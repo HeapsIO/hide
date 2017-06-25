@@ -1,0 +1,4 @@
+-cp libs
+-js bin/hide.js
+-main hide.ui.Main
+-lib hxnodejs

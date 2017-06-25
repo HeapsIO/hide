@@ -1,0 +1,10 @@
+{
+	"name" : "HIDE",
+	"window" : {
+		"title" : "HIDE",
+		"icon" : "icon.png",
+		"width" : 800,
+		"height" : 600
+	},
+	"main" : "app.html"
+}

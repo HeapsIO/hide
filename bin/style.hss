@@ -1,0 +1,29 @@
+body {
+	margin : 0;
+	padding : 0;
+	background-color : #CCC;
+}
+
+ul, li {
+	margin : 0;
+	padding : 0;
+	list-style : none;
+}
+
+body, td, th, li, p, a, input, select {
+	font-family : Verdana, serif;
+	font-size : 10pt;
+}
+
+a {
+	text-decoration : none;
+}
+
+// golden layout fixes
+
+// prevent buttons getting over title with small panel width
+.lm_header .lm_tabs { z-index: 1; }
+// no shadow in drag'n drop
+.lm_dropTargetIndicator { box-shadow: none; }
+
+
