@@ -17,4 +17,10 @@ class View<T> {
 		j.html(Type.getClassName(Type.getClass(this)));
 	}
 
+	public static var viewClasses = new Array<Class<View<Dynamic>>>();
+	public static function register<T>( cl : Class<View<T>> ) {
+		viewClasses.push(cl);
+		return null;
+	}
+
 }

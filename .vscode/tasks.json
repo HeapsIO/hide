@@ -1,0 +1,7 @@
+{
+    "version": "2.0.0",
+    "command": "haxe",
+    "args": ["hide.hxml","-cmd","bin\\hide.bat"],
+    "problemMatcher": "$haxe",
+    "showOutput": "never"
+}

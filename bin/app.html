@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
 <body>
 <script src="libs/jquery-3.2.1.js"></script>
@@ -5,6 +6,22 @@
 <link rel="stylesheet" type="text/css" href="libs/goldenlayout-base.css"/>
 <link rel="stylesheet" type="text/css" href="libs/goldenlayout-light-theme.css"/>
 <link rel="stylesheet" type="text/css" href="style.css"/>
+<xml id="mainmenu">
+	<menu label="View">
+		<separator></separator>
+		<menu label="About" component="hide.view.About"></menu>
+		<menu label="Debug" class="debug"></menu>
+	</menu>
+	<menu label="Layout" class="layout">
+		<div class="content">
+		</div>
+		<separator></separator>
+		<menu label="Keep on close" class="autosave" type="checkbox"></menu>
+		<menu label="Save" class="save"></menu>
+		<menu label="Save As..." class="saveas"></menu>
+		<menu label="Manage" class="manage" disabled="disabled"></menu>
+	</menu>
+</xml>
 <script src="hide.js"></script>
 </body>
 </html>
