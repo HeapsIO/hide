@@ -5,6 +5,11 @@ typedef PropsDef = {
 	public var autoSaveLayout : Null<Bool>;
 	public var layouts : Array<{ name : String, state : Dynamic }>;
 
+	public var currentProject : String;
+	public var recentProjects : Array<String>;
+
+	public var windowPos : { x : Int, y : Int, w : Int, h : Int, max : Bool };
+
 }
 
 class Props {
@@ -26,21 +31,22 @@ class Props {
 	// current merge
 	public var current : PropsDef;
 
-	public function new() {
+	public function new( projectDir : String ) {
 		var name = "hideProps.json";
 		var path = js.Node.process.argv[0].split("\\").join("/").split("/");
 		path.pop();
 		var globalPath = path.join("/") + "/" + name;
-		var projectPath = Sys.getCwd() + "/" + name;
-		var localPath = projectPath.split("\\").join("/").toLowerCase();
+		var projectPath = projectDir + "/" + name;
+		var localPath = projectDir.split("\\").join("/").toLowerCase();
 		paths = {
 			global : globalPath,
 			local : localPath,
 			project : projectPath
 		};
+		load();
 	}
 
-	public function load() {
+	function load() {
 		global = try haxe.Json.parse(sys.io.File.getContent(paths.global)) catch( e : Dynamic ) null;
 		project = try haxe.Json.parse(sys.io.File.getContent(paths.project)) catch( e : Dynamic ) null;
 		local = try haxe.Json.parse(js.Browser.window.localStorage.getItem(paths.local)) catch( e : Dynamic ) null;
@@ -54,6 +60,9 @@ class Props {
 		current = {
 			autoSaveLayout : true,
 			layouts : [],
+			currentProject : null,
+			recentProjects : [],
+			windowPos : null,
 		};
 		merge(global);
 		merge(project);
@@ -62,8 +71,7 @@ class Props {
 
 	public function save() {
 		sync();
-		var str = haxe.Json.stringify(global);
-		sys.io.File.saveContent(paths.global, str);
+		saveGlobals();
 		var str = haxe.Json.stringify(project);
 		if( str == '{}' )
 			try sys.FileSystem.deleteFile(paths.project) catch(e:Dynamic) {}
@@ -71,6 +79,11 @@ class Props {
 			sys.io.File.saveContent(paths.project, str);
 		var str = haxe.Json.stringify(local);
 		js.Browser.window.localStorage.setItem(paths.local, str);
+	}
+
+	public function saveGlobals() {		
+		var str = haxe.Json.stringify(global);
+		sys.io.File.saveContent(paths.global, str);
 	}
 
 	function merge( props : PropsDef ) {

@@ -2,10 +2,12 @@ package hide.ui;
 
 class View<T> {
 
+	var ide : Ide;
 	var state : T;
 
 	public function new(state:T) {
 		this.state = state;
+		ide = Ide.inst;
 	}
 
 	public function getTitle() {

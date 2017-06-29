@@ -7,7 +7,20 @@
 <link rel="stylesheet" type="text/css" href="libs/goldenlayout-light-theme.css"/>
 <link rel="stylesheet" type="text/css" href="style.css"/>
 <xml id="mainmenu">
-	<menu label="View">
+	<menu label="Project" class="project">
+		<menu label="Open..." class="open"></menu>
+		<menu label="Recently opened">
+			<div class="recents">
+				<menu label="Empty" disabled="disabled"></menu>
+			</div>
+			<separator></separator>
+			<menu label="Clear Recents" class="clear"></menu>
+		</menu>
+		<separator></separator>
+		<menu label="Exit" class="exit"></menu>
+	</menu>
+	<menu label="View" class="view">
+		<menu label="Resources" component="hide.view.FileTree" state='{"root":""}'></menu>
 		<separator></separator>
 		<menu label="About" component="hide.view.About"></menu>
 		<menu label="Debug" class="debug"></menu>

@@ -1,5 +1,5 @@
 -cp libs
 -js bin/hide.js
--main hide.ui.Main
+-main hide.ui.Ide
 -lib hxnodejs
 --macro include('hide.view')

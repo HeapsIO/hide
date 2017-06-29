@@ -8,6 +8,29 @@ function $extend(from, fields) {
 	if( fields.toString !== Object.prototype.toString ) proto.toString = fields.toString;
 	return proto;
 }
+var HxOverrides = function() { };
+$hxClasses["HxOverrides"] = HxOverrides;
+HxOverrides.__name__ = ["HxOverrides"];
+HxOverrides.substr = function(s,pos,len) {
+	if(len == null) {
+		len = s.length;
+	} else if(len < 0) {
+		if(pos == 0) {
+			len = s.length + len;
+		} else {
+			return "";
+		}
+	}
+	return s.substr(pos,len);
+};
+HxOverrides.remove = function(a,obj) {
+	var i = a.indexOf(obj);
+	if(i == -1) {
+		return false;
+	}
+	a.splice(i,1);
+	return true;
+};
 Math.__name__ = ["Math"];
 var Reflect = function() { };
 $hxClasses["Reflect"] = Reflect;
@@ -37,6 +60,31 @@ Reflect.deleteField = function(o,field) {
 	}
 	delete(o[field]);
 	return true;
+};
+var Std = function() { };
+$hxClasses["Std"] = Std;
+Std.__name__ = ["Std"];
+Std.string = function(s) {
+	return js_Boot.__string_rec(s,"");
+};
+var StringTools = function() { };
+$hxClasses["StringTools"] = StringTools;
+StringTools.__name__ = ["StringTools"];
+StringTools.startsWith = function(s,start) {
+	if(s.length >= start.length) {
+		return HxOverrides.substr(s,0,start.length) == start;
+	} else {
+		return false;
+	}
+};
+StringTools.endsWith = function(s,end) {
+	var elen = end.length;
+	var slen = s.length;
+	if(slen >= elen) {
+		return HxOverrides.substr(s,slen - elen,elen) == end;
+	} else {
+		return false;
+	}
 };
 var Type = function() { };
 $hxClasses["Type"] = Type;
@@ -133,6 +181,21 @@ haxe_io_Bytes.__name__ = ["haxe","io","Bytes"];
 haxe_io_Bytes.prototype = {
 	__class__: haxe_io_Bytes
 };
+var haxe_io_Path = function() { };
+$hxClasses["haxe.io.Path"] = haxe_io_Path;
+haxe_io_Path.__name__ = ["haxe","io","Path"];
+haxe_io_Path.isAbsolute = function(path) {
+	if(StringTools.startsWith(path,"/")) {
+		return true;
+	}
+	if(path.charAt(1) == ":") {
+		return true;
+	}
+	if(StringTools.startsWith(path,"\\\\")) {
+		return true;
+	}
+	return false;
+};
 var hide_HTypeDef = { __ename__ : true, __constructs__ : ["TId","TInt","TBool","TFloat","TString","TAlias","TArray","TEither","TFlags","TFile","TTile","TDynamic","TStruct","TEnum"] };
 hide_HTypeDef.TId = ["TId",0];
 hide_HTypeDef.TId.__enum__ = hide_HTypeDef;
@@ -164,7 +227,7 @@ hide_HTypeProp.PIsColor.__enum__ = hide_HTypeProp;
 var hide_Macros = function() { };
 $hxClasses["hide.Macros"] = hide_Macros;
 hide_Macros.__name__ = ["hide","Macros"];
-var hide_ui_Main = function() {
+var hide_ui_Ide = function() {
 	var _hide_HType = { def : null};
 	var _hide_HTypeDef = { def : null};
 	var _tmp = { def : hide_HTypeDef.TFlags(["PIsColor","PNull"])};
@@ -173,19 +236,58 @@ var hide_ui_Main = function() {
 	_hide_HType.def = inlobj_def;
 	_hide_HTypeDef.def = hide_HTypeDef.TEnum([{ name : "TId", args : []},{ name : "TInt", args : []},{ name : "TBool", args : []},{ name : "TFloat", args : []},{ name : "TString", args : []},{ name : "TAlias", args : [{ name : "name", t : { def : hide_HTypeDef.TString}},{ name : "t", t : _hide_HType}]},{ name : "TArray", args : [{ name : "t", t : _hide_HType}]},{ name : "TEither", args : [{ name : "values", t : { def : hide_HTypeDef.TArray({ def : hide_HTypeDef.TString})}}]},{ name : "TFlags", args : [{ name : "values", t : { def : hide_HTypeDef.TArray({ def : hide_HTypeDef.TString})}}]},{ name : "TFile", args : []},{ name : "TTile", args : []},{ name : "TDynamic", args : []},{ name : "TStruct", args : [{ name : "fields", t : { def : hide_HTypeDef.TArray({ def : hide_HTypeDef.TStruct([{ name : "name", t : { def : hide_HTypeDef.TString}},{ name : "t", t : _hide_HType}])})}}]},{ name : "TEnum", args : [{ name : "constructors", t : { def : hide_HTypeDef.TArray({ def : hide_HTypeDef.TStruct([{ name : "args", t : { def : hide_HTypeDef.TArray({ def : hide_HTypeDef.TStruct([{ name : "name", t : { def : hide_HTypeDef.TString}},{ name : "t", t : _hide_HType}])})}},{ name : "name", t : { def : hide_HTypeDef.TString}}])})}}]}]);
 	this.typeDef = _hide_HType;
-	this.props = new hide_ui_Props();
-	this.props.load();
+	var _gthis = this;
+	hide_ui_Ide.inst = this;
 	this.window = nw.Window.get();
-	this.initMenu();
-	this.initLayout();
+	this.props = new hide_ui_Props(process.cwd());
+	if(this.props.global.currentProject == null) {
+		this.props.global.currentProject = process.cwd();
+	}
+	var wp = this.props.global.windowPos;
+	if(wp != null) {
+		this.window.resizeBy(wp.w - (this.window.window.outerWidth | 0),wp.h - (this.window.window.outerHeight | 0));
+		this.window.moveTo(wp.x,wp.y);
+		if(wp.max) {
+			this.window.maximize();
+		}
+	}
+	this.window.show(true);
+	this.setProject(this.props.global.currentProject);
+	this.window.on("maximize",function() {
+		_gthis.maximized = true;
+		_gthis.onWindowChange();
+	});
+	this.window.on("restore",function() {
+		_gthis.maximized = false;
+		_gthis.onWindowChange();
+	});
+	this.window.on("move",function() {
+		haxe_Timer.delay($bind(_gthis,_gthis.onWindowChange),100);
+	});
+	this.window.on("resize",function() {
+		haxe_Timer.delay($bind(_gthis,_gthis.onWindowChange),100);
+	});
 };
-$hxClasses["hide.ui.Main"] = hide_ui_Main;
-hide_ui_Main.__name__ = ["hide","ui","Main"];
-hide_ui_Main.main = function() {
-	new hide_ui_Main();
+$hxClasses["hide.ui.Ide"] = hide_ui_Ide;
+hide_ui_Ide.__name__ = ["hide","ui","Ide"];
+hide_ui_Ide.main = function() {
+	new hide_ui_Ide();
 };
-hide_ui_Main.prototype = {
-	initLayout: function(state) {
+hide_ui_Ide.prototype = {
+	onWindowChange: function() {
+		if(this.props.global.windowPos == null) {
+			this.props.global.windowPos = { x : 0, y : 0, w : 0, h : 0, max : false};
+		}
+		this.props.global.windowPos.max = this.maximized;
+		if(!this.maximized) {
+			this.props.global.windowPos.x = this.window.x;
+			this.props.global.windowPos.y = this.window.y;
+			this.props.global.windowPos.w = this.window.window.outerWidth | 0;
+			this.props.global.windowPos.h = this.window.window.outerHeight | 0;
+		}
+		this.props.saveGlobals();
+	}
+	,initLayout: function(state) {
 		var _gthis = this;
 		if(this.layout != null) {
 			this.layout.destroy();
@@ -248,77 +350,139 @@ hide_ui_Main.prototype = {
 	,saveLayout: function() {
 		return this.layout.toConfig().content;
 	}
+	,get_projectDir: function() {
+		return this.props.global.currentProject;
+	}
+	,get_resourceDir: function() {
+		return this.props.global.currentProject + "/res";
+	}
+	,setProject: function(dir) {
+		if(dir != this.props.global.currentProject) {
+			this.props.global.currentProject = dir;
+			if(this.props.global.recentProjects == null) {
+				this.props.global.recentProjects = [];
+			}
+			HxOverrides.remove(this.props.global.recentProjects,dir);
+			this.props.global.recentProjects.unshift(dir);
+			if(this.props.global.recentProjects.length > 10) {
+				this.props.global.recentProjects.pop();
+			}
+			this.props.save();
+		}
+		this.window.title = "HIDE - " + dir;
+		this.props = new hide_ui_Props(dir);
+		this.initMenu();
+		this.initLayout();
+	}
 	,initMenu: function() {
 		var _gthis = this;
-		var firstInit = false;
 		if(this.menu == null) {
-			this.menu = $("#mainmenu");
-			firstInit = true;
+			this.menu = $($("#mainmenu").get(0).outerHTML);
+		}
+		if(this.props.current.recentProjects.length > 0) {
+			this.menu.find(".project .recents").html("");
+		}
+		var _g = 0;
+		var _g1 = this.props.current.recentProjects.slice();
+		while(_g < _g1.length) {
+			var v = [_g1[_g]];
+			++_g;
+			if(!sys_FileSystem.exists(v[0])) {
+				HxOverrides.remove(this.props.current.recentProjects,v[0]);
+				this.props.save();
+				continue;
+			}
+			$("<menu>").attr("label",v[0]).appendTo(this.menu.find(".project .recents")).click((function(v1) {
+				return function(_) {
+					_gthis.setProject(v1[0]);
+				};
+			})(v));
+		}
+		this.menu.find(".project .open").click(function(_1) {
+			$("<input type=\"file\" nwdirectory/>").change(function(e) {
+				var dir = $(this).val();
+				if(StringTools.endsWith(dir,"/res") || StringTools.endsWith(dir,"\\res")) {
+					dir = HxOverrides.substr(dir,0,-4);
+				}
+				_gthis.setProject(dir);
+			}).click();
+		});
+		this.menu.find(".project .clear").click(function(_2) {
+			_gthis.props.global.recentProjects = [];
+			_gthis.props.save();
+			_gthis.initMenu();
+		});
+		this.menu.find(".project .exit").click(function(_3) {
+			process.exit(0);
+		});
+		this.menu.find(".debug").click(function(_4) {
+			_gthis.window.showDevTools();
+		});
+		var comps = this.menu.find("[component]");
+		var _g_i = 0;
+		var _g_j = comps;
+		while(_g_i < _g_j.length) {
+			var c = $(_g_j[_g_i++]);
+			var cname = [c.attr("component")];
+			var cl = Type.resolveClass(cname[0]);
+			if(cl == null) {
+				js_Browser.alert("Missing component class " + cname[0]);
+			}
+			var state = [c.attr("state")];
+			if(state[0] != null) {
+				try {
+					JSON.parse(state[0]);
+				} catch( e1 ) {
+					if (e1 instanceof js__$Boot_HaxeError) e1 = e1.val;
+					js_Browser.alert("Invalid state " + state[0] + " (" + Std.string(e1) + ")");
+				}
+			}
+			c.click((function(state1,cname1) {
+				return function(_5) {
+					if(_gthis.layout.root.contentItems.length == 0) {
+						_gthis.layout.root.addChild({ type : "row"});
+					}
+					_gthis.layout.root.contentItems[0].addChild({ type : "component", componentName : cname1[0], componentState : state1[0] == null ? null : JSON.parse(state1[0])});
+				};
+			})(state,cname));
 		}
 		var layouts = this.menu.find(".layout .content");
 		layouts.html("");
-		var _g = 0;
-		var _g1 = this.props.current.layouts;
-		while(_g < _g1.length) {
-			var l = [_g1[_g]];
-			++_g;
+		var _g2 = 0;
+		var _g11 = this.props.current.layouts;
+		while(_g2 < _g11.length) {
+			var l = [_g11[_g2]];
+			++_g2;
 			if(l[0].name == "Default") {
 				continue;
 			}
 			$("<menu>").attr("label",l[0].name).addClass(l[0].name).appendTo(layouts).click((function(l1) {
-				return function(_) {
+				return function(_6) {
 					_gthis.initLayout(l1[0]);
 				};
 			})(l));
 		}
-		if(firstInit) {
-			this.menu.find(".layout .autosave").click(function(_1) {
-				_gthis.props.local.autoSaveLayout = !_gthis.props.local.autoSaveLayout;
-				_gthis.props.save();
-			});
-			this.menu.find(".layout .saveas").click(function(_2) {
-				var name = window.prompt("Please enter a layout name:");
-				if(name == null || name == "") {
-					return;
-				}
-				_gthis.props.local.layouts.push({ name : name, state : _gthis.saveLayout()});
-				_gthis.props.save();
-				_gthis.initMenu();
-			});
-			this.menu.find(".layout .save").click(function(_3) {
-				_gthis.currentLayout.state = _gthis.saveLayout();
-				_gthis.props.save();
-			});
-		}
 		var tmp = this.props.local.autoSaveLayout ? "checked" : "";
-		this.menu.find(".layout .autosave").attr("checked",tmp);
-		if(firstInit) {
-			this.menu.find(".debug").click(function(_4) {
-				_gthis.window.showDevTools();
-			});
-			var comps = this.menu.find("[component]");
-			var _g_i = 0;
-			var _g_j = comps;
-			while(_g_i < _g_j.length) {
-				var c = $(_g_j[_g_i++]);
-				var cname = [c.attr("component")];
-				var cl = Type.resolveClass(cname[0]);
-				if(cl == null) {
-					js_Browser.alert("Missing component class " + cname[0]);
-				}
-				c.click((function(cname1) {
-					return function(_5) {
-						if(_gthis.layout.root.contentItems.length == 0) {
-							_gthis.layout.root.addChild({ type : "row"});
-						}
-						_gthis.layout.root.contentItems[0].addChild({ type : "component", componentName : cname1[0]});
-					};
-				})(cname));
+		this.menu.find(".layout .autosave").click(function(_7) {
+			_gthis.props.local.autoSaveLayout = !_gthis.props.local.autoSaveLayout;
+			_gthis.props.save();
+		}).attr("checked",tmp);
+		this.menu.find(".layout .saveas").click(function(_8) {
+			var name = window.prompt("Please enter a layout name:");
+			if(name == null || name == "") {
+				return;
 			}
-		}
+			_gthis.props.local.layouts.push({ name : name, state : _gthis.saveLayout()});
+			_gthis.props.save();
+			_gthis.initMenu();
+		});
+		this.menu.find(".layout .save").click(function(_9) {
+			_gthis.currentLayout.state = _gthis.saveLayout();
+			_gthis.props.save();
+		});
 		this.window.menu = new hide_ui_Menu(this.menu).root;
 	}
-	,__class__: hide_ui_Main
+	,__class__: hide_ui_Ide
 };
 var hide_ui_Menu = function(menu) {
 	this.root = new nw.Menu({ type : "menubar"});
@@ -389,14 +553,15 @@ hide_ui_Menu.prototype = {
 	}
 	,__class__: hide_ui_Menu
 };
-var hide_ui_Props = function() {
+var hide_ui_Props = function(projectDir) {
 	var name = "hideProps.json";
 	var path = process.argv[0].split("\\").join("/").split("/");
 	path.pop();
 	var globalPath = path.join("/") + "/" + name;
-	var projectPath = process.cwd() + "/" + name;
-	var localPath = projectPath.split("\\").join("/").toLowerCase();
+	var projectPath = projectDir + "/" + name;
+	var localPath = projectDir.split("\\").join("/").toLowerCase();
 	this.paths = { global : globalPath, local : localPath, project : projectPath};
+	this.load();
 };
 $hxClasses["hide.ui.Props"] = hide_ui_Props;
 hide_ui_Props.__name__ = ["hide","ui","Props"];
@@ -435,26 +600,29 @@ hide_ui_Props.prototype = {
 		this.sync();
 	}
 	,sync: function() {
-		this.current = { autoSaveLayout : true, layouts : []};
+		this.current = { autoSaveLayout : true, layouts : [], currentProject : null, recentProjects : [], windowPos : null};
 		this.merge(this.global);
 		this.merge(this.project);
 		this.merge(this.local);
 	}
 	,save: function() {
 		this.sync();
-		var str = JSON.stringify(this.global);
-		js_node_Fs.writeFileSync(this.paths.global,str);
-		var str1 = JSON.stringify(this.project);
-		if(str1 == "{}") {
+		this.saveGlobals();
+		var str = JSON.stringify(this.project);
+		if(str == "{}") {
 			try {
 				js_node_Fs.unlinkSync(this.paths.project);
 			} catch( e ) {
 			}
 		} else {
-			js_node_Fs.writeFileSync(this.paths.project,str1);
+			js_node_Fs.writeFileSync(this.paths.project,str);
 		}
-		var str2 = JSON.stringify(this.local);
-		window.localStorage.setItem(this.paths.local,str2);
+		var str1 = JSON.stringify(this.local);
+		window.localStorage.setItem(this.paths.local,str1);
+	}
+	,saveGlobals: function() {
+		var str = JSON.stringify(this.global);
+		js_node_Fs.writeFileSync(this.paths.global,str);
 	}
 	,merge: function(props) {
 		var _g = 0;
@@ -478,6 +646,7 @@ hide_ui_Props.prototype = {
 };
 var hide_ui_View = function(state) {
 	this.state = state;
+	this.ide = hide_ui_Ide.inst;
 };
 $hxClasses["hide.ui.View"] = hide_ui_View;
 hide_ui_View.__name__ = ["hide","ui","View"];
@@ -506,6 +675,24 @@ hide_view_About.prototype = $extend(hide_ui_View.prototype,{
 		j.html("\n\t\t<p>\n\t\t\tHeaps IDE v0.1<br/>\n\t\t\t(c)2017 Nicolas Cannasse\n\t\t</p>\n\t\t");
 	}
 	,__class__: hide_view_About
+});
+var hide_view_FileTree = function(state) {
+	hide_ui_View.call(this,state);
+};
+$hxClasses["hide.view.FileTree"] = hide_view_FileTree;
+hide_view_FileTree.__name__ = ["hide","view","FileTree"];
+hide_view_FileTree.__super__ = hide_ui_View;
+hide_view_FileTree.prototype = $extend(hide_ui_View.prototype,{
+	getPath: function() {
+		if(haxe_io_Path.isAbsolute(this.state.root)) {
+			return this.state.root;
+		}
+		return this.ide.get_resourceDir() + "/" + this.state.root;
+	}
+	,onDisplay: function(j) {
+		j.text(this.getPath());
+	}
+	,__class__: hide_view_FileTree
 });
 var js__$Boot_HaxeError = function(val) {
 	Error.call(this);
@@ -648,6 +835,19 @@ js_Browser.alert = function(v) {
 };
 var js_node_Fs = require("fs");
 var js_node_buffer_Buffer = require("buffer").Buffer;
+var sys_FileSystem = function() { };
+$hxClasses["sys.FileSystem"] = sys_FileSystem;
+sys_FileSystem.__name__ = ["sys","FileSystem"];
+sys_FileSystem.exists = function(path) {
+	try {
+		js_node_Fs.accessSync(path);
+		return true;
+	} catch( _ ) {
+		return false;
+	}
+};
+var $_, $fid = 0;
+function $bind(o,m) { if( m == null ) return null; if( m.__id__ == null ) m.__id__ = $fid++; var f; if( o.hx__closures__ == null ) o.hx__closures__ = {}; else f = o.hx__closures__[m.__id__]; if( f == null ) { f = function(){ return f.method.apply(f.scope, arguments); }; f.scope = o; f.method = m; o.hx__closures__[m.__id__] = f; } return f; }
 $hxClasses["Math"] = Math;
 String.prototype.__class__ = $hxClasses["String"] = String;
 String.__name__ = ["String"];
@@ -656,6 +856,7 @@ Array.__name__ = ["Array"];
 var __map_reserved = {};
 hide_ui_View.viewClasses = [];
 hide_view_About._ = hide_ui_View.register(hide_view_About);
+hide_view_FileTree._ = hide_ui_View.register(hide_view_FileTree);
 js_Boot.__toStr = ({ }).toString;
-hide_ui_Main.main();
+hide_ui_Ide.main();
 })(typeof window != "undefined" ? window : typeof global != "undefined" ? global : typeof self != "undefined" ? self : this);
