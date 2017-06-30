@@ -1,27 +1,52 @@
 body {
 	margin : 0;
 	padding : 0;
-	background-color : #CCC;
+	background-color : black;
 }
+
 ul, li {
 	margin : 0;
 	padding : 0;
-	list-style : none;
+	list-style : none;	
 }
+
 body, td, th, li, p, a, input, select {
 	font-family : Verdana, serif;
-	font-size : 10pt;
+	font-size : 9pt;
+	color: #aaa;
 }
+
 a {
 	text-decoration : none;
 }
+
 #mainmenu { display : none }
+
+.hide_scrollzone {
+	width : 100%;
+	height : 100%;
+	overflow : auto;
+}
+
+.hide_scrollzone::-webkit-scrollbar {
+  width: 5px;
+}
+ 
+.hide_scrollzone::-webkit-scrollbar-track {
+  background: #ddd;
+}
+ 
+.hide_scrollzone::-webkit-scrollbar-thumb {
+  background: #666; 
+}
+
+/* Golden Layout Fixes */
+
 .lm_header .lm_tabs {
 	z-index : 1;
 }
+
 .lm_dropTargetIndicator {
-	-moz-box-shadow : none;
-	-webkit-box-shadow : none;
 	box-shadow : none;
 }
 div.lm_close_tab { top : 0px !important; right : 0px !important; width : 20px !important; height : 18px !important; }

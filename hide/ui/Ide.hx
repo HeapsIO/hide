@@ -1,5 +1,4 @@
 package hide.ui;
-import js.jquery.Helper.*;
 
 class Ide {
 
@@ -83,7 +82,7 @@ class Ide {
 			layout.registerComponent(Type.getClassName(cl),function(cont,state) {
 				var view = Type.createInstance(cl,[state]);
 				cont.setTitle(view.getTitle());
-				view.onDisplay(cont.getElement());
+				try view.onDisplay(cont.getElement()) catch( e : Dynamic ) js.Browser.alert(Type.getClassName(cl)+":"+e);
 			});
 
 		layout.init();
@@ -127,7 +126,7 @@ class Ide {
 
 	function initMenu() {
 		if( menu == null )
-			menu = J(J("#mainmenu").get(0).outerHTML);
+			menu = new Element(new Element("#mainmenu").get(0).outerHTML);
 
 		// project
 		if( props.current.recentProjects.length > 0 )
@@ -138,13 +137,13 @@ class Ide {
 				props.save();
 				continue;
 			}
-			J("<menu>").attr("label",v).appendTo(menu.find(".project .recents")).click(function(_){
+			new Element("<menu>").attr("label",v).appendTo(menu.find(".project .recents")).click(function(_){
 				setProject(v);
 			});
 		}
 		menu.find(".project .open").click(function(_) {
-			J('<input type="file" nwdirectory/>').change(function(e) {
-				var dir = JTHIS.val();
+			new Element('<input type="file" nwdirectory/>').change(function(e) {
+				var dir = js.jquery.Helper.JTHIS.val();
 				if( StringTools.endsWith(dir,"/res") || StringTools.endsWith(dir,"\\res") )
 					dir = dir.substr(0,-4);
 				setProject(dir);
@@ -184,7 +183,7 @@ class Ide {
 		layouts.html("");
 		for( l in props.current.layouts ) {
 			if( l.name == "Default" ) continue;
-			J("<menu>").attr("label",l.name).addClass(l.name).appendTo(layouts).click(function(_) {
+			new Element("<menu>").attr("label",l.name).addClass(l.name).appendTo(layouts).click(function(_) {
 				initLayout(l);
 			});
 		}

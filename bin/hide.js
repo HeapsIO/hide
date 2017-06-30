@@ -11,6 +11,13 @@ function $extend(from, fields) {
 var HxOverrides = function() { };
 $hxClasses["HxOverrides"] = HxOverrides;
 HxOverrides.__name__ = ["HxOverrides"];
+HxOverrides.cca = function(s,index) {
+	var x = s.charCodeAt(index);
+	if(x != x) {
+		return undefined;
+	}
+	return x;
+};
 HxOverrides.substr = function(s,pos,len) {
 	if(len == null) {
 		len = s.length;
@@ -53,6 +60,15 @@ Reflect.fields = function(o) {
 		}
 	}
 	return a;
+};
+Reflect.compare = function(a,b) {
+	if(a == b) {
+		return 0;
+	} else if(a > b) {
+		return 1;
+	} else {
+		return -1;
+	}
 };
 Reflect.deleteField = function(o,field) {
 	if(!Object.prototype.hasOwnProperty.call(o,field)) {
@@ -227,6 +243,43 @@ hide_HTypeProp.PIsColor.__enum__ = hide_HTypeProp;
 var hide_Macros = function() { };
 $hxClasses["hide.Macros"] = hide_Macros;
 hide_Macros.__name__ = ["hide","Macros"];
+var hide_comp_Component = function(root) {
+	this.root = root;
+};
+$hxClasses["hide.comp.Component"] = hide_comp_Component;
+hide_comp_Component.__name__ = ["hide","comp","Component"];
+hide_comp_Component.prototype = {
+	__class__: hide_comp_Component
+};
+var hide_comp_IconTree = function(root) {
+	hide_comp_Component.call(this,root);
+};
+$hxClasses["hide.comp.IconTree"] = hide_comp_IconTree;
+hide_comp_IconTree.__name__ = ["hide","comp","IconTree"];
+hide_comp_IconTree.__super__ = hide_comp_Component;
+hide_comp_IconTree.prototype = $extend(hide_comp_Component.prototype,{
+	get: function(id) {
+		return [{ id : Std.string(id) + "0", text : "get()", children : true}];
+	}
+	,init: function() {
+		var _gthis = this;
+		this.tree = this.root.jstree({ core : { themes : { name : "default-dark", dots : true, icons : true}, data : function(obj,callb) {
+			var tmp = _gthis.get(obj.parent == null ? null : obj.id);
+			callb.call(_gthis,tmp);
+		}}});
+	}
+	,__class__: hide_comp_IconTree
+});
+var hide_comp_ScrollZone = function(root) {
+	hide_comp_Component.call(this,root);
+	this.content = $("<div class='hide_scrollzone'>").appendTo(root);
+};
+$hxClasses["hide.comp.ScrollZone"] = hide_comp_ScrollZone;
+hide_comp_ScrollZone.__name__ = ["hide","comp","ScrollZone"];
+hide_comp_ScrollZone.__super__ = hide_comp_Component;
+hide_comp_ScrollZone.prototype = $extend(hide_comp_Component.prototype,{
+	__class__: hide_comp_ScrollZone
+});
 var hide_ui_Ide = function() {
 	var _hide_HType = { def : null};
 	var _hide_HTypeDef = { def : null};
@@ -327,7 +380,12 @@ hide_ui_Ide.prototype = {
 				return function(cont,state1) {
 					var view = Type.createInstance(cl1[0],[state1]);
 					cont.setTitle(view.getTitle());
-					view.onDisplay(cont.getElement());
+					try {
+						view.onDisplay(cont.getElement());
+					} catch( e ) {
+						if (e instanceof js__$Boot_HaxeError) e = e.val;
+						js_Browser.alert(Type.getClassName(cl1[0]) + ":" + Std.string(e));
+					}
 				};
 			})(cl));
 		}
@@ -689,8 +747,46 @@ hide_view_FileTree.prototype = $extend(hide_ui_View.prototype,{
 		}
 		return this.ide.get_resourceDir() + "/" + this.state.root;
 	}
-	,onDisplay: function(j) {
-		j.text(this.getPath());
+	,onDisplay: function(e) {
+		var _gthis = this;
+		var panel = new hide_comp_ScrollZone(e);
+		this.tree = new hide_comp_IconTree(panel.content);
+		this.tree.get = function(path) {
+			if(path == null) {
+				path = "";
+			}
+			var basePath = _gthis.getPath() + path;
+			var content = [];
+			var _g = 0;
+			var _g1 = js_node_Fs.readdirSync(basePath);
+			while(_g < _g1.length) {
+				var c = _g1[_g];
+				++_g;
+				if(_gthis.isIgnored(basePath,c)) {
+					continue;
+				}
+				var isDir = js_node_Fs.statSync(basePath + "/" + c).isDirectory();
+				content.push({ id : path + "/" + c, text : c, icon : isDir ? null : "jstree-file", children : isDir});
+			}
+			content.sort(function(a,b) {
+				if(a.children != b.children) {
+					if(a.children) {
+						return -1;
+					} else {
+						return 1;
+					}
+				}
+				return Reflect.compare(a.text,b.text);
+			});
+			return content;
+		};
+		this.tree.init();
+	}
+	,isIgnored: function(path,file) {
+		if(HxOverrides.cca(file,0) == 46) {
+			return true;
+		}
+		return false;
 	}
 	,__class__: hide_view_FileTree
 });
