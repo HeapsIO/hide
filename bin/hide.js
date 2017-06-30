@@ -187,10 +187,28 @@ haxe_Timer.prototype = {
 	}
 	,__class__: haxe_Timer
 };
-var haxe_ds_StringMap = function() { };
+var haxe_ds_StringMap = function() {
+	this.h = { };
+};
 $hxClasses["haxe.ds.StringMap"] = haxe_ds_StringMap;
 haxe_ds_StringMap.__name__ = ["haxe","ds","StringMap"];
 haxe_ds_StringMap.__interfaces__ = [haxe_IMap];
+haxe_ds_StringMap.prototype = {
+	setReserved: function(key,value) {
+		if(this.rh == null) {
+			this.rh = { };
+		}
+		this.rh["$" + key] = value;
+	}
+	,getReserved: function(key) {
+		if(this.rh == null) {
+			return null;
+		} else {
+			return this.rh["$" + key];
+		}
+	}
+	,__class__: haxe_ds_StringMap
+};
 var haxe_io_Bytes = function() { };
 $hxClasses["haxe.io.Bytes"] = haxe_io_Bytes;
 haxe_io_Bytes.__name__ = ["haxe","io","Bytes"];
@@ -259,14 +277,29 @@ hide_comp_IconTree.__name__ = ["hide","comp","IconTree"];
 hide_comp_IconTree.__super__ = hide_comp_Component;
 hide_comp_IconTree.prototype = $extend(hide_comp_Component.prototype,{
 	get: function(id) {
-		return [{ id : Std.string(id) + "0", text : "get()", children : true}];
+		return [{ id : id + "0", text : "get()", children : true}];
+	}
+	,onDblClick: function(id) {
+	}
+	,onToggle: function(id,isOpen) {
 	}
 	,init: function() {
 		var _gthis = this;
-		this.tree = this.root.jstree({ core : { themes : { name : "default-dark", dots : true, icons : true}, data : function(obj,callb) {
+		this.root.jstree({ core : { themes : { name : "default-dark", dots : true, icons : true}, data : function(obj,callb) {
 			var tmp = _gthis.get(obj.parent == null ? null : obj.id);
 			callb.call(_gthis,tmp);
-		}}});
+		}}, plugins : ["wholerow"]});
+		this.root.on("dblclick.jstree",null,function(event) {
+			var node = $(event.target).closest("li");
+			var data = node[0].id;
+			_gthis.onDblClick(data);
+		});
+		this.root.on("open_node.jstree",null,function(event1,e) {
+			_gthis.onToggle(e.node.id,true);
+		});
+		this.root.on("close_node.jstree",null,function(event2,e1) {
+			_gthis.onToggle(e1.node.id,false);
+		});
 	}
 	,__class__: hide_comp_IconTree
 });
@@ -379,7 +412,7 @@ hide_ui_Ide.prototype = {
 			this.layout.registerComponent(Type.getClassName(cl[0]),(function(cl1) {
 				return function(cont,state1) {
 					var view = Type.createInstance(cl1[0],[state1]);
-					cont.setTitle(view.getTitle());
+					view.setContainer(cont);
 					try {
 						view.onDisplay(cont.getElement());
 					} catch( e ) {
@@ -407,6 +440,12 @@ hide_ui_Ide.prototype = {
 	}
 	,saveLayout: function() {
 		return this.layout.toConfig().content;
+	}
+	,getPath: function(relPath) {
+		if(haxe_io_Path.isAbsolute(relPath)) {
+			return relPath;
+		}
+		return this.get_resourceDir() + "/" + relPath;
 	}
 	,get_projectDir: function() {
 		return this.props.global.currentProject;
@@ -497,10 +536,9 @@ hide_ui_Ide.prototype = {
 			}
 			c.click((function(state1,cname1) {
 				return function(_5) {
-					if(_gthis.layout.root.contentItems.length == 0) {
-						_gthis.layout.root.addChild({ type : "row"});
-					}
-					_gthis.layout.root.contentItems[0].addChild({ type : "component", componentName : cname1[0], componentState : state1[0] == null ? null : JSON.parse(state1[0])});
+					var cname2 = cname1[0];
+					var tmp = state1[0] == null ? null : JSON.parse(state1[0]);
+					_gthis.open(cname2,tmp);
 				};
 			})(state,cname));
 		}
@@ -520,11 +558,11 @@ hide_ui_Ide.prototype = {
 				};
 			})(l));
 		}
-		var tmp = this.props.local.autoSaveLayout ? "checked" : "";
+		var tmp1 = this.props.local.autoSaveLayout ? "checked" : "";
 		this.menu.find(".layout .autosave").click(function(_7) {
 			_gthis.props.local.autoSaveLayout = !_gthis.props.local.autoSaveLayout;
 			_gthis.props.save();
-		}).attr("checked",tmp);
+		}).attr("checked",tmp1);
 		this.menu.find(".layout .saveas").click(function(_8) {
 			var name = window.prompt("Please enter a layout name:");
 			if(name == null || name == "") {
@@ -539,6 +577,12 @@ hide_ui_Ide.prototype = {
 			_gthis.props.save();
 		});
 		this.window.menu = new hide_ui_Menu(this.menu).root;
+	}
+	,open: function(component,state) {
+		if(this.layout.root.contentItems.length == 0) {
+			this.layout.root.addChild({ type : "row"});
+		}
+		this.layout.root.contentItems[0].addChild({ type : "component", componentName : component, componentState : state});
 	}
 	,__class__: hide_ui_Ide
 };
@@ -717,8 +761,15 @@ hide_ui_View.prototype = {
 		var name = Type.getClassName(js_Boot.getClass(this));
 		return name.split(".").pop();
 	}
+	,setContainer: function(cont) {
+		this.container = cont;
+		this.container.setTitle(this.getTitle());
+	}
 	,onDisplay: function(j) {
-		j.html(Type.getClassName(js_Boot.getClass(this)));
+		j.text(Type.getClassName(js_Boot.getClass(this)) + (this.state == null ? "" : " " + Std.string(this.state)));
+	}
+	,saveState: function() {
+		this.container.setState(this.state);
 	}
 	,__class__: hide_ui_View
 };
@@ -739,23 +790,53 @@ var hide_view_FileTree = function(state) {
 };
 $hxClasses["hide.view.FileTree"] = hide_view_FileTree;
 hide_view_FileTree.__name__ = ["hide","view","FileTree"];
+hide_view_FileTree.registerExtension = function(c,extensions,options) {
+	hide_ui_View.register(c);
+	if(options == null) {
+		options = { };
+	}
+	var obj = { component : Type.getClassName(c), options : options};
+	var _g = 0;
+	while(_g < extensions.length) {
+		var e = extensions[_g];
+		++_g;
+		var _this = hide_view_FileTree.EXTENSIONS;
+		if(__map_reserved[e] != null) {
+			_this.setReserved(e,obj);
+		} else {
+			_this.h[e] = obj;
+		}
+	}
+	return null;
+};
 hide_view_FileTree.__super__ = hide_ui_View;
 hide_view_FileTree.prototype = $extend(hide_ui_View.prototype,{
-	getPath: function() {
-		if(haxe_io_Path.isAbsolute(this.state.root)) {
-			return this.state.root;
+	getExtension: function(file) {
+		if(file.indexOf(".") < 0) {
+			return null;
+		} else {
+			var this1 = hide_view_FileTree.EXTENSIONS;
+			var key = file.split(".").pop().toLowerCase();
+			var _this = this1;
+			if(__map_reserved[key] != null) {
+				return _this.getReserved(key);
+			} else {
+				return _this.h[key];
+			}
 		}
-		return this.ide.get_resourceDir() + "/" + this.state.root;
 	}
 	,onDisplay: function(e) {
 		var _gthis = this;
+		if(this.state.opened == null) {
+			this.state.opened = [];
+		}
 		var panel = new hide_comp_ScrollZone(e);
 		this.tree = new hide_comp_IconTree(panel.content);
 		this.tree.get = function(path) {
 			if(path == null) {
 				path = "";
 			}
-			var basePath = _gthis.getPath() + path;
+			var basePath = _gthis.ide.getPath(_gthis.state.root) + path;
 			var content = [];
 			var _g = 0;
 			var _g1 = js_node_Fs.readdirSync(basePath);
@@ -766,7 +847,9 @@ hide_view_FileTree.prototype = $extend(hide_ui_View.prototype,{
 					continue;
 				}
 				var isDir = js_node_Fs.statSync(basePath + "/" + c).isDirectory();
-				content.push({ id : path + "/" + c, text : c, icon : isDir ? null : "jstree-file", children : isDir});
+				var ext = _gthis.getExtension(c);
+				var id = path == "" ? c : path + "/" + c;
+				content.push({ id : id, text : c, icon : isDir ? null : ext != null && ext.options.icon != null ? "fa fa-" + ext.options.icon : "jstree-file", children : isDir, state : _gthis.state.opened.indexOf(id) >= 0 ? { opened : true} : null});
 			}
 			content.sort(function(a,b) {
 				if(a.children != b.children) {
@@ -780,7 +863,26 @@ hide_view_FileTree.prototype = $extend(hide_ui_View.prototype,{
 			});
 			return content;
 		};
+		this.tree.onToggle = function(path1,isOpen) {
+			HxOverrides.remove(_gthis.state.opened,path1);
+			if(isOpen) {
+				_gthis.state.opened.push(path1);
+			}
+			_gthis.saveState();
+		};
+		this.tree.onDblClick = $bind(this,this.onOpenFile);
 		this.tree.init();
+	}
+	,onOpenFile: function(path) {
+		var fullPath = this.ide.getPath(this.state.root) + path;
+		if(js_node_Fs.statSync(fullPath).isDirectory()) {
+			return;
+		}
+		var ext = this.getExtension(path);
+		if(ext == null) {
+			return;
+		}
+		this.ide.open(ext.component,{ path : path});
 	}
 	,isIgnored: function(path,file) {
 		if(HxOverrides.cca(file,0) == 46) {
@@ -789,6 +891,15 @@ hide_view_FileTree.prototype = $extend(hide_ui_View.prototype,{
 		return false;
 	}
 	,__class__: hide_view_FileTree
+});
+var hide_view_Image = function(state) {
+	hide_ui_View.call(this,state);
+};
+$hxClasses["hide.view.Image"] = hide_view_Image;
+hide_view_Image.__name__ = ["hide","view","Image"];
+hide_view_Image.__super__ = hide_ui_View;
+hide_view_Image.prototype = $extend(hide_ui_View.prototype,{
+	__class__: hide_view_Image
 });
 var js__$Boot_HaxeError = function(val) {
 	Error.call(this);
@@ -952,7 +1063,9 @@ Array.__name__ = ["Array"];
 var __map_reserved = {};
 hide_ui_View.viewClasses = [];
 hide_view_About._ = hide_ui_View.register(hide_view_About);
+hide_view_FileTree.EXTENSIONS = new haxe_ds_StringMap();
 hide_view_FileTree._ = hide_ui_View.register(hide_view_FileTree);
+hide_view_Image._ = hide_view_FileTree.registerExtension(hide_view_Image,["png","jpg","jpeg","gif"],{ icon : "picture-o"});
 js_Boot.__toStr = ({ }).toString;
 hide_ui_Ide.main();
 })(typeof window != "undefined" ? window : typeof global != "undefined" ? global : typeof self != "undefined" ? self : this);

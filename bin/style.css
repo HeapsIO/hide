@@ -29,15 +29,16 @@ a {
 }
 
 .hide_scrollzone::-webkit-scrollbar {
-  width: 5px;
+	width: 5px;
+	height: 5px;
 }
  
 .hide_scrollzone::-webkit-scrollbar-track {
-  background: #ddd;
+	background: #ddd;
 }
  
 .hide_scrollzone::-webkit-scrollbar-thumb {
-  background: #666; 
+	background: #666; 
 }
 
 /* Golden Layout Fixes */
@@ -51,3 +52,4 @@ a {
 }
 div.lm_close_tab { top : 0px !important; right : 0px !important; width : 20px !important; height : 18px !important; }
 div.lm_close_tab:hover { opacity : 0.7 !important; }
+

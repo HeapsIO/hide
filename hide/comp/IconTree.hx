@@ -1,7 +1,7 @@
 package hide.comp;
 
 typedef IconTreeItem = {
-	var id : Dynamic;
+	var id : String;
 	var text : String;
 	@:optional var children : Bool;
 	@:optional var icon : String;
@@ -14,14 +14,18 @@ typedef IconTreeItem = {
 
 class IconTree extends Component {
 
-	public var tree : Element;
-
-	public dynamic function get( id : Dynamic ) : Array<IconTreeItem> {
+	public dynamic function get( id : String ) : Array<IconTreeItem> {
 		return [{ id : id+"0", text : "get()", children : true }];
 	}
 
+	public dynamic function onDblClick( id : String ) : Void {
+	}
+
+	public dynamic function onToggle( id : String, isOpen : Bool ) : Void {
+	}
+
 	public function init() {
-		tree = (untyped root.jstree)({
+		(untyped root.jstree)({
 			core : {
 				themes: {
 					name: "default-dark",
@@ -31,7 +35,19 @@ class IconTree extends Component {
 				data : function(obj,callb) {
 					callb.call(this,get(obj.parent == null ? null : obj.id));
 				}
-			}
+			},
+			plugins : [ "wholerow" ],
+		});
+		root.on("dblclick.jstree", function (event) {
+			var node = new Element(event.target).closest("li");
+   			var data = node[0].id;
+			onDblClick(data);
+		});
+		root.on("open_node.jstree", function(event,e) {
+			onToggle(e.node.id, true);
+		});
+		root.on("close_node.jstree", function(event,e) {
+			onToggle(e.node.id, false);
 		});
 	}
 	

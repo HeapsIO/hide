@@ -81,7 +81,7 @@ class Ide {
 		for( cl in @:privateAccess View.viewClasses )
 			layout.registerComponent(Type.getClassName(cl),function(cont,state) {
 				var view = Type.createInstance(cl,[state]);
-				cont.setTitle(view.getTitle());
+				view.setContainer(cont);
 				try view.onDisplay(cont.getElement()) catch( e : Dynamic ) js.Browser.alert(Type.getClassName(cl)+":"+e);
 			});
 
@@ -105,6 +105,11 @@ class Ide {
 		return layout.toConfig().content;
 	}
 
+	public function getPath( relPath : String ) {
+		if( haxe.io.Path.isAbsolute(relPath) )
+			return relPath;
+		return resourceDir+"/"+relPath;
+	}
 
 	function get_projectDir() return props.global.currentProject;
 	function get_resourceDir() return props.global.currentProject+"/res";
@@ -168,13 +173,7 @@ class Ide {
 			var state = c.attr("state");
 			if( state != null ) try haxe.Json.parse(state) catch( e : Dynamic ) js.Browser.alert("Invalid state "+state+" ("+e+")");
 			c.click(function(_) {
-				if( layout.root.contentItems.length == 0 )
-					layout.root.addChild({ type : Row });
-				layout.root.contentItems[0].addChild({
-					type : Component,
-					componentName : cname,
-					componentState : state == null ? null : haxe.Json.parse(state),
-				});
+				open(cname, state == null ? null : haxe.Json.parse(state));
 			});
 		}
 
@@ -207,6 +206,15 @@ class Ide {
 		window.menu = new Menu(menu).root;
 	}
 
+	public function open( component : String, state : Dynamic ) {
+		if( layout.root.contentItems.length == 0 )
+			layout.root.addChild({ type : Row });
+		layout.root.contentItems[0].addChild({
+			type : Component,
+			componentName : component,
+			componentState : state,
+		});		
+	}
 
 	public static var inst : Ide;
 

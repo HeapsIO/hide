@@ -13,5 +13,6 @@ extern class Container {
 	public function getElement() : js.jquery.JQuery;
 
 	public function setTitle( title : String ) : Void;
+	public function setState( state : Dynamic ) : Void;
 
 }
