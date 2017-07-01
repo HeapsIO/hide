@@ -27,6 +27,7 @@ class View<T> {
 			container.getElement().find('*').trigger('resize');
 			onResize();
 		});
+		untyped cont.parent.__view = this;
 	}
 
 	public function onDisplay( j : js.jquery.JQuery ) {
@@ -40,12 +41,20 @@ class View<T> {
 		container.setState(state);
 	}
 
+	public function close() {
+		if( container != null ) {
+			container.close();
+			container = null;
+		}
+	}
+
 	function get_contentWidth() return container.width;
 	function get_contentHeight() return container.height;
 
 	public static var viewClasses = new Array<Class<View<Dynamic>>>();
 	public static function register<T>( cl : Class<View<T>> ) {
-		viewClasses.push(cl);
+		if( viewClasses.indexOf(cl) < 0 )
+			viewClasses.push(cl);
 		return null;
 	}
 

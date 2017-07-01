@@ -1,13 +1,9 @@
 package hide.view;
 
-class Image extends hide.ui.View<{ path : String }> {
+class Image extends FileView {
 
 	var bmp : h2d.Bitmap;
 	var scene : hide.comp.Scene;
-
-	override function getTitle() {
-		return state.path.split("/").pop();
-	}
 
 	override function onDisplay( e : Element ) {
 		scene = new hide.comp.Scene(e);

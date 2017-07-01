@@ -5,6 +5,7 @@ class Ide {
 	public var props : Props;
 	public var projectDir(get,never) : String;
 	public var resourceDir(get,never) : String;
+	public var initializing(default,null) : Bool;
 
 	var window : nw.Window;
 
@@ -52,6 +53,8 @@ class Ide {
 
 	function initLayout( ?state : { name : String, state : Dynamic } ) {
 
+		initializing = true;
+
 		if( layout != null ) {
 			layout.destroy();
 			layout = null;
@@ -96,6 +99,7 @@ class Ide {
 
 		// error recovery if invalid component
 		haxe.Timer.delay(function() {
+			initializing = false;
 			if( layout.isInitialised ) return;
 			state.state = [];
 			initLayout();
@@ -227,10 +231,16 @@ class Ide {
 		window.menu = new Menu(menu).root;
 	}
 
-	public function open( component : String, state : Dynamic ) {
+	public function open( component : String, state : Dynamic, ?onCreate : View<Dynamic> -> Void ) {
 		if( layout.root.contentItems.length == 0 )
 			layout.root.addChild({ type : Row });
-		layout.root.contentItems[0].addChild({
+		var target = layout.root.contentItems[0];
+		if( onCreate != null )
+			target.on("componentCreated", function(c) {
+				target.off("componentCreated");
+				onCreate(untyped c.origin.__view);
+			});
+		target.addChild({
 			type : Component,
 			componentName : component,
 			componentState : state,

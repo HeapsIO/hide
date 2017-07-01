@@ -7,6 +7,7 @@ typedef ExtensionOptions = {
 class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
 
 	var tree : hide.comp.IconTree;
+	var lastOpen : hide.ui.View<Dynamic>;
 
 	function getExtension( file : String ) {
 		return file.indexOf(".") < 0 ? null : EXTENSIONS.get(file.split(".").pop().toLowerCase());
@@ -50,6 +51,25 @@ class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
 				state.opened.push(path);
 			saveState();
 		};
+		
+		
+		// prevent dummy mouseLeft from breaking our quickOpen feature
+		var mouseLeft = false;
+		var leftCount = 0;
+		e.on("mouseenter", function(_) {
+			mouseLeft = false;
+		});
+		e.on("mouseleave", function(_) {
+			mouseLeft = true;
+			leftCount++;
+			var k = leftCount;
+			if( lastOpen != null ) 
+				haxe.Timer.delay(function() {
+					if( !mouseLeft || leftCount != k ) return;
+					lastOpen = null;
+				},1000);
+		});
+
 		tree.onDblClick = onOpenFile;
 		tree.init();
 	}
@@ -61,7 +81,10 @@ class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
 		var ext = getExtension(path);
 		if( ext == null )
 			return;
-		ide.open(ext.component, { path : path });
+		var prev = lastOpen;
+		lastOpen = null;
+		ide.open(ext.component, { path : path }, function(c) lastOpen = c);
+		if( prev != null ) prev.close();
 	}
  
 	function isIgnored( path : String, file : String ) {

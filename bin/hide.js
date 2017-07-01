@@ -10921,6 +10921,7 @@ hide_ui_Ide.prototype = {
 	}
 	,initLayout: function(state) {
 		var _gthis = this;
+		this.initializing = true;
 		if(this.layout != null) {
 			this.layout.destroy();
 			this.layout = null;
@@ -10977,6 +10978,7 @@ hide_ui_Ide.prototype = {
 			_gthis.props.save();
 		});
 		haxe_Timer.delay(function() {
+			_gthis.initializing = false;
 			if(_gthis.layout.isInitialised) {
 				return;
 			}
@@ -11150,11 +11152,18 @@ hide_ui_Ide.prototype = {
 		});
 		this.window.menu = new hide_ui_Menu(this.menu).root;
 	}
-	,open: function(component,state) {
+	,open: function(component,state,onCreate) {
 		if(this.layout.root.contentItems.length == 0) {
 			this.layout.root.addChild({ type : "row"});
 		}
-		this.layout.root.contentItems[0].addChild({ type : "component", componentName : component, componentState : state});
+		var target = this.layout.root.contentItems[0];
+		if(onCreate != null) {
+			target.on("componentCreated",function(c) {
+				target.off("componentCreated");
+				onCreate(c.origin.__view);
+			});
+		}
+		target.addChild({ type : "component", componentName : component, componentState : state});
 	}
 	,__class__: hide_ui_Ide
 };
@@ -11325,7 +11334,9 @@ var hide_ui_View = function(state) {
 $hxClasses["hide.ui.View"] = hide_ui_View;
 hide_ui_View.__name__ = ["hide","ui","View"];
 hide_ui_View.register = function(cl) {
-	hide_ui_View.viewClasses.push(cl);
+	if(hide_ui_View.viewClasses.indexOf(cl) < 0) {
+		hide_ui_View.viewClasses.push(cl);
+	}
 	return null;
 };
 hide_ui_View.prototype = {
@@ -11341,6 +11352,7 @@ hide_ui_View.prototype = {
 			_gthis.container.getElement().find("*").trigger("resize");
 			_gthis.onResize();
 		});
+		cont.parent.__view = this;
 	}
 	,onDisplay: function(j) {
 		j.text(Type.getClassName(js_Boot.getClass(this)) + (this.state == null ? "" : " " + Std.string(this.state)));
@@ -11349,6 +11361,12 @@ hide_ui_View.prototype = {
 	}
 	,saveState: function() {
 		this.container.setState(this.state);
+	}
+	,close: function() {
+		if(this.container != null) {
+			this.container.close();
+			this.container = null;
+		}
 	}
 	,get_contentWidth: function() {
 		return this.container.width;
@@ -11461,10 +11479,28 @@ hide_view_FileTree.prototype = $extend(hide_ui_View.prototype,{
 			}
 			_gthis.saveState();
 		};
+		var mouseLeft = false;
+		var leftCount = 0;
+		e.on("mouseenter",null,function(_) {
+			mouseLeft = false;
+		});
+		e.on("mouseleave",null,function(_1) {
+			mouseLeft = true;
+			var k = leftCount += 1;
+			if(_gthis.lastOpen != null) {
+				haxe_Timer.delay(function() {
+					if(!mouseLeft || leftCount != k) {
+						return;
+					}
+					_gthis.lastOpen = null;
+				},1000);
+			}
+		});
 		this.tree.onDblClick = $bind(this,this.onOpenFile);
 		this.tree.init();
 	}
 	,onOpenFile: function(path) {
+		var _gthis = this;
 		var fullPath = this.ide.getPath(this.state.root) + path;
 		if(js_node_Fs.statSync(fullPath).isDirectory()) {
 			return;
@@ -11473,7 +11509,14 @@ hide_view_FileTree.prototype = $extend(hide_ui_View.prototype,{
 		if(ext == null) {
 			return;
 		}
-		this.ide.open(ext.component,{ path : path});
+		var prev = this.lastOpen;
+		this.lastOpen = null;
+		this.ide.open(ext.component,{ path : path},function(c) {
+			_gthis.lastOpen = c;
+		});
+		if(prev != null) {
+			prev.close();
+		}
 	}
 	,isIgnored: function(path,file) {
 		if(HxOverrides.cca(file,0) == 46) {
@@ -11483,17 +11526,29 @@ hide_view_FileTree.prototype = $extend(hide_ui_View.prototype,{
 	}
 	,__class__: hide_view_FileTree
 });
-var hide_view_Image = function(state) {
+var hide_view_FileView = function(state) {
 	hide_ui_View.call(this,state);
+};
+$hxClasses["hide.view.FileView"] = hide_view_FileView;
+hide_view_FileView.__name__ = ["hide","view","FileView"];
+hide_view_FileView.__super__ = hide_ui_View;
+hide_view_FileView.prototype = $extend(hide_ui_View.prototype,{
+	getPath: function() {
+		return this.ide.getPath(this.state.path);
+	}
+	,getTitle: function() {
+		return this.state.path.split("/").pop();
+	}
+	,__class__: hide_view_FileView
+});
+var hide_view_Image = function(state) {
+	hide_view_FileView.call(this,state);
 };
 $hxClasses["hide.view.Image"] = hide_view_Image;
 hide_view_Image.__name__ = ["hide","view","Image"];
-hide_view_Image.__super__ = hide_ui_View;
-hide_view_Image.prototype = $extend(hide_ui_View.prototype,{
-	getTitle: function() {
-		return this.state.path.split("/").pop();
-	}
-	,onDisplay: function(e) {
+hide_view_Image.__super__ = hide_view_FileView;
+hide_view_Image.prototype = $extend(hide_view_FileView.prototype,{
+	onDisplay: function(e) {
 		var _gthis = this;
 		this.scene = new hide_comp_Scene(e);
 		this.scene.onReady = function() {
@@ -11523,6 +11578,19 @@ hide_view_Image.prototype = $extend(hide_ui_View.prototype,{
 		_this2.y = this.scene.s2d.height - (this.bmp.tile.height * this.bmp.scaleY | 0) >> 1;
 	}
 	,__class__: hide_view_Image
+});
+var hide_view_Sound = function(state) {
+	hide_view_FileView.call(this,state);
+};
+$hxClasses["hide.view.Sound"] = hide_view_Sound;
+hide_view_Sound.__name__ = ["hide","view","Sound"];
+hide_view_Sound.__super__ = hide_view_FileView;
+hide_view_Sound.prototype = $extend(hide_view_FileView.prototype,{
+	onDisplay: function(e) {
+		var path = this.getPath();
+		$("<audio " + (this.ide.initializing ? "" : "autoplay=\"autoplay\"") + " controls=\"controls\"><source src=\"file://" + this.getPath() + "\"/></audio>").appendTo(e);
+	}
+	,__class__: hide_view_Sound
 });
 var hxd_BitmapData = function() { };
 $hxClasses["hxd.BitmapData"] = hxd_BitmapData;
@@ -19984,6 +20052,12 @@ hide_view_About._ = hide_ui_View.register(hide_view_About);
 hide_view_FileTree.EXTENSIONS = new haxe_ds_StringMap();
 hide_view_FileTree._ = hide_ui_View.register(hide_view_FileTree);
 hide_view_Image._ = hide_view_FileTree.registerExtension(hide_view_Image,["png","jpg","jpeg","gif"],{ icon : "picture-o"});
+hide_view_Sound._ = (function($this) {
+	var $r;
+	hide_view_FileTree.registerExtension(hide_view_Sound,["wav"],{ icon : "file-audio-o"});
+	$r = hide_view_FileTree.registerExtension(hide_view_Sound,["mp3","ogg"],{ icon : "music"});
+	return $r;
+}(this));
 hxd_System.setCursor = hxd_System.setNativeCursor;
 hxd_System.loopInit = false;
 hxd_Timer.tmod = 1;

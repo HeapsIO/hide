@@ -4,7 +4,8 @@ extern class Container {
 
 	public var width(default,null) : Int;
 	public var height(default,null) : Int;
-	//public var parent :
+	public var parent : ContentItem;
+
 	//public var tab
 	public var title(default,null) : String;
 	public var layoutManager(default,null) : Layout;
@@ -15,6 +16,9 @@ extern class Container {
 	public function setTitle( title : String ) : Void;
 	public function setState( state : Dynamic ) : Void;
 
+	public function close() : Bool;
+
 	public function on( type : String, callb : Void -> Void ) : Void;
+	public function off( type : String ) : Void;
 
 }
