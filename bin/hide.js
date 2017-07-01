@@ -11410,6 +11410,12 @@ hide_view_FileTree.prototype = $extend(hide_ui_View.prototype,{
 			}
 		}
 	}
+	,getTitle: function() {
+		if(this.state.root == "") {
+			return "Resources";
+		}
+		return this.state.root.split("/").pop();
+	}
 	,onDisplay: function(e) {
 		var _gthis = this;
 		if(this.state.opened == null) {

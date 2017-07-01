@@ -12,6 +12,12 @@ class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
 		return file.indexOf(".") < 0 ? null : EXTENSIONS.get(file.split(".").pop().toLowerCase());
 	}
 
+	override function getTitle() {
+		if( state.root == "" )
+			return "Resources";
+		return state.root.split("/").pop();
+	}
+
 	override function onDisplay( e : Element ) {
 
 		if( state.opened == null ) state.opened = [];
