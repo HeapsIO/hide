@@ -2,4 +2,6 @@
 -js bin/hide.js
 -main hide.ui.Ide
 -lib hxnodejs
+-lib heaps
+-dce full
 --macro include('hide.view')

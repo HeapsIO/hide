@@ -6,7 +6,7 @@ class ScrollZone extends Component {
 
 	public function new(root) {
 		super(root);
-		content = new Element("<div class='hide_scrollzone'>").appendTo(root);
+		content = new Element("<div class='hide-scrollzone'>").appendTo(root);
 	}
 
 }

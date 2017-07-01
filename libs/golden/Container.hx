@@ -15,4 +15,6 @@ extern class Container {
 	public function setTitle( title : String ) : Void;
 	public function setState( state : Dynamic ) : Void;
 
+	public function on( type : String, callb : Void -> Void ) : Void;
+
 }

@@ -15,6 +15,7 @@ class Ide {
 	var menu : js.jquery.JQuery;
 	var currentLayout : { name : String, state : Dynamic };
 	var maximized : Bool;
+	var updates : Array<Void->Void> = [];
 
 	function new() {
 		inst = this;
@@ -99,10 +100,30 @@ class Ide {
 			state.state = [];
 			initLayout();
 		}, 1000);
+
+		hxd.System.setLoop(mainLoop);
+	}
+
+	function mainLoop() {
+		for( f in updates )
+			f();
 	}
 
 	function saveLayout() {
 		return layout.toConfig().content;
+	}
+
+	public function registerUpdate( updateFun ) {
+		updates.push(updateFun);
+	}
+
+	public function unregisterUpdate( updateFun ) {
+		for( u in updates )
+			if( Reflect.compareMethods(u,updateFun) ) {
+				updates.remove(u);
+				return true;
+			}
+		return false;
 	}
 
 	public function getPath( relPath : String ) {
@@ -111,8 +132,8 @@ class Ide {
 		return resourceDir+"/"+relPath;
 	}
 
-	function get_projectDir() return props.global.currentProject;
-	function get_resourceDir() return props.global.currentProject+"/res";
+	function get_projectDir() return props.global.currentProject.split("\\").join("/");
+	function get_resourceDir() return projectDir+"/res";
 
 	function setProject( dir : String ) {
 		if( dir != props.global.currentProject ) {
