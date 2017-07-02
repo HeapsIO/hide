@@ -24,8 +24,45 @@ class Model extends FileView {
 		control = new h3d.scene.CameraController(scene.s3d);
 		resetCamera();
 		tree.init();
+
+		var anims = listAnims();
+		if( anims.length > 0 ) {
+			var sel = tools.addSelect("bicycle");
+			var content = [for( a in anims ) {
+				var label = a.split("/").pop().substr(5).substr(0,-4);
+				if( StringTools.endsWith(label,"_loop") ) label = label.substr(0,-5);
+				{ label : label, value : a }
+			}];
+			content.unshift({ label : "-- no anim --", value : null });
+			sel.setContent(content);
+			sel.onSelect = function(a) {
+				if( a == null ) {
+					obj.stopAnimation();
+					return;
+				}
+				var anim = scene.loadAnimation(a);
+				obj.playAnimation(anim);
+			};
+		}
+	
 		tools.addButton("cube","Test");
 		tools.addToggle("bank","Test toggle");
+	}
+
+	function listAnims() {
+		var dirs : Array<String> = props.get("hmd.animPaths");
+		if( dirs == null ) {
+			var parts = getPath().split("/");
+			parts.pop();
+			dirs = [parts.join("/")];
+		} else
+			dirs = [for( d in dirs ) ide.resourceDir + d];
+		var anims = [];
+		for( dir in dirs )
+			for( f in sys.FileSystem.readDirectory(dir) )
+				if( StringTools.startsWith(f,"Anim_") )
+					anims.push(dir+"/"+f);
+		return anims;
 	}
 
 	function getSceneElements( id : String ) {

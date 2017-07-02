@@ -6,7 +6,7 @@ extern class Container {
 	public var height(default,null) : Int;
 	public var parent : ContentItem;
 
-	//public var tab
+	public var tab : Tab;
 	public var title(default,null) : String;
 	public var layoutManager(default,null) : Layout;
 	public var isHidden(default,null) : Bool;

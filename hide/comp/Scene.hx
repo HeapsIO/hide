@@ -93,6 +93,11 @@ class Scene extends Component implements h3d.IDrawable {
 		return lib.makeObject(loadHMDTexture.bind(path));
 	}
 
+	public function loadAnimation( path : String ) {
+		var lib = loadHMD(path,true);
+		return lib.loadAnimation();
+	}
+ 
 	function loadHMDTexture( basePath : String, texturePath : String ) {
 		if( sys.FileSystem.exists(texturePath) ) {
 			var t = new h3d.mat.Texture(1,1);

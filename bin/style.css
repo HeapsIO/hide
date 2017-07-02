@@ -129,6 +129,28 @@ a {
 	padding-bottom: 1px;
 }
 
+.hide-toolbar-select {
+	height : 20px;
+	padding : 2px;
+	padding-top: 4px;
+	margin-right : 5px;
+	display : inline-block;
+}
+
+.hide-toolbar-select .hide-toolbar-icon {
+	font-size: 16px;
+	vertical-align: top;	
+}
+
+.hide-toolbar-select > select {
+	margin-left : 5px;
+	min-width : 100px;
+}
+
+select {
+	background-color: rgb(34,34,34);	
+}
+
 /* Golden Layout Fixes */
 
 .lm_header .lm_tabs {
