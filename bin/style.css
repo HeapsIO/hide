@@ -48,6 +48,87 @@ a {
 	background : url('libs/jstree/default-dark/throbber.gif');
 }
 
+.hide-scene {
+	cursor: default;
+}
+
+.hide-scene-layer {
+	position: absolute;
+	z-index: 1;
+	height: 100%;
+}
+
+.hide-scene-layer .jstree {
+	background: transparent !important;
+	user-select: none;
+}
+
+.hide-toolbar-content {
+	flex-grow: 100;
+	position: relative;
+}
+
+.hide-toolbar-content > canvas {
+	position : absolute;
+}
+
+.hide-toolbar-container {
+	display: flex;
+	flex-direction: column;
+	height : 100%;
+}
+
+.hide-toolbar {
+	width: 100%;
+	height : 24px;
+	padding : 4px;
+	padding-top: 2px;
+	padding-bottom: 6px;
+	background-color : rgb(34,34,34);
+	border-bottom : 1px solid #000;
+}
+
+.hide-toolbar-button, .hide-toolbar-toggle {
+	margin-right : 5px;
+	display: inline-block;
+	border: 1px solid rgb(90,90,90);
+	width : 20px;
+	height : 20px;
+	padding : 2px;
+	text-align: center;
+	border-radius: 1px;
+	text-shadow: 1px 2px 2px black; 
+	background: -webkit-linear-gradient(top, rgb(90,90,90), rgb(50,50,50));
+	cursor : pointer;
+	font-size: 16px;
+	vertical-align: top;
+}
+
+.hide-toolbar-button .hide-toolbar-icon {
+	vertical-align: center;
+}
+
+.hide-toolbar-button:hover, .hide-toolbar-toggle:hover {
+	color : white;
+	border-color : white;
+	background-color : #666;	
+}
+
+.hide-toolbar-toggle.toggled {
+	color : #ddd;	
+	background : #777;	
+	padding-top: 2px;
+	padding-bottom: 1px;
+	text-shadow: none;
+	border-top-width: 2px;
+	border-top-color: #444;
+}
+
+.hide-toolbar-button:active {
+	padding-top: 3px;
+	padding-bottom: 1px;
+}
+
 /* Golden Layout Fixes */
 
 .lm_header .lm_tabs {

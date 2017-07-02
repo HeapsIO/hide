@@ -8,7 +8,7 @@ class Image extends FileView {
 	override function onDisplay( e : Element ) {
 		scene = new hide.comp.Scene(e);
 		scene.onReady = function() {
-			scene.loadTextureFile(state.path, function(t) {
+			scene.loadTexture(state.path, function(t) {
 				bmp = new h2d.Bitmap(h2d.Tile.fromTexture(t), scene.s2d);
 				onResize();
 			});
