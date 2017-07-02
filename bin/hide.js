@@ -11190,26 +11190,27 @@ hide_ui_Ide.prototype = {
 	}
 	,open: function(component,state,onCreate) {
 		var _this = hide_ui_View.viewClasses;
-		var pos = (__map_reserved[component] != null ? _this.getReserved(component) : _this.h[component]).position;
+		var options = (__map_reserved[component] != null ? _this.getReserved(component) : _this.h[component]).options;
 		var bestTarget = null;
 		var _g = 0;
 		var _g1 = this.views;
 		while(_g < _g1.length) {
 			var v = _g1[_g];
 			++_g;
-			if(v.get_defaultPosition() == pos) {
+			if(v.get_defaultOptions().position == options.position) {
 				if(bestTarget == null || bestTarget.width * bestTarget.height < v.container.width * v.container.height) {
 					bestTarget = v.container;
 				}
 			}
 		}
 		var index = null;
+		var width = null;
 		var target;
 		if(bestTarget != null) {
 			target = bestTarget.parent.parent;
 		} else {
 			target = this.layout.root.contentItems[0];
-			var reqKind = pos == hide_ui_DisplayPosition.Bottom ? "column" : "row";
+			var reqKind = options.position == hide_ui_DisplayPosition.Bottom ? "column" : "row";
 			if(target == null) {
 				this.layout.root.addChild({ type : "row"});
 				target = this.layout.root.contentItems[0];
@@ -11218,19 +11219,28 @@ hide_ui_Ide.prototype = {
 				var items = target.getItemsByFilter(function(r) {
 					return r.type == "component";
 				});
+				var foundViews = [];
 				var _g2 = 0;
 				var _g11 = this.views.slice();
 				while(_g2 < _g11.length) {
 					var v1 = _g11[_g2];
 					++_g2;
 					if(HxOverrides.remove(items,v1.container.parent)) {
+						foundViews.push(v1);
 						v1.container.close();
 					}
 				}
 				this.layout.root.addChild({ type : reqKind, content : config});
 				target = this.layout.root.contentItems[0];
-				if(pos == hide_ui_DisplayPosition.Left) {
+				if(options.position == hide_ui_DisplayPosition.Left) {
 					index = 0;
+				}
+				width = options.width;
+				if(width == null && foundViews.length == 1) {
+					var opt = foundViews[0].get_defaultOptions().width;
+					if(opt != null) {
+						width = (target.element.width() | 0) - opt;
+					}
 				}
 			}
 		}
@@ -11241,6 +11251,10 @@ hide_ui_Ide.prototype = {
 			});
 		}
 		var config1 = { type : "component", componentName : component, componentState : state};
+		if(width != null) {
+			haxe_Log.trace(width,{ fileName : "Ide.hx", lineNumber : 299, className : "hide.ui.Ide", methodName : "open"});
+			config1.width = width * 100 / target.element.width() | 0;
+		}
 		if(index == null) {
 			target.addChild(config1);
 		} else {
@@ -11429,17 +11443,20 @@ var hide_ui_View = function(state) {
 };
 $hxClasses["hide.ui.View"] = hide_ui_View;
 hide_ui_View.__name__ = ["hide","ui","View"];
-hide_ui_View.register = function(cl,position) {
+hide_ui_View.register = function(cl,options) {
 	var name = Type.getClassName(cl);
 	var _this = hide_ui_View.viewClasses;
 	if(__map_reserved[name] != null ? _this.existsReserved(name) : _this.h.hasOwnProperty(name)) {
 		return null;
 	}
-	if(position == null) {
-		position = hide_ui_DisplayPosition.Center;
+	if(options == null) {
+		options = { };
+	}
+	if(options.position == null) {
+		options.position = hide_ui_DisplayPosition.Center;
 	}
 	var _this1 = hide_ui_View.viewClasses;
-	var value = { name : name, cl : cl, position : position};
+	var value = { name : name, cl : cl, options : options};
 	if(__map_reserved[name] != null) {
 		_this1.setReserved(name,value);
 	} else {
@@ -11496,11 +11513,11 @@ hide_ui_View.prototype = {
 	,get_contentHeight: function() {
 		return this.container.height;
 	}
-	,get_defaultPosition: function() {
+	,get_defaultOptions: function() {
 		var this1 = hide_ui_View.viewClasses;
 		var key = Type.getClassName(js_Boot.getClass(this));
 		var _this = this1;
-		return (__map_reserved[key] != null ? _this.getReserved(key) : _this.h[key]).position;
+		return (__map_reserved[key] != null ? _this.getReserved(key) : _this.h[key]).options;
 	}
 	,__class__: hide_ui_View
 };
@@ -20247,9 +20264,9 @@ haxe_Unserializer.DEFAULT_RESOLVER = new haxe__$Unserializer_DefaultResolver();
 haxe_Unserializer.BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789%:";
 haxe_ds_ObjectMap.count = 0;
 hide_ui_View.viewClasses = new haxe_ds_StringMap();
-hide_view_About._ = hide_ui_View.register(hide_view_About,hide_ui_DisplayPosition.Bottom);
+hide_view_About._ = hide_ui_View.register(hide_view_About,{ position : hide_ui_DisplayPosition.Bottom});
 hide_view_FileTree.EXTENSIONS = new haxe_ds_StringMap();
-hide_view_FileTree._ = hide_ui_View.register(hide_view_FileTree,hide_ui_DisplayPosition.Left);
+hide_view_FileTree._ = hide_ui_View.register(hide_view_FileTree,{ width : 200, position : hide_ui_DisplayPosition.Left});
 hide_view_Image._ = hide_view_FileTree.registerExtension(hide_view_Image,["png","jpg","jpeg","gif"],{ icon : "picture-o"});
 hide_view_Script._ = (function($this) {
 	var $r;

@@ -109,6 +109,6 @@ class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
 		return null;
 	}
 
-	static var _ = hide.ui.View.register(FileTree, Left);
+	static var _ = hide.ui.View.register(FileTree, { width : 200, position : Left });
 
 }

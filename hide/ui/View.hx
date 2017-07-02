@@ -7,13 +7,15 @@ enum DisplayPosition {
 	Bottom;
 }
 
+typedef ViewOptions = { ?position : DisplayPosition, ?width : Int }
+
 @:keepSub @:allow(hide.ui.Ide)
 class View<T> {
 
 	var ide : Ide;
 	var container : golden.Container;
 	var state : T;
-	public var defaultPosition(get,never) : DisplayPosition;
+	public var defaultOptions(get,never) : ViewOptions;
 
 	var contentWidth(get,never) : Int;
 	var contentHeight(get,never) : Int;
@@ -74,16 +76,18 @@ class View<T> {
 
 	function get_contentWidth() return container.width;
 	function get_contentHeight() return container.height;
-	function get_defaultPosition() return viewClasses.get(Type.getClassName(Type.getClass(this))).position;
+	function get_defaultOptions() return viewClasses.get(Type.getClassName(Type.getClass(this))).options;
 
-	public static var viewClasses = new Map<String,{ name : String, cl : Class<View<Dynamic>>, position : DisplayPosition }>();
-	public static function register<T>( cl : Class<View<T>>, ?position : DisplayPosition ) {
+	public static var viewClasses = new Map<String,{ name : String, cl : Class<View<Dynamic>>, options : ViewOptions }>();
+	public static function register<T>( cl : Class<View<T>>, ?options : ViewOptions ) {
 		var name = Type.getClassName(cl);
 		if( viewClasses.exists(name) )
 			return null;
-		if( position == null )
-			position = Center;
-		viewClasses.set(name, { name : name, cl : cl, position : position });
+		if( options == null )
+			options = {}
+		if( options.position == null )
+			options.position = Center;
+		viewClasses.set(name, { name : name, cl : cl, options : options });
 		return null;
 	}
 

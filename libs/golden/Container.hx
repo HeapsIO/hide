@@ -15,6 +15,7 @@ extern class Container {
 
 	public function setTitle( title : String ) : Void;
 	public function setState( state : Dynamic ) : Void;
+	public function setSize( width : Int, height : Int ) : Void;
 
 	public function close() : Bool;
 

@@ -239,22 +239,23 @@ class Ide {
 	}
 
 	public function open( component : String, state : Dynamic, ?onCreate : View<Dynamic> -> Void ) {
-		var pos = View.viewClasses.get(component).position;
+		var options = View.viewClasses.get(component).options;
 		
 		var bestTarget : golden.Container = null;
 		for( v in views )
-			if( v.defaultPosition == pos ) {
+			if( v.defaultOptions.position == options.position ) {
 				if( bestTarget == null || bestTarget.width * bestTarget.height < v.container.width * v.container.height )
 					bestTarget = v.container;
 			}
 
 		var index : Null<Int> = null;
+		var width : Null<Int> = null;
 		var target;
 		if( bestTarget != null ) 
 			target = bestTarget.parent.parent;
 		else {
 			target = layout.root.contentItems[0];
-			var reqKind : golden.Config.ItemType = pos == Bottom ? Column : Row;
+			var reqKind : golden.Config.ItemType = options.position == Bottom ? Column : Row;
 			if( target == null ) {
 				layout.root.addChild({ type : Row });
 				target = layout.root.contentItems[0];
@@ -263,12 +264,23 @@ class Ide {
 				// require closing all and reopening (sadly)
 				var config = layout.toConfig().content;
 				var items = target.getItemsByFilter(function(r) return r.type == Component);
+				var foundViews = [];
 				for( v in views.copy() )
-					if( items.remove(v.container.parent) )
+					if( items.remove(v.container.parent) ) {
+						foundViews.push(v);
 						v.container.close();
+					}
 				layout.root.addChild({ type : reqKind, content : config });
 				target = layout.root.contentItems[0];
-				if( pos == Left ) index = 0;
+				if( options.position == Left ) index = 0;
+				width = options.width;
+
+				// when opening left/right
+				if( width == null && foundViews.length == 1 ) {
+					var opt = foundViews[0].defaultOptions.width;
+					if( opt != null )
+						width = Std.int(target.element.width()) - opt;
+				}
 			}
 		}
 		if( onCreate != null )
@@ -281,6 +293,11 @@ class Ide {
 			componentName : component,
 			componentState : state,
 		};
+
+		// not working... see https://github.com/deepstreamIO/golden-layout/issues/311
+		if( width != null )
+			config.width = Std.int(width * 100 / target.element.width());
+
 		if( index == null )
 			target.addChild(config);
 		else
