@@ -16636,7 +16636,7 @@ hide_view_Model.prototype = $extend(hide_view_FileView.prototype,{
 	,init: function() {
 		var _gthis = this;
 		this.obj = this.scene.loadModel(this.state.path);
-		this.scene.s3d.addChild(this.obj);
+		new h3d_scene_Object(this.scene.s3d).addChild(this.obj);
 		this.control = new h3d_scene_CameraController(null,this.scene.s3d);
 		this.resetCamera();
 		this.tree.init();
@@ -16703,7 +16703,7 @@ hide_view_Model.prototype = $extend(hide_view_FileView.prototype,{
 		return anims;
 	}
 	,getSceneElements: function(id) {
-		var root = this.obj;
+		var root = this.obj.parent;
 		var path = id == null ? "" : id + "/";
 		if(id != null) {
 			var _g = [];

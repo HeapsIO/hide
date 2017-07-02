@@ -20,7 +20,7 @@ class Model extends FileView {
 	
 	function init() {
 		obj = scene.loadModel(state.path);
-		scene.s3d.addChild(obj);
+		new h3d.scene.Object(scene.s3d).addChild(obj);
 		control = new h3d.scene.CameraController(scene.s3d);
 		resetCamera();
 		tree.init();
@@ -66,7 +66,7 @@ class Model extends FileView {
 	}
 
 	function getSceneElements( id : String ) {
-		var root = obj; 
+		var root = obj.parent; 
 		var path = id == null ? "" : id+"/";
 		if( id != null ) {
 			var parts = [for(p in id.split("/")) Std.parseInt(p)];
