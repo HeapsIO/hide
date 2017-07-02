@@ -41,6 +41,13 @@ a {
 	background: #ddd; 
 }
 
+.hide-loading {
+	width : 16px;
+	height : 16px;
+	display : inline-block;
+	background : url('libs/jstree/default-dark/throbber.gif');
+}
+
 /* Golden Layout Fixes */
 
 .lm_header .lm_tabs {

@@ -13,10 +13,11 @@ class Ide {
 	var types : Map<String,hide.HType>;
 	var typeDef = Macros.makeTypeDef(hide.HType);
 	
-	var menu : js.jquery.JQuery;
+	var menu : Element;
 	var currentLayout : { name : String, state : Dynamic };
 	var maximized : Bool;
 	var updates : Array<Void->Void> = [];
+	var views : Array<View<Dynamic>> = [];
 
 	function new() {
 		inst = this;
@@ -37,6 +38,12 @@ class Ide {
 		window.on('restore', function() { maximized = false; onWindowChange(); });
 		window.on('move', function() haxe.Timer.delay(onWindowChange,100));
 		window.on('resize', function() haxe.Timer.delay(onWindowChange,100));
+		window.on('close', function() {
+			for( v in views )
+				if( @:privateAccess !v.onBeforeClose() )
+					return;
+			window.close(true);
+		});
 	}
 
 	function onWindowChange() {

@@ -6,8 +6,8 @@ class About extends hide.ui.View<{}> {
 		super(state);
 	}
 
-	override function onDisplay(j:js.jquery.JQuery) {
-		j.html('
+	override function onDisplay( e : Element ) {
+		e.html('
 		<p>
 			Heaps IDE v0.1<br/>
 			(c)2017 Nicolas Cannasse

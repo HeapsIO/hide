@@ -37,7 +37,7 @@ class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
 				content.push({
 					id : id, 
 					text : c,
-					icon : isDir ? "fa fa-folder" : (ext != null && ext.options.icon != null ? "fa fa-"+ext.options.icon : "jstree-file"),
+					icon : "fa fa-" + (isDir ? "folder" : (ext != null && ext.options.icon != null ? ext.options.icon : "file-text")),
 					children : isDir,
 					state : state.opened.indexOf(id) >= 0 ? { opened : true } : null
 				});

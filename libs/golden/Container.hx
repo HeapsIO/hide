@@ -18,7 +18,7 @@ extern class Container {
 
 	public function close() : Bool;
 
-	public function on( type : String, callb : Void -> Void ) : Void;
+	public function on( type : String, callb : Event<Container> -> Void ) : Void;
 	public function off( type : String ) : Void;
 
 }

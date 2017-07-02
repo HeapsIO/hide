@@ -4,12 +4,12 @@ class Menu {
 
 	public var root : nw.Menu;
 
-	public function new( menu : js.jquery.JQuery ) {
+	public function new( menu : Element) {
 		root = new nw.Menu({type: Menubar});
 		buildMenuRec(root,"",menu);
 	}
 
-	function buildMenuRec( menu : nw.Menu, path : String, e : js.jquery.JQuery ) {
+	function buildMenuRec( menu : nw.Menu, path : String, e : Element ) {
 		var cl = e.attr("class");
 		if( cl != null ) {
 			if( path == "" ) path = cl else path = path + "." + cl; 

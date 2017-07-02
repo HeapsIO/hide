@@ -8,6 +8,6 @@ extern class ContentItem {
 	var childElementContainer : Container;
 
 	public function addChild( config : Config.ItemConfig, ?index : Int ) : Void;
-	public function on( type : String, callb : { name : String, origin : ContentItem } -> Void ) : Void;
+	public function on( type : String, callb : Event<ContentItem> -> Void ) : Void;
 	public function off( type : String ) : Void;
 }

@@ -6,6 +6,7 @@ extern class Window {
 	public var y : Int;
 	public var width : Int;
 	public var height : Int;
+	public var zoomLevel : Float;
 
 	public var window : js.html.Window;
 
@@ -25,6 +26,8 @@ extern class Window {
 	public function on( event : String, callb : Void -> Void ) : Void;
 
 	public function show( b : Bool ) : Void;
+
+	public function close( ?force : Bool ) : Void;
 
 	public static function get() : Window;
 

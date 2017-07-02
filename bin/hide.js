@@ -10867,6 +10867,7 @@ hide_comp_ScrollZone.prototype = $extend(hide_comp_Component.prototype,{
 	__class__: hide_comp_ScrollZone
 });
 var hide_ui_Ide = function() {
+	this.views = [];
 	this.updates = [];
 	var _gthis = this;
 	hide_ui_Ide.inst = this;
@@ -10898,6 +10899,18 @@ var hide_ui_Ide = function() {
 	});
 	this.window.on("resize",function() {
 		haxe_Timer.delay($bind(_gthis,_gthis.onWindowChange),100);
+	});
+	this.window.on("close",function() {
+		var _g = 0;
+		var _g1 = _gthis.views;
+		while(_g < _g1.length) {
+			var v = _g1[_g];
+			++_g;
+			if(!v.onBeforeClose()) {
+				return;
+			}
+		}
+		_gthis.window.close(true);
 	});
 };
 $hxClasses["hide.ui.Ide"] = hide_ui_Ide;
@@ -11344,18 +11357,32 @@ hide_ui_View.prototype = {
 		var name = Type.getClassName(js_Boot.getClass(this));
 		return name.split(".").pop();
 	}
+	,onBeforeClose: function() {
+		return true;
+	}
+	,syncTitle: function() {
+		this.container.setTitle(this.getTitle());
+	}
 	,setContainer: function(cont) {
 		var _gthis = this;
 		this.container = cont;
-		this.container.setTitle(this.getTitle());
-		this.container.on("resize",function() {
+		this.ide.views.push(this);
+		this.syncTitle();
+		this.container.on("resize",function(_) {
 			_gthis.container.getElement().find("*").trigger("resize");
 			_gthis.onResize();
 		});
+		this.container.on("destroy",function(e) {
+			if(!_gthis.onBeforeClose()) {
+				e.preventDefault();
+				return;
+			}
+			HxOverrides.remove(_gthis.ide.views,_gthis);
+		});
 		cont.parent.__view = this;
 	}
-	,onDisplay: function(j) {
-		j.text(Type.getClassName(js_Boot.getClass(this)) + (this.state == null ? "" : " " + Std.string(this.state)));
+	,onDisplay: function(e) {
+		e.text(Type.getClassName(js_Boot.getClass(this)) + (this.state == null ? "" : " " + Std.string(this.state)));
 	}
 	,onResize: function() {
 	}
@@ -11383,8 +11410,8 @@ $hxClasses["hide.view.About"] = hide_view_About;
 hide_view_About.__name__ = ["hide","view","About"];
 hide_view_About.__super__ = hide_ui_View;
 hide_view_About.prototype = $extend(hide_ui_View.prototype,{
-	onDisplay: function(j) {
-		j.html("\n\t\t<p>\n\t\t\tHeaps IDE v0.1<br/>\n\t\t\t(c)2017 Nicolas Cannasse\n\t\t</p>\n\t\t");
+	onDisplay: function(e) {
+		e.html("\n\t\t<p>\n\t\t\tHeaps IDE v0.1<br/>\n\t\t\t(c)2017 Nicolas Cannasse\n\t\t</p>\n\t\t");
 	}
 	,__class__: hide_view_About
 });
@@ -11458,7 +11485,7 @@ hide_view_FileTree.prototype = $extend(hide_ui_View.prototype,{
 				var isDir = js_node_Fs.statSync(basePath + "/" + c).isDirectory();
 				var ext = _gthis.getExtension(c);
 				var id = path == "" ? c : path + "/" + c;
-				content.push({ id : id, text : c, icon : isDir ? "fa fa-folder" : ext != null && ext.options.icon != null ? "fa fa-" + ext.options.icon : "jstree-file", children : isDir, state : _gthis.state.opened.indexOf(id) >= 0 ? { opened : true} : null});
+				content.push({ id : id, text : c, icon : "fa fa-" + (isDir ? "folder" : ext != null && ext.options.icon != null ? ext.options.icon : "file-text"), children : isDir, state : _gthis.state.opened.indexOf(id) >= 0 ? { opened : true} : null});
 			}
 			content.sort(function(a,b) {
 				if(a.children != b.children) {
@@ -11533,11 +11560,33 @@ $hxClasses["hide.view.FileView"] = hide_view_FileView;
 hide_view_FileView.__name__ = ["hide","view","FileView"];
 hide_view_FileView.__super__ = hide_ui_View;
 hide_view_FileView.prototype = $extend(hide_ui_View.prototype,{
-	getPath: function() {
+	get_extension: function() {
+		var file = this.state.path.split("/").pop();
+		if(file.indexOf(".") < 0) {
+			return "";
+		} else {
+			return file.split(".").pop().toLowerCase();
+		}
+	}
+	,onBeforeClose: function() {
+		if(this.modified && !window.confirm(this.state.path + " has been modified, quit without saving?")) {
+			return false;
+		}
+		return hide_ui_View.prototype.onBeforeClose.call(this);
+	}
+	,set_modified: function(b) {
+		if(this.modified == b) {
+			return b;
+		}
+		this.modified = b;
+		this.syncTitle();
+		return b;
+	}
+	,getPath: function() {
 		return this.ide.getPath(this.state.path);
 	}
 	,getTitle: function() {
-		return this.state.path.split("/").pop();
+		return this.state.path.split("/").pop() + (this.modified ? " *" : "");
 	}
 	,__class__: hide_view_FileView
 });
@@ -11578,6 +11627,55 @@ hide_view_Image.prototype = $extend(hide_view_FileView.prototype,{
 		_this2.y = this.scene.s2d.height - (this.bmp.tile.height * this.bmp.scaleY | 0) >> 1;
 	}
 	,__class__: hide_view_Image
+});
+var hide_view_Script = function(state) {
+	hide_view_FileView.call(this,state);
+};
+$hxClasses["hide.view.Script"] = hide_view_Script;
+hide_view_Script.__name__ = ["hide","view","Script"];
+hide_view_Script.__super__ = hide_view_FileView;
+hide_view_Script.prototype = $extend(hide_view_FileView.prototype,{
+	onDisplay: function(e) {
+		var _gthis = this;
+		if(monaco.editor == null) {
+			e.html("<div class='hide-loading'></div>");
+			haxe_Timer.delay(function() {
+				e.html("");
+				_gthis.onDisplay(e);
+			},100);
+			return;
+		}
+		var lang;
+		var _g = this.get_extension();
+		switch(_g) {
+		case "html":
+			lang = "html";
+			break;
+		case "hx":case "js":
+			lang = "javascript";
+			break;
+		case "json":
+			lang = "json";
+			break;
+		case "xml":
+			lang = "xml";
+			break;
+		default:
+			lang = "text";
+		}
+		this.originData = js_node_Fs.readFileSync(this.getPath(),{ encoding : "utf8"});
+		this.editor = monaco.editor.create(e[0],{ value : this.originData, language : lang, automaticLayout : true, wordWrap : true, theme : "vs-dark"});
+		this.editor.addCommand(49 | monaco.KeyMod.CtrlCmd,function() {
+			_gthis.originData = _gthis.editor.getValue({ preserveBOM : true});
+			_gthis.set_modified(true);
+			js_node_Fs.writeFileSync(_gthis.getPath(),_gthis.originData);
+		});
+		this.editor.onDidChangeModelContent(function() {
+			var cur = _gthis.editor.getValue({ preserveBOM : true});
+			_gthis.set_modified(cur != _gthis.originData);
+		});
+	}
+	,__class__: hide_view_Script
 });
 var hide_view_Sound = function(state) {
 	hide_view_FileView.call(this,state);
@@ -20052,9 +20150,16 @@ hide_view_About._ = hide_ui_View.register(hide_view_About);
 hide_view_FileTree.EXTENSIONS = new haxe_ds_StringMap();
 hide_view_FileTree._ = hide_ui_View.register(hide_view_FileTree);
 hide_view_Image._ = hide_view_FileTree.registerExtension(hide_view_Image,["png","jpg","jpeg","gif"],{ icon : "picture-o"});
+hide_view_Script._ = (function($this) {
+	var $r;
+	hide_view_FileTree.registerExtension(hide_view_Script,["js","hx"],{ icon : "file-code-o"});
+	hide_view_FileTree.registerExtension(hide_view_Script,["xml","html"],{ icon : "code"});
+	$r = hide_view_FileTree.registerExtension(hide_view_Script,["json"],{ icon : "gears"});
+	return $r;
+}(this));
 hide_view_Sound._ = (function($this) {
 	var $r;
-	hide_view_FileTree.registerExtension(hide_view_Sound,["wav"],{ icon : "file-audio-o"});
+	hide_view_FileTree.registerExtension(hide_view_Sound,["wav"],{ icon : "volume-up"});
 	$r = hide_view_FileTree.registerExtension(hide_view_Sound,["mp3","ogg"],{ icon : "music"});
 	return $r;
 }(this));

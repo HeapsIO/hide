@@ -6,9 +6,24 @@
 <link rel="stylesheet" type="text/css" href="style.css"/>
 <link rel="stylesheet" type="text/css" href="libs/jstree/default-dark/style.css"/>
 <link rel="stylesheet" type="text/css" href="libs/font-awesome.css"/>
+<link rel="stylesheet" data-name="vs/editor/editor.main" href="libs/monaco/vs/editor/editor.main.css">
+
 <script src="libs/jquery-3.2.1.js"></script>
 <script src="libs/goldenlayout.js"></script>
 <script src="libs/jstree/jstree.js"></script>
+
+<script>
+	var nodeRequire = require;
+	monaco = {};
+</script>
+<script src="libs/monaco/vs/loader.js"></script>
+<script>
+	var amdRequire = require;
+	require = nodeRequire;
+	require.nodeRequire = require;
+	amdRequire.config({ baseUrl: 'libs/monaco' });
+	amdRequire(['vs/editor/editor.main'], function() { });
+</script>
 
 <xml id="mainmenu">
 	<menu label="Project" class="project">

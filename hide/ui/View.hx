@@ -20,18 +20,34 @@ class View<T> {
 		return name.split(".").pop();
 	}
 
+	public function onBeforeClose() {
+		return true;
+	}
+
+	function syncTitle() {
+		container.setTitle(getTitle());		
+	}
+
 	public function setContainer(cont) {
 		this.container = cont;
-		container.setTitle(getTitle());
-		container.on("resize",function() {
+		@:privateAccess ide.views.push(this);
+		syncTitle();
+		container.on("resize",function(_) {
 			container.getElement().find('*').trigger('resize');
 			onResize();
+		});
+		container.on("destroy",function(e) {
+			if( !onBeforeClose() ) {
+				e.preventDefault();
+				return;
+			}
+			@:privateAccess ide.views.remove(this);
 		});
 		untyped cont.parent.__view = this;
 	}
 
-	public function onDisplay( j : js.jquery.JQuery ) {
-		j.text(Type.getClassName(Type.getClass(this))+(state == null ? "" : " "+state));
+	public function onDisplay( e : Element ) {
+		e.text(Type.getClassName(Type.getClass(this))+(state == null ? "" : " "+state));
 	}
 
 	public function onResize() {
