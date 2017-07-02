@@ -9,6 +9,10 @@ class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
 	var tree : hide.comp.IconTree;
 	var lastOpen : hide.ui.View<Dynamic>;
 
+	public function new(state) {
+		super(state);
+	}
+
 	function getExtension( file : String ) {
 		return file.indexOf(".") < 0 ? null : EXTENSIONS.get(file.split(".").pop().toLowerCase());
 	}
@@ -83,8 +87,10 @@ class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
 			return;
 		var prev = lastOpen;
 		lastOpen = null;
-		ide.open(ext.component, { path : path }, function(c) lastOpen = c);
-		if( prev != null ) prev.close();
+		ide.open(ext.component, { path : path }, function(c) {
+			if( prev != null ) prev.close();
+			lastOpen = c;
+		});
 	}
  
 	function isIgnored( path : String, file : String ) {
@@ -103,6 +109,6 @@ class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
 		return null;
 	}
 
-	static var _ = hide.ui.View.register(FileTree);
+	static var _ = hide.ui.View.register(FileTree, Left);
 
 }

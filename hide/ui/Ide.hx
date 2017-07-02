@@ -40,7 +40,7 @@ class Ide {
 		window.on('resize', function() haxe.Timer.delay(onWindowChange,100));
 		window.on('close', function() {
 			for( v in views )
-				if( @:privateAccess !v.onBeforeClose() )
+				if( !v.onBeforeClose() )
 					return;
 			window.close(true);
 		});
@@ -89,11 +89,11 @@ class Ide {
 		};
 		layout = new golden.Layout(config);
 
-		for( cl in @:privateAccess View.viewClasses )
-			layout.registerComponent(Type.getClassName(cl),function(cont,state) {
-				var view = Type.createInstance(cl,[state]);
+		for( vcl in View.viewClasses )
+			layout.registerComponent(vcl.name,function(cont,state) {
+				var view = Type.createInstance(vcl.cl,[state]);
 				view.setContainer(cont);
-				try view.onDisplay(cont.getElement()) catch( e : Dynamic ) js.Browser.alert(Type.getClassName(cl)+":"+e);
+				try view.onDisplay(cont.getElement()) catch( e : Dynamic ) js.Browser.alert(vcl.name+":"+e);
 			});
 
 		layout.init();
@@ -239,19 +239,52 @@ class Ide {
 	}
 
 	public function open( component : String, state : Dynamic, ?onCreate : View<Dynamic> -> Void ) {
-		if( layout.root.contentItems.length == 0 )
-			layout.root.addChild({ type : Row });
-		var target = layout.root.contentItems[0];
+		var pos = View.viewClasses.get(component).position;
+		
+		var bestTarget : golden.Container = null;
+		for( v in views )
+			if( v.defaultPosition == pos ) {
+				if( bestTarget == null || bestTarget.width * bestTarget.height < v.container.width * v.container.height )
+					bestTarget = v.container;
+			}
+
+		var index : Null<Int> = null;
+		var target;
+		if( bestTarget != null ) 
+			target = bestTarget.parent.parent;
+		else {
+			target = layout.root.contentItems[0];
+			var reqKind : golden.Config.ItemType = pos == Bottom ? Column : Row;
+			if( target == null ) {
+				layout.root.addChild({ type : Row });
+				target = layout.root.contentItems[0];
+			} else if( target.type != reqKind ) {
+				// a bit tricky : change the top 'stack' into a 'row'
+				// require closing all and reopening (sadly)
+				var config = layout.toConfig().content;
+				var items = target.getItemsByFilter(function(r) return r.type == Component);
+				for( v in views.copy() )
+					if( items.remove(v.container.parent) )
+						v.container.close();
+				layout.root.addChild({ type : reqKind, content : config });
+				target = layout.root.contentItems[0];
+				if( pos == Left ) index = 0;
+			}
+		}
 		if( onCreate != null )
 			target.on("componentCreated", function(c) {
 				target.off("componentCreated");
 				onCreate(untyped c.origin.__view);
 			});
-		target.addChild({
+		var config : golden.Config.ItemConfig = {
 			type : Component,
 			componentName : component,
 			componentState : state,
-		});		
+		};
+		if( index == null )
+			target.addChild(config);
+		else
+			target.addChild(config, index);
 	}
 
 	public static var inst : Ide;

@@ -10512,6 +10512,29 @@ haxe_ds_ObjectMap.prototype = {
 	}
 	,__class__: haxe_ds_ObjectMap
 };
+var haxe_ds__$StringMap_StringMapIterator = function(map,keys) {
+	this.map = map;
+	this.keys = keys;
+	this.index = 0;
+	this.count = keys.length;
+};
+$hxClasses["haxe.ds._StringMap.StringMapIterator"] = haxe_ds__$StringMap_StringMapIterator;
+haxe_ds__$StringMap_StringMapIterator.__name__ = ["haxe","ds","_StringMap","StringMapIterator"];
+haxe_ds__$StringMap_StringMapIterator.prototype = {
+	hasNext: function() {
+		return this.index < this.count;
+	}
+	,next: function() {
+		var _this = this.map;
+		var key = this.keys[this.index++];
+		if(__map_reserved[key] != null) {
+			return _this.getReserved(key);
+		} else {
+			return _this.h[key];
+		}
+	}
+	,__class__: haxe_ds__$StringMap_StringMapIterator
+};
 var haxe_ds_StringMap = function() {
 	this.h = { };
 };
@@ -10964,23 +10987,23 @@ hide_ui_Ide.prototype = {
 		this.currentLayout = state;
 		var config = { content : state.state};
 		this.layout = new GoldenLayout(config);
-		var _g2 = 0;
-		var _g11 = hide_ui_View.viewClasses;
-		while(_g2 < _g11.length) {
-			var cl = [_g11[_g2]];
-			++_g2;
-			this.layout.registerComponent(Type.getClassName(cl[0]),(function(cl1) {
+		var _this = hide_ui_View.viewClasses;
+		var vcl = new haxe_ds__$StringMap_StringMapIterator(_this,_this.arrayKeys());
+		while(vcl.hasNext()) {
+			var vcl1 = vcl.next();
+			var vcl2 = [vcl1];
+			this.layout.registerComponent(vcl2[0].name,(function(vcl3) {
 				return function(cont,state1) {
-					var view = Type.createInstance(cl1[0],[state1]);
+					var view = Type.createInstance(vcl3[0].cl,[state1]);
 					view.setContainer(cont);
 					try {
 						view.onDisplay(cont.getElement());
 					} catch( e ) {
 						if (e instanceof js__$Boot_HaxeError) e = e.val;
-						js_Browser.alert(Type.getClassName(cl1[0]) + ":" + Std.string(e));
+						js_Browser.alert(vcl3[0].name + ":" + Std.string(e));
 					}
 				};
-			})(cl));
+			})(vcl2));
 		}
 		this.layout.init();
 		this.layout.on("stateChanged",function() {
@@ -11166,17 +11189,63 @@ hide_ui_Ide.prototype = {
 		this.window.menu = new hide_ui_Menu(this.menu).root;
 	}
 	,open: function(component,state,onCreate) {
-		if(this.layout.root.contentItems.length == 0) {
-			this.layout.root.addChild({ type : "row"});
+		var _this = hide_ui_View.viewClasses;
+		var pos = (__map_reserved[component] != null ? _this.getReserved(component) : _this.h[component]).position;
+		var bestTarget = null;
+		var _g = 0;
+		var _g1 = this.views;
+		while(_g < _g1.length) {
+			var v = _g1[_g];
+			++_g;
+			if(v.get_defaultPosition() == pos) {
+				if(bestTarget == null || bestTarget.width * bestTarget.height < v.container.width * v.container.height) {
+					bestTarget = v.container;
+				}
+			}
 		}
-		var target = this.layout.root.contentItems[0];
+		var index = null;
+		var target;
+		if(bestTarget != null) {
+			target = bestTarget.parent.parent;
+		} else {
+			target = this.layout.root.contentItems[0];
+			var reqKind = pos == hide_ui_DisplayPosition.Bottom ? "column" : "row";
+			if(target == null) {
+				this.layout.root.addChild({ type : "row"});
+				target = this.layout.root.contentItems[0];
+			} else if(target.type != reqKind) {
+				var config = this.layout.toConfig().content;
+				var items = target.getItemsByFilter(function(r) {
+					return r.type == "component";
+				});
+				var _g2 = 0;
+				var _g11 = this.views.slice();
+				while(_g2 < _g11.length) {
+					var v1 = _g11[_g2];
+					++_g2;
+					if(HxOverrides.remove(items,v1.container.parent)) {
+						v1.container.close();
+					}
+				}
+				this.layout.root.addChild({ type : reqKind, content : config});
+				target = this.layout.root.contentItems[0];
+				if(pos == hide_ui_DisplayPosition.Left) {
+					index = 0;
+				}
+			}
+		}
 		if(onCreate != null) {
 			target.on("componentCreated",function(c) {
 				target.off("componentCreated");
 				onCreate(c.origin.__view);
 			});
 		}
-		target.addChild({ type : "component", componentName : component, componentState : state});
+		var config1 = { type : "component", componentName : component, componentState : state};
+		if(index == null) {
+			target.addChild(config1);
+		} else {
+			target.addChild(config1,index);
+		}
 	}
 	,__class__: hide_ui_Ide
 };
@@ -11340,15 +11409,41 @@ hide_ui_Props.prototype = {
 	}
 	,__class__: hide_ui_Props
 };
+var hide_ui_DisplayPosition = $hxClasses["hide.ui.DisplayPosition"] = { __ename__ : true, __constructs__ : ["Left","Center","Right","Bottom"] };
+hide_ui_DisplayPosition.Left = ["Left",0];
+hide_ui_DisplayPosition.Left.toString = $estr;
+hide_ui_DisplayPosition.Left.__enum__ = hide_ui_DisplayPosition;
+hide_ui_DisplayPosition.Center = ["Center",1];
+hide_ui_DisplayPosition.Center.toString = $estr;
+hide_ui_DisplayPosition.Center.__enum__ = hide_ui_DisplayPosition;
+hide_ui_DisplayPosition.Right = ["Right",2];
+hide_ui_DisplayPosition.Right.toString = $estr;
+hide_ui_DisplayPosition.Right.__enum__ = hide_ui_DisplayPosition;
+hide_ui_DisplayPosition.Bottom = ["Bottom",3];
+hide_ui_DisplayPosition.Bottom.toString = $estr;
+hide_ui_DisplayPosition.Bottom.__enum__ = hide_ui_DisplayPosition;
+hide_ui_DisplayPosition.__empty_constructs__ = [hide_ui_DisplayPosition.Left,hide_ui_DisplayPosition.Center,hide_ui_DisplayPosition.Right,hide_ui_DisplayPosition.Bottom];
 var hide_ui_View = function(state) {
 	this.state = state;
 	this.ide = hide_ui_Ide.inst;
 };
 $hxClasses["hide.ui.View"] = hide_ui_View;
 hide_ui_View.__name__ = ["hide","ui","View"];
-hide_ui_View.register = function(cl) {
-	if(hide_ui_View.viewClasses.indexOf(cl) < 0) {
-		hide_ui_View.viewClasses.push(cl);
+hide_ui_View.register = function(cl,position) {
+	var name = Type.getClassName(cl);
+	var _this = hide_ui_View.viewClasses;
+	if(__map_reserved[name] != null ? _this.existsReserved(name) : _this.h.hasOwnProperty(name)) {
+		return null;
+	}
+	if(position == null) {
+		position = hide_ui_DisplayPosition.Center;
+	}
+	var _this1 = hide_ui_View.viewClasses;
+	var value = { name : name, cl : cl, position : position};
+	if(__map_reserved[name] != null) {
+		_this1.setReserved(name,value);
+	} else {
+		_this1.h[name] = value;
 	}
 	return null;
 };
@@ -11400,6 +11495,12 @@ hide_ui_View.prototype = {
 	}
 	,get_contentHeight: function() {
 		return this.container.height;
+	}
+	,get_defaultPosition: function() {
+		var this1 = hide_ui_View.viewClasses;
+		var key = Type.getClassName(js_Boot.getClass(this));
+		var _this = this1;
+		return (__map_reserved[key] != null ? _this.getReserved(key) : _this.h[key]).position;
 	}
 	,__class__: hide_ui_View
 };
@@ -11539,11 +11640,11 @@ hide_view_FileTree.prototype = $extend(hide_ui_View.prototype,{
 		var prev = this.lastOpen;
 		this.lastOpen = null;
 		this.ide.open(ext.component,{ path : path},function(c) {
+			if(prev != null) {
+				prev.close();
+			}
 			_gthis.lastOpen = c;
 		});
-		if(prev != null) {
-			prev.close();
-		}
 	}
 	,isIgnored: function(path,file) {
 		if(HxOverrides.cca(file,0) == 46) {
@@ -20145,10 +20246,10 @@ h3d_shader_VolumeDecal.SRC = "oy4:namey22:h3d.shader.VolumeDecaly4:funsaoy3:retj
 haxe_Unserializer.DEFAULT_RESOLVER = new haxe__$Unserializer_DefaultResolver();
 haxe_Unserializer.BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789%:";
 haxe_ds_ObjectMap.count = 0;
-hide_ui_View.viewClasses = [];
-hide_view_About._ = hide_ui_View.register(hide_view_About);
+hide_ui_View.viewClasses = new haxe_ds_StringMap();
+hide_view_About._ = hide_ui_View.register(hide_view_About,hide_ui_DisplayPosition.Bottom);
 hide_view_FileTree.EXTENSIONS = new haxe_ds_StringMap();
-hide_view_FileTree._ = hide_ui_View.register(hide_view_FileTree);
+hide_view_FileTree._ = hide_ui_View.register(hide_view_FileTree,hide_ui_DisplayPosition.Left);
 hide_view_Image._ = hide_view_FileTree.registerExtension(hide_view_Image,["png","jpg","jpeg","gif"],{ icon : "picture-o"});
 hide_view_Script._ = (function($this) {
 	var $r;

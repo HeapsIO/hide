@@ -15,6 +15,6 @@ class About extends hide.ui.View<{}> {
 		');
 	}
 
-	static var _ = hide.ui.View.register(About);
+	static var _ = hide.ui.View.register(About, Bottom);
 
 }
