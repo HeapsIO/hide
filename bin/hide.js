@@ -16642,7 +16642,7 @@ hide_view_Model.prototype = $extend(hide_view_FileView.prototype,{
 		this.tree.init();
 		var anims = this.listAnims();
 		if(anims.length > 0) {
-			var sel = this.tools.addSelect("bicycle");
+			var sel = this.tools.addSelect("play-circle");
 			var _g = [];
 			var _g1 = 0;
 			while(_g1 < anims.length) {

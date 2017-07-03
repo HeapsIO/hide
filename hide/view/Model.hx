@@ -27,7 +27,7 @@ class Model extends FileView {
 
 		var anims = listAnims();
 		if( anims.length > 0 ) {
-			var sel = tools.addSelect("bicycle");
+			var sel = tools.addSelect("play-circle");
 			var content = [for( a in anims ) {
 				var label = a.split("/").pop().substr(5).substr(0,-4);
 				if( StringTools.endsWith(label,"_loop") ) label = label.substr(0,-5);
