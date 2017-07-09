@@ -19,7 +19,7 @@ class View<T> {
 
 	var contentWidth(get,never) : Int;
 	var contentHeight(get,never) : Int;
- 
+
 	public function new(state:T) {
 		this.state = state;
 		ide = Ide.inst;
@@ -35,7 +35,7 @@ class View<T> {
 	}
 
 	function syncTitle() {
-		container.setTitle(getTitle());		
+		container.setTitle(getTitle());
 	}
 
 	public function setContainer(cont) {
@@ -54,6 +54,14 @@ class View<T> {
 			@:privateAccess ide.views.remove(this);
 		});
 		untyped cont.parent.__view = this;
+	}
+
+	public function rebuild() {
+		if( container == null ) return;
+		syncTitle();
+		var e = container.getElement();
+		e.html('');
+		onDisplay(container.getElement());
 	}
 
 	public function onDisplay( e : Element ) {

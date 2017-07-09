@@ -22,9 +22,9 @@
     <option directives="" />
     <option flashStrict="False" />
     <option noInlineOnDebug="False" />
-    <option mainClass="hide.ui.Main" />
+    <option mainClass="hide.ui.Ide" />
     <option enabledebug="False" />
-    <option additional="-lib hxnodejs" />
+    <option additional="-lib hxnodejs&#xA;-lib heaps&#xA;-dce full&#xA;&#xA;--macro include('hide.view')" />
   </build>
   <!-- haxelib libraries -->
   <haxelib>

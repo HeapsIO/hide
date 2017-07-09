@@ -11,6 +11,13 @@ class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
 
 	public function new(state) {
 		super(state);
+		if( state.root == null ) {
+			ide.chooseDirectory(function(dir) {
+				state.root = dir.split("\\").join("/")+"/";
+				saveState();
+				rebuild();
+			});
+		}
 	}
 
 	function getExtension( file : String ) {
@@ -20,10 +27,14 @@ class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
 	override function getTitle() {
 		if( state.root == "" )
 			return "Resources";
-		return state.root.split("/").pop();
+		if( state.root == null )
+			return "";
+		return state.root;
 	}
 
 	override function onDisplay( e : Element ) {
+
+		if( state.root == null ) return;
 
 		if( state.opened == null ) state.opened = [];
 
@@ -35,28 +46,28 @@ class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
 			var content = new Array<hide.comp.IconTree.IconTreeItem>();
 			for( c in sys.FileSystem.readDirectory(basePath) ) {
 				if( isIgnored(basePath,c) ) continue;
-				var isDir = sys.FileSystem.isDirectory(basePath+"/"+c); 
+				var isDir = sys.FileSystem.isDirectory(basePath+"/"+c);
 				var ext = getExtension(c);
 				var id = ( path == "" ? c : path+"/"+c );
 				content.push({
-					id : id, 
+					id : id,
 					text : c,
 					icon : "fa fa-" + (isDir ? "folder" : (ext != null && ext.options.icon != null ? ext.options.icon : "file-text")),
 					children : isDir,
 					state : state.opened.indexOf(id) >= 0 ? { opened : true } : null
 				});
 			}
-			content.sort(function(a,b) { if( a.children != b.children ) return a.children?-1:1; return Reflect.compare(a.text,b.text); });	
+			content.sort(function(a,b) { if( a.children != b.children ) return a.children?-1:1; return Reflect.compare(a.text,b.text); });
 			return content;
 		};
 		tree.onToggle = function(path, isOpen) {
 			state.opened.remove(path);
-			if( isOpen ) 
+			if( isOpen )
 				state.opened.push(path);
 			saveState();
 		};
-		
-		
+
+
 		// prevent dummy mouseLeft from breaking our quickOpen feature
 		var mouseLeft = false;
 		var leftCount = 0;
@@ -67,7 +78,7 @@ class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
 			mouseLeft = true;
 			leftCount++;
 			var k = leftCount;
-			if( lastOpen != null ) 
+			if( lastOpen != null )
 				haxe.Timer.delay(function() {
 					if( !mouseLeft || leftCount != k ) return;
 					lastOpen = null;
@@ -87,12 +98,12 @@ class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
 			return;
 		var prev = lastOpen;
 		lastOpen = null;
-		ide.open(ext.component, { path : path }, function(c) {
+		ide.open(ext.component, { path : haxe.io.Path.isAbsolute(state.root) ? fullPath : path }, function(c) {
 			if( prev != null ) prev.close();
 			lastOpen = c;
 		});
 	}
- 
+
 	function isIgnored( path : String, file : String ) {
 		if( file.charCodeAt(0) == ".".code )
 			return true;

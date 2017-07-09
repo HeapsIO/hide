@@ -14,7 +14,7 @@ typedef PropsDef = {
 
 class Props {
 
-	
+
 	var paths : {
 		global : String,
 		local : String,
@@ -27,7 +27,7 @@ class Props {
 	public var project : PropsDef;
 	// per user, per project
 	public var local : PropsDef;
-	
+
 	// current merge
 	public var current : PropsDef;
 
@@ -53,6 +53,8 @@ class Props {
 		if( global == null ) global = cast {};
 		if( project == null ) project = cast {};
 		if( local == null ) local = cast {};
+		if( global.currentProject == null || !sys.FileSystem.exists(global.currentProject) )
+			global.currentProject = Sys.getCwd();
 		sync();
 	}
 
@@ -66,7 +68,7 @@ class Props {
 		};
 		merge(global);
 		merge(project);
-		merge(local);		
+		merge(local);
 	}
 
 	public function save() {
@@ -81,7 +83,7 @@ class Props {
 		js.Browser.window.localStorage.setItem(paths.local, str);
 	}
 
-	public function saveGlobals() {		
+	public function saveGlobals() {
 		var str = haxe.Json.stringify(global);
 		sys.io.File.saveContent(paths.global, str);
 	}

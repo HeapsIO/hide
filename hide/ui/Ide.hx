@@ -12,7 +12,7 @@ class Ide {
 	var layout : golden.Layout;
 	var types : Map<String,hide.HType>;
 	var typeDef = Macros.makeTypeDef(hide.HType);
-	
+
 	var menu : Element;
 	var currentLayout : { name : String, state : Dynamic };
 	var maximized : Bool;
@@ -23,7 +23,6 @@ class Ide {
 		inst = this;
 		window = nw.Window.get();
 		props = new Props(Sys.getCwd());
-		if( props.global.currentProject == null ) props.global.currentProject = Sys.getCwd();
 
 		var wp = props.global.windowPos;
 		if( wp != null ) {
@@ -32,7 +31,7 @@ class Ide {
 			if( wp.max ) window.maximize();
 		}
 		window.show(true);
-	
+
 		setProject(props.global.currentProject);
 		window.on('maximize', function() { maximized = true; onWindowChange(); });
 		window.on('restore', function() { maximized = false; onWindowChange(); });
@@ -55,7 +54,7 @@ class Ide {
 			props.global.windowPos.w = Std.int(window.window.outerWidth);
 			props.global.windowPos.h = Std.int(window.window.outerHeight);
 		}
-		props.saveGlobals();	
+		props.saveGlobals();
 	}
 
 	function initLayout( ?state : { name : String, state : Dynamic } ) {
@@ -161,6 +160,13 @@ class Ide {
 		initLayout();
 	}
 
+	public function chooseDirectory( onSelect : String -> Void ) {
+		new Element('<input type="file" nwdirectory/>').change(function(e) {
+			var dir = js.jquery.Helper.JTHIS.val();
+			onSelect(dir);
+		}).click();
+	}
+
 	function initMenu() {
 		if( menu == null )
 			menu = new Element(new Element("#mainmenu").get(0).outerHTML);
@@ -179,12 +185,11 @@ class Ide {
 			});
 		}
 		menu.find(".project .open").click(function(_) {
-			new Element('<input type="file" nwdirectory/>').change(function(e) {
-				var dir = js.jquery.Helper.JTHIS.val();
+			chooseDirectory(function(dir) {
 				if( StringTools.endsWith(dir,"/res") || StringTools.endsWith(dir,"\\res") )
 					dir = dir.substr(0,-4);
 				setProject(dir);
-			}).click();
+			});
 		});
 		menu.find(".project .clear").click(function(_) {
 			props.global.recentProjects = [];
@@ -240,7 +245,7 @@ class Ide {
 
 	public function open( component : String, state : Dynamic, ?onCreate : View<Dynamic> -> Void ) {
 		var options = View.viewClasses.get(component).options;
-		
+
 		var bestTarget : golden.Container = null;
 		for( v in views )
 			if( v.defaultOptions.position == options.position ) {
@@ -251,7 +256,7 @@ class Ide {
 		var index : Null<Int> = null;
 		var width : Null<Int> = null;
 		var target;
-		if( bestTarget != null ) 
+		if( bestTarget != null )
 			target = bestTarget.parent.parent;
 		else {
 			target = layout.root.contentItems[0];
