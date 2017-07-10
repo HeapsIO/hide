@@ -17,8 +17,18 @@ class Model extends FileView {
 		scene.onReady = init;
 	}
 
+	function initRec( obj : h3d.scene.Object ) {
+		if( obj.name == "Selection" || obj.name == "Collide" )
+			obj.visible = false;
+		for( o in obj )
+			initRec(o);
+	}
+
 	function init() {
 		obj = scene.loadModel(state.path);
+
+		initRec(obj);
+
 		new h3d.scene.Object(scene.s3d).addChild(obj);
 		control = new h3d.scene.CameraController(scene.s3d);
 		tree = new hide.comp.SceneTree(obj,scroll.content, obj.name != null);
