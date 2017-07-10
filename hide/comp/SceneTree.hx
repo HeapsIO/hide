@@ -2,16 +2,18 @@ package hide.comp;
 
 class SceneTree extends IconTree {
 
+	var showRoot : Bool;
 	public var obj : h3d.scene.Object;
 
-	public function new(obj, root) {
+	public function new(obj, root, showRoot : Bool) {
 		super(root);
+		this.showRoot = showRoot;
 		this.obj = obj;
 		init();
 	}
 
 	override function get( id : String ) {
-		var root = obj.parent;
+		var root = showRoot ? obj.parent : obj;
 		var path = id == null ? "" : id+"/";
 		if( id != null ) {
 			var parts = [for(p in id.split("/")) Std.parseInt(p)];
@@ -23,7 +25,7 @@ class SceneTree extends IconTree {
 				var c = root.getChildAt(i);
 				{
 					id : path+i,
-					text : c.name,
+					text : c.name == null ? c.toString()+"@"+i : c.name,
 					icon : "fa fa-" + (c.isMesh() ? (Std.is(c,h3d.scene.Skin) ? "male" : "cube") : "circle-o"),
 					children : c.isMesh() || c.numChildren > 0,
 				}
@@ -33,7 +35,7 @@ class SceneTree extends IconTree {
 			function makeMaterial( m : h3d.mat.Material, index : Int ) : IconTree.IconTreeItem {
 				return {
 					id : path+"mat"+index,
-					text : m.name,
+					text : m.name == null ? "Material@"+index : m.name,
 					icon : "fa fa-photo",
 				};
 			}

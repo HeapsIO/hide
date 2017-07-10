@@ -1,8 +1,40 @@
 package hide.comp;
 
+@:access(hide.comp.Scene)
+class SceneLoader extends h3d.impl.Serializable.SceneSerializer {
+
+	var scnPath : String;
+	var projectPath : String;
+	var scene : Scene;
+
+	public function new(scnPath,scene) {
+		super();
+		this.scnPath = scnPath;
+		this.scene = scene;
+	}
+
+	override function initSCNPaths(resPath:String, projectPath:String) {
+		this.resPath = resPath.split("\\").join("/");
+		this.projectPath = projectPath == null ? null : projectPath.split("\\").join("/");
+		trace(this.resPath, this.projectPath);
+	}
+
+	override function resolveTexture(path:String) {
+		var t = null;
+		if( projectPath != null )
+			t = scene.loadTextureFile(projectPath + resPath + "/" + scnPath.split("/").pop(), path);
+		if( t == null )
+			t = scene.loadTextureFile(scnPath, path);
+		if( t == null )
+			t = h3d.mat.Texture.fromColor(0xFF00FF);
+		return t;
+	}
+
+}
+
 class Scene extends Component implements h3d.IDrawable {
 
-	static var UID = 0; 
+	static var UID = 0;
 
 	var id = ++UID;
 	var stage : hxd.Stage;
@@ -44,6 +76,7 @@ class Scene extends Component implements h3d.IDrawable {
 			sevents.addScene(s2d);
 			sevents.addScene(s3d);
 			onReady();
+			sync();
 			ide.registerUpdate(sync);
 		};
 		engine.onResized = function() {
@@ -88,24 +121,53 @@ class Scene extends Component implements h3d.IDrawable {
 		});
 	}
 
+	function loadSCN( path : String ) {
+		var ctx = new SceneLoader(path,this);
+		var fullPath = ide.getPath(path);
+		var bytes = sys.io.File.getBytes(fullPath);
+		var root = new h3d.scene.Object();
+		for( o in ctx.loadSCN(bytes).content )
+			root.addChild(o);
+		return root;
+	}
+
 	public function loadModel( path : String ) {
+		if( StringTools.endsWith(path.toLowerCase(), ".scn") )
+			return loadSCN(path);
 		var lib = loadHMD(path,false);
-		return lib.makeObject(loadHMDTexture.bind(path));
+		return lib.makeObject(loadTextureFile.bind(path));
 	}
 
 	public function loadAnimation( path : String ) {
 		var lib = loadHMD(path,true);
 		return lib.loadAnimation();
 	}
- 
-	function loadHMDTexture( basePath : String, texturePath : String ) {
-		if( sys.FileSystem.exists(texturePath) ) {
+
+	function resolveTexturePath( modelPath : String, texturePath : String ) {
+		inline function exists(path) return sys.FileSystem.exists(path);
+		if( exists(texturePath) )
+			return texturePath;
+		texturePath = texturePath.split("\\").join("/");
+		modelPath = ide.getPath(modelPath);
+
+		var path = modelPath.split("/");
+		path.pop();
+		var relToModel = path.join("/") + "/" + texturePath.split("/").pop();
+		if( exists(relToModel) )
+			return relToModel;
+
+		return null;
+	}
+
+	function loadTextureFile( modelPath : String, texturePath : String ) {
+		var path = resolveTexturePath(modelPath, texturePath);
+		if( path != null ) {
 			var t = new h3d.mat.Texture(1,1);
 			t.clear(0x102030);
-			loadTexture(texturePath, function(_) {}, t);
+			loadTexture(path, function(_) {}, t);
 			return t;
 		}
-		trace("TODO:",basePath, texturePath);
+		trace("Could not load texture " + { modelPath : modelPath, texturePath : texturePath });
 		return null;
 	}
 
@@ -129,7 +191,7 @@ class Scene extends Component implements h3d.IDrawable {
 		s2d.render(e);
 	}
 
-	public dynamic function onUpdate(dt:Float) {	
+	public dynamic function onUpdate(dt:Float) {
 	}
 
 	public dynamic function onReady() {

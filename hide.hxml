@@ -4,4 +4,6 @@
 -lib hxnodejs
 -lib heaps
 -dce full
+--macro keep('h3d.prim')
 --macro include('hide.view')
+--macro include('h3d.prim')

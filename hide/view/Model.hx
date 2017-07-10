@@ -21,7 +21,7 @@ class Model extends FileView {
 		obj = scene.loadModel(state.path);
 		new h3d.scene.Object(scene.s3d).addChild(obj);
 		control = new h3d.scene.CameraController(scene.s3d);
-		tree = new hide.comp.SceneTree(obj,scroll.content);
+		tree = new hide.comp.SceneTree(obj,scroll.content, obj.name != null);
 		resetCamera();
 
 		var anims = listAnims();
