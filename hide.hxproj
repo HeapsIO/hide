@@ -24,7 +24,7 @@
     <option noInlineOnDebug="False" />
     <option mainClass="hide.ui.Ide" />
     <option enabledebug="False" />
-    <option additional="-lib hxnodejs&#xA;-lib heaps&#xA;-dce full&#xA;&#xA;--macro keep('h3d.prim')&#xA;--macro include('hide.view')&#xA;--macro include('h3d.prim')" />
+    <option additional="-lib hxnodejs&#xA;-lib heaps&#xA;-lib hxbit&#xA;-dce full&#xA;&#xA;--macro keep('h3d.prim')&#xA;--macro include('hide.view')&#xA;--macro include('h3d.prim')" />
   </build>
   <!-- haxelib libraries -->
   <haxelib>

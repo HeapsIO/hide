@@ -3,6 +3,7 @@
 -main hide.ui.Ide
 -lib hxnodejs
 -lib heaps
+-lib hxbit
 -dce full
 --macro keep('h3d.prim')
 --macro include('hide.view')

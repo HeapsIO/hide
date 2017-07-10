@@ -16,18 +16,29 @@ class SceneLoader extends h3d.impl.Serializable.SceneSerializer {
 	override function initSCNPaths(resPath:String, projectPath:String) {
 		this.resPath = resPath.split("\\").join("/");
 		this.projectPath = projectPath == null ? null : projectPath.split("\\").join("/");
-		trace(this.resPath, this.projectPath);
+	}
+
+	override function loadHMD(path:String) {
+		var path = resolvePath(path);
+		if( path == null )
+			throw "Missing HMD file " + path;
+		return scene.loadHMD(path, false);
 	}
 
 	override function resolveTexture(path:String) {
-		var t = null;
+		var path = resolvePath(path);
+		if( path == null )
+			return h3d.mat.Texture.fromColor(0xFF00FF);
+		return scene.loadTextureFile(scnPath, path);
+	}
+
+	function resolvePath( path : String ) {
+		var p = null;
 		if( projectPath != null )
-			t = scene.loadTextureFile(projectPath + resPath + "/" + scnPath.split("/").pop(), path);
-		if( t == null )
-			t = scene.loadTextureFile(scnPath, path);
-		if( t == null )
-			t = h3d.mat.Texture.fromColor(0xFF00FF);
-		return t;
+			p = scene.resolvePath(projectPath + resPath + "/" + scnPath.split("/").pop(), path);
+		if( p == null )
+			p = scene.resolvePath(scnPath, path);
+		return p;
 	}
 
 }
@@ -143,16 +154,16 @@ class Scene extends Component implements h3d.IDrawable {
 		return lib.loadAnimation();
 	}
 
-	function resolveTexturePath( modelPath : String, texturePath : String ) {
+	function resolvePath( modelPath : String, filePath : String ) {
 		inline function exists(path) return sys.FileSystem.exists(path);
-		if( exists(texturePath) )
-			return texturePath;
-		texturePath = texturePath.split("\\").join("/");
+		if( exists(filePath) )
+			return filePath;
+		filePath = filePath.split("\\").join("/");
 		modelPath = ide.getPath(modelPath);
 
 		var path = modelPath.split("/");
 		path.pop();
-		var relToModel = path.join("/") + "/" + texturePath.split("/").pop();
+		var relToModel = path.join("/") + "/" + filePath.split("/").pop();
 		if( exists(relToModel) )
 			return relToModel;
 
@@ -160,7 +171,7 @@ class Scene extends Component implements h3d.IDrawable {
 	}
 
 	function loadTextureFile( modelPath : String, texturePath : String ) {
-		var path = resolveTexturePath(modelPath, texturePath);
+		var path = resolvePath(modelPath, texturePath);
 		if( path != null ) {
 			var t = new h3d.mat.Texture(1,1);
 			t.clear(0x102030);
