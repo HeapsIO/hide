@@ -35,7 +35,7 @@ class Macros {
 			var def = knownTypes.get(key);
 			if( def != null )
 				return def.value;
-			var vname = "_"+key.split(".").join("_"); 
+			var vname = "_"+key.split(".").join("_");
 			def = {
 				decl : (macro var $vname : hide.HType = { def : null }),
 				init : null,
@@ -49,7 +49,7 @@ class Macros {
 			var def = knownTypes.get(key);
 			if( def != null )
 				return def.value;
-			var vname = "_"+key.split(".").join("_"); 
+			var vname = "_"+key.split(".").join("_");
 			def = {
 				decl : (macro var $vname : hide.HType = { def : null }),
 				init : null,
@@ -80,6 +80,10 @@ class Macros {
 					return macro { def : TFlags([$a{flags}]) };
 				default:
 				}
+			case "Null":
+				var pt = pl[0];
+				var e = buildTypeDefRec(pt,knownTypes);
+				return macro { var _tmp : hide.HType = $e; _tmp.props.set(PNull); _tmp; };
 			default:
 			}
 		case TInst(c,pl):
