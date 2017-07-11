@@ -14,6 +14,8 @@ typedef IconTreeItem = {
 
 class IconTree extends Component {
 
+	var waitRefresh = new Array<Void->Void>();
+
 	public dynamic function get( id : String ) : Array<IconTreeItem> {
 		return [{ id : id+"0", text : "get()", children : true }];
 	}
@@ -49,6 +51,32 @@ class IconTree extends Component {
 		root.on("close_node.jstree", function(event,e) {
 			onToggle(e.node.id, false);
 		});
+		root.on("refresh.jstree", function(_) {
+			var old = waitRefresh;
+			waitRefresh = [];
+			for( f in old ) f();
+		});
 	}
-	
+
+	public function getCurrentOver() : Null<String> {
+		var id = root.find(":focus").attr("id");
+		if( id != null )
+			id = id.substr(0, -7); // remove _anchor
+		return id;
+	}
+
+	public function setSelection( ids : Array<String> ) {
+		(untyped root.jstree)('deselect_all');
+		(untyped root.jstree)('select_node',ids);
+	}
+
+	public function refresh( ?onReady : Void -> Void ) {
+		if( onReady != null ) waitRefresh.push(onReady);
+		(untyped root.jstree)('refresh',true);
+	}
+
+	public function getSelection() : Array<String> {
+		return (untyped root.jstree)('get_selected');
+	}
+
 }

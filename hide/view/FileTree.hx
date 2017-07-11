@@ -5,6 +5,12 @@ typedef ExtensionOptions = {
 	?createNew : String,
 };
 
+typedef ExtensionDesc = {
+	var component : String;
+	var extensions : Array<String>;
+	var options : ExtensionOptions;
+}
+
 class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
 
 	var tree : hide.comp.IconTree;
@@ -99,13 +105,36 @@ class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
 					lastOpen = null;
 				},1000);
 		});
-
+		e.contextmenu(function(e) {
+			var current = tree.getCurrentOver();
+			if( current == null ) return;
+			tree.setSelection([current]);
+			e.preventDefault();
+			new hide.comp.ContextMenu([
+				{ label : "New..", menu:[for( e in EXTENSIONS ) if( e.options.createNew != null ) { label : e.options.createNew, click : createNew.bind(current, e) }] },
+				{ label : "Delete", click : function() if( js.Browser.window.confirm("Delete " + current + "?") ) { onDeleteFile(current); tree.refresh(); } },
+			]);
+		});
 		tree.onDblClick = onOpenFile;
 		tree.init();
 	}
 
+	function onDeleteFile( path : String ) {
+		var fullPath = getPath(path);
+		if( sys.FileSystem.isDirectory(fullPath) ) {
+			for( f in sys.FileSystem.readDirectory(fullPath) )
+				onDeleteFile(path + "/" + f);
+			sys.FileSystem.deleteDirectory(fullPath);
+		} else
+			sys.FileSystem.deleteFile(fullPath);
+	}
+
+	function getPath(path:String) {
+		return ide.getPath(state.root) + path;
+	}
+
 	function onOpenFile( path : String ) {
-		var fullPath = ide.getPath(state.root) + path;
+		var fullPath = getPath(path);
 		if( sys.FileSystem.isDirectory(fullPath) )
 			return;
 		var ext = getExtension(fullPath);
@@ -119,17 +148,39 @@ class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
 		});
 	}
 
+	function createNew( basePath : String, ext : ExtensionDesc ) {
+		var fullPath = getPath(basePath);
+		if( !sys.FileSystem.isDirectory(fullPath) ) {
+			basePath = new haxe.io.Path(basePath).dir;
+			fullPath = getPath(basePath);
+		}
+		var file = js.Browser.window.prompt(ext.options.createNew + " name:");
+		if( file == null ) return;
+		if( file.indexOf(".") < 0 ) file += "." + ext.extensions[0].split(".").shift();
+
+		if( sys.FileSystem.exists(fullPath + "/" + file) ) {
+			js.Browser.alert("File '" + file+"' already exists");
+			createNew(basePath, ext);
+			return;
+		}
+
+		var view : hide.view.FileView = Type.createEmptyInstance(Type.resolveClass(ext.component));
+		sys.io.File.saveBytes(fullPath + "/" + file, view.getDefaultContent());
+		tree.refresh(function() tree.setSelection([basePath + "/" + file]));
+		onOpenFile(basePath+"/"+file);
+	}
+
 	function isIgnored( path : String, file : String ) {
 		if( file.charCodeAt(0) == ".".code )
 			return true;
 		return false;
 	}
 
-	static var EXTENSIONS = new Map<String,{ component : String, options : ExtensionOptions }>();
+	static var EXTENSIONS = new Map<String,ExtensionDesc>();
 	public static function registerExtension<T>( c : Class<hide.ui.View<T>>, extensions : Array<String>, ?options : ExtensionOptions ) {
 		hide.ui.View.register(c);
 		if( options == null ) options = {};
-		var obj = { component : Type.getClassName(c), options : options };
+		var obj = { component : Type.getClassName(c), options : options, extensions : extensions };
 		for( e in extensions )
 			EXTENSIONS.set(e, obj);
 		return null;

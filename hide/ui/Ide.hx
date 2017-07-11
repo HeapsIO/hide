@@ -7,6 +7,9 @@ class Ide {
 	public var resourceDir(get,never) : String;
 	public var initializing(default,null) : Bool;
 
+	public var mouseX : Int = 0;
+	public var mouseY : Int = 0;
+
 	var window : nw.Window;
 
 	var layout : golden.Layout;
@@ -33,6 +36,10 @@ class Ide {
 		window.show(true);
 
 		setProject(props.global.currentProject);
+		window.window.document.addEventListener("mousemove", function(e) {
+			mouseX = e.x;
+			mouseY = e.y;
+		});
 		window.on('maximize', function() { maximized = true; onWindowChange(); });
 		window.on('restore', function() { maximized = false; onWindowChange(); });
 		window.on('move', function() haxe.Timer.delay(onWindowChange,100));

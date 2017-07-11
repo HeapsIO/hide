@@ -23,6 +23,7 @@ class Particles3D extends FileView {
 
 	override function getDefaultContent() {
 		var p = new h3d.parts.GpuParticles();
+		p.addGroup().name = "Default";
 		return haxe.io.Bytes.ofString(haxe.Json.stringify(p.save(),"\t"));
 	}
 

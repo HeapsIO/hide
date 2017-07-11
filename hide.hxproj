@@ -36,7 +36,6 @@
   </compileTargets>
   <!-- Paths to exclude from the Project Explorer tree -->
   <hiddenPaths>
-    <hidden path="bin\style.css" />
     <hidden path="obj" />
     <hidden path="bin\ffmpegsumo.dll" />
     <hidden path="bin\libEGL.dll" />
