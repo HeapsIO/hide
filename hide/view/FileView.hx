@@ -46,6 +46,10 @@ class FileView extends hide.ui.View<{ path : String }> {
 		return file.indexOf(".") < 0 ? "" : file.split(".").pop().toLowerCase();
 	}
 
+	public function getDefaultContent() : haxe.io.Bytes {
+		return null;
+	}
+
 	override function onBeforeClose() {
 		if( modified && !js.Browser.window.confirm(state.path+" has been modified, quit without saving?") )
 			return false;

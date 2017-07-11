@@ -2,6 +2,7 @@ package hide.view;
 
 typedef ExtensionOptions = {
 	?icon : String,
+	?createNew : String,
 };
 
 class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
@@ -21,7 +22,20 @@ class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
 	}
 
 	function getExtension( file : String ) {
-		return file.indexOf(".") < 0 ? null : EXTENSIONS.get(file.split(".").pop().toLowerCase());
+		var ext = new haxe.io.Path(file).ext;
+		if( ext == null ) return null;
+		ext = ext.toLowerCase();
+		if( ext == "json" ) {
+			try {
+				var obj : Dynamic = haxe.Json.parse(sys.io.File.getContent(file));
+				if( obj.type != null && Std.is(obj.type, String) ) {
+					var e = EXTENSIONS.get("json." + obj.type);
+					if( e != null ) return e;
+				}
+			} catch( e : Dynamic ) {
+			}
+		}
+		return EXTENSIONS.get(ext);
 	}
 
 	override function getTitle() {
@@ -45,9 +59,10 @@ class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
 			var basePath = ide.getPath(state.root) + path;
 			var content = new Array<hide.comp.IconTree.IconTreeItem>();
 			for( c in sys.FileSystem.readDirectory(basePath) ) {
-				if( isIgnored(basePath,c) ) continue;
-				var isDir = sys.FileSystem.isDirectory(basePath+"/"+c);
-				var ext = getExtension(c);
+				if( isIgnored(basePath, c) ) continue;
+				var fullPath = basePath + "/" + c;
+				var isDir = sys.FileSystem.isDirectory(fullPath);
+				var ext = getExtension(fullPath);
 				var id = ( path == "" ? c : path+"/"+c );
 				content.push({
 					id : id,
@@ -93,7 +108,7 @@ class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
 		var fullPath = ide.getPath(state.root) + path;
 		if( sys.FileSystem.isDirectory(fullPath) )
 			return;
-		var ext = getExtension(path);
+		var ext = getExtension(fullPath);
 		if( ext == null )
 			return;
 		var prev = lastOpen;

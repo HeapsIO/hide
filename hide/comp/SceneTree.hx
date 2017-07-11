@@ -12,6 +12,19 @@ class SceneTree extends IconTree {
 		init();
 	}
 
+	function getIcon( c : h3d.scene.Object ) {
+		if( c.isMesh() ) {
+			if( Std.is(c, h3d.scene.Skin) )
+				return "male";
+			if( Std.is(c, h3d.parts.GpuParticles) || Std.is(c, h3d.parts.Particles) )
+				return "snowflake-o";
+			return "cube";
+		}
+		if( Std.is(c, h3d.scene.Light) )
+			return "sun-o";
+		return "circle-o";
+	}
+
 	override function get( id : String ) {
 		var root = showRoot ? obj.parent : obj;
 		var path = id == null ? "" : id+"/";
@@ -26,7 +39,7 @@ class SceneTree extends IconTree {
 				{
 					id : path+i,
 					text : c.name == null ? c.toString()+"@"+i : c.name,
-					icon : "fa fa-" + (c.isMesh() ? (Std.is(c,h3d.scene.Skin) ? "male" : "cube") : "circle-o"),
+					icon : "fa fa-" + getIcon(c),
 					children : c.isMesh() || c.numChildren > 0,
 				}
 			}

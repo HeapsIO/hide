@@ -19,9 +19,9 @@ class Script extends FileView {
 		case "html": "html";
 		default: "text";
 		}
-		originData = sys.io.File.getContent(getPath()); 
-		editor = monaco.Editor.create(e[0],{ 
-			value : originData, 
+		originData = sys.io.File.getContent(getPath());
+		editor = monaco.Editor.create(e[0],{
+			value : originData,
 			language : lang,
 			automaticLayout : true,
 			wordWrap : true,
@@ -29,7 +29,7 @@ class Script extends FileView {
 		 });
 		 editor.addCommand(monaco.KeyCode.KEY_S | monaco.KeyMod.CtrlCmd, function() {
 			 originData = editor.getValue({preserveBOM:true});
-			 modified = true;
+			 modified = false;
 			 sys.io.File.saveContent(getPath(), originData);
 		 });
 		 editor.onDidChangeModelContent(function() {
@@ -43,5 +43,5 @@ class Script extends FileView {
 		FileTree.registerExtension(Script,["xml","html"],{ icon : "code" });
 		FileTree.registerExtension(Script,["json"],{ icon : "gears" });
 	};
-	
+
 }

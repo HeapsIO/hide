@@ -86,6 +86,18 @@ class Ide {
 		var config : golden.Config = {
 			content: state.state,
 		};
+		var comps = new Map();
+		for( vcl in View.viewClasses )
+			comps.set(vcl.name, true);
+		function checkRec(i:golden.Config.ItemConfig) {
+			if( i.componentName != null && !comps.exists(i.componentName) ) {
+				i.componentState.deletedComponent = i.componentName;
+				i.componentName = "hide.view.Unknown";
+			}
+			if( i.content != null ) for( i in i.content ) checkRec(i);
+		}
+		for( i in config.content ) checkRec(i);
+
 		layout = new golden.Layout(config);
 
 		for( vcl in View.viewClasses )

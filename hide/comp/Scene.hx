@@ -170,7 +170,7 @@ class Scene extends Component implements h3d.IDrawable {
 		return null;
 	}
 
-	function loadTextureFile( modelPath : String, texturePath : String ) {
+	public function loadTextureFile( modelPath : String, texturePath : String ) {
 		var path = resolvePath(modelPath, texturePath);
 		if( path != null ) {
 			var t = new h3d.mat.Texture(1,1);
