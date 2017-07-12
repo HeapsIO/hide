@@ -56,5 +56,17 @@
 	</menu>
 </xml>
 <script src="hide.js"></script>
+
+
+<script>
+  var path = './';
+  var fs = require('fs');
+
+  var reloadWatcher=fs.watch(path, function() {
+    location.reload();
+    reloadWatcher.close();
+  });
+</script>
+
 </body>
 </html>
