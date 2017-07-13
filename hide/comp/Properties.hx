@@ -24,12 +24,23 @@ class Properties extends Component {
 
 		e.find("input[type=range]").not("[step]").attr("step", "any");
 
-		e.find(".section").not(".open").find(".content").hide();
+		e.find(".section").not(".open").children(".content").hide();
 		e.find(".section > h1").mousedown(function(e) {
 			if( e.button != 0 ) return;
 			var section = js.jquery.Helper.JTHIS.parent();
 			section.toggleClass("open");
-			section.children(".content").toggle(100);
+			section.children(".content").slideToggle(100);
+		}).find("input").mousedown(function(e) e.stopPropagation());
+
+		for( g in e.find(".group").elements() ) {
+			g.wrapInner("<div class='content'></div>'");
+			if( g.attr("name") != null ) new Element("<div class='title'>" + g.attr("name") + '</div>').prependTo(g);
+		}
+
+		e.find(".group > .title").mousedown(function(e) {
+			if( e.button != 0 ) return;
+			var group = js.jquery.Helper.JTHIS.parent();
+			group.children(".content").slideToggle(100);
 		}).find("input").mousedown(function(e) e.stopPropagation());
 
 		for( f in e.find("[field]").elements() ) {
@@ -72,18 +83,20 @@ class Properties extends Component {
 
 				var newVal : Dynamic = f.val();
 
-				if( f.is("[type=range]") )
+				if( f.is("[type=range]") || f.is("[type=number]") )
 					newVal = Std.parseFloat(newVal);
 
 				if( enumValue != null )
 					newVal = Type.createEnum(enumValue, newVal);
 
+				if( f.is("select") ) f.blur();
+
 				if( current == newVal ) return;
 
 				beforeChange();
-				trace(fname, newVal, Type.typeof(newVal));
 				current = newVal;
 				Reflect.setProperty(context, fname, newVal);
+
 			});
 		}
 
