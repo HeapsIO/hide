@@ -20,6 +20,10 @@ class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
 		super(state);
 		if( state.root == null ) {
 			ide.chooseDirectory(function(dir) {
+				if( dir == null ) {
+					close();
+					return;
+				}
 				state.root = dir.split("\\").join("/")+"/";
 				saveState();
 				rebuild();
@@ -58,8 +62,8 @@ class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
 
 		if( state.opened == null ) state.opened = [];
 
-		var panel = new hide.comp.ScrollZone(e);
-		tree = new hide.comp.IconTree(panel.content);
+		var panel = new Element("<div class='hide-scroll'>").appendTo(e);
+		tree = new hide.comp.IconTree(panel);
 		tree.get = function(path) {
 			if( path == null ) path = "";
 			var basePath = ide.getPath(state.root) + path;

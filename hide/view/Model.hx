@@ -7,13 +7,20 @@ class Model extends FileView {
 	var scene : hide.comp.Scene;
 	var control : h3d.scene.CameraController;
 	var tree : hide.comp.IconTree;
-	var scroll : hide.comp.ScrollZone;
+	var overlay : Element;
 
 	override function onDisplay( e : Element ) {
-		tools = new hide.comp.Toolbar(e);
-		var cont = new Element('<div class="hide-scene-layer">').appendTo(tools.content);
-		scroll = new hide.comp.ScrollZone(cont);
-		scene = new hide.comp.Scene(tools.content);
+		e.html('
+			<div class="flex vertical">
+				<div class="toolbar"></div>
+				<div class="scene">
+					<div class="hide-scene-layer hide-scroll"></div>
+				</div>
+			</div>
+		');
+		tools = new hide.comp.Toolbar(e.find(".toolbar"));
+		overlay = e.find(".hide-scene-layer");
+		scene = new hide.comp.Scene(e.find(".scene"));
 		scene.onReady = init;
 	}
 
@@ -31,7 +38,7 @@ class Model extends FileView {
 
 		new h3d.scene.Object(scene.s3d).addChild(obj);
 		control = new h3d.scene.CameraController(scene.s3d);
-		tree = new hide.comp.SceneTree(obj,scroll.content, obj.name != null);
+		tree = new hide.comp.SceneTree(obj,overlay, obj.name != null);
 		resetCamera();
 
 		var anims = listAnims();

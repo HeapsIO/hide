@@ -47,13 +47,21 @@ class Properties extends Component {
 			var fname = f.attr("field");
 			var current : Dynamic = Reflect.field(context, fname);
 			var enumValue : Enum<Dynamic> = null;
-			if( f.attr("type") == "checkbox" ) {
+
+			switch( f.attr("type") ) {
+			case "checkbox":
 				f.prop("checked", current);
 				f.change(function(_) {
 					beforeChange();
 					Reflect.setProperty(context, fname, f.prop("checked"));
 				});
 				continue;
+			case "texture":
+				var sel = new hide.comp.TextureSelect(f);
+				sel.value = current;
+				sel.onChange = function() Reflect.setProperty(context, fname, sel.value);
+				continue;
+			default:
 			}
 
 			if( f.is("select") ) {

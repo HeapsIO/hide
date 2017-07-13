@@ -50,6 +50,9 @@ class Ide {
 					return;
 			window.close(true);
 		});
+
+		var body = window.window.document.body;
+		body.onfocus = function(_) haxe.Timer.delay(function() new Element(body).find("input[type=file]").change().remove(), 200);
 	}
 
 	function onWindowChange() {
@@ -179,11 +182,29 @@ class Ide {
 		initLayout();
 	}
 
+	public function makeRelative( path : String ) {
+		path = path.split("\\").join("/");
+		if( StringTools.startsWith(path.toLowerCase(), resourceDir.toLowerCase()+"/") )
+			return path.substr(resourceDir.length+1);
+		return path;
+	}
+
+	public function chooseFile( exts : Array<String>, onSelect : String -> Void ) {
+		var e = new Element('<input type="file" value="" accept="${[for( e in exts ) "."+e].join(",")}"/>');
+		e.change(function(_) {
+			var file = makeRelative(e.val());
+			e.remove();
+			onSelect(file == "" ? null : file);
+		}).appendTo(window.window.document.body).click();
+	}
+
 	public function chooseDirectory( onSelect : String -> Void ) {
-		new Element('<input type="file" nwdirectory/>').change(function(e) {
-			var dir = js.jquery.Helper.JTHIS.val();
-			onSelect(dir);
-		}).click();
+		var e = new Element('<input type="file" value="" nwdirectory/>');
+		e.change(function(_) {
+			var dir = makeRelative(js.jquery.Helper.JTHIS.val());
+			onSelect(dir == "" ? null : dir);
+			e.remove();
+		}).appendTo(window.window.document.body).click();
 	}
 
 	function initMenu() {

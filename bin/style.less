@@ -4,6 +4,11 @@ body {
 	background-color : black;
 }
 
+
+a {
+	text-decoration : none;
+}
+
 ul, li {
 	margin : 0;
 	padding : 0;
@@ -20,50 +25,67 @@ input {
 	padding-left : 4px;
 }
 
-input[type=button] {
-	background-color : #444;
+select {
+	&:focus {
+		outline: none;
+	}
+	&:focus:hover {
+		border-color : #444;
+	}
+}
+
+select, input {
+	background-color: rgb(34,34,34);
+	border : 1px solid #444;
+	&:focus {
+		background-color: rgb(20,20,20);
+	}
+	&:hover {
+		border-color : #888;
+	}
+}
+
+input[type=texture] {
 	cursor : pointer;
 }
 
-input[type=button]:hover {
-	color : white;
-	background-color : #666;
+input[type=button] {
+	background-color : #444;
+	cursor : pointer;
+	&:hover {
+		color : white;
+		background-color : #666;
+	}
 }
 
 input[type=range] {
-	-webkit-appearance: none; /* Hides the slider so that custom slider can be made */
-	background: transparent; /* Otherwise white in Chrome */
+	-webkit-appearance: none;
+	background: transparent;
 	border:none;
 	padding:0;
+	&:focus {
+		outline: none;
+	}
+	&::-webkit-slider-thumb {
+		-webkit-appearance: none;
+		outline: 1px solid #aaa;
+		height: 6px;
+		width: 6px;
+		background: #ccc;
+		cursor: pointer;
+		margin-top: 0px;
+	}
+
+	&::-webkit-slider-runnable-track {
+		width: 100%;
+		height: 8px;
+		cursor: pointer;
+		background: rgb(20,20,20);
+		border: 1px solid #444;
+	}
 }
 
-input[type=range]::-webkit-slider-thumb {
-	-webkit-appearance: none;
-	outline: 1px solid #aaa;
-	height: 6px;
-	width: 6px;
-	background: #ccc;
-	cursor: pointer;
-	margin-top: 0px; /* You need to specify a margin in Chrome, but in Firefox and IE it is automatic */
-}
-
-input[type=range]::-webkit-slider-runnable-track {
-	width: 100%;
-	height: 8px;
-	cursor: pointer;
-	background: rgb(20,20,20);
-	border: 1px solid #444;
-}
-
-input[type=range]:focus {
-	outline: none; /* Removes the blue border. You should probably do some kind of focus styling for accessibility reasons though. */
-}
-
-.checkbox-wrapper {
-	display:inline-block;
-}
-
-input[type='checkbox'] {
+input[type=checkbox] {
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeSpeed;
     width: 13px;
@@ -75,44 +97,31 @@ input[type='checkbox'] {
     position: relative;
     cursor:pointer;
 	top:1px;
-}
+	&:after {
+		content:"";
+		vertical-align: middle;
+		text-align: center;
+		line-height: 13px;
+		position: absolute;
+		cursor: pointer;
+		height: 13px;
+		width: 13px;
+		left:0px;
+		top:0px;
+		font-size:10px;
+		box-shadow: inset 0px 1px 1px #000, 0px 1px 0px #444;
+		background: #202020;
+		color: #fff;
+	}
 
-input[type='checkbox']:after {
-    content:"";
-    vertical-align: middle;
-    text-align: center;
-    line-height: 13px;
-    position: absolute;
-    cursor: pointer;
-    height: 13px;
-    width: 13px;
-    left:0px;
-    top:0px;
-    font-size:10px;
-    box-shadow: inset 0px 1px 1px #000, 0px 1px 0px #444;
-    background: #202020;
-    color: #fff;
-}
-
-input[type='checkbox']:checked:after {
-    content:'\2714';
-}
-
-a {
-	text-decoration : none;
+	&:checked:after {
+		content:'\2714';
+	}
 }
 
 #mainmenu { display : none }
 
-select, input {
-	background-color: rgb(34,34,34);
-	border : 1px solid #444;
-	&:focus {
-		background-color: rgb(20,20,20);
-	}
-}
-
-.hide-scrollzone {
+.hide-scroll {
 	width : 100%;
 	height : 100%;
 	overflow : auto;
@@ -131,6 +140,10 @@ select, input {
 	background: #ddd;
 }
 
+.checkbox-wrapper {
+	display:inline-block;
+}
+
 .hide-loading {
 	width : 16px;
 	height : 16px;
@@ -138,11 +151,19 @@ select, input {
 	background : url('libs/jstree/default-dark/throbber.gif');
 }
 
+.hide-scene-container {
+	width:100%;
+	height:100%;
+	position:relative;
+}
+
 .hide-scene {
+	position:absolute;
 	cursor: default;
 }
 
 .hide-scene-layer {
+	width:auto;
 	position: absolute;
 	z-index: 1;
 	height: 100%;
@@ -153,30 +174,27 @@ select, input {
 	}
 }
 
+.flex {
+	width:100%;
+	height:100%;
+	display:flex;
+	>* {
+		flex-grow : 100;
+	}
+}
+
+.flex.vertical {
+	flex-direction: column;
+}
+
 .hide-toolbar {
 
-	display: flex;
-	flex-direction: column;
-	height : 100%;
-
-	>.content {
-		flex-grow: 100;
-		position: relative;
-		>canvas {
-			position : absolute;
-		}
-	}
-
-	>.toolbar {
-		width: 100%;
-		height : 24px;
-		padding : 4px;
-		padding-top: 2px;
-		padding-bottom: 6px;
-		background-color : rgb(34,34,34);
-		border-bottom : 1px solid #000;
-	}
-
+	flex: none;
+	padding : 4px;
+	padding-top: 2px;
+	padding-bottom: 6px;
+	background-color : rgb(34,34,34);
+	border-bottom : 1px solid #000;
 
 	.button, .toggle {
 		margin-right : 5px;
@@ -242,7 +260,7 @@ select, input {
 	display: flex;
 
 	>.panel {
-		width : 260px;
+		flex : 0 0 260px;
 		padding:10px;
 		overflow:auto;
 	}
@@ -338,6 +356,16 @@ div.lm_close_tab:hover { background-color : #555 !important; }
 
 /* JSTree fixes */
 
+.jstree {
+	background:transparent !important;
+}
+
+.jstree-icon.jstree-ocl {
+	opacity: 0.7;
+	width:18px !important;
+	top:-1px;
+}
+
 .jstree-icon {
-	color : #888 !important;
+	color : #aaa !important;
 }

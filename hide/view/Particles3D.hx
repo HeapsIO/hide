@@ -43,8 +43,8 @@ class Particles3D extends FileView {
 					<div class="group" name="Display">
 						<dl>
 							<dt>Name</dt><dd><input field="name" onchange="$(this).closest(\'.section\').find(\'>h1 span\').text($(this).val())"/></dd>
-							<dt>Texture</dt><dd><input type="file" accept="image/*"/></dd>
-							<dt>Color Gradient</dt><dd><input type="file" accept="image/*"/></dd>
+							<dt>Texture</dt><dd><input type="texture" field="texture"/></dd>
+							<dt>Color Gradient</dt><dd><input type="texture" field="colorGradient"/></dd>
 							<dt>Sort</dt><dd><select field="sortMode"></select></dd>
 							<dt>3D&nbsp;Transform</dt><dd><input type="checkbox" field="transform3D"/></dd>
 						</dl>
@@ -100,8 +100,11 @@ class Particles3D extends FileView {
 					<div class="group" name="Animation">
 						<dl>
 							<dt>Animation Repeat</dt><dd><input type="range" field="animationRepeat" min="0" max="10"/></dd>
-							<dt>Frame Division</dt><dd>X <input type="number" field="frameDivisionX" min="1" max="16"/> Y <input type="number" field="frameDivisionY" min="1" max="16"/></dd>
-							<dt>Frame Count</dt><dd><input type="number" field="frameCount" min="0" max="32"/></dd>
+							<dt>Frame Division</dt><dd>
+								X <input type="number" style="width:30px" field="frameDivisionX" min="1" max="16"/>
+								Y <input type="number" style="width:30px" field="frameDivisionY" min="1" max="16"/>
+								# <input type="number" style="width:30px" field="frameCount" min="0" max="32"/>
+							</dd>
 						</dl>
 					</div>
 

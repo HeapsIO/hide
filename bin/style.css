@@ -3,6 +3,9 @@ body {
   padding: 0;
   background-color: black;
 }
+a {
+  text-decoration: none;
+}
 ul,
 li {
   margin: 0;
@@ -24,6 +27,28 @@ select {
 input {
   padding-left: 4px;
 }
+select:focus {
+  outline: none;
+}
+select:focus:hover {
+  border-color: #444;
+}
+select,
+input {
+  background-color: #222222;
+  border: 1px solid #444;
+}
+select:focus,
+input:focus {
+  background-color: #141414;
+}
+select:hover,
+input:hover {
+  border-color: #888;
+}
+input[type=texture] {
+  cursor: pointer;
+}
 input[type=button] {
   background-color: #444;
   cursor: pointer;
@@ -34,11 +59,12 @@ input[type=button]:hover {
 }
 input[type=range] {
   -webkit-appearance: none;
-  /* Hides the slider so that custom slider can be made */
   background: transparent;
-  /* Otherwise white in Chrome */
   border: none;
   padding: 0;
+}
+input[type=range]:focus {
+  outline: none;
 }
 input[type=range]::-webkit-slider-thumb {
   -webkit-appearance: none;
@@ -48,7 +74,6 @@ input[type=range]::-webkit-slider-thumb {
   background: #ccc;
   cursor: pointer;
   margin-top: 0px;
-  /* You need to specify a margin in Chrome, but in Firefox and IE it is automatic */
 }
 input[type=range]::-webkit-slider-runnable-track {
   width: 100%;
@@ -57,14 +82,7 @@ input[type=range]::-webkit-slider-runnable-track {
   background: #141414;
   border: 1px solid #444;
 }
-input[type=range]:focus {
-  outline: none;
-  /* Removes the blue border. You should probably do some kind of focus styling for accessibility reasons though. */
-}
-.checkbox-wrapper {
-  display: inline-block;
-}
-input[type='checkbox'] {
+input[type=checkbox] {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeSpeed;
   width: 13px;
@@ -77,7 +95,7 @@ input[type='checkbox'] {
   cursor: pointer;
   top: 1px;
 }
-input[type='checkbox']:after {
+input[type=checkbox]:after {
   content: "";
   vertical-align: middle;
   text-align: center;
@@ -93,25 +111,13 @@ input[type='checkbox']:after {
   background: #202020;
   color: #fff;
 }
-input[type='checkbox']:checked:after {
+input[type=checkbox]:checked:after {
   content: '\2714';
-}
-a {
-  text-decoration: none;
 }
 #mainmenu {
   display: none;
 }
-select,
-input {
-  background-color: #222222;
-  border: 1px solid #444;
-}
-select:focus,
-input:focus {
-  background-color: #141414;
-}
-.hide-scrollzone {
+.hide-scroll {
   width: 100%;
   height: 100%;
   overflow: auto;
@@ -126,16 +132,26 @@ input:focus {
 ::-webkit-scrollbar-thumb {
   background: #ddd;
 }
+.checkbox-wrapper {
+  display: inline-block;
+}
 .hide-loading {
   width: 16px;
   height: 16px;
   display: inline-block;
   background: url('libs/jstree/default-dark/throbber.gif');
 }
+.hide-scene-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
 .hide-scene {
+  position: absolute;
   cursor: default;
 }
 .hide-scene-layer {
+  width: auto;
   position: absolute;
   z-index: 1;
   height: 100%;
@@ -144,21 +160,19 @@ input:focus {
   background: transparent !important;
   user-select: none;
 }
-.hide-toolbar {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-.hide-toolbar > .content {
-  flex-grow: 100;
-  position: relative;
-}
-.hide-toolbar > .content > canvas {
-  position: absolute;
-}
-.hide-toolbar > .toolbar {
+.flex {
   width: 100%;
-  height: 24px;
+  height: 100%;
+  display: flex;
+}
+.flex > * {
+  flex-grow: 100;
+}
+.flex.vertical {
+  flex-direction: column;
+}
+.hide-toolbar {
+  flex: none;
   padding: 4px;
   padding-top: 2px;
   padding-bottom: 6px;
@@ -226,7 +240,7 @@ input:focus {
   display: flex;
 }
 .hide-properties > .panel {
-  width: 260px;
+  flex: 0 0 260px;
   padding: 10px;
   overflow: auto;
 }
@@ -314,6 +328,14 @@ div.lm_close_tab:hover {
   background-color: #555 !important;
 }
 /* JSTree fixes */
+.jstree {
+  background: transparent !important;
+}
+.jstree-icon.jstree-ocl {
+  opacity: 0.7;
+  width: 18px !important;
+  top: -1px;
+}
 .jstree-icon {
-  color: #888 !important;
+  color: #aaa !important;
 }

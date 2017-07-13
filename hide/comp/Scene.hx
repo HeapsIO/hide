@@ -57,6 +57,7 @@ class Scene extends Component implements h3d.IDrawable {
 
 	public function new(root) {
 		super(root);
+		root.addClass("hide-scene-container");
 		canvas = cast new Element("<canvas class='hide-scene' style='width:100%;height:100%'/>").appendTo(root)[0];
 		canvas.addEventListener("mousemove",function(_) canvas.focus());
 		canvas.addEventListener("mouseleave",function(_) canvas.blur());
@@ -65,6 +66,7 @@ class Scene extends Component implements h3d.IDrawable {
 			e.preventDefault();
 			return false;
 		};
+		untyped canvas.__scene = this;
 		haxe.Timer.delay(delayedInit,0); // wait canvas added to window
 	}
 
@@ -156,8 +158,9 @@ class Scene extends Component implements h3d.IDrawable {
 
 	function resolvePath( modelPath : String, filePath : String ) {
 		inline function exists(path) return sys.FileSystem.exists(path);
-		if( exists(filePath) )
-			return filePath;
+		var fullPath = ide.getPath(filePath);
+		if( exists(fullPath) )
+			return fullPath;
 		filePath = filePath.split("\\").join("/");
 		modelPath = ide.getPath(modelPath);
 
@@ -175,6 +178,7 @@ class Scene extends Component implements h3d.IDrawable {
 		if( path != null ) {
 			var t = new h3d.mat.Texture(1,1);
 			t.clear(0x102030);
+			t.name = ide.makeRelative(path);
 			loadTexture(path, function(_) {}, t);
 			return t;
 		}
@@ -206,6 +210,16 @@ class Scene extends Component implements h3d.IDrawable {
 	}
 
 	public dynamic function onReady() {
+	}
+
+	public static function getNearest( e : Element ) : Scene {
+		while( e.length > 0 ) {
+			var c : Dynamic = e.find("canvas")[0];
+			if( c != null && c.__scene != null )
+				return c.__scene;
+			e = e.parent();
+		}
+		return null;
 	}
 
 }
