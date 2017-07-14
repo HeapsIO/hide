@@ -1,0 +1,150 @@
+package hide.comp;
+
+typedef HideProps = {
+	var autoSaveLayout : Null<Bool>;
+	var layouts : Array<{ name : String, state : Dynamic }>;
+
+	var currentProject : String;
+	var recentProjects : Array<String>;
+
+	var windowPos : { x : Int, y : Int, w : Int, h : Int, max : Bool };
+};
+
+typedef PropsDef = {
+
+	var hide : HideProps;
+
+};
+
+class Props {
+
+	var ide : hide.ui.Ide;
+	var parent : Props;
+	public var path(default,null) : String;
+	public var source(default, null) : PropsDef;
+	public var current : PropsDef;
+
+	public function new( ?parent : Props ) {
+		ide = hide.ui.Ide.inst;
+		this.parent = parent;
+		sync();
+	}
+
+	public function load( path : String ) {
+		this.path = path;
+		var fullPath = ide.getPath(path);
+		if( sys.FileSystem.exists(fullPath) )
+			source = ide.parseJSON(sys.io.File.getContent(fullPath))
+		else
+			source = cast {};
+		sync();
+	}
+
+	public function save() {
+		sync();
+		if( path == null ) throw "Cannot save properties (unknown path)";
+		var fullPath = ide.getPath(path);
+		if( Reflect.fields(source).length == 0 )
+			try sys.FileSystem.deleteFile(fullPath) catch( e : Dynamic ) {};
+		else
+			sys.io.File.saveContent(fullPath, ide.toJSON(source));
+	}
+
+	public function sync() {
+		if( parent != null ) parent.sync();
+		current = cast {};
+		if( parent != null ) merge(parent.current);
+		if( source != null ) merge(source);
+	}
+
+	function merge( value : Dynamic ) {
+		mergeRec(current, value);
+	}
+
+	function mergeRec( dst : Dynamic, src : Dynamic ) {
+		for( f in Reflect.fields(src) ) {
+			var v : Dynamic = Reflect.field(src,f);
+			var t : Dynamic = Reflect.field(dst, f);
+			if( Type.typeof(v) == TObject ) {
+				if( t == null ) {
+					t = {};
+					Reflect.setField(dst, f, t);
+				}
+				mergeRec(t, v);
+			} else if( v == null )
+				Reflect.deleteField(dst, f);
+			else
+				Reflect.setField(dst,f,v);
+		}
+	}
+
+	public function get( key : String ) : Dynamic {
+		return Reflect.field(current,key);
+	}
+
+	public static function loadForProject( resourcePath : String ) {
+		var path = js.Node.process.argv[0].split("\\").join("/").split("/");
+		path.pop();
+		var hidePath = path.join("/");
+
+		// in dev mode
+		if( !sys.FileSystem.exists(hidePath + "/package.json") ) {
+			var prevPath = new haxe.io.Path(hidePath).dir;
+			if( sys.FileSystem.exists(prevPath + "/hide.js") )
+				hidePath = prevPath;
+		}
+
+		var defaults = new Props();
+		defaults.load(hidePath + "/defaultProps.json");
+
+		var userGlobals = new Props(defaults);
+		userGlobals.load(hidePath + "/props.json");
+
+		if( userGlobals.source.hide == null )
+			userGlobals.source.hide = {
+				autoSaveLayout : true,
+				layouts : [],
+				recentProjects : [],
+				currentProject : resourcePath,
+				windowPos : null,
+			};
+
+		var perProject = new Props(userGlobals);
+		perProject.load(resourcePath + "/props.json");
+
+		var projectUserCustom = new Props(perProject);
+		projectUserCustom.load(hidePath + "/" + resourcePath.split("/").join("_").split(":").join("_") + "_Defaults.json");
+
+		var current = new Props(projectUserCustom);
+
+		return {
+			global : userGlobals,
+			project : perProject,
+			user : projectUserCustom,
+			current : current,
+		};
+	}
+
+	public static function loadForFile( ide : hide.ui.Ide, path : String ) {
+		var parts = path.split("/");
+		var propFiles = [];
+		var first = true, allowSave = false;
+		while( true ) {
+			var pfile = ide.getPath(parts.join("/") + "/props.json");
+			if( sys.FileSystem.exists(pfile) ) {
+				propFiles.unshift(pfile);
+				if( first ) allowSave = true;
+			}
+			if( parts.length == 0 ) break;
+			first = false;
+			parts.pop();
+		}
+		var parent = ide.props.user;
+		for( p in propFiles ) {
+			parent = new hide.comp.Props(parent);
+			parent.load(p);
+		}
+		return allowSave ? parent : new hide.comp.Props(parent);
+	}
+
+}

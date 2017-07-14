@@ -20,18 +20,22 @@ class Particles3D extends FileView {
 
 	var scene : hide.comp.Scene;
 	var parts : GpuParticles;
-	var properties : hide.comp.Properties;
+	var properties : hide.comp.PropsEditor;
 
 	override function getDefaultContent() {
 		var p = new h3d.parts.GpuParticles();
 		p.addGroup().name = "Default";
-		return haxe.io.Bytes.ofString(haxe.Json.stringify(p.save(),"\t"));
+		return haxe.io.Bytes.ofString(ide.toJSON(p.save()));
 	}
 
 	override function onDisplay( e : Element ) {
-		properties = new hide.comp.Properties(e,undo);
+		properties = new hide.comp.PropsEditor(e,undo);
 		scene = new hide.comp.Scene(properties.content);
 		scene.onReady = init;
+	}
+
+	override function save() {
+		sys.io.File.saveContent(getPath(), ide.toJSON(parts.save()));
 	}
 
 	function addGroup( g : h3d.parts.GpuParticles.GpuPartGroup ) {
@@ -153,7 +157,7 @@ class Particles3D extends FileView {
 			extra.appendTo(properties.panel);
 		}, null);
 
-		//scene.resetCamera(); -- tofix when bounds are done
+		scene.resetCamera(2);
 		new h3d.scene.CameraController(scene.s3d).loadFromCamera();
 	}
 

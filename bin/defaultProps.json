@@ -1,0 +1,12 @@
+{
+	// define location of animations in HMD files
+	"hmd.animPaths" : [],
+
+	// controls
+	"key.undo" : "Ctrl-Z",
+	"key.redo" : "Ctrl-Y",
+
+	// reserved for internal ide usage
+	"hide" : {}
+
+}

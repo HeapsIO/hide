@@ -62,7 +62,8 @@
   var path = './';
   var fs = require('fs');
 
-  var reloadWatcher=fs.watch(path, function() {
+  var reloadWatcher=fs.watch(path, function(_,file) {
+	if( file.split(".").pop().toLowerCase() == "json" ) return;
 	setTimeout(function() {
 		location.reload();
 		reloadWatcher.close();

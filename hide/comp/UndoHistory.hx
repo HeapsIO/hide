@@ -4,20 +4,26 @@ enum HistoryElement {
 	Field( obj : Dynamic, field : String, oldValue : Dynamic );
 }
 
-private typedef Elt = { h : HistoryElement, callb : Void -> Void };
+private typedef Elt = { h : HistoryElement, id : Int, callb : Void -> Void };
 
 class UndoHistory {
 
+	var uidGen = 0;
 	var undoElts : Array<Elt> = [];
 	var redoElts : Array<Elt> = [];
+	public var currentID(get, never) : Int;
 
 	public function new() {
 	}
 
+	function get_currentID() {
+		return undoElts.length == 0 ? 0 : undoElts[undoElts.length - 1].id;
+	}
+
 	public function change(h, ?callb) {
-		undoElts.push({ h : h, callb : callb });
+		undoElts.push({ h : h, id : ++uidGen, callb : callb });
 		redoElts = [];
-		trace(undoElts.length);
+		onChange();
 	}
 
 	public function undo() {
@@ -35,11 +41,15 @@ class UndoHistory {
 		switch( e.h ) {
 		case Field(obj, field, value):
 			var curValue = Reflect.field(obj, field);
-			other.push({ h : Field(obj, field, curValue), callb : e.callb });
+			other.push({ h : Field(obj, field, curValue), id : e.id, callb : e.callb });
 			Reflect.setField(obj, field, value);
 		}
 		if( e.callb != null ) e.callb();
+		onChange();
 		return true;
+	}
+
+	public dynamic function onChange() {
 	}
 
 }

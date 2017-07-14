@@ -1,8 +1,15 @@
 package hide.ui;
+import hide.comp.Props;
 
 class Ide {
 
-	public var props : Props;
+	public var props : {
+		global : Props,
+		project : Props,
+		user : Props,
+		current : Props,
+	};
+	public var ideProps(get,never) : HideProps;
 	public var projectDir(get,never) : String;
 	public var resourceDir(get,never) : String;
 	public var initializing(default,null) : Bool;
@@ -16,7 +23,6 @@ class Ide {
 	var types : Map<String,hide.HType>;
 	var typeDef = Macros.makeTypeDef(hide.HType);
 
-	var menu : Element;
 	var currentLayout : { name : String, state : Dynamic };
 	var maximized : Bool;
 	var updates : Array<Void->Void> = [];
@@ -25,9 +31,9 @@ class Ide {
 	function new() {
 		inst = this;
 		window = nw.Window.get();
-		props = new Props(Sys.getCwd());
+		props = Props.loadForProject(Sys.getCwd());
 
-		var wp = props.global.windowPos;
+		var wp = props.global.current.hide.windowPos;
 		if( wp != null ) {
 			window.resizeBy(wp.w - Std.int(window.window.outerWidth), wp.h - Std.int(window.window.outerHeight));
 			window.moveTo(wp.x, wp.y);
@@ -35,7 +41,7 @@ class Ide {
 		}
 		window.show(true);
 
-		setProject(props.global.currentProject);
+		setProject(ideProps.currentProject);
 		window.window.document.addEventListener("mousemove", function(e) {
 			mouseX = e.x;
 			mouseY = e.y;
@@ -56,15 +62,15 @@ class Ide {
 	}
 
 	function onWindowChange() {
-		if( props.global.windowPos == null ) props.global.windowPos = { x : 0, y : 0, w : 0, h : 0, max : false };
-		props.global.windowPos.max = maximized;
+		if( ideProps.windowPos == null ) ideProps.windowPos = { x : 0, y : 0, w : 0, h : 0, max : false };
+		ideProps.windowPos.max = maximized;
 		if( !maximized ) {
-			props.global.windowPos.x = window.x;
-			props.global.windowPos.y = window.y;
-			props.global.windowPos.w = Std.int(window.window.outerWidth);
-			props.global.windowPos.h = Std.int(window.window.outerHeight);
+			ideProps.windowPos.x = window.x;
+			ideProps.windowPos.y = window.y;
+			ideProps.windowPos.w = Std.int(window.window.outerWidth);
+			ideProps.windowPos.h = Std.int(window.window.outerHeight);
 		}
-		props.saveGlobals();
+		props.global.save();
 	}
 
 	function initLayout( ?state : { name : String, state : Dynamic } ) {
@@ -77,16 +83,16 @@ class Ide {
 		}
 
 		var defaultLayout = null;
-		for( p in props.current.layouts )
+		for( p in props.current.current.hide.layouts )
 			if( p.name == "Default" ) {
 				defaultLayout = p;
 				break;
 			}
 		if( defaultLayout == null ) {
 			defaultLayout = { name : "Default", state : [] };
-			if( props.local.layouts == null ) props.local.layouts = [];
-			props.local.layouts.push(defaultLayout);
-			props.save();
+			ideProps.layouts.push(defaultLayout);
+			props.current.sync();
+			props.global.save();
 		}
 		if( state == null )
 			state = defaultLayout;
@@ -119,10 +125,10 @@ class Ide {
 
 		layout.init();
 		layout.on('stateChanged', function() {
-			if( !props.current.autoSaveLayout )
+			if( !ideProps.autoSaveLayout )
 				return;
 			defaultLayout.state = saveLayout();
-			props.save();
+			props.global.save();
 		});
 
 		// error recovery if invalid component
@@ -145,6 +151,8 @@ class Ide {
 		return layout.toConfig().content;
 	}
 
+	function get_ideProps() return props.global.source.hide;
+
 	public function registerUpdate( updateFun ) {
 		updates.push(updateFun);
 	}
@@ -164,20 +172,19 @@ class Ide {
 		return resourceDir+"/"+relPath;
 	}
 
-	function get_projectDir() return props.global.currentProject.split("\\").join("/");
+	function get_projectDir() return ideProps.currentProject.split("\\").join("/");
 	function get_resourceDir() return projectDir+"/res";
 
 	function setProject( dir : String ) {
-		if( dir != props.global.currentProject ) {
-			props.global.currentProject = dir;
-			if( props.global.recentProjects == null ) props.global.recentProjects = [];
-			props.global.recentProjects.remove(dir);
-			props.global.recentProjects.unshift(dir);
-			if( props.global.recentProjects.length > 10 ) props.global.recentProjects.pop();
-			props.save();
+		if( dir != ideProps.currentProject ) {
+			ideProps.currentProject = dir;
+			ideProps.recentProjects.remove(dir);
+			ideProps.recentProjects.unshift(dir);
+			if( ideProps.recentProjects.length > 10 ) ideProps.recentProjects.pop();
+			props.global.save();
 		}
 		window.title = "HIDE - " + dir;
-		props = new Props(dir);
+		props = Props.loadForProject(resourceDir);
 		initMenu();
 		initLayout();
 	}
@@ -207,17 +214,26 @@ class Ide {
 		}).appendTo(window.window.document.body).click();
 	}
 
+	public function parseJSON( str : String ) {
+		// remove comments
+		str = ~/^[ \t]+\/\/[^\n]*/gm.replace(str, "");
+		return haxe.Json.parse(str);
+	}
+
+	public function toJSON( v : Dynamic ) {
+		return haxe.Json.stringify(v, "\t");
+	}
+
 	function initMenu() {
-		if( menu == null )
-			menu = new Element(new Element("#mainmenu").get(0).outerHTML);
+		var menu = new Element(new Element("#mainmenu").get(0).outerHTML);
 
 		// project
-		if( props.current.recentProjects.length > 0 )
+		if( ideProps.recentProjects.length > 0 )
 			menu.find(".project .recents").html("");
-		for( v in props.current.recentProjects.copy() ) {
+		for( v in ideProps.recentProjects.copy() ) {
 			if( !sys.FileSystem.exists(v) ) {
-				props.current.recentProjects.remove(v);
-				props.save();
+				ideProps.recentProjects.remove(v);
+				props.global.save();
 				continue;
 			}
 			new Element("<menu>").attr("label",v).appendTo(menu.find(".project .recents")).click(function(_){
@@ -232,8 +248,8 @@ class Ide {
 			});
 		});
 		menu.find(".project .clear").click(function(_) {
-			props.global.recentProjects = [];
-			props.save();
+			ideProps.recentProjects = [];
+			props.global.save();
 			initMenu();
 		});
 		menu.find(".project .exit").click(function(_) {
@@ -241,6 +257,8 @@ class Ide {
 		});
 
 		// view
+		if( !sys.FileSystem.exists(resourceDir) )
+			menu.find(".view").remove();
 		menu.find(".debug").click(function(_) window.showDevTools());
 		var comps = menu.find("[component]");
 		for( c in comps.elements() ) {
@@ -257,27 +275,27 @@ class Ide {
 		// layout
 		var layouts = menu.find(".layout .content");
 		layouts.html("");
-		for( l in props.current.layouts ) {
+		for( l in props.current.current.hide.layouts ) {
 			if( l.name == "Default" ) continue;
 			new Element("<menu>").attr("label",l.name).addClass(l.name).appendTo(layouts).click(function(_) {
 				initLayout(l);
 			});
 		}
 		menu.find(".layout .autosave").click(function(_) {
-			props.local.autoSaveLayout = !props.local.autoSaveLayout;
-			props.save();
-		}).attr("checked",props.local.autoSaveLayout?"checked":"");
+			ideProps.autoSaveLayout = !ideProps.autoSaveLayout;
+			props.global.save();
+		}).prop("checked",ideProps.autoSaveLayout);
 
 		menu.find(".layout .saveas").click(function(_) {
 			var name = js.Browser.window.prompt("Please enter a layout name:");
 			if( name == null || name == "" ) return;
-			props.local.layouts.push({ name : name, state : saveLayout() });
-			props.save();
+			ideProps.layouts.push({ name : name, state : saveLayout() });
+			props.global.save();
 			initMenu();
 		});
 		menu.find(".layout .save").click(function(_) {
 			currentLayout.state = saveLayout();
-			props.save();
+			props.global.save();
 		});
 
 		window.menu = new Menu(menu).root;

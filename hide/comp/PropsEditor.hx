@@ -1,6 +1,6 @@
 package hide.comp;
 
-class Properties extends Component {
+class PropsEditor extends Component {
 
 	public var panel : Element;
 	public var content : Element;
