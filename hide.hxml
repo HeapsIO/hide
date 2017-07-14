@@ -4,6 +4,8 @@
 -lib hxnodejs
 -lib heaps
 -lib hxbit
+-lib hscript
+-D hscriptPos
 -dce no
 --macro include('hide.view')
 --macro include('h3d.prim')

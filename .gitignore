@@ -1,4 +1,4 @@
 /bin/nwjs
 /bin/style.min.css
 /dump
-/bin/props.json
+/bin/*.json

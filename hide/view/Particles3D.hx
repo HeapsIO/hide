@@ -54,6 +54,9 @@ class Particles3D extends FileView {
 						</dl>
 					</div>
 
+					<div class="group material" name="Material">
+					</div>
+
 					<div class="group" name="Emit">
 						<dl>
 							<dt>Mode</dt><dd><select field="emitMode"/></dd>
@@ -115,6 +118,7 @@ class Particles3D extends FileView {
 				</div>
 			</div>
 		');
+
 		e.find("h1").contextmenu(function(ev) {
 			new hide.comp.ContextMenu([
 				{ label : "Enable", checked : g.enable, click : function() { g.enable = !g.enable; e.find("[field=enable]").prop("checked", g.enable); } },
@@ -123,7 +127,8 @@ class Particles3D extends FileView {
 			ev.preventDefault();
 		});
 		e.find("[field=emitLoop]").change(function(_) parts.currentTime = 0);
-		properties.add(e,g);
+		properties.add(e, g);
+		properties.addMaterial( parts.materials[Lambda.indexOf({ iterator : parts.getGroups },g)], g.getMaterialProps(), e.find(".material > .content") );
 	}
 
 	function init() {
@@ -135,21 +140,29 @@ class Particles3D extends FileView {
 
 		for( g in parts.getGroups() )
 			addGroup(g);
+
+
 		var extra = new Element('
 			<div class="section open">
 				<h1>Manage</h1>
 				<div class="content">
-					<div class="inputs">
-						<input type="button" class="new" value="New Group"/>
-						<div>Show Bounds <input type="checkbox" class="bounds"/></div>
-					</div>
+					<dl>
+					<dt>Show Bounds</dt><dd><input type="checkbox" class="bounds"/></dd>
+					<dt>Enable Lights</dt><dd><input type="checkbox" class="lights" checked="checked"/></dd>
+					<dt></dt><dd><input type="button" class="new" value="New Group"/></dd>
+					</dl>
 				</div>
 			</div>
 		');
-
+		extra = properties.add(extra);
 		extra.find(".bounds").change(function(e) bounds.visible = e.getThis().prop("checked"));
-		extra.appendTo(properties.panel);
-
+		var defAmbient = scene.s3d.lightSystem.ambientLight.clone();
+		extra.find(".lights").change(function(e) {
+			var ls = scene.s3d.lightSystem;
+			var enable = e.getThis().prop("checked");
+			ls.maxLightsPerObject = enable ? 6 : 0;
+			if( enable ) ls.ambientLight.load(defAmbient) else ls.ambientLight.set(1, 1, 1);
+		});
 		extra.find(".new").click(function(_) {
 			var g = parts.addGroup();
 			g.name = "Group#" + Lambda.count({ iterator : parts.getGroups });

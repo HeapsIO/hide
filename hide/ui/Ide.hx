@@ -29,6 +29,8 @@ class Ide {
 	var updates : Array<Void->Void> = [];
 	var views : Array<View<Dynamic>> = [];
 
+	var renderers : Array<h3d.mat.MaterialSetup>;
+
 	function new() {
 		inst = this;
 		window = nw.Window.get();
@@ -187,6 +189,29 @@ class Ide {
 		}
 		window.title = "HIDE - " + dir;
 		props = Props.loadForProject(resourceDir);
+		renderers = [
+			new h3d.mat.MaterialSetup("Default"),
+		];
+		var path = getPath("Renderer.hx");
+		if( sys.FileSystem.exists(path) ) {
+			var r = new h3d.mat.MaterialScript();
+			try {
+				r.load(sys.io.File.getContent(path));
+				renderers.unshift(r);
+			} catch( e : Dynamic ) {
+				js.Browser.alert(e);
+			}
+			r.onError = function(msg) js.Browser.alert(msg);
+		}
+
+		var render = renderers[0];
+		for( r in renderers )
+			if( r.name == props.current.current.hide.renderer ) {
+				render = r;
+				break;
+			}
+		h3d.mat.MaterialSetup.current = render;
+
 		initMenu();
 		initLayout();
 	}
@@ -209,8 +234,8 @@ class Ide {
 
 	public function chooseDirectory( onSelect : String -> Void ) {
 		var e = new Element('<input type="file" value="" nwdirectory/>');
-		e.change(function(_) {
-			var dir = makeRelative(js.jquery.Helper.JTHIS.val());
+		e.change(function(ev) {
+			var dir = makeRelative(ev.getThis().val());
 			onSelect(dir == "" ? null : dir);
 			e.remove();
 		}).appendTo(window.window.document.body).click();
@@ -257,6 +282,17 @@ class Ide {
 		menu.find(".project .exit").click(function(_) {
 			Sys.exit(0);
 		});
+
+		for( r in renderers ) {
+			new Element("<menu type='checkbox'>").attr("label", r.name).prop("checked",r == h3d.mat.MaterialSetup.current).appendTo(menu.find(".project .renderers")).click(function(_) {
+				if( r != h3d.mat.MaterialSetup.current ) {
+					if( props.user.source.hide == null ) props.user.source.hide = cast {};
+					props.user.source.hide.renderer = r.name;
+					props.user.save();
+					setProject(ideProps.currentProject);
+				}
+			});
+		}
 
 		// view
 		if( !sys.FileSystem.exists(resourceDir) )

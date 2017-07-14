@@ -14,7 +14,18 @@ class PropsEditor extends Component {
 		panel = e.find(".panel");
 	}
 
-	public function add( e : Element, context : Dynamic ) {
+	public function addMaterial( m : h3d.mat.Material, props : Dynamic, ?parent : Element ) {
+		var def = h3d.mat.MaterialSetup.current.editMaterial(props);
+		def = add(def, props);
+		def.find("input,select").change(function(_) {
+			m.props = props;
+			def.remove();
+			addMaterial(m, props, parent);
+		});
+		if( parent != null && parent.length != 0 ) def.appendTo(parent);
+	}
+
+	public function add( e : Element, ?context : Dynamic ) {
 
 		e.appendTo(panel);
 		e = e.wrap("<div></div>").parent(); // necessary to have find working on top level element
@@ -26,7 +37,7 @@ class PropsEditor extends Component {
 		e.find(".section").not(".open").children(".content").hide();
 		e.find(".section > h1").mousedown(function(e) {
 			if( e.button != 0 ) return;
-			var section = js.jquery.Helper.JTHIS.parent();
+			var section = e.getThis().parent();
 			section.toggleClass("open");
 			section.children(".content").slideToggle(100);
 		}).find("input").mousedown(function(e) e.stopPropagation());
@@ -38,7 +49,7 @@ class PropsEditor extends Component {
 
 		e.find(".group > .title").mousedown(function(e) {
 			if( e.button != 0 ) return;
-			var group = js.jquery.Helper.JTHIS.parent();
+			var group = e.getThis().parent();
 			group.children(".content").slideToggle(100);
 		}).find("input").mousedown(function(e) e.stopPropagation());
 
@@ -131,10 +142,10 @@ class PropsEditor extends Component {
 				}
 				current = newVal;
 				Reflect.setProperty(context, fname, newVal);
-
 			});
 		}
 
+		return e;
 	}
 
 }

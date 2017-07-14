@@ -8,6 +8,7 @@ typedef HideProps = {
 	var recentProjects : Array<String>;
 
 	var windowPos : { x : Int, y : Int, w : Int, h : Int, max : Bool };
+	var renderer : String;
 };
 
 typedef PropsDef = {
@@ -107,6 +108,7 @@ class Props {
 				recentProjects : [],
 				currentProject : resourcePath,
 				windowPos : null,
+				renderer : null,
 			};
 
 		var perProject = new Props(userGlobals);
