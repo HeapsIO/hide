@@ -2,3 +2,4 @@
 /bin/style.min.css
 /dump
 /bin/*.json
+/bin/hide.js
