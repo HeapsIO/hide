@@ -1,4 +1,4 @@
-package hide.comp;
+package hide.ui;
 
 enum HistoryElement {
 	Field( obj : Dynamic, field : String, oldValue : Dynamic );

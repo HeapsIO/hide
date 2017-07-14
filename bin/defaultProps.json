@@ -5,6 +5,7 @@
 	// controls
 	"key.undo" : "Ctrl-Z",
 	"key.redo" : "Ctrl-Y",
+	"key.save" : "Ctrl-S",
 
 	// reserved for internal ide usage
 	"hide" : {}

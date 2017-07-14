@@ -4,8 +4,6 @@ class FileView extends hide.ui.View<{ path : String }> {
 
 	var extension(get,never) : String;
 	var modified(default,set) : Bool;
-	var props(get, null) : hide.comp.Props;
-	var undo = new hide.comp.UndoHistory();
 
 	function get_extension() {
 		var file = state.path.split("/").pop();
@@ -22,9 +20,9 @@ class FileView extends hide.ui.View<{ path : String }> {
 		undo.onChange = function() {
 			modified = (undo.currentID != lastSave);
 		};
-		registerKey("undo", function() undo.undo());
-		registerKey("redo", function() undo.redo());
-		registerKey("save", function() {
+		keys.register("undo", function() undo.undo());
+		keys.register("redo", function() undo.redo());
+		keys.register("save", function() {
 			save();
 			modified = false;
 			lastSave = undo.currentID;
@@ -40,9 +38,9 @@ class FileView extends hide.ui.View<{ path : String }> {
 		return super.onBeforeClose();
 	}
 
-	function get_props() {
+	override function get_props() {
 		if( props == null )
-			props = hide.comp.Props.loadForFile(ide, state.path);
+			props = hide.ui.Props.loadForFile(ide, state.path);
 		return props;
 	}
 

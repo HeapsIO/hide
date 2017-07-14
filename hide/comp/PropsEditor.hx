@@ -4,11 +4,11 @@ class PropsEditor extends Component {
 
 	public var panel : Element;
 	public var content : Element;
-	public var undo : hide.comp.UndoHistory;
+	public var undo : hide.ui.UndoHistory;
 
 	public function new(root,?undo) {
 		super(root);
-		this.undo = undo == null ? new hide.comp.UndoHistory() : undo;
+		this.undo = undo == null ? new hide.ui.UndoHistory() : undo;
 		var e = new Element("<div class='hide-properties'><div class='content'></div><div class='panel'></div></div>").appendTo(root);
 		content = e.find(".content");
 		panel = e.find(".panel");
@@ -47,7 +47,7 @@ class PropsEditor extends Component {
 			var current : Dynamic = Reflect.field(context, fname);
 			var enumValue : Enum<Dynamic> = null;
 			var tempChange = false;
-			var hadTempChange = false;
+			var beforeTempChange = null;
 
 			switch( f.attr("type") ) {
 			case "checkbox":
@@ -113,14 +113,15 @@ class PropsEditor extends Component {
 				if( f.is("select") ) f.blur();
 
 				if( current == newVal ) {
-					if( tempChange || !hadTempChange )
+					if( tempChange || beforeTempChange == null )
 						return;
-					hadTempChange = false;
+					current = beforeTempChange.value;
+					beforeTempChange = null;
 				}
 
 				if( tempChange ) {
 					tempChange = false;
-					hadTempChange = true;
+					if( beforeTempChange == null ) beforeTempChange = { value : current };
 				}
 				else {
 					undo.change(Field(context, fname, current), function() {

@@ -1,21 +1,22 @@
 package hide.ui;
-import hide.comp.Props;
 
 class Ide {
 
-	public var props : {
-		global : Props,
-		project : Props,
-		user : Props,
-		current : Props,
-	};
-	public var ideProps(get,never) : HideProps;
+	public var currentProps(get,never) : Props;
 	public var projectDir(get,never) : String;
 	public var resourceDir(get,never) : String;
 	public var initializing(default,null) : Bool;
 
 	public var mouseX : Int = 0;
 	public var mouseY : Int = 0;
+
+	var props : {
+		global : Props,
+		project : Props,
+		user : Props,
+		current : Props,
+	};
+	var ideProps(get, never) : Props.HideProps;
 
 	var window : nw.Window;
 
@@ -152,6 +153,7 @@ class Ide {
 	}
 
 	function get_ideProps() return props.global.source.hide;
+	function get_currentProps() return props.user;
 
 	public function registerUpdate( updateFun ) {
 		updates.push(updateFun);

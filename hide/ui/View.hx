@@ -15,6 +15,9 @@ class View<T> {
 	var ide : Ide;
 	var container : golden.Container;
 	var state : T;
+	var keys(get,null) : Keys;
+	var props(get,null) : Props;
+	var undo = new hide.ui.UndoHistory();
 	public var defaultOptions(get,never) : ViewOptions;
 
 	var contentWidth(get,never) : Int;
@@ -23,6 +26,17 @@ class View<T> {
 	public function new(state:T) {
 		this.state = state;
 		ide = Ide.inst;
+	}
+
+	function get_props() {
+		if( props == null )
+			props = ide.currentProps;
+		return props;
+	}
+
+	function get_keys() {
+		if( keys == null ) keys = new Keys(props);
+		return keys;
 	}
 
 	public function getTitle() {
@@ -53,10 +67,10 @@ class View<T> {
 			}
 			@:privateAccess ide.views.remove(this);
 		});
+		container.getElement().keydown(function(e) {
+			keys.processEvent(e);
+		});
 		untyped cont.parent.__view = this;
-	}
-
-	public function registerKey( name : String, callb : Void -> Void ) {
 	}
 
 	public function rebuild() {

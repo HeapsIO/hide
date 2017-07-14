@@ -1,4 +1,4 @@
-package hide.comp;
+package hide.ui;
 
 typedef HideProps = {
 	var autoSaveLayout : Null<Bool>;
@@ -18,14 +18,14 @@ typedef PropsDef = {
 
 class Props {
 
-	var ide : hide.ui.Ide;
+	var ide : Ide;
 	var parent : Props;
 	public var path(default,null) : String;
 	public var source(default, null) : PropsDef;
 	public var current : PropsDef;
 
 	public function new( ?parent : Props ) {
-		ide = hide.ui.Ide.inst;
+		ide = Ide.inst;
 		this.parent = parent;
 		sync();
 	}
@@ -139,12 +139,12 @@ class Props {
 			first = false;
 			parts.pop();
 		}
-		var parent = ide.props.user;
+		var parent = ide.currentProps;
 		for( p in propFiles ) {
-			parent = new hide.comp.Props(parent);
+			parent = new Props(parent);
 			parent.load(p);
 		}
-		return allowSave ? parent : new hide.comp.Props(parent);
+		return allowSave ? parent : new Props(parent);
 	}
 
 }
