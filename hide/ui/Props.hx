@@ -83,7 +83,7 @@ class Props {
 		return Reflect.field(current,key);
 	}
 
-	public static function loadForProject( resourcePath : String ) {
+	public static function loadForProject( projectPath : String, resourcePath : String ) {
 		var path = js.Node.process.argv[0].split("\\").join("/").split("/");
 		path.pop();
 		var hidePath = path.join("/");
@@ -106,7 +106,7 @@ class Props {
 				autoSaveLayout : true,
 				layouts : [],
 				recentProjects : [],
-				currentProject : resourcePath,
+				currentProject : projectPath,
 				windowPos : null,
 				renderer : null,
 			};
@@ -115,7 +115,7 @@ class Props {
 		perProject.load(resourcePath + "/props.json");
 
 		var projectUserCustom = new Props(perProject);
-		projectUserCustom.load(hidePath + "/" + resourcePath.split("/").join("_").split(":").join("_") + "_Defaults.json");
+		projectUserCustom.load(nw.App.dataPath + "/" + projectPath.split("/").join("_").split(":").join("_") + ".json");
 
 		var current = new Props(projectUserCustom);
 

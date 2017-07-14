@@ -2,6 +2,11 @@
 	// define location of animations in HMD files
 	"hmd.animPaths" : [],
 
+	// model names that are hidden when open in viewer
+	"scene.autoHide" : [],
+	// background color for 2D/3D viewer
+	"scene.backgroundColor" : "#111111",
+
 	// controls
 	"key.undo" : "Ctrl-Z",
 	"key.redo" : "Ctrl-Y",

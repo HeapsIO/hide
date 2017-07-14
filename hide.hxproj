@@ -56,7 +56,7 @@
   <options>
     <option showHiddenPaths="False" />
     <option testMovie="OpenDocument" />
-    <option testMovieCommand="bin/hide.bat" />
+    <option testMovieCommand="bin/hide" />
   </options>
   <!-- Plugin storage -->
   <storage />

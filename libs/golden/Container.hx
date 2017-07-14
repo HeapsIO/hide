@@ -17,6 +17,9 @@ extern class Container {
 	public function setState( state : Dynamic ) : Void;
 	public function setSize( width : Int, height : Int ) : Void;
 
+	public function hide() : Void;
+	public function show() : Bool;
+
 	public function close() : Bool;
 
 	public function on( type : String, callb : Event<Container> -> Void ) : Void;

@@ -34,7 +34,8 @@ class Ide {
 	function new() {
 		inst = this;
 		window = nw.Window.get();
-		props = Props.loadForProject(Sys.getCwd());
+		var cwd = Sys.getCwd();
+		props = Props.loadForProject(cwd, cwd+"/res");
 
 		var wp = props.global.current.hide.windowPos;
 		if( wp != null ) {
@@ -60,6 +61,15 @@ class Ide {
 			window.close(true);
 		});
 
+		nw.App.on("open", function(cmd) {
+			~/"([^"]+)"/g.map(cmd, function(r) {
+				var file = r.matched(1);
+				if( sys.FileSystem.exists(file) ) openFile(file);
+				return "";
+			});
+		});
+
+		// handle cancel on type=file
 		var body = window.window.document.body;
 		body.onfocus = function(_) haxe.Timer.delay(function() new Element(body).find("input[type=file]").change().remove(), 200);
 	}
@@ -137,7 +147,13 @@ class Ide {
 		// error recovery if invalid component
 		haxe.Timer.delay(function() {
 			initializing = false;
-			if( layout.isInitialised ) return;
+			if( layout.isInitialised ) {
+				for( file in nw.App.argv ) {
+						if( !sys.FileSystem.exists(file) ) continue;
+						openFile(file);
+					}
+				return;
+			}
 			state.state = [];
 			initLayout();
 		}, 1000);
@@ -188,7 +204,7 @@ class Ide {
 			props.global.save();
 		}
 		window.title = "HIDE - " + dir;
-		props = Props.loadForProject(resourceDir);
+		props = Props.loadForProject(projectDir, resourceDir);
 		renderers = [
 			new h3d.mat.MaterialSetup("Default"),
 		];
@@ -337,6 +353,20 @@ class Ide {
 		});
 
 		window.menu = new Menu(menu).root;
+	}
+
+	public function openFile( file : String, ?onCreate ) {
+		var ext = @:privateAccess hide.view.FileTree.getExtension(file);
+		if( ext == null ) return;
+		// look if already open
+		var path = makeRelative(file);
+		for( v in views )
+			if( Type.getClassName(Type.getClass(v)) == ext.component && v.state.path == path ) {
+				if( v.container.tab != null )
+					v.container.parent.parent.setActiveContentItem(v.container.parent);
+				return;
+			}
+		open(ext.component, { path : path }, onCreate);
 	}
 
 	public function open( component : String, state : Dynamic, ?onCreate : View<Dynamic> -> Void ) {

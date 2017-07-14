@@ -172,6 +172,7 @@ class Particles3D extends FileView {
 
 		scene.resetCamera(2);
 		new h3d.scene.CameraController(scene.s3d).loadFromCamera();
+		scene.init(props);
 	}
 
 	static var _ = FileTree.registerExtension(Particles3D, ["json.particles3D"], { icon : "snowflake-o", createNew: "Particle 3D" });

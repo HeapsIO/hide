@@ -31,7 +31,7 @@ class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
 		}
 	}
 
-	function getExtension( file : String ) {
+	static function getExtension( file : String ) {
 		var ext = new haxe.io.Path(file).ext;
 		if( ext == null ) return null;
 		ext = ext.toLowerCase();
@@ -146,7 +146,7 @@ class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
 			return;
 		var prev = lastOpen;
 		lastOpen = null;
-		ide.open(ext.component, { path : haxe.io.Path.isAbsolute(state.root) ? fullPath : path }, function(c) {
+		ide.openFile(fullPath, function(c) {
 			if( prev != null ) prev.close();
 			lastOpen = c;
 		});

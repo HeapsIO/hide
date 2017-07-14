@@ -98,6 +98,18 @@ class Scene extends Component implements h3d.IDrawable {
 		engine.init();
 	}
 
+	public function init( props : hide.ui.Props ) {
+		var autoHide : Array<String> = props.get("scene.autoHide");
+		function initRec( obj : h3d.scene.Object ) {
+			if( autoHide.indexOf(obj.name) >= 0 )
+				obj.visible = false;
+			for( o in obj )
+				initRec(o);
+		}
+		initRec(s3d);
+		engine.backgroundColor = Std.parseInt("0x"+props.get("scene.backgroundColor").substr(1)) | 0xFF000000;
+	}
+
 	function setCurrent() {
 		engine.setCurrent();
 		stage.setCurrent();
@@ -161,6 +173,14 @@ class Scene extends Component implements h3d.IDrawable {
 		var fullPath = ide.getPath(filePath);
 		if( exists(fullPath) )
 			return fullPath;
+
+		// swap drive letter
+		if( fullPath.charAt(1) == ":" && fullPath.charAt(0) != ide.projectDir.charAt(0) ) {
+			fullPath = ide.projectDir.charAt(0) + fullPath.substr(1);
+			if( exists(fullPath) )
+				return fullPath;
+		}
+
 		filePath = filePath.split("\\").join("/");
 		modelPath = ide.getPath(modelPath);
 
