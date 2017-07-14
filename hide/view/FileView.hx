@@ -39,7 +39,8 @@ class FileView extends hide.ui.View<{ path : String }> {
 
 	var extension(get,never) : String;
 	var modified(default,set) : Bool;
-	var props(get,null) : FileProps;
+	var props(get, null) : FileProps;
+	var undo = new hide.comp.UndoHistory();
 
 	function get_extension() {
 		var file = state.path.split("/").pop();
@@ -48,6 +49,12 @@ class FileView extends hide.ui.View<{ path : String }> {
 
 	public function getDefaultContent() : haxe.io.Bytes {
 		return null;
+	}
+
+	override function setContainer(cont) {
+		super.setContainer(cont);
+		registerKey("undo", function() undo.undo());
+		registerKey("redo", function() undo.redo());
 	}
 
 	override function onBeforeClose() {

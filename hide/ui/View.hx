@@ -56,6 +56,9 @@ class View<T> {
 		untyped cont.parent.__view = this;
 	}
 
+	public function registerKey( name : String, callb : Void -> Void ) {
+	}
+
 	public function rebuild() {
 		if( container == null ) return;
 		syncTitle();

@@ -67,12 +67,13 @@ class Model extends FileView {
 
 	function listAnims() {
 		var dirs : Array<String> = props.get("hmd.animPaths");
-		if( dirs == null ) {
-			var parts = getPath().split("/");
-			parts.pop();
-			dirs = [parts.join("/")];
-		} else
-			dirs = [for( d in dirs ) ide.resourceDir + d];
+		if( dirs == null ) dirs = [];
+		dirs = [for( d in dirs ) ide.resourceDir + d];
+
+		var parts = getPath().split("/");
+		parts.pop();
+		dirs.unshift(parts.join("/"));
+
 		var anims = [];
 		for( dir in dirs )
 			for( f in sys.FileSystem.readDirectory(dir) )
@@ -82,15 +83,7 @@ class Model extends FileView {
 	}
 
 	function resetCamera() {
-		var b = obj.getBounds();
-		var dx = Math.max(Math.abs(b.xMax),Math.abs(b.xMin));
-		var dy = Math.max(Math.abs(b.yMax),Math.abs(b.yMin));
-		var dz = Math.max(Math.abs(b.zMax),Math.abs(b.zMin));
-		var dist = Math.max(Math.max(dx * 6, dy * 6), dz * 4);
-		var ang = Math.PI / 4;
-		var zang = Math.PI * 0.4;
-		scene.s3d.camera.pos.set(Math.sin(zang) * Math.cos(ang) * dist, Math.sin(zang) * Math.sin(ang) * dist, Math.cos(zang) * dist);
-		scene.s3d.camera.target.set(0, 0, (b.zMax + b.zMin) * 0.5);
+		scene.resetCamera(obj);
 		control.loadFromCamera();
 	}
 

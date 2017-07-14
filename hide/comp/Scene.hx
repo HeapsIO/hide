@@ -201,6 +201,19 @@ class Scene extends Component implements h3d.IDrawable {
 		return hxd.res.Any.fromBytes(path,data).toModel().toHmd();
 	}
 
+	public function resetCamera( ?obj : h3d.scene.Object ) {
+		if( obj == null ) obj = s3d;
+		var b = obj.getBounds();
+		var dx = Math.max(Math.abs(b.xMax),Math.abs(b.xMin));
+		var dy = Math.max(Math.abs(b.yMax),Math.abs(b.yMin));
+		var dz = Math.max(Math.abs(b.zMax),Math.abs(b.zMin));
+		var dist = Math.max(Math.max(dx * 6, dy * 6), dz * 4);
+		var ang = Math.PI / 4;
+		var zang = Math.PI * 0.4;
+		s3d.camera.pos.set(Math.sin(zang) * Math.cos(ang) * dist, Math.sin(zang) * Math.sin(ang) * dist, Math.cos(zang) * dist);
+		s3d.camera.target.set(0, 0, (b.zMax + b.zMin) * 0.5);
+	}
+
 	public function render( e : h3d.Engine ) {
 		s3d.render(e);
 		s2d.render(e);

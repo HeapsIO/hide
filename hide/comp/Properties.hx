@@ -4,15 +4,14 @@ class Properties extends Component {
 
 	public var panel : Element;
 	public var content : Element;
+	public var undo : hide.comp.UndoHistory;
 
-	public function new(root) {
+	public function new(root,?undo) {
 		super(root);
+		this.undo = undo == null ? new hide.comp.UndoHistory() : undo;
 		var e = new Element("<div class='hide-properties'><div class='content'></div><div class='panel'></div></div>").appendTo(root);
 		content = e.find(".content");
 		panel = e.find(".panel");
-	}
-
-	public dynamic function beforeChange() {
 	}
 
 	public function add( e : Element, context : Dynamic ) {
@@ -47,19 +46,32 @@ class Properties extends Component {
 			var fname = f.attr("field");
 			var current : Dynamic = Reflect.field(context, fname);
 			var enumValue : Enum<Dynamic> = null;
+			var tempChange = false;
+			var hadTempChange = false;
 
 			switch( f.attr("type") ) {
 			case "checkbox":
 				f.prop("checked", current);
 				f.change(function(_) {
-					beforeChange();
-					Reflect.setProperty(context, fname, f.prop("checked"));
+					undo.change(Field(context, fname, current), function() {
+						current = Reflect.field(context, fname);
+						f.prop("checked", current);
+					});
+					current = f.prop("checked");
+					Reflect.setProperty(context, fname, current);
 				});
 				continue;
 			case "texture":
 				var sel = new hide.comp.TextureSelect(f);
 				sel.value = current;
-				sel.onChange = function() Reflect.setProperty(context, fname, sel.value);
+				sel.onChange = function() {
+					undo.change(Field(context, fname, current), function() {
+						current = Reflect.field(context, fname);
+						sel.value = current;
+					});
+					current = sel.value;
+					Reflect.setProperty(context, fname, current);
+				}
 				continue;
 			default:
 			}
@@ -73,7 +85,7 @@ class Properties extends Component {
 			}
 
 			if( f.is("[type=range]") )
-				f.on("input", function(_) f.change());
+				f.on("input", function(_) { tempChange = true; f.change(); });
 
 			f.val(current);
 			f.keyup(function(e) {
@@ -85,6 +97,7 @@ class Properties extends Component {
 					f.blur();
 					return;
 				}
+				tempChange = true;
 				f.change();
 			});
 			f.change(function(e) {
@@ -99,9 +112,22 @@ class Properties extends Component {
 
 				if( f.is("select") ) f.blur();
 
-				if( current == newVal ) return;
+				if( current == newVal ) {
+					if( tempChange || !hadTempChange )
+						return;
+					hadTempChange = false;
+				}
 
-				beforeChange();
+				if( tempChange ) {
+					tempChange = false;
+					hadTempChange = true;
+				}
+				else {
+					undo.change(Field(context, fname, current), function() {
+						current = Reflect.field(context, fname);
+						f.val(current);
+					});
+				}
 				current = newVal;
 				Reflect.setProperty(context, fname, newVal);
 

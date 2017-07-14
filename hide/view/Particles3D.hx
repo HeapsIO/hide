@@ -29,7 +29,7 @@ class Particles3D extends FileView {
 	}
 
 	override function onDisplay( e : Element ) {
-		properties = new hide.comp.Properties(e);
+		properties = new hide.comp.Properties(e,undo);
 		scene = new hide.comp.Scene(properties.content);
 		scene.onReady = init;
 	}
@@ -123,20 +123,38 @@ class Particles3D extends FileView {
 	}
 
 	function init() {
-		new h3d.scene.CameraController(scene.s3d).loadFromCamera();
 		parts = new GpuParticles(this,scene.s3d);
 		parts.load(haxe.Json.parse(sys.io.File.getContent(getPath())));
 
+		var bounds = new h3d.scene.Box(0x808080, parts.bounds, parts);
+		bounds.visible = false;
+
 		for( g in parts.getGroups() )
 			addGroup(g);
-		var but = new Element('<input type="button" value="New Group"/>');
-		but.appendTo(properties.panel);
-		but.click(function(_) {
+		var extra = new Element('
+			<div class="section open">
+				<h1>Manage</h1>
+				<div class="content">
+					<div class="inputs">
+						<input type="button" class="new" value="New Group"/>
+						<div>Show Bounds <input type="checkbox" class="bounds"/></div>
+					</div>
+				</div>
+			</div>
+		');
+
+		extra.find(".bounds").change(function(e) bounds.visible = e.getThis().prop("checked"));
+		extra.appendTo(properties.panel);
+
+		extra.find(".new").click(function(_) {
 			var g = parts.addGroup();
 			g.name = "Group#" + Lambda.count({ iterator : parts.getGroups });
 			addGroup(g);
-			but.appendTo(properties.panel);
-		},null);
+			extra.appendTo(properties.panel);
+		}, null);
+
+		//scene.resetCamera(); -- tofix when bounds are done
+		new h3d.scene.CameraController(scene.s3d).loadFromCamera();
 	}
 
 	static var _ = FileTree.registerExtension(Particles3D, ["json.particles3D"], { icon : "snowflake-o", createNew: "Particle 3D" });
