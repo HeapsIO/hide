@@ -260,9 +260,10 @@ input[type=checkbox]:checked:after {
   padding: 2px;
   padding-bottom: 0px;
   margin-bottom: 2px;
+  background-color: #333;
 }
 .hide-properties .section > h1:hover {
-  background-color: #333;
+  background-color: #555;
 }
 .hide-properties .section > h1:before {
   content: "\25ba  ";

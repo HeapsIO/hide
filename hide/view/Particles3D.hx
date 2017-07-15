@@ -21,6 +21,7 @@ class Particles3D extends FileView {
 	var scene : hide.comp.Scene;
 	var parts : GpuParticles;
 	var properties : hide.comp.PropsEditor;
+	var bounds : h3d.scene.Box;
 
 	override function getDefaultContent() {
 		var p = new h3d.parts.GpuParticles();
@@ -29,7 +30,8 @@ class Particles3D extends FileView {
 	}
 
 	override function onDisplay( e : Element ) {
-		properties = new hide.comp.PropsEditor(e,undo);
+		properties = new hide.comp.PropsEditor(e, undo);
+		properties.saveKey = "particles3D";
 		scene = new hide.comp.Scene(properties.content);
 		scene.onReady = init;
 	}
@@ -40,7 +42,7 @@ class Particles3D extends FileView {
 
 	function addGroup( g : h3d.parts.GpuParticles.GpuPartGroup ) {
 		var e = new Element('
-			<div class="section open">
+			<div class="section">
 				<h1><span>${g.name}</span> &nbsp;<input type="checkbox" field="enable"/></h1>
 				<div class="content">
 
@@ -120,8 +122,19 @@ class Particles3D extends FileView {
 		');
 
 		e.find("h1").contextmenu(function(ev) {
+			var groups = @:privateAccess parts.groups;
+			var index = groups.indexOf(g);
+			function moveIndex(d:Int,history=true) {
+				var index = groups.indexOf(g);
+				parts.removeGroup(g);
+				parts.addGroup(g, index + d);
+				if( history ) undo.change(Custom(function(undo) moveIndex(undo ? -d : d,false)));
+				initProperties();
+			}
 			new hide.comp.ContextMenu([
 				{ label : "Enable", checked : g.enable, click : function() { g.enable = !g.enable; e.find("[field=enable]").prop("checked", g.enable); } },
+				{ label : "MoveUp", enabled : index > 0, click : function() moveIndex(-1) },
+				{ label : "MoveDown", enabled : index < groups.length - 1, click : function() moveIndex(1) },
 				{ label : "Delete", click : function() { parts.removeGroup(g); e.remove(); } },
 			]);
 			ev.preventDefault();
@@ -134,16 +147,23 @@ class Particles3D extends FileView {
 	function init() {
 		parts = new GpuParticles(this,scene.s3d);
 		parts.load(haxe.Json.parse(sys.io.File.getContent(getPath())));
-
-		var bounds = new h3d.scene.Box(0x808080, parts.bounds, parts);
+		bounds = new h3d.scene.Box(0x808080, parts.bounds, parts);
 		bounds.visible = false;
+		initProperties();
+		scene.resetCamera(2);
+		new h3d.scene.CameraController(scene.s3d).loadFromCamera();
+		scene.init(props);
+	}
+
+	function initProperties() {
+
+		properties.clear();
 
 		for( g in parts.getGroups() )
 			addGroup(g);
 
-
 		var extra = new Element('
-			<div class="section open">
+			<div class="section">
 				<h1>Manage</h1>
 				<div class="content">
 					<dl>
@@ -169,10 +189,6 @@ class Particles3D extends FileView {
 			addGroup(g);
 			extra.appendTo(properties.panel);
 		}, null);
-
-		scene.resetCamera(2);
-		new h3d.scene.CameraController(scene.s3d).loadFromCamera();
-		scene.init(props);
 	}
 
 	static var _ = FileTree.registerExtension(Particles3D, ["json.particles3D"], { icon : "snowflake-o", createNew: "Particle 3D" });
