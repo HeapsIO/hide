@@ -43,7 +43,10 @@ class IconTree extends Component {
 					for( c in content )
 						if( c.state == null ) {
 							var s = getDisplayState((parent == null ? "" : parent + "/") + c.id);
-							if( s ) c.state = { opened : true };
+							if( s != null ) {
+								if( c.state == null ) c.state = {};
+								c.state.opened = s;
+							}
 						}
 					callb.call(this,content);
 				}

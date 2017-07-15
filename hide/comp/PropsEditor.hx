@@ -20,16 +20,18 @@ class PropsEditor extends Component {
 	public function addMaterial( m : h3d.mat.Material, ?parent : Element ) {
 		var props = m.props;
 		var def = h3d.mat.MaterialSetup.current.editMaterial(props);
-		def = add(def, props);
-		def.find("input,select").change(function(_) {
+		def = add(def, props, function(undo) {
+			if( m.model != null )
+				h3d.mat.MaterialSetup.current.saveModelMaterial(m);
 			m.refreshProps();
 			def.remove();
 			addMaterial(m, parent);
 		});
-		if( parent != null && parent.length != 0 ) def.appendTo(parent);
+		if( parent != null && parent.length != 0 )
+			def.appendTo(parent);
 	}
 
-	public function add( e : Element, ?context : Dynamic ) {
+	public function add( e : Element, ?context : Dynamic, ?onChange ) {
 
 		e.appendTo(root);
 		e = e.wrap("<div></div>").parent(); // necessary to have find working on top level element
@@ -80,8 +82,11 @@ class PropsEditor extends Component {
 		}).find("input").mousedown(function(e) e.stopPropagation());
 
 		// init input reflection
-		for( f in e.find("[field]").elements() )
-			fields.push(new PropsField(this,f,context));
+		for( f in e.find("[field]").elements() ) {
+			var f = new PropsField(this, f, context);
+			if( onChange != null ) f.onChange = onChange;
+			fields.push(f);
+		}
 
 		return e;
 	}
@@ -117,9 +122,11 @@ class PropsField extends Component {
 					var f = resolveField();
 					f.current = Reflect.field(f.context, fname);
 					f.root.prop("checked", f.current);
+					f.onChange(true);
 				});
 				current = f.prop("checked");
 				Reflect.setProperty(context, fname, current);
+				onChange(false);
 			});
 			return;
 		case "texture":
@@ -130,9 +137,11 @@ class PropsField extends Component {
 					var f = resolveField();
 					f.current = Reflect.field(f.context, fname);
 					f.tselect.value = f.current;
+					f.onChange(true);
 				});
 				current = tselect.value;
 				Reflect.setProperty(context, fname, current);
+				onChange(false);
 			}
 			return;
 		default:
@@ -190,11 +199,16 @@ class PropsField extends Component {
 					var f = resolveField();
 					f.current = Reflect.field(f.context, fname);
 					f.root.val(f.current);
+					f.onChange(true);
 				});
 			}
 			current = newVal;
 			Reflect.setProperty(context, fname, newVal);
+			onChange(false);
 		});
+	}
+
+	public dynamic function onChange( wasUndo : Bool ) {
 	}
 
 	function resolveField() {

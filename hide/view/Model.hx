@@ -29,13 +29,37 @@ class Model extends FileView {
 		');
 		tools = new hide.comp.Toolbar(root.find(".toolbar"));
 		overlay = root.find(".hide-scene-layer .tree");
-		properties = new hide.comp.PropsEditor(root.find(".props"));
+		properties = new hide.comp.PropsEditor(root.find(".props"), undo);
 		properties.saveDisplayKey = "Model";
 		scene = new hide.comp.Scene(root.find(".scene"));
 		scene.onReady = init;
 	}
 
+	function selectMaterial( m : h3d.mat.Material ) {
+		properties.clear();
+		var e = properties.add(new Element('
+			<div class="group" name="${m.name}">
+			</div>
+			<dl>
+				<dt></dt><dd><input type="button" value="Reset Defaults" class="reset"/></dd>
+			</dl>
+		'));
+		properties.addMaterial(m, e.find(".group > .content"));
+		e.find(".reset").click(function(_) {
+			var cur = h3d.mat.MaterialSetup.current;
+			var old = m.props;
+			m.props = null;
+			cur.saveModelMaterial(m);
+			cur.initModelMaterial(m);
+			selectMaterial(m);
+			undo.change(Field(m, "props", old), selectMaterial.bind(m));
+		});
+	}
+
 	function init() {
+
+		undo.onChange = function() {};
+
 		obj = scene.loadModel(state.path);
 		new h3d.scene.Object(scene.s3d).addChild(obj);
 
@@ -47,10 +71,7 @@ class Model extends FileView {
 
 		control = new h3d.scene.CameraController(scene.s3d);
 		tree = new hide.comp.SceneTree(obj, overlay, obj.name != null);
-		tree.onSelectMaterial = function(m) {
-			properties.clear();
-			properties.addMaterial(m);
-		}
+		tree.onSelectMaterial = selectMaterial;
 
 		this.saveDisplayKey = "Model:"+state.path;
 		var cam = getDisplayState("Camera");
