@@ -5,11 +5,11 @@ class Script extends FileView {
 	var editor : monaco.Editor;
 	var originData : String;
 
-	override function onDisplay( e : Element ) {
+	override function onDisplay() {
 
 		if( monaco.Editor == null ) {
-			e.html("<div class='hide-loading'></div>");
-			haxe.Timer.delay(function() { e.html(''); onDisplay(e); }, 100);
+			root.html("<div class='hide-loading'></div>");
+			haxe.Timer.delay(rebuild, 100);
 			return;
 		}
 		var lang = switch( extension ) {
@@ -20,7 +20,7 @@ class Script extends FileView {
 		default: "text";
 		}
 		originData = sys.io.File.getContent(getPath());
-		editor = monaco.Editor.create(e[0],{
+		editor = monaco.Editor.create(root[0],{
 			value : originData,
 			language : lang,
 			automaticLayout : true,

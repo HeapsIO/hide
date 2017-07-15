@@ -10,9 +10,8 @@ enum DisplayPosition {
 typedef ViewOptions = { ?position : DisplayPosition, ?width : Int }
 
 @:keepSub @:allow(hide.ui.Ide)
-class View<T> {
+class View<T> extends hide.comp.Component {
 
-	var ide : Ide;
 	var container : golden.Container;
 	var state : T;
 	var keys(get,null) : Keys;
@@ -24,6 +23,7 @@ class View<T> {
 	var contentHeight(get,never) : Int;
 
 	public function new(state:T) {
+		super(null);
 		this.state = state;
 		ide = Ide.inst;
 	}
@@ -71,18 +71,18 @@ class View<T> {
 			keys.processEvent(e);
 		});
 		untyped cont.parent.__view = this;
+		root = cont.getElement();
 	}
 
 	public function rebuild() {
 		if( container == null ) return;
 		syncTitle();
-		var e = container.getElement();
-		e.html('');
-		onDisplay(container.getElement());
+		root.html('');
+		onDisplay();
 	}
 
-	public function onDisplay( e : Element ) {
-		e.text(Type.getClassName(Type.getClass(this))+(state == null ? "" : " "+state));
+	public function onDisplay() {
+		root.text(Type.getClassName(Type.getClass(this))+(state == null ? "" : " "+state));
 	}
 
 	public function onResize() {

@@ -12,6 +12,40 @@ class SceneTree extends IconTree {
 		init();
 	}
 
+	function resolvePath(id:String) : Dynamic {
+		var path = id.split("/");
+		var root = showRoot ? obj.parent : obj;
+		while( path.length > 0 ) {
+			var idx = Std.parseInt(path[0]);
+			if( idx == null ) break;
+			path.shift();
+			root = root.getChildAt(idx);
+		}
+		if( path.length == 0 )
+			return root;
+		var prop = path.shift();
+		switch( prop.split(":").shift() ) {
+		case "mat":
+			return root.toMesh().getMaterials()[Std.parseInt(prop.substr(4))];
+		default:
+		}
+		return null;
+	}
+
+	override function onClick(id:String) {
+		var v : Dynamic = resolvePath(id);
+		if( Std.is(v, h3d.scene.Object) )
+			onSelectObject(v);
+		else if( Std.is(v, h3d.mat.Material) )
+			onSelectMaterial(v);
+	}
+
+	public dynamic function onSelectObject( obj : h3d.scene.Object ) {
+	}
+
+	public dynamic function onSelectMaterial( m : h3d.mat.Material ) {
+	}
+
 	function getIcon( c : h3d.scene.Object ) {
 		if( c.isMesh() ) {
 			if( Std.is(c, h3d.scene.Skin) )
@@ -45,19 +79,15 @@ class SceneTree extends IconTree {
 			}
 		];
 		if( root.isMesh() ) {
-			function makeMaterial( m : h3d.mat.Material, index : Int ) : IconTree.IconTreeItem {
-				return {
-					id : path+"mat"+index,
-					text : m.name == null ? "Material@"+index : m.name,
+			var materials = root.toMesh().getMeshMaterials();
+			for( i in 0...materials.length ) {
+				var m = materials[i];
+				elements.push({
+					id : path+"mat:"+i,
+					text : m.name == null ? "Material@"+i : m.name,
 					icon : "fa fa-photo",
-				};
+				});
 			}
-			var multi = Std.instance(root,h3d.scene.MultiMaterial);
-			if( multi != null )
-				for( m in multi.materials )
-					elements.push(makeMaterial(m,multi.materials.indexOf(m)));
-			else
-				elements.push(makeMaterial(root.toMesh().material,0));
 		}
 		return elements;
 	}

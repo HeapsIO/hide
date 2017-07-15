@@ -29,10 +29,16 @@ class Particles3D extends FileView {
 		return haxe.io.Bytes.ofString(ide.toJSON(p.save()));
 	}
 
-	override function onDisplay( e : Element ) {
-		properties = new hide.comp.PropsEditor(e, undo);
-		properties.saveKey = "particles3D";
-		scene = new hide.comp.Scene(properties.content);
+	override function onDisplay() {
+		root.html('
+			<div class="flex">
+				<div class="scene"></div>
+				<div class="props"></div>
+			</div>
+		');
+		properties = new hide.comp.PropsEditor(root.find(".props"), undo);
+		properties.saveDisplayKey = "particles3D";
+		scene = new hide.comp.Scene(root.find(".scene"));
 		scene.onReady = init;
 	}
 
@@ -141,7 +147,7 @@ class Particles3D extends FileView {
 		});
 		e.find("[field=emitLoop]").change(function(_) parts.currentTime = 0);
 		properties.add(e, g);
-		properties.addMaterial( parts.materials[Lambda.indexOf({ iterator : parts.getGroups },g)], g.getMaterialProps(), e.find(".material > .content") );
+		properties.addMaterial( parts.materials[Lambda.indexOf({ iterator : parts.getGroups },g)], e.find(".material > .content") );
 	}
 
 	function init() {
@@ -187,7 +193,7 @@ class Particles3D extends FileView {
 			var g = parts.addGroup();
 			g.name = "Group#" + Lambda.count({ iterator : parts.getGroups });
 			addGroup(g);
-			extra.appendTo(properties.panel);
+			extra.appendTo(properties.root);
 		}, null);
 	}
 

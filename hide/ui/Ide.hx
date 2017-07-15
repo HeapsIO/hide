@@ -133,7 +133,7 @@ class Ide {
 			layout.registerComponent(vcl.name,function(cont,state) {
 				var view = Type.createInstance(vcl.cl,[state]);
 				view.setContainer(cont);
-				try view.onDisplay(cont.getElement()) catch( e : Dynamic ) js.Browser.alert(vcl.name+":"+e);
+				try view.onDisplay() catch( e : Dynamic ) js.Browser.alert(vcl.name+":"+e);
 			});
 
 		layout.init();

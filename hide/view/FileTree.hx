@@ -56,13 +56,13 @@ class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
 		return state.root;
 	}
 
-	override function onDisplay( e : Element ) {
+	override function onDisplay() {
 
 		if( state.root == null ) return;
 
 		if( state.opened == null ) state.opened = [];
 
-		var panel = new Element("<div class='hide-scroll'>").appendTo(e);
+		var panel = new Element("<div class='hide-scroll'>").appendTo(root);
 		tree = new hide.comp.IconTree(panel);
 		tree.get = function(path) {
 			if( path == null ) path = "";
@@ -96,10 +96,10 @@ class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
 		// prevent dummy mouseLeft from breaking our quickOpen feature
 		var mouseLeft = false;
 		var leftCount = 0;
-		e.on("mouseenter", function(_) {
+		root.on("mouseenter", function(_) {
 			mouseLeft = false;
 		});
-		e.on("mouseleave", function(_) {
+		root.on("mouseleave", function(_) {
 			mouseLeft = true;
 			leftCount++;
 			var k = leftCount;
@@ -109,7 +109,7 @@ class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
 					lastOpen = null;
 				},1000);
 		});
-		e.contextmenu(function(e) {
+		root.contextmenu(function(e) {
 			var current = tree.getCurrentOver();
 			if( current == null ) return;
 			tree.setSelection([current]);

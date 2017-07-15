@@ -20,6 +20,9 @@ class IconTree extends Component {
 		return [{ id : id+"0", text : "get()", children : true }];
 	}
 
+	public dynamic function onClick( id : String ) : Void {
+	}
+
 	public dynamic function onDblClick( id : String ) : Void {
 	}
 
@@ -39,6 +42,11 @@ class IconTree extends Component {
 				}
 			},
 			plugins : [ "wholerow" ],
+		});
+		root.on("click.jstree", function (event) {
+			var node = new Element(event.target).closest("li");
+   			var data = node[0].id;
+			onClick(data);
 		});
 		root.on("dblclick.jstree", function (event) {
 			var node = new Element(event.target).closest("li");

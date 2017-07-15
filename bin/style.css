@@ -157,8 +157,10 @@ input[type=checkbox]:checked:after {
   height: 100%;
 }
 .hide-scene-layer .jstree {
-  background: transparent !important;
-  user-select: none;
+  padding-right: 5px;
+}
+.hide-scene-layer .jstree-container-ul {
+  padding-right: 5px;
 }
 .flex {
   width: 100%;
@@ -235,18 +237,10 @@ input[type=checkbox]:checked:after {
 }
 /* Properties */
 .hide-properties {
-  width: 100%;
-  height: 100%;
-  display: flex;
-}
-.hide-properties > .panel {
   flex: 0 0 260px;
   padding: 10px;
   overflow: auto;
   padding-bottom: 80px;
-}
-.hide-properties > .content {
-  flex-grow: 100;
 }
 .hide-properties .section {
   margin-bottom: 10px;

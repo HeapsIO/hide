@@ -169,9 +169,13 @@ input[type=checkbox] {
 	height: 100%;
 
 	.jstree {
-		background: transparent !important;
-		user-select: none;
+		padding-right : 5px;
 	}
+
+	.jstree-container-ul {
+		padding-right : 5px;
+	}
+
 }
 
 .flex {
@@ -255,20 +259,10 @@ input[type=checkbox] {
 /* Properties */
 
 .hide-properties {
-	width:100%;
-	height:100%;
-	display: flex;
-
-	>.panel {
-		flex : 0 0 260px;
-		padding:10px;
-		overflow:auto;
-		padding-bottom:80px;
-	}
-
-	>.content {
-		flex-grow:100;
-	}
+	flex : 0 0 260px;
+	padding:10px;
+	overflow:auto;
+	padding-bottom:80px;
 
 	.section {
 		margin-bottom : 10px;

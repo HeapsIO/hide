@@ -2,55 +2,36 @@ package hide.comp;
 
 class PropsEditor extends Component {
 
-	public var panel : Element;
-	public var content : Element;
 	public var undo : hide.ui.UndoHistory;
-	public var saveKey : String;
 	var fields : Array<PropsField>;
 
 	public function new(root,?undo) {
 		super(root);
+		root.addClass("hide-properties");
 		this.undo = undo == null ? new hide.ui.UndoHistory() : undo;
-		var e = new Element("<div class='hide-properties'><div class='content'></div><div class='panel'></div></div>").appendTo(root);
-		content = e.find(".content");
-		panel = e.find(".panel");
 		fields = [];
 	}
 
 	public function clear() {
-		panel.html('');
+		root.html('');
 		fields = [];
 	}
 
-	public function addMaterial( m : h3d.mat.Material, props : Dynamic, ?parent : Element ) {
+	public function addMaterial( m : h3d.mat.Material, ?parent : Element ) {
+		var props = m.props;
 		var def = h3d.mat.MaterialSetup.current.editMaterial(props);
 		def = add(def, props);
 		def.find("input,select").change(function(_) {
-			m.props = props;
+			m.refreshProps();
 			def.remove();
-			addMaterial(m, props, parent);
+			addMaterial(m, parent);
 		});
 		if( parent != null && parent.length != 0 ) def.appendTo(parent);
 	}
 
-	function getState( key : String ) : Dynamic {
-		if( saveKey == null )
-			return null;
-		var v = js.Browser.window.localStorage.getItem("propeditor/" + key);
-		if( v == null )
-			return null;
-		return haxe.Json.parse(v);
-	}
-
-	function saveState( key : String, value : Dynamic ) {
-		if( saveKey == null )
-			return;
-		js.Browser.window.localStorage.setItem("propeditor/" + key, haxe.Json.stringify(value));
-	}
-
 	public function add( e : Element, ?context : Dynamic ) {
 
-		e.appendTo(panel);
+		e.appendTo(root);
 		e = e.wrap("<div></div>").parent(); // necessary to have find working on top level element
 
 		e.find("input[type=checkbox]").wrap("<div class='checkbox-wrapper'></div>");
@@ -59,13 +40,13 @@ class PropsEditor extends Component {
 
 		// -- reload states ---
 		for( h in e.find(".section > h1").elements() )
-			if( getState("section:" + StringTools.trim(h.text())) != false )
+			if( getDisplayState("section:" + StringTools.trim(h.text())) != false )
 				h.parent().addClass("open");
 
 		for( group in e.find(".group").elements() ) {
 			var s = group.closest(".section");
 			var key = (s.length == 0 ? "" : StringTools.trim(s.children("h1").text()) + "/") + group.attr("name");
-			if( getState("group:" + key) != false )
+			if( getDisplayState("group:" + key) != false )
 				group.addClass("open");
 		}
 
@@ -76,7 +57,7 @@ class PropsEditor extends Component {
 			var section = e.getThis().parent();
 			section.toggleClass("open");
 			section.children(".content").slideToggle(100);
-			saveState("section:" + StringTools.trim(e.getThis().text()), section.hasClass("open"));
+			saveDisplayState("section:" + StringTools.trim(e.getThis().text()), section.hasClass("open"));
 		}).find("input").mousedown(function(e) e.stopPropagation());
 
 		for( g in e.find(".group").elements() ) {
@@ -94,7 +75,7 @@ class PropsEditor extends Component {
 
 			var s = group.closest(".section");
 			var key = (s.length == 0 ? "" : StringTools.trim(s.children("h1").text()) + "/") + group.attr("name");
-			saveState("group:" + key, group.hasClass("open"));
+			saveDisplayState("group:" + key, group.hasClass("open"));
 
 		}).find("input").mousedown(function(e) e.stopPropagation());
 

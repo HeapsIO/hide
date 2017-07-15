@@ -146,6 +146,14 @@ class Scene extends Component implements h3d.IDrawable {
 		});
 	}
 
+	function initMaterials( obj : h3d.scene.Object, path : String ) {
+		var res = hxd.res.Any.fromBytes(path, haxe.io.Bytes.alloc(0));
+		for( m in obj.getMaterials() ) {
+			m.model = res;
+			h3d.mat.MaterialSetup.current.initModelMaterial(m);
+		}
+	}
+
 	function loadSCN( path : String ) {
 		var ctx = new SceneLoader(path,this);
 		var fullPath = ide.getPath(path);
@@ -153,6 +161,7 @@ class Scene extends Component implements h3d.IDrawable {
 		var root = new h3d.scene.Object();
 		for( o in ctx.loadSCN(bytes).content )
 			root.addChild(o);
+		initMaterials(root, path);
 		return root;
 	}
 
@@ -160,7 +169,9 @@ class Scene extends Component implements h3d.IDrawable {
 		if( StringTools.endsWith(path.toLowerCase(), ".scn") )
 			return loadSCN(path);
 		var lib = loadHMD(path,false);
-		return lib.makeObject(loadTextureFile.bind(path));
+		var obj = lib.makeObject(loadTextureFile.bind(path));
+		initMaterials(obj, path);
+		return obj;
 	}
 
 	public function loadAnimation( path : String ) {
