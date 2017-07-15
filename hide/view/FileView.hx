@@ -6,6 +6,8 @@ class FileView extends hide.ui.View<{ path : String }> {
 	var modified(default,set) : Bool;
 
 	function get_extension() {
+		if( state.path == null )
+			return "";
 		var file = state.path.split("/").pop();
 		return file.indexOf(".") < 0 ? "" : file.split(".").pop().toLowerCase();
 	}
@@ -39,8 +41,10 @@ class FileView extends hide.ui.View<{ path : String }> {
 	}
 
 	override function get_props() {
-		if( props == null )
+		if( props == null ) {
+			if( state.path == null ) return super.get_props();
 			props = hide.ui.Props.loadForFile(ide, state.path);
+		}
 		return props;
 	}
 
@@ -58,13 +62,15 @@ class FileView extends hide.ui.View<{ path : String }> {
 
 	override function getTitle() {
 		var parts = state.path.split("/");
+		if( parts[parts.length - 1] == "" ) parts.pop(); // directory
 		while( parts.length > 2 ) parts.shift();
 		return parts.join(" / ")+(modified?" *":"");
 	}
 
 	override function syncTitle() {
 		super.syncTitle();
-		haxe.Timer.delay(function() container.tab.element.attr("title",getPath()), 100);
+		if( state.path != null )
+			haxe.Timer.delay(function() container.tab.element.attr("title",getPath()), 100);
 	}
 
 }

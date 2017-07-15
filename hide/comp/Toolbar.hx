@@ -25,10 +25,18 @@ class Toolbar extends Component {
 		return e;
 	}
 
-	public function addToggle( icon : String, ?label : String, ?onToggle : Bool -> Void ) : ToolToggle {
+	public function addToggle( icon : String, ?label : String, ?onToggle : Bool -> Void, ?defValue = false ) : ToolToggle {
 		var e = new Element('<div class="toggle" title="${label==null ? "" : label}"><div class="icon fa fa-$icon"/></div>');
-		e.click(function(_) { e.toggleClass("toggled"); if( onToggle != null ) onToggle(e.hasClass("toggled")); });
+		e.click(function(_) {
+			e.toggleClass("toggled");
+			this.saveDisplayState("toggle:" + icon, e.hasClass("toggled"));
+			if( onToggle != null ) onToggle(e.hasClass("toggled"));
+		});
 		e.appendTo(root);
+		if( defValue ) e.addClass("toggled");
+		var def = getDisplayState("toggle:" + icon);
+		if( def == null ) def = false;
+		if( def != defValue ) e.click();
 		return { element : e, toggle : function(b) e.toggleClass("toggled",b) };
 	}
 

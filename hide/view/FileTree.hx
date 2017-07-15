@@ -11,20 +11,20 @@ typedef ExtensionDesc = {
 	var options : ExtensionOptions;
 }
 
-class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
+class FileTree extends FileView {
 
 	var tree : hide.comp.IconTree;
 	var lastOpen : hide.ui.View<Dynamic>;
 
 	public function new(state) {
 		super(state);
-		if( state.root == null ) {
+		if( state.path == null ) {
 			ide.chooseDirectory(function(dir) {
 				if( dir == null ) {
 					close();
 					return;
 				}
-				state.root = dir.split("\\").join("/")+"/";
+				state.path = dir.split("\\").join("/")+"/";
 				saveState();
 				rebuild();
 			});
@@ -49,24 +49,23 @@ class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
 	}
 
 	override function getTitle() {
-		if( state.root == "" )
+		if( state.path == "" )
 			return "Resources";
-		if( state.root == null )
+		if( state.path == null )
 			return "";
-		return state.root;
+		return super.getTitle();
 	}
 
 	override function onDisplay() {
 
-		if( state.root == null ) return;
-
-		if( state.opened == null ) state.opened = [];
+		if( state.path == null ) return;
 
 		var panel = new Element("<div class='hide-scroll'>").appendTo(root);
 		tree = new hide.comp.IconTree(panel);
+		tree.saveDisplayKey = "FileTree:" + getPath().split("\\").join("/").substr(0,-1);
 		tree.get = function(path) {
 			if( path == null ) path = "";
-			var basePath = ide.getPath(state.root) + path;
+			var basePath = getFilePath(path);
 			var content = new Array<hide.comp.IconTree.IconTreeItem>();
 			for( c in sys.FileSystem.readDirectory(basePath) ) {
 				if( isIgnored(basePath, c) ) continue;
@@ -79,19 +78,11 @@ class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
 					text : c,
 					icon : "fa fa-" + (isDir ? "folder" : (ext != null && ext.options.icon != null ? ext.options.icon : "file-text")),
 					children : isDir,
-					state : state.opened.indexOf(id) >= 0 ? { opened : true } : null
 				});
 			}
 			content.sort(function(a,b) { if( a.children != b.children ) return a.children?-1:1; return Reflect.compare(a.text,b.text); });
 			return content;
 		};
-		tree.onToggle = function(path, isOpen) {
-			state.opened.remove(path);
-			if( isOpen )
-				state.opened.push(path);
-			saveState();
-		};
-
 
 		// prevent dummy mouseLeft from breaking our quickOpen feature
 		var mouseLeft = false;
@@ -124,7 +115,7 @@ class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
 	}
 
 	function onDeleteFile( path : String ) {
-		var fullPath = getPath(path);
+		var fullPath = getFilePath(path);
 		if( sys.FileSystem.isDirectory(fullPath) ) {
 			for( f in sys.FileSystem.readDirectory(fullPath) )
 				onDeleteFile(path + "/" + f);
@@ -133,12 +124,12 @@ class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
 			sys.FileSystem.deleteFile(fullPath);
 	}
 
-	function getPath(path:String) {
-		return ide.getPath(state.root) + path;
+	function getFilePath(path:String) {
+		return ide.getPath(state.path) + path;
 	}
 
 	function onOpenFile( path : String ) {
-		var fullPath = getPath(path);
+		var fullPath = getFilePath(path);
 		if( sys.FileSystem.isDirectory(fullPath) )
 			return;
 		var ext = getExtension(fullPath);
@@ -153,10 +144,10 @@ class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
 	}
 
 	function createNew( basePath : String, ext : ExtensionDesc ) {
-		var fullPath = getPath(basePath);
+		var fullPath = getFilePath(basePath);
 		if( !sys.FileSystem.isDirectory(fullPath) ) {
 			basePath = new haxe.io.Path(basePath).dir;
-			fullPath = getPath(basePath);
+			fullPath = getFilePath(basePath);
 		}
 		var file = js.Browser.window.prompt(ext.options.createNew + " name:");
 		if( file == null ) return;
@@ -169,6 +160,7 @@ class FileTree extends hide.ui.View<{ root : String, opened : Array<String> }> {
 		}
 
 		var view : hide.view.FileView = Type.createEmptyInstance(Type.resolveClass(ext.component));
+		view.ide = ide;
 		sys.io.File.saveBytes(fullPath + "/" + file, view.getDefaultContent());
 		tree.refresh(function() tree.setSelection([basePath + "/" + file]));
 		onOpenFile(basePath+"/"+file);

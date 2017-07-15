@@ -37,8 +37,15 @@ class IconTree extends Component {
 					dots: true,
 					icons: true
             	},
-				data : function(obj,callb) {
-					callb.call(this,get(obj.parent == null ? null : obj.id));
+				data : function(obj, callb) {
+					var parent = obj.parent == null ? null : obj.id;
+					var content : Array<IconTreeItem> = get(parent);
+					for( c in content )
+						if( c.state == null ) {
+							var s = getDisplayState((parent == null ? "" : parent + "/") + c.id);
+							if( s ) c.state = { opened : true };
+						}
+					callb.call(this,content);
 				}
 			},
 			plugins : [ "wholerow" ],
@@ -53,10 +60,12 @@ class IconTree extends Component {
    			var data = node[0].id;
 			onDblClick(data);
 		});
-		root.on("open_node.jstree", function(event,e) {
+		root.on("open_node.jstree", function(event, e) {
+			saveDisplayState(e.node.id, true);
 			onToggle(e.node.id, true);
 		});
 		root.on("close_node.jstree", function(event,e) {
+			saveDisplayState(e.node.id, false);
 			onToggle(e.node.id, false);
 		});
 		root.on("refresh.jstree", function(_) {

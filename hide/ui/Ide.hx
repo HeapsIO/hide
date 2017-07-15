@@ -205,6 +205,7 @@ class Ide {
 		}
 		window.title = "HIDE - " + dir;
 		props = Props.loadForProject(projectDir, resourceDir);
+		hxd.res.Loader.currentInstance = new hxd.res.Loader(new hxd.fs.LocalFileSystem(resourceDir));
 		renderers = [
 			new h3d.mat.MaterialSetup("Default"),
 		];
@@ -240,7 +241,7 @@ class Ide {
 	}
 
 	public function chooseFile( exts : Array<String>, onSelect : String -> Void ) {
-		var e = new Element('<input type="file" value="" accept="${[for( e in exts ) "."+e].join(",")}"/>');
+		var e = new Element('<input type="file" style="visibility:hidden" value="" accept="${[for( e in exts ) "."+e].join(",")}"/>');
 		e.change(function(_) {
 			var file = makeRelative(e.val());
 			e.remove();
@@ -249,7 +250,7 @@ class Ide {
 	}
 
 	public function chooseDirectory( onSelect : String -> Void ) {
-		var e = new Element('<input type="file" value="" nwdirectory/>');
+		var e = new Element('<input type="file" style="visibility:hidden" value="" nwdirectory/>');
 		e.change(function(ev) {
 			var dir = makeRelative(ev.getThis().val());
 			onSelect(dir == "" ? null : dir);

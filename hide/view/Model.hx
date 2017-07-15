@@ -9,6 +9,8 @@ class Model extends FileView {
 	var tree : hide.comp.SceneTree;
 	var overlay : Element;
 	var properties : hide.comp.PropsEditor;
+	var light : h3d.scene.DirLight;
+	var lightDirection = new h3d.Vector( 1, 2, -4 );
 
 	override function onDisplay() {
 		root.html('
@@ -35,8 +37,14 @@ class Model extends FileView {
 
 	function init() {
 		obj = scene.loadModel(state.path);
-
 		new h3d.scene.Object(scene.s3d).addChild(obj);
+
+		light = obj.find(function(o) return Std.instance(o, h3d.scene.DirLight));
+		if( light == null ) {
+			light = new h3d.scene.DirLight(new h3d.Vector(), scene.s3d);
+			light.enableSpecular = true;
+		}
+
 		control = new h3d.scene.CameraController(scene.s3d);
 		tree = new hide.comp.SceneTree(obj, overlay, obj.name != null);
 		tree.onSelectMaterial = function(m) {
@@ -76,17 +84,40 @@ class Model extends FileView {
 
 		scene.init(props);
 		scene.onUpdate = update;
+
+		tools.saveDisplayKey = "ModelTools";
+
 		tools.addButton("video-camera", "Reset Camera", function() {
 			scene.resetCamera(obj,1.5);
 			control.loadFromCamera();
 		});
+
+		tools.addToggle("sun-o", "Enable Lights/Shadows", function(v) {
+			if( !v ) {
+				for( m in obj.getMaterials() ) {
+					m.mainPass.enableLights = false;
+					m.shadows = false;
+				}
+			} else {
+				for( m in obj.getMaterials() )
+					h3d.mat.MaterialSetup.current.initModelMaterial(m);
+			}
+		},true);
+
 		//tools.addButton("cube","Test");
-		//tools.addToggle("bank","Test toggle");
 	}
 
 	function update(dt:Float) {
 		var cam = scene.s3d.camera;
 		saveDisplayState("Camera", { x : cam.pos.x, y : cam.pos.y, z : cam.pos.z, tx : cam.target.x, ty : cam.target.y, tz : cam.target.z });
+		if( light != null ) {
+			var angle = Math.atan2(cam.target.y - cam.pos.y, cam.target.x - cam.pos.x);
+			light.direction.set(
+				Math.cos(angle) * lightDirection.x - Math.sin(angle) * lightDirection.y,
+				Math.sin(angle) * lightDirection.x + Math.cos(angle) * lightDirection.y,
+				lightDirection.z
+			);
+		}
 	}
 
 	function listAnims() {

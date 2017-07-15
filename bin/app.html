@@ -13,6 +13,11 @@
 <script src="libs/jstree/jstree.js"></script>
 
 <script>
+	// fix for Sys.programPath
+	__filename = process.argv[0];
+</script>
+
+<script>
 	var nodeRequire = require;
 	monaco = {};
 </script>
@@ -44,7 +49,7 @@
 		<menu label="Exit" class="exit"></menu>
 	</menu>
 	<menu label="View" class="view">
-		<menu label="Resources" component="hide.view.FileTree" state='{"root":""}'></menu>
+		<menu label="Resources" component="hide.view.FileTree" state='{"path":""}'></menu>
 		<menu label="Directory" component="hide.view.FileTree"></menu>
 		<separator></separator>
 		<menu label="About" component="hide.view.About"></menu>
