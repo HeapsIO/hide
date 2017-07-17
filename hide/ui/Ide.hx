@@ -205,7 +205,9 @@ class Ide {
 		}
 		window.title = "HIDE - " + dir;
 		props = Props.loadForProject(projectDir, resourceDir);
-		hxd.res.Loader.currentInstance = new hxd.res.Loader(new hxd.fs.LocalFileSystem(resourceDir));
+
+		var localDir = sys.FileSystem.exists(resourceDir) ? resourceDir : projectDir;
+		hxd.res.Loader.currentInstance = new hxd.res.Loader(new hxd.fs.LocalFileSystem(localDir));
 		renderers = [
 			new h3d.mat.MaterialSetup("Default"),
 		];
