@@ -3,19 +3,95 @@ package hide.comp;
 @:access(hide.comp.Scene)
 class SceneLoader extends h3d.impl.Serializable.SceneSerializer {
 
+	var ide : hide.ui.Ide;
 	var scnPath : String;
 	var projectPath : String;
 	var scene : Scene;
+	var shaderPath : Array<String>;
+	var shaderCache = new Map<String, hxsl.SharedShader>();
 
-	public function new(scnPath,scene) {
+	public function new(scnPath, scene) {
+		ide = hide.ui.Ide.inst;
 		super();
 		this.scnPath = scnPath;
 		this.scene = scene;
+		shaderPath = ide.currentProps.get("haxe.classPath");
 	}
 
 	override function initSCNPaths(resPath:String, projectPath:String) {
 		this.resPath = resPath.split("\\").join("/");
 		this.projectPath = projectPath == null ? null : projectPath.split("\\").join("/");
+	}
+
+	override function loadShader(name:String) : hxsl.Shader {
+		var s = loadSharedShader(name);
+		if( s == null )
+			return null;
+		var sh = Type.createEmptyInstance(hxsl.Shader);
+		@:privateAccess {
+			sh.shader = s;
+			sh.constModified = true;
+		}
+		return sh;
+	}
+
+	function loadSharedShader( name : String ) {
+		var s = shaderCache.get(name);
+		if( s != null )
+			return s;
+		var e = loadShaderExpr(name);
+		if( e == null )
+			return null;
+		var chk = new hxsl.Checker();
+		chk.loadShader = function(iname) {
+			var e = loadShaderExpr(iname);
+			if( e == null )
+				throw "Could not @:import " + iname + " (referenced from " + name+")";
+			return e;
+		};
+		var s = new hxsl.SharedShader("");
+		s.data = chk.check(name, e);
+		@:privateAccess s.initialize();
+		shaderCache.set(name, s);
+		return s;
+	}
+
+	function loadShaderExpr( name : String ) : hxsl.Ast.Expr {
+		var path = name.split(".").join("/")+".hx";
+		for( s in shaderPath ) {
+			var file = ide.projectDir + "/" + s + "/" + path;
+			if( sys.FileSystem.exists(file) )
+				return loadShaderString(file,sys.io.File.getContent(file));
+		}
+		if( StringTools.startsWith(name,"h3d.shader.") ) {
+			var r = haxe.Resource.getString("shader/" + name.substr(11));
+			if( r != null ) return loadShaderString(path, r);
+		}
+		return null;
+	}
+
+	function loadShaderString( file : String, content : String ) {
+		var r = ~/var[ \t]+SRC[ \t]+=[ \t]+\{/;
+		if( !r.match(content) )
+			throw file+" does not contain shader SRC";
+		var src = r.matchedRight();
+		var count = 1;
+		var pos = 0;
+		while( pos < src.length ) {
+			switch( src.charCodeAt(pos++) ) {
+			case '{'.code: count++;
+			case '}'.code: count--; if( count == 0 ) break;
+			default:
+			}
+		}
+		src = src.substr(0, pos - 1);
+		var parser = new hscript.Parser();
+		parser.allowTypes = true;
+		parser.allowMetadata = true;
+		parser.line = r.matchedLeft().split("\n").length;
+		var e = parser.parseString(src, file);
+		var e = new hscript.Macro({ min : 0, max : 0, file : file }).convert(e);
+		return new hxsl.MacroParser().parseExpr(e);
 	}
 
 	override function loadHMD(path:String) {
@@ -51,6 +127,7 @@ class Scene extends Component implements h3d.IDrawable {
 	var stage : hxd.Stage;
 	var canvas : js.html.CanvasElement;
 	var engine : h3d.Engine;
+	var hmdCache = new Map<String, hxd.fmt.hmd.Library>();
 	public var s2d : h2d.Scene;
 	public var s3d : h3d.scene.Scene;
 	public var sevents : hxd.SceneEvents;
@@ -149,6 +226,7 @@ class Scene extends Component implements h3d.IDrawable {
 	function initMaterials( obj : h3d.scene.Object, path : String ) {
 		var res = hxd.res.Any.fromBytes(path, haxe.io.Bytes.alloc(0));
 		for( m in obj.getMaterials() ) {
+			if( m.name == null ) continue;
 			m.model = res;
 			h3d.mat.MaterialSetup.current.initModelMaterial(m);
 		}
@@ -219,6 +297,12 @@ class Scene extends Component implements h3d.IDrawable {
 
 	function loadHMD( path : String, isAnimation : Bool ) {
 		var fullPath = ide.getPath(path);
+		var hmd = hmdCache.get(fullPath);
+
+		if( hmd != null )
+			return hmd;
+		trace(fullPath);
+
 		var data = sys.io.File.getBytes(fullPath);
 		if( data.get(0) != 'H'.code ) {
 			var hmdOut = new hxd.fmt.fbx.HMDOut();
@@ -229,7 +313,9 @@ class Scene extends Component implements h3d.IDrawable {
 			new hxd.fmt.hmd.Writer(out).write(hmd);
 			data = out.getBytes();
 		}
-		return hxd.res.Any.fromBytes(path,data).toModel().toHmd();
+		hmd = hxd.res.Any.fromBytes(path, data).toModel().toHmd();
+		hmdCache.set(fullPath, hmd);
+		return hmd;
 	}
 
 	public function resetCamera( ?obj : h3d.scene.Object, distanceFactor = 1. ) {

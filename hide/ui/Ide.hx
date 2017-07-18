@@ -441,6 +441,7 @@ class Ide {
 	public static var inst : Ide;
 
 	static function main() {
+		Macros.includeShaderSources();
 		new Ide();
 	}
 

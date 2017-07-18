@@ -12,6 +12,9 @@
 	"key.redo" : "Ctrl-Y",
 	"key.save" : "Ctrl-S",
 
+	// paths to look files/shaders into - relative to project root
+	"haxe.classPath" : ["src"],
+
 	// reserved for internal ide usage
 	"hide" : {}
 

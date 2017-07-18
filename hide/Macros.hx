@@ -11,6 +11,15 @@ class Macros {
 		return buildTypeDef(t);
 	}
 
+	public static macro function includeShaderSources() {
+		var path = Context.resolvePath("h3d/shader/BaseMesh.hx");
+		var dir = new haxe.io.Path(path).dir;
+		for( f in sys.FileSystem.readDirectory(dir) )
+			if( StringTools.endsWith(f,".hx") )
+				Context.addResource("shader/" + f.substr(0, -3), sys.io.File.getBytes(dir + "/" + f));
+		return macro null;
+	}
+
 	#if macro
 
 	static function buildTypeDef( t : Type ) : Expr {
