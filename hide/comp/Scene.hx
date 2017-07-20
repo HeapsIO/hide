@@ -27,12 +27,7 @@ class SceneLoader extends h3d.impl.Serializable.SceneSerializer {
 		var s = loadSharedShader(name);
 		if( s == null )
 			return null;
-		var sh = Type.createEmptyInstance(hxsl.Shader);
-		@:privateAccess {
-			sh.shader = s;
-			sh.constModified = true;
-		}
-		return sh;
+		return new hxsl.DynamicShader(s);
 	}
 
 	function loadSharedShader( name : String ) {
@@ -301,19 +296,25 @@ class Scene extends Component implements h3d.IDrawable {
 
 		if( hmd != null )
 			return hmd;
-		trace(fullPath);
 
-		var data = sys.io.File.getBytes(fullPath);
-		if( data.get(0) != 'H'.code ) {
-			var hmdOut = new hxd.fmt.fbx.HMDOut();
-			hmdOut.absoluteTexturePath = true;
-			hmdOut.loadTextFile(data.toString());
-			var hmd = hmdOut.toHMD(null, !isAnimation);
-			var out = new haxe.io.BytesOutput();
-			new hxd.fmt.hmd.Writer(out).write(hmd);
-			data = out.getBytes();
+		var relPath = StringTools.startsWith(path, ide.resourceDir) ? path.substr(ide.resourceDir.length+1) : path;
+		var e = try hxd.res.Loader.currentInstance.load(relPath) catch( e : hxd.res.NotFound ) null;
+		if( e == null ) {
+			var data = sys.io.File.getBytes(fullPath);
+			if( data.get(0) != 'H'.code ) {
+				var hmdOut = new hxd.fmt.fbx.HMDOut();
+				hmdOut.absoluteTexturePath = true;
+				hmdOut.loadTextFile(data.toString());
+				var hmd = hmdOut.toHMD(null, !isAnimation);
+				var out = new haxe.io.BytesOutput();
+				new hxd.fmt.hmd.Writer(out).write(hmd);
+				data = out.getBytes();
+			}
+			hmd = hxd.res.Any.fromBytes(path, data).toModel().toHmd();
+		} else {
+			hmd = e.toHmd();
 		}
-		hmd = hxd.res.Any.fromBytes(path, data).toModel().toHmd();
+
 		hmdCache.set(fullPath, hmd);
 		return hmd;
 	}

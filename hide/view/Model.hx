@@ -73,7 +73,9 @@ class Model extends FileView {
 		tree = new hide.comp.SceneTree(obj, overlay, obj.name != null);
 		tree.onSelectMaterial = selectMaterial;
 
-		this.saveDisplayKey = "Model:"+state.path;
+		this.saveDisplayKey = "Model:" + state.path;
+		tree.saveDisplayKey = this.saveDisplayKey;
+
 		var cam = getDisplayState("Camera");
 		if( cam == null )
 			scene.resetCamera(obj, 1.5);

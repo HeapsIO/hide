@@ -75,7 +75,7 @@ class SceneTree extends IconTree {
 					text : c.name == null ? c.toString()+"@"+i : c.name,
 					icon : "fa fa-" + getIcon(c),
 					children : c.isMesh() || c.numChildren > 0,
-					state : { opened : c.numChildren > 0 }
+					state : { opened : c.numChildren > 0 && c.numChildren < 10 }
 				}
 			}
 		];
