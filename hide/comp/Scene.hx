@@ -147,6 +147,7 @@ class Scene extends Component implements h3d.IDrawable {
 		stage = @:privateAccess new hxd.Stage(canvas);
 		stage.setCurrent();
 		engine = new h3d.Engine();
+		engine.onResized = function() onResize();
 		engine.backgroundColor = 0xFF111111;
 		canvas.id = null;
 		engine.onReady = function() {
@@ -277,13 +278,16 @@ class Scene extends Component implements h3d.IDrawable {
 		return null;
 	}
 
-	public function loadTextureFile( modelPath : String, texturePath : String ) {
+	public function loadTextureFile( modelPath : String, texturePath : String, ?onReady ) {
 		var path = resolvePath(modelPath, texturePath);
 		if( path != null ) {
-			var t = new h3d.mat.Texture(1,1);
+			var bytes = sys.io.File.getBytes(path);
+			var size = hxd.res.Any.fromBytes(path, bytes).toImage().getSize();
+			var t = new h3d.mat.Texture(size.width,size.height);
 			t.clear(0x102030);
 			t.name = ide.makeRelative(path);
-			loadTexture(path, function(_) {}, t);
+			if( onReady == null ) onReady = function(_) {};
+			loadTexture(path, onReady, t);
 			return t;
 		}
 		trace("Could not load texture " + { modelPath : modelPath, texturePath : texturePath });
@@ -341,6 +345,9 @@ class Scene extends Component implements h3d.IDrawable {
 	}
 
 	public dynamic function onReady() {
+	}
+
+	public dynamic function onResize() {
 	}
 
 	public static function getNearest( e : Element ) : Scene {
