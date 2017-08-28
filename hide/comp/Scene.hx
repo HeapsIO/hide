@@ -171,7 +171,7 @@ class Scene extends Component implements h3d.IDrawable {
 		engine.init();
 	}
 
-	public function init( props : hide.ui.Props ) {
+	public function init( props : hide.ui.Props, ?root : h3d.scene.Object ) {
 		var autoHide : Array<String> = props.get("scene.autoHide");
 		function initRec( obj : h3d.scene.Object ) {
 			if( autoHide.indexOf(obj.name) >= 0 )
@@ -179,8 +179,11 @@ class Scene extends Component implements h3d.IDrawable {
 			for( o in obj )
 				initRec(o);
 		}
-		initRec(s3d);
-		engine.backgroundColor = Std.parseInt("0x"+props.get("scene.backgroundColor").substr(1)) | 0xFF000000;
+		if( root == null ) {
+			root = s3d;
+			engine.backgroundColor = Std.parseInt("0x"+props.get("scene.backgroundColor").substr(1)) | 0xFF000000;
+		}
+		initRec(root);
 	}
 
 	function setCurrent() {
@@ -217,6 +220,37 @@ class Scene extends Component implements h3d.IDrawable {
 			engine.driver.uploadTextureBitmap(t, cast bmp, 0, 0);
 			onReady(t);
 		});
+	}
+
+	public function listAnims( path : String ) {
+		var props = hide.ui.Props.loadForFile(ide, path);
+
+		var dirs : Array<String> = props.get("hmd.animPaths");
+		if( dirs == null ) dirs = [];
+		dirs = [for( d in dirs ) ide.resourceDir + d];
+
+		var parts = path.split("/");
+		parts.pop();
+		dirs.unshift(ide.getPath(parts.join("/")));
+
+		var anims = [];
+
+		var lib = loadHMD(path, false);
+		if( lib.header.animations.length > 0 )
+			anims.push(ide.getPath(path));
+
+		for( dir in dirs )
+			for( f in try sys.FileSystem.readDirectory(dir) catch( e : Dynamic ) [] )
+				if( StringTools.startsWith(f,"Anim_") )
+					anims.push(dir+"/"+f);
+		return anims;
+	}
+
+	public function animationName( path : String ) {
+		var name = path.split("/").pop();
+		if( StringTools.startsWith(name, "Anim_") )
+			name = name.substr(5);
+		return name.substr(0, -4);
 	}
 
 	function initMaterials( obj : h3d.scene.Object, path : String ) {
@@ -296,7 +330,8 @@ class Scene extends Component implements h3d.IDrawable {
 
 	function loadHMD( path : String, isAnimation : Bool ) {
 		var fullPath = ide.getPath(path);
-		var hmd = hmdCache.get(fullPath);
+		var key = fullPath;
+		var hmd = hmdCache.get(key);
 
 		if( hmd != null )
 			return hmd;
@@ -319,7 +354,7 @@ class Scene extends Component implements h3d.IDrawable {
 			hmd = e.toHmd();
 		}
 
-		hmdCache.set(fullPath, hmd);
+		hmdCache.set(key, hmd);
 		return hmd;
 	}
 

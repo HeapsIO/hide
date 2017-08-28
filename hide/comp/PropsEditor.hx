@@ -133,6 +133,7 @@ class PropsField extends Component {
 			});
 			return;
 		case "texture":
+			f.addClass("file");
 			tselect = new hide.comp.TextureSelect(f);
 			tselect.value = current;
 			tselect.onChange = function() {

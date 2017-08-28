@@ -85,11 +85,11 @@ class Model extends FileView {
 		}
 		control.loadFromCamera();
 
-		var anims = listAnims();
+		var anims = scene.listAnims(getPath());
 		if( anims.length > 0 ) {
 			var sel = tools.addSelect("play-circle");
 			var content = [for( a in anims ) {
-				var label = a.split("/").pop().substr(5).substr(0,-4);
+				var label = scene.animationName(a);
 				if( StringTools.endsWith(label,"_loop") ) label = label.substr(0,-5);
 				{ label : label, value : a }
 			}];
@@ -141,23 +141,6 @@ class Model extends FileView {
 				lightDirection.z
 			);
 		}
-	}
-
-	function listAnims() {
-		var dirs : Array<String> = props.get("hmd.animPaths");
-		if( dirs == null ) dirs = [];
-		dirs = [for( d in dirs ) ide.resourceDir + d];
-
-		var parts = getPath().split("/");
-		parts.pop();
-		dirs.unshift(parts.join("/"));
-
-		var anims = [];
-		for( dir in dirs )
-			for( f in sys.FileSystem.readDirectory(dir) )
-				if( StringTools.startsWith(f,"Anim_") )
-					anims.push(dir+"/"+f);
-		return anims;
 	}
 
 	static var _ = FileTree.registerExtension(Model,["hmd","fbx","scn"],{ icon : "cube" });

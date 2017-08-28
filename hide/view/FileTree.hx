@@ -154,7 +154,7 @@ class FileTree extends FileView {
 		if( file.indexOf(".") < 0 ) file += "." + ext.extensions[0].split(".").shift();
 
 		if( sys.FileSystem.exists(fullPath + "/" + file) ) {
-			js.Browser.alert("File '" + file+"' already exists");
+			ide.error("File '" + file+"' already exists");
 			createNew(basePath, ext);
 			return;
 		}

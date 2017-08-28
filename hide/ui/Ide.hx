@@ -145,7 +145,7 @@ class Ide {
 			layout.registerComponent(vcl.name,function(cont,state) {
 				var view = Type.createInstance(vcl.cl,[state]);
 				view.setContainer(cont);
-				try view.onDisplay() catch( e : Dynamic ) js.Browser.alert(vcl.name+":"+e);
+				try view.onDisplay() catch( e : Dynamic ) error(vcl.name+":"+e);
 			});
 
 		layout.init();
@@ -198,10 +198,20 @@ class Ide {
 		return false;
 	}
 
+	public function cleanObject( v : Dynamic ) {
+		for( f in Reflect.fields(v) )
+			if( Reflect.field(v, f) == null )
+				Reflect.deleteField(v, f);
+	}
+
 	public function getPath( relPath : String ) {
 		if( haxe.io.Path.isAbsolute(relPath) )
 			return relPath;
 		return resourceDir+"/"+relPath;
+	}
+
+	public function error( e : Dynamic ) {
+		js.Browser.alert(e);
 	}
 
 	function get_projectDir() return ideProps.currentProject.split("\\").join("/");
@@ -230,9 +240,9 @@ class Ide {
 				r.load(sys.io.File.getContent(path));
 				renderers.unshift(r);
 			} catch( e : Dynamic ) {
-				js.Browser.alert(e);
+				error(e);
 			}
-			r.onError = function(msg) js.Browser.alert(msg);
+			r.onError = function(msg) error(msg);
 		}
 
 		var render = renderers[0];
@@ -333,9 +343,9 @@ class Ide {
 		for( c in comps.elements() ) {
 			var cname = c.attr("component");
 			var cl = Type.resolveClass(cname);
-			if( cl == null ) js.Browser.alert("Missing component class "+cname);
+			if( cl == null ) error("Missing component class "+cname);
 			var state = c.attr("state");
-			if( state != null ) try haxe.Json.parse(state) catch( e : Dynamic ) js.Browser.alert("Invalid state "+state+" ("+e+")");
+			if( state != null ) try haxe.Json.parse(state) catch( e : Dynamic ) error("Invalid state "+state+" ("+e+")");
 			c.click(function(_) {
 				open(cname, state == null ? null : haxe.Json.parse(state));
 			});

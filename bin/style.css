@@ -46,7 +46,7 @@ select:hover,
 input:hover {
   border-color: #888;
 }
-input[type=texture] {
+input.file {
   cursor: pointer;
 }
 input[type=button] {

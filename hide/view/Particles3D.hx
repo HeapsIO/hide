@@ -22,6 +22,7 @@ class Particles3D extends FileView {
 	var parts : GpuParticles;
 	var properties : hide.comp.PropsEditor;
 	var bounds : h3d.scene.Box;
+	var model : h3d.scene.Object;
 
 	override function getDefaultContent() {
 		var p = new h3d.parts.GpuParticles();
@@ -141,13 +142,24 @@ class Particles3D extends FileView {
 				{ label : "Enable", checked : g.enable, click : function() { g.enable = !g.enable; e.find("[field=enable]").prop("checked", g.enable); } },
 				{ label : "MoveUp", enabled : index > 0, click : function() moveIndex(-1) },
 				{ label : "MoveDown", enabled : index < groups.length - 1, click : function() moveIndex(1) },
-				{ label : "Delete", click : function() { parts.removeGroup(g); e.remove(); } },
+				{ label : "Delete", click : function() {
+					parts.removeGroup(g);
+					e.remove();
+					undo.change(Custom(function(undo) {
+						if( undo )
+							parts.addGroup(g, index);
+						else
+							parts.removeGroup(g);
+						initProperties();
+					}));
+				}},
 			]);
 			ev.preventDefault();
 		});
 		e.find("[field=emitLoop]").change(function(_) parts.currentTime = 0);
-		properties.add(e, g);
-		properties.addMaterial( parts.materials[Lambda.indexOf({ iterator : parts.getGroups },g)], e.find(".material > .content") );
+		e = properties.add(e, g);
+		properties.addMaterial( parts.materials[Lambda.indexOf({ iterator : parts.getGroups }, g)], e.find(".material > .content") );
+		return e;
 	}
 
 	function init() {
@@ -173,6 +185,9 @@ class Particles3D extends FileView {
 				<h1>Manage</h1>
 				<div class="content">
 					<dl>
+					<dt>Model</dt><dd><input class="file model"/></dd>
+					<dt class="attach">Attach</dt><dd class="attach"><select/></dd>
+					<dt class="anim">Anim</dt><dd class="anim"><select/></dd>
 					<dt>Show Bounds</dt><dd><input type="checkbox" class="bounds"/></dd>
 					<dt>Enable Lights</dt><dd><input type="checkbox" class="lights" checked="checked"/></dd>
 					<dt></dt><dd><input type="button" class="new" value="New Group"/></dd>
@@ -194,7 +209,156 @@ class Particles3D extends FileView {
 			g.name = "Group#" + Lambda.count({ iterator : parts.getGroups });
 			addGroup(g);
 			extra.appendTo(properties.root);
+			undo.change(Custom(function(undo) {
+				if( undo )
+					parts.removeGroup(g);
+				else
+					parts.addGroup(g);
+				initProperties();
+			}));
 		}, null);
+
+		var pmodel = new hide.comp.FileSelect(extra.find(".model"), ["hmd", "fbx"]);
+		var props : { ?model : String, ?attach : String, ?anim : String } = @:privateAccess parts.hideProps;
+		if( props == null ) {
+			props = {};
+			@:privateAccess parts.hideProps = props;
+		}
+		pmodel.path = props.model;
+
+		var attach = extra.find(".attach select");
+		attach.change(function(_) {
+			var prev = props.attach;
+			var next = attach.val();
+			if( prev == next ) return;
+			props.attach = next;
+			undo.change(Custom(function(undo) {
+				props.attach = undo ? prev : next;
+				attach.val(props.attach == null ? '' : props.attach);
+				pmodel.onChange();
+			}));
+			pmodel.onChange();
+			attach.blur();
+		});
+
+		var anim = extra.find(".anim select");
+		anim.change(function(_) {
+			var prev = props.anim;
+			var next = anim.val();
+			if( next == "" ) next = null;
+			if( prev == next ) return;
+			props.anim = next;
+			undo.change(Custom(function(undo) {
+				props.anim = undo ? prev : next;
+				anim.val(props.anim == null ? '' : props.anim);
+				pmodel.onChange();
+			}));
+			pmodel.onChange();
+			anim.blur();
+		});
+		anim.contextmenu(function(e) {
+			e.preventDefault();
+			new hide.comp.ContextMenu([
+				{ label : "Clear", enabled : props.anim != null, click : function() {
+					var prev = props.anim;
+					props.anim = null;
+					anim.val('');
+					undo.change(Custom(function(undo) {
+						props.anim = undo ? prev : null;
+						anim.val(props.anim == null ? '' : props.anim);
+						pmodel.onChange();
+					}));
+					pmodel.onChange();
+				}},
+			]);
+		});
+
+		pmodel.onChange = function() {
+
+			extra.find(".attach").toggle(pmodel.path != null);
+			extra.find(".anim").toggle(pmodel.path != null);
+
+			if( props.model != pmodel.path ) {
+				var prev = props.model;
+				var next = pmodel.path;
+				props.model = next;
+				undo.change(Custom(function(undo) {
+					props.model = pmodel.path = undo ? prev : next;
+					pmodel.onChange();
+				}));
+			}
+
+			if( model != null ) {
+				model.remove();
+				model = null;
+			}
+
+			if( props.model == null ) {
+				props.anim = null;
+				props.attach = null;
+				anim.val('');
+				attach.val('');
+			} else {
+				try {
+					model = scene.loadModel(props.model);
+				} catch( e : Dynamic ) {
+					ide.error(e);
+					props.model = null;
+				}
+				if( model != null && props.anim != null ) {
+					try {
+						var anim = scene.loadAnimation(props.anim);
+						model.playAnimation(anim);
+					} catch( e : Dynamic ) {
+						ide.error(e);
+						props.anim = e;
+					}
+				}
+				if( model != null ) {
+					scene.s3d.addChild(model);
+					scene.init(this.props, model);
+
+					var prev = attach.val();
+					attach.html('');
+					function addRec(o:h3d.scene.Object) {
+						if( o.name != null )
+							new Element('<option value="${o.name}" ${o.name == prev ? "selected='selected'" : ""}>${o.name}</option>').appendTo(attach);
+						var s = Std.instance(o, h3d.scene.Skin);
+						if( s != null )
+							for( j in s.getSkinData().allJoints )
+								new Element('<option value="${j.name}" ${j.name == prev ? "selected='selected'" : ""}>${j.name}</option>').appendTo(attach);
+						for( s in o )
+							addRec(s);
+					}
+					addRec(model);
+
+					var prev = anim.val();
+					anim.html('');
+					var anims = scene.listAnims(props.model);
+					new Element('<option value="">-- select --</option>').appendTo(anim);
+					for( a in anims ) {
+						var name = scene.animationName(a);
+						new Element('<option value="$a" ${a == prev ? "selected='selected'" : ""}>$name</option>').appendTo(anim);
+					}
+					if( anims.length == 0 )
+						extra.find(".anim").hide();
+				}
+			}
+
+			var parent : h3d.scene.Object = null;
+			if( model != null ) {
+				parent = model;
+				if( props.attach != null )
+					parent = model.getObjectByName(props.attach);
+			}
+			parts.follow = parent;
+			ide.cleanObject(props);
+		};
+		pmodel.onChange();
+		if( props.attach != null )
+			attach.val(props.attach);
+		if( props.anim != null )
+			anim.val(props.anim);
 	}
 
 	static var _ = FileTree.registerExtension(Particles3D, ["json.particles3D"], { icon : "snowflake-o", createNew: "Particle 3D" });
