@@ -259,7 +259,7 @@ input[type=checkbox] {
 /* Properties */
 
 .hide-properties {
-	flex : 0 0 260px;
+	flex : 0 0 300px;
 	padding:10px;
 	overflow:auto;
 	padding-bottom:80px;
@@ -311,13 +311,29 @@ input[type=checkbox] {
 	}
 
 	dd {
-		width:160px;
+		width:200px;
 		margin-left:10px;
 		input:not([type=checkbox]):not([type=number]) {
-			width:150px;
+			width:190px;
 		}
 		select {
-			width:156px;
+			width:197px;
+		}
+
+		.range-group {
+			input[type=range] {
+				display : inline-block;
+				width: 155px;
+			}
+			input[type=text] {
+				display : inline-block;
+				width: 30px;
+				margin-left:3px;
+				border-color: transparent;
+			}
+			input[type=text]:hover, input[type=text]:active {
+				border-color: #444;
+			}
 		}
 	}
 

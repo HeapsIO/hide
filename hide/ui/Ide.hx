@@ -61,6 +61,7 @@ class Ide {
 			window.close(true);
 		});
 
+		// handle commandline parameters
 		nw.App.on("open", function(cmd) {
 			~/"([^"]+)"/g.map(cmd, function(r) {
 				var file = r.matched(1);
@@ -72,6 +73,17 @@ class Ide {
 		// handle cancel on type=file
 		var body = window.window.document.body;
 		body.onfocus = function(_) haxe.Timer.delay(function() new Element(body).find("input[type=file]").change().remove(), 200);
+
+		// dispatch global keys based on mouse position
+		new Element(body).keydown(function(e) {
+			for( v in views ) {
+				var c = v.root.offset();
+				if( mouseX >= c.left && mouseY >= c.top && mouseX <= c.left + v.root.outerWidth() && mouseY <= c.top + v.root.outerHeight() ) {
+					v.keys.processEvent(e);
+					break;
+				}
+			}
+		});
 	}
 
 	function onWindowChange() {

@@ -38,7 +38,10 @@ class PropsEditor extends Component {
 
 		e.find("input[type=checkbox]").wrap("<div class='checkbox-wrapper'></div>");
 
-		e.find("input[type=range]").not("[step]").attr("step", "any");
+		for( s in e.find("input[type=range]").not("[step]").elements() ) {
+			var range = Std.parseFloat(s.attr("max")) - Std.parseFloat(s.attr("min"));
+			s.attr("step", ""+hxd.Math.fmt(range/200));
+		}
 
 		// -- reload states ---
 		for( h in e.find(".section > h1").elements() )
@@ -155,8 +158,35 @@ class PropsField extends Component {
 			}
 		}
 
-		if( f.is("[type=range]") )
+		var inputView = null;
+		if( f.is("[type=range]") ) {
+			f.wrap('<div class="range-group"/>');
+			var p = f.parent();
+			var original = current;
+			p.parent().prev("dt").contextmenu(function(e) {
+				e.preventDefault();
+				new ContextMenu([
+					{ label : "Reset", click : function() { f.val(original); f.change(); } },
+					{ label : "Cancel", click : function() {} },
+				]);
+				return false;
+			});
+			inputView = new Element('<input type="text">').appendTo(p);
+			inputView.val(current);
+			inputView.keyup(function(e) {
+				if( e.keyCode == 13 || e.keyCode == 27 ) {
+					inputView.blur();
+					inputView.val(current);
+					return;
+				}
+				var v = Std.parseFloat(inputView.val());
+				if( !Math.isNaN(v) ) {
+					f.val(v);
+					f.change();
+				}
+			});
 			f.on("input", function(_) { tempChange = true; f.change(); });
+		}
 
 		f.val(current);
 		f.keyup(function(e) {
@@ -190,6 +220,9 @@ class PropsField extends Component {
 				beforeTempChange = null;
 			}
 
+			if( inputView != null )
+				inputView.val(newVal);
+
 			if( tempChange ) {
 				tempChange = false;
 				if( beforeTempChange == null ) beforeTempChange = { value : current };
@@ -199,6 +232,8 @@ class PropsField extends Component {
 					var f = resolveField();
 					f.current = Reflect.field(f.context, fname);
 					f.root.val(f.current);
+					if( inputView != null )
+						f.root.parent().find("input[type=text]").val(f.current);
 					f.onChange(true);
 				});
 			}

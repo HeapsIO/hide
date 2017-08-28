@@ -237,7 +237,7 @@ input[type=checkbox]:checked:after {
 }
 /* Properties */
 .hide-properties {
-  flex: 0 0 260px;
+  flex: 0 0 300px;
   padding: 10px;
   overflow: auto;
   padding-bottom: 80px;
@@ -285,14 +285,28 @@ input[type=checkbox]:checked:after {
   cursor: default;
 }
 .hide-properties dd {
-  width: 160px;
+  width: 200px;
   margin-left: 10px;
 }
 .hide-properties dd input:not([type=checkbox]):not([type=number]) {
-  width: 150px;
+  width: 190px;
 }
 .hide-properties dd select {
-  width: 156px;
+  width: 197px;
+}
+.hide-properties dd .range-group input[type=range] {
+  display: inline-block;
+  width: 155px;
+}
+.hide-properties dd .range-group input[type=text] {
+  display: inline-block;
+  width: 30px;
+  margin-left: 3px;
+  border-color: transparent;
+}
+.hide-properties dd .range-group input[type=text]:hover,
+.hide-properties dd .range-group input[type=text]:active {
+  border-color: #444;
 }
 .hide-properties .group {
   margin-bottom: 5px;

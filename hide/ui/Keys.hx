@@ -14,12 +14,12 @@ class Keys {
 		if( active != null && active.nodeName == "INPUT" ) return;
 
 		var parts = [];
-		if( e.shiftKey )
-			parts.push("Shift");
-		if( e.ctrlKey )
-			parts.push("Ctrl");
 		if( e.altKey )
 			parts.push("Alt");
+		if( e.ctrlKey )
+			parts.push("Ctrl");
+		if( e.shiftKey )
+			parts.push("Shift");
 		if( e.keyCode >= 'A'.code && e.keyCode <= 'Z'.code )
 			parts.push(String.fromCharCode(e.keyCode));
 		else if( e.keyCode >= 96 && e.keyCode <= 105 )
@@ -42,7 +42,10 @@ class Keys {
 
 		var key = parts.join("-");
 		var callb = keys.get(key);
-		if( callb != null ) callb();
+		if( callb != null ) {
+			callb();
+			e.stopPropagation();
+		}
 	}
 
 	public function register( name : String, callb : Void -> Void ) {
