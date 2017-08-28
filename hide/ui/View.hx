@@ -17,6 +17,7 @@ class View<T> extends hide.comp.Component {
 	var keys(get,null) : Keys;
 	var props(get,null) : Props;
 	var undo = new hide.ui.UndoHistory();
+	public var viewClass(get, never) : String;
 	public var defaultOptions(get,never) : ViewOptions;
 
 	var contentWidth(get,never) : Int;
@@ -40,12 +41,31 @@ class View<T> extends hide.comp.Component {
 	}
 
 	public function getTitle() {
-		var name = Type.getClassName(Type.getClass(this));
-		return name.split(".").pop();
+		return viewClass.split(".").pop();
 	}
 
 	public function onBeforeClose() {
 		return true;
+	}
+
+	function get_viewClass() {
+		return Type.getClassName(Type.getClass(this));
+	}
+
+	public function setClipboard( v : Dynamic, ?type : String ) {
+		nw.Clipboard.get().set(ide.toJSON({ type : type == null ? viewClass : type, value : v }));
+	}
+
+	public function hasClipboard( ?type : String ) {
+		if( type == null ) type = viewClass;
+		var v : Dynamic = try haxe.Json.parse(nw.Clipboard.get().get()) catch( e : Dynamic ) null;
+		return v != null && v.type == type;
+	}
+
+	public function getClipboard( ?type : String ) : Dynamic {
+		if( type == null ) type = viewClass;
+		var v : Dynamic = try haxe.Json.parse(nw.Clipboard.get().get()) catch( e : Dynamic ) null;
+		return v == null || v.type != type ? null : v.value;
 	}
 
 	function syncTitle() {
@@ -82,7 +102,7 @@ class View<T> extends hide.comp.Component {
 	}
 
 	public function onDisplay() {
-		root.text(Type.getClassName(Type.getClass(this))+(state == null ? "" : " "+state));
+		root.text(viewClass+(state == null ? "" : " "+state));
 	}
 
 	public function onResize() {

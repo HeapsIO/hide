@@ -140,6 +140,17 @@ class Particles3D extends FileView {
 			}
 			new hide.comp.ContextMenu([
 				{ label : "Enable", checked : g.enable, click : function() { g.enable = !g.enable; e.find("[field=enable]").prop("checked", g.enable); } },
+				{ label : "Copy", click : function() setClipboard(g.save()) },
+				{ label : "Paste", enabled : hasClipboard(), click : function() {
+					var prev = g.save();
+					var next = getClipboard();
+					g.load(@:privateAccess h3d.parts.GpuParticles.VERSION, next);
+					undo.change(Custom(function(undo) {
+						g.load(@:privateAccess h3d.parts.GpuParticles.VERSION, undo ? prev : next);
+						initProperties();
+					}));
+					initProperties();
+				} },
 				{ label : "MoveUp", enabled : index > 0, click : function() moveIndex(-1) },
 				{ label : "MoveDown", enabled : index < groups.length - 1, click : function() moveIndex(1) },
 				{ label : "Delete", click : function() {
