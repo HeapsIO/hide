@@ -149,7 +149,7 @@ class FileTree extends FileView {
 			basePath = new haxe.io.Path(basePath).dir;
 			fullPath = getFilePath(basePath);
 		}
-		var file = js.Browser.window.prompt(ext.options.createNew + " name:");
+		var file = ide.ask(ext.options.createNew + " name:");
 		if( file == null ) return;
 		if( file.indexOf(".") < 0 ) file += "." + ext.extensions[0].split(".").shift();
 

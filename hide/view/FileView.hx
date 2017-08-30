@@ -34,6 +34,16 @@ class FileView extends hide.ui.View<{ path : String }> {
 	public function save() {
 	}
 
+	public function saveAs() {
+		ide.chooseFileSave(state.path, function(target) {
+			if( target == null ) return;
+			state.path = target;
+			save();
+			modified = false;
+			syncTitle();
+		});
+	}
+
 	override function onBeforeClose() {
 		if( modified && !js.Browser.window.confirm(state.path+" has been modified, quit without saving?") )
 			return false;
@@ -71,6 +81,15 @@ class FileView extends hide.ui.View<{ path : String }> {
 		super.syncTitle();
 		if( state.path != null )
 			haxe.Timer.delay(function() container.tab.element.attr("title",getPath()), 100);
+	}
+
+	override function buildTabMenu() {
+		var arr : Array<hide.comp.ContextMenu.ContextMenuItem> = [
+			{ label : "Save", enabled : modified, click : function() { save(); modified = false; } },
+			{ label : "Save As...", click : saveAs },
+			{ label : null, isSeparator : true },
+		];
+		return arr.concat(super.buildTabMenu());
 	}
 
 }

@@ -10,6 +10,8 @@ class Ide {
 	public var mouseX : Int = 0;
 	public var mouseY : Int = 0;
 
+	public var isWindows(get, never) : Bool;
+
 	var props : {
 		global : Props,
 		project : Props,
@@ -84,6 +86,10 @@ class Ide {
 				}
 			}
 		});
+	}
+
+	function get_isWindows() {
+		return true;
 	}
 
 	function onWindowChange() {
@@ -273,6 +279,20 @@ class Ide {
 		}).appendTo(window.window.document.body).click();
 	}
 
+	public function chooseFileSave( defaultPath : String, onSelect : String -> Void ) {
+		var path = getPath(defaultPath).split("/");
+		var file = path.pop();
+		var c = isWindows ? "\\" : "/";
+		var path = path.join(c);
+		var e = new Element('<input type="file" style="visibility:hidden" value="" nwworkingdir="$path" nwsaveas="$path$c$file"/>');
+		e.change(function(_) {
+			var file = makeRelative(e.val());
+			e.remove();
+			onSelect(file == "" ? null : file);
+		}).appendTo(window.window.document.body).click();
+	}
+
+
 	public function chooseDirectory( onSelect : String -> Void ) {
 		var e = new Element('<input type="file" style="visibility:hidden" value="" nwdirectory/>');
 		e.change(function(ev) {
@@ -366,7 +386,7 @@ class Ide {
 		}).prop("checked",ideProps.autoSaveLayout);
 
 		menu.find(".layout .saveas").click(function(_) {
-			var name = js.Browser.window.prompt("Please enter a layout name:");
+			var name = ask("Please enter a layout name:");
 			if( name == null || name == "" ) return;
 			ideProps.layouts.push({ name : name, state : saveLayout() });
 			props.global.save();
@@ -458,6 +478,10 @@ class Ide {
 			target.addChild(config);
 		else
 			target.addChild(config, index);
+	}
+
+	public function ask( text : String, ?defaultValue = "" ) {
+		return js.Browser.window.prompt(text, defaultValue);
 	}
 
 	public static var inst : Ide;

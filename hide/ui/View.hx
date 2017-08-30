@@ -86,10 +86,23 @@ class View<T> extends hide.comp.Component {
 				return;
 			}
 			@:privateAccess ide.views.remove(this);
+			for( c in container.getElement().find("canvas") ) {
+				var s : hide.comp.Scene = Reflect.field(c, "__scene");
+				if( s != null )
+					s.dispose();
+			}
 		});
 		container.getElement().keydown(function(e) {
 			keys.processEvent(e);
 		});
+
+		container.on("tab", function(e) {
+			container.tab.element.contextmenu(function(e) {
+				new hide.comp.ContextMenu(buildTabMenu());
+				e.preventDefault();
+			});
+		});
+
 		untyped cont.parent.__view = this;
 		root = cont.getElement();
 	}
@@ -113,10 +126,16 @@ class View<T> extends hide.comp.Component {
 	}
 
 	public function close() {
-		if( container != null ) {
+		if( container != null )
 			container.close();
-			container = null;
-		}
+	}
+
+	function buildTabMenu() : Array<hide.comp.ContextMenu.ContextMenuItem> {
+		return [
+			{ label : "Close", click : close },
+			{ label : "Close Others", click : function() for( v in @:privateAccess ide.views ) if( v != this && v.container.tab.header == container.tab.header ) v.close() },
+			{ label : "Close All", click : function() for( v in @:privateAccess ide.views ) if( v.container.tab.header == container.tab.header ) v.close() },
+		];
 	}
 
 	function get_contentWidth() return container.width;

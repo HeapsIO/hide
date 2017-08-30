@@ -8,6 +8,7 @@ extern class ContentItem {
 	var element : js.jquery.JQuery;
 	var childElementContainer : Container;
 	var config : Config.ItemConfig;
+	var header : Header;
 
 	public function addChild( config : Config.ItemConfig, ?index : Int ) : Void;
 	public function on( type : String, callb : Event<ContentItem> -> Void ) : Void;

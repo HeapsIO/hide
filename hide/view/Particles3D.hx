@@ -295,7 +295,7 @@ class Particles3D extends FileView {
 			ide.cleanObject(props);
 		}
 		syncProps();
-		extra = properties.add(extra, props, function(_, _) syncProps());
+		extra = properties.add(extra, props, function(_) syncProps());
 
 		extra.find(".bounds").change(function(e) bounds.visible = e.getThis().prop("checked"));
 		var defAmbient = scene.s3d.lightSystem.ambientLight.clone();

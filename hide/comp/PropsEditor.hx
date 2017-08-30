@@ -20,7 +20,7 @@ class PropsEditor extends Component {
 	public function addMaterial( m : h3d.mat.Material, ?parent : Element ) {
 		var props = m.props;
 		var def = h3d.mat.MaterialSetup.current.editMaterial(props);
-		def = add(def, props, function(_, undo) {
+		def = add(def, props, function(_) {
 			if( m.model != null )
 				h3d.mat.MaterialSetup.current.saveModelMaterial(m);
 			m.refreshProps();
@@ -31,7 +31,7 @@ class PropsEditor extends Component {
 			def.appendTo(parent);
 	}
 
-	public function add( e : Element, ?context : Dynamic, ?onChange : String -> Bool -> Void ) {
+	public function add( e : Element, ?context : Dynamic, ?onChange : String -> Void ) {
 
 		e.appendTo(root);
 		e = e.wrap("<div></div>").parent(); // necessary to have find working on top level element
@@ -83,7 +83,7 @@ class PropsEditor extends Component {
 		// init input reflection
 		for( f in e.find("[field]").elements() ) {
 			var f = new PropsField(this, f, context);
-			if( onChange != null ) f.onChange = function(undo) onChange(@:privateAccess f.fname,undo);
+			if( onChange != null ) f.onChange = function(undo) onChange(@:privateAccess f.fname);
 			fields.push(f);
 		}
 
