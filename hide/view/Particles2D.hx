@@ -20,6 +20,8 @@ class Particles2D extends FileView {
 
 	var scene : hide.comp.Scene;
 	var parts : Particles;
+	var background : h2d.Bitmap = null;
+	var bgPos : h2d.col.Point;
 	var properties : hide.comp.PropsEditor;
 
 	override function getDefaultContent() {
@@ -103,7 +105,7 @@ class Particles2D extends FileView {
 					<div class="group" name="Rotation">
 						<dl>
 							<dt>Initial</dt><dd><input type="range" field="rotInit" min="0" max="1"/></dd>
-							<dt>Speed</dt><dd><input type="range" field="rotSpeed" min="0" max="5"/></dd>
+							<dt>Speed</dt><dd><input type="range" field="rotSpeed" min="0" max="20"/></dd>
 							<dt>Randomness</dt><dd><input type="range" field="rotSpeedRand" min="0" max="1"/></dd>
 							<dt>Auto orient</dt><dd><input type="checkbox" field="rotAuto"/></dd>
 						</dl>
@@ -158,6 +160,11 @@ class Particles2D extends FileView {
 		if( parts == null ) return;
 		parts.x = scene.width >> 1;
 		parts.y = scene.height >> 1;
+		if (background != null) {
+			background.setPos(parts.x - background.tile.width / 2, parts.y - background.tile.height / 2);
+			background.tile.dx = Std.int(bgPos.x);
+			background.tile.dy = Std.int(bgPos.y);
+		}
 	}
 
 	function initProperties() {
@@ -166,6 +173,8 @@ class Particles2D extends FileView {
 
 		for( g in parts.getGroups() )
 			addGroup(g);
+
+		var bgParams = addBackgroundParams();
 
 		var extra = new Element('
 			<div class="section">
@@ -177,13 +186,88 @@ class Particles2D extends FileView {
 				</div>
 			</div>
 		');
+
 		extra = properties.add(extra);
 		extra.find(".new").click(function(_) {
 			var g = parts.addGroup();
 			g.name = "Group#" + Lambda.count({ iterator : parts.getGroups });
 			addGroup(g);
+			bgParams.appendTo(properties.root);
 			extra.appendTo(properties.root);
 		}, null);
+	}
+
+	function addBackgroundParams() {
+		var bgParams = new Element('
+			<div class="section">
+				<h1>Background</h1>
+				<div class="content">
+					<dl>
+						<dt>Texture</dt><dd><input type="texture" class="bgTex"/></dd>
+						<dt>X</dt><dd><input type="range" class="bgX" min="-200" max="200"/></dd>
+						<dt>Y</dt><dd><input type="range" class="bgY" min="-200" max="200"/></dd>
+					</dl>
+				</div>
+			</div>
+		');
+
+		bgParams = properties.add(bgParams);
+
+		var newBg = new hide.comp.TextureSelect(bgParams.find("[class=bgTex]"));
+		var newX = bgParams.find("[class=bgX]");
+		var newY = bgParams.find("[class=bgY]");
+
+		var props : { ?backgroundPath : String, ?dx : Float, ?dy : Float } = @:privateAccess parts.hideProps;
+		if( props == null ) {
+			props = {};
+			@:privateAccess parts.hideProps = props;
+		}
+		else {
+			if (props.backgroundPath != null) {
+				newBg.path = props.backgroundPath;
+				var tile = h2d.Tile.fromTexture(scene.loadTextureFile(state.path, props.backgroundPath));
+				background = new h2d.Bitmap(tile);
+				scene.s2d.add(background, 0);
+				scene.s2d.addChild(parts);
+				if (props.dx != null) {
+					bgPos.x = props.dx;
+					newX.prop("value", props.dx);
+				}
+				if (props.dy != null) {
+					bgPos.y = props.dy;
+					newX.prop("value", props.dy);
+				}
+				onResize();
+			}
+		}
+		newBg.onChange = function() {
+			props.backgroundPath = newBg.path;
+			if (background != null)
+				background.remove();
+			if (newBg.value == null)
+				background = null;
+			else {
+				background = new h2d.Bitmap(h2d.Tile.fromTexture(newBg.value));
+				scene.s2d.add(background, 0);
+				scene.s2d.addChild(parts);
+			}
+			onResize();
+		};
+
+
+		newX.change(function(_) {
+			bgPos.x = newX.prop("value");
+			props.dx = newX.prop("value");
+			onResize();
+		});
+
+		newY.change(function(_) {
+			bgPos.y = newY.prop("value");
+			props.dy = newY.prop("value");
+			onResize();
+		});
+
+		return bgParams;
 	}
 
 	static var _ = FileTree.registerExtension(Particles2D, ["json.particles2D"], { icon : "snowflake-o", createNew: "Particle 2D" });
