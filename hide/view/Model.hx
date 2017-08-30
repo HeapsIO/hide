@@ -37,13 +37,26 @@ class Model extends FileView {
 
 	function selectMaterial( m : h3d.mat.Material ) {
 		properties.clear();
+
+		properties.add(new Element('
+			<div class="group" name="Textures">
+				<dl>
+					<dt>Base</dt><dd><input type="texture" field="texture"/></dd>
+				</dl>
+			</div>
+			<br/>
+		'),m);
+
+
 		var e = properties.add(new Element('
-			<div class="group" name="${m.name}">
+			<div class="group" name="Material ${m.name}">
 			</div>
 			<dl>
 				<dt></dt><dd><input type="button" value="Reset Defaults" class="reset"/></dd>
 			</dl>
+			<br/>
 		'));
+
 		properties.addMaterial(m, e.find(".group > .content"));
 		e.find(".reset").click(function(_) {
 			var cur = h3d.mat.MaterialSetup.current;

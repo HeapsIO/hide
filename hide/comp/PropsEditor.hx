@@ -62,7 +62,7 @@ class PropsEditor extends Component {
 		}).find("input").mousedown(function(e) e.stopPropagation());
 
 		for( g in e.find(".group").elements() ) {
-			g.wrapInner("<div class='content'></div>'");
+			g.wrapInner("<div class='content'></div>");
 			if( g.attr("name") != null ) new Element("<div class='title'>" + g.attr("name") + '</div>').prependTo(g);
 		}
 
@@ -113,14 +113,14 @@ class PropsField extends Component {
 		this.context = context;
 		Reflect.setField(f[0],"propsField", this);
 		fname = f.attr("field");
-		current = Reflect.field(context, fname);
+		current = Reflect.getProperty(context, fname);
 		switch( f.attr("type") ) {
 		case "checkbox":
 			f.prop("checked", current);
 			f.change(function(_) {
 				props.undo.change(Field(context, fname, current), function() {
 					var f = resolveField();
-					f.current = Reflect.field(f.context, fname);
+					f.current = Reflect.getProperty(f.context, fname);
 					f.root.prop("checked", f.current);
 					f.onChange(true);
 				});
@@ -136,7 +136,7 @@ class PropsField extends Component {
 			tselect.onChange = function() {
 				props.undo.change(Field(context, fname, current), function() {
 					var f = resolveField();
-					f.current = Reflect.field(f.context, fname);
+					f.current = Reflect.getProperty(f.context, fname);
 					f.tselect.value = f.current;
 					f.onChange(true);
 				});
@@ -152,7 +152,7 @@ class PropsField extends Component {
 			tselect.onChange = function() {
 				props.undo.change(Field(context, fname, current), function() {
 					var f = resolveField();
-					f.current = Reflect.field(f.context, fname);
+					f.current = Reflect.getProperty(f.context, fname);
 					f.tselect.path = f.current;
 					f.onChange(true);
 				});
@@ -168,7 +168,7 @@ class PropsField extends Component {
 			fselect.onChange = function() {
 				props.undo.change(Field(context, fname, current), function() {
 					var f = resolveField();
-					f.current = Reflect.field(f.context, fname);
+					f.current = Reflect.getProperty(f.context, fname);
 					f.fselect.path = f.current;
 					f.onChange(true);
 				});
@@ -298,7 +298,7 @@ class PropsField extends Component {
 		} else {
 			props.undo.change(Field(context, fname, current), function() {
 				var f = resolveField();
-				var v = Reflect.field(f.context, fname);
+				var v = Reflect.getProperty(f.context, fname);
 				f.current = v;
 				f.root.val(v);
 				f.root.parent().find("input[type=text]").val(v);

@@ -314,6 +314,7 @@ input[type=checkbox]:checked:after {
   border-color: #444;
 }
 .hide-properties dd .texture-preview {
+  pointer-events: none;
   display: inline-block;
   width: 15px;
   height: 15px;

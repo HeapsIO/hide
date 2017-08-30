@@ -169,6 +169,8 @@ class FileTree extends FileView {
 	function isIgnored( path : String, file : String ) {
 		if( file.charCodeAt(0) == ".".code )
 			return true;
+		if( StringTools.startsWith(file, "Anim_") && file.split(".").pop().toLowerCase() == "fbx" )
+			return true;
 		return false;
 	}
 
