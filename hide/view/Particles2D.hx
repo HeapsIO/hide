@@ -20,8 +20,9 @@ class Particles2D extends FileView {
 
 	var scene : hide.comp.Scene;
 	var parts : Particles;
+	var partsProps : { ?backgroundPath : String, ?dx : Int, ?dy : Int };
+
 	var background : h2d.Bitmap = null;
-	var bgPos : h2d.col.Point;
 	var properties : hide.comp.PropsEditor;
 
 	override function getDefaultContent() {
@@ -162,8 +163,8 @@ class Particles2D extends FileView {
 		parts.y = scene.height >> 1;
 		if (background != null) {
 			background.setPos(parts.x - background.tile.width / 2, parts.y - background.tile.height / 2);
-			background.tile.dx = Std.int(bgPos.x);
-			background.tile.dy = Std.int(bgPos.y);
+			background.tile.dx = partsProps.dx;
+			background.tile.dy = partsProps.dy;
 		}
 	}
 
@@ -198,74 +199,49 @@ class Particles2D extends FileView {
 	}
 
 	function addBackgroundParams() {
+		partsProps = @:privateAccess parts.hideProps;
+		if( partsProps == null ) {
+			partsProps = {dx: 0, dy: 0};
+			@:privateAccess parts.hideProps = partsProps;
+		}
+
+		function createBackground() {
+			var tile = h2d.Tile.fromTexture(scene.loadTexture(state.path, partsProps.backgroundPath));
+			background = new h2d.Bitmap(tile);
+			scene.s2d.add(background, 0);
+			scene.s2d.addChild(parts);
+		}
+		createBackground();
+
 		var bgParams = new Element('
 			<div class="section">
 				<h1>Background</h1>
 				<div class="content">
 					<dl>
-						<dt>Texture</dt><dd><input type="texture" class="bgTex"/></dd>
-						<dt>X</dt><dd><input type="range" class="bgX" min="-200" max="200"/></dd>
-						<dt>Y</dt><dd><input type="range" class="bgY" min="-200" max="200"/></dd>
+						<dt>Texture</dt><dd><input type="texturepath" field="backgroundPath"/></dd>
+						<dt>X</dt><dd><input type="range" field="dx" min="-500" max="500" step="1"/></dd>
+						<dt>Y</dt><dd><input type="range" field="dy" min="-500" max="500" step="1"/></dd>
 					</dl>
 				</div>
 			</div>
 		');
 
-		bgParams = properties.add(bgParams);
-
-		var newBg = new hide.comp.TextureSelect(bgParams.find("[class=bgTex]"));
-		var newX = bgParams.find("[class=bgX]");
-		var newY = bgParams.find("[class=bgY]");
-
-		var props : { ?backgroundPath : String, ?dx : Float, ?dy : Float } = @:privateAccess parts.hideProps;
-		if( props == null ) {
-			props = {};
-			@:privateAccess parts.hideProps = props;
-		}
-		else {
-			if (props.backgroundPath != null) {
-				newBg.path = props.backgroundPath;
-				var tile = h2d.Tile.fromTexture(scene.loadTexture(state.path, props.backgroundPath));
-				background = new h2d.Bitmap(tile);
-				scene.s2d.add(background, 0);
-				scene.s2d.addChild(parts);
-				if (props.dx != null) {
-					bgPos.x = props.dx;
-					newX.prop("value", props.dx);
+		function onChange(propName, undo) {
+			if (propName == "backgroundPath") {
+				if (background != null) {
+					background.remove();
+					background = null;
 				}
-				if (props.dy != null) {
-					bgPos.y = props.dy;
-					newX.prop("value", props.dy);
+
+				if (partsProps.backgroundPath != null) {
+					createBackground();
 				}
-				onResize();
 			}
+
+			onResize();
 		}
-		newBg.onChange = function() {
-			props.backgroundPath = newBg.path;
-			if (background != null)
-				background.remove();
-			if (newBg.value == null)
-				background = null;
-			else {
-				background = new h2d.Bitmap(h2d.Tile.fromTexture(newBg.value));
-				scene.s2d.add(background, 0);
-				scene.s2d.addChild(parts);
-			}
-			onResize();
-		};
 
-
-		newX.change(function(_) {
-			bgPos.x = newX.prop("value");
-			props.dx = newX.prop("value");
-			onResize();
-		});
-
-		newY.change(function(_) {
-			bgPos.y = newY.prop("value");
-			props.dy = newY.prop("value");
-			onResize();
-		});
+		bgParams = properties.add(bgParams, partsProps, onChange);
 
 		return bgParams;
 	}
