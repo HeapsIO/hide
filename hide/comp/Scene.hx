@@ -123,6 +123,8 @@ class Scene extends Component implements h3d.IDrawable {
 	var canvas : js.html.CanvasElement;
 	var engine : h3d.Engine;
 	var hmdCache = new Map<String, hxd.fmt.hmd.Library>();
+	public var width(get, never) : Int;
+	public var height(get, never) : Int;
 	public var s2d : h2d.Scene;
 	public var s3d : h3d.scene.Scene;
 	public var sevents : hxd.SceneEvents;
@@ -162,6 +164,7 @@ class Scene extends Component implements h3d.IDrawable {
 			sevents.addScene(s2d);
 			sevents.addScene(s3d);
 			onReady();
+			onResize();
 			sync();
 			ide.registerUpdate(sync);
 		};
@@ -169,6 +172,14 @@ class Scene extends Component implements h3d.IDrawable {
 			if( s2d != null ) s2d.setFixedSize(engine.width, engine.height);
 		};
 		engine.init();
+	}
+
+	function get_width() {
+		return engine.width;
+	}
+
+	function get_height() {
+		return engine.height;
 	}
 
 	public function init( props : hide.ui.Props, ?root : h3d.scene.Object ) {

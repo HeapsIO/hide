@@ -308,6 +308,14 @@ input[type=checkbox]:checked:after {
 .hide-properties dd .range-group input[type=text]:active {
   border-color: #444;
 }
+.hide-properties dd .texture-preview {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  position: absolute;
+  margin-left: -17px;
+  margin-top: 2px;
+}
 .hide-properties .group {
   margin-bottom: 5px;
 }

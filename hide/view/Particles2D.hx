@@ -105,6 +105,7 @@ class Particles2D extends FileView {
 							<dt>Initial</dt><dd><input type="range" field="rotInit" min="0" max="1"/></dd>
 							<dt>Speed</dt><dd><input type="range" field="rotSpeed" min="0" max="5"/></dd>
 							<dt>Randomness</dt><dd><input type="range" field="rotSpeedRand" min="0" max="1"/></dd>
+							<dt>Auto orient</dt><dd><input type="checkbox" field="rotAuto"/></dd>
 						</dl>
 					</div>
 
@@ -145,7 +146,8 @@ class Particles2D extends FileView {
 	}
 
 	function init() {
-		parts = new Particles(this,scene.s2d);
+		parts = new Particles(this, scene.s2d);
+		parts.smooth = true;
 		parts.load(haxe.Json.parse(sys.io.File.getContent(getPath())));
 		initProperties();
 		scene.init(props);
@@ -154,8 +156,8 @@ class Particles2D extends FileView {
 
 	override function onResize() {
 		if( parts == null ) return;
-		parts.x = scene.s2d.width >> 1;
-		parts.y = scene.s2d.height >> 1;
+		parts.x = scene.width >> 1;
+		parts.y = scene.height >> 1;
 	}
 
 	function initProperties() {
