@@ -100,7 +100,7 @@ class SceneLoader extends h3d.impl.Serializable.SceneSerializer {
 		var path = resolvePath(path);
 		if( path == null )
 			return h3d.mat.Texture.fromColor(0xFF00FF);
-		return scene.loadTextureFile(scnPath, path);
+		return scene.loadTexture(scnPath, path);
 	}
 
 	function resolvePath( path : String ) {
@@ -123,6 +123,8 @@ class Scene extends Component implements h3d.IDrawable {
 	var canvas : js.html.CanvasElement;
 	var engine : h3d.Engine;
 	var hmdCache = new Map<String, hxd.fmt.hmd.Library>();
+	var texCache = new Map<String, h3d.mat.Texture>();
+	var cleanup = new Array<Void->Void>();
 	public var width(get, never) : Int;
 	public var height(get, never) : Int;
 	public var s2d : h2d.Scene;
@@ -142,6 +144,13 @@ class Scene extends Component implements h3d.IDrawable {
 		};
 		untyped canvas.__scene = this;
 		haxe.Timer.delay(delayedInit,0); // wait canvas added to window
+	}
+
+	public function dispose() {
+		for( c in cleanup )
+			c();
+		cleanup = [];
+		engine.dispose();
 	}
 
 	function delayedInit() {
@@ -214,23 +223,30 @@ class Scene extends Component implements h3d.IDrawable {
 		engine.render(this);
 	}
 
-	public function loadTexture( path : String, onReady : h3d.mat.Texture -> Void, ?target : h3d.mat.Texture ) {
+	function loadTextureData( path : String, onReady : h3d.mat.Texture -> Void, ?target : h3d.mat.Texture ) {
 		var path = ide.getPath(path);
 		var img = new Element('<img src="file://$path"/>');
-		img.on("load",function() {
+		img.on("load", function() {
 			setCurrent();
 			var bmp : js.html.ImageElement = cast img[0];
 			var t;
 			if( target == null )
-				t = new h3d.mat.Texture(bmp.width, bmp.height);
+				t = target = new h3d.mat.Texture(bmp.width, bmp.height);
 			else {
 				t = target;
 				target.resize(bmp.width, bmp.height);
 			}
 			untyped bmp.ctx = { getImageData : function(_) return bmp, canvas : { width : 0, height : 0 } };
 			engine.driver.uploadTextureBitmap(t, cast bmp, 0, 0);
-			onReady(t);
+			if( onReady != null ) {
+				onReady(t);
+				onReady = null;
+			}
 		});
+		var w = js.node.Fs.watch(path, function(_, _) {
+			img.attr("src", 'file://$path?t='+Date.now().getTime());
+		});
+		cleanup.push(w.close);
 	}
 
 	public function listAnims( path : String ) {
@@ -288,7 +304,7 @@ class Scene extends Component implements h3d.IDrawable {
 		if( StringTools.endsWith(path.toLowerCase(), ".scn") )
 			return loadSCN(path);
 		var lib = loadHMD(path,false);
-		var obj = lib.makeObject(loadTextureFile.bind(path));
+		var obj = lib.makeObject(loadTexture.bind(path));
 		initMaterials(obj, path);
 		return obj;
 	}
@@ -323,20 +339,26 @@ class Scene extends Component implements h3d.IDrawable {
 		return null;
 	}
 
-	public function loadTextureFile( modelPath : String, texturePath : String, ?onReady ) {
+	public function loadTexture( modelPath : String, texturePath : String, ?onReady : h3d.mat.Texture -> Void ) {
 		var path = resolvePath(modelPath, texturePath);
-		if( path != null ) {
-			var bytes = sys.io.File.getBytes(path);
-			var size = hxd.res.Any.fromBytes(path, bytes).toImage().getSize();
-			var t = new h3d.mat.Texture(size.width,size.height);
-			t.clear(0x102030);
-			t.name = ide.makeRelative(path);
-			if( onReady == null ) onReady = function(_) {};
-			loadTexture(path, onReady, t);
+		if( path == null ) {
+			ide.error("Could not load texture " + { modelPath : modelPath, texturePath : texturePath });
+			return null;
+		}
+		var t = texCache.get(path);
+		if( t != null ) {
+			if( onReady != null ) haxe.Timer.delay(onReady.bind(t), 1);
 			return t;
 		}
-		trace("Could not load texture " + { modelPath : modelPath, texturePath : texturePath });
-		return null;
+		var bytes = sys.io.File.getBytes(path);
+		var size = hxd.res.Any.fromBytes(path, bytes).toImage().getSize();
+		t = new h3d.mat.Texture(size.width,size.height);
+		t.clear(0x102030);
+		t.name = ide.makeRelative(path);
+		texCache.set(path, t);
+		if( onReady == null ) onReady = function(_) {};
+		loadTextureData(path, onReady, t);
+		return t;
 	}
 
 	function loadHMD( path : String, isAnimation : Bool ) {

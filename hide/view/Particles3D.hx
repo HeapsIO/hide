@@ -11,7 +11,7 @@ class GpuParticles extends h3d.parts.GpuParticles {
 	}
 
 	override function loadTexture( path : String ) {
-		return parts.scene.loadTextureFile(parts.state.path, path);
+		return parts.scene.loadTexture(parts.state.path, path);
 	}
 
 }

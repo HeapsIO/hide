@@ -11,7 +11,7 @@ private class Particles extends h2d.Particles {
 	}
 
 	override function loadTexture( path : String ) {
-		return parts.scene.loadTextureFile(parts.state.path, path);
+		return parts.scene.loadTexture(parts.state.path, path);
 	}
 
 }
