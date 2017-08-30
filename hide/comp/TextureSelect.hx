@@ -5,7 +5,7 @@ class TextureSelect extends FileSelect {
 	public var value(default, set) : h3d.mat.Texture;
 
 	public function new(root) {
-		super(root,["jpg", "jpeg", "gif"]);
+		super(root,["jpg", "jpeg", "gif", "png"]);
 	}
 
 	override function set_path(p:String) {

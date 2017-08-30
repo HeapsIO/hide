@@ -45,6 +45,7 @@ class Keys {
 		if( callb != null ) {
 			callb();
 			e.stopPropagation();
+			e.preventDefault();
 		}
 	}
 
