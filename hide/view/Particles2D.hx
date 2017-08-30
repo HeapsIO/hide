@@ -88,10 +88,14 @@ class Particles2D extends FileView {
 					<div class="group" name="Emit">
 						<dl>
 							<dt>Mode</dt><dd><select field="emitMode"/></dd>
+							<dt></dt><dd>
+								X <input type="number" style="width:59px" field="dx"/>
+								Y <input type="number" style="width:59px" field="dy"/>
+							</dd>
 							<dt>Count</dt><dd><input type="range" field="nparts" min="0" max="300" step="1"/></dd>
-							<dt>Distance</dt><dd><input type="range" field="emitDist" min="0" max="1000"/></dd>
-							<dt>Distance Y</dt><dd><input type="range" field="emitDistY" min="0" max="1000"/></dd>
-							<dt>Angle</dt><dd><input type="range" field="emitAngle" min="${-Math.PI/2}" max="${Math.PI}"/></dd>
+							<dt>Distance</dt><dd><input type="range" field="emitDist" min="0" max="1000" step="1"/></dd>
+							<dt>Distance Y</dt><dd><input type="range" field="emitDistY" min="0" max="1000" step="1"/></dd>
+							<dt>Angle</dt><dd><input type="range" field="emitAngle" min="-1" max="1" step="0.1"/></dd>
 							<dt>Sync</dt><dd><input type="range" field="emitSync" min="0" max="1"/></dd>
 							<dt>Delay</dt><dd><input type="range" field="emitDelay" min="0" max="10"/></dd>
 							<dt>Loop</dt><dd><input type="checkbox" field="emitLoop"/></dd>
@@ -113,7 +117,8 @@ class Particles2D extends FileView {
 							<dt>Initial</dt><dd><input type="range" field="speed" min="0" max="1000"/></dd>
 							<dt>Randomness</dt><dd><input type="range" field="speedRand" min="0" max="1"/></dd>
 							<dt>Acceleration</dt><dd><input type="range" field="speedIncr" min="-1" max="1"/></dd>
-							<dt>Gravity</dt><dd><input type="range" field="gravity" min="-250" max="250"/></dd>
+							<dt>Gravity</dt><dd><input type="range" field="gravity" min="-500" max="500" step="1"/></dd>
+							<dt>Gravity Angle</dt><dd><input type="range" field="gravityAngle" min="0" max="1" step="0.1"/></dd>
 						</dl>
 					</div>
 
@@ -122,6 +127,10 @@ class Particles2D extends FileView {
 							<dt>Initial</dt><dd><input type="range" field="size" min="0.01" max="2"/></dd>
 							<dt>Randomness</dt><dd><input type="range" field="sizeRand" min="0" max="1"/></dd>
 							<dt>Growth</dt><dd><input type="range" field="sizeIncr" min="-1" max="1"/></dd>
+							<dt></dt><dd>
+								Grow u <input type="checkbox" field="incrX"/>
+								Grow v <input type="checkbox" field="incrY"/>
+							</dd>
 						</dl>
 					</div>
 
