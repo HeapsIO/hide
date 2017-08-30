@@ -20,7 +20,7 @@ class PropsEditor extends Component {
 	public function addMaterial( m : h3d.mat.Material, ?parent : Element ) {
 		var props = m.props;
 		var def = h3d.mat.MaterialSetup.current.editMaterial(props);
-		def = add(def, props, function(undo) {
+		def = add(def, props, function(_, undo) {
 			if( m.model != null )
 				h3d.mat.MaterialSetup.current.saveModelMaterial(m);
 			m.refreshProps();
@@ -31,7 +31,7 @@ class PropsEditor extends Component {
 			def.appendTo(parent);
 	}
 
-	public function add( e : Element, ?context : Dynamic, ?onChange ) {
+	public function add( e : Element, ?context : Dynamic, ?onChange : String -> Bool -> Void ) {
 
 		e.appendTo(root);
 		e = e.wrap("<div></div>").parent(); // necessary to have find working on top level element
@@ -83,7 +83,7 @@ class PropsEditor extends Component {
 		// init input reflection
 		for( f in e.find("[field]").elements() ) {
 			var f = new PropsField(this, f, context);
-			if( onChange != null ) f.onChange = onChange;
+			if( onChange != null ) f.onChange = function(undo) onChange(@:privateAccess f.fname,undo);
 			fields.push(f);
 		}
 
@@ -95,14 +95,15 @@ class PropsEditor extends Component {
 
 class PropsField extends Component {
 
+	public var fname : String;
 	var props : PropsEditor;
-	var fname : String;
 	var context : Dynamic;
 	var current : Dynamic;
 	var enumValue : Enum<Dynamic>;
 	var tempChange : Bool;
 	var beforeTempChange : { value : Dynamic };
 	var tselect : hide.comp.TextureSelect;
+	var fselect : hide.comp.FileSelect;
 	var viewRoot : Element;
 
 	public function new(props, f, context) {
@@ -143,6 +144,22 @@ class PropsField extends Component {
 				Reflect.setProperty(context, fname, current);
 				onChange(false);
 			}
+			return;
+		case "model":
+			f.addClass("file");
+			fselect = new hide.comp.FileSelect(f, ["hmd", "fbx"]);
+			fselect.path = current;
+			fselect.onChange = function() {
+				props.undo.change(Field(context, fname, current), function() {
+					var f = resolveField();
+					f.current = Reflect.field(f.context, fname);
+					f.fselect.path = f.current;
+					f.onChange(true);
+				});
+				current = fselect.path;
+				Reflect.setProperty(context, fname, current);
+				onChange(false);
+			};
 			return;
 		case "range":
 

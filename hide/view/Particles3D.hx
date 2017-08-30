@@ -191,14 +191,20 @@ class Particles3D extends FileView {
 		for( g in parts.getGroups() )
 			addGroup(g);
 
+		var props : { ?model : String, ?attach : String, ?anim : String } = @:privateAccess parts.hideProps;
+		if( props == null ) {
+			props = {};
+			@:privateAccess parts.hideProps = props;
+		}
+
 		var extra = new Element('
 			<div class="section">
 				<h1>Manage</h1>
 				<div class="content">
 					<dl>
-					<dt>Model</dt><dd><input class="file model"/></dd>
-					<dt class="attach">Attach</dt><dd class="attach"><select/></dd>
-					<dt class="anim">Anim</dt><dd class="anim"><select/></dd>
+					<dt>Model</dt><dd><input type="model" field="model"/></dd>
+					<dt class="attach">Attach</dt><dd class="attach"><select field="attach"/></dd>
+					<dt class="anim">Anim</dt><dd class="anim"><select field="anim"/></dd>
 					<dt>Show Bounds</dt><dd><input type="checkbox" class="bounds"/></dd>
 					<dt>Enable Lights</dt><dd><input type="checkbox" class="lights" checked="checked"/></dd>
 					<dt></dt><dd><input type="button" class="new" value="New Group"/></dd>
@@ -206,98 +212,21 @@ class Particles3D extends FileView {
 				</div>
 			</div>
 		');
-		extra = properties.add(extra);
-		extra.find(".bounds").change(function(e) bounds.visible = e.getThis().prop("checked"));
-		var defAmbient = scene.s3d.lightSystem.ambientLight.clone();
-		extra.find(".lights").change(function(e) {
-			var ls = scene.s3d.lightSystem;
-			var enable = e.getThis().prop("checked");
-			ls.maxLightsPerObject = enable ? 6 : 0;
-			if( enable ) ls.ambientLight.load(defAmbient) else ls.ambientLight.set(1, 1, 1);
-		});
-		extra.find(".new").click(function(_) {
-			var g = parts.addGroup();
-			g.name = "Group#" + Lambda.count({ iterator : parts.getGroups });
-			addGroup(g);
-			extra.appendTo(properties.root);
-			undo.change(Custom(function(undo) {
-				if( undo )
-					parts.removeGroup(g);
-				else
-					parts.addGroup(g);
-				initProperties();
-			}));
-		}, null);
-
-		var pmodel = new hide.comp.FileSelect(extra.find(".model"), ["hmd", "fbx"]);
-		var props : { ?model : String, ?attach : String, ?anim : String } = @:privateAccess parts.hideProps;
-		if( props == null ) {
-			props = {};
-			@:privateAccess parts.hideProps = props;
-		}
-		pmodel.path = props.model;
-
-		var attach = extra.find(".attach select");
-		attach.change(function(_) {
-			var prev = props.attach;
-			var next = attach.val();
-			if( prev == next ) return;
-			props.attach = next;
-			undo.change(Custom(function(undo) {
-				props.attach = undo ? prev : next;
-				attach.val(props.attach == null ? '' : props.attach);
-				pmodel.onChange();
-			}));
-			pmodel.onChange();
-			attach.blur();
-		});
 
 		var anim = extra.find(".anim select");
-		anim.change(function(_) {
-			var prev = props.anim;
-			var next = anim.val();
-			if( next == "" ) next = null;
-			if( prev == next ) return;
-			props.anim = next;
-			undo.change(Custom(function(undo) {
-				props.anim = undo ? prev : next;
-				anim.val(props.anim == null ? '' : props.anim);
-				pmodel.onChange();
-			}));
-			pmodel.onChange();
-			anim.blur();
-		});
-		anim.contextmenu(function(e) {
-			e.preventDefault();
-			new hide.comp.ContextMenu([
-				{ label : "Clear", enabled : props.anim != null, click : function() {
-					var prev = props.anim;
-					props.anim = null;
-					anim.val('');
-					undo.change(Custom(function(undo) {
-						props.anim = undo ? prev : null;
-						anim.val(props.anim == null ? '' : props.anim);
-						pmodel.onChange();
-					}));
-					pmodel.onChange();
-				}},
-			]);
-		});
+		var attach = extra.find(".attach select");
 
-		pmodel.onChange = function() {
+		function syncProps() {
 
-			extra.find(".attach").toggle(pmodel.path != null);
-			extra.find(".anim").toggle(pmodel.path != null);
+			extra.find(".attach").toggle(props.model != null);
+			extra.find(".anim").toggle(props.model != null);
 
-			if( props.model != pmodel.path ) {
-				var prev = props.model;
-				var next = pmodel.path;
-				props.model = next;
-				undo.change(Custom(function(undo) {
-					props.model = pmodel.path = undo ? prev : next;
-					pmodel.onChange();
-				}));
-			}
+			parts.rebuild();
+
+			if( props.anim == '' )
+				props.anim = null;
+			if( props.attach == '' )
+				props.attach = '';
 
 			if( model != null ) {
 				model.remove();
@@ -346,7 +275,7 @@ class Particles3D extends FileView {
 					var prev = anim.val();
 					anim.html('');
 					var anims = scene.listAnims(props.model);
-					new Element('<option value="">-- select --</option>').appendTo(anim);
+					new Element('<option value="">-- none --</option>').appendTo(anim);
 					for( a in anims ) {
 						var name = scene.animationName(a);
 						new Element('<option value="$a" ${a == prev ? "selected='selected'" : ""}>$name</option>').appendTo(anim);
@@ -364,12 +293,31 @@ class Particles3D extends FileView {
 			}
 			parts.follow = parent;
 			ide.cleanObject(props);
-		};
-		pmodel.onChange();
-		if( props.attach != null )
-			attach.val(props.attach);
-		if( props.anim != null )
-			anim.val(props.anim);
+		}
+		syncProps();
+		extra = properties.add(extra, props, function(_, _) syncProps());
+
+		extra.find(".bounds").change(function(e) bounds.visible = e.getThis().prop("checked"));
+		var defAmbient = scene.s3d.lightSystem.ambientLight.clone();
+		extra.find(".lights").change(function(e) {
+			var ls = scene.s3d.lightSystem;
+			var enable = e.getThis().prop("checked");
+			ls.maxLightsPerObject = enable ? 6 : 0;
+			if( enable ) ls.ambientLight.load(defAmbient) else ls.ambientLight.set(1, 1, 1);
+		});
+		extra.find(".new").click(function(_) {
+			var g = parts.addGroup();
+			g.name = "Group#" + Lambda.count({ iterator : parts.getGroups });
+			addGroup(g);
+			extra.appendTo(properties.root);
+			undo.change(Custom(function(undo) {
+				if( undo )
+					parts.removeGroup(g);
+				else
+					parts.addGroup(g);
+				initProperties();
+			}));
+		}, null);
 	}
 
 	static var _ = FileTree.registerExtension(Particles3D, ["json.particles3D"], { icon : "snowflake-o", createNew: "Particle 3D" });
