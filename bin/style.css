@@ -49,6 +49,10 @@ input:hover {
 input.file {
   cursor: pointer;
 }
+input.file.dragover {
+  border-color: white;
+  background-color: #141414;
+}
 input[type=button] {
   background-color: #444;
   cursor: pointer;
@@ -285,6 +289,7 @@ input[type=checkbox]:checked:after {
   cursor: default;
 }
 .hide-properties dd {
+  position: relative;
   width: 200px;
   margin-left: 10px;
 }

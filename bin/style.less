@@ -47,6 +47,10 @@ select, input {
 
 input.file {
 	cursor : pointer;
+	&.dragover {
+		border-color : white;
+		background-color : rgb(20,20,20);
+	}
 }
 
 input[type=button] {
@@ -311,6 +315,7 @@ input[type=checkbox] {
 	}
 
 	dd {
+		position:relative;
 		width:200px;
 		margin-left:10px;
 		input:not([type=checkbox]):not([type=number]) {

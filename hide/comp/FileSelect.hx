@@ -2,10 +2,12 @@ package hide.comp;
 
 class FileSelect extends Component {
 
+	var extensions : Array<String>;
 	public var path(default, set) : String;
 
 	public function new(root, extensions) {
 		super(root);
+		this.extensions = extensions;
 		path = null;
 		root.mousedown(function(e) {
 			e.preventDefault();
@@ -26,6 +28,40 @@ class FileSelect extends Component {
 			]);
 			return false;
 		});
+		// allow drag files
+		root.on("dragover", function(e) {
+			root.addClass("dragover");
+			e.preventDefault();
+		});
+		root.on("dragleave", function(e) {
+			root.removeClass("dragover");
+		});
+		root.on("drop", function(e:js.jquery.Event) {
+			root.removeClass("dragover");
+			var file = getTransferFile(e);
+			if( file != null ) {
+				path = file;
+				onChange();
+			}
+			e.preventDefault();
+		});
+	}
+
+	function getTransferFile( e : js.jquery.Event ) {
+		var data : js.html.DataTransfer = untyped e.originalEvent.dataTransfer;
+		var text = data.getData("text/html");
+		var path : String = null;
+
+		if( data.files.length > 0 )
+			path = untyped data.files[0].path;
+		else if( StringTools.startsWith(text, "<a") && text.indexOf("jstree-anchor") > 0 ) {
+			var rpath = ~/id="([^"]+)_anchor"/;
+			if( rpath.match(text) )
+				path = rpath.matched(1);
+		}
+		if( path != null && sys.FileSystem.exists(ide.getPath(path)) && extensions.indexOf(path.split(".").pop().toLowerCase()) >= 0 )
+			return ide.makeRelative(path);
+		return null;
 	}
 
 	public function getFullPath() {
