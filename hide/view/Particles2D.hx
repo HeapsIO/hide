@@ -48,6 +48,27 @@ class Particles2D extends FileView {
 		sys.io.File.saveContent(getPath(), ide.toJSON(parts.save()));
 	}
 
+	function init() {
+		parts = new Particles(this, scene.s2d);
+		parts.smooth = true;
+		parts.load(haxe.Json.parse(sys.io.File.getContent(getPath())));
+		initProperties();
+		scene.init(props);
+		scene.onResize = onResize;
+	}
+
+	override function onResize() {
+		if (parts != null) {
+			parts.x = scene.width >> 1;
+			parts.y = scene.height >> 1;
+		}
+		if (background != null) {
+			background.setPos(parts.x - background.tile.width / 2, parts.y - background.tile.height / 2);
+			background.tile.dx = partsProps.dx;
+			background.tile.dy = partsProps.dy;
+		}
+	}
+
 	function addGroup( g : h2d.Particles.ParticleGroup ) {
 		var e = new Element('
 			<div class="section">
@@ -139,34 +160,38 @@ class Particles2D extends FileView {
 				initProperties();
 			}
 			new hide.comp.ContextMenu([
-				{ label : "Enable", checked : g.enable, click : function() { g.enable = !g.enable; e.find("[field=enable]").prop("checked", g.enable); } },
-				{ label : "MoveUp", enabled : index > 0, click : function() moveIndex(-1) },
-				{ label : "MoveDown", enabled : index < groups.length - 1, click : function() moveIndex(1) },
-				{ label : "Delete", click : function() { parts.removeGroup(g); e.remove(); } },
+				{ label : "Enable", checked : g.enable, click : function() {
+					g.enable = !g.enable;
+					e.find("[field=enable]").prop("checked", g.enable);
+				} },
+				{ label : "Copy", click : function() setClipboard(g.save()) },
+				{ label : "Paste", enabled : hasClipboard(), click : function() {
+					var prev = g.save();
+					var next = getClipboard();
+					g.load(@:privateAccess h2d.Particles.VERSION, next);
+					undo.change(Custom(function(undo) {
+						g.load(@:privateAccess h2d.Particles.VERSION, undo ? prev : next);
+						initProperties();
+					}));
+					initProperties();
+				} },
+				{ label : "MoveUp", enabled : index > 0, click : function() { moveIndex( -1); } },
+				{ label : "MoveDown", enabled : index < groups.length - 1, click : function() { moveIndex(1); } },
+				{ label : "Delete", click : function() {
+					parts.removeGroup(g);
+					e.remove();
+					undo.change(Custom(function(undo) {
+						if( undo )
+							parts.addGroup(g, index);
+						else
+							parts.removeGroup(g);
+						initProperties();
+					}));
+				} },
 			]);
 			ev.preventDefault();
 		});
 		properties.add(e, g);
-	}
-
-	function init() {
-		parts = new Particles(this, scene.s2d);
-		parts.smooth = true;
-		parts.load(haxe.Json.parse(sys.io.File.getContent(getPath())));
-		initProperties();
-		scene.init(props);
-		scene.onResize = onResize;
-	}
-
-	override function onResize() {
-		if( parts == null ) return;
-		parts.x = scene.width >> 1;
-		parts.y = scene.height >> 1;
-		if (background != null) {
-			background.setPos(parts.x - background.tile.width / 2, parts.y - background.tile.height / 2);
-			background.tile.dx = partsProps.dx;
-			background.tile.dy = partsProps.dy;
-		}
 	}
 
 	function initProperties() {
@@ -196,6 +221,13 @@ class Particles2D extends FileView {
 			addGroup(g);
 			bgParams.appendTo(properties.root);
 			extra.appendTo(properties.root);
+			undo.change(Custom(function(undo) {
+				if( undo )
+					parts.removeGroup(g);
+				else
+					parts.addGroup(g);
+				initProperties();
+			}));
 		}, null);
 	}
 
@@ -229,7 +261,7 @@ class Particles2D extends FileView {
 			</div>
 		');
 
-		function onChange(propName, undo) {
+		function onChange(propName) {
 			if (propName == "backgroundPath") {
 				if (background != null) {
 					background.remove();
