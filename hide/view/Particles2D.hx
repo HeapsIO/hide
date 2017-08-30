@@ -69,6 +69,7 @@ class Particles2D extends FileView {
 							<dt>Mode</dt><dd><select field="emitMode"/></dd>
 							<dt>Count</dt><dd><input type="range" field="nparts" min="0" max="300" step="1"/></dd>
 							<dt>Distance</dt><dd><input type="range" field="emitDist" min="0" max="1000"/></dd>
+							<dt>Distance Y</dt><dd><input type="range" field="emitDistY" min="0" max="1000"/></dd>
 							<dt>Angle</dt><dd><input type="range" field="emitAngle" min="${-Math.PI/2}" max="${Math.PI}"/></dd>
 							<dt>Sync</dt><dd><input type="range" field="emitSync" min="0" max="1"/></dd>
 							<dt>Delay</dt><dd><input type="range" field="emitDelay" min="0" max="10"/></dd>
@@ -206,10 +207,12 @@ class Particles2D extends FileView {
 		}
 
 		function createBackground() {
-			var tile = h2d.Tile.fromTexture(scene.loadTexture(state.path, partsProps.backgroundPath));
-			background = new h2d.Bitmap(tile);
-			scene.s2d.add(background, 0);
-			scene.s2d.addChild(parts);
+			if (partsProps.backgroundPath != null) {
+				var tile = h2d.Tile.fromTexture(scene.loadTexture(state.path, partsProps.backgroundPath));
+				background = new h2d.Bitmap(tile);
+				scene.s2d.add(background, 0);
+				scene.s2d.addChild(parts);
+			}
 		}
 		createBackground();
 
@@ -233,9 +236,7 @@ class Particles2D extends FileView {
 					background = null;
 				}
 
-				if (partsProps.backgroundPath != null) {
-					createBackground();
-				}
+				createBackground();
 			}
 
 			onResize();
