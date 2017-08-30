@@ -225,7 +225,7 @@ class Particles2D extends FileView {
 		else {
 			if (props.backgroundPath != null) {
 				newBg.path = props.backgroundPath;
-				var tile = h2d.Tile.fromTexture(scene.loadTextureFile(state.path, props.backgroundPath));
+				var tile = h2d.Tile.fromTexture(scene.loadTexture(state.path, props.backgroundPath));
 				background = new h2d.Bitmap(tile);
 				scene.s2d.add(background, 0);
 				scene.s2d.addChild(parts);

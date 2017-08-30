@@ -145,6 +145,22 @@ class PropsField extends Component {
 				onChange(false);
 			}
 			return;
+		case "texturepath":
+			f.addClass("file");
+			tselect = new hide.comp.TextureSelect(f);
+			tselect.path = current;
+			tselect.onChange = function() {
+				props.undo.change(Field(context, fname, current), function() {
+					var f = resolveField();
+					f.current = Reflect.field(f.context, fname);
+					f.tselect.path = f.current;
+					f.onChange(true);
+				});
+				current = tselect.path;
+				Reflect.setProperty(context, fname, current);
+				onChange(false);
+			}
+			return;
 		case "model":
 			f.addClass("file");
 			fselect = new hide.comp.FileSelect(f, ["hmd", "fbx"]);
