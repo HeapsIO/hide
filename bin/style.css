@@ -363,3 +363,39 @@ div.lm_close_tab:hover {
 .jstree-icon {
   color: #aaa !important;
 }
+/* Spectrum Color picker */
+div.sp-replacer {
+  vertical-align: top;
+  background-color: #444;
+  border: 1px solid #666;
+  height: 16px;
+  margin-right: 5px;
+}
+div.sp-replacer .sp-preview {
+  width: 14px;
+  height: 14px;
+}
+div.sp-replacer .sp-dd {
+  padding-top: 0px;
+}
+div.sp-replacer:hover {
+  border-color: white;
+}
+div.sp-replacer.sp-active {
+  border-color: #888;
+}
+div.sp-container {
+  background-color: #444;
+  border: 1px solid #666;
+}
+div.sp-container .sp-picker-container {
+  border: none;
+}
+div.sp-container input {
+  color: #aaa;
+  background-color: #222222;
+  border-radius: 0px;
+}
+div.sp-container input:hover {
+  border-color: white;
+}

@@ -40,6 +40,21 @@ class Toolbar extends Component {
 		return { element : e, toggle : function(b) e.toggleClass("toggled",b) };
 	}
 
+	public function addColor( label : String, onChange : Int -> Void, ?alpha : Bool, ?defValue = 0 ) {
+		var e = new Element('<input>');
+		e.appendTo(root);
+		var color = new hide.comp.ColorPicker(e, alpha);
+		color.onChange = function(move) {
+			if( !move ) this.saveDisplayState("color:" + label, color.value);
+			onChange(color.value);
+		};
+		var def = getDisplayState("color:" + label);
+		if( def == null ) def = defValue;
+		color.value = def;
+		onChange(def);
+		return color;
+	}
+
 	public function addSelect<T>( icon : String, ?label : String ) : ToolSelect<T> {
 		var e = new Element('<div class="select" title="${label==null ? "" : label}"><div class="icon fa fa-$icon"/><select/></div>');
 		var content : Array<{ label : String, value : T }> = [];

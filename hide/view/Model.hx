@@ -140,7 +140,9 @@ class Model extends FileView {
 			}
 		},true);
 
-		//tools.addButton("cube","Test");
+		tools.addColor("Background color", function(v) {
+			scene.engine.backgroundColor = v;
+		}, scene.engine.backgroundColor);
 	}
 
 	function update(dt:Float) {
