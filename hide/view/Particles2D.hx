@@ -1,4 +1,6 @@
 package hide.view;
+import h2d.Graphics in Graphics;
+import h2d.Particles.ParticleGroup in ParticleGroup;
 
 @:access(hide.view.Particles2D)
 private class Particles extends h2d.Particles {
@@ -22,6 +24,8 @@ class Particles2D extends FileView {
 	var parts : Particles;
 	var partsProps : { ?backgroundPath : String, ?dx : Int, ?dy : Int };
 
+	var uiProps : { showBounds : Bool };
+	var debugBounds : Array<Graphics> = [];
 	var background : h2d.Bitmap = null;
 	var properties : hide.comp.PropsEditor;
 
@@ -52,8 +56,11 @@ class Particles2D extends FileView {
 		parts = new Particles(this, scene.s2d);
 		parts.smooth = true;
 		parts.load(haxe.Json.parse(sys.io.File.getContent(getPath())));
+		uiProps = { showBounds: false };
+
 		initProperties();
 		scene.init(props);
+		scene.onUpdate = update;
 		scene.onResize = onResize;
 	}
 
@@ -69,7 +76,7 @@ class Particles2D extends FileView {
 		}
 	}
 
-	function addGroup( g : h2d.Particles.ParticleGroup ) {
+	function addGroup( g : ParticleGroup ) {
 		var e = new Element('
 			<div class="section">
 				<h1><span>${g.name}</span> &nbsp;<input type="checkbox" field="enable"/></h1>
@@ -218,12 +225,13 @@ class Particles2D extends FileView {
 				<div class="content">
 					<dl>
 					<dt></dt><dd><input type="button" class="new" value="New Group"/></dd>
+					<dt>Show bounds</dt><dd><input type="checkbox" field="showBounds"/></dt>
 					</dl>
 				</div>
 			</div>
 		');
 
-		extra = properties.add(extra);
+		extra = properties.add(extra, uiProps);
 		extra.find(".new").click(function(_) {
 			var g = parts.addGroup();
 			g.name = "Group#" + Lambda.count({ iterator : parts.getGroups });
@@ -286,6 +294,44 @@ class Particles2D extends FileView {
 		bgParams = properties.add(bgParams, partsProps, onChange);
 
 		return bgParams;
+	}
+
+	function update(dt : Float) {
+		for (l in debugBounds)
+			l.remove();
+		debugBounds = [];
+		if (uiProps.showBounds) {
+			for (g in parts.getGroups())
+				drawBounds(g);
+		}
+	}
+
+	function drawBounds(pGroup : ParticleGroup) {
+		var g = new Graphics(parts.parent);
+		g.lineStyle(3, getBoundsColor(pGroup), 1.);
+		debugBounds.push(g);
+		var x = parts.x + pGroup.dx;
+		var y = parts.y + pGroup.dy;
+
+		switch(pGroup.emitMode) {
+			case Point:
+				g.drawCircle(x, y, pGroup.emitDist);
+
+			case Cone:
+				var angle = Math.PI * pGroup.emitAngle;
+				var startAngle : Float = (Math.PI - angle) * 0.5;
+				if (angle < 0) startAngle -= Math.PI;
+				g.drawPie(x, y, pGroup.emitDist, startAngle, angle);
+
+			case Box:
+				var w = pGroup.emitDist;
+				var h = pGroup.emitDistY;
+				g.drawRect(x - w, y - h, w * 2, h * 2);
+		}
+	}
+
+	function getBoundsColor(pGroup : ParticleGroup) : Int {
+		return 1000 + @:privateAccess parts.groups.indexOf(pGroup) * 30000;
 	}
 
 	static var _ = FileTree.registerExtension(Particles2D, ["json.particles2D"], { icon : "snowflake-o", createNew: "Particle 2D" });
