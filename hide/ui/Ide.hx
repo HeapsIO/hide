@@ -12,6 +12,9 @@ class Ide {
 
 	public var isWindows(get, never) : Bool;
 
+	public var database : cdb.Database;
+	var databaseFile : String;
+
 	var props : {
 		global : Props,
 		project : Props,
@@ -251,6 +254,17 @@ class Ide {
 			r.onError = function(msg) error(msg);
 		}
 
+		var db = getPath("data.cdb");
+		databaseFile = db;
+		database = new cdb.Database();
+		if( sys.FileSystem.exists(db) ) {
+			try {
+				database.load(sys.io.File.getContent(db));
+			} catch( e : Dynamic ) {
+				error(e);
+			}
+		}
+
 		var render = renderers[0];
 		for( r in renderers )
 			if( r.name == props.current.current.hide.renderer ) {
@@ -371,6 +385,15 @@ class Ide {
 			});
 		}
 
+		// database
+		var db = menu.find(".database");
+		for( s in database.sheets ) {
+			if( s.props.hide ) continue;
+			new Element("<menu>").attr("label", s.name).appendTo(db.find(".dbview")).click(function(_) {
+				open("hide.view.CdbTable", { path : s.name });
+			});
+		}
+
 		// layout
 		var layouts = menu.find(".layout .content");
 		layouts.html("");
@@ -415,7 +438,12 @@ class Ide {
 	}
 
 	public function open( component : String, state : Dynamic, ?onCreate : View<Dynamic> -> Void ) {
-		var options = View.viewClasses.get(component).options;
+		var c = View.viewClasses.get(component);
+
+		if( c == null )
+			throw "Unknown component " + component;
+
+		var options = c.options;
 
 		var bestTarget : golden.Container = null;
 		for( v in views )

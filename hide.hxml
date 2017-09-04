@@ -5,8 +5,10 @@
 -lib heaps
 -lib hxbit
 -lib hscript
+-lib castle
 -D hscriptPos
 -dce no
+-D old-error-format
 --macro include('hide.view')
 --macro include('h3d.prim')
 --macro include('h3d.scene')
