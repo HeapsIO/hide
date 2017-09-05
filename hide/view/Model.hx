@@ -13,6 +13,7 @@ class Model extends FileView {
 	var lightDirection = new h3d.Vector( 1, 2, -4 );
 
 	var aspeed : hide.comp.Range;
+	var aloop : { function toggle( v : Bool ) : Void; var element : Element; }
 	var apause : { function toggle( v : Bool ) : Void; var element : Element; };
 	var timeline : h2d.Graphics;
 	var timecursor : h2d.Bitmap;
@@ -142,6 +143,10 @@ class Model extends FileView {
 			scene.engine.backgroundColor = v;
 		}, scene.engine.backgroundColor);
 
+		aloop = tools.addToggle("refresh", "Loop animation", function(v) {
+			if( obj.currentAnimation != null ) obj.currentAnimation.loop = v;
+		});
+
 		apause = tools.addToggle("pause", "Pause animation", function(v) {
 			if( obj.currentAnimation != null ) obj.currentAnimation.pause = v;
 		});
@@ -160,18 +165,18 @@ class Model extends FileView {
 			timeline = null;
 		}
 		apause.toggle(false);
+		aloop.toggle(true);
 		aspeed.value = 1;
+		aloop.element.toggle(file != null);
+		aspeed.root.toggle(file != null);
+		apause.element.toggle(file != null);
 		if( file == null ) {
 			obj.stopAnimation();
-			aspeed.root.toggle(false);
-			apause.element.toggle(false);
 			return;
 		}
 		var anim = scene.loadAnimation(file);
 		obj.playAnimation(anim);
 		buildTimeline();
-		aspeed.root.toggle(true);
-		apause.element.toggle(true);
 	}
 
 	function buildTimeline() {
@@ -188,6 +193,16 @@ class Model extends FileView {
 		timeline.y = scene.s2d.height - H;
 		timeline.beginFill(0, 0.8);
 		timeline.drawRect(0, 0, W, H);
+
+		if( W / obj.currentAnimation.frameCount > 3 ) {
+			timeline.beginFill(0x333333);
+			for( i in 0...obj.currentAnimation.frameCount+1 ) {
+				var p = Std.int(i * W / obj.currentAnimation.frameCount);
+				if( p == W ) p--;
+				timeline.drawRect(p, 0, 1, H>>1);
+			}
+		}
+
 		var int = new h2d.Interactive(W, H, timeline);
 		timecursor = new h2d.Bitmap(h2d.Tile.fromColor(0x808080, 8, H), timeline);
 		timecursor.x = -100;
