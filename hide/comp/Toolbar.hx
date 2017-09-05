@@ -74,4 +74,11 @@ class Toolbar extends Component {
 		return tool;
 	}
 
+	public function addRange( label : String, onChange : Float -> Void, ?defValue = 0., min = 0., max = 1. ) {
+		var r = new hide.comp.Range(new Element('<input title="$label" type="range" min="$min" max="$max" value="$defValue">'));
+		r.onChange = function(_) onChange(r.value);
+		r.root.appendTo(root);
+		return r;
+	}
+
 }

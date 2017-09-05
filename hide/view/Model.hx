@@ -12,6 +12,11 @@ class Model extends FileView {
 	var light : h3d.scene.DirLight;
 	var lightDirection = new h3d.Vector( 1, 2, -4 );
 
+	var aspeed : hide.comp.Range;
+	var apause : { function toggle( v : Bool ) : Void; var element : Element; };
+	var timeline : h2d.Graphics;
+	var timecursor : h2d.Bitmap;
+
 	override function onDisplay() {
 		root.html('
 			<div class="flex vertical">
@@ -108,14 +113,7 @@ class Model extends FileView {
 			}];
 			content.unshift({ label : "-- no anim --", value : null });
 			sel.setContent(content);
-			sel.onSelect = function(a) {
-				if( a == null ) {
-					obj.stopAnimation();
-					return;
-				}
-				var anim = scene.loadAnimation(a);
-				obj.playAnimation(anim);
-			};
+			sel.onSelect = setAnimation;
 		}
 
 		scene.init(props);
@@ -143,6 +141,90 @@ class Model extends FileView {
 		tools.addColor("Background color", function(v) {
 			scene.engine.backgroundColor = v;
 		}, scene.engine.backgroundColor);
+
+		apause = tools.addToggle("pause", "Pause animation", function(v) {
+			if( obj.currentAnimation != null ) obj.currentAnimation.pause = v;
+		});
+
+		aspeed = tools.addRange("Animation speed", function(v) {
+			if( obj.currentAnimation != null ) obj.currentAnimation.speed = v;
+		}, 1, 0, 2);
+
+		scene.onResize = buildTimeline;
+		setAnimation(null);
+	}
+
+	function setAnimation( file : String ) {
+		if( timeline != null ) {
+			timeline.remove();
+			timeline = null;
+		}
+		apause.toggle(false);
+		aspeed.value = 1;
+		if( file == null ) {
+			obj.stopAnimation();
+			aspeed.root.toggle(false);
+			apause.element.toggle(false);
+			return;
+		}
+		var anim = scene.loadAnimation(file);
+		obj.playAnimation(anim);
+		buildTimeline();
+		aspeed.root.toggle(true);
+		apause.element.toggle(true);
+	}
+
+	function buildTimeline() {
+		if( timeline != null ) {
+			timeline.remove();
+			timeline = null;
+		}
+		if( obj.currentAnimation == null )
+			return;
+
+		var H = 15;
+		var W = scene.s2d.width;
+		timeline = new h2d.Graphics(scene.s2d);
+		timeline.y = scene.s2d.height - H;
+		timeline.beginFill(0, 0.8);
+		timeline.drawRect(0, 0, W, H);
+		var int = new h2d.Interactive(W, H, timeline);
+		timecursor = new h2d.Bitmap(h2d.Tile.fromColor(0x808080, 8, H), timeline);
+		timecursor.x = -100;
+		int.onPush = function(e) {
+			var prevPause = obj.currentAnimation.pause;
+			obj.currentAnimation.pause = true;
+			obj.currentAnimation.setFrame( (e.relX / W) * obj.currentAnimation.frameCount );
+			int.startDrag(function(e) {
+				switch(e.kind ) {
+				case ERelease:
+					obj.currentAnimation.pause = prevPause;
+					int.stopDrag();
+				case EMove:
+					obj.currentAnimation.setFrame( (e.relX / W) * obj.currentAnimation.frameCount );
+				default:
+				}
+			});
+		};
+
+		var events = @:privateAccess obj.currentAnimation.events;
+		for( i in 0...events.length ) {
+			var el = events[i];
+			if( el == null || el.length == 0 ) continue;
+			var px = Std.int((i / obj.currentAnimation.frameCount) * W);
+			timeline.beginFill(0xC0C0C0);
+			timeline.drawRect(px, 0, 1, H);
+			var py = -14;
+			for( e in el ) {
+				var tf = new h2d.Text(hxd.res.DefaultFont.get(), timeline);
+				tf.text = e;
+				tf.x = px - Std.int(tf.textWidth * 0.5);
+				tf.y = py;
+				tf.alpha = 0.5;
+				py -= 15;
+			}
+		}
+
 	}
 
 	function update(dt:Float) {
@@ -155,6 +237,9 @@ class Model extends FileView {
 				Math.sin(angle) * lightDirection.x + Math.cos(angle) * lightDirection.y,
 				lightDirection.z
 			);
+		}
+		if( timeline != null ) {
+			timecursor.x = Std.int((obj.currentAnimation.frame / obj.currentAnimation.frameCount) * (scene.s2d.width - timecursor.tile.width));
 		}
 	}
 

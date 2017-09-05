@@ -105,6 +105,7 @@ class PropsField extends Component {
 	var tselect : hide.comp.TextureSelect;
 	var fselect : hide.comp.FileSelect;
 	var viewRoot : Element;
+	var range : hide.comp.Range;
 
 	public function new(props, f, context) {
 		super(f);
@@ -178,71 +179,12 @@ class PropsField extends Component {
 			};
 			return;
 		case "range":
-
-			f.wrap('<div class="range-group"/>');
-			var p = f.parent();
-			var inputView = new Element('<input type="text">').appendTo(p);
-			var originMin = Std.parseFloat(f.attr("min"));
-			var originMax = Std.parseFloat(f.attr("max"));
-			var curMin = originMin, curMax = originMax;
-
-			function setVal( v : Float ) {
-				var tempChange = tempChange;
-				this.setVal(v);
-
-				if( tempChange )
-					return;
-
-				if( v < curMin ) {
-					curMin = Math.floor(v);
-					f.attr("min", curMin);
-				}
-				if( v > curMax ) {
-					curMax = Math.ceil(v);
-					f.attr("max", curMax);
-				}
-				if( v >= originMin && v <= originMax ) {
-					f.attr("min", originMin);
-					f.attr("max", originMax);
-					curMin = originMin;
-					curMax = originMax;
-				}
-			}
-
-			var original = current;
-			p.parent().prev("dt").contextmenu(function(e) {
-				e.preventDefault();
-				new ContextMenu([
-					{ label : "Reset", click : function() { inputView.val(""+original); inputView.change(); } },
-					{ label : "Cancel", click : function() {} },
-				]);
-				return false;
-			});
-
-			f.on("input", function(_) { tempChange = true; f.change(); });
-			inputView.keyup(function(e) {
-				if( e.keyCode == 13 || e.keyCode == 27 ) {
-					inputView.blur();
-					inputView.val(current);
-					return;
-				}
-				var v = Std.parseFloat(inputView.val());
-				if( Math.isNaN(v) ) return;
-				setVal(v);
-				f.val(v);
-			});
-
-			f.val(current);
-			inputView.val(current);
-
-			f.change(function(e) {
-
-				var v = Math.round(Std.parseFloat(f.val()) * 100) / 100;
-				setVal(v);
-				inputView.val(v);
-
-			});
-
+			range = new hide.comp.Range(f);
+			range.onChange = function(temp) {
+				tempChange = temp;
+				setVal(range.value);
+			};
+			return;
 		default:
 			if( f.is("select") ) {
 				enumValue = Type.getEnum(current);
