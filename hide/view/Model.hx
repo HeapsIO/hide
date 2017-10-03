@@ -75,6 +75,69 @@ class Model extends FileView {
 		});
 	}
 
+	function selectObject( obj : h3d.scene.Object ) {
+		properties.clear();
+
+		var e = properties.add(new Element('
+			<div class="group" name="Properties">
+				<dl>
+					<dt>X</dt><dd><input field="x"/></dd>
+					<dt>Y</dt><dd><input field="y"/></dd>
+					<dt>Z</dt><dd><input field="z"/></dd>
+					<dt>Visible</dt><dd><input type="checkbox" field="visible"/></dd>
+					<dt>Attach</dt><dd><select class="follow"><option value="">--- None ---</option></select></dd>
+				</dl>
+			</div>
+			<br/>
+		'),obj);
+
+		var select = e.find(".follow");
+		for( path in getNamedObjects(obj) ) {
+			var parts = path.split(".");
+			var opt = new Element("<option>").attr("value", path).html([for( p in 1...parts.length ) "&nbsp; "].join("") + parts.pop());
+			select.append(opt);
+		}
+		select.change(function(_) {
+			var name = select.val().split(".").pop();
+			obj.follow = this.obj.getObjectByName(name);
+		});
+	}
+
+	function getNamedObjects( ?exclude : h3d.scene.Object ) {
+		var out = [];
+
+		function getJoint(path:Array<String>,j:h3d.anim.Skin.Joint) {
+			path.push(j.name);
+			out.push(path.join("."));
+			for( j in j.subs )
+				getJoint(path, j);
+			path.pop();
+		}
+
+		function getRec(path:Array<String>,o:h3d.scene.Object) {
+			if( o == exclude || o.name == null ) return;
+			path.push(o.name);
+			out.push(path.join("."));
+			for( c in o )
+				getRec(path, c);
+			var sk = Std.instance(o, h3d.scene.Skin);
+			if( sk != null ) {
+				var j = sk.getSkinData();
+				for( j in j.rootJoints )
+					getJoint(path, j);
+			}
+			path.pop();
+		}
+
+		if( obj.name == null )
+			for( o in obj )
+				getRec([], o);
+		else
+			getRec([], obj);
+
+		return out;
+	}
+
 	function init() {
 
 		undo.onChange = function() {};
@@ -91,6 +154,7 @@ class Model extends FileView {
 		control = new h3d.scene.CameraController(scene.s3d);
 		tree = new hide.comp.SceneTree(obj, overlay, obj.name != null);
 		tree.onSelectMaterial = selectMaterial;
+		tree.onSelectObject = selectObject;
 
 		this.saveDisplayKey = "Model:" + state.path;
 		tree.saveDisplayKey = this.saveDisplayKey;
@@ -144,7 +208,12 @@ class Model extends FileView {
 		}, scene.engine.backgroundColor);
 
 		aloop = tools.addToggle("refresh", "Loop animation", function(v) {
-			if( obj.currentAnimation != null ) obj.currentAnimation.loop = v;
+			if( obj.currentAnimation != null ) {
+				obj.currentAnimation.loop = v;
+				obj.currentAnimation.onAnimEnd = function() {
+					if( !v ) haxe.Timer.delay(function() obj.currentAnimation.setFrame(0), 500);
+				}
+			}
 		});
 
 		apause = tools.addToggle("pause", "Pause animation", function(v) {
