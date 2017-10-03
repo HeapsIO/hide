@@ -158,7 +158,6 @@ class Scene extends Component implements h3d.IDrawable {
 		stage = @:privateAccess new hxd.Stage(canvas);
 		stage.setCurrent();
 		engine = new h3d.Engine();
-		engine.onResized = function() onResize();
 		engine.backgroundColor = 0xFF111111;
 		canvas.id = null;
 		engine.onReady = function() {
@@ -178,7 +177,9 @@ class Scene extends Component implements h3d.IDrawable {
 			ide.registerUpdate(sync);
 		};
 		engine.onResized = function() {
-			if( s2d != null ) s2d.setFixedSize(engine.width, engine.height);
+			if( s2d == null ) return;
+			s2d.setFixedSize(engine.width, engine.height);
+			onResize();
 		};
 		engine.init();
 	}
