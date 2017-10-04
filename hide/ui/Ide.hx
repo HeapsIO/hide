@@ -323,7 +323,10 @@ class Ide {
 	}
 
 	public function toJSON( v : Dynamic ) {
-		return haxe.Json.stringify(v, "\t");
+		var str = haxe.Json.stringify(v, "\t");
+		str = ~/,\n\t+"__id__": [0-9]+/g.replace(str, "");
+		str = ~/\t+"__id__": [0-9]+,\n/g.replace(str, "");
+		return str;
 	}
 
 	function initMenu() {

@@ -267,10 +267,13 @@ class Scene extends Component implements h3d.IDrawable {
 		if( lib.header.animations.length > 0 )
 			anims.push(ide.getPath(path));
 
-		for( dir in dirs )
+		for( dir in dirs ) {
+			var dir = dir;
+			if( StringTools.endsWith(dir, "/") ) dir = dir.substr(0,-1);
 			for( f in try sys.FileSystem.readDirectory(dir) catch( e : Dynamic ) [] )
 				if( StringTools.startsWith(f,"Anim_") )
 					anims.push(dir+"/"+f);
+		}
 		return anims;
 	}
 

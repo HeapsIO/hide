@@ -1,7 +1,7 @@
 package hide.comp;
 
-typedef IconTreeItem = {
-	var id : String;
+typedef IconTreeItem<T> = {
+	var data : T;
 	var text : String;
 	@:optional var children : Bool;
 	@:optional var icon : String;
@@ -10,23 +10,32 @@ typedef IconTreeItem = {
 		@:optional var selected : Bool;
 		@:optional var disabled : Bool;
 	};
+	@:optional private var id : String; // internal usage
+	@:optional private var absKey : String; // internal usage
 }
 
-class IconTree extends Component {
+class IconTree<T:{}> extends Component {
+
+	static var UID = 0;
 
 	var waitRefresh = new Array<Void->Void>();
+	var map : Map<String, IconTreeItem<T>> = new Map();
+	var revMapString : haxe.ds.StringMap<IconTreeItem<T>> = new haxe.ds.StringMap();
+	var revMap : haxe.ds.ObjectMap<T, IconTreeItem<T>> = new haxe.ds.ObjectMap();
 
-	public dynamic function get( id : String ) : Array<IconTreeItem> {
-		return [{ id : id+"0", text : "get()", children : true }];
+	public var onMenu : Void -> Void;
+
+	public dynamic function get( parent : Null<T> ) : Array<IconTreeItem<T>> {
+		return [{ data : null, text : "get()", children : true }];
 	}
 
-	public dynamic function onClick( id : String ) : Void {
+	public dynamic function onClick( e : T ) : Void {
 	}
 
-	public dynamic function onDblClick( id : String ) : Void {
+	public dynamic function onDblClick( e : T ) : Void {
 	}
 
-	public dynamic function onToggle( id : String, isOpen : Bool ) : Void {
+	public dynamic function onToggle( e : T, isOpen : Bool ) : Void {
 	}
 
 	public function init() {
@@ -38,16 +47,22 @@ class IconTree extends Component {
 					icons: true
             	},
 				data : function(obj, callb) {
-					var parent = obj.parent == null ? null : obj.id;
-					var content : Array<IconTreeItem> = get(parent);
-					for( c in content )
+					var parent = obj.parent == null ? null : map.get(obj.id);
+					var content : Array<IconTreeItem<T>> = get(parent == null ? null : parent.data);
+					for( c in content ) {
+						var key = (parent == null ? "" : parent.absKey + "/") + c.text;
+						if( c.absKey == null ) c.absKey = key;
+						c.id = "titem$" + (UID++);
+						map.set(c.id, c);
+						if( Std.is(c.data, String) )
+							revMapString.set(cast c.data, c);
+						else
+							revMap.set(c.data, c);
 						if( c.state == null ) {
-							var s = getDisplayState((parent == null ? "" : parent + "/") + c.id);
-							if( s != null ) {
-								if( c.state == null ) c.state = {};
-								c.state.opened = s;
-							}
+							var s = getDisplayState(key);
+							if( s != null ) c.state = { opened : s };
 						}
+					}
 					callb.call(this,content);
 				}
 			},
@@ -55,21 +70,23 @@ class IconTree extends Component {
 		});
 		root.on("click.jstree", function (event) {
 			var node = new Element(event.target).closest("li");
-   			var data = node[0].id;
-			onClick(data);
+   			var i = map.get(node[0].id);
+			onClick(i.data);
 		});
 		root.on("dblclick.jstree", function (event) {
 			var node = new Element(event.target).closest("li");
-   			var data = node[0].id;
-			onDblClick(data);
+   			var i = map.get(node[0].id);
+			onDblClick(i.data);
 		});
 		root.on("open_node.jstree", function(event, e) {
-			saveDisplayState(e.node.id, true);
-			onToggle(e.node.id, true);
+			var i = map.get(e.node.id);
+			saveDisplayState(i.absKey, true);
+			onToggle(i.data, true);
 		});
 		root.on("close_node.jstree", function(event,e) {
-			saveDisplayState(e.node.id, false);
-			onToggle(e.node.id, false);
+			var i = map.get(e.node.id);
+			saveDisplayState(i.absKey, false);
+			onToggle(i.data, false);
 		});
 		root.on("refresh.jstree", function(_) {
 			var old = waitRefresh;
@@ -78,15 +95,23 @@ class IconTree extends Component {
 		});
 	}
 
-	public function getCurrentOver() : Null<String> {
-		var id = root.find(":focus").attr("id");
-		if( id != null )
-			id = id.substr(0, -7); // remove _anchor
-		return id;
+	function getRev( o : T ) {
+		if( Std.is(o, String) )
+			return revMapString.get(cast o);
+		return revMap.get(o);
 	}
 
-	public function setSelection( ids : Array<String> ) {
+	public function getCurrentOver() : Null<T> {
+		var id = root.find(":focus").attr("id");
+		if( id == null )
+			return null;
+		var i = map.get(id.substr(0, -7)); // remove _anchor
+		return i == null ? null : i.data;
+	}
+
+	public function setSelection( objects : Array<T> ) {
 		(untyped root.jstree)('deselect_all');
+		var ids = [for( o in objects ) { var v = getRev(o); if( v != null ) v.id; }];
 		(untyped root.jstree)('select_node',ids);
 	}
 
@@ -95,8 +120,9 @@ class IconTree extends Component {
 		(untyped root.jstree)('refresh',true);
 	}
 
-	public function getSelection() : Array<String> {
-		return (untyped root.jstree)('get_selected');
+	public function getSelection() : Array<T> {
+		var ids : Array<String> = (untyped root.jstree)('get_selected');
+		return [for( id in ids ) map.get(id).data];
 	}
 
 }

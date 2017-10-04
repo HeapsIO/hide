@@ -284,6 +284,43 @@ input[type=checkbox] {
 	}
 }
 
+.hide-list {
+	width : 100%;
+	height : 200px;
+	background-color : #111;
+	border : 1px solid #444;
+	overflow : auto;
+}
+
+.hide-block {
+	padding : 10px;
+}
+
+.hide-tabs {
+	flex : 0 0 320px;
+	&>.tabs-header {
+		background-color : #111;
+		padding : 2px;
+		padding-bottom : 0px;
+		&>div {
+			cursor : pointer;
+			display : inline-block;
+			background-color : #202020;
+			padding : 2px 5px;
+			border : 1px solid #444;
+			margin-left : -1px;
+			&.active {
+				background-color : #222;
+				border-bottom-color : #222;
+			}
+			&:hover {
+				background-color : #282828;
+			}
+		}
+
+	}
+}
+
 /* Properties */
 
 .hide-properties {

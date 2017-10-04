@@ -13,7 +13,7 @@ typedef ExtensionDesc = {
 
 class FileTree extends FileView {
 
-	var tree : hide.comp.IconTree;
+	var tree : hide.comp.IconTree<String>;
 	var lastOpen : hide.ui.View<Dynamic>;
 
 	public function new(state) {
@@ -66,7 +66,7 @@ class FileTree extends FileView {
 		tree.get = function(path) {
 			if( path == null ) path = "";
 			var basePath = getFilePath(path);
-			var content = new Array<hide.comp.IconTree.IconTreeItem>();
+			var content = new Array<hide.comp.IconTree.IconTreeItem<String>>();
 			for( c in sys.FileSystem.readDirectory(basePath) ) {
 				if( isIgnored(basePath, c) ) continue;
 				var fullPath = basePath + "/" + c;
@@ -74,7 +74,7 @@ class FileTree extends FileView {
 				var ext = getExtension(fullPath);
 				var id = ( path == "" ? c : path+"/"+c );
 				content.push({
-					id : id,
+					data : id,
 					text : c,
 					icon : "fa fa-" + (isDir ? "folder" : (ext != null && ext.options.icon != null ? ext.options.icon : "file-text")),
 					children : isDir,
@@ -102,12 +102,12 @@ class FileTree extends FileView {
 		});
 		root.contextmenu(function(e) {
 			var current = tree.getCurrentOver();
-			if( current == null ) return;
-			tree.setSelection([current]);
+			if( current != null )
+				tree.setSelection([current]);
 			e.preventDefault();
 			new hide.comp.ContextMenu([
 				{ label : "New..", menu:[for( e in EXTENSIONS ) if( e.options.createNew != null ) { label : e.options.createNew, click : createNew.bind(current, e) }] },
-				{ label : "Delete", click : function() if( js.Browser.window.confirm("Delete " + current + "?") ) { onDeleteFile(current); tree.refresh(); } },
+				{ label : "Delete", enabled : current != null, click : function() if( js.Browser.window.confirm("Delete " + current + "?") ) { onDeleteFile(current); tree.refresh(); } },
 			]);
 		});
 		tree.onDblClick = onOpenFile;
@@ -125,6 +125,8 @@ class FileTree extends FileView {
 	}
 
 	function getFilePath(path:String) {
+		if( path == "" )
+			return ide.getPath(state.path).substr(0, -1);
 		return ide.getPath(state.path) + path;
 	}
 
@@ -144,11 +146,15 @@ class FileTree extends FileView {
 	}
 
 	function createNew( basePath : String, ext : ExtensionDesc ) {
+		if( basePath == null )
+			basePath = "";
 		var fullPath = getFilePath(basePath);
 		if( !sys.FileSystem.isDirectory(fullPath) ) {
 			basePath = new haxe.io.Path(basePath).dir;
+			if( basePath == null ) basePath = "";
 			fullPath = getFilePath(basePath);
 		}
+
 		var file = ide.ask(ext.options.createNew + " name:");
 		if( file == null ) return;
 		if( file.indexOf(".") < 0 ) file += "." + ext.extensions[0].split(".").shift();
@@ -162,8 +168,10 @@ class FileTree extends FileView {
 		var view : hide.view.FileView = Type.createEmptyInstance(Type.resolveClass(ext.component));
 		view.ide = ide;
 		sys.io.File.saveBytes(fullPath + "/" + file, view.getDefaultContent());
-		tree.refresh(function() tree.setSelection([basePath + "/" + file]));
-		onOpenFile(basePath+"/"+file);
+
+		var fpath = basePath == "" ? file : basePath + "/" + file;
+		tree.refresh(function() tree.setSelection([fpath]));
+		onOpenFile(fpath);
 	}
 
 	function isIgnored( path : String, file : String ) {

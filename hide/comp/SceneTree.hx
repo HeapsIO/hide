@@ -1,6 +1,6 @@
 package hide.comp;
 
-class SceneTree extends IconTree {
+class SceneTree extends IconTree<String> {
 
 	var showRoot : Bool;
 	public var obj : h3d.scene.Object;
@@ -67,11 +67,11 @@ class SceneTree extends IconTree {
 			for( p in parts )
 				root = root.getChildAt(p);
 		}
-		var elements : Array<IconTree.IconTreeItem> = [
+		var elements : Array<IconTree.IconTreeItem<String>> = [
 			for( i in 0...root.numChildren ) {
 				var c = root.getChildAt(i);
 				{
-					id : path+i,
+					data : path+i,
 					text : c.name == null ? c.toString()+"@"+i : c.name,
 					icon : "fa fa-" + getIcon(c),
 					children : c.isMesh() || c.numChildren > 0,
@@ -84,7 +84,7 @@ class SceneTree extends IconTree {
 			for( i in 0...materials.length ) {
 				var m = materials[i];
 				elements.push({
-					id : path+"mat:"+i,
+					data : path+"mat:"+i,
 					text : m.name == null ? "Material@"+i : m.name,
 					icon : "fa fa-photo",
 				});
