@@ -180,6 +180,7 @@ class PropsField extends Component {
 			return;
 		case "range":
 			range = new hide.comp.Range(f);
+			range.value = current;
 			range.onChange = function(temp) {
 				tempChange = temp;
 				setVal(range.value);
