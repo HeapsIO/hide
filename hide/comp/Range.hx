@@ -14,6 +14,7 @@ class Range extends Component {
 
 	var f : Element;
 	var inputView : Element;
+	var scale : Float;
 
 	public function new(f:Element) {
 		f.wrap('<div class="hide-range"/>');
@@ -23,6 +24,11 @@ class Range extends Component {
 		this.f = f;
 		if( f.attr("step") == null )
 			f.attr("step", "any");
+
+
+		scale = Std.parseFloat(f.attr("scale"));
+		if( Math.isNaN(scale) ) scale = 1.;
+
 		inputView = new Element('<input type="text">').appendTo(p);
 		originMin = Std.parseFloat(f.attr("min"));
 		originMax = Std.parseFloat(f.attr("max"));
@@ -43,18 +49,18 @@ class Range extends Component {
 		});
 
 		f.on("input", function(_) {
-			var v = Math.round(Std.parseFloat(f.val()) * 100) / 100;
+			var v = Math.round(Std.parseFloat(f.val()) * 100 * scale) / 100;
 			inputView.val(v);
-			current = v;
+			current = v * scale;
 			onChange(true);
 		});
 		inputView.keyup(function(e) {
 			if( e.keyCode == 13 || e.keyCode == 27 ) {
 				inputView.blur();
-				inputView.val(current);
+				inputView.val(current * scale);
 				return;
 			}
-			var v = Std.parseFloat(inputView.val());
+			var v = Std.parseFloat(inputView.val()) / scale;
 			if( Math.isNaN(v) ) return;
 			setInner(v);
 			f.val(v);
@@ -65,8 +71,8 @@ class Range extends Component {
 		inputView.val(current);
 
 		f.change(function(e) {
-			var v = Math.round(Std.parseFloat(f.val()) * 100) / 100;
-			setInner(v);
+			var v = Math.round(Std.parseFloat(f.val()) * 100 * scale) / 100;
+			setInner(v/scale);
 			inputView.val(v);
 			onChange(false);
 		});
@@ -76,7 +82,7 @@ class Range extends Component {
 		if( original == null ) original = v;
 		setInner(v);
 		current = v;
-		inputView.val(current);
+		inputView.val(current * scale);
 		f.val(current);
 		return v;
 	}

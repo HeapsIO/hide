@@ -32,7 +32,7 @@ class SceneEditor extends FileView {
 					<div class="scene">
 					</div>
 					<div class="tabs">
-						<div class="tab" tabtitle="Scene" icon="sitemap">
+						<div class="tab" name="Scene" icon="sitemap">
 							<div class="hide-block">
 								<div class="hide-list">
 									<div class="tree"></div>
@@ -40,7 +40,7 @@ class SceneEditor extends FileView {
 							</div>
 							<div class="props"></div>
 						</div>
-						<div class="tab" tabtitle="Properties" icon="gears">
+						<div class="tab" name="Properties" icon="gears">
 						</div>
 					</div>
 				</div>
@@ -76,16 +76,18 @@ class SceneEditor extends FileView {
 
 		if( obj != null )
 			properties.add(new Element('
+			<div class="group" name="Position">
 				<dl>
 					<dt>Name</dt><dd><input field="name"></dd>
-					<dt>X</dt><dd><input field="x"/></dd>
-					<dt>Y</dt><dd><input field="y"/></dd>
-					<dt>Z</dt><dd><input field="z"/></dd>
-					<dt>ScaleX</dt><dd><input field="scaleX"/></dd>
-					<dt>ScaleY</dt><dd><input field="scaleY"/></dd>
-					<dt>ScaleZ</dt><dd><input field="scaleZ"/></dd>
+					<dt>X</dt><dd><input type="range" min="-10" max="10" field="x"/></dd>
+					<dt>Y</dt><dd><input type="range" min="-10" max="10" field="y"/></dd>
+					<dt>Z</dt><dd><input type="range" min="-10" max="10" field="z"/></dd>
+					<dt>ScaleX</dt><dd><input type="range" min="0" max="5" field="scaleX"/></dd>
+					<dt>ScaleY</dt><dd><input type="range" min="0" max="5" field="scaleY"/></dd>
+					<dt>ScaleZ</dt><dd><input type="range" min="0" max="5" field="scaleZ"/></dd>
 					<dt>Visible</dt><dd><input type="checkbox" field="visible"/></dd>
 				</dl>
+			</div>
 			'),obj, function(name) {
 				elt.x = obj.x;
 				elt.y = obj.y;
@@ -161,6 +163,26 @@ class SceneEditor extends FileView {
 				}
 				select.val(Reflect.field(elt, select.attr("field")));
 			}
+
+		case Trail:
+
+			var elt : ExtraProperties = cast elt;
+			var obj : h3d.scene.Trail = cast obj;
+			var props = properties.add(new Element('
+			<div class="group" name="Trail Properties">
+				<dl>
+					<dt>Angle</dt><dd><input type="range" field="angle" scale="${180/Math.PI}" min="0" max="${Math.PI*2}"/></dd>
+					<dt>Duration</dt><dd><input type="range" field="duration" min="0" max="10"/></dd>
+					<dt>Size Start</dt><dd><input type="range" field="sizeStart" min="0" max="10"/></dd>
+					<dt>Size End</dt><dd><input type="range" field="sizeEnd" min="0" max="10"/></dd>
+					<dt>Movement Min.</dt><dd><input type="range" field="movementMin" min="0" max="1"/></dd>
+					<dt>Movement Max.</dt><dd><input type="range" field="movementMax" min="0" max="1"/></dd>
+					<dt>Texture</dt><dd><input type="texture" field="texture"/></dd>
+				</dl>
+			</div>
+			'),obj, function(_) {
+				elt.data = obj.save();
+			});
 
 		default:
 		}
