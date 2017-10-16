@@ -271,6 +271,10 @@ class SceneEditor extends FileView {
 			scene.engine.backgroundColor = v;
 		}, scene.engine.backgroundColor);
 
+		tools.addRange("Speed", function(v) {
+			scene.speed = v;
+		}, scene.speed);
+
 		// BUILD scene tree
 
 		function makeItem(o:BaseObject) : hide.comp.IconTree.IconTreeItem<BaseObject> {

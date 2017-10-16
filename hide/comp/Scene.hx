@@ -130,6 +130,7 @@ class Scene extends Component implements h3d.IDrawable {
 	public var s2d : h2d.Scene;
 	public var s3d : h3d.scene.Scene;
 	public var sevents : hxd.SceneEvents;
+	public var speed : Float = 1.0;
 
 	public function new(root) {
 		super(root);
@@ -220,7 +221,9 @@ class Scene extends Component implements h3d.IDrawable {
 		}
 		setCurrent();
 		sevents.checkEvents();
-		onUpdate(hxd.Timer.tmod);
+		s2d.setElapsedTime(hxd.Timer.tmod * speed / 60);
+		s3d.setElapsedTime(hxd.Timer.tmod * speed / 60);
+		onUpdate(hxd.Timer.tmod * speed);
 		engine.render(this);
 	}
 
