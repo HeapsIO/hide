@@ -168,21 +168,29 @@ class SceneEditor extends FileView {
 
 			var elt : ExtraProperties = cast elt;
 			var obj : h3d.scene.Trail = cast obj;
+
+
 			var props = properties.add(new Element('
+			<div class="group" name="Material">
+			</div>
 			<div class="group" name="Trail Properties">
 				<dl>
 					<dt>Angle</dt><dd><input type="range" field="angle" scale="${180/Math.PI}" min="0" max="${Math.PI*2}"/></dd>
-					<dt>Duration</dt><dd><input type="range" field="duration" min="0" max="10"/></dd>
+					<dt>Duration</dt><dd><input type="range" field="duration" min="0" max="1"/></dd>
 					<dt>Size Start</dt><dd><input type="range" field="sizeStart" min="0" max="10"/></dd>
 					<dt>Size End</dt><dd><input type="range" field="sizeEnd" min="0" max="10"/></dd>
 					<dt>Movement Min.</dt><dd><input type="range" field="movementMin" min="0" max="1"/></dd>
 					<dt>Movement Max.</dt><dd><input type="range" field="movementMax" min="0" max="1"/></dd>
+					<dt>Smoothness</dt><dd><input type="range" field="smoothness" min="0" max="1"/></dd>
 					<dt>Texture</dt><dd><input type="texture" field="texture"/></dd>
 				</dl>
 			</div>
 			'),obj, function(_) {
 				elt.data = obj.save();
 			});
+
+			properties.addMaterial( obj.material, props.find("[name=Material] > .content"), function(_) elt.data = obj.save());
+
 
 		default:
 		}

@@ -17,15 +17,16 @@ class PropsEditor extends Component {
 		fields = [];
 	}
 
-	public function addMaterial( m : h3d.mat.Material, ?parent : Element ) {
+	public function addMaterial( m : h3d.mat.Material, ?parent : Element, ?onChange ) {
 		var props = m.props;
 		var def = h3d.mat.MaterialSetup.current.editMaterial(props);
-		def = add(def, props, function(_) {
+		def = add(def, props, function(name) {
 			if( m.model != null )
 				h3d.mat.MaterialSetup.current.saveModelMaterial(m);
 			m.refreshProps();
 			def.remove();
-			addMaterial(m, parent);
+			addMaterial(m, parent, onChange);
+			if( onChange != null ) onChange(name);
 		});
 		if( parent != null && parent.length != 0 )
 			def.appendTo(parent);
