@@ -23,6 +23,7 @@ class Particles3D extends FileView {
 	var properties : hide.comp.PropsEditor;
 	var bounds : h3d.scene.Box;
 	var model : h3d.scene.Object;
+	var tf : h2d.Text;
 
 	override function getDefaultContent() {
 		var p = new h3d.parts.GpuParticles();
@@ -41,6 +42,7 @@ class Particles3D extends FileView {
 		properties.saveDisplayKey = "particles3D";
 		scene = new hide.comp.Scene(root.find(".scene"));
 		scene.onReady = init;
+		scene.onUpdate = update;
 	}
 
 	override function save() {
@@ -182,6 +184,14 @@ class Particles3D extends FileView {
 		scene.resetCamera(2);
 		new h3d.scene.CameraController(scene.s3d).loadFromCamera();
 		scene.init(props);
+
+		tf = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
+		tf.alpha = 0.2;
+		tf.x = tf.y = 5;
+	}
+
+	function update(dt:Float) {
+		tf.text = Math.floor(parts.currentTime)+"."+(Math.floor(Math.abs(parts.currentTime)*10)%10) + "s " + parts.count + " parts";
 	}
 
 	function initProperties() {
