@@ -327,6 +327,6 @@ class Model extends FileView {
 		}
 	}
 
-	static var _ = FileTree.registerExtension(Model,["hmd","fbx","scn"],{ icon : "cube" });
+	static var _ = FileTree.registerExtension(Model,["hmd","hsd","fbx"],{ icon : "cube" });
 
 }

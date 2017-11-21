@@ -4,21 +4,21 @@ package hide.comp;
 class SceneLoader extends h3d.impl.Serializable.SceneSerializer {
 
 	var ide : hide.ui.Ide;
-	var scnPath : String;
+	var hsdPath : String;
 	var projectPath : String;
 	var scene : Scene;
 	var shaderPath : Array<String>;
 	var shaderCache = new Map<String, hxsl.SharedShader>();
 
-	public function new(scnPath, scene) {
+	public function new(hsdPath, scene) {
 		ide = hide.ui.Ide.inst;
 		super();
-		this.scnPath = scnPath;
+		this.hsdPath = hsdPath;
 		this.scene = scene;
 		shaderPath = ide.currentProps.get("haxe.classPath");
 	}
 
-	override function initSCNPaths(resPath:String, projectPath:String) {
+	override function initHSDPaths(resPath:String, projectPath:String) {
 		this.resPath = resPath.split("\\").join("/");
 		this.projectPath = projectPath == null ? null : projectPath.split("\\").join("/");
 	}
@@ -100,15 +100,15 @@ class SceneLoader extends h3d.impl.Serializable.SceneSerializer {
 		var path = resolvePath(path);
 		if( path == null )
 			return h3d.mat.Texture.fromColor(0xFF00FF);
-		return scene.loadTexture(scnPath, path);
+		return scene.loadTexture(hsdPath, path);
 	}
 
 	function resolvePath( path : String ) {
 		var p = null;
 		if( projectPath != null )
-			p = scene.resolvePath(projectPath + resPath + "/" + scnPath.split("/").pop(), path);
+			p = scene.resolvePath(projectPath + resPath + "/" + hsdPath.split("/").pop(), path);
 		if( p == null )
-			p = scene.resolvePath(scnPath, path);
+			p = scene.resolvePath(hsdPath, path);
 		return p;
 	}
 
@@ -254,6 +254,10 @@ class Scene extends Component implements h3d.IDrawable {
 	}
 
 	public function listAnims( path : String ) {
+
+		if( StringTools.endsWith(path.toLowerCase(), ".hsd") )
+			return [];
+
 		var props = hide.ui.Props.loadForFile(ide, path);
 
 		var dirs : Array<String> = props.get("hmd.animPaths");
@@ -296,20 +300,20 @@ class Scene extends Component implements h3d.IDrawable {
 		}
 	}
 
-	function loadSCN( path : String ) {
+	function loadHSD( path : String ) {
 		var ctx = new SceneLoader(path,this);
 		var fullPath = ide.getPath(path);
 		var bytes = sys.io.File.getBytes(fullPath);
 		var root = new h3d.scene.Object();
-		for( o in ctx.loadSCN(bytes).content )
+		for( o in ctx.loadHSD(bytes).content )
 			root.addChild(o);
 		initMaterials(root, path);
 		return root;
 	}
 
 	public function loadModel( path : String ) {
-		if( StringTools.endsWith(path.toLowerCase(), ".scn") )
-			return loadSCN(path);
+		if( StringTools.endsWith(path.toLowerCase(), ".hsd") )
+			return loadHSD(path);
 		var lib = loadHMD(path,false);
 		var obj = lib.makeObject(loadTexture.bind(path));
 		initMaterials(obj, path);
