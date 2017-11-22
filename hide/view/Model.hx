@@ -142,7 +142,7 @@ class Model extends FileView {
 
 		undo.onChange = function() {};
 
-		obj = scene.loadModel(state.path);
+		obj = scene.loadModel(state.path, true);
 		new h3d.scene.Object(scene.s3d).addChild(obj);
 
 		light = obj.find(function(o) return Std.instance(o, h3d.scene.DirLight));

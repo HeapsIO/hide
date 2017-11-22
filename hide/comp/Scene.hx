@@ -124,6 +124,7 @@ class Scene extends Component implements h3d.IDrawable {
 	var hmdCache = new Map<String, hxd.fmt.hmd.Library>();
 	var texCache = new Map<String, h3d.mat.Texture>();
 	var cleanup = new Array<Void->Void>();
+	var defaultCamera : h3d.Camera;
 	public var engine : h3d.Engine;
 	public var width(get, never) : Int;
 	public var height(get, never) : Int;
@@ -291,12 +292,12 @@ class Scene extends Component implements h3d.IDrawable {
 		return name.substr(0, -4);
 	}
 
-	function initMaterials( obj : h3d.scene.Object, path : String ) {
+	function initMaterials( obj : h3d.scene.Object, path : String, reset = true ) {
 		var res = hxd.res.Any.fromBytes(path, haxe.io.Bytes.alloc(0));
 		for( m in obj.getMaterials() ) {
 			if( m.name == null ) continue;
 			m.model = res;
-			h3d.mat.MaterialSetup.current.initModelMaterial(m);
+			if( reset ) h3d.mat.MaterialSetup.current.initModelMaterial(m);
 		}
 	}
 
@@ -305,15 +306,23 @@ class Scene extends Component implements h3d.IDrawable {
 		var fullPath = ide.getPath(path);
 		var bytes = sys.io.File.getBytes(fullPath);
 		var root = new h3d.scene.Object();
-		for( o in ctx.loadHSD(bytes).content )
-			root.addChild(o);
-		initMaterials(root, path);
-		return root;
+		var hsd = ctx.loadHSD(bytes);
+		if( hsd.content.length == 1 )
+			root = hsd.content[0];
+		else {
+			for( o in hsd.content )
+				root.addChild(o);
+		}
+		initMaterials(root, path, false);
+		return { root : root, camera : hsd.camera };
 	}
 
-	public function loadModel( path : String ) {
-		if( StringTools.endsWith(path.toLowerCase(), ".hsd") )
-			return loadHSD(path);
+	public function loadModel( path : String, mainScene = false ) {
+		if( StringTools.endsWith(path.toLowerCase(), ".hsd") ) {
+			var hsd = loadHSD(path);
+			if( mainScene ) defaultCamera = hsd.camera;
+			return hsd.root;
+		}
 		var lib = loadHMD(path,false);
 		var obj = lib.makeObject(loadTexture.bind(path));
 		initMaterials(obj, path);
@@ -403,6 +412,12 @@ class Scene extends Component implements h3d.IDrawable {
 	}
 
 	public function resetCamera( ?obj : h3d.scene.Object, distanceFactor = 1. ) {
+
+		if( defaultCamera != null ) {
+			s3d.camera.load(defaultCamera);
+			return;
+		}
+
 		if( obj == null ) obj = s3d;
 		var b = obj.getBounds();
 		var dx = Math.max(Math.abs(b.xMax),Math.abs(b.xMin));
