@@ -24,10 +24,7 @@ class Ide {
 	var ideProps(get, never) : Props.HideProps;
 
 	var window : nw.Window;
-
 	var layout : golden.Layout;
-	var types : Map<String,hide.HType>;
-	var typeDef = Macros.makeTypeDef(hide.HType);
 
 	var currentLayout : { name : String, state : Dynamic };
 	var maximized : Bool;
