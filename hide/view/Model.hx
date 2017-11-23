@@ -160,9 +160,10 @@ class Model extends FileView {
 		tree.saveDisplayKey = this.saveDisplayKey;
 
 		var cam = getDisplayState("Camera");
-		if( cam == null )
-			scene.resetCamera(obj, 1.5);
-		else {
+		scene.s3d.camera.zNear = scene.s3d.camera.zFar = 0;
+		scene.resetCamera(obj, 1.5);
+		control.lockZPlanes = scene.s3d.camera.zNear != 0;
+		if( cam != null ) {
 			scene.s3d.camera.pos.set(cam.x, cam.y, cam.z);
 			scene.s3d.camera.target.set(cam.tx, cam.ty, cam.tz);
 		}

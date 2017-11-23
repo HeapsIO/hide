@@ -13,6 +13,8 @@ class Ide {
 	public var isWindows(get, never) : Bool;
 
 	public var database : cdb.Database;
+	public var shaderLoader : hide.tools.ShaderLoader;
+
 	var databaseFile : String;
 
 	var props : {
@@ -233,6 +235,7 @@ class Ide {
 		}
 		window.title = "HIDE - " + dir;
 		props = Props.loadForProject(projectDir, resourceDir);
+		shaderLoader = new hide.tools.ShaderLoader();
 
 		var localDir = sys.FileSystem.exists(resourceDir) ? resourceDir : projectDir;
 		hxd.res.Loader.currentInstance = new hxd.res.Loader(new hxd.fs.LocalFileSystem(localDir));
@@ -241,7 +244,7 @@ class Ide {
 		];
 		var path = getPath("Renderer.hx");
 		if( sys.FileSystem.exists(path) ) {
-			var r = new h3d.mat.MaterialScript();
+			var r = new hide.tools.MaterialScript();
 			try {
 				r.load(sys.io.File.getContent(path));
 				renderers.unshift(r);
@@ -515,7 +518,7 @@ class Ide {
 	public static var inst : Ide;
 
 	static function main() {
-		Macros.includeShaderSources();
+		hide.tools.Macros.include(["hide.view","h3d.prim","h3d.scene","h3d.pass"]);
 		new Ide();
 	}
 
