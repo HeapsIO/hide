@@ -95,6 +95,7 @@ class Scene extends Component implements h3d.IDrawable {
 		stage = @:privateAccess new hxd.Stage(canvas);
 		stage.setCurrent();
 		engine = new h3d.Engine();
+		@:privateAccess engine.resCache.set(Scene, this);
 		engine.backgroundColor = 0xFF111111;
 		canvas.id = null;
 		engine.onReady = function() {
@@ -282,6 +283,9 @@ class Scene extends Component implements h3d.IDrawable {
 				return fullPath;
 		}
 
+		if( modelPath == null )
+			return null;
+
 		filePath = filePath.split("\\").join("/");
 		modelPath = ide.getPath(modelPath);
 
@@ -292,6 +296,18 @@ class Scene extends Component implements h3d.IDrawable {
 			return relToModel;
 
 		return null;
+	}
+
+	public function loadTextureDotPath( path : String, ?onReady ) {
+		var path = path.split(".").join("/");
+		var t = resolvePath(null, path + ".png");
+		if( t == null )
+			t = resolvePath(null, path + ".jpg");
+		if( t == null )
+			t = resolvePath(null, path + ".jpeg");
+		if( t == null )
+			t = path;
+		return loadTexture("", t, onReady);
 	}
 
 	public function loadTexture( modelPath : String, texturePath : String, ?onReady : h3d.mat.Texture -> Void ) {
@@ -387,6 +403,10 @@ class Scene extends Component implements h3d.IDrawable {
 			e = e.parent();
 		}
 		return null;
+	}
+
+	public static function getCurrent() : Scene {
+		return @:privateAccess h3d.Engine.getCurrent().resCache.get(Scene);
 	}
 
 }

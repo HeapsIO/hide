@@ -25,6 +25,31 @@ class RendererScript extends h3d.scene.Renderer {
 
 }
 
+class ResourceLoader {
+
+	var __path : Array<String>;
+
+	public function new(p) {
+		__path = p;
+	}
+
+	public function toTexture() {
+		return hide.comp.Scene.getCurrent().loadTextureDotPath(__path.join("."));
+	}
+
+	public function hscriptGet( field : String ) {
+
+		var f = Reflect.field(this,field);
+		if( f != null )
+			return Reflect.makeVarArgs(function(args) return Reflect.callMethod(this, f, args));
+
+		var p = __path.copy();
+		p.push(field);
+		return new ResourceLoader(p);
+	}
+
+}
+
 class MaterialScript extends h3d.mat.MaterialScript {
 
 	var ide : hide.ui.Ide;
@@ -50,6 +75,19 @@ class MaterialScript extends h3d.mat.MaterialScript {
 		return objs;
 	}
 
+	function lookupShader( shader : hxsl.Shader, ?passName : String ) {
+		var s = @:privateAccess shader.shader;
+		var scene = hide.comp.Scene.getCurrent();
+		for( m in scene.s3d.getMaterials() )
+			for( p in m.getPasses() ) {
+				if( passName != null && p.name != passName ) continue;
+				for( ss in p.getShaders() )
+					if( @:privateAccess ss.shader == s )
+						return ss;
+			}
+		return shader;
+	}
+
 	function makeClass( c : hscript.Expr.ClassDecl, ?args : Array<Dynamic> ) {
 		var interp = new Interp();
 		var obj = null;
@@ -67,15 +105,8 @@ class MaterialScript extends h3d.mat.MaterialScript {
 			throw "Don't know what to do with " + c.name;
 
 		interp.variables.set("loadShader", function(name) return ide.shaderLoader.load(name));
-
-		var debug = true;
-		interp.variables.set("loadTexture", function(name) return {
-			if( debug ) {
-				trace("TODO:" + name);
-				debug = false;
-			}
-			return h3d.mat.Texture.fromColor(0);
-		});
+		interp.variables.set("lookupShader", lookupShader);
+		interp.variables.set("hxd", { Res : new ResourceLoader([]) });
 
 		for( f in c.fields )
 			switch( f.kind ) {
