@@ -62,6 +62,7 @@ class Particles3D extends FileView {
 							<dt>Color Gradient</dt><dd><input type="texture" field="colorGradient"/></dd>
 							<dt>Sort</dt><dd><select field="sortMode"></select></dd>
 							<dt>3D&nbsp;Transform</dt><dd><input type="checkbox" field="transform3D"/></dd>
+							<dt>Relative position</dt><dd><input type="checkbox" field="isRelative"/></dd>
 						</dl>
 					</div>
 
