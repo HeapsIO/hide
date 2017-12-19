@@ -25,27 +25,25 @@ class RendererScript extends h3d.scene.Renderer {
 
 }
 
-class ResourceLoader {
+class Properties extends hxd.impl.Properties {
 
-	var __path : Array<String>;
+	public var obj : Dynamic;
+	var interp : Interp;
 
-	public function new(p) {
-		__path = p;
+	public function new(interp) {
+		this.interp = interp;
 	}
 
-	public function toTexture() {
-		return hide.comp.Scene.getCurrent().loadTextureDotPath(__path.join("."));
+	override function getField( o : Dynamic, f : String ) {
+		if( o == obj && interp.variables.exists(f) )
+			return interp.variables.get(f);
+		return @:privateAccess interp.get(o, f);
 	}
 
-	public function hscriptGet( field : String ) {
-
-		var f = Reflect.field(this,field);
-		if( f != null )
-			return Reflect.makeVarArgs(function(args) return Reflect.callMethod(this, f, args));
-
-		var p = __path.copy();
-		p.push(field);
-		return new ResourceLoader(p);
+	override function setField( o : Dynamic, f : String, v : Dynamic ) {
+		if( o == obj )
+			throw "TODO";
+		@:privateAccess interp.set(o, f, v);
 	}
 
 }
@@ -90,23 +88,26 @@ class MaterialScript extends h3d.mat.MaterialScript {
 
 	function makeClass( c : hscript.Expr.ClassDecl, ?args : Array<Dynamic> ) {
 		var interp = new Interp();
-		var obj = null;
+		var makeObj = null;
 		if( c.extend != null )
 			switch( c.extend ) {
 			case CTPath(["h3d", "scene", "Renderer"], _):
-				obj = function() return new RendererScript(interp.variables.get("render"));
+				makeObj = function() return new RendererScript(interp.variables.get("render"));
 				interp.shareEnum(hxsl.Output);
 				interp.shareEnum(h3d.impl.Driver.Feature);
 				interp.shareEnum(h3d.mat.Data.Wrap);
 				interp.shareEnum(h3d.mat.BlendMode);
 			default:
 			}
-		if( obj == null )
+		if( makeObj == null )
 			throw "Don't know what to do with " + c.name;
 
 		interp.variables.set("loadShader", function(name) return ide.shaderLoader.load(name));
 		interp.variables.set("lookupShader", lookupShader);
-		interp.variables.set("hxd", { Res : new ResourceLoader([]) });
+		interp.variables.set("getS3D", function() return hide.comp.Scene.getCurrent().s3d);
+
+		var props = new Properties(interp);
+		interp.variables.set("applyProperties", props.apply);
 
 		for( f in c.fields )
 			switch( f.kind ) {
@@ -121,7 +122,8 @@ class MaterialScript extends h3d.mat.MaterialScript {
 
 
 		// share functions
-		var obj = obj();
+		var obj = makeObj();
+		props.obj = obj;
 		interp.shareObject(obj);
 		interp.variables.set("super", obj);
 		interp.variables.set("this", obj);

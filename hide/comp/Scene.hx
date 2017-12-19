@@ -1,7 +1,7 @@
 package hide.comp;
 
 @:access(hide.comp.Scene)
-class SceneLoader extends h3d.impl.Serializable.SceneSerializer {
+class SceneLoader extends hxd.fmt.hsd.Serializer {
 
 	var ide : hide.ui.Ide;
 	var hsdPath : String;
