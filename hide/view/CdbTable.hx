@@ -3,7 +3,7 @@ package hide.view;
 class CdbTable extends hide.ui.View<{ path : String }> {
 
 	var sheet : cdb.Sheet;
-	var editor : hide.comp.SheetEditor;
+	var editor : hide.comp.CdbTable;
 
 	public function new(state) {
 		super(state);
@@ -20,7 +20,7 @@ class CdbTable extends hide.ui.View<{ path : String }> {
 			return;
 		}
 		root.addClass("hide-scroll");
-		editor = new hide.comp.SheetEditor(root, sheet);
+		editor = new hide.comp.CdbTable(root, sheet);
 	}
 
 	override function getTitle() {

@@ -1,5 +1,5 @@
 /bin/nwjs
-/bin/style.min.css
+/bin/*.min.css
 /dump
 /bin/*.json
 /bin/hide.js

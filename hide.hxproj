@@ -51,6 +51,8 @@
     <hidden path="bin\credits.html" />
     <hidden path="bin\style.css" />
     <hidden path="bin\style.min.css" />
+    <hidden path="bin\cdb.css" />
+    <hidden path="bin\cdb.min.css" />
   </hiddenPaths>
   <!-- Executed before build -->
   <preBuildCommand />

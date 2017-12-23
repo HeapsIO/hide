@@ -9,4 +9,3 @@
 -D hscriptPos
 -D old-error-format
 -dce no
--debug
