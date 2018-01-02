@@ -67,6 +67,7 @@ class Scene extends Component implements h3d.IDrawable {
 	public var s3d : h3d.scene.Scene;
 	public var sevents : hxd.SceneEvents;
 	public var speed : Float = 1.0;
+	public var visible(default, null) : Bool = true;
 
 	public function new(root) {
 		super(root);
@@ -116,6 +117,7 @@ class Scene extends Component implements h3d.IDrawable {
 		};
 		engine.onResized = function() {
 			if( s2d == null ) return;
+			visible = engine.width > 32 && engine.height > 32; // 32x32 when hidden !
 			s2d.setFixedSize(engine.width, engine.height);
 			onResize();
 		};
@@ -145,9 +147,14 @@ class Scene extends Component implements h3d.IDrawable {
 		initRec(root);
 	}
 
-	function setCurrent() {
+	public function setCurrent() {
 		engine.setCurrent();
 		stage.setCurrent();
+	}
+
+	function checkCurrent() {
+		if( h3d.Engine.getCurrent() != engine )
+			throw "Invalid current engine : use setCurrent() first";
 	}
 
 	function sync() {
@@ -156,6 +163,8 @@ class Scene extends Component implements h3d.IDrawable {
 			ide.unregisterUpdate(sync);
 			return;
 		}
+		if( !visible )
+			return;
 		setCurrent();
 		sevents.checkEvents();
 		s2d.setElapsedTime(hxd.Timer.tmod * speed / 60);
@@ -254,6 +263,7 @@ class Scene extends Component implements h3d.IDrawable {
 	}
 
 	public function loadModel( path : String, mainScene = false ) {
+		checkCurrent();
 		if( StringTools.endsWith(path.toLowerCase(), ".hsd") ) {
 			var hsd = loadHSD(path);
 			if( mainScene ) defaultCamera = hsd.camera;
@@ -333,6 +343,7 @@ class Scene extends Component implements h3d.IDrawable {
 	}
 
 	function loadHMD( path : String, isAnimation : Bool ) {
+		checkCurrent();
 		var fullPath = ide.getPath(path);
 		var key = fullPath;
 		var hmd = hmdCache.get(key);

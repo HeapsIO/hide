@@ -24,7 +24,7 @@
     <option noInlineOnDebug="False" />
     <option mainClass="hide.ui.Ide" />
     <option enabledebug="False" />
-    <option additional="-D hscriptPos&#xA;-D old-error-format&#xA;-dce no" />
+    <option additional="-D hscriptPos&#xA;-D old-error-format&#xA;-D multidriver&#xA;-dce no" />
   </build>
   <!-- haxelib libraries -->
   <haxelib>

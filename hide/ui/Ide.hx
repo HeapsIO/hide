@@ -238,7 +238,7 @@ class Ide {
 		shaderLoader = new hide.tools.ShaderLoader();
 
 		var localDir = sys.FileSystem.exists(resourceDir) ? resourceDir : projectDir;
-		hxd.res.Loader.currentInstance = new hxd.res.Loader(new hxd.fs.LocalFileSystem(localDir));
+		hxd.res.Loader.currentInstance = new CustomLoader(new hxd.fs.LocalFileSystem(localDir));
 		renderers = [
 			new h3d.mat.MaterialSetup("Default"),
 		];
@@ -520,6 +520,32 @@ class Ide {
 	static function main() {
 		hide.tools.Macros.include(["hide.view","h3d.prim","h3d.scene","h3d.pass"]);
 		new Ide();
+	}
+
+}
+
+
+class CustomLoader extends hxd.res.Loader {
+
+	var pathKeys = new Map<String,{}>();
+
+	function getKey( path : String ) {
+		var k = pathKeys.get(path);
+		if( k == null ) {
+			k = {};
+			pathKeys.set(path, k);
+		}
+		return k;
+	}
+
+	override function loadImage( path : String ) {
+		var engine = h3d.Engine.getCurrent();
+		var i : hxd.res.Image = @:privateAccess engine.resCache.get(getKey(path));
+		if( i == null ) {
+			i = new hxd.res.Image(fs.get(path));
+			@:privateAccess engine.resCache.set(getKey(path), i);
+		}
+		return i;
 	}
 
 }

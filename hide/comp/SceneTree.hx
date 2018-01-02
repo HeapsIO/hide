@@ -72,7 +72,7 @@ class SceneTree extends IconTree<String> {
 				var c = root.getChildAt(i);
 				{
 					data : path+i,
-					text : c.name == null ? c.toString()+"@"+i : c.name,
+					text : getObjectName(c),
 					icon : "fa fa-" + getIcon(c),
 					children : c.isMesh() || c.numChildren > 0,
 					state : { opened : c.numChildren > 0 && c.numChildren < 10 }
@@ -91,6 +91,14 @@ class SceneTree extends IconTree<String> {
 			}
 		}
 		return elements;
+	}
+
+	public function getObjectName( o : h3d.scene.Object ) {
+		if( o.name != null )
+			return o.name;
+		if( o.parent == null )
+			return o.toString();
+		return o.toString() + "@" + @:privateAccess o.parent.children.indexOf(o);
 	}
 
 }
