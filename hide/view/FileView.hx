@@ -3,7 +3,24 @@ package hide.view;
 class FileView extends hide.ui.View<{ path : String }> {
 
 	var extension(get,never) : String;
-	var modified(default,set) : Bool;
+	var modified(default, set) : Bool;
+
+	public function new(state) {
+		super(state);
+		watch(state.path, function() onFileChanged(!sys.FileSystem.exists(ide.getPath(state.path))), { checkDelete : true, keepOnRebuild : true });
+	}
+
+	function onFileChanged( wasDeleted : Bool ) {
+		if( wasDeleted ) {
+			if( modified ) return;
+			root.html('${state.path} no longer exists');
+			return;
+		}
+		if( modified && !ide.confirm('${state.path} has been modified, reload and ignore local changes?') )
+			return;
+		modified = false;
+		rebuild();
+	}
 
 	function get_extension() {
 		if( state.path == null )

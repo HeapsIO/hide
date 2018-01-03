@@ -80,6 +80,10 @@ class FileTree extends FileView {
 					children : isDir,
 				});
 			}
+			ide.fileWatcher.register(basePath, function() {
+				trace(basePath);
+				rebuild();
+			});
 			content.sort(function(a,b) { if( a.children != b.children ) return a.children?-1:1; return Reflect.compare(a.text,b.text); });
 			return content;
 		};

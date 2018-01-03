@@ -17,6 +17,7 @@ class View<T> extends hide.comp.Component {
 	var keys(get,null) : Keys;
 	var props(get,null) : Props;
 	var undo = new hide.ui.UndoHistory();
+	var watches : Array<{ keep : Bool, path : String, callb : Void -> Void }> = [];
 	public var viewClass(get, never) : String;
 	public var defaultOptions(get,never) : ViewOptions;
 
@@ -27,6 +28,12 @@ class View<T> extends hide.comp.Component {
 		super(null);
 		this.state = state;
 		ide = Ide.inst;
+	}
+
+	function watch( filePath : String, onChange : Void -> Void, ?opts : { ?checkDelete : Bool, ?keepOnRebuild : Bool } ) {
+		if( opts == null ) opts = {};
+		ide.fileWatcher.register(filePath, onChange, opts.checkDelete);
+		watches.push({ keep : opts.keepOnRebuild, path : filePath, callb : onChange });
 	}
 
 	function get_props() {
@@ -85,12 +92,7 @@ class View<T> extends hide.comp.Component {
 				e.preventDefault();
 				return;
 			}
-			@:privateAccess ide.views.remove(this);
-			for( c in container.getElement().find("canvas") ) {
-				var s : hide.comp.Scene = Reflect.field(c, "__scene");
-				if( s != null )
-					s.dispose();
-			}
+			destroy();
 		});
 		container.getElement().keydown(function(e) {
 			keys.processEvent(e);
@@ -109,6 +111,11 @@ class View<T> extends hide.comp.Component {
 
 	public function rebuild() {
 		if( container == null ) return;
+		for( w in watches.copy() )
+			if( !w.keep ) {
+				ide.fileWatcher.unregister(w.path, w.path);
+				watches.remove(w);
+			}
 		syncTitle();
 		root.html('');
 		onDisplay();
@@ -128,6 +135,18 @@ class View<T> extends hide.comp.Component {
 	public function close() {
 		if( container != null )
 			container.close();
+	}
+
+	function destroy() {
+		for( w in watches.copy() )
+			ide.fileWatcher.unregister(w.path, w.path);
+		watches = [];
+		@:privateAccess ide.views.remove(this);
+		for( c in container.getElement().find("canvas") ) {
+			var s : hide.comp.Scene = Reflect.field(c, "__scene");
+			if( s != null )
+				s.dispose();
+		}
 	}
 
 	function buildTabMenu() : Array<hide.comp.ContextMenu.ContextMenuItem> {

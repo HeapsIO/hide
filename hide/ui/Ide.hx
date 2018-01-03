@@ -14,6 +14,7 @@ class Ide {
 
 	public var database : cdb.Database;
 	public var shaderLoader : hide.tools.ShaderLoader;
+	public var fileWatcher : hide.tools.FileWatcher;
 
 	var databaseFile : String;
 
@@ -48,6 +49,8 @@ class Ide {
 			if( wp.max ) window.maximize();
 		}
 		window.show(true);
+
+		fileWatcher = new hide.tools.FileWatcher();
 
 		setProject(ideProps.currentProject);
 		window.window.document.addEventListener("mousemove", function(e) {
@@ -509,6 +512,10 @@ class Ide {
 			target.addChild(config);
 		else
 			target.addChild(config, index);
+	}
+
+	public function confirm( text : String ) {
+		return js.Browser.window.confirm(text);
 	}
 
 	public function ask( text : String, ?defaultValue = "" ) {
