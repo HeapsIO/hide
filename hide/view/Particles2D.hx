@@ -2,26 +2,10 @@ package hide.view;
 import h2d.Graphics in Graphics;
 import h2d.Particles.ParticleGroup in ParticleGroup;
 
-@:access(hide.view.Particles2D)
-private class Particles extends h2d.Particles {
-
-	var parts : Particles2D;
-
-	public function new(parts, parent) {
-		this.parts = parts;
-		super(parent);
-	}
-
-	override function loadTexture( path : String ) {
-		return parts.scene.loadTexture(parts.state.path, path);
-	}
-
-}
-
 class Particles2D extends FileView {
 
 	var scene : hide.comp.Scene;
-	var parts : Particles;
+	var parts : h2d.Particles;
 	var partsProps : { ?backgroundPath : String, ?dx : Int, ?dy : Int };
 
 	var uiProps : { showBounds : Bool };
@@ -30,7 +14,7 @@ class Particles2D extends FileView {
 	var properties : hide.comp.PropsEditor;
 
 	override function getDefaultContent() {
-		var p = new Particles(this,null);
+		var p = new h2d.Particles(null);
 		p.addGroup().name = "Default";
 		return haxe.io.Bytes.ofString(ide.toJSON(p.save()));
 	}
@@ -53,7 +37,7 @@ class Particles2D extends FileView {
 	}
 
 	function init() {
-		parts = new Particles(this, scene.s2d);
+		parts = new h2d.Particles(scene.s2d);
 		parts.smooth = true;
 		parts.load(haxe.Json.parse(sys.io.File.getContent(getPath())));
 		uiProps = { showBounds: false };

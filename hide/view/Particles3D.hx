@@ -1,25 +1,9 @@
 package hide.view;
 
-@:access(hide.view.Particles3D)
-class GpuParticles extends h3d.parts.GpuParticles {
-
-	var parts : Particles3D;
-
-	public function new(parts, parent) {
-		super(parent);
-		this.parts = parts;
-	}
-
-	override function loadTexture( path : String ) {
-		return parts.scene.loadTexture(parts.state.path, path);
-	}
-
-}
-
 class Particles3D extends FileView {
 
 	var scene : hide.comp.Scene;
-	var parts : GpuParticles;
+	var parts : h3d.parts.GpuParticles;
 	var properties : hide.comp.PropsEditor;
 	var bounds : h3d.scene.Box;
 	var model : h3d.scene.Object;
@@ -177,7 +161,7 @@ class Particles3D extends FileView {
 	}
 
 	function init() {
-		parts = new GpuParticles(this,scene.s3d);
+		parts = new h3d.parts.GpuParticles(scene.s3d);
 		parts.load(haxe.Json.parse(sys.io.File.getContent(getPath())));
 		bounds = new h3d.scene.Box(0x808080, parts.bounds, parts);
 		bounds.visible = false;
