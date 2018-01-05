@@ -44,9 +44,12 @@ class Ide {
 
 		var wp = props.global.current.hide.windowPos;
 		if( wp != null ) {
-			window.resizeBy(wp.w - Std.int(window.window.outerWidth), wp.h - Std.int(window.window.outerHeight));
-			window.moveTo(wp.x, wp.y);
-			if( wp.max ) window.maximize();
+			if( wp.w > 400 && wp.h > 300 )
+				window.resizeBy(wp.w - Std.int(window.window.outerWidth), wp.h - Std.int(window.window.outerHeight));
+			if( wp.x >= 0 && wp.y >= 0 ) {
+				window.moveTo(wp.x, wp.y);
+				if( wp.max ) window.maximize();
+			}
 		}
 		window.show(true);
 

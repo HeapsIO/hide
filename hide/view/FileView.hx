@@ -7,7 +7,8 @@ class FileView extends hide.ui.View<{ path : String }> {
 
 	public function new(state) {
 		super(state);
-		watch(state.path, function() onFileChanged(!sys.FileSystem.exists(ide.getPath(state.path))), { checkDelete : true, keepOnRebuild : true });
+		if( state.path != null )
+			watch(state.path, function() onFileChanged(!sys.FileSystem.exists(ide.getPath(state.path))), { checkDelete : true, keepOnRebuild : true });
 	}
 
 	function onFileChanged( wasDeleted : Bool ) {

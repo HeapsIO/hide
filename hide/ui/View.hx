@@ -118,6 +118,7 @@ class View<T> extends hide.comp.Component {
 			}
 		syncTitle();
 		root.html('');
+		root.off();
 		onDisplay();
 	}
 

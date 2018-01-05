@@ -166,7 +166,9 @@ class Particles3D extends FileView {
 		bounds = new h3d.scene.Box(0x808080, parts.bounds, parts);
 		bounds.visible = false;
 		initProperties();
-		scene.resetCamera(2);
+		haxe.Timer.delay(function() {
+			scene.resetCamera(2);
+		}, 0);
 		new h3d.scene.CameraController(scene.s3d).loadFromCamera();
 		scene.init(props);
 
@@ -203,6 +205,7 @@ class Particles3D extends FileView {
 					<dt>Show Bounds</dt><dd><input type="checkbox" class="bounds"/></dd>
 					<dt>Enable Lights</dt><dd><input type="checkbox" class="lights" checked="checked"/></dd>
 					<dt></dt><dd><input type="button" class="new" value="New Group"/></dd>
+					<dt></dt><dd><input type="button" class="reset" value="Reset Camera"/></dd>
 					</dl>
 				</div>
 			</div>

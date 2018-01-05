@@ -382,6 +382,8 @@ class Scene extends Component implements h3d.IDrawable {
 
 		if( obj == null ) obj = s3d;
 		var b = obj.getBounds();
+		if( b.isEmpty() )
+			return;
 		var dx = Math.max(Math.abs(b.xMax),Math.abs(b.xMin));
 		var dy = Math.max(Math.abs(b.yMax),Math.abs(b.yMin));
 		var dz = Math.max(Math.abs(b.zMax),Math.abs(b.zMin));

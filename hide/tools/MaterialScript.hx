@@ -34,6 +34,12 @@ class Properties extends hxd.impl.Properties {
 		this.interp = interp;
 	}
 
+	public function getFields( o : Dynamic ) {
+		if( o == obj )
+			return Reflect.fields(obj).concat(Lambda.array({ iterator : interp.variables.keys }));
+		return Reflect.fields(o);
+	}
+
 	override function getField( o : Dynamic, f : String ) {
 		if( o == obj && interp.variables.exists(f) )
 			return interp.variables.get(f);
@@ -51,6 +57,7 @@ class Properties extends hxd.impl.Properties {
 class MaterialScript extends h3d.mat.MaterialScript {
 
 	var ide : hide.ui.Ide;
+	public var renderer : Properties;
 
 	public function new() {
 		super(); // name will be set by script itself
@@ -130,6 +137,9 @@ class MaterialScript extends h3d.mat.MaterialScript {
 
 		var fnew = interp.variables.get("new");
 		if( fnew != null ) Reflect.callMethod(null, fnew, args == null ? [] : args);
+
+		renderer = props;
+
 		return obj;
 	}
 
