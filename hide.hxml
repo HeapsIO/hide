@@ -9,5 +9,5 @@
 -D hscriptPos
 -D old-error-format
 -D multidriver
--D hide
+-D editor
 -dce no

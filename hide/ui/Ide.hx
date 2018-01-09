@@ -528,7 +528,7 @@ class Ide {
 	public static var inst : Ide;
 
 	static function main() {
-		hide.tools.Macros.include(["hide.view","h3d.prim","h3d.scene","h3d.pass","hxd.prefab"]);
+		hide.tools.Macros.include(["hide.view","h3d.prim","h3d.scene","h3d.pass","hide.prefab"]);
 		new Ide();
 	}
 
