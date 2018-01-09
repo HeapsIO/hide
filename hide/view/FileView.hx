@@ -4,11 +4,18 @@ class FileView extends hide.ui.View<{ path : String }> {
 
 	var extension(get,never) : String;
 	var modified(default, set) : Bool;
+	var skipNextChange : Bool;
 
 	public function new(state) {
 		super(state);
 		if( state.path != null )
-			watch(state.path, function() onFileChanged(!sys.FileSystem.exists(ide.getPath(state.path))), { checkDelete : true, keepOnRebuild : true });
+			watch(state.path, function() {
+				if( skipNextChange ) {
+					skipNextChange = false;
+					return;
+				}
+				onFileChanged(!sys.FileSystem.exists(ide.getPath(state.path)));
+			}, { checkDelete : true, keepOnRebuild : true });
 	}
 
 	function onFileChanged( wasDeleted : Bool ) {
@@ -44,6 +51,7 @@ class FileView extends hide.ui.View<{ path : String }> {
 		keys.register("redo", function() undo.redo());
 		keys.register("save", function() {
 			save();
+			skipNextChange = true;
 			modified = false;
 			lastSave = undo.currentID;
 		});
