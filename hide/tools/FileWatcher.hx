@@ -36,6 +36,7 @@ class FileWatcher {
 				changed : false,
 			};
 			w.w = try js.node.Fs.watch(ide.getPath(path), function(k:String, file:String) {
+				if( w.changed ) return;
 				w.changed = true;
 				haxe.Timer.delay(function() {
 					if( !w.changed ) return;
