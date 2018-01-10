@@ -528,6 +528,7 @@ class Ide {
 	public static var inst : Ide;
 
 	static function main() {
+		h3d.pass.ShaderManager.STRICT = false; // prevent errors with bad renderer
 		hide.tools.Macros.include(["hide.view","h3d.prim","h3d.scene","h3d.pass","hide.prefab"]);
 		new Ide();
 	}

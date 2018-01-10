@@ -45,11 +45,19 @@ class Context {
 	}
 
 	public function loadModel( path : String ) {
+		#if editor
+		return hide.comp.Scene.getCurrent().loadModel(path);
+		#else
 		return @:privateAccess shared.cache.loadModel(hxd.res.Loader.currentInstance.load(path).toModel());
+		#end
 	}
 
 	public function loadAnimation( path : String ) {
+		#if editor
+		return hide.comp.Scene.getCurrent().loadAnimation(path);
+		#else
 		return @:privateAccess shared.cache.loadAnimation(hxd.res.Loader.currentInstance.load(path).toModel());
+		#end
 	}
 
 	public function locateObject( path : String ) {
