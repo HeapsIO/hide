@@ -51,8 +51,7 @@ class Prefab {
 	}
 
 	public function makeInstance( ctx : Context ) : Context {
-		throw "Not implemented";
-		return null;
+		return ctx;
 	}
 
 	public function saveRec() : {} {

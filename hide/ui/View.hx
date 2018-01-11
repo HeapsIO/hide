@@ -113,7 +113,7 @@ class View<T> extends hide.comp.Component {
 		if( container == null ) return;
 		for( w in watches.copy() )
 			if( !w.keep ) {
-				ide.fileWatcher.unregister(w.path, w.path);
+				ide.fileWatcher.unregister(w.path, w.callb);
 				watches.remove(w);
 			}
 		syncTitle();
@@ -140,7 +140,7 @@ class View<T> extends hide.comp.Component {
 
 	function destroy() {
 		for( w in watches.copy() )
-			ide.fileWatcher.unregister(w.path, w.path);
+			ide.fileWatcher.unregister(w.path, w.callb);
 		watches = [];
 		@:privateAccess ide.views.remove(this);
 		for( c in container.getElement().find("canvas") ) {

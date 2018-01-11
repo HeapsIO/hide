@@ -14,7 +14,7 @@ class FileWatcher {
 		w.events.push({ path : path, fun : updateFun, checkDel : checkDelete });
 	}
 
-	public function unregister( path : String, updateFun ) {
+	public function unregister( path : String, updateFun : Void -> Void ) {
 		var w = getWatches(path);
 		for( e in w.events )
 			if( Reflect.compareMethods(e.fun, updateFun) ) {
