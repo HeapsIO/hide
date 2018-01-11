@@ -3,7 +3,7 @@ package hide.tools;
 class FileWatcher {
 
 	var ide : hide.ui.Ide;
-	var watches : Map<String,{ events : Array<{path:String,fun:Void->Void,checkDel:Bool}>, w : js.node.fs.FSWatcher, changed : Bool }> = new Map();
+	var watches : Map<String,{ events : Array<{path:String,fun:Void->Void,checkDel:Bool}>, w : js.node.fs.FSWatcher, changed : Bool, isDir : Bool }> = new Map();
 
 	public function new() {
 		ide = hide.ui.Ide.inst;
@@ -30,13 +30,15 @@ class FileWatcher {
 	function getWatches( path : String ) {
 		var w = watches.get(path);
 		if( w == null ) {
+			var fullPath = ide.getPath(path);
 			w = {
 				events : [],
 				w : null,
 				changed : false,
+				isDir : try sys.FileSystem.isDirectory(fullPath) catch( e : Dynamic ) false,
 			};
-			w.w = try js.node.Fs.watch(ide.getPath(path), function(k:String, file:String) {
-				if( w.changed ) return;
+			w.w = try js.node.Fs.watch(fullPath, function(k:String, file:String) {
+				if( w.changed || (w.isDir && k == "change") ) return;
 				w.changed = true;
 				haxe.Timer.delay(function() {
 					if( !w.changed ) return;
@@ -48,7 +50,7 @@ class FileWatcher {
 			}) catch( e : Dynamic ) {
 				// file does not exists, trigger a delayed event
 				haxe.Timer.delay(function() {
-					for( e in w.events )
+					for( e in w.events.copy() )
 						if( e.checkDel )
 							e.fun();
 				}, 0);
