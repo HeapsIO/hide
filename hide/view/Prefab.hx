@@ -264,6 +264,6 @@ class Prefab extends FileView {
 		}
 	}
 
-	static var _ = FileTree.registerExtension(Prefab,["pref"],{ icon : "sitemap", createNew : "Prefab" });
+	static var _ = FileTree.registerExtension(Prefab,["prefab"],{ icon : "sitemap", createNew : "Prefab" });
 
 }
