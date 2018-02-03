@@ -366,7 +366,7 @@ class Scene extends Component implements h3d.IDrawable {
 			}
 			hmd = hxd.res.Any.fromBytes(path, data).toModel().toHmd();
 		} else {
-			hmd = e.toHmd();
+			hmd = e.toModel().toHmd();
 		}
 
 		hmdCache.set(key, hmd);
