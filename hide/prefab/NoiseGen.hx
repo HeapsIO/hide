@@ -170,7 +170,7 @@ class NoiseGen extends Prefab {
 			updateTexture(tex, DEFAULT_SEED);
 		});
 		e.find("[name=dl]").click(function(_) {
-			hide.ui.Ide.inst.chooseFileSave("noise.png", function(f) if( f != null ) {
+			ctx.ide.chooseFileSave("noise.png", function(f) if( f != null ) {
 				try {
 					var data = cast(ctx.getContext(this).local2d, h2d.Bitmap).tile.getTexture().capturePixels().toPNG();
 					sys.io.File.saveBytes(f, data);

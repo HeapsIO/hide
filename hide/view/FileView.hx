@@ -2,8 +2,8 @@ package hide.view;
 
 class FileView extends hide.ui.View<{ path : String }> {
 
-	var extension(get,never) : String;
-	var modified(default, set) : Bool;
+	public var extension(get,never) : String;
+	public var modified(default, set) : Bool;
 	var skipNextChange : Bool;
 
 	public function new(state) {

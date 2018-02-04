@@ -30,10 +30,17 @@ class View<T> extends hide.comp.Component {
 		ide = Ide.inst;
 	}
 
-	function watch( filePath : String, onChange : Void -> Void, ?opts : { ?checkDelete : Bool, ?keepOnRebuild : Bool } ) {
+	public function watch( filePath : String, onChange : Void -> Void, ?opts : { ?checkDelete : Bool, ?keepOnRebuild : Bool } ) {
 		if( opts == null ) opts = {};
 		ide.fileWatcher.register(filePath, onChange, opts.checkDelete);
-		watches.push({ keep : opts.keepOnRebuild, path : filePath, callb : onChange });
+		var w = { keep : opts.keepOnRebuild, path : filePath, callb : onChange };
+		watches.push(w);
+		return w;
+	}
+
+	public function unwatch(w) {
+		if( watches.remove(w) )
+			ide.fileWatcher.unregister(w.path, w.callb);
 	}
 
 	function get_props() {
