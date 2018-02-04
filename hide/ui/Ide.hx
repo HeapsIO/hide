@@ -86,6 +86,16 @@ class Ide {
 		// handle cancel on type=file
 		var body = window.window.document.body;
 		body.onfocus = function(_) haxe.Timer.delay(function() new Element(body).find("input[type=file]").change().remove(), 200);
+		body.ondragover = function(e:js.html.DragEvent) {
+			e.preventDefault();
+			return false;
+		};
+		body.ondrop = function(e:js.html.DragEvent) {
+			for( f in e.dataTransfer.files )
+				openFile(Reflect.field(f,"path"));
+			e.preventDefault();
+			return false;
+		}
 
 		// dispatch global keys based on mouse position
 		new Element(body).keydown(function(e) {
