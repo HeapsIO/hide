@@ -57,8 +57,11 @@ class Prefab extends FileView {
 		var sh = context.shared;
 		sh.root2d.remove();
 		sh.root3d.remove();
+		for( f in sh.cleanups )
+			f();
 		sh.root2d = new h2d.Sprite();
 		sh.root3d = new h3d.scene.Object();
+		sh.cleanups = [];
 		context.init();
 		data.makeInstance(context);
 		scene.s2d.addChild(sh.root2d);

@@ -4,6 +4,7 @@ class ContextShared {
 	public var root2d : h2d.Sprite;
 	public var root3d : h3d.scene.Object;
 	public var contexts : Map<Prefab,Context>;
+	public var cleanups : Array<Void->Void>;
 	var cache : h3d.prim.ModelCache;
 
 	public function new() {
@@ -11,6 +12,7 @@ class ContextShared {
 		root3d = new h3d.scene.Object();
 		contexts = new Map();
 		cache = new h3d.prim.ModelCache();
+		cleanups = [];
 	}
 
 }
