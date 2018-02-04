@@ -88,8 +88,8 @@ class Prefab extends FileView {
 
 	function resetCamera() {
 		var bounds = context.shared.root2d.getBounds();
-		context.shared.root2d.x = Std.int(bounds.width) >> 1;
-		context.shared.root2d.y = Std.int(bounds.height) >> 1;
+		context.shared.root2d.x = -(Std.int(bounds.width) >> 1);
+		context.shared.root2d.y = -(Std.int(bounds.height) >> 1);
 		scene.resetCamera(context.shared.root3d, 1.5);
 		control.loadFromCamera();
 	}
@@ -136,10 +136,9 @@ class Prefab extends FileView {
 
 		this.saveDisplayKey = "Scene:" + state.path;
 
+		resetCamera();
 		var cam = getDisplayState("Camera");
-		if( cam == null )
-			resetCamera();
-		else {
+		if( cam == null ) {
 			scene.s3d.camera.pos.set(cam.x, cam.y, cam.z);
 			scene.s3d.camera.target.set(cam.tx, cam.ty, cam.tz);
 		}
