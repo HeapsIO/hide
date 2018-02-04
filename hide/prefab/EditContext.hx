@@ -8,6 +8,8 @@ class EditContext {
 	public var prefabPath : String;
 	public var ide(get,never) : hide.ui.Ide;
 	public var scene : hide.comp.Scene;
+	public var view : hide.view.Prefab;
+	public var cleanups : Array<Void->Void>;
 	public var properties : hide.comp.PropsEditor;
 	function get_ide() return hide.ui.Ide.inst;
 	#end
@@ -20,7 +22,10 @@ class EditContext {
 		return rootContext.shared.contexts.get(p);
 	}
 
-	public function refresh() {
+	/**
+		Rebuild the edit window
+	**/
+	public function rebuild() {
 	}
 
 	public function getNamedObjects( ?exclude : h3d.scene.Object ) {

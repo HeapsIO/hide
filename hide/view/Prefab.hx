@@ -2,6 +2,29 @@ package hide.view;
 
 import hide.prefab.Prefab in PrefabElement;
 
+class EditContext extends hide.prefab.EditContext {
+
+	public var elt : PrefabElement;
+
+	public function new(ctx, elt) {
+		super(ctx);
+		this.elt = elt;
+	}
+
+	override function rebuild() {
+		properties.clear();
+		cleanup();
+		elt.edit(this);
+	}
+
+	public function cleanup() {
+		for( c in cleanups.copy() )
+			c();
+		cleanups = [];
+	}
+
+}
+
 class Prefab extends FileView {
 
 	var data : hide.prefab.Library;
@@ -16,6 +39,8 @@ class Prefab extends FileView {
 	var lightDirection = new h3d.Vector( 1, 2, -4 );
 	var tree : hide.comp.IconTree<PrefabElement>;
 
+	var curEdit : EditContext;
+
 	override function getDefaultContent() {
 		return haxe.io.Bytes.ofString(ide.toJSON(new hide.prefab.Library().save()));
 	}
@@ -25,7 +50,6 @@ class Prefab extends FileView {
 	}
 
 	override function onDisplay() {
-
 		root.html('
 			<div class="flex vertical">
 				<div class="toolbar"></div>
@@ -78,12 +102,16 @@ class Prefab extends FileView {
 	}
 
 	function selectObject( elt : PrefabElement ) {
-		properties.clear();
-		var edit = new hide.prefab.EditContext(context);
+		if( curEdit != null )
+			curEdit.cleanup();
+		var edit = new EditContext(context, elt);
 		edit.prefabPath = state.path;
 		edit.properties = properties;
 		edit.scene = scene;
-		elt.edit(edit);
+		edit.view = this;
+		edit.cleanups = [];
+		edit.rebuild();
+		curEdit = edit;
 	}
 
 	function resetCamera() {
@@ -251,6 +279,13 @@ class Prefab extends FileView {
 			scene.s2d.y = scene.s2d.height >> 1;
 		};
 		scene.onResize();
+
+		if( curEdit != null ) {
+			curEdit.cleanup();
+			var e = curEdit.elt.name;
+			var elt = data.getPrefabByName(e);
+			if( elt != null ) selectObject(elt);
+		}
 	}
 
 	function update(dt:Float) {
