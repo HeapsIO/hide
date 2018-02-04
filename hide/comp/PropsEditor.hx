@@ -1,5 +1,12 @@
 package hide.comp;
 
+enum PropType {
+	PInt( ?min : Int, ?max : Int );
+	PFloat( ?min : Float, ?max : Float );
+	PBool;
+	PUnsupported( debug : String );
+}
+
 class PropsEditor extends Component {
 
 	public var undo : hide.ui.UndoHistory;
@@ -30,6 +37,29 @@ class PropsEditor extends Component {
 		});
 		if( parent != null && parent.length != 0 )
 			def.appendTo(parent);
+	}
+
+	public function addProps( props : Array<{ name : String, t : PropType }>, context : Dynamic ) {
+		var e = new Element('<dl>');
+		for( p in props ) {
+			new Element('<dt>${p.name}</dt>').appendTo(e);
+			var def = new Element('<dd>').appendTo(e);
+			switch( p.t ) {
+			case PInt(min, max):
+				var e = new Element('<input type="range" field="${p.name}" step="1">').appendTo(def);
+				if( min != null ) e.attr("min", "" + min);
+				if( max != null ) e.attr("max", "" + max);
+			case PFloat(min, max):
+				var e = new Element('<input type="range" field="${p.name}">').appendTo(def);
+				if( min != null ) e.attr("min", "" + min);
+				if( max != null ) e.attr("max", "" + max);
+			case PBool:
+				new Element('<input type="checkbox" field="${p.name}">').appendTo(def);
+			case PUnsupported(text):
+				new Element('<font color="red">'+StringTools.htmlEscape(text)+'</font>').appendTo(def);
+			}
+		}
+		return add(e, context);
 	}
 
 	public function add( e : Element, ?context : Dynamic, ?onChange : String -> Void ) {
