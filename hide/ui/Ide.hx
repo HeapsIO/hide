@@ -15,6 +15,7 @@ class Ide {
 	public var database : cdb.Database;
 	public var shaderLoader : hide.tools.ShaderLoader;
 	public var fileWatcher : hide.tools.FileWatcher;
+	public var typesCache : hide.tools.TypesCache;
 
 	var databaseFile : String;
 
@@ -242,6 +243,7 @@ class Ide {
 		window.title = "HIDE - " + dir;
 		props = Props.loadForProject(projectDir, resourceDir);
 		shaderLoader = new hide.tools.ShaderLoader();
+		typesCache = new hide.tools.TypesCache();
 
 		var localDir = sys.FileSystem.exists(resourceDir) ? resourceDir : projectDir;
 		hxd.res.Loader.currentInstance = new CustomLoader(new hxd.fs.LocalFileSystem(localDir));
