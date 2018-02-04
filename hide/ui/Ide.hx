@@ -37,6 +37,8 @@ class Ide {
 
 	var renderers : Array<h3d.mat.MaterialSetup>;
 
+	static var firstInit = true;
+
 	function new() {
 		inst = this;
 		window = nw.Window.get();
@@ -175,10 +177,13 @@ class Ide {
 		haxe.Timer.delay(function() {
 			initializing = false;
 			if( layout.isInitialised ) {
-				for( file in nw.App.argv ) {
+				if( firstInit ) {
+					firstInit = false;
+					for( file in nw.App.argv ) {
 						if( !sys.FileSystem.exists(file) ) continue;
 						openFile(file);
 					}
+				}
 				return;
 			}
 			state.state = [];
