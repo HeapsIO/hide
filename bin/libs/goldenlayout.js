@@ -2743,14 +2743,14 @@ lm.controls.Tab = function( header, contentItem ) {
 		this._layoutManager.config.settings.reorderEnabled === true &&
 		contentItem.config.reorderEnabled === true
 	) {
-		this._dragListener = new lm.utils.DragListener( this.element );
+		this._dragListener = new lm.utils.DragListener( this.titleElement );
 		this._dragListener.on( 'dragStart', this._onDragStart, this );
 	}
 
 	this._onTabClickFn = lm.utils.fnBind( this._onTabClick, this );
 	this._onCloseClickFn = lm.utils.fnBind( this._onCloseClick, this );
 
-	this.element.on( 'mousedown touchstart', this._onTabClickFn );
+	this.titleElement.on( 'mousedown touchstart', this._onTabClickFn );
 
 	if( this.contentItem.config.isClosable ) {
 		this.closeElement.on( 'click touchstart', this._onCloseClickFn );
@@ -2819,7 +2819,7 @@ lm.utils.copy( lm.controls.Tab.prototype, {
 	 * @returns {void}
 	 */
 	_$destroy: function() {
-		this.element.off( 'mousedown touchstart', this._onTabClickFn );
+		this.titleElement.off( 'mousedown touchstart', this._onTabClickFn );
 		this.closeElement.off( 'click touchstart', this._onCloseClickFn );
 		if( this._dragListener ) {
 			this._dragListener.off( 'dragStart', this._onDragStart );
