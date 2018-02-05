@@ -175,7 +175,8 @@ input[type=checkbox]:checked:after {
 }
 .hide-range input[type=text] {
   display: inline-block;
-  width: 30px;
+  width: 34px;
+  padding-left: 2px;
   margin-left: 3px;
   border-color: transparent;
 }
@@ -378,13 +379,6 @@ input[type=checkbox]:checked:after {
 }
 .hide-properties .group > .content {
   margin-bottom: 5px;
-}
-/* CDB */
-.hide-sheet table {
-  width: 100%;
-  table-layout: fixed;
-  border-collapse: collapse;
-  border-spacing: 0;
 }
 /* Golden Layout Fixes */
 .lm_header .lm_tabs {
