@@ -106,8 +106,10 @@ class FileTree extends FileView {
 			if( current != null )
 				tree.setSelection([current]);
 			e.preventDefault();
+			var newMenu = [for( e in EXTENSIONS ) if( e.options.createNew != null ) { label : e.options.createNew, click : createNew.bind(current, e) }];
+			newMenu.unshift({ label : "Directory", click : createNew.bind(current, { options : { createNew : "Directory" }, extensions : null, component : null }) });
 			new hide.comp.ContextMenu([
-				{ label : "New..", menu:[for( e in EXTENSIONS ) if( e.options.createNew != null ) { label : e.options.createNew, click : createNew.bind(current, e) }] },
+				{ label : "New..", menu:newMenu },
 				{ label : "Delete", enabled : current != null, click : function() if( js.Browser.window.confirm("Delete " + current + "?") ) { onDeleteFile(current); tree.refresh(); } },
 			]);
 		});
@@ -158,11 +160,18 @@ class FileTree extends FileView {
 
 		var file = ide.ask(ext.options.createNew + " name:");
 		if( file == null ) return;
-		if( file.indexOf(".") < 0 ) file += "." + ext.extensions[0].split(".").shift();
+		if( file.indexOf(".") < 0 && ext.extensions != null )
+			file += "." + ext.extensions[0].split(".").shift();
 
 		if( sys.FileSystem.exists(fullPath + "/" + file) ) {
 			ide.error("File '" + file+"' already exists");
 			createNew(basePath, ext);
+			return;
+		}
+
+		// directory
+		if( ext.component == null ) {
+			sys.FileSystem.createDirectory(fullPath + "/" + file);
 			return;
 		}
 
