@@ -166,7 +166,7 @@ class Prefab extends FileView {
 
 		resetCamera();
 		var cam = getDisplayState("Camera");
-		if( cam == null ) {
+		if( cam != null ) {
 			scene.s3d.camera.pos.set(cam.x, cam.y, cam.z);
 			scene.s3d.camera.target.set(cam.tx, cam.ty, cam.tz);
 		}
