@@ -3,3 +3,4 @@
 /dump
 /bin/*.json
 /bin/hide.js
+*.lnk

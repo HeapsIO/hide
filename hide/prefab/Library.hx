@@ -12,10 +12,18 @@ class Library extends Prefab {
 	// hacks to use directly non-recursive api
 
 	override function load( obj : Dynamic ) {
+		if( inRec )
+			return;
 		var children : Array<Dynamic> = obj.children;
 		if( children != null )
 			for( v in children )
 				Prefab.loadRec(v, this);
+	}
+
+	override function reload(v:Dynamic) {
+		inRec = true;
+		super.reload(v);
+		inRec = false;
 	}
 
 	override function save() {

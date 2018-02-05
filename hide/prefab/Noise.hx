@@ -1,8 +1,8 @@
 package hide.prefab;
 
-class NoiseGen extends Prefab {
+class Noise extends Prefab {
 
-	static var DEFAULT_SEED = 42;
+	public var seed : Int = Std.random(10000);
 
 	public var scale : Float = 1.;
 	public var channels : Int = 1;
@@ -19,26 +19,32 @@ class NoiseGen extends Prefab {
 	public var offset : Float = 0.5;
 	public var turbulence : Float = 0.;
 	public var turbulenceScale : Float = 1.;
+	public var inverse : Bool;
+
+	var tex : h3d.mat.Texture;
 
 	override public function load(v:Dynamic) {
+		this.seed = v.seed;
 		this.size = v.size;
 		this.scale = v.scale;
-		if( v.channels != null ) this.channels = v.channels;
+		if( v.channels != null ) this.channels = v.channels else this.channels = 1;
 		this.octaves = v.octaves;
 		this.persist = v.persist;
 		this.lacunarity = v.lacunarity;
 		this.ridged = v.ridged;
 		if( v.gain != null ) this.gain = v.gain;
 		if( v.offset != null ) this.offset = v.offset;
-		if( v.contrast != null ) this.contrast = v.contrast;
-		if( v.brightness != null ) this.brightness = v.brightness;
-		if( v.normals != null ) this.normals = v.normals;
-		if( v.turbulence != null ) this.turbulence = v.turbulence;
+		if( v.contrast != null ) this.contrast = v.contrast else this.contrast = 0;
+		if( v.brightness != null ) this.brightness = v.brightness else this.brightness = 0;
+		if( v.normals != null ) this.normals = v.normals else this.normals = false;
+		if( v.turbulence != null ) this.turbulence = v.turbulence else this.turbulence = 0;
 		if( v.turbulenceScale != null ) this.turbulenceScale = v.turbulenceScale;
+		if( v.inverse != null ) this.inverse = v.inverse else this.inverse = false;
 	}
 
 	override function save() {
 		var o : Dynamic = {
+			seed : seed,
 			size : size,
 			scale : scale,
 			octaves : octaves,
@@ -62,10 +68,12 @@ class NoiseGen extends Prefab {
 			o.turbulence = turbulence;
 			o.turbulenceScale = turbulenceScale;
 		}
+		if( inverse )
+			o.inverse = inverse;
 		return o;
 	}
 
-	public function updateTexture( t : h3d.mat.Texture, seed : Int ) {
+	public function updateTexture( t : h3d.mat.Texture ) {
 		var e = h3d.Engine.getCurrent();
 		e.pushTarget(t);
 		@:privateAccess e.flushTarget();
@@ -85,6 +93,7 @@ class NoiseGen extends Prefab {
 		pass.shader.contrast = contrast;
 		pass.shader.brightness = brightness;
 		pass.shader.normals = normals;
+		pass.shader.inverse = inverse ? 1 : 0;
 
 		pass.shader.turbulence = turbulence * 16 / size;
 		pass.shader.turbulenceScale = turbulenceScale;
@@ -94,12 +103,19 @@ class NoiseGen extends Prefab {
 		e.popTarget();
 	}
 
-	public function makeTexture( ?size, ?seed ) {
-		if( seed == null ) seed = DEFAULT_SEED;
-		if( size == null ) size = this.size;
-		var t = new h3d.mat.Texture(size, size, [Target]);
-		updateTexture(t, seed);
-		return t;
+	public function toTexture() {
+		if( tex != null )
+			return tex;
+		tex = new h3d.mat.Texture(size, size, [Target]);
+		if( !tex.flags.has(IsNPOT) ) tex.wrap = Repeat;
+		updateTexture(tex);
+		tex.realloc = function() updateTexture(tex);
+		return tex;
+	}
+
+	override function reload(p:Dynamic) {
+		if( tex != null ) tex.dispose();
+		super.reload(p);
 	}
 
 	function makeTile( tex : h3d.mat.Texture ) {
@@ -111,10 +127,14 @@ class NoiseGen extends Prefab {
 	}
 
 	override function makeInstance( ctx : Context ) {
-		var tex = makeTexture();
+		var tex = new h3d.mat.Texture(size, size, [Target]);
+		updateTexture(tex);
 		ctx = ctx.clone(this);
 		var bmp = new h2d.Bitmap(makeTile(tex), ctx.local2d);
 		bmp.tileWrap = !tex.flags.has(IsNPOT);
+		bmp.visible = false;
+		bmp.x = -size >> 1;
+		bmp.y = -size >> 1;
 		ctx.local2d = bmp;
 		ctx.shared.cleanups.push(tex.dispose);
 		return ctx;
@@ -154,9 +174,11 @@ class NoiseGen extends Prefab {
 			<dl>
 				<dt>Contrast</dt><dd><input type="range" min="-1" max="1" field="contrast"/></dd>
 				<dt>Brightness</dt><dd><input type="range" min="-1" max="1" field="brightness"/></dd>
+				<dt>Inverse</dt><dd><input type="checkbox" field="inverse"/></dd>
 			</dl>
 			<br/>
 			<dl>
+				<dt>Seed</dt><dd><input type="range" step="1" min="0" max="9999" field="seed"/></dd>
 				<dt>&nbsp;</dt><dd><input type="button" value="Download" name="dl"/></dd>
 			</dl>
 		'),this,function(_) {
@@ -166,9 +188,14 @@ class NoiseGen extends Prefab {
 				tex.resize(size, size);
 				bmp.tile = makeTile(tex);
 				bmp.tileWrap = !tex.flags.has(IsNPOT);
+				bmp.x = -size >> 1;
+				bmp.y = -size >> 1;
 			}
-			updateTexture(tex, DEFAULT_SEED);
+			updateTexture(tex);
 		});
+		var bmp = cast(ctx.getContext(this).local2d, h2d.Bitmap);
+		bmp.visible = true;
+		ctx.cleanups.push(function() bmp.visible = false);
 		e.find("[name=dl]").click(function(_) {
 			ctx.ide.chooseFileSave("noise.png", function(f) if( f != null ) {
 				try {
@@ -182,7 +209,7 @@ class NoiseGen extends Prefab {
 		#end
 	}
 
-	static var _ = Library.register("noise", NoiseGen);
+	static var _ = Library.register("noise", Noise);
 
 }
 
@@ -194,22 +221,22 @@ class NoiseShader extends h3d.shader.ScreenShader {
 
 		@const var channels : Int = 1;
 		@const var octaves : Int = 1;
+		@const var ridged : Bool;
+		@const var normals : Bool;
 
 		@param var seed : Int;
 		@param var scale : Float = 8;
 		@param var persist : Float = 0.5;
 		@param var lacunarity : Float = 2.0;
 
-		@const var ridged : Bool;
 		@param var gain : Float;
 		@param var offset : Float;
+		@param var inverse : Float;
 
 		@param var contrast : Float;
 		@param var brightness : Float;
 		@param var turbulence : Float;
 		@param var turbulenceScale : Float;
-
-		@const var normals : Bool;
 
 		function perturb( uv : Vec2, scale : Float, seed : Int ) : Vec2 {
 			if( turbulence > 0. ) {
@@ -266,7 +293,9 @@ class NoiseShader extends h3d.shader.ScreenShader {
 					scale *= lacunarity;
 				}
 			}
-			return (v * (1 + contrast) + 1) * 0.5 + brightness;
+			v = (v * (1 + contrast) + 1) * 0.5 + brightness;
+			if( inverse > 0 ) v = 1 - v;
+			return v;
 		}
 
 		function calcNormal() : Vec3 {

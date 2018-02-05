@@ -66,9 +66,34 @@ class Prefab {
 		return obj;
 	}
 
+	public function reload( p : Dynamic ) {
+		load(p);
+		var childData : Array<Dynamic> = p.children;
+		if( childData == null ) {
+			if( this.children.length > 0 ) this.children = [];
+			return;
+		}
+		var curChild = new Map();
+		for( c in children )
+			curChild.set(c.name, c);
+		var newchild = [];
+		for( v in childData ) {
+			var name : String = v.name;
+			var prev = curChild.get(name);
+			if( prev != null && prev.type == v.type ) {
+				curChild.remove(name);
+				prev.reload(v);
+				newchild.push(prev);
+			} else {
+				newchild.push(loadRec(v,this));
+			}
+		}
+		children = newchild;
+	}
+
 	public static function loadRec( v : Dynamic, ?parent : Prefab ) {
 		var pcl = @:privateAccess Library.registeredElements.get(v.type);
-		if( pcl == null ) throw "Unregistered prefab " + v.type;
+		if( pcl == null ) pcl = hide.prefab.Unknown;
 		var p = Type.createInstance(pcl, [parent]);
 		p.type = v.type;
 		p.name = v.name;
@@ -103,15 +128,22 @@ class Prefab {
 		return null;
 	}
 
-	public function get<T:Prefab>( cl : Class<T>, ?name : String ) : T {
+	public function getOpt<T:Prefab>( cl : Class<T>, ?name : String ) : T {
 		for( c in children ) {
 			if( (name == null || c.name == name) && Std.is(c, cl) )
 				return cast c;
-			var p = c.get(cl, name);
+			var p = c.getOpt(cl, name);
 			if( p != null )
 				return p;
 		}
 		return null;
+	}
+
+	public function get<T:Prefab>( cl : Class<T>, ?name : String ) : T {
+		var v = getOpt(cl, name);
+		if( v == null )
+			throw "Missing prefab " + (name == null ? Type.getClassName(cl) : (cl == null ? name : name+"(" + Type.getClassName(cl) + ")"));
+		return v;
 	}
 
 }

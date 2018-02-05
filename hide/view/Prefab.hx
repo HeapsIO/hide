@@ -116,8 +116,8 @@ class Prefab extends FileView {
 
 	function resetCamera() {
 		var bounds = context.shared.root2d.getBounds();
-		context.shared.root2d.x = -(Std.int(bounds.width) >> 1);
-		context.shared.root2d.y = -(Std.int(bounds.height) >> 1);
+		context.shared.root2d.x = -Std.int(bounds.xMin + bounds.width * 0.5);
+		context.shared.root2d.y = -Std.int(bounds.yMin + bounds.height * 0.5);
 		scene.resetCamera(context.shared.root3d, 1.5);
 		control.loadFromCamera();
 	}
@@ -272,8 +272,15 @@ class Prefab extends FileView {
 				} },
 			]);
 		});
+		tree.allowRename = true;
 		tree.init();
 		tree.onClick = selectObject;
+		tree.onRename = function(e, name) {
+			var oldName = e.name;
+			e.name = name;
+			undo.change(Field(e, "name", oldName), function() tree.refresh());
+			return true;
+		};
 		scene.onResize = function() {
 			scene.s2d.x = scene.s2d.width >> 1;
 			scene.s2d.y = scene.s2d.height >> 1;
