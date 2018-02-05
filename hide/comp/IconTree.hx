@@ -22,8 +22,7 @@ class IconTree<T:{}> extends Component {
 	var map : Map<String, IconTreeItem<T>> = new Map();
 	var revMapString : haxe.ds.StringMap<IconTreeItem<T>> = new haxe.ds.StringMap();
 	var revMap : haxe.ds.ObjectMap<T, IconTreeItem<T>> = new haxe.ds.ObjectMap();
-
-	public var onMenu : Void -> Void;
+	public var allowRename : Bool;
 
 	public dynamic function get( parent : Null<T> ) : Array<IconTreeItem<T>> {
 		return [{ data : null, text : "get()", children : true }];
@@ -38,6 +37,10 @@ class IconTree<T:{}> extends Component {
 	public dynamic function onToggle( e : T, isOpen : Bool ) : Void {
 	}
 
+	public dynamic function onRename( e : T, value : String ) : Bool {
+		return false;
+	}
+
 	public function init() {
 		(untyped root.jstree)({
 			core : {
@@ -46,6 +49,13 @@ class IconTree<T:{}> extends Component {
 					dots: true,
 					icons: true
             	},
+				check_callback : function(operation,node,node_parent, value) {
+					if( operation == "edit" && allowRename )
+						return true;
+					if( operation == "rename_node" )
+						return onRename(map.get(node.id).data, value);
+					return false;
+				},
 				data : function(obj, callb) {
 					var parent = obj.parent == null ? null : map.get(obj.id);
 					var content : Array<IconTreeItem<T>> = get(parent == null ? null : parent.data);
