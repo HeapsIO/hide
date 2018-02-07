@@ -4,6 +4,7 @@ enum PropType {
 	PInt( ?min : Int, ?max : Int );
 	PFloat( ?min : Float, ?max : Float );
 	PBool;
+	PTexture;
 	PUnsupported( debug : String );
 }
 
@@ -48,13 +49,15 @@ class PropsEditor extends Component {
 			case PInt(min, max):
 				var e = new Element('<input type="range" field="${p.name}" step="1">').appendTo(def);
 				if( min != null ) e.attr("min", "" + min);
-				if( max != null ) e.attr("max", "" + max);
+				e.attr("max", "" + (max == null ? 100 : max));
 			case PFloat(min, max):
 				var e = new Element('<input type="range" field="${p.name}">').appendTo(def);
 				if( min != null ) e.attr("min", "" + min);
 				if( max != null ) e.attr("max", "" + max);
 			case PBool:
 				new Element('<input type="checkbox" field="${p.name}">').appendTo(def);
+			case PTexture:
+				new Element('<input type="texturepath" field="${p.name}">').appendTo(def);
 			case PUnsupported(text):
 				new Element('<font color="red">'+StringTools.htmlEscape(text)+'</font>').appendTo(def);
 			}

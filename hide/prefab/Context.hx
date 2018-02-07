@@ -62,6 +62,14 @@ class Context {
 		#end
 	}
 
+	public function loadTexture( path : String ) {
+		#if editor
+		return hide.comp.Scene.getCurrent().loadTexture("",path);
+		#else
+		return @:privateAccess shared.cache.loadTexture("", path);
+		#end
+	}
+
 	public function locateObject( path : String ) {
 		if( path == null )
 			return null;

@@ -141,7 +141,7 @@ class Noise extends Prefab {
 	}
 
 	override function getHideProps() : HideProps {
-		return { icon : "chess-board", name : "Noise Generator" };
+		return { icon : "cloud", name : "Noise Generator" };
 	}
 
 	override function edit( ctx : EditContext ) {

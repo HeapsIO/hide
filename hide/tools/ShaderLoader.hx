@@ -1,10 +1,18 @@
 package hide.tools;
 
+typedef CachedShader = {
+	var file : String;
+	var name : String;
+	var shader : hxsl.SharedShader;
+	var inits : Array<{ v : hxsl.Ast.TVar, e : hxsl.Ast.TExpr }>;
+	var watch : Void -> Void;
+}
+
 class ShaderLoader {
 
 	var ide : hide.ui.Ide;
 	var shaderPath : Array<String>;
-	var shaderCache = new Map<String, hxsl.SharedShader>();
+	var shaderCache = new Map<String, CachedShader>();
 
 	public function new() {
 		ide = hide.ui.Ide.inst;
@@ -15,51 +23,64 @@ class ShaderLoader {
 		var s = loadSharedShader(name);
 		if( s == null )
 			return null;
-		return new hxsl.DynamicShader(s);
+		var d = new hxsl.DynamicShader(s.shader);
+		for( v in s.inits )
+			d.hscriptSet(v.v.name, hxsl.Ast.Tools.evalConst(v.e));
+		return d;
 	}
 
-	function loadSharedShader( name : String ) {
+	public function loadSharedShader( name : String, ?file : String ) {
 		var s = shaderCache.get(name);
 		if( s != null )
 			return s;
-		var e = loadShaderExpr(name);
+		var e = loadShaderExpr(name, file);
 		if( e == null )
 			return null;
 		var chk = new hxsl.Checker();
 		chk.loadShader = function(iname) {
-			var e = loadShaderExpr(iname);
+			var e = loadShaderExpr(iname, null);
 			if( e == null )
 				throw "Could not @:import " + iname + " (referenced from " + name+")";
-			return e;
+			return e.expr;
 		};
 		var s = new hxsl.SharedShader("");
-		s.data = chk.check(name, e);
+		s.data = chk.check(name, e.expr);
 		@:privateAccess s.initialize();
+		var s : CachedShader = { file : e.file, name : name, shader : s, inits : chk.inits, watch : null };
+		s.watch = onShaderChanged.bind(s);
+		ide.fileWatcher.register(s.file, s.watch);
 		shaderCache.set(name, s);
 		return s;
 	}
 
-	function loadShaderExpr( name : String ) : hxsl.Ast.Expr {
+	function onShaderChanged( s : CachedShader ) {
+		shaderCache.remove(s.name);
+		ide.fileWatcher.unregister(s.file, s.watch);
+	}
+
+	function loadShaderExpr( name : String, file : String ) : { file : String, expr : hxsl.Ast.Expr } {
+		if( file != null && sys.FileSystem.exists(file) )
+			return { file : file, expr : loadShaderString(file,sys.io.File.getContent(file), name) };
 		var path = name.split(".").join("/")+".hx";
 		for( s in shaderPath ) {
 			var file = ide.projectDir + "/" + s + "/" + path;
 			if( sys.FileSystem.exists(file) )
-				return loadShaderString(file,sys.io.File.getContent(file));
+				return { file : file, expr : loadShaderString(file, sys.io.File.getContent(file), null) };
 		}
 		if( StringTools.startsWith(name,"h3d.shader.") ) {
 			var r = haxe.Resource.getString("shader/" + name.substr(11));
-			if( r != null ) return loadShaderString(path, r);
+			if( r != null ) return { file : null, expr : loadShaderString(path, r, null) };
 		}
 		return null;
 	}
 
-	function loadShaderString( file : String, content : String ) {
+	function loadShaderString( file : String, content : String, name : String ) {
 		var parser = new hscript.Parser();
 		var decls = parser.parseModule(content, file);
 		var cl = null, cf = null;
 		for( d in decls ) {
 			switch( d ) {
-			case DClass(c):
+			case DClass(c) if( name == null || c.name == name.split(".").pop() ):
 				for( f in c.fields )
 					if( f.name == "SRC" ) {
 						cl = c;
@@ -81,7 +102,6 @@ class ShaderLoader {
 
 		var e = new hscript.Macro({ min : 0, max : 0, file : file }).convert(expr);
 		var e = new hxsl.MacroParser().parseExpr(e);
-
 		switch( cl.extend ) {
 		case CTPath(p,_):
 			var path = p.join(".");
@@ -91,7 +111,6 @@ class ShaderLoader {
 			}
 		default:
 		}
-
 		return e;
 	}
 

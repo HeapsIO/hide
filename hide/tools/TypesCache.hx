@@ -1,4 +1,5 @@
 package hide.tools;
+import hide.comp.PropsEditor.PropType;
 
 enum ModelKind {
 	PrefabDef;
@@ -17,6 +18,7 @@ typedef TypeFile = {
 	var watch : Void -> Void;
 	var models : Array<TypeModel>;
 	var files : Array<TypeFile>;
+	var error : String;
 }
 
 class TypesCache {
@@ -60,8 +62,17 @@ class TypesCache {
 				continue;
 			browseRec(path,old);
 		}
-		for( f in old )
+		for( f in old ) {
+			var fnew = hfiles.get(f.path);
+			if( fnew != null && fnew.error != null ) {
+				fnew.models = [for( m in f.models ) { id : m.id, kind : m.kind, fields : [{ t : PUnsupported(fnew.error), name : "", def : null }], file : fnew }];
+				for( m in fnew.models ) {
+					types.push(m);
+					htype.set(m.id, m);
+				}
+			}
 			ide.fileWatcher.unregister(f.path, f.watch);
+		}
 	}
 
 	function browseRec( path : String, old : Map<String,TypeFile> ) {
@@ -70,6 +81,7 @@ class TypesCache {
 			watch : null,
 			files : [],
 			models : [],
+			error : null,
 		};
 		addFile(dir);
 
@@ -101,6 +113,7 @@ class TypesCache {
 			watch : null,
 			files : [],
 			models : [],
+			error : null,
 		};
 		var content = sys.io.File.getContent(path);
 		var scan = content.indexOf("hxsl.Shader") >= 0 || content.indexOf("h3d.shader.ScreenShader") >= 0 || content.indexOf("@:prefab") >= 0;
@@ -114,8 +127,27 @@ class TypesCache {
 				switch( d ) {
 				case DPackage(p):
 					pack = p.length == 0 ? "" : p.join(".") + ".";
-				case DClass(c) if( c.extend != null && (c.extend.match(CTPath(["hxsl","Shader"])) || c.extend.match(CTPath(["h3d","shader","ScreenShader"]))) ):
-					file.models.push({ id : pack + c.name, kind : Shader, file : file, fields : [] });
+				case DClass(c) if( c.extend != null && (c.extend.match(CTPath(["hxsl", "Shader"])) || c.extend.match(CTPath(["h3d", "shader", "ScreenShader"]))) ):
+					var shader = try ide.shaderLoader.loadSharedShader(pack + c.name) catch( e : hxsl.Ast.Error ) null;
+					var fields = [];
+					var fmap = new Map();
+					if( shader == null )
+						fields.push({ name : "", t : PUnsupported("Failed to load this shader"), def : null });
+					else {
+						for( v in shader.shader.data.vars ) {
+							if( v.kind != Param ) continue;
+							if( v.qualifiers != null && v.qualifiers.indexOf(Ignore) >= 0 ) continue;
+							var t = makeShaderType(v);
+							var fl = { name : v.name, t : t, def : defType(t) };
+							fields.push(fl);
+							fmap.set(v.name, fl);
+						}
+						for( i in shader.inits ) {
+							var fl = fmap.get(i.v.name);
+							fl.def = hxsl.Ast.Tools.evalConst(i.e);
+						}
+					}
+					file.models.push({ id : pack + c.name, kind : Shader, file : file, fields : fields });
 				case DTypedef(t) if( Lambda.exists(t.meta, function(m) return m.name == ":prefab") ):
 					var fields = [];
 					switch( t.t ) {
@@ -130,7 +162,7 @@ class TypesCache {
 				default:
 				}
 		} catch( e : hscript.Expr.Error ) {
-			ide.error(e.toString());
+			file.error = e.toString();
 		}
 		return file;
 	}
@@ -191,10 +223,13 @@ class TypesCache {
 			return min == null ? 0 : min;
 		case PBool:
 			return false;
+		case PTexture:
+			return null;
 		case PUnsupported(_):
 			return null;
 		}
 	}
+
 	function makeType( t : hscript.Expr.CType ) : hide.comp.PropsEditor.PropType {
 		return switch( t ) {
 		case CTPath(["Int"]):
@@ -205,6 +240,28 @@ class TypesCache {
 			PBool;
 		default:
 			PUnsupported(new hscript.Printer().typeToString(t));
+		}
+	}
+
+	function makeShaderType( v : hxsl.Ast.TVar ) : hide.comp.PropsEditor.PropType {
+		var min : Null<Float> = null, max : Null<Float> = null;
+		if( v.qualifiers != null )
+			for( q in v.qualifiers )
+				switch( q ) {
+				case Range(rmin, rmax): min = rmin; max = rmax;
+				default:
+				}
+		return switch( v.type ) {
+		case TInt:
+			PInt(min == null ? null : Std.int(min), max == null ? null : Std.int(max));
+		case TFloat:
+			PFloat(min, max);
+		case TBool:
+			PBool;
+		case TSampler2D:
+			PTexture;
+		default:
+			PUnsupported(hxsl.Ast.Tools.toString(v.type));
 		}
 	}
 
