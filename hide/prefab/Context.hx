@@ -66,7 +66,7 @@ class Context {
 		#if editor
 		return hide.comp.Scene.getCurrent().loadTexture("",path);
 		#else
-		return @:privateAccess shared.cache.loadTexture("", path);
+		return @:privateAccess shared.cache.loadTexture(null, path);
 		#end
 	}
 
