@@ -12,6 +12,8 @@ class Blur extends Prefab {
 	public var image : String;
 	public var zoom : Int = 1;
 
+	var pass : h3d.pass.Blur;
+
 	override function load(o:Dynamic) {
 		size = o.size;
 		quality = o.quality;
@@ -43,6 +45,24 @@ class Blur extends Prefab {
 		f.gain = gain;
 		f.reduceSize = size;
 		return f;
+	}
+
+	public function apply( t : h3d.mat.Texture, ctx : h3d.impl.RenderContext ) {
+		if( passes == 0 )
+			return t;
+		if( pass == null )
+			pass = new h3d.pass.Blur();
+		pass.quality = quality;
+		pass.passes = passes;
+		pass.gain = gain;
+		pass.sigma = sigma;
+		if( size > 0 ) {
+			var t2 = ctx.textures.allocTarget(name, t.width >> size, t.height >> size, false, t.format);
+			h3d.pass.Copy.run(t, t2);
+			t = t2;
+		}
+		pass.apply(t, ctx.textures.allocTarget(name+"Tmp", t.width, t.height, false, t.format));
+		return t;
 	}
 
 	override function makeInstance( ctx : Context ) {
