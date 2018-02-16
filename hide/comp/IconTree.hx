@@ -41,6 +41,13 @@ class IconTree<T:{}> extends Component {
 		return false;
 	}
 
+	public dynamic function onAllowMove( e : T, to : T ) : Bool {
+		return false;
+	}
+
+	public dynamic function onMove( e : T, to : T, index : Int ) {
+	}
+
 	public function init() {
 		(untyped root.jstree)({
 			core : {
@@ -49,11 +56,17 @@ class IconTree<T:{}> extends Component {
 					dots: true,
 					icons: true
             	},
-				check_callback : function(operation,node,node_parent, value) {
+				check_callback : function(operation, node, node_parent, value, extra) {
 					if( operation == "edit" && allowRename )
 						return true;
-					if( operation == "rename_node" )
+					if( operation == "rename_node" ) {
+						if( node.text == value ) return true; // no change
 						return onRename(map.get(node.id).data, value);
+					}
+					if( operation == "move_node" ) {
+						if( extra.ref == null ) return true;
+						return onAllowMove(map.get(node.id).data, map.get(extra.ref.id).data);
+					}
 					return false;
 				},
 				data : function(obj, callb) {
@@ -76,7 +89,7 @@ class IconTree<T:{}> extends Component {
 					callb.call(this,content);
 				}
 			},
-			plugins : [ "wholerow" ],
+			plugins : [ "wholerow", "dnd" ],
 		});
 		root.on("click.jstree", function (event) {
 			var node = new Element(event.target).closest("li");
@@ -86,6 +99,10 @@ class IconTree<T:{}> extends Component {
 		root.on("dblclick.jstree", function (event) {
 			var node = new Element(event.target).closest("li");
    			var i = map.get(node[0].id);
+			if( allowRename ) {
+				editNode(i.data);
+				return;
+			}
 			onDblClick(i.data);
 		});
 		root.on("open_node.jstree", function(event, e) {
@@ -103,12 +120,20 @@ class IconTree<T:{}> extends Component {
 			waitRefresh = [];
 			for( f in old ) f();
 		});
+		root.on("move_node.jstree", function(event, e) {
+			onMove(map.get(e.node.id).data, e.parent == "#" ? null : map.get(e.parent).data, e.position);
+		});
 	}
 
 	function getRev( o : T ) {
 		if( Std.is(o, String) )
 			return revMapString.get(cast o);
 		return revMap.get(o);
+	}
+
+	public function editNode( e : T ) {
+		var n = getRev(e).id;
+		(untyped root.jstree)('edit',n);
 	}
 
 	public function getCurrentOver() : Null<T> {
