@@ -128,11 +128,12 @@ class TypesCache {
 				case DPackage(p):
 					pack = p.length == 0 ? "" : p.join(".") + ".";
 				case DClass(c) if( c.extend != null && (c.extend.match(CTPath(["hxsl", "Shader"])) || c.extend.match(CTPath(["h3d", "shader", "ScreenShader"]))) ):
-					var shader = try ide.shaderLoader.loadSharedShader(pack + c.name) catch( e : hxsl.Ast.Error ) null;
+					var error = null;
+					var shader = try ide.shaderLoader.loadSharedShader(pack + c.name, path) catch( e : hxsl.Ast.Error ) { error = e.toString(); null; };
 					var fields = [];
 					var fmap = new Map();
 					if( shader == null )
-						fields.push({ name : "", t : PUnsupported("Failed to load this shader"), def : null });
+						fields.push({ name : "", t : PUnsupported("Failed to load this shader"+(error == null ? "" : " ("+error+")")), def : null });
 					else {
 						for( v in shader.shader.data.vars ) {
 							if( v.kind != Param ) continue;
@@ -144,7 +145,8 @@ class TypesCache {
 						}
 						for( i in shader.inits ) {
 							var fl = fmap.get(i.v.name);
-							fl.def = hxsl.Ast.Tools.evalConst(i.e);
+							if( !fl.t.match(PUnsupported(_)) )
+								fl.def = evalConst(i.e);
 						}
 					}
 					file.models.push({ id : pack + c.name, kind : Shader, file : file, fields : fields });
@@ -165,6 +167,32 @@ class TypesCache {
 			file.error = e.toString();
 		}
 		return file;
+	}
+
+	function evalConst( e : hxsl.Ast.TExpr ) : Dynamic {
+		return switch( e.e ) {
+		case TConst(c):
+			switch( c ) {
+			case CNull: null;
+			case CBool(b): b;
+			case CInt(i): i;
+			case CFloat(f): f;
+			case CString(s): s;
+			}
+		case TCall({ e : TGlobal(Vec2 | Vec3 | Vec4) }, args):
+			var vals = [for( a in args ) evalConst(a)];
+			if( vals.length == 1 )
+				switch( e.t ) {
+				case TVec(n, _):
+					for( i in 0...n - 1 ) vals.push(vals[0]);
+					return vals;
+				default:
+					throw "assert";
+				}
+			return vals;
+		default:
+			throw "Unhandled constant init " + hxsl.Printer.toString(e);
+		}
 	}
 
 	function addFile( t : TypeFile ) {
@@ -225,6 +253,8 @@ class TypesCache {
 			return false;
 		case PTexture:
 			return null;
+		case PVec(n):
+			return [for( i in 0...n ) 0.];
 		case PUnsupported(_):
 			return null;
 		}
@@ -260,6 +290,8 @@ class TypesCache {
 			PBool;
 		case TSampler2D:
 			PTexture;
+		case TVec(n, VFloat):
+			PVec(n);
 		default:
 			PUnsupported(hxsl.Ast.Tools.toString(v.type));
 		}

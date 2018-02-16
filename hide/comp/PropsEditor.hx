@@ -3,6 +3,7 @@ package hide.comp;
 enum PropType {
 	PInt( ?min : Int, ?max : Int );
 	PFloat( ?min : Float, ?max : Float );
+	PVec( n : Int );
 	PBool;
 	PTexture;
 	PUnsupported( debug : String );
@@ -11,6 +12,7 @@ enum PropType {
 class PropsEditor extends Component {
 
 	public var undo : hide.ui.UndoHistory;
+	public var lastChange : Float = 0.;
 	var fields : Array<PropsField>;
 
 	public function new(root,?undo) {
@@ -59,7 +61,17 @@ class PropsEditor extends Component {
 			case PTexture:
 				new Element('<input type="texturepath" field="${p.name}">').appendTo(def);
 			case PUnsupported(text):
-				new Element('<font color="red">'+StringTools.htmlEscape(text)+'</font>').appendTo(def);
+				new Element('<font color="red">' + StringTools.htmlEscape(text) + '</font>').appendTo(def);
+			case PVec(n):
+				var isColor = p.name.toLowerCase().indexOf("color") >= 0;
+				var names = isColor ? ["r", "g", "b", "a"] : ["x", "y", "z", "w"];
+				for( i in 0...n ) {
+					var div = new Element('<div>').appendTo(def);
+					new Element('<span>${names[i]} </span>').appendTo(div);
+					var e = new Element('<input type="range" class="small" field="${p.name}.$i">').appendTo(div);
+					e.attr("min", isColor ? "0" : "-1");
+					e.attr("max", "1");
+				}
 			}
 		}
 		return add(e, context);
@@ -117,7 +129,10 @@ class PropsEditor extends Component {
 		// init input reflection
 		for( f in e.find("[field]").elements() ) {
 			var f = new PropsField(this, f, context);
-			if( onChange != null ) f.onChange = function(undo) onChange(@:privateAccess f.fname);
+			f.onChange = function(undo) {
+				lastChange = haxe.Timer.stamp();
+				if( onChange != null ) onChange(@:privateAccess f.fname);
+			};
 			fields.push(f);
 		}
 
@@ -148,19 +163,19 @@ class PropsField extends Component {
 		this.context = context;
 		Reflect.setField(f[0],"propsField", this);
 		fname = f.attr("field");
-		current = Reflect.getProperty(context, fname);
+		current = getFieldValue();
 		switch( f.attr("type") ) {
 		case "checkbox":
 			f.prop("checked", current);
 			f.change(function(_) {
-				props.undo.change(Field(context, fname, current), function() {
+				undo(function() {
 					var f = resolveField();
-					f.current = Reflect.getProperty(f.context, fname);
+					f.current = getFieldValue();
 					f.root.prop("checked", f.current);
 					f.onChange(true);
 				});
 				current = f.prop("checked");
-				Reflect.setProperty(context, fname, current);
+				setFieldValue(current);
 				onChange(false);
 			});
 			return;
@@ -169,14 +184,14 @@ class PropsField extends Component {
 			tselect = new hide.comp.TextureSelect(f);
 			tselect.value = current;
 			tselect.onChange = function() {
-				props.undo.change(Field(context, fname, current), function() {
+				undo(function() {
 					var f = resolveField();
-					f.current = Reflect.getProperty(f.context, fname);
+					f.current = getFieldValue();
 					f.tselect.value = f.current;
 					f.onChange(true);
 				});
 				current = tselect.value;
-				Reflect.setProperty(context, fname, current);
+				setFieldValue(current);
 				onChange(false);
 			}
 			return;
@@ -185,14 +200,14 @@ class PropsField extends Component {
 			tselect = new hide.comp.TextureSelect(f);
 			tselect.path = current;
 			tselect.onChange = function() {
-				props.undo.change(Field(context, fname, current), function() {
+				undo(function() {
 					var f = resolveField();
-					f.current = Reflect.getProperty(f.context, fname);
+					f.current = getFieldValue();
 					f.tselect.path = f.current;
 					f.onChange(true);
 				});
 				current = tselect.path;
-				Reflect.setProperty(context, fname, current);
+				setFieldValue(current);
 				onChange(false);
 			}
 			return;
@@ -201,14 +216,14 @@ class PropsField extends Component {
 			fselect = new hide.comp.FileSelect(f, ["hmd", "fbx"]);
 			fselect.path = current;
 			fselect.onChange = function() {
-				props.undo.change(Field(context, fname, current), function() {
+				undo(function() {
 					var f = resolveField();
-					f.current = Reflect.getProperty(f.context, fname);
+					f.current = getFieldValue();
 					f.fselect.path = f.current;
 					f.onChange(true);
 				});
 				current = fselect.path;
-				Reflect.setProperty(context, fname, current);
+				setFieldValue(current);
 				onChange(false);
 			};
 			return;
@@ -258,7 +273,47 @@ class PropsField extends Component {
 				setVal(newVal);
 			});
 		}
+	}
 
+	function getAccess() : { obj : Dynamic, index : Int, name : String } {
+		var obj : Dynamic = context;
+		var path = fname.split(".");
+		var field = path.pop();
+		for( p in path ) {
+			var index = Std.parseInt(p);
+			if( index != null )
+				obj = obj[index];
+			else
+				obj = Reflect.getProperty(obj, p);
+		}
+		var index = Std.parseInt(field);
+		if( index != null )
+			return { obj : obj, index : index, name : null };
+		return { obj : obj, index : -1, name : field };
+	}
+
+
+	function getFieldValue() {
+		var a = getAccess();
+		if( a.name != null )
+			return Reflect.getProperty(a.obj, a.name);
+		return a.obj[a.index];
+	}
+
+	function setFieldValue( value : Dynamic ) {
+		var a = getAccess();
+		if( a.name != null )
+			Reflect.setProperty(a.obj, a.name, value);
+		else
+			a.obj[a.index] = value;
+	}
+
+	function undo( f : Void -> Void ) {
+		var a = getAccess();
+		if( a.name != null )
+			props.undo.change(Field(a.obj, a.name, current), f);
+		else
+			props.undo.change(Array(a.obj, a.index, current), f);
 	}
 
 	function setVal(v) {
@@ -273,9 +328,9 @@ class PropsField extends Component {
 			tempChange = false;
 			if( beforeTempChange == null ) beforeTempChange = { value : current };
 		} else {
-			props.undo.change(Field(context, fname, current), function() {
+			undo(function() {
 				var f = resolveField();
-				var v = Reflect.getProperty(f.context, fname);
+				var v = getFieldValue();
 				f.current = v;
 				f.root.val(v);
 				f.root.parent().find("input[type=text]").val(v);
@@ -283,7 +338,7 @@ class PropsField extends Component {
 			});
 		}
 		current = v;
-		Reflect.setProperty(context, fname, v);
+		setFieldValue(v);
 		onChange(false);
 	}
 

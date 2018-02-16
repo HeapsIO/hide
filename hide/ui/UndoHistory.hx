@@ -2,6 +2,7 @@ package hide.ui;
 
 enum HistoryElement {
 	Field( obj : Dynamic, field : String, oldValue : Dynamic );
+	Array( obj : Array<Dynamic>, field : Int, oldValue : Dynamic );
 	Custom( undoRedo : Bool -> Void );
 }
 
@@ -44,6 +45,10 @@ class UndoHistory {
 			var curValue = Reflect.field(obj, field);
 			other.push({ h : Field(obj, field, curValue), id : e.id, callb : e.callb });
 			Reflect.setProperty(obj, field, value);
+		case Array(arr, index, value):
+			var curValue = arr[index];
+			other.push({ h : Array(arr, index, curValue), id : e.id, callb : e.callb });
+			arr[index] = value;
 		case Custom(f):
 			other.push(e);
 			f(other == redoElts);

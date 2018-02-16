@@ -23,6 +23,22 @@ class Settings extends Prefab {
 		Reflect.deleteField(o, "ignoredFields");
 	}
 
+	public function apply( to : {} ) {
+		var fields = Reflect.fields(data);
+		fields.remove("type");
+		fields.remove("children");
+		fields.remove("name");
+		for( f in fields ) {
+			var prev : Dynamic = Reflect.getProperty(to, f);
+			var value : Dynamic = Reflect.field(data, f);
+			if( prev != null && Std.is(prev, h3d.Vector) && Std.is(value, Array) ) {
+				var val : Array<Float> = value;
+				value = new h3d.Vector(value[0], value[1], value[2], value[3]);
+			}
+			Reflect.setProperty(to, f, value);
+		}
+	}
+
 	override function getHideProps() : HideProps {
 		return { icon : "cogs", name : "Settings" };
 	}
@@ -67,6 +83,8 @@ class Settings extends Prefab {
 
 		var fields = Reflect.fields(data);
 		fields.remove("type");
+		fields.remove("name");
+		fields.remove("children");
 		fields.remove("modelType");
 		fields.remove("ignoredFields");
 		var changed = false;

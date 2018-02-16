@@ -100,7 +100,7 @@ class Prefab {
 		if( v.source != null )
 			p.source = v.source;
 		p.load(v);
-		var children : Array<Dynamic> = p.children;
+		var children : Array<Dynamic> = v.children;
 		if( children != null )
 			for( v in children )
 				loadRec(v, p);
@@ -129,9 +129,14 @@ class Prefab {
 	}
 
 	public function getOpt<T:Prefab>( cl : Class<T>, ?name : String ) : T {
+		var parts = name == null ? null : name.split(".");
 		for( c in children ) {
 			if( (name == null || c.name == name) && Std.is(c, cl) )
 				return cast c;
+			if( parts != null && parts.length > 1 && c.name == parts[0] ) {
+				parts.shift();
+				return c.getOpt(cl, parts.join("."));
+			}
 			var p = c.getOpt(cl, name);
 			if( p != null )
 				return p;

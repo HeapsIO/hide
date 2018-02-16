@@ -41,12 +41,31 @@ class Prefab extends FileView {
 
 	var curEdit : EditContext;
 
+	// autoSync
+	var autoSync : Bool;
+	var currentVersion : Int = 0;
+	var lastSyncChange : Float = 0.;
+	var currentSign : String;
+
 	override function getDefaultContent() {
 		return haxe.io.Bytes.ofString(ide.toJSON(new hide.prefab.Library().save()));
 	}
 
+	override function onFileChanged(wasDeleted:Bool) {
+		if( !wasDeleted ) {
+			// double check if content has changed
+			var content = sys.io.File.getContent(getPath());
+			var sign = haxe.crypto.Md5.encode(content);
+			if( sign == currentSign )
+				return;
+		}
+		super.onFileChanged(wasDeleted);
+	}
+
 	override function save() {
-		sys.io.File.saveContent(getPath(), ide.toJSON(data.save()));
+		var content = ide.toJSON(data.save());
+		currentSign = haxe.crypto.Md5.encode(content);
+		sys.io.File.saveContent(getPath(), content);
 	}
 
 	override function onDisplay() {
@@ -75,6 +94,7 @@ class Prefab extends FileView {
 		scene = new hide.comp.Scene(root.find(".scene"));
 		scene.onReady = init;
 		tree = new hide.comp.IconTree(root.find(".tree"));
+		currentVersion = undo.currentID;
 	}
 
 	function refresh( ?callb ) {
@@ -141,7 +161,9 @@ class Prefab extends FileView {
 
 	function init() {
 		data = new hide.prefab.Library();
-		data.load(haxe.Json.parse(sys.io.File.getContent(getPath())));
+		var content = sys.io.File.getContent(getPath());
+		data.load(haxe.Json.parse(content));
+		currentSign = haxe.crypto.Md5.encode(content);
 
 		context = new hide.prefab.Context();
 		context.onError = function(e) {
@@ -197,6 +219,10 @@ class Prefab extends FileView {
 			scene.speed = v;
 		}, scene.speed);
 
+		tools.addToggle("refresh", "Auto synchronize", function(b) {
+			autoSync = b;
+		});
+
 		// BUILD scene tree
 
 		function makeItem(o:PrefabElement) : hide.comp.IconTree.IconTreeItem<PrefabElement> {
@@ -205,13 +231,14 @@ class Prefab extends FileView {
 				data : o,
 				text : o.name,
 				icon : "fa fa-"+p.icon,
-				children : o.iterator().hasNext(),
+				children : o.children.length > 0,
 				state : { opened : true },
 			};
 		}
 		tree.get = function(o:PrefabElement) {
 			var objs = o == null ? data.children : Lambda.array(o);
-			return [for( o in objs ) makeItem(o)];
+			var out = [for( o in objs ) makeItem(o)];
+			return out;
 		};
 		tree.root.parent().contextmenu(function(e) {
 			e.preventDefault();
@@ -251,6 +278,7 @@ class Prefab extends FileView {
 
 			new hide.comp.ContextMenu([
 				{ label : "New...", menu : registered },
+				{ label : "Rename", enabled : current != null, click : function() tree.editNode(current) },
 				{ label : "Delete", enabled : current != null, click : function() {
 					function deleteRec(roots:Array<PrefabElement>) {
 						for( o in roots ) {
@@ -281,6 +309,32 @@ class Prefab extends FileView {
 			undo.change(Field(e, "name", oldName), function() tree.refresh());
 			return true;
 		};
+		tree.onAllowMove = function(_, _) {
+			return true;
+		};
+		tree.onMove = function(e, to, index) {
+			if( to == null ) to = data;
+			var prev = e.parent;
+			var prevIndex = prev.children.indexOf(e);
+			e.parent = to;
+			to.children.remove(e);
+			to.children.insert(index, e);
+			undo.change(Custom(function(undo) {
+				if( undo ) {
+					e.parent = prev;
+					prev.children.remove(e);
+					prev.children.insert(prevIndex, e);
+				} else {
+					e.parent = to;
+					to.children.remove(e);
+					to.children.insert(index, e);
+				}
+				refresh();
+			}));
+			refresh();
+			return true;
+		};
+
 		scene.onResize = function() {
 			scene.s2d.x = scene.s2d.width >> 1;
 			scene.s2d.y = scene.s2d.height >> 1;
@@ -305,6 +359,11 @@ class Prefab extends FileView {
 				Math.sin(angle) * lightDirection.x + Math.cos(angle) * lightDirection.y,
 				lightDirection.z
 			);
+		}
+		if( autoSync && (currentVersion != undo.currentID || lastSyncChange != properties.lastChange) ) {
+			save();
+			lastSyncChange = properties.lastChange;
+			currentVersion = undo.currentID;
 		}
 	}
 
