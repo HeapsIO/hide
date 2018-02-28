@@ -151,4 +151,8 @@ class Prefab {
 		return v;
 	}
 
+	public function to<T:Prefab>( c : Class<T> ) : Null<T> {
+		return Std.instance(this, c);
+	}
+
 }

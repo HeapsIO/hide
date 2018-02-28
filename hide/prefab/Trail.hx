@@ -20,12 +20,17 @@ class Trail extends Object3D {
 		return obj;
 	}
 
-	override function makeInstance(ctx:Context):Context {
-		ctx = ctx.clone(this);
-		var tr = new h3d.scene.Trail(ctx.local3d);
+	public function make( ?parent : h3d.scene.Object ) {
+		var tr = new h3d.scene.Trail(parent);
 		tr.load(data);
 		applyPos(tr);
 		tr.name = name;
+		return tr;
+	}
+
+	override function makeInstance(ctx:Context):Context {
+		ctx = ctx.clone(this);
+		var tr = make(ctx.local3d);
 		ctx.local3d = tr;
 		return ctx;
 	}

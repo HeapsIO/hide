@@ -14,6 +14,13 @@ class Constraint extends Prefab {
 		return { object : object, target : target };
 	}
 
+	public function apply( root : h3d.scene.Object ) {
+		var srcObj = root.getObjectByName(object.split(".").pop());
+		var targetObj = root.getObjectByName(target.split(".").pop());
+		if( srcObj != null && targetObj != null ) srcObj.follow = targetObj;
+		return srcObj;
+	}
+
 	override function makeInstance( ctx : Context ) {
 		var srcObj = ctx.locateObject(object);
 		var targetObj = ctx.locateObject(target);
