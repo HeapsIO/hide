@@ -67,7 +67,7 @@
 }
 .cdb .cdb-sheet tr.selected,
 .cdb .cdb-sheet td.selected {
-  background-color: #EEE;
+  background-color: #353535;
 }
 .cdb .cdb-sheet td {
   user-select: none;
@@ -96,7 +96,7 @@
 }
 .cdb .cdb-sheet tr.list tr.selected,
 .cdb .cdb-sheet tr.list td.selected {
-  background-color: #DDD;
+  background-color: #353535;
 }
 .cdb .cdb-sheet tr.list > td {
   padding: 0;

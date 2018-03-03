@@ -1,22 +1,23 @@
-package hide.comp;
+package hide.comp.cdb;
 
-class CdbCell extends Component {
+class Cell extends Component {
 
 	static var UID = 0;
 	static var typeNames = [for( t in Type.getEnumConstructs(cdb.Data.ColumnType) ) t.substr(1).toLowerCase()];
 
-	var editor : CdbEditor;
+	var editor : Editor;
+	var line : Line;
 	var col : cdb.Data.Column;
-	var obj : Dynamic;
 	var currentValue : Dynamic;
 	public var value(get, set) : Dynamic;
 
-	public function new( root : Element, editor : CdbEditor, col : cdb.Data.Column, obj : Dynamic ) {
+	public function new( root : Element, line : Line, col : cdb.Data.Column ) {
 		super(root);
-		this.editor = editor;
+		this.line = line;
+		this.editor = line.table.editor;
 		this.col = col;
-		this.obj = obj;
-		currentValue = Reflect.field(obj, col.name);
+		@:privateAccess line.cells.push(this);
+		currentValue = Reflect.field(line.obj, col.name);
 		root.addClass("t_" + typeNames[col.type.getIndex()]);
 		refresh();
 	}
@@ -24,11 +25,11 @@ class CdbCell extends Component {
 	function set_value( v : Dynamic ) {
 		var old = currentValue;
 		currentValue = v;
-		if( obj == null && v != currentValue ) {
+		if( v != currentValue ) {
 			if( v == null )
-				Reflect.deleteField(obj, col.name);
+				Reflect.deleteField(line.obj, col.name);
 			else
-				Reflect.setField(obj, col.name, v);
+				Reflect.setField(line.obj, col.name, v);
 			// TODO : history
 		}
 		refresh();
@@ -38,7 +39,7 @@ class CdbCell extends Component {
 	inline function get_value() return currentValue;
 
 	function refresh() {
-		var html = valueHtml(col, value, editor.sheet, obj);
+		var html = valueHtml(col, value, editor.sheet, line.obj);
 		if( html == "&nbsp;" ) root.text(" ") else if( html.indexOf('<') < 0 && html.indexOf('&') < 0 ) root.text(html) else root.html(html);
 		updateClasses();
 	}
