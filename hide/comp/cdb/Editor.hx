@@ -16,9 +16,11 @@ class Editor extends Component {
 		schema : Array<cdb.Data.Column>,
 	};
 	public var cursor : Cursor;
+	public var undo : hide.ui.UndoHistory;
 
 	public function new(root, sheet, keys) {
 		super(root);
+		this.undo = new hide.ui.UndoHistory();
 		this.sheet = sheet;
 		this.keys = keys;
 		keys.addListener(onKey);
@@ -27,6 +29,9 @@ class Editor extends Component {
 			searchBox.find("input").focus().select();
 		});
 		keys.register("copy", onCopy);
+		keys.register("cdb.showReferences", showReferences);
+		keys.register("undo", function() if( undo.undo() ) { refresh(); save(); });
+		keys.register("redo", function() if( undo.redo() ) { refresh(); save(); });
 		base = sheet.base;
 		cursor = new Cursor(this);
 		refresh();
@@ -45,6 +50,9 @@ class Editor extends Component {
 			return true;
 		case K.DOWN:
 			cursor.move( 0, 1, e.shiftKey, e.ctrlKey);
+			return true;
+		case K.TAB:
+			cursor.move( e.shiftKey ? -1 : 1, 0, false, false);
 			return true;
 		case K.SPACE:
 			e.preventDefault(); // prevent scroll
@@ -95,6 +103,11 @@ class Editor extends Component {
 		ide.setClipboard(clipboard.text);
 	}
 
+	function showReferences() {
+		if( cursor.table == null ) return;
+		// todo : port from old cdb
+	}
+
 	function refresh() {
 
 		root.html('');
@@ -126,6 +139,12 @@ class Editor extends Component {
 		new Table(this, sheet, content);
 		content.appendTo(root);
 
+		if( cursor.table != null ) {
+			for( t in tables )
+				if( t.sheet == cursor.table.sheet )
+					cursor.table = t;
+			cursor.update();
+		}
 	}
 
 	function quickExists(path) {

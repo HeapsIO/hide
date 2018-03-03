@@ -110,9 +110,10 @@ class Table extends Component {
 						title = JTHIS.val();
 						JTHIS.remove();
 						content.text(title);
-						/*
+
+						var old = sheet.props.separatorTitles;
 						var titles = sheet.props.separatorTitles;
-						if( titles == null ) titles = [];
+						if( titles == null ) titles = [] else titles = titles.copy();
 						while( titles.length < pos )
 							titles.push(null);
 						titles[pos] = title == "" ? null : title;
@@ -120,7 +121,9 @@ class Table extends Component {
 							titles.pop();
 						if( titles.length == 0 ) titles = null;
 						sheet.props.separatorTitles = titles;
-						save();*/
+						editor.undo.change(Field(sheet.props,"separatorTitles",old));
+						editor.save(); // no undo on separator rename
+
 					}).keypress(function(e) {
 						e.stopPropagation();
 					}).keydown(function(e) {

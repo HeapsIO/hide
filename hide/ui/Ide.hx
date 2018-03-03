@@ -281,7 +281,7 @@ class Ide {
 			r.onError = function(msg) error(msg);
 		}
 
-		var db = getPath("data.cdb");
+		var db = getPath(props.project.get("cdb.databaseFile"));
 		databaseFile = db;
 		database = new cdb.Database();
 		if( sys.FileSystem.exists(db) ) {
@@ -302,6 +302,10 @@ class Ide {
 
 		initMenu();
 		initLayout();
+	}
+
+	public function saveDatabase() {
+		sys.io.File.saveContent(databaseFile, database.save());
 	}
 
 	public function makeRelative( path : String ) {

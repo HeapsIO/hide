@@ -23,6 +23,9 @@ class CdbTable extends hide.ui.View<{ path : String }> {
 		var keys = new hide.ui.Keys(props);
 		this.keys.subKeys = [keys];
 		editor = new hide.comp.cdb.Editor(root, sheet, keys);
+		editor.save = function() {
+			ide.saveDatabase();
+		};
 		new Element("<div style='width:100%; height:300px'></div>").appendTo(root);
 	}
 

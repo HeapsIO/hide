@@ -18,8 +18,17 @@
 
 	"key.search" : "Ctrl-F",
 
+	// cdb keys
+
+	"key.cdb.showReferences" : "F3",
+
+	// cdb config
+
+	"cdb.databaseFile" : "data.cdb",
+
 	// paths to look files/shaders into - relative to project root
 	"haxe.classPath" : ["src"],
+
 
 	// reserved for internal ide usage
 	"hide" : {}
