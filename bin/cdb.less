@@ -2,10 +2,244 @@
 .cdb {
 
 	.cdb-sheet {
+
 		width : 100%;
 		table-layout:fixed;
 		border-collapse : collapse;
 		border-spacing : 0;
+
+		th.start {
+			width : 30px;
+			border-left-color : #333;
+		}
+		td.start {
+			text-align : center;
+			cursor : pointer;
+			background-color: #333;
+			border-left: none;
+		}
+		tr.cursorLine td.start {
+			background-color: #444;
+		}
+
+		tr.head td.start {
+			cursor : nw-resize;
+		}
+
+		tr.separator {
+			background-color : #444;
+			height : 10px;
+			td {
+//				border-top: 1px solid #99A6D2;
+				border-left: none;
+				padding-top: 6px;
+				color : #bbb;
+				font-weight : bold;
+				padding-left : 20px;
+			}
+		}
+
+		td {
+			padding : 2px 4px;
+			overflow : hidden;
+		}
+
+		td.cursor {
+			outline : 1px solid #555;
+		}
+
+		tr.cursorLine {
+			background-color: #EFF1F8;
+		}
+
+		tr.filtered {
+			display : none;
+		}
+
+		tr.clickable {
+			cursor : pointer;
+		}
+
+		tr.clickable:hover {
+			background-color : #f8f8f8;
+		}
+
+		tr.head, th {
+			font-weight: bold;
+			text-align: center;
+			border-bottom : 1px solid #666;
+			border-left: 1px solid #555;
+			background-color : #333;
+			color : #ddd;
+			width: auto;
+			white-space: nowrap;
+			overflow: hidden;
+		}
+
+		tr.head .display {
+			font-style : italic;
+		}
+
+		tr.selected, td.selected {
+			background-color : #EEE;
+		}
+
+		td {
+			user-select: none;
+			border-left : 1px solid #444;
+		}
+
+		tr {
+			border-bottom : 1px solid #333;
+		}
+
+		// ----- types -------
+
+		tr.list {
+			background-color : #CCC;
+			border-bottom : 0px;
+			tr.head {
+				color : #fff;
+				background-color : #777;
+				font-weight : normal;
+				height : 8px;
+			}
+			tr {
+				background-color : #EEE;
+				border-color : #E0E0E0;
+			}
+			input, select {
+				background-color : #EEE;
+			}
+
+			tr.selected, td.selected {
+				background-color : #DDD;
+			}
+
+			& > td {
+				padding : 0;
+				padding-bottom: 5px;
+			}
+		}
+
+
+		th.t_tilepos {
+			width: 64px;
+		}
+		td.t_tilepos {
+			text-align : center;
+		}
+
+		th.t_bool,
+		th.t_int,
+		th.t_float {
+			width: 6%;
+		}
+
+		td.t_bool {
+			text-align : center;
+		}
+		td.t_bool.true {
+			color: #76AA09;
+			font-weight: bold;
+			font-size: inherit;
+		}
+		td.t_bool.false {
+			color: red;
+			font-weight: normal;
+			font-size: 75%;
+		}
+
+		.tile {
+			display: inline-block;
+			vertical-align: middle;
+			image-rendering: CSS("pixelated");
+		}
+
+		td.t_int, td.t_float {
+			text-align : center;
+			input {
+				text-align : center;
+			}
+		}
+
+		td.t_int.zero, td.t_float.zero {
+			color: #888;
+		}
+
+		td.t_list, td.t_properties {
+			white-space: nowrap;
+			cursor : pointer;
+			img {
+				max-height: 32px;
+				max-width: 32px;
+			}
+		}
+
+		td.t_enum {
+			padding-left : 5px;
+		}
+
+		td.t_color {
+			text-align : center;
+			.modal {
+				opacity : 0.;
+			}
+			.color {
+				display : inline-block;
+				width : 20px;
+				height : 20px;
+				border : 2px solid white;
+				outline : 1px solid black;
+			}
+		}
+
+		.flagValues {
+			position : absolute;
+			background-color : white;
+			width : 150px;
+			padding : 5px;
+			border : 1px solid #333;
+			label {
+				display : block;
+				clear : both;
+				input {
+					float : right;
+				}
+				padding : 1px;
+			}
+			label:hover {
+				background-color : #eee;
+			}
+		}
+
+		span.error {
+			color : #C44;
+		}
+
+		td.t_file {
+			.preview {
+				.previewContent {
+					.label {
+						text-align : center;
+						margin-bottom : 5px;
+						background-color : white;
+						font-family : monospace;
+					}
+					display : none;
+					position : absolute;
+					background-color : #EEE;
+					border : 1px solid black;
+					padding : 5px;
+				}
+			}
+			.preview:hover {
+				.previewContent {
+					display : block;
+				}
+			}
+		}
+
 	}
 
 }

@@ -10,7 +10,7 @@ private typedef Cursor = {
 }
 
 @:allow(hide.comp.CdbCell)
-class CdbTable extends Component {
+class CdbEditor extends Component {
 
 	var base : cdb.Database;
 	var sheet : cdb.Sheet;
@@ -102,7 +102,16 @@ class CdbTable extends Component {
 				var v = J("<td>").addClass("c");
 				var l = lines[index];
 				v.appendTo(l);
-				new CdbCell(v, this, c, sheet.lines[index]);
+				var cell = new CdbCell(v, this, c, sheet.lines[index]);
+				switch( c.type ) {
+				case TList:
+					var key = sheet.getPath() + "@" + c.name + ":" + index;
+					cell.root.click(function(e) {
+						e.stopPropagation();
+						toggleList(cell);
+					});
+				default:
+				}
 			}
 		}
 
@@ -154,6 +163,9 @@ class CdbTable extends Component {
 		inTodo = true;
 		for( t in todo ) t();
 		inTodo = false;
+	}
+
+	function toggleList( cell : CdbCell ) {
 	}
 
 	function quickExists(path) {

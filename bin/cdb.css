@@ -4,3 +4,205 @@
   border-collapse: collapse;
   border-spacing: 0;
 }
+.cdb .cdb-sheet th.start {
+  width: 30px;
+  border-left-color: #333;
+}
+.cdb .cdb-sheet td.start {
+  text-align: center;
+  cursor: pointer;
+  background-color: #333;
+  border-left: none;
+}
+.cdb .cdb-sheet tr.cursorLine td.start {
+  background-color: #444;
+}
+.cdb .cdb-sheet tr.head td.start {
+  cursor: nw-resize;
+}
+.cdb .cdb-sheet tr.separator {
+  background-color: #444;
+  height: 10px;
+}
+.cdb .cdb-sheet tr.separator td {
+  border-left: none;
+  padding-top: 6px;
+  color: #bbb;
+  font-weight: bold;
+  padding-left: 20px;
+}
+.cdb .cdb-sheet td {
+  padding: 2px 4px;
+  overflow: hidden;
+}
+.cdb .cdb-sheet td.cursor {
+  outline: 1px solid #555;
+}
+.cdb .cdb-sheet tr.cursorLine {
+  background-color: #EFF1F8;
+}
+.cdb .cdb-sheet tr.filtered {
+  display: none;
+}
+.cdb .cdb-sheet tr.clickable {
+  cursor: pointer;
+}
+.cdb .cdb-sheet tr.clickable:hover {
+  background-color: #f8f8f8;
+}
+.cdb .cdb-sheet tr.head,
+.cdb .cdb-sheet th {
+  font-weight: bold;
+  text-align: center;
+  border-bottom: 1px solid #666;
+  border-left: 1px solid #555;
+  background-color: #333;
+  color: #ddd;
+  width: auto;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.cdb .cdb-sheet tr.head .display {
+  font-style: italic;
+}
+.cdb .cdb-sheet tr.selected,
+.cdb .cdb-sheet td.selected {
+  background-color: #EEE;
+}
+.cdb .cdb-sheet td {
+  user-select: none;
+  border-left: 1px solid #444;
+}
+.cdb .cdb-sheet tr {
+  border-bottom: 1px solid #333;
+}
+.cdb .cdb-sheet tr.list {
+  background-color: #CCC;
+  border-bottom: 0px;
+}
+.cdb .cdb-sheet tr.list tr.head {
+  color: #fff;
+  background-color: #777;
+  font-weight: normal;
+  height: 8px;
+}
+.cdb .cdb-sheet tr.list tr {
+  background-color: #EEE;
+  border-color: #E0E0E0;
+}
+.cdb .cdb-sheet tr.list input,
+.cdb .cdb-sheet tr.list select {
+  background-color: #EEE;
+}
+.cdb .cdb-sheet tr.list tr.selected,
+.cdb .cdb-sheet tr.list td.selected {
+  background-color: #DDD;
+}
+.cdb .cdb-sheet tr.list > td {
+  padding: 0;
+  padding-bottom: 5px;
+}
+.cdb .cdb-sheet th.t_tilepos {
+  width: 64px;
+}
+.cdb .cdb-sheet td.t_tilepos {
+  text-align: center;
+}
+.cdb .cdb-sheet th.t_bool,
+.cdb .cdb-sheet th.t_int,
+.cdb .cdb-sheet th.t_float {
+  width: 6%;
+}
+.cdb .cdb-sheet td.t_bool {
+  text-align: center;
+}
+.cdb .cdb-sheet td.t_bool.true {
+  color: #76AA09;
+  font-weight: bold;
+  font-size: inherit;
+}
+.cdb .cdb-sheet td.t_bool.false {
+  color: red;
+  font-weight: normal;
+  font-size: 75%;
+}
+.cdb .cdb-sheet .tile {
+  display: inline-block;
+  vertical-align: middle;
+  image-rendering: CSS("pixelated");
+}
+.cdb .cdb-sheet td.t_int,
+.cdb .cdb-sheet td.t_float {
+  text-align: center;
+}
+.cdb .cdb-sheet td.t_int input,
+.cdb .cdb-sheet td.t_float input {
+  text-align: center;
+}
+.cdb .cdb-sheet td.t_int.zero,
+.cdb .cdb-sheet td.t_float.zero {
+  color: #888;
+}
+.cdb .cdb-sheet td.t_list,
+.cdb .cdb-sheet td.t_properties {
+  white-space: nowrap;
+  cursor: pointer;
+}
+.cdb .cdb-sheet td.t_list img,
+.cdb .cdb-sheet td.t_properties img {
+  max-height: 32px;
+  max-width: 32px;
+}
+.cdb .cdb-sheet td.t_enum {
+  padding-left: 5px;
+}
+.cdb .cdb-sheet td.t_color {
+  text-align: center;
+}
+.cdb .cdb-sheet td.t_color .modal {
+  opacity: 0.;
+}
+.cdb .cdb-sheet td.t_color .color {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid white;
+  outline: 1px solid black;
+}
+.cdb .cdb-sheet .flagValues {
+  position: absolute;
+  background-color: white;
+  width: 150px;
+  padding: 5px;
+  border: 1px solid #333;
+}
+.cdb .cdb-sheet .flagValues label {
+  display: block;
+  clear: both;
+  padding: 1px;
+}
+.cdb .cdb-sheet .flagValues label input {
+  float: right;
+}
+.cdb .cdb-sheet .flagValues label:hover {
+  background-color: #eee;
+}
+.cdb .cdb-sheet span.error {
+  color: #C44;
+}
+.cdb .cdb-sheet td.t_file .preview .previewContent {
+  display: none;
+  position: absolute;
+  background-color: #EEE;
+  border: 1px solid black;
+  padding: 5px;
+}
+.cdb .cdb-sheet td.t_file .preview .previewContent .label {
+  text-align: center;
+  margin-bottom: 5px;
+  background-color: white;
+  font-family: monospace;
+}
+.cdb .cdb-sheet td.t_file .preview:hover .previewContent {
+  display: block;
+}

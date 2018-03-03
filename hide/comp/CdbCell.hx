@@ -5,59 +5,53 @@ class CdbCell extends Component {
 	static var UID = 0;
 	static var typeNames = [for( t in Type.getEnumConstructs(cdb.Data.ColumnType) ) t.substr(1).toLowerCase()];
 
-	var table : CdbTable;
+	var editor : CdbEditor;
 	var col : cdb.Data.Column;
 	var obj : Dynamic;
-	public var value(default, set) : Dynamic;
+	var currentValue : Dynamic;
+	public var value(get, set) : Dynamic;
 
-	public function new( root : Element, table : CdbTable, col : cdb.Data.Column, obj : Dynamic ) {
+	public function new( root : Element, editor : CdbEditor, col : cdb.Data.Column, obj : Dynamic ) {
 		super(root);
-		this.table = table;
+		this.editor = editor;
 		this.col = col;
 		this.obj = obj;
-		value = Reflect.field(obj, col.name);
+		currentValue = Reflect.field(obj, col.name);
 		root.addClass("t_" + typeNames[col.type.getIndex()]);
-		/*
-				v.data("index", cindex);
-				v.click(function(e) {
-					if( inTodo ) {
-						// nothing
-					} else if( e.shiftKey && cursor.s == sheet ) {
-						cursor.select = { x : cindex, y : index };
-						updateCursor();
-						e.stopImmediatePropagation();
-					} else
-						setCursor(sheet, cindex, index);
-					e.stopPropagation();
-				});
-
-				function set(val2:Dynamic) {
-					var old = val;
-					val = val2;
-					if( val == null )
-						Reflect.deleteField(obj, c.name);
-					else
-						Reflect.setField(obj, c.name, val);
-					html = valueHtml(c, val, sheet, obj);
-					v.html(html);
-					updateClasses(v, c, val);
-					//this.changed(sheet, c, index, old);
-					trace("CHANGED");
-				}
-
-				// TODO
-		*/
+		refresh();
 	}
 
 	function set_value( v : Dynamic ) {
-		value = v;
+		var old = currentValue;
+		currentValue = v;
+		if( obj == null && v != currentValue ) {
+			if( v == null )
+				Reflect.deleteField(obj, col.name);
+			else
+				Reflect.setField(obj, col.name, v);
+			// TODO : history
+		}
 		refresh();
 		return v;
 	}
 
+	inline function get_value() return currentValue;
+
 	function refresh() {
-		var html = valueHtml(col, value, table.sheet, obj);
+		var html = valueHtml(col, value, editor.sheet, obj);
 		if( html == "&nbsp;" ) root.text(" ") else if( html.indexOf('<') < 0 && html.indexOf('&') < 0 ) root.text(html) else root.html(html);
+		updateClasses();
+	}
+
+	function updateClasses() {
+		switch( col.type ) {
+		case TBool :
+			root.removeClass("true false").addClass( value==true ? "true" : "false" );
+		case TInt, TFloat :
+			root.removeClass("zero");
+			if( value == 0 ) root.addClass("zero");
+		default:
+		}
 	}
 
 	public function valueHtml( c : cdb.Data.Column, v : Dynamic, sheet : cdb.Sheet, obj : Dynamic ) : String {
@@ -75,14 +69,14 @@ class CdbCell extends Component {
 				v + "";
 			}
 		case TId:
-			v == "" ? '<span class="error">#MISSING</span>' : (table.base.getSheet(sheet.name).index.get(v).obj == obj ? v : '<span class="error">#DUP($v)</span>');
+			v == "" ? '<span class="error">#MISSING</span>' : (editor.base.getSheet(sheet.name).index.get(v).obj == obj ? v : '<span class="error">#DUP($v)</span>');
 		case TString, TLayer(_):
 			v == "" ? "&nbsp;" : StringTools.htmlEscape(v);
 		case TRef(sname):
 			if( v == "" )
 				'<span class="error">#MISSING</span>';
 			else {
-				var s = table.base.getSheet(sname);
+				var s = editor.base.getSheet(sname);
 				var i = s.index.get(v);
 				i == null ? '<span class="error">#REF($v)</span>' : (i.ico == null ? "" : tileHtml(i.ico,true)+" ") + StringTools.htmlEscape(i.disp);
 			}
@@ -91,7 +85,7 @@ class CdbCell extends Component {
 		case TEnum(values):
 			values[v];
 		case TImage:
-			""; // deprecated
+			'<span class="error">#DEPRECATED</span>';
 		case TList:
 			var a : Array<Dynamic> = v;
 			var ps = sheet.getSub(c);
@@ -117,6 +111,7 @@ class CdbCell extends Component {
 					vstr = ~/<img src="[^"]+"\/>/g.replace(vstr, "[I]");
 					vstr = ~/<div id="[^>]+><\/div>/g.replace(vstr, "[D]");
 				}
+				vstr = StringTools.trim(vstr);
 				size += vstr.length;
 				out.push(v);
 			}
@@ -133,7 +128,7 @@ class CdbCell extends Component {
 			}
 			return out.join("<br/>");
 		case TCustom(name):
-			var t = table.base.getCustomType(name);
+			var t = editor.base.getCustomType(name);
 			var a : Array<Dynamic> = v;
 			var cas = t.cases[a[0]];
 			var str = cas.name;
@@ -161,7 +156,7 @@ class CdbCell extends Component {
 			var url = "file://" + path;
 			var ext = v.split(".").pop().toLowerCase();
 			var html = v == "" ? '<span class="error">#MISSING</span>' : StringTools.htmlEscape(v);
-			if( v != "" && !table.quickExists(path) )
+			if( v != "" && !editor.quickExists(path) )
 				html = '<span class="error">' + html + '</span>';
 			else if( ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "gif" )
 				html = '<span class="preview">$html<div class="previewContent"><div class="label"></div><img src="$url" onload="$(this).parent().find(\'.label\').text(this.width+\'x\'+this.height)"/></div></span>';
@@ -173,7 +168,7 @@ class CdbCell extends Component {
 		case TTileLayer:
 			var v : cdb.Types.TileLayer = v;
 			var path = ide.getPath(v.file);
-			if( !table.quickExists(path) )
+			if( !editor.quickExists(path) )
 				'<span class="error">' + v.file + '</span>';
 			else
 				'#DATA';
@@ -186,7 +181,7 @@ class CdbCell extends Component {
 
 	function tileHtml( v : cdb.Types.TilePos, ?isInline ) {
 		var path = ide.getPath(v.file);
-		if( !table.quickExists(path) ) {
+		if( !editor.quickExists(path) ) {
 			if( isInline ) return "";
 			return '<span class="error">' + v.file + '</span>';
 		}
