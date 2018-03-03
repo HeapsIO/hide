@@ -215,6 +215,10 @@ class Ide {
 	function get_ideProps() return props.global.source.hide;
 	function get_currentProps() return props.user;
 
+	public function setClipboard( text : String ) {
+		nw.Clipboard.get().set(text, Text);
+	}
+
 	public function registerUpdate( updateFun ) {
 		updates.push(updateFun);
 	}

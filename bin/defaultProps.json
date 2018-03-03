@@ -12,6 +12,12 @@
 	"key.redo" : "Ctrl-Y",
 	"key.save" : "Ctrl-S",
 
+	"key.copy" : "Ctrl-C",
+	"key.cut" : "Ctrl-X",
+	"key.paste" : "Ctrl-V",
+
+	"key.search" : "Ctrl-F",
+
 	// paths to look files/shaders into - relative to project root
 	"haxe.classPath" : ["src"],
 

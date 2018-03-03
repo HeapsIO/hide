@@ -6,30 +6,34 @@ class Cell extends Component {
 	static var typeNames = [for( t in Type.getEnumConstructs(cdb.Data.ColumnType) ) t.substr(1).toLowerCase()];
 
 	var editor : Editor;
-	var line : Line;
-	var col : cdb.Data.Column;
 	var currentValue : Dynamic;
+	public var line(default,null) : Line;
+	public var column(default, null) : cdb.Data.Column;
+	public var columnIndex(get, never) : Int;
 	public var value(get, set) : Dynamic;
+	public var table(get, never) : Table;
 
-	public function new( root : Element, line : Line, col : cdb.Data.Column ) {
+	public function new( root : Element, line : Line, column : cdb.Data.Column ) {
 		super(root);
 		this.line = line;
 		this.editor = line.table.editor;
-		this.col = col;
+		this.column = column;
 		@:privateAccess line.cells.push(this);
-		currentValue = Reflect.field(line.obj, col.name);
-		root.addClass("t_" + typeNames[col.type.getIndex()]);
+		root.addClass("t_" + typeNames[column.type.getIndex()]);
 		refresh();
 	}
+
+	function get_table() return line.table;
+	function get_columnIndex() return table.sheet.columns.indexOf(column);
 
 	function set_value( v : Dynamic ) {
 		var old = currentValue;
 		currentValue = v;
 		if( v != currentValue ) {
 			if( v == null )
-				Reflect.deleteField(line.obj, col.name);
+				Reflect.deleteField(line.obj, column.name);
 			else
-				Reflect.setField(line.obj, col.name, v);
+				Reflect.setField(line.obj, column.name, v);
 			// TODO : history
 		}
 		refresh();
@@ -38,14 +42,15 @@ class Cell extends Component {
 
 	inline function get_value() return currentValue;
 
-	function refresh() {
-		var html = valueHtml(col, value, editor.sheet, line.obj);
+	public function refresh() {
+		currentValue = Reflect.field(line.obj, column.name);
+		var html = valueHtml(column, value, editor.sheet, line.obj);
 		if( html == "&nbsp;" ) root.text(" ") else if( html.indexOf('<') < 0 && html.indexOf('&') < 0 ) root.text(html) else root.html(html);
 		updateClasses();
 	}
 
 	function updateClasses() {
-		switch( col.type ) {
+		switch( column.type ) {
 		case TBool :
 			root.removeClass("true false").addClass( value==true ? "true" : "false" );
 		case TInt, TFloat :

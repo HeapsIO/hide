@@ -6,6 +6,7 @@ class Line extends Component {
 	public var table : Table;
 	public var obj(get, never) : Dynamic;
 	public var cells : Array<Cell>;
+	public var subTable : SubTable;
 
 	public function new(table, index, root) {
 		super(root);

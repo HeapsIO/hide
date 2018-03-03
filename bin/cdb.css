@@ -1,8 +1,12 @@
+.cdb {
+  background-color: black;
+}
 .cdb .cdb-sheet {
   width: 100%;
   table-layout: fixed;
   border-collapse: collapse;
   border-spacing: 0;
+  background-color: #222;
 }
 .cdb .cdb-sheet th.start {
   width: 30px;
@@ -13,9 +17,6 @@
   cursor: pointer;
   background-color: #333;
   border-left: none;
-}
-.cdb .cdb-sheet tr.cursorLine td.start {
-  background-color: #444;
 }
 .cdb .cdb-sheet tr.head td.start {
   cursor: nw-resize;
@@ -36,10 +37,21 @@
   overflow: hidden;
 }
 .cdb .cdb-sheet td.cursor {
-  outline: 1px solid #555;
+  outline: 1px solid #ccc;
 }
 .cdb .cdb-sheet tr.cursorLine {
-  background-color: #EFF1F8;
+  background-color: #262d35;
+}
+.cdb .cdb-sheet tr.cursorLine td.start {
+  background-color: #313a48;
+}
+.cdb .cdb-sheet tr.selected,
+.cdb .cdb-sheet td.selected {
+  background-color: #313a48;
+}
+.cdb .cdb-sheet tr.selected td.start,
+.cdb .cdb-sheet td.selected td.start {
+  background-color: #313a48;
 }
 .cdb .cdb-sheet tr.filtered {
   display: none;
@@ -56,7 +68,7 @@
   text-align: center;
   border-bottom: 1px solid #666;
   border-left: 1px solid #555;
-  background-color: #333;
+  background-color: #222;
   color: #ddd;
   width: auto;
   white-space: nowrap;
@@ -64,10 +76,6 @@
 }
 .cdb .cdb-sheet tr.head .display {
   font-style: italic;
-}
-.cdb .cdb-sheet tr.selected,
-.cdb .cdb-sheet td.selected {
-  background-color: #353535;
 }
 .cdb .cdb-sheet td {
   user-select: none;
@@ -77,30 +85,12 @@
   border-bottom: 1px solid #333;
 }
 .cdb .cdb-sheet tr.list {
-  background-color: #CCC;
-  border-bottom: 0px;
-}
-.cdb .cdb-sheet tr.list tr.head {
-  color: #fff;
-  background-color: #777;
-  font-weight: normal;
-  height: 8px;
-}
-.cdb .cdb-sheet tr.list tr {
-  background-color: #EEE;
-  border-color: #E0E0E0;
-}
-.cdb .cdb-sheet tr.list input,
-.cdb .cdb-sheet tr.list select {
-  background-color: #EEE;
-}
-.cdb .cdb-sheet tr.list tr.selected,
-.cdb .cdb-sheet tr.list td.selected {
-  background-color: #353535;
+  background-color: black;
 }
 .cdb .cdb-sheet tr.list > td {
   padding: 0;
   padding-bottom: 5px;
+  border: none;
 }
 .cdb .cdb-sheet th.t_tilepos {
   width: 64px;
@@ -205,4 +195,32 @@
 }
 .cdb .cdb-sheet td.t_file .preview:hover .previewContent {
   display: block;
+}
+.cdb .searchBox {
+  display: none;
+  width: 200px;
+  position: fixed;
+  top: 20px;
+  right: 0px;
+  background-color: black;
+  border: 1px solid #555;
+  border-top: none;
+  border-right: none;
+  border-bottom-left-radius: 5px;
+  padding: 5px;
+  color: #444;
+}
+.cdb .searchBox input {
+  width: 170px;
+  background-color: black;
+}
+.cdb .searchBox i {
+  cursor: pointer;
+  margin-left: 5px;
+  display: inline-block;
+  font-size: 18px;
+  color: #888;
+}
+.cdb .searchBox i:hover {
+  color: #EEE;
 }

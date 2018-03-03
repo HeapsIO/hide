@@ -1,12 +1,15 @@
 
 .cdb {
 
+	background-color : black;
+
 	.cdb-sheet {
 
 		width : 100%;
 		table-layout:fixed;
 		border-collapse : collapse;
 		border-spacing : 0;
+		background-color: #222;
 
 		th.start {
 			width : 30px;
@@ -18,9 +21,6 @@
 			background-color: #333;
 			border-left: none;
 		}
-		tr.cursorLine td.start {
-			background-color: #444;
-		}
 
 		tr.head td.start {
 			cursor : nw-resize;
@@ -30,7 +30,6 @@
 			background-color : #444;
 			height : 10px;
 			td {
-//				border-top: 1px solid #99A6D2;
 				border-left: none;
 				padding-top: 6px;
 				color : #bbb;
@@ -45,11 +44,21 @@
 		}
 
 		td.cursor {
-			outline : 1px solid #555;
+			outline : 1px solid #ccc;
 		}
 
 		tr.cursorLine {
-			background-color: #EFF1F8;
+			background-color: #262d35;
+			td.start {
+				background-color: #313a48;
+			}
+		}
+
+		tr.selected, td.selected {
+			background-color : #313a48;
+			td.start {
+				background-color: #313a48;
+			}
 		}
 
 		tr.filtered {
@@ -69,7 +78,7 @@
 			text-align: center;
 			border-bottom : 1px solid #666;
 			border-left: 1px solid #555;
-			background-color : #333;
+			background-color : #222;
 			color : #ddd;
 			width: auto;
 			white-space: nowrap;
@@ -78,10 +87,6 @@
 
 		tr.head .display {
 			font-style : italic;
-		}
-
-		tr.selected, td.selected {
-			background-color : #353535;
 		}
 
 		td {
@@ -96,29 +101,11 @@
 		// ----- types -------
 
 		tr.list {
-			background-color : #CCC;
-			border-bottom : 0px;
-			tr.head {
-				color : #fff;
-				background-color : #777;
-				font-weight : normal;
-				height : 8px;
-			}
-			tr {
-				background-color : #EEE;
-				border-color : #E0E0E0;
-			}
-			input, select {
-				background-color : #EEE;
-			}
-
-			tr.selected, td.selected {
-				background-color : #353535;
-			}
-
+			background-color:black;
 			& > td {
 				padding : 0;
 				padding-bottom: 5px;
+				border : none;
 			}
 		}
 
@@ -241,5 +228,35 @@
 		}
 
 	}
+
+	.searchBox {
+		display : none;
+		width : 200px;
+		position : fixed;
+		top : 20px;
+		right : 0px;
+		background-color : black;
+		border : 1px solid #555;
+		border-top : none;
+		border-right : none;
+		border-bottom-left-radius : 5px;
+		padding : 5px;
+		input {
+			width : 170px;
+			background-color : black;
+		}
+		i {
+			cursor : pointer;
+			margin-left : 5px;
+			display : inline-block;
+			font-size : 18px;
+			color : #888;
+		}
+		i:hover {
+			color : #EEE;
+		}
+		color : #444;
+	}
+
 
 }

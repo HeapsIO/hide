@@ -4,9 +4,16 @@ class Keys {
 
 	var config : Props;
 	var keys = new Map<String,Void->Void>();
+	var listeners = new Array<js.jquery.Event -> Bool>();
+	// allow a sub set to hierarchise and prevent leaks wrt refresh
+	public var subKeys : Array<Keys> = [];
 
 	public function new( config : Props ) {
 		this.config = config;
+	}
+
+	public function addListener( l ) {
+		listeners.push(l);
 	}
 
 	public function processEvent( e : js.jquery.Event ) {
@@ -20,33 +27,38 @@ class Keys {
 			parts.push("Ctrl");
 		if( e.shiftKey )
 			parts.push("Shift");
-		if( e.keyCode >= 'A'.code && e.keyCode <= 'Z'.code )
-			parts.push(String.fromCharCode(e.keyCode));
-		else if( e.keyCode >= 96 && e.keyCode <= 105 )
-			parts.push(String.fromCharCode('0'.code + e.keyCode - 96));
-		else if( e.keyCode == ' '.code )
-			parts.push("Space");
-		else if( e.keyCode == 13 )
-			parts.push("Enter");
-		else if( e.keyCode == 27 )
-			parts.push("Esc");
-		else if( e.keyCode == 16 || e.keyCode == 17 || e.keyCode == 18 ) {
-			// alt-ctrl-shift
+		if( e.keyCode == hxd.Key.ALT || e.keyCode == hxd.Key.SHIFT || e.keyCode == hxd.Key.CTRL ) {
+			//
 		} else {
-			//trace(e.key + "=" + e.keyCode+" (" + String.fromCharCode(e.keyCode) + ")");
-			if( e.key != "" )
+			var name = hxd.Key.getKeyName(e.keyCode);
+			if( name != null )
+				parts.push(name);
+			else if( e.key != "" )
 				parts.push(e.key);
 			else
-				return;
+				parts.push(""+e.keyCode);
 		}
 
 		var key = parts.join("-");
-		var callb = keys.get(key);
-		if( callb != null ) {
-			callb();
+		if( triggerKey(e, key) ) {
 			e.stopPropagation();
 			e.preventDefault();
 		}
+	}
+
+	public function triggerKey( e : js.jquery.Event, key : String ) {
+		for( s in subKeys )
+			if( s.triggerKey(e, key) )
+				return true;
+		for( l in listeners )
+			if( l(e) )
+				return true;
+		var callb = keys.get(key);
+		if( callb != null ) {
+			callb();
+			return true;
+		}
+		return false;
 	}
 
 	public function register( name : String, callb : Void -> Void ) {

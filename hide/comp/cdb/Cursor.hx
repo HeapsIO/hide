@@ -3,7 +3,7 @@ package hide.comp.cdb;
 class Cursor {
 
 	var editor : Editor;
-	public var sheet : cdb.Sheet;
+	public var table : Table;
 	public var x : Int;
 	public var y : Int;
 	public var select : Null<{ x : Int, y : Int }>;
@@ -13,8 +13,8 @@ class Cursor {
 		this.editor = editor;
 	}
 
-	public function set( ?s, ?x=0, ?y=0, ?sel, update = true ) {
-		this.sheet = s;
+	public function set( ?t, ?x=0, ?y=0, ?sel, update = true ) {
+		this.table = t;
 		this.x = x;
 		this.y = y;
 		this.select = sel;
@@ -27,12 +27,12 @@ class Cursor {
 	}
 
 	public function getLine() {
-		if( sheet == null ) return null;
-		return editor.getLine(sheet, y);
+		if( table == null ) return null;
+		return table.lines[y];
 	}
 
 	public function move( dx : Int, dy : Int, shift : Bool, ctrl : Bool ) {
-		if( sheet == null )
+		if( table == null )
 			return;
 		if( x == -1 && ctrl ) {
 			if( dy != 0 )
@@ -44,9 +44,9 @@ class Cursor {
 			x--;
 		if( dy < 0 && y > 0 )
 			y--;
-		if( dx > 0 && x < sheet.columns.length - 1 )
+		if( dx > 0 && x < table.sheet.columns.length - 1 )
 			x++;
-		if( dy > 0 && y < sheet.lines.length - 1 )
+		if( dy > 0 && y < table.sheet.lines.length - 1 )
 			y++;
 		select = null;
 		update();
@@ -57,17 +57,17 @@ class Cursor {
 		root.find(".selected").removeClass("selected");
 		root.find(".cursor").removeClass("cursor");
 		root.find(".cursorLine").removeClass("cursorLine");
-		if( sheet == null )
+		if( table == null )
 			return;
 		if( y < 0 ) {
 			y = 0;
 			select = null;
 		}
-		if( y >= sheet.lines.length ) {
-			y = sheet.lines.length - 1;
+		if( y >= table.sheet.lines.length ) {
+			y = table.sheet.lines.length - 1;
 			select = null;
 		}
-		var max = sheet.props.isProps ? 1 : sheet.columns.length;
+		var max = table.sheet.props.isProps ? 1 : table.sheet.columns.length;
 		if( x >= max ) {
 			x = max - 1;
 			select = null;
@@ -79,7 +79,7 @@ class Cursor {
 				var cy = y;
 				while( select.y != cy ) {
 					if( select.y > cy ) cy++ else cy--;
-					editor.getLine(sheet, cy).root.addClass("selected");
+					table.lines[cy].root.addClass("selected");
 				}
 			}
 		} else {
@@ -87,7 +87,7 @@ class Cursor {
 			if( select != null ) {
 				var s = getSelection();
 				for( y in s.y1...s.y2 + 1 ) {
-					var l = editor.getLine(sheet, y);
+					var l = table.lines[y];
 					for( x in s.x1...s.x2+1)
 						l.cells[x].root.addClass("selected");
 				}
@@ -97,11 +97,11 @@ class Cursor {
 		if( e != null ) untyped e.scrollIntoViewIfNeeded();
 	}
 
-	function getSelection() {
-		if( sheet == null )
+	public function getSelection() {
+		if( table == null )
 			return null;
 		var x1 = if( x < 0 ) 0 else x;
-		var x2 = if( x < 0 ) sheet.columns.length-1 else if( select != null ) select.x else x1;
+		var x2 = if( x < 0 ) table.sheet.columns.length-1 else if( select != null ) select.x else x1;
 		var y1 = y;
 		var y2 = if( select != null ) select.y else y1;
 		if( x2 < x1 ) {
@@ -120,11 +120,19 @@ class Cursor {
 
 	public function clickLine( line : Line, shiftKey = false ) {
 		var sheet = line.table.sheet;
-		if( shiftKey && this.sheet == sheet && x < 0 ) {
+		if( shiftKey && this.table == line.table && x < 0 ) {
 			select = { x : -1, y : line.index };
 			update();
 		} else
-			set(sheet, -1, line.index);
+			set(line.table, -1, line.index);
+	}
+
+	public function clickCell( cell : Cell, shiftKey = false ) {
+		if( shiftKey && table == cell.table ) {
+			select = { x : cell.columnIndex, y : cell.line.index };
+			update();
+		} else
+			set(cell.table, cell.columnIndex, cell.line.index);
 	}
 
 }

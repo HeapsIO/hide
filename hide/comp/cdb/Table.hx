@@ -16,8 +16,13 @@ class Table extends Component {
 		refresh();
 	}
 
+	public function close() {
+		root.remove();
+		dispose();
+	}
+
 	public function dispose() {
-		@:privateAccess editor.tables.remove(this);
+		editor.tables.remove(this);
 	}
 
 	public function refresh() {
@@ -55,7 +60,7 @@ class Table extends Component {
 				col.addClass("display");
 			col.mousedown(function(e) {
 				if( e.which == 3 ) {
-					//haxe.Timer.delay(popupColumn.bind(sheet,c),1);
+					editor.popupColumn(this, c);
 					e.preventDefault();
 					return;
 				}
@@ -70,6 +75,12 @@ class Table extends Component {
 				var line = lines[index];
 				v.appendTo(line.root);
 				var cell = new Cell(v, line, c);
+
+				v.click(function(e) {
+					editor.cursor.clickCell(cell, e.shiftKey);
+					e.stopPropagation();
+				});
+
 				switch( c.type ) {
 				case TList:
 					var key = sheet.getPath() + "@" + c.name + ":" + index;
@@ -96,9 +107,10 @@ class Table extends Component {
 				sep.dblclick(function(e) {
 					content.empty();
 					J("<input>").appendTo(content).focus().val(title == null ? "" : title).blur(function(_) {
-						/*title = JTHIS.val();
+						title = JTHIS.val();
 						JTHIS.remove();
 						content.text(title);
+						/*
 						var titles = sheet.props.separatorTitles;
 						if( titles == null ) titles = [];
 						while( titles.length < pos )
@@ -125,7 +137,7 @@ class Table extends Component {
 			var l = J('<tr><td colspan="${sheet.columns.length + 1}"><a href="javascript:_.insertLine()">Insert Line</a></td></tr>');
 			l.find("a").click(function(_) {
 				editor.insertLine(this);
-				editor.cursor.set(sheet);
+				editor.cursor.set(this);
 			});
 			root.append(l);
 		}
@@ -136,6 +148,17 @@ class Table extends Component {
 	}
 
 	function toggleList( cell : Cell ) {
+		var line = cell.line;
+		var cur = line.subTable;
+		if( cur != null ) {
+			cur.close();
+			line.subTable = null;
+			if( cur.cell == cell ) return; // toggle
+		}
+		var sheet = editor.makeSubSheet(cell);
+		var sub = new SubTable(editor, sheet, cell);
+		sub.show();
+		editor.cursor.set(sub);
 	}
 
 }
