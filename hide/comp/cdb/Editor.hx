@@ -32,6 +32,29 @@ class Editor extends Component {
 		keys.register("cdb.showReferences", showReferences);
 		keys.register("undo", function() if( undo.undo() ) { refresh(); save(); });
 		keys.register("redo", function() if( undo.redo() ) { refresh(); save(); });
+		keys.register("cdb.toggleList", function() {
+			var c = cursor.getCell();
+			if( c != null )
+				switch( c.column.type ) {
+				case TProperties, TList: c.root.click(); // toggle
+				default:
+				}
+		});
+		keys.register("cdb.closeList", function() {
+			var c = cursor.getCell();
+			if( c != null ) {
+				var sub = Std.instance(c.table, SubTable);
+				if( sub != null ) {
+					sub.cell.root.click();
+					return;
+				}
+			}
+			if( cursor.select != null ) {
+				cursor.select = null;
+				cursor.update();
+			}
+		});
+		keys.register("cdb.gotoReference", gotoReference);
 		base = sheet.base;
 		cursor = new Cursor(this);
 		refresh();
@@ -61,7 +84,6 @@ class Editor extends Component {
 	}
 
 	function searchFilter( filter : String ) {
-
 		if( filter == "" ) filter = null;
 		if( filter != null ) filter = filter.toLowerCase();
 
@@ -108,9 +130,28 @@ class Editor extends Component {
 		// todo : port from old cdb
 	}
 
+	function gotoReference() {
+		var c = cursor.getCell();
+		if( c == null || c.value == null ) return;
+		switch( c.column.type ) {
+		case TRef(s):
+			var sd = base.getSheet(s);
+			if( sd == null ) return;
+			var k = sd.index.get(c.value);
+			if( k == null ) return;
+			var index = sd.lines.indexOf(k.obj);
+			if( index >= 0 ) openReference(sd, index, 0);
+		default:
+		}
+	}
+
+	function openReference( s : cdb.Sheet, line : Int, column : Int ) {
+		ide.open("hide.view.CdbTable", { path : s.name }, function(view) @:privateAccess Std.instance(view,hide.view.CdbTable).editor.cursor.setDefault(line,column));
+	}
+
 	function refresh() {
 
-		root.html('');
+		root.empty();
 		root.addClass('cdb');
 
 		searchBox = new Element("<div>").addClass("searchBox").appendTo(root);
@@ -191,21 +232,6 @@ class Editor extends Component {
 	}
 
 	public function popupLine( line : Line ) {
-	}
-
-	public function makeSubSheet( cell : Cell ) {
-		var sheet = cell.table.sheet;
-		var c = cell.column;
-		var index = cell.line.index;
-		var key = sheet.getPath() + "@" + c.name + ":" + index;
-		var psheet = sheet.getSub(c);
-		return new cdb.Sheet(base,{
-			columns : psheet.columns, // SHARE
-			props : psheet.props, // SHARE
-			name : psheet.name, // same
-			lines : cell.value, // ref
-			separators : [], // none
-		},key, { sheet : sheet, column : cell.columnIndex, line : index });
 	}
 
 	public function close() {

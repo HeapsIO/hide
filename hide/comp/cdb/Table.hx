@@ -49,8 +49,6 @@ class Table extends Component {
 
 
 		var colCount = sheet.columns.length;
-		var todo = [];
-		var inTodo = false;
 		for( cindex in 0...sheet.columns.length ) {
 			var c = sheet.columns[cindex];
 			var col = J("<th>");
@@ -82,7 +80,7 @@ class Table extends Component {
 				});
 
 				switch( c.type ) {
-				case TList:
+				case TList, TProperties:
 					var key = sheet.getPath() + "@" + c.name + ":" + index;
 					cell.root.click(function(e) {
 						e.stopPropagation();
@@ -122,7 +120,7 @@ class Table extends Component {
 						if( titles.length == 0 ) titles = null;
 						sheet.props.separatorTitles = titles;
 						editor.undo.change(Field(sheet.props,"separatorTitles",old));
-						editor.save(); // no undo on separator rename
+						editor.save();
 
 					}).keypress(function(e) {
 						e.stopPropagation();
@@ -144,10 +142,6 @@ class Table extends Component {
 			});
 			root.append(l);
 		}
-
-		inTodo = true;
-		for( t in todo ) t();
-		inTodo = false;
 	}
 
 	function toggleList( cell : Cell ) {
@@ -158,8 +152,7 @@ class Table extends Component {
 			line.subTable = null;
 			if( cur.cell == cell ) return; // toggle
 		}
-		var sheet = editor.makeSubSheet(cell);
-		var sub = new SubTable(editor, sheet, cell);
+		var sub = new SubTable(editor, cell);
 		sub.show();
 		editor.cursor.set(sub);
 	}

@@ -26,9 +26,19 @@ class Cursor {
 		if( update ) this.update();
 	}
 
+	public function setDefault(line, column) {
+		set(editor.tables[0], column, line);
+	}
+
 	public function getLine() {
 		if( table == null ) return null;
 		return table.lines[y];
+	}
+
+	public function getCell() {
+		var line = getLine();
+		if( line == null ) return null;
+		return line.cells[x];
 	}
 
 	public function move( dx : Int, dy : Int, shift : Bool, ctrl : Bool ) {
@@ -46,7 +56,7 @@ class Cursor {
 			y--;
 		if( dx > 0 && x < table.sheet.columns.length - 1 )
 			x++;
-		if( dy > 0 && y < table.sheet.lines.length - 1 )
+		if( dy > 0 && y < table.lines.length - 1 )
 			y++;
 		select = null;
 		update();
@@ -63,8 +73,8 @@ class Cursor {
 			y = 0;
 			select = null;
 		}
-		if( y >= table.sheet.lines.length ) {
-			y = table.sheet.lines.length - 1;
+		if( y >= table.lines.length ) {
+			y = table.lines.length - 1;
 			select = null;
 		}
 		var max = table.sheet.props.isProps ? 1 : table.sheet.columns.length;
