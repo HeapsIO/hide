@@ -257,7 +257,7 @@ class Particles3D extends FileView {
 					scene.init(this.props, model);
 
 					var prev = attach.val();
-					attach.html('');
+					attach.empty();
 					function addRec(o:h3d.scene.Object) {
 						if( o.name != null )
 							new Element('<option value="${o.name}" ${o.name == prev ? "selected='selected'" : ""}>${o.name}</option>').appendTo(attach);
@@ -271,7 +271,7 @@ class Particles3D extends FileView {
 					addRec(model);
 
 					var prev = anim.val();
-					anim.html('');
+					anim.empty();
 					var anims = scene.listAnims(props.model);
 					new Element('<option value="">-- none --</option>').appendTo(anim);
 					for( a in anims ) {

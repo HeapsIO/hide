@@ -23,7 +23,7 @@ class PropsEditor extends Component {
 	}
 
 	public function clear() {
-		root.html('');
+		root.empty();
 		fields = [];
 	}
 

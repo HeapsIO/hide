@@ -124,7 +124,7 @@ class View<T> extends hide.comp.Component {
 				watches.remove(w);
 			}
 		syncTitle();
-		root.html('');
+		root.empty();
 		root.off();
 		onDisplay();
 	}
@@ -134,6 +134,13 @@ class View<T> extends hide.comp.Component {
 	}
 
 	public function onResize() {
+	}
+
+	/**
+		Gives focus if part of a tab group
+	**/
+	public function activate() {
+		if( container != null ) container.parent.parent.setActiveContentItem(container.parent);
 	}
 
 	public function saveState() {

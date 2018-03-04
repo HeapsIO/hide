@@ -472,10 +472,20 @@ class Ide {
 	}
 
 	public function open( component : String, state : Dynamic, ?onCreate : View<Dynamic> -> Void ) {
-		var c = View.viewClasses.get(component);
+		if( state == null ) state = {};
 
+		var c = View.viewClasses.get(component);
 		if( c == null )
 			throw "Unknown component " + component;
+
+		state.componentName = component;
+		for( v in views ) {
+			if( v.viewClass == component && haxe.Json.stringify(v.state) == haxe.Json.stringify(state) ) {
+				v.activate();
+				if( onCreate != null ) onCreate(v);
+				return;
+			}
+		}
 
 		var options = c.options;
 
