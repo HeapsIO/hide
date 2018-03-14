@@ -8,7 +8,7 @@ class EditContext {
 	public var prefabPath : String;
 	public var ide(get,never) : hide.ui.Ide;
 	public var scene : hide.comp.Scene;
-	public var view : hide.view.Prefab;
+	public var view : hide.view.FileView;
 	public var cleanups : Array<Void->Void>;
 	public var properties : hide.comp.PropsEditor;
 	function get_ide() return hide.ui.Ide.inst;
