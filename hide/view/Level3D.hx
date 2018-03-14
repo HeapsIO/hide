@@ -1,4 +1,5 @@
 package hide.view;
+import hxd.Math;
 
 import hide.prefab.Prefab in PrefabElement;
 
@@ -25,6 +26,182 @@ class LevelEditContext extends hide.prefab.EditContext {
 
 }
 
+typedef AxesOptions = {
+	?x: Bool,
+	?y: Bool,
+	?z: Bool
+}
+
+enum TransformMode {
+	MoveX;
+	MoveY;
+	MoveZ;
+	MoveXY;
+	MoveYZ;
+	MoveZX;
+	RotateX;
+	RotateY;
+	RotateZ;
+}
+
+class Gizmo3D extends h3d.scene.Object {
+
+	var gizmo: h3d.scene.Object;
+	var scene : hide.comp.Scene;
+
+	var updateFunc: Float -> Void;
+
+	public var startMove: Void -> Void;
+	public var onMove: h3d.Vector -> h3d.Quat -> Void;
+	public var finishMove: Void -> Void;
+
+	// var dragAxes: AxesOptions;
+	// var startPos: h3d.Vector;
+	// var startDragPt: h3d.col.Point;
+	// var dragPlane: h3d.col.Plane;
+	var debug: h3d.scene.Graphics;
+
+	
+
+	public function new(scene: hide.comp.Scene) {
+		super(scene.s3d);
+		this.scene = scene;
+		gizmo = hxd.Res.gizmo.toHmd().makeObject();
+		addChild(gizmo);
+		debug = new h3d.scene.Graphics(scene.s3d);
+
+		function setup(objname, color, mode: TransformMode) {
+			var o = gizmo.getObjectByName(objname);
+			var mat = o.getMaterials()[0];
+			mat.mainPass.setPassName("alpha");
+			mat.mainPass.depth(false, Always);
+			var m = o.getMeshes()[0];
+			var int = new h3d.scene.Interactive(m.getCollider(), scene.s3d);
+			var highlight = hxd.Math.colorLerp(color, 0xffffff, 0.5);
+			color = hxd.Math.colorLerp(color, 0, 0.2);
+			mat.color.setColor(color);
+			int.onOver = function(e : hxd.Event) {
+				mat.color.setColor(highlight);
+			}
+			int.onOut = function(e : hxd.Event) {
+				mat.color.setColor(color);
+			}
+
+			int.onPush = function(e) {
+				if(startMove != null) startMove();
+				var startPos = getAbsPos().pos().toPoint();
+				var startRot = getRotationQuat();
+				var dragPlane = null;
+				var cam = scene.s3d.camera;
+				var norm = startPos.sub(cam.pos.toPoint());
+				switch(mode) {
+					case MoveX: norm.x = 0;
+					case MoveY: norm.y = 0;
+					case MoveZ: norm.z = 0;
+					case MoveXY: norm.set(0, 0, 1);
+					case MoveYZ: norm.set(1, 0, 0);
+					case MoveZX: norm.set(0, 1, 0);
+					case RotateX: norm.set(1, 0, 0);
+					case RotateY: norm.set(0, 1, 0);
+					case RotateZ: norm.set(0, 0, 1);
+				}
+				norm.normalize();
+				dragPlane = h3d.col.Plane.fromNormalPoint(norm, startPos);
+				var startDragPt = getDragPoint(dragPlane);
+				updateFunc = function(dt) {
+					var curPt = getDragPoint(dragPlane);
+					var delta = curPt.sub(startDragPt);
+					if(mode == MoveX || mode == MoveXY || mode == MoveZX) x = startPos.x + delta.x;
+					if(mode == MoveY || mode == MoveYZ || mode == MoveXY) y = startPos.y + delta.y;
+					if(mode == MoveZ || mode == MoveZX || mode == MoveYZ) z = startPos.z + delta.z;
+
+					if(mode == RotateX || mode == RotateY || mode == RotateZ) {
+						// debug.clear();
+						// debug.lineStyle(2, 0x00ff00, 1.0);
+						// debug.moveTo(startDragPt.x, startDragPt.y, startDragPt.z);
+						// debug.lineTo(startPos.x, startPos.y, startPos.z);
+						// debug.lineTo(curPt.x, curPt.y, curPt.z);
+						var v1 = startDragPt.sub(startPos);
+						v1.normalize();
+						var v2 = curPt.sub(startPos);
+						v2.normalize();
+
+						var rot = startRot.clone();
+						var angle = Math.atan2(v1.cross(v2).dot(norm), v1.dot(v2));
+						var delta = new h3d.Quat(norm.x, norm.y, norm.z, angle);
+						// rot.multiply(rot, delta);
+						// rot.normalize();
+						rot.initRotateAxis(norm.x, norm.y, norm.z, angle);
+						setRotationQuat(rot);
+					}
+
+					if(onMove != null) onMove(null, null);
+				}
+			}
+			int.onRelease = function(e) {
+				updateFunc = null;
+				if(finishMove != null) finishMove();
+			}
+		}
+
+		setup("xAxis", 0xff0000, MoveX);
+		setup("yAxis", 0x00ff00, MoveY);
+		setup("zAxis", 0x0000ff, MoveZ);
+		setup("xy", 0xffff00, MoveXY);
+		setup("xz", 0xffff00, MoveZX);
+		setup("yz", 0xffff00, MoveYZ);
+		setup("xRotate", 0xff0000, RotateX);
+		setup("yRotate", 0x00ff00, RotateY);
+		setup("zRotate", 0x0000ff, RotateZ);
+	}
+
+
+	function getDragPoint(plane: h3d.col.Plane) {
+		var cam = scene.s3d.camera;
+		var ray = cam.rayFromScreen(scene.s2d.mouseX, scene.s2d.mouseY);
+		// debug.clear();
+		// debug.lineStyle(3, 0xff0000, 1.0);
+		// debug.moveTo(ray.px, ray.py, ray.pz);
+		// debug.lineTo(ray.px+ray.lx*500, ray.py+ray.ly*500, ray.pz+ray.lz*500);
+		return ray.intersect(plane);
+	}
+
+	// function startDrag() {
+	// 	startPos = getAbsPos().pos();
+	// 	dragPlane = h3d.col.Plane.Z(0);
+	// 	startDragPt = getDragPoint();
+	// }
+
+	// function stopDrag() {
+	// 	dragPlane = null;
+	// 	startPos = null;
+	// 	startDragPt = null;
+	// }
+	
+	public function update(dt) {
+		var cam = this.getScene().camera;
+		var gpos = gizmo.getAbsPos().pos();
+		var distToCam = cam.pos.sub(gpos).length();
+		gizmo.setScale(distToCam / 30 );
+
+		if(updateFunc != null) {
+			updateFunc(dt);
+		}
+
+		// if(startDragPt != null) {
+		// 	var curPt = getDragPoint();
+		// 	if(curPt != null) {
+		// 		// debug.clear();
+		// 		// debug.lineStyle(3, 0xff0000, 1.0);
+		// 		// debug.moveTo(startPos.x, startPos.y, startPos.z);
+		// 		// debug.lineTo(curPt.x, curPt.y, curPt.z);
+		// 		// var delta = curPt.sub(startDragPt);
+		// 		x = startPos.x + curPt.x - startDragPt.x;
+		// 	}
+		// }
+	}
+}
+
 class Level3D extends FileView {
 
 	var data : hide.prefab.Library;
@@ -40,6 +217,7 @@ class Level3D extends FileView {
 	var tree : hide.comp.IconTree<PrefabElement>;
 
 	var curEdit : LevelEditContext;
+	var gizmo : Gizmo3D;
 
 	// autoSync
 	var autoSync : Bool;
@@ -179,8 +357,32 @@ class Level3D extends FileView {
 		if( light == null ) {
 			light = new h3d.scene.DirLight(new h3d.Vector(), scene.s3d);
 			light.enableSpecular = true;
-		} else
+		} else	
 			light = null;
+
+
+		{
+			gizmo = new Gizmo3D(scene);
+			// material.mainPass.setPassName("")
+			// var pass = material.allocPass("ui");
+		}
+
+		{
+			var grid = new h3d.scene.Graphics(scene.s3d);
+			grid.lineStyle(1, 0x404040, 1.0);
+			var size = 40;
+			grid.scale(10);
+			var offset = size/2;
+			for(ix in 0...size+1) {
+				grid.moveTo(ix - offset, -offset, 0);
+				grid.lineTo(ix - offset, offset, 0);
+			}
+			for(iy in 0...size+1) {
+				grid.moveTo(-offset, iy - offset, 0);
+				grid.lineTo(offset, iy - offset, 0);
+			}
+			grid.lineStyle(0);
+		}
 
 		control = new h3d.scene.CameraController(scene.s3d);
 
@@ -199,7 +401,7 @@ class Level3D extends FileView {
 		tools.saveDisplayKey = "SceneTools";
 
 		tools.addButton("video-camera", "Reset Camera", resetCamera);
-		tools.addToggle("sun-o", "Enablekkkk Lights/Shadows", function(v) {
+		tools.addToggle("sun-o", "Enable Lights/Shadows", function(v) {
 			if( !v ) {
 				for( m in context.shared.root3d.getMaterials() ) {
 					m.mainPass.enableLights = false;
@@ -331,11 +533,6 @@ class Level3D extends FileView {
 			return true;
 		};
 
-		scene.onResize = function() {
-			scene.s2d.x = scene.s2d.width >> 1;
-			scene.s2d.y = scene.s2d.height >> 1;
-		};
-		scene.onResize();
 
 		if( curEdit != null ) {
 			curEdit.cleanup();
@@ -355,6 +552,12 @@ class Level3D extends FileView {
 				Math.sin(angle) * lightDirection.x + Math.cos(angle) * lightDirection.y,
 				lightDirection.z
 			);
+		}
+		if(gizmo != null) {
+			gizmo.update(dt);
+			var model = scene.s3d.getObjectByName("model0");
+			model.setPos(gizmo.x, gizmo.y, gizmo.z);
+			model.setRotationQuat(gizmo.getRotationQuat());
 		}
 		if( autoSync && (currentVersion != undo.currentID || lastSyncChange != properties.lastChange) ) {
 			save();
