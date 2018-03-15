@@ -2,20 +2,30 @@ package hide.view;
 import hxd.Math;
 
 import hide.prefab.Prefab in PrefabElement;
+import h3d.scene.Object;
 
 class LevelEditContext extends hide.prefab.EditContext {
 
-	public var elt : PrefabElement;
+	public var elements : Array<PrefabElement>;
 
-	public function new(ctx, elt) {
+	public function new(ctx, elts) {
 		super(ctx);
-		this.elt = elt;
+		this.elements = elts;
+	}
+
+	public function getContexts() {
+		return [for(e in elements) getContext(e)];
+	}
+
+	public function objects() {
+		return [for(e in elements) getContext(e).local3d];
 	}
 
 	override function rebuild() {
 		properties.clear();
 		cleanup();
-		elt.edit(this);
+		if(elements.length > 0) 
+			elements[0].edit(this);
 	}
 
 	public function cleanup() {
@@ -23,7 +33,6 @@ class LevelEditContext extends hide.prefab.EditContext {
 			c();
 		cleanups = [];
 	}
-
 }
 
 typedef AxesOptions = {
@@ -54,14 +63,9 @@ class Gizmo3D extends h3d.scene.Object {
 	public var startMove: Void -> Void;
 	public var onMove: h3d.Vector -> h3d.Quat -> Void;
 	public var finishMove: Void -> Void;
+	public var moving(default, null): Bool;
 
-	// var dragAxes: AxesOptions;
-	// var startPos: h3d.Vector;
-	// var startDragPt: h3d.col.Point;
-	// var dragPlane: h3d.col.Plane;
 	var debug: h3d.scene.Graphics;
-
-	
 
 	public function new(scene: hide.comp.Scene) {
 		super(scene.s3d);
@@ -73,7 +77,7 @@ class Gizmo3D extends h3d.scene.Object {
 		function setup(objname, color, mode: TransformMode) {
 			var o = gizmo.getObjectByName(objname);
 			var mat = o.getMaterials()[0];
-			mat.mainPass.setPassName("alpha");
+			mat.mainPass.setPassName("ui");
 			mat.mainPass.depth(false, Always);
 			var m = o.getMeshes()[0];
 			var int = new h3d.scene.Interactive(m.getCollider(), scene.s3d);
@@ -88,9 +92,9 @@ class Gizmo3D extends h3d.scene.Object {
 			}
 
 			int.onPush = function(e) {
+				moving = true;
 				if(startMove != null) startMove();
 				var startPos = getAbsPos().pos().toPoint();
-				var startRot = getRotationQuat();
 				var dragPlane = null;
 				var cam = scene.s3d.camera;
 				var norm = startPos.sub(cam.pos.toPoint());
@@ -111,9 +115,15 @@ class Gizmo3D extends h3d.scene.Object {
 				updateFunc = function(dt) {
 					var curPt = getDragPoint(dragPlane);
 					var delta = curPt.sub(startDragPt);
-					if(mode == MoveX || mode == MoveXY || mode == MoveZX) x = startPos.x + delta.x;
-					if(mode == MoveY || mode == MoveYZ || mode == MoveXY) y = startPos.y + delta.y;
-					if(mode == MoveZ || mode == MoveZX || mode == MoveYZ) z = startPos.z + delta.z;
+					var translate = new h3d.Vector(0,0,0);
+					var quat = new h3d.Quat();
+					if(mode == MoveX || mode == MoveXY || mode == MoveZX) translate.x = delta.x;
+					if(mode == MoveY || mode == MoveYZ || mode == MoveXY) translate.y = delta.y;
+					if(mode == MoveZ || mode == MoveZX || mode == MoveYZ) translate.z = delta.z;
+					
+					x = startPos.x + translate.x;
+					y = startPos.y + translate.y;
+					z = startPos.z + translate.z;
 
 					if(mode == RotateX || mode == RotateY || mode == RotateZ) {
 						// debug.clear();
@@ -126,21 +136,20 @@ class Gizmo3D extends h3d.scene.Object {
 						var v2 = curPt.sub(startPos);
 						v2.normalize();
 
-						var rot = startRot.clone();
 						var angle = Math.atan2(v1.cross(v2).dot(norm), v1.dot(v2));
-						var delta = new h3d.Quat(norm.x, norm.y, norm.z, angle);
-						// rot.multiply(rot, delta);
-						// rot.normalize();
-						rot.initRotateAxis(norm.x, norm.y, norm.z, angle);
-						setRotationQuat(rot);
+						quat.initRotateAxis(norm.x, norm.y, norm.z, angle);
+						setRotationQuat(quat);
 					}
 
-					if(onMove != null) onMove(null, null);
+					if(onMove != null) onMove(translate, quat);
 				}
 			}
 			int.onRelease = function(e) {
 				updateFunc = null;
 				if(finishMove != null) finishMove();
+				getRotationQuat().identity();
+				posChanged = true;
+				moving = false;
 			}
 		}
 
@@ -159,25 +168,9 @@ class Gizmo3D extends h3d.scene.Object {
 	function getDragPoint(plane: h3d.col.Plane) {
 		var cam = scene.s3d.camera;
 		var ray = cam.rayFromScreen(scene.s2d.mouseX, scene.s2d.mouseY);
-		// debug.clear();
-		// debug.lineStyle(3, 0xff0000, 1.0);
-		// debug.moveTo(ray.px, ray.py, ray.pz);
-		// debug.lineTo(ray.px+ray.lx*500, ray.py+ray.ly*500, ray.pz+ray.lz*500);
 		return ray.intersect(plane);
 	}
 
-	// function startDrag() {
-	// 	startPos = getAbsPos().pos();
-	// 	dragPlane = h3d.col.Plane.Z(0);
-	// 	startDragPt = getDragPoint();
-	// }
-
-	// function stopDrag() {
-	// 	dragPlane = null;
-	// 	startPos = null;
-	// 	startDragPt = null;
-	// }
-	
 	public function update(dt) {
 		var cam = this.getScene().camera;
 		var gpos = gizmo.getAbsPos().pos();
@@ -187,18 +180,6 @@ class Gizmo3D extends h3d.scene.Object {
 		if(updateFunc != null) {
 			updateFunc(dt);
 		}
-
-		// if(startDragPt != null) {
-		// 	var curPt = getDragPoint();
-		// 	if(curPt != null) {
-		// 		// debug.clear();
-		// 		// debug.lineStyle(3, 0xff0000, 1.0);
-		// 		// debug.moveTo(startPos.x, startPos.y, startPos.z);
-		// 		// debug.lineTo(curPt.x, curPt.y, curPt.z);
-		// 		// var delta = curPt.sub(startDragPt);
-		// 		x = startPos.x + curPt.x - startDragPt.x;
-		// 	}
-		// }
 	}
 }
 
@@ -299,18 +280,69 @@ class Level3D extends FileView {
 		return prefix + id;
 	}
 
-	function selectObject( elt : PrefabElement ) {
+	function selectObjects( elts : Array<PrefabElement> ) {
 		if( curEdit != null )
 			curEdit.cleanup();
-		var edit = new LevelEditContext(context, elt);
+		var edit = new LevelEditContext(context, elts);
 		edit.prefabPath = state.path;
 		edit.properties = properties;
 		edit.scene = scene;
 		edit.view = this;
 		edit.cleanups = [];
 		edit.rebuild();
+
+		var objects = edit.objects();
+		addOutline(objects);
+		edit.cleanups.push(function() {
+			cleanOutline(objects);
+		});
+
 		curEdit = edit;
+		setupGizmo();
 	}
+
+	function setupGizmo() {
+		if(curEdit == null) return;
+		gizmo.startMove = function() {
+			var objects = curEdit.objects();
+			var pivotPt = getPivot(objects);
+			var pivot = new h3d.Matrix();
+			pivot.initTranslate(pivotPt.x, pivotPt.y, pivotPt.z);
+			var invPivot = pivot.clone();
+			invPivot.invert();
+			var localMats = [for(o in objects) {
+				var m = o.defaultTransform.clone();
+				m.invert();
+				m.multiply(m, o.getAbsPos());
+				m.multiply(m, invPivot);
+				m;
+			}];
+			
+			gizmo.onMove = function(translate: h3d.Vector, rot: h3d.Quat) {
+				var transf = new h3d.Matrix();
+				rot.saveToMatrix(transf);
+				transf.translate(translate.x, translate.y, translate.z);
+				for(i in 0...objects.length) {
+					var newMat = localMats[i].clone();
+					newMat.multiply(newMat, transf);
+					newMat.multiply(newMat, pivot);
+					var obj = objects[i];
+					obj.x = newMat.tx;
+					obj.y = newMat.ty;
+					obj.z = newMat.tz;
+					var q = new h3d.Quat();
+					q.initRotateMatrix(newMat);
+					q.normalize();
+					obj.setRotationQuat(q);
+				}
+			}
+
+			gizmo.finishMove = function() {
+
+			}
+		}
+	}
+
 
 	function resetCamera() {
 		var bounds = context.shared.root2d.getBounds();
@@ -330,8 +362,9 @@ class Level3D extends FileView {
 			refresh();
 		}));
 		refresh(function() {
-			tree.setSelection([e]);
-			selectObject(e);
+			var elts = [e];
+			tree.setSelection(elts);
+			selectObjects(elts);
 		});
 		if( e.parent == data && data.children.length == 1 )
 			resetCamera();
@@ -361,12 +394,8 @@ class Level3D extends FileView {
 			light = null;
 
 
-		{
-			gizmo = new Gizmo3D(scene);
-			// material.mainPass.setPassName("")
-			// var pass = material.allocPass("ui");
-		}
-
+		gizmo = new Gizmo3D(scene);
+		
 		{
 			var grid = new h3d.scene.Graphics(scene.s3d);
 			grid.lineStyle(1, 0x404040, 1.0);
@@ -500,7 +529,9 @@ class Level3D extends FileView {
 		});
 		tree.allowRename = true;
 		tree.init();
-		tree.onClick = selectObject;
+		tree.onClick = function(e) {
+			selectObjects(tree.getSelection());
+		}
 		tree.onRename = function(e, name) {
 			var oldName = e.name;
 			e.name = name;
@@ -536,9 +567,12 @@ class Level3D extends FileView {
 
 		if( curEdit != null ) {
 			curEdit.cleanup();
-			var e = curEdit.elt.name;
-			var elt = data.getPrefabByName(e);
-			if( elt != null ) selectObject(elt);
+			// var e = curEdit.elt.name;
+			// var elt = data.getPrefabByName(e);
+			// if( elt != null ) selectObject(elt);
+			if(curEdit != null) {
+				selectObjects(curEdit.elements);
+			}
 		}
 	}
 
@@ -554,15 +588,58 @@ class Level3D extends FileView {
 			);
 		}
 		if(gizmo != null) {
+			if(!gizmo.moving) {
+				// Snap Gizmo at center of objects
+				if(curEdit != null) {
+					var pos = getPivot(curEdit.objects());
+					gizmo.setPos(pos.x, pos.y, pos.z);
+				}
+			}
 			gizmo.update(dt);
-			var model = scene.s3d.getObjectByName("model0");
-			model.setPos(gizmo.x, gizmo.y, gizmo.z);
-			model.setRotationQuat(gizmo.getRotationQuat());
+			// var model = scene.s3d.getObjectByName("model0");
+			// model.setPos(gizmo.x, gizmo.y, gizmo.z);
+			// model.setRotationQuat(gizmo.getRotationQuat());
 		}
 		if( autoSync && (currentVersion != undo.currentID || lastSyncChange != properties.lastChange) ) {
 			save();
 			lastSyncChange = properties.lastChange;
 			currentVersion = undo.currentID;
+		}
+	}
+
+	static function getPivot(objects: Array<Object>) {
+		var pos = new h3d.Vector();
+		for(o in objects) {
+			pos = pos.add(o.getAbsPos().pos());
+		}
+		pos.scale3(1.0 / objects.length);
+		return pos;
+	}
+
+	static function addOutline(objects: Array<Object>) {
+		var outlineShader = new h3d.shader.Outline();
+		outlineShader.size = 0.12;
+		outlineShader.distance = 0;
+		outlineShader.color.setColor(0xffffff);
+		for(obj in objects) {
+			for( m in obj.getMaterials() ) {
+				var p = m.allocPass("outline");
+				p.culling = None;
+				p.depthWrite = false;
+				p.addShader(outlineShader);
+				if( m.mainPass.name == "default" )
+					m.mainPass.setPassName("outlined");
+			}
+		}
+	}
+
+	static function cleanOutline(objects: Array<Object>) {
+		for(obj in objects) {
+			for( m in obj.getMaterials() ) {
+				if( m.mainPass != null && m.mainPass.name == "outlined" )
+					m.mainPass.setPassName("default");
+				m.removePass(m.getPass("outline"));
+			}
 		}
 	}
 

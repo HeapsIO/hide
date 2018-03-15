@@ -267,7 +267,7 @@ class Ide {
 		var localDir = sys.FileSystem.exists(resourceDir) ? resourceDir : projectDir;
 		hxd.res.Loader.currentInstance = new CustomLoader(new hxd.fs.LocalFileSystem(localDir));
 		renderers = [
-			new h3d.mat.MaterialSetup("Default"),
+			new hide.Renderer.MaterialSetup("Default"),
 		];
 		var path = getPath("Renderer.hx");
 		if( sys.FileSystem.exists(path) ) {
