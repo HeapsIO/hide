@@ -301,6 +301,13 @@ class Level3D extends FileView {
 		setupGizmo();
 	}
 
+	function refreshProps() {
+		properties.clear();
+		if(curEdit != null && curEdit.elements != null && curEdit.elements.length > 0) {
+			curEdit.elements[0].edit(curEdit);
+		}
+	}
+
 	function setupGizmo() {
 		if(curEdit == null) return;
 		gizmo.startMove = function() {
@@ -317,6 +324,9 @@ class Level3D extends FileView {
 				m.multiply(m, invPivot);
 				m;
 			}];
+
+			var objects3d = [for(e in curEdit.elements) Std.instance(e, hide.prefab.Object3D)];
+			var prevState = [for(o in objects3d) o.save()];			
 			
 			gizmo.onMove = function(translate: h3d.Vector, rot: h3d.Quat) {
 				var transf = new h3d.Matrix();
@@ -326,19 +336,45 @@ class Level3D extends FileView {
 					var newMat = localMats[i].clone();
 					newMat.multiply(newMat, transf);
 					newMat.multiply(newMat, pivot);
-					var obj = objects[i];
-					obj.x = newMat.tx;
-					obj.y = newMat.ty;
-					obj.z = newMat.tz;
-					var q = new h3d.Quat();
-					q.initRotateMatrix(newMat);
-					q.normalize();
-					obj.setRotationQuat(q);
+					// var obj = objects[i];
+					// obj.x = newMat.tx;
+					// obj.y = newMat.ty;
+					// obj.z = newMat.tz;
+					// var q = new h3d.Quat();
+					// q.initRotateMatrix(newMat);
+					// q.normalize();
+
+					var rot = newMat.getEulerAngles();
+					var obj3d = objects3d[i];
+					obj3d.x = newMat.tx;
+					obj3d.y = newMat.ty;
+					obj3d.z = newMat.tz;
+					obj3d.rotationX = rot.x;
+					obj3d.rotationY = rot.y;
+					obj3d.rotationZ = rot.z;
+					obj3d.applyPos(objects[i]);
 				}
 			}
 
 			gizmo.finishMove = function() {
-
+				var newState = [for(o in objects3d) o.save()];
+				refreshProps();
+				undo.change(Custom(function(undo) {
+					if( undo ) {
+						for(i in 0...objects3d.length) {
+							objects3d[i].load(prevState[i]);
+							objects3d[i].applyPos(objects[i]);
+						}
+						refreshProps();
+					}
+					else {
+						for(i in 0...objects3d.length) {
+							objects3d[i].load(newState[i]);
+							objects3d[i].applyPos(objects[i]);
+						}
+						refreshProps();
+					}
+				}));
 			}
 		}
 	}

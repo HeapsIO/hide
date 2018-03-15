@@ -44,7 +44,7 @@ class Object3D extends Prefab {
 		return o;
 	}
 
-	function applyPos( o : h3d.scene.Object ) {
+	public function applyPos( o : h3d.scene.Object ) {
 		o.x = x;
 		o.y = y;
 		o.z = z;
