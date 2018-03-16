@@ -274,7 +274,7 @@ class Level3D extends FileView {
 					<div class="tabs">
 						<div class="tab" name="Scene" icon="sitemap">
 							<div class="hide-block">
-								<div class="hide-list">
+								<div class="hide-list" style="min-height: 400px;">
 									<div class="tree"></div>
 								</div>
 							</div>
@@ -318,9 +318,11 @@ class Level3D extends FileView {
 				int.onClick = function(e) {
 					if(K.isDown(K.CTRL) && curEdit != null) {
 						var list = curEdit.elements.copy();
-						list.push(elt);
-						tree.setSelection(list);
-						selectObjects(list);
+						if(list.indexOf(elt) < 0) {
+							list.push(elt);
+							tree.setSelection(list);
+							selectObjects(list);
+						}
 					}
 					else {
 						tree.setSelection([elt]);
@@ -376,14 +378,8 @@ class Level3D extends FileView {
 			var invPivot = pivot.clone();
 			invPivot.invert();
 
-			// inline function worldMat(o: Object) {
-
-			// }
-
 			var localMats = [for(o in objects) {
-				var m = o.defaultTransform.clone();
-				m.invert();
-				m.multiply(m, o.getAbsPos());
+				var m = worldMat(o);
 				m.multiply(m, invPivot);
 				m;
 			}];
@@ -403,13 +399,7 @@ class Level3D extends FileView {
 					invParent.invert();
 					newMat.multiply(newMat, invParent);
 					var obj3d = objects3d[i];
-					var rot = newMat.getEulerAngles();
-					obj3d.x = newMat.tx;
-					obj3d.y = newMat.ty;
-					obj3d.z = newMat.tz;
-					obj3d.rotationX = rot.x;
-					obj3d.rotationY = rot.y;
-					obj3d.rotationZ = rot.z;
+					obj3d.setTransform(newMat);
 					obj3d.applyPos(objects[i]);
 				}
 			}
@@ -635,30 +625,8 @@ class Level3D extends FileView {
 		tree.onAllowMove = function(_, _) {
 			return true;
 		};
-		tree.onMove = function(e, to, index) {
-			if( to == null ) to = data;
-			var prev = e.parent;
-			var prevIndex = prev.children.indexOf(e);
-			e.parent = to;
-			to.children.remove(e);
-			to.children.insert(index, e);
-			undo.change(Custom(function(undo) {
-				if( undo ) {
-					e.parent = prev;
-					prev.children.remove(e);
-					prev.children.insert(prevIndex, e);
-				} else {
-					e.parent = to;
-					to.children.remove(e);
-					to.children.insert(index, e);
-				}
-				refresh();
-			}));
-			refresh();
-			return true;
-		};
+		tree.onMove = reparentElement;
 
-		refresh();
 		refresh();
 
 		// if( curEdit != null ) {
@@ -700,6 +668,66 @@ class Level3D extends FileView {
 			save();
 			lastSyncChange = properties.lastChange;
 			currentVersion = undo.currentID;
+		}
+	}
+
+	function reparentElement(e : PrefabElement, to : PrefabElement, index : Int) {
+		if( to == null )
+			to = data;
+		var prev = e.parent;
+		var prevIndex = prev.children.indexOf(e);
+		e.parent = to;
+		to.children.remove(e);
+		to.children.insert(index, e);
+
+		var obj3d = Std.instance(e, hide.prefab.Object3D);
+		var obj = getObject(e);
+		var toObj = getObject(to);
+		var mat = worldMat(obj);
+		var parentMat = worldMat(toObj);
+		parentMat.invert();
+		mat.multiply(mat, parentMat);
+		var prevState = obj3d.save();
+		obj3d.setTransform(mat);
+		obj3d.load(obj3d.save());
+		var newState = obj3d.save();
+
+		undo.change(Custom(function(undo) {
+			if( undo ) {
+				e.parent = prev;
+				prev.children.remove(e);
+				prev.children.insert(prevIndex, e);
+				obj3d.load(prevState);
+			} else {
+				e.parent = to;
+				to.children.remove(e);
+				to.children.insert(index, e);
+				obj3d.load(newState);
+			}
+			refresh();
+		}));
+		refresh();
+		return true;
+	}
+
+	function getObject(elt: PrefabElement) {
+		if(elt != null) {
+			var ctx = context.shared.contexts.get(elt);
+			if(ctx != null)
+				return ctx.local3d;
+		}
+		return context.shared.root3d;
+	}
+
+	static function worldMat(obj: Object) {
+		if(obj.defaultTransform != null) {
+			var m = obj.defaultTransform.clone();
+			m.invert();
+			m.multiply(m, obj.getAbsPos());
+			return m;
+		}
+		else {
+			return obj.getAbsPos().clone();
 		}
 	}
 

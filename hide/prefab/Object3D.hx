@@ -44,6 +44,16 @@ class Object3D extends Prefab {
 		return o;
 	}
 
+	public function setTransform(mat : h3d.Matrix) {
+		var rot = mat.getEulerAngles();
+		x = mat.tx;
+		y = mat.ty;
+		z = mat.tz;
+		rotationX = rot.x;
+		rotationY = rot.y;
+		rotationZ = rot.z;
+	}
+
 	public function applyPos( o : h3d.scene.Object ) {
 		o.x = x;
 		o.y = y;
