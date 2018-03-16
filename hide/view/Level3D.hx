@@ -79,11 +79,19 @@ class Gizmo3D extends h3d.scene.Object {
 
 		function setup(objname, color, mode: TransformMode) {
 			var o = gizmo.getObjectByName(objname);
+			var hit = gizmo.getObjectByName(objname + "_hit");
+			if(hit == null) {
+				hit = o;
+			}
+			else {
+				hit.visible = false;
+			}
 			var mat = o.getMaterials()[0];
 			mat.mainPass.setPassName("ui");
 			mat.mainPass.depth(true, Always);
-			var m = o.getMeshes()[0];
-			var int = new h3d.scene.Interactive(m.getCollider(), scene.s3d);
+			var mesh = hit.getMeshes()[0];
+			var int = new h3d.scene.Interactive(mesh.getCollider(), scene.s3d);
+			int.priority = 100;
 			var highlight = hxd.Math.colorLerp(color, 0xffffff, 0.5);
 			color = hxd.Math.colorLerp(color, 0, 0.2);
 			mat.color.setColor(color);
@@ -119,10 +127,12 @@ class Gizmo3D extends h3d.scene.Object {
 					var curPt = getDragPoint(dragPlane);
 					var delta = curPt.sub(startDragPt);
 					var translate = new h3d.Vector(0,0,0);
+					var speedFactor = K.isDown(K.SHIFT) ? 0.1 : 1.0;
+					delta.scale(speedFactor);
 					var quat = new h3d.Quat();
 
 					inline function snap(m: Float) {
-						return moveStep > 0.0 ? hxd.Math.round(m / moveStep) * moveStep : m;
+						return moveStep > 0.0 && K.isDown(K.CTRL) ? hxd.Math.round(m / moveStep) * moveStep : m;
 					}
 
 					if(mode == MoveX || mode == MoveXY || mode == MoveZX) translate.x = snap(delta.x);
@@ -139,9 +149,9 @@ class Gizmo3D extends h3d.scene.Object {
 						var v2 = curPt.sub(startPos);
 						v2.normalize();
 
-						var angle = Math.atan2(v1.cross(v2).dot(norm), v1.dot(v2));
-						if(rotateStep > 0)
-							angle = hxd.Math.round(angle / rotateStep) * rotateStep;
+						var angle = Math.atan2(v1.cross(v2).dot(norm), v1.dot(v2)) * speedFactor;
+						if(rotateStep > 0 && K.isDown(K.CTRL))
+							angle =  hxd.Math.round(angle / rotateStep) * rotateStep;
 						quat.initRotateAxis(norm.x, norm.y, norm.z, angle);
 						setRotationQuat(quat);
 					}
@@ -281,13 +291,16 @@ class Level3D extends FileView {
 				var o = ctx.local3d;
 				var m = o.getMeshes()[0];
 				var int = new h3d.scene.Interactive(m.getCollider(), scene.s3d);
+				int.propagateEvents = true;
 				int.onClick = function(e) {
 					if(K.isDown(K.CTRL) && curEdit != null) {
 						var list = curEdit.elements.copy();
 						list.push(elt);
+						tree.setSelection(list);
 						selectObjects(list);
 					}
 					else {
+						tree.setSelection([elt]);
 						selectObjects([elt]);
 					}
 				}
