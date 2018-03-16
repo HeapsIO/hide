@@ -107,6 +107,10 @@ class Ide {
 				}
 			}
 		});
+
+		var stage = new hxd.Stage(js.Browser.document.createCanvasElement(), true);
+		stage.setCurrent();
+		hxd.Key.initialize();
 	}
 
 	function get_isWindows() {

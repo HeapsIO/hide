@@ -1,7 +1,8 @@
 package hide.view;
 import hxd.Math;
+import hxd.Key as K;
 
-import hide.prefab.Prefab in PrefabElement;
+import hide.prefab.Prefab as PrefabElement;
 import h3d.scene.Object;
 
 class LevelEditContext extends hide.prefab.EditContext {
@@ -57,6 +58,8 @@ class Gizmo3D extends h3d.scene.Object {
 
 	var gizmo: h3d.scene.Object;
 	var scene : hide.comp.Scene;
+	var moveStep = 0.5;
+	var rotateStep = 10.0 * Math.PI / 180.0;
 
 	var updateFunc: Float -> Void;
 
@@ -78,7 +81,7 @@ class Gizmo3D extends h3d.scene.Object {
 			var o = gizmo.getObjectByName(objname);
 			var mat = o.getMaterials()[0];
 			mat.mainPass.setPassName("ui");
-			mat.mainPass.depth(false, Always);
+			mat.mainPass.depth(true, Always);
 			var m = o.getMeshes()[0];
 			var int = new h3d.scene.Interactive(m.getCollider(), scene.s3d);
 			var highlight = hxd.Math.colorLerp(color, 0xffffff, 0.5);
@@ -117,26 +120,28 @@ class Gizmo3D extends h3d.scene.Object {
 					var delta = curPt.sub(startDragPt);
 					var translate = new h3d.Vector(0,0,0);
 					var quat = new h3d.Quat();
-					if(mode == MoveX || mode == MoveXY || mode == MoveZX) translate.x = delta.x;
-					if(mode == MoveY || mode == MoveYZ || mode == MoveXY) translate.y = delta.y;
-					if(mode == MoveZ || mode == MoveZX || mode == MoveYZ) translate.z = delta.z;
+
+					inline function snap(m: Float) {
+						return moveStep > 0.0 ? hxd.Math.round(m / moveStep) * moveStep : m;
+					}
+
+					if(mode == MoveX || mode == MoveXY || mode == MoveZX) translate.x = snap(delta.x);
+					if(mode == MoveY || mode == MoveYZ || mode == MoveXY) translate.y = snap(delta.y);
+					if(mode == MoveZ || mode == MoveZX || mode == MoveYZ) translate.z = snap(delta.z);
 					
-					x = startPos.x + translate.x;
-					y = startPos.y + translate.y;
-					z = startPos.z + translate.z;
+					x = (startPos.x + translate.x);
+					y = (startPos.y + translate.y);
+					z = (startPos.z + translate.z);
 
 					if(mode == RotateX || mode == RotateY || mode == RotateZ) {
-						// debug.clear();
-						// debug.lineStyle(2, 0x00ff00, 1.0);
-						// debug.moveTo(startDragPt.x, startDragPt.y, startDragPt.z);
-						// debug.lineTo(startPos.x, startPos.y, startPos.z);
-						// debug.lineTo(curPt.x, curPt.y, curPt.z);
 						var v1 = startDragPt.sub(startPos);
 						v1.normalize();
 						var v2 = curPt.sub(startPos);
 						v2.normalize();
 
 						var angle = Math.atan2(v1.cross(v2).dot(norm), v1.dot(v2));
+						if(rotateStep > 0)
+							angle = hxd.Math.round(angle / rotateStep) * rotateStep;
 						quat.initRotateAxis(norm.x, norm.y, norm.z, angle);
 						setRotationQuat(quat);
 					}
@@ -258,19 +263,36 @@ class Level3D extends FileView {
 
 	function refresh( ?callb ) {
 		var sh = context.shared;
-		sh.root2d.remove();
 		sh.root3d.remove();
 		for( f in sh.cleanups )
 			f();
-		sh.root2d = new h2d.Sprite();
 		sh.root3d = new h3d.scene.Object();
 		sh.cleanups = [];
 		context.init();
 		data.makeInstance(context);
-		scene.s2d.addChild(sh.root2d);
 		scene.s3d.addChild(sh.root3d);
 		scene.init(props);
 		tree.refresh(callb);
+
+		var all = sh.contexts.keys();
+		for(elt in all) {
+			var ctx = sh.contexts[elt];
+			if(ctx.local3d != null) {
+				var o = ctx.local3d;
+				var m = o.getMeshes()[0];
+				var int = new h3d.scene.Interactive(m.getCollider(), scene.s3d);
+				int.onClick = function(e) {
+					if(K.isDown(K.CTRL) && curEdit != null) {
+						var list = curEdit.elements.copy();
+						list.push(elt);
+						selectObjects(list);
+					}
+					else {
+						selectObjects([elt]);
+					}
+				}
+			}
+		}
 	}
 
 	function allocName( prefix : String ) {
@@ -336,14 +358,6 @@ class Level3D extends FileView {
 					var newMat = localMats[i].clone();
 					newMat.multiply(newMat, transf);
 					newMat.multiply(newMat, pivot);
-					// var obj = objects[i];
-					// obj.x = newMat.tx;
-					// obj.y = newMat.ty;
-					// obj.z = newMat.tz;
-					// var q = new h3d.Quat();
-					// q.initRotateMatrix(newMat);
-					// q.normalize();
-
 					var rot = newMat.getEulerAngles();
 					var obj3d = objects3d[i];
 					obj3d.x = newMat.tx;
@@ -600,16 +614,17 @@ class Level3D extends FileView {
 			return true;
 		};
 
+		refresh();
 
-		if( curEdit != null ) {
-			curEdit.cleanup();
-			// var e = curEdit.elt.name;
-			// var elt = data.getPrefabByName(e);
-			// if( elt != null ) selectObject(elt);
-			if(curEdit != null) {
-				selectObjects(curEdit.elements);
-			}
-		}
+		// if( curEdit != null ) {
+		// 	curEdit.cleanup();
+		// 	// var e = curEdit.elt.name;
+		// 	// var elt = data.getPrefabByName(e);
+		// 	// if( elt != null ) selectObject(elt);
+		// 	if(curEdit != null) {
+		// 		selectObjects(curEdit.elements);
+		// 	}
+		// }
 	}
 
 	function update(dt:Float) {
