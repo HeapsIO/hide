@@ -8,14 +8,17 @@ import h3d.scene.Object;
 class LevelEditContext extends hide.prefab.EditContext {
 
 	public var elements : Array<PrefabElement>;
-	var rootObjects: Array<Object>;
+	public var rootObjects(default, null): Array<Object>;
+	public var rootElements(default, null): Array<PrefabElement>;
 
 	public function new(ctx, elts) {
 		super(ctx);
 		this.elements = elts;
 		rootObjects = [];
+		rootElements = [];
 		for(elt in elements) {
 			if(!hasParent(elt, elements)) {
+				rootElements.push(elt);
 				rootObjects.push(getContext(elt).local3d);
 			}
 		}
@@ -36,10 +39,6 @@ class LevelEditContext extends hide.prefab.EditContext {
 			p = p.parent;
 		}
 		return false;
-	}
-
-	public function objects() {
-		return rootObjects; // [for(e in elements) getContext(e).local3d];
 	}
 
 	override function rebuild() {
@@ -243,6 +242,12 @@ class Level3D extends FileView {
 	var lastSyncChange : Float = 0.;
 	var currentSign : String;
 
+	override function setContainer(cont) {
+		super.setContainer(cont);
+		keys.register("copy", onCopy);
+		keys.register("paste", onPaste);
+	}
+
 	override function getDefaultContent() {
 		return haxe.io.Bytes.ofString(ide.toJSON(new hide.prefab.Library().save()));
 	}
@@ -333,11 +338,22 @@ class Level3D extends FileView {
 		}
 	}
 
-	function allocName( prefix : String ) {
+	function autoName(p : PrefabElement) {
 		var id = 0;
+		var prefix = p.type;
+		var model = Std.instance(p, hide.prefab.Model);
+		if(model != null && model.source != null) {
+			var path = new haxe.io.Path(model.source);
+			prefix = path.file;
+		}
 		while( data.getPrefabByName(prefix + id) != null )
 			id++;
-		return prefix + id;
+		
+		p.name = prefix + id;
+
+		for(c in p.children) {
+			autoName(c);
+		}
 	}
 
 	function selectObjects( elts : Array<PrefabElement> ) {
@@ -351,7 +367,7 @@ class Level3D extends FileView {
 		edit.cleanups = [];
 		edit.rebuild();
 
-		var objects = edit.objects();
+		var objects = edit.rootObjects;
 		addOutline(objects);
 		edit.cleanups.push(function() {
 			cleanOutline(objects);
@@ -371,7 +387,7 @@ class Level3D extends FileView {
 	function setupGizmo() {
 		if(curEdit == null) return;
 		gizmo.startMove = function() {
-			var objects = curEdit.objects();
+			var objects = curEdit.rootObjects;
 			var pivotPt = getPivot(objects);
 			var pivot = new h3d.Matrix();
 			pivot.initTranslate(pivotPt.x, pivotPt.y, pivotPt.z);
@@ -566,18 +582,19 @@ class Level3D extends FileView {
 					label : props.name,
 					click : function() {
 
-						function make() {
+						function make(?path) {
 							var p = Type.createInstance(pcl, [current == null ? data : current]);
 							@:privateAccess p.type = ptype;
-							p.name = allocName(ptype);
+							if(path != null)
+								p.source = path;
+							autoName(p);
 							return p;
 						}
 
 						if( props.fileSource != null )
 							ide.chooseFile(props.fileSource, function(path) {
 								if( path == null ) return;
-								var p = make();
-								p.source = path;
+								var p = make(path);
 								addObject(p);
 							});
 						else
@@ -655,7 +672,7 @@ class Level3D extends FileView {
 			if(!gizmo.moving) {
 				// Snap Gizmo at center of objects
 				if(curEdit != null) {
-					var pos = getPivot(curEdit.objects());
+					var pos = getPivot(curEdit.rootObjects);
 					gizmo.setPos(pos.x, pos.y, pos.z);
 				}
 			}
@@ -669,6 +686,48 @@ class Level3D extends FileView {
 			lastSyncChange = properties.lastChange;
 			currentVersion = undo.currentID;
 		}
+	}
+
+	function onCopy() {
+		if(curEdit == null) return;
+		if(curEdit.rootElements.length == 1) {
+			setClipboard(curEdit.rootElements[0].saveRec(), "prefab");
+		}
+		else {
+			var lib = new hide.prefab.Library();
+			for(e in curEdit.rootElements) {
+				lib.children.push(e);
+			}
+			setClipboard(lib.saveRec(), "library");
+		}
+	}
+
+	function onPaste() {
+		var parent : PrefabElement = data;
+		if(curEdit != null && curEdit.elements.length > 0) {
+			parent = curEdit.elements[0];
+		}
+		var obj: PrefabElement = getClipboard("prefab");
+		if(obj != null) {
+			var p = hide.prefab.Prefab.loadRec(obj, parent);
+			autoName(p);
+			refresh();
+		}
+		else {
+			obj = getClipboard("library");
+			if(obj != null) {
+				var lib = hide.prefab.Prefab.loadRec(obj);
+				for(c in lib.children) {
+					autoName(c);
+					c.parent = parent;
+				}
+				refresh();
+			}
+		}
+	}
+
+	function duplicate() {
+		if(curEdit == null) return;
 	}
 
 	function reparentElement(e : PrefabElement, to : PrefabElement, index : Int) {
