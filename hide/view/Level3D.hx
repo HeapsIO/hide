@@ -227,7 +227,7 @@ class Level3D extends FileView {
 
 	var tools : hide.comp.Toolbar;
 	var scene : hide.comp.Scene;
-	var control : h3d.scene.CameraController;
+	var cameraController : h3d.scene.CameraController;
 	var properties : hide.comp.PropsEditor;
 	var light : h3d.scene.DirLight;
 	var lightDirection = new h3d.Vector( 1, 2, -4 );
@@ -246,6 +246,7 @@ class Level3D extends FileView {
 		super.setContainer(cont);
 		keys.register("copy", onCopy);
 		keys.register("paste", onPaste);
+		keys.register("cancel", deselect);
 	}
 
 	override function getDefaultContent() {
@@ -449,7 +450,7 @@ class Level3D extends FileView {
 		context.shared.root2d.x = -Std.int(bounds.xMin + bounds.width * 0.5);
 		context.shared.root2d.y = -Std.int(bounds.yMin + bounds.height * 0.5);
 		scene.resetCamera(context.shared.root3d, 1.5);
-		control.loadFromCamera();
+		cameraController.loadFromCamera();
 	}
 
 	function addObject( e : PrefabElement ) {
@@ -513,7 +514,7 @@ class Level3D extends FileView {
 			grid.lineStyle(0);
 		}
 
-		control = new h3d.scene.CameraController(scene.s3d);
+		cameraController = new h3d.scene.CameraController(scene.s3d);
 
 		this.saveDisplayKey = "Scene:" + state.path;
 
@@ -523,7 +524,7 @@ class Level3D extends FileView {
 			scene.s3d.camera.pos.set(cam.x, cam.y, cam.z);
 			scene.s3d.camera.target.set(cam.tx, cam.ty, cam.tz);
 		}
-		control.loadFromCamera();
+		cameraController.loadFromCamera();
 
 		scene.onUpdate = update;
 		scene.init(props);
@@ -632,6 +633,9 @@ class Level3D extends FileView {
 		tree.init();
 		tree.onClick = function(e) {
 			selectObjects(tree.getSelection());
+			if(curEdit.rootObjects.length > 0) {
+				cameraController.set(curEdit.rootObjects[0].getAbsPos().pos().toPoint());
+			}
 		}
 		tree.onRename = function(e, name) {
 			var oldName = e.name;
@@ -671,9 +675,13 @@ class Level3D extends FileView {
 		if(gizmo != null) {
 			if(!gizmo.moving) {
 				// Snap Gizmo at center of objects
-				if(curEdit != null) {
+				if(curEdit != null && curEdit.rootObjects.length > 0) {
 					var pos = getPivot(curEdit.rootObjects);
+					gizmo.visible = true;
 					gizmo.setPos(pos.x, pos.y, pos.z);
+				}
+				else {
+					gizmo.visible = false;
 				}
 			}
 			gizmo.update(dt);
@@ -726,8 +734,9 @@ class Level3D extends FileView {
 		}
 	}
 
-	function duplicate() {
-		if(curEdit == null) return;
+	function deselect() {
+		selectObjects([]);
+		tree.setSelection([]);
 	}
 
 	function reparentElement(e : PrefabElement, to : PrefabElement, index : Int) {
