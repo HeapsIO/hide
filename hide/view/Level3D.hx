@@ -8,18 +8,38 @@ import h3d.scene.Object;
 class LevelEditContext extends hide.prefab.EditContext {
 
 	public var elements : Array<PrefabElement>;
+	var rootObjects: Array<Object>;
 
 	public function new(ctx, elts) {
 		super(ctx);
 		this.elements = elts;
+		rootObjects = [];
+		for(elt in elements) {
+			if(!hasParent(elt, elements)) {
+				rootObjects.push(getContext(elt).local3d);
+			}
+		}
 	}
 
-	public function getContexts() {
-		return [for(e in elements) getContext(e)];
+	static function hasParent(elt: PrefabElement, list: Array<PrefabElement>) {
+		for(p in list) {
+			if(isParent(elt, p))
+				return true;
+		}
+		return false;
+	}
+
+	static function isParent(elt: PrefabElement, parent: PrefabElement) {
+		var p = elt.parent;
+		while(p != null) {
+			if(p == parent) return true;
+			p = p.parent;
+		}
+		return false;
 	}
 
 	public function objects() {
-		return [for(e in elements) getContext(e).local3d];
+		return rootObjects; // [for(e in elements) getContext(e).local3d];
 	}
 
 	override function rebuild() {
@@ -89,14 +109,16 @@ class Gizmo3D extends h3d.scene.Object {
 			var mat = o.getMaterials()[0];
 			mat.mainPass.setPassName("ui");
 			mat.mainPass.depth(true, Always);
+			mat.blendMode = Alpha;
 			var mesh = hit.getMeshes()[0];
 			var int = new h3d.scene.Interactive(mesh.getCollider(), scene.s3d);
 			int.priority = 100;
-			var highlight = hxd.Math.colorLerp(color, 0xffffff, 0.5);
-			color = hxd.Math.colorLerp(color, 0, 0.2);
+			var highlight = hxd.Math.colorLerp(color, 0xffffffff, 0.1);
+			color = hxd.Math.colorLerp(color, 0xff000000, 0.2);
 			mat.color.setColor(color);
 			int.onOver = function(e : hxd.Event) {
 				mat.color.setColor(highlight);
+				mat.color.w = 1.0;
 			}
 			int.onOut = function(e : hxd.Event) {
 				mat.color.setColor(color);
@@ -168,15 +190,15 @@ class Gizmo3D extends h3d.scene.Object {
 			}
 		}
 
-		setup("xAxis", 0xff0000, MoveX);
-		setup("yAxis", 0x00ff00, MoveY);
-		setup("zAxis", 0x0000ff, MoveZ);
-		setup("xy", 0xffff00, MoveXY);
-		setup("xz", 0xffff00, MoveZX);
-		setup("yz", 0xffff00, MoveYZ);
-		setup("xRotate", 0xff0000, RotateX);
-		setup("yRotate", 0x00ff00, RotateY);
-		setup("zRotate", 0x0000ff, RotateZ);
+		setup("xAxis", 0x90ff0000, MoveX);
+		setup("yAxis", 0x9000ff00, MoveY);
+		setup("zAxis", 0x900000ff, MoveZ);
+		setup("xy", 0x90ffff00, MoveXY);
+		setup("xz", 0x90ffff00, MoveZX);
+		setup("yz", 0x90ffff00, MoveYZ);
+		setup("xRotate", 0x90ff0000, RotateX);
+		setup("yRotate", 0x9000ff00, RotateY);
+		setup("zRotate", 0x900000ff, RotateZ);
 	}
 
 
@@ -268,6 +290,7 @@ class Level3D extends FileView {
 		scene = new hide.comp.Scene(root.find(".scene"));
 		scene.onReady = init;
 		tree = new hide.comp.IconTree(root.find(".tree"));
+		tree.async = false;
 		currentVersion = undo.currentID;
 	}
 
@@ -352,6 +375,11 @@ class Level3D extends FileView {
 			pivot.initTranslate(pivotPt.x, pivotPt.y, pivotPt.z);
 			var invPivot = pivot.clone();
 			invPivot.invert();
+
+			// inline function worldMat(o: Object) {
+
+			// }
+
 			var localMats = [for(o in objects) {
 				var m = o.defaultTransform.clone();
 				m.invert();
@@ -371,8 +399,11 @@ class Level3D extends FileView {
 					var newMat = localMats[i].clone();
 					newMat.multiply(newMat, transf);
 					newMat.multiply(newMat, pivot);
-					var rot = newMat.getEulerAngles();
+					var invParent = objects[i].parent.getAbsPos().clone();
+					invParent.invert();
+					newMat.multiply(newMat, invParent);
 					var obj3d = objects3d[i];
+					var rot = newMat.getEulerAngles();
 					obj3d.x = newMat.tx;
 					obj3d.y = newMat.ty;
 					obj3d.z = newMat.tz;
@@ -627,6 +658,7 @@ class Level3D extends FileView {
 			return true;
 		};
 
+		refresh();
 		refresh();
 
 		// if( curEdit != null ) {

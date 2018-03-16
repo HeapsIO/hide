@@ -9,6 +9,7 @@ typedef IconTreeItem<T> = {
 		@:optional var opened : Bool;
 		@:optional var selected : Bool;
 		@:optional var disabled : Bool;
+		@:optional var loaded : Bool;
 	};
 	@:optional private var id : String; // internal usage
 	@:optional private var absKey : String; // internal usage
@@ -23,6 +24,7 @@ class IconTree<T:{}> extends Component {
 	var revMapString : haxe.ds.StringMap<IconTreeItem<T>> = new haxe.ds.StringMap();
 	var revMap : haxe.ds.ObjectMap<T, IconTreeItem<T>> = new haxe.ds.ObjectMap();
 	public var allowRename : Bool;
+	public var async : Bool = false;
 
 	public dynamic function get( parent : Null<T> ) : Array<IconTreeItem<T>> {
 		return [{ data : null, text : "get()", children : true }];
@@ -48,6 +50,29 @@ class IconTree<T:{}> extends Component {
 	public dynamic function onMove( e : T, to : T, index : Int ) {
 	}
 
+	function makeContent(parent:IconTreeItem<T>) {
+		var content : Array<IconTreeItem<T>> = get(parent == null ? null : parent.data);
+		for( c in content ) {
+			var key = (parent == null ? "" : parent.absKey + "/") + c.text;
+			if( c.absKey == null ) c.absKey = key;
+			c.id = "titem$" + (UID++);
+			map.set(c.id, c);
+			if( Std.is(c.data, String) )
+				revMapString.set(cast c.data, c);
+			else
+				revMap.set(c.data, c);
+			if( c.state == null ) {
+				var s = getDisplayState(key);
+				if( s != null ) c.state = { opened : s } else c.state = {};
+			}
+			if( !async ) {
+				c.state.loaded = true;
+				c.children = cast makeContent(c);
+			}
+		}
+		return content;		
+	}
+
 	public function init() {
 		(untyped root.jstree)({
 			core : {
@@ -70,23 +95,7 @@ class IconTree<T:{}> extends Component {
 					return false;
 				},
 				data : function(obj, callb) {
-					var parent = obj.parent == null ? null : map.get(obj.id);
-					var content : Array<IconTreeItem<T>> = get(parent == null ? null : parent.data);
-					for( c in content ) {
-						var key = (parent == null ? "" : parent.absKey + "/") + c.text;
-						if( c.absKey == null ) c.absKey = key;
-						c.id = "titem$" + (UID++);
-						map.set(c.id, c);
-						if( Std.is(c.data, String) )
-							revMapString.set(cast c.data, c);
-						else
-							revMap.set(c.data, c);
-						if( c.state == null ) {
-							var s = getDisplayState(key);
-							if( s != null ) c.state = { opened : s };
-						}
-					}
-					callb.call(this,content);
+					callb.call(this, makeContent(obj.parent == null ? null : map.get(obj.id)));
 				}
 			},
 			plugins : [ "wholerow", "dnd" ],
@@ -150,7 +159,7 @@ class IconTree<T:{}> extends Component {
 		(untyped root.jstree)('select_node',ids);
 	}
 
-	public function refresh( ?onReady : Void -> Void ) {
+	public function refresh( ?onReady : Void -> Void ) {		
 		if( onReady != null ) waitRefresh.push(onReady);
 		(untyped root.jstree)('refresh',true);
 	}
