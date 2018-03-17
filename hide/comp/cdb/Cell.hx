@@ -1,4 +1,5 @@
 package hide.comp.cdb;
+import hxd.Key in K;
 
 class Cell extends Component {
 
@@ -10,7 +11,7 @@ class Cell extends Component {
 	public var line(default,null) : Line;
 	public var column(default, null) : cdb.Data.Column;
 	public var columnIndex(get, never) : Int;
-	public var value(get, set) : Dynamic;
+	public var value(get, never) : Dynamic;
 	public var table(get, never) : Table;
 
 	public function new( root : Element, line : Line, column : cdb.Data.Column ) {
@@ -25,21 +26,6 @@ class Cell extends Component {
 
 	function get_table() return line.table;
 	function get_columnIndex() return table.sheet.columns.indexOf(column);
-
-	function set_value( v : Dynamic ) {
-		var old = currentValue;
-		currentValue = v;
-		if( v != currentValue ) {
-			if( v == null )
-				Reflect.deleteField(line.obj, column.name);
-			else
-				Reflect.setField(line.obj, column.name, v);
-			// TODO : history
-		}
-		refresh();
-		return v;
-	}
-
 	inline function get_value() return currentValue;
 
 	public function refresh() {
@@ -50,6 +36,8 @@ class Cell extends Component {
 	}
 
 	function updateClasses() {
+		root.removeClass("edit");
+		root.removeClass("edit_long");
 		switch( column.type ) {
 		case TBool :
 			root.removeClass("true false").addClass( value==true ? "true" : "false" );
@@ -201,6 +189,115 @@ class Cell extends Component {
 		var html = '<div class="tile" id="_c${id}" style="width : ${Std.int(width * zoom)}px; height : ${Std.int(height * zoom)}px; background : url(\'$url\') -${Std.int(v.size*v.x*zoom)}px -${Std.int(v.size*v.y*zoom)}px; opacity:0; $inl"></div>';
 		html += '<img src="$url" style="display:none" onload="$(\'#_c$id\').css({opacity:1, backgroundSize : ((this.width*$zoom)|0)+\'px \' + ((this.height*$zoom)|0)+\'px\' '+(zoom > 1 ? ", imageRendering : 'pixelated'" : "") +'}); if( this.parentNode != null ) this.parentNode.removeChild(this)"/>';
 		return html;
+	}
+
+	public function edit() {
+		switch( column.type ) {
+		case TInt, TFloat, TString, TId, TCustom(_), TDynamic:
+			var str = value == null ? "" : editor.base.valToString(column.type, value);
+			var textHeight = root.wrapInner("<span>").find("span").height();
+			var longText = textHeight > 25;
+			root.empty();
+			root.addClass("edit");
+			var i = new Element(longText ? "<textarea>" : "<input>").appendTo(root);
+			if( longText ) {
+				root.addClass("edit_long");
+				i.css({ height : Math.ceil(textHeight - 1) + "px" });
+			}
+			i.val(str);
+			i.keydown(function(e) {
+				switch( e.keyCode ) {
+				case K.ESCAPE:
+					refresh();
+				case K.ENTER:
+					closeEdit();
+					e.preventDefault();
+				case K.UP, K.DOWN if( !longText ):
+					closeEdit();
+					return;
+				case K.TAB:
+					closeEdit();
+					e.preventDefault();
+					editor.cursor.move(e.shiftKey ? -1 : 1, 0, false, false);
+					var c = editor.cursor.getCell();
+					if( c != this ) c.edit();
+				}
+				e.stopPropagation();
+			});
+			i.keyup(function(_) try {
+				editor.base.parseValue(column.type, i.val());
+				setErrorMessage(null);
+			} catch( e : Dynamic ) {
+				setErrorMessage(StringTools.htmlUnescape(""+e));
+			});
+			i.keyup(null);
+			i.blur(function(_) closeEdit());
+			i.focus();
+			i.select();
+			if( longText ) i.scrollTop(0);
+		case TProperties, TList:
+			@:privateAccess table.toggleList(this);
+		default:
+			throw "TODO "+column.type;
+		}
+	}
+
+	public function setErrorMessage( msg : String ) {
+		root.find("div.error").remove();
+		if( msg == null )  return;
+		new Element("<div>").addClass("error").html(msg).appendTo(root);
+	}
+
+	function setRawValue( str : String ) {
+		var newValue : Dynamic = try editor.base.parseValue(column.type, str, false) catch( e : Dynamic ) return;
+		if( newValue == null || newValue == currentValue )
+			return;
+
+		switch( column.type ) {
+		case TId:
+			var obj = line.obj;
+			var prevValue = value;
+			// most likely our obj, unless there was a #DUP
+			var prevObj = value != null ? table.sheet.index.get(value) : null;
+			// have we already an obj mapped to the same id ?
+			var prevTarget = table.sheet.index.get(newValue);
+			var undo = null;
+			if( prevObj == null || prevObj.obj == obj ) {
+				// remap
+				var m = new Map();
+				m.set(value, newValue);
+				undo = editor.base.updateRefs(table.sheet, m);
+			}
+			setValue(newValue, undo);
+			// creates or remove a #DUP : need to refresh the whole table
+			if( prevTarget != null || (prevObj != null && (prevObj.obj != obj || table.sheet.index.get(prevValue) != null)) )
+				table.refresh();
+		default:
+			setValue(newValue);
+		}
+	}
+
+	function setValue( value : Dynamic, ?undo : cdb.Database.Changes ) {
+		if( undo == null )
+			undo = [];
+		currentValue = value;
+		var mainLine = line;
+		while( true ) {
+			var sub = Std.instance(mainLine.table, SubTable);
+			if( sub == null ) break;
+			mainLine = sub.cell.line;
+		}
+		var prev = Reflect.field(line.obj, column.name);
+		undo.push({ ref : { mainSheet : mainLine.table.sheet, mainObj : mainLine.obj, obj : line.obj, sheet : line.table.sheet }, v : SetField(line.obj, column.name, prev) });
+		Reflect.setField(line.obj, column.name, value);
+		table.sheet.updateValue(column, line.index, prev);
+		editor.addChanges(undo);
+	}
+
+	public function closeEdit() {
+		var str = root.find("input,textarea").val();
+		if( str != null ) setRawValue(str);
+		refresh();
 	}
 
 }

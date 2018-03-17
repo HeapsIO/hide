@@ -81,12 +81,12 @@ class Table extends Component {
 
 				switch( c.type ) {
 				case TList, TProperties:
-					var key = sheet.getPath() + "@" + c.name + ":" + index;
 					cell.root.click(function(e) {
 						e.stopPropagation();
 						toggleList(cell);
 					});
 				default:
+					cell.root.dblclick(function(_) cell.edit());
 				}
 			}
 		}

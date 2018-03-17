@@ -43,6 +43,31 @@
 			overflow : hidden;
 		}
 
+		td.edit {
+			padding : 2px;
+			padding-right : 6px;
+			&> input, textarea {
+				width : 100%;
+				padding : 0px 2px;
+				border : none;
+			}
+			&> textarea {
+				overflow: hidden;
+			}
+			&> div.error {
+				margin-top : 5px;
+				position : absolute;
+				color : red;
+				background-color : #633;
+				border : 1px solid #833;
+				max-width : 200px;
+				padding : 2px;
+			}
+		}
+		td.edit_long {
+			padding-bottom : 0px;
+		}
+
 		td.cursor {
 			outline : 1px solid #ccc;
 		}

@@ -36,6 +36,31 @@
   padding: 2px 4px;
   overflow: hidden;
 }
+.cdb .cdb-sheet td.edit {
+  padding: 2px;
+  padding-right: 6px;
+}
+.cdb .cdb-sheet td.edit > input,
+.cdb .cdb-sheet td.edit textarea {
+  width: 100%;
+  padding: 0px 2px;
+  border: none;
+}
+.cdb .cdb-sheet td.edit > textarea {
+  overflow: hidden;
+}
+.cdb .cdb-sheet td.edit > div.error {
+  margin-top: 5px;
+  position: absolute;
+  color: red;
+  background-color: #633;
+  border: 1px solid #833;
+  max-width: 200px;
+  padding: 2px;
+}
+.cdb .cdb-sheet td.edit_long {
+  padding-bottom: 0px;
+}
 .cdb .cdb-sheet td.cursor {
   outline: 1px solid #ccc;
 }

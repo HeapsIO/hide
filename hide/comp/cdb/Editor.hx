@@ -32,14 +32,11 @@ class Editor extends Component {
 		keys.register("cdb.showReferences", showReferences);
 		keys.register("undo", function() if( undo.undo() ) { refresh(); save(); });
 		keys.register("redo", function() if( undo.redo() ) { refresh(); save(); });
-		keys.register("cdb.toggleList", function() {
-			var c = cursor.getCell();
-			if( c != null )
-				switch( c.column.type ) {
-				case TProperties, TList: c.root.click(); // toggle
-				default:
-				}
-		});
+		for( k in ["cdb.editCell","rename"] )
+			keys.register(k, function() {
+				var c = cursor.getCell();
+				if( c != null ) c.edit();
+			});
 		keys.register("cdb.closeList", function() {
 			var c = cursor.getCell();
 			if( c != null ) {
@@ -216,6 +213,13 @@ class Editor extends Component {
 	}
 
 	public function popupColumn( table : Table, col : cdb.Data.Column ) {
+	}
+
+	public function addChanges( changes : cdb.Database.Changes ) {
+		undo.change(Custom(function(undo) {
+			changes = base.applyChanges(changes);
+			refresh();
+		}));
 	}
 
 	function moveLine( line : Line, delta : Int ) {

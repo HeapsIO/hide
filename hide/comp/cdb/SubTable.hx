@@ -138,7 +138,11 @@ class SubTable extends Table {
 					return;
 				}
 			});
+
+			cell.root.dblclick(function(_) cell.edit());
 		}
+
+		// add/edit properties
 
 		/*
 		var end = J("<tr>").appendTo(content);

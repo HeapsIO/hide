@@ -17,13 +17,14 @@
 	"key.paste" : "Ctrl-V",
 
 	"key.search" : "Ctrl-F",
+	"key.rename" : "F2",
 
 	// cdb keys
 
 	"key.cdb.showReferences" : "F3",
 	"key.cdb.gotoReference" : "F4",
-	"key.cdb.toggleList" : "Enter",
 	"key.cdb.closeList" : "Escape",
+	"key.cdb.editCell" : "Enter",
 
 	// cdb config
 

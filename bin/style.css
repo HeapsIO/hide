@@ -19,12 +19,14 @@ li,
 p,
 a,
 input,
-select {
+select,
+textarea {
   font-family: Verdana, serif;
   font-size: 9pt;
   color: #aaa;
 }
-input {
+input,
+textarea {
   padding-left: 4px;
 }
 select:focus {
@@ -34,16 +36,19 @@ select:focus:hover {
   border-color: #444;
 }
 select,
-input {
+input,
+textarea {
   background-color: #222222;
   border: 1px solid #444;
 }
 select:focus,
-input:focus {
+input:focus,
+textarea:focus {
   background-color: #141414;
 }
 select:hover,
-input:hover {
+input:hover,
+textarea:hover {
   border-color: #888;
 }
 input.file {
