@@ -82,9 +82,9 @@ class Gizmo3D extends h3d.scene.Object {
 
 	var updateFunc: Float -> Void;
 
-	public var startMove: Void -> Void;
+	public var onStartMove: Void -> Void;
 	public var onMove: h3d.Vector -> h3d.Quat -> Void;
-	public var finishMove: Void -> Void;
+	public var onFinishMove: Void -> Void;
 	public var moving(default, null): Bool;
 
 	var debug: h3d.scene.Graphics;
@@ -122,70 +122,11 @@ class Gizmo3D extends h3d.scene.Object {
 			int.onOut = function(e : hxd.Event) {
 				mat.color.setColor(color);
 			}
-
 			int.onPush = function(e) {
-				moving = true;
-				if(startMove != null) startMove();
-				var startPos = getAbsPos().pos().toPoint();
-				var dragPlane = null;
-				var cam = scene.s3d.camera;
-				var norm = startPos.sub(cam.pos.toPoint());
-				switch(mode) {
-					case MoveX: norm.x = 0;
-					case MoveY: norm.y = 0;
-					case MoveZ: norm.z = 0;
-					case MoveXY: norm.set(0, 0, 1);
-					case MoveYZ: norm.set(1, 0, 0);
-					case MoveZX: norm.set(0, 1, 0);
-					case RotateX: norm.set(1, 0, 0);
-					case RotateY: norm.set(0, 1, 0);
-					case RotateZ: norm.set(0, 0, 1);
-				}
-				norm.normalize();
-				dragPlane = h3d.col.Plane.fromNormalPoint(norm, startPos);
-				var startDragPt = getDragPoint(dragPlane);
-				updateFunc = function(dt) {
-					var curPt = getDragPoint(dragPlane);
-					var delta = curPt.sub(startDragPt);
-					var translate = new h3d.Vector(0,0,0);
-					var speedFactor = K.isDown(K.SHIFT) ? 0.1 : 1.0;
-					delta.scale(speedFactor);
-					var quat = new h3d.Quat();
-
-					inline function snap(m: Float) {
-						return moveStep > 0.0 && K.isDown(K.CTRL) ? hxd.Math.round(m / moveStep) * moveStep : m;
-					}
-
-					if(mode == MoveX || mode == MoveXY || mode == MoveZX) translate.x = snap(delta.x);
-					if(mode == MoveY || mode == MoveYZ || mode == MoveXY) translate.y = snap(delta.y);
-					if(mode == MoveZ || mode == MoveZX || mode == MoveYZ) translate.z = snap(delta.z);
-					
-					x = (startPos.x + translate.x);
-					y = (startPos.y + translate.y);
-					z = (startPos.z + translate.z);
-
-					if(mode == RotateX || mode == RotateY || mode == RotateZ) {
-						var v1 = startDragPt.sub(startPos);
-						v1.normalize();
-						var v2 = curPt.sub(startPos);
-						v2.normalize();
-
-						var angle = Math.atan2(v1.cross(v2).dot(norm), v1.dot(v2)) * speedFactor;
-						if(rotateStep > 0 && K.isDown(K.CTRL))
-							angle =  hxd.Math.round(angle / rotateStep) * rotateStep;
-						quat.initRotateAxis(norm.x, norm.y, norm.z, angle);
-						setRotationQuat(quat);
-					}
-
-					if(onMove != null) onMove(translate, quat);
-				}
+				startMove(mode);
 			}
 			int.onRelease = function(e) {
-				updateFunc = null;
-				if(finishMove != null) finishMove();
-				getRotationQuat().identity();
-				posChanged = true;
-				moving = false;
+				finishMove();
 			}
 		}
 
@@ -200,6 +141,76 @@ class Gizmo3D extends h3d.scene.Object {
 		setup("zRotate", 0x900000ff, RotateZ);
 	}
 
+	public function startMove(mode: TransformMode, ?duplicating=false) {
+		moving = true;
+		if(onStartMove != null) onStartMove();
+		var startPos = getAbsPos().pos().toPoint();
+		var dragPlane = null;
+		var cam = scene.s3d.camera;
+		var norm = startPos.sub(cam.pos.toPoint());
+		switch(mode) {
+			case MoveX: norm.x = 0;
+			case MoveY: norm.y = 0;
+			case MoveZ: norm.z = 0;
+			case MoveXY: norm.set(0, 0, 1);
+			case MoveYZ: norm.set(1, 0, 0);
+			case MoveZX: norm.set(0, 1, 0);
+			case RotateX: norm.set(1, 0, 0);
+			case RotateY: norm.set(0, 1, 0);
+			case RotateZ: norm.set(0, 0, 1);
+		}
+		norm.normalize();
+		dragPlane = h3d.col.Plane.fromNormalPoint(norm, startPos);
+		var startDragPt = getDragPoint(dragPlane);
+		updateFunc = function(dt) {
+			var curPt = getDragPoint(dragPlane);
+			var delta = curPt.sub(startDragPt);
+			var translate = new h3d.Vector(0,0,0);
+			var speedFactor = K.isDown(K.SHIFT) ? 0.1 : 1.0;
+			delta.scale(speedFactor);
+			var quat = new h3d.Quat();
+
+			inline function snap(m: Float) {
+				return moveStep > 0.0 && K.isDown(K.CTRL) ? hxd.Math.round(m / moveStep) * moveStep : m;
+			}
+
+			if(mode == MoveX || mode == MoveXY || mode == MoveZX) translate.x = snap(delta.x);
+			if(mode == MoveY || mode == MoveYZ || mode == MoveXY) translate.y = snap(delta.y);
+			if(mode == MoveZ || mode == MoveZX || mode == MoveYZ) translate.z = snap(delta.z);
+			
+			x = (startPos.x + translate.x);
+			y = (startPos.y + translate.y);
+			z = (startPos.z + translate.z);
+
+			if(mode == RotateX || mode == RotateY || mode == RotateZ) {
+				var v1 = startDragPt.sub(startPos);
+				v1.normalize();
+				var v2 = curPt.sub(startPos);
+				v2.normalize();
+
+				var angle = Math.atan2(v1.cross(v2).dot(norm), v1.dot(v2)) * speedFactor;
+				if(rotateStep > 0 && K.isDown(K.CTRL))
+					angle =  hxd.Math.round(angle / rotateStep) * rotateStep;
+				quat.initRotateAxis(norm.x, norm.y, norm.z, angle);
+				setRotationQuat(quat);
+			}
+
+			if(onMove != null) onMove(translate, quat);
+
+			if(duplicating && K.isPressed(K.MOUSE_LEFT)) {
+				finishMove();
+			}
+		}
+	}
+
+	function finishMove() {
+		updateFunc = null;
+		if(onFinishMove != null)
+			onFinishMove();
+		getRotationQuat().identity();
+		posChanged = true;
+		moving = false;
+	}
 
 	function getDragPoint(plane: h3d.col.Plane) {
 		var cam = scene.s3d.camera;
@@ -247,6 +258,7 @@ class Level3D extends FileView {
 		keys.register("copy", onCopy);
 		keys.register("paste", onPaste);
 		keys.register("cancel", deselect);
+		keys.register("duplicate", duplicate);
 	}
 
 	override function getDefaultContent() {
@@ -318,14 +330,16 @@ class Level3D extends FileView {
 			var ctx = sh.contexts[elt];
 			if(ctx.local3d != null) {
 				var o = ctx.local3d;
-				var m = o.getMeshes()[0];
-				var int = new h3d.scene.Interactive(m.getCollider(), scene.s3d);
+				var mesh = o.getMeshes()[0];
+				var bounds = mesh.primitive.getBounds();
+				var collider = new h3d.col.ObjectCollider(o, bounds);
+				var int = new h3d.scene.Interactive(collider, sh.root3d);
 				int.propagateEvents = true;
 				int.onClick = function(e) {
 					if(K.isDown(K.CTRL) && curEdit != null) {
 						var list = curEdit.elements.copy();
 						if(list.indexOf(elt) < 0) {
-							list.push(elt);
+								list.push(elt);
 							tree.setSelection(list);
 							selectObjects(list);
 						}
@@ -387,7 +401,7 @@ class Level3D extends FileView {
 
 	function setupGizmo() {
 		if(curEdit == null) return;
-		gizmo.startMove = function() {
+		gizmo.onStartMove = function() {
 			var objects = curEdit.rootObjects;
 			var pivotPt = getPivot(objects);
 			var pivot = new h3d.Matrix();
@@ -421,7 +435,7 @@ class Level3D extends FileView {
 				}
 			}
 
-			gizmo.finishMove = function() {
+			gizmo.onFinishMove = function() {
 				var newState = [for(o in objects3d) o.save()];
 				refreshProps();
 				undo.change(Custom(function(undo) {
@@ -737,6 +751,35 @@ class Level3D extends FileView {
 	function deselect() {
 		selectObjects([]);
 		tree.setSelection([]);
+	}
+
+	function duplicate() {
+		if(curEdit == null) return;
+		var elements = curEdit.rootElements;
+		var newElements = [for(elt in elements) {
+			var clone = hide.prefab.Prefab.loadRec(elt.saveRec());
+			autoName(clone);
+			clone.parent = elt.parent;
+			clone;
+		}];
+		refresh(function() {
+			selectObjects(newElements);
+			tree.setSelection(newElements);
+			gizmo.startMove(MoveXY, true);
+			gizmo.onFinishMove = function() {
+				undo.change(Custom(function(undo) {
+					for(elt in newElements) {
+						if(undo) {
+							elt.parent.children.remove(elt);
+						}
+						else {
+							elt.parent.children.push(elt);
+						}
+					}
+					refresh();
+				}));
+			}
+		});
 	}
 
 	function reparentElement(e : PrefabElement, to : PrefabElement, index : Int) {
