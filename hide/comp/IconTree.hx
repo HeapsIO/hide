@@ -179,4 +179,22 @@ class IconTree<T:{}> extends Component {
 		var el = (untyped root.jstree)('get_node', v.id, true)[0];
 		el.scrollIntoViewIfNeeded();
 	}
+
+	public function searchFilter( filter : String ) {
+		if( filter == "" ) filter = null;
+		if( filter != null ) filter = filter.toLowerCase();
+
+		var lines = root.find(".jstree-node");
+		lines.removeClass("filtered");
+		if( filter != null ) {
+			for( t in lines ) {
+				if( t.textContent.toLowerCase().indexOf(filter) < 0 )
+					t.classList.add("filtered");
+			}
+			while( lines.length > 0 ) {
+				lines = lines.filter(".list").not(".filtered").prev();
+				lines.removeClass("filtered");
+			}
+		}
+	}
 }

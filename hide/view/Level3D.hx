@@ -244,6 +244,7 @@ class Level3D extends FileView {
 	var lightDirection = new h3d.Vector( 1, 2, -4 );
 	var tree : hide.comp.IconTree<PrefabElement>;
 
+	var searchBox : Element;
 	var curEdit : LevelEditContext;
 	var gizmo : Gizmo3D;
 
@@ -260,6 +261,7 @@ class Level3D extends FileView {
 		keys.register("cancel", deselect);
 		keys.register("duplicate", duplicate);
 		keys.register("delete", () -> deleteElements(curEdit.rootElements));
+		keys.register("search", showSearch);
 	}
 
 	override function getDefaultContent() {
@@ -293,7 +295,7 @@ class Level3D extends FileView {
 					<div class="tabs">
 						<div class="tab" name="Scene" icon="sitemap">
 							<div class="hide-block">
-								<div class="hide-list" style="min-height: 400px;">
+								<div class="hide-list scene-tree" style="min-height: 400px;">
 									<div class="tree"></div>
 								</div>
 							</div>
@@ -311,6 +313,21 @@ class Level3D extends FileView {
 		tree = new hide.comp.IconTree(root.find(".tree"));
 		tree.async = false;
 		currentVersion = undo.currentID;
+
+		var sceneTree = root.find(".scene-tree");
+		searchBox = new Element("<div>").addClass("searchBox").appendTo(sceneTree);
+		new Element("<input type='text'>").appendTo(searchBox).keydown(function(e) {
+			if( e.keyCode == 27 ) {
+				searchBox.find("i").click();
+				return;
+			}
+		}).keyup(function(e) {
+			tree.searchFilter(e.getThis().val());
+		});
+		new Element("<i>").addClass("fa fa-times-circle").appendTo(searchBox).click(function(_) {
+			tree.searchFilter(null);
+			searchBox.toggle();
+		});
 	}
 
 	function refresh( ?callb ) {
@@ -823,6 +840,11 @@ class Level3D extends FileView {
 				return ctx.local3d;
 		}
 		return context.shared.root3d;
+	}
+
+	function showSearch() {
+		searchBox.show();
+		searchBox.find("input").focus().select();
 	}
 
 	static function worldMat(obj: Object) {

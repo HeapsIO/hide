@@ -303,6 +303,35 @@ input[type=checkbox]:checked:after {
 .hide-tabs > .tabs-header > div:hover {
   background-color: #282828;
 }
+.searchBox {
+  display: none;
+  width: 200px;
+  position: fixed;
+  top: 20px;
+  right: 0px;
+  background-color: black;
+  border: 1px solid #555;
+  border-top: none;
+  border-right: none;
+  border-bottom-left-radius: 5px;
+  padding: 5px;
+  color: #444;
+}
+.searchBox input {
+  width: 170px;
+  background-color: black;
+}
+.searchBox i {
+  cursor: pointer;
+  margin-left: 5px;
+  display: inline-block;
+  font-size: 18px;
+  color: #888;
+}
+.searchBox i:hover {
+  color: #EEE;
+}
+
 /* Properties */
 .hide-properties {
   flex: 0 0 300px;
@@ -415,6 +444,9 @@ div.lm_close_tab:hover {
 }
 .jstree-icon {
   color: #aaa !important;
+}
+.jstree .filtered {
+  display: none;
 }
 /* Spectrum Color picker */
 div.sp-replacer {
