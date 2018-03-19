@@ -182,6 +182,11 @@ input[type=checkbox] {
 
 }
 
+.hide-scene-tree {
+	min-height: 500px;
+	zoom: 90%;
+}
+
 .hide-range {
 
 	display : inline-block;
@@ -327,6 +332,35 @@ input[type=checkbox] {
 	}
 }
 
+.searchBox {
+	display : none;
+	width : 200px;
+	position : fixed;
+	top : 20px;
+	right : 0px;
+	background-color : black;
+	border : 1px solid #555;
+	border-top : none;
+	border-right : none;
+	border-bottom-left-radius : 5px;
+	padding : 5px;
+	input {
+		width : 170px;
+		background-color : black;
+	}
+	i {
+		cursor : pointer;
+		margin-left : 5px;
+		display : inline-block;
+		font-size : 18px;
+		color : #888;
+	}
+	i:hover {
+		color : #EEE;
+	}
+	color : #444;
+}
+
 /* Properties */
 
 .hide-properties {
@@ -442,6 +476,10 @@ div.lm_close_tab:hover { background-color : #555 !important; }
 
 .jstree {
 	background:transparent !important;
+	
+	.filtered {
+		display: none;
+	}
 }
 
 .jstree-icon.jstree-ocl {

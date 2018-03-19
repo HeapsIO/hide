@@ -171,6 +171,10 @@ input[type=checkbox]:checked:after {
 .hide-scene-layer .jstree-container-ul {
   padding-right: 5px;
 }
+.hide-scene-tree {
+  min-height: 500px;
+  zoom: 90%;
+}
 .hide-range {
   display: inline-block;
 }
@@ -331,7 +335,6 @@ input[type=checkbox]:checked:after {
 .searchBox i:hover {
   color: #EEE;
 }
-
 /* Properties */
 .hide-properties {
   flex: 0 0 300px;
@@ -437,6 +440,9 @@ div.lm_close_tab:hover {
 .jstree {
   background: transparent !important;
 }
+.jstree .filtered {
+  display: none;
+}
 .jstree-icon.jstree-ocl {
   opacity: 0.7;
   width: 18px !important;
@@ -444,9 +450,6 @@ div.lm_close_tab:hover {
 }
 .jstree-icon {
   color: #aaa !important;
-}
-.jstree .filtered {
-  display: none;
 }
 /* Spectrum Color picker */
 div.sp-replacer {

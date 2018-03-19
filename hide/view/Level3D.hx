@@ -295,7 +295,7 @@ class Level3D extends FileView {
 					<div class="tabs">
 						<div class="tab" name="Scene" icon="sitemap">
 							<div class="hide-block">
-								<div class="hide-list scene-tree" style="min-height: 400px;">
+								<div class="hide-list hide-scene-tree">
 									<div class="tree"></div>
 								</div>
 							</div>
@@ -314,7 +314,7 @@ class Level3D extends FileView {
 		tree.async = false;
 		currentVersion = undo.currentID;
 
-		var sceneTree = root.find(".scene-tree");
+		var sceneTree = root.find(".hide-scene-tree");
 		searchBox = new Element("<div>").addClass("searchBox").appendTo(sceneTree);
 		new Element("<input type='text'>").appendTo(searchBox).keydown(function(e) {
 			if( e.keyCode == 27 ) {
