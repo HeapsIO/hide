@@ -11,6 +11,7 @@ typedef IconTreeItem<T> = {
 		@:optional var disabled : Bool;
 		@:optional var loaded : Bool;
 	};
+	@:optional var li_attr : Dynamic;
 	@:optional private var id : String; // internal usage
 	@:optional private var absKey : String; // internal usage
 }
@@ -157,6 +158,9 @@ class IconTree<T:{}> extends Component {
 		(untyped root.jstree)('deselect_all');
 		var ids = [for( o in objects ) { var v = getRev(o); if( v != null ) v.id; }];
 		(untyped root.jstree)('select_node',ids);
+		if(objects.length > 0) {
+			revealNode(objects[0]);
+		}
 	}
 
 	public function refresh( ?onReady : Void -> Void ) {		
@@ -169,4 +173,10 @@ class IconTree<T:{}> extends Component {
 		return [for( id in ids ) map.get(id).data];
 	}
 
+	public function revealNode(e : T) {
+		var v = getRev(e);
+		(untyped root.jstree)('_open_to', v.id).focus();
+		var el = (untyped root.jstree)('get_node', v.id, true)[0];
+		el.scrollIntoViewIfNeeded();
+	}
 }
