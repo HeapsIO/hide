@@ -259,6 +259,7 @@ class Level3D extends FileView {
 		keys.register("paste", onPaste);
 		keys.register("cancel", deselect);
 		keys.register("duplicate", duplicate);
+		keys.register("delete", () -> deleteElements(curEdit.rootElements));
 	}
 
 	override function getDefaultContent() {
@@ -585,7 +586,10 @@ class Level3D extends FileView {
 		tree.root.parent().contextmenu(function(e) {
 			e.preventDefault();
 			var current = tree.getCurrentOver();
-			tree.setSelection(current == null ? [] : [current]);
+			if(curEdit == null || curEdit.elements.indexOf(current) < 0) {
+				tree.setSelection([current]);
+				selectObjects([current]);
+			}
 
 			var registered = new Array<hide.comp.ContextMenu.ContextMenuItem>();
 			var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
@@ -618,29 +622,10 @@ class Level3D extends FileView {
 				});
 			}
 
-
 			new hide.comp.ContextMenu([
 				{ label : "New...", menu : registered },
 				{ label : "Rename", enabled : current != null, click : function() tree.editNode(current) },
-				{ label : "Delete", enabled : current != null, click : function() {
-					function deleteRec(roots:Array<PrefabElement>) {
-						for( o in roots ) {
-							if( o == current ) {
-								properties.clear();
-								var index = roots.indexOf(o);
-								roots.remove(o);
-								undo.change(Custom(function(undo) {
-									if( undo ) roots.insert(index, o) else roots.remove(o);
-									refresh();
-								}));
-								refresh();
-								return;
-							}
-							@:privateAccess deleteRec(o.children);
-						}
-					}
-					deleteRec(data.children);
-				} },
+				{ label : "Delete", enabled : current != null, click : function() deleteElements(curEdit.rootElements) },
 			]);
 		});
 		tree.allowRename = true;
@@ -663,16 +648,6 @@ class Level3D extends FileView {
 		tree.onMove = reparentElement;
 
 		refresh();
-
-		// if( curEdit != null ) {
-		// 	curEdit.cleanup();
-		// 	// var e = curEdit.elt.name;
-		// 	// var elt = data.getPrefabByName(e);
-		// 	// if( elt != null ) selectObject(elt);
-		// 	if(curEdit != null) {
-		// 		selectObjects(curEdit.elements);
-		// 	}
-		// }
 	}
 
 	function update(dt:Float) {
@@ -780,6 +755,26 @@ class Level3D extends FileView {
 				}));
 			}
 		});
+	}
+
+	function deleteElements(elts : Array<PrefabElement>) {
+		var list = [for(e in elts) {elt: e, parent: e.parent, index: e.parent.children.indexOf(e)}];
+		function action(undo) {
+			if( undo ) {
+				for(o in list) {
+					o.parent.children.insert(o.index, o.elt);
+				}
+			}
+			else {
+				for(o in list) {
+					o.parent.children.remove(o.elt);
+				}
+			}
+			deselect();
+			refresh();
+		}
+		action(false);
+		undo.change(Custom(action));
 	}
 
 	function reparentElement(e : PrefabElement, to : PrefabElement, index : Int) {

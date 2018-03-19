@@ -8,6 +8,7 @@
 	"scene.backgroundColor" : "#111111",
 
 	// controls
+	"key.cancel" : "Escape",
 	"key.undo" : "Ctrl-Z",
 	"key.redo" : "Ctrl-Y",
 	"key.save" : "Ctrl-S",
@@ -15,6 +16,8 @@
 	"key.copy" : "Ctrl-C",
 	"key.cut" : "Ctrl-X",
 	"key.paste" : "Ctrl-V",
+	"key.duplicate" : "Ctrl-D",
+	"key.delete" : "Delete",
 
 	"key.search" : "Ctrl-F",
 	"key.rename" : "F2",
