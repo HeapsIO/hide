@@ -477,12 +477,16 @@ class Level3D extends FileView {
 	}
 
 
-	function resetCamera() {
-		var bounds = context.shared.root2d.getBounds();
-		context.shared.root2d.x = -Std.int(bounds.xMin + bounds.width * 0.5);
-		context.shared.root2d.y = -Std.int(bounds.yMin + bounds.height * 0.5);
-		scene.resetCamera(context.shared.root3d, 1.5);
-		cameraController.loadFromCamera();
+	function resetCamera(?top = false) {
+		var targetPt = new h3d.col.Point(0, 0, 0);
+		if(curEdit != null && curEdit.rootObjects.length > 0) {
+			targetPt = curEdit.rootObjects[0].getAbsPos().pos().toPoint();
+		}
+		if(top) 
+			cameraController.set(50, Math.PI/2, 0.001, targetPt);
+		else
+			cameraController.set(50, -4.7, 0.8, targetPt);
+		cameraController.toTarget();
 	}
 
 	function addObject( e : PrefabElement ) {
@@ -562,7 +566,8 @@ class Level3D extends FileView {
 		scene.init(props);
 		tools.saveDisplayKey = "SceneTools";
 
-		tools.addButton("video-camera", "Reset Camera", resetCamera);
+		tools.addButton("video-camera", "Perspective camera", () -> resetCamera(false));
+		tools.addButton("arrow-down", "Top camera", () -> resetCamera(true));
 		tools.addToggle("sun-o", "Enable Lights/Shadows", function(v) {
 			if( !v ) {
 				for( m in context.shared.root3d.getMaterials() ) {
