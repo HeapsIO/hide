@@ -141,6 +141,12 @@ class IconTree<T:{}> extends Component {
 		return revMap.get(o);
 	}
 
+	public function getElement(e : T) : Element {
+		var v = getRev(e);
+		var el = (untyped root.jstree)('get_node', v.id, true);
+		return el;
+	}
+
 	public function editNode( e : T ) {
 		var n = getRev(e).id;
 		(untyped root.jstree)('edit',n);

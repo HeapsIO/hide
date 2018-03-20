@@ -53,6 +53,11 @@ class LevelEditContext extends hide.prefab.EditContext {
 			c();
 		cleanups = [];
 	}
+
+	override function onChange(p : PrefabElement) {
+		var level3D : Level3D = cast view;
+		level3D.onPrefabChange(p);
+	}
 }
 
 typedef AxesOptions = {
@@ -592,13 +597,17 @@ class Level3D extends FileView {
 
 		function makeItem(o:PrefabElement) : hide.comp.IconTree.IconTreeItem<PrefabElement> {
 			var p = o.getHideProps();
-			return {
+			var r : hide.comp.IconTree.IconTreeItem<PrefabElement> = {
 				data : o,
 				text : o.name,
 				icon : "fa fa-"+p.icon,
 				children : o.children.length > 0,
 				state : { opened : true },
 			};
+			if(Reflect.field(o, "visible") == false) {
+				r.li_attr = { "class": "jstree-invisible" };
+			}
+			return r;
 		}
 		tree.get = function(o:PrefabElement) {
 			var objs = o == null ? data.children : Lambda.array(o);
@@ -645,11 +654,21 @@ class Level3D extends FileView {
 				});
 			}
 
-			new hide.comp.ContextMenu([
+			var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [
 				{ label : "New...", menu : registered },
 				{ label : "Rename", enabled : current != null, click : function() tree.editNode(current) },
-				{ label : "Delete", enabled : current != null, click : function() deleteElements(curEdit.rootElements) },
-			]);
+				{ label : "Delete", enabled : current != null, click : function() deleteElements(curEdit.rootElements) }
+			];
+
+			if(current != null && curEdit != null) {
+				var obj3d = Std.instance(current, hide.prefab.Object3D);
+				if(obj3d != null) {
+					menuItems.push({label : obj3d.visible ? "Hide" : "Show", click: function() {
+						setVisible(obj3d, !obj3d.visible);
+					}});
+				}
+			}
+			new hide.comp.ContextMenu(menuItems);
 		});
 		tree.allowRename = true;
 		tree.init();
@@ -826,7 +845,6 @@ class Level3D extends FileView {
 		mat.multiply(mat, parentMat);
 		var prevState = obj3d.save();
 		obj3d.setTransform(mat);
-		obj3d.load(obj3d.save());
 		var newState = obj3d.save();
 
 		undo.change(Custom(function(undo) {
@@ -856,9 +874,29 @@ class Level3D extends FileView {
 		return context.shared.root3d;
 	}
 
+	function setVisible(obj3d : hide.prefab.Object3D, visible: Bool) {
+		obj3d.visible = visible;
+		var o = curEdit.getContext(obj3d).local3d;
+		if(o != null) {
+			obj3d.applyPos(o);
+		}
+		curEdit.onChange(obj3d);
+	}
+
 	function showSearch() {
 		searchBox.show();
 		searchBox.find("input").focus().select();
+	}
+
+	public function onPrefabChange(p: PrefabElement) {
+		var el = tree.getElement(p);
+		var obj3d : hide.prefab.Object3D = cast p;
+		if(obj3d.visible) {
+			el.removeClass("jstree-invisible");
+		}
+		else {
+			el.addClass("jstree-invisible");
+		}
 	}
 
 	static function worldMat(obj: Object) {

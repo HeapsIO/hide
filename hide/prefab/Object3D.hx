@@ -86,7 +86,10 @@ class Object3D extends Prefab {
 					<dt>Visible</dt><dd><input type="checkbox" field="visible"/></dd>
 				</dl>
 			</div>
-		'),this,function(_) applyPos(ctx.getContext(this).local3d));
+		'),this,function(_) {
+			applyPos(ctx.getContext(this).local3d);
+			ctx.onChange(this);
+		});
 		#end
 	}
 

@@ -473,6 +473,13 @@ div.lm_close_tab:hover {
 .jstree.small .jstree-wholerow {
   height: 20px;
 }
+.jstree-invisible a,
+.jstree-invisible i {
+  color: #555 !important;
+}
+.jstree-invisible a {
+  display: inline !important;
+}
 /* Spectrum Color picker */
 div.sp-replacer {
   vertical-align: top;
