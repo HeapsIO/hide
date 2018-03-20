@@ -296,7 +296,7 @@ class Level3D extends FileView {
 						<div class="tab" name="Scene" icon="sitemap">
 							<div class="hide-block">
 								<div class="hide-list hide-scene-tree">
-									<div class="tree"></div>
+									<div class="tree small"></div>
 								</div>
 							</div>
 							<div class="props"></div>
@@ -608,15 +608,16 @@ class Level3D extends FileView {
 		tree.root.parent().contextmenu(function(e) {
 			e.preventDefault();
 			var current = tree.getCurrentOver();
-			if(curEdit == null || curEdit.elements.indexOf(current) < 0) {
+			if(current != null && (curEdit == null || curEdit.elements.indexOf(current) < 0)) {
 				tree.setSelection([current]);
 				selectObjects([current]);
 			}
 
 			var registered = new Array<hide.comp.ContextMenu.ContextMenuItem>();
 			var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
+			var allowed = ["model"];
 			for( ptype in allRegs.keys() ) {
-				if( ptype == "prefab" ) continue;
+				if( allowed.indexOf(ptype) < 0 ) continue;
 				var pcl = allRegs.get(ptype);
 				var props = Type.createEmptyInstance(pcl).getHideProps();
 				registered.push({
@@ -780,16 +781,24 @@ class Level3D extends FileView {
 	}
 
 	function deleteElements(elts : Array<PrefabElement>) {
-		var list = [for(e in elts) {elt: e, parent: e.parent, index: e.parent.children.indexOf(e)}];
+		var contexts = context.shared.contexts;
+		var list = [for(e in elts) {
+			elt: e,
+			ctx: contexts.get(e),
+			parent: e.parent,
+			index: e.parent.children.indexOf(e)
+		}];
 		function action(undo) {
 			if( undo ) {
 				for(o in list) {
 					o.parent.children.insert(o.index, o.elt);
+					contexts.set(o.elt, o.ctx);
 				}
 			}
 			else {
 				for(o in list) {
 					o.parent.children.remove(o.elt);
+					contexts.remove(o.elt);
 				}
 			}
 			deselect();

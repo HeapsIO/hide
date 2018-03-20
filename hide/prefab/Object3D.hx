@@ -49,6 +49,10 @@ class Object3D extends Prefab {
 		x = mat.tx;
 		y = mat.ty;
 		z = mat.tz;
+		var s = mat.getScale();
+		scaleX = s.x;
+		scaleY = s.y;
+		scaleZ = s.z;
 		rotationX = rot.x;
 		rotationY = rot.y;
 		rotationZ = rot.z;
