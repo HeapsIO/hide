@@ -355,8 +355,9 @@ class Level3D extends FileView {
 				var o = ctx.local3d;
 				var mesh = o.getMeshes()[0];
 				var bounds = mesh.primitive.getBounds();
-				var collider = new h3d.col.ObjectCollider(o, bounds);
-				var int = new h3d.scene.Interactive(collider, sh.root3d);
+				var int = new h3d.scene.Interactive(bounds, o);
+				var collider = mesh.primitive.getCollider();
+				int.preciseShape = collider;
 				int.propagateEvents = true;
 				int.onClick = function(e) {
 					if(K.isDown(K.CTRL) && curEdit != null) {
