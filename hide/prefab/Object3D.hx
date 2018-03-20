@@ -29,6 +29,14 @@ class Object3D extends Prefab {
 		visible = obj.visible == null ? true : obj.visible;
 	}
 
+	override function makeInstance(ctx:Context):Context {
+		ctx = ctx.clone(this);
+		ctx.local3d = new h3d.scene.Object(ctx.local3d);
+		ctx.local3d.name = name;
+		applyPos(ctx.local3d);
+		return ctx;
+	}
+	
 	override function save() {
 		var o : Dynamic = {};
 		if( x != 0 ) o.x = x;
@@ -92,5 +100,12 @@ class Object3D extends Prefab {
 		});
 		#end
 	}
+
+
+	override function getHideProps() {
+		return { icon : "genderless", name : "Empty", fileSource : null };
+	}
+
+	static var _ = Library.register("object", Object3D);
 
 }

@@ -19,22 +19,22 @@ class Model extends Object3D {
 	}
 
 	override function makeInstance(ctx:Context):Context {
+		if( source == null)
+			return super.makeInstance(ctx);
 		ctx = ctx.clone(this);
-		if( source != null ) {
-			try {
-				var obj = ctx.loadModel(source);
-				obj.name = name;
-				applyPos(obj);
-				ctx.local3d.addChild(obj);
-				ctx.local3d = obj;
+		try {
+			var obj = ctx.loadModel(source);
+			obj.name = name;
+			applyPos(obj);
+			ctx.local3d.addChild(obj);
+			ctx.local3d = obj;
 
-				if( animation != null )
-					obj.playAnimation(ctx.loadAnimation(animation));
+			if( animation != null )
+				obj.playAnimation(ctx.loadAnimation(animation));
 
-				return ctx;
-			} catch( e : hxd.res.NotFound ) {
-				ctx.onError(e);
-			}
+			return ctx;
+		} catch( e : hxd.res.NotFound ) {
+			ctx.onError(e);
 		}
 		ctx.local3d = new h3d.scene.Object(ctx.local3d);
 		ctx.local3d.name = name;

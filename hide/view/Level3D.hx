@@ -390,6 +390,9 @@ class Level3D extends FileView {
 	function autoName(p : PrefabElement) {
 		var id = 0;
 		var prefix = p.type;
+		if(prefix == "object")
+			prefix = "group";
+			
 		var model = Std.instance(p, hide.prefab.Model);
 		if(model != null && model.source != null) {
 			var path = new haxe.io.Path(model.source);
@@ -635,7 +638,7 @@ class Level3D extends FileView {
 
 			var registered = new Array<hide.comp.ContextMenu.ContextMenuItem>();
 			var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
-			var allowed = ["model"];
+			var allowed = ["model", "object"];
 			for( ptype in allRegs.keys() ) {
 				if( allowed.indexOf(ptype) < 0 ) continue;
 				var pcl = allRegs.get(ptype);
