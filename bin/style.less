@@ -184,7 +184,6 @@ input[type=checkbox] {
 
 .hide-scene-tree {
 	min-height: 500px;
-	zoom: 90%;
 }
 
 .hide-range {
@@ -490,6 +489,34 @@ div.lm_close_tab:hover { background-color : #555 !important; }
 
 .jstree-icon {
 	color : #aaa !important;
+}
+
+.jstree.small {
+	@size: 20px;
+
+	.jstree-node {
+		min-height: @size;
+		line-height: @size;
+		margin-left: 10px;
+		min-width: @size;
+	}
+	.jstree-anchor {
+		line-height: @size;
+		height: @size;
+	}
+	.jstree-icon {
+		width: @size;
+		height: @size;
+		line-height: @size;
+	}
+	.jstree-icon:empty {
+		width: @size;
+		height: @size;
+		line-height: @size;
+	}
+	.jstree-wholerow {
+		height: @size;
+	}
 }
 
 /* Spectrum Color picker */

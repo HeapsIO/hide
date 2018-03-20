@@ -173,7 +173,6 @@ input[type=checkbox]:checked:after {
 }
 .hide-scene-tree {
   min-height: 500px;
-  zoom: 90%;
 }
 .hide-range {
   display: inline-block;
@@ -450,6 +449,29 @@ div.lm_close_tab:hover {
 }
 .jstree-icon {
   color: #aaa !important;
+}
+.jstree.small .jstree-node {
+  min-height: 20px;
+  line-height: 20px;
+  margin-left: 10px;
+  min-width: 20px;
+}
+.jstree.small .jstree-anchor {
+  line-height: 20px;
+  height: 20px;
+}
+.jstree.small .jstree-icon {
+  width: 20px;
+  height: 20px;
+  line-height: 20px;
+}
+.jstree.small .jstree-icon:empty {
+  width: 20px;
+  height: 20px;
+  line-height: 20px;
+}
+.jstree.small .jstree-wholerow {
+  height: 20px;
 }
 /* Spectrum Color picker */
 div.sp-replacer {
