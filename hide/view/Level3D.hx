@@ -573,7 +573,7 @@ class Level3D extends FileView {
 		function makeItem(o:PrefabElement) : hide.comp.IconTree.IconTreeItem<PrefabElement> {
 			var p = o.getHideProps();
 			var r : hide.comp.IconTree.IconTreeItem<PrefabElement> = {
-				data : o,
+				value : o,
 				text : o.name,
 				icon : "fa fa-"+p.icon,
 				children : o.children.length > 0,
@@ -595,7 +595,7 @@ class Level3D extends FileView {
 
 			var registered = new Array<hide.comp.ContextMenu.ContextMenuItem>();
 			var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
-			var allowed = ["model", "object", "layer"];
+			var allowed = ["model", "object", "layer", "box"];
 			for( ptype in allowed ) {
 				var pcl = allRegs.get(ptype);
 				var props = Type.createEmptyInstance(pcl).getHideProps();

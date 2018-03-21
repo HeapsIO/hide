@@ -228,7 +228,7 @@ class Prefab extends FileView {
 		function makeItem(o:PrefabElement) : hide.comp.IconTree.IconTreeItem<PrefabElement> {
 			var p = o.getHideProps();
 			return {
-				data : o,
+				value : o,
 				text : o.name,
 				icon : "fa fa-"+p.icon,
 				children : o.children.length > 0,

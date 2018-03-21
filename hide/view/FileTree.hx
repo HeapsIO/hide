@@ -75,7 +75,7 @@ class FileTree extends FileView {
 				var ext = getExtension(fullPath);
 				var id = ( path == "" ? c : path+"/"+c );
 				content.push({
-					data : id,
+					value : id,
 					text : c,
 					icon : "fa fa-" + (isDir ? "folder" : (ext != null && ext.options.icon != null ? ext.options.icon : "file-text")),
 					children : isDir,

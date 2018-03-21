@@ -1,7 +1,7 @@
 package hide.comp;
 
 typedef IconTreeItem<T> = {
-	var data : T;
+	var value : T;
 	var text : String;
 	@:optional var children : Bool;
 	@:optional var icon : String;
@@ -28,7 +28,7 @@ class IconTree<T:{}> extends Component {
 	public var async : Bool = false;
 
 	public dynamic function get( parent : Null<T> ) : Array<IconTreeItem<T>> {
-		return [{ data : null, text : "get()", children : true }];
+		return [{ value : null, text : "get()", children : true }];
 	}
 
 	public dynamic function onClick( e : T ) : Void {
@@ -52,21 +52,21 @@ class IconTree<T:{}> extends Component {
 	}
 
 	function makeContent(parent:IconTreeItem<T>) {
-		var content : Array<IconTreeItem<T>> = get(parent == null ? null : parent.data);
+		var content : Array<IconTreeItem<T>> = get(parent == null ? null : parent.value);
 		for( c in content ) {
 			var key = (parent == null ? "" : parent.absKey + "/") + c.text;
 			if( c.absKey == null ) c.absKey = key;
 			c.id = "titem$" + (UID++);
 			map.set(c.id, c);
-			if( Std.is(c.data, String) )
-				revMapString.set(cast c.data, c);
+			if( Std.is(c.value, String) )
+				revMapString.set(cast c.value, c);
 			else
-				revMap.set(c.data, c);
+				revMap.set(c.value, c);
 			if( c.state == null ) {
 				var s = getDisplayState(key);
 				if( s != null ) c.state = { opened : s } else c.state = {};
 			}
-			if( !async ) {
+			if( !async && c.children ) {
 				c.state.loaded = true;
 				c.children = cast makeContent(c);
 			}
@@ -87,11 +87,11 @@ class IconTree<T:{}> extends Component {
 						return true;
 					if( operation == "rename_node" ) {
 						if( node.text == value ) return true; // no change
-						return onRename(map.get(node.id).data, value);
+						return onRename(map.get(node.id).value, value);
 					}
 					if( operation == "move_node" ) {
 						if( extra.ref == null ) return true;
-						return onAllowMove(map.get(node.id).data, map.get(extra.ref.id).data);
+						return onAllowMove(map.get(node.id).value, map.get(extra.ref.id).value);
 					}
 					return false;
 				},
@@ -104,34 +104,35 @@ class IconTree<T:{}> extends Component {
 		root.on("click.jstree", function (event) {
 			var node = new Element(event.target).closest("li");
    			var i = map.get(node[0].id);
-			onClick(i.data);
+			onClick(i.value);
 		});
 		root.on("dblclick.jstree", function (event) {
 			var node = new Element(event.target).closest("li");
    			var i = map.get(node[0].id);
 			if( allowRename ) {
-				editNode(i.data);
+				editNode(i.value);
 				return;
 			}
-			onDblClick(i.data);
+			onDblClick(i.value);
 		});
 		root.on("open_node.jstree", function(event, e) {
 			var i = map.get(e.node.id);
 			saveDisplayState(i.absKey, true);
-			onToggle(i.data, true);
+			onToggle(i.value, true);
 		});
 		root.on("close_node.jstree", function(event,e) {
 			var i = map.get(e.node.id);
 			saveDisplayState(i.absKey, false);
-			onToggle(i.data, false);
+			onToggle(i.value, false);
 		});
 		root.on("refresh.jstree", function(_) {
+			trace("refresh done");
 			var old = waitRefresh;
 			waitRefresh = [];
 			for( f in old ) f();
 		});
 		root.on("move_node.jstree", function(event, e) {
-			onMove(map.get(e.node.id).data, e.parent == "#" ? null : map.get(e.parent).data, e.position);
+			onMove(map.get(e.node.id).value, e.parent == "#" ? null : map.get(e.parent).value, e.position);
 		});
 	}
 
@@ -157,7 +158,7 @@ class IconTree<T:{}> extends Component {
 		if( id == null )
 			return null;
 		var i = map.get(id.substr(0, -7)); // remove _anchor
-		return i == null ? null : i.data;
+		return i == null ? null : i.value;
 	}
 
 	public function setSelection( objects : Array<T> ) {
@@ -169,14 +170,17 @@ class IconTree<T:{}> extends Component {
 		}
 	}
 
-	public function refresh( ?onReady : Void -> Void ) {		
+	public function refresh( ?onReady : Void -> Void ) {
+		map = new Map();
+		revMap = new haxe.ds.ObjectMap();
+		revMapString = new haxe.ds.StringMap();
 		if( onReady != null ) waitRefresh.push(onReady);
 		(untyped root.jstree)('refresh',true);
 	}
 
 	public function getSelection() : Array<T> {
 		var ids : Array<String> = (untyped root.jstree)('get_selected');
-		return [for( id in ids ) map.get(id).data];
+		return [for( id in ids ) map.get(id).value];
 	}
 
 	public function revealNode(e : T) {

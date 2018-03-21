@@ -71,7 +71,7 @@ class SceneTree extends IconTree<String> {
 			for( i in 0...root.numChildren ) {
 				var c = root.getChildAt(i);
 				{
-					data : path+i,
+					value :path+i,
 					text : getObjectName(c),
 					icon : "fa fa-" + getIcon(c),
 					children : c.isMesh() || c.numChildren > 0,
@@ -84,7 +84,7 @@ class SceneTree extends IconTree<String> {
 			for( i in 0...materials.length ) {
 				var m = materials[i];
 				elements.push({
-					data : path+"mat:"+i,
+					value :path+"mat:"+i,
 					text : m.name == null ? "Material@"+i : m.name,
 					icon : "fa fa-photo",
 				});
