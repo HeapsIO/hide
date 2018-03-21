@@ -172,7 +172,7 @@ input[type=checkbox]:checked:after {
   padding-right: 5px;
 }
 .hide-scene-tree {
-  min-height: 500px;
+  min-height: 400px;
 }
 .hide-range {
   display: inline-block;
@@ -218,8 +218,9 @@ input[type=checkbox]:checked:after {
 .hide-toolbar .toggle {
   margin-right: 5px;
   display: inline-block;
+  user-select: none;
   border: 1px solid #5a5a5a;
-  width: 20px;
+  min-width: 20px;
   height: 20px;
   padding: 2px;
   text-align: center;
@@ -239,6 +240,13 @@ input[type=checkbox]:checked:after {
   color: white;
   border-color: white;
   background-color: #666;
+}
+.hide-toolbar .button label,
+.hide-toolbar .toggle label {
+  font-size: 12px;
+  margin-left: 6px;
+  margin-right: 6px;
+  text-shadow: none;
 }
 .hide-toolbar .toggle.toggled {
   color: #ddd;
@@ -447,38 +455,41 @@ div.lm_close_tab:hover {
   width: 18px !important;
   top: -1px;
 }
-.jstree-icon {
-  color: #aaa !important;
+.jstree-icon i {
+  color: #aaa;
+}
+.jstree.small a {
+  font-size: 12px;
 }
 .jstree.small .jstree-node {
-  min-height: 20px;
-  line-height: 20px;
-  margin-left: 10px;
-  min-width: 20px;
+  min-height: 18px;
+  line-height: 18px;
+  margin-left: 12px;
+  min-width: 18px;
 }
 .jstree.small .jstree-anchor {
-  line-height: 20px;
-  height: 20px;
+  line-height: 18px;
+  height: 18px;
 }
 .jstree.small .jstree-icon {
-  width: 20px;
-  height: 20px;
-  line-height: 20px;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
 }
 .jstree.small .jstree-icon:empty {
-  width: 20px;
-  height: 20px;
-  line-height: 20px;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
 }
 .jstree.small .jstree-wholerow {
-  height: 20px;
-}
-.jstree-invisible a,
-.jstree-invisible i {
-  color: #555 !important;
+  height: 18px;
 }
 .jstree-invisible a {
-  display: inline !important;
+  color: #555 !important;
+  display: inline;
+}
+.jstree-invisible i {
+  color: #555;
 }
 /* Spectrum Color picker */
 div.sp-replacer {

@@ -183,7 +183,7 @@ input[type=checkbox] {
 }
 
 .hide-scene-tree {
-	min-height: 500px;
+	min-height: 400px;
 }
 
 .hide-range {
@@ -236,8 +236,9 @@ input[type=checkbox] {
 	.button, .toggle {
 		margin-right : 5px;
 		display: inline-block;
+		user-select:none;
 		border: 1px solid rgb(90,90,90);
-		width : 20px;
+		min-width : 20px;
 		height : 20px;
 		padding : 2px;
 		text-align: center;
@@ -254,6 +255,12 @@ input[type=checkbox] {
 			color : white;
 			border-color : white;
 			background-color : #666;
+		}
+		label {
+			font-size: 12px;
+			margin-left: 6px;
+			margin-right: 6px;
+			text-shadow: none;	
 		}
 	}
 
@@ -488,16 +495,22 @@ div.lm_close_tab:hover { background-color : #555 !important; }
 }
 
 .jstree-icon {
-	color : #aaa !important;
+	i {
+		color : #aaa;
+	}
 }
 
 .jstree.small {
-	@size: 20px;
+	@size: 18px;
+
+	a {
+		font-size: 12px;
+	}
 
 	.jstree-node {
 		min-height: @size;
 		line-height: @size;
-		margin-left: 10px;
+		margin-left: 12px;
 		min-width: @size;
 	}
 	.jstree-anchor {
@@ -520,11 +533,12 @@ div.lm_close_tab:hover { background-color : #555 !important; }
 }
 
 .jstree-invisible {
-	a, i {
-		color: #555 !important;
-	}
 	a {
-		display: inline !important;
+		color: #555 !important;
+		display: inline;
+	}
+	i {
+		color: #555;
 	}
 }
 

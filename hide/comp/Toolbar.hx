@@ -3,6 +3,7 @@ package hide.comp;
 typedef ToolToggle = {
 	var element : Element;
 	function toggle( v : Bool ) : Void;
+	function isDown(): Bool;
 }
 
 typedef ToolSelect<T> = {
@@ -25,19 +26,27 @@ class Toolbar extends Component {
 		return e;
 	}
 
-	public function addToggle( icon : String, ?label : String, ?onToggle : Bool -> Void, ?defValue = false ) : ToolToggle {
-		var e = new Element('<div class="toggle" title="${label==null ? "" : label}"><div class="icon fa fa-$icon"/></div>');
+	public function addToggle( icon : String, ?title : String, ?label : String, ?onToggle : Bool -> Void, ?defValue = false ) : ToolToggle {
+		var e = new Element('<div class="toggle" title="${title==null ? "" : title}"><div class="icon fa fa-$icon"/></div>');
+		if(label != null) {
+			new Element('<label>$label</label>').appendTo(e);
+		}
+		var callback = null;
 		e.click(function(_) {
 			e.toggleClass("toggled");
 			this.saveDisplayState("toggle:" + icon, e.hasClass("toggled"));
-			if( onToggle != null ) onToggle(e.hasClass("toggled"));
+			if( callback != null ) callback(e.hasClass("toggled"));
 		});
 		e.appendTo(root);
 		if( defValue ) e.addClass("toggled");
 		var def = getDisplayState("toggle:" + icon);
 		if( def == null ) def = false;
 		if( def != defValue ) e.click();
-		return { element : e, toggle : function(b) e.toggleClass("toggled",b) };
+		callback = onToggle;
+		return {
+			element : e,
+			toggle : function(b) e.toggleClass("toggled",b),
+			isDown: function() return e.hasClass("toggled") };
 	}
 
 	public function addColor( label : String, onChange : Int -> Void, ?alpha : Bool, ?defValue = 0 ) {

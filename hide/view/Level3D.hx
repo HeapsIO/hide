@@ -3,6 +3,7 @@ import hxd.Math;
 import hxd.Key as K;
 
 import hide.prefab.Prefab as PrefabElement;
+import hide.prefab.Object3D;
 import h3d.scene.Object;
 
 class LevelEditContext extends hide.prefab.EditContext {
@@ -248,6 +249,7 @@ class Level3D extends FileView {
 	var light : h3d.scene.DirLight;
 	var lightDirection = new h3d.Vector( 1, 2, -4 );
 	var tree : hide.comp.IconTree<PrefabElement>;
+	var layerButtons : Map<PrefabElement, hide.comp.Toolbar.ToolToggle>;
 
 	var searchBox : Element;
 	var curEdit : LevelEditContext;
@@ -346,45 +348,15 @@ class Level3D extends FileView {
 		data.makeInstance(context);
 		scene.s3d.addChild(sh.root3d);
 		scene.init(props);
-		tree.refresh(callb);
-
-		var all = sh.contexts.keys();
-		for(elt in all) {
-			var ctx = sh.contexts[elt];
-			if(ctx.local3d != null) {
-				var o = ctx.local3d;
-				var meshes = o.getMeshes();
-				var collider : h3d.col.Collider;
-				var bounds = new h3d.col.Bounds();
-				if(meshes.length == 1) {
-					collider = meshes[0].primitive.getCollider();
-					bounds = meshes[0].primitive.getBounds();
-				}
-				else if(meshes.length > 1) {
-					for(m in meshes)
-						bounds.add(m.primitive.getBounds());
-					collider = new h3d.col.Collider.GroupCollider([for(m in meshes) m.primitive.getCollider()]);
-				}
-				else continue;
-				var int = new h3d.scene.Interactive(bounds, o);
-				int.preciseShape = collider;
-				int.propagateEvents = true;
-				int.onClick = function(e) {
-					if(K.isDown(K.CTRL) && curEdit != null) {
-						var list = curEdit.elements.copy();
-						if(list.indexOf(elt) < 0) {
-								list.push(elt);
-							tree.setSelection(list);
-							selectObjects(list);
-						}
-					}
-					else {
-						tree.setSelection([elt]);
-						selectObjects([elt]);
-					}
-				}
+		tree.refresh(function() {
+			for(elt in sh.contexts.keys()) {
+				onPrefabChange(elt);
 			}
-		}
+			if(callb != null) callb();
+		});
+
+		refreshInteractives();
+		refreshLayerIcons();
 	}
 
 	function autoName(p : PrefabElement) {
@@ -392,7 +364,7 @@ class Level3D extends FileView {
 		var prefix = p.type;
 		if(prefix == "object")
 			prefix = "group";
-			
+
 		var model = Std.instance(p, hide.prefab.Model);
 		if(model != null && model.source != null) {
 			var path = new haxe.io.Path(model.source);
@@ -452,7 +424,7 @@ class Level3D extends FileView {
 				m;
 			}];
 
-			var objects3d = [for(e in curEdit.elements) Std.instance(e, hide.prefab.Object3D)];
+			var objects3d = [for(e in curEdit.elements) Std.instance(e, Object3D)];
 			var prevState = [for(o in objects3d) o.save()];			
 			
 			gizmo.onMove = function(translate: h3d.Vector, rot: h3d.Quat) {
@@ -618,9 +590,6 @@ class Level3D extends FileView {
 				children : o.children.length > 0,
 				state : { opened : true },
 			};
-			if(Reflect.field(o, "visible") == false) {
-				r.li_attr = { "class": "jstree-invisible" };
-			}
 			return r;
 		}
 		tree.get = function(o:PrefabElement) {
@@ -638,9 +607,8 @@ class Level3D extends FileView {
 
 			var registered = new Array<hide.comp.ContextMenu.ContextMenuItem>();
 			var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
-			var allowed = ["model", "object"];
-			for( ptype in allRegs.keys() ) {
-				if( allowed.indexOf(ptype) < 0 ) continue;
+			var allowed = ["model", "object", "layer"];
+			for( ptype in allowed ) {
 				var pcl = allRegs.get(ptype);
 				var props = Type.createEmptyInstance(pcl).getHideProps();
 				registered.push({
@@ -675,10 +643,11 @@ class Level3D extends FileView {
 			];
 
 			if(current != null && curEdit != null) {
-				var obj3d = Std.instance(current, hide.prefab.Object3D);
+				var obj3d = Std.instance(current, Object3D);
 				if(obj3d != null) {
 					menuItems.push({label : obj3d.visible ? "Hide" : "Show", click: function() {
-						setVisible(obj3d, !obj3d.visible);
+						var children = current.getAll(Object3D);
+						setVisible(cast children, !obj3d.visible);
 					}});
 				}
 			}
@@ -850,7 +819,7 @@ class Level3D extends FileView {
 		to.children.remove(e);
 		to.children.insert(index, e);
 
-		var obj3d = Std.instance(e, hide.prefab.Object3D);
+		var obj3d = Std.instance(e, Object3D);
 		var obj = getObject(e);
 		var toObj = getObject(to);
 		var mat = worldMat(obj);
@@ -888,13 +857,27 @@ class Level3D extends FileView {
 		return context.shared.root3d;
 	}
 
-	function setVisible(obj3d : hide.prefab.Object3D, visible: Bool) {
-		obj3d.visible = visible;
-		var o = curEdit.getContext(obj3d).local3d;
-		if(o != null) {
-			obj3d.applyPos(o);
+	function setVisible(elements : Array<PrefabElement>, visible: Bool) {
+		// var objects3d = [for(e in elements) Std.instance(e, Object3D)];
+		function apply(b) {
+			for(e in elements) {
+				var obj3d = Std.instance(e, Object3D);
+				if(obj3d == null) continue;
+				obj3d.visible = b;
+				var o = curEdit.getContext(obj3d).local3d;
+				if(o != null) {
+					obj3d.applyPos(o);
+				}
+				curEdit.onChange(obj3d);
+			}
 		}
-		curEdit.onChange(obj3d);
+		apply(visible);
+		undo.change(Custom(function(undo) {
+			if(undo)
+				apply(!visible);
+			else
+				apply(visible);
+		}));
 	}
 
 	function showSearch() {
@@ -902,14 +885,85 @@ class Level3D extends FileView {
 		searchBox.find("input").focus().select();
 	}
 
+	function refreshLayerIcons() {
+		if(layerButtons != null) {
+			for(b in layerButtons)
+				b.element.remove();
+		}
+		layerButtons = new Map<PrefabElement, hide.comp.Toolbar.ToolToggle>();
+		var all = context.shared.contexts.keys();
+		for(elt in all) {
+			var layer = Std.instance(elt, hide.prefab.Layer3D);
+			if(layer == null) continue;
+			layerButtons[elt] = tools.addToggle("file", layer.name, layer.name, function(on) {
+				setVisible([layer], on);
+			}, layer.visible);
+		}
+	}
+
+	function refreshInteractives() {
+		var contexts = context.shared.contexts;
+		var all = contexts.keys();
+		for(elt in all) {
+			var ctx = contexts[elt];
+			if(ctx.local3d != null) {
+				var o = ctx.local3d;
+				var meshes = o.getMeshes();
+				var collider : h3d.col.Collider;
+				var bounds = new h3d.col.Bounds();
+				if(meshes.length == 1) {
+					collider = meshes[0].primitive.getCollider();
+					bounds = meshes[0].primitive.getBounds();
+				}
+				else if(meshes.length > 1) {
+					for(m in meshes)
+						bounds.add(m.primitive.getBounds());
+					collider = new h3d.col.Collider.GroupCollider([for(m in meshes) m.primitive.getCollider()]);
+				}
+				else continue;
+				var int = new h3d.scene.Interactive(bounds, o);
+				int.preciseShape = collider;
+				int.propagateEvents = true;
+				int.onClick = function(e) {
+					if(K.isDown(K.CTRL) && curEdit != null) {
+						var list = curEdit.elements.copy();
+						if(list.indexOf(elt) < 0) {
+								list.push(elt);
+							tree.setSelection(list);
+							selectObjects(list);
+						}
+					}
+					else {
+						tree.setSelection([elt]);
+						selectObjects([elt]);
+					}
+				}
+			}
+		}
+	}
+
 	public function onPrefabChange(p: PrefabElement) {
 		var el = tree.getElement(p);
-		var obj3d : hide.prefab.Object3D = cast p;
-		if(obj3d.visible) {
-			el.removeClass("jstree-invisible");
+		var obj3d  = Std.instance(p, Object3D);
+		if(obj3d != null) {
+			if(obj3d.visible) {
+				el.removeClass("jstree-invisible");
+			}
+			else {
+				el.addClass("jstree-invisible");
+			}
 		}
-		else {
-			el.addClass("jstree-invisible");
+
+		var layer = Std.instance(p, hide.prefab.Layer3D);
+		if(layer != null) {
+			var color = "#" + StringTools.hex(layer.color);
+			el.find("i.jstree-themeicon").first().css("color", color);
+			var lb = layerButtons[p];
+			if(lb != null) {
+				if(layer.visible != lb.isDown())
+					lb.toggle(layer.visible);
+				lb.element.find(".icon").css("color", color);
+			}
 		}
 	}
 
