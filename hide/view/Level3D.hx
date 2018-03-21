@@ -18,28 +18,11 @@ class LevelEditContext extends hide.prefab.EditContext {
 		rootObjects = [];
 		rootElements = [];
 		for(elt in elements) {
-			if(!hasParent(elt, elements)) {
+			if(!Level3D.hasParent(elt, elements)) {
 				rootElements.push(elt);
 				rootObjects.push(getContext(elt).local3d);
 			}
 		}
-	}
-
-	static function hasParent(elt: PrefabElement, list: Array<PrefabElement>) {
-		for(p in list) {
-			if(isParent(elt, p))
-				return true;
-		}
-		return false;
-	}
-
-	static function isParent(elt: PrefabElement, parent: PrefabElement) {
-		var p = elt.parent;
-		while(p != null) {
-			if(p == parent) return true;
-			p = p.parent;
-		}
-		return false;
 	}
 
 	override function rebuild() {
@@ -266,6 +249,7 @@ class Level3D extends FileView {
 		keys.register("copy", onCopy);
 		keys.register("paste", onPaste);
 		keys.register("cancel", deselect);
+		keys.register("selectAll", selectAll);
 		keys.register("duplicate", duplicate);
 		keys.register("delete", () -> deleteElements(curEdit.rootElements));
 		keys.register("search", showSearch);
@@ -380,7 +364,7 @@ class Level3D extends FileView {
 		}
 	}
 
-	function selectObjects( elts : Array<PrefabElement> ) {
+	function selectObjects( elts : Array<PrefabElement>, ?includeTree=true) {
 		if( curEdit != null )
 			curEdit.cleanup();
 		var edit = new LevelEditContext(context, elts);
@@ -390,6 +374,10 @@ class Level3D extends FileView {
 		edit.view = this;
 		edit.cleanups = [];
 		edit.rebuild();
+
+		if(includeTree) {
+			tree.setSelection(elts);
+		}
 
 		var objects = edit.rootObjects;
 		addOutline(objects);
@@ -490,9 +478,7 @@ class Level3D extends FileView {
 			refresh();
 		}));
 		refresh(function() {
-			var elts = [e];
-			tree.setSelection(elts);
-			selectObjects(elts);
+			selectObjects([e]);
 		});
 		if( e.parent == data && data.children.length == 1 )
 			resetCamera();
@@ -601,7 +587,6 @@ class Level3D extends FileView {
 			e.preventDefault();
 			var current = tree.getCurrentOver();
 			if(current != null && (curEdit == null || curEdit.elements.indexOf(current) < 0)) {
-				tree.setSelection([current]);
 				selectObjects([current]);
 			}
 
@@ -639,24 +624,20 @@ class Level3D extends FileView {
 			var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [
 				{ label : "New...", menu : registered },
 				{ label : "Rename", enabled : current != null, click : function() tree.editNode(current) },
-				{ label : "Delete", enabled : current != null, click : function() deleteElements(curEdit.rootElements) }
+				{ label : "Delete", enabled : current != null, click : function() deleteElements(curEdit.rootElements) },
+				{ label : "Select all", click : selectAll },
+				{ label : "Select children", enabled : current != null, click : function() selectObjects(current.getAll(PrefabElement)) },
+				{ label : "Show", enabled : curEdit != null && curEdit.elements.length > 0, click : function() setVisible(curEdit.elements, true) },
+				{ label : "Hide", enabled : curEdit != null && curEdit.elements.length > 0, click : function() setVisible(curEdit.elements, false) },
+				{ label : "Isolate", enabled : curEdit != null && curEdit.elements.length > 0, click : function() isolate(curEdit.elements) },
 			];
 
-			if(current != null && curEdit != null) {
-				var obj3d = Std.instance(current, Object3D);
-				if(obj3d != null) {
-					menuItems.push({label : obj3d.visible ? "Hide" : "Show", click: function() {
-						var children = current.getAll(Object3D);
-						setVisible(cast children, !obj3d.visible);
-					}});
-				}
-			}
 			new hide.comp.ContextMenu(menuItems);
 		});
 		tree.allowRename = true;
 		tree.init();
 		tree.onClick = function(e) {
-			selectObjects(tree.getSelection());
+			selectObjects(tree.getSelection(), false);
 			if(curEdit.rootObjects.length > 0) {
 				cameraController.set(curEdit.rootObjects[0].getAbsPos().pos().toPoint());
 			}
@@ -748,9 +729,26 @@ class Level3D extends FileView {
 		}
 	}
 
+	function selectAll() {
+		selectObjects([for(e in context.shared.contexts.keys()) e]);
+	}
+
 	function deselect() {
 		selectObjects([]);
-		tree.setSelection([]);
+	}
+
+	function isolate(elts : Array<PrefabElement>) {
+		var all = context.shared.contexts.keys();
+		var toShow = elts.copy();
+		var toHide = [];
+		for(e in all) {
+			if(hasParent(e, elts) || hasChild(e, elts))
+				toShow.push(e);
+			else
+				toHide.push(e);
+		}
+		setVisible(toHide, false);
+		setVisible(toShow, true);
 	}
 
 	function duplicate() {
@@ -929,12 +927,10 @@ class Level3D extends FileView {
 						var list = curEdit.elements.copy();
 						if(list.indexOf(elt) < 0) {
 								list.push(elt);
-							tree.setSelection(list);
 							selectObjects(list);
 						}
 					}
 					else {
-						tree.setSelection([elt]);
 						selectObjects([elt]);
 					}
 				}
@@ -1013,6 +1009,31 @@ class Level3D extends FileView {
 				m.removePass(m.getPass("outline"));
 			}
 		}
+	}
+
+	public static function hasParent(elt: PrefabElement, list: Array<PrefabElement>) {
+		for(p in list) {
+			if(isParent(elt, p))
+				return true;
+		}
+		return false;
+	}
+
+	public static function hasChild(elt: PrefabElement, list: Array<PrefabElement>) {
+		for(p in list) {
+			if(isParent(p, elt))
+				return true;
+		}
+		return false;
+	}
+
+	public static function isParent(elt: PrefabElement, parent: PrefabElement) {
+		var p = elt.parent;
+		while(p != null) {
+			if(p == parent) return true;
+			p = p.parent;
+		}
+		return false;
 	}
 
 	static var _ = FileTree.registerExtension(Level3D,["l3d"],{ icon : "sitemap", createNew : "Level3D" });
