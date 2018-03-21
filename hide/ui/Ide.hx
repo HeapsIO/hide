@@ -6,6 +6,7 @@ class Ide {
 	public var projectDir(get,never) : String;
 	public var resourceDir(get,never) : String;
 	public var initializing(default,null) : Bool;
+	public var appPath(get, never): String;
 
 	public var mouseX : Int = 0;
 	public var mouseY : Int = 0;
@@ -218,6 +219,17 @@ class Ide {
 
 	function get_ideProps() return props.global.source.hide;
 	function get_currentProps() return props.user;
+	function get_appPath() {
+		var path = js.Node.process.argv[0].split("\\").join("/").split("/");
+		path.pop();
+		var hidePath = path.join("/");
+		if( !sys.FileSystem.exists(hidePath + "/package.json") ) {
+			var prevPath = new haxe.io.Path(hidePath).dir;
+			if( sys.FileSystem.exists(prevPath + "/hide.js") )
+				hidePath = prevPath;
+		}
+		return hidePath;
+	}
 
 	public function setClipboard( text : String ) {
 		nw.Clipboard.get().set(text, Text);

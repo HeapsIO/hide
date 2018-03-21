@@ -84,9 +84,7 @@ class Props {
 	}
 
 	public static function loadForProject( projectPath : String, resourcePath : String ) {
-		var path = js.Node.process.argv[0].split("\\").join("/").split("/");
-		path.pop();
-		var hidePath = path.join("/");
+		var hidePath = Ide.inst.appPath;
 
 		// in dev mode
 		if( !sys.FileSystem.exists(hidePath + "/package.json") ) {

@@ -81,7 +81,10 @@ class Gizmo3D extends h3d.scene.Object {
 	public function new(scene: hide.comp.Scene) {
 		super(scene.s3d);
 		this.scene = scene;
-		gizmo = hxd.Res.gizmo.toHmd().makeObject();
+		var path = hide.ui.Ide.inst.appPath + "/../res/gizmo.hmd";
+		var data = sys.io.File.getBytes(path);
+		var hmd = hxd.res.Any.fromBytes(path, data).toModel().toHmd();
+		gizmo = hmd.makeObject();
 		addChild(gizmo);
 		debug = new h3d.scene.Graphics(scene.s3d);
 
@@ -680,9 +683,6 @@ class Level3D extends FileView {
 				}
 			}
 			gizmo.update(dt);
-			// var model = scene.s3d.getObjectByName("model0");
-			// model.setPos(gizmo.x, gizmo.y, gizmo.z);
-			// model.setRotationQuat(gizmo.getRotationQuat());
 		}
 		if( autoSync && (currentVersion != undo.currentID || lastSyncChange != properties.lastChange) ) {
 			save();
