@@ -77,6 +77,7 @@ class Gizmo3D extends h3d.scene.Object {
 	public var moving(default, null): Bool;
 
 	var debug: h3d.scene.Graphics;
+	var interactive = null;
 
 	public function new(scene: hide.comp.Scene) {
 		super(scene.s3d);
@@ -102,22 +103,22 @@ class Gizmo3D extends h3d.scene.Object {
 			mat.mainPass.depth(true, Always);
 			mat.blendMode = Alpha;
 			var mesh = hit.getMeshes()[0];
-			var int = new h3d.scene.Interactive(mesh.getCollider(), scene.s3d);
-			int.priority = 100;
+			interactive = new h3d.scene.Interactive(mesh.primitive.getCollider(), o);
+			interactive.priority = 100;
 			var highlight = hxd.Math.colorLerp(color, 0xffffffff, 0.1);
 			color = hxd.Math.colorLerp(color, 0xff000000, 0.2);
 			mat.color.setColor(color);
-			int.onOver = function(e : hxd.Event) {
+			interactive.onOver = function(e : hxd.Event) {
 				mat.color.setColor(highlight);
 				mat.color.w = 1.0;
 			}
-			int.onOut = function(e : hxd.Event) {
+			interactive.onOut = function(e : hxd.Event) {
 				mat.color.setColor(color);
 			}
-			int.onPush = function(e) {
+			interactive.onPush = function(e) {
 				startMove(mode);
 			}
-			int.onRelease = function(e) {
+			interactive.onRelease = function(e) {
 				finishMove();
 			}
 		}
