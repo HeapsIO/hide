@@ -81,7 +81,7 @@ class Gizmo3D extends h3d.scene.Object {
 	public function new(scene: hide.comp.Scene) {
 		super(scene.s3d);
 		this.scene = scene;
-		var path = hide.ui.Ide.inst.appPath + "/../res/gizmo.hmd";
+		var path = hide.ui.Ide.inst.appPath + "/res/gizmo.hmd";
 		var data = sys.io.File.getBytes(path);
 		var hmd = hxd.res.Any.fromBytes(path, data).toModel().toHmd();
 		gizmo = hmd.makeObject();
