@@ -846,12 +846,17 @@ class Level3D extends FileView {
 		return true;
 	}
 
-	function getObject(elt: PrefabElement) {
+	function getContext(elt : PrefabElement) {
 		if(elt != null) {
-			var ctx = context.shared.contexts.get(elt);
-			if(ctx != null)
-				return ctx.local3d;
+			return context.shared.contexts.get(elt);
 		}
+		return null;
+	}
+
+	function getObject(elt: PrefabElement) {
+		var ctx = getContext(elt);
+		if(ctx != null)
+			return ctx.local3d;
 		return context.shared.root3d;
 	}
 
@@ -862,11 +867,11 @@ class Level3D extends FileView {
 				var obj3d = Std.instance(e, Object3D);
 				if(obj3d == null) continue;
 				obj3d.visible = b;
-				var o = curEdit.getContext(obj3d).local3d;
+				var o = getContext(obj3d).local3d;
 				if(o != null) {
 					obj3d.applyPos(o);
 				}
-				curEdit.onChange(obj3d);
+				onPrefabChange(obj3d);
 			}
 		}
 		apply(visible);
