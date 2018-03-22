@@ -72,12 +72,13 @@ class Gizmo3D extends h3d.scene.Object {
 	var updateFunc: Float -> Void;
 
 	public var onStartMove: Void -> Void;
-	public var onMove: h3d.Vector -> h3d.Quat -> Void;
+	public var onMove: h3d.Vector -> h3d.Quat -> h3d.Vector -> Void;
 	public var onFinishMove: Void -> Void;
 	public var moving(default, null): Bool;
 
 	var debug: h3d.scene.Graphics;
 	var interactive = null;
+	var isScaling = false;
 
 	public function new(scene: hide.comp.Scene) {
 		super(scene.s3d);
@@ -137,6 +138,7 @@ class Gizmo3D extends h3d.scene.Object {
 	public function startMove(mode: TransformMode, ?duplicating=false) {
 		moving = true;
 		if(onStartMove != null) onStartMove();
+		var startMat = getAbsPos().clone();
 		var startPos = getAbsPos().pos().toPoint();
 		var dragPlane = null;
 		var cam = scene.s3d.camera;
@@ -159,21 +161,28 @@ class Gizmo3D extends h3d.scene.Object {
 			var curPt = getDragPoint(dragPlane);
 			var delta = curPt.sub(startDragPt);
 			var translate = new h3d.Vector(0,0,0);
+			var quat = new h3d.Quat();			
 			var speedFactor = K.isDown(K.SHIFT) ? 0.1 : 1.0;
 			delta.scale(speedFactor);
-			var quat = new h3d.Quat();
 
 			inline function snap(m: Float) {
 				return moveStep > 0.0 && K.isDown(K.CTRL) ? hxd.Math.round(m / moveStep) * moveStep : m;
 			}
 
-			if(mode == MoveX || mode == MoveXY || mode == MoveZX) translate.x = snap(delta.x);
-			if(mode == MoveY || mode == MoveYZ || mode == MoveXY) translate.y = snap(delta.y);
-			if(mode == MoveZ || mode == MoveZX || mode == MoveYZ) translate.z = snap(delta.z);
+			if(isScaling) {
+				if(mode == MoveX) translate.x = snap(delta.dot(startMat.front().toPoint()));
+				if(mode == MoveY) translate.y = snap(delta.dot(startMat.right().toPoint()));
+				if(mode == MoveZ) translate.z = snap(delta.dot(startMat.up().toPoint()));
+			}
+			else {
+				if(mode == MoveX || mode == MoveXY || mode == MoveZX) translate.x = snap(delta.x);
+				if(mode == MoveY || mode == MoveYZ || mode == MoveXY) translate.y = snap(delta.y);
+				if(mode == MoveZ || mode == MoveZX || mode == MoveYZ) translate.z = snap(delta.z);
 			
-			x = (startPos.x + translate.x);
-			y = (startPos.y + translate.y);
-			z = (startPos.z + translate.z);
+				x = (startPos.x + translate.x);
+				y = (startPos.y + translate.y);
+				z = (startPos.z + translate.z);
+			}
 
 			if(mode == RotateX || mode == RotateY || mode == RotateZ) {
 				var v1 = startDragPt.sub(startPos);
@@ -188,7 +197,19 @@ class Gizmo3D extends h3d.scene.Object {
 				setRotationQuat(quat);
 			}
 
-			if(onMove != null) onMove(translate, quat);
+			if(onMove != null) {
+				if(isScaling) {
+					inline function f(x: Float) {
+						return x > 0 ? (x + 1) : 1 / (1 - x);
+					}
+					translate.x = f(translate.x);
+					translate.y = f(translate.y);
+					translate.z = f(translate.z);
+					onMove(null, null, translate);
+				}
+				else
+					onMove(translate, quat, null);
+			}
 
 			if(duplicating && K.isPressed(K.MOUSE_LEFT)) {
 				finishMove();
@@ -216,6 +237,11 @@ class Gizmo3D extends h3d.scene.Object {
 		var gpos = gizmo.getAbsPos().pos();
 		var distToCam = cam.pos.sub(gpos).length();
 		gizmo.setScale(distToCam / 30 );
+
+		isScaling = K.isDown(K.ALT);
+		for(n in ["xRotate", "yRotate", "zRotate", "xy", "xz", "yz"]) {
+			gizmo.getObjectByName(n).visible = !isScaling;
+		}
 
 		if(updateFunc != null) {
 			updateFunc(dt);
@@ -418,10 +444,13 @@ class Level3D extends FileView {
 			var objects3d = [for(e in curEdit.elements) Std.instance(e, Object3D)];
 			var prevState = [for(o in objects3d) o.save()];			
 			
-			gizmo.onMove = function(translate: h3d.Vector, rot: h3d.Quat) {
+			gizmo.onMove = function(translate: h3d.Vector, rot: h3d.Quat, scale: h3d.Vector) {
 				var transf = new h3d.Matrix();
-				rot.saveToMatrix(transf);
-				transf.translate(translate.x, translate.y, translate.z);
+				transf.identity();
+				if(rot != null)
+					rot.saveToMatrix(transf);
+				if(translate != null)
+					transf.translate(translate.x, translate.y, translate.z);
 				for(i in 0...objects.length) {
 					var newMat = localMats[i].clone();
 					newMat.multiply(newMat, transf);
@@ -429,6 +458,9 @@ class Level3D extends FileView {
 					var invParent = objects[i].parent.getAbsPos().clone();
 					invParent.invert();
 					newMat.multiply(newMat, invParent);
+					if(scale != null) {
+						newMat.prependScale(scale.x, scale.y, scale.z);
+					}
 					var obj3d = objects3d[i];
 					obj3d.setTransform(newMat);
 					obj3d.applyPos(objects[i]);
@@ -673,10 +705,19 @@ class Level3D extends FileView {
 		if(gizmo != null) {
 			if(!gizmo.moving) {
 				// Snap Gizmo at center of objects
+				gizmo.getRotationQuat().identity();
 				if(curEdit != null && curEdit.rootObjects.length > 0) {
 					var pos = getPivot(curEdit.rootObjects);
 					gizmo.visible = true;
 					gizmo.setPos(pos.x, pos.y, pos.z);
+
+					if(curEdit.rootObjects.length == 1 && K.isDown(K.ALT)) {
+						var obj = curEdit.rootObjects[0];
+						var mat = worldMat(obj);
+						var s = mat.getScale();
+						mat.prependScale(1.0 / s.x, 1.0 / s.y, 1.0 / s.z);
+						gizmo.getRotationQuat().initRotateMatrix(mat);
+					}
 				}
 				else {
 					gizmo.visible = false;

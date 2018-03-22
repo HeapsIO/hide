@@ -126,7 +126,6 @@ class IconTree<T:{}> extends Component {
 			onToggle(i.value, false);
 		});
 		root.on("refresh.jstree", function(_) {
-			trace("refresh done");
 			var old = waitRefresh;
 			waitRefresh = [];
 			for( f in old ) f();
