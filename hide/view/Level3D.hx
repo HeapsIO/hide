@@ -336,15 +336,14 @@ class Level3D extends FileView {
 		data.makeInstance(context);
 		scene.s3d.addChild(sh.root3d);
 		scene.init(props);
+		refreshInteractives();
+		refreshLayerIcons();
 		tree.refresh(function() {
 			for(elt in sh.contexts.keys()) {
 				onPrefabChange(elt);
 			}
 			if(callb != null) callb();
 		});
-
-		refreshInteractives();
-		refreshLayerIcons();
 	}
 
 	function autoName(p : PrefabElement) {
@@ -958,13 +957,18 @@ class Level3D extends FileView {
 
 		var layer = Std.instance(p, hide.prefab.Layer3D);
 		if(layer != null) {
-			var color = "#" + StringTools.hex(layer.color);
+			var color = "#" + StringTools.hex(layer.color, 6);
 			el.find("i.jstree-themeicon").first().css("color", color);
 			var lb = layerButtons[p];
 			if(lb != null) {
 				if(layer.visible != lb.isDown())
 					lb.toggle(layer.visible);
 				lb.element.find(".icon").css("color", color);
+			}
+
+			var boxes = layer.getAll(hide.prefab.Box);
+			for(box in boxes) {
+				box.setColor(layer.color);
 			}
 		}
 	}
