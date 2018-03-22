@@ -785,14 +785,24 @@ class Level3D extends FileView {
 		var all = context.shared.contexts.keys();
 		var toShow = elts.copy();
 		var toHide = [];
-		for(e in all) {
-			if(hasParent(e, elts) || hasChild(e, elts))
-				toShow.push(e);
-			else
-				toHide.push(e);
+		function hideSiblings(elt: PrefabElement) {
+			var p = elt.parent;
+			for(c in p.children) {
+				var needsVisible = c == elt
+					|| toShow.indexOf(c) >= 0
+					|| hasChild(c, toShow);
+				if(!needsVisible) {
+					toHide.push(c);
+				}
+			}
+			if(p != data) {
+				hideSiblings(p);
+			}
+		}
+		for(e in toShow) {
+			hideSiblings(e);
 		}
 		setVisible(toHide, false);
-		setVisible(toShow, true);
 	}
 
 	function duplicate() {
@@ -905,25 +915,31 @@ class Level3D extends FileView {
 	}
 
 	function setVisible(elements : Array<PrefabElement>, visible: Bool) {
-		// var objects3d = [for(e in elements) Std.instance(e, Object3D)];
-		function apply(b) {
-			for(e in elements) {
-				var obj3d = Std.instance(e, Object3D);
-				if(obj3d == null) continue;
-				obj3d.visible = b;
-				var o = getContext(obj3d).local3d;
-				if(o != null) {
-					obj3d.applyPos(o);
-				}
-				onPrefabChange(obj3d);
+		var cache = [];
+		for(e in elements) {
+			var o = Std.instance(e, Object3D);
+			if(o != null) {
+				cache.push({o: o, vis: o.visible});
 			}
 		}
-		apply(visible);
+
+		function apply(b) {
+			for(c in cache) {
+				c.o.visible = b ? visible : c.vis;
+				var obj = getContext(c.o).local3d;
+				if(obj != null) {
+					c.o.applyPos(obj);
+				}
+				onPrefabChange(c.o);
+			}
+		}
+
+		apply(true);
 		undo.change(Custom(function(undo) {
 			if(undo)
-				apply(!visible);
+				apply(false);
 			else
-				apply(visible);
+				apply(true);
 		}));
 	}
 
