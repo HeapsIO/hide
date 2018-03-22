@@ -77,8 +77,8 @@ class Gizmo3D extends h3d.scene.Object {
 	public var moving(default, null): Bool;
 
 	var debug: h3d.scene.Graphics;
-	var interactive = null;
 	var isScaling = false;
+	var intOverlay : h2d.Interactive;
 
 	public function new(scene: hide.comp.Scene) {
 		super(scene.s3d);
@@ -104,7 +104,7 @@ class Gizmo3D extends h3d.scene.Object {
 			mat.mainPass.depth(true, Always);
 			mat.blendMode = Alpha;
 			var mesh = hit.getMeshes()[0];
-			interactive = new h3d.scene.Interactive(mesh.primitive.getCollider(), o);
+			var interactive = new h3d.scene.Interactive(mesh.primitive.getCollider(), o);
 			interactive.priority = 100;
 			var highlight = hxd.Math.colorLerp(color, 0xffffffff, 0.1);
 			color = hxd.Math.colorLerp(color, 0xff000000, 0.2);
@@ -143,6 +143,7 @@ class Gizmo3D extends h3d.scene.Object {
 		var dragPlane = null;
 		var cam = scene.s3d.camera;
 		var norm = startPos.sub(cam.pos.toPoint());
+		intOverlay = new h2d.Interactive(40000, 40000, scene.s2d);
 		switch(mode) {
 			case MoveX: norm.x = 0;
 			case MoveY: norm.y = 0;
@@ -224,6 +225,8 @@ class Gizmo3D extends h3d.scene.Object {
 		getRotationQuat().identity();
 		posChanged = true;
 		moving = false;
+		intOverlay.remove();
+		intOverlay = null;
 	}
 
 	function getDragPoint(plane: h3d.col.Plane) {
@@ -950,6 +953,9 @@ class Level3D extends FileView {
 		var all = contexts.keys();
 		for(elt in all) {
 			var ctx = contexts[elt];
+			var cls = Type.getClass(elt);
+			if(!(cls == hide.prefab.Model || cls == hide.prefab.Box))
+				continue;
 			if(ctx.local3d != null) {
 				var o = ctx.local3d;
 				var meshes = o.getMeshes();
