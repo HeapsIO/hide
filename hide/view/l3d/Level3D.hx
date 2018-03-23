@@ -25,8 +25,6 @@ class Level3D extends FileView {
 	var searchBox : Element;
 	var curEdit : LevelEditContext;
 	var gizmo : Gizmo;
-
-	// autoSync
 	var autoSync : Bool;
 	var currentVersion : Int = 0;
 	var lastSyncChange : Float = 0.;
@@ -673,6 +671,23 @@ class Level3D extends FileView {
 		}
 	}
 
+	function canGroupSelection() {
+		var elts = curEdit.rootElements;
+		if(elts.length == 0)
+			return false;
+
+		if(elts.length == 1)
+			return true;
+
+		// Only allow grouping of sibling elements
+		var parent = elts[0].parent;
+		for(e in elts)
+			if(e.parent != parent)
+				return false;
+		
+		return true;
+	}
+
 	function groupSelection() {
 		if(!canGroupSelection())
 			return;
@@ -951,23 +966,6 @@ class Level3D extends FileView {
 				m.removePass(m.getPass("outline"));
 			}
 		}
-	}
-
-	function canGroupSelection() {
-		var elts = curEdit.rootElements;
-		if(elts.length == 0)
-			return false;
-
-		if(elts.length == 1)
-			return true;
-
-		// Only allow grouping of sibling elements
-		var parent = elts[0].parent;
-		for(e in elts)
-			if(e.parent != parent)
-				return false;
-		
-		return true;
 	}
 
 	public static function hasParent(elt: PrefabElement, list: Array<PrefabElement>) {
