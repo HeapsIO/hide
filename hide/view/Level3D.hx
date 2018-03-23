@@ -299,6 +299,7 @@ class Level3D extends FileView {
 		keys.register("cancel", deselect);
 		keys.register("selectAll", selectAll);
 		keys.register("duplicate", duplicate);
+		keys.register("group", groupSelection);
 		keys.register("delete", () -> deleteElements(curEdit.rootElements));
 		keys.register("search", showSearch);
 	}
@@ -703,6 +704,7 @@ class Level3D extends FileView {
 				{ label : "Show", enabled : curEdit != null && curEdit.elements.length > 0, click : function() setVisible(curEdit.elements, true) },
 				{ label : "Hide", enabled : curEdit != null && curEdit.elements.length > 0, click : function() setVisible(curEdit.elements, false) },
 				{ label : "Isolate", enabled : curEdit != null && curEdit.elements.length > 0, click : function() isolate(curEdit.elements) },
+				{ label : "Group", enabled : curEdit != null && canGroupSelection(), click : groupSelection },
 			];
 
 			new hide.comp.ContextMenu(menuItems);
@@ -856,24 +858,26 @@ class Level3D extends FileView {
 		var contexts = context.shared.contexts;
 		var list = [for(e in elts) {
 			elt: e,
-			ctx: contexts.get(e),
 			parent: e.parent,
 			index: e.parent.children.indexOf(e)
 		}];
+		var oldContexts = contexts.copy();
+		for(e in elts) {
+			for(c in e.getAll(PrefabElement))
+				contexts.remove(c);
+		}
+		var newContexts = contexts.copy();
 		function action(undo) {
 			if( undo ) {
-				for(o in list) {
+				for(o in list)
 					o.parent.children.insert(o.index, o.elt);
-					contexts.set(o.elt, o.ctx);
-				}
+				context.shared.contexts = oldContexts;
 			}
 			else {
-				for(o in list) {
+				for(o in list)
 					o.parent.children.remove(o.elt);
-					contexts.remove(o.elt);
-				}
+				context.shared.contexts = newContexts;				
 			}
-			deselect();
 			refresh();
 		}
 		action(false);
@@ -883,6 +887,16 @@ class Level3D extends FileView {
 	function reparentElement(e : PrefabElement, to : PrefabElement, index : Int) {
 		if( to == null )
 			to = data;
+
+		var undoFunc = reparentImpl(e, to, index);
+		undo.change(Custom(function(undo) {
+			undoFunc(undo);
+			refresh();
+		}));
+		refresh();
+	}
+
+	function reparentImpl(e : PrefabElement, to: PrefabElement, index: Int) {
 		var prev = e.parent;
 		var prevIndex = prev.children.indexOf(e);
 		e.parent = to;
@@ -900,7 +914,7 @@ class Level3D extends FileView {
 		obj3d.setTransform(mat);
 		var newState = obj3d.save();
 
-		undo.change(Custom(function(undo) {
+		return function(undo) {
 			if( undo ) {
 				e.parent = prev;
 				prev.children.remove(e);
@@ -911,11 +925,53 @@ class Level3D extends FileView {
 				to.children.remove(e);
 				to.children.insert(index, e);
 				obj3d.load(newState);
+			};
+		}
+	}
+
+	function groupSelection() {
+		if(!canGroupSelection())
+			return;
+
+		var elts = curEdit.rootElements;
+		var parent = elts[0].parent;
+		var parentMat = getContext(parent).local3d.getAbsPos();
+		var invParentMat = parentMat.clone();
+		invParentMat.invert();
+
+		var pivot = getPivot(curEdit.rootObjects);
+		var local = new h3d.Matrix();
+		local.initTranslate(pivot.x, pivot.y, pivot.z);
+		local.multiply(local, invParentMat);
+		var group = new hide.prefab.Object3D(parent);
+		@:privateAccess group.type = "object";
+		autoName(group);
+		group.x = local.tx;
+		group.y = local.ty;
+		group.z = local.tz;
+		group.makeInstance(getContext(parent));
+		var groupCtx = getContext(group);
+
+		var undoes = [for(e in elts) reparentImpl(e, group, 0)];
+		undo.change(Custom(function(undo) {
+			if(undo) {
+				group.parent = null;
+				context.shared.contexts.remove(group);
+				for(u in undoes)
+					u(true);
 			}
-			refresh();
+			else {
+				group.parent = parent;
+				context.shared.contexts.set(group, groupCtx);
+				for(u in undoes)
+					u(false);
+			}
+			if(undo)
+				refresh(deselect);
+			else
+				refresh(()->selectObjects([group]));
 		}));
-		refresh();
-		return true;
+		refresh(() -> selectObjects([group]));
 	}
 
 	function getContext(elt : PrefabElement) {
@@ -1151,6 +1207,23 @@ class Level3D extends FileView {
 				m.removePass(m.getPass("outline"));
 			}
 		}
+	}
+
+	function canGroupSelection() {
+		var elts = curEdit.rootElements;
+		if(elts.length == 0)
+			return false;
+
+		if(elts.length == 1)
+			return true;
+
+		// Only allow grouping of sibling elements
+		var parent = elts[0].parent;
+		for(e in elts)
+			if(e.parent != parent)
+				return false;
+		
+		return true;
 	}
 
 	public static function hasParent(elt: PrefabElement, list: Array<PrefabElement>) {

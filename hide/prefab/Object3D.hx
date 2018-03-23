@@ -103,7 +103,7 @@ class Object3D extends Prefab {
 
 
 	override function getHideProps() {
-		return { icon : "folder-open", name : "Empty", fileSource : null };
+		return { icon : "folder-open", name : "Group", fileSource : null };
 	}
 
 	static var _ = Library.register("object", Object3D);
