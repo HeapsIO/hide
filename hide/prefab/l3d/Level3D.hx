@@ -1,4 +1,4 @@
-package hide.prefab;
+package hide.prefab.l3d;
 
 class Level3D extends Prefab {
 

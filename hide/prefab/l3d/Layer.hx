@@ -1,6 +1,6 @@
-package hide.prefab;
+package hide.prefab.l3d;
 
-class Layer3D extends Object3D {
+class Layer extends Object3D {
 
     public var locked = false;
     public var color = 0xffffffff;
@@ -59,5 +59,5 @@ class Layer3D extends Object3D {
 		return { icon : "file", name : "Layer", fileSource : null };
 	}
 
-	static var _ = Library.register("layer", Layer3D);
+	static var _ = Library.register("layer", Layer);
 }
