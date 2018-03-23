@@ -6,16 +6,6 @@ import hide.prefab.Prefab as PrefabElement;
 import hide.prefab.Object3D;
 import h3d.scene.Object;
 
-class CamController extends h3d.scene.CameraController {
-	public function new(?distance, ?parent) {
-		super(distance, parent);
-		friction = 0.9;
-		panSpeed = 0.6;
-		zoomAmount = 1.05;
-		smooth = 0.2;
-	}
-}
-
 class Level3D extends FileView {
 
 	var data : hide.prefab.Library;
@@ -24,7 +14,7 @@ class Level3D extends FileView {
 
 	var tools : hide.comp.Toolbar;
 	var scene : hide.comp.Scene;
-	var cameraController : CamController;
+	var cameraController : h3d.scene.CameraController;
 	var properties : hide.comp.PropsEditor;
 	var light : h3d.scene.DirLight;
 	var lightDirection = new h3d.Vector( 1, 2, -4 );
@@ -351,7 +341,11 @@ class Level3D extends FileView {
 			grid.lineStyle(0);
 		}
 
-		cameraController = new CamController(scene.s3d);
+		cameraController = new h3d.scene.CameraController(scene.s3d);
+		cameraController.friction = 0.9;
+		cameraController.panSpeed = 0.6;
+		cameraController.zoomAmount = 1.05;
+		cameraController.smooth = 0.7;
 
 		this.saveDisplayKey = "Scene:" + state.path;
 
