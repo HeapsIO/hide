@@ -248,6 +248,11 @@ input[type=checkbox]:checked:after {
   margin-right: 6px;
   text-shadow: none;
 }
+.hide-toolbar .button label.locked,
+.hide-toolbar .toggle label.locked {
+  color: #000;
+  font-style: italic;
+}
 .hide-toolbar .toggle.toggled {
   color: #ddd;
   background: #777;
@@ -490,6 +495,13 @@ div.lm_close_tab:hover {
 }
 .jstree-invisible i {
   color: #555;
+}
+a.jstree-locked {
+  color: #666 !important;
+  font-style: italic;
+}
+a.jstree-locked::after {
+  content: " (locked)";
 }
 /* Spectrum Color picker */
 div.sp-replacer {

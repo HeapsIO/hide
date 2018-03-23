@@ -28,7 +28,9 @@ class Layer3D extends Object3D {
 					<dt>Color</dt><dd><input name="colorVal"/></dd>
 				</dl>
 			</div>
-		'),this);
+		'),this, function(_) {
+            ctx.onChange(this);
+        });
         var colorInput = props.find('input[name="colorVal"]');
         var picker = new hide.comp.ColorPicker(colorInput, false);
         picker.value = color;

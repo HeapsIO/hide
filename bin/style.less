@@ -262,6 +262,10 @@ input[type=checkbox] {
 			margin-right: 6px;
 			text-shadow: none;	
 		}
+		label.locked {
+			color: #000;
+			font-style: italic;
+		}
 	}
 
 	.toggle.toggled {
@@ -540,6 +544,14 @@ div.lm_close_tab:hover { background-color : #555 !important; }
 	i {
 		color: #555;
 	}
+}
+
+a.jstree-locked {
+	color: #666 !important;
+	font-style: italic;
+}
+a.jstree-locked::after {
+	content: " (locked)";
 }
 
 /* Spectrum Color picker */

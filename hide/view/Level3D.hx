@@ -280,6 +280,7 @@ class Level3D extends FileView {
 	var lightDirection = new h3d.Vector( 1, 2, -4 );
 	var tree : hide.comp.IconTree<PrefabElement>;
 	var layerButtons : Map<PrefabElement, hide.comp.Toolbar.ToolToggle>;
+	var interactives : Map<PrefabElement, h3d.scene.Interactive>;
 
 	var searchBox : Element;
 	var curEdit : LevelEditContext;
@@ -1000,6 +1001,7 @@ class Level3D extends FileView {
 
 	function refreshInteractives() {
 		var contexts = context.shared.contexts;
+		interactives = new Map();
 		var all = contexts.keys();
 		for(elt in all) {
 			var ctx = contexts[elt];
@@ -1022,6 +1024,7 @@ class Level3D extends FileView {
 				var meshCollider = new h3d.col.Collider.GroupCollider([for(m in meshes) m.getGlobalCollider()]);
 				var boundsCollider = new h3d.col.ObjectCollider(o, bounds);
 				var int = new h3d.scene.Interactive(boundsCollider, o);
+				interactives.set(elt, int);
 				int.ignoreParentTransform = true;
 				int.preciseShape = meshCollider;
 				int.propagateEvents = true;
@@ -1072,16 +1075,32 @@ class Level3D extends FileView {
 		if(layer != null) {
 			var color = "#" + StringTools.hex(layer.color, 6);
 			el.find("i.jstree-themeicon").first().css("color", color);
+			if(layer.locked) 
+				el.find("a").first().addClass("jstree-locked");
+			else
+				el.find("a").first().removeClass("jstree-locked");
+
 			var lb = layerButtons[p];
 			if(lb != null) {
 				if(layer.visible != lb.isDown())
 					lb.toggle(layer.visible);
 				lb.element.find(".icon").css("color", color);
+				var label = lb.element.find("label");
+				if(layer.locked) 
+					label.addClass("locked");
+				else 
+					label.removeClass("locked");
 			}
 
 			var boxes = layer.getAll(hide.prefab.Box);
 			for(box in boxes) {
 				box.setColor(layer.color);
+				interactives.get(box).visible = !layer.locked;				
+			}
+
+			var models = layer.getAll(hide.prefab.Model);
+			for(m in models) {
+				interactives.get(m).visible = !layer.locked;
 			}
 		}
 	}
