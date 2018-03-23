@@ -144,6 +144,7 @@ class Gizmo3D extends h3d.scene.Object {
 		var cam = scene.s3d.camera;
 		var norm = startPos.sub(cam.pos.toPoint());
 		intOverlay = new h2d.Interactive(40000, 40000, scene.s2d);
+		intOverlay.onPush = function(e) finishMove();
 		switch(mode) {
 			case MoveX: norm.x = 0;
 			case MoveY: norm.y = 0;
@@ -212,7 +213,7 @@ class Gizmo3D extends h3d.scene.Object {
 					onMove(translate, quat, null);
 			}
 
-			if(duplicating && K.isPressed(K.MOUSE_LEFT)) {
+			if(duplicating && K.isPressed(K.MOUSE_LEFT) || K.isPressed(K.ESCAPE)) {
 				finishMove();
 			}
 		}
@@ -225,8 +226,10 @@ class Gizmo3D extends h3d.scene.Object {
 		getRotationQuat().identity();
 		posChanged = true;
 		moving = false;
-		intOverlay.remove();
-		intOverlay = null;
+		if(intOverlay != null) {
+			intOverlay.remove();
+			intOverlay = null;
+		}
 	}
 
 	function getDragPoint(plane: h3d.col.Plane) {
@@ -964,6 +967,23 @@ class Level3D extends FileView {
 		}
 	}
 
+	function getSelfMeshes(p : PrefabElement) {
+		var childObjs = [for(c in p.children) getContext(c).local3d];
+		var ret = [];
+		function rec(o : Object) {
+			var m = Std.instance(o, h3d.scene.Mesh);
+			if(m != null) ret.push(m);
+			for(i in 0...o.numChildren) {
+				var child = o.getChildAt(i);
+				if(childObjs.indexOf(child) < 0) {
+					rec(child);
+				}
+			}
+		}
+		rec(getContext(p).local3d);
+		return ret;
+	}
+
 	function refreshInteractives() {
 		var contexts = context.shared.contexts;
 		var all = contexts.keys();
@@ -974,23 +994,25 @@ class Level3D extends FileView {
 				continue;
 			if(ctx.local3d != null) {
 				var o = ctx.local3d;
-				var meshes = o.getMeshes();
-				var collider : h3d.col.Collider;
+				var meshes = getSelfMeshes(elt);
+				var invRootMat = o.getAbsPos().clone();
+				invRootMat.invert();
 				var bounds = new h3d.col.Bounds();
-				if(meshes.length == 1) {
-					collider = meshes[0].primitive.getCollider();
-					bounds = meshes[0].primitive.getBounds();
+				for(mesh in meshes) {
+					var localMat = mesh.getAbsPos().clone();
+					localMat.multiply(localMat, invRootMat);
+					var lb = mesh.primitive.getBounds().clone();
+					lb.transform(localMat);
+					bounds.add(lb);
 				}
-				else if(meshes.length > 1) {
-					for(m in meshes)
-						bounds.add(m.primitive.getBounds());
-					collider = new h3d.col.Collider.GroupCollider([for(m in meshes) m.primitive.getCollider()]);
-				}
-				else continue;
-				var int = new h3d.scene.Interactive(bounds, o);
-				int.preciseShape = collider;
+				var meshCollider = new h3d.col.Collider.GroupCollider([for(m in meshes) m.getGlobalCollider()]);
+				var boundsCollider = new h3d.col.ObjectCollider(o, bounds);
+				var int = new h3d.scene.Interactive(boundsCollider, o);
+				int.ignoreParentTransform = true;
+				int.preciseShape = meshCollider;
 				int.propagateEvents = true;
 				int.onClick = function(e) {
+					e.propagate = false;
 					if(K.isDown(K.CTRL) && curEdit != null) {
 						var list = curEdit.elements.copy();
 						if(list.indexOf(elt) < 0) {
