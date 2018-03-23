@@ -213,7 +213,7 @@ class Gizmo3D extends h3d.scene.Object {
 					onMove(translate, quat, null);
 			}
 
-			if(duplicating && K.isPressed(K.MOUSE_LEFT) || K.isPressed(K.ESCAPE)) {
+			if(duplicating && K.isPressed(K.MOUSE_LEFT) || K.isPressed(K.ESCAPE) || (!duplicating && !K.isDown(K.MOUSE_LEFT))) {
 				finishMove();
 			}
 		}
@@ -255,6 +255,17 @@ class Gizmo3D extends h3d.scene.Object {
 	}
 }
 
+class CamController extends h3d.scene.CameraController {
+
+	public function new(?distance, ?parent) {
+		super(distance, parent);
+		friction = 0.9;
+		panSpeed = 0.6;
+		zoomAmount = 1.05;
+		smooth = 0.2;
+	}
+}
+
 class Level3D extends FileView {
 
 	var data : hide.prefab.Library;
@@ -263,7 +274,7 @@ class Level3D extends FileView {
 
 	var tools : hide.comp.Toolbar;
 	var scene : hide.comp.Scene;
-	var cameraController : h3d.scene.CameraController;
+	var cameraController : CamController;
 	var properties : hide.comp.PropsEditor;
 	var light : h3d.scene.DirLight;
 	var lightDirection = new h3d.Vector( 1, 2, -4 );
@@ -496,6 +507,26 @@ class Level3D extends FileView {
 		}
 	}
 
+	function moveGizmoToSelection() {
+		// Snap Gizmo at center of objects
+		gizmo.getRotationQuat().identity();
+		if(curEdit != null && curEdit.rootObjects.length > 0) {
+			var pos = getPivot(curEdit.rootObjects);
+			gizmo.visible = true;
+			gizmo.setPos(pos.x, pos.y, pos.z);
+
+			if(curEdit.rootObjects.length == 1 && K.isDown(K.ALT)) {
+				var obj = curEdit.rootObjects[0];
+				var mat = worldMat(obj);
+				var s = mat.getScale();
+				mat.prependScale(1.0 / s.x, 1.0 / s.y, 1.0 / s.z);
+				gizmo.getRotationQuat().initRotateMatrix(mat);
+			}
+		}
+		else {
+			gizmo.visible = false;
+		}
+	}
 
 	function resetCamera(?top = false) {
 		var targetPt = new h3d.col.Point(0, 0, 0);
@@ -568,7 +599,7 @@ class Level3D extends FileView {
 			grid.lineStyle(0);
 		}
 
-		cameraController = new h3d.scene.CameraController(scene.s3d);
+		cameraController = new CamController(scene.s3d);
 
 		this.saveDisplayKey = "Scene:" + state.path;
 
@@ -710,24 +741,7 @@ class Level3D extends FileView {
 		}
 		if(gizmo != null) {
 			if(!gizmo.moving) {
-				// Snap Gizmo at center of objects
-				gizmo.getRotationQuat().identity();
-				if(curEdit != null && curEdit.rootObjects.length > 0) {
-					var pos = getPivot(curEdit.rootObjects);
-					gizmo.visible = true;
-					gizmo.setPos(pos.x, pos.y, pos.z);
-
-					if(curEdit.rootObjects.length == 1 && K.isDown(K.ALT)) {
-						var obj = curEdit.rootObjects[0];
-						var mat = worldMat(obj);
-						var s = mat.getScale();
-						mat.prependScale(1.0 / s.x, 1.0 / s.y, 1.0 / s.z);
-						gizmo.getRotationQuat().initRotateMatrix(mat);
-					}
-				}
-				else {
-					gizmo.visible = false;
-				}
+				moveGizmoToSelection();
 			}
 			gizmo.update(dt);
 		}
@@ -1011,7 +1025,9 @@ class Level3D extends FileView {
 				int.ignoreParentTransform = true;
 				int.preciseShape = meshCollider;
 				int.propagateEvents = true;
-				int.onClick = function(e) {
+				var startDrag = null;			
+				int.onPush = function(e) {
+					startDrag = [scene.s2d.mouseX, scene.s2d.mouseY];
 					e.propagate = false;
 					if(K.isDown(K.CTRL) && curEdit != null) {
 						var list = curEdit.elements.copy();
@@ -1022,6 +1038,18 @@ class Level3D extends FileView {
 					}
 					else {
 						selectObjects([elt]);
+					}
+				}
+				int.onRelease = function(e) {
+					startDrag = null;
+				}
+				int.onMove = function(e) {
+					if(startDrag != null) {
+						if((hxd.Math.abs(startDrag[0] - scene.s2d.mouseX) + hxd.Math.abs(startDrag[1] - scene.s2d.mouseY)) > 5) {
+							startDrag = null;
+							moveGizmoToSelection();
+							gizmo.startMove(MoveXY);
+						}
 					}
 				}
 			}
