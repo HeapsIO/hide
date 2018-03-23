@@ -18,6 +18,7 @@
 	"key.paste" : "Ctrl-V",
 	"key.duplicate" : "Ctrl-D",
 	"key.delete" : "Delete",
+	"key.group" : "Ctrl-G",
 
 	"key.search" : "Ctrl-F",
 	"key.rename" : "F2",
