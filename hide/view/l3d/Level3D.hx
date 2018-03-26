@@ -135,7 +135,7 @@ class Level3D extends FileView {
 		if(prefix == "object")
 			prefix = "group";
 
-		var model = Std.instance(p, hide.prefab.Model);
+		var model = p.to(hide.prefab.Model);
 		if(model != null && model.source != null) {
 			var path = new haxe.io.Path(model.source);
 			prefix = path.file;
@@ -198,7 +198,7 @@ class Level3D extends FileView {
 				m;
 			}];
 
-			var objects3d = [for(e in curEdit.elements) Std.instance(e, Object3D)];
+			var objects3d = [for(e in curEdit.elements) e.to(Object3D)];
 			var prevState = [for(o in objects3d) o.save()];			
 			
 			gizmo.onMove = function(translate: h3d.Vector, rot: h3d.Quat, scale: h3d.Vector) {
@@ -645,7 +645,7 @@ class Level3D extends FileView {
 		to.children.remove(e);
 		to.children.insert(index, e);
 
-		var obj3d = Std.instance(e, Object3D);
+		var obj3d = e.to(Object3D);
 		var obj = getObject(e);
 		var toObj = getObject(to);
 		var mat = worldMat(obj);
@@ -750,7 +750,7 @@ class Level3D extends FileView {
 	function setVisible(elements : Array<PrefabElement>, visible: Bool) {
 		var cache = [];
 		for(e in elements) {
-			var o = Std.instance(e, Object3D);
+			var o = e.to(Object3D);
 			if(o != null) {
 				cache.push({o: o, vis: o.visible});
 			}
@@ -789,7 +789,7 @@ class Level3D extends FileView {
 		layerButtons = new Map<PrefabElement, hide.comp.Toolbar.ToolToggle>();
 		var all = context.shared.contexts.keys();
 		for(elt in all) {
-			var layer = Std.instance(elt, hide.prefab.l3d.Layer);
+			var layer = elt.to(hide.prefab.l3d.Layer);
 			if(layer == null) continue;
 			layerButtons[elt] = tools.addToggle("file", layer.name, layer.name, function(on) {
 				setVisible([layer], on);
@@ -876,7 +876,7 @@ class Level3D extends FileView {
 
 	public function onPrefabChange(p: PrefabElement) {
 		var el = tree.getElement(p);
-		var obj3d  = Std.instance(p, Object3D);
+		var obj3d  = p.to(Object3D);
 		if(obj3d != null) {
 			if(obj3d.visible) {
 				el.removeClass("jstree-invisible");
@@ -886,7 +886,7 @@ class Level3D extends FileView {
 			}
 		}
 
-		var layer = Std.instance(p, hide.prefab.l3d.Layer);
+		var layer = p.to(hide.prefab.l3d.Layer);
 		if(layer != null) {
 			var color = "#" + StringTools.hex(layer.color, 6);
 			el.find("i.jstree-themeicon").first().css("color", color);
