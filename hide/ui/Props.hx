@@ -86,13 +86,6 @@ class Props {
 	public static function loadForProject( projectPath : String, resourcePath : String ) {
 		var hidePath = Ide.inst.appPath;
 
-		// in dev mode
-		if( !sys.FileSystem.exists(hidePath + "/package.json") ) {
-			var prevPath = new haxe.io.Path(hidePath).dir;
-			if( sys.FileSystem.exists(prevPath + "/hide.js") )
-				hidePath = prevPath;
-		}
-
 		var defaults = new Props();
 		defaults.load(hidePath + "/defaultProps.json");
 
