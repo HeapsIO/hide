@@ -90,6 +90,7 @@ class Level3D extends FileView {
 		scene.onReady = init;
 		tree = new hide.comp.IconTree(root.find(".tree"));
 		tree.async = false;
+		tree.saveDisplayKey = "Level3D:" + getPath().split("\\").join("/").substr(0,-1);
 		currentVersion = undo.currentID;
 
 		var sceneTree = root.find(".hide-scene-tree");
@@ -389,8 +390,7 @@ class Level3D extends FileView {
 				value : o,
 				text : o.name,
 				icon : "fa fa-"+p.icon,
-				children : o.children.length > 0,
-				state : { opened : true },
+				children : o.children.length > 0
 			};
 			return r;
 		}
@@ -570,27 +570,41 @@ class Level3D extends FileView {
 	function duplicate() {
 		if(curEdit == null) return;
 		var elements = curEdit.rootElements;
+		if(elements == null || elements.length == 0)
+			return;
+		var contexts = context.shared.contexts;		
+		var oldContexts = contexts.copy();
 		var newElements = [for(elt in elements) {
 			var clone = hide.prefab.Prefab.loadRec(elt.saveRec());
 			autoName(clone);
+			var index = elt.parent.children.indexOf(elt);
 			clone.parent = elt.parent;
-			clone;
+			elt.parent.children.remove(clone);
+			elt.parent.children.insert(index+1, clone);
+			{ elt: clone, idx: index };
 		}];
+		var newContexts = contexts.copy();
 		refresh(function() {
-			selectObjects(newElements);
-			tree.setSelection(newElements);
+			var all = [for(e in newElements) e.elt];
+			selectObjects(all);
+			tree.setSelection(all);
 			gizmo.startMove(MoveXY, true);
 			gizmo.onFinishMove = function() {
 				undo.change(Custom(function(undo) {
-					for(elt in newElements) {
+					for(e in newElements) {
 						if(undo) {
-							elt.parent.children.remove(elt);
+							e.elt.parent.children.remove(e.elt);
 						}
 						else {
-							elt.parent.children.push(elt);
+							e.elt.parent.children.insert(e.idx, e.elt);
 						}
 					}
+					if(undo)
+						context.shared.contexts = oldContexts;
+					else
+						context.shared.contexts = newContexts;
 					refresh();
+					deselect();
 				}));
 			}
 		});
