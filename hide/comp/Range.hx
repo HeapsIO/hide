@@ -37,12 +37,15 @@ class Range extends Component {
 		curMin = originMin;
 		curMax = originMax;
 		current = Std.parseFloat(f.attr("value"));
-		if( current == null || Math.isNaN(current) ) current = 0;
+		if(current != null && !Math.isNaN(current))
+			original = current;
+		else
+			current = 0;
 
 		p.parent().prev("dt").contextmenu(function(e) {
 			e.preventDefault();
 			new ContextMenu([
-				{ label : "Reset", click : function() { inputView.val(""+original); inputView.change(); } },
+				{ label : "Reset", click : reset },
 				{ label : "Cancel", click : function() {} },
 			]);
 			return false;
@@ -77,6 +80,11 @@ class Range extends Component {
 			inputView.val(current / scale);
 			onChange(false);
 		});
+	}
+
+	public function reset() {
+		value = original;
+		onChange(false);
 	}
 
 	function set_value(v) {

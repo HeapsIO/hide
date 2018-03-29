@@ -13,7 +13,7 @@ class PropsEditor extends Component {
 
 	public var undo : hide.ui.UndoHistory;
 	public var lastChange : Float = 0.;
-	var fields : Array<PropsField>;
+	public var fields(default, null) : Array<PropsField>;
 
 	public function new(root,?undo) {
 		super(root);

@@ -402,6 +402,14 @@ input[type=checkbox]:checked:after {
 .hide-properties input[type=checkbox] {
   width: 13px;
 }
+.hide-properties dt input[type=button] {
+  width: 100%;
+  text-align: right;
+  background: none;
+  border: none;
+  zoom: 1;
+  font-size: 11px;
+}
 .hide-properties select {
   width: 197px;
 }

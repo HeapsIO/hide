@@ -1,4 +1,5 @@
 package hide.prefab;
+using Lambda;
 
 class Object3D extends Prefab {
 
@@ -66,6 +67,14 @@ class Object3D extends Prefab {
 		rotationZ = rot.z;
 	}
 
+	public function getTransform() {
+		var m = new h3d.Matrix();
+		m.initScale(scaleX, scaleY, scaleZ);
+		m.rotate(rotationX, rotationY, rotationZ);
+		m.translate(x, y, z);
+		return m;
+	}
+
 	public function applyPos( o : h3d.scene.Object ) {
 		o.x = x;
 		o.y = y;
@@ -79,28 +88,40 @@ class Object3D extends Prefab {
 
 	override function edit( ctx : EditContext ) {
 		#if editor
-		ctx.properties.add(new hide.Element('
+		var props = new hide.Element('
 			<div class="group" name="Position">
 				<dl>
-					<dt>X</dt><dd><input type="range" min="-10" max="10" field="x"/></dd>
-					<dt>Y</dt><dd><input type="range" min="-10" max="10" field="y"/></dd>
-					<dt>Z</dt><dd><input type="range" min="-10" max="10" field="z"/></dd>
-					<dt>ScaleX</dt><dd><input type="range" min="0" max="5" field="scaleX"/></dd>
-					<dt>ScaleY</dt><dd><input type="range" min="0" max="5" field="scaleY"/></dd>
-					<dt>ScaleZ</dt><dd><input type="range" min="0" max="5" field="scaleZ"/></dd>
-					<dt>RotationX</dt><dd><input type="range" min="-180" max="180" field="rotationX" scale="${Math.PI/180}"/></dd>
-					<dt>RotationY</dt><dd><input type="range" min="-180" max="180" field="rotationY" scale="${Math.PI/180}"/></dd>
-					<dt>RotationZ</dt><dd><input type="range" min="-180" max="180" field="rotationZ" scale="${Math.PI/180}"/></dd>
+					<dt><input type="button" value="X" xfield="x" class="reset"/></dt><dd><input type="range" min="-10" max="10" value="0" field="x"/></dd>
+					<dt><input type="button" value="Y" xfield="y" class="reset"/></dt><dd><input type="range" min="-10" max="10" value="0" field="y"/></dd>
+					<dt><input type="button" value="Z" xfield="z" class="reset"/></dt><dd><input type="range" min="-10" max="10" value="0" field="z"/></dd>
+					<dt><input type="button" value="Scale X" xfield="scaleX" class="reset"/></dt><dd><input type="range" min="0" max="5" value="1" field="scaleX"/></dd>
+					<dt><input type="button" value="Scale Y" xfield="scaleY" class="reset"/></dt><dd><input type="range" min="0" max="5" value="1" field="scaleY"/></dd>
+					<dt><input type="button" value="Scale Z" xfield="scaleZ" class="reset"/></dt><dd><input type="range" min="0" max="5" value="1" field="scaleZ"/></dd>
+					<dt><input type="button" value="Rotation X" xfield="rotationX" class="reset"/></dt><dd><input type="range" min="-180" max="180" value="0" field="rotationX" scale="${Math.PI/180}"/></dd>
+					<dt><input type="button" value="Rotation Y" xfield="rotationY" class="reset"/></dt><dd><input type="range" min="-180" max="180" value="0" field="rotationY" scale="${Math.PI/180}"/></dd>
+					<dt><input type="button" value="Rotation Z" xfield="rotationZ" class="reset"/></dt><dd><input type="range" min="-180" max="180" value="0" field="rotationZ" scale="${Math.PI/180}"/></dd>
 					<dt>Visible</dt><dd><input type="checkbox" field="visible"/></dd>
 				</dl>
 			</div>
-		'),this,function(_) {
+		');
+
+		ctx.properties.add(props, this, function(_) {
 			applyPos(ctx.getContext(this).local3d);
 			ctx.onChange(this);
 		});
+
+		for(fname in "x y z rotationX rotationY rotationZ scaleX scaleY scaleZ".split(" ")) {
+			var resets = props.find('input.reset[xfield="$fname"]');
+			resets.click(function(e) {
+				var field = ctx.properties.fields.find(f -> f.fname == fname);
+				if(field != null) {
+					var range = @:privateAccess field.range;
+					if(range != null) range.reset();
+				}
+			});
+		}
 		#end
 	}
-
 
 	override function getHideProps() {
 		return { icon : "folder-open", name : "Group", fileSource : null };
