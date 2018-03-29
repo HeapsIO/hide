@@ -16,6 +16,7 @@ class Box extends Object3D {
         var obj = new h3d.scene.Object(ctx.local3d);
         var prim = h3d.prim.Cube.defaultUnitCube();
         mesh = new h3d.scene.Mesh(prim, obj);
+        mesh.setPos(-0.5, -0.5, -0.5);
         var mat = mesh.material;
 		mat.color.setColor(0x60ff00ff);
         mat.mainPass.depthWrite = false;
@@ -26,7 +27,6 @@ class Box extends Object3D {
         var wire = new h3d.scene.Box(obj);
         wire.color = 0;
         wire.ignoreCollide = true;
-        wire.setPos(0.5, 0.5, 0.5);
 
 		ctx.local3d = obj;
 		ctx.local3d.name = name;
