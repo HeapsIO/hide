@@ -8,7 +8,7 @@ import h3d.scene.Object;
 
 class Level3D extends FileView {
 
-	var data : hide.prefab.Library;
+	var data : hide.prefab.l3d.Level3D;
 	var context : hide.prefab.Context;
 	var tabs : hide.comp.Tabs;
 
@@ -16,12 +16,14 @@ class Level3D extends FileView {
 	var scene : hide.comp.Scene;
 	var cameraController : h3d.scene.CameraController;
 	var properties : hide.comp.PropsEditor;
+	var levelProps : hide.comp.PropsEditor;
 	var light : h3d.scene.DirLight;
 	var lightDirection = new h3d.Vector( 1, 2, -4 );
 	var tree : hide.comp.IconTree<PrefabElement>;
 	var layerButtons : Map<PrefabElement, hide.comp.Toolbar.ToolToggle>;
 	var interactives : Map<PrefabElement, h3d.scene.Interactive>;
 
+	var grid : h3d.scene.Graphics;
 	var searchBox : Element;
 	var curEdit : LevelEditContext;
 	var gizmo : Gizmo;
@@ -43,7 +45,7 @@ class Level3D extends FileView {
 	}
 
 	override function getDefaultContent() {
-		return haxe.io.Bytes.ofString(ide.toJSON(new hide.prefab.Library().save()));
+		return haxe.io.Bytes.ofString(ide.toJSON(new hide.prefab.l3d.Level3D().save()));
 	}
 
 	override function onFileChanged(wasDeleted:Bool) {
@@ -79,6 +81,9 @@ class Level3D extends FileView {
 							</div>
 							<div class="props"></div>
 						</div>
+						<div class="tab" name="Properties" icon="cog">
+							<div class="level-props"></div>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -107,6 +112,8 @@ class Level3D extends FileView {
 			tree.searchFilter(null);
 			searchBox.toggle();
 		});
+
+		levelProps = new hide.comp.PropsEditor(root.find(".level-props"), undo);
 	}
 
 	function refresh( ?callb ) {
@@ -269,6 +276,28 @@ class Level3D extends FileView {
 		}
 	}
 
+	function updateGrid() {
+		if(grid == null) {
+			grid = new h3d.scene.Graphics(scene.s3d);
+			grid.scale(10);
+		}
+		else {
+			grid.clear();
+		}
+
+		grid.lineStyle(1, 0x404040, 1.0);
+		// var offset = size/2;
+		for(ix in 0...data.width+1) {
+			grid.moveTo(ix, 0, 0);
+			grid.lineTo(ix, data.height, 0);
+		}
+		for(iy in 0...data.height+1) {
+			grid.moveTo(0, iy, 0);
+			grid.lineTo(data.width, iy, 0);
+		}
+		grid.lineStyle(0);
+	}
+
 	function resetCamera(?top = false) {
 		var targetPt = new h3d.col.Point(0, 0, 0);
 		if(curEdit != null && curEdit.rootObjects.length > 0) {
@@ -298,7 +327,7 @@ class Level3D extends FileView {
 	}
 
 	function init() {
-		data = new hide.prefab.Library();
+		data = new hide.prefab.l3d.Level3D();
 		var content = sys.io.File.getContent(getPath());
 		data.load(haxe.Json.parse(content));
 		currentSign = haxe.crypto.Md5.encode(content);
@@ -322,23 +351,6 @@ class Level3D extends FileView {
 
 
 		gizmo = new Gizmo(scene);
-		
-		{
-			var grid = new h3d.scene.Graphics(scene.s3d);
-			grid.lineStyle(1, 0x404040, 1.0);
-			var size = 40;
-			grid.scale(10);
-			var offset = size/2;
-			for(ix in 0...size+1) {
-				grid.moveTo(ix - offset, -offset, 0);
-				grid.lineTo(ix - offset, offset, 0);
-			}
-			for(iy in 0...size+1) {
-				grid.moveTo(-offset, iy - offset, 0);
-				grid.lineTo(offset, iy - offset, 0);
-			}
-			grid.lineStyle(0);
-		}
 
 		cameraController = new h3d.scene.CameraController(scene.s3d);
 		cameraController.friction = 0.9;
@@ -348,7 +360,9 @@ class Level3D extends FileView {
 
 		this.saveDisplayKey = "Scene:" + state.path;
 
+		updateGrid();
 		resetCamera();
+
 		var cam = getDisplayState("Camera");
 		if( cam != null ) {
 			scene.s3d.camera.pos.set(cam.x, cam.y, cam.z);
@@ -359,6 +373,16 @@ class Level3D extends FileView {
 		scene.onUpdate = update;
 		scene.init(props);
 		tools.saveDisplayKey = "SceneTools";
+
+		{
+			var edit = new LevelEditContext(context, []);
+			edit.prefabPath = state.path;
+			edit.properties = levelProps;
+			edit.scene = scene;
+			edit.view = this;
+			edit.cleanups = [];
+			data.edit(edit);
+		}
 
 		tools.addButton("video-camera", "Perspective camera", () -> resetCamera(false));
 		tools.addButton("arrow-down", "Top camera", () -> resetCamera(true));
@@ -924,6 +948,11 @@ class Level3D extends FileView {
 	}
 
 	public function onPrefabChange(p: PrefabElement) {
+		var level3d = p.to(hide.prefab.l3d.Level3D);
+		if(level3d != null) {
+			updateGrid();
+			return;
+		}
 		var layer = p.to(hide.prefab.l3d.Layer);
 		if(layer != null) {
 			var boxes = layer.getAll(hide.prefab.Box);
