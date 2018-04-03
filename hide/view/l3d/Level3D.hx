@@ -469,6 +469,7 @@ class Level3D extends FileView {
 			return true;
 		};
 		tree.onMove = reparentElement;
+		tree.applyStyle = updateTreeStyle;
 
 		refresh();
 	}
@@ -888,8 +889,7 @@ class Level3D extends FileView {
 		}
 	}
 
-	public function onPrefabChange(p: PrefabElement) {
-		var el = tree.getElement(p);
+	function updateTreeStyle(p: PrefabElement, el: Element) {
 		var obj3d  = p.to(Object3D);
 		if(obj3d != null) {
 			if(obj3d.visible) {
@@ -920,7 +920,12 @@ class Level3D extends FileView {
 				else 
 					label.removeClass("locked");
 			}
+		}
+	}
 
+	public function onPrefabChange(p: PrefabElement) {
+		var layer = p.to(hide.prefab.l3d.Layer);
+		if(layer != null) {
 			var boxes = layer.getAll(hide.prefab.Box);
 			for(box in boxes) {
 				box.setColor(layer.color);
@@ -932,6 +937,9 @@ class Level3D extends FileView {
 				interactives.get(m).visible = !layer.locked;
 			}
 		}
+
+		var el = tree.getElement(p);
+		updateTreeStyle(p, el);
 	}
 
 	static function worldMat(obj: Object) {

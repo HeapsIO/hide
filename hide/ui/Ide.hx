@@ -74,7 +74,8 @@ class Ide {
 					return;
 			window.close(true);
 		});
-
+		window.on('blur', hxd.Key.initialize);
+		
 		// handle commandline parameters
 		nw.App.on("open", function(cmd) {
 			~/"([^"]+)"/g.map(cmd, function(r) {

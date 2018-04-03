@@ -51,6 +51,9 @@ class IconTree<T:{}> extends Component {
 	public dynamic function onMove( e : T, to : T, index : Int ) {
 	}
 
+	public dynamic function applyStyle( e : T, element : Element ) {
+	}
+
 	function makeContent(parent:IconTreeItem<T>) {
 		var content : Array<IconTreeItem<T>> = get(parent == null ? null : parent.value);
 		for( c in content ) {
@@ -99,7 +102,7 @@ class IconTree<T:{}> extends Component {
 					callb.call(this, makeContent(obj.parent == null ? null : map.get(obj.id)));
 				}
 			},
-			plugins : [ "wholerow", "dnd" ],
+			plugins : [ "wholerow", "dnd", "changed" ],
 		});
 		root.on("click.jstree", function (event) {
 			var node = new Element(event.target).closest("li");
@@ -132,6 +135,14 @@ class IconTree<T:{}> extends Component {
 		});
 		root.on("move_node.jstree", function(event, e) {
 			onMove(map.get(e.node.id).value, e.parent == "#" ? null : map.get(e.parent).value, e.position);
+		});
+		root.on('changed.jstree', function (e, data) {
+			var nodes: Array<Dynamic> = data.changed.deselected;
+			for(id in nodes) {
+				var item = map.get(id).value;
+				var el = getElement(item);
+				applyStyle(item, el);
+			}
 		});
 	}
 
