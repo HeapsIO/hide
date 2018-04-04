@@ -1,11 +1,31 @@
 package hide.prefab.l3d;
+using Lambda;
 
 class Layer extends Object3D {
 
-    public var locked = false;
-    public var color = 0xffffffff;
+	public var locked = false;
+	public var color = 0xffffffff;
+
+	public function new(?parent) {
+		super(parent);
+		type = "layer";
+	}
 	
-    override function save() {
+	public function getCdbModel() {
+		var levelSheet = getLevelSheet();
+		if(levelSheet == null) return null;
+		var lname = name.toLowerCase();
+		lname = lname.split("_")[0].split(" ")[0].split("-")[0];
+		var col = levelSheet.columns.find(c -> { var lc = c.name.toLowerCase(); lc == lname || lc + "s" == lname; });
+		if(col == null || col.type != TList) return null;
+		return levelSheet.getSub(col);
+	}
+
+	public function getLevelSheet() {
+		return hide.ui.Ide.inst.database.getSheet("level");
+	}
+	
+	override function save() {
 		var obj : Dynamic = super.save();
 		obj.locked = locked;
 		obj.color = color;
@@ -15,7 +35,7 @@ class Layer extends Object3D {
 	override function load( obj : Dynamic ) {
 		super.load(obj);
 		locked = obj.locked;
-        color = obj.color;
+		color = obj.color;
 	}
 
 	override function edit( ctx : EditContext ) {
@@ -29,32 +49,32 @@ class Layer extends Object3D {
 				</dl>
 			</div>
 		'),this, function(_) {
-            ctx.onChange(this);
-        });
-        var colorInput = props.find('input[name="colorVal"]');
-        var picker = new hide.comp.ColorPicker(colorInput, false);
-        picker.value = color;
-        picker.onChange = function(move) {
-            if(!move) {
-                var prevVal = color;
-                var newVal = picker.value;
-                color = picker.value;
-                ctx.properties.undo.change(Custom(function(undo) {
-                    if(undo) {
-                        color = prevVal;
-                    }
-                    else {
-                        color = newVal;
-                    }
-                    picker.value = color;
-                    ctx.onChange(this);
-                }));
-                ctx.onChange(this);
-            }
-        }
-        #end
-    }
-    
+			ctx.onChange(this);
+		});
+		var colorInput = props.find('input[name="colorVal"]');
+		var picker = new hide.comp.ColorPicker(colorInput, false);
+		picker.value = color;
+		picker.onChange = function(move) {
+			if(!move) {
+				var prevVal = color;
+				var newVal = picker.value;
+				color = picker.value;
+				ctx.properties.undo.change(Custom(function(undo) {
+					if(undo) {
+						color = prevVal;
+					}
+					else {
+						color = newVal;
+					}
+					picker.value = color;
+					ctx.onChange(this);
+				}));
+				ctx.onChange(this);
+			}
+		}
+		#end
+	}
+	
 	override function getHideProps() {
 		return { icon : "file", name : "Layer", fileSource : null };
 	}

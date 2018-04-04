@@ -1,9 +1,13 @@
 package hide.view.l3d;
+using Lambda;
+
 import hxd.Math;
 import hxd.Key as K;
 
 import hide.prefab.Prefab as PrefabElement;
 import hide.prefab.Object3D;
+import hide.prefab.l3d.Instance;
+import hide.prefab.l3d.Layer;
 import h3d.scene.Object;
 
 class Level3D extends FileView {
@@ -119,13 +123,16 @@ class Level3D extends FileView {
 	function refresh( ?callb ) {
 		var sh = context.shared;
 		sh.root3d.remove();
+		sh.root2d.remove();
 		for( f in sh.cleanups )
 			f();
 		sh.root3d = new h3d.scene.Object();
+		scene.s3d.addChild(sh.root3d);
+		sh.root2d = new h2d.Sprite();
+		scene.s2d.addChild(sh.root2d);
 		sh.cleanups = [];
 		context.init();
 		data.makeInstance(context);
-		scene.s3d.addChild(sh.root3d);
 		scene.init(props);
 		refreshInteractives();
 		refreshLayerIcons();
@@ -138,19 +145,24 @@ class Level3D extends FileView {
 	}
 
 	function autoName(p : PrefabElement) {
-		var id = 0;
 		var prefix = p.type;
 		if(prefix == "object")
 			prefix = "group";
+		if(p.name != null && p.name.length > 0) {
+			prefix = p.name.split("_")[0].split(" ")[0].split("-")[0];
+		}
 
 		var model = p.to(hide.prefab.Model);
 		if(model != null && model.source != null) {
 			var path = new haxe.io.Path(model.source);
 			prefix = path.file;
 		}
+
+		prefix += "_";
+		var id = 0;		
 		while( data.getPrefabByName(prefix + id) != null )
 			id++;
-		
+			
 		p.name = prefix + id;
 
 		for(c in p.children) {
@@ -279,7 +291,7 @@ class Level3D extends FileView {
 	function updateGrid() {
 		if(grid == null) {
 			grid = new h3d.scene.Graphics(scene.s3d);
-			grid.scale(10);
+			grid.scale(1);
 		}
 		else {
 			grid.clear();
@@ -430,13 +442,13 @@ class Level3D extends FileView {
 				selectObjects([current]);
 			}
 
-			var registered = new Array<hide.comp.ContextMenu.ContextMenuItem>();
+			var newItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
 			var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
 			var allowed = ["model", "object", "layer", "box"];
 			for( ptype in allowed ) {
 				var pcl = allRegs.get(ptype);
 				var props = Type.createEmptyInstance(pcl).getHideProps();
-				registered.push({
+				newItems.push({
 					label : props.name,
 					click : function() {
 
@@ -461,8 +473,59 @@ class Level3D extends FileView {
 				});
 			}
 
+			{
+				var curLayer = current.to(hide.prefab.l3d.Layer);
+				if(curLayer != null) {
+					var cdbSheet = curLayer.getCdbModel();
+					if(cdbSheet != null) {
+						var refCol = Instance.findRefColumn(cdbSheet);
+						if(refCol != null) {
+							var refSheet = ide.database.getSheet(refCol.sheet);
+							var idCol = Instance.findIDColumn(refSheet);
+							if(idCol != null) {
+								var kindItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
+								for(line in refSheet.lines) {
+									var kind = Reflect.getProperty(line, idCol.name);
+									kindItems.push({
+										label : kind,
+										click : function() {
+											var p = new hide.prefab.l3d.Instance(current);
+											p.props = {};
+											for( c in cdbSheet.columns ) {
+												var d = ide.database.getDefault(c);
+												if( d != null )
+													Reflect.setField(p.props, c.name, d);
+											}
+											p.name = kind.toLowerCase() + "_";
+											Reflect.setField(p.props, refCol.col.name, kind);
+											autoName(p);
+											addObject(p);
+										}
+									});
+								}
+								newItems.unshift({
+									label : "Instance",
+									menu: kindItems
+								});
+							}
+							else {
+								newItems.unshift({
+									label : "Instance",
+									click : function() {
+										var p = new hide.prefab.l3d.Instance(current);
+										p.name = "object";
+										autoName(p);
+										addObject(p);
+									}
+								});
+							}
+						}
+					}
+				}
+			}
+
 			var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [
-				{ label : "New...", menu : registered },
+				{ label : "New...", menu : newItems },
 				{ label : "Rename", enabled : current != null, click : function() tree.editNode(current) },
 				{ label : "Delete", enabled : current != null, click : function() deleteElements(curEdit.rootElements) },
 				{ label : "Select all", click : selectAll },
