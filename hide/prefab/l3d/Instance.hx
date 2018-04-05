@@ -58,7 +58,7 @@ class Instance extends Object3D {
 								mesh.setPos(-0.25, -0.25, -0.25);
 								mesh.scale(0.5);
 								var mat = mesh.material;
-								mat.color.setColor(0xff0000ff);
+								mat.color.setColor(parentLayer.color);
 								mat.shadows = false;
 							}
 						}

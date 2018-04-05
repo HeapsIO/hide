@@ -10,7 +10,7 @@ class Layer extends Object3D {
 		super(parent);
 		type = "layer";
 	}
-	
+
 	public function getCdbModel() {
 		var levelSheet = getLevelSheet();
 		if(levelSheet == null) return null;
@@ -48,8 +48,8 @@ class Layer extends Object3D {
 					<dt>Color</dt><dd><input name="colorVal"/></dd>
 				</dl>
 			</div>
-		'),this, function(_) {
-			ctx.onChange(this);
+		'),this, function(pname) {
+			ctx.onChange(this, pname);
 		});
 		var colorInput = props.find('input[name="colorVal"]');
 		var picker = new hide.comp.ColorPicker(colorInput, false);
@@ -67,9 +67,9 @@ class Layer extends Object3D {
 						color = newVal;
 					}
 					picker.value = color;
-					ctx.onChange(this);
+					ctx.onChange(this, "color");
 				}));
-				ctx.onChange(this);
+				ctx.onChange(this, "color");
 			}
 		}
 		#end

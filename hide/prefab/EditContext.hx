@@ -12,7 +12,7 @@ class EditContext {
 	public var cleanups : Array<Void->Void>;
 	public var properties : hide.comp.PropsEditor;
 	function get_ide() return hide.ui.Ide.inst;
-	public function onChange(p : Prefab) { }
+	public function onChange(p : Prefab, propName : String) { }
 	#end
 
 	public function new(ctx) {

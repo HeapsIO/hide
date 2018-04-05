@@ -48,11 +48,14 @@ class Model extends Object3D {
 		var props = ctx.properties.add(new hide.Element('
 			<div class="group" name="Animation">
 				<dl>
+					<dt>Model</dt><dd><input type="model" field="source"/></dd>
 					<dt>Animation</dt><dd><select><option value="">-- Choose --</option></select>
 					<dt title="Don\'t save animation changes">Lock</dt><dd><input type="checkbox" field="lockAnimation"></select>
 				</dl>
 			</div>
-		'),this);
+		'),this, function(pname) {
+			ctx.onChange(this, pname);
+		});
 
 		var select = props.find("select");
 		var anims = ctx.scene.listAnims(source);

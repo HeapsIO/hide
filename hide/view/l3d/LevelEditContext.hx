@@ -34,8 +34,8 @@ class LevelEditContext extends hide.prefab.EditContext {
 		cleanups = [];
 	}
 
-	override function onChange(p : PrefabElement) {
+	override function onChange(p : PrefabElement, pname: String) {
 		var level3D : Level3D = cast view;
-		level3D.onPrefabChange(p);
+		level3D.onPrefabChange(p, pname);
 	}
 }

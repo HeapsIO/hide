@@ -105,9 +105,9 @@ class Object3D extends Prefab {
 			</div>
 		');
 
-		ctx.properties.add(props, this, function(_) {
+		ctx.properties.add(props, this, function(pname) {
 			applyPos(ctx.getContext(this).local3d);
-			ctx.onChange(this);
+			ctx.onChange(this, pname);
 		});
 
 		for(fname in "x y z rotationX rotationY rotationZ scaleX scaleY scaleZ".split(" ")) {

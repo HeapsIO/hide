@@ -33,8 +33,8 @@ class Level3D extends Library {
 				</dl>
 			</div>
 		');
-		ctx.properties.add(props, this, function(_) {
-			ctx.onChange(this);
+		ctx.properties.add(props, this, function(pname) {
+			ctx.onChange(this, pname);
 		});
 		#end
 	}

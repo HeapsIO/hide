@@ -1007,7 +1007,7 @@ class Level3D extends FileView {
 		}
 	}
 
-	public function onPrefabChange(p: PrefabElement) {
+	public function onPrefabChange(p: PrefabElement, ?pname: String) {
 		var level3d = p.to(hide.prefab.l3d.Level3D);
 		if(level3d != null) {
 			updateGrid();
@@ -1025,6 +1025,11 @@ class Level3D extends FileView {
 			for(m in models) {
 				interactives.get(m).visible = !layer.locked;
 			}
+		}
+		var model = p.to(hide.prefab.Model);
+		if(model != null && pname == "source") {
+			refresh();
+			return;
 		}
 
 		var el = tree.getElement(p);
