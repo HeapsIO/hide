@@ -4,8 +4,14 @@ import h3d.col.Point;
 class Polygon extends Object3D {
 
 	var data : Array<Float> = null;
-	var mesh : h3d.scene.Mesh = null;
+	public var mesh(default, null) : h3d.scene.Mesh = null;
 
+	public function setColor(col: Int) {
+		if(mesh != null) {
+			mesh.material.color.setColor(col | (80 << 24));
+		}
+	}
+	
 	override function save() {
 		var obj : Dynamic = super.save();
 		obj.data = data;
@@ -19,6 +25,7 @@ class Polygon extends Object3D {
 
 	override function makeInstance(ctx:Context):Context {
 		ctx = ctx.clone(this);
+		var layer = getParent(Layer);
 		var points = [];
 		var d = this.data;
 		if(d == null) {
@@ -44,13 +51,13 @@ class Polygon extends Object3D {
 		var obj = new h3d.scene.Object(ctx.local3d);
 		mesh = new h3d.scene.Mesh(prim, obj);
 		var mat = mesh.material;
-		mat.color.setColor(0x40ff00ff);
+		mat.color.setColor(layer != null ? (layer.color | 0x40000000) : 0x40ff00ff);
 		mat.mainPass.culling = None;
-		mat.mainPass.setPassName("ground");
+		mat.mainPass.setPassName("debuggeom");
 		mat.mainPass.setBlendMode(Alpha);
 		mat.mainPass.depthWrite = true;
 
-		var alpha = mat.allocPass("ground_alpha");
+		var alpha = mat.allocPass("debuggeom_alpha");
 		alpha.setBlendMode(Alpha);
 		alpha.depthWrite = false;
 		mat.shadows = false;

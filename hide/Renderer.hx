@@ -9,7 +9,7 @@ class MaterialSetup extends h3d.mat.MaterialSetup {
 class Renderer extends h3d.scene.DefaultRenderer {
 
 	override function render() {
-		renderPass(defaultPass, getSort("ground", true) );
+		renderPass(defaultPass, getSort("debuggeom", true) );
 		clear(null, 1.0);
 
 		if( has("shadow") )
@@ -24,7 +24,7 @@ class Renderer extends h3d.scene.DefaultRenderer {
 		renderPass(defaultPass, getSort("default", true) );
         renderPass(defaultPass, get("outline"));
 		renderPass(defaultPass, get("outlined"));
-		renderPass(defaultPass, getSort("ground_alpha"));
+		renderPass(defaultPass, getSort("debuggeom_alpha"));
 		renderPass(defaultPass, getSort("alpha") );
 		renderPass(defaultPass, get("additive") );
 		renderPass(defaultPass, getSort("ui", true));

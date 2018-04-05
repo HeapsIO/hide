@@ -79,8 +79,10 @@ class Props {
 		}
 	}
 
-	public function get( key : String ) : Dynamic {
-		return Reflect.field(current,key);
+	public function get( key : String, ?defaultVal : Dynamic ) : Dynamic {
+		var val = Reflect.field(current,key);
+		if(val != null) return val;
+		return defaultVal; 
 	}
 
 	public static function loadForProject( projectPath : String, resourcePath : String ) {

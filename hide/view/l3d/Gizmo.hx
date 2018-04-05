@@ -29,13 +29,14 @@ class Gizmo extends h3d.scene.Object {
 
 	var updateFunc: Float -> Void;
 
-	public var onStartMove: Void -> Void;
+	public var onStartMove: TransformMode -> Void;
 	public var onMove: h3d.Vector -> h3d.Quat -> h3d.Vector -> Void;
 	public var onFinishMove: Void -> Void;
 	public var moving(default, null): Bool;
 
 	var debug: h3d.scene.Graphics;
 	var isScaling = false;
+	var snapGround = false;
 	var intOverlay : h2d.Interactive;
 
 	public function new(scene: hide.comp.Scene) {
@@ -95,7 +96,7 @@ class Gizmo extends h3d.scene.Object {
 
 	public function startMove(mode: TransformMode, ?duplicating=false) {
 		moving = true;
-		if(onStartMove != null) onStartMove();
+		if(onStartMove != null) onStartMove(mode);
 		var startMat = getAbsPos().clone();
 		var startPos = getAbsPos().pos().toPoint();
 		var dragPlane = null;

@@ -38,6 +38,9 @@
 	// paths to look files/shaders into - relative to project root
 	"haxe.classPath" : ["src"],
 
+	// l3d config
+	"l3d.groundLayer": "ground",
+	"l3d.cdbLevel": "level",
 
 	// reserved for internal ide usage
 	"hide" : {}

@@ -166,4 +166,14 @@ class Prefab {
 	public function to<T:Prefab>( c : Class<T> ) : Null<T> {
 		return Std.instance(this, c);
 	}
+
+	public function getParent<T:Prefab>( c : Class<T> ) : Null<T> {
+		var p = parent;
+		while(p != null) {
+			var inst = Std.instance(p, c);
+			if(inst != null) return inst;
+			p = p.parent;
+		}
+		return null;
+	}
 }

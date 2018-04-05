@@ -204,7 +204,7 @@ class Level3D extends FileView {
 
 	function setupGizmo() {
 		if(curEdit == null) return;
-		gizmo.onStartMove = function() {
+		gizmo.onStartMove = function(mode) {
 			var objects = curEdit.rootObjects;
 			var pivotPt = getPivot(objects);
 			var pivot = new h3d.Matrix();
@@ -220,7 +220,7 @@ class Level3D extends FileView {
 
 			var objects3d = [for(e in curEdit.elements) e.to(Object3D)];
 			var prevState = [for(o in objects3d) o.save()];			
-			
+			var snapGround = mode == MoveXY;
 			gizmo.onMove = function(translate: h3d.Vector, rot: h3d.Quat, scale: h3d.Vector) {
 				var transf = new h3d.Matrix();
 				transf.identity();
@@ -232,6 +232,9 @@ class Level3D extends FileView {
 					var newMat = localMats[i].clone();
 					newMat.multiply(newMat, transf);
 					newMat.multiply(newMat, pivot);
+					if(snapGround) {
+						newMat.tz = getZ(newMat.tx, newMat.ty);
+					}
 					var invParent = objects[i].parent.getAbsPos().clone();
 					invParent.invert();
 					newMat.multiply(newMat, invParent);
@@ -316,9 +319,9 @@ class Level3D extends FileView {
 			targetPt = curEdit.rootObjects[0].getAbsPos().pos().toPoint();
 		}
 		if(top) 
-			cameraController.set(50, Math.PI/2, 0.001, targetPt);
+			cameraController.set(200, Math.PI/2, 0.001, targetPt);
 		else
-			cameraController.set(50, -4.7, 0.8, targetPt);
+			cameraController.set(200, -4.7, 0.8, targetPt);
 		cameraController.toTarget();
 	}
 
@@ -1015,17 +1018,19 @@ class Level3D extends FileView {
 		}
 		var layer = p.to(hide.prefab.l3d.Layer);
 		if(layer != null) {
-			var boxes = layer.getAll(hide.prefab.Box);
-			for(box in boxes) {
-				box.setColor(layer.color);
-				interactives.get(box).visible = !layer.locked;				
+			var obj3ds = layer.getAll(hide.prefab.Object3D);
+			for(obj in obj3ds) {
+				var i = interactives.get(obj);
+				if(i != null) i.visible = !layer.locked;
 			}
-
-			var models = layer.getAll(hide.prefab.Model);
-			for(m in models) {
-				interactives.get(m).visible = !layer.locked;
+			for(box in layer.getAll(hide.prefab.Box)) {
+				box.setColor(layer.color);
+			}
+			for(poly in layer.getAll(hide.prefab.l3d.Polygon)) {
+				poly.setColor(layer.color);
 			}
 		}
+
 		var model = p.to(hide.prefab.Model);
 		if(model != null && pname == "source") {
 			refresh();
@@ -1034,6 +1039,28 @@ class Level3D extends FileView {
 
 		var el = tree.getElement(p);
 		updateTreeStyle(p, el);
+	}
+
+	function getZ(x: Float, y: Float) {
+		var gname = props.get("l3d.groundLayer");
+		var groundLayer = data.get(Layer, gname);
+		var polygons = groundLayer.getAll(hide.prefab.l3d.Polygon);
+		var offset = 1000;
+		var ray = h3d.col.Ray.fromValues(x, y, offset, 0, 0, -1);
+		var topPoly = null;
+		var topDist = 1e10;
+		for(polygon in polygons) {
+			var collider = polygon.mesh.getGlobalCollider();
+			var d = collider.rayIntersection(ray, true);
+			if(d > 0 && d < topDist) {
+				topDist = d;
+				topPoly = polygon;
+			}
+		}
+		if(topPoly != null) {
+			return offset - topDist;
+		}
+		return 0.;
 	}
 
 	static function worldMat(obj: Object) {

@@ -22,7 +22,8 @@ class Layer extends Object3D {
 	}
 
 	public function getLevelSheet() {
-		return hide.ui.Ide.inst.database.getSheet("level");
+		var ide = hide.ui.Ide.inst;
+		return ide.database.getSheet(ide.currentProps.get("l3d.cdbLevel", "level"));
 	}
 	
 	override function save() {

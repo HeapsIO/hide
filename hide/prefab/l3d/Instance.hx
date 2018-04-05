@@ -24,7 +24,7 @@ class Instance extends Object3D {
 	override function makeInstance(ctx:Context):Context {
 		#if editor
 		var ctx = super.makeInstance(ctx);
-		var parentLayer = getParentLayer();
+		var parentLayer = getParent(Layer);
 		if(parentLayer != null) {
 			var sheet = parentLayer.getCdbModel();			
 			if(sheet != null) {
@@ -78,7 +78,7 @@ class Instance extends Object3D {
 			</div>
 		'),this);
 
-		var parentLayer = getParentLayer();
+		var parentLayer = getParent(Layer);
 		if(parentLayer == null) return;
 
 		var sheet = parentLayer.getCdbModel();
@@ -95,16 +95,6 @@ class Instance extends Object3D {
 			case TFloat: PFloat();
 			default: PUnsupported(col.name);
 		}
-	}
-
-	function getParentLayer() {
-		var p = parent;
-		while(p != null) {
-			var layer = p.to(hide.prefab.l3d.Layer);
-			if(layer != null) return layer;
-			p = p.parent;			
-		}
-		return null;
 	}
 
 	override function getHideProps() {
