@@ -444,7 +444,7 @@ class Level3D extends FileView {
 
 			var newItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
 			var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
-			var allowed = ["model", "object", "layer", "box"];
+			var allowed = ["model", "object", "layer", "box", "polygon"];
 			for( ptype in allowed ) {
 				var pcl = allRegs.get(ptype);
 				var props = Type.createEmptyInstance(pcl).getHideProps();

@@ -19,10 +19,10 @@ class Box extends Object3D {
 		mesh.setPos(-0.5, -0.5, -0.5);
 		var mat = mesh.material;
 		mat.color.setColor(0x60ff00ff);
+		mat.blendMode = Alpha;
 		mat.mainPass.depthWrite = false;
 		mat.mainPass.setPassName("alpha");
 		mat.shadows = false;
-		mat.blendMode = Alpha;
 
 		var wire = new h3d.scene.Box(obj);
 		wire.color = 0;
