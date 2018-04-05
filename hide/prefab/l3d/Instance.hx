@@ -22,8 +22,8 @@ class Instance extends Object3D {
 	}
 
 	override function makeInstance(ctx:Context):Context {
-		var ctx = super.makeInstance(ctx);
 		#if editor
+		var ctx = super.makeInstance(ctx);
 		var parentLayer = getParentLayer();
 		if(parentLayer != null) {
 			var sheet = parentLayer.getCdbModel();			
@@ -32,13 +32,35 @@ class Instance extends Object3D {
 				if(refCol != null) {
 					var refId = Reflect.getProperty(props, refCol.col.name);
 					if(refId != null) {
-						var refSheet = hide.ui.Ide.inst.database.getSheet(refCol.sheet);
+						var refSheet = sheet.base.getSheet(refCol.sheet);
 						if(refSheet != null) {
 							var idx = refSheet.index.get(refId);
-							var tile = findTile(refSheet, idx.obj).center();
-							var objFollow = new h2d.ObjectFollower(ctx.local3d, ctx.shared.root2d);
-							var bmp = new h2d.Bitmap(tile, objFollow);
-							ctx.local2d = objFollow;
+							var modelPath = findModelPath(refSheet, idx.obj);
+							if(modelPath != null) {
+								try {
+									var obj = ctx.loadModel(modelPath);
+									obj.name = name;
+									applyPos(obj);
+									ctx.local3d.addChild(obj);
+									ctx.local3d = obj;
+								} catch( e : hxd.res.NotFound ) {
+									ctx.onError(e);
+								}
+							}
+							else {
+								var tile = findTile(refSheet, idx.obj).center();
+								var objFollow = new h2d.ObjectFollower(ctx.local3d, ctx.shared.root2d);
+								var bmp = new h2d.Bitmap(tile, objFollow);
+								ctx.local2d = objFollow;
+								var obj = new h3d.scene.Object(ctx.local3d);
+								var prim = h3d.prim.Cube.defaultUnitCube();
+								var mesh = new h3d.scene.Mesh(prim, obj);
+								mesh.setPos(-0.25, -0.25, -0.25);
+								mesh.scale(0.5);
+								var mat = mesh.material;
+								mat.color.setColor(0xff0000ff);
+								mat.shadows = false;
+							}
 						}
 					}
 				}
@@ -104,10 +126,55 @@ class Instance extends Object3D {
 		return refSheet.columns.find(c -> c.type == cdb.Data.ColumnType.TId);
 	}
 
-	public static function findTile(refSheet : cdb.Sheet, obj : Dynamic) {
-		var idCol = refSheet.columns.find(c -> c.type == cdb.Data.ColumnType.TTilePos);
-		if(idCol != null) {
-			var tile: cdb.Types.TilePos = Reflect.getProperty(obj, idCol.name);
+	static function getModel(refSheet : cdb.Sheet, obj : Dynamic) {
+		var path = findModelPath(refSheet, obj);
+		if(path == null)
+			return null;
+		try {
+			var model = hxd.Res.load(path).toModel();
+			return model;
+		} catch( e : hxd.res.NotFound ) {}
+		return null;
+	}
+
+	static function findModelPath(refSheet : cdb.Sheet, obj : Dynamic) {
+		function filter(f: String) {
+			if(f != null) {
+				var lower = f.toLowerCase();
+				if(StringTools.endsWith(lower.toLowerCase(), ".fbx"))
+					return f;
+			}
+			return null;
+		}
+		var col = refSheet.columns.find(c -> c.type == cdb.Data.ColumnType.TFile);
+		var path = null;
+		if(col != null) {
+			path = filter(Reflect.getProperty(obj, col.name));
+		}
+		if(path == null) {
+			for(c in refSheet.columns) {
+				if(c.type == cdb.Data.ColumnType.TList) {
+					var sub = refSheet.getSub(c);
+					if(sub != null) {
+						var lines = sub.getLines();
+						if(lines.length > 0) {
+							var col = sub.columns.find(sc -> sc.type == cdb.Data.ColumnType.TFile);
+							if(col != null) {
+								path = filter(Reflect.getProperty(lines[0], col.name));
+								if(path != null) break;
+							}
+						}
+					}
+				}
+			}
+		}
+		return path;
+	}
+
+	static function findTile(refSheet : cdb.Sheet, obj : Dynamic) {
+		var tileCol = refSheet.columns.find(c -> c.type == cdb.Data.ColumnType.TTilePos);
+		if(tileCol != null) {
+			var tile: cdb.Types.TilePos = Reflect.getProperty(obj, tileCol.name);
 			if(tile != null)
 				return makeTile(tile);
 		}

@@ -480,7 +480,7 @@ class Level3D extends FileView {
 					if(cdbSheet != null) {
 						var refCol = Instance.findRefColumn(cdbSheet);
 						if(refCol != null) {
-							var refSheet = ide.database.getSheet(refCol.sheet);
+							var refSheet = cdbSheet.base.getSheet(refCol.sheet);
 							var idCol = Instance.findIDColumn(refSheet);
 							if(idCol != null) {
 								var kindItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
@@ -492,7 +492,7 @@ class Level3D extends FileView {
 											var p = new hide.prefab.l3d.Instance(current);
 											p.props = {};
 											for( c in cdbSheet.columns ) {
-												var d = ide.database.getDefault(c);
+												var d = cdbSheet.base.getDefault(c);
 												if( d != null )
 													Reflect.setField(p.props, c.name, d);
 											}
@@ -922,9 +922,6 @@ class Level3D extends FileView {
 		var all = contexts.keys();
 		for(elt in all) {
 			var ctx = contexts[elt];
-			var cls = Type.getClass(elt);
-			if(!(cls == hide.prefab.Model || cls == hide.prefab.Box))
-				continue;
 			if(ctx.local3d != null) {
 				var o = ctx.local3d;
 				var meshes = getSelfMeshes(elt);
