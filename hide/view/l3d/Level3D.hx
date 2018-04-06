@@ -776,6 +776,50 @@ class Level3D extends FileView {
 		}
 	}
 
+	override function onDrop(over: Bool, e:js.html.DragEvent) {
+		var supported = ["fbx"];
+		var models = [];
+		for(f in e.dataTransfer.files) {
+			var path = Reflect.field(f, "path");
+			var ext = haxe.io.Path.extension(path);
+			if(supported.indexOf(ext) >= 0) {
+				models.push(path);
+			}
+		}
+		if(models.length > 0) {
+			if(!over) {
+				dropModels(models);
+			}
+			return true;
+		}
+		return false;
+	}
+
+	function dropModels(paths: Array<String>) {
+		var proj = screenToWorld(scene.s2d.mouseX, scene.s2d.mouseY);
+		if(proj == null) return;
+
+		var parent = curEdit != null && curEdit.elements.length > 0 ? curEdit.elements[0] : data;
+		var parentMat = worldMat(getObject(parent));
+		parentMat.invert();
+
+		var localMat = new h3d.Matrix();
+		localMat.initTranslate(proj.x, proj.y, proj.z);
+		localMat.multiply(localMat, parentMat);
+
+		var models: Array<PrefabElement> = [];
+		for(path in paths) {
+			var model = new hide.prefab.Model(parent);
+			model.setTransform(localMat);
+			var relative = ide.makeRelative(path);
+			model.source = relative;
+			autoName(model);
+			models.push(model);
+		}
+
+		refresh();
+	}
+
 	function canGroupSelection() {
 		var elts = curEdit.rootElements;
 		if(elts.length == 0)
@@ -1041,26 +1085,44 @@ class Level3D extends FileView {
 		updateTreeStyle(p, el);
 	}
 
-	function getZ(x: Float, y: Float) {
+	function getGroundPolys() {
 		var gname = props.get("l3d.groundLayer");
 		var groundLayer = data.get(Layer, gname);
 		var polygons = groundLayer.getAll(hide.prefab.l3d.Polygon);
-		var offset = 1000;
-		var ray = h3d.col.Ray.fromValues(x, y, offset, 0, 0, -1);
-		var topPoly = null;
-		var topDist = 1e10;
+		return polygons;		
+	}
+
+	function projectToGround(ray: h3d.col.Ray) {
+		var polygons = getGroundPolys();
+		var minDist = -1.;
 		for(polygon in polygons) {
 			var collider = polygon.mesh.getGlobalCollider();
 			var d = collider.rayIntersection(ray, true);
-			if(d > 0 && d < topDist) {
-				topDist = d;
-				topPoly = polygon;
+			if(d > 0 && (d < minDist || minDist < 0)) {
+				minDist = d;
 			}
 		}
-		if(topPoly != null) {
-			return offset - topDist;
+		return minDist;
+	}
+
+	function getZ(x: Float, y: Float) {
+		var offset = 1000;
+		var ray = h3d.col.Ray.fromValues(x, y, offset, 0, 0, -1);
+		var dist = projectToGround(ray);
+		if(dist >= 0) {
+			return offset - dist;
 		}
 		return 0.;
+	}
+
+	function screenToWorld(sx: Float, sy: Float) {
+		var camera = scene.s3d.camera;
+		var ray = camera.rayFromScreen(sx, sy);
+		var dist = projectToGround(ray);
+		if(dist >= 0) {
+			return ray.getPoint(dist);
+		}
+		return null;
 	}
 
 	static function worldMat(obj: Object) {

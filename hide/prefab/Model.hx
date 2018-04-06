@@ -5,6 +5,11 @@ class Model extends Object3D {
 	var animation : Null<String>;
 	var lockAnimation : Bool = false;
 
+	public function new(?parent) {
+		super(parent);
+		type = "model";
+	}
+
 	override function save() {
 		var obj : Dynamic = super.save();
 		if( animation != null ) obj.animation = animation;

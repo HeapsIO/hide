@@ -136,6 +136,10 @@ class View<T> extends hide.comp.Component {
 	public function onResize() {
 	}
 
+	public function onDrop(over : Bool, e:js.html.DragEvent) {
+		return false;
+	}
+
 	/**
 		Gives focus if part of a tab group
 	**/

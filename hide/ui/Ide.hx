@@ -89,30 +89,62 @@ class Ide {
 		var body = window.window.document.body;
 		body.onfocus = function(_) haxe.Timer.delay(function() new Element(body).find("input[type=file]").change().remove(), 200);
 		body.ondragover = function(e:js.html.DragEvent) {
-			e.preventDefault();
+			syncMousePosition(e);
+			var view = getViewAt(mouseX, mouseY);
+			if(view != null && view.onDrop(true, e)) {
+				e.preventDefault();
+				e.stopPropagation();
+			}
 			return false;
 		};
 		body.ondrop = function(e:js.html.DragEvent) {
-			for( f in e.dataTransfer.files )
-				openFile(Reflect.field(f,"path"));
-			e.preventDefault();
+			syncMousePosition(e);
+			var view = getViewAt(mouseX, mouseY);
+			if(view != null && view.onDrop(false, e)) {
+				e.preventDefault();
+				e.stopPropagation();
+			}
+			else {
+				for( f in e.dataTransfer.files )
+					openFile(Reflect.field(f,"path"));
+				e.preventDefault();
+			}
 			return false;
 		}
 
 		// dispatch global keys based on mouse position
 		new Element(body).keydown(function(e) {
-			for( v in views ) {
-				var c = v.root.offset();
-				if( mouseX >= c.left && mouseY >= c.top && mouseX <= c.left + v.root.outerWidth() && mouseY <= c.top + v.root.outerHeight() ) {
-					v.keys.processEvent(e);
-					break;
-				}
+			var view = getViewAt(mouseX, mouseY);
+			if(view != null) {
+				view.keys.processEvent(e);
 			}
 		});
 
 		var stage = new hxd.Stage(js.Browser.document.createCanvasElement(), true);
 		stage.setCurrent();
 		hxd.Key.initialize();
+	}
+
+	function getViewAt(x : Float, y : Float) {
+		for( v in views ) {
+			var c = v.root.offset();
+			if( x >= c.left && y >= c.top && x <= c.left + v.root.outerWidth() && y <= c.top + v.root.outerHeight() ) {
+				return v;
+			}
+		}
+		return null;
+	}
+
+	function syncMousePosition(e:js.html.MouseEvent) {
+		mouseX = e.clientX;
+		mouseY = e.clientY;
+		for( c in new Element("canvas") ) {
+			var s : hide.comp.Scene = (c:Dynamic).__scene;
+			if( s != null ) @:privateAccess {
+				s.stage.curMouseX = mouseX;
+				s.stage.curMouseY = mouseY;
+			}
+		}
 	}
 
 	function get_isWindows() {
