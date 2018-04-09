@@ -776,12 +776,11 @@ class Level3D extends FileView {
 		}
 	}
 
-	override function onDrop(over: Bool, e:js.html.DragEvent) {
+	override function onDrop(over: Bool, items : Array<String>) {
 		var supported = ["fbx"];
 		var models = [];
-		for(f in e.dataTransfer.files) {
-			var path = Reflect.field(f, "path");
-			var ext = haxe.io.Path.extension(path);
+		for(path in items) {
+			var ext = haxe.io.Path.extension(path).toLowerCase();
 			if(supported.indexOf(ext) >= 0) {
 				models.push(path);
 			}

@@ -91,7 +91,8 @@ class Ide {
 		body.ondragover = function(e:js.html.DragEvent) {
 			syncMousePosition(e);
 			var view = getViewAt(mouseX, mouseY);
-			if(view != null && view.onDrop(true, e)) {
+			var items : Array<String> = [for(f in e.dataTransfer.files) Reflect.field(f, "path")];
+			if(view != null && view.onDrop(true, items)) {
 				e.preventDefault();
 				e.stopPropagation();
 			}
@@ -100,7 +101,8 @@ class Ide {
 		body.ondrop = function(e:js.html.DragEvent) {
 			syncMousePosition(e);
 			var view = getViewAt(mouseX, mouseY);
-			if(view != null && view.onDrop(false, e)) {
+			var items : Array<String>  = [for(f in e.dataTransfer.files) Reflect.field(f, "path")];
+			if(view != null && view.onDrop(false, items)) {
 				e.preventDefault();
 				e.stopPropagation();
 			}
@@ -111,6 +113,29 @@ class Ide {
 			}
 			return false;
 		}
+
+		// Listen to FileTree dnd
+		new Element(window.window.document).on("dnd_stop.vakata.jstree", function(e, data) {
+			if(data.data.jstree != null) {
+				for( v in views ) {
+					var ft = Std.instance(v, hide.view.FileTree);
+					if(ft != null) @:privateAccess {
+						if(ft.tree.root[0] == data.data.origin.element[0]) {
+							var node = data.data.origin.get_node(data.element);
+							var item = ft.tree.map.get(node.id);
+							if(item != null) {
+								var path = item.value;
+								var view = getViewAt(mouseX, mouseY);
+								if(view != null) {
+									view.onDrop(false, [path]);
+								}
+							}
+							break;
+						}
+					}
+				}
+			}
+		});
 
 		// dispatch global keys based on mouse position
 		new Element(body).keydown(function(e) {
