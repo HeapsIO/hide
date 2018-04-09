@@ -88,25 +88,23 @@ class Ide {
 		// handle cancel on type=file
 		var body = window.window.document.body;
 		body.onfocus = function(_) haxe.Timer.delay(function() new Element(body).find("input[type=file]").change().remove(), 200);
-		body.ondragover = function(e:js.html.DragEvent) {
+		function dragFunc(drop : Bool, e:js.html.DragEvent) {
 			syncMousePosition(e);
 			var view = getViewAt(mouseX, mouseY);
 			var items : Array<String> = [for(f in e.dataTransfer.files) Reflect.field(f, "path")];
-			if(view != null && view.onDrop(true, items)) {
+			if(view != null && view.onDragDrop(items, false)) {
 				e.preventDefault();
 				e.stopPropagation();
+				return true;
 			}
+			return false;
+		}
+		body.ondragover = function(e:js.html.DragEvent) {
+			dragFunc(false, e);
 			return false;
 		};
 		body.ondrop = function(e:js.html.DragEvent) {
-			syncMousePosition(e);
-			var view = getViewAt(mouseX, mouseY);
-			var items : Array<String>  = [for(f in e.dataTransfer.files) Reflect.field(f, "path")];
-			if(view != null && view.onDrop(false, items)) {
-				e.preventDefault();
-				e.stopPropagation();
-			}
-			else {
+			if(!dragFunc(true, e)) {
 				for( f in e.dataTransfer.files )
 					openFile(Reflect.field(f,"path"));
 				e.preventDefault();
@@ -116,23 +114,22 @@ class Ide {
 
 		// Listen to FileTree dnd
 		new Element(window.window.document).on("dnd_stop.vakata.jstree", function(e, data) {
-			if(data.data.jstree != null) {
-				for( v in views ) {
-					var ft = Std.instance(v, hide.view.FileTree);
-					if(ft != null) @:privateAccess {
-						if(ft.tree.root[0] == data.data.origin.element[0]) {
-							var node = data.data.origin.get_node(data.element);
-							var item = ft.tree.map.get(node.id);
-							if(item != null) {
-								var path = item.value;
-								var view = getViewAt(mouseX, mouseY);
-								if(view != null) {
-									view.onDrop(false, [path]);
-								}
-							}
-							break;
-						}
-					}
+			if(data.data.jstree == null) return;
+			for( v in views ) {
+				var ft = Std.instance(v, hide.view.FileTree);
+				if(ft == null) continue;
+				var item;
+				@:privateAccess {
+					if(ft.tree.root[0] != data.data.origin.element[0]) continue;
+					var node = data.data.origin.get_node(data.element);
+					item = ft.tree.map.get(node.id);
+				}
+				if( item == null ) continue;
+				var path = item.value;
+				var view = getViewAt(mouseX, mouseY);
+				if(view != null) {
+					view.onDragDrop([path], true);
+					return;
 				}
 			}
 		});

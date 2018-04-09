@@ -91,40 +91,29 @@ class Object3D extends Prefab {
 		var props = new hide.Element('
 			<div class="group" name="Position">
 				<dl>
-					<dt><input type="button" value="X" xfield="x" class="reset"/></dt><dd><input type="range" min="-10" max="10" value="0" field="x"/></dd>
-					<dt><input type="button" value="Y" xfield="y" class="reset"/></dt><dd><input type="range" min="-10" max="10" value="0" field="y"/></dd>
-					<dt><input type="button" value="Z" xfield="z" class="reset"/></dt><dd><input type="range" min="-10" max="10" value="0" field="z"/></dd>
-					<dt><input type="button" value="Scale X" xfield="scaleX" class="reset"/></dt><dd><input type="range" min="0" max="5" value="1" field="scaleX"/></dd>
-					<dt><input type="button" value="Scale Y" xfield="scaleY" class="reset"/></dt><dd><input type="range" min="0" max="5" value="1" field="scaleY"/></dd>
-					<dt><input type="button" value="Scale Z" xfield="scaleZ" class="reset"/></dt><dd><input type="range" min="0" max="5" value="1" field="scaleZ"/></dd>
-					<dt><input type="button" value="Rotation X" xfield="rotationX" class="reset"/></dt><dd><input type="range" min="-180" max="180" value="0" field="rotationX" scale="${Math.PI/180}"/></dd>
-					<dt><input type="button" value="Rotation Y" xfield="rotationY" class="reset"/></dt><dd><input type="range" min="-180" max="180" value="0" field="rotationY" scale="${Math.PI/180}"/></dd>
-					<dt><input type="button" value="Rotation Z" xfield="rotationZ" class="reset"/></dt><dd><input type="range" min="-180" max="180" value="0" field="rotationZ" scale="${Math.PI/180}"/></dd>
+					<dt>X</dt><dd><input type="range" min="-10" max="10" value="0" field="x"/></dd>
+					<dt>Y</dt><dd><input type="range" min="-10" max="10" value="0" field="y"/></dd>
+					<dt>Z</dt><dd><input type="range" min="-10" max="10" value="0" field="z"/></dd>
+					<dt>Scale X</dt><dd><input type="range" min="0" max="5" value="1" field="scaleX"/></dd>
+					<dt>Scale Y</dt><dd><input type="range" min="0" max="5" value="1" field="scaleY"/></dd>
+					<dt>Scale Z</dt><dd><input type="range" min="0" max="5" value="1" field="scaleZ"/></dd>
+					<dt>Rotation X</dt><dd><input type="range" min="-180" max="180" value="0" field="rotationX" scale="${Math.PI/180}"/></dd>
+					<dt>Rotation Y</dt><dd><input type="range" min="-180" max="180" value="0" field="rotationY" scale="${Math.PI/180}"/></dd>
+					<dt>Rotation Z</dt><dd><input type="range" min="-180" max="180" value="0" field="rotationZ" scale="${Math.PI/180}"/></dd>
 					<dt>Visible</dt><dd><input type="checkbox" field="visible"/></dd>
 				</dl>
 			</div>
 		');
-
 		ctx.properties.add(props, this, function(pname) {
 			applyPos(ctx.getContext(this).local3d);
 			ctx.onChange(this, pname);
 		});
-
-		for(fname in "x y z rotationX rotationY rotationZ scaleX scaleY scaleZ".split(" ")) {
-			var resets = props.find('input.reset[xfield="$fname"]');
-			resets.click(function(e) {
-				var field = ctx.properties.fields.find(f -> f.fname == fname);
-				if(field != null) {
-					var range = @:privateAccess field.range;
-					if(range != null) range.reset();
-				}
-			});
-		}
 		#end
 	}
 
 	override function getHideProps() {
-		return { icon : "folder-open", name : "Group", fileSource : null };
+		// Check children
+		return { icon : children == null || children.length > 0 ? "folder-open" : "genderless", name : "Group", fileSource : null };
 	}
 
 	static var _ = Library.register("object", Object3D);

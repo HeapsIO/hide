@@ -31,18 +31,16 @@ class Toolbar extends Component {
 		if(label != null) {
 			new Element('<label>$label</label>').appendTo(e);
 		}
-		var callback = null;
 		e.click(function(_) {
 			e.toggleClass("toggled");
 			this.saveDisplayState("toggle:" + icon, e.hasClass("toggled"));
-			if( callback != null ) callback(e.hasClass("toggled"));
+			if( onToggle != null ) onToggle(e.hasClass("toggled"));
 		});
 		e.appendTo(root);
 		if( defValue ) e.addClass("toggled");
 		var def = getDisplayState("toggle:" + icon);
 		if( def == null ) def = false;
 		if( def != defValue ) e.click();
-		callback = onToggle;
 		return {
 			element : e,
 			toggle : function(b) e.toggleClass("toggled",b),

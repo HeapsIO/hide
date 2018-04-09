@@ -175,9 +175,8 @@ class IconTree<T:{}> extends Component {
 		(untyped root.jstree)('deselect_all');
 		var ids = [for( o in objects ) { var v = getRev(o); if( v != null ) v.id; }];
 		(untyped root.jstree)('select_node',ids);
-		if(objects.length > 0) {
-			revealNode(objects[0]);
-		}
+		for(obj in objects)
+			revealNode(obj);
 	}
 
 	public function refresh( ?onReady : Void -> Void ) {

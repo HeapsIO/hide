@@ -14,9 +14,8 @@ class Layer extends Object3D {
 	public function getCdbModel() {
 		var levelSheet = getLevelSheet();
 		if(levelSheet == null) return null;
-		var lname = name.toLowerCase();
-		lname = lname.split("_")[0].split(" ")[0].split("-")[0];
-		var col = levelSheet.columns.find(c -> { var lc = c.name.toLowerCase(); lc == lname || lc + "s" == lname; });
+		var lname = name.split("_")[0];
+		var col = levelSheet.columns.find(c -> c.name == lname);
 		if(col == null || col.type != TList) return null;
 		return levelSheet.getSub(col);
 	}

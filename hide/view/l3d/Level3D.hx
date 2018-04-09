@@ -476,63 +476,64 @@ class Level3D extends FileView {
 				});
 			}
 
-			{
+			function addNewInstances() {
 				var curLayer = current.to(hide.prefab.l3d.Layer);
-				if(curLayer != null) {
-					var cdbSheet = curLayer.getCdbModel();
-					if(cdbSheet != null) {
-						var refCol = Instance.findRefColumn(cdbSheet);
-						if(refCol != null) {
-							var refSheet = cdbSheet.base.getSheet(refCol.sheet);
-							var idCol = Instance.findIDColumn(refSheet);
-							if(idCol != null) {
-								var kindItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
-								for(line in refSheet.lines) {
-									var kind = Reflect.getProperty(line, idCol.name);
-									kindItems.push({
-										label : kind,
-										click : function() {
-											var p = new hide.prefab.l3d.Instance(current);
-											p.props = {};
-											for( c in cdbSheet.columns ) {
-												var d = cdbSheet.base.getDefault(c);
-												if( d != null )
-													Reflect.setField(p.props, c.name, d);
-											}
-											p.name = kind.toLowerCase() + "_";
-											Reflect.setField(p.props, refCol.col.name, kind);
-											autoName(p);
-											addObject(p);
-										}
-									});
+				if(curLayer == null)
+					return;
+				var cdbSheet = curLayer.getCdbModel();
+				if(cdbSheet == null)
+					return;
+				var refCol = Instance.findRefColumn(cdbSheet);
+				if(refCol == null)
+					return;
+				var refSheet = cdbSheet.base.getSheet(refCol.sheet);
+				var idCol = Instance.findIDColumn(refSheet);
+				if(idCol != null) {
+					var kindItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
+					for(line in refSheet.lines) {
+						var kind : String = Reflect.getProperty(line, idCol.name);
+						kindItems.push({
+							label : kind,
+							click : function() {
+								var p = new hide.prefab.l3d.Instance(current);
+								p.props = {};
+								for( c in cdbSheet.columns ) {
+									var d = cdbSheet.base.getDefault(c);
+									if( d != null )
+										Reflect.setField(p.props, c.name, d);
 								}
-								newItems.unshift({
-									label : "Instance",
-									menu: kindItems
-								});
+								p.name = kind.charAt(0).toLowerCase + kind.substr(1) + "_";
+								Reflect.setField(p.props, refCol.col.name, kind);
+								autoName(p);
+								addObject(p);
 							}
-							else {
-								newItems.unshift({
-									label : "Instance",
-									click : function() {
-										var p = new hide.prefab.l3d.Instance(current);
-										p.name = "object";
-										autoName(p);
-										addObject(p);
-									}
-								});
-							}
-						}
+						});
 					}
+					newItems.unshift({
+						label : "Instance",
+						menu: kindItems
+					});
 				}
-			}
+				else {
+					newItems.unshift({
+						label : "Instance",
+						click : function() {
+							var p = new hide.prefab.l3d.Instance(current);
+							p.name = "object";
+							autoName(p);
+							addObject(p);
+						}
+					});
+				}
+			};
+			addNewInstances();
 
 			var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [
 				{ label : "New...", menu : newItems },
 				{ label : "Rename", enabled : current != null, click : function() tree.editNode(current) },
 				{ label : "Delete", enabled : current != null, click : function() deleteElements(curEdit.rootElements) },
 				{ label : "Select all", click : selectAll },
-				{ label : "Select children", enabled : current != null, click : function() selectObjects(current.getAll(PrefabElement)) },
+				{ label : "Select children", enabled : current != null, click : function() selectObjects(current.flatten()) },
 				{ label : "Show", enabled : curEdit != null && curEdit.elements.length > 0, click : function() setVisible(curEdit.elements, true) },
 				{ label : "Hide", enabled : curEdit != null && curEdit.elements.length > 0, click : function() setVisible(curEdit.elements, false) },
 				{ label : "Isolate", enabled : curEdit != null && curEdit.elements.length > 0, click : function() isolate(curEdit.elements) },
@@ -635,7 +636,6 @@ class Level3D extends FileView {
 	}
 
 	function isolate(elts : Array<PrefabElement>) {
-		var all = context.shared.contexts.keys();
 		var toShow = elts.copy();
 		var toHide = [];
 		function hideSiblings(elt: PrefabElement) {
@@ -710,7 +710,7 @@ class Level3D extends FileView {
 		}];
 		var oldContexts = contexts.copy();
 		for(e in elts) {
-			for(c in e.getAll(PrefabElement))
+			for(c in e.flatten())
 				contexts.remove(c);
 		}
 		var newContexts = contexts.copy();
@@ -776,7 +776,7 @@ class Level3D extends FileView {
 		}
 	}
 
-	override function onDrop(over: Bool, items : Array<String>) {
+	override function onDragDrop(items : Array<String>, isDrop : Bool) {
 		var supported = ["fbx"];
 		var models = [];
 		for(path in items) {
@@ -786,7 +786,7 @@ class Level3D extends FileView {
 			}
 		}
 		if(models.length > 0) {
-			if(!over) {
+			if(isDrop) {
 				dropModels(models);
 			}
 			return true;
@@ -936,13 +936,16 @@ class Level3D extends FileView {
 		}
 		layerButtons = new Map<PrefabElement, hide.comp.Toolbar.ToolToggle>();
 		var all = context.shared.contexts.keys();
+		var initDone = false;
 		for(elt in all) {
 			var layer = elt.to(hide.prefab.l3d.Layer);
 			if(layer == null) continue;
 			layerButtons[elt] = tools.addToggle("file", layer.name, layer.name, function(on) {
-				setVisible([layer], on);
+				if(initDone)
+					setVisible([layer], on);
 			}, layer.visible);
 		}
+		initDone = true;
 	}
 
 	function getSelfMeshes(p : PrefabElement) {

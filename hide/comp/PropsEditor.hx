@@ -134,8 +134,19 @@ class PropsEditor extends Component {
 				if( onChange != null ) onChange(@:privateAccess f.fname);
 			};
 			fields.push(f);
-		}
 
+			// Init reset buttons
+			var defVal = f.root.attr("value");
+			if(defVal != null) {
+				var dd = f.root.parent().parent("dd");
+				var dt = dd.prev("dt");
+				var button = dt.wrapInner('<input type="button" value="${dt.text()}"/>');
+				button.click(function(e) {
+					var range = @:privateAccess f.range;
+					if(range != null) range.reset();
+				});
+			}
+		}
 		return e;
 	}
 
