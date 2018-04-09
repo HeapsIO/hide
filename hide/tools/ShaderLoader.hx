@@ -10,12 +10,12 @@ typedef CachedShader = {
 
 class ShaderLoader {
 
-	var ide : hide.ui.Ide;
+	var ide : hide.Ide;
 	var shaderPath : Array<String>;
 	var shaderCache = new Map<String, CachedShader>();
 
 	public function new() {
-		ide = hide.ui.Ide.inst;
+		ide = hide.Ide.inst;
 		shaderPath = ide.currentProps.get("haxe.classPath");
 	}
 

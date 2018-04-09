@@ -13,7 +13,7 @@ class ContextMenu {
 
 	public function new( config : Array<ContextMenuItem> ) {
 		var menu = makeMenu(config);
-		var ide = hide.ui.Ide.inst;
+		var ide = hide.Ide.inst;
 		menu.popup(ide.mouseX, ide.mouseY);
 	}
 

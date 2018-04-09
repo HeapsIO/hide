@@ -3,13 +3,13 @@ package hide.comp;
 @:access(hide.comp.Scene)
 class SceneLoader extends hxd.fmt.hsd.Serializer {
 
-	var ide : hide.ui.Ide;
+	var ide : hide.Ide;
 	var hsdPath : String;
 	var projectPath : String;
 	var scene : Scene;
 
 	public function new(hsdPath, scene) {
-		ide = hide.ui.Ide.inst;
+		ide = hide.Ide.inst;
 		super();
 		this.hsdPath = hsdPath;
 		this.scene = scene;

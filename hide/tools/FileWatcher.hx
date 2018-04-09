@@ -2,11 +2,11 @@ package hide.tools;
 
 class FileWatcher {
 
-	var ide : hide.ui.Ide;
+	var ide : hide.Ide;
 	var watches : Map<String,{ events : Array<{path:String,fun:Void->Void,checkDel:Bool}>, w : js.node.fs.FSWatcher, changed : Bool, isDir : Bool }> = new Map();
 
 	public function new() {
-		ide = hide.ui.Ide.inst;
+		ide = hide.Ide.inst;
 	}
 
 	public function register( path : String, updateFun, ?checkDelete : Bool ) {

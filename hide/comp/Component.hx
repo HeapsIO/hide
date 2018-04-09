@@ -2,13 +2,13 @@ package hide.comp;
 
 class Component {
 
-	var ide : hide.ui.Ide;
+	var ide : hide.Ide;
 	public var name(get, never) : String;
 	public var root : Element;
 	public var saveDisplayKey : String;
 
 	public function new(root) {
-		ide = hide.ui.Ide.inst;
+		ide = hide.Ide.inst;
 		this.root = root;
 	}
 

@@ -5,10 +5,10 @@ import h3d.anim.SmoothTarget;
 
 class Interp extends hscript.Interp {
 
-	var ide : hide.ui.Ide;
+	var ide : hide.Ide;
 
 	public function new() {
-		ide = hide.ui.Ide.inst;
+		ide = hide.Ide.inst;
 		super();
 		// share some classes
 		variables.set("hxd", { Res : new ResourceLoader([]) });
@@ -84,7 +84,7 @@ class ResourceLoader {
 	}
 
 	function resolvePath() {
-		var ide = hide.ui.Ide.inst;
+		var ide = hide.Ide.inst;
 		var dir = __path.copy();
 		var name = dir.pop();
 		var dir = dir.join("/");

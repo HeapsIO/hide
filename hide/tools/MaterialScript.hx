@@ -19,7 +19,7 @@ class RendererScript extends h3d.scene.Renderer {
 			callb();
 		} catch( e : hscript.Expr.Error ) {
 			hasError = true;
-			hide.ui.Ide.inst.error(hscript.Printer.errorToString(e));
+			hide.Ide.inst.error(hscript.Printer.errorToString(e));
 		}
 	}
 
@@ -56,12 +56,12 @@ class Properties extends hxd.impl.Properties {
 
 class MaterialScript extends h3d.mat.MaterialScript {
 
-	var ide : hide.ui.Ide;
+	var ide : hide.Ide;
 	public var renderer : Properties;
 
 	public function new() {
 		super(); // name will be set by script itself
-		ide = hide.ui.Ide.inst;
+		ide = hide.Ide.inst;
 	}
 
 	function loadModule( path : String ) : Dynamic {

@@ -22,11 +22,11 @@ class Layer extends Object3D {
 	}
 
 	public function getLevelSheet() {
-		var ide = hide.ui.Ide.inst;
+		var ide = hide.Ide.inst;
 		return ide.database.getSheet(ide.currentProps.get("l3d.cdbLevel", "level"));
 	}
 	#end
-	
+
 	override function save() {
 		var obj : Dynamic = super.save();
 		obj.locked = locked;
@@ -76,7 +76,7 @@ class Layer extends Object3D {
 		}
 		#end
 	}
-	
+
 	override function getHideProps() {
 		return { icon : "file", name : "Layer", fileSource : null };
 	}

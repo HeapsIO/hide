@@ -1,4 +1,5 @@
-package hide.ui;
+package hide;
+import hide.ui.Props;
 
 class Ide {
 
@@ -26,7 +27,7 @@ class Ide {
 		user : Props,
 		current : Props,
 	};
-	var ideProps(get, never) : Props.HideProps;
+	var ideProps(get, never) : hide.ui.Props.HideProps;
 
 	var window : nw.Window;
 	var layout : golden.Layout;
@@ -34,7 +35,7 @@ class Ide {
 	var currentLayout : { name : String, state : Dynamic };
 	var maximized : Bool;
 	var updates : Array<Void->Void> = [];
-	var views : Array<View<Dynamic>> = [];
+	var views : Array<hide.ui.View<Dynamic>> = [];
 
 	var renderers : Array<h3d.mat.MaterialSetup>;
 
@@ -75,7 +76,7 @@ class Ide {
 			window.close(true);
 		});
 		window.on('blur', hxd.Key.initialize);
-		
+
 		// handle commandline parameters
 		nw.App.on("open", function(cmd) {
 			~/"([^"]+)"/g.map(cmd, function(r) {
@@ -215,7 +216,7 @@ class Ide {
 			content: state.state,
 		};
 		var comps = new Map();
-		for( vcl in View.viewClasses )
+		for( vcl in hide.ui.View.viewClasses )
 			comps.set(vcl.name, true);
 		function checkRec(i:golden.Config.ItemConfig) {
 			if( i.componentName != null && !comps.exists(i.componentName) ) {
@@ -228,7 +229,7 @@ class Ide {
 
 		layout = new golden.Layout(config);
 
-		for( vcl in View.viewClasses )
+		for( vcl in hide.ui.View.viewClasses )
 			layout.registerComponent(vcl.name,function(cont,state) {
 				var view = Type.createInstance(vcl.cl,[state]);
 				view.setContainer(cont);
@@ -525,7 +526,7 @@ class Ide {
 			props.global.save();
 		});
 
-		window.menu = new Menu(menu).root;
+		window.menu = new hide.ui.Menu(menu).root;
 	}
 
 	public function openFile( file : String, ?onCreate ) {
@@ -542,10 +543,10 @@ class Ide {
 		open(ext.component, { path : path }, onCreate);
 	}
 
-	public function open( component : String, state : Dynamic, ?onCreate : View<Dynamic> -> Void ) {
+	public function open( component : String, state : Dynamic, ?onCreate : hide.ui.View<Dynamic> -> Void ) {
 		if( state == null ) state = {};
 
-		var c = View.viewClasses.get(component);
+		var c = hide.ui.View.viewClasses.get(component);
 		if( c == null )
 			throw "Unknown component " + component;
 

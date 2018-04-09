@@ -23,7 +23,7 @@ typedef TypeFile = {
 
 class TypesCache {
 
-	var ide : hide.ui.Ide;
+	var ide : hide.Ide;
 	var needRebuild = true;
 	var types : Array<TypeModel> = [];
 	var htype : Map<String, TypeModel> = new Map();
@@ -31,7 +31,7 @@ class TypesCache {
 	var watchers = [];
 
 	public function new() {
-		ide = hide.ui.Ide.inst;
+		ide = hide.Ide.inst;
 	}
 
 	public function getModels() {

@@ -1,7 +1,22 @@
 {
     "version": "2.0.0",
-    "command": "haxe",
-    "args": ["hide.hxml","-cmd","bin\\hide.cmd"],
-    "problemMatcher": "$haxe",
-    "showOutput": "never"
+    "tasks": [
+        {
+            "label": "Compile & Run",
+            "command": "haxe",
+            "args": [
+                "hide.hxml",
+                "-cmd",
+                "bin\\hide.cmd"
+            ],
+            "problemMatcher": "$haxe",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "never"
+            }
+        }
+    ],
 }

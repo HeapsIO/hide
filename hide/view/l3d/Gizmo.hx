@@ -42,7 +42,7 @@ class Gizmo extends h3d.scene.Object {
 	public function new(scene: hide.comp.Scene) {
 		super(scene.s3d);
 		this.scene = scene;
-		var path = hide.ui.Ide.inst.appPath + "/res/gizmo.hmd";
+		var path = hide.Ide.inst.appPath + "/res/gizmo.hmd";
 		var data = sys.io.File.getBytes(path);
 		var hmd = hxd.res.Any.fromBytes(path, data).toModel().toHmd();
 		gizmo = hmd.makeObject();
@@ -122,7 +122,7 @@ class Gizmo extends h3d.scene.Object {
 			var curPt = getDragPoint(dragPlane);
 			var delta = curPt.sub(startDragPt);
 			var translate = new h3d.Vector(0,0,0);
-			var quat = new h3d.Quat();			
+			var quat = new h3d.Quat();
 			var speedFactor = K.isDown(K.SHIFT) ? 0.1 : 1.0;
 			delta.scale(speedFactor);
 
@@ -139,7 +139,7 @@ class Gizmo extends h3d.scene.Object {
 				if(mode == MoveX || mode == MoveXY || mode == MoveZX) translate.x = snap(delta.x);
 				if(mode == MoveY || mode == MoveYZ || mode == MoveXY) translate.y = snap(delta.y);
 				if(mode == MoveZ || mode == MoveZX || mode == MoveYZ) translate.z = snap(delta.z);
-			
+
 				x = (startPos.x + translate.x);
 				y = (startPos.y + translate.y);
 				z = (startPos.z + translate.z);

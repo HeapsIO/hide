@@ -5,9 +5,8 @@
 -lib castle
 -cp libs
 -js bin/hide.js
--main hide.ui.Ide
+-main hide.Ide
 -D hscriptPos
--D old-error-format
 -D multidriver
 -D editor
 -dce no

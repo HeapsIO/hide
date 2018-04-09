@@ -82,7 +82,7 @@ class Props {
 	public function get( key : String, ?defaultVal : Dynamic ) : Dynamic {
 		var val = Reflect.field(current,key);
 		if(val != null) return val;
-		return defaultVal; 
+		return defaultVal;
 	}
 
 	public static function loadForProject( projectPath : String, resourcePath : String ) {
@@ -120,7 +120,7 @@ class Props {
 		};
 	}
 
-	public static function loadForFile( ide : hide.ui.Ide, path : String ) {
+	public static function loadForFile( ide : hide.Ide, path : String ) {
 		var parts = path.split("/");
 		var propFiles = [];
 		var first = true, allowSave = false;

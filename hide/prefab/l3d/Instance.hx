@@ -26,7 +26,7 @@ class Instance extends Object3D {
 		var ctx = super.makeInstance(ctx);
 		var parentLayer = getParent(Layer);
 		if(parentLayer != null) {
-			var sheet = parentLayer.getCdbModel();			
+			var sheet = parentLayer.getCdbModel();
 			if(sheet != null) {
 				var refCol = findRefColumn(sheet);
 				if(refCol != null) {
@@ -104,7 +104,7 @@ class Instance extends Object3D {
 	public static function findRefColumn(sheet : cdb.Sheet) {
 		for(col in sheet.columns) {
 			switch(col.type) {
-				case TRef(sheet): 
+				case TRef(sheet):
 					return {col: col, sheet: sheet};
 				default:
 			}
@@ -121,7 +121,7 @@ class Instance extends Object3D {
 		if(path == null)
 			return null;
 		try {
-			var model = hxd.Res.load(path).toModel();
+			var model = hxd.res.Loader.currentInstance.load(path).toModel();
 			return model;
 		} catch( e : hxd.res.NotFound ) {}
 		return null;
@@ -174,7 +174,7 @@ class Instance extends Object3D {
 	static function makeTile(p:cdb.Types.TilePos) : h2d.Tile {
 		var w = (p.width == null ? 1 : p.width) * p.size;
 		var h = (p.height == null ? 1 : p.height) * p.size;
-		return hxd.Res.load(p.file).toTile().sub(p.x * p.size, p.y * p.size, w, h);
+		return hxd.res.Loader.currentInstance.load(p.file).toTile().sub(p.x * p.size, p.y * p.size, w, h);
 	}
 
 	static var _ = Library.register("instance", Instance);

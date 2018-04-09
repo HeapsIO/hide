@@ -9,7 +9,7 @@ enum DisplayPosition {
 
 typedef ViewOptions = { ?position : DisplayPosition, ?width : Int }
 
-@:keepSub @:allow(hide.ui.Ide)
+@:keepSub @:allow(hide.Ide)
 class View<T> extends hide.comp.Component {
 
 	var container : golden.Container;
