@@ -78,6 +78,23 @@ class Model extends FileView {
 	function selectObject( obj : h3d.scene.Object ) {
 		properties.clear();
 
+		var objectCount = 1 + obj.getObjectsCount();
+		var meshes = obj.getMeshes();
+		var vertexCount = 0, triangleCount = 0, materialDraws = 0, materialCount = 0;
+		var uniqueMats = new Map();
+		for( m in obj.getMaterials() ) {
+			if( uniqueMats.exists(m.name) ) continue;
+			uniqueMats.set(m.name, true);
+			materialCount++;
+		}
+		for( m in meshes ) {
+			var p = m.primitive;
+			triangleCount += p.triCount();
+			vertexCount += p.vertexCount();
+			var multi = Std.instance(m, h3d.scene.MultiMaterial);
+			materialDraws += if( multi != null ) multi.materials.length else 1;
+		}
+
 		var e = properties.add(new Element('
 			<div class="group" name="Properties">
 				<dl>
@@ -86,6 +103,16 @@ class Model extends FileView {
 					<dt>Z</dt><dd><input field="z"/></dd>
 					<dt>Visible</dt><dd><input type="checkbox" field="visible"/></dd>
 					<dt>Attach</dt><dd><select class="follow"><option value="">--- None ---</option></select></dd>
+				</dl>
+			</div>
+			<div class="group" name="Info">
+				<dl>
+					<dt>Objects</dt><dd>$objectCount</dd>
+					<dt>Meshes</dt><dd>${meshes.length}</dd>
+					<dt>Materials</dt><dd>$materialCount</dd>
+					<dt>Draws</dt><dd>$materialDraws</dd>
+					<dt>Vertexes</dt><dd>$vertexCount</dd>
+					<dt>Triangles</dt><dd>$triangleCount</dd>
 				</dl>
 			</div>
 			<br/>
