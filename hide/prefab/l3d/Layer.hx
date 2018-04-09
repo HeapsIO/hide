@@ -11,6 +11,7 @@ class Layer extends Object3D {
 		type = "layer";
 	}
 
+	#if editor
 	public function getCdbModel() {
 		var levelSheet = getLevelSheet();
 		if(levelSheet == null) return null;
@@ -24,6 +25,7 @@ class Layer extends Object3D {
 		var ide = hide.ui.Ide.inst;
 		return ide.database.getSheet(ide.currentProps.get("l3d.cdbLevel", "level"));
 	}
+	#end
 	
 	override function save() {
 		var obj : Dynamic = super.save();
