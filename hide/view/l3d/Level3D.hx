@@ -477,6 +477,8 @@ class Level3D extends FileView {
 			}
 
 			function addNewInstances() {
+				if(current == null)
+					return;
 				var curLayer = current.to(hide.prefab.l3d.Layer);
 				if(curLayer == null)
 					return;

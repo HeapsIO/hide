@@ -2,8 +2,8 @@ package hide.prefab.l3d;
 
 class Level3D extends Library {
 
-	public var width : Int = 0;
-	public var height : Int = 0;
+	public var width : Int = 100;
+	public var height : Int = 100;
 
 	public function new() {
 		super();
