@@ -18,6 +18,7 @@ enum TransformMode {
 	RotateX;
 	RotateY;
 	RotateZ;
+	Scale;
 }
 
 class Gizmo extends h3d.scene.Object {
@@ -35,7 +36,7 @@ class Gizmo extends h3d.scene.Object {
 	public var moving(default, null): Bool;
 
 	var debug: h3d.scene.Graphics;
-	var isScaling = false;
+	var axisScale = false;
 	var snapGround = false;
 	var intOverlay : h2d.Interactive;
 
@@ -92,6 +93,7 @@ class Gizmo extends h3d.scene.Object {
 		setup("xRotate", 0x90ff0000, RotateX);
 		setup("yRotate", 0x9000ff00, RotateY);
 		setup("zRotate", 0x900000ff, RotateZ);
+		setup("scale", 0x90ffffff, Scale);
 	}
 
 	public function startMove(mode: TransformMode, ?duplicating=false) {
@@ -114,6 +116,7 @@ class Gizmo extends h3d.scene.Object {
 			case RotateX: norm.set(1, 0, 0);
 			case RotateY: norm.set(0, 1, 0);
 			case RotateZ: norm.set(0, 0, 1);
+			case Scale: norm.z = 0;
 		}
 		norm.normalize();
 		dragPlane = h3d.col.Plane.fromNormalPoint(norm, startPos);
@@ -121,28 +124,37 @@ class Gizmo extends h3d.scene.Object {
 		updateFunc = function(dt) {
 			var curPt = getDragPoint(dragPlane);
 			var delta = curPt.sub(startDragPt);
-			var translate = new h3d.Vector(0,0,0);
+			var vec = new h3d.Vector(0,0,0);
 			var quat = new h3d.Quat();
 			var speedFactor = K.isDown(K.SHIFT) ? 0.1 : 1.0;
 			delta.scale(speedFactor);
+
+			inline function scaleFunc(x: Float) {
+				return x > 0 ? (x + 1) : 1 / (1 - x);
+			}
 
 			inline function snap(m: Float) {
 				return moveStep > 0.0 && K.isDown(K.CTRL) ? hxd.Math.round(m / moveStep) * moveStep : m;
 			}
 
-			if(isScaling) {
-				if(mode == MoveX) translate.x = snap(delta.dot(startMat.front().toPoint()));
-				if(mode == MoveY) translate.y = snap(delta.dot(startMat.right().toPoint()));
-				if(mode == MoveZ) translate.z = snap(delta.dot(startMat.up().toPoint()));
+			if(axisScale) {
+				if(mode == MoveX) vec.x = snap(delta.dot(startMat.front().toPoint()));
+				if(mode == MoveY) vec.y = snap(delta.dot(startMat.right().toPoint()));
+				if(mode == MoveZ) vec.z = snap(delta.dot(startMat.up().toPoint()));
 			}
 			else {
-				if(mode == MoveX || mode == MoveXY || mode == MoveZX) translate.x = snap(delta.x);
-				if(mode == MoveY || mode == MoveYZ || mode == MoveXY) translate.y = snap(delta.y);
-				if(mode == MoveZ || mode == MoveZX || mode == MoveYZ) translate.z = snap(delta.z);
+				if(mode == MoveX || mode == MoveXY || mode == MoveZX) vec.x = snap(delta.x);
+				if(mode == MoveY || mode == MoveYZ || mode == MoveXY) vec.y = snap(delta.y);
+				if(mode == MoveZ || mode == MoveZX || mode == MoveYZ) vec.z = snap(delta.z);
 
-				x = (startPos.x + translate.x);
-				y = (startPos.y + translate.y);
-				z = (startPos.z + translate.z);
+				x = (startPos.x + vec.x);
+				y = (startPos.y + vec.y);
+				z = (startPos.z + vec.z);
+			}
+
+			if(mode == Scale) {
+				var scale = scaleFunc(delta.z * 0.5);
+				vec.set(scale, scale, scale);
 			}
 
 			if(mode == RotateX || mode == RotateY || mode == RotateZ) {
@@ -159,17 +171,18 @@ class Gizmo extends h3d.scene.Object {
 			}
 
 			if(onMove != null) {
-				if(isScaling) {
-					inline function f(x: Float) {
-						return x > 0 ? (x + 1) : 1 / (1 - x);
-					}
-					translate.x = f(translate.x);
-					translate.y = f(translate.y);
-					translate.z = f(translate.z);
-					onMove(null, null, translate);
+				if(axisScale) {
+					vec.x = scaleFunc(vec.x);
+					vec.y = scaleFunc(vec.y);
+					vec.z = scaleFunc(vec.z);
+					onMove(null, null, vec);
 				}
-				else
-					onMove(translate, quat, null);
+				else {
+					if(mode == Scale)
+						onMove(null, null, vec);
+					else
+						onMove(vec, quat, null);
+				}
 			}
 
 			if(duplicating && K.isPressed(K.MOUSE_LEFT) || K.isPressed(K.ESCAPE) || (!duplicating && !K.isDown(K.MOUSE_LEFT))) {
@@ -203,9 +216,9 @@ class Gizmo extends h3d.scene.Object {
 		var distToCam = cam.pos.sub(gpos).length();
 		gizmo.setScale(distToCam / 30 );
 
-		isScaling = K.isDown(K.ALT);
-		for(n in ["xRotate", "yRotate", "zRotate", "xy", "xz", "yz"]) {
-			gizmo.getObjectByName(n).visible = !isScaling;
+		axisScale = K.isDown(K.ALT);
+		for(n in ["xRotate", "yRotate", "zRotate", "xy", "xz", "yz", "scale"]) {
+			gizmo.getObjectByName(n).visible = !axisScale;
 		}
 
 		if(updateFunc != null) {
