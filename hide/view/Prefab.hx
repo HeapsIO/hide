@@ -4,11 +4,13 @@ import hide.prefab.Prefab in PrefabElement;
 
 class EditContext extends hide.prefab.EditContext {
 
+	var view : FileView;
 	public var elt : PrefabElement;
 
-	public function new(ctx, elt) {
+	public function new(ctx, elt, view) {
 		super(ctx);
 		this.elt = elt;
+		this.view = view;
 	}
 
 	override function rebuild() {
@@ -21,6 +23,10 @@ class EditContext extends hide.prefab.EditContext {
 		for( c in cleanups.copy() )
 			c();
 		cleanups = [];
+	}
+
+	override function onChange(p:hide.prefab.Prefab, propName:String) {
+		view.modified = true;
 	}
 
 }
@@ -124,11 +130,10 @@ class Prefab extends FileView {
 	function selectObject( elt : PrefabElement ) {
 		if( curEdit != null )
 			curEdit.cleanup();
-		var edit = new EditContext(context, elt);
+		var edit = new EditContext(context, elt, this);
 		edit.prefabPath = state.path;
 		edit.properties = properties;
 		edit.scene = scene;
-		edit.view = this;
 		edit.cleanups = [];
 		edit.rebuild();
 		curEdit = edit;
@@ -296,7 +301,7 @@ class Prefab extends FileView {
 									}
 									else {
 										roots.remove(o);
-										contexts.remove(o);										
+										contexts.remove(o);
 									}
 									refresh();
 								}));

@@ -22,7 +22,7 @@
     <option directives="" />
     <option flashStrict="False" />
     <option noInlineOnDebug="False" />
-    <option mainClass="hide.ui.Ide" />
+    <option mainClass="hide.Ide" />
     <option enabledebug="False" />
     <option additional="-D hscriptPos&#xA;-D old-error-format&#xA;-D multidriver&#xA;-D editor&#xA;-dce no" />
   </build>

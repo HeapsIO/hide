@@ -159,10 +159,10 @@ class Level3D extends FileView {
 		}
 
 		prefix += "_";
-		var id = 0;		
+		var id = 0;
 		while( data.getPrefabByName(prefix + id) != null )
 			id++;
-			
+
 		p.name = prefix + id;
 
 		for(c in p.children) {
@@ -173,7 +173,7 @@ class Level3D extends FileView {
 	function selectObjects( elts : Array<PrefabElement>, ?includeTree=true) {
 		if( curEdit != null )
 			curEdit.cleanup();
-		var edit = new LevelEditContext(context, elts);
+		var edit = new LevelEditContext(context, elts, this);
 		edit.prefabPath = state.path;
 		edit.properties = properties;
 		edit.scene = scene;
@@ -219,7 +219,7 @@ class Level3D extends FileView {
 			}];
 
 			var objects3d = [for(e in curEdit.elements) e.to(Object3D)];
-			var prevState = [for(o in objects3d) o.save()];			
+			var prevState = [for(o in objects3d) o.save()];
 			var snapGround = mode == MoveXY;
 			gizmo.onMove = function(translate: h3d.Vector, rot: h3d.Quat, scale: h3d.Vector) {
 				var transf = new h3d.Matrix();
@@ -318,7 +318,7 @@ class Level3D extends FileView {
 		if(curEdit != null && curEdit.rootObjects.length > 0) {
 			targetPt = curEdit.rootObjects[0].getAbsPos().pos().toPoint();
 		}
-		if(top) 
+		if(top)
 			cameraController.set(200, Math.PI/2, 0.001, targetPt);
 		else
 			cameraController.set(200, -4.7, 0.8, targetPt);
@@ -361,7 +361,7 @@ class Level3D extends FileView {
 		if( light == null ) {
 			light = new h3d.scene.DirLight(new h3d.Vector(), scene.s3d);
 			light.enableSpecular = true;
-		} else	
+		} else
 			light = null;
 
 
@@ -390,7 +390,7 @@ class Level3D extends FileView {
 		tools.saveDisplayKey = "SceneTools";
 
 		{
-			var edit = new LevelEditContext(context, []);
+			var edit = new LevelEditContext(context, [], this);
 			edit.prefabPath = state.path;
 			edit.properties = levelProps;
 			edit.scene = scene;
@@ -681,7 +681,7 @@ class Level3D extends FileView {
 		var elements = curEdit.rootElements;
 		if(elements == null || elements.length == 0)
 			return;
-		var contexts = context.shared.contexts;		
+		var contexts = context.shared.contexts;
 		var oldContexts = contexts.copy();
 		var newElements = [for(elt in elements) {
 			var clone = hide.prefab.Prefab.loadRec(elt.saveRec());
@@ -741,7 +741,7 @@ class Level3D extends FileView {
 			else {
 				for(o in list)
 					o.parent.children.remove(o.elt);
-				context.shared.contexts = newContexts;				
+				context.shared.contexts = newContexts;
 			}
 			deselect();
 			refresh();
@@ -859,7 +859,7 @@ class Level3D extends FileView {
 		for(e in elts)
 			if(e.parent != parent)
 				return false;
-		
+
 		return true;
 	}
 
@@ -1016,7 +1016,7 @@ class Level3D extends FileView {
 				int.ignoreParentTransform = true;
 				int.preciseShape = meshCollider;
 				int.propagateEvents = true;
-				var startDrag = null;			
+				var startDrag = null;
 				int.onPush = function(e) {
 					startDrag = [scene.s2d.mouseX, scene.s2d.mouseY];
 					e.propagate = false;
@@ -1062,7 +1062,7 @@ class Level3D extends FileView {
 		if(layer != null) {
 			var color = "#" + StringTools.hex(layer.color, 6);
 			el.find("i.jstree-themeicon").first().css("color", color);
-			if(layer.locked) 
+			if(layer.locked)
 				el.find("a").first().addClass("jstree-locked");
 			else
 				el.find("a").first().removeClass("jstree-locked");
@@ -1073,9 +1073,9 @@ class Level3D extends FileView {
 					lb.toggle(layer.visible);
 				lb.element.find(".icon").css("color", color);
 				var label = lb.element.find("label");
-				if(layer.locked) 
+				if(layer.locked)
 					label.addClass("locked");
-				else 
+				else
 					label.removeClass("locked");
 			}
 		}
@@ -1116,7 +1116,7 @@ class Level3D extends FileView {
 		var gname = props.get("l3d.groundLayer");
 		var groundLayer = data.get(Layer, gname);
 		var polygons = groundLayer.getAll(hide.prefab.l3d.Polygon);
-		return polygons;		
+		return polygons;
 	}
 
 	function projectToGround(ray: h3d.col.Ray) {

@@ -4,12 +4,14 @@ import h3d.scene.Object;
 
 class LevelEditContext extends hide.prefab.EditContext {
 
+	public var view : Level3D;
 	public var elements : Array<PrefabElement>;
 	public var rootObjects(default, null): Array<Object>;
 	public var rootElements(default, null): Array<PrefabElement>;
 
-	public function new(ctx, elts) {
+	public function new(ctx, elts, view) {
 		super(ctx);
+		this.view = view;
 		this.elements = elts;
 		rootObjects = [];
 		rootElements = [];
@@ -24,7 +26,7 @@ class LevelEditContext extends hide.prefab.EditContext {
 	override function rebuild() {
 		properties.clear();
 		cleanup();
-		if(elements.length > 0) 
+		if(elements.length > 0)
 			elements[0].edit(this);
 	}
 
@@ -35,7 +37,6 @@ class LevelEditContext extends hide.prefab.EditContext {
 	}
 
 	override function onChange(p : PrefabElement, pname: String) {
-		var level3D : Level3D = cast view;
-		level3D.onPrefabChange(p, pname);
+		view.onPrefabChange(p, pname);
 	}
 }

@@ -99,7 +99,7 @@ class Settings extends Prefab {
 			Reflect.deleteField(data, f);
 		}
 		if( changed )
-			ctx.view.modified = true;
+			ctx.onChange(this, null);
 
 		ctx.properties.addProps(modelDef.fields, this.data);
 		var rebuild = ctx.rebuild;
