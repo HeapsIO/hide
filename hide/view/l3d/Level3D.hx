@@ -1106,6 +1106,14 @@ class Level3D extends FileView {
 				minDist = d;
 			}
 		}
+
+		if(minDist < 0) {
+			var zPlane = h3d.col.Plane.Z(0);
+			var pt = ray.intersect(zPlane);
+			if(pt != null) {
+				minDist = pt.sub(ray.getPos()).length();
+			}
+		}
 		return minDist;
 	}
 
