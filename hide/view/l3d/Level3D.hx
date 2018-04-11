@@ -417,7 +417,7 @@ class Level3D extends FileView {
 			scene.engine.backgroundColor = v;
 		}, scene.engine.backgroundColor);
 
-		tools.addToggle("refresh", "Auto synchronize", function(b) {
+		tools.addToggle("refresh", "Auto save", function(b) {
 			autoSync = b;
 		});
 
@@ -561,7 +561,23 @@ class Level3D extends FileView {
 		tree.onAllowMove = function(_, _) {
 			return true;
 		};
-		tree.onMove = reparentElement;
+
+		// Batch tree.onMove, which is called for every node moved, causing problems with undo and refresh
+		{
+			var movetimer : haxe.Timer = null;
+			var moved = [];
+			tree.onMove = function(e, to, idx) {
+				if(movetimer != null) {
+					movetimer.stop();
+				}
+				moved.push(e);
+				movetimer = haxe.Timer.delay(function() {
+					reparentElement(moved, to, idx);
+					movetimer = null;
+					moved = [];
+				}, 50);
+			}
+		}
 		tree.applyStyle = updateTreeStyle;
 
 		refresh();
@@ -727,13 +743,14 @@ class Level3D extends FileView {
 					o.parent.children.remove(o.elt);
 				context.shared.contexts = newContexts;				
 			}
+			deselect();
 			refresh();
 		}
 		action(false);
 		undo.change(Custom(action));
 	}
 
-	function reparentElement(e : PrefabElement, to : PrefabElement, index : Int) {
+	function reparentElement(e : Array<PrefabElement>, to : PrefabElement, index : Int) {
 		if( to == null )
 			to = data;
 
@@ -745,36 +762,44 @@ class Level3D extends FileView {
 		refresh();
 	}
 
-	function reparentImpl(e : PrefabElement, to: PrefabElement, index: Int) {
-		var prev = e.parent;
-		var prevIndex = prev.children.indexOf(e);
-		e.parent = to;
-		to.children.remove(e);
-		to.children.insert(index, e);
+	function reparentImpl(elts : Array<PrefabElement>, to: PrefabElement, index: Int) {
+		var undoes = [];
+		for(e in elts) {
+			var prev = e.parent;
+			var prevIndex = prev.children.indexOf(e);
+			e.parent = to;
+			to.children.remove(e);
+			to.children.insert(index, e);
 
-		var obj3d = e.to(Object3D);
-		var obj = getObject(e);
-		var toObj = getObject(to);
-		var mat = worldMat(obj);
-		var parentMat = worldMat(toObj);
-		parentMat.invert();
-		mat.multiply(mat, parentMat);
-		var prevState = obj3d.save();
-		obj3d.setTransform(mat);
-		var newState = obj3d.save();
+			var obj3d = e.to(Object3D);
+			var obj = getObject(e);
+			var toObj = getObject(to);
+			var mat = worldMat(obj);
+			var parentMat = worldMat(toObj);
+			parentMat.invert();
+			mat.multiply(mat, parentMat);
+			var prevState = obj3d.save();
+			obj3d.setTransform(mat);
+			var newState = obj3d.save();
 
+			undoes.push(function(undo) {
+				if( undo ) {
+					e.parent = prev;
+					prev.children.remove(e);
+					prev.children.insert(prevIndex, e);
+					obj3d.load(prevState);
+				} else {
+					e.parent = to;
+					to.children.remove(e);
+					to.children.insert(index, e);
+					obj3d.load(newState);
+				};
+			});
+		}
 		return function(undo) {
-			if( undo ) {
-				e.parent = prev;
-				prev.children.remove(e);
-				prev.children.insert(prevIndex, e);
-				obj3d.load(prevState);
-			} else {
-				e.parent = to;
-				to.children.remove(e);
-				to.children.insert(index, e);
-				obj3d.load(newState);
-			};
+			for(f in undoes) {
+				f(undo);
+			}
 		}
 	}
 
@@ -861,19 +886,17 @@ class Level3D extends FileView {
 		group.makeInstance(getContext(parent));
 		var groupCtx = getContext(group);
 
-		var undoes = [for(e in elts) reparentImpl(e, group, 0)];
+		var reparentUndo = reparentImpl(elts, group, 0);
 		undo.change(Custom(function(undo) {
 			if(undo) {
 				group.parent = null;
 				context.shared.contexts.remove(group);
-				for(u in undoes)
-					u(true);
+				reparentUndo(true);
 			}
 			else {
 				group.parent = parent;
 				context.shared.contexts.set(group, groupCtx);
-				for(u in undoes)
-					u(false);
+				reparentUndo(false);
 			}
 			if(undo)
 				refresh(deselect);
