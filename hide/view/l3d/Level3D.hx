@@ -64,10 +64,6 @@ class Level3DSceneEditor extends hide.comp.SceneEditor {
 	}
 	override function getNewContextMenu() {
 		var current = tree.getCurrentOver();
-		if(current != null && (curEdit == null || curEdit.elements.indexOf(current) < 0)) {
-			selectObjects([current]);
-		}
-
 		var newItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
 		var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
 		var allowed = ["model", "object", "layer", "box", "polygon"];
@@ -185,10 +181,10 @@ class Level3D extends FileView {
 
 	public function new(state) {
 		super(state);
-		saveDisplayKey = "Level3D:" + getPath().split("\\").join("/").substr(0,-1);
 	}
 
 	override function onDisplay() {
+		saveDisplayKey = "Level3D:" + getPath().split("\\").join("/").substr(0,-1);
 		data = new hide.prefab.l3d.Level3D();
 		var content = sys.io.File.getContent(getPath());
 		data.load(haxe.Json.parse(content));
@@ -234,6 +230,7 @@ class Level3D extends FileView {
 		root.find(".hide-scene-tree").first().append(sceneEditor.tree.root);
 		root.find(".tab").first().append(sceneEditor.properties.root);
 		root.find(".scene").first().append(sceneEditor.scene.root);
+		sceneEditor.tree.root.addClass("small");
 
 		// Level edit
 		{

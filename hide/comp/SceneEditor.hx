@@ -21,11 +21,24 @@ class SceneEditorContext extends hide.prefab.EditContext {
 		rootElements = [];
 		cleanups = [];
 		for(elt in elements) {
+			var obj3d = elt.to(Object3D);
+			if(obj3d == null) continue;
 			if(!SceneEditor.hasParent(elt, elements)) {
 				rootElements.push(elt);
-				rootObjects.push(getContext(elt).local3d);
+				var obj = getContext(elt).local3d;
+				if(obj != null) 
+					rootObjects.push(obj);
 			}
 		}
+	}
+
+	public function objects3D() {
+		var ret = [];
+		for(e in elements) {
+			var obj = e.to(Object3D);
+			if(obj != null) ret.push(obj);
+		}
+		return ret;
 	}
 
 	override function rebuild() {
@@ -76,7 +89,7 @@ class SceneEditor {
 		var propsEl = new Element('<div class="props"></div>');
 		properties = new hide.comp.PropsEditor(propsEl, undo);
 
-		var treeEl = new Element('<div class="tree small"></div>');
+		var treeEl = new Element('<div class="tree"></div>');
 		tree = new hide.comp.IconTree(treeEl);
 		tree.async = false;
 
@@ -320,7 +333,7 @@ class SceneEditor {
 				m;
 			}];
 
-			var objects3d = [for(e in curEdit.elements) e.to(Object3D)];
+			var objects3d = curEdit.objects3D();
 			var prevState = [for(o in objects3d) o.save()];
 			var snapGround = mode == MoveXY;
 			gizmo.onMove = function(translate: h3d.Vector, rot: h3d.Quat, scale: h3d.Vector) {
@@ -774,29 +787,31 @@ class SceneEditor {
 			to.children.insert(index, e);
 
 			var obj3d = e.to(Object3D);
-			var obj = getObject(e);
 			var toObj = getObject(to);
-			var mat = worldMat(obj);
-			var parentMat = worldMat(toObj);
-			parentMat.invert();
-			mat.multiply(mat, parentMat);
-			var prevState = obj3d.save();
-			obj3d.setTransform(mat);
-			var newState = obj3d.save();
+			var obj = getObject(e);
+			if(obj3d != null && toObj != null && obj != null) {
+				var mat = worldMat(obj);
+				var parentMat = worldMat(toObj);
+				parentMat.invert();
+				mat.multiply(mat, parentMat);
+				var prevState = obj3d.save();
+				obj3d.setTransform(mat);
+				var newState = obj3d.save();
 
-			undoes.push(function(undo) {
-				if( undo ) {
-					e.parent = prev;
-					prev.children.remove(e);
-					prev.children.insert(prevIndex, e);
-					obj3d.load(prevState);
-				} else {
-					e.parent = to;
-					to.children.remove(e);
-					to.children.insert(index, e);
-					obj3d.load(newState);
-				};
-			});
+				undoes.push(function(undo) {
+					if( undo ) {
+						e.parent = prev;
+						prev.children.remove(e);
+						prev.children.insert(prevIndex, e);
+						obj3d.load(prevState);
+					} else {
+						e.parent = to;
+						to.children.remove(e);
+						to.children.insert(index, e);
+						obj3d.load(newState);
+					};
+				});
+			}
 		}
 		return function(undo) {
 			for(f in undoes) {
