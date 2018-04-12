@@ -10,6 +10,15 @@ import hide.prefab.l3d.Instance;
 import hide.prefab.l3d.Layer;
 import h3d.scene.Object;
 
+
+class LevelEditContext extends hide.prefab.EditContext {
+	var parent : Level3D;
+	public function new(parent, context) {
+		super(context);
+		this.parent = parent;
+	}	
+}
+
 @:access(hide.view.l3d.Level3D)
 class Level3DSceneEditor extends hide.comp.SceneEditor {
 	var parent : Level3D;
@@ -53,6 +62,98 @@ class Level3DSceneEditor extends hide.comp.SceneEditor {
 			return minDist;
 		return super.projectToGround(ray);
 	}
+	override function getNewContextMenu() {
+		var current = tree.getCurrentOver();
+		if(current != null && (curEdit == null || curEdit.elements.indexOf(current) < 0)) {
+			selectObjects([current]);
+		}
+
+		var newItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
+		var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
+		var allowed = ["model", "object", "layer", "box", "polygon"];
+		for( ptype in allowed ) {
+			var pcl = allRegs.get(ptype);
+			var props = Type.createEmptyInstance(pcl).getHideProps();
+			newItems.push({
+				label : props.name,
+				click : function() {
+
+					function make(?path) {
+						var p = Type.createInstance(pcl, [current == null ? sceneData : current]);
+						@:privateAccess p.type = ptype;
+						if(path != null)
+							p.source = path;
+						autoName(p);
+						return p;
+					}
+
+					if( props.fileSource != null )
+						ide.chooseFile(props.fileSource, function(path) {
+							if( path == null ) return;
+							var p = make(path);
+							addObject(p);
+						});
+					else
+						addObject(make());
+				}
+			});
+		}
+
+		function addNewInstances() {
+			if(current == null)
+				return;
+			var curLayer = current.to(hide.prefab.l3d.Layer);
+			if(curLayer == null)
+				return;
+			var cdbSheet = curLayer.getCdbModel();
+			if(cdbSheet == null)
+				return;
+			var refCol = Instance.findRefColumn(cdbSheet);
+			if(refCol == null)
+				return;
+			var refSheet = cdbSheet.base.getSheet(refCol.sheet);
+			var idCol = Instance.findIDColumn(refSheet);
+			if(idCol != null) {
+				var kindItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
+				for(line in refSheet.lines) {
+					var kind : String = Reflect.getProperty(line, idCol.name);
+					kindItems.push({
+						label : kind,
+						click : function() {
+							var p = new hide.prefab.l3d.Instance(current);
+							p.props = {};
+							for( c in cdbSheet.columns ) {
+								var d = cdbSheet.base.getDefault(c);
+								if( d != null )
+									Reflect.setField(p.props, c.name, d);
+							}
+							p.name = kind.charAt(0).toLowerCase + kind.substr(1) + "_";
+							Reflect.setField(p.props, refCol.col.name, kind);
+							autoName(p);
+							addObject(p);
+						}
+					});
+				}
+				newItems.unshift({
+					label : "Instance",
+					menu: kindItems
+				});
+			}
+			else {
+				newItems.unshift({
+					label : "Instance",
+					click : function() {
+						var p = new hide.prefab.l3d.Instance(current);
+						p.name = "object";
+						autoName(p);
+						addObject(p);
+					}
+				});
+			}
+		};
+		addNewInstances();
+		return newItems;
+	}
 }
 
 class Level3D extends FileView {
@@ -67,12 +168,11 @@ class Level3D extends FileView {
 	var levelProps : hide.comp.PropsEditor;
 	var light : h3d.scene.DirLight;
 	var lightDirection = new h3d.Vector( 1, 2, -4 );
+
+	var layerToolbar : hide.comp.Toolbar;	
 	var layerButtons : Map<PrefabElement, hide.comp.Toolbar.ToolToggle>;
 
 	var grid : h3d.scene.Graphics;
-	//var searchBox : Element;
-	//var curEdit : LevelEditContext;
-	// var gizmo : Gizmo;
 	var autoSync : Bool;
 	var currentVersion : Int = 0;
 	var lastSyncChange : Float = 0.;
@@ -82,20 +182,10 @@ class Level3D extends FileView {
 	function get_scene() return sceneEditor.scene;
 	var properties(get, null):  hide.comp.PropsEditor;
 	function get_properties() return sceneEditor.properties;
-	
-	// var interactives : Map<PrefabElement, h3d.scene.Interactive>;
-	// var tree : hide.comp.IconTree<PrefabElement>;
-	// var searchBox : Element;
-	// var curEdit : LevelEditContext;
-	// var gizmo : Gizmo;
-	// var scene : hide.comp.Scene;
-	// var cameraController : h3d.scene.CameraController;
-	// var properties : hide.comp.PropsEditor;
-
 
 	public function new(state) {
 		super(state);
-		// sceneEditor = hide.comp.SceneEditor(this, context);
+		saveDisplayKey = "Level3D:" + getPath().split("\\").join("/").substr(0,-1);
 	}
 
 	override function onDisplay() {
@@ -112,13 +202,19 @@ class Level3D extends FileView {
 
 		root.html('
 			<div class="flex vertical">
-				<div class="toolbar"></div>
+				<div class="toolbar">
+					<span class="tools-buttons"></span>
+					<span class="layer-buttons"></span>
+				</div>
 				<div class="flex">
 					<div class="scene">
 					</div>
 					<div class="tabs">
 						<div class="tab" name="Scene" icon="sitemap">
-							
+							<div class="hide-block">
+								<div class="hide-list hide-scene-tree">
+								</div>
+							</div>
 						</div>
 						<div class="tab" name="Properties" icon="cog">
 							<div class="level-props"></div>
@@ -127,40 +223,39 @@ class Level3D extends FileView {
 				</div>
 			</div>
 		');
-		tools = new hide.comp.Toolbar(root.find(".toolbar"));
+		tools = new hide.comp.Toolbar(root.find(".tools-buttons"));
+		layerToolbar = new hide.comp.Toolbar(root.find(".layer-buttons"));
 		tabs = new hide.comp.Tabs(root.find(".tabs"));
-		// properties = new hide.comp.PropsEditor(root.find(".props"), undo);
-		// scene = new hide.comp.Scene(root.find(".scene"));
-		// scene.onReady = init;
-		// tree = new hide.comp.IconTree(root.find(".tree"));
-		// tree.async = false;
-		// tree.saveDisplayKey = "Level3D:" + getPath().split("\\").join("/").substr(0,-1);
 		currentVersion = undo.currentID;
-
-		// var sceneTree = root.find(".hide-scene-tree");
-		// searchBox = new Element("<div>").addClass("searchBox").appendTo(sceneTree);
-		// new Element("<input type='text'>").appendTo(searchBox).keydown(function(e) {
-		// 	if( e.keyCode == 27 ) {
-		// 		searchBox.find("i").click();
-		// 		return;
-		// 	}
-		// }).keyup(function(e) {
-		// 	tree.searchFilter(e.getThis().val());
-		// });
-		// new Element("<i>").addClass("fa fa-times-circle").appendTo(searchBox).click(function(_) {
-		// 	tree.searchFilter(null);
-		// 	searchBox.toggle();
-		// });
 
 		levelProps = new hide.comp.PropsEditor(root.find(".level-props"), undo);
 		sceneEditor = new Level3DSceneEditor(this, context, data);
-		var firstTab = root.find(".tab").first();
-		firstTab.append(sceneEditor.tree.root);
-		firstTab.append(sceneEditor.properties.root);
-
+		sceneEditor.addSearchBox(root.find(".hide-scene-tree").first());
+		root.find(".hide-scene-tree").first().append(sceneEditor.tree.root);
+		root.find(".tab").first().append(sceneEditor.properties.root);
 		root.find(".scene").first().append(sceneEditor.scene.root);
 
-		tools.saveDisplayKey = "SceneTools";
+		// Level edit
+		{
+			var edit = new LevelEditContext(this, context);
+			edit.prefabPath = state.path;
+			edit.properties = levelProps;
+			edit.scene = sceneEditor.scene;
+			edit.cleanups = [];
+			data.edit(edit);
+		}
+	}
+
+	public function onSceneReady() {
+		light = sceneEditor.scene.s3d.find(function(o) return Std.instance(o, h3d.scene.DirLight));
+		if( light == null ) {
+			light = new h3d.scene.DirLight(new h3d.Vector(), scene.s3d);
+			light.enableSpecular = true;
+		}
+		else
+			light = null;
+
+		tools.saveDisplayKey = "Level3D/toolbar";
 		tools.addButton("video-camera", "Perspective camera", () -> sceneEditor.resetCamera(false));
 		tools.addButton("arrow-down", "Top camera", () -> sceneEditor.resetCamera(true));
 		tools.addToggle("sun-o", "Enable Lights/Shadows", function(v) {
@@ -176,22 +271,12 @@ class Level3D extends FileView {
 		},true);
 
 		tools.addColor("Background color", function(v) {
-			// scene.engine.backgroundColor = v;
-		});
+			scene.engine.backgroundColor = v;
+		}, scene.engine.backgroundColor);
 
 		tools.addToggle("refresh", "Auto save", function(b) {
 			autoSync = b;
 		});
-	}
-
-	public function onSceneReady() {
-		light = sceneEditor.scene.s3d.find(function(o) return Std.instance(o, h3d.scene.DirLight));
-		if( light == null ) {
-			light = new h3d.scene.DirLight(new h3d.Vector(), scene.s3d);
-			light.enableSpecular = true;
-		}
-		else
-			light = null;
 
 		updateGrid();
 	}
@@ -249,7 +334,6 @@ class Level3D extends FileView {
 
 	function onUpdate(dt:Float) {
 		var cam = scene.s3d.camera;
-		saveDisplayState("Camera", { x : cam.pos.x, y : cam.pos.y, z : cam.pos.z, tx : cam.target.x, ty : cam.target.y, tz : cam.target.z });
 		if( light != null ) {
 			var angle = Math.atan2(cam.target.y - cam.pos.y, cam.target.x - cam.pos.x);
 			light.direction.set(
@@ -294,7 +378,7 @@ class Level3D extends FileView {
 		for(elt in all) {
 			var layer = elt.to(hide.prefab.l3d.Layer);
 			if(layer == null) continue;
-			layerButtons[elt] = tools.addToggle("file", layer.name, layer.name, function(on) {
+			layerButtons[elt] = layerToolbar.addToggle("file", layer.name, layer.name, function(on) {
 				if(initDone)
 					sceneEditor.setVisible([layer], on);
 			}, layer.visible);
@@ -353,27 +437,6 @@ class Level3D extends FileView {
 		var groundLayer = data.get(Layer, gname);
 		var polygons = groundLayer.getAll(hide.prefab.l3d.Polygon);
 		return polygons;
-	}
-
-	function projectToGround(ray: h3d.col.Ray) {
-		var polygons = getGroundPolys();
-		var minDist = -1.;
-		for(polygon in polygons) {
-			var collider = polygon.mesh.getGlobalCollider();
-			var d = collider.rayIntersection(ray, true);
-			if(d > 0 && (d < minDist || minDist < 0)) {
-				minDist = d;
-			}
-		}
-
-		if(minDist < 0) {
-			var zPlane = h3d.col.Plane.Z(0);
-			var pt = ray.intersect(zPlane);
-			if(pt != null) {
-				minDist = pt.sub(ray.getPos()).length();
-			}
-		}
-		return minDist;
 	}
 
 	static var _ = FileTree.registerExtension(Level3D,["l3d"],{ icon : "sitemap", createNew : "Level3D" });

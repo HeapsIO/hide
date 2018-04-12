@@ -51,7 +51,6 @@ class SceneEditor {
 	public var tree : hide.comp.IconTree<PrefabElement>;
 	public var scene : hide.comp.Scene;
 	public var properties : hide.comp.PropsEditor;
-	// public var saveDisplayKey : String;
 
 	var searchBox : Element;
 	var curEdit : SceneEditorContext;
@@ -64,7 +63,6 @@ class SceneEditor {
 	var undo(get, null):hide.ui.UndoHistory;
 	function get_undo() { return view.undo; }	
 
-	// INPUTS
 	var view : hide.view.FileView;
 	var context : hide.prefab.Context;
 	var sceneData : PrefabElement;
@@ -76,12 +74,9 @@ class SceneEditor {
 		this.sceneData = data;
 
 		var propsEl = new Element('<div class="props"></div>');
-		properties = new hide.comp.PropsEditor(propsEl.find(".props"), undo);
+		properties = new hide.comp.PropsEditor(propsEl, undo);
 
-		var treeEl = new Element('
-			<div class="hide-list hide-scene-tree">
-				<div class="tree small"></div>
-			</div>');
+		var treeEl = new Element('<div class="tree small"></div>');
 		tree = new hide.comp.IconTree(treeEl);
 		tree.async = false;
 
@@ -89,8 +84,23 @@ class SceneEditor {
 		scene = new hide.comp.Scene(sceneEl);
 		scene.onReady = onSceneReady;
 
-   		var sceneTree = treeEl.find(".hide-scene-tree");
-		searchBox = new Element("<div>").addClass("searchBox").appendTo(sceneTree);
+		view.keys.register("copy", onCopy);
+		view.keys.register("paste", onPaste);
+		view.keys.register("cancel", deselect);
+		view.keys.register("selectAll", selectAll);
+		view.keys.register("duplicate", duplicate);
+		view.keys.register("group", groupSelection);
+		view.keys.register("delete", () -> deleteElements(curEdit.rootElements));
+		view.keys.register("search", function() {
+			if(searchBox != null) {
+				searchBox.show();
+				searchBox.find("input").focus().select();
+			}
+		});
+	}
+
+	public function addSearchBox(parent : Element) {
+		searchBox = new Element("<div>").addClass("searchBox").appendTo(parent);
 		new Element("<input type='text'>").appendTo(searchBox).keydown(function(e) {
 			if( e.keyCode == 27 ) {
 				searchBox.find("i").click();
@@ -102,18 +112,6 @@ class SceneEditor {
 		new Element("<i>").addClass("fa fa-times-circle").appendTo(searchBox).click(function(_) {
 			tree.searchFilter(null);
 			searchBox.toggle();
-		});
-
-		view.keys.register("copy", onCopy);
-		view.keys.register("paste", onPaste);
-		view.keys.register("cancel", deselect);
-		view.keys.register("selectAll", selectAll);
-		view.keys.register("duplicate", duplicate);
-		view.keys.register("group", groupSelection);
-		view.keys.register("delete", () -> deleteElements(curEdit.rootElements));
-		view.keys.register("search", function() {
-			searchBox.show();
-			searchBox.find("input").focus().select();
 		});
 	}
 
@@ -166,7 +164,7 @@ class SceneEditor {
 				selectObjects([current]);
 			}
 
-			var newItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
+			var newItems = getNewContextMenu();
 			var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [
 				{ label : "New...", menu : newItems },
 				{ label : "Rename", enabled : current != null, click : function() tree.editNode(current) },
