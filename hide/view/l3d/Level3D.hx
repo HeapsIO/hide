@@ -10,42 +10,190 @@ import hide.prefab.l3d.Instance;
 import hide.prefab.l3d.Layer;
 import h3d.scene.Object;
 
+@:access(hide.view.l3d.Level3D)
+class Level3DSceneEditor extends hide.comp.SceneEditor {
+	var parent : Level3D;
+
+	public function new(view, context, data) {
+		super(view, context, data);
+		parent = cast view;
+	}
+
+	override function refresh(?callback) {
+		super.refresh(callback);
+		parent.onRefresh();
+	}
+	override function update(dt) {
+		super.update(dt);
+		parent.onUpdate(dt);
+	}
+	override function onSceneReady() {
+		super.onSceneReady();
+		parent.onSceneReady();
+	}
+	override function updateTreeStyle(p: PrefabElement, el: Element) {
+		super.updateTreeStyle(p, el);
+		parent.updateTreeStyle(p, el);
+	}
+	override function onPrefabChange(p: PrefabElement, ?pname: String) {
+		super.onPrefabChange(p, pname);
+		parent.onPrefabChange(p, pname);
+	}
+	override function projectToGround(ray: h3d.col.Ray) {
+		var polygons = parent.getGroundPolys();
+		var minDist = -1.;
+		for(polygon in polygons) {
+			var collider = polygon.mesh.getGlobalCollider();
+			var d = collider.rayIntersection(ray, true);
+			if(d > 0 && (d < minDist || minDist < 0)) {
+				minDist = d;
+			}
+		}
+		if(minDist >= 0)
+			return minDist;
+		return super.projectToGround(ray);
+	}
+}
+
 class Level3D extends FileView {
 
+	var sceneEditor : Level3DSceneEditor;
 	var data : hide.prefab.l3d.Level3D;
 	var context : hide.prefab.Context;
 	var tabs : hide.comp.Tabs;
 
 	var tools : hide.comp.Toolbar;
-	var scene : hide.comp.Scene;
-	var cameraController : h3d.scene.CameraController;
-	var properties : hide.comp.PropsEditor;
+
 	var levelProps : hide.comp.PropsEditor;
 	var light : h3d.scene.DirLight;
 	var lightDirection = new h3d.Vector( 1, 2, -4 );
-	var tree : hide.comp.IconTree<PrefabElement>;
 	var layerButtons : Map<PrefabElement, hide.comp.Toolbar.ToolToggle>;
-	var interactives : Map<PrefabElement, h3d.scene.Interactive>;
 
 	var grid : h3d.scene.Graphics;
-	var searchBox : Element;
-	var curEdit : LevelEditContext;
-	var gizmo : Gizmo;
+	//var searchBox : Element;
+	//var curEdit : LevelEditContext;
+	// var gizmo : Gizmo;
 	var autoSync : Bool;
 	var currentVersion : Int = 0;
 	var lastSyncChange : Float = 0.;
 	var currentSign : String;
 
-	override function setContainer(cont) {
-		super.setContainer(cont);
-		keys.register("copy", onCopy);
-		keys.register("paste", onPaste);
-		keys.register("cancel", deselect);
-		keys.register("selectAll", selectAll);
-		keys.register("duplicate", duplicate);
-		keys.register("group", groupSelection);
-		keys.register("delete", () -> deleteElements(curEdit.rootElements));
-		keys.register("search", showSearch);
+	var scene(get, null):  hide.comp.Scene;
+	function get_scene() return sceneEditor.scene;
+	var properties(get, null):  hide.comp.PropsEditor;
+	function get_properties() return sceneEditor.properties;
+	
+	// var interactives : Map<PrefabElement, h3d.scene.Interactive>;
+	// var tree : hide.comp.IconTree<PrefabElement>;
+	// var searchBox : Element;
+	// var curEdit : LevelEditContext;
+	// var gizmo : Gizmo;
+	// var scene : hide.comp.Scene;
+	// var cameraController : h3d.scene.CameraController;
+	// var properties : hide.comp.PropsEditor;
+
+
+	public function new(state) {
+		super(state);
+		// sceneEditor = hide.comp.SceneEditor(this, context);
+	}
+
+	override function onDisplay() {
+		data = new hide.prefab.l3d.Level3D();
+		var content = sys.io.File.getContent(getPath());
+		data.load(haxe.Json.parse(content));
+		currentSign = haxe.crypto.Md5.encode(content);
+
+		context = new hide.prefab.Context();
+		context.onError = function(e) {
+			ide.error(e);
+		};
+		context.init();
+
+		root.html('
+			<div class="flex vertical">
+				<div class="toolbar"></div>
+				<div class="flex">
+					<div class="scene">
+					</div>
+					<div class="tabs">
+						<div class="tab" name="Scene" icon="sitemap">
+							
+						</div>
+						<div class="tab" name="Properties" icon="cog">
+							<div class="level-props"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+		');
+		tools = new hide.comp.Toolbar(root.find(".toolbar"));
+		tabs = new hide.comp.Tabs(root.find(".tabs"));
+		// properties = new hide.comp.PropsEditor(root.find(".props"), undo);
+		// scene = new hide.comp.Scene(root.find(".scene"));
+		// scene.onReady = init;
+		// tree = new hide.comp.IconTree(root.find(".tree"));
+		// tree.async = false;
+		// tree.saveDisplayKey = "Level3D:" + getPath().split("\\").join("/").substr(0,-1);
+		currentVersion = undo.currentID;
+
+		// var sceneTree = root.find(".hide-scene-tree");
+		// searchBox = new Element("<div>").addClass("searchBox").appendTo(sceneTree);
+		// new Element("<input type='text'>").appendTo(searchBox).keydown(function(e) {
+		// 	if( e.keyCode == 27 ) {
+		// 		searchBox.find("i").click();
+		// 		return;
+		// 	}
+		// }).keyup(function(e) {
+		// 	tree.searchFilter(e.getThis().val());
+		// });
+		// new Element("<i>").addClass("fa fa-times-circle").appendTo(searchBox).click(function(_) {
+		// 	tree.searchFilter(null);
+		// 	searchBox.toggle();
+		// });
+
+		levelProps = new hide.comp.PropsEditor(root.find(".level-props"), undo);
+		sceneEditor = new Level3DSceneEditor(this, context, data);
+		var firstTab = root.find(".tab").first();
+		firstTab.append(sceneEditor.tree.root);
+		firstTab.append(sceneEditor.properties.root);
+
+		root.find(".scene").first().append(sceneEditor.scene.root);
+
+		tools.saveDisplayKey = "SceneTools";
+		tools.addButton("video-camera", "Perspective camera", () -> sceneEditor.resetCamera(false));
+		tools.addButton("arrow-down", "Top camera", () -> sceneEditor.resetCamera(true));
+		tools.addToggle("sun-o", "Enable Lights/Shadows", function(v) {
+			if( !v ) {
+				for( m in context.shared.root3d.getMaterials() ) {
+					m.mainPass.enableLights = false;
+					m.shadows = false;
+				}
+			} else {
+				for( m in context.shared.root3d.getMaterials() )
+					h3d.mat.MaterialSetup.current.initModelMaterial(m);
+			}
+		},true);
+
+		tools.addColor("Background color", function(v) {
+			// scene.engine.backgroundColor = v;
+		});
+
+		tools.addToggle("refresh", "Auto save", function(b) {
+			autoSync = b;
+		});
+	}
+
+	public function onSceneReady() {
+		light = sceneEditor.scene.s3d.find(function(o) return Std.instance(o, h3d.scene.DirLight));
+		if( light == null ) {
+			light = new h3d.scene.DirLight(new h3d.Vector(), scene.s3d);
+			light.enableSpecular = true;
+		}
+		else
+			light = null;
+
+		updateGrid();
 	}
 
 	override function getDefaultContent() {
@@ -67,228 +215,6 @@ class Level3D extends FileView {
 		var content = ide.toJSON(data.save());
 		currentSign = haxe.crypto.Md5.encode(content);
 		sys.io.File.saveContent(getPath(), content);
-	}
-
-	override function onDisplay() {
-		root.html('
-			<div class="flex vertical">
-				<div class="toolbar"></div>
-				<div class="flex">
-					<div class="scene">
-					</div>
-					<div class="tabs">
-						<div class="tab" name="Scene" icon="sitemap">
-							<div class="hide-block">
-								<div class="hide-list hide-scene-tree">
-									<div class="tree small"></div>
-								</div>
-							</div>
-							<div class="props"></div>
-						</div>
-						<div class="tab" name="Properties" icon="cog">
-							<div class="level-props"></div>
-						</div>
-					</div>
-				</div>
-			</div>
-		');
-		tools = new hide.comp.Toolbar(root.find(".toolbar"));
-		tabs = new hide.comp.Tabs(root.find(".tabs"));
-		properties = new hide.comp.PropsEditor(root.find(".props"), undo);
-		scene = new hide.comp.Scene(root.find(".scene"));
-		scene.onReady = init;
-		tree = new hide.comp.IconTree(root.find(".tree"));
-		tree.async = false;
-		tree.saveDisplayKey = "Level3D:" + getPath().split("\\").join("/").substr(0,-1);
-		currentVersion = undo.currentID;
-
-		var sceneTree = root.find(".hide-scene-tree");
-		searchBox = new Element("<div>").addClass("searchBox").appendTo(sceneTree);
-		new Element("<input type='text'>").appendTo(searchBox).keydown(function(e) {
-			if( e.keyCode == 27 ) {
-				searchBox.find("i").click();
-				return;
-			}
-		}).keyup(function(e) {
-			tree.searchFilter(e.getThis().val());
-		});
-		new Element("<i>").addClass("fa fa-times-circle").appendTo(searchBox).click(function(_) {
-			tree.searchFilter(null);
-			searchBox.toggle();
-		});
-
-		levelProps = new hide.comp.PropsEditor(root.find(".level-props"), undo);
-	}
-
-	function refresh( ?callb ) {
-		var sh = context.shared;
-		sh.root3d.remove();
-		sh.root2d.remove();
-		for( f in sh.cleanups )
-			f();
-		sh.root3d = new h3d.scene.Object();
-		scene.s3d.addChild(sh.root3d);
-		sh.root2d = new h2d.Sprite();
-		scene.s2d.addChild(sh.root2d);
-		sh.cleanups = [];
-		context.init();
-		data.makeInstance(context);
-		scene.init(props);
-		refreshInteractives();
-		refreshLayerIcons();
-		tree.refresh(function() {
-			for(elt in sh.contexts.keys()) {
-				onPrefabChange(elt);
-			}
-			if(callb != null) callb();
-		});
-	}
-
-	function autoName(p : PrefabElement) {
-		var prefix = p.type;
-		if(prefix == "object")
-			prefix = "group";
-		if(p.name != null && p.name.length > 0) {
-			prefix = p.name.split("_")[0].split(" ")[0].split("-")[0];
-		}
-
-		var model = p.to(hide.prefab.Model);
-		if(model != null && model.source != null) {
-			var path = new haxe.io.Path(model.source);
-			prefix = path.file;
-		}
-
-		prefix += "_";
-		var id = 0;
-		while( data.getPrefabByName(prefix + id) != null )
-			id++;
-
-		p.name = prefix + id;
-
-		for(c in p.children) {
-			autoName(c);
-		}
-	}
-
-	function selectObjects( elts : Array<PrefabElement>, ?includeTree=true) {
-		if( curEdit != null )
-			curEdit.cleanup();
-		var edit = new LevelEditContext(context, elts, this);
-		edit.prefabPath = state.path;
-		edit.properties = properties;
-		edit.scene = scene;
-		edit.view = this;
-		edit.cleanups = [];
-		edit.rebuild();
-
-		if(includeTree) {
-			tree.setSelection(elts);
-		}
-
-		var objects = edit.rootObjects;
-		addOutline(objects);
-		edit.cleanups.push(function() {
-			cleanOutline(objects);
-		});
-
-		curEdit = edit;
-		setupGizmo();
-	}
-
-	function refreshProps() {
-		properties.clear();
-		if(curEdit != null && curEdit.elements != null && curEdit.elements.length > 0) {
-			curEdit.elements[0].edit(curEdit);
-		}
-	}
-
-	function setupGizmo() {
-		if(curEdit == null) return;
-		gizmo.onStartMove = function(mode) {
-			var objects = curEdit.rootObjects;
-			var pivotPt = getPivot(objects);
-			var pivot = new h3d.Matrix();
-			pivot.initTranslate(pivotPt.x, pivotPt.y, pivotPt.z);
-			var invPivot = pivot.clone();
-			invPivot.invert();
-
-			var localMats = [for(o in objects) {
-				var m = worldMat(o);
-				m.multiply(m, invPivot);
-				m;
-			}];
-
-			var objects3d = [for(e in curEdit.elements) e.to(Object3D)];
-			var prevState = [for(o in objects3d) o.save()];
-			var snapGround = mode == MoveXY;
-			gizmo.onMove = function(translate: h3d.Vector, rot: h3d.Quat, scale: h3d.Vector) {
-				var transf = new h3d.Matrix();
-				transf.identity();
-				if(rot != null)
-					rot.saveToMatrix(transf);
-				if(translate != null)
-					transf.translate(translate.x, translate.y, translate.z);
-				for(i in 0...objects.length) {
-					var newMat = localMats[i].clone();
-					newMat.multiply(newMat, transf);
-					newMat.multiply(newMat, pivot);
-					if(snapGround) {
-						newMat.tz = getZ(newMat.tx, newMat.ty);
-					}
-					var invParent = objects[i].parent.getAbsPos().clone();
-					invParent.invert();
-					newMat.multiply(newMat, invParent);
-					if(scale != null) {
-						newMat.prependScale(scale.x, scale.y, scale.z);
-					}
-					var obj3d = objects3d[i];
-					obj3d.setTransform(newMat);
-					obj3d.applyPos(objects[i]);
-				}
-			}
-
-			gizmo.onFinishMove = function() {
-				var newState = [for(o in objects3d) o.save()];
-				refreshProps();
-				undo.change(Custom(function(undo) {
-					if( undo ) {
-						for(i in 0...objects3d.length) {
-							objects3d[i].load(prevState[i]);
-							objects3d[i].applyPos(objects[i]);
-						}
-						refreshProps();
-					}
-					else {
-						for(i in 0...objects3d.length) {
-							objects3d[i].load(newState[i]);
-							objects3d[i].applyPos(objects[i]);
-						}
-						refreshProps();
-					}
-				}));
-			}
-		}
-	}
-
-	function moveGizmoToSelection() {
-		// Snap Gizmo at center of objects
-		gizmo.getRotationQuat().identity();
-		if(curEdit != null && curEdit.rootObjects.length > 0) {
-			var pos = getPivot(curEdit.rootObjects);
-			gizmo.visible = true;
-			gizmo.setPos(pos.x, pos.y, pos.z);
-
-			if(curEdit.rootObjects.length == 1 && K.isDown(K.ALT)) {
-				var obj = curEdit.rootObjects[0];
-				var mat = worldMat(obj);
-				var s = mat.getScale();
-				mat.prependScale(1.0 / s.x, 1.0 / s.y, 1.0 / s.z);
-				gizmo.getRotationQuat().initRotateMatrix(mat);
-			}
-		}
-		else {
-			gizmo.visible = false;
-		}
 	}
 
 	function updateGrid() {
@@ -313,277 +239,15 @@ class Level3D extends FileView {
 		grid.lineStyle(0);
 	}
 
-	function resetCamera(?top = false) {
-		var targetPt = new h3d.col.Point(0, 0, 0);
-		if(curEdit != null && curEdit.rootObjects.length > 0) {
-			targetPt = curEdit.rootObjects[0].getAbsPos().pos().toPoint();
-		}
-		if(top)
-			cameraController.set(200, Math.PI/2, 0.001, targetPt);
-		else
-			cameraController.set(200, -4.7, 0.8, targetPt);
-		cameraController.toTarget();
+	function refresh(callb) {
+		sceneEditor.refresh(callb);
 	}
 
-	function addObject( e : PrefabElement ) {
-		var roots = e.parent.children;
-		undo.change(Custom(function(undo) {
-			if( undo )
-				roots.remove(e);
-			else
-				roots.push(e);
-			refresh();
-		}));
-		refresh(function() {
-			selectObjects([e]);
-		});
-		if( e.parent == data && data.children.length == 1 )
-			resetCamera();
+	function onRefresh() {
+		refreshLayerIcons();
 	}
 
-	function init() {
-		data = new hide.prefab.l3d.Level3D();
-		var content = sys.io.File.getContent(getPath());
-		data.load(haxe.Json.parse(content));
-		currentSign = haxe.crypto.Md5.encode(content);
-
-		context = new hide.prefab.Context();
-		context.onError = function(e) {
-			ide.error(e);
-		};
-		context.init();
-		scene.s2d.addChild(context.shared.root2d);
-		scene.s3d.addChild(context.shared.root3d);
-
-		data.makeInstance(context);
-
-		light = scene.s3d.find(function(o) return Std.instance(o, h3d.scene.DirLight));
-		if( light == null ) {
-			light = new h3d.scene.DirLight(new h3d.Vector(), scene.s3d);
-			light.enableSpecular = true;
-		} else
-			light = null;
-
-
-		gizmo = new Gizmo(scene);
-
-		cameraController = new h3d.scene.CameraController(scene.s3d);
-		cameraController.friction = 0.9;
-		cameraController.panSpeed = 0.6;
-		cameraController.zoomAmount = 1.05;
-		cameraController.smooth = 0.7;
-
-		this.saveDisplayKey = "Scene:" + state.path;
-
-		updateGrid();
-		resetCamera();
-
-		var cam = getDisplayState("Camera");
-		if( cam != null ) {
-			scene.s3d.camera.pos.set(cam.x, cam.y, cam.z);
-			scene.s3d.camera.target.set(cam.tx, cam.ty, cam.tz);
-		}
-		cameraController.loadFromCamera();
-
-		scene.onUpdate = update;
-		scene.init(props);
-		tools.saveDisplayKey = "SceneTools";
-
-		{
-			var edit = new LevelEditContext(context, [], this);
-			edit.prefabPath = state.path;
-			edit.properties = levelProps;
-			edit.scene = scene;
-			edit.view = this;
-			edit.cleanups = [];
-			data.edit(edit);
-		}
-
-		tools.addButton("video-camera", "Perspective camera", () -> resetCamera(false));
-		tools.addButton("arrow-down", "Top camera", () -> resetCamera(true));
-		tools.addToggle("sun-o", "Enable Lights/Shadows", function(v) {
-			if( !v ) {
-				for( m in context.shared.root3d.getMaterials() ) {
-					m.mainPass.enableLights = false;
-					m.shadows = false;
-				}
-			} else {
-				for( m in context.shared.root3d.getMaterials() )
-					h3d.mat.MaterialSetup.current.initModelMaterial(m);
-			}
-		},true);
-
-		tools.addColor("Background color", function(v) {
-			scene.engine.backgroundColor = v;
-		}, scene.engine.backgroundColor);
-
-		tools.addToggle("refresh", "Auto save", function(b) {
-			autoSync = b;
-		});
-
-		// BUILD scene tree
-
-		function makeItem(o:PrefabElement) : hide.comp.IconTree.IconTreeItem<PrefabElement> {
-			var p = o.getHideProps();
-			var r : hide.comp.IconTree.IconTreeItem<PrefabElement> = {
-				value : o,
-				text : o.name,
-				icon : "fa fa-"+p.icon,
-				children : o.children.length > 0
-			};
-			return r;
-		}
-		tree.get = function(o:PrefabElement) {
-			var objs = o == null ? data.children : Lambda.array(o);
-			var out = [for( o in objs ) makeItem(o)];
-			return out;
-		};
-		tree.root.parent().contextmenu(function(e) {
-			e.preventDefault();
-			var current = tree.getCurrentOver();
-			if(current != null && (curEdit == null || curEdit.elements.indexOf(current) < 0)) {
-				selectObjects([current]);
-			}
-
-			var newItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
-			var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
-			var allowed = ["model", "object", "layer", "box", "polygon"];
-			for( ptype in allowed ) {
-				var pcl = allRegs.get(ptype);
-				var props = Type.createEmptyInstance(pcl).getHideProps();
-				newItems.push({
-					label : props.name,
-					click : function() {
-
-						function make(?path) {
-							var p = Type.createInstance(pcl, [current == null ? data : current]);
-							@:privateAccess p.type = ptype;
-							if(path != null)
-								p.source = path;
-							autoName(p);
-							return p;
-						}
-
-						if( props.fileSource != null )
-							ide.chooseFile(props.fileSource, function(path) {
-								if( path == null ) return;
-								var p = make(path);
-								addObject(p);
-							});
-						else
-							addObject(make());
-					}
-				});
-			}
-
-			function addNewInstances() {
-				if(current == null)
-					return;
-				var curLayer = current.to(hide.prefab.l3d.Layer);
-				if(curLayer == null)
-					return;
-				var cdbSheet = curLayer.getCdbModel();
-				if(cdbSheet == null)
-					return;
-				var refCol = Instance.findRefColumn(cdbSheet);
-				if(refCol == null)
-					return;
-				var refSheet = cdbSheet.base.getSheet(refCol.sheet);
-				var idCol = Instance.findIDColumn(refSheet);
-				if(idCol != null) {
-					var kindItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
-					for(line in refSheet.lines) {
-						var kind : String = Reflect.getProperty(line, idCol.name);
-						kindItems.push({
-							label : kind,
-							click : function() {
-								var p = new hide.prefab.l3d.Instance(current);
-								p.props = {};
-								for( c in cdbSheet.columns ) {
-									var d = cdbSheet.base.getDefault(c);
-									if( d != null )
-										Reflect.setField(p.props, c.name, d);
-								}
-								p.name = kind.charAt(0).toLowerCase + kind.substr(1) + "_";
-								Reflect.setField(p.props, refCol.col.name, kind);
-								autoName(p);
-								addObject(p);
-							}
-						});
-					}
-					newItems.unshift({
-						label : "Instance",
-						menu: kindItems
-					});
-				}
-				else {
-					newItems.unshift({
-						label : "Instance",
-						click : function() {
-							var p = new hide.prefab.l3d.Instance(current);
-							p.name = "object";
-							autoName(p);
-							addObject(p);
-						}
-					});
-				}
-			};
-			addNewInstances();
-
-			var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [
-				{ label : "New...", menu : newItems },
-				{ label : "Rename", enabled : current != null, click : function() tree.editNode(current) },
-				{ label : "Delete", enabled : current != null, click : function() deleteElements(curEdit.rootElements) },
-				{ label : "Select all", click : selectAll },
-				{ label : "Select children", enabled : current != null, click : function() selectObjects(current.flatten()) },
-				{ label : "Show", enabled : curEdit != null && curEdit.elements.length > 0, click : function() setVisible(curEdit.elements, true) },
-				{ label : "Hide", enabled : curEdit != null && curEdit.elements.length > 0, click : function() setVisible(curEdit.elements, false) },
-				{ label : "Isolate", enabled : curEdit != null && curEdit.elements.length > 0, click : function() isolate(curEdit.elements) },
-				{ label : "Group", enabled : curEdit != null && canGroupSelection(), click : groupSelection },
-			];
-
-			new hide.comp.ContextMenu(menuItems);
-		});
-		tree.allowRename = true;
-		tree.init();
-		tree.onClick = function(e) {
-			selectObjects(tree.getSelection(), false);
-			if(curEdit.rootObjects.length > 0) {
-				cameraController.set(curEdit.rootObjects[0].getAbsPos().pos().toPoint());
-			}
-		}
-		tree.onRename = function(e, name) {
-			var oldName = e.name;
-			e.name = name;
-			undo.change(Field(e, "name", oldName), function() tree.refresh());
-			return true;
-		};
-		tree.onAllowMove = function(_, _) {
-			return true;
-		};
-
-		// Batch tree.onMove, which is called for every node moved, causing problems with undo and refresh
-		{
-			var movetimer : haxe.Timer = null;
-			var moved = [];
-			tree.onMove = function(e, to, idx) {
-				if(movetimer != null) {
-					movetimer.stop();
-				}
-				moved.push(e);
-				movetimer = haxe.Timer.delay(function() {
-					reparentElement(moved, to, idx);
-					movetimer = null;
-					moved = [];
-				}, 50);
-			}
-		}
-		tree.applyStyle = updateTreeStyle;
-
-		refresh();
-	}
-
-	function update(dt:Float) {
+	function onUpdate(dt:Float) {
 		var cam = scene.s3d.camera;
 		saveDisplayState("Camera", { x : cam.pos.x, y : cam.pos.y, z : cam.pos.z, tx : cam.target.x, ty : cam.target.y, tz : cam.target.z });
 		if( light != null ) {
@@ -594,212 +258,10 @@ class Level3D extends FileView {
 				lightDirection.z
 			);
 		}
-		if(gizmo != null) {
-			if(!gizmo.moving) {
-				moveGizmoToSelection();
-			}
-			gizmo.update(dt);
-		}
 		if( autoSync && (currentVersion != undo.currentID || lastSyncChange != properties.lastChange) ) {
 			save();
 			lastSyncChange = properties.lastChange;
 			currentVersion = undo.currentID;
-		}
-	}
-
-	function onCopy() {
-		if(curEdit == null) return;
-		if(curEdit.rootElements.length == 1) {
-			setClipboard(curEdit.rootElements[0].saveRec(), "prefab");
-		}
-		else {
-			var lib = new hide.prefab.Library();
-			for(e in curEdit.rootElements) {
-				lib.children.push(e);
-			}
-			setClipboard(lib.saveRec(), "library");
-		}
-	}
-
-	function onPaste() {
-		var parent : PrefabElement = data;
-		if(curEdit != null && curEdit.elements.length > 0) {
-			parent = curEdit.elements[0];
-		}
-		var obj: PrefabElement = getClipboard("prefab");
-		if(obj != null) {
-			var p = hide.prefab.Prefab.loadRec(obj, parent);
-			autoName(p);
-			refresh();
-		}
-		else {
-			obj = getClipboard("library");
-			if(obj != null) {
-				var lib = hide.prefab.Prefab.loadRec(obj);
-				for(c in lib.children) {
-					autoName(c);
-					c.parent = parent;
-				}
-				refresh();
-			}
-		}
-	}
-
-	function selectAll() {
-		selectObjects([for(e in context.shared.contexts.keys()) e]);
-	}
-
-	function deselect() {
-		selectObjects([]);
-	}
-
-	function isolate(elts : Array<PrefabElement>) {
-		var toShow = elts.copy();
-		var toHide = [];
-		function hideSiblings(elt: PrefabElement) {
-			var p = elt.parent;
-			for(c in p.children) {
-				var needsVisible = c == elt
-					|| toShow.indexOf(c) >= 0
-					|| hasChild(c, toShow);
-				if(!needsVisible) {
-					toHide.push(c);
-				}
-			}
-			if(p != data) {
-				hideSiblings(p);
-			}
-		}
-		for(e in toShow) {
-			hideSiblings(e);
-		}
-		setVisible(toHide, false);
-	}
-
-	function duplicate() {
-		if(curEdit == null) return;
-		var elements = curEdit.rootElements;
-		if(elements == null || elements.length == 0)
-			return;
-		var contexts = context.shared.contexts;
-		var oldContexts = contexts.copy();
-		var newElements = [for(elt in elements) {
-			var clone = hide.prefab.Prefab.loadRec(elt.saveRec());
-			autoName(clone);
-			var index = elt.parent.children.indexOf(elt);
-			clone.parent = elt.parent;
-			elt.parent.children.remove(clone);
-			elt.parent.children.insert(index+1, clone);
-			{ elt: clone, idx: index };
-		}];
-		var newContexts = contexts.copy();
-		refresh(function() {
-			var all = [for(e in newElements) e.elt];
-			selectObjects(all);
-			tree.setSelection(all);
-			gizmo.startMove(MoveXY, true);
-			gizmo.onFinishMove = function() {
-				undo.change(Custom(function(undo) {
-					for(e in newElements) {
-						if(undo) {
-							e.elt.parent.children.remove(e.elt);
-						}
-						else {
-							e.elt.parent.children.insert(e.idx, e.elt);
-						}
-					}
-					if(undo)
-						context.shared.contexts = oldContexts;
-					else
-						context.shared.contexts = newContexts;
-					refresh();
-					deselect();
-				}));
-			}
-		});
-	}
-
-	function deleteElements(elts : Array<PrefabElement>) {
-		var contexts = context.shared.contexts;
-		var list = [for(e in elts) {
-			elt: e,
-			parent: e.parent,
-			index: e.parent.children.indexOf(e)
-		}];
-		var oldContexts = contexts.copy();
-		for(e in elts) {
-			for(c in e.flatten())
-				contexts.remove(c);
-		}
-		var newContexts = contexts.copy();
-		function action(undo) {
-			if( undo ) {
-				for(o in list)
-					o.parent.children.insert(o.index, o.elt);
-				context.shared.contexts = oldContexts;
-			}
-			else {
-				for(o in list)
-					o.parent.children.remove(o.elt);
-				context.shared.contexts = newContexts;
-			}
-			deselect();
-			refresh();
-		}
-		action(false);
-		undo.change(Custom(action));
-	}
-
-	function reparentElement(e : Array<PrefabElement>, to : PrefabElement, index : Int) {
-		if( to == null )
-			to = data;
-
-		var undoFunc = reparentImpl(e, to, index);
-		undo.change(Custom(function(undo) {
-			undoFunc(undo);
-			refresh();
-		}));
-		refresh();
-	}
-
-	function reparentImpl(elts : Array<PrefabElement>, to: PrefabElement, index: Int) {
-		var undoes = [];
-		for(e in elts) {
-			var prev = e.parent;
-			var prevIndex = prev.children.indexOf(e);
-			e.parent = to;
-			to.children.remove(e);
-			to.children.insert(index, e);
-
-			var obj3d = e.to(Object3D);
-			var obj = getObject(e);
-			var toObj = getObject(to);
-			var mat = worldMat(obj);
-			var parentMat = worldMat(toObj);
-			parentMat.invert();
-			mat.multiply(mat, parentMat);
-			var prevState = obj3d.save();
-			obj3d.setTransform(mat);
-			var newState = obj3d.save();
-
-			undoes.push(function(undo) {
-				if( undo ) {
-					e.parent = prev;
-					prev.children.remove(e);
-					prev.children.insert(prevIndex, e);
-					obj3d.load(prevState);
-				} else {
-					e.parent = to;
-					to.children.remove(e);
-					to.children.insert(index, e);
-					obj3d.load(newState);
-				};
-			});
-		}
-		return function(undo) {
-			for(f in undoes) {
-				f(undo);
-			}
 		}
 	}
 
@@ -814,144 +276,11 @@ class Level3D extends FileView {
 		}
 		if(models.length > 0) {
 			if(isDrop) {
-				dropModels(models);
+				sceneEditor.dropModels(models);
 			}
 			return true;
 		}
 		return false;
-	}
-
-	function dropModels(paths: Array<String>) {
-		var proj = screenToWorld(scene.s2d.mouseX, scene.s2d.mouseY);
-		if(proj == null) return;
-
-		var parent = curEdit != null && curEdit.elements.length > 0 ? curEdit.elements[0] : data;
-		var parentMat = worldMat(getObject(parent));
-		parentMat.invert();
-
-		var localMat = new h3d.Matrix();
-		localMat.initTranslate(proj.x, proj.y, proj.z);
-		localMat.multiply(localMat, parentMat);
-
-		var models: Array<PrefabElement> = [];
-		for(path in paths) {
-			var model = new hide.prefab.Model(parent);
-			model.setTransform(localMat);
-			var relative = ide.makeRelative(path);
-			model.source = relative;
-			autoName(model);
-			models.push(model);
-		}
-
-		refresh();
-	}
-
-	function canGroupSelection() {
-		var elts = curEdit.rootElements;
-		if(elts.length == 0)
-			return false;
-
-		if(elts.length == 1)
-			return true;
-
-		// Only allow grouping of sibling elements
-		var parent = elts[0].parent;
-		for(e in elts)
-			if(e.parent != parent)
-				return false;
-
-		return true;
-	}
-
-	function groupSelection() {
-		if(!canGroupSelection())
-			return;
-
-		var elts = curEdit.rootElements;
-		var parent = elts[0].parent;
-		var parentMat = getContext(parent).local3d.getAbsPos();
-		var invParentMat = parentMat.clone();
-		invParentMat.invert();
-
-		var pivot = getPivot(curEdit.rootObjects);
-		var local = new h3d.Matrix();
-		local.initTranslate(pivot.x, pivot.y, pivot.z);
-		local.multiply(local, invParentMat);
-		var group = new hide.prefab.Object3D(parent);
-		@:privateAccess group.type = "object";
-		autoName(group);
-		group.x = local.tx;
-		group.y = local.ty;
-		group.z = local.tz;
-		group.makeInstance(getContext(parent));
-		var groupCtx = getContext(group);
-
-		var reparentUndo = reparentImpl(elts, group, 0);
-		undo.change(Custom(function(undo) {
-			if(undo) {
-				group.parent = null;
-				context.shared.contexts.remove(group);
-				reparentUndo(true);
-			}
-			else {
-				group.parent = parent;
-				context.shared.contexts.set(group, groupCtx);
-				reparentUndo(false);
-			}
-			if(undo)
-				refresh(deselect);
-			else
-				refresh(()->selectObjects([group]));
-		}));
-		refresh(() -> selectObjects([group]));
-	}
-
-	function getContext(elt : PrefabElement) {
-		if(elt != null) {
-			return context.shared.contexts.get(elt);
-		}
-		return null;
-	}
-
-	function getObject(elt: PrefabElement) {
-		var ctx = getContext(elt);
-		if(ctx != null)
-			return ctx.local3d;
-		return context.shared.root3d;
-	}
-
-	function setVisible(elements : Array<PrefabElement>, visible: Bool) {
-		var cache = [];
-		for(e in elements) {
-			var o = e.to(Object3D);
-			if(o != null) {
-				cache.push({o: o, vis: o.visible});
-			}
-		}
-
-		function apply(b) {
-			for(c in cache) {
-				c.o.visible = b ? visible : c.vis;
-				var obj = getContext(c.o).local3d;
-				if(obj != null) {
-					c.o.applyPos(obj);
-				}
-				onPrefabChange(c.o);
-			}
-		}
-
-		apply(true);
-		undo.change(Custom(function(undo) {
-			if(undo)
-				apply(false);
-			else
-				apply(true);
-		}));
-	}
-
-	function showSearch() {
-		searchBox.show();
-		searchBox.find("input").focus().select();
 	}
 
 	function refreshLayerIcons() {
@@ -967,97 +296,13 @@ class Level3D extends FileView {
 			if(layer == null) continue;
 			layerButtons[elt] = tools.addToggle("file", layer.name, layer.name, function(on) {
 				if(initDone)
-					setVisible([layer], on);
+					sceneEditor.setVisible([layer], on);
 			}, layer.visible);
 		}
 		initDone = true;
 	}
 
-	function getSelfMeshes(p : PrefabElement) {
-		var childObjs = [for(c in p.children) getContext(c).local3d];
-		var ret = [];
-		function rec(o : Object) {
-			var m = Std.instance(o, h3d.scene.Mesh);
-			if(m != null) ret.push(m);
-			for(i in 0...o.numChildren) {
-				var child = o.getChildAt(i);
-				if(childObjs.indexOf(child) < 0) {
-					rec(child);
-				}
-			}
-		}
-		rec(getContext(p).local3d);
-		return ret;
-	}
-
-	function refreshInteractives() {
-		var contexts = context.shared.contexts;
-		interactives = new Map();
-		var all = contexts.keys();
-		for(elt in all) {
-			var ctx = contexts[elt];
-			if(ctx.local3d != null) {
-				var o = ctx.local3d;
-				var meshes = getSelfMeshes(elt);
-				var invRootMat = o.getAbsPos().clone();
-				invRootMat.invert();
-				var bounds = new h3d.col.Bounds();
-				for(mesh in meshes) {
-					var localMat = mesh.getAbsPos().clone();
-					localMat.multiply(localMat, invRootMat);
-					var lb = mesh.primitive.getBounds().clone();
-					lb.transform(localMat);
-					bounds.add(lb);
-				}
-				var meshCollider = new h3d.col.Collider.GroupCollider([for(m in meshes) m.getGlobalCollider()]);
-				var boundsCollider = new h3d.col.ObjectCollider(o, bounds);
-				var int = new h3d.scene.Interactive(boundsCollider, o);
-				interactives.set(elt, int);
-				int.ignoreParentTransform = true;
-				int.preciseShape = meshCollider;
-				int.propagateEvents = true;
-				var startDrag = null;
-				int.onPush = function(e) {
-					startDrag = [scene.s2d.mouseX, scene.s2d.mouseY];
-					e.propagate = false;
-					if(K.isDown(K.CTRL) && curEdit != null) {
-						var list = curEdit.elements.copy();
-						if(list.indexOf(elt) < 0) {
-								list.push(elt);
-							selectObjects(list);
-						}
-					}
-					else {
-						selectObjects([elt]);
-					}
-				}
-				int.onRelease = function(e) {
-					startDrag = null;
-				}
-				int.onMove = function(e) {
-					if(startDrag != null) {
-						if((hxd.Math.abs(startDrag[0] - scene.s2d.mouseX) + hxd.Math.abs(startDrag[1] - scene.s2d.mouseY)) > 5) {
-							startDrag = null;
-							moveGizmoToSelection();
-							gizmo.startMove(MoveXY);
-						}
-					}
-				}
-			}
-		}
-	}
-
 	function updateTreeStyle(p: PrefabElement, el: Element) {
-		var obj3d  = p.to(Object3D);
-		if(obj3d != null) {
-			if(obj3d.visible) {
-				el.removeClass("jstree-invisible");
-			}
-			else {
-				el.addClass("jstree-invisible");
-			}
-		}
-
 		var layer = p.to(hide.prefab.l3d.Layer);
 		if(layer != null) {
 			var color = "#" + StringTools.hex(layer.color, 6);
@@ -1081,7 +326,7 @@ class Level3D extends FileView {
 		}
 	}
 
-	public function onPrefabChange(p: PrefabElement, ?pname: String) {
+	function onPrefabChange(p: PrefabElement, ?pname: String) {
 		var level3d = p.to(hide.prefab.l3d.Level3D);
 		if(level3d != null) {
 			updateGrid();
@@ -1091,7 +336,7 @@ class Level3D extends FileView {
 		if(layer != null) {
 			var obj3ds = layer.getAll(hide.prefab.Object3D);
 			for(obj in obj3ds) {
-				var i = interactives.get(obj);
+				var i = @:privateAccess sceneEditor.interactives.get(obj);
 				if(i != null) i.visible = !layer.locked;
 			}
 			for(box in layer.getAll(hide.prefab.Box)) {
@@ -1101,15 +346,6 @@ class Level3D extends FileView {
 				poly.setColor(layer.color);
 			}
 		}
-
-		var model = p.to(hide.prefab.Model);
-		if(model != null && pname == "source") {
-			refresh();
-			return;
-		}
-
-		var el = tree.getElement(p);
-		updateTreeStyle(p, el);
 	}
 
 	function getGroundPolys() {
@@ -1138,99 +374,6 @@ class Level3D extends FileView {
 			}
 		}
 		return minDist;
-	}
-
-	function getZ(x: Float, y: Float) {
-		var offset = 1000;
-		var ray = h3d.col.Ray.fromValues(x, y, offset, 0, 0, -1);
-		var dist = projectToGround(ray);
-		if(dist >= 0) {
-			return offset - dist;
-		}
-		return 0.;
-	}
-
-	function screenToWorld(sx: Float, sy: Float) {
-		var camera = scene.s3d.camera;
-		var ray = camera.rayFromScreen(sx, sy);
-		var dist = projectToGround(ray);
-		if(dist >= 0) {
-			return ray.getPoint(dist);
-		}
-		return null;
-	}
-
-	static function worldMat(obj: Object) {
-		if(obj.defaultTransform != null) {
-			var m = obj.defaultTransform.clone();
-			m.invert();
-			m.multiply(m, obj.getAbsPos());
-			return m;
-		}
-		else {
-			return obj.getAbsPos().clone();
-		}
-	}
-
-	static function getPivot(objects: Array<Object>) {
-		var pos = new h3d.Vector();
-		for(o in objects) {
-			pos = pos.add(o.getAbsPos().pos());
-		}
-		pos.scale3(1.0 / objects.length);
-		return pos;
-	}
-
-	static function addOutline(objects: Array<Object>) {
-		var outlineShader = new h3d.shader.Outline();
-		outlineShader.size = 0.12;
-		outlineShader.distance = 0;
-		outlineShader.color.setColor(0xffffff);
-		for(obj in objects) {
-			for( m in obj.getMaterials() ) {
-				var p = m.allocPass("outline");
-				p.culling = None;
-				p.depthWrite = false;
-				p.addShader(outlineShader);
-				if( m.mainPass.name == "default" )
-					m.mainPass.setPassName("outlined");
-			}
-		}
-	}
-
-	static function cleanOutline(objects: Array<Object>) {
-		for(obj in objects) {
-			for( m in obj.getMaterials() ) {
-				if( m.mainPass != null && m.mainPass.name == "outlined" )
-					m.mainPass.setPassName("default");
-				m.removePass(m.getPass("outline"));
-			}
-		}
-	}
-
-	public static function hasParent(elt: PrefabElement, list: Array<PrefabElement>) {
-		for(p in list) {
-			if(isParent(elt, p))
-				return true;
-		}
-		return false;
-	}
-
-	public static function hasChild(elt: PrefabElement, list: Array<PrefabElement>) {
-		for(p in list) {
-			if(isParent(p, elt))
-				return true;
-		}
-		return false;
-	}
-
-	public static function isParent(elt: PrefabElement, parent: PrefabElement) {
-		var p = elt.parent;
-		while(p != null) {
-			if(p == parent) return true;
-			p = p.parent;
-		}
-		return false;
 	}
 
 	static var _ = FileTree.registerExtension(Level3D,["l3d"],{ icon : "sitemap", createNew : "Level3D" });

@@ -20,7 +20,7 @@ class Tabs extends Component {
 		return currentTab = e;
 	}
 
-	function getTabs() : Element {
+	public function getTabs() : Element {
 		return root.children(".tab");
 	}
 
