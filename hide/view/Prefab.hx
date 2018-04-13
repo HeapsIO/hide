@@ -3,13 +3,16 @@ package hide.view;
 import hide.prefab.Prefab in PrefabElement;
 
 @:access(hide.view.Prefab)
-class PrefabSceneEditor extends hide.comp.SceneEditor {
+private class PrefabSceneEditor extends hide.comp.SceneEditor {
 	var parent : Prefab;
 	public function new(view, context, data) {
 		super(view, context, data);
 		parent = cast view;
 	}
-
+	override function onSceneReady() {
+		super.onSceneReady();
+		parent.onSceneReady();
+	}
 	override function update(dt) {
 		super.update(dt);
 		parent.onUpdate(dt);
@@ -161,14 +164,12 @@ class Prefab extends FileView {
 		tools.addColor("Background color", function(v) {
 			scene.engine.backgroundColor = v;
 		}, scene.engine.backgroundColor);
-
-		tools.addRange("Speed", function(v) {
-			scene.speed = v;
-		}, scene.speed);
-
 		tools.addToggle("refresh", "Auto synchronize", function(b) {
 			autoSync = b;
 		});
+		tools.addRange("Speed", function(v) {
+			scene.speed = v;
+		}, scene.speed);
 	}
 
 	function onUpdate(dt:Float) {

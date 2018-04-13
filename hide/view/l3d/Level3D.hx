@@ -20,7 +20,7 @@ class LevelEditContext extends hide.prefab.EditContext {
 }
 
 @:access(hide.view.l3d.Level3D)
-class Level3DSceneEditor extends hide.comp.SceneEditor {
+private class Level3DSceneEditor extends hide.comp.SceneEditor {
 	var parent : Level3D;
 
 	public function new(view, context, data) {
@@ -30,7 +30,7 @@ class Level3DSceneEditor extends hide.comp.SceneEditor {
 
 	override function refresh(?callback) {
 		super.refresh(callback);
-		parent.onRefresh();
+		parent.refreshLayerIcons();
 	}
 	override function update(dt) {
 		super.update(dt);
@@ -319,14 +319,6 @@ class Level3D extends FileView {
 			grid.lineTo(data.width, iy, 0);
 		}
 		grid.lineStyle(0);
-	}
-
-	function refresh(callb) {
-		sceneEditor.refresh(callb);
-	}
-
-	function onRefresh() {
-		refreshLayerIcons();
 	}
 
 	function onUpdate(dt:Float) {

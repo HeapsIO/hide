@@ -265,52 +265,54 @@ class SceneEditor {
 		interactives = new Map();
 		var all = contexts.keys();
 		for(elt in all) {
+			if(elt.to(Object3D) == null)
+				continue;
 			var ctx = contexts[elt];
-			if(ctx.local3d != null) {
-				var o = ctx.local3d;
-				var meshes = getSelfMeshes(elt);
-				var invRootMat = o.getAbsPos().clone();
-				invRootMat.invert();
-				var bounds = new h3d.col.Bounds();
-				for(mesh in meshes) {
-					var localMat = mesh.getAbsPos().clone();
-					localMat.multiply(localMat, invRootMat);
-					var lb = mesh.primitive.getBounds().clone();
-					lb.transform(localMat);
-					bounds.add(lb);
-				}
-				var meshCollider = new h3d.col.Collider.GroupCollider([for(m in meshes) m.getGlobalCollider()]);
-				var boundsCollider = new h3d.col.ObjectCollider(o, bounds);
-				var int = new h3d.scene.Interactive(boundsCollider, o);
-				interactives.set(elt, int);
-				int.ignoreParentTransform = true;
-				int.preciseShape = meshCollider;
-				int.propagateEvents = true;
-				var startDrag = null;
-				int.onPush = function(e) {
-					startDrag = [scene.s2d.mouseX, scene.s2d.mouseY];
-					e.propagate = false;
-					if(K.isDown(K.CTRL) && curEdit != null) {
-						var list = curEdit.elements.copy();
-						if(list.indexOf(elt) < 0) {
-								list.push(elt);
-							selectObjects(list);
-						}
-					}
-					else {
-						selectObjects([elt]);
+			var o = ctx.local3d;
+			if(o == null)
+				continue;
+			var meshes = getSelfMeshes(elt);
+			var invRootMat = o.getAbsPos().clone();
+			invRootMat.invert();
+			var bounds = new h3d.col.Bounds();
+			for(mesh in meshes) {
+				var localMat = mesh.getAbsPos().clone();
+				localMat.multiply(localMat, invRootMat);
+				var lb = mesh.primitive.getBounds().clone();
+				lb.transform(localMat);
+				bounds.add(lb);
+			}
+			var meshCollider = new h3d.col.Collider.GroupCollider([for(m in meshes) m.getGlobalCollider()]);
+			var boundsCollider = new h3d.col.ObjectCollider(o, bounds);
+			var int = new h3d.scene.Interactive(boundsCollider, o);
+			interactives.set(elt, int);
+			int.ignoreParentTransform = true;
+			int.preciseShape = meshCollider;
+			int.propagateEvents = true;
+			var startDrag = null;
+			int.onPush = function(e) {
+				startDrag = [scene.s2d.mouseX, scene.s2d.mouseY];
+				e.propagate = false;
+				if(K.isDown(K.CTRL) && curEdit != null) {
+					var list = curEdit.elements.copy();
+					if(list.indexOf(elt) < 0) {
+							list.push(elt);
+						selectObjects(list);
 					}
 				}
-				int.onRelease = function(e) {
-					startDrag = null;
+				else {
+					selectObjects([elt]);
 				}
-				int.onMove = function(e) {
-					if(startDrag != null) {
-						if((hxd.Math.abs(startDrag[0] - scene.s2d.mouseX) + hxd.Math.abs(startDrag[1] - scene.s2d.mouseY)) > 5) {
-							startDrag = null;
-							moveGizmoToSelection();
-							gizmo.startMove(MoveXY);
-						}
+			}
+			int.onRelease = function(e) {
+				startDrag = null;
+			}
+			int.onMove = function(e) {
+				if(startDrag != null) {
+					if((hxd.Math.abs(startDrag[0] - scene.s2d.mouseX) + hxd.Math.abs(startDrag[1] - scene.s2d.mouseY)) > 5) {
+						startDrag = null;
+						moveGizmoToSelection();
+						gizmo.startMove(MoveXY);
 					}
 				}
 			}
@@ -556,7 +558,7 @@ class SceneEditor {
 
 		var elts = curEdit.rootElements;
 		var parent = elts[0].parent;
-		var parentMat = getContext(parent).local3d.getAbsPos();
+		var parentMat = getObject(parent).getAbsPos();
 		var invParentMat = parentMat.clone();
 		invParentMat.invert();
 
@@ -570,7 +572,10 @@ class SceneEditor {
 		group.x = local.tx;
 		group.y = local.ty;
 		group.z = local.tz;
-		group.makeInstance(getContext(parent));
+		var parentCtx = getContext(parent);
+		if(parentCtx == null)
+			parentCtx = context;
+		group.makeInstance(parentCtx);
 		var groupCtx = getContext(group);
 
 		var reparentUndo = reparentImpl(elts, group, 0);
