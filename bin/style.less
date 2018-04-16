@@ -481,6 +481,43 @@ input[type=checkbox] {
 
 }
 
+/* Curve editor */
+.hide-curve-editor {
+	border: 1px solid black;
+
+	line {
+		stroke-width: 1px;
+	}
+	.hgrid line { stroke: #444; }
+	.vgrid line { stroke: #444; }
+	.curve line {
+		stroke: #888;
+		stroke-width: 2px;
+	}
+	line.axis {
+		stroke: #fff;
+	}
+
+	.vectors line {
+		stroke: #fff;
+	}
+
+	.handles {	
+		circle, rect {
+			stroke: #fff;
+			fill: #282828;
+		}
+		circle:hover, rect:hover {
+			fill: #555;
+		}
+	}
+}
+
+/* FX Editor */
+.fx-animpanel {
+	flex-basis: 200px;
+}
+
 /* Golden Layout Fixes */
 
 .lm_header .lm_tabs {

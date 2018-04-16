@@ -440,6 +440,42 @@ input[type=checkbox]:checked:after {
 .hide-properties .group > .content {
   margin-bottom: 5px;
 }
+/* Curve editor */
+.hide-curve-editor {
+  border: 1px solid black;
+}
+.hide-curve-editor line {
+  stroke-width: 1px;
+}
+.hide-curve-editor .hgrid line {
+  stroke: #444;
+}
+.hide-curve-editor .vgrid line {
+  stroke: #444;
+}
+.hide-curve-editor .curve line {
+  stroke: #888;
+  stroke-width: 2px;
+}
+.hide-curve-editor line.axis {
+  stroke: #fff;
+}
+.hide-curve-editor .vectors line {
+  stroke: #fff;
+}
+.hide-curve-editor .handles circle,
+.hide-curve-editor .handles rect {
+  stroke: #fff;
+  fill: #282828;
+}
+.hide-curve-editor .handles circle:hover,
+.hide-curve-editor .handles rect:hover {
+  fill: #555;
+}
+/* FX Editor */
+.fx-animpanel {
+  flex-basis: 200px;
+}
 /* Golden Layout Fixes */
 .lm_header .lm_tabs {
   z-index: 1;
