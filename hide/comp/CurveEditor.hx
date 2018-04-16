@@ -106,10 +106,21 @@ class CurveEditor extends Component {
 		var handlesGroup = svg.group(root, "handles");
 		var size = 7;
 
-		for(ik in 0...curve.keys.length-1) {
-			var pt = curve.keys[ik];
-			var nextPt = curve.keys[ik+1];
-			svg.line(curveGroup, xt(pt.time), yt(pt.value), xt(nextPt.time), yt(nextPt.value));
+		// Draw curve
+		{
+			// for(ik in 0...curve.keys.length-1) {
+			// 	var pt = curve.keys[ik];
+			// 	var nextPt = curve.keys[ik+1];
+			// 	svg.line(curveGroup, xt(pt.time), yt(pt.value), xt(nextPt.time), yt(nextPt.value));
+			// }
+			var pts = curve.sample(200);
+			var poly = [];
+			for(i in 0...pts.length) {
+				var x = xt(curve.duration * i / (pts.length - 1));
+				var y = yt(pts[i]);
+				poly.push(new h2d.col.Point(x, y));
+			}
+			svg.polyLine(curveGroup, poly);
 		}
 
 
