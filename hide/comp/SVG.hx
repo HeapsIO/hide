@@ -49,7 +49,8 @@ class SVG extends Component {
 		return make(parent, "line", {x1:x1, y1:y1, x2:x2, y2:y2}, style);
 	}
 
-	public function polyLine(?parent: Element, points: Array<h2d.col.Point>, ?style:Dynamic) {
+	public function polygon(?parent: Element, points: Array<h2d.col.Point>, ?style:Dynamic) {
+		// TODO: Use https://www.w3schools.com/graphics/svg_polygon.asp
 		var lines = ['M${points[0].x},${points[0].y} '];
 		for(i in 1...points.length) {
 			lines.push('L${points[i].x},${points[i].y} ');

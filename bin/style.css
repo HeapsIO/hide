@@ -453,9 +453,11 @@ input[type=checkbox]:checked:after {
 .hide-curve-editor .vgrid line {
   stroke: #444;
 }
-.hide-curve-editor .curve line {
-  stroke: #888;
-  stroke-width: 2px;
+.hide-curve-editor .curve line,
+.hide-curve-editor path {
+  stroke: #f00;
+  stroke-width: 1px;
+  fill: none;
 }
 .hide-curve-editor line.axis {
   stroke: #fff;
@@ -471,10 +473,12 @@ input[type=checkbox]:checked:after {
 .hide-curve-editor .handles circle:hover,
 .hide-curve-editor .handles rect:hover {
   fill: #555;
+  stroke: #fff;
+  stroke-width: 2px;
 }
 /* FX Editor */
 .fx-animpanel {
-  flex-basis: 200px;
+  flex-basis: 300px;
 }
 /* Golden Layout Fixes */
 .lm_header .lm_tabs {

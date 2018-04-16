@@ -490,9 +490,10 @@ input[type=checkbox] {
 	}
 	.hgrid line { stroke: #444; }
 	.vgrid line { stroke: #444; }
-	.curve line {
-		stroke: #888;
-		stroke-width: 2px;
+	.curve line, path {
+		stroke: #f00;
+		stroke-width: 1px;
+		fill: none;
 	}
 	line.axis {
 		stroke: #fff;
@@ -509,13 +510,15 @@ input[type=checkbox] {
 		}
 		circle:hover, rect:hover {
 			fill: #555;
+			stroke: #fff;
+			stroke-width: 2px;
 		}
 	}
 }
 
 /* FX Editor */
 .fx-animpanel {
-	flex-basis: 200px;
+	flex-basis: 300px;
 }
 
 /* Golden Layout Fixes */

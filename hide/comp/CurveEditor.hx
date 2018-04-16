@@ -108,19 +108,16 @@ class CurveEditor extends Component {
 
 		// Draw curve
 		{
-			// for(ik in 0...curve.keys.length-1) {
-			// 	var pt = curve.keys[ik];
-			// 	var nextPt = curve.keys[ik+1];
-			// 	svg.line(curveGroup, xt(pt.time), yt(pt.value), xt(nextPt.time), yt(nextPt.value));
-			// }
-			var pts = curve.sample(200);
-			var poly = [];
-			for(i in 0...pts.length) {
-				var x = xt(curve.duration * i / (pts.length - 1));
-				var y = yt(pts[i]);
-				poly.push(new h2d.col.Point(x, y));
+			var keys = curve.keys;
+			var lines = ['M ${xt(keys[0].time)},${yt(keys[0].value)}'];
+			for(ik in 1...keys.length) {
+				var prev = keys[ik-1];
+				var cur = keys[ik];
+				lines.push('C ${xt(prev.time + prev.nextHandle.dt)}, ${yt(prev.value + prev.nextHandle.dv)}
+					${xt(cur.time + cur.prevHandle.dt)}, ${yt(cur.value + cur.prevHandle.dv)}
+					${xt(cur.time)}, ${yt(cur.value)} ');
 			}
-			svg.polyLine(curveGroup, poly);
+			svg.make(curveGroup, "path", {d: lines.join("")});
 		}
 
 
@@ -158,7 +155,9 @@ class CurveEditor extends Component {
 					});
 				});
 			}
-			function addHandle(handle: hide.prefab.Curve.CurveHandle) {
+			function addHandle(next: Bool) {
+				var handle = next ? key.nextHandle : key.prevHandle;
+				var other = next ? key.prevHandle : key.nextHandle;
 				if(handle == null) return null;
 				var px = xt(key.time + handle.dt);
 				var py = yt(key.value + handle.dv);
@@ -170,11 +169,12 @@ class CurveEditor extends Component {
 						var offx = e.clientX - circle.offset().left;
 						var offy = e.clientY - circle.offset().top;
 						var offset = svg.element.offset();
-						var other = handle == key.prevHandle ? key.nextHandle : key.prevHandle;
 						var otherLen = hxd.Math.distance(other.dt * xScale, other.dv * yScale);
 						root.mousemove(function(e) {
 							var lx = e.clientX - offset.left - offx;
 							var ly = e.clientY - offset.top - offy;
+							if(next && lx < kx || !next && lx > kx)
+								lx = kx;
 							var ndt = ixt(lx) - key.time;
 							var ndv = iyt(ly) - key.value;
 							handle.dt = ndt;
@@ -193,8 +193,8 @@ class CurveEditor extends Component {
 				}
 				return circle;
 			}
-			var pHandle = addHandle(key.prevHandle);
-			var nHandle = addHandle(key.nextHandle);
+			var pHandle = addHandle(false);
+			var nHandle = addHandle(true);
 		}
 	}
 }

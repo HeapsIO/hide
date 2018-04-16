@@ -75,7 +75,6 @@ class Curve extends Prefab {
 		var maxT = 1.;
 		var maxDelta = 1./ 25.;
 
-
 		inline function sampleTime(t) {
 			return bezier(cur.time, cur.time + cur.nextHandle.dt, next.time + next.prevHandle.dt, next.time, t);
 		}
@@ -86,8 +85,8 @@ class Curve extends Prefab {
 
 		while( maxT - minT > maxDelta ) {
 			var t = (maxT + minT) * 0.5;
-			var t = sampleTime(t);
-			if( t > time )
+			var x = sampleTime(t);
+			if( x > time )
 				maxT = t;
 			else
 				minT = t;
