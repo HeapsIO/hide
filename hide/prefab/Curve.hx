@@ -5,11 +5,11 @@ typedef CurveHandle = {
 	dv: Float
 }
 
-enum CurveKeyMode {
-	Aligned;
-	Free;
-	Linear;
-	Constant;
+@:enum abstract CurveKeyMode(Int) {
+	var Aligned = 0;
+	var Free = 1;
+	var Linear = 2;
+	var Constant = 3;
 }
 
 typedef CurveKey = {
