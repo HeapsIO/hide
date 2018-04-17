@@ -483,53 +483,67 @@ input[type=checkbox] {
 
 /* Curve editor */
 .hide-curve-editor {
+	@selectCol: rgb(255, 255, 255);
+	@lineCol: rgb(255, 31, 31);
+
 	border: 1px solid black;
 	line {
 		stroke-width: 1px;
 	}
 
+	rect {
+		shape-rendering: crispEdges;
+	}
+
 	.grid {
+		line {
+			shape-rendering: crispEdges;
+		}
 		.hgrid line { stroke: #444; }
 		.vgrid line { stroke: #444; }
 		line.axis {
-			stroke: #fff;
+			stroke: rgb(116, 116, 116);
+			shape-rendering: crispEdges;
 		}
 	}
 
 	.graph {
 
 		.selection rect {
-			fill: rgb(0, 119, 255);
-			fill-opacity: 0.5;
+			fill: @selectCol;
+			fill-opacity: 0.1;
 			stroke: rgb(255, 255, 255);
-			//opacity: 0.5;
+			opacity: 0.3;
 			mix-blend-mode: screen;
 		}
 
 		.curve line, path {
-			stroke: #f00;
+			stroke: @lineCol;
 			stroke-width: 1px;
 			fill: none;
 		}
 
-		.vectors line {
-			stroke: #fff;
+		.vectors {
+			line {
+				stroke: rgba(207, 207, 207, 0.603);
+			}
+
+			line.selected {
+				stroke: @selectCol;
+			}
 		}
 
 		.handles {	
 			circle, rect {
-				stroke: #fff;
-				fill: #282828;
+				fill: rgba(187, 187, 187, 0.644);
 			}
-
-			rect.selected, rect:hover.selected {
-				fill: #f00;
-			}
-
 			circle:hover, rect:hover {
-				fill: #555;
+				fill: #fff;
 				stroke: #fff;
 				stroke-width: 2px;
+			}
+			circle.selected, circle:hover.selected, rect.selected, rect:hover.selected {
+				fill: @selectCol;
 			}
 		}
 	}

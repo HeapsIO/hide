@@ -15,9 +15,9 @@ typedef CurveHandle = {
 typedef CurveKey = {
 	time: Float,
 	value: Float,
+	mode: CurveKeyMode,	
 	?prevHandle: CurveHandle,
 	?nextHandle: CurveHandle,
-	?mode: CurveKeyMode,
 }
 
 typedef CurveKeys = Array<CurveKey>;
@@ -68,7 +68,7 @@ class Curve extends Prefab {
 
 		var cur = keys[idx];
 		var next = keys[idx + 1];
-		if(next == null)
+		if(next == null || cur.mode == Constant)
 			return cur.value;
 		
 		var minT = 0.;
@@ -76,11 +76,19 @@ class Curve extends Prefab {
 		var maxDelta = 1./ 25.;
 
 		inline function sampleTime(t) {
-			return bezier(cur.time, cur.time + cur.nextHandle.dt, next.time + next.prevHandle.dt, next.time, t);
+			return bezier(
+				cur.time,
+				cur.time + (cur.nextHandle != null ? cur.nextHandle.dt : 0.),
+				next.time + (next.prevHandle != null ? next.prevHandle.dt : 0.),
+				next.time, t);
 		}
 
 		inline function sampleVal(t) {
-			return bezier(cur.value, cur.value + cur.nextHandle.dv, next.value + next.prevHandle.dv, next.value, t);
+			return bezier(
+				cur.value,
+				cur.value + (cur.nextHandle != null ? cur.nextHandle.dv : 0.),
+				next.value + (next.prevHandle != null ? next.prevHandle.dv : 0.),
+				next.value, t);
 		}
 
 		while( maxT - minT > maxDelta ) {

@@ -63,6 +63,10 @@ class CurveEditor extends Component {
 				startPan(e);
 			}
 		});
+		root.contextmenu(function(e) {
+			e.preventDefault();
+			return false;
+		});
 		root.on("mousewheel", function(e) {
 			var step = e.originalEvent.wheelDelta > 0 ? 1.0 : -1.0;
 			if(hxd.Key.isDown(hxd.Key.SHIFT))
@@ -73,8 +77,6 @@ class CurveEditor extends Component {
 		});
 		div.keydown(function(e) {
 			if(e.keyCode == 46) {
-				var backup = curve.keys.copy();
-				var selBackup = selectedKeys.copy();
 				var newVal = [for(k in curve.keys) if(selectedKeys.indexOf(k) < 0) k];
 				curve.keys = newVal;
 				selectedKeys = [];
@@ -96,17 +98,73 @@ class CurveEditor extends Component {
 		if(val == null)
 			val = curve.getVal(time);
 
-		var prev = curve.keys[index-1];
-		var next = curve.keys[index];
-
 		var key : hide.prefab.Curve.CurveKey = {
 			time: time,
 			value: val,
-			prevHandle: { dt : prev != null ? (prev.time - time) / 4 : -0.5, dv : 0. },
-			nextHandle: { dt : next != null ? (next.time - time) / 4 : 0.5, dv : 0. },
+			mode: Linear
 		};
 		curve.keys.insert(index, key);
 		afterChange();
+	}
+
+	function fixKey(key : hide.prefab.Curve.CurveKey) {
+		var index = curve.keys.indexOf(key);
+		var prev = curve.keys[index-1];
+		var next = curve.keys[index+1];
+
+		inline function addPrevH() {
+			if(key.prevHandle == null)
+				key.prevHandle = { dt: prev != null ? (prev.time - key.time) / 3 : -0.5, dv: 0};
+		}
+		inline function addNextH() {
+			if(key.nextHandle == null)
+				key.nextHandle = { dt: next != null ? (next.time - key.time) / 3 : -0.5, dv: 0};
+		}
+		switch(key.mode) {
+			case Aligned:
+				addPrevH();
+				addNextH();
+				var pa = hxd.Math.atan2(key.prevHandle.dv, key.prevHandle.dt);
+				var na = hxd.Math.atan2(key.nextHandle.dv, key.nextHandle.dt);
+				if(hxd.Math.abs(hxd.Math.angle(pa - na)) < Math.PI - (1./180.)) {
+					key.nextHandle.dt = -key.prevHandle.dt;
+					key.nextHandle.dv = -key.prevHandle.dv;
+				}
+			case Free:
+				addPrevH();
+				addNextH();
+			case Linear:
+				key.nextHandle = null;
+				key.prevHandle = null;
+			case Constant:
+				key.nextHandle = null;
+				key.prevHandle = null;
+		}
+
+		if(key.time < 0)
+			key.time = 0;
+
+		if(prev != null && key.time < prev.time)
+			key.time = prev.time + 0.01;
+		if(next != null && key.time > next.time)
+			key.time = next.time - 0.01;
+
+		if(next != null && key.nextHandle != null) {
+			var slope = key.nextHandle.dv / key.nextHandle.dt;
+			slope = hxd.Math.clamp(slope, -1000, 1000);
+			if(key.nextHandle.dt + key.time > next.time) {
+				key.nextHandle.dt = next.time - key.time;
+				key.nextHandle.dv = slope * key.nextHandle.dt;
+			}
+		}
+		if(prev != null && key.prevHandle != null) {
+			var slope = key.prevHandle.dv / key.prevHandle.dt;
+			slope = hxd.Math.clamp(slope, -1000, 1000);
+			if(key.prevHandle.dt + key.time < prev.time) {
+				key.prevHandle.dt = prev.time - key.time;
+				key.prevHandle.dv = slope * key.prevHandle.dt;
+			}
+		}
 	}
 
 	function startSelectRect(p1x: Float, p1y: Float) {
@@ -152,12 +210,12 @@ class CurveEditor extends Component {
 		});
 	}
 
-	inline function xt(x: Float) return (x + xOffset) * xScale;
-	inline function yt(y: Float) return (y + yOffset) * yScale + height/2;
+	inline function xt(x: Float) return Math.round((x + xOffset) * xScale);
+	inline function yt(y: Float) return Math.round((y + yOffset) * yScale + height/2);
 	inline function ixt(px: Float) return px / xScale - xOffset;
 	inline function iyt(py: Float) return (py - height/2) / yScale - yOffset;
 
-	public function startDrag(el: Element, onMove, onStop) {
+	function startDrag(el: Element, onMove, onStop) {
 		el.mousemove(onMove);
 		el.mouseup(function(e) {
 			el.off("mousemove");
@@ -188,6 +246,17 @@ class CurveEditor extends Component {
 			refresh();
 		}));
 		refresh();
+	}
+
+	public function resetView() {
+		// var margin = 20;
+		// var minT = ixt(-margin);
+		// var maxT = ixt(width + margin);
+		// var minV = iyt(0);
+		// var maxV = iyt(height);
+		// xOffset = minT;
+		// xScale = (maxT - minT)
+		// TODO
 	}
 
 	public function refresh(?anim: Bool = false, ?animKey: hide.prefab.Curve.CurveKey) {
@@ -228,10 +297,11 @@ class CurveEditor extends Component {
 				l.addClass("axis");
 		}
 
-
 		var curveGroup = svg.group(graphGroup, "curve");
 		var vectorsGroup = svg.group(graphGroup, "vectors");
 		var handlesGroup = svg.group(graphGroup, "handles");
+		var tangentsHandles = svg.group(handlesGroup, "tangents");
+		var keyHandles = svg.group(handlesGroup, "keys");
 		var selection = svg.group(graphGroup, "selection");
 		var size = 7;
 
@@ -242,16 +312,25 @@ class CurveEditor extends Component {
 			for(ik in 1...keys.length) {
 				var prev = keys[ik-1];
 				var cur = keys[ik];
-				lines.push('C ${xt(prev.time + prev.nextHandle.dt)}, ${yt(prev.value + prev.nextHandle.dv)}
-					${xt(cur.time + cur.prevHandle.dt)}, ${yt(cur.value + cur.prevHandle.dv)}
+				lines.push('C
+					${xt(prev.time + (prev.nextHandle != null ? prev.nextHandle.dt : 0.))}, ${yt(prev.value + (prev.nextHandle != null ? prev.nextHandle.dv : 0.))}
+					${xt(cur.time + (cur.prevHandle != null ? cur.prevHandle.dt : 0.))}, ${yt(cur.value + (cur.prevHandle != null ? cur.prevHandle.dv : 0.))}
 					${xt(cur.time)}, ${yt(cur.value)} ');
 			}
 			svg.make(curveGroup, "path", {d: lines.join("")});
+			// var pts = curve.sample(200);
+			// var poly = [];
+			// for(i in 0...pts.length) {
+			// 	var x = xt(curve.duration * i / (pts.length - 1));
+			// 	var y = yt(pts[i]);
+			// 	poly.push(new h2d.col.Point(x, y));
+			// }
+			// svg.polygon(curveGroup, poly);
 		}
 
 
-		function addRect(x: Float, y: Float) {
-			return svg.rect(handlesGroup, x - Math.floor(size/2), y - Math.floor(size/2), size, size).attr({
+		function addRect(group, x: Float, y: Float) {
+			return svg.rect(group, x - Math.floor(size/2), y - Math.floor(size/2), size, size).attr({
 				"shape-rendering": "crispEdges"
 			});
 		}
@@ -259,10 +338,10 @@ class CurveEditor extends Component {
 		for(key in curve.keys) {
 			var kx = xt(key.time);
 			var ky = yt(key.value);
-			var keyHandle = addRect(kx, ky);
-			if(selectedKeys.indexOf(key) >= 0) {
+			var keyHandle = addRect(keyHandles, kx, ky);
+			var selected = selectedKeys.indexOf(key) >= 0;
+			if(selected)
 				keyHandle.addClass("selected");
-			}
 			if(!anim) {
 				keyHandle.mousedown(function(e) {
 					if(e.which != 1) return;
@@ -278,13 +357,32 @@ class CurveEditor extends Component {
 						var nky = iyt(ly);
 						key.time = nkx;
 						key.value = nky;
+						fixKey(key);
 						refresh(true, key);
 					}, function(e) {
 						selectedKeys = [key];
+						fixKey(key);
 						afterChange();
 					});
 					selectedKeys = [key];
 					refresh();
+				});
+				keyHandle.contextmenu(function(e) {
+					e.preventDefault();
+					function setMode(m: hide.prefab.Curve.CurveKeyMode) {
+						key.mode = m;
+						fixKey(key);
+						refresh();
+					}
+					new ContextMenu([
+						{ label : "Mode", menu :[
+							{ label : "Aligned", checked: key.mode == Aligned, click : setMode.bind(Aligned) },
+							{ label : "Free", checked: key.mode == Free, click : setMode.bind(Free) },
+							{ label : "Linear", checked: key.mode == Linear, click : setMode.bind(Linear) },
+							{ label : "Constant", checked: key.mode == Constant, click : setMode.bind(Constant) },
+						] }
+					]);
+					return false;
 				});
 			}
 			function addHandle(next: Bool) {
@@ -293,8 +391,12 @@ class CurveEditor extends Component {
 				if(handle == null) return null;
 				var px = xt(key.time + handle.dt);
 				var py = yt(key.value + handle.dv);
-				svg.line(vectorsGroup, kx, ky, px, py);
-				var circle = svg.circle(handlesGroup, px, py, size/2);
+				var line = svg.line(vectorsGroup, kx, ky, px, py);
+				var circle = svg.circle(tangentsHandles, px, py, size/2);
+				if(selected) {
+					line.addClass("selected");
+					circle.addClass("selected");
+				}
 				if(anim)
 					return circle;
 				circle.mousedown(function(e) {
@@ -314,9 +416,12 @@ class CurveEditor extends Component {
 						var ndv = iyt(ly) - key.value;
 						handle.dt = ndt;
 						handle.dv = ndv;
-						var angle = Math.atan2(ly - ky, lx - kx);
-						other.dt = Math.cos(angle + Math.PI) * otherLen / xScale;
-						other.dv = Math.sin(angle + Math.PI) * otherLen / yScale;
+						if(key.mode == Aligned) {
+							var angle = Math.atan2(ly - ky, lx - kx);
+							other.dt = Math.cos(angle + Math.PI) * otherLen / xScale;
+							other.dv = Math.sin(angle + Math.PI) * otherLen / yScale;
+						}
+						fixKey(key);
 						refresh(true, key);
 					}, function(e) {
 						afterChange();
@@ -330,7 +435,7 @@ class CurveEditor extends Component {
 			}
 		}
 
-		if(selectedKeys.length > 0) {
+		if(selectedKeys.length > 1) {
 			var bounds = new h2d.col.Bounds();
 			for(key in selectedKeys)
 				bounds.addPoint(new h2d.col.Point(xt(key.time), yt(key.value)));
