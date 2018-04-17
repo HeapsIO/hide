@@ -18,6 +18,7 @@ class CurveEditor extends Component {
 	var selectGroup : Element;
 
 	var refreshTimer : haxe.Timer = null;
+	var lastValue : Dynamic;
 
 	var selectedKeys: Array<hide.prefab.Curve.CurveKey> = [];
 
@@ -33,7 +34,8 @@ class CurveEditor extends Component {
 		div.focus();
 		svg = new hide.comp.SVG(div);
 		var root = svg.element;
-		//root.attr("tabindex", "1");
+
+		lastValue = haxe.Json.parse(haxe.Json.stringify(curve.save()));
 
 		gridGroup = svg.group(root, "grid");
 		graphGroup = svg.group(root, "graph");
@@ -76,20 +78,9 @@ class CurveEditor extends Component {
 				var newVal = [for(k in curve.keys) if(selectedKeys.indexOf(k) < 0) k];
 				curve.keys = newVal;
 				selectedKeys = [];
-				refresh();
 				e.preventDefault();
 				e.stopPropagation();
-				undo.change(Custom(function(undo) {
-					if(undo) {
-						curve.keys = backup;
-						selectedKeys = selBackup;
-					}
-					else {
-						curve.keys = newVal;
-						selectedKeys = [];
-					}
-					refresh();
-				}));
+				afterChange();
 			}
 		});
 	}
@@ -115,7 +106,7 @@ class CurveEditor extends Component {
 			nextHandle: { dt : next != null ? (next.time - time) / 4 : 0.5, dv : 0. },
 		};
 		curve.keys.insert(index, key);
-		refresh();
+		afterChange();
 	}
 
 	function startSelectRect(p1x: Float, p1y: Float) {
@@ -181,19 +172,22 @@ class CurveEditor extends Component {
 		return cast haxe.Json.parse(haxe.Json.stringify(key));
 	}
 
-	function addUndo(key: hide.prefab.Curve.CurveKey, prev : hide.prefab.Curve.CurveKey) {
-		var idx = curve.keys.indexOf(key);
-		var newVal = copyKey(key);
+	function afterChange() {
+		var newVal = haxe.Json.parse(haxe.Json.stringify(curve.save()));
+		var oldVal = lastValue;
+		lastValue = newVal;
 		undo.change(Custom(function(undo) {
 			if(undo) {
-				curve.keys[idx] = prev;
+				curve.load(oldVal);
 			}
 			else {
-				curve.keys[idx] = newVal;
+				curve.load(newVal);
 			}
+			lastValue = haxe.Json.parse(haxe.Json.stringify(curve.save()));
 			selectedKeys = [];
 			refresh();
 		}));
+		refresh();
 	}
 
 	public function refresh(?anim: Bool = false, ?animKey: hide.prefab.Curve.CurveKey) {
@@ -272,7 +266,6 @@ class CurveEditor extends Component {
 			if(!anim) {
 				keyHandle.mousedown(function(e) {
 					if(e.which != 1) return;
-					var backup = copyKey(key);
 					e.preventDefault();
 					e.stopPropagation();
 					var offx = e.clientX - keyHandle.offset().left;
@@ -288,8 +281,7 @@ class CurveEditor extends Component {
 						refresh(true, key);
 					}, function(e) {
 						selectedKeys = [key];
-						refresh();
-						addUndo(key, backup);
+						afterChange();
 					});
 					selectedKeys = [key];
 					refresh();
@@ -309,7 +301,6 @@ class CurveEditor extends Component {
 					if(e.which != 1) return;
 					e.preventDefault();
 					e.stopPropagation();
-					var backup = copyKey(key);
 					var offx = e.clientX - circle.offset().left;
 					var offy = e.clientY - circle.offset().top;
 					var offset = svg.element.offset();
@@ -328,8 +319,7 @@ class CurveEditor extends Component {
 						other.dv = Math.sin(angle + Math.PI) * otherLen / yScale;
 						refresh(true, key);
 					}, function(e) {
-						refresh();
-						addUndo(key, backup);
+						afterChange();
 					});
 				});
 				return circle;
@@ -340,7 +330,7 @@ class CurveEditor extends Component {
 			}
 		}
 
-		if(selectedKeys.length > 1) {
+		if(selectedKeys.length > 0) {
 			var bounds = new h2d.col.Bounds();
 			for(key in selectedKeys)
 				bounds.addPoint(new h2d.col.Point(xt(key.time), yt(key.value)));
@@ -357,13 +347,8 @@ class CurveEditor extends Component {
 					if(e.which != 1) return;
 					e.preventDefault();
 					e.stopPropagation();
-					// var offx = e.clientX - rect.offset().left;
-					// var offy = e.clientY - rect.offset().top;
-					var selection = selectedKeys.copy();
-					var backup = [for(k in selection) { idx: curve.keys.indexOf(k), val: Reflect.copy(k) }];
 					var lastX = e.clientX;
 					var lastY = e.clientY;
-					var offset = svg.element.offset();
 					startDrag(root, function(e) {
 						var dx = e.clientX - lastX;
 						var dy = e.clientY - lastY;
@@ -373,33 +358,9 @@ class CurveEditor extends Component {
 						}
 						lastX = e.clientX;
 						lastY = e.clientY;
-						// var lx = e.clientX - offset.left - offx;
-						// var ly = e.clientY - offset.top - offy;
-						// var nkx = ixt(lx);
-						// var nky = iyt(ly);
-						// key.time = nkx;
-						// key.value = nky;
 						refresh(true);
 					}, function(e) {
-						refresh();
-						var newVals = selection.copy();
-						undo.change(Custom(function(undo) {
-							if(undo) {
-								for(b in backup) {
-									var k = curve.keys[b.idx];
-									k.time = b.val.time;
-									k.value = b.val.value;
-								}
-							}
-							else {
-								for(b in backup) {
-									var k = curve.keys[b.idx];
-									k.time = newVals[b.idx].time;
-									k.value = newVals[b.idx].value;
-								}
-							}
-							refresh();
-						}));
+						afterChange();
 					});
 					refresh();
 				});
