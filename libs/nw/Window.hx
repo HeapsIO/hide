@@ -30,5 +30,6 @@ extern class Window {
 	public function close( ?force : Bool ) : Void;
 
 	public static function get() : Window;
+	public static function open( url : String, ?params : {?new_instance:Bool,?inject_js_start:String,?inject_js_end:String,?id:String}, ?callb:Window->Void ) : Void;
 
 }

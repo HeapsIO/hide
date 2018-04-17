@@ -456,6 +456,13 @@ div.lm_close_tab {
 div.lm_close_tab:hover {
   background-color: #555 !important;
 }
+body.hide-subview .lm_header .lm_tab {
+  padding-right: 10px;
+}
+body.hide-subview .lm_close_tab,
+body.hide-subview .lm_controls {
+  display: none;
+}
 /* JSTree fixes */
 .jstree {
   background: transparent !important;

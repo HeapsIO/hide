@@ -38,6 +38,7 @@ class Ide {
 	var views : Array<hide.ui.View<Dynamic>> = [];
 
 	var renderers : Array<h3d.mat.MaterialSetup>;
+	var subView : { component : String, state : Dynamic, events : {} };
 
 	static var firstInit = true;
 
@@ -47,13 +48,30 @@ class Ide {
 		var cwd = Sys.getCwd();
 		props = Props.loadForProject(cwd, cwd+"/res");
 
-		var wp = props.global.current.hide.windowPos;
-		if( wp != null ) {
-			if( wp.w > 400 && wp.h > 300 )
-				window.resizeBy(wp.w - Std.int(window.window.outerWidth), wp.h - Std.int(window.window.outerHeight));
-			if( wp.x >= 0 && wp.y >= 0 ) {
-				window.moveTo(wp.x, wp.y);
-				if( wp.max ) window.maximize();
+		var args = js.Browser.document.URL.split("?")[1];
+		if( args != null ) {
+			var parts = args.split("&");
+			var vars = new Map();
+			for( p in parts ) {
+				var p = p.split("=");
+				vars.set(p[0],StringTools.urlDecode(p[1]));
+			}
+			var sub = vars.get("subView");
+			if( sub != null ) {
+				var obj = untyped global.sharedRefs.get(Std.parseInt(vars.get("sid")));
+				subView = { component : sub, state : obj.state, events : obj.events };
+			}
+		}
+
+		if( subView == null ) {
+			var wp = props.global.current.hide.windowPos;
+			if( wp != null ) {
+				if( wp.w > 400 && wp.h > 300 )
+					window.resizeBy(wp.w - Std.int(window.window.outerWidth), wp.h - Std.int(window.window.outerHeight));
+				if( wp.x >= 0 && wp.y >= 0 ) {
+					window.moveTo(wp.x, wp.y);
+					if( wp.max ) window.maximize();
+				}
 			}
 		}
 		window.show(true);
@@ -112,6 +130,8 @@ class Ide {
 			}
 			return false;
 		}
+
+		if( subView != null ) body.className +=" hide-subview";
 
 		// Listen to FileTree dnd
 		new Element(window.window.document).on("dnd_stop.vakata.jstree", function(e, data) {
@@ -183,7 +203,8 @@ class Ide {
 			ideProps.windowPos.w = Std.int(window.window.outerWidth);
 			ideProps.windowPos.h = Std.int(window.window.outerHeight);
 		}
-		props.global.save();
+		if( subView == null )
+			props.global.save();
 	}
 
 	function initLayout( ?state : { name : String, state : Dynamic } ) {
@@ -209,6 +230,9 @@ class Ide {
 		}
 		if( state == null )
 			state = defaultLayout;
+
+		if( subView != null )
+			state = { name : "SubView", state : [] };
 
 		this.currentLayout = state;
 
@@ -241,25 +265,34 @@ class Ide {
 			if( !ideProps.autoSaveLayout )
 				return;
 			defaultLayout.state = saveLayout();
-			props.global.save();
+			if( subView == null ) props.global.save();
 		});
 
-		// error recovery if invalid component
-		haxe.Timer.delay(function() {
-			initializing = false;
-			if( layout.isInitialised ) {
-				if( firstInit ) {
-					firstInit = false;
-					for( file in nw.App.argv ) {
-						if( !sys.FileSystem.exists(file) ) continue;
-						openFile(file);
-					}
+		var waitCount = 0;
+		function waitInit() {
+			waitCount++;
+			if( !layout.isInitialised ) {
+				if( waitCount > 20 ) {
+					// timeout : error recovery if invalid component
+					state.state = [];
+					initLayout();
+					return;
 				}
+				haxe.Timer.delay(waitInit, 50);
 				return;
 			}
-			state.state = [];
-			initLayout();
-		}, 1000);
+			initializing = false;
+			if( firstInit ) {
+				firstInit = false;
+				for( file in nw.App.argv ) {
+					if( !sys.FileSystem.exists(file) ) continue;
+					openFile(file);
+				}
+				if( subView != null )
+					open(subView.component, subView.state);
+			}
+		};
+		waitInit();
 
 		hxd.System.setLoop(mainLoop);
 	}
@@ -433,6 +466,9 @@ class Ide {
 	}
 
 	function initMenu() {
+
+		if( subView != null ) return;
+
 		var menu = new Element(new Element("#mainmenu").get(0).outerHTML);
 
 		// project
@@ -541,6 +577,23 @@ class Ide {
 				return;
 			}
 		open(ext.component, { path : path }, onCreate);
+	}
+
+	public function openSubView<T>( component : Class<hide.ui.View<T>>, state : T, events : {} ) {
+		var sharedRefs : Map<Int,Dynamic> = untyped global.sharedRefs;
+		if( sharedRefs == null ) {
+			sharedRefs = new Map();
+			untyped global.sharedRefs = sharedRefs;
+		}
+		var id = 0;
+		while( sharedRefs.exists(id) ) id++;
+		sharedRefs.set(id,{ state : state, events : events });
+		var compName = Type.getClassName(component);
+		nw.Window.open("app.html?subView="+compName+"&sid="+id,{ id : compName });
+	}
+
+	public function callParentView( name : String, param : Dynamic ) {
+		if( subView != null ) Reflect.callMethod(subView.events,Reflect.field(subView.events,name),[param]);
 	}
 
 	public function open( component : String, state : Dynamic, ?onCreate : hide.ui.View<Dynamic> -> Void ) {

@@ -260,7 +260,7 @@ input[type=checkbox] {
 			font-size: 12px;
 			margin-left: 6px;
 			margin-right: 6px;
-			text-shadow: none;	
+			text-shadow: none;
 		}
 		label.locked {
 			color: #000;
@@ -493,11 +493,20 @@ input[type=checkbox] {
 div.lm_close_tab { top : 0px !important; right : 0px !important; width : 20px !important; height : 18px !important; }
 div.lm_close_tab:hover { background-color : #555 !important; }
 
+body.hide-subview {
+	.lm_header .lm_tab {
+		padding-right: 10px;
+	}
+	.lm_close_tab, .lm_controls {
+		display : none;
+	}
+}
+
 /* JSTree fixes */
 
 .jstree {
 	background:transparent !important;
-	
+
 	.filtered {
 		display: none;
 	}

@@ -107,7 +107,8 @@ class View<T> extends hide.comp.Component {
 
 		container.on("tab", function(e) {
 			container.tab.element.contextmenu(function(e) {
-				new hide.comp.ContextMenu(buildTabMenu());
+				var menu = buildTabMenu();
+				if( menu.length > 0 ) new hide.comp.ContextMenu(menu);
 				e.preventDefault();
 			});
 		});
@@ -169,6 +170,8 @@ class View<T> extends hide.comp.Component {
 	}
 
 	function buildTabMenu() : Array<hide.comp.ContextMenu.ContextMenuItem> {
+		if( @:privateAccess ide.subView != null )
+			return [];
 		return [
 			{ label : "Close", click : close },
 			{ label : "Close Others", click : function() for( v in @:privateAccess ide.views ) if( v != this && v.container.tab.header == container.tab.header ) v.close() },

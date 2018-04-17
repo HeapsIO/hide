@@ -9,7 +9,7 @@
             "request": "attach",
             "name": "Attach to NWjs",
             "port": 9222,
-            "webRoot": "${workspaceFolder}"
+            "webRoot": "${workspaceFolder}/bin"
         }
     ]
 }
