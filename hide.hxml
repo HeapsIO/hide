@@ -11,3 +11,4 @@
 -D multidriver
 -D editor
 -dce no
+-debug

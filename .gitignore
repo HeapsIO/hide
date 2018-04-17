@@ -4,3 +4,4 @@
 /bin/*.json
 /bin/hide.js
 *.lnk
+/bin/*.map
