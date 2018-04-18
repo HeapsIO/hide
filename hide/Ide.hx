@@ -111,7 +111,7 @@ class Ide {
 			syncMousePosition(e);
 			var view = getViewAt(mouseX, mouseY);
 			var items : Array<String> = [for(f in e.dataTransfer.files) Reflect.field(f, "path")];
-			if(view != null && view.onDragDrop(items, false)) {
+			if(view != null && view.onDragDrop(items, drop)) {
 				e.preventDefault();
 				e.stopPropagation();
 				return true;
@@ -173,10 +173,13 @@ class Ide {
 	}
 
 	function getViewAt(x : Float, y : Float) {
+		var pickedEl = js.Browser.document.elementFromPoint(x, y);
 		for( v in views ) {
-			var c = v.root.offset();
-			if( x >= c.left && y >= c.top && x <= c.left + v.root.outerWidth() && y <= c.top + v.root.outerHeight() ) {
-				return v;
+			var viewEl = v.root[0];
+			var el = pickedEl;
+			while(el != null) {
+				if(el == viewEl) return v;
+				el = el.parentElement;
 			}
 		}
 		return null;
