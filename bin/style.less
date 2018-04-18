@@ -481,6 +481,87 @@ input[type=checkbox] {
 
 }
 
+/* Curve editor */
+.hide-curve-editor {
+	@selectCol: rgb(255, 255, 255);
+	@lineCol: rgb(255, 31, 31);
+
+	border: 1px solid black;
+	line {
+		stroke-width: 1px;
+	}
+
+	rect {
+		shape-rendering: crispEdges;
+	}
+
+	.grid {
+		line {
+			shape-rendering: crispEdges;
+		}
+		.hgrid line { stroke: #444; }
+		.vgrid line { stroke: #444; }
+		line.axis {
+			stroke: rgb(116, 116, 116);
+			shape-rendering: crispEdges;
+		}
+	}
+
+	.graph {
+
+		.selection rect {
+			fill: @selectCol;
+			fill-opacity: 0.1;
+			stroke: rgb(255, 255, 255);
+			opacity: 0.3;
+			mix-blend-mode: screen;
+		}
+
+		.curve line, path {
+			stroke: @lineCol;
+			stroke-width: 1px;
+			fill: none;
+		}
+
+		.vectors {
+			line {
+				stroke: rgba(207, 207, 207, 0.603);
+			}
+
+			line.selected {
+				stroke: @selectCol;
+			}
+		}
+
+		.handles {	
+			circle, rect {
+				fill: rgba(187, 187, 187, 0.644);
+			}
+			circle:hover, rect:hover {
+				fill: #fff;
+				stroke: #fff;
+				stroke-width: 2px;
+			}
+			circle.selected, circle:hover.selected, rect.selected, rect:hover.selected {
+				fill: @selectCol;
+			}
+		}
+	}
+
+	.selection-overlay rect {
+		mix-blend-mode: multiply;
+		fill: #888;
+		fill-opacity: 20px;
+		stroke: #000;
+		opacity: 50%;
+	}
+}
+
+/* FX Editor */
+.fx-animpanel {
+	flex-basis: 300px;
+}
+
 /* Golden Layout Fixes */
 
 .lm_header .lm_tabs {

@@ -440,6 +440,75 @@ input[type=checkbox]:checked:after {
 .hide-properties .group > .content {
   margin-bottom: 5px;
 }
+/* Curve editor */
+.hide-curve-editor {
+  border: 1px solid black;
+}
+.hide-curve-editor line {
+  stroke-width: 1px;
+}
+.hide-curve-editor rect {
+  shape-rendering: crispEdges;
+}
+.hide-curve-editor .grid line {
+  shape-rendering: crispEdges;
+}
+.hide-curve-editor .grid .hgrid line {
+  stroke: #444;
+}
+.hide-curve-editor .grid .vgrid line {
+  stroke: #444;
+}
+.hide-curve-editor .grid line.axis {
+  stroke: #747474;
+  shape-rendering: crispEdges;
+}
+.hide-curve-editor .graph .selection rect {
+  fill: #ffffff;
+  fill-opacity: 0.1;
+  stroke: #ffffff;
+  opacity: 0.3;
+  mix-blend-mode: screen;
+}
+.hide-curve-editor .graph .curve line,
+.hide-curve-editor .graph path {
+  stroke: #ff1f1f;
+  stroke-width: 1px;
+  fill: none;
+}
+.hide-curve-editor .graph .vectors line {
+  stroke: rgba(207, 207, 207, 0.603);
+}
+.hide-curve-editor .graph .vectors line.selected {
+  stroke: #ffffff;
+}
+.hide-curve-editor .graph .handles circle,
+.hide-curve-editor .graph .handles rect {
+  fill: rgba(187, 187, 187, 0.644);
+}
+.hide-curve-editor .graph .handles circle:hover,
+.hide-curve-editor .graph .handles rect:hover {
+  fill: #fff;
+  stroke: #fff;
+  stroke-width: 2px;
+}
+.hide-curve-editor .graph .handles circle.selected,
+.hide-curve-editor .graph .handles circle:hover.selected,
+.hide-curve-editor .graph .handles rect.selected,
+.hide-curve-editor .graph .handles rect:hover.selected {
+  fill: #ffffff;
+}
+.hide-curve-editor .selection-overlay rect {
+  mix-blend-mode: multiply;
+  fill: #888;
+  fill-opacity: 20px;
+  stroke: #000;
+  opacity: 50%;
+}
+/* FX Editor */
+.fx-animpanel {
+  flex-basis: 300px;
+}
 /* Golden Layout Fixes */
 .lm_header .lm_tabs {
   z-index: 1;

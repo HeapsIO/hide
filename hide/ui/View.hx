@@ -13,11 +13,11 @@ typedef ViewOptions = { ?position : DisplayPosition, ?width : Int }
 class View<T> extends hide.comp.Component {
 
 	var container : golden.Container;
-	var state : T;
-	var keys(get,null) : Keys;
-	var props(get,null) : Props;
-	var undo = new hide.ui.UndoHistory();
 	var watches : Array<{ keep : Bool, path : String, callb : Void -> Void }> = [];
+	public var keys(get,null) : Keys;
+	public var state(default, null) : T;
+	public var undo(default, null) = new hide.ui.UndoHistory();
+	public var props(get, null) : Props;
 	public var viewClass(get, never) : String;
 	public var defaultOptions(get,never) : ViewOptions;
 
