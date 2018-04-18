@@ -31,6 +31,9 @@
 	"key.cdb.closeList" : "Escape",
 	"key.cdb.editCell" : "Enter",
 
+	// Scene editor config
+	"key.sceneeditor.focus": "F",
+
 	// cdb config
 
 	"cdb.databaseFile" : "data.cdb",

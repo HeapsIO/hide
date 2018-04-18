@@ -64,9 +64,10 @@ class SceneEditor {
 	public var tree : hide.comp.IconTree<PrefabElement>;
 	public var scene : hide.comp.Scene;
 	public var properties : hide.comp.PropsEditor;
+	public var curEdit(default, null) : SceneEditorContext;
+	public var snapToGround = true;
 
 	var searchBox : Element;
-	var curEdit : SceneEditorContext;
 
 	var cameraController : h3d.scene.CameraController;
 	var gizmo : hide.view.l3d.Gizmo;
@@ -110,6 +111,11 @@ class SceneEditor {
 				searchBox.find("input").focus().select();
 			}
 		});
+		view.keys.register("sceneeditor.focus", focusCamOnSelection);
+	}
+
+	public function getSelection() {
+		return curEdit.elements;
 	}
 
 	public function addSearchBox(parent : Element) {
@@ -128,6 +134,21 @@ class SceneEditor {
 		});
 	}
 
+	function makeCamController() {
+		var c = new h3d.scene.CameraController(scene.s3d);
+		c.friction = 0.9;
+		c.panSpeed = 0.6;
+		c.zoomAmount = 1.05;
+		c.smooth = 0.7;
+		return c;
+	}
+
+	function focusCamOnSelection() {
+		if(curEdit.rootObjects.length > 0) {
+			cameraController.set(curEdit.rootObjects[0].getAbsPos().pos().toPoint());
+		}
+	}
+
 	function onSceneReady() {
 
 		tree.saveDisplayKey = view.saveDisplayKey + '/tree';
@@ -137,11 +158,7 @@ class SceneEditor {
 
 		gizmo = new hide.view.l3d.Gizmo(scene);
 
-		cameraController = new h3d.scene.CameraController(scene.s3d);
-		cameraController.friction = 0.9;
-		cameraController.panSpeed = 0.6;
-		cameraController.zoomAmount = 1.05;
-		cameraController.smooth = 0.7;
+		cameraController = makeCamController();
 
 		resetCamera();
 
@@ -196,9 +213,10 @@ class SceneEditor {
 		tree.init();
 		tree.onClick = function(e) {
 			selectObjects(tree.getSelection(), false);
-			if(curEdit.rootObjects.length > 0) {
-				cameraController.set(curEdit.rootObjects[0].getAbsPos().pos().toPoint());
-			}
+		}
+		tree.onDblClick = function(e) {
+			focusCamOnSelection();
+			return true;
 		}
 		tree.onRename = function(e, name) {
 			var oldName = e.name;
@@ -227,6 +245,7 @@ class SceneEditor {
 			}
 		}
 		tree.applyStyle = updateTreeStyle;
+		selectObjects([]);
 		refresh();
 	}
 
@@ -337,7 +356,6 @@ class SceneEditor {
 
 			var objects3d = curEdit.objects3D();
 			var prevState = [for(o in objects3d) o.save()];
-			var snapGround = mode == MoveXY;
 			gizmo.onMove = function(translate: h3d.Vector, rot: h3d.Quat, scale: h3d.Vector) {
 				var transf = new h3d.Matrix();
 				transf.identity();
@@ -349,7 +367,7 @@ class SceneEditor {
 					var newMat = localMats[i].clone();
 					newMat.multiply(newMat, transf);
 					newMat.multiply(newMat, pivot);
-					if(snapGround) {
+					if(snapToGround && mode == MoveXY) {
 						newMat.tz = getZ(newMat.tx, newMat.ty);
 					}
 					var invParent = objects[i].parent.getAbsPos().clone();
@@ -510,11 +528,10 @@ class SceneEditor {
 		cameraController.toTarget();
 	}
 
-	public function dropModels(paths: Array<String>) {
+	public function dropModels(paths: Array<String>, parent: PrefabElement) {
 		var proj = screenToWorld(scene.s2d.mouseX, scene.s2d.mouseY);
 		if(proj == null) return;
 
-		var parent = curEdit != null && curEdit.elements.length > 0 ? curEdit.elements[0] : sceneData;
 		var parentMat = worldMat(getObject(parent));
 		parentMat.invert();
 
@@ -531,8 +548,8 @@ class SceneEditor {
 			autoName(model);
 			models.push(model);
 		}
-
 		refresh();
+		selectObjects(models);
 	}
 
 	function canGroupSelection() {
@@ -908,7 +925,7 @@ class SceneEditor {
 		return newItems;
 	}
 
-	function getZ(x: Float, y: Float) {
+	public function getZ(x: Float, y: Float) {
 		var offset = 1000;
 		var ray = h3d.col.Ray.fromValues(x, y, offset, 0, 0, -1);
 		var dist = projectToGround(ray);
@@ -918,7 +935,7 @@ class SceneEditor {
 		return 0.;
 	}
 
-	function projectToGround(ray: h3d.col.Ray) {
+	public function projectToGround(ray: h3d.col.Ray) {
 		var minDist = -1.;
 		var zPlane = h3d.col.Plane.Z(0);
 		var pt = ray.intersect(zPlane);
@@ -928,7 +945,7 @@ class SceneEditor {
 		return minDist;
 	}
 
-	function screenToWorld(sx: Float, sy: Float) {
+	public function screenToWorld(sx: Float, sy: Float) {
 		var camera = scene.s3d.camera;
 		var ray = camera.rayFromScreen(sx, sy);
 		var dist = projectToGround(ray);

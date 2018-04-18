@@ -320,7 +320,8 @@ class Level3D extends FileView {
 
 		tools.saveDisplayKey = "Level3D/toolbar";
 		tools.addButton("video-camera", "Perspective camera", () -> sceneEditor.resetCamera(false));
-		tools.addButton("arrow-down", "Top camera", () -> sceneEditor.resetCamera(true));
+		tools.addButton("video-camera", "Top camera", () -> sceneEditor.resetCamera(true)).find(".icon").css({transform: "rotateZ(90deg)"});
+		tools.addToggle("anchor", "Snap to ground", (v) -> sceneEditor.snapToGround = v, sceneEditor.snapToGround);
 		tools.addToggle("sun-o", "Enable Lights/Shadows", function(v) {
 			if( !v ) {
 				for( m in context.shared.root3d.getMaterials() ) {
