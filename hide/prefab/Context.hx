@@ -43,7 +43,11 @@ class Context {
 	}
 
 	public dynamic function onError( e : Dynamic ) {
+		#if editor
+		js.Browser.window.alert(e);
+		#else
 		throw e;
+		#end
 	}
 
 	public function loadModel( path : String ) {

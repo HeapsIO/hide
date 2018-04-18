@@ -137,16 +137,17 @@ class FileTree extends FileView {
 	function onOpenFile( path : String ) {
 		var fullPath = getFilePath(path);
 		if( sys.FileSystem.isDirectory(fullPath) )
-			return;
+			return false;
 		var ext = getExtension(fullPath);
 		if( ext == null )
-			return;
+			return false;
 		var prev = lastOpen;
 		lastOpen = null;
 		ide.openFile(fullPath, function(c) {
 			if( prev != null ) prev.close();
 			lastOpen = c;
 		});
+		return true;
 	}
 
 	function createNew( basePath : String, ext : ExtensionDesc ) {

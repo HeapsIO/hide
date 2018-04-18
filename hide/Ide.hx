@@ -135,21 +135,25 @@ class Ide {
 
 		// Listen to FileTree dnd
 		new Element(window.window.document).on("dnd_stop.vakata.jstree", function(e, data) {
+			var nodeIds : Array<String> = cast data.data.nodes;			
 			if(data.data.jstree == null) return;
 			for( v in views ) {
 				var ft = Std.instance(v, hide.view.FileTree);
 				if(ft == null) continue;
-				var item;
+				var paths = [];
 				@:privateAccess {
 					if(ft.tree.root[0] != data.data.origin.element[0]) continue;
-					var node = data.data.origin.get_node(data.element);
-					item = ft.tree.map.get(node.id);
+					for(id in nodeIds) {
+						var item = ft.tree.map.get(id);
+						if(item != null)
+							paths.push(item.value);
+					}
 				}
-				if( item == null ) continue;
-				var path = item.value;
+				if(paths.length == 0)
+					continue;
 				var view = getViewAt(mouseX, mouseY);
 				if(view != null) {
-					view.onDragDrop([path], true);
+					view.onDragDrop(paths, true);
 					return;
 				}
 			}

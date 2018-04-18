@@ -20,6 +20,57 @@ class LevelEditContext extends hide.prefab.EditContext {
 }
 
 @:access(hide.view.l3d.Level3D)
+class CamController extends h3d.scene.CameraController {
+	var level3d : Level3D;
+
+	public function new(parent, level3d) {
+		super(null, parent);
+		this.level3d = level3d;
+	}
+
+	override function onEvent( e : hxd.Event ) {
+		switch( e.kind ) {
+		case EWheel:
+			zoom(e.wheelDelta);
+		case EPush:
+			@:privateAccess scene.events.startDrag(onEvent, function() pushing = -1, e);
+			pushing = e.button;
+			pushX = e.relX;
+			pushY = e.relY;
+		case ERelease, EReleaseOutside:
+			if( pushing == e.button ) {
+				pushing = -1;
+				@:privateAccess scene.events.stopDrag();
+			}
+		case EMove:
+			switch( pushing ) {
+			case 1:
+				var m = 0.001 * curPos.x * panSpeed / 25;
+				if(hxd.Key.isDown(hxd.Key.SHIFT)) {
+					pan(-(e.relX - pushX) * m, (e.relY - pushY) * m);
+				}
+				else {
+					var se = level3d.sceneEditor;
+					var fromPt = se.screenToWorld(pushX, pushY);
+					var toPt = se.screenToWorld(e.relX, e.relY);
+					var delta = toPt.sub(fromPt).toVector();
+					delta.w = 0;
+					targetOffset = targetOffset.sub(delta);
+				}
+				pushX = e.relX;
+				pushY = e.relY;
+			case 2: 
+				rot(e.relX - pushX, e.relY - pushY);
+				pushX = e.relX;
+				pushY = e.relY;
+			default:
+			}
+		default:
+		}
+	}
+}
+
+@:access(hide.view.l3d.Level3D)
 private class Level3DSceneEditor extends hide.comp.SceneEditor {
 	var parent : Level3D;
 
@@ -28,26 +79,40 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		parent = cast view;
 	}
 
+	override function makeCamController() {
+		var c = new CamController(scene.s3d, parent);
+		c.friction = 0.9;
+		c.panSpeed = 0.6;
+		c.zoomAmount = 1.05;
+		c.smooth = 0.7;
+		return c;
+	}
+
 	override function refresh(?callback) {
 		super.refresh(callback);
 		parent.refreshLayerIcons();
 	}
+
 	override function update(dt) {
 		super.update(dt);
 		parent.onUpdate(dt);
 	}
+
 	override function onSceneReady() {
 		super.onSceneReady();
 		parent.onSceneReady();
 	}
+
 	override function updateTreeStyle(p: PrefabElement, el: Element) {
 		super.updateTreeStyle(p, el);
 		parent.updateTreeStyle(p, el);
 	}
+
 	override function onPrefabChange(p: PrefabElement, ?pname: String) {
 		super.onPrefabChange(p, pname);
 		parent.onPrefabChange(p, pname);
 	}
+
 	override function projectToGround(ray: h3d.col.Ray) {
 		var polygons = parent.getGroundPolys();
 		var minDist = -1.;
@@ -62,6 +127,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 			return minDist;
 		return super.projectToGround(ray);
 	}
+
 	override function getNewContextMenu() {
 		var current = tree.getCurrentOver();
 		var newItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
@@ -349,7 +415,14 @@ class Level3D extends FileView {
 		}
 		if(models.length > 0) {
 			if(isDrop) {
-				sceneEditor.dropModels(models);
+				var curSel = sceneEditor.getSelection();
+				var parent : PrefabElement = data;
+				if(curSel.length > 0) {
+					var curLayer = curSel[0].getParent(Layer);
+					if(curLayer != null)
+						parent = curLayer;
+				}
+				sceneEditor.dropModels(models, parent);
 			}
 			return true;
 		}

@@ -34,7 +34,8 @@ class IconTree<T:{}> extends Component {
 	public dynamic function onClick( e : T ) : Void {
 	}
 
-	public dynamic function onDblClick( e : T ) : Void {
+	public dynamic function onDblClick( e : T ) : Bool {
+		return false;
 	}
 
 	public dynamic function onToggle( e : T, isOpen : Bool ) : Void {
@@ -112,11 +113,12 @@ class IconTree<T:{}> extends Component {
 		root.on("dblclick.jstree", function (event) {
 			var node = new Element(event.target).closest("li");
    			var i = map.get(node[0].id);
+			if(onDblClick(i.value))
+				return;
 			if( allowRename ) {
 				editNode(i.value);
 				return;
 			}
-			onDblClick(i.value);
 		});
 		root.on("open_node.jstree", function(event, e) {
 			var i = map.get(e.node.id);

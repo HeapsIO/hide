@@ -151,27 +151,13 @@ class FXScene extends FileView {
 		curve.keys.push({
 			time: 0.1,
 			value: 1.0,
-			prevHandle: {
-				dt: -0.09,
-				dv: -0.1
-			},
-			nextHandle: {
-				dt: 0.12,
-				dv: -0.1
-			},
+			mode: Linear,
 		});
 		for(i in 0...2) {
 			curve.keys.push({
 				time: i + 1.0,
 				value: -1.0,
-				prevHandle: {
-					dt: -0.09,
-					dv: -0.1
-				},
-				nextHandle: {
-					dt: 0.3,
-					dv: -0.1
-				},
+				mode: Linear
 			});
 		}
 		var curveAnim = new hide.comp.CurveEditor(animPanel, curve, this.undo);

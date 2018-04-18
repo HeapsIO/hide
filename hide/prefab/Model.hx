@@ -38,7 +38,7 @@ class Model extends Object3D {
 				obj.playAnimation(ctx.loadAnimation(animation));
 
 			return ctx;
-		} catch( e : hxd.res.NotFound ) {
+		} catch( e : Dynamic ) {
 			ctx.onError(e);
 		}
 		ctx.local3d = new h3d.scene.Object(ctx.local3d);
@@ -63,7 +63,7 @@ class Model extends Object3D {
 		});
 
 		var select = props.find("select");
-		var anims = ctx.scene.listAnims(source);
+		var anims = try ctx.scene.listAnims(source) catch(e: Dynamic) [];
 		for( a in anims )
 			new hide.Element('<option>').attr("value", ctx.ide.makeRelative(a)).text(ctx.scene.animationName(a)).appendTo(select);
 		if( animation != null )

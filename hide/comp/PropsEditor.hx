@@ -83,7 +83,7 @@ class PropsEditor extends Component {
 		e = e.wrap("<div></div>").parent(); // necessary to have find working on top level element
 
 		e.find("input[type=checkbox]").wrap("<div class='checkbox-wrapper'></div>");
-		e.find("input[type=range]").not("[step]").attr("step", "any");
+		e.find("input[type=range]").not("[step]").attr({step: "any", tabindex:"-1"});
 
 		// -- reload states ---
 		for( h in e.find(".section > h1").elements() )
@@ -140,7 +140,7 @@ class PropsEditor extends Component {
 			if(defVal != null) {
 				var dd = f.root.parent().parent("dd");
 				var dt = dd.prev("dt");
-				var button = dt.wrapInner('<input type="button" value="${dt.text()}"/>');
+				var button = dt.wrapInner('<input type="button" tabindex="-1" value="${dt.text()}"/>');
 				button.click(function(e) {
 					var range = @:privateAccess f.range;
 					if(range != null) range.reset();
