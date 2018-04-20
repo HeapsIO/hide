@@ -24,7 +24,7 @@ typedef CurveKeys = Array<CurveKey>;
 
 class Curve extends Prefab {
 
-	public var duration : Float = 0.;
+	public var duration : Float = 0.; // TODO: optional?
 	public var keys : CurveKeys = [];
 
    	public function new(?parent) {
@@ -119,4 +119,10 @@ class Curve extends Prefab {
 		}
 		return vals;
 	}
+
+	override function getHideProps() {
+		return { icon : "paint-brush", name : "Curve", fileSource : null };
+	}
+
+	static var _ = Library.register("curve", Curve);
 }

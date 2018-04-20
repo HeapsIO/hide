@@ -144,9 +144,6 @@ class Prefab extends FileView {
 		} else
 			light = null;
 
-
-		this.saveDisplayKey = "Scene:" + state.path;
-
 		tools.saveDisplayKey = "Prefab/tools";
 		tools.addButton("video-camera", "Perspective camera", () -> sceneEditor.resetCamera(false));
 		tools.addToggle("sun-o", "Enable Lights/Shadows", function(v) {

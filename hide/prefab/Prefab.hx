@@ -191,4 +191,14 @@ class Prefab {
 	public function to<T:Prefab>( c : Class<T> ) : Null<T> {
 		return Std.instance(this, c);
 	}
+
+	public function getAbsPath() {
+		var p = this;
+		var path = [];
+		while(p != null) {
+			path.unshift(p.name + '[${p.type}]');
+			p = p.parent;
+		}
+		return path.join('.');
+	}
 }

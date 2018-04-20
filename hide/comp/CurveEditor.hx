@@ -7,8 +7,11 @@ class CurveEditor extends Component {
 	public var xOffset = 0.;
 	public var yOffset = 0.;
 
-	public var curve : hide.prefab.Curve;
+	public var curve(default, set) : hide.prefab.Curve;
 	public var undo : hide.ui.UndoHistory;
+
+	public var lockViewX = false;
+	public var lockViewY = false;
 
 	var svg : hide.comp.SVG;
 	var width = 0;
@@ -19,23 +22,19 @@ class CurveEditor extends Component {
 
 	var refreshTimer : haxe.Timer = null;
 	var lastValue : Dynamic;
+	var lastMode : hide.prefab.Curve.CurveKeyMode = Constant;
 
 	var selectedKeys: Array<hide.prefab.Curve.CurveKey> = [];
 
-	public function new(parent, curve : hide.prefab.Curve, undo) {
+	public function new(parent, undo) {
 		super(parent);
 		this.undo = undo;
-		this.curve = curve;
-		var div = new Element("<div></div>");
+		var div = new Element("<div></div>").appendTo(parent);
 		div.attr({ tabindex: "1" });
 		div.css({ width: "100%", height: "100%" });
-
-		div.appendTo(parent);
 		div.focus();
 		svg = new hide.comp.SVG(div);
 		var root = svg.element;
-
-		lastValue = haxe.Json.parse(haxe.Json.stringify(curve.save()));
 
 		gridGroup = svg.group(root, "grid");
 		graphGroup = svg.group(root, "graph");
@@ -52,7 +51,7 @@ class CurveEditor extends Component {
 			div.focus();
 			if(e.which == 1) {
 				if(e.ctrlKey) {
-					addPoint(ixt(px), iyt(py));
+					addKey(ixt(px), iyt(py));
 				}
 				else {
 					startSelectRect(px, py);
@@ -69,13 +68,27 @@ class CurveEditor extends Component {
 		});
 		root.on("mousewheel", function(e) {
 			var step = e.originalEvent.wheelDelta > 0 ? 1.0 : -1.0;
-			if(hxd.Key.isDown(hxd.Key.SHIFT))
-				yScale *= Math.pow(1.125, step);
-			else
-				xScale *= Math.pow(1.125, step);
-			refresh();
+			var changed = false;
+			if(hxd.Key.isDown(hxd.Key.SHIFT)) {
+				if(!lockViewY) {
+					yScale *= Math.pow(1.125, step);
+					changed = true;
+				}
+			}
+			else {
+				if(!lockViewX) {
+					xScale *= Math.pow(1.125, step);
+					changed = true;
+				}
+			}
+			if(changed) {
+				e.preventDefault();
+				e.stopPropagation();
+				refresh();
+			}
 		});
 		div.keydown(function(e) {
+			if(curve == null) return;
 			if(e.keyCode == 46) {
 				var newVal = [for(k in curve.keys) if(selectedKeys.indexOf(k) < 0) k];
 				curve.keys = newVal;
@@ -87,7 +100,25 @@ class CurveEditor extends Component {
 		});
 	}
 
-	function addPoint(time: Float, ?val: Float) {
+	function set_curve(curve) {
+		this.curve = curve;
+		lastValue = haxe.Json.parse(haxe.Json.stringify(curve.save()));
+		var view = getDisplayState("view");
+		if(view != null) {
+			if(!lockViewX) {
+				xOffset = view.xOffset;
+				xScale = view.xScale;
+			}
+			if(!lockViewY) {
+				yOffset = view.yOffset;
+				yScale = view.yScale;
+			}
+		}
+		refresh();
+		return curve;
+	}
+
+	function addKey(time: Float, ?val: Float) {
 		var index = 0;
 		for(ik in 0...curve.keys.length) {
 			var key = curve.keys[ik];
@@ -101,7 +132,7 @@ class CurveEditor extends Component {
 		var key : hide.prefab.Curve.CurveKey = {
 			time: time,
 			value: val,
-			mode: Linear
+			mode: lastMode
 		};
 		curve.keys.insert(index, key);
 		afterChange();
@@ -149,6 +180,7 @@ class CurveEditor extends Component {
 		if(next != null && key.time > next.time)
 			key.time = next.time - 0.01;
 
+		// TODO: Prevent backwards handles
 		if(next != null && key.nextHandle != null) {
 			var slope = key.nextHandle.dv / key.nextHandle.dt;
 			slope = hxd.Math.clamp(slope, -1000, 1000);
@@ -173,7 +205,7 @@ class CurveEditor extends Component {
 		var selY = p1y;
 		var selW = 0.;
 		var selH = 0.;
-		startDrag(root, function(e) {
+		startDrag(function(e) {
 			var p2x = e.clientX - offset.left;
 			var p2y = e.clientY - offset.top;
 			selX = hxd.Math.min(p1x, p2x);
@@ -185,41 +217,50 @@ class CurveEditor extends Component {
 		}, function(e) {
 			selectGroup.empty();
 			var minT = ixt(selX);
-			var minV = iyt(selY);
+			var minV = iyt(selY + selH);
 			var maxT = ixt(selX + selW);
-			var maxV = iyt(selY + selH);
+			var maxV = iyt(selY);
 			selectedKeys = [for(key in curve.keys)
 				if(key.time >= minT && key.time <= maxT && key.value >= minV && key.value <= maxV) key];
-			refresh();
+			refreshGraph();
 		});
 	}
 
 	function startPan(e) {
 		var lastX = e.clientX;
 		var lastY = e.clientY;
-		startDrag(root, function(e) {
+		startDrag(function(e) {
 			var dt = (e.clientX - lastX) / xScale;
 			var dv = (e.clientY - lastY) / yScale;
-			xOffset += dt;
-			yOffset += dv;
+			if(!lockViewX)
+				xOffset -= dt;
+			if(!lockViewY)
+				yOffset += dv;
 			lastX = e.clientX;
 			lastY = e.clientY;
-			refresh(true);
+			setPan(xOffset, yOffset);
 		}, function(e) {
-			refresh();
 		});
 	}
 
-	inline function xt(x: Float) return Math.round((x + xOffset) * xScale);
-	inline function yt(y: Float) return Math.round((y + yOffset) * yScale + height/2);
-	inline function ixt(px: Float) return px / xScale - xOffset;
-	inline function iyt(py: Float) return (py - height/2) / yScale - yOffset;
+	public function setPan(xoff, yoff) {
+		xOffset = xoff;
+		yOffset = yoff;
+		refreshGrid();
+		graphGroup.attr({transform: 'translate(${xt(0)},${yt(0)})'});
+	}
 
-	function startDrag(el: Element, onMove, onStop) {
-		el.mousemove(onMove);
-		el.mouseup(function(e) {
-			el.off("mousemove");
-			el.off("mouseup");
+	inline function xt(x: Float) return Math.round((x - xOffset) * xScale);
+	inline function yt(y: Float) return Math.round((-y + yOffset) * yScale + height/2);
+	inline function ixt(px: Float) return px / xScale + xOffset;
+	inline function iyt(py: Float) return -(py - height/2) / yScale + yOffset;
+
+	function startDrag(onMove: js.jquery.Event->Void, onStop: js.jquery.Event->Void) {
+		var el = new Element(root[0].ownerDocument.body);
+		el.on("mousemove.curveeditor", onMove);
+		el.on("mouseup.curveeditor", function(e: js.jquery.Event) {
+			el.off("mousemove.curveeditor");
+			el.off("mouseup.curveeditor");
 			e.preventDefault();
 			e.stopPropagation();
 			onStop(e);
@@ -248,33 +289,28 @@ class CurveEditor extends Component {
 		refresh();
 	}
 
-	public function resetView() {
-		// var margin = 20;
-		// var minT = ixt(-margin);
-		// var maxT = ixt(width + margin);
-		// var minV = iyt(0);
-		// var maxV = iyt(height);
-		// xOffset = minT;
-		// xScale = (maxT - minT)
-		// TODO
-	}
-
-	public function refresh(?anim: Bool = false, ?animKey: hide.prefab.Curve.CurveKey) {
-		width = Math.round(svg.element.width());
-		height = Math.round(svg.element.height());
-		gridGroup.empty();
-		graphGroup.empty();
-		selectGroup.empty();
-
-		if(refreshTimer != null)
-			refreshTimer.stop();
-		if(!anim) {
-			refreshTimer = haxe.Timer.delay(function() {
-				refreshTimer = null;
-				untyped window.gc();
-			}, 100);
+	public function refresh(?anim: Bool) {
+		if(false) {
+			// Auto-gc
+			if(refreshTimer != null)
+				refreshTimer.stop();
+			if(!anim) {
+				refreshTimer = haxe.Timer.delay(function() {
+					refreshTimer = null;
+					untyped window.gc();
+				}, 500);
+			}
 		}
 
+		refreshGrid();
+		refreshGraph(anim);
+	}
+
+	public function refreshGrid() {
+		width = Math.round(svg.element.width());
+		height = Math.round(svg.element.height());
+
+		gridGroup.empty();
 		var minX = Math.floor(ixt(0));
 		var maxX = Math.ceil(ixt(width));
 		var hgrid = svg.group(gridGroup, "hgrid");
@@ -286,8 +322,8 @@ class CurveEditor extends Component {
 				l.addClass("axis");
 		}
 
-		var minY = Math.floor(iyt(0));
-		var maxY = Math.ceil(iyt(height));
+		var minY = Math.floor(iyt(height));
+		var maxY = Math.ceil(iyt(0));
 		var vgrid = svg.group(gridGroup, "vgrid");
 		for(iy in minY...(maxY+1)) {
 			var l = svg.line(vgrid, 0, yt(iy), width, yt(iy)).attr({
@@ -296,6 +332,23 @@ class CurveEditor extends Component {
 			if(iy == 0)
 				l.addClass("axis");
 		}
+
+		saveDisplayState("view", {
+			xOffset: xOffset,
+			yOffset: yOffset,
+			xScale: xScale,
+			yScale: yScale
+		});
+	}
+
+	public function refreshGraph(?anim: Bool = false, ?animKey: hide.prefab.Curve.CurveKey) {
+		if(curve == null)
+			return;
+
+		graphGroup.empty();
+		var graphOffX = xt(0);
+		var graphOffY = yt(0);
+		graphGroup.attr({transform: 'translate($graphOffX, $graphOffY)'});
 
 		var curveGroup = svg.group(graphGroup, "curve");
 		var vectorsGroup = svg.group(graphGroup, "vectors");
@@ -306,23 +359,30 @@ class CurveEditor extends Component {
 		var size = 7;
 
 		// Draw curve
-		{
+		if(curve.keys.length > 0) {
 			var keys = curve.keys;
-			var lines = ['M ${xt(keys[0].time)},${yt(keys[0].value)}'];
+			var lines = ['M ${xScale*(keys[0].time)},${-yScale*(keys[0].value)}'];
 			for(ik in 1...keys.length) {
 				var prev = keys[ik-1];
 				var cur = keys[ik];
-				lines.push('C
-					${xt(prev.time + (prev.nextHandle != null ? prev.nextHandle.dt : 0.))}, ${yt(prev.value + (prev.nextHandle != null ? prev.nextHandle.dv : 0.))}
-					${xt(cur.time + (cur.prevHandle != null ? cur.prevHandle.dt : 0.))}, ${yt(cur.value + (cur.prevHandle != null ? cur.prevHandle.dv : 0.))}
-					${xt(cur.time)}, ${yt(cur.value)} ');
+				if(prev.mode == Constant) {
+					lines.push('L ${xScale*(prev.time)} ${-yScale*(prev.value)}
+					L ${xScale*(cur.time)} ${-yScale*(prev.value)}
+					L ${xScale*(cur.time)} ${-yScale*(cur.value)}');
+				}
+				else {
+					lines.push('C
+						${xScale*(prev.time + (prev.nextHandle != null ? prev.nextHandle.dt : 0.))},${-yScale*(prev.value + (prev.nextHandle != null ? prev.nextHandle.dv : 0.))}
+						${xScale*(cur.time + (cur.prevHandle != null ? cur.prevHandle.dt : 0.))}, ${-yScale*(cur.value + (cur.prevHandle != null ? cur.prevHandle.dv : 0.))}
+						${xScale*(cur.time)}, ${-yScale*(cur.value)} ');
+				}
 			}
 			svg.make(curveGroup, "path", {d: lines.join("")});
 			// var pts = curve.sample(200);
 			// var poly = [];
 			// for(i in 0...pts.length) {
-			// 	var x = xt(curve.duration * i / (pts.length - 1));
-			// 	var y = yt(pts[i]);
+			// 	var x = xScale * (curve.duration * i / (pts.length - 1));
+			// 	var y = yScale * (pts[i]);
 			// 	poly.push(new h2d.col.Point(x, y));
 			// }
 			// svg.polygon(curveGroup, poly);
@@ -336,8 +396,8 @@ class CurveEditor extends Component {
 		}
 
 		for(key in curve.keys) {
-			var kx = xt(key.time);
-			var ky = yt(key.value);
+			var kx = xScale*(key.time);
+			var ky = -yScale*(key.value);
 			var keyHandle = addRect(keyHandles, kx, ky);
 			var selected = selectedKeys.indexOf(key) >= 0;
 			if(selected)
@@ -347,32 +407,31 @@ class CurveEditor extends Component {
 					if(e.which != 1) return;
 					e.preventDefault();
 					e.stopPropagation();
-					var offx = e.clientX - keyHandle.offset().left;
-					var offy = e.clientY - keyHandle.offset().top;
-					var offset = svg.element.offset();
-					startDrag(root, function(e) {
-						var lx = e.clientX - offset.left - offx;
-						var ly = e.clientY - offset.top - offy;
+					var offset = root.offset();
+					startDrag(function(e) {
+						var lx = e.clientX - offset.left;
+						var ly = e.clientY - offset.top;
 						var nkx = ixt(lx);
 						var nky = iyt(ly);
 						key.time = nkx;
 						key.value = nky;
 						fixKey(key);
-						refresh(true, key);
+						refreshGraph(true, key);
 					}, function(e) {
 						selectedKeys = [key];
 						fixKey(key);
 						afterChange();
 					});
 					selectedKeys = [key];
-					refresh();
+					refreshGraph();
 				});
 				keyHandle.contextmenu(function(e) {
 					e.preventDefault();
 					function setMode(m: hide.prefab.Curve.CurveKeyMode) {
 						key.mode = m;
+						lastMode = m;
 						fixKey(key);
-						refresh();
+						refreshGraph();
 					}
 					new ContextMenu([
 						{ label : "Mode", menu :[
@@ -389,8 +448,8 @@ class CurveEditor extends Component {
 				var handle = next ? key.nextHandle : key.prevHandle;
 				var other = next ? key.prevHandle : key.nextHandle;
 				if(handle == null) return null;
-				var px = xt(key.time + handle.dt);
-				var py = yt(key.value + handle.dv);
+				var px = xScale*(key.time + handle.dt);
+				var py = -yScale*(key.value + handle.dv);
 				var line = svg.line(vectorsGroup, kx, ky, px, py);
 				var circle = svg.circle(tangentsHandles, px, py, size/2);
 				if(selected) {
@@ -403,26 +462,26 @@ class CurveEditor extends Component {
 					if(e.which != 1) return;
 					e.preventDefault();
 					e.stopPropagation();
-					var offx = e.clientX - circle.offset().left;
-					var offy = e.clientY - circle.offset().top;
-					var offset = svg.element.offset();
+					var offset = root.offset();
 					var otherLen = hxd.Math.distance(other.dt * xScale, other.dv * yScale);
-					startDrag(root, function(e) {
-						var lx = e.clientX - offset.left - offx;
-						var ly = e.clientY - offset.top - offy;
-						if(next && lx < kx || !next && lx > kx)
-							lx = kx;
+					startDrag(function(e) {
+						var lx = e.clientX - offset.left;
+						var ly = e.clientY - offset.top;
+						var abskx = xt(key.time);
+						var absky = yt(key.value);
+						if(next && lx < abskx || !next && lx > abskx)
+						 	lx = kx;
 						var ndt = ixt(lx) - key.time;
 						var ndv = iyt(ly) - key.value;
 						handle.dt = ndt;
 						handle.dv = ndv;
 						if(key.mode == Aligned) {
-							var angle = Math.atan2(ly - ky, lx - kx);
+							var angle = Math.atan2(absky - ly, lx - abskx);
 							other.dt = Math.cos(angle + Math.PI) * otherLen / xScale;
 							other.dv = Math.sin(angle + Math.PI) * otherLen / yScale;
 						}
 						fixKey(key);
-						refresh(true, key);
+						refreshGraph(true, key);
 					}, function(e) {
 						afterChange();
 					});
@@ -438,7 +497,7 @@ class CurveEditor extends Component {
 		if(selectedKeys.length > 1) {
 			var bounds = new h2d.col.Bounds();
 			for(key in selectedKeys)
-				bounds.addPoint(new h2d.col.Point(xt(key.time), yt(key.value)));
+				bounds.addPoint(new h2d.col.Point(xScale*(key.time), -yScale*(key.value)));
 			var margin = 12.5;
 			bounds.xMin -= margin;
 			bounds.yMin -= margin;
@@ -454,20 +513,20 @@ class CurveEditor extends Component {
 					e.stopPropagation();
 					var lastX = e.clientX;
 					var lastY = e.clientY;
-					startDrag(root, function(e) {
+					startDrag(function(e) {
 						var dx = e.clientX - lastX;
 						var dy = e.clientY - lastY;
 						for(key in selectedKeys) {
 							key.time += dx / xScale;
-							key.value += dy / yScale;
+							key.value -= dy / yScale;
 						}
 						lastX = e.clientX;
 						lastY = e.clientY;
-						refresh(true);
+						refreshGraph(true);
 					}, function(e) {
 						afterChange();
 					});
-					refresh();
+					refreshGraph();
 				});
 			}
 		}

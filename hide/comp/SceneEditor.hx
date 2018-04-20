@@ -115,7 +115,7 @@ class SceneEditor {
 	}
 
 	public function getSelection() {
-		return curEdit.elements;
+		return curEdit != null ? curEdit.elements : [];
 	}
 
 	public function addSearchBox(parent : Element) {
@@ -456,7 +456,7 @@ class SceneEditor {
 		return null;
 	}
 
-	function getObject(elt: PrefabElement) {
+	public function getObject(elt: PrefabElement) {
 		var ctx = getContext(elt);
 		if(ctx != null)
 			return ctx.local3d;
@@ -464,7 +464,7 @@ class SceneEditor {
 	}
 
 	function getSelfMeshes(p : PrefabElement) {
-		var childObjs = [for(c in p.children) getContext(c).local3d];
+		var childObjs = [for(c in p.children) {var ctx = getContext(c); if(ctx != null) ctx.local3d; }];
 		var ret = [];
 		function rec(o : Object) {
 			var m = Std.instance(o, h3d.scene.Mesh);
