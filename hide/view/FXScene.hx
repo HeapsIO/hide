@@ -89,9 +89,11 @@ class FXScene extends FileView {
 	var currentTime : Float;
 	var selectMin : Float;
 	var selectMax : Float;
+	var previewMin : Float;
+	var previewMax : Float;
 	var curveEdits : Array<hide.comp.CurveEditor>;
 	var timeLineEl : Element;
-	var panCallbacks : Array<Bool->Void>;
+	var refreshDopesheetKeys : Array<Bool->Void> = [];
 
 	override function getDefaultContent() {
 		return haxe.io.Bytes.ofString(ide.toJSON(new hide.prefab.fx.FXScene().save()));
@@ -210,6 +212,8 @@ class FXScene extends FileView {
 
 		selectMin = 0.6;
 		selectMax = 3.2;
+		previewMin = 0.6;
+		previewMax = 3.2;
 		refreshTimeline(false);
 	}
 
@@ -267,18 +271,25 @@ class FXScene extends FileView {
 
 		var overlay = root.find(".overlay");
 		overlay.empty();
-		timeLineEl = new Element('<span class="line"></span>').appendTo(overlay);
+		timeLineEl = new Element('<span class="timeline"></span>').appendTo(overlay);
 		timeLineEl.css({left: xt(currentTime)});
 
 		var select = new Element('<span class="selection"></span>').appendTo(overlay);
 		select.css({left: xt(selectMin), width: xt(selectMax) - xt(selectMin)});
+
+		var preview = new Element('<span class="preview"></span>').appendTo(overlay);
+		preview.css({left: xt(previewMin), width: xt(previewMax) - xt(previewMin)});
+		var prevLeft = new Element('<span class="preview-left"></span>').appendTo(overlay);
+		prevLeft.css({left: xt(previewMin)});
+		var prevRight = new Element('<span class="preview-right"></span>').appendTo(overlay);
+		prevRight.css({left: xt(previewMax)});
 	}
 
 	function afterPan(anim: Bool) {
 		for(curve in curveEdits) {
 			curve.setPan(xOffset, curve.yOffset);
 		}
-		for(clb in panCallbacks) {
+		for(clb in refreshDopesheetKeys) {
 			clb(anim);
 		}
 	}
@@ -288,7 +299,6 @@ class FXScene extends FileView {
 		var scrollPanel = root.find(".anim-scroll");
 		scrollPanel.empty();
 		curveEdits = [];
-		panCallbacks = [];
 
 		for(elt in selection) {
 			var objPanel = new Element('<div>
@@ -353,24 +363,42 @@ class FXScene extends FileView {
 					updateExpanded();
 				});
 				var dopesheet = trackEl.find(".dopesheet");
-				for(key in curve.keys) {
-					var keyEl = new Element('<span class="key">').appendTo(dopesheet);
-					inline function update() keyEl.css({left: xt(key.time)});
-					update();
-					keyEl.mousedown(function(e) {
-						var offset = dopesheet.offset();
-						startDrag(function(e) {
-							var x = ixt(e.clientX - offset.left);
-							key.time = x;
-							curveEdit.refreshGraph(true, key);
-							update();
-						}, function(e) {
-							curveEdit.refreshGraph();
-						});
-					});
-					panCallbacks.push(function(anim) {
+				function refreshDopesheet() {
+					refreshDopesheetKeys = [];
+					dopesheet.empty();
+					for(key in curve.keys) {
+						var keyEl = new Element('<span class="key">').appendTo(dopesheet);
+						inline function update() keyEl.css({left: xt(key.time)});
 						update();
-					});
+						keyEl.mousedown(function(e) {
+							var offset = dopesheet.offset();
+							var prevVal = key.time;
+							startDrag(function(e) {
+								var x = ixt(e.clientX - offset.left);
+								key.time = x;
+								curveEdit.refreshGraph(true, key);
+								update();
+							}, function(e) {
+								curveEdit.refreshGraph();
+								var newVal = key.time;
+								undo.change(Custom(function(undo) {
+									if(undo)
+										key.time = prevVal;
+									else
+										key.time = newVal;
+									update();
+									curveEdit.refreshGraph();
+								}));
+							});
+						});
+						refreshDopesheetKeys.push(function(anim) {
+							update();
+						});
+					}
+				}
+				refreshDopesheet();
+				curveEdit.onChange = function(anim) {
+					refreshDopesheet();
 				}
 				updateExpanded();
 			}

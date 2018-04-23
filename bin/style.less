@@ -535,6 +535,7 @@ input[type=checkbox] {
 		.handles {
 			circle, rect {
 				fill: rgba(187, 187, 187, 0.644);
+				cursor: pointer;
 			}
 			circle:hover, rect:hover {
 				fill: #fff;
@@ -575,9 +576,9 @@ input[type=checkbox] {
 	}
 
 	.timeline {
-		background: #000;
+		background: rgb(20, 20, 20);
 		position: relative;
-		height: 20px;
+		height: @timelineHeight;
 		overflow: hidden;
 
 		.mark {
@@ -604,7 +605,7 @@ input[type=checkbox] {
 			width: 100%;
 			height: 100%;
 			overflow: hidden;
-			.line {
+			.timeline {
 				position: absolute;
 				height: 100%;
 				width: 1px;
@@ -618,6 +619,38 @@ input[type=checkbox] {
 				border-left: 1px black;
 				border-right: 1px black;
 			}
+			.preview {
+				position: absolute;
+				height: @timelineHeight;
+				background: rgba(255, 255, 255, 0.1);
+				opacity: 0.9;
+				//-webkit-filter: invert(100%);
+				mix-blend-mode: screen;
+				// mix-blend-mode: screen;
+				border-left: 1px black;
+				border-right: 1px black;
+			}
+			.preview-left {
+				background: rgba(255, 255, 255, 0.068);
+				//background: -webkit-linear-gradient(left, rgba(255, 255, 255, 0.123), rgba(255, 255, 255, 0));
+				border-left:1px solid rgba(255, 255, 255, 0.671);
+				position: absolute;
+				height: 100%;
+				width: 4px;
+			}
+			.preview-right {
+				background: rgba(255, 255, 255, 0.068);
+				//background: -webkit-linear-gradient(left, rgba(255, 255, 255, 0.123), rgba(255, 255, 255, 0));
+				border-right:1px solid rgba(255, 255, 255, 0.671);
+				position: absolute;
+				height: 100%;
+				width: 4px;
+				margin-left: -4px;
+			}
+			
+			// .preview-left::after {
+			// 	background: url(http://placehold.it/16x16) no-repeat;
+			// }
 		}
 	}
 
@@ -636,6 +669,7 @@ input[type=checkbox] {
 				}
 
 				.track-toggle {
+					cursor: pointer;
 					width: 16px;
 					height: 16px;
 					display: inline-block;
@@ -653,6 +687,8 @@ input[type=checkbox] {
 				box-shadow: 0px -1px 0px black inset;
 				overflow: hidden;
 				.key {
+					cursor: pointer;
+					user-select: none;
 					position: absolute;
 					width: 5px;
 					margin-top: 1px;

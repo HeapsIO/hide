@@ -482,6 +482,7 @@ input[type=checkbox]:checked:after {
 .hide-curve-editor .graph .handles circle,
 .hide-curve-editor .graph .handles rect {
   fill: rgba(187, 187, 187, 0.644);
+  cursor: pointer;
 }
 .hide-curve-editor .graph .handles circle:hover,
 .hide-curve-editor .graph .handles rect:hover {
@@ -517,7 +518,7 @@ input[type=checkbox]:checked:after {
   height: 100%;
 }
 .fx-animpanel .timeline {
-  background: #000;
+  background: #141414;
   position: relative;
   height: 20px;
   overflow: hidden;
@@ -546,7 +547,7 @@ input[type=checkbox]:checked:after {
   height: 100%;
   overflow: hidden;
 }
-.fx-animpanel .overlay-container .overlay .line {
+.fx-animpanel .overlay-container .overlay .timeline {
   position: absolute;
   height: 100%;
   width: 1px;
@@ -559,6 +560,30 @@ input[type=checkbox]:checked:after {
   mix-blend-mode: hard-light;
   border-left: 1px black;
   border-right: 1px black;
+}
+.fx-animpanel .overlay-container .overlay .preview {
+  position: absolute;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  opacity: 0.9;
+  mix-blend-mode: screen;
+  border-left: 1px black;
+  border-right: 1px black;
+}
+.fx-animpanel .overlay-container .overlay .preview-left {
+  background: rgba(255, 255, 255, 0.068);
+  border-left: 1px solid rgba(255, 255, 255, 0.671);
+  position: absolute;
+  height: 100%;
+  width: 4px;
+}
+.fx-animpanel .overlay-container .overlay .preview-right {
+  background: rgba(255, 255, 255, 0.068);
+  border-right: 1px solid rgba(255, 255, 255, 0.671);
+  position: absolute;
+  height: 100%;
+  width: 4px;
+  margin-left: -4px;
 }
 .fx-animpanel .track .track-header {
   height: 20px;
@@ -573,6 +598,7 @@ input[type=checkbox]:checked:after {
   padding-right: 4px;
 }
 .fx-animpanel .track .track-header .track-prop .track-toggle {
+  cursor: pointer;
   width: 16px;
   height: 16px;
   display: inline-block;
@@ -590,6 +616,8 @@ input[type=checkbox]:checked:after {
   overflow: hidden;
 }
 .fx-animpanel .track .track-header .dopesheet .key {
+  cursor: pointer;
+  user-select: none;
   position: absolute;
   width: 5px;
   margin-top: 1px;

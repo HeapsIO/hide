@@ -100,6 +100,10 @@ class CurveEditor extends Component {
 		});
 	}
 
+	public dynamic function onChange(anim: Bool) {
+
+	}
+
 	function set_curve(curve) {
 		this.curve = curve;
 		lastValue = haxe.Json.parse(haxe.Json.stringify(curve.save()));
@@ -285,8 +289,10 @@ class CurveEditor extends Component {
 			lastValue = haxe.Json.parse(haxe.Json.stringify(curve.save()));
 			selectedKeys = [];
 			refresh();
+			onChange(false);
 		}));
 		refresh();
+		onChange(false);
 	}
 
 	public function refresh(?anim: Bool) {
@@ -417,6 +423,7 @@ class CurveEditor extends Component {
 						key.value = nky;
 						fixKey(key);
 						refreshGraph(true, key);
+						onChange(true);
 					}, function(e) {
 						selectedKeys = [key];
 						fixKey(key);
@@ -482,6 +489,7 @@ class CurveEditor extends Component {
 						}
 						fixKey(key);
 						refreshGraph(true, key);
+						onChange(true);
 					}, function(e) {
 						afterChange();
 					});
@@ -523,6 +531,7 @@ class CurveEditor extends Component {
 						lastX = e.clientX;
 						lastY = e.clientY;
 						refreshGraph(true);
+						onChange(true);
 					}, function(e) {
 						afterChange();
 					});
