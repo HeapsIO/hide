@@ -17,7 +17,7 @@ class Model extends FileView {
 	var apause : { function toggle( v : Bool ) : Void; var element : Element; };
 	var timeline : h2d.Graphics;
 	var timecursor : h2d.Bitmap;
-	var currentAnimation : String;
+	var currentAnimation : { file : String, name : String };
 
 	override function onDisplay() {
 		root.html('
@@ -202,7 +202,6 @@ class Model extends FileView {
 			var sel = tools.addSelect("play-circle");
 			var content = [for( a in anims ) {
 				var label = scene.animationName(a);
-				if( StringTools.endsWith(label,"_loop") ) label = label.substr(0,-5);
 				{ label : label, value : a }
 			}];
 			content.unshift({ label : "-- no anim --", value : null });
@@ -285,8 +284,8 @@ class Model extends FileView {
 				});
 			} },
 			{ label : "Export Animation", enabled : this.extension != "hsd" && currentAnimation != null, click : function() {
-				ide.chooseFileSave(this.getPath().substr(0,-4)+"_"+obj.currentAnimation.name+"_dump.txt", function(file) {
-					var lib = @:privateAccess scene.loadHMD(ide.getPath(currentAnimation),true);
+				ide.chooseFileSave(this.getPath().substr(0,-4)+"_"+currentAnimation.name+"_dump.txt", function(file) {
+					var lib = @:privateAccess scene.loadHMD(ide.getPath(currentAnimation.file),true);
 					var hmd = lib.header;
 					hmd.data = lib.getData();
 					sys.io.File.saveContent(ide.getPath(file), new hxd.fmt.hmd.Dump().dump(hmd));
@@ -313,7 +312,7 @@ class Model extends FileView {
 			return;
 		}
 		var anim = scene.loadAnimation(file);
-		currentAnimation = file;
+		currentAnimation = { file : file, name : scene.animationName(file) };
 		obj.playAnimation(anim);
 		buildTimeline();
 	}

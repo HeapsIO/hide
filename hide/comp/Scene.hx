@@ -234,7 +234,10 @@ class Scene extends Component implements h3d.IDrawable {
 		var name = path.split("/").pop();
 		if( StringTools.startsWith(name, "Anim_") )
 			name = name.substr(5);
-		return name.substr(0, -4);
+		name = name.substr(0, -4);
+		if( StringTools.endsWith(name,"_loop") )
+			name = name.substr(0,-5);
+		return name;
 	}
 
 	function initMaterials( obj : h3d.scene.Object, path : String, reset = true ) {
