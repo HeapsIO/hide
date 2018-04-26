@@ -231,6 +231,21 @@ class Model extends FileView {
 			}
 		},true);
 
+		var axis = new h3d.scene.Graphics(scene.s3d);
+		axis.lineStyle(1,0xFF0000);
+		axis.lineTo(1,0,0);
+		axis.lineStyle(1,0x00FF00);
+		axis.moveTo(0,0,0);
+		axis.lineTo(0,1,0);
+		axis.lineStyle(1,0x0000FF);
+		axis.moveTo(0,0,0);
+		axis.lineTo(0,0,1);
+		axis.visible = false;
+
+		tools.addToggle("", "Toggle Axis", function(v) {
+			axis.visible = v;
+		});
+
 		tools.addColor("Background color", function(v) {
 			scene.engine.backgroundColor = v;
 		}, scene.engine.backgroundColor);
@@ -254,6 +269,30 @@ class Model extends FileView {
 
 		scene.onResize = buildTimeline;
 		setAnimation(null);
+	}
+
+	override function buildTabMenu() {
+		var menu = super.buildTabMenu();
+		var arr : Array<hide.comp.ContextMenu.ContextMenuItem> = [
+			{ label : null, isSeparator : true },
+			{ label : "Export", enabled : this.extension != "hsd", click : function() {
+				ide.chooseFileSave(this.getPath().substr(0,-4)+"_dump.txt", function(file) {
+					var lib = @:privateAccess scene.loadHMD(this.getPath(),false);
+					var hmd = lib.header;
+					hmd.data = lib.getData();
+					sys.io.File.saveContent(ide.getPath(file), new hxd.fmt.hmd.Dump().dump(hmd));
+				});
+			} },
+			{ label : "Export Animation", enabled : this.extension != "hsd" && obj.currentAnimation != null, click : function() {
+				ide.chooseFileSave(this.getPath().substr(0,-4)+"_"+obj.currentAnimation."_dump.txt", function(file) {
+					var lib = @:privateAccess scene.loadHMD(this.getPath(),false);
+					var hmd = lib.header;
+					hmd.data = lib.getData();
+					sys.io.File.saveContent(ide.getPath(file), new hxd.fmt.hmd.Dump().dump(hmd));
+				});
+			} },
+		];
+		return menu.concat(arr);
 	}
 
 	function setAnimation( file : String ) {
