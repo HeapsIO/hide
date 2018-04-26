@@ -17,6 +17,7 @@ class Model extends FileView {
 	var apause : { function toggle( v : Bool ) : Void; var element : Element; };
 	var timeline : h2d.Graphics;
 	var timecursor : h2d.Bitmap;
+	var currentAnimation : String;
 
 	override function onDisplay() {
 		root.html('
@@ -283,9 +284,9 @@ class Model extends FileView {
 					sys.io.File.saveContent(ide.getPath(file), new hxd.fmt.hmd.Dump().dump(hmd));
 				});
 			} },
-			{ label : "Export Animation", enabled : this.extension != "hsd" && obj.currentAnimation != null, click : function() {
-				ide.chooseFileSave(this.getPath().substr(0,-4)+"_"+obj.currentAnimation."_dump.txt", function(file) {
-					var lib = @:privateAccess scene.loadHMD(this.getPath(),false);
+			{ label : "Export Animation", enabled : this.extension != "hsd" && currentAnimation != null, click : function() {
+				ide.chooseFileSave(this.getPath().substr(0,-4)+"_"+obj.currentAnimation.name+"_dump.txt", function(file) {
+					var lib = @:privateAccess scene.loadHMD(ide.getPath(currentAnimation),true);
 					var hmd = lib.header;
 					hmd.data = lib.getData();
 					sys.io.File.saveContent(ide.getPath(file), new hxd.fmt.hmd.Dump().dump(hmd));
@@ -308,9 +309,11 @@ class Model extends FileView {
 		apause.element.toggle(file != null);
 		if( file == null ) {
 			obj.stopAnimation();
+			currentAnimation = null;
 			return;
 		}
 		var anim = scene.loadAnimation(file);
+		currentAnimation = file;
 		obj.playAnimation(anim);
 		buildTimeline();
 	}
