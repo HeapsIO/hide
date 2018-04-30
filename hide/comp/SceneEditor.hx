@@ -26,7 +26,7 @@ class SceneEditorContext extends hide.prefab.EditContext {
 			if(!SceneEditor.hasParent(elt, elements)) {
 				rootElements.push(elt);
 				var obj = getContext(elt).local3d;
-				if(obj != null) 
+				if(obj != null)
 					rootObjects.push(obj);
 			}
 		}
@@ -44,8 +44,23 @@ class SceneEditorContext extends hide.prefab.EditContext {
 	override function rebuild() {
 		properties.clear();
 		cleanup();
-		if(elements.length > 0)
-			elements[0].edit(this);
+		if(elements.length > 0) {
+			var e = elements[0];
+			e.edit(this);
+			var sheet = e.getCdbModel();
+			if( sheet != null ) {
+				if( e.props == null ) {
+					trace("TODO : add button to init properties");
+					return;
+				}
+				var props = properties.add(new hide.Element('
+					<div class="group" name="Properties ${sheet.name.split('@').pop()}">
+					</div>
+				'),this);
+				var editor = new hide.comp.cdb.ObjEditor(props.find(".group .content"), sheet, e.props);
+				editor.undo = properties.undo;
+			}
+		}
 	}
 
 	public function cleanup() {
@@ -75,12 +90,12 @@ class SceneEditor {
 	var ide : hide.Ide;
 
 	var undo(get, null):hide.ui.UndoHistory;
-	function get_undo() { return view.undo; }	
+	function get_undo() { return view.undo; }
 
 	var view : hide.view.FileView;
 	var context : hide.prefab.Context;
 	var sceneData : PrefabElement;
-	
+
 	public function new(view, context, data) {
 		ide = hide.Ide.inst;
 		this.view = view;
@@ -152,7 +167,7 @@ class SceneEditor {
 	function onSceneReady() {
 
 		tree.saveDisplayKey = view.saveDisplayKey + '/tree';
-		
+
 		scene.s2d.addChild(context.shared.root2d);
 		scene.s3d.addChild(context.shared.root3d);
 

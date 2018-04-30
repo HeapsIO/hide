@@ -240,7 +240,38 @@ class Cell extends Component {
 			refresh();
 		case TProperties, TList:
 			@:privateAccess table.toggleList(this);
-		case TColor, TEnum(_), TFile, TFlags(_), TLayer(_), TRef(_), TTileLayer, TTilePos:
+		case TRef(name):
+			var sdat = editor.base.getSheet(name);
+			if( sdat == null ) return;
+			root.empty();
+			root.addClass("edit");
+
+			var s = new Element("<select>");
+			var elts = [for( d in sdat.all ){ id : d.id, ico : d.ico, text : d.disp }];
+			if( column.opt || currentValue == null || currentValue == "" )
+				elts.unshift( { id : "~", ico : null, text : "--- None ---" } );
+			root.append(s);
+
+			var props : Dynamic = { data : elts };
+			if( sdat.props.displayIcon != null ) {
+				function buildElement(i) {
+					var text = StringTools.htmlEscape(i.text);
+					return new Element("<div>"+(i.ico == null ? "<div style='display:inline-block;width:16px'/>" : tileHtml(i.ico,true)) + " " + text+"</div>");
+				}
+				props.templateResult = props.templateSelection = buildElement;
+			}
+			(untyped s.select2)(props);
+			(untyped s.select2)("val", currentValue == null ? "" : currentValue);
+			(untyped s.select2)("open");
+
+			s.change(function(e) {
+				var val = s.val();
+				if( val == "~" ) val = null;
+				setValue(val);
+				closeEdit();
+			});
+			s.on("select2:close", function(_) closeEdit());
+		case TColor, TEnum(_), TFile, TFlags(_), TLayer(_), TTileLayer, TTilePos:
 			throw "TODO "+column.type;
 		case TImage:
 			// deprecated

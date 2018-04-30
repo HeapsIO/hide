@@ -200,11 +200,10 @@ class Table extends Component {
 
 		// add/edit properties
 
-		/*
-		var end = J("<tr>").appendTo(content);
-		end = J("<td>").attr("colspan", "2").appendTo(end);
-		var sel = J("<select>").appendTo(end);
-		J("<option>").attr("value", "").text("--- Choose ---").appendTo(sel);
+		var end = new Element("<tr>").appendTo(root);
+		end = new Element("<td>").attr("colspan", "2").appendTo(end);
+		var sel = new Element("<select>").appendTo(end);
+		new Element("<option>").attr("value", "").text("--- Choose ---").appendTo(sel);
 		for( c in available )
 			J("<option>").attr("value",c.name).text(c.name).appendTo(sel);
 		J("<option>").attr("value","new").text("New property...").appendTo(sel);

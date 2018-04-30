@@ -144,7 +144,7 @@
 .cdb .cdb-sheet .tile {
   display: inline-block;
   vertical-align: middle;
-  image-rendering: CSS("pixelated");
+  image-rendering: pixelated;
 }
 .cdb .cdb-sheet td.t_int,
 .cdb .cdb-sheet td.t_float {

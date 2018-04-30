@@ -60,15 +60,6 @@ class Instance extends Object3D {
 		#if editor
 		var sheet = getCdbModel();
 		if( sheet == null ) return;
-
-		var props = ctx.properties.add(new hide.Element('
-			<div class="group" name="Instance">
-			</div>
-		'),this);
-
-		var editor = new hide.comp.cdb.ObjEditor(props.find(".group .content"), sheet, this.props);
-		editor.undo = ctx.properties.undo;
-
 		//ctx.properties.addProps([for(c in sheet.columns) {t: getPropType(c), name: c.name}], this.props);
 		#end
 	}

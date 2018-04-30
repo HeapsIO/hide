@@ -167,7 +167,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 			var curLayer = current.to(hide.prefab.l3d.Layer);
 			if(curLayer == null)
 				return;
-			var cdbSheet = curLayer.getCdbModel();
+			var cdbSheet = curLayer.getCdbModel(curLayer);
 			if(cdbSheet == null)
 				return;
 			var refCol = Instance.findRefColumn(cdbSheet);
@@ -183,11 +183,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 						label : kind,
 						click : function() {
 							var p = new hide.prefab.l3d.Instance(current);
-							for( c in cdbSheet.columns ) {
-								var d = cdbSheet.base.getDefault(c);
-								if( d != null )
-									Reflect.setField(p.props, c.name, d);
-							}
+							p.props = cdbSheet.getDefaults();
 							p.name = kind.charAt(0).toLowerCase() + kind.substr(1) + "_";
 							Reflect.setField(p.props, refCol.col.name, kind);
 							autoName(p);
