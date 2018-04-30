@@ -135,7 +135,7 @@ class Ide {
 
 		// Listen to FileTree dnd
 		new Element(window.window.document).on("dnd_stop.vakata.jstree", function(e, data) {
-			var nodeIds : Array<String> = cast data.data.nodes;			
+			var nodeIds : Array<String> = cast data.data.nodes;
 			if(data.data.jstree == null) return;
 			for( v in views ) {
 				var ft = Std.instance(v, hide.view.FileTree);
@@ -162,9 +162,7 @@ class Ide {
 		// dispatch global keys based on mouse position
 		new Element(body).keydown(function(e) {
 			var view = getViewAt(mouseX, mouseY);
-			if(view != null) {
-				view.keys.processEvent(e);
-			}
+			if(view != null) view.processKeyEvent(e);
 		});
 
 		var stage = new hxd.Stage(js.Browser.document.createCanvasElement(), true);

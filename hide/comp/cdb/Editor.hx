@@ -8,21 +8,22 @@ class Editor extends Component {
 	var sheet : cdb.Sheet;
 	var existsCache : Map<String,{ t : Float, r : Bool }> = new Map();
 	var tables : Array<Table> = [];
-	var keys : hide.ui.Keys;
 	var searchBox : Element;
+	var displayMode : Table.DisplayMode;
 	var clipboard : {
 		text : String,
 		data : {},
 		schema : Array<cdb.Data.Column>,
 	};
 	public var cursor : Cursor;
+	public var keys : hide.ui.Keys;
 	public var undo : hide.ui.UndoHistory;
 
-	public function new(root, sheet, keys) {
+	public function new(root, sheet) {
 		super(root);
 		this.undo = new hide.ui.UndoHistory();
 		this.sheet = sheet;
-		this.keys = keys;
+		keys = new hide.ui.Keys(root);
 		keys.addListener(onKey);
 		keys.register("search", function() {
 			searchBox.show();
@@ -54,6 +55,7 @@ class Editor extends Component {
 		keys.register("cdb.gotoReference", gotoReference);
 		base = sheet.base;
 		cursor = new Cursor(this);
+		if( displayMode == null ) displayMode = Table;
 		refresh();
 	}
 
@@ -174,7 +176,7 @@ class Editor extends Component {
 
 		var content = new Element("<table>");
 		tables = [];
-		new Table(this, sheet, content);
+		new Table(this, sheet, content, displayMode);
 		content.appendTo(root);
 
 		if( cursor.table != null ) {

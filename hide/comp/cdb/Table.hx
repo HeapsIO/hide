@@ -1,14 +1,21 @@
 package hide.comp.cdb;
 import js.jquery.Helper.*;
 
+enum DisplayMode {
+	Table;
+	Properties;
+}
+
 class Table extends Component {
 
 	public var editor : Editor;
 	public var sheet : cdb.Sheet;
 	public var lines : Array<Line>;
+	var displayMode : DisplayMode;
 
-	public function new(editor, sheet, root) {
+	public function new(editor, sheet, root, mode) {
 		super(root);
+		this.displayMode = mode;
 		this.editor = editor;
 		this.sheet = sheet;
 		@:privateAccess editor.tables.push(this);
@@ -26,7 +33,16 @@ class Table extends Component {
 	}
 
 	public function refresh() {
+		root.empty();
+		switch( displayMode ) {
+		case Table:
+			refreshTable();
+		case Properties:
+			refreshProperties();
+		}
+	}
 
+	function refreshTable() {
 		var cols = J("<tr>").addClass("head");
 		J("<th>").addClass("start").appendTo(cols);
 		lines = [for( index in 0...sheet.lines.length ) {
@@ -91,7 +107,6 @@ class Table extends Component {
 			}
 		}
 
-		root.empty();
 		root.append(cols);
 
 		var snext = 0;
@@ -142,6 +157,73 @@ class Table extends Component {
 			});
 			root.append(l);
 		}
+	}
+
+	function refreshProperties() {
+		lines = [];
+
+		var available = [];
+		var props = sheet.lines[0];
+		for( c in sheet.columns ) {
+			if( c.opt && !Reflect.hasField(props,c.name) ) {
+				available.push(c);
+				continue;
+			}
+
+			var v = Reflect.field(props, c.name);
+			var l = new Element("<tr>").appendTo(root);
+			var th = new Element("<th>").text(c.name).appendTo(l);
+			var td = new Element("<td>").addClass("c").appendTo(l);
+
+			var line = new Line(this, lines.length, l);
+			var cell = new Cell(td, line, c);
+			lines.push(line);
+
+			td.click(function(e) {
+				editor.cursor.clickCell(cell, e.shiftKey);
+				e.stopPropagation();
+			});
+
+			th.mousedown(function(e) {
+				if( e.which == 3 ) {
+					editor.popupColumn(this, c);
+					editor.cursor.clickCell(cell, false);
+					e.preventDefault();
+					return;
+				}
+			});
+
+			cell.root.dblclick(function(_) cell.edit());
+		}
+
+		// add/edit properties
+
+		/*
+		var end = J("<tr>").appendTo(content);
+		end = J("<td>").attr("colspan", "2").appendTo(end);
+		var sel = J("<select>").appendTo(end);
+		J("<option>").attr("value", "").text("--- Choose ---").appendTo(sel);
+		for( c in available )
+			J("<option>").attr("value",c.name).text(c.name).appendTo(sel);
+		J("<option>").attr("value","new").text("New property...").appendTo(sel);
+		sel.change(function(e) {
+			e.stopPropagation();
+			var v = sel.val();
+			if( v == "" )
+				return;
+			sel.val("");
+			if( v == "new" ) {
+				newColumn(sheet.name);
+				return;
+			}
+			for( c in available )
+				if( c.name == v ) {
+					Reflect.setField(props, c.name, base.getDefault(c, true));
+					save();
+					refresh();
+					return;
+				}
+		});*/
 	}
 
 	function toggleList( cell : Cell ) {

@@ -20,9 +20,7 @@ class CdbTable extends hide.ui.View<{ path : String }> {
 			return;
 		}
 		root.addClass("hide-scroll");
-		var keys = new hide.ui.Keys(props);
-		this.keys.subKeys = [keys];
-		editor = new hide.comp.cdb.Editor(root, sheet, keys);
+		editor = new hide.comp.cdb.Editor(root, sheet);
 		editor.save = function() {
 			ide.saveDatabase();
 		};

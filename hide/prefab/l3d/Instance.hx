@@ -66,6 +66,7 @@ class Instance extends Object3D {
 			</div>
 		'),this);
 
+		new hide.comp.cdb.ObjEditor(props.find(".group .content"), sheet, props);
 		//ctx.properties.addProps([for(c in sheet.columns) {t: getPropType(c), name: c.name}], this.props);
 		#end
 	}

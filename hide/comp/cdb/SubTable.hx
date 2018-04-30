@@ -7,7 +7,6 @@ class SubTable extends Table {
 	public var cell : Cell;
 
 	public function new(editor, cell:Cell) {
-
 		this.editor = editor;
 		this.cell = cell;
 
@@ -27,7 +26,11 @@ class SubTable extends Table {
 		insertedTR.insertAfter(cell.line.root);
 		cell.root.text("...");
 
-		super(editor, sheet, root);
+		var mode : Table.DisplayMode = switch( cell.column.type ) {
+		case TProperties: Properties;
+		default: Table;
+		};
+		super(editor, sheet, root, mode);
 	}
 
 	public function makeSubSheet() {
@@ -92,85 +95,6 @@ class SubTable extends Table {
 			}
 		}
 		cell.refresh();
-	}
-
-	override function refresh() {
-		switch( cell.column.type ) {
-		case TProperties:
-			refreshProperties();
-		default:
-			super.refresh();
-		}
-	}
-
-	function refreshProperties() {
-		root.empty();
-
-		lines = [];
-
-		var available = [];
-		var props = sheet.lines[0];
-		for( c in sheet.columns ) {
-			if( c.opt && !Reflect.hasField(props,c.name) ) {
-				available.push(c);
-				continue;
-			}
-
-			var v = Reflect.field(props, c.name);
-			var l = new Element("<tr>").appendTo(root);
-			var th = new Element("<th>").text(c.name).appendTo(l);
-			var td = new Element("<td>").addClass("c").appendTo(l);
-
-			var line = new Line(this, lines.length, l);
-			var cell = new Cell(td, line, c);
-			lines.push(line);
-
-			td.click(function(e) {
-				editor.cursor.clickCell(cell, e.shiftKey);
-				e.stopPropagation();
-			});
-
-			th.mousedown(function(e) {
-				if( e.which == 3 ) {
-					editor.popupColumn(this, c);
-					editor.cursor.clickCell(cell, false);
-					e.preventDefault();
-					return;
-				}
-			});
-
-			cell.root.dblclick(function(_) cell.edit());
-		}
-
-		// add/edit properties
-
-		/*
-		var end = J("<tr>").appendTo(content);
-		end = J("<td>").attr("colspan", "2").appendTo(end);
-		var sel = J("<select>").appendTo(end);
-		J("<option>").attr("value", "").text("--- Choose ---").appendTo(sel);
-		for( c in available )
-			J("<option>").attr("value",c.name).text(c.name).appendTo(sel);
-		J("<option>").attr("value","new").text("New property...").appendTo(sel);
-		sel.change(function(e) {
-			e.stopPropagation();
-			var v = sel.val();
-			if( v == "" )
-				return;
-			sel.val("");
-			if( v == "new" ) {
-				newColumn(sheet.name);
-				return;
-			}
-			for( c in available )
-				if( c.name == v ) {
-					Reflect.setField(props, c.name, base.getDefault(c, true));
-					save();
-					refresh();
-					return;
-				}
-		});*/
-
 	}
 
 }

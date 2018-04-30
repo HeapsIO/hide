@@ -50,7 +50,7 @@ class View<T> extends hide.comp.Component {
 	}
 
 	function get_keys() {
-		if( keys == null ) keys = new Keys(props);
+		if( keys == null ) keys = new Keys(null);
 		return keys;
 	}
 
@@ -86,6 +86,22 @@ class View<T> extends hide.comp.Component {
 		container.setTitle(getTitle());
 	}
 
+	public function processKeyEvent( e : js.jquery.Event ) {
+		var active = js.Browser.document.activeElement;
+		if( active != null && active.nodeName == "INPUT" ) {
+			e.stopPropagation();
+			return true;
+		}
+		for( el in root.find("[haskeys=true]").add(root).elements() ) {
+			var keys = hide.ui.Keys.get(el);
+			if( keys == null ) continue;
+			if( keys.processEvent(e,props) )
+				return true;
+		}
+		// global keys
+		return keys.processEvent(e,props);
+	}
+
 	public function setContainer(cont) {
 		this.container = cont;
 		@:privateAccess ide.views.push(this);
@@ -102,7 +118,7 @@ class View<T> extends hide.comp.Component {
 			destroy();
 		});
 		container.getElement().keydown(function(e) {
-			keys.processEvent(e);
+			processKeyEvent(e);
 		});
 
 		container.on("tab", function(e) {

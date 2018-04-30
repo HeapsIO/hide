@@ -2,24 +2,30 @@ package hide.ui;
 
 class Keys {
 
-	var config : Props;
 	var keys = new Map<String,Void->Void>();
+	var parent : js.html.Element;
 	var listeners = new Array<js.jquery.Event -> Bool>();
-	// allow a sub set to hierarchise and prevent leaks wrt refresh
-	public var subKeys : Array<Keys> = [];
 
-	public function new( config : Props ) {
-		this.config = config;
+	public function new( parent : Element ) {
+		if( parent != null ) {
+			this.parent = parent[0];
+			parent.attr("haskeys","true");
+			Reflect.setField(this.parent,"__keys",this);
+		}
+	}
+
+	public function remove() {
+		if( parent != null ) {
+			Reflect.deleteField(parent,"__keys");
+			parent.removeAttribute("haskeys");
+		}
 	}
 
 	public function addListener( l ) {
 		listeners.push(l);
 	}
 
-	public function processEvent( e : js.jquery.Event ) {
-		var active = js.Browser.document.activeElement;
-		if( active != null && active.nodeName == "INPUT" ) return;
-
+	public function processEvent( e : js.jquery.Event, config : Props ) {
 		var parts = [];
 		if( e.altKey )
 			parts.push("Alt");
@@ -40,34 +46,39 @@ class Keys {
 		}
 
 		var key = parts.join("-");
-		if( triggerKey(e, key) ) {
+		if( triggerKey(e, key, config) ) {
 			e.stopPropagation();
 			e.preventDefault();
+			return true;
 		}
+
+		return false;
 	}
 
-	public function triggerKey( e : js.jquery.Event, key : String ) {
-		for( s in subKeys )
-			if( s.triggerKey(e, key) )
-				return true;
+	public function triggerKey( e : js.jquery.Event, key : String, config : Props ) {
 		for( l in listeners )
 			if( l(e) )
 				return true;
-		var callb = keys.get(key);
-		if( callb != null ) {
-			callb();
-			return true;
+		for( k in keys.keys() ) {
+			var keyCode = config.get("key."+k);
+			if( keyCode == null ) {
+				trace("Key not defined " + k);
+				continue;
+			}
+			if( keyCode == key ) {
+				keys.get(k)();
+				return true;
+			}
 		}
 		return false;
 	}
 
 	public function register( name : String, callb : Void -> Void ) {
-		var key = config.get("key." + name);
-		if( key == null ) {
-			trace("Key not defined " + name);
-			return;
-		}
-		keys.set(key, callb);
+		keys.set(name, callb);
+	}
+
+	public static function get( e : Element ) : Keys {
+		return Reflect.field(e[0], "__keys");
 	}
 
 }
