@@ -235,10 +235,15 @@ class Cell extends Component {
 			i.focus();
 			i.select();
 			if( longText ) i.scrollTop(0);
+		case TBool:
+			setValue( currentValue == false && column.opt ? null : !currentValue ? true : false );
+			refresh();
 		case TProperties, TList:
 			@:privateAccess table.toggleList(this);
-		default:
+		case TColor, TEnum(_), TFile, TFlags(_), TLayer(_), TRef(_), TTileLayer, TTilePos:
 			throw "TODO "+column.type;
+		case TImage:
+			// deprecated
 		}
 	}
 
@@ -289,7 +294,10 @@ class Cell extends Component {
 		}
 		var prev = Reflect.field(line.obj, column.name);
 		undo.push({ ref : { mainSheet : mainLine.table.sheet, mainObj : mainLine.obj, obj : line.obj, sheet : line.table.sheet }, v : SetField(line.obj, column.name, prev) });
-		Reflect.setField(line.obj, column.name, value);
+		if( value == null )
+			Reflect.deleteField(line.obj, column.name);
+		else
+			Reflect.setField(line.obj, column.name, value);
 		table.sheet.updateValue(column, line.index, prev);
 		editor.addChanges(undo);
 	}
