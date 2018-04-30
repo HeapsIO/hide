@@ -138,11 +138,12 @@ class Cursor {
 	}
 
 	public function clickCell( cell : Cell, shiftKey = false ) {
+		var xIndex = cell.table.displayMode == Table ? cell.columnIndex : 0;
 		if( shiftKey && table == cell.table ) {
-			select = { x : cell.columnIndex, y : cell.line.index };
+			select = { x : xIndex, y : cell.line.index };
 			update();
 		} else
-			set(cell.table, cell.columnIndex, cell.line.index);
+			set(cell.table, xIndex, cell.line.index);
 	}
 
 }

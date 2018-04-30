@@ -4,6 +4,7 @@ import js.jquery.Helper.*;
 enum DisplayMode {
 	Table;
 	Properties;
+	AllProperties;
 }
 
 class Table extends Component {
@@ -11,7 +12,7 @@ class Table extends Component {
 	public var editor : Editor;
 	public var sheet : cdb.Sheet;
 	public var lines : Array<Line>;
-	var displayMode : DisplayMode;
+	public var displayMode(default,null) : DisplayMode;
 
 	public function new(editor, sheet, root, mode) {
 		super(root);
@@ -37,7 +38,7 @@ class Table extends Component {
 		switch( displayMode ) {
 		case Table:
 			refreshTable();
-		case Properties:
+		case Properties, AllProperties:
 			refreshProperties();
 		}
 	}
@@ -165,7 +166,8 @@ class Table extends Component {
 		var available = [];
 		var props = sheet.lines[0];
 		for( c in sheet.columns ) {
-			if( c.opt && !Reflect.hasField(props,c.name) ) {
+
+			if( c.opt && !Reflect.hasField(props,c.name) && displayMode != AllProperties ) {
 				available.push(c);
 				continue;
 			}
