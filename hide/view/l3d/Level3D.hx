@@ -189,7 +189,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 								if( d != null )
 									Reflect.setField(p.props, c.name, d);
 							}
-							p.name = kind.charAt(0).toLowerCase + kind.substr(1) + "_";
+							p.name = kind.charAt(0).toLowerCase() + kind.substr(1) + "_";
 							Reflect.setField(p.props, refCol.col.name, kind);
 							autoName(p);
 							addObject(p);
