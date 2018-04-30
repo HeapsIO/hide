@@ -16,7 +16,7 @@ class LevelEditContext extends hide.prefab.EditContext {
 	public function new(parent, context) {
 		super(context);
 		this.parent = parent;
-	}	
+	}
 }
 
 @:access(hide.view.l3d.Level3D)
@@ -59,7 +59,7 @@ class CamController extends h3d.scene.CameraController {
 				}
 				pushX = e.relX;
 				pushY = e.relY;
-			case 2: 
+			case 2:
 				rot(e.relX - pushX, e.relY - pushY);
 				pushX = e.relX;
 				pushY = e.relY;
@@ -183,7 +183,6 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 						label : kind,
 						click : function() {
 							var p = new hide.prefab.l3d.Instance(current);
-							p.props = {};
 							for( c in cdbSheet.columns ) {
 								var d = cdbSheet.base.getDefault(c);
 								if( d != null )
@@ -231,7 +230,7 @@ class Level3D extends FileView {
 	var light : h3d.scene.DirLight;
 	var lightDirection = new h3d.Vector( 1, 2, -4 );
 
-	var layerToolbar : hide.comp.Toolbar;	
+	var layerToolbar : hide.comp.Toolbar;
 	var layerButtons : Map<PrefabElement, hide.comp.Toolbar.ToolToggle>;
 
 	var grid : h3d.scene.Graphics;

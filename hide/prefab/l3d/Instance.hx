@@ -3,65 +3,50 @@ using Lambda;
 
 class Instance extends Object3D {
 
-	public var props : Dynamic;
-
 	public function new(?parent) {
 		super(parent);
 		type = "instance";
-	}
-
-	override function load( obj : Dynamic ) {
-		super.load(obj);
-		props = obj.props;
-	}
-
-	override function save() {
-		var obj : Dynamic = super.save();
-		obj.props = props;
-		return obj;
+		props = {};
 	}
 
 	override function makeInstance(ctx:Context):Context {
 		#if editor
 		var ctx = super.makeInstance(ctx);
 		var parentLayer = getParent(Layer);
-		if(parentLayer != null) {
-			var sheet = parentLayer.getCdbModel();
-			if(sheet != null) {
-				var refCol = findRefColumn(sheet);
-				if(refCol != null) {
-					var refId = Reflect.getProperty(props, refCol.col.name);
-					if(refId != null) {
-						var refSheet = sheet.base.getSheet(refCol.sheet);
-						if(refSheet != null) {
-							var idx = refSheet.index.get(refId);
-							var modelPath = findModelPath(refSheet, idx.obj);
-							if(modelPath != null) {
-								try {
-									var obj = ctx.loadModel(modelPath);
-									obj.name = name;
-									applyPos(obj);
-									ctx.local3d.addChild(obj);
-									ctx.local3d = obj;
-								} catch( e : hxd.res.NotFound ) {
-									ctx.onError(e);
-								}
-							}
-							else {
-								var tile = findTile(refSheet, idx.obj).center();
-								var objFollow = new h2d.ObjectFollower(ctx.local3d, ctx.shared.root2d);
-								var bmp = new h2d.Bitmap(tile, objFollow);
-								ctx.local2d = objFollow;
-								var obj = new h3d.scene.Object(ctx.local3d);
-								var prim = h3d.prim.Cube.defaultUnitCube();
-								var mesh = new h3d.scene.Mesh(prim, obj);
-								mesh.setPos(-0.25, -0.25, -0.25);
-								mesh.scale(0.5);
-								var mat = mesh.material;
-								mat.color.setColor(parentLayer.color);
-								mat.shadows = false;
-							}
+		var sheet = getCdbModel();
+		if( sheet == null ) return ctx;
+		var refCol = findRefColumn(sheet);
+		if(refCol != null) {
+			var refId = Reflect.getProperty(props, refCol.col.name);
+			if(refId != null) {
+				var refSheet = sheet.base.getSheet(refCol.sheet);
+				if(refSheet != null) {
+					var idx = refSheet.index.get(refId);
+					var modelPath = findModelPath(refSheet, idx.obj);
+					if(modelPath != null) {
+						try {
+							var obj = ctx.loadModel(modelPath);
+							obj.name = name;
+							applyPos(obj);
+							ctx.local3d.addChild(obj);
+							ctx.local3d = obj;
+						} catch( e : hxd.res.NotFound ) {
+							ctx.onError(e);
 						}
+					}
+					else {
+						var tile = findTile(refSheet, idx.obj).center();
+						var objFollow = new h2d.ObjectFollower(ctx.local3d, ctx.shared.root2d);
+						var bmp = new h2d.Bitmap(tile, objFollow);
+						ctx.local2d = objFollow;
+						var obj = new h3d.scene.Object(ctx.local3d);
+						var prim = h3d.prim.Cube.defaultUnitCube();
+						var mesh = new h3d.scene.Mesh(prim, obj);
+						mesh.setPos(-0.25, -0.25, -0.25);
+						mesh.scale(0.5);
+						var mat = mesh.material;
+						mat.color.setColor(parentLayer.color);
+						mat.shadows = false;
 					}
 				}
 			}
@@ -73,28 +58,16 @@ class Instance extends Object3D {
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
 		#if editor
+		var sheet = getCdbModel();
+		if( sheet == null ) return;
+
 		var props = ctx.properties.add(new hide.Element('
 			<div class="group" name="Instance">
 			</div>
 		'),this);
 
-		var parentLayer = getParent(Layer);
-		if(parentLayer == null) return;
-
-		var sheet = parentLayer.getCdbModel();
-		if(sheet == null) return;
-		ctx.properties.addProps([for(c in sheet.columns) {t: getPropType(c), name: c.name}], this.props);
+		//ctx.properties.addProps([for(c in sheet.columns) {t: getPropType(c), name: c.name}], this.props);
 		#end
-	}
-
-	function getPropType(col : cdb.Data.Column) : hide.comp.PropsEditor.PropType {
-		return switch(col.type) {
-			// case TString: TODO
-			case TBool: PBool;
-			case TInt: PInt();
-			case TFloat: PFloat();
-			default: PUnsupported(col.name);
-		}
 	}
 
 	override function getHideProps() {

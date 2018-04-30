@@ -12,7 +12,10 @@ class Layer extends Object3D {
 	}
 
 	#if editor
-	public function getCdbModel() {
+	override function getCdbModel( ?p : Prefab ) {
+		if( p == null ) p = this;
+		if( p == this )
+			return null;
 		var levelSheet = getLevelSheet();
 		if(levelSheet == null) return null;
 		var lname = name.split("_")[0];

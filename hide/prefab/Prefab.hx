@@ -7,6 +7,7 @@ class Prefab {
 	public var parent(default, set) : Prefab;
 	public var source(default, set) : String;
 	public var children(default, null) : Array<Prefab>;
+	public var props(default, null) : {};
 
 	public function new(?parent) {
 		this.parent = parent;
@@ -63,6 +64,8 @@ class Prefab {
 			obj.source = source;
 		if( children.length > 0 )
 			obj.children = [for( s in children ) s.saveRec()];
+		if( props != null )
+			obj.props = props;
 		return obj;
 	}
 
@@ -97,6 +100,7 @@ class Prefab {
 		var p = Type.createInstance(pcl, [parent]);
 		p.type = v.type;
 		p.name = v.name;
+		p.props = v.props;
 		if( v.source != null )
 			p.source = v.source;
 		p.load(v);
@@ -116,6 +120,16 @@ class Prefab {
 		for( c in children )
 			c.makeInstanceRec(ctx);
 	}
+
+	#if editor
+	public function getCdbModel( ?p : Prefab ) : cdb.Sheet {
+		if( p == null )
+			p = this;
+		if( parent != null )
+			return parent.getCdbModel(p);
+		return null;
+	}
+	#end
 
 	public function getPrefabByName( name : String ) {
 		if( this.name == name )
