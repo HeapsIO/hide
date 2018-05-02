@@ -77,10 +77,19 @@ class Gizmo extends h3d.scene.Object {
 				mat.color.setColor(color);
 			}
 			interactive.onPush = function(e) {
-				startMove(mode);
+				var startPt = new h2d.col.Point(scene.s2d.mouseX, scene.s2d.mouseY);
+				updateFunc = function(dt) {
+					var mousePt = new h2d.col.Point(scene.s2d.mouseX, scene.s2d.mouseY);
+					if(mousePt.distance(startPt) > 5) {
+						startMove(mode);
+					}
+				}
 			}
 			interactive.onRelease = function(e) {
-				finishMove();
+				if(moving)
+					finishMove();
+				else
+					updateFunc = null;
 			}
 		}
 
