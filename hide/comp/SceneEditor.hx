@@ -289,8 +289,8 @@ class SceneEditor {
 
 	function refreshProps() {
 		properties.clear();
-		if(curEdit != null && curEdit.elements != null && curEdit.elements.length > 0) {
-			curEdit.elements[0].edit(curEdit);
+		if(curEdit != null) {
+			curEdit.rebuild();
 		}
 	}
 
@@ -970,7 +970,7 @@ class SceneEditor {
 		return null;
 	}
 
-	static function worldMat(obj: Object) {
+	public function worldMat(obj: Object) {
 		if(obj.defaultTransform != null) {
 			var m = obj.defaultTransform.clone();
 			m.invert();

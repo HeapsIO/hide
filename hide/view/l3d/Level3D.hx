@@ -133,6 +133,29 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		var newItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
 		var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
 		var allowed = ["model", "object", "layer", "box", "polygon"];
+
+		var curLayer = current != null ? current.to(hide.prefab.l3d.Layer) : null;
+		var cdbSheet = curLayer != null ? curLayer.getCdbModel(curLayer) : null;
+
+		function setup(p : PrefabElement) {
+			var proj = screenToWorld(scene.s2d.width/2, scene.s2d.height/2);
+			var obj3d = p.to(hide.prefab.Object3D);
+			if(proj != null && obj3d != null) {
+				var parentMat = worldMat(getObject(p.parent));
+				parentMat.invert();
+				var localMat = new h3d.Matrix();
+				localMat.initTranslate(proj.x, proj.y, proj.z);
+				localMat.multiply(localMat, parentMat);
+				obj3d.setTransform(localMat);
+			}
+
+			if(cdbSheet != null)
+				p.props = cdbSheet.getDefaults();
+
+			autoName(p);
+			addObject(p);
+		}
+
 		for( ptype in allowed ) {
 			var pcl = allRegs.get(ptype);
 			var props = Type.createEmptyInstance(pcl).getHideProps();
@@ -145,7 +168,6 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 						@:privateAccess p.type = ptype;
 						if(path != null)
 							p.source = path;
-						autoName(p);
 						return p;
 					}
 
@@ -153,21 +175,17 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 						ide.chooseFile(props.fileSource, function(path) {
 							if( path == null ) return;
 							var p = make(path);
-							addObject(p);
+							setup(p);
 						});
 					else
-						addObject(make());
+						setup(make());
 				}
 			});
 		}
 
 		function addNewInstances() {
-			if(current == null)
-				return;
-			var curLayer = current.to(hide.prefab.l3d.Layer);
 			if(curLayer == null)
 				return;
-			var cdbSheet = curLayer.getCdbModel(curLayer);
 			if(cdbSheet == null)
 				return;
 			var refCol = Instance.findRefColumn(cdbSheet);
@@ -183,11 +201,9 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 						label : kind,
 						click : function() {
 							var p = new hide.prefab.l3d.Instance(current);
-							p.props = cdbSheet.getDefaults();
 							p.name = kind.charAt(0).toLowerCase() + kind.substr(1) + "_";
 							Reflect.setField(p.props, refCol.col.name, kind);
-							autoName(p);
-							addObject(p);
+							setup(p);
 						}
 					});
 				}
@@ -202,8 +218,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 					click : function() {
 						var p = new hide.prefab.l3d.Instance(current);
 						p.name = "object";
-						autoName(p);
-						addObject(p);
+						setup(p);
 					}
 				});
 			}

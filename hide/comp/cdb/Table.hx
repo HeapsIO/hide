@@ -199,7 +199,7 @@ class Table extends Component {
 		}
 
 		// add/edit properties
-
+		/*
 		var end = new Element("<tr>").appendTo(root);
 		end = new Element("<td>").attr("colspan", "2").appendTo(end);
 		var sel = new Element("<select>").appendTo(end);
