@@ -93,6 +93,8 @@ class View<T> extends hide.comp.Component {
 			return true;
 		}
 		for( el in root.find("[haskeys=true]").add(root).elements() ) {
+			if(el.has(active).length == 0 && el[0] != active)
+				continue;
 			var keys = hide.ui.Keys.get(el);
 			if( keys == null ) continue;
 			if( keys.processEvent(e,props) )

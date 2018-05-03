@@ -23,6 +23,7 @@ class Editor extends Component {
 		super(root);
 		this.undo = new hide.ui.UndoHistory();
 		this.sheet = sheet;
+		root.attr("tabindex", 0);
 		keys = new hide.ui.Keys(root);
 		keys.addListener(onKey);
 		keys.register("search", function() {
