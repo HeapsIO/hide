@@ -80,7 +80,7 @@ class SceneEditor {
 	public var scene : hide.comp.Scene;
 	public var properties : hide.comp.PropsEditor;
 	public var curEdit(default, null) : SceneEditorContext;
-	public var snapToGround = true;
+	public var snapToGround = false;
 
 	var searchBox : Element;
 

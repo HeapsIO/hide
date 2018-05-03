@@ -100,7 +100,8 @@ class Prefab {
 		var p = Type.createInstance(pcl, [parent]);
 		p.type = v.type;
 		p.name = v.name;
-		p.props = v.props;
+		if(v.props != null)
+			p.props = Reflect.copy(v.props);  // TODO: Recursive?
 		if( v.source != null )
 			p.source = v.source;
 		p.load(v);

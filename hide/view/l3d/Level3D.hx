@@ -140,7 +140,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		function setup(p : PrefabElement) {
 			var proj = screenToWorld(scene.s2d.width/2, scene.s2d.height/2);
 			var obj3d = p.to(hide.prefab.Object3D);
-			if(proj != null && obj3d != null) {
+			if(proj != null && obj3d != null && p.to(hide.prefab.l3d.Layer) == null) {
 				var parentMat = worldMat(getObject(p.parent));
 				parentMat.invert();
 				var localMat = new h3d.Matrix();

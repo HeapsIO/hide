@@ -14,7 +14,8 @@ class Polygon extends Object3D {
 	
 	override function save() {
 		var obj : Dynamic = super.save();
-		obj.data = data;
+		if(data != null)
+			obj.data = data;
 		return obj;
 	}
 
