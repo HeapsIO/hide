@@ -208,6 +208,7 @@ class FXScene extends FileView {
 				ce.xScale = xScale;
 				ce.refresh();
 			}
+			afterPan(false);
 		});
 
 		selectMin = 0.6;
@@ -299,6 +300,7 @@ class FXScene extends FileView {
 		var scrollPanel = root.find(".anim-scroll");
 		scrollPanel.empty();
 		curveEdits = [];
+		refreshDopesheetKeys = [];
 
 		for(elt in selection) {
 			var objPanel = new Element('<div>
@@ -315,7 +317,7 @@ class FXScene extends FileView {
 					var defaultTracks = ["x", "y", "z", "rotationX", "rotationY", "rotationZ", "scaleX", "scaleY", "scaleZ", "visibility"];
 					for(t in defaultTracks) {
 						menuItems.push({
-							label: t,
+							label: upperCase(t),
 							click: ()->addTrack(elt, t),
 							enabled: !hasTrack(t)});
 					}
@@ -364,11 +366,10 @@ class FXScene extends FileView {
 				});
 				var dopesheet = trackEl.find(".dopesheet");
 				function refreshDopesheet() {
-					refreshDopesheetKeys = [];
 					dopesheet.empty();
 					for(key in curve.keys) {
 						var keyEl = new Element('<span class="key">').appendTo(dopesheet);
-						inline function update() keyEl.css({left: xt(key.time)});
+						function update() keyEl.css({left: xt(key.time)});
 						update();
 						keyEl.mousedown(function(e) {
 							var offset = dopesheet.offset();
@@ -423,7 +424,7 @@ class FXScene extends FileView {
 
 	function addTrack(element : PrefabElement, propName : String) {
 		var curve = new hide.prefab.Curve(element);
-		curve.name = propName;
+		curve.name = upperCase(propName);
 		rebuildAnimPanel();
 		return curve;
 	}
@@ -473,6 +474,10 @@ class FXScene extends FileView {
 			lastSyncChange = properties.lastChange;
 			currentVersion = undo.currentID;
 		}
+	}
+
+	static function upperCase(prop: String) {
+		return prop.charAt(0).toUpperCase() + prop.substr(1);
 	}
 
 	static var _ = FileTree.registerExtension(FXScene,["fx"], { icon : "sitemap", createNew : "FX" });
