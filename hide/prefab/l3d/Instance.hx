@@ -16,40 +16,38 @@ class Instance extends Object3D {
 		var sheet = getCdbModel();
 		if( sheet == null ) return ctx;
 		var refCol = findRefColumn(sheet);
-		if(refCol != null) {
-			var refId = Reflect.getProperty(props, refCol.col.name);
-			if(refId != null) {
-				var refSheet = sheet.base.getSheet(refCol.sheet);
-				if(refSheet != null) {
-					var idx = refSheet.index.get(refId);
-					var modelPath = findModelPath(refSheet, idx.obj);
-					if(modelPath != null) {
-						try {
-							var obj = ctx.loadModel(modelPath);
-							obj.name = name;
-							applyPos(obj);
-							ctx.local3d.addChild(obj);
-							ctx.local3d = obj;
-						} catch( e : hxd.res.NotFound ) {
-							ctx.onError(e);
-						}
-					}
-					else {
-						var tile = findTile(refSheet, idx.obj).center();
-						var objFollow = new h2d.ObjectFollower(ctx.local3d, ctx.shared.root2d);
-						var bmp = new h2d.Bitmap(tile, objFollow);
-						ctx.local2d = objFollow;
-						var obj = new h3d.scene.Object(ctx.local3d);
-						var prim = h3d.prim.Cube.defaultUnitCube();
-						var mesh = new h3d.scene.Mesh(prim, obj);
-						mesh.setPos(-0.25, -0.25, -0.25);
-						mesh.scale(0.5);
-						var mat = mesh.material;
-						mat.color.setColor(parentLayer.color);
-						mat.shadows = false;
-					}
-				}
+		if(refCol == null)
+			return ctx;
+		var refId = Reflect.getProperty(props, refCol.col.name);
+		if(refId == null)
+			return ctx;
+		var refSheet = sheet.base.getSheet(refCol.sheet);
+		if(refSheet == null)
+			return ctx;
+		var idx = refSheet.index.get(refId);
+		var modelPath = findModelPath(refSheet, idx.obj);
+		if(modelPath != null) {
+			try {
+				var obj = ctx.loadModel(modelPath);
+				obj.name = name;
+				ctx.local3d.addChild(obj);
+			} catch( e : hxd.res.NotFound ) {
+				ctx.onError(e);
 			}
+		}
+		else {
+			var tile = findTile(refSheet, idx.obj).center();
+			var objFollow = new h2d.ObjectFollower(ctx.local3d, ctx.shared.root2d);
+			var bmp = new h2d.Bitmap(tile, objFollow);
+			ctx.local2d = objFollow;
+			var obj = new h3d.scene.Object(ctx.local3d);
+			var prim = h3d.prim.Cube.defaultUnitCube();
+			var mesh = new h3d.scene.Mesh(prim, obj);
+			mesh.setPos(-0.25, -0.25, -0.25);
+			mesh.scale(0.5);
+			var mat = mesh.material;
+			mat.color.setColor(parentLayer.color);
+			mat.shadows = false;
 		}
 		#end
 		return ctx;
@@ -68,6 +66,7 @@ class Instance extends Object3D {
 		return { icon : "circle", name : "Instance", fileSource : null };
 	}
 
+	#if editor
 	public static function findRefColumn(sheet : cdb.Sheet) {
 		for(col in sheet.columns) {
 			switch(col.type) {
@@ -112,16 +111,15 @@ class Instance extends Object3D {
 			for(c in refSheet.columns) {
 				if(c.type == cdb.Data.ColumnType.TList) {
 					var sub = refSheet.getSub(c);
-					if(sub != null) {
-						var lines = sub.getLines();
-						if(lines.length > 0) {
-							var col = sub.columns.find(sc -> sc.type == cdb.Data.ColumnType.TFile);
-							if(col != null) {
-								path = filter(Reflect.getProperty(lines[0], col.name));
-								if(path != null) break;
-							}
-						}
-					}
+					if(sub == null) continue;
+					var lines : Array<Dynamic> = Reflect.field(obj, c.name);
+					if(lines == null || lines.length == 0) continue;
+					// var lines = sub.getLines();
+					// if(lines.length == 0) continue;
+					var col = sub.columns.find(sc -> sc.type == cdb.Data.ColumnType.TFile);
+					if(col == null) continue;
+					path = filter(Reflect.getProperty(lines[0], col.name));
+					if(path != null) break;
 				}
 			}
 		}
@@ -143,6 +141,7 @@ class Instance extends Object3D {
 		var h = (p.height == null ? 1 : p.height) * p.size;
 		return hxd.res.Loader.currentInstance.load(p.file).toTile().sub(p.x * p.size, p.y * p.size, w, h);
 	}
+	#end
 
 	static var _ = Library.register("instance", Instance);
 }

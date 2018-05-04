@@ -153,7 +153,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 				p.props = cdbSheet.getDefaults();
 
 			autoName(p);
-			addObject(p);
+			haxe.Timer.delay(addObject.bind(p), 0);
 		}
 
 		for( ptype in allowed ) {
@@ -202,8 +202,8 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 						click : function() {
 							var p = new hide.prefab.l3d.Instance(current);
 							p.name = kind.charAt(0).toLowerCase() + kind.substr(1) + "_";
-							Reflect.setField(p.props, refCol.col.name, kind);
 							setup(p);
+							Reflect.setField(p.props, refCol.col.name, kind);
 						}
 					});
 				}
