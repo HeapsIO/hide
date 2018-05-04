@@ -117,6 +117,8 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		var polygons = parent.getGroundPolys();
 		var minDist = -1.;
 		for(polygon in polygons) {
+			if(polygon.mesh == null)
+				continue;
 			var collider = polygon.mesh.getGlobalCollider();
 			var d = collider.rayIntersection(ray, true);
 			if(d > 0 && (d < minDist || minDist < 0)) {
