@@ -59,6 +59,9 @@ class SceneEditorContext extends hide.prefab.EditContext {
 				'),this);
 				var editor = new hide.comp.cdb.ObjEditor(props.find(".group .content"), sheet, e.props);
 				editor.undo = properties.undo;
+				editor.onChange = function(pname) {
+					onChange(e, 'props.$pname');
+				}
 			}
 		}
 	}

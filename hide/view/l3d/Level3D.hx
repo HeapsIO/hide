@@ -499,12 +499,35 @@ class Level3D extends FileView {
 				if(i != null) i.visible = !layer.locked;
 			}
 			for(box in layer.getAll(hide.prefab.Box)) {
-				box.setColor(layer.color);
+				box.setColor(getDisplayColor(box));
 			}
 			for(poly in layer.getAll(hide.prefab.l3d.Polygon)) {
-				poly.setColor(layer.color);
+				poly.setColor(getDisplayColor(poly));
 			}
 		}
+
+		var box = p.to(hide.prefab.Box);
+		if(box != null)
+			box.setColor(getDisplayColor(p));
+		var poly = p.to(hide.prefab.l3d.Polygon);
+		if(poly != null)
+			poly.setColor(getDisplayColor(p));
+	}
+
+	static function getDisplayColor(p: PrefabElement) {
+		var color = 0xffffff;
+		var layer = p.getParent(Layer);
+		if(layer != null) {
+			color = layer.color;
+		}
+		var kind = Instance.getCdbKind(p);
+		if(kind != null) {
+			var colorCol = kind.sheet.columns.find(c -> c.type == cdb.Data.ColumnType.TColor);
+			if(colorCol != null) {
+				color = cast Reflect.getProperty(kind.idx.obj, colorCol.name);
+			}
+		}
+		return color;
 	}
 
 	function getGroundPolys() {

@@ -12,20 +12,8 @@ class Instance extends Object3D {
 	override function makeInstance(ctx:Context):Context {
 		#if editor
 		var ctx = super.makeInstance(ctx);
-		var parentLayer = getParent(Layer);
-		var sheet = getCdbModel();
-		if( sheet == null ) return ctx;
-		var refCol = findRefColumn(sheet);
-		if(refCol == null)
-			return ctx;
-		var refId = Reflect.getProperty(props, refCol.col.name);
-		if(refId == null)
-			return ctx;
-		var refSheet = sheet.base.getSheet(refCol.sheet);
-		if(refSheet == null)
-			return ctx;
-		var idx = refSheet.index.get(refId);
-		var modelPath = findModelPath(refSheet, idx.obj);
+		var kind = getCdbKind(this);
+		var modelPath = findModelPath(kind.sheet, kind.idx.obj);
 		if(modelPath != null) {
 			try {
 				var obj = ctx.loadModel(modelPath);
@@ -36,7 +24,7 @@ class Instance extends Object3D {
 			}
 		}
 		else {
-			var tile = findTile(refSheet, idx.obj).center();
+			var tile = findTile(kind.sheet, kind.idx.obj).center();
 			var objFollow = new h2d.ObjectFollower(ctx.local3d, ctx.shared.root2d);
 			var bmp = new h2d.Bitmap(tile, objFollow);
 			ctx.local2d = objFollow;
@@ -46,7 +34,7 @@ class Instance extends Object3D {
 			mesh.setPos(-0.25, -0.25, -0.25);
 			mesh.scale(0.5);
 			var mat = mesh.material;
-			mat.color.setColor(parentLayer.color);
+			mat.color.setColor(0xff00ff);
 			mat.shadows = false;
 		}
 		#end
@@ -67,6 +55,25 @@ class Instance extends Object3D {
 	}
 
 	#if editor
+	// Move to Prefab?
+	public static function getCdbKind(p: Prefab) {
+		if(p.props == null)
+			return null;
+		var sheet = p.getCdbModel();
+		if( sheet == null )
+			return null;
+		var refCol = findRefColumn(sheet);
+		if(refCol == null)
+			return null;
+		var refId = Reflect.getProperty(p.props, refCol.col.name);
+		if(refId == null)
+			return null;
+		var refSheet = sheet.base.getSheet(refCol.sheet);
+		if(refSheet == null)
+			return null;
+		return {sheet: refSheet, idx: refSheet.index.get(refId)};
+	}
+
 	public static function findRefColumn(sheet : cdb.Sheet) {
 		for(col in sheet.columns) {
 			switch(col.type) {
