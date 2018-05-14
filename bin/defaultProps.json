@@ -41,6 +41,15 @@
 	// paths to look files/shaders into - relative to project root
 	"haxe.classPath" : ["src"],
 
+	// Scene editor config
+	// Snap size when using grid snapping
+	"sceneeditor.gridSnapStep": 1.0,
+
+	// Quantization steps (0 for none)
+	"sceneeditor.xyzPrecision": 0.01,
+	"sceneeditor.scalePrecision": 0.01,
+	"sceneeditor.rotatePrecision": 0,
+
 	// l3d config
 	"l3d.groundLayer": "ground",
 	"l3d.cdbLevel": "level",

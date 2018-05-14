@@ -25,15 +25,15 @@ class Gizmo extends h3d.scene.Object {
 
 	var gizmo: h3d.scene.Object;
 	var scene : hide.comp.Scene;
-	var moveStep = 0.5;
-	var rotateStep = 10.0 * Math.PI / 180.0;
-
 	var updateFunc: Float -> Void;
 
 	public var onStartMove: TransformMode -> Void;
 	public var onMove: h3d.Vector -> h3d.Quat -> h3d.Vector -> Void;
 	public var onFinishMove: Void -> Void;
 	public var moving(default, null): Bool;
+
+	public var moveStep = 0.5;
+	public var rotateStep = 10.0 * Math.PI / 180.0;
 
 	var debug: h3d.scene.Graphics;
 	var axisScale = false;

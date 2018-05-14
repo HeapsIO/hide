@@ -179,14 +179,14 @@ input[type=checkbox]:checked:after {
 }
 .hide-range input[type=range] {
   display: inline-block;
-  width: 155px;
+  width: 145px;
 }
 .hide-range input[type=range].small {
-  width: 143px;
+  width: 133px;
 }
 .hide-range input[type=text] {
   display: inline-block;
-  width: 34px;
+  width: 44px;
   padding-left: 2px;
   margin-left: 3px;
   border-color: transparent;

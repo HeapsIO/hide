@@ -175,6 +175,7 @@ class SceneEditor {
 		scene.s3d.addChild(context.shared.root3d);
 
 		gizmo = new hide.view.l3d.Gizmo(scene);
+		gizmo.moveStep = view.props.get("sceneeditor.gridSnapStep");
 
 		cameraController = makeCamController();
 
@@ -372,6 +373,18 @@ class SceneEditor {
 				m;
 			}];
 
+			var posQuant = view.props.get("sceneeditor.xyzPrecision");
+			var scaleQuant = view.props.get("sceneeditor.scalePrecision");
+			var rotQuant = view.props.get("sceneeditor.rotatePrecision") * Math.PI / 180.0;
+
+			inline function quantize(x: Float, step: Float) {
+				if(step > 0) {
+					x = Math.floor(x / step) * step;
+					x = untyped parseFloat(x.toFixed(5)); // Snap to closest nicely displayed float :cold_sweat:
+				}
+				return x;
+			}
+
 			var objects3d = curEdit.objects3D();
 			var prevState = [for(o in objects3d) o.save()];
 			gizmo.onMove = function(translate: h3d.Vector, rot: h3d.Quat, scale: h3d.Vector) {
@@ -396,17 +409,17 @@ class SceneEditor {
 					}
 					var obj3d = objects3d[i];
 					var rot = newMat.getEulerAngles();
-					obj3d.x = newMat.tx;
-					obj3d.y = newMat.ty;
-					obj3d.z = newMat.tz;
-					obj3d.rotationX = rot.x;
-					obj3d.rotationY = rot.y;
-					obj3d.rotationZ = rot.z;
+					obj3d.x = quantize(newMat.tx, posQuant);
+					obj3d.y = quantize(newMat.ty, posQuant);
+					obj3d.z = quantize(newMat.tz, posQuant);
+					obj3d.rotationX = quantize(rot.x, rotQuant);
+					obj3d.rotationY = quantize(rot.y, rotQuant);
+					obj3d.rotationZ = quantize(rot.z, rotQuant);
 					if(scale != null) {
 						var s = newMat.getScale();
-						obj3d.scaleX = s.x;
-						obj3d.scaleY = s.y;
-						obj3d.scaleZ = s.z;
+						obj3d.scaleX = quantize(s.x, scaleQuant);
+						obj3d.scaleY = quantize(s.y, scaleQuant);
+						obj3d.scaleZ = quantize(s.z, scaleQuant);
 					}
 					obj3d.applyPos(objects[i]);
 				}
