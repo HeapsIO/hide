@@ -395,7 +395,19 @@ class SceneEditor {
 						newMat.prependScale(scale.x, scale.y, scale.z);
 					}
 					var obj3d = objects3d[i];
-					obj3d.setTransform(newMat);
+					var rot = newMat.getEulerAngles();
+					obj3d.x = newMat.tx;
+					obj3d.y = newMat.ty;
+					obj3d.z = newMat.tz;
+					obj3d.rotationX = rot.x;
+					obj3d.rotationY = rot.y;
+					obj3d.rotationZ = rot.z;
+					if(scale != null) {
+						var s = newMat.getScale();
+						obj3d.scaleX = s.x;
+						obj3d.scaleY = s.y;
+						obj3d.scaleZ = s.z;
+					}
 					obj3d.applyPos(objects[i]);
 				}
 			}
