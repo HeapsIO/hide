@@ -93,7 +93,7 @@ class Ide {
 					return;
 			window.close(true);
 		});
-		window.on('blur', hxd.Key.initialize);
+		window.on('blur', function() if( h3d.Engine.getCurrent() != null ) hxd.Key.initialize());
 
 		// handle commandline parameters
 		nw.App.on("open", function(cmd) {
@@ -164,10 +164,6 @@ class Ide {
 			var view = getViewAt(mouseX, mouseY);
 			if(view != null) view.processKeyEvent(e);
 		});
-
-		var stage = new hxd.Stage(js.Browser.document.createCanvasElement(), true);
-		stage.setCurrent();
-		hxd.Key.initialize();
 	}
 
 	function getViewAt(x : Float, y : Float) {
