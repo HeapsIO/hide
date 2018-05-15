@@ -31,9 +31,10 @@ class Editor extends Component {
 			searchBox.find("input").focus().select();
 		});
 		keys.register("copy", onCopy);
+		keys.register("delete", onDelete);
 		keys.register("cdb.showReferences", showReferences);
-		keys.register("undo", function() if( undo.undo() ) { refresh(); save(); });
-		keys.register("redo", function() if( undo.redo() ) { refresh(); save(); });
+		keys.register("undo", function() if( undo.undo() ) refresh());
+		keys.register("redo", function() if( undo.redo() ) refresh());
 		for( k in ["cdb.editCell","rename"] )
 			keys.register(k, function() {
 				var c = cursor.getCell();
@@ -125,6 +126,52 @@ class Editor extends Component {
 		ide.setClipboard(clipboard.text);
 	}
 
+	function onDelete() {
+		var sel = cursor.getSelection();
+		if( sel == null )
+			return;
+		var changes : Array<cdb.Database.Change> = [];
+		if( cursor.x < 0 ) {
+			// delete lines
+			var y = sel.y2;
+			while( y >= sel.y1 ) {
+				var line = cursor.table.lines[y];
+				changes.push({ ref : line.getChangeRef(), v : InsertIndex(line.table.sheet.lines,line.index,line.obj) });
+				line.table.sheet.lines.splice(line.index, 1);
+				y--;
+			}
+			cursor.set(cursor.table, -1, sel.y1, null, false);
+		} else {
+			// delete cells
+			for( y in sel.y1...sel.y2+1 ) {
+				var line = cursor.table.lines[y];
+				for( x in sel.x1...sel.x2+1 ) {
+					var c = line.columns[x];
+					var old = Reflect.field(line.obj, c.name);
+					var def = base.getDefault(c,false);
+					if( old == def )
+						continue;
+					changes.push(changeObject(line,c,def));
+				}
+			}
+		}
+		if( changes.length > 0 ) {
+			addChanges(changes);
+			refresh();
+		}
+	}
+
+	public function changeObject( line : Line, column : cdb.Data.Column, value : Dynamic ) {
+		var prev = Reflect.field(line.obj, column.name);
+		var change : cdb.Database.Change = { ref : line.getChangeRef(), v : SetField(line.obj, column.name, prev) };
+		if( value == null )
+			Reflect.deleteField(line.obj, column.name);
+		else
+			Reflect.setField(line.obj, column.name, value);
+		line.table.sheet.updateValue(column, line.index, prev);
+		return change;
+	}
+
 	function showReferences() {
 		if( cursor.table == null ) return;
 		// todo : port from old cdb
@@ -150,6 +197,8 @@ class Editor extends Component {
 	}
 
 	function refresh() {
+
+		base.sync();
 
 		root.empty();
 		root.addClass('cdb');

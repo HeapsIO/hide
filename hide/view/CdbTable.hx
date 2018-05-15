@@ -21,6 +21,10 @@ class CdbTable extends hide.ui.View<{ path : String }> {
 		}
 		root.addClass("hide-scroll");
 		editor = new hide.comp.cdb.Editor(root, sheet);
+		editor.undo = undo;
+		undo.onChange = function() {
+			editor.save();
+		};
 		editor.save = function() {
 			ide.saveDatabase();
 		};

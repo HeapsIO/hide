@@ -65,7 +65,7 @@ class Cell extends Component {
 		case TId:
 			v == "" ? '<span class="error">#MISSING</span>' : (editor.base.getSheet(sheet.name).index.get(v).obj == obj ? v : '<span class="error">#DUP($v)</span>');
 		case TString, TLayer(_):
-			v == "" ? "&nbsp;" : StringTools.htmlEscape(v);
+			v == "" ? "&nbsp;" : StringTools.htmlEscape(v).split("\n").join("<br/>");
 		case TRef(sname):
 			if( v == "" )
 				'<span class="error">#MISSING</span>';
@@ -209,7 +209,8 @@ class Cell extends Component {
 				switch( e.keyCode ) {
 				case K.ESCAPE:
 					refresh();
-				case K.ENTER:
+					table.editor.root.focus();
+				case K.ENTER if( !e.shiftKey ):
 					closeEdit();
 					e.preventDefault();
 				case K.UP, K.DOWN if( !longText ):
@@ -317,19 +318,7 @@ class Cell extends Component {
 		if( undo == null )
 			undo = [];
 		currentValue = value;
-		var mainLine = line;
-		while( true ) {
-			var sub = Std.instance(mainLine.table, SubTable);
-			if( sub == null ) break;
-			mainLine = sub.cell.line;
-		}
-		var prev = Reflect.field(line.obj, column.name);
-		undo.push({ ref : { mainSheet : mainLine.table.sheet, mainObj : mainLine.obj, obj : line.obj, sheet : line.table.sheet }, v : SetField(line.obj, column.name, prev) });
-		if( value == null )
-			Reflect.deleteField(line.obj, column.name);
-		else
-			Reflect.setField(line.obj, column.name, value);
-		table.sheet.updateValue(column, line.index, prev);
+		undo.push(editor.changeObject(line,column,value));
 		editor.addChanges(undo);
 	}
 
@@ -337,6 +326,7 @@ class Cell extends Component {
 		var str = root.find("input,textarea").val();
 		if( str != null ) setRawValue(str);
 		refresh();
+		table.editor.root.focus();
 	}
 
 }

@@ -101,6 +101,7 @@
 		tr.head, th {
 			font-weight: bold;
 			text-align: center;
+			padding: 1px 10px;
 			border-bottom : 1px solid #666;
 			border-left: 1px solid #555;
 			background-color : #222;
@@ -227,6 +228,27 @@
 
 		span.error {
 			color : #C44;
+		}
+
+		tr.props {
+			background-color: #111;
+			&> td {
+				border : none;
+				padding : 0;
+				text-align: right;
+				&> div {
+					display: inline-block;
+				}
+			}
+			.cdb-sheet {
+				th {
+					width: 200px;
+				}
+				width : auto;
+				min-width: 400px;
+				border-right: 1px solid #333;
+				margin-bottom: 15px;
+			}
 		}
 
 		td.t_file {

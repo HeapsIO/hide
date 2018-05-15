@@ -4,6 +4,7 @@ body {
 	background-color : black;
 }
 
+//:focus { outline: none; }
 
 a {
 	text-decoration : none;
@@ -72,6 +73,7 @@ input[type=range] {
 	}
 	&::-webkit-slider-thumb {
 		-webkit-appearance: none;
+		appearance: none;
 		outline: 1px solid #aaa;
 		height: 6px;
 		width: 6px;
@@ -647,7 +649,7 @@ input[type=checkbox] {
 				width: 4px;
 				margin-left: -4px;
 			}
-			
+
 			// .preview-left::after {
 			// 	background: url(http://placehold.it/16x16) no-repeat;
 			// }

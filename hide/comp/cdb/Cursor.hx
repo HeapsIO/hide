@@ -50,7 +50,7 @@ class Cursor {
 			update();
 			return;
 		}
-		if( dx < 0 && x >= 0 )
+		if( dx < 0 && (table.displayMode == Table ? x >= 0 : x > 0) )
 			x--;
 		if( dy < 0 && y > 0 )
 			y--;

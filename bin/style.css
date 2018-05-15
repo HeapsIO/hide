@@ -77,6 +77,7 @@ input[type=range]:focus {
 }
 input[type=range]::-webkit-slider-thumb {
   -webkit-appearance: none;
+  appearance: none;
   outline: 1px solid #aaa;
   height: 6px;
   width: 6px;

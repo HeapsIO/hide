@@ -50,7 +50,7 @@ class Table extends Component {
 			var l = J("<tr>");
 			var head = J("<td>").addClass("start").text("" + index);
 			head.appendTo(l);
-			var line = new Line(this, index, l);
+			var line = new Line(this, sheet.columns, index, l);
 			l.mousedown(function(e) {
 				if( e.which == 3 ) {
 					head.click();
@@ -177,7 +177,7 @@ class Table extends Component {
 			var th = new Element("<th>").text(c.name).appendTo(l);
 			var td = new Element("<td>").addClass("c").appendTo(l);
 
-			var line = new Line(this, lines.length, l);
+			var line = new Line(this, [c], lines.length, l);
 			var cell = new Cell(td, line, c);
 			lines.push(line);
 
@@ -199,32 +199,37 @@ class Table extends Component {
 		}
 
 		// add/edit properties
-		/*
 		var end = new Element("<tr>").appendTo(root);
 		end = new Element("<td>").attr("colspan", "2").appendTo(end);
 		var sel = new Element("<select>").appendTo(end);
 		new Element("<option>").attr("value", "").text("--- Choose ---").appendTo(sel);
 		for( c in available )
 			J("<option>").attr("value",c.name).text(c.name).appendTo(sel);
-		J("<option>").attr("value","new").text("New property...").appendTo(sel);
+		J("<option>").attr("value","$new").text("New property...").appendTo(sel);
 		sel.change(function(e) {
-			e.stopPropagation();
 			var v = sel.val();
 			if( v == "" )
 				return;
 			sel.val("");
-			if( v == "new" ) {
-				newColumn(sheet.name);
+			editor.root.focus();
+			if( v == "$new" ) {
+				editor.newColumn(sheet);
 				return;
 			}
 			for( c in available )
 				if( c.name == v ) {
-					Reflect.setField(props, c.name, base.getDefault(c, true));
-					save();
+					var val = editor.base.getDefault(c, true);
+					Reflect.setField(props, c.name, val);
+					editor.undo.change(Custom(function(undo) {
+						if( undo )
+							Reflect.deleteField(props, c.name);
+						else
+							Reflect.setField(props,c.name, val);
+					}));
 					refresh();
 					return;
 				}
-		});*/
+		});
 	}
 
 	function toggleList( cell : Cell ) {

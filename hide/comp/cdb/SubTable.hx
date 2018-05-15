@@ -15,9 +15,23 @@ class SubTable extends Table {
 		if( line.subTable != null ) throw "assert";
 		line.subTable = this;
 
+		var mode : Table.DisplayMode = switch( cell.column.type ) {
+		case TProperties: Properties;
+		default: Table;
+		};
+
 		insertedTR = new Element("<tr>").addClass(cell.column.type == TProperties ? "props" : "list");
-		new Element("<td>").appendTo(insertedTR);
-		var group = new Element("<td>").attr("colspan", "" + cell.table.sheet.columns.length).appendTo(insertedTR);
+		var group;
+		if( mode == Properties ) {
+			var count = cell.columnIndex + 1;
+			group = new Element("<td>").attr("colspan",""+(count+1)).appendTo(insertedTR);
+			var remain = cell.table.sheet.columns.length - count;
+			if( remain > 0 )
+				new Element("<td>").attr("colspan", "" + remain).appendTo(insertedTR);
+		} else {
+			new Element("<td>").appendTo(insertedTR);
+			group = new Element("<td>").attr("colspan",""+cell.table.sheet.columns.length).appendTo(insertedTR);
+		}
 		slider = new Element("<div>").appendTo(group);
 		slider.hide();
 		var root = new Element("<table>");
@@ -26,10 +40,6 @@ class SubTable extends Table {
 		insertedTR.insertAfter(cell.line.root);
 		cell.root.text("...");
 
-		var mode : Table.DisplayMode = switch( cell.column.type ) {
-		case TProperties: Properties;
-		default: Table;
-		};
 		super(editor, sheet, root, mode);
 	}
 
