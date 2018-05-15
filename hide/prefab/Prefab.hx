@@ -1,5 +1,6 @@
 package hide.prefab;
 
+@:keepSub
 class Prefab {
 
 	public var type(default, null) : String;
