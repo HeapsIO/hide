@@ -48,7 +48,7 @@
 	// Quantization steps (0 for none)
 	"sceneeditor.xyzPrecision": 0.01,
 	"sceneeditor.scalePrecision": 0.01,
-	"sceneeditor.rotatePrecision": 0,
+	"sceneeditor.rotatePrecision": 0.1,
 
 	// l3d config
 	"l3d.groundLayer": "ground",

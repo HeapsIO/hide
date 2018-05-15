@@ -1,4 +1,5 @@
 package hide.prefab;
+import hxd.Math;
 using Lambda;
 
 class Object3D extends Prefab {
@@ -62,15 +63,15 @@ class Object3D extends Prefab {
 		scaleX = s.x;
 		scaleY = s.y;
 		scaleZ = s.z;
-		rotationX = rot.x;
-		rotationY = rot.y;
-		rotationZ = rot.z;
+		rotationX = Math.radToDeg(rot.x);
+		rotationY = Math.radToDeg(rot.y);
+		rotationZ = Math.radToDeg(rot.z);
 	}
 
 	public function getTransform() {
 		var m = new h3d.Matrix();
 		m.initScale(scaleX, scaleY, scaleZ);
-		m.rotate(rotationX, rotationY, rotationZ);
+		m.rotate(Math.degToRad(rotationX), Math.degToRad(rotationY), Math.degToRad(rotationZ));
 		m.translate(x, y, z);
 		return m;
 	}
@@ -82,7 +83,7 @@ class Object3D extends Prefab {
 		o.scaleX = scaleX;
 		o.scaleY = scaleY;
 		o.scaleZ = scaleZ;
-		o.setRotate(rotationX, rotationY, rotationZ);
+		o.setRotate(Math.degToRad(rotationX), Math.degToRad(rotationY), Math.degToRad(rotationZ));
 		o.visible = visible;
 	}
 
@@ -97,9 +98,9 @@ class Object3D extends Prefab {
 					<dt>Scale X</dt><dd><input type="range" min="0" max="5" value="1" field="scaleX"/></dd>
 					<dt>Scale Y</dt><dd><input type="range" min="0" max="5" value="1" field="scaleY"/></dd>
 					<dt>Scale Z</dt><dd><input type="range" min="0" max="5" value="1" field="scaleZ"/></dd>
-					<dt>Rotation X</dt><dd><input type="range" min="-180" max="180" value="0" field="rotationX" scale="${Math.PI/180}"/></dd>
-					<dt>Rotation Y</dt><dd><input type="range" min="-180" max="180" value="0" field="rotationY" scale="${Math.PI/180}"/></dd>
-					<dt>Rotation Z</dt><dd><input type="range" min="-180" max="180" value="0" field="rotationZ" scale="${Math.PI/180}"/></dd>
+					<dt>Rotation X</dt><dd><input type="range" min="-180" max="180" value="0" field="rotationX" /></dd>
+					<dt>Rotation Y</dt><dd><input type="range" min="-180" max="180" value="0" field="rotationY" /></dd>
+					<dt>Rotation Z</dt><dd><input type="range" min="-180" max="180" value="0" field="rotationZ" /></dd>
 					<dt>Visible</dt><dd><input type="checkbox" field="visible"/></dd>
 				</dl>
 			</div>

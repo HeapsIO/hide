@@ -1,6 +1,7 @@
 package hide.comp;
 
 import hxd.Key as K;
+import hxd.Math as M;
 
 import hide.prefab.Prefab as PrefabElement;
 import hide.prefab.Object3D;
@@ -347,7 +348,7 @@ class SceneEditor {
 			}
 			int.onMove = function(e) {
 				if(startDrag != null) {
-					if((hxd.Math.abs(startDrag[0] - scene.s2d.mouseX) + hxd.Math.abs(startDrag[1] - scene.s2d.mouseY)) > 5) {
+					if((M.abs(startDrag[0] - scene.s2d.mouseX) + M.abs(startDrag[1] - scene.s2d.mouseY)) > 5) {
 						startDrag = null;
 						moveGizmoToSelection();
 						gizmo.startMove(MoveXY);
@@ -375,7 +376,7 @@ class SceneEditor {
 
 			var posQuant = view.props.get("sceneeditor.xyzPrecision");
 			var scaleQuant = view.props.get("sceneeditor.scalePrecision");
-			var rotQuant = view.props.get("sceneeditor.rotatePrecision") * Math.PI / 180.0;
+			var rotQuant = view.props.get("sceneeditor.rotatePrecision");
 
 			inline function quantize(x: Float, step: Float) {
 				if(step > 0) {
@@ -412,9 +413,9 @@ class SceneEditor {
 					obj3d.x = quantize(newMat.tx, posQuant);
 					obj3d.y = quantize(newMat.ty, posQuant);
 					obj3d.z = quantize(newMat.tz, posQuant);
-					obj3d.rotationX = quantize(rot.x, rotQuant);
-					obj3d.rotationY = quantize(rot.y, rotQuant);
-					obj3d.rotationZ = quantize(rot.z, rotQuant);
+					obj3d.rotationX = quantize(M.radToDeg(rot.x), rotQuant);
+					obj3d.rotationY = quantize(M.radToDeg(rot.y), rotQuant);
+					obj3d.rotationZ = quantize(M.radToDeg(rot.z), rotQuant);
 					if(scale != null) {
 						var s = newMat.getScale();
 						obj3d.scaleX = quantize(s.x, scaleQuant);
