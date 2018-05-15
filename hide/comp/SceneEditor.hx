@@ -380,7 +380,7 @@ class SceneEditor {
 
 			inline function quantize(x: Float, step: Float) {
 				if(step > 0) {
-					x = Math.floor(x / step) * step;
+					x = Math.round(x / step) * step;
 					x = untyped parseFloat(x.toFixed(5)); // Snap to closest nicely displayed float :cold_sweat:
 				}
 				return x;
