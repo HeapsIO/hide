@@ -34,6 +34,9 @@
 	// Scene editor config
 	"key.sceneeditor.focus": "F",
 	"key.sceneeditor.lasso": "L",
+	"key.sceneeditor.hide": "H",
+	"key.sceneeditor.showAll": "Ctrl-H",
+	"key.sceneeditor.isolate": "I",
 
 	// cdb config
 

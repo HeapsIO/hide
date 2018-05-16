@@ -126,6 +126,9 @@ class SceneEditor {
 		});
 		view.keys.register("sceneeditor.focus", focusCamOnSelection);
 		view.keys.register("sceneeditor.lasso", startLassoSelect);
+		view.keys.register("sceneeditor.hide", function() {	setVisible(curEdit.elements, false); });
+		view.keys.register("sceneeditor.isolate", function() {	isolate(curEdit.elements); });
+		view.keys.register("sceneeditor.showAll", function() {	setVisible(context.shared.elements(), true); });
 	}
 
 	public function getSelection() {
@@ -331,6 +334,9 @@ class SceneEditor {
 						selectObjects(list);
 					}
 				}
+				else if(K.isDown(K.SHIFT)) {
+					selectObjects(elt.parent.children);
+				}
 				else {
 					selectObjects([elt]);
 				}
@@ -496,7 +502,7 @@ class SceneEditor {
 						continue;
 					var ctx = contexts[elt];
 					var o = ctx.local3d;
-					if(o == null)
+					if(o == null || !o.visible)
 						continue;
 					var absPos = o.getAbsPos();
 					var screenPos = worldToScreen(absPos.tx, absPos.ty, absPos.tz);
@@ -741,7 +747,7 @@ class SceneEditor {
 	}
 
 	public function selectAll() {
-		selectObjects([for(e in context.shared.contexts.keys()) e]);
+		selectObjects(context.shared.elements());
 	}
 
 	public function deselect() {

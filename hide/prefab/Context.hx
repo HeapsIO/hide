@@ -15,6 +15,10 @@ class ContextShared {
 		cleanups = [];
 	}
 
+	public function elements() {
+		return [for(e in contexts.keys()) e];
+	}
+
 }
 
 class Context {
