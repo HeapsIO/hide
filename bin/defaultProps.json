@@ -33,6 +33,7 @@
 
 	// Scene editor config
 	"key.sceneeditor.focus": "F",
+	"key.sceneeditor.lasso": "L",
 
 	// cdb config
 

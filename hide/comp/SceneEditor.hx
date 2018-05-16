@@ -92,6 +92,7 @@ class SceneEditor {
 	var gizmo : hide.view.l3d.Gizmo;
 	var interactives : Map<PrefabElement, h3d.scene.Interactive>;
 	var ide : hide.Ide;
+	var event : hxd.WaitEvent;
 
 	var undo(get, null):hide.ui.UndoHistory;
 	function get_undo() { return view.undo; }
@@ -105,6 +106,8 @@ class SceneEditor {
 		this.view = view;
 		this.context = context;
 		this.sceneData = data;
+
+		event = new hxd.WaitEvent();
 
 		var propsEl = new Element('<div class="props"></div>');
 		properties = new hide.comp.PropsEditor(propsEl, undo);
@@ -131,6 +134,7 @@ class SceneEditor {
 			}
 		});
 		view.keys.register("sceneeditor.focus", focusCamOnSelection);
+		view.keys.register("sceneeditor.lasso", startLassoSelect);
 	}
 
 	public function getSelection() {
@@ -468,6 +472,54 @@ class SceneEditor {
 		else {
 			gizmo.visible = false;
 		}
+	}
+
+	function startLassoSelect() {
+		var g = new h2d.Sprite(scene.s2d);
+		var overlay = new h2d.Bitmap(h2d.Tile.fromColor(0xffffff, 10000, 10000, 0.1), g);
+		var intOverlay = new h2d.Interactive(10000, 10000, scene.s2d);
+		var lastPt = new h2d.col.Point(scene.s2d.mouseX, scene.s2d.mouseY);
+		var points : h2d.col.Polygon = [lastPt];
+		var polyG = new h2d.Graphics(g);
+		event.waitUntil(function(dt) {
+			var curPt = new h2d.col.Point(scene.s2d.mouseX, scene.s2d.mouseY);
+			if(curPt.distance(lastPt) > 3.0) {
+				points.push(curPt);
+				polyG.clear();
+				polyG.beginFill(0xff0000, 0.5);
+				polyG.lineStyle(1.0, 0, 1.0);
+				polyG.moveTo(points[0].x, points[0].y);
+				for(i in 1...points.length) {
+					polyG.lineTo(points[i].x, points[i].y);
+				}
+				polyG.endFill();
+				lastPt = curPt;
+			}
+			if(K.isReleased(K.MOUSE_LEFT)) {
+				
+				var contexts = context.shared.contexts;
+				var all = contexts.keys();
+				var inside = [];
+				for(elt in all) {
+					if(elt.to(Object3D) == null)
+						continue;
+					var ctx = contexts[elt];
+					var o = ctx.local3d;
+					if(o == null)
+						continue;
+					var absPos = o.getAbsPos();
+					var screenPos = worldToScreen(absPos.tx, absPos.ty, absPos.tz);
+					if(points.contains(screenPos, false)) {
+						inside.push(elt);
+					}
+				}
+				selectObjects(inside);
+				intOverlay.remove();
+				g.remove();
+				return true;
+			}
+			return false;
+		});
 	}
 
 	public function onPrefabChange(p: PrefabElement, ?pname: String) {
@@ -921,6 +973,7 @@ class SceneEditor {
 			}
 			gizmo.update(dt);
 		}
+		event.update(dt);
 	}
 
 	// Override
@@ -997,6 +1050,12 @@ class SceneEditor {
 			return ray.getPoint(dist);
 		}
 		return null;
+	}
+
+	public function worldToScreen(wx: Float, wy: Float, wz: Float) {
+		var camera = scene.s3d.camera;
+		var pt = camera.project(wx, wy, wz, scene.s2d.width, scene.s2d.height);
+		return new h2d.col.Point(pt.x, pt.y);
 	}
 
 	public function worldMat(obj: Object) {
