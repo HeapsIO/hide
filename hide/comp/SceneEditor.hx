@@ -327,19 +327,32 @@ class SceneEditor {
 			int.onPush = function(e) {
 				startDrag = [scene.s2d.mouseX, scene.s2d.mouseY];
 				e.propagate = false;
-				if(K.isDown(K.CTRL) && curEdit != null) {
-					var list = curEdit.elements.copy();
-					if(list.indexOf(elt) < 0) {
-							list.push(elt);
-						selectObjects(list);
+				var elts = null;
+				if(K.isDown(K.SHIFT)) {
+					if(Type.getClass(elt.parent) == hide.prefab.Object3D)
+						elts = [elt.parent];
+					else
+						elts = elt.parent.children;
+				}
+				else
+					elts = [elt];
+
+				if(K.isDown(K.CTRL)) {
+					var current = curEdit.elements.copy();
+					if(current.indexOf(elt) < 0) {
+						for(e in elts) {
+							if(current.indexOf(e) < 0)
+								current.push(e);
+						}
 					}
+					else {
+						for(e in elts)
+							current.remove(e);
+					}
+					selectObjects(current);
 				}
-				else if(K.isDown(K.SHIFT)) {
-					selectObjects(elt.parent.children);
-				}
-				else {
-					selectObjects([elt]);
-				}
+				else
+					selectObjects(elts);
 			}
 			int.onRelease = function(e) {
 				startDrag = null;
@@ -472,7 +485,13 @@ class SceneEditor {
 		}
 	}
 
+	var inLassoMode = false;
 	function startLassoSelect() {
+		if(inLassoMode) {
+			inLassoMode = false;
+			return;
+		}
+		inLassoMode = true;
 		var g = new h2d.Sprite(scene.s2d);
 		var overlay = new h2d.Bitmap(h2d.Tile.fromColor(0xffffff, 10000, 10000, 0.1), g);
 		var intOverlay = new h2d.Interactive(10000, 10000, scene.s2d);
@@ -493,7 +512,13 @@ class SceneEditor {
 				polyG.endFill();
 				lastPt = curPt;
 			}
-			if(K.isReleased(K.MOUSE_LEFT) || K.isPressed(K.MOUSE_LEFT) || K.isPressed(K.ESCAPE)) {				
+
+			var finish = false;
+			if(!inLassoMode || K.isPressed(K.ESCAPE)) {
+				finish = true;
+			}
+
+			if(K.isReleased(K.MOUSE_LEFT) || K.isPressed(K.MOUSE_LEFT)) {			
 				var contexts = context.shared.contexts;
 				var all = contexts.keys();
 				var inside = [];
@@ -511,9 +536,14 @@ class SceneEditor {
 					}
 				}
 				selectObjects(inside);
+				finish = true;
+			}
+
+			if(finish) {
 				intOverlay.remove();
 				g.remove();
-				return true;
+				inLassoMode = false;
+				return false;
 			}
 			return false;
 		});
