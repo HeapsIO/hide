@@ -140,10 +140,16 @@ class PropsEditor extends Component {
 			if(defVal != null) {
 				var dd = f.root.parent().parent("dd");
 				var dt = dd.prev("dt");
-				var button = dt.wrapInner('<input type="button" tabindex="-1" value="${dt.text()}"/>');
+				var tooltip = 'Click to reset ($defVal)\nCtrl+Click to round';
+				var button = dt.wrapInner('<input type="button" tabindex="-1" value="${dt.text()}" title="$tooltip"/>');
 				button.click(function(e) {
 					var range = @:privateAccess f.range;
-					if(range != null) range.reset();
+					if(range != null) {
+						if(e.ctrlKey)
+							range.value = Math.round(range.value);
+						else
+							range.reset();
+					}
 				});
 			}
 		}
