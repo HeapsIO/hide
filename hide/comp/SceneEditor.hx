@@ -33,15 +33,6 @@ class SceneEditorContext extends hide.prefab.EditContext {
 		}
 	}
 
-	public function objects3D() {
-		var ret = [];
-		for(e in elements) {
-			var obj = e.to(Object3D);
-			if(obj != null) ret.push(obj);
-		}
-		return ret;
-	}
-
 	override function rebuild() {
 		properties.clear();
 		cleanup();
@@ -297,10 +288,7 @@ class SceneEditor {
 	}
 
 	function refreshProps() {
-		properties.clear();
-		if(curEdit != null) {
-			curEdit.rebuild();
-		}
+		selectObjects(curEdit.elements, false);
 	}
 
 	function refreshInteractives() {
@@ -390,7 +378,11 @@ class SceneEditor {
 				return x;
 			}
 
-			var objects3d = curEdit.objects3D();
+			var objects3d = [for(o in curEdit.rootElements) {
+				var obj3d = o.to(hide.prefab.Object3D);
+				if(obj3d != null)
+					obj3d;
+			}];
 			var prevState = [for(o in objects3d) o.save()];
 			gizmo.onMove = function(translate: h3d.Vector, rot: h3d.Quat, scale: h3d.Vector) {
 				var transf = new h3d.Matrix();
@@ -495,8 +487,7 @@ class SceneEditor {
 				polyG.endFill();
 				lastPt = curPt;
 			}
-			if(K.isReleased(K.MOUSE_LEFT)) {
-				
+			if(K.isReleased(K.MOUSE_LEFT) || K.isPressed(K.MOUSE_LEFT) || K.isPressed(K.ESCAPE)) {				
 				var contexts = context.shared.contexts;
 				var all = contexts.keys();
 				var inside = [];
