@@ -242,7 +242,7 @@ class Table extends Component {
 		}
 		var sub = new SubTable(editor, cell);
 		sub.show();
-		editor.cursor.set(sub);
+		if( sub.lines.length > 0 ) editor.cursor.set(sub);
 	}
 
 }

@@ -41,7 +41,8 @@
   padding-right: 6px;
 }
 .cdb .cdb-sheet td.edit > input,
-.cdb .cdb-sheet td.edit textarea {
+.cdb .cdb-sheet td.edit textarea,
+.cdb .cdb-sheet td.edit select {
   width: 100%;
   padding: 0px 2px;
   border: none;

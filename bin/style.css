@@ -20,7 +20,8 @@ p,
 a,
 input,
 select,
-textarea {
+textarea,
+body .select2-dropdown {
   font-family: Verdana, serif;
   font-size: 9pt;
   color: #aaa;
@@ -37,19 +38,44 @@ select:focus:hover {
 }
 select,
 input,
-textarea {
+textarea,
+body .select2-dropdown {
   background-color: #222222;
   border: 1px solid #444;
 }
 select:focus,
 input:focus,
-textarea:focus {
+textarea:focus,
+body .select2-dropdown:focus {
   background-color: #141414;
 }
 select:hover,
 input:hover,
-textarea:hover {
+textarea:hover,
+body .select2-dropdown:hover {
   border-color: #888;
+}
+body .select2-container--default .select2-selection--single {
+  background-color: #222222;
+  border: none;
+  height: auto;
+}
+body .select2-container--default .select2-selection--single .select2-selection__rendered {
+  padding-left: 2px;
+  color: #aaa;
+}
+body .select2-container--default .select2-results__option[aria-selected=true] {
+  background-color: #444;
+}
+body .select2-container--default .select2-results__option--highlighted[aria-selected] {
+  background-color: #5897fb;
+}
+.select2-results__option > div {
+  display: flex;
+  align-items: center;
+}
+.select2-results__option > div div.tile {
+  margin-right: 5px;
 }
 input.file {
   cursor: pointer;
