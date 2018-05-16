@@ -155,7 +155,7 @@ class Cell extends Component {
 			else if( ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "gif" )
 				html = '<span class="preview">$html<div class="previewContent"><div class="label"></div><img src="$url" onload="$(this).parent().find(\'.label\').text(this.width+\'x\'+this.height)"/></div></span>';
 			if( v != "" )
-				html += ' <input type="submit" value="open" onclick="_.openFile(\'$path\')"/>';
+				html += ' <input type="submit" value="open" onclick="hide.Ide.inst.openFile(\'$path\')"/>';
 			html;
 		case TTilePos:
 			return tileHtml(v);
@@ -195,11 +195,15 @@ class Cell extends Component {
 		switch( column.type ) {
 		case TInt, TFloat, TString, TId, TCustom(_), TDynamic:
 			var str = value == null ? "" : editor.base.valToString(column.type, value);
-			var textHeight = root.wrapInner("<span>").find("span").height();
+			var textSpan = root.wrapInner("<span>").find("span");
+			var textHeight = textSpan.height();
+			var textWidth = textSpan.width();
 			var longText = textHeight > 25;
 			root.empty();
 			root.addClass("edit");
 			var i = new Element(longText ? "<textarea>" : "<input>").appendTo(root);
+			if( table.displayMode == Properties || table.displayMode == AllProperties )
+				i.css({ width : Math.ceil(textWidth - 3) + "px" });
 			if( longText ) {
 				root.addClass("edit_long");
 				i.css({ height : Math.ceil(textHeight - 1) + "px" });
@@ -272,8 +276,88 @@ class Cell extends Component {
 				closeEdit();
 			});
 			s.on("select2:close", function(_) closeEdit());
-		case TColor, TEnum(_), TFile, TFlags(_), TLayer(_), TTileLayer, TTilePos:
+		case TEnum(values):
+			root.empty();
+			root.addClass("edit");
+			var s = new Element("<select>");
+			var elts = [for( i in 0...values.length ){ id : ""+i, ico : null, text : values[i] }];
+			if( column.opt )
+				elts.unshift( { id : "-1", ico : null, text : "--- None ---" } );
+			root.append(s);
+
+			var props : Dynamic = { data : elts };
+			(untyped s.select2)(props);
+			(untyped s.select2)("val", currentValue == null ? "" : currentValue);
+			(untyped s.select2)("open");
+
+			s.change(function(e) {
+				var val = Std.parseInt(s.val());
+				if( val < 0 ) val = null;
+				setValue(val);
+				closeEdit();
+			});
+			s.keydown(function(e) {
+				switch( e.keyCode ) {
+				case K.LEFT, K.RIGHT:
+					s.blur();
+					return;
+				case K.TAB:
+					s.blur();
+					editor.cursor.move(e.shiftKey? -1:1, 0, false, false);
+					var c = editor.cursor.getCell();
+					if( c != this ) c.edit();
+					e.preventDefault();
+				default:
+				}
+				e.stopPropagation();
+			});
+			s.on("select2:close", function(_) closeEdit());
+		case TColor:
+			var modal = new Element("<div>").addClass("hide-modal").appendTo(root);
+			var e = new Element("<input>");
+			root.append(e);
+			var color = new ColorPicker(e);
+			color.value = currentValue;
+			color.open();
+			color.onChange = function(drag) {
+				root.find(".color").css({backgroundColor : '#'+StringTools.hex(color.value,6) });
+			};
+			color.onClose = function() {
+				setValue(color.value);
+				e.remove();
+				closeEdit();
+			};
+			modal.click(function(_) color.close());
+		case TFile:
+			ide.chooseFile(["*"], function(file) {
+				if( file != null ) {
+					setValue(file);
+					refresh();
+				}
+			});
+		case TFlags(values):
+			var div = new Element("<div>").addClass("flagValues");
+			div.click(function(e) e.stopPropagation()).dblclick(function(e) e.stopPropagation());
+			var val = currentValue;
+			for( i in 0...values.length ) {
+				var f = new Element("<input>").attr("type", "checkbox").prop("checked", val & (1 << i) != 0).change(function(e) {
+					val &= ~(1 << i);
+					if( e.getThis().prop("checked") ) val |= 1 << i;
+					e.stopPropagation();
+				});
+				new Element("<label>").text(values[i]).appendTo(div).prepend(f);
+			}
+			root.empty();
+			var modal = new Element("<div>").addClass("hide-modal").appendTo(root);
+			root.append(div);
+			modal.click(function(e) {
+				setValue(val);
+				refresh();
+			});
+		case TTilePos:
 			throw "TODO "+column.type;
+		case TLayer(_), TTileLayer:
+			// no edit
 		case TImage:
 			// deprecated
 		}

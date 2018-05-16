@@ -63,6 +63,10 @@ body .select2-container--default .select2-selection--single {
 body .select2-container--default .select2-selection--single .select2-selection__rendered {
   padding-left: 2px;
   color: #aaa;
+  line-height: inherit;
+}
+body .select2-container--default .select2-selection--single .select2-selection__arrow {
+  display: none;
 }
 body .select2-container--default .select2-results__option[aria-selected=true] {
   background-color: #444;
@@ -157,6 +161,15 @@ input[type=checkbox]:checked:after {
   max-width: 100%;
   max-height: 100%;
   overflow: auto;
+}
+.hide-modal {
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100%;
+  z-index: 99;
+  background-color: rgba(0, 0, 0, 0.2);
 }
 ::-webkit-scrollbar {
   width: 5px;

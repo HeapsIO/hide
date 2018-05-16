@@ -1,6 +1,7 @@
 package hide;
 import hide.ui.Props;
 
+@:expose
 class Ide {
 
 	public var currentProps(get,never) : Props;

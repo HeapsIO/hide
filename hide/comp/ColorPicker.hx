@@ -14,6 +14,12 @@ class ColorPicker extends Component {
 			showAlpha : alpha,
 			showButtons: false,
 			preferredFormat: alpha ? "hex8" : "hex",
+			hide : function() {
+				onClose();
+			},
+			show : function() {
+				onOpen();
+			},
 			change : function(color) {
 				innerValue = Std.parseInt("0x"+color.toHex8()) & mask;
 				onChange(false);
@@ -33,6 +39,20 @@ class ColorPicker extends Component {
 				timer.stop();
 			}
 		};
+	}
+
+	public function open() {
+		(untyped root.spectrum)("show");
+	}
+
+	public function close() {
+		(untyped root.spectrum)("hide");
+	}
+
+	public dynamic function onOpen() {
+	}
+
+	public dynamic function onClose() {
 	}
 
 	public dynamic function onChange(dragging) {
