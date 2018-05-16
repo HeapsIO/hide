@@ -543,7 +543,7 @@ class SceneEditor {
 				intOverlay.remove();
 				g.remove();
 				inLassoMode = false;
-				return false;
+				return true;
 			}
 			return false;
 		});
