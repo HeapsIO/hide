@@ -145,8 +145,10 @@ class PropsEditor extends Component {
 				button.click(function(e) {
 					var range = @:privateAccess f.range;
 					if(range != null) {
-						if(e.ctrlKey)
+						if(e.ctrlKey) {
 							range.value = Math.round(range.value);
+							range.onChange(false);
+						}
 						else
 							range.reset();
 					}
