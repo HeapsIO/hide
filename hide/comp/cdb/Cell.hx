@@ -217,6 +217,16 @@ class Cell extends Component {
 				case K.ENTER if( !e.shiftKey ):
 					closeEdit();
 					e.preventDefault();
+				case K.ENTER if( !longText ):
+					var old = currentValue;
+					var newVal = i.val() + "\n";
+					Reflect.setField(line.obj, column.name, newVal+"x");
+					refresh();
+					Reflect.setField(line.obj, column.name,old);
+					currentValue = newVal;
+					edit();
+					(cast element.find("textarea")[0] : js.html.TextAreaElement).setSelectionRange(newVal.length,newVal.length);
+					e.preventDefault();
 				case K.UP, K.DOWN if( !longText ):
 					closeEdit();
 					return;
@@ -353,7 +363,58 @@ class Cell extends Component {
 				refresh();
 			});
 		case TTilePos:
-			throw "TODO "+column.type;
+			var modal = new hide.comp.Modal(element);
+			modal.element.click(function(_) closeEdit());
+
+			var t : cdb.Types.TilePos = currentValue;
+			var file = t == null ? null : t.file;
+			var size = t == null ? 16 : t.size;
+			var pos = t == null ? { x : 0, y : 0, width : 1, height : 1 } : { x : t.x, y : t.y, width : t.width == null ? 1 : t.width, height : t.height == null ? 1 : t.height };
+			if( file == null ) {
+				var y = line.index - 1;
+				while( y >= 0 ) {
+					var o = line.table.lines[y--];
+					var v2 = Reflect.field(o.obj, column.name);
+					if( v2 != null ) {
+						file = v2.file;
+						size = v2.size;
+						break;
+					}
+				}
+			}
+
+			function setVal() {
+				var v : Dynamic = { file : file, size : size, x : pos.x, y : pos.y };
+				if( pos.width != 1 ) v.width = pos.width;
+				if( pos.height != 1 ) v.height = pos.height;
+				setValue(v);
+			}
+
+			if( file == null ) {
+				ide.chooseFile(["png","jpeg","jpg","gif"],function(path) {
+					file = path;
+					setVal();
+					closeEdit();
+					edit();
+				});
+				return;
+			}
+
+			var ts = new hide.comp.TileSelector(file,size,modal.content);
+			ts.allowRectSelect = true;
+			ts.allowSizeSelect = true;
+			ts.allowFileChange = true;
+			ts.value = pos;
+			ts.onChange = function(rightClick) {
+				if( !rightClick ) {
+					file = ts.file;
+					size = ts.size;
+					pos = ts.value;
+					setVal();
+				}
+				refresh();
+			};
+
 		case TLayer(_), TTileLayer:
 			// no edit
 		case TImage:

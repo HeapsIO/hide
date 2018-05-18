@@ -27,8 +27,11 @@ class TextureSelect extends FileSelect {
 		super.set_path(p);
 		if( p == null )
 			value = null;
-		else if( value == null || value.name != p )
-			value = Scene.getNearest(element).loadTexture("", p);
+		else if( value == null || value.name != p ) {
+			var scene = Scene.getNearest(element);
+			if( scene != null )
+				value = scene.loadTexture("", p);
+		}
 		if( p == null )
 			preview.hide();
 		else {

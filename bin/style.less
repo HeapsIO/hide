@@ -171,6 +171,11 @@ input[type=checkbox] {
 	height: 100%;
 	z-index: 99;
 	background-color: rgba(0,0,0,0.2);
+	display: table;
+	&> .content {
+		display: table-cell;
+		vertical-align: middle;
+	}
 }
 
 ::-webkit-scrollbar {
@@ -226,6 +231,39 @@ input[type=checkbox] {
 
 .hide-scene-tree {
 	min-height: 400px;
+}
+
+.hide-tileselect {
+	width: 800px;
+	height: 600px;
+	display: inline-block;
+	background-color : #111;
+	border : 1px solid #666;
+	text-align: left;
+	overflow: hidden;
+	.flex-scroll {
+		display: flex;
+		flex-direction: column;
+		.scroll {
+			flex-grow: 1;
+			overflow : auto;
+			.tile {
+				background-color: #202;
+				position: relative;
+				.valueDisp {
+					position: absolute;
+					background-color: rgba(0,80,128,0.3);
+					border:1px solid rgba(128,128,128,0.5);
+					pointer-events:none;
+				}
+				.cursor {
+					position: absolute;
+					border : 1px solid #fff;
+					pointer-events:none;
+				}
+			}
+		}
+	}
 }
 
 .hide-range {

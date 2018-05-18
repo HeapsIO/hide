@@ -7,7 +7,7 @@ class FileSelect extends Component {
 
 	public function new(extensions,?parent,?root) {
 		if( root == null )
-			root = new Element("<input type='file'>");
+			root = new Element("<input>");
 		super(parent,root);
 		root.addClass("file");
 		this.extensions = extensions;

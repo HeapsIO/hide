@@ -4,10 +4,11 @@ class Modal extends Component {
 
     public var content(default,null) : Element;
 
-    public function new(?parent,?root) {
-        super(parent,root);
-        this.root.addClass('hide-modal');
-        content = new Element("<div class='content'></div>").appendTo(this.root);
+    public function new(?parent,?el) {
+        super(parent,el);
+        element.addClass('hide-modal');
+        element.on("click dblclick keydown keyup keypressed mousedown mouseup mousewheel",function(e) e.stopPropagation());
+        content = new Element("<div class='content'></div>").appendTo(element);
     }
 
 }
