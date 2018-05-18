@@ -5,10 +5,10 @@ class Tabs extends Component {
 	public var currentTab(default, set) : Element;
 	var header : Element;
 
-	public function new(root) {
-		super(root);
-		root.addClass("hide-tabs");
-		header = new Element("<div>").addClass("tabs-header").prependTo(root);
+	public function new(?parent,?root) {
+		super(parent,root);
+		this.root.addClass("hide-tabs");
+		header = new Element("<div>").addClass("tabs-header").prependTo(this.root);
 		syncTabs();
 		currentTab = new Element(getTabs()[0]);
 	}

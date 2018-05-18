@@ -15,7 +15,7 @@ class Table extends Component {
 	public var displayMode(default,null) : DisplayMode;
 
 	public function new(editor, sheet, root, mode) {
-		super(root);
+		super(null,root);
 		this.displayMode = mode;
 		this.editor = editor;
 		this.sheet = sheet;

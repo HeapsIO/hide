@@ -4,25 +4,20 @@ import hide.Element;
 class SVG extends Component {
 
 	var document = null;
-	public var element(default, null) : hide.Element = null;
 
-	public function new(root: hide.Element) {
-		super(root);
-		document = root[0].ownerDocument;
-
-		var e = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-		element = new Element(e);
-		element.attr("width", "100%");
-		element.attr("height", "100%");
-		root.append(element);
+	public function new(?parent:Element,?root: hide.Element) {
+		document = parent == null ? js.Browser.document : parent[0].ownerDocument;
+		super(parent,new Element(document.createElementNS('http://www.w3.org/2000/svg', 'svg')));
+		root.attr("width", "100%");
+		root.attr("height", "100%");
 	}
 
 	public function clear() {
-		element.empty();
+		root.empty();
 	}
 
 	public function add(el: Element) {
-		element.append(el);
+		root.append(el);
 	}
 
 	public function make(?parent: Element, name: String, ?attr: Dynamic, ?style: Dynamic) {
@@ -64,7 +59,7 @@ class SVG extends Component {
 			g.addClass(className);
 		return g;
 	}
-	
+
 	// public function text(x: Float, y: Float, text: String, ?style: Dynamic) {
 	// 	var e = make("text", {x:x, y:y}, style);
 	// 	e.text(text);

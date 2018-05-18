@@ -56,7 +56,7 @@ class Layer extends Object3D {
 			ctx.onChange(this, pname);
 		});
 		var colorInput = props.find('input[name="colorVal"]');
-		var picker = new hide.comp.ColorPicker(colorInput, false);
+		var picker = new hide.comp.ColorPicker(false,null,colorInput);
 		picker.value = color;
 		picker.onChange = function(move) {
 			if(!move) {

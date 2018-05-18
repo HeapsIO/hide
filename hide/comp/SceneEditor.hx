@@ -49,7 +49,7 @@ class SceneEditorContext extends hide.prefab.EditContext {
 					<div class="group" name="Properties ${sheet.name.split('@').pop()}">
 					</div>
 				'),this);
-				var editor = new hide.comp.cdb.ObjEditor(props.find(".group .content"), sheet, e.props);
+				var editor = new hide.comp.cdb.ObjEditor(sheet, e.props, props.find(".group .content"));
 				editor.undo = properties.undo;
 				editor.onChange = function(pname) {
 					onChange(e, 'props.$pname');
@@ -101,14 +101,13 @@ class SceneEditor {
 		event = new hxd.WaitEvent();
 
 		var propsEl = new Element('<div class="props"></div>');
-		properties = new hide.comp.PropsEditor(propsEl, undo);
+		properties = new hide.comp.PropsEditor(undo,null,propsEl);
 
-		var treeEl = new Element('<div class="tree"></div>');
-		tree = new hide.comp.IconTree(treeEl);
+		tree = new hide.comp.IconTree();
 		tree.async = false;
 
 		var sceneEl = new Element('<div class="scene"></div>');
-		scene = new hide.comp.Scene(sceneEl);
+		scene = new hide.comp.Scene(null, sceneEl);
 		scene.onReady = onSceneReady;
 
 		view.keys.register("copy", onCopy);
@@ -518,7 +517,7 @@ class SceneEditor {
 				finish = true;
 			}
 
-			if(K.isReleased(K.MOUSE_LEFT) || K.isPressed(K.MOUSE_LEFT)) {			
+			if(K.isReleased(K.MOUSE_LEFT) || K.isPressed(K.MOUSE_LEFT)) {
 				var contexts = context.shared.contexts;
 				var all = contexts.keys();
 				var inside = [];

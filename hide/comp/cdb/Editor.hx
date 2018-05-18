@@ -19,8 +19,8 @@ class Editor extends Component {
 	public var keys : hide.ui.Keys;
 	public var undo : hide.ui.UndoHistory;
 
-	public function new(root, sheet) {
-		super(root);
+	public function new(sheet,?parent) {
+		super(parent,null);
 		this.undo = new hide.ui.UndoHistory();
 		this.sheet = sheet;
 		root.attr("tabindex", 0);

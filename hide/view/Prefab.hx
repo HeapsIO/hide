@@ -127,8 +127,8 @@ class Prefab extends FileView {
 				</div>
 			</div>
 		');
-		tools = new hide.comp.Toolbar(root.find(".toolbar"));
-		tabs = new hide.comp.Tabs(root.find(".tabs"));
+		tools = new hide.comp.Toolbar(null,root.find(".toolbar"));
+		tabs = new hide.comp.Tabs(null,root.find(".tabs"));
 		sceneEditor = new PrefabSceneEditor(this, context, data);
 		root.find(".hide-scene-tree").first().append(sceneEditor.tree.root);
 		root.find(".tab").first().append(sceneEditor.properties.root);

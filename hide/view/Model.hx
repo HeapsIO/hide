@@ -34,11 +34,11 @@ class Model extends FileView {
 				</div>
 			</div>
 		');
-		tools = new hide.comp.Toolbar(root.find(".toolbar"));
+		tools = new hide.comp.Toolbar(null,root.find(".toolbar"));
 		overlay = root.find(".hide-scene-layer .tree");
-		properties = new hide.comp.PropsEditor(root.find(".props"), undo);
+		properties = new hide.comp.PropsEditor(undo, null, root.find(".props"));
 		properties.saveDisplayKey = "Model";
-		scene = new hide.comp.Scene(root.find(".scene"));
+		scene = new hide.comp.Scene(null,root.find(".scene"));
 		scene.onReady = init;
 	}
 

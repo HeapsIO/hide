@@ -25,7 +25,8 @@ class View<T> extends hide.comp.Component {
 	var contentHeight(get,never) : Int;
 
 	public function new(state:T) {
-		super(null);
+		super(null,null);
+		root = null;
 		this.state = state;
 		ide = Ide.inst;
 	}

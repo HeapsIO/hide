@@ -15,9 +15,9 @@ class PropsEditor extends Component {
 	public var lastChange : Float = 0.;
 	public var fields(default, null) : Array<PropsField>;
 
-	public function new(root,?undo) {
-		super(root);
-		root.addClass("hide-properties");
+	public function new(?undo,?parent,?root) {
+		super(parent,root);
+		this.root.addClass("hide-properties");
 		this.undo = undo == null ? new hide.ui.UndoHistory() : undo;
 		fields = [];
 	}
@@ -176,7 +176,7 @@ class PropsField extends Component {
 	var range : hide.comp.Range;
 
 	public function new(props, f, context) {
-		super(f);
+		super(null,f);
 		viewRoot = root.closest(".lm_content");
 		this.props = props;
 		this.context = context;
@@ -199,8 +199,7 @@ class PropsField extends Component {
 			});
 			return;
 		case "texture":
-			f.addClass("file");
-			tselect = new hide.comp.TextureSelect(f);
+			tselect = new hide.comp.TextureSelect(null,f);
 			tselect.value = current;
 			tselect.onChange = function() {
 				undo(function() {
@@ -215,8 +214,7 @@ class PropsField extends Component {
 			}
 			return;
 		case "texturepath":
-			f.addClass("file");
-			tselect = new hide.comp.TextureSelect(f);
+			tselect = new hide.comp.TextureSelect(null,f);
 			tselect.path = current;
 			tselect.onChange = function() {
 				undo(function() {
@@ -231,8 +229,7 @@ class PropsField extends Component {
 			}
 			return;
 		case "model":
-			f.addClass("file");
-			fselect = new hide.comp.FileSelect(f, ["hmd", "fbx"]);
+			fselect = new hide.comp.FileSelect(["hmd", "fbx"], null, f);
 			fselect.path = current;
 			fselect.onChange = function() {
 				undo(function() {
@@ -247,7 +244,7 @@ class PropsField extends Component {
 			};
 			return;
 		case "range":
-			range = new hide.comp.Range(f);
+			range = new hide.comp.Range(null,f);
 			range.value = current;
 			range.onChange = function(temp) {
 				tempChange = temp;

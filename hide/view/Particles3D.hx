@@ -22,9 +22,9 @@ class Particles3D extends FileView {
 				<div class="props"></div>
 			</div>
 		');
-		properties = new hide.comp.PropsEditor(root.find(".props"), undo);
+		properties = new hide.comp.PropsEditor(undo, null, root.find(".props"));
 		properties.saveDisplayKey = "particles3D";
-		scene = new hide.comp.Scene(root.find(".scene"));
+		scene = new hide.comp.Scene(null,root.find(".scene"));
 		scene.onReady = init;
 		scene.onUpdate = update;
 	}

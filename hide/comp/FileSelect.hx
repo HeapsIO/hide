@@ -5,8 +5,11 @@ class FileSelect extends Component {
 	var extensions : Array<String>;
 	public var path(default, set) : String;
 
-	public function new(root, extensions) {
-		super(root);
+	public function new(extensions,?parent,?root) {
+		if( root == null )
+			root = new Element("<input type='file'>");
+		super(parent,root);
+		root.addClass("file");
 		this.extensions = extensions;
 		path = null;
 		root.mousedown(function(e) {

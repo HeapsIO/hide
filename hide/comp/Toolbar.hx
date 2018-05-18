@@ -14,9 +14,9 @@ typedef ToolSelect<T> = {
 
 class Toolbar extends Component {
 
-	public function new(root) {
-		super(root);
-		root.addClass("hide-toolbar");
+	public function new(?parent,?root) {
+		super(parent,root);
+		this.root.addClass("hide-toolbar");
 	}
 
 	public function addButton( icon : String, ?label : String, ?onClick : Void -> Void ) {
@@ -48,9 +48,7 @@ class Toolbar extends Component {
 	}
 
 	public function addColor( label : String, onChange : Int -> Void, ?alpha : Bool, ?defValue = 0 ) {
-		var e = new Element('<input>');
-		e.appendTo(root);
-		var color = new hide.comp.ColorPicker(e, alpha);
+		var color = new hide.comp.ColorPicker(alpha, root);
 		color.onChange = function(move) {
 			if( !move ) this.saveDisplayState("color:" + label, color.value);
 			onChange(color.value);
@@ -82,9 +80,8 @@ class Toolbar extends Component {
 	}
 
 	public function addRange( label : String, onChange : Float -> Void, ?defValue = 0., min = 0., max = 1. ) {
-		var r = new hide.comp.Range(new Element('<input title="$label" type="range" min="$min" max="$max" value="$defValue">'));
+		var r = new hide.comp.Range(root,new Element('<input title="$label" type="range" min="$min" max="$max" value="$defValue">'));
 		r.onChange = function(_) onChange(r.value);
-		r.root.appendTo(root);
 		return r;
 	}
 

@@ -10,7 +10,7 @@ class Line extends Component {
 	public var subTable : SubTable;
 
 	public function new(table, columns, index, root) {
-		super(root);
+		super(null,root);
 		this.table = table;
 		this.index = index;
 		this.columns = columns;

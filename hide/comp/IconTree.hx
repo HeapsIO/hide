@@ -27,6 +27,11 @@ class IconTree<T:{}> extends Component {
 	public var allowRename : Bool;
 	public var async : Bool = false;
 
+	public function new(?parent,?root) {
+		super(parent,root);
+		this.root.addClass("tree");
+	}
+
 	public dynamic function get( parent : Null<T> ) : Array<IconTreeItem<T>> {
 		return [{ value : null, text : "get()", children : true }];
 	}
@@ -75,7 +80,7 @@ class IconTree<T:{}> extends Component {
 				c.children = cast makeContent(c);
 			}
 		}
-		return content;		
+		return content;
 	}
 
 	public function init() {

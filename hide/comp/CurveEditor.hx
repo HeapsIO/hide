@@ -26,15 +26,15 @@ class CurveEditor extends Component {
 
 	var selectedKeys: Array<hide.prefab.Curve.CurveKey> = [];
 
-	public function new(parent, undo) {
-		super(parent);
+	public function new(undo, ?parent) {
+		super(parent,null);
 		this.undo = undo;
-		var div = new Element("<div></div>").appendTo(parent);
-		div.attr({ tabindex: "1" });
-		div.css({ width: "100%", height: "100%" });
-		div.focus();
-		svg = new hide.comp.SVG(div);
-		var root = svg.element;
+		root.attr({ tabindex: "1" });
+		root.css({ width: "100%", height: "100%" });
+		root.focus();
+		svg = new hide.comp.SVG(root);
+		var div = this.root;
+		var root = svg.root;
 
 		gridGroup = svg.group(root, "grid");
 		graphGroup = svg.group(root, "graph");
@@ -313,8 +313,8 @@ class CurveEditor extends Component {
 	}
 
 	public function refreshGrid() {
-		width = Math.round(svg.element.width());
-		height = Math.round(svg.element.height());
+		width = Math.round(svg.root.width());
+		height = Math.round(svg.root.height());
 
 		gridGroup.empty();
 		var minX = Math.floor(ixt(0));

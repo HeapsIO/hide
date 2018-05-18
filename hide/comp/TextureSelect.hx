@@ -6,10 +6,15 @@ class TextureSelect extends FileSelect {
 	public var area(default, set) : { x : Int, y : Int, width : Int, height : Int };
 	var preview : Element;
 
-	public function new(root) {
+	public function new(?parent,?root) {
 		preview = new Element("<div class='texture-preview'>");
+		super(["jpg", "jpeg", "gif", "png"], parent, root);
 		preview.insertAfter(root);
-		super(root, ["jpg", "jpeg", "gif", "png"]);
+	}
+
+	override function remove() {
+		super.remove();
+		preview.remove();
 	}
 
 	function set_area(v) {

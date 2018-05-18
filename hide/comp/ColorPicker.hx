@@ -6,8 +6,9 @@ class ColorPicker extends Component {
 	var innerValue : Int;
 	var mask : Int;
 
-	public function new(root, ?alpha : Bool = false ) {
-		super(root);
+	public function new( ?alpha : Bool = false, ?parent : Element, ?root : Element ) {
+		if( root == null ) root = new Element("<input>");
+		super(parent,root);
 		mask = alpha ? -1 : 0xFFFFFF;
 		(untyped root.spectrum)({
 			showInput : true,

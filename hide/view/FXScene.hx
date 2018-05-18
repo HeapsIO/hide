@@ -157,8 +157,8 @@ class FXScene extends FileView {
 					</div>
 				</div>
 			</div>');
-		tools = new hide.comp.Toolbar(root.find(".toolbar"));
-		tabs = new hide.comp.Tabs(root.find(".tabs"));
+		tools = new hide.comp.Toolbar(null,root.find(".toolbar"));
+		tabs = new hide.comp.Tabs(null,root.find(".tabs"));
 		sceneEditor = new FXSceneEditor(this, context, data);
 		root.find(".hide-scene-tree").first().append(sceneEditor.tree.root);
 		root.find(".tab").first().append(sceneEditor.properties.root);
@@ -339,9 +339,8 @@ class FXScene extends FileView {
 				</div>');
 				var trackToggle = trackEl.find(".track-toggle");
 				tracksEl.append(trackEl);
-				
-				var curveEl = trackEl.find(".curve");
-				var curveEdit = new hide.comp.CurveEditor(curveEl, this.undo);
+
+				var curveEdit = new hide.comp.CurveEditor(this.undo, trackEl.find(".curve"));
 				var cpath = curve.getAbsPath();
 				var trackKey = "trackVisible:" + cpath;
 				var expand = getDisplayState(trackKey) == true;
@@ -357,7 +356,7 @@ class FXScene extends FileView {
 						icon.removeClass("fa-angle-right").addClass("fa-angle-down");
 					else
 						icon.removeClass("fa-angle-down").addClass("fa-angle-right");
-					curveEl.toggleClass("hidden", !expand);
+					curveEdit.root.toggleClass("hidden", !expand);
 				}
 				trackToggle.click(function(e) {
 					expand = !expand;

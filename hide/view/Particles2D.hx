@@ -26,9 +26,9 @@ class Particles2D extends FileView {
 				<div class="props"></div>
 			</div>
 		');
-		properties = new hide.comp.PropsEditor(root.find(".props"), undo);
+		properties = new hide.comp.PropsEditor(undo, null, root.find(".props"));
 		properties.saveDisplayKey = "particles2D";
-		scene = new hide.comp.Scene(root.find(".scene"));
+		scene = new hide.comp.Scene(null,root.find(".scene"));
 		scene.onReady = init;
 	}
 

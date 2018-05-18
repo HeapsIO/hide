@@ -15,7 +15,7 @@ class Cell extends Component {
 	public var table(get, never) : Table;
 
 	public function new( root : Element, line : Line, column : cdb.Data.Column ) {
-		super(root);
+		super(null,root);
 		this.line = line;
 		this.editor = line.table.editor;
 		this.column = column;
@@ -314,9 +314,7 @@ class Cell extends Component {
 			s.on("select2:close", function(_) closeEdit());
 		case TColor:
 			var modal = new Element("<div>").addClass("hide-modal").appendTo(root);
-			var e = new Element("<input>");
-			root.append(e);
-			var color = new ColorPicker(e);
+			var color = new ColorPicker(root);
 			color.value = currentValue;
 			color.open();
 			color.onChange = function(drag) {
@@ -324,7 +322,7 @@ class Cell extends Component {
 			};
 			color.onClose = function() {
 				setValue(color.value);
-				e.remove();
+				color.remove();
 				closeEdit();
 			};
 			modal.click(function(_) color.close());

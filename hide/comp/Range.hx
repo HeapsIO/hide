@@ -16,20 +16,21 @@ class Range extends Component {
 	var inputView : Element;
 	var scale : Float;
 
-	public function new(f:Element) {
-		f.wrap('<div class="hide-range"/>');
-		var p = f.parent();
-		super(p);
+	public function new(?parent:Element,?root:Element) {
+		if( root == null )
+			root = new Element('<input type="range">');
+		super(parent,root);
 
-		this.f = f;
+		this.f = root;
+		root = root.wrap('<div class="hide-range"/>').parent();
+
 		if( f.attr("step") == null )
 			f.attr("step", "any");
-
 
 		scale = Std.parseFloat(f.attr("scale"));
 		if( Math.isNaN(scale) ) scale = 1.;
 
-		inputView = new Element('<input type="text">').appendTo(p);
+		inputView = new Element('<input type="text">').appendTo(root);
 		originMin = Std.parseFloat(f.attr("min"));
 		originMax = Std.parseFloat(f.attr("max"));
 		if( originMin == null || Math.isNaN(originMin) ) originMin = 0;
@@ -42,7 +43,7 @@ class Range extends Component {
 		else
 			current = 0;
 
-		p.parent().prev("dt").contextmenu(function(e) {
+		root.parent().prev("dt").contextmenu(function(e) {
 			e.preventDefault();
 			new ContextMenu([
 				{ label : "Reset", click : reset },

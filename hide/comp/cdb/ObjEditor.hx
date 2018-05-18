@@ -4,12 +4,12 @@ class ObjEditor extends Editor {
 
     public dynamic function onChange(propName : String) {}
 
-    public function new( root : Element, sheet : cdb.Sheet, obj : {} ) {
+    public function new( sheet : cdb.Sheet, obj : {}, ?parent : Element ) {
         var sheetData = Reflect.copy(@:privateAccess sheet.sheet);
         sheetData.lines = [for( i in 0...sheet.columns.length ) obj];
         var pseudoSheet = new cdb.Sheet(sheet.base, sheetData);
         this.displayMode = AllProperties;
-        super(root, pseudoSheet);
+        super(pseudoSheet, parent);
     }
 
     override function addChanges( changes : cdb.Database.Changes ) {
