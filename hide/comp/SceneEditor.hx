@@ -204,7 +204,7 @@ class SceneEditor {
 			var out = [for( o in objs ) makeItem(o)];
 			return out;
 		};
-		tree.root.parent().contextmenu(function(e) {
+		tree.element.parent().contextmenu(function(e) {
 			e.preventDefault();
 			var current = tree.getCurrentOver();
 			if(current != null && (curEdit == null || curEdit.elements.indexOf(current) < 0)) {

@@ -31,19 +31,19 @@ class Cell extends Component {
 	public function refresh() {
 		currentValue = Reflect.field(line.obj, column.name);
 		var html = valueHtml(column, value, editor.sheet, line.obj);
-		if( html == "&nbsp;" ) root.text(" ") else if( html.indexOf('<') < 0 && html.indexOf('&') < 0 ) root.text(html) else root.html(html);
+		if( html == "&nbsp;" ) element.text(" ") else if( html.indexOf('<') < 0 && html.indexOf('&') < 0 ) element.text(html) else element.html(html);
 		updateClasses();
 	}
 
 	function updateClasses() {
-		root.removeClass("edit");
-		root.removeClass("edit_long");
+		element.removeClass("edit");
+		element.removeClass("edit_long");
 		switch( column.type ) {
 		case TBool :
-			root.removeClass("true false").addClass( value==true ? "true" : "false" );
+			element.removeClass("true false").addClass( value==true ? "true" : "false" );
 		case TInt, TFloat :
-			root.removeClass("zero");
-			if( value == 0 ) root.addClass("zero");
+			element.removeClass("zero");
+			if( value == 0 ) element.addClass("zero");
 		default:
 		}
 	}
@@ -195,17 +195,17 @@ class Cell extends Component {
 		switch( column.type ) {
 		case TInt, TFloat, TString, TId, TCustom(_), TDynamic:
 			var str = value == null ? "" : editor.base.valToString(column.type, value);
-			var textSpan = root.wrapInner("<span>").find("span");
+			var textSpan = element.wrapInner("<span>").find("span");
 			var textHeight = textSpan.height();
 			var textWidth = textSpan.width();
 			var longText = textHeight > 25;
-			root.empty();
-			root.addClass("edit");
-			var i = new Element(longText ? "<textarea>" : "<input>").appendTo(root);
+			element.empty();
+			element.addClass("edit");
+			var i = new Element(longText ? "<textarea>" : "<input>").appendTo(element);
 			if( table.displayMode == Properties || table.displayMode == AllProperties )
 				i.css({ width : Math.ceil(textWidth - 3) + "px" });
 			if( longText ) {
-				root.addClass("edit_long");
+				element.addClass("edit_long");
 				i.css({ height : Math.ceil(textHeight - 1) + "px" });
 			}
 			i.val(str);
@@ -213,7 +213,7 @@ class Cell extends Component {
 				switch( e.keyCode ) {
 				case K.ESCAPE:
 					refresh();
-					table.editor.root.focus();
+					table.editor.element.focus();
 				case K.ENTER if( !e.shiftKey ):
 					closeEdit();
 					e.preventDefault();
@@ -248,14 +248,14 @@ class Cell extends Component {
 		case TRef(name):
 			var sdat = editor.base.getSheet(name);
 			if( sdat == null ) return;
-			root.empty();
-			root.addClass("edit");
+			element.empty();
+			element.addClass("edit");
 
 			var s = new Element("<select>");
 			var elts = [for( d in sdat.all ){ id : d.id, ico : d.ico, text : d.disp }];
 			if( column.opt || currentValue == null || currentValue == "" )
 				elts.unshift( { id : "~", ico : null, text : "--- None ---" } );
-			root.append(s);
+			element.append(s);
 
 			var props : Dynamic = { data : elts };
 			if( sdat.props.displayIcon != null ) {
@@ -277,13 +277,13 @@ class Cell extends Component {
 			});
 			s.on("select2:close", function(_) closeEdit());
 		case TEnum(values):
-			root.empty();
-			root.addClass("edit");
+			element.empty();
+			element.addClass("edit");
 			var s = new Element("<select>");
 			var elts = [for( i in 0...values.length ){ id : ""+i, ico : null, text : values[i] }];
 			if( column.opt )
 				elts.unshift( { id : "-1", ico : null, text : "--- None ---" } );
-			root.append(s);
+			element.append(s);
 
 			var props : Dynamic = { data : elts };
 			(untyped s.select2)(props);
@@ -313,12 +313,12 @@ class Cell extends Component {
 			});
 			s.on("select2:close", function(_) closeEdit());
 		case TColor:
-			var modal = new Element("<div>").addClass("hide-modal").appendTo(root);
-			var color = new ColorPicker(root);
+			var modal = new Element("<div>").addClass("hide-modal").appendTo(element);
+			var color = new ColorPicker(element);
 			color.value = currentValue;
 			color.open();
 			color.onChange = function(drag) {
-				root.find(".color").css({backgroundColor : '#'+StringTools.hex(color.value,6) });
+				element.find(".color").css({backgroundColor : '#'+StringTools.hex(color.value,6) });
 			};
 			color.onClose = function() {
 				setValue(color.value);
@@ -345,9 +345,9 @@ class Cell extends Component {
 				});
 				new Element("<label>").text(values[i]).appendTo(div).prepend(f);
 			}
-			root.empty();
-			var modal = new Element("<div>").addClass("hide-modal").appendTo(root);
-			root.append(div);
+			element.empty();
+			var modal = new Element("<div>").addClass("hide-modal").appendTo(element);
+			element.append(div);
 			modal.click(function(e) {
 				setValue(val);
 				refresh();
@@ -362,9 +362,9 @@ class Cell extends Component {
 	}
 
 	public function setErrorMessage( msg : String ) {
-		root.find("div.error").remove();
+		element.find("div.error").remove();
 		if( msg == null )  return;
-		new Element("<div>").addClass("error").html(msg).appendTo(root);
+		new Element("<div>").addClass("error").html(msg).appendTo(element);
 	}
 
 	function setRawValue( str : String ) {
@@ -405,10 +405,10 @@ class Cell extends Component {
 	}
 
 	public function closeEdit() {
-		var str = root.find("input,textarea").val();
+		var str = element.find("input,textarea").val();
 		if( str != null ) setRawValue(str);
 		refresh();
-		table.editor.root.focus();
+		table.editor.element.focus();
 	}
 
 }

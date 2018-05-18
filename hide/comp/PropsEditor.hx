@@ -15,15 +15,15 @@ class PropsEditor extends Component {
 	public var lastChange : Float = 0.;
 	public var fields(default, null) : Array<PropsField>;
 
-	public function new(?undo,?parent,?root) {
-		super(parent,root);
-		this.root.addClass("hide-properties");
+	public function new(?undo,?parent,?el) {
+		super(parent,el);
+		element.addClass("hide-properties");
 		this.undo = undo == null ? new hide.ui.UndoHistory() : undo;
 		fields = [];
 	}
 
 	public function clear() {
-		root.empty();
+		element.empty();
 		fields = [];
 	}
 
@@ -79,7 +79,7 @@ class PropsEditor extends Component {
 
 	public function add( e : Element, ?context : Dynamic, ?onChange : String -> Void ) {
 
-		e.appendTo(root);
+		e.appendTo(element);
 		e = e.wrap("<div></div>").parent(); // necessary to have find working on top level element
 
 		e.find("input[type=checkbox]").wrap("<div class='checkbox-wrapper'></div>");
@@ -136,9 +136,9 @@ class PropsEditor extends Component {
 			fields.push(f);
 
 			// Init reset buttons
-			var defVal = f.root.attr("value");
+			var defVal = f.element.attr("value");
 			if(defVal != null) {
-				var dd = f.root.parent().parent("dd");
+				var dd = f.element.parent().parent("dd");
 				var dt = dd.prev("dt");
 				var tooltip = 'Click to reset ($defVal)\nCtrl+Click to round';
 				var button = dt.wrapInner('<input type="button" tabindex="-1" value="${dt.text()}" title="$tooltip"/>');
@@ -175,11 +175,12 @@ class PropsField extends Component {
 	var viewRoot : Element;
 	var range : hide.comp.Range;
 
-	public function new(props, f, context) {
-		super(null,f);
-		viewRoot = root.closest(".lm_content");
+	public function new(props, el, context) {
+		super(null,el);
+		viewRoot = element.closest(".lm_content");
 		this.props = props;
 		this.context = context;
+		var f = element;
 		Reflect.setField(f[0],"propsField", this);
 		fname = f.attr("field");
 		current = getFieldValue();
@@ -190,7 +191,7 @@ class PropsField extends Component {
 				undo(function() {
 					var f = resolveField();
 					f.current = getFieldValue();
-					f.root.prop("checked", f.current);
+					f.element.prop("checked", f.current);
 					f.onChange(true);
 				});
 				current = f.prop("checked");
@@ -348,8 +349,8 @@ class PropsField extends Component {
 				var f = resolveField();
 				var v = getFieldValue();
 				f.current = v;
-				f.root.val(v);
-				f.root.parent().find("input[type=text]").val(v);
+				f.element.val(v);
+				f.element.parent().find("input[type=text]").val(v);
 				f.onChange(true);
 			});
 		}

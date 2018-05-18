@@ -23,8 +23,8 @@ class Editor extends Component {
 		super(parent,null);
 		this.undo = new hide.ui.UndoHistory();
 		this.sheet = sheet;
-		root.attr("tabindex", 0);
-		keys = new hide.ui.Keys(root);
+		element.attr("tabindex", 0);
+		keys = new hide.ui.Keys(element);
 		keys.addListener(onKey);
 		keys.register("search", function() {
 			searchBox.show();
@@ -45,7 +45,7 @@ class Editor extends Component {
 			if( c != null ) {
 				var sub = Std.instance(c.table, SubTable);
 				if( sub != null ) {
-					sub.cell.root.click();
+					sub.cell.element.click();
 					return;
 				}
 			}
@@ -88,7 +88,7 @@ class Editor extends Component {
 		if( filter == "" ) filter = null;
 		if( filter != null ) filter = filter.toLowerCase();
 
-		var lines = root.find("table.cdb-sheet > tr").not(".head");
+		var lines = element.find("table.cdb-sheet > tr").not(".head");
 		lines.removeClass("filtered");
 		if( filter != null ) {
 			for( t in lines ) {
@@ -200,10 +200,10 @@ class Editor extends Component {
 
 		base.sync();
 
-		root.empty();
-		root.addClass('cdb');
+		element.empty();
+		element.addClass('cdb');
 
-		searchBox = new Element("<div>").addClass("searchBox").appendTo(root);
+		searchBox = new Element("<div>").addClass("searchBox").appendTo(element);
 		new Element("<input type='text'>").appendTo(searchBox).keydown(function(e) {
 			if( e.keyCode == 27 ) {
 				searchBox.find("i").click();
@@ -218,7 +218,7 @@ class Editor extends Component {
 		});
 
 		if( sheet.columns.length == 0 ) {
-			new Element("<a>Add a column</a>").appendTo(root).click(function(_) {
+			new Element("<a>Add a column</a>").appendTo(element).click(function(_) {
 				newColumn(sheet);
 			});
 			return;
@@ -227,7 +227,7 @@ class Editor extends Component {
 		var content = new Element("<table>");
 		tables = [];
 		new Table(this, sheet, content, displayMode);
-		content.appendTo(root);
+		content.appendTo(element);
 
 		if( cursor.table != null ) {
 			for( t in tables )

@@ -78,8 +78,8 @@ class FileSelect extends Component {
 
 	function set_path(p:String) {
 		var text = p == null ? "-- select --" : (sys.FileSystem.exists(ide.getPath(p)) ? "" : "[NOT FOUND] ") + p;
-		root.val(text);
-		root.attr("title", p == null ? "" : p);
+		element.val(text);
+		element.attr("title", p == null ? "" : p);
 		return this.path = p;
 	}
 

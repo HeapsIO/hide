@@ -37,8 +37,8 @@ class SubTable extends Table {
 		var root = new Element("<table>");
 		root.appendTo(slider);
 
-		insertedTR.insertAfter(cell.line.root);
-		cell.root.text("...");
+		insertedTR.insertAfter(cell.line.element);
+		cell.element.text("...");
 
 		super(editor, sheet, root, mode);
 	}

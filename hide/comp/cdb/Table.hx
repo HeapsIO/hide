@@ -25,7 +25,7 @@ class Table extends Component {
 	}
 
 	public function close() {
-		root.remove();
+		element.remove();
 		dispose();
 	}
 
@@ -34,7 +34,7 @@ class Table extends Component {
 	}
 
 	public function refresh() {
-		root.empty();
+		element.empty();
 		switch( displayMode ) {
 		case Table:
 			refreshTable();
@@ -88,7 +88,7 @@ class Table extends Component {
 			for( index in 0...sheet.lines.length ) {
 				var v = J("<td>").addClass("c");
 				var line = lines[index];
-				v.appendTo(line.root);
+				v.appendTo(line.element);
 				var cell = new Cell(v, line, c);
 
 				v.click(function(e) {
@@ -98,22 +98,22 @@ class Table extends Component {
 
 				switch( c.type ) {
 				case TList, TProperties:
-					cell.root.click(function(e) {
+					cell.element.click(function(e) {
 						e.stopPropagation();
 						toggleList(cell);
 					});
 				default:
-					cell.root.dblclick(function(_) cell.edit());
+					cell.element.dblclick(function(_) cell.edit());
 				}
 			}
 		}
 
-		root.append(cols);
+		element.append(cols);
 
 		var snext = 0;
 		for( i in 0...lines.length ) {
 			while( sheet.separators[snext] == i ) {
-				var sep = J("<tr>").addClass("separator").append('<td colspan="${colCount+1}">').appendTo(root);
+				var sep = J("<tr>").addClass("separator").append('<td colspan="${colCount+1}">').appendTo(element);
 				var content = sep.find("td");
 				var title = if( sheet.props.separatorTitles != null ) sheet.props.separatorTitles[snext] else null;
 				if( title != null ) content.text(title);
@@ -147,7 +147,7 @@ class Table extends Component {
 				});
 				snext++;
 			}
-			root.append(lines[i].root);
+			element.append(lines[i].element);
 		}
 
 		if( sheet.lines.length == 0 ) {
@@ -156,7 +156,7 @@ class Table extends Component {
 				editor.insertLine(this);
 				editor.cursor.set(this);
 			});
-			root.append(l);
+			element.append(l);
 		}
 	}
 
@@ -173,7 +173,7 @@ class Table extends Component {
 			}
 
 			var v = Reflect.field(props, c.name);
-			var l = new Element("<tr>").appendTo(root);
+			var l = new Element("<tr>").appendTo(element);
 			var th = new Element("<th>").text(c.name).appendTo(l);
 			var td = new Element("<td>").addClass("c").appendTo(l);
 
@@ -195,11 +195,11 @@ class Table extends Component {
 				}
 			});
 
-			cell.root.dblclick(function(_) cell.edit());
+			cell.element.dblclick(function(_) cell.edit());
 		}
 
 		// add/edit properties
-		var end = new Element("<tr>").appendTo(root);
+		var end = new Element("<tr>").appendTo(element);
 		end = new Element("<td>").attr("colspan", "2").appendTo(end);
 		var sel = new Element("<select>").appendTo(end);
 		new Element("<option>").attr("value", "").text("--- Choose ---").appendTo(sel);
@@ -211,7 +211,7 @@ class Table extends Component {
 			if( v == "" )
 				return;
 			sel.val("");
-			editor.root.focus();
+			editor.element.focus();
 			if( v == "$new" ) {
 				editor.newColumn(sheet);
 				return;

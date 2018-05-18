@@ -8,7 +8,7 @@ class Script extends FileView {
 	override function onDisplay() {
 
 		if( monaco.Editor == null ) {
-			root.html("<div class='hide-loading'></div>");
+			element.html("<div class='hide-loading'></div>");
 			haxe.Timer.delay(rebuild, 100);
 			return;
 		}
@@ -20,7 +20,7 @@ class Script extends FileView {
 		default: "text";
 		}
 		originData = sys.io.File.getContent(getPath());
-		editor = monaco.Editor.create(root[0],{
+		editor = monaco.Editor.create(element[0],{
 			value : originData,
 			language : lang,
 			automaticLayout : true,

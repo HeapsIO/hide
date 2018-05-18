@@ -7,7 +7,7 @@ class About extends hide.ui.View<{}> {
 	}
 
 	override function onDisplay() {
-		root.html('
+		element.html('
 		<p>
 			Heaps IDE v0.1<br/>
 			(c)2017 Nicolas Cannasse

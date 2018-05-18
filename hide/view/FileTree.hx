@@ -60,7 +60,7 @@ class FileTree extends FileView {
 
 		if( state.path == null ) return;
 
-		var panel = new Element("<div class='hide-scroll'>").appendTo(root);
+		var panel = new Element("<div class='hide-scroll'>").appendTo(element);
 		tree = new hide.comp.IconTree(null,panel);
 		tree.async = true;
 		tree.saveDisplayKey = "FileTree:" + getPath().split("\\").join("/").substr(0,-1);
@@ -89,10 +89,10 @@ class FileTree extends FileView {
 		// prevent dummy mouseLeft from breaking our quickOpen feature
 		var mouseLeft = false;
 		var leftCount = 0;
-		root.on("mouseenter", function(_) {
+		element.on("mouseenter", function(_) {
 			mouseLeft = false;
 		});
-		root.on("mouseleave", function(_) {
+		element.on("mouseleave", function(_) {
 			mouseLeft = true;
 			leftCount++;
 			var k = leftCount;
@@ -102,7 +102,7 @@ class FileTree extends FileView {
 					lastOpen = null;
 				},1000);
 		});
-		root.contextmenu(function(e) {
+		element.contextmenu(function(e) {
 			var current = tree.getCurrentOver();
 			if( current != null )
 				tree.setSelection([current]);

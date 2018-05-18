@@ -4,7 +4,7 @@ class Sound extends FileView {
 
 	override function onDisplay() {
 		var path = getPath();
-		root.html('<audio ${ide.initializing ? '' : 'autoplay="autoplay"'} controls="controls"><source src="file://${getPath()}"/></audio>');
+		element.html('<audio ${ide.initializing ? '' : 'autoplay="autoplay"'} controls="controls"><source src="file://${getPath()}"/></audio>');
 	}
 
 	static var _ = {

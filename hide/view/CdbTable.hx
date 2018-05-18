@@ -16,11 +16,11 @@ class CdbTable extends hide.ui.View<{ path : String }> {
 
 	override function onDisplay() {
 		if( sheet == null ) {
-			root.text("Sheet not found '" + state.path + "'");
+			element.text("Sheet not found '" + state.path + "'");
 			return;
 		}
-		root.addClass("hide-scroll");
-		editor = new hide.comp.cdb.Editor(sheet,root);
+		element.addClass("hide-scroll");
+		editor = new hide.comp.cdb.Editor(sheet,element);
 		editor.undo = undo;
 		undo.onChange = function() {
 			editor.save();
@@ -28,7 +28,7 @@ class CdbTable extends hide.ui.View<{ path : String }> {
 		editor.save = function() {
 			ide.saveDatabase();
 		};
-		new Element("<div style='width:100%; height:300px'></div>").appendTo(root);
+		new Element("<div style='width:100%; height:300px'></div>").appendTo(element);
 	}
 
 	override function getTitle() {

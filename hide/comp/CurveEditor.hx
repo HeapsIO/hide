@@ -29,12 +29,12 @@ class CurveEditor extends Component {
 	public function new(undo, ?parent) {
 		super(parent,null);
 		this.undo = undo;
-		root.attr({ tabindex: "1" });
-		root.css({ width: "100%", height: "100%" });
-		root.focus();
-		svg = new hide.comp.SVG(root);
-		var div = this.root;
-		var root = svg.root;
+		element.attr({ tabindex: "1" });
+		element.css({ width: "100%", height: "100%" });
+		element.focus();
+		svg = new hide.comp.SVG(element);
+		var div = this.element;
+		var root = svg.element;
 
 		gridGroup = svg.group(root, "grid");
 		graphGroup = svg.group(root, "graph");
@@ -204,7 +204,7 @@ class CurveEditor extends Component {
 	}
 
 	function startSelectRect(p1x: Float, p1y: Float) {
-		var offset = root.offset();
+		var offset = element.offset();
 		var selX = p1x;
 		var selY = p1y;
 		var selW = 0.;
@@ -260,7 +260,7 @@ class CurveEditor extends Component {
 	inline function iyt(py: Float) return -(py - height/2) / yScale + yOffset;
 
 	function startDrag(onMove: js.jquery.Event->Void, onStop: js.jquery.Event->Void) {
-		var el = new Element(root[0].ownerDocument.body);
+		var el = new Element(element[0].ownerDocument.body);
 		el.on("mousemove.curveeditor", onMove);
 		el.on("mouseup.curveeditor", function(e: js.jquery.Event) {
 			el.off("mousemove.curveeditor");
@@ -313,8 +313,8 @@ class CurveEditor extends Component {
 	}
 
 	public function refreshGrid() {
-		width = Math.round(svg.root.width());
-		height = Math.round(svg.root.height());
+		width = Math.round(svg.element.width());
+		height = Math.round(svg.element.height());
 
 		gridGroup.empty();
 		var minX = Math.floor(ixt(0));
@@ -413,7 +413,7 @@ class CurveEditor extends Component {
 					if(e.which != 1) return;
 					e.preventDefault();
 					e.stopPropagation();
-					var offset = root.offset();
+					var offset = element.offset();
 					startDrag(function(e) {
 						var lx = e.clientX - offset.left;
 						var ly = e.clientY - offset.top;
@@ -469,7 +469,7 @@ class CurveEditor extends Component {
 					if(e.which != 1) return;
 					e.preventDefault();
 					e.stopPropagation();
-					var offset = root.offset();
+					var offset = element.offset();
 					var otherLen = hxd.Math.distance(other.dt * xScale, other.dv * yScale);
 					startDrag(function(e) {
 						var lx = e.clientX - offset.left;

@@ -10,7 +10,7 @@ class ColorPicker extends Component {
 		if( root == null ) root = new Element("<input>");
 		super(parent,root);
 		mask = alpha ? -1 : 0xFFFFFF;
-		(untyped root.spectrum)({
+		(element:Dynamic).spectrum({
 			showInput : true,
 			showAlpha : alpha,
 			showButtons: false,
@@ -32,7 +32,7 @@ class ColorPicker extends Component {
 		});
 
 		// cleanup
-		var container = (untyped root.spectrum)("container");
+		var container = (element:Dynamic).spectrum("container");
 		var timer = new haxe.Timer(1000);
 		timer.run = function() {
 			if( root.parents("body").length == 0 ) {
@@ -43,11 +43,11 @@ class ColorPicker extends Component {
 	}
 
 	public function open() {
-		(untyped root.spectrum)("show");
+		(element:Dynamic).spectrum("show");
 	}
 
 	public function close() {
-		(untyped root.spectrum)("hide");
+		(element:Dynamic).spectrum("hide");
 	}
 
 	public dynamic function onOpen() {
@@ -65,7 +65,7 @@ class ColorPicker extends Component {
 		v &= mask;
 		if( innerValue == v )
 			return v;
-		(untyped root.spectrum)("set", "#"+StringTools.hex(v,mask < 0 ? 8 : 6));
+		(element:Dynamic).spectrum("set", "#"+StringTools.hex(v,mask < 0 ? 8 : 6));
 		return innerValue = v;
 	}
 

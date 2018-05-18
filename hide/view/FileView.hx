@@ -21,7 +21,7 @@ class FileView extends hide.ui.View<{ path : String }> {
 	function onFileChanged( wasDeleted : Bool ) {
 		if( wasDeleted ) {
 			if( modified ) return;
-			root.html('${state.path} no longer exists');
+			element.html('${state.path} no longer exists');
 			return;
 		}
 		if( modified && !ide.confirm('${state.path} has been modified, reload and ignore local changes?') )

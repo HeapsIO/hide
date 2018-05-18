@@ -27,9 +27,9 @@ class IconTree<T:{}> extends Component {
 	public var allowRename : Bool;
 	public var async : Bool = false;
 
-	public function new(?parent,?root) {
-		super(parent,root);
-		this.root.addClass("tree");
+	public function new(?parent,?el) {
+		super(parent,el);
+		element.addClass("tree");
 	}
 
 	public dynamic function get( parent : Null<T> ) : Array<IconTreeItem<T>> {
@@ -84,7 +84,7 @@ class IconTree<T:{}> extends Component {
 	}
 
 	public function init() {
-		(untyped root.jstree)({
+		(element:Dynamic).jstree({
 			core : {
 				themes: {
 					name: "default-dark",
@@ -110,12 +110,12 @@ class IconTree<T:{}> extends Component {
 			},
 			plugins : [ "wholerow", "dnd", "changed" ],
 		});
-		root.on("click.jstree", function (event) {
+		element.on("click.jstree", function (event) {
 			var node = new Element(event.target).closest("li");
    			var i = map.get(node[0].id);
 			onClick(i.value);
 		});
-		root.on("dblclick.jstree", function (event) {
+		element.on("dblclick.jstree", function (event) {
 			var node = new Element(event.target).closest("li");
    			var i = map.get(node[0].id);
 			if(onDblClick(i.value))
@@ -125,25 +125,25 @@ class IconTree<T:{}> extends Component {
 				return;
 			}
 		});
-		root.on("open_node.jstree", function(event, e) {
+		element.on("open_node.jstree", function(event, e) {
 			var i = map.get(e.node.id);
 			saveDisplayState(i.absKey, true);
 			onToggle(i.value, true);
 		});
-		root.on("close_node.jstree", function(event,e) {
+		element.on("close_node.jstree", function(event,e) {
 			var i = map.get(e.node.id);
 			saveDisplayState(i.absKey, false);
 			onToggle(i.value, false);
 		});
-		root.on("refresh.jstree", function(_) {
+		element.on("refresh.jstree", function(_) {
 			var old = waitRefresh;
 			waitRefresh = [];
 			for( f in old ) f();
 		});
-		root.on("move_node.jstree", function(event, e) {
+		element.on("move_node.jstree", function(event, e) {
 			onMove(map.get(e.node.id).value, e.parent == "#" ? null : map.get(e.parent).value, e.position);
 		});
-		root.on('changed.jstree', function (e, data) {
+		element.on('changed.jstree', function (e, data) {
 			var nodes: Array<Dynamic> = data.changed.deselected;
 			for(id in nodes) {
 				var item = map.get(id).value;
@@ -161,17 +161,17 @@ class IconTree<T:{}> extends Component {
 
 	public function getElement(e : T) : Element {
 		var v = getRev(e);
-		var el = (untyped root.jstree)('get_node', v.id, true);
+		var el = (element:Dynamic).jstree('get_node', v.id, true);
 		return el;
 	}
 
 	public function editNode( e : T ) {
 		var n = getRev(e).id;
-		(untyped root.jstree)('edit',n);
+		(element:Dynamic).jstree('edit',n);
 	}
 
 	public function getCurrentOver() : Null<T> {
-		var id = root.find(":focus").attr("id");
+		var id = element.find(":focus").attr("id");
 		if( id == null )
 			return null;
 		var i = map.get(id.substr(0, -7)); // remove _anchor
@@ -179,9 +179,9 @@ class IconTree<T:{}> extends Component {
 	}
 
 	public function setSelection( objects : Array<T> ) {
-		(untyped root.jstree)('deselect_all');
+		(element:Dynamic).jstree('deselect_all');
 		var ids = [for( o in objects ) { var v = getRev(o); if( v != null ) v.id; }];
-		(untyped root.jstree)('select_node',ids);
+		(element:Dynamic).jstree('select_node',ids);
 		for(obj in objects)
 			revealNode(obj);
 	}
@@ -191,18 +191,18 @@ class IconTree<T:{}> extends Component {
 		revMap = new haxe.ds.ObjectMap();
 		revMapString = new haxe.ds.StringMap();
 		if( onReady != null ) waitRefresh.push(onReady);
-		(untyped root.jstree)('refresh',true);
+		(element:Dynamic).jstree('refresh',true);
 	}
 
 	public function getSelection() : Array<T> {
-		var ids : Array<String> = (untyped root.jstree)('get_selected');
+		var ids : Array<String> = (element:Dynamic).jstree('get_selected');
 		return [for( id in ids ) map.get(id).value];
 	}
 
 	public function revealNode(e : T) {
 		var v = getRev(e);
-		(untyped root.jstree)('_open_to', v.id).focus();
-		var el = (untyped root.jstree)('get_node', v.id, true)[0];
+		(element:Dynamic).jstree('_open_to', v.id).focus();
+		var el = (element:Dynamic).jstree('get_node', v.id, true)[0];
 		el.scrollIntoViewIfNeeded();
 	}
 
@@ -210,7 +210,7 @@ class IconTree<T:{}> extends Component {
 		if( filter == "" ) filter = null;
 		if( filter != null ) filter = filter.toLowerCase();
 
-		var lines = root.find(".jstree-node");
+		var lines = element.find(".jstree-node");
 		lines.removeClass("filtered");
 		if( filter != null ) {
 			for( t in lines ) {

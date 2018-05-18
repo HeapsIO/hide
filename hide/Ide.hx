@@ -143,7 +143,7 @@ class Ide {
 				if(ft == null) continue;
 				var paths = [];
 				@:privateAccess {
-					if(ft.tree.root[0] != data.data.origin.element[0]) continue;
+					if(ft.tree.element[0] != data.data.origin.element[0]) continue;
 					for(id in nodeIds) {
 						var item = ft.tree.map.get(id);
 						if(item != null)
@@ -170,7 +170,7 @@ class Ide {
 	function getViewAt(x : Float, y : Float) {
 		var pickedEl = js.Browser.document.elementFromPoint(x, y);
 		for( v in views ) {
-			var viewEl = v.root[0];
+			var viewEl = v.element[0];
 			var el = pickedEl;
 			while(el != null) {
 				if(el == viewEl) return v;

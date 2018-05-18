@@ -130,7 +130,7 @@ class FXScene extends FileView {
 		};
 		context.init();
 
-		root.html('
+		element.html('
 			<div class="flex vertical">
 				<div class="toolbar"></div>
 				<div class="flex">
@@ -157,22 +157,22 @@ class FXScene extends FileView {
 					</div>
 				</div>
 			</div>');
-		tools = new hide.comp.Toolbar(null,root.find(".toolbar"));
-		tabs = new hide.comp.Tabs(null,root.find(".tabs"));
+		tools = new hide.comp.Toolbar(null,element.find(".toolbar"));
+		tabs = new hide.comp.Tabs(null,element.find(".tabs"));
 		sceneEditor = new FXSceneEditor(this, context, data);
-		root.find(".hide-scene-tree").first().append(sceneEditor.tree.root);
-		root.find(".tab").first().append(sceneEditor.properties.root);
-		root.find(".scene").first().append(sceneEditor.scene.root);
-		root.resize(function(e) {
+		element.find(".hide-scene-tree").first().append(sceneEditor.tree.element);
+		element.find(".tab").first().append(sceneEditor.properties.element);
+		element.find(".scene").first().append(sceneEditor.scene.element);
+		element.resize(function(e) {
 			refreshTimeline(false);
 			rebuildAnimPanel();
 		});
 		currentVersion = undo.currentID;
 
-		var timeline = root.find(".timeline");
+		var timeline = element.find(".timeline");
 		timeline.mousedown(function(e) {
 			var lastX = e.clientX;
-			root.mousemove(function(e) {
+			element.mousemove(function(e) {
 				var dt = (e.clientX - lastX) / xScale;
 				if(e.which == 2) {
 					xOffset -= dt;
@@ -186,9 +186,9 @@ class FXScene extends FileView {
 				refreshTimeline(true);
 				afterPan(true);
 			});
-			root.mouseup(function(e) {
-				root.off("mousemove");
-				root.off("mouseup");
+			element.mouseup(function(e) {
+				element.off("mousemove");
+				element.off("mouseup");
 				e.preventDefault();
 				e.stopPropagation();
 				refreshTimeline(false);
@@ -259,7 +259,7 @@ class FXScene extends FileView {
 	inline function ixt(px: Float) return px / xScale + xOffset;
 
 	function refreshTimeline(anim: Bool) {
-		var scroll = root.find(".timeline-scroll");
+		var scroll = element.find(".timeline-scroll");
 		scroll.empty();
 		var width = scroll.parent().width();
 		var minX = Math.floor(ixt(0));
@@ -270,7 +270,7 @@ class FXScene extends FileView {
 			mark.text(ix + ".00");
 		}
 
-		var overlay = root.find(".overlay");
+		var overlay = element.find(".overlay");
 		overlay.empty();
 		timeLineEl = new Element('<span class="timeline"></span>').appendTo(overlay);
 		timeLineEl.css({left: xt(currentTime)});
@@ -297,7 +297,7 @@ class FXScene extends FileView {
 
 	function rebuildAnimPanel() {
 		var selection = sceneEditor.getSelection();
-		var scrollPanel = root.find(".anim-scroll");
+		var scrollPanel = element.find(".anim-scroll");
 		scrollPanel.empty();
 		curveEdits = [];
 		refreshDopesheetKeys = [];
@@ -356,7 +356,7 @@ class FXScene extends FileView {
 						icon.removeClass("fa-angle-right").addClass("fa-angle-down");
 					else
 						icon.removeClass("fa-angle-down").addClass("fa-angle-right");
-					curveEdit.root.toggleClass("hidden", !expand);
+					curveEdit.element.toggleClass("hidden", !expand);
 				}
 				trackToggle.click(function(e) {
 					expand = !expand;
@@ -406,7 +406,7 @@ class FXScene extends FileView {
 	}
 
 	function startDrag(onMove: js.jquery.Event->Void, onStop: js.jquery.Event->Void) {
-		var el = new Element(root[0].ownerDocument.body);
+		var el = new Element(element[0].ownerDocument.body);
 		el.on("mousemove.fxedit", onMove);
 		el.on("mouseup.fxedit", function(e: js.jquery.Event) {
 			el.off("mousemove.fxedit");

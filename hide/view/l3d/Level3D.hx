@@ -274,7 +274,7 @@ class Level3D extends FileView {
 		};
 		context.init();
 
-		root.html('
+		element.html('
 			<div class="flex vertical">
 				<div class="toolbar">
 					<span class="tools-buttons"></span>
@@ -297,18 +297,18 @@ class Level3D extends FileView {
 				</div>
 			</div>
 		');
-		tools = new hide.comp.Toolbar(null,root.find(".tools-buttons"));
-		layerToolbar = new hide.comp.Toolbar(null,root.find(".layer-buttons"));
-		tabs = new hide.comp.Tabs(null,root.find(".tabs"));
+		tools = new hide.comp.Toolbar(null,element.find(".tools-buttons"));
+		layerToolbar = new hide.comp.Toolbar(null,element.find(".layer-buttons"));
+		tabs = new hide.comp.Tabs(null,element.find(".tabs"));
 		currentVersion = undo.currentID;
 
-		levelProps = new hide.comp.PropsEditor(undo,null,root.find(".level-props"));
+		levelProps = new hide.comp.PropsEditor(undo,null,element.find(".level-props"));
 		sceneEditor = new Level3DSceneEditor(this, context, data);
-		sceneEditor.addSearchBox(root.find(".hide-scene-tree").first());
-		root.find(".hide-scene-tree").first().append(sceneEditor.tree.root);
-		root.find(".tab").first().append(sceneEditor.properties.root);
-		root.find(".scene").first().append(sceneEditor.scene.root);
-		sceneEditor.tree.root.addClass("small");
+		sceneEditor.addSearchBox(element.find(".hide-scene-tree").first());
+		element.find(".hide-scene-tree").first().append(sceneEditor.tree.element);
+		element.find(".tab").first().append(sceneEditor.properties.element);
+		element.find(".scene").first().append(sceneEditor.scene.element);
+		sceneEditor.tree.element.addClass("small");
 
 		// Level edit
 		{

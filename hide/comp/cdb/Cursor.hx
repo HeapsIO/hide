@@ -63,10 +63,10 @@ class Cursor {
 	}
 
 	public function update() {
-		var root = editor.root;
-		root.find(".selected").removeClass("selected");
-		root.find(".cursor").removeClass("cursor");
-		root.find(".cursorLine").removeClass("cursorLine");
+		var elt = editor.element;
+		elt.find(".selected").removeClass("selected");
+		elt.find(".cursor").removeClass("cursor");
+		elt.find(".cursorLine").removeClass("cursorLine");
 		if( table == null )
 			return;
 		if( y < 0 ) {
@@ -84,26 +84,26 @@ class Cursor {
 		}
 		var line = getLine();
 		if( x < 0 ) {
-			line.root.addClass("selected");
+			line.element.addClass("selected");
 			if( select != null ) {
 				var cy = y;
 				while( select.y != cy ) {
 					if( select.y > cy ) cy++ else cy--;
-					table.lines[cy].root.addClass("selected");
+					table.lines[cy].element.addClass("selected");
 				}
 			}
 		} else {
-			line.cells[x].root.addClass("cursor").closest("tr").addClass("cursorLine");
+			line.cells[x].element.addClass("cursor").closest("tr").addClass("cursorLine");
 			if( select != null ) {
 				var s = getSelection();
 				for( y in s.y1...s.y2 + 1 ) {
 					var l = table.lines[y];
 					for( x in s.x1...s.x2+1)
-						l.cells[x].root.addClass("selected");
+						l.cells[x].element.addClass("selected");
 				}
 			}
 		}
-		var e = line.root[0];
+		var e = line.element[0];
 		if( e != null ) untyped e.scrollIntoViewIfNeeded();
 	}
 

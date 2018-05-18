@@ -26,7 +26,7 @@ class View<T> extends hide.comp.Component {
 
 	public function new(state:T) {
 		super(null,null);
-		root = null;
+		element = null;
 		this.state = state;
 		ide = Ide.inst;
 	}
@@ -93,7 +93,7 @@ class View<T> extends hide.comp.Component {
 			e.stopPropagation();
 			return true;
 		}
-		for( el in root.find("[haskeys=true]").add(root).elements() ) {
+		for( el in element.find("[haskeys=true]").add(element).elements() ) {
 			if(el.has(active).length == 0 && el[0] != active)
 				continue;
 			var keys = hide.ui.Keys.get(el);
@@ -133,7 +133,7 @@ class View<T> extends hide.comp.Component {
 		});
 
 		untyped cont.parent.__view = this;
-		root = cont.getElement();
+		element = cont.getElement();
 	}
 
 	public function rebuild() {
@@ -144,13 +144,13 @@ class View<T> extends hide.comp.Component {
 				watches.remove(w);
 			}
 		syncTitle();
-		root.empty();
-		root.off();
+		element.empty();
+		element.off();
 		onDisplay();
 	}
 
 	public function onDisplay() {
-		root.text(viewClass+(state == null ? "" : " "+state));
+		element.text(viewClass+(state == null ? "" : " "+state));
 	}
 
 	public function onResize() {

@@ -20,15 +20,15 @@ class Particles2D extends FileView {
 	}
 
 	override function onDisplay() {
-		root.html('
+		element.html('
 			<div class="flex">
 				<div class="scene"></div>
 				<div class="props"></div>
 			</div>
 		');
-		properties = new hide.comp.PropsEditor(undo, null, root.find(".props"));
+		properties = new hide.comp.PropsEditor(undo, null, element.find(".props"));
 		properties.saveDisplayKey = "particles2D";
-		scene = new hide.comp.Scene(null,root.find(".scene"));
+		scene = new hide.comp.Scene(null,element.find(".scene"));
 		scene.onReady = init;
 	}
 
@@ -220,8 +220,8 @@ class Particles2D extends FileView {
 			var g = parts.addGroup();
 			g.name = "Group#" + Lambda.count({ iterator : parts.getGroups });
 			addGroup(g);
-			bgParams.appendTo(properties.root);
-			extra.appendTo(properties.root);
+			bgParams.appendTo(properties.element);
+			extra.appendTo(properties.element);
 			undo.change(Custom(function(undo) {
 				if( undo )
 					parts.removeGroup(g);

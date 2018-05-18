@@ -5,19 +5,20 @@ class SVG extends Component {
 
 	var document = null;
 
-	public function new(?parent:Element,?root: hide.Element) {
+	public function new(?parent:Element,?el) {
 		document = parent == null ? js.Browser.document : parent[0].ownerDocument;
-		super(parent,new Element(document.createElementNS('http://www.w3.org/2000/svg', 'svg')));
-		root.attr("width", "100%");
-		root.attr("height", "100%");
+		if( el == null ) el = new Element(document.createElementNS('http://www.w3.org/2000/svg', 'svg'));
+		super(parent,el);
+		element.attr("width", "100%");
+		element.attr("height", "100%");
 	}
 
 	public function clear() {
-		root.empty();
+		element.empty();
 	}
 
 	public function add(el: Element) {
-		root.append(el);
+		element.append(el);
 	}
 
 	public function make(?parent: Element, name: String, ?attr: Dynamic, ?style: Dynamic) {

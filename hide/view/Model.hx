@@ -20,7 +20,7 @@ class Model extends FileView {
 	var currentAnimation : { file : String, name : String };
 
 	override function onDisplay() {
-		root.html('
+		element.html('
 			<div class="flex vertical">
 				<div class="toolbar"></div>
 				<div class="flex">
@@ -34,11 +34,11 @@ class Model extends FileView {
 				</div>
 			</div>
 		');
-		tools = new hide.comp.Toolbar(null,root.find(".toolbar"));
-		overlay = root.find(".hide-scene-layer .tree");
-		properties = new hide.comp.PropsEditor(undo, null, root.find(".props"));
+		tools = new hide.comp.Toolbar(null,element.find(".toolbar"));
+		overlay = element.find(".hide-scene-layer .tree");
+		properties = new hide.comp.PropsEditor(undo, null, element.find(".props"));
 		properties.saveDisplayKey = "Model";
-		scene = new hide.comp.Scene(null,root.find(".scene"));
+		scene = new hide.comp.Scene(null,element.find(".scene"));
 		scene.onReady = init;
 	}
 
@@ -304,7 +304,7 @@ class Model extends FileView {
 		aloop.toggle(true);
 		aspeed.value = 1;
 		aloop.element.toggle(file != null);
-		aspeed.root.toggle(file != null);
+		aspeed.element.toggle(file != null);
 		apause.element.toggle(file != null);
 		if( file == null ) {
 			obj.stopAnimation();
