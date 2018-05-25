@@ -142,8 +142,12 @@ class Gizmo extends h3d.scene.Object {
 				return x > 0 ? (x + 1) : 1 / (1 - x);
 			}
 
-			inline function snap(m: Float) {
-				return moveStep > 0.0 && K.isDown(K.CTRL) ? hxd.Math.round(m / moveStep) * moveStep : m;
+			function snap(m: Float) {
+				if(moveStep <= 0 || !K.isDown(K.CTRL))
+					return m;
+
+				var step = K.isDown(K.SHIFT) ? moveStep / 2.0 : moveStep;
+				return hxd.Math.round(m / step) * step;
 			}
 
 			if(axisScale) {
