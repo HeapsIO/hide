@@ -858,6 +858,7 @@ class SceneEditor {
 			tree.setSelection(all);
 			gizmo.startMove(MoveXY, true);
 			gizmo.onFinishMove = function() {
+				refreshProps();
 				undo.change(Custom(function(undo) {
 					for(e in newElements) {
 						if(undo) {
