@@ -135,7 +135,7 @@ class Gizmo extends h3d.scene.Object {
 			var delta = curPt.sub(startDragPt);
 			var vec = new h3d.Vector(0,0,0);
 			var quat = new h3d.Quat();
-			var speedFactor = K.isDown(K.SHIFT) ? 0.1 : 1.0;
+			var speedFactor = (K.isDown(K.SHIFT) && !K.isDown(K.CTRL)) ? 0.1 : 1.0;
 			delta.scale(speedFactor);
 
 			inline function scaleFunc(x: Float) {
