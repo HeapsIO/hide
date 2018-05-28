@@ -464,7 +464,7 @@ class Level3D extends FileView {
 	function updateTreeStyle(p: PrefabElement, el: Element) {
 		var layer = p.to(hide.prefab.l3d.Layer);
 		if(layer != null) {
-			var color = "#" + StringTools.hex(layer.color, 6);
+			var color = "#" + StringTools.hex(layer.color & 0xffffff, 6);
 			el.find("i.jstree-themeicon").first().css("color", color);
 			if(layer.locked)
 				el.find("a").first().addClass("jstree-locked");
@@ -515,7 +515,7 @@ class Level3D extends FileView {
 	}
 
 	static function getDisplayColor(p: PrefabElement) {
-		var color = 0xffffff;
+		var color = 0x80ffffff;
 		var layer = p.getParent(Layer);
 		if(layer != null) {
 			color = layer.color;

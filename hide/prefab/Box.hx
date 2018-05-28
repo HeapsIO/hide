@@ -6,7 +6,7 @@ class Box extends Object3D {
 	
 	public function setColor(col: Int) {
 		if(mesh != null) {
-			mesh.material.color.setColor(col | (80 << 24));
+			mesh.material.color.setColor(col);
 		}
 	}
 
