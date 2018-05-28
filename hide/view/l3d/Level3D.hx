@@ -525,6 +525,7 @@ class Level3D extends FileView {
 			var colorCol = kind.sheet.columns.find(c -> c.type == cdb.Data.ColumnType.TColor);
 			if(colorCol != null) {
 				color = cast Reflect.getProperty(kind.idx.obj, colorCol.name);
+				color |= 0x80000000;
 			}
 		}
 		return color;
