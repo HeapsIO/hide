@@ -1,5 +1,10 @@
 package hide.prefab;
 
+typedef ShaderDef = {
+	var shader : hxsl.SharedShader;
+	var inits : Array<{ v : hxsl.Ast.TVar, e : hxsl.Ast.TExpr }>;
+}
+
 class ContextShared {
 	public var root2d : h2d.Sprite;
 	public var root3d : h3d.scene.Object;
@@ -26,6 +31,7 @@ class Context {
 	public var local2d : h2d.Sprite;
 	public var local3d : h3d.scene.Object;
 	public var shared : ContextShared;
+	public var custom : Dynamic;
 
 	public function new() {
 	}
@@ -42,6 +48,7 @@ class Context {
 		c.shared = shared;
 		c.local2d = local2d;
 		c.local3d = local3d;
+		c.custom = custom;
 		if( p != null ) shared.contexts.set(p, c);
 		return c;
 	}
@@ -78,6 +85,13 @@ class Context {
 		#end
 	}
 
+	public function loadShader( name : String ) : ShaderDef {
+		#if editor
+		return hide.Ide.inst.shaderLoader.loadSharedShader(name);
+		#else
+		return null;
+		#end
+	}
 	public function locateObject( path : String ) {
 		if( path == null )
 			return null;

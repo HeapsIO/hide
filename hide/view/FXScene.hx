@@ -30,7 +30,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		var current = tree.getCurrentOver();
 		var registered = new Array<hide.comp.ContextMenu.ContextMenuItem>();
 		var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
-		var allowed = ["model", "object"];
+		var allowed = ["model", "object", "shader"];
 		for( ptype in allowed ) {
 			var pcl = allRegs.get(ptype);
 			var props = Type.createEmptyInstance(pcl).getHideProps();
@@ -251,6 +251,25 @@ class FXScene extends FileView {
 		}, scene.speed);
 	}
 
+	override function onDragDrop(items : Array<String>, isDrop : Bool) {
+		var supported = ["fbx"];
+		var models = [];
+		for(path in items) {
+			var ext = haxe.io.Path.extension(path).toLowerCase();
+			if(supported.indexOf(ext) >= 0) {
+				models.push(path);
+			}
+		}
+		if(models.length > 0) {
+			if(isDrop) {
+				var parent : PrefabElement = data;
+				sceneEditor.dropModels(models, parent);
+			}
+			return true;
+		}
+		return false;
+	}
+
 	function onSelect(elts : Array<PrefabElement>) {
 		rebuildAnimPanel();
 	}
@@ -322,6 +341,9 @@ class FXScene extends FileView {
 							enabled: !hasTrack(t)});
 					}
 				}
+				else if(Std.is(elt, hide.prefab.Shader)) {
+					
+				}
 				new hide.comp.ContextMenu(menuItems);
 			});
 			var tracksEl = objPanel.find(".tracks");
@@ -340,7 +362,8 @@ class FXScene extends FileView {
 				var trackToggle = trackEl.find(".track-toggle");
 				tracksEl.append(trackEl);
 
-				var curveEdit = new hide.comp.CurveEditor(this.undo, trackEl.find(".curve"));
+				var curveContainer = trackEl.find(".curve");
+				var curveEdit = new hide.comp.CurveEditor(this.undo, curveContainer);
 				var cpath = curve.getAbsPath();
 				var trackKey = "trackVisible:" + cpath;
 				var expand = getDisplayState(trackKey) == true;
@@ -356,7 +379,7 @@ class FXScene extends FileView {
 						icon.removeClass("fa-angle-right").addClass("fa-angle-down");
 					else
 						icon.removeClass("fa-angle-down").addClass("fa-angle-right");
-					curveEdit.element.toggleClass("hidden", !expand);
+					curveContainer.toggleClass("hidden", !expand);
 				}
 				trackToggle.click(function(e) {
 					expand = !expand;
