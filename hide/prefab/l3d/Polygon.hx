@@ -5,12 +5,6 @@ class Polygon extends Object3D {
 
 	var data : Array<Float> = null;
 	public var mesh(default, null) : h3d.scene.Mesh = null;
-
-	public function setColor(col: Int) {
-		if(mesh != null) {
-			mesh.material.color.setColor(col | (80 << 24));
-		}
-	}
 	
 	override function save() {
 		var obj : Dynamic = super.save();
@@ -52,20 +46,21 @@ class Polygon extends Object3D {
 		var obj = new h3d.scene.Object(ctx.local3d);
 		mesh = new h3d.scene.Mesh(prim, obj);
 		var mat = mesh.material;
-		mat.color.setColor(layer != null ? (layer.color | 0x40000000) : 0x40ff00ff);
+		setColor(layer != null ? (layer.color | 0x40000000) : 0x40ff00ff);
 		mat.mainPass.culling = None;
-		mat.mainPass.setPassName("debuggeom");
-		mat.mainPass.setBlendMode(Alpha);
-		mat.mainPass.depthWrite = true;
-
-		var alpha = mat.allocPass("debuggeom_alpha");
-		alpha.setBlendMode(Alpha);
-		alpha.depthWrite = false;
 		mat.shadows = false;
 		ctx.local3d = obj;
 		ctx.local3d.name = name;
 		applyPos(ctx.local3d);
 		return ctx;
+	}
+
+	public function setColor(color: Int) {
+		#if editor
+		if(mesh != null) {
+			hide.prefab.Box.setDebugColor(color, mesh.material);
+		}
+		#end
 	}
 
 	override function getHideProps() {

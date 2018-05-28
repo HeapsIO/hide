@@ -4,10 +4,12 @@ class Box extends Object3D {
 
 	var mesh : h3d.scene.Mesh = null;
 	
-	public function setColor(col: Int) {
+	public function setColor(color: Int) {
+		#if editor
 		if(mesh != null) {
-			mesh.material.color.setColor(col);
+			setDebugColor(color, mesh.material);
 		}
+		#end
 	}
 
 	override function makeInstance(ctx:Context):Context {
@@ -17,12 +19,7 @@ class Box extends Object3D {
 		var prim = h3d.prim.Cube.defaultUnitCube();
 		mesh = new h3d.scene.Mesh(prim, obj);
 		mesh.setPos(-0.5, -0.5, -0.5);
-		var mat = mesh.material;
-		mat.color.setColor(0x60ff00ff);
-		mat.blendMode = Alpha;
-		mat.mainPass.depthWrite = false;
-		mat.mainPass.setPassName("alpha");
-		mat.shadows = false;
+		setColor(0x60ff00ff);
 
 		var wire = new h3d.scene.Box(obj);
 		wire.color = 0;
@@ -33,6 +30,31 @@ class Box extends Object3D {
 		applyPos(ctx.local3d);
 		return ctx;
 	}
+
+	#if editor
+	static public function setDebugColor(color : Int, mat : h3d.mat.Material) {
+		mat.color.setColor(color);
+		var opaque = (color >>> 24) == 0xff;
+		mat.shadows = false;
+		
+		if(opaque) {
+			var alpha = mat.getPass("debuggeom_alpha");
+			if(alpha != null)
+				mat.removePass(alpha);
+			mat.mainPass.setPassName("default");
+		 	mat.mainPass.setBlendMode(None);
+		 	mat.mainPass.depthWrite = true;
+		}
+		else {
+			mat.mainPass.setPassName("debuggeom");
+			mat.mainPass.setBlendMode(Alpha);
+			mat.mainPass.depthWrite = true;
+			var alpha = mat.allocPass("debuggeom_alpha");
+			alpha.setBlendMode(Alpha);
+			alpha.depthWrite = false;
+		}
+	}
+	#end
 
 	override function getHideProps() {
 		return { icon : "square", name : "Box", fileSource : null };
