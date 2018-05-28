@@ -128,6 +128,10 @@ class SceneEditor {
 		view.keys.register("sceneeditor.hide", function() {	setVisible(curEdit.elements, false); });
 		view.keys.register("sceneeditor.isolate", function() {	isolate(curEdit.elements); });
 		view.keys.register("sceneeditor.showAll", function() {	setVisible(context.shared.elements(), true); });
+		view.keys.register("sceneeditor.selectParent", function() {
+			if(curEdit.rootElements.length > 0)
+				selectObjects([curEdit.rootElements[0].parent]);
+		});
 	}
 
 	public function getSelection() {

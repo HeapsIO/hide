@@ -37,6 +37,7 @@
 	"key.sceneeditor.hide": "H",
 	"key.sceneeditor.showAll": "Ctrl-H",
 	"key.sceneeditor.isolate": "I",
+	"key.sceneeditor.selectParent": "Backspace",
 
 	// cdb config
 
