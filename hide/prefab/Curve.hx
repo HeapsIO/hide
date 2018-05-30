@@ -62,6 +62,26 @@ class Curve extends Prefab {
 		return closest;
 	}
 
+	public function addKey(time: Float, ?val: Float) {
+		var index = 0;
+		for(ik in 0...keys.length) {
+			var key = keys[ik];
+			if(time > key.time)
+				index = ik + 1;
+		}
+
+		if(val == null)
+			val = getVal(time);
+
+		var key : hide.prefab.Curve.CurveKey = {
+			time: time,
+			value: val,
+			mode: keys[index] != null ? keys[index].mode : Aligned
+		};
+		keys.insert(index, key);
+		return key;
+	}
+
 	public function getVal(time: Float) : Float {
 		switch(keys.length) {
 			case 0: return 0;

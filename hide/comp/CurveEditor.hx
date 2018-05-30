@@ -123,22 +123,7 @@ class CurveEditor extends Component {
 	}
 
 	function addKey(time: Float, ?val: Float) {
-		var index = 0;
-		for(ik in 0...curve.keys.length) {
-			var key = curve.keys[ik];
-			if(time > key.time)
-				index = ik + 1;
-		}
-
-		if(val == null)
-			val = curve.getVal(time);
-
-		var key : hide.prefab.Curve.CurveKey = {
-			time: time,
-			value: val,
-			mode: lastMode
-		};
-		curve.keys.insert(index, key);
+		curve.addKey(time, val);
 		afterChange();
 	}
 

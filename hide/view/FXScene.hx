@@ -351,6 +351,15 @@ class FXScene extends FileView {
 		var dopesheet = trackEl.find(".dopesheet");
 		var trackEdits : Array<hide.comp.CurveEditor> = [];
 
+		function backupCurves() {
+			return [for(c in curves) haxe.Json.parse(haxe.Json.stringify(c.save()))];
+		}
+		var lastBackup = backupCurves();
+
+		function beforeChange() {
+			lastBackup = backupCurves();
+		}
+
 		function dragKey(prevTime: Float, newTime: Float) {
 			var tolerance = 0.25;
 			for(edit in trackEdits) {
@@ -368,30 +377,70 @@ class FXScene extends FileView {
 			}
 		}
 
-		function refreshDopesheet() {
+		var refreshDopesheet : Void -> Void;
+
+		function afterChange() {
+			var newVal = backupCurves();
+			var oldVal = lastBackup;
+			lastBackup = newVal;
+			undo.change(Custom(function(undo) {
+				if(undo) {
+					for(i in 0...curves.length)
+						curves[i].load(oldVal[i]);
+				}
+				else {
+					for(i in 0...curves.length)
+						curves[i].load(newVal[i]);
+				}
+				lastBackup = backupCurves();
+				refreshCurves(false);
+				refreshDopesheet();
+			}));
+			refreshCurves(false);
+		}
+
+		function addKey(time: Float) {
+			beforeChange();
+			for(curve in curves) {
+				curve.addKey(time);
+			}
+			afterChange();
+			refreshDopesheet();
+		}
+
+		refreshDopesheet = function () {
 			dopesheet.empty();
-			for(key in curves[0].keys) {
+			dopesheet.off();
+			dopesheet.mouseup(function(e) {
+				var offset = dopesheet.offset();
+				if(e.ctrlKey) {
+					var x = ixt(e.clientX - offset.left);
+					addKey(x);
+				}
+			});
+			var refKeys = curves[0].keys;
+			for(ik in 0...refKeys.length) {
+				var key = refKeys[ik];
 				var keyEl = new Element('<span class="key">').appendTo(dopesheet);
-				function update() keyEl.css({left: xt(key.time)});
+				function update() keyEl.css({left: xt(refKeys[ik].time)});
 				update();
 				keyEl.mousedown(function(e) {
 					var offset = dopesheet.offset();
 					var prevVal = key.time;
+					beforeChange();
 					startDrag(function(e) {
 						var x = ixt(e.clientX - offset.left);
+						x = hxd.Math.max(0, x);
+						var next = refKeys[ik + 1];
+						if(next != null)
+							x = hxd.Math.min(x, next.time - 0.01);
+						var prev = refKeys[ik - 1];
+						if(prev != null)
+							x = hxd.Math.max(x, prev.time + 0.01);
 						dragKey(key.time, x);
 						update();
 					}, function(e) {
-						refreshCurves(false);
-						var newVal = key.time;
-						undo.change(Custom(function(undo) {
-							if(undo)
-								key.time = prevVal;
-							else
-								key.time = newVal;
-							update();
-							refreshCurves(false);
-						}));
+						afterChange();
 					});
 				});
 				refreshDopesheetKeys.push(function(anim) {
@@ -475,7 +524,7 @@ class FXScene extends FileView {
 							case TVec(n, VFloat):
 								if(n <= 4) {
 									if(param.name.toLowerCase().indexOf("color") >= 0) {
-										tracks = [for(i in 0...n) ["r", "g", "b", "a"][i]];
+										tracks = [for(i in 0...n) ["h", "s", "l", "a"][i]];
 									}
 									else {
 										tracks = [for(i in 0...n) ["x", "y", "z", "w"][i]];
