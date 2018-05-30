@@ -3,6 +3,7 @@ using Lambda;
 
 import hide.Element;
 import hide.prefab.Prefab in PrefabElement;
+import hide.prefab.Curve;
 
 @:access(hide.view.FXScene)
 private class FXSceneEditor extends hide.comp.SceneEditor {
@@ -315,11 +316,11 @@ class FXScene extends FileView {
 		}
 	}
 
-	function addTrackEdit(trackName: String, curves: Array<hide.prefab.Curve>, tracksEl: Element) {
+	function addTrackEdit(trackName: String, curves: Array<Curve>, tracksEl: Element) {
 		var trackEl = new Element('<div class="track">
 			<div class="track-header">
 				<div class="track-prop">
-					<label>${trackName}</label>
+					<label>${upperCase(trackName)}</label>
 					<div class="track-toggle"><div class="icon fa"></div></div>
 				</div>
 				<div class="dopesheet"></div>
@@ -416,6 +417,24 @@ class FXScene extends FileView {
 		updateExpanded();
 	}
 
+	static function getTrackGroups(curves: Array<Curve>) {
+		var groups : Array<{name: String, items: Array<Curve>}> = [];
+		for(c in curves) {
+			var prefix = c.name.split(".")[0];
+			var g = groups.find(g -> g.name == prefix);
+			if(g == null) {
+				groups.push({
+					name: prefix,
+					items: [c]
+				});
+			}
+			else {
+				g.items.push(c);
+			}
+		}
+		return groups;
+	}
+
 	function rebuildAnimPanel() {
 		var selection = sceneEditor.getSelection();
 		var scrollPanel = element.find(".anim-scroll");
@@ -425,33 +444,63 @@ class FXScene extends FileView {
 
 		for(elt in selection) {
 			var objPanel = new Element('<div>
-				<label>${elt.name}</label><input class="addtrack" type="button" value="[+]"></input><div class="tracks"></div>
+				<label>${upperCase(elt.name)}</label><input class="addtrack" type="button" value="[+]"></input><div class="tracks"></div>
 			</div>').appendTo(scrollPanel);
 			var addTrackEl = objPanel.find(".addtrack");
+			var objElt = Std.instance(elt, hide.prefab.Object3D);
+			var shaderElt = Std.instance(elt, hide.prefab.Shader);
+
 			addTrackEl.click(function(e) {
 				var menuItems: Array<hide.comp.ContextMenu.ContextMenuItem>= [];
 				inline function hasTrack(pname) {
 					return getTrack(elt, pname) != null;
 				}
 
-				if(Std.is(elt, hide.prefab.Object3D)) {
+				if(objElt != null) {
 					var defaultTracks = ["x", "y", "z", "rotationX", "rotationY", "rotationZ", "scaleX", "scaleY", "scaleZ", "visibility"];
 					for(t in defaultTracks) {
 						menuItems.push({
 							label: upperCase(t),
-							click: ()->addTrack(elt, t),
+							click: function() {
+								addTracks(elt, [t]);
+							},	
 							enabled: !hasTrack(t)});
 					}
 				}
-				else if(Std.is(elt, hide.prefab.Shader)) {
-					
+				else if(shaderElt != null && shaderElt.shaderDef != null) {
+					var params = shaderElt.shaderDef.shader.data.vars.filter(v -> v.kind == Param);
+					for(param in params) {
+						var tracks = null;
+						switch(param.type) {
+							case TVec(n, VFloat):
+								if(n <= 4) {
+									if(param.name.toLowerCase().indexOf("color") >= 0) {
+										tracks = [for(i in 0...n) ["r", "g", "b", "a"][i]];
+									}
+									else {
+										tracks = [for(i in 0...n) ["x", "y", "z", "w"][i]];
+									}
+								}
+							default:
+						}
+						if(tracks != null && tracks.length > 0) {
+							menuItems.push({
+								label: upperCase(param.name),
+								click: function() {
+									addTracks(elt, [for(t in tracks) param.name + "." + t]);
+								},
+								enabled: true});
+						}
+					}
 				}
 				new hide.comp.ContextMenu(menuItems);
 			});
 			var tracksEl = objPanel.find(".tracks");
-			var curves = elt.getAll(hide.prefab.Curve);
-			for(curve in curves) {
-				addTrackEdit(curve.name, [curve], tracksEl);
+			var curves = elt.getAll(Curve);
+
+			var groups = getTrackGroups(curves);
+			for(group in groups) {
+				addTrackEdit(group.name, group.items, tracksEl);
 			}
 		}
 	}
@@ -469,19 +518,36 @@ class FXScene extends FileView {
 	}
 
 	static function getTrack(element : PrefabElement, propName : String) {
-		return element.getOpt(hide.prefab.Curve, propName);
+		return element.getOpt(Curve, propName);
 	}
 
-	function addTrack(element : PrefabElement, propName : String) {
-		var curve = new hide.prefab.Curve(element);
-		curve.name = upperCase(propName);
-		rebuildAnimPanel();
-		return curve;
+	function addTracks(element : PrefabElement, props : Array<String>) {
+		var added = [];
+		for(propName in props) {
+			if(element.getOpt(Curve, propName) != null)
+				return;
+			var curve = new Curve(element);
+			curve.name = propName;
+			added.push(curve);
+		}
+
+		undo.change(Custom(function(undo) {
+			for(c in added) {
+				if(undo)
+					element.children.remove(c);
+				else 
+					element.children.push(c);
+			}
+			sceneEditor.refresh();
+		}));
+		sceneEditor.refresh(function() {
+			sceneEditor.selectObjects([element]);
+		});
 	}
 
 	function removeTrack(element : PrefabElement, propName : String) {
 		// TODO
-		// return element.get(hide.prefab.Curve, propName);
+		// return element.get(Curve, propName);
 	}
 
 	function onUpdate(dt:Float) {

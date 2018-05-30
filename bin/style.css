@@ -673,6 +673,7 @@ input[type=checkbox]:checked:after {
 .fx-animpanel .track .track-header {
   height: 20px;
   display: flex;
+  user-select: none;
 }
 .fx-animpanel .track .track-header .track-prop {
   text-align: right;
@@ -716,6 +717,7 @@ input[type=checkbox]:checked:after {
 }
 .fx-animpanel .track .curve {
   margin-left: 120px;
+  border-bottom: 1px solid black;
 }
 .fx-animpanel .track .curves.hidden {
   display: none;

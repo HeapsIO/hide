@@ -2,7 +2,7 @@ package hide.prefab;
 
 class Shader extends Prefab {
 
-	var shaderDef : Context.ShaderDef;
+	public var shaderDef : Context.ShaderDef;
 
 	public function new(?parent) {
 		super(parent);
