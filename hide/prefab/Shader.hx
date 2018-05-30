@@ -32,6 +32,8 @@ class Shader extends Prefab {
 					if(a == null)
 						continue;
 					val = h3d.Vector.fromArray(a);
+				case TSampler2D:
+					val = ctx.loadTexture(val);
 				default:
 			}
 			if(val == null)
@@ -51,7 +53,7 @@ class Shader extends Prefab {
 			return ctx;
 		var shader = new hxsl.DynamicShader(shaderDef.shader);
 		for( v in shaderDef.inits ) {
-			var defVal = hxsl.Ast.Tools.evalConst(v.e);
+			var defVal = hide.tools.TypesCache.evalConst(v.e);
 			shader.hscriptSet(v.v.name, defVal);
 		}
 		ctx.custom = shader;
@@ -71,7 +73,7 @@ class Shader extends Prefab {
 		// TODO: Where to init prefab default values?
 		for( v in shaderDef.inits ) {
 			if(!Reflect.hasField(props, v.v.name)) {
-				var defVal = hxsl.Ast.Tools.evalConst(v.e);
+				var defVal = hide.tools.TypesCache.evalConst(v.e);
 				Reflect.setField(props, v.v.name, defVal);
 			}
 		}
@@ -111,19 +113,7 @@ class Shader extends Prefab {
 		for(v in shaderDef.shader.data.vars) {
 			if(v.kind != Param)
 				continue;
-			var prop : hide.comp.PropsEditor.PropType;
-			switch(v.type) {
-				case TBool:
-					prop = PBool;
-				case TInt:
-					prop = PInt(0, 10);
-				case TFloat:
-					prop = PFloat(-1.0, 1.0);
-				case TVec( size, VFloat ):
-					prop = PVec(size);
-				default:
-					prop = PUnsupported('${v.type}');
-			}
+			var prop = hide.tools.TypesCache.makeShaderType(v);
 			props.push({name: v.name, t: prop});
 		}
 		ctx.properties.addProps(props, this.props, function(pname) {
