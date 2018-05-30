@@ -49,6 +49,19 @@ class Curve extends Prefab {
 		return u * u * u * c0 + c1 * 3 * t * u * u + c2 * 3 * t * t * u + t * t * t * c3;
 	}
 
+	public function findKey(time: Float, tolerance: Float) {
+		var minDist = tolerance;
+		var closest = null;
+		for(k in keys) {
+			var d = hxd.Math.abs(k.time - time);
+			if(d < minDist) {
+				minDist = d;
+				closest = k;
+			}
+		}
+		return closest;
+	}
+
 	public function getVal(time: Float) : Float {
 		switch(keys.length) {
 			case 0: return 0;

@@ -717,7 +717,7 @@ input[type=checkbox]:checked:after {
 .fx-animpanel .track .curve {
   margin-left: 120px;
 }
-.fx-animpanel .track .curve.hidden {
+.fx-animpanel .track .curves.hidden {
   display: none;
 }
 /* Golden Layout Fixes */

@@ -3,7 +3,7 @@ import hide.Element;
 
 class SVG extends Component {
 
-	var document = null;
+	var document : js.html.HTMLDocument = null;
 
 	public function new(?parent:Element,?el) {
 		document = parent == null ? js.Browser.document : parent[0].ownerDocument;

@@ -1,4 +1,5 @@
 package hide.view;
+using Lambda;
 
 import hide.Element;
 import hide.prefab.Prefab in PrefabElement;
@@ -314,38 +315,32 @@ class FXScene extends FileView {
 		}
 	}
 
-	function addTrackEdit(curve: hide.prefab.Curve, tracksEl: Element) {
+	function addTrackEdit(trackName: String, curves: Array<hide.prefab.Curve>, tracksEl: Element) {
 		var trackEl = new Element('<div class="track">
 			<div class="track-header">
 				<div class="track-prop">
-					<label>${curve.name}</label>
+					<label>${trackName}</label>
 					<div class="track-toggle"><div class="icon fa"></div></div>
 				</div>
 				<div class="dopesheet"></div>
 			</div>
-			<div class="curve"></div>
+			<div class="curves"></div>
 		</div>');
+		if(curves.length == 0)
+			return;
+		var parent = curves[0].parent;
 		var trackToggle = trackEl.find(".track-toggle");
 		tracksEl.append(trackEl);
-
-		var curveContainer = trackEl.find(".curve");
-		var curveEdit = new hide.comp.CurveEditor(this.undo, curveContainer);
-		var cpath = curve.getAbsPath();
-		var trackKey = "trackVisible:" + cpath;
+		var curvesContainer = trackEl.find(".curves");
+		var trackKey = "trackVisible:" + parent.getAbsPath() + "/" + trackName;
 		var expand = getDisplayState(trackKey) == true;
-		curveEdit.saveDisplayKey = getPath() + "/" + cpath;
-		curveEdit.lockViewX = true;
-		curveEdit.xOffset = xOffset;
-		curveEdit.xScale = xScale;
-		curveEdit.curve = curve;
-		curveEdits.push(curveEdit);
 		function updateExpanded() {
 			var icon = trackToggle.find(".icon");
 			if(expand)
 				icon.removeClass("fa-angle-right").addClass("fa-angle-down");
 			else
 				icon.removeClass("fa-angle-down").addClass("fa-angle-right");
-			curveContainer.toggleClass("hidden", !expand);
+			curvesContainer.toggleClass("hidden", !expand);
 		}
 		trackToggle.click(function(e) {
 			expand = !expand;
@@ -353,9 +348,28 @@ class FXScene extends FileView {
 			updateExpanded();
 		});
 		var dopesheet = trackEl.find(".dopesheet");
+		var trackEdits : Array<hide.comp.CurveEditor> = [];
+
+		function dragKey(prevTime: Float, newTime: Float) {
+			var tolerance = 0.25;
+			for(edit in trackEdits) {
+				// edit.curve.keys.find(k -> hxd.Math.abs(k.time - prevTime) < 
+				var k = edit.curve.findKey(prevTime, tolerance);
+				if(k != null) {
+					k.time = newTime;
+					edit.refreshGraph(false, k);
+				}
+			}
+		}
+		function refreshCurves(anim: Bool) {
+			for(c in trackEdits) {
+				c.refreshGraph(anim);
+			}
+		}
+
 		function refreshDopesheet() {
 			dopesheet.empty();
-			for(key in curve.keys) {
+			for(key in curves[0].keys) {
 				var keyEl = new Element('<span class="key">').appendTo(dopesheet);
 				function update() keyEl.css({left: xt(key.time)});
 				update();
@@ -364,11 +378,10 @@ class FXScene extends FileView {
 					var prevVal = key.time;
 					startDrag(function(e) {
 						var x = ixt(e.clientX - offset.left);
-						key.time = x;
-						curveEdit.refreshGraph(true, key);
+						dragKey(key.time, x);
 						update();
 					}, function(e) {
-						curveEdit.refreshGraph();
+						refreshCurves(false);
 						var newVal = key.time;
 						undo.change(Custom(function(undo) {
 							if(undo)
@@ -376,7 +389,7 @@ class FXScene extends FileView {
 							else
 								key.time = newVal;
 							update();
-							curveEdit.refreshGraph();
+							refreshCurves(false);
 						}));
 					});
 				});
@@ -385,10 +398,21 @@ class FXScene extends FileView {
 				});
 			}
 		}
-		refreshDopesheet();
-		curveEdit.onChange = function(anim) {
-			refreshDopesheet();
+		for(curve in curves) {
+			var curveContainer = new Element('<div class="curve"></div>').appendTo(curvesContainer);
+			var curveEdit = new hide.comp.CurveEditor(this.undo, curveContainer);
+			curveEdit.saveDisplayKey = getPath() + "/" + curve.getAbsPath();
+			curveEdit.lockViewX = true;
+			curveEdit.xOffset = xOffset;
+			curveEdit.xScale = xScale;
+			curveEdit.curve = curve;
+			curveEdit.onChange = function(anim) {
+				refreshDopesheet();
+			}
+			trackEdits.push(curveEdit);
+			curveEdits.push(curveEdit);
 		}
+		refreshDopesheet();
 		updateExpanded();
 	}
 
@@ -427,7 +451,7 @@ class FXScene extends FileView {
 			var tracksEl = objPanel.find(".tracks");
 			var curves = elt.getAll(hide.prefab.Curve);
 			for(curve in curves) {
-				addTrackEdit(curve, tracksEl);
+				addTrackEdit(curve.name, [curve], tracksEl);
 			}
 		}
 	}
