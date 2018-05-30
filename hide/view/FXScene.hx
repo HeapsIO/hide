@@ -314,6 +314,84 @@ class FXScene extends FileView {
 		}
 	}
 
+	function addTrackEdit(curve: hide.prefab.Curve, tracksEl: Element) {
+		var trackEl = new Element('<div class="track">
+			<div class="track-header">
+				<div class="track-prop">
+					<label>${curve.name}</label>
+					<div class="track-toggle"><div class="icon fa"></div></div>
+				</div>
+				<div class="dopesheet"></div>
+			</div>
+			<div class="curve"></div>
+		</div>');
+		var trackToggle = trackEl.find(".track-toggle");
+		tracksEl.append(trackEl);
+
+		var curveContainer = trackEl.find(".curve");
+		var curveEdit = new hide.comp.CurveEditor(this.undo, curveContainer);
+		var cpath = curve.getAbsPath();
+		var trackKey = "trackVisible:" + cpath;
+		var expand = getDisplayState(trackKey) == true;
+		curveEdit.saveDisplayKey = getPath() + "/" + cpath;
+		curveEdit.lockViewX = true;
+		curveEdit.xOffset = xOffset;
+		curveEdit.xScale = xScale;
+		curveEdit.curve = curve;
+		curveEdits.push(curveEdit);
+		function updateExpanded() {
+			var icon = trackToggle.find(".icon");
+			if(expand)
+				icon.removeClass("fa-angle-right").addClass("fa-angle-down");
+			else
+				icon.removeClass("fa-angle-down").addClass("fa-angle-right");
+			curveContainer.toggleClass("hidden", !expand);
+		}
+		trackToggle.click(function(e) {
+			expand = !expand;
+			saveDisplayState(trackKey, expand);
+			updateExpanded();
+		});
+		var dopesheet = trackEl.find(".dopesheet");
+		function refreshDopesheet() {
+			dopesheet.empty();
+			for(key in curve.keys) {
+				var keyEl = new Element('<span class="key">').appendTo(dopesheet);
+				function update() keyEl.css({left: xt(key.time)});
+				update();
+				keyEl.mousedown(function(e) {
+					var offset = dopesheet.offset();
+					var prevVal = key.time;
+					startDrag(function(e) {
+						var x = ixt(e.clientX - offset.left);
+						key.time = x;
+						curveEdit.refreshGraph(true, key);
+						update();
+					}, function(e) {
+						curveEdit.refreshGraph();
+						var newVal = key.time;
+						undo.change(Custom(function(undo) {
+							if(undo)
+								key.time = prevVal;
+							else
+								key.time = newVal;
+							update();
+							curveEdit.refreshGraph();
+						}));
+					});
+				});
+				refreshDopesheetKeys.push(function(anim) {
+					update();
+				});
+			}
+		}
+		refreshDopesheet();
+		curveEdit.onChange = function(anim) {
+			refreshDopesheet();
+		}
+		updateExpanded();
+	}
+
 	function rebuildAnimPanel() {
 		var selection = sceneEditor.getSelection();
 		var scrollPanel = element.find(".anim-scroll");
@@ -349,81 +427,7 @@ class FXScene extends FileView {
 			var tracksEl = objPanel.find(".tracks");
 			var curves = elt.getAll(hide.prefab.Curve);
 			for(curve in curves) {
-				var trackEl = new Element('<div class="track">
-					<div class="track-header">
-						<div class="track-prop">
-							<label>${curve.name}</label>
-							<div class="track-toggle"><div class="icon fa"></div></div>
-						</div>
-						<div class="dopesheet"></div>
-					</div>
-					<div class="curve"></div>
-				</div>');
-				var trackToggle = trackEl.find(".track-toggle");
-				tracksEl.append(trackEl);
-
-				var curveContainer = trackEl.find(".curve");
-				var curveEdit = new hide.comp.CurveEditor(this.undo, curveContainer);
-				var cpath = curve.getAbsPath();
-				var trackKey = "trackVisible:" + cpath;
-				var expand = getDisplayState(trackKey) == true;
-				curveEdit.saveDisplayKey = getPath() + "/" + cpath;
-				curveEdit.lockViewX = true;
-				curveEdit.xOffset = xOffset;
-				curveEdit.xScale = xScale;
-				curveEdit.curve = curve;
-				curveEdits.push(curveEdit);
-				function updateExpanded() {
-					var icon = trackToggle.find(".icon");
-					if(expand)
-						icon.removeClass("fa-angle-right").addClass("fa-angle-down");
-					else
-						icon.removeClass("fa-angle-down").addClass("fa-angle-right");
-					curveContainer.toggleClass("hidden", !expand);
-				}
-				trackToggle.click(function(e) {
-					expand = !expand;
-					saveDisplayState(trackKey, expand);
-					updateExpanded();
-				});
-				var dopesheet = trackEl.find(".dopesheet");
-				function refreshDopesheet() {
-					dopesheet.empty();
-					for(key in curve.keys) {
-						var keyEl = new Element('<span class="key">').appendTo(dopesheet);
-						function update() keyEl.css({left: xt(key.time)});
-						update();
-						keyEl.mousedown(function(e) {
-							var offset = dopesheet.offset();
-							var prevVal = key.time;
-							startDrag(function(e) {
-								var x = ixt(e.clientX - offset.left);
-								key.time = x;
-								curveEdit.refreshGraph(true, key);
-								update();
-							}, function(e) {
-								curveEdit.refreshGraph();
-								var newVal = key.time;
-								undo.change(Custom(function(undo) {
-									if(undo)
-										key.time = prevVal;
-									else
-										key.time = newVal;
-									update();
-									curveEdit.refreshGraph();
-								}));
-							});
-						});
-						refreshDopesheetKeys.push(function(anim) {
-							update();
-						});
-					}
-				}
-				refreshDopesheet();
-				curveEdit.onChange = function(anim) {
-					refreshDopesheet();
-				}
-				updateExpanded();
+				addTrackEdit(curve, tracksEl);
 			}
 		}
 	}
