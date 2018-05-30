@@ -42,7 +42,7 @@ class PropsEditor extends Component {
 			def.appendTo(parent);
 	}
 
-	public function addProps( props : Array<{ name : String, t : PropType }>, context : Dynamic ) {
+	public function addProps( props : Array<{ name : String, t : PropType }>, context : Dynamic, ?onChange : String -> Void) {
 		var e = new Element('<dl>');
 		for( p in props ) {
 			new Element('<dt>${p.name}</dt>').appendTo(e);
@@ -74,7 +74,7 @@ class PropsEditor extends Component {
 				}
 			}
 		}
-		return add(e, context);
+		return add(e, context, onChange);
 	}
 
 	public function add( e : Element, ?context : Dynamic, ?onChange : String -> Void ) {

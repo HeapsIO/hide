@@ -259,7 +259,7 @@ input[type=checkbox]:checked:after {
   width: 145px;
 }
 .hide-range input[type=range].small {
-  width: 133px;
+  width: 125px;
 }
 .hide-range input[type=text] {
   display: inline-block;
@@ -465,6 +465,11 @@ input[type=checkbox]:checked:after {
   overflow: hidden;
   margin-top: 4px;
 }
+.hide-properties dd span,
+.hide-properties dt span {
+  display: inline-block;
+  width: 20px;
+}
 .hide-properties dt {
   width: 80px;
   text-align: right;
@@ -475,6 +480,9 @@ input[type=checkbox]:checked:after {
 }
 .hide-properties input {
   width: 190px;
+}
+.hide-properties input.small {
+  width: 170px;
 }
 .hide-properties input[type=checkbox] {
   width: 13px;
