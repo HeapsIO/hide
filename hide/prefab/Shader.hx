@@ -43,6 +43,7 @@ class Shader extends Prefab {
 	}
 
 	override function makeInstance(ctx:Context):Context {
+		#if editor
 		if(source == null)
 			return ctx;
 		if(ctx.local3d == null)
@@ -63,10 +64,12 @@ class Shader extends Prefab {
 			}
 		}
 		applyVars(ctx);
+		#end
 		return ctx;
 	}
 
 	function loadShaderDef(ctx: Context) {
+		#if editor
 		if(shaderDef == null)
 			shaderDef = ctx.loadShader("shaders/TestShader");
 
@@ -84,6 +87,7 @@ class Shader extends Prefab {
 				Reflect.setField(props, v.name, getDefault(v.type));
 			}
 		}
+		#end
 	}
 
 	static function getDefault(type: hxsl.Ast.Type): Dynamic {
@@ -103,6 +107,7 @@ class Shader extends Prefab {
 	}
 
 	override function edit( ctx : EditContext ) {
+		#if editor		
 		super.edit(ctx);
 
 		loadShaderDef(ctx.rootContext);
@@ -121,6 +126,7 @@ class Shader extends Prefab {
 			var inst = ctx.getContext(this);
 			applyVars(inst);
 		});
+		#end
 	}
 
 	override function getHideProps() {
