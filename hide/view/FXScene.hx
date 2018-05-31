@@ -562,22 +562,42 @@ class FXScene extends FileView {
 		curveEdits = [];
 		refreshDopesheetKeys = [];
 
+		var sections : Array<{
+			elt: PrefabElement,
+			curves: Array<Curve>
+		}> = [];
+
 		for(elt in selection) {
+			var root = elt;
+			if(Std.instance(elt, hide.prefab.Curve) != null) {
+				root = elt.parent;
+			}
+			var sect = sections.find(s -> s.elt == root);
+			if(sect == null) {
+				sect = {elt: root, curves: []};
+				sections.push(sect);				
+			}
+			var curves = elt.flatten(hide.prefab.Curve);
+			for(c in curves) {
+				sect.curves.push(c);
+			}
+		}
+
+		for(sec in sections) {
 			var objPanel = new Element('<div>
-				<div class="tracks-header"><label>${upperCase(elt.name)}</label><div class="addtrack fa fa-plus-circle"></div></div>
+				<div class="tracks-header"><label>${upperCase(sec.elt.name)}</label><div class="addtrack fa fa-plus-circle"></div></div>
 				<div class="tracks"></div>
 			</div>').appendTo(scrollPanel);
 			var addTrackEl = objPanel.find(".addtrack");
-			var objElt = Std.instance(elt, hide.prefab.Object3D);
-			var shaderElt = Std.instance(elt, hide.prefab.Shader);
+			var objElt = Std.instance(sec.elt, hide.prefab.Object3D);
+			var shaderElt = Std.instance(sec.elt, hide.prefab.Shader);
 
 			addTrackEl.click(function(e) {
-				var menuItems = getNewTrackMenu(elt);
+				var menuItems = getNewTrackMenu(sec.elt);
 				new hide.comp.ContextMenu(menuItems);
 			});
 			var tracksEl = objPanel.find(".tracks");
-			var curves = elt.flatten(Curve);
-			var groups = hide.prefab.Curve.getGroups(curves);
+			var groups = hide.prefab.Curve.getGroups(sec.curves);
 			for(group in groups) {
 				addTrackEdit(group.name, group.items, tracksEl);
 			}
@@ -617,7 +637,7 @@ class FXScene extends FileView {
 		var added = [];
 		for(prop in props) {
 			if(element.getOpt(Curve, prop.name) != null)
-				return added;
+				continue:
 			var curve = new Curve(element);
 			curve.name = prop.name;
 			if(prop.clamp != null) {
@@ -626,6 +646,9 @@ class FXScene extends FileView {
 			}
 			added.push(curve);
 		}
+
+		if(added.length == 0)
+			return added;
 
 		undo.change(Custom(function(undo) {
 			for(c in added) {
@@ -665,9 +688,11 @@ class FXScene extends FileView {
 				enabled: !hasAllTracks };
 		}
 
-		function groupedTracks(props: Array<PropTrackDef>) {
+		function groupedTracks(prefix: String, props: Array<PropTrackDef>) : Array<hide.comp.ContextMenu.ContextMenuItem> {
 			var allLabel = [for(p in props) upperCase(p.name)].join("/");
 			var ret = [];
+			for(p in props)
+				p.name = prefix + "." + p.name;
 			ret.push(trackItem(allLabel, props));
 			for(p in props) {
 				ret.push(trackItem(p.name, [p]));
@@ -678,15 +703,15 @@ class FXScene extends FileView {
 		if(objElt != null) {
 			menuItems.push({
 				label: "Position",
-				menu: groupedTracks([{name: "x"}, {name: "y"}, {name: "z"}]),
+				menu: groupedTracks("position", [{name: "x"}, {name: "y"}, {name: "z"}]),
 			});
 			menuItems.push({
 				label: "Rotation",
-				menu: groupedTracks([{name: "rotationX"}, {name: "rotationY"}, {name: "rotationZ"}]),
+				menu: groupedTracks("rotation", [{name: "x"}, {name: "y"}, {name: "z"}]),
 			});
 			menuItems.push({
 				label: "Scale",
-				menu: groupedTracks([{name: "scaleX"}, {name: "scaleY"}, {name: "scaleZ"}]),
+				menu: groupedTracks("scale", [{name: "x"}, {name: "y"}, {name: "z"}]),
 			});
 			menuItems.push(trackItem("Visibility", [{name: "visibility", clamp: [0., 1.]}]));
 		}
@@ -704,12 +729,7 @@ class FXScene extends FileView {
 								components = [{name: "h"}, {name: "s", clamp: [0., 1.]}, {name: "l", clamp: [0., 1.]}, {name: "a", clamp: [0., 1.]}];
 							else
 								components = [{name:"x"}, {name:"y"}, {name:"z"}, {name:"w"}];
-							for(c in components) {
-								c.name = param.name + "." + c.name;
-							}
-							subItems.push(trackItem("All", components));
-							for(c in components)
-								subItems.push(trackItem(c.name, [c]));
+							subItems = groupedTracks(param.name, components);
 
 						}
 					default:
