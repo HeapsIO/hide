@@ -218,7 +218,7 @@ class SceneEditor {
 				selectObjects([current]);
 			}
 
-			var newItems = getNewContextMenu();
+			var newItems = getNewContextMenu(current);
 			var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [
 				{ label : "New...", menu : newItems },
 				{ label : "Rename", enabled : current != null, click : function() tree.editNode(current) },
@@ -1021,8 +1021,7 @@ class SceneEditor {
 	}
 
 	// Override
-	function getNewContextMenu() : Array<hide.comp.ContextMenu.ContextMenuItem> {
-		var current = tree.getCurrentOver();
+	function getNewContextMenu(current: PrefabElement) : Array<hide.comp.ContextMenu.ContextMenuItem> {
 		var newItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
 		var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
 		var allowed = ["model", "object"];

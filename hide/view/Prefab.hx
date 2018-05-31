@@ -18,8 +18,7 @@ private class PrefabSceneEditor extends hide.comp.SceneEditor {
 		parent.onUpdate(dt);
 	}
 
-	override function getNewContextMenu() {
-		var current = tree.getCurrentOver();
+	override function getNewContextMenu(current: PrefabElement) {
 		var registered = new Array<hide.comp.ContextMenu.ContextMenuItem>();
 		var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
 		for( ptype in allRegs.keys() ) {

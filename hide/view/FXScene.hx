@@ -28,38 +28,48 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		parent.onSelect(elts);
 	}
 
-	override function getNewContextMenu() {
-		var current = tree.getCurrentOver();
-		var registered = new Array<hide.comp.ContextMenu.ContextMenuItem>();
-		var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
-		var allowed = ["model", "object", "shader"];
-		for( ptype in allowed ) {
-			var pcl = allRegs.get(ptype);
-			var props = Type.createEmptyInstance(pcl).getHideProps();
-			registered.push({
-				label : props.name,
-				click : function() {
-
-					function make() {
-						var p = Type.createInstance(pcl, [current == null ? sceneData : current]);
-						@:privateAccess p.type = ptype;
-						autoName(p);
-						return p;
-					}
-
-					if( props.fileSource != null )
-						ide.chooseFile(props.fileSource, function(path) {
-							if( path == null ) return;
-							var p = make();
-							p.source = path;
-							addObject(p);
-						});
-					else
-						addObject(make());
-				}
-			});
+	override function getNewContextMenu(current: PrefabElement) {
+		if(current != null && current.to(hide.prefab.Shader) != null) {
+			return parent.getNewTrackMenu(current);
 		}
-		return registered;
+		else {
+			var registered = new Array<hide.comp.ContextMenu.ContextMenuItem>();
+
+			registered.push({
+				label: "Animation",
+				menu: parent.getNewTrackMenu(current)
+			});
+
+			var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
+			var allowed = ["model", "object", "shader"];
+			for( ptype in allowed ) {
+				var pcl = allRegs.get(ptype);
+				var props = Type.createEmptyInstance(pcl).getHideProps();
+				registered.push({
+					label : props.name,
+					click : function() {
+
+						function make() {
+							var p = Type.createInstance(pcl, [current == null ? sceneData : current]);
+							@:privateAccess p.type = ptype;
+							autoName(p);
+							return p;
+						}
+
+						if( props.fileSource != null )
+							ide.chooseFile(props.fileSource, function(path) {
+								if( path == null ) return;
+								var p = make();
+								p.source = path;
+								addObject(p);
+							});
+						else
+							addObject(make());
+					}
+				});
+			}
+			return registered;
+		}
 	}
 }
 
@@ -556,59 +566,7 @@ class FXScene extends FileView {
 			var shaderElt = Std.instance(elt, hide.prefab.Shader);
 
 			addTrackEl.click(function(e) {
-				var menuItems: Array<hide.comp.ContextMenu.ContextMenuItem>= [];
-				inline function hasTrack(pname) {
-					return getTrack(elt, pname) != null;
-				}
-
-				if(objElt != null) {
-					var defaultTracks = ["x", "y", "z", "rotationX", "rotationY", "rotationZ", "scaleX", "scaleY", "scaleZ", "visibility"];
-					for(t in defaultTracks) {
-						menuItems.push({
-							label: upperCase(t),
-							click: function() {
-								addTracks(elt, [t]);
-							},	
-							enabled: !hasTrack(t)});
-					}
-				}
-				else if(shaderElt != null && shaderElt.shaderDef != null) {
-					var params = shaderElt.shaderDef.shader.data.vars.filter(v -> v.kind == Param);
-					for(param in params) {
-						var tracks = null;
-						var isColor = false;
-						switch(param.type) {
-							case TVec(n, VFloat):
-								if(n <= 4) {
-									if(param.name.toLowerCase().indexOf("color") >= 0) {
-										tracks = [for(i in 0...n) ["h", "s", "l", "a"][i]];
-										isColor = true;
-									}
-									else {
-										tracks = [for(i in 0...n) ["x", "y", "z", "w"][i]];
-									}
-								}
-							default:
-						}
-						if(tracks != null && tracks.length > 0) {
-							menuItems.push({
-								label: upperCase(param.name),
-								click: function() {
-									var curves = addTracks(elt, [for(t in tracks) param.name + "." + t]);
-									if(isColor) {
-										for(c in curves) {
-											c.minValue = 0.0;
-											if(c.name == param.name + ".h")
-												c.maxValue = 0.0;
-											else
-												c.maxValue = 1.0;
-										}
-									}
-								},
-								enabled: true});
-						}
-					}
-				}
+				var menuItems = getNewTrackMenu(elt);
 				new hide.comp.ContextMenu(menuItems);
 			});
 			var tracksEl = objPanel.find(".tracks");
@@ -650,10 +608,6 @@ class FXScene extends FileView {
 		});
 	}
 
-	static function getTrack(element : PrefabElement, propName : String) {
-		return element.getOpt(Curve, propName);
-	}
-
 	function addTracks(element : PrefabElement, props : Array<String>) {
 		var added = [];
 		for(propName in props) {
@@ -679,9 +633,85 @@ class FXScene extends FileView {
 		return added;
 	}
 
-	function removeTrack(element : PrefabElement, propName : String) {
-		// TODO
-		// return element.get(Curve, propName);
+	public function getNewTrackMenu(elt: PrefabElement) : Array<hide.comp.ContextMenu.ContextMenuItem> {
+		var objElt = Std.instance(elt, hide.prefab.Object3D);
+		var shaderElt = Std.instance(elt, hide.prefab.Shader);
+		var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
+
+		inline function hasTrack(pname) {
+			return getTrack(elt, pname) != null;
+		}
+
+		function trackItem(name: String, props: Array<String>) : hide.comp.ContextMenu.ContextMenuItem {
+			var hasAllTracks = true;
+			for(p in props) {
+				if(getTrack(elt, p) == null)
+					hasAllTracks = false;
+			}
+			return {
+				label: upperCase(name),
+				click: function() {
+					var added = addTracks(elt, props);
+				},	
+				enabled: !hasAllTracks };
+		}
+
+		function groupedTracks(props: Array<String>) {
+			var allLabel = [for(p in props) upperCase(p)].join("/");
+			var ret = [];
+			ret.push(trackItem(allLabel, props));
+			for(p in props) {
+				ret.push(trackItem(p, [p]));
+			}
+			return ret;
+		}
+
+		if(objElt != null) {
+			menuItems.push({
+				label: "Position",
+				menu: groupedTracks(["x", "y", "z"]),
+			});
+			menuItems.push({
+				label: "Rotation",
+				menu: groupedTracks(["rotationX", "rotationY", "rotationZ"]),
+			});
+			menuItems.push({
+				label: "Scale",
+				menu: groupedTracks(["scaleX", "scaleY", "scaleZ"]),
+			});
+			menuItems.push(trackItem("Visibility", ["visibility"]));
+		}
+		if(shaderElt != null && shaderElt.shaderDef != null) {
+			var params = shaderElt.shaderDef.shader.data.vars.filter(v -> v.kind == Param);
+			for(param in params) {
+				var tracks = null;
+				var isColor = false;
+				var subItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
+				switch(param.type) {
+					case TVec(n, VFloat):
+						if(n <= 4) {
+							var components = [];
+							if(param.name.toLowerCase().indexOf("color") >= 0)
+								components = ["h", "s", "l", "a"];
+							else
+								components = ["x", "y", "z", "w"];
+							components = [for(i in 0...n) param.name + "." + components[i]];
+							subItems.push(trackItem("All", components));
+							for(i in components)
+								subItems.push(trackItem(i, [i]));
+
+						}
+					default:
+				}
+				if(subItems.length > 0) {
+					menuItems.push({
+						label: upperCase(param.name),
+						menu: subItems
+					});
+				}
+			}
+		}
+		return menuItems;
 	}
 
 	function onUpdate(dt:Float) {
@@ -734,6 +764,12 @@ class FXScene extends FileView {
 			currentVersion = undo.currentID;
 		}
 	}
+
+
+	static function getTrack(element : PrefabElement, propName : String) {
+		return element.getOpt(Curve, propName);
+	}
+
 
 	static function upperCase(prop: String) {
 		return prop.charAt(0).toUpperCase() + prop.substr(1);
