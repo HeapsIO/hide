@@ -150,6 +150,11 @@ class Scene extends Component implements h3d.IDrawable {
 			engine.backgroundColor = Std.parseInt("0x"+props.get("scene.backgroundColor").substr(1)) | 0xFF000000;
 		}
 		initRec(root);
+
+		// make sure the materials are correctly initialized
+		for( m in root.getMaterials() )
+			if( m.props == null )
+				m.props = h3d.mat.MaterialSetup.current.getDefaults("ui");
 	}
 
 	public function setCurrent() {

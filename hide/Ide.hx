@@ -375,6 +375,7 @@ class Ide {
 		hxd.res.Loader.currentInstance = new CustomLoader(new hxd.fs.LocalFileSystem(localDir));
 		renderers = [
 			new hide.Renderer.MaterialSetup("Default"),
+			new hide.Renderer.PbrSetup("PBR"),
 		];
 		var path = getPath("Renderer.hx");
 		if( sys.FileSystem.exists(path) ) {

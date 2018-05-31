@@ -11,6 +11,7 @@ class Model extends FileView {
 	var properties : hide.comp.PropsEditor;
 	var light : h3d.scene.DirLight;
 	var lightDirection = new h3d.Vector( 1, 2, -4 );
+	var isPbr : Bool;
 
 	var aspeed : hide.comp.Range;
 	var aloop : { function toggle( v : Bool ) : Void; var element : Element; }
@@ -81,7 +82,7 @@ class Model extends FileView {
 
 		var objectCount = 1 + obj.getObjectsCount();
 		var meshes = obj.getMeshes();
-		var vertexCount = 0, triangleCount = 0, materialDraws = 0, materialCount = 0;
+		var vertexCount = 0, triangleCount = 0, materialDraws = 0, materialCount = 0, bonesCount = 0;
 		var uniqueMats = new Map();
 		for( m in obj.getMaterials() ) {
 			if( uniqueMats.exists(m.name) ) continue;
@@ -93,7 +94,16 @@ class Model extends FileView {
 			triangleCount += p.triCount();
 			vertexCount += p.vertexCount();
 			var multi = Std.instance(m, h3d.scene.MultiMaterial);
-			materialDraws += if( multi != null ) multi.materials.length else 1;
+			var skin = Std.instance(m, h3d.scene.Skin);
+			if( skin != null )
+				bonesCount += skin.getSkinData().allJoints.length;
+			var count = if( skin != null && skin.getSkinData().splitJoints != null )
+				skin.getSkinData().splitJoints.length;
+			else if( multi != null )
+				multi.materials.length
+			else
+				1;
+			materialDraws += count;
 		}
 
 		var e = properties.add(new Element('
@@ -112,6 +122,7 @@ class Model extends FileView {
 					<dt>Meshes</dt><dd>${meshes.length}</dd>
 					<dt>Materials</dt><dd>$materialCount</dd>
 					<dt>Draws</dt><dd>$materialDraws</dd>
+					<dt>Bones</dt><dd>$bonesCount</dd>
 					<dt>Vertexes</dt><dd>$vertexCount</dd>
 					<dt>Triangles</dt><dd>$triangleCount</dd>
 				</dl>
@@ -168,6 +179,8 @@ class Model extends FileView {
 
 	function init() {
 
+		isPbr = Std.is(scene.s3d.renderer, h3d.scene.pbr.Renderer);
+
 		undo.onChange = function() {};
 
 		obj = scene.loadModel(state.path, true);
@@ -177,6 +190,7 @@ class Model extends FileView {
 		if( light == null ) {
 			light = new h3d.scene.DirLight(new h3d.Vector(), scene.s3d);
 			light.enableSpecular = true;
+			if( isPbr ) light.color.scale3(2);
 		}
 
 		control = new h3d.scene.CameraController(scene.s3d);
@@ -209,9 +223,6 @@ class Model extends FileView {
 			sel.onSelect = setAnimation;
 		}
 
-		scene.init(props);
-		scene.onUpdate = update;
-
 		tools.saveDisplayKey = "ModelTools";
 
 		tools.addButton("video-camera", "Reset Camera", function() {
@@ -219,17 +230,35 @@ class Model extends FileView {
 			control.loadFromCamera();
 		});
 
-		tools.addToggle("sun-o", "Enable Lights/Shadows", function(v) {
-			if( !v ) {
-				for( m in obj.getMaterials() ) {
-					m.mainPass.enableLights = false;
-					m.shadows = false;
+		if( isPbr ) {
+			tools.addButton("gears", "PBR Renderer", function() {
+				properties.clear();
+				var renderer = Std.instance(scene.s3d.renderer, h3d.scene.pbr.Renderer);
+				var props = {
+					debug : renderer.displayMode == Slides,
+				};
+				properties.add(new Element('
+					<div class="group" name="Renderer">
+						<dl>
+							<dt>Debug</dt><dd><input type="checkbox" field="debug"/></dd>
+						</dl>
+					</div>
+				'),props, function(p) {
+					renderer.displayMode = props.debug ? Slides : Pbr;
+				});
+			});
+		} else
+			tools.addToggle("sun-o", "Enable Lights/Shadows", function(v) {
+				if( !v ) {
+					for( m in obj.getMaterials() ) {
+						m.mainPass.enableLights = false;
+						m.shadows = false;
+					}
+				} else {
+					for( m in obj.getMaterials() )
+						h3d.mat.MaterialSetup.current.initModelMaterial(m);
 				}
-			} else {
-				for( m in obj.getMaterials() )
-					h3d.mat.MaterialSetup.current.initModelMaterial(m);
-			}
-		},true);
+			},true);
 
 		var axis = new h3d.scene.Graphics(scene.s3d);
 		axis.lineStyle(1,0xFF0000);
@@ -242,7 +271,10 @@ class Model extends FileView {
 		axis.lineTo(0,0,1);
 		axis.visible = false;
 
-		tools.addToggle("", "Toggle Axis", function(v) {
+		scene.init(props);
+		scene.onUpdate = update;
+
+		tools.addToggle("location-arrow", "Toggle Axis", function(v) {
 			axis.visible = v;
 		});
 
