@@ -538,7 +538,7 @@ class FXScene extends FileView {
 		refreshDopesheet();
 		updateExpanded();
 	}
-	
+
 
 	function rebuildAnimPanel() {
 		var selection = sceneEditor.getSelection();
@@ -576,11 +576,13 @@ class FXScene extends FileView {
 					var params = shaderElt.shaderDef.shader.data.vars.filter(v -> v.kind == Param);
 					for(param in params) {
 						var tracks = null;
+						var isColor = false;
 						switch(param.type) {
 							case TVec(n, VFloat):
 								if(n <= 4) {
 									if(param.name.toLowerCase().indexOf("color") >= 0) {
 										tracks = [for(i in 0...n) ["h", "s", "l", "a"][i]];
+										isColor = true;
 									}
 									else {
 										tracks = [for(i in 0...n) ["x", "y", "z", "w"][i]];
@@ -592,7 +594,13 @@ class FXScene extends FileView {
 							menuItems.push({
 								label: upperCase(param.name),
 								click: function() {
-									addTracks(elt, [for(t in tracks) param.name + "." + t]);
+									var curves = addTracks(elt, [for(t in tracks) param.name + "." + t]);
+									if(isColor) {
+										for(c in curves) {
+											c.minValue = 0.0;
+											c.maxValue = 1.0;
+										}
+									}
 								},
 								enabled: true});
 						}
@@ -647,7 +655,7 @@ class FXScene extends FileView {
 		var added = [];
 		for(propName in props) {
 			if(element.getOpt(Curve, propName) != null)
-				return;
+				return added;
 			var curve = new Curve(element);
 			curve.name = propName;
 			added.push(curve);
@@ -665,6 +673,7 @@ class FXScene extends FileView {
 		sceneEditor.refresh(function() {
 			sceneEditor.selectObjects([element]);
 		});
+		return added;
 	}
 
 	function removeTrack(element : PrefabElement, propName : String) {

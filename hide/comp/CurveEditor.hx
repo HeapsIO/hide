@@ -175,6 +175,10 @@ class CurveEditor extends Component {
 		if(next != null && key.time > next.time)
 			key.time = next.time - 0.01;
 
+		if(curve.minValue != curve.maxValue) {
+			key.value = hxd.Math.clamp(key.value, curve.minValue, curve.maxValue);
+		}
+
 		// TODO: Prevent backwards handles
 		if(next != null && key.nextHandle != null) {
 			var slope = key.nextHandle.dv / key.nextHandle.dt;

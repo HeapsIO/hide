@@ -26,6 +26,8 @@ typedef CurveKeys = Array<CurveKey>;
 class Curve extends Prefab {
 
 	public var duration : Float = 0.; // TODO: optional?
+	public var minValue : Float = 0.;
+	public var maxValue : Float = 0.;
 	public var keys : CurveKeys = [];
 
    	public function new(?parent) {
@@ -36,12 +38,16 @@ class Curve extends Prefab {
 	override function load(o:Dynamic) {
 		duration = o.duration;
 		keys = o.keys;
+		minValue = o.minValue;
+		maxValue = o.maxValue;
 	}
 
 	override function save() {
 		return {
 			duration: duration,
-			keys: keys
+			minValue: minValue,
+			maxValue: maxValue,
+			keys: keys,
 		};
 	}
 	
