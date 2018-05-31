@@ -259,7 +259,7 @@ input[type=checkbox]:checked:after {
   width: 145px;
 }
 .hide-range input[type=range].small {
-  width: 133px;
+  width: 123px;
 }
 .hide-range input[type=text] {
   display: inline-block;
