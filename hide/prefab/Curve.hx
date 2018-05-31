@@ -197,17 +197,16 @@ class Curve extends Prefab {
 			col.r = r.getVal(time);
 			col.g = g.getVal(time);
 			col.b = b.getVal(time);
-			if(a != null) {
-				col.a = a.getVal(time);
-			}
 		}
 		else {
 			var hval = 0.0, sval = 0.0, lval = 0.0;
-			if(h != null) {
-				hval = h.getVal(time);
-			}
+			if(h != null) hval = h.getVal(time);
+			if(s != null) sval = s.getVal(time);
+			if(l != null) lval = l.getVal(time);
 			col.makeColor(hval, sval, lval);
 		}
+		if(a != null)
+			col.a = a.getVal(time);
 		return col;
 	}
 

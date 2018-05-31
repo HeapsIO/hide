@@ -598,7 +598,10 @@ class FXScene extends FileView {
 									if(isColor) {
 										for(c in curves) {
 											c.minValue = 0.0;
-											c.maxValue = 1.0;
+											if(c.name == param.name + ".h")
+												c.maxValue = 0.0;
+											else
+												c.maxValue = 1.0;
 										}
 									}
 								},
@@ -695,6 +698,15 @@ class FXScene extends FileView {
 			if(curves.visibility != null) {
 				var visible = curves.visibility.getVal(currentTime) > 0.5;
 				obj3d.visible = element.visible && visible;
+			}
+		}
+
+		// Update shaders
+		var allShaders = data.getAll(hide.prefab.Shader);
+		for(shader in allShaders) {
+			var ctx = sceneEditor.getContext(shader);
+			if(ctx != null) {
+				shader.applyVars(ctx, currentTime);
 			}
 		}
 
