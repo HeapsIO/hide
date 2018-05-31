@@ -1,5 +1,7 @@
 package hide.comp;
 
+typedef CurveKey = hide.prefab.Curve.CurveKey;
+
 class CurveEditor extends Component {
 
 	public var xScale = 200.;
@@ -24,7 +26,7 @@ class CurveEditor extends Component {
 	var lastValue : Dynamic;
 	var lastMode : hide.prefab.Curve.CurveKeyMode = Constant;
 
-	var selectedKeys: Array<hide.prefab.Curve.CurveKey> = [];
+	var selectedKeys: Array<CurveKey> = [];
 
 	public function new(undo, ?parent) {
 		super(parent,null);
@@ -104,6 +106,10 @@ class CurveEditor extends Component {
 
 	}
 
+	public dynamic function onKeyMove(key: CurveKey, prevTime: Float, prevVal: Float) {
+
+	}
+
 	function set_curve(curve) {
 		this.curve = curve;
 		lastValue = haxe.Json.parse(haxe.Json.stringify(curve.save()));
@@ -127,7 +133,7 @@ class CurveEditor extends Component {
 		afterChange();
 	}
 
-	function fixKey(key : hide.prefab.Curve.CurveKey) {
+	function fixKey(key : CurveKey) {
 		var index = curve.keys.indexOf(key);
 		var prev = curve.keys[index-1];
 		var next = curve.keys[index+1];
@@ -256,7 +262,7 @@ class CurveEditor extends Component {
 		});
 	}
 
-	function copyKey(key: hide.prefab.Curve.CurveKey): hide.prefab.Curve.CurveKey {
+	function copyKey(key: CurveKey): CurveKey {
 		return cast haxe.Json.parse(haxe.Json.stringify(key));
 	}
 
@@ -332,7 +338,7 @@ class CurveEditor extends Component {
 		});
 	}
 
-	public function refreshGraph(?anim: Bool = false, ?animKey: hide.prefab.Curve.CurveKey) {
+	public function refreshGraph(?anim: Bool = false, ?animKey: CurveKey) {
 		if(curve == null)
 			return;
 
@@ -404,10 +410,13 @@ class CurveEditor extends Component {
 						var ly = e.clientY - offset.top;
 						var nkx = ixt(lx);
 						var nky = iyt(ly);
+						var prevTime = key.time;
+						var prevVal = key.value;
 						key.time = nkx;
 						key.value = nky;
 						fixKey(key);
 						refreshGraph(true, key);
+						onKeyMove(key, prevTime, prevVal);
 						onChange(true);
 					}, function(e) {
 						selectedKeys = [key];

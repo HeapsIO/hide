@@ -360,9 +360,10 @@ class FXScene extends FileView {
 			lastBackup = backupCurves();
 		}
 
-		function dragKey(prevTime: Float, newTime: Float) {
+		function dragKey(from: hide.comp.CurveEditor, prevTime: Float, newTime: Float) {
 			var tolerance = 0.25;
 			for(edit in trackEdits) {
+				if(edit == from) continue;
 				// edit.curve.keys.find(k -> hxd.Math.abs(k.time - prevTime) < 
 				var k = edit.curve.findKey(prevTime, tolerance);
 				if(k != null) {
@@ -437,7 +438,7 @@ class FXScene extends FileView {
 						var prev = refKeys[ik - 1];
 						if(prev != null)
 							x = hxd.Math.max(x, prev.time + 0.01);
-						dragKey(key.time, x);
+						dragKey(null, key.time, x);
 						update();
 					}, function(e) {
 						afterChange();
@@ -458,6 +459,9 @@ class FXScene extends FileView {
 			curveEdit.curve = curve;
 			curveEdit.onChange = function(anim) {
 				refreshDopesheet();
+			}
+			curveEdit.onKeyMove = function(key, ptime, pval) {
+				dragKey(curveEdit, ptime, key.time);
 			}
 			trackEdits.push(curveEdit);
 			curveEdits.push(curveEdit);
