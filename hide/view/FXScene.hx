@@ -637,7 +637,7 @@ class FXScene extends FileView {
 		var added = [];
 		for(prop in props) {
 			if(element.getOpt(Curve, prop.name) != null)
-				continue:
+				continue;
 			var curve = new Curve(element);
 			curve.name = prop.name;
 			if(prop.clamp != null) {

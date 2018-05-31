@@ -197,21 +197,24 @@ class CurveEditor extends Component {
 			key.value = hxd.Math.clamp(key.value, curve.clampMin, curve.clampMax);
 		}
 
-		// TODO: Prevent backwards handles
-		if(next != null && key.nextHandle != null) {
-			var slope = key.nextHandle.dv / key.nextHandle.dt;
-			slope = hxd.Math.clamp(slope, -1000, 1000);
-			if(key.nextHandle.dt + key.time > next.time) {
-				key.nextHandle.dt = next.time - key.time;
-				key.nextHandle.dv = slope * key.nextHandle.dt;
+		if(false) {
+			// TODO: This sorta works but is annoying.
+			// Doesn't yet prevent backwards handles
+			if(next != null && key.nextHandle != null) {
+				var slope = key.nextHandle.dv / key.nextHandle.dt;
+				slope = hxd.Math.clamp(slope, -1000, 1000);
+				if(key.nextHandle.dt + key.time > next.time) {
+					key.nextHandle.dt = next.time - key.time;
+					key.nextHandle.dv = slope * key.nextHandle.dt;
+				}
 			}
-		}
-		if(prev != null && key.prevHandle != null) {
-			var slope = key.prevHandle.dv / key.prevHandle.dt;
-			slope = hxd.Math.clamp(slope, -1000, 1000);
-			if(key.prevHandle.dt + key.time < prev.time) {
-				key.prevHandle.dt = prev.time - key.time;
-				key.prevHandle.dv = slope * key.prevHandle.dt;
+			if(prev != null && key.prevHandle != null) {
+				var slope = key.prevHandle.dv / key.prevHandle.dt;
+				slope = hxd.Math.clamp(slope, -1000, 1000);
+				if(key.prevHandle.dt + key.time < prev.time) {
+					key.prevHandle.dt = prev.time - key.time;
+					key.prevHandle.dv = slope * key.prevHandle.dt;
+				}
 			}
 		}
 	}
