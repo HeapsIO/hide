@@ -5,6 +5,11 @@ import hide.Element;
 import hide.prefab.Prefab in PrefabElement;
 import hide.prefab.Curve;
 
+typedef PropTrackDef = {
+	name: String,
+	?clamp: Array<Float>
+};
+
 @:access(hide.view.FXScene)
 private class FXSceneEditor extends hide.comp.SceneEditor {
 	var parent : hide.view.FXScene;
@@ -608,13 +613,17 @@ class FXScene extends FileView {
 		});
 	}
 
-	function addTracks(element : PrefabElement, props : Array<String>) {
+	function addTracks(element : PrefabElement, props : Array<PropTrackDef>) {
 		var added = [];
-		for(propName in props) {
-			if(element.getOpt(Curve, propName) != null)
+		for(prop in props) {
+			if(element.getOpt(Curve, prop.name) != null)
 				return added;
 			var curve = new Curve(element);
-			curve.name = propName;
+			curve.name = prop.name;
+			if(prop.clamp != null) {
+				curve.minValue = prop.clamp[0];
+				curve.maxValue = prop.clamp[1];
+			}
 			added.push(curve);
 		}
 
@@ -642,10 +651,10 @@ class FXScene extends FileView {
 			return getTrack(elt, pname) != null;
 		}
 
-		function trackItem(name: String, props: Array<String>) : hide.comp.ContextMenu.ContextMenuItem {
+		function trackItem(name: String, props: Array<PropTrackDef>) : hide.comp.ContextMenu.ContextMenuItem {
 			var hasAllTracks = true;
 			for(p in props) {
-				if(getTrack(elt, p) == null)
+				if(getTrack(elt, p.name) == null)
 					hasAllTracks = false;
 			}
 			return {
@@ -656,12 +665,12 @@ class FXScene extends FileView {
 				enabled: !hasAllTracks };
 		}
 
-		function groupedTracks(props: Array<String>) {
-			var allLabel = [for(p in props) upperCase(p)].join("/");
+		function groupedTracks(props: Array<PropTrackDef>) {
+			var allLabel = [for(p in props) upperCase(p.name)].join("/");
 			var ret = [];
 			ret.push(trackItem(allLabel, props));
 			for(p in props) {
-				ret.push(trackItem(p, [p]));
+				ret.push(trackItem(p.name, [p]));
 			}
 			return ret;
 		}
@@ -669,17 +678,17 @@ class FXScene extends FileView {
 		if(objElt != null) {
 			menuItems.push({
 				label: "Position",
-				menu: groupedTracks(["x", "y", "z"]),
+				menu: groupedTracks([{name: "x"}, {name: "y"}, {name: "z"}]),
 			});
 			menuItems.push({
 				label: "Rotation",
-				menu: groupedTracks(["rotationX", "rotationY", "rotationZ"]),
+				menu: groupedTracks([{name: "rotationX"}, {name: "rotationY"}, {name: "rotationZ"}]),
 			});
 			menuItems.push({
 				label: "Scale",
-				menu: groupedTracks(["scaleX", "scaleY", "scaleZ"]),
+				menu: groupedTracks([{name: "scaleX"}, {name: "scaleY"}, {name: "scaleZ"}]),
 			});
-			menuItems.push(trackItem("Visibility", ["visibility"]));
+			menuItems.push(trackItem("Visibility", [{name: "visibility", clamp: [0., 1.]}]));
 		}
 		if(shaderElt != null && shaderElt.shaderDef != null) {
 			var params = shaderElt.shaderDef.shader.data.vars.filter(v -> v.kind == Param);
@@ -690,15 +699,17 @@ class FXScene extends FileView {
 				switch(param.type) {
 					case TVec(n, VFloat):
 						if(n <= 4) {
-							var components = [];
+							var components : Array<PropTrackDef> = [];
 							if(param.name.toLowerCase().indexOf("color") >= 0)
-								components = ["h", "s", "l", "a"];
+								components = [{name: "h"}, {name: "s", clamp: [0., 1.]}, {name: "l", clamp: [0., 1.]}, {name: "a", clamp: [0., 1.]}];
 							else
-								components = ["x", "y", "z", "w"];
-							components = [for(i in 0...n) param.name + "." + components[i]];
+								components = [{name:"x"}, {name:"y"}, {name:"z"}, {name:"w"}];
+							for(c in components) {
+								c.name = param.name + "." + c.name;
+							}
 							subItems.push(trackItem("All", components));
-							for(i in components)
-								subItems.push(trackItem(i, [i]));
+							for(c in components)
+								subItems.push(trackItem(c.name, [c]));
 
 						}
 					default:
