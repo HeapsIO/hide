@@ -317,6 +317,7 @@ class FXScene extends FileView {
 	}
 
 	function addTrackEdit(trackName: String, curves: Array<Curve>, tracksEl: Element) {
+		var keyTimeTolerance = 0.05;
 		var trackEl = new Element('<div class="track">
 			<div class="track-header">
 				<div class="track-prop">
@@ -330,6 +331,9 @@ class FXScene extends FileView {
 		if(curves.length == 0)
 			return;
 		var parent = curves[0].parent;
+		var isColorTrack = trackName.toLowerCase().indexOf("color") >= 0 && (curves.length == 3 || curves.length == 4);
+		var isColorHSL = isColorTrack && curves.find(c -> StringTools.endsWith(c.name, ".h")) != null;
+		
 		var trackToggle = trackEl.find(".track-toggle");
 		tracksEl.append(trackEl);
 		var curvesContainer = trackEl.find(".curves");
@@ -361,11 +365,10 @@ class FXScene extends FileView {
 		}
 
 		function dragKey(from: hide.comp.CurveEditor, prevTime: Float, newTime: Float) {
-			var tolerance = 0.25;
 			for(edit in trackEdits) {
 				if(edit == from) continue;
 				// edit.curve.keys.find(k -> hxd.Math.abs(k.time - prevTime) < 
-				var k = edit.curve.findKey(prevTime, tolerance);
+				var k = edit.curve.findKey(prevTime, keyTimeTolerance);
 				if(k != null) {
 					k.time = newTime;
 					edit.refreshGraph(false, k);
@@ -375,6 +378,14 @@ class FXScene extends FileView {
 		function refreshCurves(anim: Bool) {
 			for(c in trackEdits) {
 				c.refreshGraph(anim);
+			}
+		}
+
+		function refreshKey(key: hide.comp.CurveEditor.CurveKey, el: Element) {
+			if(isColorTrack) {
+				var color = hide.prefab.Curve.getColorValue(curves, key.time);
+				var colorStr = "#" + StringTools.hex(color.toColor() & 0xffffff, 6);
+				el.css({background: colorStr});
 			}
 		}
 
@@ -409,6 +420,52 @@ class FXScene extends FileView {
 			refreshDopesheet();
 		}
 
+
+		function keyContextClick(key: hide.prefab.Curve.CurveKey, el: Element) {
+			function setCurveVal(suffix: String, value: Float) {
+				var c = curves.find(c -> StringTools.endsWith(c.name, suffix));
+				if(c != null) {
+					var k = c.findKey(key.time, keyTimeTolerance);
+					if(k == null) {
+						k = c.addKey(key.time);
+					}
+					k.value = value;
+				}
+			}
+			
+			if(isColorTrack) {
+				var picker = new Element("<div></div>").css({
+					"z-index": 100,
+				}).appendTo(el);
+				var cp = new hide.comp.ColorPicker(false, picker);
+				cp.value = hide.prefab.Curve.getColorValue(curves, key.time).toColor();
+				cp.open();
+				cp.onClose = function() {
+					picker.remove();
+				};
+				cp.onChange = function(dragging) {
+					if(dragging)
+						return;
+					var col = h3d.Vector.fromColor(cp.value, 1.0);
+					if(isColorHSL) {
+						col = col.toColorHSL();
+						setCurveVal(".h", col.x);
+						setCurveVal(".s", col.y);
+						setCurveVal(".l", col.z);
+						setCurveVal(".a", col.a);
+					}
+					else {
+						setCurveVal(".r", col.x);
+						setCurveVal(".g", col.y);
+						setCurveVal(".b", col.z);
+						setCurveVal(".a", col.a);
+					}
+					refreshCurves(false);
+					refreshKey(key, el);
+				};
+			}
+		}
+
 		refreshDopesheet = function () {
 			dopesheet.empty();
 			dopesheet.off();
@@ -423,30 +480,42 @@ class FXScene extends FileView {
 			for(ik in 0...refKeys.length) {
 				var key = refKeys[ik];
 				var keyEl = new Element('<span class="key">').appendTo(dopesheet);
-				function update() keyEl.css({left: xt(refKeys[ik].time)});
-				update();
+				function updatePos() keyEl.css({left: xt(refKeys[ik].time)});
+				updatePos();
+				keyEl.contextmenu(function(e) {
+					keyContextClick(key, keyEl);
+					e.preventDefault();
+					e.stopPropagation();
+				});
 				keyEl.mousedown(function(e) {
 					var offset = dopesheet.offset();
-					var prevVal = key.time;
-					beforeChange();
-					startDrag(function(e) {
-						var x = ixt(e.clientX - offset.left);
-						x = hxd.Math.max(0, x);
-						var next = refKeys[ik + 1];
-						if(next != null)
-							x = hxd.Math.min(x, next.time - 0.01);
-						var prev = refKeys[ik - 1];
-						if(prev != null)
-							x = hxd.Math.max(x, prev.time + 0.01);
-						dragKey(null, key.time, x);
-						update();
-					}, function(e) {
-						afterChange();
-					});
+					e.preventDefault();
+					e.stopPropagation();
+					if(e.button == 2) {
+					}
+					else {
+						var prevVal = key.time;
+						beforeChange();
+						startDrag(function(e) {
+							var x = ixt(e.clientX - offset.left);
+							x = hxd.Math.max(0, x);
+							var next = refKeys[ik + 1];
+							if(next != null)
+								x = hxd.Math.min(x, next.time - 0.01);
+							var prev = refKeys[ik - 1];
+							if(prev != null)
+								x = hxd.Math.max(x, prev.time + 0.01);
+							dragKey(null, key.time, x);
+							updatePos();
+						}, function(e) {
+							afterChange();
+						});
+					}
 				});
 				refreshDopesheetKeys.push(function(anim) {
-					update();
+					updatePos();
 				});
+				refreshKey(key, keyEl);
 			}
 		}
 		for(curve in curves) {
@@ -469,24 +538,7 @@ class FXScene extends FileView {
 		refreshDopesheet();
 		updateExpanded();
 	}
-
-	static function getTrackGroups(curves: Array<Curve>) {
-		var groups : Array<{name: String, items: Array<Curve>}> = [];
-		for(c in curves) {
-			var prefix = c.name.split(".")[0];
-			var g = groups.find(g -> g.name == prefix);
-			if(g == null) {
-				groups.push({
-					name: prefix,
-					items: [c]
-				});
-			}
-			else {
-				g.items.push(c);
-			}
-		}
-		return groups;
-	}
+	
 
 	function rebuildAnimPanel() {
 		var selection = sceneEditor.getSelection();
@@ -551,7 +603,7 @@ class FXScene extends FileView {
 			var tracksEl = objPanel.find(".tracks");
 			var curves = elt.getAll(Curve);
 
-			var groups = getTrackGroups(curves);
+			var groups = hide.prefab.Curve.getGroups(curves);
 			for(group in groups) {
 				addTrackEdit(group.name, group.items, tracksEl);
 			}

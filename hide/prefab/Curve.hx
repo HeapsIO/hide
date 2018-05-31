@@ -1,4 +1,5 @@
 package hide.prefab;
+using Lambda;
 
 typedef CurveHandle = {
 	dt: Float,
@@ -151,6 +152,57 @@ class Curve extends Prefab {
 			vals.push(v);
 		}
 		return vals;
+	}
+
+	public static function getGroups(curves: Array<Curve>) {
+		var groups : Array<{name: String, items: Array<Curve>}> = [];
+		for(c in curves) {
+			var prefix = c.name.split(".")[0];
+			var g = groups.find(g -> g.name == prefix);
+			if(g == null) {
+				groups.push({
+					name: prefix,
+					items: [c]
+				});
+			}
+			else {
+				g.items.push(c);
+			}
+		}
+		return groups;
+	}
+
+	public static function getColorValue(curves: Array<Curve>, time: Float) : h3d.Vector {
+		inline function findCurve(suffix: String) {
+			return curves.find(c -> StringTools.endsWith(c.name, suffix));
+		}
+		
+		var r = findCurve(".r");
+		var g = findCurve(".g");
+		var b = findCurve(".b");
+		var a = findCurve(".a");
+		var h = findCurve(".h");
+		var s = findCurve(".s");
+		var l = findCurve(".l");
+
+		var col = new h3d.Vector(0, 0, 0, 1);
+
+		if(r != null && g != null && b != null) {
+			col.r = r.getVal(time);
+			col.g = g.getVal(time);
+			col.b = b.getVal(time);
+			if(a != null) {
+				col.a = a.getVal(time);
+			}
+		}
+		else {
+			var hval = 0.0, sval = 0.0, lval = 0.0;
+			if(h != null) {
+				hval = h.getVal(time);
+			}
+			col.makeColor(hval, sval, lval);
+		}
+		return col;
 	}
 
 	override function getHideProps() {

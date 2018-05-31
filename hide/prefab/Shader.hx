@@ -129,6 +129,10 @@ class Shader extends Prefab {
 		#end
 	}
 
+	public function getCurves(prefix: String) {
+		return this.getAll(hide.prefab.Curve).filter(c -> c.name.split(".")[0] == prefix);
+	}
+
 	override function getHideProps() {
 		return { icon : "cog", name : "Shader", fileSource : ["hx"] };
 	}
