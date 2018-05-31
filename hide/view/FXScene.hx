@@ -621,8 +621,8 @@ class FXScene extends FileView {
 			var curve = new Curve(element);
 			curve.name = prop.name;
 			if(prop.clamp != null) {
-				curve.minValue = prop.clamp[0];
-				curve.maxValue = prop.clamp[1];
+				curve.clampMin = prop.clamp[0];
+				curve.clampMax = prop.clamp[1];
 			}
 			added.push(curve);
 		}

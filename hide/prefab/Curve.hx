@@ -26,8 +26,8 @@ typedef CurveKeys = Array<CurveKey>;
 class Curve extends Prefab {
 
 	public var duration : Float = 0.; // TODO: optional?
-	public var minValue : Float = 0.;
-	public var maxValue : Float = 0.;
+	public var clampMin : Float = 0.;
+	public var clampMax : Float = 0.;
 	public var keys : CurveKeys = [];
 
    	public function new(?parent) {
@@ -38,15 +38,15 @@ class Curve extends Prefab {
 	override function load(o:Dynamic) {
 		duration = o.duration;
 		keys = o.keys;
-		minValue = o.minValue;
-		maxValue = o.maxValue;
+		clampMin = o.clampMin;
+		clampMax = o.clampMax;
 	}
 
 	override function save() {
 		return {
 			duration: duration,
-			minValue: minValue,
-			maxValue: maxValue,
+			clampMin: clampMin,
+			clampMax: clampMax,
 			keys: keys,
 		};
 	}
@@ -87,6 +87,14 @@ class Curve extends Prefab {
 		};
 		keys.insert(index, key);
 		return key;
+	}
+
+	public function getBounds() {
+		var ret = new h2d.col.Bounds();
+		for(k in keys) {
+			ret.addPos(k.time, k.value);
+		}
+		return ret;
 	}
 
 	public function getVal(time: Float) : Float {

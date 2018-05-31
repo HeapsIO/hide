@@ -37,6 +37,10 @@ class CurveEditor extends Component {
 		svg = new hide.comp.SVG(element);
 		var div = this.element;
 		var root = svg.element;
+		height = Math.round(svg.element.height());
+		if(height == 0 && parent != null)
+			height = Math.round(parent.height());
+		width = Math.round(svg.element.width());
 
 		gridGroup = svg.group(root, "grid");
 		graphGroup = svg.group(root, "graph");
@@ -62,6 +66,12 @@ class CurveEditor extends Component {
 			else if(e.which == 2) {
 				// Pan
 				startPan(e);
+			}
+		});
+		element.keydown(function(e) {
+			if(e.key == "z") {
+				zoomAll();
+				refresh();
 			}
 		});
 		root.contextmenu(function(e) {
@@ -99,6 +109,9 @@ class CurveEditor extends Component {
 				e.stopPropagation();
 				afterChange();
 			}
+			if(e.key == "z") {
+				zoomAll();
+			}
 		});
 	}
 
@@ -110,7 +123,7 @@ class CurveEditor extends Component {
 
 	}
 
-	function set_curve(curve) {
+	function set_curve(curve: hide.prefab.Curve) {
 		this.curve = curve;
 		lastValue = haxe.Json.parse(haxe.Json.stringify(curve.save()));
 		var view = getDisplayState("view");
@@ -124,11 +137,16 @@ class CurveEditor extends Component {
 				yScale = view.yScale;
 			}
 		}
+		else {
+			zoomAll();
+		}
 		refresh();
 		return curve;
 	}
 
 	function addKey(time: Float, ?val: Float) {
+		if(curve.clampMin != curve.clampMax)
+			val = hxd.Math.clamp(val, curve.clampMin, curve.clampMax);
 		curve.addKey(time, val);
 		afterChange();
 	}
@@ -175,8 +193,8 @@ class CurveEditor extends Component {
 		if(next != null && key.time > next.time)
 			key.time = next.time - 0.01;
 
-		if(curve.minValue != curve.maxValue) {
-			key.value = hxd.Math.clamp(key.value, curve.minValue, curve.maxValue);
+		if(curve.clampMin != curve.clampMax) {
+			key.value = hxd.Math.clamp(key.value, curve.clampMin, curve.clampMax);
 		}
 
 		// TODO: Prevent backwards handles
@@ -225,6 +243,15 @@ class CurveEditor extends Component {
 		});
 	}
 
+	function saveView() {
+		saveDisplayState("view", {
+			xOffset: xOffset,
+			yOffset: yOffset,
+			xScale: xScale,
+			yScale: yScale
+		});
+	}
+
 	function startPan(e) {
 		var lastX = e.clientX;
 		var lastY = e.clientY;
@@ -239,6 +266,7 @@ class CurveEditor extends Component {
 			lastY = e.clientY;
 			setPan(xOffset, yOffset);
 		}, function(e) {
+			saveView();
 		});
 	}
 
@@ -247,6 +275,43 @@ class CurveEditor extends Component {
 		yOffset = yoff;
 		refreshGrid();
 		graphGroup.attr({transform: 'translate(${xt(0)},${yt(0)})'});
+	}
+
+	public function setYZoom(yMin: Float, yMax: Float) {
+		var margin = 20;
+		yScale = (height - margin*2) / (yMax - yMin);
+		yOffset = (yMax + yMin) / 2.0;
+	}
+
+	public function setXZoom(xMin: Float, xMax: Float) {
+		var margin = 20;
+		xScale = (width - margin*2) / (xMax - xMin);
+		xOffset = xMin;
+	}
+
+	public function zoomAll() {
+		var bounds = curve.getBounds();
+		if(bounds.width <= 0) {
+			bounds.xMin = 0.0;
+			bounds.xMax = 1.0;
+		}
+		if(bounds.height <= 0) {
+			if(curve.clampMax != curve.clampMin) {
+				bounds.yMin = curve.clampMin;
+				bounds.yMax = curve.clampMax;
+			}
+			else {
+				bounds.yMin = -1.0;
+				bounds.yMax = 1.0;
+			}
+		}
+		if(!lockViewY) {
+			setYZoom(bounds.yMin, bounds.yMax);
+		}
+		if(!lockViewX) {
+			setYZoom(bounds.xMax, bounds.xMax);
+		}
+		saveView();
 	}
 
 	inline function xt(x: Float) return Math.round((x - xOffset) * xScale);
@@ -333,13 +398,6 @@ class CurveEditor extends Component {
 			if(iy == 0)
 				l.addClass("axis");
 		}
-
-		saveDisplayState("view", {
-			xOffset: xOffset,
-			yOffset: yOffset,
-			xScale: xScale,
-			yScale: yScale
-		});
 	}
 
 	public function refreshGraph(?anim: Bool = false, ?animKey: CurveKey) {
