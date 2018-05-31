@@ -71,7 +71,7 @@ class CurveEditor extends Component {
 		root.on("mousewheel", function(e) {
 			var step = e.originalEvent.wheelDelta > 0 ? 1.0 : -1.0;
 			var changed = false;
-			if(hxd.Key.isDown(hxd.Key.SHIFT)) {
+			if(hxd.Key.isDown(hxd.Key.SHIFT)) {  // TODO: Why no working?
 				if(!lockViewY) {
 					yScale *= Math.pow(1.125, step);
 					changed = true;

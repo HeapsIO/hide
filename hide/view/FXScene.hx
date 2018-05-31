@@ -560,7 +560,24 @@ class FXScene extends FileView {
 
 	function startDrag(onMove: js.jquery.Event->Void, onStop: js.jquery.Event->Void) {
 		var el = new Element(element[0].ownerDocument.body);
-		el.on("mousemove.fxedit", onMove);
+		var startX = null, startY = null;
+		var dragging = false;
+		var threshold = 3;
+		el.on("mousemove.fxedit", function(e: js.jquery.Event) {
+			if(startX == null) {
+				startX = e.clientX;
+				startY = e.clientY;
+			}
+			else {
+				if(!dragging) {
+					if(hxd.Math.abs(e.clientX - startX) + hxd.Math.abs(e.clientY - startY) > threshold) {
+						dragging = true;
+					}
+				}
+				if(dragging)
+					onMove(e);
+			}
+		});
 		el.on("mouseup.fxedit", function(e: js.jquery.Event) {
 			el.off("mousemove.fxedit");
 			el.off("mouseup.fxedit");
