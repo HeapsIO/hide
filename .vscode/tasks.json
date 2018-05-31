@@ -4,12 +4,7 @@
         {
             "type": "hxml",
             "file": "hide.hxml",
-            "problemMatcher": [
-                "$haxe-absolute",
-                "$haxe",
-                "$haxe-error",
-                "$haxe-trace"
-            ],
+            "label": "Build",
             "group": {
                 "kind": "build",
                 "isDefault": true
