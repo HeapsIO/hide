@@ -370,19 +370,9 @@ class FXScene extends FileView {
 		var dopesheet = trackEl.find(".dopesheet");
 		var trackEdits : Array<hide.comp.CurveEditor> = [];
 
-		function backupCurves() {
-			return [for(c in curves) haxe.Json.parse(haxe.Json.stringify(c.save()))];
-		}
-		var lastBackup = backupCurves();
-
-		function beforeChange() {
-			lastBackup = backupCurves();
-		}
-
 		function dragKey(from: hide.comp.CurveEditor, prevTime: Float, newTime: Float) {
 			for(edit in trackEdits) {
 				if(edit == from) continue;
-				// edit.curve.keys.find(k -> hxd.Math.abs(k.time - prevTime) < 
 				var k = edit.curve.findKey(prevTime, keyTimeTolerance);
 				if(k != null) {
 					k.time = newTime;
@@ -405,6 +395,15 @@ class FXScene extends FileView {
 		}
 
 		var refreshDopesheet : Void -> Void;
+
+		function backupCurves() {
+			return [for(c in curves) haxe.Json.parse(haxe.Json.stringify(c.save()))];
+		}
+		var lastBackup = backupCurves();
+
+		function beforeChange() {
+			lastBackup = backupCurves();
+		}
 
 		function afterChange() {
 			var newVal = backupCurves();
@@ -544,9 +543,9 @@ class FXScene extends FileView {
 			curveEdit.onChange = function(anim) {
 				refreshDopesheet();
 			}
-			curveEdit.onKeyMove = function(key, ptime, pval) {
-				dragKey(curveEdit, ptime, key.time);
-			}
+			// curveEdit.onKeyMove = function(key, ptime, pval) {
+			// 	dragKey(curveEdit, ptime, key.time);
+			// }
 			trackEdits.push(curveEdit);
 			curveEdits.push(curveEdit);
 		}

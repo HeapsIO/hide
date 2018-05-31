@@ -102,6 +102,7 @@ class CurveEditor extends Component {
 		div.keydown(function(e) {
 			if(curve == null) return;
 			if(e.keyCode == 46) {
+				beforeChange();				
 				var newVal = [for(k in curve.keys) if(selectedKeys.indexOf(k) < 0) k];
 				curve.keys = newVal;
 				selectedKeys = [];
@@ -145,6 +146,7 @@ class CurveEditor extends Component {
 	}
 
 	function addKey(time: Float, ?val: Float) {
+		beforeChange();		
 		if(curve.clampMin != curve.clampMax)
 			val = hxd.Math.clamp(val, curve.clampMin, curve.clampMax);
 		curve.addKey(time, val);
@@ -338,10 +340,13 @@ class CurveEditor extends Component {
 		return cast haxe.Json.parse(haxe.Json.stringify(key));
 	}
 
+	function beforeChange() {
+		lastValue = haxe.Json.parse(haxe.Json.stringify(curve.save()));
+	}
+
 	function afterChange() {
 		var newVal = haxe.Json.parse(haxe.Json.stringify(curve.save()));
 		var oldVal = lastValue;
-		lastValue = newVal;
 		undo.change(Custom(function(undo) {
 			if(undo) {
 				curve.load(oldVal);
@@ -470,6 +475,7 @@ class CurveEditor extends Component {
 					e.preventDefault();
 					e.stopPropagation();
 					var offset = element.offset();
+					beforeChange();
 					startDrag(function(e) {
 						var lx = e.clientX - offset.left;
 						var ly = e.clientY - offset.top;
@@ -530,6 +536,7 @@ class CurveEditor extends Component {
 					e.stopPropagation();
 					var offset = element.offset();
 					var otherLen = hxd.Math.distance(other.dt * xScale, other.dv * yScale);
+					beforeChange();
 					startDrag(function(e) {
 						var lx = e.clientX - offset.left;
 						var ly = e.clientY - offset.top;
@@ -574,6 +581,7 @@ class CurveEditor extends Component {
 				"shape-rendering": "crispEdges"
 			});
 			if(!anim) {
+				beforeChange();
 				rect.mousedown(function(e) {
 					if(e.which != 1) return;
 					e.preventDefault();
