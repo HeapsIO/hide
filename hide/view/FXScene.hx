@@ -564,7 +564,8 @@ class FXScene extends FileView {
 
 		for(elt in selection) {
 			var objPanel = new Element('<div>
-				<label>${upperCase(elt.name)}</label><input class="addtrack" type="button" value="[+]"></input><div class="tracks"></div>
+				<div class="tracks-header"><label>${upperCase(elt.name)}</label><div class="addtrack fa fa-plus-circle"></div></div>
+				<div class="tracks"></div>
 			</div>').appendTo(scrollPanel);
 			var addTrackEl = objPanel.find(".addtrack");
 			var objElt = Std.instance(elt, hide.prefab.Object3D);
@@ -575,8 +576,7 @@ class FXScene extends FileView {
 				new hide.comp.ContextMenu(menuItems);
 			});
 			var tracksEl = objPanel.find(".tracks");
-			var curves = elt.getAll(Curve);
-
+			var curves = elt.flatten(Curve);
 			var groups = hide.prefab.Curve.getGroups(curves);
 			for(group in groups) {
 				addTrackEdit(group.name, group.items, tracksEl);

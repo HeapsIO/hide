@@ -670,6 +670,21 @@ input[type=checkbox]:checked:after {
   width: 4px;
   margin-left: -4px;
 }
+.fx-animpanel .tracks-header {
+  background: #4a4a4a;
+  text-align: left;
+}
+.fx-animpanel .tracks-header label {
+  margin-left: 4px;
+  color: white;
+}
+.fx-animpanel .tracks-header .addtrack {
+  margin-left: 4px;
+  padding: 2px;
+}
+.fx-animpanel .tracks-header .addtrack:hover {
+  color: white;
+}
 .fx-animpanel .track .track-header {
   height: 20px;
   display: flex;
