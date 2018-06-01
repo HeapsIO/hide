@@ -770,6 +770,15 @@ class FXScene extends FileView {
 			}
 		}
 
+		// Update emitters
+		var allEmitters = data.getAll(hide.prefab.fx.Emitter);
+		for(em in allEmitters) {
+			var ctx = sceneEditor.getContext(em);
+			var obj = Std.instance(ctx.local3d, hide.prefab.fx.Emitter.EmitterObject);
+			if(obj != null)
+				obj.setTime(currentTime);
+		}
+
 		if(true) {
 			currentTime += dt / hxd.Timer.wantedFPS;
 			if(timeLineEl != null)

@@ -133,9 +133,9 @@ class Shader extends Prefab {
 		#end
 	}
 
-	public function getCurves(prefix: String) {
-		return this.getAll(hide.prefab.Curve).filter(c -> c.name.split(".")[0] == prefix);
-	}
+	// public function getCurves(prefix: String) {
+	// 	return this.getAll(hide.prefab.Curve).filter(c -> c.name.split(".")[0] == prefix);
+	// }
 
 	public function getFloatParam(name: String, time: Float) {
 		var ret = cast Reflect.field(props, name);
@@ -151,7 +151,7 @@ class Shader extends Prefab {
 		if(a == null)
 			return ret;
 		ret = h3d.Vector.fromArray(a);
-		var curves = getCurves(name);
+		var curves = hide.prefab.Curve.getCurves(this, name);
 		if(curves != null && curves.length > 0) {
 			if(curves.length >= 3 && name.toLowerCase().indexOf("color") >= 0)
 				ret = hide.prefab.Curve.getColorValue(curves, time);

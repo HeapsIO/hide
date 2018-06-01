@@ -1,48 +1,63 @@
 package hide.prefab.fx;
-
+import hide.prefab.Curve;
+using Lambda;
 
 enum EmitShape {
 	Sphere;
 	Circle;
 }
 
-private class EmitterParam {
-	var baseValue : Float;
-	var curve : hide.prefab.Curve;
+private class FloatParam {
+	public var baseValue : Float;
+	public var curve : hide.prefab.Curve;
+	public var randScale : Float;
+	public var randCurve : hide.prefab.Curve;
+
 	var random : Float = 0.0;
 
-	public function new(val: Float=0.0) {
+	public function new(val: Float=1.0) {
 		this.baseValue = val;
+		random = hxd.Math.srand();
 	}
 	
 	public function get(t: Float) {
-		return baseValue;
+		var val = baseValue;
+		if(curve != null)
+			val *= curve.getVal(t);
+		return val;
 	}
 
 	public function getSum(t: Float) {
+		if(curve != null)
+			return baseValue * curve.getSum(t);
 		return baseValue * t;
+	}
+
+	public function copy() {
+		var p = new FloatParam(this.baseValue);
+		p.curve = curve;
+		return p;
 	}
 }
 
-private class EmitterVector {
-	// var baseValue : h3d.Vector;
-	// var random : h3d.Vector;
-	// var curveX : hide.prefab.Curve;
-	// var curveY : hide.prefab.Curve;
-	// var curveZ : hide.prefab.Curve;
-	// var curveX : hide.prefab.Curve;
-	// var curveY : hide.prefab.Curve;
-	// var curveZ : hide.prefab.Curve;
-	public var x : EmitterParam;
-	public var y : EmitterParam;
-	public var z : EmitterParam;
+private class VectorParam {
+	public var x : FloatParam;
+	public var y : FloatParam;
+	public var z : FloatParam;
 
 	public function new() {
-
 	}
 
 	public function get(t: Float) : h3d.Vector {
-		return new h3d.Vector();
+		return new h3d.Vector(x.get(t), y.get(t), z.get(t));
+	}
+
+	public function copy() {
+		var p = new VectorParam();
+		if(x != null) p.x = x.copy();
+		if(y != null) p.y = y.copy();
+		if(z != null) p.z = z.copy();
+		return p;
 	}
 }
 
@@ -59,10 +74,10 @@ private class ParticleInstance {
 	public var orientation = new h3d.Quat();
 	//public var orientation = new h3d.Matrix();
 
-	// public var speed : EmitterVector;
-	public var localSpeed : EmitterVector;
-	public var globalSpeed : EmitterVector;
-	public var localOffset : EmitterVector;
+	// public var speed : VectorParam;
+	public var localSpeed : VectorParam;
+	public var globalSpeed : VectorParam;
+	public var localOffset : VectorParam;
 
 	public function new(parent: EmitterObject) {
 		this.parent = parent;
@@ -71,16 +86,15 @@ private class ParticleInstance {
 
 	public function update(dt : Float) {
 		
-		// if(localSpeed != null) 
-		{
-			var locSpeedVec = new h3d.Vector(4, 0, 0);
+		if(localSpeed != null) {
+			var locSpeedVec = localSpeed.get(life);
 			locSpeedVec.transform3x3(orientation.toMatrix());			
 			curVelocity = locSpeedVec;
 		}
-		{
-			var globSpeedVec = new h3d.Vector(0, 0, -2);
-			curVelocity = curVelocity.add(globSpeedVec);
-		}
+		// {
+		// 	var globSpeedVec = new h3d.Vector(0, 0, -2);
+		// 	curVelocity = curVelocity.add(globSpeedVec);
+		// }
 
 		curPos.x += curVelocity.x * dt;
 		curPos.y += curVelocity.y * dt;
@@ -109,14 +123,14 @@ class EmitterObject extends h3d.scene.Object {
 	public var particleTemplate : hide.prefab.Prefab;
 	public var maxCount = 20;
 	public var lifeTime = 2.0;
-	public var emitRate = new EmitterParam(10.0);
+	public var emitRate : FloatParam;
 	public var emitShape : EmitShape = Circle;
-	public var emitShapeSize = new EmitterParam(6.0);
+	public var emitShapeSize = new FloatParam(6.0);
 
 
-	//public var emitSpeed = new EmitterParam(1.0);
-	public var localSpeed = new EmitterVector(); 
-	public var partSpeed = new EmitterVector();
+	//public var emitSpeed = new FloatParam(1.0);
+	public var localSpeed = new VectorParam(); 
+	public var partSpeed = new VectorParam();
 
 
 	var context : hide.prefab.Context;
@@ -170,6 +184,7 @@ class EmitterObject extends h3d.scene.Object {
 			var part = new ParticleInstance(this);
 			part.obj = obj3d;
 			part.curPos = localPos;
+			part.localSpeed = localSpeed.copy();
 			//part.transform = localTrans;
 			part.orientation.initRotateMatrix(absPos);
 			// part.curVelocity
@@ -178,21 +193,7 @@ class EmitterObject extends h3d.scene.Object {
 		emitCount += count;
 	}
 
-	override function sync(ctx) {
-		super.sync(ctx);
-		if(ctx.elapsedTime == 0)
-			return;
-		
-		if(ctx.time < lastTime || lastTime < 0) {
-			reset();
-		}
-		var deltaTime = ctx.time - lastTime;
-		curTime += deltaTime;
-		lastTime = curTime;
-
-		if(deltaTime <= 0.01)
-			return;
-
+	function tick(dt: Float) {
 		var emitTarget = emitRate.getSum(curTime);
 		var delta = hxd.Math.floor(emitTarget - emitCount);
 		doEmit(delta);
@@ -204,9 +205,41 @@ class EmitterObject extends h3d.scene.Object {
 				instances[i].remove();
 			}
 			else {
-				instances[i].update(deltaTime);
+				instances[i].update(dt);
 			}
 		}
+		lastTime = curTime;
+		curTime += dt;
+	}
+
+	public function setTime(time: Float) {
+		if(time < lastTime || lastTime < 0) {
+			reset();
+		}
+
+		var catchup = time - curTime;
+		var numTicks = hxd.Math.round(hxd.Timer.wantedFPS * catchup);
+		for(i in 0...numTicks) {
+			tick(catchup / numTicks);
+		}
+
+		// var deltaTime = time - lastTime;
+		// lastTime = curTime;
+		// curTime = time;
+
+		// if(deltaTime <= 0.01)
+		// 	return;
+	}
+
+	override function sync(ctx) {
+		super.sync(ctx);
+		// if(ctx.elapsedTime == 0)
+		// 	return;
+		
+		// if(ctx.time < lastTime || lastTime < 0) {
+		// 	reset();
+		// }
+
 
 		// for(inst in instances) {
 		// 	inst.update(deltaTime);
@@ -216,6 +249,8 @@ class EmitterObject extends h3d.scene.Object {
 
 class Emitter extends Object3D {
 
+	var emitRate = 50.0;
+	// var emitRateRandom = 2.0;
 
 	override function save() {
 		var obj : Dynamic = super.save();
@@ -226,14 +261,40 @@ class Emitter extends Object3D {
 		super.load(obj);
 	}
 
+	function getVectorParam(name: String) {
+		var curves = hide.prefab.Curve.getCurves(this, name);
+		var ret = new VectorParam();
+		inline function find(suf) return curves.find(c->c.name.indexOf(suf) >= 0);
+		ret.x = new FloatParam(3.0);  // TODO
+		ret.y = new FloatParam(0.0);
+		ret.z = new FloatParam(0.0);
+		ret.x.curve = find(".x");
+		ret.y.curve = find(".y");
+		ret.z.curve = find(".z");
+		return ret;
+	}
+
+	function getFloatParam(name: String) {
+		var v : Float = Reflect.field(this, name);
+		var curve = getOpt(Curve, name);
+		if(v == null)
+			v = curve != null ? 1.0 : 0.0;
+		var ret = new FloatParam(v);
+		ret.curve = curve;
+		// var rand : Float = Reflect.field(this, name + "Random");
+		return ret;
+	}
+
 	override function makeInstance(ctx:Context):Context {
 		ctx = ctx.clone(this);
 		var emitterObj = new EmitterObject();
 		emitterObj.context = ctx;
 		emitterObj.particleTemplate = children[0];
+		emitterObj.emitRate = getFloatParam("emitRate");
+		emitterObj.localSpeed = getVectorParam("localSpeed");
 		ctx.local3d.addChild(emitterObj);
 		ctx.local3d = emitterObj;
-		ctx.local3d.name = name;		
+		ctx.local3d.name = name;
 		applyPos(ctx.local3d);
 		return ctx;
 	}

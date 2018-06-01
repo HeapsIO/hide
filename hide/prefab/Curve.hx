@@ -163,7 +163,7 @@ class Curve extends Prefab {
 		var sum = 0.0;
 		for(ik in 0...keys.length) {
 			var key = keys[ik];
-			if(time > key.time)
+			if(time < key.time)
 				break;
 
 			if(ik == 0 && key.time > 0) {
@@ -200,6 +200,10 @@ class Curve extends Prefab {
 			vals.push(v);
 		}
 		return vals;
+	}
+
+	public static function getCurves(parent: hide.prefab.Prefab, prefix: String) {
+		return parent.getAll(hide.prefab.Curve).filter(c -> c.name.split(".")[0] == prefix);
 	}
 
 	public static function getGroups(curves: Array<Curve>) {
