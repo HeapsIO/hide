@@ -159,6 +159,40 @@ class Curve extends Prefab {
 		return y;
 	}
 
+	public function getSum(time: Float) {
+		var sum = 0.0;
+		for(ik in 0...keys.length) {
+			var key = keys[ik];
+			if(time > key.time)
+				break;
+
+			if(ik == 0 && key.time > 0) {
+				// Account for start of curve
+				sum += key.time * key.value;
+			}
+			
+			var nkey = keys[ik + 1];
+			if(nkey != null) {
+				if(time > nkey.time) {
+					// Full interval
+					sum += key.value * (nkey.time - key.time);
+					if(key.mode != Constant)
+						sum += 0.5 * (nkey.time - key.time) * (nkey.value - key.value);
+				}
+				else {
+					// Split interval
+					sum += key.value * (time - key.time);
+					if(key.mode != Constant)
+						sum += 0.5 * (time - key.time) * hxd.Math.lerp(key.value, nkey.value, (time - key.time) / (nkey.time - key.time));
+				}
+			}
+			else {
+				sum += key.value * (time - key.time);
+			}
+		}
+		return sum;
+	}
+
 	public function sample(numPts: Int) {
 		var vals = [];
 		for(i in 0...numPts) {
