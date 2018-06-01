@@ -1,7 +1,14 @@
 package hide.view;
+using Lambda;
 
 import hide.Element;
 import hide.prefab.Prefab in PrefabElement;
+import hide.prefab.Curve;
+
+typedef PropTrackDef = {
+	name: String,
+	?clamp: Array<Float>
+};
 
 @:access(hide.view.FXScene)
 private class FXSceneEditor extends hide.comp.SceneEditor {
@@ -26,38 +33,48 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		parent.onSelect(elts);
 	}
 
-	override function getNewContextMenu() {
-		var current = tree.getCurrentOver();
-		var registered = new Array<hide.comp.ContextMenu.ContextMenuItem>();
-		var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
-		var allowed = ["model", "object"];
-		for( ptype in allowed ) {
-			var pcl = allRegs.get(ptype);
-			var props = Type.createEmptyInstance(pcl).getHideProps();
-			registered.push({
-				label : props.name,
-				click : function() {
-
-					function make() {
-						var p = Type.createInstance(pcl, [current == null ? sceneData : current]);
-						@:privateAccess p.type = ptype;
-						autoName(p);
-						return p;
-					}
-
-					if( props.fileSource != null )
-						ide.chooseFile(props.fileSource, function(path) {
-							if( path == null ) return;
-							var p = make();
-							p.source = path;
-							addObject(p);
-						});
-					else
-						addObject(make());
-				}
-			});
+	override function getNewContextMenu(current: PrefabElement) {
+		if(current != null && current.to(hide.prefab.Shader) != null) {
+			return parent.getNewTrackMenu(current);
 		}
-		return registered;
+		else {
+			var registered = new Array<hide.comp.ContextMenu.ContextMenuItem>();
+
+			registered.push({
+				label: "Animation",
+				menu: parent.getNewTrackMenu(current)
+			});
+
+			var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
+			var allowed = ["model", "object", "shader"];
+			for( ptype in allowed ) {
+				var pcl = allRegs.get(ptype);
+				var props = Type.createEmptyInstance(pcl).getHideProps();
+				registered.push({
+					label : props.name,
+					click : function() {
+
+						function make() {
+							var p = Type.createInstance(pcl, [current == null ? sceneData : current]);
+							@:privateAccess p.type = ptype;
+							autoName(p);
+							return p;
+						}
+
+						if( props.fileSource != null )
+							ide.chooseFile(props.fileSource, function(path) {
+								if( path == null ) return;
+								var p = make();
+								p.source = path;
+								addObject(p);
+							});
+						else
+							addObject(make());
+					}
+				});
+			}
+			return registered;
+		}
 	}
 }
 
@@ -251,6 +268,25 @@ class FXScene extends FileView {
 		}, scene.speed);
 	}
 
+	override function onDragDrop(items : Array<String>, isDrop : Bool) {
+		var supported = ["fbx"];
+		var models = [];
+		for(path in items) {
+			var ext = haxe.io.Path.extension(path).toLowerCase();
+			if(supported.indexOf(ext) >= 0) {
+				models.push(path);
+			}
+		}
+		if(models.length > 0) {
+			if(isDrop) {
+				var parent : PrefabElement = data;
+				sceneEditor.dropModels(models, parent);
+			}
+			return true;
+		}
+		return false;
+	}
+
 	function onSelect(elts : Array<PrefabElement>) {
 		rebuildAnimPanel();
 	}
@@ -295,6 +331,229 @@ class FXScene extends FileView {
 		}
 	}
 
+	function addTrackEdit(trackName: String, curves: Array<Curve>, tracksEl: Element) {
+		var keyTimeTolerance = 0.05;
+		var trackEl = new Element('<div class="track">
+			<div class="track-header">
+				<div class="track-prop">
+					<label>${upperCase(trackName)}</label>
+					<div class="track-toggle"><div class="icon fa"></div></div>
+				</div>
+				<div class="dopesheet"></div>
+			</div>
+			<div class="curves"></div>
+		</div>');
+		if(curves.length == 0)
+			return;
+		var parent = curves[0].parent;
+		var isColorTrack = trackName.toLowerCase().indexOf("color") >= 0 && (curves.length == 3 || curves.length == 4);
+		var isColorHSL = isColorTrack && curves.find(c -> StringTools.endsWith(c.name, ".h")) != null;
+		
+		var trackToggle = trackEl.find(".track-toggle");
+		tracksEl.append(trackEl);
+		var curvesContainer = trackEl.find(".curves");
+		var trackKey = "trackVisible:" + parent.getAbsPath() + "/" + trackName;
+		var expand = getDisplayState(trackKey) == true;
+		function updateExpanded() {
+			var icon = trackToggle.find(".icon");
+			if(expand)
+				icon.removeClass("fa-angle-right").addClass("fa-angle-down");
+			else
+				icon.removeClass("fa-angle-down").addClass("fa-angle-right");
+			curvesContainer.toggleClass("hidden", !expand);
+		}
+		trackToggle.click(function(e) {
+			expand = !expand;
+			saveDisplayState(trackKey, expand);
+			updateExpanded();
+		});
+		var dopesheet = trackEl.find(".dopesheet");
+		var trackEdits : Array<hide.comp.CurveEditor> = [];
+
+		function dragKey(from: hide.comp.CurveEditor, prevTime: Float, newTime: Float) {
+			for(edit in trackEdits) {
+				if(edit == from) continue;
+				var k = edit.curve.findKey(prevTime, keyTimeTolerance);
+				if(k != null) {
+					k.time = newTime;
+					edit.refreshGraph(false, k);
+				}
+			}
+		}
+		function refreshCurves(anim: Bool) {
+			for(c in trackEdits) {
+				c.refreshGraph(anim);
+			}
+		}
+
+		function refreshKey(key: hide.comp.CurveEditor.CurveKey, el: Element) {
+			if(isColorTrack) {
+				var color = hide.prefab.Curve.getColorValue(curves, key.time);
+				var colorStr = "#" + StringTools.hex(color.toColor() & 0xffffff, 6);
+				el.css({background: colorStr});
+			}
+		}
+
+		var refreshDopesheet : Void -> Void;
+
+		function backupCurves() {
+			return [for(c in curves) haxe.Json.parse(haxe.Json.stringify(c.save()))];
+		}
+		var lastBackup = backupCurves();
+
+		function beforeChange() {
+			lastBackup = backupCurves();
+		}
+
+		function afterChange() {
+			var newVal = backupCurves();
+			var oldVal = lastBackup;
+			lastBackup = newVal;
+			undo.change(Custom(function(undo) {
+				if(undo) {
+					for(i in 0...curves.length)
+						curves[i].load(oldVal[i]);
+				}
+				else {
+					for(i in 0...curves.length)
+						curves[i].load(newVal[i]);
+				}
+				lastBackup = backupCurves();
+				refreshCurves(false);
+				refreshDopesheet();
+			}));
+			refreshCurves(false);
+		}
+
+		function addKey(time: Float) {
+			beforeChange();
+			for(curve in curves) {
+				curve.addKey(time);
+			}
+			afterChange();
+			refreshDopesheet();
+		}
+
+
+		function keyContextClick(key: hide.prefab.Curve.CurveKey, el: Element) {
+			function setCurveVal(suffix: String, value: Float) {
+				var c = curves.find(c -> StringTools.endsWith(c.name, suffix));
+				if(c != null) {
+					var k = c.findKey(key.time, keyTimeTolerance);
+					if(k == null) {
+						k = c.addKey(key.time);
+					}
+					k.value = value;
+				}
+			}
+			
+			if(isColorTrack) {
+				var picker = new Element("<div></div>").css({
+					"z-index": 100,
+				}).appendTo(el);
+				var cp = new hide.comp.ColorPicker(false, picker);
+				cp.value = hide.prefab.Curve.getColorValue(curves, key.time).toColor();
+				cp.open();
+				cp.onClose = function() {
+					picker.remove();
+				};
+				cp.onChange = function(dragging) {
+					if(dragging)
+						return;
+					var col = h3d.Vector.fromColor(cp.value, 1.0);
+					if(isColorHSL) {
+						col = col.toColorHSL();
+						setCurveVal(".h", col.x);
+						setCurveVal(".s", col.y);
+						setCurveVal(".l", col.z);
+						setCurveVal(".a", col.a);
+					}
+					else {
+						setCurveVal(".r", col.x);
+						setCurveVal(".g", col.y);
+						setCurveVal(".b", col.z);
+						setCurveVal(".a", col.a);
+					}
+					refreshCurves(false);
+					refreshKey(key, el);
+				};
+			}
+		}
+
+		refreshDopesheet = function () {
+			dopesheet.empty();
+			dopesheet.off();
+			dopesheet.mouseup(function(e) {
+				var offset = dopesheet.offset();
+				if(e.ctrlKey) {
+					var x = ixt(e.clientX - offset.left);
+					addKey(x);
+				}
+			});
+			var refKeys = curves[0].keys;
+			for(ik in 0...refKeys.length) {
+				var key = refKeys[ik];
+				var keyEl = new Element('<span class="key">').appendTo(dopesheet);
+				function updatePos() keyEl.css({left: xt(refKeys[ik].time)});
+				updatePos();
+				keyEl.contextmenu(function(e) {
+					keyContextClick(key, keyEl);
+					e.preventDefault();
+					e.stopPropagation();
+				});
+				keyEl.mousedown(function(e) {
+					var offset = dopesheet.offset();
+					e.preventDefault();
+					e.stopPropagation();
+					if(e.button == 2) {
+					}
+					else {
+						var prevVal = key.time;
+						beforeChange();
+						startDrag(function(e) {
+							var x = ixt(e.clientX - offset.left);
+							x = hxd.Math.max(0, x);
+							var next = refKeys[ik + 1];
+							if(next != null)
+								x = hxd.Math.min(x, next.time - 0.01);
+							var prev = refKeys[ik - 1];
+							if(prev != null)
+								x = hxd.Math.max(x, prev.time + 0.01);
+							dragKey(null, key.time, x);
+							updatePos();
+						}, function(e) {
+							afterChange();
+						});
+					}
+				});
+				refreshDopesheetKeys.push(function(anim) {
+					updatePos();
+				});
+				refreshKey(key, keyEl);
+			}
+		}
+		for(curve in curves) {
+			var curveContainer = new Element('<div class="curve"></div>').appendTo(curvesContainer);
+			var curveEdit = new hide.comp.CurveEditor(this.undo, curveContainer);
+			curveEdit.saveDisplayKey = getPath() + "/" + curve.getAbsPath();
+			curveEdit.lockViewX = true;
+			curveEdit.xOffset = xOffset;
+			curveEdit.xScale = xScale;
+			curveEdit.curve = curve;
+			curveEdit.onChange = function(anim) {
+				refreshDopesheet();
+			}
+			// curveEdit.onKeyMove = function(key, ptime, pval) {
+			// 	dragKey(curveEdit, ptime, key.time);
+			// }
+			trackEdits.push(curveEdit);
+			curveEdits.push(curveEdit);
+		}
+		refreshDopesheet();
+		updateExpanded();
+	}
+
+
 	function rebuildAnimPanel() {
 		var selection = sceneEditor.getSelection();
 		var scrollPanel = element.find(".anim-scroll");
@@ -302,112 +561,68 @@ class FXScene extends FileView {
 		curveEdits = [];
 		refreshDopesheetKeys = [];
 
+		var sections : Array<{
+			elt: PrefabElement,
+			curves: Array<Curve>
+		}> = [];
+
 		for(elt in selection) {
+			var root = elt;
+			if(Std.instance(elt, hide.prefab.Curve) != null) {
+				root = elt.parent;
+			}
+			var sect = sections.find(s -> s.elt == root);
+			if(sect == null) {
+				sect = {elt: root, curves: []};
+				sections.push(sect);				
+			}
+			var curves = elt.flatten(hide.prefab.Curve);
+			for(c in curves) {
+				sect.curves.push(c);
+			}
+		}
+
+		for(sec in sections) {
 			var objPanel = new Element('<div>
-				<label>${elt.name}</label><input class="addtrack" type="button" value="[+]"></input><div class="tracks"></div>
+				<div class="tracks-header"><label>${upperCase(sec.elt.name)}</label><div class="addtrack fa fa-plus-circle"></div></div>
+				<div class="tracks"></div>
 			</div>').appendTo(scrollPanel);
 			var addTrackEl = objPanel.find(".addtrack");
-			addTrackEl.click(function(e) {
-				var menuItems: Array<hide.comp.ContextMenu.ContextMenuItem>= [];
-				inline function hasTrack(pname) {
-					return getTrack(elt, pname) != null;
-				}
+			var objElt = Std.instance(sec.elt, hide.prefab.Object3D);
+			var shaderElt = Std.instance(sec.elt, hide.prefab.Shader);
 
-				if(Std.is(elt, hide.prefab.Object3D)) {
-					var defaultTracks = ["x", "y", "z", "rotationX", "rotationY", "rotationZ", "scaleX", "scaleY", "scaleZ", "visibility"];
-					for(t in defaultTracks) {
-						menuItems.push({
-							label: upperCase(t),
-							click: ()->addTrack(elt, t),
-							enabled: !hasTrack(t)});
-					}
-				}
+			addTrackEl.click(function(e) {
+				var menuItems = getNewTrackMenu(sec.elt);
 				new hide.comp.ContextMenu(menuItems);
 			});
 			var tracksEl = objPanel.find(".tracks");
-			var curves = elt.getAll(hide.prefab.Curve);
-			for(curve in curves) {
-				var trackEl = new Element('<div class="track">
-					<div class="track-header">
-						<div class="track-prop">
-							<label>${curve.name}</label>
-							<div class="track-toggle"><div class="icon fa"></div></div>
-						</div>
-						<div class="dopesheet"></div>
-					</div>
-					<div class="curve"></div>
-				</div>');
-				var trackToggle = trackEl.find(".track-toggle");
-				tracksEl.append(trackEl);
-
-				var curveEdit = new hide.comp.CurveEditor(this.undo, trackEl.find(".curve"));
-				var cpath = curve.getAbsPath();
-				var trackKey = "trackVisible:" + cpath;
-				var expand = getDisplayState(trackKey) == true;
-				curveEdit.saveDisplayKey = getPath() + "/" + cpath;
-				curveEdit.lockViewX = true;
-				curveEdit.xOffset = xOffset;
-				curveEdit.xScale = xScale;
-				curveEdit.curve = curve;
-				curveEdits.push(curveEdit);
-				function updateExpanded() {
-					var icon = trackToggle.find(".icon");
-					if(expand)
-						icon.removeClass("fa-angle-right").addClass("fa-angle-down");
-					else
-						icon.removeClass("fa-angle-down").addClass("fa-angle-right");
-					curveEdit.element.toggleClass("hidden", !expand);
-				}
-				trackToggle.click(function(e) {
-					expand = !expand;
-					saveDisplayState(trackKey, expand);
-					updateExpanded();
-				});
-				var dopesheet = trackEl.find(".dopesheet");
-				function refreshDopesheet() {
-					dopesheet.empty();
-					for(key in curve.keys) {
-						var keyEl = new Element('<span class="key">').appendTo(dopesheet);
-						function update() keyEl.css({left: xt(key.time)});
-						update();
-						keyEl.mousedown(function(e) {
-							var offset = dopesheet.offset();
-							var prevVal = key.time;
-							startDrag(function(e) {
-								var x = ixt(e.clientX - offset.left);
-								key.time = x;
-								curveEdit.refreshGraph(true, key);
-								update();
-							}, function(e) {
-								curveEdit.refreshGraph();
-								var newVal = key.time;
-								undo.change(Custom(function(undo) {
-									if(undo)
-										key.time = prevVal;
-									else
-										key.time = newVal;
-									update();
-									curveEdit.refreshGraph();
-								}));
-							});
-						});
-						refreshDopesheetKeys.push(function(anim) {
-							update();
-						});
-					}
-				}
-				refreshDopesheet();
-				curveEdit.onChange = function(anim) {
-					refreshDopesheet();
-				}
-				updateExpanded();
+			var groups = hide.prefab.Curve.getGroups(sec.curves);
+			for(group in groups) {
+				addTrackEdit(group.name, group.items, tracksEl);
 			}
 		}
 	}
 
 	function startDrag(onMove: js.jquery.Event->Void, onStop: js.jquery.Event->Void) {
 		var el = new Element(element[0].ownerDocument.body);
-		el.on("mousemove.fxedit", onMove);
+		var startX = null, startY = null;
+		var dragging = false;
+		var threshold = 3;
+		el.on("mousemove.fxedit", function(e: js.jquery.Event) {
+			if(startX == null) {
+				startX = e.clientX;
+				startY = e.clientY;
+			}
+			else {
+				if(!dragging) {
+					if(hxd.Math.abs(e.clientX - startX) + hxd.Math.abs(e.clientY - startY) > threshold) {
+						dragging = true;
+					}
+				}
+				if(dragging)
+					onMove(e);
+			}
+		});
 		el.on("mouseup.fxedit", function(e: js.jquery.Event) {
 			el.off("mousemove.fxedit");
 			el.off("mouseup.fxedit");
@@ -417,20 +632,116 @@ class FXScene extends FileView {
 		});
 	}
 
-	static function getTrack(element : PrefabElement, propName : String) {
-		return element.getOpt(hide.prefab.Curve, propName);
+	function addTracks(element : PrefabElement, props : Array<PropTrackDef>) {
+		var added = [];
+		for(prop in props) {
+			if(element.getOpt(Curve, prop.name) != null)
+				continue;
+			var curve = new Curve(element);
+			curve.name = prop.name;
+			if(prop.clamp != null) {
+				curve.clampMin = prop.clamp[0];
+				curve.clampMax = prop.clamp[1];
+			}
+			added.push(curve);
+		}
+
+		if(added.length == 0)
+			return added;
+
+		undo.change(Custom(function(undo) {
+			for(c in added) {
+				if(undo)
+					element.children.remove(c);
+				else 
+					element.children.push(c);
+			}
+			sceneEditor.refresh();
+		}));
+		sceneEditor.refresh(function() {
+			sceneEditor.selectObjects([element]);
+		});
+		return added;
 	}
 
-	function addTrack(element : PrefabElement, propName : String) {
-		var curve = new hide.prefab.Curve(element);
-		curve.name = upperCase(propName);
-		rebuildAnimPanel();
-		return curve;
-	}
+	public function getNewTrackMenu(elt: PrefabElement) : Array<hide.comp.ContextMenu.ContextMenuItem> {
+		var objElt = Std.instance(elt, hide.prefab.Object3D);
+		var shaderElt = Std.instance(elt, hide.prefab.Shader);
+		var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
 
-	function removeTrack(element : PrefabElement, propName : String) {
-		// TODO
-		// return element.get(hide.prefab.Curve, propName);
+		inline function hasTrack(pname) {
+			return getTrack(elt, pname) != null;
+		}
+
+		function trackItem(name: String, props: Array<PropTrackDef>) : hide.comp.ContextMenu.ContextMenuItem {
+			var hasAllTracks = true;
+			for(p in props) {
+				if(getTrack(elt, p.name) == null)
+					hasAllTracks = false;
+			}
+			return {
+				label: upperCase(name),
+				click: function() {
+					var added = addTracks(elt, props);
+				},	
+				enabled: !hasAllTracks };
+		}
+
+		function groupedTracks(prefix: String, props: Array<PropTrackDef>) : Array<hide.comp.ContextMenu.ContextMenuItem> {
+			var allLabel = [for(p in props) upperCase(p.name)].join("/");
+			var ret = [];
+			for(p in props)
+				p.name = prefix + "." + p.name;
+			ret.push(trackItem(allLabel, props));
+			for(p in props) {
+				ret.push(trackItem(p.name, [p]));
+			}
+			return ret;
+		}
+
+		if(objElt != null) {
+			menuItems.push({
+				label: "Position",
+				menu: groupedTracks("position", [{name: "x"}, {name: "y"}, {name: "z"}]),
+			});
+			menuItems.push({
+				label: "Rotation",
+				menu: groupedTracks("rotation", [{name: "x"}, {name: "y"}, {name: "z"}]),
+			});
+			menuItems.push({
+				label: "Scale",
+				menu: groupedTracks("scale", [{name: "x"}, {name: "y"}, {name: "z"}]),
+			});
+			menuItems.push(trackItem("Visibility", [{name: "visibility", clamp: [0., 1.]}]));
+		}
+		if(shaderElt != null && shaderElt.shaderDef != null) {
+			var params = shaderElt.shaderDef.shader.data.vars.filter(v -> v.kind == Param);
+			for(param in params) {
+				var tracks = null;
+				var isColor = false;
+				var subItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
+				switch(param.type) {
+					case TVec(n, VFloat):
+						if(n <= 4) {
+							var components : Array<PropTrackDef> = [];
+							if(param.name.toLowerCase().indexOf("color") >= 0)
+								components = [{name: "h"}, {name: "s", clamp: [0., 1.]}, {name: "l", clamp: [0., 1.]}, {name: "a", clamp: [0., 1.]}];
+							else
+								components = [{name:"x"}, {name:"y"}, {name:"z"}, {name:"w"}];
+							subItems = groupedTracks(param.name, components);
+
+						}
+					default:
+				}
+				if(subItems.length > 0) {
+					menuItems.push({
+						label: upperCase(param.name),
+						menu: subItems
+					});
+				}
+			}
+		}
+		return menuItems;
 	}
 
 	function onUpdate(dt:Float) {
@@ -447,6 +758,15 @@ class FXScene extends FileView {
 			if(curves.visibility != null) {
 				var visible = curves.visibility.getVal(currentTime) > 0.5;
 				obj3d.visible = element.visible && visible;
+			}
+		}
+
+		// Update shaders
+		var allShaders = data.getAll(hide.prefab.Shader);
+		for(shader in allShaders) {
+			var ctx = sceneEditor.getContext(shader);
+			if(ctx != null) {
+				shader.applyVars(ctx, currentTime);
 			}
 		}
 
@@ -474,6 +794,12 @@ class FXScene extends FileView {
 			currentVersion = undo.currentID;
 		}
 	}
+
+
+	static function getTrack(element : PrefabElement, propName : String) {
+		return element.getOpt(Curve, propName);
+	}
+
 
 	static function upperCase(prop: String) {
 		return prop.charAt(0).toUpperCase() + prop.substr(1);

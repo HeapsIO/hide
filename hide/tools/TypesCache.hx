@@ -169,7 +169,7 @@ class TypesCache {
 		return file;
 	}
 
-	function evalConst( e : hxsl.Ast.TExpr ) : Dynamic {
+	public static function evalConst( e : hxsl.Ast.TExpr ) : Dynamic {
 		return switch( e.e ) {
 		case TConst(c):
 			switch( c ) {
@@ -241,7 +241,7 @@ class TypesCache {
 		}
 	}
 
-	function defType( t :  hide.comp.PropsEditor.PropType ) : Dynamic {
+	public static function defType( t :  hide.comp.PropsEditor.PropType ) : Dynamic {
 		switch( t ) {
 		case PInt(min, _):
 			return if( min == null ) 0 else min;
@@ -273,7 +273,7 @@ class TypesCache {
 		}
 	}
 
-	function makeShaderType( v : hxsl.Ast.TVar ) : hide.comp.PropsEditor.PropType {
+	public static function makeShaderType( v : hxsl.Ast.TVar ) : hide.comp.PropsEditor.PropType {
 		var min : Null<Float> = null, max : Null<Float> = null;
 		if( v.qualifiers != null )
 			for( q in v.qualifiers )

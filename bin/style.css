@@ -259,7 +259,7 @@ input[type=checkbox]:checked:after {
   width: 145px;
 }
 .hide-range input[type=range].small {
-  width: 133px;
+  width: 123px;
 }
 .hide-range input[type=text] {
   display: inline-block;
@@ -465,6 +465,11 @@ input[type=checkbox]:checked:after {
   overflow: hidden;
   margin-top: 4px;
 }
+.hide-properties dd span,
+.hide-properties dt span {
+  display: inline-block;
+  width: 20px;
+}
 .hide-properties dt {
   width: 80px;
   text-align: right;
@@ -475,6 +480,9 @@ input[type=checkbox]:checked:after {
 }
 .hide-properties input {
   width: 190px;
+}
+.hide-properties input.small {
+  width: 170px;
 }
 .hide-properties input[type=checkbox] {
   width: 13px;
@@ -662,9 +670,25 @@ input[type=checkbox]:checked:after {
   width: 4px;
   margin-left: -4px;
 }
+.fx-animpanel .tracks-header {
+  background: #4a4a4a;
+  text-align: left;
+}
+.fx-animpanel .tracks-header label {
+  margin-left: 4px;
+  color: white;
+}
+.fx-animpanel .tracks-header .addtrack {
+  margin-left: 4px;
+  padding: 2px;
+}
+.fx-animpanel .tracks-header .addtrack:hover {
+  color: white;
+}
 .fx-animpanel .track .track-header {
   height: 20px;
   display: flex;
+  user-select: none;
 }
 .fx-animpanel .track .track-header .track-prop {
   text-align: right;
@@ -690,7 +714,7 @@ input[type=checkbox]:checked:after {
   flex-grow: 1;
   background: #333;
   box-shadow: 0px -1px 0px black inset;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 .fx-animpanel .track .track-header .dopesheet .key {
   cursor: pointer;
@@ -706,10 +730,15 @@ input[type=checkbox]:checked:after {
 .fx-animpanel .track .track-header .dopesheet .key:hover {
   background: white;
 }
+.fx-animpanel .track .track-header .dopesheet .key .sp-replacer {
+  border: none;
+  padding: 0;
+}
 .fx-animpanel .track .curve {
   margin-left: 120px;
+  border-bottom: 1px solid black;
 }
-.fx-animpanel .track .curve.hidden {
+.fx-animpanel .track .curves.hidden {
   display: none;
 }
 /* Golden Layout Fixes */

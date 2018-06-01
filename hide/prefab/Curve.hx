@@ -1,4 +1,5 @@
 package hide.prefab;
+using Lambda;
 
 typedef CurveHandle = {
 	dt: Float,
@@ -25,6 +26,8 @@ typedef CurveKeys = Array<CurveKey>;
 class Curve extends Prefab {
 
 	public var duration : Float = 0.; // TODO: optional?
+	public var clampMin : Float = 0.;
+	public var clampMax : Float = 0.;
 	public var keys : CurveKeys = [];
 
    	public function new(?parent) {
@@ -35,18 +38,63 @@ class Curve extends Prefab {
 	override function load(o:Dynamic) {
 		duration = o.duration;
 		keys = o.keys;
+		clampMin = o.clampMin;
+		clampMax = o.clampMax;
 	}
 
 	override function save() {
 		return {
 			duration: duration,
-			keys: keys
+			clampMin: clampMin,
+			clampMax: clampMax,
+			keys: keys,
 		};
 	}
 	
 	static inline function bezier(c0: Float, c1:Float, c2:Float, c3: Float, t:Float) {
 		var u = 1 - t;
 		return u * u * u * c0 + c1 * 3 * t * u * u + c2 * 3 * t * t * u + t * t * t * c3;
+	}
+
+	public function findKey(time: Float, tolerance: Float) {
+		var minDist = tolerance;
+		var closest = null;
+		for(k in keys) {
+			var d = hxd.Math.abs(k.time - time);
+			if(d < minDist) {
+				minDist = d;
+				closest = k;
+			}
+		}
+		return closest;
+	}
+
+	public function addKey(time: Float, ?val: Float) {
+		var index = 0;
+		for(ik in 0...keys.length) {
+			var key = keys[ik];
+			if(time > key.time)
+				index = ik + 1;
+		}
+
+		if(val == null)
+			val = getVal(time);
+
+		var key : hide.prefab.Curve.CurveKey = {
+			time: time,
+			value: val,
+			mode: keys[index] != null ? keys[index].mode : Aligned
+		};
+		keys.insert(index, key);
+		return key;
+	}
+
+	public function getBounds() {
+		var ret = new h2d.col.Bounds();
+		for(k in keys) {
+			ret.addPos(k.time, k.value);
+		}
+		return ret;
 	}
 
 	public function getVal(time: Float) : Float {
@@ -118,6 +166,56 @@ class Curve extends Prefab {
 			vals.push(v);
 		}
 		return vals;
+	}
+
+	public static function getGroups(curves: Array<Curve>) {
+		var groups : Array<{name: String, items: Array<Curve>}> = [];
+		for(c in curves) {
+			var prefix = c.name.split(".")[0];
+			var g = groups.find(g -> g.name == prefix);
+			if(g == null) {
+				groups.push({
+					name: prefix,
+					items: [c]
+				});
+			}
+			else {
+				g.items.push(c);
+			}
+		}
+		return groups;
+	}
+
+	public static function getColorValue(curves: Array<Curve>, time: Float) : h3d.Vector {
+		inline function findCurve(suffix: String) {
+			return curves.find(c -> StringTools.endsWith(c.name, suffix));
+		}
+		
+		var r = findCurve(".r");
+		var g = findCurve(".g");
+		var b = findCurve(".b");
+		var a = findCurve(".a");
+		var h = findCurve(".h");
+		var s = findCurve(".s");
+		var l = findCurve(".l");
+
+		var col = new h3d.Vector(0, 0, 0, 1);
+
+		if(r != null && g != null && b != null) {
+			col.r = r.getVal(time);
+			col.g = g.getVal(time);
+			col.b = b.getVal(time);
+		}
+		else {
+			var hval = 0.0, sval = 0.0, lval = 0.0;
+			if(h != null) hval = h.getVal(time);
+			if(s != null) sval = s.getVal(time);
+			if(l != null) lval = l.getVal(time);
+			col.makeColor(hval, sval, lval);
+		}
+		if(a != null)
+			col.a = a.getVal(time);
+		return col;
 	}
 
 	override function getHideProps() {

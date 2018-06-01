@@ -54,15 +54,15 @@ class FXScene extends Library {
 			if(curve == null)
 				continue;
 			switch(c.name) {
-				case "x": ret.x = curve;
-				case "y": ret.y = curve;
-				case "z": ret.z = curve;
-				case "rotationX": ret.rotationX = curve;
-				case "rotationY": ret.rotationY = curve;
-				case "rotationZ": ret.rotationZ = curve;
-				case "scaleX": ret.scaleX = curve;
-				case "scaleY": ret.scaleY = curve;
-				case "scaleZ": ret.scaleZ = curve;
+				case "position.x": ret.x = curve;
+				case "position.y": ret.y = curve;
+				case "position.z": ret.z = curve;
+				case "rotation.x": ret.rotationX = curve;
+				case "rotation.y": ret.rotationY = curve;
+				case "rotation.z": ret.rotationZ = curve;
+				case "scale.x": ret.scaleX = curve;
+				case "scale.y": ret.scaleY = curve;
+				case "scale.z": ret.scaleZ = curve;
 				case "visibility": ret.visibility = curve;
 				default: 
 					if(ret.custom == null)

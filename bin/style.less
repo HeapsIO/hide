@@ -276,7 +276,7 @@ input[type=checkbox] {
 	}
 
 	input[type=range].small {
-		width: 133px;
+		width: 123px;
 	}
 
 	input[type=text] {
@@ -494,6 +494,11 @@ input[type=checkbox] {
 		display:inline-block;
 		overflow:hidden;
 		margin-top:4px;
+
+		span {
+			display: inline-block;
+			width: 20px;
+		}	
 	}
 
 	dt {
@@ -507,6 +512,10 @@ input[type=checkbox] {
 
 	input {
 		width:190px;
+	}
+
+	input.small {
+		width:170px;
 	}
 
 	input[type=checkbox] {
@@ -734,10 +743,27 @@ input[type=checkbox] {
 		}
 	}
 
+	.tracks-header {
+		background: #4a4a4a;
+		text-align: left;
+		label {
+			margin-left: 4px;
+			color: white;
+		}
+		.addtrack {
+			margin-left: 4px;
+			padding: 2px;
+			&:hover {
+				color: white;
+			}
+		}
+	}
+
 	.track {
 		.track-header {
 			height: 20px;
 			display: flex;
+			user-select: none;
 
 			.track-prop {
 				text-align: right;
@@ -765,7 +791,7 @@ input[type=checkbox] {
 				flex-grow: 1;
 				background: #333;
 				box-shadow: 0px -1px 0px black inset;
-				overflow: hidden;
+				overflow-x: hidden;
 				.key {
 					cursor: pointer;
 					user-select: none;
@@ -779,13 +805,18 @@ input[type=checkbox] {
 					&:hover {
 						background: white;
 					}
+					.sp-replacer {
+						border: none;
+						padding: 0;
+					}
 				}
 			}
 		}
 		.curve {
 			margin-left: @leftPanelWidth;
+			border-bottom: 1px solid black;
 		}
-		.curve.hidden {
+		.curves.hidden {
 			display: none;
 		}
 	}

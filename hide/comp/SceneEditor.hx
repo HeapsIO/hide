@@ -22,13 +22,16 @@ class SceneEditorContext extends hide.prefab.EditContext {
 		rootElements = [];
 		cleanups = [];
 		for(elt in elements) {
-			var obj3d = elt.to(Object3D);
-			if(obj3d == null) continue;
+			// var obj3d = elt.to(Object3D);
+			// if(obj3d == null) continue;
 			if(!SceneEditor.hasParent(elt, elements)) {
 				rootElements.push(elt);
-				var obj = getContext(elt).local3d;
-				if(obj != null)
-					rootObjects.push(obj);
+				var ctx = getContext(elt);
+				if(ctx != null) {
+					var obj = getContext(elt).local3d;
+					if(obj != null)
+						rootObjects.push(obj);
+				}
 			}
 		}
 	}
@@ -215,7 +218,7 @@ class SceneEditor {
 				selectObjects([current]);
 			}
 
-			var newItems = getNewContextMenu();
+			var newItems = getNewContextMenu(current);
 			var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [
 				{ label : "New...", menu : newItems },
 				{ label : "Rename", enabled : current != null, click : function() tree.editNode(current) },
@@ -575,7 +578,7 @@ class SceneEditor {
 		}
 	}
 
-	function getContext(elt : PrefabElement) {
+	public function getContext(elt : PrefabElement) {
 		if(elt != null) {
 			return context.shared.contexts.get(elt);
 		}
@@ -1018,8 +1021,7 @@ class SceneEditor {
 	}
 
 	// Override
-	function getNewContextMenu() : Array<hide.comp.ContextMenu.ContextMenuItem> {
-		var current = tree.getCurrentOver();
+	function getNewContextMenu(current: PrefabElement) : Array<hide.comp.ContextMenu.ContextMenuItem> {
 		var newItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
 		var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
 		var allowed = ["model", "object"];

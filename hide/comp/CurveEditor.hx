@@ -1,5 +1,7 @@
 package hide.comp;
 
+typedef CurveKey = hide.prefab.Curve.CurveKey;
+
 class CurveEditor extends Component {
 
 	public var xScale = 200.;
@@ -24,7 +26,7 @@ class CurveEditor extends Component {
 	var lastValue : Dynamic;
 	var lastMode : hide.prefab.Curve.CurveKeyMode = Constant;
 
-	var selectedKeys: Array<hide.prefab.Curve.CurveKey> = [];
+	var selectedKeys: Array<CurveKey> = [];
 
 	public function new(undo, ?parent) {
 		super(parent,null);
@@ -35,6 +37,10 @@ class CurveEditor extends Component {
 		svg = new hide.comp.SVG(element);
 		var div = this.element;
 		var root = svg.element;
+		height = Math.round(svg.element.height());
+		if(height == 0 && parent != null)
+			height = Math.round(parent.height());
+		width = Math.round(svg.element.width());
 
 		gridGroup = svg.group(root, "grid");
 		graphGroup = svg.group(root, "graph");
@@ -62,14 +68,20 @@ class CurveEditor extends Component {
 				startPan(e);
 			}
 		});
+		element.keydown(function(e) {
+			if(e.key == "z") {
+				zoomAll();
+				refresh();
+			}
+		});
 		root.contextmenu(function(e) {
 			e.preventDefault();
 			return false;
 		});
-		root.on("mousewheel", function(e) {
-			var step = e.originalEvent.wheelDelta > 0 ? 1.0 : -1.0;
+		root.on("mousewheel", function(e : js.jquery.Event) {
+			var step = (e:Dynamic).originalEvent.wheelDelta > 0 ? 1.0 : -1.0;
 			var changed = false;
-			if(hxd.Key.isDown(hxd.Key.SHIFT)) {
+			if(e.shiftKey) {
 				if(!lockViewY) {
 					yScale *= Math.pow(1.125, step);
 					changed = true;
@@ -90,12 +102,16 @@ class CurveEditor extends Component {
 		div.keydown(function(e) {
 			if(curve == null) return;
 			if(e.keyCode == 46) {
+				beforeChange();				
 				var newVal = [for(k in curve.keys) if(selectedKeys.indexOf(k) < 0) k];
 				curve.keys = newVal;
 				selectedKeys = [];
 				e.preventDefault();
 				e.stopPropagation();
 				afterChange();
+			}
+			if(e.key == "z") {
+				zoomAll();
 			}
 		});
 	}
@@ -104,7 +120,11 @@ class CurveEditor extends Component {
 
 	}
 
-	function set_curve(curve) {
+	public dynamic function onKeyMove(key: CurveKey, prevTime: Float, prevVal: Float) {
+
+	}
+
+	function set_curve(curve: hide.prefab.Curve) {
 		this.curve = curve;
 		lastValue = haxe.Json.parse(haxe.Json.stringify(curve.save()));
 		var view = getDisplayState("view");
@@ -118,31 +138,22 @@ class CurveEditor extends Component {
 				yScale = view.yScale;
 			}
 		}
+		else {
+			zoomAll();
+		}
 		refresh();
 		return curve;
 	}
 
 	function addKey(time: Float, ?val: Float) {
-		var index = 0;
-		for(ik in 0...curve.keys.length) {
-			var key = curve.keys[ik];
-			if(time > key.time)
-				index = ik + 1;
-		}
-
-		if(val == null)
-			val = curve.getVal(time);
-
-		var key : hide.prefab.Curve.CurveKey = {
-			time: time,
-			value: val,
-			mode: lastMode
-		};
-		curve.keys.insert(index, key);
+		beforeChange();		
+		if(curve.clampMin != curve.clampMax)
+			val = hxd.Math.clamp(val, curve.clampMin, curve.clampMax);
+		curve.addKey(time, val);
 		afterChange();
 	}
 
-	function fixKey(key : hide.prefab.Curve.CurveKey) {
+	function fixKey(key : CurveKey) {
 		var index = curve.keys.indexOf(key);
 		var prev = curve.keys[index-1];
 		var next = curve.keys[index+1];
@@ -184,21 +195,28 @@ class CurveEditor extends Component {
 		if(next != null && key.time > next.time)
 			key.time = next.time - 0.01;
 
-		// TODO: Prevent backwards handles
-		if(next != null && key.nextHandle != null) {
-			var slope = key.nextHandle.dv / key.nextHandle.dt;
-			slope = hxd.Math.clamp(slope, -1000, 1000);
-			if(key.nextHandle.dt + key.time > next.time) {
-				key.nextHandle.dt = next.time - key.time;
-				key.nextHandle.dv = slope * key.nextHandle.dt;
-			}
+		if(curve.clampMin != curve.clampMax) {
+			key.value = hxd.Math.clamp(key.value, curve.clampMin, curve.clampMax);
 		}
-		if(prev != null && key.prevHandle != null) {
-			var slope = key.prevHandle.dv / key.prevHandle.dt;
-			slope = hxd.Math.clamp(slope, -1000, 1000);
-			if(key.prevHandle.dt + key.time < prev.time) {
-				key.prevHandle.dt = prev.time - key.time;
-				key.prevHandle.dv = slope * key.prevHandle.dt;
+
+		if(false) {
+			// TODO: This sorta works but is annoying.
+			// Doesn't yet prevent backwards handles
+			if(next != null && key.nextHandle != null) {
+				var slope = key.nextHandle.dv / key.nextHandle.dt;
+				slope = hxd.Math.clamp(slope, -1000, 1000);
+				if(key.nextHandle.dt + key.time > next.time) {
+					key.nextHandle.dt = next.time - key.time;
+					key.nextHandle.dv = slope * key.nextHandle.dt;
+				}
+			}
+			if(prev != null && key.prevHandle != null) {
+				var slope = key.prevHandle.dv / key.prevHandle.dt;
+				slope = hxd.Math.clamp(slope, -1000, 1000);
+				if(key.prevHandle.dt + key.time < prev.time) {
+					key.prevHandle.dt = prev.time - key.time;
+					key.prevHandle.dv = slope * key.prevHandle.dt;
+				}
 			}
 		}
 	}
@@ -230,6 +248,15 @@ class CurveEditor extends Component {
 		});
 	}
 
+	function saveView() {
+		saveDisplayState("view", {
+			xOffset: xOffset,
+			yOffset: yOffset,
+			xScale: xScale,
+			yScale: yScale
+		});
+	}
+
 	function startPan(e) {
 		var lastX = e.clientX;
 		var lastY = e.clientY;
@@ -244,6 +271,7 @@ class CurveEditor extends Component {
 			lastY = e.clientY;
 			setPan(xOffset, yOffset);
 		}, function(e) {
+			saveView();
 		});
 	}
 
@@ -252,6 +280,43 @@ class CurveEditor extends Component {
 		yOffset = yoff;
 		refreshGrid();
 		graphGroup.attr({transform: 'translate(${xt(0)},${yt(0)})'});
+	}
+
+	public function setYZoom(yMin: Float, yMax: Float) {
+		var margin = 20;
+		yScale = (height - margin*2) / (yMax - yMin);
+		yOffset = (yMax + yMin) / 2.0;
+	}
+
+	public function setXZoom(xMin: Float, xMax: Float) {
+		var margin = 20;
+		xScale = (width - margin*2) / (xMax - xMin);
+		xOffset = xMin;
+	}
+
+	public function zoomAll() {
+		var bounds = curve.getBounds();
+		if(bounds.width <= 0) {
+			bounds.xMin = 0.0;
+			bounds.xMax = 1.0;
+		}
+		if(bounds.height <= 0) {
+			if(curve.clampMax != curve.clampMin) {
+				bounds.yMin = curve.clampMin;
+				bounds.yMax = curve.clampMax;
+			}
+			else {
+				bounds.yMin = -1.0;
+				bounds.yMax = 1.0;
+			}
+		}
+		if(!lockViewY) {
+			setYZoom(bounds.yMin, bounds.yMax);
+		}
+		if(!lockViewX) {
+			setYZoom(bounds.xMax, bounds.xMax);
+		}
+		saveView();
 	}
 
 	inline function xt(x: Float) return Math.round((x - xOffset) * xScale);
@@ -271,14 +336,17 @@ class CurveEditor extends Component {
 		});
 	}
 
-	function copyKey(key: hide.prefab.Curve.CurveKey): hide.prefab.Curve.CurveKey {
+	function copyKey(key: CurveKey): CurveKey {
 		return cast haxe.Json.parse(haxe.Json.stringify(key));
+	}
+
+	function beforeChange() {
+		lastValue = haxe.Json.parse(haxe.Json.stringify(curve.save()));
 	}
 
 	function afterChange() {
 		var newVal = haxe.Json.parse(haxe.Json.stringify(curve.save()));
 		var oldVal = lastValue;
-		lastValue = newVal;
 		undo.change(Custom(function(undo) {
 			if(undo) {
 				curve.load(oldVal);
@@ -338,16 +406,9 @@ class CurveEditor extends Component {
 			if(iy == 0)
 				l.addClass("axis");
 		}
-
-		saveDisplayState("view", {
-			xOffset: xOffset,
-			yOffset: yOffset,
-			xScale: xScale,
-			yScale: yScale
-		});
 	}
 
-	public function refreshGraph(?anim: Bool = false, ?animKey: hide.prefab.Curve.CurveKey) {
+	public function refreshGraph(?anim: Bool = false, ?animKey: CurveKey) {
 		if(curve == null)
 			return;
 
@@ -414,15 +475,19 @@ class CurveEditor extends Component {
 					e.preventDefault();
 					e.stopPropagation();
 					var offset = element.offset();
+					beforeChange();
 					startDrag(function(e) {
 						var lx = e.clientX - offset.left;
 						var ly = e.clientY - offset.top;
 						var nkx = ixt(lx);
 						var nky = iyt(ly);
+						var prevTime = key.time;
+						var prevVal = key.value;
 						key.time = nkx;
 						key.value = nky;
 						fixKey(key);
 						refreshGraph(true, key);
+						onKeyMove(key, prevTime, prevVal);
 						onChange(true);
 					}, function(e) {
 						selectedKeys = [key];
@@ -471,6 +536,7 @@ class CurveEditor extends Component {
 					e.stopPropagation();
 					var offset = element.offset();
 					var otherLen = hxd.Math.distance(other.dt * xScale, other.dv * yScale);
+					beforeChange();
 					startDrag(function(e) {
 						var lx = e.clientX - offset.left;
 						var ly = e.clientY - offset.top;
@@ -515,6 +581,7 @@ class CurveEditor extends Component {
 				"shape-rendering": "crispEdges"
 			});
 			if(!anim) {
+				beforeChange();
 				rect.mousedown(function(e) {
 					if(e.which != 1) return;
 					e.preventDefault();
