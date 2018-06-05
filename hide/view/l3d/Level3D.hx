@@ -103,6 +103,11 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		parent.onSceneReady();
 	}
 
+	override function selectAll() {
+		var all = [for(e in getAllVisible()) if(e.to(Layer) == null) e];
+		selectObjects(all);
+	}
+
 	override function updateTreeStyle(p: PrefabElement, el: Element) {
 		super.updateTreeStyle(p, el);
 		parent.updateTreeStyle(p, el);

@@ -26,6 +26,7 @@ class IconTree<T:{}> extends Component {
 	var revMap : haxe.ds.ObjectMap<T, IconTreeItem<T>> = new haxe.ds.ObjectMap();
 	public var allowRename : Bool;
 	public var async : Bool = false;
+	public var autoOpenNodes = true;
 
 	public function new(?parent,?el) {
 		super(parent,el);
@@ -181,7 +182,8 @@ class IconTree<T:{}> extends Component {
 	public function setSelection( objects : Array<T> ) {
 		(element:Dynamic).jstree('deselect_all');
 		var ids = [for( o in objects ) { var v = getRev(o); if( v != null ) v.id; }];
-		(element:Dynamic).jstree('select_node',ids);
+		(element:Dynamic).jstree('select_node', ids, false, !autoOpenNodes); // Don't auto-open parent
+		if(autoOpenNodes)
 		for(obj in objects)
 			revealNode(obj);
 	}
