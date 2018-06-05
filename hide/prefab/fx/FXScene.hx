@@ -5,6 +5,7 @@ import hide.prefab.Prefab as PrefabElement;
 typedef ShaderAnimation = hide.prefab.Shader.ShaderAnimation;
 
 enum Value {
+	VZero;
 	VConst(v: Float);
 	VCurve(c: Curve);
 	VCurveValue(c: Curve, scale: Float);
@@ -31,6 +32,7 @@ class Evaluator {
 
 	public function getFloat(val: Value, time: Float) : Float {
 		switch(val) {
+			case VZero: return 0.0;
 			case VConst(v): return v;
 			case VCurve(c): return c.getVal(time);
 			case VCurveValue(c, scale): return c.getVal(time) * scale;

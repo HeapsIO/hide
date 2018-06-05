@@ -268,6 +268,7 @@ class Curve extends Prefab {
 		return col;
 	}
 
+	// TODO: rename getVectorValue
 	public static function getAnimValue(curves: Array<Curve>) : Value {
 		inline function find(s) {
 			return findCurve(curves, s);
