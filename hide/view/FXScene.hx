@@ -767,13 +767,13 @@ class FXScene extends FileView {
 		// }
 
 		// Update shaders
-		var allShaders = data.getAll(hide.prefab.Shader);
-		for(shader in allShaders) {
-			var ctx = sceneEditor.getContext(shader);
-			if(ctx != null) {
-				shader.applyVars(ctx, currentTime);
-			}
-		}
+		// var allShaders = data.getAll(hide.prefab.Shader);
+		// for(shader in allShaders) {
+		// 	var ctx = sceneEditor.getContext(shader);
+		// 	if(ctx != null) {
+		// 		shader.applyVars(ctx, currentTime);
+		// 	}
+		// }
 
 		// Update emitters
 		var allEmitters = data.getAll(hide.prefab.fx.Emitter);

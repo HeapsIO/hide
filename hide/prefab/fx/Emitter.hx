@@ -1,5 +1,7 @@
 package hide.prefab.fx;
 import hide.prefab.Curve;
+import hide.prefab.fx.FXScene.Value;
+import hide.prefab.fx.FXScene.Evaluator;
 using Lambda;
 
 enum EmitShape {
@@ -7,139 +9,13 @@ enum EmitShape {
 	Circle;
 }
 
-enum Value {
-	VConst(v: Float);
-	VCurveValue(c: Curve, scale: Float);
-	// VCurveValue(c: Curve, scale: Float);
-	VNoise(idx: Int, scale: Value);
-	VAdd(a: Value, b: Value);
-	VMult(a: Value, b: Value);
-	VVector(x: Value, y: Value, z: Value);
-}
-
-// enum ParamKind {
-// 	TFloat,
-// 	TVector
-// }
-// typedef VectorValue {
-// 	x: Value, y: Value, z: Value
-// }
-
-// typedef ParamDef = {
-// 	kind: ParamKind,
-
-// }
-
-class Evaluator {
-	var randValues : Array<Float> = [];
-	var random: hxd.Rand;
-
-	public function new(random: hxd.Rand) {
-		this.random = random;
-		// randValues[numParams-1] = 0.0;
-	}
-
-	public function getFloat(val: Value, time: Float) : Float {
-		switch(val) {
-			case VConst(v): return v;
-			case VCurveValue(c, scale): return c.getVal(time) * scale;
-			case VNoise(idx, scale):
-				if(!(randValues[idx] > 0))
-					randValues[idx] = random.rand();
-				return randValues[idx] * getFloat(scale, time);
-			case VAdd(a, b):
-				return getFloat(a, time) + getFloat(b, time);
-			default: 0.0;
-		}
-		return 0.0;
-	}
-
-	public function getSum(val: Value, time: Float) : Float {
-		switch(val) {
-			case VConst(v): return v * time;
-			case VCurveValue(c, scale): return c.getSum(time) * scale;
-			case VAdd(a, b):
-				return getSum(a, time) + getSum(b, time);
-			default: 0.0;
-		}
-		return 0.0;
-	}
-
-	public function getVector(v: Value, time: Float) : h3d.Vector {
-		switch(v) {
-			case VVector(x, y, z):
-				return new h3d.Vector(getFloat(x, time), getFloat(y, time), getFloat(z, time));
-			default:
-				var f = getFloat(v, time);
-				return new h3d.Vector(f, f, f);
-		}
-	}
-}
-
-private class FloatParam {
-	public var baseValue : Float;
-	public var curve : hide.prefab.Curve;
-	public var randScale : Float;
-	public var randCurve : hide.prefab.Curve;
-
-	var random : Float = 0.0;
-
-	public function new(val: Float=1.0) {
-		this.baseValue = val;
-		random = hxd.Math.srand();
-	}
-	
-	public function get(t: Float) {
-		var val = baseValue;
-		if(curve != null)
-			val *= curve.getVal(t);
-		return val;
-	}
-
-	public function getSum(t: Float) {
-		if(curve != null)
-			return baseValue * curve.getSum(t);
-		return baseValue * t;
-	}
-
-	public function copy() {
-		var p = new FloatParam(this.baseValue);
-		p.curve = curve;
-		return p;
-	}
-}
-
-private class VectorParam {
-	public var x : FloatParam;
-	public var y : FloatParam;
-	public var z : FloatParam;
-
-	public function new() {
-	}
-
-	public function get(t: Float) : h3d.Vector {
-		return new h3d.Vector(x.get(t), y.get(t), z.get(t));
-	}
-
-	public function copy() {
-		var p = new VectorParam();
-		if(x != null) p.x = x.copy();
-		if(y != null) p.y = y.copy();
-		if(z != null) p.z = z.copy();
-		return p;
-	}
-}
-
-// class InstanceDef {
-// 	public var localSpeed : Value;
-// 	public var localOffset : Value;
-// }
-
 typedef InstanceDef = {
 	localSpeed: Value,
 	localOffset: Value,
 	scale: Value
 }
+
+typedef ShaderAnims = Array<hide.prefab.Shader.ShaderAnimation>;
 
 @:allow(hide.prefab.fx.EmitterObject)
 private class ParticleInstance extends Evaluator {
@@ -157,6 +33,7 @@ private class ParticleInstance extends Evaluator {
 	// public var globalSpeed : VectorParam;
 	// public var localOffset : VectorParam;
 	public var def : InstanceDef;
+	public var shaderAnims : ShaderAnims;
 
 	public function new(parent: EmitterObject, def: InstanceDef) {
 		super(parent.random);
@@ -194,6 +71,10 @@ private class ParticleInstance extends Evaluator {
 		// 	obj.y += off.y;
 		// 	obj.z += off.x;
 		// }
+
+		for(anim in shaderAnims) {
+			anim.setTime(life);
+		}
 
 		life += dt;
 	}
@@ -290,6 +171,25 @@ class EmitterObject extends h3d.scene.Object {
 			//part.transform = localTrans;
 			part.orientation.initRotateMatrix(absPos);
 			// part.curVelocity
+
+			part.shaderAnims = [];
+			// var shaders = particleTemplate.getAll(hide.prefab.Shader);
+			// for(shader in shaders) {
+			// 	var params = shader.makeParams();
+			// 	part.shaderAnims.push({
+
+			// 	});
+			// }
+			var shaders = particleTemplate.getAll(hide.prefab.Shader);
+			for(shader in shaders) {
+				var shCtx = shader.makeInstance(ctx);
+				if(shCtx == null)
+					continue;
+				var anim : hide.prefab.Shader.ShaderAnimation = cast shCtx.custom;
+				if(anim != null) {
+					part.shaderAnims.push(anim);
+				}
+			}	
 		}
 		context.local3d = this;		
 		emitCount += count;
@@ -366,30 +266,6 @@ class Emitter extends Object3D {
 		super.load(obj);
 	}
 
-	function getVectorParam(name: String) {
-		var curves = hide.prefab.Curve.getCurves(this, name);
-		var ret = new VectorParam();
-		inline function find(suf) return curves.find(c->c.name.indexOf(suf) >= 0);
-		ret.x = new FloatParam(3.0);  // TODO
-		ret.y = new FloatParam(0.0);
-		ret.z = new FloatParam(0.0);
-		ret.x.curve = find(".x");
-		ret.y.curve = find(".y");
-		ret.z.curve = find(".z");
-		return ret;
-	}
-
-	function getFloatParam(name: String) {
-		var v : Float = Reflect.field(this, name);
-		var curve = getOpt(Curve, name);
-		if(v == null)
-			v = curve != null ? 1.0 : 0.0;
-		var ret = new FloatParam(v);
-		ret.curve = curve;
-		// var rand : Float = Reflect.field(this, name + "Random");
-		return ret;
-	}
-
 	override function makeInstanceRec(ctx: Context) {
 		ctx = makeInstance(ctx);
 		// Don't make children, which are used to setup particles
@@ -419,7 +295,7 @@ class Emitter extends Object3D {
 			return ctx;
 		
 		var localSpeed : Value = VVector(
-			makeVal(2.0, template.getOpt(Curve, "localSpeed.x"), 1.0, template.getOpt(Curve, "localSpeedRand.x")),
+			makeVal(2.0, template.getOpt(Curve, "localSpeed.x"), 0.0, null),
 			VConst(0),
 			VConst(0)
 		);

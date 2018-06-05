@@ -1,5 +1,7 @@
 package hide.prefab;
 using Lambda;
+import hide.prefab.fx.FXScene.Value;
+import hide.prefab.fx.FXScene.Evaluator;
 
 typedef CurveHandle = {
 	dt: Float,
@@ -203,6 +205,11 @@ class Curve extends Prefab {
 		return vals;
 	}
 
+	override function getHideProps() {
+		return { icon : "paint-brush", name : "Curve", fileSource : null };
+	}
+
+
 	public static function getCurves(parent: hide.prefab.Prefab, prefix: String) {
 		return parent.getAll(hide.prefab.Curve).filter(c -> c.name.split(".")[0] == prefix);
 	}
@@ -225,18 +232,22 @@ class Curve extends Prefab {
 		return groups;
 	}
 
+
+	static inline function findCurve(curves: Array<Curve>, suffix: String) {
+		return curves.find(c -> StringTools.endsWith(c.name, suffix));
+	}
+
 	public static function getColorValue(curves: Array<Curve>, time: Float) : h3d.Vector {
-		inline function findCurve(suffix: String) {
-			return curves.find(c -> StringTools.endsWith(c.name, suffix));
+		inline function find(s) {
+			return findCurve(curves, s);
 		}
-		
-		var r = findCurve(".r");
-		var g = findCurve(".g");
-		var b = findCurve(".b");
-		var a = findCurve(".a");
-		var h = findCurve(".h");
-		var s = findCurve(".s");
-		var l = findCurve(".l");
+		var r = find(".r");
+		var g = find(".g");
+		var b = find(".b");
+		var a = find(".a");
+		var h = find(".h");
+		var s = find(".s");
+		var l = find(".l");
 
 		var col = new h3d.Vector(0, 0, 0, 1);
 
@@ -257,8 +268,44 @@ class Curve extends Prefab {
 		return col;
 	}
 
-	override function getHideProps() {
-		return { icon : "paint-brush", name : "Curve", fileSource : null };
+	public static function getAnimValue(curves: Array<Curve>) : Value {
+		inline function find(s) {
+			return findCurve(curves, s);
+		}
+		var x = find(".x");
+		var y = find(".y");
+		var z = find(".z");
+		var w = find(".w");
+
+		return VVector(
+			x != null ? VCurve(x) : VConst(0.0),
+			y != null ? VCurve(y) : VConst(0.0),
+			z != null ? VCurve(z) : VConst(0.0),
+			w != null ? VCurve(w) : VConst(1.0));
+	}
+	
+	public static function getColorAnimValue(curves: Array<Curve>) : Value {
+		inline function find(s) {
+			return findCurve(curves, s);
+		}
+		
+		var r = find(".r");
+		var g = find(".g");
+		var b = find(".b");
+		var a = find(".a");
+		var h = find(".h");
+		var s = find(".s");
+		var l = find(".l");
+		
+		if(h != null && s != null && l != null) {
+			return VHsl(VCurve(h), VCurve(s), VCurve(l), a != null ? VCurve(a) : VConst(1.0));
+		}
+
+		return VVector(
+			r != null ? VCurve(r) : VConst(0.0),
+			g != null ? VCurve(g) : VConst(0.0),
+			b != null ? VCurve(b) : VConst(0.0),
+			a != null ? VCurve(a) : VConst(1.0));
 	}
 
 	static var _ = Library.register("curve", Curve);
