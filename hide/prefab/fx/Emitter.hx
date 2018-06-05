@@ -372,47 +372,12 @@ class Emitter extends Object3D {
 		if(template == null)
 			return ctx;
 
-		function getCurve(name) {
-			return template.getOpt(Curve, name);
-		}
 
-		// function makeVal(base: Float, name: String, randFactor: Float, randCurve: Curve) {
-		// 	var val : Value = if(curve != null)
-		// 		VCurveValue(curve, base);
-		// 	else
-		// 		VConst(base);
+		function makeParam(scope: Prefab, name: String) {
+			inline function getCurve(name) {
+				return scope.getOpt(Curve, name);
+			}
 
-		// 	if(randFactor != 0.0) {
-		// 		var randScale = randCurve != null ? VCurveValue(randCurve, randFactor) : VConst(randFactor);
-		// 		val = VAdd(val, VNoise(randIdx++, randScale));
-		// 	}
-
-		// 	return val;
-		// }
-
-		// function makeFloat(name: String) : Value {
-		// 	getCurve(name
-		// }
-
-		// function makeVec(name: String) : Value {
-		// 	var base : h3d.Vector = getParamVal(name);
-		// 	if(base.length() == 0.0) {
-		// 		return VZero;
-		// 	}
-
-		// 	var x = getCurve(name + ".x");
-		// 	var y = getCurve(name + ".y");
-		// 	var z = getCurve(name + ".z");
-		// 	var w = getCurve(name + ".w");
-
-		// 	return VVector(
-		// 		x != null ? VCurveValue(x, base.x) : VConst(base.x),
-		// 		y != null ? VCurveValue(y, base.y) : VConst(base.y),
-		// 		z != null ? VCurveValue(z, base.z) : VConst(base.z),
-		// 		w != null ? VCurveValue(w, base.w) : VConst(base.w));
-		// }
-
-		function makeParam(name: String) {
 			var param = PARAMS.find(p -> p.name == name);
 			switch(param.type) {
 				case TVector(_):
@@ -423,12 +388,6 @@ class Emitter extends Object3D {
 						makeVal(baseval.y, getCurve(param.name + ".y"), randVal != null ? randVal.y : 0.0, getCurve(param.name + ".y.rand")),
 						makeVal(baseval.z, getCurve(param.name + ".z"), randVal != null ? randVal.z : 0.0, getCurve(param.name + ".z.rand")),
 						makeVal(baseval.w, getCurve(param.name + ".w"), randVal != null ? randVal.w : 0.0, getCurve(param.name + ".w.rand")));
-					// var val = makeVec(param.name);
-					// var rand = makeVec(param.name + "_rand");
-					// if(rand != VZero) {
-					// 	val = VAdd(val, rand);
-					// }
-					// return val;
 				default:
 					var baseval : Float = getParamVal(param.name);
 					var randVal : Float = getParamVal(param.name, true);
@@ -437,9 +396,9 @@ class Emitter extends Object3D {
 		}
 
 		var instDef : InstanceDef = {
-			localSpeed: makeParam("speed"),
+			localSpeed: makeParam(template, "speed"),
 			localOffset: VConst(0.0),
-			scale: VConst(1.0), //makeVal(1.0, template.getOpt(Curve, "scale.x"), 0.0, null)
+			scale: VConst(1.0),
 		};
 
 		var emitterObj = new EmitterObject(ctx.local3d, instDef);
@@ -447,14 +406,8 @@ class Emitter extends Object3D {
 		emitterObj.particleTemplate = children[0];
 		emitterObj.lifeTime = getParamVal("lifeTime");
 		emitterObj.maxCount = getParamVal("maxCount");
-		emitterObj.emitRate = makeParam("emitRate"); //makeVal(10.0, getOpt(Curve, "emitRate"), 0.0, null);
-		emitterObj.emitSize = makeParam("emitSize");
-		//emitterObj.localSpeed = 
-
-
-		//emitterObj.emitRate = getFloatParam("emitRate");
-		// emitterObj.localSpeed = getVectorParam("localSpeed");
-		//ctx.local3d.addChild(emitterObj);
+		emitterObj.emitRate = makeParam(this, "emitRate");
+		emitterObj.emitSize = makeParam(this, "emitSize");
 		ctx.local3d = emitterObj;
 		ctx.local3d.name = name;
 		applyPos(ctx.local3d);
