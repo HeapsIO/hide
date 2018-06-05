@@ -562,8 +562,10 @@ class SceneEditor {
 			return;
 		}
 
-		var el = tree.getElement(p);
-		updateTreeStyle(p, el);
+		if(p != sceneData) {
+			var el = tree.getElement(p);
+			updateTreeStyle(p, el);
+		}
 	}
 
 	function updateTreeStyle(p: PrefabElement, el: Element) {

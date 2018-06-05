@@ -90,6 +90,7 @@ class Curve extends Prefab {
 	}
 
 	public function getBounds() {
+		// TODO: Take bezier handles into account
 		var ret = new h2d.col.Bounds();
 		for(k in keys) {
 			ret.addPos(k.time, k.value);

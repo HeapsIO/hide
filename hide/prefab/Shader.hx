@@ -133,9 +133,6 @@ class Shader extends Prefab {
 		#end
 	}
 
-	// public function getCurves(prefix: String) {
-	// 	return this.getAll(hide.prefab.Curve).filter(c -> c.name.split(".")[0] == prefix);
-	// }
 
 	public function getFloatParam(name: String, time: Float) {
 		var ret = cast Reflect.field(props, name);

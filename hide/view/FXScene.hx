@@ -746,20 +746,25 @@ class FXScene extends FileView {
 
 	function onUpdate(dt:Float) {
 
-		var allObjects = data.getAll(hide.prefab.Object3D);
-		for(element in allObjects) {
-			var obj3d = sceneEditor.getObject(element);
-			if(obj3d == null)
-				continue;
-			var curves = data.getCurves(element);
-			var mat = data.getTransform(curves, currentTime);
-			mat.multiply(element.getTransform(), mat);
-			obj3d.setTransform(mat);
-			if(curves.visibility != null) {
-				var visible = curves.visibility.getVal(currentTime) > 0.5;
-				obj3d.visible = element.visible && visible;
-			}
+		var ctx = sceneEditor.getContext(data);
+		if(ctx != null && ctx.custom != null) {
+			var anim : hide.prefab.fx.FXScene.FXAnimation = cast ctx.custom;
+			anim.setTime(currentTime);
 		}
+		// var allObjects = data.getAll(hide.prefab.Object3D);
+		// for(element in allObjects) {
+		// 	var obj3d = sceneEditor.getObject(element);
+		// 	if(obj3d == null)
+		// 		continue;
+		// 	var curves = data.getCurves(element);
+		// 	var mat = data.getTransform(curves, currentTime);
+		// 	mat.multiply(element.getTransform(), mat);
+		// 	obj3d.setTransform(mat);
+		// 	if(curves.visibility != null) {
+		// 		var visible = curves.visibility.getVal(currentTime) > 0.5;
+		// 		obj3d.visible = element.visible && visible;
+		// 	}
+		// }
 
 		// Update shaders
 		var allShaders = data.getAll(hide.prefab.Shader);
