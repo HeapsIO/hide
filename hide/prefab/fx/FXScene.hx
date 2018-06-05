@@ -2,6 +2,8 @@ package hide.prefab.fx;
 import hide.prefab.Curve;
 import hide.prefab.Prefab as PrefabElement;
 
+typedef ShaderAnimation = hide.prefab.Shader.ShaderAnimation;
+
 enum Value {
 	VConst(v: Float);
 	VCurve(c: Curve);
@@ -104,6 +106,7 @@ typedef ObjectAnimation = {
 class FXAnimation {
 	
 	public var objects: Array<ObjectAnimation> = [];
+	public var shaderAnims : Array<ShaderAnimation> = [];
 
 	public function new() { }
 
@@ -116,6 +119,10 @@ class FXAnimation {
 				var visible = anim.curves.visibility.getVal(time) > 0.5;
 				anim.obj.visible = anim.elt.visible && visible;
 			}
+		}
+
+		for(anim in shaderAnims) {
+			anim.setTime(time);
 		}
 	}
 
@@ -159,7 +166,7 @@ class FXScene extends Library {
 		super.load(obj);
 	}
 
-	public function getObjAnimations(ctx:Context, elt: PrefabElement, anims: Array<ObjectAnimation>) {
+	function getObjAnimations(ctx:Context, elt: PrefabElement, anims: Array<ObjectAnimation>) {
 		if(Std.instance(elt, hide.prefab.fx.Emitter) == null) {
 			// Don't extract animations for children of Emitters
 			for(c in elt.children) {
@@ -187,6 +194,24 @@ class FXScene extends Library {
 		anims.push(anim);
 	}
 
+	function getShaderAnims(ctx: Context, elt: PrefabElement, anims: Array<ShaderAnimation>) {
+		if(Std.instance(elt, hide.prefab.fx.Emitter) == null) {
+			for(c in elt.children) {
+				getShaderAnims(ctx, c, anims);
+			}
+		}
+
+		var shader = elt.to(hide.prefab.Shader);
+		if(shader == null)
+			return;
+
+		var shCtx = ctx.shared.contexts.get(elt);
+		if(shCtx == null || shCtx.custom == null)
+			return;
+
+		anims.push(cast shCtx.custom);
+	}
+
 	override function makeInstance(ctx:Context):Context {
 		if( inRec )
 			return ctx;
@@ -194,6 +219,7 @@ class FXScene extends Library {
 		super.makeInstance(ctx);
 		var anim = new FXAnimation();
 		getObjAnimations(ctx, this, anim.objects);
+		getShaderAnims(ctx, this, anim.shaderAnims);
 		ctx.custom = anim;
 		return ctx; 
 	}
