@@ -9,11 +9,12 @@ enum EmitShape {
 	Circle;
 }
 
-enum ParamType {
-	TInt(?min: Int, ?max: Int);
-	TFloat(?min: Float, ?max: Float);
-	TVector(size: Int);
-}
+typedef ParamType = hide.comp.PropsEditor.PropType;
+// enum ParamType {
+// 	TInt(?min: Int, ?max: Int);
+// 	TFloat(?min: Float, ?max: Float);
+// 	TVector(size: Int);
+// }
 
 typedef ParamDef = {
 	name: String,
@@ -275,35 +276,50 @@ class Emitter extends Object3D {
 		props = { };
 	}
 
-	public static var PARAMS : Array<ParamDef> = [
+	static var emitterParams : Array<ParamDef> = [
 		{
 			name: "lifeTime",
-			type: TFloat(0, 10),
+			type: PFloat(0, 10),
 			defval: 1.0,
 			noanim: true
 		},
 		{
 			name: "maxCount",
-			type: TInt(0, 100),
+			type: PInt(0, 100),
 			defval: 20,
 			noanim: true
 		},
 		{
 			name: "emitRate",
-			type: TInt(0, 100),
+			type: PInt(0, 100),
 			defval: 5
 		},
 		{
 			name: "emitSize",
-			type: TFloat(0, 10),
+			type: PFloat(0, 10),
 			defval: 1.0
 		},
+	];
+
+	static var instanceParams : Array<ParamDef> = [
 		{
 			name: "speed",
-			type: TVector(3),
+			type: PVec(3),
 			defval: [5.,0.,0.]
 		},
+		{
+			name: "scale",
+			type: PVec(3),
+			defval: [1.,1.,1.]
+		}
 	];
+
+	static var PARAMS : Array<ParamDef> = {
+		var a = emitterParams.copy();
+		for(i in instanceParams)
+			a.push(i);
+		a;
+	};
 
 	override function save() {
 		var obj : Dynamic = super.save();
@@ -335,7 +351,7 @@ class Emitter extends Object3D {
 	function getParamVal(name: String, rand: Bool=false) : Dynamic {
 		var param = PARAMS.find(p -> p.name == name);
 		var isVector = switch(param.type) {
-			case TVector(_): true;
+			case PVec(_): true;
 			default: false;
 		}
 		var val : Dynamic = rand ? (isVector ? [0.,0.,0.,0.] : 0.) : param.defval;
@@ -380,7 +396,7 @@ class Emitter extends Object3D {
 
 			var param = PARAMS.find(p -> p.name == name);
 			switch(param.type) {
-				case TVector(_):
+				case PVec(_):
 					var baseval : h3d.Vector = getParamVal(param.name);
 					var randVal : h3d.Vector = getParamVal(param.name, true);
 					return VVector(
@@ -417,14 +433,26 @@ class Emitter extends Object3D {
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
 		#if editor
+		//var lines : Array<String> = [];
 		var props = ctx.properties.add(new hide.Element('
-			<div class="group" name="Layer">
-				<dl>
-					<dt>Locked</dt><dd><input type="checkbox" field="locked"/></dd>
-					<dt>Color</dt><dd><input name="colorVal"/></dd>
-				</dl>
+			<div class="group" name="Emitter">
 			</div>
 		'),this, function(pname) {
+			ctx.onChange(this, pname);
+		});
+
+		var items : Array<{ name : String, t : ParamType }> = [];
+		for(p in emitterParams) {
+			// switch(p.type) {
+			// 	case 
+			// }
+			//lines.push('<dt>${p.name}</dt><dd><input type="range" min="${p.min}" max="10" value="0" field="x"/></dd>');
+			items.push({
+				name: p.name,
+				t: p.type
+			});
+		}
+		ctx.properties.addProps(items, this.props, function(pname) {
 			ctx.onChange(this, pname);
 		});
 		#end
