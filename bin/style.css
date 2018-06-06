@@ -455,14 +455,14 @@ input[type=checkbox]:checked:after {
   content: "\25bc  ";
 }
 .hide-properties dl {
+  overflow-x: hidden;
   margin: 0px;
-  overflow: hidden;
 }
 .hide-properties dd,
 .hide-properties dt {
   vertical-align: middle;
   display: inline-block;
-  overflow: hidden;
+  overflow-x: hidden;
   margin-top: 4px;
 }
 .hide-properties dd span,
