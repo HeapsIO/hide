@@ -37,8 +37,11 @@ class Evaluator {
 			case VCurve(c): return c.getVal(time);
 			case VCurveValue(c, scale): return c.getVal(time) * scale;
 			case VNoise(idx, scale):
-				if(!(randValues[idx] > 0))
-					randValues[idx] = random.srand();
+				var len = randValues.length;
+				while(idx >= len) {
+					randValues.push(random.srand());
+					++len;
+				}
 				return randValues[idx] * getFloat(scale, time);
 			case VMult(a, b):
 				return getFloat(a, time) * getFloat(b, time);

@@ -38,12 +38,7 @@ private class ParticleInstance extends Evaluator {
 	public var curVelocity = new h3d.Vector();
 	public var curPos = new h3d.Vector();
 	public var orientation = new h3d.Quat();
-	//public var orientation = new h3d.Matrix();
 
-	// public var speed : VectorParam;
-	// public var localSpeed : VectorParam;
-	// public var globalSpeed : VectorParam;
-	// public var localOffset : VectorParam;
 	public var def : InstanceDef;
 	public var shaderAnims : ShaderAnims;
 
@@ -58,14 +53,9 @@ private class ParticleInstance extends Evaluator {
 
 		var localSpeed = getVector(def.localSpeed, life);
 		if(localSpeed.length() > 0.001) {
-			// var locSpeedVec = localSpeed.get(life);
 			localSpeed.transform3x3(orientation.toMatrix());
 			curVelocity = localSpeed;
 		}
-		// {
-		// 	var globSpeedVec = new h3d.Vector(0, 0, -2);
-		// 	curVelocity = curVelocity.add(globSpeedVec);
-		// }
 
 		curPos.x += curVelocity.x * dt;
 		curPos.y += curVelocity.y * dt;
@@ -77,15 +67,8 @@ private class ParticleInstance extends Evaluator {
 		obj.scaleY = scaleVec.y;
 		obj.scaleZ = scaleVec.z;
 
-		// if(localOffset != null) {
-		// 	var off = localOffset.get(life);
-		// 	obj.x += off.x;
-		// 	obj.y += off.y;
-		// 	obj.z += off.x;
-		// }
-
 		for(anim in shaderAnims) {
-			anim.setTime(life);
+			anim.setTime(life);  // TODO: Scale by lifetime
 		}
 
 		life += dt;
@@ -104,18 +87,12 @@ class EmitterObject extends h3d.scene.Object {
 	public var particleTemplate : hide.prefab.Prefab;
 	public var maxCount = 20;
 	public var lifeTime = 2.0;
-	// public var emitRate : FloatParam;
 	public var emitShape : EmitShape = Circle;
-	// public var emitShapeSize = new FloatParam(6.0);
 
-	var emitRate : Value;
-	var emitSize : Value;
+	public var emitRate : Value;
+	public var emitSize : Value;
 
 	public var instDef : InstanceDef;
-
-	// public var emitSpeed = new FloatParam(1.0);
-	// public var localSpeed = new VectorParam();
-	// public var partSpeed = new VectorParam();
 
 	public function new(?parent) {
 		super(parent);
@@ -131,9 +108,6 @@ class EmitterObject extends h3d.scene.Object {
 	var evaluator : Evaluator;
 
 	var instances : Array<ParticleInstance> = [];
-
-	// public function new()
-
 
 	function reset() {
 		curTime = 0.0;
@@ -177,23 +151,12 @@ class EmitterObject extends h3d.scene.Object {
 			}
 
 			localPos.transform(absPos);
-			// localTrans.multiply(localTrans, absPos);
 			var part = new ParticleInstance(this, instDef);
 			part.obj = obj3d;
 			part.curPos = localPos;
-			// part.localSpeed = localSpeed.copy();
-			//part.transform = localTrans;
 			part.orientation.initRotateMatrix(absPos);
-			// part.curVelocity
 
 			part.shaderAnims = [];
-			// var shaders = particleTemplate.getAll(hide.prefab.Shader);
-			// for(shader in shaders) {
-			// 	var params = shader.makeParams();
-			// 	part.shaderAnims.push({
-
-			// 	});
-			// }
 			var shaders = particleTemplate.getAll(hide.prefab.Shader);
 			for(shader in shaders) {
 				var shCtx = shader.makeInstance(ctx);
@@ -210,12 +173,9 @@ class EmitterObject extends h3d.scene.Object {
 	}
 
 	function tick(dt: Float) {
-		// def.getSum(EmitRate, this);
-
 		var emitTarget = evaluator.getSum(emitRate, curTime);
 		var delta = hxd.Math.floor(emitTarget - emitCount);
 		doEmit(delta);
-
 
 		var i = instances.length;
 		while (i-- > 0) {
@@ -240,28 +200,6 @@ class EmitterObject extends h3d.scene.Object {
 		for(i in 0...numTicks) {
 			tick(catchup / numTicks);
 		}
-
-		// var deltaTime = time - lastTime;
-		// lastTime = curTime;
-		// curTime = time;
-
-		// if(deltaTime <= 0.01)
-		// 	return;
-	}
-
-	override function sync(ctx) {
-		super.sync(ctx);
-		// if(ctx.elapsedTime == 0)
-		// 	return;
-
-		// if(ctx.time < lastTime || lastTime < 0) {
-		// 	reset();
-		// }
-
-
-		// for(inst in instances) {
-		// 	inst.update(deltaTime);
-		// }
 	}
 }
 
@@ -375,21 +313,25 @@ class Emitter extends Object3D {
 		if(template == null)
 			return;
 
-		function makeVal(base: Float, curve: Curve, randFactor: Float, randCurve: Curve) {
-			var val : Value = if(curve != null)
+		function makeVal(base: Float, curve: Curve, randFactor: Float, randCurve: Curve): Value {
+			var val : Value = if(curve != null && base != 0.0)
 				VCurveValue(curve, base);
-			else
+			else if(base != 0.0)
 				VConst(base);
+			else VZero;
 
 			if(randFactor != 0.0) {
 				var randScale = randCurve != null ? VCurveValue(randCurve, randFactor) : VConst(randFactor);
-				val = VAdd(val, VNoise(randIdx++, randScale));
+				var noise = VNoise(randIdx++, randScale);
+				if(val == VZero)
+					val = noise;
+				else
+					val = VAdd(val, noise);
 			}
-
 			return val;
 		}
 
-		function makeParam(scope: Prefab, name: String) {
+		function makeParam(scope: Prefab, name: String): Value {
 			inline function getCurve(name) {
 				return scope.getOpt(Curve, name);
 			}
@@ -426,62 +368,9 @@ class Emitter extends Object3D {
 
 	override function makeInstance(ctx:Context):Context {
 		ctx = ctx.clone(this);
-
-		// var randIdx = 0;
-		// function makeVal(base: Float, curve: Curve, randFactor: Float, randCurve: Curve) {
-		// 	var val : Value = if(curve != null)
-		// 		VCurveValue(curve, base);
-		// 	else
-		// 		VConst(base);
-
-		// 	if(randFactor != 0.0) {
-		// 		var randScale = randCurve != null ? VCurveValue(randCurve, randFactor) : VConst(randFactor);
-		// 		val = VAdd(val, VNoise(randIdx++, randScale));
-		// 	}
-
-		// 	return val;
-		// }
-
-		// var template = children[0];
-		// if(template == null)
-		// 	return ctx;
-
-
-		// function makeParam(scope: Prefab, name: String) {
-		// 	inline function getCurve(name) {
-		// 		return scope.getOpt(Curve, name);
-		// 	}
-
-		// 	var param = PARAMS.find(p -> p.name == name);
-		// 	switch(param.t) {
-		// 		case PVec(_):
-		// 			var baseval : h3d.Vector = getParamVal(param.name);
-		// 			var randVal : h3d.Vector = getParamVal(param.name, true);
-		// 			return VVector(
-		// 				makeVal(baseval.x, getCurve(param.name + ".x"), randVal != null ? randVal.x : 0.0, getCurve(param.name + ".x.rand")),
-		// 				makeVal(baseval.y, getCurve(param.name + ".y"), randVal != null ? randVal.y : 0.0, getCurve(param.name + ".y.rand")),
-		// 				makeVal(baseval.z, getCurve(param.name + ".z"), randVal != null ? randVal.z : 0.0, getCurve(param.name + ".z.rand")));
-		// 		default:
-		// 			var baseval : Float = getParamVal(param.name);
-		// 			var randVal : Float = getParamVal(param.name, true);
-		// 			return makeVal(baseval, getCurve(param.name), randVal != null ? randVal : 0.0, getCurve(param.name + ".rand"));
-		// 	}
-		// }
-
-		// var instDef : InstanceDef = {
-		// 	localSpeed: makeParam(template, "speed"),
-		// 	localOffset: VConst(0.0),
-		// 	scale: VConst(1.0),
-		// };
-
 		var emitterObj = new EmitterObject(ctx.local3d);
 		emitterObj.context = ctx;
 		applyParams(emitterObj);
-		// emitterObj.particleTemplate = children[0];
-		// emitterObj.lifeTime = getParamVal("lifeTime");
-		// emitterObj.maxCount = getParamVal("maxCount");
-		// emitterObj.emitRate = makeParam(this, "emitRate");
-		// emitterObj.emitSize = makeParam(this, "emitSize");
 		ctx.local3d = emitterObj;
 		ctx.local3d.name = name;
 		applyPos(ctx.local3d);
@@ -492,7 +381,6 @@ class Emitter extends Object3D {
 		super.edit(ctx);
 		#if editor
 
-		
 		function refresh() {
 			ctx.properties.clear();
 			this.edit(ctx);
@@ -505,15 +393,7 @@ class Emitter extends Object3D {
 				applyParams(emitter);
 		}
 
-
 		var emGroup = new Element('<div class="group" name="Emitter"></div>');
-		// hide.comp.PropsEditor.makePropsList(emitter)
-		// var lines : Array<String> = [];
-		// var items : Array<hide.comp.PropsEditor.PropDef> = [];
-		// for(p in emitterParams) {
-
-		// 	items.push({name: p.name, t: p.y, def: p.def});
-		// }	
 		emGroup.append(hide.comp.PropsEditor.makePropsList(emitterParams));
 		var props = ctx.properties.add(emGroup, this.props, onChange);
 
@@ -557,31 +437,8 @@ class Emitter extends Object3D {
 			}
 			var props = ctx.properties.add(instGroup, this.props, onChange);
 		}
-
-
-		// var lines : Array<String> = [];
-		// for(p in instanceParams) {
-		// 	switch(p.type) {
-		// 		case PFloat(min, max):
-		// 			lines.push('<dt>${p.name}</dt><dd>
-		// 				<input type="range" min="${min}" max="${max}" value="${p.def}" field="props.${p.name}"/>
-		// 			</dd>');
-		// 		case PInt(min, max):
-		// 			lines.push('<dt>${p.name}</dt><dd>
-		// 				<input type="range" min="${min}" max="${max}" value="${p.def}" field="props.${p.name}" step="1" />
-		// 			</dd>');
-		// 		default:
-		// 	}
-		// }
-		// var props = ctx.properties.add(new hide.Element('<div class="group" name="Particles">' + lines.join('') + '</div>'),this, function(pname) {
-		// 	ctx.onChange(this, pname);
-		// });
-		// // ctx.properties.addProps(items, this.props, function(pname) {
-		// 	ctx.onChange(this, pname);
-		// });
 		#end
 	}
-
 
 	override function getHideProps() {
 		return { icon : "asterisk", name : "Emitter", fileSource : null };
