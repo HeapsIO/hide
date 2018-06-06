@@ -110,6 +110,8 @@ class Gizmo extends h3d.scene.Object {
 		moving = true;
 		if(onStartMove != null) onStartMove(mode);
 		var startMat = getAbsPos().clone();
+		var startQuat = new h3d.Quat();
+		startQuat.initRotateMatrix(startMat);
 		var startPos = getAbsPos().pos().toPoint();
 		var dragPlane = null;
 		var cam = scene.s3d.camera;
@@ -129,6 +131,7 @@ class Gizmo extends h3d.scene.Object {
 			case Scale: norm.z = 0;
 		}
 		norm.normalize();
+		norm.transform3x3(startMat);
 		dragPlane = h3d.col.Plane.fromNormalPoint(norm, startPos);
 		var startDragPt = getDragPoint(dragPlane);
 		updateFunc = function(dt) {
@@ -151,16 +154,12 @@ class Gizmo extends h3d.scene.Object {
 				return hxd.Math.round(m / step) * step;
 			}
 
-			if(axisScale) {
-				if(mode == MoveX) vec.x = snap(delta.dot(startMat.front().toPoint()));
-				if(mode == MoveY) vec.y = snap(delta.dot(startMat.right().toPoint()));
-				if(mode == MoveZ) vec.z = snap(delta.dot(startMat.up().toPoint()));
-			}
-			else {
-				if(mode == MoveX || mode == MoveXY || mode == MoveZX) vec.x = snap(delta.x);
-				if(mode == MoveY || mode == MoveYZ || mode == MoveXY) vec.y = snap(delta.y);
-				if(mode == MoveZ || mode == MoveZX || mode == MoveYZ) vec.z = snap(delta.z);
-
+			if(mode == MoveX || mode == MoveXY || mode == MoveZX) vec.x = snap(delta.dot(startMat.front().toPoint()));
+			if(mode == MoveY || mode == MoveYZ || mode == MoveXY) vec.y = snap(delta.dot(startMat.right().toPoint()));
+			if(mode == MoveZ || mode == MoveZX || mode == MoveYZ) vec.z = snap(delta.dot(startMat.up().toPoint()));
+			
+			if(!axisScale) {
+				vec.transform3x3(startMat);
 				x = (startPos.x + vec.x);
 				y = (startPos.y + vec.y);
 				z = (startPos.z + vec.z);
@@ -181,7 +180,9 @@ class Gizmo extends h3d.scene.Object {
 				if(rotateStep > 0 && K.isDown(K.CTRL))
 					angle =  hxd.Math.round(angle / rotateStep) * rotateStep;
 				quat.initRotateAxis(norm.x, norm.y, norm.z, angle);
-				setRotationQuat(quat);
+				var localQuat = new h3d.Quat();
+				localQuat.multiply(quat, startQuat);
+				setRotationQuat(localQuat);
 			}
 
 			if(onMove != null) {
@@ -209,7 +210,6 @@ class Gizmo extends h3d.scene.Object {
 		updateFunc = null;
 		if(onFinishMove != null)
 			onFinishMove();
-		getRotationQuat().identity();
 		posChanged = true;
 		moving = false;
 		if(intOverlay != null) {
@@ -228,7 +228,9 @@ class Gizmo extends h3d.scene.Object {
 		var cam = this.getScene().camera;
 		var gpos = gizmo.getAbsPos().pos();
 		var distToCam = cam.pos.sub(gpos).length();
-		gizmo.setScale(distToCam / 30 );
+		var engine = h3d.Engine.getCurrent();
+		var ratio = 150 / engine.height;
+		gizmo.setScale(ratio * distToCam * Math.tan(cam.fovY * 0.5 * Math.PI / 180.0));
 
 		axisScale = K.isDown(K.ALT);
 		for(n in ["xRotate", "yRotate", "zRotate", "xy", "xz", "yz", "scale"]) {
