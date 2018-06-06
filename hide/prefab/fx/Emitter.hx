@@ -17,9 +17,7 @@ typedef ParamType = hide.comp.PropsEditor.PropType;
 // }
 
 typedef ParamDef = {
-	name: String,
-	type: ParamType,
-	defval: Dynamic,
+	> hide.comp.PropsEditor.PropDef,
 	?noanim: Bool
 }
 
@@ -279,38 +277,38 @@ class Emitter extends Object3D {
 	static var emitterParams : Array<ParamDef> = [
 		{
 			name: "lifeTime",
-			type: PFloat(0, 10),
-			defval: 1.0,
+			t: PFloat(0, 10),
+			def: 1.0,
 			noanim: true
 		},
 		{
 			name: "maxCount",
-			type: PInt(0, 100),
-			defval: 20,
+			t: PInt(0, 100),
+			def: 20,
 			noanim: true
 		},
 		{
 			name: "emitRate",
-			type: PInt(0, 100),
-			defval: 5
+			t: PInt(0, 100),
+			def: 5
 		},
 		{
 			name: "emitSize",
-			type: PFloat(0, 10),
-			defval: 1.0
+			t: PFloat(0, 10),
+			def: 1.0
 		},
 	];
 
 	static var instanceParams : Array<ParamDef> = [
 		{
 			name: "speed",
-			type: PVec(3),
-			defval: [5.,0.,0.]
+			t: PVec(3),
+			def: [5.,0.,0.]
 		},
 		{
 			name: "scale",
-			type: PVec(3),
-			defval: [1.,1.,1.]
+			t: PVec(3),
+			def: [1.,1.,1.]
 		}
 	];
 
@@ -326,7 +324,7 @@ class Emitter extends Object3D {
 		for(param in PARAMS) {
 			if(Reflect.hasField(props, param.name)) {
 				var f = Reflect.field(props, param.name);
-				if(f != param.defval) {
+				if(f != param.def) {
 					Reflect.setField(obj, param.name, f);
 				}
 			}
@@ -348,21 +346,32 @@ class Emitter extends Object3D {
 		// Don't make children, which are used to setup particles
 	}
 
+	static inline function randProp(name: String) {
+		return name + "_rand";
+	}
+
 	function getParamVal(name: String, rand: Bool=false) : Dynamic {
 		var param = PARAMS.find(p -> p.name == name);
-		var isVector = switch(param.type) {
+		var isVector = switch(param.t) {
 			case PVec(_): true;
 			default: false;
 		}
-		var val : Dynamic = rand ? (isVector ? [0.,0.,0.,0.] : 0.) : param.defval;
+		var val : Dynamic = rand ? (isVector ? [0.,0.,0.,0.] : 0.) : param.def;
 		if(rand)
-			name = name + "_rand";
+			name = randProp(name);
 		if(props != null && Reflect.hasField(props, name)) {
 			val = Reflect.field(props, name);
 		}
 		if(isVector)
 			return h3d.Vector.fromArray(val);
 		return val;
+	}
+
+	function applyParams(ctx: Context) {
+		var emitter = Std.instance(ctx.local3d, EmitterObject);
+		if(emitter == null)
+			return;
+		
 	}
 
 	override function makeInstance(ctx:Context):Context {
@@ -395,15 +404,14 @@ class Emitter extends Object3D {
 			}
 
 			var param = PARAMS.find(p -> p.name == name);
-			switch(param.type) {
+			switch(param.t) {
 				case PVec(_):
 					var baseval : h3d.Vector = getParamVal(param.name);
 					var randVal : h3d.Vector = getParamVal(param.name, true);
 					return VVector(
 						makeVal(baseval.x, getCurve(param.name + ".x"), randVal != null ? randVal.x : 0.0, getCurve(param.name + ".x.rand")),
 						makeVal(baseval.y, getCurve(param.name + ".y"), randVal != null ? randVal.y : 0.0, getCurve(param.name + ".y.rand")),
-						makeVal(baseval.z, getCurve(param.name + ".z"), randVal != null ? randVal.z : 0.0, getCurve(param.name + ".z.rand")),
-						makeVal(baseval.w, getCurve(param.name + ".w"), randVal != null ? randVal.w : 0.0, getCurve(param.name + ".w.rand")));
+						makeVal(baseval.z, getCurve(param.name + ".z"), randVal != null ? randVal.z : 0.0, getCurve(param.name + ".z.rand")));
 				default:
 					var baseval : Float = getParamVal(param.name);
 					var randVal : Float = getParamVal(param.name, true);
@@ -416,6 +424,8 @@ class Emitter extends Object3D {
 			localOffset: VConst(0.0),
 			scale: VConst(1.0),
 		};
+
+		trace(instDef.localSpeed);
 
 		var emitterObj = new EmitterObject(ctx.local3d, instDef);
 		emitterObj.context = ctx;
@@ -433,28 +443,91 @@ class Emitter extends Object3D {
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
 		#if editor
-		//var lines : Array<String> = [];
-		var props = ctx.properties.add(new hide.Element('
-			<div class="group" name="Emitter">
-			</div>
-		'),this, function(pname) {
+
+		
+		function refresh() {
+			ctx.properties.clear();
+			this.edit(ctx);
+		}
+
+
+		var emGroup = new Element('<div class="group" name="Emitter"></div>');
+		// hide.comp.PropsEditor.makePropsList(emitter)
+		// var lines : Array<String> = [];
+		// var items : Array<hide.comp.PropsEditor.PropDef> = [];
+		// for(p in emitterParams) {
+
+		// 	items.push({name: p.name, t: p.y, def: p.def});
+		// }	
+		emGroup.append(hide.comp.PropsEditor.makePropsList(emitterParams));
+		var props = ctx.properties.add(emGroup, this.props, function(pname) {
 			ctx.onChange(this, pname);
 		});
 
-		var items : Array<{ name : String, t : ParamType }> = [];
-		for(p in emitterParams) {
-			// switch(p.type) {
-			// 	case 
-			// }
-			//lines.push('<dt>${p.name}</dt><dd><input type="range" min="${p.min}" max="10" value="0" field="x"/></dd>');
-			items.push({
-				name: p.name,
-				t: p.type
+
+		{
+			var instGroup = new Element('<div class="group" name="Particles"></div>');
+			var dl = new Element('<dl>').appendTo(instGroup);
+			for(p in instanceParams) {
+				var dt = new Element('<dt>${p.name}</dt>').appendTo(dl);
+				var dd = new Element('<dd>').appendTo(dl);
+				if(Reflect.hasField(this.props, p.name)) {
+					hide.comp.PropsEditor.makePropEl(p, dd);
+				}
+				else {
+					var btn = new Element('<input type="button" value="+"></input>').appendTo(dd);
+					btn.click(function(e) {
+						Reflect.setField(this.props, p.name, p.def);
+						refresh();
+					});
+				}
+				var dt = new Element('<dt>~</dt>').appendTo(dl);
+				var dd = new Element('<dd>').appendTo(dl);
+				var randDef : Dynamic = switch(p.t) {
+					case PVec(n): [for(i in 0...n) 0.0];
+					case PFloat(_): 0.0;
+					default: 0;
+				};
+				if(Reflect.hasField(this.props, randProp(p.name))) {
+					hide.comp.PropsEditor.makePropEl({
+						name: randProp(p.name),
+						t: p.t,
+						def: randDef}, dd);
+				}
+				else {
+					var btn = new Element('<input type="button" value="+"></input>').appendTo(dd);
+					btn.click(function(e) {
+						Reflect.setField(this.props, randProp(p.name), randDef);
+						refresh();
+					});
+				}
+			}
+			var props = ctx.properties.add(instGroup, this.props, function(pname) {
+				ctx.onChange(this, pname);
 			});
 		}
-		ctx.properties.addProps(items, this.props, function(pname) {
-			ctx.onChange(this, pname);
-		});
+
+
+		// var lines : Array<String> = [];
+		// for(p in instanceParams) {
+		// 	switch(p.type) {
+		// 		case PFloat(min, max):
+		// 			lines.push('<dt>${p.name}</dt><dd>
+		// 				<input type="range" min="${min}" max="${max}" value="${p.def}" field="props.${p.name}"/>
+		// 			</dd>');
+		// 		case PInt(min, max):
+		// 			lines.push('<dt>${p.name}</dt><dd>
+		// 				<input type="range" min="${min}" max="${max}" value="${p.def}" field="props.${p.name}" step="1" />
+		// 			</dd>');
+		// 		default:
+		// 	}
+		// }
+		// var props = ctx.properties.add(new hide.Element('<div class="group" name="Particles">' + lines.join('') + '</div>'),this, function(pname) {
+		// 	ctx.onChange(this, pname);
+		// });
+		// // ctx.properties.addProps(items, this.props, function(pname) {
+		// 	ctx.onChange(this, pname);
+		// });
 		#end
 	}
 

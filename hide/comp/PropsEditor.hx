@@ -9,6 +9,12 @@ enum PropType {
 	PUnsupported( debug : String );
 }
 
+typedef PropDef = {
+	name : String,
+	t : PropType,
+	?def: Dynamic
+};
+
 class PropsEditor extends Component {
 
 	public var undo : hide.ui.UndoHistory;
@@ -42,38 +48,53 @@ class PropsEditor extends Component {
 			def.appendTo(parent);
 	}
 
-	public function addProps( props : Array<{ name : String, t : PropType }>, context : Dynamic, ?onChange : String -> Void) {
-		var e = new Element('<dl>');
-		for( p in props ) {
-			new Element('<dt>${p.name}</dt>').appendTo(e);
-			var def = new Element('<dd>').appendTo(e);
-			switch( p.t ) {
-			case PInt(min, max):
-				var e = new Element('<input type="range" field="${p.name}" step="1">').appendTo(def);
-				if( min != null ) e.attr("min", "" + min);
-				e.attr("max", "" + (max == null ? 100 : max));
-			case PFloat(min, max):
-				var e = new Element('<input type="range" field="${p.name}">').appendTo(def);
-				if( min != null ) e.attr("min", "" + min);
-				if( max != null ) e.attr("max", "" + max);
-			case PBool:
-				new Element('<input type="checkbox" field="${p.name}">').appendTo(def);
-			case PTexture:
-				new Element('<input type="texturepath" field="${p.name}">').appendTo(def);
-			case PUnsupported(text):
-				new Element('<font color="red">' + StringTools.htmlEscape(text) + '</font>').appendTo(def);
-			case PVec(n):
-				var isColor = p.name.toLowerCase().indexOf("color") >= 0;
-				var names = isColor ? ["r", "g", "b", "a"] : ["x", "y", "z", "w"];
-				for( i in 0...n ) {
-					var div = new Element('<div>').appendTo(def);
-					new Element('<span>${names[i]} </span>').appendTo(div);
-					var e = new Element('<input type="range" class="small" field="${p.name}.$i">').appendTo(div);
-					e.attr("min", isColor ? "0" : "-1");
-					e.attr("max", "1");
-				}
+	public static function makePropEl(p: PropDef, parent: Element) {
+		switch( p.t ) {
+		case PInt(min, max):
+			var e = new Element('<input type="range" field="${p.name}" step="1">').appendTo(parent);
+			if( min != null ) e.attr("min", "" + min);
+			if(p.def != null) e.attr("value", "" + p.def);
+			e.attr("max", "" + (max == null ? 100 : max));
+		case PFloat(min, max):
+			var e = new Element('<input type="range" field="${p.name}">').appendTo(parent);
+			if(p.def != null) e.attr("value", "" + p.def);
+			if( min != null ) e.attr("min", "" + min);
+			if( max != null ) e.attr("max", "" + max);
+		case PBool:
+			new Element('<input type="checkbox" field="${p.name}">').appendTo(parent);
+		case PTexture:
+			new Element('<input type="texturepath" field="${p.name}">').appendTo(parent);
+		case PUnsupported(text):
+			new Element('<font color="red">' + StringTools.htmlEscape(text) + '</font>').appendTo(parent);
+		case PVec(n):
+			var isColor = p.name.toLowerCase().indexOf("color") >= 0;
+			var names = isColor ? ["r", "g", "b", "a"] : ["x", "y", "z", "w"];
+			for( i in 0...n ) {
+				var div = new Element('<div>').appendTo(parent);
+				new Element('<span>${names[i]} </span>').appendTo(div);
+				var e = new Element('<input type="range" class="small" field="${p.name}.$i">').appendTo(div);
+				e.attr("min", isColor ? "0" : "-1");
+				e.attr("max", "1");
 			}
 		}
+	}
+
+	static function upperCase(prop: String) {
+		return prop.charAt(0).toUpperCase() + prop.substr(1);
+	}
+
+	public static function makePropsList(props : Array<PropDef>) : Element {
+		var e = new Element('<dl>');
+		for( p in props ) {
+			new Element('<dt>${upperCase(p.name)}</dt>').appendTo(e);
+			var def = new Element('<dd>').appendTo(e);
+			makePropEl(p, def);
+		}
+		return e;
+	}
+
+	public function addProps( props : Array<PropDef>, context : Dynamic, ?onChange : String -> Void) {
+		var e = makePropsList(props);
 		return add(e, context, onChange);
 	}
 
@@ -136,11 +157,11 @@ class PropsEditor extends Component {
 			fields.push(f);
 
 			// Init reset buttons
-			var defVal = f.element.attr("value");
-			if(defVal != null) {
+			var def = f.element.attr("value");
+			if(def != null) {
 				var dd = f.element.parent().parent("dd");
 				var dt = dd.prev("dt");
-				var tooltip = 'Click to reset ($defVal)\nCtrl+Click to round';
+				var tooltip = 'Click to reset ($def)\nCtrl+Click to round';
 				var button = dt.wrapInner('<input type="button" tabindex="-1" value="${dt.text()}" title="$tooltip"/>');
 				button.click(function(e) {
 					var range = @:privateAccess f.range;
@@ -246,7 +267,8 @@ class PropsField extends Component {
 			return;
 		case "range":
 			range = new hide.comp.Range(null,f);
-			range.value = current;
+			if(!Math.isNaN(current))
+				range.value = current;
 			range.onChange = function(temp) {
 				tempChange = temp;
 				setVal(range.value);
