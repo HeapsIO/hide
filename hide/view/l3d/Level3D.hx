@@ -77,6 +77,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 	public function new(view, context, data) {
 		super(view, context, data);
 		parent = cast view;
+		this.localTransform = false; // TODO: Expose option
 	}
 
 	override function makeCamController() {

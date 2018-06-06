@@ -79,6 +79,7 @@ class SceneEditor {
 	public var properties : hide.comp.PropsEditor;
 	public var curEdit(default, null) : SceneEditorContext;
 	public var snapToGround = false;
+	public var localTransform = true;
 
 	var searchBox : Element;
 
@@ -481,7 +482,7 @@ class SceneEditor {
 			gizmo.visible = true;
 			gizmo.setPos(pos.x, pos.y, pos.z);
 
-			if(curEdit.rootObjects.length == 1 && K.isDown(K.ALT)) {
+			if(curEdit.rootObjects.length == 1 && (localTransform || K.isDown(K.ALT))) {
 				var obj = curEdit.rootObjects[0];
 				var mat = worldMat(obj);
 				var s = mat.getScale();
