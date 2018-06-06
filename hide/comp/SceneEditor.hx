@@ -108,6 +108,7 @@ class SceneEditor {
 
 		tree = new hide.comp.IconTree();
 		tree.async = false;
+		tree.autoOpenNodes = false;
 
 		var sceneEl = new Element('<div class="scene"></div>');
 		scene = new hide.comp.Scene(null, sceneEl);
@@ -126,7 +127,7 @@ class SceneEditor {
 				searchBox.find("input").focus().select();
 			}
 		});
-		view.keys.register("sceneeditor.focus", focusCamOnSelection);
+		view.keys.register("sceneeditor.focus", focusSelection);
 		view.keys.register("sceneeditor.lasso", startLassoSelect);
 		view.keys.register("sceneeditor.hide", function() {	setVisible(curEdit.elements, false); });
 		view.keys.register("sceneeditor.isolate", function() {	isolate(curEdit.elements); });
@@ -166,10 +167,12 @@ class SceneEditor {
 		return c;
 	}
 
-	function focusCamOnSelection() {
+	function focusSelection() {
 		if(curEdit.rootObjects.length > 0) {
 			cameraController.set(curEdit.rootObjects[0].getAbsPos().pos().toPoint());
 		}
+		for(obj in curEdit.rootElements)
+			tree.revealNode(obj);
 	}
 
 	function onSceneReady() {
@@ -239,7 +242,7 @@ class SceneEditor {
 			selectObjects(tree.getSelection(), false);
 		}
 		tree.onDblClick = function(e) {
-			focusCamOnSelection();
+			focusSelection();
 			return true;
 		}
 		tree.onRename = function(e, name) {
@@ -526,7 +529,7 @@ class SceneEditor {
 
 			if(K.isReleased(K.MOUSE_LEFT) || K.isPressed(K.MOUSE_LEFT)) {
 				var contexts = context.shared.contexts;
-				var all = contexts.keys();
+				var all = getAllVisible();
 				var inside = [];
 				for(elt in all) {
 					if(elt.to(Object3D) == null)
@@ -784,8 +787,21 @@ class SceneEditor {
 		}
 	}
 
+	public function isVisible(elt: PrefabElement) {
+		if(elt == sceneData)
+			return true;
+		var o = elt.to(Object3D);
+		if(o == null)
+			return true;
+		return o.visible && (elt.parent != null ? isVisible(elt.parent) : true);
+	}
+
+	public function getAllVisible() : Array<PrefabElement> {
+		return [for(e in context.shared.elements()) if(isVisible(e)) e];
+	}
+
 	public function selectAll() {
-		selectObjects(context.shared.elements());
+		selectObjects(getAllVisible());
 	}
 
 	public function deselect() {
