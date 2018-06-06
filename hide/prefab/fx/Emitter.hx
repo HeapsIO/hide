@@ -117,9 +117,8 @@ class EmitterObject extends h3d.scene.Object {
 	// public var localSpeed = new VectorParam();
 	// public var partSpeed = new VectorParam();
 
-	public function new(?parent, instDef) {
+	public function new(?parent) {
 		super(parent);
-		this.instDef = instDef;
 		random = new hxd.Rand(0);
 		evaluator = new Evaluator(random);
 	}
@@ -147,6 +146,9 @@ class EmitterObject extends h3d.scene.Object {
 
 	function doEmit(count: Int) {
 		calcAbsPos();
+
+		if(instDef == null)
+			return;
 
 		var shapeSize = evaluator.getFloat(emitSize, curTime);
 		context.local3d = this.parent;
@@ -367,17 +369,11 @@ class Emitter extends Object3D {
 		return val;
 	}
 
-	function applyParams(ctx: Context) {
-		var emitter = Std.instance(ctx.local3d, EmitterObject);
-		if(emitter == null)
-			return;
-		
-	}
-
-	override function makeInstance(ctx:Context):Context {
-		ctx = ctx.clone(this);
-
+	public function applyParams(emitterObj: EmitterObject) {
 		var randIdx = 0;
+		var template = children[0];
+		if(template == null)
+			return;
 
 		function makeVal(base: Float, curve: Curve, randFactor: Float, randCurve: Curve) {
 			var val : Value = if(curve != null)
@@ -392,11 +388,6 @@ class Emitter extends Object3D {
 
 			return val;
 		}
-
-		var template = children[0];
-		if(template == null)
-			return ctx;
-
 
 		function makeParam(scope: Prefab, name: String) {
 			inline function getCurve(name) {
@@ -419,21 +410,78 @@ class Emitter extends Object3D {
 			}
 		}
 
-		var instDef : InstanceDef = {
+		emitterObj.instDef = {
 			localSpeed: makeParam(template, "speed"),
 			localOffset: VConst(0.0),
 			scale: VConst(1.0),
 		};
 
-		trace(instDef.localSpeed);
-
-		var emitterObj = new EmitterObject(ctx.local3d, instDef);
-		emitterObj.context = ctx;
-		emitterObj.particleTemplate = children[0];
+		trace(emitterObj.instDef.localSpeed);
+		emitterObj.particleTemplate = template;
 		emitterObj.lifeTime = getParamVal("lifeTime");
 		emitterObj.maxCount = getParamVal("maxCount");
 		emitterObj.emitRate = makeParam(this, "emitRate");
 		emitterObj.emitSize = makeParam(this, "emitSize");
+	}
+
+	override function makeInstance(ctx:Context):Context {
+		ctx = ctx.clone(this);
+
+		// var randIdx = 0;
+		// function makeVal(base: Float, curve: Curve, randFactor: Float, randCurve: Curve) {
+		// 	var val : Value = if(curve != null)
+		// 		VCurveValue(curve, base);
+		// 	else
+		// 		VConst(base);
+
+		// 	if(randFactor != 0.0) {
+		// 		var randScale = randCurve != null ? VCurveValue(randCurve, randFactor) : VConst(randFactor);
+		// 		val = VAdd(val, VNoise(randIdx++, randScale));
+		// 	}
+
+		// 	return val;
+		// }
+
+		// var template = children[0];
+		// if(template == null)
+		// 	return ctx;
+
+
+		// function makeParam(scope: Prefab, name: String) {
+		// 	inline function getCurve(name) {
+		// 		return scope.getOpt(Curve, name);
+		// 	}
+
+		// 	var param = PARAMS.find(p -> p.name == name);
+		// 	switch(param.t) {
+		// 		case PVec(_):
+		// 			var baseval : h3d.Vector = getParamVal(param.name);
+		// 			var randVal : h3d.Vector = getParamVal(param.name, true);
+		// 			return VVector(
+		// 				makeVal(baseval.x, getCurve(param.name + ".x"), randVal != null ? randVal.x : 0.0, getCurve(param.name + ".x.rand")),
+		// 				makeVal(baseval.y, getCurve(param.name + ".y"), randVal != null ? randVal.y : 0.0, getCurve(param.name + ".y.rand")),
+		// 				makeVal(baseval.z, getCurve(param.name + ".z"), randVal != null ? randVal.z : 0.0, getCurve(param.name + ".z.rand")));
+		// 		default:
+		// 			var baseval : Float = getParamVal(param.name);
+		// 			var randVal : Float = getParamVal(param.name, true);
+		// 			return makeVal(baseval, getCurve(param.name), randVal != null ? randVal : 0.0, getCurve(param.name + ".rand"));
+		// 	}
+		// }
+
+		// var instDef : InstanceDef = {
+		// 	localSpeed: makeParam(template, "speed"),
+		// 	localOffset: VConst(0.0),
+		// 	scale: VConst(1.0),
+		// };
+
+		var emitterObj = new EmitterObject(ctx.local3d);
+		emitterObj.context = ctx;
+		applyParams(emitterObj);
+		// emitterObj.particleTemplate = children[0];
+		// emitterObj.lifeTime = getParamVal("lifeTime");
+		// emitterObj.maxCount = getParamVal("maxCount");
+		// emitterObj.emitRate = makeParam(this, "emitRate");
+		// emitterObj.emitSize = makeParam(this, "emitSize");
 		ctx.local3d = emitterObj;
 		ctx.local3d.name = name;
 		applyPos(ctx.local3d);
@@ -450,6 +498,13 @@ class Emitter extends Object3D {
 			this.edit(ctx);
 		}
 
+		function onChange(pname: String) {
+			ctx.onChange(this, pname);
+			var emitter = Std.instance(ctx.getContext(this).local3d, EmitterObject);
+			if(emitter != null)
+				applyParams(emitter);
+		}
+
 
 		var emGroup = new Element('<div class="group" name="Emitter"></div>');
 		// hide.comp.PropsEditor.makePropsList(emitter)
@@ -460,9 +515,7 @@ class Emitter extends Object3D {
 		// 	items.push({name: p.name, t: p.y, def: p.def});
 		// }	
 		emGroup.append(hide.comp.PropsEditor.makePropsList(emitterParams));
-		var props = ctx.properties.add(emGroup, this.props, function(pname) {
-			ctx.onChange(this, pname);
-		});
+		var props = ctx.properties.add(emGroup, this.props, onChange);
 
 
 		{
@@ -502,9 +555,7 @@ class Emitter extends Object3D {
 					});
 				}
 			}
-			var props = ctx.properties.add(instGroup, this.props, function(pname) {
-				ctx.onChange(this, pname);
-			});
+			var props = ctx.properties.add(instGroup, this.props, onChange);
 		}
 
 
