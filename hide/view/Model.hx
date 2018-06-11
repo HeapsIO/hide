@@ -235,16 +235,23 @@ class Model extends FileView {
 				properties.clear();
 				var renderer = Std.instance(scene.s3d.renderer, h3d.scene.pbr.Renderer);
 				var props = {
-					debug : renderer.displayMode == Slides,
+					mode : renderer.displayMode.getName(),
 				};
 				properties.add(new Element('
 					<div class="group" name="Renderer">
 						<dl>
-							<dt>Debug</dt><dd><input type="checkbox" field="debug"/></dd>
+							<dt>Mode</dt>
+							<dd>
+								<select field="mode">
+									<option value="Pbr">PBR</option>
+									<option value="MatCap">MatCap</option>
+									<option value="Slides">Debug</option>
+								</select>
+							</dd>
 						</dl>
 					</div>
 				'),props, function(p) {
-					renderer.displayMode = props.debug ? Slides : Pbr;
+					renderer.displayMode = h3d.scene.pbr.Renderer.DisplayMode.createByName(props.mode);
 				});
 			});
 		} else
