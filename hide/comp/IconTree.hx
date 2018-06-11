@@ -12,8 +12,8 @@ typedef IconTreeItem<T> = {
 		@:optional var loaded : Bool;
 	};
 	@:optional var li_attr : Dynamic;
-	@:optional private var id : String; // internal usage
-	@:optional private var absKey : String; // internal usage
+	@:optional @:noCompletion var id : String; // internal usage
+	@:optional @:noCompletion var absKey : String; // internal usage
 }
 
 class IconTree<T:{}> extends Component {
