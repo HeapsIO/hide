@@ -69,9 +69,11 @@ class Ide {
 			if( wp != null ) {
 				if( wp.w > 400 && wp.h > 300 )
 					window.resizeBy(wp.w - Std.int(window.window.outerWidth), wp.h - Std.int(window.window.outerHeight));
-				if( wp.x >= 0 && wp.y >= 0 ) {
+				if( wp.x >= 0 && wp.y >= 0 )
 					window.moveTo(wp.x, wp.y);
-					if( wp.max ) window.maximize();
+				if( wp.max ) {
+					window.maximize();
+					maximized = true;
 				}
 			}
 		}
