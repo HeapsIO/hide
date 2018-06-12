@@ -450,8 +450,25 @@ class Level3D extends FileView {
 				if(initDone)
 					sceneEditor.setVisible([layer], on);
 			}, layer.visible);
+
+			refreshLayerIcon(layer);
 		}
 		initDone = true;
+	}
+
+	function refreshLayerIcon(layer: hide.prefab.l3d.Layer) {
+		var lb = layerButtons[layer];
+		if(lb != null) {
+			var color = "#" + StringTools.hex(layer.color & 0xffffff, 6);
+			if(layer.visible != lb.isDown())
+				lb.toggle(layer.visible);
+			lb.element.find(".icon").css("color", color);
+			var label = lb.element.find("label");
+			if(layer.locked)
+				label.addClass("locked");
+			else
+				label.removeClass("locked");
+		}
 	}
 
 	function updateTreeStyle(p: PrefabElement, el: Element) {
@@ -464,17 +481,7 @@ class Level3D extends FileView {
 			else
 				el.find("a").first().removeClass("jstree-locked");
 
-			var lb = layerButtons[p];
-			if(lb != null) {
-				if(layer.visible != lb.isDown())
-					lb.toggle(layer.visible);
-				lb.element.find(".icon").css("color", color);
-				var label = lb.element.find("label");
-				if(layer.locked)
-					label.addClass("locked");
-				else
-					label.removeClass("locked");
-			}
+			refreshLayerIcon(layer);
 		}
 	}
 

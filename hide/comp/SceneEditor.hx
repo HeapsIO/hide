@@ -289,7 +289,9 @@ class SceneEditor {
 		sh.cleanups = [];
 		context.init();
 		sceneData.makeInstance(context);
+		var bgcol = scene.engine.backgroundColor;
 		scene.init();
+		scene.engine.backgroundColor = bgcol;
 		refreshInteractives();
 		tree.refresh(function() {
 			for(elt in sh.contexts.keys()) {
