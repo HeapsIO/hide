@@ -43,5 +43,22 @@ class Renderer extends h3d.scene.DefaultRenderer {
 
 class PbrSetup extends h3d.mat.PbrMaterialSetup {
 
+	function getEnvMap() {
+		var ide = hide.Ide.inst;
+		var scene = hide.comp.Scene.getCurrent();
+		var path = ide.getPath(scene.props.get("scene.environment"));
+		var data = sys.io.File.getBytes(path);
+		var pix = hxd.res.Any.fromBytes(path, data).toImage().getPixels();
+		var t = h3d.mat.Texture.fromPixels(pix); // sync
+		t.name = ide.makeRelative(path);
+		return t;
+	}
+
+    override function createRenderer() {
+		var env = new h3d.scene.pbr.Environment(getEnvMap());
+		env.compute();
+		return new h3d.scene.pbr.Renderer(env);
+	}
+
 }
 

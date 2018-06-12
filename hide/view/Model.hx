@@ -39,7 +39,7 @@ class Model extends FileView {
 		overlay = element.find(".hide-scene-layer .tree");
 		properties = new hide.comp.PropsEditor(undo, null, element.find(".props"));
 		properties.saveDisplayKey = "Model";
-		scene = new hide.comp.Scene(null,element.find(".scene"));
+		scene = new hide.comp.Scene(props, null,element.find(".scene"));
 		scene.onReady = init;
 	}
 
@@ -231,12 +231,51 @@ class Model extends FileView {
 		});
 
 		if( isPbr ) {
+			var sky = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), scene.s3d);
+			var sshader = sky.material.mainPass.addShader(new h3d.shader.CubeMap(null));
+			sky.visible = false;
+			sky.material.props = h3d.mat.MaterialSetup.current.getDefaults("ui");
+			sky.material.mainPass.setPassName("overlay");
+			sky.material.mainPass.culling = Front;
+			sky.setScale(10);
 			tools.addButton("gears", "PBR Renderer", function() {
-				properties.clear();
 				var renderer = Std.instance(scene.s3d.renderer, h3d.scene.pbr.Renderer);
+				properties.clear();
 				var props = {
 					mode : renderer.displayMode.getName(),
+					exposure : renderer.exposure,
+					skyPower : renderer.env.power,
+					lightPower : light.color.r,
+					sky : renderer.env.source,
+					skyDisp : "no",
 				};
+				function onChange() {
+					if( props.sky != renderer.env.source ) {
+						if( props.sky.flags.has(Loading) ) {
+							haxe.Timer.delay(onChange, 100);
+							return;
+						}
+						var prev = renderer.env;
+						var env = new h3d.scene.pbr.Environment(props.sky);
+						env.compute();
+						renderer.env = env;
+						prev.dispose();
+					}
+					renderer.displayMode = h3d.scene.pbr.Renderer.DisplayMode.createByName(props.mode);
+					renderer.exposure = props.exposure;
+					renderer.env.power = props.skyPower;
+					light.color.set(props.lightPower,props.lightPower,props.lightPower);
+					switch( props.skyDisp ) {
+					case "no":
+						sky.visible = false;
+					case "yes":
+						sky.visible = true;
+						sshader.texture = renderer.env.env;
+					case "irrad":
+						sky.visible = true;
+						sshader.texture = renderer.env.diffuse;
+					}
+				}
 				properties.add(new Element('
 					<div class="group" name="Renderer">
 						<dl>
@@ -244,15 +283,29 @@ class Model extends FileView {
 							<dd>
 								<select field="mode">
 									<option value="Pbr">PBR</option>
+									<option value="Env">Env</option>
 									<option value="MatCap">MatCap</option>
 									<option value="Slides">Debug</option>
 								</select>
 							</dd>
+							<dt>Exposure</dt> <dd><input type="range" min="-3" max="3" field="exposure"></dd>
+							<dt>Sky</dt>
+							<dd>
+								<input type="texture" field="sky" style="width:165px"/>
+								<select field="skyDisp" style="width:20px">
+									<option value="no">Hide</option>
+									<option value="yes">Show</option>
+									<option value="irrad">Show Irrad</option>
+								</select>
+							</dd>
+							<dt></dt>
+							<dd>
+								<input type="range" min="0" max="5" field="skyPower"/>
+							</dd>
+							<dt>Light</dt> <dd><input type="range" min="0" max="5" field="lightPower"></dd>
 						</dl>
 					</div>
-				'),props, function(p) {
-					renderer.displayMode = h3d.scene.pbr.Renderer.DisplayMode.createByName(props.mode);
-				});
+				'),props, function(_) onChange());
 			});
 		} else
 			tools.addToggle("sun-o", "Enable Lights/Shadows", function(v) {
@@ -278,7 +331,7 @@ class Model extends FileView {
 		axis.lineTo(0,0,1);
 		axis.visible = false;
 
-		scene.init(props);
+		scene.init();
 		scene.onUpdate = update;
 
 		tools.addToggle("location-arrow", "Toggle Axis", function(v) {
