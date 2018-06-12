@@ -28,7 +28,7 @@ class Particles2D extends FileView {
 		');
 		properties = new hide.comp.PropsEditor(undo, null, element.find(".props"));
 		properties.saveDisplayKey = "particles2D";
-		scene = new hide.comp.Scene(null,element.find(".scene"));
+		scene = new hide.comp.Scene(props, null,element.find(".scene"));
 		scene.onReady = init;
 	}
 
@@ -43,7 +43,7 @@ class Particles2D extends FileView {
 		uiProps = { showBounds: false };
 
 		initProperties();
-		scene.init(props);
+		scene.init();
 		scene.onUpdate = update;
 		scene.onResize = onResize;
 	}

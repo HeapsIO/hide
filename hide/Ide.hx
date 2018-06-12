@@ -348,6 +348,7 @@ class Ide {
 	}
 
 	public function getPath( relPath : String ) {
+		relPath = relPath.split("${HIDE}").join(appPath);
 		if( haxe.io.Path.isAbsolute(relPath) )
 			return relPath;
 		return resourceDir+"/"+relPath;

@@ -111,7 +111,7 @@ class SceneEditor {
 		tree.autoOpenNodes = false;
 
 		var sceneEl = new Element('<div class="scene"></div>');
-		scene = new hide.comp.Scene(null, sceneEl);
+		scene = new hide.comp.Scene(view.props, null, sceneEl);
 		scene.onReady = onSceneReady;
 
 		view.keys.register("copy", onCopy);
@@ -289,7 +289,7 @@ class SceneEditor {
 		sh.cleanups = [];
 		context.init();
 		sceneData.makeInstance(context);
-		scene.init(view.props);
+		scene.init();
 		refreshInteractives();
 		tree.refresh(function() {
 			for(elt in sh.contexts.keys()) {

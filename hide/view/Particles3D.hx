@@ -24,7 +24,7 @@ class Particles3D extends FileView {
 		');
 		properties = new hide.comp.PropsEditor(undo, null, element.find(".props"));
 		properties.saveDisplayKey = "particles3D";
-		scene = new hide.comp.Scene(null,element.find(".scene"));
+		scene = new hide.comp.Scene(props, null,element.find(".scene"));
 		scene.onReady = init;
 		scene.onUpdate = update;
 	}
@@ -170,7 +170,7 @@ class Particles3D extends FileView {
 			scene.resetCamera(2);
 		}, 0);
 		new h3d.scene.CameraController(scene.s3d).loadFromCamera();
-		scene.init(props);
+		scene.init();
 
 		tf = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		tf.alpha = 0.2;
@@ -254,7 +254,7 @@ class Particles3D extends FileView {
 				}
 				if( model != null ) {
 					scene.s3d.addChild(model);
-					scene.init(this.props, model);
+					scene.init(model);
 
 					var prev = attach.val();
 					attach.empty();
