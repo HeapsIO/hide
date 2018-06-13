@@ -339,6 +339,7 @@ class Level3D extends FileView {
 		tools.addButton("video-camera", "Perspective camera", () -> sceneEditor.resetCamera(false));
 		tools.addButton("video-camera", "Top camera", () -> sceneEditor.resetCamera(true)).find(".icon").css({transform: "rotateZ(90deg)"});
 		tools.addToggle("anchor", "Snap to ground", (v) -> sceneEditor.snapToGround = v, sceneEditor.snapToGround);
+		tools.addToggle("compass", "Local transforms", (v) -> sceneEditor.localTransform = v, sceneEditor.localTransform);
 
 		tools.addColor("Background color", function(v) {
 			scene.engine.backgroundColor = v;
