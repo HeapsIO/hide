@@ -60,9 +60,10 @@ class Gizmo extends h3d.scene.Object {
 				hit.visible = false;
 			}
 			var mat = o.getMaterials()[0];
-			mat.mainPass.setPassName("ui");
+			mat.props = h3d.mat.MaterialSetup.current.getDefaults("ui");
+			mat.mainPass.blend(SrcAlpha, OneMinusSrcAlpha);
 			mat.mainPass.depth(true, Always);
-			mat.blendMode = Alpha;
+			mat.mainPass.setPassName("ui");
 			var mesh = hit.getMeshes()[0];
 			var interactive = new h3d.scene.Interactive(mesh.primitive.getCollider(), o);
 			interactive.priority = 100;

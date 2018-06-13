@@ -138,7 +138,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 	override function getNewContextMenu(current: PrefabElement) {
 		var newItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
 		var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
-		var allowed = ["model", "object", "layer", "box", "polygon"];
+		var allowed = ["model", "object", "layer", "box", "polygon", "light"];
 
 		var curLayer = current != null ? current.to(hide.prefab.l3d.Layer) : null;
 		var cdbSheet = curLayer != null ? curLayer.getCdbModel(curLayer) : null;
@@ -425,7 +425,9 @@ class Level3D extends FileView {
 				var curSel = sceneEditor.getSelection();
 				var parent : PrefabElement = data;
 				if(curSel.length > 0) {
-					var curLayer = curSel[0].getParent(Layer);
+					var curLayer = curSel[0].to(Layer);
+					if(curLayer == null)
+						curLayer = curSel[0].getParent(Layer);
 					if(curLayer != null)
 						parent = curLayer;
 				}

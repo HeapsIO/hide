@@ -6,6 +6,16 @@ class MaterialSetup extends h3d.mat.MaterialSetup {
     override public function createRenderer() {
 	    return new Renderer();
 	}
+
+	override function getDefaults( ?type : String ) : Any {
+		if(type == "ui") return {
+			kind : "Alpha",
+			shadows : false,
+			culled : false,
+			lighted : false
+		};
+		return super.getDefaults(type);
+	}
 }
 
 class Renderer extends h3d.scene.DefaultRenderer {
@@ -50,6 +60,16 @@ class PbrSetup extends h3d.mat.PbrMaterialSetup {
 		var env = new h3d.scene.pbr.Environment(getEnvMap());
 		env.compute();
 		return new PbrRenderer(env);
+	}
+
+	override function getDefaults( ?type : String ) : Any {
+		if(type == "ui") return {
+			kind : "Alpha",
+			shadows : false,
+			culled : false,
+			lighted : false
+		};
+		return super.getDefaults(type);
 	}
 }
 
