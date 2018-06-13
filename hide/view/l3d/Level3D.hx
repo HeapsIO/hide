@@ -375,6 +375,7 @@ class Level3D extends FileView {
 		if(grid == null) {
 			grid = new h3d.scene.Graphics(scene.s3d);
 			grid.scale(1);
+			grid.material.mainPass.setPassName("debuggeom");
 		}
 		else {
 			grid.clear();

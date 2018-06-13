@@ -26,7 +26,6 @@ class Renderer extends h3d.scene.DefaultRenderer {
 
 		renderPass(defaultPass, getSort("default", true) );
         renderPass(defaultPass, get("outline"));
-		renderPass(defaultPass, get("outlined"));
 		renderPass(defaultPass, getSort("debuggeom_alpha"));
 		renderPass(defaultPass, getSort("alpha") );
 		renderPass(defaultPass, get("additive") );

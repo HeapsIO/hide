@@ -1135,14 +1135,24 @@ class SceneEditor {
 		outlineShader.size = 0.12;
 		outlineShader.distance = 0;
 		outlineShader.color.setColor(0xffffff);
+
+		var s1 = new h3d.mat.Stencil();
+		s1.setFunc(Both, Always, 1, 0xFF);
+		s1.setOp(Both, Keep, Keep, Replace);
+		s1.setMask(Both, 0xFF);
+
+		var s2 = new h3d.mat.Stencil();
+		s2.setFunc(Both, Greater, 1, 0xFF);
+		s2.setMask(Both, 0x00);
 		for(obj in objects) {
 			for( m in obj.getMaterials() ) {
+				m.mainPass.stencil = s1;
+
 				var p = m.allocPass("outline");
 				p.culling = None;
 				p.depthWrite = false;
 				p.addShader(outlineShader);
-				if( m.mainPass.name == "default" )
-					m.mainPass.setPassName("outlined");
+				p.stencil = s2;
 			}
 		}
 	}
@@ -1150,8 +1160,7 @@ class SceneEditor {
 	static function cleanOutline(objects: Array<Object>) {
 		for(obj in objects) {
 			for( m in obj.getMaterials() ) {
-				if( m.mainPass != null && m.mainPass.name == "outlined" )
-					m.mainPass.setPassName("default");
+				m.mainPass.stencil = null;
 				m.removePass(m.getPass("outline"));
 			}
 		}
