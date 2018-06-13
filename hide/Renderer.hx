@@ -12,9 +12,6 @@ class Renderer extends h3d.scene.DefaultRenderer {
 
 	override function render() {
 
-		renderPass(defaultPass, getSort("debuggeom", true) );
-		clear(null, 1.0);
-
 		if( has("shadow") )
 			renderPass(shadow,get("shadow"));
 
@@ -25,10 +22,11 @@ class Renderer extends h3d.scene.DefaultRenderer {
 			renderPass(normal,get("normal"));
 
 		renderPass(defaultPass, getSort("default", true) );
-        renderPass(defaultPass, get("outline"));
-		renderPass(defaultPass, getSort("debuggeom_alpha"));
 		renderPass(defaultPass, getSort("alpha") );
 		renderPass(defaultPass, get("additive") );
+		renderPass(defaultPass, getSort("debuggeom") );
+		renderPass(defaultPass, getSort("debuggeom_alpha"));
+        renderPass(defaultPass, get("outline"));
 		renderPass(defaultPass, getSort("ui", true));
 	}
 }
@@ -65,10 +63,11 @@ class PbrRenderer extends h3d.scene.pbr.Renderer {
 	}
 
 	override function postDraw() {
-		draw("debuggeom");
-		draw("debuggeom_alpha");
-		draw("outline");
+		defaultPass.draw(getSort("debuggeom") );
+		defaultPass.draw(getSort("debuggeom_alpha"));
 		draw("overlay");
+		draw("outline");
+		draw("ui");
 	}
 }
 

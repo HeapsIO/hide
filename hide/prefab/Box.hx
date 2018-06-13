@@ -36,7 +36,7 @@ class Box extends Object3D {
 		mat.color.setColor(color);
 		var opaque = (color >>> 24) == 0xff;
 		mat.shadows = false;
-		
+
 		if(opaque) {
 			var alpha = mat.getPass("debuggeom_alpha");
 			if(alpha != null)
@@ -44,13 +44,16 @@ class Box extends Object3D {
 			mat.mainPass.setPassName("default");
 		 	mat.mainPass.setBlendMode(None);
 		 	mat.mainPass.depthWrite = true;
+			mat.mainPass.culling = None;
 		}
 		else {
 			mat.mainPass.setPassName("debuggeom");
 			mat.mainPass.setBlendMode(Alpha);
 			mat.mainPass.depthWrite = true;
+			mat.mainPass.culling = Front;
 			var alpha = mat.allocPass("debuggeom_alpha");
 			alpha.setBlendMode(Alpha);
+			alpha.culling = Back;
 			alpha.depthWrite = false;
 		}
 	}
