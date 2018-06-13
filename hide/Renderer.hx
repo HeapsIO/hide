@@ -52,8 +52,24 @@ class PbrSetup extends h3d.mat.PbrMaterialSetup {
     override function createRenderer() {
 		var env = new h3d.scene.pbr.Environment(getEnvMap());
 		env.compute();
-		return new h3d.scene.pbr.Renderer(env);
+		return new PbrRenderer(env);
+	}
+}
+
+class PbrRenderer extends h3d.scene.pbr.Renderer {
+
+	override function mainDraw() {
+		output.draw(getSort("default", true));
+		output.draw(get("outlined"));
+		output.draw(getSort("alpha"));
+		output.draw(get("additive"));
 	}
 
+	override function postDraw() {
+		draw("debuggeom");
+		draw("debuggeom_alpha");
+		draw("outline");
+		draw("overlay");
+	}
 }
 
