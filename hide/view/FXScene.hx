@@ -245,17 +245,6 @@ class FXScene extends FileView {
 
 		tools.saveDisplayKey = "FXScene/tools";
 		tools.addButton("video-camera", "Perspective camera", () -> sceneEditor.resetCamera(false));
-		tools.addToggle("sun-o", "Enable Lights/Shadows", function(v) {
-			if( !v ) {
-				for( m in context.shared.root3d.getMaterials() ) {
-					m.mainPass.enableLights = false;
-					m.shadows = false;
-				}
-			} else {
-				for( m in context.shared.root3d.getMaterials() )
-					h3d.mat.MaterialSetup.current.initModelMaterial(m);
-			}
-		},true);
 
 		tools.addColor("Background color", function(v) {
 			scene.engine.backgroundColor = v;
@@ -348,7 +337,7 @@ class FXScene extends FileView {
 		var parent = curves[0].parent;
 		var isColorTrack = trackName.toLowerCase().indexOf("color") >= 0 && (curves.length == 3 || curves.length == 4);
 		var isColorHSL = isColorTrack && curves.find(c -> StringTools.endsWith(c.name, ".h")) != null;
-		
+
 		var trackToggle = trackEl.find(".track-toggle");
 		tracksEl.append(trackEl);
 		var curvesContainer = trackEl.find(".curves");
@@ -446,7 +435,7 @@ class FXScene extends FileView {
 					k.value = value;
 				}
 			}
-			
+
 			if(isColorTrack) {
 				var picker = new Element("<div></div>").css({
 					"z-index": 100,
@@ -574,7 +563,7 @@ class FXScene extends FileView {
 			var sect = sections.find(s -> s.elt == root);
 			if(sect == null) {
 				sect = {elt: root, curves: []};
-				sections.push(sect);				
+				sections.push(sect);
 			}
 			var curves = elt.flatten(hide.prefab.Curve);
 			for(c in curves) {
@@ -653,7 +642,7 @@ class FXScene extends FileView {
 			for(c in added) {
 				if(undo)
 					element.children.remove(c);
-				else 
+				else
 					element.children.push(c);
 			}
 			sceneEditor.refresh();
@@ -683,7 +672,7 @@ class FXScene extends FileView {
 				label: upperCase(name),
 				click: function() {
 					var added = addTracks(elt, props);
-				},	
+				},
 				enabled: !hasAllTracks };
 		}
 

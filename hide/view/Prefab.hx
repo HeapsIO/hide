@@ -145,17 +145,6 @@ class Prefab extends FileView {
 
 		tools.saveDisplayKey = "Prefab/tools";
 		tools.addButton("video-camera", "Perspective camera", () -> sceneEditor.resetCamera(false));
-		tools.addToggle("sun-o", "Enable Lights/Shadows", function(v) {
-			if( !v ) {
-				for( m in context.shared.root3d.getMaterials() ) {
-					m.mainPass.enableLights = false;
-					m.shadows = false;
-				}
-			} else {
-				for( m in context.shared.root3d.getMaterials() )
-					h3d.mat.MaterialSetup.current.initModelMaterial(m);
-			}
-		},true);
 
 		tools.addColor("Background color", function(v) {
 			scene.engine.backgroundColor = v;

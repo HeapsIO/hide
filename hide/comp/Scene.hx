@@ -152,11 +152,6 @@ class Scene extends Component implements h3d.IDrawable {
 			engine.backgroundColor = Std.parseInt("0x"+props.get("scene.backgroundColor").substr(1)) | 0xFF000000;
 		}
 		initRec(root);
-
-		// make sure the materials are correctly initialized
-		for( m in root.getMaterials() )
-			if( m.props == null )
-				m.props = h3d.mat.MaterialSetup.current.getDefaults("ui");
 	}
 
 	public function setCurrent() {
@@ -253,15 +248,6 @@ class Scene extends Component implements h3d.IDrawable {
 		return name;
 	}
 
-	function initMaterials( obj : h3d.scene.Object, path : String, reset = true ) {
-		var res = hxd.res.Any.fromBytes(path, haxe.io.Bytes.alloc(0));
-		for( m in obj.getMaterials() ) {
-			if( m.name == null ) continue;
-			m.model = res;
-			if( reset ) h3d.mat.MaterialSetup.current.initModelMaterial(m);
-		}
-	}
-
 	function loadHSD( path : String ) {
 		var ctx = new SceneLoader(path,this);
 		var fullPath = ide.getPath(path);
@@ -274,7 +260,6 @@ class Scene extends Component implements h3d.IDrawable {
 			for( o in hsd.content )
 				root.addChild(o);
 		}
-		initMaterials(root, path, false);
 		return { root : root, camera : hsd.camera };
 	}
 
@@ -286,9 +271,7 @@ class Scene extends Component implements h3d.IDrawable {
 			return hsd.root;
 		}
 		var lib = loadHMD(path,false);
-		var obj = lib.makeObject(loadTexture.bind(path));
-		initMaterials(obj, path);
-		return obj;
+		return lib.makeObject(loadTexture.bind(path));
 	}
 
 	public function loadAnimation( path : String ) {

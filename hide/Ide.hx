@@ -382,6 +382,7 @@ class Ide {
 		];
 		var path = getPath("Renderer.hx");
 		if( sys.FileSystem.exists(path) ) {
+			/*
 			var r = new hide.tools.MaterialScript();
 			try {
 				r.load(sys.io.File.getContent(path));
@@ -390,6 +391,7 @@ class Ide {
 				error(e);
 			}
 			r.onError = function(msg) error(msg);
+			*/
 		}
 
 		var db = getPath(props.project.get("cdb.databaseFile"));

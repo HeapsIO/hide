@@ -6,11 +6,6 @@ class MaterialSetup extends h3d.mat.MaterialSetup {
     override public function createRenderer() {
 	    return new Renderer();
 	}
-
-	override function getDefaults( ?type : String ) : Any {
-		if(type == "ui") return null;
-		return super.getDefaults(type);
-	}
 }
 
 class Renderer extends h3d.scene.DefaultRenderer {
