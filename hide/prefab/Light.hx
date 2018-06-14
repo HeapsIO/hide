@@ -15,6 +15,11 @@ class Light extends Object3D {
 	public var power : Float = 1.0;
 	public var isSun : Bool = false;
 
+	public function new(?parent) {
+		super(parent);
+		type = "light";
+	}
+
 	override function save() {
 		var obj : Dynamic = super.save();
 		obj.kind = kind;
