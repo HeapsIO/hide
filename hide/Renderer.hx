@@ -37,7 +37,7 @@ class Renderer extends h3d.scene.DefaultRenderer {
 		renderPass(defaultPass, getSort("debuggeom") );
 		renderPass(defaultPass, getSort("debuggeom_alpha"));
         renderPass(defaultPass, get("outline"));
-		renderPass(defaultPass, getSort("ui", true));
+		renderPass(defaultPass, getSort("ui"));
 	}
 }
 
@@ -83,11 +83,11 @@ class PbrRenderer extends h3d.scene.pbr.Renderer {
 	}
 
 	override function postDraw() {
-		defaultPass.draw(getSort("debuggeom") );
+		defaultPass.draw(getSort("debuggeom"));
 		defaultPass.draw(getSort("debuggeom_alpha"));
 		draw("overlay");
 		draw("outline");
-		draw("ui");
+		defaultPass.draw(getSort("ui"));
 	}
 }
 

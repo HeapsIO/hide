@@ -62,13 +62,14 @@ class Gizmo extends h3d.scene.Object {
 			var mat = o.getMaterials()[0];
 			mat.props = h3d.mat.MaterialSetup.current.getDefaults("ui");
 			mat.mainPass.blend(SrcAlpha, OneMinusSrcAlpha);
-			mat.mainPass.depth(true, Always);
+			mat.mainPass.depth(false, Always);
 			mat.mainPass.setPassName("ui");
 			var mesh = hit.getMeshes()[0];
 			var interactive = new h3d.scene.Interactive(mesh.primitive.getCollider(), o);
 			interactive.priority = 100;
-			var highlight = hxd.Math.colorLerp(color, 0xffffffff, 0.1);
-			color = hxd.Math.colorLerp(color, 0xff000000, 0.2);
+			var highlight = hxd.Math.colorLerp(color, 0xffffff, 0.1);
+			color = hxd.Math.colorLerp(color, 0x000000, 0.2);
+			color = (color & 0x00ffffff) | 0x80000000;
 			mat.color.setColor(color);
 			interactive.onOver = function(e : hxd.Event) {
 				mat.color.setColor(highlight);
@@ -94,16 +95,16 @@ class Gizmo extends h3d.scene.Object {
 			}
 		}
 
-		setup("xAxis", 0x90ff0000, MoveX);
-		setup("yAxis", 0x9000ff00, MoveY);
-		setup("zAxis", 0x900000ff, MoveZ);
-		setup("xy", 0x90ffff00, MoveXY);
-		setup("xz", 0x90ffff00, MoveZX);
-		setup("yz", 0x90ffff00, MoveYZ);
-		setup("xRotate", 0x90ff0000, RotateX);
-		setup("yRotate", 0x9000ff00, RotateY);
-		setup("zRotate", 0x900000ff, RotateZ);
-		setup("scale", 0x90ffffff, Scale);
+		setup("xAxis", 0xff0000, MoveX);
+		setup("yAxis", 0x00ff00, MoveY);
+		setup("zAxis", 0x0000ff, MoveZ);
+		setup("xy", 0xffff00, MoveXY);
+		setup("xz", 0xffff00, MoveZX);
+		setup("yz", 0xffff00, MoveYZ);
+		setup("xRotate", 0xff0000, RotateX);
+		setup("yRotate", 0x00ff00, RotateY);
+		setup("zRotate", 0x0000ff, RotateZ);
+		setup("scale", 0xffffff, Scale);
 	}
 
 	public function startMove(mode: TransformMode, ?duplicating=false) {
