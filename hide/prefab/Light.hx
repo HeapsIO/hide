@@ -33,17 +33,6 @@ class Light extends Object3D {
 		ctx.local3d = obj;
 		ctx.local3d.name = name;
 
-		var prim = h3d.prim.Sphere.defaultUnitSphere();
-		var mesh = new h3d.scene.Mesh(prim, obj);
-		mesh.setScale(0.33);
-
-		// var path = hide.Ide.inst.appPath + "/res/pointLightSmall.png";
-		// var data = sys.io.File.getBytes(path);
-		// var tile = hxd.res.Any.fromBytes(path, data).toTile().center();
-		// var objFollow = new h2d.ObjectFollower(ctx.local3d, ctx.shared.root2d);
-		// var bmp = new h2d.Bitmap(tile, objFollow);
-		// ctx.local2d = objFollow;
-
 		applyPos(ctx.local3d);
 		applyProps(ctx);
 		return ctx;
@@ -54,22 +43,56 @@ class Light extends Object3D {
 			var l : h3d.scene.Light = cast ctx.custom;
 			l.remove();
 		}
-
-		var mesh = Std.instance(ctx.local3d.getChildAt(0), h3d.scene.Mesh);
-		if(mesh != null) {
-			var mat = mesh.material;
-			mat.mainPass.setPassName("overlay");
-			mat.color.setColor(color | 0xff000000);
-		}
-
 		var light = new h3d.scene.pbr.PointLight(ctx.local3d);
 		light.color.setColor(color);
+		light.range = range;
+		light.size = size;
 		ctx.custom = light;
+
+		#if editor
+		var color = color | 0xff000000;
+
+		var debugObj = ctx.local3d.find(c -> if(c.name == "_debug") c else null);
+		var mesh : h3d.scene.Mesh = null;
+		var sizeSphere : h3d.scene.Sphere = null;
+		var rangeSphere : h3d.scene.Sphere = null;
+		if(debugObj == null) {
+			debugObj = new h3d.scene.Object(ctx.local3d);
+			debugObj.name = "_debug";
+
+			mesh = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), debugObj);
+
+			var highlight = new h3d.scene.Object(debugObj);
+			highlight.name = "_highlight";
+			highlight.visible = false;
+			sizeSphere = new h3d.scene.Sphere(0xffffff, size, true, highlight);
+			sizeSphere.ignoreCollide = true;
+			sizeSphere.material.mainPass.setPassName("overlay");
+
+			rangeSphere = new h3d.scene.Sphere(0xffffff, range, true, highlight);
+			rangeSphere.ignoreCollide = true;
+			rangeSphere.material.mainPass.setPassName("overlay");
+		}
+		else {
+			mesh = cast debugObj.getChildAt(0);
+			sizeSphere = cast debugObj.getChildAt(1).getChildAt(0);
+			rangeSphere = cast debugObj.getChildAt(1).getChildAt(1);
+		}
+
+		mesh.setScale(hxd.Math.min(0.25, size));
+		var mat = mesh.material;
+		mat.mainPass.setPassName("overlay");
+		mat.color.setColor(color);
+
+		sizeSphere.radius = size;
+		rangeSphere.radius = range;
+		#end
 	}
 
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
 		#if editor
+
 		var props = ctx.properties.add(new hide.Element('
 			<div class="group" name="Light">
 				<dl>
@@ -102,6 +125,24 @@ class Light extends Object3D {
 			applyProps(ctx.getContext(this));
 			ctx.onChange(this, "color");
 		}
+
+		var group = new Element('<div class="group" name="Point Light"></div>');
+		group.append(hide.comp.PropsEditor.makePropsList([
+			{
+				name: "size",
+				t: PFloat(0, 5),
+				def: 0
+			},
+			{
+				name: "range",
+				t: PFloat(1, 20),
+				def: 10
+			},
+		]));
+		var props = ctx.properties.add(group, this, function(pname) {
+			applyProps(ctx.getContext(this));
+			ctx.onChange(this, pname);
+		});
 		#end
 	}
 
