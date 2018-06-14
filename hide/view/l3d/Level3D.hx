@@ -245,8 +245,6 @@ class Level3D extends FileView {
 	var tools : hide.comp.Toolbar;
 
 	var levelProps : hide.comp.PropsEditor;
-	var light : h3d.scene.DirLight;
-	var lightDirection = new h3d.Vector( 1, 2, -4 );
 
 	var layerToolbar : hide.comp.Toolbar;
 	var layerButtons : Map<PrefabElement, hide.comp.Toolbar.ToolToggle>;
@@ -327,13 +325,6 @@ class Level3D extends FileView {
 	}
 
 	public function onSceneReady() {
-		light = sceneEditor.scene.s3d.find(function(o) return Std.instance(o, h3d.scene.DirLight));
-		if( light == null ) {
-			light = new h3d.scene.DirLight(new h3d.Vector(), scene.s3d);
-			light.enableSpecular = true;
-		}
-		else
-			light = null;
 
 		tools.saveDisplayKey = "Level3D/toolbar";
 		tools.addButton("video-camera", "Perspective camera", () -> sceneEditor.resetCamera(false));
@@ -398,14 +389,6 @@ class Level3D extends FileView {
 
 	function onUpdate(dt:Float) {
 		var cam = scene.s3d.camera;
-		if( light != null ) {
-			var angle = Math.atan2(cam.target.y - cam.pos.y, cam.target.x - cam.pos.x);
-			light.direction.set(
-				Math.cos(angle) * lightDirection.x - Math.sin(angle) * lightDirection.y,
-				Math.sin(angle) * lightDirection.x + Math.cos(angle) * lightDirection.y,
-				lightDirection.z
-			);
-		}
 		if( autoSync && (currentVersion != undo.currentID || lastSyncChange != properties.lastChange) ) {
 			save();
 			lastSyncChange = properties.lastChange;

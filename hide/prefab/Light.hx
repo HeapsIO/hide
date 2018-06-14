@@ -12,6 +12,8 @@ class Light extends Object3D {
 	public var color : Int = 0xffffff;
 	public var range : Float = 10;
 	public var size : Float = 1.0;
+	public var power : Float = 1.0;
+	public var isSun : Bool = false;
 
 	override function save() {
 		var obj : Dynamic = super.save();
@@ -19,6 +21,8 @@ class Light extends Object3D {
 		obj.color = color;
 		obj.range = range;
 		obj.size = size;
+		obj.power = power;
+		obj.isSun = isSun;
 		return obj;
 	}
 
@@ -28,6 +32,9 @@ class Light extends Object3D {
 		color = obj.color;
 		range = obj.range;
 		size = obj.size;
+		power = obj.power;
+		if(obj.isSun)
+			isSun = obj.isSun;
 	}
 
 
@@ -60,6 +67,14 @@ class Light extends Object3D {
 			light.color.setColor(color);
 			light.range = range;
 			light.size = size;
+			light.power = power;
+			ctx.custom = light;
+		}
+		else {
+			var light = new h3d.scene.pbr.DirLight(ctx.local3d);
+			light.color.setColor(color);
+			light.isSun = isSun;
+			light.power = power;
 			ctx.custom = light;
 		}
 		
@@ -142,6 +157,7 @@ class Light extends Object3D {
 							<option value="1">Directional</option>
 						</select></dd>
 					<dt>Color</dt><dd><input name="colorVal"/></dd>
+					<dt>Power</dt><dd><input type="range" min="0" max="10" field="power"/></dd>
 				</dl>
 			</div>
 		');
@@ -160,15 +176,16 @@ class Light extends Object3D {
 		]);
 
 		var dirProps = hide.comp.PropsEditor.makePropsList([
+			{
+				name: "isSun",
+				t: PBool,
+				def: false
+			},
 		]);
 		
 		group.append(pointProps);
 		group.append(dirProps);
-
-
-		var props = ctx.properties.add(group,this, function(pname) {
-			applyProps(ctx.getContext(this));
-			ctx.onChange(this, pname);
+		function updateProps() {
 			if(kind == Point) {
 				pointProps.show();
 				dirProps.hide();
@@ -177,6 +194,13 @@ class Light extends Object3D {
 				pointProps.hide();
 				dirProps.show();
 			}
+		}
+		updateProps();
+		
+		var props = ctx.properties.add(group,this, function(pname) {
+			applyProps(ctx.getContext(this));
+			ctx.onChange(this, pname);
+			updateProps();
 		});
 		var colorInput = props.find('input[name="colorVal"]');
 		var picker = new hide.comp.ColorPicker(false,null,colorInput);
@@ -200,44 +224,6 @@ class Light extends Object3D {
 			applyProps(ctx.getContext(this));
 			ctx.onChange(this, "color");
 		}
-
-		// var pointProps = hide.comp.PropsEditor.makePropsList([
-		// 	{
-		// 		name: "size",
-		// 		t: PFloat(0, 5),
-		// 		def: 0
-		// 	},
-		// 	{
-		// 		name: "range",
-		// 		t: PFloat(1, 20),
-		// 		def: 10
-		// 	},
-		// ]);
-
-		// var dirProps = hide.comp.PropsEditor.makePropsList([
-		// ]);
-
-
-		// props.find(".group").append(pointProps);
-		// props.find(".group").append(dirProps);
-
-		// var group = new Element('<div class="group" name="Point Light"></div>');
-		// group.append(hide.comp.PropsEditor.makePropsList([
-		// 	{
-		// 		name: "size",
-		// 		t: PFloat(0, 5),
-		// 		def: 0
-		// 	},
-		// 	{
-		// 		name: "range",
-		// 		t: PFloat(1, 20),
-		// 		def: 10
-		// 	},
-		// ]));
-		// var props = ctx.properties.add(group, this, function(pname) {
-		// 	applyProps(ctx.getContext(this));
-		// 	ctx.onChange(this, pname);
-		// });
 
 		#end
 	}

@@ -636,6 +636,8 @@ class SceneEditor {
 
 	function setHighlighed(elt: PrefabElement, on: Bool) {
 		var ctx = getContext(elt);
+		if(ctx == null)
+			return;
 		var highlights = ctx.local3d.findAll(c -> if(c.name == "_highlight") c else null);
 		for(o in highlights) {
 			o.visible = on;
