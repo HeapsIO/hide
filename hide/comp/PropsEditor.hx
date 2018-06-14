@@ -6,6 +6,7 @@ enum PropType {
 	PVec( n : Int );
 	PBool;
 	PTexture;
+	PChoice( choices : Array<String> );
 	PUnsupported( debug : String );
 }
 
@@ -75,6 +76,10 @@ class PropsEditor extends Component {
 				e.attr("min", isColor ? "0" : "-1");
 				e.attr("max", "1");
 			}
+		case PChoice(choices):
+			var e = new Element('<select field="${p.name}"></select>');
+			for(c in choices)
+				new hide.Element('<option>').attr("value", choices.indexOf(c)).text(upperCase(c)).appendTo(e);
 		}
 	}
 

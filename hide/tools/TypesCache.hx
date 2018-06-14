@@ -257,6 +257,8 @@ class TypesCache {
 			return [for( i in 0...n ) 0.];
 		case PUnsupported(_):
 			return null;
+		case PChoice(c):
+			return c != null && c.length > 0 ? c[0] : null;
 		}
 	}
 
