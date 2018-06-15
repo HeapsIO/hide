@@ -323,6 +323,8 @@ class SceneEditor {
 			invRootMat.invert();
 			var bounds = new h3d.col.Bounds();
 			for(mesh in meshes) {
+				if(mesh.ignoreCollide)
+					continue;
 				var localMat = mesh.getAbsPos().clone();
 				localMat.multiply(localMat, invRootMat);
 				var lb = mesh.primitive.getBounds().clone();
