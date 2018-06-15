@@ -145,6 +145,10 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 			allowed = ["renderProps"];
 		}
 
+		if(current != null && current.type == "model") {
+			allowed.push("shader");
+		}
+
 		var curLayer = current != null ? current.to(hide.prefab.l3d.Layer) : null;
 		var cdbSheet = curLayer != null ? curLayer.getCdbModel(curLayer) : null;
 
