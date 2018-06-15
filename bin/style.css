@@ -26,6 +26,9 @@ body .select2-dropdown {
   font-size: 9pt;
   color: #aaa;
 }
+canvas {
+  user-select: none;
+}
 input,
 textarea {
   padding-left: 4px;
