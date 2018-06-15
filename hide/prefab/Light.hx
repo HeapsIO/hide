@@ -234,7 +234,7 @@ class Light extends Object3D {
 	}
 
 	override function getHideProps() {
-		return { icon : "sun", name : "Light", fileSource : null };
+		return { icon : "sun-o", name : "Light", fileSource : null };
 	}
 
 	static var _ = Library.register("light", Light);

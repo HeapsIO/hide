@@ -91,7 +91,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 
 	override function refresh(?callback) {
 		super.refresh(callback);
-		parent.refreshLayerIcons();
+		parent.onRefresh();
 	}
 
 	override function update(dt) {
@@ -140,6 +140,10 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		var newItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
 		var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
 		var allowed = ["model", "object", "layer", "box", "polygon", "light"];
+
+		if(current != null && current.type == "object" && current.name == "settings" && current.parent == sceneData) {
+			allowed = ["renderProps"];
+		}
 
 		var curLayer = current != null ? current.to(hide.prefab.l3d.Layer) : null;
 		var cdbSheet = curLayer != null ? curLayer.getCdbModel(curLayer) : null;
@@ -365,14 +369,13 @@ class Level3D extends FileView {
 	}
 
 	function updateGrid() {
-		if(grid == null) {
-			grid = new h3d.scene.Graphics(scene.s3d);
-			grid.scale(1);
-			grid.material.mainPass.setPassName("debuggeom");
+		if(grid != null) {
+			grid.remove();
 		}
-		else {
-			grid.clear();
-		}
+		
+		grid = new h3d.scene.Graphics(scene.s3d);
+		grid.scale(1);
+		grid.material.mainPass.setPassName("debuggeom");
 
 		grid.lineStyle(1, 0x404040, 1.0);
 		// var offset = size/2;
@@ -393,6 +396,22 @@ class Level3D extends FileView {
 			save();
 			lastSyncChange = properties.lastChange;
 			currentVersion = undo.currentID;
+		}
+	}
+
+	function onRefresh() {
+		refreshLayerIcons();
+
+		// Apply first render props
+		var settings = data.children.find(c -> c.name == "settings");
+		if(settings != null) {
+			for(c in settings.children) {
+				var renderProps = c.to(hide.prefab.RenderProps);
+				if(renderProps != null) {
+					renderProps.applyProps(scene.s3d.renderer);
+					break;
+				}
+			}
 		}
 	}
 

@@ -119,7 +119,7 @@ class SceneEditor {
 		view.keys.register("paste", onPaste);
 		view.keys.register("cancel", deselect);
 		view.keys.register("selectAll", selectAll);
-		view.keys.register("duplicate", duplicate);
+		view.keys.register("duplicate", duplicate.bind(true));
 		view.keys.register("group", groupSelection);
 		view.keys.register("delete", () -> deleteElements(curEdit.rootElements));
 		view.keys.register("search", function() {
@@ -227,6 +227,7 @@ class SceneEditor {
 				{ label : "New...", menu : newItems },
 				{ label : "Rename", enabled : current != null, click : function() tree.editNode(current) },
 				{ label : "Delete", enabled : current != null, click : function() deleteElements(curEdit.rootElements) },
+				{ label : "Duplicate", enabled : current != null, click : duplicate.bind(false) },
 				{ label : "Select all", click : selectAll },
 				{ label : "Select children", enabled : current != null, click : function() selectObjects(current.flatten()) },
 				{ label : "Show", enabled : curEdit != null && curEdit.elements.length > 0, click : function() setVisible(curEdit.elements, true) },
@@ -881,7 +882,7 @@ class SceneEditor {
 		setVisible(toHide, false);
 	}
 
-	function duplicate() {
+	function duplicate(thenMove: Bool) {
 		if(curEdit == null) return;
 		var elements = curEdit.rootElements;
 		if(elements == null || elements.length == 0)
@@ -902,25 +903,27 @@ class SceneEditor {
 			var all = [for(e in newElements) e.elt];
 			selectObjects(all);
 			tree.setSelection(all);
-			gizmo.startMove(MoveXY, true);
-			gizmo.onFinishMove = function() {
-				refreshProps();
-				undo.change(Custom(function(undo) {
-					for(e in newElements) {
-						if(undo) {
-							e.elt.parent.children.remove(e.elt);
+			if(thenMove) {
+				gizmo.startMove(MoveXY, true);
+				gizmo.onFinishMove = function() {
+					refreshProps();
+					undo.change(Custom(function(undo) {
+						for(e in newElements) {
+							if(undo) {
+								e.elt.parent.children.remove(e.elt);
+							}
+							else {
+								e.elt.parent.children.insert(e.idx, e.elt);
+							}
 						}
-						else {
-							e.elt.parent.children.insert(e.idx, e.elt);
-						}
-					}
-					if(undo)
-						context.shared.contexts = oldContexts;
-					else
-						context.shared.contexts = newContexts;
-					refresh();
-					deselect();
-				}));
+						if(undo)
+							context.shared.contexts = oldContexts;
+						else
+							context.shared.contexts = newContexts;
+						refresh();
+						deselect();
+					}));
+				}
 			}
 		});
 	}
