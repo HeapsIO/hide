@@ -254,6 +254,7 @@ class Level3D extends FileView {
 	var layerButtons : Map<PrefabElement, hide.comp.Toolbar.ToolToggle>;
 
 	var grid : h3d.scene.Graphics;
+	var showGrid = true;
 	var autoSync : Bool;
 	var currentVersion : Int = 0;
 	var lastSyncChange : Float = 0.;
@@ -335,6 +336,7 @@ class Level3D extends FileView {
 		tools.addButton("video-camera", "Top camera", () -> sceneEditor.resetCamera(true)).find(".icon").css({transform: "rotateZ(90deg)"});
 		tools.addToggle("anchor", "Snap to ground", (v) -> sceneEditor.snapToGround = v, sceneEditor.snapToGround);
 		tools.addToggle("compass", "Local transforms", (v) -> sceneEditor.localTransform = v, sceneEditor.localTransform);
+		tools.addToggle("th", "Show grid", function(v) { showGrid = v; updateGrid(); }, showGrid);
 
 		tools.addColor("Background color", function(v) {
 			scene.engine.backgroundColor = v;
@@ -371,8 +373,12 @@ class Level3D extends FileView {
 	function updateGrid() {
 		if(grid != null) {
 			grid.remove();
+			grid = null;
 		}
-		
+
+		if(!showGrid)
+			return;
+
 		grid = new h3d.scene.Graphics(scene.s3d);
 		grid.scale(1);
 		grid.material.mainPass.setPassName("debuggeom");
