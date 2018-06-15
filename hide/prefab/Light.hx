@@ -65,6 +65,10 @@ class Light extends Object3D {
 			l.remove();
 		}
 
+		var isPbr = Std.is(h3d.mat.MaterialSetup.current, h3d.scene.pbr.Renderer);
+		if(!isPbr)
+			return; // TODO
+
 		var color = color | 0xff000000;
 
 		if(kind == Point) {
