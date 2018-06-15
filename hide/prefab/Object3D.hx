@@ -117,6 +117,10 @@ class Object3D extends Prefab {
 		return { icon : children == null || children.length > 0 ? "folder-open" : "genderless", name : "Group", fileSource : null };
 	}
 
+	override function getDefaultName() {
+		return type == "object" ? "group" : super.getDefaultName();
+	}
+
 	static var _ = Library.register("object", Object3D);
 
 }

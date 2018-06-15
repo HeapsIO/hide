@@ -891,9 +891,9 @@ class SceneEditor {
 		var oldContexts = contexts.copy();
 		var newElements = [for(elt in elements) {
 			var clone = hide.prefab.Prefab.loadRec(elt.saveRec());
-			autoName(clone);
 			var index = elt.parent.children.indexOf(elt);
 			clone.parent = elt.parent;
+			autoName(clone);
 			elt.parent.children.remove(clone);
 			elt.parent.children.insert(index+1, clone);
 			{ elt: clone, idx: index };
@@ -1015,25 +1015,33 @@ class SceneEditor {
 	}
 
 	function autoName(p : PrefabElement) {
-		var prefix = p.type;
-		if(prefix == "object")
-			prefix = "group";
+		
+		var uniqueName = false;
+		var layer = p.getParent(hide.prefab.l3d.Layer);
+		if(layer != null) {
+			uniqueName = layer.uniqueNames;
+		}
+
+		var prefix = null;
 		if(p.name != null && p.name.length > 0) {
-			prefix = p.name.split("_")[0].split(" ")[0].split("-")[0];
+			if(uniqueName)
+				prefix = ~/_+[0-9]*$/.replace(p.name, "");
+			else
+				prefix = p.name;
 		}
+		else
+			prefix = p.getDefaultName();
 
-		var model = p.to(hide.prefab.Model);
-		if(model != null && model.source != null) {
-			var path = new haxe.io.Path(model.source);
-			prefix = path.file;
+		if(uniqueName) {
+			prefix += "_";
+			var id = 0;
+			while( sceneData.getPrefabByName(prefix + id) != null )
+				id++;
+
+			p.name = prefix + id;
 		}
-
-		prefix += "_";
-		var id = 0;
-		while( sceneData.getPrefabByName(prefix + id) != null )
-			id++;
-
-		p.name = prefix + id;
+		else
+			p.name = prefix;
 
 		for(c in p.children) {
 			autoName(c);

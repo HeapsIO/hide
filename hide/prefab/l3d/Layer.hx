@@ -4,6 +4,7 @@ using Lambda;
 class Layer extends Object3D {
 
 	public var locked = false;
+	public var uniqueNames = false;
 	public var color = 0xffffffff;
 
 	public function new(?parent) {
@@ -32,6 +33,7 @@ class Layer extends Object3D {
 	override function save() {
 		var obj : Dynamic = super.save();
 		obj.locked = locked;
+		obj.uniqueNames = uniqueNames;
 		obj.color = color;
 		return obj;
 	}
@@ -39,6 +41,7 @@ class Layer extends Object3D {
 	override function load( obj : Dynamic ) {
 		super.load(obj);
 		locked = obj.locked;
+		uniqueNames = obj.uniqueNames;
 		color = obj.color;
 	}
 
@@ -49,6 +52,7 @@ class Layer extends Object3D {
 			<div class="group" name="Layer">
 				<dl>
 					<dt>Locked</dt><dd><input type="checkbox" field="locked"/></dd>
+					<dt>Unique names</dt><dd><input type="checkbox" field="uniqueNames"/></dd>
 					<dt>Color</dt><dd><input name="colorVal"/></dd>
 				</dl>
 			</div>
