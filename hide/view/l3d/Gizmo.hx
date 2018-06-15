@@ -113,7 +113,7 @@ class Gizmo extends h3d.scene.Object {
 		var startMat = getAbsPos().clone();
 		var startQuat = new h3d.Quat();
 		startQuat.initRotateMatrix(startMat);
-		var startPos = getAbsPos().pos().toPoint();
+		var startPos = getAbsPos().getPosition().toPoint();
 		var dragPlane = null;
 		var cam = scene.s3d.camera;
 		var norm = startPos.sub(cam.pos.toPoint());
@@ -158,7 +158,7 @@ class Gizmo extends h3d.scene.Object {
 			if(mode == MoveX || mode == MoveXY || mode == MoveZX) vec.x = snap(delta.dot(startMat.front().toPoint()));
 			if(mode == MoveY || mode == MoveYZ || mode == MoveXY) vec.y = snap(delta.dot(startMat.right().toPoint()));
 			if(mode == MoveZ || mode == MoveZX || mode == MoveYZ) vec.z = snap(delta.dot(startMat.up().toPoint()));
-			
+
 			if(!axisScale) {
 				vec.transform3x3(startMat);
 				x = (startPos.x + vec.x);
@@ -227,7 +227,7 @@ class Gizmo extends h3d.scene.Object {
 
 	public function update(dt) {
 		var cam = this.getScene().camera;
-		var gpos = gizmo.getAbsPos().pos();
+		var gpos = gizmo.getAbsPos().getPosition();
 		var distToCam = cam.pos.sub(gpos).length();
 		var engine = h3d.Engine.getCurrent();
 		var ratio = 150 / engine.height;

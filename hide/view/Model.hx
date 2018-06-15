@@ -189,7 +189,7 @@ class Model extends FileView {
 		if( light == null ) {
 			light = new h3d.scene.DirLight(scene.s3d);
 			light.enableSpecular = true;
-			if( isPbr ) light.color.scale3(2);
+			if( isPbr ) light.color.scale3(4);
 		}
 
 		control = new h3d.scene.CameraController(scene.s3d);
@@ -239,16 +239,17 @@ class Model extends FileView {
 
 
 			var lprops = {
-				power : light.color.r,
+				power : Math.sqrt(light.color.r),
 			};
 			properties.add(new Element('
 			<div class="group" name="Light">
 				<dl>
-				<dt>Power</dt><dd><input type="range" min="0" max="5" field="power"/></dd>
+				<dt>Power</dt><dd><input type="range" min="0" max="4" field="power"/></dd>
 				</dl>
 			</div>
 			'), lprops, function(_) {
-				light.color.set(lprops.power, lprops.power, lprops.power);
+				var p = lprops.power * lprops.power;
+				light.color.set(p, p, p);
 			});
 
 		});
@@ -410,11 +411,11 @@ class Model extends FileView {
 		saveDisplayState("Camera", { x : cam.pos.x, y : cam.pos.y, z : cam.pos.z, tx : cam.target.x, ty : cam.target.y, tz : cam.target.z });
 		if( light != null ) {
 			var angle = Math.atan2(cam.target.y - cam.pos.y, cam.target.x - cam.pos.x);
-			light.setDirection(
+			light.setDirection(new h3d.Vector(
 				Math.cos(angle) * lightDirection.x - Math.sin(angle) * lightDirection.y,
 				Math.sin(angle) * lightDirection.x + Math.cos(angle) * lightDirection.y,
 				lightDirection.z
-			);
+			));
 		}
 		if( timeline != null ) {
 			timecursor.x = Std.int((obj.currentAnimation.frame / obj.currentAnimation.frameCount) * (scene.s2d.width - timecursor.tile.width));

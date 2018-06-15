@@ -161,11 +161,11 @@ class Prefab extends FileView {
 		var cam = scene.s3d.camera;
 		if( light != null ) {
 			var angle = Math.atan2(cam.target.y - cam.pos.y, cam.target.x - cam.pos.x);
-			light.setDirection(
+			light.setDirection(new h3d.Vector(
 				Math.cos(angle) * lightDirection.x - Math.sin(angle) * lightDirection.y,
 				Math.sin(angle) * lightDirection.x + Math.cos(angle) * lightDirection.y,
 				lightDirection.z
-			);
+			));
 		}
 		if( autoSync && (currentVersion != undo.currentID || lastSyncChange != properties.lastChange) ) {
 			save();

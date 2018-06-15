@@ -38,7 +38,7 @@ class Object3D extends Prefab {
 		applyPos(ctx.local3d);
 		return ctx;
 	}
-	
+
 	override function save() {
 		var o : Dynamic = {};
 		if( x != 0 ) o.x = x;
@@ -83,7 +83,7 @@ class Object3D extends Prefab {
 		o.scaleX = scaleX;
 		o.scaleY = scaleY;
 		o.scaleZ = scaleZ;
-		o.setRotate(Math.degToRad(rotationX), Math.degToRad(rotationY), Math.degToRad(rotationZ));
+		o.setRotation(Math.degToRad(rotationX), Math.degToRad(rotationY), Math.degToRad(rotationZ));
 		o.visible = visible;
 	}
 

@@ -170,7 +170,7 @@ class SceneEditor {
 
 	function focusSelection() {
 		if(curEdit.rootObjects.length > 0) {
-			cameraController.set(curEdit.rootObjects[0].getAbsPos().pos().toPoint());
+			cameraController.set(curEdit.rootObjects[0].getAbsPos().getPosition().toPoint());
 		}
 		for(obj in curEdit.rootElements)
 			tree.revealNode(obj);
@@ -331,7 +331,7 @@ class SceneEditor {
 			}
 			var meshCollider = new h3d.col.Collider.GroupCollider([for(m in meshes) {
 				var c = m.getGlobalCollider();
-				if(c != null) c; 
+				if(c != null) c;
 			}]);
 			var boundsCollider = new h3d.col.ObjectCollider(o, bounds);
 			var int = new h3d.scene.Interactive(boundsCollider, o);
@@ -391,7 +391,7 @@ class SceneEditor {
 			var objects = curEdit.rootObjects;
 			var pivotPt = getPivot(objects);
 			var pivot = new h3d.Matrix();
-			pivot.initTranslate(pivotPt.x, pivotPt.y, pivotPt.z);
+			pivot.initTranslation(pivotPt.x, pivotPt.y, pivotPt.z);
 			var invPivot = pivot.clone();
 			invPivot.invert();
 
@@ -423,7 +423,7 @@ class SceneEditor {
 				var transf = new h3d.Matrix();
 				transf.identity();
 				if(rot != null)
-					rot.saveToMatrix(transf);
+					rot.toMatrix(transf);
 				if(translate != null)
 					transf.translate(translate.x, translate.y, translate.z);
 				for(i in 0...objects.length) {
@@ -486,7 +486,7 @@ class SceneEditor {
 		if(curEdit != null && curEdit.rootObjects.length > 0) {
 			var pos = getPivot(curEdit.rootObjects);
 			gizmo.visible = true;
-			gizmo.setPos(pos.x, pos.y, pos.z);
+			gizmo.setPosition(pos.x, pos.y, pos.z);
 
 			if(curEdit.rootObjects.length == 1 && (localTransform || K.isDown(K.ALT))) {
 				var obj = curEdit.rootObjects[0];
@@ -675,7 +675,7 @@ class SceneEditor {
 	public function resetCamera(?top = false) {
 		var targetPt = new h3d.col.Point(0, 0, 0);
 		if(curEdit != null && curEdit.rootObjects.length > 0) {
-			targetPt = curEdit.rootObjects[0].getAbsPos().pos().toPoint();
+			targetPt = curEdit.rootObjects[0].getAbsPos().getPosition().toPoint();
 		}
 		if(top)
 			cameraController.set(200, Math.PI/2, 0.001, targetPt);
@@ -692,7 +692,7 @@ class SceneEditor {
 		parentMat.invert();
 
 		var localMat = new h3d.Matrix();
-		localMat.initTranslate(proj.x, proj.y, proj.z);
+		localMat.initTranslation(proj.x, proj.y, proj.z);
 		localMat.multiply(localMat, parentMat);
 
 		var models: Array<PrefabElement> = [];
@@ -737,7 +737,7 @@ class SceneEditor {
 
 		var pivot = getPivot(curEdit.rootObjects);
 		var local = new h3d.Matrix();
-		local.initTranslate(pivot.x, pivot.y, pivot.z);
+		local.initTranslation(pivot.x, pivot.y, pivot.z);
 		local.multiply(local, invParentMat);
 		var group = new hide.prefab.Object3D(parent);
 		@:privateAccess group.type = "object";
@@ -1148,7 +1148,7 @@ class SceneEditor {
 	static function getPivot(objects: Array<Object>) {
 		var pos = new h3d.Vector();
 		for(o in objects) {
-			pos = pos.add(o.getAbsPos().pos());
+			pos = pos.add(o.getAbsPos().getPosition());
 		}
 		pos.scale3(1.0 / objects.length);
 		return pos;

@@ -54,7 +54,7 @@ class Particles2D extends FileView {
 			parts.y = scene.height >> 1;
 		}
 		if (background != null) {
-			background.setPos(parts.x - background.tile.width / 2, parts.y - background.tile.height / 2);
+			background.setPosition(parts.x - background.tile.width / 2, parts.y - background.tile.height / 2);
 			background.tile.dx = partsProps.dx;
 			background.tile.dy = partsProps.dy;
 		}

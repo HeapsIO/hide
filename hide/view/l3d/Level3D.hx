@@ -155,7 +155,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 				var parentMat = worldMat(getObject(p.parent));
 				parentMat.invert();
 				var localMat = new h3d.Matrix();
-				localMat.initTranslate(proj.x, proj.y, proj.z);
+				localMat.initTranslation(proj.x, proj.y, proj.z);
 				localMat.multiply(localMat, parentMat);
 				obj3d.setTransform(localMat);
 			}
