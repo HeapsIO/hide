@@ -404,8 +404,6 @@ class Level3D extends FileView {
 			grid.lineTo(data.width, iy, 0);
 		}
 		grid.lineStyle(0);
-
-		trace("coucou");
 	}
 
 	function onUpdate(dt:Float) {
