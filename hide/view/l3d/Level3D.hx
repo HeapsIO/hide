@@ -344,6 +344,7 @@ class Level3D extends FileView {
 
 		tools.addColor("Background color", function(v) {
 			scene.engine.backgroundColor = v;
+			updateGrid();
 		}, scene.engine.backgroundColor);
 
 		tools.addToggle("refresh", "Auto save", function(b) {
@@ -386,10 +387,14 @@ class Level3D extends FileView {
 		grid = new h3d.scene.Graphics(scene.s3d);
 		grid.scale(1);
 		grid.material.mainPass.setPassName("debuggeom");
-		grid.material.shadows = false;
 
-		grid.lineStyle(1, 0x404040, 1.0);
-		// var offset = size/2;
+		var col = h3d.Vector.fromColor(scene.engine.backgroundColor);
+		var hsl = col.toColorHSL();
+		if(hsl.z > 0.5) hsl.z -= 0.1;
+		else hsl.z += 0.1;
+		col.makeColor(hsl.x, hsl.y, hsl.z);
+
+		grid.lineStyle(1.0, col.toColor(), 1.0);
 		for(ix in 0...data.width+1) {
 			grid.moveTo(ix, 0, 0);
 			grid.lineTo(ix, data.height, 0);
@@ -399,6 +404,8 @@ class Level3D extends FileView {
 			grid.lineTo(data.width, iy, 0);
 		}
 		grid.lineStyle(0);
+
+		trace("coucou");
 	}
 
 	function onUpdate(dt:Float) {
