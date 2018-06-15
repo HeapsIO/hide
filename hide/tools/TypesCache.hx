@@ -259,6 +259,8 @@ class TypesCache {
 			return null;
 		case PChoice(c):
 			return c != null && c.length > 0 ? c[0] : null;
+		case PFile(_):
+			return null;
 		}
 	}
 

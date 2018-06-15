@@ -7,6 +7,7 @@ enum PropType {
 	PBool;
 	PTexture;
 	PChoice( choices : Array<String> );
+	PFile( exts : Array<String> );
 	PUnsupported( debug : String );
 }
 
@@ -80,6 +81,8 @@ class PropsEditor extends Component {
 			var e = new Element('<select field="${p.name}"></select>');
 			for(c in choices)
 				new hide.Element('<option>').attr("value", choices.indexOf(c)).text(upperCase(c)).appendTo(e);
+		case PFile(exts):
+			new Element('<input type="texturepath" extensions="${exts.join(" ")}" field="${p.name}">').appendTo(parent);
 		}
 	}
 
@@ -256,6 +259,21 @@ class PropsField extends Component {
 			return;
 		case "model":
 			fselect = new hide.comp.FileSelect(["hmd", "fbx"], null, f);
+			fselect.path = current;
+			fselect.onChange = function() {
+				undo(function() {
+					var f = resolveField();
+					f.current = getFieldValue();
+					f.fselect.path = f.current;
+					f.onChange(true);
+				});
+				current = fselect.path;
+				setFieldValue(current);
+				onChange(false);
+			};
+			return;
+		case "file":
+			fselect = new hide.comp.FileSelect(f.attr("extensions").split(" "), null, f);
 			fselect.path = current;
 			fselect.onChange = function() {
 				undo(function() {

@@ -74,8 +74,18 @@ class Shader extends Prefab {
 
 	function loadShaderDef(ctx: Context) {
 		#if editor
+		if(shaderDef == null) {
+			var path = source.split("\\").join("/");
+			var ide = hide.Ide.inst;
+			var shadersPath = ide.projectDir + "/src";  // TODO: serach in haxe.classPath?
+			if( StringTools.startsWith(path.toLowerCase(), shadersPath.toLowerCase()+"/") ) {
+				path = path.substr(shadersPath.length + 1);
+			}
+			path = haxe.io.Path.withoutExtension(path);
+			shaderDef = ctx.loadShader(path);
+		}
 		if(shaderDef == null)
-			shaderDef = ctx.loadShader("shaders/TestShader");
+			return;
 
 		// TODO: Where to init prefab default values?
 		for( v in shaderDef.inits ) {
@@ -118,6 +128,8 @@ class Shader extends Prefab {
 		if(shaderDef == null)
 			return;
 
+		var group = new hide.Element('<div class="group" name="Shader"></div>');
+
 		var props = [];
 		for(v in shaderDef.shader.data.vars) {
 			if(v.kind != Param)
@@ -125,7 +137,9 @@ class Shader extends Prefab {
 			var prop = hide.tools.TypesCache.makeShaderType(v);
 			props.push({name: v.name, t: prop});
 		}
-		ctx.properties.addProps(props, this.props, function(pname) {
+		group.append(hide.comp.PropsEditor.makePropsList(props));
+		
+		ctx.properties.add(group,this.props, function(pname) {
 			ctx.onChange(this, pname);
 			var inst = ctx.getContext(this);
 			applyVars(inst);
