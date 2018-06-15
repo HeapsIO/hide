@@ -24,6 +24,7 @@ class Box extends Object3D {
 		var wire = new h3d.scene.Box(obj);
 		wire.color = 0;
 		wire.ignoreCollide = true;
+		wire.material.shadows = false;
 
 		ctx.local3d = obj;
 		ctx.local3d.name = name;

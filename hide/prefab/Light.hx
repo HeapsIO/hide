@@ -146,6 +146,7 @@ class Light extends Object3D {
 		var mat = mesh.material;
 		mat.mainPass.setPassName("overlay");
 		mat.color.setColor(color);
+		mat.shadows = false;
 
 		#end
 	}

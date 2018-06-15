@@ -386,6 +386,7 @@ class Level3D extends FileView {
 		grid = new h3d.scene.Graphics(scene.s3d);
 		grid.scale(1);
 		grid.material.mainPass.setPassName("debuggeom");
+		grid.material.shadows = false;
 
 		grid.lineStyle(1, 0x404040, 1.0);
 		// var offset = size/2;
