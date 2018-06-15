@@ -187,7 +187,7 @@ class Model extends FileView {
 
 		light = obj.find(function(o) return Std.instance(o, h3d.scene.DirLight));
 		if( light == null ) {
-			light = new h3d.scene.DirLight(new h3d.Vector(), scene.s3d);
+			light = new h3d.scene.DirLight(scene.s3d);
 			light.enableSpecular = true;
 			if( isPbr ) light.color.scale3(2);
 		}
@@ -410,7 +410,7 @@ class Model extends FileView {
 		saveDisplayState("Camera", { x : cam.pos.x, y : cam.pos.y, z : cam.pos.z, tx : cam.target.x, ty : cam.target.y, tz : cam.target.z });
 		if( light != null ) {
 			var angle = Math.atan2(cam.target.y - cam.pos.y, cam.target.x - cam.pos.x);
-			light.direction.set(
+			light.setDirection(
 				Math.cos(angle) * lightDirection.x - Math.sin(angle) * lightDirection.y,
 				Math.sin(angle) * lightDirection.x + Math.cos(angle) * lightDirection.y,
 				lightDirection.z
