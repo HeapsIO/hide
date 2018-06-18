@@ -390,14 +390,19 @@ class SceneEditor {
 	function setupGizmo() {
 		if(curEdit == null) return;
 		gizmo.onStartMove = function(mode) {
-			var objects = curEdit.rootObjects;
-			var pivotPt = getPivot(objects);
+			var objects3d = [for(o in curEdit.rootElements) {
+				var obj3d = o.to(hide.prefab.Object3D);
+				if(obj3d != null)
+					obj3d;
+			}];
+			var sceneObjs = [for(o in objects3d) getContext(o).local3d];
+			var pivotPt = getPivot(sceneObjs);
 			var pivot = new h3d.Matrix();
 			pivot.initTranslation(pivotPt.x, pivotPt.y, pivotPt.z);
 			var invPivot = pivot.clone();
 			invPivot.invert();
 
-			var localMats = [for(o in objects) {
+			var localMats = [for(o in sceneObjs) {
 				var m = worldMat(o);
 				m.multiply(m, invPivot);
 				m;
@@ -415,11 +420,6 @@ class SceneEditor {
 				return x;
 			}
 
-			var objects3d = [for(o in curEdit.rootElements) {
-				var obj3d = o.to(hide.prefab.Object3D);
-				if(obj3d != null)
-					obj3d;
-			}];
 			var prevState = [for(o in objects3d) o.save()];
 			gizmo.onMove = function(translate: h3d.Vector, rot: h3d.Quat, scale: h3d.Vector) {
 				var transf = new h3d.Matrix();
@@ -428,14 +428,14 @@ class SceneEditor {
 					rot.toMatrix(transf);
 				if(translate != null)
 					transf.translate(translate.x, translate.y, translate.z);
-				for(i in 0...objects.length) {
+				for(i in 0...sceneObjs.length) {
 					var newMat = localMats[i].clone();
 					newMat.multiply(newMat, transf);
 					newMat.multiply(newMat, pivot);
 					if(snapToGround && mode == MoveXY) {
 						newMat.tz = getZ(newMat.tx, newMat.ty);
 					}
-					var invParent = objects[i].parent.getAbsPos().clone();
+					var invParent = sceneObjs[i].parent.getAbsPos().clone();
 					invParent.invert();
 					newMat.multiply(newMat, invParent);
 					if(scale != null) {
@@ -455,7 +455,7 @@ class SceneEditor {
 						obj3d.scaleY = quantize(s.y, scaleQuant);
 						obj3d.scaleZ = quantize(s.z, scaleQuant);
 					}
-					obj3d.applyPos(objects[i]);
+					obj3d.applyPos(sceneObjs[i]);
 				}
 			}
 
@@ -466,14 +466,14 @@ class SceneEditor {
 					if( undo ) {
 						for(i in 0...objects3d.length) {
 							objects3d[i].load(prevState[i]);
-							objects3d[i].applyPos(objects[i]);
+							objects3d[i].applyPos(sceneObjs[i]);
 						}
 						refreshProps();
 					}
 					else {
 						for(i in 0...objects3d.length) {
 							objects3d[i].load(newState[i]);
-							objects3d[i].applyPos(objects[i]);
+							objects3d[i].applyPos(sceneObjs[i]);
 						}
 						refreshProps();
 					}
