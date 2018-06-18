@@ -123,9 +123,11 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		var polygons = parent.getGroundPolys();
 		var minDist = -1.;
 		for(polygon in polygons) {
-			if(polygon.mesh == null)
+			var ctx = getContext(polygon);
+			var mesh = Std.instance(ctx.local3d, h3d.scene.Mesh);
+			if(mesh == null)
 				continue;
-			var collider = polygon.mesh.getGlobalCollider();
+			var collider = mesh.getGlobalCollider();
 			var d = collider.rayIntersection(ray, true);
 			if(d > 0 && (d < minDist || minDist < 0)) {
 				minDist = d;
@@ -145,7 +147,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 			allowed = ["renderProps"];
 		}
 
-		if(current != null && current.type == "model") {
+		if(current != null && (current.type == "model" || current.type == "polygon")) {
 			allowed.push("shader");
 		}
 
@@ -522,19 +524,25 @@ class Level3D extends FileView {
 				if(i != null) i.visible = !layer.locked;
 			}
 			for(box in layer.getAll(hide.prefab.Box)) {
-				box.setColor(getDisplayColor(box));
+				var ctx = sceneEditor.getContext(box);
+				box.setColor(ctx, getDisplayColor(box));
 			}
 			for(poly in layer.getAll(hide.prefab.l3d.Polygon)) {
-				poly.setColor(getDisplayColor(poly));
+				var ctx = sceneEditor.getContext(poly);
+				poly.applyProps(ctx);
 			}
 		}
 
 		var box = p.to(hide.prefab.Box);
-		if(box != null)
-			box.setColor(getDisplayColor(p));
+		if(box != null) {
+			var ctx = sceneEditor.getContext(box);
+			box.setColor(ctx, getDisplayColor(p));
+		}
 		var poly = p.to(hide.prefab.l3d.Polygon);
-		if(poly != null)
-			poly.setColor(getDisplayColor(p));
+		if(poly != null) {
+			var ctx = sceneEditor.getContext(poly);
+			poly.applyProps(ctx);
+		}
 	}
 
 	static function getDisplayColor(p: PrefabElement) {

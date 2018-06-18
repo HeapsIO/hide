@@ -2,10 +2,12 @@ package hide.prefab;
 
 class Box extends Object3D {
 
-	var mesh : h3d.scene.Mesh = null;
 
-	public function setColor(color: Int) {
+	public function setColor(ctx: Context, color: Int) {
 		#if editor
+		if(ctx.local3d == null)
+			return;
+		var mesh = Std.instance(ctx.local3d.getChildAt(0), h3d.scene.Mesh);
 		if(mesh != null) {
 			setDebugColor(color, mesh.material);
 		}
@@ -17,9 +19,9 @@ class Box extends Object3D {
 
 		var obj = new h3d.scene.Object(ctx.local3d);
 		var prim = h3d.prim.Cube.defaultUnitCube();
-		mesh = new h3d.scene.Mesh(prim, obj);
+		var mesh = new h3d.scene.Mesh(prim, obj);
 		mesh.setPosition(-0.5, -0.5, -0.5);
-		setColor(0x60ff00ff);
+		setDebugColor(0x60ff00ff, mesh.material);
 
 		var wire = new h3d.scene.Box(obj);
 		wire.color = 0;
