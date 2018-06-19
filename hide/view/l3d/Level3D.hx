@@ -105,7 +105,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 	}
 
 	override function selectAll() {
-		var all = [for(e in getAllVisible()) if(e.to(Layer) == null) e];
+		var all = [for(e in getAllSelectable()) if(e.to(Layer) == null) e];
 		selectObjects(all);
 	}
 

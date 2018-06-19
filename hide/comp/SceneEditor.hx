@@ -538,7 +538,7 @@ class SceneEditor {
 
 			if(K.isReleased(K.MOUSE_LEFT) || K.isPressed(K.MOUSE_LEFT)) {
 				var contexts = context.shared.contexts;
-				var all = getAllVisible();
+				var all = getAllSelectable();
 				var inside = [];
 				for(elt in all) {
 					if(elt.to(Object3D) == null)
@@ -820,12 +820,12 @@ class SceneEditor {
 		return o.visible && (elt.parent != null ? isVisible(elt.parent) : true);
 	}
 
-	public function getAllVisible() : Array<PrefabElement> {
-		return [for(e in context.shared.elements()) if(isVisible(e)) e];
+	public function getAllSelectable() : Array<PrefabElement> {
+		return [for(elt in interactives.keys()) if(interactives.get(elt).visible) elt];
 	}
 
 	public function selectAll() {
-		selectObjects(getAllVisible());
+		selectObjects(getAllSelectable());
 	}
 
 	public function deselect() {
