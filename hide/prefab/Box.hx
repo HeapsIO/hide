@@ -21,13 +21,16 @@ class Box extends Object3D {
 		var prim = h3d.prim.Cube.defaultUnitCube();
 		var mesh = new h3d.scene.Mesh(prim, obj);
 		mesh.setPosition(-0.5, -0.5, -0.5);
+
+		#if editor
 		setDebugColor(0x60ff00ff, mesh.material);
 
 		var wire = new h3d.scene.Box(obj);
 		wire.color = 0;
 		wire.ignoreCollide = true;
 		wire.material.shadows = false;
-
+		#end
+		
 		ctx.local3d = obj;
 		ctx.local3d.name = name;
 		applyPos(ctx.local3d);
