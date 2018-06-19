@@ -3,6 +3,18 @@ package hide.prefab;
 @:enum abstract LightKind(Int) {
 	var Point = 0;
 	var Directional = 1;
+
+	inline function new(v) {
+		this = v;
+	}
+
+	public inline function toInt() {
+		return this;
+	}
+
+	public static inline function fromInt( v : Int ) : LightKind {
+		return new LightKind(v);
+	}
 }
 
 
@@ -22,7 +34,7 @@ class Light extends Object3D {
 
 	override function save() {
 		var obj : Dynamic = super.save();
-		obj.kind = kind;
+		obj.kind = kind.toInt();
 		obj.color = color;
 		obj.range = range;
 		obj.size = size;
@@ -33,7 +45,7 @@ class Light extends Object3D {
 
 	override function load( obj : Dynamic ) {
 		super.load(obj);
-		kind = obj.kind;
+		kind = LightKind.fromInt(obj.kind);
 		color = obj.color;
 		range = obj.range;
 		size = obj.size;
