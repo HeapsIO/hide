@@ -10,11 +10,6 @@ enum EmitShape {
 }
 
 typedef ParamType = hide.comp.PropsEditor.PropType;
-// enum ParamType {
-// 	TInt(?min: Int, ?max: Int);
-// 	TFloat(?min: Float, ?max: Float);
-// 	TVector(size: Int);
-// }
 
 typedef ParamDef = {
 	> hide.comp.PropsEditor.PropDef,
@@ -30,42 +25,42 @@ typedef InstanceDef = {
 typedef ShaderAnims = Array<hide.prefab.Shader.ShaderAnimation>;
 
 @:allow(hide.prefab.fx.EmitterObject)
-private class ParticleInstance extends Evaluator {
-	var parent : EmitterObject;
+private class ParticleInstance extends h3d.scene.Object {
+	var emitter : EmitterObject;
+	var evaluator : Evaluator;
 	public var life = 0.0;
-	public var obj : h3d.scene.Object;
 
 	public var curVelocity = new h3d.Vector();
-	public var curPos = new h3d.Vector();
-	public var orientation = new h3d.Quat();
+	// public var curPos = new h3d.Vector();
+	// public var orientation = new h3d.Quat();
 
 	public var def : InstanceDef;
 	public var shaderAnims : ShaderAnims;
 
-	public function new(parent: EmitterObject, def: InstanceDef) {
-		super(parent.random);
+	public function new(emitter: EmitterObject, def: InstanceDef) {
+		super(emitter.parent);
 		this.def = def;
-		this.parent = parent;
-		parent.instances.push(this);
+		this.emitter = emitter;
+		this.evaluator = new Evaluator(emitter.random);
+		emitter.instances.push(this);
 	}
 
 	public function update(dt : Float) {
 
-		var localSpeed = getVector(def.localSpeed, life);
+		var localSpeed = evaluator.getVector(def.localSpeed, life);
 		if(localSpeed.length() > 0.001) {
-			localSpeed.transform3x3(orientation.toMatrix());
+			localSpeed.transform3x3(getRotationQuat().toMatrix());
 			curVelocity = localSpeed;
 		}
 
-		curPos.x += curVelocity.x * dt;
-		curPos.y += curVelocity.y * dt;
-		curPos.z += curVelocity.z * dt;
-		obj.setPosition(curPos.x, curPos.y, curPos.z);
+		x += curVelocity.x * dt;
+		y += curVelocity.y * dt;
+		z += curVelocity.z * dt;
 
-		var scaleVec = getVector(def.scale, life);
-		obj.scaleX = scaleVec.x;
-		obj.scaleY = scaleVec.y;
-		obj.scaleZ = scaleVec.z;
+		var scaleVec = evaluator.getVector(def.scale, life);
+		scaleX = scaleVec.x;
+		scaleY = scaleVec.y;
+		scaleZ = scaleVec.z;
 
 		for(anim in shaderAnims) {
 			anim.setTime(life);  // TODO: Scale by lifetime
@@ -74,9 +69,9 @@ private class ParticleInstance extends Evaluator {
 		life += dt;
 	}
 
-	public function remove() {
-		obj.remove();
-		parent.instances.remove(this);
+	function kill() {
+		remove();
+		emitter.instances.remove(this);
 	}
 }
 
@@ -114,7 +109,7 @@ class EmitterObject extends h3d.scene.Object {
 		lastTime = 0.0;
 		emitCount = 0;
 		for(inst in instances.copy()) {
-			inst.remove();
+			inst.kill();
 		}
 	}
 
@@ -125,13 +120,12 @@ class EmitterObject extends h3d.scene.Object {
 			return;
 
 		var shapeSize = evaluator.getFloat(emitSize, curTime);
-		context.local3d = this.parent;
 		if(particleTemplate == null)
 			return;
-		// var localTrans = new h3d.Matrix();
 		for(i in 0...count) {
+			var part = new ParticleInstance(this, instDef);
+			context.local3d = part;
 			var ctx = particleTemplate.makeInstance(context);
-			var obj3d = ctx.local3d;
 
 			var localPos = new h3d.Vector();
 			var localDir = new h3d.Vector();
@@ -146,15 +140,12 @@ class EmitterObject extends h3d.scene.Object {
 					dx *= shapeSize / 2.0;
 					dy *= shapeSize / 2.0;
 					localPos.set(0, dx, dy);
-					// localTrans.initTranslate(0, dx, dy);
 				default:
 			}
 
 			localPos.transform(absPos);
-			var part = new ParticleInstance(this, instDef);
-			part.obj = obj3d;
-			part.curPos = localPos;
-			part.orientation.initRotateMatrix(absPos);
+			part.setTransform(absPos);
+			part.setPosition(localPos.x, localPos.y, localPos.z);
 
 			part.shaderAnims = [];
 			var shaders = particleTemplate.getAll(hide.prefab.Shader);
@@ -180,7 +171,7 @@ class EmitterObject extends h3d.scene.Object {
 		var i = instances.length;
 		while (i-- > 0) {
 			if(instances[i].life > lifeTime) {
-				instances[i].remove();
+				instances[i].kill();
 			}
 			else {
 				instances[i].update(dt);
