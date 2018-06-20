@@ -313,7 +313,7 @@ class Emitter extends Object3D {
 
 			if(randFactor != 0.0) {
 				var randScale = randCurve != null ? VCurveValue(randCurve, randFactor) : VConst(randFactor);
-				var noise = VNoise(randIdx++, randScale);
+				var noise = VRandom(randIdx++, randScale);
 				if(val == VZero)
 					val = noise;
 				else

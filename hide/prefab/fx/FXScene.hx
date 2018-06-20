@@ -9,7 +9,7 @@ enum Value {
 	VConst(v: Float);
 	VCurve(c: Curve);
 	VCurveValue(c: Curve, scale: Float);
-	VNoise(idx: Int, scale: Value);
+	VRandom(idx: Int, scale: Value);
 	VAdd(a: Value, b: Value);
 	VMult(a: Value, b: Value);
 	VVector(x: Value, y: Value, z: Value, ?w: Value);
@@ -36,7 +36,7 @@ class Evaluator {
 			case VConst(v): return v;
 			case VCurve(c): return c.getVal(time);
 			case VCurveValue(c, scale): return c.getVal(time) * scale;
-			case VNoise(idx, scale):
+			case VRandom(idx, scale):
 				var len = randValues.length;
 				while(idx >= len) {
 					randValues.push(random.srand());
