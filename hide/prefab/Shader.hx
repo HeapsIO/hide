@@ -53,7 +53,7 @@ class Shader extends Prefab {
 		};
 	}
 
-	public function applyVars(ctx: Context, time: Float=0.0) {
+	function applyVars(ctx: Context) {
 		var shader = Std.instance(ctx.custom, ShaderAnimation);
 		if(shader == null || shaderDef == null)
 			return;

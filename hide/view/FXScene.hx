@@ -46,7 +46,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 			});
 
 			var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
-			var allowed = ["model", "object", "shader", "emitter", "constraint", "polygon"];
+			var allowed = ["model", "object", "shader", "emitter", "constraint", "polygon", "material"];
 			for( ptype in allowed ) {
 				var pcl = allRegs.get(ptype);
 				var props = Type.createEmptyInstance(pcl).getHideProps();

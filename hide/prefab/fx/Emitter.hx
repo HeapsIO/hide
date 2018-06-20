@@ -158,6 +158,11 @@ class EmitterObject extends h3d.scene.Object {
 					part.shaderAnims.push(anim);
 				}
 			}
+
+			var materials = particleTemplate.getAll(hide.prefab.Material);
+			for(mat in materials) {
+				mat.makeInstance(ctx);
+			}
 		}
 		context.local3d = this;
 		emitCount += count;
@@ -349,7 +354,6 @@ class Emitter extends Object3D {
 			scale: VConst(1.0),
 		};
 
-		trace(emitterObj.instDef.localSpeed);
 		emitterObj.particleTemplate = template;
 		emitterObj.lifeTime = getParamVal("lifeTime");
 		emitterObj.maxCount = getParamVal("maxCount");
