@@ -31,7 +31,7 @@ class Instance extends Object3D {
 			var obj = new h3d.scene.Object(ctx.local3d);
 			var prim = h3d.prim.Cube.defaultUnitCube();
 			var mesh = new h3d.scene.Mesh(prim, obj);
-			mesh.setPos(-0.25, -0.25, -0.25);
+			mesh.setPosition(-0.25, -0.25, -0.25);
 			mesh.scale(0.5);
 			var mat = mesh.material;
 			mat.color.setColor(0xff00ff);

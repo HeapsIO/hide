@@ -138,24 +138,13 @@ class Prefab extends FileView {
 	public function onSceneReady() {
 		light = sceneEditor.scene.s3d.find(function(o) return Std.instance(o, h3d.scene.DirLight));
 		if( light == null ) {
-			light = new h3d.scene.DirLight(new h3d.Vector(), scene.s3d);
+			light = new h3d.scene.DirLight(scene.s3d);
 			light.enableSpecular = true;
 		} else
 			light = null;
 
 		tools.saveDisplayKey = "Prefab/tools";
 		tools.addButton("video-camera", "Perspective camera", () -> sceneEditor.resetCamera(false));
-		tools.addToggle("sun-o", "Enable Lights/Shadows", function(v) {
-			if( !v ) {
-				for( m in context.shared.root3d.getMaterials() ) {
-					m.mainPass.enableLights = false;
-					m.shadows = false;
-				}
-			} else {
-				for( m in context.shared.root3d.getMaterials() )
-					h3d.mat.MaterialSetup.current.initModelMaterial(m);
-			}
-		},true);
 
 		tools.addColor("Background color", function(v) {
 			scene.engine.backgroundColor = v;
@@ -172,11 +161,11 @@ class Prefab extends FileView {
 		var cam = scene.s3d.camera;
 		if( light != null ) {
 			var angle = Math.atan2(cam.target.y - cam.pos.y, cam.target.x - cam.pos.x);
-			light.direction.set(
+			light.setDirection(new h3d.Vector(
 				Math.cos(angle) * lightDirection.x - Math.sin(angle) * lightDirection.y,
 				Math.sin(angle) * lightDirection.x + Math.cos(angle) * lightDirection.y,
 				lightDirection.z
-			);
+			));
 		}
 		if( autoSync && (currentVersion != undo.currentID || lastSyncChange != properties.lastChange) ) {
 			save();

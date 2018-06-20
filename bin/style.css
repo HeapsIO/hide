@@ -26,6 +26,9 @@ body .select2-dropdown {
   font-size: 9pt;
   color: #aaa;
 }
+canvas {
+  user-select: none;
+}
 input,
 textarea {
   padding-left: 4px;
@@ -287,9 +290,10 @@ input[type=checkbox]:checked:after {
   flex: none;
   padding: 4px;
   padding-top: 2px;
-  padding-bottom: 6px;
+  padding-bottom: 2px;
   background-color: #222222;
   border-bottom: 1px solid #000;
+  display: inline-block;
 }
 .hide-toolbar .button,
 .hide-toolbar .toggle {

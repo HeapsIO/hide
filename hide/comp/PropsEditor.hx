@@ -6,6 +6,8 @@ enum PropType {
 	PVec( n : Int );
 	PBool;
 	PTexture;
+	PChoice( choices : Array<String> );
+	PFile( exts : Array<String> );
 	PUnsupported( debug : String );
 }
 
@@ -34,9 +36,8 @@ class PropsEditor extends Component {
 	}
 
 	public function addMaterial( m : h3d.mat.Material, ?parent : Element, ?onChange ) {
-		var props = m.props;
-		var def = h3d.mat.MaterialSetup.current.editMaterial(props);
-		def = add(def, props, function(name) {
+		var def = m.editProps();
+		def = add(def, m.props, function(name) {
 			if( m.model != null )
 				h3d.mat.MaterialSetup.current.saveModelMaterial(m);
 			m.refreshProps();
@@ -76,6 +77,12 @@ class PropsEditor extends Component {
 				e.attr("min", isColor ? "0" : "-1");
 				e.attr("max", "1");
 			}
+		case PChoice(choices):
+			var e = new Element('<select field="${p.name}"></select>');
+			for(c in choices)
+				new hide.Element('<option>').attr("value", choices.indexOf(c)).text(upperCase(c)).appendTo(e);
+		case PFile(exts):
+			new Element('<input type="texturepath" extensions="${exts.join(" ")}" field="${p.name}">').appendTo(parent);
 		}
 	}
 
@@ -252,6 +259,21 @@ class PropsField extends Component {
 			return;
 		case "model":
 			fselect = new hide.comp.FileSelect(["hmd", "fbx"], null, f);
+			fselect.path = current;
+			fselect.onChange = function() {
+				undo(function() {
+					var f = resolveField();
+					f.current = getFieldValue();
+					f.fselect.path = f.current;
+					f.onChange(true);
+				});
+				current = fselect.path;
+				setFieldValue(current);
+				onChange(false);
+			};
+			return;
+		case "file":
+			fselect = new hide.comp.FileSelect(f.attr("extensions").split(" "), null, f);
 			fselect.path = current;
 			fselect.onChange = function() {
 				undo(function() {

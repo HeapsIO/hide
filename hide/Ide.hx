@@ -69,9 +69,11 @@ class Ide {
 			if( wp != null ) {
 				if( wp.w > 400 && wp.h > 300 )
 					window.resizeBy(wp.w - Std.int(window.window.outerWidth), wp.h - Std.int(window.window.outerHeight));
-				if( wp.x >= 0 && wp.y >= 0 ) {
+				if( wp.x >= 0 && wp.y >= 0 )
 					window.moveTo(wp.x, wp.y);
-					if( wp.max ) window.maximize();
+				if( wp.max ) {
+					window.maximize();
+					maximized = true;
 				}
 			}
 		}
@@ -346,6 +348,7 @@ class Ide {
 	}
 
 	public function getPath( relPath : String ) {
+		relPath = relPath.split("${HIDE}").join(appPath);
 		if( haxe.io.Path.isAbsolute(relPath) )
 			return relPath;
 		return resourceDir+"/"+relPath;
@@ -379,6 +382,7 @@ class Ide {
 		];
 		var path = getPath("Renderer.hx");
 		if( sys.FileSystem.exists(path) ) {
+			/*
 			var r = new hide.tools.MaterialScript();
 			try {
 				r.load(sys.io.File.getContent(path));
@@ -387,6 +391,7 @@ class Ide {
 				error(e);
 			}
 			r.onError = function(msg) error(msg);
+			*/
 		}
 
 		var db = getPath(props.project.get("cdb.databaseFile"));

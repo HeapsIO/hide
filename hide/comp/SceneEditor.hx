@@ -112,14 +112,14 @@ class SceneEditor {
 		tree.autoOpenNodes = false;
 
 		var sceneEl = new Element('<div class="scene"></div>');
-		scene = new hide.comp.Scene(null, sceneEl);
+		scene = new hide.comp.Scene(view.props, null, sceneEl);
 		scene.onReady = onSceneReady;
 
 		view.keys.register("copy", onCopy);
 		view.keys.register("paste", onPaste);
 		view.keys.register("cancel", deselect);
 		view.keys.register("selectAll", selectAll);
-		view.keys.register("duplicate", duplicate);
+		view.keys.register("duplicate", duplicate.bind(true));
 		view.keys.register("group", groupSelection);
 		view.keys.register("delete", () -> deleteElements(curEdit.rootElements));
 		view.keys.register("search", function() {
@@ -170,7 +170,7 @@ class SceneEditor {
 
 	function focusSelection() {
 		if(curEdit.rootObjects.length > 0) {
-			cameraController.set(curEdit.rootObjects[0].getAbsPos().pos().toPoint());
+			cameraController.set(curEdit.rootObjects[0].getAbsPos().getPosition().toPoint());
 		}
 		for(obj in curEdit.rootElements)
 			tree.revealNode(obj);
@@ -227,6 +227,7 @@ class SceneEditor {
 				{ label : "New...", menu : newItems },
 				{ label : "Rename", enabled : current != null, click : function() tree.editNode(current) },
 				{ label : "Delete", enabled : current != null, click : function() deleteElements(curEdit.rootElements) },
+				{ label : "Duplicate", enabled : current != null, click : duplicate.bind(false) },
 				{ label : "Select all", click : selectAll },
 				{ label : "Select children", enabled : current != null, click : function() selectObjects(current.flatten()) },
 				{ label : "Show", enabled : curEdit != null && curEdit.elements.length > 0, click : function() setVisible(curEdit.elements, true) },
@@ -290,7 +291,9 @@ class SceneEditor {
 		sh.cleanups = [];
 		context.init();
 		sceneData.makeInstance(context);
-		scene.init(view.props);
+		var bgcol = scene.engine.backgroundColor;
+		scene.init();
+		scene.engine.backgroundColor = bgcol;
 		refreshInteractives();
 		tree.refresh(function() {
 			for(elt in sh.contexts.keys()) {
@@ -315,18 +318,23 @@ class SceneEditor {
 			var o = ctx.local3d;
 			if(o == null)
 				continue;
-			var meshes = getSelfMeshes(elt);
+			var meshes = getSelfObjects(elt, h3d.scene.Mesh);
 			var invRootMat = o.getAbsPos().clone();
 			invRootMat.invert();
 			var bounds = new h3d.col.Bounds();
 			for(mesh in meshes) {
+				if(mesh.ignoreCollide)
+					continue;
 				var localMat = mesh.getAbsPos().clone();
 				localMat.multiply(localMat, invRootMat);
 				var lb = mesh.primitive.getBounds().clone();
 				lb.transform(localMat);
 				bounds.add(lb);
 			}
-			var meshCollider = new h3d.col.Collider.GroupCollider([for(m in meshes) m.getGlobalCollider()]);
+			var meshCollider = new h3d.col.Collider.GroupCollider([for(m in meshes) {
+				var c = m.getGlobalCollider();
+				if(c != null) c;
+			}]);
 			var boundsCollider = new h3d.col.ObjectCollider(o, bounds);
 			var int = new h3d.scene.Interactive(boundsCollider, o);
 			interactives.set(elt, int);
@@ -382,14 +390,19 @@ class SceneEditor {
 	function setupGizmo() {
 		if(curEdit == null) return;
 		gizmo.onStartMove = function(mode) {
-			var objects = curEdit.rootObjects;
-			var pivotPt = getPivot(objects);
+			var objects3d = [for(o in curEdit.rootElements) {
+				var obj3d = o.to(hide.prefab.Object3D);
+				if(obj3d != null)
+					obj3d;
+			}];
+			var sceneObjs = [for(o in objects3d) getContext(o).local3d];
+			var pivotPt = getPivot(sceneObjs);
 			var pivot = new h3d.Matrix();
-			pivot.initTranslate(pivotPt.x, pivotPt.y, pivotPt.z);
+			pivot.initTranslation(pivotPt.x, pivotPt.y, pivotPt.z);
 			var invPivot = pivot.clone();
 			invPivot.invert();
 
-			var localMats = [for(o in objects) {
+			var localMats = [for(o in sceneObjs) {
 				var m = worldMat(o);
 				m.multiply(m, invPivot);
 				m;
@@ -407,27 +420,22 @@ class SceneEditor {
 				return x;
 			}
 
-			var objects3d = [for(o in curEdit.rootElements) {
-				var obj3d = o.to(hide.prefab.Object3D);
-				if(obj3d != null)
-					obj3d;
-			}];
 			var prevState = [for(o in objects3d) o.save()];
 			gizmo.onMove = function(translate: h3d.Vector, rot: h3d.Quat, scale: h3d.Vector) {
 				var transf = new h3d.Matrix();
 				transf.identity();
 				if(rot != null)
-					rot.saveToMatrix(transf);
+					rot.toMatrix(transf);
 				if(translate != null)
 					transf.translate(translate.x, translate.y, translate.z);
-				for(i in 0...objects.length) {
+				for(i in 0...sceneObjs.length) {
 					var newMat = localMats[i].clone();
 					newMat.multiply(newMat, transf);
 					newMat.multiply(newMat, pivot);
 					if(snapToGround && mode == MoveXY) {
 						newMat.tz = getZ(newMat.tx, newMat.ty);
 					}
-					var invParent = objects[i].parent.getAbsPos().clone();
+					var invParent = sceneObjs[i].parent.getAbsPos().clone();
 					invParent.invert();
 					newMat.multiply(newMat, invParent);
 					if(scale != null) {
@@ -447,7 +455,7 @@ class SceneEditor {
 						obj3d.scaleY = quantize(s.y, scaleQuant);
 						obj3d.scaleZ = quantize(s.z, scaleQuant);
 					}
-					obj3d.applyPos(objects[i]);
+					obj3d.applyPos(sceneObjs[i]);
 				}
 			}
 
@@ -458,14 +466,14 @@ class SceneEditor {
 					if( undo ) {
 						for(i in 0...objects3d.length) {
 							objects3d[i].load(prevState[i]);
-							objects3d[i].applyPos(objects[i]);
+							objects3d[i].applyPos(sceneObjs[i]);
 						}
 						refreshProps();
 					}
 					else {
 						for(i in 0...objects3d.length) {
 							objects3d[i].load(newState[i]);
-							objects3d[i].applyPos(objects[i]);
+							objects3d[i].applyPos(sceneObjs[i]);
 						}
 						refreshProps();
 					}
@@ -480,7 +488,7 @@ class SceneEditor {
 		if(curEdit != null && curEdit.rootObjects.length > 0) {
 			var pos = getPivot(curEdit.rootObjects);
 			gizmo.visible = true;
-			gizmo.setPos(pos.x, pos.y, pos.z);
+			gizmo.setPosition(pos.x, pos.y, pos.z);
 
 			if(curEdit.rootObjects.length == 1 && (localTransform || K.isDown(K.ALT))) {
 				var obj = curEdit.rootObjects[0];
@@ -530,7 +538,7 @@ class SceneEditor {
 
 			if(K.isReleased(K.MOUSE_LEFT) || K.isPressed(K.MOUSE_LEFT)) {
 				var contexts = context.shared.contexts;
-				var all = getAllVisible();
+				var all = getAllSelectable();
 				var inside = [];
 				for(elt in all) {
 					if(elt.to(Object3D) == null)
@@ -598,11 +606,11 @@ class SceneEditor {
 		return context.shared.root3d;
 	}
 
-	function getSelfMeshes(p : PrefabElement) {
+	function getSelfObjects<T:h3d.scene.Object>(p : PrefabElement, c: Class<T>) : Array<T> {
 		var childObjs = [for(c in p.children) {var ctx = getContext(c); if(ctx != null) ctx.local3d; }];
 		var ret = [];
 		function rec(o : Object) {
-			var m = Std.instance(o, h3d.scene.Mesh);
+			var m = Std.instance(o, c);
 			if(m != null) ret.push(m);
 			for(i in 0...o.numChildren) {
 				var child = o.getChildAt(i);
@@ -631,6 +639,16 @@ class SceneEditor {
 			resetCamera();
 	}
 
+	function setHighlighed(elt: PrefabElement, on: Bool) {
+		var ctx = getContext(elt);
+		if(ctx == null)
+			return;
+		var highlights = ctx.local3d.findAll(c -> if(c.name == "_highlight") c else null);
+		for(o in highlights) {
+			o.visible = on;
+		}
+	}
+
 	public function selectObjects( elts : Array<PrefabElement>, ?includeTree=true) {
 		if( curEdit != null )
 			curEdit.cleanup();
@@ -641,10 +659,17 @@ class SceneEditor {
 			tree.setSelection(elts);
 		}
 
+		var rootElts = edit.rootElements;
 		var objects = edit.rootObjects;
 		addOutline(objects);
+		for(elt in rootElts) {
+			setHighlighed(elt, true);
+		}
 		edit.cleanups.push(function() {
 			cleanOutline(objects);
+			for(elt in rootElts) {
+				setHighlighed(elt, false);
+			}
 		});
 
 		curEdit = edit;
@@ -654,7 +679,7 @@ class SceneEditor {
 	public function resetCamera(?top = false) {
 		var targetPt = new h3d.col.Point(0, 0, 0);
 		if(curEdit != null && curEdit.rootObjects.length > 0) {
-			targetPt = curEdit.rootObjects[0].getAbsPos().pos().toPoint();
+			targetPt = curEdit.rootObjects[0].getAbsPos().getPosition().toPoint();
 		}
 		if(top)
 			cameraController.set(200, Math.PI/2, 0.001, targetPt);
@@ -671,7 +696,7 @@ class SceneEditor {
 		parentMat.invert();
 
 		var localMat = new h3d.Matrix();
-		localMat.initTranslate(proj.x, proj.y, proj.z);
+		localMat.initTranslation(proj.x, proj.y, proj.z);
 		localMat.multiply(localMat, parentMat);
 
 		var models: Array<PrefabElement> = [];
@@ -716,7 +741,7 @@ class SceneEditor {
 
 		var pivot = getPivot(curEdit.rootObjects);
 		var local = new h3d.Matrix();
-		local.initTranslate(pivot.x, pivot.y, pivot.z);
+		local.initTranslation(pivot.x, pivot.y, pivot.z);
 		local.multiply(local, invParentMat);
 		var group = new hide.prefab.Object3D(parent);
 		@:privateAccess group.type = "object";
@@ -797,12 +822,12 @@ class SceneEditor {
 		return o.visible && (elt.parent != null ? isVisible(elt.parent) : true);
 	}
 
-	public function getAllVisible() : Array<PrefabElement> {
-		return [for(e in context.shared.elements()) if(isVisible(e)) e];
+	public function getAllSelectable() : Array<PrefabElement> {
+		return [for(elt in interactives.keys()) if(interactives.get(elt).visible) elt];
 	}
 
 	public function selectAll() {
-		selectObjects(getAllVisible());
+		selectObjects(getAllSelectable());
 	}
 
 	public function deselect() {
@@ -861,7 +886,7 @@ class SceneEditor {
 		setVisible(toHide, false);
 	}
 
-	function duplicate() {
+	function duplicate(thenMove: Bool) {
 		if(curEdit == null) return;
 		var elements = curEdit.rootElements;
 		if(elements == null || elements.length == 0)
@@ -870,9 +895,9 @@ class SceneEditor {
 		var oldContexts = contexts.copy();
 		var newElements = [for(elt in elements) {
 			var clone = hide.prefab.Prefab.loadRec(elt.saveRec());
-			autoName(clone);
 			var index = elt.parent.children.indexOf(elt);
 			clone.parent = elt.parent;
+			autoName(clone);
 			elt.parent.children.remove(clone);
 			elt.parent.children.insert(index+1, clone);
 			{ elt: clone, idx: index };
@@ -882,25 +907,27 @@ class SceneEditor {
 			var all = [for(e in newElements) e.elt];
 			selectObjects(all);
 			tree.setSelection(all);
-			gizmo.startMove(MoveXY, true);
-			gizmo.onFinishMove = function() {
-				refreshProps();
-				undo.change(Custom(function(undo) {
-					for(e in newElements) {
-						if(undo) {
-							e.elt.parent.children.remove(e.elt);
+			if(thenMove) {
+				gizmo.startMove(MoveXY, true);
+				gizmo.onFinishMove = function() {
+					refreshProps();
+					undo.change(Custom(function(undo) {
+						for(e in newElements) {
+							if(undo) {
+								e.elt.parent.children.remove(e.elt);
+							}
+							else {
+								e.elt.parent.children.insert(e.idx, e.elt);
+							}
 						}
-						else {
-							e.elt.parent.children.insert(e.idx, e.elt);
-						}
-					}
-					if(undo)
-						context.shared.contexts = oldContexts;
-					else
-						context.shared.contexts = newContexts;
-					refresh();
-					deselect();
-				}));
+						if(undo)
+							context.shared.contexts = oldContexts;
+						else
+							context.shared.contexts = newContexts;
+						refresh();
+						deselect();
+					}));
+				}
 			}
 		});
 	}
@@ -992,25 +1019,33 @@ class SceneEditor {
 	}
 
 	function autoName(p : PrefabElement) {
-		var prefix = p.type;
-		if(prefix == "object")
-			prefix = "group";
+		
+		var uniqueName = false;
+		var layer = p.getParent(hide.prefab.l3d.Layer);
+		if(layer != null) {
+			uniqueName = layer.uniqueNames;
+		}
+
+		var prefix = null;
 		if(p.name != null && p.name.length > 0) {
-			prefix = p.name.split("_")[0].split(" ")[0].split("-")[0];
+			if(uniqueName)
+				prefix = ~/_+[0-9]*$/.replace(p.name, "");
+			else
+				prefix = p.name;
 		}
+		else
+			prefix = p.getDefaultName();
 
-		var model = p.to(hide.prefab.Model);
-		if(model != null && model.source != null) {
-			var path = new haxe.io.Path(model.source);
-			prefix = path.file;
+		if(uniqueName) {
+			prefix += "_";
+			var id = 0;
+			while( sceneData.getPrefabByName(prefix + id) != null )
+				id++;
+
+			p.name = prefix + id;
 		}
-
-		prefix += "_";
-		var id = 0;
-		while( sceneData.getPrefabByName(prefix + id) != null )
-			id++;
-
-		p.name = prefix + id;
+		else
+			p.name = prefix;
 
 		for(c in p.children) {
 			autoName(c);
@@ -1125,7 +1160,7 @@ class SceneEditor {
 	static function getPivot(objects: Array<Object>) {
 		var pos = new h3d.Vector();
 		for(o in objects) {
-			pos = pos.add(o.getAbsPos().pos());
+			pos = pos.add(o.getAbsPos().getPosition());
 		}
 		pos.scale3(1.0 / objects.length);
 		return pos;
@@ -1136,14 +1171,24 @@ class SceneEditor {
 		outlineShader.size = 0.12;
 		outlineShader.distance = 0;
 		outlineShader.color.setColor(0xffffff);
+
+		var s1 = new h3d.mat.Stencil();
+		s1.setFunc(Both, Always, 1, 0xFF);
+		s1.setOp(Both, Keep, Keep, Replace);
+		s1.setMask(Both, 0xFF);
+
+		var s2 = new h3d.mat.Stencil();
+		s2.setFunc(Both, Greater, 1, 0xFF);
+		s2.setMask(Both, 0x00);
 		for(obj in objects) {
 			for( m in obj.getMaterials() ) {
+				m.mainPass.stencil = s1;
+
 				var p = m.allocPass("outline");
 				p.culling = None;
 				p.depthWrite = false;
 				p.addShader(outlineShader);
-				if( m.mainPass.name == "default" )
-					m.mainPass.setPassName("outlined");
+				p.stencil = s2;
 			}
 		}
 	}
@@ -1151,8 +1196,7 @@ class SceneEditor {
 	static function cleanOutline(objects: Array<Object>) {
 		for(obj in objects) {
 			for( m in obj.getMaterials() ) {
-				if( m.mainPass != null && m.mainPass.name == "outlined" )
-					m.mainPass.setPassName("default");
+				m.mainPass.stencil = null;
 				m.removePass(m.getPass("outline"));
 			}
 		}

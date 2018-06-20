@@ -8,7 +8,12 @@ class MaterialSetup extends h3d.mat.MaterialSetup {
 	}
 
 	override function getDefaults( ?type : String ) : Any {
-		if(type == "ui") return null;
+		if(type == "ui") return {
+			kind : "Alpha",
+			shadows : false,
+			culled : false,
+			lighted : false
+		};
 		return super.getDefaults(type);
 	}
 }
@@ -16,9 +21,6 @@ class MaterialSetup extends h3d.mat.MaterialSetup {
 class Renderer extends h3d.scene.DefaultRenderer {
 
 	override function render() {
-
-		renderPass(defaultPass, getSort("debuggeom", true) );
-		clear(null, 1.0);
 
 		if( has("shadow") )
 			renderPass(shadow,get("shadow"));
@@ -30,48 +32,62 @@ class Renderer extends h3d.scene.DefaultRenderer {
 			renderPass(normal,get("normal"));
 
 		renderPass(defaultPass, getSort("default", true) );
-        renderPass(defaultPass, get("outline"));
-		renderPass(defaultPass, get("outlined"));
-		renderPass(defaultPass, getSort("debuggeom_alpha"));
 		renderPass(defaultPass, getSort("alpha") );
 		renderPass(defaultPass, get("additive") );
-		renderPass(defaultPass, getSort("ui", true));
+		renderPass(defaultPass, getSort("debuggeom") );
+		renderPass(defaultPass, getSort("debuggeom_alpha"));
+        renderPass(defaultPass, get("outline"));
+		renderPass(defaultPass, getSort("ui"));
 	}
 }
 
 // ----- PBR Rendering --------------------------------
 
-class PbrSetup extends h3d.mat.MaterialSetup {
+class PbrSetup extends h3d.mat.PbrMaterialSetup {
 
-	override public function createRenderer() : h3d.scene.Renderer {
-		var envMap = new h3d.mat.Texture(16,16,[Cube]);
-		envMap.clear(0x808080);
-		var irrad = new h3d.scene.pbr.Irradiance(envMap);
-		irrad.compute();
-		return new h3d.scene.pbr.Renderer(irrad);
+	function getEnvMap() {
+		var ide = hide.Ide.inst;
+		var scene = hide.comp.Scene.getCurrent();
+		var path = ide.getPath(scene.props.get("scene.environment"));
+		var data = sys.io.File.getBytes(path);
+		var pix = hxd.res.Any.fromBytes(path, data).toImage().getPixels();
+		var t = h3d.mat.Texture.fromPixels(pix); // sync
+		t.name = ide.makeRelative(path);
+		return t;
 	}
 
-	override function createLightSystem() {
-		return new h3d.scene.pbr.LightSystem();
+    override function createRenderer() {
+		var env = new h3d.scene.pbr.Environment(getEnvMap());
+		env.compute();
+		return new PbrRenderer(env);
 	}
 
-	override function applyProps( m : h3d.mat.Material ) {
-		m.shadows = false;
-		// default values (if no texture)
-		if( m.mainPass.getShader(h3d.shader.pbr.PropsValues) == null )
-			m.mainPass.addShader(new h3d.shader.pbr.PropsValues());
-		// get values from specular texture
-		var spec = m.mainPass.getShader(h3d.shader.pbr.PropsTexture);
-		if( m.specularTexture != null ) {
-			if( spec == null ) {
-				spec = new h3d.shader.pbr.PropsTexture();
-				m.mainPass.addShader(spec);
-			}
-			spec.texture = m.specularTexture;
-		} else
-			m.mainPass.removeShader(spec);
-		m.castShadows = true;
+	override function getDefaults( ?type : String ) : Any {
+		if(type == "ui") return {
+			kind : "Alpha",
+			shadows : false,
+			culled : false,
+			lighted : false
+		};
+		return super.getDefaults(type);
+	}
+}
+
+class PbrRenderer extends h3d.scene.pbr.Renderer {
+
+	override function mainDraw() {
+		output.draw(getSort("default", true));
+		output.draw(get("outlined"));
+		output.draw(getSort("alpha"));
+		output.draw(get("additive"));
 	}
 
+	override function postDraw() {
+		defaultPass.draw(getSort("debuggeom"));
+		defaultPass.draw(getSort("debuggeom_alpha"));
+		draw("overlay");
+		draw("outline");
+		defaultPass.draw(getSort("ui"));
+	}
 }
 

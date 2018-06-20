@@ -91,7 +91,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 
 	override function refresh(?callback) {
 		super.refresh(callback);
-		parent.refreshLayerIcons();
+		parent.onRefresh();
 	}
 
 	override function update(dt) {
@@ -105,7 +105,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 	}
 
 	override function selectAll() {
-		var all = [for(e in getAllVisible()) if(e.to(Layer) == null) e];
+		var all = [for(e in getAllSelectable()) if(e.to(Layer) == null) e];
 		selectObjects(all);
 	}
 
@@ -123,9 +123,11 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		var polygons = parent.getGroundPolys();
 		var minDist = -1.;
 		for(polygon in polygons) {
-			if(polygon.mesh == null)
+			var ctx = getContext(polygon);
+			var mesh = Std.instance(ctx.local3d, h3d.scene.Mesh);
+			if(mesh == null)
 				continue;
-			var collider = polygon.mesh.getGlobalCollider();
+			var collider = mesh.getGlobalCollider();
 			var d = collider.rayIntersection(ray, true);
 			if(d > 0 && (d < minDist || minDist < 0)) {
 				minDist = d;
@@ -139,7 +141,15 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 	override function getNewContextMenu(current: PrefabElement) {
 		var newItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
 		var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
-		var allowed = ["model", "object", "layer", "box", "polygon"];
+		var allowed = ["model", "object", "layer", "box", "polygon", "light"];
+
+		if(current != null && current.type == "object" && current.name == "settings" && current.parent == sceneData) {
+			allowed = ["renderProps"];
+		}
+
+		if(current != null && (current.type == "model" || current.type == "polygon")) {
+			allowed.push("shader");
+		}
 
 		var curLayer = current != null ? current.to(hide.prefab.l3d.Layer) : null;
 		var cdbSheet = curLayer != null ? curLayer.getCdbModel(curLayer) : null;
@@ -151,7 +161,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 				var parentMat = worldMat(getObject(p.parent));
 				parentMat.invert();
 				var localMat = new h3d.Matrix();
-				localMat.initTranslate(proj.x, proj.y, proj.z);
+				localMat.initTranslation(proj.x, proj.y, proj.z);
 				localMat.multiply(localMat, parentMat);
 				obj3d.setTransform(localMat);
 			}
@@ -245,13 +255,12 @@ class Level3D extends FileView {
 	var tools : hide.comp.Toolbar;
 
 	var levelProps : hide.comp.PropsEditor;
-	var light : h3d.scene.DirLight;
-	var lightDirection = new h3d.Vector( 1, 2, -4 );
 
 	var layerToolbar : hide.comp.Toolbar;
 	var layerButtons : Map<PrefabElement, hide.comp.Toolbar.ToolToggle>;
 
 	var grid : h3d.scene.Graphics;
+	var showGrid = true;
 	var autoSync : Bool;
 	var currentVersion : Int = 0;
 	var lastSyncChange : Float = 0.;
@@ -327,32 +336,17 @@ class Level3D extends FileView {
 	}
 
 	public function onSceneReady() {
-		light = sceneEditor.scene.s3d.find(function(o) return Std.instance(o, h3d.scene.DirLight));
-		if( light == null ) {
-			light = new h3d.scene.DirLight(new h3d.Vector(), scene.s3d);
-			light.enableSpecular = true;
-		}
-		else
-			light = null;
 
 		tools.saveDisplayKey = "Level3D/toolbar";
 		tools.addButton("video-camera", "Perspective camera", () -> sceneEditor.resetCamera(false));
 		tools.addButton("video-camera", "Top camera", () -> sceneEditor.resetCamera(true)).find(".icon").css({transform: "rotateZ(90deg)"});
 		tools.addToggle("anchor", "Snap to ground", (v) -> sceneEditor.snapToGround = v, sceneEditor.snapToGround);
-		tools.addToggle("sun-o", "Enable Lights/Shadows", function(v) {
-			if( !v ) {
-				for( m in context.shared.root3d.getMaterials() ) {
-					m.mainPass.enableLights = false;
-					m.shadows = false;
-				}
-			} else {
-				for( m in context.shared.root3d.getMaterials() )
-					h3d.mat.MaterialSetup.current.initModelMaterial(m);
-			}
-		},true);
+		tools.addToggle("compass", "Local transforms", (v) -> sceneEditor.localTransform = v, sceneEditor.localTransform);
+		tools.addToggle("th", "Show grid", function(v) { showGrid = v; updateGrid(); }, showGrid);
 
 		tools.addColor("Background color", function(v) {
 			scene.engine.backgroundColor = v;
+			updateGrid();
 		}, scene.engine.backgroundColor);
 
 		tools.addToggle("refresh", "Auto save", function(b) {
@@ -384,16 +378,25 @@ class Level3D extends FileView {
 	}
 
 	function updateGrid() {
-		if(grid == null) {
-			grid = new h3d.scene.Graphics(scene.s3d);
-			grid.scale(1);
-		}
-		else {
-			grid.clear();
+		if(grid != null) {
+			grid.remove();
+			grid = null;
 		}
 
-		grid.lineStyle(1, 0x404040, 1.0);
-		// var offset = size/2;
+		if(!showGrid)
+			return;
+
+		grid = new h3d.scene.Graphics(scene.s3d);
+		grid.scale(1);
+		grid.material.mainPass.setPassName("debuggeom");
+
+		var col = h3d.Vector.fromColor(scene.engine.backgroundColor);
+		var hsl = col.toColorHSL();
+		if(hsl.z > 0.5) hsl.z -= 0.1;
+		else hsl.z += 0.1;
+		col.makeColor(hsl.x, hsl.y, hsl.z);
+
+		grid.lineStyle(1.0, col.toColor(), 1.0);
 		for(ix in 0...data.width+1) {
 			grid.moveTo(ix, 0, 0);
 			grid.lineTo(ix, data.height, 0);
@@ -407,18 +410,26 @@ class Level3D extends FileView {
 
 	function onUpdate(dt:Float) {
 		var cam = scene.s3d.camera;
-		if( light != null ) {
-			var angle = Math.atan2(cam.target.y - cam.pos.y, cam.target.x - cam.pos.x);
-			light.direction.set(
-				Math.cos(angle) * lightDirection.x - Math.sin(angle) * lightDirection.y,
-				Math.sin(angle) * lightDirection.x + Math.cos(angle) * lightDirection.y,
-				lightDirection.z
-			);
-		}
 		if( autoSync && (currentVersion != undo.currentID || lastSyncChange != properties.lastChange) ) {
 			save();
 			lastSyncChange = properties.lastChange;
 			currentVersion = undo.currentID;
+		}
+	}
+
+	function onRefresh() {
+		refreshLayerIcons();
+
+		// Apply first render props
+		var settings = data.children.find(c -> c.name == "settings");
+		if(settings != null) {
+			for(c in settings.children) {
+				var renderProps = c.to(hide.prefab.RenderProps);
+				if(renderProps != null) {
+					renderProps.applyProps(scene.s3d.renderer);
+					break;
+				}
+			}
 		}
 	}
 
@@ -436,7 +447,9 @@ class Level3D extends FileView {
 				var curSel = sceneEditor.getSelection();
 				var parent : PrefabElement = data;
 				if(curSel.length > 0) {
-					var curLayer = curSel[0].getParent(Layer);
+					var curLayer = curSel[0].to(Layer);
+					if(curLayer == null)
+						curLayer = curSel[0].getParent(Layer);
 					if(curLayer != null)
 						parent = curLayer;
 				}
@@ -462,8 +475,25 @@ class Level3D extends FileView {
 				if(initDone)
 					sceneEditor.setVisible([layer], on);
 			}, layer.visible);
+
+			refreshLayerIcon(layer);
 		}
 		initDone = true;
+	}
+
+	function refreshLayerIcon(layer: hide.prefab.l3d.Layer) {
+		var lb = layerButtons[layer];
+		if(lb != null) {
+			var color = "#" + StringTools.hex(layer.color & 0xffffff, 6);
+			if(layer.visible != lb.isDown())
+				lb.toggle(layer.visible);
+			lb.element.find(".icon").css("color", color);
+			var label = lb.element.find("label");
+			if(layer.locked)
+				label.addClass("locked");
+			else
+				label.removeClass("locked");
+		}
 	}
 
 	function updateTreeStyle(p: PrefabElement, el: Element) {
@@ -476,17 +506,7 @@ class Level3D extends FileView {
 			else
 				el.find("a").first().removeClass("jstree-locked");
 
-			var lb = layerButtons[p];
-			if(lb != null) {
-				if(layer.visible != lb.isDown())
-					lb.toggle(layer.visible);
-				lb.element.find(".icon").css("color", color);
-				var label = lb.element.find("label");
-				if(layer.locked)
-					label.addClass("locked");
-				else
-					label.removeClass("locked");
-			}
+			refreshLayerIcon(layer);
 		}
 	}
 
@@ -504,19 +524,25 @@ class Level3D extends FileView {
 				if(i != null) i.visible = !layer.locked;
 			}
 			for(box in layer.getAll(hide.prefab.Box)) {
-				box.setColor(getDisplayColor(box));
+				var ctx = sceneEditor.getContext(box);
+				box.setColor(ctx, getDisplayColor(box));
 			}
 			for(poly in layer.getAll(hide.prefab.l3d.Polygon)) {
-				poly.setColor(getDisplayColor(poly));
+				var ctx = sceneEditor.getContext(poly);
+				poly.applyProps(ctx);
 			}
 		}
 
 		var box = p.to(hide.prefab.Box);
-		if(box != null)
-			box.setColor(getDisplayColor(p));
+		if(box != null) {
+			var ctx = sceneEditor.getContext(box);
+			box.setColor(ctx, getDisplayColor(p));
+		}
 		var poly = p.to(hide.prefab.l3d.Polygon);
-		if(poly != null)
-			poly.setColor(getDisplayColor(p));
+		if(poly != null) {
+			var ctx = sceneEditor.getContext(poly);
+			poly.applyProps(ctx);
+		}
 	}
 
 	static function getDisplayColor(p: PrefabElement) {

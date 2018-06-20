@@ -36,7 +36,7 @@ class TextureSelect extends FileSelect {
 			preview.hide();
 		else {
 			preview.show();
-			preview.css("background-image", "url(file://" + ide.getPath(p) + ")");
+			preview.css("background-image", "url('file://" + ide.getPath(p) + "')");
 			preview.css("background-size", area == null ? "15px 15px" : area.width + "px " + area.height + "px");
 			preview.css("background-position", area == null ? "" : area.x + "px " + area.y + "px");
 		}

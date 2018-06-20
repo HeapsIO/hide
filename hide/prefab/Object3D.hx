@@ -38,7 +38,7 @@ class Object3D extends Prefab {
 		applyPos(ctx.local3d);
 		return ctx;
 	}
-	
+
 	override function save() {
 		var o : Dynamic = {};
 		if( x != 0 ) o.x = x;
@@ -83,7 +83,7 @@ class Object3D extends Prefab {
 		o.scaleX = scaleX;
 		o.scaleY = scaleY;
 		o.scaleZ = scaleZ;
-		o.setRotate(Math.degToRad(rotationX), Math.degToRad(rotationY), Math.degToRad(rotationZ));
+		o.setRotation(Math.degToRad(rotationX), Math.degToRad(rotationY), Math.degToRad(rotationZ));
 		o.visible = visible;
 	}
 
@@ -115,6 +115,10 @@ class Object3D extends Prefab {
 	override function getHideProps() {
 		// Check children
 		return { icon : children == null || children.length > 0 ? "folder-open" : "genderless", name : "Group", fileSource : null };
+	}
+
+	override function getDefaultName() {
+		return type == "object" ? "group" : super.getDefaultName();
 	}
 
 	static var _ = Library.register("object", Object3D);

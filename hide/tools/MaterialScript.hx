@@ -1,4 +1,5 @@
 package hide.tools;
+/*
 
 class RendererScript extends h3d.scene.Renderer {
 
@@ -144,3 +145,4 @@ class MaterialScript extends h3d.mat.MaterialScript {
 	}
 
 }
+*/

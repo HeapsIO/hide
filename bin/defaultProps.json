@@ -6,6 +6,8 @@
 	"scene.autoHide" : [],
 	// background color for 2D/3D viewer
 	"scene.backgroundColor" : "#111111",
+	// default env map for PBR renderer
+	"scene.environment" : "${HIDE}/res/defaultEnv.jpg",
 
 	// controls
 	"key.cancel" : "Escape",

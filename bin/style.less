@@ -22,6 +22,10 @@ body, td, th, li, p, a, input, select, textarea, body .select2-dropdown {
 	color: #aaa;
 }
 
+canvas {
+	user-select: none;
+}
+
 input, textarea {
 	padding-left : 4px;
 }
@@ -309,9 +313,10 @@ input[type=checkbox] {
 	flex: none;
 	padding : 4px;
 	padding-top: 2px;
-	padding-bottom: 6px;
+	padding-bottom: 2px;
 	background-color : rgb(34,34,34);
 	border-bottom : 1px solid #000;
+	display: inline-block;
 
 	.button, .toggle {
 		margin-right : 5px;

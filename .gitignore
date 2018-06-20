@@ -5,3 +5,4 @@
 /bin/hide.js
 *.lnk
 /bin/*.map
+/bin/shaders

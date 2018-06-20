@@ -6,7 +6,7 @@ class Image extends FileView {
 	var scene : hide.comp.Scene;
 
 	override function onDisplay() {
-		scene = new hide.comp.Scene(element);
+		scene = new hide.comp.Scene(props, null, element);
 		scene.onReady = function() {
 			scene.loadTexture(state.path, state.path, function(t) {
 				bmp = new h2d.Bitmap(h2d.Tile.fromTexture(t), scene.s2d);

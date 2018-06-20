@@ -28,7 +28,7 @@ class Particles2D extends FileView {
 		');
 		properties = new hide.comp.PropsEditor(undo, null, element.find(".props"));
 		properties.saveDisplayKey = "particles2D";
-		scene = new hide.comp.Scene(null,element.find(".scene"));
+		scene = new hide.comp.Scene(props, null,element.find(".scene"));
 		scene.onReady = init;
 	}
 
@@ -43,7 +43,7 @@ class Particles2D extends FileView {
 		uiProps = { showBounds: false };
 
 		initProperties();
-		scene.init(props);
+		scene.init();
 		scene.onUpdate = update;
 		scene.onResize = onResize;
 	}
@@ -54,7 +54,7 @@ class Particles2D extends FileView {
 			parts.y = scene.height >> 1;
 		}
 		if (background != null) {
-			background.setPos(parts.x - background.tile.width / 2, parts.y - background.tile.height / 2);
+			background.setPosition(parts.x - background.tile.width / 2, parts.y - background.tile.height / 2);
 			background.tile.dx = partsProps.dx;
 			background.tile.dy = partsProps.dy;
 		}

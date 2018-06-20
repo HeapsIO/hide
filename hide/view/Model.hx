@@ -39,7 +39,7 @@ class Model extends FileView {
 		overlay = element.find(".hide-scene-layer .tree");
 		properties = new hide.comp.PropsEditor(undo, null, element.find(".props"));
 		properties.saveDisplayKey = "Model";
-		scene = new hide.comp.Scene(null,element.find(".scene"));
+		scene = new hide.comp.Scene(props, null,element.find(".scene"));
 		scene.onReady = init;
 	}
 
@@ -69,9 +69,8 @@ class Model extends FileView {
 		e.find(".reset").click(function(_) {
 			var cur = h3d.mat.MaterialSetup.current;
 			var old = m.props;
-			m.props = null;
-			cur.saveModelMaterial(m);
-			cur.initModelMaterial(m);
+			m.props = m.getDefaultModelProps();
+			cur.saveModelMaterial(m); // should erase
 			selectMaterial(m);
 			undo.change(Field(m, "props", old), selectMaterial.bind(m));
 		});
@@ -188,9 +187,9 @@ class Model extends FileView {
 
 		light = obj.find(function(o) return Std.instance(o, h3d.scene.DirLight));
 		if( light == null ) {
-			light = new h3d.scene.DirLight(new h3d.Vector(), scene.s3d);
+			light = new h3d.scene.DirLight(scene.s3d);
 			light.enableSpecular = true;
-			if( isPbr ) light.color.scale3(2);
+			if( isPbr ) light.color.scale3(4);
 		}
 
 		control = new h3d.scene.CameraController(scene.s3d);
@@ -230,35 +229,30 @@ class Model extends FileView {
 			control.loadFromCamera();
 		});
 
-		if( isPbr ) {
-			tools.addButton("gears", "PBR Renderer", function() {
-				properties.clear();
-				var renderer = Std.instance(scene.s3d.renderer, h3d.scene.pbr.Renderer);
-				var props = {
-					debug : renderer.displayMode == Slides,
-				};
-				properties.add(new Element('
-					<div class="group" name="Renderer">
-						<dl>
-							<dt>Debug</dt><dd><input type="checkbox" field="debug"/></dd>
-						</dl>
-					</div>
-				'),props, function(p) {
-					renderer.displayMode = props.debug ? Slides : Pbr;
-				});
+		tools.addButton("gears", "Renderer Properties", function() {
+			properties.clear();
+
+			var renderer = scene.s3d.renderer;
+			var group = new Element('<div class="group" name="Renderer"></div>');
+			renderer.editProps().appendTo(group);
+			properties.add(group, renderer.props, function(_) renderer.refreshProps());
+
+
+			var lprops = {
+				power : Math.sqrt(light.color.r),
+			};
+			properties.add(new Element('
+			<div class="group" name="Light">
+				<dl>
+				<dt>Power</dt><dd><input type="range" min="0" max="4" field="power"/></dd>
+				</dl>
+			</div>
+			'), lprops, function(_) {
+				var p = lprops.power * lprops.power;
+				light.color.set(p, p, p);
 			});
-		} else
-			tools.addToggle("sun-o", "Enable Lights/Shadows", function(v) {
-				if( !v ) {
-					for( m in obj.getMaterials() ) {
-						m.mainPass.enableLights = false;
-						m.shadows = false;
-					}
-				} else {
-					for( m in obj.getMaterials() )
-						h3d.mat.MaterialSetup.current.initModelMaterial(m);
-				}
-			},true);
+
+		});
 
 		var axis = new h3d.scene.Graphics(scene.s3d);
 		axis.lineStyle(1,0xFF0000);
@@ -271,7 +265,7 @@ class Model extends FileView {
 		axis.lineTo(0,0,1);
 		axis.visible = false;
 
-		scene.init(props);
+		scene.init();
 		scene.onUpdate = update;
 
 		tools.addToggle("location-arrow", "Toggle Axis", function(v) {
@@ -417,11 +411,11 @@ class Model extends FileView {
 		saveDisplayState("Camera", { x : cam.pos.x, y : cam.pos.y, z : cam.pos.z, tx : cam.target.x, ty : cam.target.y, tz : cam.target.z });
 		if( light != null ) {
 			var angle = Math.atan2(cam.target.y - cam.pos.y, cam.target.x - cam.pos.x);
-			light.direction.set(
+			light.setDirection(new h3d.Vector(
 				Math.cos(angle) * lightDirection.x - Math.sin(angle) * lightDirection.y,
 				Math.sin(angle) * lightDirection.x + Math.cos(angle) * lightDirection.y,
 				lightDirection.z
-			);
+			));
 		}
 		if( timeline != null ) {
 			timecursor.x = Std.int((obj.currentAnimation.frame / obj.currentAnimation.frameCount) * (scene.s2d.width - timecursor.tile.width));

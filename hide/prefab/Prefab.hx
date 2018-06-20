@@ -217,4 +217,13 @@ class Prefab {
 		}
 		return path.join('.');
 	}
+
+	public function getDefaultName() : String {
+		if(source != null) {
+			var f = new haxe.io.Path(source).file;
+			f = f.split(" ")[0].split("-")[0];
+			return f;
+		}
+		return type;
+	}
 }
