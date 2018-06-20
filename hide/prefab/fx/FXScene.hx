@@ -235,7 +235,6 @@ class FXScene extends Library {
 		ctx = ctx.clone(this);
 		super.makeInstance(ctx);
 		var fxanim = new FXAnimation(ctx.local3d);
-		var ctx = super.makeInstance(ctx);
 		getObjAnimations(ctx, this, fxanim.objects);
 		getShaderAnims(ctx, this, fxanim.shaderAnims);
 		ctx.local3d = fxanim;
