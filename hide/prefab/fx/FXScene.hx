@@ -233,11 +233,12 @@ class FXScene extends Library {
 		if( inRec )
 			return ctx;
 		ctx = ctx.clone(this);
-		var anim = new FXAnimation(ctx.local3d);
-		getObjAnimations(ctx, this, anim.objects);
-		getShaderAnims(ctx, this, anim.shaderAnims);
-		ctx.local3d = anim;
 		super.makeInstance(ctx);
+		var fxanim = new FXAnimation(ctx.local3d);
+		var ctx = super.makeInstance(ctx);
+		getObjAnimations(ctx, this, fxanim.objects);
+		getShaderAnims(ctx, this, fxanim.shaderAnims);
+		ctx.local3d = fxanim;
 		return ctx; 
 	}
 
