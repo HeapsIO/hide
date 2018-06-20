@@ -64,7 +64,8 @@ class PbrSetup extends h3d.mat.PbrMaterialSetup {
 
 	override function getDefaults( ?type : String ) : Any {
 		if(type == "ui") return {
-			kind : "Alpha",
+			mode : "Overlay",
+			blend : "Alpha",
 			shadows : false,
 			culled : false,
 			lighted : false
