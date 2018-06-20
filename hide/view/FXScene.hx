@@ -46,7 +46,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 			});
 
 			var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
-			var allowed = ["model", "object", "shader", "emitter"];
+			var allowed = ["model", "object", "shader", "emitter", "constraint", "polygon"];
 			for( ptype in allowed ) {
 				var pcl = allRegs.get(ptype);
 				var props = Type.createEmptyInstance(pcl).getHideProps();
@@ -736,8 +736,8 @@ class FXScene extends FileView {
 	function onUpdate(dt:Float) {
 
 		var ctx = sceneEditor.getContext(data);
-		if(ctx != null && ctx.custom != null) {
-			var anim : hide.prefab.fx.FXScene.FXAnimation = cast ctx.custom;
+		if(ctx != null && ctx.local3d != null) {
+			var anim : hide.prefab.fx.FXScene.FXAnimation = cast ctx.local3d;
 			anim.setTime(currentTime);
 		}
 		// var allObjects = data.getAll(hide.prefab.Object3D);
@@ -774,7 +774,7 @@ class FXScene extends FileView {
 		}
 
 		if(true) {
-			currentTime += dt / hxd.Timer.wantedFPS;
+			currentTime += scene.speed * dt / hxd.Timer.wantedFPS;
 			if(timeLineEl != null)
 				timeLineEl.css({left: xt(currentTime)});
 			if(currentTime >= selectMax) {

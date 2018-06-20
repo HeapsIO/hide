@@ -108,12 +108,14 @@ typedef ObjectAnimation = {
 	curves: ObjectCurves
 };
 
-class FXAnimation {
+class FXAnimation extends h3d.scene.Object {
 	
 	public var objects: Array<ObjectAnimation> = [];
 	public var shaderAnims : Array<ShaderAnimation> = [];
 
-	public function new() { }
+	public function new(?parent) {
+		super(parent);
+	}
 
 	public function setTime(time: Float) {
 		for(anim in objects) {
@@ -128,6 +130,16 @@ class FXAnimation {
 
 		for(anim in shaderAnims) {
 			anim.setTime(time);
+		}
+
+		for(i in 0...numChildren) {
+			var child = getChildAt(i);
+			if(child.currentAnimation != null) {
+				var anim = child.currentAnimation;
+				anim.loop = false;
+				anim.pause = true;
+				anim.setFrame(hxd.Math.clamp(time * anim.sampling * anim.speed, 0, anim.frameCount));
+			}
 		}
 	}
 
@@ -221,11 +233,11 @@ class FXScene extends Library {
 		if( inRec )
 			return ctx;
 		ctx = ctx.clone(this);
-		super.makeInstance(ctx);
-		var anim = new FXAnimation();
+		var anim = new FXAnimation(ctx.local3d);
 		getObjAnimations(ctx, this, anim.objects);
 		getShaderAnims(ctx, this, anim.shaderAnims);
-		ctx.custom = anim;
+		ctx.local3d = anim;
+		super.makeInstance(ctx);
 		return ctx; 
 	}
 

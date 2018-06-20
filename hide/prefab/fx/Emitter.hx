@@ -60,7 +60,7 @@ private class ParticleInstance extends Evaluator {
 		curPos.x += curVelocity.x * dt;
 		curPos.y += curVelocity.y * dt;
 		curPos.z += curVelocity.z * dt;
-		obj.setPos(curPos.x, curPos.y, curPos.z);
+		obj.setPosition(curPos.x, curPos.y, curPos.z);
 
 		var scaleVec = getVector(def.scale, life);
 		obj.scaleX = scaleVec.x;
