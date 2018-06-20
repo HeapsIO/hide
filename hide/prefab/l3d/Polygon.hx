@@ -33,7 +33,6 @@ class Polygon extends Object3D {
 		var mesh : h3d.scene.Mesh = cast ctx.local3d;
 		var mat = mesh.material;
 		mat.mainPass.culling = None;
-		mat.shadows = false;
 
 		var layer = getParent(Layer);
 		if(layer != null && (diffuseMap == null || diffuseMap.length == 0)) {
@@ -46,11 +45,14 @@ class Polygon extends Object3D {
 					t.wrap = Repeat;
 				return t;
 			}
+			mat.props = h3d.mat.MaterialSetup.current.getDefaults("opaque");
 			mat.texture = getTex(diffuseMap);
 			mat.normalMap = getTex(normalMap);
 			mat.specularTexture = getTex(specularMap);
 			mat.color.setColor(0xffffffff);
 		}
+
+		mat.castShadows = false;
 	}
 
 	override function makeInstance(ctx:Context):Context {
@@ -83,8 +85,6 @@ class Polygon extends Object3D {
 		}
 
 		var mesh = new h3d.scene.Mesh(primitive, ctx.local3d);
-		mesh.material.props = h3d.mat.MaterialSetup.current.getDefaults("ui");
-		mesh.material.blendMode = Alpha;
 		ctx.local3d = mesh;
 		ctx.local3d.name = name;
 		applyPos(ctx.local3d);
