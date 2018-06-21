@@ -673,19 +673,16 @@ input[type=checkbox]:checked:after {
   border-right: 1px black;
 }
 .fx-animpanel .overlay-container .overlay .preview-left {
-  background: rgba(255, 255, 255, 0.068);
-  border-left: 1px solid rgba(255, 255, 255, 0.671);
+  background: rgba(0, 0, 0, 0.3);
+  border-right: 1px dashed #797979;
   position: absolute;
   height: 100%;
-  width: 4px;
 }
 .fx-animpanel .overlay-container .overlay .preview-right {
-  background: rgba(255, 255, 255, 0.068);
-  border-right: 1px solid rgba(255, 255, 255, 0.671);
+  background: rgba(0, 0, 0, 0.3);
+  border-left: 1px dashed #797979;
   position: absolute;
   height: 100%;
-  width: 4px;
-  margin-left: -4px;
 }
 .fx-animpanel .tracks-header {
   background: #4a4a4a;

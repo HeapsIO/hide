@@ -10,6 +10,14 @@ typedef PropTrackDef = {
 	?clamp: Array<Float>
 };
 
+class FXEditContext extends hide.prefab.EditContext {
+	var parent : FXScene;
+	public function new(parent, context) {
+		super(context);
+		this.parent = parent;
+	}
+}
+
 @:access(hide.view.FXScene)
 private class FXSceneEditor extends hide.comp.SceneEditor {
 	var parent : hide.view.FXScene;
@@ -84,6 +92,7 @@ class FXScene extends FileView {
 	var data : hide.prefab.fx.FXScene;
 	var context : hide.prefab.Context;
 	var tabs : hide.comp.Tabs;
+	var fxprops : hide.comp.PropsEditor;
 
 	var tools : hide.comp.Toolbar;
 	var light : h3d.scene.DirLight;
@@ -173,6 +182,9 @@ class FXScene extends FileView {
 							</div>
 							<div class="hide-scroll"></div>
 						</div>
+						<div class="tab" name="Properties" icon="cog">
+							<div class="fx-props"></div>
+						</div>
 					</div>
 				</div>
 			</div>');
@@ -186,27 +198,71 @@ class FXScene extends FileView {
 			refreshTimeline(false);
 			rebuildAnimPanel();
 		});
+		fxprops = new hide.comp.PropsEditor(undo,null,element.find(".fx-props"));
+		{
+			var edit = new FXEditContext(this, context);
+			edit.prefabPath = state.path;
+			edit.properties = fxprops;
+			edit.scene = sceneEditor.scene;
+			edit.cleanups = [];
+			data.edit(edit);
+		}
+
 		currentVersion = undo.currentID;
 		sceneEditor.tree.element.addClass("small");
 
 		var timeline = element.find(".timeline");
 		timeline.mousedown(function(e) {
 			var lastX = e.clientX;
-			element.mousemove(function(e) {
+			var shift = e.shiftKey;
+			var ctrl = e.ctrlKey;
+			var xoffset = timeline.offset().left;
+
+			if(shift) {
+				selectMin = ixt(e.clientX - xoffset);
+			}
+			else if(ctrl) {
+				previewMin = ixt(e.clientX - xoffset);
+			}
+
+			function updateMouse(e: js.jquery.Event) {
 				var dt = (e.clientX - lastX) / xScale;
 				if(e.which == 2) {
 					xOffset -= dt;
 					xOffset = hxd.Math.max(xOffset, 0);
 				}
 				else if(e.which == 1) {
-					currentTime = ixt(e.clientX - timeline.offset().left);
-					currentTime = hxd.Math.max(currentTime, 0);
+					if(shift) {
+						selectMax = ixt(e.clientX - xoffset);
+					}
+					else if(ctrl) {
+						previewMax = ixt(e.clientX - xoffset);
+					}
+					else {
+						currentTime = ixt(e.clientX - xoffset);
+						currentTime = hxd.Math.max(currentTime, 0);
+					}
 				}
+			}
+
+			element.mousemove(function(e: js.jquery.Event) {
+				updateMouse(e);
 				lastX = e.clientX;
 				refreshTimeline(true);
 				afterPan(true);
 			});
-			element.mouseup(function(e) {
+			element.mouseup(function(e: js.jquery.Event) {
+				updateMouse(e);
+
+				if(previewMax < previewMin + 0.1) {
+					previewMin = 0;
+					previewMax = data.duration;
+				}
+				if(selectMax < selectMin + 0.1) {
+					selectMin = 0;
+					selectMax = 0;
+				}
+
 				element.off("mousemove");
 				element.off("mouseup");
 				e.preventDefault();
@@ -291,7 +347,7 @@ class FXScene extends FileView {
 		scroll.empty();
 		var width = scroll.parent().width();
 		var minX = Math.floor(ixt(0));
-		var maxX = Math.ceil(ixt(width));
+		var maxX = Math.ceil(hxd.Math.min(data.duration, ixt(width)));
 		for(ix in minX...(maxX+1)) {
 			var mark = new Element('<span class="mark"></span>').appendTo(scroll);
 			mark.css({left: xt(ix)});
@@ -306,12 +362,12 @@ class FXScene extends FileView {
 		var select = new Element('<span class="selection"></span>').appendTo(overlay);
 		select.css({left: xt(selectMin), width: xt(selectMax) - xt(selectMin)});
 
-		var preview = new Element('<span class="preview"></span>').appendTo(overlay);
-		preview.css({left: xt(previewMin), width: xt(previewMax) - xt(previewMin)});
+		//var preview = new Element('<span class="preview"></span>').appendTo(overlay);
+		// preview.css({left: xt(previewMin), width: xt(previewMax) - xt(previewMin)});
 		var prevLeft = new Element('<span class="preview-left"></span>').appendTo(overlay);
-		prevLeft.css({left: xt(previewMin)});
+		prevLeft.css({left: 0, width: xt(previewMin)});
 		var prevRight = new Element('<span class="preview-right"></span>').appendTo(overlay);
-		prevRight.css({left: xt(previewMax)});
+		prevRight.css({left: xt(previewMax), width: xt(data.duration) - xt(previewMax)});
 	}
 
 	function afterPan(anim: Bool) {
@@ -737,6 +793,14 @@ class FXScene extends FileView {
 	}
 
 	function onUpdate(dt:Float) {
+		if(true) {
+			currentTime += scene.speed * dt / hxd.Timer.wantedFPS;
+			if(timeLineEl != null)
+				timeLineEl.css({left: xt(currentTime)});
+			if(currentTime >= previewMax) {
+				currentTime = previewMin;
+			}
+		}
 
 		var ctx = sceneEditor.getContext(data);
 		if(ctx != null && ctx.local3d != null) {
@@ -774,15 +838,6 @@ class FXScene extends FileView {
 			var obj = Std.instance(ctx.local3d, hide.prefab.fx.Emitter.EmitterObject);
 			if(obj != null)
 				obj.setTime(currentTime);
-		}
-
-		if(true) {
-			currentTime += scene.speed * dt / hxd.Timer.wantedFPS;
-			if(timeLineEl != null)
-				timeLineEl.css({left: xt(currentTime)});
-			if(currentTime >= selectMax) {
-				currentTime = selectMin;
-			}
 		}
 
 		var cam = scene.s3d.camera;

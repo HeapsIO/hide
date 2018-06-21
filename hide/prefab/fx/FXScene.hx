@@ -110,6 +110,7 @@ typedef ObjectAnimation = {
 
 class FXAnimation extends h3d.scene.Object {
 	
+	public var duration : Float;
 	public var objects: Array<ObjectAnimation> = [];
 	public var shaderAnims : Array<ShaderAnimation> = [];
 
@@ -169,18 +170,23 @@ class FXAnimation extends h3d.scene.Object {
 
 class FXScene extends Library {
 
+	public var duration : Float;
+
 	public function new() {
 		super();
 		type = "fx";
+		duration = 5.0;
 	}
 
 	override function save() {
 		var obj : Dynamic = super.save();
+		obj.duration = duration;
 		return obj;
 	}
 
 	override function load( obj : Dynamic ) {
 		super.load(obj);
+		duration = obj.duration;
 	}
 
 	function getObjAnimations(ctx:Context, elt: PrefabElement, anims: Array<ObjectAnimation>) {
@@ -234,6 +240,7 @@ class FXScene extends Library {
 			return ctx;
 		ctx = ctx.clone(this);
 		var fxanim = new FXAnimation(ctx.local3d);
+		fxanim.duration = duration;
 		ctx.local3d = fxanim;
 		super.makeInstance(ctx);
 		getObjAnimations(ctx, this, fxanim.objects);
@@ -244,9 +251,11 @@ class FXScene extends Library {
 	override function edit( ctx : EditContext ) {
 		#if editor
 		var props = new hide.Element('
-			<div class="group" name="Level">
-			</div>
-		');
+			<div class="group" name="FX Scene">
+				<dl>
+					<dt>Duration</dt><dd><input type="number" value="0" field="duration"/></dd>
+				</dl>
+			</div>');
 		ctx.properties.add(props, this, function(pname) {
 			ctx.onChange(this, pname);
 		});

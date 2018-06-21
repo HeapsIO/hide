@@ -732,33 +732,22 @@ input[type=checkbox] {
 				height: @timelineHeight;
 				background: rgba(255, 255, 255, 0.1);
 				opacity: 0.9;
-				//-webkit-filter: invert(100%);
 				mix-blend-mode: screen;
-				// mix-blend-mode: screen;
 				border-left: 1px black;
 				border-right: 1px black;
 			}
 			.preview-left {
-				background: rgba(255, 255, 255, 0.068);
-				//background: -webkit-linear-gradient(left, rgba(255, 255, 255, 0.123), rgba(255, 255, 255, 0));
-				border-left:1px solid rgba(255, 255, 255, 0.671);
+				background: rgba(0, 0, 0, 0.3);
+				border-right:1px dashed rgb(121, 121, 121);
 				position: absolute;
 				height: 100%;
-				width: 4px;
 			}
 			.preview-right {
-				background: rgba(255, 255, 255, 0.068);
-				//background: -webkit-linear-gradient(left, rgba(255, 255, 255, 0.123), rgba(255, 255, 255, 0));
-				border-right:1px solid rgba(255, 255, 255, 0.671);
+				background: rgba(0, 0, 0, 0.3);
+				border-left:1px dashed rgb(121, 121, 121);
 				position: absolute;
 				height: 100%;
-				width: 4px;
-				margin-left: -4px;
 			}
-
-			// .preview-left::after {
-			// 	background: url(http://placehold.it/16x16) no-repeat;
-			// }
 		}
 	}
 
