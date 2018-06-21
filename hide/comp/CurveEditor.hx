@@ -31,6 +31,7 @@ class CurveEditor extends Component {
 	public function new(undo, ?parent) {
 		super(parent,null);
 		this.undo = undo;
+		element.addClass("hide-curve-editor");
 		element.attr({ tabindex: "1" });
 		element.css({ width: "100%", height: "100%" });
 		element.focus();

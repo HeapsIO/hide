@@ -485,6 +485,7 @@ input[type=checkbox]:checked:after {
   font-size: 11px;
   color: #aaa;
   user-select: none;
+  text-transform: capitalize;
   cursor: default;
 }
 .hide-properties input {
@@ -535,66 +536,70 @@ input[type=checkbox]:checked:after {
   margin-bottom: 5px;
 }
 /* Curve editor */
-.hide-curve-editor line {
+.hide-curve-editor:focus {
+  background-color: rgba(0, 0, 0, 0.219);
+  outline: none;
+}
+.hide-curve-editor svg line {
   stroke-width: 1px;
 }
-.hide-curve-editor rect {
+.hide-curve-editor svg rect {
   shape-rendering: crispEdges;
 }
-.hide-curve-editor .grid line {
+.hide-curve-editor svg .grid line {
   shape-rendering: crispEdges;
 }
-.hide-curve-editor .grid .hgrid line {
+.hide-curve-editor svg .grid .hgrid line {
   stroke: #444;
 }
-.hide-curve-editor .grid .vgrid line {
+.hide-curve-editor svg .grid .vgrid line {
   stroke: #444;
 }
-.hide-curve-editor .grid line.axis {
+.hide-curve-editor svg .grid line.axis {
   stroke: #747474;
   shape-rendering: crispEdges;
 }
-.hide-curve-editor .grid text {
+.hide-curve-editor svg .grid text {
   font: 10px sans-serif;
   fill: #555;
 }
-.hide-curve-editor .graph .selection rect {
+.hide-curve-editor svg .graph .selection rect {
   fill: #ffffff;
   fill-opacity: 0.1;
   stroke: #ffffff;
   opacity: 0.3;
   mix-blend-mode: screen;
 }
-.hide-curve-editor .graph .curve line,
-.hide-curve-editor .graph path {
+.hide-curve-editor svg .graph .curve line,
+.hide-curve-editor svg .graph path {
   stroke: #ff1f1f;
   stroke-width: 1px;
   fill: none;
 }
-.hide-curve-editor .graph .vectors line {
+.hide-curve-editor svg .graph .vectors line {
   stroke: rgba(207, 207, 207, 0.603);
 }
-.hide-curve-editor .graph .vectors line.selected {
+.hide-curve-editor svg .graph .vectors line.selected {
   stroke: #ffffff;
 }
-.hide-curve-editor .graph .handles circle,
-.hide-curve-editor .graph .handles rect {
+.hide-curve-editor svg .graph .handles circle,
+.hide-curve-editor svg .graph .handles rect {
   fill: rgba(187, 187, 187, 0.644);
   cursor: pointer;
 }
-.hide-curve-editor .graph .handles circle:hover,
-.hide-curve-editor .graph .handles rect:hover {
+.hide-curve-editor svg .graph .handles circle:hover,
+.hide-curve-editor svg .graph .handles rect:hover {
   fill: #fff;
   stroke: #fff;
   stroke-width: 2px;
 }
-.hide-curve-editor .graph .handles circle.selected,
-.hide-curve-editor .graph .handles circle:hover.selected,
-.hide-curve-editor .graph .handles rect.selected,
-.hide-curve-editor .graph .handles rect:hover.selected {
+.hide-curve-editor svg .graph .handles circle.selected,
+.hide-curve-editor svg .graph .handles circle:hover.selected,
+.hide-curve-editor svg .graph .handles rect.selected,
+.hide-curve-editor svg .graph .handles rect:hover.selected {
   fill: #ffffff;
 }
-.hide-curve-editor .selection-overlay rect {
+.hide-curve-editor svg .selection-overlay rect {
   mix-blend-mode: multiply;
   fill: #888;
   fill-opacity: 20px;
@@ -703,22 +708,23 @@ input[type=checkbox]:checked:after {
   user-select: none;
 }
 .fx-animpanel .track .track-header .track-prop {
+  cursor: pointer;
   text-align: right;
   width: 120px;
   height: 100%;
 }
 .fx-animpanel .track .track-header .track-prop label {
+  vertical-align: middle;
   padding-right: 4px;
 }
 .fx-animpanel .track .track-header .track-prop .track-toggle {
-  cursor: pointer;
   width: 16px;
   height: 16px;
   display: inline-block;
   text-align: center;
 }
-.fx-animpanel .track .track-header .track-prop .track-toggle:hover {
-  background: black;
+.fx-animpanel .track .track-header .track-prop:hover {
+  background: rgba(0, 0, 0, 0.438);
 }
 .fx-animpanel .track .track-header .dopesheet {
   position: relative;

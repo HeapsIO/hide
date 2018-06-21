@@ -518,6 +518,7 @@ input[type=checkbox] {
 		font-size:11px;
 		color:#aaa;
 		user-select:none;
+		text-transform: capitalize;
 		cursor:default;
 	}
 
@@ -583,80 +584,86 @@ input[type=checkbox] {
 
 /* Curve editor */
 .hide-curve-editor {
-	@selectCol: rgb(255, 255, 255);
-	@lineCol: rgb(255, 31, 31);
-
-	line {
-		stroke-width: 1px;
+	&:focus {
+		background-color: rgba(0, 0, 0, 0.219);
+		outline: none;
 	}
+	svg {
+		@selectCol: rgb(255, 255, 255);
+		@lineCol: rgb(255, 31, 31);
 
-	rect {
-		shape-rendering: crispEdges;
-	}
-
-	.grid {
 		line {
-			shape-rendering: crispEdges;
-		}
-		.hgrid line { stroke: #444; }
-		.vgrid line { stroke: #444; }
-		line.axis {
-			stroke: rgb(116, 116, 116);
-			shape-rendering: crispEdges;
-		}
-		text {
-			font: 10px sans-serif; fill: #555;
-		}
-	}
-
-	.graph {
-
-		.selection rect {
-			fill: @selectCol;
-			fill-opacity: 0.1;
-			stroke: rgb(255, 255, 255);
-			opacity: 0.3;
-			mix-blend-mode: screen;
-		}
-
-		.curve line, path {
-			stroke: @lineCol;
 			stroke-width: 1px;
-			fill: none;
 		}
 
-		.vectors {
+		rect {
+			shape-rendering: crispEdges;
+		}
+
+		.grid {
 			line {
-				stroke: rgba(207, 207, 207, 0.603);
+				shape-rendering: crispEdges;
 			}
-
-			line.selected {
-				stroke: @selectCol;
+			.hgrid line { stroke: #444; }
+			.vgrid line { stroke: #444; }
+			line.axis {
+				stroke: rgb(116, 116, 116);
+				shape-rendering: crispEdges;
+			}
+			text {
+				font: 10px sans-serif; fill: #555;
 			}
 		}
 
-		.handles {
-			circle, rect {
-				fill: rgba(187, 187, 187, 0.644);
-				cursor: pointer;
-			}
-			circle:hover, rect:hover {
-				fill: #fff;
-				stroke: #fff;
-				stroke-width: 2px;
-			}
-			circle.selected, circle:hover.selected, rect.selected, rect:hover.selected {
+		.graph {
+
+			.selection rect {
 				fill: @selectCol;
+				fill-opacity: 0.1;
+				stroke: rgb(255, 255, 255);
+				opacity: 0.3;
+				mix-blend-mode: screen;
+			}
+
+			.curve line, path {
+				stroke: @lineCol;
+				stroke-width: 1px;
+				fill: none;
+			}
+
+			.vectors {
+				line {
+					stroke: rgba(207, 207, 207, 0.603);
+				}
+
+				line.selected {
+					stroke: @selectCol;
+				}
+			}
+
+			.handles {
+				circle, rect {
+					fill: rgba(187, 187, 187, 0.644);
+					cursor: pointer;
+				}
+				circle:hover, rect:hover {
+					fill: #fff;
+					stroke: #fff;
+					stroke-width: 2px;
+				}
+				circle.selected, circle:hover.selected, rect.selected, rect:hover.selected {
+					fill: @selectCol;
+				}
 			}
 		}
-	}
 
-	.selection-overlay rect {
-		mix-blend-mode: multiply;
-		fill: #888;
-		fill-opacity: 20px;
-		stroke: #000;
-		opacity: 50%;
+		.selection-overlay rect {
+			mix-blend-mode: multiply;
+			fill: #888;
+			fill-opacity: 20px;
+			stroke: #000;
+			opacity: 50%;
+		}
 	}
 }
 
@@ -778,23 +785,24 @@ input[type=checkbox] {
 			user-select: none;
 
 			.track-prop {
+				cursor: pointer;
 				text-align: right;
 				width: @leftPanelWidth;
 				height: 100%;
 
 				label {
+					vertical-align: middle;
 					padding-right: 4px;
 				}
 
 				.track-toggle {
-					cursor: pointer;
 					width: 16px;
 					height: 16px;
 					display: inline-block;
 					text-align: center;
-					&:hover {
-						background: black;
-					}
+				}
+				&:hover {
+					background: rgba(0, 0, 0, 0.438);
 				}
 			}
 			.dopesheet {

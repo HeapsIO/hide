@@ -354,7 +354,7 @@ class FXScene extends FileView {
 				icon.removeClass("fa-angle-down").addClass("fa-angle-right");
 			curvesContainer.toggleClass("hidden", !expand);
 		}
-		trackToggle.click(function(e) {
+		trackEl.find(".track-prop").click(function(e) {
 			expand = !expand;
 			saveDisplayState(trackKey, expand);
 			updateExpanded();
