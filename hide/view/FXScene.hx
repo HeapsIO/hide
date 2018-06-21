@@ -753,18 +753,25 @@ class FXScene extends FileView {
 			return ret;
 		}
 
+		var hslaTracks : Array<PropTrackDef> = [{name: "h"}, {name: "s", clamp: [0., 1.]}, {name: "l", clamp: [0., 1.]}, {name: "a", clamp: [0., 1.]}];
+		var xyzTracks : Array<PropTrackDef> = [{name: "x"}, {name: "y"}, {name: "z"}];
+
 		if(objElt != null) {
 			menuItems.push({
 				label: "Position",
-				menu: groupedTracks("position", [{name: "x"}, {name: "y"}, {name: "z"}]),
+				menu: groupedTracks("position", xyzTracks),
 			});
 			menuItems.push({
 				label: "Rotation",
-				menu: groupedTracks("rotation", [{name: "x"}, {name: "y"}, {name: "z"}]),
+				menu: groupedTracks("rotation", xyzTracks),
 			});
 			menuItems.push({
 				label: "Scale",
-				menu: groupedTracks("scale", [{name: "x"}, {name: "y"}, {name: "z"}]),
+				menu: groupedTracks("scale", xyzTracks),
+			});
+			menuItems.push({
+				label: "Color",
+				menu: groupedTracks("color", hslaTracks),
 			});
 			menuItems.push(trackItem("Visibility", [{name: "visibility", clamp: [0., 1.]}]));
 		}
@@ -779,7 +786,7 @@ class FXScene extends FileView {
 						if(n <= 4) {
 							var components : Array<PropTrackDef> = [];
 							if(param.name.toLowerCase().indexOf("color") >= 0)
-								components = [{name: "h"}, {name: "s", clamp: [0., 1.]}, {name: "l", clamp: [0., 1.]}, {name: "a", clamp: [0., 1.]}];
+								components = hslaTracks;
 							else
 								components = [{name:"x"}, {name:"y"}, {name:"z"}, {name:"w"}];
 							subItems = groupedTracks(param.name, components);

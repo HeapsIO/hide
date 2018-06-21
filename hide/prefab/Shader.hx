@@ -192,27 +192,6 @@ class Shader extends Prefab {
 		return null;
 	}
 
-	// public static function applyAnimation(shader: hxsl.DynamicShader, params: ShaderParams, eval: Evaluator, time: Float) {
-	// 	for(param in params) {
-	// 		var v = param.def;
-	// 		switch(v.type) {
-	// 			case TFloat:
-	// 				var val = eval.getFloat(param.value, time);
-	// 				shader.setParamValue(v, val);
-	// 			case TInt:
-	// 				var val = hxd.Math.round(eval.getFloat(param.value, time));
-	// 				shader.setParamValue(v, val);
-	// 			case TBool:
-	// 				var val = eval.getFloat(param.value, time) >= 0.5;
-	// 				shader.setParamValue(v, val);
-	// 			case TVec(_, VFloat):
-	// 				var val = eval.getVector(param.value, time);
-	// 				shader.setParamValue(v, val);
-	// 			default:
-	// 		}
-	// 	}
-	// }
-
 	public function makeParams() {
 		if(shaderDef == null)
 			return null;
