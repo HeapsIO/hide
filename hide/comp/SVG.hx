@@ -61,9 +61,9 @@ class SVG extends Component {
 		return g;
 	}
 
-	// public function text(x: Float, y: Float, text: String, ?style: Dynamic) {
-	// 	var e = make("text", {x:x, y:y}, style);
-	// 	e.text(text);
-	// 	return e;
-	// }
+	public function text(?parent: Element, x: Float, y: Float, text: String, ?style: Dynamic) {
+		var e = make(parent, "text", {x:x, y:y}, style);
+		e.text(text);
+		return e;
+	}
 }

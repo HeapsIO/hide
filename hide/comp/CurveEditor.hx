@@ -399,12 +399,28 @@ class CurveEditor extends Component {
 		var minY = Math.floor(iyt(height));
 		var maxY = Math.ceil(iyt(0));
 		var vgrid = svg.group(gridGroup, "vgrid");
-		for(iy in minY...(maxY+1)) {
-			var l = svg.line(vgrid, 0, yt(iy), width, yt(iy)).attr({
+		var vstep = 1;
+		while((maxY - minY) / vstep > 10)
+			vstep *= 10;
+
+		inline function hline(iy) {
+			return svg.line(vgrid, 0, yt(iy), width, yt(iy)).attr({
 				"shape-rendering": "crispEdges"
 			});
+		}
+
+		inline function hlabel(str, iy) {
+			svg.text(vgrid, 1, yt(iy), str);
+		}
+
+		var minS = Math.floor(minY / vstep);
+		var maxS = Math.ceil(maxY / vstep);
+		for(i in minS...(maxS+1)) {
+			var iy = i * vstep;
+			var l = hline(iy);
 			if(iy == 0)
-				l.addClass("axis");
+				l.addClass("axis");	
+			hlabel("" + iy, iy + 1);			
 		}
 	}
 

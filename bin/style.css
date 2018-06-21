@@ -549,6 +549,10 @@ input[type=checkbox]:checked:after {
   stroke: #747474;
   shape-rendering: crispEdges;
 }
+.hide-curve-editor .grid text {
+  font: 10px sans-serif;
+  fill: #555;
+}
 .hide-curve-editor .graph .selection rect {
   fill: #ffffff;
   fill-opacity: 0.1;
