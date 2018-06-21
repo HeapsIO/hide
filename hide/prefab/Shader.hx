@@ -49,6 +49,7 @@ class Shader extends Prefab {
 	}
 
 	override function save() {
+		fixSourcePath();
 		return {
 		};
 	}
@@ -110,16 +111,22 @@ class Shader extends Prefab {
 		return ctx;
 	}
 
+	function fixSourcePath() {
+		var ide = hide.Ide.inst;
+		var shadersPath = ide.projectDir + "/src";  // TODO: serach in haxe.classPath?
+
+		var path = source.split("\\").join("/");
+		if( StringTools.startsWith(path.toLowerCase(), shadersPath.toLowerCase()+"/") ) {
+			path = path.substr(shadersPath.length + 1);
+		}
+		source = path;
+	}
+
 	function loadShaderDef(ctx: Context) {
 		#if editor
 		if(shaderDef == null) {
-			var path = source.split("\\").join("/");
-			var ide = hide.Ide.inst;
-			var shadersPath = ide.projectDir + "/src";  // TODO: serach in haxe.classPath?
-			if( StringTools.startsWith(path.toLowerCase(), shadersPath.toLowerCase()+"/") ) {
-				path = path.substr(shadersPath.length + 1);
-			}
-			path = haxe.io.Path.withoutExtension(path);
+			fixSourcePath();
+			var path = haxe.io.Path.withoutExtension(haxe.io.Path.withoutExtension(source));
 			shaderDef = ctx.loadShader(path);
 		}
 		if(shaderDef == null)
