@@ -25,6 +25,7 @@
 	"key.search" : "Ctrl-F",
 	"key.rename" : "F2",
 	"key.selectAll" : "Ctrl-A",
+	"key.playPause" : "Space",
 
 	// cdb keys
 

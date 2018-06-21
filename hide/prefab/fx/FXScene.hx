@@ -113,6 +113,7 @@ class FXAnimation extends h3d.scene.Object {
 	public var duration : Float;
 	public var objects: Array<ObjectAnimation> = [];
 	public var shaderAnims : Array<ShaderAnimation> = [];
+	public var emitters : Array<hide.prefab.fx.Emitter.EmitterObject> = [];
 
 	public function new(?parent) {
 		super(parent);
@@ -141,6 +142,10 @@ class FXAnimation extends h3d.scene.Object {
 				anim.pause = true;
 				anim.setFrame(hxd.Math.clamp(time * anim.sampling * anim.speed, 0, anim.frameCount));
 			}
+		}
+
+		for(em in emitters) {
+			em.setTime(time);
 		}
 	}
 
@@ -235,6 +240,21 @@ class FXScene extends Library {
 		anims.push(cast shCtx.custom);
 	}
 
+	function getEmitters(ctx: Context, elt: PrefabElement, emitters: Array<hide.prefab.fx.Emitter.EmitterObject>) {
+		var em = Std.instance(elt, hide.prefab.fx.Emitter);
+		if(em != null)  {
+			var emCtx = ctx.shared.contexts.get(elt);
+			if(emCtx == null || emCtx.local3d == null)
+				return;
+			emitters.push(cast emCtx.local3d);
+		}
+		else {
+			for(c in elt.children) {
+				getEmitters(ctx, c, emitters);
+			}
+		}
+	}
+
 	override function makeInstance(ctx:Context):Context {
 		if( inRec )
 			return ctx;
@@ -245,6 +265,7 @@ class FXScene extends Library {
 		super.makeInstance(ctx);
 		getObjAnimations(ctx, this, fxanim.objects);
 		getShaderAnims(ctx, this, fxanim.shaderAnims);
+		getEmitters(ctx, this, fxanim.emitters);
 		return ctx; 
 	}
 

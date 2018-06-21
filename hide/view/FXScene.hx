@@ -112,6 +112,7 @@ class FXScene extends FileView {
 	var xScale = 200.;
 	var xOffset = 0.;
 
+	var pauseButton : hide.comp.Toolbar.ToolToggle;
 	var currentTime : Float;
 	var selectMin : Float;
 	var selectMax : Float;
@@ -208,6 +209,8 @@ class FXScene extends FileView {
 			data.edit(edit);
 		}
 
+		keys.register("playPause", function() { pauseButton.toggle(!pauseButton.isDown()); });
+
 		currentVersion = undo.currentID;
 		sceneEditor.tree.element.addClass("small");
 
@@ -239,6 +242,8 @@ class FXScene extends FileView {
 						previewMax = ixt(e.clientX - xoffset);
 					}
 					else {
+						if(!pauseButton.isDown())
+							pauseButton.toggle(true);
 						currentTime = ixt(e.clientX - xoffset);
 						currentTime = hxd.Math.max(currentTime, 0);
 					}
@@ -311,6 +316,7 @@ class FXScene extends FileView {
 		tools.addToggle("refresh", "Auto synchronize", function(b) {
 			autoSync = b;
 		});
+		pauseButton = tools.addToggle("pause", "Pause animation", function(v) {}, false);
 		tools.addRange("Speed", function(v) {
 			scene.speed = v;
 		}, scene.speed);
@@ -793,7 +799,7 @@ class FXScene extends FileView {
 	}
 
 	function onUpdate(dt:Float) {
-		if(true) {
+		if(!pauseButton.isDown()) {
 			currentTime += scene.speed * dt / hxd.Timer.wantedFPS;
 			if(timeLineEl != null)
 				timeLineEl.css({left: xt(currentTime)});
@@ -801,43 +807,11 @@ class FXScene extends FileView {
 				currentTime = previewMin;
 			}
 		}
-
+		
 		var ctx = sceneEditor.getContext(data);
 		if(ctx != null && ctx.local3d != null) {
 			var anim : hide.prefab.fx.FXScene.FXAnimation = cast ctx.local3d;
 			anim.setTime(currentTime);
-		}
-		// var allObjects = data.getAll(hide.prefab.Object3D);
-		// for(element in allObjects) {
-		// 	var obj3d = sceneEditor.getObject(element);
-		// 	if(obj3d == null)
-		// 		continue;
-		// 	var curves = data.getCurves(element);
-		// 	var mat = data.getTransform(curves, currentTime);
-		// 	mat.multiply(element.getTransform(), mat);
-		// 	obj3d.setTransform(mat);
-		// 	if(curves.visibility != null) {
-		// 		var visible = curves.visibility.getVal(currentTime) > 0.5;
-		// 		obj3d.visible = element.visible && visible;
-		// 	}
-		// }
-
-		// Update shaders
-		// var allShaders = data.getAll(hide.prefab.Shader);
-		// for(shader in allShaders) {
-		// 	var ctx = sceneEditor.getContext(shader);
-		// 	if(ctx != null) {
-		// 		shader.applyVars(ctx, currentTime);
-		// 	}
-		// }
-
-		// Update emitters
-		var allEmitters = data.getAll(hide.prefab.fx.Emitter);
-		for(em in allEmitters) {
-			var ctx = sceneEditor.getContext(em);
-			var obj = Std.instance(ctx.local3d, hide.prefab.fx.Emitter.EmitterObject);
-			if(obj != null)
-				obj.setTime(currentTime);
 		}
 
 		var cam = scene.s3d.camera;
