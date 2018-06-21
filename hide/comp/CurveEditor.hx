@@ -421,7 +421,7 @@ class CurveEditor extends Component {
 			var l = hline(iy);
 			if(iy == 0)
 				l.addClass("axis");	
-			hlabel("" + iy, iy + 1);			
+			hlabel("" + iy, iy);
 		}
 	}
 
