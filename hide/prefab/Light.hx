@@ -25,7 +25,6 @@ class Light extends Object3D {
 	public var range : Float = 10;
 	public var size : Float = 1.0;
 	public var power : Float = 1.0;
-	public var isSun : Bool = false;
 
 	public function new(?parent) {
 		super(parent);
@@ -39,7 +38,6 @@ class Light extends Object3D {
 		obj.range = range;
 		obj.size = size;
 		obj.power = power;
-		obj.isSun = isSun;
 		return obj;
 	}
 
@@ -50,8 +48,6 @@ class Light extends Object3D {
 		range = obj.range;
 		size = obj.size;
 		power = obj.power;
-		if(obj.isSun)
-			isSun = obj.isSun;
 	}
 
 
@@ -94,11 +90,10 @@ class Light extends Object3D {
 		else {
 			var light = new h3d.scene.pbr.DirLight(ctx.local3d);
 			light.color.setColor(color);
-			light.isSun = isSun;
 			light.power = power;
 			ctx.custom = light;
 		}
-		
+
 		#if editor
 		var debugPoint = ctx.local3d.find(c -> if(c.name == "_debugPoint") c else null);
 		var debugDir = ctx.local3d.find(c -> if(c.name == "_debugDir") c else null);
@@ -139,7 +134,7 @@ class Light extends Object3D {
 		else {
 			if(debugPoint != null)
 				debugPoint.remove();
-			
+
 			if(debugDir == null) {
 				debugDir = new h3d.scene.Object(ctx.local3d);
 				debugDir.name = "_debugDir";
@@ -198,13 +193,8 @@ class Light extends Object3D {
 		]);
 
 		var dirProps = hide.comp.PropsEditor.makePropsList([
-			{
-				name: "isSun",
-				t: PBool,
-				def: false
-			},
 		]);
-		
+
 		group.append(pointProps);
 		group.append(dirProps);
 		function updateProps() {
@@ -218,7 +208,7 @@ class Light extends Object3D {
 			}
 		}
 		updateProps();
-		
+
 		var props = ctx.properties.add(group,this, function(pname) {
 			applyProps(ctx.getContext(this));
 			ctx.onChange(this, pname);
