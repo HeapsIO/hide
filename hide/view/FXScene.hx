@@ -185,6 +185,7 @@ class FXScene extends FileView {
 			rebuildAnimPanel();
 		});
 		currentVersion = undo.currentID;
+		sceneEditor.tree.element.addClass("small");
 
 		var timeline = element.find(".timeline");
 		timeline.mousedown(function(e) {
