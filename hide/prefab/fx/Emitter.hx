@@ -19,7 +19,8 @@ typedef ParamDef = {
 typedef InstanceDef = {
 	localSpeed: Value,
 	localOffset: Value,
-	scale: Value
+	scale: Value,
+	?alignVec: h3d.Vector
 }
 
 typedef ShaderAnims = Array<hide.prefab.Shader.ShaderAnimation>;
@@ -31,8 +32,7 @@ private class ParticleInstance extends h3d.scene.Object {
 	public var life = 0.0;
 
 	public var curVelocity = new h3d.Vector();
-	// public var curPos = new h3d.Vector();
-	// public var orientation = new h3d.Quat();
+	public var orientation = new h3d.Quat();
 
 	public var def : InstanceDef;
 	public var shaderAnims : ShaderAnims;
@@ -49,7 +49,7 @@ private class ParticleInstance extends h3d.scene.Object {
 
 		var localSpeed = evaluator.getVector(def.localSpeed, life);
 		if(localSpeed.length() > 0.001) {
-			localSpeed.transform3x3(getRotationQuat().toMatrix());
+			localSpeed.transform3x3(orientation.toMatrix());
 			curVelocity = localSpeed;
 		}
 
@@ -67,6 +67,30 @@ private class ParticleInstance extends h3d.scene.Object {
 		}
 
 		life += dt;
+	}
+
+	function faceCamera(cam : h3d.Camera) {
+		if(def.alignVec != null && def.alignVec.lengthSq() > 0.01) {
+			var local = def.alignVec.clone();
+			local.transform3x3(getAbsPos());
+			local.normalize();
+			var delta : h3d.Vector = cam.pos.sub(absPos.getPosition());
+			delta.normalize();
+			var axis = local.cross(delta);
+			var l = axis.length();
+			if(l > 0.01) {
+				var angle = Math.asin(l);
+				var q = new h3d.Quat();
+				q.initRotateAxis(axis.x, axis.y, axis.z, angle);
+				qRot.multiply(q, qRot);
+				posChanged = true;
+				calcAbsPos(); // Meh
+			}
+		}
+	}
+
+	override function sync( ctx : h3d.scene.RenderContext ) {
+		faceCamera(ctx.camera);
 	}
 
 	function kill() {
@@ -101,7 +125,6 @@ class EmitterObject extends h3d.scene.Object {
 	var lastTime = -1.0;
 	var curTime = 0.0;
 	var evaluator : Evaluator;
-
 	var instances : Array<ParticleInstance> = [];
 
 	function reset() {
@@ -145,6 +168,7 @@ class EmitterObject extends h3d.scene.Object {
 
 			localPos.transform(absPos);
 			part.setTransform(absPos);
+			part.orientation.initRotateMatrix(absPos);
 			part.setPosition(localPos.x, localPos.y, localPos.z);
 
 			part.shaderAnims = [];
@@ -352,6 +376,7 @@ class Emitter extends Object3D {
 			localSpeed: makeParam(template, "speed"),
 			localOffset: VConst(0.0),
 			scale: VConst(1.0),
+			alignVec: new h3d.Vector(1,0,0)
 		};
 
 		emitterObj.particleTemplate = template;
