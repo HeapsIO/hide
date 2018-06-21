@@ -151,26 +151,28 @@ class FXScene extends FileView {
 			<div class="flex vertical">
 				<div class="toolbar"></div>
 				<div class="flex">
-					<div class="scene">
-					</div>
-					<div class="tabs">
-						<div class="tab" name="Scene" icon="sitemap">
-							<div class="hide-block">
-								<div class="hide-list hide-scene-tree">
+					<div class="flex vertical">
+						<div class="flex scene"></div>
+						<div class="fx-animpanel">
+							<div class="top-bar">
+								<div class="timeline">
+									<div class="timeline-scroll"/>
 								</div>
+							</div>
+							<div class="anim-scroll"></div>
+							<div class="overlay-container">
+								<div class="overlay"></div>
 							</div>
 						</div>
 					</div>
-				</div>
-				<div class="fx-animpanel">
-					<div class="top-bar">
-						<div class="timeline">
-							<div class="timeline-scroll"/>
+					<div class="tabs">
+						<div class="tab" name="Scene" icon="sitemap">
+							<div class="hide-block" style="height:40%">
+								<div class="hide-scene-tree hide-list">
+								</div>
+							</div>
+							<div class="hide-scroll"></div>
 						</div>
-					</div>
-					<div class="anim-scroll"></div>
-					<div class="overlay-container">
-						<div class="overlay"></div>
 					</div>
 				</div>
 			</div>');
@@ -178,7 +180,7 @@ class FXScene extends FileView {
 		tabs = new hide.comp.Tabs(null,element.find(".tabs"));
 		sceneEditor = new FXSceneEditor(this, context, data);
 		element.find(".hide-scene-tree").first().append(sceneEditor.tree.element);
-		element.find(".tab").first().append(sceneEditor.properties.element);
+		element.find(".hide-scroll").first().append(sceneEditor.properties.element);
 		element.find(".scene").first().append(sceneEditor.scene.element);
 		element.resize(function(e) {
 			refreshTimeline(false);

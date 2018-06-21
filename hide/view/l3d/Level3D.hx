@@ -299,10 +299,11 @@ class Level3D extends FileView {
 					</div>
 					<div class="tabs">
 						<div class="tab" name="Scene" icon="sitemap">
-							<div class="hide-block">
-								<div class="hide-list hide-scene-tree">
+							<div class="hide-block" style="height:60%">
+								<div class="hide-scene-tree hide-list">
 								</div>
 							</div>
+							<div class="hide-scroll"></div>
 						</div>
 						<div class="tab" name="Properties" icon="cog">
 							<div class="level-props"></div>
@@ -320,7 +321,7 @@ class Level3D extends FileView {
 		sceneEditor = new Level3DSceneEditor(this, context, data);
 		sceneEditor.addSearchBox(element.find(".hide-scene-tree").first());
 		element.find(".hide-scene-tree").first().append(sceneEditor.tree.element);
-		element.find(".tab").first().append(sceneEditor.properties.element);
+		element.find(".hide-scroll").first().append(sceneEditor.properties.element);
 		element.find(".scene").first().append(sceneEditor.scene.element);
 		sceneEditor.tree.element.addClass("small");
 
