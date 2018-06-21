@@ -120,7 +120,7 @@ class FXAnimation extends h3d.scene.Object {
 	public function setTime(time: Float) {
 		for(anim in objects) {
 			var mat = getTransform(anim.curves, time);
-			mat.multiply(anim.elt.getTransform(), mat);
+			mat.multiply(mat, anim.elt.getTransform());
 			anim.obj.setTransform(mat);
 			if(anim.curves.visibility != null) {
 				var visible = anim.curves.visibility.getVal(time) > 0.5;
@@ -151,9 +151,9 @@ class FXAnimation extends h3d.scene.Object {
 		var y = curves.y == null ? 0. : curves.y.getVal(time);
 		var z = curves.z == null ? 0. : curves.z.getVal(time);
 
-		var rotationX = curves.rotationX == null ? 0. : curves.rotationX.getVal(time);
-		var rotationY = curves.rotationY == null ? 0. : curves.rotationY.getVal(time);
-		var rotationZ = curves.rotationZ == null ? 0. : curves.rotationZ.getVal(time);
+		var rotationX = curves.rotationX == null ? 0. : hxd.Math.degToRad(curves.rotationX.getVal(time));
+		var rotationY = curves.rotationY == null ? 0. : hxd.Math.degToRad(curves.rotationY.getVal(time));
+		var rotationZ = curves.rotationZ == null ? 0. : hxd.Math.degToRad(curves.rotationZ.getVal(time));
 
 		var scaleX = curves.scaleX == null ? 1. : curves.scaleX.getVal(time);
 		var scaleY = curves.scaleY == null ? 1. : curves.scaleY.getVal(time);
@@ -284,29 +284,6 @@ class FXScene extends Library {
 		}
 		return ret;
 	}
-
-	// public function getTransform(curves: ObjectCurves, time: Float, ?m: h3d.Matrix) {
-	// 	if(m == null)
-	// 		m = new h3d.Matrix();
-
-	// 	var x = curves.x == null ? 0. : curves.x.getVal(time);
-	// 	var y = curves.y == null ? 0. : curves.y.getVal(time);
-	// 	var z = curves.z == null ? 0. : curves.z.getVal(time);
-
-	// 	var rotationX = curves.rotationX == null ? 0. : curves.rotationX.getVal(time);
-	// 	var rotationY = curves.rotationY == null ? 0. : curves.rotationY.getVal(time);
-	// 	var rotationZ = curves.rotationZ == null ? 0. : curves.rotationZ.getVal(time);
-
-	// 	var scaleX = curves.scaleX == null ? 1. : curves.scaleX.getVal(time);
-	// 	var scaleY = curves.scaleY == null ? 1. : curves.scaleY.getVal(time);
-	// 	var scaleZ = curves.scaleZ == null ? 1. : curves.scaleZ.getVal(time);
-
-	// 	m.initScale(scaleX, scaleY, scaleZ);
-	// 	m.rotate(rotationX, rotationY, rotationZ);
-	// 	m.translate(x, y, z);
-
-	// 	return m;
-	// }
 
 	static var _ = Library.register("fx", FXScene);
 }
