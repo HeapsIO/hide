@@ -106,6 +106,7 @@ class SceneEditor {
 
 		var propsEl = new Element('<div class="props"></div>');
 		properties = new hide.comp.PropsEditor(undo,null,propsEl);
+		properties.saveDisplayKey = view.saveDisplayKey + "/properties";
 
 		tree = new hide.comp.IconTree();
 		tree.async = false;
