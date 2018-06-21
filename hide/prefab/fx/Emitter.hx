@@ -20,6 +20,7 @@ typedef InstanceDef = {
 	localSpeed: Value,
 	localOffset: Value,
 	scale: Value,
+	rotation: Value,
 	?alignVec: h3d.Vector
 }
 
@@ -46,8 +47,13 @@ private class ParticleInstance extends h3d.scene.Object {
 	}
 
 	public function update(dt : Float) {
+		var child = getChildAt(0);
+		if(child == null)
+			return;
 
-		var localSpeed = evaluator.getVector(def.localSpeed, life);
+		var t = hxd.Math.clamp(life / emitter.lifeTime, 0.0, 1.0);
+
+		var localSpeed = evaluator.getVector(def.localSpeed, t);
 		if(localSpeed.length() > 0.001) {
 			localSpeed.transform3x3(orientation.toMatrix());
 			curVelocity = localSpeed;
@@ -57,13 +63,20 @@ private class ParticleInstance extends h3d.scene.Object {
 		y += curVelocity.y * dt;
 		z += curVelocity.z * dt;
 
-		var scaleVec = evaluator.getVector(def.scale, life);
-		scaleX = scaleVec.x;
-		scaleY = scaleVec.y;
-		scaleZ = scaleVec.z;
+		var rot = evaluator.getVector(def.rotation, t);
+		rot.scale3(Math.PI / 180.0);
+		child.setRotation(rot.x, rot.y, rot.z);
+
+		var offset = evaluator.getVector(def.localOffset, t);
+		child.setPosition(offset.x, offset.y, offset.z);
+
+		var scaleVec = evaluator.getVector(def.scale, t);
+		child.scaleX = scaleVec.x;
+		child.scaleY = scaleVec.y;
+		child.scaleZ = scaleVec.z;
 
 		for(anim in shaderAnims) {
-			anim.setTime(life);  // TODO: Scale by lifetime
+			anim.setTime(t);
 		}
 
 		life += dt;
@@ -262,13 +275,23 @@ class Emitter extends Object3D {
 	static var instanceParams : Array<ParamDef> = [
 		{
 			name: "speed",
-			t: PVec(3),
+			t: PVec(3, -10, 10),
 			def: [5.,0.,0.]
 		},
 		{
 			name: "scale",
 			t: PVec(3),
 			def: [1.,1.,1.]
+		},
+		{
+			name: "rotation",
+			t: PVec(3, 0, 360),
+			def: [0.,0.,0.]
+		},
+		{
+			name: "offset",
+			t: PVec(3, -10, 10),
+			def: [0.,0.,0.]
 		}
 	];
 
@@ -374,9 +397,10 @@ class Emitter extends Object3D {
 
 		emitterObj.instDef = {
 			localSpeed: makeParam(template, "speed"),
-			localOffset: VConst(0.0),
-			scale: VConst(1.0),
-			alignVec: new h3d.Vector(1,0,0)
+			localOffset: makeParam(template, "offset"),
+			scale: makeParam(template, "scale"),
+			rotation: makeParam(template, "rotation"),
+			alignVec: null, //new h3d.Vector(1,0,0)
 		};
 
 		emitterObj.particleTemplate = template;

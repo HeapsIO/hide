@@ -3,7 +3,7 @@ package hide.comp;
 enum PropType {
 	PInt( ?min : Int, ?max : Int );
 	PFloat( ?min : Float, ?max : Float );
-	PVec( n : Int );
+	PVec( n : Int, ?min : Float, ?max : Float );
 	PBool;
 	PTexture;
 	PChoice( choices : Array<String> );
@@ -67,15 +67,17 @@ class PropsEditor extends Component {
 			new Element('<input type="texturepath" field="${p.name}">').appendTo(parent);
 		case PUnsupported(text):
 			new Element('<font color="red">' + StringTools.htmlEscape(text) + '</font>').appendTo(parent);
-		case PVec(n):
+		case PVec(n, min, max):
 			var isColor = p.name.toLowerCase().indexOf("color") >= 0;
 			var names = isColor ? ["r", "g", "b", "a"] : ["x", "y", "z", "w"];
 			for( i in 0...n ) {
 				var div = new Element('<div>').appendTo(parent);
 				new Element('<span>${names[i]} </span>').appendTo(div);
 				var e = new Element('<input type="range" class="small" field="${p.name}.$i">').appendTo(div);
-				e.attr("min", isColor ? "0" : "-1");
-				e.attr("max", "1");
+				if(min == null) min = isColor ? 0.0 : -1.0;
+				if(max == null)	max = 1.0;
+				e.attr("min", "" + min);
+				e.attr("max", "" + max);
 			}
 		case PChoice(choices):
 			var e = new Element('<select field="${p.name}"></select>');
