@@ -130,6 +130,7 @@ class EmitterObject extends h3d.scene.Object {
 		super(parent);
 		random = new hxd.Rand(0);
 		evaluator = new Evaluator(random);
+		reset();
 	}
 
 	var random: hxd.Rand;
@@ -141,6 +142,7 @@ class EmitterObject extends h3d.scene.Object {
 	var instances : Array<ParticleInstance> = [];
 
 	function reset() {
+		random.init(0);
 		curTime = 0.0;
 		lastTime = 0.0;
 		emitCount = 0;
@@ -169,8 +171,8 @@ class EmitterObject extends h3d.scene.Object {
 				case Circle:
 					var dx = 0.0, dy = 0.0;
 					do {
-						dx = hxd.Math.srand(1.0);
-						dy = hxd.Math.srand(1.0);
+						dx = random.srand(1.0);
+						dy = random.srand(1.0);
 					}
 					while(dx * dx + dy * dy > 1.0);
 					dx *= shapeSize / 2.0;
