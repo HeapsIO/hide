@@ -106,6 +106,7 @@ class Shader extends Prefab {
 	}
 
 	function fixSourcePath() {
+		#if editor
 		var ide = hide.Ide.inst;
 		var shadersPath = ide.projectDir + "/src";  // TODO: serach in haxe.classPath?
 
@@ -114,6 +115,7 @@ class Shader extends Prefab {
 			path = path.substr(shadersPath.length + 1);
 		}
 		source = path;
+		#end
 	}
 
 	function loadShaderDef(ctx: Context) {

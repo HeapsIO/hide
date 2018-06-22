@@ -94,7 +94,6 @@ class Light extends Object3D {
 		else {
 			var light = new h3d.scene.pbr.DirLight(ctx.local3d);
 			light.color.setColor(color);
-			light.isSun = isSun;
 			light.power = power;
 			ctx.custom = light;
 		}

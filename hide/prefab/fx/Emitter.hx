@@ -10,10 +10,8 @@ enum EmitShape {
 	Circle;
 }
 
-typedef ParamType = hide.comp.PropsEditor.PropType;
-
 typedef ParamDef = {
-	> hide.comp.PropsEditor.PropDef,
+	> hide.comp.PropsEditor.PropDef,  // TODO: Runtime-friendly version
 	?noanim: Bool
 }
 
@@ -399,7 +397,7 @@ class Emitter extends Object3D {
 						makeVal(baseval.z, getCurve(param.name + ".z"), randVal != null ? randVal.z : 0.0, getCurve(param.name + ".z.rand")));
 				default:
 					var baseval : Float = getParamVal(param.name);
-					var randVal : Float = getParamVal(param.name, true);
+					var randVal : Null<Float> = getParamVal(param.name, true);
 					return makeVal(baseval, getCurve(param.name), randVal != null ? randVal : 0.0, getCurve(param.name + ".rand"));
 			}
 		}
