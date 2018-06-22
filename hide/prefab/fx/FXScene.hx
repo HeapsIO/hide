@@ -80,6 +80,7 @@ class Evaluator {
 				var aval = getFloat(a, time);
 				var col = new h3d.Vector(0,0,0,1);
 				col.makeColor(hval, sval, lval);
+				col.a = aval;
 				return col;
 			default:
 				var f = getFloat(v, time);

@@ -63,12 +63,6 @@ class Shader extends Prefab {
 				continue;
 			var val : Dynamic = Reflect.field(props, v.name);
 			switch(v.type) {
-				// case TFloat:
-				// 	val = getFloatParam(v.name, time);
-				// case TInt:
-				// 	val = hxd.Math.round(getFloatParam(v.name, time));
-				// case TBool:
-				// 	val = getFloatParam(v.name, time) >= 0.5;
 				case TVec(_, VFloat):
 					val = h3d.Vector.fromArray(val);
 				case TSampler2D:

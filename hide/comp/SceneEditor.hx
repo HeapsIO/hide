@@ -836,16 +836,16 @@ class SceneEditor {
 	}
 
 	public function setVisible(elements : Array<PrefabElement>, visible: Bool) {
-		var cache = [];
+		var obj3ds = [];
 		for(e in elements) {
 			var o = e.to(Object3D);
 			if(o != null) {
-				cache.push({o: o, vis: o.visible});
+				obj3ds.push({o: o, vis: o.visible});
 			}
 		}
 
 		function apply(b) {
-			for(c in cache) {
+			for(c in obj3ds) {
 				c.o.visible = b ? visible : c.vis;
 				var obj = getContext(c.o).local3d;
 				if(obj != null) {

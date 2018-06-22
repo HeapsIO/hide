@@ -275,8 +275,12 @@ class Curve extends Prefab {
 		var s = find(".s");
 		var l = find(".l");
 		
-		if(h != null && s != null && l != null) {
-			return VHsl(VCurve(h), VCurve(s), VCurve(l), a != null ? VCurve(a) : VConst(1.0));
+		if(h != null || s != null || l != null) {
+			return VHsl(
+				h != null ? VCurve(h) : VConst(0.0),
+				s != null ? VCurve(s) : VConst(1.0),
+				l != null ? VCurve(l) : VConst(1.0),
+				a != null ? VCurve(a) : VConst(1.0));
 		}
 
 		return VVector(
