@@ -229,14 +229,16 @@ class Model extends FileView {
 			control.loadFromCamera();
 		});
 
-		tools.addButton("gears", "Renderer Properties", function() {
+		function renderProps() {
 			properties.clear();
 
 			var renderer = scene.s3d.renderer;
 			var group = new Element('<div class="group" name="Renderer"></div>');
 			renderer.editProps().appendTo(group);
-			properties.add(group, renderer.props, function(_) renderer.refreshProps());
-
+			properties.add(group, renderer.props, function(_) {
+				renderer.refreshProps();
+				if( !properties.isTempChange ) renderProps();
+			});
 
 			var lprops = {
 				power : Math.sqrt(light.color.r),
@@ -252,7 +254,8 @@ class Model extends FileView {
 				light.color.set(p, p, p);
 			});
 
-		});
+		}
+		tools.addButton("gears", "Renderer Properties", renderProps);
 
 		var axis = new h3d.scene.Graphics(scene.s3d);
 		axis.lineStyle(1,0xFF0000);
