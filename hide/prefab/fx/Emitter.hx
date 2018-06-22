@@ -5,9 +5,9 @@ import hide.prefab.fx.FXScene.Evaluator;
 using Lambda;
 
 enum EmitShape {
+	Cone(angle: Float);
+	Disc;
 	Sphere;
-	Cone;
-	Circle;
 }
 
 typedef ParamDef = {
@@ -118,7 +118,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var particleTemplate : hide.prefab.Prefab;
 	public var maxCount = 20;
 	public var lifeTime = 2.0;
-	public var emitShape : EmitShape = Circle;
+	public var emitShape : EmitShape = Disc;
 
 	public var emitRate : Value;
 	public var emitSize : Value;
@@ -159,36 +159,57 @@ class EmitterObject extends h3d.scene.Object {
 		parentInvMat.invert();
 		localMat.multiply(localMat, parentInvMat);
 
+		//var baseQuat = new h3d.Quat();
+		//baseQuat.initRotateMatrix(localMat);
+		//var baseQuat = 
+		// baseQuat.initRotation(this.rotation, ry, rz);
+
 		if(instDef == null)
 			return;
 
 		var shapeSize = evaluator.getFloat(emitSize, curTime);
 		if(particleTemplate == null)
 			return;
+		
+		var tmpq = new h3d.Quat();
 		for(i in 0...count) {
 			var part = new ParticleInstance(this, instDef);
 			context.local3d = part;
 			var ctx = particleTemplate.makeInstance(context);
 
 			var offset = new h3d.Vector();
+			var direction = new h3d.Vector();
 			var localDir = new h3d.Vector();
+			var localQuat = getRotationQuat().clone();
+
 			switch(emitShape) {
-				case Circle:
+				case Disc:
 					var dx = 0.0, dy = 0.0;
 					do {
 						dx = random.srand(1.0);
 						dy = random.srand(1.0);
 					}
 					while(dx * dx + dy * dy > 1.0);
-					dx *= shapeSize / 2.0;
-					dy *= shapeSize / 2.0;
 					offset.set(0, dx, dy);
+					direction.set(1, 0, 0);
+				case Sphere:
+					do {
+						offset.x = random.srand(1.0);
+						offset.y = random.srand(1.0);
+						offset.z = random.srand(1.0);
+					}
+					while(offset.lengthSq() > 1.0);
+					direction = offset.clone();
+					direction.normalizeFast();
 				default:
 			}
 
+			tmpq.initDirection(direction);
+			localQuat.multiply(localQuat, tmpq);
 
+			part.setRotationQuat(localQuat);
+			part.orientation = localQuat.clone();
 			offset.transform(localMat);
-			part.setTransform(localMat);
 			part.setPosition(offset.x, offset.y, offset.z);
 
 			part.shaderAnims = [];
@@ -415,6 +436,7 @@ class Emitter extends Object3D {
 		emitterObj.maxCount = getParamVal("maxCount");
 		emitterObj.emitRate = makeParam(this, "emitRate");
 		emitterObj.emitSize = makeParam(this, "emitSize");
+		emitterObj.emitShape = Sphere;
 	}
 
 	override function makeInstance(ctx:Context):Context {
