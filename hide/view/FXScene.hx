@@ -292,10 +292,10 @@ class FXScene extends FileView {
 			afterPan(false);
 		});
 
-		selectMin = 0.6;
-		selectMax = 3.2;
-		previewMin = 0.6;
-		previewMax = 3.2;
+		selectMin = 0.0;
+		selectMax = 0.0;
+		previewMin = 0.0;
+		previewMax = data.duration;
 		refreshTimeline(false);
 	}
 
