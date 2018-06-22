@@ -17,6 +17,7 @@ typedef PropDef = {
 	?def: Dynamic
 };
 
+#if js  // TODO: Extract props and remove this
 class PropsEditor extends Component {
 
 	public var undo : hide.ui.UndoHistory;
@@ -424,3 +425,4 @@ class PropsField extends Component {
 	}
 
 }
+#end
