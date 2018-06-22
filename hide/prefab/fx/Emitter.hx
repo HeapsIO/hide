@@ -6,6 +6,7 @@ using Lambda;
 
 enum EmitShape {
 	Sphere;
+	Cone;
 	Circle;
 }
 
@@ -152,7 +153,13 @@ class EmitterObject extends h3d.scene.Object {
 	}
 
 	function doEmit(count: Int) {
-		calcAbsPos();
+		if(count == 0)
+			return;
+		
+		var localMat = getAbsPos().clone();
+		var parentInvMat = parent.getAbsPos().clone();
+		parentInvMat.invert();
+		localMat.multiply(localMat, parentInvMat);
 
 		if(instDef == null)
 			return;
@@ -165,7 +172,7 @@ class EmitterObject extends h3d.scene.Object {
 			context.local3d = part;
 			var ctx = particleTemplate.makeInstance(context);
 
-			var localPos = new h3d.Vector();
+			var offset = new h3d.Vector();
 			var localDir = new h3d.Vector();
 			switch(emitShape) {
 				case Circle:
@@ -177,14 +184,14 @@ class EmitterObject extends h3d.scene.Object {
 					while(dx * dx + dy * dy > 1.0);
 					dx *= shapeSize / 2.0;
 					dy *= shapeSize / 2.0;
-					localPos.set(0, dx, dy);
+					offset.set(0, dx, dy);
 				default:
 			}
 
-			localPos.transform(absPos);
-			part.setTransform(absPos);
-			part.orientation.initRotateMatrix(absPos);
-			part.setPosition(localPos.x, localPos.y, localPos.z);
+
+			offset.transform(localMat);
+			part.setTransform(localMat);
+			part.setPosition(offset.x, offset.y, offset.z);
 
 			part.shaderAnims = [];
 			var shaders = particleTemplate.getAll(hide.prefab.Shader);
