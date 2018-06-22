@@ -31,6 +31,8 @@ class Evaluator {
 	}
 
 	public function getFloat(val: Value, time: Float) : Float {
+		if(val == null)
+			return 0.0;
 		switch(val) {
 			case VZero: return 0.0;
 			case VConst(v): return v;

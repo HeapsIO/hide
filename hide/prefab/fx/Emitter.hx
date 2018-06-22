@@ -4,10 +4,22 @@ import hide.prefab.fx.FXScene.Value;
 import hide.prefab.fx.FXScene.Evaluator;
 using Lambda;
 
-enum EmitShape {
-	Cone(angle: Float);
-	Disc;
-	Sphere;
+@:enum abstract EmitShape(Int) {
+	var Cone = 0;
+	var Disc = 1;
+	var Sphere = 2;
+
+	inline function new(v) {
+		this = v;
+	}
+
+	public inline function toInt() {
+		return this;
+	}
+
+	public static inline function fromInt( v : Int ) : EmitShape {
+		return new EmitShape(v);
+	}
 }
 
 typedef ParamDef = {
@@ -120,6 +132,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var lifeTime = 2.0;
 	public var emitShape : EmitShape = Disc;
 
+	public var emitAngle : Value;
 	public var emitRate : Value;
 	public var emitSize : Value;
 
@@ -153,33 +166,27 @@ class EmitterObject extends h3d.scene.Object {
 	function doEmit(count: Int) {
 		if(count == 0)
 			return;
+
+		if(instDef == null || particleTemplate == null)
+			return;
 		
 		var localMat = getAbsPos().clone();
 		var parentInvMat = parent.getAbsPos().clone();
 		parentInvMat.invert();
 		localMat.multiply(localMat, parentInvMat);
 
-		//var baseQuat = new h3d.Quat();
-		//baseQuat.initRotateMatrix(localMat);
-		//var baseQuat = 
-		// baseQuat.initRotation(this.rotation, ry, rz);
-
-		if(instDef == null)
-			return;
-
 		var shapeSize = evaluator.getFloat(emitSize, curTime);
-		if(particleTemplate == null)
-			return;
+		var shapeAngle = hxd.Math.degToRad(evaluator.getFloat(emitAngle, curTime)) / 2.0;
 		
 		var tmpq = new h3d.Quat();
+		var offset = new h3d.Vector();
+		var direction = new h3d.Vector();
+
 		for(i in 0...count) {
 			var part = new ParticleInstance(this, instDef);
 			context.local3d = part;
 			var ctx = particleTemplate.makeInstance(context);
 
-			var offset = new h3d.Vector();
-			var direction = new h3d.Vector();
-			var localDir = new h3d.Vector();
 			var localQuat = getRotationQuat().clone();
 
 			switch(emitShape) {
@@ -201,7 +208,14 @@ class EmitterObject extends h3d.scene.Object {
 					while(offset.lengthSq() > 1.0);
 					direction = offset.clone();
 					direction.normalizeFast();
-				default:
+				case Cone:
+					offset.set(0, 0, 0);
+					var theta = random.rand() * Math.PI * 2;
+					var phi = shapeAngle * random.rand();
+					direction.x = Math.sin(phi) * Math.cos(theta);
+					direction.y = Math.sin(phi) * Math.sin(theta);
+					direction.z = Math.cos(phi);
+					direction.normalizeFast();
 			}
 
 			tmpq.initDirection(direction);
@@ -267,12 +281,14 @@ class EmitterObject extends h3d.scene.Object {
 
 class Emitter extends Object3D {
 
-	var emitRate = 50.0;
-	var emitRateRandom = 2.0;
-
 	public function new(?parent) {
 		super(parent);
 		props = { };
+
+		for(param in PARAMS) {
+			if(param.def != null)
+				Reflect.setField(props, param.name, param.def);
+		}
 	}
 
 	static var emitterParams : Array<ParamDef> = [
@@ -286,12 +302,25 @@ class Emitter extends Object3D {
 			name: "maxCount",
 			t: PInt(0, 100),
 			def: 20,
-			noanim: true
+			noanim: true,
+		},
+		{
+			name: "emitShape",
+			t: PChoice(["Cone", "Disc", "Sphere"]),
+			noanim: true,
+			disp: "Shape",
+		},
+		{
+			name: "emitAngle",
+			t: PFloat(0, 360.0),
+			noanim: true,
+			disp: "Angle",
 		},
 		{
 			name: "emitRate",
 			t: PInt(0, 100),
-			def: 5
+			def: 5,
+			disp: "Rate",
 		},
 		{
 			name: "emitSize",
@@ -436,7 +465,41 @@ class Emitter extends Object3D {
 		emitterObj.maxCount = getParamVal("maxCount");
 		emitterObj.emitRate = makeParam(this, "emitRate");
 		emitterObj.emitSize = makeParam(this, "emitSize");
-		emitterObj.emitShape = Sphere;
+		emitterObj.emitShape = getParamVal("emitShape");
+		emitterObj.emitAngle = makeParam(this, "emitAngle");
+
+		#if editor
+		var debugShape = emitterObj.find(c -> if(c.name == "_debugShape") c else null);
+		if(debugShape != null)
+			debugShape.remove();
+
+		var mesh : h3d.scene.Mesh = null;
+		if(emitterObj.emitShape == Disc) {
+			var nsegments = 32;
+			var g = new h3d.scene.Graphics(emitterObj);
+			g.lineStyle(1, 0xffffff);
+			for(i in 0...nsegments) {
+				var c = hxd.Math.cos(i / (nsegments - 1) * hxd.Math.PI * 2.0);
+				var s = hxd.Math.sin(i / (nsegments - 1) * hxd.Math.PI * 2.0);
+				if(i == 0)
+					g.moveTo(0, c, s);
+				else
+					g.lineTo(0, c, s);
+			}
+			g.ignoreCollide = true;
+			mesh = g;
+		}
+		else if(emitterObj.emitShape == Sphere) {
+			mesh = new h3d.scene.Sphere(0xffffff, 1.0, true, emitterObj);
+		}
+
+		if(mesh != null) {
+			mesh.name = "_debugShape";
+			var mat = mesh.material;
+			mat.mainPass.setPassName("overlay");
+			mat.shadows = false;
+		}
+		#end
 	}
 
 	override function makeInstance(ctx:Context):Context {
@@ -459,17 +522,32 @@ class Emitter extends Object3D {
 			this.edit(ctx);
 		}
 
+		var angleProp = null;
+
 		function onChange(pname: String) {
 			ctx.onChange(this, pname);
 			var emitter = Std.instance(ctx.getContext(this).local3d, EmitterObject);
 			if(emitter != null)
 				applyParams(emitter);
+
+			if(pname == "emitShape") {
+				refresh();
+			}
 		}
 
-		var emGroup = new Element('<div class="group" name="Emitter"></div>');
-		emGroup.append(hide.comp.PropsEditor.makePropsList(emitterParams));
-		var props = ctx.properties.add(emGroup, this.props, onChange);
+		var params = emitterParams.copy();
 
+		var emitShape : EmitShape = getParamVal("emitShape");
+		if(emitShape != null) 
+			switch(emitShape) {
+				case Cone:
+				default: params.remove(params.find(p -> p.name == "emitAngle"));
+			}
+
+		var emGroup = new Element('<div class="group" name="Emitter"></div>');
+		emGroup.append(hide.comp.PropsEditor.makePropsList(params));
+		var props = ctx.properties.add(emGroup, this.props, onChange);
+		// angleProp = ctx.properties.fields.find(f -> f.fname == "emitAngle");
 
 		{
 			var instGroup = new Element('<div class="group" name="Particles"></div>');

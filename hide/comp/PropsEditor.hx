@@ -14,7 +14,8 @@ enum PropType {
 typedef PropDef = {
 	name : String,
 	t : PropType,
-	?def: Dynamic
+	?def: Dynamic,
+	?disp: String
 };
 
 #if js  // TODO: Extract props and remove this
@@ -81,7 +82,7 @@ class PropsEditor extends Component {
 				e.attr("max", "" + max);
 			}
 		case PChoice(choices):
-			var e = new Element('<select field="${p.name}"></select>');
+			var e = new Element('<select field="${p.name}" type="number"></select>').appendTo(parent);
 			for(c in choices)
 				new hide.Element('<option>').attr("value", choices.indexOf(c)).text(upperCase(c)).appendTo(e);
 		case PFile(exts):
@@ -96,7 +97,7 @@ class PropsEditor extends Component {
 	public static function makePropsList(props : Array<PropDef>) : Element {
 		var e = new Element('<dl>');
 		for( p in props ) {
-			new Element('<dt>${upperCase(p.name)}</dt>').appendTo(e);
+			new Element('<dt>${p.disp != null ? p.disp : upperCase(p.name)}</dt>').appendTo(e);
 			var def = new Element('<dd>').appendTo(e);
 			makePropEl(p, def);
 		}

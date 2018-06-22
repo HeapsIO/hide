@@ -1,5 +1,6 @@
 package hide.tools;
 import hide.comp.PropsEditor.PropType;
+import hide.comp.PropsEditor.PropDef;
 
 enum ModelKind {
 	PrefabDef;
@@ -9,7 +10,7 @@ enum ModelKind {
 typedef TypeModel = {
 	var id : String;
 	var kind : ModelKind;
-	var fields : Array<{ name : String, t : hide.comp.PropsEditor.PropType, def : Dynamic }>;
+	var fields : Array<PropDef>;
 	var file : TypeFile;
 }
 
@@ -261,6 +262,8 @@ class TypesCache {
 			return c != null && c.length > 0 ? c[0] : null;
 		case PFile(_):
 			return null;
+		// case PEnum(e):
+		// 	return e.createByIndex(0);
 		}
 	}
 
