@@ -209,9 +209,17 @@ class Curve extends Prefab {
 		return { icon : "paint-brush", name : "Curve", fileSource : null };
 	}
 
-
 	public static function getCurves(parent: hide.prefab.Prefab, prefix: String) {
-		return parent.getAll(hide.prefab.Curve).filter(c -> c.name.split(".")[0] == prefix);
+		var ret = [];
+		for(c in parent.children) {
+			if(c.name.split(".")[0] != prefix)
+				continue;
+			var curve = c.to(Curve);
+			if(curve == null)
+				continue;
+			ret.push(curve);
+		}
+		return ret;
 	}
 
 	public static function getGroups(curves: Array<Curve>) {
@@ -237,39 +245,8 @@ class Curve extends Prefab {
 		return curves.find(c -> StringTools.endsWith(c.name, suffix));
 	}
 
-	public static function getColorValue(curves: Array<Curve>, time: Float) : h3d.Vector {
-		inline function find(s) {
-			return findCurve(curves, s);
-		}
-		var r = find(".r");
-		var g = find(".g");
-		var b = find(".b");
-		var a = find(".a");
-		var h = find(".h");
-		var s = find(".s");
-		var l = find(".l");
-
-		var col = new h3d.Vector(0, 0, 0, 1);
-
-		if(r != null && g != null && b != null) {
-			col.r = r.getVal(time);
-			col.g = g.getVal(time);
-			col.b = b.getVal(time);
-		}
-		else {
-			var hval = 0.0, sval = 0.0, lval = 0.0;
-			if(h != null) hval = h.getVal(time);
-			if(s != null) sval = s.getVal(time);
-			if(l != null) lval = l.getVal(time);
-			col.makeColor(hval, sval, lval);
-		}
-		if(a != null)
-			col.a = a.getVal(time);
-		return col;
-	}
-
 	// TODO: rename getVectorValue
-	public static function getAnimValue(curves: Array<Curve>) : Value {
+	public static function getVectorValue(curves: Array<Curve>, defVal: Float=0.0) : Value {
 		inline function find(s) {
 			return findCurve(curves, s);
 		}
@@ -279,13 +256,13 @@ class Curve extends Prefab {
 		var w = find(".w");
 
 		return VVector(
-			x != null ? VCurve(x) : VConst(0.0),
-			y != null ? VCurve(y) : VConst(0.0),
-			z != null ? VCurve(z) : VConst(0.0),
+			x != null ? VCurve(x) : VConst(defVal),
+			y != null ? VCurve(y) : VConst(defVal),
+			z != null ? VCurve(z) : VConst(defVal),
 			w != null ? VCurve(w) : VConst(1.0));
 	}
 	
-	public static function getColorAnimValue(curves: Array<Curve>) : Value {
+	public static function getColorValue(curves: Array<Curve>) : Value {
 		inline function find(s) {
 			return findCurve(curves, s);
 		}

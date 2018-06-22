@@ -88,24 +88,14 @@ class Evaluator {
 	}
 }
 
-typedef ObjectCurves = {
-	?x: Curve,
-	?y: Curve,
-	?z: Curve,
-	?rotationX: Curve,
-	?rotationY: Curve,
-	?rotationZ: Curve,
-	?scaleX: Curve,
-	?scaleY: Curve,
-	?scaleZ: Curve,
-	?visibility: Curve,
-	?custom: Array<Curve>
-}
-
 typedef ObjectAnimation = {
 	elt: hide.prefab.Object3D,
 	obj: h3d.scene.Object,
-	curves: ObjectCurves
+	?position: Value,
+	?scale: Value,
+	?rotation: Value,
+	?color: Value,
+	?visibility: Value
 };
 
 class FXAnimation extends h3d.scene.Object {
@@ -114,19 +104,28 @@ class FXAnimation extends h3d.scene.Object {
 	public var objects: Array<ObjectAnimation> = [];
 	public var shaderAnims : Array<ShaderAnimation> = [];
 	public var emitters : Array<hide.prefab.fx.Emitter.EmitterObject> = [];
+	var evaluator = new Evaluator(new hxd.Rand(0));
 
 	public function new(?parent) {
 		super(parent);
 	}
 
+	static var tempMat = new h3d.Matrix();
 	public function setTime(time: Float) {
 		for(anim in objects) {
-			var mat = getTransform(anim.curves, time);
+			var mat = getTransform(anim, time, tempMat);
 			mat.multiply(mat, anim.elt.getTransform());
 			anim.obj.setTransform(mat);
-			if(anim.curves.visibility != null) {
-				var visible = anim.curves.visibility.getVal(time) > 0.5;
-				anim.obj.visible = anim.elt.visible && visible;
+
+			if(anim.visibility != null)
+				anim.obj.visible = evaluator.getFloat(anim.visibility, time) > 0.5;
+
+			if(anim.color != null) {
+				var mesh = Std.instance(anim.obj, h3d.scene.Mesh);
+				var col = evaluator.getVector(anim.color, time);
+				if(mesh != null) {
+					mesh.material.color = col;
+				}
 			}
 		}
 
@@ -149,25 +148,27 @@ class FXAnimation extends h3d.scene.Object {
 		}
 	}
 
-	public function getTransform(curves: ObjectCurves, time: Float, ?m: h3d.Matrix) {
+	public function getTransform(anim: ObjectAnimation, time: Float, ?m: h3d.Matrix) {
 		if(m == null)
 			m = new h3d.Matrix();
+	
+		if(anim.scale != null) {
+			var scale = evaluator.getVector(anim.scale, time);
+			m.initScale(scale.x, scale.y, scale.z);
+		}
+		else
+			m.identity();
 
-		var x = curves.x == null ? 0. : curves.x.getVal(time);
-		var y = curves.y == null ? 0. : curves.y.getVal(time);
-		var z = curves.z == null ? 0. : curves.z.getVal(time);
+		if(anim.rotation != null) {
+			var rotation = evaluator.getVector(anim.rotation, time);
+			rotation.scale3(Math.PI / 180.0);
+			m.rotate(rotation.x, rotation.y, rotation.z);
+		}
 
-		var rotationX = curves.rotationX == null ? 0. : hxd.Math.degToRad(curves.rotationX.getVal(time));
-		var rotationY = curves.rotationY == null ? 0. : hxd.Math.degToRad(curves.rotationY.getVal(time));
-		var rotationZ = curves.rotationZ == null ? 0. : hxd.Math.degToRad(curves.rotationZ.getVal(time));
-
-		var scaleX = curves.scaleX == null ? 1. : curves.scaleX.getVal(time);
-		var scaleY = curves.scaleY == null ? 1. : curves.scaleY.getVal(time);
-		var scaleZ = curves.scaleZ == null ? 1. : curves.scaleZ.getVal(time);
-
-		m.initScale(scaleX, scaleY, scaleZ);
-		m.rotate(rotationX, rotationY, rotationZ);
-		m.translate(x, y, z);
+		if(anim.position != null) {
+			var pos = evaluator.getVector(anim.position, time);
+			m.translate(pos.x, pos.y, pos.z);
+		}
 
 		return m;
 	}
@@ -210,16 +211,45 @@ class FXScene extends Library {
 		if(objCtx == null || objCtx.local3d == null)
 			return;
 
-		var curves = getCurves(elt);
-		if(curves == null)
-			return;
+		var anyFound = false;
+
+		function makeVal(name, def) : Value {
+			var c = getCurve(elt, name);
+			if(c != null)
+				anyFound = true;
+			return c != null ? VCurve(c) : def;
+		}
+		
+		function makeVector(name: String, defVal: Float)  {
+			var curves = hide.prefab.Curve.getCurves(elt, name);
+			if(curves == null || curves.length == 0)
+				return null;
+
+			anyFound = true;
+			return hide.prefab.Curve.getVectorValue(curves);
+		}
+
+		function makeColor(name: String)  {
+			var curves = hide.prefab.Curve.getCurves(elt, name);
+			if(curves == null || curves.length == 0)
+				return null;
+
+			anyFound = true;
+			return hide.prefab.Curve.getColorValue(curves);
+		}
 
 		var anim : ObjectAnimation = {
 			elt: obj3d,
 			obj: objCtx.local3d,
-			curves: curves
+			position: makeVector("position", 0.0),
+			scale: makeVector("scale", 1.0),
+			rotation: makeVector("rotation", 0.0),
+			color: makeColor("color"),
+			visibility: makeVal("visibility", null),
 		};
-		anims.push(anim);
+
+		if(anyFound)
+			anims.push(anim);
 	}
 
 	function getShaderAnims(ctx: Context, elt: PrefabElement, anims: Array<ShaderAnimation>) {
@@ -287,32 +317,14 @@ class FXScene extends Library {
 		return { icon : "cube", name : "FX", fileSource : ["fx"] };
 	}
 
-	public function getCurves(element : hide.prefab.Prefab) : ObjectCurves {
-		var ret : ObjectCurves = null;
+	static function getCurve(element : hide.prefab.Prefab, name: String) {
 		for(c in element.children) {
+			if(c.name != name) continue;
 			var curve = c.to(Curve);
-			if(curve == null)
-				continue;
-			if(ret == null)
-				ret = {};
-			switch(c.name) {
-				case "position.x": ret.x = curve;
-				case "position.y": ret.y = curve;
-				case "position.z": ret.z = curve;
-				case "rotation.x": ret.rotationX = curve;
-				case "rotation.y": ret.rotationY = curve;
-				case "rotation.z": ret.rotationZ = curve;
-				case "scale.x": ret.scaleX = curve;
-				case "scale.y": ret.scaleY = curve;
-				case "scale.z": ret.scaleZ = curve;
-				case "visibility": ret.visibility = curve;
-				default: 
-					if(ret.custom == null)
-						ret.custom = [];
-					ret.custom.push(curve);
-			}
+			if(curve == null) continue;
+			return curve;
 		}
-		return ret;
+		return null;
 	}
 
 	static var _ = Library.register("fx", FXScene);

@@ -423,6 +423,11 @@ class FXScene extends FileView {
 		});
 		var dopesheet = trackEl.find(".dopesheet");
 		var trackEdits : Array<hide.comp.CurveEditor> = [];
+		var evaluator = new hide.prefab.fx.FXScene.Evaluator(new hxd.Rand(0));
+
+		function getKeyColor(key) {
+			return evaluator.getVector(hide.prefab.Curve.getColorValue(curves), key.time);
+		}
 
 		function dragKey(from: hide.comp.CurveEditor, prevTime: Float, newTime: Float) {
 			for(edit in trackEdits) {
@@ -442,7 +447,7 @@ class FXScene extends FileView {
 
 		function refreshKey(key: hide.comp.CurveEditor.CurveKey, el: Element) {
 			if(isColorTrack) {
-				var color = hide.prefab.Curve.getColorValue(curves, key.time);
+				var color = getKeyColor(key);
 				var colorStr = "#" + StringTools.hex(color.toColor() & 0xffffff, 6);
 				el.css({background: colorStr});
 			}
@@ -506,7 +511,7 @@ class FXScene extends FileView {
 					"z-index": 100,
 				}).appendTo(el);
 				var cp = new hide.comp.ColorPicker(false, picker);
-				cp.value = hide.prefab.Curve.getColorValue(curves, key.time).toColor();
+				cp.value = getKeyColor(key).toColor();
 				cp.open();
 				cp.onClose = function() {
 					picker.remove();

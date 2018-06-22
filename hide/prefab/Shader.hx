@@ -213,7 +213,7 @@ class Shader extends Prefab {
 			switch(v.type) {
 				case TVec(_, VFloat) :
 					var isColor = v.name.toLowerCase().indexOf("color") >= 0;
-					var val = isColor ? hide.prefab.Curve.getColorAnimValue(curves) : hide.prefab.Curve.getAnimValue(curves);
+					var val = isColor ? hide.prefab.Curve.getColorValue(curves) : hide.prefab.Curve.getVectorValue(curves);
 					ret.push({
 						def: v,
 						value: val
@@ -234,35 +234,6 @@ class Shader extends Prefab {
 			}
 		}
 
-		return ret;
-	}
-
-	public function getFloatParam(name: String, time: Float) {
-		var ret = cast Reflect.field(props, name);
-		var curve = getOpt(hide.prefab.Curve, name);
-		if(curve != null)
-			ret = curve.getVal(time);
-		return ret;
-	}
-
-	public function getVectorParam(name: String, time: Float) : h3d.Vector {
-		var ret = new h3d.Vector();
-		var a = Std.instance(Reflect.field(props, name), Array);
-		if(a == null)
-			return ret;
-		ret = h3d.Vector.fromArray(a);
-		var curves = hide.prefab.Curve.getCurves(this, name);
-		if(curves != null && curves.length > 0) {
-			if(curves.length >= 3 && name.toLowerCase().indexOf("color") >= 0)
-				ret = hide.prefab.Curve.getColorValue(curves, time);
-			else {
-				// TODO: Map by name instead of order?
-				ret.x = curves[0].getVal(time);
-				if(curves.length > 1) ret.y = curves[1].getVal(time);
-				if(curves.length > 2) ret.z = curves[2].getVal(time);
-				if(curves.length > 3) ret.w = curves[3].getVal(time);
-			}
-		}
 		return ret;
 	}
 
