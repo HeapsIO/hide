@@ -109,6 +109,9 @@ class FXScene extends FileView {
 	var lastSyncChange : Float = 0.;
 	var currentSign : String;
 
+	var showGrid = true;
+	var grid : h3d.scene.Graphics;
+
 	var xScale = 200.;
 	var xOffset = 0.;
 
@@ -307,11 +310,30 @@ class FXScene extends FileView {
 		} else
 			light = null;
 
+		var axis = new h3d.scene.Graphics(scene.s3d);
+		axis.z = 0.001;
+		axis.lineStyle(2,0xFF0000);
+		axis.lineTo(1,0,0);
+		axis.lineStyle(1,0x00FF00);
+		axis.moveTo(0,0,0);
+		axis.lineTo(0,1,0);
+		axis.lineStyle(1,0x0000FF);
+		axis.moveTo(0,0,0);
+		axis.lineTo(0,0,1);
+		axis.material.mainPass.setPassName("debuggeom");
+		axis.visible = showGrid;
+
 		tools.saveDisplayKey = "FXScene/tools";
 		tools.addButton("video-camera", "Perspective camera", () -> sceneEditor.resetCamera(false));
 
+		tools.addToggle("th", "Show grid", function(v) {
+			showGrid = v;
+			axis.visible = v;
+			updateGrid();
+		}, showGrid);
 		tools.addColor("Background color", function(v) {
 			scene.engine.backgroundColor = v;
+			updateGrid();
 		}, scene.engine.backgroundColor);
 		tools.addToggle("refresh", "Auto synchronize", function(b) {
 			autoSync = b;
@@ -320,6 +342,8 @@ class FXScene extends FileView {
 		tools.addRange("Speed", function(v) {
 			scene.speed = v;
 		}, scene.speed);
+
+		updateGrid();
 	}
 
 	override function onDragDrop(items : Array<String>, isDrop : Bool) {
@@ -808,6 +832,36 @@ class FXScene extends FileView {
 			}
 		}
 		return menuItems;
+	}
+
+	function updateGrid() {
+		if(grid != null) {
+			grid.remove();
+			grid = null;
+		}
+
+		if(!showGrid)
+			return;
+
+		grid = new h3d.scene.Graphics(scene.s3d);
+		grid.scale(1);
+		grid.material.mainPass.setPassName("debuggeom");
+
+		var col = h3d.Vector.fromColor(scene.engine.backgroundColor);
+		var hsl = col.toColorHSL();
+		if(hsl.z > 0.5) hsl.z -= 0.1;
+		else hsl.z += 0.1;
+		col.makeColor(hsl.x, hsl.y, hsl.z);
+
+		grid.lineStyle(1.0, col.toColor(), 1.0);
+		for(ix in -10...11) {
+			grid.moveTo(ix, -10, 0);
+			grid.lineTo(ix, 10, 0);
+			grid.moveTo(-10, ix, 0);
+			grid.lineTo(10, ix, 0);
+
+		}
+		grid.lineStyle(0);
 	}
 
 	function onUpdate(dt:Float) {
