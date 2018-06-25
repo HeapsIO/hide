@@ -79,6 +79,9 @@ class Ide {
 		}
 		window.show(true);
 
+		if( props.global.get("hide") == null )
+			error("Failed to load defaultProps.json");
+
 		fileWatcher = new hide.tools.FileWatcher();
 
 		setProject(ideProps.currentProject);
