@@ -138,10 +138,9 @@ class EmitterObject extends h3d.scene.Object {
 	public var frameDivisionX : Int = 1;
 	public var frameDivisionY : Int = 1;
 	public var animationRepeat : Float = 1;
+	public var emitAngle : Float = 0.0;
 
-	public var emitAngle : Value;
 	public var emitRate : Value;
-	public var emitSize : Value;
 	public var alignVec: h3d.Vector;
 
 	public var instDef : InstanceDef;
@@ -184,8 +183,7 @@ class EmitterObject extends h3d.scene.Object {
 		parentInvMat.invert();
 		localMat.multiply(localMat, parentInvMat);
 
-		var shapeSize = evaluator.getFloat(emitSize, curTime);
-		var shapeAngle = hxd.Math.degToRad(evaluator.getFloat(emitAngle, curTime)) / 2.0;
+		var shapeAngle = hxd.Math.degToRad(emitAngle) / 2.0;
 		
 		var tmpq = new h3d.Quat();
 		var offset = new h3d.Vector();
@@ -221,9 +219,9 @@ class EmitterObject extends h3d.scene.Object {
 					offset.set(0, 0, 0);
 					var theta = random.rand() * Math.PI * 2;
 					var phi = shapeAngle * random.rand();
-					direction.x = Math.sin(phi) * Math.cos(theta);
-					direction.y = Math.sin(phi) * Math.sin(theta);
-					direction.z = Math.cos(phi);
+					direction.x = Math.cos(phi) * scaleX;
+					direction.y = Math.sin(phi) * Math.sin(theta) * scaleY;
+					direction.z = Math.sin(phi) * Math.cos(theta) * scaleZ;
 					direction.normalizeFast();
 			}
 
@@ -322,12 +320,11 @@ class Emitter extends Object3D {
 	}	
 
 	static var emitterParams : Array<ParamDef> = [
-		{ name: "lifeTime", t: PFloat(0, 10), def: 1.0, noanim: true },
-		{ name: "maxCount", t: PInt(0, 100), def: 20, noanim: true, },
-		{ name: "emitShape", t: PChoice(["Cone", "Disc", "Sphere"]), noanim: true, disp: "Shape", },
-		{ name: "emitAngle", t: PFloat(0, 360.0), noanim: true, disp: "Angle", },
+		{ name: "lifeTime", t: PFloat(0, 10), def: 1.0 },
+		{ name: "maxCount", t: PInt(0, 100), def: 20, },
+		{ name: "emitShape", t: PChoice(["Cone", "Disc", "Sphere"]), disp: "Shape", },
+		{ name: "emitAngle", t: PFloat(0, 360.0), disp: "Angle", },
 		{ name: "emitRate", t: PInt(0, 100), def: 5, disp: "Rate", },
-		{ name: "emitSize", t: PFloat(0, 10), def: 1.0 },
 		{ name: "camAlign", t: PVec(3, -1.0, 1.0), def: [0.,0.,0.] },
 
 		{ name: "frameCount", t: PInt(0), def: 0 },
@@ -337,7 +334,7 @@ class Emitter extends Object3D {
 	];
 
 	static var instanceParams : Array<ParamDef> = [
-		{ name: "speed", t: PVec(3, -10, 10), def: [5.,0.,0.] },
+		{ name: "speed", t: PVec(3, -10, 10), def: [0.,0.,0.] },
 		{ name: "scale", t: PFloat(0, 2.0), def: 1. },
 		{ name: "stretch", t: PVec(3, 0.0, 2.0), def: [1.,1.,1.] },
 		{ name: "rotation", t: PVec(3, 0, 360), def: [0.,0.,0.] },
@@ -467,9 +464,8 @@ class Emitter extends Object3D {
 		emitterObj.lifeTime = getParamVal("lifeTime");
 		emitterObj.maxCount = getParamVal("maxCount");
 		emitterObj.emitRate = makeParam(this, "emitRate");
-		emitterObj.emitSize = makeParam(this, "emitSize");
 		emitterObj.emitShape = getParamVal("emitShape");
-		emitterObj.emitAngle = makeParam(this, "emitAngle");
+		emitterObj.emitAngle = getParamVal("emitAngle");
 		emitterObj.alignVec = getParamVal("camAlign");
 		emitterObj.frameCount = getParamVal("frameCount");
 		emitterObj.frameDivisionX = getParamVal("frameDivisionX");
@@ -481,26 +477,52 @@ class Emitter extends Object3D {
 		if(debugShape != null)
 			debugShape.remove();
 
-		var mesh : h3d.scene.Mesh = null;
-		if(emitterObj.emitShape == Disc) {
-			var nsegments = 32;
-			var g = new h3d.scene.Graphics(emitterObj);
-			g.lineStyle(1, 0xffffff);
-			for(i in 0...nsegments) {
-				var c = hxd.Math.cos(i / (nsegments - 1) * hxd.Math.PI * 2.0);
-				var s = hxd.Math.sin(i / (nsegments - 1) * hxd.Math.PI * 2.0);
-				if(i == 0)
-					g.moveTo(0, c, s);
-				else
-					g.lineTo(0, c, s);
+		inline function circle(npts, f) {
+			for(i in 0...npts) {
+				var c = hxd.Math.cos(i / (npts - 1) * hxd.Math.PI * 2.0);
+				var s = hxd.Math.sin(i / (npts - 1) * hxd.Math.PI * 2.0);
+				f(i, c, s);
 			}
-			g.ignoreCollide = true;
-			mesh = g;
-		}
-		else if(emitterObj.emitShape == Sphere) {
-			mesh = new h3d.scene.Sphere(0xffffff, 1.0, true, emitterObj);
 		}
 
+		var mesh : h3d.scene.Mesh = null;
+		switch(emitterObj.emitShape) {
+			case Disc: {
+				var g = new h3d.scene.Graphics(emitterObj);
+				g.lineStyle(1, 0xffffff);
+				circle(32, function(i, c, s) {
+					if(i == 0)
+						g.moveTo(0, c, s);
+					else
+						g.lineTo(0, c, s);
+				});
+				g.ignoreCollide = true;
+				mesh = g;
+			}
+			case Cone: {
+				var g = new h3d.scene.Graphics(emitterObj);
+				var angle = hxd.Math.degToRad(getParamVal("emitAngle")) / 2.0;
+				var rad = hxd.Math.sin(angle);
+				var dist = hxd.Math.cos(angle);
+				g.lineStyle(1, 0xffffff);
+				circle(32, function(i, c, s) {
+					if(i == 0)
+						g.moveTo(dist, c * rad, s * rad);
+					else
+						g.lineTo(dist, c * rad, s * rad);
+				});
+				g.lineStyle(1, 0xffffff);
+				circle(4, function(i, c, s) {
+					g.moveTo(0, 0, 0);
+					g.lineTo(dist, c * rad, s * rad);
+				});
+				g.ignoreCollide = true;
+				mesh = g;
+			}
+			case Sphere:
+				mesh = new h3d.scene.Sphere(0xffffff, 1.0, true, emitterObj);	
+		}
+	
 		if(mesh != null) {
 			mesh.name = "_debugShape";
 			var mat = mesh.material;
