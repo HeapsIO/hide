@@ -134,6 +134,11 @@ class EmitterObject extends h3d.scene.Object {
 	public var lifeTime = 2.0;
 	public var emitShape : EmitShape = Disc;
 
+	public var frameCount : Int = 0;
+	public var frameDivisionX : Int = 1;
+	public var frameDivisionY : Int = 1;
+	public var animationRepeat : Float = 1;
+
 	public var emitAngle : Value;
 	public var emitRate : Value;
 	public var emitSize : Value;
@@ -153,6 +158,7 @@ class EmitterObject extends h3d.scene.Object {
 	var emitCount = 0;
 	var lastTime = -1.0;
 	var curTime = 0.0;
+	var renderTime = 0.0;
 	var evaluator : Evaluator;
 	var instances : Array<ParticleInstance> = [];
 
@@ -229,6 +235,30 @@ class EmitterObject extends h3d.scene.Object {
 			offset.transform(localMat);
 			part.setPosition(offset.x, offset.y, offset.z);
 
+			// Setup mats.
+			// Should we do this manually here or make a recursive makeInstance on the template?
+			var materials = particleTemplate.getAll(hide.prefab.Material);
+			for(mat in materials) {
+				mat.makeInstance(ctx);
+			}
+
+			// Animated textures animations
+			{
+				var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
+				if(frameCount > 1) {
+					var mesh = Std.instance(ctx.local3d, h3d.scene.Mesh);
+					if(mesh != null && mesh.material != null) {
+						var pshader = new h3d.shader.AnimatedTexture(mesh.material.texture, frameDivisionX, frameDivisionY, frameCount, frameCount * animationRepeat / lifeTime);
+						pshader.startTime = renderTime;
+						if(animationRepeat == 0) {
+							pshader.startFrame = random.random(frameCount);
+						}
+						mesh.material.mainPass.addShader(pshader);
+					}
+				}
+			}
+
+			// Setup shaders
 			part.shaderAnims = [];
 			var shaders = particleTemplate.getAll(hide.prefab.Shader);
 			for(shader in shaders) {
@@ -239,11 +269,6 @@ class EmitterObject extends h3d.scene.Object {
 				if(anim != null) {
 					part.shaderAnims.push(anim);
 				}
-			}
-
-			var materials = particleTemplate.getAll(hide.prefab.Material);
-			for(mat in materials) {
-				mat.makeInstance(ctx);
 			}
 		}
 		context.local3d = this;
@@ -271,6 +296,10 @@ class EmitterObject extends h3d.scene.Object {
 		curTime += dt;
 	}
 
+	override function sync( ctx : h3d.scene.RenderContext ) {
+		renderTime = ctx.time;
+	}
+
 	public function setTime(time: Float) {
 		if(time < lastTime || lastTime < 0) {
 			reset();
@@ -290,77 +319,29 @@ class Emitter extends Object3D {
 	public function new(?parent) {
 		super(parent);
 		props = { };
-	}
+	}	
 
 	static var emitterParams : Array<ParamDef> = [
-		{
-			name: "lifeTime",
-			t: PFloat(0, 10),
-			def: 1.0,
-			noanim: true
-		},
-		{
-			name: "maxCount",
-			t: PInt(0, 100),
-			def: 20,
-			noanim: true,
-		},
-		{
-			name: "emitShape",
-			t: PChoice(["Cone", "Disc", "Sphere"]),
-			noanim: true,
-			disp: "Shape",
-		},
-		{
-			name: "emitAngle",
-			t: PFloat(0, 360.0),
-			noanim: true,
-			disp: "Angle",
-		},
-		{
-			name: "emitRate",
-			t: PInt(0, 100),
-			def: 5,
-			disp: "Rate",
-		},
-		{
-			name: "emitSize",
-			t: PFloat(0, 10),
-			def: 1.0
-		},
-		{
-			name: "camAlign",
-			t: PVec(3, -1.0, 1.0),
-			def: [0.,0.,0.]
-		},
+		{ name: "lifeTime", t: PFloat(0, 10), def: 1.0, noanim: true },
+		{ name: "maxCount", t: PInt(0, 100), def: 20, noanim: true, },
+		{ name: "emitShape", t: PChoice(["Cone", "Disc", "Sphere"]), noanim: true, disp: "Shape", },
+		{ name: "emitAngle", t: PFloat(0, 360.0), noanim: true, disp: "Angle", },
+		{ name: "emitRate", t: PInt(0, 100), def: 5, disp: "Rate", },
+		{ name: "emitSize", t: PFloat(0, 10), def: 1.0 },
+		{ name: "camAlign", t: PVec(3, -1.0, 1.0), def: [0.,0.,0.] },
+
+		{ name: "frameCount", t: PInt(0), def: 0 },
+		{ name: "frameDivisionX", t: PInt(1), def: 1 },
+		{ name: "frameDivisionY", t: PInt(1), def: 1 },
+		{ name: "animationRepeat", t: PFloat(0, 2.0), def: 1.0 },
 	];
 
 	static var instanceParams : Array<ParamDef> = [
-		{
-			name: "speed",
-			t: PVec(3, -10, 10),
-			def: [5.,0.,0.]
-		},
-		{
-			name: "scale",
-			t: PFloat(0, 2.0),
-			def: 1.
-		},
-		{
-			name: "stretch",
-			t: PVec(3, 0.0, 2.0),
-			def: [1.,1.,1.]
-		},
-		{
-			name: "rotation",
-			t: PVec(3, 0, 360),
-			def: [0.,0.,0.]
-		},
-		{
-			name: "offset",
-			t: PVec(3, -10, 10),
-			def: [0.,0.,0.]
-		}
+		{ name: "speed", t: PVec(3, -10, 10), def: [5.,0.,0.] },
+		{ name: "scale", t: PFloat(0, 2.0), def: 1. },
+		{ name: "stretch", t: PVec(3, 0.0, 2.0), def: [1.,1.,1.] },
+		{ name: "rotation", t: PVec(3, 0, 360), def: [0.,0.,0.] },
+		{ name: "offset", t: PVec(3, -10, 10), def: [0.,0.,0.] }
 	];
 
 	static var PARAMS : Array<ParamDef> = {
@@ -404,6 +385,8 @@ class Emitter extends Object3D {
 
 	function getParamVal(name: String, rand: Bool=false) : Dynamic {
 		var param = PARAMS.find(p -> p.name == name);
+		if(param == null)
+			return Reflect.field(props, name);
 		var isVector = switch(param.t) {
 			case PVec(_): true;
 			default: false;
@@ -488,6 +471,10 @@ class Emitter extends Object3D {
 		emitterObj.emitShape = getParamVal("emitShape");
 		emitterObj.emitAngle = makeParam(this, "emitAngle");
 		emitterObj.alignVec = getParamVal("camAlign");
+		emitterObj.frameCount = getParamVal("frameCount");
+		emitterObj.frameDivisionX = getParamVal("frameDivisionX");
+		emitterObj.frameDivisionY = getParamVal("frameDivisionY");
+		emitterObj.animationRepeat = getParamVal("animationRepeat");
 
 		#if editor
 		var debugShape = emitterObj.find(c -> if(c.name == "_debugShape") c else null);
@@ -568,8 +555,8 @@ class Emitter extends Object3D {
 		var emGroup = new Element('<div class="group" name="Emitter"></div>');
 		emGroup.append(hide.comp.PropsEditor.makePropsList(params));
 		var props = ctx.properties.add(emGroup, this.props, onChange);
-		// angleProp = ctx.properties.fields.find(f -> f.fname == "emitAngle");
 
+		// Instances
 		{
 			var instGroup = new Element('<div class="group" name="Particles"></div>');
 			var dl = new Element('<dl>').appendTo(instGroup);
