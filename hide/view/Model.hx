@@ -19,6 +19,7 @@ class Model extends FileView {
 	var timeline : h2d.Graphics;
 	var timecursor : h2d.Bitmap;
 	var currentAnimation : { file : String, name : String };
+	var cameraMove : Void -> Void;
 
 	override function onDisplay() {
 		element.html('
@@ -298,8 +299,32 @@ class Model extends FileView {
 			if( obj.currentAnimation != null ) obj.currentAnimation.speed = v;
 		}, 1, 0, 2);
 
+		initConsole();
+
 		scene.onResize = buildTimeline;
 		setAnimation(null);
+	}
+
+	function initConsole() {
+		var c = new h2d.Console(hxd.res.DefaultFont.get(), scene.s2d);
+		c.addCommand("rotate",[{ name : "speed", t : AFloat }], function(r) {
+			cameraMove = function() {
+				var cam = scene.s3d.camera;
+				var dir = cam.pos.sub(cam.target);
+				dir.z = 0;
+				var angle = Math.atan2(dir.y, dir.x);
+				angle += r * hxd.Timer.tmod * 0.01;
+				var ray = dir.length();
+				cam.pos.set(
+					Math.cos(angle) * ray + cam.target.x,
+					Math.sin(angle) * ray + cam.target.y,
+					cam.pos.z);
+				control.loadFromCamera();
+			};
+		});
+		c.addCommand("stop", [], function() {
+			cameraMove = null;
+		});
 	}
 
 	override function buildTabMenu() {
@@ -425,6 +450,8 @@ class Model extends FileView {
 		if( timeline != null ) {
 			timecursor.x = Std.int((obj.currentAnimation.frame / obj.currentAnimation.frameCount) * (scene.s2d.width - timecursor.tile.width));
 		}
+		if( cameraMove != null )
+			cameraMove();
 	}
 
 	static var _ = FileTree.registerExtension(Model,["hmd","hsd","fbx"],{ icon : "cube" });
