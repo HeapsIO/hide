@@ -19,6 +19,7 @@ class Model extends FileView {
 	var timeline : h2d.Graphics;
 	var timecursor : h2d.Bitmap;
 	var currentAnimation : { file : String, name : String };
+	var cameraMove : Void -> Void;
 
 	override function onDisplay() {
 		element.html('
@@ -61,18 +62,20 @@ class Model extends FileView {
 			</div>
 			<dl>
 				<dt></dt><dd><input type="button" value="Reset Defaults" class="reset"/></dd>
+				<dt></dt><dd><input type="button" value="Save" class="save"/></dd>
 			</dl>
 			<br/>
 		'));
 
 		properties.addMaterial(m, e.find(".group > .content"));
 		e.find(".reset").click(function(_) {
-			var cur = h3d.mat.MaterialSetup.current;
 			var old = m.props;
 			m.props = m.getDefaultModelProps();
-			cur.saveModelMaterial(m); // should erase
 			selectMaterial(m);
 			undo.change(Field(m, "props", old), selectMaterial.bind(m));
+		});
+		e.find(".save").click(function(_) {
+			h3d.mat.MaterialSetup.current.saveMaterialProps(m);
 		});
 	}
 
@@ -229,14 +232,16 @@ class Model extends FileView {
 			control.loadFromCamera();
 		});
 
-		tools.addButton("gears", "Renderer Properties", function() {
+		function renderProps() {
 			properties.clear();
 
 			var renderer = scene.s3d.renderer;
 			var group = new Element('<div class="group" name="Renderer"></div>');
 			renderer.editProps().appendTo(group);
-			properties.add(group, renderer.props, function(_) renderer.refreshProps());
-
+			properties.add(group, renderer.props, function(_) {
+				renderer.refreshProps();
+				if( !properties.isTempChange ) renderProps();
+			});
 
 			var lprops = {
 				power : Math.sqrt(light.color.r),
@@ -252,7 +257,8 @@ class Model extends FileView {
 				light.color.set(p, p, p);
 			});
 
-		});
+		}
+		tools.addButton("gears", "Renderer Properties", renderProps);
 
 		var axis = new h3d.scene.Graphics(scene.s3d);
 		axis.lineStyle(1,0xFF0000);
@@ -293,8 +299,32 @@ class Model extends FileView {
 			if( obj.currentAnimation != null ) obj.currentAnimation.speed = v;
 		}, 1, 0, 2);
 
+		initConsole();
+
 		scene.onResize = buildTimeline;
 		setAnimation(null);
+	}
+
+	function initConsole() {
+		var c = new h2d.Console(hxd.res.DefaultFont.get(), scene.s2d);
+		c.addCommand("rotate",[{ name : "speed", t : AFloat }], function(r) {
+			cameraMove = function() {
+				var cam = scene.s3d.camera;
+				var dir = cam.pos.sub(cam.target);
+				dir.z = 0;
+				var angle = Math.atan2(dir.y, dir.x);
+				angle += r * hxd.Timer.tmod * 0.01;
+				var ray = dir.length();
+				cam.pos.set(
+					Math.cos(angle) * ray + cam.target.x,
+					Math.sin(angle) * ray + cam.target.y,
+					cam.pos.z);
+				control.loadFromCamera();
+			};
+		});
+		c.addCommand("stop", [], function() {
+			cameraMove = null;
+		});
 	}
 
 	override function buildTabMenu() {
@@ -420,6 +450,8 @@ class Model extends FileView {
 		if( timeline != null ) {
 			timecursor.x = Std.int((obj.currentAnimation.frame / obj.currentAnimation.frameCount) * (scene.s2d.width - timecursor.tile.width));
 		}
+		if( cameraMove != null )
+			cameraMove();
 	}
 
 	static var _ = FileTree.registerExtension(Model,["hmd","hsd","fbx"],{ icon : "cube" });

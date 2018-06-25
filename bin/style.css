@@ -522,6 +522,18 @@ input[type=checkbox]:checked:after {
   margin-left: -17px;
   margin-top: 2px;
 }
+.hide-properties dl dl dt {
+  width: 50px;
+}
+.hide-properties dl dl dd {
+  width: 140px;
+}
+.hide-properties dl dl input[type=range] {
+  width: 90px;
+}
+.hide-properties dl dl .hide-range input[type=text] {
+  width: 30px;
+}
 .hide-properties .group {
   margin-bottom: 5px;
 }

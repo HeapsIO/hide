@@ -24,6 +24,7 @@ class PropsEditor extends Component {
 	public var undo : hide.ui.UndoHistory;
 	public var lastChange : Float = 0.;
 	public var fields(default, null) : Array<PropsField>;
+	public var isTempChange = false;
 
 	public function new(?undo,?parent,?el) {
 		super(parent,el);
@@ -40,8 +41,6 @@ class PropsEditor extends Component {
 	public function addMaterial( m : h3d.mat.Material, ?parent : Element, ?onChange ) {
 		var def = m.editProps();
 		def = add(def, m.props, function(name) {
-			if( m.model != null )
-				h3d.mat.MaterialSetup.current.saveModelMaterial(m);
 			m.refreshProps();
 			def.remove();
 			addMaterial(m, parent, onChange);
@@ -162,8 +161,10 @@ class PropsEditor extends Component {
 		for( f in e.find("[field]").elements() ) {
 			var f = new PropsField(this, f, context);
 			f.onChange = function(undo) {
+				isTempChange = f.isTempChange;
 				lastChange = haxe.Timer.stamp();
 				if( onChange != null ) onChange(@:privateAccess f.fname);
+				isTempChange = false;
 			};
 			fields.push(f);
 
@@ -196,6 +197,7 @@ class PropsEditor extends Component {
 class PropsField extends Component {
 
 	public var fname : String;
+	public var isTempChange : Bool;
 	var props : PropsEditor;
 	var context : Dynamic;
 	var current : Dynamic;
@@ -389,6 +391,7 @@ class PropsField extends Component {
 			current = beforeTempChange.value;
 			beforeTempChange = null;
 		}
+		isTempChange = tempChange;
 		if( tempChange ) {
 			tempChange = false;
 			if( beforeTempChange == null ) beforeTempChange = { value : current };
