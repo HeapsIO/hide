@@ -10,11 +10,15 @@ typedef PropTrackDef = {
 	?clamp: Array<Float>
 };
 
+@:access(hide.view.FXScene)
 class FXEditContext extends hide.prefab.EditContext {
 	var parent : FXScene;
 	public function new(parent, context) {
 		super(context);
 		this.parent = parent;
+	}
+	override function onChange(p, propName) {
+		parent.onPrefabChange(p, propName);
 	}
 }
 
@@ -29,6 +33,11 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 	override function onSceneReady() {
 		super.onSceneReady();
 		parent.onSceneReady();
+	}
+
+	override function onPrefabChange(p: PrefabElement, ?pname: String) {
+		super.onPrefabChange(p, pname);
+		parent.onPrefabChange(p, pname);
 	}
 
 	override function update(dt) {
@@ -344,6 +353,13 @@ class FXScene extends FileView {
 		}, scene.speed);
 
 		updateGrid();
+	}
+
+	function onPrefabChange(p: PrefabElement, ?pname: String) {
+		if(p == data) {
+			previewMax = hxd.Math.min(data.duration, previewMax);
+			refreshTimeline(false);
+		}
 	}
 
 	override function onDragDrop(items : Array<String>, isDrop : Bool) {
@@ -903,6 +919,7 @@ class FXScene extends FileView {
 
 
 	static function upperCase(prop: String) {
+		if(prop == null) return "";
 		return prop.charAt(0).toUpperCase() + prop.substr(1);
 	}
 
