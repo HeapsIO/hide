@@ -799,20 +799,20 @@ class FXScene extends FileView {
 		}
 
 		var hslaTracks : Array<PropTrackDef> = [{name: "h"}, {name: "s", clamp: [0., 1.]}, {name: "l", clamp: [0., 1.]}, {name: "a", clamp: [0., 1.]}];
-		var xyzTracks : Array<PropTrackDef> = [{name: "x"}, {name: "y"}, {name: "z"}];
+		var xyzTracks : Void -> Array<PropTrackDef> = () -> [{name: "x"}, {name: "y"}, {name: "z"}];
 
 		if(objElt != null) {
 			menuItems.push({
 				label: "Position",
-				menu: groupedTracks("position", xyzTracks),
+				menu: groupedTracks("position", xyzTracks()),
 			});
 			menuItems.push({
 				label: "Rotation",
-				menu: groupedTracks("rotation", xyzTracks),
+				menu: groupedTracks("rotation", xyzTracks()),
 			});
 			menuItems.push({
 				label: "Scale",
-				menu: groupedTracks("scale", xyzTracks),
+				menu: groupedTracks("scale", xyzTracks()),
 			});
 			menuItems.push({
 				label: "Color",

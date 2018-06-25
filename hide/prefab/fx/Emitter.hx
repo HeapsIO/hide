@@ -31,6 +31,7 @@ typedef InstanceDef = {
 	localSpeed: Value,
 	localOffset: Value,
 	scale: Value,
+	stretch: Value,
 	rotation: Value,
 }
 
@@ -80,7 +81,8 @@ private class ParticleInstance extends h3d.scene.Object {
 		var offset = evaluator.getVector(def.localOffset, t);
 		child.setPosition(offset.x, offset.y, offset.z);
 
-		var scaleVec = evaluator.getVector(def.scale, t);
+		var scaleVec = evaluator.getVector(def.stretch, t);
+		scaleVec.scale3(evaluator.getFloat(def.scale, t));
 		child.scaleX = scaleVec.x;
 		child.scaleY = scaleVec.y;
 		child.scaleZ = scaleVec.z;
@@ -338,6 +340,11 @@ class Emitter extends Object3D {
 		},
 		{
 			name: "scale",
+			t: PFloat(0, 10),
+			def: 1.
+		},
+		{
+			name: "stretch",
 			t: PVec(3),
 			def: [1.,1.,1.]
 		},
@@ -375,7 +382,7 @@ class Emitter extends Object3D {
 
 	override function load( obj : Dynamic ) {
 		super.load(obj);
-		for(param in PARAMS) {
+		for(param in emitterParams) {
 			if(Reflect.hasField(obj, param.name))
 				Reflect.setField(props, param.name, Reflect.field(obj, param.name));
 			else if(param.def != null)
@@ -466,6 +473,7 @@ class Emitter extends Object3D {
 			localSpeed: makeParam(template, "speed"),
 			localOffset: makeParam(template, "offset"),
 			scale: makeParam(template, "scale"),
+			stretch: makeParam(template, "stretch"),
 			rotation: makeParam(template, "rotation"),
 		};
 

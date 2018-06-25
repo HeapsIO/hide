@@ -173,7 +173,7 @@ class PropsEditor extends Component {
 				var dd = f.element.parent().parent("dd");
 				var dt = dd.prev("dt");
 				var tooltip = 'Click to reset ($def)\nCtrl+Click to round';
-				var button = dt.wrapInner('<input type="button" tabindex="-1" value="${dt.text()}" title="$tooltip"/>');
+				var button = dt.wrapInner('<input type="button" tabindex="-1" value="${upperCase(dt.text())}" title="$tooltip"/>');
 				button.click(function(e) {
 					var range = @:privateAccess f.range;
 					if(range != null) {
