@@ -55,40 +55,45 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 			return parent.getNewTrackMenu(current);
 		}
 		else {
+			var parentElt = current == null ? sceneData : current;
 			var registered = new Array<hide.comp.ContextMenu.ContextMenuItem>();
 
+			// Animations
 			registered.push({
 				label: "Animation",
 				menu: parent.getNewTrackMenu(current)
 			});
 
-			var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
-			var allowed = ["model", "object", "shader", "emitter", "constraint", "polygon", "material"];
-			for( ptype in allowed ) {
-				var pcl = allRegs.get(ptype);
-				var props = Type.createEmptyInstance(pcl).getHideProps();
-				registered.push({
-					label : props.name,
-					click : function() {
+			// Shaders
+			{
+				var custom = getNewTypeMenuItem("shader", parentElt);
+				custom.label = "Custom...";
 
-						function make() {
-							var p = Type.createInstance(pcl, [current == null ? sceneData : current]);
-							@:privateAccess p.type = ptype;
-							autoName(p);
-							return p;
+				function shaderItem(name, path) : hide.comp.ContextMenu.ContextMenuItem {
+					return {
+						label : name,
+						click : function() {	
+							var s = new hide.prefab.Shader(parentElt);
+							s.source = path;
+							s.name = name;
+							addObject(s);
 						}
-
-						if( props.fileSource != null )
-							ide.chooseFile(props.fileSource, function(path) {
-								if( path == null ) return;
-								var p = make();
-								p.source = path;
-								addObject(p);
-							});
-						else
-							addObject(make());
 					}
+				}
+
+				registered.push({
+					label: "Shaders",
+					menu: [
+						custom,
+						shaderItem("AnimatedTexture", "h3d.shader.AnimatedTexture")
+					]
 				});
+			}
+
+			// Other prefabs
+			var allowed = ["model", "object", "emitter", "constraint", "polygon", "material"];
+			for( ptype in allowed ) {
+				registered.push(getNewTypeMenuItem(ptype, parentElt));
 			}
 			return registered;
 		}

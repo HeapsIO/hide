@@ -23,30 +23,7 @@ private class PrefabSceneEditor extends hide.comp.SceneEditor {
 		var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
 		for( ptype in allRegs.keys() ) {
 			if( ptype == "prefab" ) continue;
-			var pcl = allRegs.get(ptype);
-			var props = Type.createEmptyInstance(pcl).getHideProps();
-			registered.push({
-				label : props.name,
-				click : function() {
-
-					function make() {
-						var p = Type.createInstance(pcl, [current == null ? sceneData : current]);
-						@:privateAccess p.type = ptype;
-						autoName(p);
-						return p;
-					}
-
-					if( props.fileSource != null )
-						ide.chooseFile(props.fileSource, function(path) {
-							if( path == null ) return;
-							var p = make();
-							p.source = path;
-							addObject(p);
-						});
-					else
-						addObject(make());
-				}
-			});
+			registered.push(getNewTypeMenuItem(ptype, current == null ? sceneData : current));
 		}
 		return registered;
 	}

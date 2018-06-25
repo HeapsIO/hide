@@ -41,6 +41,7 @@ class Shader extends Prefab {
 
 	public function new(?parent) {
 		super(parent);
+		type = "shader";
 		props = {};
 	}
 	
@@ -122,7 +123,10 @@ class Shader extends Prefab {
 		#if editor
 		if(shaderDef == null) {
 			fixSourcePath();
-			var path = haxe.io.Path.withoutExtension(haxe.io.Path.withoutExtension(source));
+			var path = source;
+			if(StringTools.endsWith(path, ".hx")) {
+				path = path.substr(0, -3);
+			}
 			shaderDef = ctx.loadShader(path);
 		}
 		if(shaderDef == null)

@@ -174,30 +174,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		}
 
 		for( ptype in allowed ) {
-			var pcl = allRegs.get(ptype);
-			var props = Type.createEmptyInstance(pcl).getHideProps();
-			newItems.push({
-				label : props.name,
-				click : function() {
-
-					function make(?path) {
-						var p = Type.createInstance(pcl, [current == null ? sceneData : current]);
-						@:privateAccess p.type = ptype;
-						if(path != null)
-							p.source = path;
-						return p;
-					}
-
-					if( props.fileSource != null )
-						ide.chooseFile(props.fileSource, function(path) {
-							if( path == null ) return;
-							var p = make(path);
-							setup(p);
-						});
-					else
-						setup(make());
-				}
-			});
+			newItems.push(getNewTypeMenuItem(ptype, current == null ? sceneData : current));
 		}
 
 		function addNewInstances() {

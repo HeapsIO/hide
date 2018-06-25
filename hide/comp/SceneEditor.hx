@@ -1081,33 +1081,37 @@ class SceneEditor {
 		var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
 		var allowed = ["model", "object"];
 		for( ptype in allowed ) {
-			var pcl = allRegs.get(ptype);
-			var props = Type.createEmptyInstance(pcl).getHideProps();
-			newItems.push({
-				label : props.name,
-				click : function() {
-
-					function make(?path) {
-						var p = Type.createInstance(pcl, [current == null ? sceneData : current]);
-						@:privateAccess p.type = ptype;
-						if(path != null)
-							p.source = path;
-						autoName(p);
-						return p;
-					}
-
-					if( props.fileSource != null )
-						ide.chooseFile(props.fileSource, function(path) {
-							if( path == null ) return;
-							var p = make(path);
-							addObject(p);
-						});
-					else
-						addObject(make());
-				}
-			});
+			newItems.push(getNewTypeMenuItem(ptype, current));
 		}
 		return newItems;
+	}
+
+	function getNewTypeMenuItem(ptype: String, parent: PrefabElement) : hide.comp.ContextMenu.ContextMenuItem {
+		var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
+		var pcl = allRegs.get(ptype);
+		var props = Type.createEmptyInstance(pcl).getHideProps();
+		return {
+			label : props.name,
+			click : function() {
+				function make(?path) {
+					var p = Type.createInstance(pcl, [parent]);
+					@:privateAccess p.type = ptype;
+					if(path != null)
+						p.source = path;
+					autoName(p);
+					return p;
+				}
+
+				if( props.fileSource != null )
+					ide.chooseFile(props.fileSource, function(path) {
+						if( path == null ) return;
+						var p = make(path);
+						addObject(p);
+					});
+				else
+					addObject(make());
+			}
+		};
 	}
 
 	public function getZ(x: Float, y: Float) {
