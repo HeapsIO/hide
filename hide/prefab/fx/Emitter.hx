@@ -32,7 +32,6 @@ typedef InstanceDef = {
 	localOffset: Value,
 	scale: Value,
 	rotation: Value,
-	?alignVec: h3d.Vector
 }
 
 typedef ShaderAnims = Array<hide.prefab.Shader.ShaderAnimation>;
@@ -94,8 +93,9 @@ private class ParticleInstance extends h3d.scene.Object {
 	}
 
 	function faceCamera(cam : h3d.Camera) {
-		if(def.alignVec != null && def.alignVec.lengthSq() > 0.01) {
-			var local = def.alignVec.clone();
+		var align = emitter.alignVec;
+		if(align != null && align.lengthSq() > 0.01) {
+			var local = align.clone();
 			local.transform3x3(getAbsPos());
 			local.normalize();
 			var delta : h3d.Vector = cam.pos.sub(absPos.getPosition());
@@ -135,6 +135,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var emitAngle : Value;
 	public var emitRate : Value;
 	public var emitSize : Value;
+	public var alignVec: h3d.Vector;
 
 	public var instDef : InstanceDef;
 
@@ -284,11 +285,6 @@ class Emitter extends Object3D {
 	public function new(?parent) {
 		super(parent);
 		props = { };
-
-		for(param in PARAMS) {
-			if(param.def != null)
-				Reflect.setField(props, param.name, param.def);
-		}
 	}
 
 	static var emitterParams : Array<ParamDef> = [
@@ -326,6 +322,11 @@ class Emitter extends Object3D {
 			name: "emitSize",
 			t: PFloat(0, 10),
 			def: 1.0
+		},
+		{
+			name: "camAlign",
+			t: PVec(3, -1.0, 1.0),
+			def: [0.,0.,0.]
 		},
 	];
 
@@ -375,9 +376,10 @@ class Emitter extends Object3D {
 	override function load( obj : Dynamic ) {
 		super.load(obj);
 		for(param in PARAMS) {
-			if(Reflect.hasField(obj, param.name)) {
+			if(Reflect.hasField(obj, param.name))
 				Reflect.setField(props, param.name, Reflect.field(obj, param.name));
-			}
+			else if(param.def != null)
+				Reflect.setField(props, param.name, param.def);
 		}
 	}
 
@@ -457,7 +459,6 @@ class Emitter extends Object3D {
 			localOffset: makeParam(template, "offset"),
 			scale: makeParam(template, "scale"),
 			rotation: makeParam(template, "rotation"),
-			alignVec: null, //new h3d.Vector(1,0,0)
 		};
 
 		emitterObj.particleTemplate = template;
@@ -467,6 +468,7 @@ class Emitter extends Object3D {
 		emitterObj.emitSize = makeParam(this, "emitSize");
 		emitterObj.emitShape = getParamVal("emitShape");
 		emitterObj.emitAngle = makeParam(this, "emitAngle");
+		emitterObj.alignVec = getParamVal("camAlign");
 
 		#if editor
 		var debugShape = emitterObj.find(c -> if(c.name == "_debugShape") c else null);
