@@ -251,6 +251,9 @@ class EmitterObject extends h3d.scene.Object {
 	}
 
 	function tick(dt: Float) {
+		if(emitRate == null || emitRate == VZero)
+			return;
+
 		var emitTarget = evaluator.getSum(emitRate, curTime);
 		var delta = hxd.Math.floor(emitTarget - emitCount);
 		doEmit(delta);
@@ -340,12 +343,12 @@ class Emitter extends Object3D {
 		},
 		{
 			name: "scale",
-			t: PFloat(0, 10),
+			t: PFloat(0, 2.0),
 			def: 1.
 		},
 		{
 			name: "stretch",
-			t: PVec(3),
+			t: PVec(3, 0.0, 2.0),
 			def: [1.,1.,1.]
 		},
 		{
@@ -463,9 +466,9 @@ class Emitter extends Object3D {
 						makeVal(baseval.y, getCurve(param.name + ".y"), randVal != null ? randVal.y : 0.0, getCurve(param.name + ".y.rand")),
 						makeVal(baseval.z, getCurve(param.name + ".z"), randVal != null ? randVal.z : 0.0, getCurve(param.name + ".z.rand")));
 				default:
-					var baseval : Float = getParamVal(param.name);
+					var baseval : Null<Float> = getParamVal(param.name);
 					var randVal : Null<Float> = getParamVal(param.name, true);
-					return makeVal(baseval, getCurve(param.name), randVal != null ? randVal : 0.0, getCurve(param.name + ".rand"));
+					return makeVal(baseval != null ? baseval : 0.0, getCurve(param.name), randVal != null ? randVal : 0.0, getCurve(param.name + ".rand"));
 			}
 		}
 
