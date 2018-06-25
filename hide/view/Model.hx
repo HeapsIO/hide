@@ -61,18 +61,20 @@ class Model extends FileView {
 			</div>
 			<dl>
 				<dt></dt><dd><input type="button" value="Reset Defaults" class="reset"/></dd>
+				<dt></dt><dd><input type="button" value="Save" class="save"/></dd>
 			</dl>
 			<br/>
 		'));
 
 		properties.addMaterial(m, e.find(".group > .content"));
 		e.find(".reset").click(function(_) {
-			var cur = h3d.mat.MaterialSetup.current;
 			var old = m.props;
 			m.props = m.getDefaultModelProps();
-			cur.saveModelMaterial(m); // should erase
 			selectMaterial(m);
 			undo.change(Field(m, "props", old), selectMaterial.bind(m));
+		});
+		e.find(".save").click(function(_) {
+			h3d.mat.MaterialSetup.current.saveMaterialProps(m);
 		});
 	}
 

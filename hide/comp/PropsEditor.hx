@@ -39,8 +39,6 @@ class PropsEditor extends Component {
 	public function addMaterial( m : h3d.mat.Material, ?parent : Element, ?onChange ) {
 		var def = m.editProps();
 		def = add(def, m.props, function(name) {
-			if( m.model != null )
-				h3d.mat.MaterialSetup.current.saveModelMaterial(m);
 			m.refreshProps();
 			def.remove();
 			addMaterial(m, parent, onChange);
