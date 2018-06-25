@@ -486,7 +486,7 @@ input[type=checkbox]:checked:after {
   color: #aaa;
   user-select: none;
   text-transform: capitalize;
-  cursor: default;
+  cursor: pointer;
 }
 .hide-properties input {
   width: 190px;

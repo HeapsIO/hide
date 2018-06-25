@@ -379,7 +379,7 @@ class Emitter extends Object3D {
 			if(Reflect.hasField(obj, param.name))
 				Reflect.setField(props, param.name, Reflect.field(obj, param.name));
 			else if(param.def != null)
-				Reflect.setField(props, param.name, param.def);
+				resetParam(param);
 		}
 	}
 
@@ -407,6 +407,14 @@ class Emitter extends Object3D {
 		if(isVector)
 			return h3d.Vector.fromArray(val);
 		return val;
+	}
+
+	function resetParam(param: ParamDef) {
+		var a = Std.instance(param.def, Array);
+		if(a != null)
+			Reflect.setField(props, param.name, a.copy());
+		else
+			Reflect.setField(props, param.name, param.def);
 	}
 
 	public function applyParams(emitterObj: EmitterObject) {
@@ -557,12 +565,36 @@ class Emitter extends Object3D {
 			for(p in instanceParams) {
 				var dt = new Element('<dt>${p.name}</dt>').appendTo(dl);
 				var dd = new Element('<dd>').appendTo(dl);
+
+				function addUndo() {
+					ctx.properties.undo.change(Field(this.props, p.name, Reflect.field(this.props, p.name)), function() {
+						refresh();
+					});
+				}
+
 				if(Reflect.hasField(this.props, p.name)) {
 					hide.comp.PropsEditor.makePropEl(p, dd);
+					dt.contextmenu(function(e) {
+						e.preventDefault();
+						new hide.comp.ContextMenu([
+							{ label : "Reset", click : function() {
+								addUndo();
+								resetParam(p);
+								refresh();
+							} },
+							{ label : "Remove", click : function() {
+								addUndo();
+								Reflect.deleteField(this.props, p.name);
+								refresh();
+							} },
+						]);
+						return false;
+					});
 				}
 				else {
 					var btn = new Element('<input type="button" value="+"></input>').appendTo(dd);
 					btn.click(function(e) {
+						//addUndo();
 						Reflect.setField(this.props, p.name, p.def);
 						refresh();
 					});
@@ -579,6 +611,22 @@ class Emitter extends Object3D {
 						name: randProp(p.name),
 						t: p.t,
 						def: randDef}, dd);
+					dt.contextmenu(function(e) {
+						e.preventDefault();
+						new hide.comp.ContextMenu([
+							{ label : "Reset", click : function() {
+								addUndo();
+								Reflect.setField(this.props, randProp(p.name), randDef);
+								refresh();
+							} },
+							{ label : "Remove", click : function() {
+								addUndo();
+								Reflect.deleteField(this.props, randProp(p.name));
+								refresh();
+							} },
+						]);
+						return false;
+					});
 				}
 				else {
 					var btn = new Element('<input type="button" value="+"></input>').appendTo(dd);
