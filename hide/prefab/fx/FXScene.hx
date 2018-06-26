@@ -208,7 +208,7 @@ class FXScene extends Library {
 		duration = obj.duration;
 	}
 
-	function getObjAnimations(ctx:Context, elt: PrefabElement, anims: Array<ObjectAnimation>) {
+	static function getObjAnimations(ctx:Context, elt: PrefabElement, anims: Array<ObjectAnimation>) {
 		if(Std.instance(elt, hide.prefab.fx.Emitter) == null) {
 			// Don't extract animations for children of Emitters
 			for(c in elt.children) {
@@ -265,7 +265,7 @@ class FXScene extends Library {
 			anims.push(anim);
 	}
 
-	function getShaderAnims(ctx: Context, elt: PrefabElement, anims: Array<ShaderAnimation>) {
+	static function getShaderAnims(ctx: Context, elt: PrefabElement, anims: Array<ShaderAnimation>) {
 		if(Std.instance(elt, hide.prefab.fx.Emitter) == null) {
 			for(c in elt.children) {
 				getShaderAnims(ctx, c, anims);

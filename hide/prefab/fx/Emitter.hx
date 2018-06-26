@@ -35,6 +35,7 @@ typedef InstanceDef = {
 	scale: Value,
 	stretch: Value,
 	rotation: Value,
+	color: Value
 }
 
 typedef ShaderAnims = Array<hide.prefab.Shader.ShaderAnimation>;
@@ -43,6 +44,7 @@ typedef ShaderAnims = Array<hide.prefab.Shader.ShaderAnimation>;
 private class ParticleInstance extends h3d.scene.Object {
 	var emitter : EmitterObject;
 	var evaluator : Evaluator;
+
 	public var life = 0.0;
 
 	public var curVelocity = new h3d.Vector();
@@ -91,6 +93,11 @@ private class ParticleInstance extends h3d.scene.Object {
 
 		for(anim in shaderAnims) {
 			anim.setTime(t);
+		}
+
+		var mesh = Std.instance(child, h3d.scene.Mesh);
+		if(mesh != null && def.color != null) {
+			mesh.material.color = evaluator.getVector(def.color, t);
 		}
 
 		life += dt;
@@ -472,12 +479,20 @@ class Emitter extends Object3D {
 			}
 		}
 
+		function makeColor(scope: Prefab, name: String) {
+			var curves = hide.prefab.Curve.getCurves(scope, name);
+			if(curves == null || curves.length == 0)
+				return null;
+			return hide.prefab.Curve.getColorValue(curves);
+		}
+
 		emitterObj.instDef = {
 			localSpeed: makeParam(this, "instSpeed"),
 			localOffset: makeParam(this, "instOffset"),
 			scale: makeParam(this, "instScale"),
 			stretch: makeParam(this, "instStretch"),
 			rotation: makeParam(this, "instRotation"),
+			color: makeColor(template, "color")
 		};
 
 		emitterObj.particleTemplate = template;
