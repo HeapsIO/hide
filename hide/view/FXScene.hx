@@ -903,18 +903,22 @@ class FXScene extends FileView {
 	}
 
 	function onUpdate(dt:Float) {
+		var anim : hide.prefab.fx.FXScene.FXAnimation = null;
+		var ctx = sceneEditor.getContext(data);
+		if(ctx != null && ctx.local3d != null) {
+			anim = cast ctx.local3d;
+		}
 		if(!pauseButton.isDown()) {
 			currentTime += scene.speed * dt / hxd.Timer.wantedFPS;
 			if(timeLineEl != null)
 				timeLineEl.css({left: xt(currentTime)});
 			if(currentTime >= previewMax) {
 				currentTime = previewMin;
+				anim.setRandSeed(Std.random(0xFFFFFF));
 			}
 		}
 		
-		var ctx = sceneEditor.getContext(data);
-		if(ctx != null && ctx.local3d != null) {
-			var anim : hide.prefab.fx.FXScene.FXAnimation = cast ctx.local3d;
+		if(anim != null) {
 			anim.setTime(currentTime);
 		}
 

@@ -107,10 +107,20 @@ class FXAnimation extends h3d.scene.Object {
 	public var objects: Array<ObjectAnimation> = [];
 	public var shaderAnims : Array<ShaderAnimation> = [];
 	public var emitters : Array<hide.prefab.fx.Emitter.EmitterObject> = [];
-	var evaluator = new Evaluator(new hxd.Rand(0));
+	var evaluator : Evaluator; 
+	var random : hxd.Rand;
 
 	public function new(?parent) {
 		super(parent);
+		random = new hxd.Rand(Std.random(0xFFFFFF));
+		evaluator = new Evaluator(random);
+	}
+
+	public function setRandSeed(seed: Int) {
+		random.init(seed);
+		for(em in emitters) {
+			em.setRandSeed(seed);
+		}
 	}
 
 	static var tempMat = new h3d.Matrix();

@@ -147,12 +147,14 @@ class EmitterObject extends h3d.scene.Object {
 
 	public function new(?parent) {
 		super(parent);
-		random = new hxd.Rand(0);
+		randomSeed = Std.random(0xFFFFFF);
+		random = new hxd.Rand(randomSeed);
 		evaluator = new Evaluator(random);
 		reset();
 	}
 
 	var random: hxd.Rand;
+	var randomSeed = 0;
 	var context : hide.prefab.Context;
 	var emitCount = 0;
 	var lastTime = -1.0;
@@ -162,7 +164,7 @@ class EmitterObject extends h3d.scene.Object {
 	var instances : Array<ParticleInstance> = [];
 
 	function reset() {
-		random.init(0);
+		random.init(randomSeed);
 		curTime = 0.0;
 		lastTime = 0.0;
 		emitCount = 0;
@@ -296,6 +298,11 @@ class EmitterObject extends h3d.scene.Object {
 
 	override function sync( ctx : h3d.scene.RenderContext ) {
 		renderTime = ctx.time;
+	}
+
+	public function setRandSeed(seed: Int) {
+		randomSeed = seed;
+		reset();
 	}
 
 	public function setTime(time: Float) {
