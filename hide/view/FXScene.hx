@@ -7,7 +7,8 @@ import hide.prefab.Curve;
 
 typedef PropTrackDef = {
 	name: String,
-	?clamp: Array<Float>
+	?clamp: Array<Float>,
+	?def: Float
 };
 
 @:access(hide.view.FXScene)
@@ -747,6 +748,9 @@ class FXScene extends FileView {
 				curve.clampMin = prop.clamp[0];
 				curve.clampMax = prop.clamp[1];
 			}
+			if(prop.def != null) {
+				curve.addKey(0, prop.def, Linear);
+			}
 			added.push(curve);
 		}
 
@@ -804,7 +808,7 @@ class FXScene extends FileView {
 			return ret;
 		}
 
-		var hslaTracks : Array<PropTrackDef> = [{name: "h"}, {name: "s", clamp: [0., 1.]}, {name: "l", clamp: [0., 1.]}, {name: "a", clamp: [0., 1.]}];
+		var hslaTracks : Array<PropTrackDef> = [{name: "h", def: 0.0}, {name: "s", clamp: [0., 1.], def: 0.0}, {name: "l", clamp: [0., 1.], def: 1.0}, {name: "a", clamp: [0., 1.], def: 1.0}];
 		var xyzwTracks : Int -> Array<PropTrackDef> = (n) -> [{name: "x"}, {name: "y"}, {name: "z"}, {name: "z"}].slice(0, n);
 
 		if(objElt != null) {
@@ -831,26 +835,24 @@ class FXScene extends FileView {
 			for(param in params) {
 				var tracks = null;
 				var isColor = false;
-				var subItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
-				switch(param.type) {
+				var item : hide.comp.ContextMenu.ContextMenuItem = switch(param.type) {
 					case TVec(n, VFloat):
-						if(n <= 4) {
-							var components : Array<PropTrackDef> = [];
-							if(param.name.toLowerCase().indexOf("color") >= 0)
-								components = hslaTracks;
-							else
-								components = xyzwTracks(n);
-							subItems = groupedTracks(param.name, components);
-
+						var components : Array<PropTrackDef> = [];
+						if(param.name.toLowerCase().indexOf("color") >= 0)
+							components = hslaTracks;
+						else
+							components = xyzwTracks(n);
+						{
+							label: upperCase(param.name),
+							menu: groupedTracks(param.name, components)
 						}
+					case TFloat:
+						trackItem(upperCase(param.name), [{name: param.name}]);
 					default:
+						null;
 				}
-				if(subItems.length > 0) {
-					menuItems.push({
-						label: upperCase(param.name),
-						menu: subItems
-					});
-				}
+				if(item != null)
+					menuItems.push(item);
 			}
 		}
 		if(emitterElt != null) {
