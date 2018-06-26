@@ -30,6 +30,7 @@ class Curve extends Prefab {
 	public var duration : Float = 0.; // TODO: optional?
 	public var clampMin : Float = 0.;
 	public var clampMax : Float = 0.;
+	public var keyMode : CurveKeyMode = Linear;
 	public var keys : CurveKeys = [];
 
    	public function new(?parent) {
@@ -42,14 +43,28 @@ class Curve extends Prefab {
 		keys = o.keys;
 		clampMin = o.clampMin;
 		clampMax = o.clampMax;
+		if(o.keyMode != null)
+			keyMode = o.keyMode;
 	}
 
 	override function save() {
+		var keysDat = [];
+		for(k in keys) {
+			var o = {
+				time: k.time,
+				value: k.value,
+				mode: k.mode
+			};
+			if(k.prevHandle != null) Reflect.setField(o, "prevHandle", k.prevHandle);
+			if(k.nextHandle != null) Reflect.setField(o, "nextHandle", k.nextHandle);
+			keysDat.push(o);
+		}
 		return {
 			duration: duration,
 			clampMin: clampMin,
 			clampMax: clampMax,
-			keys: keys,
+			keyMode: keyMode,
+			keys: keysDat,
 		};
 	}
 	
@@ -71,7 +86,7 @@ class Curve extends Prefab {
 		return closest;
 	}
 
-	public function addKey(time: Float, ?val: Float) {
+	public function addKey(time: Float, ?val: Float, ?mode=null) {
 		var index = 0;
 		for(ik in 0...keys.length) {
 			var key = keys[ik];
@@ -85,7 +100,7 @@ class Curve extends Prefab {
 		var key : hide.prefab.Curve.CurveKey = {
 			time: time,
 			value: val,
-			mode: keys[index] != null ? keys[index].mode : Aligned
+			mode: mode != null ? mode : (keys[index] != null ? keys[index].mode : keyMode)
 		};
 		keys.insert(index, key);
 		return key;

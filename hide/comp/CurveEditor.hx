@@ -24,7 +24,6 @@ class CurveEditor extends Component {
 
 	var refreshTimer : haxe.Timer = null;
 	var lastValue : Dynamic;
-	var lastMode : hide.prefab.Curve.CurveKeyMode = Constant;
 
 	var selectedKeys: Array<CurveKey> = [];
 
@@ -150,7 +149,7 @@ class CurveEditor extends Component {
 		beforeChange();		
 		if(curve.clampMin != curve.clampMax)
 			val = hxd.Math.clamp(val, curve.clampMin, curve.clampMax);
-		curve.addKey(time, val);
+		curve.addKey(time, val, curve.keyMode);
 		afterChange();
 	}
 
@@ -518,7 +517,7 @@ class CurveEditor extends Component {
 					e.preventDefault();
 					function setMode(m: hide.prefab.Curve.CurveKeyMode) {
 						key.mode = m;
-						lastMode = m;
+						curve.keyMode = m;
 						fixKey(key);
 						refreshGraph();
 					}
