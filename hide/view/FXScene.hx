@@ -795,11 +795,11 @@ class FXScene extends FileView {
 		function groupedTracks(prefix: String, props: Array<PropTrackDef>) : Array<hide.comp.ContextMenu.ContextMenuItem> {
 			var allLabel = [for(p in props) upperCase(p.name)].join("/");
 			var ret = [];
-			for(p in props)
-				p.name = prefix + "." + p.name;
 			ret.push(trackItem(allLabel, props));
 			for(p in props) {
-				ret.push(trackItem(p.name, [p]));
+				var label = upperCase(p.name);
+				p.name = prefix + "." + p.name;
+				ret.push(trackItem(label, [p]));
 			}
 			return ret;
 		}
@@ -854,19 +854,28 @@ class FXScene extends FileView {
 			}
 		}
 		if(emitterElt != null) {
-			for(param in hide.prefab.fx.Emitter.PARAMS) {
-				if(!param.animate)
-					continue;
+			function addParam(param : hide.prefab.fx.Emitter.ParamDef, prefix: String) {
+				var label = prefix + (param.disp != null ? param.disp : upperCase(param.name));
 				var item : hide.comp.ContextMenu.ContextMenuItem = switch(param.t) {
 					case PVec(n, _):
 						{
-							label: upperCase(param.name),
+							label: label,
 							menu: groupedTracks(param.name, xyzwTracks(n)),
 						}
 					default:
-						trackItem(upperCase(param.name), [{name: param.name}]);
+						trackItem(label, [{name: param.name}]);
 				};
 				menuItems.push(item);
+			}
+			for(param in hide.prefab.fx.Emitter.emitterParams) {
+				if(!param.animate)
+					continue;
+				addParam(param, "");
+			}
+			for(param in hide.prefab.fx.Emitter.instanceParams) {
+				if(!param.animate)
+					continue;
+				addParam(param, "Instance ");
 			}
 		}
 		return menuItems;

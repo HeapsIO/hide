@@ -24,7 +24,8 @@ using Lambda;
 
 typedef ParamDef = {
 	> hide.comp.PropsEditor.PropDef,  // TODO: Runtime-friendly version
-	?animate: Bool
+	?animate: Bool,
+	?instance: Bool
 }
 
 typedef InstanceDef = {
@@ -326,7 +327,7 @@ class Emitter extends Object3D {
 		props = { };
 	}	
 
-	static var emitterParams : Array<ParamDef> = [
+	public static var emitterParams : Array<ParamDef> = [
 		{ name: "emitRate", t: PInt(0, 100), def: 5, disp: "Rate", animate: true },
 		{ name: "lifeTime", t: PFloat(0, 10), def: 1.0 },
 		{ name: "maxCount", t: PInt(0, 100), def: 20, },
@@ -340,18 +341,21 @@ class Emitter extends Object3D {
 		{ name: "animationRepeat", t: PFloat(0, 2.0), def: 1.0 },
 	];
 
-	static var instanceParams : Array<ParamDef> = [
-		{ name: "speed", t: PVec(3, -10, 10), def: [0.,0.,0.], animate: true },
-		{ name: "scale", t: PFloat(0, 2.0), def: 1., animate: true },
-		{ name: "stretch", t: PVec(3, 0.0, 2.0), def: [1.,1.,1.], animate: true },
-		{ name: "rotation", t: PVec(3, 0, 360), def: [0.,0.,0.], animate: true },
-		{ name: "offset", t: PVec(3, -10, 10), def: [0.,0.,0.], animate: true }
+	public static var instanceParams : Array<ParamDef> = [
+		{ name: "instSpeed",    t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Speed" },
+		{ name: "instScale",    t: PFloat(0, 2.0),    def: 1.,         disp: "Scale" },
+		{ name: "instStretch",  t: PVec(3, 0.0, 2.0), def: [1.,1.,1.], disp: "Stretch" },
+		{ name: "instRotation", t: PVec(3, 0, 360),   def: [0.,0.,0.], disp: "Rotation" },
+		{ name: "instOffset",   t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Offset" }
 	];
 
 	public static var PARAMS : Array<ParamDef> = {
 		var a = emitterParams.copy();
-		for(i in instanceParams)
+		for(i in instanceParams) {
+			i.instance = true;
+			i.animate = true;
 			a.push(i);
+		}
 		a;
 	};
 
@@ -460,11 +464,11 @@ class Emitter extends Object3D {
 		}
 
 		emitterObj.instDef = {
-			localSpeed: makeParam(template, "speed"),
-			localOffset: makeParam(template, "offset"),
-			scale: makeParam(template, "scale"),
-			stretch: makeParam(template, "stretch"),
-			rotation: makeParam(template, "rotation"),
+			localSpeed: makeParam(this, "instSpeed"),
+			localOffset: makeParam(this, "instOffset"),
+			scale: makeParam(this, "instScale"),
+			stretch: makeParam(this, "instStretch"),
+			rotation: makeParam(this, "instRotation"),
 		};
 
 		emitterObj.particleTemplate = template;
@@ -593,7 +597,7 @@ class Emitter extends Object3D {
 			var instGroup = new Element('<div class="group" name="Particles"></div>');
 			var dl = new Element('<dl>').appendTo(instGroup);
 			for(p in instanceParams) {
-				var dt = new Element('<dt>${p.name}</dt>').appendTo(dl);
+				var dt = new Element('<dt>${p.disp != null ? p.disp : p.name}</dt>').appendTo(dl);
 				var dd = new Element('<dd>').appendTo(dl);
 
 				function addUndo() {
