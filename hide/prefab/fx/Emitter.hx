@@ -8,6 +8,7 @@ using Lambda;
 	var Cone = 0;
 	var Disc = 1;
 	var Sphere = 2;
+	var Line = 3;
 
 	inline function new(v) {
 		this = v;
@@ -209,6 +210,10 @@ class EmitterObject extends h3d.scene.Object {
 					while(dx * dx + dy * dy > 1.0);
 					offset.set(0, dx, dy);
 					direction.set(1, 0, 0);
+					tmpq.initDirection(direction);
+				case Line:
+					offset.set(random.rand(), 0, 0);
+					tmpq.initRotation(Math.PI/2.0, -Math.PI/2.0, 0);
 				case Sphere:
 					do {
 						offset.x = random.srand(1.0);
@@ -218,6 +223,7 @@ class EmitterObject extends h3d.scene.Object {
 					while(offset.lengthSq() > 1.0);
 					direction = offset.clone();
 					direction.normalizeFast();
+					tmpq.initDirection(direction);
 				case Cone:
 					offset.set(0, 0, 0);
 					var theta = random.rand() * Math.PI * 2;
@@ -226,11 +232,10 @@ class EmitterObject extends h3d.scene.Object {
 					direction.y = Math.sin(phi) * Math.sin(theta) * scaleY;
 					direction.z = Math.sin(phi) * Math.cos(theta) * scaleZ;
 					direction.normalizeFast();
+					tmpq.initDirection(direction);
 			}
 
-			tmpq.initDirection(direction);
 			localQuat.multiply(localQuat, tmpq);
-
 			part.setRotationQuat(localQuat);
 			part.orientation = localQuat.clone();
 			offset.transform(localMat);
@@ -331,7 +336,7 @@ class Emitter extends Object3D {
 		{ name: "emitRate", t: PInt(0, 100), def: 5, disp: "Rate", animate: true },
 		{ name: "lifeTime", t: PFloat(0, 10), def: 1.0 },
 		{ name: "maxCount", t: PInt(0, 100), def: 20, },
-		{ name: "emitShape", t: PChoice(["Cone", "Disc", "Sphere"]), disp: "Shape", },
+		{ name: "emitShape", t: PChoice(["Cone", "Disc", "Sphere", "Line"]), disp: "Shape", },
 		{ name: "emitAngle", t: PFloat(0, 360.0), disp: "Angle", },
 		{ name: "camAlign", t: PVec(3, -1.0, 1.0), def: [0.,0.,0.] },
 
@@ -507,6 +512,14 @@ class Emitter extends Object3D {
 					else
 						g.lineTo(0, c, s);
 				});
+				g.ignoreCollide = true;
+				mesh = g;
+			}
+			case Line: {
+				var g = new h3d.scene.Graphics(emitterObj);
+				g.lineStyle(1, 0xffffff);
+				g.moveTo(0, 0, 0);
+				g.lineTo(1, 0, 0);
 				g.ignoreCollide = true;
 				mesh = g;
 			}
