@@ -108,6 +108,10 @@ private class ParticleInstance extends h3d.scene.Object {
 			var l = axis.length();
 			if(l > 0.01) {
 				var angle = Math.asin(l);
+				if(angle > Math.PI/2.0)
+					angle =- Math.PI;
+				if(angle < -Math.PI/2.0)
+					angle += Math.PI;
 				var q = new h3d.Quat();
 				q.initRotateAxis(axis.x, axis.y, axis.z, angle);
 				qRot.multiply(q, qRot);
