@@ -24,7 +24,7 @@ using Lambda;
 
 typedef ParamDef = {
 	> hide.comp.PropsEditor.PropDef,  // TODO: Runtime-friendly version
-	?noanim: Bool
+	?animate: Bool
 }
 
 typedef InstanceDef = {
@@ -320,11 +320,11 @@ class Emitter extends Object3D {
 	}	
 
 	static var emitterParams : Array<ParamDef> = [
+		{ name: "emitRate", t: PInt(0, 100), def: 5, disp: "Rate", animate: true },
 		{ name: "lifeTime", t: PFloat(0, 10), def: 1.0 },
 		{ name: "maxCount", t: PInt(0, 100), def: 20, },
 		{ name: "emitShape", t: PChoice(["Cone", "Disc", "Sphere"]), disp: "Shape", },
 		{ name: "emitAngle", t: PFloat(0, 360.0), disp: "Angle", },
-		{ name: "emitRate", t: PInt(0, 100), def: 5, disp: "Rate", },
 		{ name: "camAlign", t: PVec(3, -1.0, 1.0), def: [0.,0.,0.] },
 
 		{ name: "frameCount", t: PInt(0), def: 0 },
@@ -334,14 +334,14 @@ class Emitter extends Object3D {
 	];
 
 	static var instanceParams : Array<ParamDef> = [
-		{ name: "speed", t: PVec(3, -10, 10), def: [0.,0.,0.] },
-		{ name: "scale", t: PFloat(0, 2.0), def: 1. },
-		{ name: "stretch", t: PVec(3, 0.0, 2.0), def: [1.,1.,1.] },
-		{ name: "rotation", t: PVec(3, 0, 360), def: [0.,0.,0.] },
-		{ name: "offset", t: PVec(3, -10, 10), def: [0.,0.,0.] }
+		{ name: "speed", t: PVec(3, -10, 10), def: [0.,0.,0.], animate: true },
+		{ name: "scale", t: PFloat(0, 2.0), def: 1., animate: true },
+		{ name: "stretch", t: PVec(3, 0.0, 2.0), def: [1.,1.,1.], animate: true },
+		{ name: "rotation", t: PVec(3, 0, 360), def: [0.,0.,0.], animate: true },
+		{ name: "offset", t: PVec(3, -10, 10), def: [0.,0.,0.], animate: true }
 	];
 
-	static var PARAMS : Array<ParamDef> = {
+	public static var PARAMS : Array<ParamDef> = {
 		var a = emitterParams.copy();
 		for(i in instanceParams)
 			a.push(i);
@@ -478,9 +478,9 @@ class Emitter extends Object3D {
 			debugShape.remove();
 
 		inline function circle(npts, f) {
-			for(i in 0...npts) {
-				var c = hxd.Math.cos(i / (npts - 1) * hxd.Math.PI * 2.0);
-				var s = hxd.Math.sin(i / (npts - 1) * hxd.Math.PI * 2.0);
+			for(i in 0...(npts+1)) {
+				var c = hxd.Math.cos((i / npts) * hxd.Math.PI * 2.0);
+				var s = hxd.Math.sin((i / npts) * hxd.Math.PI * 2.0);
 				f(i, c, s);
 			}
 		}
@@ -574,9 +574,12 @@ class Emitter extends Object3D {
 				default: params.remove(params.find(p -> p.name == "emitAngle"));
 			}
 
-		var emGroup = new Element('<div class="group" name="Emitter"></div>');
-		emGroup.append(hide.comp.PropsEditor.makePropsList(params));
-		var props = ctx.properties.add(emGroup, this.props, onChange);
+		// Emitter
+		{
+			var emGroup = new Element('<div class="group" name="Emitter"></div>');
+			emGroup.append(hide.comp.PropsEditor.makePropsList(params));
+			var props = ctx.properties.add(emGroup, this.props, onChange);
+		}
 
 		// Instances
 		{

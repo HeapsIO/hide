@@ -771,6 +771,7 @@ class FXScene extends FileView {
 	public function getNewTrackMenu(elt: PrefabElement) : Array<hide.comp.ContextMenu.ContextMenuItem> {
 		var objElt = Std.instance(elt, hide.prefab.Object3D);
 		var shaderElt = Std.instance(elt, hide.prefab.Shader);
+		var emitterElt = Std.instance(elt, hide.prefab.fx.Emitter);
 		var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
 
 		inline function hasTrack(pname) {
@@ -804,20 +805,20 @@ class FXScene extends FileView {
 		}
 
 		var hslaTracks : Array<PropTrackDef> = [{name: "h"}, {name: "s", clamp: [0., 1.]}, {name: "l", clamp: [0., 1.]}, {name: "a", clamp: [0., 1.]}];
-		var xyzTracks : Void -> Array<PropTrackDef> = () -> [{name: "x"}, {name: "y"}, {name: "z"}];
+		var xyzwTracks : Int -> Array<PropTrackDef> = (n) -> [{name: "x"}, {name: "y"}, {name: "z"}, {name: "z"}].slice(0, n);
 
 		if(objElt != null) {
 			menuItems.push({
 				label: "Position",
-				menu: groupedTracks("position", xyzTracks()),
+				menu: groupedTracks("position", xyzwTracks(3)),
 			});
 			menuItems.push({
 				label: "Rotation",
-				menu: groupedTracks("rotation", xyzTracks()),
+				menu: groupedTracks("rotation", xyzwTracks(3)),
 			});
 			menuItems.push({
 				label: "Scale",
-				menu: groupedTracks("scale", xyzTracks()),
+				menu: groupedTracks("scale", xyzwTracks(3)),
 			});
 			menuItems.push({
 				label: "Color",
@@ -838,7 +839,7 @@ class FXScene extends FileView {
 							if(param.name.toLowerCase().indexOf("color") >= 0)
 								components = hslaTracks;
 							else
-								components = [{name:"x"}, {name:"y"}, {name:"z"}, {name:"w"}];
+								components = xyzwTracks(n);
 							subItems = groupedTracks(param.name, components);
 
 						}
@@ -850,6 +851,22 @@ class FXScene extends FileView {
 						menu: subItems
 					});
 				}
+			}
+		}
+		if(emitterElt != null) {
+			for(param in hide.prefab.fx.Emitter.PARAMS) {
+				if(!param.animate)
+					continue;
+				var item : hide.comp.ContextMenu.ContextMenuItem = switch(param.t) {
+					case PVec(n, _):
+						{
+							label: upperCase(param.name),
+							menu: groupedTracks(param.name, xyzwTracks(n)),
+						}
+					default:
+						trackItem(upperCase(param.name), [{name: param.name}]);
+				};
+				menuItems.push(item);
 			}
 		}
 		return menuItems;
