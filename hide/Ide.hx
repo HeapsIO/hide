@@ -1,5 +1,6 @@
 package hide;
 import hide.ui.Props;
+import hxd.inspect.Group;
 
 @:expose
 class Ide {
@@ -40,6 +41,7 @@ class Ide {
 
 	var renderers : Array<h3d.mat.MaterialSetup>;
 	var subView : { component : String, state : Dynamic, events : {} };
+	var scripts : Map<String,Array<Void->Void>> = new Map();
 
 	static var firstInit = true;
 
@@ -383,18 +385,26 @@ class Ide {
 			new hide.Renderer.MaterialSetup("Default"),
 			new hide.Renderer.PbrSetup("PBR"),
 		];
-		var path = getPath("Renderer.hx");
-		if( sys.FileSystem.exists(path) ) {
-			/*
-			var r = new hide.tools.MaterialScript();
-			try {
-				r.load(sys.io.File.getContent(path));
-				renderers.unshift(r);
-			} catch( e : Dynamic ) {
-				error(e);
+
+		var extraRenderers = props.current.get("renderers");
+		for( name in Reflect.fields(extraRenderers) ) {
+			var script = Reflect.field(extraRenderers, name);
+			var r = ~/^(.*)?\(([A-Za-z0-9_.]+)\)$/;
+			if( !r.match(script) ) {
+				error(script+" has invalid renderer format");
+				continue;
 			}
-			r.onError = function(msg) error(msg);
-			*/
+			var file = r.matched(1);
+			var clName = r.matched(2);
+			loadScript(file, function() {
+				var cl = try js.Lib.eval(clName) catch( e : Dynamic ) null;
+				if( cl == null  ) {
+					error(clName+" could not be found in "+script);
+					return;
+				}
+				renderers.push(Type.createInstance(cl,[]));
+				initMenu();
+			});
 		}
 
 		var db = getPath(props.project.get("cdb.databaseFile"));
@@ -418,6 +428,29 @@ class Ide {
 
 		initMenu();
 		initLayout();
+	}
+
+	function loadScript( file : String, callb : Void -> Void ) {
+		file = getPath(file);
+		var wait = scripts.get(file);
+		if( wait != null ) {
+			if( wait.length == 0 )
+				callb();
+			else
+				wait.push(callb);
+			return;
+		}
+		wait = [callb];
+		scripts.set(file, wait);
+		var e = js.Browser.document.createScriptElement();
+		e.addEventListener("load", function() {
+			scripts.set(file, []);
+			for( w in wait )
+				w();
+		});
+		e.type = "text/javascript";
+		e.src = "file://"+file.split("\\").join("/");
+		js.Browser.document.body.appendChild(e);
 	}
 
 	public function saveDatabase() {

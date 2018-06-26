@@ -1,6 +1,9 @@
 {
 	// define location of animations in HMD files
 	"hmd.animPaths" : [],
+	
+	// custom renderers in the form of { "Name" : "script.js(MatSetupClassName)" }
+	"renderers" : {},
 
 	// model names that are hidden when open in viewer
 	"scene.autoHide" : [],
