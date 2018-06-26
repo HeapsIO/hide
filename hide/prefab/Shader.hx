@@ -171,6 +171,12 @@ class Shader extends Prefab {
 		ctx.properties.add(group,this.props, function(pname) {
 			ctx.onChange(this, pname);
 			var inst = ctx.getContext(this);
+			if(inst == null)
+				return;
+
+			var shader = Std.instance(inst.custom, ShaderAnimation);
+			if(shader != null)
+				shader.params = makeParams();
 			applyVars(inst);
 		});
 		#end
