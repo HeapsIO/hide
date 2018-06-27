@@ -439,6 +439,7 @@ class FXScene extends FileView {
 
 	function addTrackEdit(trackName: String, curves: Array<Curve>, tracksEl: Element) {
 		var keyTimeTolerance = 0.05;
+		var trackEdits : Array<hide.comp.CurveEditor> = [];
 		var trackEl = new Element('<div class="track">
 			<div class="track-header">
 				<div class="track-prop">
@@ -467,6 +468,8 @@ class FXScene extends FileView {
 			else
 				icon.removeClass("fa-angle-down").addClass("fa-angle-right");
 			curvesContainer.toggleClass("hidden", !expand);
+			for(c in trackEdits)
+				c.refresh();	
 		}
 		trackEl.find(".track-prop").click(function(e) {
 			expand = !expand;
@@ -474,7 +477,6 @@ class FXScene extends FileView {
 			updateExpanded();
 		});
 		var dopesheet = trackEl.find(".dopesheet");
-		var trackEdits : Array<hide.comp.CurveEditor> = [];
 		var evaluator = new hide.prefab.fx.FXScene.Evaluator(new hxd.Rand(0));
 
 		function getKeyColor(key) {
@@ -644,9 +646,14 @@ class FXScene extends FileView {
 			}
 		}
 		for(curve in curves) {
+			var dispKey = getPath() + "/" + curve.getAbsPath();
 			var curveContainer = new Element('<div class="curve"></div>').appendTo(curvesContainer);
+			var height = getDisplayState(dispKey + "/height");
+			if(height == null)
+				height = 200;
+			curveContainer.height(height);
 			var curveEdit = new hide.comp.CurveEditor(this.undo, curveContainer);
-			curveEdit.saveDisplayKey = getPath() + "/" + curve.getAbsPath();
+			curveEdit.saveDisplayKey = dispKey;
 			curveEdit.lockViewX = true;
 			curveEdit.xOffset = xOffset;
 			curveEdit.xScale = xScale;
@@ -654,9 +661,20 @@ class FXScene extends FileView {
 			curveEdit.onChange = function(anim) {
 				refreshDopesheet();
 			}
-			// curveEdit.onKeyMove = function(key, ptime, pval) {
-			// 	dragKey(curveEdit, ptime, key.time);
-			// }
+
+			curveContainer.on("mousewheel", function(e) {
+				var step = e.originalEvent.wheelDelta > 0 ? 1.0 : -1.0;
+				if(e.ctrlKey) {
+					var prevH = curveContainer.height();
+					var newH = prevH + Std.int(step * 20.0);
+					curveContainer.height(newH);
+					saveDisplayState(dispKey + "/height", newH);
+					curveEdit.yScale *= newH / prevH;
+					curveEdit.refresh();
+					e.preventDefault();
+					e.stopPropagation();
+				}
+			});
 			trackEdits.push(curveEdit);
 			curveEdits.push(curveEdit);
 		}

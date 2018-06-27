@@ -378,6 +378,8 @@ class CurveEditor extends Component {
 
 		refreshGrid();
 		refreshGraph(anim);
+		if(!anim)
+			saveView();
 	}
 
 	public function refreshGrid() {
