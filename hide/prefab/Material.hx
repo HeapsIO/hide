@@ -27,7 +27,7 @@ class Material extends Prefab {
 		return r;
 	}
 
-	function updateInstance(ctx: Context) {
+	override function updateInstance(ctx: Context, ?propName) {
 		if(ctx.local3d == null)
 			return;
 
@@ -70,9 +70,6 @@ class Material extends Prefab {
 		ctx.properties.addMaterial(mat, group.find('.group > .content'), function(pname) {
 			Reflect.setField(props, h3d.mat.MaterialSetup.current.name, mat.props);
 			ctx.onChange(this, "props");
-			var inst = ctx.getContext(this);
-			if(inst != null)
-				updateInstance(inst);
 		});
 
 		var isPbr = Std.is(ctx.scene.s3d.renderer, h3d.scene.pbr.Renderer);
@@ -83,9 +80,6 @@ class Material extends Prefab {
 				<dt>Specular</dt><dd><input type="texturepath" field="specularMap" style="width:165px"/></dd>
 			</dl></div>'), renderProps(), function(_) {
 			ctx.onChange(this, "props");
-			var inst = ctx.getContext(this);
-			if(inst != null)
-				updateInstance(inst);
 		});
 		#end
 	}

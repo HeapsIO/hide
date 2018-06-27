@@ -57,6 +57,8 @@ class Prefab {
 		return ctx;
 	}
 
+	public function updateInstance( ctx : Context, ?propName : String) { }
+
 	public function saveRec() : {} {
 		var obj : Dynamic = save();
 		obj.type = type;
@@ -218,8 +220,8 @@ class Prefab {
 	public function getAbsPath() {
 		var p = this;
 		var path = [];
-		while(p != null) {
-			path.unshift(p.name + '[${p.type}]');
+		while(p != null && !Std.is(p, hide.prefab.Library)) {
+			path.unshift(p.name);
 			p = p.parent;
 		}
 		return path.join('.');

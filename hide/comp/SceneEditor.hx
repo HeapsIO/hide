@@ -68,6 +68,7 @@ class SceneEditorContext extends hide.prefab.EditContext {
 	}
 
 	override function onChange(p : PrefabElement, pname: String) {
+		super.onChange(p, pname);
 		editor.onPrefabChange(p, pname);
 	}
 }
@@ -229,6 +230,7 @@ class SceneEditor {
 				{ label : "Rename", enabled : current != null, click : function() tree.editNode(current) },
 				{ label : "Delete", enabled : current != null, click : function() deleteElements(curEdit.rootElements) },
 				{ label : "Duplicate", enabled : current != null, click : duplicate.bind(false) },
+				{ label : "Reference", enabled : current != null, click : function() createRef(current, current.parent) },
 			];
 			
 			if(current != null && current.to(Object3D) != null) {
@@ -914,6 +916,13 @@ class SceneEditor {
 			hideSiblings(e);
 		}
 		setVisible(toHide, false);
+	}
+
+	function createRef(elt: PrefabElement, toParent: PrefabElement) {
+		var ref = new hide.prefab.Reference(toParent);
+		ref.name = elt.name;
+		ref.refpath = elt.getAbsPath();
+		addObject(ref);
 	}
 
 	function duplicate(thenMove: Bool) {

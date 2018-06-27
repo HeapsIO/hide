@@ -221,6 +221,7 @@ class FXScene extends Library {
 		if(obj3d == null)
 			return;
 
+		// TODO: Support references?
 		var objCtx = ctx.shared.contexts.get(elt);
 		if(objCtx == null || objCtx.local3d == null)
 			return;
@@ -277,20 +278,19 @@ class FXScene extends Library {
 		if(shader == null)
 			return;
 
-		var shCtx = ctx.shared.contexts.get(elt);
-		if(shCtx == null || shCtx.custom == null)
-			return;
-
-		anims.push(cast shCtx.custom);
+		for(shCtx in ctx.shared.getContexts(elt)) {
+			if(shCtx.custom == null) continue;
+			anims.push(cast shCtx.custom);
+		}
 	}
 
 	function getEmitters(ctx: Context, elt: PrefabElement, emitters: Array<hide.prefab.fx.Emitter.EmitterObject>) {
 		var em = Std.instance(elt, hide.prefab.fx.Emitter);
 		if(em != null)  {
-			var emCtx = ctx.shared.contexts.get(elt);
-			if(emCtx == null || emCtx.local3d == null)
-				return;
-			emitters.push(cast emCtx.local3d);
+			for(emCtx in ctx.shared.getContexts(elt)) {
+				if(emCtx.local3d == null) continue;
+				emitters.push(cast emCtx.local3d);
+			}
 		}
 		else {
 			for(c in elt.children) {

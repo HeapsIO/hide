@@ -19,6 +19,7 @@ class FXEditContext extends hide.prefab.EditContext {
 		this.parent = parent;
 	}
 	override function onChange(p, propName) {
+		super.onChange(p, propName);
 		parent.onPrefabChange(p, propName);
 	}
 }

@@ -11,7 +11,17 @@ class EditContext {
 	public var properties : hide.comp.PropsEditor;
 	public var cleanups : Array<Void->Void>;
 	function get_ide() return hide.Ide.inst;
-	public function onChange(p : Prefab, propName : String) { }
+	public function onChange(p : Prefab, propName : String) {
+		var ctx = getContext(p);
+		if(ctx != null)
+			p.updateInstance(ctx, propName);
+		
+		var refs = rootContext.shared.references.get(p);
+		if(refs != null) {
+			for(ctx in refs)
+				p.updateInstance(ctx, propName);
+		}
+	}
 	#end
 
 	public function new(ctx) {

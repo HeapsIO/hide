@@ -55,8 +55,9 @@ class Shader extends Prefab {
 		};
 	}
 
-	function applyVars(ctx: Context) {
+	override function updateInstance(ctx: Context, ?propName) {
 		var shader = Std.instance(ctx.custom, ShaderAnimation);
+		shader.params = makeParams();
 		if(shader == null || shaderDef == null)
 			return;
 		for(v in shaderDef.shader.data.vars) {
@@ -93,7 +94,6 @@ class Shader extends Prefab {
 			shader.hscriptSet(v.v.name, defVal);
 		}
 		var anim: ShaderAnimation = new ShaderAnimation(new hxd.Rand(0));
-		anim.params = makeParams();
 		anim.shader = shader;
 		ctx.custom = anim;
 		if(shader != null) {
@@ -101,7 +101,7 @@ class Shader extends Prefab {
 				m.mainPass.addShader(shader);
 			}
 		}
-		applyVars(ctx);
+		updateInstance(ctx);
 		#end
 		return ctx;
 	}
@@ -170,14 +170,6 @@ class Shader extends Prefab {
 		
 		ctx.properties.add(group,this.props, function(pname) {
 			ctx.onChange(this, pname);
-			var inst = ctx.getContext(this);
-			if(inst == null)
-				return;
-
-			var shader = Std.instance(inst.custom, ShaderAnimation);
-			if(shader != null)
-				shader.params = makeParams();
-			applyVars(inst);
 		});
 		#end
 	}
