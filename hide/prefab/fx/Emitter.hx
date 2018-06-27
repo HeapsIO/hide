@@ -508,7 +508,7 @@ class Emitter extends Object3D {
 		emitterObj.animationRepeat = getParamVal("animationRepeat");
 
 		#if editor
-		var debugShape = emitterObj.find(c -> if(c.name == "_debugShape") c else null);
+		var debugShape = emitterObj.find(c -> if(c.name == "_highlight") c else null);
 		if(debugShape != null)
 			debugShape.remove();
 
@@ -567,10 +567,11 @@ class Emitter extends Object3D {
 		}
 	
 		if(mesh != null) {
-			mesh.name = "_debugShape";
+			mesh.name = "_highlight";
 			var mat = mesh.material;
 			mat.mainPass.setPassName("overlay");
 			mat.shadows = false;
+			mesh.visible = false;
 		}
 		#end
 	}
