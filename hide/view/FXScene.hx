@@ -127,6 +127,7 @@ class FXScene extends FileView {
 	var showGrid = true;
 	var grid : h3d.scene.Graphics;
 
+	var timelineLeftMargin = 10;
 	var xScale = 200.;
 	var xOffset = 0.;
 
@@ -139,6 +140,7 @@ class FXScene extends FileView {
 	var curveEdits : Array<hide.comp.CurveEditor>;
 	var timeLineEl : Element;
 	var refreshDopesheetKeys : Array<Bool->Void> = [];
+	var statusText : h2d.Text;
 
 	override function getDefaultContent() {
 		return haxe.io.Bytes.ofString(ide.toJSON(new hide.prefab.fx.FXScene().save()));
@@ -164,6 +166,7 @@ class FXScene extends FileView {
 	override function onDisplay() {
 		saveDisplayKey = "FXScene/" + getPath().split("\\").join("/").substr(0,-1);
 		currentTime = 0.;
+		xOffset = -timelineLeftMargin / xScale;
 		data = new hide.prefab.fx.FXScene();
 		var content = sys.io.File.getContent(getPath());
 		data.load(haxe.Json.parse(content));
@@ -250,7 +253,7 @@ class FXScene extends FileView {
 				var dt = (e.clientX - lastX) / xScale;
 				if(e.which == 2) {
 					xOffset -= dt;
-					xOffset = hxd.Math.max(xOffset, 0);
+					xOffset = hxd.Math.max(xOffset, -timelineLeftMargin/xScale);
 				}
 				else if(e.which == 1) {
 					if(shift) {
@@ -357,6 +360,9 @@ class FXScene extends FileView {
 		tools.addRange("Speed", function(v) {
 			scene.speed = v;
 		}, scene.speed);
+
+		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
+		statusText.setPosition(5, 5);
 
 		updateGrid();
 	}
@@ -932,6 +938,9 @@ class FXScene extends FileView {
 		if(anim != null) {
 			anim.setTime(currentTime);
 		}
+
+		if(statusText != null)
+			statusText.text = 'Time: ${Math.round(currentTime*1000)} ms';
 
 		var cam = scene.s3d.camera;
 		if( light != null ) {
