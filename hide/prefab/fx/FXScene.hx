@@ -157,7 +157,8 @@ class FXAnimation extends h3d.scene.Object {
 		}
 
 		for(em in emitters) {
-			em.setTime(time);
+			if(em.visible)
+				em.setTime(time);
 		}
 	}
 
@@ -227,7 +228,7 @@ class FXScene extends Library {
 		var anyFound = false;
 
 		function makeVal(name, def) : Value {
-			var c = getCurve(elt, name);
+			var c = hide.prefab.Curve.getCurve(elt, name);
 			if(c != null)
 				anyFound = true;
 			return c != null ? VCurve(c) : def;
@@ -328,16 +329,6 @@ class FXScene extends Library {
 
 	override function getHideProps() {
 		return { icon : "cube", name : "FX", fileSource : ["fx"] };
-	}
-
-	static function getCurve(element : hide.prefab.Prefab, name: String) {
-		for(c in element.children) {
-			if(c.name != name) continue;
-			var curve = c.to(Curve);
-			if(curve == null) continue;
-			return curve;
-		}
-		return null;
 	}
 
 	static var _ = Library.register("fx", FXScene);

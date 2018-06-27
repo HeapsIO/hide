@@ -764,7 +764,7 @@ class FXScene extends FileView {
 	function addTracks(element : PrefabElement, props : Array<PropTrackDef>) {
 		var added = [];
 		for(prop in props) {
-			if(element.getOpt(Curve, prop.name) != null)
+			if(Curve.getCurve(element, prop.name) != null)
 				continue;
 			var curve = new Curve(element);
 			curve.name = prop.name;

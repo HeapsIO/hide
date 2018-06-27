@@ -229,7 +229,7 @@ class Shader extends Prefab {
 					var base = 1.0;
 					if(Std.is(prop, Float) || Std.is(prop, Int))
 						base = cast prop;
-					var curve = getOpt(hide.prefab.Curve, v.name);
+					var curve = hide.prefab.Curve.getCurve(this, v.name);
 					var val = VConst(base);
 					if(curve != null)
 						val = VCurveValue(curve, base);

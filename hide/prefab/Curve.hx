@@ -224,14 +224,25 @@ class Curve extends Prefab {
 		return { icon : "paint-brush", name : "Curve", fileSource : null };
 	}
 
+	public static function getCurve(parent : hide.prefab.Prefab, name: String) {
+		for(c in parent.children) {
+			if(!c.enabled) continue;
+			if(c.name != name) continue;
+			var curve = c.to(Curve);
+			if(curve == null) continue;
+			return curve;
+		}
+		return null;
+	}
+
 	public static function getCurves(parent: hide.prefab.Prefab, prefix: String) {
 		var ret = [];
 		for(c in parent.children) {
+			if(!c.enabled) continue;
 			if(c.name.split(".")[0] != prefix)
 				continue;
 			var curve = c.to(Curve);
-			if(curve == null)
-				continue;
+			if(curve == null) continue;
 			ret.push(curve);
 		}
 		return ret;

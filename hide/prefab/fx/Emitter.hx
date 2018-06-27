@@ -459,9 +459,7 @@ class Emitter extends Object3D {
 		}
 
 		function makeParam(scope: Prefab, name: String): Value {
-			inline function getCurve(name) {
-				return scope.getOpt(Curve, name);
-			}
+			var getCurve = hide.prefab.Curve.getCurve.bind(scope);
 
 			var param = PARAMS.find(p -> p.name == name);
 			switch(param.t) {

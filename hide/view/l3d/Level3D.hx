@@ -479,11 +479,7 @@ class Level3D extends FileView {
 		if(layer != null) {
 			var color = "#" + StringTools.hex(layer.color & 0xffffff, 6);
 			el.find("i.jstree-themeicon").first().css("color", color);
-			if(layer.locked)
-				el.find("a").first().addClass("jstree-locked");
-			else
-				el.find("a").first().removeClass("jstree-locked");
-
+			el.find("a").first().toggleClass("locked", layer.locked);
 			refreshLayerIcon(layer);
 		}
 	}

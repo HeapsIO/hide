@@ -8,6 +8,7 @@ class Prefab {
 	public var parent(default, set) : Prefab;
 	public var source(default, set) : String;
 	public var children(default, null) : Array<Prefab>;
+	public var enabled : Bool = true;
 	public var props : {};
 
 	public function new(?parent) {
@@ -59,6 +60,8 @@ class Prefab {
 	public function saveRec() : {} {
 		var obj : Dynamic = save();
 		obj.type = type;
+		if( !enabled )
+			obj.enabled = false;
 		if( name != null )
 			obj.name = name;
 		if( source != null )
@@ -101,6 +104,8 @@ class Prefab {
 		var p = Type.createInstance(pcl, [parent]);
 		p.type = v.type;
 		p.name = v.name;
+		if(v.enabled != null)
+			p.enabled = v.enabled;
 		if(v.props != null)
 			p.props = Reflect.copy(v.props);  // TODO: Recursive?
 		if( v.source != null )
@@ -114,6 +119,8 @@ class Prefab {
 	}
 
 	public function makeInstanceRec( ctx : Context ) {
+		if(!enabled)
+			return;
 		if( ctx == null ) {
 			ctx = new Context();
 			ctx.init();

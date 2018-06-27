@@ -798,6 +798,27 @@ body.hide-subview .lm_controls {
 .jstree .filtered {
   display: none;
 }
+.jstree .invisible a {
+  color: #555 !important;
+  display: inline;
+}
+.jstree .invisible i {
+  color: #555;
+}
+.jstree .disabled a {
+  color: #533 !important;
+  display: inline;
+}
+.jstree .disabled i {
+  color: #533;
+}
+.jstree a.locked {
+  color: #666 !important;
+  font-style: italic;
+}
+.jstree a.locked::after {
+  content: " (locked)";
+}
 .jstree-icon.jstree-ocl {
   opacity: 0.7;
   width: 18px !important;
@@ -831,20 +852,6 @@ body.hide-subview .lm_controls {
 }
 .jstree.small .jstree-wholerow {
   height: 18px;
-}
-.jstree-invisible a {
-  color: #555 !important;
-  display: inline;
-}
-.jstree-invisible i {
-  color: #555;
-}
-a.jstree-locked {
-  color: #666 !important;
-  font-style: italic;
-}
-a.jstree-locked::after {
-  content: " (locked)";
 }
 /* Spectrum Color picker */
 div.sp-replacer {
