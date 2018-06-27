@@ -1,2 +1,2 @@
 @cd %~dp0
-@nwjs\nw.exe --nwapp package.json % --remote-debugging-port=9222
+@nwjs\nw.exe --remote-debugging-port=9222 --nwapp package.json %*
