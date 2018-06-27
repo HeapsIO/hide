@@ -503,6 +503,10 @@ class CurveEditor extends Component {
 						var prevVal = key.value;
 						key.time = nkx;
 						key.value = nky;
+						if(e.ctrlKey) {
+							key.time = Math.round(key.time * 10) / 10.;
+							key.value = Math.round(key.value * 10) / 10.;
+						}
 						fixKey(key);
 						refreshGraph(true, key);
 						onKeyMove(key, prevTime, prevVal);
