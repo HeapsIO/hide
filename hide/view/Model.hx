@@ -245,18 +245,36 @@ class Model extends FileView {
 
 			var lprops = {
 				power : Math.sqrt(light.color.r),
+				enable: true
 			};
-			properties.add(new Element('
-			<div class="group" name="Light">
+			var group = new Element('<div class="group" name="Light">
 				<dl>
 				<dt>Power</dt><dd><input type="range" min="0" max="4" field="power"/></dd>
 				</dl>
-			</div>
-			'), lprops, function(_) {
+			</div>');
+			if(!isPbr) {
+				var enable = new Element('<dt>Enable</dt><dd><input type="checkbox" field="enable"/></dd>');
+				group.find('dl').append(enable);
+			}
+			properties.add(group, lprops, function(_) {
 				var p = lprops.power * lprops.power;
 				light.color.set(p, p, p);
+				if(!isPbr) {
+					if(!lprops.enable) {
+						for( m in obj.getMaterials() ) {
+							m.mainPass.enableLights = false;
+							m.shadows = false;
+						}
+					}
+					else {
+						for( m in obj.getMaterials() ) {
+							var props = h3d.mat.MaterialSetup.current.loadMaterialProps(m);
+							if( props == null ) props = m.getDefaultModelProps();
+							m.props = props;
+						}
+					}
+				}
 			});
-
 		}
 		tools.addButton("gears", "Renderer Properties", renderProps);
 
