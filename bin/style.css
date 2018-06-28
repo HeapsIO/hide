@@ -764,9 +764,19 @@ input[type=checkbox]:checked:after {
 .fx-animpanel .track .curve {
   margin-left: 120px;
   border-bottom: 1px solid black;
+  border-left: 1px solid black;
+  position: relative;
 }
 .fx-animpanel .track .curves.hidden {
   display: none;
+}
+.fx-animpanel .track label.curve-label {
+  position: absolute;
+  text-transform: capitalize;
+  margin-left: 15px;
+  font-size: 20px;
+  color: white;
+  mix-blend-mode: overlay;
 }
 /* Golden Layout Fixes */
 .lm_header .lm_tabs {

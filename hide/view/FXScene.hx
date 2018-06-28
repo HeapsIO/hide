@@ -649,7 +649,7 @@ class FXScene extends FileView {
 		}
 		for(curve in curves) {
 			var dispKey = getPath() + "/" + curve.getAbsPath();
-			var curveContainer = new Element('<div class="curve"></div>').appendTo(curvesContainer);
+			var curveContainer = new Element('<div class="curve"><label class="curve-label">${curve.name}</alpha></div>').appendTo(curvesContainer);
 			var height = getDisplayState(dispKey + "/height");
 			if(height == null)
 				height = 100;

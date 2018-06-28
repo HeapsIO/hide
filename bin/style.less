@@ -839,9 +839,19 @@ input[type=checkbox] {
 		.curve {
 			margin-left: @leftPanelWidth;
 			border-bottom: 1px solid black;
+			border-left: 1px solid black;
+			position: relative;
 		}
 		.curves.hidden {
 			display: none;
+		}
+		label.curve-label {
+			position: absolute;
+			text-transform: capitalize;
+			margin-left: 15px;
+			font-size: 20px;
+			color: white;
+			mix-blend-mode: overlay;
 		}
 	}
 }
