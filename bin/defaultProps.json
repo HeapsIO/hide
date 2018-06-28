@@ -65,6 +65,11 @@
 	"l3d.groundLayer": "ground",
 	"l3d.cdbLevel": "level",
 
+	// FX editor
+	"fx.shaders": [
+		"h3d.shader.AnimatedTexture",
+		"h3d.shader.ColorAdd"],
+
 	// reserved for internal ide usage
 	"hide" : {}
 

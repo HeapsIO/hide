@@ -83,12 +83,24 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 					}
 				}
 
+				var menu = [custom];
+
+				var shaders : Array<String> = hide.Ide.inst.currentProps.get("fx.shaders", []);
+				for(path in shaders) {
+					var name = path;
+					if(StringTools.endsWith(name, ".hx")) {
+						name = name.substr(0, -3);
+						name = name.split("/").pop();
+					}
+					else {
+						name = name.split(".").pop();
+					}
+					menu.push(shaderItem(name, path));
+				}
+
 				registered.push({
 					label: "Shaders",
-					menu: [
-						custom,
-						shaderItem("AnimatedTexture", "h3d.shader.AnimatedTexture")
-					]
+					menu: menu
 				});
 			}
 
@@ -344,6 +356,31 @@ class FXScene extends FileView {
 
 		tools.saveDisplayKey = "FXScene/tools";
 		tools.addButton("video-camera", "Perspective camera", () -> sceneEditor.resetCamera(false));
+		
+		function renderProps() {
+			properties.clear();
+			var renderer = scene.s3d.renderer;
+			var group = new Element('<div class="group" name="Renderer"></div>');
+			renderer.editProps().appendTo(group);
+			properties.add(group, renderer.props, function(_) {
+				renderer.refreshProps();
+				if( !properties.isTempChange ) renderProps();
+			});
+			var lprops = {
+				power : Math.sqrt(light.color.r),
+				enable: true
+			};
+			var group = new Element('<div class="group" name="Light">
+				<dl>
+				<dt>Power</dt><dd><input type="range" min="0" max="4" field="power"/></dd>
+				</dl>
+			</div>');
+			properties.add(group, lprops, function(_) {
+				var p = lprops.power * lprops.power;
+				light.color.set(p, p, p);
+			});
+		}
+		tools.addButton("gears", "Renderer Properties", renderProps);
 
 		tools.addToggle("th", "Show grid", function(v) {
 			showGrid = v;
