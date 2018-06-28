@@ -566,7 +566,8 @@ class FXScene extends FileView {
 					"z-index": 100,
 				}).appendTo(el);
 				var cp = new hide.comp.ColorPicker(false, picker);
-				cp.value = getKeyColor(key).toColor();
+				var prevCol = getKeyColor(key);
+				cp.value = prevCol.toColor();
 				cp.open();
 				cp.onClose = function() {
 					picker.remove();
@@ -580,13 +581,13 @@ class FXScene extends FileView {
 						setCurveVal(".h", col.x);
 						setCurveVal(".s", col.y);
 						setCurveVal(".l", col.z);
-						setCurveVal(".a", col.a);
+						setCurveVal(".a", prevCol.a);
 					}
 					else {
 						setCurveVal(".r", col.x);
 						setCurveVal(".g", col.y);
 						setCurveVal(".b", col.z);
-						setCurveVal(".a", col.a);
+						setCurveVal(".a", prevCol.a);
 					}
 					refreshCurves(false);
 					refreshKey(key, el);
