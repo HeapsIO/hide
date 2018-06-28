@@ -771,6 +771,7 @@ input[type=checkbox]:checked:after {
   display: none;
 }
 .fx-animpanel .track label.curve-label {
+  user-select: none;
   position: absolute;
   text-transform: capitalize;
   margin-left: 15px;
