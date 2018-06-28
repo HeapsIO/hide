@@ -657,6 +657,8 @@ class FXScene extends FileView {
 			var curveEdit = new hide.comp.CurveEditor(this.undo, curveContainer);
 			curveEdit.saveDisplayKey = dispKey;
 			curveEdit.lockViewX = true;
+			if(curves.length > 1)
+				curveEdit.lockKeyX = true;
 			curveEdit.xOffset = xOffset;
 			curveEdit.xScale = xScale;
 			curveEdit.curve = curve;

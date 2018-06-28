@@ -14,6 +14,7 @@ class CurveEditor extends Component {
 
 	public var lockViewX = false;
 	public var lockViewY = false;
+	public var lockKeyX = false;
 
 	var svg : hide.comp.SVG;
 	var width = 0;
@@ -507,6 +508,8 @@ class CurveEditor extends Component {
 							key.time = Math.round(key.time * 10) / 10.;
 							key.value = Math.round(key.value * 10) / 10.;
 						}
+						if(lockKeyX)
+							key.time = prevTime;
 						fixKey(key);
 						refreshGraph(true, key);
 						onKeyMove(key, prevTime, prevVal);
