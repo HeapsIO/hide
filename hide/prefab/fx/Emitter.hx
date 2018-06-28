@@ -8,7 +8,7 @@ using Lambda;
 	var Cone = 0;
 	var Disc = 1;
 	var Sphere = 2;
-	var Line = 3;
+	var Box = 3;
 
 	inline function new(v) {
 		this = v;
@@ -219,12 +219,11 @@ class EmitterObject extends h3d.scene.Object {
 						dy = random.srand(1.0);
 					}
 					while(dx * dx + dy * dy > 1.0);
-					offset.set(0, dx, dy);
-					direction.set(1, 0, 0);
-					tmpq.initDirection(direction);
-				case Line:
-					offset.set(random.rand(), 0, 0);
-					tmpq.initRotation(Math.PI/2.0, -Math.PI/2.0, 0);
+					offset.set(0, dx * 0.5, dy * 0.5);
+					tmpq.initRotation(0, -hxd.Math.atan2(dy, dx), Math.PI/2);
+				case Box:
+					offset.set(random.srand(0.5), random.srand(0.5), random.srand(0.5));
+					tmpq.initRotation(1, 0, 0);
 				case Sphere:
 					do {
 						offset.x = random.srand(1.0);
@@ -232,6 +231,7 @@ class EmitterObject extends h3d.scene.Object {
 						offset.z = random.srand(1.0);
 					}
 					while(offset.lengthSq() > 1.0);
+					offset.scale3(0.5);
 					direction = offset.clone();
 					direction.normalizeFast();
 					tmpq.initDirection(direction);
@@ -347,7 +347,7 @@ class Emitter extends Object3D {
 		{ name: "emitRate", t: PInt(0, 100), def: 5, disp: "Rate", animate: true },
 		{ name: "lifeTime", t: PFloat(0, 10), def: 1.0 },
 		{ name: "maxCount", t: PInt(0, 100), def: 20, },
-		{ name: "emitShape", t: PChoice(["Cone", "Disc", "Sphere", "Line"]), disp: "Shape", },
+		{ name: "emitShape", t: PChoice(["Cone", "Disc", "Sphere", "Box"]), disp: "Shape", },
 		{ name: "emitAngle", t: PFloat(0, 360.0), disp: "Angle", },
 		{ name: "camAlign", t: PVec(3, -1.0, 1.0), def: [0.,0.,0.] },
 
@@ -506,9 +506,15 @@ class Emitter extends Object3D {
 		emitterObj.animationRepeat = getParamVal("animationRepeat");
 
 		#if editor
-		var debugShape = emitterObj.find(c -> if(c.name == "_highlight") c else null);
-		if(debugShape != null)
-			debugShape.remove();
+		var debugShape : h3d.scene.Object = emitterObj.find(c -> if(c.name == "_highlight") c else null);
+		if(debugShape == null) {
+			debugShape = new h3d.scene.Object(emitterObj);
+			debugShape.name = "_highlight";
+			debugShape.visible = false;
+		}
+
+		for(i in 0...debugShape.numChildren)
+			debugShape.removeChild(debugShape.getChildAt(i));
 
 		inline function circle(npts, f) {
 			for(i in 0...(npts+1)) {
@@ -521,27 +527,22 @@ class Emitter extends Object3D {
 		var mesh : h3d.scene.Mesh = null;
 		switch(emitterObj.emitShape) {
 			case Disc: {
-				var g = new h3d.scene.Graphics(emitterObj);
+				var g = new h3d.scene.Graphics(debugShape);
 				g.lineStyle(1, 0xffffff);
 				circle(32, function(i, c, s) {
 					if(i == 0)
-						g.moveTo(0, c, s);
+						g.moveTo(0, c * 0.5, s * 0.5);
 					else
-						g.lineTo(0, c, s);
+						g.lineTo(0, c * 0.5, s * 0.5);
 				});
 				g.ignoreCollide = true;
 				mesh = g;
 			}
-			case Line: {
-				var g = new h3d.scene.Graphics(emitterObj);
-				g.lineStyle(1, 0xffffff);
-				g.moveTo(0, 0, 0);
-				g.lineTo(1, 0, 0);
-				g.ignoreCollide = true;
-				mesh = g;
+			case Box: {
+				mesh = new h3d.scene.Box(0xffffff, true, debugShape);
 			}
 			case Cone: {
-				var g = new h3d.scene.Graphics(emitterObj);
+				var g = new h3d.scene.Graphics(debugShape);
 				var angle = hxd.Math.degToRad(getParamVal("emitAngle")) / 2.0;
 				var rad = hxd.Math.sin(angle);
 				var dist = hxd.Math.cos(angle);
@@ -561,15 +562,13 @@ class Emitter extends Object3D {
 				mesh = g;
 			}
 			case Sphere:
-				mesh = new h3d.scene.Sphere(0xffffff, 1.0, true, emitterObj);	
+				mesh = new h3d.scene.Sphere(0xffffff, 0.5, true, debugShape);
 		}
 	
 		if(mesh != null) {
-			mesh.name = "_highlight";
 			var mat = mesh.material;
 			mat.mainPass.setPassName("overlay");
 			mat.shadows = false;
-			mesh.visible = false;
 		}
 		#end
 	}
