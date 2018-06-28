@@ -244,10 +244,10 @@ class FXScene extends FileView {
 			var xoffset = timeline.offset().left;
 
 			if(shift) {
-				selectMin = ixt(e.clientX - xoffset);
+				selectMin = hxd.Math.max(0, ixt(e.clientX - xoffset));
 			}
 			else if(ctrl) {
-				previewMin = ixt(e.clientX - xoffset);
+				previewMin = hxd.Math.max(0, ixt(e.clientX - xoffset));
 			}
 
 			function updateMouse(e: js.jquery.Event) {
@@ -651,7 +651,7 @@ class FXScene extends FileView {
 			var curveContainer = new Element('<div class="curve"></div>').appendTo(curvesContainer);
 			var height = getDisplayState(dispKey + "/height");
 			if(height == null)
-				height = 200;
+				height = 100;
 			curveContainer.height(height);
 			var curveEdit = new hide.comp.CurveEditor(this.undo, curveContainer);
 			curveEdit.saveDisplayKey = dispKey;
@@ -762,13 +762,14 @@ class FXScene extends FileView {
 		});
 	}
 
-	function addTracks(element : PrefabElement, props : Array<PropTrackDef>) {
+	function addTracks(element : PrefabElement, props : Array<PropTrackDef>, ?prefix: String) {
 		var added = [];
 		for(prop in props) {
-			if(Curve.getCurve(element, prop.name) != null)
+			var id = prefix != null ? prefix + "." + prop.name : prop.name;
+			if(Curve.getCurve(element, id) != null)
 				continue;
 			var curve = new Curve(element);
-			curve.name = prop.name;
+			curve.name = id;
 			if(prop.clamp != null) {
 				curve.clampMin = prop.clamp[0];
 				curve.clampMax = prop.clamp[1];
@@ -807,16 +808,16 @@ class FXScene extends FileView {
 			return getTrack(elt, pname) != null;
 		}
 
-		function trackItem(name: String, props: Array<PropTrackDef>) : hide.comp.ContextMenu.ContextMenuItem {
+		function trackItem(name: String, props: Array<PropTrackDef>, ?prefix: String) : hide.comp.ContextMenu.ContextMenuItem {
 			var hasAllTracks = true;
 			for(p in props) {
-				if(getTrack(elt, p.name) == null)
+				if(getTrack(elt, prefix + "." + p.name) == null)
 					hasAllTracks = false;
 			}
 			return {
 				label: upperCase(name),
 				click: function() {
-					var added = addTracks(elt, props);
+					var added = addTracks(elt, props, prefix);
 				},
 				enabled: !hasAllTracks };
 		}
@@ -827,13 +828,13 @@ class FXScene extends FileView {
 			ret.push(trackItem(allLabel, props));
 			for(p in props) {
 				var label = upperCase(p.name);
-				p.name = prefix + "." + p.name;
-				ret.push(trackItem(label, [p]));
+				ret.push(trackItem(label, [p], prefix));
 			}
 			return ret;
 		}
 
-		var hslaTracks : Array<PropTrackDef> = [{name: "h", def: 0.0}, {name: "s", clamp: [0., 1.], def: 0.0}, {name: "l", clamp: [0., 1.], def: 1.0}, {name: "a", clamp: [0., 1.], def: 1.0}];
+		var hslTracks : Void -> Array<PropTrackDef> = () -> [{name: "h", def: 0.0}, {name: "s", clamp: [0., 1.], def: 0.0}, {name: "l", clamp: [0., 1.], def: 1.0}];
+		var alphaTrack : Void -> Array<PropTrackDef> = () -> [{name: "a", clamp: [0., 1.], def: 1.0}];
 		var xyzwTracks : Int -> Array<PropTrackDef> = (n) -> [{name: "x"}, {name: "y"}, {name: "z"}, {name: "z"}].slice(0, n);
 
 		if(objElt != null) {
@@ -851,7 +852,10 @@ class FXScene extends FileView {
 			});
 			menuItems.push({
 				label: "Color",
-				menu: groupedTracks("color", hslaTracks),
+				menu: [
+					trackItem("HSL", hslTracks(), "color"),
+					trackItem("Alpha", alphaTrack(), "color")
+				]
 			});
 			menuItems.push(trackItem("Visibility", [{name: "visibility", clamp: [0., 1.]}]));
 		}
@@ -862,15 +866,18 @@ class FXScene extends FileView {
 				var isColor = false;
 				var item : hide.comp.ContextMenu.ContextMenuItem = switch(param.type) {
 					case TVec(n, VFloat):
-						var components : Array<PropTrackDef> = [];
-						if(param.name.toLowerCase().indexOf("color") >= 0)
-							components = hslaTracks;
-						else
-							components = xyzwTracks(n);
-						{
-							label: upperCase(param.name),
-							menu: groupedTracks(param.name, components)
+						var color = param.name.toLowerCase().indexOf("color") >= 0;
+						var label = upperCase(param.name);
+						var menu = null;
+						if(color) {
+							if(n == 3)
+								menu = trackItem(label, hslTracks(), param.name);
+							else if(n == 4)
+								menu = trackItem(label, hslTracks().concat(alphaTrack()), param.name);
 						}
+						if(menu == null)
+							menu = trackItem(label, xyzwTracks(n), param.name);
+						menu;
 					case TFloat:
 						trackItem(upperCase(param.name), [{name: param.name}]);
 					default:
@@ -979,7 +986,7 @@ class FXScene extends FileView {
 
 
 	static function getTrack(element : PrefabElement, propName : String) {
-		return element.getOpt(Curve, propName);
+		return Curve.getCurve(element, propName, false);
 	}
 
 

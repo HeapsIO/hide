@@ -224,9 +224,9 @@ class Curve extends Prefab {
 		return { icon : "paint-brush", name : "Curve", fileSource : null };
 	}
 
-	public static function getCurve(parent : hide.prefab.Prefab, name: String) {
+	public static function getCurve(parent : hide.prefab.Prefab, name: String, onlyEnabled=true) {
 		for(c in parent.children) {
-			if(!c.enabled) continue;
+			if(onlyEnabled && !c.enabled) continue;
 			if(c.name != name) continue;
 			var curve = c.to(Curve);
 			if(curve == null) continue;
@@ -271,7 +271,6 @@ class Curve extends Prefab {
 		return curves.find(c -> StringTools.endsWith(c.name, suffix));
 	}
 
-	// TODO: rename getVectorValue
 	public static function getVectorValue(curves: Array<Curve>, defVal: Float=0.0) : Value {
 		inline function find(s) {
 			return findCurve(curves, s);
