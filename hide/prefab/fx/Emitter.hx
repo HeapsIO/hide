@@ -31,11 +31,13 @@ typedef ParamDef = {
 
 typedef InstanceDef = {
 	localSpeed: Value,
+	worldSpeed: Value,
 	localOffset: Value,
 	scale: Value,
 	stretch: Value,
 	rotation: Value,
-	color: Value
+	color: Value,
+	alignDirection: Bool
 }
 
 typedef ShaderAnims = Array<hide.prefab.Shader.ShaderAnimation>;
@@ -69,9 +71,14 @@ private class ParticleInstance extends h3d.scene.Object {
 		var t = hxd.Math.clamp(life / emitter.lifeTime, 0.0, 1.0);
 
 		var localSpeed = evaluator.getVector(def.localSpeed, t);
+		var worldSpeed = evaluator.getVector(def.worldSpeed, t);
 		if(localSpeed.length() > 0.001) {
 			localSpeed.transform3x3(orientation.toMatrix());
-			curVelocity = localSpeed;
+		}
+		curVelocity = localSpeed.add(worldSpeed);
+		if(def.alignDirection) {
+			getRotationQuat().initDirection(curVelocity);
+			posChanged = true;
 		}
 
 		x += curVelocity.x * dt;
@@ -350,6 +357,7 @@ class Emitter extends Object3D {
 		{ name: "emitShape", t: PChoice(["Cone", "Disc", "Sphere", "Box"]), disp: "Shape", },
 		{ name: "emitAngle", t: PFloat(0, 360.0), disp: "Angle", },
 		{ name: "camAlign", t: PVec(3, -1.0, 1.0), def: [0.,0.,0.] },
+		{ name: "alignDirection", t: PBool, def: false, disp: "Align Direction" },
 
 		{ name: "frameCount", t: PInt(0), def: 0 },
 		{ name: "frameDivisionX", t: PInt(1), def: 1 },
@@ -358,11 +366,12 @@ class Emitter extends Object3D {
 	];
 
 	public static var instanceParams : Array<ParamDef> = [
-		{ name: "instSpeed",    t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Speed" },
-		{ name: "instScale",    t: PFloat(0, 2.0),    def: 1.,         disp: "Scale" },
-		{ name: "instStretch",  t: PVec(3, 0.0, 2.0), def: [1.,1.,1.], disp: "Stretch" },
-		{ name: "instRotation", t: PVec(3, 0, 360),   def: [0.,0.,0.], disp: "Rotation" },
-		{ name: "instOffset",   t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Offset" }
+		{ name: "instSpeed",      t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Speed" },
+		{ name: "instWorldSpeed", t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "World Speed" },
+		{ name: "instScale",      t: PFloat(0, 2.0),    def: 1.,         disp: "Scale" },
+		{ name: "instStretch",    t: PVec(3, 0.0, 2.0), def: [1.,1.,1.], disp: "Stretch" },
+		{ name: "instRotation",   t: PVec(3, 0, 360),   def: [0.,0.,0.], disp: "Rotation" },
+		{ name: "instOffset",     t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Offset" }
 	];
 
 	public static var PARAMS : Array<ParamDef> = {
@@ -440,40 +449,50 @@ class Emitter extends Object3D {
 		if(template == null)
 			return;
 
-		function makeVal(base: Float, curve: Curve, randFactor: Float, randCurve: Curve): Value {
-			var val : Value = if(curve != null && base != 0.0)
-				VCurveValue(curve, base);
-			else if(base != 0.0)
-				VConst(base);
-			else VZero;
-
-			if(randFactor != 0.0) {
-				var randScale = randCurve != null ? VCurveValue(randCurve, randFactor) : VConst(randFactor);
-				var noise = VRandom(randIdx++, randScale);
-				if(val == VZero)
-					val = noise;
-				else
-					val = VAdd(val, noise);
-			}
-			return val;
-		}
-
 		function makeParam(scope: Prefab, name: String): Value {
 			var getCurve = hide.prefab.Curve.getCurve.bind(scope);
+			function makeCompVal(baseProp: Null<Float>, defVal: Float, randProp: Null<Float>, pname: String, suffix: String) : Value {
+				var xVal : Value = VZero;
+				var xCurve = getCurve(pname + suffix);
+				if(xCurve != null)
+					xVal = VCurveValue(xCurve, baseProp != null ? baseProp : 1.0);
+				else if(baseProp != null)
+					xVal = VConst(baseProp);
+				else
+					xVal = defVal == 0.0 ? VZero : VConst(defVal);
 
+				var randCurve = getCurve(pname + suffix + ".rand");
+				var randVal : Value = VZero;
+				if(randCurve != null)
+					randVal = VRandom(randIdx++, VCurveValue(randCurve, randProp != null ? randProp : 1.0));
+				else if(randProp != null)
+					randVal = VRandom(randIdx++, VConst(randProp));
+				
+				if(randVal == VZero)
+					return xVal;
+				if(xVal == VZero)
+					return randVal;
+				return VAdd(xVal, randVal);
+			}
+
+			var baseProp: Dynamic = Reflect.field(props, name);
+			var randProp: Dynamic = Reflect.field(props, randProp(name));
 			var param = PARAMS.find(p -> p.name == name);
 			switch(param.t) {
 				case PVec(_):
-					var baseval : h3d.Vector = getParamVal(param.name);
-					var randVal : h3d.Vector = getParamVal(param.name, true);
+					inline function makeComp(idx, suffix) {
+						return makeCompVal(
+							baseProp != null ? baseProp[idx] : null,
+							param.def != null ? param.def[idx] : 0.0,
+							randProp != null ? randProp[idx] : null,
+							param.name, suffix);
+					}
 					return VVector(
-						makeVal(baseval.x, getCurve(param.name + ".x"), randVal != null ? randVal.x : 0.0, getCurve(param.name + ".x.rand")),
-						makeVal(baseval.y, getCurve(param.name + ".y"), randVal != null ? randVal.y : 0.0, getCurve(param.name + ".y.rand")),
-						makeVal(baseval.z, getCurve(param.name + ".z"), randVal != null ? randVal.z : 0.0, getCurve(param.name + ".z.rand")));
+						makeComp(0, ".x"),
+						makeComp(1, ".y"),
+						makeComp(2, ".z"));
 				default:
-					var baseval : Null<Float> = getParamVal(param.name);
-					var randVal : Null<Float> = getParamVal(param.name, true);
-					return makeVal(baseval != null ? baseval : 0.0, getCurve(param.name), randVal != null ? randVal : 0.0, getCurve(param.name + ".rand"));
+					return makeCompVal(baseProp, param.def != null ? param.def : 0.0, randProp, param.name, "");
 			}
 		}
 
@@ -486,11 +505,13 @@ class Emitter extends Object3D {
 
 		emitterObj.instDef = {
 			localSpeed: makeParam(this, "instSpeed"),
+			worldSpeed: makeParam(this, "instWorldSpeed"),
 			localOffset: makeParam(this, "instOffset"),
 			scale: makeParam(this, "instScale"),
 			stretch: makeParam(this, "instStretch"),
 			rotation: makeParam(this, "instRotation"),
-			color: makeColor(template, "color")
+			color: makeColor(template, "color"),
+			alignDirection: getParamVal("alignDirection")
 		};
 
 		emitterObj.particleTemplate = template;
