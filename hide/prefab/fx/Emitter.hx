@@ -595,7 +595,7 @@ class Emitter extends Object3D {
 
 		var angleProp = null;
 
-		function onChange(pname: String) {
+		function onChange(?pname: String) {
 			ctx.onChange(this, pname);
 			var emitter = Std.instance(ctx.getContext(this).local3d, EmitterObject);
 			if(emitter != null)
@@ -630,8 +630,10 @@ class Emitter extends Object3D {
 				var dt = new Element('<dt>${p.disp != null ? p.disp : p.name}</dt>').appendTo(dl);
 				var dd = new Element('<dd>').appendTo(dl);
 
-				function addUndo() {
-					ctx.properties.undo.change(Field(this.props, p.name, Reflect.field(this.props, p.name)), function() {
+				function addUndo(pname: String) {
+					ctx.properties.undo.change(Field(this.props, pname, Reflect.field(this.props, pname)), function() {
+						if(Reflect.field(this.props, pname) == null)
+							Reflect.deleteField(this.props, pname);
 						refresh();
 					});
 				}
@@ -642,13 +644,15 @@ class Emitter extends Object3D {
 						e.preventDefault();
 						new hide.comp.ContextMenu([
 							{ label : "Reset", click : function() {
-								addUndo();
+								addUndo(p.name);
 								resetParam(p);
+								onChange();
 								refresh();
 							} },
 							{ label : "Remove", click : function() {
-								addUndo();
+								addUndo(p.name);
 								Reflect.deleteField(this.props, p.name);
+								onChange();
 								refresh();
 							} },
 						]);
@@ -658,8 +662,8 @@ class Emitter extends Object3D {
 				else {
 					var btn = new Element('<input type="button" value="+"></input>').appendTo(dd);
 					btn.click(function(e) {
-						//addUndo();
-						Reflect.setField(this.props, p.name, p.def);
+						addUndo(p.name);
+						resetParam(p);
 						refresh();
 					});
 				}
@@ -679,13 +683,15 @@ class Emitter extends Object3D {
 						e.preventDefault();
 						new hide.comp.ContextMenu([
 							{ label : "Reset", click : function() {
-								addUndo();
+								addUndo(randProp(p.name));
 								Reflect.setField(this.props, randProp(p.name), randDef);
+								onChange();
 								refresh();
 							} },
 							{ label : "Remove", click : function() {
-								addUndo();
+								addUndo(randProp(p.name));
 								Reflect.deleteField(this.props, randProp(p.name));
+								onChange();
 								refresh();
 							} },
 						]);
@@ -695,6 +701,7 @@ class Emitter extends Object3D {
 				else {
 					var btn = new Element('<input type="button" value="+"></input>').appendTo(dd);
 					btn.click(function(e) {
+						addUndo(randProp(p.name));
 						Reflect.setField(this.props, randProp(p.name), randDef);
 						refresh();
 					});
