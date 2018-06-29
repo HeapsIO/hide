@@ -70,15 +70,20 @@ class PropsEditor extends Component {
 			new Element('<font color="red">' + StringTools.htmlEscape(text) + '</font>').appendTo(parent);
 		case PVec(n, min, max):
 			var isColor = p.name.toLowerCase().indexOf("color") >= 0;
-			var names = isColor ? ["r", "g", "b", "a"] : ["x", "y", "z", "w"];
-			for( i in 0...n ) {
-				var div = new Element('<div>').appendTo(parent);
-				new Element('<span>${names[i]} </span>').appendTo(div);
-				var e = new Element('<input type="range" class="small" field="${p.name}.$i">').appendTo(div);
-				if(min == null) min = isColor ? 0.0 : -1.0;
-				if(max == null)	max = 1.0;
-				e.attr("min", "" + min);
-				e.attr("max", "" + max);
+			if(isColor && n == 3) {
+				new Element('<input type="color" field="${p.name}">').appendTo(parent);
+			}
+			else {
+				var names = isColor ? ["r", "g", "b", "a"] : ["x", "y", "z", "w"];
+				for( i in 0...n ) {
+					var div = new Element('<div>').appendTo(parent);
+					new Element('<span>${names[i]} </span>').appendTo(div);
+					var e = new Element('<input type="range" class="small" field="${p.name}.$i">').appendTo(div);
+					if(min == null) min = isColor ? 0.0 : -1.0;
+					if(max == null)	max = 1.0;
+					e.attr("min", "" + min);
+					e.attr("max", "" + max);
+				}
 			}
 		case PChoice(choices):
 			var e = new Element('<select field="${p.name}" type="number"></select>').appendTo(parent);
@@ -300,6 +305,46 @@ class PropsField extends Component {
 			range.onChange = function(temp) {
 				tempChange = temp;
 				setVal(range.value);
+			};
+			return;
+		case "color":
+			var arr = Std.instance(current, Array);
+			var alpha = arr != null && arr.length == 4;
+			var picker = new hide.comp.ColorPicker(alpha, null, f);
+
+			function updatePicker(val: Dynamic) {				
+				if(arr != null) {
+					var v = h3d.Vector.fromArray(val);
+					picker.value = v.toColor();
+				}
+				else if(!Math.isNaN(val))
+					picker.value = val;
+			}
+			updatePicker(current);
+			picker.onChange = function(move) {
+				if(!move) {
+					trace("Add " + current);
+					undo(function() {
+						var f = resolveField();
+						f.current = getFieldValue();
+						trace("Undo " + f.current);
+						updatePicker(f.current);
+						f.onChange(true);
+					});
+				}
+				var newVal : Dynamic =
+					if(arr != null) {
+						var vec = h3d.Vector.fromColor(picker.value);
+						if(alpha)
+							[vec.x, vec.y, vec.z, vec.w];
+						else
+							[vec.x, vec.y, vec.z];
+					}
+					else picker.value;
+				if(!move)
+					current = newVal;
+				setFieldValue(newVal);
+				onChange(false);
 			};
 			return;
 		default:
