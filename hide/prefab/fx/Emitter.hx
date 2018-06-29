@@ -24,7 +24,7 @@ using Lambda;
 }
 
 typedef ParamDef = {
-	> hide.comp.PropsEditor.PropDef,  // TODO: Runtime-friendly version
+	> hide.Props.PropDef,
 	?animate: Bool,
 	?instance: Bool
 }

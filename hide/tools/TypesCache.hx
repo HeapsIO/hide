@@ -1,6 +1,5 @@
 package hide.tools;
-import hide.comp.PropsEditor.PropType;
-import hide.comp.PropsEditor.PropDef;
+import hide.Props;
 
 enum ModelKind {
 	PrefabDef;
@@ -242,7 +241,7 @@ class TypesCache {
 		}
 	}
 
-	public static function defType( t :  hide.comp.PropsEditor.PropType ) : Dynamic {
+	public static function defType( t :  PropType ) : Dynamic {
 		switch( t ) {
 		case PInt(min, _):
 			return if( min == null ) 0 else min;
@@ -267,7 +266,7 @@ class TypesCache {
 		}
 	}
 
-	function makeType( t : hscript.Expr.CType ) : hide.comp.PropsEditor.PropType {
+	function makeType( t : hscript.Expr.CType ) : PropType {
 		return switch( t ) {
 		case CTPath(["Int"]):
 			PInt();
@@ -280,7 +279,7 @@ class TypesCache {
 		}
 	}
 
-	public static function makeShaderType( v : hxsl.Ast.TVar ) : hide.comp.PropsEditor.PropType {
+	public static function makeShaderType( v : hxsl.Ast.TVar ) : PropType {
 		var min : Null<Float> = null, max : Null<Float> = null;
 		if( v.qualifiers != null )
 			for( q in v.qualifiers )
