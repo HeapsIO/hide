@@ -158,7 +158,7 @@ class Gizmo extends h3d.scene.Object {
 			if(mode == MoveX || mode == MoveXY || mode == MoveZX) vec.x = snap(delta.dot(startMat.front().toPoint()));
 			if(mode == MoveY || mode == MoveYZ || mode == MoveXY) vec.y = snap(delta.dot(startMat.right().toPoint()));
 			if(mode == MoveZ || mode == MoveZX || mode == MoveYZ) vec.z = snap(delta.dot(startMat.up().toPoint()));
-			
+
 			if(!axisScale) {
 				vec.transform3x3(startMat);
 				x = (startPos.x + vec.x);

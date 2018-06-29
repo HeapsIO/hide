@@ -261,8 +261,6 @@ class TypesCache {
 			return c != null && c.length > 0 ? c[0] : null;
 		case PFile(_):
 			return null;
-		// case PEnum(e):
-		// 	return e.createByIndex(0);
 		}
 	}
 

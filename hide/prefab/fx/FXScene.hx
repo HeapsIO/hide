@@ -26,10 +26,6 @@ class Evaluator {
 		this.random = random;
 	}
 
-	public function getVal(val: Value, time: Float) : Dynamic {
-		return null; // TODO?
-	}
-
 	public function getFloat(val: Value, time: Float) : Float {
 		if(val == null)
 			return 0.0;
