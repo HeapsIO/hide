@@ -821,7 +821,16 @@ class SceneEditor {
 	}
 
 	public function getAllSelectable() : Array<PrefabElement> {
-		return [for(elt in interactives.keys()) if(interactives.get(elt).visible) elt];
+		var ret = [];
+		for(elt in interactives.keys()) {
+			var i = interactives.get(elt);
+			var p : h3d.scene.Object = i;
+			while( p != null && p.visible )
+				p = p.parent;
+			if( p != null ) continue;
+			ret.push(elt);
+		}
+		return ret;
 	}
 
 	public function selectAll() {
