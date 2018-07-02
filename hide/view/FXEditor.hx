@@ -117,7 +117,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 class FXEditor extends FileView {
 
 	var sceneEditor : FXSceneEditor;
-	var data : hide.prefab.fx.FXScene;
+	var data : hide.prefab.fx.FX;
 	var context : hide.prefab.Context;
 	var tabs : hide.comp.Tabs;
 	var fxprops : hide.comp.PropsEditor;
@@ -156,7 +156,7 @@ class FXEditor extends FileView {
 	var statusText : h2d.Text;
 
 	override function getDefaultContent() {
-		return haxe.io.Bytes.ofString(ide.toJSON(new hide.prefab.fx.FXScene().save()));
+		return haxe.io.Bytes.ofString(ide.toJSON(new hide.prefab.fx.FX().save()));
 	}
 
 	override function onFileChanged(wasDeleted:Bool) {
@@ -180,7 +180,7 @@ class FXEditor extends FileView {
 		saveDisplayKey = "FXScene/" + getPath().split("\\").join("/").substr(0,-1);
 		currentTime = 0.;
 		xOffset = -timelineLeftMargin / xScale;
-		data = new hide.prefab.fx.FXScene();
+		data = new hide.prefab.fx.FX();
 		var content = sys.io.File.getContent(getPath());
 		data.load(haxe.Json.parse(content));
 		currentSign = haxe.crypto.Md5.encode(content);
@@ -515,7 +515,7 @@ class FXEditor extends FileView {
 			updateExpanded();
 		});
 		var dopesheet = trackEl.find(".dopesheet");
-		var evaluator = new hide.prefab.fx.FXScene.Evaluator(new hxd.Rand(0));
+		var evaluator = new hide.prefab.fx.Evaluator(new hxd.Rand(0));
 
 		function getKeyColor(key) {
 			return evaluator.getVector(hide.prefab.Curve.getColorValue(curves), key.time);
@@ -986,7 +986,7 @@ class FXEditor extends FileView {
 	}
 
 	function onUpdate(dt:Float) {
-		var anim : hide.prefab.fx.FXScene.FXAnimation = null;
+		var anim : hide.prefab.fx.FX.FXAnimation = null;
 		var ctx = sceneEditor.getContext(data);
 		if(ctx != null && ctx.local3d != null) {
 			anim = cast ctx.local3d;

@@ -10,7 +10,7 @@ class Resource extends hxd.res.Resource {
 		var data = haxe.Json.parse(entry.getText());
 		var lib : Library = switch(data.type) {
 			case "level3d": new hide.prefab.l3d.Level3D();
-			case "fx": new hide.prefab.fx.FXScene();
+			case "fx": new hide.prefab.fx.FX();
 			default: new Library();
 		}
 		lib.load(data);

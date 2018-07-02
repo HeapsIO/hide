@@ -1,6 +1,5 @@
 package hide.prefab;
 using Lambda;
-import hide.prefab.fx.FXScene.Value;
 
 typedef CurveHandle = {
 	dt: Float,
@@ -270,7 +269,7 @@ class Curve extends Prefab {
 		return curves.find(c -> StringTools.endsWith(c.name, suffix));
 	}
 
-	public static function getVectorValue(curves: Array<Curve>, defVal: Float=0.0) : Value {
+	public static function getVectorValue(curves: Array<Curve>, defVal: Float=0.0) : hide.prefab.fx.Value {
 		inline function find(s) {
 			return findCurve(curves, s);
 		}
@@ -286,7 +285,7 @@ class Curve extends Prefab {
 			w != null ? VCurve(w) : VConst(1.0));
 	}
 	
-	public static function getColorValue(curves: Array<Curve>) : Value {
+	public static function getColorValue(curves: Array<Curve>) : hide.prefab.fx.Value {
 		inline function find(s) {
 			return findCurve(curves, s);
 		}

@@ -2,89 +2,6 @@ package hide.prefab.fx;
 import hide.prefab.Curve;
 import hide.prefab.Prefab as PrefabElement;
 
-enum Value {
-	VZero;
-	VConst(v: Float);
-	VCurve(c: Curve);
-	VCurveValue(c: Curve, scale: Float);
-	VRandom(idx: Int, scale: Value);
-	VAdd(a: Value, b: Value);
-	VMult(a: Value, b: Value);
-	VVector(x: Value, y: Value, z: Value, ?w: Value);
-	VHsl(h: Value, s: Value, l: Value, a: Value);
-	VBool(v: Value);
-	VInt(v: Value);
-}
-
-class Evaluator {
-	var randValues : Array<Float> = [];
-	var random: hxd.Rand;
-
-	public function new(random: hxd.Rand) {
-		this.random = random;
-	}
-
-	public function getFloat(val: Value, time: Float) : Float {
-		if(val == null)
-			return 0.0;
-		switch(val) {
-			case VZero: return 0.0;
-			case VConst(v): return v;
-			case VCurve(c): return c.getVal(time);
-			case VCurveValue(c, scale): return c.getVal(time) * scale;
-			case VRandom(idx, scale):
-				var len = randValues.length;
-				while(idx >= len) {
-					randValues.push(random.srand());
-					++len;
-				}
-				return randValues[idx] * getFloat(scale, time);
-			case VMult(a, b):
-				return getFloat(a, time) * getFloat(b, time);
-			case VAdd(a, b):
-				return getFloat(a, time) + getFloat(b, time);
-			default: 0.0;
-		}
-		return 0.0;
-	}
-
-	public function getSum(val: Value, time: Float) : Float {
-		switch(val) {
-			case VConst(v): return v * time;
-			case VCurveValue(c, scale): return c.getSum(time) * scale;
-			case VAdd(a, b):
-				return getSum(a, time) + getSum(b, time);
-			default: 0.0;
-		}
-		return 0.0;
-	}
-
-	public function getVector(v: Value, time: Float) : h3d.Vector {
-		switch(v) {
-			case VMult(a, b):
-				var av = getVector(a, time);
-				var bv = getVector(b, time);
-				return new h3d.Vector(av.x * bv.x, av.y * bv.y, av.z * bv.z, av.w * bv.w);
-			case VVector(x, y, z, null):
-				return new h3d.Vector(getFloat(x, time), getFloat(y, time), getFloat(z, time), 1.0);
-			case VVector(x, y, z, w):
-				return new h3d.Vector(getFloat(x, time), getFloat(y, time), getFloat(z, time), getFloat(w, time));
-			case VHsl(h, s, l, a):
-				var hval = getFloat(h, time);
-				var sval = getFloat(s, time);
-				var lval = getFloat(l, time);
-				var aval = getFloat(a, time);
-				var col = new h3d.Vector(0,0,0,1);
-				col.makeColor(hval, sval, lval);
-				col.a = aval;
-				return col;
-			default:
-				var f = getFloat(v, time);
-				return new h3d.Vector(f, f, f, 1.0);
-		}
-	}
-}
-
 typedef ShaderParam = {
 	def: hxsl.Ast.TVar,
 	value: Value
@@ -216,7 +133,7 @@ class FXAnimation extends h3d.scene.Object {
 	}
 }
 
-class FXScene extends Library {
+class FX extends Library {
 
 	public var duration : Float;
 
@@ -329,9 +246,9 @@ class FXScene extends Library {
 					if(Std.is(prop, Float) || Std.is(prop, Int))
 						base = cast prop;
 					var curve = hide.prefab.Curve.getCurve(shaderElt, v.name);
-					var val = VConst(base);
+					var val = Value.VConst(base);
 					if(curve != null)
-						val = VCurveValue(curve, base);
+						val = Value.VCurveValue(curve, base);
 					ret.push({
 						def: v,
 						value: val
@@ -409,5 +326,5 @@ class FXScene extends Library {
 		return { icon : "cube", name : "FX", fileSource : ["fx"] };
 	}
 
-	static var _ = Library.register("fx", FXScene);
+	static var _ = Library.register("fx", FX);
 }

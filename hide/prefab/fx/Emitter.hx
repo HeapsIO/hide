@@ -1,8 +1,6 @@
 package hide.prefab.fx;
 import hide.prefab.Curve;
-import hide.prefab.fx.FXScene.Value;
-import hide.prefab.fx.FXScene.Evaluator;
-import hide.prefab.fx.FXScene.ShaderAnimation;
+import hide.prefab.fx.FX.ShaderAnimation;
 using Lambda;
 
 @:enum abstract EmitShape(Int) {
@@ -292,7 +290,7 @@ class EmitterObject extends h3d.scene.Object {
 				var shCtx = shader.makeInstance(ctx);
 				if(shCtx == null)
 					continue;
-				hide.prefab.fx.FXScene.getShaderAnims(ctx, shader, part.shaderAnims);
+				hide.prefab.fx.FX.getShaderAnims(ctx, shader, part.shaderAnims);
 			}
 		}
 		context.local3d = this;

@@ -1,6 +1,4 @@
 package hide.prefab;
-import hide.prefab.fx.FXScene.Value;
-import hide.prefab.fx.FXScene.Evaluator;
 
 class Shader extends Prefab {
 
