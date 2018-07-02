@@ -11,9 +11,9 @@ typedef PropTrackDef = {
 	?def: Float
 };
 
-@:access(hide.view.FXScene)
+@:access(hide.view.FXEditor)
 class FXEditContext extends hide.prefab.EditContext {
-	var parent : FXScene;
+	var parent : FXEditor;
 	public function new(parent, context) {
 		super(context);
 		this.parent = parent;
@@ -24,9 +24,9 @@ class FXEditContext extends hide.prefab.EditContext {
 	}
 }
 
-@:access(hide.view.FXScene)
+@:access(hide.view.FXEditor)
 private class FXSceneEditor extends hide.comp.SceneEditor {
-	var parent : hide.view.FXScene;
+	var parent : hide.view.FXEditor;
 	public function new(view, context, data) {
 		super(view, context, data);
 		parent = cast view;
@@ -114,7 +114,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 	}
 }
 
-class FXScene extends FileView {
+class FXEditor extends FileView {
 
 	var sceneEditor : FXSceneEditor;
 	var data : hide.prefab.fx.FXScene;
@@ -1035,5 +1035,5 @@ class FXScene extends FileView {
 		return prop.charAt(0).toUpperCase() + prop.substr(1);
 	}
 
-	static var _ = FileTree.registerExtension(FXScene,["fx"], { icon : "sitemap", createNew : "FX" });
+	static var _ = FileTree.registerExtension(FXEditor, ["fx"], { icon : "sitemap", createNew : "FX" });
 }
