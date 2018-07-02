@@ -2,6 +2,7 @@ package hide.prefab.fx;
 import hide.prefab.Curve;
 import hide.prefab.fx.FXScene.Value;
 import hide.prefab.fx.FXScene.Evaluator;
+import hide.prefab.fx.FXScene.ShaderAnimation;
 using Lambda;
 
 @:enum abstract EmitShape(Int) {
@@ -23,11 +24,13 @@ using Lambda;
 	}
 }
 
+#if editor
 typedef ParamDef = {
-	> hide.Props.PropDef,
+	> hide.comp.PropsEditor.PropDef,
 	?animate: Bool,
 	?instance: Bool
 }
+#end
 
 typedef InstanceDef = {
 	localSpeed: Value,
@@ -40,7 +43,7 @@ typedef InstanceDef = {
 	alignDirection: Bool
 }
 
-typedef ShaderAnims = Array<hide.prefab.Shader.ShaderAnimation>;
+typedef ShaderAnims = Array<ShaderAnimation>;
 
 @:allow(hide.prefab.fx.EmitterObject)
 private class ParticleInstance extends h3d.scene.Object {
@@ -289,10 +292,7 @@ class EmitterObject extends h3d.scene.Object {
 				var shCtx = shader.makeInstance(ctx);
 				if(shCtx == null)
 					continue;
-				var anim : hide.prefab.Shader.ShaderAnimation = cast shCtx.custom;
-				if(anim != null) {
-					part.shaderAnims.push(anim);
-				}
+				hide.prefab.fx.FXScene.getShaderAnims(ctx, shader, part.shaderAnims);
 			}
 		}
 		context.local3d = this;

@@ -1,7 +1,6 @@
 package hide.prefab;
 using Lambda;
 import hide.prefab.fx.FXScene.Value;
-import hide.prefab.fx.FXScene.Evaluator;
 
 typedef CurveHandle = {
 	dt: Float,

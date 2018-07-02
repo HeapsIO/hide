@@ -2,39 +2,6 @@ package hide.prefab;
 import hide.prefab.fx.FXScene.Value;
 import hide.prefab.fx.FXScene.Evaluator;
 
-typedef ShaderParam = {
-	def: hxsl.Ast.TVar,
-	value: Value
-};
-
-typedef ShaderParams = Array<ShaderParam>;
-
-class ShaderAnimation extends Evaluator {
-	public var params : ShaderParams;
-	public var shader : hxsl.DynamicShader;
-
-	public function setTime(time: Float) {
-		for(param in params) {
-			var v = param.def;
-			switch(v.type) {
-				case TFloat:
-					var val = getFloat(param.value, time);
-					shader.setParamValue(v, val);
-				case TInt:
-					var val = hxd.Math.round(getFloat(param.value, time));
-					shader.setParamValue(v, val);
-				case TBool:
-					var val = getFloat(param.value, time) >= 0.5;
-					shader.setParamValue(v, val);
-				case TVec(_, VFloat):
-					var val = getVector(param.value, time);
-					shader.setParamValue(v, val);
-				default:
-			}
-		}
-	}
-}
-
 class Shader extends Prefab {
 
 	public var shaderDef : Context.ShaderDef;
@@ -56,8 +23,7 @@ class Shader extends Prefab {
 	}
 
 	override function updateInstance(ctx: Context, ?propName) {
-		var shader = Std.instance(ctx.custom, ShaderAnimation);
-		shader.params = makeParams();
+		var shader = Std.instance(ctx.custom, hxsl.DynamicShader);
 		if(shader == null || shaderDef == null)
 			return;
 		for(v in shaderDef.shader.data.vars) {
@@ -74,7 +40,7 @@ class Shader extends Prefab {
 			}
 			if(val == null)
 				continue;
-			shader.shader.setParamValue(v, val);
+			shader.setParamValue(v, val);
 		}
 	}
 
@@ -93,14 +59,10 @@ class Shader extends Prefab {
 			var defVal = hide.tools.TypesCache.evalConst(v.e);
 			shader.hscriptSet(v.v.name, defVal);
 		}
-		var anim: ShaderAnimation = new ShaderAnimation(new hxd.Rand(0));
-		anim.shader = shader;
-		ctx.custom = anim;
-		if(shader != null) {
-			for(m in ctx.local3d.getMaterials()) {
-				m.mainPass.addShader(shader);
-			}
+		for(m in ctx.local3d.getMaterials()) {
+			m.mainPass.addShader(shader);
 		}
+		ctx.custom = shader;
 		updateInstance(ctx);
 		#end
 		return ctx;
@@ -119,8 +81,7 @@ class Shader extends Prefab {
 		#end
 	}
 
-	function loadShaderDef(ctx: Context) {
-		#if editor
+	public function loadShaderDef(ctx: Context) {
 		if(shaderDef == null) {
 			fixSourcePath();
 			var path = source;
@@ -146,7 +107,6 @@ class Shader extends Prefab {
 				Reflect.setField(props, v.name, getDefault(v.type));
 			}
 		}
-		#end
 	}
 
 	override function edit( ctx : EditContext ) {
@@ -174,7 +134,7 @@ class Shader extends Prefab {
 		#end
 	}
 
-	static function getDefault(type: hxsl.Ast.Type): Dynamic {
+	public static function getDefault(type: hxsl.Ast.Type): Dynamic {
 		switch(type) {
 			case TBool:
 				return false;
@@ -188,51 +148,6 @@ class Shader extends Prefab {
 				return null;
 		}
 		return null;
-	}
-
-	public function makeParams() {
-		if(shaderDef == null)
-			return null;
-
-		var ret : ShaderParams = [];
-
-		for(v in shaderDef.shader.data.vars) {
-			if(v.kind != Param)
-				continue;
-
-			var prop = Reflect.field(props, v.name);
-			if(prop == null) 
-				prop = getDefault(v.type);
-
-			var curves = hide.prefab.Curve.getCurves(this, v.name);
-			if(curves == null || curves.length == 0)
-				continue;
-
-			switch(v.type) {
-				case TVec(_, VFloat) :
-					var isColor = v.name.toLowerCase().indexOf("color") >= 0;
-					var val = isColor ? hide.prefab.Curve.getColorValue(curves) : hide.prefab.Curve.getVectorValue(curves);
-					ret.push({
-						def: v,
-						value: val
-					});
-
-				default:
-					var base = 1.0;
-					if(Std.is(prop, Float) || Std.is(prop, Int))
-						base = cast prop;
-					var curve = hide.prefab.Curve.getCurve(this, v.name);
-					var val = VConst(base);
-					if(curve != null)
-						val = VCurveValue(curve, base);
-					ret.push({
-						def: v,
-						value: val
-					});
-			}
-		}
-
-		return ret;
 	}
 
 	override function getHideProps() {

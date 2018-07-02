@@ -220,7 +220,7 @@ class Prefab {
 	public function getAbsPath() {
 		var p = this;
 		var path = [];
-		while(p != null && !Std.is(p, hide.prefab.Library)) {
+		while(p.parent != null) {
 			path.unshift(p.name);
 			p = p.parent;
 		}

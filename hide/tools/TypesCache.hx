@@ -1,5 +1,5 @@
 package hide.tools;
-import hide.Props;
+import hide.comp.PropsEditor;
 
 enum ModelKind {
 	PrefabDef;

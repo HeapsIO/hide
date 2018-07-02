@@ -2,8 +2,6 @@ package hide.prefab.fx;
 import hide.prefab.Curve;
 import hide.prefab.Prefab as PrefabElement;
 
-typedef ShaderAnimation = hide.prefab.Shader.ShaderAnimation;
-
 enum Value {
 	VZero;
 	VConst(v: Float);
@@ -86,6 +84,40 @@ class Evaluator {
 		}
 	}
 }
+
+typedef ShaderParam = {
+	def: hxsl.Ast.TVar,
+	value: Value
+};
+
+typedef ShaderParams = Array<ShaderParam>;
+
+class ShaderAnimation extends Evaluator {
+	public var params : ShaderParams;
+	public var shader : hxsl.DynamicShader;
+
+	public function setTime(time: Float) {
+		for(param in params) {
+			var v = param.def;
+			switch(v.type) {
+				case TFloat:
+					var val = getFloat(param.value, time);
+					shader.setParamValue(v, val);
+				case TInt:
+					var val = hxd.Math.round(getFloat(param.value, time));
+					shader.setParamValue(v, val);
+				case TBool:
+					var val = getFloat(param.value, time) >= 0.5;
+					shader.setParamValue(v, val);
+				case TVec(_, VFloat):
+					var val = getVector(param.value, time);
+					shader.setParamValue(v, val);
+				default:
+			}
+		}
+	}
+}
+
 
 typedef ObjectAnimation = {
 	elt: hide.prefab.Object3D,
@@ -263,7 +295,54 @@ class FXScene extends Library {
 			anims.push(anim);
 	}
 
-	static function getShaderAnims(ctx: Context, elt: PrefabElement, anims: Array<ShaderAnimation>) {
+	public static function makeShaderParams(ctx: Context, shaderElt: hide.prefab.Shader) {
+		shaderElt.loadShaderDef(ctx);
+		var shaderDef = shaderElt.shaderDef;
+		if(shaderDef == null)
+			return null;
+
+		var ret : ShaderParams = [];
+
+		for(v in shaderDef.shader.data.vars) {
+			if(v.kind != Param)
+				continue;
+
+			var prop = Reflect.field(shaderElt.props, v.name);
+			if(prop == null) 
+				prop = hide.prefab.Shader.getDefault(v.type);
+
+			var curves = hide.prefab.Curve.getCurves(shaderElt, v.name);
+			if(curves == null || curves.length == 0)
+				continue;
+
+			switch(v.type) {
+				case TVec(_, VFloat) :
+					var isColor = v.name.toLowerCase().indexOf("color") >= 0;
+					var val = isColor ? hide.prefab.Curve.getColorValue(curves) : hide.prefab.Curve.getVectorValue(curves);
+					ret.push({
+						def: v,
+						value: val
+					});
+
+				default:
+					var base = 1.0;
+					if(Std.is(prop, Float) || Std.is(prop, Int))
+						base = cast prop;
+					var curve = hide.prefab.Curve.getCurve(shaderElt, v.name);
+					var val = VConst(base);
+					if(curve != null)
+						val = VCurveValue(curve, base);
+					ret.push({
+						def: v,
+						value: val
+					});
+			}
+		}
+
+		return ret;
+	}
+
+	public static function getShaderAnims(ctx: Context, elt: PrefabElement, anims: Array<ShaderAnimation>) {
 		if(Std.instance(elt, hide.prefab.fx.Emitter) == null) {
 			for(c in elt.children) {
 				getShaderAnims(ctx, c, anims);
@@ -276,7 +355,10 @@ class FXScene extends Library {
 
 		for(shCtx in ctx.shared.getContexts(elt)) {
 			if(shCtx.custom == null) continue;
-			anims.push(cast shCtx.custom);
+			var anim: ShaderAnimation = new ShaderAnimation(new hxd.Rand(0));
+			anim.shader = shCtx.custom;
+			anim.params = makeShaderParams(ctx, shader);
+			anims.push(anim);
 		}
 	}
 
