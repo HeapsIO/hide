@@ -148,6 +148,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		}
 
 		if(current != null && (current.type == "model" || current.type == "polygon")) {
+			allowed.push("material");
 			allowed.push("shader");
 		}
 
