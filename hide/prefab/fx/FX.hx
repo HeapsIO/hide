@@ -35,7 +35,6 @@ class ShaderAnimation extends Evaluator {
 	}
 }
 
-
 typedef ObjectAnimation = {
 	elt: hide.prefab.Object3D,
 	obj: h3d.scene.Object,

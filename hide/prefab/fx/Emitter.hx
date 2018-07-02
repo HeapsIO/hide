@@ -22,13 +22,11 @@ using Lambda;
 	}
 }
 
-#if editor
 typedef ParamDef = {
 	> hide.comp.PropsEditor.PropDef,
 	?animate: Bool,
 	?instance: Bool
 }
-#end
 
 typedef InstanceDef = {
 	localSpeed: Value,
@@ -346,7 +344,7 @@ class Emitter extends Object3D {
 	public function new(?parent) {
 		super(parent);
 		props = { };
-	}	
+	}
 
 	public static var emitterParams : Array<ParamDef> = [
 		{ name: "emitRate", t: PInt(0, 100), def: 5, disp: "Rate", animate: true },

@@ -43,7 +43,6 @@ class Shader extends Prefab {
 	}
 
 	override function makeInstance(ctx:Context):Context {
-		#if editor
 		if(source == null)
 			return ctx;
 		if(ctx.local3d == null)
@@ -54,7 +53,7 @@ class Shader extends Prefab {
 			return ctx;
 		var shader = new hxsl.DynamicShader(shaderDef.shader);
 		for( v in shaderDef.inits ) {
-			var defVal = hide.tools.TypesCache.evalConst(v.e);
+			var defVal = evalConst(v.e);
 			shader.hscriptSet(v.v.name, defVal);
 		}
 		for(m in ctx.local3d.getMaterials()) {
@@ -62,7 +61,6 @@ class Shader extends Prefab {
 		}
 		ctx.custom = shader;
 		updateInstance(ctx);
-		#end
 		return ctx;
 	}
 
@@ -91,10 +89,11 @@ class Shader extends Prefab {
 		if(shaderDef == null)
 			return;
 
+		#if editor
 		// TODO: Where to init prefab default values?
 		for( v in shaderDef.inits ) {
 			if(!Reflect.hasField(props, v.v.name)) {
-				var defVal = hide.tools.TypesCache.evalConst(v.e);
+				var defVal = evalConst(v.e);
 				Reflect.setField(props, v.v.name, defVal);
 			}
 		}
@@ -105,6 +104,7 @@ class Shader extends Prefab {
 				Reflect.setField(props, v.name, getDefault(v.type));
 			}
 		}
+		#end
 	}
 
 	override function edit( ctx : EditContext ) {
@@ -130,6 +130,32 @@ class Shader extends Prefab {
 			ctx.onChange(this, pname);
 		});
 		#end
+	}
+
+	public static function evalConst( e : hxsl.Ast.TExpr ) : Dynamic {
+		return switch( e.e ) {
+		case TConst(c):
+			switch( c ) {
+			case CNull: null;
+			case CBool(b): b;
+			case CInt(i): i;
+			case CFloat(f): f;
+			case CString(s): s;
+			}
+		case TCall({ e : TGlobal(Vec2 | Vec3 | Vec4) }, args):
+			var vals = [for( a in args ) evalConst(a)];
+			if( vals.length == 1 )
+				switch( e.t ) {
+				case TVec(n, _):
+					for( i in 0...n - 1 ) vals.push(vals[0]);
+					return vals;
+				default:
+					throw "assert";
+				}
+			return vals;
+		default:
+			throw "Unhandled constant init " + hxsl.Printer.toString(e);
+		}
 	}
 
 	public static function getDefault(type: hxsl.Ast.Type): Dynamic {

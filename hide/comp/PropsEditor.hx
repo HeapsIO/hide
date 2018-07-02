@@ -18,6 +18,8 @@ typedef PropDef = {
 	?disp: String
 };
 
+#if editor
+
 class PropsEditor extends Component {
 
 	public var undo : hide.ui.UndoHistory;
@@ -473,3 +475,5 @@ class PropsField extends Component {
 	}
 
 }
+
+#end
