@@ -23,7 +23,7 @@ using Lambda;
 }
 
 typedef ParamDef = {
-	> hide.comp.PropsEditor.PropDef,
+	> hide.prefab.Props.PropDef,
 	?animate: Bool,
 	?instance: Bool
 }

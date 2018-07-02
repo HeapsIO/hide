@@ -1,5 +1,6 @@
 package hide.tools;
 import hide.comp.PropsEditor;
+import hide.prefab.Props;
 
 enum ModelKind {
 	PrefabDef;
@@ -9,7 +10,7 @@ enum ModelKind {
 typedef TypeModel = {
 	var id : String;
 	var kind : ModelKind;
-	var fields : Array<PropDef>;
+	var fields : Array<hide.prefab.Props.PropDef>;
 	var file : TypeFile;
 }
 
@@ -215,7 +216,7 @@ class TypesCache {
 		}
 	}
 
-	public static function defType( t :  PropType ) : Dynamic {
+	public static function defType( t : PropType ) : Dynamic {
 		switch( t ) {
 		case PInt(min, _):
 			return if( min == null ) 0 else min;
