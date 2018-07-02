@@ -6,6 +6,7 @@ class Shader extends Prefab {
 
 	public function new(?parent) {
 		super(parent);
+		type = "shader";
 		props = {};
 	}
 	
@@ -14,11 +15,12 @@ class Shader extends Prefab {
 	}
 
 	override function save() {
+		fixSourcePath();
 		return {
 		};
 	}
 
-	public function applyVars(ctx: Context, time: Float=0.0) {
+	override function updateInstance(ctx: Context, ?propName) {
 		var shader = Std.instance(ctx.custom, hxsl.DynamicShader);
 		if(shader == null || shaderDef == null)
 			return;
@@ -27,14 +29,8 @@ class Shader extends Prefab {
 				continue;
 			var val : Dynamic = Reflect.field(props, v.name);
 			switch(v.type) {
-				case TFloat:
-					val = getFloatParam(v.name, time);
-				case TInt:
-					val = hxd.Math.round(getFloatParam(v.name, time));
-				case TBool:
-					val = getFloatParam(v.name, time) >= 0.5;
 				case TVec(_, VFloat):
-					val = getVectorParam(v.name, time);
+					val = h3d.Vector.fromArray(val);
 				case TSampler2D:
 					if(val != null)
 						val = ctx.loadTexture(val);
@@ -47,7 +43,6 @@ class Shader extends Prefab {
 	}
 
 	override function makeInstance(ctx:Context):Context {
-		#if editor
 		if(source == null)
 			return ctx;
 		if(ctx.local3d == null)
@@ -58,39 +53,47 @@ class Shader extends Prefab {
 			return ctx;
 		var shader = new hxsl.DynamicShader(shaderDef.shader);
 		for( v in shaderDef.inits ) {
-			var defVal = hide.tools.TypesCache.evalConst(v.e);
+			var defVal = evalConst(v.e);
 			shader.hscriptSet(v.v.name, defVal);
 		}
-		ctx.custom = shader;
-		if(shader != null) {
-			for(m in ctx.local3d.getMaterials()) {
-				m.mainPass.addShader(shader);
-			}
+		for(m in ctx.local3d.getMaterials()) {
+			m.mainPass.addShader(shader);
 		}
-		applyVars(ctx);
-		#end
+		ctx.custom = shader;
+		updateInstance(ctx);
 		return ctx;
 	}
 
-	function loadShaderDef(ctx: Context) {
+	function fixSourcePath() {
 		#if editor
+		var ide = hide.Ide.inst;
+		var shadersPath = ide.projectDir + "/src";  // TODO: serach in haxe.classPath?
+
+		var path = source.split("\\").join("/");
+		if( StringTools.startsWith(path.toLowerCase(), shadersPath.toLowerCase()+"/") ) {
+			path = path.substr(shadersPath.length + 1);
+		}
+		source = path;
+		#end
+	}
+
+	public function loadShaderDef(ctx: Context) {
 		if(shaderDef == null) {
-			var path = source.split("\\").join("/");
-			var ide = hide.Ide.inst;
-			var shadersPath = ide.projectDir + "/src";  // TODO: serach in haxe.classPath?
-			if( StringTools.startsWith(path.toLowerCase(), shadersPath.toLowerCase()+"/") ) {
-				path = path.substr(shadersPath.length + 1);
+			fixSourcePath();
+			var path = source;
+			if(StringTools.endsWith(path, ".hx")) {
+				path = path.substr(0, -3);
 			}
-			path = haxe.io.Path.withoutExtension(path);
 			shaderDef = ctx.loadShader(path);
 		}
 		if(shaderDef == null)
 			return;
 
+		#if editor
 		// TODO: Where to init prefab default values?
 		for( v in shaderDef.inits ) {
 			if(!Reflect.hasField(props, v.v.name)) {
-				var defVal = hide.tools.TypesCache.evalConst(v.e);
+				var defVal = evalConst(v.e);
 				Reflect.setField(props, v.v.name, defVal);
 			}
 		}
@@ -102,22 +105,6 @@ class Shader extends Prefab {
 			}
 		}
 		#end
-	}
-
-	static function getDefault(type: hxsl.Ast.Type): Dynamic {
-		switch(type) {
-			case TBool:
-				return false;
-			case TInt:
-				return 0;
-			case TFloat:
-				return 0.0;
-			case TVec( size, VFloat ):
-				return [for(i in 0...size) 0];
-			default:
-				return null;
-		}
-		return null;
 	}
 
 	override function edit( ctx : EditContext ) {
@@ -141,43 +128,50 @@ class Shader extends Prefab {
 		
 		ctx.properties.add(group,this.props, function(pname) {
 			ctx.onChange(this, pname);
-			var inst = ctx.getContext(this);
-			applyVars(inst);
 		});
 		#end
 	}
 
-	public function getCurves(prefix: String) {
-		return this.getAll(hide.prefab.Curve).filter(c -> c.name.split(".")[0] == prefix);
-	}
-
-	public function getFloatParam(name: String, time: Float) {
-		var ret = cast Reflect.field(props, name);
-		var curve = getOpt(hide.prefab.Curve, name);
-		if(curve != null)
-			ret = curve.getVal(time);
-		return ret;
-	}
-
-	public function getVectorParam(name: String, time: Float) : h3d.Vector {
-		var ret = new h3d.Vector();
-		var a = Std.instance(Reflect.field(props, name), Array);
-		if(a == null)
-			return ret;
-		ret = h3d.Vector.fromArray(a);
-		var curves = getCurves(name);
-		if(curves != null && curves.length > 0) {
-			if(curves.length >= 3 && name.toLowerCase().indexOf("color") >= 0)
-				ret = hide.prefab.Curve.getColorValue(curves, time);
-			else {
-				// TODO: Map by name instead of order?
-				ret.x = curves[0].getVal(time);
-				if(curves.length > 1) ret.y = curves[1].getVal(time);
-				if(curves.length > 2) ret.z = curves[2].getVal(time);
-				if(curves.length > 3) ret.w = curves[3].getVal(time);
+	public static function evalConst( e : hxsl.Ast.TExpr ) : Dynamic {
+		return switch( e.e ) {
+		case TConst(c):
+			switch( c ) {
+			case CNull: null;
+			case CBool(b): b;
+			case CInt(i): i;
+			case CFloat(f): f;
+			case CString(s): s;
 			}
+		case TCall({ e : TGlobal(Vec2 | Vec3 | Vec4) }, args):
+			var vals = [for( a in args ) evalConst(a)];
+			if( vals.length == 1 )
+				switch( e.t ) {
+				case TVec(n, _):
+					for( i in 0...n - 1 ) vals.push(vals[0]);
+					return vals;
+				default:
+					throw "assert";
+				}
+			return vals;
+		default:
+			throw "Unhandled constant init " + hxsl.Printer.toString(e);
 		}
-		return ret;
+	}
+
+	public static function getDefault(type: hxsl.Ast.Type): Dynamic {
+		switch(type) {
+			case TBool:
+				return false;
+			case TInt:
+				return 0;
+			case TFloat:
+				return 0.0;
+			case TVec( size, VFloat ):
+				return [for(i in 0...size) 0];
+			default:
+				return null;
+		}
+		return null;
 	}
 
 	override function getHideProps() {

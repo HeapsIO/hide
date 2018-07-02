@@ -47,8 +47,10 @@ class ShaderLoader {
 		s.data = chk.check(name, e.expr);
 		@:privateAccess s.initialize();
 		var s : CachedShader = { file : e.file, name : name, shader : s, inits : chk.inits, watch : null };
-		s.watch = onShaderChanged.bind(s);
-		ide.fileWatcher.register(s.file, s.watch);
+		if(sys.FileSystem.exists(s.file)) {
+			s.watch = onShaderChanged.bind(s);
+			ide.fileWatcher.register(s.file, s.watch);
+		}
 		shaderCache.set(name, s);
 		return s;
 	}

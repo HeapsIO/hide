@@ -174,30 +174,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		}
 
 		for( ptype in allowed ) {
-			var pcl = allRegs.get(ptype);
-			var props = Type.createEmptyInstance(pcl).getHideProps();
-			newItems.push({
-				label : props.name,
-				click : function() {
-
-					function make(?path) {
-						var p = Type.createInstance(pcl, [current == null ? sceneData : current]);
-						@:privateAccess p.type = ptype;
-						if(path != null)
-							p.source = path;
-						return p;
-					}
-
-					if( props.fileSource != null )
-						ide.chooseFile(props.fileSource, function(path) {
-							if( path == null ) return;
-							var p = make(path);
-							setup(p);
-						});
-					else
-						setup(make());
-				}
-			});
+			newItems.push(getNewTypeMenuItem(ptype, current == null ? sceneData : current));
 		}
 
 		function addNewInstances() {
@@ -299,10 +276,11 @@ class Level3D extends FileView {
 					</div>
 					<div class="tabs">
 						<div class="tab" name="Scene" icon="sitemap">
-							<div class="hide-block">
-								<div class="hide-list hide-scene-tree">
+							<div class="hide-block" style="height:60%">
+								<div class="hide-scene-tree hide-list">
 								</div>
 							</div>
+							<div class="hide-scroll"></div>
 						</div>
 						<div class="tab" name="Properties" icon="cog">
 							<div class="level-props"></div>
@@ -320,7 +298,7 @@ class Level3D extends FileView {
 		sceneEditor = new Level3DSceneEditor(this, context, data);
 		sceneEditor.addSearchBox(element.find(".hide-scene-tree").first());
 		element.find(".hide-scene-tree").first().append(sceneEditor.tree.element);
-		element.find(".tab").first().append(sceneEditor.properties.element);
+		element.find(".hide-scroll").first().append(sceneEditor.properties.element);
 		element.find(".scene").first().append(sceneEditor.scene.element);
 		sceneEditor.tree.element.addClass("small");
 
@@ -501,11 +479,7 @@ class Level3D extends FileView {
 		if(layer != null) {
 			var color = "#" + StringTools.hex(layer.color & 0xffffff, 6);
 			el.find("i.jstree-themeicon").first().css("color", color);
-			if(layer.locked)
-				el.find("a").first().addClass("jstree-locked");
-			else
-				el.find("a").first().removeClass("jstree-locked");
-
+			el.find("a").first().toggleClass("locked", layer.locked);
 			refreshLayerIcon(layer);
 		}
 	}

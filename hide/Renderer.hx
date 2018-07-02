@@ -64,7 +64,8 @@ class PbrSetup extends h3d.mat.PbrMaterialSetup {
 
 	override function getDefaults( ?type : String ) : Any {
 		if(type == "ui") return {
-			kind : "Alpha",
+			mode : "Overlay",
+			blend : "Alpha",
 			shadows : false,
 			culled : false,
 			lighted : false
@@ -85,7 +86,7 @@ class PbrRenderer extends h3d.scene.pbr.Renderer {
 	override function postDraw() {
 		defaultPass.draw(getSort("debuggeom"));
 		defaultPass.draw(getSort("debuggeom_alpha"));
-		draw("overlay");
+		defaultPass.draw(getSort("overlay"));
 		draw("outline");
 		defaultPass.draw(getSort("ui"));
 	}

@@ -80,11 +80,13 @@ class Polygon extends Object3D {
 			primitive = new h3d.prim.Polygon(verts, cast indices);
 			var n = new h3d.col.Point(0, 0, 1.);
 			primitive.normals = [for(p in points) n];
-			primitive.uvs = [for(p in points) new h3d.prim.UV(p.x + 0.5, p.y + 0.5)];
+			primitive.uvs = [for(p in points) new h3d.prim.UV(p.y + 0.5, -p.x + 0.5)];  // Setup UVs so that image up (Y) is aligned with forward axis (X)
 			primitive.colors = [for(p in points) new h3d.col.Point(1,1,1)];
 		}
 
 		var mesh = new h3d.scene.Mesh(primitive, ctx.local3d);
+		mesh.material.props = h3d.mat.MaterialSetup.current.getDefaults("ui");
+		mesh.material.blendMode = Alpha;
 		ctx.local3d = mesh;
 		ctx.local3d.name = name;
 		applyPos(ctx.local3d);

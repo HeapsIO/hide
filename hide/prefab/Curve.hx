@@ -28,6 +28,7 @@ class Curve extends Prefab {
 	public var duration : Float = 0.; // TODO: optional?
 	public var clampMin : Float = 0.;
 	public var clampMax : Float = 0.;
+	public var keyMode : CurveKeyMode = Linear;
 	public var keys : CurveKeys = [];
 
    	public function new(?parent) {
@@ -40,14 +41,28 @@ class Curve extends Prefab {
 		keys = o.keys;
 		clampMin = o.clampMin;
 		clampMax = o.clampMax;
+		if(o.keyMode != null)
+			keyMode = o.keyMode;
 	}
 
 	override function save() {
+		var keysDat = [];
+		for(k in keys) {
+			var o = {
+				time: k.time,
+				value: k.value,
+				mode: k.mode
+			};
+			if(k.prevHandle != null) Reflect.setField(o, "prevHandle", k.prevHandle);
+			if(k.nextHandle != null) Reflect.setField(o, "nextHandle", k.nextHandle);
+			keysDat.push(o);
+		}
 		return {
 			duration: duration,
 			clampMin: clampMin,
 			clampMax: clampMax,
-			keys: keys,
+			keyMode: keyMode,
+			keys: keysDat,
 		};
 	}
 	
@@ -69,7 +84,7 @@ class Curve extends Prefab {
 		return closest;
 	}
 
-	public function addKey(time: Float, ?val: Float) {
+	public function addKey(time: Float, ?val: Float, ?mode=null) {
 		var index = 0;
 		for(ik in 0...keys.length) {
 			var key = keys[ik];
@@ -83,13 +98,14 @@ class Curve extends Prefab {
 		var key : hide.prefab.Curve.CurveKey = {
 			time: time,
 			value: val,
-			mode: keys[index] != null ? keys[index].mode : Aligned
+			mode: mode != null ? mode : (keys[index] != null ? keys[index].mode : keyMode)
 		};
 		keys.insert(index, key);
 		return key;
 	}
 
 	public function getBounds() {
+		// TODO: Take bezier handles into account
 		var ret = new h2d.col.Bounds();
 		for(k in keys) {
 			ret.addPos(k.time, k.value);
@@ -159,6 +175,40 @@ class Curve extends Prefab {
 		return y;
 	}
 
+	public function getSum(time: Float) {
+		var sum = 0.0;
+		for(ik in 0...keys.length) {
+			var key = keys[ik];
+			if(time < key.time)
+				break;
+
+			if(ik == 0 && key.time > 0) {
+				// Account for start of curve
+				sum += key.time * key.value;
+			}
+			
+			var nkey = keys[ik + 1];
+			if(nkey != null) {
+				if(time > nkey.time) {
+					// Full interval
+					sum += key.value * (nkey.time - key.time);
+					if(key.mode != Constant)
+						sum += 0.5 * (nkey.time - key.time) * (nkey.value - key.value);
+				}
+				else {
+					// Split interval
+					sum += key.value * (time - key.time);
+					if(key.mode != Constant)
+						sum += 0.5 * (time - key.time) * hxd.Math.lerp(key.value, nkey.value, (time - key.time) / (nkey.time - key.time));
+				}
+			}
+			else {
+				sum += key.value * (time - key.time);
+			}
+		}
+		return sum;
+	}
+
 	public function sample(numPts: Int) {
 		var vals = [];
 		for(i in 0...numPts) {
@@ -166,6 +216,34 @@ class Curve extends Prefab {
 			vals.push(v);
 		}
 		return vals;
+	}
+
+	override function getHideProps() {
+		return { icon : "paint-brush", name : "Curve", fileSource : null };
+	}
+
+	public static function getCurve(parent : hide.prefab.Prefab, name: String, onlyEnabled=true) {
+		for(c in parent.children) {
+			if(onlyEnabled && !c.enabled) continue;
+			if(c.name != name) continue;
+			var curve = c.to(Curve);
+			if(curve == null) continue;
+			return curve;
+		}
+		return null;
+	}
+
+	public static function getCurves(parent: hide.prefab.Prefab, prefix: String) {
+		var ret = [];
+		for(c in parent.children) {
+			if(!c.enabled) continue;
+			if(c.name.split(".")[0] != prefix)
+				continue;
+			var curve = c.to(Curve);
+			if(curve == null) continue;
+			ret.push(curve);
+		}
+		return ret;
 	}
 
 	public static function getGroups(curves: Array<Curve>) {
@@ -186,40 +264,53 @@ class Curve extends Prefab {
 		return groups;
 	}
 
-	public static function getColorValue(curves: Array<Curve>, time: Float) : h3d.Vector {
-		inline function findCurve(suffix: String) {
-			return curves.find(c -> StringTools.endsWith(c.name, suffix));
-		}
-		
-		var r = findCurve(".r");
-		var g = findCurve(".g");
-		var b = findCurve(".b");
-		var a = findCurve(".a");
-		var h = findCurve(".h");
-		var s = findCurve(".s");
-		var l = findCurve(".l");
 
-		var col = new h3d.Vector(0, 0, 0, 1);
-
-		if(r != null && g != null && b != null) {
-			col.r = r.getVal(time);
-			col.g = g.getVal(time);
-			col.b = b.getVal(time);
-		}
-		else {
-			var hval = 0.0, sval = 0.0, lval = 0.0;
-			if(h != null) hval = h.getVal(time);
-			if(s != null) sval = s.getVal(time);
-			if(l != null) lval = l.getVal(time);
-			col.makeColor(hval, sval, lval);
-		}
-		if(a != null)
-			col.a = a.getVal(time);
-		return col;
+	static inline function findCurve(curves: Array<Curve>, suffix: String) {
+		return curves.find(c -> StringTools.endsWith(c.name, suffix));
 	}
 
-	override function getHideProps() {
-		return { icon : "paint-brush", name : "Curve", fileSource : null };
+	public static function getVectorValue(curves: Array<Curve>, defVal: Float=0.0) : hide.prefab.fx.Value {
+		inline function find(s) {
+			return findCurve(curves, s);
+		}
+		var x = find(".x");
+		var y = find(".y");
+		var z = find(".z");
+		var w = find(".w");
+
+		return VVector(
+			x != null ? VCurve(x) : VConst(defVal),
+			y != null ? VCurve(y) : VConst(defVal),
+			z != null ? VCurve(z) : VConst(defVal),
+			w != null ? VCurve(w) : VConst(1.0));
+	}
+	
+	public static function getColorValue(curves: Array<Curve>) : hide.prefab.fx.Value {
+		inline function find(s) {
+			return findCurve(curves, s);
+		}
+		
+		var r = find(".r");
+		var g = find(".g");
+		var b = find(".b");
+		var a = find(".a");
+		var h = find(".h");
+		var s = find(".s");
+		var l = find(".l");
+		
+		if(h != null || s != null || l != null) {
+			return VHsl(
+				h != null ? VCurve(h) : VConst(0.0),
+				s != null ? VCurve(s) : VConst(1.0),
+				l != null ? VCurve(l) : VConst(1.0),
+				a != null ? VCurve(a) : VConst(1.0));
+		}
+
+		return VVector(
+			r != null ? VCurve(r) : VConst(1.0),
+			g != null ? VCurve(g) : VConst(1.0),
+			b != null ? VCurve(b) : VConst(1.0),
+			a != null ? VCurve(a) : VConst(1.0));
 	}
 
 	static var _ = Library.register("curve", Curve);

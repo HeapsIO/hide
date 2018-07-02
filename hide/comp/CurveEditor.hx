@@ -14,6 +14,7 @@ class CurveEditor extends Component {
 
 	public var lockViewX = false;
 	public var lockViewY = false;
+	public var lockKeyX = false;
 
 	var svg : hide.comp.SVG;
 	var width = 0;
@@ -24,13 +25,13 @@ class CurveEditor extends Component {
 
 	var refreshTimer : haxe.Timer = null;
 	var lastValue : Dynamic;
-	var lastMode : hide.prefab.Curve.CurveKeyMode = Constant;
 
 	var selectedKeys: Array<CurveKey> = [];
 
 	public function new(undo, ?parent) {
 		super(parent,null);
 		this.undo = undo;
+		element.addClass("hide-curve-editor");
 		element.attr({ tabindex: "1" });
 		element.css({ width: "100%", height: "100%" });
 		element.focus();
@@ -149,7 +150,7 @@ class CurveEditor extends Component {
 		beforeChange();		
 		if(curve.clampMin != curve.clampMax)
 			val = hxd.Math.clamp(val, curve.clampMin, curve.clampMax);
-		curve.addKey(time, val);
+		curve.addKey(time, val, curve.keyMode);
 		afterChange();
 	}
 
@@ -378,6 +379,8 @@ class CurveEditor extends Component {
 
 		refreshGrid();
 		refreshGraph(anim);
+		if(!anim)
+			saveView();
 	}
 
 	public function refreshGrid() {
@@ -399,12 +402,28 @@ class CurveEditor extends Component {
 		var minY = Math.floor(iyt(height));
 		var maxY = Math.ceil(iyt(0));
 		var vgrid = svg.group(gridGroup, "vgrid");
-		for(iy in minY...(maxY+1)) {
-			var l = svg.line(vgrid, 0, yt(iy), width, yt(iy)).attr({
+		var vstep = 1;
+		while((maxY - minY) / vstep > 10)
+			vstep *= 10;
+
+		inline function hline(iy) {
+			return svg.line(vgrid, 0, yt(iy), width, yt(iy)).attr({
 				"shape-rendering": "crispEdges"
 			});
+		}
+
+		inline function hlabel(str, iy) {
+			svg.text(vgrid, 1, yt(iy), str);
+		}
+
+		var minS = Math.floor(minY / vstep);
+		var maxS = Math.ceil(maxY / vstep);
+		for(i in minS...(maxS+1)) {
+			var iy = i * vstep;
+			var l = hline(iy);
 			if(iy == 0)
-				l.addClass("axis");
+				l.addClass("axis");	
+			hlabel("" + iy, iy);
 		}
 	}
 
@@ -485,6 +504,12 @@ class CurveEditor extends Component {
 						var prevVal = key.value;
 						key.time = nkx;
 						key.value = nky;
+						if(e.ctrlKey) {
+							key.time = Math.round(key.time * 10) / 10.;
+							key.value = Math.round(key.value * 10) / 10.;
+						}
+						if(lockKeyX)
+							key.time = prevTime;
 						fixKey(key);
 						refreshGraph(true, key);
 						onKeyMove(key, prevTime, prevVal);
@@ -501,7 +526,7 @@ class CurveEditor extends Component {
 					e.preventDefault();
 					function setMode(m: hide.prefab.Curve.CurveKeyMode) {
 						key.mode = m;
-						lastMode = m;
+						curve.keyMode = m;
 						fixKey(key);
 						refreshGraph();
 					}

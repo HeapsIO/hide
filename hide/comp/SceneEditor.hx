@@ -68,6 +68,7 @@ class SceneEditorContext extends hide.prefab.EditContext {
 	}
 
 	override function onChange(p : PrefabElement, pname: String) {
+		super.onChange(p, pname);
 		editor.onPrefabChange(p, pname);
 	}
 }
@@ -106,6 +107,7 @@ class SceneEditor {
 
 		var propsEl = new Element('<div class="props"></div>');
 		properties = new hide.comp.PropsEditor(undo,null,propsEl);
+		properties.saveDisplayKey = view.saveDisplayKey + "/properties";
 
 		tree = new hide.comp.IconTree();
 		tree.async = false;
@@ -228,13 +230,25 @@ class SceneEditor {
 				{ label : "Rename", enabled : current != null, click : function() tree.editNode(current) },
 				{ label : "Delete", enabled : current != null, click : function() deleteElements(curEdit.rootElements) },
 				{ label : "Duplicate", enabled : current != null, click : duplicate.bind(false) },
-				{ label : "Select all", click : selectAll },
-				{ label : "Select children", enabled : current != null, click : function() selectObjects(current.flatten()) },
-				{ label : "Show", enabled : curEdit != null && curEdit.elements.length > 0, click : function() setVisible(curEdit.elements, true) },
-				{ label : "Hide", enabled : curEdit != null && curEdit.elements.length > 0, click : function() setVisible(curEdit.elements, false) },
-				{ label : "Isolate", enabled : curEdit != null && curEdit.elements.length > 0, click : function() isolate(curEdit.elements) },
-				{ label : "Group", enabled : curEdit != null && canGroupSelection(), click : groupSelection },
+				{ label : "Reference", enabled : current != null, click : function() createRef(current, current.parent) },
 			];
+			
+			if(current != null && current.to(Object3D) != null) {
+				menuItems = menuItems.concat([
+					{ label : "Select all", click : selectAll },
+					{ label : "Select children", enabled : current != null, click : function() selectObjects(current.flatten()) },
+					{ label : "Show", click : function() setVisible(curEdit.elements, true) },
+					{ label : "Hide", click : function() setVisible(curEdit.elements, false) },
+					{ label : "Isolate", click : function() isolate(curEdit.elements) },
+					{ label : "Group", enabled : curEdit != null && canGroupSelection(), click : groupSelection }
+				]);
+			}
+			else if(current != null) {
+				var enabled = current.enabled;
+				menuItems = menuItems.concat([
+					{ label : enabled ? "Disable" : "Enable", click : function() setEnabled(curEdit.elements, !enabled) },
+				]);
+			}
 
 			new hide.comp.ContextMenu(menuItems);
 		});
@@ -280,6 +294,21 @@ class SceneEditor {
 
 	public function refresh( ?callb ) {
 		var sh = context.shared;
+		refreshScene();
+		tree.refresh(function() {
+			for(elt in sh.contexts.keys()) {
+				onPrefabChange(elt);
+			}
+			if(callb != null) callb();
+		});
+	}
+
+	function refreshProps() {
+		selectObjects(curEdit.elements, false);
+	}
+
+	public function refreshScene() {
+		var sh = context.shared;
 		sh.root3d.remove();
 		sh.root2d.remove();
 		for( f in sh.cleanups )
@@ -295,16 +324,6 @@ class SceneEditor {
 		scene.init();
 		scene.engine.backgroundColor = bgcol;
 		refreshInteractives();
-		tree.refresh(function() {
-			for(elt in sh.contexts.keys()) {
-				onPrefabChange(elt);
-			}
-			if(callb != null) callb();
-		});
-	}
-
-	function refreshProps() {
-		selectObjects(curEdit.elements, false);
 	}
 
 	function refreshInteractives() {
@@ -570,24 +589,21 @@ class SceneEditor {
 	public function onPrefabChange(p: PrefabElement, ?pname: String) {
 		var model = p.to(hide.prefab.Model);
 		if(model != null && pname == "source") {
-			refresh();
+			refreshScene();
 			return;
 		}
 
-		var el = tree.getElement(p);
-		updateTreeStyle(p, el);
+		if(p != sceneData) {
+			var el = tree.getElement(p);
+			updateTreeStyle(p, el);
+		}
 	}
 
 	function updateTreeStyle(p: PrefabElement, el: Element) {
 		var obj3d  = p.to(Object3D);
-		if(obj3d != null) {
-			if(obj3d.visible) {
-				el.removeClass("jstree-invisible");
-			}
-			else {
-				el.addClass("jstree-invisible");
-			}
-		}
+		if(obj3d != null)
+			el.toggleClass("invisible", !obj3d.visible);
+		el.toggleClass("disabled", !p.enabled);
 	}
 
 	public function getContext(elt : PrefabElement) {
@@ -706,8 +722,7 @@ class SceneEditor {
 			autoName(model);
 			models.push(model);
 		}
-		refresh();
-		selectObjects(models);
+		refresh(() -> selectObjects(models));
 	}
 
 	function canGroupSelection() {
@@ -841,17 +856,36 @@ class SceneEditor {
 		selectObjects([]);
 	}
 
+	public function setEnabled(elements : Array<PrefabElement>, enable: Bool) {
+		elements = [for(e in elements) if(e.to(Object3D) == null) e]; // Don't disable/enable Object3Ds, too confusing with visibility
+		var old = [for(e in elements) e.enabled];
+		function apply(on) {
+			for(i in 0...elements.length) {
+				elements[i].enabled = on ? enable : old[i];
+				onPrefabChange(elements[i]);
+			}
+			refreshScene();
+		}
+		apply(true);
+		undo.change(Custom(function(undo) {
+			if(undo)
+				apply(false);
+			else
+				apply(true);
+		}));
+	}
+
 	public function setVisible(elements : Array<PrefabElement>, visible: Bool) {
-		var cache = [];
+		var obj3ds = [];
 		for(e in elements) {
 			var o = e.to(Object3D);
 			if(o != null) {
-				cache.push({o: o, vis: o.visible});
+				obj3ds.push({o: o, vis: o.visible});
 			}
 		}
 
 		function apply(b) {
-			for(c in cache) {
+			for(c in obj3ds) {
 				c.o.visible = b ? visible : c.vis;
 				var obj = getContext(c.o).local3d;
 				if(obj != null) {
@@ -891,6 +925,13 @@ class SceneEditor {
 			hideSiblings(e);
 		}
 		setVisible(toHide, false);
+	}
+
+	function createRef(elt: PrefabElement, toParent: PrefabElement) {
+		var ref = new hide.prefab.Reference(toParent);
+		ref.name = elt.name;
+		ref.refpath = elt.getAbsPath();
+		addObject(ref);
 	}
 
 	function duplicate(thenMove: Bool) {
@@ -1087,33 +1128,37 @@ class SceneEditor {
 		var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
 		var allowed = ["model", "object"];
 		for( ptype in allowed ) {
-			var pcl = allRegs.get(ptype);
-			var props = Type.createEmptyInstance(pcl).getHideProps();
-			newItems.push({
-				label : props.name,
-				click : function() {
-
-					function make(?path) {
-						var p = Type.createInstance(pcl, [current == null ? sceneData : current]);
-						@:privateAccess p.type = ptype;
-						if(path != null)
-							p.source = path;
-						autoName(p);
-						return p;
-					}
-
-					if( props.fileSource != null )
-						ide.chooseFile(props.fileSource, function(path) {
-							if( path == null ) return;
-							var p = make(path);
-							addObject(p);
-						});
-					else
-						addObject(make());
-				}
-			});
+			newItems.push(getNewTypeMenuItem(ptype, current));
 		}
 		return newItems;
+	}
+
+	function getNewTypeMenuItem(ptype: String, parent: PrefabElement) : hide.comp.ContextMenu.ContextMenuItem {
+		var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
+		var pcl = allRegs.get(ptype);
+		var props = Type.createEmptyInstance(pcl).getHideProps();
+		return {
+			label : props.name,
+			click : function() {
+				function make(?path) {
+					var p = Type.createInstance(pcl, [parent]);
+					@:privateAccess p.type = ptype;
+					if(path != null)
+						p.source = path;
+					autoName(p);
+					return p;
+				}
+
+				if( props.fileSource != null )
+					ide.chooseFile(props.fileSource, function(path) {
+						if( path == null ) return;
+						var p = make(path);
+						addObject(p);
+					});
+				else
+					addObject(make());
+			}
+		};
 	}
 
 	public function getZ(x: Float, y: Float) {

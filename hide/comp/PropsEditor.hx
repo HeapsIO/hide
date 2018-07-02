@@ -3,7 +3,7 @@ package hide.comp;
 enum PropType {
 	PInt( ?min : Int, ?max : Int );
 	PFloat( ?min : Float, ?max : Float );
-	PVec( n : Int );
+	PVec( n : Int, ?min : Float, ?max : Float );
 	PBool;
 	PTexture;
 	PChoice( choices : Array<String> );
@@ -14,8 +14,11 @@ enum PropType {
 typedef PropDef = {
 	name : String,
 	t : PropType,
-	?def: Dynamic
+	?def: Dynamic,
+	?disp: String
 };
+
+#if editor
 
 class PropsEditor extends Component {
 
@@ -66,18 +69,25 @@ class PropsEditor extends Component {
 			new Element('<input type="texturepath" field="${p.name}">').appendTo(parent);
 		case PUnsupported(text):
 			new Element('<font color="red">' + StringTools.htmlEscape(text) + '</font>').appendTo(parent);
-		case PVec(n):
+		case PVec(n, min, max):
 			var isColor = p.name.toLowerCase().indexOf("color") >= 0;
-			var names = isColor ? ["r", "g", "b", "a"] : ["x", "y", "z", "w"];
-			for( i in 0...n ) {
-				var div = new Element('<div>').appendTo(parent);
-				new Element('<span>${names[i]} </span>').appendTo(div);
-				var e = new Element('<input type="range" class="small" field="${p.name}.$i">').appendTo(div);
-				e.attr("min", isColor ? "0" : "-1");
-				e.attr("max", "1");
+			if(isColor && n == 3) {
+				new Element('<input type="color" field="${p.name}">').appendTo(parent);
+			}
+			else {
+				var names = isColor ? ["r", "g", "b", "a"] : ["x", "y", "z", "w"];
+				for( i in 0...n ) {
+					var div = new Element('<div>').appendTo(parent);
+					new Element('<span>${names[i]} </span>').appendTo(div);
+					var e = new Element('<input type="range" class="small" field="${p.name}.$i">').appendTo(div);
+					if(min == null) min = isColor ? 0.0 : -1.0;
+					if(max == null)	max = 1.0;
+					e.attr("min", "" + min);
+					e.attr("max", "" + max);
+				}
 			}
 		case PChoice(choices):
-			var e = new Element('<select field="${p.name}"></select>');
+			var e = new Element('<select field="${p.name}" type="number"></select>').appendTo(parent);
 			for(c in choices)
 				new hide.Element('<option>').attr("value", choices.indexOf(c)).text(upperCase(c)).appendTo(e);
 		case PFile(exts):
@@ -92,7 +102,7 @@ class PropsEditor extends Component {
 	public static function makePropsList(props : Array<PropDef>) : Element {
 		var e = new Element('<dl>');
 		for( p in props ) {
-			new Element('<dt>${upperCase(p.name)}</dt>').appendTo(e);
+			new Element('<dt>${p.disp != null ? p.disp : upperCase(p.name)}</dt>').appendTo(e);
 			var def = new Element('<dd>').appendTo(e);
 			makePropEl(p, def);
 		}
@@ -170,7 +180,7 @@ class PropsEditor extends Component {
 				var dd = f.element.parent().parent("dd");
 				var dt = dd.prev("dt");
 				var tooltip = 'Click to reset ($def)\nCtrl+Click to round';
-				var button = dt.wrapInner('<input type="button" tabindex="-1" value="${dt.text()}" title="$tooltip"/>');
+				var button = dt.wrapInner('<input type="button" tabindex="-1" value="${upperCase(dt.text())}" title="$tooltip"/>');
 				button.click(function(e) {
 					var range = @:privateAccess f.range;
 					if(range != null) {
@@ -296,6 +306,46 @@ class PropsField extends Component {
 			range.onChange = function(temp) {
 				tempChange = temp;
 				setVal(range.value);
+			};
+			return;
+		case "color":
+			var arr = Std.instance(current, Array);
+			var alpha = arr != null && arr.length == 4;
+			var picker = new hide.comp.ColorPicker(alpha, null, f);
+
+			function updatePicker(val: Dynamic) {				
+				if(arr != null) {
+					var v = h3d.Vector.fromArray(val);
+					picker.value = v.toColor();
+				}
+				else if(!Math.isNaN(val))
+					picker.value = val;
+			}
+			updatePicker(current);
+			picker.onChange = function(move) {
+				if(!move) {
+					trace("Add " + current);
+					undo(function() {
+						var f = resolveField();
+						f.current = getFieldValue();
+						trace("Undo " + f.current);
+						updatePicker(f.current);
+						f.onChange(true);
+					});
+				}
+				var newVal : Dynamic =
+					if(arr != null) {
+						var vec = h3d.Vector.fromColor(picker.value);
+						if(alpha)
+							[vec.x, vec.y, vec.z, vec.w];
+						else
+							[vec.x, vec.y, vec.z];
+					}
+					else picker.value;
+				if(!move)
+					current = newVal;
+				setFieldValue(newVal);
+				onChange(false);
 			};
 			return;
 		default:
@@ -425,3 +475,5 @@ class PropsField extends Component {
 	}
 
 }
+
+#end

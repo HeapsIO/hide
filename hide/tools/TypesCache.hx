@@ -1,5 +1,5 @@
 package hide.tools;
-import hide.comp.PropsEditor.PropType;
+import hide.comp.PropsEditor;
 
 enum ModelKind {
 	PrefabDef;
@@ -9,7 +9,7 @@ enum ModelKind {
 typedef TypeModel = {
 	var id : String;
 	var kind : ModelKind;
-	var fields : Array<{ name : String, t : hide.comp.PropsEditor.PropType, def : Dynamic }>;
+	var fields : Array<PropDef>;
 	var file : TypeFile;
 }
 
@@ -146,7 +146,7 @@ class TypesCache {
 						for( i in shader.inits ) {
 							var fl = fmap.get(i.v.name);
 							if( !fl.t.match(PUnsupported(_)) )
-								fl.def = evalConst(i.e);
+								fl.def = hide.prefab.Shader.evalConst(i.e);
 						}
 					}
 					file.models.push({ id : pack + c.name, kind : Shader, file : file, fields : fields });
@@ -167,32 +167,6 @@ class TypesCache {
 			file.error = e.toString();
 		}
 		return file;
-	}
-
-	public static function evalConst( e : hxsl.Ast.TExpr ) : Dynamic {
-		return switch( e.e ) {
-		case TConst(c):
-			switch( c ) {
-			case CNull: null;
-			case CBool(b): b;
-			case CInt(i): i;
-			case CFloat(f): f;
-			case CString(s): s;
-			}
-		case TCall({ e : TGlobal(Vec2 | Vec3 | Vec4) }, args):
-			var vals = [for( a in args ) evalConst(a)];
-			if( vals.length == 1 )
-				switch( e.t ) {
-				case TVec(n, _):
-					for( i in 0...n - 1 ) vals.push(vals[0]);
-					return vals;
-				default:
-					throw "assert";
-				}
-			return vals;
-		default:
-			throw "Unhandled constant init " + hxsl.Printer.toString(e);
-		}
 	}
 
 	function addFile( t : TypeFile ) {
@@ -241,7 +215,7 @@ class TypesCache {
 		}
 	}
 
-	public static function defType( t :  hide.comp.PropsEditor.PropType ) : Dynamic {
+	public static function defType( t :  PropType ) : Dynamic {
 		switch( t ) {
 		case PInt(min, _):
 			return if( min == null ) 0 else min;
@@ -264,7 +238,7 @@ class TypesCache {
 		}
 	}
 
-	function makeType( t : hscript.Expr.CType ) : hide.comp.PropsEditor.PropType {
+	function makeType( t : hscript.Expr.CType ) : PropType {
 		return switch( t ) {
 		case CTPath(["Int"]):
 			PInt();
@@ -277,7 +251,7 @@ class TypesCache {
 		}
 	}
 
-	public static function makeShaderType( v : hxsl.Ast.TVar ) : hide.comp.PropsEditor.PropType {
+	public static function makeShaderType( v : hxsl.Ast.TVar ) : PropType {
 		var min : Null<Float> = null, max : Null<Float> = null;
 		if( v.qualifiers != null )
 			for( q in v.qualifiers )

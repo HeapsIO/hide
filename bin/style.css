@@ -220,7 +220,7 @@ input[type=checkbox]:checked:after {
   padding-right: 5px;
 }
 .hide-scene-tree {
-  min-height: 400px;
+  height: 100%;
 }
 .hide-tileselect {
   width: 800px;
@@ -369,13 +369,13 @@ input[type=checkbox]:checked:after {
 }
 .hide-list {
   width: 100%;
-  height: 200px;
+  min-height: 200px;
   background-color: #111;
   border: 1px solid #444;
   overflow: auto;
 }
 .hide-block {
-  padding: 10px;
+  padding: 8px;
 }
 .hide-tabs {
   flex: 0 0 320px;
@@ -399,6 +399,11 @@ input[type=checkbox]:checked:after {
 }
 .hide-tabs > .tabs-header > div:hover {
   background-color: #282828;
+}
+.hide-tabs .tab {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 .searchBox {
   display: none;
@@ -459,14 +464,14 @@ input[type=checkbox]:checked:after {
   content: "\25bc  ";
 }
 .hide-properties dl {
+  overflow-x: hidden;
   margin: 0px;
-  overflow: hidden;
 }
 .hide-properties dd,
 .hide-properties dt {
   vertical-align: middle;
   display: inline-block;
-  overflow: hidden;
+  overflow-x: hidden;
   margin-top: 4px;
 }
 .hide-properties dd span,
@@ -480,7 +485,8 @@ input[type=checkbox]:checked:after {
   font-size: 11px;
   color: #aaa;
   user-select: none;
-  cursor: default;
+  text-transform: capitalize;
+  cursor: pointer;
 }
 .hide-properties input {
   width: 190px;
@@ -542,62 +548,70 @@ input[type=checkbox]:checked:after {
   margin-bottom: 5px;
 }
 /* Curve editor */
-.hide-curve-editor line {
+.hide-curve-editor:focus {
+  background-color: rgba(0, 0, 0, 0.219);
+  outline: none;
+}
+.hide-curve-editor svg line {
   stroke-width: 1px;
 }
-.hide-curve-editor rect {
+.hide-curve-editor svg rect {
   shape-rendering: crispEdges;
 }
-.hide-curve-editor .grid line {
+.hide-curve-editor svg .grid line {
   shape-rendering: crispEdges;
 }
-.hide-curve-editor .grid .hgrid line {
+.hide-curve-editor svg .grid .hgrid line {
   stroke: #444;
 }
-.hide-curve-editor .grid .vgrid line {
+.hide-curve-editor svg .grid .vgrid line {
   stroke: #444;
 }
-.hide-curve-editor .grid line.axis {
+.hide-curve-editor svg .grid line.axis {
   stroke: #747474;
   shape-rendering: crispEdges;
 }
-.hide-curve-editor .graph .selection rect {
+.hide-curve-editor svg .grid text {
+  font: 10px sans-serif;
+  fill: #555;
+}
+.hide-curve-editor svg .graph .selection rect {
   fill: #ffffff;
   fill-opacity: 0.1;
   stroke: #ffffff;
   opacity: 0.3;
   mix-blend-mode: screen;
 }
-.hide-curve-editor .graph .curve line,
-.hide-curve-editor .graph path {
+.hide-curve-editor svg .graph .curve line,
+.hide-curve-editor svg .graph path {
   stroke: #ff1f1f;
   stroke-width: 1px;
   fill: none;
 }
-.hide-curve-editor .graph .vectors line {
+.hide-curve-editor svg .graph .vectors line {
   stroke: rgba(207, 207, 207, 0.603);
 }
-.hide-curve-editor .graph .vectors line.selected {
+.hide-curve-editor svg .graph .vectors line.selected {
   stroke: #ffffff;
 }
-.hide-curve-editor .graph .handles circle,
-.hide-curve-editor .graph .handles rect {
+.hide-curve-editor svg .graph .handles circle,
+.hide-curve-editor svg .graph .handles rect {
   fill: rgba(187, 187, 187, 0.644);
   cursor: pointer;
 }
-.hide-curve-editor .graph .handles circle:hover,
-.hide-curve-editor .graph .handles rect:hover {
+.hide-curve-editor svg .graph .handles circle:hover,
+.hide-curve-editor svg .graph .handles rect:hover {
   fill: #fff;
   stroke: #fff;
   stroke-width: 2px;
 }
-.hide-curve-editor .graph .handles circle.selected,
-.hide-curve-editor .graph .handles circle:hover.selected,
-.hide-curve-editor .graph .handles rect.selected,
-.hide-curve-editor .graph .handles rect:hover.selected {
+.hide-curve-editor svg .graph .handles circle.selected,
+.hide-curve-editor svg .graph .handles circle:hover.selected,
+.hide-curve-editor svg .graph .handles rect.selected,
+.hide-curve-editor svg .graph .handles rect:hover.selected {
   fill: #ffffff;
 }
-.hide-curve-editor .selection-overlay rect {
+.hide-curve-editor svg .selection-overlay rect {
   mix-blend-mode: multiply;
   fill: #888;
   fill-opacity: 20px;
@@ -606,7 +620,6 @@ input[type=checkbox]:checked:after {
 }
 /* FX Editor */
 .fx-animpanel {
-  max-width: 1000px;
   position: relative;
 }
 .fx-animpanel .anim-scroll {
@@ -672,19 +685,16 @@ input[type=checkbox]:checked:after {
   border-right: 1px black;
 }
 .fx-animpanel .overlay-container .overlay .preview-left {
-  background: rgba(255, 255, 255, 0.068);
-  border-left: 1px solid rgba(255, 255, 255, 0.671);
+  background: rgba(0, 0, 0, 0.3);
+  border-right: 1px dashed #797979;
   position: absolute;
   height: 100%;
-  width: 4px;
 }
 .fx-animpanel .overlay-container .overlay .preview-right {
-  background: rgba(255, 255, 255, 0.068);
-  border-right: 1px solid rgba(255, 255, 255, 0.671);
+  background: rgba(0, 0, 0, 0.3);
+  border-left: 1px dashed #797979;
   position: absolute;
   height: 100%;
-  width: 4px;
-  margin-left: -4px;
 }
 .fx-animpanel .tracks-header {
   background: #4a4a4a;
@@ -707,22 +717,23 @@ input[type=checkbox]:checked:after {
   user-select: none;
 }
 .fx-animpanel .track .track-header .track-prop {
+  cursor: pointer;
   text-align: right;
   width: 120px;
   height: 100%;
 }
 .fx-animpanel .track .track-header .track-prop label {
+  vertical-align: middle;
   padding-right: 4px;
 }
 .fx-animpanel .track .track-header .track-prop .track-toggle {
-  cursor: pointer;
   width: 16px;
   height: 16px;
   display: inline-block;
   text-align: center;
 }
-.fx-animpanel .track .track-header .track-prop .track-toggle:hover {
-  background: black;
+.fx-animpanel .track .track-header .track-prop:hover {
+  background: rgba(0, 0, 0, 0.438);
 }
 .fx-animpanel .track .track-header .dopesheet {
   position: relative;
@@ -753,9 +764,20 @@ input[type=checkbox]:checked:after {
 .fx-animpanel .track .curve {
   margin-left: 120px;
   border-bottom: 1px solid black;
+  border-left: 1px solid black;
+  position: relative;
 }
 .fx-animpanel .track .curves.hidden {
   display: none;
+}
+.fx-animpanel .track label.curve-label {
+  user-select: none;
+  position: absolute;
+  text-transform: capitalize;
+  margin-left: 15px;
+  font-size: 20px;
+  color: white;
+  mix-blend-mode: overlay;
 }
 /* Golden Layout Fixes */
 .lm_header .lm_tabs {
@@ -786,6 +808,27 @@ body.hide-subview .lm_controls {
 }
 .jstree .filtered {
   display: none;
+}
+.jstree .invisible a {
+  color: #555 !important;
+  display: inline;
+}
+.jstree .invisible i {
+  color: #555;
+}
+.jstree .disabled a {
+  color: #533 !important;
+  display: inline;
+}
+.jstree .disabled i {
+  color: #533;
+}
+.jstree a.locked {
+  color: #666 !important;
+  font-style: italic;
+}
+.jstree a.locked::after {
+  content: " (locked)";
 }
 .jstree-icon.jstree-ocl {
   opacity: 0.7;
@@ -820,20 +863,6 @@ body.hide-subview .lm_controls {
 }
 .jstree.small .jstree-wholerow {
   height: 18px;
-}
-.jstree-invisible a {
-  color: #555 !important;
-  display: inline;
-}
-.jstree-invisible i {
-  color: #555;
-}
-a.jstree-locked {
-  color: #666 !important;
-  font-style: italic;
-}
-a.jstree-locked::after {
-  content: " (locked)";
 }
 /* Spectrum Color picker */
 div.sp-replacer {

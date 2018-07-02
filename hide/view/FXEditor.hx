@@ -7,12 +7,26 @@ import hide.prefab.Curve;
 
 typedef PropTrackDef = {
 	name: String,
-	?clamp: Array<Float>
+	?clamp: Array<Float>,
+	?def: Float
 };
 
-@:access(hide.view.FXScene)
+@:access(hide.view.FXEditor)
+class FXEditContext extends hide.prefab.EditContext {
+	var parent : FXEditor;
+	public function new(parent, context) {
+		super(context);
+		this.parent = parent;
+	}
+	override function onChange(p, propName) {
+		super.onChange(p, propName);
+		parent.onPrefabChange(p, propName);
+	}
+}
+
+@:access(hide.view.FXEditor)
 private class FXSceneEditor extends hide.comp.SceneEditor {
-	var parent : hide.view.FXScene;
+	var parent : hide.view.FXEditor;
 	public function new(view, context, data) {
 		super(view, context, data);
 		parent = cast view;
@@ -21,6 +35,11 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 	override function onSceneReady() {
 		super.onSceneReady();
 		parent.onSceneReady();
+	}
+
+	override function onPrefabChange(p: PrefabElement, ?pname: String) {
+		super.onPrefabChange(p, pname);
+		parent.onPrefabChange(p, pname);
 	}
 
 	override function update(dt) {
@@ -38,52 +57,70 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 			return parent.getNewTrackMenu(current);
 		}
 		else {
+			var parentElt = current == null ? sceneData : current;
 			var registered = new Array<hide.comp.ContextMenu.ContextMenuItem>();
 
+			// Animations
 			registered.push({
 				label: "Animation",
 				menu: parent.getNewTrackMenu(current)
 			});
 
-			var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
-			var allowed = ["model", "object", "shader"];
-			for( ptype in allowed ) {
-				var pcl = allRegs.get(ptype);
-				var props = Type.createEmptyInstance(pcl).getHideProps();
-				registered.push({
-					label : props.name,
-					click : function() {
+			// Shaders
+			{
+				var custom = getNewTypeMenuItem("shader", parentElt);
+				custom.label = "Custom...";
 
-						function make() {
-							var p = Type.createInstance(pcl, [current == null ? sceneData : current]);
-							@:privateAccess p.type = ptype;
-							autoName(p);
-							return p;
+				function shaderItem(name, path) : hide.comp.ContextMenu.ContextMenuItem {
+					return {
+						label : name,
+						click : function() {	
+							var s = new hide.prefab.Shader(parentElt);
+							s.source = path;
+							s.name = name;
+							addObject(s);
 						}
-
-						if( props.fileSource != null )
-							ide.chooseFile(props.fileSource, function(path) {
-								if( path == null ) return;
-								var p = make();
-								p.source = path;
-								addObject(p);
-							});
-						else
-							addObject(make());
 					}
+				}
+
+				var menu = [custom];
+
+				var shaders : Array<String> = hide.Ide.inst.currentProps.get("fx.shaders", []);
+				for(path in shaders) {
+					var name = path;
+					if(StringTools.endsWith(name, ".hx")) {
+						name = name.substr(0, -3);
+						name = name.split("/").pop();
+					}
+					else {
+						name = name.split(".").pop();
+					}
+					menu.push(shaderItem(name, path));
+				}
+
+				registered.push({
+					label: "Shaders",
+					menu: menu
 				});
+			}
+
+			// Other prefabs
+			var allowed = ["model", "object", "emitter", "constraint", "polygon", "material"];
+			for( ptype in allowed ) {
+				registered.push(getNewTypeMenuItem(ptype, parentElt));
 			}
 			return registered;
 		}
 	}
 }
 
-class FXScene extends FileView {
+class FXEditor extends FileView {
 
 	var sceneEditor : FXSceneEditor;
-	var data : hide.prefab.fx.FXScene;
+	var data : hide.prefab.fx.FX;
 	var context : hide.prefab.Context;
 	var tabs : hide.comp.Tabs;
+	var fxprops : hide.comp.PropsEditor;
 
 	var tools : hide.comp.Toolbar;
 	var light : h3d.scene.DirLight;
@@ -100,9 +137,14 @@ class FXScene extends FileView {
 	var lastSyncChange : Float = 0.;
 	var currentSign : String;
 
+	var showGrid = true;
+	var grid : h3d.scene.Graphics;
+
+	var timelineLeftMargin = 10;
 	var xScale = 200.;
 	var xOffset = 0.;
 
+	var pauseButton : hide.comp.Toolbar.ToolToggle;
 	var currentTime : Float;
 	var selectMin : Float;
 	var selectMax : Float;
@@ -111,9 +153,10 @@ class FXScene extends FileView {
 	var curveEdits : Array<hide.comp.CurveEditor>;
 	var timeLineEl : Element;
 	var refreshDopesheetKeys : Array<Bool->Void> = [];
+	var statusText : h2d.Text;
 
 	override function getDefaultContent() {
-		return haxe.io.Bytes.ofString(ide.toJSON(new hide.prefab.fx.FXScene().save()));
+		return haxe.io.Bytes.ofString(ide.toJSON(new hide.prefab.fx.FX().save()));
 	}
 
 	override function onFileChanged(wasDeleted:Bool) {
@@ -136,7 +179,8 @@ class FXScene extends FileView {
 	override function onDisplay() {
 		saveDisplayKey = "FXScene/" + getPath().split("\\").join("/").substr(0,-1);
 		currentTime = 0.;
-		data = new hide.prefab.fx.FXScene();
+		xOffset = -timelineLeftMargin / xScale;
+		data = new hide.prefab.fx.FX();
 		var content = sys.io.File.getContent(getPath());
 		data.load(haxe.Json.parse(content));
 		currentSign = haxe.crypto.Md5.encode(content);
@@ -151,26 +195,31 @@ class FXScene extends FileView {
 			<div class="flex vertical">
 				<div class="toolbar"></div>
 				<div class="flex">
-					<div class="scene">
-					</div>
-					<div class="tabs">
-						<div class="tab" name="Scene" icon="sitemap">
-							<div class="hide-block">
-								<div class="hide-list hide-scene-tree">
+					<div class="flex vertical">
+						<div class="flex scene"></div>
+						<div class="fx-animpanel">
+							<div class="top-bar">
+								<div class="timeline">
+									<div class="timeline-scroll"/>
 								</div>
+							</div>
+							<div class="anim-scroll"></div>
+							<div class="overlay-container">
+								<div class="overlay"></div>
 							</div>
 						</div>
 					</div>
-				</div>
-				<div class="fx-animpanel">
-					<div class="top-bar">
-						<div class="timeline">
-							<div class="timeline-scroll"/>
+					<div class="tabs">
+						<div class="tab" name="Scene" icon="sitemap">
+							<div class="hide-block" style="height:40%">
+								<div class="hide-scene-tree hide-list">
+								</div>
+							</div>
+							<div class="hide-scroll"></div>
 						</div>
-					</div>
-					<div class="anim-scroll"></div>
-					<div class="overlay-container">
-						<div class="overlay"></div>
+						<div class="tab" name="Properties" icon="cog">
+							<div class="fx-props"></div>
+						</div>
 					</div>
 				</div>
 			</div>');
@@ -178,32 +227,81 @@ class FXScene extends FileView {
 		tabs = new hide.comp.Tabs(null,element.find(".tabs"));
 		sceneEditor = new FXSceneEditor(this, context, data);
 		element.find(".hide-scene-tree").first().append(sceneEditor.tree.element);
-		element.find(".tab").first().append(sceneEditor.properties.element);
+		element.find(".hide-scroll").first().append(sceneEditor.properties.element);
 		element.find(".scene").first().append(sceneEditor.scene.element);
 		element.resize(function(e) {
 			refreshTimeline(false);
 			rebuildAnimPanel();
 		});
+		fxprops = new hide.comp.PropsEditor(undo,null,element.find(".fx-props"));
+		{
+			var edit = new FXEditContext(this, context);
+			edit.prefabPath = state.path;
+			edit.properties = fxprops;
+			edit.scene = sceneEditor.scene;
+			edit.cleanups = [];
+			data.edit(edit);
+		}
+
+		keys.register("playPause", function() { pauseButton.toggle(!pauseButton.isDown()); });
+
 		currentVersion = undo.currentID;
+		sceneEditor.tree.element.addClass("small");
 
 		var timeline = element.find(".timeline");
 		timeline.mousedown(function(e) {
 			var lastX = e.clientX;
-			element.mousemove(function(e) {
+			var shift = e.shiftKey;
+			var ctrl = e.ctrlKey;
+			var xoffset = timeline.offset().left;
+
+			if(shift) {
+				selectMin = hxd.Math.max(0, ixt(e.clientX - xoffset));
+			}
+			else if(ctrl) {
+				previewMin = hxd.Math.max(0, ixt(e.clientX - xoffset));
+			}
+
+			function updateMouse(e: js.jquery.Event) {
 				var dt = (e.clientX - lastX) / xScale;
 				if(e.which == 2) {
 					xOffset -= dt;
-					xOffset = hxd.Math.max(xOffset, 0);
+					xOffset = hxd.Math.max(xOffset, -timelineLeftMargin/xScale);
 				}
 				else if(e.which == 1) {
-					currentTime = ixt(e.clientX - timeline.offset().left);
-					currentTime = hxd.Math.max(currentTime, 0);
+					if(shift) {
+						selectMax = ixt(e.clientX - xoffset);
+					}
+					else if(ctrl) {
+						previewMax = ixt(e.clientX - xoffset);
+					}
+					else {
+						if(!pauseButton.isDown())
+							pauseButton.toggle(true);
+						currentTime = ixt(e.clientX - xoffset);
+						currentTime = hxd.Math.max(currentTime, 0);
+					}
 				}
+			}
+
+			element.mousemove(function(e: js.jquery.Event) {
+				updateMouse(e);
 				lastX = e.clientX;
 				refreshTimeline(true);
 				afterPan(true);
 			});
-			element.mouseup(function(e) {
+			element.mouseup(function(e: js.jquery.Event) {
+				updateMouse(e);
+
+				if(previewMax < previewMin + 0.1) {
+					previewMin = 0;
+					previewMax = data.duration;
+				}
+				if(selectMax < selectMin + 0.1) {
+					selectMin = 0;
+					selectMax = 0;
+				}
+
 				element.off("mousemove");
 				element.off("mouseup");
 				e.preventDefault();
@@ -228,10 +326,10 @@ class FXScene extends FileView {
 			afterPan(false);
 		});
 
-		selectMin = 0.6;
-		selectMax = 3.2;
-		previewMin = 0.6;
-		previewMax = 3.2;
+		selectMin = 0.0;
+		selectMax = 0.0;
+		previewMin = 0.0;
+		previewMax = data.duration;
 		refreshTimeline(false);
 	}
 
@@ -243,18 +341,75 @@ class FXScene extends FileView {
 		} else
 			light = null;
 
+		var axis = new h3d.scene.Graphics(scene.s3d);
+		axis.z = 0.001;
+		axis.lineStyle(2,0xFF0000);
+		axis.lineTo(1,0,0);
+		axis.lineStyle(1,0x00FF00);
+		axis.moveTo(0,0,0);
+		axis.lineTo(0,1,0);
+		axis.lineStyle(1,0x0000FF);
+		axis.moveTo(0,0,0);
+		axis.lineTo(0,0,1);
+		axis.material.mainPass.setPassName("debuggeom");
+		axis.visible = showGrid;
+
 		tools.saveDisplayKey = "FXScene/tools";
 		tools.addButton("video-camera", "Perspective camera", () -> sceneEditor.resetCamera(false));
+		
+		function renderProps() {
+			properties.clear();
+			var renderer = scene.s3d.renderer;
+			var group = new Element('<div class="group" name="Renderer"></div>');
+			renderer.editProps().appendTo(group);
+			properties.add(group, renderer.props, function(_) {
+				renderer.refreshProps();
+				if( !properties.isTempChange ) renderProps();
+			});
+			var lprops = {
+				power : Math.sqrt(light.color.r),
+				enable: true
+			};
+			var group = new Element('<div class="group" name="Light">
+				<dl>
+				<dt>Power</dt><dd><input type="range" min="0" max="4" field="power"/></dd>
+				</dl>
+			</div>');
+			properties.add(group, lprops, function(_) {
+				var p = lprops.power * lprops.power;
+				light.color.set(p, p, p);
+			});
+		}
+		tools.addButton("gears", "Renderer Properties", renderProps);
 
+		tools.addToggle("th", "Show grid", function(v) {
+			showGrid = v;
+			axis.visible = v;
+			updateGrid();
+		}, showGrid);
 		tools.addColor("Background color", function(v) {
 			scene.engine.backgroundColor = v;
+			updateGrid();
 		}, scene.engine.backgroundColor);
 		tools.addToggle("refresh", "Auto synchronize", function(b) {
 			autoSync = b;
 		});
+		pauseButton = tools.addToggle("pause", "Pause animation", function(v) {}, false);
 		tools.addRange("Speed", function(v) {
 			scene.speed = v;
 		}, scene.speed);
+
+		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
+		statusText.setPosition(5, 5);
+
+		updateGrid();
+	}
+
+	function onPrefabChange(p: PrefabElement, ?pname: String) {
+		if(p == data) {
+			previewMax = hxd.Math.min(data.duration, previewMax);
+			refreshTimeline(false);
+		}
 	}
 
 	override function onDragDrop(items : Array<String>, isDrop : Bool) {
@@ -288,7 +443,7 @@ class FXScene extends FileView {
 		scroll.empty();
 		var width = scroll.parent().width();
 		var minX = Math.floor(ixt(0));
-		var maxX = Math.ceil(ixt(width));
+		var maxX = Math.ceil(hxd.Math.min(data.duration, ixt(width)));
 		for(ix in minX...(maxX+1)) {
 			var mark = new Element('<span class="mark"></span>').appendTo(scroll);
 			mark.css({left: xt(ix)});
@@ -303,12 +458,12 @@ class FXScene extends FileView {
 		var select = new Element('<span class="selection"></span>').appendTo(overlay);
 		select.css({left: xt(selectMin), width: xt(selectMax) - xt(selectMin)});
 
-		var preview = new Element('<span class="preview"></span>').appendTo(overlay);
-		preview.css({left: xt(previewMin), width: xt(previewMax) - xt(previewMin)});
+		//var preview = new Element('<span class="preview"></span>').appendTo(overlay);
+		// preview.css({left: xt(previewMin), width: xt(previewMax) - xt(previewMin)});
 		var prevLeft = new Element('<span class="preview-left"></span>').appendTo(overlay);
-		prevLeft.css({left: xt(previewMin)});
+		prevLeft.css({left: 0, width: xt(previewMin)});
 		var prevRight = new Element('<span class="preview-right"></span>').appendTo(overlay);
-		prevRight.css({left: xt(previewMax)});
+		prevRight.css({left: xt(previewMax), width: xt(data.duration) - xt(previewMax)});
 	}
 
 	function afterPan(anim: Bool) {
@@ -322,6 +477,7 @@ class FXScene extends FileView {
 
 	function addTrackEdit(trackName: String, curves: Array<Curve>, tracksEl: Element) {
 		var keyTimeTolerance = 0.05;
+		var trackEdits : Array<hide.comp.CurveEditor> = [];
 		var trackEl = new Element('<div class="track">
 			<div class="track-header">
 				<div class="track-prop">
@@ -350,14 +506,20 @@ class FXScene extends FileView {
 			else
 				icon.removeClass("fa-angle-down").addClass("fa-angle-right");
 			curvesContainer.toggleClass("hidden", !expand);
+			for(c in trackEdits)
+				c.refresh();	
 		}
-		trackToggle.click(function(e) {
+		trackEl.find(".track-prop").click(function(e) {
 			expand = !expand;
 			saveDisplayState(trackKey, expand);
 			updateExpanded();
 		});
 		var dopesheet = trackEl.find(".dopesheet");
-		var trackEdits : Array<hide.comp.CurveEditor> = [];
+		var evaluator = new hide.prefab.fx.Evaluator(new hxd.Rand(0));
+
+		function getKeyColor(key) {
+			return evaluator.getVector(hide.prefab.Curve.getColorValue(curves), key.time);
+		}
 
 		function dragKey(from: hide.comp.CurveEditor, prevTime: Float, newTime: Float) {
 			for(edit in trackEdits) {
@@ -377,7 +539,7 @@ class FXScene extends FileView {
 
 		function refreshKey(key: hide.comp.CurveEditor.CurveKey, el: Element) {
 			if(isColorTrack) {
-				var color = hide.prefab.Curve.getColorValue(curves, key.time);
+				var color = getKeyColor(key);
 				var colorStr = "#" + StringTools.hex(color.toColor() & 0xffffff, 6);
 				el.css({background: colorStr});
 			}
@@ -441,7 +603,8 @@ class FXScene extends FileView {
 					"z-index": 100,
 				}).appendTo(el);
 				var cp = new hide.comp.ColorPicker(false, picker);
-				cp.value = hide.prefab.Curve.getColorValue(curves, key.time).toColor();
+				var prevCol = getKeyColor(key);
+				cp.value = prevCol.toColor();
 				cp.open();
 				cp.onClose = function() {
 					picker.remove();
@@ -455,13 +618,13 @@ class FXScene extends FileView {
 						setCurveVal(".h", col.x);
 						setCurveVal(".s", col.y);
 						setCurveVal(".l", col.z);
-						setCurveVal(".a", col.a);
+						setCurveVal(".a", prevCol.a);
 					}
 					else {
 						setCurveVal(".r", col.x);
 						setCurveVal(".g", col.y);
 						setCurveVal(".b", col.z);
-						setCurveVal(".a", col.a);
+						setCurveVal(".a", prevCol.a);
 					}
 					refreshCurves(false);
 					refreshKey(key, el);
@@ -522,19 +685,37 @@ class FXScene extends FileView {
 			}
 		}
 		for(curve in curves) {
-			var curveContainer = new Element('<div class="curve"></div>').appendTo(curvesContainer);
+			var dispKey = getPath() + "/" + curve.getAbsPath();
+			var curveContainer = new Element('<div class="curve"><label class="curve-label">${curve.name}</alpha></div>').appendTo(curvesContainer);
+			var height = getDisplayState(dispKey + "/height");
+			if(height == null)
+				height = 100;
+			curveContainer.height(height);
 			var curveEdit = new hide.comp.CurveEditor(this.undo, curveContainer);
-			curveEdit.saveDisplayKey = getPath() + "/" + curve.getAbsPath();
+			curveEdit.saveDisplayKey = dispKey;
 			curveEdit.lockViewX = true;
+			if(curves.length > 1)
+				curveEdit.lockKeyX = true;
 			curveEdit.xOffset = xOffset;
 			curveEdit.xScale = xScale;
 			curveEdit.curve = curve;
 			curveEdit.onChange = function(anim) {
 				refreshDopesheet();
 			}
-			// curveEdit.onKeyMove = function(key, ptime, pval) {
-			// 	dragKey(curveEdit, ptime, key.time);
-			// }
+
+			curveContainer.on("mousewheel", function(e) {
+				var step = e.originalEvent.wheelDelta > 0 ? 1.0 : -1.0;
+				if(e.ctrlKey) {
+					var prevH = curveContainer.height();
+					var newH = prevH + Std.int(step * 20.0);
+					curveContainer.height(newH);
+					saveDisplayState(dispKey + "/height", newH);
+					curveEdit.yScale *= newH / prevH;
+					curveEdit.refresh();
+					e.preventDefault();
+					e.stopPropagation();
+				}
+			});
 			trackEdits.push(curveEdit);
 			curveEdits.push(curveEdit);
 		}
@@ -621,16 +802,20 @@ class FXScene extends FileView {
 		});
 	}
 
-	function addTracks(element : PrefabElement, props : Array<PropTrackDef>) {
+	function addTracks(element : PrefabElement, props : Array<PropTrackDef>, ?prefix: String) {
 		var added = [];
 		for(prop in props) {
-			if(element.getOpt(Curve, prop.name) != null)
+			var id = prefix != null ? prefix + "." + prop.name : prop.name;
+			if(Curve.getCurve(element, id) != null)
 				continue;
 			var curve = new Curve(element);
-			curve.name = prop.name;
+			curve.name = id;
 			if(prop.clamp != null) {
 				curve.clampMin = prop.clamp[0];
 				curve.clampMax = prop.clamp[1];
+			}
+			if(prop.def != null) {
+				curve.addKey(0, prop.def, Linear);
 			}
 			added.push(curve);
 		}
@@ -656,22 +841,23 @@ class FXScene extends FileView {
 	public function getNewTrackMenu(elt: PrefabElement) : Array<hide.comp.ContextMenu.ContextMenuItem> {
 		var objElt = Std.instance(elt, hide.prefab.Object3D);
 		var shaderElt = Std.instance(elt, hide.prefab.Shader);
+		var emitterElt = Std.instance(elt, hide.prefab.fx.Emitter);
 		var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
 
 		inline function hasTrack(pname) {
 			return getTrack(elt, pname) != null;
 		}
 
-		function trackItem(name: String, props: Array<PropTrackDef>) : hide.comp.ContextMenu.ContextMenuItem {
+		function trackItem(name: String, props: Array<PropTrackDef>, ?prefix: String) : hide.comp.ContextMenu.ContextMenuItem {
 			var hasAllTracks = true;
 			for(p in props) {
-				if(getTrack(elt, p.name) == null)
+				if(getTrack(elt, prefix + "." + p.name) == null)
 					hasAllTracks = false;
 			}
 			return {
 				label: upperCase(name),
 				click: function() {
-					var added = addTracks(elt, props);
+					var added = addTracks(elt, props, prefix);
 				},
 				enabled: !hasAllTracks };
 		}
@@ -679,27 +865,37 @@ class FXScene extends FileView {
 		function groupedTracks(prefix: String, props: Array<PropTrackDef>) : Array<hide.comp.ContextMenu.ContextMenuItem> {
 			var allLabel = [for(p in props) upperCase(p.name)].join("/");
 			var ret = [];
-			for(p in props)
-				p.name = prefix + "." + p.name;
 			ret.push(trackItem(allLabel, props));
 			for(p in props) {
-				ret.push(trackItem(p.name, [p]));
+				var label = upperCase(p.name);
+				ret.push(trackItem(label, [p], prefix));
 			}
 			return ret;
 		}
 
+		var hslTracks : Void -> Array<PropTrackDef> = () -> [{name: "h", def: 0.0}, {name: "s", clamp: [0., 1.], def: 0.0}, {name: "l", clamp: [0., 1.], def: 1.0}];
+		var alphaTrack : Void -> Array<PropTrackDef> = () -> [{name: "a", clamp: [0., 1.], def: 1.0}];
+		var xyzwTracks : Int -> Array<PropTrackDef> = (n) -> [{name: "x"}, {name: "y"}, {name: "z"}, {name: "z"}].slice(0, n);
+
 		if(objElt != null) {
 			menuItems.push({
 				label: "Position",
-				menu: groupedTracks("position", [{name: "x"}, {name: "y"}, {name: "z"}]),
+				menu: groupedTracks("position", xyzwTracks(3)),
 			});
 			menuItems.push({
 				label: "Rotation",
-				menu: groupedTracks("rotation", [{name: "x"}, {name: "y"}, {name: "z"}]),
+				menu: groupedTracks("rotation", xyzwTracks(3)),
 			});
 			menuItems.push({
 				label: "Scale",
-				menu: groupedTracks("scale", [{name: "x"}, {name: "y"}, {name: "z"}]),
+				menu: groupedTracks("scale", xyzwTracks(3)),
+			});
+			menuItems.push({
+				label: "Color",
+				menu: [
+					trackItem("HSL", hslTracks(), "color"),
+					trackItem("Alpha", alphaTrack(), "color")
+				]
 			});
 			menuItems.push(trackItem("Visibility", [{name: "visibility", clamp: [0., 1.]}]));
 		}
@@ -708,65 +904,109 @@ class FXScene extends FileView {
 			for(param in params) {
 				var tracks = null;
 				var isColor = false;
-				var subItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
-				switch(param.type) {
+				var item : hide.comp.ContextMenu.ContextMenuItem = switch(param.type) {
 					case TVec(n, VFloat):
-						if(n <= 4) {
-							var components : Array<PropTrackDef> = [];
-							if(param.name.toLowerCase().indexOf("color") >= 0)
-								components = [{name: "h"}, {name: "s", clamp: [0., 1.]}, {name: "l", clamp: [0., 1.]}, {name: "a", clamp: [0., 1.]}];
-							else
-								components = [{name:"x"}, {name:"y"}, {name:"z"}, {name:"w"}];
-							subItems = groupedTracks(param.name, components);
-
+						var color = param.name.toLowerCase().indexOf("color") >= 0;
+						var label = upperCase(param.name);
+						var menu = null;
+						if(color) {
+							if(n == 3)
+								menu = trackItem(label, hslTracks(), param.name);
+							else if(n == 4)
+								menu = trackItem(label, hslTracks().concat(alphaTrack()), param.name);
+						}
+						if(menu == null)
+							menu = trackItem(label, xyzwTracks(n), param.name);
+						menu;
+					case TFloat:
+						trackItem(upperCase(param.name), [{name: param.name}]);
+					default:
+						null;
+				}
+				if(item != null)
+					menuItems.push(item);
+			}
+		}
+		if(emitterElt != null) {
+			function addParam(param : hide.prefab.fx.Emitter.ParamDef, prefix: String) {
+				var label = prefix + (param.disp != null ? param.disp : upperCase(param.name));
+				var item : hide.comp.ContextMenu.ContextMenuItem = switch(param.t) {
+					case PVec(n, _):
+						{
+							label: label,
+							menu: groupedTracks(param.name, xyzwTracks(n)),
 						}
 					default:
-				}
-				if(subItems.length > 0) {
-					menuItems.push({
-						label: upperCase(param.name),
-						menu: subItems
-					});
-				}
+						trackItem(label, [{name: param.name}]);
+				};
+				menuItems.push(item);
+			}
+			for(param in hide.prefab.fx.Emitter.emitterParams) {
+				if(!param.animate)
+					continue;
+				addParam(param, "");
+			}
+			for(param in hide.prefab.fx.Emitter.instanceParams) {
+				if(!param.animate)
+					continue;
+				addParam(param, "Instance ");
 			}
 		}
 		return menuItems;
 	}
 
+	function updateGrid() {
+		if(grid != null) {
+			grid.remove();
+			grid = null;
+		}
+
+		if(!showGrid)
+			return;
+
+		grid = new h3d.scene.Graphics(scene.s3d);
+		grid.scale(1);
+		grid.material.mainPass.setPassName("debuggeom");
+
+		var col = h3d.Vector.fromColor(scene.engine.backgroundColor);
+		var hsl = col.toColorHSL();
+		if(hsl.z > 0.5) hsl.z -= 0.1;
+		else hsl.z += 0.1;
+		col.makeColor(hsl.x, hsl.y, hsl.z);
+
+		grid.lineStyle(1.0, col.toColor(), 1.0);
+		for(ix in -10...11) {
+			grid.moveTo(ix, -10, 0);
+			grid.lineTo(ix, 10, 0);
+			grid.moveTo(-10, ix, 0);
+			grid.lineTo(10, ix, 0);
+
+		}
+		grid.lineStyle(0);
+	}
+
 	function onUpdate(dt:Float) {
-
-		var allObjects = data.getAll(hide.prefab.Object3D);
-		for(element in allObjects) {
-			var obj3d = sceneEditor.getObject(element);
-			if(obj3d == null)
-				continue;
-			var curves = data.getCurves(element);
-			var mat = data.getTransform(curves, currentTime);
-			mat.multiply(element.getTransform(), mat);
-			obj3d.setTransform(mat);
-			if(curves.visibility != null) {
-				var visible = curves.visibility.getVal(currentTime) > 0.5;
-				obj3d.visible = element.visible && visible;
-			}
+		var anim : hide.prefab.fx.FX.FXAnimation = null;
+		var ctx = sceneEditor.getContext(data);
+		if(ctx != null && ctx.local3d != null) {
+			anim = cast ctx.local3d;
 		}
-
-		// Update shaders
-		var allShaders = data.getAll(hide.prefab.Shader);
-		for(shader in allShaders) {
-			var ctx = sceneEditor.getContext(shader);
-			if(ctx != null) {
-				shader.applyVars(ctx, currentTime);
-			}
-		}
-
-		if(true) {
-			currentTime += dt / hxd.Timer.wantedFPS;
+		if(!pauseButton.isDown()) {
+			currentTime += scene.speed * dt / hxd.Timer.wantedFPS;
 			if(timeLineEl != null)
 				timeLineEl.css({left: xt(currentTime)});
-			if(currentTime >= selectMax) {
-				currentTime = selectMin;
+			if(currentTime >= previewMax) {
+				currentTime = previewMin;
+				anim.setRandSeed(Std.random(0xFFFFFF));
 			}
 		}
+		
+		if(anim != null) {
+			anim.setTime(currentTime);
+		}
+
+		if(statusText != null)
+			statusText.text = 'Time: ${Math.round(currentTime*1000)} ms';
 
 		var cam = scene.s3d.camera;
 		if( light != null ) {
@@ -786,13 +1026,14 @@ class FXScene extends FileView {
 
 
 	static function getTrack(element : PrefabElement, propName : String) {
-		return element.getOpt(Curve, propName);
+		return Curve.getCurve(element, propName, false);
 	}
 
 
 	static function upperCase(prop: String) {
+		if(prop == null) return "";
 		return prop.charAt(0).toUpperCase() + prop.substr(1);
 	}
 
-	static var _ = FileTree.registerExtension(FXScene,["fx"], { icon : "sitemap", createNew : "FX" });
+	static var _ = FileTree.registerExtension(FXEditor, ["fx"], { icon : "sitemap", createNew : "FX" });
 }

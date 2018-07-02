@@ -9,6 +9,7 @@ class ContextShared {
 	public var root2d : h2d.Sprite;
 	public var root3d : h3d.scene.Object;
 	public var contexts : Map<Prefab,Context>;
+	public var references : Map<Prefab,Array<Context>>;
 	public var cleanups : Array<Void->Void>;
 	var cache : h3d.prim.ModelCache;
 
@@ -16,6 +17,7 @@ class ContextShared {
 		root2d = new h2d.Sprite();
 		root3d = new h3d.scene.Object();
 		contexts = new Map();
+		references = new Map();
 		cache = new h3d.prim.ModelCache();
 		cleanups = [];
 	}
@@ -24,6 +26,16 @@ class ContextShared {
 		return [for(e in contexts.keys()) e];
 	}
 
+	public function getContexts(p: Prefab) {
+		var ret : Array<Context> = [];
+		var ctx = contexts.get(p);
+		if(ctx != null)
+			ret.push(ctx);
+		var ctxs = references.get(p);
+		if(ctxs != null)
+			return ret.concat(ctxs);
+		return ret;
+	}
 }
 
 class Context {
@@ -32,6 +44,7 @@ class Context {
 	public var local3d : h3d.scene.Object;
 	public var shared : ContextShared;
 	public var custom : Dynamic;
+	public var isRef : Bool = false;
 
 	public function new() {
 	}
@@ -49,7 +62,17 @@ class Context {
 		c.local2d = local2d;
 		c.local3d = local3d;
 		c.custom = custom;
-		if( p != null ) shared.contexts.set(p, c);
+		c.isRef = isRef;
+		if( p != null ) {
+			if(!isRef)
+				shared.contexts.set(p, c);
+			else {
+				if(!shared.references.exists(p))
+					shared.references.set(p, [c])
+				else
+					shared.references[p].push(c);
+			}
+		}
 		return c;
 	}
 
