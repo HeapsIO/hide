@@ -12,6 +12,12 @@ class ContextShared {
 	public var references : Map<Prefab,Array<Context>>;
 	public var cleanups : Array<Void->Void>;
 	var cache : h3d.prim.ModelCache;
+	#if editor
+	var scene : hide.comp.Scene;
+	public function getScene() {
+		return scene;
+	}
+	#end
 
 	public function new() {
 		root2d = new h2d.Sprite();
@@ -45,9 +51,6 @@ class Context {
 	public var shared : ContextShared;
 	public var custom : Dynamic;
 	public var isRef : Bool = false;
-	#if editor
-	var scene : hide.comp.Scene;
-	#end
 
 	public function new() {
 	}
@@ -79,12 +82,6 @@ class Context {
 		return c;
 	}
 
-	#if editor
-	function getScene() {
-		return scene;
-	}
-	#end
-
 	public dynamic function onError( e : Dynamic ) {
 		#if editor
 		js.Browser.window.alert(e);
@@ -95,7 +92,7 @@ class Context {
 
 	public function loadModel( path : String ) {
 		#if editor
-		return getScene().loadModel(path);
+		return shared.getScene().loadModel(path);
 		#else
 		return @:privateAccess shared.cache.loadModel(hxd.res.Loader.currentInstance.load(path).toModel());
 		#end
@@ -103,7 +100,7 @@ class Context {
 
 	public function loadAnimation( path : String ) {
 		#if editor
-		return getScene().loadAnimation(path);
+		return shared.getScene().loadAnimation(path);
 		#else
 		return @:privateAccess shared.cache.loadAnimation(hxd.res.Loader.currentInstance.load(path).toModel());
 		#end
@@ -111,7 +108,7 @@ class Context {
 
 	public function loadTexture( path : String ) {
 		#if editor
-		return getScene().loadTexture("",path);
+		return shared.getScene().loadTexture("",path);
 		#else
 		return @:privateAccess shared.cache.loadTexture(null, path);
 		#end

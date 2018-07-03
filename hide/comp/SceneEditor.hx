@@ -116,7 +116,7 @@ class SceneEditor {
 		var sceneEl = new Element('<div class="scene"></div>');
 		scene = new hide.comp.Scene(view.props, null, sceneEl);
 		scene.onReady = onSceneReady;
-		@:privateAccess context.scene = scene;
+		@:privateAccess context.shared.scene = scene;
 
 		view.keys.register("copy", onCopy);
 		view.keys.register("paste", onPaste);
