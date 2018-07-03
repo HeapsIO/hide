@@ -45,6 +45,9 @@ class Context {
 	public var shared : ContextShared;
 	public var custom : Dynamic;
 	public var isRef : Bool = false;
+	#if editor
+	var scene : hide.comp.Scene;
+	#end
 
 	public function new() {
 	}
@@ -76,6 +79,12 @@ class Context {
 		return c;
 	}
 
+	#if editor
+	function getScene() {
+		return scene;
+	}
+	#end
+
 	public dynamic function onError( e : Dynamic ) {
 		#if editor
 		js.Browser.window.alert(e);
@@ -86,7 +95,7 @@ class Context {
 
 	public function loadModel( path : String ) {
 		#if editor
-		return hide.comp.Scene.getCurrent().loadModel(path);
+		return getScene().loadModel(path);
 		#else
 		return @:privateAccess shared.cache.loadModel(hxd.res.Loader.currentInstance.load(path).toModel());
 		#end
@@ -94,7 +103,7 @@ class Context {
 
 	public function loadAnimation( path : String ) {
 		#if editor
-		return hide.comp.Scene.getCurrent().loadAnimation(path);
+		return getScene().loadAnimation(path);
 		#else
 		return @:privateAccess shared.cache.loadAnimation(hxd.res.Loader.currentInstance.load(path).toModel());
 		#end
@@ -102,7 +111,7 @@ class Context {
 
 	public function loadTexture( path : String ) {
 		#if editor
-		return hide.comp.Scene.getCurrent().loadTexture("",path);
+		return getScene().loadTexture("",path);
 		#else
 		return @:privateAccess shared.cache.loadTexture(null, path);
 		#end

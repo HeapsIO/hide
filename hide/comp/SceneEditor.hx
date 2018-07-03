@@ -116,6 +116,7 @@ class SceneEditor {
 		var sceneEl = new Element('<div class="scene"></div>');
 		scene = new hide.comp.Scene(view.props, null, sceneEl);
 		scene.onReady = onSceneReady;
+		@:privateAccess context.scene = scene;
 
 		view.keys.register("copy", onCopy);
 		view.keys.register("paste", onPaste);
@@ -232,7 +233,7 @@ class SceneEditor {
 				{ label : "Duplicate", enabled : current != null, click : duplicate.bind(false) },
 				{ label : "Reference", enabled : current != null, click : function() createRef(current, current.parent) },
 			];
-			
+
 			if(current != null && current.to(Object3D) != null) {
 				menuItems = menuItems.concat([
 					{ label : "Select all", click : selectAll },
@@ -1067,7 +1068,7 @@ class SceneEditor {
 	}
 
 	function autoName(p : PrefabElement) {
-		
+
 		var uniqueName = false;
 		var layer = p.getParent(hide.prefab.l3d.Layer);
 		if(layer != null) {
