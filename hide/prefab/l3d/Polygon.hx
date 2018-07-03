@@ -46,9 +46,9 @@ class Polygon extends Object3D {
 				return t;
 			}
 			mat.props = h3d.mat.MaterialSetup.current.getDefaults("opaque");
-			mat.texture = getTex(diffuseMap);
 			mat.normalMap = getTex(normalMap);
 			mat.specularTexture = getTex(specularMap);
+			mat.texture = getTex(diffuseMap);
 			mat.color.setColor(0xffffffff);
 		}
 
@@ -78,8 +78,8 @@ class Polygon extends Object3D {
 			var indices = poly2d.fastTriangulate();
 			var verts = [for(p in points) new h3d.col.Point(p.x, p.y, 0.)];
 			primitive = new h3d.prim.Polygon(verts, cast indices);
-			var n = new h3d.col.Point(0, 0, 1.);
-			primitive.normals = [for(p in points) n];
+			primitive.normals = [for(p in points) new h3d.col.Point(0, 0, 1.)];
+			primitive.tangents = [for(p in points) new h3d.col.Point(1., 0, 0.)];
 			primitive.uvs = [for(p in points) new h3d.prim.UV(p.y + 0.5, -p.x + 0.5)];  // Setup UVs so that image up (Y) is aligned with forward axis (X)
 			primitive.colors = [for(p in points) new h3d.col.Point(1,1,1)];
 		}
@@ -87,6 +87,7 @@ class Polygon extends Object3D {
 		var mesh = new h3d.scene.Mesh(primitive, ctx.local3d);
 		mesh.material.props = h3d.mat.MaterialSetup.current.getDefaults("ui");
 		mesh.material.blendMode = Alpha;
+		mesh.material.mainPass.culling = None;
 		ctx.local3d = mesh;
 		ctx.local3d.name = name;
 		applyPos(ctx.local3d);
