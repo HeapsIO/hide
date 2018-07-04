@@ -27,9 +27,14 @@ class Polygon extends Object3D {
 		specularMap = obj.specularMap;
 	}
 
-	public function applyProps(ctx: Context) { // Idea: make common to all Prefabs
+	override function updateInstance( ctx : Context, ?propName : String) {
+		super.updateInstance(ctx, propName);
 		if(ctx.local3d == null)
 			return;
+
+		if(hide.prefab.Material.hasOverride(this))
+			return;
+
 		var mesh : h3d.scene.Mesh = cast ctx.local3d;
 		var mat = mesh.material;
 		mat.mainPass.culling = None;
@@ -91,12 +96,14 @@ class Polygon extends Object3D {
 		ctx.local3d = mesh;
 		ctx.local3d.name = name;
 		applyPos(ctx.local3d);
-		applyProps(ctx);
+		updateInstance(ctx);
 		return ctx;
 	}
 
 	function setColor(ctx: Context, color: Int) {
 		#if editor
+		if(hide.prefab.Material.hasOverride(this))
+			return;
 		if(ctx.local3d == null)
 			return;
 		var mesh = Std.instance(ctx.local3d, h3d.scene.Mesh);
@@ -119,7 +126,6 @@ class Polygon extends Object3D {
 			</div>
 		'),this, function(pname) {
 			ctx.onChange(this, pname);
-			applyProps(ctx.getContext(this));
 		});
 		#end
 	}

@@ -27,19 +27,27 @@ class Material extends Prefab {
 		return r;
 	}
 
-	override function updateInstance(ctx: Context, ?propName) {
-		if(ctx.local3d == null)
-			return;
-
-		inline function update(mat : h3d.mat.Material, props) {
+	function updateObject(ctx: Context, obj: h3d.scene.Object) {
+		function update(mat : h3d.mat.Material, props) {
 			mat.props = props;
-			var diff : String = Reflect.field(props, "diffuseMap");
-			if(diff != null) {
-				mat.texture = ctx.loadTexture(diff);
+
+			inline function getTex(pname: String) {
+				var p : String = Reflect.field(props, pname);
+				var tex : h3d.mat.Texture = null;
+				if(p != null) {
+					tex = ctx.loadTexture(p);
+					if(tex != null)
+						tex.wrap = Repeat;
+				}
+				return tex;
 			}
+			
+			mat.texture = getTex("diffuseMap");
+			mat.normalMap = getTex("normalMap");
+			mat.specularTexture = getTex("specularMap");
 		}
 
-		var mats = ctx.local3d.getMaterials();
+		var mats = obj.getMaterials();
 		var mat = Lambda.find(mats, m -> m.name == this.name);
 		var props = renderProps();
 		if(mat != null) {
@@ -49,6 +57,20 @@ class Material extends Prefab {
 			for(m in mats)
 				update(m, props);
 		}
+	}
+
+	override function updateInstance(ctx: Context, ?propName) {
+		if(ctx.local3d == null)
+			return;
+
+		var obj = ctx.local3d;
+		if(parent != null && Type.getClass(parent) == hide.prefab.Object3D) {
+			for(i in 0...obj.numChildren) {
+				updateObject(ctx, obj.getChildAt(i));
+			}
+		}
+		else
+			updateObject(ctx, obj);
 	}
 
 	override function makeInstance(ctx:Context):Context {
@@ -86,6 +108,14 @@ class Material extends Prefab {
 
 	override function getHideProps() : HideProps {
 		return { icon : "cog", name : "Material" };
+	}
+
+	public static function hasOverride(p: Prefab) {
+		if(Lambda.exists(p.children, c -> Std.is(c, Material)))
+			return true;
+		if(Type.getClass(p.parent) == hide.prefab.Object3D) //if(Std.is(p.parent, Prefab)) 
+			return Lambda.exists(p.parent.children, c -> Std.is(c, Material));
+		return false;
 	}
 
 	static var _ = Library.register("material", Material);

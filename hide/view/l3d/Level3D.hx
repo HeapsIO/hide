@@ -152,7 +152,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 			allowed = ["renderProps"];
 		}
 
-		if(current != null && (current.type == "model" || current.type == "polygon")) {
+		if(current != null && (current.type == "model" || current.type == "polygon" || current.type == "object")) {
 			allowed.push("material");
 			allowed.push("shader");
 		}
@@ -518,7 +518,7 @@ class Level3D extends FileView {
 		var poly = p.to(hide.prefab.l3d.Polygon);
 		if(poly != null) {
 			var ctx = sceneEditor.getContext(poly);
-			poly.applyProps(ctx);
+			poly.updateInstance(ctx);
 		}
 	}
 
@@ -534,7 +534,7 @@ class Level3D extends FileView {
 		}
 		for(poly in layer.getAll(hide.prefab.l3d.Polygon)) {
 			var ctx = sceneEditor.getContext(poly);
-			poly.applyProps(ctx);
+			poly.updateInstance(ctx);
 		}
 	}
 

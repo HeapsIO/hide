@@ -56,7 +56,7 @@ class Shader extends Prefab {
 			var defVal = evalConst(v.e);
 			shader.hscriptSet(v.v.name, defVal);
 		}
-		for(m in ctx.local3d.getMaterials()) {
+		for(m in ctx.local3d.getMaterials()) { // TODO: Only add to self materials, not all children materials
 			m.mainPass.addShader(shader);
 		}
 		ctx.custom = shader;
