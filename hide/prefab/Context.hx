@@ -5,6 +5,8 @@ typedef ShaderDef = {
 	var inits : Array<{ v : hxsl.Ast.TVar, e : hxsl.Ast.TExpr }>;
 }
 
+typedef ShaderDefCache = Map<String, ShaderDef>;
+
 class ContextShared {
 	public var root2d : h2d.Sprite;
 	public var root3d : h3d.scene.Object;
@@ -12,6 +14,7 @@ class ContextShared {
 	public var references : Map<Prefab,Array<Context>>;
 	public var cleanups : Array<Void->Void>;
 	var cache : h3d.prim.ModelCache;
+	var shaderCache : ShaderDefCache;
 	#if editor
 	var scene : hide.comp.Scene;
 	public function getScene() {
@@ -26,6 +29,7 @@ class ContextShared {
 		references = new Map();
 		cache = new h3d.prim.ModelCache();
 		cleanups = [];
+		shaderCache = new ShaderDefCache();
 	}
 
 	public function elements() {
@@ -41,6 +45,19 @@ class ContextShared {
 		if(ctxs != null)
 			return ret.concat(ctxs);
 		return ret;
+	}
+
+	public function loadShader(path: String) : ShaderDef {
+		var r = shaderCache.get(path);
+		if(r != null)
+			return r;
+		var cl = Type.resolveClass(path.split("/").join("."));
+		var shader = new hxsl.SharedShader(Reflect.field(cl, "SRC"));
+		r = {
+			shader: shader,
+			inits: [] };
+		shaderCache.set(path, r);
+		return r;
 	}
 }
 
@@ -118,7 +135,7 @@ class Context {
 		#if editor
 		return hide.Ide.inst.shaderLoader.loadSharedShader(name);
 		#else
-		return null;
+		return shared.loadShader(name);
 		#end
 	}
 	public function locateObject( path : String ) {
