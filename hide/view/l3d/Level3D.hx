@@ -201,7 +201,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 						label : kind,
 						click : function() {
 							var p = new hide.prefab.l3d.Instance(current);
-							p.name = kind.charAt(0).toLowerCase() + kind.substr(1) + "_";
+							p.name = kind.charAt(0).toLowerCase() + kind.substr(1);
 							setup(p);
 							Reflect.setField(p.props, refCol.col.name, kind);
 						}

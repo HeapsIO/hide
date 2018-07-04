@@ -40,9 +40,12 @@ class Layer extends Object3D {
 
 	override function load( obj : Dynamic ) {
 		super.load(obj);
-		locked = obj.locked;
-		uniqueNames = obj.uniqueNames;
-		color = obj.color;
+		if(obj.locked != null)
+			locked = obj.locked;
+		if(obj.color != null)
+			color = obj.color;
+		if(obj.uniqueNames != null)
+			uniqueNames = obj.uniqueNames;
 	}
 
 	override function edit( ctx : EditContext ) {

@@ -1079,7 +1079,7 @@ class SceneEditor {
 		var prefix = null;
 		if(p.name != null && p.name.length > 0) {
 			if(uniqueName)
-				prefix = ~/_+[0-9]*$/.replace(p.name, "");
+				prefix = ~/_+[0-9]+$/.replace(p.name, "");
 			else
 				prefix = p.name;
 		}
