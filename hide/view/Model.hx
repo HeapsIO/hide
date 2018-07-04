@@ -51,6 +51,8 @@ class Model extends FileView {
 			<div class="group" name="Textures">
 				<dl>
 					<dt>Base</dt><dd><input type="texture" field="texture"/></dd>
+					<dt>Spec</dt><dd><input type="texture" field="specularTexture"/></dd>
+					<dt>Normal</dt><dd><input type="texture" field="normalMap"/></dd>
 				</dl>
 			</div>
 			<br/>
