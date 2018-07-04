@@ -82,7 +82,10 @@ class Polygon extends Object3D {
 			var poly2d = new h2d.col.Polygon(points);
 			var indices = poly2d.fastTriangulate();
 			var verts = [for(p in points) new h3d.col.Point(p.x, p.y, 0.)];
-			primitive = new h3d.prim.Polygon(verts, cast indices);
+			var idx = new hxd.IndexBuffer(indices.length);
+			for(i in indices)
+				idx.push(i);
+			primitive = new h3d.prim.Polygon(verts, idx);
 			primitive.normals = [for(p in points) new h3d.col.Point(0, 0, 1.)];
 			primitive.tangents = [for(p in points) new h3d.col.Point(1., 0, 0.)];
 			primitive.uvs = [for(p in points) new h3d.prim.UV(p.y + 0.5, -p.x + 0.5)];  // Setup UVs so that image up (Y) is aligned with forward axis (X)
