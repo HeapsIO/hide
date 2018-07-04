@@ -298,7 +298,8 @@ class SceneEditor {
 		refreshScene();
 		tree.refresh(function() {
 			for(elt in sh.contexts.keys()) {
-				onPrefabChange(elt);
+				var el = tree.getElement(elt);
+				updateTreeStyle(elt, el);
 			}
 			if(callb != null) callb();
 		});

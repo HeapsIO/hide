@@ -94,6 +94,11 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		parent.onRefresh();
 	}
 
+	override function refreshScene() {
+		super.refreshScene();
+		parent.onRefreshScene();
+	}
+
 	override function update(dt) {
 		super.update(dt);
 		parent.onUpdate(dt);
@@ -398,6 +403,12 @@ class Level3D extends FileView {
 
 	function onRefresh() {
 		refreshLayerIcons();
+	}
+
+	function onRefreshScene() {
+		var all = context.shared.contexts.keys();
+		for(elt in all)
+			refreshSceneStyle(elt);
 
 		// Apply first render props
 		var settings = data.children.find(c -> c.name == "settings");
@@ -486,27 +497,18 @@ class Level3D extends FileView {
 	}
 
 	function onPrefabChange(p: PrefabElement, ?pname: String) {
+		refreshSceneStyle(p);
+	}
+
+	function refreshSceneStyle(p: PrefabElement) {
 		var level3d = p.to(hide.prefab.l3d.Level3D);
 		if(level3d != null) {
 			updateGrid();
 			return;
 		}
 		var layer = p.to(hide.prefab.l3d.Layer);
-		if(layer != null) {
-			var obj3ds = layer.getAll(hide.prefab.Object3D);
-			for(obj in obj3ds) {
-				var i = @:privateAccess sceneEditor.interactives.get(obj);
-				if(i != null) i.visible = !layer.locked;
-			}
-			for(box in layer.getAll(hide.prefab.Box)) {
-				var ctx = sceneEditor.getContext(box);
-				box.setColor(ctx, getDisplayColor(box));
-			}
-			for(poly in layer.getAll(hide.prefab.l3d.Polygon)) {
-				var ctx = sceneEditor.getContext(poly);
-				poly.applyProps(ctx);
-			}
-		}
+		if(layer != null)
+			applyLayerProps(layer);
 
 		var box = p.to(hide.prefab.Box);
 		if(box != null) {
@@ -515,6 +517,22 @@ class Level3D extends FileView {
 		}
 		var poly = p.to(hide.prefab.l3d.Polygon);
 		if(poly != null) {
+			var ctx = sceneEditor.getContext(poly);
+			poly.applyProps(ctx);
+		}
+	}
+
+	function applyLayerProps(layer: hide.prefab.l3d.Layer) {
+		var obj3ds = layer.getAll(hide.prefab.Object3D);
+		for(obj in obj3ds) {
+			var i = @:privateAccess sceneEditor.interactives.get(obj);
+			if(i != null) i.visible = !layer.locked;
+		}
+		for(box in layer.getAll(hide.prefab.Box)) {
+			var ctx = sceneEditor.getContext(box);
+			box.setColor(ctx, getDisplayColor(box));
+		}
+		for(poly in layer.getAll(hide.prefab.l3d.Polygon)) {
 			var ctx = sceneEditor.getContext(poly);
 			poly.applyProps(ctx);
 		}
