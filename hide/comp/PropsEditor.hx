@@ -24,9 +24,11 @@ class PropsEditor extends Component {
 		var def = m.editProps();
 		def = add(def, m.props, function(name) {
 			m.refreshProps();
-			def.remove();
-			addMaterial(m, parent, onChange);
-			if( onChange != null ) onChange(name);
+			if( !isTempChange ) {
+				def.remove();
+				addMaterial(m, parent, onChange);
+				if( onChange != null ) onChange(name);
+			}
 		});
 		if( parent != null && parent.length != 0 )
 			def.appendTo(parent);
@@ -294,7 +296,7 @@ class PropsField extends Component {
 			var alpha = arr != null && arr.length == 4;
 			var picker = new hide.comp.ColorPicker(alpha, null, f);
 
-			function updatePicker(val: Dynamic) {				
+			function updatePicker(val: Dynamic) {
 				if(arr != null) {
 					var v = h3d.Vector.fromArray(val);
 					picker.value = v.toColor();
