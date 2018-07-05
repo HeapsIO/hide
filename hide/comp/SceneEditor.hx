@@ -1227,13 +1227,11 @@ class SceneEditor {
 		outlineShader.color.setColor(0xffffff);
 
 		var s1 = new h3d.mat.Stencil();
-		s1.setFunc(Both, Always, 1, 0xFF);
-		s1.setOp(Both, Keep, Keep, Replace);
-		s1.setMask(Both, 0xFF);
+		s1.setFunc(Always, 1);
+		s1.setOp(Keep, Keep, Replace);
 
 		var s2 = new h3d.mat.Stencil();
-		s2.setFunc(Both, Greater, 1, 0xFF);
-		s2.setMask(Both, 0x00);
+		s2.setFunc(Greater, 1, 0xFF, 0);
 		for(obj in objects) {
 			for( m in obj.getMaterials() ) {
 				m.mainPass.stencil = s1;
