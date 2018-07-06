@@ -543,6 +543,11 @@ input[type=checkbox]:checked:after {
   cursor: pointer;
   user-select: none;
   padding: 1px;
+  position: relative;
+}
+.hide-properties .group > .title > .checkbox-wrapper {
+  position: absolute;
+  left: 5px;
 }
 .hide-properties .group > .content {
   margin-bottom: 5px;
