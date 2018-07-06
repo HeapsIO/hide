@@ -2,11 +2,10 @@ package hide.prefab;
 
 class Blur extends Prefab {
 
-	public var size : Int = 0;
-	public var quality : Int = 1;
-	public var passes : Int = 1;
-	public var sigma : Float = 1.;
+	public var radius : Float = 1.;
+	public var quality : Float = 1;
 	public var gain : Float = 1.;
+	public var linear : Float = 0.;
 
 	// mostly testing
 	public var image : String;
@@ -15,22 +14,20 @@ class Blur extends Prefab {
 	var pass : h3d.pass.Blur;
 
 	override function load(o:Dynamic) {
-		size = o.size;
+		radius = o.radius;
 		quality = o.quality;
-		passes = o.passes;
-		sigma = o.sigma;
 		gain = o.gain;
+		linear = o.linear;
 		image = o.image;
 		zoom = o.zoom;
 	}
 
 	override function save() {
 		return {
-			size:size,
+			radius:radius,
 			quality:quality,
-			passes:passes,
-			sigma:sigma,
 			gain:gain,
+			linear:linear,
 			image : image,
 			zoom : zoom,
 		};
@@ -41,27 +38,21 @@ class Blur extends Prefab {
 	}
 
 	public function makeFilter() {
-		var f = new h2d.filter.Blur(quality, passes, sigma);
-		f.gain = gain;
-		f.reduceSize = size;
+		var f = new h2d.filter.Blur(radius, gain, quality);
+		f.linear = linear;
 		return f;
 	}
 
 	public function apply( t : h3d.mat.Texture, ctx : h3d.impl.RenderContext ) {
-		if( passes == 0 )
+		if( radius == 0 )
 			return t;
 		if( pass == null )
 			pass = new h3d.pass.Blur();
 		pass.quality = quality;
-		pass.passes = passes;
+		pass.radius = radius;
 		pass.gain = gain;
-		pass.sigma = sigma;
-		if( size > 0 ) {
-			var t2 = ctx.textures.allocTarget(name, t.width >> size, t.height >> size, false, t.format);
-			h3d.pass.Copy.run(t, t2);
-			t = t2;
-		}
-		pass.apply(t, ctx.textures.allocTarget(name+"Tmp", t.width, t.height, false, t.format));
+		pass.linear = linear;
+		pass.apply(ctx, t);
 		return t;
 	}
 
@@ -94,8 +85,9 @@ class Blur extends Prefab {
 	override function edit( ctx : EditContext ) {
 		#if editor
 		var e : hide.Element;
-		function sync() {
-			e.find("[name=fetches]").text( "" + hxd.Math.fmt(quality * (passes * 2 + 1) * 2 * passes / Math.pow(2, size)) );
+		function sync( bmp : h2d.Bitmap ) {
+			var k = @:privateAccess Std.instance(bmp.filter, h2d.filter.Blur).pass.getKernelSize();
+			e.find("[name=fetches]").text( (k + k) +"x" );
 		}
 		e = ctx.properties.add(new hide.Element('
 			<dl>
@@ -115,12 +107,12 @@ class Blur extends Prefab {
 			var ctx = ctx.getContext(this);
 			var bmp = cast(ctx.local2d, h2d.Bitmap);
 			syncBitmap(bmp, ctx);
-			sync();
+			sync(bmp);
 		});
 		var bmp = cast(ctx.getContext(this).local2d, h2d.Bitmap);
 		bmp.visible = true;
 		ctx.cleanups.push(function() bmp.visible = false);
-		sync();
+		sync(bmp);
 		#end
 	}
 
