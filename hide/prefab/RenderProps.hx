@@ -12,23 +12,46 @@ class RenderProps extends Prefab {
 	}
 
 	override function save() {
-		return {
-		};
+		return {};
 	}
-	
+
+	public function getProps() {
+		return Reflect.field(this.props, h3d.mat.MaterialSetup.current.name);
+	}
+
+	public function setProps( props : Any ) {
+		var name = h3d.mat.MaterialSetup.current.name;
+		if( props == null )
+			Reflect.deleteField(this.props, name);
+		else
+			Reflect.setField(this.props, name, props);
+	}
+
 	public function applyProps(renderer: h3d.scene.Renderer) {
-		renderer.props = this.props;
+		var props = getProps();
+		if( props == null )
+			return false;
+		renderer.props = props;
 		renderer.refreshProps();
+		return true;
 	}
 
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
 		#if editor
 		var renderer = ctx.scene.s3d.renderer;
-		var group = new Element('<div class="group" name="Renderer"></div>');
-		renderer.editProps().appendTo(group);
-		ctx.properties.add(group, props, function(_) {
+		var props = getProps();
+		var needSet = false;
+		if( props == null ) {
+			props = ctx.ide.parseJSON(ctx.ide.toJSON(renderer.props));
+			needSet = true;
+		}
+		ctx.properties.add(renderer.editProps(), props, function(_) {
 			applyProps(renderer);
+			if( needSet ) {
+				setProps(props);
+				needSet = false;
+			}
 		});
 		applyProps(renderer);
 		#end
