@@ -238,8 +238,34 @@ class Model extends FileView {
 			properties.clear();
 
 			var renderer = scene.s3d.renderer;
-			var group = new Element('<div class="group" name="Renderer"></div>');
-			renderer.editProps().appendTo(group);
+
+			var e = properties.add(new Element('<table>
+			<tr>
+			<td><input type="button" style="width:145px" value="Export"/>
+			<td><input type="button" style="width:145px" value="Import"/>
+			</tr>
+			</table>'));
+			e.find("input[value=Export]").click(function(_) {
+				ide.chooseFileSave("renderer.prefab", function(sel) {
+					var r = new hide.prefab.RenderProps();
+					r.name = h3d.mat.MaterialSetup.current.name;
+					r.setProps(renderer.props);
+					ide.savePrefab(sel, r);
+				});
+			});
+			e.find("input[value=Import]").click(function(_) {
+				ide.chooseFile(["prefab"], function(f) {
+					var r = ide.loadPrefab(f, hide.prefab.RenderProps);
+					if( r == null ) {
+						ide.error("This prefab does not have renderer properties");
+						return;
+					}
+					if( !r.applyProps(renderer) )
+						ide.error("This prefab does not contain "+h3d.mat.MaterialSetup.current.name+" renderer properties");
+				});
+			});
+
+			var group = renderer.editProps();
 			properties.add(group, renderer.props, function(_) {
 				renderer.refreshProps();
 				if( !properties.isTempChange ) renderProps();
@@ -249,11 +275,13 @@ class Model extends FileView {
 				power : Math.sqrt(light.color.r),
 				enable: true
 			};
-			var group = new Element('<div class="group" name="Light">
+			var group = new Element('
+			<div class="group" name="Light">
 				<dl>
 				<dt>Power</dt><dd><input type="range" min="0" max="4" field="power"/></dd>
 				</dl>
-			</div>');
+			</div>
+			');
 			if(!isPbr) {
 				var enable = new Element('<dt>Enable</dt><dd><input type="checkbox" field="enable"/></dd>');
 				group.find('dl').append(enable);

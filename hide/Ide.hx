@@ -486,7 +486,6 @@ class Ide {
 		}).appendTo(window.window.document.body).click();
 	}
 
-
 	public function chooseDirectory( onSelect : String -> Void ) {
 		var e = new Element('<input type="file" style="visibility:hidden" value="" nwdirectory/>');
 		e.change(function(ev) {
@@ -507,6 +506,29 @@ class Ide {
 		str = ~/,\n\t+"__id__": [0-9]+/g.replace(str, "");
 		str = ~/\t+"__id__": [0-9]+,\n/g.replace(str, "");
 		return str;
+	}
+
+	public function loadPrefab<T:hide.prefab.Prefab>( file : String, cl : Class<T> ) : T {
+		var l = new hide.prefab.Library();
+		try {
+			l.load(parseJSON(sys.io.File.getContent(getPath(file))));
+		} catch( e : Dynamic ) {
+			error("Invalid prefab ("+e+")");
+			throw e;
+		}
+		return l.get(cl);
+	}
+
+	public function savePrefab( file : String, f : hide.prefab.Prefab ) {
+		var content;
+		if( f.type == "library" )
+			content = f.save();
+		else {
+			var l = new hide.prefab.Library();
+			@:privateAccess l.children.push(f); // hack (don't remove f from current parent)
+			content = l.save();
+		}
+		sys.io.File.saveContent(getPath(file), toJSON(content));
 	}
 
 	function initMenu() {

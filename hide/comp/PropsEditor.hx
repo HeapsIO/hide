@@ -110,13 +110,6 @@ class PropsEditor extends Component {
 			if( getDisplayState("section:" + StringTools.trim(h.text())) != false )
 				h.parent().addClass("open");
 
-		for( group in e.find(".group").elements() ) {
-			var s = group.closest(".section");
-			var key = (s.length == 0 ? "" : StringTools.trim(s.children("h1").text()) + "/") + group.attr("name");
-			if( getDisplayState("group:" + key) != false )
-				group.addClass("open");
-		}
-
 		// init section
 		e.find(".section").not(".open").children(".content").hide();
 		e.find(".section > h1").mousedown(function(e) {
@@ -127,12 +120,25 @@ class PropsEditor extends Component {
 			saveDisplayState("section:" + StringTools.trim(e.getThis().text()), section.hasClass("open"));
 		}).find("input").mousedown(function(e) e.stopPropagation());
 
+		// init groups
+		var gindex = 0;
 		for( g in e.find(".group").elements() ) {
+			var name = g.attr("name");
 			g.wrapInner("<div class='content'></div>");
-			if( g.attr("name") != null ) new Element("<div class='title'>" + g.attr("name") + '</div>').prependTo(g);
+			if( name != null )
+				new Element("<div class='title'>" + g.attr("name") + '</div>').prependTo(g);
+			else {
+				name = "_g"+(gindex++);
+				g.attr("name",name);
+				g.children().children(".title").prependTo(g);
+			}
+
+			var s = g.closest(".section");
+			var key = (s.length == 0 ? "" : StringTools.trim(s.children("h1").text()) + "/") + name;
+			if( getDisplayState("group:" + key) != false )
+				g.addClass("open");
 		}
 
-		// init group
 		e.find(".group").not(".open").children(".content").hide();
 		e.find(".group > .title").mousedown(function(e) {
 			if( e.button != 0 ) return;
@@ -210,6 +216,7 @@ class PropsField extends Component {
 		switch( f.attr("type") ) {
 		case "checkbox":
 			f.prop("checked", current);
+			f.mousedown(function(e) e.stopPropagation());
 			f.change(function(_) {
 				undo(function() {
 					var f = resolveField();
