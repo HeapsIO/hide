@@ -47,11 +47,11 @@ class RenderProps extends Prefab {
 			needSet = true;
 		}
 		ctx.properties.add(renderer.editProps(), props, function(_) {
-			applyProps(renderer);
 			if( needSet ) {
 				setProps(props);
 				needSet = false;
 			}
+			applyProps(renderer);
 		});
 		applyProps(renderer);
 		#end

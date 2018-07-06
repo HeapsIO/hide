@@ -32,9 +32,9 @@ class Layer extends Object3D {
 
 	override function save() {
 		var obj : Dynamic = super.save();
-		obj.locked = locked;
-		obj.uniqueNames = uniqueNames;
-		obj.color = color;
+		if( locked ) obj.locked = locked;
+		if( uniqueNames ) obj.uniqueNames = uniqueNames;
+		if( color != -1 ) obj.color = color;
 		return obj;
 	}
 
