@@ -33,7 +33,8 @@ class Gizmo extends h3d.scene.Object {
 	public var moving(default, null): Bool;
 
 	public var moveStep = 0.5;
-	public var rotateStep = 10.0 * Math.PI / 180.0;
+	public var rotateStepFine = 15.0;
+	public var rotateStepCoarse = 45.0;
 
 	var debug: h3d.scene.Graphics;
 	var axisScale = false;
@@ -178,8 +179,10 @@ class Gizmo extends h3d.scene.Object {
 				v2.normalize();
 
 				var angle = Math.atan2(v1.cross(v2).dot(norm), v1.dot(v2)) * speedFactor;
-				if(rotateStep > 0 && K.isDown(K.CTRL))
-					angle =  hxd.Math.round(angle / rotateStep) * rotateStep;
+				if(K.isDown(K.CTRL)) {
+					var step = hxd.Math.degToRad(K.isDown(K.SHIFT) ? rotateStepFine : rotateStepCoarse);
+					angle =  hxd.Math.round(angle / step) * step;
+				}
 				quat.initRotateAxis(norm.x, norm.y, norm.z, angle);
 				var localQuat = new h3d.Quat();
 				localQuat.multiply(quat, startQuat);

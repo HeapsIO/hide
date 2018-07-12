@@ -55,6 +55,8 @@
 	// Scene editor config
 	// Snap size when using grid snapping
 	"sceneeditor.gridSnapStep": 1.0,
+	"sceneeditor.rotateStepCoarse": 45,
+	"sceneeditor.rotateStepFine": 15,
 
 	// Quantization steps (0 for none)
 	"sceneeditor.xyzPrecision": 0.01,
