@@ -1037,29 +1037,32 @@ class SceneEditor {
 			var obj3d = e.to(Object3D);
 			var toObj = getObject(to);
 			var obj = getObject(e);
+			var prevState = null, newState = null;
 			if(obj3d != null && toObj != null && obj != null) {
 				var mat = worldMat(obj);
 				var parentMat = worldMat(toObj);
 				parentMat.invert();
 				mat.multiply(mat, parentMat);
-				var prevState = obj3d.save();
+				prevState = obj3d.save();
 				obj3d.setTransform(mat);
-				var newState = obj3d.save();
-
-				undoes.push(function(undo) {
-					if( undo ) {
-						e.parent = prev;
-						prev.children.remove(e);
-						prev.children.insert(prevIndex, e);
-						obj3d.load(prevState);
-					} else {
-						e.parent = to;
-						to.children.remove(e);
-						to.children.insert(index, e);
-						obj3d.load(newState);
-					};
-				});
+				newState = obj3d.save();
 			}
+
+			undoes.push(function(undo) {
+				if( undo ) {
+					e.parent = prev;
+					prev.children.remove(e);
+					prev.children.insert(prevIndex, e);
+					if(obj3d != null)
+						obj3d.load(prevState);
+				} else {
+					e.parent = to;
+					to.children.remove(e);
+					to.children.insert(index, e);
+					if(obj3d != null)
+						obj3d.load(newState);
+				};
+			});
 		}
 		return function(undo) {
 			for(f in undoes) {
