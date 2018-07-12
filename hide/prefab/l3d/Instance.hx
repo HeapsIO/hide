@@ -28,10 +28,7 @@ class Instance extends Object3D {
 			var objFollow = new h2d.ObjectFollower(ctx.local3d, ctx.shared.root2d);
 			var bmp = new h2d.Bitmap(tile, objFollow);
 			ctx.local2d = objFollow;
-			var obj = new h3d.scene.Object(ctx.local3d);
-			var prim = h3d.prim.Cube.defaultUnitCube();
-			var mesh = new h3d.scene.Mesh(prim, obj);
-			mesh.setPosition(-0.25, -0.25, -0.25);
+			var mesh = new h3d.scene.Mesh(h3d.prim.Cube.defaultUnitCube(), ctx.local3d);
 			mesh.scale(0.5);
 			var mat = mesh.material;
 			mat.color.setColor(0xff00ff);
