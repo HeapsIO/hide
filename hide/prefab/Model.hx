@@ -30,9 +30,10 @@ class Model extends Object3D {
 		try {
 			var obj = ctx.loadModel(source);
 			if(obj.defaultTransform != null && children.length > 0) {
-				var container = new h3d.scene.Object();
-				container.addChild(obj);
-				obj = container;
+				obj.name = "root";
+				var root = new h3d.scene.Object();
+				root.addChild(obj);
+				obj = root;
 			}
 			obj.name = name;
 			applyPos(obj);
