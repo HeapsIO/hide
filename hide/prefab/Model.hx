@@ -29,6 +29,11 @@ class Model extends Object3D {
 		ctx = ctx.clone(this);
 		try {
 			var obj = ctx.loadModel(source);
+			if(obj.defaultTransform != null && children.length > 0) {
+				var container = new h3d.scene.Object();
+				container.addChild(obj);
+				obj = container;
+			}
 			obj.name = name;
 			applyPos(obj);
 			ctx.local3d.addChild(obj);
