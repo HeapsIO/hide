@@ -114,6 +114,8 @@ class FileView extends hide.ui.View<{ path : String }> {
 			{ label : "Save", enabled : modified, click : function() { save(); modified = false; } },
 			{ label : "Save As...", click : saveAs },
 			{ label : null, isSeparator : true },
+			{ label : "Reload", click : function() rebuild() },
+			{ label : null, isSeparator : true },
 		];
 		return arr.concat(super.buildTabMenu());
 	}
