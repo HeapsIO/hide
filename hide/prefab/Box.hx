@@ -7,7 +7,7 @@ class Box extends Object3D {
 		#if editor
 		if(ctx.local3d == null)
 			return;
-		var mesh = Std.instance(ctx.local3d.getChildAt(0), h3d.scene.Mesh);
+		var mesh = Std.instance(ctx.local3d, h3d.scene.Mesh);
 		if(mesh != null) {
 			setDebugColor(color, mesh.material);
 		}
@@ -20,7 +20,7 @@ class Box extends Object3D {
 		var mesh = new h3d.scene.Mesh(h3d.prim.Cube.defaultUnitCube(), ctx.local3d);
 
 		#if editor
-		setDebugColor(0x60ff00ff, mesh.material);
+		setDebugColor(0x60ffffff, mesh.material);
 
 		var wire = new h3d.scene.Box(mesh);
 		wire.color = 0;
