@@ -1,0 +1,9 @@
+-lib hxnodejs
+-lib heaps
+-lib hxbit
+-lib hscript
+-lib castle
+-D hscriptPos
+-D multidriver
+-D editor
+-cp libs

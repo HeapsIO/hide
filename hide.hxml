@@ -1,14 +1,6 @@
--lib hxnodejs
--lib heaps
--lib hxbit
--lib hscript
--lib castle
--cp libs
+common.hxml
 -js bin/hide.js
 -main hide.Ide
--D hscriptPos
--D multidriver
--D editor
 -D js-classic
 -D js-unflatten
 -dce no

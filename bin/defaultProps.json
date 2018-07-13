@@ -1,8 +1,11 @@
 {
 	// define location of animations in HMD files
 	"hmd.animPaths" : [],
-	
-	// custom renderers in the form of { "Name" : "script.js(MatSetupClassName)" }
+
+	// path to js scripts containing hide plugins
+	"plugins" : [],
+
+	// custom renderers in the form of { "Name" : "MaterialSetupClassName" }
 	"renderers" : {},
 
 	// model names that are hidden when open in viewer

@@ -386,26 +386,9 @@ class Ide {
 			new hide.Renderer.PbrSetup("PBR"),
 		];
 
-		var extraRenderers = props.current.get("renderers");
-		for( name in Reflect.fields(extraRenderers) ) {
-			var script = Reflect.field(extraRenderers, name);
-			var r = ~/^(.*)?\(([A-Za-z0-9_.]+)\)$/;
-			if( !r.match(script) ) {
-				error(script+" has invalid renderer format");
-				continue;
-			}
-			var file = r.matched(1);
-			var clName = r.matched(2);
-			loadScript(file, function() {
-				var cl = try js.Lib.eval(clName) catch( e : Dynamic ) null;
-				if( cl == null  ) {
-					error(clName+" could not be found in "+script);
-					return;
-				}
-				renderers.push(Type.createInstance(cl,[]));
-				initMenu();
-			});
-		}
+		var plugins : Array<String> = props.current.get("plugins");
+		for( file in plugins )
+			loadScript(file, function() {});
 
 		var db = getPath(props.project.get("cdb.databaseFile"));
 		databaseFile = db;
@@ -418,16 +401,49 @@ class Ide {
 			}
 		}
 
-		var render = renderers[0];
-		for( r in renderers )
-			if( r.name == props.current.current.hide.renderer ) {
-				render = r;
-				break;
+		waitScripts(function() {
+			var extraRenderers = props.current.get("renderers");
+			for( name in Reflect.fields(extraRenderers) ) {
+				var clName = Reflect.field(extraRenderers, name);
+				var cl = try js.Lib.eval(clName) catch( e : Dynamic ) null;
+				if( cl == null  ) {
+					error(clName+" could not be found");
+					return;
+				}
+				renderers.push(Type.createInstance(cl,[]));
 			}
-		h3d.mat.MaterialSetup.current = render;
 
-		initMenu();
-		initLayout();
+			var render = renderers[0];
+			for( r in renderers )
+				if( r.name == props.current.current.hide.renderer ) {
+					render = r;
+					break;
+				}
+			h3d.mat.MaterialSetup.current = render;
+
+			initMenu();
+			initLayout();
+		});
+	}
+
+	function waitScripts( f : Void -> Void ) {
+		if( !isScriptLoading() ) {
+			f();
+			return;
+		}
+		var wait = scripts.get("");
+		if( wait == null ) {
+			wait = [];
+			scripts.set("",wait);
+		}
+		wait.push(f);
+	}
+
+	function isScriptLoading() {
+		for( s in scripts.keys() )
+			if( s != "" && scripts.get(s).length > 0 )
+				return true;
+		return false;
 	}
 
 	function loadScript( file : String, callb : Void -> Void ) {
@@ -447,7 +463,16 @@ class Ide {
 			scripts.set(file, []);
 			for( w in wait )
 				w();
+			if( !isScriptLoading() ) {
+				wait = scripts.get("");
+				scripts.set("",[]);
+				for( w in wait ) w();
+			}
 		});
+		e.addEventListener("error", function(e) {
+			error("Error while loading "+file);
+		});
+		e.async = false;
 		e.type = "text/javascript";
 		e.src = "file://"+file.split("\\").join("/");
 		js.Browser.document.body.appendChild(e);
