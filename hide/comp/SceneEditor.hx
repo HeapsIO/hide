@@ -704,16 +704,26 @@ class SceneEditor {
 		cameraController.toTarget();
 	}
 
-	public function dropModels(paths: Array<String>, parent: PrefabElement) {
+	public function getPickTransform(parent: PrefabElement) {
 		var proj = screenToWorld(scene.s2d.mouseX, scene.s2d.mouseY);
-		if(proj == null) return;
+		if(proj == null) return null;
+
+		var localMat = new h3d.Matrix();
+		localMat.initTranslation(proj.x, proj.y, proj.z);
+
+		if(parent == null)
+			return localMat;
 
 		var parentMat = worldMat(getObject(parent));
 		parentMat.invert();
 
-		var localMat = new h3d.Matrix();
-		localMat.initTranslation(proj.x, proj.y, proj.z);
 		localMat.multiply(localMat, parentMat);
+		return localMat;
+	}
+
+	public function dropModels(paths: Array<String>, parent: PrefabElement) {
+		var localMat = getPickTransform(parent);
+		if(localMat == null) return;
 
 		var models: Array<PrefabElement> = [];
 		for(path in paths) {
@@ -958,6 +968,13 @@ class SceneEditor {
 			selectObjects(all);
 			tree.setSelection(all);
 			if(thenMove) {
+				if(all.length == 1) {
+					var pickMat = getPickTransform(all[0].parent);
+					if(pickMat != null) {
+						setTransform(all[0], pickMat);
+						moveGizmoToSelection();
+					}
+				}
 				gizmo.startMove(MoveXY, true);
 				gizmo.onFinishMove = function() {
 					refreshProps();
@@ -980,6 +997,16 @@ class SceneEditor {
 				}
 			}
 		});
+	}
+
+	function setTransform(elt: PrefabElement, mat: h3d.Matrix) {
+		var obj3d = Std.instance(elt, hide.prefab.Object3D);
+		if(obj3d == null)
+			return;
+		obj3d.setTransform(mat);
+		var o = getContext(obj3d).local3d;
+		if(o != null)
+			obj3d.applyPos(o);
 	}
 
 	function deleteElements(elts : Array<PrefabElement>) {
