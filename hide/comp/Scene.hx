@@ -180,8 +180,22 @@ class Scene extends Component implements h3d.IDrawable {
 		engine.render(this);
 	}
 
-	function loadTextureData( path : String, onReady : h3d.mat.Texture -> Void, ?target : h3d.mat.Texture ) {
-		var path = ide.getPath(path);
+	function loadTextureData( img : hxd.res.Image, onReady : h3d.mat.Texture -> Void, ?target : h3d.mat.Texture ) {
+		if( img.entry.extension == "tga" ) {
+			// immediate read
+			var pix = img.getPixels();
+			if( target == null )
+				target = new h3d.mat.Texture(pix.width, pix.height);
+			else
+				target.resize(pix.width, pix.height);
+			target.uploadPixels(pix);
+			if( onReady != null ) {
+				onReady(target);
+				onReady = null;
+			}
+			return;
+		}
+		var path = ide.getPath(img.entry.path);
 		var img = new Element('<img src="file://$path"/>');
 		img.on("load", function() {
 			setCurrent();
@@ -332,14 +346,15 @@ class Scene extends Component implements h3d.IDrawable {
 			return t;
 		}
 		var bytes = sys.io.File.getBytes(path);
-		var size = hxd.res.Any.fromBytes(path, bytes).toImage().getSize();
+		var img = hxd.res.Any.fromBytes(path, bytes).toImage();
+		var size = img.getSize();
 		t = new h3d.mat.Texture(size.width,size.height);
 		t.clear(0x102030);
 		t.flags.set(Loading);
 		t.name = ide.makeRelative(path);
 		texCache.set(path, t);
 		if( onReady == null ) onReady = function(_) {};
-		loadTextureData(path, onReady, t);
+		loadTextureData(img, onReady, t);
 		return t;
 	}
 
