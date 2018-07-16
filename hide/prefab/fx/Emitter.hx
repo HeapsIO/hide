@@ -198,14 +198,14 @@ class EmitterObject extends h3d.scene.Object {
 
 		if(instDef == null || particleTemplate == null)
 			return;
-		
+
 		var localMat = getAbsPos().clone();
 		var parentInvMat = parent.getAbsPos().clone();
 		parentInvMat.invert();
 		localMat.multiply(localMat, parentInvMat);
 
 		var shapeAngle = hxd.Math.degToRad(emitAngle) / 2.0;
-		
+
 		var tmpq = new h3d.Quat();
 		var offset = new h3d.Vector();
 		var direction = new h3d.Vector();
@@ -463,7 +463,7 @@ class Emitter extends Object3D {
 					randVal = VRandom(randIdx++, VCurveValue(randCurve, randProp != null ? randProp : 1.0));
 				else if(randProp != null)
 					randVal = VRandom(randIdx++, VConst(randProp));
-				
+
 				if(randVal == VZero)
 					return xVal;
 				if(xVal == VZero)
@@ -581,7 +581,7 @@ class Emitter extends Object3D {
 			case Sphere:
 				mesh = new h3d.scene.Sphere(0xffffff, 0.5, true, debugShape);
 		}
-	
+
 		if(mesh != null) {
 			var mat = mesh.material;
 			mat.mainPass.setPassName("overlay");
@@ -601,9 +601,9 @@ class Emitter extends Object3D {
 		return ctx;
 	}
 
+	#if editor
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
-		#if editor
 
 		function refresh() {
 			ctx.properties.clear();
@@ -626,7 +626,7 @@ class Emitter extends Object3D {
 		var params = emitterParams.copy();
 
 		var emitShape : EmitShape = getParamVal("emitShape");
-		if(emitShape != null) 
+		if(emitShape != null)
 			switch(emitShape) {
 				case Cone:
 				default: params.remove(params.find(p -> p.name == "emitAngle"));
@@ -726,13 +726,13 @@ class Emitter extends Object3D {
 			}
 			var props = ctx.properties.add(instGroup, this.props, onChange);
 		}
-		#end
 	}
 
 	override function getHideProps() {
 		return { icon : "asterisk", name : "Emitter", fileSource : null };
 	}
+	#end
 
-	static var _ = Library.register("emitter", Emitter);
+	static var _ = hxd.prefab.Library.register("emitter", Emitter);
 
 }

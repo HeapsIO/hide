@@ -31,10 +31,12 @@ class Scene extends Prefab {
 		return ctx;
 	}
 
+	#if editor
 	override function getHideProps() {
 		return { icon : "cube", name : "Scene", fileSource : ["hsd"] };
 	}
+	#end
 
-	static var _ = Library.register("scene", Scene);
+	static var _ = hxd.prefab.Library.register("scene", Scene);
 
 }

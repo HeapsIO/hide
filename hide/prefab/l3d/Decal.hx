@@ -68,11 +68,12 @@ class Decal extends Object3D {
 		return ctx;
 	}
 
+
+	#if editor
 	override function getHideProps() {
 		return { icon : "paint-brush", name : "Decal", fileSource : null };
 	}
 
-	#if editor
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
 		var props = ctx.properties.add(new hide.Element('
@@ -98,6 +99,6 @@ class Decal extends Object3D {
 	}
 	#end
 
-	static var _ = Library.register("decal", Decal);
+	static var _ = hxd.prefab.Library.register("decal", Decal);
 
 }

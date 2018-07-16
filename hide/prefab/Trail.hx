@@ -35,13 +35,13 @@ class Trail extends Object3D {
 		return ctx;
 	}
 
+	#if editor
+
 	override function getHideProps():HideProps {
 		return { icon : "toggle-on", name : "Trail" };
 	}
 
-
 	override public function edit(ctx:EditContext) {
-		#if editor
 		super.edit(ctx);
 
 		var trail = Std.instance(ctx.getContext(this).local3d, h3d.scene.Trail);
@@ -64,11 +64,10 @@ class Trail extends Object3D {
 			data = trail.save();
 		});
 		ctx.properties.addMaterial( trail.material, props.find("[name=Material] > .content"), function(_) data = trail.save());
-		#end
 	}
 
+	#end
 
-
-	static var _ = Library.register("trail", Trail);
+	static var _ = hxd.prefab.Library.register("trail", Trail);
 
 }

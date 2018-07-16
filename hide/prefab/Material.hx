@@ -7,7 +7,7 @@ class Material extends Prefab {
 		super(parent);
 		props = {};
 	}
-	
+
 	override function load(o:Dynamic) {
 	}
 
@@ -41,7 +41,7 @@ class Material extends Prefab {
 				}
 				return tex;
 			}
-			
+
 			mat.texture = getTex("diffuseMap");
 			mat.normalMap = getTex("normalMap");
 			mat.specularTexture = getTex("specularMap");
@@ -82,8 +82,8 @@ class Material extends Prefab {
 		return ctx;
 	}
 
+	#if editor
 	override function edit( ctx : EditContext ) {
-		#if editor		
 		super.edit(ctx);
 
 		var mat = h3d.mat.Material.create();
@@ -103,20 +103,20 @@ class Material extends Prefab {
 			</dl></div>'), renderProps(), function(_) {
 			ctx.onChange(this, "props");
 		});
-		#end
 	}
 
 	override function getHideProps() : HideProps {
 		return { icon : "cog", name : "Material" };
 	}
+	#end
 
 	public static function hasOverride(p: Prefab) {
 		if(Lambda.exists(p.children, c -> Std.is(c, Material)))
 			return true;
-		if(Type.getClass(p.parent) == hide.prefab.Object3D) //if(Std.is(p.parent, Prefab)) 
+		if(Type.getClass(p.parent) == hide.prefab.Object3D) //if(Std.is(p.parent, Prefab))
 			return Lambda.exists(p.parent.children, c -> Std.is(c, Material));
 		return false;
 	}
 
-	static var _ = Library.register("material", Material);
+	static var _ = hxd.prefab.Library.register("material", Material);
 }

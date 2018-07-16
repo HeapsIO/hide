@@ -87,8 +87,8 @@ class Object3D extends Prefab {
 		o.visible = visible;
 	}
 
+	#if editor
 	override function edit( ctx : EditContext ) {
-		#if editor
 		var props = new hide.Element('
 			<div class="group" name="Position">
 				<dl>
@@ -109,18 +109,18 @@ class Object3D extends Prefab {
 			applyPos(ctx.getContext(this).local3d);
 			ctx.onChange(this, pname);
 		});
-		#end
 	}
 
 	override function getHideProps() {
 		// Check children
 		return { icon : children == null || children.length > 0 ? "folder-open" : "genderless", name : "Group", fileSource : null };
 	}
+	#end
 
 	override function getDefaultName() {
 		return type == "object" ? "group" : super.getDefaultName();
 	}
 
-	static var _ = Library.register("object", Object3D);
+	static var _ = hxd.prefab.Library.register("object", Object3D);
 
 }

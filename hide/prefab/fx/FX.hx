@@ -46,12 +46,12 @@ typedef ObjectAnimation = {
 };
 
 class FXAnimation extends h3d.scene.Object {
-	
+
 	public var duration : Float;
 	public var objects: Array<ObjectAnimation> = [];
 	public var shaderAnims : Array<ShaderAnimation> = [];
 	public var emitters : Array<hide.prefab.fx.Emitter.EmitterObject> = [];
-	var evaluator : Evaluator; 
+	var evaluator : Evaluator;
 	var random : hxd.Rand;
 
 	public function new(?parent) {
@@ -109,7 +109,7 @@ class FXAnimation extends h3d.scene.Object {
 	public function getTransform(anim: ObjectAnimation, time: Float, ?m: h3d.Matrix) {
 		if(m == null)
 			m = new h3d.Matrix();
-	
+
 		if(anim.scale != null) {
 			var scale = evaluator.getVector(anim.scale, time);
 			m.initScale(scale.x, scale.y, scale.z);
@@ -132,7 +132,7 @@ class FXAnimation extends h3d.scene.Object {
 	}
 }
 
-class FX extends Library {
+class FX extends hxd.prefab.Library {
 
 	public var duration : Float;
 
@@ -178,7 +178,7 @@ class FX extends Library {
 				anyFound = true;
 			return c != null ? VCurve(c) : def;
 		}
-		
+
 		function makeVector(name: String, defVal: Float)  {
 			var curves = hide.prefab.Curve.getCurves(elt, name);
 			if(curves == null || curves.length == 0)
@@ -224,7 +224,7 @@ class FX extends Library {
 				continue;
 
 			var prop = Reflect.field(shaderElt.props, v.name);
-			if(prop == null) 
+			if(prop == null)
 				prop = hide.prefab.Shader.getDefault(v.type);
 
 			var curves = hide.prefab.Curve.getCurves(shaderElt, v.name);
@@ -304,11 +304,11 @@ class FX extends Library {
 		getObjAnimations(ctx, this, fxanim.objects);
 		getShaderAnims(ctx, this, fxanim.shaderAnims);
 		getEmitters(ctx, this, fxanim.emitters);
-		return ctx; 
+		return ctx;
 	}
 
+	#if editor
 	override function edit( ctx : EditContext ) {
-		#if editor
 		var props = new hide.Element('
 			<div class="group" name="FX Scene">
 				<dl>
@@ -318,12 +318,12 @@ class FX extends Library {
 		ctx.properties.add(props, this, function(pname) {
 			ctx.onChange(this, pname);
 		});
-		#end
 	}
 
 	override function getHideProps() {
 		return { icon : "cube", name : "FX", fileSource : ["fx"] };
 	}
+	#end
 
-	static var _ = Library.register("fx", FX);
+	static var _ = hxd.prefab.Library.register("fx", FX);
 }

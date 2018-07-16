@@ -62,9 +62,10 @@ class RenderProps extends Prefab {
 		return true;
 	}
 
+	#if editor
+
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
-		#if editor
 		var renderer = ctx.scene.s3d.renderer;
 		var props = getProps(renderer);
 		var needSet = false;
@@ -80,12 +81,13 @@ class RenderProps extends Prefab {
 			applyProps(renderer);
 		});
 		applyProps(renderer);
-		#end
 	}
 
 	override function getHideProps() {
 		return { icon : "sun-o", name : "RenderProps", fileSource : null };
 	}
 
-	static var _ = Library.register("renderProps", RenderProps);
+	#end
+
+	static var _ = hxd.prefab.Library.register("renderProps", RenderProps);
 }

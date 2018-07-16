@@ -1,6 +1,6 @@
 package hide.prefab.l3d;
 
-class Level3D extends Library {
+class Level3D extends hxd.prefab.Library {
 
 	public var width : Int = 100;
 	public var height : Int = 100;
@@ -23,8 +23,9 @@ class Level3D extends Library {
 		height = obj.height == null ? 100 : obj.height;
 	}
 
+	#if editor
+
 	override function edit( ctx : EditContext ) {
-		#if editor
 		var props = new hide.Element('
 			<div class="group" name="Level">
 					<dl>
@@ -36,12 +37,13 @@ class Level3D extends Library {
 		ctx.properties.add(props, this, function(pname) {
 			ctx.onChange(this, pname);
 		});
-		#end
 	}
 
 	override function getHideProps() {
 		return { icon : "cube", name : "Level3D", fileSource : ["l3d"] };
 	}
 
-	static var _ = Library.register("level3d", Level3D);
+	#end
+
+	static var _ = hxd.prefab.Library.register("level3d", Level3D);
 }

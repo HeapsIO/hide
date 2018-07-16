@@ -534,7 +534,7 @@ class Ide {
 	}
 
 	public function loadPrefab<T:hide.prefab.Prefab>( file : String, cl : Class<T> ) : T {
-		var l = new hide.prefab.Library();
+		var l = new hxd.prefab.Library();
 		try {
 			l.load(parseJSON(sys.io.File.getContent(getPath(file))));
 		} catch( e : Dynamic ) {
@@ -549,7 +549,7 @@ class Ide {
 		if( f.type == "library" )
 			content = f.save();
 		else {
-			var l = new hide.prefab.Library();
+			var l = new hxd.prefab.Library();
 			@:privateAccess l.children.push(f); // hack (don't remove f from current parent)
 			content = l.save();
 		}

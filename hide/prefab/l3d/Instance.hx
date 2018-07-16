@@ -38,20 +38,19 @@ class Instance extends Object3D {
 		return ctx;
 	}
 
+	#if editor
+
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
-		#if editor
 		var sheet = getCdbModel();
 		if( sheet == null ) return;
 		//ctx.properties.addProps([for(c in sheet.columns) {t: getPropType(c), name: c.name}], this.props);
-		#end
 	}
 
 	override function getHideProps() {
 		return { icon : "circle", name : "Instance", fileSource : null };
 	}
 
-	#if editor
 	// Move to Prefab?
 	public static function getCdbKind(p: Prefab) {
 		if(p.props == null)
@@ -147,5 +146,5 @@ class Instance extends Object3D {
 	}
 	#end
 
-	static var _ = Library.register("instance", Instance);
+	static var _ = hxd.prefab.Library.register("instance", Instance);
 }

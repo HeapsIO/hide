@@ -162,9 +162,9 @@ class Light extends Object3D {
 		#end
 	}
 
+	#if editor
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
-		#if editor
 
 		var group = new hide.Element('<div class="group" name="Light">
 				<dl>
@@ -237,12 +237,12 @@ class Light extends Object3D {
 			ctx.onChange(this, "color");
 		}
 
-		#end
 	}
 
 	override function getHideProps() {
 		return { icon : "sun-o", name : "Light", fileSource : null };
 	}
+	#end
 
-	static var _ = Library.register("light", Light);
+	static var _ = hxd.prefab.Library.register("light", Light);
 }

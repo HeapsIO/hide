@@ -2,14 +2,14 @@ package hide.prefab;
 
 class Shader extends Prefab {
 
-	public var shaderDef : Context.ShaderDef;
+	public var shaderDef : hxd.prefab.ContextShared.ShaderDef;
 
 	public function new(?parent) {
 		super(parent);
 		type = "shader";
 		props = {};
 	}
-	
+
 	override function load(o:Dynamic) {
 
 	}
@@ -54,7 +54,11 @@ class Shader extends Prefab {
 		var shader = new hxsl.DynamicShader(shaderDef.shader);
 		for( v in shaderDef.inits ) {
 			var defVal = evalConst(v.e);
+			#if !hscript
+			throw "hscript required";
+			#else
 			shader.hscriptSet(v.v.name, defVal);
+			#end
 		}
 		for(m in ctx.local3d.getMaterials()) { // TODO: Only add to self materials, not all children materials
 			m.mainPass.addShader(shader);
@@ -107,8 +111,9 @@ class Shader extends Prefab {
 		#end
 	}
 
+	#if editor
+
 	override function edit( ctx : EditContext ) {
-		#if editor		
 		super.edit(ctx);
 
 		loadShaderDef(ctx.rootContext);
@@ -125,12 +130,17 @@ class Shader extends Prefab {
 			props.push({name: v.name, t: prop});
 		}
 		group.append(hide.comp.PropsEditor.makePropsList(props));
-		
+
 		ctx.properties.add(group,this.props, function(pname) {
 			ctx.onChange(this, pname);
 		});
-		#end
 	}
+
+	override function getHideProps() {
+		return { icon : "cog", name : "Shader", fileSource : ["hx"] };
+	}
+
+	#end
 
 	public static function evalConst( e : hxsl.Ast.TExpr ) : Dynamic {
 		return switch( e.e ) {
@@ -174,9 +184,5 @@ class Shader extends Prefab {
 		return null;
 	}
 
-	override function getHideProps() {
-		return { icon : "cog", name : "Shader", fileSource : ["hx"] };
-	}
-
-	static var _ = Library.register("shader", Shader);
+	static var _ = hxd.prefab.Library.register("shader", Shader);
 }

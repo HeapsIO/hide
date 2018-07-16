@@ -60,11 +60,11 @@ class Box extends Object3D {
 			alpha.depthWrite = false;
 		}
 	}
-	#end
 
 	override function getHideProps() {
 		return { icon : "square", name : "Box", fileSource : null };
 	}
+	#end
 
-	static var _ = Library.register("box", Box);
+	static var _ = hxd.prefab.Library.register("box", Box);
 }

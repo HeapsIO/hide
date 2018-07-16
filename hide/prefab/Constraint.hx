@@ -28,12 +28,12 @@ class Constraint extends Prefab {
 		return ctx;
 	}
 
+	#if editor
 	override function getHideProps() : HideProps {
 		return { icon : "lock", name : "Constraint" };
 	}
 
 	override function edit(ctx:EditContext) {
-		#if editor
 		var curObj = ctx.rootContext.locateObject(object);
 		var props = ctx.properties.add(new hide.Element('
 			<dl>
@@ -53,9 +53,9 @@ class Constraint extends Prefab {
 			}
 			select.val(Reflect.field(this, select.attr("field")));
 		}
-		#end
 	}
+	#end
 
-	static var _ = Library.register("constraint", Constraint);
+	static var _ = hxd.prefab.Library.register("constraint", Constraint);
 
 }

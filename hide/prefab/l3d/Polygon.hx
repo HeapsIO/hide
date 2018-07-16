@@ -9,7 +9,7 @@ class Polygon extends Object3D {
 	public var diffuseMap : String;
 	public var normalMap : String;
 	public var specularMap : String;
-	
+
 	override function save() {
 		var obj : Dynamic = super.save();
 		if(data != null) obj.data = data;
@@ -116,9 +116,10 @@ class Polygon extends Object3D {
 		#end
 	}
 
+	#if editor
+
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
-		#if editor
 		var props = ctx.properties.add(new hide.Element('
 			<div class="group" name="Polygon">
 				<dl>
@@ -130,12 +131,13 @@ class Polygon extends Object3D {
 		'),this, function(pname) {
 			ctx.onChange(this, pname);
 		});
-		#end
 	}
 
 	override function getHideProps() {
 		return { icon : "square", name : "Polygon", fileSource : null };
 	}
 
-	static var _ = Library.register("polygon", Polygon);
+	#end
+
+	static var _ = hxd.prefab.Library.register("polygon", Polygon);
 }

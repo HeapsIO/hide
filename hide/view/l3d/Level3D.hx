@@ -145,7 +145,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 
 	override function getNewContextMenu(current: PrefabElement) {
 		var newItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
-		var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
+		var allRegs = hxd.prefab.Library.getRegistered();
 		var allowed = ["model", "object", "layer", "box", "polygon", "light", "decal"];
 
 		if(current != null && current.type == "object" && current.name == "settings" && current.parent == sceneData) {

@@ -16,7 +16,7 @@ typedef CurveHandle = {
 typedef CurveKey = {
 	time: Float,
 	value: Float,
-	mode: CurveKeyMode,	
+	mode: CurveKeyMode,
 	?prevHandle: CurveHandle,
 	?nextHandle: CurveHandle,
 }
@@ -65,7 +65,7 @@ class Curve extends Prefab {
 			keys: keysDat,
 		};
 	}
-	
+
 	static inline function bezier(c0: Float, c1:Float, c2:Float, c3: Float, t:Float) {
 		var u = 1 - t;
 		return u * u * u * c0 + c1 * 3 * t * u * u + c2 * 3 * t * t * u + t * t * t * c3;
@@ -134,7 +134,7 @@ class Curve extends Prefab {
 		var next = keys[idx + 1];
 		if(next == null || cur.mode == Constant)
 			return cur.value;
-		
+
 		var minT = 0.;
 		var maxT = 1.;
 		var maxDelta = 1./ 25.;
@@ -186,7 +186,7 @@ class Curve extends Prefab {
 				// Account for start of curve
 				sum += key.time * key.value;
 			}
-			
+
 			var nkey = keys[ik + 1];
 			if(nkey != null) {
 				if(time > nkey.time) {
@@ -218,9 +218,11 @@ class Curve extends Prefab {
 		return vals;
 	}
 
+	#if editor
 	override function getHideProps() {
 		return { icon : "paint-brush", name : "Curve", fileSource : null };
 	}
+	#end
 
 	public static function getCurve(parent : hide.prefab.Prefab, name: String, onlyEnabled=true) {
 		for(c in parent.children) {
@@ -284,12 +286,12 @@ class Curve extends Prefab {
 			z != null ? VCurve(z) : VConst(defVal),
 			w != null ? VCurve(w) : VConst(1.0));
 	}
-	
+
 	public static function getColorValue(curves: Array<Curve>) : hide.prefab.fx.Value {
 		inline function find(s) {
 			return findCurve(curves, s);
 		}
-		
+
 		var r = find(".r");
 		var g = find(".g");
 		var b = find(".b");
@@ -297,7 +299,7 @@ class Curve extends Prefab {
 		var h = find(".h");
 		var s = find(".s");
 		var l = find(".l");
-		
+
 		if(h != null || s != null || l != null) {
 			return VHsl(
 				h != null ? VCurve(h) : VConst(0.0),
@@ -313,5 +315,5 @@ class Curve extends Prefab {
 			a != null ? VCurve(a) : VConst(1.0));
 	}
 
-	static var _ = Library.register("curve", Curve);
+	static var _ = hxd.prefab.Library.register("curve", Curve);
 }

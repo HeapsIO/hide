@@ -140,12 +140,13 @@ class Noise extends Prefab {
 		return ctx;
 	}
 
+	#if editor
+
 	override function getHideProps() : HideProps {
 		return { icon : "cloud", name : "Noise Generator" };
 	}
 
 	override function edit( ctx : EditContext ) {
-		#if editor
 		var e = ctx.properties.add(new hide.Element('
 			<dl>
 				<dt>Size</dt><dd><input type="range" min="16" max="2048" step="16" field="size"/></dd>
@@ -206,10 +207,11 @@ class Noise extends Prefab {
 				}
 			});
 		});
-		#end
 	}
 
-	static var _ = Library.register("noise", Noise);
+	#end
+
+	static var _ = hxd.prefab.Library.register("noise", Noise);
 
 }
 

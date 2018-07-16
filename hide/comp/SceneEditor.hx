@@ -116,7 +116,7 @@ class SceneEditor {
 		var sceneEl = new Element('<div class="scene"></div>');
 		scene = new hide.comp.Scene(view.props, null, sceneEl);
 		scene.onReady = onSceneReady;
-		@:privateAccess context.shared.scene = scene;
+		@:privateAccess context.shared = new hide.prefab.ContextShared(scene);
 
 		view.keys.register("copy", onCopy);
 		view.keys.register("paste", onPaste);
@@ -806,7 +806,7 @@ class SceneEditor {
 			view.setClipboard(curEdit.rootElements[0].saveRec(), "prefab");
 		}
 		else {
-			var lib = new hide.prefab.Library();
+			var lib = new hxd.prefab.Library();
 			for(e in curEdit.rootElements) {
 				lib.children.push(e);
 			}
@@ -1157,7 +1157,7 @@ class SceneEditor {
 	// Override
 	function getNewContextMenu(current: PrefabElement) : Array<hide.comp.ContextMenu.ContextMenuItem> {
 		var newItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
-		var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
+		var allRegs = hxd.prefab.Library.getRegistered();
 		var allowed = ["model", "object"];
 		for( ptype in allowed ) {
 			newItems.push(getNewTypeMenuItem(ptype, current));
@@ -1166,8 +1166,7 @@ class SceneEditor {
 	}
 
 	function getNewTypeMenuItem(ptype: String, parent: PrefabElement) : hide.comp.ContextMenu.ContextMenuItem {
-		var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
-		var pcl = allRegs.get(ptype);
+		var pcl = hxd.prefab.Library.getRegistered().get(ptype);
 		var props = Type.createEmptyInstance(pcl).getHideProps();
 		return {
 			label : props.name,

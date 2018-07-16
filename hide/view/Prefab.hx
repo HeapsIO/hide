@@ -20,7 +20,7 @@ private class PrefabSceneEditor extends hide.comp.SceneEditor {
 
 	override function getNewContextMenu(current: PrefabElement) {
 		var registered = new Array<hide.comp.ContextMenu.ContextMenuItem>();
-		var allRegs = @:privateAccess hide.prefab.Library.registeredElements;
+		var allRegs = hxd.prefab.Library.getRegistered();
 		for( ptype in allRegs.keys() ) {
 			if( ptype == "prefab" ) continue;
 			registered.push(getNewTypeMenuItem(ptype, current == null ? sceneData : current));
@@ -32,7 +32,7 @@ private class PrefabSceneEditor extends hide.comp.SceneEditor {
 class Prefab extends FileView {
 
 	var sceneEditor : PrefabSceneEditor;
-	var data : hide.prefab.Library;
+	var data : hxd.prefab.Library;
 	var context : hide.prefab.Context;
 	var tabs : hide.comp.Tabs;
 
@@ -53,7 +53,7 @@ class Prefab extends FileView {
 	var currentSign : String;
 
 	override function getDefaultContent() {
-		return haxe.io.Bytes.ofString(ide.toJSON(new hide.prefab.Library().save()));
+		return haxe.io.Bytes.ofString(ide.toJSON(new hxd.prefab.Library().save()));
 	}
 
 	override function onFileChanged(wasDeleted:Bool) {
@@ -75,7 +75,7 @@ class Prefab extends FileView {
 
 	override function onDisplay() {
 		saveDisplayKey = "Prefab:" + getPath().split("\\").join("/").substr(0,-1);
-		data = new hide.prefab.Library();
+		data = new hxd.prefab.Library();
 		var content = sys.io.File.getContent(getPath());
 		data.load(haxe.Json.parse(content));
 		currentSign = haxe.crypto.Md5.encode(content);

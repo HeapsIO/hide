@@ -39,12 +39,13 @@ class Settings extends Prefab {
 		}
 	}
 
+	#if editor
+
 	override function getHideProps() : HideProps {
 		return { icon : "cogs", name : "Settings" };
 	}
 
 	override function edit( ctx : EditContext ) {
-		#if editor
 		var props = ctx.properties.add(new hide.Element('
 			<dl>
 				<dt>Model</dt><dd><select><option value="">-- Choose --</option></select>
@@ -105,9 +106,10 @@ class Settings extends Prefab {
 		var rebuild = ctx.rebuild;
 		ctx.ide.typesCache.watch(rebuild);
 		ctx.cleanups.push(ctx.ide.typesCache.unwatch.bind(rebuild));
-		#end
 	}
 
-	static var _ = Library.register("settings", Settings);
+	#end
+
+	static var _ = hxd.prefab.Library.register("settings", Settings);
 
 }

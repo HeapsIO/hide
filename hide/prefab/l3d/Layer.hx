@@ -48,9 +48,10 @@ class Layer extends Object3D {
 			uniqueNames = obj.uniqueNames;
 	}
 
+	#if editor
+
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
-		#if editor
 		var props = ctx.properties.add(new hide.Element('
 			<div class="group" name="Layer">
 				<dl>
@@ -83,12 +84,12 @@ class Layer extends Object3D {
 				ctx.onChange(this, "color");
 			}
 		}
-		#end
 	}
 
 	override function getHideProps() {
 		return { icon : "file", name : "Layer", fileSource : null };
 	}
+	#end
 
-	static var _ = Library.register("layer", Layer);
+	static var _ = hxd.prefab.Library.register("layer", Layer);
 }

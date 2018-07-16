@@ -25,8 +25,8 @@ class Reference extends Prefab {
 		if(ref != null)
 			return ref;
 		if(refpath == null)
-			return null;	
-		var lib = getParent(hide.prefab.Library);
+			return null;
+		var lib = getParent(hxd.prefab.Library);
 		if(lib == null)
 			return null;
 		return lib.getOpt(Prefab, refpath);
@@ -42,9 +42,11 @@ class Reference extends Prefab {
 		return p.makeInstance(ctx);
 	}
 
+	#if editor
 	override function getHideProps() {
 		return { icon : "share", name : "Reference", fileSource : null };
 	}
+	#end
 
-	static var _ = Library.register("reference", Reference);
+	static var _ = hxd.prefab.Library.register("reference", Reference);
 }

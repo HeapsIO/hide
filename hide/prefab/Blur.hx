@@ -33,10 +33,6 @@ class Blur extends Prefab {
 		};
 	}
 
-	override function getHideProps() : HideProps {
-		return { name : "Blur", icon : "bullseye" };
-	}
-
 	public function makeFilter() {
 		var f = new h2d.filter.Blur(radius, gain, quality);
 		f.linear = linear;
@@ -82,8 +78,12 @@ class Blur extends Prefab {
 		bmp.y = -(t.height * zoom) >> 1;
 	}
 
+	#if editor
+	override function getHideProps() : HideProps {
+		return { name : "Blur", icon : "bullseye" };
+	}
+
 	override function edit( ctx : EditContext ) {
-		#if editor
 		var e : hide.Element;
 		function sync( bmp : h2d.Bitmap ) {
 			var k = @:privateAccess Std.instance(bmp.filter, h2d.filter.Blur).pass.getKernelSize();
@@ -113,10 +113,9 @@ class Blur extends Prefab {
 		bmp.visible = true;
 		ctx.cleanups.push(function() bmp.visible = false);
 		sync(bmp);
-		#end
 	}
+	#end
 
-
-	static var _ = Library.register("blur", Blur);
+	static var _ = hxd.prefab.Library.register("blur", Blur);
 
 }

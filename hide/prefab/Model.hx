@@ -53,9 +53,9 @@ class Model extends Object3D {
 		return ctx;
 	}
 
+	#if editor
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
-		#if editor
 		var props = ctx.properties.add(new hide.Element('
 			<div class="group" name="Animation">
 				<dl>
@@ -99,13 +99,13 @@ class Model extends Object3D {
 				}
 			}));
 		});
-		#end
 	}
 
 	override function getHideProps() {
 		return { icon : "cube", name : "Model", fileSource : ["fbx","hmd"] };
 	}
+	#end
 
-	static var _ = Library.register("model", Model);
+	static var _ = hxd.prefab.Library.register("model", Model);
 
 }
