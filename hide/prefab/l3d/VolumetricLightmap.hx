@@ -50,8 +50,7 @@ class VolumetricLightmap extends Object3D {
 	}
 
 	function initProbes(){
-		if(!displaySH) clearPreview();
-		else resetProbes();
+		resetProbes();
 	}
 
 	function resetProbes(){
@@ -153,8 +152,6 @@ class VolumetricLightmap extends Object3D {
 	}
 
 	override function applyPos( o : h3d.scene.Object ) {
-
-		var needReset = (this.scaleX != o.scaleX || this.scaleY != o.scaleY || this.scaleZ != o.scaleZ);
 
 		super.applyPos(o);
 
