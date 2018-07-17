@@ -5,8 +5,8 @@ import hide.prefab.Prefab in PrefabElement;
 @:access(hide.view.Prefab)
 private class PrefabSceneEditor extends hide.comp.SceneEditor {
 	var parent : Prefab;
-	public function new(view, context, data) {
-		super(view, context, data);
+	public function new(view, data) {
+		super(view, data);
 		parent = cast view;
 	}
 	override function onSceneReady() {
@@ -17,23 +17,12 @@ private class PrefabSceneEditor extends hide.comp.SceneEditor {
 		super.update(dt);
 		parent.onUpdate(dt);
 	}
-
-	override function getNewContextMenu(current: PrefabElement) {
-		var registered = new Array<hide.comp.ContextMenu.ContextMenuItem>();
-		var allRegs = hxd.prefab.Library.getRegistered();
-		for( ptype in allRegs.keys() ) {
-			if( ptype == "prefab" ) continue;
-			registered.push(getNewTypeMenuItem(ptype, current == null ? sceneData : current));
-		}
-		return registered;
-	}
 }
 
 class Prefab extends FileView {
 
 	var sceneEditor : PrefabSceneEditor;
 	var data : hxd.prefab.Library;
-	var context : hide.prefab.Context;
 	var tabs : hide.comp.Tabs;
 
 	var tools : hide.comp.Toolbar;
@@ -80,12 +69,6 @@ class Prefab extends FileView {
 		data.load(haxe.Json.parse(content));
 		currentSign = haxe.crypto.Md5.encode(content);
 
-		context = new hide.prefab.Context();
-		context.onError = function(e) {
-			ide.error(e);
-		};
-		context.init();
-
 		element.html('
 			<div class="flex vertical">
 				<div class="toolbar"></div>
@@ -105,7 +88,7 @@ class Prefab extends FileView {
 		');
 		tools = new hide.comp.Toolbar(null,element.find(".toolbar"));
 		tabs = new hide.comp.Tabs(null,element.find(".tabs"));
-		sceneEditor = new PrefabSceneEditor(this, context, data);
+		sceneEditor = new PrefabSceneEditor(this, data);
 		element.find(".hide-scene-tree").first().append(sceneEditor.tree.element);
 		element.find(".tab").first().append(sceneEditor.properties.element);
 		element.find(".scene").first().append(sceneEditor.scene.element);

@@ -86,8 +86,8 @@ class Layer extends Object3D {
 		}
 	}
 
-	override function getHideProps() {
-		return { icon : "file", name : "Layer", fileSource : null };
+	override function getHideProps() : HideProps {
+		return { icon : "file", name : "Layer" };
 	}
 	#end
 

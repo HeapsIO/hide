@@ -43,8 +43,8 @@ class Reference extends Prefab {
 	}
 
 	#if editor
-	override function getHideProps() {
-		return { icon : "share", name : "Reference", fileSource : null };
+	override function getHideProps() : HideProps {
+		return { icon : "share", name : "Reference" };
 	}
 	#end
 

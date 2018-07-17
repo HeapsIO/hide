@@ -47,8 +47,8 @@ class Instance extends Object3D {
 		//ctx.properties.addProps([for(c in sheet.columns) {t: getPropType(c), name: c.name}], this.props);
 	}
 
-	override function getHideProps() {
-		return { icon : "circle", name : "Instance", fileSource : null };
+	override function getHideProps() : HideProps {
+		return { icon : "circle", name : "Instance", allowParent : function(p) return p.type == "layer" };
 	}
 
 	// Move to Prefab?

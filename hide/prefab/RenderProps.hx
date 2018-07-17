@@ -58,6 +58,12 @@ class RenderProps extends Prefab {
 		if( props == null )
 			return false;
 		renderer.props = props;
+		renderer.effects = [];
+		for( s in children ) {
+			var fx = Std.instance(s, hxd.prefab.rfx.RendererFX);
+			if( fx != null )
+				renderer.effects.push(fx);
+		}
 		renderer.refreshProps();
 		return true;
 	}
@@ -83,8 +89,8 @@ class RenderProps extends Prefab {
 		applyProps(renderer);
 	}
 
-	override function getHideProps() {
-		return { icon : "sun-o", name : "RenderProps", fileSource : null };
+	override function getHideProps() : HideProps {
+		return { icon : "sun-o", name : "RenderProps" };
 	}
 
 	#end

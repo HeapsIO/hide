@@ -101,7 +101,7 @@ class Model extends Object3D {
 		});
 	}
 
-	override function getHideProps() {
+	override function getHideProps() : HideProps {
 		return { icon : "cube", name : "Model", fileSource : ["fbx","hmd"] };
 	}
 	#end

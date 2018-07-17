@@ -70,8 +70,8 @@ class Decal extends Object3D {
 
 
 	#if editor
-	override function getHideProps() {
-		return { icon : "paint-brush", name : "Decal", fileSource : null };
+	override function getHideProps() : HideProps {
+		return { icon : "paint-brush", name : "Decal" };
 	}
 
 	override function edit( ctx : EditContext ) {

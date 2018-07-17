@@ -39,8 +39,8 @@ class Level3D extends hxd.prefab.Library {
 		});
 	}
 
-	override function getHideProps() {
-		return { icon : "cube", name : "Level3D", fileSource : ["l3d"] };
+	override function getHideProps() : HideProps {
+		return { icon : "cube", name : "Level3D", fileSource : ["l3d"], allowChildren : function(t) return hxd.prefab.Library.isOfType(t,Object3D) };
 	}
 
 	#end

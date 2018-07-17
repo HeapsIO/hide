@@ -74,8 +74,8 @@ class CamController extends h3d.scene.CameraController {
 private class Level3DSceneEditor extends hide.comp.SceneEditor {
 	var parent : Level3D;
 
-	public function new(view, context, data) {
-		super(view, context, data);
+	public function new(view, data) {
+		super(view, data);
 		parent = cast view;
 		this.localTransform = false; // TODO: Expose option
 	}
@@ -145,17 +145,9 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 
 	override function getNewContextMenu(current: PrefabElement) {
 		var newItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
-		var allRegs = hxd.prefab.Library.getRegistered();
-		var allowed = ["model", "object", "layer", "box", "polygon", "light", "decal"];
 
-		if(current != null && current.type == "object" && current.name == "settings" && current.parent == sceneData) {
-			allowed = ["renderProps"];
-		}
-
-		if(current != null && (current.type == "model" || current.type == "polygon" || current.type == "object")) {
-			allowed.push("material");
-			allowed.push("shader");
-		}
+		if(current != null && current.type == "object" && current.name == "settings" && current.parent == sceneData)
+			newItems.push(getNewTypeMenuItem("renderProps",current)); // hack : todo
 
 		var curLayer = current != null ? current.to(hide.prefab.l3d.Layer) : null;
 		var cdbSheet = curLayer != null ? curLayer.getCdbModel(curLayer) : null;
@@ -179,9 +171,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 			haxe.Timer.delay(addObject.bind(p), 0);
 		}
 
-		for( ptype in allowed ) {
-			newItems.push(getNewTypeMenuItem(ptype, current == null ? sceneData : current));
-		}
+		newItems = newItems.concat(super.getNewContextMenu(current));
 
 		function addNewInstances() {
 			if(curLayer == null)
@@ -232,7 +222,6 @@ class Level3D extends FileView {
 
 	var sceneEditor : Level3DSceneEditor;
 	var data : hide.prefab.l3d.Level3D;
-	var context : hide.prefab.Context;
 	var tabs : hide.comp.Tabs;
 
 	var tools : hide.comp.Toolbar;
@@ -265,12 +254,6 @@ class Level3D extends FileView {
 		data.load(haxe.Json.parse(content));
 		currentSign = haxe.crypto.Md5.encode(content);
 
-		context = new hide.prefab.Context();
-		context.onError = function(e) {
-			ide.error(e);
-		};
-		context.init();
-
 		element.html('
 			<div class="flex vertical">
 				<div class="toolbar">
@@ -301,7 +284,7 @@ class Level3D extends FileView {
 		currentVersion = undo.currentID;
 
 		levelProps = new hide.comp.PropsEditor(undo,null,element.find(".level-props"));
-		sceneEditor = new Level3DSceneEditor(this, context, data);
+		sceneEditor = new Level3DSceneEditor(this, data);
 		sceneEditor.addSearchBox(element.find(".hide-scene-tree").first());
 		element.find(".hide-scene-tree").first().append(sceneEditor.tree.element);
 		element.find(".hide-scroll").first().append(sceneEditor.properties.element);
@@ -310,7 +293,7 @@ class Level3D extends FileView {
 
 		// Level edit
 		{
-			var edit = new LevelEditContext(this, context);
+			var edit = new LevelEditContext(this, sceneEditor.context);
 			edit.prefabPath = state.path;
 			edit.properties = levelProps;
 			edit.scene = sceneEditor.scene;
@@ -406,7 +389,7 @@ class Level3D extends FileView {
 	}
 
 	function onRefreshScene() {
-		var all = context.shared.contexts.keys();
+		var all = sceneEditor.context.shared.contexts.keys();
 		for(elt in all)
 			refreshSceneStyle(elt);
 
@@ -456,7 +439,7 @@ class Level3D extends FileView {
 				b.element.remove();
 		}
 		layerButtons = new Map<PrefabElement, hide.comp.Toolbar.ToolToggle>();
-		var all = context.shared.contexts.keys();
+		var all = sceneEditor.context.shared.contexts.keys();
 		var initDone = false;
 		for(elt in all) {
 			var layer = elt.to(hide.prefab.l3d.Layer);

@@ -111,9 +111,12 @@ class Object3D extends Prefab {
 		});
 	}
 
-	override function getHideProps() {
+	override function getHideProps() : HideProps {
 		// Check children
-		return { icon : children == null || children.length > 0 ? "folder-open" : "genderless", name : "Group", fileSource : null };
+		return {
+			icon : children == null || children.length > 0 ? "folder-open" : "genderless",
+			name : "Group",
+		};
 	}
 	#end
 

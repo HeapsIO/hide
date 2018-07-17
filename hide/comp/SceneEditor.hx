@@ -78,6 +78,7 @@ class SceneEditor {
 	public var tree : hide.comp.IconTree<PrefabElement>;
 	public var scene : hide.comp.Scene;
 	public var properties : hide.comp.PropsEditor;
+	public var context(default,null) : hide.prefab.Context;
 	public var curEdit(default, null) : SceneEditorContext;
 	public var snapToGround = false;
 	public var localTransform = true;
@@ -94,13 +95,11 @@ class SceneEditor {
 	function get_undo() { return view.undo; }
 
 	var view : hide.view.FileView;
-	var context : hide.prefab.Context;
 	var sceneData : PrefabElement;
 
-	public function new(view, context, data) {
+	public function new(view, data) {
 		ide = hide.Ide.inst;
 		this.view = view;
-		this.context = context;
 		this.sceneData = data;
 
 		event = new hxd.WaitEvent();
@@ -116,7 +115,11 @@ class SceneEditor {
 		var sceneEl = new Element('<div class="scene"></div>');
 		scene = new hide.comp.Scene(view.props, null, sceneEl);
 		scene.onReady = onSceneReady;
-		@:privateAccess context.shared = new hide.prefab.ContextShared(scene);
+
+		context = new hide.prefab.Context();
+		context.onError = function(e) ide.error(e);
+		context.shared = new hide.prefab.ContextShared(scene);
+		context.init();
 
 		view.keys.register("copy", onCopy);
 		view.keys.register("paste", onPaste);
@@ -228,6 +231,8 @@ class SceneEditor {
 			var newItems = getNewContextMenu(current);
 			var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [
 				{ label : "New...", menu : newItems },
+			];
+			var actionItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [
 				{ label : "Rename", enabled : current != null, click : function() tree.editNode(current) },
 				{ label : "Delete", enabled : current != null, click : function() deleteElements(curEdit.rootElements) },
 				{ label : "Duplicate", enabled : current != null, click : duplicate.bind(false) },
@@ -235,23 +240,24 @@ class SceneEditor {
 			];
 
 			if(current != null && current.to(Object3D) != null) {
+				var visible = current.to(Object3D).visible;
 				menuItems = menuItems.concat([
+					{ label : "Visible", checked : visible, click : function() setVisible(curEdit.elements, !visible) },
 					{ label : "Select all", click : selectAll },
 					{ label : "Select children", enabled : current != null, click : function() selectObjects(current.flatten()) },
-					{ label : "Show", click : function() setVisible(curEdit.elements, true) },
-					{ label : "Hide", click : function() setVisible(curEdit.elements, false) },
+				]);
+				actionItems = actionItems.concat([
 					{ label : "Isolate", click : function() isolate(curEdit.elements) },
 					{ label : "Group", enabled : curEdit != null && canGroupSelection(), click : groupSelection }
 				]);
 			}
 			else if(current != null) {
 				var enabled = current.enabled;
-				menuItems = menuItems.concat([
-					{ label : enabled ? "Disable" : "Enable", click : function() setEnabled(curEdit.elements, !enabled) },
-				]);
+				menuItems.push({ label : "Enable", checked : enabled, click : function() setEnabled(curEdit.elements, !enabled) });
 			}
 
-			new hide.comp.ContextMenu(menuItems);
+			menuItems.push({ isSeparator : true, label : "" });
+			new hide.comp.ContextMenu(menuItems.concat(actionItems));
 		});
 		tree.allowRename = true;
 		tree.init();
@@ -1158,21 +1164,37 @@ class SceneEditor {
 	function getNewContextMenu(current: PrefabElement) : Array<hide.comp.ContextMenu.ContextMenuItem> {
 		var newItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
 		var allRegs = hxd.prefab.Library.getRegistered();
-		var allowed = ["model", "object"];
-		for( ptype in allowed ) {
-			newItems.push(getNewTypeMenuItem(ptype, current));
+		var parent = current == null ? sceneData : current;
+		var allowChildren = null;
+		{
+			var cur = parent;
+			while( allowChildren == null && cur != null ) {
+				allowChildren = cur.getHideProps().allowChildren;
+				cur = cur.parent;
+			}
 		}
+		for( ptype in allRegs.keys() ) {
+			var pinf = allRegs.get(ptype);
+			if( allowChildren != null && !allowChildren(ptype) ) {
+				if( pinf.inf.allowParent == null || !pinf.inf.allowParent(parent) )
+					continue;
+			} else {
+				if( pinf.inf.allowParent != null && !pinf.inf.allowParent(parent) )
+					continue;
+			}
+			newItems.push(getNewTypeMenuItem(ptype, parent));
+		}
+		newItems.sort(function(l1,l2) return Reflect.compare(l1.label,l2.label));
 		return newItems;
 	}
 
 	function getNewTypeMenuItem(ptype: String, parent: PrefabElement) : hide.comp.ContextMenu.ContextMenuItem {
-		var pcl = hxd.prefab.Library.getRegistered().get(ptype);
-		var props = Type.createEmptyInstance(pcl).getHideProps();
+		var pmodel = hxd.prefab.Library.getRegistered().get(ptype);
 		return {
-			label : props.name,
+			label : pmodel.inf.name,
 			click : function() {
 				function make(?path) {
-					var p = Type.createInstance(pcl, [parent]);
+					var p = Type.createInstance(pmodel.cl, [parent]);
 					@:privateAccess p.type = ptype;
 					if(path != null)
 						p.source = path;
@@ -1180,8 +1202,8 @@ class SceneEditor {
 					return p;
 				}
 
-				if( props.fileSource != null )
-					ide.chooseFile(props.fileSource, function(path) {
+				if( pmodel.inf.fileSource != null )
+					ide.chooseFile(pmodel.inf.fileSource, function(path) {
 						if( path == null ) return;
 						var p = make(path);
 						addObject(p);

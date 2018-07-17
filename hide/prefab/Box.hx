@@ -61,8 +61,8 @@ class Box extends Object3D {
 		}
 	}
 
-	override function getHideProps() {
-		return { icon : "square", name : "Box", fileSource : null };
+	override function getHideProps() : HideProps {
+		return { icon : "square", name : "Box" };
 	}
 	#end
 

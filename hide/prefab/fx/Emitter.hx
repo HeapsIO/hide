@@ -728,8 +728,8 @@ class Emitter extends Object3D {
 		}
 	}
 
-	override function getHideProps() {
-		return { icon : "asterisk", name : "Emitter", fileSource : null };
+	override function getHideProps() : HideProps {
+		return { icon : "asterisk", name : "Emitter", allowParent : function(p) return p.to(FX) != null || p.getParent(FX) != null };
 	}
 	#end
 

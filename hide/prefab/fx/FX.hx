@@ -320,7 +320,7 @@ class FX extends hxd.prefab.Library {
 		});
 	}
 
-	override function getHideProps() {
+	override function getHideProps() : HideProps {
 		return { icon : "cube", name : "FX", fileSource : ["fx"] };
 	}
 	#end

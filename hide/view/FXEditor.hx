@@ -27,8 +27,8 @@ class FXEditContext extends hide.prefab.EditContext {
 @:access(hide.view.FXEditor)
 private class FXSceneEditor extends hide.comp.SceneEditor {
 	var parent : hide.view.FXEditor;
-	public function new(view, context, data) {
-		super(view, context, data);
+	public function new(view,  data) {
+		super(view, data);
 		parent = cast view;
 	}
 
@@ -74,7 +74,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 				function shaderItem(name, path) : hide.comp.ContextMenu.ContextMenuItem {
 					return {
 						label : name,
-						click : function() {	
+						click : function() {
 							var s = new hide.prefab.Shader(parentElt);
 							s.source = path;
 							s.name = name;
@@ -105,6 +105,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 			}
 
 			// Other prefabs
+			// TODO : use allowParent/allowChildren
 			var allowed = ["model", "object", "emitter", "constraint", "polygon", "material"];
 			for( ptype in allowed ) {
 				registered.push(getNewTypeMenuItem(ptype, parentElt));
@@ -118,7 +119,6 @@ class FXEditor extends FileView {
 
 	var sceneEditor : FXSceneEditor;
 	var data : hide.prefab.fx.FX;
-	var context : hide.prefab.Context;
 	var tabs : hide.comp.Tabs;
 	var fxprops : hide.comp.PropsEditor;
 
@@ -185,12 +185,6 @@ class FXEditor extends FileView {
 		data.load(haxe.Json.parse(content));
 		currentSign = haxe.crypto.Md5.encode(content);
 
-		context = new hide.prefab.Context();
-		context.onError = function(e) {
-			ide.error(e);
-		};
-		context.init();
-
 		element.html('
 			<div class="flex vertical">
 				<div class="toolbar"></div>
@@ -225,7 +219,7 @@ class FXEditor extends FileView {
 			</div>');
 		tools = new hide.comp.Toolbar(null,element.find(".toolbar"));
 		tabs = new hide.comp.Tabs(null,element.find(".tabs"));
-		sceneEditor = new FXSceneEditor(this, context, data);
+		sceneEditor = new FXSceneEditor(this, data);
 		element.find(".hide-scene-tree").first().append(sceneEditor.tree.element);
 		element.find(".hide-scroll").first().append(sceneEditor.properties.element);
 		element.find(".scene").first().append(sceneEditor.scene.element);
@@ -235,7 +229,7 @@ class FXEditor extends FileView {
 		});
 		fxprops = new hide.comp.PropsEditor(undo,null,element.find(".fx-props"));
 		{
-			var edit = new FXEditContext(this, context);
+			var edit = new FXEditContext(this, sceneEditor.context);
 			edit.prefabPath = state.path;
 			edit.properties = fxprops;
 			edit.scene = sceneEditor.scene;
@@ -356,7 +350,7 @@ class FXEditor extends FileView {
 
 		tools.saveDisplayKey = "FXScene/tools";
 		tools.addButton("video-camera", "Perspective camera", () -> sceneEditor.resetCamera(false));
-		
+
 		function renderProps() {
 			properties.clear();
 			var renderer = scene.s3d.renderer;
@@ -507,7 +501,7 @@ class FXEditor extends FileView {
 				icon.removeClass("fa-angle-down").addClass("fa-angle-right");
 			curvesContainer.toggleClass("hidden", !expand);
 			for(c in trackEdits)
-				c.refresh();	
+				c.refresh();
 		}
 		trackEl.find(".track-prop").click(function(e) {
 			expand = !expand;
@@ -1000,7 +994,7 @@ class FXEditor extends FileView {
 				anim.setRandSeed(Std.random(0xFFFFFF));
 			}
 		}
-		
+
 		if(anim != null) {
 			anim.setTime(currentTime);
 		}

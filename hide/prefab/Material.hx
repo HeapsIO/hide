@@ -106,7 +106,7 @@ class Material extends Prefab {
 	}
 
 	override function getHideProps() : HideProps {
-		return { icon : "cog", name : "Material" };
+		return { icon : "cog", name : "Material", allowParent : function(p) return p.to(Object3D) != null };
 	}
 	#end
 

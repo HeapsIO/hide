@@ -133,8 +133,8 @@ class Polygon extends Object3D {
 		});
 	}
 
-	override function getHideProps() {
-		return { icon : "square", name : "Polygon", fileSource : null };
+	override function getHideProps() : HideProps {
+		return { icon : "square", name : "Polygon" };
 	}
 
 	#end

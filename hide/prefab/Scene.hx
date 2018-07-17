@@ -32,7 +32,7 @@ class Scene extends Prefab {
 	}
 
 	#if editor
-	override function getHideProps() {
+	override function getHideProps() : HideProps {
 		return { icon : "cube", name : "Scene", fileSource : ["hsd"] };
 	}
 	#end

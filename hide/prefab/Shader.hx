@@ -136,8 +136,8 @@ class Shader extends Prefab {
 		});
 	}
 
-	override function getHideProps() {
-		return { icon : "cog", name : "Shader", fileSource : ["hx"] };
+	override function getHideProps() : HideProps {
+		return { icon : "cog", name : "Shader", fileSource : ["hx"], allowParent : function(p) return p.to(Object3D) != null };
 	}
 
 	#end

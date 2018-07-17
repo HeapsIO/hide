@@ -219,7 +219,7 @@ class Curve extends Prefab {
 	}
 
 	#if editor
-	override function getHideProps() {
+	override function getHideProps() : HideProps {
 		return { icon : "paint-brush", name : "Curve", fileSource : null };
 	}
 	#end
