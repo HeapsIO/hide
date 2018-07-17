@@ -9,8 +9,8 @@ class VolumetricLightmap extends Object3D {
 	var order : Int = 1;
 	var displaySH_field = false;
 
-	var useWorldAlignedProbe = false;
 	public var volumetricLightmap : h3d.scene.pbr.VolumetricLightmap;
+	var useWorldAlignedProbe = false;
 	var displaySH = false;
 
 	var sceneObject : h3d.scene.Object;
@@ -179,6 +179,8 @@ class VolumetricLightmap extends Object3D {
 		volumetricLightmap.shOrder = order;
 		volumetricLightmap.useAlignedProb = false;
 		volumetricLightmap.strength = strength;
+		var bytes = ctx.shared.loadBakedBytes(name+".vlm");
+		if( bytes != null ) volumetricLightmap.load(bytes);
 
 		#if editor
 
@@ -239,6 +241,7 @@ class VolumetricLightmap extends Object3D {
 			}
 			else{
 				baker.update(dt);
+				if( baker == null ) return;
 				var props = ctx.getCurrentProps(this);
 				props.find(".bakeProgress").val(baker.progress);
 			}
@@ -250,26 +253,22 @@ class VolumetricLightmap extends Object3D {
 			ctx.rebuild();
 		}
 
-		function startBake() {
+		function startedBake() {
 			//var props = ctx.getCurrentProps(this);
 			props.find(".progress").show();
 			props.find(".bake").attr("value","Cancel").off("click").click(function(_) cancel());
+			bakeUpdate(0);
 		}
 
 		props.find(".progress").hide();
 		props.find(".bake").click(function(_) {
-			maxOrderBaked = order;
-			volumetricLightmap.lastBakedProbeIndex = 0;
-			var s3d = @:privateAccess ctx.rootContext.local3d.getScene();
-			baker = new hide.view.l3d.ProbeBakerProcess(s3d, this);
-			startBake();
-			bakeUpdate(0);
+			startBake(ctx, cancel);
+			startedBake();
 			ctx.addUpdate(bakeUpdate);
 		});
 
 		if( baker != null ){
-			startBake();
-			bakeUpdate(0);
+			startedBake();
 			ctx.addUpdate(bakeUpdate);
 		}
 
@@ -280,7 +279,11 @@ class VolumetricLightmap extends Object3D {
 		volumetricLightmap.lastBakedProbeIndex = 0;
 		var s3d = @:privateAccess ctx.rootContext.local3d.getScene();
 		baker = new hide.view.l3d.ProbeBakerProcess(s3d, this);
-		baker.onEnd = function() if( onEnd != null ) onEnd();
+		baker.onEnd = function() {
+			if( onEnd != null ) onEnd();
+			var bytes = volumetricLightmap.save();
+			ctx.rootContext.shared.saveBakedBytes(name+".vlm", bytes);
+		}
 	}
 
 	#end

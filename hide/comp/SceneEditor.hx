@@ -127,6 +127,7 @@ class SceneEditor {
 		context = new hide.prefab.Context();
 		context.onError = function(e) ide.error(e);
 		context.shared = new hide.prefab.ContextShared(scene);
+		context.shared.currentPath = view.state.path;
 		context.init();
 
 		view.keys.register("copy", onCopy);
@@ -1120,6 +1121,8 @@ class SceneEditor {
 		if(layer != null) {
 			uniqueName = layer.uniqueNames;
 		}
+		if( p.type == "volumetricLightmap" )
+			uniqueName = true;
 
 		var prefix = null;
 		if(p.name != null && p.name.length > 0) {

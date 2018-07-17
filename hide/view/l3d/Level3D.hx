@@ -145,6 +145,13 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 
 	public function bakeVolumetricLightmaps(){
 		var volumetricLightmaps = sceneData.getAll(hide.prefab.l3d.VolumetricLightmap);
+		var total = 0;
+		for( v in volumetricLightmaps )
+			total += v.volumetricLightmap.getProbeCount();
+		if( total == 0 )
+			return;
+		if( !ide.confirm("Bake "+total+" probes?") )
+			return;
 		function bakeNext() {
 			var v = volumetricLightmaps.shift();
 			if( v == null ) {

@@ -29,4 +29,16 @@ class ContextShared extends hxd.prefab.ContextShared {
 		return getScene().loadTexture("",path);
 	}
 
+	override function loadBakedFile():Null<haxe.io.Bytes> {
+		var path = new haxe.io.Path(currentPath);
+		path.ext = "bake";
+		return try sys.io.File.getBytes(hide.Ide.inst.getPath(path.toString())) catch( e : Dynamic ) null;
+	}
+
+	override function saveBakedFile( bytes ) {
+		var path = new haxe.io.Path(currentPath);
+		path.ext = "bake";
+		sys.io.File.saveBytes(hide.Ide.inst.getPath(path.toString()), bytes);
+	}
+
 }
