@@ -277,14 +277,16 @@ class VolumetricLightmap extends Object3D {
 		}
 
 	}
-	#end
 
-	public function startBake(ctx : EditContext){
+	public function startBake(ctx : EditContext, ?onEnd){
 		maxOrderBaked = order;
 		volumetricLightmap.lastBakedProbeIndex = 0;
 		var s3d = @:privateAccess ctx.rootContext.local3d.getScene();
 		baker = new hide.view.l3d.ProbeBakerProcess(s3d, this);
+		baker.onEnd = function() if( onEnd != null ) onEnd();
 	}
+
+	#end
 
 	static var _ = hxd.prefab.Library.register("volumetricLightmap", VolumetricLightmap);
 }

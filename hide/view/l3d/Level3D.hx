@@ -144,11 +144,17 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 	}
 
 	public function bakeVolumetricLightmaps(){
-		var volumetricLightmaps : Array<hide.prefab.l3d.VolumetricLightmap> = sceneData.getAll(hide.prefab.l3d.VolumetricLightmap);
-		for(v in volumetricLightmaps){
-			v.startBake(curEdit);
+		var volumetricLightmaps = sceneData.getAll(hide.prefab.l3d.VolumetricLightmap);
+		function bakeNext() {
+			var v = volumetricLightmaps.shift();
+			if( v == null ) {
+				ide.message("Done");
+				return;
+			}
+			v.startBake(curEdit, bakeNext);
 			selectObjects([v]);
 		}
+		bakeNext();
 	}
 
 	override function getNewContextMenu(current: PrefabElement) {

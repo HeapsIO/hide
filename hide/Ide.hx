@@ -768,6 +768,10 @@ class Ide {
 			target.addChild(config, index);
 	}
 
+	public function message( text : String ) {
+		js.Browser.window.alert(text);
+	}
+
 	public function confirm( text : String ) {
 		return js.Browser.window.confirm(text);
 	}
