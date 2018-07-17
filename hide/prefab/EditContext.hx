@@ -5,6 +5,9 @@ class EditContext {
 	public var rootContext : Context;
 
 	#if editor
+
+	var updates : Array<Float->Void> = [];
+
 	public var prefabPath : String;
 	public var ide(get,never) : hide.Ide;
 	public var scene : hide.comp.Scene;
@@ -15,13 +18,31 @@ class EditContext {
 		var ctx = getContext(p);
 		if(ctx != null)
 			p.updateInstance(ctx, propName);
-		
+
 		var refs = rootContext.shared.references.get(p);
 		if(refs != null) {
 			for(ctx in refs)
 				p.updateInstance(ctx, propName);
 		}
 	}
+
+	public function getCurrentProps( p : Prefab ) : Element {
+		throw "Not implemented";
+		return null;
+	}
+
+	public function addUpdate( f : (dt:Float) -> Void ) {
+		updates.push(f);
+	}
+
+	public function removeUpdate( f : (dt:Float) -> Void ) {
+		for( f2 in updates )
+			if( Reflect.compareMethods(f,f2) ) {
+				updates.remove(f2);
+				break;
+			}
+	}
+
 	#end
 
 	public function new(ctx) {

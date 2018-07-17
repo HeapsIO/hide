@@ -12,7 +12,7 @@ import h3d.scene.Object;
 
 
 class LevelEditContext extends hide.prefab.EditContext {
-	var parent : Level3D;
+	public var parent : Level3D;
 	public function new(parent, context) {
 		super(context);
 		this.parent = parent;
@@ -143,6 +143,14 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		return super.projectToGround(ray);
 	}
 
+	public function bakeVolumetricLightmaps(){
+		var volumetricLightmaps : Array<hide.prefab.l3d.VolumetricLightmap> = sceneData.getAll(hide.prefab.l3d.VolumetricLightmap);
+		for(v in volumetricLightmaps){
+			v.startBake(curEdit);
+			selectObjects([v]);
+		}
+	}
+
 	override function getNewContextMenu(current: PrefabElement) {
 		var newItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
 
@@ -220,7 +228,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 
 class Level3D extends FileView {
 
-	var sceneEditor : Level3DSceneEditor;
+	public var sceneEditor : Level3DSceneEditor;
 	var data : hide.prefab.l3d.Level3D;
 	var tabs : hide.comp.Tabs;
 
@@ -240,12 +248,8 @@ class Level3D extends FileView {
 
 	var scene(get, null):  hide.comp.Scene;
 	function get_scene() return sceneEditor.scene;
-	var properties(get, null):  hide.comp.PropsEditor;
+	public var properties(get, null):  hide.comp.PropsEditor;
 	function get_properties() return sceneEditor.properties;
-
-	public function new(state) {
-		super(state);
-	}
 
 	override function onDisplay() {
 		saveDisplayKey = "Level3D:" + getPath().split("\\").join("/").substr(0,-1);
@@ -310,6 +314,7 @@ class Level3D extends FileView {
 		tools.addToggle("anchor", "Snap to ground", (v) -> sceneEditor.snapToGround = v, sceneEditor.snapToGround);
 		tools.addToggle("compass", "Local transforms", (v) -> sceneEditor.localTransform = v, sceneEditor.localTransform);
 		tools.addToggle("th", "Show grid", function(v) { showGrid = v; updateGrid(); }, showGrid);
+		tools.addButton("map", "Bake Volumetric Lightmaps", () -> sceneEditor.bakeVolumetricLightmaps());
 
 		tools.addColor("Background color", function(v) {
 			scene.engine.backgroundColor = v;
@@ -546,5 +551,4 @@ class Level3D extends FileView {
 	}
 
 	static var _ = FileTree.registerExtension(Level3D,["l3d"],{ icon : "sitemap", createNew : "Level3D" });
-
 }

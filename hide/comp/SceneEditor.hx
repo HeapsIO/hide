@@ -7,9 +7,10 @@ import hide.prefab.Prefab as PrefabElement;
 import hide.prefab.Object3D;
 import h3d.scene.Object;
 
+@:access(hide.comp.SceneEditor)
 class SceneEditorContext extends hide.prefab.EditContext {
 
-	public var editor : SceneEditor;
+	public var editor(default, null) : SceneEditor;
 	public var elements : Array<PrefabElement>;
 	public var rootObjects(default, null): Array<Object>;
 	public var rootElements(default, null): Array<PrefabElement>;
@@ -17,6 +18,7 @@ class SceneEditorContext extends hide.prefab.EditContext {
 	public function new(ctx, elts, editor) {
 		super(ctx);
 		this.editor = editor;
+		this.updates = editor.updates;
 		this.elements = elts;
 		rootObjects = [];
 		rootElements = [];
@@ -34,6 +36,11 @@ class SceneEditorContext extends hide.prefab.EditContext {
 				}
 			}
 		}
+	}
+
+	override function getCurrentProps( p : hide.prefab.Prefab ) {
+		var cur = editor.curEdit;
+		return cur != null && cur.elements[0] == p ? editor.properties.element : new Element();
 	}
 
 	override function rebuild() {
@@ -84,6 +91,7 @@ class SceneEditor {
 	public var localTransform = true;
 
 	var searchBox : Element;
+	var updates : Array<Float -> Void> = [];
 
 	var cameraController : h3d.scene.CameraController;
 	var gizmo : hide.view.l3d.Gizmo;
@@ -94,7 +102,7 @@ class SceneEditor {
 	var undo(get, null):hide.ui.UndoHistory;
 	function get_undo() { return view.undo; }
 
-	var view : hide.view.FileView;
+	public var view(default, null) : hide.view.FileView;
 	var sceneData : PrefabElement;
 
 	public function new(view, data) {
@@ -1149,6 +1157,8 @@ class SceneEditor {
 			gizmo.update(dt);
 		}
 		event.update(dt);
+		for( f in updates )
+			f(dt);
 	}
 
 	// Override
@@ -1157,7 +1167,6 @@ class SceneEditor {
 		edit.prefabPath = view.state.path;
 		edit.properties = properties;
 		edit.scene = scene;
-		edit.editor = this;
 		return edit;
 	}
 
