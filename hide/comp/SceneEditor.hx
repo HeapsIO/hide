@@ -305,6 +305,7 @@ class SceneEditor {
 		tree.refresh(function() {
 			for(elt in sh.contexts.keys()) {
 				var el = tree.getElement(elt);
+				if(el == null) continue;
 				updateTreeStyle(elt, el);
 			}
 			if(callb != null) callb();

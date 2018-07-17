@@ -162,6 +162,8 @@ class IconTree<T:{}> extends Component {
 
 	public function getElement(e : T) : Element {
 		var v = getRev(e);
+		if(v == null)
+			return null;
 		var el = (element:Dynamic).jstree('get_node', v.id, true);
 		return el;
 	}
