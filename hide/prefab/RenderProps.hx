@@ -90,7 +90,7 @@ class RenderProps extends Prefab {
 	}
 
 	override function getHideProps() : HideProps {
-		return { icon : "sun-o", name : "RenderProps" };
+		return { icon : "sun-o", name : "RenderProps", allowChildren : function(t) return hxd.prefab.Library.isOfType(t,hxd.prefab.rfx.RendererFX) };
 	}
 
 	#end
