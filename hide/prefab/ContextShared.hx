@@ -1,7 +1,7 @@
 package hide.prefab;
 
 class ContextShared extends hxd.prefab.ContextShared {
-
+	#if editor
 	var scene : hide.comp.Scene;
 
 	public function new(scene) {
@@ -40,5 +40,5 @@ class ContextShared extends hxd.prefab.ContextShared {
 		path.ext = "bake";
 		sys.io.File.saveBytes(hide.Ide.inst.getPath(path.toString()), bytes);
 	}
-
+	#end
 }
