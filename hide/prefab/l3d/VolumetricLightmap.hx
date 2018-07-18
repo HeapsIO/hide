@@ -51,6 +51,7 @@ class VolumetricLightmap extends Object3D {
 
 	function initProbes(){
 		resetProbes();
+		volumetricLightmap.packDataInsideTexture(); // Default 0
 	}
 
 	function resetProbes(){
@@ -59,11 +60,11 @@ class VolumetricLightmap extends Object3D {
 		for( i in 0...volumetricLightmap.lightProbes.length){
 			volumetricLightmap.lightProbes[i].sh = new h3d.scene.pbr.SphericalHarmonic(order);
 		}
-		volumetricLightmap.packDataInsideTexture();
 		createPreview();
 	}
 
 	function updateVolumetricLightmap(){
+		#if editor
 
 		if(volumetricLightmap == null) return;
 
@@ -98,6 +99,7 @@ class VolumetricLightmap extends Object3D {
 			if(!displaySH) clearPreview();
 			else createPreview();
 		}
+		#end
 	}
 
 	function clearPreview(){
@@ -159,6 +161,7 @@ class VolumetricLightmap extends Object3D {
 		volumetricLightmap.scaleX = o.scaleX;
 		volumetricLightmap.scaleY = o.scaleY;
 		volumetricLightmap.scaleZ = o.scaleZ;
+		volumetricLightmap.visible = this.visible;
 
 		resetProbes();
 	}
