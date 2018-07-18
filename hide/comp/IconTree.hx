@@ -113,6 +113,7 @@ class IconTree<T:{}> extends Component {
 		});
 		element.on("click.jstree", function (event) {
 			var node = new Element(event.target).closest("li");
+			if(node == null || node.length == 0) return;
    			var i = map.get(node[0].id);
 			onClick(i.value);
 		});
