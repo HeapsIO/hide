@@ -3,17 +3,21 @@ package hide.prefab;
 
 class Material extends Prefab {
 
+	var wrapRepeat = false;
+
 	public function new(?parent) {
 		super(parent);
 		props = {};
 	}
 
 	override function load(o:Dynamic) {
+		if(o.wrapRepeat) wrapRepeat = o.wrapRepeat;
 	}
 
 	override function save() {
-		return {
-		};
+		var o : Dynamic = {};
+		if(wrapRepeat) o.wrapRepeat = true;
+		return o;
 	}
 
 	function renderProps() {
@@ -36,7 +40,7 @@ class Material extends Prefab {
 				var tex : h3d.mat.Texture = null;
 				if(p != null) {
 					tex = ctx.loadTexture(p);
-					if(tex != null)
+					if(tex != null && wrapRepeat)
 						tex.wrap = Repeat;
 				}
 				return tex;
@@ -100,8 +104,9 @@ class Material extends Prefab {
 				<dt>${isPbr ? "Albedo" : "Diffuse"}</dt><dd><input type="texturepath" field="diffuseMap" style="width:165px"/></dd>
 				<dt>Normal</dt><dd><input type="texturepath" field="normalMap" style="width:165px"/></dd>
 				<dt>Specular</dt><dd><input type="texturepath" field="specularMap" style="width:165px"/></dd>
-			</dl></div>'), renderProps(), function(_) {
-			ctx.onChange(this, "props");
+				<dt>Wrap</dt><dd><input type="checkbox" field="wrapRepeat"/></dd>
+			</dl></div>'), renderProps(), function(pname) {
+			ctx.onChange(this, pname);
 		});
 	}
 
@@ -111,10 +116,10 @@ class Material extends Prefab {
 	#end
 
 	public static function hasOverride(p: Prefab) {
-		if(Lambda.exists(p.children, c -> Std.is(c, Material)))
+		if(Lambda.exists(p.children, c -> Std.is(c, Material) && c.enabled))
 			return true;
-		if(Type.getClass(p.parent) == hide.prefab.Object3D) //if(Std.is(p.parent, Prefab))
-			return Lambda.exists(p.parent.children, c -> Std.is(c, Material));
+		if(Type.getClass(p.parent) == hide.prefab.Object3D)
+			return Lambda.exists(p.parent.children, c -> Std.is(c, Material) && c.enabled);
 		return false;
 	}
 

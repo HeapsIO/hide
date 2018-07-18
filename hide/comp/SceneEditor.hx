@@ -312,7 +312,8 @@ class SceneEditor {
 		var sh = context.shared;
 		refreshScene();
 		tree.refresh(function() {
-			for(elt in sh.contexts.keys()) {
+			var all = sceneData.flatten(hxd.prefab.Prefab);
+			for(elt in all) {
 				var el = tree.getElement(elt);
 				if(el == null) continue;
 				updateTreeStyle(elt, el);
