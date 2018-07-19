@@ -4,6 +4,9 @@ package hide.prefab;
 class Material extends Prefab {
 
 	var wrapRepeat = false;
+	var diffuseMap : String;
+	var normalMap : String;
+	var specularMap : String;
 
 	public function new(?parent) {
 		super(parent);
@@ -12,11 +15,29 @@ class Material extends Prefab {
 
 	override function load(o:Dynamic) {
 		if(o.wrapRepeat) wrapRepeat = o.wrapRepeat;
+		if(o.diffuseMap != null) diffuseMap = o.diffuseMap;
+		if(o.normalMap != null) normalMap = o.normalMap;
+		if(o.specularMap != null) specularMap = o.specularMap;
+
+		// Backward compat
+		if(o.props != null && Reflect.hasField(o.props, "PBR")) {
+			var pbrProps = Reflect.field(o.props, "PBR");
+			for(pname in ["diffuseMap", "normalMap", "specularMap"]) {
+				var p : String = Reflect.field(pbrProps, pname);
+				if(p != null) {
+					Reflect.setField(this, pname, p);
+				}
+				Reflect.deleteField(pbrProps, pname);
+			}
+		}
 	}
 
 	override function save() {
 		var o : Dynamic = {};
 		if(wrapRepeat) o.wrapRepeat = true;
+		if(diffuseMap != null) o.diffuseMap = diffuseMap;
+		if(normalMap != null) o.normalMap = normalMap;
+		if(specularMap != null) o.specularMap = specularMap;
 		return o;
 	}
 
@@ -36,12 +57,12 @@ class Material extends Prefab {
 			mat.props = props;
 
 			inline function getTex(pname: String) {
-				var p : String = Reflect.field(props, pname);
+				var p : String = Reflect.field(this, pname);
 				var tex : h3d.mat.Texture = null;
 				if(p != null) {
 					tex = ctx.loadTexture(p);
-					if(tex != null && wrapRepeat)
-						tex.wrap = Repeat;
+					if(tex != null)
+						tex.wrap = wrapRepeat ? Repeat : Clamp;
 				}
 				return tex;
 			}
@@ -105,7 +126,7 @@ class Material extends Prefab {
 				<dt>Normal</dt><dd><input type="texturepath" field="normalMap" style="width:165px"/></dd>
 				<dt>Specular</dt><dd><input type="texturepath" field="specularMap" style="width:165px"/></dd>
 				<dt>Wrap</dt><dd><input type="checkbox" field="wrapRepeat"/></dd>
-			</dl></div>'), renderProps(), function(pname) {
+			</dl></div>'), this, function(pname) {
 			ctx.onChange(this, pname);
 		});
 	}
