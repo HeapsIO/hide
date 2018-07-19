@@ -106,7 +106,11 @@ class Object3D extends Prefab {
 			</div>
 		');
 		ctx.properties.add(props, this, function(pname) {
-			applyPos(ctx.getContext(this).local3d);
+			var obj = ctx.getContext(this).local3d;
+			if( pname == "visible" )
+				obj.visible = visible;
+			else
+				applyPos(obj);
 			ctx.onChange(this, pname);
 		});
 	}

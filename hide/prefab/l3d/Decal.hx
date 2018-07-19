@@ -51,15 +51,6 @@ class Decal extends Object3D {
 		var mesh = new h3d.scene.Mesh(h3d.prim.Cube.defaultUnitCube(), ctx.local3d);
 		mesh.material.setDefaultProps("decal");
 
-		#if editor
-		var wire = new h3d.scene.Box(0xFFFFFFFF,mesh);
-		wire.name = "_highlight";
-		wire.material.setDefaultProps("ui");
-		wire.ignoreCollide = true;
-		wire.material.shadows = false;
-		wire.visible = false;
-		#end
-
 		ctx.local3d = mesh;
 		ctx.local3d.name = name;
 		applyPos(ctx.local3d);
@@ -72,6 +63,23 @@ class Decal extends Object3D {
 	#if editor
 	override function getHideProps() : HideProps {
 		return { icon : "paint-brush", name : "Decal" };
+	}
+
+	override function setSelected( ctx : Context, b : Bool ) {
+		if( b ) {
+			var obj = ctx.shared.contexts.get(this).local3d;
+			var wire = new h3d.scene.Box(0xFFFFFFFF,obj);
+			wire.name = "_highlight";
+			wire.material.setDefaultProps("ui");
+			wire.ignoreCollide = true;
+			wire.material.shadows = false;
+		} else {
+			for( o in ctx.shared.getObjects(this,h3d.scene.Box) )
+				if( o.name == "_highlight" ) {
+					o.remove();
+					return;
+				}
+		}
 	}
 
 	override function edit( ctx : EditContext ) {

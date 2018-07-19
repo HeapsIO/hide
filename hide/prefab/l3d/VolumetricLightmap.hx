@@ -13,8 +13,6 @@ class VolumetricLightmap extends Object3D {
 	var useWorldAlignedProbe = false;
 	var displaySH = false;
 
-	var sceneObject : h3d.scene.Object;
-
 	#if editor
 	var maxOrderBaked = 0;
 	var baker : hide.view.l3d.ProbeBakerProcess;
@@ -126,9 +124,9 @@ class VolumetricLightmap extends Object3D {
 			previewSphere.name = "_previewSphere";
 			previewSphere.material.setDefaultProps("ui");
 			var size = 0.1;
-			previewSphere.scaleX = size/volumetricLightmap.scaleX;
-			previewSphere.scaleY = size/volumetricLightmap.scaleY;
-			previewSphere.scaleZ = size/volumetricLightmap.scaleZ;
+			previewSphere.scaleX = size/volumetricLightmap.parent.scaleX;
+			previewSphere.scaleY = size/volumetricLightmap.parent.scaleY;
+			previewSphere.scaleZ = size/volumetricLightmap.parent.scaleZ;
 			var probePos = volumetricLightmap.getProbePosition(volumetricLightmap.getProbeCoords(i));
 			volumetricLightmap.globalToLocal(probePos);
 			previewSphere.setPosition(probePos.x, probePos.y, probePos.z);
@@ -149,15 +147,7 @@ class VolumetricLightmap extends Object3D {
 	}
 
 	override function applyPos( o : h3d.scene.Object ) {
-
 		super.applyPos(o);
-
-		volumetricLightmap.setTransform(sceneObject.getAbsPos());
-		volumetricLightmap.scaleX = o.scaleX;
-		volumetricLightmap.scaleY = o.scaleY;
-		volumetricLightmap.scaleZ = o.scaleZ;
-		volumetricLightmap.visible = this.visible;
-
 		resetLightmap();
 	}
 
@@ -165,13 +155,15 @@ class VolumetricLightmap extends Object3D {
 
 		ctx = ctx.clone(this);
 		var obj = new h3d.scene.Object(ctx.local3d);
-		sceneObject = new h3d.scene.Object(obj);
-		sceneObject.setPosition(-0.5, -0.5, -0.5);
-
-		volumetricLightmap = new h3d.scene.pbr.VolumetricLightmap(ctx.local3d);
+		volumetricLightmap = new h3d.scene.pbr.VolumetricLightmap(obj);
+		volumetricLightmap.setPosition(-0.5, -0.5, -0.5);
 		ctx.local3d = obj;
 		ctx.local3d.name = name;
 		applyPos(ctx.local3d);
+
+		#if editor
+		initProbes();
+		#end
 
 		volumetricLightmap.voxelSize = new h3d.Vector(voxelsize_x,voxelsize_y,voxelsize_z);
 		volumetricLightmap.shOrder = order;
@@ -180,19 +172,7 @@ class VolumetricLightmap extends Object3D {
 		var bytes = ctx.shared.loadBakedBytes(name+".vlm");
 		if( bytes != null ) volumetricLightmap.load(bytes);
 
-		#if editor
 
-		var wire = new h3d.scene.Box(0xFFFFFFFF,obj);
-		wire.name = "_highlight";
-		wire.material.setDefaultProps("ui");
-		wire.ignoreCollide = true;
-		wire.material.shadows = false;
-		wire.material.castShadows = false;
-		wire.visible = false;
-
-		initProbes();
-
-		#end
 
 		return ctx;
 	}
@@ -201,6 +181,23 @@ class VolumetricLightmap extends Object3D {
 
 	override function getHideProps() : HideProps {
 		return { icon : "map-o", name : "VolumetricLightmap" };
+	}
+
+	override function setSelected( ctx : Context, b : Bool ) {
+		if( b ) {
+			var obj = ctx.shared.contexts.get(this).local3d;
+			var wire = new h3d.scene.Box(volumetricLightmap.lightProbeTexture == null ? 0xFFFF0000 : 0xFFFFFFFF,obj);
+			wire.name = "_highlight";
+			wire.material.setDefaultProps("ui");
+			wire.ignoreCollide = true;
+			wire.material.shadows = false;
+		} else {
+			for( o in ctx.shared.getObjects(this,h3d.scene.Box) )
+				if( o.name == "_highlight" ) {
+					o.remove();
+					return;
+				}
+		}
 	}
 
 	override function edit( ctx : EditContext ) {

@@ -356,7 +356,7 @@ class SceneEditor {
 			var o = ctx.local3d;
 			if(o == null)
 				continue;
-			var meshes = getSelfObjects(elt, h3d.scene.Mesh);
+			var meshes = context.shared.getObjects(elt, h3d.scene.Mesh);
 			var invRootMat = o.getAbsPos().clone();
 			invRootMat.invert();
 			var bounds = new h3d.col.Bounds();
@@ -639,23 +639,6 @@ class SceneEditor {
 		return context.shared.root3d;
 	}
 
-	function getSelfObjects<T:h3d.scene.Object>(p : PrefabElement, c: Class<T>) : Array<T> {
-		var childObjs = [for(c in p.children) {var ctx = getContext(c); if(ctx != null) ctx.local3d; }];
-		var ret = [];
-		function rec(o : Object) {
-			var m = Std.instance(o, c);
-			if(m != null) ret.push(m);
-			for(i in 0...o.numChildren) {
-				var child = o.getChildAt(i);
-				if(childObjs.indexOf(child) < 0) {
-					rec(child);
-				}
-			}
-		}
-		rec(getContext(p).local3d);
-		return ret;
-	}
-
 	public function addObject( e : PrefabElement ) {
 		var roots = e.parent.children;
 		undo.change(Custom(function(undo) {
@@ -672,16 +655,6 @@ class SceneEditor {
 			resetCamera();
 	}
 
-	function setHighlighed(elt: PrefabElement, on: Bool) {
-		var ctx = getContext(elt);
-		if(ctx == null)
-			return;
-		var highlights = ctx.local3d.findAll(c -> if(c.name == "_highlight") c else null);
-		for(o in highlights) {
-			o.visible = on;
-		}
-	}
-
 	public function selectObjects( elts : Array<PrefabElement>, ?includeTree=true) {
 		if( curEdit != null )
 			curEdit.cleanup();
@@ -692,17 +665,22 @@ class SceneEditor {
 			tree.setSelection(elts);
 		}
 
-		var rootElts = edit.rootElements;
-		var objects = edit.rootObjects;
-		addOutline(objects);
-		for(elt in rootElts) {
-			setHighlighed(elt, true);
+		var map = new Map<PrefabElement,Bool>();
+		function selectRec(e : PrefabElement, b:Bool) {
+			if( map.exists(e) )
+				return;
+			map.set(e, true);
+			e.setSelected(context, b);
+			for( e in e.children )
+				selectRec(e,b);
 		}
+
+		for( e in elts )
+			selectRec(e, true);
+
 		edit.cleanups.push(function() {
-			cleanOutline(objects);
-			for(elt in rootElts) {
-				setHighlighed(elt, false);
-			}
+			for( e in map.keys() )
+				e.setSelected(context, false);
 		});
 
 		curEdit = edit;
@@ -1283,40 +1261,6 @@ class SceneEditor {
 		}
 		pos.scale3(1.0 / objects.length);
 		return pos;
-	}
-
-	static function addOutline(objects: Array<Object>) {
-		var outlineShader = new h3d.shader.Outline();
-		outlineShader.size = 0.12;
-		outlineShader.distance = 0;
-		outlineShader.color.setColor(0xffffff);
-
-		var s1 = new h3d.mat.Stencil();
-		s1.setFunc(Always, 1);
-		s1.setOp(Keep, Keep, Replace);
-
-		var s2 = new h3d.mat.Stencil();
-		s2.setFunc(Greater, 1, 0xFF, 0);
-		for(obj in objects) {
-			for( m in obj.getMaterials() ) {
-				m.mainPass.stencil = s1;
-
-				var p = m.allocPass("outline");
-				p.culling = None;
-				p.depthWrite = false;
-				p.addShader(outlineShader);
-				p.stencil = s2;
-			}
-		}
-	}
-
-	static function cleanOutline(objects: Array<Object>) {
-		for(obj in objects) {
-			for( m in obj.getMaterials() ) {
-				m.mainPass.stencil = null;
-				m.removePass(m.getPass("outline"));
-			}
-		}
 	}
 
 	public static function hasParent(elt: PrefabElement, list: Array<PrefabElement>) {
