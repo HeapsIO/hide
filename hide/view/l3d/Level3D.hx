@@ -407,7 +407,7 @@ class Level3D extends FileView {
 	}
 
 	function onRefreshScene() {
-		var all = sceneEditor.context.shared.contexts.keys();
+		var all = data.flatten(hxd.prefab.Prefab);
 		for(elt in all)
 			refreshSceneStyle(elt);
 
@@ -457,7 +457,7 @@ class Level3D extends FileView {
 				b.element.remove();
 		}
 		layerButtons = new Map<PrefabElement, hide.comp.Toolbar.ToolToggle>();
-		var all = sceneEditor.context.shared.contexts.keys();
+		var all = data.flatten(hxd.prefab.Prefab);
 		var initDone = false;
 		for(elt in all) {
 			var layer = elt.to(hide.prefab.l3d.Layer);
