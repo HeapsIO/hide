@@ -48,7 +48,6 @@ class VolumetricLightmap extends Object3D {
 	}
 
 	function initProbes(){
-		volumetricLightmap.updateProbeCount();
 		createDebugPreview();
 	}
 
@@ -161,10 +160,6 @@ class VolumetricLightmap extends Object3D {
 		ctx.local3d.name = name;
 		applyPos(ctx.local3d);
 
-		#if editor
-		initProbes();
-		#end
-
 		volumetricLightmap.voxelSize = new h3d.Vector(voxelsize_x,voxelsize_y,voxelsize_z);
 		volumetricLightmap.shOrder = order;
 		volumetricLightmap.useAlignedProb = false;
@@ -172,8 +167,9 @@ class VolumetricLightmap extends Object3D {
 		var bytes = ctx.shared.loadBakedBytes(name+".vlm");
 		if( bytes != null ) volumetricLightmap.load(bytes);
 
-
-
+		#if editor
+		initProbes();
+		#end
 		return ctx;
 	}
 
