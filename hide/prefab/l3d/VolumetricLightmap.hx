@@ -155,7 +155,8 @@ class VolumetricLightmap extends Object3D {
 		ctx = ctx.clone(this);
 		var obj = new h3d.scene.Object(ctx.local3d);
 		volumetricLightmap = new h3d.scene.pbr.VolumetricLightmap(obj);
-		volumetricLightmap.setPosition(-0.5, -0.5, -0.5);
+		volumetricLightmap.ignoreCollide = true;
+		volumetricLightmap.setPosition(-0.5, -0.5, 0);
 		ctx.local3d = obj;
 		ctx.local3d.name = name;
 		applyPos(ctx.local3d);
@@ -182,7 +183,7 @@ class VolumetricLightmap extends Object3D {
 	override function setSelected( ctx : Context, b : Bool ) {
 		if( b ) {
 			var obj = ctx.shared.contexts.get(this).local3d;
-			var wire = new h3d.scene.Box(volumetricLightmap.lightProbeTexture == null ? 0xFFFF0000 : 0xFFFFFFFF,obj);
+			var wire = new h3d.scene.Box(volumetricLightmap.lightProbeTexture == null ? 0xFFFF0000 : 0xFFFFFFFF,h3d.col.Bounds.fromValues(-0.5,-0.5,0,1,1,1),obj);
 			wire.name = "_highlight";
 			wire.material.setDefaultProps("ui");
 			wire.ignoreCollide = true;
