@@ -50,17 +50,15 @@ class VolumetricLightmap extends Object3D {
 	}
 
 	function initProbes(){
-		resetProbes();
-		volumetricLightmap.packDataInsideTexture(); // Default 0
+		volumetricLightmap.updateProbeCount();
+		createDebugPreview();
 	}
 
-	function resetProbes(){
+	function resetLightmap(){
+		if(volumetricLightmap.lightProbeTexture != null) volumetricLightmap.lightProbeTexture.dispose();
+		volumetricLightmap.lightProbeTexture = null;
 		volumetricLightmap.updateProbeCount();
-		volumetricLightmap.generateProbes();
-		for( i in 0...volumetricLightmap.lightProbes.length){
-			volumetricLightmap.lightProbes[i].sh = new h3d.scene.pbr.SphericalHarmonic(order);
-		}
-		createPreview();
+		createDebugPreview();
 	}
 
 	function updateVolumetricLightmap(){
@@ -70,24 +68,23 @@ class VolumetricLightmap extends Object3D {
 
 		if(volumetricLightmap.voxelSize.x != voxelsize_x || volumetricLightmap.voxelSize.y != voxelsize_y ||volumetricLightmap.voxelSize.z != voxelsize_z){
 			volumetricLightmap.voxelSize = new h3d.Vector(voxelsize_x,voxelsize_y,voxelsize_z);
-			resetProbes();
+			resetLightmap();
 		}
 
 		if(volumetricLightmap.shOrder != order){
 			if(maxOrderBaked >= order){
 				volumetricLightmap.shOrder = order;
-				volumetricLightmap.packDataInsideTexture();
-				createPreview();
+				createDebugPreview();
 			}
 			else{
 				volumetricLightmap.shOrder = order;
-				resetProbes();
+				resetLightmap();
 			}
 		}
 
 		if(volumetricLightmap.useAlignedProb != useWorldAlignedProbe){
 			volumetricLightmap.useAlignedProb = useWorldAlignedProbe;
-			resetProbes();
+			resetLightmap();
 		}
 
 		if(volumetricLightmap.strength != strength){
@@ -96,13 +93,13 @@ class VolumetricLightmap extends Object3D {
 
 		if(displaySH != displaySH_field){
 			displaySH = displaySH_field;
-			if(!displaySH) clearPreview();
-			else createPreview();
+			if(!displaySH) clearDebugPreview();
+			else createDebugPreview();
 		}
 		#end
 	}
 
-	function clearPreview(){
+	function clearDebugPreview(){
 		var previewSpheres = volumetricLightmap.findAll(c -> if(c.name == "_previewSphere") c else null);
 		if (previewSpheres != null) {
 			while(previewSpheres.length > 0){
@@ -112,15 +109,19 @@ class VolumetricLightmap extends Object3D {
 		}
 	}
 
-	public function createPreview(){
+	public function createDebugPreview(){
 
 		if(!displaySH) return;
 
-		clearPreview();
+		clearDebugPreview();
 
 		if(volumetricLightmap == null) return;
 
-		for( i in 0...volumetricLightmap.lightProbes.length){
+		var pixels : hxd.Pixels.PixelsFloat = null;
+		if(volumetricLightmap.lightProbeTexture != null)
+			pixels = volumetricLightmap.lightProbeTexture.capturePixels();
+
+		for( i in 0...volumetricLightmap.getProbeCount()){
 			var previewSphere = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), volumetricLightmap );
 			previewSphere.name = "_previewSphere";
 			previewSphere.material.setDefaultProps("ui");
@@ -128,24 +129,18 @@ class VolumetricLightmap extends Object3D {
 			previewSphere.scaleX = size/volumetricLightmap.scaleX;
 			previewSphere.scaleY = size/volumetricLightmap.scaleY;
 			previewSphere.scaleZ = size/volumetricLightmap.scaleZ;
-			var probePos = new h3d.Vector(volumetricLightmap.lightProbes[i].position.x, volumetricLightmap.lightProbes[i].position.y, volumetricLightmap.lightProbes[i].position.z);
+			var probePos = volumetricLightmap.getProbePosition(volumetricLightmap.getProbeCoords(i));
 			volumetricLightmap.globalToLocal(probePos);
 			previewSphere.setPosition(probePos.x, probePos.y, probePos.z);
 			var shader = new h3d.shader.pbr.SHDisplay();
 			shader.order = volumetricLightmap.shOrder;
-			var coefCount =volumetricLightmap.shOrder * volumetricLightmap.shOrder;
+			var coefCount = volumetricLightmap.getCoefCount();
 			shader.SIZE = coefCount;
 
-			if(i < volumetricLightmap.lastBakedProbeIndex+1){
-				shader.shCoefsRed = volumetricLightmap.lightProbes[i].sh.coefR.slice(0, coefCount);
-				shader.shCoefsGreen = volumetricLightmap.lightProbes[i].sh.coefG.slice(0, coefCount);
-				shader.shCoefsBlue = volumetricLightmap.lightProbes[i].sh.coefB.slice(0, coefCount);
-			}
-			else{
-				shader.shCoefsRed = [for (value in 0...coefCount) 0];
-				shader.shCoefsGreen = [for (value in 0...coefCount) 0];
-				shader.shCoefsBlue = [for (value in 0...coefCount) 0];
-			}
+			var sh = volumetricLightmap.getProbeSH(volumetricLightmap.getProbeCoords(i), pixels);
+			shader.shCoefsRed = sh.coefR.slice(0, coefCount);
+			shader.shCoefsGreen = sh.coefG.slice(0, coefCount);
+			shader.shCoefsBlue = sh.coefB.slice(0, coefCount);
 
 			previewSphere.material.mainPass.culling = Back;
 			previewSphere.material.shadows = false;
@@ -163,7 +158,7 @@ class VolumetricLightmap extends Object3D {
 		volumetricLightmap.scaleZ = o.scaleZ;
 		volumetricLightmap.visible = this.visible;
 
-		resetProbes();
+		resetLightmap();
 	}
 
 	override function makeInstance(ctx:Context):Context {

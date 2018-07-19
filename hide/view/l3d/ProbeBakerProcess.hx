@@ -23,10 +23,9 @@ class ProbeBakerProcess {
 	}
 
 	public function update(dt:Float) {
-		lightProbeBaker.bakePartial(s3d.renderer, s3d, volumetricLightmap.volumetricLightmap, 32, bakeTime);
-		volumetricLightmap.volumetricLightmap.packDataInsideTexture();
-		volumetricLightmap.createPreview();
-		progress = (volumetricLightmap.volumetricLightmap.lastBakedProbeIndex +1.0) / volumetricLightmap.volumetricLightmap.lightProbes.length;
+		lightProbeBaker.bake(s3d.renderer, s3d, volumetricLightmap.volumetricLightmap, 32, bakeTime);
+		volumetricLightmap.createDebugPreview();
+		progress = (volumetricLightmap.volumetricLightmap.lastBakedProbeIndex +1.0) / volumetricLightmap.volumetricLightmap.getProbeCount();
 		if( progress == 1 ) {
 			lightProbeBaker.dispose();
 			lightProbeBaker = null;
