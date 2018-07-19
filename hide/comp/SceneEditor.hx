@@ -963,13 +963,14 @@ class SceneEditor {
 			selectObjects(all);
 			tree.setSelection(all);
 			if(thenMove) {
+				/* Disabled for now as getPickTransform() will necessarily project on ground, which we don't always want 
 				if(all.length == 1) {
 					var pickMat = getPickTransform(all[0].parent);
 					if(pickMat != null) {
-						setTransform(all[0], pickMat);
+						setTransform(all[0], pickMat.getPosition());
 						moveGizmoToSelection();
 					}
-				}
+				} */
 				gizmo.startMove(MoveXY, true);
 				gizmo.onFinishMove = function() {
 					refreshProps();
@@ -994,11 +995,17 @@ class SceneEditor {
 		});
 	}
 
-	function setTransform(elt: PrefabElement, mat: h3d.Matrix) {
+	function setTransform(elt: PrefabElement, ?mat: h3d.Matrix, ?position: h3d.Vector) {
 		var obj3d = Std.instance(elt, hide.prefab.Object3D);
 		if(obj3d == null)
 			return;
-		obj3d.setTransform(mat);
+		if(mat != null)
+			obj3d.setTransform(mat);
+		else {
+			obj3d.x = position.x;
+			obj3d.y = position.y;
+			obj3d.z = position.z;
+		}
 		var o = getContext(obj3d).local3d;
 		if(o != null)
 			obj3d.applyPos(o);
