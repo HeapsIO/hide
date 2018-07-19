@@ -859,7 +859,7 @@ class FXEditor extends FileView {
 		function groupedTracks(prefix: String, props: Array<PropTrackDef>) : Array<hide.comp.ContextMenu.ContextMenuItem> {
 			var allLabel = [for(p in props) upperCase(p.name)].join("/");
 			var ret = [];
-			ret.push(trackItem(allLabel, props));
+			ret.push(trackItem(allLabel, props, prefix));
 			for(p in props) {
 				var label = upperCase(p.name);
 				ret.push(trackItem(label, [p], prefix));
