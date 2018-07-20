@@ -124,6 +124,10 @@ class SceneEditor {
 		var sceneEl = new Element('<div class="scene"></div>');
 		scene = new hide.comp.Scene(view.props, null, sceneEl);
 		scene.onReady = onSceneReady;
+		scene.onResize = function() {
+			context.shared.root2d.x = scene.width >> 1;
+			context.shared.root2d.y = scene.height >> 1;
+		};
 
 		context = new hide.prefab.Context();
 		context.onError = function(e) ide.error(e);
@@ -337,6 +341,7 @@ class SceneEditor {
 		scene.s3d.addChild(sh.root3d);
 		sh.root2d = new h2d.Sprite();
 		scene.s2d.addChild(sh.root2d);
+		scene.onResize();
 		sh.cleanups = [];
 		context.init();
 		sceneData.makeInstance(context);
