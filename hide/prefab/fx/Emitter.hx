@@ -478,9 +478,9 @@ class Emitter extends Object3D {
 				case PVec(_):
 					inline function makeComp(idx, suffix) {
 						return makeCompVal(
-							baseProp != null ? baseProp[idx] : null,
+							baseProp != null ? (baseProp[idx] : Float) : null,
 							param.def != null ? param.def[idx] : 0.0,
-							randProp != null ? randProp[idx] : null,
+							randProp != null ? (randProp[idx] : Float) : null,
 							param.name, suffix);
 					}
 					return VVector(
