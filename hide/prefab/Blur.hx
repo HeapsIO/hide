@@ -69,13 +69,13 @@ class Blur extends Prefab {
 			t = h2d.Tile.fromTexture(h3d.mat.Texture.genChecker(16));
 			t.setSize(256, 256);
 		}
+		t.dx = -t.width>>1;
+		t.dy = -t.height>>1;
 		bmp.tile = t;
 		bmp.filter = makeFilter();
 		bmp.smooth = true;
 		bmp.tileWrap = image == null;
 		bmp.setScale(zoom);
-		bmp.x = -(t.width * zoom) >> 1;
-		bmp.y = -(t.height * zoom) >> 1;
 	}
 
 	#if editor
