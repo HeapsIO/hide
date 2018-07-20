@@ -59,12 +59,20 @@ class Range extends Component {
 			f.val(current / scale);
 			onChange(true);
 		});
+
 		inputView.keyup(function(e) {
 			if( e.keyCode == 13 || e.keyCode == 27 ) {
 				inputView.blur();
 				inputView.val(current / scale);
 				return;
 			}
+			var v = Std.parseFloat(inputView.val()) * scale;
+			if( Math.isNaN(v) ) return;
+			setInner(v,true);
+			f.val(v / scale);
+			onChange(true);
+		});
+		inputView.change(function(e) {
 			var v = Std.parseFloat(inputView.val()) * scale;
 			if( Math.isNaN(v) ) return;
 			setInner(v,false);
