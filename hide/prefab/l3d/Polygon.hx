@@ -6,25 +6,15 @@ class Polygon extends Object3D {
 	var data : Array<Float> = null;
 	var primitive : h3d.prim.Polygon;  // TODO: When to dispose? https://github.com/HeapsIO/heaps/issues/336
 
-	public var diffuseMap : String;
-	public var normalMap : String;
-	public var specularMap : String;
-
 	override function save() {
 		var obj : Dynamic = super.save();
 		if(data != null) obj.data = data;
-		if(diffuseMap != null) obj.diffuseMap = diffuseMap;
-		if(normalMap != null) obj.normalMap = normalMap;
-		if(specularMap != null) obj.specularMap = specularMap;
 		return obj;
 	}
 
 	override function load( obj : Dynamic ) {
 		super.load(obj);
 		data = obj.data;
-		diffuseMap = obj.diffuseMap;
-		normalMap = obj.normalMap;
-		specularMap = obj.specularMap;
 	}
 
 	override function updateInstance( ctx : Context, ?propName : String) {
@@ -40,20 +30,11 @@ class Polygon extends Object3D {
 		mat.mainPass.culling = None;
 
 		var layer = getParent(Layer);
-		if(layer != null && (diffuseMap == null || diffuseMap.length == 0)) {
+		if(layer != null) {
 			setColor(ctx, layer != null ? (layer.color | 0x40000000) : 0x40ff00ff);
 		}
 		else {
-			inline function getTex(path: String) {
-				var t = path != null && path.length > 0 ? ctx.loadTexture(path) : null;
-				if(t != null)
-					t.wrap = Repeat;
-				return t;
-			}
 			mat.props = h3d.mat.MaterialSetup.current.getDefaults("opaque");
-			mat.normalMap = getTex(normalMap);
-			mat.specularTexture = getTex(specularMap);
-			mat.texture = getTex(diffuseMap);
 			mat.color.setColor(0xffffffff);
 		}
 
@@ -117,21 +98,6 @@ class Polygon extends Object3D {
 	}
 
 	#if editor
-
-	override function edit( ctx : EditContext ) {
-		super.edit(ctx);
-		var props = ctx.properties.add(new hide.Element('
-			<div class="group" name="Polygon">
-				<dl>
-					<dt>Diffuse</dt><dd><input type="texturepath" field="diffuseMap" style="width:165px"/></dd>
-					<dt>Normal</dt><dd><input type="texturepath" field="normalMap" style="width:165px"/></dd>
-					<dt>Specular</dt><dd><input type="texturepath" field="specularMap" style="width:165px"/></dd>
-				</dl>
-			</div>
-		'),this, function(pname) {
-			ctx.onChange(this, pname);
-		});
-	}
 
 	override function getHideProps() : HideProps {
 		return { icon : "square", name : "Polygon" };
