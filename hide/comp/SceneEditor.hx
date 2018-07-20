@@ -48,7 +48,7 @@ class SceneEditorContext extends hide.prefab.EditContext {
 		cleanup();
 		if(elements.length > 0) {
 			var e = elements[0];
-			editor.scene.select();
+			editor.scene.setCurrent();
 			e.edit(this);
 			var sheet = e.getCdbModel();
 			if( sheet != null ) {
