@@ -54,7 +54,7 @@ class Range extends Component {
 
 		f.on("input", function(_) {
 			var v = Math.round(Std.parseFloat(f.val()) * 100 * scale) / 100;
-			setInner(v);
+			setInner(v,true);
 			inputView.val(current / scale);
 			f.val(current / scale);
 			onChange(true);
@@ -67,7 +67,7 @@ class Range extends Component {
 			}
 			var v = Std.parseFloat(inputView.val()) * scale;
 			if( Math.isNaN(v) ) return;
-			setInner(v);
+			setInner(v,false);
 			f.val(v / scale);
 			onChange(false);
 		});
@@ -77,7 +77,7 @@ class Range extends Component {
 
 		f.change(function(e) {
 			var v = Math.round(Std.parseFloat(f.val()) * 100 * scale) / 100;
-			setInner(v);
+			setInner(v,false);
 			inputView.val(current / scale);
 			onChange(false);
 		});
@@ -90,7 +90,7 @@ class Range extends Component {
 
 	function set_value(v) {
 		if( original == null ) original = v;
-		setInner(v);
+		setInner(v,true);
 		current = v;
 		inputView.val(current / scale);
 		f.val(current / scale);
@@ -101,7 +101,7 @@ class Range extends Component {
 		return current;
 	}
 
-	function setInner(v:Float) {
+	function setInner(v:Float,tempChange:Bool) {
 		current = v;
 		if( v < curMin ) {
 			curMin = Math.floor(v);
@@ -111,7 +111,7 @@ class Range extends Component {
 			curMax = Math.ceil(v);
 			f.attr("max", curMax);
 		}
-		if( v >= originMin && v <= originMax ) {
+		if( v >= originMin && v <= originMax && !tempChange ) {
 			f.attr("min", originMin);
 			f.attr("max", originMax);
 			curMin = originMin;
