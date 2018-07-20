@@ -42,6 +42,7 @@ class Ide {
 	var renderers : Array<h3d.mat.MaterialSetup>;
 	var subView : { component : String, state : Dynamic, events : {} };
 	var scripts : Map<String,Array<Void->Void>> = new Map();
+	var hasReloaded = false;
 
 	static var firstInit = true;
 
@@ -96,15 +97,17 @@ class Ide {
 		window.on('move', function() haxe.Timer.delay(onWindowChange,100));
 		window.on('resize', function() haxe.Timer.delay(onWindowChange,100));
 		window.on('close', function() {
+			if( hasReloaded ) return;
 			for( v in views )
 				if( !v.onBeforeClose() )
 					return;
 			window.close(true);
 		});
-		window.on('blur', function() if( h3d.Engine.getCurrent() != null ) hxd.Key.initialize());
+		window.on('blur', function() if( h3d.Engine.getCurrent() != null && !hasReloaded ) hxd.Key.initialize());
 
 		// handle commandline parameters
 		nw.App.on("open", function(cmd) {
+			if( hasReloaded ) return;
 			~/"([^"]+)"/g.map(cmd, function(r) {
 				var file = r.matched(1);
 				if( sys.FileSystem.exists(file) ) openFile(file);
@@ -204,6 +207,8 @@ class Ide {
 	}
 
 	function onWindowChange() {
+		if( hasReloaded )
+			return;
 		if( ideProps.windowPos == null ) ideProps.windowPos = { x : 0, y : 0, w : 0, h : 0, max : false };
 		ideProps.windowPos.max = maximized;
 		if( !maximized ) {

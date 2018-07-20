@@ -85,6 +85,7 @@
 	var ext = file.split(".").pop().toLowerCase();
 	if( ext != "js" && ext != "css" ) return;
 	setTimeout(function() {
+		hide.Ide.inst.hasReloaded = true;
 		location.reload();
 		reloadWatcher.close();
 	},1000);
