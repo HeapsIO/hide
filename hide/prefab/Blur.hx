@@ -83,6 +83,10 @@ class Blur extends Prefab {
 		return { name : "Blur", icon : "bullseye" };
 	}
 
+	override function setSelected( ctx : Context, b : Bool ) {
+		ctx.shared.contexts.get(this).local2d.visible = b;
+	}
+
 	override function edit( ctx : EditContext ) {
 		var e : hide.Element;
 		function sync( bmp : h2d.Bitmap ) {
@@ -91,11 +95,10 @@ class Blur extends Prefab {
 		}
 		e = ctx.properties.add(new hide.Element('
 			<dl>
-				<dt>Reduce Size</dt><dd><input type="range" min="0" max="8" step="1" field="size"/></dd>
-				<dt>Quality</dt><dd><input type="range" min="1" max="4" step="1" field="quality"/></dd>
-				<dt>Passes</dt><dd><input type="range" min="0" max="10" step="1" field="passes"/></dd>
-				<dt>Sigma</dt><dd><input type="range" min="0" max="5" field="sigma"/></dd>
+				<dt>Radius</dt><dd><input type="range" min="0" max="30" field="radius"/></dd>
 				<dt>Gain</dt><dd><input type="range" min="0.5" max="1.5" field="gain"/></dd>
+				<dt>Linear</dt><dd><input type="range" min="0" max="1" field="linear"/></dd>
+				<dt>Quality</dt><dd><input type="range" min="0" max="1" field="quality"/></dd>
 			</dl>
 			<br/>
 			<dl>
@@ -109,9 +112,8 @@ class Blur extends Prefab {
 			syncBitmap(bmp, ctx);
 			sync(bmp);
 		});
-		var bmp = cast(ctx.getContext(this).local2d, h2d.Bitmap);
-		bmp.visible = true;
-		ctx.cleanups.push(function() bmp.visible = false);
+		var ctx = ctx.getContext(this);
+		var bmp = cast(ctx.local2d, h2d.Bitmap);
 		sync(bmp);
 	}
 	#end
