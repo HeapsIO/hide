@@ -46,7 +46,7 @@ class Material extends Prefab {
 		var setupName = cur.name;
 		var r = Reflect.field(props, setupName);
 		if(r == null) {
-			r = {};
+			r = cur.getDefaults();
 			Reflect.setField(props, setupName, r);
 		}
 		return r;

@@ -48,6 +48,7 @@ class SceneEditorContext extends hide.prefab.EditContext {
 		cleanup();
 		if(elements.length > 0) {
 			var e = elements[0];
+			editor.scene.select();
 			e.edit(this);
 			var sheet = e.getCdbModel();
 			if( sheet != null ) {
@@ -963,7 +964,7 @@ class SceneEditor {
 			selectObjects(all);
 			tree.setSelection(all);
 			if(thenMove) {
-				/* Disabled for now as getPickTransform() will necessarily project on ground, which we don't always want 
+				/* Disabled for now as getPickTransform() will necessarily project on ground, which we don't always want
 				if(all.length == 1) {
 					var pickMat = getPickTransform(all[0].parent);
 					if(pickMat != null) {
