@@ -371,7 +371,7 @@ class SceneEditor {
 				bounds.add(lb);
 			}
 			var meshCollider = new h3d.col.Collider.GroupCollider([for(m in meshes) {
-				var c = m.getGlobalCollider();
+				var c : h3d.col.Collider = try m.getGlobalCollider() catch(e: Dynamic) null;
 				if(c != null) c;
 			}]);
 			var boundsCollider = new h3d.col.ObjectCollider(o, bounds);

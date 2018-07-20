@@ -3,13 +3,14 @@ package hide.prefab;
 
 class Material extends Prefab {
 
-	var wrapRepeat = false;
-	var diffuseMap : String;
-	var normalMap : String;
-	var specularMap : String;
+	public var wrapRepeat = false;
+	public var diffuseMap : String;
+	public var normalMap : String;
+	public var specularMap : String;
 
 	public function new(?parent) {
 		super(parent);
+		type = "material";
 		props = {};
 	}
 
