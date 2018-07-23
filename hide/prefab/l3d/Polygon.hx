@@ -87,9 +87,12 @@ class Polygon extends Object3D {
 				points = [];
 				uvs = [];
 				indices = [];
+				if(angle >= 360)
+					angle = 360;
+				++segments;
 				var anglerad = hxd.Math.degToRad(angle);
 				for(i in 0...segments) {
-					var t = i / (segments + 1);
+					var t = i / (segments - 1);
 					var a = hxd.Math.lerp(-anglerad/2, anglerad/2, t);
 					var ct = hxd.Math.cos(a);
 					var st = hxd.Math.sin(a);
@@ -97,14 +100,16 @@ class Polygon extends Object3D {
 					points.push(new Point(ct, st));
 					uvs.push(new Point(t, 0));
 					uvs.push(new Point(t, 1));
+				}
+				for(i in 0...segments-1) {
 					var idx = i * 2;
-					var nxt = ((i + 1) % segments) * 2;
+					var nxt = (i + 1) * 2;
 					indices.push(idx);
-					indices.push(nxt);
 					indices.push(idx + 1);
 					indices.push(nxt);
+					indices.push(nxt);
+					indices.push(idx + 1);
 					indices.push(nxt + 1);
-					indices.push(idx + 1);
 				}
 			default:
 		}
