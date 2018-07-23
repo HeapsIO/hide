@@ -34,11 +34,12 @@ class Polygon extends Object3D {
 		if(ctx.local3d == null)
 			return;
 
+		var mesh : h3d.scene.Mesh = cast ctx.local3d;
+		mesh.primitive = makePrimitive();
+
 		if(hide.prefab.Material.hasOverride(this))
 			return;
 
-		var mesh : h3d.scene.Mesh = cast ctx.local3d;
-		mesh.primitive = makePrimitive();
 		var mat = mesh.material;
 		mat.mainPass.culling = None;
 
