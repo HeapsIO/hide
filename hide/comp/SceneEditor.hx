@@ -1169,6 +1169,7 @@ class SceneEditor {
 	function getNewContextMenu(current: PrefabElement) : Array<hide.comp.ContextMenu.ContextMenuItem> {
 		var newItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
 		var allRegs = hxd.prefab.Library.getRegistered();
+		allRegs.remove("reference");
 		var parent = current == null ? sceneData : current;
 		var allowChildren = null;
 		{
@@ -1187,7 +1188,10 @@ class SceneEditor {
 				if( pinf.inf.allowParent != null && !pinf.inf.allowParent(parent) )
 					continue;
 			}
-			newItems.push(getNewTypeMenuItem(ptype, parent));
+			if(ptype == "shader")
+				newItems.push(getNewShaderMenu(parent));
+			else
+				newItems.push(getNewTypeMenuItem(ptype, parent));
 		}
 		newItems.sort(function(l1,l2) return Reflect.compare(l1.label,l2.label));
 		return newItems;
@@ -1216,6 +1220,43 @@ class SceneEditor {
 				else
 					addObject(make());
 			}
+		};
+	}
+
+	function getNewShaderMenu(parentElt: PrefabElement) : hide.comp.ContextMenu.ContextMenuItem {
+		var custom = getNewTypeMenuItem("shader", parentElt);
+		custom.label = "Custom...";
+
+		function shaderItem(name, path) : hide.comp.ContextMenu.ContextMenuItem {
+			return {
+				label : name,
+				click : function() {
+					var s = new hide.prefab.Shader(parentElt);
+					s.source = path;
+					s.name = name;
+					addObject(s);
+				}
+			}
+		}
+
+		var menu = [custom];
+
+		var shaders : Array<String> = hide.Ide.inst.currentProps.get("fx.shaders", []);
+		for(path in shaders) {
+			var name = path;
+			if(StringTools.endsWith(name, ".hx")) {
+				name = name.substr(0, -3);
+				name = name.split("/").pop();
+			}
+			else {
+				name = name.split(".").pop();
+			}
+			menu.push(shaderItem(name, path));
+		}
+
+		return {
+			label: "Shaders",
+			menu: menu
 		};
 	}
 

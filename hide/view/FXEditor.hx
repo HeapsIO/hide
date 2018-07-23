@@ -56,62 +56,12 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		if(current != null && current.to(hide.prefab.Shader) != null) {
 			return parent.getNewTrackMenu(current);
 		}
-		else {
-			var parentElt = current == null ? sceneData : current;
-			var registered = new Array<hide.comp.ContextMenu.ContextMenuItem>();
-
-			// Animations
-			registered.push({
-				label: "Animation",
-				menu: parent.getNewTrackMenu(current)
-			});
-
-			// Shaders
-			{
-				var custom = getNewTypeMenuItem("shader", parentElt);
-				custom.label = "Custom...";
-
-				function shaderItem(name, path) : hide.comp.ContextMenu.ContextMenuItem {
-					return {
-						label : name,
-						click : function() {
-							var s = new hide.prefab.Shader(parentElt);
-							s.source = path;
-							s.name = name;
-							addObject(s);
-						}
-					}
-				}
-
-				var menu = [custom];
-
-				var shaders : Array<String> = hide.Ide.inst.currentProps.get("fx.shaders", []);
-				for(path in shaders) {
-					var name = path;
-					if(StringTools.endsWith(name, ".hx")) {
-						name = name.substr(0, -3);
-						name = name.split("/").pop();
-					}
-					else {
-						name = name.split(".").pop();
-					}
-					menu.push(shaderItem(name, path));
-				}
-
-				registered.push({
-					label: "Shaders",
-					menu: menu
-				});
-			}
-
-			// Other prefabs
-			// TODO : use allowParent/allowChildren
-			var allowed = ["model", "object", "emitter", "constraint", "polygon", "material"];
-			for( ptype in allowed ) {
-				registered.push(getNewTypeMenuItem(ptype, parentElt));
-			}
-			return registered;
-		}
+		var menu = super.getNewContextMenu(current);
+		menu.unshift({
+			label: "Animation",
+			menu: parent.getNewTrackMenu(current)
+		});
+		return menu;
 	}
 }
 

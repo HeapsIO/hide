@@ -102,7 +102,10 @@ class Model extends Object3D {
 	}
 
 	override function getHideProps() : HideProps {
-		return { icon : "cube", name : "Model", fileSource : ["fbx","hmd"] };
+		return {
+			icon : "cube", name : "Model", fileSource : ["fbx","hmd"],
+			allowChildren : function(t) return hxd.prefab.Library.isOfType(t,Object3D) || ["material", "shader"].indexOf(t) >= 0
+		};
 	}
 	#end
 
