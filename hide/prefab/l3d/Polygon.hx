@@ -5,7 +5,6 @@ class Polygon extends Object3D {
 
 	var data : Array<Float> = null;
 	var primitive : h3d.prim.Polygon;  // TODO: When to dispose? https://github.com/HeapsIO/heaps/issues/336
-	static var defaultPrimitive : h3d.prim.Polygon;
 
 	override function save() {
 		var obj : Dynamic = super.save();
@@ -47,9 +46,11 @@ class Polygon extends Object3D {
 			return;
 		var data = this.data;
 		var isDefault = data == null;
+		var engine = h3d.Engine.getCurrent();
 		if(isDefault) {
-			if(defaultPrimitive != null) {
-				primitive = defaultPrimitive;
+			var defaultPrim : h3d.prim.Polygon = @:privateAccess engine.resCache.get(Polygon);
+			if(defaultPrim != null) {
+				primitive = defaultPrim;
 				return;
 			}
 			data = [-0.5, -0.5,
@@ -78,7 +79,7 @@ class Polygon extends Object3D {
 		primitive.colors = [for(p in points) new h3d.col.Point(1,1,1)];
 
 		if(isDefault)
-			defaultPrimitive = primitive;
+			@:privateAccess engine.resCache.set(Polygon, primitive);
 		return;
 	}
 
