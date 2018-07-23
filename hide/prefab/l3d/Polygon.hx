@@ -5,6 +5,7 @@ class Polygon extends Object3D {
 
 	var data : Array<Float> = null;
 	var primitive : h3d.prim.Polygon;  // TODO: When to dispose? https://github.com/HeapsIO/heaps/issues/336
+	static var defaultPrimitive : h3d.prim.Polygon;
 
 	override function save() {
 		var obj : Dynamic = super.save();
@@ -41,38 +42,49 @@ class Polygon extends Object3D {
 		mat.castShadows = false;
 	}
 
+	function makePrimitive() {
+		if(primitive != null)
+			return;
+		var data = this.data;
+		var isDefault = data == null;
+		if(isDefault) {
+			if(defaultPrimitive != null) {
+				primitive = defaultPrimitive;
+				return;
+			}
+			data = [-0.5, -0.5,
+				0.5, -0.5,
+				0.5,  0.5,
+				-0.5,  0.5];
+		}
+		var points = [];
+		var npts = Std.int(data.length / 2);
+		for(i in 0...npts) {
+			var x = data[(i<<1)];
+			var y = data[(i<<1) + 1];
+			var vert = new h2d.col.Point(x, y);
+			points.push(vert);
+		}
+		var poly2d = new h2d.col.Polygon(points);
+		var indices = poly2d.fastTriangulate();
+		var verts = [for(p in points) new h3d.col.Point(p.x, p.y, 0.)];
+		var idx = new hxd.IndexBuffer(indices.length);
+		for(i in indices)
+			idx.push(i);
+		primitive = new h3d.prim.Polygon(verts, idx);
+		primitive.normals = [for(p in points) new h3d.col.Point(0, 0, 1.)];
+		primitive.tangents = [for(p in points) new h3d.col.Point(0., 1., 0.)];
+		primitive.uvs = [for(p in points) new h3d.prim.UV(p.y + 0.5, -p.x + 0.5)];  // Setup UVs so that image up (Y) is aligned with forward axis (X)
+		primitive.colors = [for(p in points) new h3d.col.Point(1,1,1)];
+
+		if(isDefault)
+			defaultPrimitive = primitive;
+		return;
+	}
+
 	override function makeInstance(ctx:Context):Context {
 		ctx = ctx.clone(this);
-
-		if(primitive == null) {
-			var points = [];
-			var d = this.data;
-			if(d == null) {
-				d = [-0.5, -0.5,
-					0.5, -0.5,
-					0.5,  0.5,
-					-0.5,  0.5];
-			}
-			var npts = Std.int(d.length / 2);
-			for(i in 0...npts) {
-				var x = d[(i<<1)];
-				var y = d[(i<<1) + 1];
-				var vert = new h2d.col.Point(x, y);
-				points.push(vert);
-			}
-			var poly2d = new h2d.col.Polygon(points);
-			var indices = poly2d.fastTriangulate();
-			var verts = [for(p in points) new h3d.col.Point(p.x, p.y, 0.)];
-			var idx = new hxd.IndexBuffer(indices.length);
-			for(i in indices)
-				idx.push(i);
-			primitive = new h3d.prim.Polygon(verts, idx);
-			primitive.normals = [for(p in points) new h3d.col.Point(0, 0, 1.)];
-			primitive.tangents = [for(p in points) new h3d.col.Point(0., 1., 0.)];
-			primitive.uvs = [for(p in points) new h3d.prim.UV(p.y + 0.5, -p.x + 0.5)];  // Setup UVs so that image up (Y) is aligned with forward axis (X)
-			primitive.colors = [for(p in points) new h3d.col.Point(1,1,1)];
-		}
-
+		makePrimitive();
 		var mesh = new h3d.scene.Mesh(primitive, ctx.local3d);
 		mesh.material.props = h3d.mat.MaterialSetup.current.getDefaults("ui");
 		mesh.material.blendMode = Alpha;
