@@ -538,8 +538,10 @@ class SceneEditor {
 				var obj = curEdit.rootObjects[0];
 				var mat = worldMat(obj);
 				var s = mat.getScale();
-				mat.prependScale(1.0 / s.x, 1.0 / s.y, 1.0 / s.z);
-				gizmo.getRotationQuat().initRotateMatrix(mat);
+				if(s.x != 0 && s.y != 0 && s.z != 0) {
+					mat.prependScale(1.0 / s.x, 1.0 / s.y, 1.0 / s.z);
+					gizmo.getRotationQuat().initRotateMatrix(mat);
+				}
 			}
 		}
 		else {
