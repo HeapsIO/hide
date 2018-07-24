@@ -308,6 +308,9 @@ class Curve extends Prefab {
 				a != null ? VCurve(a) : VConst(1.0));
 		}
 
+		if(a != null && r == null && g == null && b == null)
+			return VCurve(a);
+
 		return VVector(
 			r != null ? VCurve(r) : VConst(1.0),
 			g != null ? VCurve(g) : VConst(1.0),
