@@ -7,6 +7,7 @@ class Material extends Prefab {
 	public var diffuseMap : String;
 	public var normalMap : String;
 	public var specularMap : String;
+	public var color : Array<Float> = [1,1,1,1];
 
 	public function new(?parent) {
 		super(parent);
@@ -19,6 +20,7 @@ class Material extends Prefab {
 		if(o.diffuseMap != null) diffuseMap = o.diffuseMap;
 		if(o.normalMap != null) normalMap = o.normalMap;
 		if(o.specularMap != null) specularMap = o.specularMap;
+		if(o.color != null) color = o.color;
 
 		// Backward compat
 		if(o.props != null && Reflect.hasField(o.props, "PBR")) {
@@ -39,6 +41,7 @@ class Material extends Prefab {
 		if(diffuseMap != null) o.diffuseMap = diffuseMap;
 		if(normalMap != null) o.normalMap = normalMap;
 		if(specularMap != null) o.specularMap = specularMap;
+		if(color != null && h3d.Vector.fromArray(color).toColor() != 0xffffffff) o.color = color;
 		return o;
 	}
 
@@ -56,6 +59,8 @@ class Material extends Prefab {
 	function updateObject(ctx: Context, obj: h3d.scene.Object) {
 		function update(mat : h3d.mat.Material, props) {
 			mat.props = props;
+			if(color != null)
+				mat.color.setColor(h3d.Vector.fromArray(color).toColor());
 
 			inline function getTex(pname: String) {
 				var p : String = Reflect.field(this, pname);
@@ -127,6 +132,7 @@ class Material extends Prefab {
 				<dt>Normal</dt><dd><input type="texturepath" field="normalMap" style="width:165px"/></dd>
 				<dt>Specular</dt><dd><input type="texturepath" field="specularMap" style="width:165px"/></dd>
 				<dt>Wrap</dt><dd><input type="checkbox" field="wrapRepeat"/></dd>
+				<dt>Color</dt><dd><input type="color" field="color"/></dd>
 			</dl></div>'), this, function(pname) {
 			ctx.onChange(this, pname);
 		});
