@@ -264,7 +264,7 @@ class TypesCache {
 		case TInt:
 			PInt(min == null ? null : Std.int(min), max == null ? null : Std.int(max));
 		case TFloat:
-			PFloat(min, max);
+			PFloat(min != null ? min : 0.0, max != null ? max : 1.0);
 		case TBool:
 			PBool;
 		case TSampler2D:
