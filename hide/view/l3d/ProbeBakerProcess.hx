@@ -19,7 +19,11 @@ class ProbeBakerProcess {
 		lightProbeBaker.useGPU = false;
 
 		var rend = Std.instance(s3d.renderer, h3d.scene.pbr.Renderer) ;
-		if(rend != null) lightProbeBaker.environment = rend.env;
+		if(rend != null) {
+			lightProbeBaker.environment = rend.env;
+			if( rend.env == null || rend.env.env == null || rend.env.env.isDisposed() ) trace("Environment missing");
+		 } else
+		 	trace("Invalid renderer");
 	}
 
 	public function update(dt:Float) {
