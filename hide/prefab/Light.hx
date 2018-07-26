@@ -256,7 +256,7 @@ class Light extends Object3D {
 
 		var props = ctx.properties.add(group,this, function(pname) {
 			if( pname == "kind")
-				ctx.refresh(this);
+				ctx.rebuildPrefab(this);
 			else
 				ctx.onChange(this, pname);
 		});
@@ -283,7 +283,7 @@ class Light extends Object3D {
 			</div>
 		'),shadows,function(pname) {
 			ctx.onChange(this,pname);
-			if( pname == "mode" ) ctx.rebuild();
+			if( pname == "mode" ) ctx.rebuildProperties();
 		});
 
 		if( shadows.mode == None ) {

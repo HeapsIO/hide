@@ -67,13 +67,13 @@ class Settings extends Prefab {
 			var prev = save();
 			var type = select.val();
 			load({ modelType : type });
-			ctx.rebuild();
+			ctx.rebuildProperties();
 			ctx.properties.undo.change(Custom(function(undo) {
 				if( undo )
 					load(prev);
 				else
 					load({ modelType : type });
-				ctx.rebuild();
+				ctx.rebuildProperties();
 			}));
 		});
 
@@ -103,7 +103,7 @@ class Settings extends Prefab {
 			ctx.onChange(this, null);
 
 		ctx.properties.addProps(modelDef.fields, this.data);
-		var rebuild = ctx.rebuild;
+		var rebuild = ctx.rebuildProperties;
 		ctx.ide.typesCache.watch(rebuild);
 		ctx.cleanups.push(ctx.ide.typesCache.unwatch.bind(rebuild));
 	}

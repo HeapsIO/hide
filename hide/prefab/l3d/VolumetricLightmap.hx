@@ -229,7 +229,7 @@ class VolumetricLightmap extends Object3D {
 			if(baker == null || baker.progress == 1){
 				ctx.removeUpdate(bakeUpdate);
 				baker = null;
-				ctx.rebuild();
+				ctx.rebuildProperties();
 			}
 			else{
 				baker.update(dt);
@@ -242,7 +242,7 @@ class VolumetricLightmap extends Object3D {
 		function cancel() {
 			ctx.removeUpdate(bakeUpdate);
 			baker = null;
-			ctx.rebuild();
+			ctx.rebuildProperties();
 		}
 
 		function startedBake() {

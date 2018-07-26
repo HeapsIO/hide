@@ -43,12 +43,12 @@ class SceneEditorContext extends hide.prefab.EditContext {
 		return cur != null && cur.elements[0] == p ? editor.properties.element : new Element();
 	}
 
-	override function rebuild() {
+	override function rebuildProperties() {
 		editor.scene.setCurrent();
 		editor.selectObjects(elements);
 	}
 
-	override function refresh( p : hide.prefab.Prefab ) {
+	override function rebuildPrefab( p : hide.prefab.Prefab ) {
 		// refresh all for now
 		editor.refresh();
 	}
@@ -319,14 +319,15 @@ class SceneEditor {
 		var sh = context.shared;
 		sh.root3d.remove();
 		sh.root2d.remove();
-		for( f in sh.cleanups )
-			f();
-		sh.root3d = new h3d.scene.Object();
+		for( c in sh.contexts )
+			if( c != null && c.cleanup != null )
+				c.cleanup();
+		context.shared = sh = new hide.prefab.ContextShared(scene);
+		sh.currentPath = view.state.path;
 		scene.s3d.addChild(sh.root3d);
-		sh.root2d = new h2d.Sprite();
 		scene.s2d.addChild(sh.root2d);
+		scene.setCurrent();
 		scene.onResize();
-		sh.cleanups = [];
 		context.init();
 		sceneData.makeInstance(context);
 		var bgcol = scene.engine.backgroundColor;

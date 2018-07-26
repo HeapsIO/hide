@@ -45,7 +45,7 @@ class Reference extends Prefab {
 
 	#if editor
 
-	
+
 	override function edit( ctx : EditContext ) {
 		var element = new hide.Element('
 			<dl>
@@ -65,8 +65,8 @@ class Reference extends Prefab {
 				ref = null;
 				updateProps();
 				if(!ctx.properties.isTempChange)
-					ctx.refresh(this);
-			}	
+					ctx.rebuildPrefab(this);
+			}
 		});
 	}
 

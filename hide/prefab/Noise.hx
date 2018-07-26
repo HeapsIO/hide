@@ -136,7 +136,7 @@ class Noise extends Prefab {
 		bmp.x = -size >> 1;
 		bmp.y = -size >> 1;
 		ctx.local2d = bmp;
-		ctx.shared.cleanups.push(tex.dispose);
+		ctx.cleanup = function() tex.dispose();
 		return ctx;
 	}
 
