@@ -146,10 +146,6 @@ class Noise extends Prefab {
 		return { icon : "cloud", name : "Noise Generator" };
 	}
 
-	override function setSelected( ctx : Context, b : Bool ) {
-		ctx.shared.contexts.get(this).local2d.visible = b;
-	}
-
 	override function edit( ctx : EditContext ) {
 		var e = ctx.properties.add(new hide.Element('
 			<dl>
@@ -209,6 +205,8 @@ class Noise extends Prefab {
 				}
 			});
 		});
+		bmp.visible = true;
+		ctx.cleanups.push(function() bmp.visible = false);
 	}
 
 	#end
