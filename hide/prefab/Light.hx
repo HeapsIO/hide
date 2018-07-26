@@ -261,10 +261,10 @@ class Light extends Object3D {
 				ctx.onChange(this, pname);
 		});
 
-		ctx.properties.add(new hide.Element('
+		var e = ctx.properties.add(new hide.Element('
 			<div class="group" name="Shadows">
 				<dl>
-					<dt>Kind</dt><dd><select field="mode"></select></dd>
+					<dt>Mode</dt><dd><select field="mode"></select></dd>
 					<dt>Size</dt>
 					<dd>
 						<select field="size" type="number">
@@ -283,10 +283,13 @@ class Light extends Object3D {
 			</div>
 		'),shadows,function(pname) {
 			ctx.onChange(this,pname);
+			if( pname == "mode" ) ctx.rebuild();
 		});
 
-
-
+		if( shadows.mode == None ) {
+			e.find("dd").not(":first").remove();
+			e.find("dt").not(":first").remove();
+		}
 
 	}
 
