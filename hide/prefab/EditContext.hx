@@ -16,8 +16,15 @@ class EditContext {
 	function get_ide() return hide.Ide.inst;
 	public function onChange(p : Prefab, propName : String) {
 		var ctx = getContext(p);
-		if(ctx != null)
+		if(ctx != null) {
 			p.updateInstance(ctx, propName);
+			var parent = p.parent;
+			while( parent != null ) {
+				var pr = parent.getHideProps();
+				if( pr.onChildUpdate != null ) pr.onChildUpdate(p);
+				parent = parent.parent;
+			}
+		}
 
 		var refs = rootContext.shared.references.get(p);
 		if(refs != null) {

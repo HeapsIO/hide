@@ -6,4 +6,5 @@ typedef HideProps = {
 	@:optional var fileSource : Array<String>;
 	@:optional dynamic function allowChildren( type : String ) : Bool;
 	@:optional dynamic function allowParent( p : Prefab ) : Bool;
+	@:optional dynamic function onChildUpdate( p : Prefab ) : Void;
 }
