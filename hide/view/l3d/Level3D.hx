@@ -143,27 +143,6 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		return super.projectToGround(ray);
 	}
 
-	public function bakeVolumetricLightmaps(){
-		var volumetricLightmaps = sceneData.getAll(hide.prefab.l3d.VolumetricLightmap);
-		var total = 0;
-		for( v in volumetricLightmaps )
-			total += v.volumetricLightmap.getProbeCount();
-		if( total == 0 )
-			return;
-		if( !ide.confirm("Bake "+total+" probes?") )
-			return;
-		function bakeNext() {
-			var v = volumetricLightmaps.shift();
-			if( v == null ) {
-				ide.message("Done");
-				return;
-			}
-			v.startBake(curEdit, bakeNext);
-			selectObjects([v]);
-		}
-		bakeNext();
-	}
-
 	override function getNewContextMenu(current: PrefabElement) {
 		var newItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
 
@@ -327,7 +306,8 @@ class Level3D extends FileView {
 		tools.addToggle("anchor", "Snap to ground", (v) -> sceneEditor.snapToGround = v, sceneEditor.snapToGround);
 		tools.addToggle("compass", "Local transforms", (v) -> sceneEditor.localTransform = v, sceneEditor.localTransform);
 		tools.addToggle("th", "Show grid", function(v) { showGrid = v; updateGrid(); }, showGrid);
-		tools.addButton("map", "Bake Volumetric Lightmaps", () -> sceneEditor.bakeVolumetricLightmaps());
+		tools.addButton("map", "Bake Volumetric Lightmaps", () -> bakeVolumetricLightmaps());
+		tools.addButton("sun-o", "Bake Lights", () -> bakeLights());
 
 		tools.addColor("Background color", function(v) {
 			scene.engine.backgroundColor = v;
@@ -339,6 +319,40 @@ class Level3D extends FileView {
 		});
 
 		updateGrid();
+	}
+
+	function bakeLights() {
+		var passes = [];
+		for( m in scene.s3d.getMaterials() ) {
+			var s = m.getPass("shadow");
+			if( s != null && !s.isStatic ) passes.push(s);
+		}
+		for( p in passes )
+			p.isStatic = true;
+		scene.s3d.computeStatic();
+		for( p in passes )
+			p.isStatic = false;
+	}
+
+	function bakeVolumetricLightmaps(){
+		var volumetricLightmaps = data.getAll(hide.prefab.l3d.VolumetricLightmap);
+		var total = 0;
+		for( v in volumetricLightmaps )
+			total += v.volumetricLightmap.getProbeCount();
+		if( total == 0 )
+			return;
+		if( !ide.confirm("Bake "+total+" probes?") )
+			return;
+		function bakeNext() {
+			var v = volumetricLightmaps.shift();
+			if( v == null ) {
+				ide.message("Done");
+				return;
+			}
+			v.startBake(sceneEditor.curEdit, bakeNext);
+			sceneEditor.selectObjects([v]);
+		}
+		bakeNext();
 	}
 
 	override function getDefaultContent() {

@@ -17,6 +17,13 @@ package hide.prefab;
 	}
 }
 
+typedef LightShadows = {
+	var mode : h3d.pass.Shadows.RenderMode;
+	var size : Int;
+	var radius : Float;
+	var power : Float;
+	var bias : Float;
+}
 
 class Light extends Object3D {
 
@@ -25,6 +32,17 @@ class Light extends Object3D {
 	public var range : Float = 10;
 	public var size : Float = 1.0;
 	public var power : Float = 1.0;
+	public var shadows : LightShadows = getShadowsDefault();
+
+	static function getShadowsDefault() : LightShadows {
+		return {
+			mode : None,
+			size : 256,
+			radius : 1,
+			power : 30,
+			bias : 0.1,
+		};
+	}
 
 	public function new(?parent) {
 		super(parent);
@@ -38,6 +56,10 @@ class Light extends Object3D {
 		obj.range = range;
 		obj.size = size;
 		obj.power = power;
+		if( shadows.mode != None ) {
+			obj.shadows = Reflect.copy(shadows);
+			obj.shadows.mode = shadows.mode.getName();
+		}
 		return obj;
 	}
 
@@ -48,6 +70,12 @@ class Light extends Object3D {
 		range = obj.range;
 		size = obj.size;
 		power = obj.power;
+		if( obj.shadows != null ) {
+			var sh : Dynamic = Reflect.copy(obj.shadows);
+			sh.mode = h3d.pass.Shadows.RenderMode.createByName(sh.mode);
+			shadows = sh;
+		} else
+			shadows = getShadowsDefault();
 	}
 
 
@@ -58,46 +86,55 @@ class Light extends Object3D {
 
 	override function makeInstance(ctx:Context):Context {
 		ctx = ctx.clone(this);
-		var obj = new h3d.scene.Object(ctx.local3d);
-		ctx.local3d = obj;
-		ctx.local3d.name = name;
 
-		applyPos(ctx.local3d);
-		applyProps(ctx);
+		var isPbr = Std.is(h3d.mat.MaterialSetup.current, h3d.mat.PbrMaterialSetup);
+		if( !isPbr )
+			return ctx;
+
+		switch( kind ) {
+		case Point:
+			ctx.local3d = new h3d.scene.pbr.PointLight(ctx.local3d);
+		case Directional:
+			ctx.local3d = new h3d.scene.pbr.DirLight(ctx.local3d);
+		}
+		ctx.local3d.name = name;
+		updateInstance(ctx);
 		return ctx;
 	}
 
-	function applyProps(ctx: Context) {
-		if(ctx.custom != null) {
-			var l : h3d.scene.Light = cast ctx.custom;
-			l.remove();
-		}
+	override function updateInstance( ctx : Context, ?propName : String ) {
+		applyPos(ctx.local3d);
 
 		var isPbr = Std.is(h3d.mat.MaterialSetup.current, h3d.mat.PbrMaterialSetup);
-		if(!isPbr)
+		if( !isPbr )
 			return; // TODO
 
 		var color = color | 0xff000000;
-
-		if(kind == Point) {
-			var light = new h3d.scene.pbr.PointLight(ctx.local3d);
-			light.color.setColor(color);
-			light.range = range;
-			light.size = size;
-			light.power = power;
-			ctx.custom = light;
+		var light = cast(ctx.local3d,h3d.scene.pbr.Light);
+		switch( kind ) {
+		case Point:
+			var pl = Std.instance(light, h3d.scene.pbr.PointLight);
+			pl.range = range;
+			pl.size = size;
+		default:
 		}
-		else {
-			var light = new h3d.scene.pbr.DirLight(ctx.local3d);
-			light.color.setColor(color);
-			light.power = power;
-			ctx.custom = light;
-		}
+		light.color.setColor(color);
+		light.power = power;
+		light.shadows.mode = shadows.mode;
+		light.shadows.size = shadows.size;
+		light.shadows.power = shadows.power;
+		light.shadows.bias = shadows.bias * 0.1;
+		light.shadows.blur.radius = shadows.radius;
 
 		#if editor
+
+		// no "Mixed" in editor (prevent double shadowing)
+		if( light.shadows.mode == Mixed ) light.shadows.mode = Static;
+
 		var debugPoint = ctx.local3d.find(c -> if(c.name == "_debugPoint") c else null);
 		var debugDir = ctx.local3d.find(c -> if(c.name == "_debugDir") c else null);
 		var mesh : h3d.scene.Mesh = null;
+		var sel : h3d.scene.Object;
 
 		if(kind == Point) {
 			if(debugDir != null)
@@ -119,6 +156,8 @@ class Light extends Object3D {
 				sizeSphere.material.mainPass.setPassName("overlay");
 
 				rangeSphere = new h3d.scene.Sphere(0xffffff, range, true, highlight);
+				rangeSphere.name = "selection";
+				rangeSphere.visible = false;
 				rangeSphere.ignoreCollide = true;
 				rangeSphere.material.mainPass.setPassName("overlay");
 			}
@@ -127,9 +166,11 @@ class Light extends Object3D {
 				sizeSphere = cast debugPoint.getChildAt(1).getChildAt(0);
 				rangeSphere = cast debugPoint.getChildAt(1).getChildAt(1);
 			}
+			debugPoint.setScale(1/range);
 			mesh.setScale(hxd.Math.clamp(size, 0.1, 0.5));
 			sizeSphere.radius = size;
 			rangeSphere.radius = range;
+			sel = rangeSphere;
 		}
 		else {
 			if(debugPoint != null)
@@ -147,11 +188,15 @@ class Light extends Object3D {
 				g.moveTo(0,0,0);
 				g.lineTo(10,0,0);
 				g.ignoreCollide = true;
+				g.visible = false;
 				g.material.mainPass.setPassName("overlay");
+				sel = g;
 			}
 			else {
 				mesh = cast debugDir.getChildAt(0);
+				sel = debugDir.getChildAt(1);
 			}
+
 		}
 
 		var mat = mesh.material;
@@ -159,83 +204,89 @@ class Light extends Object3D {
 		mat.color.setColor(color);
 		mat.shadows = false;
 
+		var isSelected = sel.visible;
+		sel.name = "__selection";
+		// when selected, force Dynamic mode (realtime preview)
+		if( isSelected && shadows.mode != None ) light.shadows.mode = Dynamic;
+
 		#end
 	}
 
 	#if editor
+
+	override function setSelected( ctx : Context, b : Bool ) {
+		var sel = ctx.local3d.getObjectByName("__selection");
+		if( sel != null ) sel.visible = b;
+		updateInstance(ctx);
+	}
+
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
 
 		var group = new hide.Element('<div class="group" name="Light">
 				<dl>
 					<dt>Kind</dt><dd>
-						<select field="kind">
+						<select type="number" field="kind">
 							<option value="0">Point</option>
 							<option value="1">Directional</option>
 						</select></dd>
-					<dt>Color</dt><dd><input name="colorVal"/></dd>
+					<dt>Color</dt><dd><input type="color" field="color"/></dd>
 					<dt>Power</dt><dd><input type="range" min="0" max="10" field="power"/></dd>
 				</dl>
 			</div>
 		');
 
-		var pointProps = hide.comp.PropsEditor.makePropsList([
-			{
-				name: "size",
-				t: PFloat(0, 5),
-				def: 0
-			},
-			{
-				name: "range",
-				t: PFloat(1, 20),
-				def: 10
-			},
-		]);
 
-		var dirProps = hide.comp.PropsEditor.makePropsList([
-		]);
-
-		group.append(pointProps);
-		group.append(dirProps);
-		function updateProps() {
-			if(kind == Point) {
-				pointProps.show();
-				dirProps.hide();
-			}
-			else {
-				pointProps.hide();
-				dirProps.show();
-			}
+		switch( kind ) {
+		case Point:
+			group.append(hide.comp.PropsEditor.makePropsList([
+				{
+					name: "size",
+					t: PFloat(0, 5),
+					def: 0
+				},
+				{
+					name: "range",
+					t: PFloat(1, 20),
+					def: 10
+				},
+			]));
+		default:
 		}
-		updateProps();
 
 		var props = ctx.properties.add(group,this, function(pname) {
-			applyProps(ctx.getContext(this));
-			ctx.onChange(this, pname);
-			updateProps();
+			if( pname == "kind")
+				ctx.refresh(this);
+			else
+				ctx.onChange(this, pname);
 		});
-		var colorInput = props.find('input[name="colorVal"]');
-		var picker = new hide.comp.ColorPicker(false,null,colorInput);
-		picker.value = color;
-		picker.onChange = function(move) {
-			if(!move) {
-				var prevVal = color;
-				var newVal = picker.value;
-				color = picker.value;
-				ctx.properties.undo.change(Custom(function(undo) {
-					if(undo)
-						color = prevVal;
-					else
-						color = newVal;
-					picker.value = color;
-					applyProps(ctx.getContext(this));
-					ctx.onChange(this, "color");
-				}));
-			}
-			color = picker.value;
-			applyProps(ctx.getContext(this));
-			ctx.onChange(this, "color");
-		}
+
+		ctx.properties.add(new hide.Element('
+			<div class="group" name="Shadows">
+				<dl>
+					<dt>Kind</dt><dd><select field="mode"></select></dd>
+					<dt>Size</dt>
+					<dd>
+						<select field="size" type="number">
+							<option value="64">64</option>
+							<option value="128">128</option>
+							<option value="256">256</option>
+							<option value="512">512</option>
+							<option value="1024">1024</option>
+							<option value="2048">2048</option>
+						</select>
+					</dd>
+					<dt>Blur Radius</dt><dd><input type="range" field="radius" min="0" max="20"/></dd>
+					<dt>Power</dt><dd><input type="range" field="power" min="0" max="50"/></dd>
+					<dt>Bias</dt><dd><input type="range" field="bias" min="0" max="1"/></dd>
+				</dl>
+			</div>
+		'),shadows,function(pname) {
+			ctx.onChange(this,pname);
+		});
+
+
+
 
 	}
 
