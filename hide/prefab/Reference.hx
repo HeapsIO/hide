@@ -29,7 +29,8 @@ class Reference extends Prefab {
 		var lib = getParent(hxd.prefab.Library);
 		if(lib == null)
 			return null;
-		return lib.getOpt(Prefab, refpath);
+		ref = lib.getOpt(Prefab, refpath);
+		return ref;
 	}
 
 	override function makeInstance(ctx: Context) : Context {
@@ -43,6 +44,32 @@ class Reference extends Prefab {
 	}
 
 	#if editor
+
+	
+	override function edit( ctx : EditContext ) {
+		var element = new hide.Element('
+			<dl>
+				<dt>Reference</dt><dd><input type="text" field="refpath"/></dd>
+			</dl>');
+
+		function updateProps() {
+			var input = element.find("input");
+			var found = resolveRef() != null;
+			input.toggleClass("error", !found);
+		}
+		updateProps();
+
+		var props = ctx.properties.add(element, this, function(pname) {
+			ctx.onChange(this, pname);
+			if(pname == "refpath") {
+				ref = null;
+				updateProps();
+				if(!ctx.properties.isTempChange)
+					ctx.refresh(this);
+			}	
+		});
+	}
+
 	override function getHideProps() : HideProps {
 		return { icon : "share", name : "Reference" };
 	}

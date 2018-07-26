@@ -552,6 +552,9 @@ input[type=checkbox]:checked:after {
 .hide-properties .group > .content {
   margin-bottom: 5px;
 }
+.hide-properties .error {
+  color: red;
+}
 /* Curve editor */
 .hide-curve-editor:focus {
   background-color: rgba(0, 0, 0, 0.219);
