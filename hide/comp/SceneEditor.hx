@@ -69,6 +69,11 @@ class SceneEditorContext extends hide.prefab.EditContext {
 		}
 	}
 
+	override function refresh( p : hide.prefab.Prefab ) {
+		// refresh all for now
+		editor.refresh();
+	}
+
 	public function cleanup() {
 		for( c in cleanups.copy() )
 			c();
@@ -678,7 +683,8 @@ class SceneEditor {
 			if( map.exists(e) )
 				return;
 			map.set(e, true);
-			e.setSelected(context, b);
+			var ectx = context.shared.contexts.get(e);
+			e.setSelected(ectx == null ? context : ectx, b);
 			for( e in e.children )
 				selectRec(e,b);
 		}
@@ -687,12 +693,24 @@ class SceneEditor {
 			selectRec(e, true);
 
 		edit.cleanups.push(function() {
-			for( e in map.keys() )
-				e.setSelected(context, false);
+			for( e in map.keys() ) {
+				if( hasBeenRemoved(e) ) continue;
+				var ectx = context.shared.contexts.get(e);
+				e.setSelected(ectx == null ? context : ectx, false);
+			}
 		});
 
 		curEdit = edit;
 		setupGizmo();
+	}
+
+	function hasBeenRemoved( e : hide.prefab.Prefab ) {
+		while( e != null && e != sceneData ) {
+			if( e.parent != null && e.parent.children.indexOf(e) < 0 )
+				return true;
+			e = e.parent;
+		}
+		return e == null;
 	}
 
 	public function resetCamera(?top = false) {

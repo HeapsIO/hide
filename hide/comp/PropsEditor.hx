@@ -347,7 +347,11 @@ class PropsField extends Component {
 				}
 			}
 
-			f.val(current);
+			if( enumValue != null ) {
+				var cst = Type.enumConstructor(current);
+				f.val(cst);
+			} else
+				f.val(current);
 			f.keyup(function(e) {
 				if( e.keyCode == 13 ) {
 					f.blur();

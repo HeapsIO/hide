@@ -59,6 +59,12 @@ class EditContext {
 	public function rebuild() {
 	}
 
+	/**
+		Force rebuilding makeInstance for the given hierarchy
+	**/
+	public function refresh( p : Prefab ) {
+	}
+
 	public function getNamedObjects( ?exclude : h3d.scene.Object ) {
 		var out = [];
 
