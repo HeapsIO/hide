@@ -44,29 +44,8 @@ class SceneEditorContext extends hide.prefab.EditContext {
 	}
 
 	override function rebuild() {
-		properties.clear();
-		cleanup();
-		if(elements.length > 0) {
-			var e = elements[0];
-			editor.scene.setCurrent();
-			e.edit(this);
-			var sheet = e.getCdbModel();
-			if( sheet != null ) {
-				if( e.props == null ) {
-					trace("TODO : add button to init properties");
-					return;
-				}
-				var props = properties.add(new hide.Element('
-					<div class="group" name="Properties ${sheet.name.split('@').pop()}">
-					</div>
-				'),this);
-				var editor = new hide.comp.cdb.ObjEditor(sheet, e.props, props.find(".group .content"));
-				editor.undo = properties.undo;
-				editor.onChange = function(pname) {
-					onChange(e, 'props.$pname');
-				}
-			}
-		}
+		editor.scene.setCurrent();
+		editor.selectObjects(elements);
 	}
 
 	override function refresh( p : hide.prefab.Prefab ) {
@@ -668,11 +647,32 @@ class SceneEditor {
 			resetCamera();
 	}
 
+	function fillProps( edit, e : PrefabElement ) {
+		e.edit(edit);
+		var sheet = e.getCdbModel();
+		if( sheet == null ) return;
+
+		if( e.props == null ) {
+			trace("TODO : add button to init properties");
+			return;
+		}
+		var props = properties.add(new hide.Element('
+			<div class="group" name="Properties ${sheet.name.split('@').pop()}">
+			</div>
+		'),this);
+		var editor = new hide.comp.cdb.ObjEditor(sheet, e.props, props.find(".group .content"));
+		editor.undo = properties.undo;
+		editor.onChange = function(pname) {
+			edit.onChange(e, 'props.$pname');
+		}
+	}
+
 	public function selectObjects( elts : Array<PrefabElement>, ?includeTree=true) {
 		if( curEdit != null )
 			curEdit.cleanup();
 		var edit = makeEditContext(elts);
-		edit.rebuild();
+		properties.clear();
+		if( elts.length > 0 ) fillProps(edit, elts[0]);
 
 		if(includeTree) {
 			tree.setSelection(elts);
