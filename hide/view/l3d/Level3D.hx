@@ -322,6 +322,8 @@ class Level3D extends FileView {
 	}
 
 	function bakeLights() {
+		var curSel = sceneEditor.curEdit.elements;
+		sceneEditor.selectObjects([]);
 		var passes = [];
 		for( m in scene.s3d.getMaterials() ) {
 			var s = m.getPass("shadow");
@@ -332,6 +334,10 @@ class Level3D extends FileView {
 		scene.s3d.computeStatic();
 		for( p in passes )
 			p.isStatic = false;
+		var lights = data.getAll(hide.prefab.Light);
+		for( l in lights )
+			l.saveBaked(sceneEditor.context);
+		sceneEditor.selectObjects(curSel);
 	}
 
 	function bakeVolumetricLightmaps(){

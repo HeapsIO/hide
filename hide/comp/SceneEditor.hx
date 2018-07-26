@@ -1134,7 +1134,7 @@ class SceneEditor {
 		if(layer != null) {
 			uniqueName = layer.uniqueNames;
 		}
-		if( p.type == "volumetricLightmap" )
+		if( p.type == "volumetricLightmap" || p.type == "light" )
 			uniqueName = true;
 
 		var prefix = null;

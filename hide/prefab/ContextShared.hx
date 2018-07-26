@@ -38,7 +38,11 @@ class ContextShared extends hxd.prefab.ContextShared {
 	override function saveBakedFile( bytes ) {
 		var path = new haxe.io.Path(currentPath);
 		path.ext = "bake";
-		sys.io.File.saveBytes(hide.Ide.inst.getPath(path.toString()), bytes);
+		var file = hide.Ide.inst.getPath(path.toString());
+		if( bytes == null )
+			try sys.FileSystem.deleteFile(file) catch( e : Dynamic ) {};
+		else
+			sys.io.File.saveBytes(file, bytes);
 	}
 	#end
 }

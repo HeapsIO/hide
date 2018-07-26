@@ -78,7 +78,6 @@ class Light extends Object3D {
 			shadows = getShadowsDefault();
 	}
 
-
 	override function applyPos( o : h3d.scene.Object ) {
 		super.applyPos(o);
 		o.setScale(1.0);
@@ -99,7 +98,17 @@ class Light extends Object3D {
 		}
 		ctx.local3d.name = name;
 		updateInstance(ctx);
+		loadBaked(ctx);
 		return ctx;
+	}
+
+	function loadBaked( ctx : Context ) {
+		var name = name+".li";
+		var bytes = ctx.shared.loadBakedBytes(name);
+		if( bytes == null ) return;
+		var light = cast(ctx.local3d,h3d.scene.pbr.Light);
+		if( !light.shadows.loadStaticData(bytes) )
+			ctx.shared.saveBakedBytes(name,null);
 	}
 
 	override function updateInstance( ctx : Context, ?propName : String ) {
@@ -213,6 +222,13 @@ class Light extends Object3D {
 	}
 
 	#if editor
+
+	public function saveBaked( ctx : Context ) {
+		var name = name+".li";
+		var light = cast(ctx.shared.contexts.get(this).local3d,h3d.scene.pbr.Light);
+		var data = light.shadows.saveStaticData();
+		ctx.shared.saveBakedBytes(name, data);
+	}
 
 	override function setSelected( ctx : Context, b : Bool ) {
 		var sel = ctx.local3d.getObjectByName("__selection");
