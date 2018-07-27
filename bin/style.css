@@ -555,6 +555,9 @@ input[type=checkbox]:checked:after {
 .hide-properties .error {
   color: red;
 }
+.hide-properties .vector {
+  flex-direction: row;
+}
 /* Curve editor */
 .hide-curve-editor:focus {
   background-color: rgba(0, 0, 0, 0.219);
