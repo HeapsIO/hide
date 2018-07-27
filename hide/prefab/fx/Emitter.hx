@@ -3,23 +3,24 @@ import hide.prefab.Curve;
 import hide.prefab.fx.FX.ShaderAnimation;
 using Lambda;
 
-@:enum abstract EmitShape(Int) {
-	var Cone = 0;
-	var Disc = 1;
-	var Sphere = 2;
-	var Box = 3;
+enum StartDirection {
+	Fixed;
+	EmitPosition;
+	EmitSpeed;
+	Random;
+}
 
-	inline function new(v) {
-		this = v;
-	}
+enum AlignMode {
+	None;
+	Screen;
+	Axis;
+}
 
-	public inline function toInt() {
-		return this;
-	}
-
-	public static inline function fromInt( v : Int ) : EmitShape {
-		return new EmitShape(v);
-	}
+enum EmitShape {
+	Cone;
+	Disc;
+	Sphere;
+	Box;
 }
 
 typedef ParamDef = {
@@ -134,8 +135,15 @@ private class ParticleInstance extends h3d.scene.Object {
 		}
 	}
 
-	override function sync( ctx : h3d.scene.RenderContext ) {
-		faceCamera(ctx.camera);
+	override function syncRec( ctx : h3d.scene.RenderContext ) {
+		if(emitter.alignMode == Screen) {
+			var mat = ctx.camera.mcam.clone();
+			mat.invert();
+			var q = new h3d.Quat();
+			q.initRotateMatrix(mat);
+			setRotationQuat(q);
+		}
+		super.syncRec(ctx);
 	}
 
 	function kill() {
@@ -158,6 +166,10 @@ class EmitterObject extends h3d.scene.Object {
 	public var frameDivisionY : Int = 1;
 	public var animationRepeat : Float = 1;
 	public var emitAngle : Float = 0.0;
+
+	public var alignMode : AlignMode;
+	public var alignAxis : h3d.Vector;
+	public var alignLockAxis : h3d.Vector;
 
 	public var emitRate : Value;
 	public var alignVec: h3d.Vector;
@@ -357,9 +369,15 @@ class Emitter extends Object3D {
 		{ name: "emitRate", t: PInt(0, 100), def: 5, disp: "Rate", animate: true },
 		{ name: "lifeTime", t: PFloat(0, 10), def: 1.0 },
 		{ name: "maxCount", t: PInt(0, 100), def: 20, },
-		{ name: "emitShape", t: PChoice(["Cone", "Disc", "Sphere", "Box"]), disp: "Emit Shape", },
+		{ name: "emitShape", t: PEnum(EmitShape), def: EmitShape.Sphere, disp: "Emit Shape", },
 		{ name: "emitAngle", t: PFloat(0, 360.0), disp: "Angle", },
 		{ name: "camAlign", t: PVec(3, -1.0, 1.0), def: [0.,0.,0.] },
+
+
+		{ name: "alignMode", t: PEnum(AlignMode), def: AlignMode.None, disp: "Alignment" },
+		{ name: "alignAxis", t: PVec(3, -1.0, 1.0), def: [0.,0.,0.], disp: "Axis" },
+		{ name: "alignLockAxis", t: PVec(3, -1.0, 1.0), def: [0.,0.,0.], disp: "Lock Axis" },
+
 		{ name: "alignDirection", t: PBool, def: false, disp: "Align Direction" },
 
 		{ name: "frameCount", t: PInt(0), def: 0 },
@@ -389,12 +407,20 @@ class Emitter extends Object3D {
 
 	override function save() {
 		var obj : Dynamic = super.save();
+		obj.props = Reflect.copy(props);
 		for(param in PARAMS) {
-			if(Reflect.hasField(props, param.name)) {
-				var f = Reflect.field(props, param.name);
-				if(f != param.def) {
-					Reflect.setField(obj, param.name, f);
+			var f = Reflect.field(props, param.name);
+			if(f != null && haxe.Json.stringify(f) != haxe.Json.stringify(param.def)) {
+				var val : Dynamic = f;
+				switch(param.t) {
+					case PEnum(en):
+						val = Type.enumConstructor(val);
+					default:
 				}
+				Reflect.setField(obj.props, param.name, val);
+			}
+			else {
+				Reflect.deleteField(obj.props, param.name);
 			}
 		}
 		return obj;
@@ -403,8 +429,15 @@ class Emitter extends Object3D {
 	override function load( obj : Dynamic ) {
 		super.load(obj);
 		for(param in emitterParams) {
-			if(Reflect.hasField(obj, param.name))
-				Reflect.setField(props, param.name, Reflect.field(obj, param.name));
+			if(Reflect.hasField(obj.props, param.name)) {
+				var val = Reflect.field(obj.props, param.name);
+				switch(param.t) {
+					case PEnum(en):
+						val = Type.createEnum(en, val);
+					default:
+				}
+				Reflect.setField(props, param.name, val);
+			}
 			else if(param.def != null)
 				resetParam(param);
 		}
@@ -528,6 +561,9 @@ class Emitter extends Object3D {
 		emitterObj.emitShape = getParamVal("emitShape");
 		emitterObj.emitAngle = getParamVal("emitAngle");
 		emitterObj.alignVec = getParamVal("camAlign");
+		emitterObj.alignMode = getParamVal("alignMode");
+		emitterObj.alignAxis = getParamVal("alignAxis");
+		emitterObj.alignLockAxis = getParamVal("alignLockAxis");
 		emitterObj.frameCount = getParamVal("frameCount");
 		emitterObj.frameDivisionX = getParamVal("frameDivisionX");
 		emitterObj.frameDivisionY = getParamVal("frameDivisionY");
@@ -563,19 +599,30 @@ class Emitter extends Object3D {
 		function onChange(?pname: String) {
 			ctx.onChange(this, pname);
 
-			if(pname == "emitShape") {
+			if(pname == "emitShape" || pname == "alignMode")
 				refresh();
-			}
 		}
 
 		var params = emitterParams.copy();
+		inline function removeParam(pname: String) {
+			params.remove(params.find(p -> p.name == pname));
+		}
 
 		var emitShape : EmitShape = getParamVal("emitShape");
-		if(emitShape != null)
-			switch(emitShape) {
-				case Cone:
-				default: params.remove(params.find(p -> p.name == "emitAngle"));
-			}
+		switch(emitShape) {
+			case Cone:
+			default: removeParam("emitAngle");
+		}
+
+		var alignMode : AlignMode = getParamVal("alignMode");
+		switch(alignMode) {
+			case None:
+				removeParam("alignAxis");
+				removeParam("alignLockAxis");
+			case Screen:
+				removeParam("alignLockAxis");
+			default:
+		}
 
 		// Emitter
 		{
