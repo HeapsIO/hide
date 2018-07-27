@@ -443,6 +443,12 @@ class Emitter extends Object3D {
 			Reflect.setField(props, param.name, param.def);
 	}
 
+	override function setSelected( ctx : Context, b : Bool ) {
+		var emitterObj = Std.instance(ctx.local3d, EmitterObject);
+		var debugShape : h3d.scene.Object = emitterObj.find(c -> if(c.name == "_highlight") c else null);
+		debugShape.visible = b;		
+	}
+
 	override function updateInstance( ctx: Context, ?propName : String ) {
 		super.updateInstance(ctx, propName);
 		var emitterObj = Std.instance(ctx.local3d, EmitterObject);
