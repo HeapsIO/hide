@@ -669,6 +669,7 @@ class SceneEditor {
 	}
 
 	public function selectObjects( elts : Array<PrefabElement>, ?includeTree=true) {
+		scene.setCurrent();
 		if( curEdit != null )
 			curEdit.cleanup();
 		var edit = makeEditContext(elts);
