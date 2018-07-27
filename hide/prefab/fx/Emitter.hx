@@ -262,7 +262,8 @@ class EmitterObject extends h3d.scene.Object {
 			// Should we do this manually here or make a recursive makeInstance on the template?
 			var materials = particleTemplate.getAll(hide.prefab.Material);
 			for(mat in materials) {
-				mat.makeInstance(ctx);
+				if(mat.enabled)
+					mat.makeInstance(ctx);
 			}
 
 			// Animated textures animations
@@ -285,6 +286,8 @@ class EmitterObject extends h3d.scene.Object {
 			part.shaderAnims = [];
 			var shaders = particleTemplate.getAll(hide.prefab.Shader);
 			for(shader in shaders) {
+				if(!shader.enabled)
+					continue;
 				var shCtx = shader.makeInstance(ctx);
 				if(shCtx == null)
 					continue;
@@ -443,19 +446,12 @@ class Emitter extends Object3D {
 			Reflect.setField(props, param.name, param.def);
 	}
 
-	override function setSelected( ctx : Context, b : Bool ) {
-		var emitterObj = Std.instance(ctx.local3d, EmitterObject);
-		var debugShape : h3d.scene.Object = emitterObj.find(c -> if(c.name == "_highlight") c else null);
-		debugShape.visible = b;		
-	}
-
 	override function updateInstance( ctx: Context, ?propName : String ) {
 		super.updateInstance(ctx, propName);
 		var emitterObj = Std.instance(ctx.local3d, EmitterObject);
+
 		var randIdx = 0;
 		var template = children[0];
-		if(template == null)
-			return;
 
 		function makeParam(scope: Prefab, name: String): Value {
 			var getCurve = hide.prefab.Curve.getCurve.bind(scope);
@@ -511,18 +507,21 @@ class Emitter extends Object3D {
 			return hide.prefab.Curve.getColorValue(curves);
 		}
 
-		emitterObj.instDef = {
-			localSpeed: makeParam(this, "instSpeed"),
-			worldSpeed: makeParam(this, "instWorldSpeed"),
-			localOffset: makeParam(this, "instOffset"),
-			scale: makeParam(this, "instScale"),
-			stretch: makeParam(this, "instStretch"),
-			rotation: makeParam(this, "instRotation"),
-			color: makeColor(template, "color"),
-			alignDirection: getParamVal("alignDirection")
-		};
+		if(template != null) {
+			emitterObj.instDef = {
+				localSpeed: makeParam(this, "instSpeed"),
+				worldSpeed: makeParam(this, "instWorldSpeed"),
+				localOffset: makeParam(this, "instOffset"),
+				scale: makeParam(this, "instScale"),
+				stretch: makeParam(this, "instStretch"),
+				rotation: makeParam(this, "instRotation"),
+				color: makeColor(template, "color"),
+				alignDirection: getParamVal("alignDirection")
+			};
 
-		emitterObj.particleTemplate = template;
+			emitterObj.particleTemplate = template;
+		}
+
 		emitterObj.lifeTime = getParamVal("lifeTime");
 		emitterObj.maxCount = getParamVal("maxCount");
 		emitterObj.emitRate = makeParam(this, "emitRate");
@@ -535,70 +534,8 @@ class Emitter extends Object3D {
 		emitterObj.animationRepeat = getParamVal("animationRepeat");
 
 		#if editor
-		var debugShape : h3d.scene.Object = emitterObj.find(c -> if(c.name == "_highlight") c else null);
-		if(debugShape == null) {
-			debugShape = new h3d.scene.Object(emitterObj);
-			debugShape.name = "_highlight";
-			debugShape.visible = false;
-		}
-
-		for(i in 0...debugShape.numChildren)
-			debugShape.removeChild(debugShape.getChildAt(i));
-
-		inline function circle(npts, f) {
-			for(i in 0...(npts+1)) {
-				var c = hxd.Math.cos((i / npts) * hxd.Math.PI * 2.0);
-				var s = hxd.Math.sin((i / npts) * hxd.Math.PI * 2.0);
-				f(i, c, s);
-			}
-		}
-
-		var mesh : h3d.scene.Mesh = null;
-		switch(emitterObj.emitShape) {
-			case Disc: {
-				var g = new h3d.scene.Graphics(debugShape);
-				g.lineStyle(1, 0xffffff);
-				circle(32, function(i, c, s) {
-					if(i == 0)
-						g.moveTo(0, c * 0.5, s * 0.5);
-					else
-						g.lineTo(0, c * 0.5, s * 0.5);
-				});
-				g.ignoreCollide = true;
-				mesh = g;
-			}
-			case Box: {
-				mesh = new h3d.scene.Box(0xffffff, true, debugShape);
-			}
-			case Cone: {
-				var g = new h3d.scene.Graphics(debugShape);
-				var angle = hxd.Math.degToRad(getParamVal("emitAngle")) / 2.0;
-				var rad = hxd.Math.sin(angle);
-				var dist = hxd.Math.cos(angle);
-				g.lineStyle(1, 0xffffff);
-				circle(32, function(i, c, s) {
-					if(i == 0)
-						g.moveTo(dist, c * rad, s * rad);
-					else
-						g.lineTo(dist, c * rad, s * rad);
-				});
-				g.lineStyle(1, 0xffffff);
-				circle(4, function(i, c, s) {
-					g.moveTo(0, 0, 0);
-					g.lineTo(dist, c * rad, s * rad);
-				});
-				g.ignoreCollide = true;
-				mesh = g;
-			}
-			case Sphere:
-				mesh = new h3d.scene.Sphere(0xffffff, 0.5, true, debugShape);
-		}
-
-		if(mesh != null) {
-			var mat = mesh.material;
-			mat.mainPass.setPassName("overlay");
-			mat.shadows = false;
-		}
+		if(propName == null || propName == "emitShape" || propName == "emitAngle")
+			updateEmitShape(emitterObj);
 		#end
 	}
 
@@ -734,6 +671,82 @@ class Emitter extends Object3D {
 			}
 			var props = ctx.properties.add(instGroup, this.props, onChange);
 		}
+	}
+
+	override function setSelected( ctx : Context, b : Bool ) {
+		var emitterObj = Std.instance(ctx.local3d, EmitterObject);
+		var debugShape : h3d.scene.Object = emitterObj.find(c -> if(c.name == "_highlight") c else null);
+		if(debugShape != null)
+			debugShape.visible = b;		
+	}
+
+	function updateEmitShape(emitterObj: EmitterObject) {
+		var debugShape : h3d.scene.Object = emitterObj.find(c -> if(c.name == "_highlight") c else null);
+		if(debugShape == null) {
+			debugShape = new h3d.scene.Object(emitterObj);
+			debugShape.name = "_highlight";
+			debugShape.visible = false;
+		}
+
+		for(i in 0...debugShape.numChildren)
+			debugShape.removeChild(debugShape.getChildAt(i));
+
+		inline function circle(npts, f) {
+			for(i in 0...(npts+1)) {
+				var c = hxd.Math.cos((i / npts) * hxd.Math.PI * 2.0);
+				var s = hxd.Math.sin((i / npts) * hxd.Math.PI * 2.0);
+				f(i, c, s);
+			}
+		}
+
+		var mesh : h3d.scene.Mesh = null;
+		switch(emitterObj.emitShape) {
+			case Disc: {
+				var g = new h3d.scene.Graphics(debugShape);
+				g.lineStyle(1, 0xffffff);
+				circle(32, function(i, c, s) {
+					if(i == 0)
+						g.moveTo(0, c * 0.5, s * 0.5);
+					else
+						g.lineTo(0, c * 0.5, s * 0.5);
+				});
+				g.ignoreCollide = true;
+				mesh = g;
+			}
+			case Box: {
+				mesh = new h3d.scene.Box(0xffffff, true, debugShape);
+			}
+			case Cone: {
+				var g = new h3d.scene.Graphics(debugShape);
+				var angle = hxd.Math.degToRad(getParamVal("emitAngle")) / 2.0;
+				var rad = hxd.Math.sin(angle);
+				var dist = hxd.Math.cos(angle);
+				g.lineStyle(1, 0xffffff);
+				circle(32, function(i, c, s) {
+					if(i == 0)
+						g.moveTo(dist, c * rad, s * rad);
+					else
+						g.lineTo(dist, c * rad, s * rad);
+				});
+				g.lineStyle(1, 0xffffff);
+				circle(4, function(i, c, s) {
+					g.moveTo(0, 0, 0);
+					g.lineTo(dist, c * rad, s * rad);
+				});
+				g.ignoreCollide = true;
+				mesh = g;
+			}
+			case Sphere:
+				mesh = new h3d.scene.Sphere(0xffffff, 0.5, true, debugShape);
+		}
+
+		if(mesh != null) {
+			var mat = mesh.material;
+			mat.mainPass.setPassName("overlay");
+			mat.shadows = false;
+		}
+
+		return debugShape;
 	}
 
 	override function getHideProps() : HideProps {
