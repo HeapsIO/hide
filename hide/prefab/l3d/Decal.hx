@@ -53,9 +53,7 @@ class Decal extends Object3D {
 
 		ctx.local3d = mesh;
 		ctx.local3d.name = name;
-		applyPos(ctx.local3d);
 		updateInstance(ctx);
-
 		return ctx;
 	}
 

@@ -138,7 +138,6 @@ class Polygon extends Object3D {
 		mesh.material.mainPass.culling = None;
 		ctx.local3d = mesh;
 		ctx.local3d.name = name;
-		applyPos(ctx.local3d);
 		updateInstance(ctx);
 		return ctx;
 	}

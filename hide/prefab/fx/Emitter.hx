@@ -344,13 +344,17 @@ class Emitter extends Object3D {
 	public function new(?parent) {
 		super(parent);
 		props = { };
+		for(param in emitterParams) {
+			if(param.def != null)
+				resetParam(param);
+		}
 	}
 
 	public static var emitterParams : Array<ParamDef> = [
 		{ name: "emitRate", t: PInt(0, 100), def: 5, disp: "Rate", animate: true },
 		{ name: "lifeTime", t: PFloat(0, 10), def: 1.0 },
 		{ name: "maxCount", t: PInt(0, 100), def: 20, },
-		{ name: "emitShape", t: PChoice(["Cone", "Disc", "Sphere", "Box"]), disp: "Shape", },
+		{ name: "emitShape", t: PChoice(["Cone", "Disc", "Sphere", "Box"]), disp: "Emit Shape", },
 		{ name: "emitAngle", t: PFloat(0, 360.0), disp: "Angle", },
 		{ name: "camAlign", t: PVec(3, -1.0, 1.0), def: [0.,0.,0.] },
 		{ name: "alignDirection", t: PBool, def: false, disp: "Align Direction" },
@@ -439,7 +443,9 @@ class Emitter extends Object3D {
 			Reflect.setField(props, param.name, param.def);
 	}
 
-	public function applyParams(emitterObj: EmitterObject) {
+	override function updateInstance( ctx: Context, ?propName : String ) {
+		super.updateInstance(ctx, propName);
+		var emitterObj = Std.instance(ctx.local3d, EmitterObject);
 		var randIdx = 0;
 		var template = children[0];
 		if(template == null)
@@ -594,10 +600,9 @@ class Emitter extends Object3D {
 		ctx = ctx.clone(this);
 		var emitterObj = new EmitterObject(ctx.local3d);
 		emitterObj.context = ctx;
-		applyParams(emitterObj);
 		ctx.local3d = emitterObj;
 		ctx.local3d.name = name;
-		applyPos(ctx.local3d);
+		updateInstance(ctx);
 		return ctx;
 	}
 
@@ -614,9 +619,6 @@ class Emitter extends Object3D {
 
 		function onChange(?pname: String) {
 			ctx.onChange(this, pname);
-			var emitter = Std.instance(ctx.getContext(this).local3d, EmitterObject);
-			if(emitter != null)
-				applyParams(emitter);
 
 			if(pname == "emitShape") {
 				refresh();

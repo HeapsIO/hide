@@ -36,9 +36,9 @@ class Model extends Object3D {
 				obj = root;
 			}
 			obj.name = name;
-			applyPos(obj);
 			ctx.local3d.addChild(obj);
 			ctx.local3d = obj;
+			updateInstance(ctx);
 
 			if( animation != null )
 				obj.playAnimation(ctx.loadAnimation(animation));
@@ -49,7 +49,7 @@ class Model extends Object3D {
 		}
 		ctx.local3d = new h3d.scene.Object(ctx.local3d);
 		ctx.local3d.name = name;
-		applyPos(ctx.local3d);
+		updateInstance(ctx);
 		return ctx;
 	}
 

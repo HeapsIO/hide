@@ -35,7 +35,7 @@ class Object3D extends Prefab {
 		ctx = ctx.clone(this);
 		ctx.local3d = new h3d.scene.Object(ctx.local3d);
 		ctx.local3d.name = name;
-		applyPos(ctx.local3d);
+		updateInstance(ctx);
 		return ctx;
 	}
 
@@ -84,7 +84,22 @@ class Object3D extends Prefab {
 		o.scaleY = scaleY;
 		o.scaleZ = scaleZ;
 		o.setRotation(Math.degToRad(rotationX), Math.degToRad(rotationY), Math.degToRad(rotationZ));
-		o.visible = visible;
+	}
+
+	override function updateInstance( ctx: Context, ?propName : String ) {
+		var o = ctx.local3d;
+		o.x = x;
+		o.y = y;
+		o.z = z;
+		if(propName == null || propName.indexOf("scale") == 0) {
+			o.scaleX = scaleX;
+			o.scaleY = scaleY;
+			o.scaleZ = scaleZ;
+		}
+		if(propName == null || propName.indexOf("rotation") == 0)
+			o.setRotation(Math.degToRad(rotationX), Math.degToRad(rotationY), Math.degToRad(rotationZ));
+		if(propName == null || propName == "visible")
+			o.visible = visible;
 	}
 
 	#if editor
@@ -106,11 +121,6 @@ class Object3D extends Prefab {
 			</div>
 		');
 		ctx.properties.add(props, this, function(pname) {
-			var obj = ctx.getContext(this).local3d;
-			if( pname == "visible" )
-				obj.visible = visible;
-			else
-				applyPos(obj);
 			ctx.onChange(this, pname);
 		});
 	}

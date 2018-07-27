@@ -112,7 +112,7 @@ class Light extends Object3D {
 	}
 
 	override function updateInstance( ctx : Context, ?propName : String ) {
-		applyPos(ctx.local3d);
+		super.updateInstance(ctx, propName);
 
 		var isPbr = Std.is(h3d.mat.MaterialSetup.current, h3d.mat.PbrMaterialSetup);
 		if( !isPbr )
@@ -120,6 +120,8 @@ class Light extends Object3D {
 
 		var color = color | 0xff000000;
 		var light = cast(ctx.local3d,h3d.scene.pbr.Light);
+		light.setScale(1.0);		
+
 		switch( kind ) {
 		case Point:
 			var pl = Std.instance(light, h3d.scene.pbr.PointLight);

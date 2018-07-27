@@ -145,8 +145,8 @@ class VolumetricLightmap extends Object3D {
 		}
 	}
 
-	override function applyPos( o : h3d.scene.Object ) {
-		super.applyPos(o);
+	override function updateInstance( ctx: Context, ?propName : String ) {
+		super.updateInstance(ctx, propName);
 		resetLightmap();
 	}
 
@@ -159,7 +159,7 @@ class VolumetricLightmap extends Object3D {
 		volumetricLightmap.setPosition(-0.5, -0.5, 0);
 		ctx.local3d = obj;
 		ctx.local3d.name = name;
-		applyPos(ctx.local3d);
+		updateInstance(ctx);
 
 		volumetricLightmap.voxelSize = new h3d.Vector(voxelsize_x,voxelsize_y,voxelsize_z);
 		volumetricLightmap.shOrder = order;

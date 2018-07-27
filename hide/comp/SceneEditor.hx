@@ -922,9 +922,9 @@ class SceneEditor {
 		function apply(b) {
 			for(c in obj3ds) {
 				c.o.visible = b ? visible : c.vis;
-				var obj = getContext(c.o).local3d;
-				if(obj != null) {
-					c.o.applyPos(obj);
+				var ctx = getContext(c.o);
+				if(ctx != null) {
+					c.o.updateInstance(ctx, "visible");
 				}
 				onPrefabChange(c.o);
 			}
@@ -1034,9 +1034,9 @@ class SceneEditor {
 			obj3d.y = position.y;
 			obj3d.z = position.z;
 		}
-		var o = getContext(obj3d).local3d;
-		if(o != null)
-			obj3d.applyPos(o);
+		var ctx = getContext(obj3d);
+		if(ctx != null)
+			obj3d.updateInstance(ctx);
 	}
 
 	function deleteElements(elts : Array<PrefabElement>) {
