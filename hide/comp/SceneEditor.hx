@@ -74,11 +74,11 @@ class SceneEditor {
 	public var curEdit(default, null) : SceneEditorContext;
 	public var snapToGround = false;
 	public var localTransform = true;
+	public var cameraController : h3d.scene.CameraController;
 
 	var searchBox : Element;
 	var updates : Array<Float -> Void> = [];
 
-	var cameraController : h3d.scene.CameraController;
 	var gizmo : hide.view.l3d.Gizmo;
 	var interactives : Map<PrefabElement, h3d.scene.Interactive>;
 	var ide : hide.Ide;

@@ -76,6 +76,12 @@ class PbrSetup extends h3d.mat.PbrMaterialSetup {
 
 class PbrRenderer extends h3d.scene.pbr.Renderer {
 
+	override function getDefaultProps( ?kind : String ) : Any {
+		var props : h3d.scene.pbr.Renderer.RenderProps = super.getDefaultProps(kind);
+		props.sky = Background;
+		return props;
+	}
+
 	override function mainDraw() {
 		output.draw(getSort("default", true));
 		output.draw(get("outlined"));
