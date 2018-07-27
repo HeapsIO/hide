@@ -990,7 +990,7 @@ class SceneEditor {
 			var all = [for(e in newElements) e.elt];
 			selectObjects(all);
 			tree.setSelection(all);
-			if(thenMove) {
+			if(thenMove && curEdit.rootObjects.length > 0) {
 				/* Disabled for now as getPickTransform() will necessarily project on ground, which we don't always want
 				if(all.length == 1) {
 					var pickMat = getPickTransform(all[0].parent);
