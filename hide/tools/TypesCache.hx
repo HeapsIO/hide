@@ -234,6 +234,8 @@ class TypesCache {
 			return null;
 		case PChoice(c):
 			return c != null && c.length > 0 ? c[0] : null;
+		case PEnum(e):
+			return e.getConstructors()[0];
 		case PFile(_):
 			return null;
 		}

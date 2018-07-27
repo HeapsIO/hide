@@ -71,6 +71,8 @@ class PropsEditor extends Component {
 			var e = new Element('<select field="${p.name}" type="number"></select>').appendTo(parent);
 			for(c in choices)
 				new hide.Element('<option>').attr("value", choices.indexOf(c)).text(upperCase(c)).appendTo(e);
+		case PEnum(en):
+			var e = new Element('<select field="${p.name}"></select>').appendTo(parent);
 		case PFile(exts):
 			new Element('<input type="texturepath" extensions="${exts.join(" ")}" field="${p.name}">').appendTo(parent);
 		}
