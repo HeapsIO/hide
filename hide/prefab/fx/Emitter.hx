@@ -381,7 +381,7 @@ class Emitter extends Object3D {
 		var obj : Dynamic = super.save();
 		obj.props = Reflect.copy(props);
 		for(param in PARAMS) {
-			var f = Reflect.field(props, param.name);
+			var f : Dynamic = Reflect.field(props, param.name);
 			if(f != null && haxe.Json.stringify(f) != haxe.Json.stringify(param.def)) {
 				var val : Dynamic = f;
 				switch(param.t) {
@@ -402,7 +402,7 @@ class Emitter extends Object3D {
 		super.load(obj);
 		for(param in emitterParams) {
 			if(Reflect.hasField(obj.props, param.name)) {
-				var val = Reflect.field(obj.props, param.name);
+				var val : Dynamic = Reflect.field(obj.props, param.name);
 				switch(param.t) {
 					case PEnum(en):
 						val = Type.createEnum(en, val);
