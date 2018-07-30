@@ -30,7 +30,7 @@ class SceneEditorContext extends hide.prefab.EditContext {
 				rootElements.push(elt);
 				var ctx = getContext(elt);
 				if(ctx != null) {
-					var pobj = elt.parent == editor.sceneData ? ctx.shared.root3d : getContext(elt.parent).local3d;
+					var pobj = elt.parent == editor.sceneData ? ctx.shared.root3d : getContextRec(elt.parent).local3d;
 					if( ctx.local3d != pobj )
 						rootObjects.push(ctx.local3d);
 				}
@@ -41,6 +41,15 @@ class SceneEditorContext extends hide.prefab.EditContext {
 	override function getCurrentProps( p : hide.prefab.Prefab ) {
 		var cur = editor.curEdit;
 		return cur != null && cur.elements[0] == p ? editor.properties.element : new Element();
+	}
+
+	function getContextRec( p : hide.prefab.Prefab ) {
+		if( p == null )
+			return editor.context;
+		var c = editor.context.shared.contexts.get(p);
+		if( c == null )
+			return getContextRec(p.parent);
+		return c;
 	}
 
 	override function rebuildProperties() {
