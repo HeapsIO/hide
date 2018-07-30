@@ -301,8 +301,8 @@ class Level3D extends FileView {
 	public function onSceneReady() {
 
 		tools.saveDisplayKey = "Level3D/toolbar";
-		tools.addButton("video-camera", "Perspective camera", () -> sceneEditor.resetCamera(false));
-		tools.addButton("video-camera", "Top camera", () -> sceneEditor.resetCamera(true)).find(".icon").css({transform: "rotateZ(90deg)"});
+		tools.addButton("video-camera", "Perspective camera", () -> resetCamera(false));
+		tools.addButton("video-camera", "Top camera", () -> resetCamera(true)).find(".icon").css({transform: "rotateZ(90deg)"});
 		tools.addToggle("anchor", "Snap to ground", (v) -> sceneEditor.snapToGround = v, sceneEditor.snapToGround);
 		tools.addToggle("compass", "Local transforms", (v) -> sceneEditor.localTransform = v, sceneEditor.localTransform);
 		tools.addToggle("th", "Show grid", function(v) { showGrid = v; updateGrid(); }, showGrid);
@@ -359,6 +359,19 @@ class Level3D extends FileView {
 			sceneEditor.selectObjects([v]);
 		}
 		bakeNext();
+	}
+
+	function resetCamera( top : Bool ) {
+		var targetPt = new h3d.col.Point(0, 0, 0);
+		var curEdit = sceneEditor.curEdit;
+		if(curEdit != null && curEdit.rootObjects.length > 0) {
+			targetPt = curEdit.rootObjects[0].getAbsPos().getPosition().toPoint();
+		}
+		if(top)
+			sceneEditor.cameraController.set(200, Math.PI/2, 0.001, targetPt);
+		else
+			sceneEditor.cameraController.set(200, -4.7, 0.8, targetPt);
+		sceneEditor.cameraController.toTarget();
 	}
 
 	override function getDefaultContent() {

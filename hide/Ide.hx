@@ -539,6 +539,8 @@ class Ide {
 	}
 
 	public function loadPrefab<T:hide.prefab.Prefab>( file : String, cl : Class<T> ) : T {
+		if( file == null )
+			return null;
 		var l = new hxd.prefab.Library();
 		try {
 			l.load(parseJSON(sys.io.File.getContent(getPath(file))));
@@ -546,12 +548,14 @@ class Ide {
 			error("Invalid prefab ("+e+")");
 			throw e;
 		}
+		if( Std.is(l,cl) )
+			return cast l;
 		return l.get(cl);
 	}
 
 	public function savePrefab( file : String, f : hide.prefab.Prefab ) {
 		var content;
-		if( f.type == "library" )
+		if( Std.is(f,hxd.prefab.Library) )
 			content = f.save();
 		else {
 			var l = new hxd.prefab.Library();

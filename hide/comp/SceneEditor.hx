@@ -75,6 +75,7 @@ class SceneEditor {
 	public var snapToGround = false;
 	public var localTransform = true;
 	public var cameraController : h3d.scene.CameraController;
+	public var editorDisplay(default,set) : Bool;
 
 	var searchBox : Element;
 	var updates : Array<Float -> Void> = [];
@@ -111,6 +112,7 @@ class SceneEditor {
 		scene.onResize = function() {
 			context.shared.root2d.x = scene.width >> 1;
 			context.shared.root2d.y = scene.height >> 1;
+			onResize();
 		};
 
 		context = new hide.prefab.Context();
@@ -118,6 +120,7 @@ class SceneEditor {
 		context.shared = new hide.prefab.ContextShared(scene);
 		context.shared.currentPath = view.state.path;
 		context.init();
+		editorDisplay = true;
 
 		view.keys.register("copy", onCopy);
 		view.keys.register("paste", onPaste);
@@ -141,6 +144,14 @@ class SceneEditor {
 			if(curEdit.rootElements.length > 0)
 				selectObjects([curEdit.rootElements[0].parent]);
 		});
+	}
+
+	public dynamic function onResize() {
+	}
+
+	function set_editorDisplay(v) {
+		context.shared.editorDisplay = v;
+		return editorDisplay = v;
 	}
 
 	public function getSelection() {
@@ -298,7 +309,6 @@ class SceneEditor {
 	}
 
 	public function refresh( ?callb ) {
-		var sh = context.shared;
 		refreshScene();
 		tree.refresh(function() {
 			var all = sceneData.flatten(hxd.prefab.Prefab);
@@ -323,6 +333,7 @@ class SceneEditor {
 			if( c != null && c.cleanup != null )
 				c.cleanup();
 		context.shared = sh = new hide.prefab.ContextShared(scene);
+		sh.editorDisplay = editorDisplay;
 		sh.currentPath = view.state.path;
 		scene.s3d.addChild(sh.root3d);
 		scene.s2d.addChild(sh.root2d);
@@ -334,6 +345,10 @@ class SceneEditor {
 		scene.init();
 		scene.engine.backgroundColor = bgcol;
 		refreshInteractives();
+		onRefresh();
+	}
+
+	public dynamic function onRefresh() {
 	}
 
 	function refreshInteractives() {
@@ -354,6 +369,15 @@ class SceneEditor {
 			for(mesh in meshes) {
 				if(mesh.ignoreCollide)
 					continue;
+
+				// invisible objects are ignored collision wise
+				var p : h3d.scene.Object = mesh;
+				while( p != o ) {
+					if( !p.visible ) break;
+					p = p.parent;
+				}
+				if( p != o ) continue;
+
 				var localMat = mesh.getAbsPos().clone();
 				localMat.multiply(localMat, invRootMat);
 				var lb = mesh.primitive.getBounds().clone();
@@ -643,9 +667,9 @@ class SceneEditor {
 		}));
 		refresh(function() {
 			selectObjects([e]);
+			if( e.parent == sceneData && sceneData.children.length == 1 )
+				resetCamera();
 		});
-		if( e.parent == sceneData && sceneData.children.length == 1 )
-			resetCamera();
 	}
 
 	function fillProps( edit, e : PrefabElement ) {
@@ -715,16 +739,11 @@ class SceneEditor {
 		return e == null;
 	}
 
-	public function resetCamera(?top = false) {
-		var targetPt = new h3d.col.Point(0, 0, 0);
-		if(curEdit != null && curEdit.rootObjects.length > 0) {
-			targetPt = curEdit.rootObjects[0].getAbsPos().getPosition().toPoint();
-		}
-		if(top)
-			cameraController.set(200, Math.PI/2, 0.001, targetPt);
-		else
-			cameraController.set(200, -4.7, 0.8, targetPt);
-		cameraController.toTarget();
+	public function resetCamera() {
+		scene.s3d.camera.zNear = scene.s3d.camera.zFar = 0;
+		scene.resetCamera(1.5);
+		cameraController.lockZPlanes = scene.s3d.camera.zNear != 0;
+		cameraController.loadFromCamera();
 	}
 
 	public function getPickTransform(parent: PrefabElement) {
@@ -889,6 +908,10 @@ class SceneEditor {
 
 	public function deselect() {
 		selectObjects([]);
+	}
+
+	public function isSelected( p : PrefabElement ) {
+		return curEdit != null && curEdit.elements.indexOf(p) >= 0;
 	}
 
 	public function setEnabled(elements : Array<PrefabElement>, enable: Bool) {
@@ -1176,6 +1199,10 @@ class SceneEditor {
 		event.update(dt);
 		for( f in updates )
 			f(dt);
+		onUpdate(dt);
+	}
+
+	public dynamic function onUpdate(dt:Float) {
 	}
 
 	// Override

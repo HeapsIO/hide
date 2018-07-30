@@ -376,6 +376,7 @@ input[type=checkbox]:checked:after {
 }
 .hide-block {
   padding: 8px;
+  flex-grow: initial;
 }
 .hide-tabs {
   flex: 0 0 320px;

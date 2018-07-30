@@ -4,14 +4,13 @@ class Model extends FileView {
 
 	var tools : hide.comp.Toolbar;
 	var obj : h3d.scene.Object;
-	var scene : hide.comp.Scene;
-	var control : h3d.scene.CameraController;
+	var sceneEditor : hide.comp.SceneEditor;
 	var tree : hide.comp.SceneTree;
 	var overlay : Element;
-	var properties : hide.comp.PropsEditor;
-	var light : h3d.scene.DirLight;
-	var lightDirection = new h3d.Vector( 1, 2, -4 );
-	var isPbr : Bool;
+
+	var plight : hxd.prefab.Prefab;
+	var light : h3d.scene.Object;
+	var lightDirection : h3d.Vector;
 
 	var aspeed : hide.comp.Range;
 	var aloop : { function toggle( v : Bool ) : Void; var element : Element; }
@@ -20,6 +19,8 @@ class Model extends FileView {
 	var timecursor : h2d.Bitmap;
 	var currentAnimation : { file : String, name : String };
 	var cameraMove : Void -> Void;
+	var scene(get,never) : hide.comp.Scene;
+	var root : hide.prefab.Prefab;
 
 	override function onDisplay() {
 		element.html('
@@ -31,20 +32,81 @@ class Model extends FileView {
 							<div class="tree"></div>
 						</div>
 					</div>
-					<div class="props">
+					<div class="hide-tabs flex vertical">
+						<div class="hide-block">
+							<table>
+							<tr>
+							<td><input type="button" style="width:145px" value="Export"/>
+							<td><input type="button" style="width:145px" value="Import"/>
+							</tr>
+							</table>
+							<div class="hide-scene-tree hide-list">
+							</div>
+						</div>
+						<div class="props hide-scroll">
+						</div>
 					</div>
 				</div>
 			</div>
 		');
 		tools = new hide.comp.Toolbar(null,element.find(".toolbar"));
 		overlay = element.find(".hide-scene-layer .tree");
-		properties = new hide.comp.PropsEditor(undo, null, element.find(".props"));
-		properties.saveDisplayKey = "Model";
-		scene = new hide.comp.Scene(props, null,element.find(".scene"));
-		scene.onReady = init;
+
+		if( root == null ) {
+			var p = props.get("model.renderProps");
+			if( p != null )
+				root = ide.loadPrefab(p, hxd.prefab.Library);
+		}
+
+		if( root == null ) {
+			var def = new hxd.prefab.Library();
+			new hide.prefab.RenderProps(def).name = "renderer";
+			var l = new hide.prefab.Light(def);
+			l.name = "sunLight";
+			l.kind = Directional;
+			l.power = 1.5;
+			var q = new h3d.Quat();
+			q.initDirection(new h3d.Vector(-1,-1.5,-3));
+			var a = q.toEuler();
+			l.rotationX = Math.round(a.x * 180 / Math.PI);
+			l.rotationY = Math.round(a.y * 180 / Math.PI);
+			l.rotationZ = Math.round(a.z * 180 / Math.PI);
+			l.shadows.mode = Dynamic;
+			l.shadows.size = 1024;
+			root = def;
+		}
+
+		sceneEditor = new hide.comp.SceneEditor(this, root);
+		sceneEditor.editorDisplay = false;
+		sceneEditor.onRefresh = onRefresh;
+		sceneEditor.onUpdate = update;
+
+		element.find(".hide-scene-tree").first().append(sceneEditor.tree.element);
+		element.find(".props").first().append(sceneEditor.properties.element);
+		element.find(".scene").first().append(sceneEditor.scene.element);
+		sceneEditor.tree.element.addClass("small");
+
+		element.find("input[value=Export]").click(function(_) {
+			ide.chooseFileSave("renderer.prefab", function(sel) if( sel != null ) ide.savePrefab(sel, root));
+		});
+		element.find("input[value=Import]").click(function(_) {
+			ide.chooseFile(["prefab"], function(f) {
+				if( f == null ) return;
+				var r = ide.loadPrefab(f, hxd.prefab.Library);
+				if( r == null ) {
+					ide.error("This prefab does not have renderer properties");
+					return;
+				}
+				root = r;
+				rebuild();
+			});
+		});
 	}
 
+	inline function get_scene() return sceneEditor.scene;
+
 	function selectMaterial( m : h3d.mat.Material ) {
+		var properties = sceneEditor.properties;
 		properties.clear();
 
 		properties.add(new Element('
@@ -82,6 +144,7 @@ class Model extends FileView {
 	}
 
 	function selectObject( obj : h3d.scene.Object ) {
+		var properties = sceneEditor.properties;
 		properties.clear();
 
 		var objectCount = 1 + obj.getObjectsCount();
@@ -181,23 +244,23 @@ class Model extends FileView {
 		return out;
 	}
 
-	function init() {
+	function onRefresh() {
 
-		isPbr = Std.is(scene.s3d.renderer, h3d.scene.pbr.Renderer);
+		var r = root.get(hide.prefab.RenderProps);
+		if( r != null ) r.applyProps(scene.s3d.renderer);
+
+		plight = root.getAll(hide.prefab.Light)[0];
+		if( plight != null ) {
+			this.light = sceneEditor.context.shared.contexts.get(plight).local3d;
+			lightDirection = this.light.getDirection();
+		}
 
 		undo.onChange = function() {};
 
 		obj = scene.loadModel(state.path, true);
 		new h3d.scene.Object(scene.s3d).addChild(obj);
 
-		light = obj.find(function(o) return Std.instance(o, h3d.scene.DirLight));
-		if( light == null ) {
-			light = new h3d.scene.DirLight(scene.s3d);
-			light.enableSpecular = true;
-			if( isPbr ) light.color.scale3(4);
-		}
-
-		control = new h3d.scene.CameraController(scene.s3d);
+		if( tree != null ) tree.remove();
 		tree = new hide.comp.SceneTree(obj, overlay, obj.name != null);
 		tree.onSelectMaterial = selectMaterial;
 		tree.onSelectObject = selectObject;
@@ -205,16 +268,7 @@ class Model extends FileView {
 		this.saveDisplayKey = "Model:" + state.path;
 		tree.saveDisplayKey = this.saveDisplayKey;
 
-		var cam = getDisplayState("Camera");
-		scene.s3d.camera.zNear = scene.s3d.camera.zFar = 0;
-		scene.resetCamera(obj, 1.5);
-		control.lockZPlanes = scene.s3d.camera.zNear != 0;
-		if( cam != null ) {
-			scene.s3d.camera.pos.set(cam.x, cam.y, cam.z);
-			scene.s3d.camera.target.set(cam.tx, cam.ty, cam.tz);
-		}
-		control.loadFromCamera();
-
+		tools.element.empty();
 		var anims = scene.listAnims(getPath());
 		if( anims.length > 0 ) {
 			var sel = tools.addSelect("play-circle");
@@ -230,83 +284,8 @@ class Model extends FileView {
 		tools.saveDisplayKey = "ModelTools";
 
 		tools.addButton("video-camera", "Reset Camera", function() {
-			scene.resetCamera(obj,1.5);
-			control.loadFromCamera();
+			sceneEditor.resetCamera();
 		});
-
-		function renderProps() {
-			properties.clear();
-
-			var renderer = scene.s3d.renderer;
-
-			var e = properties.add(new Element('<table>
-			<tr>
-			<td><input type="button" style="width:145px" value="Export"/>
-			<td><input type="button" style="width:145px" value="Import"/>
-			</tr>
-			</table>'));
-			e.find("input[value=Export]").click(function(_) {
-				ide.chooseFileSave("renderer.prefab", function(sel) {
-					var r = new hide.prefab.RenderProps();
-					r.name = h3d.mat.MaterialSetup.current.name;
-					r.setProps(renderer.props);
-					ide.savePrefab(sel, r);
-				});
-			});
-			e.find("input[value=Import]").click(function(_) {
-				ide.chooseFile(["prefab"], function(f) {
-					var r = ide.loadPrefab(f, hide.prefab.RenderProps);
-					if( r == null ) {
-						ide.error("This prefab does not have renderer properties");
-						return;
-					}
-					if( !r.applyProps(renderer) )
-						ide.error("This prefab does not contain "+h3d.mat.MaterialSetup.current.name+" renderer properties");
-				});
-			});
-
-			var group = renderer.editProps();
-			properties.add(group, renderer.props, function(_) {
-				renderer.refreshProps();
-				if( !properties.isTempChange ) renderProps();
-			});
-
-			var lprops = {
-				power : Math.sqrt(light.color.r),
-				enable: true
-			};
-			var group = new Element('
-			<div class="group" name="Light">
-				<dl>
-				<dt>Power</dt><dd><input type="range" min="0" max="4" field="power"/></dd>
-				</dl>
-			</div>
-			');
-			if(!isPbr) {
-				var enable = new Element('<dt>Enable</dt><dd><input type="checkbox" field="enable"/></dd>');
-				group.find('dl').append(enable);
-			}
-			properties.add(group, lprops, function(_) {
-				var p = lprops.power * lprops.power;
-				light.color.set(p, p, p);
-				if(!isPbr) {
-					if(!lprops.enable) {
-						for( m in obj.getMaterials() ) {
-							m.mainPass.enableLights = false;
-							m.shadows = false;
-						}
-					}
-					else {
-						for( m in obj.getMaterials() ) {
-							var props = h3d.mat.MaterialSetup.current.loadMaterialProps(m);
-							if( props == null ) props = m.getDefaultModelProps();
-							m.props = props;
-						}
-					}
-				}
-			});
-		}
-		tools.addButton("gears", "Renderer Properties", renderProps);
 
 		var axis = new h3d.scene.Graphics(scene.s3d);
 		axis.lineStyle(1,0xFF0000);
@@ -317,10 +296,8 @@ class Model extends FileView {
 		axis.lineStyle(1,0x0000FF);
 		axis.moveTo(0,0,0);
 		axis.lineTo(0,0,1);
+		axis.lineStyle();
 		axis.visible = false;
-
-		scene.init();
-		scene.onUpdate = update;
 
 		tools.addToggle("location-arrow", "Toggle Axis", function(v) {
 			axis.visible = v;
@@ -349,7 +326,7 @@ class Model extends FileView {
 
 		initConsole();
 
-		scene.onResize = buildTimeline;
+		sceneEditor.onResize = buildTimeline;
 		setAnimation(null);
 	}
 
@@ -367,7 +344,7 @@ class Model extends FileView {
 					Math.cos(angle) * ray + cam.target.x,
 					Math.sin(angle) * ray + cam.target.y,
 					cam.pos.z);
-				control.loadFromCamera();
+				sceneEditor.cameraController.loadFromCamera();
 			};
 		});
 		c.addCommand("stop", [], function() {
@@ -488,12 +465,16 @@ class Model extends FileView {
 		var cam = scene.s3d.camera;
 		saveDisplayState("Camera", { x : cam.pos.x, y : cam.pos.y, z : cam.pos.z, tx : cam.target.x, ty : cam.target.y, tz : cam.target.z });
 		if( light != null ) {
-			var angle = Math.atan2(cam.target.y - cam.pos.y, cam.target.x - cam.pos.x);
-			light.setDirection(new h3d.Vector(
-				Math.cos(angle) * lightDirection.x - Math.sin(angle) * lightDirection.y,
-				Math.sin(angle) * lightDirection.x + Math.cos(angle) * lightDirection.y,
-				lightDirection.z
-			));
+			if( sceneEditor.isSelected(plight) )
+				lightDirection = light.getDirection();
+			else {
+				var angle = Math.atan2(cam.target.y - cam.pos.y, cam.target.x - cam.pos.x);
+				light.setDirection(new h3d.Vector(
+					Math.cos(angle) * lightDirection.x - Math.sin(angle) * lightDirection.y,
+					Math.sin(angle) * lightDirection.x + Math.cos(angle) * lightDirection.y,
+					lightDirection.z
+				));
+			}
 		}
 		if( timeline != null ) {
 			timecursor.x = Std.int((obj.currentAnimation.frame / obj.currentAnimation.frameCount) * (scene.s2d.width - timecursor.tile.width));

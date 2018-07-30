@@ -87,14 +87,20 @@ class Light extends Object3D {
 		ctx = ctx.clone(this);
 
 		var isPbr = Std.is(h3d.mat.MaterialSetup.current, h3d.mat.PbrMaterialSetup);
-		if( !isPbr )
-			return ctx;
-
-		switch( kind ) {
-		case Point:
-			ctx.local3d = new h3d.scene.pbr.PointLight(ctx.local3d);
-		case Directional:
-			ctx.local3d = new h3d.scene.pbr.DirLight(ctx.local3d);
+		if( !isPbr ) {
+			switch( kind ) {
+			case Point:
+				ctx.local3d = new h3d.scene.PointLight(ctx.local3d);
+			case Directional:
+				ctx.local3d = new h3d.scene.DirLight(ctx.local3d);
+			}
+		} else {
+			switch( kind ) {
+			case Point:
+				ctx.local3d = new h3d.scene.pbr.PointLight(ctx.local3d);
+			case Directional:
+				ctx.local3d = new h3d.scene.pbr.DirLight(ctx.local3d);
+			}
 		}
 		ctx.local3d.name = name;
 		updateInstance(ctx);
@@ -139,9 +145,6 @@ class Light extends Object3D {
 
 		#if editor
 
-		// no "Mixed" in editor (prevent double shadowing)
-		if( light.shadows.mode == Mixed ) light.shadows.mode = Static;
-
 		var debugPoint = ctx.local3d.find(c -> if(c.name == "_debugPoint") c else null);
 		var debugDir = ctx.local3d.find(c -> if(c.name == "_debugDir") c else null);
 		var mesh : h3d.scene.Mesh = null;
@@ -158,15 +161,18 @@ class Light extends Object3D {
 				debugPoint.name = "_debugPoint";
 
 				mesh = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), debugPoint);
+				mesh.ignoreBounds = true;
 
 				var highlight = new h3d.scene.Object(debugPoint);
 				highlight.name = "_highlight";
 				highlight.visible = false;
 				sizeSphere = new h3d.scene.Sphere(0xffffff, size, true, highlight);
+				sizeSphere.ignoreBounds = true;
 				sizeSphere.ignoreCollide = true;
 				sizeSphere.material.mainPass.setPassName("overlay");
 
 				rangeSphere = new h3d.scene.Sphere(0xffffff, range, true, highlight);
+				rangeSphere.ignoreBounds = true;
 				rangeSphere.name = "selection";
 				rangeSphere.visible = false;
 				rangeSphere.ignoreCollide = true;
@@ -192,12 +198,14 @@ class Light extends Object3D {
 				debugDir.name = "_debugDir";
 
 				mesh = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), debugDir);
+				mesh.ignoreBounds = true;
 				mesh.scale(0.5);
 
 				var g = new h3d.scene.Graphics(debugDir);
 				g.lineStyle(1, 0xffffff);
 				g.moveTo(0,0,0);
 				g.lineTo(10,0,0);
+				g.ignoreBounds = true;
 				g.ignoreCollide = true;
 				g.visible = false;
 				g.material.mainPass.setPassName("overlay");
@@ -216,7 +224,11 @@ class Light extends Object3D {
 		mat.shadows = false;
 
 		var isSelected = sel.visible;
+		if( debugPoint != null ) debugPoint.visible = isSelected || ctx.shared.editorDisplay;
+		if( debugDir != null ) debugDir.visible = isSelected || ctx.shared.editorDisplay;
 		sel.name = "__selection";
+		// no "Mixed" in editor (prevent double shadowing)
+		if( light.shadows.mode == Mixed ) light.shadows.mode = Static;
 		// when selected, force Dynamic mode (realtime preview)
 		if( isSelected && shadows.mode != None ) light.shadows.mode = Dynamic;
 

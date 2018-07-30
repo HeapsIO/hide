@@ -295,11 +295,12 @@ class FXEditor extends FileView {
 		axis.lineStyle(1,0x0000FF);
 		axis.moveTo(0,0,0);
 		axis.lineTo(0,0,1);
+		axis.lineStyle();
 		axis.material.mainPass.setPassName("debuggeom");
 		axis.visible = showGrid;
 
 		tools.saveDisplayKey = "FXScene/tools";
-		tools.addButton("video-camera", "Perspective camera", () -> sceneEditor.resetCamera(false));
+		tools.addButton("video-camera", "Perspective camera", () -> sceneEditor.resetCamera());
 
 		function renderProps() {
 			properties.clear();
