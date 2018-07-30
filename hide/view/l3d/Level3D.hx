@@ -306,8 +306,8 @@ class Level3D extends FileView {
 		tools.addToggle("anchor", "Snap to ground", (v) -> sceneEditor.snapToGround = v, sceneEditor.snapToGround);
 		tools.addToggle("compass", "Local transforms", (v) -> sceneEditor.localTransform = v, sceneEditor.localTransform);
 		tools.addToggle("th", "Show grid", function(v) { showGrid = v; updateGrid(); }, showGrid);
-		tools.addButton("map", "Bake Volumetric Lightmaps", () -> bakeVolumetricLightmaps());
 		tools.addButton("sun-o", "Bake Lights", () -> bakeLights());
+		tools.addButton("map", "Bake Volumetric Lightmaps", () -> { bakeLights(); bakeVolumetricLightmaps(); });
 
 		tools.addColor("Background color", function(v) {
 			scene.engine.backgroundColor = v;

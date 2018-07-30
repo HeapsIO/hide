@@ -20,6 +20,7 @@ class Model extends FileView {
 	var currentAnimation : { file : String, name : String };
 	var cameraMove : Void -> Void;
 	var scene(get,never) : hide.comp.Scene;
+	var rootPath : String;
 	var root : hide.prefab.Prefab;
 
 	override function onDisplay() {
@@ -52,11 +53,11 @@ class Model extends FileView {
 		tools = new hide.comp.Toolbar(null,element.find(".toolbar"));
 		overlay = element.find(".hide-scene-layer .tree");
 
-		if( root == null ) {
-			var p = props.get("model.renderProps");
-			if( p != null )
-				root = ide.loadPrefab(p, hxd.prefab.Library);
-		}
+		if( rootPath == null )
+			rootPath = props.get("model.renderProps");
+
+		if( rootPath != null )
+			root = ide.loadPrefab(rootPath, hxd.prefab.Library);
 
 		if( root == null ) {
 			var def = new hxd.prefab.Library();
@@ -92,12 +93,11 @@ class Model extends FileView {
 		element.find("input[value=Import]").click(function(_) {
 			ide.chooseFile(["prefab"], function(f) {
 				if( f == null ) return;
-				var r = ide.loadPrefab(f, hxd.prefab.Library);
-				if( r == null ) {
+				if( ide.loadPrefab(f, hide.prefab.RenderProps) == null ) {
 					ide.error("This prefab does not have renderer properties");
 					return;
 				}
-				root = r;
+				rootPath = f;
 				rebuild();
 			});
 		});
