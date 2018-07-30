@@ -820,7 +820,9 @@ class FXEditor extends FileView {
 
 		var hslTracks : Void -> Array<PropTrackDef> = () -> [{name: "h", def: 0.0}, {name: "s", clamp: [0., 1.], def: 0.0}, {name: "l", clamp: [0., 1.], def: 1.0}];
 		var alphaTrack : Void -> Array<PropTrackDef> = () -> [{name: "a", clamp: [0., 1.], def: 1.0}];
-		var xyzwTracks : Int -> Array<PropTrackDef> = (n) -> [{name: "x"}, {name: "y"}, {name: "z"}, {name: "z"}].slice(0, n);
+		var xyzwTracks : Int -> Array<PropTrackDef> = (n) -> [{name: "x"}, {name: "y"}, {name: "z"}, {name: "w"}].slice(0, n);
+		var scaleTracks = groupedTracks("scale", xyzwTracks(3));
+		scaleTracks.unshift(trackItem("Uniform", [{name: "scale"}]));
 
 		if(objElt != null) {
 			menuItems.push({
@@ -833,7 +835,7 @@ class FXEditor extends FileView {
 			});
 			menuItems.push({
 				label: "Scale",
-				menu: groupedTracks("scale", xyzwTracks(3)),
+				menu: scaleTracks,
 			});
 			menuItems.push({
 				label: "Color",

@@ -184,13 +184,17 @@ class FX extends hxd.prefab.Library {
 			return c != null ? VCurve(c) : def;
 		}
 
-		function makeVector(name: String, defVal: Float)  {
+		function makeVector(name: String, defVal: Float, uniform: Bool=true) : Value {
 			var curves = hide.prefab.Curve.getCurves(elt, name);
 			if(curves == null || curves.length == 0)
 				return null;
 
 			anyFound = true;
-			return hide.prefab.Curve.getVectorValue(curves);
+
+			if(uniform && curves.length == 1 && curves[0].name == name)
+				return VCurve(curves[0]);
+
+			return hide.prefab.Curve.getVectorValue(curves, defVal);
 		}
 
 		function makeColor(name: String)  {
@@ -206,7 +210,7 @@ class FX extends hxd.prefab.Library {
 			elt: obj3d,
 			obj: objCtx.local3d,
 			position: makeVector("position", 0.0),
-			scale: makeVector("scale", 1.0),
+			scale: makeVector("scale", 1.0, true),
 			rotation: makeVector("rotation", 0.0),
 			color: makeColor("color"),
 			visibility: makeVal("visibility", null),
