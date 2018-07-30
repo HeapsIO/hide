@@ -54,6 +54,7 @@ private class ParticleInstance extends h3d.scene.Object {
 
 	public var def : InstanceDef;
 	public var shaderAnims : ShaderAnims;
+	public var baseMat : h3d.Matrix;
 
 	public function new(emitter: EmitterObject, def: InstanceDef) {
 		super(emitter.parent);
@@ -76,7 +77,7 @@ private class ParticleInstance extends h3d.scene.Object {
 			localSpeed.transform3x3(orientation.toMatrix());
 		}
 		curVelocity = localSpeed.add(worldSpeed);
-		if(def.alignDirection) {
+		if(def.alignDirection && curVelocity.lengthSq() > 0.01) {
 			getRotationQuat().initDirection(curVelocity);
 			posChanged = true;
 		}
@@ -87,16 +88,17 @@ private class ParticleInstance extends h3d.scene.Object {
 
 		var rot = evaluator.getVector(def.rotation, t);
 		rot.scale3(Math.PI / 180.0);
-		child.setRotation(rot.x, rot.y, rot.z);
-
 		var offset = evaluator.getVector(def.localOffset, t);
-		child.setPosition(offset.x, offset.y, offset.z);
-
 		var scaleVec = evaluator.getVector(def.stretch, t);
 		scaleVec.scale3(evaluator.getFloat(def.scale, t));
-		child.scaleX = scaleVec.x;
-		child.scaleY = scaleVec.y;
-		child.scaleZ = scaleVec.z;
+
+		var childMat = new h3d.Matrix();
+		childMat.initScale(scaleVec.x, scaleVec.y, scaleVec.z);
+		childMat.rotate(rot.x, rot.y, rot.z);
+		childMat.translate(offset.x, offset.y, offset.z);
+		if(baseMat != null)
+			childMat.multiply(baseMat, childMat);
+		child.setTransform(childMat);
 
 		for(anim in shaderAnims) {
 			anim.setTime(t);
@@ -131,7 +133,7 @@ private class ParticleInstance extends h3d.scene.Object {
 @:allow(hide.prefab.fx.Emitter)
 class EmitterObject extends h3d.scene.Object {
 
-	public var particleTemplate : hide.prefab.Prefab;
+	public var particleTemplate : hide.prefab.Object3D;
 	public var maxCount = 20;
 	public var lifeTime = 2.0;
 	public var emitShape : EmitShape = Disc;
@@ -243,6 +245,8 @@ class EmitterObject extends h3d.scene.Object {
 			part.orientation = localQuat.clone();
 			offset.transform(localMat);
 			part.setPosition(offset.x, offset.y, offset.z);
+			part.baseMat = particleTemplate.getTransform();
+			part.baseMat.tx = part.baseMat.ty = part.baseMat.tz = 0; // Kill translation to make edition easier
 
 			// Setup mats.
 			// Should we do this manually here or make a recursive makeInstance on the template?
@@ -456,7 +460,7 @@ class Emitter extends Object3D {
 		var emitterObj = Std.instance(ctx.local3d, EmitterObject);
 
 		var randIdx = 0;
-		var template = children[0];
+		var template = Std.instance(children[0], Object3D);
 
 		function makeParam(scope: Prefab, name: String): Value {
 			var getCurve = hide.prefab.Curve.getCurve.bind(scope);

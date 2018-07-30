@@ -1123,10 +1123,11 @@ class SceneEditor {
 			to.children.insert(index, e);
 
 			var obj3d = e.to(Object3D);
+			var preserveTransform = Std.is(to, hide.prefab.fx.Emitter) || Std.is(prev, hide.prefab.fx.Emitter);
 			var toObj = getObject(to);
 			var obj = getObject(e);
 			var prevState = null, newState = null;
-			if(obj3d != null && toObj != null && obj != null) {
+			if(obj3d != null && toObj != null && obj != null && !preserveTransform) {
 				var mat = worldMat(obj);
 				var parentMat = worldMat(toObj);
 				parentMat.invert();
@@ -1141,13 +1142,13 @@ class SceneEditor {
 					e.parent = prev;
 					prev.children.remove(e);
 					prev.children.insert(prevIndex, e);
-					if(obj3d != null)
+					if(obj3d != null && prevState != null)
 						obj3d.load(prevState);
 				} else {
 					e.parent = to;
 					to.children.remove(e);
 					to.children.insert(index, e);
-					if(obj3d != null)
+					if(obj3d != null && newState != null)
 						obj3d.load(newState);
 				};
 			});
