@@ -3,13 +3,6 @@ import hide.prefab.Curve;
 import hide.prefab.fx.FX.ShaderAnimation;
 using Lambda;
 
-enum StartDirection {
-	Fixed;
-	EmitPosition;
-	EmitSpeed;
-	Random;
-}
-
 enum AlignMode {
 	None;
 	Screen;
@@ -18,9 +11,16 @@ enum AlignMode {
 
 enum EmitShape {
 	Cone;
-	Disc;
 	Sphere;
 	Box;
+	Cylinder;
+}
+
+enum Orientation {
+	Forward;
+	Normal;
+	Speed;
+	Random;
 }
 
 typedef ParamDef = {
@@ -37,7 +37,6 @@ typedef InstanceDef = {
 	stretch: Value,
 	rotation: Value,
 	color: Value,
-	alignDirection: Bool
 }
 
 typedef ShaderAnims = Array<ShaderAnimation>;
@@ -77,7 +76,7 @@ private class ParticleInstance extends h3d.scene.Object {
 			localSpeed.transform3x3(orientation.toMatrix());
 		}
 		curVelocity = localSpeed.add(worldSpeed);
-		if(def.alignDirection && curVelocity.lengthSq() > 0.01) {
+		if(emitter.emitOrientation == Speed && curVelocity.lengthSq() > 0.01) {
 			getRotationQuat().initDirection(curVelocity);
 			posChanged = true;
 		}
@@ -136,13 +135,17 @@ class EmitterObject extends h3d.scene.Object {
 	public var particleTemplate : hide.prefab.Object3D;
 	public var maxCount = 20;
 	public var lifeTime = 2.0;
-	public var emitShape : EmitShape = Disc;
+	public var emitShape : EmitShape = Cylinder;
+	public var emitOrientation : Orientation = Forward;
+	public var emitAngle : Float = 0.0;
+	public var emitRad1 : Float = 1.0;
+	public var emitRad2 : Float = 1.0;
+	public var emitSurface : Bool = false;
 
 	public var frameCount : Int = 0;
 	public var frameDivisionX : Int = 1;
 	public var frameDivisionY : Int = 1;
 	public var animationRepeat : Float = 1;
-	public var emitAngle : Float = 0.0;
 
 	public var alignMode : AlignMode;
 	public var alignAxis : h3d.Vector;
@@ -204,20 +207,31 @@ class EmitterObject extends h3d.scene.Object {
 			var ctx = particleTemplate.makeInstance(context);
 
 			var localQuat = getRotationQuat().clone();
+			tmpq.identity();
 
 			switch(emitShape) {
-				case Disc:
-					var dx = 0.0, dy = 0.0;
-					do {
-						dx = random.srand(1.0);
-						dy = random.srand(1.0);
-					}
-					while(dx * dx + dy * dy > 1.0);
-					offset.set(0, dx * 0.5, dy * 0.5);
-					tmpq.initRotation(0, -hxd.Math.atan2(dy, dx), Math.PI/2);
 				case Box:
 					offset.set(random.srand(0.5), random.srand(0.5), random.srand(0.5));
-					tmpq.identity();
+				case Cylinder:
+					var dx = 0.0, dy = 0.0;
+					if(emitSurface) {
+						var a = random.srand(Math.PI);
+						dx = Math.cos(a);
+						dy = Math.sin(a);
+					}
+					else {
+						do {
+							dx = random.srand(1.0);
+							dy = random.srand(1.0);
+						}
+						while(dx * dx + dy * dy > 1.0);
+					}
+					var x = random.rand();
+					offset.set(x - 0.5, dx * 0.5, dy * 0.5);
+					if(emitOrientation == Normal)
+						tmpq.initRotation(0, -hxd.Math.atan2(dy, dx), Math.PI/2);
+					offset.y *= hxd.Math.lerp(emitRad1, emitRad2, x);
+					offset.z *= hxd.Math.lerp(emitRad1, emitRad2, x);
 				case Sphere:
 					do {
 						offset.x = random.srand(1.0);
@@ -225,10 +239,11 @@ class EmitterObject extends h3d.scene.Object {
 						offset.z = random.srand(1.0);
 					}
 					while(offset.lengthSq() > 1.0);
+					if(emitSurface)
+						offset.normalize();
 					offset.scale3(0.5);
-					direction = offset.clone();
-					direction.normalizeFast();
-					tmpq.initDirection(direction);
+					if(emitOrientation == Normal)
+						tmpq.initDirection(offset);
 				case Cone:
 					offset.set(0, 0, 0);
 					var theta = random.rand() * Math.PI * 2;
@@ -239,6 +254,9 @@ class EmitterObject extends h3d.scene.Object {
 					direction.normalizeFast();
 					tmpq.initDirection(direction);
 			}
+
+			if(emitOrientation == Random)
+				tmpq.initRotation(hxd.Math.srand(Math.PI), hxd.Math.srand(Math.PI), hxd.Math.srand(Math.PI));
 
 			localQuat.multiply(localQuat, tmpq);
 			part.setRotationQuat(localQuat);
@@ -349,12 +367,14 @@ class Emitter extends Object3D {
 		{ name: "maxCount", t: PInt(0, 100), def: 20, },
 		{ name: "emitShape", t: PEnum(EmitShape), def: EmitShape.Sphere, disp: "Emit Shape", },
 		{ name: "emitAngle", t: PFloat(0, 360.0), disp: "Angle", },
+		{ name: "emitRad1", t: PFloat(0, 1.0), def: 1.0, disp: "Radius 1", },
+		{ name: "emitRad2", t: PFloat(0, 1.0), def: 1.0, disp: "Radius 2", },
+		{ name: "emitSurface", t: PBool, def: false, disp: "Surface" },
 
+		{ name: "emitOrientation", t: PEnum(Orientation), def: Orientation.Forward, disp: "Orientation", },
 		{ name: "alignMode", t: PEnum(AlignMode), def: AlignMode.None, disp: "Alignment" },
 		{ name: "alignAxis", t: PVec(3, -1.0, 1.0), def: [0.,0.,0.], disp: "Axis" },
 		{ name: "alignLockAxis", t: PVec(3, -1.0, 1.0), def: [0.,0.,0.], disp: "Lock Axis" },
-
-		{ name: "alignDirection", t: PBool, def: false, disp: "Align Direction" },
 
 		{ name: "frameCount", t: PInt(0), def: 0 },
 		{ name: "frameDivisionX", t: PInt(1), def: 1 },
@@ -525,7 +545,6 @@ class Emitter extends Object3D {
 				stretch: makeParam(this, "instStretch"),
 				rotation: makeParam(this, "instRotation"),
 				color: makeColor(template, "color"),
-				alignDirection: getParamVal("alignDirection")
 			};
 
 			emitterObj.particleTemplate = template;
@@ -535,7 +554,11 @@ class Emitter extends Object3D {
 		emitterObj.maxCount = getParamVal("maxCount");
 		emitterObj.emitRate = makeParam(this, "emitRate");
 		emitterObj.emitShape = getParamVal("emitShape");
+		emitterObj.emitOrientation = getParamVal("emitOrientation");
 		emitterObj.emitAngle = getParamVal("emitAngle");
+		emitterObj.emitRad1 = getParamVal("emitRad1");
+		emitterObj.emitRad2 = getParamVal("emitRad2");
+		emitterObj.emitSurface = getParamVal("emitSurface");
 		emitterObj.alignMode = getParamVal("alignMode");
 		emitterObj.alignAxis = getParamVal("alignAxis");
 		emitterObj.alignLockAxis = getParamVal("alignLockAxis");
@@ -545,7 +568,7 @@ class Emitter extends Object3D {
 		emitterObj.animationRepeat = getParamVal("animationRepeat");
 
 		#if editor
-		if(propName == null || propName == "emitShape" || propName == "emitAngle")
+		if(propName == null || ["emitShape", "emitAngle", "emitRad1", "emitRad2"].indexOf(propName) >= 0)
 			updateEmitShape(emitterObj);
 		#end
 	}
@@ -584,17 +607,17 @@ class Emitter extends Object3D {
 		}
 
 		var emitShape : EmitShape = getParamVal("emitShape");
-		switch(emitShape) {
-			case Cone:
-			default: removeParam("emitAngle");
+		if(emitShape != Cone)
+			removeParam("emitAngle");
+		if(emitShape != Cylinder) {
+			removeParam("emitRad1");
+			removeParam("emitRad2");
 		}
 
 		var alignMode : AlignMode = getParamVal("alignMode");
 		switch(alignMode) {
-			case None:
+			case None | Screen:
 				removeParam("alignAxis");
-				removeParam("alignLockAxis");
-			case Screen:
 				removeParam("alignLockAxis");
 			default:
 		}
@@ -723,14 +746,27 @@ class Emitter extends Object3D {
 
 		var mesh : h3d.scene.Mesh = null;
 		switch(emitterObj.emitShape) {
-			case Disc: {
+			case Cylinder: {
+				var rad1 = getParamVal("emitRad1") * 0.5;
+				var rad2 = getParamVal("emitRad2") * 0.5;
 				var g = new h3d.scene.Graphics(debugShape);
 				g.lineStyle(1, 0xffffff);
 				circle(32, function(i, c, s) {
 					if(i == 0)
-						g.moveTo(0, c * 0.5, s * 0.5);
+						g.moveTo(-0.5, c * rad1, s * rad1);
 					else
-						g.lineTo(0, c * 0.5, s * 0.5);
+						g.lineTo(-0.5, c * rad1, s * rad1);
+				});
+				circle(32, function(i, c, s) {
+					if(i == 0)
+						g.moveTo(0.5, c * rad2, s * rad2);
+					else
+						g.lineTo(0.5, c * rad2, s * rad2);
+				});
+				g.lineStyle(1, 0xffffff);
+				circle(8, function(i, c, s) {
+					g.moveTo(-0.5, c * rad1, s * rad1);
+					g.lineTo(0.5, c * rad2, s * rad2);
 				});
 				g.ignoreCollide = true;
 				mesh = g;
