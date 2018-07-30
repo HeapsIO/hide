@@ -109,7 +109,7 @@ class Noise extends Prefab {
 		tex = new h3d.mat.Texture(size, size, [Target]);
 		if( !tex.flags.has(IsNPOT) ) tex.wrap = Repeat;
 		updateTexture(tex);
-		tex.realloc = function() updateTexture(tex);
+		tex.realloc = function() haxe.Timer.delay(function() updateTexture(tex), 0);
 		return tex;
 	}
 
@@ -182,7 +182,7 @@ class Noise extends Prefab {
 				<dt>Seed</dt><dd><input type="range" step="1" min="0" max="9999" field="seed"/></dd>
 				<dt>&nbsp;</dt><dd><input type="button" value="Download" name="dl"/></dd>
 			</dl>
-		'),this,function(_) {
+		'),this,function(pname)  {
 			var bmp = cast(ctx.getContext(this).local2d, h2d.Bitmap);
 			var tex = bmp.tile.getTexture();
 			if( tex.width != size ) {
@@ -193,6 +193,7 @@ class Noise extends Prefab {
 				bmp.y = -size >> 1;
 			}
 			updateTexture(tex);
+			ctx.onChange(this, pname);
 		});
 		var bmp = cast(ctx.getContext(this).local2d, h2d.Bitmap);
 		e.find("[name=dl]").click(function(_) {
