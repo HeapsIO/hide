@@ -110,31 +110,6 @@ private class ParticleInstance extends h3d.scene.Object {
 		life += dt;
 	}
 
-	function faceCamera(cam : h3d.Camera) {
-		var align = emitter.alignVec;
-		if(align != null && align.lengthSq() > 0.01) {
-			var local = align.clone();
-			local.transform3x3(getAbsPos());
-			local.normalize();
-			var delta : h3d.Vector = cam.pos.sub(absPos.getPosition());
-			delta.normalize();
-			var axis = local.cross(delta);
-			var l = axis.length();
-			if(l > 0.01) {
-				var angle = Math.asin(l);
-				if(angle > Math.PI/2.0)
-					angle =- Math.PI;
-				if(angle < -Math.PI/2.0)
-					angle += Math.PI;
-				var q = new h3d.Quat();
-				q.initRotateAxis(axis.x, axis.y, axis.z, angle);
-				qRot.multiply(q, qRot);
-				posChanged = true;
-				calcAbsPos(); // Meh
-			}
-		}
-	}
-
 	override function syncRec( ctx : h3d.scene.RenderContext ) {
 		if(emitter.alignMode == Screen) {
 			var mat = ctx.camera.mcam.clone();
@@ -172,7 +147,6 @@ class EmitterObject extends h3d.scene.Object {
 	public var alignLockAxis : h3d.Vector;
 
 	public var emitRate : Value;
-	public var alignVec: h3d.Vector;
 
 	public var instDef : InstanceDef;
 
@@ -371,8 +345,6 @@ class Emitter extends Object3D {
 		{ name: "maxCount", t: PInt(0, 100), def: 20, },
 		{ name: "emitShape", t: PEnum(EmitShape), def: EmitShape.Sphere, disp: "Emit Shape", },
 		{ name: "emitAngle", t: PFloat(0, 360.0), disp: "Angle", },
-		{ name: "camAlign", t: PVec(3, -1.0, 1.0), def: [0.,0.,0.] },
-
 
 		{ name: "alignMode", t: PEnum(AlignMode), def: AlignMode.None, disp: "Alignment" },
 		{ name: "alignAxis", t: PVec(3, -1.0, 1.0), def: [0.,0.,0.], disp: "Axis" },
@@ -560,7 +532,6 @@ class Emitter extends Object3D {
 		emitterObj.emitRate = makeParam(this, "emitRate");
 		emitterObj.emitShape = getParamVal("emitShape");
 		emitterObj.emitAngle = getParamVal("emitAngle");
-		emitterObj.alignVec = getParamVal("camAlign");
 		emitterObj.alignMode = getParamVal("alignMode");
 		emitterObj.alignAxis = getParamVal("alignAxis");
 		emitterObj.alignLockAxis = getParamVal("alignLockAxis");
