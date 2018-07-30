@@ -241,7 +241,7 @@ class EmitterObject extends h3d.scene.Object {
 					tmpq.initRotation(0, -hxd.Math.atan2(dy, dx), Math.PI/2);
 				case Box:
 					offset.set(random.srand(0.5), random.srand(0.5), random.srand(0.5));
-					tmpq.initRotation(1, 0, 0);
+					tmpq.identity();
 				case Sphere:
 					do {
 						offset.x = random.srand(1.0);
