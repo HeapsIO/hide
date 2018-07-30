@@ -147,7 +147,7 @@ class VolumetricLightmap extends Object3D {
 
 	override function updateInstance( ctx: Context, ?propName : String ) {
 		super.updateInstance(ctx, propName);
-		resetLightmap();
+		if( propName != "visible" && propName != "strength" && propName != "order" && propName != "displaySH_field") resetLightmap();
 	}
 
 	override function makeInstance(ctx:Context):Context {
