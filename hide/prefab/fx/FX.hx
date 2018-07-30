@@ -82,7 +82,7 @@ class FXAnimation extends h3d.scene.Object {
 				if(mesh != null) {
 					var mat = mesh.material;
 					switch(anim.color) {
-						case VCurve(a): 
+						case VCurve(a):
 							mat.color.a = evaluator.getFloat(anim.color, time);
 						default:
 							mat.color = evaluator.getVector(anim.color, time);
@@ -326,9 +326,9 @@ class FX extends hxd.prefab.Library {
 	}
 
 	override function getHideProps() : HideProps {
-		return { icon : "cube", name : "FX", fileSource : ["fx"] };
+		return { icon : "cube", name : "FX" };
 	}
 	#end
 
-	static var _ = hxd.prefab.Library.register("fx", FX);
+	static var _ = hxd.prefab.Library.register("fx", FX, "fx");
 }
