@@ -193,8 +193,8 @@ class View<T> extends hide.comp.Component {
 			return [];
 		return [
 			{ label : "Close", click : close },
-			{ label : "Close Others", click : function() for( v in @:privateAccess ide.views ) if( v != this && v.container.tab.header == container.tab.header ) v.close() },
-			{ label : "Close All", click : function() for( v in @:privateAccess ide.views ) if( v.container.tab.header == container.tab.header ) v.close() },
+			{ label : "Close Others", click : function() for( v in @:privateAccess ide.views.copy() ) if( v != this && v.container.tab.header == container.tab.header ) v.close() },
+			{ label : "Close All", click : function() for( v in @:privateAccess ide.views.copy() ) if( v.container.tab.header == container.tab.header ) v.close() },
 		];
 	}
 
