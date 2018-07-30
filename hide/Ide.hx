@@ -364,8 +364,11 @@ class Ide {
 		return resourceDir+"/"+relPath;
 	}
 
+	var showErrors = true;
 	public function error( e : Dynamic ) {
-		js.Browser.alert(e);
+		if( showErrors && !js.Browser.window.confirm(e) )
+			showErrors = false;
+		js.Browser.console.error(e);
 	}
 
 	function get_projectDir() return ideProps.currentProject.split("\\").join("/");
@@ -405,6 +408,18 @@ class Ide {
 				error(e);
 			}
 		}
+
+		if( props.project.get("debug.displayErrors")  ) {
+			js.Browser.window.onerror = function(msg, url, line, col, error) {
+				var e = error.stack;
+				e = ~/\(?chrome-extension:\/\/[a-z0-9\-\.\/]+.js:[0-9]+:[0-9]+\)?/g.replace(e,"");
+				e = ~/at ([A-Za-z0-9_\.\$]+)/g.map(e,function(r) { var path = r.matched(1); path = path.split("$hx_exports.").pop().split("$hxClasses.").pop(); return path; });
+				e = e.split("\t").join("    ");
+				this.error(e);
+				return true;
+			};
+		} else
+			Reflect.deleteField(js.Browser.window, "onerror");
 
 		waitScripts(function() {
 			var extraRenderers = props.current.get("renderers");
@@ -538,17 +553,17 @@ class Ide {
 		return str;
 	}
 
-	public function loadPrefab<T:hide.prefab.Prefab>( file : String, cl : Class<T> ) : T {
+	public function loadPrefab<T:hide.prefab.Prefab>( file : String, ?cl : Class<T> ) : T {
 		if( file == null )
 			return null;
-		var l = new hxd.prefab.Library();
+		var l = hxd.prefab.Library.create(file.split(".").pop().toLowerCase());
 		try {
 			l.load(parseJSON(sys.io.File.getContent(getPath(file))));
 		} catch( e : Dynamic ) {
 			error("Invalid prefab ("+e+")");
 			throw e;
 		}
-		if( Std.is(l,cl) )
+		if( cl == null || Std.is(l,cl) )
 			return cast l;
 		return l.get(cl);
 	}
@@ -563,6 +578,42 @@ class Ide {
 			content = l.save();
 		}
 		sys.io.File.saveContent(getPath(file), toJSON(content));
+	}
+
+	public function filterPrefabs( callb : hxd.prefab.Prefab -> Bool ) {
+		var exts = Lambda.array({iterator : @:privateAccess hxd.prefab.Library.registeredExtensions.keys });
+		exts.push("prefab");
+		var todo = [];
+		browseFiles(function(path) {
+			var ext = path.split(".").pop();
+			if( exts.indexOf(ext) < 0 ) return;
+			var prefab = loadPrefab(path);
+			var changed = false;
+			function filterRec(p) {
+				if( callb(p) ) changed = true;
+				for( ps in p.children )
+					filterRec(ps);
+			}
+			filterRec(prefab);
+			if( !changed ) return;
+			todo.push(function() sys.io.File.saveContent(getPath(path), toJSON(prefab.save())));
+		});
+		for( t in todo )
+			t();
+	}
+
+	function browseFiles( callb : String -> Void ) {
+		function browseRec(path) {
+			for( p in sys.FileSystem.readDirectory(resourceDir + "/" + path) ) {
+				var p = path == "" ? p : path + "/" + p;
+				if( sys.FileSystem.isDirectory(resourceDir+"/"+p) ) {
+					browseRec(p);
+					continue;
+				}
+				callb(p);
+			}
+		}
+		browseRec("");
 	}
 
 	function initMenu() {

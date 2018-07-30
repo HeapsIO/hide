@@ -202,7 +202,7 @@ class Noise extends Prefab {
 					var data = cast(ctx.getContext(this).local2d, h2d.Bitmap).tile.getTexture().capturePixels().toPNG();
 					sys.io.File.saveBytes(f, data);
 				} catch( e : Dynamic ) {
-					js.Browser.alert(e);
+					ctx.ide.error(e);
 				}
 			});
 		});

@@ -63,6 +63,7 @@ class FileTree extends FileView {
 		var panel = new Element("<div class='hide-scroll'>").appendTo(element);
 		tree = new hide.comp.IconTree(null,panel);
 		tree.async = true;
+		tree.allowRename = true;
 		tree.saveDisplayKey = "FileTree:" + getPath().split("\\").join("/").substr(0,-1);
 		tree.get = function(path) {
 			if( path == null ) path = "";
@@ -84,6 +85,44 @@ class FileTree extends FileView {
 			watch(basePath, function() rebuild(),{checkDelete:true});
 			content.sort(function(a,b) { if( a.children != b.children ) return a.children?-1:1; return Reflect.compare(a.text,b.text); });
 			return content;
+		};
+
+		tree.onRename = function(path, name) {
+			var parts = path.split("/");
+			parts.pop();
+			for( n in name.split("/") ) {
+				if( n == ".." )
+					parts.pop();
+				else
+					parts.push(n);
+			}
+			var newPath = parts.join("/");
+			var isDir = sys.FileSystem.isDirectory(ide.getPath(path));
+			if( isDir )
+				throw "TODO : rename directory";
+			ide.filterPrefabs(function(p:hxd.prefab.Prefab) {
+				var changed = false;
+				function filter(p:String) {
+					if( p == null )
+						return null;
+					if( p == path ) {
+						changed = true;
+						return newPath;
+					}
+					if( isDir && StringTools.startsWith(p,path+"/") ) {
+						changed = true;
+						return newPath + p.substr(path.length, p.length - path.length);
+					}
+					return p;
+				}
+				p.source = filter(p.source);
+				var h = p.getHideProps();
+				if( h.onResourceRenamed != null )
+					h.onResourceRenamed(filter);
+				return changed;
+			});
+			sys.FileSystem.rename(ide.getPath(path), ide.getPath(newPath));
+			return true;
 		};
 
 		// prevent dummy mouseLeft from breaking our quickOpen feature

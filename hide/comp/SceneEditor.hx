@@ -125,7 +125,6 @@ class SceneEditor {
 		};
 
 		context = new hide.prefab.Context();
-		context.onError = function(e) ide.error(e);
 		context.shared = new hide.prefab.ContextShared(scene);
 		context.shared.currentPath = view.state.path;
 		context.init();

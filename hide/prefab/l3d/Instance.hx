@@ -20,7 +20,7 @@ class Instance extends Object3D {
 				obj.name = name;
 				ctx.local3d.addChild(obj);
 			} catch( e : hxd.res.NotFound ) {
-				ctx.onError(e);
+				ctx.shared.onError(e);
 			}
 		}
 		else {

@@ -139,7 +139,16 @@ class Material extends Prefab {
 	}
 
 	override function getHideProps() : HideProps {
-		return { icon : "cog", name : "Material", allowParent : function(p) return p.to(Object3D) != null };
+		return {
+			icon : "cog",
+			name : "Material",
+			allowParent : function(p) return p.to(Object3D) != null,
+			onResourceRenamed : function(f) {
+				diffuseMap = f(diffuseMap);
+				normalMap = f(normalMap);
+				specularMap = f(specularMap);
+			},
+		};
 	}
 	#end
 

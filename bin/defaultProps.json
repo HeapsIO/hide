@@ -76,6 +76,7 @@
 		"h3d.shader.ColorAdd"],
 
 	// reserved for internal ide usage
+	"debug.displayErrors" : true,
 	"hide" : {}
 
 }
