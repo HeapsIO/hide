@@ -1,4 +1,8 @@
-package hxd.prefab.rfx;
+package hide.prefab.rfx;
+
+import hxd.prefab.rfx.RendererFX;
+import hxd.prefab.Library;
+import hxd.Math;
 
 typedef FogProps = {
 	var density : Float;
@@ -55,7 +59,7 @@ class Fog extends RendererFX {
 			} : FogProps);
 	}
 
-	override function apply( r : h3d.scene.Renderer, step : RendererFX.Step ) {
+	override function apply( r : h3d.scene.Renderer, step : hxd.prefab.rfx.RendererFX.Step ) {
 		var ctx = r.ctx;
 		var props : FogProps = props;
 
