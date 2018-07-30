@@ -1,19 +1,11 @@
 package hide.prefab;
 
-@:enum abstract LightKind(Int) {
-	var Point = 0;
-	var Directional = 1;
+@:enum abstract LightKind(String) {
+	var Point = "Point";
+	var Directional = "Directional";
 
 	inline function new(v) {
 		this = v;
-	}
-
-	public inline function toInt() {
-		return this;
-	}
-
-	public static inline function fromInt( v : Int ) : LightKind {
-		return new LightKind(v);
 	}
 }
 
@@ -51,7 +43,7 @@ class Light extends Object3D {
 
 	override function save() {
 		var obj : Dynamic = super.save();
-		obj.kind = kind.toInt();
+		obj.kind = kind;
 		obj.color = color;
 		obj.range = range;
 		obj.size = size;
@@ -65,7 +57,7 @@ class Light extends Object3D {
 
 	override function load( obj : Dynamic ) {
 		super.load(obj);
-		kind = LightKind.fromInt(obj.kind);
+		kind = obj.kind;
 		color = obj.color;
 		range = obj.range;
 		size = obj.size;
@@ -256,9 +248,9 @@ class Light extends Object3D {
 		var group = new hide.Element('<div class="group" name="Light">
 				<dl>
 					<dt>Kind</dt><dd>
-						<select type="number" field="kind">
-							<option value="0">Point</option>
-							<option value="1">Directional</option>
+						<select field="kind">
+							<option value="Point">Point</option>
+							<option value="Directional">Directional</option>
 						</select></dd>
 					<dt>Color</dt><dd><input type="color" field="color"/></dd>
 					<dt>Power</dt><dd><input type="range" min="0" max="10" field="power"/></dd>
