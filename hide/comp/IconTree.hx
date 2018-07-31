@@ -206,6 +206,7 @@ class IconTree<T:{}> extends Component {
 
 	public function revealNode(e : T) {
 		var v = getRev(e);
+		if(v == null) return;
 		(element:Dynamic).jstree('_open_to', v.id).focus();
 		var el = (element:Dynamic).jstree('get_node', v.id, true)[0];
 		el.scrollIntoViewIfNeeded();

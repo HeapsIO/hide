@@ -57,10 +57,12 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 			return parent.getNewTrackMenu(current);
 		}
 		var menu = super.getNewContextMenu(current);
-		menu.unshift({
-			label: "Animation",
-			menu: parent.getNewTrackMenu(current)
-		});
+		if(current != null) {
+			menu.unshift({
+				label: "Animation",
+				menu: parent.getNewTrackMenu(current)
+			});
+		}
 		return menu;
 	}
 }
