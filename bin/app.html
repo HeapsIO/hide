@@ -79,15 +79,13 @@
 
 <script>
   var path = './';
-  var fs = require('fs');
-
+  var fs = require('fs');  
   var reloadWatcher=fs.watch(path, function(_,file) {
 	var ext = file.split(".").pop().toLowerCase();
 	if( ext != "js" && ext != "css" ) return;
+	reloadWatcher.close();
 	setTimeout(function() {
-		hide.Ide.inst.hasReloaded = true;
-		location.reload();
-		reloadWatcher.close();
+		hide.Ide.inst.reload();
 	},1000);
   });
 </script>

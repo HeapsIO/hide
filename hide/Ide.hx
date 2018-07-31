@@ -496,6 +496,13 @@ class Ide {
 		e.type = "text/javascript";
 		e.src = "file://"+file.split("\\").join("/");
 		js.Browser.document.body.appendChild(e);
+		fileWatcher.register(file,reload);
+	}
+
+	public function reload() {
+		hasReloaded = true;
+		fileWatcher.dispose();
+		js.Browser.location.reload();
 	}
 
 	public function saveDatabase() {

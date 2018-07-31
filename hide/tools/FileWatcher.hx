@@ -9,6 +9,13 @@ class FileWatcher {
 		ide = hide.Ide.inst;
 	}
 
+	public function dispose() {
+		for( w in watches )
+			if( w.w != null )
+				w.w.close();
+		watches = new Map();
+	}
+
 	public function register( path : String, updateFun, ?checkDelete : Bool ) {
 		var w = getWatches(path);
 		w.events.push({ path : path, fun : updateFun, checkDel : checkDelete });
