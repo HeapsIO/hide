@@ -480,7 +480,7 @@ class Emitter extends Object3D {
 		var emitterObj = Std.instance(ctx.local3d, EmitterObject);
 
 		var randIdx = 0;
-		var template = Std.instance(children[0], Object3D);
+		var template = children[0] != null ? children[0].to(Object3D) : null;
 
 		function makeParam(scope: Prefab, name: String): Value {
 			var getCurve = hide.prefab.Curve.getCurve.bind(scope);
