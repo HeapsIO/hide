@@ -49,6 +49,15 @@ class Reference extends Prefab {
 		return p.makeInstance(ctx);
 	}
 
+	override function to<T:Prefab>( c : Class<T> ) : Null<T> {
+		var base = super.to(c);
+		if(base != null)
+			return base;
+		var p = resolveRef();
+		if(p == null) return null;
+		return Std.instance(p, c);
+	}
+
 	#if editor
 
 
