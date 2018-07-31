@@ -70,10 +70,33 @@ class FXAnimation extends h3d.scene.Object {
 	static var tempMat = new h3d.Matrix();
 	public function setTime(time: Float) {
 		for(anim in objects) {
-			var mat = getTransform(anim, time, tempMat);
-			mat.multiply(mat, anim.elt.getTransform());
-			anim.obj.setTransform(mat);
+			var m = tempMat;
+			if(anim.scale != null) {
+				var scale = evaluator.getVector(anim.scale, time);
+				m.initScale(scale.x, scale.y, scale.z);
+			}
+			else
+				m.identity();
 
+			if(anim.rotation != null) {
+				var rotation = evaluator.getVector(anim.rotation, time);
+				rotation.scale3(Math.PI / 180.0);
+				m.rotate(rotation.x, rotation.y, rotation.z);
+			}
+
+			var baseMat = anim.elt.getTransform();
+			var offset = baseMat.getPosition();
+			baseMat.tx = baseMat.ty = baseMat.tz = 0.0;  // Ignore 
+			m.multiply(baseMat, m);
+			m.translate(offset.x, offset.y, offset.z);
+
+			if(anim.position != null) {
+				var pos = evaluator.getVector(anim.position, time);
+				m.translate(pos.x, pos.y, pos.z);
+			}
+
+			anim.obj.setTransform(m);
+	
 			if(anim.visibility != null)
 				anim.obj.visible = evaluator.getFloat(anim.visibility, time) > 0.5;
 
@@ -111,30 +134,6 @@ class FXAnimation extends h3d.scene.Object {
 		}
 	}
 
-	public function getTransform(anim: ObjectAnimation, time: Float, ?m: h3d.Matrix) {
-		if(m == null)
-			m = new h3d.Matrix();
-
-		if(anim.scale != null) {
-			var scale = evaluator.getVector(anim.scale, time);
-			m.initScale(scale.x, scale.y, scale.z);
-		}
-		else
-			m.identity();
-
-		if(anim.rotation != null) {
-			var rotation = evaluator.getVector(anim.rotation, time);
-			rotation.scale3(Math.PI / 180.0);
-			m.rotate(rotation.x, rotation.y, rotation.z);
-		}
-
-		if(anim.position != null) {
-			var pos = evaluator.getVector(anim.position, time);
-			m.translate(pos.x, pos.y, pos.z);
-		}
-
-		return m;
-	}
 }
 
 class FX extends hxd.prefab.Library {
