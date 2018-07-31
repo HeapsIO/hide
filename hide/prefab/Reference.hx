@@ -29,8 +29,14 @@ class Reference extends Prefab {
 		var lib = getParent(hxd.prefab.Library);
 		if(lib == null)
 			return null;
-		ref = lib.getOpt(Prefab, refpath);
-		return ref;
+		var all = lib.getAll(Prefab);
+		for(p in all) {
+			if(!Std.is(p, Reference) && p.getAbsPath() == refpath) {
+				ref = p;
+				return ref;
+			}
+		}
+		return null;
 	}
 
 	override function makeInstance(ctx: Context) : Context {
