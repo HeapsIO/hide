@@ -288,7 +288,10 @@ class SceneEditor {
 		tree.onRename = function(e, name) {
 			var oldName = e.name;
 			e.name = name;
-			undo.change(Field(e, "name", oldName), function() tree.refresh());
+			undo.change(Field(e, "name", oldName), function() {
+				tree.refresh();
+				refreshScene();
+			});
 			return true;
 		};
 		tree.onAllowMove = function(_, _) {
