@@ -87,43 +87,7 @@ class FileTree extends FileView {
 			return content;
 		};
 
-		tree.onRename = function(path, name) {
-			var parts = path.split("/");
-			parts.pop();
-			for( n in name.split("/") ) {
-				if( n == ".." )
-					parts.pop();
-				else
-					parts.push(n);
-			}
-			var newPath = parts.join("/");
-			var isDir = sys.FileSystem.isDirectory(ide.getPath(path));
-			if( isDir )
-				throw "TODO : rename directory";
-			ide.filterPrefabs(function(p:hxd.prefab.Prefab) {
-				var changed = false;
-				function filter(p:String) {
-					if( p == null )
-						return null;
-					if( p == path ) {
-						changed = true;
-						return newPath;
-					}
-					if( isDir && StringTools.startsWith(p,path+"/") ) {
-						changed = true;
-						return newPath + p.substr(path.length, p.length - path.length);
-					}
-					return p;
-				}
-				p.source = filter(p.source);
-				var h = p.getHideProps();
-				if( h.onResourceRenamed != null )
-					h.onResourceRenamed(filter);
-				return changed;
-			});
-			sys.FileSystem.rename(ide.getPath(path), ide.getPath(newPath));
-			return true;
-		};
+		tree.onRename = onRename;
 
 		// prevent dummy mouseLeft from breaking our quickOpen feature
 		var mouseLeft = false;
@@ -155,6 +119,56 @@ class FileTree extends FileView {
 		});
 		tree.onDblClick = onOpenFile;
 		tree.init();
+	}
+
+	function onRename(path:String, name:String) {
+		var parts = path.split("/");
+		parts.pop();
+		for( n in name.split("/") ) {
+			if( n == ".." )
+				parts.pop();
+			else
+				parts.push(n);
+		}
+		var newPath = name.charAt(0) == "/" ? name.substr(1) : parts.join("/");
+
+		if( sys.FileSystem.exists(ide.getPath(newPath)) ) {
+			if( !ide.confirm(newPath+" already exists, invert files?") )
+				return false;
+			var rand = "__tmp"+Std.random(10000);
+			onRename(path, "/"+path+rand);
+			onRename(newPath, "/"+path);
+			onRename(path+rand, name);
+			return false;
+		}
+
+
+		var isDir = sys.FileSystem.isDirectory(ide.getPath(path));
+		if( isDir )
+			throw "TODO : rename directory";
+		ide.filterPrefabs(function(p:hxd.prefab.Prefab) {
+			var changed = false;
+			function filter(p:String) {
+				if( p == null )
+					return null;
+				if( p == path ) {
+					changed = true;
+					return newPath;
+				}
+				if( isDir && StringTools.startsWith(p,path+"/") ) {
+					changed = true;
+					return newPath + p.substr(path.length, p.length - path.length);
+				}
+				return p;
+			}
+			p.source = filter(p.source);
+			var h = p.getHideProps();
+			if( h.onResourceRenamed != null )
+				h.onResourceRenamed(filter);
+			return changed;
+		});
+		sys.FileSystem.rename(ide.getPath(path), ide.getPath(newPath));
+		return true;
 	}
 
 	function onDeleteFile( path : String ) {
