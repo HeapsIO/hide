@@ -54,6 +54,7 @@ private class ParticleInstance extends h3d.scene.Object {
 	public var def : InstanceDef;
 	public var shaderAnims : ShaderAnims;
 	public var baseMat : h3d.Matrix;
+	var childMat = new h3d.Matrix();
 
 	public function new(emitter: EmitterObject, def: InstanceDef) {
 		super(emitter.parent);
@@ -91,7 +92,6 @@ private class ParticleInstance extends h3d.scene.Object {
 		var scaleVec = evaluator.getVector(def.stretch, t);
 		scaleVec.scale3(evaluator.getFloat(def.scale, t));
 
-		var childMat = new h3d.Matrix();
 		childMat.initScale(scaleVec.x, scaleVec.y, scaleVec.z);
 		childMat.rotate(rot.x, rot.y, rot.z);
 		childMat.translate(offset.x, offset.y, offset.z);
@@ -112,12 +112,47 @@ private class ParticleInstance extends h3d.scene.Object {
 	}
 
 	override function syncRec( ctx : h3d.scene.RenderContext ) {
-		if(emitter.alignMode == Screen) {
-			var mat = ctx.camera.mcam.clone();
-			mat.invert();
-			var q = new h3d.Quat();
-			q.initRotateMatrix(mat);
-			setRotationQuat(q);
+		var child = getChildAt(0);
+		if(child != null) {
+			switch(emitter.alignMode) {
+				case Screen: {
+					var mat = ctx.camera.mcam.clone();
+					mat.invert();
+					var q = new h3d.Quat();
+					q.initRotateMatrix(mat);
+					setRotationQuat(q);
+				}
+				case Axis: {
+					var absChildMat = new h3d.Matrix();
+					absChildMat.multiply(getAbsPos(), childMat);
+					var alignVec = emitter.alignAxis.clone();
+					alignVec.transform3x3(absChildMat);
+					alignVec.normalize();
+
+					var rotAxis = emitter.alignLockAxis.clone();
+					rotAxis.transform3x3(getAbsPos());
+					rotAxis.normalize();
+
+					var camVec : h3d.Vector = ctx.camera.pos.sub(absPos.getPosition());
+					camVec.normalize();
+
+				    var d = camVec.clone();
+					d.scale3(camVec.dot3(rotAxis));
+					d = camVec.sub(d);
+					d.normalize();
+					var angle = hxd.Math.acos(alignVec.dot3(d));
+					var cross = alignVec.cross(d);
+					if(rotAxis.dot3(cross) < 0)
+						angle = -angle;
+
+					var q = new h3d.Quat();
+					q.initRotateAxis(emitter.alignLockAxis.x, emitter.alignLockAxis.y, emitter.alignLockAxis.z, angle);
+					var cq = child.getRotationQuat();
+					cq.multiply(cq, q);
+					child.setRotationQuat(cq);
+				}
+				case None:
+			}
 		}
 		super.syncRec(ctx);
 	}
