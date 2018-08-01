@@ -34,6 +34,9 @@ class Shader extends Prefab {
 				case TSampler2D:
 					if(val != null)
 						val = ctx.loadTexture(val);
+					var childNoise = getOpt(Noise, v.name);
+					if(childNoise != null)
+						val = childNoise.toTexture();
 				default:
 			}
 			if(val == null)
@@ -44,8 +47,6 @@ class Shader extends Prefab {
 
 	override function makeInstance(ctx:Context):Context {
 		if(source == null)
-			return ctx;
-		if(ctx.local3d == null)
 			return ctx;
 		ctx = ctx.clone(this);
 		loadShaderDef(ctx);
@@ -60,8 +61,10 @@ class Shader extends Prefab {
 			shader.hscriptSet(v.v.name, defVal);
 			#end
 		}
-		for(m in ctx.local3d.getMaterials()) { // TODO: Only add to self materials, not all children materials
-			m.mainPass.addShader(shader);
+		if(ctx.local3d != null) {
+			for(m in ctx.local3d.getMaterials()) { // TODO: Only add to self materials, not all children materials
+				m.mainPass.addShader(shader);
+			}
 		}
 		ctx.custom = shader;
 		updateInstance(ctx);
