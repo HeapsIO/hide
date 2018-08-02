@@ -631,12 +631,15 @@ class FXEditor extends FileView {
 				refreshKey(key, keyEl);
 			}
 		}
+
+		var minHeight = 40;
 		for(curve in curves) {
 			var dispKey = getPath() + "/" + curve.getAbsPath();
 			var curveContainer = new Element('<div class="curve"><label class="curve-label">${curve.name}</alpha></div>').appendTo(curvesContainer);
 			var height = getDisplayState(dispKey + "/height");
 			if(height == null)
 				height = 100;
+			if(height < minHeight) height = minHeight;
 			curveContainer.height(height);
 			var curveEdit = new hide.comp.CurveEditor(this.undo, curveContainer);
 			curveEdit.saveDisplayKey = dispKey;
@@ -654,7 +657,7 @@ class FXEditor extends FileView {
 				var step = e.originalEvent.wheelDelta > 0 ? 1.0 : -1.0;
 				if(e.ctrlKey) {
 					var prevH = curveContainer.height();
-					var newH = prevH + Std.int(step * 20.0);
+					var newH = hxd.Math.max(minHeight, prevH + Std.int(step * 20.0));
 					curveContainer.height(newH);
 					saveDisplayState(dispKey + "/height", newH);
 					curveEdit.yScale *= newH / prevH;
