@@ -3,6 +3,8 @@
 -lib hxbit
 -lib hscript
 -lib castle
+-D js-classic
+-D js-unflatten
 -D hscriptPos
 -D multidriver
 -D editor

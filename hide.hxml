@@ -1,7 +1,5 @@
 common.hxml
 -js bin/hide.js
 -main hide.Ide
--D js-classic
--D js-unflatten
 -dce no
 -debug
