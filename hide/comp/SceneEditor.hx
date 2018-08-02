@@ -872,7 +872,7 @@ class SceneEditor {
 		if(curEdit != null && curEdit.elements.length > 0) {
 			parent = curEdit.elements[0];
 		}
-		var obj: PrefabElement = view.getClipboard("prefab");
+		var obj = haxe.Json.parse(haxe.Json.stringify(view.getClipboard("prefab")));
 		if(obj != null) {
 			var p = hide.prefab.Prefab.loadRec(obj, parent);
 			autoName(p);
@@ -1011,7 +1011,7 @@ class SceneEditor {
 		var contexts = context.shared.contexts;
 		var oldContexts = contexts.copy();
 		var newElements = [for(elt in elements) {
-			var clone = hide.prefab.Prefab.loadRec(elt.saveRec());
+			var clone = elt.clone();
 			var index = elt.parent.children.indexOf(elt);
 			clone.parent = elt.parent;
 			autoName(clone);
