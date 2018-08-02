@@ -1,8 +1,15 @@
 package hide.prefab;
 
+enum abstract NoiseMode(String) {
+	var Perlin;
+	var Ridged;
+}
+
 class Noise extends Prefab {
 
 	public var seed : Int = Std.random(10000);
+
+	public var mode : NoiseMode = Perlin;
 
 	public var scale : Float = 1.;
 	public var channels : Int = 1;
@@ -14,7 +21,6 @@ class Noise extends Prefab {
 	public var octaves : Int = 1;
 	public var persist : Float = 0.5;
 	public var lacunarity : Float = 2.;
-	public var ridged : Bool = false;
 	public var gain : Float = 2.0;
 	public var offset : Float = 0.5;
 	public var turbulence : Float = 0.;
@@ -24,6 +30,7 @@ class Noise extends Prefab {
 	var tex : h3d.mat.Texture;
 
 	override public function load(v:Dynamic) {
+		this.mode = v.mode;
 		this.seed = v.seed;
 		this.size = v.size;
 		this.scale = v.scale;
@@ -31,7 +38,6 @@ class Noise extends Prefab {
 		this.octaves = v.octaves;
 		this.persist = v.persist;
 		this.lacunarity = v.lacunarity;
-		this.ridged = v.ridged;
 		if( v.gain != null ) this.gain = v.gain;
 		if( v.offset != null ) this.offset = v.offset;
 		if( v.contrast != null ) this.contrast = v.contrast else this.contrast = 0;
@@ -53,8 +59,10 @@ class Noise extends Prefab {
 		};
 		if( channels != 1 )
 			o.channels = channels;
-		if( ridged ) {
-			o.ridged = ridged;
+		o.mode = mode;
+		switch( mode ) {
+		case Perlin:
+		case Ridged:
 			o.gain = gain;
 			o.offset = offset;
 		}
@@ -86,9 +94,13 @@ class Noise extends Prefab {
 		pass.shader.persist = persist;
 		pass.shader.lacunarity = lacunarity;
 
-		pass.shader.ridged = ridged;
-		pass.shader.gain = gain;
-		pass.shader.offset = offset;
+		pass.shader.mode = switch( mode ) {
+		case Perlin: 0;
+		case Ridged :
+			pass.shader.gain = gain;
+			pass.shader.offset = offset;
+			1;
+		}
 
 		pass.shader.contrast = contrast;
 		pass.shader.brightness = brightness;
@@ -149,6 +161,11 @@ class Noise extends Prefab {
 	override function edit( ctx : EditContext ) {
 		var e = ctx.properties.add(new hide.Element('
 			<dl>
+				<dt>Mode</dt><dd><select field="mode">
+					<option value="Perlin">Perlin</option>
+					<option value="Ridged">Ridged</option>
+				</select>
+				</dd>
 				<dt>Size</dt><dd><input type="range" min="16" max="2048" step="16" field="size"/></dd>
 				<dt>Scale</dt><dd><input type="range" min="0" max="2" field="scale"/></dd>
 				<dt>Channels</dt><dd><input type="range" min="1" max="4" step="1" field="channels"/></dd>
@@ -161,12 +178,13 @@ class Noise extends Prefab {
 				<dt>Lacunarity</dt><dd><input type="range" min="1" max="5" field="lacunarity"/></dd>
 			</dl>
 			<br/>
-			<dl>
-				<dt>Ridged</dt><dd><input type="checkbox" field="ridged"/></dd>
-				<dt>Offset</dt><dd><input type="range" min="-1" max="1" field="offset"/></dd>
-				<dt>Gain</dt><dd><input type="range" min="0.01" max="5" field="gain"/></dd>
-			</dl>
-			<br/>
+			${mode == Ridged ? '
+				<dl>
+					<dt>Offset</dt><dd><input type="range" min="-1" max="1" field="offset"/></dd>
+					<dt>Gain</dt><dd><input type="range" min="0.01" max="5" field="gain"/></dd>
+				</dl>
+				<br/>
+			' : ''}
 			<dl>
 				<dt>Turbulence</dt><dd><input type="range" min="0" max="1" field="turbulence"/></dd>
 				<dt>Scale</dt><dd><input type="range" min="0" max="10" field="turbulenceScale"/></dd>
@@ -224,7 +242,7 @@ class NoiseShader extends h3d.shader.ScreenShader {
 
 		@const var channels : Int = 1;
 		@const var octaves : Int = 1;
-		@const var ridged : Bool;
+		@const var mode : Int;
 		@const var normals : Bool;
 
 		@param var seed : Int;
@@ -270,7 +288,15 @@ class NoiseShader extends h3d.shader.ScreenShader {
 			var v = 0.;
 			var seed = seed + channel * octaves;
 			var scale = scale;
-			if( ridged ) {
+			switch( mode ) {
+			case 0: // perlin
+				var k = 1.;
+				for( i in 0...octaves ) {
+					v += noise(seed + i, scale) * k;
+					k *= persist;
+					scale *= lacunarity;
+				}
+			case 1: // ridged
 				var k = 1.;
 				var s = lacunarity;
 				var weight = 1.;
@@ -288,13 +314,6 @@ class NoiseShader extends h3d.shader.ScreenShader {
 					scale *= lacunarity;
 				}
 				v /= tot;
-			} else {
-				var k = 1.;
-				for( i in 0...octaves ) {
-					v += noise(seed + i, scale) * k;
-					k *= persist;
-					scale *= lacunarity;
-				}
 			}
 			v = (v * (1 + contrast) + 1) * 0.5 + brightness;
 			if( inverse > 0 ) v = 1 - v;
@@ -304,16 +323,17 @@ class NoiseShader extends h3d.shader.ScreenShader {
 		function calcNormal() : Vec3 {
 			var v = vec3(0.);
 			var scale = scale;
-			if( ridged ) {
-				// TODO
-				v.z = 1.;
-			} else {
+			switch( mode ) {
+			case 0:
 				var k = 1.;
 				for( i in 0...octaves ) {
 					v += noiseNormal(seed + i, scale) * k;
 					k *= persist;
 					scale *= lacunarity;
 				}
+			default:
+				// TODO
+				v.z = 1.;
 			}
 			v.z = (v.z + 1) * 0.5 + 10;
 			v = v.normalize();
