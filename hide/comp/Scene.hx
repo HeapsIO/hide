@@ -374,7 +374,7 @@ class Scene extends Component implements h3d.IDrawable {
 			if( data.get(0) != 'H'.code ) {
 				var hmdOut = new hxd.fmt.fbx.HMDOut(fullPath);
 				hmdOut.absoluteTexturePath = true;
-				hmdOut.loadTextFile(data.toString());
+				hmdOut.loadTextFile(data);
 				var hmd = hmdOut.toHMD(null, !isAnimation);
 				var out = new haxe.io.BytesOutput();
 				new hxd.fmt.hmd.Writer(out).write(hmd);
