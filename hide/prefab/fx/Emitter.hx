@@ -105,7 +105,13 @@ private class ParticleInstance extends h3d.scene.Object {
 
 		var mesh = Std.instance(child, h3d.scene.Mesh);
 		if(mesh != null && def.color != null) {
-			mesh.material.color = evaluator.getVector(def.color, t);
+			var mat = mesh.material;
+			switch(def.color) {
+				case VCurve(a):
+					mat.color.a = evaluator.getFloat(def.color, t);
+				default:
+					mat.color = evaluator.getVector(def.color, t);
+			}
 		}
 
 		life += dt;
