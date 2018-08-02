@@ -761,6 +761,8 @@ class Emitter extends Object3D {
 
 	override function setSelected( ctx : Context, b : Bool ) {
 		var emitterObj = Std.instance(ctx.local3d, EmitterObject);
+		if(emitterObj == null)
+			return;
 		var debugShape : h3d.scene.Object = emitterObj.find(c -> if(c.name == "_highlight") c else null);
 		if(debugShape != null)
 			debugShape.visible = b;		
