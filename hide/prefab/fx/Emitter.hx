@@ -72,10 +72,11 @@ private class ParticleInstance extends h3d.scene.Object {
 		var t = hxd.Math.clamp(life / emitter.lifeTime, 0.0, 1.0);
 
 		var localSpeed = evaluator.getVector(def.localSpeed, t);
-		var worldSpeed = evaluator.getVector(def.worldSpeed, t);
 		if(localSpeed.length() > 0.001) {
 			localSpeed.transform3x3(orientation.toMatrix());
 		}
+		var worldSpeed = evaluator.getVector(def.worldSpeed, t);
+		worldSpeed.transform3x3(emitter.invTransform);
 		curVelocity = localSpeed.add(worldSpeed);
 		if(emitter.emitOrientation == Speed && curVelocity.lengthSq() > 0.01) {
 			getRotationQuat().initDirection(curVelocity);
@@ -124,6 +125,7 @@ private class ParticleInstance extends h3d.scene.Object {
 				case Screen: {
 					var mat = ctx.camera.mcam.clone();
 					mat.invert();
+					mat.multiply3x4(mat, emitter.invTransform);
 					var q = new h3d.Quat();
 					q.initRotateMatrix(mat);
 					setRotationQuat(q);
@@ -195,6 +197,9 @@ class EmitterObject extends h3d.scene.Object {
 	public var emitRate : Value;
 
 	public var instDef : InstanceDef;
+
+	public var invTransform : h3d.Matrix;
+
 
 	public function new(?parent) {
 		super(parent);
@@ -350,6 +355,9 @@ class EmitterObject extends h3d.scene.Object {
 	function tick(dt: Float) {
 		if(emitRate == null || emitRate == VZero)
 			return;
+
+		invTransform = parent.getAbsPos().clone();
+		invTransform.invert();
 
 		var emitTarget = evaluator.getSum(emitRate, curTime);
 		var delta = hxd.Math.floor(emitTarget - emitCount);
