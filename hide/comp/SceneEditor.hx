@@ -778,6 +778,10 @@ class SceneEditor {
 		var localMat = getPickTransform(parent);
 		if(localMat == null) return;
 
+		localMat.tx = hxd.Math.round(localMat.tx);
+		localMat.ty = hxd.Math.round(localMat.ty);
+		localMat.tz = hxd.Math.round(localMat.tz);
+
 		var models: Array<PrefabElement> = [];
 		for(path in paths) {
 			var model = new hide.prefab.Model(parent);
