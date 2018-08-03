@@ -471,11 +471,18 @@ class Level3D extends FileView {
 				var curSel = sceneEditor.getSelection();
 				var parent : PrefabElement = data;
 				if(curSel.length > 0) {
-					var curLayer = curSel[0].to(Layer);
-					if(curLayer == null)
-						curLayer = curSel[0].getParent(Layer);
-					if(curLayer != null)
-						parent = curLayer;
+					var sel = curSel[0];
+					if(Type.getClass(sel) == Object3D)
+						parent = sel;
+					else if(sel.parent != null && Type.getClass(sel.parent) == Object3D)
+						parent = sel.parent;
+					else {
+						var curLayer = sel.to(Layer);
+						if(curLayer == null)
+							curLayer = sel.getParent(Layer);
+						if(curLayer != null)
+							parent = curLayer;
+					}
 				}
 				sceneEditor.dropModels(models, parent);
 			}
