@@ -98,7 +98,7 @@ class FXAnimation extends h3d.scene.Object {
 			anim.obj.setTransform(m);
 	
 			if(anim.visibility != null)
-				anim.obj.visible = evaluator.getFloat(anim.visibility, time) > 0.5;
+				anim.obj.visible = anim.elt.visible && evaluator.getFloat(anim.visibility, time) > 0.5;
 
 			if(anim.color != null) {
 				var mesh = Std.instance(anim.obj, h3d.scene.Mesh);
