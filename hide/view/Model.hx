@@ -442,23 +442,24 @@ class Model extends FileView {
 		};
 
 		var events = @:privateAccess obj.currentAnimation.events;
-		for( i in 0...events.length ) {
-			var el = events[i];
-			if( el == null || el.length == 0 ) continue;
-			var px = Std.int((i / obj.currentAnimation.frameCount) * W);
-			timeline.beginFill(0xC0C0C0);
-			timeline.drawRect(px, 0, 1, H);
-			var py = -14;
-			for( e in el ) {
-				var tf = new h2d.Text(hxd.res.DefaultFont.get(), timeline);
-				tf.text = e;
-				tf.x = px - Std.int(tf.textWidth * 0.5);
-				tf.y = py;
-				tf.alpha = 0.5;
-				py -= 15;
+		if(events != null) {
+			for( i in 0...events.length ) {
+				var el = events[i];
+				if( el == null || el.length == 0 ) continue;
+				var px = Std.int((i / obj.currentAnimation.frameCount) * W);
+				timeline.beginFill(0xC0C0C0);
+				timeline.drawRect(px, 0, 1, H);
+				var py = -14;
+				for( e in el ) {
+					var tf = new h2d.Text(hxd.res.DefaultFont.get(), timeline);
+					tf.text = e;
+					tf.x = px - Std.int(tf.textWidth * 0.5);
+					tf.y = py;
+					tf.alpha = 0.5;
+					py -= 15;
+				}
 			}
 		}
-
 	}
 
 	function update(dt:Float) {
