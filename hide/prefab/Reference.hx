@@ -1,6 +1,6 @@
 package hide.prefab;
 
-class Reference extends Prefab {
+class Reference extends Object3D {
 
 	public var refpath : String;
 	var ref: Prefab = null;
@@ -10,50 +10,81 @@ class Reference extends Prefab {
 		type = "reference";
 	}
 
+	public function isFile() {
+		// TODO: Use source instead?
+		return refpath != null && refpath.charAt(0) == "/";
+	}
+
 	override function save() {
-		return {
-			// Recalc abs path if ref has been resolved to supprot renaming
-			refpath: ref != null ? ref.getAbsPath() : refpath
-		};
+		var obj : Dynamic = super.save();
+		// Recalc abs path if ref has been resolved to supprot renaming
+		obj.refpath = ref != null && !isFile() ? ref.getAbsPath() : refpath;
+		return obj;
 	}
 
 	override function load( o : Dynamic ) {
+		super.load(o);
 		refpath = o.refpath;
 	}
 
-	function resolveRef() {
+	public function resolveRef(shared : hxd.prefab.ContextShared) {
 		if(ref != null)
 			return ref;
 		if(refpath == null)
 			return null;
-		var lib = getParent(hxd.prefab.Library);
-		if(lib == null)
-			return null;
-		var all = lib.getAll(Prefab);
-		for(p in all) {
-			if(!Std.is(p, Reference) && p.getAbsPath() == refpath) {
-				ref = p;
-				return ref;
+		if(isFile()) {
+			#if editor
+			if(shared == null) // Allow resolving ref in Hide prefore makeInstance 
+				ref = hide.Ide.inst.loadPrefab(refpath.substr(1));
+			else
+			#else
+			ref = shared.loadPrefab(refpath.substr(1));
+			#end
+			return ref;
+		}
+		else {
+			var lib = getParent(hxd.prefab.Library);
+			if(lib == null)
+				return null;
+			var all = lib.getAll(Prefab);
+			for(p in all) {
+				if(!Std.is(p, Reference) && p.getAbsPath() == refpath) {
+					ref = p;
+					return ref;
+				}
 			}
 		}
 		return null;
 	}
 
+	override function updateInstance( ctx: Context, ?propName : String ) {
+		var p = resolveRef(ctx.shared);
+		if(p == null)
+			return;
+		var parentCtx = ctx.shared.contexts.get(parent);
+		if(parentCtx != null && parentCtx.local3d != ctx.local3d) {
+			super.updateInstance(ctx, propName);
+		}
+	}
+
 	override function makeInstance(ctx: Context) : Context {
-		var p = resolveRef();
+		var p = resolveRef(ctx.shared);
 		if(p == null)
 			return ctx;
 
 		ctx = ctx.clone(this);
 		ctx.isRef = true;
-		return p.makeInstance(ctx);
+		var refCtx = p.makeInstance(ctx);
+		ctx.local3d = refCtx.local3d;
+		updateInstance(ctx);
+		return ctx;
 	}
 
 	override function to<T:Prefab>( c : Class<T> ) : Null<T> {
 		var base = super.to(c);
 		if(base != null)
 			return base;
-		var p = resolveRef();
+		var p = resolveRef(null);
 		if(p == null) return null;
 		return Std.instance(p, c);
 	}
@@ -63,13 +94,15 @@ class Reference extends Prefab {
 
 	override function edit( ctx : EditContext ) {
 		var element = new hide.Element('
+			<div class="group" name="Reference">
 			<dl>
 				<dt>Reference</dt><dd><input type="text" field="refpath"/></dd>
-			</dl>');
+			</dl>
+			</div>');
 
 		function updateProps() {
 			var input = element.find("input");
-			var found = resolveRef() != null;
+			var found = resolveRef(ctx.rootContext.shared) != null;
 			input.toggleClass("error", !found);
 		}
 		updateProps();
@@ -83,6 +116,13 @@ class Reference extends Prefab {
 					ctx.rebuildPrefab(this);
 			}
 		});
+		
+		var parentCtx = ctx.getContext(parent);
+		var selfCtx = ctx.getContext(this);
+		var p = resolveRef(ctx.rootContext.shared);
+		if(selfCtx != null && parentCtx != null && parentCtx.local3d != selfCtx.local3d) {
+			super.edit(ctx);
+		}
 	}
 
 	override function getHideProps() : HideProps {

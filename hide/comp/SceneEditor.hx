@@ -256,7 +256,7 @@ class SceneEditor {
 				{ label : "Reference", enabled : current != null, click : function() createRef(current, current.parent) },
 			];
 
-			if(current != null && current.to(Object3D) != null) {
+			if(current != null && current.to(Object3D) != null && current.to(hide.prefab.Reference) == null) {
 				var visible = current.to(Object3D).visible;
 				menuItems = menuItems.concat([
 					{ label : "Visible", checked : visible, click : function() setVisible(curEdit.elements, !visible) },
@@ -774,7 +774,7 @@ class SceneEditor {
 		return localMat;
 	}
 
-	public function dropModels(paths: Array<String>, parent: PrefabElement) {
+	public function dropObjects(paths: Array<String>, parent: PrefabElement) {
 		var localMat = getPickTransform(parent);
 		if(localMat == null) return;
 
@@ -782,16 +782,26 @@ class SceneEditor {
 		localMat.ty = hxd.Math.round(localMat.ty);
 		localMat.tz = hxd.Math.round(localMat.tz);
 
-		var models: Array<PrefabElement> = [];
+		var elts: Array<PrefabElement> = [];
 		for(path in paths) {
-			var model = new hide.prefab.Model(parent);
-			model.setTransform(localMat);
+			var obj3d : Object3D;
 			var relative = ide.makeRelative(path);
-			model.source = relative;
-			autoName(model);
-			models.push(model);
+
+			if(StringTools.endsWith(path, ".fx")) {
+				var ref = new hide.prefab.Reference(parent);
+				ref.refpath = "/" + relative;
+				obj3d = ref;
+				obj3d.name = new haxe.io.Path(relative).file;
+			}
+			else {
+				obj3d = new hide.prefab.Model(parent);
+				obj3d.source = relative;
+			}
+			obj3d.setTransform(localMat);
+			autoName(obj3d);
+			elts.push(obj3d);
 		}
-		refresh(() -> selectObjects(models));
+		refresh(() -> selectObjects(elts));
 	}
 
 	function canGroupSelection() {
@@ -1004,6 +1014,18 @@ class SceneEditor {
 		var ref = new hide.prefab.Reference(toParent);
 		ref.name = elt.name;
 		ref.refpath = elt.getAbsPath();
+		var obj3d = Std.instance(elt, Object3D);
+		if(obj3d != null) {
+			ref.x = obj3d.x;
+			ref.y = obj3d.y;
+			ref.z = obj3d.z;
+			ref.scaleX = obj3d.scaleX;
+			ref.scaleY = obj3d.scaleY;
+			ref.scaleZ = obj3d.scaleZ;
+			ref.rotationX = obj3d.rotationX;
+			ref.rotationY = obj3d.rotationY;
+			ref.rotationZ = obj3d.rotationZ;
+		}
 		addObject(ref);
 	}
 

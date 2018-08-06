@@ -51,6 +51,7 @@ class FXAnimation extends h3d.scene.Object {
 	public var objects: Array<ObjectAnimation> = [];
 	public var shaderAnims : Array<ShaderAnimation> = [];
 	public var emitters : Array<hide.prefab.fx.Emitter.EmitterObject> = [];
+	public var currentTime(default, null) : Float = 0.0;
 	var evaluator : Evaluator;
 	var random : hxd.Rand;
 
@@ -69,6 +70,7 @@ class FXAnimation extends h3d.scene.Object {
 
 	static var tempMat = new h3d.Matrix();
 	public function setTime(time: Float) {
+		currentTime = time;
 		for(anim in objects) {
 			var m = tempMat;
 			if(anim.scale != null) {

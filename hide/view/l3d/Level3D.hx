@@ -458,15 +458,15 @@ class Level3D extends FileView {
 	}
 
 	override function onDragDrop(items : Array<String>, isDrop : Bool) {
-		var supported = ["fbx"];
-		var models = [];
+		var supported = ["fbx", "fx"];
+		var paths = [];
 		for(path in items) {
 			var ext = haxe.io.Path.extension(path).toLowerCase();
 			if(supported.indexOf(ext) >= 0) {
-				models.push(path);
+				paths.push(path);
 			}
 		}
-		if(models.length > 0) {
+		if(paths.length > 0) {
 			if(isDrop) {
 				var curSel = sceneEditor.getSelection();
 				var parent : PrefabElement = data;
@@ -484,7 +484,7 @@ class Level3D extends FileView {
 							parent = curLayer;
 					}
 				}
-				sceneEditor.dropModels(models, parent);
+				sceneEditor.dropObjects(paths, parent);
 			}
 			return true;
 		}

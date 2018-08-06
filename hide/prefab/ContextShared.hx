@@ -17,6 +17,10 @@ class ContextShared extends hxd.prefab.ContextShared {
 		hide.Ide.inst.error(e);
 	}
 
+	override function loadPrefab( path : String ) : Prefab {
+		return hide.Ide.inst.loadPrefab(path);
+	}
+
 	override function loadShader( path : String ) {
 		return hide.Ide.inst.shaderLoader.loadSharedShader(path);
 	}

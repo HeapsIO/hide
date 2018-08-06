@@ -371,7 +371,7 @@ class FXEditor extends FileView {
 		if(models.length > 0) {
 			if(isDrop) {
 				var parent : PrefabElement = data;
-				sceneEditor.dropModels(models, parent);
+				sceneEditor.dropObjects(models, parent);
 			}
 			return true;
 		}
