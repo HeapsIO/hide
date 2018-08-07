@@ -59,6 +59,7 @@ class Scene extends Component implements h3d.IDrawable {
 	var canvas : js.html.CanvasElement;
 	var hmdCache = new Map<String, hxd.fmt.hmd.Library>();
 	var texCache = new Map<String, h3d.mat.Texture>();
+	var pathsMap = new Map<String, String>();
 	var cleanup = new Array<Void->Void>();
 	var defaultCamera : h3d.Camera;
 	public var props : hide.ui.Props;
@@ -293,7 +294,7 @@ class Scene extends Component implements h3d.IDrawable {
 		return lib.loadAnimation();
 	}
 
-	function resolvePath( modelPath : String, filePath : String ) {
+	function resolvePathImpl( modelPath : String, filePath : String ) {
 		inline function exists(path) return sys.FileSystem.exists(path);
 		var fullPath = ide.getPath(filePath);
 		if( exists(fullPath) )
@@ -319,6 +320,16 @@ class Scene extends Component implements h3d.IDrawable {
 			return relToModel;
 
 		return null;
+	}
+
+	function resolvePath(modelPath : String, filePath : String) {
+		var key = modelPath + ":" + filePath;
+		var p = pathsMap.get(key);
+		if(p != null)
+			return p;
+		p = resolvePathImpl(modelPath, filePath);
+		pathsMap.set(key, p);
+		return p;
 	}
 
 	public function loadTextureDotPath( path : String, ?onReady ) {
