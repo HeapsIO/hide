@@ -268,7 +268,7 @@ class VolumetricLightmap extends Object3D {
 
 	public function startBake(ctx : EditContext, ?onEnd){
 		maxOrderBaked = order;
-		volumetricLightmap.lastBakedProbeIndex = 0;
+		volumetricLightmap.lastBakedProbeIndex = -1;
 		var s3d = @:privateAccess ctx.rootContext.local3d.getScene();
 		baker = new hide.view.l3d.ProbeBakerProcess(s3d, this);
 		baker.onEnd = function() {
