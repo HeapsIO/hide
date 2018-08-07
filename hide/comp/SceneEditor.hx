@@ -152,6 +152,13 @@ class SceneEditor {
 			if(curEdit.rootElements.length > 0)
 				selectObjects([curEdit.rootElements[0].parent]);
 		});
+		view.keys.register("sceneeditor.reparent", function() {
+			if(curEdit.rootElements.length > 1) {
+				var children = curEdit.rootElements.copy();
+				var parent = children.pop();
+				reparentElement(children, parent, 0);
+			}
+		});
 	}
 
 	public dynamic function onResize() {
