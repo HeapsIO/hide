@@ -218,7 +218,7 @@ class Noise extends Prefab {
 			ctx.ide.chooseFileSave("noise.png", function(f) if( f != null ) {
 				try {
 					var data = cast(ctx.getContext(this).local2d, h2d.Bitmap).tile.getTexture().capturePixels().toPNG();
-					sys.io.File.saveBytes(f, data);
+					sys.io.File.saveBytes(hide.Ide.inst.getPath(f), data);
 				} catch( e : Dynamic ) {
 					ctx.ide.error(e);
 				}
