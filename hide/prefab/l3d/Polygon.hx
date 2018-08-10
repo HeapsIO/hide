@@ -3,7 +3,7 @@ import h2d.col.Point;
 
 enum Shape {
 	Quad;
-	Disc(segments: Int, angle: Float, inner: Float);
+	Disc(segments: Int, angle: Float, inner: Float, rings:Int);
 }
 
 typedef PrimCache = Map<Shape, h3d.prim.Polygon>;
@@ -84,7 +84,7 @@ class Polygon extends Object3D {
 					new Point(-0.5,  0.5)];
 				uvs = [for(v in points) new Point(v.y + 0.5, -v.x + 0.5)];  // Setup UVs so that image up (Y) is aligned with forward axis (X)
 				indices = [0,1,2,0,2,3];
-			case Disc(segments, angle, inner):
+			case Disc(segments, angle, inner, rings):
 				points = [];
 				uvs = [];
 				indices = [];
@@ -97,20 +97,24 @@ class Polygon extends Object3D {
 					var a = hxd.Math.lerp(-anglerad/2, anglerad/2, t);
 					var ct = hxd.Math.cos(a);
 					var st = hxd.Math.sin(a);
-					points.push(new Point(ct * inner, st * inner));
-					points.push(new Point(ct, st));
-					uvs.push(new Point(t, 0));
-					uvs.push(new Point(t, 1));
+					for(r in 0...(rings + 2)) {
+						var v = r / (rings + 1);
+						var r = hxd.Math.lerp(inner, 1.0, v);
+						points.push(new Point(ct * r, st * r));
+						uvs.push(new Point(t, v));
+					}
 				}
 				for(i in 0...segments-1) {
-					var idx = i * 2;
-					var nxt = (i + 1) * 2;
-					indices.push(idx);
-					indices.push(idx + 1);
-					indices.push(nxt);
-					indices.push(nxt);
-					indices.push(idx + 1);
-					indices.push(nxt + 1);
+					for(r in 0...(rings + 1)) {
+						var idx = r + i * (rings + 2);
+						var nxt = r + (i + 1) * (rings + 2);
+						indices.push(idx);
+						indices.push(idx + 1);
+						indices.push(nxt);
+						indices.push(nxt);
+						indices.push(idx + 1);
+						indices.push(nxt + 1);
+					}
 				}
 			default:
 		}
@@ -163,12 +167,13 @@ class Polygon extends Object3D {
 		var viewModel = {
 			kind: shape.getIndex(),
 			segments: 24,
+			rings: 4,
 			innerRadius: 0.0,
 			angle: 360.0
 		};
 
 		switch(shape) {
-			case Disc(seg, angle, inner):
+			case Disc(seg, angle, inner, rings):
 				viewModel.segments = seg;
 				viewModel.angle = angle;
 				viewModel.innerRadius = inner;
@@ -189,6 +194,7 @@ class Polygon extends Object3D {
 
 		var discProps = new hide.Element('
 			<dt>Segments</dt><dd><input field="segments" type="range" min="0" max="100" step="1" /></dd>
+			<dt>Rings</dt><dd><input field="rings" type="range" min="0" max="100" step="1" /></dd>
 			<dt>Inner radius</dt><dd><input field="innerRadius" type="range" min="0" max="1" /></dd>
 			<dt>Angle</dt><dd><input field="angle" type="range" min="0" max="360" /></dd>');
 
@@ -211,7 +217,7 @@ class Polygon extends Object3D {
 
 			switch(viewModel.kind) {
 				case 1:
-					shape = Disc(viewModel.segments, viewModel.angle, viewModel.innerRadius);
+					shape = Disc(viewModel.segments, viewModel.angle, viewModel.innerRadius, viewModel.rings);
 				default:
 					shape = Quad;
 			}
