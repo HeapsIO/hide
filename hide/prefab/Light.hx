@@ -105,8 +105,10 @@ class Light extends Object3D {
 		var bytes = ctx.shared.loadBakedBytes(name);
 		if( bytes == null ) return;
 		var light = cast(ctx.local3d,h3d.scene.pbr.Light);
-		if( !light.shadows.loadStaticData(bytes) )
-			ctx.shared.saveBakedBytes(name,null);
+		var r = light.shadows.loadStaticData(bytes);
+		#if editor
+		if(!r) ctx.shared.saveBakedBytes(name,null);
+		#end
 	}
 
 	override function updateInstance( ctx : Context, ?propName : String ) {
@@ -118,7 +120,7 @@ class Light extends Object3D {
 
 		var color = color | 0xff000000;
 		var light = cast(ctx.local3d,h3d.scene.pbr.Light);
-		light.setScale(1.0);		
+		light.setScale(1.0);
 
 		switch( kind ) {
 		case Point:
