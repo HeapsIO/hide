@@ -124,6 +124,16 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		parent.onPrefabChange(p, pname);
 	}
 
+	override function addObject(p: PrefabElement) {
+		var layer = p.getParent(Layer);
+		if(layer != null) {
+			var cdbSheet = layer.getCdbModel(layer);
+			if(cdbSheet != null)
+				p.props = cdbSheet.getDefaults();
+		}
+		super.addObject(p);
+	}
+
 	override function projectToGround(ray: h3d.col.Ray) {
 		var polygons = parent.getGroundPolys();
 		var minDist = -1.;
