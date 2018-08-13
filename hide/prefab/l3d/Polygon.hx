@@ -10,7 +10,7 @@ typedef PrimCache = Map<Shape, h3d.prim.Polygon>;
 
 class Polygon extends Object3D {
 
-	var shape : Shape = Quad;
+	public var shape(default, null) : Shape = Quad;
 
 	override function save() {
 		var obj : Dynamic = super.save();
