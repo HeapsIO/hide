@@ -28,11 +28,12 @@ class Shader extends Prefab {
 			if(v.kind != Param)
 				continue;
 			var val : Dynamic = Reflect.field(props, v.name);
-			if(val == null)
-				continue;
 			switch(v.type) {
 				case TVec(_, VFloat):
-					val = h3d.Vector.fromArray(val);
+					if(val != null)
+						val = h3d.Vector.fromArray(val);
+					else
+						val = new h3d.Vector();
 				case TSampler2D:
 					if(val != null)
 						val = ctx.loadTexture(val);
@@ -41,6 +42,8 @@ class Shader extends Prefab {
 						val = childNoise.toTexture();
 				default:
 			}
+			if(val == null)
+				continue;
 			shader.setParamValue(v, val);
 		}
 	}
