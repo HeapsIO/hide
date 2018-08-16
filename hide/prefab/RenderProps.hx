@@ -58,6 +58,8 @@ class RenderProps extends Prefab {
 		if( props == null )
 			return false;
 		renderer.props = props;
+		for(fx in renderer.effects)
+			fx.dispose();
 		renderer.effects = [];
 		for( s in children ) {
 			var fx = Std.instance(s, hxd.prefab.rfx.RendererFX);
