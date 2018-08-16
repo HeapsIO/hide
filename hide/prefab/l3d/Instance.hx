@@ -16,9 +16,16 @@ class Instance extends Object3D {
 		var modelPath = findModelPath(kind.sheet, kind.idx.obj);
 		if(modelPath != null) {
 			try {
-				var obj = ctx.loadModel(modelPath);
-				obj.name = name;
-				ctx.local3d.addChild(obj);
+				if(modelPath.indexOf(".prefab") > 0) {
+					var ref = ctx.shared.loadPrefab(modelPath);
+					if(ref != null)
+						ref.makeInstance(ctx);
+				}
+				else {
+					var obj = ctx.loadModel(modelPath);
+					obj.name = name;
+					ctx.local3d.addChild(obj);
+				}
 			} catch( e : hxd.res.NotFound ) {
 				ctx.shared.onError(e);
 			}
@@ -100,7 +107,7 @@ class Instance extends Object3D {
 		function filter(f: String) {
 			if(f != null) {
 				var lower = f.toLowerCase();
-				if(StringTools.endsWith(lower.toLowerCase(), ".fbx"))
+				if(StringTools.endsWith(lower, ".fbx") || StringTools.endsWith(lower, ".prefab"))
 					return f;
 			}
 			return null;
