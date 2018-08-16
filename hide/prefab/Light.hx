@@ -15,6 +15,7 @@ typedef LightShadows = {
 	var radius : Float;
 	var power : Float;
 	var bias : Float;
+	var quality : Float;
 }
 
 class Light extends Object3D {
@@ -24,6 +25,7 @@ class Light extends Object3D {
 	public var range : Float = 10;
 	public var size : Float = 1.0;
 	public var power : Float = 1.0;
+	public var quality : Float = 0.5;
 	public var shadows : LightShadows = getShadowsDefault();
 
 	static function getShadowsDefault() : LightShadows {
@@ -33,6 +35,7 @@ class Light extends Object3D {
 			radius : 1,
 			power : 30,
 			bias : 0.1,
+			quality : 0.5,
 		};
 	}
 
@@ -48,6 +51,7 @@ class Light extends Object3D {
 		obj.range = range;
 		obj.size = size;
 		obj.power = power;
+		obj.quality = quality;
 		if( shadows.mode != None ) {
 			obj.shadows = Reflect.copy(shadows);
 			obj.shadows.mode = shadows.mode.getName();
@@ -62,6 +66,7 @@ class Light extends Object3D {
 		range = obj.range;
 		size = obj.size;
 		power = obj.power;
+		quality = obj.quality;
 		if( obj.shadows != null ) {
 			var sh : Dynamic = Reflect.copy(obj.shadows);
 			sh.mode = h3d.pass.Shadows.RenderMode.createByName(sh.mode);
@@ -136,6 +141,7 @@ class Light extends Object3D {
 		light.shadows.power = shadows.power;
 		light.shadows.bias = shadows.bias * 0.1;
 		light.shadows.blur.radius = shadows.radius;
+		light.shadows.blur.quality = shadows.quality;
 
 		#if editor
 
@@ -301,6 +307,7 @@ class Light extends Object3D {
 						</select>
 					</dd>
 					<dt>Blur Radius</dt><dd><input type="range" field="radius" min="0" max="20"/></dd>
+					<dt>Blur Quality</dt><dd><input type="range" field="quality" min="0" max="1"/></dd>
 					<dt>Power</dt><dd><input type="range" field="power" min="0" max="50"/></dd>
 					<dt>Bias</dt><dd><input type="range" field="bias" min="0" max="1"/></dd>
 				</dl>
