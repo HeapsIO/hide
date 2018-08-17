@@ -1,9 +1,13 @@
 package hide.prefab;
 using Lambda;
 
-typedef CurveHandle = {
-	dt: Float,
-	dv: Float
+class CurveHandle {
+	public var dt: Float;
+	public var dv: Float;
+	public function new(v, t) {
+		this.dv = v;
+		this.dt = t;
+	}
 }
 
 @:enum abstract CurveKeyMode(Int) {
@@ -13,12 +17,13 @@ typedef CurveHandle = {
 	var Constant = 3;
 }
 
-typedef CurveKey = {
-	time: Float,
-	value: Float,
-	mode: CurveKeyMode,
-	?prevHandle: CurveHandle,
-	?nextHandle: CurveHandle,
+class CurveKey {
+	public var time: Float;
+	public var value: Float;
+	public var mode: CurveKeyMode;
+	public var prevHandle: CurveHandle;
+	public var nextHandle: CurveHandle;
+	public function new() {}
 }
 
 typedef CurveKeys = Array<CurveKey>;
@@ -38,7 +43,20 @@ class Curve extends Prefab {
 
 	override function load(o:Dynamic) {
 		duration = o.duration;
-		keys = o.keys;
+		keys = [];
+		if(o.keys != null) {
+			for(k in (o.keys: Array<Dynamic>)) {
+				var nk = new CurveKey();
+				nk.time = k.time;
+				nk.value = k.value;
+				nk.mode = k.mode;
+				if(k.prevHandle != null)
+					nk.prevHandle = new CurveHandle(k.prevHandle.dv, k.prevHandle.dt);
+				if(k.nextHandle != null)
+					nk.nextHandle = new CurveHandle(k.nextHandle.dv, k.nextHandle.dt);
+				keys.push(nk);
+			}
+		}
 		clampMin = o.clampMin;
 		clampMax = o.clampMax;
 		if(o.keyMode != null)
@@ -53,8 +71,8 @@ class Curve extends Prefab {
 				value: k.value,
 				mode: k.mode
 			};
-			if(k.prevHandle != null) Reflect.setField(o, "prevHandle", k.prevHandle);
-			if(k.nextHandle != null) Reflect.setField(o, "nextHandle", k.nextHandle);
+			if(k.prevHandle != null) Reflect.setField(o, "prevHandle", { dv: k.prevHandle.dv, dt: k.prevHandle.dt });
+			if(k.nextHandle != null) Reflect.setField(o, "nextHandle", { dv: k.nextHandle.dv, dt: k.nextHandle.dt });
 			keysDat.push(o);
 		}
 		return {
@@ -95,11 +113,10 @@ class Curve extends Prefab {
 		if(val == null)
 			val = getVal(time);
 
-		var key : hide.prefab.Curve.CurveKey = {
-			time: time,
-			value: val,
-			mode: mode != null ? mode : (keys[index] != null ? keys[index].mode : keyMode)
-		};
+		var key = new hide.prefab.Curve.CurveKey();
+		key.time = time;
+		key.value = val;
+		key.mode = mode != null ? mode : (keys[index] != null ? keys[index].mode : keyMode);
 		keys.insert(index, key);
 		return key;
 	}

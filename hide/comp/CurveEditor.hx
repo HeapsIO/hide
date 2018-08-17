@@ -161,11 +161,11 @@ class CurveEditor extends Component {
 
 		inline function addPrevH() {
 			if(key.prevHandle == null)
-				key.prevHandle = { dt: prev != null ? (prev.time - key.time) / 3 : -0.5, dv: 0};
+				key.prevHandle = new hide.prefab.Curve.CurveHandle(prev != null ? (prev.time - key.time) / 3 : -0.5, 0);
 		}
 		inline function addNextH() {
 			if(key.nextHandle == null)
-				key.nextHandle = { dt: next != null ? (next.time - key.time) / 3 : -0.5, dv: 0};
+				key.nextHandle = new hide.prefab.Curve.CurveHandle(next != null ? (next.time - key.time) / 3 : -0.5, 0);
 		}
 		switch(key.mode) {
 			case Aligned:
