@@ -18,6 +18,8 @@ class Instance extends Object3D {
 			try {
 				if(modelPath.indexOf(".prefab") > 0) {
 					var ref = ctx.shared.loadPrefab(modelPath);
+					var ctx = ctx.clone(this);
+					ctx.isRef = true;
 					if(ref != null)
 						ref.makeInstance(ctx);
 				}

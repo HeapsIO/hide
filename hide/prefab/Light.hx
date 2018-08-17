@@ -101,7 +101,8 @@ class Light extends Object3D {
 		}
 		ctx.local3d.name = name;
 		updateInstance(ctx);
-		loadBaked(ctx);
+		if(!ctx.isRef)
+			loadBaked(ctx);
 		return ctx;
 	}
 
