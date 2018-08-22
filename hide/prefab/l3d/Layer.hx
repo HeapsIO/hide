@@ -5,7 +5,7 @@ class Layer extends Object3D {
 
 	public var locked = false;
 	public var uniqueNames = false;
-	public var color = 0xffffffff;
+	var color = 0xffffffff;
 
 	public function new(?parent) {
 		super(parent);

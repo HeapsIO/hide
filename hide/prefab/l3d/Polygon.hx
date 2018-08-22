@@ -42,15 +42,14 @@ class Polygon extends Object3D {
 
 		var mat = mesh.material;
 		mat.mainPass.culling = None;
-
-		var layer = getParent(Layer);
-		if(layer != null) {
-			setColor(ctx, layer != null ? (layer.color | 0x40000000) : 0x40ff00ff);
-		}
-		else {
-			mat.props = h3d.mat.MaterialSetup.current.getDefaults("opaque");
-			mat.color.setColor(0xffffffff);
-		}
+		// var layer = getParent(Layer);
+		// if(layer != null) {
+		// 	setColor(ctx, layer != null ? (layer.color | 0x40000000) : 0x40ff00ff);
+		// }
+		// else {
+		// 	mat.props = h3d.mat.MaterialSetup.current.getDefaults("opaque");
+		// 	mat.color.setColor(0xffffffff);
+		// }
 
 		mat.castShadows = false;
 	}
@@ -146,7 +145,7 @@ class Polygon extends Object3D {
 		return ctx;
 	}
 
-	function setColor(ctx: Context, color: Int) {
+	public function setColor(ctx: Context, color: Int) {
 		#if editor
 		if(hide.prefab.Material.hasOverride(this))
 			return;
