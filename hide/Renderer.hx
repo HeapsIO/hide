@@ -72,7 +72,7 @@ class Renderer extends h3d.scene.DefaultRenderer {
 			var outlineSrcTex = allocTarget("outline", false);
 			setTarget(outlineSrcTex);
 			clear(0);
-			draw("outline");
+			draw("highlight");
 			resetTarget();
 			outlineBlur.apply(ctx, outlineSrcTex, outlineTex);
 		}
@@ -159,7 +159,7 @@ class PbrRenderer extends h3d.scene.pbr.Renderer {
 		var outlineTex = allocTarget("outline", false);
 		setTarget(outlineTex);
 		clear(0);
-		draw("outline");
+		draw("highlight");
 
 		var outlineBlurTex = allocTarget("outlineBlur", false);
 		outlineBlur.apply(ctx, outlineTex, outlineBlurTex);
