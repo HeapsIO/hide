@@ -13,6 +13,9 @@ class Instance extends Object3D {
 		#if editor
 		var ctx = super.makeInstance(ctx);
 		var kind = getCdbKind(this);
+		if(kind == null)
+			return ctx;
+	
 		var modelPath = findModelPath(kind.sheet, kind.idx.obj);
 		if(modelPath != null) {
 			try {

@@ -217,15 +217,10 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		return newItems;
 	}
 
-	function resolveCdbType(id: String) {
-		var types = parent.getCdbTypes();
-		return types.find(t -> t.name.split("@").pop() == id);
-	}
-
 	override function fillProps(edit:hide.prefab.EditContext, e:PrefabElement) {
 		super.fillProps(edit, e);
 
-		var sheet = parent.getCdbModel(e);
+		var sheet = Level3D.getCdbModel(e);
 		var group = new hide.Element('
 			<div class="group" name="CDB">
 				<dl><dt>Type</dt><dd><select><option value="">-- Choose --</option></select></dd>
@@ -233,7 +228,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		');
 
 		var select = group.find("select");
-		var cdbTypes = parent.getCdbTypes();
+		var cdbTypes = Level3D.getCdbTypes();
 		for(t in cdbTypes) {
 			var current = sheet != null && sheet.name == t.name;
 			var id = t.name.split("@").pop();
@@ -244,7 +239,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		}
 		select.change(function(v) {
 			var typeId = select.val();
-			var cdbSheet = resolveCdbType(typeId);
+			var cdbSheet = Level3D.resolveCdbType(typeId);
 			if(cdbSheet == null)
 				return;
 
@@ -671,28 +666,32 @@ class Level3D extends FileView {
 		return null;
 	}
 
-	public function getLevelSheet() {
-		return ide.database.getSheet(ide.currentProps.get("l3d.cdbLevel", "level"));
+	public static function getLevelSheet() {
+		return Ide.inst.database.getSheet(Ide.inst.currentProps.get("l3d.cdbLevel", "level"));
 	}
 
-	public function getCdbTypes() {
+	static function resolveCdbType(id: String) {
+		var types = Level3D.getCdbTypes();
+		return types.find(t -> t.name.split("@").pop() == id);
+	}
+
+	public static function getCdbTypes() {
 		var levelSheet = getLevelSheet();
 		if(levelSheet == null) return [];
 		return [for(c in levelSheet.columns) if(c.type == TList) levelSheet.getSub(c)];
 	}
 
-	function getCdbTypeId(p: PrefabElement) : String {
+	public static function getCdbTypeId(p: PrefabElement) : String {
 		if(p.props == null)
 			return null;
 		return Reflect.getProperty(p.props, "$cdbtype");
 	}
 
-	public function getCdbModel(e:hxd.prefab.Prefab):cdb.Sheet {
+	public static function getCdbModel(e:hxd.prefab.Prefab):cdb.Sheet {
 		var typeName : String = getCdbTypeId(e);
 		if(typeName == null)
 			return null;
-		var types = getCdbTypes();
-		return types.find(t -> t.name.split("@").pop() == typeName);
+		return resolveCdbType(typeName);
 	}
 
 	function getGroundPolys() {
