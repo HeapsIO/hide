@@ -685,29 +685,11 @@ class SceneEditor {
 		}));
 		refresh(function() {
 			selectObjects([e]);
-			if( e.parent == sceneData && sceneData.children.length == 1 )
-				resetCamera();
 		});
 	}
 
 	function fillProps( edit, e : PrefabElement ) {
 		e.edit(edit);
-		var sheet = e.getCdbModel();
-		if( sheet == null ) return;
-
-		if( e.props == null ) {
-			trace("TODO : add button to init properties");
-			return;
-		}
-		var props = properties.add(new hide.Element('
-			<div class="group" name="Properties ${sheet.name.split('@').pop()}">
-			</div>
-		'),this);
-		var editor = new hide.comp.cdb.ObjEditor(sheet, e.props, props.find(".group .content"));
-		editor.undo = properties.undo;
-		editor.onChange = function(pname) {
-			edit.onChange(e, 'props.$pname');
-		}
 	}
 
 	public function selectObjects( elts : Array<PrefabElement>, ?includeTree=true) {

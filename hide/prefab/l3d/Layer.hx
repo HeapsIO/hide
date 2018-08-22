@@ -13,21 +13,21 @@ class Layer extends Object3D {
 	}
 
 	#if editor
-	override function getCdbModel( ?p : Prefab ) {
-		if( p == null )
-			return null;
-		var levelSheet = getLevelSheet();
-		if(levelSheet == null) return null;
-		var lname = name.split("_")[0];
-		var col = levelSheet.columns.find(c -> c.name == lname);
-		if(col == null || col.type != TList) return null;
-		return levelSheet.getSub(col);
-	}
+	// override function getCdbModel( ?p : Prefab ) {
+	// 	if( p == null )
+	// 		return null;
+	// 	var levelSheet = getLevelSheet();
+	// 	if(levelSheet == null) return null;
+	// 	var lname = name.split("_")[0];
+	// 	var col = levelSheet.columns.find(c -> c.name == lname);
+	// 	if(col == null || col.type != TList) return null;
+	// 	return levelSheet.getSub(col);
+	// }
 
-	public function getLevelSheet() {
-		var ide = hide.Ide.inst;
-		return ide.database.getSheet(ide.currentProps.get("l3d.cdbLevel", "level"));
-	}
+	// public function getLevelSheet() {
+	// 	var ide = hide.Ide.inst;
+	// 	return ide.database.getSheet(ide.currentProps.get("l3d.cdbLevel", "level"));
+	// }
 	#end
 
 	override function save() {
