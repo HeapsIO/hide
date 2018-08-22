@@ -3,6 +3,7 @@ package hide.prefab;
 @:enum abstract LightKind(String) {
 	var Point = "Point";
 	var Directional = "Directional";
+	var Spot = "Spot";
 
 	inline function new(v) {
 		this = v;
@@ -22,11 +23,21 @@ class Light extends Object3D {
 
 	public var kind : LightKind = Point;
 	public var color : Int = 0xffffff;
-	public var range : Float = 10;
-	public var size : Float = 1.0;
 	public var power : Float = 1.0;
 	public var quality : Float = 0.5;
 	public var shadows : LightShadows = getShadowsDefault();
+	public var isMainLight : Bool = false;
+
+	// Point/Spot
+	public var range : Float = 10;
+
+	// Point
+	public var size : Float = 1.0;
+
+	// Spot
+	public var maxRange : Float = 20;
+	public var angle : Float = 90;
+	public var fallOff : Float = 80;
 
 	static function getShadowsDefault() : LightShadows {
 		return {
@@ -52,6 +63,11 @@ class Light extends Object3D {
 		obj.size = size;
 		obj.power = power;
 		obj.quality = quality;
+		obj.isMainLight = isMainLight;
+		obj.angle = angle;
+		obj.fallOff = fallOff;
+		obj.maxRange = maxRange;
+
 		if( shadows.mode != None ) {
 			obj.shadows = Reflect.copy(shadows);
 			obj.shadows.mode = shadows.mode.getName();
@@ -67,6 +83,13 @@ class Light extends Object3D {
 		size = obj.size;
 		power = obj.power;
 		quality = obj.quality;
+		isMainLight = obj.isMainLight;
+		angle = obj.angle;
+		fallOff = obj.fallOff;
+		maxRange = obj.maxRange;
+
+		trace(obj);
+		trace(obj.shadows);
 		if( obj.shadows != null ) {
 			var sh : Dynamic = Reflect.copy(obj.shadows);
 			sh.mode = h3d.pass.Shadows.RenderMode.createByName(sh.mode);
@@ -86,17 +109,15 @@ class Light extends Object3D {
 		var isPbr = Std.is(h3d.mat.MaterialSetup.current, h3d.mat.PbrMaterialSetup);
 		if( !isPbr ) {
 			switch( kind ) {
-			case Point:
-				ctx.local3d = new h3d.scene.PointLight(ctx.local3d);
-			case Directional:
-				ctx.local3d = new h3d.scene.DirLight(ctx.local3d);
+			case Point: ctx.local3d = new h3d.scene.PointLight(ctx.local3d);
+			case Directional: ctx.local3d = new h3d.scene.DirLight(ctx.local3d);
+			case Spot: ctx.local3d = new h3d.scene.SpotLight(ctx.local3d);
 			}
 		} else {
 			switch( kind ) {
-			case Point:
-				ctx.local3d = new h3d.scene.pbr.PointLight(ctx.local3d);
-			case Directional:
-				ctx.local3d = new h3d.scene.pbr.DirLight(ctx.local3d);
+			case Point: ctx.local3d = new h3d.scene.pbr.PointLight(ctx.local3d);
+			case Directional: ctx.local3d = new h3d.scene.pbr.DirLight(ctx.local3d);
+			case Spot: ctx.local3d = new h3d.scene.pbr.SpotLight(ctx.local3d);
 			}
 		}
 		ctx.local3d.name = name;
@@ -113,7 +134,8 @@ class Light extends Object3D {
 		var light = cast(ctx.local3d,h3d.scene.pbr.Light);
 		var r = light.shadows.loadStaticData(bytes);
 		#if editor
-		if(!r) ctx.shared.saveBakedBytes(name,null);
+		if(!r)
+			ctx.shared.saveBakedBytes(name,null);
 		#end
 	}
 
@@ -127,8 +149,15 @@ class Light extends Object3D {
 		var color = color | 0xff000000;
 		var light = cast(ctx.local3d,h3d.scene.pbr.Light);
 		light.setScale(1.0);
+		light.isMainLight = isMainLight;
 
 		switch( kind ) {
+		case Spot:
+			var sl = Std.instance(light, h3d.scene.pbr.SpotLight);
+			sl.range = range;
+			sl.maxRange = maxRange;
+			sl.angle = angle;
+			sl.fallOff = fallOff;
 		case Point:
 			var pl = Std.instance(light, h3d.scene.pbr.PointLight);
 			pl.range = range;
@@ -148,86 +177,139 @@ class Light extends Object3D {
 
 		var debugPoint = ctx.local3d.find(c -> if(c.name == "_debugPoint") c else null);
 		var debugDir = ctx.local3d.find(c -> if(c.name == "_debugDir") c else null);
+		var debugSpot = ctx.local3d.find(c -> if(c.name == "_debugSpot") c else null);
 		var mesh : h3d.scene.Mesh = null;
-		var sel : h3d.scene.Object;
+		var sel : h3d.scene.Object = null;
 
-		if(kind == Point) {
-			if(debugDir != null)
-				debugDir.remove();
+		switch(kind){
 
-			var sizeSphere : h3d.scene.Sphere = null;
-			var rangeSphere : h3d.scene.Sphere = null;
-			if(debugPoint == null) {
-				debugPoint = new h3d.scene.Object(ctx.local3d);
-				debugPoint.name = "_debugPoint";
+			case Point:
 
-				mesh = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), debugPoint);
-				mesh.ignoreBounds = true;
+				if(debugDir != null) debugDir.remove();
+				if(debugSpot != null) debugSpot.remove();
 
-				var highlight = new h3d.scene.Object(debugPoint);
-				highlight.name = "_highlight";
-				highlight.visible = false;
-				sizeSphere = new h3d.scene.Sphere(0xffffff, size, true, highlight);
-				sizeSphere.ignoreBounds = true;
-				sizeSphere.ignoreCollide = true;
-				sizeSphere.material.mainPass.setPassName("overlay");
+				var rangeSphere : h3d.scene.Sphere;
 
-				rangeSphere = new h3d.scene.Sphere(0xffffff, range, true, highlight);
-				rangeSphere.ignoreBounds = true;
-				rangeSphere.name = "selection";
-				rangeSphere.visible = false;
-				rangeSphere.ignoreCollide = true;
-				rangeSphere.material.mainPass.setPassName("overlay");
-			}
-			else {
-				mesh = cast debugPoint.getChildAt(0);
-				sizeSphere = cast debugPoint.getChildAt(1).getChildAt(0);
-				rangeSphere = cast debugPoint.getChildAt(1).getChildAt(1);
-			}
-			debugPoint.setScale(1/range);
-			mesh.setScale(hxd.Math.clamp(size, 0.1, 0.5));
-			sizeSphere.radius = size;
-			rangeSphere.radius = range;
-			sel = rangeSphere;
+				if(debugPoint == null) {
+					debugPoint = new h3d.scene.Object(ctx.local3d);
+					debugPoint.name = "_debugPoint";
+
+					mesh = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), debugPoint);
+					mesh.ignoreBounds = true;
+
+					rangeSphere = new h3d.scene.Sphere(0xffffff, range, true, debugPoint);
+					rangeSphere.visible = false;
+					rangeSphere.ignoreBounds = true;
+					rangeSphere.ignoreCollide = true;
+					rangeSphere.material.mainPass.setPassName("overlay");
+					rangeSphere.material.shadows = false;
+				}
+				else {
+					mesh = cast debugPoint.getChildAt(0);
+					rangeSphere = cast debugPoint.getChildAt(1);
+				}
+
+				debugPoint.setScale(1/range);
+				mesh.setScale(hxd.Math.clamp(size, 0.1, 0.5));
+				rangeSphere.material.color.setColor(color);
+				rangeSphere.radius = range;
+				sel = rangeSphere;
+
+			case Directional :
+
+				if(debugPoint != null) debugPoint.remove();
+				if(debugSpot != null) debugSpot.remove();
+
+				if(debugDir == null) {
+					debugDir = new h3d.scene.Object(ctx.local3d);
+					debugDir.name = "_debugDir";
+
+					mesh = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), debugDir);
+					mesh.ignoreBounds = true;
+					mesh.scale(0.5);
+
+					var g = new h3d.scene.Graphics(debugDir);
+					g.lineStyle(1, 0xffffff);
+					g.moveTo(0,0,0);
+					g.lineTo(10,0,0);
+					g.ignoreBounds = true;
+					g.ignoreCollide = true;
+					g.visible = false;
+					g.material.mainPass.setPassName("overlay");
+					sel = g;
+				}
+				else {
+					mesh = cast debugDir.getChildAt(0);
+					sel = debugDir.getChildAt(1);
+				}
+
+			case Spot:
+
+				if(debugDir != null) debugDir.remove();
+				if(debugPoint != null) debugPoint.remove();
+
+				if(debugSpot == null) {
+					debugSpot = new h3d.scene.Object(ctx.local3d);
+					debugSpot.name = "_debugSpot";
+
+					mesh = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), debugSpot);
+					mesh.ignoreBounds = true;
+					mesh.scale(0.5);
+
+					var g = new h3d.scene.Graphics(debugSpot);
+					g.lineStyle(1, this.color);
+					var offset = hxd.Math.sin(hxd.Math.degToRad(angle)) * maxRange;
+					g.moveTo(0,0,0); g.lineTo(maxRange, offset, offset);
+					g.moveTo(0,0,0); g.lineTo(maxRange, -offset, offset);
+					g.moveTo(0,0,0); g.lineTo(maxRange, offset, -offset);
+					g.moveTo(0,0,0); g.lineTo(maxRange, -offset, -offset);
+					g.lineTo(maxRange, offset, -offset);
+					g.lineTo(maxRange, offset, offset);
+					g.lineTo(maxRange, -offset, offset);
+					g.lineTo(maxRange, -offset, -offset);
+
+					g.ignoreBounds = true;
+					g.ignoreCollide = true;
+					g.visible = false;
+					g.material.mainPass.setPassName("overlay");
+					sel = g;
+				}
+				else{
+					var g : h3d.scene.Graphics = Std.instance(debugSpot.getChildAt(1), h3d.scene.Graphics);
+					g.clear();
+					g.lineStyle(1, this.color);
+					var offset = hxd.Math.sin(hxd.Math.degToRad(angle)) * maxRange;
+					g.moveTo(0,0,0); g.lineTo(maxRange, offset, offset);
+					g.moveTo(0,0,0); g.lineTo(maxRange, -offset, offset);
+					g.moveTo(0,0,0); g.lineTo(maxRange, offset, -offset);
+					g.moveTo(0,0,0); g.lineTo(maxRange, -offset, -offset);
+					g.lineTo(maxRange, offset, -offset);
+					g.lineTo(maxRange, offset, offset);
+					g.lineTo(maxRange, -offset, offset);
+					g.lineTo(maxRange, -offset, -offset);
+
+					mesh = cast debugSpot.getChildAt(0);
+					sel = debugSpot.getChildAt(1);
+				}
+
+				debugSpot.setScale(1/maxRange);
 		}
-		else {
-			if(debugPoint != null)
-				debugPoint.remove();
 
-			if(debugDir == null) {
-				debugDir = new h3d.scene.Object(ctx.local3d);
-				debugDir.name = "_debugDir";
-
-				mesh = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), debugDir);
-				mesh.ignoreBounds = true;
-				mesh.scale(0.5);
-
-				var g = new h3d.scene.Graphics(debugDir);
-				g.lineStyle(1, 0xffffff);
-				g.moveTo(0,0,0);
-				g.lineTo(10,0,0);
-				g.ignoreBounds = true;
-				g.ignoreCollide = true;
-				g.visible = false;
-				g.material.mainPass.setPassName("overlay");
-				sel = g;
-			}
-			else {
-				mesh = cast debugDir.getChildAt(0);
-				sel = debugDir.getChildAt(1);
-			}
-
+		if(mesh != null){
+			var mat = mesh.material;
+			mat.mainPass.setPassName("overlay");
+			mat.color.setColor(color);
+			mat.shadows = false;
 		}
 
-		var mat = mesh.material;
-		mat.mainPass.setPassName("overlay");
-		mat.color.setColor(color);
-		mat.shadows = false;
-
-		var isSelected = sel.visible;
-		if( debugPoint != null ) debugPoint.visible = isSelected || ctx.shared.editorDisplay;
-		if( debugDir != null ) debugDir.visible = isSelected || ctx.shared.editorDisplay;
-		sel.name = "__selection";
+		var isSelected = false;
+		if(sel != null){
+			isSelected = sel.visible;
+			if( debugPoint != null ) debugPoint.visible = isSelected || ctx.shared.editorDisplay;
+			if( debugDir != null ) debugDir.visible = isSelected || ctx.shared.editorDisplay;
+			if( debugSpot != null ) debugSpot.visible = isSelected || ctx.shared.editorDisplay;
+			sel.name = "__selection";
+		}
 		// no "Mixed" in editor (prevent double shadowing)
 		if( light.shadows.mode == Mixed ) light.shadows.mode = Static;
 		// when selected, force Dynamic mode (realtime preview)
@@ -254,12 +336,15 @@ class Light extends Object3D {
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
 
-		var group = new hide.Element('<div class="group" name="Light">
+		var group = new hide.Element('
+			<div class="group" name="Light">
 				<dl>
+					<dt>Main Light</dt><dd><input type="checkbox" field="isMainLight"/></dd>
 					<dt>Kind</dt><dd>
 						<select field="kind">
 							<option value="Point">Point</option>
 							<option value="Directional">Directional</option>
+							<option value="Spot">Spot</option>
 						</select></dd>
 					<dt>Color</dt><dd><input type="color" field="color"/></dd>
 					<dt>Power</dt><dd><input type="range" min="0" max="10" field="power"/></dd>
@@ -269,18 +354,17 @@ class Light extends Object3D {
 
 
 		switch( kind ) {
+		case Spot:
+			group.append(hide.comp.PropsEditor.makePropsList([
+				{ name: "range", t: PFloat(1, 200), def: 10 },
+				{ name: "maxRange", t: PFloat(1, 200), def: 10 },
+				{ name: "angle", t: PFloat(1, 90), def: 90 },
+				{ name: "fallOff", t: PFloat(1, 90), def: 80 },
+			]));
 		case Point:
 			group.append(hide.comp.PropsEditor.makePropsList([
-				{
-					name: "size",
-					t: PFloat(0, 5),
-					def: 0
-				},
-				{
-					name: "range",
-					t: PFloat(1, 20),
-					def: 10
-				},
+				{ name: "size", t: PFloat(0, 5), def: 0 },
+				{ name: "range", t: PFloat(1, 20), def: 10 },
 			]));
 		default:
 		}
