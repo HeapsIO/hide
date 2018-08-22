@@ -111,7 +111,7 @@ class Light extends Object3D {
 			switch( kind ) {
 			case Point: ctx.local3d = new h3d.scene.PointLight(ctx.local3d);
 			case Directional: ctx.local3d = new h3d.scene.DirLight(ctx.local3d);
-			case Spot: ctx.local3d = new h3d.scene.SpotLight(ctx.local3d);
+			case Spot:
 			}
 		} else {
 			switch( kind ) {
