@@ -149,9 +149,6 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		if(current != null && current.type == "object" && current.name == "settings" && current.parent == sceneData)
 			newItems.push(getNewTypeMenuItem("renderProps",current)); // hack : todo
 
-		var curLayer = current != null ? current.to(hide.prefab.l3d.Layer) : null;
-		var cdbSheet = curLayer != null ? curLayer.getCdbModel(curLayer) : null;
-
 		function setup(p : PrefabElement) {
 			var proj = screenToWorld(scene.s2d.width/2, scene.s2d.height/2);
 			var obj3d = p.to(hide.prefab.Object3D);
@@ -164,9 +161,6 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 				obj3d.setTransform(localMat);
 			}
 
-			if(cdbSheet != null)
-				p.props = cdbSheet.getDefaults();
-
 			autoName(p);
 			haxe.Timer.delay(addObject.bind(p), 0);
 		}
@@ -174,44 +168,55 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		newItems = newItems.concat(super.getNewContextMenu(current));
 
 		function addNewInstances() {
-			if(curLayer == null)
-				return;
-			if(cdbSheet == null)
-				return;
-			var refCol = Instance.findRefColumn(cdbSheet);
-			if(refCol == null)
-				return;
-			var refSheet = cdbSheet.base.getSheet(refCol.sheet);
-			var idCol = Instance.findIDColumn(refSheet);
-			if(idCol != null) {
-				var kindItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
-				for(line in refSheet.lines) {
-					var kind : String = Reflect.getProperty(line, idCol.name);
-					kindItems.push({
-						label : kind,
-						click : function() {
-							var p = new hide.prefab.l3d.Instance(current);
-							p.name = kind.charAt(0).toLowerCase() + kind.substr(1);
-							setup(p);
-							Reflect.setField(p.props, refCol.col.name, kind);
-						}
+			var types = Level3D.getCdbTypes();
+			var items = new Array<hide.comp.ContextMenu.ContextMenuItem>();
+			for(type in types) {
+				var typeId = type.name.split("@").pop();
+				var label = typeId.charAt(0).toUpperCase() + typeId.substr(1);
+
+				var refCol = Instance.findRefColumn(type);
+				if(refCol == null)
+					continue;
+				var refSheet = type.base.getSheet(refCol.sheet);
+				var idCol = Instance.findIDColumn(refSheet);
+
+				function make(name) {
+					var p = new hide.prefab.l3d.Instance(current);
+					p.props = type.getDefaults();
+					Reflect.setField(p.props, "$cdbtype", typeId);
+					p.name = name;
+					setup(p);
+					return p;
+				}
+
+				if(idCol != null) {
+					var kindItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
+					for(line in refSheet.lines) {
+						var kind : String = Reflect.getProperty(line, idCol.name);
+						kindItems.push({
+							label : kind,
+							click : function() {
+								var p = make(kind.charAt(0).toLowerCase() + kind.substr(1));
+								Reflect.setField(p.props, refCol.col.name, kind);
+							}
+						});
+					}
+					items.unshift({
+						label : label,
+						menu: kindItems
 					});
 				}
-				newItems.unshift({
-					label : "Instance",
-					menu: kindItems
-				});
+				else {
+					items.push({
+						label : label,
+						click : make.bind(typeId)
+					});
+				}
 			}
-			else {
-				newItems.unshift({
-					label : "Instance",
-					click : function() {
-						var p = new hide.prefab.l3d.Instance(current);
-						p.name = "object";
-						setup(p);
-					}
-				});
-			}
+			newItems.unshift({
+				label : "Instance",
+				menu: items
+			});
 		};
 		addNewInstances();
 		return newItems;
