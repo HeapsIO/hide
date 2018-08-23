@@ -160,6 +160,15 @@ class SceneEditor {
 				reparentElement(children, parent, 0);
 			}
 		});
+
+		var list = @:privateAccess view.getDisplayState("hideList");
+		if(list != null) {
+			for(i in (list:Array<Dynamic>)) {
+				var c = sceneData.getOpt(Object3D, i);
+				if(c != null)
+					hideList.push(c);
+			}
+		}
 	}
 
 	public dynamic function onResize() {
@@ -265,7 +274,7 @@ class SceneEditor {
 			];
 
 			if(current != null && current.to(Object3D) != null && current.to(hide.prefab.Reference) == null) {
-				var visible = current.to(Object3D).visible;
+				var visible = !isHidden(current);
 				menuItems = menuItems.concat([
 					{ label : "Visible", checked : visible, click : function() setVisible(curEdit.elements, !visible) },
 					{ label : "Select all", click : selectAll },
@@ -665,15 +674,15 @@ class SceneEditor {
 		el.toggleClass("disabled", !p.enabled);
 
 		if(obj3d != null) {
-			el.toggleClass("invisible", !obj3d.visible);
+			el.toggleClass("invisible", isHidden(obj3d));
 			var tog = el.find(".visibility-toggle").first();
 			if(tog.length == 0) {
 				tog = new Element('<i class="fa fa-eye visibility-toggle"/>').appendTo(el.find(".jstree-wholerow").first());
 				tog.click(function(e) {
 					if(curEdit.elements.indexOf(obj3d) >= 0)
-						setVisible(curEdit.elements, !obj3d.visible);
+						setVisible(curEdit.elements, isHidden(obj3d));
 					else
-						setVisible([obj3d], !obj3d.visible);
+						setVisible([obj3d], isHidden(obj3d));
 					
 					e.preventDefault();
 					e.stopPropagation();
@@ -930,7 +939,7 @@ class SceneEditor {
 		var o = elt.to(Object3D);
 		if(o == null)
 			return true;
-		return o.visible && (elt.parent != null ? isVisible(elt.parent) : true);
+		return o.visible && !isHidden(o) && (elt.parent != null ? isVisible(elt.parent) : true);
 	}
 
 	public function getAllSelectable() : Array<PrefabElement> {
@@ -977,11 +986,23 @@ class SceneEditor {
 		}));
 	}
 
+	public function isHidden(e: PrefabElement) {
+		return hideList.indexOf(e) >= 0;
+	}
+
+	function saveHideState() {
+		var state = [for (h in hideList) h.getAbsPath()];
+		@:privateAccess view.saveDisplayState("hideList", state);
+	}
+
 	public function setVisible(elements : Array<PrefabElement>, visible: Bool) {
 		for(e in elements) {
 			var objs = e.flatten(Object3D);
 			for(o in objs) {
-				o.visible = visible;
+				if(visible)
+					hideList.remove(o);
+				else
+					hideList.push(o);
 				var ctx = getContext(o);
 				if(ctx != null) {
 					o.updateInstance(ctx, "visible");
@@ -989,6 +1010,7 @@ class SceneEditor {
 				onPrefabChange(o, "visible");
 			}
 		}
+		saveHideState();
 	}
 
 	function isolate(elts : Array<PrefabElement>) {
@@ -1112,9 +1134,11 @@ class SceneEditor {
 		}];
 		var oldContexts = contexts.copy();
 		for(e in elts) {
+			hideList.remove(e);
 			for(c in e.flatten())
 				contexts.remove(c);
 		}
+		saveHideState();
 		var newContexts = contexts.copy();
 		function action(undo) {
 			if( undo ) {

@@ -619,7 +619,7 @@ class Level3D extends FileView {
 
 		var obj3d = p.to(Object3D);
 		if(obj3d != null) {
-			var visible = obj3d.visible && sceneFilters.get(p.type) != false;
+			var visible = obj3d.visible && !sceneEditor.isHidden(obj3d) && sceneFilters.get(p.type) != false;
 			if(visible) {
 				var cdbType = getCdbTypeId(p);
 				if(cdbType != null && sceneFilters.get(cdbType) == false)
