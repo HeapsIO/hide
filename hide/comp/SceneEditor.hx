@@ -114,6 +114,7 @@ class SceneEditor {
 		tree = new hide.comp.IconTree();
 		tree.async = false;
 		tree.autoOpenNodes = false;
+		tree.checkboxes = true;
 
 		var sceneEl = new Element('<div class="scene"></div>');
 		scene = new hide.comp.Scene(view.props, null, sceneEl);
@@ -655,9 +656,24 @@ class SceneEditor {
 
 	function updateTreeStyle(p: PrefabElement, el: Element) {
 		var obj3d  = p.to(Object3D);
-		if(obj3d != null)
-			el.toggleClass("invisible", !obj3d.visible);
 		el.toggleClass("disabled", !p.enabled);
+
+		if(obj3d != null) {
+			el.toggleClass("invisible", !obj3d.visible);
+			var tog = el.find(".visibility-toggle").first();
+			if(tog.length == 0) {
+				tog = new Element('<i class="fa fa-eye visibility-toggle"/>').appendTo(el.find(".jstree-wholerow").first());
+				tog.click(function(e) {
+					if(curEdit.elements.indexOf(obj3d) >= 0)
+						setVisible(curEdit.elements, !obj3d.visible);
+					else
+						setVisible([obj3d], !obj3d.visible);
+					
+					e.preventDefault();
+					e.stopPropagation();
+				});
+			}
+		}
 	}
 
 	public function getContext(elt : PrefabElement) {
@@ -952,32 +968,17 @@ class SceneEditor {
 	}
 
 	public function setVisible(elements : Array<PrefabElement>, visible: Bool) {
-		var obj3ds = [];
 		for(e in elements) {
-			var o = e.to(Object3D);
-			if(o != null) {
-				obj3ds.push({o: o, vis: o.visible});
-			}
-		}
-
-		function apply(b) {
-			for(c in obj3ds) {
-				c.o.visible = b ? visible : c.vis;
-				var ctx = getContext(c.o);
+			var objs = e.flatten(Object3D);
+			for(o in objs) {
+				o.visible = visible;
+				var ctx = getContext(o);
 				if(ctx != null) {
-					c.o.updateInstance(ctx, "visible");
+					o.updateInstance(ctx, "visible");
 				}
-				onPrefabChange(c.o);
+				onPrefabChange(o, "visible");
 			}
 		}
-
-		apply(true);
-		undo.change(Custom(function(undo) {
-			if(undo)
-				apply(false);
-			else
-				apply(true);
-		}));
 	}
 
 	function isolate(elts : Array<PrefabElement>) {

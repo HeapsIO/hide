@@ -852,6 +852,13 @@ body.hide-subview .lm_controls {
 .jstree-icon i {
   color: #aaa;
 }
+.visibility-toggle {
+  float: right;
+  padding: 4px;
+}
+.visibility-toggle:hover {
+  color: white;
+}
 .jstree.small a {
   font-size: 12px;
 }
