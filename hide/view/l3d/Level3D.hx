@@ -228,7 +228,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		var sheet = Level3D.getCdbModel(e);
 		var group = new hide.Element('
 			<div class="group" name="CDB">
-				<dl><dt>Type</dt><dd><select><option value="">-- Choose --</option></select></dd>
+				<dl><dt>Type</dt><dd><select><option value="">- No props -</option></select></dd>
 			</div>
 		');
 
@@ -242,17 +242,24 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		if(sheet != null) {
 			select.val(sheet.name.split("@").pop());
 		}
-		select.change(function(v) {
-			var typeId = select.val();
-			var cdbSheet = Level3D.resolveCdbType(typeId);
-			if(cdbSheet == null)
-				return;
 
+		function changeProps(props: Dynamic) {
 			properties.undo.change(Field(e, "props", e.props), ()->edit.rebuildProperties());
-			e.props = cdbSheet.getDefaults();
-			Reflect.setField(e.props, "$cdbtype", typeId);
+			e.props = props;
 			edit.onChange(e, "props");
 			edit.rebuildProperties();
+		}
+
+		select.change(function(v) {
+			var typeId = select.val();
+			if(typeId == null || typeId == "") {
+				changeProps(null);
+				return;
+			}
+			var cdbSheet = Level3D.resolveCdbType(typeId);
+			var props = cdbSheet.getDefaults();
+			Reflect.setField(props, "$cdbtype", typeId);
+			changeProps(props);
 		});
 
 		edit.properties.add(group);
