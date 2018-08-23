@@ -71,7 +71,6 @@
 	"l3d.groundLayer": "ground",
 	"l3d.cdbLevel": "level",
 	"l3d.colors": {
-		"zones": "#ff0000"
 	},
 	"l3d.treeStyles": {
 		"settings": {"color": "#ffffff", "font-weight": "bold"}

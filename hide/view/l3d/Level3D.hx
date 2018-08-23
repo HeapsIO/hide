@@ -624,7 +624,7 @@ class Level3D extends FileView {
 		if(color == null)
 			color = 0x80ffffff;
 		else
-			color = (color & 0xffffff) | 0x80000000;
+			color = (color & 0xffffff) | 0xa0000000;
 
 		var box = p.to(hide.prefab.Box);
 		if(box != null) {
