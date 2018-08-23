@@ -93,7 +93,7 @@ class SceneEditor {
 	var interactives : Map<PrefabElement, h3d.scene.Interactive>;
 	var ide : hide.Ide;
 	var event : hxd.WaitEvent;
-	var hideList : Array<PrefabElement> = [];
+	var hideList : Map<PrefabElement, Bool> = new Map();
 
 	var undo(get, null):hide.ui.UndoHistory;
 	function get_undo() { return view.undo; }
@@ -163,10 +163,11 @@ class SceneEditor {
 
 		var list = @:privateAccess view.getDisplayState("hideList");
 		if(list != null) {
-			for(i in (list:Array<Dynamic>)) {
-				var c = sceneData.getOpt(Object3D, i);
-				if(c != null)
-					hideList.push(c);
+			var m = [for(i in (list:Array<Dynamic>)) i => true];
+			var all = sceneData.flatten(hxd.prefab.Prefab);
+			for(p in all) {
+				if(m.exists(p.getAbsPath()))
+					hideList.set(p, true);
 			}
 		}
 	}
@@ -674,7 +675,7 @@ class SceneEditor {
 		el.toggleClass("disabled", !p.enabled);
 
 		if(obj3d != null) {
-			el.toggleClass("invisible", isHidden(obj3d));
+			el.children().not("ul").toggleClass("hidden", isHidden(obj3d));
 			var tog = el.find(".visibility-toggle").first();
 			if(tog.length == 0) {
 				tog = new Element('<i class="fa fa-eye visibility-toggle"/>').appendTo(el.find(".jstree-wholerow").first());
@@ -987,11 +988,11 @@ class SceneEditor {
 	}
 
 	public function isHidden(e: PrefabElement) {
-		return hideList.indexOf(e) >= 0;
+		return hideList.exists(e);
 	}
 
 	function saveHideState() {
-		var state = [for (h in hideList) h.getAbsPath()];
+		var state = [for (h in hideList.keys()) h.getAbsPath()];
 		@:privateAccess view.saveDisplayState("hideList", state);
 	}
 
@@ -1002,12 +1003,10 @@ class SceneEditor {
 				if(visible)
 					hideList.remove(o);
 				else
-					hideList.push(o);
-				var ctx = getContext(o);
-				if(ctx != null) {
-					o.updateInstance(ctx, "visible");
-				}
-				onPrefabChange(o, "visible");
+					hideList.set(o, true);
+				var el = tree.getElement(o);
+				applyTreeStyle(o, el);
+				applySceneStyle(o);
 			}
 		}
 		saveHideState();

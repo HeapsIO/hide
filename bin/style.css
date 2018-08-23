@@ -823,12 +823,8 @@ body.hide-subview .lm_controls {
 .jstree .filtered {
   display: none;
 }
-.jstree .invisible a {
+.jstree .hidden {
   color: #555 !important;
-  display: inline;
-}
-.jstree .invisible i {
-  color: #555;
 }
 .jstree .disabled a {
   color: #533 !important;
