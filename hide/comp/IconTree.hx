@@ -88,6 +88,7 @@ class IconTree<T:{}> extends Component {
 	public function init() {
 		(element:Dynamic).jstree({
 			core : {
+				dblclick_toggle: false,
 				animation: 50,
 				themes: {
 					name: "default-dark",

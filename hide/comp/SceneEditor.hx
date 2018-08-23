@@ -93,6 +93,7 @@ class SceneEditor {
 	var interactives : Map<PrefabElement, h3d.scene.Interactive>;
 	var ide : hide.Ide;
 	var event : hxd.WaitEvent;
+	var hideList : Array<PrefabElement> = [];
 
 	var undo(get, null):hide.ui.UndoHistory;
 	function get_undo() { return view.undo; }
@@ -114,7 +115,6 @@ class SceneEditor {
 		tree = new hide.comp.IconTree();
 		tree.async = false;
 		tree.autoOpenNodes = false;
-		tree.checkboxes = true;
 
 		var sceneEl = new Element('<div class="scene"></div>');
 		scene = new hide.comp.Scene(view.props, null, sceneEl);
@@ -322,7 +322,7 @@ class SceneEditor {
 				}, 50);
 			}
 		}
-		tree.applyStyle = updateTreeStyle;
+		tree.applyStyle = applyTreeStyle;
 		selectObjects([]);
 		refresh();
 	}
@@ -334,7 +334,7 @@ class SceneEditor {
 			for(elt in all) {
 				var el = tree.getElement(elt);
 				if(el == null) continue;
-				updateTreeStyle(elt, el);
+				applyTreeStyle(elt, el);
 			}
 			if(callb != null) callb();
 		});
@@ -364,6 +364,10 @@ class SceneEditor {
 		scene.init();
 		scene.engine.backgroundColor = bgcol;
 		refreshInteractives();
+
+		var all = sceneData.flatten(hxd.prefab.Prefab);
+		for(elt in all)
+			applySceneStyle(elt);
 		onRefresh();
 	}
 
@@ -650,11 +654,13 @@ class SceneEditor {
 
 		if(p != sceneData) {
 			var el = tree.getElement(p);
-			updateTreeStyle(p, el);
+			applyTreeStyle(p, el);
 		}
+
+		applySceneStyle(p);
 	}
 
-	function updateTreeStyle(p: PrefabElement, el: Element) {
+	public function applyTreeStyle(p: PrefabElement, el: Element) {
 		var obj3d  = p.to(Object3D);
 		el.toggleClass("disabled", !p.enabled);
 
@@ -674,6 +680,10 @@ class SceneEditor {
 				});
 			}
 		}
+	}
+
+	public function applySceneStyle(p: PrefabElement) {
+	
 	}
 
 	public function getContext(elt : PrefabElement) {

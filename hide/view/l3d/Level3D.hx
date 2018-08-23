@@ -114,9 +114,14 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		selectObjects(all);
 	}
 
-	override function updateTreeStyle(p: PrefabElement, el: Element) {
-		super.updateTreeStyle(p, el);
-		parent.updateTreeStyle(p, el);
+	override function applyTreeStyle(p: PrefabElement, el: Element) {
+		super.applyTreeStyle(p, el);
+		parent.applyTreeStyle(p, el);
+	}
+
+	override function applySceneStyle(p:PrefabElement) {
+		super.applySceneStyle(p);
+		parent.applySceneStyle(p);
 	}
 
 	override function onPrefabChange(p: PrefabElement, ?pname: String) {
@@ -499,10 +504,6 @@ class Level3D extends FileView {
 	}
 
 	function onRefreshScene() {
-		var all = data.flatten(hxd.prefab.Prefab);
-		for(elt in all)
-			refreshSceneStyle(elt);
-
 		// Apply first render props
 		var settings = data.children.find(c -> c.name == "settings");
 		if(settings != null) {
@@ -555,7 +556,7 @@ class Level3D extends FileView {
 		var all = data.flatten(hxd.prefab.Prefab);
 		for(p in all) {
 			if(p.type == typeid || getCdbTypeId(p) == typeid) {
-				refreshSceneStyle(p);
+				sceneEditor.applySceneStyle(p);
 			}
 		}
 	}
@@ -588,8 +589,7 @@ class Level3D extends FileView {
 		initDone = true;
 	}
 
-
-	function updateTreeStyle(p: PrefabElement, el: Element) {
+	function applyTreeStyle(p: PrefabElement, el: Element) {
 		var styles = ide.currentProps.get("l3d.treeStyles");
 		var style: Dynamic = null;
 		var typeId = getCdbTypeId(p);
@@ -607,10 +607,10 @@ class Level3D extends FileView {
 	}
 
 	function onPrefabChange(p: PrefabElement, ?pname: String) {
-		refreshSceneStyle(p);
+		
 	}
 
-	function refreshSceneStyle(p: PrefabElement) {
+	function applySceneStyle(p: PrefabElement) {
 		var level3d = p.to(hide.prefab.l3d.Level3D);
 		if(level3d != null) {
 			updateGrid();
