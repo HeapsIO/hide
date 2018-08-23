@@ -661,10 +661,14 @@ class SceneEditor {
 	}
 
 	public function getContext(elt : PrefabElement) {
-		if(elt != null) {
-			return context.shared.contexts.get(elt);
-		}
-		return null;
+		if(elt == null) return null;
+		return context.shared.contexts.get(elt);
+	}
+
+	public function getContexts(elt: PrefabElement) {
+		if(elt == null)
+			return null;
+		return context.shared.getContexts(elt);
 	}
 
 	public function getObject(elt: PrefabElement) {

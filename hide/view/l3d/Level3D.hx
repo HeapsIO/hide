@@ -171,7 +171,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 			var types = Level3D.getCdbTypes();
 			var items = new Array<hide.comp.ContextMenu.ContextMenuItem>();
 			for(type in types) {
-				var typeId = type.name.split("@").pop();
+				var typeId = Level3D.getCdbTypeId(type);
 				var label = typeId.charAt(0).toUpperCase() + typeId.substr(1);
 
 				var refCol = Instance.findRefColumn(type);
@@ -236,11 +236,11 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		var cdbTypes = Level3D.getCdbTypes();
 		for(t in cdbTypes) {
 			var current = sheet != null && sheet.name == t.name;
-			var id = t.name.split("@").pop();
+			var id = Level3D.getCdbTypeId(t);
 			var opt = new hide.Element("<option>").attr("value", id).text(id).appendTo(select);
 		}
 		if(sheet != null) {
-			select.val(sheet.name.split("@").pop());
+			select.val(Level3D.getCdbTypeId(sheet));
 		}
 
 		function changeProps(props: Dynamic) {
@@ -294,7 +294,7 @@ class Level3D extends FileView {
 	var currentVersion : Int = 0;
 	var lastSyncChange : Float = 0.;
 	var currentSign : String;
-	var typeColorMap : Map<String, String>;
+	var sceneFilters : Map<String, Bool>;
 
 	var scene(get, null):  hide.comp.Scene;
 	function get_scene() return sceneEditor.scene;
@@ -307,16 +307,6 @@ class Level3D extends FileView {
 		var content = sys.io.File.getContent(getPath());
 		data.load(haxe.Json.parse(content));
 		currentSign = haxe.crypto.Md5.encode(content);
-
-		// typeColorMap = new Map();
-		// var colors = ide.currentProps.get("l3d.colors");
-		// if(colors != null) {
-		// 	for(f in Reflect.fields(colors)) {
-		// 		var col = Reflect.field(color, f);
-
-		// 	}
-		// }
-		
 
 		element.html('
 			<div class="flex vertical">
@@ -364,6 +354,8 @@ class Level3D extends FileView {
 			edit.cleanups = [];
 			data.edit(edit);
 		}
+
+		refreshSceneFilters();
 	}
 
 	public function onSceneReady() {
@@ -504,7 +496,6 @@ class Level3D extends FileView {
 	}
 
 	function onRefresh() {
-		refreshLayerIcons();
 	}
 
 	function onRefreshScene() {
@@ -559,40 +550,42 @@ class Level3D extends FileView {
 		return false;
 	}
 
-	function refreshLayerIcons() {
+	function applySceneFilter(typeid: String, visible: Bool) {
+		saveDisplayState("sceneFilters/" + typeid, visible);
+		var all = data.flatten(hxd.prefab.Prefab);
+		for(p in all) {
+			if(p.type == typeid || getCdbTypeId(p) == typeid) {
+				refreshSceneStyle(p);
+			}
+		}
+	}
+
+	function refreshSceneFilters() {
+		var filters = ["model", "polygon", "box", "instance", "light"];
+		for(sheet in getCdbTypes()) {
+			filters.push(getCdbTypeId(sheet));
+		}
+		sceneFilters = new Map();
+		for(f in filters) {
+			sceneFilters.set(f, getDisplayState("sceneFilters/" + f) != false);
+		}
+
 		if(layerButtons != null) {
 			for(b in layerButtons)
 				b.element.remove();
 		}
 		layerButtons = new Map<PrefabElement, hide.comp.Toolbar.ToolToggle>();
-		var all = data.flatten(hxd.prefab.Prefab);
 		var initDone = false;
-		for(elt in all) {
-			var layer = elt.to(hide.prefab.l3d.Layer);
-			if(layer == null) continue;
-			layerButtons[elt] = layerToolbar.addToggle("file", layer.name, layer.name, function(on) {
+		for(typeid in sceneFilters.keys()) {
+			var btn = layerToolbar.addToggle("", typeid, typeid.charAt(0).toLowerCase() + typeid.substr(1), function(on) {
+				sceneFilters.set(typeid, on);
 				if(initDone)
-					sceneEditor.setVisible([layer], on);
-			}, layer.visible);
-
-			refreshLayerIcon(layer);
+					applySceneFilter(typeid, on);
+			});
+			if(sceneFilters.get(typeid) != false)
+				btn.toggle(true);
 		}
 		initDone = true;
-	}
-
-	function refreshLayerIcon(layer: hide.prefab.l3d.Layer) {
-		// var lb = layerButtons[layer];
-		// if(lb != null) {
-		// 	var color = "#" + StringTools.hex(layer.color & 0xffffff, 6);
-		// 	if(layer.visible != lb.isDown())
-		// 		lb.toggle(layer.visible);
-		// 	lb.element.find(".icon").css("color", color);
-		// 	var label = lb.element.find("label");
-		// 	if(layer.locked)
-		// 		label.addClass("locked");
-		// 	else
-		// 		label.removeClass("locked");
-		// }
 	}
 
 
@@ -623,9 +616,19 @@ class Level3D extends FileView {
 			updateGrid();
 			return;
 		}
-		// var layer = p.to(hide.prefab.l3d.Layer);
-		// if(layer != null)
-		// 	applyLayerProps(layer);
+
+		var obj3d = p.to(Object3D);
+		if(obj3d != null) {
+			var visible = obj3d.visible && sceneFilters.get(p.type) != false;
+			if(visible) {
+				var cdbType = getCdbTypeId(p);
+				if(cdbType != null && sceneFilters.get(cdbType) == false)
+					visible = false;
+			}
+			for(ctx in sceneEditor.getContexts(obj3d)) {
+				ctx.local3d.visible = visible;
+			}
+		}
 
 		var color = getDisplayColor(p);
 		if(color == null)
@@ -679,7 +682,7 @@ class Level3D extends FileView {
 
 	static function resolveCdbType(id: String) {
 		var types = Level3D.getCdbTypes();
-		return types.find(t -> t.name.split("@").pop() == id);
+		return types.find(t -> getCdbTypeId(t) == id);
 	}
 
 	public static function getCdbTypes() {
@@ -688,10 +691,15 @@ class Level3D extends FileView {
 		return [for(c in levelSheet.columns) if(c.type == TList) levelSheet.getSub(c)];
 	}
 
-	public static function getCdbTypeId(p: PrefabElement) : String {
-		if(p.props == null)
-			return null;
-		return Reflect.getProperty(p.props, "$cdbtype");
+	public static function getCdbTypeId(?p: PrefabElement, ?sheet: cdb.Sheet) : String {
+		if(p != null) {
+			if(p.props == null)
+				return null;
+			return Reflect.getProperty(p.props, "$cdbtype");
+		}
+		else {
+			return sheet.name.split("@").pop();
+		}
 	}
 
 	public static function getCdbModel(e:hxd.prefab.Prefab):cdb.Sheet {
