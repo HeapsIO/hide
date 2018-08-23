@@ -38,6 +38,8 @@ class Light extends Object3D {
 	public var maxRange : Float = 20;
 	public var angle : Float = 90;
 	public var fallOff : Float = 80;
+	public var cookieTex : h3d.mat.Texture = null;
+	public var cookiePath : String = null;
 
 	static function getShadowsDefault() : LightShadows {
 		return {
@@ -67,6 +69,7 @@ class Light extends Object3D {
 		obj.angle = angle;
 		obj.fallOff = fallOff;
 		obj.maxRange = maxRange;
+		obj.cookiePath = cookiePath;
 
 		if( shadows.mode != None ) {
 			obj.shadows = Reflect.copy(shadows);
@@ -87,9 +90,8 @@ class Light extends Object3D {
 		angle = obj.angle;
 		fallOff = obj.fallOff;
 		maxRange = obj.maxRange;
+		cookiePath = obj.cookiePath;
 
-		trace(obj);
-		trace(obj.shadows);
 		if( obj.shadows != null ) {
 			var sh : Dynamic = Reflect.copy(obj.shadows);
 			sh.mode = h3d.pass.Shadows.RenderMode.createByName(sh.mode);
@@ -101,6 +103,15 @@ class Light extends Object3D {
 	override function applyPos( o : h3d.scene.Object ) {
 		super.applyPos(o);
 		o.setScale(1.0);
+	}
+
+	function initTexture(path : String, ?wrap : h3d.mat.Data.Wrap){
+		if(path != null){
+			var texture = hxd.res.Loader.currentInstance.load(path).toTexture();
+			if(texture != null ) texture.wrap = wrap == null ? Repeat : wrap;
+			return texture;
+		}
+		return null;
 	}
 
 	override function makeInstance(ctx:Context):Context {
@@ -121,7 +132,10 @@ class Light extends Object3D {
 			}
 		}
 		ctx.local3d.name = name;
+
+		cookieTex = initTexture(cookiePath);
 		updateInstance(ctx);
+
 		if(!ctx.isRef)
 			loadBaked(ctx);
 		return ctx;
@@ -158,6 +172,7 @@ class Light extends Object3D {
 			sl.maxRange = maxRange;
 			sl.angle = angle;
 			sl.fallOff = fallOff;
+			sl.cookie = cookieTex;
 		case Point:
 			var pl = Std.instance(light, h3d.scene.pbr.PointLight);
 			pl.range = range;
@@ -254,19 +269,20 @@ class Light extends Object3D {
 
 					mesh = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), debugSpot);
 					mesh.ignoreBounds = true;
-					mesh.scale(0.5);
+					mesh.scaleX = 1.0 / maxRange;
+					mesh.scaleY = 1.0 / (hxd.Math.tan(hxd.Math.degToRad(angle/2.0)) * maxRange);
+					mesh.scaleZ = 1.0 / (hxd.Math.tan(hxd.Math.degToRad(angle/2.0)) * maxRange);
 
 					var g = new h3d.scene.Graphics(debugSpot);
 					g.lineStyle(1, this.color);
-					var offset = hxd.Math.sin(hxd.Math.degToRad(angle)) * maxRange;
-					g.moveTo(0,0,0); g.lineTo(maxRange, offset, offset);
-					g.moveTo(0,0,0); g.lineTo(maxRange, -offset, offset);
-					g.moveTo(0,0,0); g.lineTo(maxRange, offset, -offset);
-					g.moveTo(0,0,0); g.lineTo(maxRange, -offset, -offset);
-					g.lineTo(maxRange, offset, -offset);
-					g.lineTo(maxRange, offset, offset);
-					g.lineTo(maxRange, -offset, offset);
-					g.lineTo(maxRange, -offset, -offset);
+					g.moveTo(0,0,0); g.lineTo(1, 1, 1);
+					g.moveTo(0,0,0); g.lineTo(1, -1, 1);
+					g.moveTo(0,0,0); g.lineTo(1, 1, -1);
+					g.moveTo(0,0,0); g.lineTo(1, -1, -1);
+					g.lineTo(1, 1, -1);
+					g.lineTo(1, 1, 1);
+					g.lineTo(1, -1, 1);
+					g.lineTo(1, -1, -1);
 
 					g.ignoreBounds = true;
 					g.ignoreCollide = true;
@@ -278,21 +294,21 @@ class Light extends Object3D {
 					var g : h3d.scene.Graphics = Std.instance(debugSpot.getChildAt(1), h3d.scene.Graphics);
 					g.clear();
 					g.lineStyle(1, this.color);
-					var offset = hxd.Math.sin(hxd.Math.degToRad(angle)) * maxRange;
-					g.moveTo(0,0,0); g.lineTo(maxRange, offset, offset);
-					g.moveTo(0,0,0); g.lineTo(maxRange, -offset, offset);
-					g.moveTo(0,0,0); g.lineTo(maxRange, offset, -offset);
-					g.moveTo(0,0,0); g.lineTo(maxRange, -offset, -offset);
-					g.lineTo(maxRange, offset, -offset);
-					g.lineTo(maxRange, offset, offset);
-					g.lineTo(maxRange, -offset, offset);
-					g.lineTo(maxRange, -offset, -offset);
+					g.moveTo(0,0,0); g.lineTo(1, 1, 1);
+					g.moveTo(0,0,0); g.lineTo(1, -1, 1);
+					g.moveTo(0,0,0); g.lineTo(1, 1, -1);
+					g.moveTo(0,0,0); g.lineTo(1, -1, -1);
+					g.lineTo(1, 1, -1);
+					g.lineTo(1, 1, 1);
+					g.lineTo(1, -1, 1);
+					g.lineTo(1, -1, -1);
 
 					mesh = cast debugSpot.getChildAt(0);
-					sel = debugSpot.getChildAt(1);
+					mesh.scaleX = 1.0 / maxRange;
+					mesh.scaleY = 1.0 / (hxd.Math.tan(hxd.Math.degToRad(angle/2.0)) * maxRange);
+					mesh.scaleZ = 1.0 / (hxd.Math.tan(hxd.Math.degToRad(angle/2.0)) * maxRange);
+					sel = g;
 				}
-
-				debugSpot.setScale(1/maxRange);
 		}
 
 		if(mesh != null){
@@ -352,7 +368,6 @@ class Light extends Object3D {
 			</div>
 		');
 
-
 		switch( kind ) {
 		case Spot:
 			group.append(hide.comp.PropsEditor.makePropsList([
@@ -360,6 +375,7 @@ class Light extends Object3D {
 				{ name: "maxRange", t: PFloat(1, 200), def: 10 },
 				{ name: "angle", t: PFloat(1, 90), def: 90 },
 				{ name: "fallOff", t: PFloat(1, 90), def: 80 },
+				{ name: "cookiePath", t: PTexture },
 			]));
 		case Point:
 			group.append(hide.comp.PropsEditor.makePropsList([
@@ -369,11 +385,13 @@ class Light extends Object3D {
 		default:
 		}
 
-		var props = ctx.properties.add(group,this, function(pname) {
+		var props = ctx.properties.add(group, this, function(pname) {
 			if( pname == "kind")
 				ctx.rebuildPrefab(this);
-			else
+			else{
+				if( pname == "cookiePath") cookieTex = loadTexture(ctx, this.cookiePath, cookieTex, Clamp);
 				ctx.onChange(this, pname);
+			}
 		});
 
 		var e = ctx.properties.add(new hide.Element('
@@ -406,7 +424,14 @@ class Light extends Object3D {
 			e.find("dd").not(":first").remove();
 			e.find("dt").not(":first").remove();
 		}
+	}
 
+	function loadTexture( ctx : hide.prefab.EditContext, propsName : String, texture : h3d.mat.Texture, ?wrap : h3d.mat.Data.Wrap){
+		if(texture != null) texture.dispose();
+		if(propsName == null) return null;
+		texture = ctx.rootContext.loadTexture(propsName);
+		texture.wrap = wrap == null ? Repeat : wrap;
+		return texture;
 	}
 
 	override function getHideProps() : HideProps {
