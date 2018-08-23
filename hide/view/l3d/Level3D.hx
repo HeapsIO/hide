@@ -590,25 +590,20 @@ class Level3D extends FileView {
 
 
 	function updateTreeStyle(p: PrefabElement, el: Element) {
-		// var layer = p.to(hide.prefab.l3d.Layer);
-		// if(layer != null) {
-		// 	var color = "#" + StringTools.hex(layer.color & 0xffffff, 6);
-		// 	el.find("i.jstree-themeicon").first().css("color", color);
-		// 	el.find("a").first().toggleClass("locked", layer.locked);
-		// 	refreshLayerIcon(layer);
-		// }
-
-		var dispColor = getDisplayColor(p);
-		var colorStr = dispColor != null ? "#" + StringTools.hex(dispColor & 0xffffff, 6) : "";
-		el.find("a").first().css("color", colorStr);
-		// var type = getCdbTypeId(p);
-		// if(type != null) {
-		// 	var colors = ide.currentProps.get("l3d.colors");
-		// 	var color = Reflect.field(colors, type);
-		// 	if(color != null) {
-		// 		el.find("a").first().css("color", color);
-		// 	}
-		// }
+		var styles = ide.currentProps.get("l3d.treeStyles");
+		var style: Dynamic = null;
+		var typeId = getCdbTypeId(p);
+		if(typeId != null) {
+			style = Reflect.field(styles, typeId);
+		}
+		if(style == null) {
+			style = Reflect.field(styles, p.name);
+		}
+		var a = el.find("a").first();
+		if(style == null)
+			a.removeAttr("style");
+		else
+			a.css(style);
 	}
 
 	function onPrefabChange(p: PrefabElement, ?pname: String) {

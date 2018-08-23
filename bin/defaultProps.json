@@ -73,6 +73,9 @@
 	"l3d.colors": {
 		"zones": "#ff0000"
 	},
+	"l3d.treeStyles": {
+		"settings": {"color": "#ffffff", "font-weight": "bold"}
+	},
 
 	// FX editor
 	"fx.shaders": [
