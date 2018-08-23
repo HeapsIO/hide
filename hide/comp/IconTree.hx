@@ -155,7 +155,12 @@ class IconTree<T:{}> extends Component {
 				applyStyle(item, el);
 			}
 		});
-		element.on("before_open.jstree", function(event, node) {
+		element.on("rename_node.jstree", function(e, data) {
+			var item = map.get(data.node.id).value;
+			var el = getElement(item);
+			applyStyle(item, el);
+		});
+		element.on("before_open.jstree", function(event, data) {
 			var lis = new Element(event.target).find("li");
 			for(li in lis) {
 				applyStyle(map.get(li.id).value, new Element(li));
