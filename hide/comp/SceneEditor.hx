@@ -1223,10 +1223,6 @@ class SceneEditor {
 	function autoName(p : PrefabElement) {
 
 		var uniqueName = false;
-		var layer = p.getParent(hide.prefab.l3d.Layer);
-		if(layer != null) {
-			uniqueName = layer.uniqueNames;
-		}
 		if( p.type == "volumetricLightmap" || p.type == "light" )
 			uniqueName = true;
 

@@ -7,7 +7,6 @@ import hxd.Key as K;
 import hide.prefab.Prefab as PrefabElement;
 import hide.prefab.Object3D;
 import hide.prefab.l3d.Instance;
-import hide.prefab.l3d.Layer;
 import h3d.scene.Object;
 
 
@@ -109,11 +108,6 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		parent.onSceneReady();
 	}
 
-	override function selectAll() {
-		var all = [for(e in getAllSelectable()) if(e.to(Layer) == null) e];
-		selectObjects(all);
-	}
-
 	override function applyTreeStyle(p: PrefabElement, el: Element) {
 		super.applyTreeStyle(p, el);
 		parent.applyTreeStyle(p, el);
@@ -157,7 +151,8 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		function setup(p : PrefabElement) {
 			var proj = screenToWorld(scene.s2d.width/2, scene.s2d.height/2);
 			var obj3d = p.to(hide.prefab.Object3D);
-			if(proj != null && obj3d != null && p.to(hide.prefab.l3d.Layer) == null) {
+			var autoCenter = proj != null && obj3d != null && (Type.getClass(p) != Object3D || p.parent != sceneData);
+			if(autoCenter) {
 				var parentMat = worldMat(getObject(p.parent));
 				parentMat.invert();
 				var localMat = new h3d.Matrix();
@@ -536,13 +531,6 @@ class Level3D extends FileView {
 						parent = sel;
 					else if(sel.parent != null && Type.getClass(sel.parent) == Object3D)
 						parent = sel.parent;
-					else {
-						var curLayer = sel.to(Layer);
-						if(curLayer == null)
-							curLayer = sel.getParent(Layer);
-						if(curLayer != null)
-							parent = curLayer;
-					}
 				}
 				sceneEditor.dropObjects(paths, parent);
 			}
@@ -648,22 +636,6 @@ class Level3D extends FileView {
 		}
 	}
 
-	function applyLayerProps(layer: hide.prefab.l3d.Layer) {
-		var obj3ds = layer.getAll(hide.prefab.Object3D);
-		for(obj in obj3ds) {
-			var i = @:privateAccess sceneEditor.interactives.get(obj);
-			if(i != null) i.visible = !layer.locked;
-		}
-		for(box in layer.getAll(hide.prefab.Box)) {
-			var ctx = sceneEditor.getContext(box);
-			box.setColor(ctx, getDisplayColor(box));
-		}
-		for(poly in layer.getAll(hide.prefab.l3d.Polygon)) {
-			var ctx = sceneEditor.getContext(poly);
-			poly.updateInstance(ctx);
-		}
-	}
-
 	function getDisplayColor(p: PrefabElement) : Null<Int> {
 		var typeId = getCdbTypeId(p);
 		if(typeId != null) {
@@ -710,12 +682,20 @@ class Level3D extends FileView {
 	}
 
 	function getGroundPolys() {
-		var gname = props.get("l3d.groundLayer");
-		var groundLayer = data.getOpt(Layer, gname);
-		if(groundLayer == null)
-			return [];
-		var polygons = groundLayer.getAll(hide.prefab.l3d.Polygon);
-		return polygons;
+		var groundGroups = data.findAll(p -> if(p.name == "ground") p else null);
+		var ret = [];
+		for(group in groundGroups) {
+			group.visitChildren(function(p) {
+				if(p.name == "nocollide")
+					return false;
+				var pp = p.to(hide.prefab.l3d.Polygon);
+				if(pp == null)
+					return false;
+				ret.push(pp);
+				return true;
+			});
+		}
+		return ret;
 	}
 
 	static var _ = FileTree.registerExtension(Level3D,["l3d"],{ icon : "sitemap", createNew : "Level3D" });
