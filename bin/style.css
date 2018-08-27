@@ -826,6 +826,10 @@ body.hide-subview .lm_controls {
 .jstree .hidden {
   color: #555 !important;
 }
+.jstree .hidden i,
+.jstree .hidden a {
+  color: #555;
+}
 .jstree .disabled a {
   color: #533 !important;
   display: inline;
@@ -854,6 +858,9 @@ body.hide-subview .lm_controls {
 }
 .visibility-toggle:hover {
   color: white;
+}
+.visibility-toggle .hidden i {
+  color: #555;
 }
 .jstree.small a {
   font-size: 12px;

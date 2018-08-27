@@ -675,7 +675,7 @@ class SceneEditor {
 		el.toggleClass("disabled", !p.enabled);
 
 		if(obj3d != null) {
-			el.children().not("ul").toggleClass("hidden", isHidden(obj3d));
+			el.toggleClass("hidden", isHidden(obj3d));
 			var tog = el.find(".visibility-toggle").first();
 			if(tog.length == 0) {
 				tog = new Element('<i class="fa fa-eye visibility-toggle"/>').appendTo(el.find(".jstree-wholerow").first());
@@ -997,17 +997,20 @@ class SceneEditor {
 	}
 
 	public function setVisible(elements : Array<PrefabElement>, visible: Bool) {
-		for(e in elements) {
-			var objs = e.flatten(Object3D);
-			for(o in objs) {
-				if(visible)
-					hideList.remove(o);
-				else
-					hideList.set(o, true);
+		for(o in elements) {
+			if(visible) {
+				for(c in o.flatten(Object3D)) {
+					hideList.remove(c);
+					var el = tree.getElement(c);
+					applyTreeStyle(c, el);
+				}
+			}
+			else {
+				hideList.set(o, true);
 				var el = tree.getElement(o);
 				applyTreeStyle(o, el);
-				applySceneStyle(o);
 			}
+			applySceneStyle(o);
 		}
 		saveHideState();
 	}
