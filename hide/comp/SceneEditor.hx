@@ -1003,14 +1003,15 @@ class SceneEditor {
 					hideList.remove(c);
 					var el = tree.getElement(c);
 					applyTreeStyle(c, el);
+					applySceneStyle(c);
 				}
 			}
 			else {
 				hideList.set(o, true);
 				var el = tree.getElement(o);
 				applyTreeStyle(o, el);
+				applySceneStyle(o);
 			}
-			applySceneStyle(o);
 		}
 		saveHideState();
 	}
