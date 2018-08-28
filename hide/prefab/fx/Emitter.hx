@@ -490,6 +490,7 @@ class Emitter extends Object3D {
 
 	override function makeInstanceRec(ctx: Context) {
 		ctx = makeInstance(ctx);
+		return ctx;
 		// Don't make children, which are used to setup particles
 	}
 

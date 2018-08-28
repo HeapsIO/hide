@@ -1,5 +1,10 @@
 common.hxml
 -js bin/hide.js
 -main hide.Ide
+--macro include("h3d.shader")
+--macro include("h2d.col")
+--macro include("hxd.poly2tri")
+--macro include("hxd.clipper")
+--macro include("hxd.earcut")
 -dce no
 -debug

@@ -823,11 +823,11 @@ body.hide-subview .lm_controls {
 .jstree .filtered {
   display: none;
 }
-.jstree .invisible a {
+.jstree .hidden {
   color: #555 !important;
-  display: inline;
 }
-.jstree .invisible i {
+.jstree .hidden i,
+.jstree .hidden a {
   color: #555;
 }
 .jstree .disabled a {
@@ -851,6 +851,16 @@ body.hide-subview .lm_controls {
 }
 .jstree-icon i {
   color: #aaa;
+}
+.visibility-toggle {
+  float: right;
+  padding: 4px;
+}
+.visibility-toggle:hover {
+  color: white;
+}
+.visibility-toggle .hidden i {
+  color: #555;
 }
 .jstree.small a {
   font-size: 12px;

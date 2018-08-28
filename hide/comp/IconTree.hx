@@ -12,6 +12,7 @@ typedef IconTreeItem<T> = {
 		@:optional var loaded : Bool;
 	};
 	@:optional var li_attr : Dynamic;
+	@:optional var a_attr : Dynamic;
 	@:optional @:noCompletion var id : String; // internal usage
 	@:optional @:noCompletion var absKey : String; // internal usage
 }
@@ -87,6 +88,8 @@ class IconTree<T:{}> extends Component {
 	public function init() {
 		(element:Dynamic).jstree({
 			core : {
+				dblclick_toggle: false,
+				animation: 50,
 				themes: {
 					name: "default-dark",
 					dots: true,
@@ -151,6 +154,17 @@ class IconTree<T:{}> extends Component {
 				var item = map.get(id).value;
 				var el = getElement(item);
 				applyStyle(item, el);
+			}
+		});
+		element.on("rename_node.jstree", function(e, data) {
+			var item = map.get(data.node.id).value;
+			var el = getElement(item);
+			applyStyle(item, el);
+		});
+		element.on("before_open.jstree", function(event, data) {
+			var lis = new Element(event.target).find("li");
+			for(li in lis) {
+				applyStyle(map.get(li.id).value, new Element(li));
 			}
 		});
 	}

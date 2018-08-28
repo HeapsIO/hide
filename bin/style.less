@@ -903,16 +903,14 @@ body.hide-subview {
 		display: none;
 	}
 
-	.invisible {
-		a {
-			color: #555 !important;
-			display: inline;
-		}
-		i {
+	.hidden {
+		color: #555 !important;
+
+		i, a {
 			color: #555;
 		}
 	}
-
+	
 	.disabled {
 		a {
 			color: #533 !important;
@@ -941,6 +939,21 @@ body.hide-subview {
 .jstree-icon {
 	i {
 		color : #aaa;
+	}
+}
+
+.visibility-toggle {
+	float: right;
+	padding: 4px;
+
+	&:hover {
+		color : white;
+	}
+}
+
+.visibility-toggle .hidden {
+	i {
+		color: #555;
 	}
 }
 

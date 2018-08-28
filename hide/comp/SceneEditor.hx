@@ -93,6 +93,7 @@ class SceneEditor {
 	var interactives : Map<PrefabElement, h3d.scene.Interactive>;
 	var ide : hide.Ide;
 	var event : hxd.WaitEvent;
+	var hideList : Map<PrefabElement, Bool> = new Map();
 
 	var undo(get, null):hide.ui.UndoHistory;
 	function get_undo() { return view.undo; }
@@ -159,6 +160,16 @@ class SceneEditor {
 				reparentElement(children, parent, 0);
 			}
 		});
+
+		var list = @:privateAccess view.getDisplayState("hideList");
+		if(list != null) {
+			var m = [for(i in (list:Array<Dynamic>)) i => true];
+			var all = sceneData.flatten(hxd.prefab.Prefab);
+			for(p in all) {
+				if(m.exists(p.getAbsPath()))
+					hideList.set(p, true);
+			}
+		}
 	}
 
 	public dynamic function onResize() {
@@ -264,7 +275,7 @@ class SceneEditor {
 			];
 
 			if(current != null && current.to(Object3D) != null && current.to(hide.prefab.Reference) == null) {
-				var visible = current.to(Object3D).visible;
+				var visible = !isHidden(current);
 				menuItems = menuItems.concat([
 					{ label : "Visible", checked : visible, click : function() setVisible(curEdit.elements, !visible) },
 					{ label : "Select all", click : selectAll },
@@ -321,7 +332,7 @@ class SceneEditor {
 				}, 50);
 			}
 		}
-		tree.applyStyle = updateTreeStyle;
+		tree.applyStyle = applyTreeStyle;
 		selectObjects([]);
 		refresh();
 	}
@@ -333,7 +344,7 @@ class SceneEditor {
 			for(elt in all) {
 				var el = tree.getElement(elt);
 				if(el == null) continue;
-				updateTreeStyle(elt, el);
+				applyTreeStyle(elt, el);
 			}
 			if(callb != null) callb();
 		});
@@ -363,6 +374,10 @@ class SceneEditor {
 		scene.init();
 		scene.engine.backgroundColor = bgcol;
 		refreshInteractives();
+
+		var all = sceneData.flatten(hxd.prefab.Prefab);
+		for(elt in all)
+			applySceneStyle(elt);
 		onRefresh();
 	}
 
@@ -649,22 +664,47 @@ class SceneEditor {
 
 		if(p != sceneData) {
 			var el = tree.getElement(p);
-			updateTreeStyle(p, el);
+			applyTreeStyle(p, el);
+		}
+
+		applySceneStyle(p);
+	}
+
+	public function applyTreeStyle(p: PrefabElement, el: Element) {
+		var obj3d  = p.to(Object3D);
+		el.toggleClass("disabled", !p.enabled);
+
+		if(obj3d != null) {
+			el.toggleClass("hidden", isHidden(obj3d));
+			var tog = el.find(".visibility-toggle").first();
+			if(tog.length == 0) {
+				tog = new Element('<i class="fa fa-eye visibility-toggle"/>').appendTo(el.find(".jstree-wholerow").first());
+				tog.click(function(e) {
+					if(curEdit.elements.indexOf(obj3d) >= 0)
+						setVisible(curEdit.elements, isHidden(obj3d));
+					else
+						setVisible([obj3d], isHidden(obj3d));
+					
+					e.preventDefault();
+					e.stopPropagation();
+				});
+			}
 		}
 	}
 
-	function updateTreeStyle(p: PrefabElement, el: Element) {
-		var obj3d  = p.to(Object3D);
-		if(obj3d != null)
-			el.toggleClass("invisible", !obj3d.visible);
-		el.toggleClass("disabled", !p.enabled);
+	public function applySceneStyle(p: PrefabElement) {
+	
 	}
 
 	public function getContext(elt : PrefabElement) {
-		if(elt != null) {
-			return context.shared.contexts.get(elt);
-		}
-		return null;
+		if(elt == null) return null;
+		return context.shared.contexts.get(elt);
+	}
+
+	public function getContexts(elt: PrefabElement) {
+		if(elt == null)
+			return null;
+		return context.shared.getContexts(elt);
 	}
 
 	public function getObject(elt: PrefabElement) {
@@ -685,29 +725,11 @@ class SceneEditor {
 		}));
 		refresh(function() {
 			selectObjects([e]);
-			if( e.parent == sceneData && sceneData.children.length == 1 )
-				resetCamera();
 		});
 	}
 
 	function fillProps( edit, e : PrefabElement ) {
 		e.edit(edit);
-		var sheet = e.getCdbModel();
-		if( sheet == null ) return;
-
-		if( e.props == null ) {
-			trace("TODO : add button to init properties");
-			return;
-		}
-		var props = properties.add(new hide.Element('
-			<div class="group" name="Properties ${sheet.name.split('@').pop()}">
-			</div>
-		'),this);
-		var editor = new hide.comp.cdb.ObjEditor(sheet, e.props, props.find(".group .content"));
-		editor.undo = properties.undo;
-		editor.onChange = function(pname) {
-			edit.onChange(e, 'props.$pname');
-		}
 	}
 
 	public function selectObjects( elts : Array<PrefabElement>, ?includeTree=true) {
@@ -918,7 +940,7 @@ class SceneEditor {
 		var o = elt.to(Object3D);
 		if(o == null)
 			return true;
-		return o.visible && (elt.parent != null ? isVisible(elt.parent) : true);
+		return o.visible && !isHidden(o) && (elt.parent != null ? isVisible(elt.parent) : true);
 	}
 
 	public function getAllSelectable() : Array<PrefabElement> {
@@ -965,33 +987,33 @@ class SceneEditor {
 		}));
 	}
 
+	public function isHidden(e: PrefabElement) {
+		return hideList.exists(e);
+	}
+
+	function saveHideState() {
+		var state = [for (h in hideList.keys()) h.getAbsPath()];
+		@:privateAccess view.saveDisplayState("hideList", state);
+	}
+
 	public function setVisible(elements : Array<PrefabElement>, visible: Bool) {
-		var obj3ds = [];
-		for(e in elements) {
-			var o = e.to(Object3D);
-			if(o != null) {
-				obj3ds.push({o: o, vis: o.visible});
-			}
-		}
-
-		function apply(b) {
-			for(c in obj3ds) {
-				c.o.visible = b ? visible : c.vis;
-				var ctx = getContext(c.o);
-				if(ctx != null) {
-					c.o.updateInstance(ctx, "visible");
+		for(o in elements) {
+			if(visible) {
+				for(c in o.flatten(Object3D)) {
+					hideList.remove(c);
+					var el = tree.getElement(c);
+					applyTreeStyle(c, el);
+					applySceneStyle(c);
 				}
-				onPrefabChange(c.o);
+			}
+			else {
+				hideList.set(o, true);
+				var el = tree.getElement(o);
+				applyTreeStyle(o, el);
+				applySceneStyle(o);
 			}
 		}
-
-		apply(true);
-		undo.change(Custom(function(undo) {
-			if(undo)
-				apply(false);
-			else
-				apply(true);
-		}));
+		saveHideState();
 	}
 
 	function isolate(elts : Array<PrefabElement>) {
@@ -1115,9 +1137,11 @@ class SceneEditor {
 		}];
 		var oldContexts = contexts.copy();
 		for(e in elts) {
+			hideList.remove(e);
 			for(c in e.flatten())
 				contexts.remove(c);
 		}
+		saveHideState();
 		var newContexts = contexts.copy();
 		function action(undo) {
 			if( undo ) {
@@ -1199,10 +1223,6 @@ class SceneEditor {
 	function autoName(p : PrefabElement) {
 
 		var uniqueName = false;
-		var layer = p.getParent(hide.prefab.l3d.Layer);
-		if(layer != null) {
-			uniqueName = layer.uniqueNames;
-		}
 		if( p.type == "volumetricLightmap" || p.type == "light" )
 			uniqueName = true;
 

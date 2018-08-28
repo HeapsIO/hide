@@ -13,6 +13,9 @@ class Instance extends Object3D {
 		#if editor
 		var ctx = super.makeInstance(ctx);
 		var kind = getCdbKind(this);
+		if(kind == null)
+			return ctx;
+	
 		var modelPath = findModelPath(kind.sheet, kind.idx.obj);
 		if(modelPath != null) {
 			try {
@@ -57,7 +60,7 @@ class Instance extends Object3D {
 	}
 
 	override function getHideProps() : HideProps {
-		return { icon : "circle", name : "Instance", allowParent : function(p) return p.type == "layer" };
+		return { icon : "circle", name : "Instance" };
 	}
 
 	// Move to Prefab?

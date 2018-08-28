@@ -23,6 +23,13 @@ class Level3D extends hxd.prefab.Library {
 		height = obj.height == null ? 100 : obj.height;
 	}
 
+	override function getCdbModel(?p:hxd.prefab.Prefab):cdb.Sheet {
+		#if (editor && castle)
+		return hide.view.l3d.Level3D.getCdbModel(p);
+		#end 
+		return null;
+	}
+
 	#if editor
 
 	override function edit( ctx : EditContext ) {
