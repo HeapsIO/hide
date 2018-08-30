@@ -21,6 +21,7 @@ class Cell extends Component {
 		this.column = column;
 		@:privateAccess line.cells.push(this);
 		root.addClass("t_" + typeNames[column.type.getIndex()]);
+		if( column.kind == Script ) root.addClass("t_script");
 		refresh();
 	}
 
@@ -64,6 +65,8 @@ class Cell extends Component {
 			}
 		case TId:
 			v == "" ? '<span class="error">#MISSING</span>' : (editor.base.getSheet(sheet.name).index.get(v).obj == obj ? v : '<span class="error">#DUP($v)</span>');
+		case TString if( c.kind == Script ):
+			v == "" ? "&nbsp;" : colorizeScript(v);
 		case TString, TLayer(_):
 			v == "" ? "&nbsp;" : StringTools.htmlEscape(v).split("\n").join("<br/>");
 		case TRef(sname):
@@ -173,6 +176,18 @@ class Cell extends Component {
 		}
 	}
 
+	function colorizeScript( code : String ) {
+		code = StringTools.htmlEscape(code);
+		code = code.split("\n").join("<br/>");
+		// strings
+		code = ~/("[^"]*")/g.replace(code,'<span class="str">$1</span>');
+		code = ~/('[^']*')/g.replace(code,'<span class="str">$1</span>');
+		// keywords
+		for( k in ["for","if","var","this","while","else","do","break","continue","switch","function","return","new","throw","try","catch","case","default"] )
+			code = code.split(k).join('<span class="kwd">$k</span>');
+		return code;
+	}
+
 	function tileHtml( v : cdb.Types.TilePos, ?isInline ) {
 		var path = ide.getPath(v.file);
 		if( !editor.quickExists(path) ) {
@@ -198,7 +213,7 @@ class Cell extends Component {
 			var textSpan = element.wrapInner("<span>").find("span");
 			var textHeight = textSpan.height();
 			var textWidth = textSpan.width();
-			var longText = textHeight > 25;
+			var longText = textHeight > 25 || column.kind == Script;
 			element.empty();
 			element.addClass("edit");
 			var i = new Element(longText ? "<textarea>" : "<input>").appendTo(element);
@@ -240,6 +255,8 @@ class Cell extends Component {
 				e.stopPropagation();
 			});
 			i.keyup(function(_) try {
+				if( column.kind == Script )
+					try new hscript.Parser().parseString(i.val()) catch( e : Dynamic ) throw hscript.Printer.errorToString(e);
 				editor.base.parseValue(column.type, i.val());
 				setErrorMessage(null);
 			} catch( e : Dynamic ) {
@@ -452,6 +469,8 @@ class Cell extends Component {
 			// creates or remove a #DUP : need to refresh the whole table
 			if( prevTarget != null || (prevObj != null && (prevObj.obj != obj || table.sheet.index.get(prevValue) != null)) )
 				table.refresh();
+		case TString if( column.kind == Script ):
+			setValue(StringTools.trim(newValue));
 		default:
 			setValue(newValue);
 		}

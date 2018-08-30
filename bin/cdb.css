@@ -143,6 +143,20 @@
   font-weight: normal;
   font-size: 75%;
 }
+.cdb .cdb-sheet td.t_script {
+  font-family: Courier;
+  color: #CCC;
+}
+.cdb .cdb-sheet td.t_script input,
+.cdb .cdb-sheet td.t_script textarea {
+  font-family: Courier;
+}
+.cdb .cdb-sheet td.t_script .kwd {
+  color: #88F;
+}
+.cdb .cdb-sheet td.t_script .str {
+  color: #C66;
+}
 .cdb .cdb-sheet .tile {
   display: inline-block;
   vertical-align: middle;
