@@ -47,7 +47,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		parent.onUpdate(dt);
 	}
 
-	override function selectObjects( elts, ?includeTree) {
+	override function selectObjects( elts, ?includeTree=true) {
 		super.selectObjects(elts, includeTree);
 		parent.onSelect(elts);
 	}
