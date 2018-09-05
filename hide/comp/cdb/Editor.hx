@@ -35,6 +35,7 @@ class Editor extends Component {
 		keys.register("cdb.showReferences", showReferences);
 		keys.register("undo", function() if( undo.undo() ) refresh());
 		keys.register("redo", function() if( undo.redo() ) refresh());
+		keys.register("cdb.insertLine", function() { insertLine(cursor.table,cursor.y); cursor.move(0,1,false,false); });
 		for( k in ["cdb.editCell","rename"] )
 			keys.register(k, function() {
 				var c = cursor.getCell();
@@ -262,6 +263,9 @@ class Editor extends Component {
 	}
 
 	public function insertLine( table : Table, index = 0 ) {
+		addChanges([{ ref : cursor.getLine().getChangeRef(), v : DeleteIndex(table.sheet.lines,index+1) }]);
+		table.sheet.newLine(index);
+		table.refresh();
 	}
 
 	public function popupColumn( table : Table, col : cdb.Data.Column ) {

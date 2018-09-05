@@ -9,6 +9,7 @@ class SubTable extends Table {
 	public function new(editor, cell:Cell) {
 		this.editor = editor;
 		this.cell = cell;
+		parent = cell.table;
 
 		var sheet = makeSubSheet();
 		var line = cell.line;

@@ -10,6 +10,7 @@ enum DisplayMode {
 class Table extends Component {
 
 	public var editor : Editor;
+	public var parent : Table;
 	public var sheet : cdb.Sheet;
 	public var lines : Array<Line>;
 	public var displayMode(default,null) : DisplayMode;
@@ -31,6 +32,13 @@ class Table extends Component {
 
 	public function dispose() {
 		editor.tables.remove(this);
+	}
+
+	public function getChangeRef() : cdb.Database.ChangeRef {
+		var mainTable = this;
+		while( mainTable.parent != null )
+			mainTable = mainTable.parent;
+		return { mainSheet : mainTable.sheet, mainObj : null, obj : null, sheet : sheet };
 	}
 
 	public function refresh() {

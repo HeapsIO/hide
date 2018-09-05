@@ -39,6 +39,7 @@
 	"key.cdb.gotoReference" : "F4",
 	"key.cdb.closeList" : "Escape",
 	"key.cdb.editCell" : "Enter",
+	"key.cdb.insertLine" : "Insert",
 
 	// Scene editor config
 	"key.sceneeditor.focus": "F",
