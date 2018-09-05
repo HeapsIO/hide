@@ -121,11 +121,18 @@ class IconTree<T:{}> extends Component {
 			onClick(i.value);
 		});
 		element.on("dblclick.jstree", function (event) {
+			// ignore dblclick on open/close arrow
+			if( event.target.className.indexOf("jstree-ocl") >= 0 )
+				return;
+
 			var node = new Element(event.target).closest("li");
    			var i = map.get(node[0].id);
 			if(onDblClick(i.value))
 				return;
 			if( allowRename ) {
+				// ignore rename on icon
+				if( event.target.className.indexOf("jstree-icon") >= 0 )
+					return;
 				editNode(i.value);
 				return;
 			}
