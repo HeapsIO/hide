@@ -50,6 +50,10 @@ class Cursor {
 			update();
 			return;
 		}
+		if( !shift )
+			select = null;
+		else if( select == null )
+			select = { x : x, y : y };
 		if( dx < 0 && (table.displayMode == Table ? x >= 0 : x > 0) )
 			x--;
 		if( dy < 0 && y > 0 )
@@ -58,7 +62,6 @@ class Cursor {
 			x++;
 		if( dy > 0 && y < table.lines.length - 1 )
 			y++;
-		select = null;
 		update();
 	}
 

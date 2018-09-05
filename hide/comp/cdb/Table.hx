@@ -107,6 +107,7 @@ class Table extends Component {
 				switch( c.type ) {
 				case TList, TProperties:
 					cell.element.click(function(e) {
+						if( e.shiftKey ) return;
 						e.stopPropagation();
 						toggleList(cell);
 					});
