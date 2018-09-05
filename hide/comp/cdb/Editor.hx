@@ -266,13 +266,18 @@ class Editor extends Component {
 		addChanges([{ ref : cursor.getLine().getChangeRef(), v : DeleteIndex(table.sheet.lines,index+1) }]);
 		table.sheet.newLine(index);
 		table.refresh();
+		save();
 	}
 
 	public function popupColumn( table : Table, col : cdb.Data.Column ) {
 	}
 
 	public function addChanges( changes : cdb.Database.Changes ) {
+		var cs = cursor.save();
 		undo.change(Custom(function(undo) {
+			var ns = cursor.save();
+			cursor.load(cs);
+			cs = ns;
 			changes = base.applyChanges(changes);
 			refresh();
 		}));

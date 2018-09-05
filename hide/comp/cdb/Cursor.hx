@@ -41,6 +41,23 @@ class Cursor {
 		return line.cells[x];
 	}
 
+	public function save() {
+		return { sheet : table.sheet, x : x, y : y, select : select == null ? null : { x : select.x, y : select.y} };
+	}
+
+	public function load( s ) {
+		var table = null;
+		for( t in editor.tables )
+			if( t.sheet == s.sheet ) {
+				table = t;
+				break;
+			}
+		if( table == null )
+			return false;
+		set(table, s.x, s.y, s.select);
+		return true;
+	}
+
 	public function move( dx : Int, dy : Int, shift : Bool, ctrl : Bool ) {
 		if( table == null )
 			return;
