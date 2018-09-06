@@ -74,7 +74,6 @@ class Terrain extends Object3D {
 	#if editor
 	var interactive : h2d.Interactive;
 	var currentBrush : Brush;
-	var brushFx : h3d.pass.ScreenFx<h3d.shader.pbr.Brush>;
 	var substractMode = false;
 	var remainingDist = 0.0;
 	var previewResolution = 256;
