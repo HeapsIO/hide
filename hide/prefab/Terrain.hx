@@ -121,7 +121,6 @@ class Terrain extends Object3D {
 		ctx.local3d.name = name;
 
 		#if editor
-		brushFx = new h3d.pass.ScreenFx(new h3d.shader.pbr.Brush());
 		copyPass = new h3d.pass.Copy();
 		#end
 
