@@ -160,7 +160,7 @@ class Table extends Component {
 		}
 
 		if( sheet.lines.length == 0 ) {
-			var l = J('<tr><td colspan="${sheet.columns.length + 1}"><a href="javascript:_.insertLine()">Insert Line</a></td></tr>');
+			var l = J('<tr><td colspan="${sheet.columns.length + 1}"><a>Insert Line</a></td></tr>');
 			l.find("a").click(function(_) {
 				editor.insertLine(this);
 				editor.cursor.set(this);
