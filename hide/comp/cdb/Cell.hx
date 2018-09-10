@@ -217,11 +217,11 @@ class Cell extends Component {
 			element.empty();
 			element.addClass("edit");
 			var i = new Element(longText ? "<textarea>" : "<input>").appendTo(element);
-			if( table.displayMode == Properties || table.displayMode == AllProperties )
-				i.css({ width : Math.ceil(textWidth - 3) + "px" });
+			//if( str != "" && (table.displayMode == Properties || table.displayMode == AllProperties) )
+			//	i.css({ width : Math.ceil(textWidth - 3) + "px" }); -- bug if small text ?
 			if( longText ) {
 				element.addClass("edit_long");
-				i.css({ height : Math.ceil(textHeight - 1) + "px" });
+				i.css({ height : Math.max(25,Math.ceil(textHeight - 1)) + "px" });
 			}
 			i.val(str);
 			i.keydown(function(e) {
