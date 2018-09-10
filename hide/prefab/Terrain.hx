@@ -115,12 +115,12 @@ class Terrain extends Object3D {
 		terrain.createTile(0,0);
 		terrain.refresh();
 
-		currentBrush = new Brush();
 
 		ctx.local3d = terrain;
 		ctx.local3d.name = name;
 
 		#if editor
+		currentBrush = new Brush();
 		copyPass = new h3d.pass.Copy();
 		#end
 
@@ -129,6 +129,7 @@ class Terrain extends Object3D {
 		return ctx;
 	}
 
+	#if editor
 	function getStrokeBuffer(x, y){
 		for(strokebuffer in strokeBuffers)
 			if((strokebuffer.x == x && strokebuffer.y == y) || strokebuffer.used == false){
@@ -178,6 +179,7 @@ class Terrain extends Object3D {
 			}
 		}
 	}
+	#end
 
 	function getCellSize(){
 		var resolution = Math.max(0.1, cellSize);
@@ -203,14 +205,14 @@ class Terrain extends Object3D {
 			terrain.refreshMesh();
 		}
 
+		#if editor
+
 		if(propName == "heightMapResolution" || propName == "weightMapResolution"){
 			terrain.heightMapResolution = heightMapResolution;
 			terrain.weightMapResolution = weightMapResolution;
 			terrain.refreshTex();
 			updateStrokeBuffers(heightMapResolution+2);
 		}
-
-		#if editor
 
 		if(currentBrush.isValid())
 			currentBrush.bitmap.color = new h3d.Vector(currentBrush.strength);
