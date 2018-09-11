@@ -176,6 +176,8 @@ class Cell extends Component {
 		}
 	}
 
+	static var KWDS = ["for","if","var","this","while","else","do","break","continue","switch","function","return","new","throw","try","catch","case","default"];
+	static var KWD_REG = new EReg([for( k in KWDS ) "(\\b"+k+"\\b)"].join("|"),"g");
 	function colorizeScript( code : String ) {
 		code = StringTools.htmlEscape(code);
 		code = code.split("\n").join("<br/>");
@@ -183,8 +185,7 @@ class Cell extends Component {
 		code = ~/("[^"]*")/g.replace(code,'<span class="str">$1</span>');
 		code = ~/('[^']*')/g.replace(code,'<span class="str">$1</span>');
 		// keywords
-		for( k in ["for","if","var","this","while","else","do","break","continue","switch","function","return","new","throw","try","catch","case","default"] )
-			code = code.split(k).join('<span class="kwd">$k</span>');
+		code = KWD_REG.map(code, function(r) return '<span class="kwd">${r.matched(0)}</span>');
 		return code;
 	}
 
