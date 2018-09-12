@@ -54,6 +54,18 @@
 
 	"cdb.databaseFile" : "data.cdb",
 
+	// script support
+
+	"script.api.files" : [],
+	"script.api.cdbModule" : "Data",
+	"script.api" : {
+		"TableName.fieldName" : {
+			"globals" : { "this" : "ThisClass" },
+			"context" : "ContextClass",
+			"cdbEnums" : false
+		}
+	},
+
 	// paths to look files/shaders into - relative to project root
 	"haxe.classPath" : ["src"],
 

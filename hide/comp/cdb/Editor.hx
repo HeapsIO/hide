@@ -15,12 +15,14 @@ class Editor extends Component {
 		data : {},
 		schema : Array<cdb.Data.Column>,
 	};
+	public var props : hide.ui.Props;
 	public var cursor : Cursor;
 	public var keys : hide.ui.Keys;
 	public var undo : hide.ui.UndoHistory;
 
-	public function new(sheet,?parent) {
+	public function new(sheet,props,?parent) {
 		super(parent,null);
+		this.props = props;
 		this.undo = new hide.ui.UndoHistory();
 		this.sheet = sheet;
 		element.attr("tabindex", 0);

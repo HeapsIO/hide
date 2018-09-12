@@ -266,7 +266,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 
 		if(sheet != null) {
 			var props = new hide.Element('<div></div>').appendTo(group.find(".content"));
-			var editor = new hide.comp.cdb.ObjEditor(sheet, e.props, props);
+			var editor = new hide.comp.cdb.ObjEditor(sheet, parent.props, e.props, props);
 			editor.undo = properties.undo;
 			editor.onChange = function(pname) {
 				edit.onChange(e, 'props.$pname');
@@ -595,7 +595,7 @@ class Level3D extends FileView {
 	}
 
 	function onPrefabChange(p: PrefabElement, ?pname: String) {
-		
+
 	}
 
 	function applySceneStyle(p: PrefabElement) {
