@@ -209,12 +209,15 @@ class Cell extends Component {
 
 	public function edit() {
 		switch( column.type ) {
+		case TString if( column.kind == Script ):
+			var str = value == null ? "" : editor.base.valToString(column.type, value);
+			@:privateAccess table.toggleList(this, function() return new ScriptTable(editor, this));
 		case TInt, TFloat, TString, TId, TCustom(_), TDynamic:
 			var str = value == null ? "" : editor.base.valToString(column.type, value);
 			var textSpan = element.wrapInner("<span>").find("span");
 			var textHeight = textSpan.height();
 			var textWidth = textSpan.width();
-			var longText = textHeight > 25 || column.kind == Script;
+			var longText = textHeight > 25;
 			element.empty();
 			element.addClass("edit");
 			var i = new Element(longText ? "<textarea>" : "<input>").appendTo(element);
@@ -256,8 +259,6 @@ class Cell extends Component {
 				e.stopPropagation();
 			});
 			i.keyup(function(_) try {
-				if( column.kind == Script )
-					try new hscript.Parser().parseString(i.val()) catch( e : Dynamic ) throw hscript.Printer.errorToString(e);
 				editor.base.parseValue(column.type, i.val());
 				setErrorMessage(null);
 			} catch( e : Dynamic ) {

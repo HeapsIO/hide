@@ -10,7 +10,7 @@ class Keys {
 		if( parent != null ) {
 			this.parent = parent[0];
 			parent.attr("haskeys","true");
-			Reflect.setField(this.parent,"__keys",this);
+			if( this.parent != null ) Reflect.setField(this.parent,"__keys",this);
 		}
 	}
 

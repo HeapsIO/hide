@@ -85,7 +85,7 @@ class Cursor {
 	public function update() {
 		var elt = editor.element;
 		elt.find(".selected").removeClass("selected");
-		elt.find(".cursor").removeClass("cursor");
+		elt.find(".cursorView").removeClass("cursorView");
 		elt.find(".cursorLine").removeClass("cursorLine");
 		if( table == null )
 			return;
@@ -113,7 +113,9 @@ class Cursor {
 				}
 			}
 		} else {
-			line.cells[x].element.addClass("cursor").closest("tr").addClass("cursorLine");
+			var c = line.cells[x];
+			if( c != null )
+				c.element.addClass("cursorView").closest("tr").addClass("cursorLine");
 			if( select != null ) {
 				var s = getSelection();
 				for( y in s.y1...s.y2 + 1 ) {

@@ -62,7 +62,7 @@
 .cdb .cdb-sheet td.edit_long {
   padding-bottom: 0px;
 }
-.cdb .cdb-sheet td.cursor {
+.cdb .cdb-sheet td.cursorView {
   outline: 1px solid #ccc;
 }
 .cdb .cdb-sheet tr.cursorLine {
@@ -268,4 +268,17 @@
 }
 .cdb .cdb-sheet td.t_file .preview:hover .previewContent {
   display: block;
+}
+.cdb .cdb-sheet div.cdb-script {
+  min-width: 500px;
+  min-height: 400px;
+}
+.cdb .cdb-sheet div.cdb-script .scriptErrorLine {
+  background: #400;
+}
+.cdb .cdb-sheet div.cdb-script .scriptErrorContentLine {
+  background: rgba(255, 0, 0, 0.1);
+}
+.cdb .cdb-sheet div.cdb-script .scriptErrorContent {
+  background: rgba(255, 5, 5, 0.4);
 }
