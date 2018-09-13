@@ -1,5 +1,8 @@
 <!DOCTYPE html>
 <html>
+<head>
+	<meta charset="utf-8" />
+</head>
 <body>
 <link rel="stylesheet" type="text/css" href="libs/goldenlayout-base.css"/>
 <link rel="stylesheet" type="text/css" href="libs/goldenlayout-dark-theme.css"/>
@@ -79,7 +82,7 @@
 
 <script>
   var path = './';
-  var fs = require('fs');  
+  var fs = require('fs');
   var reloadWatcher=fs.watch(path, function(_,file) {
 	var ext = file.split(".").pop().toLowerCase();
 	if( ext != "js" && ext != "css" ) return;

@@ -9,6 +9,7 @@ extern class Editor {
 	function onDidChangeModelContent( listener : Void -> Void ) : Void;
 	function focus() : Void;
 	function dispose() : Void;
+	function getModel() : Model;
 	function deltaDecorations( old : Array<String>, newDeco : Array<ModelDeltaDecoration> ) : Array<String>;
 
 	public static function create( elt : js.html.Element, ?options : Dynamic ) : Editor;
