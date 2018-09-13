@@ -86,7 +86,7 @@ END OF chjj-marked NOTICES AND INFORMATION
 
 
 
-%% typescript version 1.8.10 (https://github.com/Microsoft/TypeScript)
+%% typescript version 2.7.2 (https://github.com/Microsoft/TypeScript)
 =========================================
 Copyright (c) Microsoft Corporation. All rights reserved.
 

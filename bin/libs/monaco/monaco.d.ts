@@ -1,20 +1,16 @@
 /*!-----------------------------------------------------------
  * Copyright (c) Microsoft Corporation. All rights reserved.
- * Type definitions for monaco-editor v0.8.3
+ * Type definitions for monaco-editor v0.14.3
  * Released under the MIT license
 *-----------------------------------------------------------*/
-declare module monaco {
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
 
-    interface Thenable<T> {
-        /**
-         * Attaches callbacks for the resolution and/or rejection of the Promise.
-         * @param onfulfilled The callback to execute when the Promise is resolved.
-         * @param onrejected The callback to execute when the Promise is rejected.
-         * @returns A Promise for the completion of which ever callback is executed.
-         */
-        then<TResult>(onfulfilled?: (value: T) => TResult | Thenable<TResult>, onrejected?: (reason: any) => TResult | Thenable<TResult>): Thenable<TResult>;
-        then<TResult>(onfulfilled?: (value: T) => TResult | Thenable<TResult>, onrejected?: (reason: any) => void): Thenable<TResult>;
-    }
+declare namespace monaco {
+
+    export type Thenable<T> = PromiseLike<T>;
 
     export interface IDisposable {
         dispose(): void;
@@ -34,63 +30,63 @@ declare module monaco {
         dispose(): void;
     }
 
-    export enum Severity {
-        Ignore = 0,
-        Info = 1,
-        Warning = 2,
-        Error = 3,
+    export enum MarkerTag {
+        Unnecessary = 1,
+    }
+
+    export enum MarkerSeverity {
+        Hint = 1,
+        Info = 2,
+        Warning = 4,
+        Error = 8,
     }
 
 
 
-    /**
-     * The value callback to complete a promise
-     */
-    export interface TValueCallback<T> {
-        (value: T): void;
-    }
+
+    export type TValueCallback<T = any> = (value: T | PromiseLike<T>) => void;
+
+    export type ProgressCallback<TProgress = any> = (progress: TProgress) => void;
 
 
-    export interface ProgressCallback {
-        (progress: any): any;
-    }
+    export class Promise<T = any, TProgress = any> {
+        constructor(
+            executor: (
+                resolve: (value: T | PromiseLike<T>) => void,
+                reject: (reason: any) => void,
+                progress: (progress: TProgress) => void) => void,
+            oncancel?: () => void);
 
+        public then<TResult1 = T, TResult2 = never>(
+            onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | null,
+            onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null,
+            onprogress?: (progress: TProgress) => void): Promise<TResult1 | TResult2, TProgress>;
 
-    /**
-     * A Promise implementation that supports progress and cancelation.
-     */
-    export class Promise<V> {
+        public done(
+            onfulfilled?: (value: T) => void,
+            onrejected?: (reason: any) => void,
+            onprogress?: (progress: TProgress) => void): void;
 
-        constructor(init: (complete: TValueCallback<V>, error: (err: any) => void, progress: ProgressCallback) => void, oncancel?: any);
-
-        public then<U>(success?: (value: V) => Promise<U>, error?: (err: any) => Promise<U>, progress?: ProgressCallback): Promise<U>;
-        public then<U>(success?: (value: V) => Promise<U>, error?: (err: any) => Promise<U> | U, progress?: ProgressCallback): Promise<U>;
-        public then<U>(success?: (value: V) => Promise<U>, error?: (err: any) => U, progress?: ProgressCallback): Promise<U>;
-        public then<U>(success?: (value: V) => Promise<U>, error?: (err: any) => void, progress?: ProgressCallback): Promise<U>;
-        public then<U>(success?: (value: V) => Promise<U> | U, error?: (err: any) => Promise<U>, progress?: ProgressCallback): Promise<U>;
-        public then<U>(success?: (value: V) => Promise<U> | U, error?: (err: any) => Promise<U> | U, progress?: ProgressCallback): Promise<U>;
-        public then<U>(success?: (value: V) => Promise<U> | U, error?: (err: any) => U, progress?: ProgressCallback): Promise<U>;
-        public then<U>(success?: (value: V) => Promise<U> | U, error?: (err: any) => void, progress?: ProgressCallback): Promise<U>;
-        public then<U>(success?: (value: V) => U, error?: (err: any) => Promise<U>, progress?: ProgressCallback): Promise<U>;
-        public then<U>(success?: (value: V) => U, error?: (err: any) => Promise<U> | U, progress?: ProgressCallback): Promise<U>;
-        public then<U>(success?: (value: V) => U, error?: (err: any) => U, progress?: ProgressCallback): Promise<U>;
-        public then<U>(success?: (value: V) => U, error?: (err: any) => void, progress?: ProgressCallback): Promise<U>;
-
-        public done(success?: (value: V) => void, error?: (err: any) => any, progress?: ProgressCallback): void;
         public cancel(): void;
 
-        public static as<ValueType>(value: ValueType): Promise<ValueType>;
-        public static is(value: any): value is Thenable<any>;
+        public static as(value: null): Promise<null>;
+        public static as(value: undefined): Promise<undefined>;
+        public static as<T>(value: PromiseLike<T>): PromiseLike<T>;
+        public static as<T, SomePromise extends PromiseLike<T>>(value: SomePromise): SomePromise;
+        public static as<T>(value: T): Promise<T>;
+
+        public static is(value: any): value is PromiseLike<any>;
+
         public static timeout(delay: number): Promise<void>;
-        public static join<ValueType>(promises: Promise<ValueType>[]): Promise<ValueType[]>;
-        public static join<ValueType>(promises: Thenable<ValueType>[]): Thenable<ValueType[]>;
-        public static join<ValueType>(promises: { [n: string]: Promise<ValueType> }): Promise<{ [n: string]: ValueType }>;
-        public static any<ValueType>(promises: Promise<ValueType>[]): Promise<{ key: string; value: Promise<ValueType>; }>;
 
-        public static wrap<ValueType>(value: Thenable<ValueType>): Promise<ValueType>;
-        public static wrap<ValueType>(value: ValueType): Promise<ValueType>;
+        public static join<T1, T2>(promises: [T1 | PromiseLike<T1>, T2 | PromiseLike<T2>]): Promise<[T1, T2]>;
+        public static join<T>(promises: (T | PromiseLike<T>)[]): Promise<T[]>;
 
-        public static wrapError<ValueType>(error: any): Promise<ValueType>;
+        public static any<T>(promises: (T | PromiseLike<T>)[]): Promise<{ key: string; value: Promise<T>; }>;
+
+        public static wrap<T>(value: T | PromiseLike<T>): Promise<T>;
+
+        public static wrapError<T = never>(error: Error): Promise<T>;
     }
 
     export class CancellationTokenSource {
@@ -123,9 +119,8 @@ declare module monaco {
      *
      *
      */
-    export class Uri {
+    export class Uri implements UriComponents {
         static isUri(thing: any): thing is Uri;
-        protected constructor();
         /**
          * scheme is the 'http' part of 'http://www.msft.com/some/path?query#fragment'.
          * The part before the first colon.
@@ -176,8 +171,16 @@ declare module monaco {
          * @param skipEncoding Do not encode the result, default is `false`
          */
         toString(skipEncoding?: boolean): string;
-        toJSON(): any;
-        static revive(data: any): Uri;
+        toJSON(): object;
+        static revive(data: UriComponents | any): Uri;
+    }
+
+    export interface UriComponents {
+        scheme: string;
+        authority: string;
+        path: string;
+        query: string;
+        fragment: string;
     }
 
     /**
@@ -349,10 +352,16 @@ declare module monaco {
         NUMPAD_DECIMAL = 107,
         NUMPAD_DIVIDE = 108,
         /**
+         * Cover all key codes when IME is processing input.
+         */
+        KEY_IN_COMPOSITION = 109,
+        ABNT_C1 = 110,
+        ABNT_C2 = 111,
+        /**
          * Placed last to cover the length of the enum.
          * Please do not depend on this value!
          */
-        MAX_VALUE = 109,
+        MAX_VALUE = 112
     }
 
     export class KeyMod {
@@ -362,27 +371,10 @@ declare module monaco {
         static readonly WinCtrl: number;
         static chord(firstPart: number, secondPart: number): number;
     }
-
-    export class Keybinding {
-        value: number;
-        constructor(keybinding: number);
-        equals(other: Keybinding): boolean;
-        hasCtrlCmd(): boolean;
-        hasShift(): boolean;
-        hasAlt(): boolean;
-        hasWinCtrl(): boolean;
-        isModifierKey(): boolean;
-        getKeyCode(): KeyCode;
+    export interface IMarkdownString {
+        value: string;
+        isTrusted?: boolean;
     }
-    /**
-     * MarkedString can be used to render human readable text. It is either a markdown string
-     * or a code-block that provides a language and a code snippet. Note that
-     * markdown strings will be sanitized - that means html will be escaped.
-     */
-    export type MarkedString = string | {
-        readonly language: string;
-        readonly value: string;
-    };
 
     export interface IKeyboardEvent {
         readonly browserEvent: KeyboardEvent;
@@ -392,7 +384,7 @@ declare module monaco {
         readonly altKey: boolean;
         readonly metaKey: boolean;
         readonly keyCode: KeyCode;
-        toKeybinding(): Keybinding;
+        readonly code: string;
         equals(keybinding: number): boolean;
         preventDefault(): void;
         stopPropagation(): void;
@@ -425,7 +417,6 @@ declare module monaco {
         readonly scrollWidthChanged: boolean;
         readonly scrollHeightChanged: boolean;
     }
-
     /**
      * A position in the editor. This interface is suitable for serialization.
      */
@@ -438,51 +429,6 @@ declare module monaco {
          * column (the first character in a line is between column 1 and column 2)
          */
         readonly column: number;
-    }
-
-    /**
-     * A range in the editor. This interface is suitable for serialization.
-     */
-    export interface IRange {
-        /**
-         * Line number on which the range starts (starts at 1).
-         */
-        readonly startLineNumber: number;
-        /**
-         * Column on which the range starts in line `startLineNumber` (starts at 1).
-         */
-        readonly startColumn: number;
-        /**
-         * Line number on which the range ends.
-         */
-        readonly endLineNumber: number;
-        /**
-         * Column on which the range ends in line `endLineNumber`.
-         */
-        readonly endColumn: number;
-    }
-
-    /**
-     * A selection in the editor.
-     * The selection is a range that has an orientation.
-     */
-    export interface ISelection {
-        /**
-         * The line number on which the selection has started.
-         */
-        readonly selectionStartLineNumber: number;
-        /**
-         * The column on `selectionStartLineNumber` where the selection has started.
-         */
-        readonly selectionStartColumn: number;
-        /**
-         * The line number on which the selection has ended.
-         */
-        readonly positionLineNumber: number;
-        /**
-         * The column on `positionLineNumber` where the selection has ended.
-         */
-        readonly positionColumn: number;
     }
 
     /**
@@ -546,6 +492,28 @@ declare module monaco {
          * Test if `obj` is an `IPosition`.
          */
         static isIPosition(obj: any): obj is IPosition;
+    }
+
+    /**
+     * A range in the editor. This interface is suitable for serialization.
+     */
+    export interface IRange {
+        /**
+         * Line number on which the range starts (starts at 1).
+         */
+        readonly startLineNumber: number;
+        /**
+         * Column on which the range starts in line `startLineNumber` (starts at 1).
+         */
+        readonly startColumn: number;
+        /**
+         * Line number on which the range ends.
+         */
+        readonly endLineNumber: number;
+        /**
+         * Column on which the range ends in line `endLineNumber`.
+         */
+        readonly endColumn: number;
     }
 
     /**
@@ -628,10 +596,6 @@ declare module monaco {
          */
         getStartPosition(): Position;
         /**
-         * Clone this range.
-         */
-        cloneRange(): Range;
-        /**
          * Transform to a user presentable string representation.
          */
         toString(): string;
@@ -651,6 +615,7 @@ declare module monaco {
          * Create a new empty range using this range's start position.
          */
         static collapseToStart(range: IRange): Range;
+        static fromPositions(start: IPosition, end?: IPosition): Range;
         /**
          * Create a `Range` from an `IRange`.
          */
@@ -663,6 +628,10 @@ declare module monaco {
          * Test if the two ranges are touching in any way.
          */
         static areIntersectingOrTouching(a: IRange, b: IRange): boolean;
+        /**
+         * Test if the two ranges are intersecting. If the ranges are touching it returns true.
+         */
+        static areIntersecting(a: IRange, b: IRange): boolean;
         /**
          * A function that compares ranges, useful for sorting ranges
          * It will first compare ranges on the startPosition and then on the endPosition
@@ -677,6 +646,29 @@ declare module monaco {
          * Test if the range spans multiple lines.
          */
         static spansMultipleLines(range: IRange): boolean;
+    }
+
+    /**
+     * A selection in the editor.
+     * The selection is a range that has an orientation.
+     */
+    export interface ISelection {
+        /**
+         * The line number on which the selection has started.
+         */
+        readonly selectionStartLineNumber: number;
+        /**
+         * The column on `selectionStartLineNumber` where the selection has started.
+         */
+        readonly selectionStartColumn: number;
+        /**
+         * The line number on which the selection has ended.
+         */
+        readonly positionLineNumber: number;
+        /**
+         * The column on `positionLineNumber` where the selection has ended.
+         */
+        readonly positionColumn: number;
     }
 
     /**
@@ -726,9 +718,17 @@ declare module monaco {
          */
         setEndPosition(endLineNumber: number, endColumn: number): Selection;
         /**
+         * Get the position at `positionLineNumber` and `positionColumn`.
+         */
+        getPosition(): Position;
+        /**
          * Create a new selection with a different `selectionStartLineNumber` and `selectionStartColumn`.
          */
         setStartPosition(startLineNumber: number, startColumn: number): Selection;
+        /**
+         * Create a `Selection` from one or two positions
+         */
+        static fromPositions(start: IPosition, end?: IPosition): Selection;
         /**
          * Create a `Selection` from an `ISelection`.
          */
@@ -758,7 +758,7 @@ declare module monaco {
         /**
          * The selection starts below where it ends.
          */
-        RTL = 1,
+        RTL = 1
     }
 
     export class Token {
@@ -771,7 +771,7 @@ declare module monaco {
     }
 }
 
-declare module monaco.editor {
+declare namespace monaco.editor {
 
 
     /**
@@ -796,7 +796,6 @@ declare module monaco.editor {
     export function createDiffEditor(domElement: HTMLElement, options?: IDiffEditorConstructionOptions, override?: IEditorOverrideServices): IStandaloneDiffEditor;
 
     export interface IDiffNavigator {
-        revealFirst: boolean;
         canNavigate(): boolean;
         next(): void;
         previous(): void;
@@ -815,46 +814,57 @@ declare module monaco.editor {
      * Create a new editor model.
      * You can specify the language that should be set for this model or let the language be inferred from the `uri`.
      */
-    export function createModel(value: string, language?: string, uri?: Uri): IModel;
+    export function createModel(value: string, language?: string, uri?: Uri): ITextModel;
 
     /**
      * Change the language for a model.
      */
-    export function setModelLanguage(model: IModel, language: string): void;
+    export function setModelLanguage(model: ITextModel, languageId: string): void;
 
     /**
      * Set the markers for a model.
      */
-    export function setModelMarkers(model: IModel, owner: string, markers: IMarkerData[]): void;
+    export function setModelMarkers(model: ITextModel, owner: string, markers: IMarkerData[]): void;
+
+    /**
+     * Get markers for owner and/or resource
+     * @returns {IMarker[]} list of markers
+     * @param filter
+     */
+    export function getModelMarkers(filter: {
+        owner?: string;
+        resource?: Uri;
+        take?: number;
+    }): IMarker[];
 
     /**
      * Get the model that has `uri` if it exists.
      */
-    export function getModel(uri: Uri): IModel;
+    export function getModel(uri: Uri): ITextModel;
 
     /**
      * Get all the created models.
      */
-    export function getModels(): IModel[];
+    export function getModels(): ITextModel[];
 
     /**
      * Emitted when a model is created.
      * @event
      */
-    export function onDidCreateModel(listener: (model: IModel) => void): IDisposable;
+    export function onDidCreateModel(listener: (model: ITextModel) => void): IDisposable;
 
     /**
      * Emitted right before a model is disposed.
      * @event
      */
-    export function onWillDisposeModel(listener: (model: IModel) => void): IDisposable;
+    export function onWillDisposeModel(listener: (model: ITextModel) => void): IDisposable;
 
     /**
      * Emitted when a different language is set to a model.
      * @event
      */
     export function onDidChangeModelLanguage(listener: (e: {
-        readonly model: IModel;
+        readonly model: ITextModel;
         readonly oldLanguage: string;
     }) => void): IDisposable;
 
@@ -877,7 +887,7 @@ declare module monaco.editor {
     /**
      * Colorize a line in a model.
      */
-    export function colorizeModelLine(model: IModel, lineNumber: number, tabSize?: number): string;
+    export function colorizeModelLine(model: ITextModel, lineNumber: number, tabSize?: number): string;
 
     /**
      * Tokenize `text` using language `languageId`
@@ -885,19 +895,30 @@ declare module monaco.editor {
     export function tokenize(text: string, languageId: string): Token[][];
 
     /**
-     * Define a new theme.
+     * Define a new theme or updte an existing theme.
      */
-    export function defineTheme(themeName: string, themeData: ITheme): void;
+    export function defineTheme(themeName: string, themeData: IStandaloneThemeData): void;
+
+    /**
+     * Switches to a theme.
+     */
+    export function setTheme(themeName: string): void;
 
     export type BuiltinTheme = 'vs' | 'vs-dark' | 'hc-black';
 
-    export interface ITheme {
+    export interface IStandaloneThemeData {
         base: BuiltinTheme;
         inherit: boolean;
-        rules: IThemeRule[];
+        rules: ITokenThemeRule[];
+        encodedTokensColors?: string[];
+        colors: IColors;
     }
 
-    export interface IThemeRule {
+    export type IColors = {
+        [colorId: string]: string;
+    };
+
+    export interface ITokenThemeRule {
         token: string;
         foreground?: string;
         background?: string;
@@ -940,9 +961,58 @@ declare module monaco.editor {
     }
 
     /**
+     * Description of an action contribution
+     */
+    export interface IActionDescriptor {
+        /**
+         * An unique identifier of the contributed action.
+         */
+        id: string;
+        /**
+         * A label of the action that will be presented to the user.
+         */
+        label: string;
+        /**
+         * Precondition rule.
+         */
+        precondition?: string;
+        /**
+         * An array of keybindings for the action.
+         */
+        keybindings?: number[];
+        /**
+         * The keybinding rule (condition on top of precondition).
+         */
+        keybindingContext?: string;
+        /**
+         * Control if the action should show up in the context menu and where.
+         * The context menu of the editor has these default:
+         *   navigation - The navigation group comes first in all cases.
+         *   1_modification - This group comes next and contains commands that modify your code.
+         *   9_cutcopypaste - The last default group with the basic editing commands.
+         * You can also create your own group.
+         * Defaults to null (don't show in context menu).
+         */
+        contextMenuGroupId?: string;
+        /**
+         * Control the order in the context menu group.
+         */
+        contextMenuOrder?: number;
+        /**
+         * Method that will be executed when the action is triggered.
+         * @param editor The editor instance is passed in as a convinience
+         */
+        run(editor: ICodeEditor): void | Promise<void>;
+    }
+
+    /**
      * The options to create an editor.
      */
-    export interface IEditorConstructionOptions extends ICodeEditorWidgetCreationOptions {
+    export interface IEditorConstructionOptions extends IEditorOptions {
+        /**
+         * The initial model associated with this code editor.
+         */
+        model?: ITextModel | null;
         /**
          * The initial value of the auto created model in the editor.
          * To not create automatically a model, use `model: null`.
@@ -953,12 +1023,33 @@ declare module monaco.editor {
          * To not create automatically a model, use `model: null`.
          */
         language?: string;
+        /**
+         * Initial theme to be used for rendering.
+         * The current out-of-the-box available themes are: 'vs' (default), 'vs-dark', 'hc-black'.
+         * You can create custom themes via `monaco.editor.defineTheme`.
+         * To switch a theme, use `monaco.editor.setTheme`
+         */
+        theme?: string;
+        /**
+         * An URL to open when Ctrl+H (Windows and Linux) or Cmd+H (OSX) is pressed in
+         * the accessibility help dialog in the editor.
+         *
+         * Defaults to "https://go.microsoft.com/fwlink/?linkid=852450"
+         */
+        accessibilityHelpUrl?: string;
     }
 
     /**
      * The options to create a diff editor.
      */
     export interface IDiffEditorConstructionOptions extends IDiffEditorOptions {
+        /**
+         * Initial theme to be used for rendering.
+         * The current out-of-the-box available themes are: 'vs' (default), 'vs-dark', 'hc-black'.
+         * You can create custom themes via `monaco.editor.defineTheme`.
+         * To switch a theme, use `monaco.editor.setTheme`
+         */
+        theme?: string;
     }
 
     export interface IStandaloneCodeEditor extends ICodeEditor {
@@ -985,6 +1076,22 @@ declare module monaco.editor {
     }
 
     export interface IEditorOverrideServices {
+        [index: string]: any;
+    }
+
+    export interface IMarker {
+        owner: string;
+        resource: Uri;
+        severity: MarkerSeverity;
+        code?: string;
+        message: string;
+        source?: string;
+        startLineNumber: number;
+        startColumn: number;
+        endLineNumber: number;
+        endColumn: number;
+        relatedInformation?: IRelatedInformation[];
+        tags?: MarkerTag[];
     }
 
     /**
@@ -992,9 +1099,23 @@ declare module monaco.editor {
      */
     export interface IMarkerData {
         code?: string;
-        severity: Severity;
+        severity: MarkerSeverity;
         message: string;
         source?: string;
+        startLineNumber: number;
+        startColumn: number;
+        endLineNumber: number;
+        endColumn: number;
+        relatedInformation?: IRelatedInformation[];
+        tags?: MarkerTag[];
+    }
+
+    /**
+     *
+     */
+    export interface IRelatedInformation {
+        resource: Uri;
+        message: string;
         startLineNumber: number;
         startColumn: number;
         endLineNumber: number;
@@ -1013,7 +1134,1236 @@ declare module monaco.editor {
     export enum ScrollbarVisibility {
         Auto = 1,
         Hidden = 2,
-        Visible = 3,
+        Visible = 3
+    }
+
+    export interface ThemeColor {
+        id: string;
+    }
+
+    /**
+     * Vertical Lane in the overview ruler of the editor.
+     */
+    export enum OverviewRulerLane {
+        Left = 1,
+        Center = 2,
+        Right = 4,
+        Full = 7
+    }
+
+    /**
+     * Options for rendering a model decoration in the overview ruler.
+     */
+    export interface IModelDecorationOverviewRulerOptions {
+        /**
+         * CSS color to render in the overview ruler.
+         * e.g.: rgba(100, 100, 100, 0.5) or a color from the color registry
+         */
+        color: string | ThemeColor;
+        /**
+         * CSS color to render in the overview ruler.
+         * e.g.: rgba(100, 100, 100, 0.5) or a color from the color registry
+         */
+        darkColor: string | ThemeColor;
+        /**
+         * CSS color to render in the overview ruler.
+         * e.g.: rgba(100, 100, 100, 0.5) or a color from the color registry
+         */
+        hcColor?: string | ThemeColor;
+        /**
+         * The position in the overview ruler.
+         */
+        position: OverviewRulerLane;
+    }
+
+    /**
+     * Options for a model decoration.
+     */
+    export interface IModelDecorationOptions {
+        /**
+         * Customize the growing behavior of the decoration when typing at the edges of the decoration.
+         * Defaults to TrackedRangeStickiness.AlwaysGrowsWhenTypingAtEdges
+         */
+        stickiness?: TrackedRangeStickiness;
+        /**
+         * CSS class name describing the decoration.
+         */
+        className?: string;
+        /**
+         * Message to be rendered when hovering over the glyph margin decoration.
+         */
+        glyphMarginHoverMessage?: IMarkdownString | IMarkdownString[];
+        /**
+         * Array of MarkdownString to render as the decoration message.
+         */
+        hoverMessage?: IMarkdownString | IMarkdownString[];
+        /**
+         * Should the decoration expand to encompass a whole line.
+         */
+        isWholeLine?: boolean;
+        /**
+         * Specifies the stack order of a decoration.
+         * A decoration with greater stack order is always in front of a decoration with a lower stack order.
+         */
+        zIndex?: number;
+        /**
+         * If set, render this decoration in the overview ruler.
+         */
+        overviewRuler?: IModelDecorationOverviewRulerOptions;
+        /**
+         * If set, the decoration will be rendered in the glyph margin with this CSS class name.
+         */
+        glyphMarginClassName?: string;
+        /**
+         * If set, the decoration will be rendered in the lines decorations with this CSS class name.
+         */
+        linesDecorationsClassName?: string;
+        /**
+         * If set, the decoration will be rendered in the margin (covering its full width) with this CSS class name.
+         */
+        marginClassName?: string;
+        /**
+         * If set, the decoration will be rendered inline with the text with this CSS class name.
+         * Please use this only for CSS rules that must impact the text. For example, use `className`
+         * to have a background color decoration.
+         */
+        inlineClassName?: string;
+        /**
+         * If there is an `inlineClassName` which affects letter spacing.
+         */
+        inlineClassNameAffectsLetterSpacing?: boolean;
+        /**
+         * If set, the decoration will be rendered before the text with this CSS class name.
+         */
+        beforeContentClassName?: string;
+        /**
+         * If set, the decoration will be rendered after the text with this CSS class name.
+         */
+        afterContentClassName?: string;
+    }
+
+    /**
+     * New model decorations.
+     */
+    export interface IModelDeltaDecoration {
+        /**
+         * Range that this decoration covers.
+         */
+        range: IRange;
+        /**
+         * Options associated with this decoration.
+         */
+        options: IModelDecorationOptions;
+    }
+
+    /**
+     * A decoration in the model.
+     */
+    export interface IModelDecoration {
+        /**
+         * Identifier for a decoration.
+         */
+        readonly id: string;
+        /**
+         * Identifier for a decoration's owener.
+         */
+        readonly ownerId: number;
+        /**
+         * Range that this decoration covers.
+         */
+        readonly range: Range;
+        /**
+         * Options associated with this decoration.
+         */
+        readonly options: IModelDecorationOptions;
+    }
+
+    /**
+     * Word inside a model.
+     */
+    export interface IWordAtPosition {
+        /**
+         * The word.
+         */
+        readonly word: string;
+        /**
+         * The column where the word starts.
+         */
+        readonly startColumn: number;
+        /**
+         * The column where the word ends.
+         */
+        readonly endColumn: number;
+    }
+
+    /**
+     * End of line character preference.
+     */
+    export enum EndOfLinePreference {
+        /**
+         * Use the end of line character identified in the text buffer.
+         */
+        TextDefined = 0,
+        /**
+         * Use line feed (\n) as the end of line character.
+         */
+        LF = 1,
+        /**
+         * Use carriage return and line feed (\r\n) as the end of line character.
+         */
+        CRLF = 2
+    }
+
+    /**
+     * The default end of line to use when instantiating models.
+     */
+    export enum DefaultEndOfLine {
+        /**
+         * Use line feed (\n) as the end of line character.
+         */
+        LF = 1,
+        /**
+         * Use carriage return and line feed (\r\n) as the end of line character.
+         */
+        CRLF = 2
+    }
+
+    /**
+     * End of line character preference.
+     */
+    export enum EndOfLineSequence {
+        /**
+         * Use line feed (\n) as the end of line character.
+         */
+        LF = 0,
+        /**
+         * Use carriage return and line feed (\r\n) as the end of line character.
+         */
+        CRLF = 1
+    }
+
+    /**
+     * An identifier for a single edit operation.
+     */
+    export interface ISingleEditOperationIdentifier {
+        /**
+         * Identifier major
+         */
+        major: number;
+        /**
+         * Identifier minor
+         */
+        minor: number;
+    }
+
+    /**
+     * A single edit operation, that acts as a simple replace.
+     * i.e. Replace text at `range` with `text` in model.
+     */
+    export interface ISingleEditOperation {
+        /**
+         * The range to replace. This can be empty to emulate a simple insert.
+         */
+        range: IRange;
+        /**
+         * The text to replace with. This can be null to emulate a simple delete.
+         */
+        text: string;
+        /**
+         * This indicates that this operation has "insert" semantics.
+         * i.e. forceMoveMarkers = true => if `range` is collapsed, all markers at the position will be moved.
+         */
+        forceMoveMarkers?: boolean;
+    }
+
+    /**
+     * A single edit operation, that has an identifier.
+     */
+    export interface IIdentifiedSingleEditOperation {
+        /**
+         * The range to replace. This can be empty to emulate a simple insert.
+         */
+        range: Range;
+        /**
+         * The text to replace with. This can be null to emulate a simple delete.
+         */
+        text: string;
+        /**
+         * This indicates that this operation has "insert" semantics.
+         * i.e. forceMoveMarkers = true => if `range` is collapsed, all markers at the position will be moved.
+         */
+        forceMoveMarkers?: boolean;
+    }
+
+    /**
+     * A callback that can compute the cursor state after applying a series of edit operations.
+     */
+    export interface ICursorStateComputer {
+        /**
+         * A callback that can compute the resulting cursors state after some edit operations have been executed.
+         */
+        (inverseEditOperations: IIdentifiedSingleEditOperation[]): Selection[];
+    }
+
+    export class TextModelResolvedOptions {
+        _textModelResolvedOptionsBrand: void;
+        readonly tabSize: number;
+        readonly insertSpaces: boolean;
+        readonly defaultEOL: DefaultEndOfLine;
+        readonly trimAutoWhitespace: boolean;
+    }
+
+    export interface ITextModelUpdateOptions {
+        tabSize?: number;
+        insertSpaces?: boolean;
+        trimAutoWhitespace?: boolean;
+    }
+
+    export class FindMatch {
+        _findMatchBrand: void;
+        readonly range: Range;
+        readonly matches: string[];
+    }
+
+    /**
+     * Describes the behavior of decorations when typing/editing near their edges.
+     * Note: Please do not edit the values, as they very carefully match `DecorationRangeBehavior`
+     */
+    export enum TrackedRangeStickiness {
+        AlwaysGrowsWhenTypingAtEdges = 0,
+        NeverGrowsWhenTypingAtEdges = 1,
+        GrowsOnlyWhenTypingBefore = 2,
+        GrowsOnlyWhenTypingAfter = 3
+    }
+
+    /**
+     * A model.
+     */
+    export interface ITextModel {
+        /**
+         * Gets the resource associated with this editor model.
+         */
+        readonly uri: Uri;
+        /**
+         * A unique identifier associated with this model.
+         */
+        readonly id: string;
+        /**
+         * Get the resolved options for this model.
+         */
+        getOptions(): TextModelResolvedOptions;
+        /**
+         * Get the current version id of the model.
+         * Anytime a change happens to the model (even undo/redo),
+         * the version id is incremented.
+         */
+        getVersionId(): number;
+        /**
+         * Get the alternative version id of the model.
+         * This alternative version id is not always incremented,
+         * it will return the same values in the case of undo-redo.
+         */
+        getAlternativeVersionId(): number;
+        /**
+         * Replace the entire text buffer value contained in this model.
+         */
+        setValue(newValue: string): void;
+        /**
+         * Get the text stored in this model.
+         * @param eol The end of line character preference. Defaults to `EndOfLinePreference.TextDefined`.
+         * @param preserverBOM Preserve a BOM character if it was detected when the model was constructed.
+         * @return The text.
+         */
+        getValue(eol?: EndOfLinePreference, preserveBOM?: boolean): string;
+        /**
+         * Get the length of the text stored in this model.
+         */
+        getValueLength(eol?: EndOfLinePreference, preserveBOM?: boolean): number;
+        /**
+         * Get the text in a certain range.
+         * @param range The range describing what text to get.
+         * @param eol The end of line character preference. This will only be used for multiline ranges. Defaults to `EndOfLinePreference.TextDefined`.
+         * @return The text.
+         */
+        getValueInRange(range: IRange, eol?: EndOfLinePreference): string;
+        /**
+         * Get the length of text in a certain range.
+         * @param range The range describing what text length to get.
+         * @return The text length.
+         */
+        getValueLengthInRange(range: IRange): number;
+        /**
+         * Get the number of lines in the model.
+         */
+        getLineCount(): number;
+        /**
+         * Get the text for a certain line.
+         */
+        getLineContent(lineNumber: number): string;
+        /**
+         * Get the text length for a certain line.
+         */
+        getLineLength(lineNumber: number): number;
+        /**
+         * Get the text for all lines.
+         */
+        getLinesContent(): string[];
+        /**
+         * Get the end of line sequence predominantly used in the text buffer.
+         * @return EOL char sequence (e.g.: '\n' or '\r\n').
+         */
+        getEOL(): string;
+        /**
+         * Get the minimum legal column for line at `lineNumber`
+         */
+        getLineMinColumn(lineNumber: number): number;
+        /**
+         * Get the maximum legal column for line at `lineNumber`
+         */
+        getLineMaxColumn(lineNumber: number): number;
+        /**
+         * Returns the column before the first non whitespace character for line at `lineNumber`.
+         * Returns 0 if line is empty or contains only whitespace.
+         */
+        getLineFirstNonWhitespaceColumn(lineNumber: number): number;
+        /**
+         * Returns the column after the last non whitespace character for line at `lineNumber`.
+         * Returns 0 if line is empty or contains only whitespace.
+         */
+        getLineLastNonWhitespaceColumn(lineNumber: number): number;
+        /**
+         * Create a valid position,
+         */
+        validatePosition(position: IPosition): Position;
+        /**
+         * Advances the given position by the given offest (negative offsets are also accepted)
+         * and returns it as a new valid position.
+         *
+         * If the offset and position are such that their combination goes beyond the beginning or
+         * end of the model, throws an exception.
+         *
+         * If the ofsset is such that the new position would be in the middle of a multi-byte
+         * line terminator, throws an exception.
+         */
+        modifyPosition(position: IPosition, offset: number): Position;
+        /**
+         * Create a valid range.
+         */
+        validateRange(range: IRange): Range;
+        /**
+         * Converts the position to a zero-based offset.
+         *
+         * The position will be [adjusted](#TextDocument.validatePosition).
+         *
+         * @param position A position.
+         * @return A valid zero-based offset.
+         */
+        getOffsetAt(position: IPosition): number;
+        /**
+         * Converts a zero-based offset to a position.
+         *
+         * @param offset A zero-based offset.
+         * @return A valid [position](#Position).
+         */
+        getPositionAt(offset: number): Position;
+        /**
+         * Get a range covering the entire model
+         */
+        getFullModelRange(): Range;
+        /**
+         * Returns if the model was disposed or not.
+         */
+        isDisposed(): boolean;
+        /**
+         * Search the model.
+         * @param searchString The string used to search. If it is a regular expression, set `isRegex` to true.
+         * @param searchOnlyEditableRange Limit the searching to only search inside the editable range of the model.
+         * @param isRegex Used to indicate that `searchString` is a regular expression.
+         * @param matchCase Force the matching to match lower/upper case exactly.
+         * @param wordSeparators Force the matching to match entire words only. Pass null otherwise.
+         * @param captureMatches The result will contain the captured groups.
+         * @param limitResultCount Limit the number of results
+         * @return The ranges where the matches are. It is empty if not matches have been found.
+         */
+        findMatches(searchString: string, searchOnlyEditableRange: boolean, isRegex: boolean, matchCase: boolean, wordSeparators: string | null, captureMatches: boolean, limitResultCount?: number): FindMatch[];
+        /**
+         * Search the model.
+         * @param searchString The string used to search. If it is a regular expression, set `isRegex` to true.
+         * @param searchScope Limit the searching to only search inside this range.
+         * @param isRegex Used to indicate that `searchString` is a regular expression.
+         * @param matchCase Force the matching to match lower/upper case exactly.
+         * @param wordSeparators Force the matching to match entire words only. Pass null otherwise.
+         * @param captureMatches The result will contain the captured groups.
+         * @param limitResultCount Limit the number of results
+         * @return The ranges where the matches are. It is empty if no matches have been found.
+         */
+        findMatches(searchString: string, searchScope: IRange, isRegex: boolean, matchCase: boolean, wordSeparators: string | null, captureMatches: boolean, limitResultCount?: number): FindMatch[];
+        /**
+         * Search the model for the next match. Loops to the beginning of the model if needed.
+         * @param searchString The string used to search. If it is a regular expression, set `isRegex` to true.
+         * @param searchStart Start the searching at the specified position.
+         * @param isRegex Used to indicate that `searchString` is a regular expression.
+         * @param matchCase Force the matching to match lower/upper case exactly.
+         * @param wordSeparators Force the matching to match entire words only. Pass null otherwise.
+         * @param captureMatches The result will contain the captured groups.
+         * @return The range where the next match is. It is null if no next match has been found.
+         */
+        findNextMatch(searchString: string, searchStart: IPosition, isRegex: boolean, matchCase: boolean, wordSeparators: string | null, captureMatches: boolean): FindMatch;
+        /**
+         * Search the model for the previous match. Loops to the end of the model if needed.
+         * @param searchString The string used to search. If it is a regular expression, set `isRegex` to true.
+         * @param searchStart Start the searching at the specified position.
+         * @param isRegex Used to indicate that `searchString` is a regular expression.
+         * @param matchCase Force the matching to match lower/upper case exactly.
+         * @param wordSeparators Force the matching to match entire words only. Pass null otherwise.
+         * @param captureMatches The result will contain the captured groups.
+         * @return The range where the previous match is. It is null if no previous match has been found.
+         */
+        findPreviousMatch(searchString: string, searchStart: IPosition, isRegex: boolean, matchCase: boolean, wordSeparators: string | null, captureMatches: boolean): FindMatch;
+        /**
+         * Get the language associated with this model.
+         */
+        getModeId(): string;
+        /**
+         * Get the word under or besides `position`.
+         * @param position The position to look for a word.
+         * @param skipSyntaxTokens Ignore syntax tokens, as identified by the mode.
+         * @return The word under or besides `position`. Might be null.
+         */
+        getWordAtPosition(position: IPosition): IWordAtPosition;
+        /**
+         * Get the word under or besides `position` trimmed to `position`.column
+         * @param position The position to look for a word.
+         * @param skipSyntaxTokens Ignore syntax tokens, as identified by the mode.
+         * @return The word under or besides `position`. Will never be null.
+         */
+        getWordUntilPosition(position: IPosition): IWordAtPosition;
+        /**
+         * Get the language associated with this model.
+         */
+        getModeId(): string;
+        /**
+         * Get the word under or besides `position`.
+         * @param position The position to look for a word.
+         * @param skipSyntaxTokens Ignore syntax tokens, as identified by the mode.
+         * @return The word under or besides `position`. Might be null.
+         */
+        getWordAtPosition(position: IPosition): IWordAtPosition;
+        /**
+         * Get the word under or besides `position` trimmed to `position`.column
+         * @param position The position to look for a word.
+         * @param skipSyntaxTokens Ignore syntax tokens, as identified by the mode.
+         * @return The word under or besides `position`. Will never be null.
+         */
+        getWordUntilPosition(position: IPosition): IWordAtPosition;
+        /**
+         * Perform a minimum ammount of operations, in order to transform the decorations
+         * identified by `oldDecorations` to the decorations described by `newDecorations`
+         * and returns the new identifiers associated with the resulting decorations.
+         *
+         * @param oldDecorations Array containing previous decorations identifiers.
+         * @param newDecorations Array describing what decorations should result after the call.
+         * @param ownerId Identifies the editor id in which these decorations should appear. If no `ownerId` is provided, the decorations will appear in all editors that attach this model.
+         * @return An array containing the new decorations identifiers.
+         */
+        deltaDecorations(oldDecorations: string[], newDecorations: IModelDeltaDecoration[], ownerId?: number): string[];
+        /**
+         * Get the options associated with a decoration.
+         * @param id The decoration id.
+         * @return The decoration options or null if the decoration was not found.
+         */
+        getDecorationOptions(id: string): IModelDecorationOptions;
+        /**
+         * Get the range associated with a decoration.
+         * @param id The decoration id.
+         * @return The decoration range or null if the decoration was not found.
+         */
+        getDecorationRange(id: string): Range;
+        /**
+         * Gets all the decorations for the line `lineNumber` as an array.
+         * @param lineNumber The line number
+         * @param ownerId If set, it will ignore decorations belonging to other owners.
+         * @param filterOutValidation If set, it will ignore decorations specific to validation (i.e. warnings, errors).
+         * @return An array with the decorations
+         */
+        getLineDecorations(lineNumber: number, ownerId?: number, filterOutValidation?: boolean): IModelDecoration[];
+        /**
+         * Gets all the decorations for the lines between `startLineNumber` and `endLineNumber` as an array.
+         * @param startLineNumber The start line number
+         * @param endLineNumber The end line number
+         * @param ownerId If set, it will ignore decorations belonging to other owners.
+         * @param filterOutValidation If set, it will ignore decorations specific to validation (i.e. warnings, errors).
+         * @return An array with the decorations
+         */
+        getLinesDecorations(startLineNumber: number, endLineNumber: number, ownerId?: number, filterOutValidation?: boolean): IModelDecoration[];
+        /**
+         * Gets all the deocorations in a range as an array. Only `startLineNumber` and `endLineNumber` from `range` are used for filtering.
+         * So for now it returns all the decorations on the same line as `range`.
+         * @param range The range to search in
+         * @param ownerId If set, it will ignore decorations belonging to other owners.
+         * @param filterOutValidation If set, it will ignore decorations specific to validation (i.e. warnings, errors).
+         * @return An array with the decorations
+         */
+        getDecorationsInRange(range: IRange, ownerId?: number, filterOutValidation?: boolean): IModelDecoration[];
+        /**
+         * Gets all the decorations as an array.
+         * @param ownerId If set, it will ignore decorations belonging to other owners.
+         * @param filterOutValidation If set, it will ignore decorations specific to validation (i.e. warnings, errors).
+         */
+        getAllDecorations(ownerId?: number, filterOutValidation?: boolean): IModelDecoration[];
+        /**
+         * Gets all the decorations that should be rendered in the overview ruler as an array.
+         * @param ownerId If set, it will ignore decorations belonging to other owners.
+         * @param filterOutValidation If set, it will ignore decorations specific to validation (i.e. warnings, errors).
+         */
+        getOverviewRulerDecorations(ownerId?: number, filterOutValidation?: boolean): IModelDecoration[];
+        /**
+         * Normalize a string containing whitespace according to indentation rules (converts to spaces or to tabs).
+         */
+        normalizeIndentation(str: string): string;
+        /**
+         * Get what is considered to be one indent (e.g. a tab character or 4 spaces, etc.).
+         */
+        getOneIndent(): string;
+        /**
+         * Change the options of this model.
+         */
+        updateOptions(newOpts: ITextModelUpdateOptions): void;
+        /**
+         * Detect the indentation options for this model from its content.
+         */
+        detectIndentation(defaultInsertSpaces: boolean, defaultTabSize: number): void;
+        /**
+         * Push a stack element onto the undo stack. This acts as an undo/redo point.
+         * The idea is to use `pushEditOperations` to edit the model and then to
+         * `pushStackElement` to create an undo/redo stop point.
+         */
+        pushStackElement(): void;
+        /**
+         * Push edit operations, basically editing the model. This is the preferred way
+         * of editing the model. The edit operations will land on the undo stack.
+         * @param beforeCursorState The cursor state before the edit operaions. This cursor state will be returned when `undo` or `redo` are invoked.
+         * @param editOperations The edit operations.
+         * @param cursorStateComputer A callback that can compute the resulting cursors state after the edit operations have been executed.
+         * @return The cursor state returned by the `cursorStateComputer`.
+         */
+        pushEditOperations(beforeCursorState: Selection[], editOperations: IIdentifiedSingleEditOperation[], cursorStateComputer: ICursorStateComputer): Selection[];
+        /**
+         * Change the end of line sequence. This is the preferred way of
+         * changing the eol sequence. This will land on the undo stack.
+         */
+        pushEOL(eol: EndOfLineSequence): void;
+        /**
+         * Edit the model without adding the edits to the undo stack.
+         * This can have dire consequences on the undo stack! See @pushEditOperations for the preferred way.
+         * @param operations The edit operations.
+         * @return The inverse edit operations, that, when applied, will bring the model back to the previous state.
+         */
+        applyEdits(operations: IIdentifiedSingleEditOperation[]): IIdentifiedSingleEditOperation[];
+        /**
+         * Change the end of line sequence without recording in the undo stack.
+         * This can have dire consequences on the undo stack! See @pushEOL for the preferred way.
+         */
+        setEOL(eol: EndOfLineSequence): void;
+        /**
+         * An event emitted when the contents of the model have changed.
+         * @event
+         */
+        onDidChangeContent(listener: (e: IModelContentChangedEvent) => void): IDisposable;
+        /**
+         * An event emitted when decorations of the model have changed.
+         * @event
+         */
+        onDidChangeDecorations(listener: (e: IModelDecorationsChangedEvent) => void): IDisposable;
+        /**
+         * An event emitted when the model options have changed.
+         * @event
+         */
+        onDidChangeOptions(listener: (e: IModelOptionsChangedEvent) => void): IDisposable;
+        /**
+         * An event emitted when the language associated with the model has changed.
+         * @event
+         */
+        onDidChangeLanguage(listener: (e: IModelLanguageChangedEvent) => void): IDisposable;
+        /**
+         * An event emitted when the language configuration associated with the model has changed.
+         * @event
+         */
+        onDidChangeLanguageConfiguration(listener: (e: IModelLanguageConfigurationChangedEvent) => void): IDisposable;
+        /**
+         * An event emitted right before disposing the model.
+         * @event
+         */
+        onWillDispose(listener: () => void): IDisposable;
+        /**
+         * Destroy this model. This will unbind the model from the mode
+         * and make all necessary clean-up to release this object to the GC.
+         */
+        dispose(): void;
+    }
+
+    /**
+     * A builder and helper for edit operations for a command.
+     */
+    export interface IEditOperationBuilder {
+        /**
+         * Add a new edit operation (a replace operation).
+         * @param range The range to replace (delete). May be empty to represent a simple insert.
+         * @param text The text to replace with. May be null to represent a simple delete.
+         */
+        addEditOperation(range: Range, text: string): void;
+        /**
+         * Add a new edit operation (a replace operation).
+         * The inverse edits will be accessible in `ICursorStateComputerData.getInverseEditOperations()`
+         * @param range The range to replace (delete). May be empty to represent a simple insert.
+         * @param text The text to replace with. May be null to represent a simple delete.
+         */
+        addTrackedEditOperation(range: Range, text: string): void;
+        /**
+         * Track `selection` when applying edit operations.
+         * A best effort will be made to not grow/expand the selection.
+         * An empty selection will clamp to a nearby character.
+         * @param selection The selection to track.
+         * @param trackPreviousOnEmpty If set, and the selection is empty, indicates whether the selection
+         *           should clamp to the previous or the next character.
+         * @return A unique identifer.
+         */
+        trackSelection(selection: Selection, trackPreviousOnEmpty?: boolean): string;
+    }
+
+    /**
+     * A helper for computing cursor state after a command.
+     */
+    export interface ICursorStateComputerData {
+        /**
+         * Get the inverse edit operations of the added edit operations.
+         */
+        getInverseEditOperations(): IIdentifiedSingleEditOperation[];
+        /**
+         * Get a previously tracked selection.
+         * @param id The unique identifier returned by `trackSelection`.
+         * @return The selection.
+         */
+        getTrackedSelection(id: string): Selection;
+    }
+
+    /**
+     * A command that modifies text / cursor state on a model.
+     */
+    export interface ICommand {
+        /**
+         * Get the edit operations needed to execute this command.
+         * @param model The model the command will execute on.
+         * @param builder A helper to collect the needed edit operations and to track selections.
+         */
+        getEditOperations(model: ITextModel, builder: IEditOperationBuilder): void;
+        /**
+         * Compute the cursor state after the edit operations were applied.
+         * @param model The model the commad has executed on.
+         * @param helper A helper to get inverse edit operations and to get previously tracked selections.
+         * @return The cursor state after the command executed.
+         */
+        computeCursorState(model: ITextModel, helper: ICursorStateComputerData): Selection;
+    }
+
+    /**
+     * A model for the diff editor.
+     */
+    export interface IDiffEditorModel {
+        /**
+         * Original model.
+         */
+        original: ITextModel;
+        /**
+         * Modified model.
+         */
+        modified: ITextModel;
+    }
+
+    /**
+     * An event describing that an editor has had its model reset (i.e. `editor.setModel()`).
+     */
+    export interface IModelChangedEvent {
+        /**
+         * The `uri` of the previous model or null.
+         */
+        readonly oldModelUrl: Uri;
+        /**
+         * The `uri` of the new model or null.
+         */
+        readonly newModelUrl: Uri;
+    }
+
+    export interface IDimension {
+        width: number;
+        height: number;
+    }
+
+    /**
+     * A change
+     */
+    export interface IChange {
+        readonly originalStartLineNumber: number;
+        readonly originalEndLineNumber: number;
+        readonly modifiedStartLineNumber: number;
+        readonly modifiedEndLineNumber: number;
+    }
+
+    /**
+     * A character level change.
+     */
+    export interface ICharChange extends IChange {
+        readonly originalStartColumn: number;
+        readonly originalEndColumn: number;
+        readonly modifiedStartColumn: number;
+        readonly modifiedEndColumn: number;
+    }
+
+    /**
+     * A line change
+     */
+    export interface ILineChange extends IChange {
+        readonly charChanges: ICharChange[];
+    }
+
+    export interface INewScrollPosition {
+        scrollLeft?: number;
+        scrollTop?: number;
+    }
+
+    export interface IEditorAction {
+        readonly id: string;
+        readonly label: string;
+        readonly alias: string;
+        isSupported(): boolean;
+        run(): Promise<void>;
+    }
+
+    export type IEditorModel = ITextModel | IDiffEditorModel;
+
+    /**
+     * A (serializable) state of the cursors.
+     */
+    export interface ICursorState {
+        inSelectionMode: boolean;
+        selectionStart: IPosition;
+        position: IPosition;
+    }
+
+    /**
+     * A (serializable) state of the view.
+     */
+    export interface IViewState {
+        /** written by previous versions */
+        scrollTop?: number;
+        /** written by previous versions */
+        scrollTopWithoutViewZones?: number;
+        scrollLeft: number;
+        firstPosition: IPosition;
+        firstPositionDeltaTop: number;
+    }
+
+    /**
+     * A (serializable) state of the code editor.
+     */
+    export interface ICodeEditorViewState {
+        cursorState: ICursorState[];
+        viewState: IViewState;
+        contributionsState: {
+            [id: string]: any;
+        };
+    }
+
+    /**
+     * (Serializable) View state for the diff editor.
+     */
+    export interface IDiffEditorViewState {
+        original: ICodeEditorViewState;
+        modified: ICodeEditorViewState;
+    }
+
+    /**
+     * An editor view state.
+     */
+    export type IEditorViewState = ICodeEditorViewState | IDiffEditorViewState;
+
+    export const enum ScrollType {
+        Smooth = 0,
+        Immediate = 1
+    }
+
+    /**
+     * An editor.
+     */
+    export interface IEditor {
+        /**
+         * An event emitted when the editor has been disposed.
+         * @event
+         */
+        onDidDispose(listener: () => void): IDisposable;
+        /**
+         * Dispose the editor.
+         */
+        dispose(): void;
+        /**
+         * Get a unique id for this editor instance.
+         */
+        getId(): string;
+        /**
+         * Get the editor type. Please see `EditorType`.
+         * This is to avoid an instanceof check
+         */
+        getEditorType(): string;
+        /**
+         * Update the editor's options after the editor has been created.
+         */
+        updateOptions(newOptions: IEditorOptions): void;
+        /**
+         * Instructs the editor to remeasure its container. This method should
+         * be called when the container of the editor gets resized.
+         */
+        layout(dimension?: IDimension): void;
+        /**
+         * Brings browser focus to the editor text
+         */
+        focus(): void;
+        /**
+         * Returns true if the text inside this editor is focused (i.e. cursor is blinking).
+         */
+        hasTextFocus(): boolean;
+        /**
+         * Returns all actions associated with this editor.
+         */
+        getSupportedActions(): IEditorAction[];
+        /**
+         * Saves current view state of the editor in a serializable object.
+         */
+        saveViewState(): IEditorViewState;
+        /**
+         * Restores the view state of the editor from a serializable object generated by `saveViewState`.
+         */
+        restoreViewState(state: IEditorViewState): void;
+        /**
+         * Given a position, returns a column number that takes tab-widths into account.
+         */
+        getVisibleColumnFromPosition(position: IPosition): number;
+        /**
+         * Returns the primary position of the cursor.
+         */
+        getPosition(): Position;
+        /**
+         * Set the primary position of the cursor. This will remove any secondary cursors.
+         * @param position New primary cursor's position
+         */
+        setPosition(position: IPosition): void;
+        /**
+         * Scroll vertically as necessary and reveal a line.
+         */
+        revealLine(lineNumber: number, scrollType?: ScrollType): void;
+        /**
+         * Scroll vertically as necessary and reveal a line centered vertically.
+         */
+        revealLineInCenter(lineNumber: number, scrollType?: ScrollType): void;
+        /**
+         * Scroll vertically as necessary and reveal a line centered vertically only if it lies outside the viewport.
+         */
+        revealLineInCenterIfOutsideViewport(lineNumber: number, scrollType?: ScrollType): void;
+        /**
+         * Scroll vertically or horizontally as necessary and reveal a position.
+         */
+        revealPosition(position: IPosition, scrollType?: ScrollType): void;
+        /**
+         * Scroll vertically or horizontally as necessary and reveal a position centered vertically.
+         */
+        revealPositionInCenter(position: IPosition, scrollType?: ScrollType): void;
+        /**
+         * Scroll vertically or horizontally as necessary and reveal a position centered vertically only if it lies outside the viewport.
+         */
+        revealPositionInCenterIfOutsideViewport(position: IPosition, scrollType?: ScrollType): void;
+        /**
+         * Returns the primary selection of the editor.
+         */
+        getSelection(): Selection;
+        /**
+         * Returns all the selections of the editor.
+         */
+        getSelections(): Selection[];
+        /**
+         * Set the primary selection of the editor. This will remove any secondary cursors.
+         * @param selection The new selection
+         */
+        setSelection(selection: IRange): void;
+        /**
+         * Set the primary selection of the editor. This will remove any secondary cursors.
+         * @param selection The new selection
+         */
+        setSelection(selection: Range): void;
+        /**
+         * Set the primary selection of the editor. This will remove any secondary cursors.
+         * @param selection The new selection
+         */
+        setSelection(selection: ISelection): void;
+        /**
+         * Set the primary selection of the editor. This will remove any secondary cursors.
+         * @param selection The new selection
+         */
+        setSelection(selection: Selection): void;
+        /**
+         * Set the selections for all the cursors of the editor.
+         * Cursors will be removed or added, as necessary.
+         */
+        setSelections(selections: ISelection[]): void;
+        /**
+         * Scroll vertically as necessary and reveal lines.
+         */
+        revealLines(startLineNumber: number, endLineNumber: number, scrollType?: ScrollType): void;
+        /**
+         * Scroll vertically as necessary and reveal lines centered vertically.
+         */
+        revealLinesInCenter(lineNumber: number, endLineNumber: number, scrollType?: ScrollType): void;
+        /**
+         * Scroll vertically as necessary and reveal lines centered vertically only if it lies outside the viewport.
+         */
+        revealLinesInCenterIfOutsideViewport(lineNumber: number, endLineNumber: number, scrollType?: ScrollType): void;
+        /**
+         * Scroll vertically or horizontally as necessary and reveal a range.
+         */
+        revealRange(range: IRange, scrollType?: ScrollType): void;
+        /**
+         * Scroll vertically or horizontally as necessary and reveal a range centered vertically.
+         */
+        revealRangeInCenter(range: IRange, scrollType?: ScrollType): void;
+        /**
+         * Scroll vertically or horizontally as necessary and reveal a range at the top of the viewport.
+         */
+        revealRangeAtTop(range: IRange, scrollType?: ScrollType): void;
+        /**
+         * Scroll vertically or horizontally as necessary and reveal a range centered vertically only if it lies outside the viewport.
+         */
+        revealRangeInCenterIfOutsideViewport(range: IRange, scrollType?: ScrollType): void;
+        /**
+         * Directly trigger a handler or an editor action.
+         * @param source The source of the call.
+         * @param handlerId The id of the handler or the id of a contribution.
+         * @param payload Extra data to be sent to the handler.
+         */
+        trigger(source: string, handlerId: string, payload: any): void;
+        /**
+         * Gets the current model attached to this editor.
+         */
+        getModel(): IEditorModel | null;
+        /**
+         * Sets the current model attached to this editor.
+         * If the previous model was created by the editor via the value key in the options
+         * literal object, it will be destroyed. Otherwise, if the previous model was set
+         * via setModel, or the model key in the options literal object, the previous model
+         * will not be destroyed.
+         * It is safe to call setModel(null) to simply detach the current model from the editor.
+         */
+        setModel(model: IEditorModel | null): void;
+    }
+
+    /**
+     * An editor contribution that gets created every time a new editor gets created and gets disposed when the editor gets disposed.
+     */
+    export interface IEditorContribution {
+        /**
+         * Get a unique identifier for this contribution.
+         */
+        getId(): string;
+        /**
+         * Dispose this contribution.
+         */
+        dispose(): void;
+        /**
+         * Store view state.
+         */
+        saveViewState?(): any;
+        /**
+         * Restore view state.
+         */
+        restoreViewState?(state: any): void;
+    }
+
+    /**
+     * The type of the `IEditor`.
+     */
+    export const EditorType: {
+        ICodeEditor: string;
+        IDiffEditor: string;
+    };
+
+    /**
+     * An event describing that the current mode associated with a model has changed.
+     */
+    export interface IModelLanguageChangedEvent {
+        /**
+         * Previous language
+         */
+        readonly oldLanguage: string;
+        /**
+         * New language
+         */
+        readonly newLanguage: string;
+    }
+
+    /**
+     * An event describing that the language configuration associated with a model has changed.
+     */
+    export interface IModelLanguageConfigurationChangedEvent {
+    }
+
+    export interface IModelContentChange {
+        /**
+         * The range that got replaced.
+         */
+        readonly range: IRange;
+        /**
+         * The offset of the range that got replaced.
+         */
+        readonly rangeOffset: number;
+        /**
+         * The length of the range that got replaced.
+         */
+        readonly rangeLength: number;
+        /**
+         * The new text for the range.
+         */
+        readonly text: string;
+    }
+
+    /**
+     * An event describing a change in the text of a model.
+     */
+    export interface IModelContentChangedEvent {
+        readonly changes: IModelContentChange[];
+        /**
+         * The (new) end-of-line character.
+         */
+        readonly eol: string;
+        /**
+         * The new version id the model has transitioned to.
+         */
+        readonly versionId: number;
+        /**
+         * Flag that indicates that this event was generated while undoing.
+         */
+        readonly isUndoing: boolean;
+        /**
+         * Flag that indicates that this event was generated while redoing.
+         */
+        readonly isRedoing: boolean;
+        /**
+         * Flag that indicates that all decorations were lost with this edit.
+         * The model has been reset to a new value.
+         */
+        readonly isFlush: boolean;
+    }
+
+    /**
+     * An event describing that model decorations have changed.
+     */
+    export interface IModelDecorationsChangedEvent {
+    }
+
+    /**
+     * An event describing that some ranges of lines have been tokenized (their tokens have changed).
+     */
+    export interface IModelTokensChangedEvent {
+        readonly ranges: {
+            /**
+             * The start of the range (inclusive)
+             */
+            readonly fromLineNumber: number;
+            /**
+             * The end of the range (inclusive)
+             */
+            readonly toLineNumber: number;
+        }[];
+    }
+
+    export interface IModelOptionsChangedEvent {
+        readonly tabSize: boolean;
+        readonly insertSpaces: boolean;
+        readonly trimAutoWhitespace: boolean;
+    }
+
+    /**
+     * Describes the reason the cursor has changed its position.
+     */
+    export enum CursorChangeReason {
+        /**
+         * Unknown or not set.
+         */
+        NotSet = 0,
+        /**
+         * A `model.setValue()` was called.
+         */
+        ContentFlush = 1,
+        /**
+         * The `model` has been changed outside of this cursor and the cursor recovers its position from associated markers.
+         */
+        RecoverFromMarkers = 2,
+        /**
+         * There was an explicit user gesture.
+         */
+        Explicit = 3,
+        /**
+         * There was a Paste.
+         */
+        Paste = 4,
+        /**
+         * There was an Undo.
+         */
+        Undo = 5,
+        /**
+         * There was a Redo.
+         */
+        Redo = 6
+    }
+
+    /**
+     * An event describing that the cursor position has changed.
+     */
+    export interface ICursorPositionChangedEvent {
+        /**
+         * Primary cursor's position.
+         */
+        readonly position: Position;
+        /**
+         * Secondary cursors' position.
+         */
+        readonly secondaryPositions: Position[];
+        /**
+         * Reason.
+         */
+        readonly reason: CursorChangeReason;
+        /**
+         * Source of the call that caused the event.
+         */
+        readonly source: string;
+    }
+
+    /**
+     * An event describing that the cursor selection has changed.
+     */
+    export interface ICursorSelectionChangedEvent {
+        /**
+         * The primary selection.
+         */
+        readonly selection: Selection;
+        /**
+         * The secondary selections.
+         */
+        readonly secondarySelections: Selection[];
+        /**
+         * Source of the call that caused the event.
+         */
+        readonly source: string;
+        /**
+         * Reason.
+         */
+        readonly reason: CursorChangeReason;
     }
 
     /**
@@ -1080,34 +2430,104 @@ declare module monaco.editor {
     }
 
     /**
-     * Describes how to indent wrapped lines.
+     * Configuration options for editor find widget
      */
-    export enum WrappingIndent {
+    export interface IEditorFindOptions {
         /**
-         * No indentation => wrapped lines begin at column 1.
+         * Controls if we seed search string in the Find Widget with editor selection.
          */
-        None = 0,
+        seedSearchStringFromSelection?: boolean;
         /**
-         * Same => wrapped lines get the same indentation as the parent.
+         * Controls if Find in Selection flag is turned on when multiple lines of text are selected in the editor.
          */
-        Same = 1,
-        /**
-         * Indent => wrapped lines get +1 indentation as the parent.
-         */
-        Indent = 2,
+        autoFindInSelection: boolean;
     }
 
-    export type LineNumbersOption = 'on' | 'off' | 'relative' | ((lineNumber: number) => string);
+    /**
+     * Configuration options for editor minimap
+     */
+    export interface IEditorMinimapOptions {
+        /**
+         * Enable the rendering of the minimap.
+         * Defaults to false.
+         */
+        enabled?: boolean;
+        /**
+         * Control the side of the minimap in editor.
+         * Defaults to 'right'.
+         */
+        side?: 'right' | 'left';
+        /**
+         * Control the rendering of the minimap slider.
+         * Defaults to 'mouseover'.
+         */
+        showSlider?: 'always' | 'mouseover';
+        /**
+         * Render the actual text on a line (as opposed to color blocks).
+         * Defaults to true.
+         */
+        renderCharacters?: boolean;
+        /**
+         * Limit the width of the minimap to render at most a certain number of columns.
+         * Defaults to 120.
+         */
+        maxColumn?: number;
+    }
+
+    /**
+     * Configuration options for editor minimap
+     */
+    export interface IEditorLightbulbOptions {
+        /**
+         * Enable the lightbulb code action.
+         * Defaults to true.
+         */
+        enabled?: boolean;
+    }
+
+    /**
+     * Configuration options for editor hover
+     */
+    export interface IEditorHoverOptions {
+        /**
+         * Enable the hover.
+         * Defaults to true.
+         */
+        enabled?: boolean;
+        /**
+         * Delay for showing the hover.
+         * Defaults to 300.
+         */
+        delay?: number;
+        /**
+         * Is the hover sticky such that it can be clicked and its contents selected?
+         * Defaults to true.
+         */
+        sticky?: boolean;
+    }
+
+    export interface ISuggestOptions {
+        /**
+         * Enable graceful matching. Defaults to true.
+         */
+        filterGraceful?: boolean;
+        /**
+         * Prevent quick suggestions when a snippet is active. Defaults to true.
+         */
+        snippetsPreventQuickSuggestions?: boolean;
+    }
+
+    /**
+     * Configuration map for codeActionsOnSave
+     */
+    export interface ICodeActionsOnSaveOptions {
+        [kind: string]: boolean;
+    }
 
     /**
      * Configuration options for the editor.
      */
     export interface IEditorOptions {
-        /**
-         * Enable experimental screen reader support.
-         * Defaults to `true`.
-         */
-        experimentalScreenReader?: boolean;
         /**
          * The aria label for the editor's textarea (when it is focused).
          */
@@ -1134,7 +2554,7 @@ declare module monaco.editor {
          * Otherwise, line numbers will not be rendered.
          * Defaults to true.
          */
-        lineNumbers?: LineNumbersOption;
+        lineNumbers?: 'on' | 'off' | 'relative' | 'interval' | ((lineNumber: number) => string);
         /**
          * Should the corresponding line be selected when clicking on the line number?
          * Defaults to true.
@@ -1169,11 +2589,9 @@ declare module monaco.editor {
          */
         roundedSelection?: boolean;
         /**
-         * Theme to be used for rendering.
-         * The current out-of-the-box available themes are: 'vs' (default), 'vs-dark', 'hc-black'.
-         * You can create custom themes via `monaco.editor.defineTheme`.
+         * Class name to be added to the editor.
          */
-        theme?: string;
+        extraEditorClassName?: string;
         /**
          * Should the editor be read only.
          * Defaults to false.
@@ -1184,6 +2602,14 @@ declare module monaco.editor {
          */
         scrollbar?: IEditorScrollbarOptions;
         /**
+         * Control the behavior and rendering of the minimap.
+         */
+        minimap?: IEditorMinimapOptions;
+        /**
+         * Control the behavior of the find widget.
+         */
+        find?: IEditorFindOptions;
+        /**
          * Display overflow widgets as `fixed`.
          * Defaults to `false`.
          */
@@ -1193,6 +2619,11 @@ declare module monaco.editor {
          * Defaults to 2.
          */
         overviewRulerLanes?: number;
+        /**
+         * Controls if a border should be drawn around the overview ruler.
+         * Defaults to `true`.
+         */
+        overviewRulerBorder?: boolean;
         /**
          * Control the cursor animation style, possible values are 'blink', 'smooth', 'phase', 'expand' and 'solid'.
          * Defaults to 'blink'.
@@ -1209,15 +2640,20 @@ declare module monaco.editor {
          */
         cursorStyle?: string;
         /**
+         * Control the width of the cursor when cursorStyle is set to 'line'
+         */
+        cursorWidth?: number;
+        /**
          * Enable font ligatures.
          * Defaults to false.
          */
         fontLigatures?: boolean;
         /**
-         * Disable the use of `translate3d`.
+         * Disable the use of `will-change` for the editor margin and lines layers.
+         * The usage of `will-change` acts as a hint for browsers to create an extra layer.
          * Defaults to false.
          */
-        disableTranslate3d?: boolean;
+        disableLayerHinting?: boolean;
         /**
          * Disable the optimizations for monospace fonts.
          * Defaults to false.
@@ -1234,27 +2670,46 @@ declare module monaco.editor {
          */
         scrollBeyondLastLine?: boolean;
         /**
+         * Enable that scrolling can go beyond the last column by a number of columns.
+         * Defaults to 5.
+         */
+        scrollBeyondLastColumn?: number;
+        /**
+         * Enable that the editor animates scrolling to a position.
+         * Defaults to false.
+         */
+        smoothScrolling?: boolean;
+        /**
          * Enable that the editor will install an interval to check if its container dom node size has changed.
          * Enabling this might have a severe performance impact.
          * Defaults to false.
          */
         automaticLayout?: boolean;
         /**
-         * Control the wrapping strategy of the editor.
-         * Using -1 means no wrapping whatsoever.
-         * Using 0 means viewport width wrapping (ajusts with the resizing of the editor).
-         * Using a positive number means wrapping after a fixed number of characters.
-         * Defaults to 300.
+         * Control the wrapping of the editor.
+         * When `wordWrap` = "off", the lines will never wrap.
+         * When `wordWrap` = "on", the lines will wrap at the viewport width.
+         * When `wordWrap` = "wordWrapColumn", the lines will wrap at `wordWrapColumn`.
+         * When `wordWrap` = "bounded", the lines will wrap at min(viewport width, wordWrapColumn).
+         * Defaults to "off".
          */
-        wrappingColumn?: number;
+        wordWrap?: 'off' | 'on' | 'wordWrapColumn' | 'bounded';
         /**
-         * Control the alternate style of viewport wrapping.
-         * When set to true viewport wrapping is used only when the window width is less than the number of columns specified in the wrappingColumn property. Has no effect if wrappingColumn is not a positive number.
-         * Defaults to false.
+         * Control the wrapping of the editor.
+         * When `wordWrap` = "off", the lines will never wrap.
+         * When `wordWrap` = "on", the lines will wrap at the viewport width.
+         * When `wordWrap` = "wordWrapColumn", the lines will wrap at `wordWrapColumn`.
+         * When `wordWrap` = "bounded", the lines will wrap at min(viewport width, wordWrapColumn).
+         * Defaults to 80.
          */
-        wordWrap?: boolean;
+        wordWrapColumn?: number;
         /**
-         * Control indentation of wrapped lines. Can be: 'none', 'same' or 'indent'.
+         * Force word wrapping when the text appears to be of a minified/generated file.
+         * Defaults to true.
+         */
+        wordWrapMinified?: boolean;
+        /**
+         * Control indentation of wrapped lines. Can be: 'none', 'same', 'indent' or 'deepIndent'.
          * Defaults to 'same' in vscode and to 'none' in monaco-editor.
          */
         wrappingIndent?: string;
@@ -1275,15 +2730,23 @@ declare module monaco.editor {
         wordWrapBreakObtrusiveCharacters?: string;
         /**
          * Performance guard: Stop rendering a line after x characters.
-         * Defaults to 10000 if wrappingColumn is -1. Defaults to -1 if wrappingColumn is >= 0.
+         * Defaults to 10000.
          * Use -1 to never stop rendering
          */
         stopRenderingLineAfter?: number;
         /**
-         * Enable hover.
+         * Configure the editor's hover.
+         */
+        hover?: IEditorHoverOptions;
+        /**
+         * Enable detecting links and making them clickable.
          * Defaults to true.
          */
-        hover?: boolean;
+        links?: boolean;
+        /**
+         * Enable inline color decorators and color picker rendering.
+         */
+        colorDecorators?: boolean;
         /**
          * Enable custom contextmenu.
          * Defaults to true.
@@ -1295,10 +2758,33 @@ declare module monaco.editor {
          */
         mouseWheelScrollSensitivity?: number;
         /**
+         * The modifier to be used to add multiple cursors with the mouse.
+         * Defaults to 'alt'
+         */
+        multiCursorModifier?: 'ctrlCmd' | 'alt';
+        /**
+         * Merge overlapping selections.
+         * Defaults to true
+         */
+        multiCursorMergeOverlapping?: boolean;
+        /**
+         * Configure the editor's accessibility support.
+         * Defaults to 'auto'. It is best to leave this to 'auto'.
+         */
+        accessibilitySupport?: 'auto' | 'off' | 'on';
+        /**
+         * Suggest options.
+         */
+        suggest?: ISuggestOptions;
+        /**
          * Enable quick suggestions (shadow suggestions)
          * Defaults to true.
          */
-        quickSuggestions?: boolean;
+        quickSuggestions?: boolean | {
+            other: boolean;
+            comments: boolean;
+            strings: boolean;
+        };
         /**
          * Quick suggestions show delay (in ms)
          * Defaults to 500 (ms)
@@ -1319,6 +2805,11 @@ declare module monaco.editor {
          */
         autoClosingBrackets?: boolean;
         /**
+         * Enable auto indentation adjustment.
+         * Defaults to false.
+         */
+        autoIndent?: boolean;
+        /**
          * Enable format on type.
          * Defaults to false.
          */
@@ -1329,15 +2820,20 @@ declare module monaco.editor {
          */
         formatOnPaste?: boolean;
         /**
+         * Controls if the editor should allow to move selections via drag and drop.
+         * Defaults to false.
+         */
+        dragAndDrop?: boolean;
+        /**
          * Enable the suggestion box to pop-up on trigger characters.
          * Defaults to true.
          */
         suggestOnTriggerCharacters?: boolean;
         /**
          * Accept suggestions on ENTER.
-         * Defaults to true.
+         * Defaults to 'on'.
          */
-        acceptSuggestionOnEnter?: boolean;
+        acceptSuggestionOnEnter?: boolean | 'on' | 'smart' | 'off';
         /**
          * Accept suggestions on provider defined characters.
          * Defaults to true.
@@ -1352,13 +2848,13 @@ declare module monaco.editor {
          */
         emptySelectionClipboard?: boolean;
         /**
-         * Enable tab completion. Defaults to 'false'
-         */
-        tabCompletion?: boolean;
-        /**
          * Enable word based suggestions. Defaults to 'true'
          */
         wordBasedSuggestions?: boolean;
+        /**
+         * The history mode for suggestions.
+         */
+        suggestSelection?: 'first' | 'recentlyUsed' | 'recentlyUsedByPrefix';
         /**
          * The font size for the suggest widget.
          * Defaults to the editor font size.
@@ -1375,15 +2871,47 @@ declare module monaco.editor {
          */
         selectionHighlight?: boolean;
         /**
+         * Enable semantic occurrences highlight.
+         * Defaults to true.
+         */
+        occurrencesHighlight?: boolean;
+        /**
          * Show code lens
          * Defaults to true.
          */
         codeLens?: boolean;
         /**
+         * Control the behavior and rendering of the code action lightbulb.
+         */
+        lightbulb?: IEditorLightbulbOptions;
+        /**
+         * Code action kinds to be run on save.
+         */
+        codeActionsOnSave?: ICodeActionsOnSaveOptions;
+        /**
+         * Timeout for running code actions on save.
+         */
+        codeActionsOnSaveTimeout?: number;
+        /**
          * Enable code folding
-         * Defaults to true in vscode and to false in monaco-editor.
+         * Defaults to true.
          */
         folding?: boolean;
+        /**
+         * Selects the folding strategy. 'auto' uses the strategies contributed for the current document, 'indentation' uses the indentation based folding strategy.
+         * Defaults to 'auto'.
+         */
+        foldingStrategy?: 'auto' | 'indentation';
+        /**
+         * Controls whether the fold actions in the gutter stay always visible or hide unless the mouse is over the gutter.
+         * Defaults to 'mouseover'.
+         */
+        showFoldingControls?: 'always' | 'mouseover';
+        /**
+         * Enable highlighting of matching brackets.
+         * Defaults to true.
+         */
+        matchBrackets?: boolean;
         /**
          * Enable rendering of whitespace.
          * Defaults to none.
@@ -1396,9 +2924,14 @@ declare module monaco.editor {
         renderControlCharacters?: boolean;
         /**
          * Enable rendering of indent guides.
-         * Defaults to false.
+         * Defaults to true.
          */
         renderIndentGuides?: boolean;
+        /**
+         * Enable highlighting of the active indent guide.
+         * Defaults to true.
+         */
+        highlightActiveIndentGuide?: boolean;
         /**
          * Enable rendering of current line highlight.
          * Defaults to all.
@@ -1424,6 +2957,14 @@ declare module monaco.editor {
          * The line height
          */
         lineHeight?: number;
+        /**
+         * The letter spacing
+         */
+        letterSpacing?: number;
+        /**
+         * Controls fading out of unused variables.
+         */
+        showUnused?: boolean;
     }
 
     /**
@@ -1457,8 +2998,97 @@ declare module monaco.editor {
         originalEditable?: boolean;
     }
 
-    export class InternalEditorScrollbarOptions {
-        readonly _internalEditorScrollbarOptionsBrand: void;
+    export enum RenderMinimap {
+        None = 0,
+        Small = 1,
+        Large = 2,
+        SmallBlocks = 3,
+        LargeBlocks = 4
+    }
+
+    /**
+     * Describes how to indent wrapped lines.
+     */
+    export enum WrappingIndent {
+        /**
+         * No indentation => wrapped lines begin at column 1.
+         */
+        None = 0,
+        /**
+         * Same => wrapped lines get the same indentation as the parent.
+         */
+        Same = 1,
+        /**
+         * Indent => wrapped lines get +1 indentation toward the parent.
+         */
+        Indent = 2,
+        /**
+         * DeepIndent => wrapped lines get +2 indentation toward the parent.
+         */
+        DeepIndent = 3
+    }
+
+    /**
+     * The kind of animation in which the editor's cursor should be rendered.
+     */
+    export enum TextEditorCursorBlinkingStyle {
+        /**
+         * Hidden
+         */
+        Hidden = 0,
+        /**
+         * Blinking
+         */
+        Blink = 1,
+        /**
+         * Blinking with smooth fading
+         */
+        Smooth = 2,
+        /**
+         * Blinking with prolonged filled state and smooth fading
+         */
+        Phase = 3,
+        /**
+         * Expand collapse animation on the y axis
+         */
+        Expand = 4,
+        /**
+         * No-Blinking
+         */
+        Solid = 5
+    }
+
+    /**
+     * The style in which the editor's cursor should be rendered.
+     */
+    export enum TextEditorCursorStyle {
+        /**
+         * As a vertical line (sitting between two characters).
+         */
+        Line = 1,
+        /**
+         * As a block (sitting on top of a character).
+         */
+        Block = 2,
+        /**
+         * As a horizontal line (sitting under a character).
+         */
+        Underline = 3,
+        /**
+         * As a thin vertical line (sitting between two characters).
+         */
+        LineThin = 4,
+        /**
+         * As an outlined block (sitting on top of a character).
+         */
+        BlockOutline = 5,
+        /**
+         * As a thin horizontal line (sitting under a character).
+         */
+        UnderlineThin = 6
+    }
+
+    export interface InternalEditorScrollbarOptions {
         readonly arrowSize: number;
         readonly vertical: ScrollbarVisibility;
         readonly horizontal: ScrollbarVisibility;
@@ -1473,8 +3103,35 @@ declare module monaco.editor {
         readonly mouseWheelScrollSensitivity: number;
     }
 
-    export class EditorWrappingInfo {
-        readonly _editorWrappingInfoBrand: void;
+    export interface InternalEditorMinimapOptions {
+        readonly enabled: boolean;
+        readonly side: 'right' | 'left';
+        readonly showSlider: 'always' | 'mouseover';
+        readonly renderCharacters: boolean;
+        readonly maxColumn: number;
+    }
+
+    export interface InternalEditorFindOptions {
+        readonly seedSearchStringFromSelection: boolean;
+        readonly autoFindInSelection: boolean;
+    }
+
+    export interface InternalEditorHoverOptions {
+        readonly enabled: boolean;
+        readonly delay: number;
+        readonly sticky: boolean;
+    }
+
+    export interface InternalSuggestOptions {
+        readonly filterGraceful: boolean;
+        readonly snippets: 'top' | 'bottom' | 'inline' | 'none';
+        readonly snippetsPreventQuickSuggestions: boolean;
+    }
+
+    export interface EditorWrappingInfo {
+        readonly inDiffEditor: boolean;
+        readonly isDominatedByLongLines: boolean;
+        readonly isWordWrapMinified: boolean;
         readonly isViewportWrapping: boolean;
         readonly wrappingColumn: number;
         readonly wrappingIndent: WrappingIndent;
@@ -1483,89 +3140,82 @@ declare module monaco.editor {
         readonly wordWrapBreakObtrusiveCharacters: string;
     }
 
-    export class InternalEditorViewOptions {
-        readonly _internalEditorViewOptionsBrand: void;
-        readonly theme: string;
-        readonly canUseTranslate3d: boolean;
+    export const enum RenderLineNumbersType {
+        Off = 0,
+        On = 1,
+        Relative = 2,
+        Interval = 3,
+        Custom = 4
+    }
+
+    export interface InternalEditorViewOptions {
+        readonly extraEditorClassName: string;
         readonly disableMonospaceOptimizations: boolean;
-        readonly experimentalScreenReader: boolean;
         readonly rulers: number[];
         readonly ariaLabel: string;
-        readonly renderLineNumbers: boolean;
+        readonly renderLineNumbers: RenderLineNumbersType;
         readonly renderCustomLineNumbers: (lineNumber: number) => string;
-        readonly renderRelativeLineNumbers: boolean;
         readonly selectOnLineNumbers: boolean;
         readonly glyphMargin: boolean;
         readonly revealHorizontalRightPadding: number;
         readonly roundedSelection: boolean;
         readonly overviewRulerLanes: number;
+        readonly overviewRulerBorder: boolean;
         readonly cursorBlinking: TextEditorCursorBlinkingStyle;
         readonly mouseWheelZoom: boolean;
         readonly cursorStyle: TextEditorCursorStyle;
+        readonly cursorWidth: number;
         readonly hideCursorInOverviewRuler: boolean;
         readonly scrollBeyondLastLine: boolean;
-        readonly editorClassName: string;
+        readonly scrollBeyondLastColumn: number;
+        readonly smoothScrolling: boolean;
         readonly stopRenderingLineAfter: number;
         readonly renderWhitespace: 'none' | 'boundary' | 'all';
         readonly renderControlCharacters: boolean;
+        readonly fontLigatures: boolean;
         readonly renderIndentGuides: boolean;
+        readonly highlightActiveIndentGuide: boolean;
         readonly renderLineHighlight: 'none' | 'gutter' | 'line' | 'all';
         readonly scrollbar: InternalEditorScrollbarOptions;
+        readonly minimap: InternalEditorMinimapOptions;
         readonly fixedOverflowWidgets: boolean;
     }
 
-    export interface IViewConfigurationChangedEvent {
-        readonly theme: boolean;
-        readonly canUseTranslate3d: boolean;
-        readonly disableMonospaceOptimizations: boolean;
-        readonly experimentalScreenReader: boolean;
-        readonly rulers: boolean;
-        readonly ariaLabel: boolean;
-        readonly renderLineNumbers: boolean;
-        readonly renderCustomLineNumbers: boolean;
-        readonly renderRelativeLineNumbers: boolean;
-        readonly selectOnLineNumbers: boolean;
-        readonly glyphMargin: boolean;
-        readonly revealHorizontalRightPadding: boolean;
-        readonly roundedSelection: boolean;
-        readonly overviewRulerLanes: boolean;
-        readonly cursorBlinking: boolean;
-        readonly mouseWheelZoom: boolean;
-        readonly cursorStyle: boolean;
-        readonly hideCursorInOverviewRuler: boolean;
-        readonly scrollBeyondLastLine: boolean;
-        readonly editorClassName: boolean;
-        readonly stopRenderingLineAfter: boolean;
-        readonly renderWhitespace: boolean;
-        readonly renderControlCharacters: boolean;
-        readonly renderIndentGuides: boolean;
-        readonly renderLineHighlight: boolean;
-        readonly scrollbar: boolean;
-        readonly fixedOverflowWidgets: boolean;
-    }
-
-    export class EditorContribOptions {
+    export interface EditorContribOptions {
         readonly selectionClipboard: boolean;
-        readonly hover: boolean;
+        readonly hover: InternalEditorHoverOptions;
+        readonly links: boolean;
         readonly contextmenu: boolean;
-        readonly quickSuggestions: boolean;
+        readonly quickSuggestions: boolean | {
+            other: boolean;
+            comments: boolean;
+            strings: boolean;
+        };
         readonly quickSuggestionsDelay: number;
         readonly parameterHints: boolean;
         readonly iconsInSuggestions: boolean;
         readonly formatOnType: boolean;
         readonly formatOnPaste: boolean;
         readonly suggestOnTriggerCharacters: boolean;
-        readonly acceptSuggestionOnEnter: boolean;
+        readonly acceptSuggestionOnEnter: 'on' | 'smart' | 'off';
         readonly acceptSuggestionOnCommitCharacter: boolean;
-        readonly snippetSuggestions: 'top' | 'bottom' | 'inline' | 'none';
-        readonly emptySelectionClipboard: boolean;
-        readonly tabCompletion: boolean;
         readonly wordBasedSuggestions: boolean;
+        readonly suggestSelection: 'first' | 'recentlyUsed' | 'recentlyUsedByPrefix';
         readonly suggestFontSize: number;
         readonly suggestLineHeight: number;
+        readonly suggest: InternalSuggestOptions;
         readonly selectionHighlight: boolean;
+        readonly occurrencesHighlight: boolean;
         readonly codeLens: boolean;
         readonly folding: boolean;
+        readonly foldingStrategy: 'auto' | 'indentation';
+        readonly showFoldingControls: 'always' | 'mouseover';
+        readonly matchBrackets: boolean;
+        readonly find: InternalEditorFindOptions;
+        readonly colorDecorators: boolean;
+        readonly lightbulbEnabled: boolean;
+        readonly codeActionsOnSave: ICodeActionsOnSaveOptions;
+        readonly codeActionsOnSaveTimeout: number;
     }
 
     /**
@@ -1573,12 +3223,21 @@ declare module monaco.editor {
      */
     export class InternalEditorOptions {
         readonly _internalEditorOptionsBrand: void;
+        readonly canUseLayerHinting: boolean;
+        readonly pixelRatio: number;
+        readonly editorClassName: string;
         readonly lineHeight: number;
         readonly readOnly: boolean;
+        readonly multiCursorModifier: 'altKey' | 'ctrlKey' | 'metaKey';
+        readonly multiCursorMergeOverlapping: boolean;
+        readonly showUnused: boolean;
         readonly wordSeparators: string;
         readonly autoClosingBrackets: boolean;
+        readonly autoIndent: boolean;
         readonly useTabStops: boolean;
         readonly tabFocusMode: boolean;
+        readonly dragAndDrop: boolean;
+        readonly emptySelectionClipboard: boolean;
         readonly layoutInfo: EditorLayoutInfo;
         readonly fontInfo: FontInfo;
         readonly viewInfo: InternalEditorViewOptions;
@@ -1587,956 +3246,9 @@ declare module monaco.editor {
     }
 
     /**
-     * An event describing that the configuration of the editor has changed.
-     */
-    export interface IConfigurationChangedEvent {
-        readonly lineHeight: boolean;
-        readonly readOnly: boolean;
-        readonly wordSeparators: boolean;
-        readonly autoClosingBrackets: boolean;
-        readonly useTabStops: boolean;
-        readonly tabFocusMode: boolean;
-        readonly layoutInfo: boolean;
-        readonly fontInfo: boolean;
-        readonly viewInfo: IViewConfigurationChangedEvent;
-        readonly wrappingInfo: boolean;
-        readonly contribInfo: boolean;
-    }
-
-    /**
-     * Vertical Lane in the overview ruler of the editor.
-     */
-    export enum OverviewRulerLane {
-        Left = 1,
-        Center = 2,
-        Right = 4,
-        Full = 7,
-    }
-
-    /**
-     * Options for rendering a model decoration in the overview ruler.
-     */
-    export interface IModelDecorationOverviewRulerOptions {
-        /**
-         * CSS color to render in the overview ruler.
-         * e.g.: rgba(100, 100, 100, 0.5)
-         */
-        color: string;
-        /**
-         * CSS color to render in the overview ruler.
-         * e.g.: rgba(100, 100, 100, 0.5)
-         */
-        darkColor: string;
-        /**
-         * The position in the overview ruler.
-         */
-        position: OverviewRulerLane;
-    }
-
-    /**
-     * Options for a model decoration.
-     */
-    export interface IModelDecorationOptions {
-        /**
-         * Customize the growing behaviour of the decoration when typing at the edges of the decoration.
-         * Defaults to TrackedRangeStickiness.AlwaysGrowsWhenTypingAtEdges
-         */
-        stickiness?: TrackedRangeStickiness;
-        /**
-         * CSS class name describing the decoration.
-         */
-        className?: string;
-        /**
-         * Message to be rendered when hovering over the glyph margin decoration.
-         */
-        glyphMarginHoverMessage?: MarkedString | MarkedString[];
-        /**
-         * Array of MarkedString to render as the decoration message.
-         */
-        hoverMessage?: MarkedString | MarkedString[];
-        /**
-         * Should the decoration expand to encompass a whole line.
-         */
-        isWholeLine?: boolean;
-        /**
-         * @deprecated : Use `overviewRuler` instead
-         */
-        showInOverviewRuler?: string;
-        /**
-         * If set, render this decoration in the overview ruler.
-         */
-        overviewRuler?: IModelDecorationOverviewRulerOptions;
-        /**
-         * If set, the decoration will be rendered in the glyph margin with this CSS class name.
-         */
-        glyphMarginClassName?: string;
-        /**
-         * If set, the decoration will be rendered in the lines decorations with this CSS class name.
-         */
-        linesDecorationsClassName?: string;
-        /**
-         * If set, the decoration will be rendered in the margin (covering its full width) with this CSS class name.
-         */
-        marginClassName?: string;
-        /**
-         * If set, the decoration will be rendered inline with the text with this CSS class name.
-         * Please use this only for CSS rules that must impact the text. For example, use `className`
-         * to have a background color decoration.
-         */
-        inlineClassName?: string;
-        /**
-         * If set, the decoration will be rendered before the text with this CSS class name.
-         */
-        beforeContentClassName?: string;
-        /**
-         * If set, the decoration will be rendered after the text with this CSS class name.
-         */
-        afterContentClassName?: string;
-    }
-
-    /**
-     * New model decorations.
-     */
-    export interface IModelDeltaDecoration {
-        /**
-         * Range that this decoration covers.
-         */
-        range: IRange;
-        /**
-         * Options associated with this decoration.
-         */
-        options: IModelDecorationOptions;
-    }
-
-    /**
-     * A decoration in the model.
-     */
-    export interface IModelDecoration {
-        /**
-         * Identifier for a decoration.
-         */
-        readonly id: string;
-        /**
-         * Identifier for a decoration's owener.
-         */
-        readonly ownerId: number;
-        /**
-         * Range that this decoration covers.
-         */
-        readonly range: Range;
-        /**
-         * Options associated with this decoration.
-         */
-        readonly options: IModelDecorationOptions;
-        /**
-         * A flag describing if this is a problem decoration (e.g. warning/error).
-         */
-        readonly isForValidation: boolean;
-    }
-
-    /**
-     * Word inside a model.
-     */
-    export interface IWordAtPosition {
-        /**
-         * The word.
-         */
-        readonly word: string;
-        /**
-         * The column where the word starts.
-         */
-        readonly startColumn: number;
-        /**
-         * The column where the word ends.
-         */
-        readonly endColumn: number;
-    }
-
-    /**
-     * End of line character preference.
-     */
-    export enum EndOfLinePreference {
-        /**
-         * Use the end of line character identified in the text buffer.
-         */
-        TextDefined = 0,
-        /**
-         * Use line feed (\n) as the end of line character.
-         */
-        LF = 1,
-        /**
-         * Use carriage return and line feed (\r\n) as the end of line character.
-         */
-        CRLF = 2,
-    }
-
-    /**
-     * The default end of line to use when instantiating models.
-     */
-    export enum DefaultEndOfLine {
-        /**
-         * Use line feed (\n) as the end of line character.
-         */
-        LF = 1,
-        /**
-         * Use carriage return and line feed (\r\n) as the end of line character.
-         */
-        CRLF = 2,
-    }
-
-    /**
-     * End of line character preference.
-     */
-    export enum EndOfLineSequence {
-        /**
-         * Use line feed (\n) as the end of line character.
-         */
-        LF = 0,
-        /**
-         * Use carriage return and line feed (\r\n) as the end of line character.
-         */
-        CRLF = 1,
-    }
-
-    /**
-     * An identifier for a single edit operation.
-     */
-    export interface ISingleEditOperationIdentifier {
-        /**
-         * Identifier major
-         */
-        major: number;
-        /**
-         * Identifier minor
-         */
-        minor: number;
-    }
-
-    /**
-     * A builder and helper for edit operations for a command.
-     */
-    export interface IEditOperationBuilder {
-        /**
-         * Add a new edit operation (a replace operation).
-         * @param range The range to replace (delete). May be empty to represent a simple insert.
-         * @param text The text to replace with. May be null to represent a simple delete.
-         */
-        addEditOperation(range: Range, text: string): void;
-        /**
-         * Track `selection` when applying edit operations.
-         * A best effort will be made to not grow/expand the selection.
-         * An empty selection will clamp to a nearby character.
-         * @param selection The selection to track.
-         * @param trackPreviousOnEmpty If set, and the selection is empty, indicates whether the selection
-         *           should clamp to the previous or the next character.
-         * @return A unique identifer.
-         */
-        trackSelection(selection: Selection, trackPreviousOnEmpty?: boolean): string;
-    }
-
-    /**
-     * A helper for computing cursor state after a command.
-     */
-    export interface ICursorStateComputerData {
-        /**
-         * Get the inverse edit operations of the added edit operations.
-         */
-        getInverseEditOperations(): IIdentifiedSingleEditOperation[];
-        /**
-         * Get a previously tracked selection.
-         * @param id The unique identifier returned by `trackSelection`.
-         * @return The selection.
-         */
-        getTrackedSelection(id: string): Selection;
-    }
-
-    /**
-     * A command that modifies text / cursor state on a model.
-     */
-    export interface ICommand {
-        /**
-         * Get the edit operations needed to execute this command.
-         * @param model The model the command will execute on.
-         * @param builder A helper to collect the needed edit operations and to track selections.
-         */
-        getEditOperations(model: ITokenizedModel, builder: IEditOperationBuilder): void;
-        /**
-         * Compute the cursor state after the edit operations were applied.
-         * @param model The model the commad has executed on.
-         * @param helper A helper to get inverse edit operations and to get previously tracked selections.
-         * @return The cursor state after the command executed.
-         */
-        computeCursorState(model: ITokenizedModel, helper: ICursorStateComputerData): Selection;
-    }
-
-    /**
-     * A single edit operation, that acts as a simple replace.
-     * i.e. Replace text at `range` with `text` in model.
-     */
-    export interface ISingleEditOperation {
-        /**
-         * The range to replace. This can be empty to emulate a simple insert.
-         */
-        range: IRange;
-        /**
-         * The text to replace with. This can be null to emulate a simple delete.
-         */
-        text: string;
-        /**
-         * This indicates that this operation has "insert" semantics.
-         * i.e. forceMoveMarkers = true => if `range` is collapsed, all markers at the position will be moved.
-         */
-        forceMoveMarkers?: boolean;
-    }
-
-    /**
-     * A single edit operation, that has an identifier.
-     */
-    export interface IIdentifiedSingleEditOperation {
-        /**
-         * An identifier associated with this single edit operation.
-         */
-        identifier: ISingleEditOperationIdentifier;
-        /**
-         * The range to replace. This can be empty to emulate a simple insert.
-         */
-        range: Range;
-        /**
-         * The text to replace with. This can be null to emulate a simple delete.
-         */
-        text: string;
-        /**
-         * This indicates that this operation has "insert" semantics.
-         * i.e. forceMoveMarkers = true => if `range` is collapsed, all markers at the position will be moved.
-         */
-        forceMoveMarkers: boolean;
-        /**
-         * This indicates that this operation is inserting automatic whitespace
-         * that can be removed on next model edit operation if `config.trimAutoWhitespace` is true.
-         */
-        isAutoWhitespaceEdit?: boolean;
-    }
-
-    /**
-     * A callback that can compute the cursor state after applying a series of edit operations.
-     */
-    export interface ICursorStateComputer {
-        /**
-         * A callback that can compute the resulting cursors state after some edit operations have been executed.
-         */
-        (inverseEditOperations: IIdentifiedSingleEditOperation[]): Selection[];
-    }
-
-    export class TextModelResolvedOptions {
-        _textModelResolvedOptionsBrand: void;
-        readonly tabSize: number;
-        readonly insertSpaces: boolean;
-        readonly defaultEOL: DefaultEndOfLine;
-        readonly trimAutoWhitespace: boolean;
-    }
-
-    export interface ITextModelUpdateOptions {
-        tabSize?: number;
-        insertSpaces?: boolean;
-        trimAutoWhitespace?: boolean;
-    }
-
-    export interface IModelOptionsChangedEvent {
-        readonly tabSize: boolean;
-        readonly insertSpaces: boolean;
-        readonly trimAutoWhitespace: boolean;
-    }
-
-    /**
-     * A textual read-only model.
-     */
-    export interface ITextModel {
-        getOptions(): TextModelResolvedOptions;
-        /**
-         * Get the current version id of the model.
-         * Anytime a change happens to the model (even undo/redo),
-         * the version id is incremented.
-         */
-        getVersionId(): number;
-        /**
-         * Get the alternative version id of the model.
-         * This alternative version id is not always incremented,
-         * it will return the same values in the case of undo-redo.
-         */
-        getAlternativeVersionId(): number;
-        /**
-         * Replace the entire text buffer value contained in this model.
-         */
-        setValue(newValue: string): void;
-        /**
-         * Get the text stored in this model.
-         * @param eol The end of line character preference. Defaults to `EndOfLinePreference.TextDefined`.
-         * @param preserverBOM Preserve a BOM character if it was detected when the model was constructed.
-         * @return The text.
-         */
-        getValue(eol?: EndOfLinePreference, preserveBOM?: boolean): string;
-        /**
-         * Get the length of the text stored in this model.
-         */
-        getValueLength(eol?: EndOfLinePreference, preserveBOM?: boolean): number;
-        /**
-         * Get the text in a certain range.
-         * @param range The range describing what text to get.
-         * @param eol The end of line character preference. This will only be used for multiline ranges. Defaults to `EndOfLinePreference.TextDefined`.
-         * @return The text.
-         */
-        getValueInRange(range: IRange, eol?: EndOfLinePreference): string;
-        /**
-         * Get the length of text in a certain range.
-         * @param range The range describing what text length to get.
-         * @return The text length.
-         */
-        getValueLengthInRange(range: IRange): number;
-        /**
-         * Get the number of lines in the model.
-         */
-        getLineCount(): number;
-        /**
-         * Get the text for a certain line.
-         */
-        getLineContent(lineNumber: number): string;
-        /**
-         * Get the text for all lines.
-         */
-        getLinesContent(): string[];
-        /**
-         * Get the end of line sequence predominantly used in the text buffer.
-         * @return EOL char sequence (e.g.: '\n' or '\r\n').
-         */
-        getEOL(): string;
-        /**
-         * Change the end of line sequence used in the text buffer.
-         */
-        setEOL(eol: EndOfLineSequence): void;
-        /**
-         * Get the minimum legal column for line at `lineNumber`
-         */
-        getLineMinColumn(lineNumber: number): number;
-        /**
-         * Get the maximum legal column for line at `lineNumber`
-         */
-        getLineMaxColumn(lineNumber: number): number;
-        /**
-         * Returns the column before the first non whitespace character for line at `lineNumber`.
-         * Returns 0 if line is empty or contains only whitespace.
-         */
-        getLineFirstNonWhitespaceColumn(lineNumber: number): number;
-        /**
-         * Returns the column after the last non whitespace character for line at `lineNumber`.
-         * Returns 0 if line is empty or contains only whitespace.
-         */
-        getLineLastNonWhitespaceColumn(lineNumber: number): number;
-        /**
-         * Create a valid position,
-         */
-        validatePosition(position: IPosition): Position;
-        /**
-         * Advances the given position by the given offest (negative offsets are also accepted)
-         * and returns it as a new valid position.
-         *
-         * If the offset and position are such that their combination goes beyond the beginning or
-         * end of the model, throws an exception.
-         *
-         * If the ofsset is such that the new position would be in the middle of a multi-byte
-         * line terminator, throws an exception.
-         */
-        modifyPosition(position: IPosition, offset: number): Position;
-        /**
-         * Create a valid range.
-         */
-        validateRange(range: IRange): Range;
-        /**
-         * Converts the position to a zero-based offset.
-         *
-         * The position will be [adjusted](#TextDocument.validatePosition).
-         *
-         * @param position A position.
-         * @return A valid zero-based offset.
-         */
-        getOffsetAt(position: IPosition): number;
-        /**
-         * Converts a zero-based offset to a position.
-         *
-         * @param offset A zero-based offset.
-         * @return A valid [position](#Position).
-         */
-        getPositionAt(offset: number): Position;
-        /**
-         * Get a range covering the entire model
-         */
-        getFullModelRange(): Range;
-        /**
-         * Returns iff the model was disposed or not.
-         */
-        isDisposed(): boolean;
-        /**
-         * Search the model.
-         * @param searchString The string used to search. If it is a regular expression, set `isRegex` to true.
-         * @param searchOnlyEditableRange Limit the searching to only search inside the editable range of the model.
-         * @param isRegex Used to indicate that `searchString` is a regular expression.
-         * @param matchCase Force the matching to match lower/upper case exactly.
-         * @param wholeWord Force the matching to match entire words only.
-         * @param captureMatches The result will contain the captured groups.
-         * @param limitResultCount Limit the number of results
-         * @return The ranges where the matches are. It is empty if not matches have been found.
-         */
-        findMatches(searchString: string, searchOnlyEditableRange: boolean, isRegex: boolean, matchCase: boolean, wholeWord: boolean, captureMatches: boolean, limitResultCount?: number): FindMatch[];
-        /**
-         * Search the model.
-         * @param searchString The string used to search. If it is a regular expression, set `isRegex` to true.
-         * @param searchScope Limit the searching to only search inside this range.
-         * @param isRegex Used to indicate that `searchString` is a regular expression.
-         * @param matchCase Force the matching to match lower/upper case exactly.
-         * @param wholeWord Force the matching to match entire words only.
-         * @param captureMatches The result will contain the captured groups.
-         * @param limitResultCount Limit the number of results
-         * @return The ranges where the matches are. It is empty if no matches have been found.
-         */
-        findMatches(searchString: string, searchScope: IRange, isRegex: boolean, matchCase: boolean, wholeWord: boolean, captureMatches: boolean, limitResultCount?: number): FindMatch[];
-        /**
-         * Search the model for the next match. Loops to the beginning of the model if needed.
-         * @param searchString The string used to search. If it is a regular expression, set `isRegex` to true.
-         * @param searchStart Start the searching at the specified position.
-         * @param isRegex Used to indicate that `searchString` is a regular expression.
-         * @param matchCase Force the matching to match lower/upper case exactly.
-         * @param wholeWord Force the matching to match entire words only.
-         * @param captureMatches The result will contain the captured groups.
-         * @return The range where the next match is. It is null if no next match has been found.
-         */
-        findNextMatch(searchString: string, searchStart: IPosition, isRegex: boolean, matchCase: boolean, wholeWord: boolean, captureMatches: boolean): FindMatch;
-        /**
-         * Search the model for the previous match. Loops to the end of the model if needed.
-         * @param searchString The string used to search. If it is a regular expression, set `isRegex` to true.
-         * @param searchStart Start the searching at the specified position.
-         * @param isRegex Used to indicate that `searchString` is a regular expression.
-         * @param matchCase Force the matching to match lower/upper case exactly.
-         * @param wholeWord Force the matching to match entire words only.
-         * @param captureMatches The result will contain the captured groups.
-         * @return The range where the previous match is. It is null if no previous match has been found.
-         */
-        findPreviousMatch(searchString: string, searchStart: IPosition, isRegex: boolean, matchCase: boolean, wholeWord: boolean, captureMatches: boolean): FindMatch;
-    }
-
-    export class FindMatch {
-        _findMatchBrand: void;
-        readonly range: Range;
-        readonly matches: string[];
-    }
-
-    export interface IReadOnlyModel extends ITextModel {
-        /**
-         * Gets the resource associated with this editor model.
-         */
-        readonly uri: Uri;
-        /**
-         * Get the language associated with this model.
-         */
-        getModeId(): string;
-        /**
-         * Get the word under or besides `position`.
-         * @param position The position to look for a word.
-         * @param skipSyntaxTokens Ignore syntax tokens, as identified by the mode.
-         * @return The word under or besides `position`. Might be null.
-         */
-        getWordAtPosition(position: IPosition): IWordAtPosition;
-        /**
-         * Get the word under or besides `position` trimmed to `position`.column
-         * @param position The position to look for a word.
-         * @param skipSyntaxTokens Ignore syntax tokens, as identified by the mode.
-         * @return The word under or besides `position`. Will never be null.
-         */
-        getWordUntilPosition(position: IPosition): IWordAtPosition;
-    }
-
-    /**
-     * A model that is tokenized.
-     */
-    export interface ITokenizedModel extends ITextModel {
-        /**
-         * Get the language associated with this model.
-         */
-        getModeId(): string;
-        /**
-         * Get the word under or besides `position`.
-         * @param position The position to look for a word.
-         * @param skipSyntaxTokens Ignore syntax tokens, as identified by the mode.
-         * @return The word under or besides `position`. Might be null.
-         */
-        getWordAtPosition(position: IPosition): IWordAtPosition;
-        /**
-         * Get the word under or besides `position` trimmed to `position`.column
-         * @param position The position to look for a word.
-         * @param skipSyntaxTokens Ignore syntax tokens, as identified by the mode.
-         * @return The word under or besides `position`. Will never be null.
-         */
-        getWordUntilPosition(position: IPosition): IWordAtPosition;
-    }
-
-    /**
-     * A model that can track markers.
-     */
-    export interface ITextModelWithMarkers extends ITextModel {
-    }
-
-    /**
-     * Describes the behaviour of decorations when typing/editing near their edges.
-     */
-    export enum TrackedRangeStickiness {
-        AlwaysGrowsWhenTypingAtEdges = 0,
-        NeverGrowsWhenTypingAtEdges = 1,
-        GrowsOnlyWhenTypingBefore = 2,
-        GrowsOnlyWhenTypingAfter = 3,
-    }
-
-    /**
-     * A model that can have decorations.
-     */
-    export interface ITextModelWithDecorations {
-        /**
-         * Perform a minimum ammount of operations, in order to transform the decorations
-         * identified by `oldDecorations` to the decorations described by `newDecorations`
-         * and returns the new identifiers associated with the resulting decorations.
-         *
-         * @param oldDecorations Array containing previous decorations identifiers.
-         * @param newDecorations Array describing what decorations should result after the call.
-         * @param ownerId Identifies the editor id in which these decorations should appear. If no `ownerId` is provided, the decorations will appear in all editors that attach this model.
-         * @return An array containing the new decorations identifiers.
-         */
-        deltaDecorations(oldDecorations: string[], newDecorations: IModelDeltaDecoration[], ownerId?: number): string[];
-        /**
-         * Get the options associated with a decoration.
-         * @param id The decoration id.
-         * @return The decoration options or null if the decoration was not found.
-         */
-        getDecorationOptions(id: string): IModelDecorationOptions;
-        /**
-         * Get the range associated with a decoration.
-         * @param id The decoration id.
-         * @return The decoration range or null if the decoration was not found.
-         */
-        getDecorationRange(id: string): Range;
-        /**
-         * Gets all the decorations for the line `lineNumber` as an array.
-         * @param lineNumber The line number
-         * @param ownerId If set, it will ignore decorations belonging to other owners.
-         * @param filterOutValidation If set, it will ignore decorations specific to validation (i.e. warnings, errors).
-         * @return An array with the decorations
-         */
-        getLineDecorations(lineNumber: number, ownerId?: number, filterOutValidation?: boolean): IModelDecoration[];
-        /**
-         * Gets all the decorations for the lines between `startLineNumber` and `endLineNumber` as an array.
-         * @param startLineNumber The start line number
-         * @param endLineNumber The end line number
-         * @param ownerId If set, it will ignore decorations belonging to other owners.
-         * @param filterOutValidation If set, it will ignore decorations specific to validation (i.e. warnings, errors).
-         * @return An array with the decorations
-         */
-        getLinesDecorations(startLineNumber: number, endLineNumber: number, ownerId?: number, filterOutValidation?: boolean): IModelDecoration[];
-        /**
-         * Gets all the deocorations in a range as an array. Only `startLineNumber` and `endLineNumber` from `range` are used for filtering.
-         * So for now it returns all the decorations on the same line as `range`.
-         * @param range The range to search in
-         * @param ownerId If set, it will ignore decorations belonging to other owners.
-         * @param filterOutValidation If set, it will ignore decorations specific to validation (i.e. warnings, errors).
-         * @return An array with the decorations
-         */
-        getDecorationsInRange(range: IRange, ownerId?: number, filterOutValidation?: boolean): IModelDecoration[];
-        /**
-         * Gets all the decorations as an array.
-         * @param ownerId If set, it will ignore decorations belonging to other owners.
-         * @param filterOutValidation If set, it will ignore decorations specific to validation (i.e. warnings, errors).
-         */
-        getAllDecorations(ownerId?: number, filterOutValidation?: boolean): IModelDecoration[];
-    }
-
-    /**
-     * An editable text model.
-     */
-    export interface IEditableTextModel extends ITextModelWithMarkers {
-        /**
-         * Normalize a string containing whitespace according to indentation rules (converts to spaces or to tabs).
-         */
-        normalizeIndentation(str: string): string;
-        /**
-         * Get what is considered to be one indent (e.g. a tab character or 4 spaces, etc.).
-         */
-        getOneIndent(): string;
-        /**
-         * Change the options of this model.
-         */
-        updateOptions(newOpts: ITextModelUpdateOptions): void;
-        /**
-         * Detect the indentation options for this model from its content.
-         */
-        detectIndentation(defaultInsertSpaces: boolean, defaultTabSize: number): void;
-        /**
-         * Push a stack element onto the undo stack. This acts as an undo/redo point.
-         * The idea is to use `pushEditOperations` to edit the model and then to
-         * `pushStackElement` to create an undo/redo stop point.
-         */
-        pushStackElement(): void;
-        /**
-         * Push edit operations, basically editing the model. This is the preferred way
-         * of editing the model. The edit operations will land on the undo stack.
-         * @param beforeCursorState The cursor state before the edit operaions. This cursor state will be returned when `undo` or `redo` are invoked.
-         * @param editOperations The edit operations.
-         * @param cursorStateComputer A callback that can compute the resulting cursors state after the edit operations have been executed.
-         * @return The cursor state returned by the `cursorStateComputer`.
-         */
-        pushEditOperations(beforeCursorState: Selection[], editOperations: IIdentifiedSingleEditOperation[], cursorStateComputer: ICursorStateComputer): Selection[];
-        /**
-         * Edit the model without adding the edits to the undo stack.
-         * This can have dire consequences on the undo stack! See @pushEditOperations for the preferred way.
-         * @param operations The edit operations.
-         * @return The inverse edit operations, that, when applied, will bring the model back to the previous state.
-         */
-        applyEdits(operations: IIdentifiedSingleEditOperation[]): IIdentifiedSingleEditOperation[];
-    }
-
-    /**
-     * A model.
-     */
-    export interface IModel extends IReadOnlyModel, IEditableTextModel, ITextModelWithMarkers, ITokenizedModel, ITextModelWithDecorations, IEditorModel {
-        /**
-         * An event emitted when the contents of the model have changed.
-         * @event
-         */
-        onDidChangeContent(listener: (e: IModelContentChangedEvent2) => void): IDisposable;
-        /**
-         * An event emitted when decorations of the model have changed.
-         * @event
-         */
-        onDidChangeDecorations(listener: (e: IModelDecorationsChangedEvent) => void): IDisposable;
-        /**
-         * An event emitted when the model options have changed.
-         * @event
-         */
-        onDidChangeOptions(listener: (e: IModelOptionsChangedEvent) => void): IDisposable;
-        /**
-         * An event emitted when the language associated with the model has changed.
-         * @event
-         */
-        onDidChangeLanguage(listener: (e: IModelLanguageChangedEvent) => void): IDisposable;
-        /**
-         * An event emitted right before disposing the model.
-         * @event
-         */
-        onWillDispose(listener: () => void): IDisposable;
-        /**
-         * A unique identifier associated with this model.
-         */
-        readonly id: string;
-        /**
-         * Destroy this model. This will unbind the model from the mode
-         * and make all necessary clean-up to release this object to the GC.
-         */
-        dispose(): void;
-    }
-
-    /**
-     * An event describing that the current mode associated with a model has changed.
-     */
-    export interface IModelLanguageChangedEvent {
-        /**
-         * Previous language
-         */
-        readonly oldLanguage: string;
-        /**
-         * New language
-         */
-        readonly newLanguage: string;
-    }
-
-    /**
-     * An event describing a change in the text of a model.
-     */
-    export interface IModelContentChangedEvent2 {
-        /**
-         * The range that got replaced.
-         */
-        readonly range: IRange;
-        /**
-         * The length of the range that got replaced.
-         */
-        readonly rangeLength: number;
-        /**
-         * The new text for the range.
-         */
-        readonly text: string;
-        /**
-         * The (new) end-of-line character.
-         */
-        readonly eol: string;
-        /**
-         * The new version id the model has transitioned to.
-         */
-        versionId: number;
-        /**
-         * Flag that indicates that this event was generated while undoing.
-         */
-        readonly isUndoing: boolean;
-        /**
-         * Flag that indicates that this event was generated while redoing.
-         */
-        readonly isRedoing: boolean;
-    }
-
-    /**
-     * An event describing that model decorations have changed.
-     */
-    export interface IModelDecorationsChangedEvent {
-        /**
-         * Lists of ids for added decorations.
-         */
-        readonly addedDecorations: string[];
-        /**
-         * Lists of ids for changed decorations.
-         */
-        readonly changedDecorations: string[];
-        /**
-         * List of ids for removed decorations.
-         */
-        readonly removedDecorations: string[];
-    }
-
-    /**
-     * An event describing that some ranges of lines have been tokenized (their tokens have changed).
-     */
-    export interface IModelTokensChangedEvent {
-        readonly ranges: {
-            /**
-             * The start of the range (inclusive)
-             */
-            readonly fromLineNumber: number;
-            /**
-             * The end of the range (inclusive)
-             */
-            readonly toLineNumber: number;
-        }[];
-    }
-
-    /**
-     * Describes the reason the cursor has changed its position.
-     */
-    export enum CursorChangeReason {
-        /**
-         * Unknown or not set.
-         */
-        NotSet = 0,
-        /**
-         * A `model.setValue()` was called.
-         */
-        ContentFlush = 1,
-        /**
-         * The `model` has been changed outside of this cursor and the cursor recovers its position from associated markers.
-         */
-        RecoverFromMarkers = 2,
-        /**
-         * There was an explicit user gesture.
-         */
-        Explicit = 3,
-        /**
-         * There was a Paste.
-         */
-        Paste = 4,
-        /**
-         * There was an Undo.
-         */
-        Undo = 5,
-        /**
-         * There was a Redo.
-         */
-        Redo = 6,
-    }
-
-    /**
-     * An event describing that the cursor position has changed.
-     */
-    export interface ICursorPositionChangedEvent {
-        /**
-         * Primary cursor's position.
-         */
-        readonly position: Position;
-        /**
-         * Primary cursor's view position
-         */
-        readonly viewPosition: Position;
-        /**
-         * Secondary cursors' position.
-         */
-        readonly secondaryPositions: Position[];
-        /**
-         * Secondary cursors' view position.
-         */
-        readonly secondaryViewPositions: Position[];
-        /**
-         * Reason.
-         */
-        readonly reason: CursorChangeReason;
-        /**
-         * Source of the call that caused the event.
-         */
-        readonly source: string;
-        /**
-         * Is the primary cursor in the editable range?
-         */
-        readonly isInEditableRange: boolean;
-    }
-
-    /**
-     * An event describing that the cursor selection has changed.
-     */
-    export interface ICursorSelectionChangedEvent {
-        /**
-         * The primary selection.
-         */
-        readonly selection: Selection;
-        /**
-         * The primary selection in view coordinates.
-         */
-        readonly viewSelection: Selection;
-        /**
-         * The secondary selections.
-         */
-        readonly secondarySelections: Selection[];
-        /**
-         * The secondary selections in view coordinates.
-         */
-        readonly secondaryViewSelections: Selection[];
-        /**
-         * Source of the call that caused the event.
-         */
-        readonly source: string;
-        /**
-         * Reason.
-         */
-        readonly reason: CursorChangeReason;
-    }
-
-    /**
-     * An event describing that an editor has had its model reset (i.e. `editor.setModel()`).
-     */
-    export interface IModelChangedEvent {
-        /**
-         * The `uri` of the previous model or null.
-         */
-        readonly oldModelUrl: Uri;
-        /**
-         * The `uri` of the new model or null.
-         */
-        readonly newModelUrl: Uri;
-    }
-
-    /**
      * A description for the overview ruler position.
      */
-    export class OverviewRulerPosition {
-        readonly _overviewRulerPositionBrand: void;
+    export interface OverviewRulerPosition {
         /**
          * Width of the overview ruler
          */
@@ -2558,8 +3270,7 @@ declare module monaco.editor {
     /**
      * The internal layout details of the editor.
      */
-    export class EditorLayoutInfo {
-        readonly _editorLayoutInfoBrand: void;
+    export interface EditorLayoutInfo {
         /**
          * Full editor width.
          */
@@ -2617,6 +3328,22 @@ declare module monaco.editor {
          */
         readonly contentHeight: number;
         /**
+         * The position for the minimap
+         */
+        readonly minimapLeft: number;
+        /**
+         * The width of the minimap
+         */
+        readonly minimapWidth: number;
+        /**
+         * Minimap render type
+         */
+        readonly renderMinimap: RenderMinimap;
+        /**
+         * The number of columns (of typical characters) fitting on a viewport line.
+         */
+        readonly viewportColumn: number;
+        /**
          * The width of the vertical scrollbar.
          */
         readonly verticalScrollbarWidth: number;
@@ -2631,59 +3358,211 @@ declare module monaco.editor {
     }
 
     /**
-     * Options for creating the editor.
+     * An event describing that the configuration of the editor has changed.
      */
-    export interface ICodeEditorWidgetCreationOptions extends IEditorOptions {
+    export interface IConfigurationChangedEvent {
+        readonly canUseLayerHinting: boolean;
+        readonly pixelRatio: boolean;
+        readonly editorClassName: boolean;
+        readonly lineHeight: boolean;
+        readonly readOnly: boolean;
+        readonly accessibilitySupport: boolean;
+        readonly multiCursorModifier: boolean;
+        readonly multiCursorMergeOverlapping: boolean;
+        readonly wordSeparators: boolean;
+        readonly autoClosingBrackets: boolean;
+        readonly autoIndent: boolean;
+        readonly useTabStops: boolean;
+        readonly tabFocusMode: boolean;
+        readonly dragAndDrop: boolean;
+        readonly emptySelectionClipboard: boolean;
+        readonly layoutInfo: boolean;
+        readonly fontInfo: boolean;
+        readonly viewInfo: boolean;
+        readonly wrappingInfo: boolean;
+        readonly contribInfo: boolean;
+    }
+
+    /**
+     * A view zone is a full horizontal rectangle that 'pushes' text down.
+     * The editor reserves space for view zones when rendering.
+     */
+    export interface IViewZone {
         /**
-         * The initial model associated with this code editor.
+         * The line number after which this zone should appear.
+         * Use 0 to place a view zone before the first line number.
          */
-        model?: IModel;
+        afterLineNumber: number;
+        /**
+         * The column after which this zone should appear.
+         * If not set, the maxLineColumn of `afterLineNumber` will be used.
+         */
+        afterColumn?: number;
+        /**
+         * Suppress mouse down events.
+         * If set, the editor will attach a mouse down listener to the view zone and .preventDefault on it.
+         * Defaults to false
+         */
+        suppressMouseDown?: boolean;
+        /**
+         * The height in lines of the view zone.
+         * If specified, `heightInPx` will be used instead of this.
+         * If neither `heightInPx` nor `heightInLines` is specified, a default of `heightInLines` = 1 will be chosen.
+         */
+        heightInLines?: number;
+        /**
+         * The height in px of the view zone.
+         * If this is set, the editor will give preference to it rather than `heightInLines` above.
+         * If neither `heightInPx` nor `heightInLines` is specified, a default of `heightInLines` = 1 will be chosen.
+         */
+        heightInPx?: number;
+        /**
+         * The minimum width in px of the view zone.
+         * If this is set, the editor will ensure that the scroll width is >= than this value.
+         */
+        minWidthInPx?: number;
+        /**
+         * The dom node of the view zone
+         */
+        domNode: HTMLElement;
+        /**
+         * An optional dom node for the view zone that will be placed in the margin area.
+         */
+        marginDomNode?: HTMLElement;
+        /**
+         * Callback which gives the relative top of the view zone as it appears (taking scrolling into account).
+         */
+        onDomNodeTop?: (top: number) => void;
+        /**
+         * Callback which gives the height in pixels of the view zone.
+         */
+        onComputedHeight?: (height: number) => void;
     }
 
     /**
-     * An editor model.
+     * An accessor that allows for zones to be added or removed.
      */
-    export interface IEditorModel {
+    export interface IViewZoneChangeAccessor {
+        /**
+         * Create a new view zone.
+         * @param zone Zone to create
+         * @return A unique identifier to the view zone.
+         */
+        addZone(zone: IViewZone): number;
+        /**
+         * Remove a zone
+         * @param id A unique identifier to the view zone, as returned by the `addZone` call.
+         */
+        removeZone(id: number): void;
+        /**
+         * Change a zone's position.
+         * The editor will rescan the `afterLineNumber` and `afterColumn` properties of a view zone.
+         */
+        layoutZone(id: number): void;
     }
 
     /**
-     * An editor view state.
+     * A positioning preference for rendering content widgets.
      */
-    export interface IEditorViewState {
-    }
-
-    export interface IDimension {
-        width: number;
-        height: number;
+    export enum ContentWidgetPositionPreference {
+        /**
+         * Place the content widget exactly at a position
+         */
+        EXACT = 0,
+        /**
+         * Place the content widget above a position
+         */
+        ABOVE = 1,
+        /**
+         * Place the content widget below a position
+         */
+        BELOW = 2
     }
 
     /**
-     * A (serializable) state of the cursors.
+     * A position for rendering content widgets.
      */
-    export interface ICursorState {
-        inSelectionMode: boolean;
-        selectionStart: IPosition;
+    export interface IContentWidgetPosition {
+        /**
+         * Desired position for the content widget.
+         * `preference` will also affect the placement.
+         */
         position: IPosition;
+        /**
+         * Placement preference for position, in order of preference.
+         */
+        preference: ContentWidgetPositionPreference[];
     }
 
     /**
-     * A (serializable) state of the view.
+     * A content widget renders inline with the text and can be easily placed 'near' an editor position.
      */
-    export interface IViewState {
-        scrollTop: number;
-        scrollTopWithoutViewZones: number;
-        scrollLeft: number;
+    export interface IContentWidget {
+        /**
+         * Render this content widget in a location where it could overflow the editor's view dom node.
+         */
+        allowEditorOverflow?: boolean;
+        suppressMouseDown?: boolean;
+        /**
+         * Get a unique identifier of the content widget.
+         */
+        getId(): string;
+        /**
+         * Get the dom node of the content widget.
+         */
+        getDomNode(): HTMLElement;
+        /**
+         * Get the placement of the content widget.
+         * If null is returned, the content widget will be placed off screen.
+         */
+        getPosition(): IContentWidgetPosition;
     }
 
     /**
-     * A (serializable) state of the code editor.
+     * A positioning preference for rendering overlay widgets.
      */
-    export interface ICodeEditorViewState extends IEditorViewState {
-        cursorState: ICursorState[];
-        viewState: IViewState;
-        contributionsState: {
-            [id: string]: any;
-        };
+    export enum OverlayWidgetPositionPreference {
+        /**
+         * Position the overlay widget in the top right corner
+         */
+        TOP_RIGHT_CORNER = 0,
+        /**
+         * Position the overlay widget in the bottom right corner
+         */
+        BOTTOM_RIGHT_CORNER = 1,
+        /**
+         * Position the overlay widget in the top center
+         */
+        TOP_CENTER = 2
+    }
+
+    /**
+     * A position for rendering overlay widgets.
+     */
+    export interface IOverlayWidgetPosition {
+        /**
+         * The position preference for the overlay widget.
+         */
+        preference: OverlayWidgetPositionPreference;
+    }
+
+    /**
+     * An overlay widgets renders on top of the text.
+     */
+    export interface IOverlayWidget {
+        /**
+         * Get a unique identifier of the overlay widget.
+         */
+        getId(): string;
+        /**
+         * Get the dom node of the overlay widget.
+         */
+        getDomNode(): HTMLElement;
+        /**
+         * Get the placement of the overlay widget.
+         * If null is returned, the overlay widget is responsible to place itself.
+         */
+        getPosition(): IOverlayWidgetPosition;
     }
 
     /**
@@ -2742,933 +3621,10 @@ declare module monaco.editor {
          * Mouse is on top of an overlay widget.
          */
         OVERLAY_WIDGET = 12,
-    }
-
-    /**
-     * A model for the diff editor.
-     */
-    export interface IDiffEditorModel extends IEditorModel {
         /**
-         * Original model.
+         * Mouse is outside of the editor.
          */
-        original: IModel;
-        /**
-         * Modified model.
-         */
-        modified: IModel;
-    }
-
-    /**
-     * (Serializable) View state for the diff editor.
-     */
-    export interface IDiffEditorViewState extends IEditorViewState {
-        original: ICodeEditorViewState;
-        modified: ICodeEditorViewState;
-    }
-
-    /**
-     * A change
-     */
-    export interface IChange {
-        readonly originalStartLineNumber: number;
-        readonly originalEndLineNumber: number;
-        readonly modifiedStartLineNumber: number;
-        readonly modifiedEndLineNumber: number;
-    }
-
-    /**
-     * A character level change.
-     */
-    export interface ICharChange extends IChange {
-        readonly originalStartColumn: number;
-        readonly originalEndColumn: number;
-        readonly modifiedStartColumn: number;
-        readonly modifiedEndColumn: number;
-    }
-
-    /**
-     * A line change
-     */
-    export interface ILineChange extends IChange {
-        readonly charChanges: ICharChange[];
-    }
-
-    /**
-     * Information about a line in the diff editor
-     */
-    export interface IDiffLineInformation {
-        readonly equivalentLineNumber: number;
-    }
-
-    export interface INewScrollPosition {
-        scrollLeft?: number;
-        scrollTop?: number;
-    }
-
-    /**
-     * Description of an action contribution
-     */
-    export interface IActionDescriptor {
-        /**
-         * An unique identifier of the contributed action.
-         */
-        id: string;
-        /**
-         * A label of the action that will be presented to the user.
-         */
-        label: string;
-        /**
-         * Precondition rule.
-         */
-        precondition?: string;
-        /**
-         * An array of keybindings for the action.
-         */
-        keybindings?: number[];
-        /**
-         * The keybinding rule (condition on top of precondition).
-         */
-        keybindingContext?: string;
-        /**
-         * Control if the action should show up in the context menu and where.
-         * The context menu of the editor has these default:
-         *   navigation - The navigation group comes first in all cases.
-         *   1_modification - This group comes next and contains commands that modify your code.
-         *   9_cutcopypaste - The last default group with the basic editing commands.
-         * You can also create your own group.
-         * Defaults to null (don't show in context menu).
-         */
-        contextMenuGroupId?: string;
-        /**
-         * Control the order in the context menu group.
-         */
-        contextMenuOrder?: number;
-        /**
-         * Method that will be executed when the action is triggered.
-         * @param editor The editor instance is passed in as a convinience
-         */
-        run(editor: ICommonCodeEditor): void | Promise<void>;
-    }
-
-    export interface IEditorAction {
-        readonly id: string;
-        readonly label: string;
-        readonly alias: string;
-        isSupported(): boolean;
-        run(): Promise<void>;
-    }
-
-    /**
-     * An editor.
-     */
-    export interface IEditor {
-        /**
-         * An event emitted when the content of the current model has changed.
-         * @event
-         */
-        onDidChangeModelContent(listener: (e: IModelContentChangedEvent2) => void): IDisposable;
-        /**
-         * An event emitted when the language of the current model has changed.
-         * @event
-         */
-        onDidChangeModelLanguage(listener: (e: IModelLanguageChangedEvent) => void): IDisposable;
-        /**
-         * An event emitted when the options of the current model has changed.
-         * @event
-         */
-        onDidChangeModelOptions(listener: (e: IModelOptionsChangedEvent) => void): IDisposable;
-        /**
-         * An event emitted when the configuration of the editor has changed. (e.g. `editor.updateOptions()`)
-         * @event
-         */
-        onDidChangeConfiguration(listener: (e: IConfigurationChangedEvent) => void): IDisposable;
-        /**
-         * An event emitted when the cursor position has changed.
-         * @event
-         */
-        onDidChangeCursorPosition(listener: (e: ICursorPositionChangedEvent) => void): IDisposable;
-        /**
-         * An event emitted when the cursor selection has changed.
-         * @event
-         */
-        onDidChangeCursorSelection(listener: (e: ICursorSelectionChangedEvent) => void): IDisposable;
-        /**
-         * An event emitted when the editor has been disposed.
-         * @event
-         */
-        onDidDispose(listener: () => void): IDisposable;
-        /**
-         * Dispose the editor.
-         */
-        dispose(): void;
-        /**
-         * Get a unique id for this editor instance.
-         */
-        getId(): string;
-        /**
-         * Get the editor type. Please see `EditorType`.
-         * This is to avoid an instanceof check
-         */
-        getEditorType(): string;
-        /**
-         * Update the editor's options after the editor has been created.
-         */
-        updateOptions(newOptions: IEditorOptions): void;
-        /**
-         * Instructs the editor to remeasure its container. This method should
-         * be called when the container of the editor gets resized.
-         */
-        layout(dimension?: IDimension): void;
-        /**
-         * Brings browser focus to the editor text
-         */
-        focus(): void;
-        /**
-         * Returns true if this editor has keyboard focus (e.g. cursor is blinking).
-         */
-        isFocused(): boolean;
-        /**
-         * Returns all actions associated with this editor.
-         */
-        getActions(): IEditorAction[];
-        /**
-         * Returns all actions associated with this editor.
-         */
-        getSupportedActions(): IEditorAction[];
-        /**
-         * Saves current view state of the editor in a serializable object.
-         */
-        saveViewState(): IEditorViewState;
-        /**
-         * Restores the view state of the editor from a serializable object generated by `saveViewState`.
-         */
-        restoreViewState(state: IEditorViewState): void;
-        /**
-         * Given a position, returns a column number that takes tab-widths into account.
-         */
-        getVisibleColumnFromPosition(position: IPosition): number;
-        /**
-         * Returns the primary position of the cursor.
-         */
-        getPosition(): Position;
-        /**
-         * Set the primary position of the cursor. This will remove any secondary cursors.
-         * @param position New primary cursor's position
-         */
-        setPosition(position: IPosition): void;
-        /**
-         * Scroll vertically as necessary and reveal a line.
-         */
-        revealLine(lineNumber: number): void;
-        /**
-         * Scroll vertically as necessary and reveal a line centered vertically.
-         */
-        revealLineInCenter(lineNumber: number): void;
-        /**
-         * Scroll vertically as necessary and reveal a line centered vertically only if it lies outside the viewport.
-         */
-        revealLineInCenterIfOutsideViewport(lineNumber: number): void;
-        /**
-         * Scroll vertically or horizontally as necessary and reveal a position.
-         */
-        revealPosition(position: IPosition): void;
-        /**
-         * Scroll vertically or horizontally as necessary and reveal a position centered vertically.
-         */
-        revealPositionInCenter(position: IPosition): void;
-        /**
-         * Scroll vertically or horizontally as necessary and reveal a position centered vertically only if it lies outside the viewport.
-         */
-        revealPositionInCenterIfOutsideViewport(position: IPosition): void;
-        /**
-         * Returns the primary selection of the editor.
-         */
-        getSelection(): Selection;
-        /**
-         * Returns all the selections of the editor.
-         */
-        getSelections(): Selection[];
-        /**
-         * Set the primary selection of the editor. This will remove any secondary cursors.
-         * @param selection The new selection
-         */
-        setSelection(selection: IRange): void;
-        /**
-         * Set the primary selection of the editor. This will remove any secondary cursors.
-         * @param selection The new selection
-         */
-        setSelection(selection: Range): void;
-        /**
-         * Set the primary selection of the editor. This will remove any secondary cursors.
-         * @param selection The new selection
-         */
-        setSelection(selection: ISelection): void;
-        /**
-         * Set the primary selection of the editor. This will remove any secondary cursors.
-         * @param selection The new selection
-         */
-        setSelection(selection: Selection): void;
-        /**
-         * Set the selections for all the cursors of the editor.
-         * Cursors will be removed or added, as necessary.
-         */
-        setSelections(selections: ISelection[]): void;
-        /**
-         * Scroll vertically as necessary and reveal lines.
-         */
-        revealLines(startLineNumber: number, endLineNumber: number): void;
-        /**
-         * Scroll vertically as necessary and reveal lines centered vertically.
-         */
-        revealLinesInCenter(lineNumber: number, endLineNumber: number): void;
-        /**
-         * Scroll vertically as necessary and reveal lines centered vertically only if it lies outside the viewport.
-         */
-        revealLinesInCenterIfOutsideViewport(lineNumber: number, endLineNumber: number): void;
-        /**
-         * Scroll vertically or horizontally as necessary and reveal a range.
-         */
-        revealRange(range: IRange): void;
-        /**
-         * Scroll vertically or horizontally as necessary and reveal a range centered vertically.
-         */
-        revealRangeInCenter(range: IRange): void;
-        /**
-         * Scroll vertically or horizontally as necessary and reveal a range at the top of the viewport.
-         */
-        revealRangeAtTop(range: IRange): void;
-        /**
-         * Scroll vertically or horizontally as necessary and reveal a range centered vertically only if it lies outside the viewport.
-         */
-        revealRangeInCenterIfOutsideViewport(range: IRange): void;
-        /**
-         * Directly trigger a handler or an editor action.
-         * @param source The source of the call.
-         * @param handlerId The id of the handler or the id of a contribution.
-         * @param payload Extra data to be sent to the handler.
-         */
-        trigger(source: string, handlerId: string, payload: any): void;
-        /**
-         * Gets the current model attached to this editor.
-         */
-        getModel(): IEditorModel;
-        /**
-         * Sets the current model attached to this editor.
-         * If the previous model was created by the editor via the value key in the options
-         * literal object, it will be destroyed. Otherwise, if the previous model was set
-         * via setModel, or the model key in the options literal object, the previous model
-         * will not be destroyed.
-         * It is safe to call setModel(null) to simply detach the current model from the editor.
-         */
-        setModel(model: IEditorModel): void;
-    }
-
-    /**
-     * An editor contribution that gets created every time a new editor gets created and gets disposed when the editor gets disposed.
-     */
-    export interface IEditorContribution {
-        /**
-         * Get a unique identifier for this contribution.
-         */
-        getId(): string;
-        /**
-         * Dispose this contribution.
-         */
-        dispose(): void;
-        /**
-         * Store view state.
-         */
-        saveViewState?(): any;
-        /**
-         * Restore view state.
-         */
-        restoreViewState?(state: any): void;
-    }
-
-    export interface ICommonCodeEditor extends IEditor {
-        /**
-         * An event emitted when the model of this editor has changed (e.g. `editor.setModel()`).
-         * @event
-         */
-        onDidChangeModel(listener: (e: IModelChangedEvent) => void): IDisposable;
-        /**
-         * An event emitted when the decorations of the current model have changed.
-         * @event
-         */
-        onDidChangeModelDecorations(listener: (e: IModelDecorationsChangedEvent) => void): IDisposable;
-        /**
-         * An event emitted when the text inside this editor gained focus (i.e. cursor blinking).
-         * @event
-         */
-        onDidFocusEditorText(listener: () => void): IDisposable;
-        /**
-         * An event emitted when the text inside this editor lost focus.
-         * @event
-         */
-        onDidBlurEditorText(listener: () => void): IDisposable;
-        /**
-         * An event emitted when the text inside this editor or an editor widget gained focus.
-         * @event
-         */
-        onDidFocusEditor(listener: () => void): IDisposable;
-        /**
-         * An event emitted when the text inside this editor or an editor widget lost focus.
-         * @event
-         */
-        onDidBlurEditor(listener: () => void): IDisposable;
-        /**
-         * Returns true if this editor or one of its widgets has keyboard focus.
-         */
-        hasWidgetFocus(): boolean;
-        /**
-         * Get a contribution of this editor.
-         * @id Unique identifier of the contribution.
-         * @return The contribution or null if contribution not found.
-         */
-        getContribution<T extends IEditorContribution>(id: string): T;
-        /**
-         * Type the getModel() of IEditor.
-         */
-        getModel(): IModel;
-        /**
-         * Returns the current editor's configuration
-         */
-        getConfiguration(): InternalEditorOptions;
-        /**
-         * Get value of the current model attached to this editor.
-         * @see IModel.getValue
-         */
-        getValue(options?: {
-            preserveBOM: boolean;
-            lineEnding: string;
-        }): string;
-        /**
-         * Set the value of the current model attached to this editor.
-         * @see IModel.setValue
-         */
-        setValue(newValue: string): void;
-        /**
-         * Get the scrollWidth of the editor's viewport.
-         */
-        getScrollWidth(): number;
-        /**
-         * Get the scrollLeft of the editor's viewport.
-         */
-        getScrollLeft(): number;
-        /**
-         * Get the scrollHeight of the editor's viewport.
-         */
-        getScrollHeight(): number;
-        /**
-         * Get the scrollTop of the editor's viewport.
-         */
-        getScrollTop(): number;
-        /**
-         * Change the scrollLeft of the editor's viewport.
-         */
-        setScrollLeft(newScrollLeft: number): void;
-        /**
-         * Change the scrollTop of the editor's viewport.
-         */
-        setScrollTop(newScrollTop: number): void;
-        /**
-         * Change the scroll position of the editor's viewport.
-         */
-        setScrollPosition(position: INewScrollPosition): void;
-        /**
-         * Get an action that is a contribution to this editor.
-         * @id Unique identifier of the contribution.
-         * @return The action or null if action not found.
-         */
-        getAction(id: string): IEditorAction;
-        /**
-         * Execute a command on the editor.
-         * @param source The source of the call.
-         * @param command The command to execute
-         */
-        executeCommand(source: string, command: ICommand): void;
-        /**
-         * Push an "undo stop" in the undo-redo stack.
-         */
-        pushUndoStop(): boolean;
-        /**
-         * Execute edits on the editor.
-         * @param source The source of the call.
-         * @param edits The edits to execute.
-         * @param endCursoState Cursor state after the edits were applied.
-         */
-        executeEdits(source: string, edits: IIdentifiedSingleEditOperation[], endCursoState?: Selection[]): boolean;
-        /**
-         * Execute multiple (concommitent) commands on the editor.
-         * @param source The source of the call.
-         * @param command The commands to execute
-         */
-        executeCommands(source: string, commands: ICommand[]): void;
-        /**
-         * Get all the decorations on a line (filtering out decorations from other editors).
-         */
-        getLineDecorations(lineNumber: number): IModelDecoration[];
-        /**
-         * All decorations added through this call will get the ownerId of this editor.
-         * @see IModel.deltaDecorations
-         */
-        deltaDecorations(oldDecorations: string[], newDecorations: IModelDeltaDecoration[]): string[];
-        /**
-         * Get the layout info for the editor.
-         */
-        getLayoutInfo(): EditorLayoutInfo;
-    }
-
-    export interface ICommonDiffEditor extends IEditor {
-        /**
-         * An event emitted when the diff information computed by this diff editor has been updated.
-         * @event
-         */
-        onDidUpdateDiff(listener: () => void): IDisposable;
-        /**
-         * Type the getModel() of IEditor.
-         */
-        getModel(): IDiffEditorModel;
-        /**
-         * Get the `original` editor.
-         */
-        getOriginalEditor(): ICommonCodeEditor;
-        /**
-         * Get the `modified` editor.
-         */
-        getModifiedEditor(): ICommonCodeEditor;
-        /**
-         * Get the computed diff information.
-         */
-        getLineChanges(): ILineChange[];
-        /**
-         * Get information based on computed diff about a line number from the original model.
-         * If the diff computation is not finished or the model is missing, will return null.
-         */
-        getDiffLineInformationForOriginal(lineNumber: number): IDiffLineInformation;
-        /**
-         * Get information based on computed diff about a line number from the modified model.
-         * If the diff computation is not finished or the model is missing, will return null.
-         */
-        getDiffLineInformationForModified(lineNumber: number): IDiffLineInformation;
-        /**
-         * @see ICodeEditor.getValue
-         */
-        getValue(options?: {
-            preserveBOM: boolean;
-            lineEnding: string;
-        }): string;
-    }
-
-    /**
-     * The type of the `IEditor`.
-     */
-    export var EditorType: {
-        ICodeEditor: string;
-        IDiffEditor: string;
-    };
-
-    /**
-     * Positions in the view for cursor move command.
-     */
-    export const CursorMovePosition: {
-        Left: string;
-        Right: string;
-        Up: string;
-        Down: string;
-        WrappedLineStart: string;
-        WrappedLineFirstNonWhitespaceCharacter: string;
-        WrappedLineColumnCenter: string;
-        WrappedLineEnd: string;
-        WrappedLineLastNonWhitespaceCharacter: string;
-        ViewPortTop: string;
-        ViewPortCenter: string;
-        ViewPortBottom: string;
-        ViewPortIfOutside: string;
-    };
-
-    /**
-     * Units for Cursor move 'by' argument
-     */
-    export const CursorMoveByUnit: {
-        Line: string;
-        WrappedLine: string;
-        Character: string;
-        HalfLine: string;
-    };
-
-    /**
-     * Arguments for Cursor move command
-     */
-    export interface CursorMoveArguments {
-        to: string;
-        select?: boolean;
-        by?: string;
-        value?: number;
-    }
-
-    /**
-     * Directions in the view for editor scroll command.
-     */
-    export const EditorScrollDirection: {
-        Up: string;
-        Down: string;
-    };
-
-    /**
-     * Units for editor scroll 'by' argument
-     */
-    export const EditorScrollByUnit: {
-        Line: string;
-        WrappedLine: string;
-        Page: string;
-        HalfPage: string;
-    };
-
-    /**
-     * Arguments for editor scroll command
-     */
-    export interface EditorScrollArguments {
-        to: string;
-        by?: string;
-        value?: number;
-        revealCursor?: boolean;
-    }
-
-    /**
-     * Arguments for reveal line command
-     */
-    export interface RevealLineArguments {
-        lineNumber?: number;
-        at?: string;
-    }
-
-    /**
-     * Values for reveal line 'at' argument
-     */
-    export const RevealLineAtArgument: {
-        Top: string;
-        Center: string;
-        Bottom: string;
-    };
-
-    /**
-     * Built-in commands.
-     */
-    export var Handler: {
-        ExecuteCommand: string;
-        ExecuteCommands: string;
-        CursorLeft: string;
-        CursorLeftSelect: string;
-        CursorWordLeft: string;
-        CursorWordStartLeft: string;
-        CursorWordEndLeft: string;
-        CursorWordLeftSelect: string;
-        CursorWordStartLeftSelect: string;
-        CursorWordEndLeftSelect: string;
-        CursorRight: string;
-        CursorRightSelect: string;
-        CursorWordRight: string;
-        CursorWordStartRight: string;
-        CursorWordEndRight: string;
-        CursorWordRightSelect: string;
-        CursorWordStartRightSelect: string;
-        CursorWordEndRightSelect: string;
-        CursorUp: string;
-        CursorUpSelect: string;
-        CursorDown: string;
-        CursorDownSelect: string;
-        CursorPageUp: string;
-        CursorPageUpSelect: string;
-        CursorPageDown: string;
-        CursorPageDownSelect: string;
-        CursorHome: string;
-        CursorHomeSelect: string;
-        CursorEnd: string;
-        CursorEndSelect: string;
-        ExpandLineSelection: string;
-        CursorTop: string;
-        CursorTopSelect: string;
-        CursorBottom: string;
-        CursorBottomSelect: string;
-        CursorColumnSelectLeft: string;
-        CursorColumnSelectRight: string;
-        CursorColumnSelectUp: string;
-        CursorColumnSelectPageUp: string;
-        CursorColumnSelectDown: string;
-        CursorColumnSelectPageDown: string;
-        CursorMove: string;
-        AddCursorDown: string;
-        AddCursorUp: string;
-        CursorUndo: string;
-        MoveTo: string;
-        MoveToSelect: string;
-        ColumnSelect: string;
-        CreateCursor: string;
-        LastCursorMoveToSelect: string;
-        Type: string;
-        ReplacePreviousChar: string;
-        CompositionStart: string;
-        CompositionEnd: string;
-        Paste: string;
-        Tab: string;
-        Indent: string;
-        Outdent: string;
-        DeleteLeft: string;
-        DeleteRight: string;
-        DeleteWordLeft: string;
-        DeleteWordStartLeft: string;
-        DeleteWordEndLeft: string;
-        DeleteWordRight: string;
-        DeleteWordStartRight: string;
-        DeleteWordEndRight: string;
-        RemoveSecondaryCursors: string;
-        CancelSelection: string;
-        Cut: string;
-        Undo: string;
-        Redo: string;
-        WordSelect: string;
-        WordSelectDrag: string;
-        LastCursorWordSelect: string;
-        LineSelect: string;
-        LineSelectDrag: string;
-        LastCursorLineSelect: string;
-        LastCursorLineSelectDrag: string;
-        LineInsertBefore: string;
-        LineInsertAfter: string;
-        LineBreakInsert: string;
-        SelectAll: string;
-        EditorScroll: string;
-        ScrollLineUp: string;
-        ScrollLineDown: string;
-        ScrollPageUp: string;
-        ScrollPageDown: string;
-        RevealLine: string;
-    };
-
-    /**
-     * The style in which the editor's cursor should be rendered.
-     */
-    export enum TextEditorCursorStyle {
-        /**
-         * As a vertical line (sitting between two characters).
-         */
-        Line = 1,
-        /**
-         * As a block (sitting on top of a character).
-         */
-        Block = 2,
-        /**
-         * As a horizontal line (sitting under a character).
-         */
-        Underline = 3,
-    }
-
-    /**
-     * The kind of animation in which the editor's cursor should be rendered.
-     */
-    export enum TextEditorCursorBlinkingStyle {
-        /**
-         * Hidden
-         */
-        Hidden = 0,
-        /**
-         * Blinking
-         */
-        Blink = 1,
-        /**
-         * Blinking with smooth fading
-         */
-        Smooth = 2,
-        /**
-         * Blinking with prolonged filled state and smooth fading
-         */
-        Phase = 3,
-        /**
-         * Expand collapse animation on the y axis
-         */
-        Expand = 4,
-        /**
-         * No-Blinking
-         */
-        Solid = 5,
-    }
-
-    /**
-     * A view zone is a full horizontal rectangle that 'pushes' text down.
-     * The editor reserves space for view zones when rendering.
-     */
-    export interface IViewZone {
-        /**
-         * The line number after which this zone should appear.
-         * Use 0 to place a view zone before the first line number.
-         */
-        afterLineNumber: number;
-        /**
-         * The column after which this zone should appear.
-         * If not set, the maxLineColumn of `afterLineNumber` will be used.
-         */
-        afterColumn?: number;
-        /**
-         * Suppress mouse down events.
-         * If set, the editor will attach a mouse down listener to the view zone and .preventDefault on it.
-         * Defaults to false
-         */
-        suppressMouseDown?: boolean;
-        /**
-         * The height in lines of the view zone.
-         * If specified, `heightInPx` will be used instead of this.
-         * If neither `heightInPx` nor `heightInLines` is specified, a default of `heightInLines` = 1 will be chosen.
-         */
-        heightInLines?: number;
-        /**
-         * The height in px of the view zone.
-         * If this is set, the editor will give preference to it rather than `heightInLines` above.
-         * If neither `heightInPx` nor `heightInLines` is specified, a default of `heightInLines` = 1 will be chosen.
-         */
-        heightInPx?: number;
-        /**
-         * The dom node of the view zone
-         */
-        domNode: HTMLElement;
-        /**
-         * An optional dom node for the view zone that will be placed in the margin area.
-         */
-        marginDomNode?: HTMLElement;
-        /**
-         * Callback which gives the relative top of the view zone as it appears (taking scrolling into account).
-         */
-        onDomNodeTop?: (top: number) => void;
-        /**
-         * Callback which gives the height in pixels of the view zone.
-         */
-        onComputedHeight?: (height: number) => void;
-    }
-
-    /**
-     * An accessor that allows for zones to be added or removed.
-     */
-    export interface IViewZoneChangeAccessor {
-        /**
-         * Create a new view zone.
-         * @param zone Zone to create
-         * @return A unique identifier to the view zone.
-         */
-        addZone(zone: IViewZone): number;
-        /**
-         * Remove a zone
-         * @param id A unique identifier to the view zone, as returned by the `addZone` call.
-         */
-        removeZone(id: number): void;
-        /**
-         * Change a zone's position.
-         * The editor will rescan the `afterLineNumber` and `afterColumn` properties of a view zone.
-         */
-        layoutZone(id: number): void;
-    }
-
-    /**
-     * A positioning preference for rendering content widgets.
-     */
-    export enum ContentWidgetPositionPreference {
-        /**
-         * Place the content widget exactly at a position
-         */
-        EXACT = 0,
-        /**
-         * Place the content widget above a position
-         */
-        ABOVE = 1,
-        /**
-         * Place the content widget below a position
-         */
-        BELOW = 2,
-    }
-
-    /**
-     * A position for rendering content widgets.
-     */
-    export interface IContentWidgetPosition {
-        /**
-         * Desired position for the content widget.
-         * `preference` will also affect the placement.
-         */
-        position: IPosition;
-        /**
-         * Placement preference for position, in order of preference.
-         */
-        preference: ContentWidgetPositionPreference[];
-    }
-
-    /**
-     * A content widget renders inline with the text and can be easily placed 'near' an editor position.
-     */
-    export interface IContentWidget {
-        /**
-         * Render this content widget in a location where it could overflow the editor's view dom node.
-         */
-        allowEditorOverflow?: boolean;
-        suppressMouseDown?: boolean;
-        /**
-         * Get a unique identifier of the content widget.
-         */
-        getId(): string;
-        /**
-         * Get the dom node of the content widget.
-         */
-        getDomNode(): HTMLElement;
-        /**
-         * Get the placement of the content widget.
-         * If null is returned, the content widget will be placed off screen.
-         */
-        getPosition(): IContentWidgetPosition;
-    }
-
-    /**
-     * A positioning preference for rendering overlay widgets.
-     */
-    export enum OverlayWidgetPositionPreference {
-        /**
-         * Position the overlay widget in the top right corner
-         */
-        TOP_RIGHT_CORNER = 0,
-        /**
-         * Position the overlay widget in the bottom right corner
-         */
-        BOTTOM_RIGHT_CORNER = 1,
-        /**
-         * Position the overlay widget in the top center
-         */
-        TOP_CENTER = 2,
-    }
-
-    /**
-     * A position for rendering overlay widgets.
-     */
-    export interface IOverlayWidgetPosition {
-        /**
-         * The position preference for the overlay widget.
-         */
-        preference: OverlayWidgetPositionPreference;
-    }
-
-    /**
-     * An overlay widgets renders on top of the text.
-     */
-    export interface IOverlayWidget {
-        /**
-         * Get a unique identifier of the overlay widget.
-         */
-        getId(): string;
-        /**
-         * Get the dom node of the overlay widget.
-         */
-        getDomNode(): HTMLElement;
-        /**
-         * Get the placement of the overlay widget.
-         * If null is returned, the overlay widget is responsible to place itself.
-         */
-        getPosition(): IOverlayWidgetPosition;
+        OUTSIDE_EDITOR = 13
     }
 
     /**
@@ -3712,7 +3668,72 @@ declare module monaco.editor {
     /**
      * A rich code editor.
      */
-    export interface ICodeEditor extends ICommonCodeEditor {
+    export interface ICodeEditor extends IEditor {
+        /**
+         * An event emitted when the content of the current model has changed.
+         * @event
+         */
+        onDidChangeModelContent(listener: (e: IModelContentChangedEvent) => void): IDisposable;
+        /**
+         * An event emitted when the language of the current model has changed.
+         * @event
+         */
+        onDidChangeModelLanguage(listener: (e: IModelLanguageChangedEvent) => void): IDisposable;
+        /**
+         * An event emitted when the language configuration of the current model has changed.
+         * @event
+         */
+        onDidChangeModelLanguageConfiguration(listener: (e: IModelLanguageConfigurationChangedEvent) => void): IDisposable;
+        /**
+         * An event emitted when the options of the current model has changed.
+         * @event
+         */
+        onDidChangeModelOptions(listener: (e: IModelOptionsChangedEvent) => void): IDisposable;
+        /**
+         * An event emitted when the configuration of the editor has changed. (e.g. `editor.updateOptions()`)
+         * @event
+         */
+        onDidChangeConfiguration(listener: (e: IConfigurationChangedEvent) => void): IDisposable;
+        /**
+         * An event emitted when the cursor position has changed.
+         * @event
+         */
+        onDidChangeCursorPosition(listener: (e: ICursorPositionChangedEvent) => void): IDisposable;
+        /**
+         * An event emitted when the cursor selection has changed.
+         * @event
+         */
+        onDidChangeCursorSelection(listener: (e: ICursorSelectionChangedEvent) => void): IDisposable;
+        /**
+         * An event emitted when the model of this editor has changed (e.g. `editor.setModel()`).
+         * @event
+         */
+        onDidChangeModel(listener: (e: IModelChangedEvent) => void): IDisposable;
+        /**
+         * An event emitted when the decorations of the current model have changed.
+         * @event
+         */
+        onDidChangeModelDecorations(listener: (e: IModelDecorationsChangedEvent) => void): IDisposable;
+        /**
+         * An event emitted when the text inside this editor gained focus (i.e. cursor starts blinking).
+         * @event
+         */
+        onDidFocusEditorText(listener: () => void): IDisposable;
+        /**
+         * An event emitted when the text inside this editor lost focus (i.e. cursor stops blinking).
+         * @event
+         */
+        onDidBlurEditorText(listener: () => void): IDisposable;
+        /**
+         * An event emitted when the text inside this editor or an editor widget gained focus.
+         * @event
+         */
+        onDidFocusEditorWidget(listener: () => void): IDisposable;
+        /**
+         * An event emitted when the text inside this editor or an editor widget lost focus.
+         * @event
+         */
+        onDidBlurEditorWidget(listener: () => void): IDisposable;
         /**
          * An event emitted on a "mouseup".
          * @event
@@ -3759,6 +3780,130 @@ declare module monaco.editor {
          */
         onDidScrollChange(listener: (e: IScrollEvent) => void): IDisposable;
         /**
+         * Saves current view state of the editor in a serializable object.
+         */
+        saveViewState(): ICodeEditorViewState;
+        /**
+         * Restores the view state of the editor from a serializable object generated by `saveViewState`.
+         */
+        restoreViewState(state: ICodeEditorViewState): void;
+        /**
+         * Returns true if the text inside this editor or an editor widget has focus.
+         */
+        hasWidgetFocus(): boolean;
+        /**
+         * Get a contribution of this editor.
+         * @id Unique identifier of the contribution.
+         * @return The contribution or null if contribution not found.
+         */
+        getContribution<T extends IEditorContribution>(id: string): T;
+        /**
+         * Type the getModel() of IEditor.
+         */
+        getModel(): ITextModel;
+        /**
+         * Returns the current editor's configuration
+         */
+        getConfiguration(): InternalEditorOptions;
+        /**
+         * Get value of the current model attached to this editor.
+         * @see `ITextModel.getValue`
+         */
+        getValue(options?: {
+            preserveBOM: boolean;
+            lineEnding: string;
+        }): string;
+        /**
+         * Set the value of the current model attached to this editor.
+         * @see `ITextModel.setValue`
+         */
+        setValue(newValue: string): void;
+        /**
+         * Get the scrollWidth of the editor's viewport.
+         */
+        getScrollWidth(): number;
+        /**
+         * Get the scrollLeft of the editor's viewport.
+         */
+        getScrollLeft(): number;
+        /**
+         * Get the scrollHeight of the editor's viewport.
+         */
+        getScrollHeight(): number;
+        /**
+         * Get the scrollTop of the editor's viewport.
+         */
+        getScrollTop(): number;
+        /**
+         * Change the scrollLeft of the editor's viewport.
+         */
+        setScrollLeft(newScrollLeft: number): void;
+        /**
+         * Change the scrollTop of the editor's viewport.
+         */
+        setScrollTop(newScrollTop: number): void;
+        /**
+         * Change the scroll position of the editor's viewport.
+         */
+        setScrollPosition(position: INewScrollPosition): void;
+        /**
+         * Get an action that is a contribution to this editor.
+         * @id Unique identifier of the contribution.
+         * @return The action or null if action not found.
+         */
+        getAction(id: string): IEditorAction;
+        /**
+         * Execute a command on the editor.
+         * The edits will land on the undo-redo stack, but no "undo stop" will be pushed.
+         * @param source The source of the call.
+         * @param command The command to execute
+         */
+        executeCommand(source: string, command: ICommand): void;
+        /**
+         * Push an "undo stop" in the undo-redo stack.
+         */
+        pushUndoStop(): boolean;
+        /**
+         * Execute edits on the editor.
+         * The edits will land on the undo-redo stack, but no "undo stop" will be pushed.
+         * @param source The source of the call.
+         * @param edits The edits to execute.
+         * @param endCursorState Cursor state after the edits were applied.
+         */
+        executeEdits(source: string, edits: IIdentifiedSingleEditOperation[], endCursorState?: Selection[]): boolean;
+        /**
+         * Execute multiple (concommitent) commands on the editor.
+         * @param source The source of the call.
+         * @param command The commands to execute
+         */
+        executeCommands(source: string, commands: ICommand[]): void;
+        /**
+         * Get all the decorations on a line (filtering out decorations from other editors).
+         */
+        getLineDecorations(lineNumber: number): IModelDecoration[];
+        /**
+         * All decorations added through this call will get the ownerId of this editor.
+         * @see `ITextModel.deltaDecorations`
+         */
+        deltaDecorations(oldDecorations: string[], newDecorations: IModelDeltaDecoration[]): string[];
+        /**
+         * Get the layout info for the editor.
+         */
+        getLayoutInfo(): EditorLayoutInfo;
+        /**
+         * Returns the ranges that are currently visible.
+         * Does not account for horizontal scrolling.
+         */
+        getVisibleRanges(): Range[];
+        /**
+         * Get the vertical position (top offset) for the line w.r.t. to the first line.
+         */
+        getTopForLineNumber(lineNumber: number): number;
+        /**
+         * Get the vertical position (top offset) for the position w.r.t. to the first line.
+         */
+        getTopForPosition(lineNumber: number, column: number): number;
+        /**
          * Returns the editor's dom node
          */
         getDomNode(): HTMLElement;
@@ -3793,10 +3938,6 @@ declare module monaco.editor {
          */
         changeViewZones(callback: (accessor: IViewZoneChangeAccessor) => void): void;
         /**
-         * Returns the range that is currently centered in the view port.
-         */
-        getCenteredRangeInViewport(): Range;
-        /**
          * Get the horizontal position (left offset) for the column w.r.t to the beginning of the line.
          * This method works only if the line `lineNumber` is currently rendered (in the editor's viewport).
          * Use this method with caution.
@@ -3806,14 +3947,6 @@ declare module monaco.editor {
          * Force an editor render now.
          */
         render(): void;
-        /**
-         * Get the vertical position (top offset) for the line w.r.t. to the first line.
-         */
-        getTopForLineNumber(lineNumber: number): number;
-        /**
-         * Get the vertical position (top offset) for the position w.r.t. to the first line.
-         */
-        getTopForPosition(lineNumber: number, column: number): number;
         /**
          * Get the hit test target at coordinates `clientX` and `clientY`.
          * The coordinates are relative to the top-left of the viewport.
@@ -3840,17 +3973,64 @@ declare module monaco.editor {
     }
 
     /**
+     * Information about a line in the diff editor
+     */
+    export interface IDiffLineInformation {
+        readonly equivalentLineNumber: number;
+    }
+
+    /**
      * A rich diff editor.
      */
-    export interface IDiffEditor extends ICommonDiffEditor {
+    export interface IDiffEditor extends IEditor {
         /**
          * @see ICodeEditor.getDomNode
          */
         getDomNode(): HTMLElement;
+        /**
+         * An event emitted when the diff information computed by this diff editor has been updated.
+         * @event
+         */
+        onDidUpdateDiff(listener: () => void): IDisposable;
+        /**
+         * Saves current view state of the editor in a serializable object.
+         */
+        saveViewState(): IDiffEditorViewState;
+        /**
+         * Restores the view state of the editor from a serializable object generated by `saveViewState`.
+         */
+        restoreViewState(state: IDiffEditorViewState): void;
+        /**
+         * Type the getModel() of IEditor.
+         */
+        getModel(): IDiffEditorModel;
+        /**
+         * Get the `original` editor.
+         */
+        getOriginalEditor(): ICodeEditor;
+        /**
+         * Get the `modified` editor.
+         */
+        getModifiedEditor(): ICodeEditor;
+        /**
+         * Get the computed diff information.
+         */
+        getLineChanges(): ILineChange[];
+        /**
+         * Get information based on computed diff about a line number from the original model.
+         * If the diff computation is not finished or the model is missing, will return null.
+         */
+        getDiffLineInformationForOriginal(lineNumber: number): IDiffLineInformation;
+        /**
+         * Get information based on computed diff about a line number from the modified model.
+         * If the diff computation is not finished or the model is missing, will return null.
+         */
+        getDiffLineInformationForModified(lineNumber: number): IDiffLineInformation;
     }
 
     export class FontInfo extends BareFontInfo {
         readonly _editorStylingBrand: void;
+        readonly isTrusted: boolean;
         readonly isMonospace: boolean;
         readonly typicalHalfwidthCharacterWidth: number;
         readonly typicalFullwidthCharacterWidth: number;
@@ -3859,14 +4039,20 @@ declare module monaco.editor {
     }
     export class BareFontInfo {
         readonly _bareFontInfoBrand: void;
+        readonly zoomLevel: number;
         readonly fontFamily: string;
         readonly fontWeight: string;
         readonly fontSize: number;
         readonly lineHeight: number;
+        readonly letterSpacing: number;
     }
+
+    //compatibility:
+    export type IReadOnlyModel = ITextModel;
+    export type IModel = ITextModel;
 }
 
-declare module monaco.languages {
+declare namespace monaco.languages {
 
 
     /**
@@ -3878,6 +4064,8 @@ declare module monaco.languages {
      * Get the information of all the registered languages.
      */
     export function getLanguages(): ILanguageExtensionPoint[];
+
+    export function getEncodedLanguageId(languageId: string): number;
 
     /**
      * An event emitted when a language is first time needed (e.g. a model has it set).
@@ -3914,6 +4102,38 @@ declare module monaco.languages {
     }
 
     /**
+     * The result of a line tokenization.
+     */
+    export interface IEncodedLineTokens {
+        /**
+         * The tokens on the line in a binary, encoded format. Each token occupies two array indices. For token i:
+         *  - at offset 2*i => startIndex
+         *  - at offset 2*i + 1 => metadata
+         * Meta data is in binary format:
+         * - -------------------------------------------
+         *     3322 2222 2222 1111 1111 1100 0000 0000
+         *     1098 7654 3210 9876 5432 1098 7654 3210
+         * - -------------------------------------------
+         *     bbbb bbbb bfff ffff ffFF FTTT LLLL LLLL
+         * - -------------------------------------------
+         *  - L = EncodedLanguageId (8 bits): Use `getEncodedLanguageId` to get the encoded ID of a language.
+         *  - T = StandardTokenType (3 bits): Other = 0, Comment = 1, String = 2, RegEx = 4.
+         *  - F = FontStyle (3 bits): None = 0, Italic = 1, Bold = 2, Underline = 4.
+         *  - f = foreground ColorId (9 bits)
+         *  - b = background ColorId (9 bits)
+         *  - The color value for each colorId is defined in IStandaloneThemeData.customTokenColors:
+         * e.g colorId = 1 is stored in IStandaloneThemeData.customTokenColors[1]. Color id = 0 means no color,
+         * id = 1 is for the default foreground color, id = 2 for the default background.
+         */
+        tokens: Uint32Array;
+        /**
+         * The tokenization end state.
+         * A pointer will be held to this and the object should not be modified by the tokenizer after the pointer is returned.
+         */
+        endState: IState;
+    }
+
+    /**
      * A "manual" provider of tokens.
      */
     export interface TokensProvider {
@@ -3928,9 +4148,23 @@ declare module monaco.languages {
     }
 
     /**
+     * A "manual" provider of tokens, returning tokens in a binary form.
+     */
+    export interface EncodedTokensProvider {
+        /**
+         * The initial state of a language. Will be the state passed in to tokenize the first line.
+         */
+        getInitialState(): IState;
+        /**
+         * Tokenize a line given the state at the beginning of the line.
+         */
+        tokenizeEncoded(line: string, state: IState): IEncodedLineTokens;
+    }
+
+    /**
      * Set the tokens provider for a language (manual implementation).
      */
-    export function setTokensProvider(languageId: string, provider: TokensProvider): IDisposable;
+    export function setTokensProvider(languageId: string, provider: TokensProvider | EncodedTokensProvider): IDisposable;
 
     /**
      * Set the tokens provider for a language (monarch implementation).
@@ -3963,7 +4197,7 @@ declare module monaco.languages {
     export function registerDocumentSymbolProvider(languageId: string, provider: DocumentSymbolProvider): IDisposable;
 
     /**
-     * Register a document highlight provider (used by e.g. highlight occurences).
+     * Register a document highlight provider (used by e.g. highlight occurrences).
      */
     export function registerDocumentHighlightProvider(languageId: string, provider: DocumentHighlightProvider): IDisposable;
 
@@ -3973,9 +4207,14 @@ declare module monaco.languages {
     export function registerDefinitionProvider(languageId: string, provider: DefinitionProvider): IDisposable;
 
     /**
-     * Register a type implementation provider (used by e.g. go to implementation).
+     * Register a implementation provider (used by e.g. go to implementation).
      */
     export function registerImplementationProvider(languageId: string, provider: ImplementationProvider): IDisposable;
+
+    /**
+     * Register a type definition provider (used by e.g. go to type definition).
+     */
+    export function registerTypeDefinitionProvider(languageId: string, provider: TypeDefinitionProvider): IDisposable;
 
     /**
      * Register a code lens provider (used by e.g. inline code lenses).
@@ -4013,6 +4252,16 @@ declare module monaco.languages {
     export function registerCompletionItemProvider(languageId: string, provider: CompletionItemProvider): IDisposable;
 
     /**
+     * Register a document color provider (used by Color Picker, Color Decorator).
+     */
+    export function registerColorProvider(languageId: string, provider: DocumentColorProvider): IDisposable;
+
+    /**
+     * Register a folding range provider
+     */
+    export function registerFoldingRangeProvider(languageId: string, provider: FoldingRangeProvider): IDisposable;
+
+    /**
      * Contains additional diagnostic information about the context in which
      * a [code action](#CodeActionProvider.provideCodeActions) is run.
      */
@@ -4023,6 +4272,10 @@ declare module monaco.languages {
          * @readonly
          */
         readonly markers: editor.IMarkerData[];
+        /**
+         * Requested kind of actions to return.
+         */
+        readonly only?: string;
     }
 
     /**
@@ -4033,7 +4286,7 @@ declare module monaco.languages {
         /**
          * Provide commands for the given document and range.
          */
-        provideCodeActions(model: editor.IReadOnlyModel, range: Range, context: CodeActionContext, token: CancellationToken): CodeAction[] | Thenable<CodeAction[]>;
+        provideCodeActions(model: editor.ITextModel, range: Range, context: CodeActionContext, token: CancellationToken): (Command | CodeAction)[] | Thenable<(Command | CodeAction)[]>;
     }
 
     /**
@@ -4058,7 +4311,7 @@ declare module monaco.languages {
         Color = 15,
         File = 16,
         Reference = 17,
-        Folder = 18,
+        Folder = 18
     }
 
     /**
@@ -4069,7 +4322,7 @@ declare module monaco.languages {
      * and `${3:foo}`. `$0` defines the final tab stop, it defaults to
      * the end of the snippet. Variables are defined with `$name` and
      * `${name:default value}`. The full snippet syntax is documented
-     * [here](http://code.visualstudio.com/docs/customization/userdefinedsnippets#_creating-your-own-snippets).
+     * [here](http://code.visualstudio.com/docs/editor/userdefinedsnippets#_creating-your-own-snippets).
      */
     export interface SnippetString {
         /**
@@ -4102,7 +4355,11 @@ declare module monaco.languages {
         /**
          * A human-readable string that represents a doc-comment.
          */
-        documentation?: string;
+        documentation?: string | IMarkdownString;
+        /**
+         * A command that should be run upon acceptance of this item.
+         */
+        command?: Command;
         /**
          * A string that should be used when comparing this item
          * with other items. When `falsy` the [label](#CompletionItem.label)
@@ -4132,6 +4389,12 @@ declare module monaco.languages {
          */
         range?: Range;
         /**
+         * An optional set of characters that when pressed while this completion is active will accept it first and
+         * then type that character. *Note* that all commit characters should have `length=1` and that superfluous
+         * characters will be ignored.
+         */
+        commitCharacters?: string[];
+        /**
          * @deprecated **Deprecated** in favor of `CompletionItem.insertText` and `CompletionItem.range`.
          *
          * ~~An [edit](#TextEdit) which is applied to a document when selecting
@@ -4142,6 +4405,12 @@ declare module monaco.languages {
          * line completions were [requested](#CompletionItemProvider.provideCompletionItems) at.~~
          */
         textEdit?: editor.ISingleEditOperation;
+        /**
+         * An optional array of additional text edits that are applied when
+         * selecting this completion. Edits must not overlap with the main edit
+         * nor with themselves.
+         */
+        additionalTextEdits?: editor.ISingleEditOperation[];
     }
 
     /**
@@ -4161,8 +4430,25 @@ declare module monaco.languages {
     }
 
     /**
+     * Contains additional information about the context in which
+     * [completion provider](#CompletionItemProvider.provideCompletionItems) is triggered.
+     */
+    export interface CompletionContext {
+        /**
+         * How the completion was triggered.
+         */
+        triggerKind: SuggestTriggerKind;
+        /**
+         * Character that triggered the completion item provider.
+         *
+         * `undefined` if provider was not triggered by a character.
+         */
+        triggerCharacter?: string;
+    }
+
+    /**
      * The completion item provider interface defines the contract between extensions and
-     * the [IntelliSense](https://code.visualstudio.com/docs/editor/editingevolved#_intellisense).
+     * the [IntelliSense](https://code.visualstudio.com/docs/editor/intellisense).
      *
      * When computing *complete* completion items is expensive, providers can optionally implement
      * the `resolveCompletionItem`-function. In that case it is enough to return completion
@@ -4176,7 +4462,7 @@ declare module monaco.languages {
         /**
          * Provide completion items for the given position and document.
          */
-        provideCompletionItems(model: editor.IReadOnlyModel, position: Position, token: CancellationToken): CompletionItem[] | Thenable<CompletionItem[]> | CompletionList | Thenable<CompletionList>;
+        provideCompletionItems(document: editor.ITextModel, position: Position, token: CancellationToken, context: CompletionContext): CompletionItem[] | Thenable<CompletionItem[]> | CompletionList | Thenable<CompletionList>;
         /**
          * Given a completion item fill in more data, like [doc-comment](#CompletionItem.documentation)
          * or [details](#CompletionItem.detail).
@@ -4242,6 +4528,10 @@ declare module monaco.languages {
          */
         surroundingPairs?: IAutoClosingPair[];
         /**
+         * The language's folding rules.
+         */
+        folding?: FoldingRules;
+        /**
          * **Deprecated** Do not use.
          *
          * @deprecated Will be replaced by a better API soon.
@@ -4269,6 +4559,34 @@ declare module monaco.languages {
          * If a line matches this pattern, then its indentation should not be changed and it should not be evaluated against the other rules.
          */
         unIndentedLinePattern?: RegExp;
+    }
+
+    /**
+     * Describes language specific folding markers such as '#region' and '#endregion'.
+     * The start and end regexes will be tested against the contents of all lines and must be designed efficiently:
+     * - the regex should start with '^'
+     * - regexp flags (i, g) are ignored
+     */
+    export interface FoldingMarkers {
+        start: RegExp;
+        end: RegExp;
+    }
+
+    /**
+     * Describes folding rules for a language.
+     */
+    export interface FoldingRules {
+        /**
+         * Used by the indentation based strategy to decide wheter empty lines belong to the previous or the next block.
+         * A language adheres to the off-side rule if blocks in that language are expressed by their indentation.
+         * See [wikipedia](https://en.wikipedia.org/wiki/Off-side_rule) for more information.
+         * If not set, `false` is used and empty lines belong to the previous block.
+         */
+        offSide?: boolean;
+        /**
+         * Region markers used by the language.
+         */
+        markers?: FoldingMarkers;
     }
 
     /**
@@ -4343,7 +4661,7 @@ declare module monaco.languages {
         /**
          * Insert new line and outdent once (relative to the previous line's indentation).
          */
-        Outdent = 3,
+        Outdent = 3
     }
 
     /**
@@ -4386,18 +4704,18 @@ declare module monaco.languages {
         /**
          * The contents of this hover.
          */
-        contents: MarkedString[];
+        contents: IMarkdownString[];
         /**
          * The range to which this hover applies. When missing, the
          * editor will use the range at the current position or the
          * current position itself.
          */
-        range: IRange;
+        range?: IRange;
     }
 
     /**
      * The hover provider interface defines the contract between extensions and
-     * the [hover](https://code.visualstudio.com/docs/editor/editingevolved#_hover)-feature.
+     * the [hover](https://code.visualstudio.com/docs/editor/intellisense)-feature.
      */
     export interface HoverProvider {
         /**
@@ -4405,15 +4723,24 @@ declare module monaco.languages {
          * position will be merged by the editor. A hover can have a range which defaults
          * to the word range at the position when omitted.
          */
-        provideHover(model: editor.IReadOnlyModel, position: Position, token: CancellationToken): Hover | Thenable<Hover>;
+        provideHover(model: editor.ITextModel, position: Position, token: CancellationToken): Hover | Thenable<Hover>;
     }
 
     /**
-     * Interface used to quick fix typing errors while accesing member fields.
+     * How a suggest provider was triggered.
      */
+    export enum SuggestTriggerKind {
+        Invoke = 0,
+        TriggerCharacter = 1,
+        TriggerForIncompleteCompletions = 2
+    }
+
     export interface CodeAction {
-        command: Command;
-        score: number;
+        title: string;
+        command?: Command;
+        edit?: WorkspaceEdit;
+        diagnostics?: editor.IMarkerData[];
+        kind?: string;
     }
 
     /**
@@ -4430,7 +4757,7 @@ declare module monaco.languages {
          * The human-readable doc-comment of this signature. Will be shown
          * in the UI but can be omitted.
          */
-        documentation?: string;
+        documentation?: string | IMarkdownString;
     }
 
     /**
@@ -4448,7 +4775,7 @@ declare module monaco.languages {
          * The human-readable doc-comment of this signature. Will be shown
          * in the UI but can be omitted.
          */
-        documentation?: string;
+        documentation?: string | IMarkdownString;
         /**
          * The parameters of this signature.
          */
@@ -4477,14 +4804,14 @@ declare module monaco.languages {
 
     /**
      * The signature help provider interface defines the contract between extensions and
-     * the [parameter hints](https://code.visualstudio.com/docs/editor/editingevolved#_parameter-hints)-feature.
+     * the [parameter hints](https://code.visualstudio.com/docs/editor/intellisense)-feature.
      */
     export interface SignatureHelpProvider {
         signatureHelpTriggerCharacters: string[];
         /**
          * Provide help for the signature at the given position and document.
          */
-        provideSignatureHelp(model: editor.IReadOnlyModel, position: Position, token: CancellationToken): SignatureHelp | Thenable<SignatureHelp>;
+        provideSignatureHelp(model: editor.ITextModel, position: Position, token: CancellationToken): SignatureHelp | Thenable<SignatureHelp>;
     }
 
     /**
@@ -4502,7 +4829,7 @@ declare module monaco.languages {
         /**
          * Write-access of a symbol, like writing to a variable.
          */
-        Write = 2,
+        Write = 2
     }
 
     /**
@@ -4530,7 +4857,7 @@ declare module monaco.languages {
          * Provide a set of document highlights, like all occurrences of a variable or
          * all exit-points of a function.
          */
-        provideDocumentHighlights(model: editor.IReadOnlyModel, position: Position, token: CancellationToken): DocumentHighlight[] | Thenable<DocumentHighlight[]>;
+        provideDocumentHighlights(model: editor.ITextModel, position: Position, token: CancellationToken): DocumentHighlight[] | Thenable<DocumentHighlight[]>;
     }
 
     /**
@@ -4552,7 +4879,7 @@ declare module monaco.languages {
         /**
          * Provide a set of project-wide references for the given position and document.
          */
-        provideReferences(model: editor.IReadOnlyModel, position: Position, context: ReferenceContext, token: CancellationToken): Location[] | Thenable<Location[]>;
+        provideReferences(model: editor.ITextModel, position: Position, context: ReferenceContext, token: CancellationToken): Location[] | Thenable<Location[]>;
     }
 
     /**
@@ -4577,6 +4904,13 @@ declare module monaco.languages {
      */
     export type Definition = Location | Location[];
 
+    export interface DefinitionLink {
+        origin?: IRange;
+        uri: Uri;
+        range: IRange;
+        selectionRange?: IRange;
+    }
+
     /**
      * The definition provider interface defines the contract between extensions and
      * the [go to definition](https://code.visualstudio.com/docs/editor/editingevolved#_go-to-definition)
@@ -4586,18 +4920,29 @@ declare module monaco.languages {
         /**
          * Provide the definition of the symbol at the given position and document.
          */
-        provideDefinition(model: editor.IReadOnlyModel, position: Position, token: CancellationToken): Definition | Thenable<Definition>;
+        provideDefinition(model: editor.ITextModel, position: Position, token: CancellationToken): Definition | DefinitionLink[] | Thenable<Definition | DefinitionLink[]>;
     }
 
     /**
-     * The type definition provider interface defines the contract between extensions and
+     * The implementation provider interface defines the contract between extensions and
      * the go to implementation feature.
      */
     export interface ImplementationProvider {
         /**
          * Provide the implementation of the symbol at the given position and document.
          */
-        provideImplementation(model: editor.IReadOnlyModel, position: Position, token: CancellationToken): Definition | Thenable<Definition>;
+        provideImplementation(model: editor.ITextModel, position: Position, token: CancellationToken): Definition | DefinitionLink[] | Thenable<Definition | DefinitionLink[]>;
+    }
+
+    /**
+     * The type definition provider interface defines the contract between extensions and
+     * the go to type definition feature.
+     */
+    export interface TypeDefinitionProvider {
+        /**
+         * Provide the type definition of the symbol at the given position and document.
+         */
+        provideTypeDefinition(model: editor.ITextModel, position: Position, token: CancellationToken): Definition | DefinitionLink[] | Thenable<Definition | DefinitionLink[]>;
     }
 
     /**
@@ -4625,29 +4970,21 @@ declare module monaco.languages {
         Object = 18,
         Key = 19,
         Null = 20,
+        EnumMember = 21,
+        Struct = 22,
+        Event = 23,
+        Operator = 24,
+        TypeParameter = 25
     }
 
-    /**
-     * Represents information about programming constructs like variables, classes,
-     * interfaces etc.
-     */
-    export interface SymbolInformation {
-        /**
-         * The name of this symbol.
-         */
+    export interface DocumentSymbol {
         name: string;
-        /**
-         * The name of the symbol containing this symbol.
-         */
-        containerName?: string;
-        /**
-         * The kind of this symbol.
-         */
+        detail: string;
         kind: SymbolKind;
-        /**
-         * The location of this symbol.
-         */
-        location: Location;
+        containerName?: string;
+        range: IRange;
+        selectionRange: IRange;
+        children?: DocumentSymbol[];
     }
 
     /**
@@ -4655,10 +4992,17 @@ declare module monaco.languages {
      * the [go to symbol](https://code.visualstudio.com/docs/editor/editingevolved#_goto-symbol)-feature.
      */
     export interface DocumentSymbolProvider {
+        displayName?: string;
         /**
          * Provide symbol information for the given document.
          */
-        provideDocumentSymbols(model: editor.IReadOnlyModel, token: CancellationToken): SymbolInformation[] | Thenable<SymbolInformation[]>;
+        provideDocumentSymbols(model: editor.ITextModel, token: CancellationToken): DocumentSymbol[] | Thenable<DocumentSymbol[]>;
+    }
+
+    export interface TextEdit {
+        range: IRange;
+        text: string;
+        eol?: editor.EndOfLineSequence;
     }
 
     /**
@@ -4683,7 +5027,7 @@ declare module monaco.languages {
         /**
          * Provide formatting edits for a whole document.
          */
-        provideDocumentFormattingEdits(model: editor.IReadOnlyModel, options: FormattingOptions, token: CancellationToken): editor.ISingleEditOperation[] | Thenable<editor.ISingleEditOperation[]>;
+        provideDocumentFormattingEdits(model: editor.ITextModel, options: FormattingOptions, token: CancellationToken): TextEdit[] | Thenable<TextEdit[]>;
     }
 
     /**
@@ -4698,7 +5042,7 @@ declare module monaco.languages {
          * or larger range. Often this is done by adjusting the start and end
          * of the range to full syntax nodes.
          */
-        provideDocumentRangeFormattingEdits(model: editor.IReadOnlyModel, range: Range, options: FormattingOptions, token: CancellationToken): editor.ISingleEditOperation[] | Thenable<editor.ISingleEditOperation[]>;
+        provideDocumentRangeFormattingEdits(model: editor.ITextModel, range: Range, options: FormattingOptions, token: CancellationToken): TextEdit[] | Thenable<TextEdit[]>;
     }
 
     /**
@@ -4714,7 +5058,7 @@ declare module monaco.languages {
          * what range the position to expand to, like find the matching `{`
          * when `}` has been entered.
          */
-        provideOnTypeFormattingEdits(model: editor.IReadOnlyModel, position: Position, ch: string, options: FormattingOptions, token: CancellationToken): editor.ISingleEditOperation[] | Thenable<editor.ISingleEditOperation[]>;
+        provideOnTypeFormattingEdits(model: editor.ITextModel, position: Position, ch: string, options: FormattingOptions, token: CancellationToken): TextEdit[] | Thenable<TextEdit[]>;
     }
 
     /**
@@ -4722,35 +5066,179 @@ declare module monaco.languages {
      */
     export interface ILink {
         range: IRange;
-        url: string;
+        url?: string;
     }
 
     /**
      * A provider of links.
      */
     export interface LinkProvider {
-        provideLinks(model: editor.IReadOnlyModel, token: CancellationToken): ILink[] | Thenable<ILink[]>;
+        provideLinks(model: editor.ITextModel, token: CancellationToken): ILink[] | Thenable<ILink[]>;
         resolveLink?: (link: ILink, token: CancellationToken) => ILink | Thenable<ILink>;
     }
 
-    export interface IResourceEdit {
-        resource: Uri;
+    /**
+     * A color in RGBA format.
+     */
+    export interface IColor {
+        /**
+         * The red component in the range [0-1].
+         */
+        readonly red: number;
+        /**
+         * The green component in the range [0-1].
+         */
+        readonly green: number;
+        /**
+         * The blue component in the range [0-1].
+         */
+        readonly blue: number;
+        /**
+         * The alpha component in the range [0-1].
+         */
+        readonly alpha: number;
+    }
+
+    /**
+     * String representations for a color
+     */
+    export interface IColorPresentation {
+        /**
+         * The label of this color presentation. It will be shown on the color
+         * picker header. By default this is also the text that is inserted when selecting
+         * this color presentation.
+         */
+        label: string;
+        /**
+         * An [edit](#TextEdit) which is applied to a document when selecting
+         * this presentation for the color.
+         */
+        textEdit?: TextEdit;
+        /**
+         * An optional array of additional [text edits](#TextEdit) that are applied when
+         * selecting this color presentation.
+         */
+        additionalTextEdits?: TextEdit[];
+    }
+
+    /**
+     * A color range is a range in a text model which represents a color.
+     */
+    export interface IColorInformation {
+        /**
+         * The range within the model.
+         */
         range: IRange;
-        newText: string;
+        /**
+         * The color represented in this range.
+         */
+        color: IColor;
+    }
+
+    /**
+     * A provider of colors for editor models.
+     */
+    export interface DocumentColorProvider {
+        /**
+         * Provides the color ranges for a specific model.
+         */
+        provideDocumentColors(model: editor.ITextModel, token: CancellationToken): IColorInformation[] | Thenable<IColorInformation[]>;
+        /**
+         * Provide the string representations for a color.
+         */
+        provideColorPresentations(model: editor.ITextModel, colorInfo: IColorInformation, token: CancellationToken): IColorPresentation[] | Thenable<IColorPresentation[]>;
+    }
+
+    export interface FoldingContext {
+    }
+
+    /**
+     * A provider of colors for editor models.
+     */
+    export interface FoldingRangeProvider {
+        /**
+         * Provides the color ranges for a specific model.
+         */
+        provideFoldingRanges(model: editor.ITextModel, context: FoldingContext, token: CancellationToken): FoldingRange[] | Thenable<FoldingRange[]>;
+    }
+
+    export interface FoldingRange {
+        /**
+         * The one-based start line of the range to fold. The folded area starts after the line's last character.
+         */
+        start: number;
+        /**
+         * The one-based end line of the range to fold. The folded area ends with the line's last character.
+         */
+        end: number;
+        /**
+         * Describes the [Kind](#FoldingRangeKind) of the folding range such as [Comment](#FoldingRangeKind.Comment) or
+         * [Region](#FoldingRangeKind.Region). The kind is used to categorize folding ranges and used by commands
+         * like 'Fold all comments'. See
+         * [FoldingRangeKind](#FoldingRangeKind) for an enumeration of standardized kinds.
+         */
+        kind?: FoldingRangeKind;
+    }
+
+    export class FoldingRangeKind {
+        value: string;
+        /**
+         * Kind for folding range representing a comment. The value of the kind is 'comment'.
+         */
+        static readonly Comment: FoldingRangeKind;
+        /**
+         * Kind for folding range representing a import. The value of the kind is 'imports'.
+         */
+        static readonly Imports: FoldingRangeKind;
+        /**
+         * Kind for folding range representing regions (for example marked by `#region`, `#endregion`).
+         * The value of the kind is 'region'.
+         */
+        static readonly Region: FoldingRangeKind;
+        /**
+         * Creates a new [FoldingRangeKind](#FoldingRangeKind).
+         *
+         * @param value of the kind.
+         */
+        constructor(value: string);
+    }
+
+    export interface ResourceFileEdit {
+        oldUri: Uri;
+        newUri: Uri;
+        options: {
+            overwrite?: boolean;
+            ignoreIfNotExists?: boolean;
+            ignoreIfExists?: boolean;
+            recursive?: boolean;
+        };
+    }
+
+    export interface ResourceTextEdit {
+        resource: Uri;
+        modelVersionId?: number;
+        edits: TextEdit[];
     }
 
     export interface WorkspaceEdit {
-        edits: IResourceEdit[];
+        edits: Array<ResourceTextEdit | ResourceFileEdit>;
         rejectReason?: string;
     }
 
+    export interface RenameLocation {
+        range: IRange;
+        text: string;
+    }
+
     export interface RenameProvider {
-        provideRenameEdits(model: editor.IReadOnlyModel, position: Position, newName: string, token: CancellationToken): WorkspaceEdit | Thenable<WorkspaceEdit>;
+        provideRenameEdits(model: editor.ITextModel, position: Position, newName: string, token: CancellationToken): WorkspaceEdit | Thenable<WorkspaceEdit>;
+        resolveRenameLocation?(model: editor.ITextModel, position: Position, token: CancellationToken): RenameLocation | Thenable<RenameLocation>;
     }
 
     export interface Command {
         id: string;
         title: string;
+        tooltip?: string;
         arguments?: any[];
     }
 
@@ -4762,8 +5250,8 @@ declare module monaco.languages {
 
     export interface CodeLensProvider {
         onDidChange?: IEvent<this>;
-        provideCodeLenses(model: editor.IReadOnlyModel, token: CancellationToken): ICodeLensSymbol[] | Thenable<ICodeLensSymbol[]>;
-        resolveCodeLens?(model: editor.IReadOnlyModel, codeLens: ICodeLensSymbol, token: CancellationToken): ICodeLensSymbol | Thenable<ICodeLensSymbol>;
+        provideCodeLenses(model: editor.ITextModel, token: CancellationToken): ICodeLensSymbol[] | Thenable<ICodeLensSymbol[]>;
+        resolveCodeLens?(model: editor.ITextModel, codeLens: ICodeLensSymbol, token: CancellationToken): ICodeLensSymbol | Thenable<ICodeLensSymbol>;
     }
 
     export interface ILanguageExtensionPoint {
@@ -4774,7 +5262,7 @@ declare module monaco.languages {
         firstLine?: string;
         aliases?: string[];
         mimetypes?: string[];
-        configuration?: string;
+        configuration?: Uri;
     }
     /**
      * A Monarch language definition
@@ -4805,15 +5293,19 @@ declare module monaco.languages {
         /**
          * attach this to every token class (by default '.' + name)
          */
-        tokenPostfix: string;
+        tokenPostfix?: string;
     }
+
+    export type IShortMonarchLanguageRule1 = [RegExp, string | IMonarchLanguageAction];
+
+    export type IShortMonarchLanguageRule2 = [RegExp, string | IMonarchLanguageAction, string];
 
     /**
      * A rule is either a regular expression and an action
      * 		shorthands: [reg,act] == { regex: reg, action: act}
      *		and       : [reg,act,nxt] == { regex: reg, action: act{ next: nxt }}
      */
-    export interface IMonarchLanguageRule {
+    export interface IExpandedMonarchLanguageRule {
         /**
          * match tokens
          */
@@ -4827,6 +5319,8 @@ declare module monaco.languages {
          */
         include?: string;
     }
+
+    export type IMonarchLanguageRule = IShortMonarchLanguageRule1 | IShortMonarchLanguageRule2 | IExpandedMonarchLanguageRule;
 
     /**
      * An action is either an array of actions...
@@ -4892,7 +5386,7 @@ declare module monaco.languages {
 
 }
 
-declare module monaco.worker {
+declare namespace monaco.worker {
 
 
     export interface IMirrorModel {
@@ -4910,7 +5404,8 @@ declare module monaco.worker {
 
 }
 
-declare module monaco.languages.typescript {
+
+declare namespace monaco.languages.typescript {
 
     enum ModuleKind {
         None = 0,
@@ -4919,15 +5414,17 @@ declare module monaco.languages.typescript {
         UMD = 3,
         System = 4,
         ES2015 = 5,
+        ESNext = 6
     }
     enum JsxEmit {
         None = 0,
         Preserve = 1,
         React = 2,
+        ReactNative = 3
     }
     enum NewLineKind {
         CarriageReturnLineFeed = 0,
-        LineFeed = 1,
+        LineFeed = 1
     }
 
     enum ScriptTarget {
@@ -4936,16 +5433,22 @@ declare module monaco.languages.typescript {
         ES2015 = 2,
         ES2016 = 3,
         ES2017 = 4,
-        ESNext = 5,
-        Latest = 5,
+        ES2018 = 5,
+        ESNext = 6,
+        JSON = 100,
+        Latest = 6
     }
 
     export enum ModuleResolutionKind {
         Classic = 1,
-        NodeJs = 2,
+        NodeJs = 2
     }
 
-    type CompilerOptionsValue = string | number | boolean | (string | number)[] | string[];
+    interface MapLike<T> {
+        [index: string]: T;
+    }
+
+    type CompilerOptionsValue = string | number | boolean | (string | number)[] | string[] | MapLike<string[]> | null | undefined;
     interface CompilerOptions {
         allowJs?: boolean;
         allowSyntheticDefaultImports?: boolean;
@@ -4954,9 +5457,13 @@ declare module monaco.languages.typescript {
         alwaysStrict?: boolean;
         baseUrl?: string;
         charset?: string;
+        checkJs?: boolean;
         declaration?: boolean;
+        declarationMap?: boolean;
+        emitDeclarationOnly?: boolean;
         declarationDir?: string;
         disableSizeLimit?: boolean;
+        downlevelIteration?: boolean;
         emitBOM?: boolean;
         emitDecoratorMetadata?: boolean;
         experimentalDecorators?: boolean;
@@ -4966,6 +5473,7 @@ declare module monaco.languages.typescript {
         inlineSources?: boolean;
         isolatedModules?: boolean;
         jsx?: JsxEmit;
+        keyofStringsOnly?: boolean;
         lib?: string[];
         locale?: string;
         mapRoot?: string;
@@ -4981,6 +5489,7 @@ declare module monaco.languages.typescript {
         noImplicitAny?: boolean;
         noImplicitReturns?: boolean;
         noImplicitThis?: boolean;
+        noStrictGenericChecks?: boolean;
         noUnusedLocals?: boolean;
         noUnusedParameters?: boolean;
         noImplicitUseStrict?: boolean;
@@ -4989,10 +5498,13 @@ declare module monaco.languages.typescript {
         out?: string;
         outDir?: string;
         outFile?: string;
+        paths?: MapLike<string[]>;
         preserveConstEnums?: boolean;
+        preserveSymlinks?: boolean;
         project?: string;
         reactNamespace?: string;
         jsxFactory?: string;
+        composite?: boolean;
         removeComments?: boolean;
         rootDir?: string;
         rootDirs?: string[];
@@ -5000,14 +5512,19 @@ declare module monaco.languages.typescript {
         skipDefaultLibCheck?: boolean;
         sourceMap?: boolean;
         sourceRoot?: string;
+        strict?: boolean;
+        strictFunctionTypes?: boolean;
         strictNullChecks?: boolean;
+        strictPropertyInitialization?: boolean;
         suppressExcessPropertyErrors?: boolean;
         suppressImplicitAnyIndexErrors?: boolean;
         target?: ScriptTarget;
         traceResolution?: boolean;
+        resolveJsonModule?: boolean;
         types?: string[];
         /** Paths used to compute primary types search locations */
         typeRoots?: string[];
+        esModuleInterop?: boolean;
         [option: string]: CompilerOptionsValue | undefined;
     }
 
@@ -5043,24 +5560,30 @@ declare module monaco.languages.typescript {
         /**
          * Configure when the worker shuts down. By default that is 2mins.
          *
-         * @param value The maximun idle time in milliseconds. Values less than one
+         * @param value The maximum idle time in milliseconds. Values less than one
          * mean never shut down.
          */
-        setMaximunWorkerIdleTime(value: number): void;
+        setMaximumWorkerIdleTime(value: number): void;
+
+        /**
+         * Configure if all existing models should be eagerly sync'd
+         * to the worker on start or restart.
+         */
+        setEagerModelSync(value: boolean): void;
     }
 
     export var typescriptDefaults: LanguageServiceDefaults;
     export var javascriptDefaults: LanguageServiceDefaults;
 
-    export var getTypeScriptWorker: () => monaco.Promise<any>;
-    export var getJavaScriptWorker: () => monaco.Promise<any>;
+    export var getTypeScriptWorker: () => Promise<any>;
+    export var getJavaScriptWorker: () => Promise<any>;
 }
 
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-declare module monaco.languages.css {
+declare namespace monaco.languages.css {
     export interface DiagnosticsOptions {
         readonly validate?: boolean;
         readonly lint?: {
@@ -5100,7 +5623,7 @@ declare module monaco.languages.css {
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-declare module monaco.languages.json {
+declare namespace monaco.languages.json {
     export interface DiagnosticsOptions {
         /**
          * If set, the validator will be enabled and perform syntax validation as well as schema based validation.
@@ -5142,7 +5665,7 @@ declare module monaco.languages.json {
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-declare module monaco.languages.html {
+declare namespace monaco.languages.html {
     export interface HTMLFormatConfiguration {
         readonly tabSize: number;
         readonly insertSpaces: boolean;
