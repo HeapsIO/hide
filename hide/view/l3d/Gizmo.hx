@@ -148,17 +148,17 @@ class Gizmo extends h3d.scene.Object {
 				return x > 0 ? (x + 1) : 1 / (1 - x);
 			}
 
-			function snap(m: Float) {
-				if(moveStep <= 0 || !K.isDown(K.CTRL))
+			function moveSnap(m: Float) {
+				if(moveStep <= 0 || !K.isDown(K.CTRL) || axisScale)
 					return m;
 
 				var step = K.isDown(K.SHIFT) ? moveStep / 2.0 : moveStep;
 				return hxd.Math.round(m / step) * step;
 			}
 
-			if(mode == MoveX || mode == MoveXY || mode == MoveZX) vec.x = snap(delta.dot(startMat.front().toPoint()));
-			if(mode == MoveY || mode == MoveYZ || mode == MoveXY) vec.y = snap(delta.dot(startMat.right().toPoint()));
-			if(mode == MoveZ || mode == MoveZX || mode == MoveYZ) vec.z = snap(delta.dot(startMat.up().toPoint()));
+			if(mode == MoveX || mode == MoveXY || mode == MoveZX) vec.x = moveSnap(delta.dot(startMat.front().toPoint()));
+			if(mode == MoveY || mode == MoveYZ || mode == MoveXY) vec.y = moveSnap(delta.dot(startMat.right().toPoint()));
+			if(mode == MoveZ || mode == MoveZX || mode == MoveYZ) vec.z = moveSnap(delta.dot(startMat.up().toPoint()));
 
 			if(!axisScale) {
 				vec.transform3x3(startMat);

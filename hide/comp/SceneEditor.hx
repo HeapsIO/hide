@@ -539,10 +539,17 @@ class SceneEditor {
 					obj3d.rotationY = quantize(M.radToDeg(rot.y), rotQuant);
 					obj3d.rotationZ = quantize(M.radToDeg(rot.z), rotQuant);
 					if(scale != null) {
+						inline function scaleSnap(x: Float) {
+							if(K.isDown(K.CTRL)) {
+								var step = K.isDown(K.SHIFT) ? 0.5 : 1.0;
+								x = Math.round(x / step) * step;
+							}
+							return x;
+						}
 						var s = newMat.getScale();
-						obj3d.scaleX = quantize(s.x, scaleQuant);
-						obj3d.scaleY = quantize(s.y, scaleQuant);
-						obj3d.scaleZ = quantize(s.z, scaleQuant);
+						obj3d.scaleX = quantize(scaleSnap(s.x), scaleQuant);
+						obj3d.scaleY = quantize(scaleSnap(s.y), scaleQuant);
+						obj3d.scaleZ = quantize(scaleSnap(s.z), scaleQuant);
 					}
 					obj3d.applyPos(sceneObjs[i]);
 				}
