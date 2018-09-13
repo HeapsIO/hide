@@ -1282,7 +1282,7 @@ class SceneEditor {
 	// Override
 	function getNewContextMenu(current: PrefabElement) : Array<hide.comp.ContextMenu.ContextMenuItem> {
 		var newItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
-		var allRegs = hxd.prefab.Library.getRegistered();
+		var allRegs = hxd.prefab.Library.getRegistered().copy();
 		allRegs.remove("reference");
 		var parent = current == null ? sceneData : current;
 		var allowChildren = null;
