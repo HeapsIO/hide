@@ -146,7 +146,10 @@ class SceneEditor {
 		});
 		view.keys.register("sceneeditor.focus", focusSelection);
 		view.keys.register("sceneeditor.lasso", startLassoSelect);
-		view.keys.register("sceneeditor.hide", function() {	setVisible(curEdit.elements, false); });
+		view.keys.register("sceneeditor.hide", function() {
+			var isHidden = isHidden(curEdit.rootElements[0]);
+			setVisible(curEdit.elements, isHidden);
+		});
 		view.keys.register("sceneeditor.isolate", function() {	isolate(curEdit.elements); });
 		view.keys.register("sceneeditor.showAll", function() {	setVisible(context.shared.elements(), true); });
 		view.keys.register("sceneeditor.selectParent", function() {
@@ -988,6 +991,8 @@ class SceneEditor {
 	}
 
 	public function isHidden(e: PrefabElement) {
+		if(e == null)
+			return false;
 		return hideList.exists(e);
 	}
 
