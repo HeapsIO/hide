@@ -33,13 +33,15 @@ class Reference extends Object3D {
 		if(refpath == null)
 			return null;
 		if(isFile()) {
-			#if editor
-			if(shared == null) // Allow resolving ref in Hide prefore makeInstance 
+			if(shared == null) { // Allow resolving ref in Hide prefore makeInstance 
+				#if editor
 				ref = hide.Ide.inst.loadPrefab(refpath.substr(1));
+				#else
+				return null;
+				#end
+			}
 			else
-			#else
-			ref = shared.loadPrefab(refpath.substr(1));
-			#end
+				ref = shared.loadPrefab(refpath.substr(1));
 			return ref;
 		}
 		else {
@@ -72,11 +74,18 @@ class Reference extends Object3D {
 		if(p == null)
 			return ctx;
 
-		ctx = ctx.clone(this);
-		ctx.isRef = true;
-		var refCtx = p.makeInstance(ctx);
-		ctx.local3d = refCtx.local3d;
-		updateInstance(ctx);
+		if(isFile()) {
+			ctx = super.makeInstance(ctx);
+			p.makeInstance(ctx);
+		}
+		else {
+			ctx = ctx.clone(this);
+			ctx.isRef = true;
+			var refCtx = p.makeInstanceRec(ctx);
+			ctx.local3d = refCtx.local3d;
+			updateInstance(ctx);
+		}
+		
 		return ctx;
 	}
 
@@ -88,6 +97,7 @@ class Reference extends Object3D {
 		if(p == null) return null;
 		return Std.instance(p, c);
 	}
+
 
 	#if editor
 

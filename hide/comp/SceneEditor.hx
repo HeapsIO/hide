@@ -826,7 +826,7 @@ class SceneEditor {
 			var obj3d : Object3D;
 			var relative = ide.makeRelative(path);
 
-			if(StringTools.endsWith(path, ".fx")) {
+			if(hxd.prefab.Library.getPrefabType(path) != null) {
 				var ref = new hide.prefab.Reference(parent);
 				ref.refpath = "/" + relative;
 				obj3d = ref;

@@ -19,7 +19,7 @@ class Instance extends Object3D {
 		var modelPath = findModelPath(kind.sheet, kind.idx.obj);
 		if(modelPath != null) {
 			try {
-				if(modelPath.indexOf(".prefab") > 0) {
+				if(hxd.prefab.Library.getPrefabType(modelPath) != null) {
 					var ref = ctx.shared.loadPrefab(modelPath);
 					var ctx = ctx.clone(this);
 					ctx.isRef = true;
@@ -50,20 +50,6 @@ class Instance extends Object3D {
 		return ctx;
 	}
 
-	#if editor
-
-	override function edit( ctx : EditContext ) {
-		super.edit(ctx);
-		var sheet = getCdbModel();
-		if( sheet == null ) return;
-		//ctx.properties.addProps([for(c in sheet.columns) {t: getPropType(c), name: c.name}], this.props);
-	}
-
-	override function getHideProps() : HideProps {
-		return { icon : "circle", name : "Instance" };
-	}
-
-	// Move to Prefab?
 	public static function getCdbKind(p: Prefab) {
 		if(p.props == null)
 			return null;
@@ -97,22 +83,11 @@ class Instance extends Object3D {
 		return refSheet.columns.find(c -> c.type == cdb.Data.ColumnType.TId);
 	}
 
-	static function getModel(refSheet : cdb.Sheet, obj : Dynamic) {
-		var path = findModelPath(refSheet, obj);
-		if(path == null)
-			return null;
-		try {
-			var model = hxd.res.Loader.currentInstance.load(path).toModel();
-			return model;
-		} catch( e : hxd.res.NotFound ) {}
-		return null;
-	}
-
-	static function findModelPath(refSheet : cdb.Sheet, obj : Dynamic) {
+	public static function findModelPath(refSheet : cdb.Sheet, obj : Dynamic) {
 		function filter(f: String) {
 			if(f != null) {
 				var lower = f.toLowerCase();
-				if(StringTools.endsWith(lower, ".fbx") || StringTools.endsWith(lower, ".prefab"))
+				if(StringTools.endsWith(lower, ".fbx") || hxd.prefab.Library.getPrefabType(lower) != null)
 					return f;
 			}
 			return null;
@@ -139,6 +114,29 @@ class Instance extends Object3D {
 			}
 		}
 		return path;
+	}
+
+	#if editor
+
+	override function edit( ctx : EditContext ) {
+		super.edit(ctx);
+		var sheet = getCdbModel();
+		if( sheet == null ) return;
+	}
+
+	override function getHideProps() : HideProps {
+		return { icon : "circle", name : "Instance" };
+	}
+
+	static function getModel(refSheet : cdb.Sheet, obj : Dynamic) {
+		var path = findModelPath(refSheet, obj);
+		if(path == null)
+			return null;
+		try {
+			var model = hxd.res.Loader.currentInstance.load(path).toModel();
+			return model;
+		} catch( e : hxd.res.NotFound ) {}
+		return null;
 	}
 
 	static function findTile(refSheet : cdb.Sheet, obj : Dynamic) {

@@ -513,7 +513,7 @@ class Level3D extends FileView {
 	}
 
 	override function onDragDrop(items : Array<String>, isDrop : Bool) {
-		var supported = ["fbx", "fx"];
+		var supported = ["fbx", "fx", "l3d", "prefab"];
 		var paths = [];
 		for(path in items) {
 			var ext = haxe.io.Path.extension(path).toLowerCase();
