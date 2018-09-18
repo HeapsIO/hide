@@ -15,14 +15,14 @@ class Editor extends Component {
 		data : {},
 		schema : Array<cdb.Data.Column>,
 	};
-	public var props : hide.ui.Props;
+	public var config : hide.Config;
 	public var cursor : Cursor;
 	public var keys : hide.ui.Keys;
 	public var undo : hide.ui.UndoHistory;
 
-	public function new(sheet,props,?parent) {
+	public function new(sheet,config,?parent) {
 		super(parent,null);
-		this.props = props;
+		this.config = config;
 		this.undo = new hide.ui.UndoHistory();
 		this.sheet = sheet;
 		element.attr("tabindex", 0);
@@ -272,6 +272,13 @@ class Editor extends Component {
 	}
 
 	public function popupColumn( table : Table, col : cdb.Data.Column ) {
+		var menu : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
+		if( col.type == TString && col.kind == Script )
+			menu.push({ label : "Edit all", click : function() editScripts(table,col) });
+		new hide.comp.ContextMenu(menu);
+	}
+
+	function editScripts( table : Table, col : cdb.Data.Column ) {
 	}
 
 	public function addChanges( changes : cdb.Database.Changes ) {

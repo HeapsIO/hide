@@ -117,7 +117,7 @@ class SceneEditor {
 		tree.autoOpenNodes = false;
 
 		var sceneEl = new Element('<div class="scene"></div>');
-		scene = new hide.comp.Scene(view.props, null, sceneEl);
+		scene = new hide.comp.Scene(view.config, null, sceneEl);
 		scene.onReady = onSceneReady;
 		scene.onResize = function() {
 			context.shared.root2d.x = scene.width >> 1;
@@ -228,7 +228,7 @@ class SceneEditor {
 		scene.s3d.addChild(context.shared.root3d);
 
 		gizmo = new hide.view.l3d.Gizmo(scene);
-		gizmo.moveStep = view.props.get("sceneeditor.gridSnapStep");
+		gizmo.moveStep = view.config.get("sceneeditor.gridSnapStep");
 
 		cameraController = makeCamController();
 
@@ -497,9 +497,9 @@ class SceneEditor {
 				m;
 			}];
 
-			var posQuant = view.props.get("sceneeditor.xyzPrecision");
-			var scaleQuant = view.props.get("sceneeditor.scalePrecision");
-			var rotQuant = view.props.get("sceneeditor.rotatePrecision");
+			var posQuant = view.config.get("sceneeditor.xyzPrecision");
+			var scaleQuant = view.config.get("sceneeditor.scalePrecision");
+			var rotQuant = view.config.get("sceneeditor.rotatePrecision");
 
 			inline function quantize(x: Float, step: Float) {
 				if(step > 0) {
@@ -694,7 +694,7 @@ class SceneEditor {
 						setVisible(curEdit.elements, isHidden(obj3d));
 					else
 						setVisible([obj3d], isHidden(obj3d));
-					
+
 					e.preventDefault();
 					e.stopPropagation();
 				});
@@ -703,7 +703,7 @@ class SceneEditor {
 	}
 
 	public function applySceneStyle(p: PrefabElement) {
-	
+
 	}
 
 	public function getContext(elt : PrefabElement) {
@@ -1367,7 +1367,7 @@ class SceneEditor {
 
 		var menu = [custom];
 
-		var shaders : Array<String> = hide.Ide.inst.currentProps.get("fx.shaders", []);
+		var shaders : Array<String> = hide.Ide.inst.currentConfig.get("fx.shaders", []);
 		for(path in shaders) {
 			var name = path;
 			if(StringTools.endsWith(name, ".hx")) {

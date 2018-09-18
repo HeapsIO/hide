@@ -16,7 +16,7 @@ class ShaderLoader {
 
 	public function new() {
 		ide = hide.Ide.inst;
-		shaderPath = ide.currentProps.get("haxe.classPath");
+		shaderPath = ide.currentConfig.get("haxe.classPath");
 	}
 
 	public function load( name : String ) {

@@ -266,7 +266,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 
 		if(sheet != null) {
 			var props = new hide.Element('<div></div>').appendTo(group.find(".content"));
-			var editor = new hide.comp.cdb.ObjEditor(sheet, parent.props, e.props, props);
+			var editor = new hide.comp.cdb.ObjEditor(sheet, parent.config, e.props, props);
 			editor.undo = properties.undo;
 			editor.onChange = function(pname) {
 				edit.onChange(e, 'props.$pname');
@@ -578,7 +578,7 @@ class Level3D extends FileView {
 	}
 
 	function applyTreeStyle(p: PrefabElement, el: Element) {
-		var styles = ide.currentProps.get("l3d.treeStyles");
+		var styles = ide.currentConfig.get("l3d.treeStyles");
 		var style: Dynamic = null;
 		var typeId = getCdbTypeId(p);
 		if(typeId != null) {
@@ -639,7 +639,7 @@ class Level3D extends FileView {
 	function getDisplayColor(p: PrefabElement) : Null<Int> {
 		var typeId = getCdbTypeId(p);
 		if(typeId != null) {
-			var colors = ide.currentProps.get("l3d.colors");
+			var colors = ide.currentConfig.get("l3d.colors");
 			var color = Reflect.field(colors, typeId);
 			if(color != null) {
 				return Std.parseInt("0x"+color.substr(1)) | 0xff000000;
@@ -649,7 +649,7 @@ class Level3D extends FileView {
 	}
 
 	public static function getLevelSheet() {
-		return Ide.inst.database.getSheet(Ide.inst.currentProps.get("l3d.cdbLevel", "level"));
+		return Ide.inst.database.getSheet(Ide.inst.currentConfig.get("l3d.cdbLevel", "level"));
 	}
 
 	static function resolveCdbType(id: String) {

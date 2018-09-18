@@ -57,7 +57,7 @@
 	// script support
 
 	"script.api.files" : [],
-	"script.cdbModule" : "Data",
+	"script.cdbPackage" : "",
 	"script.api" : {
 		"TableName.fieldName" : {
 			"globals" : { "this" : "ThisClass" },

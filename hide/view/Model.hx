@@ -54,7 +54,7 @@ class Model extends FileView {
 		overlay = element.find(".hide-scene-layer .tree");
 
 		if( rootPath == null )
-			rootPath = props.get("model.renderProps");
+			rootPath = config.get("model.renderProps");
 
 		if( rootPath != null )
 			root = ide.loadPrefab(rootPath, hxd.prefab.Library);

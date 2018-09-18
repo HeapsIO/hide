@@ -76,12 +76,12 @@ class FileView extends hide.ui.View<{ path : String }> {
 		return super.onBeforeClose();
 	}
 
-	override function get_props() {
-		if( props == null ) {
-			if( state.path == null ) return super.get_props();
-			props = hide.ui.Props.loadForFile(ide, state.path);
+	override function get_config() {
+		if( config == null ) {
+			if( state.path == null ) return super.get_config();
+			config = hide.Config.loadForFile(ide, state.path);
 		}
-		return props;
+		return config;
 	}
 
 	function set_modified(b) {

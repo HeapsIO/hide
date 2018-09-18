@@ -40,9 +40,9 @@ class Cell extends Component {
 		element.removeClass("edit");
 		element.removeClass("edit_long");
 		switch( column.type ) {
-		case TBool :
+		case TBool:
 			element.removeClass("true false").addClass( value==true ? "true" : "false" );
-		case TInt, TFloat :
+		case TInt, TFloat:
 			element.removeClass("zero");
 			if( value == 0 ) element.addClass("zero");
 		default:
@@ -178,9 +178,14 @@ class Cell extends Component {
 
 	static var KWDS = ["for","if","var","this","while","else","do","break","continue","switch","function","return","new","throw","try","catch","case","default"];
 	static var KWD_REG = new EReg([for( k in KWDS ) "(\\b"+k+"\\b)"].join("|"),"g");
-	function colorizeScript( code : String ) {
+	function colorizeScript( ecode : String ) {
+		var code = ecode;
 		code = StringTools.htmlEscape(code);
 		code = code.split("\n").join("<br/>");
+		// typecheck
+		var error = new ScriptEditor.ScriptChecker(editor.config, "cdb/"+table.sheet.name+"/"+column.name).check(ecode);
+		if( error != null )
+			return '<span class="error">'+code+'</span>';
 		// strings
 		code = ~/("[^"]*")/g.replace(code,'<span class="str">$1</span>');
 		code = ~/('[^']*')/g.replace(code,'<span class="str">$1</span>');

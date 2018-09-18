@@ -25,7 +25,7 @@ class Keys {
 		listeners.push(l);
 	}
 
-	public function processEvent( e : js.jquery.Event, config : Props ) {
+	public function processEvent( e : js.jquery.Event, config : Config ) {
 		var parts = [];
 		if( e.altKey )
 			parts.push("Alt");
@@ -55,7 +55,7 @@ class Keys {
 		return false;
 	}
 
-	public function triggerKey( e : js.jquery.Event, key : String, config : Props ) {
+	public function triggerKey( e : js.jquery.Event, key : String, config : Config ) {
 		for( l in listeners )
 			if( l(e) )
 				return true;

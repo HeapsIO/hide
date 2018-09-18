@@ -17,7 +17,7 @@ class View<T> extends hide.comp.Component {
 	public var keys(get,null) : Keys;
 	public var state(default, null) : T;
 	public var undo(default, null) = new hide.ui.UndoHistory();
-	public var props(get, null) : Props;
+	public var config(get, null) : Config;
 	public var viewClass(get, never) : String;
 	public var defaultOptions(get,never) : ViewOptions;
 
@@ -44,10 +44,10 @@ class View<T> extends hide.comp.Component {
 			ide.fileWatcher.unregister(w.path, w.callb);
 	}
 
-	function get_props() {
-		if( props == null )
-			props = ide.currentProps;
-		return props;
+	function get_config() {
+		if( config == null )
+			config = ide.currentConfig;
+		return config;
 	}
 
 	function get_keys() {
@@ -98,11 +98,11 @@ class View<T> extends hide.comp.Component {
 				continue;
 			var keys = hide.ui.Keys.get(el);
 			if( keys == null ) continue;
-			if( keys.processEvent(e,props) )
+			if( keys.processEvent(e,config) )
 				return true;
 		}
 		// global keys
-		return keys.processEvent(e,props);
+		return keys.processEvent(e,config);
 	}
 
 	public function setContainer(cont) {

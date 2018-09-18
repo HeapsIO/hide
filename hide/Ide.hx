@@ -1,11 +1,10 @@
 package hide;
-import hide.ui.Props;
 import hxd.inspect.Group;
 
 @:expose
 class Ide {
 
-	public var currentProps(get,never) : Props;
+	public var currentConfig(get,never) : Config;
 	public var projectDir(get,never) : String;
 	public var resourceDir(get,never) : String;
 	public var initializing(default,null) : Bool;
@@ -23,13 +22,13 @@ class Ide {
 
 	var databaseFile : String;
 
-	var props : {
-		global : Props,
-		project : Props,
-		user : Props,
-		current : Props,
+	var config : {
+		global : Config,
+		project : Config,
+		user : Config,
+		current : Config,
 	};
-	var ideProps(get, never) : hide.ui.Props.HideProps;
+	var ideConfig(get, never) : hide.Config.HideConfig;
 
 	var window : nw.Window;
 	var layout : golden.Layout;
@@ -50,7 +49,7 @@ class Ide {
 		inst = this;
 		window = nw.Window.get();
 		var cwd = Sys.getCwd();
-		props = Props.loadForProject(cwd, cwd+"/res");
+		config = Config.loadForProject(cwd, cwd+"/res");
 
 		var args = js.Browser.document.URL.split("?")[1];
 		if( args != null ) {
@@ -68,7 +67,7 @@ class Ide {
 		}
 
 		if( subView == null ) {
-			var wp = props.global.current.hide.windowPos;
+			var wp = config.global.current.hide.windowPos;
 			if( wp != null ) {
 				if( wp.w > 400 && wp.h > 300 )
 					window.resizeBy(wp.w - Std.int(window.window.outerWidth), wp.h - Std.int(window.window.outerHeight));
@@ -82,12 +81,12 @@ class Ide {
 		}
 		window.show(true);
 
-		if( props.global.get("hide") == null )
+		if( config.global.get("hide") == null )
 			error("Failed to load defaultProps.json");
 
 		fileWatcher = new hide.tools.FileWatcher();
 
-		setProject(ideProps.currentProject);
+		setProject(ideConfig.currentProject);
 		window.window.document.addEventListener("mousemove", function(e) {
 			mouseX = e.x;
 			mouseY = e.y;
@@ -209,16 +208,16 @@ class Ide {
 	function onWindowChange() {
 		if( hasReloaded )
 			return;
-		if( ideProps.windowPos == null ) ideProps.windowPos = { x : 0, y : 0, w : 0, h : 0, max : false };
-		ideProps.windowPos.max = maximized;
+		if( ideConfig.windowPos == null ) ideConfig.windowPos = { x : 0, y : 0, w : 0, h : 0, max : false };
+		ideConfig.windowPos.max = maximized;
 		if( !maximized ) {
-			ideProps.windowPos.x = window.x;
-			ideProps.windowPos.y = window.y;
-			ideProps.windowPos.w = Std.int(window.window.outerWidth);
-			ideProps.windowPos.h = Std.int(window.window.outerHeight);
+			ideConfig.windowPos.x = window.x;
+			ideConfig.windowPos.y = window.y;
+			ideConfig.windowPos.w = Std.int(window.window.outerWidth);
+			ideConfig.windowPos.h = Std.int(window.window.outerHeight);
 		}
 		if( subView == null )
-			props.global.save();
+			config.global.save();
 	}
 
 	function initLayout( ?state : { name : String, state : Dynamic } ) {
@@ -231,16 +230,16 @@ class Ide {
 		}
 
 		var defaultLayout = null;
-		for( p in props.current.current.hide.layouts )
+		for( p in config.current.current.hide.layouts )
 			if( p.name == "Default" ) {
 				defaultLayout = p;
 				break;
 			}
 		if( defaultLayout == null ) {
 			defaultLayout = { name : "Default", state : [] };
-			ideProps.layouts.push(defaultLayout);
-			props.current.sync();
-			props.global.save();
+			ideConfig.layouts.push(defaultLayout);
+			config.current.sync();
+			config.global.save();
 		}
 		if( state == null )
 			state = defaultLayout;
@@ -276,10 +275,10 @@ class Ide {
 
 		layout.init();
 		layout.on('stateChanged', function() {
-			if( !ideProps.autoSaveLayout )
+			if( !ideConfig.autoSaveLayout )
 				return;
 			defaultLayout.state = saveLayout();
-			if( subView == null ) props.global.save();
+			if( subView == null ) this.config.global.save();
 		});
 
 		var waitCount = 0;
@@ -322,8 +321,8 @@ class Ide {
 		return layout.toConfig().content;
 	}
 
-	function get_ideProps() return props.global.source.hide;
-	function get_currentProps() return props.user;
+	function get_ideConfig() return config.global.source.hide;
+	function get_currentConfig() return config.user;
 	function get_appPath() {
 		var path = js.Node.process.argv[0].split("\\").join("/").split("/");
 		path.pop();
@@ -373,19 +372,19 @@ class Ide {
 		js.Browser.console.error(e);
 	}
 
-	function get_projectDir() return ideProps.currentProject.split("\\").join("/");
+	function get_projectDir() return ideConfig.currentProject.split("\\").join("/");
 	function get_resourceDir() return projectDir+"/res";
 
 	function setProject( dir : String ) {
-		if( dir != ideProps.currentProject ) {
-			ideProps.currentProject = dir;
-			ideProps.recentProjects.remove(dir);
-			ideProps.recentProjects.unshift(dir);
-			if( ideProps.recentProjects.length > 10 ) ideProps.recentProjects.pop();
-			props.global.save();
+		if( dir != ideConfig.currentProject ) {
+			ideConfig.currentProject = dir;
+			ideConfig.recentProjects.remove(dir);
+			ideConfig.recentProjects.unshift(dir);
+			if( ideConfig.recentProjects.length > 10 ) ideConfig.recentProjects.pop();
+			config.global.save();
 		}
 		window.title = "HIDE - " + dir;
-		props = Props.loadForProject(projectDir, resourceDir);
+		config = Config.loadForProject(projectDir, resourceDir);
 		shaderLoader = new hide.tools.ShaderLoader();
 		typesCache = new hide.tools.TypesCache();
 
@@ -396,11 +395,11 @@ class Ide {
 			new hide.Renderer.PbrSetup("PBR"),
 		];
 
-		var plugins : Array<String> = props.current.get("plugins");
+		var plugins : Array<String> = config.current.get("plugins");
 		for( file in plugins )
 			loadScript(file, function() {});
 
-		var db = getPath(props.project.get("cdb.databaseFile"));
+		var db = getPath(config.project.get("cdb.databaseFile"));
 		databaseFile = db;
 		database = new cdb.Database();
 		if( sys.FileSystem.exists(db) ) {
@@ -411,7 +410,7 @@ class Ide {
 			}
 		}
 
-		if( props.project.get("debug.displayErrors")  ) {
+		if( config.project.get("debug.displayErrors")  ) {
 			js.Browser.window.onerror = function(msg, url, line, col, error) {
 				var e = error.stack;
 				e = ~/\(?chrome-extension:\/\/[a-z0-9\-\.\/]+.js:[0-9]+:[0-9]+\)?/g.replace(e,"");
@@ -424,7 +423,7 @@ class Ide {
 			Reflect.deleteField(js.Browser.window, "onerror");
 
 		waitScripts(function() {
-			var extraRenderers = props.current.get("renderers");
+			var extraRenderers = config.current.get("renderers");
 			for( name in Reflect.fields(extraRenderers) ) {
 				var clName = Reflect.field(extraRenderers, name);
 				var cl = try js.Lib.eval(clName) catch( e : Dynamic ) null;
@@ -437,7 +436,7 @@ class Ide {
 
 			var render = renderers[0];
 			for( r in renderers )
-				if( r.name == props.current.current.hide.renderer ) {
+				if( r.name == config.current.current.hide.renderer ) {
 					render = r;
 					break;
 				}
@@ -632,12 +631,12 @@ class Ide {
 		var menu = new Element(new Element("#mainmenu").get(0).outerHTML);
 
 		// project
-		if( ideProps.recentProjects.length > 0 )
+		if( ideConfig.recentProjects.length > 0 )
 			menu.find(".project .recents").html("");
-		for( v in ideProps.recentProjects.copy() ) {
+		for( v in ideConfig.recentProjects.copy() ) {
 			if( !sys.FileSystem.exists(v) ) {
-				ideProps.recentProjects.remove(v);
-				props.global.save();
+				ideConfig.recentProjects.remove(v);
+				config.global.save();
 				continue;
 			}
 			new Element("<menu>").attr("label",v).appendTo(menu.find(".project .recents")).click(function(_){
@@ -652,8 +651,8 @@ class Ide {
 			});
 		});
 		menu.find(".project .clear").click(function(_) {
-			ideProps.recentProjects = [];
-			props.global.save();
+			ideConfig.recentProjects = [];
+			config.global.save();
 			initMenu();
 		});
 		menu.find(".project .exit").click(function(_) {
@@ -663,10 +662,10 @@ class Ide {
 		for( r in renderers ) {
 			new Element("<menu type='checkbox'>").attr("label", r.name).prop("checked",r == h3d.mat.MaterialSetup.current).appendTo(menu.find(".project .renderers")).click(function(_) {
 				if( r != h3d.mat.MaterialSetup.current ) {
-					if( props.user.source.hide == null ) props.user.source.hide = cast {};
-					props.user.source.hide.renderer = r.name;
-					props.user.save();
-					setProject(ideProps.currentProject);
+					if( config.user.source.hide == null ) config.user.source.hide = cast {};
+					config.user.source.hide.renderer = r.name;
+					config.user.save();
+					setProject(ideConfig.currentProject);
 				}
 			});
 		}
@@ -699,27 +698,27 @@ class Ide {
 		// layout
 		var layouts = menu.find(".layout .content");
 		layouts.html("");
-		for( l in props.current.current.hide.layouts ) {
+		for( l in config.current.current.hide.layouts ) {
 			if( l.name == "Default" ) continue;
 			new Element("<menu>").attr("label",l.name).addClass(l.name).appendTo(layouts).click(function(_) {
 				initLayout(l);
 			});
 		}
 		menu.find(".layout .autosave").click(function(_) {
-			ideProps.autoSaveLayout = !ideProps.autoSaveLayout;
-			props.global.save();
-		}).prop("checked",ideProps.autoSaveLayout);
+			ideConfig.autoSaveLayout = !ideConfig.autoSaveLayout;
+			config.global.save();
+		}).prop("checked",ideConfig.autoSaveLayout);
 
 		menu.find(".layout .saveas").click(function(_) {
 			var name = ask("Please enter a layout name:");
 			if( name == null || name == "" ) return;
-			ideProps.layouts.push({ name : name, state : saveLayout() });
-			props.global.save();
+			ideConfig.layouts.push({ name : name, state : saveLayout() });
+			config.global.save();
 			initMenu();
 		});
 		menu.find(".layout .save").click(function(_) {
 			currentLayout.state = saveLayout();
-			props.global.save();
+			config.global.save();
 		});
 
 		window.menu = new hide.ui.Menu(menu).root;

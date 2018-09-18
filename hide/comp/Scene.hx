@@ -62,7 +62,7 @@ class Scene extends Component implements h3d.IDrawable {
 	var pathsMap = new Map<String, String>();
 	var cleanup = new Array<Void->Void>();
 	var defaultCamera : h3d.Camera;
-	public var props : hide.ui.Props;
+	public var config : hide.Config;
 	public var engine : h3d.Engine;
 	public var width(get, never) : Int;
 	public var height(get, never) : Int;
@@ -72,9 +72,9 @@ class Scene extends Component implements h3d.IDrawable {
 	public var speed : Float = 1.0;
 	public var visible(default, null) : Bool = true;
 
-	public function new(props : hide.ui.Props, parent, el) {
+	public function new(config, parent, el) {
 		super(parent,el);
-		this.props = props;
+		this.config = config;
 		element.addClass("hide-scene-container");
 		canvas = cast new Element("<canvas class='hide-scene' style='width:100%;height:100%'/>").appendTo(element)[0];
 		canvas.addEventListener("mousemove",function(_) canvas.focus());
@@ -141,7 +141,7 @@ class Scene extends Component implements h3d.IDrawable {
 	}
 
 	public function init( ?root : h3d.scene.Object ) {
-		var autoHide : Array<String> = props.get("scene.autoHide");
+		var autoHide : Array<String> = config.get("scene.autoHide");
 		function initRec( obj : h3d.scene.Object ) {
 			if( autoHide.indexOf(obj.name) >= 0 )
 				obj.visible = false;
@@ -150,7 +150,7 @@ class Scene extends Component implements h3d.IDrawable {
 		}
 		if( root == null ) {
 			root = s3d;
-			engine.backgroundColor = Std.parseInt("0x"+props.get("scene.backgroundColor").substr(1)) | 0xFF000000;
+			engine.backgroundColor = Std.parseInt("0x"+config.get("scene.backgroundColor").substr(1)) | 0xFF000000;
 		}
 		initRec(root);
 	}
@@ -227,9 +227,9 @@ class Scene extends Component implements h3d.IDrawable {
 		if( StringTools.endsWith(path.toLowerCase(), ".hsd") )
 			return [];
 
-		var props = hide.ui.Props.loadForFile(ide, path);
+		var config = hide.Config.loadForFile(ide, path);
 
-		var dirs : Array<String> = props.get("hmd.animPaths");
+		var dirs : Array<String> = config.get("hmd.animPaths");
 		if( dirs == null ) dirs = [];
 		dirs = [for( d in dirs ) ide.resourceDir + d];
 

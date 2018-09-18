@@ -91,7 +91,7 @@ class PbrSetup extends h3d.mat.PbrMaterialSetup {
 	function getEnvMap() {
 		var ide = hide.Ide.inst;
 		var scene = hide.comp.Scene.getCurrent();
-		var path = ide.getPath(scene.props.get("scene.environment"));
+		var path = ide.getPath(scene.config.get("scene.environment"));
 		var data = sys.io.File.getBytes(path);
 		var pix = hxd.res.Any.fromBytes(path, data).toImage().getPixels();
 		var t = h3d.mat.Texture.fromPixels(pix); // sync
@@ -142,7 +142,7 @@ class PbrRenderer extends h3d.scene.pbr.Renderer {
 	public function new(env) {
 		super(env);
 		tonemap.addShader(outline);
-	} 
+	}
 
 	override function getDefaultProps( ?kind : String ) : Any {
 		var props : h3d.scene.pbr.Renderer.RenderProps = super.getDefaultProps(kind);
@@ -155,7 +155,7 @@ class PbrRenderer extends h3d.scene.pbr.Renderer {
 		output.draw(getSort("alpha"));
 		output.draw(get("additive"));
 
-		
+
 		var outlineTex = allocTarget("outline", false);
 		setTarget(outlineTex);
 		clear(0);

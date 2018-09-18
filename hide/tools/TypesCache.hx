@@ -56,7 +56,7 @@ class TypesCache {
 		types = [];
 		needRebuild = false;
 
-		var src : Array<Dynamic> = ide.currentProps.get("haxe.classPath");
+		var src : Array<Dynamic> = ide.currentConfig.get("haxe.classPath");
 		for( dir in src ) {
 			var path = ide.projectDir + "/" + dir;
 			if( !sys.FileSystem.exists(path) )

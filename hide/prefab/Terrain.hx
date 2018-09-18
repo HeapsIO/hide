@@ -373,7 +373,7 @@ class Terrain extends Object3D {
 				</dl>
 			</div>
 		');
-		var brushes : Array<Dynamic> = ctx.scene.props.get("terrain.brushes");
+		var brushes : Array<Dynamic> = ctx.scene.config.get("terrain.brushes");
 		var brushesContainer = props.find(".terrain-brushes");
 		for( brush in brushes){
 			var label = brush.name + "<br/>Step : " + brush.step + "<br/>Strength : " + brush.strength + "<br/>Size : " + brush.size ;
@@ -401,7 +401,7 @@ class Terrain extends Object3D {
 		}
 
 		var surfacesContainer = props.find(".terrain-surfaces");
-		var surfacesPath : Dynamic = ctx.scene.props.get("terrain.surfacesPath");
+		var surfacesPath : Dynamic = ctx.scene.config.get("terrain.surfacesPath");
 		var dir = hide.Ide.inst.getPath(surfacesPath);
 		for( f in try sys.FileSystem.readDirectory(dir) catch( e : Dynamic ) [] ){
 			if( StringTools.endsWith(f,"_Albedo.png") ){

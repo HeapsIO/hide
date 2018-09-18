@@ -1,6 +1,6 @@
-package hide.ui;
+package hide;
 
-typedef HideProps = {
+typedef HideConfig = {
 	var autoSaveLayout : Null<Bool>;
 	var layouts : Array<{ name : String, state : Dynamic }>;
 
@@ -11,21 +11,21 @@ typedef HideProps = {
 	var renderer : String;
 };
 
-typedef PropsDef = {
+typedef ConfigDef = {
 
-	var hide : HideProps;
+	var hide : HideConfig;
 
 };
 
-class Props {
+class Config {
 
 	var ide : Ide;
-	var parent : Props;
+	var parent : Config;
 	public var path(default,null) : String;
-	public var source(default, null) : PropsDef;
-	public var current : PropsDef;
+	public var source(default, null) : ConfigDef;
+	public var current : ConfigDef;
 
-	public function new( ?parent : Props ) {
+	public function new( ?parent : Config ) {
 		ide = Ide.inst;
 		this.parent = parent;
 		sync();
@@ -88,10 +88,10 @@ class Props {
 	public static function loadForProject( projectPath : String, resourcePath : String ) {
 		var hidePath = Ide.inst.appPath;
 
-		var defaults = new Props();
+		var defaults = new Config();
 		defaults.load(hidePath + "/defaultProps.json");
 
-		var userGlobals = new Props(defaults);
+		var userGlobals = new Config(defaults);
 		userGlobals.load(hidePath + "/props.json");
 
 		if( userGlobals.source.hide == null )
@@ -104,13 +104,13 @@ class Props {
 				renderer : null,
 			};
 
-		var perProject = new Props(userGlobals);
+		var perProject = new Config(userGlobals);
 		perProject.load(resourcePath + "/props.json");
 
-		var projectUserCustom = new Props(perProject);
+		var projectUserCustom = new Config(perProject);
 		projectUserCustom.load(nw.App.dataPath + "/" + projectPath.split("/").join("_").split(":").join("_") + ".json");
 
-		var current = new Props(projectUserCustom);
+		var current = new Config(projectUserCustom);
 
 		return {
 			global : userGlobals,
@@ -134,12 +134,12 @@ class Props {
 			first = false;
 			parts.pop();
 		}
-		var parent = ide.currentProps;
+		var parent = ide.currentConfig;
 		for( p in propFiles ) {
-			parent = new Props(parent);
+			parent = new Config(parent);
 			parent.load(p);
 		}
-		return allowSave ? parent : new Props(parent);
+		return allowSave ? parent : new Config(parent);
 	}
 
 }

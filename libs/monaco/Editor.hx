@@ -11,6 +11,10 @@ extern class Editor {
 	function dispose() : Void;
 	function getModel() : Model;
 	function deltaDecorations( old : Array<String>, newDeco : Array<ModelDeltaDecoration> ) : Array<String>;
+	function setValue( script : String ) : Void;
+	function updateOptions( options : Dynamic ) : Void;
+	function getPosition() : Position;
+	function setPosition( p : Position ) : Void;
 
 	public static function create( elt : js.html.Element, ?options : Dynamic ) : Editor;
 
