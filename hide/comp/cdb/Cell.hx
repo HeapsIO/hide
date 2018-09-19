@@ -182,8 +182,9 @@ class Cell extends Component {
 		var code = ecode;
 		code = StringTools.htmlEscape(code);
 		code = code.split("\n").join("<br/>");
+		code = code.split("\t").join("&nbsp;&nbsp;&nbsp;&nbsp;");
 		// typecheck
-		var error = new ScriptEditor.ScriptChecker(editor.config, "cdb/"+table.sheet.name+"/"+column.name).check(ecode);
+		var error = new ScriptEditor.ScriptChecker(editor.config, "cdb."+table.sheet.name+"."+column.name, ["cdb."+table.sheet.name => line.obj]).check(ecode);
 		if( error != null )
 			return '<span class="error">'+code+'</span>';
 		// strings

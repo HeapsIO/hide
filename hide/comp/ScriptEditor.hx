@@ -9,13 +9,15 @@ typedef GlobalsDef = haxe.DynamicAccess<{
 class ScriptChecker {
 
 	static var TYPES_SAVE = new Map();
+	static var ERROR_SAVE = new Map();
+	var ide : hide.Ide;
 	public var checker : hscript.Checker;
 
-	public function new( config : hide.Config, documentName : String ) {
+	public function new( config : hide.Config, documentName : String, ?constants : Map<String,Dynamic> ) {
 
 		checker = new hscript.Checker();
+		ide = hide.Ide.inst;
 
-		var ide = hide.Ide.inst;
 		var files : Array<String> = config.get("script.api.files");
 		if( files.length >= 0 ) {
 			var types = TYPES_SAVE.get(files.join(";"));
@@ -23,7 +25,7 @@ class ScriptChecker {
 				types = new hscript.Checker.CheckerTypes();
 				for( f in files ) {
 					// TODO : reload + recheck script when modified
-					var content = try sys.io.File.getContent(ide.getPath(f)) catch( e : Dynamic ) { ide.error(e); continue; };
+					var content = try sys.io.File.getContent(ide.getPath(f)) catch( e : Dynamic ) { error(""+e); continue; };
 					types.addXmlApi(Xml.parse(content).firstElement());
 				}
 				TYPES_SAVE.set(files.join(";"), types);
@@ -31,24 +33,43 @@ class ScriptChecker {
 			checker.types = types;
 		}
 
-		var parts = documentName.split("/");
+		var parts = documentName.split(".");
 		var cdbPack : String = config.get("script.cdbPackage");
 		while( parts.length > 0 ) {
-			var path = parts.join("/");
+			var path = parts.join(".");
 			parts.pop();
 			var api = (config.get("script.api") : GlobalsDef).get(path);
 			if( api == null ) continue;
 
+
 			for( f in api.globals.keys() ) {
 				var tname = api.globals.get(f);
 				var t = checker.types.resolve(tname);
-				if( t == null ) ide.error('Global type $tname not found in $files ($f)');
+				if( t == null ) {
+					var path = tname.split(".");
+					var fields = [];
+					while( path.length > 0 ) {
+						var name = path.join(".");
+						if( constants.exists(name) ) {
+							var value : Dynamic = constants.get(name);
+							for( f in fields )
+								value = Reflect.field(value, f);
+							t = typeFromValue(value);
+							if( t == null ) t = TAnon([]);
+						}
+						fields.unshift(path.pop());
+					}
+				}
+				if( t == null ) {
+					error('Global type $tname not found in $files ($f)');
+					continue;
+				}
 				checker.setGlobal(f, t);
 			}
 
 			if( api.context != null ) {
 				var t = checker.types.resolve(api.context);
-				if( t == null ) ide.error("Missing context type "+api.context);
+				if( t == null ) error("Missing context type "+api.context);
 				while( t != null )
 					switch (t) {
 					case TInst(c, args):
@@ -58,7 +79,7 @@ class ScriptChecker {
 						}
 						t = c.superClass;
 					default:
-						ide.error(api.context+" context is not a class");
+						error(api.context+" context is not a class");
 					}
 			}
 
@@ -91,6 +112,40 @@ class ScriptChecker {
 		}
 	}
 
+	function error( msg : String ) {
+		if( !ERROR_SAVE.exists(msg) ) {
+			ERROR_SAVE.set(msg,true);
+			ide.error(msg);
+		}
+	}
+
+	function typeFromValue( value : Dynamic ) : hscript.Checker.TType {
+		switch( std.Type.typeof(value) ) {
+		case TNull:
+			return null;
+		case TInt:
+			return TInt;
+		case TFloat:
+			return TFloat;
+		case TBool:
+			return TBool;
+		case TObject:
+			var fields = [];
+			for( f in Reflect.fields(value) ) {
+				var t = typeFromValue(Reflect.field(value,f));
+				if( t == null ) continue;
+				fields.push({ name : f, t : t, opt : false });
+			}
+			return TAnon(fields);
+		case TClass(c):
+			return checker.types.resolve(Type.getClassName(c),[]);
+		case TEnum(e):
+			return checker.types.resolve(Type.getEnumName(e),[]);
+		case TFunction, TUnknown:
+		}
+		return null;
+	}
+
 	public function check( script : String, checkTypes = true ) {
 		var parser = new hscript.Parser();
 		parser.allowMetadata = true;
@@ -118,15 +173,11 @@ class ScriptEditor extends Component {
 	var errorMessage : Element;
 	var checker : ScriptChecker;
 	var currrentDecos : Array<String> = [];
-	var config : hide.Config;
-	public var documentName : String;
+	var checkTypes : Bool;
 	public var script(get,never) : String;
-	public var checkTypes : Bool = false;
 
-	public function new( documentName : String, script : String, config, ?parent : Element, ?root : Element ) {
+	public function new( script : String, ?checker : ScriptChecker, ?parent : Element, ?root : Element ) {
 		super(parent,root);
-		this.config = config;
-		this.documentName = documentName;
 
 		if( !INIT_DONE ) {
 			INIT_DONE = true;
@@ -156,7 +207,11 @@ class ScriptEditor extends Component {
 		editor.onDidChangeModelContent(doCheckScript);
 		editor.addCommand(monaco.KeyCode.KEY_S | monaco.KeyMod.CtrlCmd, function() { clearSpaces(); onSave(); });
 		errorMessage = new Element('<div class="scriptErrorMessage"></div>').appendTo(root).hide();
-		checker = new ScriptChecker(config, documentName);
+		if( checker == null ) {
+			checker = new ScriptChecker(new hide.Config(),"");
+			checkTypes = false;
+		}
+		this.checker = checker;
 		haxe.Timer.delay(function() doCheckScript(), 0);
 	}
 
