@@ -198,7 +198,7 @@ class Scene extends Component implements h3d.IDrawable {
 		}
 		var path = ide.getPath(img.entry.path);
 		var img = new Element('<img src="file://$path"/>');
-		img.on("load", function() {
+		function onLoaded() {
 			setCurrent();
 			var bmp : js.html.ImageElement = cast img[0];
 			var t;
@@ -210,12 +210,14 @@ class Scene extends Component implements h3d.IDrawable {
 			}
 			untyped bmp.ctx = { getImageData : function(_) return bmp, canvas : { width : 0, height : 0 } };
 			engine.driver.uploadTextureBitmap(t, cast bmp, 0, 0);
+			t.realloc = onLoaded;
 			t.flags.unset(Loading);
 			if( onReady != null ) {
 				onReady(t);
 				onReady = null;
 			}
-		});
+		}
+		img.on("load", onLoaded);
 		var w = js.node.Fs.watch(path, function(_, _) {
 			img.attr("src", 'file://$path?t='+Date.now().getTime());
 		});
