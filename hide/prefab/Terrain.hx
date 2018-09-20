@@ -2,6 +2,8 @@ package hide.prefab;
 using Lambda;
 import hxd.Key as K;
 
+#if editor
+
 class BrushMode {
 	public var accumulate = false;
 	public var substract = false;
@@ -768,3 +770,5 @@ class Terrain extends Object3D {
 
 	static var _ = hxd.prefab.Library.register("Terrain", Terrain);
 }
+
+#end
