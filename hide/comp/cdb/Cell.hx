@@ -224,6 +224,10 @@ class Cell extends Component {
 		}
 	}
 
+	public function select() {
+		editor.element.focus();
+		editor.cursor.set(table, this.columnIndex, this.line.index);
+	}
 
 	public function edit() {
 		switch( column.type ) {

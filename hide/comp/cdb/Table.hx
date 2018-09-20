@@ -252,7 +252,6 @@ class Table extends Component {
 		var cur = line.subTable;
 		if( cur != null ) {
 			cur.close();
-			line.subTable = null;
 			if( cur.cell == cell ) return; // toggle
 		}
 		var sub = make == null ? new SubTable(editor, cell) : make();

@@ -191,7 +191,7 @@ class ScriptEditor extends Component {
 
 		var root = element;
 		root.addClass("scripteditor");
-		root.on("keydown", function(e) e.stopPropagation());
+		root.on("keydown", function(e) { if( e.keyCode == 27 && root.find(".suggest-widget.visible").length == 0 ) onClose(); e.stopPropagation(); });
 
 		editor = monaco.Editor.create(root[0],{
 			value : script,
@@ -290,6 +290,9 @@ class ScriptEditor extends Component {
 	}
 
 	public dynamic function onSave() {
+	}
+
+	public dynamic function onClose() {
 	}
 
 }

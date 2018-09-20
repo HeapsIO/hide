@@ -25,6 +25,7 @@ class ScriptTable extends SubTable {
 		var checker = new ScriptEditor.ScriptChecker(editor.config,"cdb."+cell.table.sheet.name+"."+cell.column.name,[ "cdb."+cell.table.sheet.name => cell.line.obj ]);
 		script = new ScriptEditor(cell.value, checker, element.find("div"));
 		script.onSave = function() @:privateAccess cell.setValue(script.script);
+		script.onClose = function() { close(); cell.select(); }
 		lines = [new Line(this,[],0,script.element)];
 		if( first ) script.focus();
 	}

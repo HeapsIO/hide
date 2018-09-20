@@ -84,6 +84,7 @@ class SubTable extends Table {
 	}
 
 	override public function close() {
+		if( cell.line.subTable == this ) cell.line.subTable = null;
 		if( slider != null ) {
 			slider.slideUp(100, function() { slider = null; close(); });
 			return;
