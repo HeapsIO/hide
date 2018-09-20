@@ -52,5 +52,19 @@ class ContextShared extends hxd.prefab.ContextShared {
 		else
 			sys.io.File.saveBytes(file, bytes);
 	}
+
+	override function saveTexture(file:String, bytes:haxe.io.Bytes, dir:String, ext:String) {
+		var path = new haxe.io.Path("");
+		path.dir = dir + "/";
+		path.file = file;
+		path.ext = ext;
+
+		if(!sys.FileSystem.isDirectory( hide.Ide.inst.getPath(dir)))
+			sys.FileSystem.createDirectory( hide.Ide.inst.getPath(dir));
+
+		var file = hide.Ide.inst.getPath(path.toString());
+		sys.io.File.saveBytes(file, bytes);
+	}
+
 	#end
 }
