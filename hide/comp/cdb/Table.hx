@@ -210,7 +210,7 @@ class Table extends Component {
 		// add/edit properties
 		var end = new Element("<tr>").appendTo(element);
 		end = new Element("<td>").attr("colspan", "2").appendTo(end);
-		var sel = new Element("<select>").appendTo(end);
+		var sel = new Element("<select class='insertField'>").appendTo(end);
 		new Element("<option>").attr("value", "").text("--- Choose ---").appendTo(sel);
 		for( c in available )
 			J("<option>").attr("value",c.name).text(c.name).appendTo(sel);
@@ -225,20 +225,26 @@ class Table extends Component {
 				editor.newColumn(sheet);
 				return;
 			}
-			for( c in available )
-				if( c.name == v ) {
-					var val = editor.base.getDefault(c, true);
-					Reflect.setField(props, c.name, val);
-					editor.undo.change(Custom(function(undo) {
-						if( undo )
-							Reflect.deleteField(props, c.name);
-						else
-							Reflect.setField(props,c.name, val);
-					}));
-					refresh();
-					return;
-				}
+			insertProperty(v);
 		});
+	}
+
+	public function insertProperty( p : String ) {
+		var props = sheet.lines[0];
+		for( c in sheet.columns )
+			if( c.name == p ) {
+				var val = editor.base.getDefault(c, true);
+				Reflect.setField(props, c.name, val);
+				editor.undo.change(Custom(function(undo) {
+					if( undo )
+						Reflect.deleteField(props, c.name);
+					else
+						Reflect.setField(props,c.name, val);
+				}));
+				refresh();
+				return true;
+			}
+		return false;
 	}
 
 	function toggleList( cell : Cell, ?make : Void -> SubTable ) {

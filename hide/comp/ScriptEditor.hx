@@ -277,7 +277,11 @@ class ScriptEditor extends Component {
 				{ range : range, options : { linesDecorationsClassName: "scriptErrorLine", inlineClassName: "scriptErrorContent" } }
 			]);
 			errorMessage.text(hscript.Printer.errorToString(error));
-			errorMessage.show();
+			errorMessage.show(function() {
+				var rect = errorMessage[0].getBoundingClientRect();
+				if( rect.bottom > js.Browser.window.innerHeight )
+					errorMessage[0].scrollIntoView(false);
+			});
 		}
 	}
 

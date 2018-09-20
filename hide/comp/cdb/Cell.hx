@@ -213,6 +213,18 @@ class Cell extends Component {
 		return html;
 	}
 
+	public function isTextInput() {
+		return switch( column.type ) {
+		case TString if( column.kind == Script ):
+			return false;
+		case TString, TInt, TFloat, TId, TCustom(_), TDynamic, TRef(_):
+			return true;
+		default:
+			return false;
+		}
+	}
+
+
 	public function edit() {
 		switch( column.type ) {
 		case TString if( column.kind == Script ):
@@ -223,10 +235,11 @@ class Cell extends Component {
 			var textSpan = element.wrapInner("<span>").find("span");
 			var textHeight = textSpan.height();
 			var textWidth = textSpan.width();
-			var longText = textHeight > 25;
+			var longText = textHeight > 25 || str.indexOf("\n") >= 0;
 			element.empty();
 			element.addClass("edit");
 			var i = new Element(longText ? "<textarea>" : "<input>").appendTo(element);
+			i.keypress(function(e) e.stopPropagation());
 			//if( str != "" && (table.displayMode == Properties || table.displayMode == AllProperties) )
 			//	i.css({ width : Math.ceil(textWidth - 3) + "px" }); -- bug if small text ?
 			if( longText ) {
@@ -276,7 +289,7 @@ class Cell extends Component {
 			i.select();
 			if( longText ) i.scrollTop(0);
 		case TBool:
-			setValue( currentValue == false && column.opt ? null : !currentValue ? true : false );
+			setValue( currentValue == false && column.opt && table.displayMode != Properties ? null : currentValue == null ? true : currentValue ? false : true );
 			refresh();
 		case TProperties, TList:
 			@:privateAccess table.toggleList(this);

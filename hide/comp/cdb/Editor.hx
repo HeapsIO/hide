@@ -26,6 +26,11 @@ class Editor extends Component {
 		this.undo = new hide.ui.UndoHistory();
 		this.sheet = sheet;
 		element.attr("tabindex", 0);
+		element.on("keypress", function(e) {
+			var cell = cursor.getCell();
+			if( cell != null && cell.isTextInput() && !e.ctrlKey )
+				cell.edit();
+		});
 		keys = new hide.ui.Keys(element);
 		keys.addListener(onKey);
 		keys.register("search", function() {
@@ -265,6 +270,33 @@ class Editor extends Component {
 	}
 
 	public function insertLine( table : Table, index = 0 ) {
+		if( table.displayMode == Properties ) {
+			var ins = table.element.find("select.insertField");
+			var options = [for( o in ins.find("option").elements() ) o.val()];
+			ins.attr("size", options.length);
+			options.shift();
+			ins.focus();
+			var index = 0;
+			ins.val(options[0]);
+			ins.off();
+			ins.blur(function(_) table.refresh());
+			ins.keydown(function(e) {
+				switch( e.keyCode ) {
+				case K.ESCAPE:
+					element.focus();
+				case K.UP if( index > 0 ):
+					ins.val(options[--index]);
+				case K.DOWN if( index < options.length - 1 ):
+					ins.val(options[++index]);
+				case K.ENTER:
+					table.insertProperty(ins.val());
+				default:
+				}
+				e.stopPropagation();
+				e.preventDefault();
+			});
+			return;
+		}
 		addChanges([{ ref : cursor.getLine().getChangeRef(), v : DeleteIndex(table.sheet.lines,index+1) }]);
 		table.sheet.newLine(index);
 		table.refresh();
