@@ -181,7 +181,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 				var idCol = Instance.findIDColumn(refSheet);
 
 				function make(name) {
-					var p = new hide.prefab.l3d.Instance(current);
+					var p = new hide.prefab.l3d.Instance(current == null ? sceneData : current);
 					p.props = type.getDefaults();
 					Reflect.setField(p.props, "$cdbtype", typeId);
 					p.name = name;
