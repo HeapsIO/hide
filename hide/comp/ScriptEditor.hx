@@ -3,7 +3,8 @@ package hide.comp;
 typedef GlobalsDef = haxe.DynamicAccess<{
 	var globals : haxe.DynamicAccess<String>;
 	var context : String;
-	var cdbEnums : Bool;
+	var events : String;
+	var cdbEnums : Array<String>;
 }>;
 
 class ScriptChecker {
@@ -41,7 +42,6 @@ class ScriptChecker {
 			var api = (config.get("script.api") : GlobalsDef).get(path);
 			if( api == null ) continue;
 
-
 			for( f in api.globals.keys() ) {
 				var tname = api.globals.get(f);
 				var t = checker.types.resolve(tname);
@@ -68,48 +68,52 @@ class ScriptChecker {
 			}
 
 			if( api.context != null ) {
-				var t = checker.types.resolve(api.context);
-				if( t == null ) error("Missing context type "+api.context);
-				while( t != null )
-					switch (t) {
-					case TInst(c, args):
-						for( fname in c.fields.keys() ) {
-							var f = c.fields.get(fname);
-							checker.setGlobal(f.name, f.t);
-						}
-						t = c.superClass;
-					default:
-						error(api.context+" context is not a class");
-					}
+				var fields = getFields(api.context);
+				for( f in fields )
+					checker.setGlobal(f.name, f.t);
 			}
 
-			if( api.cdbEnums ) {
-				for( s in ide.database.sheets ) {
-					if( s.props.hide ) continue;
-					for( c in s.columns )
-						if( c.type == TId ) {
-							var name = s.name.charAt(0).toUpperCase() + s.name.substr(1);
-							var kname = name+"Kind";
-							if( cdbPack != "" ) kname = cdbPack + "." + kname;
-							var kind = checker.types.resolve(kname);
-							if( kind == null )
-								kind = TEnum({ name : kname, params : [], constructors : new Map() },[]);
-							var cl : hscript.Checker.CClass = {
-								name : name,
-								params : [],
-								fields : new Map(),
-								statics : new Map()
-							};
-							for( o in s.getLines() ) {
-								var id = Reflect.field(o, c.name);
-								if( id == null || id == "" ) continue;
-								cl.fields.set(id, { name : id, params : [], t : kind, isPublic: true });
-							}
-							checker.setGlobal(name, TInst(cl,[]));
+			if( api.events != null ) {
+				for( f in getFields(api.events) )
+					checker.setEvent(f.name, f.t);
+			}
+
+			if( api.cdbEnums != null ) {
+				for( c in api.cdbEnums ) {
+					for( s in ide.database.sheets ) {
+						if( s.name != c ) continue;
+						var name = s.name.charAt(0).toUpperCase() + s.name.substr(1);
+						var kname = name+"Kind";
+						if( cdbPack != "" ) kname = cdbPack + "." + kname;
+						var kind = checker.types.resolve(kname);
+						if( kind == null )
+							kind = TEnum({ name : kname, params : [], constructors : new Map() },[]);
+						var cl : hscript.Checker.CClass = {
+							name : name,
+							params : [],
+							fields : new Map(),
+							statics : new Map()
+						};
+						for( o in s.all ) {
+							var id = o.id;
+							if( id == null || id == "" ) continue;
+							cl.fields.set(id, { name : id, params : [], t : kind, isPublic: true });
 						}
+						checker.setGlobal(name, TInst(cl,[]));
+					}
 				}
 			}
 		}
+	}
+
+	function getFields( tpath : String ) {
+		var t = checker.types.resolve(tpath);
+		if( t == null )
+			error("Missing type "+tpath);
+		var fl = checker.getFields(t);
+		if( fl == null )
+			error(tpath+" context is not a class");
+		return fl;
 	}
 
 	function error( msg : String ) {
