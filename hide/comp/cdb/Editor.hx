@@ -27,6 +27,8 @@ class Editor extends Component {
 		this.sheet = sheet;
 		element.attr("tabindex", 0);
 		element.on("keypress", function(e) {
+			if( e.target.nodeName == "INPUT" )
+				return;
 			var cell = cursor.getCell();
 			if( cell != null && cell.isTextInput() && !e.ctrlKey )
 				cell.edit();

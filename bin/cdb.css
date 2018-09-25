@@ -287,10 +287,10 @@
   text-decoration: underline dashed red;
 }
 .cdb .cdb-sheet div.cdb-script .scriptErrorMessage {
-  background: rgba(255, 5, 5, 0.4);
+  background: #500505;
   color: red;
   position: absolute;
   margin-top: -20px;
   padding: 2px;
-  border: 1px solid red;
+  border: 1px solid #A00;
 }

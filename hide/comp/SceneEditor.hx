@@ -608,7 +608,7 @@ class SceneEditor {
 			return;
 		}
 		inLassoMode = true;
-		var g = new h2d.Sprite(scene.s2d);
+		var g = new h2d.Object(scene.s2d);
 		var overlay = new h2d.Bitmap(h2d.Tile.fromColor(0xffffff, 10000, 10000, 0.1), g);
 		var intOverlay = new h2d.Interactive(10000, 10000, scene.s2d);
 		var lastPt = new h2d.col.Point(scene.s2d.mouseX, scene.s2d.mouseY);
