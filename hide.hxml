@@ -6,5 +6,6 @@ common.hxml
 --macro include("hxd.poly2tri")
 --macro include("hxd.clipper")
 --macro include("hxd.earcut")
+-lib jqueryExtern
 -dce no
 -debug
