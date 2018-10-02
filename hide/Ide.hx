@@ -195,8 +195,8 @@ class Ide {
 		for( c in new Element("canvas") ) {
 			var s : hide.comp.Scene = (c:Dynamic).__scene;
 			if( s != null ) @:privateAccess {
-				s.stage.curMouseX = mouseX;
-				s.stage.curMouseY = mouseY;
+				s.window.curMouseX = mouseX;
+				s.window.curMouseY = mouseY;
 			}
 		}
 	}

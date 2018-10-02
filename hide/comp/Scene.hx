@@ -55,7 +55,7 @@ class Scene extends Component implements h3d.IDrawable {
 	static var firstInit = true;
 
 	var id = ++UID;
-	var stage : hxd.Stage;
+	var window : hxd.Window;
 	var canvas : js.html.CanvasElement;
 	var hmdCache = new Map<String, hxd.fmt.hmd.Library>();
 	var texCache = new Map<String, h3d.mat.Texture>();
@@ -97,25 +97,25 @@ class Scene extends Component implements h3d.IDrawable {
 
 	function delayedInit() {
 		canvas.id = "webgl";
-		stage = @:privateAccess new hxd.Stage(canvas);
-		stage.setCurrent();
+		window = @:privateAccess new hxd.Window(canvas);
+		window.setCurrent();
 		engine = new h3d.Engine();
 		@:privateAccess engine.resCache.set(Scene, this);
 		engine.backgroundColor = 0xFF111111;
 		canvas.id = null;
 		engine.onReady = function() {
 			new Element(canvas).on("resize", function() {
-				@:privateAccess stage.checkResize();
+				@:privateAccess window.checkResize();
 			});
 			if( firstInit ) {
 				firstInit = false;
 				hxd.Key.initialize();
 			}
 			engine.setCurrent();
-			stage.setCurrent();
+			window.setCurrent();
 			s2d = new h2d.Scene();
 			s3d = new h3d.scene.Scene();
-			sevents = new hxd.SceneEvents(stage);
+			sevents = new hxd.SceneEvents(window);
 			sevents.addScene(s2d);
 			sevents.addScene(s3d);
 			onReady();
@@ -157,7 +157,7 @@ class Scene extends Component implements h3d.IDrawable {
 
 	public function setCurrent() {
 		engine.setCurrent();
-		stage.setCurrent();
+		window.setCurrent();
 	}
 
 	function checkCurrent() {
@@ -167,7 +167,7 @@ class Scene extends Component implements h3d.IDrawable {
 
 	function sync() {
 		if( new Element(canvas).parents("html").length == 0 ) {
-			stage.dispose();
+			window.dispose();
 			ide.unregisterUpdate(sync);
 			return;
 		}
