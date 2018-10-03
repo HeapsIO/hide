@@ -183,25 +183,25 @@ class TerrainEditor {
 		}
 	}
 
-	function applyBrush(pos){
+	function applyBrush(pos, ctx){
 		switch (currentBrush.brushMode.mode){
 			case Paint: drawSurface(pos);
 			case Sculpt: drawHeight(pos);
-			case Delete : terrainPrefab.terrain.removeTile(terrainPrefab.terrain.getTileAtWorldPos(pos));
+			case Delete: deleteTile(pos, ctx);
 		}
 	}
 
 	function useBrush( from : h3d.Vector, to : h3d.Vector, ctx : Context){
 
 		if(currentBrush.brushMode.mode == Delete){
-			 applyBrush(to);
+			 applyBrush(to, ctx);
 			 previewStrokeBuffers();
 			 return;
 		}
 
 		var dist = (to.sub(from)).length();
 		if(dist == 0){
-			applyBrush(from);
+			applyBrush(from, ctx);
 			previewStrokeBuffers();
 			return;
 		}
@@ -220,7 +220,7 @@ class TerrainEditor {
 				}else
 					pos = pos.add(step);
 
-				applyBrush(pos);
+				applyBrush(pos, ctx);
 
 				dist -= currentBrush.step - remainingDist;
 				remainingDist = 0;
@@ -230,6 +230,25 @@ class TerrainEditor {
 		}else{
 			remainingDist += dist;
 		}
+	}
+
+	public function deleteTile(pos, ctx){
+		var tile = terrainPrefab.terrain.getTileAtWorldPos(pos);
+		if(tile == null) return;
+		var dir = ctx.shared.currentPath.split(".l3d")[0] + "_terrain";
+		var dirPath = hide.Ide.inst.getPath(dir);
+		var files = sys.FileSystem.readDirectory(dirPath);
+		for(file in files){
+			var name = file.split(".heightMap")[0];
+			name = name.split(".png")[0];
+			var coords = name.split("_");
+			if(coords[2] != "h" && coords[2] != "i" && coords[2] != "w") continue;
+			var x = Std.parseInt(coords[0]);
+			var y = Std.parseInt(coords[1]);
+			if( x != tile.tileX || y != tile.tileY ) continue;
+			sys.FileSystem.deleteFile(dirPath + "/" + file);
+		}
+		terrainPrefab.terrain.removeTile(tile);
 	}
 
 	public function drawSurface(pos : h3d.Vector){
