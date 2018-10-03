@@ -24,7 +24,7 @@ class TilePreview extends hxsl.Shader {
 			var tilePos = (input.position.xy / primSize);
 			var brushUV = tilePos - (brushPos - (brushSize / (2.0 * primSize)));
 			brushUV /= (brushSize / primSize);
-			pixelColor = vec4(brushTex.get(brushUV).r * vec3(0,1,1), min(0.7,brushTex.get(brushUV).r));
+			pixelColor = vec4(brushTex.get(brushUV).r * vec3(1,1,1), min(0.8,brushTex.get(brushUV).r));
 
 			if(brushUV.x < 0 || brushUV.x > 1 || brushUV.y < 0 || brushUV.y > 1 )
 				pixelColor = vec4(0);

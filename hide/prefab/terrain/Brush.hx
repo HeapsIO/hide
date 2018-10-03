@@ -1,0 +1,118 @@
+package hide.prefab.terrain;
+using Lambda;
+import hxd.Key as K;
+
+class Brush {
+	public var name : String;
+	public var size : Float;
+	public var strength : Float;
+	public var step : Float;
+	public var tex : h3d.mat.Texture;
+	public var bitmap : h2d.Bitmap;
+	public var texPath : String;
+	public var index : Int = -1;
+	public var brushMode : BrushMode;
+
+	public function new(){
+		brushMode = new BrushMode();
+	}
+
+	public function isValid() : Bool{
+		return ( brushMode.mode == Delete || (bitmap != null && tex != null && name != null && step > 0.0 && texPath != null));
+	}
+
+	public function scaleForTex(tileSize : Float, texResolution : Float){
+		var scale = size / ((tileSize / texResolution) * tex.width);
+		bitmap.setScale(scale);
+	}
+
+	public function drawTo( target : h3d.mat.Texture, pos : h3d.Vector, tileSize : Float, ?offset = 0){
+		var texSize = target.width + offset;
+		scaleForTex(tileSize, texSize);
+		bitmap.setPosition(
+						(pos.x * texSize - ( size / (tileSize / texSize) * 0.5 )),
+						(pos.y * texSize - ( size / (tileSize / texSize) * 0.5 )));
+		bitmap.drawTo(target);
+	}
+}
+
+enum Mode {
+	Paint;
+	Sculpt;
+	Delete;
+}
+
+class BrushMode {
+
+	public var accumulate = false;
+	public var substract = false;
+	public var mode = Paint;
+
+	public function new(){}
+}
+
+class BrushPreview {
+
+	var terrain : h3d.scene.pbr.terrain.Terrain;
+	var tiles : Array<TilePreviewMesh> = [];
+
+	public function new(terrain){
+		this.terrain = terrain;
+	}
+
+	public function addPreviewMeshAt(x : Int, y : Int, brush : Brush, brushPos : h3d.Vector) : TilePreviewMesh {
+		var tilePreview = null;
+		for(tile in tiles){
+			if(tile.used) continue;
+			tilePreview = tile;
+		}
+		if(tilePreview == null){
+			tilePreview = new TilePreviewMesh(terrain.grid, terrain);
+			tiles.push(tilePreview);
+		}
+		tilePreview.used = true;
+		tilePreview.heightMap = terrain.getTile(x,y).heightMap;
+		tilePreview.shader.heightMapSize = tilePreview.heightMap.width;
+		var pos = new h3d.Vector(x * terrain.tileSize, y * terrain.tileSize);
+		tilePreview.setPosition(pos.x, pos.y, pos.z + 0.1 * terrain.scaleZ);
+		tilePreview.visible = true;
+		tilePreview.shader.brushTex = brush.tex;
+		tilePreview.shader.brushSize =  brush.size;
+		tilePreview.shader.brushPos = brushPos;
+		return tilePreview;
+	}
+
+	public function reset(){
+		for(tile in tiles){
+			tile.used = false;
+			tile.visible = false;
+		}
+	}
+
+	public function refreshMesh(){
+		for(tile in tiles)
+			tile.primitive = terrain.grid;
+	}
+}
+
+class TilePreviewMesh extends h3d.scene.Mesh {
+	public var used = false;
+	public var heightMap : h3d.mat.Texture;
+	public var shader : hide.prefab.terrain.TilePreview;
+
+	public function new(prim, parent){
+		super(prim, null, parent);
+		material.setDefaultProps("ui");
+		material.shadows = false;
+		material.blendMode = Alpha;
+		material.color = new h3d.Vector(1,0,0,0.5);
+		shader = new hide.prefab.terrain.TilePreview();
+		material.mainPass.addShader(shader);
+	}
+
+	override function sync(ctx : h3d.impl.RenderContext) {
+		shader.heightMap = heightMap;
+		shader.heightMapSize = heightMap.width;
+		shader.primSize = Std.instance(parent, h3d.scene.pbr.terrain.Terrain).tileSize;
+	}
+}
