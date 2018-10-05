@@ -9,7 +9,7 @@ class GenerateIndex extends h3d.shader.ScreenShader {
 		@param var mask : Array<Vec4, 4>;
 
 		function fragment() {
-			var indexes = vec4(0);
+			var indexes = vec4(0,0,0,1);
 			var curMask = 0;
 			for(i in 0 ... weightCount){
 				var w = weightTextures.get(vec3(calculatedUV, i)).r;

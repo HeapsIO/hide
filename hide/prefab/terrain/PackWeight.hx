@@ -10,7 +10,6 @@ class PackWeight extends h3d.shader.ScreenShader {
 		@param var mask : Array<Vec4, 4>;
 
 		function fragment() {
-
 			pixelColor = vec4(0,0,0,1);
 			var curMaskIndex = 0;
 			for(i in 0 ... weightCount){

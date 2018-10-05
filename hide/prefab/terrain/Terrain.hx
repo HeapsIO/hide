@@ -1,6 +1,5 @@
 package hide.prefab.terrain;
 using Lambda;
-import hxd.Key as K;
 
 typedef SurfaceProps = {
 	albedo : String,
@@ -18,6 +17,7 @@ class Terrain extends Object3D {
 	public var cellSize = 1;
 	public var heightMapResolution : Int = 1;
 	public var weightMapResolution : Int = 1;
+	public var autoCreateTile = false;
 	var tmpSurfacesProps : Array<SurfaceProps> = [];
 	public var terrain : h3d.scene.pbr.terrain.Terrain;
 	var parallaxAmount = 0.0;
@@ -44,6 +44,7 @@ class Terrain extends Object3D {
 		parallaxMaxStep = obj.parallaxMaxStep == null ? 1 : obj.parallaxMaxStep;
 		heightBlendStrength = obj.heightBlendStrength == null ? 0 : obj.heightBlendStrength;
 		heightBlendSharpness = obj.heightBlendSharpness == null ? 0 : obj.heightBlendSharpness;
+		autoCreateTile = obj.autoCreateTile == null ? false : obj.autoCreateTile;
 	}
 
 	override function save() {
@@ -57,6 +58,7 @@ class Terrain extends Object3D {
 		obj.parallaxMaxStep = parallaxMaxStep;
 		obj.heightBlendStrength = heightBlendStrength;
 		obj.heightBlendSharpness = heightBlendSharpness;
+		obj.autoCreateTile = autoCreateTile;
 		var surfacesProps : Array<SurfaceProps> = [];
 		for(surface in terrain.surfaces){
 			var surfaceProps : SurfaceProps =
@@ -72,7 +74,6 @@ class Terrain extends Object3D {
 			surfacesProps.push(surfaceProps);
 		}
 		obj.surfaces = surfacesProps;
-
 		return obj;
 	}
 
@@ -91,10 +92,8 @@ class Terrain extends Object3D {
 		var dir = ctx.shared.currentPath.split(".l3d")[0] + "_terrain";
 
 		var packedWeightsTex = new h3d.mat.Texture(terrain.weightMapResolution, terrain.weightMapResolution, [Target], RGBA);
-
 		for(tile in terrain.tiles){
-			var engine = h3d.Engine.getCurrent();
-			engine.pushTarget(packedWeightsTex);
+			h3d.Engine.getCurrent().pushTarget(packedWeightsTex);
 			packWeight.shader.indexMap = tile.surfaceIndexMap;
 			packWeight.shader.weightTextures = tile.surfaceWeightArray;
 			packWeight.shader.weightCount = tile.surfaceWeights.length;
@@ -168,8 +167,7 @@ class Terrain extends Object3D {
 				if( tex.flags.has(Loading) || tile.surfaceIndexMap == null) haxe.Timer.delay(wait, 1);
 				else {
 					for(i in 0 ... tile.surfaceWeights.length){
-						var engine = h3d.Engine.getCurrent();
-						engine.pushTarget(tile.surfaceWeights[i]);
+						h3d.Engine.getCurrent().pushTarget(tile.surfaceWeights[i]);
 						unpackWeight.shader.indexMap = tile.surfaceIndexMap;
 						unpackWeight.shader.packedWeightTexture = tex;
 						unpackWeight.shader.index = i;
@@ -237,7 +235,6 @@ class Terrain extends Object3D {
 				terrain.generateSurfaceArray();
 				loadWeightTextures(ctx);
 				loadHeightTextures(ctx);
-
 				for(tile in terrain.tiles)
 					tile.blendEdges();
 			}
@@ -246,25 +243,9 @@ class Terrain extends Object3D {
 		}
 		waitAll();
 
-		#if editor
-		editor = new TerrainEditor(this);
-		#end
-
 		updateInstance(ctx);
 
 		return ctx;
-	}
-
-	function getCellCount(){
-		var resolution = Math.max(0.1, cellSize);
-		var cellCount = Math.ceil(Math.min(1000, tileSize / resolution));
-		return cellCount;
-	}
-
-	function getCellSize(){
-		var cellCount = getCellCount();
-		var finalCellSize = tileSize / cellCount;
-		return finalCellSize;
 	}
 
 	override function updateInstance( ctx: Context, ?propName : String ) {
@@ -301,12 +282,21 @@ class Terrain extends Object3D {
 		terrain.heightBlendStrength = heightBlendStrength;
 		terrain.heightBlendSharpness = heightBlendSharpness;
 
-		editor.update(propName);
-
-		/*for(tile in terrain.tiles){
-			tile.blendEdges();
-		}*/
+		if(editor != null) editor.update(propName);
 		#end
+	}
+
+
+	function getCellCount(){
+		var resolution = Math.max(0.1, cellSize);
+		var cellCount = Math.ceil(Math.min(1000, tileSize / resolution));
+		return cellCount;
+	}
+
+	function getCellSize(){
+		var cellCount = getCellCount();
+		var finalCellSize = tileSize / cellCount;
+		return finalCellSize;
 	}
 
 	#if editor
@@ -321,6 +311,7 @@ class Terrain extends Object3D {
 	override function edit( ctx : EditContext ) {
 
 		//super.edit(ctx);
+		if( editor == null ) editor = new TerrainEditor(this, ctx.properties.undo);
 
 		function loadTexture( ctx : hide.prefab.EditContext, propsName : String, ?wrap : h3d.mat.Data.Wrap){
 			var texture = ctx.rootContext.shared.loadTexture(propsName);
@@ -356,6 +347,7 @@ class Terrain extends Object3D {
 					<option value="Sculpt">Sculpt</option>
 					<option value="Delete">Delete</option>
 				</select></dd>
+				<dt>AutoCreate</dt><dd><input type="checkbox" field="autoCreateTile"/></dd>
 			</div>
 			<div class="group" name="Brush">
 				<dl>
@@ -377,6 +369,16 @@ class Terrain extends Object3D {
 		');
 
 		props.find(".save").click(function(_) {
+			var dir = ctx.rootContext.shared.currentPath.split(".l3d")[0] + "_terrain";
+			var dirPath = hide.Ide.inst.getPath(dir);
+			var files = sys.FileSystem.readDirectory(dirPath);
+			for(file in files){
+				var name = file.split(".heightMap")[0];
+				name = name.split(".png")[0];
+				var coords = name.split("_");
+				if(coords[2] != "h" && coords[2] != "i" && coords[2] != "w") continue;
+				sys.FileSystem.deleteFile(dirPath + "/" + file);
+			}
 			saveWeightTextures(ctx.rootContext);
 			saveHeightTextures(ctx.rootContext);
 		});

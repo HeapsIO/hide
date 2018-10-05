@@ -15,7 +15,7 @@ class TilePreview extends hxsl.Shader {
 
 		function vertex() {
 			var calculatedUV = input.position.xy / primSize;
-			var terrainUV = (calculatedUV * (heightMapSize - 2)) / heightMapSize;
+			var terrainUV = (calculatedUV * (heightMapSize - 1)) / heightMapSize;
 			terrainUV += 0.5 / heightMapSize;
 			transformedPosition += (vec3(0,0, heightMap.get(terrainUV).r) * global.modelView.mat3());
 		}
