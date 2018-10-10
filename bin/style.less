@@ -872,6 +872,78 @@ input[type=checkbox] {
 	}
 }
 
+/* Terrain editor */
+.terrain-brushes {
+	.brush {
+		display: inline-block;
+		padding : 6px;
+		position: relative;
+	}
+	.brush-preview {
+		@size: 45px;
+		background-size: @size @size;
+		width: @size;
+		height: @size;
+		outline: 4px solid #4a4a4a;
+	}
+	.brush-preview-selected {
+		@size: 45px;
+		background-size: @size @size;
+		width: @size;
+		height: @size;
+		outline: 4px solid #5897fb;
+	}
+	.tooltiptext {
+		visibility: hidden;
+		background-color: black;
+		color: #fff;
+		text-align: left;
+		border-radius: 6px;
+		position: absolute;
+		z-index: 1;
+		padding: 4px;
+		width: 90px;
+	}
+	.brush:hover .tooltiptext {
+		visibility: visible;
+	}
+}
+
+.terrain-surfaces {
+	.surface {
+		display: inline-block;
+		padding : 6px;
+		position: relative;
+	}
+	.surface-preview {
+		@size: 45px;
+		background-size: @size @size;
+		width: @size;
+		height: @size;
+		outline: 4px solid #4a4a4a;
+	}
+	.surface-preview-selected {
+		@size: 45px;
+		background-size: @size @size;
+		width: @size;
+		height: @size;
+		outline: 4px solid #5897fb;
+	}
+	.tooltiptext {
+		visibility: hidden;
+		background-color: black;
+		color: #fff;
+		text-align: left;
+		border-radius: 6px;
+		position: absolute;
+		z-index: 1;
+		padding: 4px;
+	}
+	.surface:hover .tooltiptext {
+		visibility: visible;
+	}
+}
+
 /* Golden Layout Fixes */
 
 .lm_header .lm_tabs {
@@ -910,7 +982,7 @@ body.hide-subview {
 			color: #555;
 		}
 	}
-	
+
 	.disabled {
 		a {
 			color: #533 !important;

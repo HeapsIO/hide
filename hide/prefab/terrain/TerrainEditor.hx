@@ -345,7 +345,6 @@ class TerrainEditor {
 		fetchPos.y = hxd.Math.clamp(fetchPos.y, 0, uvTexPixels.height - 1);
 		var pixel = h3d.Vector.fromColor(uvTexPixels.getPixel( Std.int(fetchPos.x), Std.int(fetchPos.y)));
 		var tiles = terrainPrefab.terrain.getVisibleTiles(@:privateAccess ctx.local3d.getScene().camera);
-		trace(pixel.z);
 		for(i in 0 ... tiles.length)
 			if( hxd.Math.ceil(pixel.z * 255) == i)
 				brushWorldPos = tiles[i].localToGlobal(new h3d.Vector(pixel.x * terrainPrefab.tileSize, pixel.y * terrainPrefab.tileSize, 0));
@@ -628,6 +627,7 @@ class TerrainEditor {
 				for(i in 0 ... tile.surfaceWeights.length){
 					tile.surfaceWeights[i] = new h3d.mat.Texture(terrainPrefab.weightMapResolution, terrainPrefab.weightMapResolution, [Target], R8);
 					tile.surfaceWeights[i].wrap = Clamp;
+					tile.surfaceWeights[i].preventAutoDispose();
 				}
 				for(i in 0 ... oldArray.length)
 					if( oldArray[i] != null) oldArray[i].dispose();
