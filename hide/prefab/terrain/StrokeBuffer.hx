@@ -20,6 +20,11 @@ class StrokeBuffer {
 		used = false;
 	}
 
+	public function dispose(){
+		if(tex != null) tex.dispose();
+		if(tempTex != null) tempTex.dispose();
+	}
+
 	public function refresh(size){
 		if(tex != null) tex.dispose();
 		if(tempTex != null) tempTex.dispose();
@@ -46,6 +51,10 @@ class StrokeBufferArray{
 	public function new(format, texSize){
 		this.format = format;
 		this.texSize = texSize;
+	}
+
+	public function dispose(){
+		for(strokebuffer in strokeBuffers) strokebuffer.dispose();
 	}
 
 	public function getStrokeBuffer(x, y){

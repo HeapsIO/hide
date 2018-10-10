@@ -16,7 +16,6 @@ class CustomRenderer extends h3d.scene.Renderer {
 	}
 
 	override function render() {
-		clear(0, 1, 0);
 		defaultPass.draw(get(passName));
 	}
 }

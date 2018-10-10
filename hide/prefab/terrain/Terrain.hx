@@ -122,6 +122,7 @@ class Terrain extends Object3D {
 
 	function loadHeightTextures(ctx : Context){
 		var dir = getTerrainDir(ctx);
+		if(!sys.FileSystem.isDirectory(hide.Ide.inst.getPath(dir))) sys.FileSystem.createDirectory(hide.Ide.inst.getPath(dir));
 		var files = sys.FileSystem.readDirectory(hide.Ide.inst.getPath(dir));
 		for(file in files){
 			var texName = file.split(".heightMap")[0];
@@ -140,8 +141,8 @@ class Terrain extends Object3D {
 
 	function loadWeightTextures(ctx : Context){
 		var dir = ctx.shared.currentPath.split(".l3d")[0] + "_terrain";
+		if(!sys.FileSystem.isDirectory(hide.Ide.inst.getPath(dir))) sys.FileSystem.createDirectory(hide.Ide.inst.getPath(dir));
 		var files = sys.FileSystem.readDirectory(hide.Ide.inst.getPath(dir));
-
 		for(file in files){
 			var texName = file.split(".png")[0];
 			var coords = texName.split("_");
@@ -349,7 +350,10 @@ class Terrain extends Object3D {
 			terrain.heightMapResolution = heightMapResolution;
 			terrain.weightMapResolution = weightMapResolution;
 			terrain.refreshTex();
-			if( editor != null ) editor.refresh();
+			for(tile in terrain.tiles)
+				tile.blendEdges();
+			if( editor != null )
+				editor.refresh();
 		});
 
 		ctx.properties.add(props, this, function(pname) {

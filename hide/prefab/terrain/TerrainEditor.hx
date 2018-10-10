@@ -49,6 +49,7 @@ class TerrainEditor {
 	var paintRevertDatas : Array<TileRevertData> = [];
 	var uvTexPixels : hxd.Pixels;
 	var uvTex : h3d.mat.Texture;
+	var uvTexRes = 0.5;
 	var customScene : h3d.scene.Scene;
 	var customRenderer : hide.prefab.terrain.CustomRenderer;
 
@@ -70,6 +71,13 @@ class TerrainEditor {
 		#end
 	}
 
+	public function dispose(){
+		if(uvTex != null) uvTex.dispose();
+		heightStrokeBufferArray.dispose();
+		weightStrokeBufferArray.dispose();
+		brushPreview.dispose();
+	}
+
 	public function update( ?propName : String ) {
 		if(propName == "editor.currentSurface.tilling"
 		|| propName == "editor.currentSurface.offset.x"
@@ -89,9 +97,13 @@ class TerrainEditor {
 		var engine = h3d.Engine.getCurrent();
 		var mainScene = @:privateAccess ctx.local3d.getScene();
 
-		if(uvTex == null || uvTex.width != Std.int(h3d.Engine.getCurrent().width * 0.5) || uvTex.height != Std.int(h3d.Engine.getCurrent().height * 0.5)){
-			if(uvTex != null) uvTex.dispose();
-			uvTex = new h3d.mat.Texture( Std.int(h3d.Engine.getCurrent().width * 0.5),  Std.int(h3d.Engine.getCurrent().height * 0.5), [Target], RGBA);
+		if(uvTex == null || uvTex.width != Std.int(h3d.Engine.getCurrent().width * uvTexRes) || uvTex.height != Std.int(h3d.Engine.getCurrent().height * uvTexRes)){
+			if(uvTex != null) {
+				uvTex.depthBuffer.dispose();
+				uvTex.dispose();
+			}
+			uvTex = new h3d.mat.Texture( Std.int(h3d.Engine.getCurrent().width * uvTexRes),  Std.int(h3d.Engine.getCurrent().height * uvTexRes), [Target], RGBA);
+			uvTex.depthBuffer = new h3d.mat.DepthBuffer(uvTex.width, uvTex.height);
 		}
 
 		customScene.addChild(terrainPrefab.terrain);
@@ -105,6 +117,7 @@ class TerrainEditor {
 			p.addShader(new h3d.shader.BaseMesh());
 			p.depthTest = Less;
 			p.culling = None;
+			p.depthWrite = true;
 			tile.material.addPass(p);
 			var s = new hide.prefab.terrain.CustomUV();
 			s.primSize = terrainPrefab.terrain.tileSize;
@@ -116,7 +129,7 @@ class TerrainEditor {
 
 		engine.begin();
 		engine.pushTarget(uvTex);
-		engine.clear(0,1,0);
+		engine.clear(0xffffff,1,0);
 		customScene.render(engine);
 		engine.popTarget();
 
@@ -327,11 +340,12 @@ class TerrainEditor {
 	function getBrushWorldPosFromTex(worldPos : h3d.Vector, ctx : Context) : h3d.Vector {
 		var screenPos = worldToScreen(worldPos.x, worldPos.y, worldPos.z, ctx);
 		var brushWorldPos : h3d.Vector = worldPos.clone();
-		var fetchPos = new h2d.col.Point(hxd.Math.floor(screenPos.x * 0.5), hxd.Math.floor(screenPos.y * 0.5));
+		var fetchPos = new h2d.col.Point(hxd.Math.floor(screenPos.x * uvTexRes), hxd.Math.floor(screenPos.y * uvTexRes));
 		fetchPos.x = hxd.Math.clamp(fetchPos.x, 0, uvTexPixels.width - 1);
 		fetchPos.y = hxd.Math.clamp(fetchPos.y, 0, uvTexPixels.height - 1);
 		var pixel = h3d.Vector.fromColor(uvTexPixels.getPixel( Std.int(fetchPos.x), Std.int(fetchPos.y)));
 		var tiles = terrainPrefab.terrain.getVisibleTiles(@:privateAccess ctx.local3d.getScene().camera);
+		trace(pixel.z);
 		for(i in 0 ... tiles.length)
 			if( hxd.Math.ceil(pixel.z * 255) == i)
 				brushWorldPos = tiles[i].localToGlobal(new h3d.Vector(pixel.x * terrainPrefab.tileSize, pixel.y * terrainPrefab.tileSize, 0));
