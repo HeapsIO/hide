@@ -47,7 +47,7 @@ class TerrainEditor {
 	var undo : hide.ui.UndoHistory;
 	var tileTrashBin : Array<h3d.scene.pbr.terrain.Tile> = [];
 	var paintRevertDatas : Array<TileRevertData> = [];
-	var uvTexPixels : hxd.Pixels;
+	var uvTexPixels : hxd.Pixels.PixelsFloat;
 	var uvTex : h3d.mat.Texture;
 	var uvTexRes = 0.5;
 	var customScene : h3d.scene.Scene;
@@ -102,7 +102,7 @@ class TerrainEditor {
 				uvTex.depthBuffer.dispose();
 				uvTex.dispose();
 			}
-			uvTex = new h3d.mat.Texture( Std.int(h3d.Engine.getCurrent().width * uvTexRes),  Std.int(h3d.Engine.getCurrent().height * uvTexRes), [Target], RGBA);
+			uvTex = new h3d.mat.Texture( Std.int(h3d.Engine.getCurrent().width * uvTexRes),  Std.int(h3d.Engine.getCurrent().height * uvTexRes), [Target], RGBA32F);
 			uvTex.depthBuffer = new h3d.mat.DepthBuffer(uvTex.width, uvTex.height);
 		}
 
@@ -123,13 +123,14 @@ class TerrainEditor {
 			s.primSize = terrainPrefab.terrain.tileSize;
 			s.heightMapSize = terrainPrefab.heightMapResolution;
 			s.heightMap = tile.heightMap;
-			s.tileIndex = i / 255.0;
+			s.tileIndex = i;
 			p.addShader(s);
 		}
 
 		engine.begin();
 		engine.pushTarget(uvTex);
 		engine.clear(0xffffff,1,0);
+		engine.clearF(new h3d.Vector(-1, -1, -1, -1),1,0);
 		customScene.render(engine);
 		engine.popTarget();
 
@@ -343,10 +344,11 @@ class TerrainEditor {
 		var fetchPos = new h2d.col.Point(hxd.Math.floor(screenPos.x * uvTexRes), hxd.Math.floor(screenPos.y * uvTexRes));
 		fetchPos.x = hxd.Math.clamp(fetchPos.x, 0, uvTexPixels.width - 1);
 		fetchPos.y = hxd.Math.clamp(fetchPos.y, 0, uvTexPixels.height - 1);
-		var pixel = h3d.Vector.fromColor(uvTexPixels.getPixel( Std.int(fetchPos.x), Std.int(fetchPos.y)));
+		var pixel = uvTexPixels.getPixelF( Std.int(fetchPos.x), Std.int(fetchPos.y));
 		var tiles = terrainPrefab.terrain.getVisibleTiles(@:privateAccess ctx.local3d.getScene().camera);
+		trace(pixel.z);
 		for(i in 0 ... tiles.length)
-			if( hxd.Math.ceil(pixel.z * 255) == i)
+			if( hxd.Math.ceil(pixel.z) == i)
 				brushWorldPos = tiles[i].localToGlobal(new h3d.Vector(pixel.x * terrainPrefab.tileSize, pixel.y * terrainPrefab.tileSize, 0));
 		return brushWorldPos;
 	}
