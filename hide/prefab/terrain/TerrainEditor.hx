@@ -2,6 +2,14 @@ package hide.prefab.terrain;
 using Lambda;
 import hxd.Key as K;
 
+class TerrainRevertData {
+	public var surfaceIndex : Int;
+	public var surface : h3d.scene.pbr.terrain.Surface;
+	public function new(){
+
+	}
+}
+
 class TileRevertData{
 	public var x : Int;
 	public var y : Int;
@@ -9,6 +17,8 @@ class TileRevertData{
 	public var nextHeightMapPixels : hxd.Pixels.PixelsFloat;
 	public var prevWeightMapPixels : Array<hxd.Pixels> = [];
 	public var nextWeightMapPixels : Array<hxd.Pixels> = [];
+	public var prevSurfaceIndexMapPixels : hxd.Pixels;
+	public var nextSurfaceIndexMapPixels : hxd.Pixels;
 	public function new(x, y){
 		this.x = x;
 		this.y = y;
@@ -32,6 +42,7 @@ class TerrainEditor {
 	var normalizeWeight = new h3d.pass.ScreenFx(new hide.prefab.terrain.NormalizeWeight());
 	var clampWeight = new h3d.pass.ScreenFx(new hide.prefab.terrain.ClampWeight());
 	var generateIndex = new h3d.pass.ScreenFx(new hide.prefab.terrain.GenerateIndex());
+	var swapIndex = new h3d.pass.ScreenFx(new hide.prefab.terrain.SwapIndex());
 	var terrainPrefab : hide.prefab.terrain.Terrain;
 	var undo : hide.ui.UndoHistory;
 	var tileTrashBin : Array<h3d.scene.pbr.terrain.Tile> = [];
@@ -39,10 +50,12 @@ class TerrainEditor {
 	var uvTexPixels : hxd.Pixels;
 	var uvTex : h3d.mat.Texture;
 	var customScene : h3d.scene.Scene;
+	var customRenderer : hide.prefab.terrain.CustomRenderer;
 
 	public function new(terrainPrefab, undo : hide.ui.UndoHistory){
 		this.terrainPrefab = terrainPrefab;
 		this.undo = undo;
+		autoCreateTile = terrainPrefab.autoCreateTile;
 		brushPreview = new hide.prefab.terrain.Brush.BrushPreview(terrainPrefab.terrain);
 		brushPreview.refreshMesh();
 		currentBrush = new Brush();
@@ -50,17 +63,26 @@ class TerrainEditor {
 		heightStrokeBufferArray = new hide.prefab.terrain.StrokeBuffer.StrokeBufferArray(RGBA32F, terrainPrefab.heightMapResolution + 1);
 		weightStrokeBufferArray = new hide.prefab.terrain.StrokeBuffer.StrokeBufferArray(R8, terrainPrefab.weightMapResolution);
 		customScene = new h3d.scene.Scene();
+		customRenderer = new hide.prefab.terrain.CustomRenderer("terrainUV");
+		customScene.renderer = customRenderer;
+		#if debug
+		customScene.checkPasses = false;
+		#end
 	}
 
 	public function update( ?propName : String ) {
-		if(propName == "tileSize" || propName == "cellSize"){
-			brushPreview.refreshMesh();
-		}
-		else if(propName == "heightMapResolution" || propName == "weightMapResolution"){
-			heightStrokeBufferArray.refresh(terrainPrefab.heightMapResolution + 1);
-			weightStrokeBufferArray.refresh(terrainPrefab.weightMapResolution);
-		}
+		if(propName == "editor.currentSurface.tilling"
+		|| propName == "editor.currentSurface.offset.x"
+		|| propName == "editor.currentSurface.offset.y"
+		|| propName == "editor.currentSurface.angle")
+			terrainPrefab.terrain.updateSurfaceParams();
 		autoCreateTile = terrainPrefab.autoCreateTile;
+	}
+
+	public function refresh(){
+		brushPreview.refreshMesh();
+		heightStrokeBufferArray.refresh(terrainPrefab.heightMapResolution + 1);
+		weightStrokeBufferArray.refresh(terrainPrefab.weightMapResolution);
 	}
 
 	function renderTerrainUV(ctx : Context){
@@ -76,12 +98,13 @@ class TerrainEditor {
 		customScene.camera = mainScene.camera;
 		brushPreview.reset();
 
-		var tiles = terrainPrefab.terrain.tiles;
+		var tiles = terrainPrefab.terrain.getVisibleTiles(mainScene.camera);
 		for(i in 0 ... tiles.length){
 			var tile = tiles[i];
-			var p = new h3d.mat.Pass("overlay");
+			var p = new h3d.mat.Pass("terrainUV");
 			p.addShader(new h3d.shader.BaseMesh());
-			p.depthTest = LessEqual;
+			p.depthTest = Less;
+			p.culling = None;
 			tile.material.addPass(p);
 			var s = new hide.prefab.terrain.CustomUV();
 			s.primSize = terrainPrefab.terrain.tileSize;
@@ -98,7 +121,7 @@ class TerrainEditor {
 		engine.popTarget();
 
 		for(tile in tiles)
-			tile.material.removePass(tile.material.getPass("overlay"));
+			tile.material.removePass(tile.material.getPass("terrainUV"));
 
 		mainScene.addChild(terrainPrefab.terrain);
 		customScene.camera = null;
@@ -298,30 +321,34 @@ class TerrainEditor {
 		var s2d = @:privateAccess ctx.local2d.getScene();
 		var camera = @:privateAccess ctx.local3d.getScene().camera;
 		var pt = camera.project(wx, wy, wz, s2d.width, s2d.height);
-		return new h2d.col.Point(pt.x, pt.y);
+		return new h2d.col.Point( hxd.Math.abs(pt.x), hxd.Math.abs(pt.y));
 	}
 
-	function getBrushWorldPosFromTex(screenPos : h2d.col.Point, ctx : Context) : h3d.Vector {
-		var brushWorldPos : h3d.Vector = null;
-		if(hxd.Math.floor(screenPos.x * 0.5) >= uvTexPixels.width || hxd.Math.floor(screenPos.y * 0.5) >= uvTexPixels.height) return null;
-		var pixel = h3d.Vector.fromColor(uvTexPixels.getPixel( hxd.Math.floor(screenPos.x * 0.5) , hxd.Math.floor(screenPos.y * 0.5)));
-		for(i in 0 ... terrainPrefab.terrain.tiles.length)
+	function getBrushWorldPosFromTex(worldPos : h3d.Vector, ctx : Context) : h3d.Vector {
+		var screenPos = worldToScreen(worldPos.x, worldPos.y, worldPos.z, ctx);
+		var brushWorldPos : h3d.Vector = worldPos.clone();
+		var fetchPos = new h2d.col.Point(hxd.Math.floor(screenPos.x * 0.5), hxd.Math.floor(screenPos.y * 0.5));
+		fetchPos.x = hxd.Math.clamp(fetchPos.x, 0, uvTexPixels.width - 1);
+		fetchPos.y = hxd.Math.clamp(fetchPos.y, 0, uvTexPixels.height - 1);
+		var pixel = h3d.Vector.fromColor(uvTexPixels.getPixel( Std.int(fetchPos.x), Std.int(fetchPos.y)));
+		var tiles = terrainPrefab.terrain.getVisibleTiles(@:privateAccess ctx.local3d.getScene().camera);
+		for(i in 0 ... tiles.length)
 			if( hxd.Math.ceil(pixel.z * 255) == i)
-				brushWorldPos = terrainPrefab.terrain.tiles[i].localToGlobal(new h3d.Vector(pixel.x * terrainPrefab.tileSize, pixel.y * terrainPrefab.tileSize, 0));
+				brushWorldPos = tiles[i].localToGlobal(new h3d.Vector(pixel.x * terrainPrefab.tileSize, pixel.y * terrainPrefab.tileSize, 0));
 		return brushWorldPos;
 	}
 
 	function drawBrushPreview( worldPos : h3d.Vector, ctx : Context){
 		if(currentBrush.brushMode.mode != Paint && currentBrush.brushMode.mode != Sculpt) return;
 		brushPreview.reset();
-		var brushWorldPos = uvTexPixels == null ? worldPos : getBrushWorldPosFromTex(worldToScreen(worldPos.x,worldPos.y, worldPos.z, ctx), ctx);
+		var brushWorldPos = uvTexPixels == null ? worldPos : getBrushWorldPosFromTex(worldPos, ctx);
 		if(brushWorldPos == null) return;
 		var tiles = terrainPrefab.terrain.getTiles(brushWorldPos, currentBrush.size / 2.0 , false);
 		for(i in 0 ... tiles.length){
 			var tile = tiles[i];
 			var brushPos = tile.globalToLocal(brushWorldPos.clone());
 			brushPos.scale3(1.0 / terrainPrefab.tileSize);
-			brushPreview.addPreviewMeshAt(tile.tileX, tile.tileY, currentBrush, brushPos);
+			brushPreview.addPreviewMeshAt(tile.tileX, tile.tileY, currentBrush, brushPos, ctx);
 		}
 	}
 
@@ -375,7 +402,7 @@ class TerrainEditor {
 	}
 
 	public function deleteTile(pos : h3d.Vector, ctx : Context){
-		var brushWorldPos = uvTexPixels == null ? pos : getBrushWorldPosFromTex(worldToScreen(pos.x, pos.y, pos.z, ctx), ctx);
+		var brushWorldPos = uvTexPixels == null ? pos : getBrushWorldPosFromTex(pos, ctx);
 		if(brushWorldPos == null) return;
 		var tile = terrainPrefab.terrain.getTileAtWorldPos(brushWorldPos);
 		if(tile == null) return;
@@ -385,9 +412,14 @@ class TerrainEditor {
 
 	public function drawSurface(pos : h3d.Vector, ctx : Context){
 		if(currentBrush.index == -1) return;
-		var brushWorldPos = uvTexPixels == null ? pos : getBrushWorldPosFromTex(worldToScreen(pos.x, pos.y, pos.z, ctx), ctx);
+		var brushWorldPos = uvTexPixels == null ? pos : getBrushWorldPosFromTex(pos, ctx);
 		if(brushWorldPos == null) return;
+		var c = terrainPrefab.terrain.tiles.length;
 		var tiles = terrainPrefab.terrain.getTiles(pos, currentBrush.size / 2.0, autoCreateTile);
+		if(c != terrainPrefab.terrain.tiles.length){
+			renderTerrainUV(ctx);
+			brushWorldPos = getBrushWorldPosFromTex(pos, ctx);
+		}
 		for(tile in tiles){
 			var strokeBuffer = weightStrokeBufferArray.getStrokeBuffer(tile.tileX, tile.tileY);
 			if(strokeBuffer.used == false){
@@ -417,9 +449,14 @@ class TerrainEditor {
 	}
 
 	public function drawHeight(pos : h3d.Vector, ctx : Context){
-		var brushWorldPos = uvTexPixels == null ? pos : getBrushWorldPosFromTex(worldToScreen(pos.x, pos.y, pos.z, ctx), ctx);
+		var brushWorldPos = uvTexPixels == null ? pos : getBrushWorldPosFromTex(pos, ctx);
 		if(brushWorldPos == null) return;
+		var c = terrainPrefab.terrain.tiles.length;
 		var tiles = terrainPrefab.terrain.getTiles(brushWorldPos, currentBrush.size / 2.0, autoCreateTile);
+		if(c != terrainPrefab.terrain.tiles.length){
+			renderTerrainUV(ctx);
+			brushWorldPos = getBrushWorldPosFromTex(pos, ctx);
+		}
 		for(tile in tiles){
 			var localPos = tile.globalToLocal(brushWorldPos.clone());
 			localPos.scale3(1.0 / terrainPrefab.tileSize);
@@ -444,12 +481,13 @@ class TerrainEditor {
 			interactive.cancelEvents = false;
 
 			interactive.onWheel = function(e) {
+				var worldPos = screenToWorld(s2d.mouseX, s2d.mouseY, ctx).toVector();
 				renderTerrainUV(ctx);
+				drawBrushPreview(worldPos, ctx);
 			};
 
 			interactive.onPush = function(e) {
 				var worldPos = screenToWorld(s2d.mouseX, s2d.mouseY, ctx).toVector();
-				var screenPos = new h2d.col.Point(s2d.mouseX, s2d.mouseY);
 				if(K.isDown( K.MOUSE_LEFT)){
 					e.propagate = false;
 					if(currentBrush.isValid()){
@@ -464,7 +502,6 @@ class TerrainEditor {
 
 			interactive.onRelease = function(e) {
 				var worldPos = screenToWorld(s2d.mouseX, s2d.mouseY, ctx).toVector();
-				var screenPos = new h2d.col.Point(s2d.mouseX, s2d.mouseY);
 				remainingDist = 0;
 				lastPos = null;
 				applyStrokeBuffers();
@@ -475,7 +512,6 @@ class TerrainEditor {
 
 			interactive.onMove = function(e) {
 				var worldPos = screenToWorld(s2d.mouseX, s2d.mouseY, ctx).toVector();
-				var screenPos = new h2d.col.Point(s2d.mouseX, s2d.mouseY);
 				if(K.isDown( K.MOUSE_LEFT)){
 					e.propagate = false;
 					if(currentBrush.isValid()){
@@ -493,5 +529,295 @@ class TerrainEditor {
 			if(interactive != null) interactive.remove();
 			brushPreview.reset();
 		}
+	}
+
+	function removeSurface(index :Int, onChange : Void -> Void){
+
+		var terrainRevertData = new TerrainRevertData();
+		var tileRevertDatas = new Array<TileRevertData>();
+		for(tile in terrainPrefab.terrain.tiles)
+			tileRevertDatas.push(new TileRevertData(tile.tileX, tile.tileY));
+
+		var oldIndexes : Array<h3d.Vector> = [];
+		var newIndexes : Array<h3d.Vector> = [];
+		for(i in 0 ... terrainPrefab.terrain.surfaces.length)
+			oldIndexes.push(new h3d.Vector(i));
+		var offset = 0;
+		for(i in 0 ... terrainPrefab.terrain.surfaces.length){
+			if(i == index) {
+				offset = -1;
+				newIndexes.push(new h3d.Vector(0));
+			}
+			else
+				newIndexes.push(new h3d.Vector(i + offset));
+		}
+
+		swapIndex.shader.USE_ARRAY = true;
+		swapIndex.shader.INDEX_COUNT = oldIndexes.length;
+		swapIndex.shader.oldIndexes = oldIndexes;
+		swapIndex.shader.newIndexes = newIndexes;
+		var newSurfaceIndexMap = new h3d.mat.Texture(terrainPrefab.weightMapResolution, terrainPrefab.weightMapResolution, [Target], RGBA);
+		for(i in 0 ... terrainPrefab.terrain.tiles.length){
+			var tile = terrainPrefab.terrain.tiles[i];
+			var revert = tileRevertDatas[i];
+			revert.prevSurfaceIndexMapPixels = tile.surfaceIndexMap.capturePixels();
+			for(w in tile.surfaceWeights) revert.prevWeightMapPixels.push(w.capturePixels());
+			swapIndex.shader.surfaceIndexMap = tile.surfaceIndexMap;
+			h3d.Engine.getCurrent().pushTarget(newSurfaceIndexMap);
+			swapIndex.render();
+			copyPass.apply(newSurfaceIndexMap, tile.surfaceIndexMap);
+			tile.surfaceWeights.remove(tile.surfaceWeights[index]);
+			tile.generateWeightArray();
+		}
+		terrainRevertData.surfaceIndex = index;
+		terrainRevertData.surface = terrainPrefab.terrain.surfaces[index];
+		terrainPrefab.terrain.surfaces.remove(terrainPrefab.terrain.surfaces[index]);
+		terrainPrefab.terrain.generateSurfaceArray();
+
+		for(i in 0 ... terrainPrefab.terrain.tiles.length){
+			var tile = terrainPrefab.terrain.tiles[i];
+			normalizeWeight.shader.weightTextures = tile.surfaceWeightArray;
+			normalizeWeight.shader.weightCount = tile.surfaceWeights.length;
+			normalizeWeight.shader.baseTexIndex = 0;
+			for(i in 0 ... tile.surfaceWeights.length){
+				normalizeWeight.shader.curTexIndex = i;
+				h3d.Engine.getCurrent().pushTarget(tile.surfaceWeights[i]);
+				normalizeWeight.render();
+			}
+			tile.generateWeightArray();
+
+			generateIndex.shader.weightTextures = tile.surfaceWeightArray;
+			generateIndex.shader.weightCount = tile.surfaceWeights.length;
+			h3d.Engine.getCurrent().pushTarget(tile.surfaceIndexMap);
+			generateIndex.render();
+
+			var revert = tileRevertDatas[i];
+			revert.nextSurfaceIndexMapPixels = tile.surfaceIndexMap.capturePixels();
+			for(w in tile.surfaceWeights) revert.nextWeightMapPixels.push(w.capturePixels());
+		}
+
+		onChange();
+
+		undo.change(Custom(function(undo) {
+			if(undo)
+				terrainPrefab.terrain.surfaces.insert(terrainRevertData.surfaceIndex, terrainRevertData.surface);
+			else
+				terrainPrefab.terrain.surfaces.remove(terrainRevertData.surface);
+			terrainPrefab.terrain.generateSurfaceArray();
+
+			for(revertData in tileRevertDatas){
+				var tile = terrainPrefab.terrain.getTile(revertData.x, revertData.y);
+				if(tile == null) continue;
+				var oldArray = tile.surfaceWeights;
+				tile.surfaceWeights = new Array<h3d.mat.Texture>();
+				tile.surfaceWeights = [for (i in 0...terrainPrefab.terrain.surfaces.length) null];
+				for(i in 0 ... tile.surfaceWeights.length){
+					tile.surfaceWeights[i] = new h3d.mat.Texture(terrainPrefab.weightMapResolution, terrainPrefab.weightMapResolution, [Target], R8);
+					tile.surfaceWeights[i].wrap = Clamp;
+				}
+				for(i in 0 ... oldArray.length)
+					if( oldArray[i] != null) oldArray[i].dispose();
+
+				tile.surfaceIndexMap.uploadPixels(undo ? revertData.prevSurfaceIndexMapPixels : revertData.nextSurfaceIndexMapPixels);
+
+				for(i in 0 ... tile.surfaceWeights.length)
+					tile.surfaceWeights[i].uploadPixels(undo ? revertData.prevWeightMapPixels[i] : revertData.nextWeightMapPixels[i]);
+
+				tile.generateWeightArray();
+				generateIndex.shader.weightTextures = tile.surfaceWeightArray;
+				generateIndex.shader.weightCount = tile.surfaceWeights.length;
+				h3d.Engine.getCurrent().pushTarget(tile.surfaceIndexMap);
+				generateIndex.render();
+			}
+			onChange();
+		}));
+
+	}
+
+	function loadTexture( ctx : hide.prefab.EditContext, propsName : String, ?wrap : h3d.mat.Data.Wrap){
+		var texture = ctx.rootContext.shared.loadTexture(propsName);
+		texture.wrap = wrap == null ? Repeat : wrap;
+		return texture;
+	}
+
+	inline function setRange(name, value, ctx : EditContext){
+		var field = Lambda.find(ctx.properties.fields, f->f.fname==name);
+		if(field != null) @:privateAccess field.range.value = value;
+	};
+
+	function refreshSurfaces(props : hide.Element, ctx : EditContext){
+		var surfacesContainer = props.find(".terrain-surfaces");
+		surfacesContainer.empty();
+		for( i in 0 ... terrainPrefab.terrain.surfaces.length ){
+			var surface = terrainPrefab.terrain.surfaces[i];
+			if(surface == null || surface.albedo == null) continue;
+			var texName = surface.albedo.name.split(".");
+			texName = texName[0].split("/");
+			texName = texName[texName.length - 1].split("_Albedo");
+			var label = texName[0];
+			var img : Element;
+			if( i == currentBrush.index) img = new Element('<div class="surface-preview-selected"></div>');
+			else img = new Element('<div class="surface-preview"></div>');
+			var imgPath = hide.Ide.inst.getPath(surface.albedo.name);
+			img.css("background-image", 'url("file://$imgPath")');
+			var surfaceElem = new Element('<div class=" surface"><span class="tooltiptext">$label</span></div>').prepend(img);
+			surfaceElem.contextmenu(function(e) {
+				e.preventDefault();
+				var cmi :Array< hide.comp.ContextMenu.ContextMenuItem> = [];
+				var delete : hide.comp.ContextMenu.ContextMenuItem = {label : "Delete"};
+				delete.click = function(){
+					removeSurface(i, function(){refreshSurfaces(props, ctx);});
+				};
+				cmi.push(delete);
+				var cm = new hide.comp.ContextMenu(cmi);
+			});
+			surfaceElem.click(function(e){
+				currentBrush.index = i;
+				currentSurface = terrainPrefab.terrain.getSurface(i);
+				refreshSurfaces(props, ctx);
+			});
+			surfacesContainer.append(surfaceElem);
+		}
+		if(currentSurface != null){
+			setRange("editor.currentSurface.tilling", currentSurface.tilling, ctx);
+			setRange("editor.currentSurface.offset.x", currentSurface.offset.x, ctx);
+			setRange("editor.currentSurface.offset.y", currentSurface.offset.y, ctx);
+			setRange("editor.currentSurface.angle", currentSurface.angle, ctx);
+		}
+	}
+
+	public function setupUI(props : hide.Element, ctx : EditContext){
+		props.append(
+			'<div class="group" name="Mode">
+				<dt>Accumulate</dt><dd><input type="checkbox" field="editor.currentBrush.brushMode.accumulate"/></dd>
+				<dt>Mode</dt>
+				<dd><select field="editor.currentBrush.brushMode.mode">
+					<option value="Paint">Paint</option>
+					<option value="Sculpt">Sculpt</option>
+					<option value="Delete">Delete</option>
+				</select></dd>
+				<dt>AutoCreate</dt><dd><input type="checkbox" field="autoCreateTile"/></dd>
+			</div>
+			<div class="group" name="Brush">
+				<div class="terrain-brushes"></div>
+				<dt>Size</dt><dd><input type="range" min="0.01" max="10" field="editor.currentBrush.size"/></dd>
+				<dt>Strength</dt><dd><input type="range" min="0" max="1" field="editor.currentBrush.strength"/></dd>
+				<dt>Step</dt><dd><input type="range" min="0.01" max="10" field="editor.currentBrush.step"/></dd>
+			</div>
+			<div class="group" name="Surface">
+				<dt>Add</dt><dd><input type="texturepath" field="editor.tmpTexPath"/></dd>
+				<div class="terrain-surfaces"></div>
+				<div class="group" name="Params">
+					<dt>Tilling</dt><dd><input type="range" min="0" max="10" field="editor.currentSurface.tilling"/></dd>
+					<dt>Offset X</dt><dd><input type="range" min="0" max="1" field="editor.currentSurface.offset.x"/></dd>
+					<dt>Offset Y</dt><dd><input type="range" min="0" max="1" field="editor.currentSurface.offset.y"/></dd>
+					<dt>Rotate</dt><dd><input type="range" min="0" max="360" field="editor.currentSurface.angle"/></dd>
+				</div>
+			</div>
+			<div align="center">
+				<input type="button" value="Save" class="save" />
+			</div>');
+
+			props.find(".save").click(function(_) {
+			var dir = ctx.rootContext.shared.currentPath.split(".l3d")[0] + "_terrain";
+			var dirPath = hide.Ide.inst.getPath(dir);
+			var files = sys.FileSystem.readDirectory(dirPath);
+			for(file in files){
+				var name = file.split(".heightMap")[0];
+				name = name.split(".png")[0];
+				var coords = name.split("_");
+				if(coords[2] != "h" && coords[2] != "i" && coords[2] != "w") continue;
+				sys.FileSystem.deleteFile(dirPath + "/" + file);
+			}
+			terrainPrefab.saveWeightTextures(ctx.rootContext);
+			terrainPrefab.saveHeightTextures(ctx.rootContext);
+		});
+
+		var brushes : Array<Dynamic> = ctx.scene.config.get("terrain.brushes");
+		var brushesContainer = props.find(".terrain-brushes");
+		function refreshBrushes(){
+			brushesContainer.empty();
+			for( brush in brushes){
+				var label = brush.name + "</br>Step : " + brush.step + "</br>Strength : " + brush.strength + "</br>Size : " + brush.size ;
+				var img : Element;
+				if( brush.name == currentBrush.name) img = new Element('<div class="brush-preview-selected"></div>');
+				else img = new Element('<div class="brush-preview"></div>');
+				img.css("background-image", 'url("file://${hide.Ide.inst.getPath(brush.texture)}")');
+				var brushElem = new Element('<div class="brush"><span class="tooltiptext">$label</span></div>').prepend(img);
+				brushElem.click(function(e){
+					currentBrush.size = brush.size;
+					currentBrush.strength = brush.strength;
+					currentBrush.step = brush.step;
+					currentBrush.texPath = hide.Ide.inst.getPath(brush.texture);
+					currentBrush.tex = loadTexture(ctx, currentBrush.texPath);
+					currentBrush.name = brush.name;
+					if(currentBrush.bitmap != null){
+						currentBrush.bitmap.tile.dispose();
+						currentBrush.bitmap.tile = h2d.Tile.fromTexture(currentBrush.tex);
+					}
+					else
+						currentBrush.bitmap = new h2d.Bitmap(h2d.Tile.fromTexture(currentBrush.tex));
+					currentBrush.bitmap.smooth = true;
+					currentBrush.bitmap.color = new h3d.Vector(currentBrush.strength);
+					refreshBrushes();
+				});
+				brushesContainer.append(brushElem);
+			}
+			if(currentBrush != null){
+				setRange("editor.currentBrush.size", currentBrush.size, ctx);
+				setRange("editor.currentBrush.strength", currentBrush.strength, ctx);
+				setRange("editor.currentBrush.step", currentBrush.step, ctx);
+			}
+		}
+		refreshBrushes();
+		refreshSurfaces(props, ctx);
+	}
+
+	public function onChange(ctx : EditContext, pname, props){
+		if(pname == "editor.tmpTexPath" && tmpTexPath != null){
+			var split : Array<String> = [];
+			var curTypeIndex = 0;
+			while( split.length <= 1 && curTypeIndex < textureType.length){
+				split = tmpTexPath.split(textureType[curTypeIndex]);
+				curTypeIndex++;
+			}
+			if(split.length > 1) {
+				var t : h3d.mat.Texture;
+				var name = split[0];
+				var albedo = ctx.rootContext.shared.loadTexture(name + textureType[0] + ".png");
+				var normal = ctx.rootContext.shared.loadTexture(name + textureType[1] + ".png");
+				var pbr = ctx.rootContext.shared.loadTexture(name + textureType[2] + ".png");
+				function wait() {
+					if( albedo.flags.has(Loading) || normal.flags.has(Loading)|| pbr.flags.has(Loading))
+						haxe.Timer.delay(wait, 1);
+					else{
+						if(terrainPrefab.terrain.getSurfaceFromTex(name + textureType[0] + ".png", name + textureType[1] + ".png", name + textureType[2] + ".png") == null){
+							terrainPrefab.terrain.addSurface(albedo, normal, pbr);
+							terrainPrefab.terrain.generateSurfaceArray();
+							refreshSurfaces(props, ctx);
+							var terrainRevertData = new TerrainRevertData();
+							terrainRevertData.surface = terrainPrefab.terrain.getSurface(terrainPrefab.terrain.surfaces.length - 1);
+							terrainRevertData.surfaceIndex = terrainPrefab.terrain.surfaces.length - 1;
+							undo.change(Custom(function(undo) {
+								if(undo){
+									terrainPrefab.terrain.surfaces.remove(terrainRevertData.surface);
+									if(currentSurface == terrainRevertData.surface) currentSurface = null;
+									currentBrush.index = Std.int(hxd.Math.min(terrainPrefab.terrain.surfaces.length - 1, currentBrush.index));
+								}
+								else
+									terrainPrefab.terrain.surfaces.push(terrainRevertData.surface);
+								terrainPrefab.terrain.generateSurfaceArray();
+								refreshSurfaces(props, ctx);
+							}));
+						}
+						albedo.dispose();
+						normal.dispose();
+						pbr.dispose();
+					}
+				}
+				wait();
+			}
+		}
+		tmpTexPath = null;
 	}
 }

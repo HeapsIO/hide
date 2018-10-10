@@ -11,12 +11,18 @@ typedef SurfaceProps = {
 	offsetY : Float
 };
 
+enum RenderMode {
+	PBR;
+	ShaderComplexity;
+	Checker;
+}
+
 class Terrain extends Object3D {
 
-	public var tileSize = 1;
-	public var cellSize = 1;
-	public var heightMapResolution : Int = 1;
-	public var weightMapResolution : Int = 1;
+	public var tileSize = 10.0;
+	public var cellSize = 1.0;
+	public var heightMapResolution : Int = 20;
+	public var weightMapResolution : Int = 20;
 	public var autoCreateTile = false;
 	var tmpSurfacesProps : Array<SurfaceProps> = [];
 	public var terrain : h3d.scene.pbr.terrain.Terrain;
@@ -30,6 +36,7 @@ class Terrain extends Object3D {
 
 	#if editor
 	var editor : hide.prefab.terrain.TerrainEditor;
+	public var renderMode : RenderMode = PBR;
 	#end
 
 	override function load( obj : Dynamic ) {
@@ -77,9 +84,13 @@ class Terrain extends Object3D {
 		return obj;
 	}
 
-	function saveHeightTextures(ctx : Context){
-		if(ctx.shared.currentPath == null) return;
-		var dir = ctx.shared.currentPath.split(".l3d")[0] + "_terrain";
+	function getTerrainDir(ctx : Context){
+		if(ctx.shared.currentPath == null) return null;
+		return ctx.shared.currentPath.split(".l3d")[0] + "_terrain";
+	}
+
+	public function saveHeightTextures(ctx : Context){
+		var dir = getTerrainDir(ctx);
 		for(tile in terrain.tiles){
 			var pixels = tile.heightMap.capturePixels();
 			var name = tile.tileX + "_" + tile.tileY + "_" + "h";
@@ -87,10 +98,8 @@ class Terrain extends Object3D {
 		}
 	}
 
-	function saveWeightTextures(ctx : Context){
-		if(ctx.shared.currentPath == null) return;
-		var dir = ctx.shared.currentPath.split(".l3d")[0] + "_terrain";
-
+	public function saveWeightTextures(ctx : Context){
+		var dir = getTerrainDir(ctx);
 		var packedWeightsTex = new h3d.mat.Texture(terrain.weightMapResolution, terrain.weightMapResolution, [Target], RGBA);
 		for(tile in terrain.tiles){
 			h3d.Engine.getCurrent().pushTarget(packedWeightsTex);
@@ -112,7 +121,7 @@ class Terrain extends Object3D {
 	}
 
 	function loadHeightTextures(ctx : Context){
-		var dir = ctx.shared.currentPath.split(".l3d")[0] + "_terrain";
+		var dir = getTerrainDir(ctx);
 		var files = sys.FileSystem.readDirectory(hide.Ide.inst.getPath(dir));
 		for(file in files){
 			var texName = file.split(".heightMap")[0];
@@ -141,7 +150,6 @@ class Terrain extends Object3D {
 			var y = Std.parseInt(coords[1]);
 			var tile = terrain.createTile(x, y);
 			var tex = ctx.loadTexture(dir + "/" + file);
-
 			function wait() {
 				if( tex.flags.has(Loading) ) haxe.Timer.delay(wait, 1);
 				else {
@@ -162,7 +170,6 @@ class Terrain extends Object3D {
 			var y = Std.parseInt(coords[1]);
 			var tile = terrain.createTile(x, y);
 			var tex = ctx.loadTexture(dir + "/" + file);
-
 			function wait() {
 				if( tex.flags.has(Loading) || tile.surfaceIndexMap == null) haxe.Timer.delay(wait, 1);
 				else {
@@ -196,6 +203,7 @@ class Terrain extends Object3D {
 		terrain.parallaxMaxStep = parallaxMaxStep;
 		terrain.heightBlendStrength = heightBlendStrength;
 		terrain.heightBlendSharpness = heightBlendSharpness;
+		terrain.name = "terrain";
 
 		ctx.local3d = terrain;
 		ctx.local3d.name = name;
@@ -242,9 +250,7 @@ class Terrain extends Object3D {
 				haxe.Timer.delay(waitAll, 1);
 		}
 		waitAll();
-
 		updateInstance(ctx);
-
 		return ctx;
 	}
 
@@ -252,30 +258,6 @@ class Terrain extends Object3D {
 		super.updateInstance(ctx, null);
 
 		#if editor
-		if(propName == "editor.currentSurface.tilling"
-		|| propName == "editor.currentSurface.offset.x"
-		|| propName == "editor.currentSurface.offset.y"
-		|| propName == "editor.currentSurface.angle"
-		|| propName == "editor.currentSurface.parallaxAmount")
-			terrain.updateSurfaceParams();
-
-		if(propName == "tileSize" || propName == "cellSize"){
-			terrain.cellCount = getCellCount();
-			terrain.cellSize = getCellSize();
-			terrain.tileSize = terrain.cellCount * terrain.cellSize;
-			terrain.refreshMesh();
-		}
-
-		if(propName == "heightMapResolution" || propName == "weightMapResolution"){
-			terrain.heightMapResolution = heightMapResolution;
-			terrain.weightMapResolution = weightMapResolution;
-			terrain.refreshTex();
-		}
-
-		if(propName == "terrain.correctUV"){
-			terrain.refreshMesh();
-		}
-
 		terrain.parallaxAmount = parallaxAmount / 10.0;
 		terrain.parallaxMinStep = parallaxMinStep;
 		terrain.parallaxMaxStep = parallaxMaxStep;
@@ -283,9 +265,20 @@ class Terrain extends Object3D {
 		terrain.heightBlendSharpness = heightBlendSharpness;
 
 		if(editor != null) editor.update(propName);
+		if(propName == "renderMode") updateRender();
 		#end
 	}
 
+	function updateRender(){
+		for(tile in terrain.tiles) tile.material.removePass(tile.material.getPass("overlay"));
+		terrain.showChecker = false;
+		terrain.showComplexity = false;
+		switch(renderMode){
+			case PBR:
+			case ShaderComplexity: terrain.showComplexity = true;
+			case Checker: terrain.showChecker = true;
+		}
+	}
 
 	function getCellCount(){
 		var resolution = Math.max(0.1, cellSize);
@@ -301,7 +294,7 @@ class Terrain extends Object3D {
 
 	#if editor
 	override function setSelected( ctx : Context, b : Bool ) {
-		editor.setSelected(ctx, b);
+		if( editor != null ) editor.setSelected(ctx, b);
 	}
 
 	override function getHideProps() : HideProps {
@@ -309,26 +302,29 @@ class Terrain extends Object3D {
 	}
 
 	override function edit( ctx : EditContext ) {
-
-		//super.edit(ctx);
-		if( editor == null ) editor = new TerrainEditor(this, ctx.properties.undo);
-
-		function loadTexture( ctx : hide.prefab.EditContext, propsName : String, ?wrap : h3d.mat.Data.Wrap){
-			var texture = ctx.rootContext.shared.loadTexture(propsName);
-			texture.wrap = wrap == null ? Repeat : wrap;
-			return texture;
-		}
-
-		var props = new hide.Element('
-			<div class="group" name="<Terrain>">
-				<dl>
-					<dt>Tile Size</dt><dd><input type="range" min="1" max="100" value="0" field="tileSize"/></dd>
-					<dt>Cell Size</dt><dd><input type="range" min="0.01" max="10" value="0" field="cellSize"/></dd>
-					<dt>WeightMap Resolution</dt><dd><input type="range" min="1" max="1000" value="0" step="1" field="weightMapResolution"/></dd>
-					<dt>HeightMap Resolution</dt><dd><input type="range" min="1" max="1000" value="0" step="1" field="heightMapResolution"/></dd>
-					<dt>Show Grid</dt><dd><input type="checkbox" field="terrain.showGrid"/></dd>
-					<dt>Visible</dt><dd><input type="checkbox" field="visible"/></dd>
-				</dl>
+		//super.edit(ctx); // Only need Pos-Z and Rot-Z
+		var props = new hide.Element('<div></div>');
+		if( editor == null )editor = new TerrainEditor(this, ctx.properties.undo);
+		editor.setupUI(props, ctx);
+		props.append('
+			<div class="group" name="Terrain"><dl>
+				<dt>Pos Z</dt><dd><input type="range" min="-100" max="100" value="0" field="z"/></dd>
+				<dt>Rotation Z</dt><dd><input type="range" min="-180" max="180" value="0" field="rotationZ" /></dd>
+				<dt>Show Grid</dt><dd><input type="checkbox" field="terrain.showGrid"/></dd>
+				<dt>Visible</dt><dd><input type="checkbox" field="visible"/></dd>
+				<dt>Mode</dt>
+				<dd><select field="renderMode">
+					<option value="PBR">PBR</option>
+					<option value="ShaderComplexity">Shader Complexity</option>
+					<option value="Checker">Checker</option>
+				</select></dd>
+			</dl></div>
+			<div class="group" name="Quality">
+				<dt>Tile Size</dt><dd><input type="range" min="1" max="100" value="0" field="tileSizeSet"/></dd>
+				<dt>Cell Size</dt><dd><input type="range" min="0.01" max="10" value="0" field="cellSizeSet"/></dd>
+				<dt>WeightMap Resolution</dt><dd><input type="range" min="1" max="1000" value="0" step="1" field="weightMapResolutionSet"/></dd>
+				<dt>HeightMap Resolution</dt><dd><input type="range" min="1" max="1000" value="0" step="1" field="heightMapResolutionSet"/></dd>
+				<div align="center"><input type="button" value="Apply" class="apply"/></div>
 			</div>
 			<div class="group" name="Blend">
 				<dt>HeightBlend</dt><dd><input type="range" min="0" max="1" field="heightBlendStrength"/></dd>
@@ -339,158 +335,33 @@ class Terrain extends Object3D {
 				<dt>Min Step</dt><dd><input type="range" min="1" max="256" value="0" step="1" field="parallaxMinStep"/></dd>
 				<dt>Max Step</dt><dd><input type="range" min="1" max="256" value="0" step="1" field="parallaxMaxStep"/></dd>
 			</div>
-			<div class="group" name="Mode">
-				<dt>Accumulate</dt><dd><input type="checkbox" field="editor.currentBrush.brushMode.accumulate"/></dd>
-				<dt>Mode</dt>
-				<dd><select field="editor.currentBrush.brushMode.mode">
-					<option value="Paint">Paint</option>
-					<option value="Sculpt">Sculpt</option>
-					<option value="Delete">Delete</option>
-				</select></dd>
-				<dt>AutoCreate</dt><dd><input type="checkbox" field="autoCreateTile"/></dd>
-			</div>
-			<div class="group" name="Brush">
-				<dl>
-					<div class="terrain-brushes"></div>
-					<dt>Size</dt><dd><input type="range" min="0.01" max="10" field="editor.currentBrush.size"/></dd>
-					<dt>Strength</dt><dd><input type="range" min="0" max="1" field="editor.currentBrush.strength"/></dd>
-					<dt>Step</dt><dd><input type="range" min="0.01" max="10" field="editor.currentBrush.step"/></dd>
-				</dl>
-			</div>
-			<div class="group" name="Surface">
-				<dt>Add</dt><dd><input type="texturepath" field="editor.tmpTexPath"/></dd>
-				<div class="terrain-surfaces"></div>
-				<dt>Tilling</dt><dd><input type="range" min="0" max="10" field="editor.currentSurface.tilling"/></dd>
-				<dt>Offset X</dt><dd><input type="range" min="0" max="1" field="editor.currentSurface.offset.x"/></dd>
-				<dt>Offset Y</dt><dd><input type="range" min="0" max="1" field="editor.currentSurface.offset.y"/></dd>
-				<dt>Rotate</dt><dd><input type="range" min="0" max="360" field="editor.currentSurface.angle"/></dd>
-			</div>
-			<div><dl><input type="button" value="Save" class="save"/><dl></div>
 		');
 
-		props.find(".save").click(function(_) {
-			var dir = ctx.rootContext.shared.currentPath.split(".l3d")[0] + "_terrain";
-			var dirPath = hide.Ide.inst.getPath(dir);
-			var files = sys.FileSystem.readDirectory(dirPath);
-			for(file in files){
-				var name = file.split(".heightMap")[0];
-				name = name.split(".png")[0];
-				var coords = name.split("_");
-				if(coords[2] != "h" && coords[2] != "i" && coords[2] != "w") continue;
-				sys.FileSystem.deleteFile(dirPath + "/" + file);
-			}
-			saveWeightTextures(ctx.rootContext);
-			saveHeightTextures(ctx.rootContext);
+		props.find(".apply").click(function(_) {
+			tileSize = @:privateAccess Lambda.find(ctx.properties.fields, f->f.fname=="tileSizeSet").range.value;
+			cellSize = @:privateAccess Lambda.find(ctx.properties.fields, f->f.fname=="cellSizeSet").range.value;
+			weightMapResolution = Std.int(@:privateAccess Lambda.find(ctx.properties.fields, f->f.fname=="weightMapResolutionSet").range.value);
+			heightMapResolution = Std.int(@:privateAccess Lambda.find(ctx.properties.fields, f->f.fname=="heightMapResolutionSet").range.value);
+			terrain.cellCount = getCellCount();
+			terrain.cellSize = getCellSize();
+			terrain.tileSize = terrain.cellCount * terrain.cellSize;
+			terrain.refreshMesh();
+			terrain.heightMapResolution = heightMapResolution;
+			terrain.weightMapResolution = weightMapResolution;
+			terrain.refreshTex();
+			if( editor != null ) editor.refresh();
 		});
-
-		inline function setRange(name, value){
-			var field = Lambda.find(ctx.properties.fields, f->f.fname==name);
-			if(field != null) @:privateAccess field.range.value = value;
-		};
-
-		var brushes : Array<Dynamic> = ctx.scene.config.get("terrain.brushes");
-		var brushesContainer = props.find(".terrain-brushes");
-		function refreshBrushes(){
-			brushesContainer.empty();
-			for( brush in brushes){
-				var label = brush.name + "<br/>Step : " + brush.step + "<br/>Strength : " + brush.strength + "<br/>Size : " + brush.size ;
-				var img : Element;
-				if( brush.name == editor.currentBrush.name) img = new Element('<div class="brush-preview-selected"></div>');
-				else img = new Element('<div class="brush-preview"></div>');
-				img.css("background-image", 'url("file://${hide.Ide.inst.getPath(brush.texture)}")');
-				var brushElem = new Element('<div class="brush"><span class="tooltiptext">$label</span></div>').prepend(img);
-				brushElem.click(function(e){
-					editor.currentBrush.size = brush.size;
-					editor.currentBrush.strength = brush.strength;
-					editor.currentBrush.step = brush.step;
-					editor.currentBrush.texPath = hide.Ide.inst.getPath(brush.texture);
-					editor.currentBrush.tex = loadTexture(ctx, editor.currentBrush.texPath);
-					editor.currentBrush.name = brush.name;
-					if(editor.currentBrush.bitmap != null){
-						editor.currentBrush.bitmap.tile.dispose();
-						editor.currentBrush.bitmap.tile = h2d.Tile.fromTexture(editor.currentBrush.tex);
-					}
-					else
-						editor.currentBrush.bitmap = new h2d.Bitmap(h2d.Tile.fromTexture(editor.currentBrush.tex));
-					editor.currentBrush.bitmap.smooth = true;
-					editor.currentBrush.bitmap.color = new h3d.Vector(editor.currentBrush.strength);
-					refreshBrushes();
-				});
-				brushesContainer.append(brushElem);
-			}
-			if(editor.currentBrush != null){
-				setRange("editor.currentBrush.size", editor.currentBrush.size);
-				setRange("editor.currentBrush.strength", editor.currentBrush.strength);
-				setRange("editor.currentBrush.step", editor.currentBrush.step);
-			}
-		}
-		refreshBrushes();
-
-		var surfacesContainer = props.find(".terrain-surfaces");
-		function refreshSurfaces(){
-			surfacesContainer.empty();
-			for( i in 0 ... terrain.surfaces.length ){
-				var surface = terrain.surfaces[i];
-				if(surface == null || surface.albedo == null) continue;
-				var label = surface.albedo.name;
-				var img : Element;
-				if( i == editor.currentBrush.index) img = new Element('<div class="surface-preview-selected"></div>');
-				else img = new Element('<div class="surface-preview"></div>');
-				var imgPath = hide.Ide.inst.getPath(surface.albedo.name);
-				img.css("background-image", 'url("file://$imgPath")');
-				var surfaceElem = new Element('<div class=" surface"><span class="tooltiptext">$label</span></div>').prepend(img);
-				surfaceElem.click(function(e){
-					editor.currentBrush.index = i;
-					editor.currentSurface = terrain.getSurface(i);
-					refreshSurfaces();
-				});
-				surfacesContainer.append(surfaceElem);
-			}
-			if(editor.currentSurface != null){
-				setRange("editor.currentSurface.tilling", editor.currentSurface.tilling);
-				setRange("editor.currentSurface.offset.x", editor.currentSurface.offset.x);
-				setRange("editor.currentSurface.offset.y", editor.currentSurface.offset.y);
-				setRange("editor.currentSurface.angle", editor.currentSurface.angle);
-			}
-		};
-		refreshSurfaces();
 
 		ctx.properties.add(props, this, function(pname) {
-			if(pname == "editor.tmpTexPath"){
-				var split : Array<String> = [];
-				var curTypeIndex = 0;
-				while( split.length <= 1 && curTypeIndex < editor.textureType.length){
-					split = editor.tmpTexPath.split(editor.textureType[curTypeIndex]);
-					curTypeIndex++;
-				}
-				if(split.length > 1) {
-					var t : h3d.mat.Texture;
-					var name = split[0];
-					var albedo = ctx.rootContext.shared.loadTexture(name + editor.textureType[0] + ".png");
-					var normal = ctx.rootContext.shared.loadTexture(name + editor.textureType[1] + ".png");
-					var pbr = ctx.rootContext.shared.loadTexture(name + editor.textureType[2] + ".png");
-					function wait() {
-						if( albedo.flags.has(Loading) || normal.flags.has(Loading)|| pbr.flags.has(Loading))
-							haxe.Timer.delay(wait, 1);
-						else{
-							if(terrain.getSurfaceFromTex(name + editor.textureType[0] + ".png", name + editor.textureType[1] + ".png", name + editor.textureType[2] + ".png") == null){
-								terrain.addSurface(albedo, normal, pbr);
-								terrain.generateSurfaceArray();
-								props.remove();
-								edit(ctx);
-							}
-							albedo.dispose();
-							normal.dispose();
-							pbr.dispose();
-						}
-					}
-					wait();
-				}
-			}
-			editor.tmpTexPath = null;
-
-		ctx.onChange(this, pname);
+			ctx.onChange(this, pname);
+			editor.onChange(ctx, pname, props);
 		});
+
+		// Reset values if not applied
+		@:privateAccess Lambda.find(ctx.properties.fields, f->f.fname=="tileSizeSet").range.value = tileSize;
+		@:privateAccess Lambda.find(ctx.properties.fields, f->f.fname=="cellSizeSet").range.value = cellSize;
+		@:privateAccess Lambda.find(ctx.properties.fields, f->f.fname=="weightMapResolutionSet").range.value = weightMapResolution;
+		@:privateAccess Lambda.find(ctx.properties.fields, f->f.fname=="heightMapResolutionSet").range.value = heightMapResolution;
 	}
 	#end
 

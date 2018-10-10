@@ -60,7 +60,10 @@ class BrushPreview {
 		this.terrain = terrain;
 	}
 
-	public function addPreviewMeshAt(x : Int, y : Int, brush : Brush, brushPos : h3d.Vector) : TilePreviewMesh {
+	public function addPreviewMeshAt(x : Int, y : Int, brush : Brush, brushPos : h3d.Vector, ctx : Context) : TilePreviewMesh {
+		var camera = @:privateAccess ctx.local3d.getScene().camera;
+		var dir = camera.pos.sub(new h3d.Vector(terrain.getAbsPos().tx, terrain.getAbsPos().ty, terrain.getAbsPos().tz));
+		var offsetDir = dir.z < 0 ? -1: 1;
 		var tilePreview = null;
 		for(tile in tiles){
 			if(tile.used) continue;
@@ -74,7 +77,7 @@ class BrushPreview {
 		tilePreview.heightMap = terrain.getTile(x,y).heightMap;
 		tilePreview.shader.heightMapSize = tilePreview.heightMap.width;
 		var pos = new h3d.Vector(x * terrain.tileSize, y * terrain.tileSize);
-		tilePreview.setPosition(pos.x, pos.y, pos.z + 0.1 * terrain.scaleZ);
+		tilePreview.setPosition(pos.x, pos.y, pos.z + 0.1 * terrain.scaleZ * offsetDir);
 		tilePreview.visible = true;
 		tilePreview.shader.brushTex = brush.tex;
 		tilePreview.shader.brushSize =  brush.size;
@@ -104,8 +107,7 @@ class TilePreviewMesh extends h3d.scene.Mesh {
 		super(prim, null, parent);
 		material.setDefaultProps("ui");
 		material.shadows = false;
-		material.blendMode = Alpha;
-		material.color = new h3d.Vector(1,0,0,0.5);
+		material.blendMode = AlphaAdd;
 		shader = new hide.prefab.terrain.TilePreview();
 		material.mainPass.addShader(shader);
 	}
