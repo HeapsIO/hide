@@ -3,6 +3,7 @@
 -lib hxbit
 -lib hscript
 -lib castle
+-lib hx3compat
 -D js-classic
 -D js-unflatten
 -D hscriptPos

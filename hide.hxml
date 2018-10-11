@@ -6,6 +6,5 @@ common.hxml
 --macro include("hxd.poly2tri")
 --macro include("hxd.clipper")
 --macro include("hxd.earcut")
--lib hx3compat
 -dce no
 -debug
