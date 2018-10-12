@@ -66,11 +66,11 @@ class ContextShared extends hxd.prefab.ContextShared {
 		sys.io.File.saveBytes(file, bytes);
 	}
 
-	override function savePrefabDat(file : String, ext:String, p : hide.prefab.Prefab, bytes : haxe.io.Bytes ){
+	override function savePrefabDat(file : String, ext:String, p : String, bytes : haxe.io.Bytes ){
 		var path = new haxe.io.Path(currentPath);
 		path.ext = "dat";
 		var datDir = path.toString();
-		var instanceDir = datDir + "/" + p.name;
+		var instanceDir = datDir + "/" + p;
 		if(!sys.FileSystem.isDirectory( hide.Ide.inst.getPath(datDir)))
 			sys.FileSystem.createDirectory( hide.Ide.inst.getPath(datDir));
 		if(!sys.FileSystem.isDirectory( hide.Ide.inst.getPath(instanceDir)))

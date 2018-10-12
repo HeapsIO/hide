@@ -131,6 +131,7 @@ class VolumetricLightmap extends Object3D {
 			previewSphere.setPosition(probePos.x, probePos.y, probePos.z);
 			var shader = new h3d.shader.pbr.SHDisplay();
 			shader.order = volumetricLightmap.shOrder;
+			shader.strength = volumetricLightmap.strength;
 			var coefCount = volumetricLightmap.getCoefCount();
 			shader.SIZE = coefCount;
 
@@ -147,7 +148,17 @@ class VolumetricLightmap extends Object3D {
 
 	override function updateInstance( ctx: Context, ?propName : String ) {
 		super.updateInstance(ctx, propName);
-		if( propName != "visible" && propName != "strength" && propName != "order" && propName != "displaySH_field") resetLightmap();
+
+		if(propName ==  "strength" && displaySH){
+			var previewSpheres = volumetricLightmap.findAll(c -> if(c.name == "_previewSphere") c else null);
+			for(ps in previewSpheres){
+				var mesh = Std.instance(ps, h3d.scene.Mesh);
+				var shader = mesh.material.mainPass.getShader(h3d.shader.pbr.SHDisplay);
+				if(shader != null) shader.strength = volumetricLightmap.strength;
+			}
+		}
+		if( propName != "visible" && propName != "strength" && propName != "order" && propName != "displaySH_field")
+			resetLightmap();
 	}
 
 	override function makeInstance(ctx:Context):Context {
@@ -165,8 +176,9 @@ class VolumetricLightmap extends Object3D {
 		volumetricLightmap.shOrder = order;
 		volumetricLightmap.useAlignedProb = false;
 		volumetricLightmap.strength = strength;
-		var bytes = ctx.shared.loadBakedBytes(name+".vlm");
-		if( bytes != null ) volumetricLightmap.load(bytes);
+
+		var res = ctx.shared.loadPrefabDat("sh", "bake", name);
+		if(res != null) volumetricLightmap.load(res.entry.getBytes());
 
 		#if editor
 		initProbes();
@@ -274,7 +286,7 @@ class VolumetricLightmap extends Object3D {
 		baker.onEnd = function() {
 			if( onEnd != null ) onEnd();
 			var bytes = volumetricLightmap.save();
-			ctx.rootContext.shared.saveBakedBytes(name+".vlm", bytes);
+			ctx.rootContext.shared.savePrefabDat("sh", "bake", name, bytes);
 		}
 	}
 

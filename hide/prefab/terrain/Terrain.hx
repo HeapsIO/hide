@@ -32,6 +32,11 @@ class Terrain extends Object3D {
 	var editor : hide.prefab.terrain.TerrainEditor;
 	#end
 
+	public function new(?parent) {
+		super(parent);
+		type = "terrain";
+	}
+
 	override function load( obj : Dynamic ) {
 		super.load(obj);
 		tileSize = obj.tileSize == null ? 1 : obj.tileSize;
@@ -81,7 +86,7 @@ class Terrain extends Object3D {
 		for(tile in terrain.tiles){
 			var pixels = tile.heightMap.capturePixels();
 			var name = tile.tileX + "_" + tile.tileY + "_" + "h";
-			ctx.shared.savePrefabDat(name, "heightMap", this, pixels.bytes);
+			ctx.shared.savePrefabDat(name, "heightMap", name, pixels.bytes);
 		}
 	}
 
@@ -97,17 +102,17 @@ class Terrain extends Object3D {
 			var pixels = packedWeightsTex.capturePixels();
 			var bytes = pixels.toPNG();
 			var name = tile.tileX + "_" + tile.tileY + "_" + "w";
-			ctx.shared.savePrefabDat(name, "png", this, bytes);
+			ctx.shared.savePrefabDat(name, "png", name, bytes);
 
 			var pixels = tile.surfaceIndexMap.capturePixels();
 			var bytes = pixels.toPNG();
 			var name = tile.tileX + "_" + tile.tileY + "_" + "i";
-			ctx.shared.savePrefabDat(name, "png", this, bytes);
+			ctx.shared.savePrefabDat(name, "png", name, bytes);
 		}
 	}
 
 	function loadTerrain(ctx : Context){
-		var resDir = ctx.shared.loadDir(this);
+		var resDir = ctx.shared.loadDir(name);
 		if(resDir == null) return;
 		for(res in resDir){
 			var file = res.name.split(".")[0];
