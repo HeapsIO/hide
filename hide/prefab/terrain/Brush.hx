@@ -79,7 +79,8 @@ class BrushPreview {
 			tiles.push(tilePreview);
 		}
 		tilePreview.used = true;
-		tilePreview.heightMap = terrain.getTile(x,y).heightMap;
+		var t = terrain.getTile(x,y);
+		tilePreview.heightMap = t == null ? null : t.heightMap;
 		tilePreview.shader.heightMapSize = tilePreview.heightMap.width;
 		var pos = new h3d.Vector(x * terrain.tileSize, y * terrain.tileSize);
 		tilePreview.setPosition(pos.x, pos.y, pos.z + 0.1 * terrain.scaleZ * offsetDir);

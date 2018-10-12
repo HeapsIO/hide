@@ -1,6 +1,14 @@
+
 package hide.prefab.terrain;
+#if editor
 using Lambda;
 import hxd.Key as K;
+
+enum RenderMode {
+	PBR;
+	ShaderComplexity;
+	Checker;
+}
 
 class TerrainRevertData {
 	public var surfaceIndex : Int;
@@ -52,6 +60,7 @@ class TerrainEditor {
 	var uvTexRes = 0.5;
 	var customScene : h3d.scene.Scene;
 	var customRenderer : hide.prefab.terrain.CustomRenderer;
+	var renderMode : RenderMode = PBR;
 
 	public function new(terrainPrefab, undo : hide.ui.UndoHistory){
 		this.terrainPrefab = terrainPrefab;
@@ -85,12 +94,24 @@ class TerrainEditor {
 		|| propName == "editor.currentSurface.angle")
 			terrainPrefab.terrain.updateSurfaceParams();
 		autoCreateTile = terrainPrefab.autoCreateTile;
+		if(propName == "terrain.renderMode") updateRender();
 	}
 
 	public function refresh(){
 		brushPreview.refreshMesh();
 		heightStrokeBufferArray.refresh(terrainPrefab.heightMapResolution + 1);
 		weightStrokeBufferArray.refresh(terrainPrefab.weightMapResolution);
+	}
+
+	function updateRender(){
+		for(tile in terrainPrefab.terrain.tiles) tile.material.removePass(tile.material.getPass("overlay"));
+		terrainPrefab.terrain.showChecker = false;
+		terrainPrefab.terrain.showComplexity = false;
+		switch(renderMode){
+			case PBR:
+			case ShaderComplexity: terrainPrefab.terrain.showComplexity = true;
+			case Checker: terrainPrefab.terrain.showChecker = true;
+		}
 	}
 
 	function renderTerrainUV(ctx : Context){
@@ -346,7 +367,6 @@ class TerrainEditor {
 		fetchPos.y = hxd.Math.clamp(fetchPos.y, 0, uvTexPixels.height - 1);
 		var pixel = uvTexPixels.getPixelF( Std.int(fetchPos.x), Std.int(fetchPos.y));
 		var tiles = terrainPrefab.terrain.getVisibleTiles(@:privateAccess ctx.local3d.getScene().camera);
-		trace(pixel.z);
 		for(i in 0 ... tiles.length)
 			if( hxd.Math.ceil(pixel.z) == i)
 				brushWorldPos = tiles[i].localToGlobal(new h3d.Vector(pixel.x * terrainPrefab.tileSize, pixel.y * terrainPrefab.tileSize, 0));
@@ -735,19 +755,17 @@ class TerrainEditor {
 			</div>');
 
 			props.find(".save").click(function(_) {
-			var dir = ctx.rootContext.shared.currentPath.split(".l3d")[0] + "_terrain";
-			var dirPath = hide.Ide.inst.getPath(dir);
-			var files = sys.FileSystem.readDirectory(dirPath);
-			for(file in files){
-				var name = file.split(".heightMap")[0];
-				name = name.split(".png")[0];
-				var coords = name.split("_");
-				if(coords[2] != "h" && coords[2] != "i" && coords[2] != "w") continue;
-				sys.FileSystem.deleteFile(dirPath + "/" + file);
-			}
-			terrainPrefab.saveWeightTextures(ctx.rootContext);
-			terrainPrefab.saveHeightTextures(ctx.rootContext);
-		});
+				var datPath = new haxe.io.Path(ctx.rootContext.shared.currentPath);
+				datPath.ext = "dat";
+				var fullPath = hide.Ide.inst.getPath(datPath.toString() + "/" + terrainPrefab.name);
+				if( sys.FileSystem.isDirectory(fullPath)){
+					var files = sys.FileSystem.readDirectory(fullPath);
+					for(file in files)
+						sys.FileSystem.deleteFile(fullPath + "/" + file);
+				}
+				terrainPrefab.saveWeightTextures(ctx.rootContext);
+				terrainPrefab.saveHeightTextures(ctx.rootContext);
+			});
 
 		var brushes : Array<Dynamic> = ctx.scene.config.get("terrain.brushes");
 		var brushesContainer = props.find(".terrain-brushes");
@@ -837,3 +855,5 @@ class TerrainEditor {
 		tmpTexPath = null;
 	}
 }
+
+#end
