@@ -792,6 +792,68 @@ input[type=checkbox]:checked:after {
   color: white;
   mix-blend-mode: overlay;
 }
+/* Terrain editor */
+.terrain-brushes .brush {
+  display: inline-block;
+  padding: 6px;
+  position: relative;
+}
+.terrain-brushes .brush-preview {
+  background-size: 45px 45px;
+  width: 45px;
+  height: 45px;
+  outline: 4px solid #4a4a4a;
+}
+.terrain-brushes .brush-preview-selected {
+  background-size: 45px 45px;
+  width: 45px;
+  height: 45px;
+  outline: 4px solid #5897fb;
+}
+.terrain-brushes .tooltiptext {
+  visibility: hidden;
+  background-color: black;
+  color: #fff;
+  text-align: left;
+  border-radius: 6px;
+  position: absolute;
+  z-index: 1;
+  padding: 4px;
+  width: 90px;
+}
+.terrain-brushes .brush:hover .tooltiptext {
+  visibility: visible;
+}
+.terrain-surfaces .surface {
+  display: inline-block;
+  padding: 6px;
+  position: relative;
+}
+.terrain-surfaces .surface-preview {
+  background-size: 45px 45px;
+  width: 45px;
+  height: 45px;
+  outline: 4px solid #4a4a4a;
+}
+.terrain-surfaces .surface-preview-selected {
+  background-size: 45px 45px;
+  width: 45px;
+  height: 45px;
+  outline: 4px solid #5897fb;
+}
+.terrain-surfaces .tooltiptext {
+  visibility: hidden;
+  background-color: black;
+  color: #fff;
+  text-align: left;
+  border-radius: 6px;
+  position: absolute;
+  z-index: 1;
+  padding: 4px;
+}
+.terrain-surfaces .surface:hover .tooltiptext {
+  visibility: visible;
+}
 /* Golden Layout Fixes */
 .lm_header .lm_tabs {
   z-index: 1;
