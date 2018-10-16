@@ -245,7 +245,7 @@ class Terrain extends Object3D {
 	}
 
 	override function getHideProps() : HideProps {
-		return { icon : "square", name : "terrain" };
+		return { icon : "square", name : "Terrain" };
 	}
 
 	override function edit( ctx : EditContext ) {
@@ -315,5 +315,5 @@ class Terrain extends Object3D {
 	}
 	#end
 
-	static var _ = hxd.prefab.Library.register("Terrain", Terrain);
+	static var _ = hxd.prefab.Library.register("terrain", Terrain);
 }
