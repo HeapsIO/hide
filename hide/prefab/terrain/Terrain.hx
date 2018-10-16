@@ -22,7 +22,7 @@ class Terrain extends Object3D {
 	public var terrain : h3d.scene.pbr.terrain.Terrain;
 	var parallaxAmount = 0.0;
 	var parallaxMinStep : Int = 1;
-	var parallaxMaxStep : Int = 256;
+	var parallaxMaxStep : Int = 16;
 	var heightBlendStrength : Float = 0.0;
 	var heightBlendSharpness : Float = 0.0;
 	var packWeight = new h3d.pass.ScreenFx(new hide.prefab.terrain.PackWeight());
