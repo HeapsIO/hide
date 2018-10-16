@@ -85,8 +85,8 @@ class Terrain extends Object3D {
 	public function saveHeightTextures(ctx : Context){
 		for(tile in terrain.tiles){
 			var pixels = tile.heightMap.capturePixels();
-			var name = tile.tileX + "_" + tile.tileY + "_" + "h";
-			ctx.shared.savePrefabDat(name, "heightMap", name, pixels.bytes);
+			var fileName = tile.tileX + "_" + tile.tileY + "_" + "h";
+			ctx.shared.savePrefabDat(fileName, "heightMap", name, pixels.bytes);
 		}
 	}
 
@@ -101,13 +101,13 @@ class Terrain extends Object3D {
 
 			var pixels = packedWeightsTex.capturePixels();
 			var bytes = pixels.toPNG();
-			var name = tile.tileX + "_" + tile.tileY + "_" + "w";
-			ctx.shared.savePrefabDat(name, "png", name, bytes);
+			var fileName = tile.tileX + "_" + tile.tileY + "_" + "w";
+			ctx.shared.savePrefabDat(fileName, "png", name, bytes);
 
 			var pixels = tile.surfaceIndexMap.capturePixels();
 			var bytes = pixels.toPNG();
-			var name = tile.tileX + "_" + tile.tileY + "_" + "i";
-			ctx.shared.savePrefabDat(name, "png", name, bytes);
+			var fileName = tile.tileX + "_" + tile.tileY + "_" + "i";
+			ctx.shared.savePrefabDat(fileName, "png", name, bytes);
 		}
 	}
 
@@ -184,9 +184,9 @@ class Terrain extends Object3D {
 					surface.offset.y = surfaceProps.offsetY;
 					surface.angle = surfaceProps.angle;
 					surface.tilling = surfaceProps.tilling;
-					albedo.dispose();
-					normal.dispose();
-					pbr.dispose();
+					//albedo.dispose();
+					//normal.dispose();
+					//pbr.dispose();
 				}
 			}
 			wait();
