@@ -184,9 +184,9 @@ class Terrain extends Object3D {
 					surface.offset.y = surfaceProps.offsetY;
 					surface.angle = surfaceProps.angle;
 					surface.tilling = surfaceProps.tilling;
-					//albedo.dispose();
-					//normal.dispose();
-					//pbr.dispose();
+					albedo.dispose();
+					normal.dispose();
+					pbr.dispose();
 				}
 			}
 			wait();

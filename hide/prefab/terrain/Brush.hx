@@ -43,11 +43,9 @@ enum Mode {
 }
 
 class BrushMode {
-
 	public var accumulate = false;
 	public var substract = false;
 	public var mode = Paint;
-
 	public function new(){}
 }
 

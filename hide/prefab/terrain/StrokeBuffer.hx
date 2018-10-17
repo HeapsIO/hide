@@ -32,6 +32,8 @@ class StrokeBuffer {
 		tempTex = new h3d.mat.Texture(size, size, [Target], format);
 		tex.filter = Linear;
 		tempTex.filter = Linear;
+		tex.preventAutoDispose();
+		tempTex.preventAutoDispose();
 	}
 
 	public function reset(){

@@ -396,20 +396,13 @@ class TerrainEditor {
 	}
 
 	function useBrush( from : h3d.Vector, to : h3d.Vector, ctx : Context){
-
-		if(currentBrush.brushMode.mode == Delete){
-			 applyBrush(to, ctx);
-			 previewStrokeBuffers();
-			 return;
-		}
-
+		// First click
 		var dist = (to.sub(from)).length();
 		if(dist == 0){
 			applyBrush(from, ctx);
 			previewStrokeBuffers();
 			return;
 		}
-
 		if(dist + remainingDist >= currentBrush.step){
 			var dir = to.sub(from);
 			dir.normalize();
@@ -423,17 +416,14 @@ class TerrainEditor {
 					pos = pos.add(firstStep);
 				}else
 					pos = pos.add(step);
-
 				applyBrush(pos, ctx);
-
 				dist -= currentBrush.step - remainingDist;
 				remainingDist = 0;
 			}
 			remainingDist = dist;
 			previewStrokeBuffers();
-		}else{
+		}else
 			remainingDist += dist;
-		}
 	}
 
 	public function deleteTile(pos : h3d.Vector, ctx : Context){
@@ -443,6 +433,7 @@ class TerrainEditor {
 		if(tile == null) return;
 		terrainPrefab.terrain.removeTile(tile);
 		tileTrashBin.push(tile);
+		renderTerrainUV(ctx);
 	}
 
 	public function drawSurface(pos : h3d.Vector, ctx : Context){
