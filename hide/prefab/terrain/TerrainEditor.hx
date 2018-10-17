@@ -94,7 +94,7 @@ class TerrainEditor {
 		|| propName == "editor.currentSurface.angle")
 			terrainPrefab.terrain.updateSurfaceParams();
 		autoCreateTile = terrainPrefab.autoCreateTile;
-		if(propName == "terrain.renderMode") updateRender();
+		if(propName == "editor.renderMode") updateRender();
 	}
 
 	public function refresh(){
