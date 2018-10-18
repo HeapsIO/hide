@@ -311,6 +311,10 @@ class Particles2D extends FileView {
 				var w = pGroup.emitDist;
 				var h = pGroup.emitDistY;
 				g.drawRect(x - w, y - h, w * 2, h * 2);
+			case Direction:
+				var angle = Math.PI * pGroup.emitAngle;
+				g.moveTo(x, y);
+				g.lineTo(x + Math.cos(angle) * pGroup.emitDist, y + Math.sin(angle) * pGroup.emitDist);
 		}
 	}
 
