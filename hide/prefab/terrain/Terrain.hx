@@ -245,7 +245,7 @@ class Terrain extends Object3D {
 	}
 
 	override function getHideProps() : HideProps {
-		return { icon : "square", name : "Terrain" };
+		return { icon : "industry", name : "Terrain" };
 	}
 
 	override function edit( ctx : EditContext ) {

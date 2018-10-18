@@ -53,9 +53,13 @@ class BrushPreview {
 
 	var terrain : h3d.scene.pbr.terrain.Terrain;
 	var tiles : Array<TilePreviewMesh> = [];
+	var grid : h3d.prim.Grid;
 
 	public function new(terrain){
 		this.terrain = terrain;
+		grid = new h3d.prim.Grid( terrain.cellCount, terrain.cellCount, terrain.cellSize, terrain.cellSize);
+		grid.addUVs();
+		grid.addNormals();
 	}
 
 	public function dispose(){
@@ -73,13 +77,13 @@ class BrushPreview {
 			tilePreview = tile;
 		}
 		if(tilePreview == null){
-			tilePreview = new TilePreviewMesh(terrain.grid, terrain);
+			tilePreview = new TilePreviewMesh(grid, terrain);
 			tiles.push(tilePreview);
 		}
 		tilePreview.used = true;
 		var t = terrain.getTile(x,y);
 		tilePreview.heightMap = t == null ? null : t.heightMap;
-		tilePreview.shader.heightMapSize = tilePreview.heightMap.width;
+		tilePreview.shader.heightMapSize = terrain.heightMapResolution;
 		var pos = new h3d.Vector(x * terrain.tileSize, y * terrain.tileSize);
 		tilePreview.setPosition(pos.x, pos.y, pos.z + 0.1 * terrain.scaleZ * offsetDir);
 		tilePreview.visible = true;
@@ -97,8 +101,12 @@ class BrushPreview {
 	}
 
 	public function refreshMesh(){
+		if(grid != null) grid.dispose();
+		grid = new h3d.prim.Grid( terrain.cellCount, terrain.cellCount, terrain.cellSize, terrain.cellSize);
+		grid.addUVs();
+		grid.addNormals();
 		for(tile in tiles)
-			tile.primitive = terrain.grid;
+			tile.primitive = grid;
 	}
 }
 

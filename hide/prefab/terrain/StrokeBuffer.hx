@@ -34,6 +34,8 @@ class StrokeBuffer {
 		tempTex.filter = Linear;
 		tex.preventAutoDispose();
 		tempTex.preventAutoDispose();
+		tex.realloc = null;
+		tempTex.realloc = null;
 	}
 
 	public function reset(){
