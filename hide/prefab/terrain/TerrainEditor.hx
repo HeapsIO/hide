@@ -378,7 +378,7 @@ class TerrainEditor {
 		brushPreview.reset();
 		var brushWorldPos = uvTexPixels == null ? worldPos : getBrushWorldPosFromTex(worldPos, ctx);
 		if(brushWorldPos == null) return;
-		var tiles = terrainPrefab.terrain.getTiles(brushWorldPos, currentBrush.size / 2.0 , false);
+		var tiles = terrainPrefab.terrain.getTiles(brushWorldPos.x, brushWorldPos.y, currentBrush.size / 2.0 , false);
 		for(i in 0 ... tiles.length){
 			var tile = tiles[i];
 			var brushPos = tile.globalToLocal(brushWorldPos.clone());
@@ -429,7 +429,7 @@ class TerrainEditor {
 	public function deleteTile(pos : h3d.Vector, ctx : Context){
 		var brushWorldPos = uvTexPixels == null ? pos : getBrushWorldPosFromTex(pos, ctx);
 		if(brushWorldPos == null) return;
-		var tile = terrainPrefab.terrain.getTileAtWorldPos(brushWorldPos);
+		var tile = terrainPrefab.terrain.getTileAtWorldPos(brushWorldPos.x, brushWorldPos.y);
 		if(tile == null) return;
 		terrainPrefab.terrain.removeTile(tile);
 		tileTrashBin.push(tile);
@@ -441,7 +441,7 @@ class TerrainEditor {
 		var brushWorldPos = uvTexPixels == null ? pos : getBrushWorldPosFromTex(pos, ctx);
 		if(brushWorldPos == null) return;
 		var c = terrainPrefab.terrain.tiles.length;
-		var tiles = terrainPrefab.terrain.getTiles(pos, currentBrush.size / 2.0, autoCreateTile);
+		var tiles = terrainPrefab.terrain.getTiles(pos.x, pos.y, currentBrush.size / 2.0, autoCreateTile);
 		if(c != terrainPrefab.terrain.tiles.length){
 			renderTerrainUV(ctx);
 			brushWorldPos = getBrushWorldPosFromTex(pos, ctx);
@@ -478,7 +478,7 @@ class TerrainEditor {
 		var brushWorldPos = uvTexPixels == null ? pos : getBrushWorldPosFromTex(pos, ctx);
 		if(brushWorldPos == null) return;
 		var c = terrainPrefab.terrain.tiles.length;
-		var tiles = terrainPrefab.terrain.getTiles(brushWorldPos, currentBrush.size / 2.0, autoCreateTile);
+		var tiles = terrainPrefab.terrain.getTiles(brushWorldPos.x, brushWorldPos.y, currentBrush.size / 2.0, autoCreateTile);
 		if(c != terrainPrefab.terrain.tiles.length){
 			renderTerrainUV(ctx);
 			brushWorldPos = getBrushWorldPosFromTex(pos, ctx);
