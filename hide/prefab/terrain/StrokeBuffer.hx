@@ -42,7 +42,6 @@ class StrokeBuffer {
 		used = false;
 		if(tex != null) tex.clear(0);
 		if(tempTex != null) tempTex.clear(0);
-		if(prevTex != null) prevTex.clear(0);
 	}
 }
 

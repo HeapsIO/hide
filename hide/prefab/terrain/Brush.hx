@@ -42,10 +42,17 @@ enum Mode {
 	Delete;
 }
 
+enum SculptMode {
+	AddSub;
+	Set;
+	Smooth;
+}
+
 class BrushMode {
 	public var accumulate = false;
 	public var substract = false;
 	public var mode = Paint;
+	public var scultpMode = AddSub;
 	public function new(){}
 }
 
