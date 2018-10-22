@@ -206,7 +206,7 @@ class TerrainEditor {
 					case Set :
 						copyPass.apply(tile.heightMap, strokeBuffer.tempTex);
 						setHeight.shader.prevHeight = strokeBuffer.tempTex;
-						setHeight.shader.targetHeight = currentBrush.strength;
+						setHeight.shader.targetHeight = currentBrush.brushMode.setHeightValue;
 						setHeight.shader.strengthTex = strokeBuffer.tex;
 						h3d.Engine.getCurrent().pushTarget(tile.heightMap);
 						setHeight.render();
@@ -328,7 +328,7 @@ class TerrainEditor {
 						copyPass.apply(strokeBuffer.tex, tile.heightMap, currentBrush.brushMode.subAction ? Sub : Add);
 					case Set :
 						setHeight.shader.prevHeight = strokeBuffer.prevTex;
-						setHeight.shader.targetHeight = currentBrush.strength;
+						setHeight.shader.targetHeight = currentBrush.brushMode.setHeightValue;
 						setHeight.shader.strengthTex = strokeBuffer.tex;
 						h3d.Engine.getCurrent().pushTarget(tile.heightMap);
 						setHeight.render();
@@ -457,13 +457,19 @@ class TerrainEditor {
 	}
 
 	function useBrush( from : h3d.Vector, to : h3d.Vector, ctx : Context){
-		// First click
 		var dist = (to.sub(from)).length();
-		if(dist == 0){
+		if(currentBrush.firstClick){
+			if( currentBrush.brushMode.mode == Set ){
+				if( currentBrush.brushMode.subAction )
+					currentBrush.brushMode.setHeightValue = terrainPrefab.terrain.getHeight(from.x, from.y);
+				else
+					currentBrush.brushMode.setHeightValue = currentBrush.strength;
+			}
 			applyBrush(from, ctx);
 			previewStrokeBuffers();
 			return;
 		}
+		var dist = (to.sub(from)).length();
 		if(dist + remainingDist >= currentBrush.step){
 			var dir = to.sub(from);
 			dir.normalize();
@@ -594,6 +600,7 @@ class TerrainEditor {
 				currentBrush.brushMode.snapToGrid = K.isDown(K.CTRL);
 				var worldPos = getBrushPlanePos(s2d.mouseX, s2d.mouseY, ctx);
 				if(K.isDown( K.MOUSE_LEFT)){
+					currentBrush.firstClick = true;
 					e.propagate = false;
 					lastPos = worldPos.clone();
 					if(currentBrush.isValid()){
@@ -609,6 +616,7 @@ class TerrainEditor {
 				remainingDist = 0;
 				lastPos = null;
 				currentBrush.brushMode.lockAxe = NoLock;
+				currentBrush.firstClick = false;
 				applyStrokeBuffers();
 				resetStrokeBuffers();
 				drawBrushPreview(worldPos, ctx);
@@ -620,6 +628,7 @@ class TerrainEditor {
 				var worldPos = getBrushPlanePos(s2d.mouseX, s2d.mouseY, ctx);
 
 				if( K.isDown( K.MOUSE_LEFT) ){
+					currentBrush.firstClick = false;
 					e.propagate = false;
 					if( lastPos == null ) return;
 					if( currentBrush.isValid() ){

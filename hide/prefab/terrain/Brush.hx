@@ -12,6 +12,7 @@ class Brush {
 	public var texPath : String;
 	public var index : Int = -1;
 	public var brushMode : BrushMode;
+	public var firstClick = false;
 
 	public function new(){
 		brushMode = new BrushMode();
@@ -58,6 +59,7 @@ class BrushMode {
 	public var snapToGrid = false;
 	public var mode = NoMode;
 	public var lockAxe = NoLock;
+	public var setHeightValue = 0.0;
 	public function new(){}
 }
 
