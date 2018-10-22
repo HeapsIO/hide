@@ -37,22 +37,27 @@ class Brush {
 }
 
 enum Mode {
-	Paint;
-	Sculpt;
-	Delete;
-}
-
-enum SculptMode {
 	AddSub;
 	Set;
 	Smooth;
+	Paint;
+	Delete;
+	NoMode;
+}
+
+enum LockAxe {
+	LockX;
+	LockY;
+	NoLock;
 }
 
 class BrushMode {
 	public var accumulate = false;
-	public var substract = false;
-	public var mode = Paint;
-	public var scultpMode = AddSub;
+	public var subAction = false;
+	public var lockDir = false;
+	public var snapToGrid = false;
+	public var mode = NoMode;
+	public var lockAxe = NoLock;
 	public function new(){}
 }
 
@@ -131,7 +136,12 @@ class TilePreviewMesh extends h3d.scene.Mesh {
 		material.mainPass.addShader(shader);
 	}
 
-	override function sync(ctx : h3d.impl.RenderContext) {
+	override function emit( ctx : h3d.scene.RenderContext ) {
+		if(heightMap == null) return;
+		super.emit(ctx);
+	}
+
+	override function sync(ctx : h3d.scene.RenderContext) {
 		shader.heightMap = heightMap;
 		shader.heightMapSize = heightMap.width;
 		shader.primSize = Std.instance(parent, h3d.scene.pbr.terrain.Terrain).tileSize;

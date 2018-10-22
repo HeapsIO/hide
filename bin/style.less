@@ -873,6 +873,36 @@ input[type=checkbox] {
 }
 
 /* Terrain editor */
+
+.terrain-brushModeDescription{
+	margin: 5px;
+	background-color: black;
+	outline: 4px solid #4a4a4a;
+	padding : 1px;
+}
+
+.terrain-brushModeContainer{
+	padding : 1px;
+}
+
+.terrain-brushMode{
+	padding : 5px;
+	display: inline-block;
+	.selected {
+		outline: 4px solid #5897fb;
+	}
+}
+
+.terrain-brushModeIcon {
+	@size: 40px;
+	width: @size;
+	height: @size;
+	background-size: @size @size;
+	background-color: #AAAAAA;
+	outline: 4px solid #4a4a4a;
+	background-size: contain;
+}
+
 .terrain-brushes {
 	.brush {
 		display: inline-block;
@@ -880,7 +910,7 @@ input[type=checkbox] {
 		position: relative;
 	}
 	.brush-preview {
-		@size: 45px;
+		@size: 40px;
 		background-size: @size @size;
 		width: @size;
 		height: @size;

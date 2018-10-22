@@ -793,15 +793,39 @@ input[type=checkbox]:checked:after {
   mix-blend-mode: overlay;
 }
 /* Terrain editor */
+.terrain-brushModeDescription {
+  margin: 5px;
+  background-color: black;
+  outline: 4px solid #4a4a4a;
+  padding: 1px;
+}
+.terrain-brushModeContainer {
+  padding: 1px;
+}
+.terrain-brushMode {
+  padding: 5px;
+  display: inline-block;
+}
+.terrain-brushMode .selected {
+  outline: 4px solid #5897fb;
+}
+.terrain-brushModeIcon {
+  width: 40px;
+  height: 40px;
+  background-size: 40px 40px;
+  background-color: #AAAAAA;
+  outline: 4px solid #4a4a4a;
+  background-size: contain;
+}
 .terrain-brushes .brush {
   display: inline-block;
   padding: 6px;
   position: relative;
 }
 .terrain-brushes .brush-preview {
-  background-size: 45px 45px;
-  width: 45px;
-  height: 45px;
+  background-size: 40px 40px;
+  width: 40px;
+  height: 40px;
   outline: 4px solid #4a4a4a;
 }
 .terrain-brushes .brush-preview-selected {
