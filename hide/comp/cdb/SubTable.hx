@@ -55,7 +55,7 @@ class SubTable extends Table {
 			var value = cell.value;
 			if( value == null ) {
 				value = [];
-				Reflect.setField(cell.line.obj, cell.column.name, sheet.lines);
+				Reflect.setField(cell.line.obj, cell.column.name, value);
 				// do not save for now
 			}
 			value;
@@ -63,10 +63,10 @@ class SubTable extends Table {
 			var value = cell.value;
 			if( value == null ) {
 				value = {};
-				Reflect.setField(cell.line.obj, cell.column.name, sheet.lines);
+				Reflect.setField(cell.line.obj, cell.column.name, value);
 				// do not save for now
 			}
-			[for( c in sheet.columns ) cell.value];
+			[for( c in sheet.columns ) value];
 		default:
 			throw "assert";
 		}
