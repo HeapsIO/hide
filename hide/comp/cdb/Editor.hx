@@ -12,7 +12,7 @@ class Editor extends Component {
 	var displayMode : Table.DisplayMode;
 	var clipboard : {
 		text : String,
-		data : {},
+		data : Array<{}>,
 		schema : Array<cdb.Data.Column>,
 	};
 	public var config : hide.Config;
@@ -40,6 +40,7 @@ class Editor extends Component {
 			searchBox.find("input").focus().select();
 		});
 		keys.register("copy", onCopy);
+		keys.register("paste", onPaste);
 		keys.register("delete", onDelete);
 		keys.register("cdb.showReferences", showReferences);
 		keys.register("undo", function() if( undo.undo() ) refresh());
@@ -134,6 +135,47 @@ class Editor extends Component {
 			schema : [for( x in sel.x1...sel.x2+1 ) cursor.table.sheet.columns[x]],
 		};
 		ide.setClipboard(clipboard.text);
+	}
+
+	function onPaste() {
+		var text = ide.getClipboard();
+		if( clipboard == null || text != clipboard.text ) {
+			// TODO : edit and copy text
+			return;
+		}
+		var sheet = cursor.table.sheet;
+		var posX = cursor.x < 0 ? 0 : cursor.x;
+		var posY = cursor.y < 0 ? 0 : cursor.y;
+		for( obj1 in clipboard.data ) {
+			if( posY == sheet.lines.length )
+				sheet.newLine();
+			var obj2 = sheet.lines[posY];
+			for( cid in 0...clipboard.schema.length ) {
+				var c1 = clipboard.schema[cid];
+				var c2 = sheet.columns[cid + posX];
+				if( c2 == null ) continue;
+				var f = base.getConvFunction(c1.type, c2.type);
+				var v : Dynamic = Reflect.field(obj1, c1.name);
+				if( f == null )
+					v = base.getDefault(c2);
+				else {
+					// make a deep copy to erase references
+					if( v != null ) v = haxe.Json.parse(haxe.Json.stringify(v));
+					if( f.f != null )
+						v = f.f(v);
+				}
+				if( v == null && !c2.opt )
+					v = base.getDefault(c2);
+				if( v == null )
+					Reflect.deleteField(obj2, c2.name);
+				else
+					Reflect.setField(obj2, c2.name, v);
+			}
+			posY++;
+		}
+		sheet.sync();
+		refresh();
+		save();
 	}
 
 	function onDelete() {

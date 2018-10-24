@@ -339,6 +339,10 @@ class Ide {
 		nw.Clipboard.get().set(text, Text);
 	}
 
+	public function getClipboard() {
+		return nw.Clipboard.get().get(Text);
+	}
+
 	public function registerUpdate( updateFun ) {
 		updates.push(updateFun);
 	}
