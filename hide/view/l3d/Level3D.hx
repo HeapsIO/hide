@@ -619,20 +619,18 @@ class Level3D extends FileView {
 		}
 
 		var color = getDisplayColor(p);
-		if(color == null)
-			color = 0x80ffffff;
-		else
+		if(color != null){
 			color = (color & 0xffffff) | 0xa0000000;
-
-		var box = p.to(hide.prefab.Box);
-		if(box != null) {
-			var ctx = sceneEditor.getContext(box);
-			box.setColor(ctx, color);
-		}
-		var poly = p.to(hide.prefab.l3d.Polygon);
-		if(poly != null) {
-			var ctx = sceneEditor.getContext(poly);
-			poly.setColor(ctx, color);
+			var box = p.to(hide.prefab.Box);
+			if(box != null) {
+				var ctx = sceneEditor.getContext(box);
+				box.setColor(ctx, color);
+			}
+			var poly = p.to(hide.prefab.l3d.Polygon);
+			if(poly != null) {
+				var ctx = sceneEditor.getContext(poly);
+				poly.setColor(ctx, color);
+			}
 		}
 	}
 

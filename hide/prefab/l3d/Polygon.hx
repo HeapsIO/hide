@@ -4,6 +4,7 @@ import h2d.col.Point;
 enum Shape {
 	Quad;
 	Disc(segments: Int, angle: Float, inner: Float, rings:Int);
+	Custom;
 }
 
 typedef PrimCache = Map<Shape, h3d.prim.Polygon>;
@@ -11,37 +12,55 @@ typedef PrimCache = Map<Shape, h3d.prim.Polygon>;
 class Polygon extends Object3D {
 
 	public var shape(default, null) : Shape = Quad;
+	public var debugColor : Int;
+	public var points : h2d.col.Polygon = [];
+	#if editor
+	public var editor : PolygonEditor;
+	#end
 
 	override function save() {
 		var obj : Dynamic = super.save();
-		if(shape != Quad) {
-			obj.kind = shape.getIndex();
-			obj.args = shape.getParameters();
+		switch(shape){
+			case Quad:
+			case Disc(segments, angle, inner, rings):
+				obj.kind = shape.getIndex();
+				obj.args = shape.getParameters();
+			case Custom:
+				obj.kind = 2;
+				obj.points = points;
 		}
+		obj.debugColor = debugColor;
 		return obj;
 	}
 
 	override function load( obj : Dynamic ) {
 		super.load(obj);
-		if(obj.kind > 0)
-			shape = Type.createEnumIndex(Shape, obj.kind, obj.args);
-		else
-			shape = Quad;
+		switch(obj.kind){
+			case 0: shape = Quad;
+			case 1: shape = Type.createEnumIndex(Shape, obj.kind, obj.args);
+			case 2:
+				shape = Custom;
+				points = obj.points;
+		}
+		debugColor = obj.debugColor != null ? obj.debugColor : 0xFFFFFF;
 	}
 
 	override function updateInstance( ctx : Context, ?propName : String) {
 		super.updateInstance(ctx, propName);
-		if(ctx.local3d == null)
-			return;
-
+		//if(ctx.local3d == null) return;
 		var mesh : h3d.scene.Mesh = cast ctx.local3d;
 		mesh.primitive = makePrimitive();
-
-		if(hide.prefab.Material.hasOverride(this))
-			return;
-
-		var mat = mesh.material;
-		mat.mainPass.culling = None;
+		//if(!hide.prefab.Material.hasOverride(this)){
+			var mat = mesh.material;
+			mat.mainPass.culling = None;
+			mat.castShadows = false;
+			mat.color = h3d.Vector.fromColor(debugColor);
+			mat.color.a = 0.7;
+		//}
+		#if editor
+		if(editor != null)
+			editor.update(propName);
+		#end
 		// var layer = getParent(Layer);
 		// if(layer != null) {
 		// 	setColor(ctx, layer != null ? (layer.color | 0x40000000) : 0x40ff00ff);
@@ -50,8 +69,6 @@ class Polygon extends Object3D {
 		// 	mat.props = h3d.mat.MaterialSetup.current.getDefaults("opaque");
 		// 	mat.color.setColor(0xffffffff);
 		// }
-
-		mat.castShadows = false;
 	}
 
 	function getPrimCache() {
@@ -65,6 +82,10 @@ class Polygon extends Object3D {
 	}
 
 	function makePrimitive() {
+
+		if(shape == Custom)
+			return generateCustomPolygon();
+
 		var cache = getPrimCache();
 		var primitive : h3d.prim.Polygon = cache.get(shape);
 		if(primitive != null)
@@ -152,19 +173,53 @@ class Polygon extends Object3D {
 		if(ctx.local3d == null)
 			return;
 		var mesh = Std.instance(ctx.local3d, h3d.scene.Mesh);
-		if(mesh != null) {
+		if(mesh != null)
 			hide.prefab.Box.setDebugColor(color, mesh.material);
-		}
 		#end
+	}
+
+	public function generateCustomPolygon(){
+		var polyPrim : h3d.prim.Polygon = null;
+		if( points != null ){
+			var indexes = points.fastTriangulate();
+			var idx : hxd.IndexBuffer = new hxd.IndexBuffer();
+			for( i in indexes ) if( i != null ) idx.push(i);
+			var pts = [for( p in points ) new h3d.col.Point(p.x, p.y, 0)];
+			polyPrim = new h3d.prim.Polygon(pts, idx);
+			polyPrim.addNormals();
+			polyPrim.addUVs();
+			polyPrim.addTangents() ;
+			polyPrim.alloc(h3d.Engine.getCurrent());
+		}
+		return polyPrim;
+	}
+
+	public function getPrimitive( ctx : Context ) : h3d.prim.Polygon {
+		var mesh = Std.instance(ctx.local3d, h3d.scene.Mesh);
+		return Std.instance(mesh.primitive, h3d.prim.Polygon);
 	}
 
 	#if editor
 
+	override function setSelected( ctx : Context, b : Bool ) {
+		super.setSelected(ctx, b);
+		if( editor != null && shape == Custom)
+			editor.setSelected(ctx, b);
+	}
+
+	function createEditor( ctx : EditContext ){
+		if( editor == null )
+			editor = new PolygonEditor(this, ctx.properties.undo);
+		editor.editContext = ctx;
+	}
+
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
+		createEditor(ctx);
 
+		var prevKind : Shape = this.shape;
 		var viewModel = {
-			kind: shape.getIndex(),
+			kind: shape.getName(),
 			segments: 24,
 			rings: 4,
 			innerRadius: 0.0,
@@ -172,23 +227,27 @@ class Polygon extends Object3D {
 		};
 
 		switch(shape) {
+			case Quad:
 			case Disc(seg, angle, inner, rings):
 				viewModel.segments = seg;
 				viewModel.angle = angle;
 				viewModel.innerRadius = inner;
+			case Custom:
 			default:
 		}
 
-		var group = new hide.Element('<div class="group" name="Polygon">
-				<dl>
-					<dt>Kind</dt><dd>
-						<select field="kind">
-							<option value="0">Quad</option>
-							<option value="1">Disc</option>
-						</select>
-					</dd>
-				</dl>
-			</div>
+		var group = new hide.Element('
+		<div class="group" name="Shape">
+			<dl>
+				<dt>Kind</dt><dd>
+					<select field="kind">
+						<option value="Quad">Quad</option>
+						<option value="Disc">Disc</option>
+						<option value="Custom">Custom</option>
+					</select>
+				</dd>
+			</dl>
+		</div>
 		');
 
 		var discProps = new hide.Element('
@@ -198,31 +257,59 @@ class Polygon extends Object3D {
 			<dt>Angle</dt><dd><input field="angle" type="range" min="0" max="360" /></dd>');
 
 		group.append(discProps);
+		var editorProps = editor.addProps(ctx);
 
 		function updateProps() {
-			if(viewModel.kind == 1)
-				discProps.show();
-			else
-				discProps.hide();
+			discProps.hide();
+			editorProps.hide();
+			switch(viewModel.kind){
+				case "Quad":
+				case "Disc": discProps.show();
+				case "Custom":
+					editorProps.show();
+					setSelected(ctx.getContext(this), true);
+				default:
+			}
 		}
-		updateProps();
+
+		ctx.properties.add( new hide.Element('
+			<div class="group" name="Params">
+				<dl><dt>Color</dt><dd><input type="color" field="debugColor"/></dd> </dl>
+			</div>'), this, function(pname) { ctx.onChange(this, pname); });
+
 		ctx.properties.add(group, viewModel, function(pname) {
-			if(pname == "kind") {
-				var cache = getPrimCache();
-				var prim = cache.get(shape);
-				prim.dispose();
-				cache.remove(shape);
+			if( pname == "kind" ) {
+				editor.reset();
+
+				if( prevKind != Custom ){
+					var cache = getPrimCache();
+					var prim = cache.get(shape);
+					if(prim != null){
+						prim.dispose();
+						cache.remove(shape);
+					}
+				}
+				else if( prevKind == Custom ){
+					var mesh = Std.instance(ctx.getContext(this).local3d, h3d.scene.Mesh);
+					if( mesh.primitive != null ) mesh.primitive.dispose(); // Dispose custom prim
+				}
+
+				prevKind = this.shape;
 			}
 
-			switch(viewModel.kind) {
-				case 1:
-					shape = Disc(viewModel.segments, viewModel.angle, viewModel.innerRadius, viewModel.rings);
-				default:
-					shape = Quad;
+			switch( viewModel.kind ) {
+				case "Quad": shape = Quad;
+				case "Disc": shape = Disc(viewModel.segments, viewModel.angle, viewModel.innerRadius, viewModel.rings);
+				case "Custom": shape = Custom;
+				default: shape = Quad;
 			}
+
 			updateProps();
 			ctx.onChange(this, pname);
 		});
+
+		updateProps();
+
 	}
 
 	override function getHideProps() : HideProps {
