@@ -22,7 +22,7 @@ class ScriptTable extends SubTable {
 	override function refresh() {
 		var first = script == null;
 		element.html("<div class='cdb-script'></div>");
-		var checker = new ScriptEditor.ScriptChecker(editor.config,"cdb."+cell.table.sheet.name+"."+cell.column.name,[ "cdb."+cell.table.sheet.name => cell.line.obj ]);
+		var checker = new ScriptEditor.ScriptChecker(editor.config,"cdb."+cell.getDocumentName(),[ "cdb."+cell.table.sheet.name => cell.line.obj ]);
 		script = new ScriptEditor(cell.value, checker, element.find("div"));
 		script.onSave = function() @:privateAccess cell.setValue(script.script);
 		script.onClose = function() { close(); cell.select(); }

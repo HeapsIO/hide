@@ -184,7 +184,7 @@ class Cell extends Component {
 		code = code.split("\n").join("<br/>");
 		code = code.split("\t").join("&nbsp;&nbsp;&nbsp;&nbsp;");
 		// typecheck
-		var error = new ScriptEditor.ScriptChecker(editor.config, "cdb."+table.sheet.name+"."+column.name, ["cdb."+table.sheet.name => line.obj]).check(ecode);
+		var error = new ScriptEditor.ScriptChecker(editor.config, "cdb."+getDocumentName(), ["cdb."+table.sheet.name => line.obj]).check(ecode);
 		if( error != null )
 			return '<span class="error">'+code+'</span>';
 		// strings
@@ -193,6 +193,22 @@ class Cell extends Component {
 		// keywords
 		code = KWD_REG.map(code, function(r) return '<span class="kwd">${r.matched(0)}</span>');
 		return code;
+	}
+
+	public function getGroup() : String {
+		var gid : Null<Int> = Reflect.field(line.obj, "group");
+		if( gid == null ) return null;
+		return table.sheet.props.separatorTitles[gid-1];
+	}
+
+	public function getDocumentName() {
+		var name = table.sheet.name;
+		if( table.sheet.props.hasGroup ) {
+			var g = getGroup();
+			if( g != null ) name += "[group="+g+"]";
+		}
+		name += "."+column.name;
+		return name;
 	}
 
 	function tileHtml( v : cdb.Types.TilePos, ?isInline ) {
