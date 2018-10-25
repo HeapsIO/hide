@@ -1,6 +1,7 @@
 package hide.prefab;
 import hxd.Key as K;
 
+#if editor
 enum ColorState{
 	None;
 	Overlapped;
@@ -591,3 +592,5 @@ class PolygonEditor {
 		}
 	}
 }
+
+#end
