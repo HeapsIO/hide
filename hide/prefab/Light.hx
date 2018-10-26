@@ -142,15 +142,9 @@ class Light extends Object3D {
 	}
 
 	function loadBaked( ctx : Context ) {
-		var name = name+".li";
-		var bytes = ctx.shared.loadBakedBytes(name);
-		if( bytes == null ) return;
 		var light = cast(ctx.local3d,h3d.scene.pbr.Light);
-		var r = light.shadows.loadStaticData(bytes);
-		#if editor
-		if(!r)
-			ctx.shared.saveBakedBytes(name,null);
-		#end
+		var res = ctx.shared.loadPrefabDat("shadowMap", "bake", name);
+		if(res != null) light.shadows.loadStaticData(res.entry.getBytes());
 	}
 
 	override function updateInstance( ctx : Context, ?propName : String ) {
@@ -337,10 +331,9 @@ class Light extends Object3D {
 	#if editor
 
 	public function saveBaked( ctx : Context ) {
-		var name = name+".li";
 		var light = cast(ctx.shared.contexts.get(this).local3d,h3d.scene.pbr.Light);
-		var data = light.shadows.saveStaticData();
-		ctx.shared.saveBakedBytes(name, data);
+		var bytes = light.shadows.saveStaticData();
+		ctx.shared.savePrefabDat("shadowMap", "bake", name, bytes);
 	}
 
 	override function setSelected( ctx : Context, b : Bool ) {
