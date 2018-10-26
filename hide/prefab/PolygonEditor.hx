@@ -18,6 +18,22 @@ class Edge{
 	}
 }
 
+class SphereHandle extends h3d.scene.Mesh {
+	public function new(prim, mat, parent) {
+		super(prim, mat, parent);
+	}
+	override function sync(ctx:h3d.scene.RenderContext) {
+		var cam = ctx.camera;
+		var gpos = getAbsPos().getPosition();
+		var distToCam = cam.pos.sub(gpos).length();
+		var engine = h3d.Engine.getCurrent();
+		var ratio = 18 / engine.height;
+		setScale(ratio * distToCam * Math.tan(cam.fovY * 0.5 * Math.PI / 180.0));
+		calcAbsPos();
+		super.sync(ctx);
+	}
+}
+
 class MovablePoint {
 
 	public var showDebug : Bool;
@@ -29,9 +45,10 @@ class MovablePoint {
 
 	public function new(point : h2d.col.Point, ctx : Context){
 		this.point = point;
-		mesh = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), null, ctx.local3d);
+		mesh = new SphereHandle(h3d.prim.Cube.defaultUnitCube(), null, ctx.local3d);
 		mesh.name = "_movablePoint";
 		mesh.material.setDefaultProps("ui");
+		mesh.material.mainPass.depthTest = Always;
 		mesh.scale(0.1);
 		mesh.setPosition(point.x, point.y, 0);
 		localPosText = createText(ctx);
@@ -78,7 +95,7 @@ class MovablePoint {
 
 	public function updateColor(){
 		switch(colorState){
-			case None : mesh.material.color.set(1,1,1);
+			case None : mesh.material.color.set(0,0,0);
 			case Overlapped : mesh.material.color.set(1,1,0);
 			case OverlappedForDelete : mesh.material.color.set(1,0,0);
 			case Selected : mesh.material.color.set(0,0,1);
@@ -307,7 +324,7 @@ class PolygonEditor {
 			lineGraphics.material.mainPass.setPassName("overlay");
 			lineGraphics.material.mainPass.depth(false, LessEqual);
 			selectedEdgeGraphic = new h3d.scene.Graphics(ctx.local3d);
-			selectedEdgeGraphic.lineStyle(6, 0xFFFF00, 0.5);
+			selectedEdgeGraphic.lineStyle(3, 0xFFFF00, 0.5);
 			selectedEdgeGraphic.material.mainPass.setPassName("overlay");
 			selectedEdgeGraphic.material.mainPass.depth(false, LessEqual);
 			triangleGraphics = new h3d.scene.Graphics(ctx.local3d);
@@ -586,9 +603,11 @@ class PolygonEditor {
 			v.append('</div>');
 			container.append(v);
 		}
-
-		for(p in polygonPrefab.points){
-			createVector(p);
+		
+		if(polygonPrefab.points != null) {
+			for(p in polygonPrefab.points){
+				createVector(p);
+			}
 		}
 	}
 }

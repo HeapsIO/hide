@@ -792,12 +792,30 @@ input[type=checkbox]:checked:after {
   color: white;
   mix-blend-mode: overlay;
 }
+/* Poly editor */
+.poly-editor .description {
+  margin: 5px;
+  background-color: black;
+  outline: 4px solid #4a4a4a;
+  padding: 2px;
+}
+.poly-editor .point-list input {
+  width: 70px;
+}
+.poly-editor .point-list .deletePoint {
+  width: 20px;
+  margin-left: 8px;
+}
+.poly-editor .poly-vector2 {
+  display: block;
+  padding: 5px;
+}
 /* Terrain editor */
 .terrain-brushModeDescription {
   margin: 5px;
   background-color: black;
   outline: 4px solid #4a4a4a;
-  padding: 1px;
+  padding: 2px;
 }
 .terrain-brushModeContainer {
   padding: 1px;

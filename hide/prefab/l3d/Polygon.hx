@@ -13,7 +13,7 @@ class Polygon extends Object3D {
 
 	public var shape(default, null) : Shape = Quad;
 	public var debugColor : Int;
-	public var points : h2d.col.Polygon = [];
+	public var points : h2d.col.Polygon;
 	#if editor
 	public var editor : PolygonEditor;
 	#end
@@ -40,7 +40,8 @@ class Polygon extends Object3D {
 			case 1: shape = Type.createEnumIndex(Shape, obj.kind, obj.args);
 			case 2:
 				shape = Custom;
-				points = obj.points;
+				var list : Array<Dynamic> = obj.points;
+				points = [for(pt in list) new h2d.col.Point(pt.x, pt.y)];
 		}
 		debugColor = obj.debugColor != null ? obj.debugColor : 0xFFFFFF;
 	}
@@ -157,7 +158,7 @@ class Polygon extends Object3D {
 		ctx = ctx.clone(this);
 		var primitive = makePrimitive();
 		var mesh = new h3d.scene.Mesh(primitive, ctx.local3d);
-		mesh.material.props = h3d.mat.MaterialSetup.current.getDefaults("ui");
+		mesh.material.props = h3d.mat.MaterialSetup.current.getDefaults("overlay");
 		mesh.material.blendMode = Alpha;
 		mesh.material.mainPass.culling = None;
 		ctx.local3d = mesh;
@@ -183,7 +184,7 @@ class Polygon extends Object3D {
 		if( points != null ){
 			var indexes = points.fastTriangulate();
 			var idx : hxd.IndexBuffer = new hxd.IndexBuffer();
-			for( i in indexes ) if( i != null ) idx.push(i);
+			for( i in indexes ) #if js if( i != null ) #end idx.push(i);
 			var pts = [for( p in points ) new h3d.col.Point(p.x, p.y, 0)];
 			polyPrim = new h3d.prim.Polygon(pts, idx);
 			polyPrim.addNormals();
@@ -257,25 +258,8 @@ class Polygon extends Object3D {
 			<dt>Angle</dt><dd><input field="angle" type="range" min="0" max="360" /></dd>');
 
 		group.append(discProps);
-		var editorProps = editor.addProps(ctx);
 
-		function updateProps() {
-			discProps.hide();
-			editorProps.hide();
-			switch(viewModel.kind){
-				case "Quad":
-				case "Disc": discProps.show();
-				case "Custom":
-					editorProps.show();
-					setSelected(ctx.getContext(this), true);
-				default:
-			}
-		}
-
-		ctx.properties.add( new hide.Element('
-			<div class="group" name="Params">
-				<dl><dt>Color</dt><dd><input type="color" field="debugColor"/></dd> </dl>
-			</div>'), this, function(pname) { ctx.onChange(this, pname); });
+		var updateProps = null;
 
 		ctx.properties.add(group, viewModel, function(pname) {
 			if( pname == "kind" ) {
@@ -300,13 +284,62 @@ class Polygon extends Object3D {
 			switch( viewModel.kind ) {
 				case "Quad": shape = Quad;
 				case "Disc": shape = Disc(viewModel.segments, viewModel.angle, viewModel.innerRadius, viewModel.rings);
-				case "Custom": shape = Custom;
+				case "Custom":
+					shape = Custom;
+					if(points == null) {
+						if(prevKind == Quad) {
+							var prevScale = [scaleX, scaleY];
+							function apply() {
+								points = [
+									new Point(-scaleX/2, -scaleY/2),
+									new Point(-scaleX/2, scaleY/2),
+									new Point(scaleX/2, scaleY/2),
+									new Point(scaleX/2, -scaleY/2)
+								];
+								scaleX = 1.0; scaleY = 1.0;
+							}
+							ctx.properties.undo.change(Custom(function(undo) {
+								if(undo) {
+									scaleX = prevScale[0];
+									scaleY = prevScale[1];
+									points = null;
+								}
+								else apply();
+								ctx.onChange(this, null);
+							}));
+							apply();
+							ctx.onChange(this, null);
+						}
+						else 
+							points = [];
+					}
 				default: shape = Quad;
 			}
 
 			updateProps();
 			ctx.onChange(this, pname);
 		});
+
+
+		var editorProps = editor.addProps(ctx);
+
+		updateProps = function() {
+			discProps.hide();
+			editorProps.hide();
+			switch(viewModel.kind){
+				case "Quad":
+				case "Disc": discProps.show();
+				case "Custom":
+					editorProps.show();
+					setSelected(ctx.getContext(this), true);
+				default:
+			}
+		}
+
+		ctx.properties.add( new hide.Element('
+			<div class="group" name="Params">
+				<dl><dt>Color</dt><dd><input type="color" field="debugColor"/></dd> </dl>
+			</div>'), this, function(pname) { ctx.onChange(this, pname); });
 
 		updateProps();
 
