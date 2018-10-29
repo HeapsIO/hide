@@ -434,10 +434,10 @@ class SceneEditor {
 		int.propagateEvents = true;
 		int.enableRightButton = true;
 		var startDrag = null;
+		var dragBtn = -1;
 		int.onClick = function(e) {
 			if(e.button == K.MOUSE_RIGHT) {
 				e.propagate = false;
-				e.cancel = true;
 				var parentEl = curEdit.rootElements[0];
 				if(parentEl == null)
 					parentEl = elt;
@@ -461,6 +461,7 @@ class SceneEditor {
 		}
 		int.onPush = function(e) {
 			startDrag = [scene.s2d.mouseX, scene.s2d.mouseY];
+			dragBtn = e.button;
 			if(e.button != K.MOUSE_LEFT)
 				return;
 			e.propagate = false;
@@ -493,9 +494,9 @@ class SceneEditor {
 		}
 		int.onRelease = function(e) {
 			startDrag = null;
+			dragBtn = -1;
 			if(e.button == K.MOUSE_LEFT) {
 				e.propagate = false;
-				e.cancel = true;
 			}
 		}
 		int.onMove = function(e) {
@@ -503,7 +504,7 @@ class SceneEditor {
 				if((M.abs(startDrag[0] - scene.s2d.mouseX) + M.abs(startDrag[1] - scene.s2d.mouseY)) > 5) {
 					int.preventClick();
 					startDrag = null;
-					if(e.button == K.MOUSE_LEFT) {
+					if(dragBtn == K.MOUSE_LEFT) {
 						moveGizmoToSelection();
 						gizmo.startMove(MoveXY);
 					}
@@ -511,13 +512,6 @@ class SceneEditor {
 			}
 		}
 	}
-
-	// function removeInteractive(elt: PrefabElement) {
-	// 	var int = interactives.get(elt);
-	// 	if(int != null)
-	// 		int.remove()
-	// 	interactives.remove(elt);
-	// }
 
 	function refreshInteractives() {
 		var contexts = context.shared.contexts;
