@@ -342,6 +342,10 @@ class SceneEditor {
 
 	public function refresh( ?callb ) {
 		refreshScene();
+		refreshTree(callb);
+	}
+
+	public function refreshTree( ?callb ) {
 		tree.refresh(function() {
 			var all = sceneData.flatten(hxd.prefab.Prefab);
 			for(elt in all) {
@@ -722,6 +726,15 @@ class SceneEditor {
 		if(ctx != null)
 			return ctx.local3d;
 		return context.shared.root3d;
+	}
+
+	public function getSelfObject(elt: PrefabElement) {
+		var ctx = getContext(elt);
+		var parentCtx = getContext(elt.parent);
+		if(ctx == null || parentCtx == null) return null;
+		if(ctx.local3d != parentCtx.local3d)
+			return ctx.local3d;
+		return null;
 	}
 
 	public function addObject( e : PrefabElement ) {
@@ -1142,11 +1155,23 @@ class SceneEditor {
 
 	function deleteElements(elts : Array<PrefabElement>) {
 		var contexts = context.shared.contexts;
-		var list = [for(e in elts) {
-			elt: e,
-			parent: e.parent,
-			index: e.parent.children.indexOf(e)
-		}];
+		var list = [];
+		var allObjects = true;
+		for(e in elts) {
+			var obj = getSelfObject(e);
+			var parentObj = obj != null ? obj.parent : null;
+			if(obj == null)
+				allObjects = false;
+			list.push({
+				elt: e,
+				parent: e.parent,
+				index: e.parent.children.indexOf(e),
+				obj: obj,
+				parentObj: parentObj,
+				objIndex: parentObj != null ? parentObj.getChildIndex(obj) : -1
+			});
+		}
+		deselect();
 		var oldContexts = contexts.copy();
 		for(e in elts) {
 			hideList.remove(e);
@@ -1157,17 +1182,25 @@ class SceneEditor {
 		var newContexts = contexts.copy();
 		function action(undo) {
 			if( undo ) {
-				for(o in list)
+				for(o in list) {
 					o.parent.children.insert(o.index, o.elt);
+					if(o.obj != null)
+						o.parentObj.addChildAt(o.obj, o.objIndex);
+				}
 				context.shared.contexts = oldContexts;
 			}
 			else {
-				for(o in list)
+				for(o in list) {
 					o.parent.children.remove(o.elt);
+					if(o.parentObj != null)
+						o.parentObj.removeChild(o.obj);
+				}
 				context.shared.contexts = newContexts;
 			}
-			deselect();
-			refresh();
+			if(allObjects)
+				refreshTree(); // Only refresh tree, scene has already been updated
+			else
+				refresh(); // Full-refresh
 		}
 		action(false);
 		undo.change(Custom(action));
