@@ -300,7 +300,7 @@ class PropsField extends Component {
 			return;
 		case "color":
 			var arr = Std.instance(current, Array);
-			var alpha = arr != null && arr.length == 4;
+			var alpha = arr != null && arr.length == 4 || f.attr("alpha") == "true";
 			var picker = new hide.comp.ColorPicker(alpha, null, f);
 
 			function updatePicker(val: Dynamic) {
@@ -314,11 +314,9 @@ class PropsField extends Component {
 			updatePicker(current);
 			picker.onChange = function(move) {
 				if(!move) {
-					trace("Add " + current);
 					undo(function() {
 						var f = resolveField();
 						f.current = getFieldValue();
-						trace("Undo " + f.current);
 						updatePicker(f.current);
 						f.onChange(true);
 					});

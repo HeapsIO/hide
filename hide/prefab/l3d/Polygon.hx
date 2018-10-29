@@ -12,9 +12,9 @@ typedef PrimCache = Map<Shape, h3d.prim.Polygon>;
 class Polygon extends Object3D {
 
 	public var shape(default, null) : Shape = Quad;
-	public var debugColor : Int;
 	public var points : h2d.col.Polygon;
 	#if editor
+	public var debugColor : Int;
 	public var editor : PolygonEditor;
 	#end
 
@@ -29,7 +29,9 @@ class Polygon extends Object3D {
 				obj.kind = 2;
 				obj.points = points;
 		}
+		#if editor
 		obj.debugColor = debugColor;
+		#end
 		return obj;
 	}
 
@@ -43,33 +45,22 @@ class Polygon extends Object3D {
 				var list : Array<Dynamic> = obj.points;
 				points = [for(pt in list) new h2d.col.Point(pt.x, pt.y)];
 		}
+		#if editor
 		debugColor = obj.debugColor != null ? obj.debugColor : 0xFFFFFF;
+		if((debugColor >> 24) == 0)
+			debugColor = 0x80000000 | debugColor;
+		#end
 	}
 
 	override function updateInstance( ctx : Context, ?propName : String) {
 		super.updateInstance(ctx, propName);
-		//if(ctx.local3d == null) return;
 		var mesh : h3d.scene.Mesh = cast ctx.local3d;
 		mesh.primitive = makePrimitive();
-		//if(!hide.prefab.Material.hasOverride(this)){
-			var mat = mesh.material;
-			mat.mainPass.culling = None;
-			mat.castShadows = false;
-			mat.color = h3d.Vector.fromColor(debugColor);
-			mat.color.a = 0.7;
-		//}
 		#if editor
+		setColor(ctx, debugColor);
 		if(editor != null)
 			editor.update(propName);
 		#end
-		// var layer = getParent(Layer);
-		// if(layer != null) {
-		// 	setColor(ctx, layer != null ? (layer.color | 0x40000000) : 0x40ff00ff);
-		// }
-		// else {
-		// 	mat.props = h3d.mat.MaterialSetup.current.getDefaults("opaque");
-		// 	mat.color.setColor(0xffffffff);
-		// }
 	}
 
 	function getPrimCache() {
@@ -338,7 +329,7 @@ class Polygon extends Object3D {
 
 		ctx.properties.add( new hide.Element('
 			<div class="group" name="Params">
-				<dl><dt>Color</dt><dd><input type="color" field="debugColor"/></dd> </dl>
+				<dl><dt>Color</dt><dd><input type="color" alpha="true" field="debugColor"/></dd> </dl>
 			</div>'), this, function(pname) { ctx.onChange(this, pname); });
 
 		updateProps();
