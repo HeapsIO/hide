@@ -391,128 +391,140 @@ class SceneEditor {
 	public dynamic function onRefresh() {
 	}
 
+	function makeInteractive(elt: PrefabElement) {
+		var obj3d = Std.instance(elt, Object3D);
+		if(obj3d == null)
+			return;
+		var contexts = context.shared.contexts;
+		var ctx = contexts[elt];
+		var local3d = ctx.local3d;
+		if(local3d == null)
+			return;
+		var meshes = context.shared.getObjects(elt, h3d.scene.Mesh);
+		var invRootMat = local3d.getAbsPos().clone();
+		invRootMat.invert();
+		var bounds = new h3d.col.Bounds();
+		for(mesh in meshes) {
+			if(mesh.ignoreCollide)
+				continue;
+
+			// invisible objects are ignored collision wise
+			var p : h3d.scene.Object = mesh;
+			while( p != local3d ) {
+				if( !p.visible ) break;
+				p = p.parent;
+			}
+			if( p != local3d ) continue;
+
+			var localMat = mesh.getAbsPos().clone();
+			localMat.multiply(localMat, invRootMat);
+			var lb = mesh.primitive.getBounds().clone();
+			lb.transform(localMat);
+			bounds.add(lb);
+		}
+		var meshCollider = new h3d.col.Collider.GroupCollider([for(m in meshes) {
+			var c : h3d.col.Collider = try m.getGlobalCollider() catch(e: Dynamic) null;
+			if(c != null) c;
+		}]);
+		var boundsCollider = new h3d.col.ObjectCollider(local3d, bounds);
+		var int = new h3d.scene.Interactive(boundsCollider, local3d);
+		interactives.set(elt, int);
+		int.ignoreParentTransform = true;
+		int.preciseShape = meshCollider;
+		int.propagateEvents = true;
+		int.enableRightButton = true;
+		var startDrag = null;
+		int.onClick = function(e) {
+			if(e.button == K.MOUSE_RIGHT) {
+				e.propagate = false;
+				e.cancel = true;
+				var parentEl = curEdit.rootElements[0];
+				if(parentEl == null)
+					parentEl = elt;
+				var newItems = getNewContextMenu(parentEl, function(newElt) {
+					var newObj3d = Std.instance(newElt, Object3D);
+					if(newObj3d != null) {
+						var newPos = new h3d.Matrix();
+						newPos.identity();
+						newPos.setPosition(@:privateAccess int.hitPoint);
+						var invParent = getObject(parentEl).getAbsPos().clone();
+						invParent.invert();
+						newPos.multiply(newPos, invParent);
+						newObj3d.setTransform(newPos);
+					}
+				});
+				var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [
+					{ label : "New...", menu : newItems },
+				];
+				new hide.comp.ContextMenu(menuItems);
+			}
+		}
+		int.onPush = function(e) {
+			startDrag = [scene.s2d.mouseX, scene.s2d.mouseY];
+			if(e.button != K.MOUSE_LEFT)
+				return;
+			e.propagate = false;
+			var elts = null;
+			if(K.isDown(K.SHIFT)) {
+				if(Type.getClass(elt.parent) == hide.prefab.Object3D)
+					elts = [elt.parent];
+				else
+					elts = elt.parent.children;
+			}
+			else
+				elts = [elt];
+
+			if(K.isDown(K.CTRL)) {
+				var current = curEdit.elements.copy();
+				if(current.indexOf(elt) < 0) {
+					for(e in elts) {
+						if(current.indexOf(e) < 0)
+							current.push(e);
+					}
+				}
+				else {
+					for(e in elts)
+						current.remove(e);
+				}
+				selectObjects(current);
+			}
+			else
+				selectObjects(elts);
+		}
+		int.onRelease = function(e) {
+			startDrag = null;
+			if(e.button == K.MOUSE_LEFT) {
+				e.propagate = false;
+				e.cancel = true;
+			}
+		}
+		int.onMove = function(e) {
+			if(startDrag != null) {
+				if((M.abs(startDrag[0] - scene.s2d.mouseX) + M.abs(startDrag[1] - scene.s2d.mouseY)) > 5) {
+					int.preventClick();
+					startDrag = null;
+					if(e.button == K.MOUSE_LEFT) {
+						moveGizmoToSelection();
+						gizmo.startMove(MoveXY);
+					}
+				}
+			}
+		}
+	}
+
+	// function removeInteractive(elt: PrefabElement) {
+	// 	var int = interactives.get(elt);
+	// 	if(int != null)
+	// 		int.remove()
+	// 	interactives.remove(elt);
+	// }
+
 	function refreshInteractives() {
 		var contexts = context.shared.contexts;
 		interactives = new Map();
 		var all = contexts.keys();
 		for(elt in all) {
-			var obj3d = Std.instance(elt, Object3D);
-			if(obj3d == null)
-				continue;
-			var ctx = contexts[elt];
-			var local3d = ctx.local3d;
-			if(local3d == null)
-				continue;
-			var meshes = context.shared.getObjects(elt, h3d.scene.Mesh);
-			var invRootMat = local3d.getAbsPos().clone();
-			invRootMat.invert();
-			var bounds = new h3d.col.Bounds();
-			for(mesh in meshes) {
-				if(mesh.ignoreCollide)
-					continue;
-
-				// invisible objects are ignored collision wise
-				var p : h3d.scene.Object = mesh;
-				while( p != local3d ) {
-					if( !p.visible ) break;
-					p = p.parent;
-				}
-				if( p != local3d ) continue;
-
-				var localMat = mesh.getAbsPos().clone();
-				localMat.multiply(localMat, invRootMat);
-				var lb = mesh.primitive.getBounds().clone();
-				lb.transform(localMat);
-				bounds.add(lb);
-			}
-			var meshCollider = new h3d.col.Collider.GroupCollider([for(m in meshes) {
-				var c : h3d.col.Collider = try m.getGlobalCollider() catch(e: Dynamic) null;
-				if(c != null) c;
-			}]);
-			var boundsCollider = new h3d.col.ObjectCollider(local3d, bounds);
-			var int = new h3d.scene.Interactive(boundsCollider, local3d);
-			interactives.set(elt, int);
-			int.ignoreParentTransform = true;
-			int.preciseShape = meshCollider;
-			int.propagateEvents = true;
-			int.enableRightButton = true;
-			var startDrag = null;
-            int.onClick = function(e) {
-                if(e.button == K.MOUSE_RIGHT) {
-                    e.propagate = false;
-					e.cancel = true;
-					var parentEl = curEdit.rootElements[0];
-					if(parentEl == null)
-						parentEl = elt;
-                    var newItems = getNewContextMenu(parentEl, function(newElt) {
-						var newObj3d = Std.instance(newElt, Object3D);
-						if(newObj3d != null) {
-							var newPos = new h3d.Matrix();
-							newPos.identity();
-							newPos.setPosition(@:privateAccess int.hitPoint);
-							var invParent = getObject(parentEl).getAbsPos().clone();
-							invParent.invert();
-							newPos.multiply(newPos, invParent);
-							newObj3d.setTransform(newPos);
-						}
-					});
-                    var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [
-                        { label : "New...", menu : newItems },
-                    ];
-                    new hide.comp.ContextMenu(menuItems);
-                }
-			}
-			int.onPush = function(e) {
-				startDrag = [scene.s2d.mouseX, scene.s2d.mouseY];
-                if(e.button != K.MOUSE_LEFT)
-                    return;
-				e.propagate = false;
-				var elts = null;
-				if(K.isDown(K.SHIFT)) {
-					if(Type.getClass(elt.parent) == hide.prefab.Object3D)
-						elts = [elt.parent];
-					else
-						elts = elt.parent.children;
-				}
-				else
-					elts = [elt];
-
-				if(K.isDown(K.CTRL)) {
-					var current = curEdit.elements.copy();
-					if(current.indexOf(elt) < 0) {
-						for(e in elts) {
-							if(current.indexOf(e) < 0)
-								current.push(e);
-						}
-					}
-					else {
-						for(e in elts)
-							current.remove(e);
-					}
-					selectObjects(current);
-				}
-				else
-					selectObjects(elts);
-			}
-			int.onRelease = function(e) {
-				startDrag = null;
-				if(e.button == K.MOUSE_LEFT) {
-					e.propagate = false;
-					e.cancel = true;
-				}
-			}
-			int.onMove = function(e) {
-				if(startDrag != null) {
-					if((M.abs(startDrag[0] - scene.s2d.mouseX) + M.abs(startDrag[1] - scene.s2d.mouseY)) > 5) {
-						int.preventClick();
-						startDrag = null;
-						if(e.button == K.MOUSE_LEFT) {
-							moveGizmoToSelection();
-							gizmo.startMove(MoveXY);
-						}
-					}
-				}
-			}
+			makeInteractive(elt);
 		}
 	}
 
@@ -775,14 +787,39 @@ class SceneEditor {
 
 	public function addObject( e : PrefabElement ) {
 		var roots = e.parent.children;
+		var parentCtx = getContext(e.parent);
+		e.makeInstance(parentCtx);
+		var local3d = getSelfObject(e);
+		var parentObj = local3d != null ? local3d.parent : null;
+		var int = interactives.get(e);
 		undo.change(Custom(function(undo) {
-			if( undo )
+			deselect();
+			if( undo ) {
 				roots.remove(e);
-			else
+				if(parentObj != null)
+					parentObj.removeChild(local3d);
+				if(int != null)
+					interactives.remove(e);
+			}
+			else {
 				roots.push(e);
-			refresh();
+				if(parentObj != null)
+					parentObj.addChild(local3d);
+				if(int != null)
+					interactives.set(e, int);
+			}
+			if(local3d != null)
+				refreshTree();
+			else 
+				refresh();
 		}));
-		refresh(function() {
+		if(local3d != null) {
+			makeInteractive(e);
+			refreshTree(function() {
+				selectObjects([e]);
+			});
+		}
+		else refresh(function() {
 			selectObjects([e]);
 		});
 	}
@@ -1126,17 +1163,43 @@ class SceneEditor {
 			return;
 		var contexts = context.shared.contexts;
 		var oldContexts = contexts.copy();
+		var lightRefresh = true;
 		var newElements = [for(elt in elements) {
+			var obj3d = Std.instance(elt, Object3D);
+			if(obj3d == null)
+				lightRefresh = false;
 			var clone = elt.clone();
 			var index = elt.parent.children.indexOf(elt);
 			clone.parent = elt.parent;
-			autoName(clone);
 			elt.parent.children.remove(clone);
 			elt.parent.children.insert(index+1, clone);
+			autoName(clone);
+			clone.makeInstanceRec(getContext(elt.parent));
+			makeInteractive(clone);
 			{ elt: clone, idx: index };
 		}];
 		var newContexts = contexts.copy();
-		refresh(function() {
+
+		function addUndo() {
+			undo.change(Custom(function(undo) {
+				for(e in newElements) {
+					if(undo) {
+						e.elt.parent.children.remove(e.elt);
+					}
+					else {
+						e.elt.parent.children.insert(e.idx, e.elt);
+					}
+				}
+				if(undo)
+					context.shared.contexts = oldContexts;
+				else
+					context.shared.contexts = newContexts;
+				refresh();
+				deselect();
+			}));
+		}
+
+		function afterRefresh() {
 			var all = [for(e in newElements) e.elt];
 			selectObjects(all);
 			tree.setSelection(all);
@@ -1152,25 +1215,16 @@ class SceneEditor {
 				gizmo.startMove(MoveXY, true);
 				gizmo.onFinishMove = function() {
 					refreshProps();
-					undo.change(Custom(function(undo) {
-						for(e in newElements) {
-							if(undo) {
-								e.elt.parent.children.remove(e.elt);
-							}
-							else {
-								e.elt.parent.children.insert(e.idx, e.elt);
-							}
-						}
-						if(undo)
-							context.shared.contexts = oldContexts;
-						else
-							context.shared.contexts = newContexts;
-						refresh();
-						deselect();
-					}));
+					addUndo();
 				}
 			}
-		});
+			else {
+				addUndo();
+			}
+		}
+		if(lightRefresh)
+			refreshTree(afterRefresh);
+		else refresh(afterRefresh);
 	}
 
 	function setTransform(elt: PrefabElement, ?mat: h3d.Matrix, ?position: h3d.Vector) {
@@ -1192,12 +1246,12 @@ class SceneEditor {
 	function deleteElements(elts : Array<PrefabElement>) {
 		var contexts = context.shared.contexts;
 		var list = [];
-		var allObjects = true;
+		var lightRefresh = true;
 		for(e in elts) {
 			var obj = getSelfObject(e);
 			var parentObj = obj != null ? obj.parent : null;
 			if(obj == null)
-				allObjects = false;
+				lightRefresh = false;
 			list.push({
 				elt: e,
 				parent: e.parent,
@@ -1233,10 +1287,10 @@ class SceneEditor {
 				}
 				context.shared.contexts = newContexts;
 			}
-			if(allObjects)
-				refreshTree(); // Only refresh tree, scene has already been updated
+			if(lightRefresh)
+				refreshTree();
 			else
-				refresh(); // Full-refresh
+				refresh();
 		}
 		action(false);
 		undo.change(Custom(action));
