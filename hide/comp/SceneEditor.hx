@@ -396,14 +396,15 @@ class SceneEditor {
 		interactives = new Map();
 		var all = contexts.keys();
 		for(elt in all) {
-			if(elt.to(Object3D) == null)
+			var obj3d = Std.instance(elt, Object3D);
+			if(obj3d == null)
 				continue;
 			var ctx = contexts[elt];
-			var o = ctx.local3d;
-			if(o == null)
+			var local3d = ctx.local3d;
+			if(local3d == null)
 				continue;
 			var meshes = context.shared.getObjects(elt, h3d.scene.Mesh);
-			var invRootMat = o.getAbsPos().clone();
+			var invRootMat = local3d.getAbsPos().clone();
 			invRootMat.invert();
 			var bounds = new h3d.col.Bounds();
 			for(mesh in meshes) {
@@ -412,11 +413,11 @@ class SceneEditor {
 
 				// invisible objects are ignored collision wise
 				var p : h3d.scene.Object = mesh;
-				while( p != o ) {
+				while( p != local3d ) {
 					if( !p.visible ) break;
 					p = p.parent;
 				}
-				if( p != o ) continue;
+				if( p != local3d ) continue;
 
 				var localMat = mesh.getAbsPos().clone();
 				localMat.multiply(localMat, invRootMat);
@@ -428,15 +429,43 @@ class SceneEditor {
 				var c : h3d.col.Collider = try m.getGlobalCollider() catch(e: Dynamic) null;
 				if(c != null) c;
 			}]);
-			var boundsCollider = new h3d.col.ObjectCollider(o, bounds);
-			var int = new h3d.scene.Interactive(boundsCollider, o);
+			var boundsCollider = new h3d.col.ObjectCollider(local3d, bounds);
+			var int = new h3d.scene.Interactive(boundsCollider, local3d);
 			interactives.set(elt, int);
 			int.ignoreParentTransform = true;
 			int.preciseShape = meshCollider;
 			int.propagateEvents = true;
+			int.enableRightButton = true;
 			var startDrag = null;
+            int.onClick = function(e) {
+                if(e.button == K.MOUSE_RIGHT) {
+                    e.propagate = false;
+					e.cancel = true;
+					var parentEl = curEdit.rootElements[0];
+					if(parentEl == null)
+						parentEl = elt;
+                    var newItems = getNewContextMenu(parentEl, function(newElt) {
+						var newObj3d = Std.instance(newElt, Object3D);
+						if(newObj3d != null) {
+							var newPos = new h3d.Matrix();
+							newPos.identity();
+							newPos.setPosition(@:privateAccess int.hitPoint);
+							var invParent = getObject(parentEl).getAbsPos().clone();
+							invParent.invert();
+							newPos.multiply(newPos, invParent);
+							newObj3d.setTransform(newPos);
+						}
+					});
+                    var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [
+                        { label : "New...", menu : newItems },
+                    ];
+                    new hide.comp.ContextMenu(menuItems);
+                }
+			}
 			int.onPush = function(e) {
 				startDrag = [scene.s2d.mouseX, scene.s2d.mouseY];
+                if(e.button != K.MOUSE_LEFT)
+                    return;
 				e.propagate = false;
 				var elts = null;
 				if(K.isDown(K.SHIFT)) {
@@ -467,13 +496,20 @@ class SceneEditor {
 			}
 			int.onRelease = function(e) {
 				startDrag = null;
+				if(e.button == K.MOUSE_LEFT) {
+					e.propagate = false;
+					e.cancel = true;
+				}
 			}
 			int.onMove = function(e) {
 				if(startDrag != null) {
 					if((M.abs(startDrag[0] - scene.s2d.mouseX) + M.abs(startDrag[1] - scene.s2d.mouseY)) > 5) {
+						int.preventClick();
 						startDrag = null;
-						moveGizmoToSelection();
-						gizmo.startMove(MoveXY);
+						if(e.button == K.MOUSE_LEFT) {
+							moveGizmoToSelection();
+							gizmo.startMove(MoveXY);
+						}
 					}
 				}
 			}
@@ -1325,7 +1361,7 @@ class SceneEditor {
 	}
 
 	// Override
-	function getNewContextMenu(current: PrefabElement) : Array<hide.comp.ContextMenu.ContextMenuItem> {
+	function getNewContextMenu(current: PrefabElement, ?onMake: PrefabElement->Void=null) : Array<hide.comp.ContextMenu.ContextMenuItem> {
 		var newItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
 		var allRegs = hxd.prefab.Library.getRegistered().copy();
 		allRegs.remove("reference");
@@ -1348,15 +1384,15 @@ class SceneEditor {
 					continue;
 			}
 			if(ptype == "shader")
-				newItems.push(getNewShaderMenu(parent));
+				newItems.push(getNewShaderMenu(parent, onMake));
 			else
-				newItems.push(getNewTypeMenuItem(ptype, parent));
+				newItems.push(getNewTypeMenuItem(ptype, parent, onMake));
 		}
 		newItems.sort(function(l1,l2) return Reflect.compare(l1.label,l2.label));
 		return newItems;
 	}
 
-	function getNewTypeMenuItem(ptype: String, parent: PrefabElement) : hide.comp.ContextMenu.ContextMenuItem {
+	function getNewTypeMenuItem(ptype: String, parent: PrefabElement, onMake: PrefabElement->Void) : hide.comp.ContextMenu.ContextMenuItem {
 		var pmodel = hxd.prefab.Library.getRegistered().get(ptype);
 		return {
 			label : pmodel.inf.name,
@@ -1367,6 +1403,8 @@ class SceneEditor {
 					if(path != null)
 						p.source = path;
 					autoName(p);
+					if(onMake != null)
+						onMake(p);
 					return p;
 				}
 
@@ -1382,8 +1420,8 @@ class SceneEditor {
 		};
 	}
 
-	function getNewShaderMenu(parentElt: PrefabElement) : hide.comp.ContextMenu.ContextMenuItem {
-		var custom = getNewTypeMenuItem("shader", parentElt);
+	function getNewShaderMenu(parentElt: PrefabElement, onMake: PrefabElement->Void) : hide.comp.ContextMenu.ContextMenuItem {
+		var custom = getNewTypeMenuItem("shader", parentElt, onMake);
 		custom.label = "Custom...";
 
 		function shaderItem(name, path) : hide.comp.ContextMenu.ContextMenuItem {

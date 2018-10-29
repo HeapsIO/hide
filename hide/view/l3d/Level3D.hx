@@ -21,6 +21,7 @@ class LevelEditContext extends hide.prefab.EditContext {
 @:access(hide.view.l3d.Level3D)
 class CamController extends h3d.scene.CameraController {
 	var level3d : Level3D;
+	var startPush : h2d.col.Point;
 
 	public function new(parent, level3d) {
 		super(null, parent);
@@ -32,29 +33,31 @@ class CamController extends h3d.scene.CameraController {
 		case EWheel:
 			zoom(e.wheelDelta);
 		case EPush:
-			@:privateAccess scene.events.startDrag(onEvent, function() pushing = -1, e);
 			pushing = e.button;
 			pushX = e.relX;
 			pushY = e.relY;
+			startPush = new h2d.col.Point(pushX, pushY);
 		case ERelease, EReleaseOutside:
 			if( pushing == e.button ) {
 				pushing = -1;
-				@:privateAccess scene.events.stopDrag();
+				startPush = null;
 			}
 		case EMove:
 			switch( pushing ) {
 			case 1:
-				var m = 0.001 * curPos.x * panSpeed / 25;
-				if(hxd.Key.isDown(hxd.Key.SHIFT)) {
-					pan(-(e.relX - pushX) * m, (e.relY - pushY) * m);
-				}
-				else {
-					var se = level3d.sceneEditor;
-					var fromPt = se.screenToWorld(pushX, pushY);
-					var toPt = se.screenToWorld(e.relX, e.relY);
-					var delta = toPt.sub(fromPt).toVector();
-					delta.w = 0;
-					targetOffset = targetOffset.sub(delta);
+				if(startPush != null && startPush.distance(new h2d.col.Point(e.relX, e.relY)) > 3) {
+					var m = 0.001 * curPos.x * panSpeed / 25;
+					if(hxd.Key.isDown(hxd.Key.SHIFT)) {
+						pan(-(e.relX - pushX) * m, (e.relY - pushY) * m);
+					}
+					else {
+						var se = level3d.sceneEditor;
+						var fromPt = se.screenToWorld(pushX, pushY);
+						var toPt = se.screenToWorld(e.relX, e.relY);
+						var delta = toPt.sub(fromPt).toVector();
+						delta.w = 0;
+						targetOffset = targetOffset.sub(delta);
+					}
 				}
 				pushX = e.relX;
 				pushY = e.relY;
@@ -142,11 +145,11 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		return super.projectToGround(ray);
 	}
 
-	override function getNewContextMenu(current: PrefabElement) {
+	override function getNewContextMenu(current: PrefabElement, ?onMake: PrefabElement->Void=null) {
 		var newItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
 
 		if(current != null && current.type == "object" && current.name == "settings" && current.parent == sceneData)
-			newItems.push(getNewTypeMenuItem("renderProps",current)); // hack : todo
+			newItems.push(getNewTypeMenuItem("renderProps",current, onMake)); // hack : todo
 
 		function setup(p : PrefabElement) {
 			var proj = screenToWorld(scene.s2d.width/2, scene.s2d.height/2);
@@ -165,7 +168,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 			haxe.Timer.delay(addObject.bind(p), 0);
 		}
 
-		newItems = newItems.concat(super.getNewContextMenu(current));
+		newItems = newItems.concat(super.getNewContextMenu(current, onMake));
 
 		function addNewInstances() {
 			var types = Level3D.getCdbTypes();

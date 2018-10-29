@@ -52,11 +52,11 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		parent.onSelect(elts);
 	}
 
-	override function getNewContextMenu(current: PrefabElement) {
+	override function getNewContextMenu(current: PrefabElement, ?onMake: PrefabElement->Void=null) {
 		if(current != null && current.to(hide.prefab.Shader) != null) {
 			return parent.getNewTrackMenu(current);
 		}
-		var menu = super.getNewContextMenu(current);
+		var menu = super.getNewContextMenu(current, onMake);
 		if(current != null) {
 			menu.unshift({
 				label: "Animation",
