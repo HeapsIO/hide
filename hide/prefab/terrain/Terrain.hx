@@ -30,6 +30,7 @@ class Terrain extends Object3D {
 
 	#if editor
 	var editor : hide.prefab.terrain.TerrainEditor;
+	var cachedInstance : h3d.scene.pbr.terrain.Terrain;
 	#end
 
 	public function new(?parent) {
@@ -150,6 +151,16 @@ class Terrain extends Object3D {
 
 	override function makeInstance(ctx:Context):Context {
 		ctx = ctx.clone(this);
+		
+		#if editor
+		if(cachedInstance != null) {
+			ctx.local3d.addChild(cachedInstance);
+			ctx.local3d = cachedInstance;
+			ctx.local3d.name = name;
+			updateInstance(ctx);
+			return ctx;
+		}
+		#end
 
 		terrain = new h3d.scene.pbr.terrain.Terrain(ctx.local3d);
 		terrain.cellCount = getCellCount();
@@ -164,6 +175,7 @@ class Terrain extends Object3D {
 		terrain.heightBlendStrength = heightBlendStrength;
 		terrain.heightBlendSharpness = heightBlendSharpness;
 		terrain.name = "terrain";
+		cachedInstance = terrain;
 
 		ctx.local3d = terrain;
 		ctx.local3d.name = name;
