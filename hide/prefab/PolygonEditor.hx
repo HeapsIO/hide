@@ -113,6 +113,11 @@ class MovablePoint {
 
 class PolygonEditor {
 
+	public var editContext : EditContext;
+	public var showDebug : Bool;
+	public var gridSize = 1;
+	public var showTriangles : Bool = false;
+
 	var polygonPrefab : hide.prefab.l3d.Polygon;
 	var undo : hide.ui.UndoHistory;
 	var interactive : h2d.Interactive;
@@ -124,12 +129,10 @@ class PolygonEditor {
 	var lastPos : h3d.Vector;
 	var selectedEdge : Edge;
 	var selectedEdgeGraphic : h3d.scene.Graphics;
-	public var editContext : EditContext;
-	public var showDebug : Bool;
-	public var gridSize = 1;
-	public var showTriangles : Bool = false;
 	var lastClickStamp = 0.0;
+	var editMode = false;
 
+	// Temp container for Undo
 	var beforeMoveList : Array<h2d.col.Point> = [];
 	var afterMoveList : Array<h2d.col.Point> = [];
 
@@ -172,6 +175,9 @@ class PolygonEditor {
 		}
 		else if(propName == "showTriangles") {
 			drawTriangles(showTriangles);
+		}
+		else if(propName == "editMode") {
+			setSelected(getContext(), true);
 		}
 	}
 
@@ -314,6 +320,7 @@ class PolygonEditor {
 
 	public function setSelected( ctx : Context, b : Bool ) {
 		reset();
+		if(!editMode) return;
 		if(b){
 			var s2d = @:privateAccess ctx.local2d.getScene();
 			interactive = new h2d.Interactive(10000, 10000, s2d);
@@ -439,6 +446,8 @@ class PolygonEditor {
 					refreshDebugDisplay();
 			};
 		}
+		else
+			editMode = false;
 	}
 
 	function refreshSelectedEdge( pos : h2d.col.Point ){
@@ -518,6 +527,9 @@ class PolygonEditor {
 		var props = new hide.Element('
 		<div class="poly-editor">
 			<div class="group" name="Tool">
+				<div align="center">
+					<input type="button" value="Edit Mode : Disabled" class="editModeButton" />
+				</div>
 				<div class="description">
 					<i>Double Left Click</i> : Add point on edge <br>
 					<i>Shift + Left Click</i> : Delete selected point <br>
@@ -536,6 +548,14 @@ class PolygonEditor {
 				</div>
 			</div>
 		</div>');
+
+		var editModeButton = props.find(".editModeButton");
+		editModeButton.click(function(_) {
+			editMode = !editMode;
+			editModeButton.val(editMode ? "Edit Mode : Enabled" : "Edit Mode : Disabled");
+			editModeButton.toggleClass("editModeEnabled", editMode);
+			setSelected(getContext(), true);
+		});
 
 		props.find(".reset").click(function(_) {
 			var prevList = copyArray(polygonPrefab.points.points);
@@ -603,7 +623,7 @@ class PolygonEditor {
 			v.append('</div>');
 			container.append(v);
 		}
-		
+
 		if(polygonPrefab.points != null) {
 			for(p in polygonPrefab.points){
 				createVector(p);
