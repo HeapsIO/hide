@@ -175,7 +175,10 @@ class Terrain extends Object3D {
 		terrain.heightBlendStrength = heightBlendStrength;
 		terrain.heightBlendSharpness = heightBlendSharpness;
 		terrain.name = "terrain";
+		
+		#if editor
 		cachedInstance = terrain;
+		#end
 
 		ctx.local3d = terrain;
 		ctx.local3d.name = name;
