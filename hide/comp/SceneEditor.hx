@@ -782,6 +782,8 @@ class SceneEditor {
 	public function addObject( e : PrefabElement ) {
 		var roots = e.parent.children;
 		var parentCtx = getContext(e.parent);
+		if(parentCtx == null)
+			parentCtx = context;
 		e.makeInstance(parentCtx);
 		var local3d = getSelfObject(e);
 		var parentObj = local3d != null ? local3d.parent : null;
