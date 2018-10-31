@@ -403,7 +403,6 @@ class PolygonEditor {
 								addUndo(prevList, newList);
 								refreshSelectedEdge(new h2d.col.Point(finalPos.x, finalPos.y));
 								// Select new point
-								addSelectedPoint(pt);
 								lastPointSelected = pt;
 							}
 							lastClickStamp = curStamp;
