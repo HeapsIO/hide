@@ -12,6 +12,7 @@ class VolumetricLightmap extends Object3D {
 	public var volumetricLightmap : h3d.scene.pbr.VolumetricLightmap;
 	var useWorldAlignedProbe = false;
 	var displaySH = false;
+	var resolution : Int;
 
 	#if editor
 	var maxOrderBaked = 0;
@@ -33,6 +34,7 @@ class VolumetricLightmap extends Object3D {
 		displaySH = obj.displaySH == null ? false : obj.displaySH;
 		displaySH_field = displaySH;
 		useWorldAlignedProbe = obj.useWorldAlignedProbe == null ? false : obj.useWorldAlignedProbe;
+		resolution = obj.resolution == null ? 32 : obj.resolution;
 	}
 
 	override function save() {
@@ -44,6 +46,7 @@ class VolumetricLightmap extends Object3D {
 		o.order = order;
 		o.displaySH = displaySH;
 		o.useWorldAlignedProbe = useWorldAlignedProbe;
+		o.resolution = resolution;
 		return o;
 	}
 
@@ -216,6 +219,7 @@ class VolumetricLightmap extends Object3D {
 				<dl>
 				<dt>Strength</dt><dd><input type="range" min="0" max="2" value="0" field="strength"/></dd>
 				<dt>SH Order</dt><dd><input type="range" min="1" max="3" value="0" step="1" field="order"/></dd>
+				<dt>Resolution</dt><dd><input type="range" min="1" max="1024" value="0" step="1" field="resolution"/></dd>
 				<dt>Use World Aligned Probes</dt><dd><input type="checkbox" field="useWorldAlignedProbe"/></dd>
 				<dt>Display SH</dt><dd><input type="checkbox" field="displaySH_field"/></dd>
 				<dt></dt><dd><input type="button" value="Bake" class="bake"/></dd>
@@ -282,7 +286,7 @@ class VolumetricLightmap extends Object3D {
 		maxOrderBaked = order;
 		volumetricLightmap.lastBakedProbeIndex = -1;
 		var s3d = @:privateAccess ctx.rootContext.local3d.getScene();
-		baker = new hide.view.l3d.ProbeBakerProcess(s3d, this);
+		baker = new hide.view.l3d.ProbeBakerProcess(s3d, this, resolution);
 		baker.onEnd = function() {
 			if( onEnd != null ) onEnd();
 			var bytes = volumetricLightmap.save();

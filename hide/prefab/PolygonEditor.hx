@@ -397,10 +397,14 @@ class PolygonEditor {
 							var diff = curStamp - lastClickStamp;
 							if(diff < 0.2){
 								var prevList = copyArray(polygonPrefab.points.points);
-								addPointOnEdge(new h2d.col.Point(finalPos.x, finalPos.y), selectedEdge);
+								var pt = new h2d.col.Point(finalPos.x, finalPos.y);
+								addPointOnEdge(pt, selectedEdge);
 								var newList = copyArray(polygonPrefab.points.points);
 								addUndo(prevList, newList);
 								refreshSelectedEdge(new h2d.col.Point(finalPos.x, finalPos.y));
+								// Select new point
+								addSelectedPoint(pt);
+								lastPointSelected = pt;
 							}
 							lastClickStamp = curStamp;
 						}
