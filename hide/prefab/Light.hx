@@ -142,7 +142,8 @@ class Light extends Object3D {
 	}
 
 	function loadBaked( ctx : Context ) {
-		var light = cast(ctx.local3d,h3d.scene.pbr.Light);
+		var light = Std.instance(ctx.local3d, h3d.scene.pbr.Light);
+		if(light == null) return;
 		var res = ctx.shared.loadPrefabDat("shadowMap", "bake", name);
 		if(res != null) light.shadows.loadStaticData(res.entry.getBytes());
 	}
