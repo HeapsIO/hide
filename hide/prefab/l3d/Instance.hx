@@ -92,25 +92,23 @@ class Instance extends Object3D {
 			}
 			return null;
 		}
-		var col = refSheet.columns.find(c -> c.type == cdb.Data.ColumnType.TFile);
 		var path = null;
-		if(col != null) {
-			path = filter(Reflect.getProperty(obj, col.name));
-		}
-		if(path == null) {
-			for(c in refSheet.columns) {
-				if(c.type == cdb.Data.ColumnType.TList) {
-					var sub = refSheet.getSub(c);
-					if(sub == null) continue;
-					var lines : Array<Dynamic> = Reflect.field(obj, c.name);
-					if(lines == null || lines.length == 0) continue;
-					// var lines = sub.getLines();
-					// if(lines.length == 0) continue;
-					var col = sub.columns.find(sc -> sc.type == cdb.Data.ColumnType.TFile);
-					if(col == null) continue;
-					path = filter(Reflect.getProperty(lines[0], col.name));
-					if(path != null) break;
-				}
+		for(c in refSheet.columns) {
+			if(c.type == cdb.Data.ColumnType.TList) {
+				var sub = refSheet.getSub(c);
+				if(sub == null) continue;
+				var lines : Array<Dynamic> = Reflect.field(obj, c.name);
+				if(lines == null || lines.length == 0) continue;
+				// var lines = sub.getLines();
+				// if(lines.length == 0) continue;
+				var col = sub.columns.find(sc -> sc.type == cdb.Data.ColumnType.TFile);
+				if(col == null) continue;
+				path = filter(Reflect.getProperty(lines[0], col.name));
+				if(path != null) break;
+			}
+			else if(c.type == cdb.Data.ColumnType.TFile) {
+				path = filter(Reflect.getProperty(obj, c.name));
+				if(path != null) break;
 			}
 		}
 		return path;
