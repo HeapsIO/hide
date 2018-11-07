@@ -59,6 +59,17 @@ class FXAnimation extends h3d.scene.Object {
 		super(parent);
 		random = new hxd.Rand(Std.random(0xFFFFFF));
 		evaluator = new Evaluator(random);
+		name = "FXAnimation";
+	}
+
+	override function onRemove() {
+		super.onRemove();
+		for(obj in objects){
+			obj.obj.remove();
+		}
+		for(emitter in emitters){
+			emitter.reset();
+		}
 	}
 
 	public function setRandSeed(seed: Int) {
@@ -88,7 +99,7 @@ class FXAnimation extends h3d.scene.Object {
 
 			var baseMat = anim.elt.getTransform();
 			var offset = baseMat.getPosition();
-			baseMat.tx = baseMat.ty = baseMat.tz = 0.0;  // Ignore 
+			baseMat.tx = baseMat.ty = baseMat.tz = 0.0;  // Ignore
 			m.multiply(baseMat, m);
 			m.translate(offset.x, offset.y, offset.z);
 
@@ -98,7 +109,7 @@ class FXAnimation extends h3d.scene.Object {
 			}
 
 			anim.obj.setTransform(m);
-	
+
 			if(anim.visibility != null)
 				anim.obj.visible = anim.elt.visible && evaluator.getFloat(anim.visibility, time) > 0.5;
 
@@ -120,15 +131,17 @@ class FXAnimation extends h3d.scene.Object {
 			anim.setTime(time);
 		}
 
-		for(i in 0...numChildren) {
-			var child = getChildAt(i);
-			if(child.currentAnimation != null) {
-				var anim = child.currentAnimation;
+		function setAnimFrame(object : h3d.scene.Object, time : Float){
+			var anim = object.currentAnimation;
+			if(object.currentAnimation != null){
 				anim.loop = false;
 				anim.pause = true;
-				anim.setFrame(hxd.Math.clamp(time * anim.sampling * anim.speed, 0, anim.frameCount));
+				anim.setFrame( hxd.Math.clamp(time * anim.sampling * anim.speed, 0, anim.frameCount) );
 			}
+			for(i in 0...object.numChildren)
+				setAnimFrame(object.getChildAt(i), time);
 		}
+		setAnimFrame(this, time);
 
 		for(em in emitters) {
 			if(em.visible)
@@ -303,14 +316,65 @@ class FX extends hxd.prefab.Library {
 		}
 	}
 
-	override function makeInstance(ctx:Context):Context {
-		if( inRec )
-			return ctx;
+	function getFXRoot( ctx : Context, elt : PrefabElement ) : PrefabElement {
+		if( elt.name == "FXRoot" )
+			return elt;
+		else {
+			for(c in elt.children) {
+				var elt = getFXRoot(ctx, c);
+				if(elt != null) return elt;
+			}
+		}
+		return null;
+	}
+
+	function getContraints( ctx : Context, elt : PrefabElement, contraints : Array<hide.prefab.Constraint> ){
+		var co = Std.instance(elt, hide.prefab.Constraint);
+		if(co != null)
+			contraints.push(co);
+		else
+			for(c in elt.children)
+				getContraints(ctx, c, contraints);
+	}
+
+	function resolveContraints( ctx : Context , contraints : Array<hide.prefab.Constraint> ){
+		var parent = ctx.local3d.parent;
+		for(co in contraints){
+			var objectName = co.object.split(".").pop();
+			var targetName = co.target.split(".").pop();
+			trace(co.object + " on " + co.target);
+			var srcObj = objectName == "FXRoot" ? ctx.local3d : parent.getObjectByName(objectName);
+			var targetObj = parent.getObjectByName(targetName);
+			if( srcObj != null && targetObj != null ) srcObj.follow = targetObj;
+		}
+	}
+
+	override function makeInstance( ctx : Context ) : Context {
+		if( inRec ) return ctx;
+
 		ctx = ctx.clone(this);
 		var fxanim = new FXAnimation(ctx.local3d);
 		fxanim.duration = duration;
 		ctx.local3d = fxanim;
+
+		#if editor
 		super.makeInstance(ctx);
+		#else
+		var root = getFXRoot(ctx, this);
+		if(root != null){
+			for( c in root.children ){
+				var co = Std.instance(c , Constraint);
+				if(co == null) c.makeInstanceRec(ctx);
+			}
+			var contraints : Array<hide.prefab.Constraint> = [];
+			getContraints(ctx, root, contraints);
+			resolveContraints(ctx, contraints);
+			getObjAnimations(ctx, this, fxanim.objects);
+		}
+		else
+			super.makeInstance(ctx);
+		#end
+
 		getObjAnimations(ctx, this, fxanim.objects);
 		getShaderAnims(ctx, this, fxanim.shaderAnims);
 		getEmitters(ctx, this, fxanim.emitters);

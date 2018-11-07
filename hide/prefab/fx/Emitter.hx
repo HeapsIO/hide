@@ -3,6 +3,11 @@ import hide.prefab.Curve;
 import hide.prefab.fx.FX.ShaderAnimation;
 using Lambda;
 
+enum SimulationSpace {
+	Local;
+	World;
+}
+
 enum AlignMode {
 	None;
 	Screen;
@@ -57,7 +62,10 @@ private class ParticleInstance extends h3d.scene.Object {
 	var childMat = new h3d.Matrix();
 
 	public function new(emitter: EmitterObject, def: InstanceDef) {
-		super(emitter.parent);
+		switch(emitter.simulationSpace){
+			case Local:super(emitter.parent);
+			case World:super(emitter.getScene());
+		}
 		this.def = def;
 		this.emitter = emitter;
 		this.evaluator = new Evaluator(emitter.random);
@@ -125,7 +133,10 @@ private class ParticleInstance extends h3d.scene.Object {
 				case Screen: {
 					var mat = ctx.camera.mcam.clone();
 					mat.invert();
-					mat.multiply3x4(mat, emitter.invTransform);
+					switch(emitter.simulationSpace){
+						case Local:mat.multiply3x4(mat, emitter.invTransform);
+						case World:
+					}
 					var q = new h3d.Quat();
 					q.initRotateMatrix(mat);
 					setRotationQuat(q);
@@ -180,6 +191,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var lifeTime = 2.0;
 	public var emitShape : EmitShape = Cylinder;
 	public var emitOrientation : Orientation = Forward;
+	public var simulationSpace : SimulationSpace = Local;
 	public var emitAngle : Float = 0.0;
 	public var emitRad1 : Float = 1.0;
 	public var emitRad2 : Float = 1.0;
@@ -219,7 +231,7 @@ class EmitterObject extends h3d.scene.Object {
 	var evaluator : Evaluator;
 	var instances : Array<ParticleInstance> = [];
 
-	function reset() {
+	public function reset() {
 		random.init(randomSeed);
 		curTime = 0.0;
 		lastTime = 0.0;
@@ -304,13 +316,26 @@ class EmitterObject extends h3d.scene.Object {
 			if(emitOrientation == Random)
 				tmpq.initRotation(hxd.Math.srand(Math.PI), hxd.Math.srand(Math.PI), hxd.Math.srand(Math.PI));
 
-			localQuat.multiply(localQuat, tmpq);
-			part.setRotationQuat(localQuat);
-			part.orientation = localQuat.clone();
-			offset.transform(localMat);
-			part.setPosition(offset.x, offset.y, offset.z);
-			part.baseMat = particleTemplate.getTransform();
-			part.baseMat.tx = part.baseMat.ty = part.baseMat.tz = 0; // Kill translation to make edition easier
+			switch(simulationSpace){
+				case Local:
+					offset.transform(localMat);
+					part.setPosition(offset.x, offset.y, offset.z);
+					part.baseMat = particleTemplate.getTransform();
+					part.baseMat.tx = part.baseMat.ty = part.baseMat.tz = 0; // Kill translation to make edition easier
+					localQuat.multiply(localQuat, tmpq);
+					part.setRotationQuat(localQuat);
+					part.orientation = localQuat.clone();
+				case World:
+					var worldPos = localToGlobal(offset.clone());
+					part.setPosition(worldPos.x, worldPos.y, worldPos.z);
+					part.baseMat = particleTemplate.getTransform();
+					part.baseMat.tx = part.baseMat.ty = part.baseMat.tz = 0; // Kill translation to make edition easier
+					var worldQuat = new h3d.Quat();
+					worldQuat.initRotateMatrix(getAbsPos());
+					tmpq.multiply(tmpq, worldQuat);
+					part.setRotationQuat(tmpq);
+					part.orientation = tmpq.clone();
+			}
 
 			// Setup mats.
 			// Should we do this manually here or make a recursive makeInstance on the template?
@@ -411,6 +436,7 @@ class Emitter extends Object3D {
 	}
 
 	public static var emitterParams : Array<ParamDef> = [
+		{ name: "simulationSpace", t: PEnum(SimulationSpace), def: SimulationSpace.Local, disp: "Simulation Space", },
 		{ name: "emitRate", t: PInt(0, 100), def: 5, disp: "Rate", animate: true },
 		{ name: "lifeTime", t: PFloat(0, 10), def: 1.0 },
 		{ name: "maxCount", t: PInt(0, 100), def: 20, },
@@ -600,6 +626,7 @@ class Emitter extends Object3D {
 			emitterObj.particleTemplate = template;
 		}
 
+		emitterObj.simulationSpace = getParamVal("simulationSpace");
 		emitterObj.lifeTime = getParamVal("lifeTime");
 		emitterObj.maxCount = getParamVal("maxCount");
 		emitterObj.emitRate = makeParam(this, "emitRate");
@@ -774,7 +801,7 @@ class Emitter extends Object3D {
 			return;
 		var debugShape : h3d.scene.Object = emitterObj.find(c -> if(c.name == "_highlight") c else null);
 		if(debugShape != null)
-			debugShape.visible = b;		
+			debugShape.visible = b;
 	}
 
 	function updateEmitShape(emitterObj: EmitterObject) {

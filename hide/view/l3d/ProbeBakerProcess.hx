@@ -8,12 +8,14 @@ class ProbeBakerProcess {
 	var volumetricLightmap : hide.prefab.l3d.VolumetricLightmap;
 	var s3d : h3d.scene.Scene;
 	var bakeTime : Float;
+	var resolution : Int;
 
-	public function new(s3d, volumetricLightmap, bakeTime : Float = 0.08 ){
+	public function new(s3d, volumetricLightmap, res, bakeTime : Float = 0.08 ){
 		progress = 0;
 		this.s3d = s3d;
 		this.bakeTime = bakeTime;
 		this.volumetricLightmap = volumetricLightmap;
+		this.resolution = res;
 
 		lightProbeBaker = new h3d.scene.pbr.LightProbeBaker();
 		lightProbeBaker.useGPU = false;
@@ -27,7 +29,7 @@ class ProbeBakerProcess {
 	}
 
 	public function update(dt:Float) {
-		lightProbeBaker.bake(s3d.renderer, s3d, volumetricLightmap.volumetricLightmap, 32, bakeTime);
+		lightProbeBaker.bake(s3d, volumetricLightmap.volumetricLightmap, resolution, bakeTime);
 		volumetricLightmap.createDebugPreview();
 		progress = (volumetricLightmap.volumetricLightmap.lastBakedProbeIndex +1.0) / volumetricLightmap.volumetricLightmap.getProbeCount();
 		if( progress == 1 ) {

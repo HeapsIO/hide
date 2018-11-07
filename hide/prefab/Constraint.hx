@@ -2,8 +2,8 @@ package hide.prefab;
 
 class Constraint extends Prefab {
 
-	var object : String;
-	var target : String;
+	public var object(default,null) : String;
+	public var target(default,null) : String;
 
 	override public function load(v:Dynamic) {
 		object = v.object;
@@ -45,6 +45,7 @@ class Constraint extends Prefab {
 			makeInstance(ctx.rootContext);
 			curObj = ctx.rootContext.locateObject(object);
 		});
+
 		for( select in [props.find("[field=object]"), props.find("[field=target]")] ) {
 			for( path in ctx.getNamedObjects() ) {
 				var parts = path.split(".");
