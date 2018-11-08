@@ -152,7 +152,8 @@ class FXAnimation extends h3d.scene.Object {
 		for(co in contraints){
 			var objectName = co.object.split(".").pop();
 			var targetName = co.target.split(".").pop();
-			var srcObj = objectName == "FXRoot" ? this : caster.getObjectByName(objectName);
+			var isInFX = co.object.split(".")[1] == "FXRoot";
+			var srcObj = objectName == "FXRoot" ? this : isInFX ? this.getObjectByName(objectName) : caster.getObjectByName(objectName);
 			var targetObj = caster.getObjectByName(targetName);
 			if( srcObj != null && targetObj != null ) srcObj.follow = targetObj;
 		}
