@@ -51,6 +51,7 @@ class FXAnimation extends h3d.scene.Object {
 	public var objects: Array<ObjectAnimation> = [];
 	public var shaderAnims : Array<ShaderAnimation> = [];
 	public var emitters : Array<hide.prefab.fx.Emitter.EmitterObject> = [];
+	public var contraints : Array<hide.prefab.Constraint> = [];
 	public var currentTime(default, null) : Float = 0.0;
 	var evaluator : Evaluator;
 	var random : hxd.Rand;
@@ -64,12 +65,10 @@ class FXAnimation extends h3d.scene.Object {
 
 	override function onRemove() {
 		super.onRemove();
-		for(obj in objects){
+		for(obj in objects)
 			obj.obj.remove();
-		}
-		for(emitter in emitters){
+		for(emitter in emitters)
 			emitter.reset();
-		}
 	}
 
 	public function setRandSeed(seed: Int) {
@@ -149,11 +148,21 @@ class FXAnimation extends h3d.scene.Object {
 		}
 	}
 
+	public function resolveContraints( caster : h3d.scene.Object ) {
+		for(co in contraints){
+			var objectName = co.object.split(".").pop();
+			var targetName = co.target.split(".").pop();
+			var srcObj = objectName == "FXRoot" ? this : caster.getObjectByName(objectName);
+			var targetObj = caster.getObjectByName(targetName);
+			if( srcObj != null && targetObj != null ) srcObj.follow = targetObj;
+		}
+	}
 }
 
 class FX extends hxd.prefab.Library {
 
 	public var duration : Float;
+	public var caster : h3d.scene.Object;
 
 	public function new() {
 		super();
@@ -328,25 +337,22 @@ class FX extends hxd.prefab.Library {
 		return null;
 	}
 
-	function getContraints( ctx : Context, elt : PrefabElement, contraints : Array<hide.prefab.Constraint> ){
+	function setupRenderer( ctx : Context, elt : PrefabElement )  {
+		var renderProps = Std.instance(elt, hide.prefab.RenderProps);
+		if(renderProps != null)
+			renderProps.applyProps(ctx.local3d.getScene().renderer);
+		else
+			for(c in elt.children)
+				setupRenderer(ctx, c);
+	}
+
+	function getContraints( ctx : Context, elt : PrefabElement, contraints : Array<hide.prefab.Constraint>){
 		var co = Std.instance(elt, hide.prefab.Constraint);
 		if(co != null)
 			contraints.push(co);
 		else
 			for(c in elt.children)
 				getContraints(ctx, c, contraints);
-	}
-
-	function resolveContraints( ctx : Context , contraints : Array<hide.prefab.Constraint> ){
-		var parent = ctx.local3d.parent;
-		for(co in contraints){
-			var objectName = co.object.split(".").pop();
-			var targetName = co.target.split(".").pop();
-			trace(co.object + " on " + co.target);
-			var srcObj = objectName == "FXRoot" ? ctx.local3d : parent.getObjectByName(objectName);
-			var targetObj = parent.getObjectByName(targetName);
-			if( srcObj != null && targetObj != null ) srcObj.follow = targetObj;
-		}
 	}
 
 	override function makeInstance( ctx : Context ) : Context {
@@ -359,6 +365,7 @@ class FX extends hxd.prefab.Library {
 
 		#if editor
 		super.makeInstance(ctx);
+		setupRenderer(ctx, this);
 		#else
 		var root = getFXRoot(ctx, this);
 		if(root != null){
@@ -366,9 +373,7 @@ class FX extends hxd.prefab.Library {
 				var co = Std.instance(c , Constraint);
 				if(co == null) c.makeInstanceRec(ctx);
 			}
-			var contraints : Array<hide.prefab.Constraint> = [];
-			getContraints(ctx, root, contraints);
-			resolveContraints(ctx, contraints);
+			getContraints(ctx, root, fxanim.contraints);
 			getObjAnimations(ctx, this, fxanim.objects);
 		}
 		else
