@@ -1244,6 +1244,9 @@ class SceneEditor {
 		var list = [];
 		var lightRefresh = true;
 		for(e in elts) {
+			var ctx = getContext(e);
+			var local2d = ctx.local2d;
+			var local2dParent = local2d != null ? local2d.parent : null;
 			var obj = getSelfObject(e);
 			var parentObj = obj != null ? obj.parent : null;
 			if(obj == null)
@@ -1254,7 +1257,9 @@ class SceneEditor {
 				index: e.parent.children.indexOf(e),
 				obj: obj,
 				parentObj: parentObj,
-				objIndex: parentObj != null ? parentObj.getChildIndex(obj) : -1
+				objIndex: parentObj != null ? parentObj.getChildIndex(obj) : -1,
+				local2d: local2d,
+				local2dParent: local2dParent
 			});
 		}
 		deselect();
@@ -1272,6 +1277,8 @@ class SceneEditor {
 					o.parent.children.insert(o.index, o.elt);
 					if(o.obj != null)
 						o.parentObj.addChildAt(o.obj, o.objIndex);
+					if(o.local2dParent != null)
+						o.local2dParent.addChild(o.local2d);
 				}
 				context.shared.contexts = oldContexts;
 			}
@@ -1280,6 +1287,8 @@ class SceneEditor {
 					o.parent.children.remove(o.elt);
 					if(o.parentObj != null)
 						o.parentObj.removeChild(o.obj);
+					if(o.local2dParent != null)
+						o.local2dParent.removeChild(o.local2d);
 				}
 				context.shared.contexts = newContexts;
 			}
