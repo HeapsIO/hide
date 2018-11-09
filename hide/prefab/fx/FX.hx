@@ -48,6 +48,7 @@ typedef ObjectAnimation = {
 class FXAnimation extends h3d.scene.Object {
 
 	public var duration : Float;
+	public var loopAnims : Bool;
 	public var objects: Array<ObjectAnimation> = [];
 	public var shaderAnims : Array<ShaderAnimation> = [];
 	public var emitters : Array<hide.prefab.fx.Emitter.EmitterObject> = [];
@@ -135,7 +136,12 @@ class FXAnimation extends h3d.scene.Object {
 			if(object.currentAnimation != null){
 				anim.loop = false;
 				anim.pause = true;
-				anim.setFrame( hxd.Math.clamp(time * anim.sampling * anim.speed, 0, anim.frameCount) );
+				if(loopAnims){
+					var frameTime = time * anim.sampling * anim.speed;
+					var frameIndex = frameTime - hxd.Math.floor(frameTime / anim.frameCount) * anim.frameCount;
+					anim.setFrame( frameIndex );
+				}else
+					anim.setFrame( hxd.Math.clamp(time * anim.sampling * anim.speed, 0, anim.frameCount));
 			}
 			for(i in 0...object.numChildren)
 				setAnimFrame(object.getChildAt(i), time);
@@ -155,7 +161,8 @@ class FXAnimation extends h3d.scene.Object {
 			var isInFX = co.object.split(".")[1] == "FXRoot";
 			var srcObj = objectName == "FXRoot" ? this : isInFX ? this.getObjectByName(objectName) : caster.getObjectByName(objectName);
 			var targetObj = caster.getObjectByName(targetName);
-			if( srcObj != null && targetObj != null ) srcObj.follow = targetObj;
+			if( srcObj != null && targetObj != null )
+				srcObj.follow = targetObj;
 		}
 	}
 }
@@ -163,23 +170,29 @@ class FXAnimation extends h3d.scene.Object {
 class FX extends hxd.prefab.Library {
 
 	public var duration : Float;
-	public var caster : h3d.scene.Object;
+	public var loopAnims : Bool;
+	public var script : String;
 
 	public function new() {
 		super();
 		type = "fx";
 		duration = 5.0;
+		loopAnims = true;
 	}
 
 	override function save() {
 		var obj : Dynamic = super.save();
 		obj.duration = duration;
+		obj.loopAnims = loopAnims;
+		obj.script = script;
 		return obj;
 	}
 
 	override function load( obj : Dynamic ) {
 		super.load(obj);
-		duration = obj.duration;
+		duration = obj.duration == null ? 5.0 : obj.duration;
+		loopAnims = obj.loopAnims == null ? true : obj.loopAnims;
+		script = obj.script == null ? '// My Script ' : obj.script;
 	}
 
 	static function getObjAnimations(ctx:Context, elt: PrefabElement, anims: Array<ObjectAnimation>) {
@@ -362,6 +375,7 @@ class FX extends hxd.prefab.Library {
 		ctx = ctx.clone(this);
 		var fxanim = new FXAnimation(ctx.local3d);
 		fxanim.duration = duration;
+		fxanim.loopAnims = loopAnims;
 		ctx.local3d = fxanim;
 
 		#if editor
@@ -387,12 +401,20 @@ class FX extends hxd.prefab.Library {
 		return ctx;
 	}
 
+	override function updateInstance( ctx: Context, ?propName : String ) {
+		super.updateInstance(ctx, null);
+		var fxanim = Std.instance(ctx.local3d, FXAnimation);
+		fxanim.duration = duration;
+		fxanim.loopAnims = loopAnims;
+	}
+
 	#if editor
 	override function edit( ctx : EditContext ) {
 		var props = new hide.Element('
 			<div class="group" name="FX Scene">
 				<dl>
 					<dt>Duration</dt><dd><input type="number" value="0" field="duration"/></dd>
+					<dt>Loop Anims</dt><dd><input type="checkbox" field="loopAnims"/></dd>
 				</dl>
 			</div>');
 		ctx.properties.add(props, this, function(pname) {

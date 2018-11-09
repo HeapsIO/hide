@@ -20,7 +20,7 @@ class ScriptChecker {
 		ide = hide.Ide.inst;
 
 		var files : Array<String> = config.get("script.api.files");
-		if( files.length >= 0 ) {
+		if( files != null && files.length >= 0 ) {
 			var types = TYPES_SAVE.get(files.join(";"));
 			if( types == null ) {
 				types = new hscript.Checker.CheckerTypes();
@@ -39,7 +39,9 @@ class ScriptChecker {
 		while( parts.length > 0 ) {
 			var path = parts.join(".");
 			parts.pop();
-			var api = (config.get("script.api") : GlobalsDef).get(path);
+			var config = config.get("script.api");
+			if( config == null ) continue;
+			var api = (config : GlobalsDef).get(path);
 			if( api == null ) continue;
 
 			for( f in api.globals.keys() ) {

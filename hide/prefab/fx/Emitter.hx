@@ -63,8 +63,8 @@ private class ParticleInstance extends h3d.scene.Object {
 
 	public function new(emitter: EmitterObject, def: InstanceDef) {
 		switch(emitter.simulationSpace){
-			case Local:super(emitter.parent);
-			case World:super(emitter.getScene());
+			case Local : super(emitter.parent);
+			case World : super(emitter.getScene());
 		}
 		this.def = def;
 		this.emitter = emitter;
@@ -248,11 +248,6 @@ class EmitterObject extends h3d.scene.Object {
 		if(instDef == null || particleTemplate == null)
 			return;
 
-		var localMat = getAbsPos().clone();
-		var parentInvMat = parent.getAbsPos().clone();
-		parentInvMat.invert();
-		localMat.multiply(localMat, parentInvMat);
-
 		var shapeAngle = hxd.Math.degToRad(emitAngle) / 2.0;
 
 		var tmpq = new h3d.Quat();
@@ -264,7 +259,6 @@ class EmitterObject extends h3d.scene.Object {
 			context.local3d = part;
 			var ctx = particleTemplate.makeInstance(context);
 
-			var localQuat = getRotationQuat().clone();
 			tmpq.identity();
 
 			switch(emitShape) {
@@ -318,6 +312,11 @@ class EmitterObject extends h3d.scene.Object {
 
 			switch(simulationSpace){
 				case Local:
+					var localQuat = getRotationQuat().clone();
+					var localMat = getAbsPos().clone();
+					var parentInvMat = parent.getAbsPos().clone();
+					parentInvMat.invert();
+					localMat.multiply(localMat, parentInvMat);
 					offset.transform(localMat);
 					part.setPosition(offset.x, offset.y, offset.z);
 					part.baseMat = particleTemplate.getTransform();

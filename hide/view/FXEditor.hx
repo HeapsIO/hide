@@ -107,6 +107,9 @@ class FXEditor extends FileView {
 	var refreshDopesheetKeys : Array<Bool->Void> = [];
 	var statusText : h2d.Text;
 
+	var scriptEditor : hide.comp.ScriptEditor;
+	var fxScript : FXScript;
+
 	override function getDefaultContent() {
 		return haxe.io.Bytes.ofString(ide.toJSON(new hide.prefab.fx.FX().save()));
 	}
@@ -166,6 +169,10 @@ class FXEditor extends FileView {
 						<div class="tab" name="Properties" icon="cog">
 							<div class="fx-props"></div>
 						</div>
+						<div class="tab" name="Script" icon="cog">
+							<div class="fx-script"></div>
+							<div class="fx-scriptParams"></div>
+						</div>
 					</div>
 				</div>
 			</div>');
@@ -188,6 +195,18 @@ class FXEditor extends FileView {
 			edit.cleanups = [];
 			data.edit(edit);
 		}
+
+		var scriptElem = element.find(".fx-script");
+		scriptEditor = new hide.comp.ScriptEditor(data.script, null, scriptElem, scriptElem);
+		function onSaveScript() {
+			data.script = scriptEditor.script;
+			save();
+			skipNextChange = true;
+			modified = false;
+		}
+		scriptEditor.onSave = onSaveScript;
+		fxScript = new FXScript(this);
+		fxScript.updateScriptParams();
 
 		keys.register("playPause", function() { pauseButton.toggle(!pauseButton.isDown()); });
 
@@ -289,14 +308,9 @@ class FXEditor extends FileView {
 
 		var axis = new h3d.scene.Graphics(scene.s3d);
 		axis.z = 0.001;
-		axis.lineStyle(2,0xFF0000);
-		axis.lineTo(1,0,0);
-		axis.lineStyle(1,0x00FF00);
-		axis.moveTo(0,0,0);
-		axis.lineTo(0,1,0);
-		axis.lineStyle(1,0x0000FF);
-		axis.moveTo(0,0,0);
-		axis.lineTo(0,0,1);
+		axis.lineStyle(2,0xFF0000); axis.lineTo(1,0,0);
+		axis.lineStyle(1,0x00FF00); axis.moveTo(0,0,0); axis.lineTo(0,1,0);
+		axis.lineStyle(1,0x0000FF); axis.moveTo(0,0,0); axis.lineTo(0,0,1);
 		axis.lineStyle();
 		axis.material.mainPass.setPassName("debuggeom");
 		axis.visible = showGrid;
@@ -673,7 +687,6 @@ class FXEditor extends FileView {
 		updateExpanded();
 	}
 
-
 	function rebuildAnimPanel() {
 		var selection = sceneEditor.getSelection();
 		var scrollPanel = element.find(".anim-scroll");
@@ -974,13 +987,16 @@ class FXEditor extends FileView {
 			lastSyncChange = properties.lastChange;
 			currentVersion = undo.currentID;
 		}
-	}
 
+		if( data.script != scriptEditor.script ){
+			modified = true;
+			fxScript.updateScriptParams();
+		}
+	}
 
 	static function getTrack(element : PrefabElement, propName : String) {
 		return Curve.getCurve(element, propName, false);
 	}
-
 
 	static function upperCase(prop: String) {
 		if(prop == null) return "";
