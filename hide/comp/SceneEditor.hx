@@ -83,6 +83,7 @@ class SceneEditor {
 	public var curEdit(default, null) : SceneEditorContext;
 	public var snapToGround = false;
 	public var localTransform = true;
+	public var enableLightRefresh = false;
 	public var cameraController : h3d.scene.CameraController;
 	public var editorDisplay(default,set) : Bool;
 
@@ -786,6 +787,7 @@ class SceneEditor {
 			parentCtx = context;
 		e.makeInstance(parentCtx);
 		var local3d = getSelfObject(e);
+		var lightRefresh = local3d != null && enableLightRefresh;
 		var parentObj = local3d != null ? local3d.parent : null;
 		var int = interactives.get(e);
 		undo.change(Custom(function(undo) {
@@ -809,7 +811,7 @@ class SceneEditor {
 			else 
 				refresh();
 		}));
-		if(local3d != null) {
+		if(lightRefresh) {
 			makeInteractive(e);
 			refreshTree(function() {
 				selectObjects([e]);
@@ -1159,7 +1161,7 @@ class SceneEditor {
 			return;
 		var contexts = context.shared.contexts;
 		var oldContexts = contexts.copy();
-		var lightRefresh = true;
+		var lightRefresh = enableLightRefresh;
 		var newElements = [for(elt in elements) {
 			var obj3d = Std.instance(elt, Object3D);
 			if(obj3d == null)
@@ -1242,9 +1244,11 @@ class SceneEditor {
 	function deleteElements(elts : Array<PrefabElement>) {
 		var contexts = context.shared.contexts;
 		var list = [];
-		var lightRefresh = true;
+		var lightRefresh = enableLightRefresh;
 		for(e in elts) {
 			var ctx = getContext(e);
+			if(ctx == null)
+				continue;
 			var local2d = ctx.local2d;
 			var local2dParent = local2d != null ? local2d.parent : null;
 			var obj = getSelfObject(e);
