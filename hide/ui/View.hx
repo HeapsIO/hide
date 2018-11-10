@@ -89,7 +89,7 @@ class View<T> extends hide.comp.Component {
 
 	public function processKeyEvent( e : js.jquery.Event ) {
 		var active = js.Browser.document.activeElement;
-		if( active != null && active.nodeName == "INPUT" ) {
+		if( active != null && (active.nodeName == "INPUT" || active.nodeName == "TEXTAREA") ) {
 			e.stopPropagation();
 			return true;
 		}
