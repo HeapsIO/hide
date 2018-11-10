@@ -12,6 +12,7 @@ class TileSelector extends Component {
     var valueDisp : Element;
     var cursor : Element;
     var image : Element;
+	var movePos : { x : Int, y : Int, moving : Bool } = { x : 0, y : 0, moving : false };
     var cursorPos : { x : Int, y : Int, x2 : Int, y2 : Int, down : Bool };
     var width : Int;
     var height : Int;
@@ -84,6 +85,13 @@ class TileSelector extends Component {
 		element.empty();
 		element.off();
         element.click(function(e) e.stopPropagation());
+		element.attr("tabindex","0");
+		element.focus();
+		element.on("keydown", function(e) {
+			if( e.keyCode == 27 ) {
+				onChange(true);
+			}
+		});
 
 		var tool = new Toolbar(element);
 		if( allowFileChange ) {
@@ -97,6 +105,8 @@ class TileSelector extends Component {
                 var nsize = Std.parseInt(e.getThis().val());
                 if( this.size != nsize && nsize != null && nsize > 0 )
 				    this.size = nsize;
+			}).on("keydown", function(e:js.jquery.Event) {
+				if( e.keyCode == 13 ) size.find("input").blur();
 			});
 		}
 		if( tool.element.children().length == 0 )
@@ -116,8 +126,6 @@ class TileSelector extends Component {
 			zoom = Math.floor(hxd.Math.min(800 / width, 580 / height));
 			if( zoom <= 0 ) zoom = 1;
 			scroll.on("mousewheel", function(e:js.jquery.Event) {
-				if( !e.ctrlKey )
-					return;
 				if( untyped e.originalEvent.wheelDelta > 0 )
 					zoom++;
 				else if( zoom > 1 )
@@ -125,27 +133,46 @@ class TileSelector extends Component {
 				rescale();
 				e.preventDefault();
 			});
+			scroll.parent().on("mousedown", function(e) {
+				if( e.button != 0 ) {
+					movePos.moving = true;
+					movePos.x = e.offsetX;
+					movePos.y = e.offsetY;
+				}
+			});
+			scroll.parent().on("mousemove", function(e) {
+				if( movePos.moving ) {
+					var dx = e.offsetX - movePos.x;
+					var dy = e.offsetY - movePos.y;
+					scroll[0].scrollBy(-dx,-dy);
+				}
+			});
 			image.on("mousemove", function(e:js.jquery.Event) {
 				var k = zoom * size;
 				var x = Math.floor(e.offsetX / k);
 				var y = Math.floor(e.offsetY / k);
 				if( (x+1) * size > i.width ) x--;
 				if( (y+1) * size > i.height ) y--;
-                if( cursorPos.down ) {
-                    cursorPos.x2 = x;
-                    cursorPos.y2 = y;
-                } else {
-                    cursorPos.x = cursorPos.x2 = x;
-                    cursorPos.y = cursorPos.y2 = y;
-                }
-                updateCursor();
+				if( cursorPos.down ) {
+					cursorPos.x2 = x;
+					cursorPos.y2 = y;
+				} else {
+					cursorPos.x = cursorPos.x2 = x;
+					cursorPos.y = cursorPos.y2 = y;
+				}
+				updateCursor();
 			});
             image.on("mousedown", function(e:js.jquery.Event) {
-                if( allowRectSelect )
-                    cursorPos.down = true;
+				if( e.button != 0 )
+					return;
+				cursorPos.down = true;
             });
             image.on("mouseup", function(e:js.jquery.Event) {
+                e.preventDefault();
+				movePos.moving = false;
                 cursorPos.down = false;
+				if( e.button != 0 || !allowRectSelect )
+					return;
                 if( cursorPos.x2 >= cursorPos.x ) {
                     value.x = cursorPos.x;
                     value.width = cursorPos.x2 - cursorPos.x + 1;
@@ -160,15 +187,15 @@ class TileSelector extends Component {
                     value.y = cursorPos.y2;
                     value.height = cursorPos.y - cursorPos.y2 + 1;
                 }
-                onChange(e.which == 3);
-                e.preventDefault();
+                onChange(false);
             });
+			image.on("contextmenu", function(e) e.preventDefault());
 			rescale();
 		};
 		i.src = url;
 	}
 
-	public dynamic function onChange( rightClick : Bool ) {
+	public dynamic function onChange( cancel : Bool ) {
 	}
 
 }

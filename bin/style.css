@@ -223,8 +223,6 @@ input[type=checkbox]:checked:after {
   height: 100%;
 }
 .hide-tileselect {
-  width: 800px;
-  height: 600px;
   display: inline-block;
   background-color: #111;
   border: 1px solid #666;
@@ -232,6 +230,8 @@ input[type=checkbox]:checked:after {
   overflow: hidden;
 }
 .hide-tileselect .flex-scroll {
+  height: 600px;
+  width: 800px;
   display: flex;
   flex-direction: column;
 }
