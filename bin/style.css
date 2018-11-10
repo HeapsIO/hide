@@ -793,6 +793,13 @@ input[type=checkbox]:checked:after {
   mix-blend-mode: overlay;
 }
 /* Poly editor */
+.poly-editor .editModeButton {
+  margin: 10px;
+  outline: 4px solid #fd5151;
+}
+.poly-editor .editModeEnabled {
+  outline: 4px solid #5897fb;
+}
 .poly-editor .description {
   margin: 5px;
   background-color: black;
@@ -903,10 +910,18 @@ input[type=checkbox]:checked:after {
 .lm_dropTargetIndicator {
   box-shadow: none;
 }
+span.lm_title {
+  display: inline-block;
+  padding: 0px 10px;
+}
+li.lm_tab {
+  padding-left: 0px !important;
+  padding-right: 15px !important;
+}
 div.lm_close_tab {
   top: 0px !important;
   right: 0px !important;
-  width: 20px !important;
+  width: 15px !important;
   height: 18px !important;
 }
 div.lm_close_tab:hover {
