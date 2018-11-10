@@ -156,6 +156,9 @@ class View<T> extends hide.comp.Component {
 	public function onResize() {
 	}
 
+	public function onActivate() {
+	}
+
 	public function onDragDrop(items : Array<String>, isDrop : Bool) {
 		return false;
 	}

@@ -16,6 +16,7 @@ class Ide {
 	public var isWindows(get, never) : Bool;
 
 	public var database : cdb.Database;
+	public var databaseApi : hide.comp.cdb.Editor.EditorApi;
 	public var shaderLoader : hide.tools.ShaderLoader;
 	public var fileWatcher : hide.tools.FileWatcher;
 	public var typesCache : hide.tools.TypesCache;
@@ -147,9 +148,7 @@ class Ide {
 		new Element(window.window.document).on("dnd_stop.vakata.jstree", function(e, data) {
 			var nodeIds : Array<String> = cast data.data.nodes;
 			if(data.data.jstree == null) return;
-			for( v in views ) {
-				var ft = Std.instance(v, hide.view.FileTree);
-				if(ft == null) continue;
+			for( ft in getViews(hide.view.FileTree) ) {
 				var paths = [];
 				@:privateAccess {
 					if(ft.tree.element[0] != data.data.origin.element[0]) continue;
@@ -174,6 +173,10 @@ class Ide {
 			var view = getViewAt(mouseX, mouseY);
 			if(view != null) view.processKeyEvent(e);
 		});
+	}
+
+	public function getViews<K,T:hide.ui.View<K>>( cl : Class<T> ) {
+		return [for( v in views ) { var t = Std.instance(v,cl); if( t != null ) t; }];
 	}
 
 	function getViewAt(x : Float, y : Float) {
@@ -419,6 +422,14 @@ class Ide {
 				error(e);
 			}
 		}
+		databaseApi = {
+			copy : () -> (database.save() : Any),
+			load : (v:Any) -> database.load((v:String)),
+			save : saveDatabase,
+			undo : new hide.ui.UndoHistory(),
+			undoState : [], // common
+		};
+		databaseApi.editor = new hide.comp.cdb.AllEditors();
 
 		if( config.project.get("debug.displayErrors")  ) {
 			js.Browser.window.onerror = function(msg, url, line, col, error) {

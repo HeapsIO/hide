@@ -14,20 +14,18 @@ class CdbTable extends hide.ui.View<{ path : String }> {
 			}
 	}
 
+	override function onActivate() {
+		editor.focus();
+	}
+
 	override function onDisplay() {
 		if( sheet == null ) {
 			element.text("Sheet not found '" + state.path + "'");
 			return;
 		}
 		element.addClass("hide-scroll");
-		editor = new hide.comp.cdb.Editor(sheet,config,element);
-		editor.undo = undo;
-		undo.onChange = function() {
-			editor.save();
-		};
-		editor.save = function() {
-			ide.saveDatabase();
-		};
+		editor = new hide.comp.cdb.Editor(sheet,config,ide.databaseApi,element);
+		undo = editor.undo;
 		new Element("<div style='width:100%; height:300px'></div>").appendTo(element);
 	}
 

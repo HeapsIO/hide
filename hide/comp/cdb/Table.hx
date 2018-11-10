@@ -34,13 +34,6 @@ class Table extends Component {
 		editor.tables.remove(this);
 	}
 
-	public function getChangeRef() : cdb.Database.ChangeRef {
-		var mainTable = this;
-		while( mainTable.parent != null )
-			mainTable = mainTable.parent;
-		return { mainSheet : mainTable.sheet, mainObj : null, obj : null, sheet : sheet };
-	}
-
 	public function refresh() {
 		element.empty();
 		switch( displayMode ) {
@@ -120,42 +113,12 @@ class Table extends Component {
 		element.append(cols);
 
 		var snext = 0;
-		for( i in 0...lines.length ) {
+		for( i in 0...lines.length+1 ) {
 			while( sheet.separators[snext] == i ) {
-				var sep = J("<tr>").addClass("separator").append('<td colspan="${colCount+1}">').appendTo(element);
-				var content = sep.find("td");
-				var title = if( sheet.props.separatorTitles != null ) sheet.props.separatorTitles[snext] else null;
-				if( title != null ) content.text(title);
-				var pos = snext;
-				sep.dblclick(function(e) {
-					content.empty();
-					J("<input>").appendTo(content).focus().val(title == null ? "" : title).blur(function(_) {
-						title = JTHIS.val();
-						JTHIS.remove();
-						content.text(title);
-
-						var old = sheet.props.separatorTitles;
-						var titles = sheet.props.separatorTitles;
-						if( titles == null ) titles = [] else titles = titles.copy();
-						while( titles.length < pos )
-							titles.push(null);
-						titles[pos] = title == "" ? null : title;
-						while( titles[titles.length - 1] == null && titles.length > 0 )
-							titles.pop();
-						if( titles.length == 0 ) titles = null;
-						sheet.props.separatorTitles = titles;
-						editor.undo.change(Field(sheet.props,"separatorTitles",old));
-						editor.save();
-
-					}).keypress(function(e) {
-						e.stopPropagation();
-					}).keydown(function(e) {
-						if( e.keyCode == 13 ) { JTHIS.blur(); e.preventDefault(); } else if( e.keyCode == 27 ) content.text(title);
-						e.stopPropagation();
-					});
-				});
+				makeSeparator(snext, colCount).appendTo(element);
 				snext++;
 			}
+			if( i == lines.length ) break;
 			element.append(lines[i].element);
 		}
 
@@ -167,6 +130,41 @@ class Table extends Component {
 			});
 			element.append(l);
 		}
+	}
+
+	function makeSeparator( sindex : Int, colCount : Int ) {
+		var sep = J("<tr>").addClass("separator").append('<td colspan="${colCount+1}">');
+		var content = sep.find("td");
+		var title = if( sheet.props.separatorTitles != null ) sheet.props.separatorTitles[sindex] else null;
+		if( title != null ) content.text(title);
+		sep.dblclick(function(e) {
+			content.empty();
+			J("<input>").appendTo(content).focus().val(title == null ? "" : title).blur(function(_) {
+				title = JTHIS.val();
+				JTHIS.remove();
+				content.text(title);
+
+				var old = sheet.props.separatorTitles;
+				var titles = sheet.props.separatorTitles;
+				if( titles == null ) titles = [] else titles = titles.copy();
+				while( titles.length < sindex )
+					titles.push(null);
+				titles[sindex] = title == "" ? null : title;
+				while( titles[titles.length - 1] == null && titles.length > 0 )
+					titles.pop();
+				if( titles.length == 0 ) titles = null;
+				editor.beginChanges();
+				sheet.props.separatorTitles = titles;
+				editor.endChanges();
+
+			}).keypress(function(e) {
+				e.stopPropagation();
+			}).keydown(function(e) {
+				if( e.keyCode == 13 ) { JTHIS.blur(); e.preventDefault(); } else if( e.keyCode == 27 ) content.text(title);
+				e.stopPropagation();
+			});
+		});
+		return sep;
 	}
 
 	function refreshProperties() {
@@ -234,13 +232,9 @@ class Table extends Component {
 		for( c in sheet.columns )
 			if( c.name == p ) {
 				var val = editor.base.getDefault(c, true);
+				editor.beginChanges();
 				Reflect.setField(props, c.name, val);
-				editor.undo.change(Custom(function(undo) {
-					if( undo )
-						Reflect.deleteField(props, c.name);
-					else
-						Reflect.setField(props,c.name, val);
-				}));
+				editor.endChanges();
 				refresh();
 				return true;
 			}

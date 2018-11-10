@@ -19,13 +19,19 @@ class ScriptTable extends SubTable {
 		}, key, { sheet : sheet, column : cell.columnIndex, line : index });
 	}
 
+	override public function close() {
+		if( script != null )
+			cell.setValue(script.script);
+		super.close();
+	}
+
 	override function refresh() {
 		var first = script == null;
 		element.html("<div class='cdb-script'></div>");
 		var checker = new ScriptEditor.ScriptChecker(editor.config,"cdb."+cell.getDocumentName(),[ "cdb."+cell.table.sheet.name => cell.line.obj ]);
 		script = new ScriptEditor(cell.value, checker, element.find("div"));
-		script.onSave = function() @:privateAccess cell.setValue(script.script);
-		script.onClose = function() { close(); cell.select(); }
+		script.onSave = function() cell.setValue(script.script);
+		script.onClose = function() { close(); cell.focus(); }
 		lines = [new Line(this,[],0,script.element)];
 		if( first ) script.focus();
 	}

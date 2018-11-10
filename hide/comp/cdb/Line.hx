@@ -17,16 +17,6 @@ class Line extends Component {
 		cells = [];
 	}
 
-	public function getChangeRef() : cdb.Database.ChangeRef {
-		var mainLine = this;
-		while( true ) {
-			var sub = Std.instance(mainLine.table, SubTable);
-			if( sub == null ) break;
-			mainLine = sub.cell.line;
-		}
-		return { mainSheet : mainLine.table.sheet, mainObj : mainLine.obj, obj : obj, sheet : table.sheet };
-	}
-
 	inline function get_obj() return table.sheet.lines[index];
 
 }

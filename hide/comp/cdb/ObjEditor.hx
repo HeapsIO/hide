@@ -9,20 +9,23 @@ class ObjEditor extends Editor {
         sheetData.lines = [for( i in 0...sheet.columns.length ) obj];
         var pseudoSheet = new cdb.Sheet(sheet.base, sheetData);
         this.displayMode = AllProperties;
-        super(pseudoSheet, props, parent);
+        var api = {
+            load : function(v:Any) {
+                var obj2 = haxe.Json.parse((v:String));
+                for( f in Reflect.fields(obj) )
+                    Reflect.deleteField(obj,f);
+                for( f in Reflect.fields(obj2) )
+                    Reflect.setField(obj, f, Reflect.field(obj2,f));
+            },
+            copy : function() return (haxe.Json.stringify(obj) : Any),
+            save : function() {},
+        };
+        super(pseudoSheet, props, api, parent);
     }
 
-    override function addChanges( changes : cdb.Database.Changes ) {
-        super.addChanges(changes);
-        if(changes.length == 1) {
-            switch(changes[0].v) {
-                case SetField(o, f, v):
-                    onChange(f);
-                default:
-                    onChange(null);
-            }
-        }
-        else
-            onChange(null);
+	override function changeObject(line:Line, column:cdb.Data.Column, value:Dynamic) {
+        super.changeObject(line, column, value);
+        onChange(column.name);
     }
+
 }

@@ -102,8 +102,9 @@ class SubTable extends Table {
 			default: false;
 			}
 			if( isEmpty ) {
+				// not a change to really undo, perform direct change
 				Reflect.deleteField(cell.line.obj, cell.column.name);
-				editor.save();
+				editor.api.save();
 			}
 		}
 		cell.refresh();

@@ -1,6 +1,19 @@
 package hide.comp.cdb;
 import hxd.Key in K;
 
+typedef UndoState = {
+	var data : Any;
+}
+
+typedef EditorApi = {
+	function load( data : Any ) : Void;
+	function copy() : Any;
+	function save() : Void;
+	var ?undo : hide.ui.UndoHistory;
+	var ?undoState : Array<UndoState>;
+	var ?editor : Editor;
+}
+
 @:allow(hide.comp.cdb)
 class Editor extends Component {
 
@@ -15,17 +28,29 @@ class Editor extends Component {
 		data : Array<{}>,
 		schema : Array<cdb.Data.Column>,
 	};
+	var changesDepth : Int = 0;
+	var currentValue : Any;
+	var api : EditorApi;
 	public var config : hide.Config;
 	public var cursor : Cursor;
 	public var keys : hide.ui.Keys;
 	public var undo : hide.ui.UndoHistory;
 
-	public function new(sheet,config,?parent) {
+	public function new(sheet,config,api,?parent) {
 		super(parent,null);
+		this.api = api;
 		this.config = config;
-		this.undo = new hide.ui.UndoHistory();
 		this.sheet = sheet;
+		if( api.undoState == null ) api.undoState = [];
+		if( api.editor == null ) api.editor = this;
+		this.undo = api.undo == null ? new hide.ui.UndoHistory() : api.undo;
+		api.undo = undo;
+		init();
+	}
+
+	function init() {
 		element.attr("tabindex", 0);
+		element.on("blur", function(_) cursor.set());
 		element.on("keypress", function(e) {
 			if( e.target.nodeName == "INPUT" )
 				return;
@@ -69,6 +94,7 @@ class Editor extends Component {
 		base = sheet.base;
 		cursor = new Cursor(this);
 		if( displayMode == null ) displayMode = Table;
+		currentValue = api.copy();
 		refresh();
 	}
 
@@ -143,6 +169,7 @@ class Editor extends Component {
 			// TODO : edit and copy text
 			return;
 		}
+		beginChanges();
 		var sheet = cursor.table.sheet;
 		var posX = cursor.x < 0 ? 0 : cursor.x;
 		var posY = cursor.y < 0 ? 0 : cursor.y;
@@ -173,23 +200,24 @@ class Editor extends Component {
 			}
 			posY++;
 		}
+		endChanges();
 		sheet.sync();
-		refresh();
-		save();
+		refreshAll();
 	}
 
 	function onDelete() {
 		var sel = cursor.getSelection();
 		if( sel == null )
 			return;
-		var changes : Array<cdb.Database.Change> = [];
+		var hasChanges = false;
+		beginChanges();
 		if( cursor.x < 0 ) {
 			// delete lines
 			var y = sel.y2;
 			while( y >= sel.y1 ) {
 				var line = cursor.table.lines[y];
-				changes.push({ ref : line.getChangeRef(), v : InsertIndex(line.table.sheet.lines,line.index,line.obj) });
 				line.table.sheet.lines.splice(line.index, 1);
+				hasChanges = true;
 				y--;
 			}
 			cursor.set(cursor.table, -1, sel.y1, null, false);
@@ -203,25 +231,69 @@ class Editor extends Component {
 					var def = base.getDefault(c,false);
 					if( old == def )
 						continue;
-					changes.push(changeObject(line,c,def));
+					changeObject(line,c,def);
+					hasChanges = true;
 				}
 			}
 		}
-		if( changes.length > 0 ) {
-			addChanges(changes);
-			refresh();
-		}
+		endChanges();
+		if( hasChanges )
+			refreshAll();
 	}
 
 	public function changeObject( line : Line, column : cdb.Data.Column, value : Dynamic ) {
+		beginChanges();
 		var prev = Reflect.field(line.obj, column.name);
-		var change : cdb.Database.Change = { ref : line.getChangeRef(), v : SetField(line.obj, column.name, prev) };
 		if( value == null )
 			Reflect.deleteField(line.obj, column.name);
 		else
 			Reflect.setField(line.obj, column.name, value);
 		line.table.sheet.updateValue(column, line.index, prev);
-		return change;
+		endChanges();
+	}
+
+	/**
+		Call before modifying the database, allow to group several changes together.
+		Allow recursion, only last endChanges() will trigger db save and undo point creation.
+	**/
+	public function beginChanges() {
+		if( changesDepth == 0 ) {
+			api.undoState.push({
+				data : currentValue,
+			});
+		}
+		changesDepth++;
+	}
+
+	/**
+		Call when changes are done, after endChanges.
+	**/
+	public function endChanges() {
+		changesDepth--;
+		if( changesDepth == 0 )
+			undo.change(Custom(makeCustom(api)));
+	}
+
+	// do not reference "this" editor in undo state !
+	static function makeCustom( api : EditorApi ) {
+		var state = api.undoState[0];
+		var newValue = api.copy();
+		api.editor.currentValue = newValue;
+		api.save();
+		return function(undo) api.editor.handleUndo(state, newValue, undo);
+	}
+
+	function handleUndo( state : UndoState, newValue : Any, undo : Bool ) {
+		if( undo ) {
+			api.undoState.shift();
+			currentValue = state.data;
+		} else {
+			api.undoState.unshift(state);
+			currentValue = newValue;
+		}
+		api.load(currentValue);
+		refresh();
+		api.save();
 	}
 
 	function showReferences() {
@@ -246,6 +318,19 @@ class Editor extends Component {
 
 	function openReference( s : cdb.Sheet, line : Int, column : Int ) {
 		ide.open("hide.view.CdbTable", { path : s.name }, function(view) @:privateAccess Std.instance(view,hide.view.CdbTable).editor.cursor.setDefault(line,column));
+	}
+
+	function syncSheet() {
+		// swap sheet if it was modified
+		for( s in base.sheets )
+			if( s.name == this.sheet.name ) {
+				this.sheet = s;
+				break;
+			}
+	}
+
+	function refreshAll() {
+		api.editor.refresh();
 	}
 
 	function refresh() {
@@ -341,10 +426,10 @@ class Editor extends Component {
 			});
 			return;
 		}
-		addChanges([{ ref : cursor.getLine().getChangeRef(), v : DeleteIndex(table.sheet.lines,index+1) }]);
+		beginChanges();
 		table.sheet.newLine(index);
+		endChanges();
 		table.refresh();
-		save();
 	}
 
 	public function popupColumn( table : Table, col : cdb.Data.Column ) {
@@ -355,17 +440,6 @@ class Editor extends Component {
 	}
 
 	function editScripts( table : Table, col : cdb.Data.Column ) {
-	}
-
-	public function addChanges( changes : cdb.Database.Changes ) {
-		var cs = cursor.save();
-		undo.change(Custom(function(undo) {
-			var ns = cursor.save();
-			cursor.load(cs);
-			cs = ns;
-			changes = base.applyChanges(changes);
-			refresh();
-		}));
 	}
 
 	function moveLine( line : Line, delta : Int ) {
@@ -389,7 +463,8 @@ class Editor extends Component {
 			t.dispose();
 	}
 
-	public dynamic function save() {
+	public function focus() {
+		element.focus();
 	}
 
 }

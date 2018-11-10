@@ -240,7 +240,7 @@ class Cell extends Component {
 		}
 	}
 
-	public function select() {
+	public function focus() {
 		editor.element.focus();
 		editor.cursor.set(table, this.columnIndex, this.line.index);
 	}
@@ -277,6 +277,7 @@ class Cell extends Component {
 					e.preventDefault();
 				case K.ENTER if( !longText ):
 					var old = currentValue;
+					// hack to insert newline and tranform the input into textarea
 					var newVal = i.val() + "\n";
 					Reflect.setField(line.obj, column.name, newVal+"x");
 					refresh();
@@ -463,14 +464,15 @@ class Cell extends Component {
 			ts.allowSizeSelect = true;
 			ts.allowFileChange = true;
 			ts.value = pos;
-			ts.onChange = function(rightClick) {
-				if( !rightClick ) {
+			ts.onChange = function(cancel) {
+				if( !cancel ) {
 					file = ts.file;
 					size = ts.size;
 					pos = ts.value;
 					setVal();
 				}
 				refresh();
+				focus();
 			};
 
 		case TLayer(_), TTileLayer:
@@ -499,14 +501,15 @@ class Cell extends Component {
 			var prevObj = value != null ? table.sheet.index.get(value) : null;
 			// have we already an obj mapped to the same id ?
 			var prevTarget = table.sheet.index.get(newValue);
-			var undo = null;
+			editor.beginChanges();
 			if( prevObj == null || prevObj.obj == obj ) {
 				// remap
 				var m = new Map();
 				m.set(value, newValue);
-				undo = editor.base.updateRefs(table.sheet, m);
+				editor.base.updateRefs(table.sheet, m);
 			}
-			setValue(newValue, undo);
+			setValue(newValue);
+			editor.endChanges();
 			// creates or remove a #DUP : need to refresh the whole table
 			if( prevTarget != null || (prevObj != null && (prevObj.obj != obj || table.sheet.index.get(prevValue) != null)) )
 				table.refresh();
@@ -517,12 +520,9 @@ class Cell extends Component {
 		}
 	}
 
-	function setValue( value : Dynamic, ?undo : cdb.Database.Changes ) {
-		if( undo == null )
-			undo = [];
+	public function setValue( value : Dynamic ) {
 		currentValue = value;
-		undo.push(editor.changeObject(line,column,value));
-		editor.addChanges(undo);
+		editor.changeObject(line,column,value);
 	}
 
 	public function closeEdit() {
