@@ -6,6 +6,14 @@
     "configurations": [
         {
             "type": "nwjs",
+            "request": "launch",
+            "name": "Launch NWjs",
+            "nwjsVersion": "any",
+            "webRoot": "${workspaceFolder}/bin",
+            "preLaunchTask": "Build"
+        },
+        {
+            "type": "nwjs",
             "request": "attach",
             "name": "Attach to NWjs",
             "port": 9222,

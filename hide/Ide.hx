@@ -330,7 +330,13 @@ class Ide {
 		if( !sys.FileSystem.exists(hidePath + "/package.json") ) {
 			var prevPath = new haxe.io.Path(hidePath).dir;
 			if( sys.FileSystem.exists(prevPath + "/hide.js") )
-				hidePath = prevPath;
+				return prevPath;
+			// nwjs launch
+			var path = Sys.getCwd();
+			if( sys.FileSystem.exists(path+"/hide.js") )
+				return path;
+			message("Hide application path was not found");
+			Sys.exit(0);
 		}
 		return hidePath;
 	}
@@ -857,7 +863,6 @@ class Ide {
 	static function main() {
 		h3d.pass.ShaderManager.STRICT = false; // prevent errors with bad renderer
 		hide.tools.Macros.include(["hide.view","h3d.prim","h3d.scene","h3d.pass","hide.prefab","hxd.prefab"]);
-		(monaco.Languages : Dynamic).typescript.javascriptDefaults.setCompilerOptions({ noLib: true, allowNonTsExtensions: true }); // disable js stdlib completion
 		new Ide();
 	}
 

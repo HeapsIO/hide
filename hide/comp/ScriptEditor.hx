@@ -187,6 +187,7 @@ class ScriptEditor extends Component {
 
 		if( !INIT_DONE ) {
 			INIT_DONE = true;
+			(monaco.Languages : Dynamic).typescript.javascriptDefaults.setCompilerOptions({ noLib: true, allowNonTsExtensions: true }); // disable js stdlib completion
 			monaco.Languages.registerCompletionItemProvider("javascript", {
 				provideCompletionItems : function(model,position,_,_) {
 					var comp : ScriptEditor = (model : Dynamic).__comp__;
