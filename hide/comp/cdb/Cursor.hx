@@ -11,6 +11,7 @@ class Cursor {
 
 	public function new(editor) {
 		this.editor = editor;
+		set();
 	}
 
 	public function set( ?t, ?x=0, ?y=0, ?sel, update = true ) {
@@ -60,7 +61,7 @@ class Cursor {
 
 	public function move( dx : Int, dy : Int, shift : Bool, ctrl : Bool ) {
 		if( table == null )
-			return;
+			table = editor.tables[0];
 		if( x == -1 && ctrl ) {
 			if( dy != 0 )
 				editor.moveLine(getLine(), dy);

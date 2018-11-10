@@ -120,6 +120,9 @@ class View<T> extends hide.comp.Component {
 			}
 			destroy();
 		});
+		container.on("show", function(_) {
+			haxe.Timer.delay(onActivate,0);
+		});
 		container.getElement().keydown(function(e) {
 			processKeyEvent(e);
 		});
@@ -161,6 +164,10 @@ class View<T> extends hide.comp.Component {
 
 	public function onDragDrop(items : Array<String>, isDrop : Bool) {
 		return false;
+	}
+
+	function toString() {
+		return Type.getClassName(Type.getClass(this)) + (this.state == null ? "" : "("+haxe.Json.stringify(this.state)+")");
 	}
 
 	/**
