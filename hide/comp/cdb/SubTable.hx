@@ -79,8 +79,11 @@ class SubTable extends Table {
 		},key, { sheet : sheet, column : cell.columnIndex, line : index });
 	}
 
-	public function show() {
-		slider.slideDown(100);
+	public function show( ?immediate ) {
+		if( immediate )
+			slider.show();
+		else
+			slider.slideDown(100);
 	}
 
 	override public function close() {

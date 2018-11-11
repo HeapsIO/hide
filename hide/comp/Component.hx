@@ -3,7 +3,7 @@ package hide.comp;
 class Component {
 
 	var ide : hide.Ide;
-	public var name(get, never) : String;
+	public var componentName(get, never) : String;
 	public var element(default,null) : Element;
 	public var saveDisplayKey : String;
 
@@ -20,7 +20,7 @@ class Component {
 		element.remove();
 	}
 
-	@:final function get_name() return Type.getClassName(Type.getClass(this));
+	@:final function get_componentName() return Type.getClassName(Type.getClass(this));
 
 	function getDisplayState( key : String ) : Dynamic {
 		if( saveDisplayKey == null )

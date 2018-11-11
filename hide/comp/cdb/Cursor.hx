@@ -14,7 +14,14 @@ class Cursor {
 		set();
 	}
 
-	public function set( ?t, ?x=0, ?y=0, ?sel, update = true ) {
+	public function set( ?t:Table, ?x=0, ?y=0, ?sel, update = true ) {
+		if( t != null ) {
+			for( t2 in editor.tables )
+				if( t.sheet.name == t2.sheet.name ) {
+					t = t2;
+					break;
+				}
+		}
 		this.table = t;
 		this.x = x;
 		this.y = y;
@@ -104,6 +111,8 @@ class Cursor {
 			select = null;
 		}
 		var line = getLine();
+		if( line == null )
+			return;
 		if( x < 0 ) {
 			line.element.addClass("selected");
 			if( select != null ) {

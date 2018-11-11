@@ -1,6 +1,26 @@
 .cdb {
   background-color: black;
 }
+.cdb:focus {
+  outline: none;
+}
+.cdb:focus .cdb-sheet td.cursorView {
+  outline: 1px solid #ccc;
+}
+.cdb:focus .cdb-sheet tr.cursorLine {
+  background-color: #262d35;
+}
+.cdb:focus .cdb-sheet tr.cursorLine td.start {
+  background-color: #313a48;
+}
+.cdb:focus .cdb-sheet tr.selected,
+.cdb:focus .cdb-sheet td.selected {
+  background-color: #313a48;
+}
+.cdb:focus .cdb-sheet tr.selected td.start,
+.cdb:focus .cdb-sheet td.selected td.start {
+  background-color: #313a48;
+}
 .cdb .cdb-sheet {
   width: 100%;
   table-layout: fixed;
@@ -61,23 +81,6 @@
 }
 .cdb .cdb-sheet td.edit_long {
   padding-bottom: 0px;
-}
-.cdb .cdb-sheet td.cursorView {
-  outline: 1px solid #ccc;
-}
-.cdb .cdb-sheet tr.cursorLine {
-  background-color: #262d35;
-}
-.cdb .cdb-sheet tr.cursorLine td.start {
-  background-color: #313a48;
-}
-.cdb .cdb-sheet tr.selected,
-.cdb .cdb-sheet td.selected {
-  background-color: #313a48;
-}
-.cdb .cdb-sheet tr.selected td.start,
-.cdb .cdb-sheet td.selected td.start {
-  background-color: #313a48;
 }
 .cdb .cdb-sheet tr.filtered {
   display: none;

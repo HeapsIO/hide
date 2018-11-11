@@ -31,7 +31,7 @@ class Cell extends Component {
 
 	public function refresh() {
 		currentValue = Reflect.field(line.obj, column.name);
-		var html = valueHtml(column, value, editor.sheet, line.obj);
+		var html = valueHtml(column, value, line.table.sheet, line.obj);
 		if( html == "&nbsp;" ) element.text(" ") else if( html.indexOf('<') < 0 && html.indexOf('&') < 0 ) element.text(html) else element.html(html);
 		updateClasses();
 	}
@@ -241,15 +241,14 @@ class Cell extends Component {
 	}
 
 	public function focus() {
-		editor.element.focus();
+		editor.focus();
 		editor.cursor.set(table, this.columnIndex, this.line.index);
 	}
 
 	public function edit() {
 		switch( column.type ) {
 		case TString if( column.kind == Script ):
-			var str = value == null ? "" : editor.base.valToString(column.type, value);
-			@:privateAccess table.toggleList(this, function() return new ScriptTable(editor, this));
+			open();
 		case TInt, TFloat, TString, TId, TCustom(_), TDynamic:
 			var str = value == null ? "" : editor.base.valToString(column.type, value);
 			var textSpan = element.wrapInner("<span>").find("span");
@@ -313,7 +312,7 @@ class Cell extends Component {
 			setValue( currentValue == false && column.opt && table.displayMode != Properties ? null : currentValue == null ? true : currentValue ? false : true );
 			refresh();
 		case TProperties, TList:
-			@:privateAccess table.toggleList(this);
+			open();
 		case TRef(name):
 			var sdat = editor.base.getSheet(name);
 			if( sdat == null ) return;
@@ -482,6 +481,15 @@ class Cell extends Component {
 		}
 	}
 
+	public function open( ?immediate : Bool ) {
+		if( column.type == TString && column.kind == Script ) {
+			if( immediate ) return;
+			var str = value == null ? "" : editor.base.valToString(column.type, value);
+			@:privateAccess table.toggleList(this, function() return new ScriptTable(editor, this));
+		} else
+			@:privateAccess table.toggleList(this, immediate);
+	}
+
 	public function setErrorMessage( msg : String ) {
 		element.find("div.error").remove();
 		if( msg == null )  return;
@@ -510,9 +518,13 @@ class Cell extends Component {
 			}
 			setValue(newValue);
 			editor.endChanges();
+			editor.refreshAll();
+			focus();
+			/*
 			// creates or remove a #DUP : need to refresh the whole table
 			if( prevTarget != null || (prevObj != null && (prevObj.obj != obj || table.sheet.index.get(prevValue) != null)) )
 				table.refresh();
+			*/
 		case TString if( column.kind == Script ):
 			setValue(StringTools.trim(newValue));
 		default:
@@ -529,7 +541,7 @@ class Cell extends Component {
 		var str = element.find("input,textarea").val();
 		if( str != null ) setRawValue(str);
 		refresh();
-		table.editor.element.focus();
+		focus();
 	}
 
 }

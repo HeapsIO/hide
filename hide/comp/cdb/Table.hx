@@ -241,7 +241,7 @@ class Table extends Component {
 		return false;
 	}
 
-	function toggleList( cell : Cell, ?make : Void -> SubTable ) {
+	function toggleList( cell : Cell, ?immediate : Bool, ?make : Void -> SubTable ) {
 		var line = cell.line;
 		var cur = line.subTable;
 		if( cur != null ) {
@@ -249,8 +249,12 @@ class Table extends Component {
 			if( cur.cell == cell ) return; // toggle
 		}
 		var sub = make == null ? new SubTable(editor, cell) : make();
-		sub.show();
-		if( sub.lines.length > 0 ) editor.cursor.set(sub);
+		sub.show(immediate);
+		editor.cursor.set(sub);
+	}
+
+	function toString() {
+		return "Table#"+sheet.name;
 	}
 
 }

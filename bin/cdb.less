@@ -3,6 +3,31 @@
 
 	background-color : black;
 
+	&:focus {
+		outline: none;
+	}
+
+	&:focus .cdb-sheet {
+
+		td.cursorView {
+			outline : 1px solid #ccc;
+		}
+
+		tr.cursorLine {
+			background-color: #262d35;
+			td.start {
+				background-color: #313a48;
+			}
+		}
+
+		tr.selected, td.selected {
+			background-color : #313a48;
+			td.start {
+				background-color: #313a48;
+			}
+		}
+	}
+
 	.cdb-sheet {
 
 		width : 100%;
@@ -66,24 +91,6 @@
 		}
 		td.edit_long {
 			padding-bottom : 0px;
-		}
-
-		td.cursorView {
-			outline : 1px solid #ccc;
-		}
-
-		tr.cursorLine {
-			background-color: #262d35;
-			td.start {
-				background-color: #313a48;
-			}
-		}
-
-		tr.selected, td.selected {
-			background-color : #313a48;
-			td.start {
-				background-color: #313a48;
-			}
 		}
 
 		tr.filtered {

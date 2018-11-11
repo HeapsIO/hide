@@ -3,12 +3,15 @@ import hxd.Key in K;
 
 typedef UndoState = {
 	var data : Any;
+	var cursor : { sheet : String, x : Int, y : Int, select : Null<{ x : Int, y : Int }> };
+	var tables : Array<{ sheet : String, parent : { sheet : String, line : Int, column : Int } }>;
 }
 
 typedef EditorApi = {
 	function load( data : Any ) : Void;
 	function copy() : Any;
 	function save() : Void;
+	var ?currentValue : Any;
 	var ?undo : hide.ui.UndoHistory;
 	var ?undoState : Array<UndoState>;
 	var ?editor : Editor;
@@ -29,7 +32,6 @@ class Editor extends Component {
 		schema : Array<cdb.Data.Column>,
 	};
 	var changesDepth : Int = 0;
-	var currentValue : Any;
 	var api : EditorApi;
 	public var config : hide.Config;
 	public var cursor : Cursor;
@@ -43,6 +45,7 @@ class Editor extends Component {
 		this.sheet = sheet;
 		if( api.undoState == null ) api.undoState = [];
 		if( api.editor == null ) api.editor = this;
+		if( api.currentValue == null ) api.currentValue = api.copy();
 		this.undo = api.undo == null ? new hide.ui.UndoHistory() : api.undo;
 		api.undo = undo;
 		init();
@@ -50,7 +53,7 @@ class Editor extends Component {
 
 	function init() {
 		element.attr("tabindex", 0);
-		element.on("blur", function(_) cursor.set());
+		element.on("focus", function(_) onFocus());
 		element.on("keypress", function(e) {
 			if( e.target.nodeName == "INPUT" )
 				return;
@@ -68,8 +71,8 @@ class Editor extends Component {
 		keys.register("paste", onPaste);
 		keys.register("delete", onDelete);
 		keys.register("cdb.showReferences", showReferences);
-		keys.register("undo", function() if( undo.undo() ) refresh());
-		keys.register("redo", function() if( undo.redo() ) refresh());
+		keys.register("undo", function() undo.undo());
+		keys.register("redo", function() undo.redo());
 		keys.register("cdb.insertLine", function() { insertLine(cursor.table,cursor.y); cursor.move(0,1,false,false); });
 		for( k in ["cdb.editCell","rename"] )
 			keys.register(k, function() {
@@ -78,12 +81,10 @@ class Editor extends Component {
 			});
 		keys.register("cdb.closeList", function() {
 			var c = cursor.getCell();
-			if( c != null ) {
-				var sub = Std.instance(c.table, SubTable);
-				if( sub != null ) {
-					sub.cell.element.click();
-					return;
-				}
+			var sub = Std.instance(c == null ? cursor.table : c.table, SubTable);
+			if( sub != null ) {
+				sub.cell.element.click();
+				return;
 			}
 			if( cursor.select != null ) {
 				cursor.select = null;
@@ -94,7 +95,6 @@ class Editor extends Component {
 		base = sheet.base;
 		cursor = new Cursor(this);
 		if( displayMode == null ) displayMode = Table;
-		currentValue = api.copy();
 		refresh();
 	}
 
@@ -258,11 +258,52 @@ class Editor extends Component {
 	**/
 	public function beginChanges() {
 		if( changesDepth == 0 ) {
-			api.undoState.push({
-				data : currentValue,
+			api.undoState.unshift({
+				data : api.currentValue,
+				cursor : cursor.table == null ? null : {
+					sheet : cursor.table.sheet.name,
+					x : cursor.x,
+					y : cursor.y,
+					select : cursor.select == null ? null : { x : cursor.select.x, y : cursor.select.y }
+				},
+				tables : [for( i in 1...tables.length ) {
+					var t = tables[i];
+					var tp = t.sheet.parent;
+					{ sheet : t.sheet.name, parent : { sheet : tp.sheet.name, line : tp.line, column : tp.column } }
+				}],
 			});
 		}
 		changesDepth++;
+	}
+
+	function setState( state : UndoState ) {
+		var cur = state.cursor;
+
+		trace({ cursor : cur, tables : state.tables });
+
+		for( t in state.tables ) {
+			var tparent = null;
+			for( tp in tables )
+				if( tp.sheet.name == t.parent.sheet ) {
+					tparent = tp;
+					break;
+				}
+			if( tparent != null )
+				tparent.lines[t.parent.line].cells[t.parent.column].open(true);
+		}
+
+		if( cur != null ) {
+			var table = null;
+			for( t in tables )
+				if( t.sheet.name == cur.sheet ) {
+					table = t;
+					break;
+				}
+			if( table != null )
+				focus();
+			cursor.set(table, cur.x, cur.y, cur.select == null ? null : { x : cur.select.x, y : cur.select.y } );
+		} else
+			cursor.set();
 	}
 
 	/**
@@ -270,15 +311,19 @@ class Editor extends Component {
 	**/
 	public function endChanges() {
 		changesDepth--;
-		if( changesDepth == 0 )
-			undo.change(Custom(makeCustom(api)));
+		if( changesDepth == 0 ) {
+			var f = makeCustom(api);
+			if( f != null ) undo.change(Custom(f));
+		}
 	}
 
 	// do not reference "this" editor in undo state !
 	static function makeCustom( api : EditorApi ) {
-		var state = api.undoState[0];
 		var newValue = api.copy();
-		api.editor.currentValue = newValue;
+		if( newValue == api.currentValue )
+			return null;
+		var state = api.undoState[0];
+		api.currentValue = newValue;
 		api.save();
 		return function(undo) api.editor.handleUndo(state, newValue, undo);
 	}
@@ -286,13 +331,13 @@ class Editor extends Component {
 	function handleUndo( state : UndoState, newValue : Any, undo : Bool ) {
 		if( undo ) {
 			api.undoState.shift();
-			currentValue = state.data;
+			api.currentValue = state.data;
 		} else {
 			api.undoState.unshift(state);
-			currentValue = newValue;
+			api.currentValue = newValue;
 		}
-		api.load(currentValue);
-		refresh();
+		api.load(api.currentValue);
+		refreshAll(state);
 		api.save();
 	}
 
@@ -329,11 +374,11 @@ class Editor extends Component {
 			}
 	}
 
-	function refreshAll() {
-		api.editor.refresh();
+	function refreshAll( ?state : UndoState ) {
+		api.editor.refresh(state);
 	}
 
-	function refresh() {
+	function refresh( ?state : UndoState ) {
 
 		base.sync();
 
@@ -366,9 +411,12 @@ class Editor extends Component {
 		new Table(this, sheet, content, displayMode);
 		content.appendTo(element);
 
+		if( state != null )
+			setState(state);
+
 		if( cursor.table != null ) {
 			for( t in tables )
-				if( t.sheet == cursor.table.sheet )
+				if( t.sheet.name == cursor.table.sheet.name )
 					cursor.table = t;
 			cursor.update();
 		}
@@ -464,7 +512,12 @@ class Editor extends Component {
 	}
 
 	public function focus() {
+		if( element.is(":focus") ) return;
 		element.focus();
+		onFocus();
+	}
+
+	public dynamic function onFocus() {
 	}
 
 }
