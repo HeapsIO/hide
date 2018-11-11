@@ -413,8 +413,7 @@ class Ide {
 		for( file in plugins )
 			loadScript(file, function() {});
 
-		var db = getPath(config.project.get("cdb.databaseFile"));
-		databaseFile = db;
+		databaseFile = config.project.get("cdb.databaseFile");
 		loadDatabase();
 		fileWatcher.register(databaseFile,loadDatabase);
 		databaseApi = {
@@ -524,9 +523,10 @@ class Ide {
 
 	function loadDatabase() {
 		database = new cdb.Database();
-		if( sys.FileSystem.exists(databaseFile) ) {
+		var db = getPath(databaseFile);
+		if( sys.FileSystem.exists(db) ) {
 			try {
-				database.load(sys.io.File.getContent(databaseFile));
+				database.load(sys.io.File.getContent(db));
 			} catch( e : Dynamic ) {
 				error(e);
 			}
@@ -534,7 +534,8 @@ class Ide {
 	}
 
 	public function saveDatabase() {
-		sys.io.File.saveContent(databaseFile, database.save());
+		fileWatcher.ignoreNextChange(databaseFile);
+		sys.io.File.saveContent(getPath(databaseFile), database.save());
 	}
 
 	public function makeRelative( path : String ) {

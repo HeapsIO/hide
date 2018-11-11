@@ -5,11 +5,16 @@ private typedef FileEvent = {path:String,fun:Void->Void,checkDel:Bool,element:js
 class FileWatcher {
 
 	var ide : hide.Ide;
-	var watches : Map<String,{ events : Array<FileEvent>, w : js.node.fs.FSWatcher, changed : Bool, isDir : Bool }> = new Map();
+	var watches : Map<String,{ events : Array<FileEvent>, w : js.node.fs.FSWatcher, ignoreNext : Bool, changed : Bool, isDir : Bool }> = new Map();
 	var timer : haxe.Timer;
 
 	public function new() {
 		ide = hide.Ide.inst;
+	}
+
+	public function ignoreNextChange( path : String ) {
+		var w = getWatches(path);
+		w.ignoreNext = true;
 	}
 
 	public function dispose() {
@@ -71,11 +76,16 @@ class FileWatcher {
 				w : null,
 				changed : false,
 				isDir : try sys.FileSystem.isDirectory(fullPath) catch( e : Dynamic ) false,
+				ignoreNext : false,
 			};
 			w.w = try js.node.Fs.watch(fullPath, function(k:String, file:String) {
 				if( w.changed || (w.isDir && k == "change") ) return;
 				w.changed = true;
 				haxe.Timer.delay(function() {
+					if( w.ignoreNext ) {
+						w.ignoreNext = false;
+						return;
+					}
 					if( !w.changed ) return;
 					w.changed = false;
 					for( e in w.events.copy() )
