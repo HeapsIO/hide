@@ -450,7 +450,7 @@ class Cell extends Component {
 				var v : Dynamic = { file : file, size : size, x : pos.x, y : pos.y };
 				if( pos.width != 1 ) v.width = pos.width;
 				if( pos.height != 1 ) v.height = pos.height;
-				setValue(v);
+				setRawValue(v);
 			}
 
 			if( file == null ) {
@@ -501,8 +501,13 @@ class Cell extends Component {
 		new Element("<div>").addClass("error").html(msg).appendTo(element);
 	}
 
-	function setRawValue( str : String ) {
-		var newValue : Dynamic = try editor.base.parseValue(column.type, str, false) catch( e : Dynamic ) return;
+	function setRawValue( str : Dynamic ) {
+		var newValue : Dynamic;
+		if( Std.is(str,String) ) {
+			newValue = try editor.base.parseValue(column.type, str, false) catch( e : Dynamic ) return;
+		} else
+			newValue = str;
+
 		if( newValue == null || newValue == currentValue )
 			return;
 
@@ -532,6 +537,27 @@ class Cell extends Component {
 			*/
 		case TString if( column.kind == Script ):
 			setValue(StringTools.trim(newValue));
+		case TTilePos:
+			// if we change a file that has moved, change it for all instances having the same file
+			editor.beginChanges();
+			var obj = line.obj;
+			var change = false;
+			var oldV : cdb.Types.TilePos = currentValue;
+			var newV : cdb.Types.TilePos = newValue;
+			if( newV != null && oldV != null && oldV.file != newV.file && !sys.FileSystem.exists(ide.getPath(oldV.file)) && sys.FileSystem.exists(ide.getPath(newV.file)) ) {
+				for( l in table.lines) {
+					if( l == line ) continue;
+					var t : Dynamic = Reflect.field(l.obj, column.name);
+					if( t != null && t.file == oldV.file ) {
+						t.file = newV.file;
+						change = true;
+					}
+				}
+			}
+			setValue(newValue);
+			editor.endChanges();
+			if( change )
+				editor.refresh();
 		default:
 			setValue(newValue);
 		}

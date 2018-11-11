@@ -5,7 +5,7 @@ private typedef FileEvent = {path:String,fun:Void->Void,checkDel:Bool,element:js
 class FileWatcher {
 
 	var ide : hide.Ide;
-	var watches : Map<String,{ events : Array<FileEvent>, w : js.node.fs.FSWatcher, ignoreNext : Bool, changed : Bool, isDir : Bool }> = new Map();
+	var watches : Map<String,{ events : Array<FileEvent>, w : js.node.fs.FSWatcher, ignoreNext : Bool, wasChanged : Bool, changed : Bool, isDir : Bool }> = new Map();
 	var timer : haxe.Timer;
 
 	public function new() {
@@ -77,20 +77,24 @@ class FileWatcher {
 				changed : false,
 				isDir : try sys.FileSystem.isDirectory(fullPath) catch( e : Dynamic ) false,
 				ignoreNext : false,
+				wasChanged : false,
 			};
 			w.w = try js.node.Fs.watch(fullPath, function(k:String, file:String) {
-				if( w.changed || (w.isDir && k == "change") ) return;
+				if( w.isDir && k == "change" ) return;
+				if( k == "change" ) w.wasChanged = true;
+				if( w.changed ) return;
 				w.changed = true;
 				haxe.Timer.delay(function() {
+					if( !w.changed ) return;
+					w.changed = false;
 					if( w.ignoreNext ) {
 						w.ignoreNext = false;
 						return;
 					}
-					if( !w.changed ) return;
-					w.changed = false;
 					for( e in w.events.copy() )
-						if( isLive(w.events,e) && (k == "change" || e.checkDel) )
+						if( isLive(w.events,e) && (w.wasChanged || e.checkDel) )
 							e.fun();
+					w.wasChanged = false;
 				}, 100);
 			}) catch( e : Dynamic ) {
 				// file does not exists, trigger a delayed event

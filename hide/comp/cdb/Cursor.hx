@@ -90,11 +90,16 @@ class Cursor {
 		update();
 	}
 
-	public function update() {
+	public function hide() {
 		var elt = editor.element;
 		elt.find(".selected").removeClass("selected");
 		elt.find(".cursorView").removeClass("cursorView");
 		elt.find(".cursorLine").removeClass("cursorLine");
+	}
+
+	public function update() {
+		var elt = editor.element;
+		hide();
 		if( table == null )
 			return;
 		if( y < 0 ) {

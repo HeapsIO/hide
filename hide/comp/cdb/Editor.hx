@@ -54,6 +54,7 @@ class Editor extends Component {
 	function init() {
 		element.attr("tabindex", 0);
 		element.on("focus", function(_) onFocus());
+		element.on("blur", function(_) cursor.hide());
 		element.on("keypress", function(e) {
 			if( e.target.nodeName == "INPUT" )
 				return;
@@ -216,7 +217,7 @@ class Editor extends Component {
 			var y = sel.y2;
 			while( y >= sel.y1 ) {
 				var line = cursor.table.lines[y];
-				line.table.sheet.lines.splice(line.index, 1);
+				line.table.sheet.deleteLine(line.index);
 				hasChanges = true;
 				y--;
 			}

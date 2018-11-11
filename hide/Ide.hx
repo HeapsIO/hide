@@ -415,7 +415,7 @@ class Ide {
 
 		databaseFile = config.project.get("cdb.databaseFile");
 		loadDatabase();
-		fileWatcher.register(databaseFile,loadDatabase);
+		fileWatcher.register(databaseFile,function() loadDatabase(true));
 		databaseApi = {
 			copy : () -> (database.save() : Any),
 			load : (v:Any) -> database.load((v:String)),
@@ -521,10 +521,13 @@ class Ide {
 		js.Browser.location.reload();
 	}
 
-	function loadDatabase() {
-		database = new cdb.Database();
+	function loadDatabase( ?checkExists ) {
 		var db = getPath(databaseFile);
-		if( sys.FileSystem.exists(db) ) {
+		var exists = sys.FileSystem.exists(db);
+		if( checkExists && !exists )
+			return; // cancel load
+		database = new cdb.Database();
+		if( exists ) {
 			try {
 				database.load(sys.io.File.getContent(db));
 			} catch( e : Dynamic ) {

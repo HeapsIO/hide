@@ -15,6 +15,7 @@ extern class ContentItem {
 	public function off( type : String ) : Void;
 	public function replaceChild( c : ContentItem, config : Config.ItemConfig ) : Void;
 	public function getItemsByFilter( f : ContentItem -> Bool ) : Array<ContentItem>;
+	public function getActiveContentItem() : ContentItem;
 	public function setActiveContentItem( item : ContentItem ) : Void;
 
 }

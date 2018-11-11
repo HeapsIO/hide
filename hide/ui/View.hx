@@ -176,7 +176,11 @@ class View<T> extends hide.comp.Component {
 		Gives focus if part of a tab group
 	**/
 	public function activate() {
-		if( container != null ) container.parent.parent.setActiveContentItem(container.parent);
+		if( container != null ) {
+			var cur = container.parent.parent.getActiveContentItem();
+			if( cur != container.parent )
+				container.parent.parent.setActiveContentItem(container.parent);
+		}
 	}
 
 	public function saveState() {
