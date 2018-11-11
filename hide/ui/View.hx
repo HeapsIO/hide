@@ -121,6 +121,8 @@ class View<T> extends hide.comp.Component {
 			destroy();
 		});
 		container.on("show", function(_) {
+			// we are dragging the container tab
+			if( container.parent.parent.config == null ) return;
 			haxe.Timer.delay(onActivate,0);
 		});
 		container.getElement().keydown(function(e) {
