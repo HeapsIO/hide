@@ -257,30 +257,30 @@ class Editor extends Component {
 		Allow recursion, only last endChanges() will trigger db save and undo point creation.
 	**/
 	public function beginChanges() {
-		if( changesDepth == 0 ) {
-			api.undoState.unshift({
-				data : api.currentValue,
-				cursor : cursor.table == null ? null : {
-					sheet : cursor.table.sheet.name,
-					x : cursor.x,
-					y : cursor.y,
-					select : cursor.select == null ? null : { x : cursor.select.x, y : cursor.select.y }
-				},
-				tables : [for( i in 1...tables.length ) {
-					var t = tables[i];
-					var tp = t.sheet.parent;
-					{ sheet : t.sheet.name, parent : { sheet : tp.sheet.name, line : tp.line, column : tp.column } }
-				}],
-			});
-		}
+		if( changesDepth == 0 )
+			api.undoState.unshift(getState());
 		changesDepth++;
+	}
+
+	function getState() : UndoState {
+		return {
+			data : api.currentValue,
+			cursor : cursor.table == null ? null : {
+				sheet : cursor.table.sheet.name,
+				x : cursor.x,
+				y : cursor.y,
+				select : cursor.select == null ? null : { x : cursor.select.x, y : cursor.select.y }
+			},
+			tables : [for( i in 1...tables.length ) {
+				var t = tables[i];
+				var tp = t.sheet.parent;
+				{ sheet : t.sheet.name, parent : { sheet : tp.sheet.name, line : tp.line, column : tp.column } }
+			}],
+		};
 	}
 
 	function setState( state : UndoState ) {
 		var cur = state.cursor;
-
-		trace({ cursor : cur, tables : state.tables });
-
 		for( t in state.tables ) {
 			var tparent = null;
 			for( tp in tables )
@@ -365,7 +365,10 @@ class Editor extends Component {
 		ide.open("hide.view.CdbTable", { path : s.name }, function(view) @:privateAccess Std.instance(view,hide.view.CdbTable).editor.cursor.setDefault(line,column));
 	}
 
-	function syncSheet() {
+	public function syncSheet( ?base ) {
+		if( base == null ) base = this.base;
+		this.base = base;
+
 		// swap sheet if it was modified
 		for( s in base.sheets )
 			if( s.name == this.sheet.name ) {
@@ -378,7 +381,10 @@ class Editor extends Component {
 		api.editor.refresh(state);
 	}
 
-	function refresh( ?state : UndoState ) {
+	public function refresh( ?state : UndoState ) {
+
+		if( state == null )
+			state = getState();
 
 		base.sync();
 
@@ -491,16 +497,13 @@ class Editor extends Component {
 	}
 
 	function moveLine( line : Line, delta : Int ) {
-		/*
-		// remove opened list
-		getLine(sheet, index).next("tr.list").change();
-		var index = sheet.moveLine(index, delta);
+		beginChanges();
+		var index = sheet.moveLine(line.index, delta);
 		if( index != null ) {
-			setCursor(sheet, -1, index, false);
+			cursor.set(cursor.table, -1, index);
 			refresh();
-			save();
 		}
-		*/
+		endChanges();
 	}
 
 	public function popupLine( line : Line ) {

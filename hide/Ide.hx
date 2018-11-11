@@ -224,7 +224,6 @@ class Ide {
 	}
 
 	function initLayout( ?state : { name : String, state : Dynamic } ) {
-
 		initializing = true;
 
 		if( layout != null ) {
@@ -389,6 +388,8 @@ class Ide {
 	function get_resourceDir() return projectDir+"/res";
 
 	function setProject( dir : String ) {
+		fileWatcher.dispose();
+
 		if( dir != ideConfig.currentProject ) {
 			ideConfig.currentProject = dir;
 			ideConfig.recentProjects.remove(dir);
@@ -414,14 +415,8 @@ class Ide {
 
 		var db = getPath(config.project.get("cdb.databaseFile"));
 		databaseFile = db;
-		database = new cdb.Database();
-		if( sys.FileSystem.exists(db) ) {
-			try {
-				database.load(sys.io.File.getContent(db));
-			} catch( e : Dynamic ) {
-				error(e);
-			}
-		}
+		loadDatabase();
+		fileWatcher.register(databaseFile,loadDatabase);
 		databaseApi = {
 			copy : () -> (database.save() : Any),
 			load : (v:Any) -> database.load((v:String)),
@@ -525,6 +520,17 @@ class Ide {
 		hasReloaded = true;
 		fileWatcher.dispose();
 		js.Browser.location.reload();
+	}
+
+	function loadDatabase() {
+		database = new cdb.Database();
+		if( sys.FileSystem.exists(databaseFile) ) {
+			try {
+				database.load(sys.io.File.getContent(databaseFile));
+			} catch( e : Dynamic ) {
+				error(e);
+			}
+		}
 	}
 
 	public function saveDatabase() {
