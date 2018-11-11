@@ -88,6 +88,10 @@ class Ide {
 		fileWatcher = new hide.tools.FileWatcher();
 
 		setProject(ideConfig.currentProject);
+		window.window.document.addEventListener("mousedown", function(e) {
+			mouseX = e.x;
+			mouseY = e.y;
+		});
 		window.window.document.addEventListener("mousemove", function(e) {
 			mouseX = e.x;
 			mouseY = e.y;

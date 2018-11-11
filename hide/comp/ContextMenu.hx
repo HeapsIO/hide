@@ -14,7 +14,10 @@ class ContextMenu {
 	public function new( config : Array<ContextMenuItem> ) {
 		var menu = makeMenu(config);
 		var ide = hide.Ide.inst;
-		menu.popup(ide.mouseX, ide.mouseY);
+		// wait until mousedown to get correct mouse pos
+		haxe.Timer.delay(function() {
+			menu.popup(ide.mouseX, ide.mouseY)
+		},0);
 	}
 
 	function makeMenu( config : Array<ContextMenuItem> ) {

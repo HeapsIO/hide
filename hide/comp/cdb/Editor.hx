@@ -508,6 +508,41 @@ class Editor extends Component {
 	}
 
 	public function popupLine( line : Line ) {
+		var sheet = line.table.sheet;
+		var sepIndex = sheet.separators.indexOf(line.index);
+		new hide.comp.ContextMenu([
+			{ label : "Move Up", click : moveLine.bind(line,-1) },
+			{ label : "Move Down", click : moveLine.bind(line,1) },
+			{ label : "Insert", click : function() {
+				insertLine(line.table,line.index);
+				cursor.move(0,1,false,false);
+			} },
+			{ label : "Delete", click : function() {
+				beginChanges();
+				sheet.deleteLine(line.index);
+				endChanges();
+				refreshAll();
+			} },
+			{ label : "Separator", enabled : !sheet.props.hide, checked : sepIndex >= 0, click : function() {
+				beginChanges();
+				if( sepIndex >= 0 ) {
+					sheet.separators.splice(sepIndex, 1);
+					if( sheet.props.separatorTitles != null ) sheet.props.separatorTitles.splice(sepIndex, 1);
+				} else {
+					sepIndex = sheet.separators.length;
+					for( i in 0...sheet.separators.length )
+						if( sheet.separators[i] > line.index ) {
+							sepIndex = i;
+							break;
+						}
+					sheet.separators.insert(sepIndex, line.index);
+					if( sheet.props.separatorTitles != null && sheet.props.separatorTitles.length > sepIndex )
+						sheet.props.separatorTitles.insert(sepIndex, null);
+				}
+				endChanges();
+				refresh();
+			} }
+		]);
 	}
 
 	public function close() {
