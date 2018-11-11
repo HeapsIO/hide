@@ -729,6 +729,23 @@ class Ide {
 				open("hide.view.CdbTable", { path : s.name });
 			});
 		}
+		db.find(".dbcompress").prop("checked",database.compress).click(function(_) {
+			database.compress = !database.compress;
+			saveDatabase();
+		});
+		db.find(".dbcleanup").click(function(_) {
+			database.cleanup();
+			saveDatabase();
+			message("Cleanup Done");
+		});
+		db.find(".dbexport").click(function(_) {
+			var lang = new cdb.Lang(@:privateAccess database.data);
+			var xml = lang.buildXML();
+			xml = String.fromCharCode(0xFEFF) + xml; // prefix with BOM
+			chooseFileSave("export.xml", function(f) {
+				if( f != null ) sys.io.File.saveContent(getPath(f), xml);
+			});
+		});
 
 		// layout
 		var layouts = menu.find(".layout .content");
