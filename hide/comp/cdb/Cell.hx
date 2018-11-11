@@ -337,6 +337,11 @@ class Cell extends Component {
 			(untyped s.select2)("val", currentValue == null ? "" : currentValue);
 			(untyped s.select2)("open");
 
+			var sel2 = s.data("select2");
+			sel2.$dropdown.find("input").on("keydown", function(e) {
+				e.stopPropagation();
+			});
+
 			s.change(function(e) {
 				var val = s.val();
 				if( val == "~" ) val = null;
