@@ -212,6 +212,11 @@ class Scene extends Component implements h3d.IDrawable {
 			engine.driver.uploadTextureBitmap(t, cast bmp, 0, 0);
 			t.realloc = onLoaded;
 			t.flags.unset(Loading);
+			@:privateAccess if( t.waitLoads != null ) {
+				var arr = t.waitLoads;
+				t.waitLoads = null;
+				for( f in arr ) f();
+			}
 			if( onReady != null ) {
 				onReady(t);
 				onReady = null;

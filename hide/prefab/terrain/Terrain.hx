@@ -183,47 +183,45 @@ class Terrain extends Object3D {
 		ctx.local3d = terrain;
 		ctx.local3d.name = name;
 
+		function waitAll() {
+			for(surface in terrain.surfaces)
+				if(surface == null || surface.albedo == null || surface.normal == null || surface.pbr == null )
+					return;
+			
+			terrain.generateSurfaceArray();
+			loadTerrain(ctx);
+			for(tile in terrain.tiles)
+				tile.blendEdges();
+		}
+
 		for(surfaceProps in tmpSurfacesProps){
 			var surface = terrain.addEmptySurface();
 			var albedo = ctx.shared.loadTexture(surfaceProps.albedo);
 			var normal = ctx.shared.loadTexture(surfaceProps.normal);
 			var pbr = ctx.shared.loadTexture(surfaceProps.pbr);
 			function wait() {
-				if( albedo.flags.has(Loading) || normal.flags.has(Loading)|| pbr.flags.has(Loading))
-					haxe.Timer.delay(wait, 1);
-				else{
-					surface.albedo = albedo;
-					surface.normal = normal;
-					surface.pbr = pbr;
-					surface.offset.x = surfaceProps.offsetX;
-					surface.offset.y = surfaceProps.offsetY;
-					surface.angle = surfaceProps.angle;
-					surface.tilling = surfaceProps.tilling;
-					albedo.dispose();
-					normal.dispose();
-					pbr.dispose();
-				}
+				if(albedo.isDisposed())
+					return;
+				if( albedo.flags.has(Loading) || normal.flags.has(Loading) || pbr.flags.has(Loading))
+					return;
+				surface.albedo = albedo;
+				surface.normal = normal;
+				surface.pbr = pbr;
+				surface.offset.x = surfaceProps.offsetX;
+				surface.offset.y = surfaceProps.offsetY;
+				surface.angle = surfaceProps.angle;
+				surface.tilling = surfaceProps.tilling;
+				albedo.dispose();
+				normal.dispose();
+				pbr.dispose();
+
+				waitAll();
 			}
-			wait();
+			albedo.waitLoad(wait);
+			normal.waitLoad(wait);
+			pbr.waitLoad(wait);
 		}
 
-		function waitAll() {
-			var ready = true;
-			for(surface in terrain.surfaces)
-				if(surface == null || surface.albedo == null || surface.normal == null || surface.pbr == null ){
-					ready = false;
-					break;
-				}
-			if(ready){
-				terrain.generateSurfaceArray();
-				loadTerrain(ctx);
-				for(tile in terrain.tiles)
-					tile.blendEdges();
-			}
-			else
-				haxe.Timer.delay(waitAll, 1);
-		}
-		waitAll();
 		updateInstance(ctx);
 		return ctx;
 	}
