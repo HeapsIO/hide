@@ -299,6 +299,7 @@ class Level3D extends FileView {
 	var lastSyncChange : Float = 0.;
 	var currentSign : String;
 	var sceneFilters : Map<String, Bool>;
+	var statusText : h2d.Text;
 
 	var scene(get, null):  hide.comp.Scene;
 	function get_scene() return sceneEditor.scene;
@@ -382,7 +383,25 @@ class Level3D extends FileView {
 			autoSync = b;
 		});
 
+		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
+		statusText.setPosition(5, 5);
+		updateStats();
 		updateGrid();
+	}
+
+	function updateStats() {
+		var memStats = scene.engine.mem.stats();
+		@:privateAccess
+		var lines : Array<String> = [
+			'Scene objects: ${scene.s3d.getObjectsCount()}',
+			'Interactives: ' + sceneEditor.interactives.count(),
+			'Contexts: ' + sceneEditor.context.shared.contexts.count(),
+			'Triangles: ${scene.engine.drawTriangles}',
+			'Buffers: ${memStats.bufferCount}',
+			'Textures: ${memStats.textureCount}',
+		];
+		statusText.text = lines.join("\n");
+		sceneEditor.event.wait(0.5, updateStats);
 	}
 
 	function bakeLights() {
