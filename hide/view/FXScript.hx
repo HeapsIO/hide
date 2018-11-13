@@ -52,10 +52,16 @@ class FXScript {
 			field += names[index];
 
 		return switch(field){
-			case "rotationX": function(v){ curObj.setRotationAxis(1,0,0,v); };
-			case "rotationY": function(v){ curObj.setRotationAxis(0,1,0,v); };
-			case "rotationZ": function(v){ curObj.setRotationAxis(0,0,1,v); };
-			default: function(v){ Reflect.setProperty(curObj, field, v); };
+			case "rotationX": function(v){
+				var euler = curObj.getRotationQuat().toEuler();
+				curObj.setRotation(v, euler.y, euler.z);};
+			case "rotationY": function(v){
+				var euler = curObj.getRotationQuat().toEuler();
+				curObj.setRotation(euler.x, v, euler.z); };
+			case "rotationZ": function(v){
+				var euler = curObj.getRotationQuat().toEuler();
+				curObj.setRotation(euler.x, euler.y, v);};
+			default: function(v){ if(Reflect.hasField(curObj, field)) Reflect.setProperty(curObj, field, v); };
 		}
 	}
 
