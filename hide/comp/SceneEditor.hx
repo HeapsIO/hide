@@ -1230,89 +1230,57 @@ class SceneEditor {
 		var contexts = context.shared.contexts;
 
 		var undoes = [];
+		var newElements = [];
+		var roots = [];
 		for(elt in elements) {
-			// var obj3d = Std.instance(elt, Object3D);
-			// if(obj3d == null)
-			// 	lightRefresh = false;
 			var clone = elt.clone();
-			var index = elt.parent.children.indexOf(elt);
+			var index = elt.parent.children.indexOf(elt) + 1;
 			clone.parent = elt.parent;
+			if(roots.indexOf(clone.parent) < 0)
+				roots.push(clone.parent);
 			elt.parent.children.remove(clone);
-			elt.parent.children.insert(index+1, clone);
+			elt.parent.children.insert(index, clone);
 			autoName(clone);
-			clone.makeInstanceRec(getContext(elt.parent));
-		}	
-	}
+			makeInstances(clone);
+			newElements.push(clone);
 
-	function duplicate_(thenMove: Bool) {
-		if(curEdit == null) return;
-		var elements = curEdit.rootElements;
-		if(elements == null || elements.length == 0)
-			return;
-		var contexts = context.shared.contexts;
-		var oldContexts = contexts.copy();
-		var lightRefresh = enableLightRefresh;
-		var newElements = [for(elt in elements) {
-			var obj3d = Std.instance(elt, Object3D);
-			if(obj3d == null)
-				lightRefresh = false;
-			var clone = elt.clone();
-			var index = elt.parent.children.indexOf(elt);
-			clone.parent = elt.parent;
-			elt.parent.children.remove(clone);
-			elt.parent.children.insert(index+1, clone);
-			autoName(clone);
-			clone.makeInstanceRec(getContext(elt.parent));
-			makeInteractive(clone);
-			{ elt: clone, idx: index };
-		}];
-		var newContexts = contexts.copy();
-
-		function addUndo() {
-			undo.change(Custom(function(undo) {
-				for(e in newElements) {
-					if(undo) {
-						e.elt.parent.children.remove(e.elt);
-					}
-					else {
-						e.elt.parent.children.insert(e.idx, e.elt);
-					}
-				}
-				if(undo)
-					context.shared.contexts = oldContexts;
-				else
-					context.shared.contexts = newContexts;
-				refresh();
-				deselect();
-			}));
+			undoes.push(function(undo) {
+				if(undo) elt.parent.children.remove(clone);
+				else elt.parent.children.insert(index, clone);
+			});
 		}
 
-		function afterRefresh() {
-			var all = [for(e in newElements) e.elt];
-			selectObjects(all);
-			tree.setSelection(all);
+		refreshTree(function() {
+			selectObjects(newElements);
+			tree.setSelection(newElements);
 			if(thenMove && curEdit.rootObjects.length > 0) {
-				/* Disabled for now as getPickTransform() will necessarily project on ground, which we don't always want
-				if(all.length == 1) {
-					var pickMat = getPickTransform(all[0].parent);
-					if(pickMat != null) {
-						setTransform(all[0], pickMat.getPosition());
-						moveGizmoToSelection();
-					}
-				} */
 				gizmo.startMove(MoveXY, true);
 				gizmo.onFinishMove = function() {
 					refreshProps();
-					addUndo();
 				}
 			}
-			else {
-				addUndo();
+		});
+
+		undo.change(Custom(function(undo) {
+			deselect();
+			var fullRefreshNeeded = false;
+			for(root in roots) {
+				if(root == sceneData || !removeInstances(root)) {
+					fullRefreshNeeded = true;
+					break;
+				}
 			}
-		}
-		if(lightRefresh)
-			refreshTree(afterRefresh);
-		else refresh(afterRefresh);
+
+			for(u in undoes) u(undo);
+
+			if(fullRefreshNeeded)
+				refresh();
+			else {
+				for(root in roots)
+					makeInstances(root);
+				refreshTree();
+			}
+		}));
 	}
 
 	function setTransform(elt: PrefabElement, ?mat: h3d.Matrix, ?position: h3d.Vector) {
