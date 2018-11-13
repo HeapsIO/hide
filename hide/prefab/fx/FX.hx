@@ -54,6 +54,7 @@ class FXAnimation extends h3d.scene.Object {
 	public var emitters : Array<hide.prefab.fx.Emitter.EmitterObject> = [];
 	public var contraints : Array<hide.prefab.Constraint> = [];
 	public var currentTime(default, null) : Float = 0.0;
+	public var script : hide.view.FXScript;
 	var evaluator : Evaluator;
 	var random : hxd.Rand;
 
@@ -152,6 +153,8 @@ class FXAnimation extends h3d.scene.Object {
 			if(em.visible)
 				em.setTime(time);
 		}
+
+		script.eval();
 	}
 
 	public function resolveContraints( caster : h3d.scene.Object ) {
@@ -234,7 +237,7 @@ class FX extends hxd.prefab.Library {
 			return hide.prefab.Curve.getVectorValue(curves, defVal);
 		}
 
-		function makeColor(name: String)  {
+		function makeColor(name: String) {
 			var curves = hide.prefab.Curve.getCurves(elt, name);
 			if(curves == null || curves.length == 0)
 				return null;
@@ -398,6 +401,10 @@ class FX extends hxd.prefab.Library {
 		getObjAnimations(ctx, this, fxanim.objects);
 		getShaderAnims(ctx, this, fxanim.shaderAnims);
 		getEmitters(ctx, this, fxanim.emitters);
+		var parser = new hide.view.FXScript.FXScriptParser();
+		var fxScript = parser.createFXScript(script, fxanim);
+		fxanim.script = fxScript;
+
 		return ctx;
 	}
 

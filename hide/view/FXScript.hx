@@ -1,68 +1,296 @@
 package hide.view;
-using Lambda;
 
-enum ParamOption{
-	Range(min : Float, max : Float);
+enum FxAst {
+	Block( a : Array<FxAst> );
+	Var( get : Void -> Float );
+	Const( v : Float );
+	Set( set : Float -> Void, a : FxAst );
+	Op( a : FxAst, b : FxAst, op : Float -> Float -> Float );
+	Unop( a : FxAst, op : Float -> Float );
+	If( cond : FxAst, eif : FxAst, eelse : FxAst );
 }
 
-enum FXParam{
-	Float(name : String, value : Float, options : Array<ParamOption>);
-	Int(name : String, value : Int, options : Array<ParamOption>);
+enum ParamOption {
+	Range( min : Float, max : Float );
+}
+
+enum FXParam {
+	Float( name : String, value : Float, options : Array<ParamOption> );
+	Int( name : String, value : Int, options : Array<ParamOption> );
+}
+
+enum FXVar {
+	Float( value : Float );
+	Int( value : Int );
+}
+
+class FXScript {
+
+	public var fx : hide.prefab.fx.FX.FXAnimation;
+	public var myVars : Map<String, FXVar> = [];
+	public var ast : FxAst;
+	public var params : Array<FXParam> = [];
+
+	public function new(){
+	}
+
+	public function getSetter( p : String ) {
+		var names = p.split('.');
+		var i = 0;
+		var root : h3d.scene.Object = fx;
+		#if editor
+		var fxRoot = fx.getObjectByName("FXRoot");
+		if(fxRoot != null) root = fxRoot;
+		#end
+		var curObj : h3d.scene.Object = root.getObjectByName(names[i++]);
+		while(curObj != null && i < p.length) {
+			var next = curObj.getObjectByName(names[i++]);
+			next != null ? curObj = next : break;
+		}
+		var field : String = "";
+		for(index in i - 1 ... i)
+			field += names[index];
+
+		return switch(field){
+			case "rotationX": function(v){ curObj.setRotationAxis(1,0,0,v); };
+			case "rotationY": function(v){ curObj.setRotationAxis(0,1,0,v); };
+			case "rotationZ": function(v){ curObj.setRotationAxis(0,0,1,v); };
+			default: function(v){ Reflect.setProperty(curObj, field, v); };
+		}
+	}
+
+	public function getVar( n : String ) : Float {
+		if(!myVars.exists(n))
+			return 0.0;
+		return switch myVars[n]{
+			case Float(value): value;
+			case Int(value): value;
+		}
+	}
+
+	public function setVar( n : String, v : Float ) : Float {
+		if(!myVars.exists(n))
+			return 0.0;
+		switch myVars[n]{
+			case Float(value): myVars.set(n, FXVar.Float(v));
+			case Int(value): myVars.set(n, FXVar.Int(Std.int(v)));
+		}
+		return switch myVars[n]{
+			case Float(value): value;
+			case Int(value): value;
+		}
+	}
+
+	public function eval() {
+		function eval(ast : FxAst) : Float {
+			if(ast == null) return 0.0;
+			switch (ast) {
+				case Block(a):
+					for(ast in a)
+						eval(ast);
+					return 0.0;
+				case Var(get):
+					return get();
+				case Const(v):
+					return v;
+				case Set(set, a):
+					var v = eval(a);
+					set(v);
+					return v;
+				case Op(a, b, op):
+					var va = eval(a);
+					var vb = eval(b);
+					return op(va,vb);
+				case Unop(a, op):
+					return op(eval(a));
+				case If(cond, eif, eelse):
+					return eval(cond) != 0 ? eval(eif) : eval(eelse);
+			}
+		}
+		eval(ast);
+	}
 }
 
 @:access(hide.view.FXEditor)
-class FXScript {
+class FXScriptParser {
 
-	var editor : hide.view.FXEditor;
+	public var firstParse = false;
 
-	public function new(editor){
-		this.editor = editor;
+	public function new(){
 	}
 
-	public function updateScriptParams(){
+	inline function getExpr(e : hscript.Expr) {
+		#if hscriptPos
+		return e.e;
+		#else
+		return e;
+		#end
+	}
+
+	public function createFXScript( s : String, fx : hide.prefab.fx.FX.FXAnimation ) : FXScript {
 		var parser = new hscript.Parser();
 		parser.allowMetadata = true;
 		parser.allowTypes = true;
 		parser.allowJSON = true;
-		var params : Array<FXParam> = [];
 		var expr : hscript.Expr = null;
-		var parseDebug = true;
+		var script = new FXScript();
+		script.fx = fx;
 
-		function parseExpr(expr : hscript.Expr ) {
+		function parse( expr : hscript.Expr ) {
 			if( expr == null ) return;
-			switch(expr.e){
+			switch(getExpr(expr)){
+				case EMeta(name, args, e):
+					parse(e);
+					switch(name){
+						case "param" :
+							script.params.push(createFXParam(e));
+					}
 
 				case EBlock(e):
 					for(expr in e)
-						parseExpr(expr);
+						parse(expr);
 
-				case EMeta(name, args, e):
-					switch(name){
-						case "param" : params.push(createParam(e));
-					}
+				case EVar(n, t, e):
+					script.myVars.set(n, createFXVar(expr));
 
 				default:
 			}
 		}
-
 		try {
-			expr = parser.parseString(editor.scriptEditor.script, "");
-			parseExpr(expr);
+			expr = parser.parseString(s, "");
 		} catch( e : hscript.Expr.Error ) { }
+		parse(expr);
 
-		generateUI(params);
+		function convert( expr : hscript.Expr ) : FxAst {
+			if( expr == null ) return null;
+			switch(getExpr(expr)){
+
+				case EBlock(e):
+					return Block( [for(expr in e) convert(expr)] );
+
+				case EVar(n, t, e):
+					if(e != null ) return Set(function(v){ script.setVar(n, v); }, convert(e));
+					else return Var( function(){ return script.getVar(n); });
+
+				case EField(e, f):
+					return null;
+
+				case EIdent(v):
+					return switch(v) {
+								case "true": Const(1);
+								case "false": Const(0);
+								default: Var( function(){ return script.getVar(v); });
+							}
+
+				case EConst( c ):
+					return switch(c){
+						case CInt(v): Const(v);
+						case CFloat(f): Const(f);
+						default: null;
+					}
+
+				case EBinop(op, e1, e2):
+					switch(op){
+						case "+": return Op( convert(e1), convert(e2), function(a,b) { return a + b; });
+						case "-": return Op( convert(e1), convert(e2), function(a,b) { return a - b; });
+						case "=":  switch(getExpr(e1)){
+											case EIdent(v): return Set(function(val){ script.setVar(v, val); }, convert(e2));
+											case EField(e,f):
+												function getPath( expr : hscript.Expr ) : String {
+													return switch(getExpr(expr)){
+														case EField(e,f): getPath(e) + "." + f;
+														case EIdent(v): v;
+														default: null;
+													}
+												}
+												var fullPath = getPath(e1);
+												var setter = script.getSetter(fullPath);
+												return Set( setter, convert(e2));
+											default: return null;
+										}
+						default: return null;
+					}
+
+				case EUnop(op, prefix, e):
+					return switch(op){
+						case "++": Unop(convert(e), function(a){ return prefix ? ++a : a++; });
+						case "--": Unop(convert(e), function(a){ return prefix ? --a : a--; });
+						default: null;
+					}
+
+				default:
+					return null;
+			}
+		}
+
+		script.ast = convert(expr);
+		return script;
 	}
 
+	function createFXVar( expr : hscript.Expr ) {
+		function parse(expr : hscript.Expr) : FXVar {
+			return switch(getExpr(expr)){
+				case EMeta(name, args, e):
+					return parse(e);
+				case EVar(n, t, e):
+					var r : FXVar = null;
+					if(t != null){
+						switch(t){
+							case CTPath(path, params):
+								switch(path){
+									case ["Int"]: r = FXVar.Int(0);
+									case ["Float"]: r = FXVar.Float(0.0);
+									default:
+								}
+							default: null;
+						}
+					}
+					if(e != null){
+						switch(getExpr(e)){
+							case EConst(c):
+								if(r != null){
+									switch(r){
+										case Float(value):
+											switch(c){
+												case CInt(v): r = FXVar.Float(v);
+												case CFloat(f): r = FXVar.Float(f);
+												default:
+											}
+										case Int(value):
+											switch(c){
+												case CInt(v): r = FXVar.Int(v);
+												case CFloat(f): r = FXVar.Int(Std.int(f));
+												default:
+											}
+									}
+								}
+								else{
+									switch(c){
+										case CInt(v): r = FXVar.Int(v);
+										case CFloat(f): r = FXVar.Float(f);
+										default:
+									}
+								}
+							default: null;
+						}
+					}
+					return r;
 
-	function createParam( expr : hscript.Expr ) : FXParam {
+				default: null;
+			}
+		}
+		return parse(expr);
+	}
+
+	function createFXParam( expr : hscript.Expr ) : FXParam {
 		var options : Array<ParamOption> = [];
 		function parse(expr : hscript.Expr) : FXParam {
 			if( expr == null ) return null;
-			switch(expr.e){
+			switch(getExpr(expr)){
 				case EMeta(name, args, e):
 					switch(name){
 						case "range":
-						var min = 	switch(args[0].e){
+						var min = 	switch(getExpr(args[0])){
 										case EConst(c):
 											switch(c){
 												case CInt(v): v;
@@ -71,7 +299,7 @@ class FXScript {
 											}
 										default: null;
 									}
-						var max = 	switch(args[1].e){
+						var max = 	switch(getExpr(args[1])){
 										case EConst(c):
 											switch(c){
 												case CInt(v): v;
@@ -86,28 +314,48 @@ class FXScript {
 					return parse(e);
 
 				case EVar(n, t, e):
-					if(e == null){
+					var r : FXParam = null;
+					if(t != null){
 						switch(t){
 							case CTPath(path, params):
 								switch(path){
-									case ["Int"]: return FXParam.Int(n, null, options);
-									case ["Float"]: return FXParam.Float(n, null, options);
+									case ["Int"]: r =  FXParam.Int(n, 0, options);
+									case ["Float"]: r = FXParam.Float(n, 0.0, options);
 									default:
-								}
-							default:
-						}
-					}
-					else{
-						switch(e.e){
-							case EConst(c):
-								switch(c){
-									case CInt(v): return FXParam.Int(n, v, options);
-									case CFloat(f): return FXParam.Float(n, f, options);
-									default: null;
 								}
 							default: null;
 						}
 					}
+					if(e != null){
+						switch(getExpr(e)){
+							case EConst(c):
+								if(r != null){
+									switch(r){
+										case Float(name, value, options):
+											switch(c){
+												case CInt(v): r = FXParam.Float(n, v, options);
+												case CFloat(f): r = FXParam.Float(n, f, options);
+												default:
+											}
+										case Int(name, value, options):
+											switch(c){
+												case CInt(v): r = FXParam.Int(n, v, options);
+												case CFloat(f): r = FXParam.Int(n, Std.int(f), options);
+												default:
+											}
+									}
+								}
+								else{
+									switch(c){
+										case CInt(v): r = FXParam.Int(n, v, options);
+										case CFloat(f): r =  FXParam.Float(n, f, options);
+										default:
+									}
+								}
+							default: null;
+						}
+					}
+					return r;
 
 				default:
 					return null;
@@ -117,11 +365,13 @@ class FXScript {
 		return parse(expr);
 	}
 
-	function generateUI( params : Array<FXParam> ){
+	#if editor
+
+	public function generateUI( s : FXScript, editor : FXEditor ){
 		var elem = editor.element.find(".fx-scriptParams");
 		elem.empty();
 		var root = new Element('<div class="group" name="Params"></div>');
-		for(p in params){
+		for(p in s.params){
 			switch(p){
 				case Float(name, value, options):
 					var sliderMin = 0.0;
@@ -134,7 +384,7 @@ class FXScript {
 							default:
 						}
 					}
-					root.append(createSlider(name, sliderMin, sliderMax, 0.1, value));
+					root.append(createSlider(s, name, sliderMin, sliderMax, 0.1, value));
 				case Int(name, value, options):
 					var sliderMin = 0.0;
 					var sliderMax = 1.0;
@@ -146,23 +396,23 @@ class FXScript {
 							default:
 						}
 					}
-					root.append(createSlider(name, sliderMin, sliderMax, 1.0, value));
+					root.append(createSlider(s, name, sliderMin, sliderMax, 1.0, value));
 			}
 		}
 		elem.append(root);
 	}
 
-	function createSlider(name : String, min : Float, max : Float, step : Float, defaultVal : Float) : Element {
+	function createSlider( s : FXScript, name : String, min : Float, max : Float, step : Float, defaultVal : Float ) : Element {
 		var root = new Element('<div class="fx-slider"></div>');
-		var name = new Element('<label> $name : </label>');
-		var min = new Element('<label> $min </label>');
-		var max = new Element('<label> $max </label>');
-		var slider = new Element('<input class="param" type="range" min="$min" max="$max" step="$step" value="$defaultVal"/>');
-		var range = new hide.comp.Range(slider, null);
-		root.append(name);
-		root.append(min);
-		root.append(slider);
-		root.append(max);
+		var label = new Element('<label> $name : </label>');
+		var slider = new Element('<input type="range" min="$min" max="$max" step="$step" value="$defaultVal"/>');
+		root.append(label);
+		var range = new hide.comp.Range(root, slider);
+		range.onChange = function(b){
+			s.setVar(name, range.value);
+		}
 		return root;
 	}
+
+	#end
 }
