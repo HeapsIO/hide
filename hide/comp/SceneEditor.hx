@@ -1276,26 +1276,23 @@ class SceneEditor {
 			});
 		}
 
-		deselect();
+		function refreshFunc(then) {
+			if(fullRefresh) refresh(then);
+			else refreshTree(then);
+		}
 
-		if(fullRefresh) refresh();
-		else refreshTree();
+		refreshFunc(selectObjects.bind(elts));
 
 		undo.change(Custom(function(undo) {
-			if(!undo && !fullRefresh) {
-				for(e in elts)
-					removeInstance(e);
-			}
+			if(!undo && !fullRefresh)
+				for(e in elts) removeInstance(e);
 
 			for(u in undoes) u(undo);
 
-			if(undo) {
-				for(e in elts)
-					makeInstance(e);
-			}
+			if(undo)
+				for(e in elts) makeInstance(e);
 
-			if(fullRefresh) refresh();
-			else refreshTree();
+			refreshFunc(selectObjects.bind(undo ? elts : []));
 		}));
 	}
 
