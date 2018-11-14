@@ -102,6 +102,12 @@ class Object3D extends Prefab {
 			o.visible = visible;
 	}
 
+	override function removeInstance(ctx: Context):Bool {
+		if(ctx.local3d != null)
+			ctx.local3d.remove();
+		return true;
+	}
+
 	#if editor
 	override function edit( ctx : EditContext ) {
 		var props = new hide.Element('

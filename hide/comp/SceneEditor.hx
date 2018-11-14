@@ -74,6 +74,11 @@ class SceneEditorContext extends hide.prefab.EditContext {
 	}
 }
 
+enum RefreshMode {
+	Partial;
+	Full;
+}
+
 class SceneEditor {
 
 	public var tree : hide.comp.IconTree<PrefabElement>;
@@ -83,7 +88,6 @@ class SceneEditor {
 	public var curEdit(default, null) : SceneEditorContext;
 	public var snapToGround = false;
 	public var localTransform = true;
-	public var enableLightRefresh = false;
 	public var cameraController : h3d.scene.CameraController;
 	public var editorDisplay(default,set) : Bool;
 
@@ -93,7 +97,7 @@ class SceneEditor {
 	var gizmo : hide.view.l3d.Gizmo;
 	var interactives : Map<PrefabElement, h3d.scene.Interactive>;
 	var ide : hide.Ide;
-	var event : hxd.WaitEvent;
+	public var event(default, null) : hxd.WaitEvent;
 	var hideList : Map<PrefabElement, Bool> = new Map();
 
 	var undo(get, null):hide.ui.UndoHistory;
@@ -341,12 +345,12 @@ class SceneEditor {
 		refresh();
 	}
 
-	public function refresh( ?callb ) {
-		refreshScene();
+	public function refresh( ?mode: RefreshMode, ?callb: Void->Void) {
+		if(mode == null || mode == Full) refreshScene();
 		refreshTree(callb);
 	}
 
-	public function refreshTree( ?callb ) {
+	function refreshTree( ?callb ) {
 		tree.refresh(function() {
 			var all = sceneData.flatten(hxd.prefab.Prefab);
 			for(elt in all) {
@@ -755,6 +759,7 @@ class SceneEditor {
 
 	public function getContext(elt : PrefabElement) {
 		if(elt == null) return null;
+		if(elt == sceneData) return context;
 		return context.shared.contexts.get(elt);
 	}
 
@@ -780,46 +785,53 @@ class SceneEditor {
 		return null;
 	}
 
-	public function addObject( e : PrefabElement ) {
-		var roots = e.parent.children;
-		var parentCtx = getContext(e.parent);
-		if(parentCtx == null)
-			parentCtx = context;
-		e.makeInstance(parentCtx);
-		var local3d = getSelfObject(e);
-		var lightRefresh = local3d != null && enableLightRefresh;
-		var parentObj = local3d != null ? local3d.parent : null;
-		var int = interactives.get(e);
+	function removeInstance(elt : PrefabElement) {
+		var result = true;
+		var contexts = context.shared.contexts;
+		function recRemove(e: PrefabElement) {
+			for(c in e.children)
+				recRemove(c);
+			
+			var int = interactives.get(e);
+			if(int != null) {
+				int.remove();
+				interactives.remove(e);
+			}
+			for(ctx in getContexts(e)) {
+				if(!e.removeInstance(ctx))
+					result = false;
+				contexts.remove(e);
+			}
+		}
+		recRemove(elt);	
+		return result;
+	}
+
+	function makeInstance(elt: PrefabElement) {
+		var parentCtx = getContext(elt.parent);
+		elt.makeInstanceRec(parentCtx);
+		makeInteractive(elt);
+		elt.visitChildren(function(e) { makeInteractive(e); return true; });
+	}
+
+	public function addObject(e : PrefabElement) {
+		makeInstance(e);
+		refresh(Partial, () -> selectObjects([e]));
 		undo.change(Custom(function(undo) {
-			deselect();
-			if( undo ) {
-				roots.remove(e);
-				if(parentObj != null)
-					parentObj.removeChild(local3d);
-				if(int != null)
-					interactives.remove(e);
+			var fullRefresh = false;
+			if(undo) {
+				deselect();
+				if(!removeInstance(e))
+					fullRefresh = true;
+				e.parent.children.remove(e);
+				refresh(fullRefresh ? Full : Partial);
 			}
 			else {
-				roots.push(e);
-				if(parentObj != null)
-					parentObj.addChild(local3d);
-				if(int != null)
-					interactives.set(e, int);
+				e.parent.children.push(e);
+				makeInstance(e);
+				refresh(Partial, () -> selectObjects([e]));
 			}
-			if(local3d != null)
-				refreshTree();
-			else 
-				refresh();
 		}));
-		if(lightRefresh) {
-			makeInteractive(e);
-			refreshTree(function() {
-				selectObjects([e]);
-			});
-		}
-		else refresh(function() {
-			selectObjects([e]);
-		});
 	}
 
 	function fillProps( edit, e : PrefabElement ) {
@@ -923,8 +935,31 @@ class SceneEditor {
 			obj3d.setTransform(localMat);
 			autoName(obj3d);
 			elts.push(obj3d);
+
 		}
-		refresh(() -> selectObjects(elts));
+
+		for(e in elts)
+			makeInstance(e);
+		refresh(Partial, () -> selectObjects(elts));
+
+		undo.change(Custom(function(undo) {
+			if( undo ) {
+				var fullRefresh = false;
+				for(e in elts) {
+					if(!removeInstance(e))
+						fullRefresh = true;
+					parent.children.remove(e);
+				}
+				refresh(fullRefresh ? Full : Partial);
+			}
+			else {
+				for(e in elts) {
+					parent.children.push(e);
+					makeInstance(e);
+				}
+				refresh(Partial);
+			}
+		}));
 	}
 
 	function canGroupSelection() {
@@ -1160,69 +1195,58 @@ class SceneEditor {
 		if(elements == null || elements.length == 0)
 			return;
 		var contexts = context.shared.contexts;
-		var oldContexts = contexts.copy();
-		var lightRefresh = enableLightRefresh;
-		var newElements = [for(elt in elements) {
-			var obj3d = Std.instance(elt, Object3D);
-			if(obj3d == null)
-				lightRefresh = false;
+
+		var undoes = [];
+		var newElements = [];
+		for(elt in elements) {
 			var clone = elt.clone();
-			var index = elt.parent.children.indexOf(elt);
+			var index = elt.parent.children.indexOf(elt) + 1;
 			clone.parent = elt.parent;
 			elt.parent.children.remove(clone);
-			elt.parent.children.insert(index+1, clone);
+			elt.parent.children.insert(index, clone);
 			autoName(clone);
-			clone.makeInstanceRec(getContext(elt.parent));
-			makeInteractive(clone);
-			{ elt: clone, idx: index };
-		}];
-		var newContexts = contexts.copy();
+			makeInstance(clone);
+			newElements.push(clone);
 
-		function addUndo() {
-			undo.change(Custom(function(undo) {
-				for(e in newElements) {
-					if(undo) {
-						e.elt.parent.children.remove(e.elt);
-					}
-					else {
-						e.elt.parent.children.insert(e.idx, e.elt);
-					}
-				}
-				if(undo)
-					context.shared.contexts = oldContexts;
-				else
-					context.shared.contexts = newContexts;
-				refresh();
-				deselect();
-			}));
+			undoes.push(function(undo) {
+				if(undo) elt.parent.children.remove(clone);
+				else elt.parent.children.insert(index, clone);
+			});
 		}
 
-		function afterRefresh() {
-			var all = [for(e in newElements) e.elt];
-			selectObjects(all);
-			tree.setSelection(all);
+		refreshTree(function() {
+			selectObjects(newElements);
+			tree.setSelection(newElements);
 			if(thenMove && curEdit.rootObjects.length > 0) {
-				/* Disabled for now as getPickTransform() will necessarily project on ground, which we don't always want
-				if(all.length == 1) {
-					var pickMat = getPickTransform(all[0].parent);
-					if(pickMat != null) {
-						setTransform(all[0], pickMat.getPosition());
-						moveGizmoToSelection();
-					}
-				} */
 				gizmo.startMove(MoveXY, true);
 				gizmo.onFinishMove = function() {
 					refreshProps();
-					addUndo();
 				}
 			}
-			else {
-				addUndo();
+		});
+
+		undo.change(Custom(function(undo) {
+			deselect();
+
+			var fullRefresh = false;
+			if(undo) {
+				for(elt in newElements) {
+					if(!removeInstance(elt)) {
+						fullRefresh = true;
+						break;
+					}
+				}
 			}
-		}
-		if(lightRefresh)
-			refreshTree(afterRefresh);
-		else refresh(afterRefresh);
+
+			for(u in undoes) u(undo);
+
+			if(!undo) {
+				for(elt in newElements)
+					makeInstance(elt);
+			}
+
+			refresh(fullRefresh ? Full : Partial);
+		}));
 	}
 
 	function setTransform(elt: PrefabElement, ?mat: h3d.Matrix, ?position: h3d.Vector) {
@@ -1242,67 +1266,36 @@ class SceneEditor {
 	}
 
 	function deleteElements(elts : Array<PrefabElement>) {
-		var contexts = context.shared.contexts;
-		var list = [];
-		var lightRefresh = enableLightRefresh;
-		for(e in elts) {
-			var ctx = getContext(e);
-			if(ctx == null)
-				continue;
-			var local2d = ctx.local2d;
-			var local2dParent = local2d != null ? local2d.parent : null;
-			var obj = getSelfObject(e);
-			var parentObj = obj != null ? obj.parent : null;
-			if(obj == null)
-				lightRefresh = false;
-			list.push({
-				elt: e,
-				parent: e.parent,
-				index: e.parent.children.indexOf(e),
-				obj: obj,
-				parentObj: parentObj,
-				objIndex: parentObj != null ? parentObj.getChildIndex(obj) : -1,
-				local2d: local2d,
-				local2dParent: local2dParent
+		var fullRefresh = false;
+		var undoes = [];
+		for(elt in elts) {
+			if(!removeInstance(elt))
+				fullRefresh = true;
+			var index = elt.parent.children.indexOf(elt);
+			elt.parent.children.remove(elt);
+			undoes.push(function(undo) {
+				if(undo) elt.parent.children.insert(index, elt);
+				else elt.parent.children.remove(elt);
 			});
 		}
-		deselect();
-		var oldContexts = contexts.copy();
-		for(e in elts) {
-			hideList.remove(e);
-			for(c in e.flatten())
-				contexts.remove(c);
+
+		function refreshFunc(then) {
+			refresh(fullRefresh ? Full : Partial, then);
 		}
-		saveHideState();
-		var newContexts = contexts.copy();
-		function action(undo) {
-			if( undo ) {
-				for(o in list) {
-					o.parent.children.insert(o.index, o.elt);
-					if(o.obj != null)
-						o.parentObj.addChildAt(o.obj, o.objIndex);
-					if(o.local2dParent != null)
-						o.local2dParent.addChild(o.local2d);
-				}
-				context.shared.contexts = oldContexts;
-			}
-			else {
-				for(o in list) {
-					o.parent.children.remove(o.elt);
-					if(o.parentObj != null)
-						o.parentObj.removeChild(o.obj);
-					if(o.local2dParent != null)
-						o.local2dParent.removeChild(o.local2d);
-				}
-				context.shared.contexts = newContexts;
-			}
-			if(lightRefresh)
-				refreshTree();
-			else
-				refresh();
-		}
-		action(false);
-		undo.change(Custom(action));
+
+		refreshFunc(selectObjects.bind(elts));
+
+		undo.change(Custom(function(undo) {
+			if(!undo && !fullRefresh)
+				for(e in elts) removeInstance(e);
+
+			for(u in undoes) u(undo);
+
+			if(undo)
+				for(e in elts) makeInstance(e);
+
+			refreshFunc(selectObjects.bind(undo ? elts : []));
+		}));
 	}
 
 	function reparentElement(e : Array<PrefabElement>, to : PrefabElement, index : Int) {
