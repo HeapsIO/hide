@@ -91,9 +91,9 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		return c;
 	}
 
-	override function refresh(?callback) {
+	override function refresh(?mode, ?callback) {
 		parent.onRefresh();
-		super.refresh(callback);
+		super.refresh(mode, callback);
 	}
 
 	override function refreshScene() {

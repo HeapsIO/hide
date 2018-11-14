@@ -17,6 +17,10 @@ private class PrefabSceneEditor extends hide.comp.SceneEditor {
 		super.update(dt);
 		parent.onUpdate(dt);
 	}
+	override function refresh(?mode, ?callb:Void->Void) {
+		refreshScene();
+		refreshTree(callb);
+	}
 }
 
 class Prefab extends FileView {

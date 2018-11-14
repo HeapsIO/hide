@@ -74,6 +74,11 @@ class SceneEditorContext extends hide.prefab.EditContext {
 	}
 }
 
+enum RefreshMode {
+	Partial;
+	Full;
+}
+
 class SceneEditor {
 
 	public var tree : hide.comp.IconTree<PrefabElement>;
@@ -340,12 +345,12 @@ class SceneEditor {
 		refresh();
 	}
 
-	public function refresh( ?callb ) {
-		refreshScene();
+	public function refresh( ?mode: RefreshMode, ?callb: Void->Void) {
+		if(mode == null || mode == Full) refreshScene();
 		refreshTree(callb);
 	}
 
-	public function refreshTree( ?callb ) {
+	function refreshTree( ?callb ) {
 		tree.refresh(function() {
 			var all = sceneData.flatten(hxd.prefab.Prefab);
 			for(elt in all) {
@@ -810,7 +815,7 @@ class SceneEditor {
 
 	public function addObject(e : PrefabElement) {
 		makeInstance(e);
-		refreshTree(() -> selectObjects([e]));
+		refresh(Partial, () -> selectObjects([e]));
 		undo.change(Custom(function(undo) {
 			var fullRefresh = false;
 			if(undo) {
@@ -818,13 +823,12 @@ class SceneEditor {
 				if(!removeInstance(e))
 					fullRefresh = true;
 				e.parent.children.remove(e);
-				if(fullRefresh) refresh();
-				else refreshTree();
+				refresh(fullRefresh ? Full : Partial);
 			}
 			else {
 				e.parent.children.push(e);
 				makeInstance(e);
-				refreshTree(() -> selectObjects([e]));
+				refresh(Partial, () -> selectObjects([e]));
 			}
 		}));
 	}
@@ -935,7 +939,7 @@ class SceneEditor {
 
 		for(e in elts)
 			makeInstance(e);
-		refreshTree(() -> selectObjects(elts));
+		refresh(Partial, () -> selectObjects(elts));
 
 		undo.change(Custom(function(undo) {
 			if( undo ) {
@@ -945,15 +949,14 @@ class SceneEditor {
 						fullRefresh = true;
 					parent.children.remove(e);
 				}
-				if(fullRefresh) refresh();
-				else refreshTree();
+				refresh(fullRefresh ? Full : Partial);
 			}
 			else {
 				for(e in elts) {
 					parent.children.push(e);
 					makeInstance(e);
 				}
-				refreshTree();
+				refresh(Partial);
 			}
 		}));
 	}
@@ -1241,8 +1244,7 @@ class SceneEditor {
 					makeInstance(elt);
 			}
 
-			if(fullRefresh) refresh();
-			else refreshTree();
+			refresh(fullRefresh ? Full : Partial);
 		}));
 	}
 
@@ -1277,8 +1279,7 @@ class SceneEditor {
 		}
 
 		function refreshFunc(then) {
-			if(fullRefresh) refresh(then);
-			else refreshTree(then);
+			refresh(fullRefresh ? Full : Partial, then);
 		}
 
 		refreshFunc(selectObjects.bind(elts));

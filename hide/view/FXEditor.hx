@@ -52,6 +52,12 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		parent.onSelect(elts);
 	}
 
+	override function refresh(?mode, ?callb:Void->Void) {
+		// Always refresh scene
+		refreshScene();
+		refreshTree(callb);
+	}
+
 	override function getNewContextMenu(current: PrefabElement, ?onMake: PrefabElement->Void=null) {
 		if(current != null && current.to(hide.prefab.Shader) != null) {
 			return parent.getNewTrackMenu(current);
@@ -957,7 +963,7 @@ class FXEditor extends FileView {
 			anim = cast ctx.local3d;
 		}
 		if(!pauseButton.isDown()) {
-			currentTime += scene.speed * dt / hxd.Timer.wantedFPS;
+			currentTime += scene.speed * dt;
 			if(timeLineEl != null)
 				timeLineEl.css({left: xt(currentTime)});
 			if(currentTime >= previewMax) {
