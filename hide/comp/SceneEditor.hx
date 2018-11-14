@@ -1283,7 +1283,7 @@ class SceneEditor {
 			refresh(fullRefresh ? Full : Partial, then);
 		}
 
-		refreshFunc(selectObjects.bind(elts));
+		refreshFunc(deselect);
 
 		undo.change(Custom(function(undo) {
 			if(!undo && !fullRefresh)
