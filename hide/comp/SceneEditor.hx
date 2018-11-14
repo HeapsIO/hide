@@ -759,7 +759,12 @@ class SceneEditor {
 
 	public function getContext(elt : PrefabElement) {
 		if(elt == null) return null;
-		if(elt == sceneData) return context;
+		var ctx = null;
+		if(elt == sceneData) {
+			ctx = context.shared.contexts.get(sceneData);
+			if(ctx != null) return ctx; // Some libs make their own instances
+			return context;
+		}
 		return context.shared.contexts.get(elt);
 	}
 
