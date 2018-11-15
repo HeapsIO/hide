@@ -976,8 +976,14 @@ class FXEditor extends FileView {
 			anim.setTime(currentTime);
 		}
 
-		if(statusText != null)
-			statusText.text = 'Time: ${Math.round(currentTime*1000)} ms';
+		if(statusText != null) {
+			var lines : Array<String> = [
+				'Time: ${Math.round(currentTime*1000)} ms',
+				'Scene objects: ${scene.s3d.getObjectsCount()}',
+			];
+			statusText.text = lines.join("\n");
+		}
+
 
 		var cam = scene.s3d.camera;
 		if( light != null ) {
