@@ -9,7 +9,7 @@ class FXScriptParser {
 	public function new(){
 	}
 
-	inline function getExpr(e : hscript.Expr) {
+	inline function getExpr( e : hscript.Expr ) {
 		#if hscriptPos
 		return e.e;
 		#else
