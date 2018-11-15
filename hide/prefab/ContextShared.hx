@@ -71,6 +71,7 @@ class ContextShared extends hxd.prefab.ContextShared {
 		path.ext = "dat";
 		var datDir = path.toString();
 		var instanceDir = datDir + "/" + p;
+
 		if(!sys.FileSystem.isDirectory( hide.Ide.inst.getPath(datDir)))
 			sys.FileSystem.createDirectory( hide.Ide.inst.getPath(datDir));
 		if(!sys.FileSystem.isDirectory( hide.Ide.inst.getPath(instanceDir)))
@@ -80,12 +81,24 @@ class ContextShared extends hxd.prefab.ContextShared {
 		path.dir = instanceDir;
 		path.file = file;
 		path.ext = ext;
-
 		var file = hide.Ide.inst.getPath(path.toString());
-		if( bytes == null )
+
+		if( bytes == null ){
 			try sys.FileSystem.deleteFile(file) catch( e : Dynamic ) {};
-		else
+			var p = hide.Ide.inst.getPath(instanceDir);
+			if(sys.FileSystem.isDirectory(p)){
+				var dir = sys.FileSystem.readDirectory(p);
+				if(dir.length == 0) sys.FileSystem.deleteDirectory(p);
+			}
+			var p = hide.Ide.inst.getPath(datDir);
+			if(sys.FileSystem.isDirectory(p)){
+				var dir = sys.FileSystem.readDirectory(p);
+				if(dir.length == 0) sys.FileSystem.deleteDirectory(p);
+			}
+			return;
+		}else{
 			sys.io.File.saveBytes(file, bytes);
+		}
 	}
 
 	#end

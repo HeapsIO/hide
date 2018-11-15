@@ -144,8 +144,10 @@ class Light extends Object3D {
 	function loadBaked( ctx : Context ) {
 		var light = Std.instance(ctx.local3d, h3d.scene.pbr.Light);
 		if(light == null) return;
-		var res = ctx.shared.loadPrefabDat("shadowMap", "bake", name);
-		if(res != null) light.shadows.loadStaticData(res.entry.getBytes());
+		if(light.shadows.mode == Static || light.shadows.mode == Mixed){
+			var res = ctx.shared.loadPrefabDat("shadowMap", "bake", name);
+			if(res != null) light.shadows.loadStaticData(res.entry.getBytes());
+		}
 	}
 
 	override function updateInstance( ctx : Context, ?propName : String ) {
@@ -321,10 +323,12 @@ class Light extends Object3D {
 			if( debugSpot != null ) debugSpot.visible = isSelected || ctx.shared.editorDisplay;
 			sel.name = "__selection";
 		}
+
 		// no "Mixed" in editor (prevent double shadowing)
 		if( light.shadows.mode == Mixed ) light.shadows.mode = Static;
+
 		// when selected, force Dynamic mode (realtime preview)
-		if( isSelected && shadows.mode != None ) light.shadows.mode = Dynamic;
+		//if( isSelected && shadows.mode != None ) light.shadows.mode = Dynamic;
 
 		#end
 	}
