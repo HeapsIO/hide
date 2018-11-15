@@ -384,7 +384,7 @@ class EmitterObject extends h3d.scene.Object {
 		invTransform.invert();
 
 		var emitTarget = evaluator.getSum(emitRate, curTime);
-		var delta = hxd.Math.floor(emitTarget - emitCount);
+		var delta = hxd.Math.ceil(emitTarget - emitCount);
 		doEmit(delta);
 
 		var i = instances.length;
