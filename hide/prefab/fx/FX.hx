@@ -54,7 +54,7 @@ class FXAnimation extends h3d.scene.Object {
 	public var emitters : Array<hide.prefab.fx.Emitter.EmitterObject> = [];
 	public var contraints : Array<hide.prefab.Constraint> = [];
 	public var currentTime(default, null) : Float = 0.0;
-	public var script : hide.view.FXScript;
+	public var script : hide.prefab.fx.FXScript;
 	var evaluator : Evaluator;
 	var random : hxd.Rand;
 
@@ -401,9 +401,10 @@ class FX extends hxd.prefab.Library {
 		getObjAnimations(ctx, this, fxanim.objects);
 		getShaderAnims(ctx, this, fxanim.shaderAnims);
 		getEmitters(ctx, this, fxanim.emitters);
-		var parser = new hide.view.FXScript.FXScriptParser();
+		var parser = new hide.view.FXScriptParser();
 		var fxScript = parser.createFXScript(script, fxanim);
 		fxanim.script = fxScript;
+
 
 		return ctx;
 	}
