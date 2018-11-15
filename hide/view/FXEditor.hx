@@ -114,7 +114,7 @@ class FXEditor extends FileView {
 	var statusText : h2d.Text;
 
 	var scriptEditor : hide.comp.ScriptEditor;
-	var fxScriptParser : hide.view.FXScriptParser;
+	var fxScriptParser : hide.prefab.fx.FXScriptParser;
 
 	override function getDefaultContent() {
 		return haxe.io.Bytes.ofString(ide.toJSON(new hide.prefab.fx.FX().save()));
@@ -211,7 +211,7 @@ class FXEditor extends FileView {
 			modified = false;
 		}
 		scriptEditor.onSave = onSaveScript;
-		fxScriptParser = new hide.view.FXScriptParser();
+		fxScriptParser = new hide.prefab.fx.FXScriptParser();
 		data.script = scriptEditor.script;
 
 		keys.register("playPause", function() { pauseButton.toggle(!pauseButton.isDown()); });
