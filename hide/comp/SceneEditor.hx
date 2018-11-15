@@ -402,6 +402,8 @@ class SceneEditor {
 			return;
 		var contexts = context.shared.contexts;
 		var ctx = contexts[elt];
+		if(ctx == null)
+			return;
 		var local3d = ctx.local3d;
 		if(local3d == null)
 			return;

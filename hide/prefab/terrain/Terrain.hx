@@ -240,6 +240,10 @@ class Terrain extends Object3D {
 		#end
 	}
 
+	override function removeInstance(ctx:Context):Bool {
+		return false; // TODO
+	}
+
 	function getCellCount(){
 		var resolution = Math.max(0.1, cellSize);
 		var cellCount = Math.ceil(Math.min(1000, tileSize / resolution));

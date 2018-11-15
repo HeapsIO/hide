@@ -659,6 +659,10 @@ class Emitter extends Object3D {
 		return ctx;
 	}
 
+	override function removeInstance(ctx:Context):Bool {
+		return false;
+	}
+
 	#if editor
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
