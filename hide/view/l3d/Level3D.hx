@@ -117,7 +117,6 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 	}
 
 	override function applySceneStyle(p:PrefabElement) {
-		super.applySceneStyle(p);
 		parent.applySceneStyle(p);
 	}
 

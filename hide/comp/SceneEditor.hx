@@ -756,7 +756,13 @@ class SceneEditor {
 	}
 
 	public function applySceneStyle(p: PrefabElement) {
-
+		var obj3d = p.to(Object3D);
+		if(obj3d != null) {
+			var visible = obj3d.visible && !isHidden(obj3d);
+			for(ctx in getContexts(obj3d)) {
+				ctx.local3d.visible = visible;
+			}
+		}
 	}
 
 	public function getContext(elt : PrefabElement) {
