@@ -36,7 +36,7 @@ class FXScript {
 	public function new(){
 	}
 
-	public function getGetter( p : String ) {
+	public function getGetter( p : String ) : Void -> Float {
 		var names = p.split('.');
 		var i = 0;
 		var root : h3d.scene.Object = fx;
@@ -54,18 +54,26 @@ class FXScript {
 			field += names[index];
 
 		return switch(field){
+			case "x": function(){ return curObj.x; };
+			case "y": function(){ return curObj.y; };
+			case "z": function(){ return curObj.z; };
+			case "visible": function(){ return curObj.visible ? 1.0 : 0.0; };
 			case "rotationX": function(){
 				return curObj.getRotationQuat().toEuler().x;}
 			case "rotationY": function(){
 				return curObj.getRotationQuat().toEuler().y;}
 			case "rotationZ": function(){
 				return curObj.getRotationQuat().toEuler().z;}
-			default:// function(){ if(Reflect.hasField(curObj, field)) Reflect.getProperty(curObj, field); };
-				return function(){ return 0.0; };
+			default: return function(){
+				if(Reflect.hasField(curObj, field)){
+					var p = Reflect.getProperty(curObj, field);
+					return cast(p, Float);
+				}
+				else return 0.0;};
 		}
 	}
 
-	public function getSetter( p : String ) {
+	public function getSetter( p : String ) : Float -> Void {
 		var names = p.split('.');
 		var i = 0;
 		var root : h3d.scene.Object = fx;
@@ -83,26 +91,35 @@ class FXScript {
 			field += names[index];
 
 		return switch(field){
+			case "x": function(v){ curObj.x = v; };
+			case "y": function(v){ curObj.y = v; };
+			case "z": function(v){ curObj.z = v; };
+			case "visible": function(v){ curObj.visible = v > 0; };
 			case "rotationX": function(v){
 				var euler = curObj.getRotationQuat().toEuler();
-				curObj.setRotation(v, euler.y, euler.z);};
+				curObj.setRotation(v, euler.y, euler.z); };
 			case "rotationY": function(v){
 				var euler = curObj.getRotationQuat().toEuler();
 				curObj.setRotation(euler.x, v, euler.z); };
 			case "rotationZ": function(v){
 				var euler = curObj.getRotationQuat().toEuler();
-				curObj.setRotation(euler.x, euler.y, v);};
-			default: function(v){ if(Reflect.hasField(curObj, field)) Reflect.setProperty(curObj, field, v); };
+				curObj.setRotation(euler.x, euler.y, v); };
+			default: function(v){
+				if(Reflect.hasField(curObj, field))
+					Reflect.setProperty(curObj, field, v); };
 		}
 	}
 
 	public function getVar( n : String ) : Float {
 		if(!myVars.exists(n))
 			return 0.0;
+		if(myVars[n] == null)
+			return 0.0;
 		return switch myVars[n]{
 			case Float(value): value;
 			case Int(value): value;
 			case Bool(value): value ? 1.0 : 0.0;
+			default : 0.0;
 		}
 	}
 

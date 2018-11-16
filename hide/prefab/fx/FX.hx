@@ -47,14 +47,20 @@ typedef ObjectAnimation = {
 
 class FXAnimation extends h3d.scene.Object {
 
+	public var onEnd : Void -> Void;
+
+	public var playSpeed : Float;
+	public var localTime(default, null) : Float = 0.0;
+	public var worldTime(default, null) : Float = 0.0;
 	public var duration : Float;
+
 	public var loopAnims : Bool;
 	public var objects: Array<ObjectAnimation> = [];
 	public var shaderAnims : Array<ShaderAnimation> = [];
 	public var emitters : Array<hide.prefab.fx.Emitter.EmitterObject> = [];
 	public var contraints : Array<hide.prefab.Constraint> = [];
-	public var currentTime(default, null) : Float = 0.0;
 	public var script : hide.prefab.fx.FXScript;
+
 	var evaluator : Evaluator;
 	var random : hxd.Rand;
 
@@ -63,6 +69,7 @@ class FXAnimation extends h3d.scene.Object {
 		random = new hxd.Rand(Std.random(0xFFFFFF));
 		evaluator = new Evaluator(random);
 		name = "FXAnimation";
+		setTime(0,0);
 	}
 
 	override function onRemove() {
@@ -80,20 +87,33 @@ class FXAnimation extends h3d.scene.Object {
 		}
 	}
 
+	override function sync( ctx : h3d.scene.RenderContext ) {
+		super.sync(ctx);
+		#if !editor
+		worldTime += ctx.elapsedTime;
+		localTime += ctx.elapsedTime * playSpeed;
+		setTime(localTime, worldTime);
+
+		if(localTime >duration && duration != 0 /*Infinite*/) {
+			if(onEnd != null )
+				onEnd();
+		}
+		#end
+	}
+
 	static var tempMat = new h3d.Matrix();
-	public function setTime(time: Float) {
-		currentTime = time;
+	public function setTime( localTime : Float, worldTime : Float ) {
 		for(anim in objects) {
 			var m = tempMat;
 			if(anim.scale != null) {
-				var scale = evaluator.getVector(anim.scale, time);
+				var scale = evaluator.getVector(anim.scale, localTime);
 				m.initScale(scale.x, scale.y, scale.z);
 			}
 			else
 				m.identity();
 
 			if(anim.rotation != null) {
-				var rotation = evaluator.getVector(anim.rotation, time);
+				var rotation = evaluator.getVector(anim.rotation, localTime);
 				rotation.scale3(Math.PI / 180.0);
 				m.rotate(rotation.x, rotation.y, rotation.z);
 			}
@@ -105,14 +125,14 @@ class FXAnimation extends h3d.scene.Object {
 			m.translate(offset.x, offset.y, offset.z);
 
 			if(anim.position != null) {
-				var pos = evaluator.getVector(anim.position, time);
+				var pos = evaluator.getVector(anim.position, localTime);
 				m.translate(pos.x, pos.y, pos.z);
 			}
 
 			anim.obj.setTransform(m);
 
 			if(anim.visibility != null)
-				anim.obj.visible = anim.elt.visible && evaluator.getFloat(anim.visibility, time) > 0.5;
+				anim.obj.visible = anim.elt.visible && evaluator.getFloat(anim.visibility, localTime) > 0.5;
 
 			if(anim.color != null) {
 				var mesh = Std.instance(anim.obj, h3d.scene.Mesh);
@@ -120,16 +140,16 @@ class FXAnimation extends h3d.scene.Object {
 					var mat = mesh.material;
 					switch(anim.color) {
 						case VCurve(a):
-							mat.color.a = evaluator.getFloat(anim.color, time);
+							mat.color.a = evaluator.getFloat(anim.color, localTime);
 						default:
-							mat.color = evaluator.getVector(anim.color, time);
+							mat.color = evaluator.getVector(anim.color, localTime);
 					}
 				}
 			}
 		}
 
 		for(anim in shaderAnims) {
-			anim.setTime(time);
+			anim.setTime(localTime);
 		}
 
 		function setAnimFrame(object : h3d.scene.Object, time : Float){
@@ -147,14 +167,15 @@ class FXAnimation extends h3d.scene.Object {
 			for(i in 0...object.numChildren)
 				setAnimFrame(object.getChildAt(i), time);
 		}
-		setAnimFrame(this, time);
+		setAnimFrame(this, localTime);
 
 		for(em in emitters) {
 			if(em.visible)
-				em.setTime(time);
+				em.setTime(worldTime);
 		}
 
-		script.eval();
+		if(script != null)
+			script.eval();
 	}
 
 	public function resolveContraints( caster : h3d.scene.Object ) {
@@ -401,10 +422,14 @@ class FX extends hxd.prefab.Library {
 		getObjAnimations(ctx, this, fxanim.objects);
 		getShaderAnims(ctx, this, fxanim.shaderAnims);
 		getEmitters(ctx, this, fxanim.emitters);
-		var parser = new FXScriptParser();
-		var fxScript = parser.createFXScript(script, fxanim);
-		fxanim.script = fxScript;
 
+		if(script != ""){
+			var parser = new FXScriptParser();
+			var fxScript = parser.createFXScript(script, fxanim);
+			fxanim.script = fxScript;
+		}
+
+		fxanim.playSpeed = 1.0;
 
 		return ctx;
 	}

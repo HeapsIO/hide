@@ -186,6 +186,8 @@ private class ParticleInstance extends h3d.scene.Object {
 @:allow(hide.prefab.fx.Emitter)
 class EmitterObject extends h3d.scene.Object {
 
+	public var enable : Bool;
+
 	public var particleTemplate : hide.prefab.Object3D;
 	public var maxCount = 20;
 	public var lifeTime = 2.0;
@@ -232,6 +234,7 @@ class EmitterObject extends h3d.scene.Object {
 	var instances : Array<ParticleInstance> = [];
 
 	public function reset() {
+		enable = true;
 		random.init(randomSeed);
 		curTime = 0.0;
 		lastTime = 0.0;
@@ -385,7 +388,8 @@ class EmitterObject extends h3d.scene.Object {
 
 		var emitTarget = evaluator.getSum(emitRate, curTime);
 		var delta = hxd.Math.ceil(emitTarget - emitCount);
-		doEmit(delta);
+		if(enable)
+			doEmit(delta);
 
 		var i = instances.length;
 		while (i-- > 0) {

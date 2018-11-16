@@ -108,22 +108,26 @@ class FXScriptParser {
 						case "-": return Op( convert(e1), convert(e2), function(a,b) { return a - b; });
 						case "=": 	switch(getExpr(e1)){
 											case EIdent(v): return Set(function(val){ script.setVar(v, val); }, convert(e2));
-											case EField(e,f): return Set( getSetField(e), convert(e2));
+											case EField(e,f): return Set( getSetField(e1), convert(e2));
 											default: return null;
 										}
 						case "+=":  switch(getExpr(e1)){
 										case EIdent(v): return Set(function(val){ script.setVar(v, val); }, Op( convert(e1), convert(e2), function(a,b) { return a + b; }));
-										case EField(e,f): return Set( getSetField(e), Op( convert(e1), convert(e2), function(a,b) { return a + b; }));
+										case EField(e,f): return Set( getSetField(e1), Op( convert(e1), convert(e2), function(a,b) { return a + b; }));
 										default: return null;
 									}
 
 						case "-=":	switch(getExpr(e1)){
 										case EIdent(v): return Set(function(val){ script.setVar(v, val); }, Op( convert(e1), convert(e2), function(a,b) { return a - b; }));
-										case EField(e,f): return Set( getSetField(e), Op( convert(e1), convert(e2), function(a,b) { return a - b; }));
+										case EField(e,f): return Set( getSetField(e1), Op( convert(e1), convert(e2), function(a,b) { return a - b; }));
 										default: return null;
 									}
 						case "==": return Op( convert(e1), convert(e2), function(a,b) { return a == b ? 1.0 : 0.0; });
 						case "!=": return Op( convert(e1), convert(e2), function(a,b) { return a != b ? 1.0 : 0.0; });
+						case ">": return Op( convert(e1), convert(e2), function(a,b) { return a > b ? 1.0 : 0.0; });
+						case "<": return Op( convert(e1), convert(e2), function(a,b) { return a < b ? 1.0 : 0.0; });
+						case ">=": return Op( convert(e1), convert(e2), function(a,b) { return a >= b ? 1.0 : 0.0; });
+						case "<=": return Op( convert(e1), convert(e2), function(a,b) { return a <= b ? 1.0 : 0.0; });
 						default: return null;
 					}
 
@@ -368,8 +372,10 @@ class FXScriptParser {
 	public function generateUI( s : FXScript, editor : hide.view.FXEditor ){
 		var elem = editor.element.find(".fx-scriptParams");
 		elem.empty();
+		if(s == null) return;
 		var root = new Element('<div class="group" name="Params"></div>');
 		for(p in s.params){
+			if(p == null) continue;
 			switch(p){
 				case Float(name, value, options):
 					var sliderMin = 0.0;
@@ -400,7 +406,6 @@ class FXScriptParser {
 			}
 		}
 		elem.append(root);
-
 	}
 
 	function createSlider( s : FXScript, name : String, min : Float, max : Float, step : Float, defaultVal : Float ) : Element {
@@ -416,7 +421,7 @@ class FXScriptParser {
 	}
 
 	function createChekbox( s : FXScript, name : String, defaultVal : Bool ) : Element {
-		var root = new Element('<div class="fx-slider"></div>');
+		var root = new Element('<div class="fx-chekcBox"></div>');
 		var label = new Element('<label> $name : </label>');
 		var checkbox = new Element('<input type="checkbox" value="$defaultVal"/>');
 		root.append(label);

@@ -973,7 +973,7 @@ class FXEditor extends FileView {
 		}
 
 		if(anim != null) {
-			anim.setTime(currentTime);
+			anim.setTime(currentTime, currentTime);
 		}
 
 		if(statusText != null) {
