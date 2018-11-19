@@ -149,6 +149,11 @@ class SceneEditor {
 				searchBox.find("input").focus().select();
 			}
 		});
+		view.keys.register("rename", function () {
+			if(curEdit.rootElements.length > 0)			
+				tree.editNode(curEdit.rootElements[0]);
+		});
+
 		view.keys.register("sceneeditor.focus", focusSelection);
 		view.keys.register("sceneeditor.lasso", startLassoSelect);
 		view.keys.register("sceneeditor.hide", function() {
