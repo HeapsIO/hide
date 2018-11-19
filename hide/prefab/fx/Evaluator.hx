@@ -15,7 +15,7 @@ class Evaluator {
 			case VZero: return 0.0;
 			case VConst(v): return v;
 			case VCurve(c): return c.getVal(time);
-			case VCurveValue(c, scale): return c.getVal(time) * scale;
+			case VCurveScale(c, scale): return c.getVal(time) * scale;
 			case VRandom(idx, scale):
 				var len = randValues.length;
 				while(idx >= len) {
@@ -35,7 +35,7 @@ class Evaluator {
 	public function getSum(val: Value, time: Float) : Float {
 		switch(val) {
 			case VConst(v): return v * time;
-			case VCurveValue(c, scale): return c.getSum(time) * scale;
+			case VCurveScale(c, scale): return c.getSum(time) * scale;
 			case VAdd(a, b):
 				return getSum(a, time) + getSum(b, time);
 			default: 0.0;

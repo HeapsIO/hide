@@ -246,7 +246,7 @@ class FX extends hxd.prefab.Library {
 			return c != null ? VCurve(c) : def;
 		}
 
-		function makeVector(name: String, defVal: Float, uniform: Bool=true) : Value {
+		function makeVector(name: String, defVal: Float, uniform: Bool=true, scale: Float=1.0) : Value {
 			var curves = hide.prefab.Curve.getCurves(elt, name);
 			if(curves == null || curves.length == 0)
 				return null;
@@ -254,9 +254,9 @@ class FX extends hxd.prefab.Library {
 			anyFound = true;
 
 			if(uniform && curves.length == 1 && curves[0].name == name)
-				return VCurve(curves[0]);
+				return scale != 1.0 ? VCurveScale(curves[0], scale) : VCurve(curves[0]);
 
-			return hide.prefab.Curve.getVectorValue(curves, defVal);
+			return hide.prefab.Curve.getVectorValue(curves, defVal, scale);
 		}
 
 		function makeColor(name: String) {
@@ -273,7 +273,7 @@ class FX extends hxd.prefab.Library {
 			obj: objCtx.local3d,
 			position: makeVector("position", 0.0),
 			scale: makeVector("scale", 1.0, true),
-			rotation: makeVector("rotation", 0.0),
+			rotation: makeVector("rotation", 0.0, 360.0),
 			color: makeColor("color"),
 			visibility: makeVal("visibility", null),
 		};
@@ -318,7 +318,7 @@ class FX extends hxd.prefab.Library {
 					var curve = hide.prefab.Curve.getCurve(shaderElt, v.name);
 					var val = Value.VConst(base);
 					if(curve != null)
-						val = Value.VCurveValue(curve, base);
+						val = Value.VCurveScale(curve, base);
 					ret.push({
 						def: v,
 						value: val

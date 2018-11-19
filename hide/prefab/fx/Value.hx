@@ -4,7 +4,7 @@ enum Value {
 	VZero;
 	VConst(v: Float);
 	VCurve(c: Curve);
-	VCurveValue(c: Curve, scale: Float);
+	VCurveScale(c: Curve, scale: Float);
 	VRandom(idx: Int, scale: Value);
 	VAdd(a: Value, b: Value);
 	VMult(a: Value, b: Value);

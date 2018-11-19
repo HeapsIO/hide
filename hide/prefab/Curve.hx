@@ -288,7 +288,7 @@ class Curve extends Prefab {
 		return curves.find(c -> StringTools.endsWith(c.name, suffix));
 	}
 
-	public static function getVectorValue(curves: Array<Curve>, defVal: Float=0.0) : hide.prefab.fx.Value {
+	public static function getVectorValue(curves: Array<Curve>, defVal: Float=0.0, scale: Float=1.0) : hide.prefab.fx.Value {
 		inline function find(s) {
 			return findCurve(curves, s);
 		}
@@ -297,11 +297,15 @@ class Curve extends Prefab {
 		var z = find(".z");
 		var w = find(".w");
 
+		inline function curveOrVal(c: Curve, defVal: Float) : hide.prefab.fx.Value {
+			return c != null ? (scale != 1.0 ? VCurveScale(c, scale) : VCurve(c)) : VConst(defVal);
+		}
+
 		return VVector(
-			x != null ? VCurve(x) : VConst(defVal),
-			y != null ? VCurve(y) : VConst(defVal),
-			z != null ? VCurve(z) : VConst(defVal),
-			w != null ? VCurve(w) : VConst(1.0));
+			curveOrVal(x, defVal),
+			curveOrVal(y, defVal),
+			curveOrVal(z, defVal),
+			curveOrVal(w, 1.0));
 	}
 
 	public static function getColorValue(curves: Array<Curve>) : hide.prefab.fx.Value {

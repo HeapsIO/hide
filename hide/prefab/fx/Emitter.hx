@@ -567,7 +567,7 @@ class Emitter extends Object3D {
 				var xVal : Value = VZero;
 				var xCurve = getCurve(pname + suffix);
 				if(xCurve != null)
-					xVal = VCurveValue(xCurve, baseProp != null ? baseProp : 1.0);
+					xVal = VCurveScale(xCurve, baseProp != null ? baseProp : 1.0);
 				else if(baseProp != null)
 					xVal = VConst(baseProp);
 				else
@@ -576,7 +576,7 @@ class Emitter extends Object3D {
 				var randCurve = getCurve(pname + suffix + ".rand");
 				var randVal : Value = VZero;
 				if(randCurve != null)
-					randVal = VRandom(randIdx++, VCurveValue(randCurve, randProp != null ? randProp : 1.0));
+					randVal = VRandom(randIdx++, VCurveScale(randCurve, randProp != null ? randProp : 1.0));
 				else if(randProp != null)
 					randVal = VRandom(randIdx++, VConst(randProp));
 
