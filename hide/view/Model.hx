@@ -6,7 +6,9 @@ class Model extends FileView {
 	var obj : h3d.scene.Object;
 	var sceneEditor : hide.comp.SceneEditor;
 	var tree : hide.comp.SceneTree;
+	var tabs : hide.comp.Tabs;
 	var overlay : Element;
+	var eventList : Element;
 
 	var plight : hxd.prefab.Prefab;
 	var light : h3d.scene.Object;
@@ -17,11 +19,43 @@ class Model extends FileView {
 	var apause : { function toggle( v : Bool ) : Void; var element : Element; };
 	var timeline : h2d.Graphics;
 	var timecursor : h2d.Bitmap;
+	var frameIndex : h2d.Text;
 	var currentAnimation : { file : String, name : String };
 	var cameraMove : Void -> Void;
 	var scene(get,never) : hide.comp.Scene;
 	var rootPath : String;
 	var root : hide.prefab.Prefab;
+
+	override function save() {
+		if(!modified) return;
+		// Save current Anim data
+		if(obj.currentAnimation != null){
+			var path = getPath();
+			var relPath = StringTools.startsWith(path, ide.resourceDir) ? path.substr(ide.resourceDir.length+1) : path;
+			var parts = relPath.split("/");
+			parts.pop();
+			var propsPath = parts.join("/") + "/model.props";
+			var hideData : hxd.fmt.hmd.Library.HideData;
+			if( hxd.res.Loader.currentInstance.exists(propsPath)){
+				var props = hxd.res.Loader.currentInstance.load(propsPath).toText();
+				hideData = haxe.Json.parse(props);
+			}
+			else
+				hideData = { animations : {} };
+
+			var events : Array<{ frame : Int, data : String }> = [];
+			for(i in 0 ... obj.currentAnimation.events.length){
+				if( obj.currentAnimation.events[i] == null) continue;
+				for( e in obj.currentAnimation.events[i])
+					events.push({frame:i, data:e});
+			}
+			hideData.animations.set(currentAnimation.name, {events : events} );
+
+			var bytes = new haxe.io.BytesOutput();
+			bytes.writeString(haxe.Json.stringify(hideData, "\t"));
+			hxd.File.saveBytes(ide.getPath(propsPath), bytes.getBytes());
+		}
+	}
 
 	override function onDisplay() {
 		element.html('
@@ -33,25 +67,33 @@ class Model extends FileView {
 							<div class="tree"></div>
 						</div>
 					</div>
-					<div class="hide-tabs flex vertical">
-						<div class="hide-block">
-							<table>
-							<tr>
-							<td><input type="button" style="width:145px" value="Export"/>
-							<td><input type="button" style="width:145px" value="Import"/>
-							</tr>
-							</table>
-							<div class="hide-scene-tree hide-list">
+					<div class="tabs">
+						<div class="tab" name="Model" icon="sitemap">
+							<div class="hide-block">
+								<table>
+								<tr>
+								<td><input type="button" style="width:145px" value="Export"/>
+								<td><input type="button" style="width:145px" value="Import"/>
+								</tr>
+								</table>
+								<div class="hide-scene-tree hide-list">
+								</div>
+							</div>
+							<div class="props hide-scroll">
 							</div>
 						</div>
-						<div class="props hide-scroll">
+						<div class="tab" name="Animation" icon="cog">
+							<div class="event-editor"> </div>
 						</div>
 					</div>
+
 				</div>
 			</div>
 		');
 		tools = new hide.comp.Toolbar(null,element.find(".toolbar"));
 		overlay = element.find(".hide-scene-layer .tree");
+		tabs = new hide.comp.Tabs(null,element.find(".tabs"));
+		eventList = element.find(".event-editor");
 
 		if( rootPath == null )
 			rootPath = config.get("model.renderProps");
@@ -81,6 +123,7 @@ class Model extends FileView {
 		sceneEditor.editorDisplay = false;
 		sceneEditor.onRefresh = onRefresh;
 		sceneEditor.onUpdate = update;
+		sceneEditor.view.keys = new hide.ui.Keys(null); // Remove SceneEditor Shortcuts
 
 		element.find(".hide-scene-tree").first().append(sceneEditor.tree.element);
 		element.find(".props").first().append(sceneEditor.properties.element);
@@ -270,6 +313,7 @@ class Model extends FileView {
 
 		tools.element.empty();
 		var anims = scene.listAnims(getPath());
+
 		if( anims.length > 0 ) {
 			var sel = tools.addSelect("play-circle");
 			var content = [for( a in anims ) {
@@ -396,6 +440,28 @@ class Model extends FileView {
 		currentAnimation = { file : file, name : scene.animationName(file) };
 		obj.playAnimation(anim);
 		buildTimeline();
+		buildEventPanel();
+		modified = false;
+	}
+
+	function buildEventPanel(){
+		eventList.empty();
+		var events = @:privateAccess obj.currentAnimation.events;
+		var fbxEventList = new Element('<div></div>');
+		fbxEventList.append(new Element('<div class="title"><label>Events</label></div>'));
+		function addEvent( n : String, f : Float, root : Element ){
+			var e = new Element('<div class="event"><span class="label">"$n"</span><span class="label">$f</span></div>');
+			root.append(e);
+		}
+		if(events != null) {
+			for( i in 0...events.length ) {
+				var el = events[i];
+				if( el == null || el.length == 0 ) continue;
+				for( e in el )
+					addEvent(e, i, fbxEventList);
+			}
+		}
+		eventList.append(fbxEventList);
 	}
 
 	function buildTimeline() {
@@ -410,7 +476,7 @@ class Model extends FileView {
 		var W = scene.s2d.width;
 		timeline = new h2d.Graphics(scene.s2d);
 		timeline.y = scene.s2d.height - H;
-		timeline.beginFill(0, 0.8);
+		timeline.beginFill(0x101010, 0.8);
 		timeline.drawRect(0, 0, W, H);
 
 		if( W / obj.currentAnimation.frameCount > 3 ) {
@@ -423,23 +489,59 @@ class Model extends FileView {
 		}
 
 		var int = new h2d.Interactive(W, H, timeline);
+		int.enableRightButton = true;
 		timecursor = new h2d.Bitmap(h2d.Tile.fromColor(0x808080, 8, H), timeline);
 		timecursor.x = -100;
 		int.onPush = function(e) {
-			var prevPause = obj.currentAnimation.pause;
-			obj.currentAnimation.pause = true;
-			obj.currentAnimation.setFrame( (e.relX / W) * obj.currentAnimation.frameCount );
-			int.startDrag(function(e) {
-				switch(e.kind ) {
-				case ERelease:
-					obj.currentAnimation.pause = prevPause;
-					int.stopDrag();
-				case EMove:
-					obj.currentAnimation.setFrame( (e.relX / W) * obj.currentAnimation.frameCount );
-				default:
+			if( hxd.Key.isDown( hxd.Key.MOUSE_LEFT) ){
+				var prevPause = obj.currentAnimation.pause;
+				obj.currentAnimation.pause = true;
+				obj.currentAnimation.setFrame( (e.relX / W) * obj.currentAnimation.frameCount );
+				int.startDrag(function(e) {
+					switch(e.kind ) {
+					case ERelease:
+						obj.currentAnimation.pause = prevPause;
+						int.stopDrag();
+					case EMove:
+						obj.currentAnimation.setFrame( (e.relX / W) * obj.currentAnimation.frameCount );
+					default:
+					}
+				});
+			}
+			else if( hxd.Key.isDown( hxd.Key.MOUSE_RIGHT) ){
+				var deleteEvent = function(s:String, f:Int){
+					obj.currentAnimation.events[f].remove(s);
+					if(obj.currentAnimation.events[f].length == 0)
+						obj.currentAnimation.events[f] = null;
+					buildTimeline();
+					buildEventPanel();
+					modified = true;
 				}
-			});
-		};
+				var addEvent = function(s:String, f:Int){
+					if(obj.currentAnimation.events[f] == null)
+						obj.currentAnimation.events[f] = [];
+					obj.currentAnimation.events[f].push(s);
+					buildTimeline();
+					buildEventPanel();
+					modified = true;
+				}
+				var frame = Math.round((e.relX / W) * obj.currentAnimation.frameCount);
+				var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [
+					{ label : "New", click: function(){ addEvent("NewEvent", frame); }},
+				];
+				if(obj.currentAnimation.events[frame] != null){
+					for(e in obj.currentAnimation.events[frame])
+						menuItems.push({ label : "Delete " + e, click: function(){ deleteEvent(e, frame); }});
+				}
+				new hide.comp.ContextMenu(menuItems);
+			}
+		}
+
+		frameIndex = new h2d.Text(hxd.res.DefaultFont.get(), timecursor);
+		frameIndex.y = -30.0;
+		frameIndex.textAlign = Center;
+		frameIndex.text = "0";
+		frameIndex.alpha = 0.5;
 
 		var events = @:privateAccess obj.currentAnimation.events;
 		if(events != null) {
@@ -449,10 +551,18 @@ class Model extends FileView {
 				var px = Std.int((i / obj.currentAnimation.frameCount) * W);
 				timeline.beginFill(0xC0C0C0);
 				timeline.drawRect(px, 0, 1, H);
-				var py = -14;
-				for( e in el ) {
-					var tf = new h2d.Text(hxd.res.DefaultFont.get(), timeline);
-					tf.text = e;
+				var py = -20;
+				for(j in 0 ... el.length ) {
+					var event = events[i][j];
+					var tf = new h2d.TextInput(hxd.res.DefaultFont.get(), timeline);
+					tf.backgroundColor = 0xFF0000;
+					tf.onFocusLost = function(e){
+						events[i][j] = tf.text;
+						buildTimeline();
+						buildEventPanel();
+						modified = true;
+					}
+					tf.text = event;
 					tf.x = px - Std.int(tf.textWidth * 0.5);
 					tf.y = py;
 					tf.alpha = 0.5;
@@ -479,6 +589,7 @@ class Model extends FileView {
 		}
 		if( timeline != null ) {
 			timecursor.x = Std.int((obj.currentAnimation.frame / obj.currentAnimation.frameCount) * (scene.s2d.width - timecursor.tile.width));
+			frameIndex.text = untyped obj.currentAnimation.frame.toFixed(2);
 		}
 		if( cameraMove != null )
 			cameraMove();

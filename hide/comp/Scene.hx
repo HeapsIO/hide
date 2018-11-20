@@ -294,11 +294,36 @@ class Scene extends Component implements h3d.IDrawable {
 			return hsd.root;
 		}
 		var lib = loadHMD(path,false);
+
+		function loadHideData( path : String ) : hxd.fmt.hmd.Library.HideData {
+			var relPath = StringTools.startsWith(path, ide.resourceDir) ? path.substr(ide.resourceDir.length+1) : path;
+			var parts = relPath.split("/");
+			parts.pop();
+			var propsPath = parts.join("/") + "/model.props";
+			if(!hxd.res.Loader.currentInstance.exists(propsPath)) return null;
+			var props = hxd.res.Loader.currentInstance.load(propsPath).toText();
+			var hideData : hxd.fmt.hmd.Library.HideData;
+			hideData = haxe.Json.parse(props);
+			return hideData;
+		}
+		lib.hideData = loadHideData(path);
+
 		return lib.makeObject(loadTexture.bind(path));
 	}
 
 	public function loadAnimation( path : String ) {
 		var lib = loadHMD(path,true);
+
+		// HideData
+		var relPath = StringTools.startsWith(path, ide.resourceDir) ? path.substr(ide.resourceDir.length+1) : path;
+		var parts = relPath.split("/");
+		parts.pop();
+		var propsPath = parts.join("/") + "/model.props";
+		if( propsPath != null && hxd.res.Loader.currentInstance.exists(propsPath)){
+			var props = hxd.res.Loader.currentInstance.load(propsPath).toText();
+			lib.hideData = haxe.Json.parse(props);
+		}
+
 		return lib.loadAnimation();
 	}
 

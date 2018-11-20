@@ -209,7 +209,7 @@ class FX extends hxd.prefab.Library {
 		var obj : Dynamic = super.save();
 		obj.duration = duration;
 		obj.loopAnims = loopAnims;
-		obj.script = script;
+		if( script != "" ) obj.script = script;
 		return obj;
 	}
 
@@ -217,7 +217,7 @@ class FX extends hxd.prefab.Library {
 		super.load(obj);
 		duration = obj.duration == null ? 5.0 : obj.duration;
 		loopAnims = obj.loopAnims == null ? true : obj.loopAnims;
-		script = obj.script == null ? '// My Script ' : obj.script;
+		script = obj.script;
 	}
 
 	static function getObjAnimations(ctx:Context, elt: PrefabElement, anims: Array<ObjectAnimation>) {
