@@ -424,7 +424,7 @@ class FX extends hxd.prefab.Library {
 		getShaderAnims(ctx, this, fxanim.shaderAnims);
 		getEmitters(ctx, this, fxanim.emitters);
 
-		if(script != ""){
+		if(script != null && script != ""){
 			var parser = new FXScriptParser();
 			var fxScript = parser.createFXScript(script, fxanim);
 			fxanim.script = fxScript;
