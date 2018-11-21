@@ -124,6 +124,11 @@ class Model extends FileView {
 		sceneEditor.onRefresh = onRefresh;
 		sceneEditor.onUpdate = update;
 		sceneEditor.view.keys = new hide.ui.Keys(null); // Remove SceneEditor Shortcuts
+		sceneEditor.view.keys.register("save", function() {
+			save();
+			skipNextChange = true;
+			modified = false;
+		});
 
 		element.find(".hide-scene-tree").first().append(sceneEditor.tree.element);
 		element.find(".props").first().append(sceneEditor.properties.element);
@@ -518,9 +523,7 @@ class Model extends FileView {
 					modified = true;
 				}
 				var addEvent = function(s:String, f:Int){
-					if(obj.currentAnimation.events[f] == null)
-						obj.currentAnimation.events[f] = [];
-					obj.currentAnimation.events[f].push(s);
+					obj.currentAnimation.addEvent(f, s);
 					buildTimeline();
 					buildEventPanel();
 					modified = true;
@@ -529,7 +532,7 @@ class Model extends FileView {
 				var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [
 					{ label : "New", click: function(){ addEvent("NewEvent", frame); }},
 				];
-				if(obj.currentAnimation.events[frame] != null){
+				if(obj.currentAnimation.events != null && obj.currentAnimation.events[frame] != null){
 					for(e in obj.currentAnimation.events[frame])
 						menuItems.push({ label : "Delete " + e, click: function(){ deleteEvent(e, frame); }});
 				}
