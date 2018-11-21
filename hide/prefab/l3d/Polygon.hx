@@ -14,7 +14,7 @@ class Polygon extends Object3D {
 	public var shape(default, null) : Shape = Quad;
 	public var points : h2d.col.Polygon;
 	#if editor
-	public var debugColor : Int;
+	public var debugColor : Int = 0xFFFFFFFF;
 	public var editor : PolygonEditor;
 	#end
 
