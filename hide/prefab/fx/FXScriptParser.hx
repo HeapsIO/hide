@@ -69,7 +69,7 @@ class FXScriptParser {
 			function getGetField( expr : hscript.Expr ){
 				return script.getGetter(getPath(expr));
 			}
-			trace(expr);
+
 			switch(getExpr(expr)){
 
 				case EBlock(e):
