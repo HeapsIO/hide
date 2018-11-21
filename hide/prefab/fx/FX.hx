@@ -176,7 +176,7 @@ class FXAnimation extends h3d.scene.Object {
 		}
 
 		if(script != null)
-			script.eval();
+			script.run();
 	}
 
 	public function resolveContraints( caster : h3d.scene.Object ) {

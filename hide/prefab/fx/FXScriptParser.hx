@@ -69,11 +69,21 @@ class FXScriptParser {
 			function getGetField( expr : hscript.Expr ){
 				return script.getGetter(getPath(expr));
 			}
-
+			trace(expr);
 			switch(getExpr(expr)){
 
 				case EBlock(e):
 					return Block( [for(expr in e) convert(expr)] );
+
+				case ECall( e, params ):
+					var name = switch(getExpr(e)){
+						case EIdent(v): v;
+						default: null;
+					}
+					return Call( name, [for(a in params) convert(a)]);
+
+				case EFunction(args, e, name, ret):
+					return null; // TO DO
 
 				case EVar(n, t, e):
 					if(e != null ) return Set(function(v){ script.setVar(n, v); }, convert(e));
@@ -135,15 +145,16 @@ class FXScriptParser {
 					switch(getExpr(e)){
 						case EIdent(v):
 							return switch(op){
-								case "++": Set(function(val){ script.setVar(v, val); }, Unop(convert(e), function(a){ return prefix ? ++a : a++; }));
-								case "--": Set(function(val){ script.setVar(v, val); }, Unop(convert(e), function(a){ return prefix ? --a : a--; }));
+								case "++": Set( function(val){ script.setVar(v, val); }, Unop(convert(e), function(a){ return prefix ? ++a : a++; }));
+								case "--": Set( function(val){ script.setVar(v, val); }, Unop(convert(e), function(a){ return prefix ? --a : a--; }));
+								case "-": Unop( convert(e), function(a){ return -a;});
 								default: null;
 							}
-
 						case EField(e,f):
 							return switch(op){
 								case "++": Set( getSetField(e), Unop(convert(e), function(a){ return prefix ? ++a : a++; }));
 								case "--": Set( getSetField(e), Unop(convert(e), function(a){ return prefix ? --a : a--; }));
+								case "-": Unop( convert(e), function(a){ return -a;});
 								default : null;
 							}
 						default: return null;
@@ -409,7 +420,7 @@ class FXScriptParser {
 	}
 
 	function createSlider( s : FXScript, name : String, min : Float, max : Float, step : Float, defaultVal : Float ) : Element {
-		var root = new Element('<div class="fx-slider"></div>');
+		var root = new Element('<div class="slider"></div>');
 		var label = new Element('<label> $name : </label>');
 		var slider = new Element('<input type="range" min="$min" max="$max" step="$step" value="$defaultVal"/>');
 		root.append(label);
@@ -421,13 +432,13 @@ class FXScriptParser {
 	}
 
 	function createChekbox( s : FXScript, name : String, defaultVal : Bool ) : Element {
-		var root = new Element('<div class="fx-chekcBox"></div>');
+		var root = new Element('<div class="checkBox"></div>');
 		var label = new Element('<label> $name : </label>');
 		var checkbox = new Element('<input type="checkbox" value="$defaultVal"/>');
+		checkbox.on("input", function(_) {
+			s.setVar(name, checkbox.val() );
+		});
 		root.append(label);
-		/*checkbox.onChange = function(b){
-			s.setVar(name, checkbox.value);
-		}*/
 		root.append(checkbox);
 		return root;
 	}

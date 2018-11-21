@@ -1,5 +1,7 @@
 package hide.prefab.fx;
 
+typedef Argument = { name : String, ?value : FxAst };
+
 enum FxAst {
 	Block( a : Array<FxAst> );
 	Var( get : Void -> Float );
@@ -8,22 +10,24 @@ enum FxAst {
 	Op( a : FxAst, b : FxAst, op : Float -> Float -> Float );
 	Unop( a : FxAst, op : Float -> Float );
 	If( cond : FxAst, eif : FxAst, eelse : FxAst );
-}
-
-enum ParamOption {
-	Range( min : Float, max : Float );
-}
-
-enum FXParam {
-	Float( name : String, value : Float, options : Array<ParamOption> );
-	Int( name : String, value : Int, options : Array<ParamOption> );
-	Bool( name : String, value : Bool, options : Array<ParamOption> );
+	Function( args : Array<hide.prefab.fx.Argument>, a : FxAst, name : String );
+	Call( name : String, args : Array<FxAst> );
 }
 
 enum FXVar {
 	Float( value : Float );
 	Int( value : Int );
 	Bool( value : Bool );
+}
+
+// UI
+enum ParamOption {
+	Range( min : Float, max : Float );
+}
+enum FXParam {
+	Float( name : String, value : Float, options : Array<ParamOption> );
+	Int( name : String, value : Int, options : Array<ParamOption> );
+	Bool( name : String, value : Bool, options : Array<ParamOption> );
 }
 
 class FXScript {
@@ -138,32 +142,45 @@ class FXScript {
 		}
 	}
 
-	public function eval() {
-		function eval(ast : FxAst) : Float {
-			if(ast == null) return 0.0;
-			switch (ast) {
-				case Block(a):
-					for(ast in a)
-						eval(ast);
-					return 0.0;
-				case Var(get):
-					return get();
-				case Const(v):
-					return v;
-				case Set(set, a):
-					var v = eval(a);
-					set(v);
-					return v;
-				case Op(a, b, op):
-					var va = eval(a);
-					var vb = eval(b);
-					return op(va,vb);
-				case Unop(a, op):
-					return op(eval(a));
-				case If(cond, eif, eelse):
-					return eval(cond) != 0 ? eval(eif) : eval(eelse);
-			}
+	function call( f : String, args : Array<FxAst>) : Float {
+		switch(f){
+			case "rand": return hxd.Math.random();
+			case "mix": return hxd.Math.lerp(eval(args[0]), eval(args[1]), eval(args[2]));
+			default: return 0.0;
 		}
+	}
+
+	function eval(ast : FxAst) : Float {
+		if(ast == null) return 0.0;
+		switch (ast) {
+			case Block(a):
+				for(ast in a)
+					eval(ast);
+				return 0.0;
+			case Call(a, args):
+				return call(a, args);
+			case Function(args, a, name):
+				return 0.0; // TO DO
+			case Var(get):
+				return get();
+			case Const(v):
+				return v;
+			case Set(set, a):
+				var v = eval(a);
+				set(v);
+				return v;
+			case Op(a, b, op):
+				var va = eval(a);
+				var vb = eval(b);
+				return op(va,vb);
+			case Unop(a, op):
+				return op(eval(a));
+			case If(cond, eif, eelse):
+				return eval(cond) != 0 ? eval(eif) : eval(eelse);
+		}
+	}
+
+	public function run() {
 		eval(ast);
 	}
 }

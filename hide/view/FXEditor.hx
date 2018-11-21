@@ -266,7 +266,7 @@ class FXEditor extends FileView {
 
 				if(previewMax < previewMin + 0.1) {
 					previewMin = 0;
-					previewMax = data.duration;
+					previewMax = data.duration == 0 ? 1 : data.duration;
 				}
 				if(selectMax < selectMin + 0.1) {
 					selectMin = 0;
@@ -300,7 +300,7 @@ class FXEditor extends FileView {
 		selectMin = 0.0;
 		selectMax = 0.0;
 		previewMin = 0.0;
-		previewMax = data.duration;
+		previewMax = data.duration == 0 ? 5000 : data.duration;
 		refreshTimeline(false);
 	}
 
@@ -374,7 +374,7 @@ class FXEditor extends FileView {
 
 	function onPrefabChange(p: PrefabElement, ?pname: String) {
 		if(p == data) {
-			previewMax = hxd.Math.min(data.duration, previewMax);
+			previewMax = hxd.Math.min(data.duration == 0 ? 5000 : data.duration, previewMax);
 			refreshTimeline(false);
 		}
 	}
@@ -410,7 +410,7 @@ class FXEditor extends FileView {
 		scroll.empty();
 		var width = scroll.parent().width();
 		var minX = Math.floor(ixt(0));
-		var maxX = Math.ceil(hxd.Math.min(data.duration, ixt(width)));
+		var maxX = Math.ceil(hxd.Math.min(data.duration == 0 ? 5000 : data.duration, ixt(width)));
 		for(ix in minX...(maxX+1)) {
 			var mark = new Element('<span class="mark"></span>').appendTo(scroll);
 			mark.css({left: xt(ix)});
@@ -430,7 +430,7 @@ class FXEditor extends FileView {
 		var prevLeft = new Element('<span class="preview-left"></span>').appendTo(overlay);
 		prevLeft.css({left: 0, width: xt(previewMin)});
 		var prevRight = new Element('<span class="preview-right"></span>').appendTo(overlay);
-		prevRight.css({left: xt(previewMax), width: xt(data.duration) - xt(previewMax)});
+		prevRight.css({left: xt(previewMax), width: xt(data.duration == 0 ? 5000 : data.duration) - xt(previewMax)});
 	}
 
 	function afterPan(anim: Bool) {
