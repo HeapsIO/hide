@@ -266,7 +266,7 @@ class Terrain extends Object3D {
 	}
 
 	override function edit( ctx : EditContext ) {
-		//super.edit(ctx); // Only need Pos-Z and Rot-Z
+		super.edit(ctx);
 		var props = new hide.Element('<div></div>');
 		if( editor == null )editor = new TerrainEditor(this, ctx.properties.undo);
 		editor.setupUI(props, ctx);
