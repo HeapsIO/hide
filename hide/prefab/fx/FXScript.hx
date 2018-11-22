@@ -32,12 +32,16 @@ enum FXParam {
 
 class FXScript {
 
-	public var fx : hide.prefab.fx.FX.FXAnimation;
 	public var myVars : Map<String, FXVar> = [];
-	public var ast : FxAst;
 	public var params : Array<FXParam> = [];
 
-	public function new(){
+	var fx : hide.prefab.fx.FX.FXAnimation;
+	var ast : FxAst;
+	var initAst : FxAst;
+	var updateAst : FxAst;
+
+	public function new( fx : hide.prefab.fx.FX.FXAnimation ){
+		this.fx = fx;
 	}
 
 	public function getGetter( p : String ) : Void -> Float {
@@ -180,7 +184,11 @@ class FXScript {
 		}
 	}
 
-	public function run() {
-		eval(ast);
+	public function init() {
+		eval(initAst);
+	}
+
+	public function update() {
+		eval(updateAst);
 	}
 }

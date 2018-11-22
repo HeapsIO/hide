@@ -176,7 +176,7 @@ class FXAnimation extends h3d.scene.Object {
 		}
 
 		if(script != null)
-			script.run();
+			script.update();
 	}
 
 	public function resolveContraints( caster : h3d.scene.Object ) {
@@ -402,6 +402,7 @@ class FX extends hxd.prefab.Library {
 		fxanim.duration = duration;
 		fxanim.loopAnims = loopAnims;
 		ctx.local3d = fxanim;
+		fxanim.playSpeed = 1.0;
 
 		#if editor
 		super.makeInstance(ctx);
@@ -426,11 +427,9 @@ class FX extends hxd.prefab.Library {
 
 		if(script != null && script != ""){
 			var parser = new FXScriptParser();
-			var fxScript = parser.createFXScript(script, fxanim);
-			fxanim.script = fxScript;
+			fxanim.script = parser.createFXScript(script, fxanim);
+			fxanim.script.init();
 		}
-
-		fxanim.playSpeed = 1.0;
 
 		return ctx;
 	}

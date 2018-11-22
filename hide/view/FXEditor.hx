@@ -968,6 +968,7 @@ class FXEditor extends FileView {
 				timeLineEl.css({left: xt(currentTime)});
 			if(currentTime >= previewMax) {
 				currentTime = previewMin;
+				sceneEditor.refreshScene();
 				anim.setRandSeed(Std.random(0xFFFFFF));
 			}
 		}
@@ -983,7 +984,6 @@ class FXEditor extends FileView {
 			];
 			statusText.text = lines.join("\n");
 		}
-
 
 		var cam = scene.s3d.camera;
 		if( light != null ) {

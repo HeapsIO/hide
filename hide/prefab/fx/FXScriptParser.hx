@@ -2,6 +2,7 @@ package hide.prefab.fx;
 import  hide.prefab.fx.FXScript;
 
 @:access(hide.view.FXEditor)
+@:access(hide.prefab.fx.FXScript)
 class FXScriptParser {
 
 	public var firstParse = false;
@@ -23,8 +24,7 @@ class FXScriptParser {
 		parser.allowTypes = true;
 		parser.allowJSON = true;
 		var expr : hscript.Expr = null;
-		var script = new hide.prefab.fx.FXScript();
-		script.fx = fx;
+		var script = new hide.prefab.fx.FXScript(fx);
 
 		function parse( expr : hscript.Expr ) {
 			if( expr == null ) return;
@@ -83,7 +83,11 @@ class FXScriptParser {
 					return Call( name, [for(a in params) convert(a)]);
 
 				case EFunction(args, e, name, ret):
-					return null; // TO DO
+					switch(name){
+						case "update": script.updateAst = convert(e);
+						case "init": script.initAst = convert(e);
+					}
+					return null;
 
 				case EVar(n, t, e):
 					if(e != null ) return Set(function(v){ script.setVar(n, v); }, convert(e));
@@ -157,6 +161,11 @@ class FXScriptParser {
 								case "-": Unop( convert(e), function(a){ return -a;});
 								default : null;
 							}
+						case ECall( e, params ):
+							return switch(op){
+								case "-": Unop( convert(e), function(a){ return -a;});
+								default : null;
+							}
 						default: return null;
 					}
 
@@ -171,6 +180,8 @@ class FXScriptParser {
 	function createFXVar( expr : hscript.Expr ) {
 		function parse(expr : hscript.Expr) : FXVar {
 			return switch(getExpr(expr)){
+				case EFunction(args, e, name, ret):
+					return parse(e);
 				case EMeta(name, args, e):
 					return parse(e);
 				case EVar(n, t, e):
@@ -264,6 +275,8 @@ class FXScriptParser {
 		function parse(expr : hscript.Expr) : FXParam {
 			if( expr == null ) return null;
 			switch(getExpr(expr)){
+				case EFunction(args, e, name, ret):
+					return parse(e);
 				case EMeta(name, args, e):
 					switch(name){
 						case "range":
