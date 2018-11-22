@@ -76,6 +76,7 @@ class Reference extends Object3D {
 
 		if(isFile()) {
 			ctx = super.makeInstance(ctx);
+			ctx.isRef = true;
 			p.makeInstance(ctx);
 		}
 		else {
