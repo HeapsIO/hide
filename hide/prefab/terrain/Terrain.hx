@@ -151,7 +151,7 @@ class Terrain extends Object3D {
 
 	override function makeInstance(ctx:Context):Context {
 		ctx = ctx.clone(this);
-		
+
 		#if editor
 		if(cachedInstance != null) {
 			ctx.local3d.addChild(cachedInstance);
@@ -166,7 +166,6 @@ class Terrain extends Object3D {
 		terrain.cellCount = getCellCount();
 		terrain.cellSize = getCellSize();
 		terrain.tileSize = terrain.cellCount * terrain.cellSize;
-		terrain.refreshMesh();
 		terrain.heightMapResolution = heightMapResolution;
 		terrain.weightMapResolution = weightMapResolution;
 		terrain.parallaxAmount = parallaxAmount / 10;
@@ -175,7 +174,7 @@ class Terrain extends Object3D {
 		terrain.heightBlendStrength = heightBlendStrength;
 		terrain.heightBlendSharpness = heightBlendSharpness;
 		terrain.name = "terrain";
-		
+
 		#if editor
 		cachedInstance = terrain;
 		#end
@@ -187,11 +186,11 @@ class Terrain extends Object3D {
 			for(surface in terrain.surfaces)
 				if(surface == null || surface.albedo == null || surface.normal == null || surface.pbr == null )
 					return;
-			
 			terrain.generateSurfaceArray();
 			loadTerrain(ctx);
-			for(tile in terrain.tiles)
-				tile.blendEdges();
+
+			for( t in terrain.tiles)
+				t.computeEdgesNormals();
 		}
 
 		for(surfaceProps in tmpSurfacesProps){
