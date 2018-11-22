@@ -141,7 +141,7 @@ class Terrain extends Object3D {
 					tex.dispose();
 				case"i":
 					var tex = res.toTexture();
-					tile.surfaceIndexMap = tex.clone();
+					tile.surfaceIndexMap = tex;
 					tile.surfaceIndexMap.filter = Nearest;
 					tile.surfaceIndexMap.flags.set(Target);
 					tex.dispose();
