@@ -141,10 +141,11 @@ class Terrain extends Object3D {
 					tex.dispose();
 				case"i":
 					var tex = res.toTexture();
+					tex.preventAutoDispose();
+					tex.realloc = null;
 					tile.surfaceIndexMap = tex;
 					tile.surfaceIndexMap.filter = Nearest;
 					tile.surfaceIndexMap.flags.set(Target);
-					tex.dispose();
 			}
 		}
 	}
