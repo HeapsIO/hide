@@ -33,6 +33,10 @@
 	"key.selectAll" : "Ctrl-A",
 	"key.playPause" : "Space",
 
+	// view keys
+
+	"key.view.fullScreen" : "F11",
+
 	// cdb keys
 
 	"key.cdb.showReferences" : "Shift+F12",

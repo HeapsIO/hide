@@ -14,6 +14,7 @@ class View<T> extends hide.comp.Component {
 
 	var container : golden.Container;
 	var watches : Array<{ keep : Bool, path : String, callb : Void -> Void }> = [];
+	public var fullScreen(get,set) : Bool;
 	public var keys(get,null) : Keys;
 	public var state(default, null) : T;
 	public var undo(default, null) = new hide.ui.UndoHistory();
@@ -29,6 +30,7 @@ class View<T> extends hide.comp.Component {
 		element = null;
 		this.state = state;
 		ide = Ide.inst;
+		@:privateAccess ide.currentFullScreen = null;
 	}
 
 	public function watch( filePath : String, onChange : Void -> Void, ?opts : { ?checkDelete : Bool, ?keepOnRebuild : Bool } ) {
@@ -51,7 +53,10 @@ class View<T> extends hide.comp.Component {
 	}
 
 	function get_keys() {
-		if( keys == null ) keys = new Keys(null);
+		if( keys == null ) {
+			keys = new Keys(null);
+			keys.register("view.fullScreen", function() fullScreen = !fullScreen);
+		}
 		return keys;
 	}
 
@@ -202,6 +207,7 @@ class View<T> extends hide.comp.Component {
 			if( s != null )
 				s.dispose();
 		}
+		element = null;
 	}
 
 	function buildTabMenu() : Array<hide.comp.ContextMenu.ContextMenuItem> {
@@ -217,6 +223,19 @@ class View<T> extends hide.comp.Component {
 	function get_contentWidth() return container.width;
 	function get_contentHeight() return container.height;
 	function get_defaultOptions() return viewClasses.get(Type.getClassName(Type.getClass(this))).options;
+
+	function get_fullScreen() return container != null && container.getElement().is(".fullScreen");
+	function set_fullScreen(v) {
+		if( fullScreen == v )
+			return v;
+		if( container != null ) {
+			new Element(".fullScreen").removeClass("fullScreen");
+			container.getElement().toggleClass("fullScreen", v);
+			new Element("body").toggleClass("fullScreenMode",v);
+		}
+		@:privateAccess if( v ) ide.currentFullScreen = this else ide.currentFullScreen = null;
+		return v;
+	}
 
 	public static var viewClasses = new Map<String,{ name : String, cl : Class<View<Dynamic>>, options : ViewOptions }>();
 	public static function register<T>( cl : Class<View<T>>, ?options : ViewOptions ) {

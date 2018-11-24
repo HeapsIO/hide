@@ -1,8 +1,13 @@
 package hide;
 
+typedef LayoutState = {
+	var content : Any;
+	var fullScreen : { name : String, state : Any };
+}
+
 typedef HideConfig = {
 	var autoSaveLayout : Null<Bool>;
-	var layouts : Array<{ name : String, state : Dynamic }>;
+	var layouts : Array<{ name : String, state : LayoutState }>;
 
 	var currentProject : String;
 	var recentProjects : Array<String>;

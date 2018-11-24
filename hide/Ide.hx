@@ -34,7 +34,9 @@ class Ide {
 	var window : nw.Window;
 	var layout : golden.Layout;
 
-	var currentLayout : { name : String, state : Dynamic };
+	var currentLayout : { name : String, state : Config.LayoutState };
+	var defaultLayout : { name : String, state : Config.LayoutState };
+	var currentFullScreen(default,set) : hide.ui.View<Dynamic>;
 	var maximized : Bool;
 	var updates : Array<Void->Void> = [];
 	var views : Array<hide.ui.View<Dynamic>> = [];
@@ -227,7 +229,7 @@ class Ide {
 			config.global.save();
 	}
 
-	function initLayout( ?state : { name : String, state : Dynamic } ) {
+	function initLayout( ?state : { name : String, state : Config.LayoutState } ) {
 		initializing = true;
 
 		if( layout != null ) {
@@ -235,14 +237,16 @@ class Ide {
 			layout = null;
 		}
 
-		var defaultLayout = null;
+		defaultLayout = null;
+		var emptyLayout : Config.LayoutState = { content : [], fullScreen : null };
 		for( p in config.current.current.hide.layouts )
 			if( p.name == "Default" ) {
+				if( p.state.content == null ) continue; // old version
 				defaultLayout = p;
 				break;
 			}
 		if( defaultLayout == null ) {
-			defaultLayout = { name : "Default", state : [] };
+			defaultLayout = { name : "Default", state : emptyLayout };
 			ideConfig.layouts.push(defaultLayout);
 			config.current.sync();
 			config.global.save();
@@ -251,12 +255,12 @@ class Ide {
 			state = defaultLayout;
 
 		if( subView != null )
-			state = { name : "SubView", state : [] };
+			state = { name : "SubView", state : emptyLayout };
 
 		this.currentLayout = state;
 
 		var config : golden.Config = {
-			content: state.state,
+			content: state.state.content,
 		};
 		var comps = new Map();
 		for( vcl in hide.ui.View.viewClasses )
@@ -280,12 +284,7 @@ class Ide {
 			});
 
 		layout.init();
-		layout.on('stateChanged', function() {
-			if( !ideConfig.autoSaveLayout )
-				return;
-			defaultLayout.state = saveLayout();
-			if( subView == null ) this.config.global.save();
-		});
+		layout.on('stateChanged', onLayoutChanged);
 
 		var waitCount = 0;
 		function waitInit() {
@@ -293,12 +292,25 @@ class Ide {
 			if( !layout.isInitialised ) {
 				if( waitCount > 20 ) {
 					// timeout : error recovery if invalid component
-					state.state = [];
+					state.state = emptyLayout;
 					initLayout();
 					return;
 				}
 				haxe.Timer.delay(waitInit, 50);
 				return;
+			}
+			if( state.state.fullScreen != null ) {
+				var fs = state.state.fullScreen;
+				var found = [for( v in views ) if( v.viewClass == fs.name ) v];
+				if( found.length == 1 )
+					found[0].fullScreen = true;
+				else {
+					for( f in found )
+						if( haxe.Json.stringify(f.state) == haxe.Json.stringify(fs.state) ) {
+							f.fullScreen = true;
+							return;
+						}
+				}
 			}
 			initializing = false;
 			if( subView == null && views.length == 0 )
@@ -323,8 +335,26 @@ class Ide {
 			f();
 	}
 
-	function saveLayout() {
-		return layout.toConfig().content;
+	function set_currentFullScreen(v) {
+		var old = currentFullScreen;
+		currentFullScreen = v;
+		if( old != null ) old.fullScreen = false;
+		onLayoutChanged();
+		return v;
+	}
+
+	function onLayoutChanged() {
+		if( initializing || !ideConfig.autoSaveLayout )
+			return;
+		defaultLayout.state = saveLayout();
+		if( subView == null ) this.config.global.save();
+	}
+
+	function saveLayout() : Config.LayoutState {
+		return {
+			content : layout.toConfig().content,
+			fullScreen : currentFullScreen == null ? null : { name : currentFullScreen.viewClass, state : currentFullScreen.state }
+		};
 	}
 
 	function get_ideConfig() return config.global.source.hide;

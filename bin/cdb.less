@@ -337,3 +337,18 @@
 
 	}
 }
+
+
+body.fullScreenMode {
+	.lm_content, .lm_header, .lm_splitter {
+		display : none;
+	}
+	.lm_content.fullScreen {
+		display: block;
+		position: absolute;
+		left: 0;
+		top: 0;
+		width : 100% !important;
+		height: 100% !important;
+	}
+}

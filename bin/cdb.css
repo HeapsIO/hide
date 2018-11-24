@@ -297,3 +297,16 @@
   padding: 2px;
   border: 1px solid #A00;
 }
+body.fullScreenMode .lm_content,
+body.fullScreenMode .lm_header,
+body.fullScreenMode .lm_splitter {
+  display: none;
+}
+body.fullScreenMode .lm_content.fullScreen {
+  display: block;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100% !important;
+  height: 100% !important;
+}
