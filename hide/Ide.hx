@@ -8,7 +8,7 @@ class Ide {
 	public var projectDir(get,never) : String;
 	public var resourceDir(get,never) : String;
 	public var initializing(default,null) : Bool;
-	public var appPath(get, never): String;
+	public var appPath(get, null): String;
 
 	public var mouseX : Int = 0;
 	public var mouseY : Int = 0;
@@ -308,7 +308,7 @@ class Ide {
 					for( f in found )
 						if( haxe.Json.stringify(f.state) == haxe.Json.stringify(fs.state) ) {
 							f.fullScreen = true;
-							return;
+							break;
 						}
 				}
 			}
@@ -359,22 +359,25 @@ class Ide {
 
 	function get_ideConfig() return config.global.source.hide;
 	function get_currentConfig() return config.user;
+
 	function get_appPath() {
+		if( appPath != null )
+			return appPath;
 		var path = js.Node.process.argv[0].split("\\").join("/").split("/");
 		path.pop();
 		var hidePath = path.join("/");
 		if( !sys.FileSystem.exists(hidePath + "/package.json") ) {
 			var prevPath = new haxe.io.Path(hidePath).dir;
 			if( sys.FileSystem.exists(prevPath + "/hide.js") )
-				return prevPath;
+				return appPath = prevPath;
 			// nwjs launch
 			var path = Sys.getCwd();
 			if( sys.FileSystem.exists(path+"/hide.js") )
-				return path;
+				return appPath = path;
 			message("Hide application path was not found");
 			Sys.exit(0);
 		}
-		return hidePath;
+		return appPath = hidePath;
 	}
 
 	public function setClipboard( text : String ) {
@@ -753,6 +756,10 @@ class Ide {
 
 		// database
 		var db = menu.find(".database");
+		if( database.sheets.length > 0 )
+			new Element("<menu label='All'>").appendTo(db.find(".dbview")).click(function(_) {
+				open("hide.view.CdbTable", {});
+			});
 		for( s in database.sheets ) {
 			if( s.props.hide ) continue;
 			new Element("<menu>").attr("label", s.name).appendTo(db.find(".dbview")).click(function(_) {

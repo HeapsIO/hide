@@ -380,6 +380,8 @@ input[type=checkbox]:checked:after {
 }
 .hide-tabs {
   flex: 0 0 320px;
+  position: relative;
+  height: 100%;
 }
 .hide-tabs > .tabs-header {
   background-color: #111;
@@ -389,22 +391,28 @@ input[type=checkbox]:checked:after {
 .hide-tabs > .tabs-header > div {
   cursor: pointer;
   display: inline-block;
-  background-color: #202020;
-  padding: 2px 5px;
+  color: #888;
+  background-color: #151515;
+  padding: 3px 8px;
   border: 1px solid #444;
   margin-left: -1px;
+  border-top-right-radius: 5px;
+  user-select: none;
 }
 .hide-tabs > .tabs-header > div.active {
   background-color: #222;
+  color: #ccc;
   border-bottom-color: #222;
+  border-top-right-radius: 0px;
 }
 .hide-tabs > .tabs-header > div:hover {
   background-color: #282828;
 }
 .hide-tabs .tab {
-  height: 100%;
+  max-height: 100%;
   display: flex;
   flex-direction: column;
+  position: absolute;
 }
 .searchBox {
   display: none;
@@ -631,6 +639,19 @@ input[type=checkbox]:checked:after {
   opacity: 50%;
 }
 /* FX Editor */
+.fx-script {
+  height: 500px;
+  width: 500px;
+}
+.fx-scriptParams {
+  margin: 10px;
+}
+.fx-scriptParams .slider {
+  margin: 10px;
+}
+.fx-scriptParams .checkBox {
+  margin: 10px;
+}
 .fx-animpanel {
   position: relative;
 }
@@ -1042,4 +1063,17 @@ div.sp-container input {
 }
 div.sp-container input:hover {
   border-color: white;
+}
+/* Animation Event Editor */
+.event-editor .title {
+  text-align: center;
+  font-weight: bold;
+  font-size: 12px;
+  margin: 4px;
+  background-color: #1e1e1e;
+}
+.event-editor .event .label {
+  text-align: center;
+  display: inline-block;
+  width: 50%;
 }

@@ -10,18 +10,35 @@ class Tabs extends Component {
 		element.addClass("hide-tabs");
 		header = new Element("<div>").addClass("tabs-header").prependTo(element);
 		syncTabs();
-		currentTab = new Element(getTabs()[0]);
+		var t = getTabs()[0];
+		if( t != null ) currentTab = new Element(t);
+	}
+
+	public function createTab( title : String, ?icon : String ) {
+		var e = new Element('<div class="tab" name="$title">');
+		if( icon != null ) e.attr("icon",icon);
+		e.appendTo(element);
+		syncTabs();
+		if( currentTab == null )
+			currentTab = e;
+		return e;
 	}
 
 	function set_currentTab( e : Element ) {
+		var index = Std.parseInt(e.attr("index"));
 		getTabs().hide();
 		e.show();
-		header.children().removeClass("active").filter("[index=" + e.attr("index") + "]").addClass("active");
-		return currentTab = e;
+		header.children().removeClass("active").filter("[index=" + index + "]").addClass("active");
+		currentTab = e;
+		onTabChange(index);
+		return e;
 	}
 
 	public function getTabs() : Element {
 		return element.children(".tab");
+	}
+
+	public dynamic function onTabChange( index : Int ) {
 	}
 
 	function syncTabs() {
@@ -37,6 +54,8 @@ class Tabs extends Component {
 			tab.appendTo(header);
 			tab.click(function(_) currentTab = t);
 		}
+		if( currentTab != null )
+			this.currentTab = currentTab;
 	}
 
 }

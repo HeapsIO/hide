@@ -113,7 +113,7 @@ class Cell extends Component {
 				out.push(v);
 			}
 			if( out.length == 0 )
-				return "[]";
+				return "";
 			return out.join(", ");
 		case TProperties:
 			var ps = sheet.getSub(c);
