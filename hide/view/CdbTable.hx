@@ -32,8 +32,10 @@ class CdbTable extends hide.ui.View<{ path : String }> {
 		if( editor != null )
 			editor.remove();
 		editor = new hide.comp.cdb.Editor(sheets[index],config,ide.databaseApi,tabContents[index]);
+		editor.focus();
 		editor.onFocus = activate;
-		editor.undo = undo;
+		undo = ide.databaseApi.undo;
+		chromeFix();
 	}
 
 	function chromeFix() {
@@ -42,7 +44,7 @@ class CdbTable extends hide.ui.View<{ path : String }> {
 		if( sheets != null && sheets.length > 1 ) {
 			var tabs = element.find(".hide-tabs");
 			tabs.css({ height : "100px" });
-			haxe.Timer.delay(function() tabs.css({ height : "" }), 100);
+			haxe.Timer.delay(function() tabs.css({ height : "" }), 1);
 		}
 	}
 
