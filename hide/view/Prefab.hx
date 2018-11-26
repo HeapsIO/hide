@@ -80,7 +80,7 @@ class Prefab extends FileView {
 					<div class="scene">
 					</div>
 					<div class="tabs">
-						<div class="tab" name="Scene" icon="sitemap">
+						<div class="tab expand" name="Scene" icon="sitemap">
 							<div class="hide-block">
 								<div class="hide-list hide-scene-tree">
 								</div>

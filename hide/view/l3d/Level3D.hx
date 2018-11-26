@@ -321,8 +321,8 @@ class Level3D extends FileView {
 					<div class="scene">
 					</div>
 					<div class="tabs">
-						<div class="tab" name="Scene" icon="sitemap">
-							<div class="hide-block" style="height:60%">
+						<div class="tab expand" name="Scene" icon="sitemap">
+							<div class="hide-block" style="height:50%">
 								<div class="hide-scene-tree hide-list">
 								</div>
 							</div>
