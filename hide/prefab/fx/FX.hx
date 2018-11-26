@@ -48,6 +48,7 @@ typedef ObjectAnimation = {
 class FXAnimation extends h3d.scene.Object {
 
 	public var onEnd : Void -> Void;
+	public var followVisibility : h3d.scene.Object;
 
 	public var playSpeed : Float;
 	public var localTime(default, null) : Float = 0.0;
@@ -87,6 +88,10 @@ class FXAnimation extends h3d.scene.Object {
 		}
 	}
 
+	public dynamic function customVisibility() : Bool {
+		return true;
+	}
+
 	override function sync( ctx : h3d.scene.RenderContext ) {
 		super.sync(ctx);
 		#if !editor
@@ -99,6 +104,18 @@ class FXAnimation extends h3d.scene.Object {
 				onEnd();
 		}
 		#end
+
+		var visiblity : Bool = true;
+		if(followVisibility != null)
+			visiblity = visiblity && followVisibility.visible;
+		visiblity = visiblity && customVisibility();
+
+		for(emitter in emitters){
+			if(emitter.particleVisibility != visiblity)
+				emitter.setParticleVibility(visiblity);
+		}
+		for(obj in objects)
+			obj.obj.visible = visiblity;
 	}
 
 	static var tempMat = new h3d.Matrix();

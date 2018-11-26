@@ -187,6 +187,7 @@ private class ParticleInstance extends h3d.scene.Object {
 class EmitterObject extends h3d.scene.Object {
 
 	public var enable : Bool;
+	public var particleVisibility(default, null) : Bool;
 
 	public var particleTemplate : hide.prefab.Object3D;
 	public var maxCount = 20;
@@ -234,6 +235,7 @@ class EmitterObject extends h3d.scene.Object {
 	var instances : Array<ParticleInstance> = [];
 
 	public function reset() {
+		particleVisibility = true;
 		enable = true;
 		random.init(randomSeed);
 		curTime = 0.0;
@@ -242,6 +244,13 @@ class EmitterObject extends h3d.scene.Object {
 		for(inst in instances.copy()) {
 			inst.kill();
 		}
+	}
+
+	public function setParticleVibility( b : Bool ){
+		for(inst in instances) {
+			inst.visible = b;
+		}
+		particleVisibility = b;
 	}
 
 	function doEmit(count: Int) {
@@ -259,6 +268,7 @@ class EmitterObject extends h3d.scene.Object {
 
 		for(i in 0...count) {
 			var part = new ParticleInstance(this, instDef);
+			part.visible = particleVisibility;
 			context.local3d = part;
 			var ctx = particleTemplate.makeInstance(context);
 
