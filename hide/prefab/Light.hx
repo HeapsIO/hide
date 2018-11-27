@@ -143,10 +143,13 @@ class Light extends Object3D {
 
 	function loadBaked( ctx : Context ) {
 		var light = Std.instance(ctx.local3d, h3d.scene.pbr.Light);
-		if(light == null) return;
-		if(light.shadows.mode == Static || light.shadows.mode == Mixed){
+		if( light == null ) return;
+		if( light.shadows.mode == Static || light.shadows.mode == Mixed ){
 			var res = ctx.shared.loadPrefabDat("shadowMap", "bake", name);
-			if(res != null) light.shadows.loadStaticData(res.entry.getBytes());
+			if( res != null ) light.shadows.loadStaticData(res.entry.getBytes());
+			#if !editor
+			if( res == null ) light.shadows.mode = None; // Prevent crash if shadows are not baked
+			#end
 		}
 	}
 
