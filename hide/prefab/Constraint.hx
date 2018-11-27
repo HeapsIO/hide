@@ -4,20 +4,23 @@ class Constraint extends Prefab {
 
 	public var object(default,null) : String;
 	public var target(default,null) : String;
+	public var positionOnly(default,null) : Bool;
 
 	override public function load(v:Dynamic) {
 		object = v.object;
 		target = v.target;
+		positionOnly = v.positionOnly;
 	}
 
 	override function save() {
-		return { object : object, target : target };
+		return { object : object, target : target, positionOnly : positionOnly };
 	}
 
 	public function apply( root : h3d.scene.Object ) {
 		var srcObj = root.getObjectByName(object.split(".").pop());
 		var targetObj = root.getObjectByName(target.split(".").pop());
 		if( srcObj != null && targetObj != null ) srcObj.follow = targetObj;
+		if( srcObj.follow != null ) srcObj.followPositionOnly = positionOnly;
 		return srcObj;
 	}
 
@@ -25,6 +28,7 @@ class Constraint extends Prefab {
 		var srcObj = ctx.locateObject(object);
 		var targetObj = ctx.locateObject(target);
 		if( srcObj != null ) srcObj.follow = targetObj;
+		if( srcObj.follow != null ) srcObj.followPositionOnly = positionOnly;
 		return ctx;
 	}
 
@@ -39,6 +43,7 @@ class Constraint extends Prefab {
 			<dl>
 				<dt>Source</dt><dd><select field="object"><option value="">-- Choose --</option></select>
 				<dt>Target</dt><dd><select field="target"><option value="">-- Choose --</option></select>
+				<dt>Position Only</dt><dd><input type="checkbox" field="positionOnly"/></dd>
 			</dl>
 		'),this, function(_) {
 			if( curObj != null ) curObj.follow = null;

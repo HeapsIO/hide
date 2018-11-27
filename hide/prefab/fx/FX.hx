@@ -202,7 +202,7 @@ class FXAnimation extends h3d.scene.Object {
 			var targetName = co.target.split(".").pop();
 
 			var casterName = caster.name;
-			//Get the Model Name
+			// Get the Model Name
 			var sk = Std.instance(caster, h3d.scene.Skin);
 			if( sk != null ) {
 				var prim = Std.instance(sk.getSkinData().primitive, h3d.prim.HMDModel);
@@ -212,8 +212,10 @@ class FXAnimation extends h3d.scene.Object {
 			var isInFX = co.object.split(".")[1] == "FXRoot";
 			var srcObj = objectName == "FXRoot" ? this : isInFX ? this.getObjectByName(objectName) : caster.getObjectByName(objectName);
 			var targetObj = casterName == targetName ? caster : caster.getObjectByName(targetName);
-			if( srcObj != null && targetObj != null )
+			if( srcObj != null && targetObj != null ){
 				srcObj.follow = targetObj;
+				srcObj.followPositionOnly = co.positionOnly;
+			}
 		}
 	}
 }
