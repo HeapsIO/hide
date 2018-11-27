@@ -123,6 +123,7 @@ class SceneEditor {
 
 		var sceneEl = new Element('<div class="scene"></div>');
 		scene = new hide.comp.Scene(view.config, null, sceneEl);
+		scene.editor = this;
 		scene.onReady = onSceneReady;
 		scene.onResize = function() {
 			context.shared.root2d.x = scene.width >> 1;

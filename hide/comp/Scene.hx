@@ -71,6 +71,7 @@ class Scene extends Component implements h3d.IDrawable {
 	public var sevents : hxd.SceneEvents;
 	public var speed : Float = 1.0;
 	public var visible(default, null) : Bool = true;
+	public var editor : hide.comp.SceneEditor;
 
 	public function new(config, parent, el) {
 		super(parent,el);
