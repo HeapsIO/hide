@@ -328,7 +328,7 @@ class Level3D extends FileView {
 							</div>
 							<div class="hide-scroll"></div>
 						</div>
-						<div class="tab" name="Properties" icon="cog">
+						<div class="tab expand" name="Properties" icon="cog">
 							<div class="level-props"></div>
 						</div>
 					</div>

@@ -165,17 +165,17 @@ class FXEditor extends FileView {
 						</div>
 					</div>
 					<div class="tabs">
-						<div class="tab" name="Scene" icon="sitemap">
+						<div class="tab expand" name="Scene" icon="sitemap">
 							<div class="hide-block" style="height:40%">
 								<div class="hide-scene-tree hide-list">
 								</div>
 							</div>
 							<div class="hide-scroll"></div>
 						</div>
-						<div class="tab" name="Properties" icon="cog">
+						<div class="tab expand" name="Properties" icon="cog">
 							<div class="fx-props"></div>
 						</div>
-						<div class="tab" name="Script" icon="cog">
+						<div class="tab expand" name="Script" icon="cog">
 							<div class="fx-script"></div>
 							<div class="fx-scriptParams"></div>
 						</div>

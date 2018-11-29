@@ -68,7 +68,7 @@ class Model extends FileView {
 						</div>
 					</div>
 					<div class="tabs">
-						<div class="tab" name="Model" icon="sitemap">
+						<div class="tab expand" name="Model" icon="sitemap">
 							<div class="hide-block">
 								<table>
 								<tr>
@@ -82,7 +82,7 @@ class Model extends FileView {
 							<div class="props hide-scroll">
 							</div>
 						</div>
-						<div class="tab" name="Animation" icon="cog">
+						<div class="tab expand" name="Animation" icon="cog">
 							<div class="event-editor"> </div>
 						</div>
 					</div>
