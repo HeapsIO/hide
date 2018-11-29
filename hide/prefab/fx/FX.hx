@@ -59,7 +59,7 @@ class FXAnimation extends h3d.scene.Object {
 	public var objects: Array<ObjectAnimation> = [];
 	public var shaderAnims : Array<ShaderAnimation> = [];
 	public var emitters : Array<hide.prefab.fx.Emitter.EmitterObject> = [];
-	public var contraints : Array<hide.prefab.Constraint> = [];
+	public var constraints : Array<hide.prefab.Constraint> = [];
 	public var script : hide.prefab.fx.FXScript;
 
 	var evaluator : Evaluator;
@@ -196,8 +196,8 @@ class FXAnimation extends h3d.scene.Object {
 			script.update();
 	}
 
-	public function resolveContraints( caster : h3d.scene.Object ) {
-		for(co in contraints){
+	public function resolveConstraints( caster : h3d.scene.Object ) {
+		for(co in constraints){
 			var objectName = co.object.split(".").pop();
 			var targetName = co.target.split(".").pop();
 
@@ -413,13 +413,13 @@ class FX extends hxd.prefab.Library {
 				setupRenderer(ctx, c);
 	}
 
-	function getContraints( ctx : Context, elt : PrefabElement, contraints : Array<hide.prefab.Constraint>){
+	function getConstraints( ctx : Context, elt : PrefabElement, constraints : Array<hide.prefab.Constraint>){
 		var co = Std.instance(elt, hide.prefab.Constraint);
 		if(co != null)
-			contraints.push(co);
+			constraints.push(co);
 		else
 			for(c in elt.children)
-				getContraints(ctx, c, contraints);
+				getConstraints(ctx, c, constraints);
 	}
 
 	override function makeInstance( ctx : Context ) : Context {
@@ -442,7 +442,7 @@ class FX extends hxd.prefab.Library {
 				var co = Std.instance(c , Constraint);
 				if(co == null) c.makeInstanceRec(ctx);
 			}
-			getContraints(ctx, root, fxanim.contraints);
+			getConstraints(ctx, root, fxanim.constraints);
 			getObjAnimations(ctx, this, fxanim.objects);
 		}
 		else
