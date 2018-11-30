@@ -88,12 +88,11 @@ class FXAnimation extends h3d.scene.Object {
 		}
 	}
 
-	public dynamic function customVisibility() : Bool {
+	public dynamic function customVisibility(self: FXAnimation) : Bool {
 		return true;
 	}
 
-	override function sync( ctx : h3d.scene.RenderContext ) {
-		super.sync(ctx);
+	override function syncRec( ctx : h3d.scene.RenderContext ) {
 		#if !editor
 		worldTime += ctx.elapsedTime;
 		localTime += ctx.elapsedTime * playSpeed;
@@ -108,14 +107,15 @@ class FXAnimation extends h3d.scene.Object {
 		var visiblity : Bool = true;
 		if(followVisibility != null)
 			visiblity = visiblity && followVisibility.visible;
-		visiblity = visiblity && customVisibility();
+		visiblity = visiblity && customVisibility(this);
 
 		for(emitter in emitters){
 			if(emitter.particleVisibility != visiblity)
 				emitter.setParticleVibility(visiblity);
 		}
-		for(obj in objects)
-			obj.obj.visible = visiblity;
+		this.visible = visiblity;
+
+		super.syncRec(ctx);
 	}
 
 	static var tempMat = new h3d.Matrix();
