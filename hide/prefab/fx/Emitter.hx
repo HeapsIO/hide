@@ -63,6 +63,8 @@ private class ParticleInstance extends h3d.scene.Object {
 
 	public function new(emitter: EmitterObject, def: InstanceDef) {
 		switch(emitter.simulationSpace){
+			// Particles in Local are spawned next to emitter in the scene tree,
+			// so emitter shape can be transformed (especially scaled) without affecting children
 			case Local : super(emitter.parent);
 			case World : super(emitter.getScene());
 		}
@@ -84,7 +86,9 @@ private class ParticleInstance extends h3d.scene.Object {
 			localSpeed.transform3x3(orientation.toMatrix());
 		}
 		var worldSpeed = evaluator.getVector(def.worldSpeed, t);
-		worldSpeed.transform3x3(emitter.invTransform);
+		if(emitter.simulationSpace == Local)
+			worldSpeed.transform3x3(emitter.invTransform);
+
 		curVelocity = localSpeed.add(worldSpeed);
 		if(emitter.emitOrientation == Speed && curVelocity.lengthSq() > 0.01) {
 			getRotationQuat().initDirection(curVelocity);
@@ -333,7 +337,6 @@ class EmitterObject extends h3d.scene.Object {
 					offset.transform(localMat);
 					part.setPosition(offset.x, offset.y, offset.z);
 					part.baseMat = particleTemplate.getTransform();
-					part.baseMat.tx = part.baseMat.ty = part.baseMat.tz = 0; // Kill translation to make edition easier
 					localQuat.multiply(localQuat, tmpq);
 					part.setRotationQuat(localQuat);
 					part.orientation = localQuat.clone();
@@ -341,7 +344,6 @@ class EmitterObject extends h3d.scene.Object {
 					var worldPos = localToGlobal(offset.clone());
 					part.setPosition(worldPos.x, worldPos.y, worldPos.z);
 					part.baseMat = particleTemplate.getTransform();
-					part.baseMat.tx = part.baseMat.ty = part.baseMat.tz = 0; // Kill translation to make edition easier
 					var worldQuat = new h3d.Quat();
 					worldQuat.initRotateMatrix(getAbsPos());
 					tmpq.multiply(tmpq, worldQuat);
