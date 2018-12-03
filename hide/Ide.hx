@@ -1,8 +1,15 @@
 package hide;
 import hxd.inspect.Group;
 
+#if !isIDE
+// forbid access to Ide.inst when not compiled with -D isIDE
+// plugins should not access directly to hide.Ide!
+abstract ShouldNotAccess(Int) {}
+class Ide { public static var inst(get,never) : ShouldNotAccess; }
+#else
+
 @:expose
-class Ide {
+class Ide implements hide.prefab.EditContext.IdeApi {
 
 	public var currentConfig(get,never) : Config;
 	public var projectDir(get,never) : String;
@@ -978,3 +985,5 @@ class CustomLoader extends hxd.res.Loader {
 	}
 
 }
+
+#end

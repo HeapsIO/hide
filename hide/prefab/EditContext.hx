@@ -1,5 +1,14 @@
 package hide.prefab;
 
+interface IdeApi {
+	function getPath( relPath : String ) : String;
+	function makeRelative( path : String ) : String;
+	function error( message : String ) : Void;
+	function chooseFileSave( fileName : String, callb : Null<String> -> Void ) : Void;
+	function parseJSON( jsonStr : String ) : Dynamic;
+	function toJSON( obj : Dynamic ) : String;
+}
+
 class EditContext {
 
 	public var rootContext : Context;
@@ -9,11 +18,11 @@ class EditContext {
 	var updates : Array<Float->Void> = [];
 
 	public var prefabPath : String;
-	public var ide(get,never) : hide.Ide;
+	public var ide(get,never) : IdeApi;
 	public var scene : hide.comp.Scene;
 	public var properties : hide.comp.PropsEditor;
 	public var cleanups : Array<Void->Void>;
-	function get_ide() return hide.Ide.inst;
+	function get_ide() return #if isIDE hide.Ide.inst #else throw "assert" #end;
 	public function onChange(p : Prefab, propName : String) {
 		var ctx = getContext(p);
 		if(ctx != null) {

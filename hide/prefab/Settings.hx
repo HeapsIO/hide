@@ -52,13 +52,14 @@ class Settings extends Prefab {
 			</dl>
 			<br/>
 		'),this);
+		var typesCache = hide.Ide.inst.typesCache; // direct reference (not in API)
 		var select = props.find("select");
-		var models = ctx.ide.typesCache.getModels();
+		var models = typesCache.getModels();
 		for( m in models )
-			new hide.Element('<option>').attr("value", m.id).text(ctx.ide.typesCache.getModelName(m)).appendTo(select);
+			new hide.Element('<option>').attr("value", m.id).text(typesCache.getModelName(m)).appendTo(select);
 		var modelDef = null;
 		if( modelType != null ) {
-			modelDef = ctx.ide.typesCache.get(modelType, true);
+			modelDef = typesCache.get(modelType, true);
 			if( modelDef == null )
 				new hide.Element('<option>').attr("value", modelType).text("?"+modelType).appendTo(select);
 			select.val(modelType);
@@ -104,8 +105,8 @@ class Settings extends Prefab {
 
 		ctx.properties.addProps(modelDef.fields, this.data);
 		var rebuild = ctx.rebuildProperties;
-		ctx.ide.typesCache.watch(rebuild);
-		ctx.cleanups.push(ctx.ide.typesCache.unwatch.bind(rebuild));
+		typesCache.watch(rebuild);
+		ctx.cleanups.push(typesCache.unwatch.bind(rebuild));
 	}
 
 	#end

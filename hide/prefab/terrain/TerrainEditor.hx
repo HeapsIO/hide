@@ -791,7 +791,7 @@ class TerrainEditor {
 			var img : Element;
 			if( i == currentBrush.index) img = new Element('<div class="surface-preview-selected"></div>');
 			else img = new Element('<div class="surface-preview"></div>');
-			var imgPath = hide.Ide.inst.getPath(surface.albedo.name);
+			var imgPath = ctx.ide.getPath(surface.albedo.name);
 			img.css("background-image", 'url("file://$imgPath")');
 			var surfaceElem = new Element('<div class=" surface"><span class="tooltiptext">$label</span></div>').prepend(img);
 			surfaceElem.contextmenu(function(e) {
@@ -838,7 +838,7 @@ class TerrainEditor {
 		for( i in 0 ... brushIcons.length){
 			var elem = new Element('<div class="terrain-brushMode"></div>');
 			var img = new Element('<div class="terrain-brushModeIcon"></div>');
-			img.css("background-image", 'url("file://${hide.Ide.inst.getPath("${HIDE}/res/" + brushIcons[i])}")');
+			img.css("background-image", 'url("file://${ctx.ide.getPath("${HIDE}/res/" + brushIcons[i])}")');
 			elem.prepend(img);
 			elem.click(function(_) {
 				var l = props.find(".terrain-brushModeIcon");
@@ -901,7 +901,7 @@ class TerrainEditor {
 		props.find(".save").click(function(_) {
 			var datPath = new haxe.io.Path(ctx.rootContext.shared.currentPath);
 			datPath.ext = "dat";
-			var fullPath = hide.Ide.inst.getPath(datPath.toString() + "/" + terrainPrefab.name);
+			var fullPath = ctx.ide.getPath(datPath.toString() + "/" + terrainPrefab.name);
 			if( sys.FileSystem.isDirectory(fullPath)){
 				var files = sys.FileSystem.readDirectory(fullPath);
 				for(file in files)
@@ -920,13 +920,13 @@ class TerrainEditor {
 				var img : Element;
 				if( brush.name == currentBrush.name) img = new Element('<div class="brush-preview-selected"></div>');
 				else img = new Element('<div class="brush-preview"></div>');
-				img.css("background-image", 'url("file://${hide.Ide.inst.getPath(brush.texture)}")');
+				img.css("background-image", 'url("file://${ctx.ide.getPath(brush.texture)}")');
 				var brushElem = new Element('<div class="brush"><span class="tooltiptext">$label</span></div>').prepend(img);
 				brushElem.click(function(e){
 					currentBrush.size = brush.size;
 					currentBrush.strength = brush.strength;
 					currentBrush.step = brush.step;
-					currentBrush.texPath = hide.Ide.inst.getPath(brush.texture);
+					currentBrush.texPath = ctx.ide.getPath(brush.texture);
 					currentBrush.tex = loadTexture(ctx, currentBrush.texPath);
 					currentBrush.name = brush.name;
 					if(currentBrush.bitmap != null){
