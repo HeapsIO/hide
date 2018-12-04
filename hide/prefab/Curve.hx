@@ -4,9 +4,9 @@ using Lambda;
 class CurveHandle {
 	public var dt: Float;
 	public var dv: Float;
-	public function new(v, t) {
-		this.dv = v;
+	public function new(t, v) {
 		this.dt = t;
+		this.dv = v;
 	}
 }
 
@@ -51,9 +51,9 @@ class Curve extends Prefab {
 				nk.value = k.value;
 				nk.mode = k.mode;
 				if(k.prevHandle != null)
-					nk.prevHandle = new CurveHandle(k.prevHandle.dv, k.prevHandle.dt);
+					nk.prevHandle = new CurveHandle(k.prevHandle.dt, k.prevHandle.dv);
 				if(k.nextHandle != null)
-					nk.nextHandle = new CurveHandle(k.nextHandle.dv, k.nextHandle.dt);
+					nk.nextHandle = new CurveHandle(k.nextHandle.dt, k.nextHandle.dv);
 				keys.push(nk);
 			}
 		}
