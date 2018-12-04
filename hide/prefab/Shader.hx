@@ -75,7 +75,7 @@ class Shader extends Prefab {
 	}
 
 	function fixSourcePath() {
-		#if isIDE
+		#if editor
 		var ide = hide.Ide.inst;
 		var shadersPath = ide.projectDir + "/src";  // TODO: serach in haxe.classPath?
 
