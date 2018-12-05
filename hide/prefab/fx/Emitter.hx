@@ -74,6 +74,12 @@ private class ParticleInstance extends h3d.scene.Object {
 		emitter.instances.push(this);
 	}
 
+	static var tmpRot = new h3d.Vector();
+	static var tmpOffset = new h3d.Vector();
+	static var tmpScale = new h3d.Vector();
+	static var tmpLocalSpeed = new h3d.Vector();
+	static var tmpWorldSpeed = new h3d.Vector();
+	var tmpColor = new h3d.Vector();
 	public function update(dt : Float) {
 		var child = getChildAt(0);
 		if(child == null)
@@ -81,15 +87,15 @@ private class ParticleInstance extends h3d.scene.Object {
 
 		var t = hxd.Math.clamp(life / emitter.lifeTime, 0.0, 1.0);
 
-		var localSpeed = evaluator.getVector(def.localSpeed, t);
-		if(localSpeed.length() > 0.001) {
-			localSpeed.transform3x3(orientation.toMatrix());
+		evaluator.getVector(def.localSpeed, t, tmpLocalSpeed);
+		if(tmpLocalSpeed.length() > 0.001) {
+			tmpLocalSpeed.transform3x3(orientation.toMatrix());
 		}
-		var worldSpeed = evaluator.getVector(def.worldSpeed, t);
+		evaluator.getVector(def.worldSpeed, t, tmpWorldSpeed);
 		if(emitter.simulationSpace == Local)
-			worldSpeed.transform3x3(emitter.invTransform);
+			tmpWorldSpeed.transform3x3(emitter.invTransform);
 
-		curVelocity = localSpeed.add(worldSpeed);
+		curVelocity = tmpLocalSpeed.add(tmpWorldSpeed);
 		if(emitter.emitOrientation == Speed && curVelocity.lengthSq() > 0.01) {
 			getRotationQuat().initDirection(curVelocity);
 			posChanged = true;
@@ -99,10 +105,10 @@ private class ParticleInstance extends h3d.scene.Object {
 		y += curVelocity.y * dt;
 		z += curVelocity.z * dt;
 
-		var rot = evaluator.getVector(def.rotation, t);
+		var rot = evaluator.getVector(def.rotation, t, tmpRot);
 		rot.scale3(Math.PI / 180.0);
-		var offset = evaluator.getVector(def.localOffset, t);
-		var scaleVec = evaluator.getVector(def.stretch, t);
+		var offset = evaluator.getVector(def.localOffset, t, tmpOffset);
+		var scaleVec = evaluator.getVector(def.stretch, t, tmpScale);
 		scaleVec.scale3(evaluator.getFloat(def.scale, t));
 
 		childMat.initScale(scaleVec.x, scaleVec.y, scaleVec.z);
@@ -123,7 +129,7 @@ private class ParticleInstance extends h3d.scene.Object {
 				case VCurve(a):
 					mat.color.a = evaluator.getFloat(def.color, t);
 				default:
-					mat.color = evaluator.getVector(def.color, t);
+					mat.color = evaluator.getVector(def.color, t, tmpColor);
 			}
 		}
 

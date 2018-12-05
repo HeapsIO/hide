@@ -43,28 +43,29 @@ class Evaluator {
 		return 0.0;
 	}
 
-	public function getVector(v: Value, time: Float) : h3d.Vector {
+	public function getVector(v: Value, time: Float, ?vec: h3d.Vector) : h3d.Vector {
+		if(vec == null)
+			vec = new h3d.Vector();
 		switch(v) {
 			case VMult(a, b):
 				var av = getVector(a, time);
 				var bv = getVector(b, time);
-				return new h3d.Vector(av.x * bv.x, av.y * bv.y, av.z * bv.z, av.w * bv.w);
+				vec.set(av.x * bv.x, av.y * bv.y, av.z * bv.z, av.w * bv.w);
 			case VVector(x, y, z, null):
-				return new h3d.Vector(getFloat(x, time), getFloat(y, time), getFloat(z, time), 1.0);
+				vec.set(getFloat(x, time), getFloat(y, time), getFloat(z, time), 1.0);
 			case VVector(x, y, z, w):
-				return new h3d.Vector(getFloat(x, time), getFloat(y, time), getFloat(z, time), getFloat(w, time));
+				vec.set(getFloat(x, time), getFloat(y, time), getFloat(z, time), getFloat(w, time));
 			case VHsl(h, s, l, a):
 				var hval = getFloat(h, time);
 				var sval = getFloat(s, time);
 				var lval = getFloat(l, time);
 				var aval = getFloat(a, time);
-				var col = new h3d.Vector(0,0,0,1);
-				col.makeColor(hval, sval, lval);
-				col.a = aval;
-				return col;
+				vec.makeColor(hval, sval, lval);
+				vec.a = aval;
 			default:
 				var f = getFloat(v, time);
-				return new h3d.Vector(f, f, f, 1.0);
+				vec.set(f, f, f, 1.0);
 		}
+		return vec;
 	}
 }
