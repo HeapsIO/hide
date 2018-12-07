@@ -14,6 +14,7 @@ class Ide {
 	public var mouseY : Int = 0;
 
 	public var isWindows(get, never) : Bool;
+	public var isFocused(get, never) : Bool;
 
 	public var database : cdb.Database;
 	public var databaseApi : hide.comp.cdb.Editor.EditorApi;
@@ -212,6 +213,10 @@ class Ide {
 
 	function get_isWindows() {
 		return true;
+	}
+
+	function get_isFocused() {
+		return js.Browser.document.hasFocus();
 	}
 
 	function onWindowChange() {

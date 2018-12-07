@@ -172,7 +172,7 @@ class Scene extends Component implements h3d.IDrawable {
 			ide.unregisterUpdate(sync);
 			return;
 		}
-		if( !visible )
+		if( !visible || !Ide.inst.isFocused)
 			return;
 		setCurrent();
 		sevents.checkEvents();
