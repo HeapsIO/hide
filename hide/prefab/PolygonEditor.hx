@@ -117,6 +117,7 @@ class PolygonEditor {
 	public var showDebug : Bool;
 	public var gridSize = 1;
 	public var showTriangles : Bool = false;
+	public var worldSnap = false;
 
 	var polygonPrefab : hide.prefab.l3d.Polygon;
 	var undo : hide.ui.UndoHistory;
@@ -310,13 +311,25 @@ class PolygonEditor {
 		return edge;
 	}
 
-	function getFinalPos(mouseX, mouseY){
+	function getFinalPos( mouseX, mouseY ){
 		var worldPos = screenToWorld(mouseX, mouseY).toVector();
 		var localPos = getContext().local3d.globalToLocal(worldPos);
 		if( K.isDown( K.CTRL ) ){ // Snap To Grid with Ctrl
-			localPos.x = hxd.Math.round(worldPos.x / gridSize) * gridSize;
-			localPos.y = hxd.Math.round(worldPos.y / gridSize) * gridSize;
-			localPos.z = hxd.Math.round(worldPos.z / gridSize) * gridSize;
+			var gridPos = new h3d.Vector();
+			if( worldSnap ){
+				var absPos = getContext().local3d.getAbsPos();
+				worldPos = getContext().local3d.localToGlobal(worldPos);
+				gridPos.x = hxd.Math.round(localPos.x / gridSize) * gridSize;
+				gridPos.y = hxd.Math.round(localPos.y / gridSize) * gridSize;
+				gridPos.z = hxd.Math.round(localPos.z / gridSize) * gridSize;
+				gridPos = getContext().local3d.globalToLocal(gridPos);
+			}
+			else{
+				gridPos.x = hxd.Math.round(worldPos.x / gridSize) * gridSize;
+				gridPos.y = hxd.Math.round(worldPos.y / gridSize) * gridSize;
+				gridPos.z = hxd.Math.round(worldPos.z / gridSize) * gridSize;
+			}
+			localPos = gridPos;
 		}
 		return localPos;
 	}
@@ -546,6 +559,7 @@ class PolygonEditor {
 				<dt>Show Debug</dt><dd><input type="checkbox" field="showDebug"/></dd>
 				<dt>Show Triangles</dt><dd><input type="checkbox" field="showTriangles"/></dd>
 				<dt>Grid Size</dt><dd><input type="range" min="0" max="10" field="gridSize"/></dd>
+				<dt>World Snap</dt><dd><input type="checkbox" field="worldSnap"/></dd>
 			</div>
 			<div align="center">
 				<div class="group" name="Points">
