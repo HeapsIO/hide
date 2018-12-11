@@ -201,14 +201,14 @@ class PolygonEditor {
 		}));
 	}
 
-	function refreshPolygon(){
+	function refreshPolygon(withProps=false) {
 		if(!polygonPrefab.points.isClockwise())
 			polygonPrefab.points.reverse();  // Ensure poly is always clockwise
 
 		var polyPrim = polygonPrefab.generateCustomPolygon();
 		var mesh : h3d.scene.Mesh = cast getContext().local3d;
 		mesh.primitive = polyPrim;
-		refreshEditorDisplay();
+		refreshEditorDisplay(withProps);
 	}
 
 	function refreshDebugDisplay(){
@@ -431,6 +431,7 @@ class PolygonEditor {
 			function(e) {
 				//lastPos = null;
 				lastPointSelected = null;
+				refreshEditorDisplay();
 				refreshDebugDisplay();
 				if( beforeMoveList != null ){
 					afterMoveList = copyArray(polygonPrefab.points.points);
@@ -458,7 +459,7 @@ class PolygonEditor {
 					}
 					refreshMovablePoints();
 					refreshSelectedEdge(new h2d.col.Point(finalPos.x, finalPos.y));
-					refreshPolygon();
+					refreshPolygon(false);
 					lastPos = finalPos.clone();
 				}
 				else
@@ -530,16 +531,17 @@ class PolygonEditor {
 		}
 	}
 
-	function refreshEditorDisplay(){
+	function refreshEditorDisplay(withProps=true) {
 		lineGraphics.clear();
 		clearMovablePoints();
-		refreshPointList(editContext.getCurrentProps(polygonPrefab));
 		if(polygonPrefab.points == null || polygonPrefab.points.length == 0) return;
 		lineGraphics.moveTo(polygonPrefab.points[polygonPrefab.points.length - 1].x, polygonPrefab.points[polygonPrefab.points.length - 1].y, 0);
 		for(p in polygonPrefab.points)
 			lineGraphics.lineTo(p.x, p.y, 0);
 		createMovablePoints();
 		refreshMovablePoints();
+		if(withProps)
+			refreshPointList(editContext.getCurrentProps(polygonPrefab));
 	}
 
 	public function addProps( ctx : EditContext ){
