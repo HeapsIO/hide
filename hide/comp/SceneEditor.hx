@@ -151,7 +151,7 @@ class SceneEditor {
 			}
 		});
 		view.keys.register("rename", function () {
-			if(curEdit.rootElements.length > 0)			
+			if(curEdit.rootElements.length > 0)
 				tree.editNode(curEdit.rootElements[0]);
 		});
 
@@ -689,11 +689,11 @@ class SceneEditor {
 			}
 
 			var finish = false;
-			if(!inLassoMode || K.isPressed(K.ESCAPE)) {
+			if(!inLassoMode || K.isDown(K.ESCAPE) || K.isDown(K.MOUSE_RIGHT)) {
 				finish = true;
 			}
 
-			if(K.isReleased(K.MOUSE_LEFT) || K.isPressed(K.MOUSE_LEFT)) {
+			if(K.isDown(K.MOUSE_LEFT)) {
 				var contexts = context.shared.contexts;
 				var all = getAllSelectable();
 				var inside = [];
@@ -810,7 +810,7 @@ class SceneEditor {
 		function recRemove(e: PrefabElement) {
 			for(c in e.children)
 				recRemove(c);
-			
+
 			var int = interactives.get(e);
 			if(int != null) {
 				int.remove();
@@ -822,7 +822,7 @@ class SceneEditor {
 				contexts.remove(e);
 			}
 		}
-		recRemove(elt);	
+		recRemove(elt);
 		return result;
 	}
 
