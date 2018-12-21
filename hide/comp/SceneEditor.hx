@@ -1004,11 +1004,23 @@ class SceneEditor {
 
 		var elts = curEdit.rootElements;
 		var parent = elts[0].parent;
-		var parentMat = getObject(parent).getAbsPos();
+		var parentMat = worldMat(parent);
 		var invParentMat = parentMat.clone();
 		invParentMat.invert();
 
-		var pivot = getPivot(curEdit.rootObjects);
+
+		var pivot = new h3d.Vector();
+		{
+			var count = 0;
+			for(elt in curEdit.rootElements) {
+				var m = worldMat(elt);
+				if(m != null) {
+					pivot = pivot.add(m.getPosition());
+					++count;
+				}
+			}
+			pivot.scale3(1.0 / count);
+		}
 		var local = new h3d.Matrix();
 		local.initTranslation(pivot.x, pivot.y, pivot.z);
 		local.multiply(local, invParentMat);
@@ -1329,23 +1341,20 @@ class SceneEditor {
 		refresh();
 	}
 
-	function reparentImpl(elts : Array<PrefabElement>, to: PrefabElement, index: Int) {
+	function reparentImpl(elts : Array<PrefabElement>, toElt: PrefabElement, index: Int) {
 		var undoes = [];
-		for(e in elts) {
-			var prev = e.parent;
-			var prevIndex = prev.children.indexOf(e);
-			e.parent = to;
-			to.children.remove(e);
-			to.children.insert(index, e);
+		for(elt in elts) {
+			var prev = elt.parent;
+			var prevIndex = prev.children.indexOf(elt);
 
-			var obj3d = e.to(Object3D);
-			var preserveTransform = Std.is(to, hide.prefab.fx.Emitter) || Std.is(prev, hide.prefab.fx.Emitter);
-			var toObj = getObject(to);
-			var obj = getObject(e);
+			var obj3d = elt.to(Object3D);
+			var preserveTransform = Std.is(toElt, hide.prefab.fx.Emitter) || Std.is(prev, hide.prefab.fx.Emitter);
+			var toObj = getObject(toElt);
+			var obj = getObject(elt);
 			var prevState = null, newState = null;
 			if(obj3d != null && toObj != null && obj != null && !preserveTransform) {
-				var mat = worldMat(obj);
-				var parentMat = worldMat(toObj);
+				var mat = worldMat(elt);
+				var parentMat = worldMat(toElt);
 				parentMat.invert();
 				mat.multiply(mat, parentMat);
 				prevState = obj3d.save();
@@ -1353,17 +1362,21 @@ class SceneEditor {
 				newState = obj3d.save();
 			}
 
+			elt.parent = toElt;
+			toElt.children.remove(elt);
+			toElt.children.insert(index, elt);
+
 			undoes.push(function(undo) {
 				if( undo ) {
-					e.parent = prev;
-					prev.children.remove(e);
-					prev.children.insert(prevIndex, e);
+					elt.parent = prev;
+					prev.children.remove(elt);
+					prev.children.insert(prevIndex, elt);
 					if(obj3d != null && prevState != null)
 						obj3d.load(prevState);
 				} else {
-					e.parent = to;
-					to.children.remove(e);
-					to.children.insert(index, e);
+					elt.parent = toElt;
+					toElt.children.remove(elt);
+					toElt.children.insert(index, elt);
 					if(obj3d != null && newState != null)
 						obj3d.load(newState);
 				};
@@ -1568,15 +1581,27 @@ class SceneEditor {
 		return new h2d.col.Point(pt.x, pt.y);
 	}
 
-	public function worldMat(obj: Object) {
-		if(obj.defaultTransform != null) {
-			var m = obj.defaultTransform.clone();
-			m.invert();
-			m.multiply(m, obj.getAbsPos());
-			return m;
+	public function worldMat(?obj: Object, ?elt: PrefabElement) {
+		if(obj != null) {
+			if(obj.defaultTransform != null) {
+				var m = obj.defaultTransform.clone();
+				m.invert();
+				m.multiply(m, obj.getAbsPos());
+				return m;
+			}
+			else {
+				return obj.getAbsPos().clone();
+			}
 		}
 		else {
-			return obj.getAbsPos().clone();
+			var mat = new h3d.Matrix();
+			mat.identity();
+			var o = Std.instance(elt, Object3D);
+			while(o != null) {
+				mat.multiply(mat, o.getTransform());
+				o = o.parent.to(hide.prefab.Object3D);
+			}
+			return mat;
 		}
 	}
 
