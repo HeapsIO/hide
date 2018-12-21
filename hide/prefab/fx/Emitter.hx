@@ -147,9 +147,9 @@ private class ParticleInstance extends h3d.scene.Object {
 						case Local:mat.multiply3x4(mat, emitter.invTransform);
 						case World:
 					}
-					var q = new h3d.Quat();
-					q.initRotateMatrix(mat);
-					setRotationQuat(q);
+					getRotationQuat().initRotateMatrix(mat);
+					getRotationQuat().normalize();
+					posChanged = true;
 				}
 				case Axis: {
 					var absChildMat = new h3d.Matrix();
@@ -352,6 +352,7 @@ class EmitterObject extends h3d.scene.Object {
 					part.baseMat = particleTemplate.getTransform();
 					var worldQuat = new h3d.Quat();
 					worldQuat.initRotateMatrix(getAbsPos());
+					worldQuat.normalize();
 					tmpq.multiply(tmpq, worldQuat);
 					part.setRotationQuat(tmpq);
 					part.orientation = tmpq.clone();
