@@ -110,7 +110,6 @@ class Ide {
 					return;
 			window.close(true);
 		});
-		window.on('blur', function() if( h3d.Engine.getCurrent() != null && !hasReloaded ) hxd.Key.initialize());
 
 		// handle commandline parameters
 		nw.App.on("open", function(cmd) {

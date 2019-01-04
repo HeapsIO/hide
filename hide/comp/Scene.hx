@@ -52,7 +52,6 @@ class SceneLoader extends hxd.fmt.hsd.Serializer {
 class Scene extends Component implements h3d.IDrawable {
 
 	static var UID = 0;
-	static var firstInit = true;
 
 	var id = ++UID;
 	var window : hxd.Window;
@@ -108,10 +107,7 @@ class Scene extends Component implements h3d.IDrawable {
 			new Element(canvas).on("resize", function() {
 				@:privateAccess window.checkResize();
 			});
-			if( firstInit ) {
-				firstInit = false;
-				hxd.Key.initialize();
-			}
+			hxd.Key.initialize();
 			engine.setCurrent();
 			window.setCurrent();
 			s2d = new h2d.Scene();
