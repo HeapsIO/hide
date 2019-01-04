@@ -57,6 +57,8 @@ class FXScript {
 			var next = curObj.getObjectByName(names[i++]);
 			next != null ? curObj = next : break;
 		}
+		if(curObj == null)
+			return () -> 0.0;
 		var field : String = "";
 		for(index in i - 1 ... i)
 			field += names[index];
@@ -94,6 +96,8 @@ class FXScript {
 			var next = curObj.getObjectByName(names[i++]);
 			next != null ? curObj = next : break;
 		}
+		if(curObj == null)
+			return (v) -> {};
 		var field : String = "";
 		for(index in i - 1 ... i)
 			field += names[index];
@@ -112,13 +116,22 @@ class FXScript {
 			case "rotationZ": function(v){
 				var euler = curObj.getRotationQuat().toEuler();
 				curObj.setRotation(euler.x, euler.y, v); };
-			default: function(v){
-				if(Reflect.hasField(curObj, field))
-					Reflect.setProperty(curObj, field, v); };
+			default: {
+				if(Reflect.hasField(curObj, field)) {
+					var cur = Reflect.field(curObj, field);
+					if(Std.is(cur, Value))
+						(v) -> Reflect.setProperty(curObj, field, Value.VConst(v));
+					else
+						(v) -> Reflect.setProperty(curObj, field, v);
+				}
+				else (v) -> {};
+			};
 		}
 	}
 
 	public function getVar( n : String ) : Float {
+		if(n == "time")  // TODO: support @global like hxsl
+			return fx.localTime;
 		if(!myVars.exists(n))
 			return 0.0;
 		if(myVars[n] == null)
@@ -150,6 +163,7 @@ class FXScript {
 		switch(f){
 			case "rand": return hxd.Math.random();
 			case "mix": return hxd.Math.lerp(eval(args[0]), eval(args[1]), eval(args[2]));
+			case "clamp": return hxd.Math.clamp(eval(args[0]), eval(args[1]), eval(args[2]));
 			default: return 0.0;
 		}
 	}

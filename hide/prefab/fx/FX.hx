@@ -121,6 +121,8 @@ class FXAnimation extends h3d.scene.Object {
 	static var tempMat = new h3d.Matrix();
 	public function setTime( localTime : Float, ?worldTime : Float ) {
 		if(worldTime == null) worldTime = localTime;
+		this.localTime = localTime;
+		this.worldTime = worldTime;
 		for(anim in objects) {
 			var m = tempMat;
 			if(anim.scale != null) {
