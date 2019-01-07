@@ -78,6 +78,7 @@ class Model extends Object3D {
 			var v = select.val();
 			var prev = animation;
 			var obj = ctx.getContext(this).local3d;
+			ctx.scene.setCurrent();
 			if( v == "" ) {
 				animation = null;
 				obj.stopAnimation();
