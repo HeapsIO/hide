@@ -34,7 +34,6 @@ class CurveEditor extends Component {
 		element.addClass("hide-curve-editor");
 		element.attr({ tabindex: "1" });
 		element.css({ width: "100%", height: "100%" });
-		element.focus();
 		svg = new hide.comp.SVG(element);
 		var div = this.element;
 		var root = svg.element;
@@ -103,7 +102,7 @@ class CurveEditor extends Component {
 		div.keydown(function(e) {
 			if(curve == null) return;
 			if(e.keyCode == 46) {
-				beforeChange();				
+				beforeChange();
 				var newVal = [for(k in curve.keys) if(selectedKeys.indexOf(k) < 0) k];
 				curve.keys = newVal;
 				selectedKeys = [];
@@ -147,7 +146,7 @@ class CurveEditor extends Component {
 	}
 
 	function addKey(time: Float, ?val: Float) {
-		beforeChange();		
+		beforeChange();
 		if(curve.clampMin != curve.clampMax)
 			val = hxd.Math.clamp(val, curve.clampMin, curve.clampMax);
 		curve.addKey(time, val, curve.keyMode);
@@ -422,7 +421,7 @@ class CurveEditor extends Component {
 			var iy = i * vstep;
 			var l = hline(iy);
 			if(iy == 0)
-				l.addClass("axis");	
+				l.addClass("axis");
 			hlabel("" + iy, iy);
 		}
 	}
