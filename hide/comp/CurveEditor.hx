@@ -468,6 +468,49 @@ class CurveEditor extends Component {
 			});
 		}
 
+		function editPopup(key: CurveKey, top: Float, left: Float) {
+			var popup = new Element('<div class="keyPopup">
+					<div class="line"><label>Time</label><input class="x" type="number" value="0" step="0.1"/></div>
+					<div class="line"><label>Value</label><input class="y" type="number" value="0" step="0.1"/></div>
+				</div>').appendTo(element);
+			popup.css({top: top, left: left});
+			popup.focusout(function(e) {
+				haxe.Timer.delay(function() {
+					if(popup.find(':focus').length == 0)
+						popup.remove();
+				}, 0);
+			});
+
+			function afterEdit() {
+				refreshGraph(false);
+				onChange(false);
+			}
+
+			var xel = popup.find(".x");
+			xel.val(hxd.Math.fmt(key.time));
+			xel.change(function(e) {
+				var f = Std.parseFloat(xel.val());
+				if(f != null) {
+					undo.change(Field(key, "time", key.time), afterEdit);
+					key.time = f;
+					afterEdit();
+				}
+			});
+			var yel = popup.find(".y");
+			yel.val(hxd.Math.fmt(key.value));
+			yel.change(function(e) {
+				var f = Std.parseFloat(yel.val());
+				if(f != null) {
+					undo.change(Field(key, "value", key.value), afterEdit);
+					key.value = f;
+					afterEdit();
+				}
+			});
+			popup.find("input").first().focus();
+			popup.focus();
+			return popup;
+		}
+
 		for(key in curve.keys) {
 			var kx = xScale*(key.time);
 			var ky = -yScale*(key.value);
@@ -482,6 +525,8 @@ class CurveEditor extends Component {
 					e.stopPropagation();
 					var offset = element.offset();
 					beforeChange();
+
+					var popup = edidPopup(key, e.clientY - offset.top - 20, e.clientX - offset.left + 10);
 					startDrag(function(e) {
 						var lx = e.clientX - offset.left;
 						var ly = e.clientY - offset.top;
@@ -497,6 +542,7 @@ class CurveEditor extends Component {
 						}
 						if(lockKeyX)
 							key.time = prevTime;
+						popup.remove();
 						fixKey(key);
 						refreshGraph(true, key);
 						onKeyMove(key, prevTime, prevVal);

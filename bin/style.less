@@ -626,9 +626,24 @@ input[type=checkbox] {
 
 /* Curve editor */
 .hide-curve-editor {
+	position: relative;
 	&:focus {
 		background-color: rgba(0, 0, 0, 0.219);
 		outline: none;
+	}
+	.keyPopup {
+		padding: 4px;
+		padding-bottom: 2px;
+		background-color: #151515;
+		position: absolute;
+		.line {
+			margin-bottom: 2px;
+		}
+		label {
+			width: 60px;
+			display: inline-block;
+		}
+		input { width: 80px; }
 	}
 	svg {
 		@selectCol: rgb(255, 255, 255);

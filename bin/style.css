@@ -572,9 +572,28 @@ input[type=checkbox]:checked:after {
   flex-direction: row;
 }
 /* Curve editor */
+.hide-curve-editor {
+  position: relative;
+}
 .hide-curve-editor:focus {
   background-color: rgba(0, 0, 0, 0.219);
   outline: none;
+}
+.hide-curve-editor .keyPopup {
+  padding: 4px;
+  padding-bottom: 2px;
+  background-color: #151515;
+  position: absolute;
+}
+.hide-curve-editor .keyPopup .line {
+  margin-bottom: 2px;
+}
+.hide-curve-editor .keyPopup label {
+  width: 60px;
+  display: inline-block;
+}
+.hide-curve-editor .keyPopup input {
+  width: 80px;
 }
 .hide-curve-editor svg line {
   stroke-width: 1px;
