@@ -526,7 +526,7 @@ class CurveEditor extends Component {
 					var offset = element.offset();
 					beforeChange();
 
-					var popup = edidPopup(key, e.clientY - offset.top - 20, e.clientX - offset.left + 10);
+					var popup = editPopup(key, e.clientY - offset.top - 20, e.clientX - offset.left + 10);
 					startDrag(function(e) {
 						var lx = e.clientX - offset.left;
 						var ly = e.clientY - offset.top;
