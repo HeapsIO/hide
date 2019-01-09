@@ -38,6 +38,7 @@ class ShaderAnimation extends Evaluator {
 typedef ObjectAnimation = {
 	elt: hide.prefab.Object3D,
 	obj: h3d.scene.Object,
+	events: Array<hide.prefab.fx.Event.EventInstance>,
 	?position: Value,
 	?scale: Value,
 	?rotation: Value,
@@ -166,28 +167,17 @@ class FXAnimation extends h3d.scene.Object {
 					}
 				}
 			}
+
+			if(anim.events != null) {
+				for(evt in anim.events) {
+					evt.setTime(localTime - evt.evt.time);
+				}
+			}
 		}
 
 		for(anim in shaderAnims) {
 			anim.setTime(localTime);
 		}
-
-		function setAnimFrame(object : h3d.scene.Object, time : Float){
-			var anim = object.currentAnimation;
-			if(object.currentAnimation != null){
-				anim.loop = false;
-				anim.pause = true;
-				if(loopAnims){
-					var frameTime = time * anim.sampling * anim.speed;
-					var frameIndex = frameTime - hxd.Math.floor(frameTime / anim.frameCount) * anim.frameCount;
-					anim.setFrame( frameIndex );
-				}else
-					anim.setFrame( hxd.Math.clamp(time * anim.sampling * anim.speed, 0, anim.frameCount));
-			}
-			for(i in 0...object.numChildren)
-				setAnimFrame(object.getChildAt(i), time);
-		}
-		setAnimFrame(this, localTime);
 
 		for(em in emitters) {
 			if(em.visible)
@@ -298,9 +288,14 @@ class FX extends hxd.prefab.Library {
 			return hide.prefab.Curve.getColorValue(curves);
 		}
 
+		var events = [for(evt in elt.getAll(Event)) evt.prepare(objCtx)];
+		if(events.length > 0)
+			anyFound = true;
+
 		var anim : ObjectAnimation = {
 			elt: obj3d,
 			obj: objCtx.local3d,
+			events: events.length > 0 ? events : null,
 			position: makeVector("position", 0.0),
 			scale: makeVector("scale", 1.0, true),
 			rotation: makeVector("rotation", 0.0, 360.0),

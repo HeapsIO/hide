@@ -4,6 +4,7 @@ using Lambda;
 import hide.Element;
 import hide.prefab.Prefab in PrefabElement;
 import hide.prefab.Curve;
+import hide.prefab.fx.Event;
 
 typedef PropTrackDef = {
 	name: String,
@@ -110,7 +111,7 @@ class FXEditor extends FileView {
 	var previewMax : Float;
 	var curveEdits : Array<hide.comp.CurveEditor>;
 	var timeLineEl : Element;
-	var refreshDopesheetKeys : Array<Bool->Void> = [];
+	var afterPanRefreshes : Array<Bool->Void> = [];
 	var statusText : h2d.Text;
 
 	var scriptEditor : hide.comp.ScriptEditor;
@@ -377,6 +378,10 @@ class FXEditor extends FileView {
 			previewMax = hxd.Math.min(data.duration == 0 ? 5000 : data.duration, previewMax);
 			refreshTimeline(false);
 		}
+
+		if(p.to(Event) != null) {
+			afterPan(false);
+		}
 	}
 
 	override function onDragDrop(items : Array<String>, isDrop : Bool) {
@@ -437,12 +442,12 @@ class FXEditor extends FileView {
 		for(curve in curveEdits) {
 			curve.setPan(xOffset, curve.yOffset);
 		}
-		for(clb in refreshDopesheetKeys) {
+		for(clb in afterPanRefreshes) {
 			clb(anim);
 		}
 	}
 
-	function addTrackEdit(trackName: String, curves: Array<Curve>, tracksEl: Element) {
+	function addCurvesTrack(trackName: String, curves: Array<Curve>, tracksEl: Element) {
 		var keyTimeTolerance = 0.05;
 		var trackEdits : Array<hide.comp.CurveEditor> = [];
 		var trackEl = new Element('<div class="track">
@@ -645,7 +650,7 @@ class FXEditor extends FileView {
 						});
 					}
 				});
-				refreshDopesheetKeys.push(function(anim) {
+				afterPanRefreshes.push(function(anim) {
 					updatePos();
 				});
 				refreshKey(key, keyEl);
@@ -693,16 +698,94 @@ class FXEditor extends FileView {
 		updateExpanded();
 	}
 
+	function addEventsTrack(events: Array<Event>, tracksEl: Element) {
+		var trackEl = new Element('<div class="track">
+			<div class="track-header">
+				<div class="track-prop">
+					<label>Events</label>
+				</div>
+				<div class="events"></div>
+			</div>
+		</div>');
+		var eventsEl = trackEl.find(".events");
+		var items : Array<{el: Element, event: Event }> = [];
+		function refreshItems() {
+			var yoff = 1;
+			for(item in items) {
+				var info = item.event.getDisplayInfo(sceneEditor.curEdit);
+				item.el.css({left: xt(item.event.time), top: yoff});
+				item.el.width(info.length * xScale);
+				yoff += 21;
+			}
+			eventsEl.css("height", yoff + 1);
+		}
+
+		function refreshTrack() {
+			trackEl.remove();
+			trackEl = addEventsTrack(events, tracksEl);
+		}
+
+		for(event in events) {
+			var info = event.getDisplayInfo(sceneEditor.curEdit);
+			var evtEl = new Element('<div class="event">
+				<i class="icon fa fa-play-circle"></i><label>${info.label}</label>
+			</div>').appendTo(eventsEl);
+			items.push({el: evtEl, event: event });
+
+			evtEl.click(function(e) {
+				sceneEditor.showProps(event);
+			});
+
+			evtEl.contextmenu(function(e) {
+				e.preventDefault();
+				e.stopPropagation();
+				new hide.comp.ContextMenu([
+					{
+						label: "Delete", click: function() {
+							events.remove(event);
+							sceneEditor.deleteElements([event], refreshTrack);
+						}
+					}
+				]);
+			});
+
+			evtEl.mousedown(function(e) {
+				var offsetX = e.clientX - xt(event.time);
+				e.preventDefault();
+				e.stopPropagation();
+				if(e.button == 2) {
+				}
+				else {
+					var prevVal = event.time;
+					startDrag(function(e) {
+						var x = ixt(e.clientX - offsetX);
+						x = hxd.Math.max(0, x);
+						x = untyped parseFloat(x.toFixed(5));
+						event.time = x;
+						refreshItems();
+					}, function(e) {
+						undo.change(Field(event, "time", prevVal), refreshItems);
+					});
+				}
+			});
+		}
+		refreshItems();
+		afterPanRefreshes.push(function(anim) refreshItems());
+		tracksEl.append(trackEl);
+		return trackEl;
+	}
+
 	function rebuildAnimPanel() {
 		var selection = sceneEditor.getSelection();
 		var scrollPanel = element.find(".anim-scroll");
 		scrollPanel.empty();
 		curveEdits = [];
-		refreshDopesheetKeys = [];
+		afterPanRefreshes = [];
 
 		var sections : Array<{
 			elt: PrefabElement,
-			curves: Array<Curve>
+			curves: Array<Curve>,
+			events: Array<Event>
 		}> = [];
 
 		for(elt in selection) {
@@ -712,13 +795,16 @@ class FXEditor extends FileView {
 			}
 			var sect = sections.find(s -> s.elt == root);
 			if(sect == null) {
-				sect = {elt: root, curves: []};
+				sect = {elt: root, curves: [], events: []};
 				sections.push(sect);
 			}
 			var curves = elt.flatten(hide.prefab.Curve);
-			for(c in curves) {
+			for(c in curves)
 				sect.curves.push(c);
-			}
+
+			var events = elt.flatten(Event);
+			for(e in events)
+				sect.events.push(e);
 		}
 
 		for(sec in sections) {
@@ -735,9 +821,12 @@ class FXEditor extends FileView {
 				new hide.comp.ContextMenu(menuItems);
 			});
 			var tracksEl = objPanel.find(".tracks");
+
+			addEventsTrack(sec.events, tracksEl);
+
 			var groups = hide.prefab.Curve.getGroups(sec.curves);
 			for(group in groups) {
-				addTrackEdit(group.name, group.items, tracksEl);
+				addCurvesTrack(group.name, group.items, tracksEl);
 			}
 		}
 	}

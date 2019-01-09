@@ -749,7 +749,7 @@ input[type=checkbox]:checked:after {
   color: white;
 }
 .fx-animpanel .track .track-header {
-  height: 20px;
+  min-height: 20px;
   display: flex;
   user-select: none;
 }
@@ -800,12 +800,35 @@ input[type=checkbox]:checked:after {
 }
 .fx-animpanel .track .curve {
   margin-left: 120px;
-  border-bottom: 1px solid black;
-  border-left: 1px solid black;
   position: relative;
 }
 .fx-animpanel .track .curves.hidden {
   display: none;
+}
+.fx-animpanel .track .events {
+  position: relative;
+  overflow-x: hidden;
+  flex-grow: 1;
+  box-shadow: 0px -1px 0px black inset;
+}
+.fx-animpanel .track .events .event {
+  cursor: pointer;
+  min-width: 10px;
+  display: inline-block;
+  height: 17px;
+  user-select: none;
+  position: absolute;
+  background: #202;
+  overflow-x: hidden;
+  padding-top: 3px;
+}
+.fx-animpanel .track .events .event label,
+.fx-animpanel .track .events .event i {
+  margin-left: 3px;
+  display: inline;
+}
+.fx-animpanel .track .events .event:hover {
+  color: white;
 }
 .fx-animpanel .track label.curve-label {
   user-select: none;

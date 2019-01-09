@@ -857,6 +857,13 @@ class SceneEditor {
 		e.edit(edit);
 	}
 
+	public function showProps(e: PrefabElement) {
+		scene.setCurrent();
+		var edit = makeEditContext([e]);
+		properties.clear();
+		fillProps(edit, e);
+	}
+
 	public function selectObjects( elts : Array<PrefabElement>, ?includeTree=true) {
 		scene.setCurrent();
 		if( curEdit != null )
@@ -1296,7 +1303,7 @@ class SceneEditor {
 			obj3d.updateInstance(ctx);
 	}
 
-	function deleteElements(elts : Array<PrefabElement>) {
+	public function deleteElements(elts : Array<PrefabElement>, ?then: Void->Void) {
 		var fullRefresh = false;
 		var undoes = [];
 		for(elt in elts) {
@@ -1314,7 +1321,7 @@ class SceneEditor {
 			refresh(fullRefresh ? Full : Partial, then);
 		}
 
-		refreshFunc(deselect);
+		refreshFunc(then != null ? then : deselect);
 
 		undo.change(Custom(function(undo) {
 			if(!undo && !fullRefresh)
@@ -1325,7 +1332,7 @@ class SceneEditor {
 			if(undo)
 				for(e in elts) makeInstance(e);
 
-			refreshFunc(selectObjects.bind(undo ? elts : []));
+			refreshFunc(then != null ? then : selectObjects.bind(undo ? elts : []));
 		}));
 	}
 
