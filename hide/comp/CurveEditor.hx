@@ -364,18 +364,6 @@ class CurveEditor extends Component {
 	}
 
 	public function refresh(?anim: Bool) {
-		if(false) {
-			// Auto-gc
-			if(refreshTimer != null)
-				refreshTimer.stop();
-			if(!anim) {
-				refreshTimer = haxe.Timer.delay(function() {
-					refreshTimer = null;
-					untyped window.gc();
-				}, 500);
-			}
-		}
-
 		refreshGrid();
 		refreshGraph(anim);
 		if(!anim)
@@ -401,8 +389,8 @@ class CurveEditor extends Component {
 		var minY = Math.floor(iyt(height));
 		var maxY = Math.ceil(iyt(0));
 		var vgrid = svg.group(gridGroup, "vgrid");
-		var vstep = 1;
-		while((maxY - minY) / vstep > 10)
+		var vstep = 0.1;
+		while((maxY - minY) / vstep > 20)
 			vstep *= 10;
 
 		inline function hline(iy) {
@@ -422,7 +410,7 @@ class CurveEditor extends Component {
 			var l = hline(iy);
 			if(iy == 0)
 				l.addClass("axis");
-			hlabel("" + iy, iy);
+			hlabel("" + hxd.Math.fmt(iy), iy);
 		}
 	}
 
