@@ -147,8 +147,10 @@ private class ParticleInstance extends h3d.scene.Object {
 						case Local:mat.multiply3x4(mat, emitter.invTransform);
 						case World:
 					}
-					getRotationQuat().initRotateMatrix(mat);
-					getRotationQuat().normalize();
+					mat.prependRotation(0, Math.PI, 0);
+					var q = getRotationQuat();
+					q.initRotateMatrix(mat);
+					q.normalize();
 					posChanged = true;
 				}
 				case Axis: {
