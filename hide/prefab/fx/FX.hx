@@ -39,6 +39,7 @@ typedef ObjectAnimation = {
 	elt: hide.prefab.Object3D,
 	obj: h3d.scene.Object,
 	events: Array<hide.prefab.fx.Event.EventInstance>,
+	lookAt: hide.prefab.fx.LookAt.LookAtInstance,
 	?position: Value,
 	?scale: Value,
 	?rotation: Value,
@@ -173,6 +174,10 @@ class FXAnimation extends h3d.scene.Object {
 					evt.setTime(localTime - evt.evt.time);
 				}
 			}
+
+			if(anim.lookAt != null) {
+				anim.lookAt.apply();
+			}
 		}
 
 		for(anim in shaderAnims) {
@@ -292,10 +297,21 @@ class FX extends hxd.prefab.Library {
 		if(events.length > 0)
 			anyFound = true;
 
+		var lookAt = null;
+		{
+			var p = elt.getOpt(LookAt);
+			if(p != null) {
+				anyFound = true;
+				var ctx = ctx.shared.contexts.get(p);
+				lookAt = cast ctx.custom;
+			}
+		}
+
 		var anim : ObjectAnimation = {
 			elt: obj3d,
 			obj: objCtx.local3d,
 			events: events.length > 0 ? events : null,
+			lookAt: lookAt,
 			position: makeVector("position", 0.0),
 			scale: makeVector("scale", 1.0, true),
 			rotation: makeVector("rotation", 0.0, 360.0),
@@ -481,7 +497,7 @@ class FX extends hxd.prefab.Library {
 	}
 
 	override function getHideProps() : HideProps {
-		return { icon : "cube", name : "FX" };
+		return { icon : "cube", name : "FX", allowParent: _ -> false};
 	}
 	#end
 
