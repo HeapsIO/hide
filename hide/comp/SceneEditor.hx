@@ -1487,10 +1487,10 @@ class SceneEditor {
 		return newItems;
 	}
 
-	function getNewTypeMenuItem(ptype: String, parent: PrefabElement, onMake: PrefabElement->Void) : hide.comp.ContextMenu.ContextMenuItem {
+	function getNewTypeMenuItem(ptype: String, parent: PrefabElement, onMake: PrefabElement->Void, ?label: String) : hide.comp.ContextMenu.ContextMenuItem {
 		var pmodel = hxd.prefab.Library.getRegistered().get(ptype);
 		return {
-			label : pmodel.inf.name,
+			label : label != null ? label : pmodel.inf.name,
 			click : function() {
 				function make(?path) {
 					var p = Type.createInstance(pmodel.cl, [parent]);
@@ -1516,8 +1516,7 @@ class SceneEditor {
 	}
 
 	function getNewShaderMenu(parentElt: PrefabElement, onMake: PrefabElement->Void) : hide.comp.ContextMenu.ContextMenuItem {
-		var custom = getNewTypeMenuItem("shader", parentElt, onMake);
-		custom.label = "Custom...";
+		var custom = getNewTypeMenuItem("shader", parentElt, onMake, "Custom...");
 
 		function shaderItem(name, path) : hide.comp.ContextMenu.ContextMenuItem {
 			return {

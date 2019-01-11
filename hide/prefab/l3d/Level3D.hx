@@ -26,7 +26,7 @@ class Level3D extends hxd.prefab.Library {
 	override function getCdbModel(?p:hxd.prefab.Prefab):cdb.Sheet {
 		#if (editor && castle)
 		return hide.view.l3d.Level3D.getCdbModel(p);
-		#end 
+		#end
 		return null;
 	}
 
@@ -47,7 +47,7 @@ class Level3D extends hxd.prefab.Library {
 	}
 
 	override function getHideProps() : HideProps {
-		return { icon : "cube", name : "Level3D", allowChildren : function(t) return hxd.prefab.Library.isOfType(t,Object3D) };
+		return { icon : "cube", name : "Level3D", allowChildren : function(t) return hxd.prefab.Library.isOfType(t,Object3D), allowParent: _ -> false};
 	}
 
 	#end

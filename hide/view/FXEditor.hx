@@ -63,13 +63,43 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		if(current != null && current.to(hide.prefab.Shader) != null) {
 			return parent.getNewTrackMenu(current);
 		}
-		var menu = super.getNewContextMenu(current, onMake);
-		if(current != null) {
-			menu.unshift({
-				label: "Animation",
-				menu: parent.getNewTrackMenu(current)
-			});
+		var allTypes = super.getNewContextMenu(current, onMake);
+
+		var menu = [];
+		for(name in ["Group", "Polygon", "Model", "Shaders"]) {
+			var item = allTypes.find(i -> i.label == name);
+			if(item == null) continue;
+			allTypes.remove(item);
+			menu.push(item);
 		}
+		menu.push({
+			label: "Animation",
+			menu: parent.getNewTrackMenu(current)
+		});
+
+		menu.push({
+			label: "Material",
+			menu: [
+				getNewTypeMenuItem("material", current, onMake, "Default"),
+				getNewTypeMenuItem("material", current, function (p) {
+					// TODO: Move material presets to props.json
+					p.props = {
+						PBR: {
+							mode: "Overlay",
+							blend: "None",
+							shadows: false
+						}
+					}
+					if(onMake != null) onMake(p);
+				}, "Unlit")
+			]
+		});
+		menu.sort(function(l1,l2) return Reflect.compare(l1.label,l2.label));
+		menu.push({label: null, isSeparator: true});
+		menu.push({
+			label: "Other",
+			menu: allTypes
+		});
 		return menu;
 	}
 }
