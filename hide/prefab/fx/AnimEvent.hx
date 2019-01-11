@@ -95,7 +95,9 @@ class AnimEvent extends hide.prefab.fx.Event {
 	override function getHideProps() : HideProps {
 		return {
 			icon : "play-circle", name : "AnimEvent",
-			allowParent : (p) -> p.to(Model) != null };
+			allowParent : (p) -> p.to(Model) != null,
+			allowChildren: function(s) return false
+		};
 	}
 
 	override function getDisplayInfo(ctx: EditContext) {
