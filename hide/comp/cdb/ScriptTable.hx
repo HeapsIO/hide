@@ -21,7 +21,7 @@ class ScriptTable extends SubTable {
 
 	override public function close() {
 		if( script != null )
-			cell.setValue(script.script);
+			cell.setValue(script.code);
 		super.close();
 	}
 
@@ -30,7 +30,7 @@ class ScriptTable extends SubTable {
 		element.html("<div class='cdb-script'></div>");
 		var checker = new ScriptEditor.ScriptChecker(editor.config,"cdb."+cell.getDocumentName(),[ "cdb."+cell.table.sheet.name => cell.line.obj ]);
 		script = new ScriptEditor(cell.value, checker, element.find("div"));
-		script.onSave = function() cell.setValue(script.script);
+		script.onSave = function() cell.setValue(script.code);
 		script.onClose = function() { close(); cell.focus(); }
 		lines = [new Line(this,[],0,script.element)];
 		if( first ) script.focus();

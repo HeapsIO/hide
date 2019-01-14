@@ -50,6 +50,17 @@ class Ide {
 	static var firstInit = true;
 
 	function new() {
+		function wait() {
+			if( monaco.Editor == null ) {
+				haxe.Timer.delay(wait, 10);
+				return;
+			}
+			startup();
+		}
+		wait();
+	}
+
+	function startup() {
 		inst = this;
 		window = nw.Window.get();
 		var cwd = Sys.getCwd();
@@ -620,7 +631,7 @@ class Ide {
 		}).appendTo(window.window.document.body).click();
 	}
 
-	public function parseJSON( str : String ) {
+	public function parseJSON( str : String ) : Dynamic {
 		// remove comments
 		str = ~/^[ \t]+\/\/[^\n]*/gm.replace(str, "");
 		return haxe.Json.parse(str);

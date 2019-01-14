@@ -171,20 +171,13 @@ class ScriptChecker {
 
 }
 
-class ScriptEditor extends Component {
+class ScriptEditor extends CodeEditor {
 
 	static var INIT_DONE = false;
-
-	var editor : monaco.Editor;
-	var errorMessage : Element;
 	var checker : ScriptChecker;
-	var currrentDecos : Array<String> = [];
 	var checkTypes : Bool;
-	public var script(get,never) : String;
 
 	public function new( script : String, ?checker : ScriptChecker, ?parent : Element, ?root : Element ) {
-		super(parent,root);
-
 		if( !INIT_DONE ) {
 			INIT_DONE = true;
 			(monaco.Languages : Dynamic).typescript.javascriptDefaults.setCompilerOptions({ noLib: true, allowNonTsExtensions: true }); // disable js stdlib completion
@@ -195,49 +188,14 @@ class ScriptEditor extends Component {
 				}
 			});
 		}
-
-		var root = element;
-		root.addClass("scripteditor");
-		root.on("keydown", function(e) { if( e.keyCode == 27 && root.find(".suggest-widget.visible").length == 0 ) onClose(); e.stopPropagation(); });
-
-		editor = monaco.Editor.create(root[0],{
-			value : script,
-			language : "javascript",
-			automaticLayout : true,
-			wordWrap : true,
-			minimap : { enabled : false },
-			theme : "vs-dark",
-		});
-		var model = editor.getModel();
-		(model : Dynamic).__comp__ = this;
-		model.updateOptions({ insertSpaces:false, trimAutoWhitespace:true });
-		editor.onDidChangeModelContent(doCheckScript);
-		editor.addCommand(monaco.KeyCode.KEY_S | monaco.KeyMod.CtrlCmd, function() { clearSpaces(); onSave(); });
-		errorMessage = new Element('<div class="scriptErrorMessage"></div>').appendTo(root).hide();
+		super(script, "javascript", parent,root);
 		if( checker == null ) {
 			checker = new ScriptChecker(new hide.Config(),"");
 			checkTypes = false;
 		}
 		this.checker = checker;
+		onChanged = doCheckScript;
 		haxe.Timer.delay(function() doCheckScript(), 0);
-	}
-
-	function clearSpaces() {
-		var script = script;
-		var newScript = [for( l in StringTools.trim(script).split("\n") ) StringTools.rtrim(l)].join("\n");
-		if( newScript != script ) {
-			var p = editor.getPosition();
-			setScript(newScript);
-			editor.setPosition(p);
-		}
-	}
-
-	function get_script() {
-		return editor.getValue({preserveBOM:true});
-	}
-
-	public function setScript( script : String ) {
-		editor.setValue(script);
 	}
 
 	function getCompletion( position : monaco.Position ) : Array<monaco.Languages.CompletionItem> {
@@ -268,38 +226,12 @@ class ScriptEditor extends Component {
 	}
 
 	function doCheckScript() {
-		var script = script;
+		var script = code;
 		var error = checker.check(script, checkTypes);
-		if( error == null ) {
-			if( currrentDecos.length != 0 )
-				currrentDecos = editor.deltaDecorations(currrentDecos,[]);
-			errorMessage.hide();
-		} else {
-			var linePos = script.substr(0,error.pmin).lastIndexOf("\n");
-			//trace(e, e.pmin, e.pmax, cur.substr(e.pmin, e.pmax - e.pmin + 1), linePos);
-			if( linePos < 0 ) linePos = 0 else linePos++;
-			var range = new monaco.Range(error.line,error.pmin + 1 - linePos,error.line,error.pmax + 2 - linePos);
-			currrentDecos = editor.deltaDecorations(currrentDecos,[
-				{ range : range, options : { inlineClassName: "scriptErrorContentLine", isWholeLine : true } },
-				{ range : range, options : { linesDecorationsClassName: "scriptErrorLine", inlineClassName: "scriptErrorContent" } }
-			]);
-			errorMessage.text(hscript.Printer.errorToString(error));
-			errorMessage.show(function() {
-				var rect = errorMessage[0].getBoundingClientRect();
-				if( rect.bottom > js.Browser.window.innerHeight )
-					errorMessage[0].scrollIntoView(false);
-			});
-		}
-	}
-
-	public function focus() {
-		editor.focus();
-	}
-
-	public dynamic function onSave() {
-	}
-
-	public dynamic function onClose() {
+		if( error == null )
+			clearError();
+		else
+			setError(hscript.Printer.errorToString(error), error.line, error.pmin, error.pmax);
 	}
 
 }

@@ -166,6 +166,7 @@ class FXEditor extends FileView {
 		var content = ide.toJSON(data.save());
 		currentSign = haxe.crypto.Md5.encode(content);
 		sys.io.File.saveContent(getPath(), content);
+		super.save();
 	}
 
 	override function onDisplay() {
@@ -236,14 +237,14 @@ class FXEditor extends FileView {
 		var scriptElem = element.find(".fx-script");
 		scriptEditor = new hide.comp.ScriptEditor(data.script, null, scriptElem, scriptElem);
 		function onSaveScript() {
-			data.script = scriptEditor.script;
+			data.script = scriptEditor.code;
 			save();
 			skipNextChange = true;
 			modified = false;
 		}
 		scriptEditor.onSave = onSaveScript;
 		fxScriptParser = new hide.prefab.fx.FXScriptParser();
-		data.script = scriptEditor.script;
+		data.script = scriptEditor.code;
 
 		keys.register("playPause", function() { pauseButton.toggle(!pauseButton.isDown()); });
 
@@ -1120,11 +1121,11 @@ class FXEditor extends FileView {
 			currentVersion = undo.currentID;
 		}
 
-		if( data.script != scriptEditor.script || !fxScriptParser.firstParse ){
+		if( data.script != scriptEditor.code || !fxScriptParser.firstParse ){
 			modified = true;
 			fxScriptParser.firstParse = true;
-			data.script = scriptEditor.script;
-			anim.script = fxScriptParser.createFXScript(scriptEditor.script, anim);
+			data.script = scriptEditor.code;
+			anim.script = fxScriptParser.createFXScript(scriptEditor.code, anim);
 			fxScriptParser.generateUI(anim.script, this);
 		}
 	}

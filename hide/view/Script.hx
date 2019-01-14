@@ -6,12 +6,6 @@ class Script extends FileView {
 	var originData : String;
 
 	override function onDisplay() {
-
-		if( monaco.Editor == null ) {
-			element.html("<div class='hide-loading'></div>");
-			haxe.Timer.delay(rebuild, 100);
-			return;
-		}
 		var lang = switch( extension ) {
 		case "js", "hx": "javascript";
 		case "json": "json";
@@ -26,16 +20,16 @@ class Script extends FileView {
 			automaticLayout : true,
 			wordWrap : true,
 			theme : "vs-dark",
-		 });
-		 editor.addCommand(monaco.KeyCode.KEY_S | monaco.KeyMod.CtrlCmd, function() {
-			 originData = editor.getValue({preserveBOM:true});
-			 modified = false;
-			 sys.io.File.saveContent(getPath(), originData);
-		 });
-		 editor.onDidChangeModelContent(function() {
-			 var cur = editor.getValue({preserveBOM:true});
-			 modified = cur != originData;
-		 });
+		});
+		editor.addCommand(monaco.KeyCode.KEY_S | monaco.KeyMod.CtrlCmd, function() {
+			originData = editor.getValue({preserveBOM:true});
+			modified = false;
+			sys.io.File.saveContent(getPath(), originData);
+		});
+		editor.onDidChangeModelContent(function() {
+			var cur = editor.getValue({preserveBOM:true});
+			modified = cur != originData;
+		});
 	}
 
 	static var _ = {
