@@ -55,6 +55,7 @@ class Model extends FileView {
 			bytes.writeString(haxe.Json.stringify(hideData, "\t"));
 			hxd.File.saveBytes(ide.getPath(propsPath), bytes.getBytes());
 		}
+		super.save();
 	}
 
 	override function onDisplay() {

@@ -31,6 +31,7 @@ class Particles3D extends FileView {
 
 	override function save() {
 		sys.io.File.saveContent(getPath(), ide.toJSON(parts.save()));
+		super.save();
 	}
 
 	function addGroup( g : h3d.parts.GpuParticles.GpuPartGroup ) {

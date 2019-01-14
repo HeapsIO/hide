@@ -474,6 +474,7 @@ class Level3D extends FileView {
 		var content = ide.toJSON(data.save());
 		currentSign = haxe.crypto.Md5.encode(content);
 		sys.io.File.saveContent(getPath(), content);
+		super.save();
 	}
 
 	function updateGrid() {

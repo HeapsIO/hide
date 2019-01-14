@@ -5,6 +5,7 @@ class FileView extends hide.ui.View<{ path : String }> {
 	public var extension(get,never) : String;
 	public var modified(default, set) : Bool;
 	var skipNextChange : Bool;
+	var lastSaveTag : Int;
 
 	public function new(state) {
 		super(state);
@@ -38,26 +39,25 @@ class FileView extends hide.ui.View<{ path : String }> {
 	}
 
 	public function getDefaultContent() : haxe.io.Bytes {
+		throw "Not implemented";
 		return null;
 	}
 
 	override function setContainer(cont) {
 		super.setContainer(cont);
-		var lastSave = undo.currentID;
+		lastSaveTag = undo.currentID;
 		undo.onChange = function() {
-			modified = (undo.currentID != lastSave);
+			modified = (undo.currentID != lastSaveTag);
 		};
 		keys.register("undo", function() undo.undo());
 		keys.register("redo", function() undo.redo());
-		keys.register("save", function() {
-			save();
-			skipNextChange = true;
-			modified = false;
-			lastSave = undo.currentID;
-		});
+		keys.register("save", function() save());
 	}
 
 	public function save() {
+		skipNextChange = true;
+		modified = false;
+		lastSaveTag = undo.currentID;
 	}
 
 	public function saveAs() {
@@ -65,7 +65,7 @@ class FileView extends hide.ui.View<{ path : String }> {
 			if( target == null ) return;
 			state.path = target;
 			save();
-			modified = false;
+			skipNextChange = false;
 			syncTitle();
 		});
 	}

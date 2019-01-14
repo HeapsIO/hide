@@ -34,6 +34,7 @@ class Particles2D extends FileView {
 
 	override function save() {
 		sys.io.File.saveContent(getPath(), ide.toJSON(parts.save()));
+		super.save();
 	}
 
 	function init() {
