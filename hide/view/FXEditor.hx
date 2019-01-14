@@ -829,13 +829,15 @@ class FXEditor extends FileView {
 				sect = {elt: root, curves: [], events: []};
 				sections.push(sect);
 			}
-			var curves = elt.flatten(hide.prefab.Curve);
-			for(c in curves)
-				sect.curves.push(c);
 
-			var events = elt.flatten(Event);
-			for(e in events)
-				sect.events.push(e);
+			for(child in elt.children) {
+				var curve = Std.instance(child, hide.prefab.Curve);
+				if(curve != null)
+					sect.curves.push(curve);
+				var evt = Std.instance(child, Event);
+				if(evt != null)
+					sect.events.push(evt);
+			}
 		}
 
 		for(sec in sections) {
@@ -853,7 +855,8 @@ class FXEditor extends FileView {
 			});
 			var tracksEl = objPanel.find(".tracks");
 
-			addEventsTrack(sec.events, tracksEl);
+			if(sec.events.length > 0)
+				addEventsTrack(sec.events, tracksEl);
 
 			var groups = hide.prefab.Curve.getGroups(sec.curves);
 			for(group in groups) {
