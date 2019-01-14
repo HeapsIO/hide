@@ -1087,7 +1087,8 @@ class FXEditor extends FileView {
 				timeLineEl.css({left: xt(currentTime)});
 			if(currentTime >= previewMax) {
 				currentTime = previewMin;
-				sceneEditor.refreshScene();
+				if(data.script != null && data.script.length > 0)
+					sceneEditor.refreshScene(); // This allow to reset the scene when values are modified causes edition issues, solves
 				anim.setRandSeed(Std.random(0xFFFFFF));
 			}
 		}
