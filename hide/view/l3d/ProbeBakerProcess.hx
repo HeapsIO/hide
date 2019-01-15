@@ -4,7 +4,7 @@ class ProbeBakerProcess {
 
 	public var progress : Float = 0.;
 
-	var lightProbeBaker : hide.tools.LightProbeBaker;
+	var lightProbeBaker : hide.view.l3d.LightProbeBaker;
 	var volumetricLightmap : hide.prefab.l3d.VolumetricLightmap;
 	var bakeTime : Float;
 	var resolution : Int;
@@ -14,7 +14,7 @@ class ProbeBakerProcess {
 		this.bakeTime = bakeTime;
 		this.volumetricLightmap = volumetricLightmap;
 		this.resolution = res;
-		lightProbeBaker = new hide.tools.LightProbeBaker();
+		lightProbeBaker = new hide.view.l3d.LightProbeBaker();
 		lightProbeBaker.useGPU = useGPU;
 	}
 

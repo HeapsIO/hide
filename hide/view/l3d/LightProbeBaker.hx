@@ -1,4 +1,4 @@
-package hide.tools;
+package hide.view.l3d;
 
 import h3d.scene.pbr.Renderer;
 
