@@ -180,7 +180,7 @@ class Light extends Object3D {
 			var pl = Std.instance(light, h3d.scene.pbr.PointLight);
 			pl.range = range;
 			pl.size = size;
-			pl.zNear = hxd.Math.maxx(0.02, zNear);
+			pl.zNear = hxd.Math.max(0.02, zNear);
 		default:
 		}
 		light.color.setColor(color);
