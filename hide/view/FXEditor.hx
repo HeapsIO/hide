@@ -72,10 +72,12 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 			allTypes.remove(item);
 			menu.push(item);
 		}
-		menu.push({
-			label: "Animation",
-			menu: parent.getNewTrackMenu(current)
-		});
+		if(current != null) {
+			menu.push({
+				label: "Animation",
+				menu: parent.getNewTrackMenu(current)
+			});
+		}
 
 		menu.push({
 			label: "Material",
