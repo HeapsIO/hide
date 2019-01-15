@@ -4,22 +4,22 @@ class ProbeBakerProcess {
 
 	public var progress : Float = 0.;
 
-	var lightProbeBaker : h3d.scene.pbr.LightProbeBaker;
+	var lightProbeBaker : hide.tools.LightProbeBaker;
 	var volumetricLightmap : hide.prefab.l3d.VolumetricLightmap;
 	var bakeTime : Float;
 	var resolution : Int;
 
-	public function new(volumetricLightmap, res, useGPU, bakeTime : Float = 0.016 ){
+	public function new(volumetricLightmap, res, useGPU, bakeTime = 0.016 ){
 		progress = 0;
 		this.bakeTime = bakeTime;
 		this.volumetricLightmap = volumetricLightmap;
 		this.resolution = res;
-		lightProbeBaker = new h3d.scene.pbr.LightProbeBaker();
+		lightProbeBaker = new hide.tools.LightProbeBaker();
 		lightProbeBaker.useGPU = useGPU;
 	}
 
-	public function init( sceneData : hide.prefab.Prefab , shared : hide.prefab.ContextShared, scene : hide.comp.Scene) {
-		lightProbeBaker.initScene(sceneData, shared, scene);
+	public function init( env : h3d.scene.pbr.Environment, sceneData : hide.prefab.Prefab , shared : hide.prefab.ContextShared, scene : hide.comp.Scene) {
+		lightProbeBaker.initScene(sceneData, shared, scene, env);
 	}
 
 	public function update(dt:Float) {
