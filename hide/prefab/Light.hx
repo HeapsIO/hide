@@ -33,6 +33,7 @@ class Light extends Object3D {
 
 	// Point
 	public var size : Float = 1.0;
+	public var zNear : Float = 0.02;
 
 	// Spot
 	public var maxRange : Float = 20;
@@ -63,6 +64,7 @@ class Light extends Object3D {
 		obj.color = color;
 		obj.range = range;
 		obj.size = size;
+		obj.zNear = zNear;
 		obj.power = power;
 		obj.quality = quality;
 		obj.isMainLight = isMainLight;
@@ -84,6 +86,7 @@ class Light extends Object3D {
 		color = obj.color;
 		range = obj.range;
 		size = obj.size;
+		zNear = obj.zNear;
 		power = obj.power;
 		quality = obj.quality;
 		isMainLight = obj.isMainLight;
@@ -177,6 +180,7 @@ class Light extends Object3D {
 			var pl = Std.instance(light, h3d.scene.pbr.PointLight);
 			pl.range = range;
 			pl.size = size;
+			pl.zNear = hxd.Math.maxx(0.02, zNear);
 		default:
 		}
 		light.color.setColor(color);
@@ -382,6 +386,7 @@ class Light extends Object3D {
 			group.append(hide.comp.PropsEditor.makePropsList([
 				{ name: "size", t: PFloat(0, 5), def: 0 },
 				{ name: "range", t: PFloat(1, 20), def: 10 },
+				{ name: "zNear", t: PFloat(0.02, 1), def: 0.02 },
 			]));
 		default:
 		}
