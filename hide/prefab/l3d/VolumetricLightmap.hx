@@ -13,6 +13,7 @@ class VolumetricLightmap extends Object3D {
 	var useWorldAlignedProbe = false;
 	var displaySH = false;
 	var resolution : Int;
+	var useGPU = true;
 
 	#if editor
 	var maxOrderBaked = 0;
@@ -218,16 +219,18 @@ class VolumetricLightmap extends Object3D {
 			<div class="group" name="Light Params">
 				<dl>
 				<dt>Strength</dt><dd><input type="range" min="0" max="2" value="0" field="strength"/></dd>
+				<dt>Display SH</dt><dd><input type="checkbox" field="displaySH_field"/></dd>
+				</dl>
+			</div>
+			<div class="group" name="Bake">
 				<dt>SH Order</dt><dd><input type="range" min="1" max="3" value="0" step="1" field="order"/></dd>
 				<dt>Resolution</dt><dd><input type="range" min="1" max="1024" value="0" step="1" field="resolution"/></dd>
-				<dt>Use World Aligned Probes</dt><dd><input type="checkbox" field="useWorldAlignedProbe"/></dd>
-				<dt>Display SH</dt><dd><input type="checkbox" field="displaySH_field"/></dd>
+				<dt>Use GPU</dt><dd><input type="checkbox" field="useGPU"/></dd>
 				<dt></dt><dd><input type="button" value="Bake" class="bake"/></dd>
 				<div class="progress">
 					<dt>Baking Process</dt><dd><progress class="bakeProgress" max="1"></progress></dd>
 				</div>
-				</dl>
-			</div>
+			</dl></div>
 			<div class="group" name="Voxel Size">
 				<dl>
 					<dt>X</dt><dd><input type="range" min="1" max="10" value="0" field="voxelsize_x"/></dd>
@@ -286,11 +289,16 @@ class VolumetricLightmap extends Object3D {
 		maxOrderBaked = order;
 		volumetricLightmap.lastBakedProbeIndex = -1;
 		var s3d = @:privateAccess ctx.rootContext.local3d.getScene();
-		baker = new hide.view.l3d.ProbeBakerProcess(s3d, this, resolution);
+		baker = new hide.view.l3d.ProbeBakerProcess(this, resolution, useGPU, 0.032);
+
+		var sceneData = @:privateAccess ctx.scene.editor.sceneData;
+		baker.init(sceneData.clone(), cast ctx.rootContext.shared, ctx.scene);
+
 		baker.onEnd = function() {
 			if( onEnd != null ) onEnd();
 			var bytes = volumetricLightmap.save();
 			ctx.rootContext.shared.savePrefabDat("sh", "bake", name, bytes);
+			createDebugPreview();
 		}
 	}
 
