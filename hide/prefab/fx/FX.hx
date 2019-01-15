@@ -157,15 +157,13 @@ class FXAnimation extends h3d.scene.Object {
 				anim.obj.visible = anim.elt.visible && evaluator.getFloat(anim.visibility, localTime) > 0.5;
 
 			if(anim.color != null) {
-				var mesh = Std.instance(anim.obj, h3d.scene.Mesh);
-				if(mesh != null) {
-					var mat = mesh.material;
-					switch(anim.color) {
-						case VCurve(a):
+				switch(anim.color) {
+					case VCurve(a):
+						for(mat in anim.obj.getMaterials())
 							mat.color.a = evaluator.getFloat(anim.color, localTime);
-						default:
+					default:
+						for(mat in anim.obj.getMaterials())
 							mat.color = evaluator.getVector(anim.color, localTime);
-					}
 				}
 			}
 
