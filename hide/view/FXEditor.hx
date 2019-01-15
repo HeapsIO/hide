@@ -945,14 +945,18 @@ class FXEditor extends FileView {
 				sections.push(sect);
 			}
 
-			for(child in elt.children) {
-				var curve = Std.instance(child, hide.prefab.Curve);
+			inline function f(elt) {
+				var curve = Std.instance(elt, hide.prefab.Curve);
 				if(curve != null)
 					sect.curves.push(curve);
-				var evt = Std.instance(child, Event);
+				var evt = Std.instance(elt, Event);
 				if(evt != null)
 					sect.events.push(evt);
 			}
+
+			f(elt);
+			for(child in elt.children)
+				f(child);
 		}
 
 		for(sec in sections) {
