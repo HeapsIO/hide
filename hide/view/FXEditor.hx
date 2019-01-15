@@ -461,6 +461,59 @@ class FXEditor extends FileView {
 		var select = new Element('<span class="selection"></span>').appendTo(overlay);
 		select.css({left: xt(selectMin), width: xt(selectMax) - xt(selectMin)});
 
+		if(!anim) {
+			select.mousedown(function(e) {
+				var offset = scroll.offset();
+				e.preventDefault();
+				e.stopPropagation();
+				var startTime = ixt(e.clientX);
+				if(e.button == 2) {
+				}
+				else {
+					function refreshView() {
+						for(ce in curveEdits) {
+							ce.refreshGraph(false);
+							ce.onChange(false);
+						}
+					}
+					var curves = [for(ce in curveEdits) ce.curve];
+					var backup = [for(c in curves) haxe.Json.parse(haxe.Json.stringify(c.save()))];
+					startDrag(function(e) {
+						var time = ixt(e.clientX);
+						var shift = time - startTime;
+						select.css({left: xt(selectMin), width: xt(selectMax) - xt(selectMin)});
+						startTime = time;
+						for(ce in curveEdits) {
+							for(key in ce.curve.keys) {
+								if(key.time >= selectMin && key.time <= selectMax) {
+									key.time += shift;
+								}
+							}
+							ce.refreshGraph(true);
+							ce.onChange(true);
+						}
+						selectMin += shift;
+						selectMax += shift;
+						// updatePos();
+					}, function(e) {
+						var newVals = [for(c in curves) haxe.Json.parse(haxe.Json.stringify(c.save()))];
+						undo.change(Custom(function(undo) {
+							if(undo) {
+								for(i in 0...curves.length)
+									curves[i].load(backup[i]);
+							}
+							else {
+								for(i in 0...curves.length)
+									curves[i].load(newVals[i]);
+							}
+							refreshView();
+						}));
+						refreshView();
+					});
+				}
+			});
+		}
+
 		//var preview = new Element('<span class="preview"></span>').appendTo(overlay);
 		// preview.css({left: xt(previewMin), width: xt(previewMax) - xt(previewMin)});
 		var prevLeft = new Element('<span class="preview-left"></span>').appendTo(overlay);

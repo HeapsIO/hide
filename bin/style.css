@@ -728,8 +728,10 @@ input[type=checkbox]:checked:after {
   height: 100%;
   background: #17ffeb12;
   mix-blend-mode: hard-light;
-  border-left: 1px black;
-  border-right: 1px black;
+  border-left: 1px dashed black;
+  border-right: 1px dashed black;
+  pointer-events: all;
+  cursor: move;
 }
 .fx-animpanel .overlay-container .overlay .preview {
   position: absolute;
