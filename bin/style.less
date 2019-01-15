@@ -799,10 +799,22 @@ input[type=checkbox] {
 				height: 100%;
 				background: #17ffeb12;
 				mix-blend-mode: hard-light;
-				border-left: 1px dashed black;
-				border-right: 1px dashed black;
 				pointer-events: all;
 				cursor: move;
+			}
+			.selection-left, .selection-right {
+				cursor: ew-resize;
+				pointer-events: all;
+				width: 4px;
+				background: #00000036;
+				position: absolute;
+				height: 100%;
+			}
+			.selection-left {
+				border-right: 1px dashed black;
+			}
+			.selection-right {
+				border-left: 1px dashed black;
 			}
 			.preview {
 				position: absolute;

@@ -461,56 +461,116 @@ class FXEditor extends FileView {
 		var select = new Element('<span class="selection"></span>').appendTo(overlay);
 		select.css({left: xt(selectMin), width: xt(selectMax) - xt(selectMin)});
 
-		if(!anim) {
-			select.mousedown(function(e) {
-				var offset = scroll.offset();
-				e.preventDefault();
-				e.stopPropagation();
-				var startTime = ixt(e.clientX);
-				if(e.button == 2) {
+		if(!anim && selectMax > selectMin + 1e-6) {
+			var selLeft = new Element('<span class="selection-left"></span>').appendTo(overlay);
+			var selRight = new Element('<span class="selection-right"></span>').appendTo(overlay);
+
+			function updateSelectPos() {
+				select.css({left: xt(selectMin), width: xt(selectMax) - xt(selectMin)});
+				selLeft.css({left: xt(selectMin) - 4});
+				selRight.css({left: xt(selectMax)});
+			}
+			updateSelectPos();
+
+			function refreshViews() {
+				for(ce in curveEdits) {
+					ce.refreshGraph(false);
+					ce.onChange(false);
 				}
-				else {
-					function refreshView() {
-						for(ce in curveEdits) {
-							ce.refreshGraph(false);
-							ce.onChange(false);
-						}
+			}
+
+			var curves = [for(ce in curveEdits) ce.curve];
+			var backup = null;
+			function beforeChange() {
+				backup = [for(c in curves) haxe.Json.parse(haxe.Json.stringify(c.save()))];
+			}
+
+			function afterChange() {
+				var newVals = [for(c in curves) haxe.Json.parse(haxe.Json.stringify(c.save()))];
+				undo.change(Custom(function(undo) {
+					if(undo) {
+						for(i in 0...curves.length)
+							curves[i].load(backup[i]);
 					}
-					var curves = [for(ce in curveEdits) ce.curve];
-					var backup = [for(c in curves) haxe.Json.parse(haxe.Json.stringify(c.save()))];
+					else {
+						for(i in 0...curves.length)
+							curves[i].load(newVals[i]);
+					}
+					refreshViews();
+				}));
+				refreshViews();
+			}
+
+			function setupSelectDrag(element: js.jquery.JQuery, update: Float->Float->Void) {
+				element.mousedown(function(e) {
+					if(e.button != 0)
+						return;
+					var offset = scroll.offset();
+					e.preventDefault();
+					e.stopPropagation();
+					var lastTime = ixt(e.clientX);
 					startDrag(function(e) {
 						var time = ixt(e.clientX);
-						var shift = time - startTime;
-						select.css({left: xt(selectMin), width: xt(selectMax) - xt(selectMin)});
-						startTime = time;
-						for(ce in curveEdits) {
-							for(key in ce.curve.keys) {
-								if(key.time >= selectMin && key.time <= selectMax) {
-									key.time += shift;
-								}
-							}
-							ce.refreshGraph(true);
-							ce.onChange(true);
-						}
-						selectMin += shift;
-						selectMax += shift;
-						// updatePos();
+						update(time, lastTime);
+						updateSelectPos();
+						lastTime = time;
 					}, function(e) {
-						var newVals = [for(c in curves) haxe.Json.parse(haxe.Json.stringify(c.save()))];
-						undo.change(Custom(function(undo) {
-							if(undo) {
-								for(i in 0...curves.length)
-									curves[i].load(backup[i]);
-							}
-							else {
-								for(i in 0...curves.length)
-									curves[i].load(newVals[i]);
-							}
-							refreshView();
-						}));
-						refreshView();
+						afterChange();
 					});
+				});
+			}
+
+			setupSelectDrag(selRight, function(time, lastTime) {
+				var shift = time - lastTime;
+				if(selectMax > selectMin + 0.1) {
+					var scaleFactor = (selectMax + shift - selectMin) / (selectMax - selectMin);
+
+					for(ce in curveEdits) {
+						for(key in ce.curve.keys) {
+							if(key.time >= selectMin && key.time <= selectMax) {
+								key.time = (key.time - selectMin) * scaleFactor + selectMin;
+							}
+						}
+						ce.refreshGraph(true);
+						ce.onChange(true);
+					}
+
+					selectMax += shift;
 				}
+			});
+
+			setupSelectDrag(selLeft, function(time, lastTime) {
+				var shift = time - lastTime;
+				if(selectMax > selectMin + 0.1) {
+					var scaleFactor = (selectMax - (selectMin + shift)) / (selectMax - selectMin);
+
+					for(ce in curveEdits) {
+						for(key in ce.curve.keys) {
+							if(key.time >= selectMin && key.time <= selectMax) {
+								key.time = selectMax - (selectMax - key.time) * scaleFactor;
+							}
+						}
+						ce.refreshGraph(true);
+						ce.onChange(true);
+					}
+
+					selectMin += shift;
+				}
+			});
+
+			setupSelectDrag(select, function(time, lastTime) {
+				var shift = time - lastTime;
+				for(ce in curveEdits) {
+					for(key in ce.curve.keys) {
+						if(key.time >= selectMin && key.time <= selectMax) {
+							key.time += shift;
+						}
+					}
+					ce.refreshGraph(true);
+					ce.onChange(true);
+				}
+				selectMin += shift;
+				selectMax += shift;
 			});
 		}
 
