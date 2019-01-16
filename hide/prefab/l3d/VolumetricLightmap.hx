@@ -12,7 +12,7 @@ class VolumetricLightmap extends Object3D {
 	public var volumetricLightmap : h3d.scene.pbr.VolumetricLightmap;
 	var useWorldAlignedProbe = false;
 	var displaySH = false;
-	var resolution : Int;
+	var resolution : Int = 16;
 	var useGPU = true;
 
 	#if editor
@@ -35,7 +35,7 @@ class VolumetricLightmap extends Object3D {
 		displaySH = obj.displaySH == null ? false : obj.displaySH;
 		displaySH_field = displaySH;
 		useWorldAlignedProbe = obj.useWorldAlignedProbe == null ? false : obj.useWorldAlignedProbe;
-		resolution = obj.resolution == null ? 32 : obj.resolution;
+		resolution = obj.resolution == null ? 16 : obj.resolution;
 	}
 
 	override function save() {
@@ -161,7 +161,7 @@ class VolumetricLightmap extends Object3D {
 				if(shader != null) shader.strength = volumetricLightmap.strength;
 			}
 		}
-		if( propName != "visible" && propName != "strength" && propName != "order" && propName != "displaySH_field")
+		if( propName != "visible" && propName != "strength" && propName != "order" && propName != "displaySH_field" && propName != "useGPU" &&  propName != "resolution")
 			resetLightmap();
 	}
 
@@ -291,8 +291,15 @@ class VolumetricLightmap extends Object3D {
 		var s3d = @:privateAccess ctx.rootContext.local3d.getScene();
 		baker = new hide.view.l3d.ProbeBakerProcess(this, resolution, useGPU, 0.032);
 
+		var pbrRenderer = Std.instance(s3d.renderer, h3d.scene.pbr.Renderer);
+		if(pbrRenderer != null) {
+			if( pbrRenderer.env == null || pbrRenderer.env.env == null || pbrRenderer.env.env.isDisposed() )
+					trace("Environment missing");
+		} else
+			trace("Invalid renderer");
+
 		var sceneData = @:privateAccess ctx.scene.editor.sceneData;
-		baker.init(sceneData.clone(), cast ctx.rootContext.shared, ctx.scene);
+		baker.init(pbrRenderer.env, sceneData.clone(), cast ctx.rootContext.shared, ctx.scene);
 
 		baker.onEnd = function() {
 			if( onEnd != null ) onEnd();

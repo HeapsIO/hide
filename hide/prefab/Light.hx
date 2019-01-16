@@ -86,7 +86,7 @@ class Light extends Object3D {
 		color = obj.color;
 		range = obj.range;
 		size = obj.size;
-		zNear = obj.zNear;
+		zNear = obj.zNear == null ?  0.02 : obj.zNear;
 		power = obj.power;
 		quality = obj.quality;
 		isMainLight = obj.isMainLight;
@@ -104,8 +104,11 @@ class Light extends Object3D {
 	}
 
 	override function applyPos( o : h3d.scene.Object ) {
-		super.applyPos(o);
-		o.setScale(1.0);
+		//super.applyPos(o); // Disable scaling
+		o.x = x;
+		o.y = y;
+		o.z = z;
+		o.setRotation(hxd.Math.degToRad(rotationX), hxd.Math.degToRad(rotationY), hxd.Math.degToRad(rotationZ));
 	}
 
 	function initTexture(path : String, ?wrap : h3d.mat.Data.Wrap){
@@ -165,7 +168,6 @@ class Light extends Object3D {
 
 		var color = color | 0xff000000;
 		var light = cast(ctx.local3d,h3d.scene.pbr.Light);
-		light.setScale(1.0);
 		light.isMainLight = isMainLight;
 
 		switch( kind ) {
@@ -192,6 +194,7 @@ class Light extends Object3D {
 		light.shadows.blur.radius = shadows.radius;
 		light.shadows.blur.quality = shadows.quality;
 
+
 		#if editor
 
 		var debugPoint = ctx.local3d.find(c -> if(c.name == "_debugPoint") c else null);
@@ -215,8 +218,9 @@ class Light extends Object3D {
 
 					mesh = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), debugPoint);
 					mesh.ignoreBounds = true;
+					mesh.setScale(0.2);
 
-					rangeSphere = new h3d.scene.Sphere(0xffffff, range, true, debugPoint);
+					rangeSphere = new h3d.scene.Sphere(0xffffff, 1, true, debugPoint);
 					rangeSphere.visible = false;
 					rangeSphere.ignoreBounds = true;
 					rangeSphere.ignoreCollide = true;
@@ -228,10 +232,8 @@ class Light extends Object3D {
 					rangeSphere = cast debugPoint.getChildAt(1);
 				}
 
-				debugPoint.setScale(1/range);
-				mesh.setScale(hxd.Math.clamp(size, 0.1, 0.5));
+				mesh.setScale(0.2/range);
 				rangeSphere.material.color.setColor(color);
-				rangeSphere.radius = range;
 				sel = rangeSphere;
 
 			case Directional :
@@ -245,7 +247,7 @@ class Light extends Object3D {
 
 					mesh = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), debugDir);
 					mesh.ignoreBounds = true;
-					mesh.scale(0.5);
+					mesh.setScale(0.2);
 
 					var g = new h3d.scene.Graphics(debugDir);
 					g.lineStyle(1, 0xffffff);
@@ -273,9 +275,7 @@ class Light extends Object3D {
 
 					mesh = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), debugSpot);
 					mesh.ignoreBounds = true;
-					mesh.scaleX = 1.0 / maxRange;
-					mesh.scaleY = 1.0 / (hxd.Math.tan(hxd.Math.degToRad(angle/2.0)) * maxRange);
-					mesh.scaleZ = 1.0 / (hxd.Math.tan(hxd.Math.degToRad(angle/2.0)) * maxRange);
+					mesh.setScale(0.2);
 
 					var g = new h3d.scene.Graphics(debugSpot);
 					g.lineStyle(1, this.color);
@@ -308,11 +308,10 @@ class Light extends Object3D {
 					g.lineTo(1, -1, -1);
 
 					mesh = cast debugSpot.getChildAt(0);
-					mesh.scaleX = 1.0 / maxRange;
-					mesh.scaleY = 1.0 / (hxd.Math.tan(hxd.Math.degToRad(angle/2.0)) * maxRange);
-					mesh.scaleZ = 1.0 / (hxd.Math.tan(hxd.Math.degToRad(angle/2.0)) * maxRange);
 					sel = g;
 				}
+
+				mesh.setScale(0.2/maxRange);
 		}
 
 		if(mesh != null){
@@ -386,7 +385,7 @@ class Light extends Object3D {
 			group.append(hide.comp.PropsEditor.makePropsList([
 				{ name: "size", t: PFloat(0, 5), def: 0 },
 				{ name: "range", t: PFloat(1, 20), def: 10 },
-				{ name: "zNear", t: PFloat(0.02, 1), def: 0.02 },
+				{ name: "zNear", t: PFloat(0.02, 5), def: 0.02 },
 			]));
 		default:
 		}
