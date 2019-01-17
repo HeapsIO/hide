@@ -68,7 +68,10 @@ class UIKit extends FileView {
 		for( f in cssFiles ) {
 			var content = sys.io.File.getContent(ide.getPath(f));
 			var parser = new h2d.uikit.CssParser();
-			var css = parser.parseSheet(content);
+			var css = try parser.parseSheet(content) catch( e : h2d.uikit.CssParser.CssParserError ) {
+				warnings.push({ file : f, line : content.substr(0,e.position).split("\n").length + 1, msg : e.message });
+				continue;
+			}
 			sheets.add(css);
 			for( w in parser.warnings )
 				warnings.push({ file : f, line : content.substr(0,w.end).split("\n").length+1, msg : w.msg });
