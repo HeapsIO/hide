@@ -96,6 +96,9 @@
 	"fx.shaders": [
 		"h3d.shader.AnimatedTexture",
 		"h3d.shader.ColorAdd"],
+		
+	// UIKIT css files list	
+	"uikit.css" : [],
 
 	// reserved for internal ide usage
 	"debug.displayErrors" : true,

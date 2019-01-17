@@ -63,7 +63,7 @@ class CodeEditor extends Component {
 	public function clearError() {
 		if( currrentDecos.length != 0 )
 			currrentDecos = editor.deltaDecorations(currrentDecos,[]);
-		errorMessage.hide();
+		errorMessage.toggle(false);
 	}
 
 	public function setError( msg : String, line : Int, pmin : Int, pmax : Int ) {
@@ -74,12 +74,11 @@ class CodeEditor extends Component {
 			{ range : range, options : { inlineClassName: "codeErrorContentLine", isWholeLine : true } },
 			{ range : range, options : { linesDecorationsClassName: "codeErrorLine", inlineClassName: "codeErrorContent" } }
 		]);
-		errorMessage.text(msg);
-		errorMessage.show(function() {
-			var rect = errorMessage[0].getBoundingClientRect();
-			if( rect.bottom > js.Browser.window.innerHeight )
-				errorMessage[0].scrollIntoView(false);
-		});
+		errorMessage.html([for( l in msg.split("\n") ) StringTools.htmlEscape(l)].join("<br/>"));
+		errorMessage.toggle(true);
+		var rect = errorMessage[0].getBoundingClientRect();
+		if( rect.bottom > js.Browser.window.innerHeight )
+			errorMessage[0].scrollIntoView(false);
 	}
 
 }

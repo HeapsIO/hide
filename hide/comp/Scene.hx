@@ -71,6 +71,7 @@ class Scene extends Component implements h3d.IDrawable {
 	public var speed : Float = 1.0;
 	public var visible(default, null) : Bool = true;
 	public var editor : hide.comp.SceneEditor;
+	public var refreshIfUnfocused = false;
 
 	public function new(config, parent, el) {
 		super(parent,el);
@@ -168,8 +169,9 @@ class Scene extends Component implements h3d.IDrawable {
 			ide.unregisterUpdate(sync);
 			return;
 		}
-		if( !visible || !Ide.inst.isFocused)
+		if( !visible || (!Ide.inst.isFocused && !refreshIfUnfocused) )
 			return;
+		refreshIfUnfocused = false;
 		setCurrent();
 		sevents.checkEvents();
 		var dt = hxd.Timer.tmod * speed / 60;

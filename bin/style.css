@@ -1175,3 +1175,13 @@ div.sp-container input:hover {
   padding: 5px;
   height: 400px;
 }
+.uikit .leftpanel .cssErrors {
+  background: #840;
+  border: 1px solid #F80;
+  color: #F80;
+  padding: 10px;
+  position: absolute;
+  z-index: 1;
+  left: 10px;
+  bottom: 10px;
+}
