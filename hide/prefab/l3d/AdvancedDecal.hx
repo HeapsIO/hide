@@ -13,6 +13,7 @@ class AdvancedDecal extends Object3D {
 	var fadeEnd : Float = 1.0;
 	var emissive : Float = 0.0;
 	var blendMode : h2d.BlendMode = Alpha;
+	var renderMode : h3d.mat.PbrMaterial.PbrMode = Decal;
 	var centered : Bool = true;
 
 	override function save() {
@@ -28,6 +29,7 @@ class AdvancedDecal extends Object3D {
 		if(fadePower != 1) obj.fadePower = fadePower;
 		if(fadeStart != 0) obj.fadeStart = fadeStart;
 		if(fadeEnd != 1) obj.fadeEnd = fadeEnd;
+		if(renderMode != Decal) obj.renderMode = renderMode;
 		return obj;
 	}
 
@@ -44,22 +46,35 @@ class AdvancedDecal extends Object3D {
 		fadePower = obj.fadePower != null ? obj.fadePower : 1;
 		fadeStart = obj.fadeStart != null ? obj.fadeStart : 0;
 		fadeEnd = obj.fadeEnd != null ? obj.fadeEnd : 1;
+		renderMode = obj.renderMode != null ? obj.renderMode : Decal;
 	}
 
 	override function makeInstance(ctx:Context):Context {
 		ctx = ctx.clone(this);
 		var mesh = new h3d.scene.Mesh(h3d.prim.Cube.defaultUnitCube(), ctx.local3d);
-		var vd = mesh.material.mainPass.getShader(h3d.shader.pbr.VolumeDecal);
-		if( vd == null ) {
-			vd = new h3d.shader.pbr.VolumeDecal();
-			//vd.setPriority(-1);
-			mesh.material.mainPass.addShader(vd);
+
+		switch (renderMode) {
+			case Decal:
+				var shader = mesh.material.mainPass.getShader(h3d.shader.pbr.VolumeDecal.DecalPBR);
+				if( shader == null ) {
+					shader = new h3d.shader.pbr.VolumeDecal.DecalPBR();
+					//shader.setPriority(-1);
+					mesh.material.mainPass.addShader(shader);
+				}
+				mesh.material.mainPass.setPassName("decal");
+			case BeforeTonemapping:
+				var shader = mesh.material.mainPass.getShader(h3d.shader.pbr.VolumeDecal.DecalOverlay);
+				if( shader == null ) {
+					shader = new h3d.shader.pbr.VolumeDecal.DecalOverlay();
+					mesh.material.mainPass.addShader(shader);
+				}
+				mesh.material.mainPass.setPassName("BeforeTonemapping");
+			default:
 		}
-		mesh.material.mainPass.setPassName("decal");
+
 		mesh.material.mainPass.depthWrite = false;
 		mesh.material.mainPass.depthTest = GreaterEqual;
 		mesh.material.mainPass.culling = Front;
-
 		ctx.local3d = mesh;
 		ctx.local3d.name = name;
 		updateInstance(ctx);
@@ -70,33 +85,53 @@ class AdvancedDecal extends Object3D {
 		super.updateInstance(ctx,propName);
 
 		var mesh = Std.instance(ctx.local3d, h3d.scene.Mesh);
-		var vd = mesh.material.mainPass.getShader(h3d.shader.pbr.VolumeDecal);
-		if( vd != null ){
-			var b = mesh.getBounds();
-			vd.minBound = new h3d.Vector(b.xMin, b.yMin, b.zMin);
-			vd.maxBound = new h3d.Vector(b.xMax, b.yMax, b.zMax);
-			vd.normal = mesh.getAbsPos().up();
-			vd.tangent = mesh.getAbsPos().right();
-			vd.albedoTexture = albedoMap != null ? ctx.loadTexture(albedoMap) : null;
-			vd.normalTexture = normalMap != null ? ctx.loadTexture(normalMap) : null;
-			vd.pbrTexture = pbrMap != null ? ctx.loadTexture(pbrMap) : null;
-			if(vd.albedoTexture != null) vd.albedoTexture.wrap = Repeat;
-			if(vd.normalTexture != null) vd.normalTexture.wrap = Repeat;
-			if(vd.pbrTexture != null) vd.pbrTexture.wrap = Repeat;
-			vd.albedoStrength = albedoStrength;
-			vd.normalStrength = normalStrength;
-			vd.pbrStrength = pbrStrength;
-			vd.USE_ALBEDO = albedoStrength != 0;
-			vd.USE_NORMAL = normalStrength != 0;
-			vd.USE_PBR = pbrStrength != 0;
-			vd.CENTERED = centered;
-			vd.scale = new h3d.Vector(mesh.scaleX, mesh.scaleY, mesh.scaleZ);
-			vd.fadePower = fadePower;
-			vd.fadeStart = fadeStart;
-			vd.fadeEnd = fadeEnd;
-			vd.emissive = emissive;
-		}
 		mesh.material.blendMode = blendMode;
+
+		switch (renderMode) {
+			case Decal:
+				var shader = mesh.material.mainPass.getShader(h3d.shader.pbr.VolumeDecal.DecalPBR);
+				if( shader != null ){
+					var b = mesh.getBounds();
+					shader.minBound = new h3d.Vector(b.xMin, b.yMin, b.zMin);
+					shader.maxBound = new h3d.Vector(b.xMax, b.yMax, b.zMax);
+					shader.normal = mesh.getAbsPos().up();
+					shader.tangent = mesh.getAbsPos().right();
+					shader.albedoTexture = albedoMap != null ? ctx.loadTexture(albedoMap) : null;
+					shader.normalTexture = normalMap != null ? ctx.loadTexture(normalMap) : null;
+					shader.pbrTexture = pbrMap != null ? ctx.loadTexture(pbrMap) : null;
+					if(shader.albedoTexture != null) shader.albedoTexture.wrap = Repeat;
+					if(shader.normalTexture != null) shader.normalTexture.wrap = Repeat;
+					if(shader.pbrTexture != null) shader.pbrTexture.wrap = Repeat;
+					shader.albedoStrength = albedoStrength;
+					shader.normalStrength = normalStrength;
+					shader.pbrStrength = pbrStrength;
+					shader.USE_ALBEDO = albedoStrength != 0;
+					shader.USE_NORMAL = normalStrength != 0;
+					shader.USE_PBR = pbrStrength != 0;
+					shader.CENTERED = centered;
+					shader.scale = new h3d.Vector(mesh.scaleX, mesh.scaleY, mesh.scaleZ);
+					shader.fadePower = fadePower;
+					shader.fadeStart = fadeStart;
+					shader.fadeEnd = fadeEnd;
+					shader.emissive = emissive;
+				}
+			case BeforeTonemapping:
+				var shader = mesh.material.mainPass.getShader(h3d.shader.pbr.VolumeDecal.DecalOverlay);
+				if( shader != null ){
+					var b = mesh.getBounds();
+					shader.minBound = new h3d.Vector(b.xMin, b.yMin, b.zMin);
+					shader.maxBound = new h3d.Vector(b.xMax, b.yMax, b.zMax);
+					shader.colorTexture = albedoMap != null ? ctx.loadTexture(albedoMap) : null;
+					if(shader.colorTexture != null) shader.colorTexture.wrap = Repeat;
+					shader.CENTERED = centered;
+					shader.scale = new h3d.Vector(mesh.scaleX, mesh.scaleY, mesh.scaleZ);
+					shader.fadePower = fadePower;
+					shader.fadeStart = fadeStart;
+					shader.fadeEnd = fadeEnd;
+					shader.emissive = emissive;
+				}
+			default:
+		}
 	}
 
 	#if editor
@@ -121,23 +156,38 @@ class AdvancedDecal extends Object3D {
 		}
 	}
 
-	override function edit( ctx : EditContext ) {
-		super.edit(ctx);
-		var props = ctx.properties.add(new hide.Element('
-			<div class="group" name="Decal">
-				<dl>
-					<dt>Centered</dt><dd><input type="checkbox" field="centered"/></dd>
-
-					<dt>Albedo</dt><dd><input type="texturepath" field="albedoMap"/>
+	var pbrParams = '<dt>Albedo</dt><dd><input type="texturepath" field="albedoMap"/>
 					<br/><input type="range" min="0" max="1" field="albedoStrength"/></dd>
 
 					<dt>Normal</dt><dd><input type="texturepath" field="normalMap"/>
 					<br/><input type="range" min="0" max="1" field="normalStrength"/></dd>
 
 					<dt>PBR</dt><dd><input type="texturepath" field="pbrMap"/>
-					<br/><input type="range" min="0" max="1" field="pbrStrength"/></dd>
+					<br/><input type="range" min="0" max="1" field="pbrStrength"/></dd>';
 
-					<dt>Mode</dt>
+	var overlayParams = '<dt>Color</dt><dd><input type="texturepath" field="albedoMap"/>';
+
+	override function edit( ctx : EditContext ) {
+		super.edit(ctx);
+
+		var params = switch (renderMode) {
+			case Decal: pbrParams;
+			case BeforeTonemapping: overlayParams;
+			default: null;
+		}
+
+		var props = ctx.properties.add(new hide.Element('
+			<div class="group" name="Decal">
+				<dl>
+					<dt>Centered</dt><dd><input type="checkbox" field="centered"/></dd>'
+					+ params +
+					'<dt>Render Mode</dt>
+					<dd><select field="renderMode">
+						<option value="Decal">PBR</option>
+						<option value="BeforeTonemapping">Overlay</option>
+					</select></dd>
+
+					<dt>Blend Mode</dt>
 					<dd><select field="blendMode">
 						<option value="Alpha">Alpha</option>
 						<option value="Add">Add</option>
