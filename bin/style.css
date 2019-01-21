@@ -595,6 +595,9 @@ input[type=checkbox]:checked:after {
 .hide-curve-editor .keyPopup input {
   width: 80px;
 }
+.hide-curve-editor svg {
+  border-right: 1px solid black;
+}
 .hide-curve-editor svg line {
   stroke-width: 1px;
 }

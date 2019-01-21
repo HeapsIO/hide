@@ -820,6 +820,8 @@ class FXEditor extends FileView {
 			curveEdit.xOffset = xOffset;
 			curveEdit.xScale = xScale;
 			curveEdit.curve = curve;
+			if(curve.getParent(hide.prefab.fx.Emitter) != null)
+				curveEdit.maxLength = 1.0;
 			curveEdit.onChange = function(anim) {
 				refreshDopesheet();
 			}

@@ -15,6 +15,7 @@ class CurveEditor extends Component {
 	public var lockViewX = false;
 	public var lockViewY = false;
 	public var lockKeyX = false;
+	public var maxLength = 0.0;
 
 	var svg : hide.comp.SVG;
 	var width = 0;
@@ -189,6 +190,8 @@ class CurveEditor extends Component {
 
 		if(key.time < 0)
 			key.time = 0;
+		if(maxLength > 0 && key.time > maxLength)
+			key.time = maxLength;
 
 		if(prev != null && key.time < prev.time)
 			key.time = prev.time + 0.01;
@@ -412,6 +415,9 @@ class CurveEditor extends Component {
 				l.addClass("axis");
 			hlabel("" + hxd.Math.fmt(iy), iy);
 		}
+
+		if(maxLength > 0)
+			svg.rect(gridGroup, xt(maxLength), 0, width - xt(maxLength), height, { opacity: 0.4});
 	}
 
 	public function refreshGraph(?anim: Bool = false, ?animKey: CurveKey) {
