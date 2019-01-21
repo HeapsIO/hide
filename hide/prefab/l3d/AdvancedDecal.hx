@@ -147,6 +147,12 @@ class AdvancedDecal extends Object3D {
 			wire.material.setDefaultProps("ui");
 			wire.ignoreCollide = true;
 			wire.material.shadows = false;
+			var wireCenter = new h3d.scene.Box(0xFFFF00, obj);
+			wireCenter.scaleZ = 0;
+			wireCenter.name = "_highlight";
+			wireCenter.material.setDefaultProps("ui");
+			wireCenter.ignoreCollide = true;
+			wireCenter.material.shadows = false;
 		} else {
 			for( o in ctx.shared.getObjects(this,h3d.scene.Box) )
 				if( o.name == "_highlight" ) {
@@ -176,33 +182,44 @@ class AdvancedDecal extends Object3D {
 			default: null;
 		}
 
-		var props = ctx.properties.add(new hide.Element('
-			<div class="group" name="Decal">
-				<dl>
-					<dt>Centered</dt><dd><input type="checkbox" field="centered"/></dd>'
-					+ params +
-					'<dt>Render Mode</dt>
-					<dd><select field="renderMode">
-						<option value="Decal">PBR</option>
-						<option value="BeforeTonemapping">Overlay</option>
-					</select></dd>
+		function refreshProps(){
+			//ctx.properties.clear();
+			var props = ctx.properties.add(new hide.Element('
+			<div class="decal">
+				<div class="group" name="Decal">
+					<dl>
+						<dt>Centered</dt><dd><input type="checkbox" field="centered"/></dd>'
+						+ params +
+						'<dt>Render Mode</dt>
+						<dd><select field="renderMode">
+							<option value="Decal">PBR</option>
+							<option value="BeforeTonemapping">Overlay</option>
+						</select></dd>
 
-					<dt>Blend Mode</dt>
-					<dd><select field="blendMode">
-						<option value="Alpha">Alpha</option>
-						<option value="Add">Add</option>
-					</select></dd>
-					<dt>Emissive</dt><dd> <input type="range" min="0" max="10" field="emissive"/></dd>
-				</dl>
+						<dt>Blend Mode</dt>
+						<dd><select field="blendMode">
+							<option value="Alpha">Alpha</option>
+							<option value="Add">Add</option>
+						</select></dd>
+						<dt>Emissive</dt><dd> <input type="range" min="0" max="10" field="emissive"/></dd>
+					</dl>
+				</div>
+				<div class="group" name="Fade">
+					<dt>FadePower</dt><dd> <input type="range" min="0" max="3" field="fadePower"/></dd>
+					<dt>Start</dt><dd> <input type="range" min="0" max="1" field="fadeStart"/></dd>
+					<dt>End</dt><dd> <input type="range" min="0" max="1" field="fadeEnd"/></dd>
+				</div>
 			</div>
-			<div class="group" name="Fade">
-				<dt>FadePower</dt><dd> <input type="range" min="0" max="10" field="fadePower"/></dd>
-				<dt>Start</dt><dd> <input type="range" min="0" max="1" field="fadeStart"/></dd>
-				<dt>End</dt><dd> <input type="range" min="0" max="1" field="fadeEnd"/></dd>
-			</div>
-		'),this, function(pname) {
-			ctx.onChange(this, pname);
-		});
+			'),this, function(pname) {
+				if(pname == "renderMode"){
+					ctx.rebuildProperties();
+				}
+				else
+					ctx.onChange(this, pname);
+			});
+		}
+
+		refreshProps();
 	}
 	#end
 

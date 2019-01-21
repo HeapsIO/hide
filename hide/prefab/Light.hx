@@ -248,6 +248,7 @@ class Light extends Object3D {
 					mesh = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), debugDir);
 					mesh.ignoreBounds = true;
 					mesh.setScale(0.2);
+					mesh.ignoreParentTransform = true;
 
 					var g = new h3d.scene.Graphics(debugDir);
 					g.lineStyle(1, 0xffffff);
@@ -263,6 +264,8 @@ class Light extends Object3D {
 					mesh = cast debugDir.getChildAt(0);
 					sel = debugDir.getChildAt(1);
 				}
+
+				mesh.setPosition(debugDir.getAbsPos().tx, debugDir.getAbsPos().ty, debugDir.getAbsPos().tz);
 
 			case Spot:
 
@@ -391,8 +394,10 @@ class Light extends Object3D {
 		}
 
 		var props = ctx.properties.add(group, this, function(pname) {
-			if( pname == "kind")
+			if( pname == "kind"){
 				ctx.rebuildPrefab(this);
+				ctx.rebuildProperties();
+			}
 			else{
 				if( pname == "cookiePath") cookieTex = loadTexture(ctx, this.cookiePath, cookieTex, Clamp);
 				ctx.onChange(this, pname);

@@ -400,7 +400,7 @@ class TerrainEditor {
 	function worldToScreen(wx: Float, wy: Float, wz: Float, ctx : Context) {
 		var s2d = @:privateAccess ctx.local2d.getScene();
 		var camera = @:privateAccess ctx.local3d.getScene().camera;
-		var pt = camera.project(wx, wy, wz, s2d.width, s2d.height);
+		var pt = camera.project(wx, wy, wz,  h3d.Engine.getCurrent().width, h3d.Engine.getCurrent().height);
 		return new h2d.col.Point( hxd.Math.abs(pt.x), hxd.Math.abs(pt.y));
 	}
 
