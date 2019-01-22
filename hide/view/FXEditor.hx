@@ -488,9 +488,28 @@ class FXEditor extends FileView {
 				}
 			}
 
-			var curves = [for(ce in curveEdits) ce.curve];
+			var curves = [];
+			var allKeys = null;
+			for(ce in curveEdits) {
+				if(isEmitterCurve(ce.curve))
+					continue;
+				curves.push(ce.curve);
+			}
+
+			function fillKeys() {
+				allKeys = [];
+				for(curve in curves) {
+					for(key in curve.keys) {
+						if(key.time >= selectMin && key.time <= selectMax)
+							allKeys.push(key);
+					}
+				}
+			}
+			fillKeys();
+
 			var backup = null;
 			var prevSel = null;
+
 			function beforeChange() {
 				backup = [for(c in curves) haxe.Json.parse(haxe.Json.stringify(c.save()))];
 				prevSel = [selectMin, selectMax];
@@ -512,6 +531,7 @@ class FXEditor extends FileView {
 						selectMin = newSel[0];
 						selectMax = newSel[1];
 					}
+					fillKeys();
 					updateSelectPos();
 					refreshViews();
 				}));
@@ -530,6 +550,10 @@ class FXEditor extends FileView {
 					startDrag(function(e) {
 						var time = ixt(e.clientX);
 						update(time, lastTime);
+						for(ce in curveEdits) {
+							ce.refreshGraph(true);
+							ce.onChange(true);
+						}
 						updateSelectPos();
 						lastTime = time;
 					}, function(e) {
@@ -543,15 +567,8 @@ class FXEditor extends FileView {
 				if(selectMax > selectMin + 0.1) {
 					var scaleFactor = (selectMax + shift - selectMin) / (selectMax - selectMin);
 
-					for(ce in curveEdits) {
-						for(key in ce.curve.keys) {
-							if(key.time >= selectMin && key.time <= selectMax) {
-								key.time = (key.time - selectMin) * scaleFactor + selectMin;
-							}
-						}
-						ce.refreshGraph(true);
-						ce.onChange(true);
-					}
+					for(key in allKeys)
+						key.time = (key.time - selectMin) * scaleFactor + selectMin;
 
 					selectMax += shift;
 				}
@@ -562,15 +579,8 @@ class FXEditor extends FileView {
 				if(selectMax > selectMin + 0.1) {
 					var scaleFactor = (selectMax - (selectMin + shift)) / (selectMax - selectMin);
 
-					for(ce in curveEdits) {
-						for(key in ce.curve.keys) {
-							if(key.time >= selectMin && key.time <= selectMax) {
-								key.time = selectMax - (selectMax - key.time) * scaleFactor;
-							}
-						}
-						ce.refreshGraph(true);
-						ce.onChange(true);
-					}
+					for(key in allKeys)
+						key.time = selectMax - (selectMax - key.time) * scaleFactor;
 
 					selectMin += shift;
 				}
@@ -578,15 +588,10 @@ class FXEditor extends FileView {
 
 			setupSelectDrag(select, function(time, lastTime) {
 				var shift = time - lastTime;
-				for(ce in curveEdits) {
-					for(key in ce.curve.keys) {
-						if(key.time >= selectMin && key.time <= selectMax) {
-							key.time += shift;
-						}
-					}
-					ce.refreshGraph(true);
-					ce.onChange(true);
-				}
+
+				for(key in allKeys)
+					key.time += shift;
+
 				selectMin += shift;
 				selectMax += shift;
 			});
@@ -836,7 +841,7 @@ class FXEditor extends FileView {
 			curveEdit.xOffset = xOffset;
 			curveEdit.xScale = xScale;
 			curveEdit.curve = curve;
-			if(curve.getParent(hide.prefab.fx.Emitter) != null)
+			if(isEmitterCurve(curve))
 				curveEdit.maxLength = 1.0;
 			curveEdit.onChange = function(anim) {
 				refreshDopesheet();
@@ -1277,6 +1282,10 @@ class FXEditor extends FileView {
 	static function upperCase(prop: String) {
 		if(prop == null) return "";
 		return prop.charAt(0).toUpperCase() + prop.substr(1);
+	}
+
+	static function isEmitterCurve(curve: Curve) {
+		return curve.getParent(hide.prefab.fx.Emitter) != null;
 	}
 
 	static var _ = FileTree.registerExtension(FXEditor, ["fx"], { icon : "sitemap", createNew : "FX" });
