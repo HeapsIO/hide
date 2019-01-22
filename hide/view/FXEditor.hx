@@ -254,6 +254,8 @@ class FXEditor extends FileView {
 		sceneEditor.tree.element.addClass("small");
 
 		var timeline = element.find(".timeline");
+		var sMin = 0.0;
+		var sMax = 0.0;
 		timeline.mousedown(function(e) {
 			var lastX = e.clientX;
 			var shift = e.shiftKey;
@@ -261,7 +263,7 @@ class FXEditor extends FileView {
 			var xoffset = timeline.offset().left;
 
 			if(shift) {
-				selectMin = hxd.Math.max(0, ixt(e.clientX - xoffset));
+				sMin = hxd.Math.max(0, ixt(e.clientX - xoffset));
 			}
 			else if(ctrl) {
 				previewMin = hxd.Math.max(0, ixt(e.clientX - xoffset));
@@ -275,7 +277,7 @@ class FXEditor extends FileView {
 				}
 				else if(e.which == 1) {
 					if(shift) {
-						selectMax = ixt(e.clientX - xoffset);
+						sMax = ixt(e.clientX - xoffset);
 					}
 					else if(ctrl) {
 						previewMax = ixt(e.clientX - xoffset);
@@ -286,6 +288,15 @@ class FXEditor extends FileView {
 						currentTime = ixt(e.clientX - xoffset);
 						currentTime = hxd.Math.max(currentTime, 0);
 					}
+				}
+
+				if(hxd.Math.abs(sMax - sMin) < 1e-5) {
+					selectMin = 0;
+					selectMax = 0;
+				}
+				else {
+					selectMax = hxd.Math.max(sMin, sMax);
+					selectMin = hxd.Math.min(sMin, sMax);
 				}
 			}
 
@@ -301,10 +312,6 @@ class FXEditor extends FileView {
 				if(previewMax < previewMin + 0.1) {
 					previewMin = 0;
 					previewMax = data.duration == 0 ? 1 : data.duration;
-				}
-				if(selectMax < selectMin + 0.1) {
-					selectMin = 0;
-					selectMax = 0;
 				}
 
 				element.off("mousemove");
@@ -463,7 +470,7 @@ class FXEditor extends FileView {
 		var select = new Element('<span class="selection"></span>').appendTo(overlay);
 		select.css({left: xt(selectMin), width: xt(selectMax) - xt(selectMin)});
 
-		if(!anim && selectMax > selectMin + 1e-6) {
+		if(!anim && selectMax != selectMin) {
 			var selLeft = new Element('<span class="selection-left"></span>').appendTo(overlay);
 			var selRight = new Element('<span class="selection-right"></span>').appendTo(overlay);
 
