@@ -511,6 +511,7 @@ class FXEditor extends FileView {
 					e.preventDefault();
 					e.stopPropagation();
 					var lastTime = ixt(e.clientX);
+					beforeChange();
 					startDrag(function(e) {
 						var time = ixt(e.clientX);
 						update(time, lastTime);
