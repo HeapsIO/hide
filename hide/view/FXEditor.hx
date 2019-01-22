@@ -961,29 +961,21 @@ class FXEditor extends FileView {
 			events: Array<Event>
 		}> = [];
 
-		for(elt in selection) {
-			var root = elt;
-			if(Std.instance(elt, hide.prefab.Curve) != null) {
-				root = elt.parent;
-			}
-			var sect = sections.find(s -> s.elt == root);
+		function getSection(elt: PrefabElement) {
+			var ctxElt = elt.parent;
+			var sect = sections.find(s -> s.elt == ctxElt);
 			if(sect == null) {
-				sect = {elt: root, curves: [], events: []};
+				sect = {elt: ctxElt, curves: [], events: []};
 				sections.push(sect);
 			}
+			return sect;
+		}
 
-			inline function f(elt) {
-				var curve = Std.instance(elt, hide.prefab.Curve);
-				if(curve != null)
-					sect.curves.push(curve);
-				var evt = Std.instance(elt, Event);
-				if(evt != null)
-					sect.events.push(evt);
-			}
-
-			f(elt);
-			for(child in elt.children)
-				f(child);
+		for(sel in selection) {
+			for(curve in sel.flatten(Curve))
+				getSection(curve).curves.push(curve);
+			for(evt in sel.flatten(Event))
+				getSection(evt).events.push(evt);
 		}
 
 		for(sec in sections) {
