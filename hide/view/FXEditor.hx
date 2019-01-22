@@ -488,15 +488,18 @@ class FXEditor extends FileView {
 				}
 			}
 
-			var curves = [];
+			var curves = null;
 			var allKeys = null;
-			for(ce in curveEdits) {
-				if(isEmitterCurve(ce.curve))
-					continue;
-				curves.push(ce.curve);
-			}
 
-			function fillKeys() {
+			function updateSelected() {
+				curves = [];
+				var anyNonEmitter = curveEdits.find(ce -> !isEmitterCurve(ce.curve)) != null;
+				for(ce in curveEdits) {
+					if(anyNonEmitter && isEmitterCurve(ce.curve))
+						continue;  // Filter-out emitter curves unless only emitter curves are selected
+					curves.push(ce.curve);
+				}
+
 				allKeys = [];
 				for(curve in curves) {
 					for(key in curve.keys) {
@@ -505,7 +508,6 @@ class FXEditor extends FileView {
 					}
 				}
 			}
-			fillKeys();
 
 			var backup = null;
 			var prevSel = null;
@@ -531,7 +533,7 @@ class FXEditor extends FileView {
 						selectMin = newSel[0];
 						selectMax = newSel[1];
 					}
-					fillKeys();
+					updateSelected();
 					updateSelectPos();
 					refreshViews();
 				}));
@@ -540,6 +542,8 @@ class FXEditor extends FileView {
 
 			function setupSelectDrag(element: js.jquery.JQuery, update: Float->Float->Void) {
 				element.mousedown(function(e) {
+					updateSelected();
+
 					if(e.button != 0)
 						return;
 					var offset = scroll.offset();
