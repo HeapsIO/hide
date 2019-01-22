@@ -483,21 +483,29 @@ class FXEditor extends FileView {
 
 			var curves = [for(ce in curveEdits) ce.curve];
 			var backup = null;
+			var prevSel = null;
 			function beforeChange() {
 				backup = [for(c in curves) haxe.Json.parse(haxe.Json.stringify(c.save()))];
+				prevSel = [selectMin, selectMax];
 			}
 
 			function afterChange() {
 				var newVals = [for(c in curves) haxe.Json.parse(haxe.Json.stringify(c.save()))];
+				var newSel = [selectMin, selectMax];
 				undo.change(Custom(function(undo) {
 					if(undo) {
 						for(i in 0...curves.length)
 							curves[i].load(backup[i]);
+						selectMin = prevSel[0];
+						selectMax = prevSel[1];
 					}
 					else {
 						for(i in 0...curves.length)
 							curves[i].load(newVals[i]);
+						selectMin = newSel[0];
+						selectMax = newSel[1];
 					}
+					updateSelectPos();
 					refreshViews();
 				}));
 				refreshViews();
