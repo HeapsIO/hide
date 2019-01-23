@@ -31,7 +31,7 @@ class AnimEvent extends hide.prefab.fx.Event {
 
 	override function prepare(ctx: Context) : Event.EventInstance {
 		var obj = ctx.local3d;
-		var anim = ctx.loadAnimation(animation);
+		var anim = animation != null ? ctx.loadAnimation(animation) : null;
 		var lastTime = -1.0;
 		var inst = null;
 		if(anim == null) { return null; }
