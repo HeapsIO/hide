@@ -80,6 +80,7 @@ class AnimEvent extends hide.prefab.fx.Event {
 			if( animation != null )
 				select.val(animation);
 			select.change(function(_) {
+				ctx.scene.setCurrent();
 				var v = select.val();
 				var prev = animation;
 				if( v == "" ) {
