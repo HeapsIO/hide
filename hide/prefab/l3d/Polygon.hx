@@ -132,7 +132,7 @@ class Polygon extends Object3D {
 		}
 
 		var verts = [for(p in points) new h3d.col.Point(p.x, p.y, 0.)];
-		var idx = new hxd.IndexBuffer(indices.length);
+		var idx = new hxd.IndexBuffer();
 		for(i in indices)
 			idx.push(i);
 		primitive = new h3d.prim.Polygon(verts, idx);
@@ -301,7 +301,7 @@ class Polygon extends Object3D {
 							apply();
 							ctx.onChange(this, null);
 						}
-						else 
+						else
 							points = [];
 					}
 				default: shape = Quad;
