@@ -291,10 +291,6 @@ class FX extends hxd.prefab.Library {
 			return hide.prefab.Curve.getColorValue(curves);
 		}
 
-		var events = [for(evt in elt.getAll(Event)) evt.prepare(objCtx)];
-		if(events.length > 0)
-			anyFound = true;
-
 		var lookAt = null;
 		{
 			var p = elt.getOpt(LookAt);
@@ -308,7 +304,7 @@ class FX extends hxd.prefab.Library {
 		var anim : ObjectAnimation = {
 			elt: obj3d,
 			obj: objCtx.local3d,
-			events: events.length > 0 ? events : null,
+			events: null,
 			lookAt: lookAt,
 			position: makeVector("position", 0.0),
 			scale: makeVector("scale", 1.0, true),
@@ -317,8 +313,22 @@ class FX extends hxd.prefab.Library {
 			visibility: makeVal("visibility", null),
 		};
 
+		for(evt in elt.getAll(Event)) {
+			var eventObj = evt.prepare(objCtx);
+			if(eventObj == null) continue;
+			if(anim.events == null) anim.events = [];
+			anim.events.push(eventObj);
+			anyFound = true;
+		}
+
 		if(anyFound)
 			anims.push(anim);
+	}
+
+	public function refreshObjectAnims(ctx: Context) {
+		var fxanim = Std.instance(ctx.local3d, FXAnimation);
+		fxanim.objects = [];
+		getObjAnimations(ctx, this, fxanim.objects);
 	}
 
 	public static function makeShaderParams(ctx: Context, shaderElt: hide.prefab.Shader) {
@@ -454,7 +464,6 @@ class FX extends hxd.prefab.Library {
 				if(co == null) c.makeInstanceRec(ctx);
 			}
 			getConstraints(ctx, root, fxanim.constraints);
-			getObjAnimations(ctx, this, fxanim.objects);
 		}
 		else
 			super.makeInstance(ctx);

@@ -421,6 +421,7 @@ class FXEditor extends FileView {
 
 		if(p.to(Event) != null) {
 			afterPan(false);
+			data.refreshObjectAnims(sceneEditor.getContext(data));
 		}
 	}
 
@@ -888,6 +889,7 @@ class FXEditor extends FileView {
 				var info = item.event.getDisplayInfo(sceneEditor.curEdit);
 				item.el.css({left: xt(item.event.time), top: yoff});
 				item.el.width(info.length * xScale);
+				item.el.find("label").text(info.label);
 				yoff += 21;
 			}
 			eventsEl.css("height", yoff + 1);
@@ -901,7 +903,7 @@ class FXEditor extends FileView {
 		for(event in events) {
 			var info = event.getDisplayInfo(sceneEditor.curEdit);
 			var evtEl = new Element('<div class="event">
-				<i class="icon fa fa-play-circle"></i><label>${info.label}</label>
+				<i class="icon fa fa-play-circle"></i><label></label>
 			</div>').appendTo(eventsEl);
 			items.push({el: evtEl, event: event });
 

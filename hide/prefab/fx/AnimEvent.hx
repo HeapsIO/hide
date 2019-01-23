@@ -88,6 +88,7 @@ class AnimEvent extends hide.prefab.fx.Event {
 					animation = v;
 				}
 				ctx.properties.undo.change(Field(this, "animation", prev));
+				ctx.onChange(this, "animation");
 			});
 		}
 	}
