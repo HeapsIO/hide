@@ -51,14 +51,13 @@ class AdvancedDecal extends Object3D {
 
 	override function makeInstance(ctx:Context):Context {
 		ctx = ctx.clone(this);
-		var mesh = new h3d.scene.Mesh(h3d.prim.Cube.defaultUnitCube(), ctx.local3d);
+		var mesh = new h3d.scene.pbr.Decal(h3d.prim.Cube.defaultUnitCube(), ctx.local3d);
 
 		switch (renderMode) {
 			case Decal:
 				var shader = mesh.material.mainPass.getShader(h3d.shader.pbr.VolumeDecal.DecalPBR);
 				if( shader == null ) {
 					shader = new h3d.shader.pbr.VolumeDecal.DecalPBR();
-					//shader.setPriority(-1);
 					mesh.material.mainPass.addShader(shader);
 				}
 				mesh.material.mainPass.setPassName("decal");
@@ -68,7 +67,7 @@ class AdvancedDecal extends Object3D {
 					shader = new h3d.shader.pbr.VolumeDecal.DecalOverlay();
 					mesh.material.mainPass.addShader(shader);
 				}
-				mesh.material.mainPass.setPassName("BeforeTonemapping");
+				mesh.material.mainPass.setPassName("beforeTonemapping");
 			default:
 		}
 
@@ -81,21 +80,13 @@ class AdvancedDecal extends Object3D {
 		return ctx;
 	}
 
-	override function updateInstance(ctx:Context,?propName:String) {
-		super.updateInstance(ctx,propName);
-
+	public function updateRenderParams(ctx) {
 		var mesh = Std.instance(ctx.local3d, h3d.scene.Mesh);
 		mesh.material.blendMode = blendMode;
-
 		switch (renderMode) {
 			case Decal:
 				var shader = mesh.material.mainPass.getShader(h3d.shader.pbr.VolumeDecal.DecalPBR);
 				if( shader != null ){
-					var b = mesh.getBounds();
-					shader.minBound = new h3d.Vector(b.xMin, b.yMin, b.zMin);
-					shader.maxBound = new h3d.Vector(b.xMax, b.yMax, b.zMax);
-					shader.normal = mesh.getAbsPos().up();
-					shader.tangent = mesh.getAbsPos().right();
 					shader.albedoTexture = albedoMap != null ? ctx.loadTexture(albedoMap) : null;
 					shader.normalTexture = normalMap != null ? ctx.loadTexture(normalMap) : null;
 					shader.pbrTexture = pbrMap != null ? ctx.loadTexture(pbrMap) : null;
@@ -109,7 +100,6 @@ class AdvancedDecal extends Object3D {
 					shader.USE_NORMAL = normalStrength != 0;
 					shader.USE_PBR = pbrStrength != 0;
 					shader.CENTERED = centered;
-					shader.scale = new h3d.Vector(mesh.scaleX, mesh.scaleY, mesh.scaleZ);
 					shader.fadePower = fadePower;
 					shader.fadeStart = fadeStart;
 					shader.fadeEnd = fadeEnd;
@@ -118,13 +108,9 @@ class AdvancedDecal extends Object3D {
 			case BeforeTonemapping:
 				var shader = mesh.material.mainPass.getShader(h3d.shader.pbr.VolumeDecal.DecalOverlay);
 				if( shader != null ){
-					var b = mesh.getBounds();
-					shader.minBound = new h3d.Vector(b.xMin, b.yMin, b.zMin);
-					shader.maxBound = new h3d.Vector(b.xMax, b.yMax, b.zMax);
 					shader.colorTexture = albedoMap != null ? ctx.loadTexture(albedoMap) : null;
 					if(shader.colorTexture != null) shader.colorTexture.wrap = Repeat;
 					shader.CENTERED = centered;
-					shader.scale = new h3d.Vector(mesh.scaleX, mesh.scaleY, mesh.scaleZ);
 					shader.fadePower = fadePower;
 					shader.fadeStart = fadeStart;
 					shader.fadeEnd = fadeEnd;
@@ -132,6 +118,11 @@ class AdvancedDecal extends Object3D {
 				}
 			default:
 		}
+	}
+
+	override function updateInstance(ctx:Context,?propName:String) {
+		super.updateInstance(ctx,propName);
+		updateRenderParams(ctx);
 	}
 
 	#if editor
@@ -153,6 +144,7 @@ class AdvancedDecal extends Object3D {
 			wireCenter.material.setDefaultProps("ui");
 			wireCenter.ignoreCollide = true;
 			wireCenter.material.shadows = false;
+			wireCenter.material.mainPass.depthTest = Always;
 		} else {
 			for( o in ctx.shared.getObjects(this,h3d.scene.Box) )
 				if( o.name == "_highlight" ) {
@@ -183,7 +175,6 @@ class AdvancedDecal extends Object3D {
 		}
 
 		function refreshProps(){
-			//ctx.properties.clear();
 			var props = ctx.properties.add(new hide.Element('
 			<div class="decal">
 				<div class="group" name="Decal">
@@ -212,6 +203,7 @@ class AdvancedDecal extends Object3D {
 			</div>
 			'),this, function(pname) {
 				if(pname == "renderMode"){
+					ctx.rebuildPrefab(this);
 					ctx.rebuildProperties();
 				}
 				else
