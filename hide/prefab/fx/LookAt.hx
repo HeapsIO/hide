@@ -16,7 +16,7 @@ class LookAtInstance {
 	static var tmpMat = new h3d.Matrix();
 	static var deltaVec = new h3d.Vector();
 	static var lockAxis = new h3d.Vector();
-	static var invParentQ = new h3d.Quat();
+	static var tempQ = new h3d.Quat();
 	public function apply() {
 		if(object == null || object.getScene() == null)
 			return;
@@ -33,6 +33,7 @@ class LookAtInstance {
 
 		tmpMat.load(object.parent.getAbsPos());
 		tmpMat.invert();
+		var invParentQ = tempQ;
 		invParentQ.initRotateMatrix(tmpMat);
 
 		if(definition.lockAxis != null) {

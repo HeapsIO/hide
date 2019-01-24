@@ -295,9 +295,11 @@ class FX extends hxd.prefab.Library {
 		{
 			var p = elt.getOpt(LookAt);
 			if(p != null) {
-				anyFound = true;
 				var ctx = ctx.shared.contexts.get(p);
-				lookAt = cast ctx.custom;
+				if(ctx != null) {
+					anyFound = true;
+					lookAt = cast ctx.custom;
+				}
 			}
 		}
 
