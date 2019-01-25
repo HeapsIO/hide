@@ -24,7 +24,7 @@ class AdvancedDecal extends Object3D {
 		if(albedoStrength != 1) obj.albedoStrength = albedoStrength;
 		if(normalStrength != 1) obj.normalStrength = normalStrength;
 		if(pbrStrength != 1) obj.pbrStrength = pbrStrength;
-		if(blendMode != Alpha) obj.blendMode = blendMode;
+		if(blendMode != Alpha) obj.blendMode = blendMode.getIndex();
 		if(centered != true) obj.centered = centered;
 		if(fadePower != 1) obj.fadePower = fadePower;
 		if(fadeStart != 0) obj.fadeStart = fadeStart;
@@ -41,7 +41,7 @@ class AdvancedDecal extends Object3D {
 		albedoStrength = obj.albedoStrength != null ? obj.albedoStrength : 1;
 		normalStrength = obj.normalStrength != null ? obj.normalStrength : 1;
 		pbrStrength = obj.pbrStrength != null ? obj.pbrStrength : 1;
-		blendMode = obj.blendMode != null ? obj.blendMode : Alpha;
+		blendMode = obj.blendMode != null ? h2d.BlendMode.createByIndex(obj.blendMode) : Alpha;
 		centered = obj.centered != null ? obj.centered : true;
 		fadePower = obj.fadePower != null ? obj.fadePower : 1;
 		fadeStart = obj.fadeStart != null ? obj.fadeStart : 0;
