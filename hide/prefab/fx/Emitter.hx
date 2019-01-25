@@ -52,6 +52,7 @@ private class ParticleInstance extends h3d.scene.Object {
 	var evaluator : Evaluator;
 
 	public var life = 0.0;
+	public var lifeTime = 0.0;
 
 	public var curVelocity = new h3d.Vector();
 	public var orientation = new h3d.Quat();
@@ -85,7 +86,7 @@ private class ParticleInstance extends h3d.scene.Object {
 		if(child == null)
 			return;
 
-		var t = hxd.Math.clamp(life / emitter.lifeTime, 0.0, 1.0);
+		var t = hxd.Math.clamp(life / lifeTime, 0.0, 1.0);
 
 		evaluator.getVector(def.localSpeed, t, tmpLocalSpeed);
 		if(tmpLocalSpeed.length() > 0.001) {
@@ -204,6 +205,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var particleTemplate : hide.prefab.Object3D;
 	public var maxCount = 20;
 	public var lifeTime = 2.0;
+	public var lifeTimeRand = 0.0;
 	public var emitShape : EmitShape = Cylinder;
 	public var emitOrientation : Orientation = Forward;
 	public var simulationSpace : SimulationSpace = Local;
@@ -281,6 +283,7 @@ class EmitterObject extends h3d.scene.Object {
 		for(i in 0...count) {
 			var part = new ParticleInstance(this, instDef);
 			part.visible = particleVisibility;
+			part.lifeTime = hxd.Math.max(0.01, lifeTime + hxd.Math.srand(lifeTimeRand));
 			context.local3d = part;
 			var ctx = particleTemplate.makeInstance(context);
 
@@ -463,6 +466,7 @@ class Emitter extends Object3D {
 		{ name: "simulationSpace", t: PEnum(SimulationSpace), def: SimulationSpace.Local, disp: "Simulation Space", },
 		{ name: "emitRate", t: PInt(0, 100), def: 5, disp: "Rate", animate: true },
 		{ name: "lifeTime", t: PFloat(0, 10), def: 1.0 },
+		{ name: "lifeTimeRand", t: PFloat(0, 1), def: 0.0 },
 		{ name: "maxCount", t: PInt(0, 100), def: 20, },
 		{ name: "emitShape", t: PEnum(EmitShape), def: EmitShape.Sphere, disp: "Emit Shape", },
 		{ name: "emitAngle", t: PFloat(0, 360.0), disp: "Angle", },
@@ -652,6 +656,7 @@ class Emitter extends Object3D {
 
 		emitterObj.simulationSpace = getParamVal("simulationSpace");
 		emitterObj.lifeTime = getParamVal("lifeTime");
+		emitterObj.lifeTimeRand = getParamVal("lifeTimeRand");
 		emitterObj.maxCount = getParamVal("maxCount");
 		emitterObj.emitRate = makeParam(this, "emitRate");
 		emitterObj.emitShape = getParamVal("emitShape");
