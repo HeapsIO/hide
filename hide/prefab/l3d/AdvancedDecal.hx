@@ -49,7 +49,7 @@ class AdvancedDecal extends Object3D {
 		renderMode = obj.renderMode != null ? obj.renderMode : Decal;
 	}
 
-	override function makeInstance(ctx:Context):Context {
+	override function makeInstance(ctx:Context) : Context {
 		ctx = ctx.clone(this);
 		var mesh = new h3d.scene.pbr.Decal(h3d.prim.Cube.defaultUnitCube(), ctx.local3d);
 
@@ -120,14 +120,14 @@ class AdvancedDecal extends Object3D {
 		}
 	}
 
-	override function updateInstance(ctx:Context,?propName:String) {
+	override function updateInstance( ctx : Context, ?propName : String ) {
 		super.updateInstance(ctx,propName);
 		updateRenderParams(ctx);
 	}
 
 	#if editor
 	override function getHideProps() : HideProps {
-		return { icon : "paint-brush", name : "Decal" };
+		return { icon : "paint-brush", name : "AdvancedDecal" };
 	}
 
 	override function setSelected( ctx : Context, b : Bool ) {
@@ -146,12 +146,16 @@ class AdvancedDecal extends Object3D {
 			wireCenter.material.shadows = false;
 			wireCenter.material.mainPass.depthTest = Always;
 		} else {
-			for( o in ctx.shared.getObjects(this,h3d.scene.Box) )
-				if( o.name == "_highlight" ) {
-					o.remove();
-					return;
-				}
+			clearSelection( ctx );
 		}
+	}
+
+	function clearSelection( ctx : Context ) {
+
+		var obj = ctx.shared.contexts.get(this).local3d;
+		var objs = obj.findAll( o -> if(o.name == "_highlight") o else null );
+		for( o in objs )
+			o.remove();
 	}
 
 	var pbrParams = '<dt>Albedo</dt><dd><input type="texturepath" field="albedoMap"/>
@@ -174,7 +178,7 @@ class AdvancedDecal extends Object3D {
 			default: null;
 		}
 
-		function refreshProps(){
+		function refreshProps() {
 			var props = ctx.properties.add(new hide.Element('
 			<div class="decal">
 				<div class="group" name="Decal">
@@ -202,7 +206,8 @@ class AdvancedDecal extends Object3D {
 				</div>
 			</div>
 			'),this, function(pname) {
-				if(pname == "renderMode"){
+				if( pname == "renderMode" ) {
+					clearSelection( ctx.rootContext );
 					ctx.rebuildPrefab(this);
 					ctx.rebuildProperties();
 				}
