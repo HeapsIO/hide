@@ -12,9 +12,9 @@ class UIKit extends FileView {
 	var uiElt : UIKitDefinition;
 	var editor : hide.comp.CodeEditor;
 	var lastSaveHtml : String;
-	var doc : h2d.uikit.Document;
+	var doc : uikit.Document<h2d.Object>;
 	var cssFiles : Array<String>;
-	var sheets : h2d.uikit.CssStyle;
+	var sheets : uikit.CssStyle;
 	var root : h2d.Flow;
 
 	override function getDefaultContent() {
@@ -63,12 +63,12 @@ class UIKit extends FileView {
 	}
 
 	function loadSheets() {
-		sheets = new h2d.uikit.CssStyle();
+		sheets = new uikit.CssStyle();
 		var warnings = [];
 		for( f in cssFiles ) {
 			var content = sys.io.File.getContent(ide.getPath(f));
-			var parser = new h2d.uikit.CssParser();
-			var css = try parser.parseSheet(content) catch( e : h2d.uikit.Error ) {
+			var parser = new uikit.CssParser();
+			var css = try parser.parseSheet(content) catch( e : uikit.Error ) {
 				warnings.push({ file : f, line : content.substr(0,e.pmin).split("\n").length + 1, msg : e.message });
 				continue;
 			}
@@ -84,18 +84,20 @@ class UIKit extends FileView {
 	function sync() {
 		if( sheets == null )
 			loadSheets();
+		var oldDoc = doc;
 		editor.clearError();
-		var xml = try haxe.xml.Parser.parse(uiElt.html) catch( e : haxe.xml.Parser.XmlParserException ) {
-			editor.setError(e.message, e.lineNumber, e.position, e.position+1);
-			return;
-		};
-		if( doc != null ) {
-			doc.remove();
-			doc = null;
-		}
 
-		var b = new h2d.uikit.Builder();
-		doc = b.build(xml);
+		var b = new uikit.Builder();
+		try {
+			doc = b.build(uiElt.html);
+		} catch( e : uikit.Error ) {
+			//editor.setError(e.message, uiElt.html.substr(0,e.pmin).split("\n")
+			return;
+		}
+		if( oldDoc != null ) {
+			oldDoc.remove();
+			oldDoc.root.obj.remove();
+		}
 		if( b.errors.length > 0 )
 			editor.setError(b.errors.join("\n"), 1, 0, uiElt.html.length);
 
@@ -105,7 +107,8 @@ class UIKit extends FileView {
 			root.horizontalAlign = Middle;
 			root.verticalAlign = Middle;
 		}
-		doc.addTo(root);
+		if( doc.root != null )
+			root.addChild(doc.root.obj);
 		doc.setStyle(sheets);
 	}
 
