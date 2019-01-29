@@ -135,8 +135,7 @@ class Object3D extends Prefab {
 		// Check children
 		return {
 			icon : children == null || children.length > 0 ? "folder-open" : "genderless",
-			name : "Group",
-			allowChildren : function(t) return hxd.prefab.Library.isOfType(t,Object3D) || ["settings", "material", "shader"].indexOf(t) >= 0 || name == "settings"
+			name : "Group"
 		};
 	}
 	#end
