@@ -109,7 +109,8 @@ class FXAnimation extends h3d.scene.Object {
 		var visiblity : Bool = true;
 		if(followVisibility != null)
 			visiblity = visiblity && followVisibility.visible;
-		visiblity = visiblity && customVisibility(this);
+		if(customVisibility != null)
+			visiblity = visiblity && customVisibility(this);
 
 		for(emitter in emitters){
 			if(emitter.particleVisibility != visiblity)
