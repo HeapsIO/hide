@@ -27,40 +27,57 @@ class LookAtInstance {
 			else
 				object.getScene().camera.pos;
 
+		object.ignoreParentTransform = false;
+		@:privateAccess object.posChanged = true;
+
 		deltaVec.load(lookAtPos.sub(object.getAbsPos().getPosition()));
 		if(deltaVec.lengthSq() < 0.001)
 			return;
 
-		tmpMat.load(object.parent.getAbsPos());
-		tmpMat.invert();
-		var invParentQ = tempQ;
-		invParentQ.initRotateMatrix(tmpMat);
-
-		if(definition.lockAxis != null) {
+		if(definition.lockAxis != null)
 			lockAxis.set(definition.lockAxis[0], definition.lockAxis[1], definition.lockAxis[2]);
-			if(lockAxis.lengthSq() > 0.001) {
-				var targetOnPlane = h3d.col.Plane.fromNormalPoint(lockAxis.toPoint(), new h3d.col.Point()).project(deltaVec.toPoint()).toVector();
-				targetOnPlane.normalize();
-				var frontAxis = new h3d.Vector(1, 0, 0);
-				var angle = hxd.Math.acos(frontAxis.dot3(targetOnPlane));
+		else
+			lockAxis.set();
 
-				var cross = frontAxis.cross(deltaVec);
-				if(lockAxis.dot3(cross) < 0)
-					angle = -angle;
+		if(lockAxis.lengthSq() > 0.001) {
+			tmpMat.load(object.parent.getAbsPos());
+			tmpMat.invert();
+			var invParentQ = tempQ;
+			invParentQ.initRotateMatrix(tmpMat);
 
-				var q = object.getRotationQuat();
-				q.initRotateAxis(lockAxis.x, lockAxis.y, lockAxis.z, angle);
-				q.multiply(invParentQ, q);
-				object.setRotationQuat(q);
-				return;
-			}
+			var targetOnPlane = h3d.col.Plane.fromNormalPoint(lockAxis.toPoint(), new h3d.col.Point()).project(deltaVec.toPoint()).toVector();
+			targetOnPlane.normalize();
+			var frontAxis = new h3d.Vector(1, 0, 0);
+			var angle = hxd.Math.acos(frontAxis.dot3(targetOnPlane));
+
+			var cross = frontAxis.cross(deltaVec);
+			if(lockAxis.dot3(cross) < 0)
+				angle = -angle;
+
+			var q = object.getRotationQuat();
+			q.initRotateAxis(lockAxis.x, lockAxis.y, lockAxis.z, angle);
+			q.multiply(invParentQ, q);
+			object.setRotationQuat(q);
 		}
+		else
+		{
+			tmpMat.load(object.getAbsPos());
+			object.ignoreParentTransform = true;
+			@:privateAccess object.posChanged = true;
+			var scale = tmpMat.getScale();
+			object.scaleX = scale.x;
+			object.scaleY = scale.y;
+			object.scaleZ = scale.z;
+			object.x = tmpMat.tx;
+			object.y = tmpMat.ty;
+			object.z = tmpMat.tz;
 
-		// Default look at
-		h3d.Matrix.lookAtX(deltaVec, tmpMat);
-		var q = object.getRotationQuat();
-		q.initRotateMatrix(tmpMat);
-		object.setRotationQuat(q);
+			// // Default look at
+			h3d.Matrix.lookAtX(deltaVec, tmpMat);
+			var q = object.getRotationQuat();
+			q.initRotateMatrix(tmpMat);
+			object.setRotationQuat(q);
+		}
 	}
 }
 
