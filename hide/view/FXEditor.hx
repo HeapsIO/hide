@@ -66,7 +66,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		var allTypes = super.getNewContextMenu(current, onMake);
 
 		var menu = [];
-		for(name in ["Group", "Polygon", "Model", "Shaders"]) {
+		for(name in ["Group", "Polygon", "Model", "Shaders", "Emitter"]) {
 			var item = allTypes.find(i -> i.label == name);
 			if(item == null) continue;
 			allTypes.remove(item);
