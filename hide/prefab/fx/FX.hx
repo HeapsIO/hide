@@ -54,7 +54,6 @@ class FXAnimation extends h3d.scene.Object {
 
 	public var playSpeed : Float;
 	public var localTime(default, null) : Float = 0.0;
-	public var worldTime(default, null) : Float = 0.0;
 	public var duration : Float;
 
 	public var loopAnims : Bool;
@@ -72,7 +71,7 @@ class FXAnimation extends h3d.scene.Object {
 		random = new hxd.Rand(Std.random(0xFFFFFF));
 		evaluator = new Evaluator(random);
 		name = "FXAnimation";
-		setTime(0,0);
+		setTime(0);
 	}
 
 	override function onRemove() {
@@ -96,13 +95,15 @@ class FXAnimation extends h3d.scene.Object {
 
 	override function syncRec( ctx : h3d.scene.RenderContext ) {
 		#if !editor
-		worldTime += ctx.elapsedTime;
-		localTime += ctx.elapsedTime * playSpeed;
-		setTime(localTime, worldTime);
+		if(playSpeed > 0) {
+			// Auto-play outside of editor
+			localTime += ctx.elapsedTime * playSpeed;
+			setTime(localTime);
 
-		if(localTime >duration && duration != 0 /*Infinite*/) {
-			if(onEnd != null )
-				onEnd();
+			if(localTime > duration && duration != 0 /*Infinite*/) {
+				if(onEnd != null )
+					onEnd();
+			}
 		}
 		#end
 
@@ -122,21 +123,19 @@ class FXAnimation extends h3d.scene.Object {
 	}
 
 	static var tempMat = new h3d.Matrix();
-	public function setTime( localTime : Float, ?worldTime : Float ) {
-		if(worldTime == null) worldTime = localTime;
-		this.localTime = localTime;
-		this.worldTime = worldTime;
+	public function setTime( time : Float ) {
+		this.localTime = time;
 		for(anim in objects) {
 			var m = tempMat;
 			if(anim.scale != null) {
-				var scale = evaluator.getVector(anim.scale, localTime);
+				var scale = evaluator.getVector(anim.scale, time);
 				m.initScale(scale.x, scale.y, scale.z);
 			}
 			else
 				m.identity();
 
 			if(anim.rotation != null) {
-				var rotation = evaluator.getVector(anim.rotation, localTime);
+				var rotation = evaluator.getVector(anim.rotation, time);
 				rotation.scale3(Math.PI / 180.0);
 				m.rotate(rotation.x, rotation.y, rotation.z);
 			}
@@ -148,29 +147,29 @@ class FXAnimation extends h3d.scene.Object {
 			m.translate(offset.x, offset.y, offset.z);
 
 			if(anim.position != null) {
-				var pos = evaluator.getVector(anim.position, localTime);
+				var pos = evaluator.getVector(anim.position, time);
 				m.translate(pos.x, pos.y, pos.z);
 			}
 
 			anim.obj.setTransform(m);
 
 			if(anim.visibility != null)
-				anim.obj.visible = anim.elt.visible && evaluator.getFloat(anim.visibility, localTime) > 0.5;
+				anim.obj.visible = anim.elt.visible && evaluator.getFloat(anim.visibility, time) > 0.5;
 
 			if(anim.color != null) {
 				switch(anim.color) {
 					case VCurve(a):
 						for(mat in anim.obj.getMaterials())
-							mat.color.a = evaluator.getFloat(anim.color, localTime);
+							mat.color.a = evaluator.getFloat(anim.color, time);
 					default:
 						for(mat in anim.obj.getMaterials())
-							mat.color = evaluator.getVector(anim.color, localTime);
+							mat.color = evaluator.getVector(anim.color, time);
 				}
 			}
 
 			if(anim.events != null) {
 				for(evt in anim.events) {
-					evt.setTime(localTime - evt.evt.time);
+					evt.setTime(time - evt.evt.time);
 				}
 			}
 
@@ -180,12 +179,12 @@ class FXAnimation extends h3d.scene.Object {
 		}
 
 		for(anim in shaderAnims) {
-			anim.setTime(localTime);
+			anim.setTime(time);
 		}
 
 		for(em in emitters) {
 			if(em.visible)
-				em.setTime(worldTime);
+				em.setTime(time);
 		}
 
 		if(script != null)
@@ -446,11 +445,15 @@ class FX extends hxd.prefab.Library {
 				getConstraints(ctx, c, constraints);
 	}
 
+	function createInstance(parent: h3d.scene.Object) : FXAnimation {
+		return new FXAnimation(parent);
+	}
+
 	override function makeInstance( ctx : Context ) : Context {
 		if( inRec ) return ctx;
 
 		ctx = ctx.clone(this);
-		var fxanim = new FXAnimation(ctx.local3d);
+		var fxanim = createInstance(ctx.local3d);
 		fxanim.duration = duration;
 		fxanim.loopAnims = loopAnims;
 		ctx.local3d = fxanim;

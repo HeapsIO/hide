@@ -1238,7 +1238,7 @@ class FXEditor extends FileView {
 		}
 
 		if(anim != null) {
-			anim.setTime(currentTime, currentTime);
+			anim.setTime(currentTime);
 		}
 
 		if(statusText != null) {

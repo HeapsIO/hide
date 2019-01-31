@@ -415,6 +415,15 @@ class EmitterObject extends h3d.scene.Object {
 		if(enable)
 			doEmit(delta);
 
+		#if editor
+		updateParticles(dt);
+		#end
+
+		lastTime = curTime;
+		curTime += dt;
+	}
+
+	function updateParticles(dt: Float) {
 		var i = instances.length;
 		while (i-- > 0) {
 			if(instances[i].life > lifeTime) {
@@ -424,12 +433,13 @@ class EmitterObject extends h3d.scene.Object {
 				instances[i].update(dt);
 			}
 		}
-		lastTime = curTime;
-		curTime += dt;
 	}
 
 	override function sync( ctx : h3d.scene.RenderContext ) {
 		renderTime = ctx.time;
+		#if !editor
+		updateParticles(ctx.elapsedTime);
+		#end
 	}
 
 	public function setRandSeed(seed: Int) {
