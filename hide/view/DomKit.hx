@@ -1,24 +1,25 @@
 package hide.view;
+import h2d.domkit.Object;
 
-typedef UIKitDefinition = {
+typedef DomKitDefinition = {
 	var type : String;
 	var html : String;
 	var json : {};
 }
 
-class UIKit extends FileView {
+class DomKit extends FileView {
 
 	var scene : hide.comp.Scene;
-	var uiElt : UIKitDefinition;
+	var uiElt : DomKitDefinition;
 	var editor : hide.comp.CodeEditor;
 	var lastSaveHtml : String;
-	var doc : uikit.Document<h2d.Object>;
+	var doc : domkit.Document<h2d.Object>;
 	var cssFiles : Array<String>;
-	var sheets : uikit.CssStyle;
+	var sheets : domkit.CssStyle;
 	var root : h2d.Flow;
 
 	override function getDefaultContent() {
-		var p : UIKitDefinition = {
+		var p : DomKitDefinition = {
 			type : "ui",
 			html : "",
 			json : {},
@@ -63,12 +64,12 @@ class UIKit extends FileView {
 	}
 
 	function loadSheets() {
-		sheets = new uikit.CssStyle();
+		sheets = new domkit.CssStyle();
 		var warnings = [];
 		for( f in cssFiles ) {
 			var content = sys.io.File.getContent(ide.getPath(f));
-			var parser = new uikit.CssParser();
-			var css = try parser.parseSheet(content) catch( e : uikit.Error ) {
+			var parser = new domkit.CssParser();
+			var css = try parser.parseSheet(content) catch( e : domkit.Error ) {
 				warnings.push({ file : f, line : content.substr(0,e.pmin).split("\n").length + 1, msg : e.message });
 				continue;
 			}
@@ -81,25 +82,33 @@ class UIKit extends FileView {
 		warns.toggle(warnings.length > 0);
 	}
 
+	function displayError( e : domkit.Error ) {
+		var lines = uiElt.html.substr(0,e.pmin).split("\n");
+		var offset = e.pmin - lines[lines.length - 1].length;
+		editor.setError(e.message, lines.length, e.pmin - offset, e.pmax - offset - 1);
+	}
+
 	function sync() {
 		if( sheets == null )
 			loadSheets();
 		var oldDoc = doc;
 		editor.clearError();
 
-		var b = new uikit.Builder();
+		var b = new domkit.Builder();
 		try {
 			doc = b.build(uiElt.html);
-		} catch( e : uikit.Error ) {
-			//editor.setError(e.message, uiElt.html.substr(0,e.pmin).split("\n")
+		} catch( e : domkit.Error ) {
+			displayError(e);
 			return;
 		}
+		for( e in b.warnings )
+			displayError(e);
+		if( doc == null )
+			return;
 		if( oldDoc != null ) {
 			oldDoc.remove();
 			oldDoc.root.obj.remove();
 		}
-		if( b.errors.length > 0 )
-			editor.setError(b.errors.join("\n"), 1, 0, uiElt.html.length);
 
 		if( root == null ) {
 			root = new h2d.Flow(scene.s2d);
@@ -123,5 +132,5 @@ class UIKit extends FileView {
 		super.save();
 	}
 
-	static var _ = FileTree.registerExtension(UIKit, ["ui"], { icon : "id-card-o", createNew : "UI Component" });
+	static var _ = FileTree.registerExtension(DomKit, ["ui"], { icon : "id-card-o", createNew : "UI Component" });
 }

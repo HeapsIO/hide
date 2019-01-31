@@ -4,7 +4,7 @@
 -lib hscript
 -lib castle
 -lib hx3compat
--lib uikit
+-lib domkit
 -D js-classic
 -D js-unflatten
 -D hscriptPos
