@@ -39,7 +39,6 @@ typedef ObjectAnimation = {
 	elt: hide.prefab.Object3D,
 	obj: h3d.scene.Object,
 	events: Array<hide.prefab.fx.Event.EventInstance>,
-	lookAt: hide.prefab.fx.LookAt.LookAtInstance,
 	?position: Value,
 	?scale: Value,
 	?rotation: Value,
@@ -172,10 +171,6 @@ class FXAnimation extends h3d.scene.Object {
 					evt.setTime(time - evt.evt.time);
 				}
 			}
-
-			if(anim.lookAt != null) {
-				anim.lookAt.apply();
-			}
 		}
 
 		for(anim in shaderAnims) {
@@ -291,23 +286,10 @@ class FX extends hxd.prefab.Library {
 			return hide.prefab.Curve.getColorValue(curves);
 		}
 
-		var lookAt = null;
-		{
-			var p = elt.getOpt(LookAt);
-			if(p != null) {
-				var ctx = ctx.shared.contexts.get(p);
-				if(ctx != null) {
-					anyFound = true;
-					lookAt = cast ctx.custom;
-				}
-			}
-		}
-
 		var anim : ObjectAnimation = {
 			elt: obj3d,
 			obj: objCtx.local3d,
 			events: null,
-			lookAt: lookAt,
 			position: makeVector("position", 0.0),
 			scale: makeVector("scale", 1.0, true),
 			rotation: makeVector("rotation", 0.0, 360.0),

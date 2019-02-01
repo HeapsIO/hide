@@ -2,35 +2,32 @@ package hide.prefab.fx;
 
 
 @:access(hide.prefab.fx.LookAt)
-class LookAtInstance {
-	var object: h3d.scene.Object;
+class LookAtObject extends h3d.scene.Object {
 	var target: h3d.scene.Object;
 	var definition: LookAt;
 
-	public function new(def, obj, target) {
+	public function new(parent, def) {
+		super(parent);
 		this.definition = def;
-		this.object = obj;
-		this.target = target;
 	}
 
 	static var tmpMat = new h3d.Matrix();
 	static var deltaVec = new h3d.Vector();
+	static var lookAtPos = new h3d.Vector();
 	static var lockAxis = new h3d.Vector();
 	static var tempQ = new h3d.Quat();
-	public function apply() {
-		if(object == null || object.getScene() == null)
-			return;
 
-		var lookAtPos =
-			if(target != null)
-				target.getAbsPos().getPosition();
-			else
-				object.getScene().camera.pos;
+	override function syncPos() {
+		if( parent != null ) parent.syncPos();
 
-		object.ignoreParentTransform = false;
-		@:privateAccess object.posChanged = true;
+		if(target != null)
+			target.getAbsPos().getPosition(lookAtPos);
+		else
+			lookAtPos.load(getScene().camera.pos);
 
-		deltaVec.load(lookAtPos.sub(object.getAbsPos().getPosition()));
+		posChanged = true;
+		calcAbsPos();
+		deltaVec.load(lookAtPos.sub(absPos.getPosition()));
 		if(deltaVec.lengthSq() < 0.001)
 			return;
 
@@ -40,8 +37,11 @@ class LookAtInstance {
 			lockAxis.set();
 
 		if(lockAxis.lengthSq() > 0.001) {
-			tmpMat.load(object.parent.getAbsPos());
+			tmpMat.load(parent.getAbsPos());
 			tmpMat.invert();
+			lookAtPos.transform(tmpMat);
+			deltaVec.set(lookAtPos.x - x, lookAtPos.y - y, lookAtPos.z - z);
+
 			var invParentQ = tempQ;
 			invParentQ.initRotateMatrix(tmpMat);
 
@@ -54,61 +54,72 @@ class LookAtInstance {
 			if(lockAxis.dot3(cross) < 0)
 				angle = -angle;
 
-			var q = object.getRotationQuat();
+			var q = getRotationQuat();
 			q.initRotateAxis(lockAxis.x, lockAxis.y, lockAxis.z, angle);
-			q.multiply(invParentQ, q);
-			object.setRotationQuat(q);
+			q.normalize();
+			setRotationQuat(q);
+			calcAbsPos();
 		}
 		else
 		{
-			tmpMat.load(object.getAbsPos());
-			object.ignoreParentTransform = true;
-			@:privateAccess object.posChanged = true;
+			tmpMat.load(absPos);
 			var scale = tmpMat.getScale();
-			object.scaleX = scale.x;
-			object.scaleY = scale.y;
-			object.scaleZ = scale.z;
-			object.x = tmpMat.tx;
-			object.y = tmpMat.ty;
-			object.z = tmpMat.tz;
-
-			// // Default look at
-			h3d.Matrix.lookAtX(deltaVec, tmpMat);
-			var q = object.getRotationQuat();
-			q.initRotateMatrix(tmpMat);
-			object.setRotationQuat(q);
+			qRot.initDirection(deltaVec);
+			qRot.toMatrix(absPos);
+			absPos._11 *= scale.x;
+			absPos._12 *= scale.x;
+			absPos._13 *= scale.x;
+			absPos._21 *= scale.y;
+			absPos._22 *= scale.y;
+			absPos._23 *= scale.y;
+			absPos._31 *= scale.z;
+			absPos._32 *= scale.z;
+			absPos._33 *= scale.z;
+			absPos._41 = tmpMat.tx;
+			absPos._42 = tmpMat.ty;
+			absPos._43 = tmpMat.tz;
 		}
+
+		for( c in children )
+			c.posChanged = true;
 	}
 }
 
 @:allow(hide.prefab.fx.LookAt.LookAtInstance)
-class LookAt extends Prefab {
+class LookAt extends hide.prefab.Object3D {
 
 	var target(default,null) : String;
 	var lockAxis: Array<Float> = [0,0,0];
 
+	public function new(?parent) {
+		super(parent);
+		type = "lookAt";
+	}
+
 	override public function load(v:Dynamic) {
+		super.load(v);
 		target = v.target;
 		if(v.lockAxis != null)
 			lockAxis = v.lockAxis;
 	}
 
 	override function save() {
-		return {
-			target : target,
-			lockAxis: lockAxis
-		};
+		var obj : Dynamic = super.save();
+		obj.target = target;
+		obj.lockAxis = lockAxis;
+		return obj;
 	}
 
 	override function updateInstance(ctx:hxd.prefab.Context, ?propName:String) {
+		super.updateInstance(ctx, propName);
 		var targetObj = null;
 		if(target != "camera")
 			targetObj = ctx.locateObject(target);
-		ctx.custom = new LookAtInstance(this, ctx.local3d, targetObj);
 	}
 
 	override function makeInstance( ctx : Context ) {
 		ctx = ctx.clone(this);
+		ctx.local3d = new LookAtObject(ctx.local3d, this);
 		updateInstance(ctx);
 		return ctx;
 	}
@@ -124,6 +135,7 @@ class LookAt extends Prefab {
 	}
 
 	override function edit(ctx:EditContext) {
+		super.edit(ctx);
 		var group = new hide.Element('
 		<div class="group" name="LookAt">
 			<dl>
