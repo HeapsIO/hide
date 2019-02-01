@@ -218,6 +218,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var frameDivisionX : Int = 1;
 	public var frameDivisionY : Int = 1;
 	public var animationRepeat : Float = 1;
+	public var animationLoop : Bool = true;
 
 	public var alignMode : AlignMode;
 	public var alignAxis : h3d.Vector;
@@ -379,6 +380,7 @@ class EmitterObject extends h3d.scene.Object {
 					if(mesh != null && mesh.material != null) {
 						var pshader = new h3d.shader.AnimatedTexture(mesh.material.texture, frameDivisionX, frameDivisionY, frameCount, frameCount * animationRepeat / lifeTime);
 						pshader.startTime = renderTime;
+						pshader.loop = animationLoop;
 						if(animationRepeat == 0) {
 							pshader.startFrame = random.random(frameCount);
 						}
@@ -493,6 +495,7 @@ class Emitter extends Object3D {
 		{ name: "frameDivisionX", t: PInt(1), def: 1 },
 		{ name: "frameDivisionY", t: PInt(1), def: 1 },
 		{ name: "animationRepeat", t: PFloat(0, 2.0), def: 1.0 },
+		{ name: "animationLoop", t: PBool, def: true },
 	];
 
 	public static var instanceParams : Array<ParamDef> = [
@@ -682,6 +685,7 @@ class Emitter extends Object3D {
 		emitterObj.frameDivisionX = getParamVal("frameDivisionX");
 		emitterObj.frameDivisionY = getParamVal("frameDivisionY");
 		emitterObj.animationRepeat = getParamVal("animationRepeat");
+		emitterObj.animationLoop = getParamVal("animationLoop");
 
 		#if editor
 		if(propName == null || ["emitShape", "emitAngle", "emitRad1", "emitRad2"].indexOf(propName) >= 0)
