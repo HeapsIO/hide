@@ -17,16 +17,15 @@ class LookAtObject extends h3d.scene.Object {
 	static var lockAxis = new h3d.Vector();
 	static var tempQ = new h3d.Quat();
 
-	override function syncPos() {
-		if( parent != null ) parent.syncPos();
-
+	override function calcAbsPos() {
 		if(target != null)
 			target.getAbsPos().getPosition(lookAtPos);
-		else
+		else {
+			if(getScene() == null || getScene().camera == null) return;
 			lookAtPos.load(getScene().camera.pos);
+		}
 
-		posChanged = true;
-		calcAbsPos();
+		super.calcAbsPos();
 		deltaVec.load(lookAtPos.sub(absPos.getPosition()));
 		if(deltaVec.lengthSq() < 0.001)
 			return;
@@ -58,7 +57,7 @@ class LookAtObject extends h3d.scene.Object {
 			q.initRotateAxis(lockAxis.x, lockAxis.y, lockAxis.z, angle);
 			q.normalize();
 			setRotationQuat(q);
-			calcAbsPos();
+			super.calcAbsPos();
 		}
 		else
 		{
@@ -80,8 +79,7 @@ class LookAtObject extends h3d.scene.Object {
 			absPos._43 = tmpMat.tz;
 		}
 
-		for( c in children )
-			c.posChanged = true;
+		posChanged = true;
 	}
 }
 
@@ -120,6 +118,7 @@ class LookAt extends hide.prefab.Object3D {
 	override function makeInstance( ctx : Context ) {
 		ctx = ctx.clone(this);
 		ctx.local3d = new LookAtObject(ctx.local3d, this);
+		ctx.local3d.name = name;
 		updateInstance(ctx);
 		return ctx;
 	}
@@ -128,9 +127,7 @@ class LookAt extends hide.prefab.Object3D {
 	override function getHideProps() : HideProps {
 		return {
 			icon : "cog",
-			name : "LookAt",
-			allowParent : function(p) return p.to(Object3D) != null && p.getParent(FX) != null,
-			allowChildren: function(s) return false
+			name : "LookAt"
 		};
 	}
 
