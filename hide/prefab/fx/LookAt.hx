@@ -17,6 +17,11 @@ class LookAtObject extends h3d.scene.Object {
 	static var lockAxis = new h3d.Vector();
 	static var tempQ = new h3d.Quat();
 
+	override function syncRec( ctx ) {
+		posChanged = true;
+		super.syncRec(ctx);
+	}
+
 	override function calcAbsPos() {
 		if(target != null)
 			target.getAbsPos().getPosition(lookAtPos);
@@ -78,8 +83,6 @@ class LookAtObject extends h3d.scene.Object {
 			absPos._42 = tmpMat.ty;
 			absPos._43 = tmpMat.tz;
 		}
-
-		posChanged = true;
 	}
 }
 
