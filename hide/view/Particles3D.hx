@@ -63,6 +63,7 @@ class Particles3D extends FileView {
 							<dt>Sync</dt><dd><input type="range" field="emitSync" min="0" max="1"/></dd>
 							<dt>Delay</dt><dd><input type="range" field="emitDelay" min="0" max="10"/></dd>
 							<dt>Loop</dt><dd><input type="checkbox" field="emitLoop"/></dd>
+							<dt>Border</dt><dd><input type="checkbox" field="emitOnBorder"/></dd>
 						</dl>
 					</div>
 
