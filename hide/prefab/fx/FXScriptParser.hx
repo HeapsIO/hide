@@ -94,7 +94,7 @@ class FXScriptParser {
 					else return Var( function(){ return script.getVar(n); });
 
 				case EField(e, f):
-					return Var( script.getGetter(f) );
+					return Var( getGetField(expr) );
 
 				case EIf( cond, e1, e2):
 					return If(convert(cond), convert(e1), convert(e2));
@@ -146,6 +146,7 @@ class FXScriptParser {
 					}
 
 				case EUnop(op, prefix, e):
+					var expr = e;
 					switch(getExpr(e)){
 						case EIdent(v):
 							return switch(op){
@@ -156,8 +157,8 @@ class FXScriptParser {
 							}
 						case EField(e,f):
 							return switch(op){
-								case "++": Set( getSetField(e), Unop(convert(e), function(a){ return prefix ? ++a : a++; }));
-								case "--": Set( getSetField(e), Unop(convert(e), function(a){ return prefix ? --a : a--; }));
+								case "++": Set( getSetField(expr), Unop(convert(e), function(a){ return prefix ? ++a : a++; }));
+								case "--": Set( getSetField(expr), Unop(convert(e), function(a){ return prefix ? --a : a--; }));
 								case "-": Unop( convert(e), function(a){ return -a;});
 								default : null;
 							}
@@ -433,7 +434,7 @@ class FXScriptParser {
 	}
 
 	function createSlider( s : FXScript, name : String, min : Float, max : Float, step : Float, defaultVal : Float ) : Element {
-		var root = new Element('<div class="slider"></div>');
+		var root = new Element('<div class="slider"/>');
 		var label = new Element('<label> $name : </label>');
 		var slider = new Element('<input type="range" min="$min" max="$max" step="$step" value="$defaultVal"/>');
 		root.append(label);
@@ -445,11 +446,13 @@ class FXScriptParser {
 	}
 
 	function createChekbox( s : FXScript, name : String, defaultVal : Bool ) : Element {
-		var root = new Element('<div class="checkBox"></div>');
+		var root = new Element('<div class="checkbox"/>');
 		var label = new Element('<label> $name : </label>');
-		var checkbox = new Element('<input type="checkbox" value="$defaultVal"/>');
-		checkbox.on("input", function(_) {
-			s.setVar(name, checkbox.val() );
+		var checkbox = new Element('<input type="checkbox" />');
+		checkbox.prop("checked", defaultVal);
+		checkbox.on("change", function(_) {
+			var checked : Bool = checkbox.prop("checked");
+			s.setVar(name, checked ? 1.0 : 0.0);
 		});
 		root.append(label);
 		root.append(checkbox);

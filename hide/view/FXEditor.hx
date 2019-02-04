@@ -237,16 +237,16 @@ class FXEditor extends FileView {
 		}
 
 		var scriptElem = element.find(".fx-script");
-		scriptEditor = new hide.comp.ScriptEditor(data.script, null, scriptElem, scriptElem);
+		scriptEditor = new hide.comp.ScriptEditor(data.scriptCode, null, scriptElem, scriptElem);
 		function onSaveScript() {
-			data.script = scriptEditor.code;
+			data.scriptCode = scriptEditor.code;
 			save();
 			skipNextChange = true;
 			modified = false;
 		}
 		scriptEditor.onSave = onSaveScript;
 		fxScriptParser = new hide.prefab.fx.FXScriptParser();
-		data.script = scriptEditor.code;
+		data.scriptCode = scriptEditor.code;
 
 		keys.register("playPause", function() { pauseButton.toggle(!pauseButton.isDown()); });
 
@@ -1223,7 +1223,7 @@ class FXEditor extends FileView {
 		var anim : hide.prefab.fx.FX.FXAnimation = null;
 		var ctx = sceneEditor.getContext(data);
 		if(ctx != null && ctx.local3d != null) {
-			anim = cast ctx.local3d;
+			anim = Std.instance(ctx.local3d,hide.prefab.fx.FX.FXAnimation);
 		}
 		if(!pauseButton.isDown()) {
 			currentTime += scene.speed * dt;
@@ -1231,8 +1231,13 @@ class FXEditor extends FileView {
 				timeLineEl.css({left: xt(currentTime)});
 			if(currentTime >= previewMax) {
 				currentTime = previewMin;
-				if(data.script != null && data.script.length > 0)
-					sceneEditor.refreshScene(); // This allow to reset the scene when values are modified causes edition issues, solves
+
+				//if(data.scriptCode != null && data.scriptCode.length > 0)
+					//sceneEditor.refreshScene(); // This allow to reset the scene when values are modified causes edition issues, solves
+
+				if( anim.script != null )
+					anim.script.init();
+
 				anim.setRandSeed(Std.random(0xFFFFFF));
 			}
 		}
@@ -1264,12 +1269,13 @@ class FXEditor extends FileView {
 			currentVersion = undo.currentID;
 		}
 
-		if( data.script != scriptEditor.code || !fxScriptParser.firstParse ){
-			modified = true;
-			fxScriptParser.firstParse = true;
-			data.script = scriptEditor.code;
+		if( data.scriptCode != scriptEditor.code || !fxScriptParser.firstParse ){
+			modified = fxScriptParser.firstParse;
+			data.scriptCode = scriptEditor.code;
 			anim.script = fxScriptParser.createFXScript(scriptEditor.code, anim);
+			anim.script.init();
 			fxScriptParser.generateUI(anim.script, this);
+			fxScriptParser.firstParse = true;
 		}
 	}
 

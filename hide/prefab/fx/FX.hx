@@ -214,7 +214,7 @@ class FX extends hxd.prefab.Library {
 
 	public var duration : Float;
 	public var loopAnims : Bool;
-	public var script : String;
+	public var scriptCode : String;
 
 	public function new() {
 		super();
@@ -227,7 +227,7 @@ class FX extends hxd.prefab.Library {
 		var obj : Dynamic = super.save();
 		obj.duration = duration;
 		obj.loopAnims = loopAnims;
-		if( script != "" ) obj.script = script;
+		if( scriptCode != "" ) obj.scriptCode = scriptCode;
 		return obj;
 	}
 
@@ -235,7 +235,7 @@ class FX extends hxd.prefab.Library {
 		super.load(obj);
 		duration = obj.duration == null ? 5.0 : obj.duration;
 		loopAnims = obj.loopAnims == null ? true : obj.loopAnims;
-		script = obj.script;
+		scriptCode = obj.scriptCode;
 	}
 
 	static function getObjAnimations(ctx:Context, elt: PrefabElement, anims: Array<ObjectAnimation>) {
@@ -461,9 +461,9 @@ class FX extends hxd.prefab.Library {
 		getShaderAnims(ctx, this, fxanim.shaderAnims);
 		getEmitters(ctx, this, fxanim.emitters);
 
-		if(script != null && script != ""){
+		if(scriptCode != null && scriptCode != ""){
 			var parser = new FXScriptParser();
-			fxanim.script = parser.createFXScript(script, fxanim);
+			fxanim.script = parser.createFXScript(scriptCode, fxanim);
 			fxanim.script.init();
 		}
 

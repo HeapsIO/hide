@@ -50,32 +50,35 @@ class FXScript {
 		var root : h3d.scene.Object = fx;
 		#if editor
 		var fxRoot = fx.getObjectByName("FXRoot");
-		if(fxRoot != null) root = fxRoot;
+		if( fxRoot != null ) root = fxRoot;
 		#end
 		var curObj : h3d.scene.Object = root.getObjectByName(names[i++]);
 		while(curObj != null && i < p.length) {
 			var next = curObj.getObjectByName(names[i++]);
 			next != null ? curObj = next : break;
 		}
-		if(curObj == null)
+		if( curObj == null )
 			return () -> 0.0;
 		var field : String = "";
-		for(index in i - 1 ... i)
+		for( index in i - 1 ... i )
 			field += names[index];
 
-		return switch(field){
-			case "x": function(){ return curObj.x; };
-			case "y": function(){ return curObj.y; };
-			case "z": function(){ return curObj.z; };
-			case "visible": function(){ return curObj.visible ? 1.0 : 0.0; };
-			case "rotationX": function(){
-				return curObj.getRotationQuat().toEuler().x;}
-			case "rotationY": function(){
-				return curObj.getRotationQuat().toEuler().y;}
-			case "rotationZ": function(){
-				return curObj.getRotationQuat().toEuler().z;}
-			default: return function(){
-				if(Reflect.hasField(curObj, field)){
+		return switch( field ) {
+			case "x": function() { return curObj.x; };
+			case "y": function() { return curObj.y; };
+			case "z": function() { return curObj.z; };
+			case "scaleX": function() { return curObj.scaleX; };
+			case "scaleY": function() { return curObj.scaleY; };
+			case "scaleZ": function() { return curObj.scaleZ; };
+			case "visible": function() { return curObj.visible ? 1.0 : 0.0; };
+			case "rotationX": function() {
+				return curObj.getRotationQuat().toEuler().x; }
+			case "rotationY": function() {
+				return curObj.getRotationQuat().toEuler().y; }
+			case "rotationZ": function() {
+				return curObj.getRotationQuat().toEuler().z; }
+			default: return function() {
+				if(Reflect.hasField(curObj, field)) {
 					var p = Reflect.getProperty(curObj, field);
 					return cast(p, Float);
 				}
@@ -89,31 +92,34 @@ class FXScript {
 		var root : h3d.scene.Object = fx;
 		#if editor
 		var fxRoot = fx.getObjectByName("FXRoot");
-		if(fxRoot != null) root = fxRoot;
+		if( fxRoot != null ) root = fxRoot;
 		#end
 		var curObj : h3d.scene.Object = root.getObjectByName(names[i++]);
 		while(curObj != null && i < p.length) {
 			var next = curObj.getObjectByName(names[i++]);
 			next != null ? curObj = next : break;
 		}
-		if(curObj == null)
+		if( curObj == null )
 			return (v) -> {};
 		var field : String = "";
-		for(index in i - 1 ... i)
+		for( index in i - 1 ... i )
 			field += names[index];
 
-		return switch(field){
-			case "x": function(v){ curObj.x = v; };
-			case "y": function(v){ curObj.y = v; };
-			case "z": function(v){ curObj.z = v; };
-			case "visible": function(v){ curObj.visible = v > 0; };
-			case "rotationX": function(v){
+		return switch( field ) {
+			case "x": function(v) { curObj.x = v; };
+			case "y": function(v) { curObj.y = v; };
+			case "z": function(v) { curObj.z = v; };
+			case "scaleX": function(v) { curObj.scaleX = v; };
+			case "scaleY": function(v) { curObj.scaleY = v; };
+			case "scaleZ": function(v) { curObj.scaleZ = v; };
+			case "visible": function(v) { curObj.visible = v > 0; };
+			case "rotationX": function(v) {
 				var euler = curObj.getRotationQuat().toEuler();
 				curObj.setRotation(v, euler.y, euler.z); };
-			case "rotationY": function(v){
+			case "rotationY": function(v) {
 				var euler = curObj.getRotationQuat().toEuler();
 				curObj.setRotation(euler.x, v, euler.z); };
-			case "rotationZ": function(v){
+			case "rotationZ": function(v) {
 				var euler = curObj.getRotationQuat().toEuler();
 				curObj.setRotation(euler.x, euler.y, v); };
 			default: {
@@ -130,13 +136,13 @@ class FXScript {
 	}
 
 	public function getVar( n : String ) : Float {
-		if(n == "time")  // TODO: support @global like hxsl
+		if( n == "time" )  // TODO: support @global like hxsl
 			return fx.localTime;
-		if(!myVars.exists(n))
+		if( !myVars.exists(n))
 			return 0.0;
-		if(myVars[n] == null)
+		if( myVars[n] == null )
 			return 0.0;
-		return switch myVars[n]{
+		return switch myVars[n] {
 			case Float(value): value;
 			case Int(value): value;
 			case Bool(value): value ? 1.0 : 0.0;
@@ -145,7 +151,7 @@ class FXScript {
 	}
 
 	public function setVar( n : String, v : Float ) : Float {
-		if(!myVars.exists(n))
+		if( !myVars.exists(n) )
 			return 0.0;
 		switch myVars[n]{
 			case Float(value): myVars.set(n, FXVar.Float(v));
@@ -160,7 +166,7 @@ class FXScript {
 	}
 
 	function call( f : String, args : Array<FxAst>) : Float {
-		switch(f){
+		switch( f ) {
 			case "rand": return hxd.Math.random();
 			case "mix": return hxd.Math.lerp(eval(args[0]), eval(args[1]), eval(args[2]));
 			case "clamp": return hxd.Math.clamp(eval(args[0]), eval(args[1]), eval(args[2]));
