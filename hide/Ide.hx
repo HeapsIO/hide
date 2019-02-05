@@ -121,6 +121,7 @@ class Ide {
 					return;
 			window.close(true);
 		});
+		window.on("blur", function() { hxd.Key.initialize(); });
 
 		// handle commandline parameters
 		nw.App.on("open", function(cmd) {
