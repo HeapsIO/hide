@@ -15,7 +15,7 @@ class Instance extends Object3D {
 		var kind = getCdbKind(this);
 		if(kind == null)
 			return ctx;
-	
+
 		var modelPath = findModelPath(kind.sheet, kind.idx.obj);
 		if(modelPath != null) {
 			try {
@@ -38,6 +38,7 @@ class Instance extends Object3D {
 		else {
 			var tile = findTile(kind.sheet, kind.idx.obj).center();
 			var objFollow = new h2d.ObjectFollower(ctx.local3d, ctx.shared.root2d);
+			objFollow.followVisibility = true;
 			var bmp = new h2d.Bitmap(tile, objFollow);
 			ctx.local2d = objFollow;
 			var mesh = new h3d.scene.Mesh(h3d.prim.Cube.defaultUnitCube(), ctx.local3d);
