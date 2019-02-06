@@ -74,6 +74,7 @@ class AdvancedDecal extends Object3D {
 		mesh.material.mainPass.depthWrite = false;
 		mesh.material.mainPass.depthTest = GreaterEqual;
 		mesh.material.mainPass.culling = Front;
+		mesh.material.shadows = false;
 		ctx.local3d = mesh;
 		ctx.local3d.name = name;
 		updateInstance(ctx);
