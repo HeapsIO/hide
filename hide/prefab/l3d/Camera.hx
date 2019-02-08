@@ -5,9 +5,23 @@ import hxd.prefab.Library;
 
 class Camera extends hide.prefab.Object3D {
 
+	var fovY : Float = 45;
+
 	public function new(?parent) {
 		super(parent);
 		type = "camera";
+	}
+
+	override function save() {
+		var obj : Dynamic = super.save();
+		obj.fovY = fovY;
+		return obj;
+	}
+
+	override function load(obj:Dynamic) {
+		super.load(obj);
+		if(obj.fovY != null)
+			this.fovY = obj.fovY;
 	}
 
 
@@ -23,11 +37,17 @@ class Camera extends hide.prefab.Object3D {
 		var props : hide.Element = ctx.properties.add(new hide.Element('
 			<div class="group" name="Camera">
 				<dl>
+					<dt>Fov Y</dt><dd><input type="range" min="0" max="180" field="fovY"/></dd>
+					<dt></dt><dd><input class="preview" type="button" value="Preview" /></dd>
 				</dl>
-				<dt></dt><dd><input class="preview" type="button" value="Preview" /></dd>
 			</div>
 		'),this, function(pname) {
-
+			var c = ctx.scene.s3d.camera;
+			if(c != null) {
+				c.fovY = fovY;
+				var cam = ctx.scene.editor.cameraController;
+				cam.loadFromCamera();
+			}
 		});
 
 		props.find(".preview").click(function(e) {
@@ -39,6 +59,7 @@ class Camera extends hide.prefab.Object3D {
 			if(pt != null) {
 				c.pos.set(x, y, z);
 				c.target = pt.toVector();
+				c.fovY = fovY;
 				var cam = ctx.scene.editor.cameraController;
 				cam.loadFromCamera();
 			}
