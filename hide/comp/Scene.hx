@@ -141,8 +141,9 @@ class Scene extends Component implements h3d.IDrawable {
 	public function init( ?root : h3d.scene.Object ) {
 		var autoHide : Array<String> = config.get("scene.autoHide");
 		function initRec( obj : h3d.scene.Object ) {
-			if( autoHide.indexOf(obj.name) >= 0 )
-				obj.visible = false;
+			for(n in autoHide)
+				if(obj.name != null && obj.name.indexOf(n) == 0)
+					obj.visible = false;
 			for( o in obj )
 				initRec(o);
 		}
