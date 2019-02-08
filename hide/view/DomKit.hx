@@ -75,7 +75,7 @@ class DomKit extends FileView {
 			}
 			sheets.add(css);
 			for( w in parser.warnings )
-				warnings.push({ file : f, line : content.substr(0,w.end).split("\n").length+1, msg : w.msg });
+				warnings.push({ file : f, line : content.substr(0,w.pmin).split("\n").length+1, msg : w.msg });
 		}
 		var warns = element.find(".cssErrors");
 		warns.html([for( w in warnings ) w.file+":"+w.line+": "+StringTools.htmlEscape(w.msg)].join("<br>"));
