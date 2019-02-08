@@ -76,7 +76,7 @@ class FXScriptParser {
 					return Block( [for(expr in e) convert(expr)] );
 
 				case ECall( e, params ):
-					var name = switch(getExpr(e)){
+					var name = switch(getExpr(e)) {
 						case EIdent(v): v;
 						default: null;
 					}
@@ -107,14 +107,14 @@ class FXScriptParser {
 							}
 
 				case EConst( c ):
-					return switch(c){
+					return switch(c) {
 						case CInt(v): Const(v);
 						case CFloat(f): Const(f);
 						default: null;
 					}
 
 				case EBinop(op, e1, e2):
-					switch(op){
+					switch(op) {
 						case "%": return Op( convert(e1), convert(e2), function(a,b) { return a % b; });
 						case "*": return Op( convert(e1), convert(e2), function(a,b) { return a * b; });
 						case "/": return Op( convert(e1), convert(e2), function(a,b) { return a / b; });
@@ -169,7 +169,11 @@ class FXScriptParser {
 							}
 						default: return null;
 					}
-
+				case EParent(e):
+					return convert(e);
+				case EObject(fl):
+					for(elem in fl) trace(elem.name);
+					return Block( [for(elem in fl) convert(elem.e)] );
 				default:
 					return null;
 			}
