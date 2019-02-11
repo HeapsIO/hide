@@ -31,6 +31,7 @@ class Terrain extends Object3D {
 	#if editor
 	var editor : hide.prefab.terrain.TerrainEditor;
 	var cachedInstance : h3d.scene.pbr.terrain.Terrain;
+	var showChecker = false;
 	#end
 
 	public function new(?parent) {
@@ -51,6 +52,10 @@ class Terrain extends Object3D {
 		heightBlendStrength = obj.heightBlendStrength == null ? 0 : obj.heightBlendStrength;
 		heightBlendSharpness = obj.heightBlendSharpness == null ? 0 : obj.heightBlendSharpness;
 		autoCreateTile = obj.autoCreateTile == null ? false : obj.autoCreateTile;
+
+		#if editor
+		showChecker = obj.showChecker == null ? false : obj.showChecker;
+		#end
 	}
 
 	override function save() {
@@ -80,6 +85,11 @@ class Terrain extends Object3D {
 			surfacesProps.push(surfaceProps);
 		}
 		obj.surfaces = surfacesProps;
+
+		#if editor
+	 	obj.showChecker = terrain.showChecker;
+		#end
+
 		return obj;
 	}
 
@@ -235,6 +245,8 @@ class Terrain extends Object3D {
 		terrain.parallaxMaxStep = parallaxMaxStep;
 		terrain.heightBlendStrength = heightBlendStrength;
 		terrain.heightBlendSharpness = heightBlendSharpness;
+
+		terrain.showChecker = showChecker;
 
 		if(editor != null) editor.update(propName);
 		#end
