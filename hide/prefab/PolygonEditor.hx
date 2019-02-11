@@ -130,7 +130,7 @@ class PolygonEditor {
 	var lastPos : h3d.Vector;
 	var selectedEdge : Edge;
 	var selectedEdgeGraphic : h3d.scene.Graphics;
-	var lastClickStamp = 0.0;
+	//var lastClickStamp = 0.0;
 	var editMode = false;
 
 	// Temp container for Undo
@@ -409,9 +409,10 @@ class PolygonEditor {
 						// Double Left Click : Create point
 						else{
 							clearSelectedPoint();
-							var curStamp = haxe.Timer.stamp();
-							var diff = curStamp - lastClickStamp;
-							if(diff < 0.2){
+							if(K.isDown(K.CTRL)) {
+							// var curStamp = haxe.Timer.stamp();
+							// var diff = curStamp - lastClickStamp;
+							// if(diff < 0.2){
 								var prevList = copyArray(polygonPrefab.points.points);
 								var pt = new h2d.col.Point(finalPos.x, finalPos.y);
 								addPointOnEdge(pt, selectedEdge);
@@ -421,7 +422,7 @@ class PolygonEditor {
 								// Select new point
 								lastPointSelected = pt;
 							}
-							lastClickStamp = curStamp;
+							//lastClickStamp = curStamp;
 						}
 						refreshMovablePoints();
 					}
@@ -552,7 +553,7 @@ class PolygonEditor {
 					<input type="button" value="Edit Mode : Disabled" class="editModeButton" />
 				</div>
 				<div class="description">
-					<i>Double Left Click</i> : Add point on edge <br>
+					<i>Ctrl + Left Click</i> : Add point on edge <br>
 					<i>Shift + Left Click</i> : Delete selected point <br>
 					Drag with <i>Left Click</i> : Move selected points <br>
 					Drag with <i>Left Click + Ctrl</i> : Move selected points on grid <br>
