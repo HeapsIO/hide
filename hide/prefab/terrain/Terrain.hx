@@ -122,10 +122,10 @@ class Terrain extends Object3D {
 		}
 	}
 
-	function loadTerrain(ctx : Context){
+	function loadTiles( ctx : Context, height = true, index = true , weight = true ){
 		var resDir = ctx.shared.loadDir(name);
-		if(resDir == null) return;
-		for(res in resDir){
+		if( resDir == null ) return;
+		for( res in resDir ) {
 			var file = res.name.split(".")[0];
 			var coords = file.split("_");
 			var x = Std.parseInt(coords[0]);
@@ -134,11 +134,14 @@ class Terrain extends Object3D {
 			var tile = terrain.createTile(x, y);
 			switch(type){
 				case "h":
+				if( height ) {
 					var bytes = res.entry.getBytes();
 					var pixels : hxd.Pixels.PixelsFloat = new hxd.Pixels(heightMapResolution + 1, heightMapResolution + 1, bytes, RGBA32F);
 					tile.heightMap.uploadPixels(pixels);
-					tile.refreshMesh();
+				}
+				tile.refreshMesh();
 				case "w":
+				if( weight ) {
 					var tex = res.toTexture();
 					for(i in 0 ... tile.surfaceWeights.length){
 						h3d.Engine.getCurrent().pushTarget(tile.surfaceWeights[i]);
@@ -149,18 +152,75 @@ class Terrain extends Object3D {
 					}
 					tile.generateWeightArray();
 					tex.dispose();
+				}
 				case"i":
+				if( index ) {
 					var tex = res.toTexture();
 					tex.preventAutoDispose();
 					tex.realloc = null;
 					tile.surfaceIndexMap = tex;
 					tile.surfaceIndexMap.filter = Nearest;
 					tile.surfaceIndexMap.flags.set(Target);
+				}
 			}
 		}
 	}
 
-	override function makeInstance(ctx:Context):Context {
+	function loadSurfaces( ctx : Context, onEnd : Void -> Void ) {
+
+		for( surfaceProps in tmpSurfacesProps ) {
+			var surface = terrain.addEmptySurface();
+			var albedo = ctx.shared.loadTexture(surfaceProps.albedo);
+			var normal = ctx.shared.loadTexture(surfaceProps.normal);
+			var pbr = ctx.shared.loadTexture(surfaceProps.pbr);
+			function wait() {
+				if( albedo.isDisposed() )
+					return;
+				if( albedo.flags.has(Loading) || normal.flags.has(Loading) || pbr.flags.has(Loading))
+					return;
+				surface.albedo = albedo;
+				surface.normal = normal;
+				surface.pbr = pbr;
+				surface.offset.x = surfaceProps.offsetX;
+				surface.offset.y = surfaceProps.offsetY;
+				surface.angle = surfaceProps.angle;
+				surface.tilling = surfaceProps.tilling;
+				albedo.dispose();
+				normal.dispose();
+				pbr.dispose();
+
+				onEnd();
+			}
+			albedo.waitLoad(wait);
+			normal.waitLoad(wait);
+			pbr.waitLoad(wait);
+		}
+	}
+
+	public function initTerrain( ctx : Context, height = true, surface = true ) {
+
+		if( surface ) {
+			function waitAll() {
+				for(surface in terrain.surfaces)
+					if(surface == null || surface.albedo == null || surface.normal == null || surface.pbr == null )
+						return;
+				terrain.generateSurfaceArray();
+				loadTiles(ctx, height, surface, surface);
+
+				for( t in terrain.tiles)
+					t.computeEdgesNormals();
+			}
+
+			loadSurfaces(ctx, waitAll);
+		}
+		else {
+			loadTiles(ctx, height, surface, surface);
+			for( t in terrain.tiles)
+				t.computeEdgesNormals();
+		}
+	}
+
+	override function makeInstance( ctx : Context ) : Context {
 		ctx = ctx.clone(this);
 
 		#if editor
@@ -193,44 +253,10 @@ class Terrain extends Object3D {
 		ctx.local3d = terrain;
 		ctx.local3d.name = name;
 
-		function waitAll() {
-			for(surface in terrain.surfaces)
-				if(surface == null || surface.albedo == null || surface.normal == null || surface.pbr == null )
-					return;
-			terrain.generateSurfaceArray();
-			loadTerrain(ctx);
-
-			for( t in terrain.tiles)
-				t.computeEdgesNormals();
-		}
-
-		for(surfaceProps in tmpSurfacesProps){
-			var surface = terrain.addEmptySurface();
-			var albedo = ctx.shared.loadTexture(surfaceProps.albedo);
-			var normal = ctx.shared.loadTexture(surfaceProps.normal);
-			var pbr = ctx.shared.loadTexture(surfaceProps.pbr);
-			function wait() {
-				if(albedo.isDisposed())
-					return;
-				if( albedo.flags.has(Loading) || normal.flags.has(Loading) || pbr.flags.has(Loading))
-					return;
-				surface.albedo = albedo;
-				surface.normal = normal;
-				surface.pbr = pbr;
-				surface.offset.x = surfaceProps.offsetX;
-				surface.offset.y = surfaceProps.offsetY;
-				surface.angle = surfaceProps.angle;
-				surface.tilling = surfaceProps.tilling;
-				albedo.dispose();
-				normal.dispose();
-				pbr.dispose();
-
-				waitAll();
-			}
-			albedo.waitLoad(wait);
-			normal.waitLoad(wait);
-			pbr.waitLoad(wait);
-		}
+		#if editor
+		// Auto init in editor
+		initTerrain(ctx, true, true);
+		#end
 
 		updateInstance(ctx);
 		return ctx;
@@ -245,10 +271,9 @@ class Terrain extends Object3D {
 		terrain.parallaxMaxStep = parallaxMaxStep;
 		terrain.heightBlendStrength = heightBlendStrength;
 		terrain.heightBlendSharpness = heightBlendSharpness;
-
 		terrain.showChecker = showChecker;
-
-		if(editor != null) editor.update(propName);
+		if( editor != null )
+			editor.update(propName);
 		#end
 	}
 
