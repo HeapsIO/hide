@@ -1168,7 +1168,11 @@ body.hide-subview {
 	}
 }
 
-.visibility-toggle {
+.jstree-node {
+	padding-right: 10px!important;
+}
+
+.visibility-toggle, .visibility-large-toggle {
 	float: right;
 	padding: 4px;
 
@@ -1177,10 +1181,14 @@ body.hide-subview {
 	}
 }
 
-.visibility-toggle .hidden {
+.visibility-toggle .hidden, .visibility-large-toggle .hidden {
 	i {
 		color: #555;
 	}
+}
+
+.visibility-large-toggle {
+	font-size: 14px!important;
 }
 
 .jstree.small {

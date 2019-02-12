@@ -46,6 +46,23 @@ class SceneTree extends IconTree<String> {
 	public dynamic function onSelectMaterial( m : h3d.mat.Material ) {
 	}
 
+	override function applyStyle(id: String, el: Element) {
+		var v : Dynamic = resolvePath(id);
+		
+		var obj = Std.instance(v, h3d.scene.Object);
+
+		if (obj != null) {
+			if (el.find(".fa-eye").length == 0) {
+				var visibilityToggle = new Element('<i class="fa fa-eye visibility-large-toggle"/>').appendTo(el.find(".jstree-wholerow").first());
+				visibilityToggle.click(function (e) {
+					obj.visible = !obj.visible;
+					el.toggleClass("hidden", !obj.visible);
+				});
+			}
+			el.toggleClass("hidden", !obj.visible);
+		}
+	}
+
 	function getIcon( c : h3d.scene.Object ) {
 		if( c.isMesh() ) {
 			if( Std.is(c, h3d.scene.Skin) )

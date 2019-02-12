@@ -675,8 +675,12 @@ input[type=checkbox]:checked:after {
 .fx-scriptParams .slider {
   margin: 10px;
 }
-.fx-scriptParams .checkBox {
+.fx-scriptParams .checkbox {
   margin: 10px;
+}
+.fx-scriptParams input[type=checkbox] {
+  display: inline-block;
+  float: none;
 }
 .fx-animpanel {
   position: relative;
@@ -1057,15 +1061,24 @@ body.hide-subview .lm_controls {
 .jstree-icon i {
   color: #aaa;
 }
-.visibility-toggle {
+.jstree-node {
+  padding-right: 10px!important;
+}
+.visibility-toggle,
+.visibility-large-toggle {
   float: right;
   padding: 4px;
 }
-.visibility-toggle:hover {
+.visibility-toggle:hover,
+.visibility-large-toggle:hover {
   color: white;
 }
-.visibility-toggle .hidden i {
+.visibility-toggle .hidden i,
+.visibility-large-toggle .hidden i {
   color: #555;
+}
+.visibility-large-toggle {
+  font-size: 14px!important;
 }
 .jstree.small a {
   font-size: 12px;

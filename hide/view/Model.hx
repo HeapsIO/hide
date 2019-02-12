@@ -228,7 +228,6 @@ class Model extends FileView {
 					<dt>X</dt><dd><input field="x"/></dd>
 					<dt>Y</dt><dd><input field="y"/></dd>
 					<dt>Z</dt><dd><input field="z"/></dd>
-					<dt>Visible</dt><dd><input type="checkbox" field="visible"/></dd>
 					<dt>Attach</dt><dd><select class="follow"><option value="">--- None ---</option></select></dd>
 				</dl>
 			</div>
@@ -308,6 +307,17 @@ class Model extends FileView {
 
 		obj = scene.loadModel(state.path, true);
 		new h3d.scene.Object(scene.s3d).addChild(obj);
+
+		var autoHide : Array<String> = config.get("scene.autoHide");
+		
+		function hidePropsRec( obj : h3d.scene.Object ) {
+			for(n in autoHide)
+				if(obj.name != null && obj.name.indexOf(n) == 0)
+					obj.visible = false;
+			for( o in obj )
+				hidePropsRec(o);
+		}
+		hidePropsRec(obj);
 
 		if( tree != null ) tree.remove();
 		tree = new hide.comp.SceneTree(obj, overlay, obj.name != null);
