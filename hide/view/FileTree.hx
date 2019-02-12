@@ -114,11 +114,42 @@ class FileTree extends FileView {
 			newMenu.unshift({ label : "Directory", click : createNew.bind(current, { options : { createNew : "Directory" }, extensions : null, component : null }) });
 			new hide.comp.ContextMenu([
 				{ label : "New..", menu:newMenu },
+				{ label : "Explore", enabled : current != null, click : function() { onExploreFile(current); } },
+				{ label : "Clone", enabled : current != null, click : function() { 
+						try {
+							if (onCloneFile(current)) {
+								tree.refresh();
+							}
+						} catch (e : Dynamic) {
+							js.Browser.window.alert(e);
+						}
+					} },
+				{ label : "Rename", enabled : current != null, click : function() { 
+					try {
+						onRenameFile(current); 
+					} catch (e : Dynamic) {
+						js.Browser.window.alert(e);
+					}
+					} },
 				{ label : "Delete", enabled : current != null, click : function() if( js.Browser.window.confirm("Delete " + current + "?") ) { onDeleteFile(current); tree.refresh(); } },
 			]);
 		});
 		tree.onDblClick = onOpenFile;
 		tree.init();
+	}
+
+	function onRenameFile( path : String ) {
+		var newFilename = ide.ask("New name:", path.substring( path.lastIndexOf("/") + 1 ));
+
+		while ( newFilename != null && sys.FileSystem.exists(ide.getPath(newFilename))) {
+			newFilename = ide.ask("This file already exists. Another new name:");
+		}
+		if (newFilename == null) {
+			return false;
+		}
+
+		onRename(path, newFilename);
+		return true;
 	}
 
 	function onRename(path:String, name:String) {
@@ -141,7 +172,6 @@ class FileTree extends FileView {
 			onRename(path+rand, name);
 			return false;
 		}
-
 
 		var isDir = sys.FileSystem.isDirectory(ide.getPath(path));
 		if( isDir )
@@ -168,6 +198,42 @@ class FileTree extends FileView {
 			return changed;
 		});
 		sys.FileSystem.rename(ide.getPath(path), ide.getPath(newPath));
+		return true;
+	}
+
+	function onExploreFile( path : String ) {
+		var fullPath = sys.FileSystem.absolutePath(getFilePath(path));
+		Sys.command("explorer.exe /select," + fullPath);
+	}
+
+	function onCloneFile( path : String ) {
+		var sourcePath = getFilePath(path);
+		var nameNewFile = ide.ask("New filename:");
+		if (nameNewFile == null || nameNewFile.length == 0) {
+			return false;
+		}
+
+		var targetPath = new haxe.io.Path(sourcePath).dir + "/" + nameNewFile;
+		if ( sys.FileSystem.exists(targetPath) ) {
+			throw "File already exists";
+		}
+
+		if( sys.FileSystem.isDirectory(sourcePath) ) {
+			sys.FileSystem.createDirectory(targetPath + "/");
+			for( f in sys.FileSystem.readDirectory(sourcePath) ) {
+				sys.io.File.saveBytes(targetPath + "/" + f, sys.io.File.getBytes(sourcePath + "/" + f));
+			}
+		} else {
+			var extensionNewFile = getExtension(targetPath);
+
+			if (extensionNewFile == null) {
+				var extensionSourceFile = getExtension(sourcePath).extensions[0];
+				if (extensionSourceFile != null) {
+					targetPath =  targetPath + "." + extensionSourceFile;
+				}
+			}
+			sys.io.File.saveBytes(targetPath, sys.io.File.getBytes(sourcePath));
+		}
 		return true;
 	}
 
