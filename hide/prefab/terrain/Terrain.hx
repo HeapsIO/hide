@@ -31,7 +31,7 @@ class Terrain extends Object3D {
 	#if editor
 	var editor : hide.prefab.terrain.TerrainEditor;
 	var cachedInstance : h3d.scene.pbr.terrain.Terrain;
-	var showChecker = false;
+	public var showChecker = false;
 	#end
 
 	public function new(?parent) {

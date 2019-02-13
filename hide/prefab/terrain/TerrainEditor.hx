@@ -82,6 +82,7 @@ class TerrainEditor {
 		#if debug
 		customScene.checkPasses = false;
 		#end
+		renderMode = terrainPrefab.showChecker ? Checker : PBR;
 	}
 
 	public function dispose(){
@@ -112,10 +113,13 @@ class TerrainEditor {
 			tile.material.removePass(tile.material.getPass("overlay"));
 		terrainPrefab.terrain.showChecker = false;
 		terrainPrefab.terrain.showComplexity = false;
+		terrainPrefab.showChecker = false;
 		switch(renderMode){
 			case PBR :
 			case ShaderComplexity : terrainPrefab.terrain.showComplexity = true;
-			case Checker : terrainPrefab.terrain.showChecker = true;
+			case Checker :
+				terrainPrefab.terrain.showChecker = true;
+				terrainPrefab.showChecker = true;
 		}
 	}
 
