@@ -301,8 +301,9 @@ class Particles3D extends FileView {
 		var defAmbient = scene.s3d.lightSystem.ambientLight.clone();
 		extra.find(".lights").change(function(e) {
 			var ls = scene.s3d.lightSystem;
+			var lfw = Std.instance(ls, h3d.scene.fwd.LightSystem);
 			var enable = e.getThis().prop("checked");
-			ls.maxLightsPerObject = enable ? 6 : 0;
+			if( lfw != null ) lfw.maxLightsPerObject = enable ? 6 : 0;
 			if( enable ) ls.ambientLight.load(defAmbient) else ls.ambientLight.set(1, 1, 1);
 		});
 		extra.find(".new").click(function(_) {

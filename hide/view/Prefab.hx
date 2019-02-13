@@ -30,7 +30,7 @@ class Prefab extends FileView {
 	var tabs : hide.comp.Tabs;
 
 	var tools : hide.comp.Toolbar;
-	var light : h3d.scene.DirLight;
+	var light : h3d.scene.fwd.DirLight;
 	var lightDirection = new h3d.Vector( 1, 2, -4 );
 
 
@@ -101,9 +101,9 @@ class Prefab extends FileView {
 	}
 
 	public function onSceneReady() {
-		light = sceneEditor.scene.s3d.find(function(o) return Std.instance(o, h3d.scene.DirLight));
+		light = sceneEditor.scene.s3d.find(function(o) return Std.instance(o, h3d.scene.fwd.DirLight));
 		if( light == null ) {
-			light = new h3d.scene.DirLight(scene.s3d);
+			light = new h3d.scene.fwd.DirLight(scene.s3d);
 			light.enableSpecular = true;
 		} else
 			light = null;

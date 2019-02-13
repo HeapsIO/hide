@@ -32,7 +32,7 @@ class MaterialSetup extends h3d.mat.MaterialSetup {
 	}
 }
 
-class Renderer extends h3d.scene.DefaultRenderer {
+class Renderer extends h3d.scene.fwd.Renderer {
 
 	var composite: h3d.pass.ScreenFx<DefaultForwardComposite>;
 	var outline = new ScreenOutline();

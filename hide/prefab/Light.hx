@@ -126,8 +126,8 @@ class Light extends Object3D {
 		var isPbr = Std.is(h3d.mat.MaterialSetup.current, h3d.mat.PbrMaterialSetup);
 		if( !isPbr ) {
 			switch( kind ) {
-			case Point: ctx.local3d = new h3d.scene.PointLight(ctx.local3d);
-			case Directional: ctx.local3d = new h3d.scene.DirLight(ctx.local3d);
+			case Point: ctx.local3d = new h3d.scene.fwd.PointLight(ctx.local3d);
+			case Directional: ctx.local3d = new h3d.scene.fwd.DirLight(ctx.local3d);
 			case Spot:
 			}
 		} else {

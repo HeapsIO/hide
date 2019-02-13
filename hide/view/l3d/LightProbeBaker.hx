@@ -136,7 +136,10 @@ class LightProbeBaker {
 				p = p.next;
 			}
 			prev.next = null;
-			passes.push(new h3d.scene.Renderer.PassObjects(curPass.pass.name,curPass));
+			var po = new h3d.scene.Renderer.PassObjects();
+			po.name = curPass.pass.name;
+			po.passes = new h3d.pass.PassList(curPass);
+			passes.push(po);
 			curPass = p;
 		}
 	}
