@@ -80,6 +80,8 @@ private class ParticleInstance extends h3d.scene.Object {
 	static var tmpScale = new h3d.Vector();
 	static var tmpLocalSpeed = new h3d.Vector();
 	static var tmpWorldSpeed = new h3d.Vector();
+	static var tmpMat = new h3d.Matrix();
+
 	var tmpColor = new h3d.Vector();
 	public function update(dt : Float) {
 		var child = getChildAt(0);
@@ -90,13 +92,13 @@ private class ParticleInstance extends h3d.scene.Object {
 
 		evaluator.getVector(def.localSpeed, t, tmpLocalSpeed);
 		if(tmpLocalSpeed.length() > 0.001) {
-			tmpLocalSpeed.transform3x3(orientation.toMatrix());
+			tmpLocalSpeed.transform3x3(orientation.toMatrix(tmpMat));
 		}
 		evaluator.getVector(def.worldSpeed, t, tmpWorldSpeed);
 		if(emitter.simulationSpace == Local)
 			tmpWorldSpeed.transform3x3(emitter.invTransform);
 
-		curVelocity = tmpLocalSpeed.add(tmpWorldSpeed);
+		curVelocity.load(tmpLocalSpeed.add(tmpWorldSpeed));
 		if(emitter.emitOrientation == Speed && curVelocity.lengthSq() > 0.01) {
 			getRotationQuat().initDirection(curVelocity);
 			posChanged = true;
@@ -142,7 +144,8 @@ private class ParticleInstance extends h3d.scene.Object {
 		if(child != null) {
 			switch(emitter.alignMode) {
 				case Screen: {
-					var mat = ctx.camera.mcam.clone();
+					var mat = tmpMat;
+					mat.load(ctx.camera.mcam);
 					mat.invert();
 					switch(emitter.simulationSpace){
 						case Local:mat.multiply3x4(mat, emitter.invTransform);
@@ -155,23 +158,23 @@ private class ParticleInstance extends h3d.scene.Object {
 					posChanged = true;
 				}
 				case Axis: {
-					var absChildMat = new h3d.Matrix();
-					absChildMat.multiply(getAbsPos(), childMat);
+					var absChildMat = tmpMat;
+					absChildMat.multiply3x4(getAbsPos(), childMat);
 					var alignVec = emitter.alignAxis.clone();
 					alignVec.transform3x3(absChildMat);
-					alignVec.normalize();
+					alignVec.normalizeFast();
 
 					var rotAxis = emitter.alignLockAxis.clone();
 					rotAxis.transform3x3(getAbsPos());
-					rotAxis.normalize();
+					rotAxis.normalizeFast();
 
 					var camVec : h3d.Vector = ctx.camera.pos.sub(absPos.getPosition());
-					camVec.normalize();
+					camVec.normalizeFast();
 
 				    var d = camVec.clone();
 					d.scale3(camVec.dot3(rotAxis));
 					d = camVec.sub(d);
-					d.normalize();
+					d.normalizeFast();
 					var angle = hxd.Math.acos(alignVec.dot3(d));
 					var cross = alignVec.cross(d);
 					if(rotAxis.dot3(cross) < 0)
@@ -236,6 +239,7 @@ class EmitterObject extends h3d.scene.Object {
 		randomSeed = Std.random(0xFFFFFF);
 		random = new hxd.Rand(randomSeed);
 		evaluator = new Evaluator(random);
+		invTransform = new h3d.Matrix();
 		reset();
 	}
 
@@ -409,7 +413,7 @@ class EmitterObject extends h3d.scene.Object {
 		if(emitRate == null || emitRate == VZero)
 			return;
 
-		invTransform = parent.getAbsPos().clone();
+		invTransform.load(parent.getAbsPos());
 		invTransform.invert();
 
 		var emitTarget = evaluator.getSum(emitRate, curTime);
