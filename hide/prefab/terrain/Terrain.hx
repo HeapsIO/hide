@@ -24,7 +24,7 @@ class Terrain extends Object3D {
 	var parallaxMinStep : Int = 1;
 	var parallaxMaxStep : Int = 16;
 	var heightBlendStrength : Float = 0.0;
-	var heightBlendSharpness : Float = 0.0;
+	var blendSharpness : Float = 0.0;
 	var packWeight = new h3d.pass.ScreenFx(new hide.prefab.terrain.PackWeight());
 	var unpackWeight = new h3d.pass.ScreenFx(new hide.prefab.terrain.UnpackWeight());
 
@@ -50,7 +50,7 @@ class Terrain extends Object3D {
 		parallaxMinStep = obj.parallaxMinStep == null ? 1 : obj.parallaxMinStep;
 		parallaxMaxStep = obj.parallaxMaxStep == null ? 1 : obj.parallaxMaxStep;
 		heightBlendStrength = obj.heightBlendStrength == null ? 0 : obj.heightBlendStrength;
-		heightBlendSharpness = obj.heightBlendSharpness == null ? 0 : obj.heightBlendSharpness;
+		blendSharpness = obj.blendSharpness == null ? 0 : obj.blendSharpness;
 		autoCreateTile = obj.autoCreateTile == null ? false : obj.autoCreateTile;
 
 		#if editor
@@ -68,7 +68,7 @@ class Terrain extends Object3D {
 		obj.parallaxMinStep = parallaxMinStep;
 		obj.parallaxMaxStep = parallaxMaxStep;
 		obj.heightBlendStrength = heightBlendStrength;
-		obj.heightBlendSharpness = heightBlendSharpness;
+		obj.blendSharpness = blendSharpness;
 		obj.autoCreateTile = autoCreateTile;
 		var surfacesProps : Array<SurfaceProps> = [];
 		for(surface in terrain.surfaces){
@@ -243,7 +243,7 @@ class Terrain extends Object3D {
 		terrain.parallaxMinStep = parallaxMinStep;
 		terrain.parallaxMaxStep = parallaxMaxStep;
 		terrain.heightBlendStrength = heightBlendStrength;
-		terrain.heightBlendSharpness = heightBlendSharpness;
+		terrain.blendSharpness = blendSharpness;
 		terrain.name = "terrain";
 
 		#if editor
@@ -270,7 +270,7 @@ class Terrain extends Object3D {
 		terrain.parallaxMinStep = parallaxMinStep;
 		terrain.parallaxMaxStep = parallaxMaxStep;
 		terrain.heightBlendStrength = heightBlendStrength;
-		terrain.heightBlendSharpness = heightBlendSharpness;
+		terrain.blendSharpness = blendSharpness;
 		terrain.showChecker = showChecker;
 		if( editor != null )
 			editor.update(propName);
@@ -309,8 +309,6 @@ class Terrain extends Object3D {
 		editor.setupUI(props, ctx);
 		props.append('
 			<div class="group" name="Terrain"><dl>
-				<dt>Pos Z</dt><dd><input type="range" min="-100" max="100" value="0" field="z"/></dd>
-				<dt>Rotation Z</dt><dd><input type="range" min="-180" max="180" value="0" field="rotationZ" /></dd>
 				<dt>Show Grid</dt><dd><input type="checkbox" field="terrain.showGrid"/></dd>
 				<dt>Visible</dt><dd><input type="checkbox" field="visible"/></dd>
 				<dt>Mode</dt>
@@ -323,18 +321,18 @@ class Terrain extends Object3D {
 			<div class="group" name="Quality">
 				<dt>Tile Size</dt><dd><input type="range" min="1" max="100" value="0" field="tileSizeSet"/></dd>
 				<dt>Cell Size</dt><dd><input type="range" min="0.01" max="10" value="0" field="cellSizeSet"/></dd>
-				<dt>WeightMap Resolution</dt><dd><input type="range" min="1" max="1000" value="0" step="1" field="weightMapResolutionSet"/></dd>
-				<dt>HeightMap Resolution</dt><dd><input type="range" min="1" max="1000" value="0" step="1" field="heightMapResolutionSet"/></dd>
+				<dt>WeightMap Resolution</dt><dd><input type="range" min="1" max="256" value="0" step="1" field="weightMapResolutionSet"/></dd>
+				<dt>HeightMap Resolution</dt><dd><input type="range" min="1" max="256" value="0" step="1" field="heightMapResolutionSet"/></dd>
 				<div align="center"><input type="button" value="Apply" class="apply"/></div>
 			</div>
 			<div class="group" name="Blend">
-				<dt>HeightBlend</dt><dd><input type="range" min="0" max="1" field="heightBlendStrength"/></dd>
-				<dt>Sharpness</dt><dd><input type="range" min="0" max="1" field="heightBlendSharpness"/></dd>
+				<dt>Height Blend</dt><dd><input type="range" min="0" max="1" field="heightBlendStrength"/></dd>
+				<dt>Sharpness</dt><dd><input type="range" min="0" max="1" field="blendSharpness"/></dd>
 			</div>
 			<div class="group" name="Parallax">
 				<dt>Amount</dt><dd><input type="range" min="0" max="1" field="parallaxAmount"/></dd>
-				<dt>Min Step</dt><dd><input type="range" min="1" max="256" value="0" step="1" field="parallaxMinStep"/></dd>
-				<dt>Max Step</dt><dd><input type="range" min="1" max="256" value="0" step="1" field="parallaxMaxStep"/></dd>
+				<dt>Min Step</dt><dd><input type="range" min="1" max="64" value="0" step="1" field="parallaxMinStep"/></dd>
+				<dt>Max Step</dt><dd><input type="range" min="1" max="64" value="0" step="1" field="parallaxMaxStep"/></dd>
 			</div>
 		');
 

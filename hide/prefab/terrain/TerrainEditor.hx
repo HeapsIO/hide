@@ -96,7 +96,8 @@ class TerrainEditor {
 		if(propName == "editor.currentSurface.tilling"
 		|| propName == "editor.currentSurface.offset.x"
 		|| propName == "editor.currentSurface.offset.y"
-		|| propName == "editor.currentSurface.angle")
+		|| propName == "editor.currentSurface.angle"
+		|| propName == "editor.currentSurface.heightScale")
 			terrainPrefab.terrain.updateSurfaceParams();
 		autoCreateTile = terrainPrefab.autoCreateTile;
 		if(propName == "editor.renderMode") updateRender();
@@ -820,6 +821,7 @@ class TerrainEditor {
 			setRange("editor.currentSurface.offset.x", currentSurface.offset.x, ctx);
 			setRange("editor.currentSurface.offset.y", currentSurface.offset.y, ctx);
 			setRange("editor.currentSurface.angle", currentSurface.angle, ctx);
+			setRange("editor.currentSurface.heightScale", currentSurface.heightScale, ctx);
 		}
 	}
 
@@ -888,6 +890,7 @@ class TerrainEditor {
 			<dt>Offset X</dt><dd><input type="range" min="0" max="1" field="editor.currentSurface.offset.x"/></dd>
 			<dt>Offset Y</dt><dd><input type="range" min="0" max="1" field="editor.currentSurface.offset.y"/></dd>
 			<dt>Rotate</dt><dd><input type="range" min="0" max="360" field="editor.currentSurface.angle"/></dd>
+			<dt>Height Scale</dt><dd><input type="range" min="0" max="1" field="editor.currentSurface.heightScale"/></dd>
 		</div>
 	</div>';
 
