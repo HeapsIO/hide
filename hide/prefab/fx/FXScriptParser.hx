@@ -10,6 +10,14 @@ class FXScriptParser {
 	public function new(){
 	}
 
+	#if !hscript
+
+	public function createFXScript( s : String, fx : hide.prefab.fx.FX.FXAnimation ) : FXScript {
+		throw "FX Scripts requires -lib hscript";
+	}
+
+	#else
+
 	inline function getExpr( e : hscript.Expr ) {
 		#if hscriptPos
 		return e.e;
@@ -395,6 +403,7 @@ class FXScriptParser {
 		}
 		return parse(expr);
 	}
+	#end
 
 	#if editor
 
