@@ -8,7 +8,8 @@ typedef SurfaceProps = {
 	tilling : Float,
 	angle : Float,
 	offsetX : Float,
-	offsetY : Float
+	offsetY : Float,
+	heightBias : Float
 };
 
 class Terrain extends Object3D {
@@ -80,7 +81,8 @@ class Terrain extends Object3D {
 				tilling : surface.tilling,
 				angle : surface.angle,
 				offsetX : surface.offset.x,
-				offsetY : surface.offset.y
+				offsetY : surface.offset.y,
+				heightBias : surface.heightBias
 			};
 			surfacesProps.push(surfaceProps);
 		}
@@ -185,6 +187,7 @@ class Terrain extends Object3D {
 				surface.offset.y = surfaceProps.offsetY;
 				surface.angle = surfaceProps.angle;
 				surface.tilling = surfaceProps.tilling;
+				surface.heightBias = surfaceProps.heightBias;
 				albedo.dispose();
 				normal.dispose();
 				pbr.dispose();
