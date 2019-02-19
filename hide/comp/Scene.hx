@@ -99,6 +99,7 @@ class Scene extends Component implements h3d.IDrawable {
 	function delayedInit() {
 		canvas.id = "webgl";
 		window = @:privateAccess new hxd.Window(canvas);
+		window.propagateKeyEvents = true;
 		window.setCurrent();
 		engine = new h3d.Engine();
 		@:privateAccess engine.resCache.set(Scene, this);
