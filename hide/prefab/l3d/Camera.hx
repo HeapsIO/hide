@@ -24,6 +24,19 @@ class Camera extends hide.prefab.Object3D {
 			this.fovY = obj.fovY;
 	}
 
+	public function applyTo(c: h3d.Camera) {
+		var front = getTransform().front();
+		var ray = h3d.col.Ray.fromValues(x, y, z, front.x, front.y, front.z);
+		var plane = h3d.col.Plane.Z();
+		var pt = ray.intersect(plane);
+		c.pos.set(x, y, z);
+		if(pt != null)
+			c.target = pt.toVector();
+		else
+			c.target = c.pos.add(front);
+		c.fovY = fovY;
+	}
+
 
 	#if editor
 
@@ -45,24 +58,13 @@ class Camera extends hide.prefab.Object3D {
 			var c = ctx.scene.s3d.camera;
 			if(c != null) {
 				c.fovY = fovY;
-				var cam = ctx.scene.editor.cameraController;
-				cam.loadFromCamera();
+				ctx.scene.editor.cameraController.loadFromCamera();
 			}
 		});
 
 		props.find(".preview").click(function(e) {
-			var c = ctx.scene.s3d.camera;
-			var front = getTransform().front();
-			var ray = h3d.col.Ray.fromValues(x, y, z, front.x, front.y, front.z);
-			var plane = h3d.col.Plane.Z();
-			var pt = ray.intersect(plane);
-			if(pt != null) {
-				c.pos.set(x, y, z);
-				c.target = pt.toVector();
-				c.fovY = fovY;
-				var cam = ctx.scene.editor.cameraController;
-				cam.loadFromCamera();
-			}
+			applyTo(ctx.scene.editor.camera);
+			ctx.scene.editor.cameraController.loadFromCamera();
 		});
 	}
 
