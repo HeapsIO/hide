@@ -158,7 +158,9 @@ class IconTree<T:{}> extends Component {
 		element.on('ready.jstree', function () {
 			var lis = element.find("li");
 			for(li in lis) {
-				applyStyle(map.get(li.id).value, new Element(li));
+				var item = map.get(li.id);
+				if(item != null)
+					applyStyle(item.value, new Element(li));
 			}
 		});
 		element.on('changed.jstree', function (e, data) {
@@ -177,7 +179,9 @@ class IconTree<T:{}> extends Component {
 		element.on("after_open.jstree", function(event, data) {
 			var lis = new Element(event.target).find("li");
 			for(li in lis) {
-				applyStyle(map.get(li.id).value, new Element(li));
+				var item = map.get(li.id);
+				if(item != null)
+					applyStyle(item.value, new Element(li));
 			}
 		});
 	}
