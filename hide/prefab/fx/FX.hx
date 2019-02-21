@@ -187,7 +187,11 @@ class FXAnimation extends h3d.scene.Object {
 	}
 
 	public function resolveConstraints( caster : h3d.scene.Object ) {
-		for(co in constraints){
+		for( co in constraints ) {
+
+			if( !co.enabled )
+		 		continue;
+
 			var objectName = co.object.split(".").pop();
 			var targetName = co.target.split(".").pop();
 
@@ -206,6 +210,8 @@ class FXAnimation extends h3d.scene.Object {
 				srcObj.follow = targetObj;
 				srcObj.followPositionOnly = co.positionOnly;
 			}
+			else
+				trace ("Failed te resolve constraint for FX : " + name);
 		}
 	}
 }

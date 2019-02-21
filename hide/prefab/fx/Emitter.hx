@@ -46,33 +46,104 @@ typedef InstanceDef = {
 
 typedef ShaderAnims = Array<ShaderAnimation>;
 
+private class ParticleTransform {
+
+	public var parent : h3d.scene.Object;
+	public var absPos = new h3d.Matrix();
+	public var qRot = new h3d.Quat();
+	public var x = 0.0;
+	public var y = 0.0;
+	public var z = 0.0;
+	public var scaleX = 1.0;
+	public var scaleY = 1.0;
+	public var scaleZ = 1.0;
+
+	public function new() {
+
+	}
+
+	public function setRotation( quat ) {
+		qRot.load(quat);
+	}
+
+	public function setPosition( x, y, z ) {
+		this.x = x;
+		this.y = y;
+		this.z = z;
+	}
+
+	public function calcAbsPos() {
+		qRot.toMatrix(absPos);
+		absPos._11 *= scaleX;
+		absPos._12 *= scaleX;
+		absPos._13 *= scaleX;
+		absPos._21 *= scaleY;
+		absPos._22 *= scaleY;
+		absPos._23 *= scaleY;
+		absPos._31 *= scaleZ;
+		absPos._32 *= scaleZ;
+		absPos._33 *= scaleZ;
+		absPos._41 = x;
+		absPos._42 = y;
+		absPos._43 = z;
+		if( parent != null )
+			absPos.multiply3x4inline(absPos, parent.getAbsPos());
+	}
+
+	public function setTransform( mat : h3d.Matrix ) {
+		var s = mat.getScale();
+		this.x = mat.tx;
+		this.y = mat.ty;
+		this.z = mat.tz;
+		this.scaleX = s.x;
+		this.scaleY = s.y;
+		this.scaleZ = s.z;
+		mat.prependScale(1.0 / s.x, 1.0 / s.y, 1.0 / s.z);
+		qRot.initRotateMatrix(mat);
+	}
+}
+
 @:allow(hide.prefab.fx.EmitterObject)
-private class ParticleInstance extends h3d.scene.Object {
+private class ParticleInstance  {
+
 	var emitter : EmitterObject;
 	var evaluator : Evaluator;
+	var parent : h3d.scene.Object;
+
+	var transform = new ParticleTransform();
+	var childTransform = new ParticleTransform();
+	public var absPos = new h3d.Matrix();
+	public var childMat = new h3d.Matrix();
+	public var baseMat : h3d.Matrix;
 
 	public var life = 0.0;
 	public var lifeTime = 0.0;
+	public var color = new h3d.Vector();
 
 	public var curVelocity = new h3d.Vector();
 	public var orientation = new h3d.Quat();
 
 	public var def : InstanceDef;
-	public var shaderAnims : ShaderAnims;
-	public var baseMat : h3d.Matrix;
-	var childMat = new h3d.Matrix();
 
 	public function new(emitter: EmitterObject, def: InstanceDef) {
 		switch(emitter.simulationSpace){
 			// Particles in Local are spawned next to emitter in the scene tree,
 			// so emitter shape can be transformed (especially scaled) without affecting children
-			case Local : super(emitter.parent);
-			case World : super(emitter.getScene());
+			case Local : transform.parent = emitter.parent;
+			case World : transform.parent = emitter.getScene();
 		}
 		this.def = def;
 		this.emitter = emitter;
 		this.evaluator = new Evaluator(emitter.random);
 		emitter.instances.push(this);
+	}
+
+	public function setPosition( x, y, z ) {
+		transform.setPosition(x, y, z);
+	}
+
+	public function setRotation( quat ) {
+		transform.setRotation(quat);
 	}
 
 	static var tmpRot = new h3d.Vector();
@@ -81,32 +152,27 @@ private class ParticleInstance extends h3d.scene.Object {
 	static var tmpLocalSpeed = new h3d.Vector();
 	static var tmpWorldSpeed = new h3d.Vector();
 	static var tmpMat = new h3d.Matrix();
-
 	var tmpColor = new h3d.Vector();
-	public function update(dt : Float) {
-		var child = getChildAt(0);
-		if(child == null)
-			return;
+
+	public function update( dt : Float ) {
 
 		var t = hxd.Math.clamp(life / lifeTime, 0.0, 1.0);
 
 		evaluator.getVector(def.localSpeed, t, tmpLocalSpeed);
-		if(tmpLocalSpeed.length() > 0.001) {
+		if(tmpLocalSpeed.length() > 0.001)
 			tmpLocalSpeed.transform3x3(orientation.toMatrix(tmpMat));
-		}
+
 		evaluator.getVector(def.worldSpeed, t, tmpWorldSpeed);
 		if(emitter.simulationSpace == Local)
 			tmpWorldSpeed.transform3x3(emitter.invTransform);
 
 		curVelocity.load(tmpLocalSpeed.add(tmpWorldSpeed));
-		if(emitter.emitOrientation == Speed && curVelocity.lengthSq() > 0.01) {
-			getRotationQuat().initDirection(curVelocity);
-			posChanged = true;
-		}
+		if(emitter.emitOrientation == Speed && curVelocity.lengthSq() > 0.01)
+			transform.qRot.initDirection(curVelocity);
 
-		x += curVelocity.x * dt;
-		y += curVelocity.y * dt;
-		z += curVelocity.z * dt;
+		transform.x += curVelocity.x * dt;
+		transform.y += curVelocity.y * dt;
+		transform.z += curVelocity.z * dt;
 
 		var rot = evaluator.getVector(def.rotation, t, tmpRot);
 		rot.scale3(Math.PI / 180.0);
@@ -117,83 +183,80 @@ private class ParticleInstance extends h3d.scene.Object {
 		childMat.initScale(scaleVec.x, scaleVec.y, scaleVec.z);
 		childMat.rotate(rot.x, rot.y, rot.z);
 		childMat.translate(offset.x, offset.y, offset.z);
-		if(baseMat != null)
-			childMat.multiply(baseMat, childMat);
-		child.setTransform(childMat);
 
-		for(anim in shaderAnims) {
-			anim.setTime(t);
+		if( baseMat != null )
+			childMat.multiply(baseMat, childMat);
+
+		childTransform.setTransform(childMat);
+
+		if( def.color != null ) {
+			switch( def.color ) {
+				case VCurve(a): color.a = evaluator.getFloat(def.color, t);
+				default: color.load(evaluator.getVector(def.color, t, tmpColor));
+			}
 		}
 
-		var mesh = Std.instance(child, h3d.scene.Mesh);
-		if(mesh != null && def.color != null) {
-			var mat = mesh.material;
-			switch(def.color) {
-				case VCurve(a):
-					mat.color.a = evaluator.getFloat(def.color, t);
-				default:
-					mat.color = evaluator.getVector(def.color, t, tmpColor);
-			}
+		switch( emitter.alignMode ) {
+			case Screen:
+				tmpMat.load(emitter.getScene().camera.mcam);
+				tmpMat.invert();
+				switch( emitter.simulationSpace ) {
+					case Local: tmpMat.multiply3x4(tmpMat, emitter.invTransform);
+					case World:
+				}
+				tmpMat.prependRotation(0, Math.PI, 0);
+				var q = transform.qRot;
+				q.initRotateMatrix(tmpMat);
+				q.normalize();
+
+				transform.calcAbsPos();
+				childTransform.calcAbsPos();
+				absPos.multiply(childTransform.absPos, transform.absPos);
+
+			case Axis:
+				transform.calcAbsPos();
+
+				var absChildMat = tmpMat;
+				absChildMat.multiply3x4(transform.absPos, childMat);
+				var alignVec = emitter.alignAxis.clone();
+				alignVec.transform3x3(absChildMat);
+				alignVec.normalizeFast();
+
+				var rotAxis = emitter.alignLockAxis.clone();
+				rotAxis.transform3x3(transform.absPos);
+				rotAxis.normalizeFast();
+
+				var camVec : h3d.Vector = emitter.getScene().camera.pos.sub(transform.absPos.getPosition());
+				camVec.normalizeFast();
+
+				var d = camVec.clone();
+				d.scale3(camVec.dot3(rotAxis));
+				d = camVec.sub(d);
+				d.normalizeFast();
+				var angle = hxd.Math.acos(alignVec.dot3(d));
+				var cross = alignVec.cross(d);
+				if(rotAxis.dot3(cross) < 0)
+					angle = -angle;
+
+				var q = new h3d.Quat();
+				q.initRotateAxis(emitter.alignLockAxis.x, emitter.alignLockAxis.y, emitter.alignLockAxis.z, angle);
+				var cq = childTransform.qRot;
+				cq.multiply(cq, q);
+				childTransform.setRotation(cq);
+
+				childTransform.calcAbsPos();
+				absPos.multiply(childTransform.absPos, transform.absPos);
+
+			case None:
+				transform.calcAbsPos();
+				childTransform.calcAbsPos();
+				absPos.multiply(childTransform.absPos, transform.absPos);
 		}
 
 		life += dt;
 	}
 
-	override function syncRec( ctx : h3d.scene.RenderContext ) {
-		var child = getChildAt(0);
-		if(child != null) {
-			switch(emitter.alignMode) {
-				case Screen: {
-					var mat = tmpMat;
-					mat.load(ctx.camera.mcam);
-					mat.invert();
-					switch(emitter.simulationSpace){
-						case Local:mat.multiply3x4(mat, emitter.invTransform);
-						case World:
-					}
-					mat.prependRotation(0, Math.PI, 0);
-					var q = getRotationQuat();
-					q.initRotateMatrix(mat);
-					q.normalize();
-					posChanged = true;
-				}
-				case Axis: {
-					var absChildMat = tmpMat;
-					absChildMat.multiply3x4(getAbsPos(), childMat);
-					var alignVec = emitter.alignAxis.clone();
-					alignVec.transform3x3(absChildMat);
-					alignVec.normalizeFast();
-
-					var rotAxis = emitter.alignLockAxis.clone();
-					rotAxis.transform3x3(getAbsPos());
-					rotAxis.normalizeFast();
-
-					var camVec : h3d.Vector = ctx.camera.pos.sub(absPos.getPosition());
-					camVec.normalizeFast();
-
-				    var d = camVec.clone();
-					d.scale3(camVec.dot3(rotAxis));
-					d = camVec.sub(d);
-					d.normalizeFast();
-					var angle = hxd.Math.acos(alignVec.dot3(d));
-					var cross = alignVec.cross(d);
-					if(rotAxis.dot3(cross) < 0)
-						angle = -angle;
-
-					var q = new h3d.Quat();
-					q.initRotateAxis(emitter.alignLockAxis.x, emitter.alignLockAxis.y, emitter.alignLockAxis.z, angle);
-					var cq = child.getRotationQuat();
-					cq.multiply(cq, q);
-					child.setRotationQuat(cq);
-				}
-				case None:
-			}
-		}
-		super.syncRec(ctx);
-	}
-
 	function kill() {
-		remove();
 		emitter.instances.remove(this);
 	}
 }
@@ -201,6 +264,10 @@ private class ParticleInstance extends h3d.scene.Object {
 @:allow(hide.prefab.fx.ParticleInstance)
 @:allow(hide.prefab.fx.Emitter)
 class EmitterObject extends h3d.scene.Object {
+
+	public var batch : h3d.scene.MeshBatch;
+	public var instances : Array<ParticleInstance> = [];
+	public var shaderAnims : ShaderAnims;
 
 	public var enable : Bool;
 	public var particleVisibility(default, null) : Bool;
@@ -233,6 +300,14 @@ class EmitterObject extends h3d.scene.Object {
 
 	public var invTransform : h3d.Matrix;
 
+	var random: hxd.Rand;
+	var randomSeed = 0;
+	var context : hide.prefab.Context;
+	var emitCount = 0;
+	var lastTime = -1.0;
+	var curTime = 0.0;
+	var renderTime = 0.0;
+	var evaluator : Evaluator;
 
 	public function new(?parent) {
 		super(parent);
@@ -242,16 +317,6 @@ class EmitterObject extends h3d.scene.Object {
 		invTransform = new h3d.Matrix();
 		reset();
 	}
-
-	var random: hxd.Rand;
-	var randomSeed = 0;
-	var context : hide.prefab.Context;
-	var emitCount = 0;
-	var lastTime = -1.0;
-	var curTime = 0.0;
-	var renderTime = 0.0;
-	var evaluator : Evaluator;
-	var instances : Array<ParticleInstance> = [];
 
 	public function reset() {
 		particleVisibility = true;
@@ -266,35 +331,27 @@ class EmitterObject extends h3d.scene.Object {
 	}
 
 	public function setParticleVibility( b : Bool ){
-		for(inst in instances) {
-			inst.visible = b;
-		}
 		particleVisibility = b;
 	}
 
-	function doEmit(count: Int) {
-		if(count == 0)
+	function doEmit( count : Int ) {
+		if( count == 0 )
 			return;
 
-		if(instDef == null || particleTemplate == null)
+		if( instDef == null || particleTemplate == null )
 			return;
 
 		var shapeAngle = hxd.Math.degToRad(emitAngle) / 2.0;
-
 		var tmpq = new h3d.Quat();
 		var offset = new h3d.Vector();
 		var direction = new h3d.Vector();
 
-		for(i in 0...count) {
+		for( i in 0...count ) {
 			var part = new ParticleInstance(this, instDef);
-			part.visible = particleVisibility;
 			part.lifeTime = hxd.Math.max(0.01, lifeTime + hxd.Math.srand(lifeTimeRand));
-			context.local3d = part;
-			var ctx = particleTemplate.makeInstance(context);
-
 			tmpq.identity();
 
-			switch(emitShape) {
+			switch( emitShape ) {
 				case Box:
 					offset.set(random.srand(0.5), random.srand(0.5), random.srand(0.5));
 				case Cylinder:
@@ -313,7 +370,7 @@ class EmitterObject extends h3d.scene.Object {
 					}
 					var x = random.rand();
 					offset.set(x - 0.5, dx * 0.5, dy * 0.5);
-					if(emitOrientation == Normal)
+					if( emitOrientation == Normal )
 						tmpq.initRotation(0, -hxd.Math.atan2(dy, dx), Math.PI/2);
 					offset.y *= hxd.Math.lerp(emitRad1, emitRad2, x);
 					offset.z *= hxd.Math.lerp(emitRad1, emitRad2, x);
@@ -323,11 +380,11 @@ class EmitterObject extends h3d.scene.Object {
 						offset.y = random.srand(1.0);
 						offset.z = random.srand(1.0);
 					}
-					while(offset.lengthSq() > 1.0);
-					if(emitSurface)
+					while( offset.lengthSq() > 1.0 );
+					if( emitSurface )
 						offset.normalize();
 					offset.scale3(0.5);
-					if(emitOrientation == Normal)
+					if( emitOrientation == Normal )
 						tmpq.initDirection(offset);
 				case Cone:
 					offset.set(0, 0, 0);
@@ -340,10 +397,10 @@ class EmitterObject extends h3d.scene.Object {
 					tmpq.initDirection(direction);
 			}
 
-			if(emitOrientation == Random)
+			if( emitOrientation == Random )
 				tmpq.initRotation(hxd.Math.srand(Math.PI), hxd.Math.srand(Math.PI), hxd.Math.srand(Math.PI));
 
-			switch(simulationSpace){
+			switch( simulationSpace ) {
 				case Local:
 					var localQuat = getRotationQuat().clone();
 					var localMat = getAbsPos().clone();
@@ -354,7 +411,7 @@ class EmitterObject extends h3d.scene.Object {
 					part.setPosition(offset.x, offset.y, offset.z);
 					part.baseMat = particleTemplate.getTransform();
 					localQuat.multiply(localQuat, tmpq);
-					part.setRotationQuat(localQuat);
+					part.setRotation(localQuat);
 					part.orientation = localQuat.clone();
 				case World:
 					var worldPos = localToGlobal(offset.clone());
@@ -364,60 +421,83 @@ class EmitterObject extends h3d.scene.Object {
 					worldQuat.initRotateMatrix(getAbsPos());
 					worldQuat.normalize();
 					tmpq.multiply(tmpq, worldQuat);
-					part.setRotationQuat(tmpq);
+					part.setRotation(tmpq);
 					part.orientation = tmpq.clone();
-			}
-
-			// Setup mats.
-			// Should we do this manually here or make a recursive makeInstance on the template?
-			var materials = particleTemplate.getAll(hide.prefab.Material);
-			for(mat in materials) {
-				if(mat.enabled)
-					mat.makeInstance(ctx);
-			}
-
-			// Animated textures animations
-			{
-				var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
-				if(frameCount > 1) {
-					var mesh = Std.instance(ctx.local3d, h3d.scene.Mesh);
-					if(mesh != null && mesh.material != null) {
-						var pshader = new h3d.shader.AnimatedTexture(mesh.material.texture, frameDivisionX, frameDivisionY, frameCount, frameCount * animationRepeat / lifeTime);
-						pshader.startTime = renderTime;
-						pshader.loop = animationLoop;
-						if(animationRepeat == 0) {
-							pshader.startFrame = random.random(frameCount);
-						}
-						mesh.material.mainPass.addShader(pshader);
-					}
-				}
-			}
-
-			// Setup shaders
-			part.shaderAnims = [];
-			var shaders = particleTemplate.getAll(hide.prefab.Shader);
-			for(shader in shaders) {
-				if(!shader.enabled)
-					continue;
-				var shCtx = shader.makeInstance(ctx);
-				if(shCtx == null)
-					continue;
-				hide.prefab.fx.FX.getShaderAnims(ctx, shader, part.shaderAnims);
 			}
 		}
 		context.local3d = this;
 		emitCount += count;
 	}
 
-	function tick(dt: Float) {
-		if(emitRate == null || emitRate == VZero)
+	function createMeshBatch() {
+
+		if( batch != null )
+			batch.remove();
+
+		if( particleTemplate == null )
+			return;
+
+		var template = particleTemplate.makeInstance(context);
+		var mesh = Std.instance(template.local3d, h3d.scene.Mesh);
+		if( mesh != null && mesh.primitive != null ) {
+			var meshPrim = Std.instance(mesh.primitive, h3d.prim.MeshPrimitive);
+
+			// Setup mats.
+			// Should we do this manually here or make a recursive makeInstance on the template?
+			var materials = particleTemplate.getAll(hide.prefab.Material);
+			for(mat in materials) {
+				if(mat.enabled)
+					mat.makeInstance(template);
+			}
+
+			// Setup shaders
+			shaderAnims = [];
+			var shaders = particleTemplate.getAll(hide.prefab.Shader);
+			for( shader in shaders ) {
+				if( !shader.enabled ) continue;
+				var shCtx = shader.makeInstance(template);
+				if( shCtx == null ) continue;
+				hide.prefab.fx.FX.getShaderAnims(template, shader, shaderAnims);
+			}
+
+			// Animated textures animations
+			var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
+			if( frameCount > 1 ) {
+				if( mesh != null && mesh.material != null ) {
+					var pshader = new h3d.shader.AnimatedTexture(mesh.material.texture, frameDivisionX, frameDivisionY, frameCount, frameCount * animationRepeat / lifeTime);
+					pshader.startTime = renderTime;
+					pshader.loop = animationLoop;
+					if( animationRepeat == 0 )
+						pshader.startFrame = random.random(frameCount);
+					mesh.material.mainPass.addShader(pshader);
+				}
+			}
+
+			#if editor
+			/*var shader = new h3d.shader.FixedColor(0xffffff);
+			var p = mesh.material.allocPass("highlight");
+			p.culling = None;
+			p.depthWrite = false;
+			p.addShader(shader);*/
+			#end
+
+			if( meshPrim != null ) {
+				batch = new h3d.scene.MeshBatch(meshPrim, mesh.material, this);
+				batch.name = "batch";
+			}
+			template.local3d.remove();
+		}
+	}
+
+	function tick( dt : Float ) {
+		if( emitRate == null || emitRate == VZero )
 			return;
 
 		invTransform.load(parent.getAbsPos());
 		invTransform.invert();
 
 		var emitTarget = evaluator.getSum(emitRate, curTime);
-		var delta = hxd.Math.ceil(emitTarget - emitCount);
+		var delta = hxd.Math.ceil(hxd.Math.min(maxCount - instances.length, emitTarget - emitCount));
 		if(enable)
 			doEmit(delta);
 
@@ -425,19 +505,30 @@ class EmitterObject extends h3d.scene.Object {
 		updateParticles(dt);
 		#end
 
+		if( batch != null ) {
+			batch.begin(maxCount);
+			if( particleVisibility ) {
+				for( p in instances ) {
+					batch.worldPosition = p.absPos;
+					for( anim in shaderAnims ) {
+						var t = hxd.Math.clamp(p.life / p.lifeTime, 0.0, 1.0);
+						anim.setTime(t);
+					}
+					batch.emitInstance();
+				}
+			}
+		}
 		lastTime = curTime;
 		curTime += dt;
 	}
 
 	function updateParticles(dt: Float) {
 		var i = instances.length;
-		while (i-- > 0) {
-			if(instances[i].life > lifeTime) {
+		while( i-- > 0 ) {
+			if(instances[i].life > lifeTime)
 				instances[i].kill();
-			}
-			else {
+			else
 				instances[i].update(dt);
-			}
 		}
 	}
 
@@ -691,6 +782,8 @@ class Emitter extends Object3D {
 		emitterObj.animationRepeat = getParamVal("animationRepeat");
 		emitterObj.animationLoop = getParamVal("animationLoop");
 
+		emitterObj.createMeshBatch();
+
 		#if editor
 		if(propName == null || ["emitShape", "emitAngle", "emitRad1", "emitRad2"].indexOf(propName) >= 0)
 			updateEmitShape(emitterObj);
@@ -853,9 +946,23 @@ class Emitter extends Object3D {
 		var debugShape : h3d.scene.Object = emitterObj.find(c -> if(c.name == "_highlight") c else null);
 		if(debugShape != null)
 			debugShape.visible = b;
+
+		if( b ) {
+			var shader = new h3d.shader.FixedColor(0xffffff);
+			var p = emitterObj.batch.material.allocPass("highlight");
+			p.culling = None;
+			p.depthWrite = false;
+			p.addShader(shader);
+			@:privateAccess p.batchMode = true;
+		}
+		else {
+			emitterObj.batch.material.removePass(emitterObj.batch.material.getPass("highlight"));
+		}
+		emitterObj.batch.shadersChanged = true;
 	}
 
 	function updateEmitShape(emitterObj: EmitterObject) {
+
 		var debugShape : h3d.scene.Object = emitterObj.find(c -> if(c.name == "_highlight") c else null);
 		if(debugShape == null) {
 			debugShape = new h3d.scene.Object(emitterObj);

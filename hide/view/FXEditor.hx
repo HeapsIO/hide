@@ -48,6 +48,12 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		parent.onUpdate(dt);
 	}
 
+	override function setObjectSelected( p : PrefabElement, ctx : hide.prefab.Context, b : Bool ) {
+		if( p.getParent(hide.prefab.fx.Emitter) != null )
+			return;
+		super.setObjectSelected(p, ctx, b);
+	}
+
 	override function selectObjects( elts, ?includeTree=true) {
 		super.selectObjects(elts, includeTree);
 		parent.onSelect(elts);
@@ -1250,6 +1256,7 @@ class FXEditor extends FileView {
 			var lines : Array<String> = [
 				'Time: ${Math.round(currentTime*1000)} ms',
 				'Scene objects: ${scene.s3d.getObjectsCount()}',
+				'Drawcalls: ${h3d.Engine.getCurrent().drawCalls}',
 			];
 			statusText.text = lines.join("\n");
 		}

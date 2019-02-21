@@ -23,10 +23,13 @@ class Constraint extends Prefab {
 			srcObj.follow = targetObj;
 			srcObj.followPositionOnly = positionOnly;
 		}
+		else
+			trace("failed te resolve constraint");
 		return srcObj;
 	}
 
 	override function makeInstance( ctx : Context ) {
+		if(!enabled) return ctx;
 		var srcObj = ctx.locateObject(object);
 		var targetObj = ctx.locateObject(target);
 		if( srcObj != null && targetObj != null ){

@@ -144,6 +144,14 @@ class PbrRenderer extends h3d.scene.pbr.Renderer {
 		tonemap.addShader(outline);
 	}
 
+	override function getPassByName(name:String):h3d.pass.Base {
+		switch( name ) {
+		case "highlight":
+			return defaultPass;
+		}
+		return super.getPassByName(name);
+	}
+
 	override function getDefaultProps( ?kind : String ) : Any {
 		var props : h3d.scene.pbr.Renderer.RenderProps = super.getDefaultProps(kind);
 		props.sky = Background;
