@@ -9,7 +9,8 @@ typedef SurfaceProps = {
 	angle : Float,
 	offsetX : Float,
 	offsetY : Float,
-	heightBias : Float
+	minHeight : Float,
+	maxHeight : Float,
 };
 
 class Terrain extends Object3D {
@@ -53,7 +54,6 @@ class Terrain extends Object3D {
 		heightBlendStrength = obj.heightBlendStrength == null ? 0 : obj.heightBlendStrength;
 		blendSharpness = obj.blendSharpness == null ? 0 : obj.blendSharpness;
 		autoCreateTile = obj.autoCreateTile == null ? false : obj.autoCreateTile;
-
 		#if editor
 		showChecker = obj.showChecker == null ? false : obj.showChecker;
 		#end
@@ -82,7 +82,8 @@ class Terrain extends Object3D {
 				angle : surface.angle,
 				offsetX : surface.offset.x,
 				offsetY : surface.offset.y,
-				heightBias : surface.heightBias
+				minHeight : surface.minHeight,
+				maxHeight : surface.maxHeight,
 			};
 			surfacesProps.push(surfaceProps);
 		}
@@ -187,7 +188,8 @@ class Terrain extends Object3D {
 				surface.offset.y = surfaceProps.offsetY;
 				surface.angle = surfaceProps.angle;
 				surface.tilling = surfaceProps.tilling;
-				surface.heightBias = surfaceProps.heightBias;
+				surface.minHeight = surfaceProps.minHeight;
+				surface.maxHeight = surfaceProps.maxHeight;
 				albedo.dispose();
 				normal.dispose();
 				pbr.dispose();
