@@ -63,7 +63,7 @@ class Camera extends hide.prefab.Object3D {
 		});
 
 		props.find(".preview").click(function(e) {
-			applyTo(ctx.scene.editor.camera);
+			applyTo(ctx.scene.s3d.camera);
 			ctx.scene.editor.cameraController.loadFromCamera();
 		});
 	}
