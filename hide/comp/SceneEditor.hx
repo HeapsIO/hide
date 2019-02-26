@@ -1140,7 +1140,8 @@ class SceneEditor {
 	}
 
 	public function setEnabled(elements : Array<PrefabElement>, enable: Bool) {
-		elements = [for(e in elements) if(e.to(Object3D) == null) e]; // Don't disable/enable Object3Ds, too confusing with visibility
+		// Don't disable/enable Object3Ds, too confusing with visibility
+		elements = [for(e in elements) if(e.to(Object3D) == null || e.to(hide.prefab.Reference) != null) e];
 		var old = [for(e in elements) e.enabled];
 		function apply(on) {
 			for(i in 0...elements.length) {
