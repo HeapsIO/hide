@@ -60,6 +60,7 @@ class Gizmo extends h3d.scene.Object {
 			else {
 				hit.visible = false;
 			}
+
 			var mat = o.getMaterials()[0];
 			mat.props = h3d.mat.MaterialSetup.current.getDefaults("ui");
 			mat.mainPass.blend(SrcAlpha, OneMinusSrcAlpha);
@@ -235,6 +236,20 @@ class Gizmo extends h3d.scene.Object {
 		var engine = h3d.Engine.getCurrent();
 		var ratio = 150 / engine.height;
 		gizmo.setScale(ratio * distToCam * Math.tan(cam.fovY * 0.5 * Math.PI / 180.0));
+
+		if( !moving ) {
+			var dir = cam.pos.sub(gpos);
+			dir = gizmo.globalToLocal(dir);
+			gizmo.getObjectByName("xAxis").setRotation(0, 0, dir.x < 0 ? Math.PI : 0);
+			gizmo.getObjectByName("yAxis").setRotation(0, 0, dir.y < 0 ? Math.PI : 0);
+			gizmo.getObjectByName("zAxis").setRotation(dir.z < 0 ? Math.PI : 0, 0, 0);
+			gizmo.getObjectByName("xy").setRotation(0, 0, dir.x < 0 ? dir.y < 0 ? Math.PI : Math.PI / 2.0 : dir.y < 0 ? -Math.PI / 2.0 : 0);
+			gizmo.getObjectByName("xz").setRotation(0, dir.z < 0 ? dir.x < 0 ? Math.PI : Math.PI / 2.0 : 0, dir.x < 0 ? dir.z < 0 ? 0 : Math.PI : 0);
+			gizmo.getObjectByName("yz").setRotation(dir.z < 0 ? dir.y < 0 ? Math.PI : -Math.PI / 2.0 : 0, 0, dir.y < 0 ? dir.z < 0 ? 0 : Math.PI : 0);
+			gizmo.getObjectByName("xRotate").setRotation(dir.z < 0 ? -Math.PI / 2.0 : 0, 0, dir.y < 0 ? Math.PI : 0);
+			gizmo.getObjectByName("yRotate").setRotation(0, dir.z < 0 ? Math.PI / 2.0 : 0, dir.x < 0 ? Math.PI : 0);
+			gizmo.getObjectByName("zRotate").setRotation(0, 0, dir.x < 0 ? dir.y < 0 ? Math.PI : Math.PI / 2.0 : dir.y < 0 ? -Math.PI / 2.0 : 0);
+		}
 
 		axisScale = K.isDown(K.ALT);
 		for(n in ["xRotate", "yRotate", "zRotate", "xy", "xz", "yz", "scale"]) {
