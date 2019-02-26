@@ -33,7 +33,7 @@ class Reference extends Object3D {
 		if(refpath == null)
 			return null;
 		if(isFile()) {
-			if(shared == null) { // Allow resolving ref in Hide prefore makeInstance 
+			if(shared == null) { // Allow resolving ref in Hide prefore makeInstance
 				#if editor
 				ref = hide.Ide.inst.loadPrefab(refpath.substr(1));
 				#else
@@ -64,7 +64,9 @@ class Reference extends Object3D {
 		if(p == null)
 			return;
 		var parentCtx = ctx.shared.contexts.get(parent);
-		if(parentCtx != null && parentCtx.local3d != ctx.local3d) {
+		if(parentCtx == null || parentCtx.local3d != ctx.local3d) {
+			// Only apply reference Object3D properties (pos, scale...) to own local3D
+			// Not all refs will create their own scene object
 			super.updateInstance(ctx, propName);
 		}
 	}
@@ -86,7 +88,7 @@ class Reference extends Object3D {
 			ctx.local3d = refCtx.local3d;
 			updateInstance(ctx);
 		}
-		
+
 		return ctx;
 	}
 
@@ -127,7 +129,7 @@ class Reference extends Object3D {
 					ctx.rebuildPrefab(this);
 			}
 		});
-		
+
 		var parentCtx = ctx.getContext(parent);
 		var selfCtx = ctx.getContext(this);
 		var p = resolveRef(ctx.rootContext.shared);
