@@ -245,7 +245,7 @@ class Terrain extends Object3D {
 
 	public function loadBinary( ctx : Context ) {
 
-		terrain.surfaceArray = new h3d.scene.pbr.terrain.Surface.SurfaceArray(surfaceCount, surfaceSize);
+		//terrain.surfaceArray = new h3d.scene.pbr.terrain.Surface.SurfaceArray(surfaceCount, surfaceSize);
 
 		var resDir = ctx.shared.loadDir(name);
 		if( resDir == null ) return;
