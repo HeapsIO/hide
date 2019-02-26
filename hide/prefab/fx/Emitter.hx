@@ -947,18 +947,20 @@ class Emitter extends Object3D {
 		if(debugShape != null)
 			debugShape.visible = b;
 
-		if( b ) {
-			var shader = new h3d.shader.FixedColor(0xffffff);
-			var p = emitterObj.batch.material.allocPass("highlight");
-			p.culling = None;
-			p.depthWrite = false;
-			p.addShader(shader);
-			@:privateAccess p.batchMode = true;
+		if( emitterObj.batch != null ) {
+			if( b ) {
+				var shader = new h3d.shader.FixedColor(0xffffff);
+				var p = emitterObj.batch.material.allocPass("highlight");
+				p.culling = None;
+				p.depthWrite = false;
+				p.addShader(shader);
+				@:privateAccess p.batchMode = true;
+			}
+			else {
+				emitterObj.batch.material.removePass(emitterObj.batch.material.getPass("highlight"));
+			}
+			emitterObj.batch.shadersChanged = true;
 		}
-		else {
-			emitterObj.batch.material.removePass(emitterObj.batch.material.getPass("highlight"));
-		}
-		emitterObj.batch.shadersChanged = true;
 	}
 
 	function updateEmitShape(emitterObj: EmitterObject) {

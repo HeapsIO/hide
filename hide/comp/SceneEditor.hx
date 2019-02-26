@@ -864,6 +864,10 @@ class SceneEditor {
 		fillProps(edit, e);
 	}
 
+	function setObjectSelected( p : PrefabElement, ctx : hide.prefab.Context, b : Bool ) {
+		p.setSelected(ctx, b);
+	}
+
 	public function selectObjects( elts : Array<PrefabElement>, ?includeTree=true) {
 		scene.setCurrent();
 		if( curEdit != null )
@@ -882,7 +886,7 @@ class SceneEditor {
 				return;
 			map.set(e, true);
 			var ectx = context.shared.contexts.get(e);
-			e.setSelected(ectx == null ? context : ectx, b);
+			setObjectSelected(e, ectx == null ? context : ectx, b);
 			for( e in e.children )
 				selectRec(e,b);
 		}
@@ -894,7 +898,7 @@ class SceneEditor {
 			for( e in map.keys() ) {
 				if( hasBeenRemoved(e) ) continue;
 				var ectx = context.shared.contexts.get(e);
-				e.setSelected(ectx == null ? context : ectx, false);
+				setObjectSelected(e, ectx == null ? context : ectx, false);
 			}
 		});
 
