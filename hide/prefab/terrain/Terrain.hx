@@ -30,13 +30,16 @@ class Terrain extends Object3D {
 	var packWeight = new h3d.pass.ScreenFx(new hide.prefab.terrain.PackWeight());
 	var unpackWeight = new h3d.pass.ScreenFx(new hide.prefab.terrain.UnpackWeight());
 
+	var surfaceCount = 0;
+	var surfaceSize = 0;
+
 	#if editor
 	var editor : hide.prefab.terrain.TerrainEditor;
 	var cachedInstance : h3d.scene.pbr.terrain.Terrain;
 	public var showChecker = false;
 	#end
 
-	public function new(?parent) {
+	public function new( ?parent ) {
 		super(parent);
 		type = "terrain";
 	}
@@ -54,6 +57,8 @@ class Terrain extends Object3D {
 		heightBlendStrength = obj.heightBlendStrength == null ? 0 : obj.heightBlendStrength;
 		blendSharpness = obj.blendSharpness == null ? 0 : obj.blendSharpness;
 		autoCreateTile = obj.autoCreateTile == null ? false : obj.autoCreateTile;
+		surfaceCount = obj.surfaceCount == null ? 0 : obj.surfaceCount;
+		surfaceSize = obj.surfaceSize == null ? 0 : obj.surfaceSize;
 		#if editor
 		showChecker = obj.showChecker == null ? false : obj.showChecker;
 		#end
@@ -88,25 +93,28 @@ class Terrain extends Object3D {
 			surfacesProps.push(surfaceProps);
 		}
 		obj.surfaces = surfacesProps;
+		obj.surfaceCount = terrain.surfaces.count;
+		obj.surfaceSize = terrain.surfaceArray.albedo.width;
 
 		#if editor
 	 	obj.showChecker = terrain.showChecker;
+		if( editor != null ) editor.save();
 		#end
 
 		return obj;
 	}
 
-	public function saveHeightTextures(ctx : Context){
-		for(tile in terrain.tiles){
+	public function saveHeightTextures( ctx : Context ) {
+		for( tile in terrain.tiles ) {
 			var pixels = tile.heightMap.capturePixels();
 			var fileName = tile.tileX + "_" + tile.tileY + "_" + "h";
 			ctx.shared.savePrefabDat(fileName, "heightMap", name, pixels.bytes);
 		}
 	}
 
-	public function saveWeightTextures(ctx : Context){
+	public function saveWeightTextures( ctx : Context ) {
 		var packedWeightsTex = new h3d.mat.Texture(terrain.weightMapResolution, terrain.weightMapResolution, [Target], RGBA);
-		for(tile in terrain.tiles){
+		for( tile in terrain.tiles ) {
 			h3d.Engine.getCurrent().pushTarget(packedWeightsTex);
 			packWeight.shader.indexMap = tile.surfaceIndexMap;
 			packWeight.shader.weightTextures = tile.surfaceWeightArray;
@@ -125,7 +133,7 @@ class Terrain extends Object3D {
 		}
 	}
 
-	function loadTiles( ctx : Context, height = true, index = true , weight = true ){
+	function loadTiles( ctx : Context, height = true, index = true , weight = true ) {
 		var resDir = ctx.shared.loadDir(name);
 		if( resDir == null ) return;
 		for( res in resDir ) {
@@ -135,7 +143,7 @@ class Terrain extends Object3D {
 			var y = Std.parseInt(coords[1]);
 			var type = coords[2];
 			var tile = terrain.createTile(x, y);
-			switch(type){
+			switch( type ) {
 				case "h":
 				if( height ) {
 					var bytes = res.entry.getBytes();
@@ -170,7 +178,6 @@ class Terrain extends Object3D {
 	}
 
 	function loadSurfaces( ctx : Context, onEnd : Void -> Void ) {
-
 		for( surfaceProps in tmpSurfacesProps ) {
 			var surface = terrain.addEmptySurface();
 			var albedo = ctx.shared.loadTexture(surfaceProps.albedo);
@@ -179,7 +186,7 @@ class Terrain extends Object3D {
 			function wait() {
 				if( albedo.isDisposed() )
 					return;
-				if( albedo.flags.has(Loading) || normal.flags.has(Loading) || pbr.flags.has(Loading))
+				if( albedo.flags.has(Loading) || normal.flags.has(Loading) || pbr.flags.has(Loading) )
 					return;
 				surface.albedo = albedo;
 				surface.normal = normal;
@@ -190,9 +197,9 @@ class Terrain extends Object3D {
 				surface.tilling = surfaceProps.tilling;
 				surface.minHeight = surfaceProps.minHeight;
 				surface.maxHeight = surfaceProps.maxHeight;
-				albedo.dispose();
+				/*albedo.dispose();
 				normal.dispose();
-				pbr.dispose();
+				pbr.dispose();*/
 
 				onEnd();
 			}
@@ -203,33 +210,77 @@ class Terrain extends Object3D {
 	}
 
 	public function initTerrain( ctx : Context, height = true, surface = true ) {
-
 		if( surface ) {
 			function waitAll() {
-				for(surface in terrain.surfaces)
-					if(surface == null || surface.albedo == null || surface.normal == null || surface.pbr == null )
+				for( surface in terrain.surfaces )
+					if( surface == null || surface.albedo == null || surface.normal == null || surface.pbr == null )
 						return;
 				terrain.generateSurfaceArray();
+
 				loadTiles(ctx, height, surface, surface);
 
-				for( t in terrain.tiles)
+				for( t in terrain.tiles )
 					t.computeEdgesNormals();
 			}
-
 			loadSurfaces(ctx, waitAll);
 		}
 		else {
 			loadTiles(ctx, height, surface, surface);
-			for( t in terrain.tiles)
+			for( t in terrain.tiles )
 				t.computeEdgesNormals();
 		}
+	}
+
+	public function saveBinary( ctx : Context ) {
+		var count = terrain.surfaces.length;
+		for( i in 0 ... count ) {
+			var pixels = terrain.surfaceArray.albedo.capturePixels(i);
+			ctx.shared.savePrefabDat("albedo_" + i, "bin", name, pixels.bytes);
+			var pixels = terrain.surfaceArray.pbr.capturePixels(i);
+			ctx.shared.savePrefabDat("pbr-" + i, "bin", name, pixels.bytes);
+			var pixels = terrain.surfaceArray.normal.capturePixels(i);
+			ctx.shared.savePrefabDat("normal_" + i, "bin", name, pixels.bytes);
+		}
+	}
+
+	public function loadBinary( ctx : Context ) {
+
+		terrain.surfaceArray = new h3d.scene.pbr.terrain.Surface.SurfaceArray(surfaceCount, surfaceSize);
+
+		var resDir = ctx.shared.loadDir(name);
+		if( resDir == null ) return;
+
+		for( res in resDir ) {
+			var fileInfos = res.name.split(".");
+			var ext = fileInfos[1];
+			var file = fileInfos[0];
+			if( ext != "bin" ) continue;
+
+			var texInfos = file.split("_");
+			var texType = texInfos[0];
+			var face = Std.parseInt(texInfos[1]);
+
+			var bytes = res.entry.getBytes();
+			var pixels : hxd.Pixels.PixelsFloat = new hxd.Pixels(surfaceSize, surfaceSize, bytes, RGBA32F);
+			switch( texType ) {
+				case "albedo" : terrain.surfaceArray.albedo.uploadPixels(pixels, 0, face);
+				case "pbr" : terrain.surfaceArray.pbr.uploadPixels(pixels, 0, face);
+				case "normal" : terrain.surfaceArray.normal.uploadPixels(pixels, 0, face);
+			}
+		}
+
+		terrain.updateSurfaceParams();
+		terrain.refreshTex();
+		loadTiles(ctx, true, true, true);
+		for( t in terrain.tiles )
+			t.computeEdgesNormals();
 	}
 
 	override function makeInstance( ctx : Context ) : Context {
 		ctx = ctx.clone(this);
 
 		#if editor
-		if(cachedInstance != null) {
+		if( cachedInstance != null ) {
 			ctx.local3d.addChild(cachedInstance);
 			ctx.local3d = cachedInstance;
 			ctx.local3d.name = name;
@@ -282,17 +333,17 @@ class Terrain extends Object3D {
 		#end
 	}
 
-	override function removeInstance(ctx:Context):Bool {
+	override function removeInstance( ctx : Context ) : Bool {
 		return false; // TODO
 	}
 
-	function getCellCount(){
+	function getCellCount() {
 		var resolution = Math.max(0.1, cellSize);
 		var cellCount = Math.ceil(Math.min(1000, tileSize / resolution));
 		return cellCount;
 	}
 
-	function getCellSize(){
+	function getCellSize() {
 		var cellCount = getCellCount();
 		var finalCellSize = tileSize / cellCount;
 		return finalCellSize;
@@ -310,7 +361,8 @@ class Terrain extends Object3D {
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
 		var props = new hide.Element('<div></div>');
-		if( editor == null )editor = new TerrainEditor(this, ctx.properties.undo);
+		if( editor == null ) editor = new TerrainEditor(this, ctx.properties.undo);
+		editor.editContext = ctx;
 		editor.setupUI(props, ctx);
 		props.append('
 			<div class="group" name="Terrain"><dl>
@@ -353,7 +405,7 @@ class Terrain extends Object3D {
 			terrain.heightMapResolution = heightMapResolution;
 			terrain.weightMapResolution = weightMapResolution;
 			terrain.refreshTex();
-			for(tile in terrain.tiles)
+			for( tile in terrain.tiles )
 				tile.blendEdges();
 			if( editor != null )
 				editor.refresh();
