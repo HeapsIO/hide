@@ -106,6 +106,7 @@ class TerrainEditor {
 		}
 		terrainPrefab.saveWeightTextures(ctx.rootContext);
 		terrainPrefab.saveHeightTextures(ctx.rootContext);
+		terrainPrefab.saveBinary(ctx.rootContext);
 	}
 
 	public function update( ?propName : String ) {

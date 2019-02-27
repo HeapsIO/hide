@@ -93,7 +93,7 @@ class Terrain extends Object3D {
 			surfacesProps.push(surfaceProps);
 		}
 		obj.surfaces = surfacesProps;
-		obj.surfaceCount = terrain.surfaces.count;
+		obj.surfaceCount = terrain.surfaceArray.surfaceCount;
 		obj.surfaceSize = terrain.surfaceArray.albedo.width;
 
 		#if editor
@@ -210,6 +210,7 @@ class Terrain extends Object3D {
 	}
 
 	public function initTerrain( ctx : Context, height = true, surface = true ) {
+		//#if editor
 		if( surface ) {
 			function waitAll() {
 				for( surface in terrain.surfaces )
@@ -229,6 +230,9 @@ class Terrain extends Object3D {
 			for( t in terrain.tiles )
 				t.computeEdgesNormals();
 		}
+		//#else
+		//loadBinary(ctx);
+		//#end
 	}
 
 	public function saveBinary( ctx : Context ) {
@@ -237,7 +241,7 @@ class Terrain extends Object3D {
 			var pixels = terrain.surfaceArray.albedo.capturePixels(i);
 			ctx.shared.savePrefabDat("albedo_" + i, "bin", name, pixels.bytes);
 			var pixels = terrain.surfaceArray.pbr.capturePixels(i);
-			ctx.shared.savePrefabDat("pbr-" + i, "bin", name, pixels.bytes);
+			ctx.shared.savePrefabDat("pbr_" + i, "bin", name, pixels.bytes);
 			var pixels = terrain.surfaceArray.normal.capturePixels(i);
 			ctx.shared.savePrefabDat("normal_" + i, "bin", name, pixels.bytes);
 		}
@@ -245,29 +249,51 @@ class Terrain extends Object3D {
 
 	public function loadBinary( ctx : Context ) {
 
-		//terrain.surfaceArray = new h3d.scene.pbr.terrain.Surface.SurfaceArray(surfaceCount, surfaceSize);
+		terrain.surfaceArray = new h3d.scene.pbr.terrain.Surface.SurfaceArray(surfaceCount, surfaceSize);
 
 		var resDir = ctx.shared.loadDir(name);
 		if( resDir == null ) return;
 
-		for( res in resDir ) {
+		/*for( res in resDir ) {
 			var fileInfos = res.name.split(".");
 			var ext = fileInfos[1];
 			var file = fileInfos[0];
 			if( ext != "bin" ) continue;
-
 			var texInfos = file.split("_");
 			var texType = texInfos[0];
 			var face = Std.parseInt(texInfos[1]);
-
 			var bytes = res.entry.getBytes();
-			var pixels : hxd.Pixels.PixelsFloat = new hxd.Pixels(surfaceSize, surfaceSize, bytes, RGBA32F);
+			var pixels = new hxd.Pixels(surfaceSize, surfaceSize, bytes, RGBA);
 			switch( texType ) {
 				case "albedo" : terrain.surfaceArray.albedo.uploadPixels(pixels, 0, face);
 				case "pbr" : terrain.surfaceArray.pbr.uploadPixels(pixels, 0, face);
 				case "normal" : terrain.surfaceArray.normal.uploadPixels(pixels, 0, face);
 			}
-		}
+		}*/
+
+		var pixels = hxd.Pixels.alloc(surfaceSize, surfaceSize, RGBA);
+		for(i in 0 ... pixels.width)
+			for(j in 0 ... pixels.height)
+				pixels.setPixel(i,j, 0xFF0000);
+		terrain.surfaceArray.albedo.uploadPixels(pixels, 0, 0);
+		for(i in 0 ... pixels.width)
+			for(j in 0 ... pixels.height)
+				pixels.setPixel(i,j, 0x00FF00);
+		terrain.surfaceArray.albedo.uploadPixels(pixels, 0, 1);
+		for(i in 0 ... pixels.width)
+			for(j in 0 ... pixels.height)
+				pixels.setPixel(i,j, 0x0000FF);
+		terrain.surfaceArray.albedo.uploadPixels(pixels, 0, 2);
+
+		var pixels = hxd.Pixels.alloc(surfaceSize, surfaceSize, RGBA);
+		terrain.surfaceArray.normal.uploadPixels(pixels, 0, 0);
+		terrain.surfaceArray.normal.uploadPixels(pixels, 0, 1);
+		terrain.surfaceArray.normal.uploadPixels(pixels, 0, 2);
+
+		var pixels = hxd.Pixels.alloc(surfaceSize, surfaceSize, RGBA);
+		terrain.surfaceArray.pbr.uploadPixels(pixels, 0, 0);
+		terrain.surfaceArray.pbr.uploadPixels(pixels, 0, 1);
+		terrain.surfaceArray.pbr.uploadPixels(pixels, 0, 2);
 
 		terrain.updateSurfaceParams();
 		terrain.refreshTex();
