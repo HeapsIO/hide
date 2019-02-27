@@ -119,6 +119,8 @@ private class ParticleInstance  {
 	public var life = 0.0;
 	public var lifeTime = 0.0;
 	public var color = new h3d.Vector();
+	public var startFrame : Int;
+
 
 	public var curVelocity = new h3d.Vector();
 	public var orientation = new h3d.Quat();
@@ -424,7 +426,12 @@ class EmitterObject extends h3d.scene.Object {
 					part.setRotation(tmpq);
 					part.orientation = tmpq.clone();
 			}
+
+			var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
+			part.startFrame = random.random(frameCount);
 		}
+
+
 		context.local3d = this;
 		emitCount += count;
 	}
@@ -467,19 +474,9 @@ class EmitterObject extends h3d.scene.Object {
 					var pshader = new h3d.shader.AnimatedTexture(mesh.material.texture, frameDivisionX, frameDivisionY, frameCount, frameCount * animationRepeat / lifeTime);
 					pshader.startTime = renderTime;
 					pshader.loop = animationLoop;
-					if( animationRepeat == 0 )
-						pshader.startFrame = random.random(frameCount);
 					mesh.material.mainPass.addShader(pshader);
 				}
 			}
-
-			#if editor
-			/*var shader = new h3d.shader.FixedColor(0xffffff);
-			var p = mesh.material.allocPass("highlight");
-			p.culling = None;
-			p.depthWrite = false;
-			p.addShader(shader);*/
-			#end
 
 			if( meshPrim != null ) {
 				batch = new h3d.scene.MeshBatch(meshPrim, mesh.material, this);
@@ -513,6 +510,12 @@ class EmitterObject extends h3d.scene.Object {
 					for( anim in shaderAnims ) {
 						var t = hxd.Math.clamp(p.life / p.lifeTime, 0.0, 1.0);
 						anim.setTime(t);
+					}
+					// Init the start frame for each particle
+					var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
+					if( frameCount > 0 && animationRepeat == 0 ) {
+						var s = batch.material.mainPass.getShader(h3d.shader.AnimatedTexture);
+						if( s != null) s.startFrame = p.startFrame;
 					}
 					batch.emitInstance();
 				}
