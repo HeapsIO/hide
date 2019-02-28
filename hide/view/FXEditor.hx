@@ -172,7 +172,10 @@ class FXEditor extends FileView {
 
 	override function save() {
 		var content = ide.toJSON(data.save());
-		currentSign = haxe.crypto.Md5.encode(content);
+		var newSign = haxe.crypto.Md5.encode(content);
+		if(newSign != currentSign)
+			haxe.Timer.delay(saveBackup.bind(content), 0);
+		currentSign = newSign;
 		sys.io.File.saveContent(getPath(), content);
 		super.save();
 	}

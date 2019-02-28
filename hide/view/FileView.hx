@@ -60,6 +60,34 @@ class FileView extends hide.ui.View<{ path : String }> {
 		lastSaveTag = undo.currentID;
 	}
 
+	function saveBackup(content: String) {
+		var tmpPath = ide.resourceDir + "/.tmp/" + state.path;
+		var baseName = haxe.io.Path.withoutExtension(tmpPath);
+		var tmpDir = haxe.io.Path.directory(tmpPath);
+
+		// Save backup file
+		try {
+			sys.FileSystem.createDirectory(tmpDir);
+			var dateFmt = DateTools.format(Date.now(), "%Y%m%d-%H%M%S");
+			sys.io.File.saveContent(baseName + "-backup" + dateFmt + "." + haxe.io.Path.extension(state.path), content);
+		}
+		catch (e: Dynamic) {
+			trace("Cannot save backup", e);
+		}
+
+		// Delete old files
+		var allTemp = [];
+		for( f in try sys.FileSystem.readDirectory(tmpDir) catch( e : Dynamic ) [] ) {
+			if(~/-backup[0-9]{8}-[0-9]{6}$/.match(haxe.io.Path.withoutExtension(f))) {
+				allTemp.push(f);
+			}
+		}
+		allTemp.sort(Reflect.compare);
+		if(allTemp.length > 10) {
+			sys.FileSystem.deleteFile(tmpDir + "/" + allTemp[0]);
+		}
+	}
+
 	public function saveAs() {
 		ide.chooseFileSave(state.path, function(target) {
 			if( target == null ) return;
