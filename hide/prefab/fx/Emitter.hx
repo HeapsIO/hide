@@ -486,6 +486,13 @@ class EmitterObject extends h3d.scene.Object {
 		}
 	}
 
+	var camPosTmp : h3d.Vector;
+	var p1PosTmp = new h3d.Vector();
+	var p2PosTmp = new h3d.Vector();
+	function sortZ( p1 : ParticleInstance, p2 : ParticleInstance ) : Int {
+		return Std.int(camPosTmp.distanceSq(p2.absPos.getPosition(p1PosTmp)) - camPosTmp.distanceSq(p1.absPos.getPosition(p2PosTmp)));
+	}
+
 	function tick( dt : Float ) {
 		if( emitRate == null || emitRate == VZero )
 			return;
@@ -505,6 +512,8 @@ class EmitterObject extends h3d.scene.Object {
 		if( batch != null ) {
 			batch.begin(maxCount);
 			if( particleVisibility ) {
+				camPosTmp = getScene().camera.pos;
+				instances.sort(sortZ);
 				for( p in instances ) {
 					batch.worldPosition = p.absPos;
 					for( anim in shaderAnims ) {
