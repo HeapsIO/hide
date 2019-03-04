@@ -95,8 +95,7 @@ class TerrainEditor {
 
 	public function save() {
 		if( editContext == null ) return;
-		editContext.scene.setCurrent();
-		var ctx = editContext;
+		editContext.scene.setCurrent();		if( terrainPrefab == null ) return;		var ctx = editContext;
 		var datPath = new haxe.io.Path(ctx.rootContext.shared.currentPath);
 		datPath.ext = "dat";
 		var fullPath = ctx.ide.getPath(datPath.toString() + "/" + terrainPrefab.name);
