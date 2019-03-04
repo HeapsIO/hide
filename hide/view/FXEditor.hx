@@ -960,6 +960,8 @@ class FXEditor extends FileView {
 	}
 
 	function rebuildAnimPanel() {
+		if(element == null)
+			return;
 		var selection = sceneEditor.getSelection();
 		var scrollPanel = element.find(".anim-scroll");
 		scrollPanel.empty();
