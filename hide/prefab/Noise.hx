@@ -121,7 +121,11 @@ class Noise extends Prefab {
 		tex = new h3d.mat.Texture(size, size, [Target]);
 		if( !tex.flags.has(IsNPOT) ) tex.wrap = Repeat;
 		updateTexture(tex);
-		tex.realloc = function() haxe.Timer.delay(function() updateTexture(tex), 0);
+		var e = h3d.Engine.getCurrent();
+		tex.realloc = function() haxe.Timer.delay(function() {
+			e.setCurrent();
+			updateTexture(tex);
+		}, 0);
 		return tex;
 	}
 
