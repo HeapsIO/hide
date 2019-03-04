@@ -828,6 +828,7 @@ class TerrainEditor {
 				var cm = new hide.comp.ContextMenu(cmi);
 			});
 			surfaceElem.click(function(e){
+				editContext.scene.setCurrent();
 				currentBrush.index = i;
 				currentSurface = terrainPrefab.terrain.getSurface(i);
 				refreshSurfaces(props, ctx);
@@ -866,6 +867,7 @@ class TerrainEditor {
 			img.css("background-image", 'url("file://${ctx.ide.getPath("${HIDE}/res/" + brushIcons[i])}")');
 			elem.prepend(img);
 			elem.click(function(_) {
+				editContext.scene.setCurrent();
 				var l = props.find(".terrain-brushModeIcon");
 				for( e in l ) {
 					var elem = new Element(e);
@@ -950,6 +952,7 @@ class TerrainEditor {
 				img.css("background-image", 'url("file://${ctx.ide.getPath(brush.texture)}")');
 				var brushElem = new Element('<div class="brush"><span class="tooltiptext">$label</span></div>').prepend(img);
 				brushElem.click(function(e){
+					editContext.scene.setCurrent();
 					currentBrush.size = brush.size;
 					currentBrush.strength = brush.strength;
 					currentBrush.step = brush.step;
