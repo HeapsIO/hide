@@ -106,7 +106,6 @@ class Terrain extends Object3D {
 
 	public function saveHeightTextures( ctx : Context ) {
 		for( tile in terrain.tiles ) {
-			if( tile.tileX == null || tile.tileY == null ) continue;
 			var pixels = tile.heightMap.capturePixels();
 			var fileName = tile.tileX + "_" + tile.tileY + "_" + "h";
 			ctx.shared.savePrefabDat(fileName, "heightMap", name, pixels.bytes);
@@ -116,7 +115,6 @@ class Terrain extends Object3D {
 	public function saveWeightTextures( ctx : Context ) {
 		var packedWeightsTex = new h3d.mat.Texture(terrain.weightMapResolution, terrain.weightMapResolution, [Target], RGBA);
 		for( tile in terrain.tiles ) {
-			if( tile.tileX == null || tile.tileY == null ) continue;
 			h3d.Engine.getCurrent().pushTarget(packedWeightsTex);
 			packWeight.shader.indexMap = tile.surfaceIndexMap;
 			packWeight.shader.weightTextures = tile.surfaceWeightArray;
