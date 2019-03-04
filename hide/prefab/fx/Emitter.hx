@@ -515,6 +515,13 @@ class EmitterObject extends h3d.scene.Object {
 				camPosTmp = getScene().camera.pos;
 				instances.sort(sortZ);
 				for( p in instances ) {
+					// Init the color for each particles
+					if( p.def.color != null ) {
+						switch( p.def.color ) {
+							case VCurve(a): batch.material.color.a = p.color.a;
+							default: batch.material.color = p.color;
+						}
+					}
 					batch.worldPosition = p.absPos;
 					for( anim in shaderAnims ) {
 						var t = hxd.Math.clamp(p.life / p.lifeTime, 0.0, 1.0);
