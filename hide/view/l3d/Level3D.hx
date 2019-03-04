@@ -292,7 +292,6 @@ class Level3D extends FileView {
 
 	var grid : h3d.scene.Graphics;
 	var showGrid = true;
-	var autoSync : Bool;
 	var currentVersion : Int = 0;
 	var lastSyncChange : Float = 0.;
 	var currentSign : String;
@@ -376,10 +375,6 @@ class Level3D extends FileView {
 			scene.engine.backgroundColor = v;
 			updateGrid();
 		}, scene.engine.backgroundColor);
-
-		tools.addToggle("refresh", "Auto save", function(b) {
-			autoSync = b;
-		});
 
 		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		statusText.setPosition(5, 5);
@@ -512,12 +507,6 @@ class Level3D extends FileView {
 	}
 
 	function onUpdate(dt:Float) {
-		var cam = scene.s3d.camera;
-		if( autoSync && (currentVersion != undo.currentID || lastSyncChange != properties.lastChange) ) {
-			save();
-			lastSyncChange = properties.lastChange;
-			currentVersion = undo.currentID;
-		}
 	}
 
 	function onRefresh() {
