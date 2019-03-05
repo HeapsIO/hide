@@ -6,6 +6,7 @@ import hxd.prefab.Library;
 class Camera extends hide.prefab.Object3D {
 
 	var fovY : Float = 45;
+	var zFar : Float = 150;
 
 	public function new(?parent) {
 		super(parent);
@@ -15,13 +16,14 @@ class Camera extends hide.prefab.Object3D {
 	override function save() {
 		var obj : Dynamic = super.save();
 		obj.fovY = fovY;
+		obj.zFar = zFar;
 		return obj;
 	}
 
 	override function load(obj:Dynamic) {
 		super.load(obj);
-		if(obj.fovY != null)
-			this.fovY = obj.fovY;
+		if(obj.fovY != null) this.fovY = obj.fovY;
+		if(obj.zFar != null) this.zFar = obj.zFar;
 	}
 
 	public function applyTo(c: h3d.Camera) {
@@ -35,6 +37,7 @@ class Camera extends hide.prefab.Object3D {
 		else
 			c.target = c.pos.add(front);
 		c.fovY = fovY;
+		c.zFar = zFar;
 	}
 
 
@@ -51,19 +54,30 @@ class Camera extends hide.prefab.Object3D {
 			<div class="group" name="Camera">
 				<dl>
 					<dt>Fov Y</dt><dd><input type="range" min="0" max="180" field="fovY"/></dd>
+					<dt>Z Far</dt><dd><input type="range" min="0" max="180" field="zFar"/></dd>
 					<dt></dt><dd><input class="preview" type="button" value="Preview" /></dd>
+					<dt></dt><dd><input class="reset" type="button" value="Reset" /></dd>
 				</dl>
 			</div>
 		'),this, function(pname) {
 			var c = ctx.scene.s3d.camera;
 			if(c != null) {
 				c.fovY = fovY;
+				c.zFar = zFar;
+				ctx.scene.editor.cameraController.lockZPlanes = true;
 				ctx.scene.editor.cameraController.loadFromCamera();
 			}
 		});
 
 		props.find(".preview").click(function(e) {
 			applyTo(ctx.scene.s3d.camera);
+			ctx.scene.editor.cameraController.lockZPlanes = true;
+			ctx.scene.editor.cameraController.loadFromCamera();
+		});
+
+		props.find(".reset").click(function(e) {
+			ctx.scene.s3d.camera.zFar = 150;
+			ctx.scene.editor.cameraController.lockZPlanes = false;
 			ctx.scene.editor.cameraController.loadFromCamera();
 		});
 	}
