@@ -185,13 +185,15 @@ class Terrain extends Object3D {
 	function loadSurfaces( ctx : Context, onEnd : Void -> Void ) {
 		for( surfaceProps in tmpSurfacesProps ) {
 			var surface = terrain.addEmptySurface();
+		}
+		for( i in 0 ... tmpSurfacesProps.length ) {
+			var surfaceProps = tmpSurfacesProps[i];
+			var surface = terrain.getSurface(i);
 			var albedo = ctx.shared.loadTexture(surfaceProps.albedo);
 			var normal = ctx.shared.loadTexture(surfaceProps.normal);
 			var pbr = ctx.shared.loadTexture(surfaceProps.pbr);
 			function wait() {
-				if( albedo.isDisposed() )
-					return;
-				if( albedo.flags.has(Loading) || normal.flags.has(Loading) || pbr.flags.has(Loading) )
+				if( albedo.isDisposed() || albedo.flags.has(Loading) || normal.flags.has(Loading) || pbr.flags.has(Loading) )
 					return;
 				surface.albedo = albedo;
 				surface.normal = normal;
@@ -205,7 +207,6 @@ class Terrain extends Object3D {
 				/*albedo.dispose();
 				normal.dispose();
 				pbr.dispose();*/
-
 				onEnd();
 			}
 			albedo.waitLoad(wait);
@@ -217,16 +218,24 @@ class Terrain extends Object3D {
 	public function initTerrain( ctx : Context, height = true, surface = true ) {
 		//#if editor
 		if( surface ) {
+			var initDone = false;
 			function waitAll() {
-				for( surface in terrain.surfaces )
+
+				if( initDone )
+					return;
+
+				for( surface in terrain.surfaces ) {
 					if( surface == null || surface.albedo == null || surface.normal == null || surface.pbr == null )
 						return;
+				}
 				terrain.generateSurfaceArray();
 
 				loadTiles(ctx, height, surface, surface);
 
 				for( t in terrain.tiles )
 					t.computeEdgesNormals();
+
+				initDone = true;
 			}
 			loadSurfaces(ctx, waitAll);
 		}

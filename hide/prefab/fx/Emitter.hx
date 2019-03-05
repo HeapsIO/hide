@@ -446,6 +446,13 @@ class EmitterObject extends h3d.scene.Object {
 
 		var template = particleTemplate.makeInstance(context);
 		var mesh = Std.instance(template.local3d, h3d.scene.Mesh);
+		if( mesh == null ) {
+			for( i in 0...template.local3d.numChildren ) {
+				mesh = Std.instance(template.local3d.getChildAt(i), h3d.scene.Mesh);
+				if( mesh != null ) break;
+			}
+		}
+
 		if( mesh != null && mesh.primitive != null ) {
 			var meshPrim = Std.instance(mesh.primitive, h3d.prim.MeshPrimitive);
 
