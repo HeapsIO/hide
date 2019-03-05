@@ -24,7 +24,7 @@ class Instance extends Object3D {
 					var ctx = ctx.clone(this);
 					ctx.isRef = true;
 					if(ref != null)
-						ref.makeInstance(ctx);
+						ref.make(ctx);
 				}
 				else {
 					var obj = ctx.loadModel(modelPath);
