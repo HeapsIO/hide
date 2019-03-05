@@ -15,6 +15,22 @@ class Object3D extends Prefab {
 	public var rotationZ : Float = 0.;
 	public var visible : Bool = true;
 
+	public function loadTransform(t) {
+		x = t.x;
+		y = t.y;
+		z = t.z;
+		scaleX = t.scaleX;
+		scaleY = t.scaleY;
+		scaleZ = t.scaleZ;
+		rotationX = t.rotationX;
+		rotationY = t.rotationY;
+		rotationZ = t.rotationZ;
+	}
+
+	public function saveTransform() {
+		return { x : x, y : y, z : z, scaleX : scaleX, scaleY : scaleY, scaleZ : scaleZ, rotationX : rotationX, rotationY : rotationY, rotationZ : rotationZ };
+	}
+
 	override function load( obj : Dynamic ) {
 		x = obj.x == null ? 0. : obj.x;
 		y = obj.y == null ? 0. : obj.y;

@@ -130,7 +130,10 @@ class Noise extends Prefab {
 	}
 
 	override function reload(p:Dynamic) {
-		if( tex != null ) tex.dispose();
+		if( tex != null ) {
+			tex.dispose();
+			tex = null;
+		}
 		super.reload(p);
 	}
 

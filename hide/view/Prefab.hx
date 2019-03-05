@@ -46,7 +46,7 @@ class Prefab extends FileView {
 	var currentSign : String;
 
 	override function getDefaultContent() {
-		return haxe.io.Bytes.ofString(ide.toJSON(new hxd.prefab.Library().save()));
+		return haxe.io.Bytes.ofString(ide.toJSON(new hxd.prefab.Library().saveData()));
 	}
 
 	override function onFileChanged(wasDeleted:Bool) {
@@ -61,7 +61,7 @@ class Prefab extends FileView {
 	}
 
 	override function save() {
-		var content = ide.toJSON(data.save());
+		var content = ide.toJSON(data.saveData());
 		currentSign = haxe.crypto.Md5.encode(content);
 		sys.io.File.saveContent(getPath(), content);
 		super.save();
@@ -71,7 +71,7 @@ class Prefab extends FileView {
 		saveDisplayKey = "Prefab:" + getPath().split("\\").join("/").substr(0,-1);
 		data = new hxd.prefab.Library();
 		var content = sys.io.File.getContent(getPath());
-		data.load(haxe.Json.parse(content));
+		data.loadData(haxe.Json.parse(content));
 		currentSign = haxe.crypto.Md5.encode(content);
 
 		element.html('

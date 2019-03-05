@@ -156,7 +156,7 @@ class FXEditor extends FileView {
 	var fxScriptParser : hide.prefab.fx.FXScriptParser;
 
 	override function getDefaultContent() {
-		return haxe.io.Bytes.ofString(ide.toJSON(new hide.prefab.fx.FX().save()));
+		return haxe.io.Bytes.ofString(ide.toJSON(new hide.prefab.fx.FX().saveData()));
 	}
 
 	override function onFileChanged(wasDeleted:Bool) {
@@ -171,7 +171,7 @@ class FXEditor extends FileView {
 	}
 
 	override function save() {
-		var content = ide.toJSON(data.save());
+		var content = ide.toJSON(data.saveData());
 		var newSign = haxe.crypto.Md5.encode(content);
 		if(newSign != currentSign)
 			haxe.Timer.delay(saveBackup.bind(content), 0);
@@ -186,7 +186,7 @@ class FXEditor extends FileView {
 		xOffset = -timelineLeftMargin / xScale;
 		data = new hide.prefab.fx.FX();
 		var content = sys.io.File.getContent(getPath());
-		data.load(haxe.Json.parse(content));
+		data.loadData(haxe.Json.parse(content));
 		currentSign = haxe.crypto.Md5.encode(content);
 
 		element.html('

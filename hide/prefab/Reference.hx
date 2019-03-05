@@ -84,7 +84,7 @@ class Reference extends Object3D {
 		else {
 			ctx = ctx.clone(this);
 			ctx.isRef = true;
-			var refCtx = p.makeInstanceRec(ctx);
+			var refCtx = p.make(ctx);
 			ctx.local3d = refCtx.local3d;
 			updateInstance(ctx);
 		}

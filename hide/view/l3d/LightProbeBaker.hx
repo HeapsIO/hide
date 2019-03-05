@@ -84,7 +84,7 @@ class LightProbeBaker {
 					filter(c);
 		}
 		filter(sceneData);
-		sceneData.makeInstance(context);
+		sceneData.make(context);
 
 		/*function disableFaceCulling( o : Object ){
 			for( m in o.getMaterials() )

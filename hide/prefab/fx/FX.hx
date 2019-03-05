@@ -437,9 +437,7 @@ class FX extends hxd.prefab.Library {
 		return new FXAnimation(parent);
 	}
 
-	override function makeInstance( ctx : Context ) : Context {
-		if( inRec ) return ctx;
-
+	override function make( ctx : Context ) : Context {
 		ctx = ctx.clone(this);
 		var fxanim = createInstance(ctx.local3d);
 		fxanim.duration = duration;
@@ -448,19 +446,19 @@ class FX extends hxd.prefab.Library {
 		fxanim.playSpeed = 1.0;
 
 		#if editor
-		super.makeInstance(ctx);
+		super.make(ctx);
 		setupRenderer(ctx, this);
 		#else
 		var root = getFXRoot(ctx, this);
 		if(root != null){
 			for( c in root.children ){
 				var co = Std.instance(c , Constraint);
-				if(co == null) c.makeInstanceRec(ctx);
+				if(co == null) c.make(ctx);
 			}
 			getConstraints(ctx, root, fxanim.constraints);
 		}
 		else
-			super.makeInstance(ctx);
+			super.make(ctx);
 		#end
 
 		getObjAnimations(ctx, this, fxanim.objects);

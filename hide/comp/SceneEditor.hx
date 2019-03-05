@@ -387,7 +387,7 @@ class SceneEditor {
 		scene.setCurrent();
 		scene.onResize();
 		context.init();
-		sceneData.makeInstance(context);
+		sceneData.make(context);
 		var bgcol = scene.engine.backgroundColor;
 		scene.init();
 		scene.engine.backgroundColor = bgcol;
@@ -568,7 +568,7 @@ class SceneEditor {
 				return x;
 			}
 
-			var prevState = [for(o in objects3d) o.save()];
+			var prevState = [for(o in objects3d) o.saveTransform()];
 			gizmo.onMove = function(translate: h3d.Vector, rot: h3d.Quat, scale: h3d.Vector) {
 				var transf = new h3d.Matrix();
 				transf.identity();
@@ -615,19 +615,19 @@ class SceneEditor {
 			}
 
 			gizmo.onFinishMove = function() {
-				var newState = [for(o in objects3d) o.save()];
+				var newState = [for(o in objects3d) o.saveTransform()];
 				refreshProps();
 				undo.change(Custom(function(undo) {
 					if( undo ) {
 						for(i in 0...objects3d.length) {
-							objects3d[i].load(prevState[i]);
+							objects3d[i].loadTransform(prevState[i]);
 							objects3d[i].applyPos(sceneObjs[i]);
 						}
 						refreshProps();
 					}
 					else {
 						for(i in 0...objects3d.length) {
-							objects3d[i].load(newState[i]);
+							objects3d[i].loadTransform(newState[i]);
 							objects3d[i].applyPos(sceneObjs[i]);
 						}
 						refreshProps();
@@ -828,9 +828,9 @@ class SceneEditor {
 
 	function makeInstance(elt: PrefabElement) {
 		var parentCtx = getContext(elt.parent);
-		elt.makeInstanceRec(parentCtx);
-		makeInteractive(elt);
-		elt.visitChildren(function(e) { makeInteractive(e); return true; });
+		elt.make(parentCtx);
+		for( p in elt.flatten() )
+			makeInteractive(p);
 	}
 
 	public function addObject(e : PrefabElement) {
@@ -1044,7 +1044,7 @@ class SceneEditor {
 		var parentCtx = getContext(parent);
 		if(parentCtx == null)
 			parentCtx = context;
-		group.makeInstance(parentCtx);
+		group.make(parentCtx);
 		var groupCtx = getContext(group);
 
 		var reparentUndo = reparentImpl(elts, group, 0);
@@ -1070,14 +1070,14 @@ class SceneEditor {
 	function onCopy() {
 		if(curEdit == null) return;
 		if(curEdit.rootElements.length == 1) {
-			view.setClipboard(curEdit.rootElements[0].saveRec(), "prefab");
+			view.setClipboard(curEdit.rootElements[0].saveData(), "prefab");
 		}
 		else {
 			var lib = new hxd.prefab.Library();
 			for(e in curEdit.rootElements) {
 				lib.children.push(e);
 			}
-			view.setClipboard(lib.saveRec(), "library");
+			view.setClipboard(lib.saveData(), "library");
 		}
 	}
 
@@ -1088,14 +1088,14 @@ class SceneEditor {
 		}
 		var obj = haxe.Json.parse(haxe.Json.stringify(view.getClipboard("prefab")));
 		if(obj != null) {
-			var p = hide.prefab.Prefab.loadRec(obj, parent);
+			var p = hide.prefab.Prefab.loadPrefab(obj, parent);
 			autoName(p);
 			refresh();
 		}
 		else {
 			obj = view.getClipboard("library");
 			if(obj != null) {
-				var lib = hide.prefab.Prefab.loadRec(obj);
+				var lib = hide.prefab.Prefab.loadPrefab(obj);
 				for(c in lib.children) {
 					autoName(c);
 					c.parent = parent;
@@ -1369,9 +1369,9 @@ class SceneEditor {
 				var parentMat = worldMat(toElt);
 				parentMat.invert();
 				mat.multiply(mat, parentMat);
-				prevState = obj3d.save();
+				prevState = obj3d.saveTransform();
 				obj3d.setTransform(mat);
-				newState = obj3d.save();
+				newState = obj3d.saveTransform();
 			}
 
 			elt.parent = toElt;
@@ -1384,13 +1384,13 @@ class SceneEditor {
 					prev.children.remove(elt);
 					prev.children.insert(prevIndex, elt);
 					if(obj3d != null && prevState != null)
-						obj3d.load(prevState);
+						obj3d.loadTransform(prevState);
 				} else {
 					elt.parent = toElt;
 					toElt.children.remove(elt);
 					toElt.children.insert(index, elt);
 					if(obj3d != null && newState != null)
-						obj3d.load(newState);
+						obj3d.loadTransform(newState);
 				};
 			});
 		}

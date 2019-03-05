@@ -669,10 +669,9 @@ class Emitter extends Object3D {
 		}
 	}
 
-	override function makeInstanceRec(ctx: Context) {
-		ctx = makeInstance(ctx);
-		return ctx;
+	override function make(ctx: Context) {
 		// Don't make children, which are used to setup particles
+		return makeInstance(ctx);
 	}
 
 	static inline function randProp(name: String) {

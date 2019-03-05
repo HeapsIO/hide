@@ -650,25 +650,18 @@ class Ide {
 			return null;
 		var l = hxd.prefab.Library.create(file.split(".").pop().toLowerCase());
 		try {
-			l.load(parseJSON(sys.io.File.getContent(getPath(file))));
+			l.loadData(parseJSON(sys.io.File.getContent(getPath(file))));
 		} catch( e : Dynamic ) {
 			error("Invalid prefab ("+e+")");
 			throw e;
 		}
-		if( cl == null || Std.is(l,cl) )
+		if( cl == null )
 			return cast l;
 		return l.get(cl);
 	}
 
 	public function savePrefab( file : String, f : hide.prefab.Prefab ) {
-		var content;
-		if( Std.is(f,hxd.prefab.Library) )
-			content = f.save();
-		else {
-			var l = new hxd.prefab.Library();
-			@:privateAccess l.children.push(f); // hack (don't remove f from current parent)
-			content = l.save();
-		}
+		var content = f.saveData();
 		sys.io.File.saveContent(getPath(file), toJSON(content));
 	}
 
@@ -688,7 +681,7 @@ class Ide {
 			}
 			filterRec(prefab);
 			if( !changed ) return;
-			todo.push(function() sys.io.File.saveContent(getPath(path), toJSON(prefab.save())));
+			todo.push(function() sys.io.File.saveContent(getPath(path), toJSON(prefab.saveData())));
 		});
 		for( t in todo )
 			t();

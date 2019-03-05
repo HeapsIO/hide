@@ -307,7 +307,7 @@ class Level3D extends FileView {
 		saveDisplayKey = "Level3D:" + getPath().split("\\").join("/").substr(0,-1);
 		data = new hide.prefab.l3d.Level3D();
 		var content = sys.io.File.getContent(getPath());
-		data.load(haxe.Json.parse(content));
+		data.loadData(haxe.Json.parse(content));
 		currentSign = haxe.crypto.Md5.encode(content);
 
 		element.html('
@@ -451,7 +451,7 @@ class Level3D extends FileView {
 	}
 
 	override function getDefaultContent() {
-		return haxe.io.Bytes.ofString(ide.toJSON(new hide.prefab.l3d.Level3D().save()));
+		return haxe.io.Bytes.ofString(ide.toJSON(new hide.prefab.l3d.Level3D().saveData()));
 	}
 
 	override function onFileChanged(wasDeleted:Bool) {
@@ -466,7 +466,7 @@ class Level3D extends FileView {
 	}
 
 	override function save() {
-		var content = ide.toJSON(data.save());
+		var content = ide.toJSON(data.saveData());
 		var newSign = haxe.crypto.Md5.encode(content);
 		if(newSign != currentSign)
 			haxe.Timer.delay(saveBackup.bind(content), 0);
@@ -696,17 +696,12 @@ class Level3D extends FileView {
 	function getGroundPolys() {
 		var groundGroups = data.findAll(p -> if(p.name == "ground") p else null);
 		var ret = [];
-		for(group in groundGroups) {
-			group.visitChildren(function(p) {
+		for(group in groundGroups)
+			group.findAll(function(p) {
 				if(p.name == "nocollide")
-					return false;
-				var pp = p.to(hide.prefab.l3d.Polygon);
-				if(pp == null)
-					return false;
-				ret.push(pp);
-				return true;
-			});
-		}
+					return null;
+				return p.to(hide.prefab.l3d.Polygon);
+			},ret);
 		return ret;
 	}
 

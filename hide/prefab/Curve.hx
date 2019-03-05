@@ -41,7 +41,7 @@ class Curve extends Prefab {
 		this.type = "curve";
 	}
 
-	override function load(o:Dynamic) {
+	public override function load(o:Dynamic) {
 		duration = o.duration;
 		keys = [];
 		if(o.keys != null) {
@@ -63,7 +63,7 @@ class Curve extends Prefab {
 			keyMode = o.keyMode;
 	}
 
-	override function save() {
+	public override function save() {
 		var keysDat = [];
 		for(k in keys) {
 			var o = {
