@@ -30,6 +30,7 @@ class AdvancedDecal extends Object3D {
 		if(fadeStart != 0) obj.fadeStart = fadeStart;
 		if(fadeEnd != 1) obj.fadeEnd = fadeEnd;
 		if(renderMode != Decal) obj.renderMode = renderMode;
+		if(emissive != 0.0) obj.emissive = emissive;
 		return obj;
 	}
 
@@ -47,6 +48,7 @@ class AdvancedDecal extends Object3D {
 		fadeStart = obj.fadeStart != null ? obj.fadeStart : 0;
 		fadeEnd = obj.fadeEnd != null ? obj.fadeEnd : 1;
 		renderMode = obj.renderMode != null ? obj.renderMode : Decal;
+		emissive = obj.emissive != null ? obj.emissive : 0.0;
 	}
 
 	override function makeInstance(ctx:Context) : Context {
@@ -58,6 +60,7 @@ class AdvancedDecal extends Object3D {
 				var shader = mesh.material.mainPass.getShader(h3d.shader.pbr.VolumeDecal.DecalPBR);
 				if( shader == null ) {
 					shader = new h3d.shader.pbr.VolumeDecal.DecalPBR();
+					//mesh.material.mainPass.colorMask
 					mesh.material.mainPass.addShader(shader);
 				}
 				mesh.material.mainPass.setPassName("decal");
@@ -104,7 +107,6 @@ class AdvancedDecal extends Object3D {
 					shader.fadePower = fadePower;
 					shader.fadeStart = fadeStart;
 					shader.fadeEnd = fadeEnd;
-					shader.emissive = emissive;
 				}
 			case BeforeTonemapping:
 				var shader = mesh.material.mainPass.getShader(h3d.shader.pbr.VolumeDecal.DecalOverlay);
@@ -168,7 +170,8 @@ class AdvancedDecal extends Object3D {
 					<dt>PBR</dt><dd><input type="texturepath" field="pbrMap"/>
 					<br/><input type="range" min="0" max="1" field="pbrStrength"/></dd>';
 
-	var overlayParams = '<dt>Color</dt><dd><input type="texturepath" field="albedoMap"/>';
+	var overlayParams = '<dt>Color</dt><dd><input type="texturepath" field="albedoMap"/>
+						<dt>Emissive</dt><dd> <input type="range" min="0" max="10" field="emissive"/></dd>';
 
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
@@ -197,7 +200,6 @@ class AdvancedDecal extends Object3D {
 							<option value="Alpha">Alpha</option>
 							<option value="Add">Add</option>
 						</select></dd>
-						<dt>Emissive</dt><dd> <input type="range" min="0" max="10" field="emissive"/></dd>
 					</dl>
 				</div>
 				<div class="group" name="Fade">
