@@ -24,7 +24,7 @@ class Constraint extends Prefab {
 			srcObj.followPositionOnly = positionOnly;
 		}
 		else
-			trace("failed te resolve constraint");
+			trace("failed to resolve constraint");
 		return srcObj;
 	}
 
