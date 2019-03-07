@@ -97,8 +97,8 @@
 		"h3d.shader.AnimatedTexture",
 		"h3d.shader.ColorAdd"],
 		
-	// UIKIT css files list	
-	"uikit.css" : [],
+	// DomKit css files list	
+	"domkit.css" : [],
 
 	// reserved for internal ide usage
 	"debug.displayErrors" : true,

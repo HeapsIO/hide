@@ -1172,26 +1172,26 @@ div.sp-container input:hover {
   padding: 2px;
   border: 1px solid #A00;
 }
-/* UIKit */
-.uikit {
+/* Domkit */
+.domkit {
   width: 100%;
   height: 100%;
   display: flex;
 }
-.uikit > * {
+.domkit > * {
   flex-grow: 100;
 }
-.uikit .leftpanel {
+.domkit .leftpanel {
   width: 600px;
   resize: horizontal;
   border-right: 1px solid #333;
   overflow: hidden;
 }
-.uikit .leftpanel .html .codeeditor {
+.domkit .leftpanel .html .codeeditor {
   padding: 5px;
   height: 400px;
 }
-.uikit .leftpanel .cssErrors {
+.domkit .leftpanel .cssErrors {
   background: #840;
   border: 1px solid #F80;
   color: #F80;

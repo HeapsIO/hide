@@ -33,7 +33,7 @@ class DomKit extends FileView {
 		lastSaveHtml = uiElt.html;
 
 		this.element.html('
-			<div class="uikit">
+			<div class="domkit">
 				<div class="leftpanel">
 					<div class="html"></div>
 					<div class="cssErrors"></div>
@@ -54,7 +54,7 @@ class DomKit extends FileView {
 		};
 		editor.onSave = save;
 
-		cssFiles = this.config.get("uikit.css");
+		cssFiles = this.config.get("domkit.css");
 		for( f in cssFiles )
 			watch(f, function() {
 				loadSheets();
