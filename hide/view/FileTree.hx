@@ -115,7 +115,7 @@ class FileTree extends FileView {
 			new hide.comp.ContextMenu([
 				{ label : "New..", menu:newMenu },
 				{ label : "Explore", enabled : current != null, click : function() { onExploreFile(current); } },
-				{ label : "Clone", enabled : current != null, click : function() { 
+				{ label : "Clone", enabled : current != null, click : function() {
 						try {
 							if (onCloneFile(current)) {
 								tree.refresh();
@@ -124,9 +124,9 @@ class FileTree extends FileView {
 							js.Browser.window.alert(e);
 						}
 					} },
-				{ label : "Rename", enabled : current != null, click : function() { 
+				{ label : "Rename", enabled : current != null, click : function() {
 					try {
-						onRenameFile(current); 
+						onRenameFile(current);
 					} catch (e : Dynamic) {
 						js.Browser.window.alert(e);
 					}
@@ -308,7 +308,10 @@ class FileTree extends FileView {
 	function isIgnored( path : String, file : String ) {
 		if( file.charCodeAt(0) == ".".code )
 			return true;
-		if( StringTools.startsWith(file, "Anim_") && file.split(".").pop().toLowerCase() == "fbx" )
+		var ext = file.split(".").pop().toLowerCase();
+		if( StringTools.startsWith(file, "Anim_") && ext == "fbx" )
+			return true;
+		if( ext == "dat" && sys.FileSystem.isDirectory(path) )
 			return true;
 		return false;
 	}
