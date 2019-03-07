@@ -199,7 +199,7 @@ class Scene extends Component implements h3d.IDrawable {
 			return;
 		}
 		var path = ide.getPath(img.entry.path);
-		var img = new Element('<img src="file://$path"/>');
+		var img = new Element('<img src="file://$path" crossorigin="anonymous"/>');
 		function onLoaded() {
 			setCurrent();
 			var bmp : js.html.ImageElement = cast img[0];
