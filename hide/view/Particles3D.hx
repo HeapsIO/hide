@@ -251,7 +251,7 @@ class Particles3D extends FileView {
 						model.playAnimation(anim);
 					} catch( e : Dynamic ) {
 						ide.error(e);
-						props.anim = e;
+						props.anim = null;
 					}
 				}
 				if( model != null ) {
@@ -277,6 +277,7 @@ class Particles3D extends FileView {
 					var anims = scene.listAnims(props.model);
 					new Element('<option value="">-- none --</option>').appendTo(anim);
 					for( a in anims ) {
+						var a = ide.makeRelative(a);
 						var name = scene.animationName(a);
 						new Element('<option value="$a" ${a == prev ? "selected='selected'" : ""}>$name</option>').appendTo(anim);
 					}

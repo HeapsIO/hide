@@ -615,7 +615,7 @@ class Ide {
 		var file = path.pop();
 		var c = isWindows ? "\\" : "/";
 		var path = path.join(c);
-		var e = new Element('<input type="file" style="visibility:hidden" value="" nwworkingdir="$path" nwsaveas="$path$c$file"/>');
+		var e = new Element('<input type="file" style="visibility:hidden" value="" nwworkingdir="$path" nwsaveas="$file"/>');
 		e.change(function(_) {
 			var file = makeRelative(e.val());
 			e.remove();
