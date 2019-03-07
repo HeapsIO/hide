@@ -8,6 +8,9 @@
 	// custom renderers in the form of { "Name" : "MaterialSetupClassName" }
 	"renderers" : {},
 
+	// set default renderer setup
+	"scene.renderProps" : null,
+
 	// model names that are hidden when open in viewer
 	"scene.autoHide" : [],
 	// background color for 2D/3D viewer
@@ -96,8 +99,8 @@
 	"fx.shaders": [
 		"h3d.shader.AnimatedTexture",
 		"h3d.shader.ColorAdd"],
-		
-	// DomKit css files list	
+
+	// DomKit css files list
 	"domkit.css" : [],
 
 	// reserved for internal ide usage
