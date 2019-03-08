@@ -4,86 +4,86 @@ import cdb.Data;
 
 class ModalColumnForm extends Modal {
 
-    var contentModal : Element;
-    var form : Element;
+	var contentModal : Element;
+	var form : Element;
 
-    public function new(base : cdb.Database, column : cdb.Data.Column, ?parent,?el) {
-        super(parent,el);
+	public function new(base : cdb.Database, column : cdb.Data.Column, ?parent,?el) {
+		super(parent,el);
 
-        var editForm = (column != null);
+		var editForm = (column != null);
 
-        contentModal = new Element("<div>").addClass("content-modal").appendTo(content);
+		contentModal = new Element("<div>").addClass("content-modal").appendTo(content);
 
-        if (editForm)
-		    new Element("<h2> Edit column </h2>").appendTo(contentModal);
-        else
-		    new Element("<h2> Create column </h2>").appendTo(contentModal);
-        new Element("<p id='errorModal'></p>").appendTo(contentModal);
+		if (editForm)
+			new Element("<h2> Edit column </h2>").appendTo(contentModal);
+		else
+			new Element("<h2> Create column </h2>").appendTo(contentModal);
+		new Element("<p id='errorModal'></p>").appendTo(contentModal);
 
-        form = new Element('<form id="col_form" onsubmit="return false">
+		form = new Element('<form id="col_form" onsubmit="return false">
 
-            <div>Column name</div> <input type="text" name="name"/>
+			<div>Column name</div> <input type="text" name="name"/>
 			<br /><br />
 
-            <div>Column type</div>
-            <select name="type" onchange="$(\'#col_options\').attr(\'class\',\'t_\'+this.value)">
-                <option value="">---- Choose -----</option>
-                <option value="id">Unique Identifier</option>
-                <option value="string">Text</option>
-                <option value="bool">Boolean</option>
-                <option value="int">Integer</option>
-                <option value="float">Float</option>
-                <option value="enum">Enumeration</option>
-                <option value="flags">Flags</option>
-                <option value="ref">Reference</option>
-                <option value="list">List</option>
-                <option value="properties">Properties</option>
-                <option value="color">Color</option>
-                <option value="file">File</option>
-                <option value="image">Image</option>
-                <option value="tilepos">Tile</option>
-                <option value="dynamic">Dynamic</option>
-                <option value="layer">Data Layer</option>
-                <option value="tilelayer">Tile Layer</option>
-                <option value="custom">Custom Type</option>
-            </select>
-            <br /><br />
+			<div>Column type</div>
+			<select name="type" onchange="$(\'#col_options\').attr(\'class\',\'t_\'+this.value)">
+				<option value="">---- Choose -----</option>
+				<option value="id">Unique Identifier</option>
+				<option value="string">Text</option>
+				<option value="bool">Boolean</option>
+				<option value="int">Integer</option>
+				<option value="float">Float</option>
+				<option value="enum">Enumeration</option>
+				<option value="flags">Flags</option>
+				<option value="ref">Reference</option>
+				<option value="list">List</option>
+				<option value="properties">Properties</option>
+				<option value="color">Color</option>
+				<option value="file">File</option>
+				<option value="image">Image</option>
+				<option value="tilepos">Tile</option>
+				<option value="dynamic">Dynamic</option>
+				<option value="layer">Data Layer</option>
+				<option value="tilelayer">Tile Layer</option>
+				<option value="custom">Custom Type</option>
+			</select>
+			<br /><br />
 
 			<div id="col_options">
 				<div class="values">
-                    Possible Values
-                    <br />
-                    <input type="text" name="values" name="vals"/>
-                    <br /><br />
-                </div>
+					Possible Values
+					<br />
+					<input type="text" name="values" name="vals"/>
+					<br /><br />
+				</div>
 
 				<div class="sheet">
-                    Sheet
-                    <br />
-                    <select name="sheet"></select>
-                    <br /><br />
-                </div>
+					Sheet
+					<br />
+					<select name="sheet"></select>
+					<br /><br />
+				</div>
 
 				<div class="disp">
-                    Display
-                    <br />
-                    <select name="display">
-                    <option value="0">Default</option>
-                    <option value="1">Percentage</option>
-                    </select>
-                    <br /><br />
-                </div>
+					Display
+					<br />
+					<select name="display">
+					<option value="0">Default</option>
+					<option value="1">Percentage</option>
+					</select>
+					<br /><br />
+				</div>
 
 				<div class="localizable"><input type="checkbox" name="localizable"/> Localizable<br /><br /></div>
 
 				<div class="custom">
-                    Type
-                    <select name="ctype"></select>
-                    <br /><br />
-                </div>
+					Type
+					<select name="ctype"></select>
+					<br /><br />
+				</div>
 				<div class="opt"><input type="checkbox" name="req"/> Required</div>
 			</div>
-            <br /><br />
+			<br /><br />
 			<p class="buttons">
 				<input class="edit" type="submit" value="Modify" id="editBtn" />
 				<input class="create" type="submit" value="Create" id="createBtn" />
@@ -100,7 +100,7 @@ class ModalColumnForm extends Modal {
 			new Element("<option>").attr("value", "" + i).text(s.name).appendTo(sheets);
 		}
 
-        var types = form.find("[name=ctype]");
+		var types = form.find("[name=ctype]");
 		types.empty();
 		types.off("change");
 		types.change(function(_) {
@@ -110,9 +110,9 @@ class ModalColumnForm extends Modal {
 		for( t in base.getCustomTypes() )
 			new Element("<option>").attr("value", "" + t.name).text(t.name).appendTo(types);
 
-        if (editForm) {
+		if (editForm) {
 			form.addClass("edit");
-            form.find("[name=name]").val(column.name);
+			form.find("[name=name]").val(column.name);
 			form.find("[name=type]").val(column.type.getName().substr(1).toLowerCase()).change();
 			form.find("[name=req]").prop("checked", !column.opt);
 			form.find("[name=display]").val(column.display == null ? "0" : Std.string(column.display));
@@ -126,33 +126,33 @@ class ModalColumnForm extends Modal {
 				form.find("[name=ctype]").val(name);
 			default:
 			}
-        } else {
+		} else {
 			form.addClass("create");
 			form.find("input").not("[type=submit]").val("");
 			form.find("[name=req]").prop("checked", true);
 			form.find("[name=localizable]").prop("checked", false);
-        }
+		}
 
-        contentModal.click( function(e) e.stopPropagation());
+		contentModal.click( function(e) e.stopPropagation());
 
 		element.click(function(e) {
-            closeModal();
+			closeModal();
 		});
 
-        form.find("#cancelBtn").click(function(e) closeModal());
-    }
+		form.find("#cancelBtn").click(function(e) closeModal());
+	}
 
-    public function setCallback(callback : (Void -> Void)) {
-        form.find("#createBtn").click(function(e) callback());
-        form.find("#editBtn").click(function(e) callback());
-    }
+	public function setCallback(callback : (Void -> Void)) {
+		form.find("#createBtn").click(function(e) callback());
+		form.find("#editBtn").click(function(e) callback());
+	}
 
-    public function closeModal() {
-        content.empty();
-        close();
-    }
+	public function closeModal() {
+		content.empty();
+		close();
+	}
 
-    public function getColumn(base : cdb.Database, sheet : cdb.Sheet, refColumn : cdb.Data.Column) : Column{
+	public function getColumn(base : cdb.Database, sheet : cdb.Sheet, refColumn : cdb.Data.Column) : Column{
 
 		var v : Dynamic<String> = { };
 		var cols = form.find("input, select").not("[type=submit]");
@@ -228,11 +228,11 @@ class ModalColumnForm extends Modal {
 		if( v.display != "0" ) c.display = cast Std.parseInt(v.display);
 		if( v.localizable == "on" ) c.kind = Localizable;
 
-        return c;
+		return c;
 	}
 
-    public function error(str : String) {
-        contentModal.find("#errorModal").html(str);
-    }
+	public function error(str : String) {
+		contentModal.find("#errorModal").html(str);
+	}
 
 }
