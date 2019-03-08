@@ -2,6 +2,7 @@
 .cdb {
 
 	background-color : black;
+	margin-bottom: 350px;
 
 	&:focus {
 		outline: none;
@@ -36,7 +37,7 @@
 		border-spacing : 0;
 		background-color: #222;
 
-		th.start {
+		.start {
 			width : 30px;
 			border-left-color : #333;
 		}
@@ -143,16 +144,16 @@
 		}
 
 
-		th.t_tilepos {
+		.t_tilepos {
 			width: 64px;
 		}
 		td.t_tilepos {
 			text-align : center;
 		}
 
-		th.t_bool,
-		th.t_int,
-		th.t_float {
+		.t_bool,
+		.t_int,
+		.t_float {
 			width: 6%;
 		}
 
@@ -318,6 +319,68 @@
 			}
 		}
 
+	}
+
+	.floating-thead {
+		position: fixed;
+		background-color : #222;
+
+		th:first-child {
+			border-left: 1px solid #222;
+		}
+
+		th {
+			overflow: hidden;
+			color : #ddd;
+			padding: 1px 10px;
+			border-left: 1px solid #555;
+			border-bottom: 2px solid #666;
+		}
+	}
+
+	.content-modal {
+		width: 350px;
+		min-height: 300px;
+		margin: auto;
+		padding: 15px;
+		background: #292929;
+		border: 2px solid #555;
+		color: #dadada;
+
+		form {
+			font-size: 14px;
+			input[type=text], input[type=submit], select {
+				height: 28px;
+			}
+			.t_int, .t_float {
+				.disp { display : block; }
+			}
+			.t_string {
+				.localizable { display : block; }
+			}
+			.t_enum .values, .t_flags .values { display : block; }
+			.t_ref .sheet { display : block; }
+			.t_layer .sheet { display : block; }
+			.t_custom .custom { display : block; }
+			.values, .sheet, .custom, .disp, .localizable  { display : none; }
+
+		}
+
+		form.edit {
+			input.create {
+				display: none;
+			}
+		}
+		form.create {
+			input.edit {
+				display: none;
+			}
+		}
+
+		#errorModal {
+			color: red;
+			text-align: center;
+		}
 	}
 }
 

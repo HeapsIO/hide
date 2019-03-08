@@ -121,7 +121,7 @@ class SceneEditor {
 		tree.async = false;
 		tree.autoOpenNodes = false;
 
-		var sceneEl = new Element('<div class="scene"></div>');
+		var sceneEl = new Element('<div class="heaps-scene"></div>');
 		scene = new hide.comp.Scene(view.config, null, sceneEl);
 		scene.editor = this;
 		scene.onReady = onSceneReady;

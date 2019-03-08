@@ -295,13 +295,22 @@ input[type=checkbox] {
 	}
 }
 
+.heaps-scene {
+	flex: 1;
+}
+
 .flex {
 	width:100%;
 	height:100%;
 	display:flex;
 	>* {
-		flex-grow : 100;
+		//flex-grow : 100;
 	}
+}
+
+.flex-elt {
+	flex: 1;
+	display: flex;
 }
 
 .flex.vertical {
@@ -407,33 +416,32 @@ input[type=checkbox] {
 	flex : 0 0 320px;
 	position: relative;
 	height: 100%;
-	&>.tabs-header {
-		background-color : #111;
-		padding : 2px;
-		padding-bottom : 0px;
-		&>div {
-			cursor : pointer;
-			display : inline-block;
-			color: #888;
-			background-color : #151515;
-			padding : 3px 8px;
-			border : 1px solid #444;
-			margin-left : -1px;
-			border-top-right-radius: 5px;
-			user-select: none;
-			&.active {
-				background-color : #222;
-				color : #ccc;
-				border-bottom-color : #222;
-				border-top-right-radius: 0px;
-			}
-			&:hover {
-				background-color : #282828;
-			}
+}
+
+.tabs-header {
+	background-color : #111;
+	padding : 2px;
+	padding-bottom : 0px;
+	&>div {
+		cursor : pointer;
+		display : inline-block;
+		color: #888;
+		background-color : #151515;
+		padding : 3px 8px;
+		border : 1px solid #444;
+		margin-left : -1px;
+		border-top-right-radius: 5px;
+		user-select: none;
+		&.active {
+			background-color : #222;
+			color : #ccc;
+			border-bottom-color : #222;
+			border-top-right-radius: 0px;
 		}
-
+		&:hover {
+			background-color : #282828;
+		}
 	}
-
 	.tab {
 		max-height: 100%;
 		display: flex;
@@ -761,7 +769,7 @@ input[type=checkbox] {
 	.top-bar {
 		margin-left: @leftPanelWidth;
 		position: relative;
-		height: 100%;
+		//height: 100%;
 	}
 
 	.timeline {

@@ -11,4 +11,8 @@ class Modal extends Component {
         content = new Element("<div class='content'></div>").appendTo(element);
     }
 
+    public function close() {
+        element.remove();
+    }
+
 }

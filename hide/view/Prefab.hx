@@ -77,8 +77,8 @@ class Prefab extends FileView {
 		element.html('
 			<div class="flex vertical">
 				<div class="toolbar"></div>
-				<div class="flex">
-					<div class="scene">
+				<div class="flex-elt">
+					<div class="heaps-scene">
 					</div>
 					<div class="tabs">
 						<div class="tab expand" name="Scene" icon="sitemap">

@@ -275,13 +275,17 @@ input[type=checkbox]:checked:after {
 .hide-range input[type=text]:active {
   border-color: #444;
 }
+.heaps-scene {
+  flex: 1;
+}
 .flex {
   width: 100%;
   height: 100%;
   display: flex;
 }
-.flex > * {
-  flex-grow: 100;
+.flex-elt {
+  flex: 1;
+  display: flex;
 }
 .flex.vertical {
   flex-direction: column;
@@ -383,12 +387,12 @@ input[type=checkbox]:checked:after {
   position: relative;
   height: 100%;
 }
-.hide-tabs > .tabs-header {
+.tabs-header {
   background-color: #111;
   padding: 2px;
   padding-bottom: 0px;
 }
-.hide-tabs > .tabs-header > div {
+.tabs-header > div {
   cursor: pointer;
   display: inline-block;
   color: #888;
@@ -399,22 +403,22 @@ input[type=checkbox]:checked:after {
   border-top-right-radius: 5px;
   user-select: none;
 }
-.hide-tabs > .tabs-header > div.active {
+.tabs-header > div.active {
   background-color: #222;
   color: #ccc;
   border-bottom-color: #222;
   border-top-right-radius: 0px;
 }
-.hide-tabs > .tabs-header > div:hover {
+.tabs-header > div:hover {
   background-color: #282828;
 }
-.hide-tabs .tab {
+.tabs-header .tab {
   max-height: 100%;
   display: flex;
   flex-direction: column;
   position: absolute;
 }
-.hide-tabs .expand {
+.tabs-header .expand {
   width: 100%;
   height: 100%;
 }
@@ -692,7 +696,6 @@ input[type=checkbox]:checked:after {
 .fx-animpanel .top-bar {
   margin-left: 120px;
   position: relative;
-  height: 100%;
 }
 .fx-animpanel .timeline {
   background: #141414;

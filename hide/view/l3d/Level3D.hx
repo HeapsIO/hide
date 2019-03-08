@@ -316,7 +316,7 @@ class Level3D extends FileView {
 					<span class="tools-buttons"></span>
 					<span class="layer-buttons"></span>
 				</div>
-				<div class="flex">
+				<div class="flex-elt">
 					<div class="scene">
 					</div>
 					<div class="tabs">
