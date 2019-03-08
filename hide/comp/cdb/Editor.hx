@@ -62,6 +62,9 @@ class Editor extends Component {
 			if( cell != null && cell.isTextInput() && !e.ctrlKey )
 				cell.edit();
 		});
+		element.on("resize", function(e) {
+			refresh();
+		});
 		keys = new hide.ui.Keys(element);
 		keys.addListener(onKey);
 		keys.register("search", function() {
@@ -450,7 +453,88 @@ class Editor extends Component {
 		return null;
 	}
 
-	public function newColumn( sheet : cdb.Sheet, ?after ) {
+	public function newColumn( sheet : cdb.Sheet, ?index : Int ) {
+		var modal = new hide.comp.cdb.ModalColumnForm(base, null, element);
+		modal.setCallback(function() {
+			var c = modal.getColumn(base, sheet, null);
+			if (c == null) {
+				return;
+			}
+			var err = newColumn_save(sheet, c, index + 1);
+			if (err != null) {
+				modal.error(err);
+			} else {
+				modal.closeModal();
+			}
+		});
+	}
+
+	function newColumn_save( sheet : cdb.Sheet, c : cdb.Data.Column, ?index : Int ) {
+		beginChanges();
+		var err = sheet.addColumn(c, index);
+		endChanges();
+		if (err != null) {
+			return err;
+		}
+		for( t in tables )
+			if( t.sheet == sheet )
+				t.refresh();
+		return null;
+	}
+
+	public function editColumn( sheet : cdb.Sheet, col : cdb.Data.Column ) {
+		var modal = new hide.comp.cdb.ModalColumnForm(base, col, element);
+		modal.setCallback(function() {
+			var c = modal.getColumn(base, sheet, col);
+			if (c == null) {
+				return;
+			}
+			var err = editColumn_save(base, sheet, col, c);
+			if (err != null) {
+				modal.error(err);
+			} else {
+				modal.closeModal();
+			}
+		});
+	}
+
+	function editColumn_save( base : cdb.Database, sheet : cdb.Sheet, colOld : cdb.Data.Column, colNew : cdb.Data.Column ) {
+		beginChanges();
+		var err = base.updateColumn(sheet, colOld, colNew);
+		endChanges();
+		for( t in tables )
+			if( t.sheet == sheet )
+				t.refresh();
+		if (err != null) {
+			return err;
+		}
+		return null;
+	}
+
+	public function deleteColumn( sheet : cdb.Sheet, cname : String ) {
+		beginChanges();
+		sheet.deleteColumn(cname);
+		endChanges();
+	}
+
+	public function moveColumnLeft( sheet : cdb.Sheet, index : Int ) {
+		beginChanges();
+		var c = sheet.columns[index];
+		if( index > 0 ) {
+			sheet.columns.remove(c);
+			sheet.columns.insert(index - 1, c);
+		}
+		endChanges();
+	}
+
+	public function moveColumnRight( sheet : cdb.Sheet, index : Int ) {
+		beginChanges();
+		var c = sheet.columns[index];
+		if( index > 0 ) {
+			sheet.columns.remove(c);
+			sheet.columns.insert(index + 1, c);
+		}
+		endChanges();
 	}
 
 	public function insertLine( table : Table, index = 0 ) {
@@ -488,9 +572,45 @@ class Editor extends Component {
 	}
 
 	public function popupColumn( table : Table, col : cdb.Data.Column ) {
+		var indexColumn = 0;
+		for (c in table.sheet.columns) {
+			if (c == col) {
+				break;
+			}
+			indexColumn++;
+		}
 		var menu : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
 		if( col.type == TString && col.kind == Script )
 			menu.push({ label : "Edit all", click : function() editScripts(table,col) });
+
+		menu.push({ label : "Edit", click : function () {
+				editColumn(table.sheet, col);
+			}
+		});
+		
+		menu.push({ label : "Add Column", click : function () {
+				newColumn(table.sheet, indexColumn);
+			}
+		});
+			
+		menu.push({ label: "sep", isSeparator: true });
+		menu.push({ label : "Move Left", enabled:  (indexColumn > 0), click : function () {
+				moveColumnLeft(table.sheet, indexColumn);
+				table.refresh();
+			}
+		});
+		menu.push({ label : "Move Right", enabled: (indexColumn < table.sheet.columns.length - 1), click : function () {
+				moveColumnRight(table.sheet, indexColumn);
+				table.refresh();
+			}
+		});
+		menu.push({ label: "sep", isSeparator: true });
+
+		menu.push({ label : "Delete", click : function () {
+				deleteColumn(table.sheet, col.name);
+				table.refresh();
+			}
+		});
 		new hide.comp.ContextMenu(menu);
 	}
 

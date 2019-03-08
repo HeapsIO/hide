@@ -1,5 +1,6 @@
 .cdb {
   background-color: black;
+  margin-bottom: 350px;
 }
 .cdb:focus {
   outline: none;
@@ -28,7 +29,7 @@
   border-spacing: 0;
   background-color: #222;
 }
-.cdb .cdb-sheet th.start {
+.cdb .cdb-sheet .start {
   width: 30px;
   border-left-color: #333;
 }
@@ -122,15 +123,15 @@
   padding-bottom: 5px;
   border: none;
 }
-.cdb .cdb-sheet th.t_tilepos {
+.cdb .cdb-sheet .t_tilepos {
   width: 64px;
 }
 .cdb .cdb-sheet td.t_tilepos {
   text-align: center;
 }
-.cdb .cdb-sheet th.t_bool,
-.cdb .cdb-sheet th.t_int,
-.cdb .cdb-sheet th.t_float {
+.cdb .cdb-sheet .t_bool,
+.cdb .cdb-sheet .t_int,
+.cdb .cdb-sheet .t_float {
   width: 6%;
 }
 .cdb .cdb-sheet td.t_bool {
@@ -280,6 +281,20 @@
   min-width: 500px;
   min-height: 200px;
 }
+.floating-thead {
+  position: fixed;
+  background-color: #222;
+}
+.floating-thead th:first-child {
+  border-left: 1px solid #222;
+}
+.floating-thead th {
+  overflow: hidden;
+  color: #ddd;
+  padding: 1px 10px;
+  border-left: 1px solid #555;
+  border-bottom: 2px solid #666;
+}
 body.fullScreenMode .lm_content,
 body.fullScreenMode .lm_header,
 body.fullScreenMode .lm_splitter {
@@ -292,4 +307,58 @@ body.fullScreenMode .lm_content.fullScreen {
   top: 0;
   width: 100% !important;
   height: 100% !important;
+}
+.content-modal {
+  width: 350px;
+  min-height: 300px;
+  margin: auto;
+  padding: 15px;
+  background: #292929;
+  border: 2px solid #555;
+  color: #dadada;
+}
+.content-modal form {
+  font-size: 14px;
+}
+.content-modal form input[type=text],
+.content-modal form input[type=submit],
+.content-modal form select {
+  height: 28px;
+}
+.content-modal form .t_int .disp,
+.content-modal form .t_float .disp {
+  display: block;
+}
+.content-modal form .t_string .localizable {
+  display: block;
+}
+.content-modal form .t_enum .values,
+.content-modal form .t_flags .values {
+  display: block;
+}
+.content-modal form .t_ref .sheet {
+  display: block;
+}
+.content-modal form .t_layer .sheet {
+  display: block;
+}
+.content-modal form .t_custom .custom {
+  display: block;
+}
+.content-modal form .values,
+.content-modal form .sheet,
+.content-modal form .custom,
+.content-modal form .disp,
+.content-modal form .localizable {
+  display: none;
+}
+.content-modal form.edit input.create {
+  display: none;
+}
+.content-modal form.create input.edit {
+  display: none;
+}
+.content-modal #errorModal {
+  color: red;
+  text-align: center;
 }

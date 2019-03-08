@@ -25,7 +25,6 @@ class CdbTable extends hide.ui.View<{ path : String }> {
 
 	override function onActivate() {
 		if( editor != null ) editor.focus();
-		chromeFix();
 	}
 
 	function setEditor(index:Int) {
@@ -35,17 +34,6 @@ class CdbTable extends hide.ui.View<{ path : String }> {
 		editor.focus();
 		editor.onFocus = activate;
 		undo = ide.databaseApi.undo;
-		chromeFix();
-	}
-
-	function chromeFix() {
-		// bugfix chrome : for some reason, the tabs does not appear
-		// doing this will turn them back...
-		if( sheets != null && sheets.length > 1 ) {
-			var tabs = element.find(".hide-tabs");
-			tabs.css({ height : "100px" });
-			haxe.Timer.delay(function() tabs.css({ height : "" }), 1);
-		}
 	}
 
 	override function onDisplay() {

@@ -192,7 +192,7 @@ class FXEditor extends FileView {
 		element.html('
 			<div class="flex vertical">
 				<div class="toolbar"></div>
-				<div class="flex">
+				<div class="flex-elt">
 					<div class="flex vertical">
 						<div class="flex scene"></div>
 						<div class="fx-animpanel">

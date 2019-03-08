@@ -62,7 +62,7 @@ class Model extends FileView {
 		element.html('
 			<div class="flex vertical">
 				<div class="toolbar"></div>
-				<div class="flex">
+				<div class="flex-elt">
 					<div class="scene">
 						<div class="hide-scroll hide-scene-layer">
 							<div class="tree"></div>

@@ -27,10 +27,10 @@ class Tabs extends Component {
 	function set_currentTab( e : Element ) {
 		var index = Std.parseInt(e.attr("index"));
 		getTabs().hide();
-		e.show();
 		header.children().removeClass("active").filter("[index=" + index + "]").addClass("active");
 		currentTab = e;
 		onTabChange(index);
+		e.show();
 		return e;
 	}
 

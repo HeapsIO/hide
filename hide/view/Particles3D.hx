@@ -17,7 +17,7 @@ class Particles3D extends FileView {
 
 	override function onDisplay() {
 		element.html('
-			<div class="flex">
+			<div class="flex-elt">
 				<div class="scene"></div>
 				<div class="props"></div>
 			</div>
