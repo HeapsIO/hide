@@ -63,7 +63,7 @@ class Model extends FileView {
 			<div class="flex vertical">
 				<div class="toolbar"></div>
 				<div class="flex-elt">
-					<div class="scene">
+					<div class="heaps-scene">
 						<div class="hide-scroll hide-scene-layer">
 							<div class="tree"></div>
 						</div>
@@ -133,7 +133,7 @@ class Model extends FileView {
 
 		element.find(".hide-scene-tree").first().append(sceneEditor.tree.element);
 		element.find(".props").first().append(sceneEditor.properties.element);
-		element.find(".scene").first().append(sceneEditor.scene.element);
+		element.find(".heaps-scene").first().append(sceneEditor.scene.element);
 		sceneEditor.tree.element.addClass("small");
 
 		element.find("input[value=Export]").click(function(_) {

@@ -18,13 +18,13 @@ class Particles3D extends FileView {
 	override function onDisplay() {
 		element.html('
 			<div class="flex-elt">
-				<div class="scene"></div>
+				<div class="heaps-scene"></div>
 				<div class="props"></div>
 			</div>
 		');
 		properties = new hide.comp.PropsEditor(undo, null, element.find(".props"));
 		properties.saveDisplayKey = "particles3D";
-		scene = new hide.comp.Scene(config, null,element.find(".scene"));
+		scene = new hide.comp.Scene(config, null,element.find(".heaps-scene"));
 		scene.onReady = init;
 		scene.onUpdate = update;
 	}

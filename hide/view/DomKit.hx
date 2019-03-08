@@ -38,11 +38,11 @@ class DomKit extends FileView {
 					<div class="html"></div>
 					<div class="cssErrors"></div>
 				</div>
-				<div class="scene">
+				<div class="heaps-scene">
 				</div>
 			</div>
 		');
-		scene = new hide.comp.Scene(config,null,element.find(".scene"));
+		scene = new hide.comp.Scene(config,null,element.find(".heaps-scene"));
 		scene.onResize = onSceneResize;
 		scene.onReady = sync;
 		editor = new hide.comp.CodeEditor(uiElt.html, "xml", element.find(".html"));

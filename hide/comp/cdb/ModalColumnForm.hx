@@ -48,14 +48,14 @@ class ModalColumnForm extends Modal {
                 <option value="custom">Custom Type</option>
             </select>
             <br /><br />
-            
+
 			<div id="col_options">
 				<div class="values">
                     Possible Values
                     <br />
                     <input type="text" name="values" name="vals"/>
                     <br /><br />
-                </div> 
+                </div>
 
 				<div class="sheet">
                     Sheet
@@ -65,7 +65,7 @@ class ModalColumnForm extends Modal {
                 </div>
 
 				<div class="disp">
-                    Display 
+                    Display
                     <br />
                     <select name="display">
                     <option value="0">Default</option>
@@ -92,7 +92,7 @@ class ModalColumnForm extends Modal {
 
 			</form>').appendTo(contentModal);
 
-        var sheets = form.find("[name=sheet]");
+		var sheets = form.find("[name=sheet]");
 		sheets.empty();
 		for( i in 0...base.sheets.length ) {
 			var s = base.sheets[i];

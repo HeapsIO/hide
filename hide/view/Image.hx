@@ -40,7 +40,7 @@ class Image extends FileView {
 		element.html('
 			<div class="flex vertical">
 				<div class="toolbar"></div>
-				<div class="scene">
+				<div class="heaps-scene">
 				</div>
 			</div>
 		');
@@ -53,7 +53,7 @@ class Image extends FileView {
 				if( b ) channelSelect.channels |= 1 << i;
 			});
 		}
-		scene = new hide.comp.Scene(config, null, element.find(".scene"));
+		scene = new hide.comp.Scene(config, null, element.find(".heaps-scene"));
 		scene.onReady = function() {
 			scene.loadTexture(state.path, state.path, function(t) {
 				bmp = new h2d.Bitmap(h2d.Tile.fromTexture(t), scene.s2d);

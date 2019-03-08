@@ -44,7 +44,7 @@ class Table extends Component {
 		}
 	}
 
-	function cloneTableHead() {
+	public function cloneTableHead() {
 		var target = J('.head');
 		if (target.length == 0) {
 			trace("Fail clone table head");
@@ -162,6 +162,7 @@ class Table extends Component {
 		}
 
 		cols.ready(cloneTableHead);
+		cols.on("resize", cloneTableHead);
 	}
 
 	function makeSeparator( sindex : Int, colCount : Int ) {

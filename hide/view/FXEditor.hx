@@ -194,7 +194,7 @@ class FXEditor extends FileView {
 				<div class="toolbar"></div>
 				<div class="flex-elt">
 					<div class="flex vertical">
-						<div class="flex scene"></div>
+						<div class="flex heaps-scene"></div>
 						<div class="fx-animpanel">
 							<div class="top-bar">
 								<div class="timeline">
@@ -230,7 +230,7 @@ class FXEditor extends FileView {
 		sceneEditor = new FXSceneEditor(this, data);
 		element.find(".hide-scene-tree").first().append(sceneEditor.tree.element);
 		element.find(".hide-scroll").first().append(sceneEditor.properties.element);
-		element.find(".scene").first().append(sceneEditor.scene.element);
+		element.find(".heaps-scene").first().append(sceneEditor.scene.element);
 		element.resize(function(e) {
 			refreshTimeline(false);
 			rebuildAnimPanel();

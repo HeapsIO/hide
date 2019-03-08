@@ -281,19 +281,73 @@
   min-width: 500px;
   min-height: 200px;
 }
-.floating-thead {
+.cdb .floating-thead {
   position: fixed;
   background-color: #222;
 }
-.floating-thead th:first-child {
+.cdb .floating-thead th:first-child {
   border-left: 1px solid #222;
 }
-.floating-thead th {
+.cdb .floating-thead th {
   overflow: hidden;
   color: #ddd;
   padding: 1px 10px;
   border-left: 1px solid #555;
   border-bottom: 2px solid #666;
+}
+.cdb .content-modal {
+  width: 350px;
+  min-height: 300px;
+  margin: auto;
+  padding: 15px;
+  background: #292929;
+  border: 2px solid #555;
+  color: #dadada;
+}
+.cdb .content-modal form {
+  font-size: 14px;
+}
+.cdb .content-modal form input[type=text],
+.cdb .content-modal form input[type=submit],
+.cdb .content-modal form select {
+  height: 28px;
+}
+.cdb .content-modal form .t_int .disp,
+.cdb .content-modal form .t_float .disp {
+  display: block;
+}
+.cdb .content-modal form .t_string .localizable {
+  display: block;
+}
+.cdb .content-modal form .t_enum .values,
+.cdb .content-modal form .t_flags .values {
+  display: block;
+}
+.cdb .content-modal form .t_ref .sheet {
+  display: block;
+}
+.cdb .content-modal form .t_layer .sheet {
+  display: block;
+}
+.cdb .content-modal form .t_custom .custom {
+  display: block;
+}
+.cdb .content-modal form .values,
+.cdb .content-modal form .sheet,
+.cdb .content-modal form .custom,
+.cdb .content-modal form .disp,
+.cdb .content-modal form .localizable {
+  display: none;
+}
+.cdb .content-modal form.edit input.create {
+  display: none;
+}
+.cdb .content-modal form.create input.edit {
+  display: none;
+}
+.cdb .content-modal #errorModal {
+  color: red;
+  text-align: center;
 }
 body.fullScreenMode .lm_content,
 body.fullScreenMode .lm_header,
@@ -307,58 +361,4 @@ body.fullScreenMode .lm_content.fullScreen {
   top: 0;
   width: 100% !important;
   height: 100% !important;
-}
-.content-modal {
-  width: 350px;
-  min-height: 300px;
-  margin: auto;
-  padding: 15px;
-  background: #292929;
-  border: 2px solid #555;
-  color: #dadada;
-}
-.content-modal form {
-  font-size: 14px;
-}
-.content-modal form input[type=text],
-.content-modal form input[type=submit],
-.content-modal form select {
-  height: 28px;
-}
-.content-modal form .t_int .disp,
-.content-modal form .t_float .disp {
-  display: block;
-}
-.content-modal form .t_string .localizable {
-  display: block;
-}
-.content-modal form .t_enum .values,
-.content-modal form .t_flags .values {
-  display: block;
-}
-.content-modal form .t_ref .sheet {
-  display: block;
-}
-.content-modal form .t_layer .sheet {
-  display: block;
-}
-.content-modal form .t_custom .custom {
-  display: block;
-}
-.content-modal form .values,
-.content-modal form .sheet,
-.content-modal form .custom,
-.content-modal form .disp,
-.content-modal form .localizable {
-  display: none;
-}
-.content-modal form.edit input.create {
-  display: none;
-}
-.content-modal form.create input.edit {
-  display: none;
-}
-.content-modal #errorModal {
-  color: red;
-  text-align: center;
 }

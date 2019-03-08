@@ -62,9 +62,6 @@ class Editor extends Component {
 			if( cell != null && cell.isTextInput() && !e.ctrlKey )
 				cell.edit();
 		});
-		element.on("resize", function(e) {
-			refresh();
-		});
 		keys = new hide.ui.Keys(element);
 		keys.addListener(onKey);
 		keys.register("search", function() {
@@ -587,12 +584,12 @@ class Editor extends Component {
 				editColumn(table.sheet, col);
 			}
 		});
-		
+
 		menu.push({ label : "Add Column", click : function () {
 				newColumn(table.sheet, indexColumn);
 			}
 		});
-			
+
 		menu.push({ label: "sep", isSeparator: true });
 		menu.push({ label : "Move Left", enabled:  (indexColumn > 0), click : function () {
 				moveColumnLeft(table.sheet, indexColumn);
