@@ -6,7 +6,6 @@ class ModalColumnForm extends Modal {
 
     var contentModal : Element;
     var form : Element;
-    var lastError : String;
 
     public function new(base : cdb.Database, column : cdb.Data.Column, ?parent,?el) {
         super(parent,el);
