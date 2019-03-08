@@ -317,7 +317,7 @@ class Level3D extends FileView {
 					<span class="layer-buttons"></span>
 				</div>
 				<div class="flex-elt">
-					<div class="scene">
+					<div class="heaps-scene">
 					</div>
 					<div class="tabs">
 						<div class="tab expand" name="Scene" icon="sitemap">
@@ -344,7 +344,7 @@ class Level3D extends FileView {
 		sceneEditor.addSearchBox(element.find(".hide-scene-tree").first());
 		element.find(".hide-scene-tree").first().append(sceneEditor.tree.element);
 		element.find(".hide-scroll").first().append(sceneEditor.properties.element);
-		element.find(".scene").first().append(sceneEditor.scene.element);
+		element.find(".heaps-scene").first().append(sceneEditor.scene.element);
 		sceneEditor.tree.element.addClass("small");
 
 		// Level edit
