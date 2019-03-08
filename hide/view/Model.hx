@@ -97,7 +97,7 @@ class Model extends FileView {
 		eventList = element.find(".event-editor");
 
 		if( rootPath == null )
-			rootPath = config.get("model.renderProps");
+			rootPath = config.get("scene.renderProps");
 
 		if( rootPath != null )
 			root = ide.loadPrefab(rootPath, hxd.prefab.Library);
@@ -309,7 +309,7 @@ class Model extends FileView {
 		new h3d.scene.Object(scene.s3d).addChild(obj);
 
 		var autoHide : Array<String> = config.get("scene.autoHide");
-		
+
 		function hidePropsRec( obj : h3d.scene.Object ) {
 			for(n in autoHide)
 				if(obj.name != null && obj.name.indexOf(n) == 0)
