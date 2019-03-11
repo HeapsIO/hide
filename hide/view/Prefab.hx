@@ -96,7 +96,7 @@ class Prefab extends FileView {
 		sceneEditor = new PrefabSceneEditor(this, data);
 		element.find(".hide-scene-tree").first().append(sceneEditor.tree.element);
 		element.find(".tab").first().append(sceneEditor.properties.element);
-		element.find(".scene").first().append(sceneEditor.scene.element);
+		element.find(".heaps-scene").first().append(sceneEditor.scene.element);
 		currentVersion = undo.currentID;
 	}
 
