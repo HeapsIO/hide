@@ -70,7 +70,7 @@ class AdvancedDecal extends Object3D {
 					shader = new h3d.shader.pbr.VolumeDecal.DecalOverlay();
 					mesh.material.mainPass.addShader(shader);
 				}
-				mesh.material.mainPass.setPassName("beforeTonemapping");
+				mesh.material.mainPass.setPassName("beforeTonemappingDecal");
 			default:
 		}
 
