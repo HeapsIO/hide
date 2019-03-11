@@ -29,7 +29,7 @@
   border-spacing: 0;
   background-color: #222;
 }
-.cdb .cdb-sheet .start {
+.cdb .cdb-sheet th.start {
   width: 30px;
   border-left-color: #333;
 }
@@ -123,15 +123,15 @@
   padding-bottom: 5px;
   border: none;
 }
-.cdb .cdb-sheet .t_tilepos {
+.cdb .cdb-sheet th.t_tilepos {
   width: 64px;
 }
 .cdb .cdb-sheet td.t_tilepos {
   text-align: center;
 }
-.cdb .cdb-sheet .t_bool,
-.cdb .cdb-sheet .t_int,
-.cdb .cdb-sheet .t_float {
+.cdb .cdb-sheet th.t_bool,
+.cdb .cdb-sheet th.t_int,
+.cdb .cdb-sheet th.t_float {
   width: 6%;
 }
 .cdb .cdb-sheet td.t_bool {
