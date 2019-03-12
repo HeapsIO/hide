@@ -827,10 +827,12 @@ class SceneEditor {
 	}
 
 	function makeInstance(elt: PrefabElement) {
+		scene.setCurrent();
 		var parentCtx = getContext(elt.parent);
-		elt.make(parentCtx);
+		var ctx = elt.make(parentCtx);
 		for( p in elt.flatten() )
 			makeInteractive(p);
+		scene.init(ctx.local3d);
 	}
 
 	public function addObject(e : PrefabElement) {
@@ -1047,24 +1049,24 @@ class SceneEditor {
 		group.make(parentCtx);
 		var groupCtx = getContext(group);
 
-		var reparentUndo = reparentImpl(elts, group, 0);
+		var effectFunc = reparentImpl(elts, group, 0);
 		undo.change(Custom(function(undo) {
 			if(undo) {
 				group.parent = null;
 				context.shared.contexts.remove(group);
-				reparentUndo(true);
+				effectFunc(true);
 			}
 			else {
 				group.parent = parent;
 				context.shared.contexts.set(group, groupCtx);
-				reparentUndo(false);
+				effectFunc(false);
 			}
 			if(undo)
 				refresh(deselect);
 			else
 				refresh(()->selectObjects([group]));
 		}));
-		refresh(() -> selectObjects([group]));
+		refresh(effectFunc(false) ? Full : Partial, () -> selectObjects([group]));
 	}
 
 	function onCopy() {
@@ -1345,16 +1347,32 @@ class SceneEditor {
 		if( to == null )
 			to = sceneData;
 
-		var undoFunc = reparentImpl(e, to, index);
+		var effectFunc = reparentImpl(e, to, index);
 		undo.change(Custom(function(undo) {
-			undoFunc(undo);
-			refresh();
+			refresh(effectFunc(undo) ? Full : Partial);
 		}));
-		refresh();
+		refresh(effectFunc(false) ? Full : Partial);
 	}
 
-	function reparentImpl(elts : Array<PrefabElement>, toElt: PrefabElement, index: Int) {
-		var undoes = [];
+	function makeTransform(mat: h3d.Matrix) {
+		var rot = mat.getEulerAngles();
+		var x = mat.tx;
+		var y = mat.ty;
+		var z = mat.tz;
+		var s = mat.getScale();
+		var scaleX = s.x;
+		var scaleY = s.y;
+		var scaleZ = s.z;
+		var rotationX = hxd.Math.radToDeg(rot.x);
+		var rotationY = hxd.Math.radToDeg(rot.y);
+		var rotationZ = hxd.Math.radToDeg(rot.z);
+		return { x : x, y : y, z : z, scaleX : scaleX, scaleY : scaleY, scaleZ : scaleZ, rotationX : rotationX, rotationY : rotationY, rotationZ : rotationZ };
+	}
+
+	function reparentImpl(elts : Array<PrefabElement>, toElt: PrefabElement, index: Int) : Bool -> Bool {
+		var effects = [];
+		var fullRefresh = false;
+		var toRefresh : Array<PrefabElement> = null;
 		for(elt in elts) {
 			var prev = elt.parent;
 			var prevIndex = prev.children.indexOf(elt);
@@ -1370,34 +1388,46 @@ class SceneEditor {
 				parentMat.invert();
 				mat.multiply(mat, parentMat);
 				prevState = obj3d.saveTransform();
-				obj3d.setTransform(mat);
-				newState = obj3d.saveTransform();
+				newState = makeTransform(mat);
 			}
 
-			elt.parent = toElt;
-			toElt.children.remove(elt);
-			toElt.children.insert(index, elt);
-
-			undoes.push(function(undo) {
+			effects.push(function(undo) {
+				var refresh = false;
 				if( undo ) {
+					refresh = !removeInstance(elt);
 					elt.parent = prev;
 					prev.children.remove(elt);
 					prev.children.insert(prevIndex, elt);
 					if(obj3d != null && prevState != null)
 						obj3d.loadTransform(prevState);
 				} else {
+					var refresh = !removeInstance(elt);
 					elt.parent = toElt;
 					toElt.children.remove(elt);
 					toElt.children.insert(index, elt);
 					if(obj3d != null && newState != null)
 						obj3d.loadTransform(newState);
 				};
+				// Refresh PARENTS, because some objects (eg Model) make themselves differently based on their children
+				if(toRefresh.indexOf(elt.parent) < 0)
+					toRefresh.push(elt.parent);
+				return refresh;
 			});
 		}
 		return function(undo) {
-			for(f in undoes) {
-				f(undo);
+			var refresh = false;
+			toRefresh = [];
+			for(f in effects) {
+				if(f(undo))
+					refresh = true;
 			}
+			if(!refresh) {
+				for(parent in toRefresh) {
+					removeInstance(parent);
+					makeInstance(parent);
+				}
+			}
+			return refresh;
 		}
 	}
 
