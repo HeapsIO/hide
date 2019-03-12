@@ -415,15 +415,6 @@ class FX extends hxd.prefab.Library {
 		return null;
 	}
 
-	function setupRenderer( ctx : Context, elt : PrefabElement )  {
-		var renderProps = Std.instance(elt, hide.prefab.RenderProps);
-		if(renderProps != null)
-			renderProps.applyProps(ctx.local3d.getScene().renderer);
-		else
-			for(c in elt.children)
-				setupRenderer(ctx, c);
-	}
-
 	function getConstraints( ctx : Context, elt : PrefabElement, constraints : Array<hide.prefab.Constraint>){
 		var co = Std.instance(elt, hide.prefab.Constraint);
 		if(co != null)
@@ -447,7 +438,6 @@ class FX extends hxd.prefab.Library {
 
 		#if editor
 		super.make(ctx);
-		setupRenderer(ctx, this);
 		#else
 		var root = getFXRoot(ctx, this);
 		if(root != null){

@@ -125,6 +125,11 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		parent.onPrefabChange(p, pname);
 	}
 
+	override function selectObjects(elts:Array<PrefabElement>, ?includeTree:Bool = true) {
+		super.selectObjects(elts, includeTree);
+		parent.onSelectObjects(elts);
+	}
+
 	override function projectToGround(ray: h3d.col.Ray) {
 		var polygons = parent.getGroundPolys();
 		var minDist = -1.;
@@ -297,6 +302,7 @@ class Level3D extends FileView {
 	var currentSign : String;
 	var sceneFilters : Map<String, Bool>;
 	var statusText : h2d.Text;
+	var lastRenderProps : hide.prefab.RenderProps = null;
 
 	var scene(get, null):  hide.comp.Scene;
 	function get_scene() return sceneEditor.scene;
@@ -513,14 +519,19 @@ class Level3D extends FileView {
 	}
 
 	function onRefreshScene() {
-		// Apply first render props
-		var settings = data.children.find(c -> c.name == "settings");
-		if(settings != null) {
-			for(c in settings.children) {
-				var renderProps = c.to(hide.prefab.RenderProps);
-				if(renderProps != null) {
-					renderProps.applyProps(scene.s3d.renderer);
-					break;
+		if(lastRenderProps != null) {
+			lastRenderProps.applyProps(scene.s3d.renderer);
+		}
+		else {
+			// Apply first render props
+			var settings = data.children.find(c -> c.name == "settings");
+			if(settings != null) {
+				for(c in settings.children) {
+					var renderProps = c.to(hide.prefab.RenderProps);
+					if(renderProps != null) {
+						renderProps.applyProps(scene.s3d.renderer);
+						break;
+					}
 				}
 			}
 		}
@@ -610,6 +621,12 @@ class Level3D extends FileView {
 
 	function onPrefabChange(p: PrefabElement, ?pname: String) {
 
+	}
+
+	function onSelectObjects(elts: Array<PrefabElement>) {
+		var renderProps = Std.instance(elts.find(e -> Std.is(e, hide.prefab.RenderProps)), hide.prefab.RenderProps);
+		if(renderProps != null)
+			lastRenderProps = renderProps;
 	}
 
 	function applySceneStyle(p: PrefabElement) {

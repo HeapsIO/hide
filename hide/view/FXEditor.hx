@@ -63,6 +63,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		// Always refresh scene
 		refreshScene();
 		refreshTree(callb);
+		parent.onRefreshScene();
 	}
 
 	override function getNewContextMenu(current: PrefabElement, ?onMake: PrefabElement->Void=null) {
@@ -432,6 +433,12 @@ class FXEditor extends FileView {
 			afterPan(false);
 			data.refreshObjectAnims(sceneEditor.getContext(data));
 		}
+	}
+
+	function onRefreshScene() {
+		var renderProps = data.find(e -> e.to(hide.prefab.RenderProps));
+		if(renderProps != null)
+			renderProps.applyProps(scene.s3d.renderer);
 	}
 
 	override function onDragDrop(items : Array<String>, isDrop : Bool) {
