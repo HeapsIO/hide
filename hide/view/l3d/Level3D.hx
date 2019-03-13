@@ -363,6 +363,8 @@ class Level3D extends FileView {
 			data.edit(edit);
 		}
 
+		scene.loadHMDData = false;
+
 		refreshSceneFilters();
 	}
 

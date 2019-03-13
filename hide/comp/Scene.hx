@@ -72,6 +72,7 @@ class Scene extends Component implements h3d.IDrawable {
 	public var visible(default, null) : Bool = true;
 	public var editor : hide.comp.SceneEditor;
 	public var refreshIfUnfocused = false;
+	public var loadHMDData = true;
 
 	public function new(config, parent, el) {
 		super(parent,el);
@@ -296,18 +297,20 @@ class Scene extends Component implements h3d.IDrawable {
 		}
 		var lib = loadHMD(path,false);
 
-		function loadHideData( path : String ) : hxd.fmt.hmd.Library.HideData {
-			var relPath = StringTools.startsWith(path, ide.resourceDir) ? path.substr(ide.resourceDir.length+1) : path;
-			var parts = relPath.split("/");
-			parts.pop();
-			var propsPath = parts.join("/") + "/model.props";
-			if(!hxd.res.Loader.currentInstance.exists(propsPath)) return null;
-			var props = hxd.res.Loader.currentInstance.load(propsPath).toText();
-			var hideData : hxd.fmt.hmd.Library.HideData;
-			hideData = haxe.Json.parse(props);
-			return hideData;
+		if(loadHMDData) {
+			function loadHideData( path : String ) : hxd.fmt.hmd.Library.HideData {
+				var relPath = StringTools.startsWith(path, ide.resourceDir) ? path.substr(ide.resourceDir.length+1) : path;
+				var parts = relPath.split("/");
+				parts.pop();
+				var propsPath = parts.join("/") + "/model.props";
+				if(!hxd.res.Loader.currentInstance.exists(propsPath)) return null;
+				var props = hxd.res.Loader.currentInstance.load(propsPath).toText();
+				var hideData : hxd.fmt.hmd.Library.HideData;
+				hideData = haxe.Json.parse(props);
+				return hideData;
+			}
+			lib.hideData = loadHideData(path);
 		}
-		lib.hideData = loadHideData(path);
 
 		return lib.makeObject(loadTexture.bind(path));
 	}
@@ -316,13 +319,15 @@ class Scene extends Component implements h3d.IDrawable {
 		var lib = loadHMD(path,true);
 
 		// HideData
-		var relPath = StringTools.startsWith(path, ide.resourceDir) ? path.substr(ide.resourceDir.length+1) : path;
-		var parts = relPath.split("/");
-		parts.pop();
-		var propsPath = parts.join("/") + "/model.props";
-		if( propsPath != null && hxd.res.Loader.currentInstance.exists(propsPath)){
-			var props = hxd.res.Loader.currentInstance.load(propsPath).toText();
-			lib.hideData = haxe.Json.parse(props);
+		if(loadHMDData) {
+			var relPath = StringTools.startsWith(path, ide.resourceDir) ? path.substr(ide.resourceDir.length+1) : path;
+			var parts = relPath.split("/");
+			parts.pop();
+			var propsPath = parts.join("/") + "/model.props";
+			if( propsPath != null && hxd.res.Loader.currentInstance.exists(propsPath)){
+				var props = hxd.res.Loader.currentInstance.load(propsPath).toText();
+				lib.hideData = haxe.Json.parse(props);
+			}
 		}
 
 		return lib.loadAnimation();
