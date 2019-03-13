@@ -415,12 +415,37 @@ class Level3D extends FileView {
 		}
 		for( p in passes )
 			p.isStatic = true;
+
+		function isDynamic(elt: hxd.prefab.Prefab) {
+			var p = elt;
+			while(p != null) {
+				if(p.name == "dynamic")
+					return true;
+				p = p.parent;
+			}
+			return false;
+		}
+
+		for(elt in data.flatten()) {
+			if(Std.is(elt, Instance) || isDynamic(elt)) {
+				var mats = sceneEditor.context.shared.getMaterials(elt);
+				for(mat in mats) {
+					var p = mat.getPass("shadow");
+					if(p != null)
+						p.isStatic = false;
+				}
+			}
+		}
+
 		scene.s3d.computeStatic();
 		for( p in passes )
 			p.isStatic = false;
 		var lights = data.getAll(hide.prefab.Light);
-		for( l in lights )
+		for( l in lights ) {
+			if(!l.visible)
+				continue;
 			l.saveBaked(sceneEditor.context);
+		}
 		sceneEditor.selectObjects(curSel);
 	}
 
