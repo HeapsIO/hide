@@ -16,6 +16,7 @@ class Polygon extends Object3D {
 	#if editor
 	public var debugColor : Int = 0xFFFFFFFF;
 	public var editor : PolygonEditor;
+	public var cachedPrim : h3d.prim.Polygon;
 	#end
 
 	override function save() {
@@ -75,8 +76,12 @@ class Polygon extends Object3D {
 
 	function makePrimitive() {
 
-		if(shape == Custom)
+		if(shape == Custom) {
+			#if editor
+			if(cachedPrim != null) return cachedPrim;
+			#end
 			return generateCustomPolygon();
+		}
 
 		var cache = getPrimCache();
 		var primitive : h3d.prim.Polygon = cache.get(shape);
@@ -183,6 +188,9 @@ class Polygon extends Object3D {
 			polyPrim.addTangents() ;
 			polyPrim.alloc(h3d.Engine.getCurrent());
 		}
+		#if editor
+		cachedPrim = polyPrim;
+		#end
 		return polyPrim;
 	}
 
