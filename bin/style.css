@@ -222,6 +222,9 @@ input[type=checkbox]:checked:after {
 .hide-scene-tree {
   height: 100%;
 }
+.hide-scene-tree .jstree-container-ul {
+  max-width: 300px;
+}
 .hide-tileselect {
   display: inline-block;
   background-color: #111;
