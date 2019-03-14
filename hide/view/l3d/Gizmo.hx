@@ -122,20 +122,23 @@ class Gizmo extends h3d.scene.Object {
 		intOverlay = new h2d.Interactive(40000, 40000, scene.s2d);
 		intOverlay.onPush = function(e) finishMove();
 		switch(mode) {
-			case MoveX: norm.x = 0;
-			case MoveY: norm.y = 0;
-			case MoveZ: norm.z = 0;
 			case MoveXY: norm.set(0, 0, 1);
 			case MoveYZ: norm.set(1, 0, 0);
 			case MoveZX: norm.set(0, 1, 0);
 			case RotateX: norm.set(1, 0, 0);
 			case RotateY: norm.set(0, 1, 0);
 			case RotateZ: norm.set(0, 0, 1);
-			case Scale: norm.z = 0;
+			default:
 		}
-		norm.normalize();
-		norm.transform3x3(startMat);
-		dragPlane = h3d.col.Plane.fromNormalPoint(norm, startPos);
+
+		if (mode == MoveX || mode == MoveY || mode == MoveZ || mode == Scale) {
+			var point = scene.s3d.camera.rayFromScreen(scene.s2d.mouseX, scene.s2d.mouseY).getDir();
+			dragPlane = h3d.col.Plane.fromNormalPoint(point, startPos);
+		} else {
+			norm.normalize();
+			norm.transform3x3(startMat);
+			dragPlane = h3d.col.Plane.fromNormalPoint(norm, startPos);
+		}
 		var startDragPt = getDragPoint(dragPlane);
 		updateFunc = function(dt) {
 			var curPt = getDragPoint(dragPlane);
@@ -156,7 +159,8 @@ class Gizmo extends h3d.scene.Object {
 				var step = K.isDown(K.SHIFT) ? moveStep / 2.0 : moveStep;
 				return hxd.Math.round(m / step) * step;
 			}
-
+			trace(startMat);
+			trace(delta);
 			if(mode == MoveX || mode == MoveXY || mode == MoveZX) vec.x = moveSnap(delta.dot(startMat.front().toPoint()));
 			if(mode == MoveY || mode == MoveYZ || mode == MoveXY) vec.y = moveSnap(delta.dot(startMat.right().toPoint()));
 			if(mode == MoveZ || mode == MoveZX || mode == MoveYZ) vec.z = moveSnap(delta.dot(startMat.up().toPoint()));
