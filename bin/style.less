@@ -1219,6 +1219,13 @@ body.hide-subview {
 	.jstree-anchor {
 		line-height: @size;
 		height: @size;
+
+		&.crop {
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			overflow: hidden;
+			width: 230px;
+		}
 	}
 	.jstree-icon {
 		width: @size;

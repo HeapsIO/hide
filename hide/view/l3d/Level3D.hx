@@ -640,6 +640,7 @@ class Level3D extends FileView {
 			style = Reflect.field(styles, p.name);
 		}
 		var a = el.find("a").first();
+		a.addClass("crop");
 		if(style == null)
 			a.removeAttr("style");
 		else
