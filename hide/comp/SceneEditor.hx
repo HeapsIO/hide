@@ -749,6 +749,7 @@ class SceneEditor {
 			if(tog.length == 0) {
 				tog = new Element('<i class="fa fa-eye visibility-toggle"/>').appendTo(el.find(".jstree-wholerow").first());
 				tog.click(function(e) {
+					e.stopPropagation();
 					if(curEdit.elements.indexOf(obj3d) >= 0)
 						setVisible(curEdit.elements, isHidden(obj3d));
 					else
