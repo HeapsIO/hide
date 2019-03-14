@@ -1408,9 +1408,8 @@ class SceneEditor {
 					if(obj3d != null && newState != null)
 						obj3d.loadTransform(newState);
 				};
-				// Refresh PARENTS, because some objects (eg Model) make themselves differently based on their children
-				if(toRefresh.indexOf(elt.parent) < 0)
-					toRefresh.push(elt.parent);
+				if(toRefresh.indexOf(elt) < 0)
+					toRefresh.push(elt);
 				return refresh;
 			});
 		}
@@ -1422,9 +1421,9 @@ class SceneEditor {
 					refresh = true;
 			}
 			if(!refresh) {
-				for(parent in toRefresh) {
-					removeInstance(parent);
-					makeInstance(parent);
+				for(elt in toRefresh) {
+					removeInstance(elt);
+					makeInstance(elt);
 				}
 			}
 			return refresh;
