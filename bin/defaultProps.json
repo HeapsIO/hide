@@ -94,6 +94,7 @@
 	"l3d.treeStyles": {
 		"settings": {"color": "#ffffff", "font-weight": "bold"}
 	},
+	"l3d.filterTypes": ["terrain", "model", "polygon", "box", "instance", "light"],
 
 	// FX editor
 	"fx.shaders": [

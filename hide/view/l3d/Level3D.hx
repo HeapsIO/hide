@@ -602,7 +602,7 @@ class Level3D extends FileView {
 	}
 
 	function refreshSceneFilters() {
-		var filters = ["terrain", "model", "polygon", "box", "instance", "light"];
+		var filters : Array<String> = ide.currentConfig.get("l3d.filterTypes");
 		for(sheet in getCdbTypes()) {
 			filters.push(getCdbTypeId(sheet));
 		}
