@@ -17,6 +17,8 @@ typedef LightShadows = {
 	var power : Float;
 	var bias : Float;
 	var quality : Float;
+	var pcf : Int;
+	var pcfScale : Float;
 }
 
 class Light extends Object3D {
@@ -24,7 +26,6 @@ class Light extends Object3D {
 	public var kind : LightKind = Point;
 	public var color : Int = 0xffffff;
 	public var power : Float = 1.0;
-	public var quality : Float = 0.5;
 	public var shadows : LightShadows = getShadowsDefault();
 	public var isMainLight : Bool = false;
 
@@ -50,6 +51,8 @@ class Light extends Object3D {
 			power : 30,
 			bias : 0.1,
 			quality : 0.5,
+			pcf : 0,
+			pcfScale : 1.0,
 		};
 	}
 
@@ -66,7 +69,6 @@ class Light extends Object3D {
 		obj.size = size;
 		obj.zNear = zNear;
 		obj.power = power;
-		obj.quality = quality;
 		obj.isMainLight = isMainLight;
 		obj.angle = angle;
 		obj.fallOff = fallOff;
@@ -88,7 +90,6 @@ class Light extends Object3D {
 		size = obj.size;
 		zNear = obj.zNear == null ?  0.02 : obj.zNear;
 		power = obj.power;
-		quality = obj.quality;
 		isMainLight = obj.isMainLight;
 		angle = obj.angle;
 		fallOff = obj.fallOff;
@@ -193,7 +194,8 @@ class Light extends Object3D {
 		light.shadows.bias = shadows.bias * 0.1;
 		light.shadows.blur.radius = shadows.radius;
 		light.shadows.blur.quality = shadows.quality;
-
+		light.shadows.pcf = shadows.pcf;
+		light.shadows.pcfScale = shadows.pcfScale;
 
 		#if editor
 
@@ -417,12 +419,19 @@ class Light extends Object3D {
 							<option value="512">512</option>
 							<option value="1024">1024</option>
 							<option value="2048">2048</option>
+							<option value="4096">4096</option>
 						</select>
 					</dd>
 					<dt>Blur Radius</dt><dd><input type="range" field="radius" min="0" max="20"/></dd>
 					<dt>Blur Quality</dt><dd><input type="range" field="quality" min="0" max="1"/></dd>
 					<dt>Power</dt><dd><input type="range" field="power" min="0" max="50"/></dd>
 					<dt>Bias</dt><dd><input type="range" field="bias" min="0" max="1"/></dd>
+				</dl>
+			</div>
+			<div class="group" name="PCF">
+				<dl>
+					<dt>Quality</dt><dd><input type="range" field="pcf" min="0" max="2" step="1"/></dd>
+					<dt>Scale</dt><dd><input type="range" field="pcfScale" min="0" max="10" /></dd>
 				</dl>
 			</div>
 		'),shadows,function(pname) {
