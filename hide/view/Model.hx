@@ -437,6 +437,7 @@ class Model extends FileView {
 	}
 
 	function setAnimation( file : String ) {
+		scene.setCurrent();
 		if( timeline != null ) {
 			timeline.remove();
 			timeline = null;
@@ -481,6 +482,7 @@ class Model extends FileView {
 	}
 
 	function buildTimeline() {
+		scene.setCurrent();
 		if( timeline != null ) {
 			timeline.remove();
 			timeline = null;
