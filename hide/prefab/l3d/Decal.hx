@@ -50,6 +50,7 @@ class Decal extends Object3D {
 
 		var mesh = new h3d.scene.Mesh(h3d.prim.Cube.defaultUnitCube(), ctx.local3d);
 		mesh.material.setDefaultProps("decal");
+		mesh.material.name = "decal";
 
 		ctx.local3d = mesh;
 		ctx.local3d.name = name;
