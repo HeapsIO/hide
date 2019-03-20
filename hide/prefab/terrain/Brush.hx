@@ -78,7 +78,7 @@ class BrushPreview {
 
 	public function dispose(){
 		for(tile in tiles)
-			tile.dispose();
+			tile.remove();
 	}
 
 	public function addPreviewMeshAt(x : Int, y : Int, brush : Brush, brushPos : h3d.Vector, ctx : Context) : TilePreviewMesh {
