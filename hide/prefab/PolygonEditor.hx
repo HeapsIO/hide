@@ -150,7 +150,6 @@ class PolygonEditor {
 		if(g != null){
 			g.clear();
 			g.remove();
-			g.dispose();
 		}
 	}
 
