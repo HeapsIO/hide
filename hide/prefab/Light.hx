@@ -13,12 +13,29 @@ package hide.prefab;
 typedef LightShadows = {
 	var mode : h3d.pass.Shadows.RenderMode;
 	var size : Int;
-	var radius : Float;
-	var power : Float;
 	var bias : Float;
+	var radius : Float;
 	var quality : Float;
-	var pcf : Int;
-	var pcfScale : Float;
+	var samplingMode : ShadowSamplingMode;
+}
+
+enum abstract ShadowSamplingKind(String) {
+	var None;
+	var PCF;
+	var ESM;
+}
+
+typedef ShadowSamplingMode = {
+	var kind : ShadowSamplingKind;
+}
+
+typedef ShadowSamplingESM = {> ShadowSamplingMode,
+	var power : Float;
+}
+
+typedef ShadowSamplingPCF = {> ShadowSamplingMode,
+	var quality : Int;
+	var scale : Float;
 }
 
 class Light extends Object3D {
@@ -48,11 +65,11 @@ class Light extends Object3D {
 			mode : None,
 			size : 256,
 			radius : 1,
-			power : 30,
-			bias : 0.1,
 			quality : 0.5,
-			pcf : 0,
-			pcfScale : 1.0,
+			bias : 0.1,
+			samplingMode : {
+				kind : None,
+			}
 		};
 	}
 
@@ -100,6 +117,19 @@ class Light extends Object3D {
 			var sh : Dynamic = Reflect.copy(obj.shadows);
 			sh.mode = h3d.pass.Shadows.RenderMode.createByName(sh.mode);
 			shadows = sh;
+
+			// Retro compatibility
+			if( shadows.samplingMode == null ) {
+				if( obj.shadows.power != null ) {
+					shadows.samplingMode = cast {
+						kind : ESM,
+						power : obj.shadows.power,
+						};
+				}
+				else
+					shadows.samplingMode = { kind : None };
+			}
+
 		} else
 			shadows = getShadowsDefault();
 	}
@@ -112,7 +142,7 @@ class Light extends Object3D {
 		o.setRotation(hxd.Math.degToRad(rotationX), hxd.Math.degToRad(rotationY), hxd.Math.degToRad(rotationZ));
 	}
 
-	function initTexture(path : String, ?wrap : h3d.mat.Data.Wrap){
+	function initTexture( path : String, ?wrap : h3d.mat.Data.Wrap ) {
 		if(path != null){
 			var texture = hxd.res.Loader.currentInstance.load(path).toTexture();
 			if(texture != null ) texture.wrap = wrap == null ? Repeat : wrap;
@@ -121,7 +151,7 @@ class Light extends Object3D {
 		return null;
 	}
 
-	override function makeInstance(ctx:Context):Context {
+	override function makeInstance( ctx : Context ) : Context {
 		ctx = ctx.clone(this);
 
 		var isPbr = Std.is(h3d.mat.MaterialSetup.current, h3d.mat.PbrMaterialSetup);
@@ -190,12 +220,23 @@ class Light extends Object3D {
 		light.power = power;
 		light.shadows.mode = shadows.mode;
 		light.shadows.size = shadows.size;
-		light.shadows.power = shadows.power;
-		light.shadows.bias = shadows.bias * 0.1;
 		light.shadows.blur.radius = shadows.radius;
 		light.shadows.blur.quality = shadows.quality;
-		light.shadows.pcf = shadows.pcf;
-		light.shadows.pcfScale = shadows.pcfScale;
+		light.shadows.bias = shadows.bias * 0.1;
+
+		switch (shadows.samplingMode.kind) {
+			case None:
+				light.shadows.samplingKind = None;
+			case PCF:
+				var sm : ShadowSamplingPCF = cast shadows.samplingMode;
+				light.shadows.pcfQuality = sm.quality;
+				light.shadows.pcfScale = sm.scale;
+				light.shadows.samplingKind = PCF;
+			case ESM:
+				var sm : ShadowSamplingESM = cast shadows.samplingMode;
+				light.shadows.power = sm.power;
+				light.shadows.samplingKind = ESM;
+		}
 
 		#if editor
 
@@ -406,7 +447,29 @@ class Light extends Object3D {
 			}
 		});
 
-		var e = ctx.properties.add(new hide.Element('
+		var shadowModeESM =
+		'<div class="group" name="ESM">
+			<dl>
+				<dt>Power</dt><dd><input type="range" field="samplingMode.power" min="0" max="50"/></dd>
+			</dl>
+		</div>';
+
+		var shadowModePCF =
+		'<div class="group" name="PCF">
+			<dl>
+				<dt>Quality</dt>
+					<dd>
+						<select field="samplingMode.quality" type="number">
+							<option value="1">Low</option>
+							<option value="2">High</option>
+							<option value="3">Very High</option>
+						</select>
+					</dd>
+				<dt>Scale</dt><dd><input type="range" field="samplingMode.scale" min="0" max="10" /></dd>
+			</dl>
+		</div>';
+
+		var shadowGroup = new hide.Element('
 			<div class="group" name="Shadows">
 				<dl>
 					<dt>Mode</dt><dd><select field="mode"></select></dd>
@@ -424,19 +487,36 @@ class Light extends Object3D {
 					</dd>
 					<dt>Blur Radius</dt><dd><input type="range" field="radius" min="0" max="20"/></dd>
 					<dt>Blur Quality</dt><dd><input type="range" field="quality" min="0" max="1"/></dd>
-					<dt>Power</dt><dd><input type="range" field="power" min="0" max="50"/></dd>
 					<dt>Bias</dt><dd><input type="range" field="bias" min="0" max="1"/></dd>
+					<dt>Sampling Mode</dt>
+					<dd>
+						<select field="samplingMode.kind">
+							<option value="None">None</option>
+							<option value="ESM">ESM</option>
+							<option value="PCF">PCF</option>
+						</select>
+					</dd>
 				</dl>
 			</div>
-			<div class="group" name="PCF">
-				<dl>
-					<dt>Quality</dt><dd><input type="range" field="pcf" min="0" max="2" step="1"/></dd>
-					<dt>Scale</dt><dd><input type="range" field="pcfScale" min="0" max="10" /></dd>
-				</dl>
-			</div>
-		'),shadows,function(pname) {
+		');
+
+		switch (shadows.samplingMode.kind) {
+			case None:
+			case PCF: shadowGroup.append(shadowModePCF);
+			case ESM: shadowGroup.append(shadowModeESM);
+		}
+
+		var e = ctx.properties.add(shadowGroup,shadows,function(pname) {
 			ctx.onChange(this,pname);
 			if( pname == "mode" ) ctx.rebuildProperties();
+			if( pname == "samplingMode.kind" ) {
+				switch (shadows.samplingMode.kind) {
+					case None: shadows.samplingMode = cast { kind : None };
+					case PCF: shadows.samplingMode = cast { kind : PCF, quality : 1, scale : 1.0, bias : 0.1 };
+					case ESM: shadows.samplingMode = cast { kind : ESM, power : 30, bias : 0.1 };
+				}
+				ctx.rebuildProperties();
+			}
 		});
 
 		if( shadows.mode == None ) {
