@@ -245,6 +245,19 @@ class Ide {
 			config.global.save();
 	}
 
+	function getProjectConfig( ?forSave : Bool ) {
+		var hide = forSave ? config.user.source.hide : config.current.current.hide;
+		var c = hide == null ? null : hide.perProject.get(projectDir);
+		if( c == null ) {
+			c = { layouts : [], renderer : null };
+			if( config.user.source.hide == null ) config.user.source.hide = cast {};
+			if( config.user.source.hide.perProject == null ) config.user.source.hide.perProject = {};
+			config.user.source.hide.perProject.set(projectDir, c);
+			config.user.save();
+		}
+		return c;
+	}
+
 	function initLayout( ?state : { name : String, state : Config.LayoutState } ) {
 		initializing = true;
 
@@ -255,7 +268,8 @@ class Ide {
 
 		defaultLayout = null;
 		var emptyLayout : Config.LayoutState = { content : [], fullScreen : null };
-		for( p in config.current.current.hide.layouts )
+		var prj = getProjectConfig(true);
+		for( p in prj.layouts )
 			if( p.name == "Default" ) {
 				if( p.state.content == null ) continue; // old version
 				defaultLayout = p;
@@ -263,7 +277,7 @@ class Ide {
 			}
 		if( defaultLayout == null ) {
 			defaultLayout = { name : "Default", state : emptyLayout };
-			ideConfig.layouts.push(defaultLayout);
+			prj.layouts.push(defaultLayout);
 			config.current.sync();
 			config.global.save();
 		}
@@ -503,8 +517,9 @@ class Ide {
 			}
 
 			var render = renderers[0];
+			var prj = getProjectConfig();
 			for( r in renderers )
-				if( r.name == config.current.current.hide.renderer ) {
+				if( r.name == prj.renderer ) {
 					render = r;
 					break;
 				}
@@ -739,8 +754,7 @@ class Ide {
 		for( r in renderers ) {
 			new Element("<menu type='checkbox'>").attr("label", r.name).prop("checked",r == h3d.mat.MaterialSetup.current).appendTo(menu.find(".project .renderers")).click(function(_) {
 				if( r != h3d.mat.MaterialSetup.current ) {
-					if( config.user.source.hide == null ) config.user.source.hide = cast {};
-					config.user.source.hide.renderer = r.name;
+					getProjectConfig(true).renderer = r.name;
 					config.user.save();
 					setProject(ideConfig.currentProject);
 				}
@@ -796,7 +810,7 @@ class Ide {
 		// layout
 		var layouts = menu.find(".layout .content");
 		layouts.html("");
-		for( l in config.current.current.hide.layouts ) {
+		for( l in getProjectConfig().layouts ) {
 			if( l.name == "Default" ) continue;
 			new Element("<menu>").attr("label",l.name).addClass(l.name).appendTo(layouts).click(function(_) {
 				initLayout(l);
@@ -810,7 +824,7 @@ class Ide {
 		menu.find(".layout .saveas").click(function(_) {
 			var name = ask("Please enter a layout name:");
 			if( name == null || name == "" ) return;
-			ideConfig.layouts.push({ name : name, state : saveLayout() });
+			getProjectConfig(true).layouts.push({ name : name, state : saveLayout() });
 			config.global.save();
 			initMenu();
 		});

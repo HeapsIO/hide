@@ -7,14 +7,18 @@ typedef LayoutState = {
 
 typedef HideConfig = {
 	var autoSaveLayout : Null<Bool>;
-	var layouts : Array<{ name : String, state : LayoutState }>;
 
 	var currentProject : String;
 	var recentProjects : Array<String>;
 
 	var windowPos : { x : Int, y : Int, w : Int, h : Int, max : Bool };
+	var perProject : haxe.DynamicAccess<HideProjectConfig>;
+}
+
+typedef HideProjectConfig = {
+	var layouts : Array<{ name : String, state : LayoutState }>;
 	var renderer : String;
-};
+}
 
 typedef ConfigDef = {
 
@@ -102,12 +106,13 @@ class Config {
 		if( userGlobals.source.hide == null )
 			userGlobals.source.hide = {
 				autoSaveLayout : true,
-				layouts : [],
 				recentProjects : [],
 				currentProject : projectPath,
 				windowPos : null,
-				renderer : null,
+				perProject: {},
 			};
+		if( userGlobals.source.hide.perProject == null )
+			userGlobals.source.hide.perProject = {};
 
 		var perProject = new Config(userGlobals);
 		perProject.load(resourcePath + "/props.json");
