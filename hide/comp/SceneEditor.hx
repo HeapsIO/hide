@@ -632,6 +632,10 @@ class SceneEditor {
 						}
 						refreshProps();
 					}
+
+					for(o in objects3d)
+						o.updateInstance(getContext(o));
+
 				}));
 			}
 		}
