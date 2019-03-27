@@ -51,6 +51,7 @@ class Model extends Object3D {
 
 			return ctx;
 		} catch( e : Dynamic ) {
+			e.message = "Could not load model " + source + ": " + e.message;
 			ctx.shared.onError(e);
 		}
 		ctx.local3d = new h3d.scene.Object(ctx.local3d);
