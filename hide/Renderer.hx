@@ -159,10 +159,9 @@ class PbrRenderer extends h3d.scene.pbr.Renderer {
 	}
 
 	override function mainDraw() {
-		output.draw(getSort("default", true));
-		output.draw(getSort("alpha"));
-		output.draw(get("additive"));
-
+		renderPass(output, getSort("default", true));
+		renderPass(output, getSort("alpha"));
+		renderPass(output, get("additive"));
 
 		var outlineTex = allocTarget("outline", false);
 		setTarget(outlineTex);
@@ -175,10 +174,10 @@ class PbrRenderer extends h3d.scene.pbr.Renderer {
 	}
 
 	override function postDraw() {
-		defaultPass.draw(getSort("debuggeom"));
-		defaultPass.draw(getSort("debuggeom_alpha"));
-		defaultPass.draw(getSort("overlay"));
-		defaultPass.draw(getSort("ui"));
+		renderPass(defaultPass, getSort("debuggeom"));
+		renderPass(defaultPass, getSort("debuggeom_alpha"));
+		renderPass(defaultPass, getSort("overlay"));
+		renderPass(defaultPass, getSort("ui"));
 	}
 }
 

@@ -23,6 +23,12 @@ class Model extends Object3D {
 		lockAnimation = obj.lockAnimation;
 	}
 
+	function setCullingCollider( o : h3d.scene.Object, cc : h3d.col.Collider ) {
+		o.cullingCollider = cc;
+		for( c in @:privateAccess o.children )
+			setCullingCollider(c, cc);
+	}
+
 	override function makeInstance(ctx:Context):Context {
 		if( source == null)
 			return super.makeInstance(ctx);
@@ -51,6 +57,16 @@ class Model extends Object3D {
 		ctx.local3d.name = name;
 		updateInstance(ctx);
 		return ctx;
+	}
+
+	var tmpBounds = new h3d.col.Bounds();
+	override function updateInstance( ctx: Context, ?propName : String ) {
+		super.updateInstance(ctx, propName);
+		var o = ctx.local3d;
+		#if editor
+		var cc = o.getBounds(tmpBounds).toSphere();
+		setCullingCollider(o, cc);
+		#end
 	}
 
 	#if editor
