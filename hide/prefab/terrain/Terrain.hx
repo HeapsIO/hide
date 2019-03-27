@@ -146,19 +146,22 @@ class Terrain extends Object3D {
 			var y = Std.parseInt(coords[1]);
 			if( x == null || y == null ) continue;
 			var type = coords[2];
-			var tile = terrain.createTile(x, y);
+			var tile = terrain.createEmptyTile(x, y);
 
 			switch( type ) {
 				case "h":
 				if( height ) {
 					var bytes = res.entry.getBytes();
 					var pixels : hxd.Pixels.PixelsFloat = new hxd.Pixels(heightMapResolution + 1, heightMapResolution + 1, bytes, RGBA32F);
+					if( tile.heightMap == null ) @:privateAccess tile.refreshHeightMap();
 					tile.heightMap.uploadPixels(pixels);
+					@:privateAccess tile.heightmapPixels = pixels;
 				}
 				tile.refreshMesh();
 				case "w":
 				if( weight ) {
 					var tex = res.toTexture();
+					if( tile.surfaceWeights.length == 0 ) @:privateAccess tile.refreshSurfaceWeights();
 					for(i in 0 ... tile.surfaceWeights.length){
 						h3d.Engine.getCurrent().pushTarget(tile.surfaceWeights[i]);
 						unpackWeight.shader.indexMap = tile.surfaceIndexMap;
@@ -172,11 +175,9 @@ class Terrain extends Object3D {
 				case"i":
 				if( index ) {
 					var tex = res.toTexture();
-					tex.preventAutoDispose();
-					tex.realloc = null;
-					tile.surfaceIndexMap = tex;
-					tile.surfaceIndexMap.filter = Nearest;
-					tile.surfaceIndexMap.flags.set(Target);
+					if( tile.surfaceIndexMap == null ) @:privateAccess tile.refreshIndexMap();
+					h3d.pass.Copy.run(tex, tile.surfaceIndexMap);
+					tex.dispose();
 				}
 			}
 		}
@@ -195,6 +196,10 @@ class Terrain extends Object3D {
 			function wait() {
 				if( albedo.isDisposed() || albedo.flags.has(Loading) || normal.flags.has(Loading) || pbr.flags.has(Loading) )
 					return;
+
+				albedo.preventAutoDispose();
+				normal.preventAutoDispose();
+				pbr.preventAutoDispose();
 				surface.albedo = albedo;
 				surface.normal = normal;
 				surface.pbr = pbr;
