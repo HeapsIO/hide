@@ -400,6 +400,8 @@ class Level3D extends FileView {
 			'Triangles: ${scene.engine.drawTriangles}',
 			'Buffers: ${memStats.bufferCount}',
 			'Textures: ${memStats.textureCount}',
+			'FPS: ${Math.round(scene.engine.realFps)}',
+			'Draw Calls: ${scene.engine.drawCalls}',
 		];
 		statusText.text = lines.join("\n");
 		sceneEditor.event.wait(0.5, updateStats);
