@@ -157,7 +157,8 @@ class TerrainEditor {
 			uvTex.depthBuffer = new h3d.mat.DepthBuffer(uvTex.width, uvTex.height);
 		}
 
-		customScene.addChild(terrainPrefab.terrain);
+		@:privateAccess customScene.children = [];
+		@:privateAccess customScene.children.push(terrainPrefab.terrain); // Prevent OnRemove() call
 		customScene.camera = mainScene.camera;
 		brushPreview.reset();
 
@@ -802,6 +803,12 @@ class TerrainEditor {
 	}
 
 	function refreshSurfaces( props : hide.Element, ctx : EditContext ) {
+
+		if( currentSurface == null )
+			props.find('div[name="Params"]').hide();
+		else
+			props.find('div[name="Params"]').show();
+
 		var surfacesContainer = props.find(".terrain-surfaces");
 		surfacesContainer.empty();
 		for( i in 0 ... terrainPrefab.terrain.surfaces.length ){

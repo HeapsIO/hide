@@ -247,6 +247,8 @@ class MeshGenerator extends Object3D {
 			');
 			var select = rootElement.find("select");
 			fillSelectMenu(ctx, select, mp.socketType);
+			if(select.find('option[value="${mp.mesh}"]').length == 0)
+				new hide.Element('<option>').attr("value", mp.mesh).text(extractMeshName(mp.mesh)).appendTo(select);
 			select.change(function(_) {
 				mp.mesh = select.val();
 				mp.parts = createMeshParts(getSocketListFromHMD(getHMD(ctx.rootContext, mp.mesh)));
@@ -267,6 +269,8 @@ class MeshGenerator extends Object3D {
 			for( cmp in mp.parts ) {
 				var select = rootElement.find('.${mp.parts.indexOf(cmp)}');
 				fillSelectMenu(ctx, select, cmp.socketType);
+				if(select.find('option[value="${cmp.mesh}"]').length == 0)
+					new hide.Element('<option>').attr("value", cmp.mesh).text(extractMeshName(cmp.mesh)).appendTo(select);
 				select.change(function(_) {
 					var mp = mp.parts[mp.parts.indexOf(cmp)];
 					mp.mesh = select.val();
