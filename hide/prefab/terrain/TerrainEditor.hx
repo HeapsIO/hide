@@ -162,7 +162,7 @@ class TerrainEditor {
 		customScene.camera = mainScene.camera;
 		brushPreview.reset();
 
-		var tiles = terrainPrefab.terrain.getVisibleTiles(mainScene.camera);
+		var tiles = terrainPrefab.terrain.tiles;
 		for( i in 0 ... tiles.length ) {
 			var tile = tiles[i];
 			var p = new h3d.mat.Pass("terrainUV");
@@ -449,7 +449,7 @@ class TerrainEditor {
 		fetchPos.x = hxd.Math.clamp(fetchPos.x, 0, uvTexPixels.width - 1);
 		fetchPos.y = hxd.Math.clamp(fetchPos.y, 0, uvTexPixels.height - 1);
 		var pixel = uvTexPixels.getPixelF( Std.int(fetchPos.x), Std.int(fetchPos.y));
-		var tiles = terrainPrefab.terrain.getVisibleTiles(@:privateAccess ctx.local3d.getScene().camera);
+		var tiles = terrainPrefab.terrain.tiles;
 		for( i in 0 ... tiles.length )
 			if( hxd.Math.ceil(pixel.z) == i )
 				brushWorldPos = tiles[i].localToGlobal(new h3d.Vector(pixel.x * terrainPrefab.tileSize, pixel.y * terrainPrefab.tileSize, 0));
