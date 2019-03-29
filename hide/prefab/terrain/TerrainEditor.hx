@@ -94,9 +94,6 @@ class TerrainEditor {
 	}
 
 	public function saveTextures()  {
-
-		terrainPrefab.terrain.remove();
-
 		if( !readyToSave() ) {
 			throw "Failed to save terrain";
 			return;
