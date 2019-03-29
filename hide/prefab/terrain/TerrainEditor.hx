@@ -93,20 +93,63 @@ class TerrainEditor {
 		brushPreview.dispose();
 	}
 
-	public function save() {
+	public function saveTextures()  {
+
+		terrainPrefab.terrain.remove();
+
+		if( !readyToSave() ) {
+			throw "Failed to save terrain";
+			return;
+		}
+		editContext.scene.setCurrent();
+		clearSavedTextures();
+		terrainPrefab.saveWeightTextures(editContext.rootContext);
+		terrainPrefab.saveHeightTextures(editContext.rootContext);
+		terrainPrefab.saveBinary(editContext.rootContext);
+		return;
+	}
+
+	function readyToSave() : Bool {
+		if( editContext == null )
+			return false;
+		if( terrainPrefab == null )
+			return false;
+		if( terrainPrefab.terrain == null )
+			return false;
+		if( terrainPrefab.terrain.surfaceArray == null )
+			return false;
+		if( terrainPrefab.terrain.surfaceArray.albedo == null || terrainPrefab.terrain.surfaceArray.albedo.isDisposed() )
+			return false;
+		if( terrainPrefab.terrain.surfaceArray.normal == null || terrainPrefab.terrain.surfaceArray.normal.isDisposed() )
+			return false;
+		if( terrainPrefab.terrain.surfaceArray.pbr == null || terrainPrefab.terrain.surfaceArray.pbr.isDisposed() )
+			return false;
+		for( tile in terrainPrefab.terrain.tiles ) {
+			if( tile == null )
+				return false;
+			for( s in tile.surfaceWeights )
+				if( s == null || s.isDisposed() )
+					return false;
+			if( tile.heightMap == null || tile.heightMap.isDisposed() )
+				return false;
+			if( tile.surfaceIndexMap == null || tile.surfaceIndexMap.isDisposed())
+				return false;
+			if( tile.surfaceWeightArray == null || tile.surfaceWeightArray.isDisposed())
+				return false;
+		}
+		return true;
+	}
+
+	function clearSavedTextures() {
 		if( editContext == null ) return;
-		editContext.scene.setCurrent();		if( terrainPrefab == null ) return;		var ctx = editContext;
-		var datPath = new haxe.io.Path(ctx.rootContext.shared.currentPath);
+		var datPath = new haxe.io.Path(editContext.rootContext.shared.currentPath);
 		datPath.ext = "dat";
-		var fullPath = ctx.ide.getPath(datPath.toString() + "/" + terrainPrefab.name);
+		var fullPath = editContext.ide.getPath(datPath.toString() + "/" + terrainPrefab.name);
 		if( sys.FileSystem.isDirectory(fullPath) ) {
 			var files = sys.FileSystem.readDirectory(fullPath);
 			for( f in files )
 				sys.FileSystem.deleteFile(fullPath + "/" + f);
 		}
-		terrainPrefab.saveWeightTextures(ctx.rootContext);
-		terrainPrefab.saveHeightTextures(ctx.rootContext);
-		terrainPrefab.saveBinary(ctx.rootContext);
 	}
 
 	public function update( ?propName : String ) {
@@ -145,6 +188,7 @@ class TerrainEditor {
 
 	function renderTerrainUV( ctx : Context ) {
 		if( customScene == null ) return;
+		if( ctx == null || ctx.local3d == null || ctx.local3d.getScene() == null ) return;
 		var engine = h3d.Engine.getCurrent();
 		var mainScene = @:privateAccess ctx.local3d.getScene();
 
@@ -416,13 +460,15 @@ class TerrainEditor {
 	}
 
 	function screenToWorld( u : Float, v : Float, ctx : Context ) {
+		if( ctx == null || ctx.local3d == null || ctx.local3d.getScene() == null ) return new h3d.col.Point();
 		var camera = @:privateAccess ctx.local3d.getScene().camera;
 		var ray = camera.rayFromScreen(u, v);
 		var dist = projectToGround(ray);
-		return dist >= 0 ? ray.getPoint(dist) : null;
+		return dist >= 0 ? ray.getPoint(dist) : new h3d.col.Point();
 	}
 
 	function worldToScreen( wx: Float, wy: Float, wz: Float, ctx : Context ) {
+		if( ctx == null || ctx.local3d == null || ctx.local3d.getScene() == null || ctx.local2d == null || ctx.local2d.getScene() == null ) return new h2d.col.Point();
 		var s2d = @:privateAccess ctx.local2d.getScene();
 		var camera = @:privateAccess ctx.local3d.getScene().camera;
 		var pt = camera.project(wx, wy, wz, h3d.Engine.getCurrent().width, h3d.Engine.getCurrent().height);
@@ -457,6 +503,7 @@ class TerrainEditor {
 	}
 
 	function drawBrushPreview( worldPos : h3d.Vector, ctx : Context ) {
+		if( ctx == null || ctx.local3d == null || ctx.local3d.getScene() == null ) return;
 		brushPreview.reset();
 		if( currentBrush.brushMode.mode == Delete || currentBrush.bitmap == null ) return;
 		var brushWorldPos = uvTexPixels == null ? worldPos : getBrushWorldPosFromTex(worldPos, ctx);
@@ -863,7 +910,7 @@ class TerrainEditor {
 			'Smooth height <br>
 			<i>Paint to smooth the terrain</i>',
 			'Paint surface <br>
-			<i>hold down shift to subsract</i>',
+			<i>Hold down shift to subsract</i>',
 			'Delete tile <br>
 			<i>Paint to delete tiles</i>'];
 		var brushModeContainer = props.find(".terrain-brushModeContainer");

@@ -98,7 +98,7 @@ class Terrain extends Object3D {
 
 		#if editor
 	 	obj.showChecker = terrain.showChecker;
-		if( editor != null ) editor.save();
+		if( editor != null ) editor.saveTextures();
 		#end
 
 		return obj;
@@ -208,10 +208,6 @@ class Terrain extends Object3D {
 				surface.angle = surfaceProps.angle;
 				surface.tilling = surfaceProps.tilling;
 				surface.minHeight = surfaceProps.minHeight;
-				surface.maxHeight = surfaceProps.maxHeight;
-				/*albedo.dispose();
-				normal.dispose();
-				pbr.dispose();*/
 				onEnd();
 			}
 			albedo.waitLoad(wait);
@@ -324,17 +320,22 @@ class Terrain extends Object3D {
 	override function makeInstance( ctx : Context ) : Context {
 		ctx = ctx.clone(this);
 
+
 		#if editor
+		// Attach the terrain to the scene directly, avoid slow refresh
 		if( cachedInstance != null ) {
-			ctx.local3d.addChild(cachedInstance);
-			ctx.local3d = cachedInstance;
+			ctx.local3d = terrain;
 			ctx.local3d.name = name;
 			updateInstance(ctx);
 			return ctx;
 		}
-		#end
-
+		else {
+			terrain = new h3d.scene.pbr.terrain.Terrain(ctx.local3d.getScene());
+			cachedInstance = terrain;
+		}
+		#else
 		terrain = new h3d.scene.pbr.terrain.Terrain(ctx.local3d);
+		#end
 		terrain.cellCount = getCellCount();
 		terrain.cellSize = getCellSize();
 		terrain.tileSize = terrain.cellCount * terrain.cellSize;
@@ -346,10 +347,6 @@ class Terrain extends Object3D {
 		terrain.heightBlendStrength = heightBlendStrength;
 		terrain.blendSharpness = blendSharpness;
 		terrain.name = "terrain";
-
-		#if editor
-		cachedInstance = terrain;
-		#end
 
 		ctx.local3d = terrain;
 		ctx.local3d.name = name;
