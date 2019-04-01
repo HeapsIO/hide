@@ -898,7 +898,7 @@ input[type=checkbox]:checked:after {
 }
 .poly-editor .description {
   margin: 5px;
-  background-color: black;
+  background-color: #303030;
   outline: 4px solid #4a4a4a;
   padding: 2px;
 }
@@ -912,6 +912,29 @@ input[type=checkbox]:checked:after {
 .poly-editor .poly-vector2 {
   display: block;
   padding: 5px;
+}
+.spline-editor .editModeButton {
+  margin: 10px;
+  outline: 4px solid #fd5151;
+}
+.spline-editor .editModeEnabled {
+  outline: 4px solid #5897fb;
+}
+.spline-editor .description {
+  margin: 5px;
+  background-color: #303030;
+  outline: 4px solid #4a4a4a;
+  padding: 2px;
+}
+/* Mesh Generator */
+.meshGenerator-thumbnail {
+  display: inline-block;
+  margin: 5px;
+  width: 75px;
+  height: 75px;
+  background-size: 75px 75px;
+  outline: 2px solid #4a4a4a;
+  background-size: contain;
 }
 /* Terrain editor */
 .terrain-brushModeDescription {
