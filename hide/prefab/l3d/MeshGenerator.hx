@@ -93,6 +93,9 @@ class MeshGenerator extends Object3D {
 		ctx.local3d = new h3d.scene.Object(ctx.local3d);
 		ctx.local3d.name = name;
 
+		var rootObject = new h3d.scene.Object(ctx.local3d);
+		rootObject.name = "rootObject";
+
 		if( root == null ) {
 			root = new MeshPart();
 			root.socket.type = "Root";
@@ -117,7 +120,7 @@ class MeshGenerator extends Object3D {
 		createEmptyMeshPart(ctx, root);
 		#end
 
-		createMeshPart(ctx, root, ctx.local3d);
+		createMeshPart(ctx, root, ctx.local3d.getObjectByName("rootObject"));
 	}
 
 	public function getSocket( obj : h3d.scene.Object, s : Socket ) : h3d.scene.Object {
@@ -165,7 +168,7 @@ class MeshGenerator extends Object3D {
 	}
 
 	function resetMesh( ctx : Context ) {
-		ctx.local3d.removeChildren();
+		ctx.local3d.getObjectByName("rootObject").removeChildren();
 	}
 
 	function getSocketMatFromHMD( hmd : hxd.fmt.hmd.Library, s : Socket ) : h3d.Matrix {
