@@ -239,7 +239,6 @@ input[type=checkbox] {
 	border : 1px solid #444;
 	width: 300px;
 	overflow-y: auto;
-	flex: 0 0 300px;
 
 	.jstree {
 		width: 300px;
@@ -1187,6 +1186,11 @@ body.hide-subview {
 		}
 	}
 
+	a.favorite {
+		color: white;
+		font-weight: bold;
+	}
+
 	.disabled {
 		a {
 			color: #533 !important;
@@ -1222,9 +1226,22 @@ body.hide-subview {
 	padding-right: 10px!important;
 }
 
+.hide-scene-outliner {
+	.favorites {
+		overflow-y: auto;
+		label {
+			font-weight: bold;
+		}
+		background: #111;
+	}
+	.favorites-tree {
+		padding: 4px;
+	}
+}
+
 .visibility-toggle, .visibility-large-toggle {
 	position: absolute;
-	right: 0px;
+	right: 4px;
 	padding: 4px;
 
 	&:hover {

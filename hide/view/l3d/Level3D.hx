@@ -318,14 +318,19 @@ class Level3D extends FileView {
 
 		element.html('
 			<div class="flex vertical">
-				<div class="toolbar">
+				<div style="flex: 0 0 30px;">
 					<span class="tools-buttons"></span>
 					<span class="layer-buttons"></span>
 				</div>
-				<div class="flex-elt">
+				<div style="display: flex; flex-direction: row; flex: 1;">
 					<div class="heaps-scene">
 					</div>
-					<div class="hide-scenetree">
+					<div class="hide-scene-outliner">
+						<div class="favorites" style="height:20%;">
+							<label>Favorites</label>
+							<div class="favorites-tree"></div>
+						</div>
+						<div class="hide-scenetree" style="height:80%;"></div>
 					</div>
 					<div class="tabs">
 						<div class="tab expand" name="Scene" icon="sitemap">
@@ -347,9 +352,11 @@ class Level3D extends FileView {
 		sceneEditor = new Level3DSceneEditor(this, data);
 		sceneEditor.addSearchBox(element.find(".hide-scenetree").first());
 		element.find(".hide-scenetree").first().append(sceneEditor.tree.element);
+		element.find(".favorites-tree").first().append(sceneEditor.favTree.element);
 		element.find(".hide-scroll").first().append(sceneEditor.properties.element);
 		element.find(".heaps-scene").first().append(sceneEditor.scene.element);
 		sceneEditor.tree.element.addClass("small");
+		sceneEditor.favTree.element.addClass("small");
 
 		// Level edit
 		{

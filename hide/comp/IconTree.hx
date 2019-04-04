@@ -98,6 +98,8 @@ class IconTree<T:{}> extends Component {
 				check_callback : function(operation, node, node_parent, value, extra) {
 					if( operation == "edit" && allowRename )
 						return true;
+					if(!map.exists(node.id))  // Can happen on drag from foreign tree
+						return false;
 					if( operation == "rename_node" ) {
 						if( node.text == value ) return true; // no change
 						return onRename(map.get(node.id).value, value);

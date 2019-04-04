@@ -225,7 +225,6 @@ input[type=checkbox]:checked:after {
   border: 1px solid #444;
   width: 300px;
   overflow-y: auto;
-  flex: 0 0 300px;
 }
 .hide-scenetree .jstree {
   width: 300px;
@@ -1077,6 +1076,10 @@ body.hide-subview .lm_controls {
 .jstree .hidden a {
   color: #555;
 }
+.jstree a.favorite {
+  color: white;
+  font-weight: bold;
+}
 .jstree .disabled a {
   color: #533 !important;
   display: inline;
@@ -1102,10 +1105,20 @@ body.hide-subview .lm_controls {
 .jstree-node {
   padding-right: 10px!important;
 }
+.hide-scene-outliner .favorites {
+  overflow-y: auto;
+  background: #111;
+}
+.hide-scene-outliner .favorites label {
+  font-weight: bold;
+}
+.hide-scene-outliner .favorites-tree {
+  padding: 4px;
+}
 .visibility-toggle,
 .visibility-large-toggle {
   position: absolute;
-  right: 0px;
+  right: 4px;
   padding: 4px;
 }
 .visibility-toggle:hover,
