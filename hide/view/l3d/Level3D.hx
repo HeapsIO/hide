@@ -29,6 +29,7 @@ class CamController extends h3d.scene.CameraController {
 	}
 
 	override function onEvent( e : hxd.Event ) {
+		if(curPos == null) return;
 		switch( e.kind ) {
 		case EWheel:
 			zoom(e.wheelDelta);
