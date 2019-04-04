@@ -1,6 +1,7 @@
 {
 	// define location of animations in HMD files
 	"hmd.animPaths" : [],
+	"hmd.savePropsByAnimation" : false,
 
 	// path to js scripts containing hide plugins
 	"plugins" : [],

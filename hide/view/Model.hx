@@ -29,19 +29,8 @@ class Model extends FileView {
 	override function save() {
 		if(!modified) return;
 		// Save current Anim data
-		if(obj.currentAnimation != null){
-			var path = getPath();
-			var relPath = StringTools.startsWith(path, ide.resourceDir) ? path.substr(ide.resourceDir.length+1) : path;
-			var parts = relPath.split("/");
-			parts.pop();
-			var propsPath = parts.join("/") + "/model.props";
-			var hideData : hxd.fmt.hmd.Library.HideData;
-			if( hxd.res.Loader.currentInstance.exists(propsPath)){
-				var props = hxd.res.Loader.currentInstance.load(propsPath).toText();
-				hideData = haxe.Json.parse(props);
-			}
-			else
-				hideData = { animations : {} };
+		if( currentAnimation != null ) {
+			var hideData = loadProps();
 
 			var events : Array<{ frame : Int, data : String }> = [];
 			for(i in 0 ... obj.currentAnimation.events.length){
@@ -49,13 +38,31 @@ class Model extends FileView {
 				for( e in obj.currentAnimation.events[i])
 					events.push({frame:i, data:e});
 			}
-			hideData.animations.set(currentAnimation.name, {events : events} );
+			hideData.animations.set(currentAnimation.file.split("/").pop(), {events : events} );
 
 			var bytes = new haxe.io.BytesOutput();
 			bytes.writeString(haxe.Json.stringify(hideData, "\t"));
-			hxd.File.saveBytes(ide.getPath(propsPath), bytes.getBytes());
+			hxd.File.saveBytes(getPropsPath(), bytes.getBytes());
 		}
 		super.save();
+	}
+
+	function loadProps() {
+		var propsPath = getPropsPath();
+		var hideData : h3d.prim.ModelCache.HideProps;
+		if( sys.FileSystem.exists(propsPath) )
+			hideData = haxe.Json.parse(sys.io.File.getContent(propsPath));
+		else
+			hideData = { animations : {} };
+		return hideData;
+	}
+
+	function getPropsPath() {
+		var path = config.get("hmd.savePropsByAnimation") ? currentAnimation.file : getPath();
+		var parts = path.split(".");
+		parts.pop();
+		parts.push("props");
+		return ide.getPath(parts.join("."));
 	}
 
 	override function onDisplay() {
@@ -455,6 +462,12 @@ class Model extends FileView {
 		}
 		var anim = scene.loadAnimation(file);
 		currentAnimation = { file : file, name : scene.animationName(file) };
+
+		var hideData = loadProps();
+		var animData = hideData.animations.get(currentAnimation.file.split("/").pop());
+		if( animData != null && animData.events != null )
+			anim.setEvents(animData.events);
+
 		obj.playAnimation(anim);
 		buildTimeline();
 		buildEventPanel();
