@@ -208,12 +208,10 @@ class FXEditor extends FileView {
 							</div>
 						</div>
 					</div>
+					<div class="hide-scenetree">
+					</div>
 					<div class="tabs">
 						<div class="tab expand" name="Scene" icon="sitemap">
-							<div class="hide-block" style="height:40%">
-								<div class="hide-scene-tree hide-list">
-								</div>
-							</div>
 							<div class="hide-scroll"></div>
 						</div>
 						<div class="tab expand" name="Properties" icon="cog">
@@ -229,7 +227,7 @@ class FXEditor extends FileView {
 		tools = new hide.comp.Toolbar(null,element.find(".toolbar"));
 		tabs = new hide.comp.Tabs(null,element.find(".tabs"));
 		sceneEditor = new FXSceneEditor(this, data);
-		element.find(".hide-scene-tree").first().append(sceneEditor.tree.element);
+		element.find(".hide-scenetree").first().append(sceneEditor.tree.element);
 		element.find(".hide-scroll").first().append(sceneEditor.properties.element);
 		element.find(".heaps-scene").first().append(sceneEditor.scene.element);
 		element.resize(function(e) {

@@ -219,10 +219,19 @@ input[type=checkbox]:checked:after {
 .hide-scene-layer .jstree-container-ul {
   padding-right: 5px;
 }
-.hide-scene-tree {
+.hide-scenetree {
   height: 100%;
+  background-color: #111;
+  border: 1px solid #444;
+  width: 300px;
+  overflow-y: auto;
+  flex: 0 0 300px;
 }
-.hide-scene-tree .jstree-container-ul {
+.hide-scenetree .jstree {
+  width: 300px;
+  overflow-x: hidden;
+}
+.hide-scenetree .jstree-container-ul {
   max-width: 300px;
 }
 .hide-tileselect {
@@ -1095,15 +1104,21 @@ body.hide-subview .lm_controls {
 }
 .visibility-toggle,
 .visibility-large-toggle {
-  float: right;
+  position: absolute;
+  right: 0px;
   padding: 4px;
 }
 .visibility-toggle:hover,
 .visibility-large-toggle:hover {
   color: white;
+  background: black;
 }
-.visibility-toggle .hidden i,
-.visibility-large-toggle .hidden i {
+.hidden .visibility-toggle,
+.hidden .visibility-large-toggle {
+  background: #0000008a;
+}
+.hidden .visibility-toggle i,
+.hidden .visibility-large-toggle i {
   color: #555;
 }
 .visibility-large-toggle {
@@ -1121,12 +1136,6 @@ body.hide-subview .lm_controls {
 .jstree.small .jstree-anchor {
   line-height: 18px;
   height: 18px;
-}
-.jstree.small .jstree-anchor.crop {
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  overflow: hidden;
-  width: 230px;
 }
 .jstree.small .jstree-icon {
   width: 18px;

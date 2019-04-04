@@ -83,7 +83,7 @@ class Prefab extends FileView {
 					<div class="tabs">
 						<div class="tab expand" name="Scene" icon="sitemap">
 							<div class="hide-block">
-								<div class="hide-list hide-scene-tree">
+								<div class="hide-list scenetree">
 								</div>
 							</div>
 						</div>
@@ -94,7 +94,7 @@ class Prefab extends FileView {
 		tools = new hide.comp.Toolbar(null,element.find(".toolbar"));
 		tabs = new hide.comp.Tabs(null,element.find(".tabs"));
 		sceneEditor = new PrefabSceneEditor(this, data);
-		element.find(".hide-scene-tree").first().append(sceneEditor.tree.element);
+		element.find(".scenetree").first().append(sceneEditor.tree.element);
 		element.find(".tab").first().append(sceneEditor.properties.element);
 		element.find(".heaps-scene").first().append(sceneEditor.scene.element);
 		currentVersion = undo.currentID;

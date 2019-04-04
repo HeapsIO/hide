@@ -325,12 +325,10 @@ class Level3D extends FileView {
 				<div class="flex-elt">
 					<div class="heaps-scene">
 					</div>
+					<div class="hide-scenetree">
+					</div>
 					<div class="tabs">
 						<div class="tab expand" name="Scene" icon="sitemap">
-							<div class="hide-block" style="height:50%">
-								<div class="hide-scene-tree hide-list">
-								</div>
-							</div>
 							<div class="hide-scroll"></div>
 						</div>
 						<div class="tab expand" name="Properties" icon="cog">
@@ -347,8 +345,8 @@ class Level3D extends FileView {
 
 		levelProps = new hide.comp.PropsEditor(undo,null,element.find(".level-props"));
 		sceneEditor = new Level3DSceneEditor(this, data);
-		sceneEditor.addSearchBox(element.find(".hide-scene-tree").first());
-		element.find(".hide-scene-tree").first().append(sceneEditor.tree.element);
+		sceneEditor.addSearchBox(element.find(".hide-scenetree").first());
+		element.find(".hide-scenetree").first().append(sceneEditor.tree.element);
 		element.find(".hide-scroll").first().append(sceneEditor.properties.element);
 		element.find(".heaps-scene").first().append(sceneEditor.scene.element);
 		sceneEditor.tree.element.addClass("small");
@@ -632,6 +630,7 @@ class Level3D extends FileView {
 	}
 
 	function applyTreeStyle(p: PrefabElement, el: Element) {
+		/*
 		var styles = ide.currentConfig.get("l3d.treeStyles");
 		var style: Dynamic = null;
 		var typeId = getCdbTypeId(p);
@@ -647,6 +646,7 @@ class Level3D extends FileView {
 			a.removeAttr("style");
 		else
 			a.css(style);
+			*/
 	}
 
 	function onPrefabChange(p: PrefabElement, ?pname: String) {

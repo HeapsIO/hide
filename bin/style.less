@@ -233,8 +233,18 @@ input[type=checkbox] {
 
 }
 
-.hide-scene-tree {
+.hide-scenetree {
 	height: 100%;
+	background-color : #111;
+	border : 1px solid #444;
+	width: 300px;
+	overflow-y: auto;
+	flex: 0 0 300px;
+
+	.jstree {
+		width: 300px;
+		overflow-x: hidden;
+	}
 
 	.jstree-container-ul {
 		max-width: 300px;
@@ -1213,17 +1223,21 @@ body.hide-subview {
 }
 
 .visibility-toggle, .visibility-large-toggle {
-	float: right;
+	position: absolute;
+	right: 0px;
 	padding: 4px;
 
 	&:hover {
 		color : white;
+		background: black;
 	}
 }
-
-.visibility-toggle .hidden, .visibility-large-toggle .hidden {
-	i {
-		color: #555;
+.hidden {
+	.visibility-toggle, .visibility-large-toggle {
+		background: #0000008a;
+		i {
+			color: #555;
+		}
 	}
 }
 
@@ -1247,13 +1261,6 @@ body.hide-subview {
 	.jstree-anchor {
 		line-height: @size;
 		height: @size;
-
-		&.crop {
-			text-overflow: ellipsis;
-			white-space: nowrap;
-			overflow: hidden;
-			width: 230px;
-		}
 	}
 	.jstree-icon {
 		width: @size;
