@@ -12,7 +12,7 @@ class FXScriptParser {
 
 	#if !hscript
 
-	public function createFXScript( s : String, fx : hide.prefab.fx.FX.FXAnimation ) : FXScript {
+	public function createFXScript( s : String, fx : hrt.prefab.fx.FX.FXAnimation ) : FXScript {
 		throw "FX Scripts requires -lib hscript";
 	}
 

@@ -1,0 +1,7 @@
+-hl out.hl
+-lib heaps
+-lib hide
+-lib castle
+--remap hide:notAllowed
+--macro include("hrt")
+-D no-compilation
