@@ -14,7 +14,7 @@ typedef DistanceFogProps = {
 
 class DistanceFog extends RendererFX {
 
-	var fogPass = new h3d.pass.ScreenFx(new h3d.shader.DistanceFog());
+	var fogPass = new h3d.pass.ScreenFx(new hrt.shader.DistanceFog());
 
 	public function new(?parent) {
 		super(parent);

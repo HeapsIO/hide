@@ -466,7 +466,7 @@ class Level3D extends FileView {
 	}
 
 	function bakeVolumetricLightmaps(){
-		var volumetricLightmaps = data.getAll(hrt.prefab.l3d.VolumetricLightmap);
+		var volumetricLightmaps = data.getAll(hrt.prefab.vlm.VolumetricLightmap);
 		var total = 0;
 		for( v in volumetricLightmaps )
 			total += v.volumetricLightmap.getProbeCount();
