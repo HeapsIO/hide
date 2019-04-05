@@ -331,7 +331,7 @@ class Level3D extends FileView {
 							<label>Favorites</label>
 							<div class="favorites-tree"></div>
 						</div>
-						<div style="height:80%;">
+						<div style="height:80%;" class="flex vertical">
 							<div class="hide-toolbar" style="zoom: 80%">
 								<div class="button collapse-btn" title="Collapse all">
 									<div class="icon fa fa-reply-all"></div>
