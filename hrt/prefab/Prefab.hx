@@ -1,3 +1,3 @@
-package hide.prefab;
+package hrt.prefab;
 
 typedef Prefab = hxd.prefab.Prefab;

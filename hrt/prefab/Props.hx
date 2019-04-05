@@ -1,4 +1,4 @@
-package hide.prefab;
+package hrt.prefab;
 
 enum PropType {
 	PInt( ?min : Int, ?max : Int );
