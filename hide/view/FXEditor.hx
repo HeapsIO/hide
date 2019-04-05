@@ -208,7 +208,19 @@ class FXEditor extends FileView {
 							</div>
 						</div>
 					</div>
-					<div class="hide-scenetree">
+					<div class="hide-scene-outliner">
+						<div class="favorites" style="height:20%;">
+							<label>Favorites</label>
+							<div class="favorites-tree"></div>
+						</div>
+						<div style="height:80%;">
+							<div class="hide-toolbar" style="zoom: 80%">
+								<div class="button collapse-btn" title="Collapse all">
+									<div class="icon fa fa-reply-all"></div>
+								</div>
+							</div>
+							<div class="hide-scenetree"></div>
+						</div>
 					</div>
 					<div class="tabs">
 						<div class="tab expand" name="Scene" icon="sitemap">
@@ -228,11 +240,15 @@ class FXEditor extends FileView {
 		tabs = new hide.comp.Tabs(null,element.find(".tabs"));
 		sceneEditor = new FXSceneEditor(this, data);
 		element.find(".hide-scenetree").first().append(sceneEditor.tree.element);
+		element.find(".favorites-tree").first().append(sceneEditor.favTree.element);
 		element.find(".hide-scroll").first().append(sceneEditor.properties.element);
 		element.find(".heaps-scene").first().append(sceneEditor.scene.element);
 		element.resize(function(e) {
 			refreshTimeline(false);
 			rebuildAnimPanel();
+		});
+		element.find(".collapse-btn").click(function(e) {
+			sceneEditor.collapseTree();
 		});
 		fxprops = new hide.comp.PropsEditor(undo,null,element.find(".fx-props"));
 		{
@@ -260,6 +276,7 @@ class FXEditor extends FileView {
 
 		currentVersion = undo.currentID;
 		sceneEditor.tree.element.addClass("small");
+		sceneEditor.favTree.element.addClass("small");
 
 		var timeline = element.find(".timeline");
 		var sMin = 0.0;
