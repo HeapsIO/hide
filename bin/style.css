@@ -220,7 +220,7 @@ input[type=checkbox]:checked:after {
   padding-right: 5px;
 }
 .hide-scenetree {
-  height: 100%;
+  flex: 1;
   background-color: #111;
   border: 1px solid #444;
   width: 300px;
@@ -700,6 +700,7 @@ input[type=checkbox]:checked:after {
 }
 .fx-animpanel .anim-scroll {
   overflow-y: scroll;
+  overflow-x: hidden;
   height: 400px;
 }
 .fx-animpanel .top-bar {

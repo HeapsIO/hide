@@ -1,6 +1,6 @@
-package hrt.prefab.terrain;
+package hrt.shader;
 
-class Shader extends hxsl.Shader {
+class Terrain extends hxsl.Shader {
 
 	static var SRC = {
 

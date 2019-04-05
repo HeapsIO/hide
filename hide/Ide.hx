@@ -735,6 +735,12 @@ class Ide {
 		menu.find(".project .exit").click(function(_) {
 			Sys.exit(0);
 		});
+		menu.find(".project .clear-local").click(function(_) {
+			js.Browser.window.localStorage.clear();
+			nw.App.clearCache();
+			try sys.FileSystem.deleteFile(Ide.inst.appPath + "/props.json") catch( e : Dynamic ) {};
+			untyped chrome.runtime.reload();
+		});
 
 		for( r in renderers ) {
 			new Element("<menu type='checkbox'>").attr("label", r.name).prop("checked",r == h3d.mat.MaterialSetup.current).appendTo(menu.find(".project .renderers")).click(function(_) {

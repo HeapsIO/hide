@@ -584,8 +584,8 @@ class TerrainEditor {
 		}
 
 		currentBrush.bitmap.color = new h3d.Vector(1.0);
-		var shader : h3d.shader.pbr.Brush = currentBrush.bitmap.getShader(h3d.shader.pbr.Brush);
-		if( shader == null ) shader = currentBrush.bitmap.addShader(new h3d.shader.pbr.Brush());
+		var shader : hrt.shader.Brush = currentBrush.bitmap.getShader(hrt.shader.Brush);
+		if( shader == null ) shader = currentBrush.bitmap.addShader(new hrt.shader.Brush());
 		currentBrush.bitmap.blendMode = currentBrush.brushMode.accumulate ? Add : Max;
 		shader.strength = currentBrush.strength;
 		shader.size = currentBrush.size / terrainPrefab.tileSize;
@@ -618,8 +618,8 @@ class TerrainEditor {
 			brushWorldPos = getBrushWorldPosFromTex(pos, ctx);
 		}
 
-		var shader : h3d.shader.pbr.Brush = currentBrush.bitmap.getShader(h3d.shader.pbr.Brush);
-		if( shader == null ) shader = currentBrush.bitmap.addShader(new h3d.shader.pbr.Brush());
+		var shader : hrt.shader.Brush = currentBrush.bitmap.getShader(hrt.shader.Brush);
+		if( shader == null ) shader = currentBrush.bitmap.addShader(new hrt.shader.Brush());
 		currentBrush.bitmap.color = new h3d.Vector(1.0);
 		shader.size = currentBrush.size / terrainPrefab.tileSize;
 

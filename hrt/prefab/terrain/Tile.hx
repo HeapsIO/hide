@@ -17,13 +17,13 @@ class Tile extends h3d.scene.Mesh {
 	public var needNewPixelCapture = false;
 	public var insideFrustrum = false;
 	var heightmapPixels : hxd.Pixels.PixelsFloat;
-	var shader : Shader;
+	var shader : hrt.shader.Terrain;
 
 	public function new( x : Int, y : Int , ?parent ) {
 		super(null, null, parent);
 		this.tileX = x;
 		this.tileY = y;
-		shader = new Shader();
+		shader = new hrt.shader.Terrain();
 		material.mainPass.addShader(shader);
 		material.mainPass.culling = None;
 		material.shadows = false;

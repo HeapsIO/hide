@@ -22,7 +22,7 @@ class LightProbeBaker {
 
 	function getSwiz(name,comp) : hxsl.Output { return Swiz(Value(name,3),[comp]); }
 
-	var computeSH : h3d.pass.ScreenFx<h3d.shader.pbr.ComputeSH>;
+	var computeSH : h3d.pass.ScreenFx<hrt.shader.ComputeSH>;
 	var output0 : h3d.mat.Texture;
 	var output1 : h3d.mat.Texture;
 	var output2 : h3d.mat.Texture;
@@ -150,7 +150,7 @@ class LightProbeBaker {
 	}
 
 	var pixels : hxd.Pixels.PixelsFloat = null;
-	public function bake( volumetricLightMap : h3d.scene.pbr.VolumetricLightmap, resolution : Int, ?time :Float ) {
+	public function bake( volumetricLightMap : hrt.prefab.vlm.VolumetricMesh, resolution : Int, ?time :Float ) {
 
 		var timer = haxe.Timer.stamp();
 		var timeElapsed = 0.0;
@@ -198,7 +198,7 @@ class LightProbeBaker {
 			}
 			else {
 				var pbrRenderer = Std.instance(offScreenScene.renderer, h3d.scene.pbr.Renderer);
-				var sh : h3d.scene.pbr.SphericalHarmonic = convertEnvIntoSH_CPU(envMap, volumetricLightMap.shOrder);
+				var sh : hrt.prefab.vlm.SphericalHarmonic = convertEnvIntoSH_CPU(envMap, volumetricLightMap.shOrder);
 				for( coef in 0 ... coefCount ) {
 					var u = coords.x + volumetricLightMap.probeCount.x * coef;
 					var v = coords.y + coords.z * volumetricLightMap.probeCount.y;
@@ -259,11 +259,11 @@ class LightProbeBaker {
 		switch(order){
 			case 1:
 				textureArray = [output0];
-				computeSH = new h3d.pass.ScreenFx(new h3d.shader.pbr.ComputeSH(),[
+				computeSH = new h3d.pass.ScreenFx(new hrt.shader.ComputeSH(),[
 								Vec4([Value("out.coefL00", 3), Const(0)])]);
 			case 2:
 				textureArray = [output0, output1, output2, output3];
-				computeSH = new h3d.pass.ScreenFx(new h3d.shader.pbr.ComputeSH(),[
+				computeSH = new h3d.pass.ScreenFx(new hrt.shader.ComputeSH(),[
 							Vec4([Value("out.coefL00", 3), Const(0)]),
 							Vec4([Value("out.coefL1n1", 3), Const(0)]),
 							Vec4([Value("out.coefL10", 3), Const(0)]),
@@ -271,7 +271,7 @@ class LightProbeBaker {
 
 			case 3:
 				textureArray = [output0, output1, output2, output3, output4, output5, output6, output7];
-				computeSH = new h3d.pass.ScreenFx(new h3d.shader.pbr.ComputeSH(),[
+				computeSH = new h3d.pass.ScreenFx(new hrt.shader.ComputeSH(),[
 							Vec4([Value("out.coefL00", 3), getSwiz("out.coefL22",X) ]),
 							Vec4([Value("out.coefL1n1", 3), getSwiz("out.coefL22",Y) ]),
 							Vec4([Value("out.coefL10", 3), getSwiz("out.coefL22",Z) ]),
@@ -313,10 +313,10 @@ class LightProbeBaker {
 		@:privateAccess renderer.ctx.engine.flushTarget();
 	}
 
-	function convertOuputTexturesIntoSH( volumetricLightMap : h3d.scene.pbr.VolumetricLightmap, pixelsOut : hxd.Pixels.PixelsFloat ) {
+	function convertOuputTexturesIntoSH( volumetricLightMap : hrt.prefab.vlm.VolumetricMesh, pixelsOut : hxd.Pixels.PixelsFloat ) {
 
 		var order = volumetricLightMap.shOrder;
-		var sh = new h3d.scene.pbr.SphericalHarmonic(order);
+		var sh = new hrt.prefab.vlm.SphericalHarmonic(order);
 		var coefCount = order * order;
 		var maxCoef : Int = Std.int(Math.min(8, coefCount));
 
@@ -343,9 +343,9 @@ class LightProbeBaker {
 		}
 	}
 
-	function convertEnvIntoSH_CPU( env : h3d.mat.Texture, order : Int ) : h3d.scene.pbr.SphericalHarmonic {
+	function convertEnvIntoSH_CPU( env : h3d.mat.Texture, order : Int ) : hrt.prefab.vlm.SphericalHarmonic {
 		var coefCount = order * order;
-		var sphericalHarmonic = new h3d.scene.pbr.SphericalHarmonic(order);
+		var sphericalHarmonic = new hrt.prefab.vlm.SphericalHarmonic(order);
 		var face : hxd.Pixels.PixelsFloat;
 		var weightSum = 0.0;
 		var invWidth = 1.0 / env.width;

@@ -1,4 +1,4 @@
-package hrt.prefab.l3d;
+package hrt.prefab.vlm;
 
 class VolumetricLightmap extends Object3D {
 
@@ -9,7 +9,7 @@ class VolumetricLightmap extends Object3D {
 	var order : Int = 1;
 	var displaySH_field = false;
 
-	public var volumetricLightmap : h3d.scene.pbr.VolumetricLightmap;
+	public var volumetricLightmap : VolumetricMesh;
 	var useWorldAlignedProbe = false;
 	var displaySH = false;
 	var resolution : Int = 16;
@@ -133,7 +133,7 @@ class VolumetricLightmap extends Object3D {
 			var probePos = volumetricLightmap.getProbePosition(volumetricLightmap.getProbeCoords(i));
 			volumetricLightmap.globalToLocal(probePos);
 			previewSphere.setPosition(probePos.x, probePos.y, probePos.z);
-			var shader = new h3d.shader.pbr.SHDisplay();
+			var shader = new hrt.shader.DisplaySH();
 			shader.order = volumetricLightmap.shOrder;
 			shader.strength = volumetricLightmap.strength;
 			var coefCount = volumetricLightmap.getCoefCount();
@@ -157,7 +157,7 @@ class VolumetricLightmap extends Object3D {
 			var previewSpheres = volumetricLightmap.findAll(c -> if(c.name == "_previewSphere") c else null);
 			for(ps in previewSpheres){
 				var mesh = Std.instance(ps, h3d.scene.Mesh);
-				var shader = mesh.material.mainPass.getShader(h3d.shader.pbr.SHDisplay);
+				var shader = mesh.material.mainPass.getShader(hrt.shader.DisplaySH);
 				if(shader != null) shader.strength = volumetricLightmap.strength;
 			}
 		}
@@ -169,7 +169,7 @@ class VolumetricLightmap extends Object3D {
 
 		ctx = ctx.clone(this);
 		var obj = new h3d.scene.Object(ctx.local3d);
-		volumetricLightmap = new h3d.scene.pbr.VolumetricLightmap(obj);
+		volumetricLightmap = new hrt.prefab.vlm.VolumetricMesh(obj);
 		volumetricLightmap.ignoreCollide = true;
 		volumetricLightmap.setPosition(-0.5, -0.5, 0);
 		ctx.local3d = obj;

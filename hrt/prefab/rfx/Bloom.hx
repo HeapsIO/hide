@@ -12,7 +12,7 @@ typedef BloomProps = {
 
 class Bloom extends RendererFX {
 
-	var bloomPass = new h3d.pass.ScreenFx(new h3d.shader.pbr.Bloom());
+	var bloomPass = new h3d.pass.ScreenFx(new hrt.shader.Bloom());
 	var bloomBlur = new h3d.pass.Blur();
 
 	public function new(?parent) {

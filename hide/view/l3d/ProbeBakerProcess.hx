@@ -5,7 +5,7 @@ class ProbeBakerProcess {
 	public var progress : Float = 0.;
 
 	var lightProbeBaker : hide.view.l3d.LightProbeBaker;
-	var volumetricLightmap : hrt.prefab.l3d.VolumetricLightmap;
+	var volumetricLightmap : hrt.prefab.vlm.VolumetricLightmap;
 	var bakeTime : Float;
 	var resolution : Int;
 
