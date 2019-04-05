@@ -12,7 +12,7 @@ enum RenderMode {
 
 class TerrainRevertData {
 	public var surfaceIndex : Int;
-	public var surface : h3d.scene.pbr.terrain.Surface;
+	public var surface : hrt.prefab.terrain.Surface;
 	public function new(){
 
 	}
@@ -36,7 +36,7 @@ class TileRevertData {
 class TerrainEditor {
 
 	public var currentBrush : Brush;
-	public var currentSurface : h3d.scene.pbr.terrain.Surface;
+	public var currentSurface : hrt.prefab.terrain.Surface;
 	public var tmpTexPath : String;
 	public var textureType = ["_Albedo", "_Normal", "_MetallicGlossAO"];
 	public var autoCreateTile = false;
@@ -58,7 +58,7 @@ class TerrainEditor {
 
 	var terrainPrefab : hrt.prefab.terrain.Terrain;
 	var undo : hide.ui.UndoHistory;
-	var tileTrashBin : Array<h3d.scene.pbr.terrain.Tile> = [];
+	var tileTrashBin : Array<hrt.prefab.terrain.Tile> = [];
 	var paintRevertDatas : Array<TileRevertData> = [];
 	var uvTexPixels : hxd.Pixels.PixelsFloat;
 	var uvTex : h3d.mat.Texture;

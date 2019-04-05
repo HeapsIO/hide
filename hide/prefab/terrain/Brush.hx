@@ -65,7 +65,7 @@ class BrushMode {
 
 class BrushPreview {
 
-	var terrain : h3d.scene.pbr.terrain.Terrain;
+	var terrain : hrt.prefab.terrain.TerrainMesh;
 	var tiles : Array<TilePreviewMesh> = [];
 	var grid : h3d.prim.Grid;
 
@@ -146,6 +146,6 @@ class TilePreviewMesh extends h3d.scene.Mesh {
 	override function sync(ctx : h3d.scene.RenderContext) {
 		shader.heightMap = heightMap;
 		shader.heightMapSize = heightMap.width;
-		shader.primSize = Std.instance(parent, h3d.scene.pbr.terrain.Terrain).tileSize;
+		shader.primSize = Std.instance(parent, hrt.prefab.terrain.TerrainMesh).tileSize;
 	}
 }
