@@ -1,7 +1,7 @@
-package hide.prefab.fx;
+package hrt.prefab.fx;
 
 
-@:access(hide.prefab.fx.LookAt)
+@:access(hrt.prefab.fx.LookAt)
 class LookAtObject extends h3d.scene.Object {
 	var target: h3d.scene.Object;
 	var definition: LookAt;
@@ -86,8 +86,8 @@ class LookAtObject extends h3d.scene.Object {
 	}
 }
 
-@:allow(hide.prefab.fx.LookAt.LookAtInstance)
-class LookAt extends hide.prefab.Object3D {
+@:allow(hrt.prefab.fx.LookAt.LookAtInstance)
+class LookAt extends Object3D {
 
 	var target(default,null) : String;
 	var lockAxis: Array<Float> = [0,0,0];

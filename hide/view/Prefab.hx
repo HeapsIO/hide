@@ -1,6 +1,6 @@
 package hide.view;
 
-import hide.prefab.Prefab in PrefabElement;
+import hxd.prefab.Prefab in PrefabElement;
 
 @:access(hide.view.Prefab)
 private class PrefabSceneEditor extends hide.comp.SceneEditor {

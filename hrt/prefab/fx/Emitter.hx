@@ -1,6 +1,6 @@
-package hide.prefab.fx;
-import hide.prefab.Curve;
-import hide.prefab.fx.FX.ShaderAnimation;
+package hrt.prefab.fx;
+import hrt.prefab.Curve;
+import hrt.prefab.fx.FX.ShaderAnimation;
 using Lambda;
 
 enum SimulationSpace {
@@ -29,7 +29,7 @@ enum Orientation {
 }
 
 typedef ParamDef = {
-	> hide.prefab.Props.PropDef,
+	> hrt.prefab.Props.PropDef,
 	?animate: Bool,
 	?instance: Bool
 }
@@ -103,7 +103,7 @@ private class ParticleTransform {
 	}
 }
 
-@:allow(hide.prefab.fx.EmitterObject)
+@:allow(hrt.prefab.fx.EmitterObject)
 private class ParticleInstance  {
 
 	var emitter : EmitterObject;
@@ -263,8 +263,8 @@ private class ParticleInstance  {
 	}
 }
 
-@:allow(hide.prefab.fx.ParticleInstance)
-@:allow(hide.prefab.fx.Emitter)
+@:allow(hrt.prefab.fx.ParticleInstance)
+@:allow(hrt.prefab.fx.Emitter)
 class EmitterObject extends h3d.scene.Object {
 
 	public var batch : h3d.scene.MeshBatch;
@@ -274,7 +274,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var enable : Bool;
 	public var particleVisibility(default, null) : Bool;
 
-	public var particleTemplate : hide.prefab.Object3D;
+	public var particleTemplate : hrt.prefab.Object3D;
 	public var maxCount = 20;
 	public var lifeTime = 2.0;
 	public var lifeTimeRand = 0.0;
@@ -304,7 +304,7 @@ class EmitterObject extends h3d.scene.Object {
 
 	var random: hxd.Rand;
 	var randomSeed = 0;
-	var context : hide.prefab.Context;
+	var context : hxd.prefab.Context;
 	var emitCount = 0;
 	var lastTime = -1.0;
 	var curTime = 0.0;
@@ -458,7 +458,7 @@ class EmitterObject extends h3d.scene.Object {
 
 			// Setup mats.
 			// Should we do this manually here or make a recursive makeInstance on the template?
-			var materials = particleTemplate.getAll(hide.prefab.Material);
+			var materials = particleTemplate.getAll(hrt.prefab.Material);
 			for(mat in materials) {
 				if(mat.enabled)
 					mat.makeInstance(template);
@@ -466,12 +466,12 @@ class EmitterObject extends h3d.scene.Object {
 
 			// Setup shaders
 			shaderAnims = [];
-			var shaders = particleTemplate.getAll(hide.prefab.Shader);
+			var shaders = particleTemplate.getAll(hrt.prefab.Shader);
 			for( shader in shaders ) {
 				if( !shader.enabled ) continue;
 				var shCtx = shader.makeInstance(template);
 				if( shCtx == null ) continue;
-				hide.prefab.fx.FX.getShaderAnims(template, shader, shaderAnims);
+				hrt.prefab.fx.FX.getShaderAnims(template, shader, shaderAnims);
 			}
 
 			// Animated textures animations
@@ -720,7 +720,7 @@ class Emitter extends Object3D {
 		var template = children[0] != null ? children[0].to(Object3D) : null;
 
 		function makeParam(scope: Prefab, name: String): Value {
-			var getCurve = hide.prefab.Curve.getCurve.bind(scope);
+			var getCurve = hrt.prefab.Curve.getCurve.bind(scope);
 			function makeCompVal(baseProp: Null<Float>, defVal: Float, randProp: Null<Float>, pname: String, suffix: String) : Value {
 				var xVal : Value = VZero;
 				var xCurve = getCurve(pname + suffix);
@@ -767,10 +767,10 @@ class Emitter extends Object3D {
 		}
 
 		function makeColor(scope: Prefab, name: String) {
-			var curves = hide.prefab.Curve.getCurves(scope, name);
+			var curves = hrt.prefab.Curve.getCurves(scope, name);
 			if(curves == null || curves.length == 0)
 				return null;
-			return hide.prefab.Curve.getColorValue(curves);
+			return hrt.prefab.Curve.getColorValue(curves);
 		}
 
 		if(template != null) {

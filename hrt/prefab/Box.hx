@@ -1,4 +1,4 @@
-package hide.prefab;
+package hrt.prefab;
 
 class Box extends Object3D {
 

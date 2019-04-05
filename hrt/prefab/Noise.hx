@@ -1,4 +1,4 @@
-package hide.prefab;
+package hrt.prefab;
 
 enum abstract NoiseMode(String) {
 	var Perlin;

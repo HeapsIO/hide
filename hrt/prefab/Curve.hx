@@ -1,4 +1,4 @@
-package hide.prefab;
+package hrt.prefab;
 using Lambda;
 
 class CurveHandle {
@@ -113,7 +113,7 @@ class Curve extends Prefab {
 		if(val == null)
 			val = getVal(time);
 
-		var key = new hide.prefab.Curve.CurveKey();
+		var key = new hrt.prefab.Curve.CurveKey();
 		key.time = time;
 		key.value = val;
 		key.mode = mode != null ? mode : (keys[index] != null ? keys[index].mode : keyMode);
@@ -241,7 +241,7 @@ class Curve extends Prefab {
 	}
 	#end
 
-	public static function getCurve(parent : hide.prefab.Prefab, name: String, onlyEnabled=true) {
+	public static function getCurve(parent : Prefab, name: String, onlyEnabled=true) {
 		for(c in parent.children) {
 			if(onlyEnabled && !c.enabled) continue;
 			if(c.name != name) continue;
@@ -252,7 +252,7 @@ class Curve extends Prefab {
 		return null;
 	}
 
-	public static function getCurves(parent: hide.prefab.Prefab, prefix: String) {
+	public static function getCurves(parent: Prefab, prefix: String) {
 		var ret = [];
 		for(c in parent.children) {
 			if(!c.enabled) continue;
@@ -288,7 +288,7 @@ class Curve extends Prefab {
 		return curves.find(c -> StringTools.endsWith(c.name, suffix));
 	}
 
-	public static function getVectorValue(curves: Array<Curve>, defVal: Float=0.0, scale: Float=1.0) : hide.prefab.fx.Value {
+	public static function getVectorValue(curves: Array<Curve>, defVal: Float=0.0, scale: Float=1.0) : hrt.prefab.fx.Value {
 		inline function find(s) {
 			return findCurve(curves, s);
 		}
@@ -297,7 +297,7 @@ class Curve extends Prefab {
 		var z = find(".z");
 		var w = find(".w");
 
-		inline function curveOrVal(c: Curve, defVal: Float) : hide.prefab.fx.Value {
+		inline function curveOrVal(c: Curve, defVal: Float) : hrt.prefab.fx.Value {
 			return c != null ? (scale != 1.0 ? VCurveScale(c, scale) : VCurve(c)) : VConst(defVal);
 		}
 
@@ -308,7 +308,7 @@ class Curve extends Prefab {
 			curveOrVal(w, 1.0));
 	}
 
-	public static function getColorValue(curves: Array<Curve>) : hide.prefab.fx.Value {
+	public static function getColorValue(curves: Array<Curve>) : hrt.prefab.fx.Value {
 		inline function find(s) {
 			return findCurve(curves, s);
 		}

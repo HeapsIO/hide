@@ -1,7 +1,7 @@
 package hide.prefab;
 import hxd.Key as K;
+import hxd.prefab.Context;
 
-#if editor
 enum ColorState{
 	None;
 	Overlapped;
@@ -119,7 +119,7 @@ class PolygonEditor {
 	public var showTriangles : Bool = false;
 	public var worldSnap = false;
 
-	var polygonPrefab : hide.prefab.l3d.Polygon;
+	var polygonPrefab : hrt.prefab.l3d.Polygon;
 	var undo : hide.ui.UndoHistory;
 	var interactive : h2d.Interactive;
 	var lineGraphics : h3d.scene.Graphics;
@@ -137,7 +137,7 @@ class PolygonEditor {
 	var beforeMoveList : Array<h2d.col.Point> = [];
 	var afterMoveList : Array<h2d.col.Point> = [];
 
-	public function new( polygonPrefab : hide.prefab.l3d.Polygon, undo : hide.ui.UndoHistory ){
+	public function new( polygonPrefab , undo : hide.ui.UndoHistory ){
 		this.polygonPrefab = polygonPrefab;
 		this.undo = undo;
 	}
@@ -653,5 +653,3 @@ class PolygonEditor {
 		}
 	}
 }
-
-#end

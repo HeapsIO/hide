@@ -1,6 +1,6 @@
-package hide.prefab.fx;
+package hrt.prefab.fx;
 
-class AnimEvent extends hide.prefab.fx.Event {
+class AnimEvent extends hrt.prefab.fx.Event {
 
 	public var animation: String;
 	public var speed : Float = 1.0;

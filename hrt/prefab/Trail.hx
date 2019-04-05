@@ -1,4 +1,4 @@
-package hide.prefab;
+package hrt.prefab;
 
 class Trail extends Object3D {
 

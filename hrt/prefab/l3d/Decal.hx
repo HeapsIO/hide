@@ -1,4 +1,4 @@
-package hide.prefab.l3d;
+package hrt.prefab.l3d;
 
 class Decal extends Object3D {
 

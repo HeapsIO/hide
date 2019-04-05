@@ -3,8 +3,8 @@ package hide.comp;
 import hxd.Key as K;
 import hxd.Math as M;
 
-import hide.prefab.Prefab as PrefabElement;
-import hide.prefab.Object3D;
+import hxd.prefab.Prefab as PrefabElement;
+import hrt.prefab.Object3D;
 import h3d.scene.Object;
 
 @:access(hide.comp.SceneEditor)
@@ -38,12 +38,12 @@ class SceneEditorContext extends hide.prefab.EditContext {
 		}
 	}
 
-	override function getCurrentProps( p : hide.prefab.Prefab ) {
+	override function getCurrentProps( p : hxd.prefab.Prefab ) {
 		var cur = editor.curEdit;
 		return cur != null && cur.elements[0] == p ? editor.properties.element : new Element();
 	}
 
-	function getContextRec( p : hide.prefab.Prefab ) {
+	function getContextRec( p : hxd.prefab.Prefab ) {
 		if( p == null )
 			return editor.context;
 		var c = editor.context.shared.contexts.get(p);
@@ -57,7 +57,7 @@ class SceneEditorContext extends hide.prefab.EditContext {
 		editor.selectObjects(elements);
 	}
 
-	override function rebuildPrefab( p : hide.prefab.Prefab ) {
+	override function rebuildPrefab( p : hxd.prefab.Prefab ) {
 		// refresh all for now
 		editor.refresh();
 	}
@@ -84,7 +84,7 @@ class SceneEditor {
 	public var tree : hide.comp.IconTree<PrefabElement>;
 	public var scene : hide.comp.Scene;
 	public var properties : hide.comp.PropsEditor;
-	public var context(default,null) : hide.prefab.Context;
+	public var context(default,null) : hxd.prefab.Context;
 	public var curEdit(default, null) : SceneEditorContext;
 	public var snapToGround = false;
 	public var localTransform = true;
@@ -131,7 +131,7 @@ class SceneEditor {
 			onResize();
 		};
 
-		context = new hide.prefab.Context();
+		context = new hxd.prefab.Context();
 		context.shared = new hide.prefab.ContextShared(scene);
 		context.shared.currentPath = view.state.path;
 		context.init();
@@ -288,7 +288,7 @@ class SceneEditor {
 				{ label : "Reference", enabled : current != null, click : function() createRef(current, current.parent) },
 			];
 
-			if(current != null && current.to(Object3D) != null && current.to(hide.prefab.Reference) == null) {
+			if(current != null && current.to(Object3D) != null && current.to(hrt.prefab.Reference) == null) {
 				var visible = !isHidden(current);
 				menuItems = menuItems.concat([
 					{ label : "Visible", checked : visible, click : function() setVisible(curEdit.elements, !visible) },
@@ -480,7 +480,7 @@ class SceneEditor {
 			e.propagate = false;
 			var elts = null;
 			if(K.isDown(K.SHIFT)) {
-				if(Type.getClass(elt.parent) == hide.prefab.Object3D)
+				if(Type.getClass(elt.parent) == hrt.prefab.Object3D)
 					elts = [elt.parent];
 				else
 					elts = elt.parent.children;
@@ -539,7 +539,7 @@ class SceneEditor {
 		if(curEdit == null) return;
 		gizmo.onStartMove = function(mode) {
 			var objects3d = [for(o in curEdit.rootElements) {
-				var obj3d = o.to(hide.prefab.Object3D);
+				var obj3d = o.to(hrt.prefab.Object3D);
 				if(obj3d != null)
 					obj3d;
 			}];
@@ -729,7 +729,7 @@ class SceneEditor {
 	}
 
 	public function onPrefabChange(p: PrefabElement, ?pname: String) {
-		var model = p.to(hide.prefab.Model);
+		var model = p.to(hrt.prefab.Model);
 		if(model != null && pname == "source") {
 			refreshScene();
 			return;
@@ -871,7 +871,7 @@ class SceneEditor {
 		fillProps(edit, e);
 	}
 
-	function setObjectSelected( p : PrefabElement, ctx : hide.prefab.Context, b : Bool ) {
+	function setObjectSelected( p : PrefabElement, ctx : hxd.prefab.Context, b : Bool ) {
 		p.setSelected(ctx, b);
 	}
 
@@ -913,7 +913,7 @@ class SceneEditor {
 		setupGizmo();
 	}
 
-	function hasBeenRemoved( e : hide.prefab.Prefab ) {
+	function hasBeenRemoved( e : hxd.prefab.Prefab ) {
 		while( e != null && e != sceneData ) {
 			if( e.parent != null && e.parent.children.indexOf(e) < 0 )
 				return true;
@@ -960,13 +960,13 @@ class SceneEditor {
 			var relative = ide.makeRelative(path);
 
 			if(hxd.prefab.Library.getPrefabType(path) != null) {
-				var ref = new hide.prefab.Reference(parent);
+				var ref = new hrt.prefab.Reference(parent);
 				ref.refpath = "/" + relative;
 				obj3d = ref;
 				obj3d.name = new haxe.io.Path(relative).file;
 			}
 			else {
-				obj3d = new hide.prefab.Model(parent);
+				obj3d = new hrt.prefab.Model(parent);
 				obj3d.source = relative;
 			}
 			obj3d.setTransform(localMat);
@@ -1042,7 +1042,7 @@ class SceneEditor {
 		var local = new h3d.Matrix();
 		local.initTranslation(pivot.x, pivot.y, pivot.z);
 		local.multiply(local, invParentMat);
-		var group = new hide.prefab.Object3D(parent);
+		var group = new hrt.prefab.Object3D(parent);
 		@:privateAccess group.type = "object";
 		autoName(group);
 		group.x = local.tx;
@@ -1095,14 +1095,14 @@ class SceneEditor {
 		}
 		var obj = haxe.Json.parse(haxe.Json.stringify(view.getClipboard("prefab")));
 		if(obj != null) {
-			var p = hide.prefab.Prefab.loadPrefab(obj, parent);
+			var p = hxd.prefab.Prefab.loadPrefab(obj, parent);
 			autoName(p);
 			refresh();
 		}
 		else {
 			obj = view.getClipboard("library");
 			if(obj != null) {
-				var lib = hide.prefab.Prefab.loadPrefab(obj);
+				var lib = hxd.prefab.Prefab.loadPrefab(obj);
 				for(c in lib.children) {
 					autoName(c);
 					c.parent = parent;
@@ -1148,7 +1148,7 @@ class SceneEditor {
 
 	public function setEnabled(elements : Array<PrefabElement>, enable: Bool) {
 		// Don't disable/enable Object3Ds, too confusing with visibility
-		elements = [for(e in elements) if(e.to(Object3D) == null || e.to(hide.prefab.Reference) != null) e];
+		elements = [for(e in elements) if(e.to(Object3D) == null || e.to(hrt.prefab.Reference) != null) e];
 		var old = [for(e in elements) e.enabled];
 		function apply(on) {
 			for(i in 0...elements.length) {
@@ -1221,7 +1221,7 @@ class SceneEditor {
 	}
 
 	function createRef(elt: PrefabElement, toParent: PrefabElement) {
-		var ref = new hide.prefab.Reference(toParent);
+		var ref = new hrt.prefab.Reference(toParent);
 		ref.name = elt.name;
 		ref.refpath = elt.getAbsPath();
 		var obj3d = Std.instance(elt, Object3D);
@@ -1300,7 +1300,7 @@ class SceneEditor {
 	}
 
 	function setTransform(elt: PrefabElement, ?mat: h3d.Matrix, ?position: h3d.Vector) {
-		var obj3d = Std.instance(elt, hide.prefab.Object3D);
+		var obj3d = Std.instance(elt, hrt.prefab.Object3D);
 		if(obj3d == null)
 			return;
 		if(mat != null)
@@ -1383,7 +1383,7 @@ class SceneEditor {
 			var prevIndex = prev.children.indexOf(elt);
 
 			var obj3d = elt.to(Object3D);
-			var preserveTransform = Std.is(toElt, hide.prefab.fx.Emitter) || Std.is(prev, hide.prefab.fx.Emitter);
+			var preserveTransform = Std.is(toElt, hrt.prefab.fx.Emitter) || Std.is(prev, hrt.prefab.fx.Emitter);
 			var toObj = getObject(toElt);
 			var obj = getObject(elt);
 			var prevState = null, newState = null;
@@ -1561,7 +1561,7 @@ class SceneEditor {
 			return {
 				label : name,
 				click : function() {
-					var s = new hide.prefab.Shader(parentElt);
+					var s = new hrt.prefab.Shader(parentElt);
 					s.source = path;
 					s.name = name;
 					addObject(s);
@@ -1644,7 +1644,7 @@ class SceneEditor {
 			var o = Std.instance(elt, Object3D);
 			while(o != null) {
 				mat.multiply(mat, o.getTransform());
-				o = o.parent.to(hide.prefab.Object3D);
+				o = o.parent.to(hrt.prefab.Object3D);
 			}
 			return mat;
 		}

@@ -24,7 +24,7 @@ class Model extends FileView {
 	var cameraMove : Void -> Void;
 	var scene(get,never) : hide.comp.Scene;
 	var rootPath : String;
-	var root : hide.prefab.Prefab;
+	var root : hxd.prefab.Prefab;
 
 	override function save() {
 		if(!modified) return;
@@ -111,8 +111,8 @@ class Model extends FileView {
 
 		if( root == null ) {
 			var def = new hxd.prefab.Library();
-			new hide.prefab.RenderProps(def).name = "renderer";
-			var l = new hide.prefab.Light(def);
+			new hrt.prefab.RenderProps(def).name = "renderer";
+			var l = new hrt.prefab.Light(def);
 			l.name = "sunLight";
 			l.kind = Directional;
 			l.power = 1.5;
@@ -149,7 +149,7 @@ class Model extends FileView {
 		element.find("input[value=Import]").click(function(_) {
 			ide.chooseFile(["prefab"], function(f) {
 				if( f == null ) return;
-				if( ide.loadPrefab(f, hide.prefab.RenderProps) == null ) {
+				if( ide.loadPrefab(f, hrt.prefab.RenderProps) == null ) {
 					ide.error("This prefab does not have renderer properties");
 					return;
 				}
@@ -301,10 +301,10 @@ class Model extends FileView {
 
 	function onRefresh() {
 
-		var r = root.get(hide.prefab.RenderProps);
+		var r = root.get(hrt.prefab.RenderProps);
 		if( r != null ) r.applyProps(scene.s3d.renderer);
 
-		plight = root.getAll(hide.prefab.Light)[0];
+		plight = root.getAll(hrt.prefab.Light)[0];
 		if( plight != null ) {
 			this.light = sceneEditor.context.shared.contexts.get(plight).local3d;
 			lightDirection = this.light.getDirection();

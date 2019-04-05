@@ -1,4 +1,4 @@
-package hide.prefab.fx;
+package hrt.prefab.fx;
 
 typedef EventInstance = {
 	evt: Event,

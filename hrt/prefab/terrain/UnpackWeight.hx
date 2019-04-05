@@ -1,4 +1,4 @@
-package hide.prefab.terrain;
+package hrt.prefab.terrain;
 
 class UnpackWeight extends h3d.shader.ScreenShader {
 

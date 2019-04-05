@@ -645,7 +645,7 @@ class Ide {
 		return str;
 	}
 
-	public function loadPrefab<T:hide.prefab.Prefab>( file : String, ?cl : Class<T> ) : T {
+	public function loadPrefab<T:hxd.prefab.Prefab>( file : String, ?cl : Class<T> ) : T {
 		if( file == null )
 			return null;
 		var l = hxd.prefab.Library.create(file.split(".").pop().toLowerCase());
@@ -660,7 +660,7 @@ class Ide {
 		return l.get(cl);
 	}
 
-	public function savePrefab( file : String, f : hide.prefab.Prefab ) {
+	public function savePrefab( file : String, f : hxd.prefab.Prefab ) {
 		var content = f.saveData();
 		sys.io.File.saveContent(getPath(file), toJSON(content));
 	}
@@ -950,7 +950,7 @@ class Ide {
 
 	static function main() {
 		h3d.pass.ShaderManager.STRICT = false; // prevent errors with bad renderer
-		hide.tools.Macros.include(["hide.view","h3d.prim","h3d.scene","h3d.pass","hide.prefab","hxd.prefab"]);
+		hide.tools.Macros.include(["hide.view","h3d.prim","h3d.scene","h3d.pass","hide.prefab","hxd.prefab","hrt"]);
 		new Ide();
 	}
 

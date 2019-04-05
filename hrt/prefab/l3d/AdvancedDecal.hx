@@ -1,4 +1,4 @@
-package hide.prefab.l3d;
+package hrt.prefab.l3d;
 
 class AdvancedDecal extends Object3D {
 

@@ -1,4 +1,4 @@
-package hide.prefab.fx;
+package hrt.prefab.fx;
 
 typedef Argument = { name : String, ?value : FxAst };
 
@@ -10,7 +10,7 @@ enum FxAst {
 	Op( a : FxAst, b : FxAst, op : Float -> Float -> Float );
 	Unop( a : FxAst, op : Float -> Float );
 	If( cond : FxAst, eif : FxAst, eelse : FxAst );
-	Function( args : Array<hide.prefab.fx.Argument>, a : FxAst, name : String );
+	Function( args : Array<Argument>, a : FxAst, name : String );
 	Call( name : String, args : Array<FxAst> );
 }
 
@@ -35,12 +35,12 @@ class FXScript {
 	public var myVars : Map<String, FXVar> = [];
 	public var params : Array<FXParam> = [];
 
-	var fx : hide.prefab.fx.FX.FXAnimation;
+	var fx : FX.FXAnimation;
 	var ast : FxAst;
 	var initAst : FxAst;
 	var updateAst : FxAst;
 
-	public function new( fx : hide.prefab.fx.FX.FXAnimation ){
+	public function new( fx : FX.FXAnimation ){
 		this.fx = fx;
 	}
 

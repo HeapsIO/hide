@@ -81,7 +81,7 @@ class BrushPreview {
 			tile.remove();
 	}
 
-	public function addPreviewMeshAt(x : Int, y : Int, brush : Brush, brushPos : h3d.Vector, ctx : Context) : TilePreviewMesh {
+	public function addPreviewMeshAt(x : Int, y : Int, brush : Brush, brushPos : h3d.Vector, ctx : hxd.prefab.Context) : TilePreviewMesh {
 		var camera = @:privateAccess ctx.local3d.getScene().camera;
 		var dir = camera.pos.sub(new h3d.Vector(terrain.getAbsPos().tx, terrain.getAbsPos().ty, terrain.getAbsPos().tz));
 		var offsetDir = dir.z < 0 ? -1: 1;

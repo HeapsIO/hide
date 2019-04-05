@@ -1,6 +1,6 @@
-package hide.prefab.fx;
-import hide.prefab.Curve;
-import hide.prefab.Prefab as PrefabElement;
+package hrt.prefab.fx;
+import hrt.prefab.Curve;
+import hxd.prefab.Prefab as PrefabElement;
 
 typedef ShaderParam = {
 	def: hxsl.Ast.TVar,
@@ -36,9 +36,9 @@ class ShaderAnimation extends Evaluator {
 }
 
 typedef ObjectAnimation = {
-	elt: hide.prefab.Object3D,
+	elt: hrt.prefab.Object3D,
 	obj: h3d.scene.Object,
-	events: Array<hide.prefab.fx.Event.EventInstance>,
+	events: Array<hrt.prefab.fx.Event.EventInstance>,
 	?position: Value,
 	?scale: Value,
 	?rotation: Value,
@@ -58,9 +58,9 @@ class FXAnimation extends h3d.scene.Object {
 	public var loopAnims : Bool;
 	public var objects: Array<ObjectAnimation> = [];
 	public var shaderAnims : Array<ShaderAnimation> = [];
-	public var emitters : Array<hide.prefab.fx.Emitter.EmitterObject> = [];
-	public var constraints : Array<hide.prefab.Constraint> = [];
-	public var script : hide.prefab.fx.FXScript;
+	public var emitters : Array<hrt.prefab.fx.Emitter.EmitterObject> = [];
+	public var constraints : Array<hrt.prefab.Constraint> = [];
+	public var script : hrt.prefab.fx.FXScript;
 
 	var evaluator : Evaluator;
 	var random : hxd.Rand;
@@ -245,14 +245,14 @@ class FX extends hxd.prefab.Library {
 	}
 
 	static function getObjAnimations(ctx:Context, elt: PrefabElement, anims: Array<ObjectAnimation>) {
-		if(Std.instance(elt, hide.prefab.fx.Emitter) == null) {
+		if(Std.instance(elt, hrt.prefab.fx.Emitter) == null) {
 			// Don't extract animations for children of Emitters
 			for(c in elt.children) {
 				getObjAnimations(ctx, c, anims);
 			}
 		}
 
-		var obj3d = elt.to(hide.prefab.Object3D);
+		var obj3d = elt.to(hrt.prefab.Object3D);
 		if(obj3d == null)
 			return;
 
@@ -264,14 +264,14 @@ class FX extends hxd.prefab.Library {
 		var anyFound = false;
 
 		function makeVal(name, def) : Value {
-			var c = hide.prefab.Curve.getCurve(elt, name);
+			var c = Curve.getCurve(elt, name);
 			if(c != null)
 				anyFound = true;
 			return c != null ? VCurve(c) : def;
 		}
 
 		function makeVector(name: String, defVal: Float, uniform: Bool=true, scale: Float=1.0) : Value {
-			var curves = hide.prefab.Curve.getCurves(elt, name);
+			var curves = Curve.getCurves(elt, name);
 			if(curves == null || curves.length == 0)
 				return null;
 
@@ -280,16 +280,16 @@ class FX extends hxd.prefab.Library {
 			if(uniform && curves.length == 1 && curves[0].name == name)
 				return scale != 1.0 ? VCurveScale(curves[0], scale) : VCurve(curves[0]);
 
-			return hide.prefab.Curve.getVectorValue(curves, defVal, scale);
+			return Curve.getVectorValue(curves, defVal, scale);
 		}
 
 		function makeColor(name: String) {
-			var curves = hide.prefab.Curve.getCurves(elt, name);
+			var curves = Curve.getCurves(elt, name);
 			if(curves == null || curves.length == 0)
 				return null;
 
 			anyFound = true;
-			return hide.prefab.Curve.getColorValue(curves);
+			return Curve.getColorValue(curves);
 		}
 
 		var anim : ObjectAnimation = {
@@ -321,7 +321,7 @@ class FX extends hxd.prefab.Library {
 		getObjAnimations(ctx, this, fxanim.objects);
 	}
 
-	public static function makeShaderParams(ctx: Context, shaderElt: hide.prefab.Shader) {
+	public static function makeShaderParams(ctx: Context, shaderElt: hrt.prefab.Shader) {
 		shaderElt.loadShaderDef(ctx);
 		var shaderDef = shaderElt.shaderDef;
 		if(shaderDef == null)
@@ -335,16 +335,16 @@ class FX extends hxd.prefab.Library {
 
 			var prop = Reflect.field(shaderElt.props, v.name);
 			if(prop == null)
-				prop = hide.prefab.Shader.getDefault(v.type);
+				prop = hrt.prefab.Shader.getDefault(v.type);
 
-			var curves = hide.prefab.Curve.getCurves(shaderElt, v.name);
+			var curves = Curve.getCurves(shaderElt, v.name);
 			if(curves == null || curves.length == 0)
 				continue;
 
 			switch(v.type) {
 				case TVec(_, VFloat) :
 					var isColor = v.name.toLowerCase().indexOf("color") >= 0;
-					var val = isColor ? hide.prefab.Curve.getColorValue(curves) : hide.prefab.Curve.getVectorValue(curves);
+					var val = isColor ? Curve.getColorValue(curves) : Curve.getVectorValue(curves);
 					ret.push({
 						def: v,
 						value: val
@@ -354,7 +354,7 @@ class FX extends hxd.prefab.Library {
 					var base = 1.0;
 					if(Std.is(prop, Float) || Std.is(prop, Int))
 						base = cast prop;
-					var curve = hide.prefab.Curve.getCurve(shaderElt, v.name);
+					var curve = Curve.getCurve(shaderElt, v.name);
 					var val = Value.VConst(base);
 					if(curve != null)
 						val = Value.VCurveScale(curve, base);
@@ -369,13 +369,13 @@ class FX extends hxd.prefab.Library {
 	}
 
 	public static function getShaderAnims(ctx: Context, elt: PrefabElement, anims: Array<ShaderAnimation>) {
-		if(Std.instance(elt, hide.prefab.fx.Emitter) == null) {
+		if(Std.instance(elt, hrt.prefab.fx.Emitter) == null) {
 			for(c in elt.children) {
 				getShaderAnims(ctx, c, anims);
 			}
 		}
 
-		var shader = elt.to(hide.prefab.Shader);
+		var shader = elt.to(hrt.prefab.Shader);
 		if(shader == null)
 			return;
 
@@ -388,8 +388,8 @@ class FX extends hxd.prefab.Library {
 		}
 	}
 
-	function getEmitters(ctx: Context, elt: PrefabElement, emitters: Array<hide.prefab.fx.Emitter.EmitterObject>) {
-		var em = Std.instance(elt, hide.prefab.fx.Emitter);
+	function getEmitters(ctx: Context, elt: PrefabElement, emitters: Array<hrt.prefab.fx.Emitter.EmitterObject>) {
+		var em = Std.instance(elt, hrt.prefab.fx.Emitter);
 		if(em != null)  {
 			for(emCtx in ctx.shared.getContexts(elt)) {
 				if(emCtx.local3d == null) continue;
@@ -415,8 +415,8 @@ class FX extends hxd.prefab.Library {
 		return null;
 	}
 
-	function getConstraints( ctx : Context, elt : PrefabElement, constraints : Array<hide.prefab.Constraint>){
-		var co = Std.instance(elt, hide.prefab.Constraint);
+	function getConstraints( ctx : Context, elt : PrefabElement, constraints : Array<hrt.prefab.Constraint>){
+		var co = Std.instance(elt, hrt.prefab.Constraint);
 		if(co != null)
 			constraints.push(co);
 		else

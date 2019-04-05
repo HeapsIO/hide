@@ -1,4 +1,6 @@
 package hide.prefab;
+import hxd.prefab.Prefab;
+import hxd.prefab.Context;
 
 class EditContext {
 

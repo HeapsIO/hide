@@ -1,6 +1,6 @@
 package hide.comp;
 
-typedef CurveKey = hide.prefab.Curve.CurveKey;
+typedef CurveKey = hrt.prefab.Curve.CurveKey;
 
 class CurveEditor extends Component {
 
@@ -9,7 +9,7 @@ class CurveEditor extends Component {
 	public var xOffset = 0.;
 	public var yOffset = 0.;
 
-	public var curve(default, set) : hide.prefab.Curve;
+	public var curve(default, set) : hrt.prefab.Curve;
 	public var undo : hide.ui.UndoHistory;
 
 	public var lockViewX = false;
@@ -125,7 +125,7 @@ class CurveEditor extends Component {
 
 	}
 
-	function set_curve(curve: hide.prefab.Curve) {
+	function set_curve(curve: hrt.prefab.Curve) {
 		this.curve = curve;
 		lastValue = haxe.Json.parse(haxe.Json.stringify(curve.save()));
 		var view = getDisplayState("view");
@@ -161,11 +161,11 @@ class CurveEditor extends Component {
 
 		inline function addPrevH() {
 			if(key.prevHandle == null)
-				key.prevHandle = new hide.prefab.Curve.CurveHandle(prev != null ? (prev.time - key.time) / 3 : -0.5, 0);
+				key.prevHandle = new hrt.prefab.Curve.CurveHandle(prev != null ? (prev.time - key.time) / 3 : -0.5, 0);
 		}
 		inline function addNextH() {
 			if(key.nextHandle == null)
-				key.nextHandle = new hide.prefab.Curve.CurveHandle(next != null ? (next.time - key.time) / 3 : -0.5, 0);
+				key.nextHandle = new hrt.prefab.Curve.CurveHandle(next != null ? (next.time - key.time) / 3 : -0.5, 0);
 		}
 		switch(key.mode) {
 			case Aligned:
@@ -563,7 +563,7 @@ class CurveEditor extends Component {
 				});
 				keyHandle.contextmenu(function(e) {
 					e.preventDefault();
-					function setMode(m: hide.prefab.Curve.CurveKeyMode) {
+					function setMode(m: hrt.prefab.Curve.CurveKeyMode) {
 						key.mode = m;
 						curve.keyMode = m;
 						fixKey(key);

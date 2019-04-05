@@ -1,4 +1,4 @@
-package hide.prefab.l3d;
+package hrt.prefab.l3d;
 
 class Level3D extends hxd.prefab.Library {
 

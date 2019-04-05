@@ -1,4 +1,4 @@
-package hide.prefab.l3d;
+package hrt.prefab.l3d;
 import h2d.col.Point;
 
 enum Shape {
@@ -15,7 +15,7 @@ class Polygon extends Object3D {
 	public var points : h2d.col.Polygon;
 	#if editor
 	public var debugColor : Int = 0xFFFFFFFF;
-	public var editor : PolygonEditor;
+	public var editor : hide.prefab.PolygonEditor;
 	public var cachedPrim : h3d.prim.Polygon;
 	#end
 
@@ -165,13 +165,13 @@ class Polygon extends Object3D {
 
 	public function setColor(ctx: Context, color: Int) {
 		#if editor
-		if(hide.prefab.Material.hasOverride(this))
+		if(hrt.prefab.Material.hasOverride(this))
 			return;
 		if(ctx.local3d == null)
 			return;
 		var mesh = Std.instance(ctx.local3d, h3d.scene.Mesh);
 		if(mesh != null)
-			hide.prefab.Box.setDebugColor(color, mesh.material);
+			hrt.prefab.Box.setDebugColor(color, mesh.material);
 		#end
 	}
 
@@ -212,7 +212,7 @@ class Polygon extends Object3D {
 
 	function createEditor( ctx : EditContext ){
 		if( editor == null )
-			editor = new PolygonEditor(this, ctx.properties.undo);
+			editor = new hide.prefab.PolygonEditor(this, ctx.properties.undo);
 		editor.editContext = ctx;
 	}
 

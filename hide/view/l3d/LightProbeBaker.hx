@@ -7,7 +7,7 @@ class LightProbeBaker {
 	public var useGPU = false;
 	public var environment : h3d.scene.pbr.Environment;
 
-	var context : hide.prefab.Context;
+	var context : hxd.prefab.Context;
 	var offScreenScene : h3d.scene.Scene = null;
 	var prim : h3d.prim.Plane2D;
 
@@ -38,7 +38,7 @@ class LightProbeBaker {
 		customCamera.screenRatio = 1.0;
 		customCamera.fovY = 90;
 		customCamera.zFar = 100;
-		context = new hide.prefab.Context();
+		context = new hxd.prefab.Context();
 	}
 
 	public function dispose() {
@@ -58,7 +58,7 @@ class LightProbeBaker {
 		if(offScreenScene != null) offScreenScene.dispose();
 	}
 
-	public function initScene( sceneData : hide.prefab.Prefab, shared : hide.prefab.ContextShared, scene : hide.comp.Scene , env : h3d.scene.pbr.Environment) {
+	public function initScene( sceneData : hxd.prefab.Prefab, shared : hide.prefab.ContextShared, scene : hide.comp.Scene , env : h3d.scene.pbr.Environment) {
 		if(offScreenScene != null) offScreenScene.dispose();
 		offScreenScene = new h3d.scene.Scene();
 

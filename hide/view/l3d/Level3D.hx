@@ -4,9 +4,9 @@ using Lambda;
 import hxd.Math;
 import hxd.Key as K;
 
-import hide.prefab.Prefab as PrefabElement;
-import hide.prefab.Object3D;
-import hide.prefab.l3d.Instance;
+import hxd.prefab.Prefab as PrefabElement;
+import hrt.prefab.Object3D;
+import hrt.prefab.l3d.Instance;
 import h3d.scene.Object;
 
 
@@ -157,7 +157,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 
 		function setup(p : PrefabElement) {
 			var proj = screenToWorld(scene.s2d.width/2, scene.s2d.height/2);
-			var obj3d = p.to(hide.prefab.Object3D);
+			var obj3d = p.to(hrt.prefab.Object3D);
 			var autoCenter = proj != null && obj3d != null && (Type.getClass(p) != Object3D || p.parent != sceneData);
 			if(autoCenter) {
 				var parentMat = worldMat(getObject(p.parent));
@@ -188,7 +188,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 				var idCol = Instance.findIDColumn(refSheet);
 
 				function make(name) {
-					var p = new hide.prefab.l3d.Instance(current == null ? sceneData : current);
+					var p = new hrt.prefab.l3d.Instance(current == null ? sceneData : current);
 					p.props = type.getDefaults();
 					Reflect.setField(p.props, "$cdbtype", typeId);
 					p.name = name;
@@ -285,7 +285,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 class Level3D extends FileView {
 
 	public var sceneEditor : Level3DSceneEditor;
-	var data : hide.prefab.l3d.Level3D;
+	var data : hrt.prefab.l3d.Level3D;
 	var tabs : hide.comp.Tabs;
 
 	var tools : hide.comp.Toolbar;
@@ -302,7 +302,7 @@ class Level3D extends FileView {
 	var currentSign : String;
 	var sceneFilters : Map<String, Bool>;
 	var statusText : h2d.Text;
-	var lastRenderProps : hide.prefab.RenderProps = null;
+	var lastRenderProps : hrt.prefab.RenderProps = null;
 
 	var scene(get, null):  hide.comp.Scene;
 	function get_scene() return sceneEditor.scene;
@@ -311,7 +311,7 @@ class Level3D extends FileView {
 
 	override function onDisplay() {
 		saveDisplayKey = "Level3D:" + getPath().split("\\").join("/").substr(0,-1);
-		data = new hide.prefab.l3d.Level3D();
+		data = new hrt.prefab.l3d.Level3D();
 		var content = sys.io.File.getContent(getPath());
 		data.loadData(haxe.Json.parse(content));
 		currentSign = haxe.crypto.Md5.encode(content);
@@ -438,7 +438,7 @@ class Level3D extends FileView {
 		scene.s3d.computeStatic();
 		for( p in passes )
 			p.isStatic = false;
-		var lights = data.getAll(hide.prefab.Light);
+		var lights = data.getAll(hrt.prefab.Light);
 		for( l in lights ) {
 			if(!l.visible)
 				continue;
@@ -448,7 +448,7 @@ class Level3D extends FileView {
 	}
 
 	function bakeVolumetricLightmaps(){
-		var volumetricLightmaps = data.getAll(hide.prefab.l3d.VolumetricLightmap);
+		var volumetricLightmaps = data.getAll(hrt.prefab.l3d.VolumetricLightmap);
 		var total = 0;
 		for( v in volumetricLightmaps )
 			total += v.volumetricLightmap.getProbeCount();
@@ -482,7 +482,7 @@ class Level3D extends FileView {
 	}
 
 	override function getDefaultContent() {
-		return haxe.io.Bytes.ofString(ide.toJSON(new hide.prefab.l3d.Level3D().saveData()));
+		return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab.l3d.Level3D().saveData()));
 	}
 
 	override function onFileChanged(wasDeleted:Bool) {
@@ -552,7 +552,7 @@ class Level3D extends FileView {
 			var settings = data.children.find(c -> c.name == "settings");
 			if(settings != null) {
 				for(c in settings.children) {
-					var renderProps = c.to(hide.prefab.RenderProps);
+					var renderProps = c.to(hrt.prefab.RenderProps);
 					if(renderProps != null) {
 						renderProps.applyProps(scene.s3d.renderer);
 						break;
@@ -652,13 +652,13 @@ class Level3D extends FileView {
 	}
 
 	function onSelectObjects(elts: Array<PrefabElement>) {
-		var renderProps = Std.instance(elts.find(e -> Std.is(e, hide.prefab.RenderProps)), hide.prefab.RenderProps);
+		var renderProps = Std.instance(elts.find(e -> Std.is(e, hrt.prefab.RenderProps)), hrt.prefab.RenderProps);
 		if(renderProps != null)
 			lastRenderProps = renderProps;
 	}
 
 	function applySceneStyle(p: PrefabElement) {
-		var level3d = p.to(hide.prefab.l3d.Level3D);
+		var level3d = p.to(hrt.prefab.l3d.Level3D);
 		if(level3d != null) {
 			updateGrid();
 			return;
@@ -680,12 +680,12 @@ class Level3D extends FileView {
 		var color = getDisplayColor(p);
 		if(color != null){
 			color = (color & 0xffffff) | 0xa0000000;
-			var box = p.to(hide.prefab.Box);
+			var box = p.to(hrt.prefab.Box);
 			if(box != null) {
 				var ctx = sceneEditor.getContext(box);
 				box.setColor(ctx, color);
 			}
-			var poly = p.to(hide.prefab.l3d.Polygon);
+			var poly = p.to(hrt.prefab.l3d.Polygon);
 			if(poly != null) {
 				var ctx = sceneEditor.getContext(poly);
 				poly.setColor(ctx, color);
@@ -745,7 +745,7 @@ class Level3D extends FileView {
 			group.findAll(function(p) {
 				if(p.name == "nocollide")
 					return null;
-				return p.to(hide.prefab.l3d.Polygon);
+				return p.to(hrt.prefab.l3d.Polygon);
 			},ret);
 		return ret;
 	}

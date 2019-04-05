@@ -1,9 +1,8 @@
-package hide.prefab.l3d;
+package hrt.prefab.l3d;
 import hxd.prefab.Context;
 import hxd.prefab.Library;
 
-
-class Camera extends hide.prefab.Object3D {
+class Camera extends Object3D {
 
 	var fovY : Float = 45;
 	var zFar : Float = 150;
@@ -43,7 +42,7 @@ class Camera extends hide.prefab.Object3D {
 
 	#if editor
 
-	override function setSelected( ctx : hide.prefab.Context, b : Bool ) {
+	override function setSelected( ctx : Context, b : Bool ) {
 
 	}
 

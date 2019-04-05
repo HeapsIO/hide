@@ -2,9 +2,9 @@ package hide.view;
 using Lambda;
 
 import hide.Element;
-import hide.prefab.Prefab in PrefabElement;
-import hide.prefab.Curve;
-import hide.prefab.fx.Event;
+import hxd.prefab.Prefab in PrefabElement;
+import hrt.prefab.Curve;
+import hrt.prefab.fx.Event;
 
 typedef PropTrackDef = {
 	name: String,
@@ -48,8 +48,8 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		parent.onUpdate(dt);
 	}
 
-	override function setObjectSelected( p : PrefabElement, ctx : hide.prefab.Context, b : Bool ) {
-		if( p.getParent(hide.prefab.fx.Emitter) != null )
+	override function setObjectSelected( p : PrefabElement, ctx : hxd.prefab.Context, b : Bool ) {
+		if( p.getParent(hrt.prefab.fx.Emitter) != null )
 			return;
 		super.setObjectSelected(p, ctx, b);
 	}
@@ -67,7 +67,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 	}
 
 	override function getNewContextMenu(current: PrefabElement, ?onMake: PrefabElement->Void=null) {
-		if(current != null && current.to(hide.prefab.Shader) != null) {
+		if(current != null && current.to(hrt.prefab.Shader) != null) {
 			return parent.getNewTrackMenu(current);
 		}
 		var allTypes = super.getNewContextMenu(current, onMake);
@@ -116,7 +116,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 class FXEditor extends FileView {
 
 	var sceneEditor : FXSceneEditor;
-	var data : hide.prefab.fx.FX;
+	var data : hrt.prefab.fx.FX;
 	var tabs : hide.comp.Tabs;
 	var fxprops : hide.comp.PropsEditor;
 
@@ -154,10 +154,10 @@ class FXEditor extends FileView {
 	var statusText : h2d.Text;
 
 	var scriptEditor : hide.comp.ScriptEditor;
-	var fxScriptParser : hide.prefab.fx.FXScriptParser;
+	var fxScriptParser : hrt.prefab.fx.FXScriptParser;
 
 	override function getDefaultContent() {
-		return haxe.io.Bytes.ofString(ide.toJSON(new hide.prefab.fx.FX().saveData()));
+		return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab.fx.FX().saveData()));
 	}
 
 	override function onFileChanged(wasDeleted:Bool) {
@@ -185,7 +185,7 @@ class FXEditor extends FileView {
 		saveDisplayKey = "FXScene/" + getPath().split("\\").join("/").substr(0,-1);
 		currentTime = 0.;
 		xOffset = -timelineLeftMargin / xScale;
-		data = new hide.prefab.fx.FX();
+		data = new hrt.prefab.fx.FX();
 		var content = sys.io.File.getContent(getPath());
 		data.loadData(haxe.Json.parse(content));
 		currentSign = haxe.crypto.Md5.encode(content);
@@ -253,7 +253,7 @@ class FXEditor extends FileView {
 			modified = false;
 		}
 		scriptEditor.onSave = onSaveScript;
-		fxScriptParser = new hide.prefab.fx.FXScriptParser();
+		fxScriptParser = new hrt.prefab.fx.FXScriptParser();
 		data.scriptCode = scriptEditor.code;
 
 		keys.register("playPause", function() { pauseButton.toggle(!pauseButton.isDown()); });
@@ -434,7 +434,7 @@ class FXEditor extends FileView {
 	}
 
 	function onRefreshScene() {
-		var renderProps = data.find(e -> e.to(hide.prefab.RenderProps));
+		var renderProps = data.find(e -> e.to(hrt.prefab.RenderProps));
 		if(renderProps != null)
 			renderProps.applyProps(scene.s3d.renderer);
 	}
@@ -673,10 +673,10 @@ class FXEditor extends FileView {
 			updateExpanded();
 		});
 		var dopesheet = trackEl.find(".dopesheet");
-		var evaluator = new hide.prefab.fx.Evaluator(new hxd.Rand(0));
+		var evaluator = new hrt.prefab.fx.Evaluator(new hxd.Rand(0));
 
 		function getKeyColor(key) {
-			return evaluator.getVector(hide.prefab.Curve.getColorValue(curves), key.time);
+			return evaluator.getVector(Curve.getColorValue(curves), key.time);
 		}
 
 		function dragKey(from: hide.comp.CurveEditor, prevTime: Float, newTime: Float) {
@@ -744,7 +744,7 @@ class FXEditor extends FileView {
 		}
 
 
-		function keyContextClick(key: hide.prefab.Curve.CurveKey, el: Element) {
+		function keyContextClick(key: hrt.prefab.Curve.CurveKey, el: Element) {
 			function setCurveVal(suffix: String, value: Float) {
 				var c = curves.find(c -> StringTools.endsWith(c.name, suffix));
 				if(c != null) {
@@ -1002,8 +1002,8 @@ class FXEditor extends FileView {
 				<div class="tracks"></div>
 			</div>').appendTo(scrollPanel);
 			var addTrackEl = objPanel.find(".addtrack");
-			var objElt = Std.instance(sec.elt, hide.prefab.Object3D);
-			var shaderElt = Std.instance(sec.elt, hide.prefab.Shader);
+			var objElt = Std.instance(sec.elt, hrt.prefab.Object3D);
+			var shaderElt = Std.instance(sec.elt, hrt.prefab.Shader);
 
 			addTrackEl.click(function(e) {
 				var menuItems = getNewTrackMenu(sec.elt);
@@ -1014,7 +1014,7 @@ class FXEditor extends FileView {
 			if(sec.events.length > 0)
 				addEventsTrack(sec.events, tracksEl);
 
-			var groups = hide.prefab.Curve.getGroups(sec.curves);
+			var groups = Curve.getGroups(sec.curves);
 			for(group in groups) {
 				addCurvesTrack(group.name, group.items, tracksEl);
 			}
@@ -1087,9 +1087,9 @@ class FXEditor extends FileView {
 	}
 
 	public function getNewTrackMenu(elt: PrefabElement) : Array<hide.comp.ContextMenu.ContextMenuItem> {
-		var objElt = Std.instance(elt, hide.prefab.Object3D);
-		var shaderElt = Std.instance(elt, hide.prefab.Shader);
-		var emitterElt = Std.instance(elt, hide.prefab.fx.Emitter);
+		var objElt = Std.instance(elt, hrt.prefab.Object3D);
+		var shaderElt = Std.instance(elt, hrt.prefab.Shader);
+		var emitterElt = Std.instance(elt, hrt.prefab.fx.Emitter);
 		var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
 
 		inline function hasTrack(pname) {
@@ -1178,7 +1178,7 @@ class FXEditor extends FileView {
 			}
 		}
 		if(emitterElt != null) {
-			function addParam(param : hide.prefab.fx.Emitter.ParamDef, prefix: String) {
+			function addParam(param : hrt.prefab.fx.Emitter.ParamDef, prefix: String) {
 				var label = prefix + (param.disp != null ? param.disp : upperCase(param.name));
 				var item : hide.comp.ContextMenu.ContextMenuItem = switch(param.t) {
 					case PVec(n, _):
@@ -1191,12 +1191,12 @@ class FXEditor extends FileView {
 				};
 				menuItems.push(item);
 			}
-			for(param in hide.prefab.fx.Emitter.emitterParams) {
+			for(param in hrt.prefab.fx.Emitter.emitterParams) {
 				if(!param.animate)
 					continue;
 				addParam(param, "");
 			}
-			for(param in hide.prefab.fx.Emitter.instanceParams) {
+			for(param in hrt.prefab.fx.Emitter.instanceParams) {
 				if(!param.animate)
 					continue;
 				addParam(param, "Instance ");
@@ -1236,10 +1236,10 @@ class FXEditor extends FileView {
 	}
 
 	function onUpdate(dt:Float) {
-		var anim : hide.prefab.fx.FX.FXAnimation = null;
+		var anim : hrt.prefab.fx.FX.FXAnimation = null;
 		var ctx = sceneEditor.getContext(data);
 		if(ctx != null && ctx.local3d != null) {
-			anim = Std.instance(ctx.local3d,hide.prefab.fx.FX.FXAnimation);
+			anim = Std.instance(ctx.local3d,hrt.prefab.fx.FX.FXAnimation);
 		}
 		if(!pauseButton.isDown()) {
 			currentTime += scene.speed * dt;
@@ -1306,7 +1306,7 @@ class FXEditor extends FileView {
 	}
 
 	static function isEmitterCurve(curve: Curve) {
-		return curve.getParent(hide.prefab.fx.Emitter) != null;
+		return curve.getParent(hrt.prefab.fx.Emitter) != null;
 	}
 
 	static var _ = FileTree.registerExtension(FXEditor, ["fx"], { icon : "sitemap", createNew : "FX" });

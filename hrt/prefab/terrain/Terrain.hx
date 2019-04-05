@@ -1,4 +1,4 @@
-package hide.prefab.terrain;
+package hrt.prefab.terrain;
 using Lambda;
 
 typedef SurfaceProps = {
@@ -27,13 +27,13 @@ class Terrain extends Object3D {
 	var parallaxMaxStep : Int = 16;
 	var heightBlendStrength : Float = 0.0;
 	var blendSharpness : Float = 0.0;
-	var packWeight = new h3d.pass.ScreenFx(new hide.prefab.terrain.PackWeight());
-	var unpackWeight = new h3d.pass.ScreenFx(new hide.prefab.terrain.UnpackWeight());
+	var unpackWeight = new h3d.pass.ScreenFx(new UnpackWeight());
 
 	var surfaceCount = 0;
 	var surfaceSize = 0;
 
 	#if editor
+	var packWeight = new h3d.pass.ScreenFx(new PackWeight());
 	var editor : hide.prefab.terrain.TerrainEditor;
 	var cachedInstance : h3d.scene.pbr.terrain.Terrain;
 	public var showChecker = false;
@@ -102,35 +102,6 @@ class Terrain extends Object3D {
 		#end
 
 		return obj;
-	}
-
-	public function saveHeightTextures( ctx : Context ) {
-		for( tile in terrain.tiles ) {
-			var pixels = tile.heightMap.capturePixels();
-			var fileName = tile.tileX + "_" + tile.tileY + "_" + "h";
-			ctx.shared.savePrefabDat(fileName, "heightMap", name, pixels.bytes);
-		}
-	}
-
-	public function saveWeightTextures( ctx : Context ) {
-		var packedWeightsTex = new h3d.mat.Texture(terrain.weightMapResolution, terrain.weightMapResolution, [Target], RGBA);
-		for( tile in terrain.tiles ) {
-			h3d.Engine.getCurrent().pushTarget(packedWeightsTex);
-			packWeight.shader.indexMap = tile.surfaceIndexMap;
-			packWeight.shader.weightTextures = tile.surfaceWeightArray;
-			packWeight.shader.weightCount = tile.surfaceWeights.length;
-			packWeight.render();
-
-			var pixels = packedWeightsTex.capturePixels();
-			var bytes = pixels.toPNG();
-			var fileName = tile.tileX + "_" + tile.tileY + "_" + "w";
-			ctx.shared.savePrefabDat(fileName, "png", name, bytes);
-
-			var pixels = tile.surfaceIndexMap.capturePixels();
-			var bytes = pixels.toPNG();
-			var fileName = tile.tileX + "_" + tile.tileY + "_" + "i";
-			ctx.shared.savePrefabDat(fileName, "png", name, bytes);
-		}
 	}
 
 	function loadTiles( ctx : Context, height = true, index = true , weight = true ) {
@@ -250,6 +221,38 @@ class Terrain extends Object3D {
 		//#end
 	}
 
+
+	#if editor
+
+	public function saveHeightTextures( ctx : Context ) {
+		for( tile in terrain.tiles ) {
+			var pixels = tile.heightMap.capturePixels();
+			var fileName = tile.tileX + "_" + tile.tileY + "_" + "h";
+			ctx.shared.savePrefabDat(fileName, "heightMap", name, pixels.bytes);
+		}
+	}
+
+	public function saveWeightTextures( ctx : Context ) {
+		var packedWeightsTex = new h3d.mat.Texture(terrain.weightMapResolution, terrain.weightMapResolution, [Target], RGBA);
+		for( tile in terrain.tiles ) {
+			h3d.Engine.getCurrent().pushTarget(packedWeightsTex);
+			packWeight.shader.indexMap = tile.surfaceIndexMap;
+			packWeight.shader.weightTextures = tile.surfaceWeightArray;
+			packWeight.shader.weightCount = tile.surfaceWeights.length;
+			packWeight.render();
+
+			var pixels = packedWeightsTex.capturePixels();
+			var bytes = pixels.toPNG();
+			var fileName = tile.tileX + "_" + tile.tileY + "_" + "w";
+			ctx.shared.savePrefabDat(fileName, "png", name, bytes);
+
+			var pixels = tile.surfaceIndexMap.capturePixels();
+			var bytes = pixels.toPNG();
+			var fileName = tile.tileX + "_" + tile.tileY + "_" + "i";
+			ctx.shared.savePrefabDat(fileName, "png", name, bytes);
+		}
+	}
+
 	public function saveBinary( ctx : Context ) {
 		var count = terrain.surfaces.length;
 		for( i in 0 ... count ) {
@@ -261,6 +264,8 @@ class Terrain extends Object3D {
 			ctx.shared.savePrefabDat("normal_" + i, "bin", name, pixels.bytes);
 		}
 	}
+
+	#end
 
 	public function loadBinary( ctx : Context ) {
 
@@ -403,7 +408,7 @@ class Terrain extends Object3D {
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
 		var props = new hide.Element('<div></div>');
-		if( editor == null ) editor = new TerrainEditor(this, ctx.properties.undo);
+		if( editor == null ) editor = new hide.prefab.terrain.TerrainEditor(this, ctx.properties.undo);
 		editor.editContext = ctx;
 		editor.setupUI(props, ctx);
 		props.append('

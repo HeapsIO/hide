@@ -1,8 +1,8 @@
-
 package hide.prefab.terrain;
-#if editor
+
 using Lambda;
 import hxd.Key as K;
+import hxd.prefab.Context;
 
 enum RenderMode {
 	PBR;
@@ -56,7 +56,7 @@ class TerrainEditor {
 	var setHeight = new h3d.pass.ScreenFx(new hide.prefab.terrain.SetHeight());
 	var smoothHeight = new h3d.pass.ScreenFx(new hide.prefab.terrain.SmoothHeight());
 
-	var terrainPrefab : hide.prefab.terrain.Terrain;
+	var terrainPrefab : hrt.prefab.terrain.Terrain;
 	var undo : hide.ui.UndoHistory;
 	var tileTrashBin : Array<h3d.scene.pbr.terrain.Tile> = [];
 	var paintRevertDatas : Array<TileRevertData> = [];
@@ -67,7 +67,7 @@ class TerrainEditor {
 	var customRenderer : hide.prefab.terrain.CustomRenderer;
 	var renderMode : RenderMode = PBR;
 
-	public function new( terrainPrefab : hide.prefab.terrain.Terrain, undo : hide.ui.UndoHistory ) {
+	public function new( terrainPrefab : hrt.prefab.terrain.Terrain, undo : hide.ui.UndoHistory ) {
 		this.terrainPrefab = terrainPrefab;
 		this.undo = undo;
 		autoCreateTile = terrainPrefab.autoCreateTile;
@@ -1079,5 +1079,3 @@ class TerrainEditor {
 		tmpTexPath = null;
 	}
 }
-
-#end

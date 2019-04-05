@@ -1,8 +1,8 @@
-package hide.prefab.fx;
-import  hide.prefab.fx.FXScript;
+package hrt.prefab.fx;
+import hrt.prefab.fx.FXScript;
 
 @:access(hide.view.FXEditor)
-@:access(hide.prefab.fx.FXScript)
+@:access(hrt.prefab.fx.FXScript)
 class FXScriptParser {
 
 	public var firstParse = false;
@@ -26,13 +26,13 @@ class FXScriptParser {
 		#end
 	}
 
-	public function createFXScript( s : String, fx : hide.prefab.fx.FX.FXAnimation ) : FXScript {
+	public function createFXScript( s : String, fx : hrt.prefab.fx.FX.FXAnimation ) : FXScript {
 		var parser = new hscript.Parser();
 		parser.allowMetadata = true;
 		parser.allowTypes = true;
 		parser.allowJSON = true;
 		var expr : hscript.Expr = null;
-		var script = new hide.prefab.fx.FXScript(fx);
+		var script = new hrt.prefab.fx.FXScript(fx);
 
 		function parse( expr : hscript.Expr ) {
 			if( expr == null ) return;

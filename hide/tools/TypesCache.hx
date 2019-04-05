@@ -1,6 +1,6 @@
 package hide.tools;
 import hide.comp.PropsEditor;
-import hide.prefab.Props;
+import hrt.prefab.Props;
 
 enum ModelKind {
 	PrefabDef;
@@ -10,7 +10,7 @@ enum ModelKind {
 typedef TypeModel = {
 	var id : String;
 	var kind : ModelKind;
-	var fields : Array<hide.prefab.Props.PropDef>;
+	var fields : Array<PropDef>;
 	var file : TypeFile;
 }
 
@@ -147,7 +147,7 @@ class TypesCache {
 						for( i in shader.inits ) {
 							var fl = fmap.get(i.v.name);
 							if( !fl.t.match(PUnsupported(_)) )
-								fl.def = hide.prefab.Shader.evalConst(i.e);
+								fl.def = hrt.prefab.Shader.evalConst(i.e);
 						}
 					}
 					file.models.push({ id : pack + c.name, kind : Shader, file : file, fields : fields });

@@ -1,5 +1,5 @@
 package hide.comp;
-import hide.prefab.Props;
+import hrt.prefab.Props;
 
 class PropsEditor extends Component {
 
