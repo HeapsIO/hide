@@ -114,7 +114,7 @@ class IconTree<T:{}> extends Component {
 					callb.call(this, makeContent(obj.parent == null ? null : map.get(obj.id)));
 				}
 			},
-			plugins : [ "wholerow", "dnd", "changed" ],
+			plugins : [ "dnd", "changed" ],
 		});
 		element.on("click.jstree", function (event) {
 			var node = new Element(event.target).closest("li");

@@ -844,6 +844,7 @@
 						$(e.currentTarget).mouseenter();
 						this.element.attr('tabindex', '-1');
 					}, this))
+				/*
 				.on('focus.jstree', $.proxy(function () {
 						if(+(new Date()) - was_click > 500 && !this._data.core.focused) {
 							was_click = 0;
@@ -853,6 +854,7 @@
 							}
 						}
 					}, this))
+				*/
 				.on('mouseenter.jstree', '.jstree-anchor', $.proxy(function (e) {
 						this.hover_node(e.currentTarget);
 					}, this))

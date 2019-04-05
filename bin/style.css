@@ -1065,6 +1065,8 @@ body.hide-subview .lm_controls {
 .jstree {
   background: transparent !important;
   padding-bottom: 40px;
+  outline: none;
+  position: relative;
 }
 .jstree .filtered {
   display: none;
