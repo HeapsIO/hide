@@ -1028,6 +1028,169 @@ input[type=checkbox]:checked:after {
 .terrain-surfaces .surface:hover .tooltiptext {
   visibility: visible;
 }
+/* Shader Editor */
+.shader-view #add-menu {
+  position: absolute;
+  width: 400px;
+  box-shadow: 0px 0px 25px -4px black;
+  background-color: #222222;
+  border: 1px solid #444;
+}
+.shader-view #add-menu .search-container {
+  display: flex;
+}
+.shader-view #add-menu .search-container .icon {
+  width: 16px;
+  font-size: 15px;
+  text-align: center;
+  padding: 7px;
+  border: solid #444;
+  background: #2d2d2d;
+  border-width: 0 1px 1px 0;
+}
+.shader-view #add-menu .search-container .search-bar {
+  flex: 1;
+  margin: -1px 11px 0px -1px;
+}
+.shader-view #add-menu .search-container .search-bar input {
+  width: 100%;
+  height: 30px;
+  padding-left: 10px;
+  outline: none;
+}
+.shader-view #add-menu .search-container .search-bar input:focus {
+  border: 1px solid #888888;
+}
+.shader-view #add-menu #results {
+  max-height: 300px;
+  overflow-y: auto;
+}
+.shader-view #add-menu #results div {
+  padding: 5px;
+  border-top: 1px solid #444444;
+  cursor: pointer;
+  color: #d4d4d4;
+  position: relative;
+}
+.shader-view #add-menu #results div.group {
+  background: #474747;
+  color: #c0c0c0;
+  cursor: default;
+  z-index: 1;
+  box-shadow: 0px 0px 34px -9px black;
+}
+.shader-view #add-menu #results div.group:hover {
+  background: #474747!important;
+  color: #dadada!important;
+  box-shadow: none;
+}
+.shader-view #add-menu #results div > span:first-child {
+  font-weight: bold;
+  padding-left: 10px;
+}
+.shader-view #add-menu #results div > span:last-child {
+  font-style: oblique;
+  padding-left: 7px;
+}
+.shader-view #add-menu #results div:first-child {
+  border-top: 0;
+}
+.shader-view #add-menu #results div:hover,
+.shader-view #add-menu #results div.selected {
+  background: #5eb7bf;
+  color: #000000;
+  box-shadow: inset 0px 0px 12px -1px black;
+  z-index: 3;
+}
+.shader-view .heaps-scene #preview {
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  background-color: #111;
+  border: 1px solid #444;
+  right: 290px;
+  bottom: 10px;
+}
+.shader-view .heaps-scene svg g {
+  stroke: #202020;
+}
+.shader-view .heaps-scene svg g.selected .outline {
+  stroke: #668fff;
+}
+.shader-view .heaps-scene svg .outline {
+  fill: none;
+}
+.shader-view .heaps-scene svg .head-box {
+  fill: #424242;
+}
+.shader-view .heaps-scene svg .title-box {
+  fill: #ffffff;
+  stroke: none;
+  user-select: none;
+}
+.shader-view .heaps-scene svg .title-box::selection {
+  background: none;
+}
+.shader-view .heaps-scene svg .nodes,
+.shader-view .heaps-scene svg .parameters {
+  fill: #5c5c5c;
+  opacity: 0.75;
+}
+.shader-view .heaps-scene svg .input-node,
+.shader-view .heaps-scene svg .output-node {
+  fill: #c8c8c8;
+  stroke-width: 15px;
+  stroke-opacity: 0;
+}
+.shader-view .heaps-scene svg .input-node.nodeMatch,
+.shader-view .heaps-scene svg .output-node.nodeMatch {
+  fill: #5ca4ab;
+}
+.shader-view .heaps-scene svg .title-node,
+.shader-view .heaps-scene svg .title-param {
+  fill: #ffffff;
+  stroke: none;
+  user-select: none;
+}
+.shader-view .heaps-scene svg .title-node::selection,
+.shader-view .heaps-scene svg .title-param::selection {
+  background: none;
+}
+.shader-view .heaps-scene svg .parameters-group span {
+  color: #ffffff;
+  user-select: none;
+}
+.shader-view .heaps-scene svg .parameters-group span::selection {
+  background: none;
+}
+.shader-view .heaps-scene svg .parameters-group input[type=text],
+.shader-view .heaps-scene svg .parameters-group select {
+  width: 100%;
+}
+.shader-view .heaps-scene svg .edge {
+  stroke-width: 2;
+  stroke: #c8c8c8;
+  fill: transparent;
+}
+.shader-view .heaps-scene svg .edge:not(.draft):hover,
+.shader-view .heaps-scene svg .edge:not(.draft).selected {
+  stroke-width: 5;
+  stroke: #72b4ff;
+}
+.shader-view .heaps-scene svg .rect-selection {
+  stroke: rgba(0, 0, 255, 0.7);
+  fill: rgba(70, 70, 116, 0.08);
+}
+.shader-view .tabs {
+  width: 280px;
+  padding-top: 10px;
+  border-left: 1px solid #444444;
+}
+.shader-view .tabs span {
+  margin-left: 5px;
+  font-size: 15px;
+  font-weight: bold;
+}
 /* Golden Layout Fixes */
 .lm_header .lm_tabs {
   z-index: 1;

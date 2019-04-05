@@ -1,0 +1,107 @@
+package hrt.shgraph;
+
+import hide.Element;
+import hxsl.*;
+
+using hxsl.Ast;
+
+@name("Inputs")
+@description("Parameters inputs, it's dynamic")
+@group("Input")
+@noheader()
+class ShaderInput extends ShaderNode {
+
+	@output() var output = SType.Variant;
+
+	@param("Variable") public var variable : TVar;
+
+	override public function getOutput(key : String) : TVar {
+		return variable;
+	}
+
+	override public function build(key : String) : TExpr {
+		return null;
+	}
+
+	static var availableInputs = [{
+						parent: null,
+						id: 0,
+						kind: Global,
+						name: "global.time",
+						type: TFloat
+					},
+					{
+						parent: null,
+						id: 0,
+						kind: Input,
+						name: "input.uv",
+						type: TVec(2, VFloat)
+					}];
+
+	override public function loadParameters(params : Dynamic) {
+		var paramVariable : String = Reflect.field(params, "variable");
+
+		for (c in ShaderNode.availableVariables) {
+			if (c.name == paramVariable) {
+				this.variable = c;
+				return;
+			}
+		}
+		for (c in ShaderInput.availableInputs) {
+			if (c.name == paramVariable) {
+				this.variable = c;
+				return;
+			}
+		}
+	}
+
+	override public function saveParameters() : Dynamic {
+		var parameters = {
+			variable: variable.name
+		};
+
+		return parameters;
+	}
+
+	#if editor
+	override public function getParametersHTML(width : Float) : Array<Element> {
+		var elements = super.getParametersHTML(width);
+		var element = new Element('<div style="width: 110px; height: 30px"></div>');
+		element.append(new Element('<select id="variable"></select>'));
+
+		if (this.variable == null) {
+			this.variable = ShaderNode.availableVariables[0];
+		}
+		var input = element.children("select");
+		var indexOption = 0;
+		for (c in ShaderNode.availableVariables) {
+			input.append(new Element('<option value="${indexOption}">${c.name}</option>'));
+			if (this.variable.name == c.name) {
+				input.val(indexOption);
+			}
+			indexOption++;
+		}
+		for (c in ShaderInput.availableInputs) {
+			input.append(new Element('<option value="${indexOption}">${c.name}</option>'));
+			if (this.variable.name == c.name) {
+				input.val(indexOption);
+			}
+			indexOption++;
+		}
+		input.on("change", function(e) {
+			var value = input.val();
+			if (value < ShaderNode.availableVariables.length) {
+				this.variable = ShaderNode.availableVariables[value];
+			} else {
+				this.variable = ShaderInput.availableInputs[value-ShaderNode.availableVariables.length];
+			}
+		});
+
+
+		elements.push(element);
+
+		return elements;
+	}
+	#end
+
+}

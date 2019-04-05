@@ -45,6 +45,14 @@ class SVG extends Component {
 		return make(parent, "line", {x1:x1, y1:y1, x2:x2, y2:y2}, style);
 	}
 
+	public function curve(?parent: Element, x1:Float, y1:Float, x2:Float, y2:Float, xTurn:Float, yTurn:Float, ?style:Dynamic) {
+		return make(parent, "path", {d : 'M ${x1} ${y1} Q ${xTurn} ${yTurn}, ${x1 + (x2-x1)/2} ${y1 + (y2-y1)/2}, T ${x2} ${y2}'}, style);
+	}
+
+	public function foreignObject(?parent: Element, x:Float, y:Float, width:Float, height:Float, ?style:Dynamic) {
+		return make(parent, "foreignObject", {x:x, y:y, width:width, height:height}, style);
+	}
+
 	public function polygon(?parent: Element, points: Array<h2d.col.Point>, ?style:Dynamic) {
 		// TODO: Use https://www.w3schools.com/graphics/svg_polygon.asp
 		var lines = ['M${points[0].x},${points[0].y} '];

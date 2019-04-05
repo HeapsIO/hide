@@ -1143,6 +1143,202 @@ input[type=checkbox] {
 	}
 }
 
+/* Shader Editor */
+.shader-view {
+	#add-menu {
+		position: absolute;
+		width: 400px;
+		box-shadow: 0px 0px 25px -4px black;
+
+		background-color: rgb(34, 34, 34);
+		border: 1px solid #444;
+
+		.search-container {
+			display: flex;
+
+			.icon {
+				width: 16px;
+				font-size: 15px;
+				text-align: center;
+				padding: 7px;
+				border: solid #444;
+				background: #2d2d2d;
+				border-width: 0 1px 1px 0;
+			}
+
+			.search-bar {
+				flex: 1;
+				margin: -1px 11px 0px -1px;
+
+				input {
+					width: 100%;
+					height: 30px;
+					padding-left: 10px;
+					outline: none;
+
+					&:focus {
+						border: 1px solid #888888;
+					}
+				}
+			}
+		}
+		#results {
+			max-height: 300px;
+
+    		overflow-y: auto;
+			div {
+				padding: 5px;
+				border-top: 1px solid #444444;
+				cursor: pointer;
+				color: #d4d4d4;
+
+				& {
+					position: relative;
+				}
+
+				&.group {
+					background: #474747;
+					color: #c0c0c0;
+					cursor: default;
+					z-index: 1;
+    				box-shadow: 0px 0px 34px -9px black;
+
+					&:hover {
+						background: #474747!important;
+						color: #dadada!important;
+						box-shadow: none;
+					}
+				}
+
+				& > span:first-child {
+					font-weight: bold;
+					padding-left: 10px;
+				}
+				& > span:last-child {
+					font-style: oblique;
+					padding-left: 7px;
+				}
+				&:first-child {
+					border-top: 0;
+				}
+				&:hover, &.selected {
+					background: #5eb7bf;
+					color: #000000;
+					box-shadow: inset 0px 0px 12px -1px black;
+    				z-index: 3;
+				}
+			}
+		}
+
+	}
+	.heaps-scene {
+		#preview {
+			position: absolute;
+
+			width: 300px;
+			height: 300px;
+
+			background-color: #111;
+   			border: 1px solid #444;
+
+			right: 290px;
+			bottom: 10px;
+		}
+		svg {
+
+			g {
+				stroke: #202020;
+
+				&.selected {
+					.outline {
+						stroke: #668fff;
+					}
+				}
+			}
+			.outline {
+				fill: none;
+			}
+
+			.head-box {
+				fill: #424242;
+			}
+
+			.title-box {
+				fill: #ffffff;
+				stroke: none;
+				user-select: none;
+				&::selection {
+					background: none;
+				}
+			}
+
+			.nodes, .parameters {
+				fill: #5c5c5c;
+				opacity: 0.75;
+			}
+
+			.input-node, .output-node {
+				fill: rgb(200, 200, 200);
+				stroke-width: 15px;
+				stroke-opacity: 0;
+
+				&.nodeMatch {
+					fill: #5ca4ab;
+				}
+			}
+
+			.title-node, .title-param {
+				fill: #ffffff;
+				stroke: none;
+				user-select: none;
+				&::selection {
+					background: none;
+				}
+			}
+
+			.parameters-group {
+				span {
+					color: #ffffff;
+					user-select: none;
+					&::selection {
+						background: none;
+					}
+				}
+				input[type=text], select {
+					width: 100%;
+				}
+			}
+
+			.edge {
+				stroke-width: 2;
+				stroke: rgb(200, 200, 200);
+				fill: transparent;
+			}
+
+			.edge:not(.draft):hover, .edge:not(.draft).selected {
+				stroke-width: 5;
+				stroke: rgb(114, 180, 255);
+			}
+
+			.rect-selection {
+				stroke: rgba(0, 0, 255, 0.7);
+				fill: rgba(70, 70, 116, 0.08);
+			}
+		}
+	}
+	.tabs {
+		width: 280px;
+		padding-top: 10px;
+		border-left: 1px solid #444444;
+
+		span { // title
+			margin-left: 5px;
+			font-size: 15px;
+			font-weight: bold;
+		}
+	}
+}
+
 /* Golden Layout Fixes */
 
 .lm_header .lm_tabs {
