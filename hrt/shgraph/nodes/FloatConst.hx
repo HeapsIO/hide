@@ -33,10 +33,13 @@ class FloatConst extends ShaderConst {
 
 		var input = element.children("input");
 		input.on("change", function(e) {
-			try {
-				value = Std.parseFloat(input.val());
-			} catch (e : Dynamic) {
-
+			var tmpValue = Std.parseFloat(input.val());
+			if (Math.isNaN(tmpValue) ) {
+				input.addClass("error");
+			} else {
+				this.value = tmpValue;
+				input.val(tmpValue);
+				input.removeClass("error");
 			}
 		});
 

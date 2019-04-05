@@ -46,8 +46,12 @@ class Cond extends ShaderNode {
 			};
 	}
 
-	var availableConditions = [OpEq, OpNotEq, OpGt, OpGte, OpLt, OpLte, OpAnd, OpOr];
+	var availableConditions : Array<Binop> = [OpEq, OpNotEq, OpGt, OpGte, OpLt, OpLte, OpAnd, OpOr];
 	var conditionStrings 	= ["==", "!=",    ">",  ">=",  "<",  "<=",  "AND", "OR"];
+
+	override public function loadParameters(params : Dynamic) {
+		this.condition = std.Type.createEnum(Binop, Reflect.field(params, "condition"));
+	}
 
 	override public function saveParameters() : Dynamic {
 		var parameters = {
@@ -64,17 +68,22 @@ class Cond extends ShaderNode {
 		element.append('<span>Condition</span>');
 		element.append(new Element('<select id="condition"></select>'));
 
+		if (this.condition == null) {
+			this.condition = availableConditions[0];
+		}
 		var input = element.children("select");
 		var indexOption = 0;
 		for (c in conditionStrings) {
 			input.append(new Element('<option value="${indexOption}">${c}</option>'));
+			if (this.condition == availableConditions[indexOption]) {
+				input.val(indexOption);
+			}
 			indexOption++;
 		}
 		input.on("change", function(e) {
 			var value = input.val();
 			this.condition = availableConditions[value];
 		});
-		this.condition = availableConditions[0];
 
 		elements.push(element);
 

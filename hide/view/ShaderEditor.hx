@@ -327,7 +327,11 @@ class ShaderEditor extends FileView {
 			});
 		}
 
-		new Element("body").ready(function(e) {
+		listOfBoxes = [];
+		listOfEdges = [];
+
+		new Element("svg").ready(function(e) {
+
 			for (node in shaderGraph.getNodes()) {
 				addBox(new Point(node.x, node.y), std.Type.getClass(node.instance), node.instance);
 			}
@@ -539,18 +543,17 @@ class ShaderEditor extends FileView {
 			endLinkNode = tmpNode;
 		}
 
-		var edge = { from: startLinkBox, nodeFrom : startLinkNode, to : endLinkBox, nodeTo : endLinkNode, elt : currentLink };
+		var newEdge = { from: startLinkBox, nodeFrom : startLinkNode, to : endLinkBox, nodeTo : endLinkNode, elt : currentLink };
 		if (endLinkNode.attr("hasLink") != null) {
-			var length = listOfEdges.length;
-			for (i in 0...length) {
-				var e = listOfEdges[length-i-1];
-				if (e.to == edge.to) {
-					removeEdge(e);
+			for (edge in listOfEdges) {
+				if (edge.nodeTo.is(endLinkNode)) {
+					removeEdge(edge);
+					break;
 				}
 			}
 		}
 		shaderGraph.addEdge({ idOutput: startLinkBox.getId(), nameOutput: startLinkNode.attr("field"), idInput: endLinkBox.getId(), nameInput: endLinkNode.attr("field") });
-		createEdgeInEditorGraph(edge);
+		createEdgeInEditorGraph(newEdge);
 		currentLink.removeClass("draft");
 		currentLink = null;
 	}
