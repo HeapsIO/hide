@@ -176,7 +176,7 @@ class FileTree extends FileView {
 		var isDir = sys.FileSystem.isDirectory(ide.getPath(path));
 		if( isDir )
 			throw "TODO : rename directory";
-		ide.filterPrefabs(function(p:hxd.prefab.Prefab) {
+		ide.filterPrefabs(function(p:hrt.prefab.Prefab) {
 			var changed = false;
 			function filter(p:String) {
 				if( p == null )

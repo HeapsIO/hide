@@ -1,6 +1,5 @@
 package hrt.prefab;
 
-
 class Material extends Prefab {
 
 	public var wrapRepeat = false;
@@ -95,7 +94,7 @@ class Material extends Prefab {
 			return;
 
 		var obj = ctx.local3d;
-		if(parent != null && Type.getClass(parent) == hrt.prefab.Object3D) {
+		if(parent != null && Type.getClass(parent) == Object3D) {
 			for(i in 0...obj.numChildren) {
 				updateObject(ctx, obj.getChildAt(i));
 			}
@@ -155,10 +154,10 @@ class Material extends Prefab {
 	public static function hasOverride(p: Prefab) {
 		if(Lambda.exists(p.children, c -> Std.is(c, Material) && c.enabled))
 			return true;
-		if(Type.getClass(p.parent) == hrt.prefab.Object3D)
+		if(Type.getClass(p.parent) == Object3D)
 			return Lambda.exists(p.parent.children, c -> Std.is(c, Material) && c.enabled);
 		return false;
 	}
 
-	static var _ = hxd.prefab.Library.register("material", Material);
+	static var _ = Library.register("material", Material);
 }

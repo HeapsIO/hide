@@ -6,7 +6,7 @@ typedef EventInstance = {
 	setTime: Float->Void
 };
 
-class Event extends hxd.prefab.Prefab {
+class Event extends hrt.prefab.Prefab {
 	public var time: Float = 0.0;
 
 	override function save() : {} {

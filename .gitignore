@@ -6,3 +6,4 @@
 *.lnk
 /bin/*.map
 /bin/shaders
+/out.hl

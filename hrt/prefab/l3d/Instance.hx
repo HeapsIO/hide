@@ -19,7 +19,7 @@ class Instance extends Object3D {
 		var modelPath = findModelPath(kind.sheet, kind.idx.obj);
 		if(modelPath != null) {
 			try {
-				if(hxd.prefab.Library.getPrefabType(modelPath) != null) {
+				if(hrt.prefab.Library.getPrefabType(modelPath) != null) {
 					var ref = ctx.shared.loadPrefab(modelPath);
 					var ctx = ctx.clone(this);
 					ctx.isRef = true;
@@ -96,7 +96,7 @@ class Instance extends Object3D {
 		function filter(f: String) {
 			if(f != null) {
 				var lower = f.toLowerCase();
-				if(StringTools.endsWith(lower, ".fbx") || hxd.prefab.Library.getPrefabType(lower) != null)
+				if(StringTools.endsWith(lower, ".fbx") || hrt.prefab.Library.getPrefabType(lower) != null)
 					return f;
 			}
 			return null;
@@ -163,5 +163,5 @@ class Instance extends Object3D {
 	}
 	#end
 
-	static var _ = hxd.prefab.Library.register("instance", Instance);
+	static var _ = Library.register("instance", Instance);
 }

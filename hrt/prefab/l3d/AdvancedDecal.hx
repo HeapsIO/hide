@@ -223,6 +223,6 @@ class AdvancedDecal extends Object3D {
 	}
 	#end
 
-	static var _ = hxd.prefab.Library.register("advancedDecal", AdvancedDecal);
+	static var _ = Library.register("advancedDecal", AdvancedDecal);
 
 }

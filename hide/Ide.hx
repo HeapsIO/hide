@@ -645,10 +645,10 @@ class Ide {
 		return str;
 	}
 
-	public function loadPrefab<T:hxd.prefab.Prefab>( file : String, ?cl : Class<T> ) : T {
+	public function loadPrefab<T:hrt.prefab.Prefab>( file : String, ?cl : Class<T> ) : T {
 		if( file == null )
 			return null;
-		var l = hxd.prefab.Library.create(file.split(".").pop().toLowerCase());
+		var l = hrt.prefab.Library.create(file.split(".").pop().toLowerCase());
 		try {
 			l.loadData(parseJSON(sys.io.File.getContent(getPath(file))));
 		} catch( e : Dynamic ) {
@@ -660,13 +660,13 @@ class Ide {
 		return l.get(cl);
 	}
 
-	public function savePrefab( file : String, f : hxd.prefab.Prefab ) {
+	public function savePrefab( file : String, f : hrt.prefab.Prefab ) {
 		var content = f.saveData();
 		sys.io.File.saveContent(getPath(file), toJSON(content));
 	}
 
-	public function filterPrefabs( callb : hxd.prefab.Prefab -> Bool ) {
-		var exts = Lambda.array({iterator : @:privateAccess hxd.prefab.Library.registeredExtensions.keys });
+	public function filterPrefabs( callb : hrt.prefab.Prefab -> Bool ) {
+		var exts = Lambda.array({iterator : @:privateAccess hrt.prefab.Library.registeredExtensions.keys });
 		exts.push("prefab");
 		var todo = [];
 		browseFiles(function(path) {
@@ -956,7 +956,7 @@ class Ide {
 
 	static function main() {
 		h3d.pass.ShaderManager.STRICT = false; // prevent errors with bad renderer
-		hide.tools.Macros.include(["hide.view","h3d.prim","h3d.scene","h3d.pass","hide.prefab","hxd.prefab","hrt"]);
+		hide.tools.Macros.include(["hide.view","h3d.prim","h3d.scene","h3d.pass","hide.prefab","hrt"]);
 		new Ide();
 	}
 

@@ -116,6 +116,6 @@ class AnimEvent extends hrt.prefab.fx.Event {
 	}
 	#end
 
-	static var _ = hxd.prefab.Library.register("animEvent", AnimEvent);
+	static var _ = Library.register("animEvent", AnimEvent);
 
 }

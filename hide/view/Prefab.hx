@@ -1,6 +1,6 @@
 package hide.view;
 
-import hxd.prefab.Prefab in PrefabElement;
+import hrt.prefab.Prefab in PrefabElement;
 
 @:access(hide.view.Prefab)
 private class PrefabSceneEditor extends hide.comp.SceneEditor {
@@ -26,7 +26,7 @@ private class PrefabSceneEditor extends hide.comp.SceneEditor {
 class Prefab extends FileView {
 
 	var sceneEditor : PrefabSceneEditor;
-	var data : hxd.prefab.Library;
+	var data : hrt.prefab.Library;
 	var tabs : hide.comp.Tabs;
 
 	var tools : hide.comp.Toolbar;
@@ -46,7 +46,7 @@ class Prefab extends FileView {
 	var currentSign : String;
 
 	override function getDefaultContent() {
-		return haxe.io.Bytes.ofString(ide.toJSON(new hxd.prefab.Library().saveData()));
+		return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab.Library().saveData()));
 	}
 
 	override function onFileChanged(wasDeleted:Bool) {
@@ -69,7 +69,7 @@ class Prefab extends FileView {
 
 	override function onDisplay() {
 		saveDisplayKey = "Prefab:" + getPath().split("\\").join("/").substr(0,-1);
-		data = new hxd.prefab.Library();
+		data = new hrt.prefab.Library();
 		var content = sys.io.File.getContent(getPath());
 		data.loadData(haxe.Json.parse(content));
 		currentSign = haxe.crypto.Md5.encode(content);

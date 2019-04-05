@@ -3,7 +3,7 @@ package hide.comp;
 import hxd.Key as K;
 import hxd.Math as M;
 
-import hxd.prefab.Prefab as PrefabElement;
+import hrt.prefab.Prefab as PrefabElement;
 import hrt.prefab.Object3D;
 import h3d.scene.Object;
 
@@ -38,12 +38,12 @@ class SceneEditorContext extends hide.prefab.EditContext {
 		}
 	}
 
-	override function getCurrentProps( p : hxd.prefab.Prefab ) {
+	override function getCurrentProps( p : hrt.prefab.Prefab ) {
 		var cur = editor.curEdit;
 		return cur != null && cur.elements[0] == p ? editor.properties.element : new Element();
 	}
 
-	function getContextRec( p : hxd.prefab.Prefab ) {
+	function getContextRec( p : hrt.prefab.Prefab ) {
 		if( p == null )
 			return editor.context;
 		var c = editor.context.shared.contexts.get(p);
@@ -57,7 +57,7 @@ class SceneEditorContext extends hide.prefab.EditContext {
 		editor.selectObjects(elements);
 	}
 
-	override function rebuildPrefab( p : hxd.prefab.Prefab ) {
+	override function rebuildPrefab( p : hrt.prefab.Prefab ) {
 		// refresh all for now
 		editor.refresh();
 	}
@@ -85,7 +85,7 @@ class SceneEditor {
 	public var favTree : hide.comp.IconTree<PrefabElement>;
 	public var scene : hide.comp.Scene;
 	public var properties : hide.comp.PropsEditor;
-	public var context(default,null) : hxd.prefab.Context;
+	public var context(default,null) : hrt.prefab.Context;
 	public var curEdit(default, null) : SceneEditorContext;
 	public var snapToGround = false;
 	public var localTransform = true;
@@ -137,7 +137,7 @@ class SceneEditor {
 			onResize();
 		};
 
-		context = new hxd.prefab.Context();
+		context = new hrt.prefab.Context();
 		context.shared = new hide.prefab.ContextShared(scene);
 		context.shared.currentPath = view.state.path;
 		context.init();
@@ -183,7 +183,7 @@ class SceneEditor {
 
 		// Load display state
 		{
-			var all = sceneData.flatten(hxd.prefab.Prefab);
+			var all = sceneData.flatten(hrt.prefab.Prefab);
 			var list = @:privateAccess view.getDisplayState("hideList");
 			if(list != null) {
 				var m = [for(i in (list:Array<Dynamic>)) i => true];
@@ -426,7 +426,7 @@ class SceneEditor {
 
 	function refreshTree( ?callb ) {
 		tree.refresh(function() {
-			var all = sceneData.flatten(hxd.prefab.Prefab);
+			var all = sceneData.flatten(hrt.prefab.Prefab);
 			for(elt in all) {
 				var el = tree.getElement(elt);
 				if(el == null) continue;
@@ -465,7 +465,7 @@ class SceneEditor {
 		scene.engine.backgroundColor = bgcol;
 		refreshInteractives();
 
-		var all = sceneData.flatten(hxd.prefab.Prefab);
+		var all = sceneData.flatten(hrt.prefab.Prefab);
 		for(elt in all)
 			applySceneStyle(elt);
 		onRefresh();
@@ -947,7 +947,7 @@ class SceneEditor {
 		fillProps(edit, e);
 	}
 
-	function setObjectSelected( p : PrefabElement, ctx : hxd.prefab.Context, b : Bool ) {
+	function setObjectSelected( p : PrefabElement, ctx : hrt.prefab.Context, b : Bool ) {
 		p.setSelected(ctx, b);
 	}
 
@@ -989,7 +989,7 @@ class SceneEditor {
 		setupGizmo();
 	}
 
-	function hasBeenRemoved( e : hxd.prefab.Prefab ) {
+	function hasBeenRemoved( e : hrt.prefab.Prefab ) {
 		while( e != null && e != sceneData ) {
 			if( e.parent != null && e.parent.children.indexOf(e) < 0 )
 				return true;
@@ -1035,7 +1035,7 @@ class SceneEditor {
 			var obj3d : Object3D;
 			var relative = ide.makeRelative(path);
 
-			if(hxd.prefab.Library.getPrefabType(path) != null) {
+			if(hrt.prefab.Library.getPrefabType(path) != null) {
 				var ref = new hrt.prefab.Reference(parent);
 				ref.refpath = "/" + relative;
 				obj3d = ref;
@@ -1156,7 +1156,7 @@ class SceneEditor {
 			view.setClipboard(curEdit.rootElements[0].saveData(), "prefab");
 		}
 		else {
-			var lib = new hxd.prefab.Library();
+			var lib = new hrt.prefab.Library();
 			for(e in curEdit.rootElements) {
 				lib.children.push(e);
 			}
@@ -1171,14 +1171,14 @@ class SceneEditor {
 		}
 		var obj = haxe.Json.parse(haxe.Json.stringify(view.getClipboard("prefab")));
 		if(obj != null) {
-			var p = hxd.prefab.Prefab.loadPrefab(obj, parent);
+			var p = hrt.prefab.Prefab.loadPrefab(obj, parent);
 			autoName(p);
 			refresh();
 		}
 		else {
 			obj = view.getClipboard("library");
 			if(obj != null) {
-				var lib = hxd.prefab.Prefab.loadPrefab(obj);
+				var lib = hrt.prefab.Prefab.loadPrefab(obj);
 				for(c in lib.children) {
 					autoName(c);
 					c.parent = parent;
@@ -1593,7 +1593,7 @@ class SceneEditor {
 	// Override
 	function getNewContextMenu(current: PrefabElement, ?onMake: PrefabElement->Void=null) : Array<hide.comp.ContextMenu.ContextMenuItem> {
 		var newItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
-		var allRegs = hxd.prefab.Library.getRegistered().copy();
+		var allRegs = hrt.prefab.Library.getRegistered().copy();
 		allRegs.remove("reference");
 		var parent = current == null ? sceneData : current;
 		var allowChildren = null;
@@ -1623,7 +1623,7 @@ class SceneEditor {
 	}
 
 	function getNewTypeMenuItem(ptype: String, parent: PrefabElement, onMake: PrefabElement->Void, ?label: String) : hide.comp.ContextMenu.ContextMenuItem {
-		var pmodel = hxd.prefab.Library.getRegistered().get(ptype);
+		var pmodel = hrt.prefab.Library.getRegistered().get(ptype);
 		return {
 			label : label != null ? label : pmodel.inf.name,
 			click : function() {

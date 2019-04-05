@@ -110,6 +110,6 @@ class Settings extends Prefab {
 
 	#end
 
-	static var _ = hxd.prefab.Library.register("settings", Settings);
+	static var _ = Library.register("settings", Settings);
 
 }

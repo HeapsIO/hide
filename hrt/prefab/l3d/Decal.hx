@@ -106,6 +106,6 @@ class Decal extends Object3D {
 	}
 	#end
 
-	static var _ = hxd.prefab.Library.register("decal", Decal);
+	static var _ = Library.register("decal", Decal);
 
 }

@@ -116,6 +116,6 @@ class Blur extends Prefab {
 	}
 	#end
 
-	static var _ = hxd.prefab.Library.register("blur", Blur);
+	static var _ = Library.register("blur", Blur);
 
 }

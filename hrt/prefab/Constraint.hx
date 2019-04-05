@@ -69,6 +69,6 @@ class Constraint extends Prefab {
 	}
 	#end
 
-	static var _ = hxd.prefab.Library.register("constraint", Constraint);
+	static var _ = Library.register("constraint", Constraint);
 
 }

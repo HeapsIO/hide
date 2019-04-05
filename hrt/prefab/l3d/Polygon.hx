@@ -353,5 +353,5 @@ class Polygon extends Object3D {
 
 	#end
 
-	static var _ = hxd.prefab.Library.register("polygon", Polygon);
+	static var _ = Library.register("polygon", Polygon);
 }

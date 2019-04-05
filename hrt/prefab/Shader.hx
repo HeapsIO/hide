@@ -2,7 +2,7 @@ package hrt.prefab;
 
 class Shader extends Prefab {
 
-	public var shaderDef : hxd.prefab.ContextShared.ShaderDef;
+	public var shaderDef : hrt.prefab.ContextShared.ShaderDef;
 
 	public function new(?parent) {
 		super(parent);
@@ -190,5 +190,5 @@ class Shader extends Prefab {
 		return null;
 	}
 
-	static var _ = hxd.prefab.Library.register("shader", Shader);
+	static var _ = Library.register("shader", Shader);
 }

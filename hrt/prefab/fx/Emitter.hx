@@ -304,7 +304,7 @@ class EmitterObject extends h3d.scene.Object {
 
 	var random: hxd.Rand;
 	var randomSeed = 0;
-	var context : hxd.prefab.Context;
+	var context : hrt.prefab.Context;
 	var emitCount = 0;
 	var lastTime = -1.0;
 	var curTime = 0.0;
@@ -1076,6 +1076,6 @@ class Emitter extends Object3D {
 	}
 	#end
 
-	static var _ = hxd.prefab.Library.register("emitter", Emitter);
+	static var _ = Library.register("emitter", Emitter);
 
 }

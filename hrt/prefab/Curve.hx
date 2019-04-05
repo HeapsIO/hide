@@ -339,5 +339,5 @@ class Curve extends Prefab {
 			a != null ? VCurve(a) : VConst(1.0));
 	}
 
-	static var _ = hxd.prefab.Library.register("curve", Curve);
+	static var _ = Library.register("curve", Curve);
 }

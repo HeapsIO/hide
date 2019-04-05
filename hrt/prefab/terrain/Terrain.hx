@@ -21,7 +21,7 @@ class Terrain extends Object3D {
 	public var weightMapResolution : Int = 20;
 	public var autoCreateTile = false;
 	var tmpSurfacesProps : Array<SurfaceProps> = [];
-	public var terrain : h3d.scene.pbr.terrain.Terrain;
+	public var terrain : TerrainMesh;
 	var parallaxAmount = 0.0;
 	var parallaxMinStep : Int = 1;
 	var parallaxMaxStep : Int = 16;
@@ -35,7 +35,7 @@ class Terrain extends Object3D {
 	#if editor
 	var packWeight = new h3d.pass.ScreenFx(new PackWeight());
 	var editor : hide.prefab.terrain.TerrainEditor;
-	var cachedInstance : h3d.scene.pbr.terrain.Terrain;
+	var cachedInstance : TerrainMesh;
 	public var showChecker = false;
 	#end
 
@@ -269,7 +269,7 @@ class Terrain extends Object3D {
 
 	public function loadBinary( ctx : Context ) {
 
-		terrain.surfaceArray = new h3d.scene.pbr.terrain.Surface.SurfaceArray(surfaceCount, surfaceSize);
+		terrain.surfaceArray = new Surface.SurfaceArray(surfaceCount, surfaceSize);
 
 		var resDir = ctx.shared.loadDir(name);
 		if( resDir == null ) return;
@@ -335,11 +335,11 @@ class Terrain extends Object3D {
 			return ctx;
 		}
 		else {
-			terrain = new h3d.scene.pbr.terrain.Terrain(ctx.local3d.getScene());
+			terrain = new TerrainMesh(ctx.local3d.getScene());
 			cachedInstance = terrain;
 		}
 		#else
-		terrain = new h3d.scene.pbr.terrain.Terrain(ctx.local3d);
+		terrain = new TerrainMesh(ctx.local3d);
 		#end
 		terrain.cellCount = getCellCount();
 		terrain.cellSize = getCellSize();
@@ -471,5 +471,5 @@ class Terrain extends Object3D {
 	}
 	#end
 
-	static var _ = hxd.prefab.Library.register("terrain", Terrain);
+	static var _ = Library.register("terrain", Terrain);
 }

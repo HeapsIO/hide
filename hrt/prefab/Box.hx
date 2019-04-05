@@ -66,5 +66,5 @@ class Box extends Object3D {
 	}
 	#end
 
-	static var _ = hxd.prefab.Library.register("box", Box);
+	static var _ = Library.register("box", Box);
 }

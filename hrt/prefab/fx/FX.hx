@@ -1,6 +1,6 @@
 package hrt.prefab.fx;
 import hrt.prefab.Curve;
-import hxd.prefab.Prefab as PrefabElement;
+import hrt.prefab.Prefab as PrefabElement;
 
 typedef ShaderParam = {
 	def: hxsl.Ast.TVar,
@@ -216,7 +216,7 @@ class FXAnimation extends h3d.scene.Object {
 	}
 }
 
-class FX extends hxd.prefab.Library {
+class FX extends hrt.prefab.Library {
 
 	public var duration : Float;
 	public var loopAnims : Bool;
@@ -490,5 +490,5 @@ class FX extends hxd.prefab.Library {
 	}
 	#end
 
-	static var _ = hxd.prefab.Library.register("fx", FX, "fx");
+	static var _ = Library.register("fx", FX, "fx");
 }
