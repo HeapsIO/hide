@@ -60,9 +60,9 @@ class ShaderEditor extends FileView {
 	// used to preview
 	var sceneEditor : SceneEditor;
 
-	var root : hxd.prefab.Prefab;
+	var root : hrt.prefab.Prefab;
 	var obj : h3d.scene.Object;
-	var plight : hxd.prefab.Prefab;
+	var plight : hrt.prefab.Prefab;
 	var light : h3d.scene.Object;
 	var lightDirection : h3d.Vector;
 
@@ -97,7 +97,7 @@ class ShaderEditor extends FileView {
 		preview.on("wheel", function(e) { e.stopPropagation(); });
 		parent.append(preview);
 
-		var def = new hxd.prefab.Library();
+		var def = new hrt.prefab.Library();
 		new hrt.prefab.RenderProps(def).name = "renderer";
 		var l = new hrt.prefab.Light(def);
 		l.name = "sunLight";
