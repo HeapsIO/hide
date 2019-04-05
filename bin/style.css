@@ -1133,7 +1133,7 @@ input[type=checkbox]:checked:after {
   background: none;
 }
 .shader-view .heaps-scene svg .nodes,
-.shader-view .heaps-scene svg .parameters {
+.shader-view .heaps-scene svg .properties {
   fill: #5c5c5c;
   opacity: 0.75;
 }
@@ -1147,28 +1147,26 @@ input[type=checkbox]:checked:after {
 .shader-view .heaps-scene svg .output-node.nodeMatch {
   fill: #5ca4ab;
 }
-.shader-view .heaps-scene svg .title-node,
-.shader-view .heaps-scene svg .title-param {
+.shader-view .heaps-scene svg .title-node {
   fill: #ffffff;
   stroke: none;
   user-select: none;
 }
-.shader-view .heaps-scene svg .title-node::selection,
-.shader-view .heaps-scene svg .title-param::selection {
+.shader-view .heaps-scene svg .title-node::selection {
   background: none;
 }
-.shader-view .heaps-scene svg .parameters-group span {
+.shader-view .heaps-scene svg .properties-group span {
   color: #ffffff;
   user-select: none;
 }
-.shader-view .heaps-scene svg .parameters-group span::selection {
+.shader-view .heaps-scene svg .properties-group span::selection {
   background: none;
 }
-.shader-view .heaps-scene svg .parameters-group input[type=text],
-.shader-view .heaps-scene svg .parameters-group select {
+.shader-view .heaps-scene svg .properties-group input[type=text],
+.shader-view .heaps-scene svg .properties-group select {
   width: 100%;
 }
-.shader-view .heaps-scene svg .parameters-group input[type=text].error {
+.shader-view .heaps-scene svg .properties-group input[type=text].error {
   border: red 1px solid;
 }
 .shader-view .heaps-scene svg .edge {

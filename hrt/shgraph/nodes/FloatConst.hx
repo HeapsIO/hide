@@ -11,7 +11,7 @@ class FloatConst extends ShaderConst {
 
 	@output() var output = SType.Float;
 
-	@param() var value : Float = 0.5;
+	@prop() var value : Float = 0.5;
 
 	override public function getOutputTExpr(key : String) : TExpr {
 		return {
@@ -26,8 +26,8 @@ class FloatConst extends ShaderConst {
 	}
 
 	#if editor
-	override public function getParametersHTML(width : Float) : Array<Element> {
-		var elements = super.getParametersHTML(width);
+	override public function getPropertiesHTML(width : Float) : Array<Element> {
+		var elements = super.getPropertiesHTML(width);
 		var element = new Element('<div style="width: 75px; height: 30px"></div>');
 		element.append(new Element('<input type="text" id="value" style="width: ${width*0.65}px" value="${value}" />'));
 

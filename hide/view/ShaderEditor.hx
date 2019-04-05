@@ -468,7 +468,7 @@ class ShaderEditor extends FileView {
 				});
 			}
 		}
-		box.generateParameters(editor);
+		box.generateProperties(editor);
 	}
 
 	function removeBox(box : Box) {

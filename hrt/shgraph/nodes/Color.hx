@@ -11,10 +11,10 @@ class Color extends ShaderNode {
 
 	@output() var output = SType.Vec4;
 
-	@param() var r : Float = 0;
-	@param() var g : Float = 0;
-	@param() var b : Float = 0;
-	@param() var a : Float = 1;
+	@prop() var r : Float = 0;
+	@prop() var g : Float = 0;
+	@prop() var b : Float = 0;
+	@prop() var a : Float = 1;
 
 	override public function createOutputs() {
 		addOutput("output", TVec(4, VFloat));
@@ -68,8 +68,8 @@ class Color extends ShaderNode {
 	}
 
 	#if editor
-	override public function getParametersHTML(width : Float) : Array<Element> {
-		var elements = super.getParametersHTML(width);
+	override public function getPropertiesHTML(width : Float) : Array<Element> {
+		var elements = super.getPropertiesHTML(width);
 		var element = new Element('<div style="width: 47px; height: 35px"></div>');
 		var picker = new hide.comp.ColorPicker(true, element);
 

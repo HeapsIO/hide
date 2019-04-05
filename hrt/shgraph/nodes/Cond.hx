@@ -13,7 +13,7 @@ class Cond extends ShaderNode {
 
 	@output("boolean") var output = SType.Bool;
 
-	@param() var condition : Binop;
+	@prop() var condition : Binop;
 
 	override public function checkValidityInput(key : String, type : ShaderType.SType) : Bool {
 
@@ -46,24 +46,24 @@ class Cond extends ShaderNode {
 			};
 	}
 
-	var availableConditions : Array<Binop> = [OpEq, OpNotEq, OpGt, OpGte, OpLt, OpLte, OpAnd, OpOr];
+	var availableConditions = [OpEq, OpNotEq, OpGt, OpGte, OpLt, OpLte, OpAnd, OpOr];
 	var conditionStrings 	= ["==", "!=",    ">",  ">=",  "<",  "<=",  "AND", "OR"];
 
-	override public function loadParameters(params : Dynamic) {
-		this.condition = std.Type.createEnum(Binop, Reflect.field(params, "condition"));
+	override public function loadProperties(props : Dynamic) {
+		this.condition = std.Type.createEnum(Binop, Reflect.field(props, "condition"));
 	}
 
-	override public function saveParameters() : Dynamic {
-		var parameters = {
+	override public function saveProperties() : Dynamic {
+		var properties = {
 			condition: this.condition.getName()
 		};
 
-		return parameters;
+		return properties;
 	}
 
 	#if editor
-	override public function getParametersHTML(width : Float) : Array<Element> {
-		var elements = super.getParametersHTML(width);
+	override public function getPropertiesHTML(width : Float) : Array<Element> {
+		var elements = super.getPropertiesHTML(width);
 		var element = new Element('<div style="width: ${width * 0.8}px; height: 40px"></div>');
 		element.append('<span>Condition</span>');
 		element.append(new Element('<select id="condition"></select>'));

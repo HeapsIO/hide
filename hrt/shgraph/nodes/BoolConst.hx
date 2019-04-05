@@ -11,7 +11,7 @@ class BoolConst extends ShaderConst {
 
 	@output() var fakeOutput = SType.Bool;
 
-	@param() var value : Bool = true;
+	@prop() var value : Bool = true;
 
 	override public function getOutputTExpr(key : String) : TExpr {
 		return {
@@ -26,8 +26,8 @@ class BoolConst extends ShaderConst {
 	}
 
 	#if editor
-	override public function getParametersHTML(width : Float) : Array<Element> {
-		var elements = super.getParametersHTML(width);
+	override public function getPropertiesHTML(width : Float) : Array<Element> {
+		var elements = super.getPropertiesHTML(width);
 		var element = new Element('<div style="width: 15px; height: 30px"></div>');
 		element.append(new Element('<input type="checkbox" id="value" ></select>'));
 

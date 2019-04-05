@@ -110,14 +110,14 @@ class ShaderNode {
 		return null;
 	}
 
-	public function loadParameters(params : Dynamic) {
-		var fields = Reflect.fields(params);
+	public function loadProperties(props : Dynamic) {
+		var fields = Reflect.fields(props);
 		for (f in fields) {
-			Reflect.setField(this, f, Reflect.field(params, f));
+			Reflect.setField(this, f, Reflect.field(props, f));
 		}
 	}
 
-	public function saveParameters() : Dynamic {
+	public function saveProperties() : Dynamic {
 		var parameters = {};
 
 		var fields = std.Type.getInstanceFields(std.Type.getClass(this));
@@ -128,7 +128,7 @@ class ShaderNode {
 			if (m == null) {
 				continue;
 			}
-			if (Reflect.hasField(m, "param")) {
+			if (Reflect.hasField(m, "prop")) {
 				Reflect.setField(parameters, f, Reflect.getProperty(this, f));
 			}
 		}
@@ -136,7 +136,7 @@ class ShaderNode {
 	}
 
 	#if editor
-	public function getParametersHTML(width : Float) : Array<Element> {
+	public function getPropertiesHTML(width : Float) : Array<Element> {
 		return [];
 	}
 

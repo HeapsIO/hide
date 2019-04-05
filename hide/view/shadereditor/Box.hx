@@ -13,7 +13,7 @@ class Box {
 
 	var width : Int = 150;
 	var height : Int;
-	var paramHeight : Int = 0;
+	var propsHeight : Int = 0;
 
 	var HEADER_HEIGHT = 27;
 	@const var NODE_MARGIN = 20;
@@ -25,7 +25,7 @@ class Box {
 	public var outputs : Array<JQuery> = [];
 
 	var element : JQuery;
-	var parametersGroup : JQuery;
+	var propertiesGroup : JQuery;
 
 	public function new(editor : SVG, parent : JQuery, x : Float, y : Float, node : ShaderNode) {
 		this.nodeInstance = node;
@@ -51,7 +51,7 @@ class Box {
 			editor.text(element, 10, HEADER_HEIGHT-8, className).addClass("title-box");
 		}
 
-		parametersGroup = editor.group(element).addClass("parameters-group");
+		propertiesGroup = editor.group(element).addClass("properties-group");
 
 		// nodes div
 		editor.rect(element, 0, HEADER_HEIGHT, this.width, 0).addClass("nodes");
@@ -86,10 +86,10 @@ class Box {
 		return node;
 	}
 
-	public function generateParameters(editor : SVG) {
-		var params = nodeInstance.getParametersHTML(this.width);
+	public function generateProperties(editor : SVG) {
+		var props = nodeInstance.getPropertiesHTML(this.width);
 
-		if (params.length == 0) return;
+		if (props.length == 0) return;
 
 		if (inputs.length <= 1 && outputs.length <= 1) {
 			element.find(".nodes").remove();
@@ -97,18 +97,18 @@ class Box {
 			element.find(".output-node-group > .title-node").html("");
 		}
 
-			// create param box
-		editor.rect(parametersGroup, 0, 0, this.width, 0).addClass("parameters");
-		paramHeight = 10;
+			// create properties box
+		editor.rect(propertiesGroup, 0, 0, this.width, 0).addClass("properties");
+		propsHeight = 10;
 
-		for (p in params) {
-			var param = editor.group(parametersGroup).addClass("param-group");
-			param.attr("transform", 'translate(0, ${paramHeight})');
+		for (p in props) {
+			var prop = editor.group(propertiesGroup).addClass("prop-group");
+			prop.attr("transform", 'translate(0, ${propsHeight})');
 
-			var paramWidth = (p.width() > 0 ? p.width() : this.width);
-			var fObject = editor.foreignObject(param, (this.width - paramWidth) / 2, 5, paramWidth, p.height());
+			var propWidth = (p.width() > 0 ? p.width() : this.width);
+			var fObject = editor.foreignObject(prop, (this.width - propWidth) / 2, 5, propWidth, p.height());
 			p.appendTo(fObject);
-			paramHeight += Std.int(p.height()) + 10;
+			propsHeight += Std.int(p.height()) + 10;
 		}
 
 		refreshHeight();
@@ -122,16 +122,16 @@ class Box {
 		var height = getNodesHeight();
 		element.find(".nodes").height(height);
 		element.find(".outline").attr("height", getHeight()+2);
-		if (inputs.length > 1 || outputs.length > 1 || paramHeight == 0) {
+		if (inputs.length > 1 || outputs.length > 1 || propsHeight == 0) {
 			element.find(".nodes-separator").attr("y2", HEADER_HEIGHT + height);
 			element.find(".nodes-separator").show();
 		} else {
 			element.find(".nodes-separator").hide();
 		}
 
-		if (parametersGroup != null) {
-			parametersGroup.attr("transform", 'translate(0, ${HEADER_HEIGHT + height})');
-			parametersGroup.find(".parameters").attr("height", paramHeight);
+		if (propertiesGroup != null) {
+			propertiesGroup.attr("transform", 'translate(0, ${HEADER_HEIGHT + height})');
+			propertiesGroup.find(".properties").attr("height", propsHeight);
 		}
 	}
 
@@ -167,13 +167,13 @@ class Box {
 	}
 	public function getNodesHeight() {
 		var maxNb = Std.int(Math.max(inputs.length, outputs.length));
-		if (maxNb == 1 && paramHeight > 0) {
+		if (maxNb == 1 && propsHeight > 0) {
 			return 0;
 		}
 		return (NODE_MARGIN + NODE_RADIUS) * (maxNb+1);
 	}
 	public function getHeight() {
-		return HEADER_HEIGHT + getNodesHeight() + paramHeight;
+		return HEADER_HEIGHT + getNodesHeight() + propsHeight;
 	}
 	public function getElement() {
 		return element;

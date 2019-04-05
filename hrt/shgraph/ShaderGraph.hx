@@ -45,7 +45,7 @@ class ShaderGraph {
 
 		for (n in nodes) {
 			n.instance = std.Type.createInstance(std.Type.resolveClass(n.type), []);
-			n.instance.loadParameters(n.parameters);
+			n.instance.loadProperties(n.parameters);
 			n.instance.setId(n.id);
 			this.nodes.set(n.id, n);
 		}
@@ -173,7 +173,7 @@ class ShaderGraph {
 
 		var json = haxe.Json.stringify({
 			nodes: [
-				for (n in nodes) { x : n.x, y : n.y, comment: n.comment, id: n.id, type: n.type, parameters : n.instance.saveParameters() }
+				for (n in nodes) { x : n.x, y : n.y, comment: n.comment, id: n.id, type: n.type, parameters : n.instance.saveProperties() }
 			],
 			edges: edgesJson
 		});

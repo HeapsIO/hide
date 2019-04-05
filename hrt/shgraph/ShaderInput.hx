@@ -38,8 +38,8 @@ class ShaderInput extends ShaderNode {
 						type: TVec(2, VFloat)
 					}];
 
-	override public function loadParameters(params : Dynamic) {
-		var paramVariable : String = Reflect.field(params, "variable");
+	override public function loadProperties(props : Dynamic) {
+		var paramVariable : String = Reflect.field(props, "variable");
 
 		for (c in ShaderNode.availableVariables) {
 			if (c.name == paramVariable) {
@@ -55,7 +55,7 @@ class ShaderInput extends ShaderNode {
 		}
 	}
 
-	override public function saveParameters() : Dynamic {
+	override public function saveProperties() : Dynamic {
 		var parameters = {
 			variable: variable.name
 		};
@@ -64,8 +64,8 @@ class ShaderInput extends ShaderNode {
 	}
 
 	#if editor
-	override public function getParametersHTML(width : Float) : Array<Element> {
-		var elements = super.getParametersHTML(width);
+	override public function getPropertiesHTML(width : Float) : Array<Element> {
+		var elements = super.getPropertiesHTML(width);
 		var element = new Element('<div style="width: 110px; height: 30px"></div>');
 		element.append(new Element('<select id="variable"></select>'));
 

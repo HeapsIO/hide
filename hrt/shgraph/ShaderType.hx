@@ -15,6 +15,8 @@ enum SType {
 	Vec4;
 	/** Float or Vectors **/
 	Number;
+	/** Texture **/
+	Sampler;
 	/** Any **/
 	Variant;
 }
@@ -33,6 +35,8 @@ class ShaderType {
 				return Bool;
 			case TFloat:
 				return Float;
+			case TSampler2D:
+				return Sampler;
 			default:
 		}
 		return Variant;
@@ -56,6 +60,8 @@ class ShaderType {
 				return (from == Float);
 			case Number:
 				return (from == Float || from == Vec2 || from == Vec3 || from == Vec4);
+			case Sampler:
+				return (from == Sampler);
 			case Variant:
 				return true;
 			default:
