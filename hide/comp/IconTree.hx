@@ -38,7 +38,7 @@ class IconTree<T:{}> extends Component {
 		return [{ value : null, text : "get()", children : true }];
 	}
 
-	public dynamic function onClick( e : T ) : Void {
+	public dynamic function onClick( e : T, evt: Dynamic) : Void {
 	}
 
 	public dynamic function onDblClick( e : T ) : Bool {
@@ -120,7 +120,7 @@ class IconTree<T:{}> extends Component {
 			var node = new Element(event.target).closest("li");
 			if(node == null || node.length == 0) return;
    			var i = map.get(node[0].id);
-			onClick(i.value);
+			onClick(i.value, event);
 		});
 		element.on("dblclick.jstree", function (event) {
 			// ignore dblclick on open/close arrow
@@ -237,12 +237,21 @@ class IconTree<T:{}> extends Component {
 		return [for( id in ids ) map.get(id).value];
 	}
 
-	public function revealNode(e : T) {
+	public function collapseAll() {
+		(element:Dynamic).jstree('close_all');
+	}
+
+	public function openNode(e: T) {
 		var v = getRev(e);
 		if(v == null) return;
-		(element:Dynamic).jstree('_open_to', v.id).focus();
-		var el = (element:Dynamic).jstree('get_node', v.id, true)[0];
-		el.scrollIntoViewIfNeeded();
+		(element:Dynamic).jstree('_open_to', v.id);
+	}
+
+	public function revealNode(e : T) {
+		openNode(e);
+		var el = getElement(e);
+		if(el != null)
+			(el[0] : Dynamic).scrollIntoViewIfNeeded();
 	}
 
 	public function searchFilter( filter : String ) {

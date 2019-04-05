@@ -331,7 +331,14 @@ class Level3D extends FileView {
 							<label>Favorites</label>
 							<div class="favorites-tree"></div>
 						</div>
-						<div class="hide-scenetree" style="height:80%;"></div>
+						<div style="height:80%;">
+							<div class="hide-toolbar" style="zoom: 80%">
+								<div class="button collapse-btn" title="Collapse all">
+									<div class="icon fa fa-reply-all"></div>
+								</div>
+							</div>
+							<div class="hide-scenetree"></div>
+						</div>
 					</div>
 					<div class="tabs">
 						<div class="tab expand" name="Scene" icon="sitemap">
@@ -358,6 +365,9 @@ class Level3D extends FileView {
 		element.find(".heaps-scene").first().append(sceneEditor.scene.element);
 		sceneEditor.tree.element.addClass("small");
 		sceneEditor.favTree.element.addClass("small");
+		element.find(".collapse-btn").click(function(e) {
+			sceneEditor.collapseTree();
+		});
 
 		// Level edit
 		{

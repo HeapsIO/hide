@@ -295,8 +295,20 @@ class SceneEditor {
 		favTree.onAllowMove = function(_, _) {
 			return false;
 		};
-		favTree.onClick = function(e) {
+		favTree.onClick = function(e, evt) {
+			if(evt.ctrlKey) {
+				var sel = tree.getSelection();
+				sel.push(e);
+				selectObjects(sel, true);
+				tree.revealNode(e);
+			}
+			else
+				selectObjects([e], true);
+		}
+		favTree.onDblClick = function(e) {
 			selectObjects([e], true);
+			tree.revealNode(e);
+			return true;
 		}
 		tree.get = function(o:PrefabElement) {
 			var objs = o == null ? sceneData.children : Lambda.array(o);
@@ -346,7 +358,7 @@ class SceneEditor {
 		favTree.element.parent().contextmenu(ctxMenu.bind(favTree));
 		tree.allowRename = true;
 		tree.init();
-		tree.onClick = function(e) {
+		tree.onClick = function(e, _) {
 			selectObjects(tree.getSelection(), false);
 		}
 		tree.onDblClick = function(e) {
@@ -391,6 +403,12 @@ class SceneEditor {
 		if(mode == null || mode == Full) refreshScene();
 		refreshFavs();
 		refreshTree(callb);
+	}
+
+	public function collapseTree() {
+		tree.collapseAll();
+		for(fav in favorites)
+			tree.openNode(fav);
 	}
 
 	function refreshTree( ?callb ) {
@@ -1533,6 +1551,7 @@ class SceneEditor {
 	}
 
 	function update(dt:Float) {
+		trace(K.isDown(K.CTRL));
 		var cam = scene.s3d.camera;
 		@:privateAccess view.saveDisplayState("Camera", { x : cam.pos.x, y : cam.pos.y, z : cam.pos.z, tx : cam.target.x, ty : cam.target.y, tz : cam.target.z });
 		if(gizmo != null) {

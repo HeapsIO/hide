@@ -32,7 +32,7 @@ class SceneTree extends IconTree<String> {
 		return null;
 	}
 
-	override function onClick(id:String) {
+	override function onClick(id:String, evt: Dynamic) {
 		var v : Dynamic = resolvePath(id);
 		if( Std.is(v, h3d.scene.Object) )
 			onSelectObject(v);
@@ -48,7 +48,7 @@ class SceneTree extends IconTree<String> {
 
 	override function applyStyle(id: String, el: Element) {
 		var v : Dynamic = resolvePath(id);
-		
+
 		var obj = Std.instance(v, h3d.scene.Object);
 
 		if (obj != null) {
