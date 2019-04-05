@@ -2,7 +2,7 @@ package hide.view;
 using Lambda;
 
 import hide.Element;
-import hxd.prefab.Prefab in PrefabElement;
+import hrt.prefab.Prefab in PrefabElement;
 import hrt.prefab.Curve;
 import hrt.prefab.fx.Event;
 
@@ -48,7 +48,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		parent.onUpdate(dt);
 	}
 
-	override function setObjectSelected( p : PrefabElement, ctx : hxd.prefab.Context, b : Bool ) {
+	override function setObjectSelected( p : PrefabElement, ctx : hrt.prefab.Context, b : Bool ) {
 		if( p.getParent(hrt.prefab.fx.Emitter) != null )
 			return;
 		super.setObjectSelected(p, ctx, b);

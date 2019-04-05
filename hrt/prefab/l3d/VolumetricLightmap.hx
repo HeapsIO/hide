@@ -311,5 +311,5 @@ class VolumetricLightmap extends Object3D {
 
 	#end
 
-	static var _ = hxd.prefab.Library.register("volumetricLightmap", VolumetricLightmap);
+	static var _ = Library.register("volumetricLightmap", VolumetricLightmap);
 }

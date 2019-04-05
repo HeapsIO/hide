@@ -111,7 +111,7 @@ class LookAt extends Object3D {
 		return obj;
 	}
 
-	override function updateInstance(ctx:hxd.prefab.Context, ?propName:String) {
+	override function updateInstance(ctx:hrt.prefab.Context, ?propName:String) {
 		super.updateInstance(ctx, propName);
 		var targetObj = null;
 		if(target != "camera")
@@ -162,5 +162,5 @@ class LookAt extends Object3D {
 	}
 	#end
 
-	static var _ = hxd.prefab.Library.register("lookAt", LookAt);
+	static var _ = Library.register("lookAt", LookAt);
 }

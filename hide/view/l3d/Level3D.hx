@@ -4,7 +4,7 @@ using Lambda;
 import hxd.Math;
 import hxd.Key as K;
 
-import hxd.prefab.Prefab as PrefabElement;
+import hrt.prefab.Prefab as PrefabElement;
 import hrt.prefab.Object3D;
 import hrt.prefab.l3d.Instance;
 import h3d.scene.Object;
@@ -432,7 +432,7 @@ class Level3D extends FileView {
 		for( p in passes )
 			p.isStatic = true;
 
-		function isDynamic(elt: hxd.prefab.Prefab) {
+		function isDynamic(elt: hrt.prefab.Prefab) {
 			var p = elt;
 			while(p != null) {
 				if(p.name == "dynamic")
@@ -609,7 +609,7 @@ class Level3D extends FileView {
 
 	function applySceneFilter(typeid: String, visible: Bool) {
 		saveDisplayState("sceneFilters/" + typeid, visible);
-		var all = data.flatten(hxd.prefab.Prefab);
+		var all = data.flatten(hrt.prefab.Prefab);
 		for(p in all) {
 			if(p.type == typeid || getCdbTypeId(p) == typeid) {
 				sceneEditor.applySceneStyle(p);
@@ -749,7 +749,7 @@ class Level3D extends FileView {
 		}
 	}
 
-	public static function getCdbModel(e:hxd.prefab.Prefab):cdb.Sheet {
+	public static function getCdbModel(e:hrt.prefab.Prefab):cdb.Sheet {
 		var typeName : String = getCdbTypeId(e);
 		if(typeName == null)
 			return null;

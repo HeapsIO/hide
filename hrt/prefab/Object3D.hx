@@ -160,6 +160,6 @@ class Object3D extends Prefab {
 		return type == "object" ? "group" : super.getDefaultName();
 	}
 
-	static var _ = hxd.prefab.Library.register("object", Object3D);
+	static var _ = Library.register("object", Object3D);
 
 }

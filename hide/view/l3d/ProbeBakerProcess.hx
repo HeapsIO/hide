@@ -18,7 +18,7 @@ class ProbeBakerProcess {
 		lightProbeBaker.useGPU = useGPU;
 	}
 
-	public function init( env : h3d.scene.pbr.Environment, sceneData : hxd.prefab.Prefab , shared : hide.prefab.ContextShared, scene : hide.comp.Scene) {
+	public function init( env : h3d.scene.pbr.Environment, sceneData : hrt.prefab.Prefab , shared : hide.prefab.ContextShared, scene : hide.comp.Scene) {
 		lightProbeBaker.initScene(sceneData, shared, scene, env);
 	}
 

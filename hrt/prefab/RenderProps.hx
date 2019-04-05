@@ -62,7 +62,7 @@ class RenderProps extends Prefab {
 			fx.dispose();
 		renderer.effects = [];
 		for( s in children ) {
-			var fx = Std.instance(s, hxd.prefab.rfx.RendererFX);
+			var fx = Std.instance(s, hrt.prefab.rfx.RendererFX);
 			if( fx != null )
 				renderer.effects.push(fx);
 		}
@@ -92,10 +92,10 @@ class RenderProps extends Prefab {
 	}
 
 	override function getHideProps() : HideProps {
-		return { icon : "sun-o", name : "RenderProps", allowChildren : function(t) return hxd.prefab.Library.isOfType(t,hxd.prefab.rfx.RendererFX) };
+		return { icon : "sun-o", name : "RenderProps", allowChildren : function(t) return Library.isOfType(t,hrt.prefab.rfx.RendererFX) };
 	}
 
 	#end
 
-	static var _ = hxd.prefab.Library.register("renderProps", RenderProps);
+	static var _ = Library.register("renderProps", RenderProps);
 }

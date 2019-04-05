@@ -122,12 +122,12 @@ class Model extends Object3D {
 	override function getHideProps() : HideProps {
 		return {
 			icon : "cube", name : "Model", fileSource : ["fbx","hmd"],
-			allowChildren : function(t) return hxd.prefab.Library.isOfType(t,Object3D) || ["material", "shader"].indexOf(t) >= 0,
+			allowChildren : function(t) return Library.isOfType(t,Object3D) || ["material", "shader"].indexOf(t) >= 0,
 			onResourceRenamed : function(f) animation = f(animation),
 		};
 	}
 	#end
 
-	static var _ = hxd.prefab.Library.register("model", Model);
+	static var _ = Library.register("model", Model);
 
 }

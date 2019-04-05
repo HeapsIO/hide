@@ -463,5 +463,5 @@ class MeshGenerator extends Object3D {
 	}
 	#end
 
-	static var _ = hxd.prefab.Library.register("meshGenerator", MeshGenerator);
+	static var _ = Library.register("meshGenerator", MeshGenerator);
 }

@@ -7,7 +7,7 @@ class LightProbeBaker {
 	public var useGPU = false;
 	public var environment : h3d.scene.pbr.Environment;
 
-	var context : hxd.prefab.Context;
+	var context : hrt.prefab.Context;
 	var offScreenScene : h3d.scene.Scene = null;
 	var prim : h3d.prim.Plane2D;
 
@@ -38,7 +38,7 @@ class LightProbeBaker {
 		customCamera.screenRatio = 1.0;
 		customCamera.fovY = 90;
 		customCamera.zFar = 100;
-		context = new hxd.prefab.Context();
+		context = new hrt.prefab.Context();
 	}
 
 	public function dispose() {
@@ -58,7 +58,7 @@ class LightProbeBaker {
 		if(offScreenScene != null) offScreenScene.dispose();
 	}
 
-	public function initScene( sceneData : hxd.prefab.Prefab, shared : hide.prefab.ContextShared, scene : hide.comp.Scene , env : h3d.scene.pbr.Environment) {
+	public function initScene( sceneData : hrt.prefab.Prefab, shared : hide.prefab.ContextShared, scene : hide.comp.Scene , env : h3d.scene.pbr.Environment) {
 		if(offScreenScene != null) offScreenScene.dispose();
 		offScreenScene = new h3d.scene.Scene();
 
@@ -70,12 +70,12 @@ class LightProbeBaker {
 		context.local3d = offScreenScene;
 
 		var whiteList = [ "level3d", "object", "model", "material", "light"];
-		function keep( p : hxd.prefab.Prefab ) {
+		function keep( p : hrt.prefab.Prefab ) {
 			for( f in whiteList )
 				if( f == p.type ) return true;
 			return false;
 		}
-		function filter( p : hxd.prefab.Prefab ) {
+		function filter( p : hrt.prefab.Prefab ) {
 			for( c in p.children ) {
 				if(!keep(c))
 					sceneData.children.remove(c);

@@ -471,5 +471,5 @@ class Terrain extends Object3D {
 	}
 	#end
 
-	static var _ = hxd.prefab.Library.register("terrain", Terrain);
+	static var _ = Library.register("terrain", Terrain);
 }

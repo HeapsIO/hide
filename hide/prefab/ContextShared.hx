@@ -1,6 +1,6 @@
 package hide.prefab;
 
-class ContextShared extends hxd.prefab.ContextShared {
+class ContextShared extends hrt.prefab.ContextShared {
 	#if editor
 	var scene : hide.comp.Scene;
 
@@ -17,7 +17,7 @@ class ContextShared extends hxd.prefab.ContextShared {
 		hide.Ide.inst.error(e);
 	}
 
-	override function loadPrefab( path : String ) : hxd.prefab.Prefab {
+	override function loadPrefab( path : String ) : hrt.prefab.Prefab {
 		return hide.Ide.inst.loadPrefab(path);
 	}
 

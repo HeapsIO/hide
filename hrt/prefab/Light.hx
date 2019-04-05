@@ -538,5 +538,5 @@ class Light extends Object3D {
 	}
 	#end
 
-	static var _ = hxd.prefab.Library.register("light", Light);
+	static var _ = Library.register("light", Light);
 }

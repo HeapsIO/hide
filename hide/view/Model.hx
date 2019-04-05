@@ -10,7 +10,7 @@ class Model extends FileView {
 	var overlay : Element;
 	var eventList : Element;
 
-	var plight : hxd.prefab.Prefab;
+	var plight : hrt.prefab.Prefab;
 	var light : h3d.scene.Object;
 	var lightDirection : h3d.Vector;
 
@@ -24,7 +24,7 @@ class Model extends FileView {
 	var cameraMove : Void -> Void;
 	var scene(get,never) : hide.comp.Scene;
 	var rootPath : String;
-	var root : hxd.prefab.Prefab;
+	var root : hrt.prefab.Prefab;
 
 	override function save() {
 		if(!modified) return;
@@ -107,10 +107,10 @@ class Model extends FileView {
 			rootPath = config.get("scene.renderProps");
 
 		if( rootPath != null )
-			root = ide.loadPrefab(rootPath, hxd.prefab.Library);
+			root = ide.loadPrefab(rootPath, hrt.prefab.Library);
 
 		if( root == null ) {
-			var def = new hxd.prefab.Library();
+			var def = new hrt.prefab.Library();
 			new hrt.prefab.RenderProps(def).name = "renderer";
 			var l = new hrt.prefab.Light(def);
 			l.name = "sunLight";

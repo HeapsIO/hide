@@ -37,6 +37,6 @@ class Scene extends Prefab {
 	}
 	#end
 
-	static var _ = hxd.prefab.Library.register("scene", Scene);
+	static var _ = Library.register("scene", Scene);
 
 }

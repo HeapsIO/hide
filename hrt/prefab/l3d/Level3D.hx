@@ -1,6 +1,6 @@
 package hrt.prefab.l3d;
 
-class Level3D extends hxd.prefab.Library {
+class Level3D extends hrt.prefab.Library {
 
 	public var width : Int = 100;
 	public var height : Int = 100;
@@ -23,14 +23,11 @@ class Level3D extends hxd.prefab.Library {
 		height = obj.height == null ? 100 : obj.height;
 	}
 
-	override function getCdbModel(?p:hxd.prefab.Prefab):cdb.Sheet {
-		#if (editor && castle)
-		return hide.view.l3d.Level3D.getCdbModel(p);
-		#end
-		return null;
-	}
-
 	#if editor
+
+	override function getCdbModel(?p:hrt.prefab.Prefab) : cdb.Sheet {
+		return hide.view.l3d.Level3D.getCdbModel(p);
+	}
 
 	override function edit( ctx : EditContext ) {
 		var props = new hide.Element('
@@ -47,10 +44,10 @@ class Level3D extends hxd.prefab.Library {
 	}
 
 	override function getHideProps() : HideProps {
-		return { icon : "cube", name : "Level3D", allowChildren : function(t) return hxd.prefab.Library.isOfType(t,Object3D), allowParent: _ -> false};
+		return { icon : "cube", name : "Level3D", allowChildren : function(t) return Library.isOfType(t,Object3D), allowParent: _ -> false};
 	}
 
 	#end
 
-	static var _ = hxd.prefab.Library.register("level3d", Level3D, "l3d");
+	static var _ = Library.register("level3d", Level3D, "l3d");
 }

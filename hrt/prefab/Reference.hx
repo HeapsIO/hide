@@ -27,7 +27,7 @@ class Reference extends Object3D {
 		refpath = o.refpath;
 	}
 
-	public function resolveRef(shared : hxd.prefab.ContextShared) {
+	public function resolveRef(shared : hrt.prefab.ContextShared) {
 		if(ref != null)
 			return ref;
 		if(refpath == null)
@@ -45,7 +45,7 @@ class Reference extends Object3D {
 			return ref;
 		}
 		else {
-			var lib = getParent(hxd.prefab.Library);
+			var lib = getParent(hrt.prefab.Library);
 			if(lib == null)
 				return null;
 			var all = lib.getAll(Prefab);
@@ -143,5 +143,5 @@ class Reference extends Object3D {
 	}
 	#end
 
-	static var _ = hxd.prefab.Library.register("reference", Reference);
+	static var _ = Library.register("reference", Reference);
 }

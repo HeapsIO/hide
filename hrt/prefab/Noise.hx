@@ -237,7 +237,7 @@ class Noise extends Prefab {
 
 	#end
 
-	static var _ = hxd.prefab.Library.register("noise", Noise);
+	static var _ = Library.register("noise", Noise);
 
 }
 
