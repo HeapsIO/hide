@@ -241,7 +241,20 @@ class SceneEditor {
 
 	function focusSelection() {
 		if(curEdit.rootObjects.length > 0) {
-			cameraController.set(curEdit.rootObjects[0].getAbsPos().getPosition().toPoint());
+			var bnds = new h3d.col.Bounds();
+			var centroid = new h3d.Vector();
+			for(obj in curEdit.rootObjects) {
+				centroid = centroid.add(obj.getAbsPos().getPosition());
+				bnds.add(obj.getBounds());
+			}
+			if(!bnds.isEmpty()) {
+				var s = bnds.toSphere();
+				cameraController.set(s.r * 4.0, null, null, s.getCenter());
+			}
+			else {
+				centroid.scale3(1.0 / curEdit.rootObjects.length);
+				cameraController.set(centroid.toPoint());
+			}
 		}
 		for(obj in curEdit.rootElements)
 			tree.revealNode(obj);
@@ -1551,7 +1564,6 @@ class SceneEditor {
 	}
 
 	function update(dt:Float) {
-		trace(K.isDown(K.CTRL));
 		var cam = scene.s3d.camera;
 		@:privateAccess view.saveDisplayState("Camera", { x : cam.pos.x, y : cam.pos.y, z : cam.pos.z, tx : cam.target.x, ty : cam.target.y, tz : cam.target.z });
 		if(gizmo != null) {
