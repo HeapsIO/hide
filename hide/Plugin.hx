@@ -11,6 +11,7 @@ class Plugin {
 	static var haxelibRoot = sys.io.File.getContent(Sys.getEnv("USERPROFILE")+"/.haxelib");
 	static var EXCLUDES = [
 		"hide",
+		"hrt",
 
 		"h2d",
 		"h3d",
