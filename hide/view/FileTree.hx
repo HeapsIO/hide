@@ -15,9 +15,15 @@ class FileTree extends FileView {
 
 	var tree : hide.comp.IconTree<String>;
 	var lastOpen : hide.ui.View<Dynamic>;
+	var ignorePatterns : Array<EReg> = [];
 
 	public function new(state) {
 		super(state);
+
+		var exclPatterns : Array<String> = ide.currentConfig.get("filetree.excludes", []);
+		for(pat in exclPatterns)
+			ignorePatterns.push(new EReg(pat, "i"));
+
 		if( state.path == null ) {
 			ide.chooseDirectory(function(dir) {
 				if( dir == null ) {
@@ -65,13 +71,14 @@ class FileTree extends FileView {
 		tree.async = true;
 		tree.allowRename = true;
 		tree.saveDisplayKey = "FileTree:" + getPath().split("\\").join("/").substr(0,-1);
+		tree.element.addClass("small");
 		tree.get = function(path) {
 			if( path == null ) path = "";
 			var basePath = getFilePath(path);
 			var content = new Array<hide.comp.IconTree.IconTreeItem<String>>();
 			for( c in sys.FileSystem.readDirectory(basePath) ) {
-				if( isIgnored(basePath, c) ) continue;
 				var fullPath = basePath + "/" + c;
+				if( isIgnored(fullPath) ) continue;
 				var isDir = sys.FileSystem.isDirectory(fullPath);
 				var ext = getExtension(fullPath);
 				var id = ( path == "" ? c : path+"/"+c );
@@ -305,14 +312,11 @@ class FileTree extends FileView {
 		onOpenFile(fpath);
 	}
 
-	function isIgnored( path : String, file : String ) {
-		if( file.charCodeAt(0) == ".".code )
-			return true;
-		var ext = file.split(".").pop().toLowerCase();
-		if( StringTools.startsWith(file, "Anim_") && ext == "fbx" )
-			return true;
-		if( ext == "dat" && sys.FileSystem.isDirectory(path) )
-			return true;
+	function isIgnored( fullpath : String ) {
+		for(pat in ignorePatterns) {
+			if(pat.match(fullpath))
+				return true;
+		}
 		return false;
 	}
 
