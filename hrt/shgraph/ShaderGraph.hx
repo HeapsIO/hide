@@ -23,7 +23,7 @@ private typedef Edge = {
 
 class ShaderGraph {
 
-	var id = 0;
+	var current_node_id = 0;
 	var filepath : String;
 	var nodes : Map<Int, Node> = [];
 	var allVariables : Array<TVar> = [];
@@ -53,7 +53,7 @@ class ShaderGraph {
 			this.nodes.set(n.id, n);
 		}
 		if (nodes[nodes.length-1] != null)
-			this.id = nodes[nodes.length-1].id+1;
+			this.current_node_id = nodes[nodes.length-1].id+1;
 
 		for (e in edges) {
 			addEdge(e);
@@ -61,14 +61,15 @@ class ShaderGraph {
 	}
 
 	public function addNode(x : Float, y : Float, nameClass : Class<ShaderNode>) {
-		var node : Node = { x : x, y : y, comment: "", id : id, type: std.Type.getClassName(nameClass) };
-		id++;
+		var node : Node = { x : x, y : y, comment: "", id : current_node_id, type: std.Type.getClassName(nameClass) };
 
 		node.instance = std.Type.createInstance(nameClass, []);
+		node.instance.setId(current_node_id);
 		node.instance.createOutputs();
 		node.outputs = [];
 
 		this.nodes.set(node.id, node);
+		current_node_id++;
 
 		return node.instance;
 	}
