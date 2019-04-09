@@ -1,5 +1,6 @@
 package hide.view;
 
+import haxe.Timer;
 import h3d.shader.LineShader;
 import h3d.shader.ColorAdd;
 using hxsl.Ast.Type;
@@ -41,12 +42,13 @@ class ShaderEditor extends FileView {
 
 	static var transformMatrix : Array<Float> = [1, 0, 0, 1, 0, 0];
 	var isPanning : Bool = false;
+	var timerUpdateView : Timer;
 
 	// used for selection
 	var listOfBoxesSelected : Array<Box> = [];
 	var recSelection : JQuery;
-	var startRecSelection : h2d.col.IPoint;
-	var firstClickDrag : h2d.col.IPoint;
+	var startRecSelection : h2d.col.Point;
+	var lastClickDrag : h2d.col.Point;
 
 	// used to build edge
 	static var NODE_TRIGGER_NEAR = 2000.0;
@@ -136,7 +138,7 @@ class ShaderEditor extends FileView {
 			closeAddMenu();
 
 			if (e.button == 0) {
-				startRecSelection = new IPoint(e.offsetX, e.offsetY);
+				startRecSelection = new Point(lX(e.clientX), lY(e.clientY));
 				if (currentEdge != null) {
 					currentEdge.elt.removeClass("selected");
 					currentEdge = null;
@@ -145,101 +147,22 @@ class ShaderEditor extends FileView {
 				clearSelectionBoxes();
 			}
 			if (e.button == 1) {
-				firstClickDrag = new IPoint(e.clientX, e.clientY);
+				lastClickDrag = new Point(lX(e.clientX), lY(e.clientY));
 				isPanning = true;
 			}
-		});
-
-		parent.on("mouseover", function(e) {
-			if (isCreatingLink != None)
-				updateViewPosition();
-			if (currentEdge != null)
-				updateViewPosition();
-			if (startRecSelection != null)
-				updateViewPosition();
 		});
 
 		parent.on("mousemove", function(e : js.jquery.Event) {
 			e.preventDefault();
 			e.cancelBubble=true;
     		e.returnValue=false;
-
-			if (isCreatingLink != None) {
-				createLink(e);
-				return;
-			}
-			// Moving edge
-			if (currentEdge != null) {
-				// TODO: handle moving edge => disconnect closest node
-				// try to use the same code when user clicks on input node already connected and here
-			}
-			if (isPanning) {
-				pan(new Point(e.clientX - firstClickDrag.x, e.clientY - firstClickDrag.y));
-				firstClickDrag.x = e.clientX;
-				firstClickDrag.y = e.clientY;
-				return;
-			}
-			// Edit rectangle selection
-			if (startRecSelection != null) {
-				var screenOffset = editor.element.offset();
-				var endRecSelection = new h2d.col.IPoint(Std.int(e.clientX - screenOffset.left), Std.int(e.clientY - screenOffset.top));
-				var xMin = startRecSelection.x;
-				var xMax = endRecSelection.x;
-				var yMin = startRecSelection.y;
-				var yMax = endRecSelection.y;
-
-				if (startRecSelection.x > endRecSelection.x) {
-					xMin = endRecSelection.x;
-					xMax = startRecSelection.x;
-				}
-				if (startRecSelection.y > endRecSelection.y) {
-					yMin = endRecSelection.y;
-					yMax = startRecSelection.y;
-				}
-
-				if (recSelection != null) recSelection.remove();
-				recSelection = editor.rect(editor.element, xMin, yMin, xMax - xMin, yMax - yMin).addClass("rect-selection");
-
-				for (box in listOfBoxes) {
-					if (isInside(box, new IPoint(xMin, yMin), new IPoint(xMax, yMax))) {
-						box.setSelected(true);
-					} else {
-						box.setSelected(false);
-					}
-				}
-				return;
-			}
-
-			// Move selected boxes
-			if (listOfBoxesSelected.length > 0 && firstClickDrag != null) {
-				var dx = (e.clientX - firstClickDrag.x)/transformMatrix[0];
-				var dy = (e.clientY - firstClickDrag.y)/transformMatrix[3];
-
-				for (b in listOfBoxesSelected) {
-					b.setPosition(b.getX() + dx, b.getY() + dy);
-					shaderGraph.setPosition(b.getId(), b.getX(), b.getY());
-					// move edges from and to this box
-					for (edge in listOfEdges) {
-						if (edge.from == b || edge.to == b) {
-							edge.elt.remove();
-							edge.elt = createCurve(edge.nodeFrom, edge.nodeTo);
-
-							edge.elt.on("mousedown", function(e) {
-								e.stopPropagation();
-								clearSelectionBoxes();
-								this.currentEdge = edge;
-								currentEdge.elt.addClass("selected");
-							});
-						}
-					}
-				}
-				firstClickDrag.x = e.clientX;
-				firstClickDrag.y = e.clientY;
-				return;
-			}
+			mouseMoveFunction(e.clientX, e.clientY);
 		});
 
+
 		parent.on("mouseup", function(e) {
+			if(timerUpdateView != null)
+				stopUpdateViewPosition();
 			if (e.button == 0) {
 				// Stop link creation
 				if (isCreatingLink != None) {
@@ -256,7 +179,7 @@ class ShaderEditor extends FileView {
 				}
 
 				// Stop rectangle selection
-				firstClickDrag = null;
+				lastClickDrag = null;
 				startRecSelection = null;
 				if (recSelection != null) {
 					recSelection.remove();
@@ -269,7 +192,7 @@ class ShaderEditor extends FileView {
 
 			// Stop panning
 			if (e.button == 1) {
-				firstClickDrag = null;
+				lastClickDrag = null;
 				isPanning = false;
 			}
 		});
@@ -319,7 +242,7 @@ class ShaderEditor extends FileView {
 				}
 			} else if (e.keyCode == 83 && e.ctrlKey) { // CTRL+S : save
 				shaderGraph.save();
-			} else if (e.keyCode == 74 && e.ctrlKey) { // CTRL+J : test
+			} else if (e.keyCode == 74 && e.ctrlKey) { // CTRL+S : save
 				trace(shaderGraph.hasCycle());
 			}
 		});
@@ -406,6 +329,85 @@ class ShaderEditor extends FileView {
 		element.find("#preview").first().append(sceneEditor.scene.element);
 	}
 
+	function mouseMoveFunction(clientX : Int, clientY : Int) {
+		if (isCreatingLink != None) {
+			startUpdateViewPosition();
+			createLink(clientX, clientY);
+			return;
+		}
+		// Moving edge
+		if (currentEdge != null) {
+			startUpdateViewPosition();
+			// TODO: handle moving edge => disconnect closest node
+			// try to use the same code when user clicks on input node already connected and here
+		}
+		if (isPanning) {
+			pan(new Point(lX(clientX) - lastClickDrag.x, lY(clientY) - lastClickDrag.y));
+			lastClickDrag.x = lX(clientX);
+			lastClickDrag.y = lY(clientY);
+			return;
+		}
+		// Edit rectangle selection
+		if (startRecSelection != null) {
+			startUpdateViewPosition();
+			var endRecSelection = new h2d.col.Point(lX(clientX), lY(clientY));
+			var xMin = startRecSelection.x;
+			var xMax = endRecSelection.x;
+			var yMin = startRecSelection.y;
+			var yMax = endRecSelection.y;
+
+			if (startRecSelection.x > endRecSelection.x) {
+				xMin = endRecSelection.x;
+				xMax = startRecSelection.x;
+			}
+			if (startRecSelection.y > endRecSelection.y) {
+				yMin = endRecSelection.y;
+				yMax = startRecSelection.y;
+			}
+
+			if (recSelection != null) recSelection.remove();
+			recSelection = editor.rect(editorMatrix, xMin, yMin, xMax - xMin, yMax - yMin).addClass("rect-selection");
+
+			for (box in listOfBoxes) {
+				if (isInside(box, new Point(xMin, yMin), new Point(xMax, yMax))) {
+					box.setSelected(true);
+				} else {
+					box.setSelected(false);
+				}
+			}
+			return;
+		}
+
+		// Move selected boxes
+		if (listOfBoxesSelected.length > 0 && lastClickDrag != null) {
+			startUpdateViewPosition();
+			var dx = (lX(clientX) - lastClickDrag.x);
+			var dy = (lY(clientY) - lastClickDrag.y);
+
+			for (b in listOfBoxesSelected) {
+				b.setPosition(b.getX() + dx, b.getY() + dy);
+				shaderGraph.setPosition(b.getId(), b.getX(), b.getY());
+				// move edges from and to this box
+				for (edge in listOfEdges) {
+					if (edge.from == b || edge.to == b) {
+						edge.elt.remove();
+						edge.elt = createCurve(edge.nodeFrom, edge.nodeTo);
+
+						edge.elt.on("mousedown", function(e) {
+							e.stopPropagation();
+							clearSelectionBoxes();
+							this.currentEdge = edge;
+							currentEdge.elt.addClass("selected");
+						});
+					}
+				}
+			}
+			lastClickDrag.x = lX(clientX);
+			lastClickDrag.y = lY(clientY);
+			return;
+		}
+	}
+
 	function addNode(p : Point, nodeClass : Class<ShaderNode>) {
 		var node = shaderGraph.addNode(p.x, p.y, nodeClass);
 
@@ -424,7 +426,7 @@ class ShaderEditor extends FileView {
 				return;
 			e.stopPropagation();
 
-			firstClickDrag = new IPoint(e.clientX, e.clientY);
+			lastClickDrag = new Point(lX(e.clientX), lY(e.clientY));
 			if (!box.selected) {
 				if (!e.ctrlKey) {
 					// when not group selection and click on box not selected
@@ -438,7 +440,7 @@ class ShaderEditor extends FileView {
 		elt.mouseup(function(e) {
 			if (e.button != 0)
 				return;
-			firstClickDrag = null;
+			lastClickDrag = null;
 			if (listOfBoxesSelected.length == 1 && box.selected && !e.ctrlKey) {
 				clearSelectionBoxes();
 			}
@@ -493,7 +495,7 @@ class ShaderEditor extends FileView {
 								startLinkBox = edge.from;
 								setAvailableInputNodes(edge.from, edge.nodeFrom.attr("field"));
 								removeEdge(edge);
-								createLink(e);
+								createLink(e.clientX, e.clientY);
 								return;
 							}
 						}
@@ -635,16 +637,16 @@ class ShaderEditor extends FileView {
 		});
 	}
 
-	function createLink(e : js.jquery.Event) {
+	function createLink(clientX : Int, clientY : Int) {
 
 		var nearestNode = null;
 		var minDistNode = NODE_TRIGGER_NEAR;
 
 		// checking nearest box
 		var nearestBox = listOfBoxes[0];
-		var minDist = distanceToBox(nearestBox, e.clientX, e.clientY);
+		var minDist = distanceToBox(nearestBox, clientX, clientY);
 		for (i in 1...listOfBoxes.length) {
-			var tmpDist = distanceToBox(listOfBoxes[i], e.clientX, e.clientY);
+			var tmpDist = distanceToBox(listOfBoxes[i], clientX, clientY);
 			if (tmpDist < minDist) {
 				minDist = tmpDist;
 				nearestBox = listOfBoxes[i];
@@ -659,11 +661,11 @@ class ShaderEditor extends FileView {
 			}
 			if (startIndex < nearestBox.outputs.length) {
 				nearestNode = nearestBox.outputs[startIndex];
-				minDistNode = distanceToElement(nearestNode, e.clientX, e.clientY);
+				minDistNode = distanceToElement(nearestNode, clientX, clientY);
 				for (i in startIndex+1...nearestBox.outputs.length) {
 					if (!nearestBox.outputs[i].hasClass("nodeMatch"))
 						continue;
-					var tmpDist = distanceToElement(nearestBox.outputs[i], e.clientX, e.clientY);
+					var tmpDist = distanceToElement(nearestBox.outputs[i], clientX, clientY);
 					if (tmpDist < minDistNode) {
 						minDistNode = tmpDist;
 						nearestNode = nearestBox.outputs[i];
@@ -678,11 +680,11 @@ class ShaderEditor extends FileView {
 			}
 			if (startIndex < nearestBox.inputs.length) {
 				nearestNode = nearestBox.inputs[startIndex];
-				minDistNode = distanceToElement(nearestNode, e.clientX, e.clientY);
+				minDistNode = distanceToElement(nearestNode, clientX, clientY);
 				for (i in startIndex+1...nearestBox.inputs.length) {
 					if (!nearestBox.inputs[i].hasClass("nodeMatch"))
 						continue;
-					var tmpDist = distanceToElement(nearestBox.inputs[i], e.clientX, e.clientY);
+					var tmpDist = distanceToElement(nearestBox.inputs[i], clientX, clientY);
 					if (tmpDist < minDistNode) {
 						minDistNode = tmpDist;
 						nearestNode = nearestBox.inputs[i];
@@ -700,7 +702,7 @@ class ShaderEditor extends FileView {
 
 		// create edge
 		if (currentLink != null) currentLink.remove();
-		currentLink = createCurve(startLinkGrNode.find(".node"), nearestNode, minDistNode, e.clientX, e.clientY, true);
+		currentLink = createCurve(startLinkGrNode.find(".node"), nearestNode, minDistNode, clientX, clientY, true);
 
 	}
 
@@ -915,23 +917,41 @@ class ShaderEditor extends FileView {
 		}
 	}
 
-	function updateViewPosition() {
-		var PADDING_BOUNDS = 40;
-		var SPEED_BOUNDS = 1;
-		var posCursor = new Point(ide.mouseX - parent.offset().left, ide.mouseY - parent.offset().top);
-		if (posCursor.x < PADDING_BOUNDS) {
-			pan(new Point((PADDING_BOUNDS - posCursor.x)*SPEED_BOUNDS, 0));
-		}
-		if (posCursor.y < PADDING_BOUNDS) {
-			pan(new Point(0, (PADDING_BOUNDS - posCursor.y)*SPEED_BOUNDS));
-		}
-		var rightBorder = parent.width() - PADDING_BOUNDS;
-		if (posCursor.x > rightBorder) {
-			pan(new Point((rightBorder - posCursor.x)*SPEED_BOUNDS, 0));
-		}
-		var botBorder = parent.height() - PADDING_BOUNDS;
-		if (posCursor.y > botBorder) {
-			pan(new Point(0, (botBorder - posCursor.y)*SPEED_BOUNDS));
+	function startUpdateViewPosition() {
+		if (timerUpdateView != null)
+			return;
+		var PADDING_BOUNDS = 75;
+		var SPEED_BOUNDS = 0.1;
+		timerUpdateView = new Timer(10);
+		timerUpdateView.run = function() {
+			var posCursor = new Point(ide.mouseX - parent.offset().left, ide.mouseY - parent.offset().top);
+			var wasUpdated = false;
+			if (posCursor.x < PADDING_BOUNDS) {
+				pan(new Point((PADDING_BOUNDS - posCursor.x)*SPEED_BOUNDS, 0));
+				wasUpdated = true;
+			}
+			if (posCursor.y < PADDING_BOUNDS) {
+				pan(new Point(0, (PADDING_BOUNDS - posCursor.y)*SPEED_BOUNDS));
+				wasUpdated = true;
+			}
+			var rightBorder = parent.width() - PADDING_BOUNDS;
+			if (posCursor.x > rightBorder) {
+				pan(new Point((rightBorder - posCursor.x)*SPEED_BOUNDS, 0));
+				wasUpdated = true;
+			}
+			var botBorder = parent.height() - PADDING_BOUNDS;
+			if (posCursor.y > botBorder) {
+				pan(new Point(0, (botBorder - posCursor.y)*SPEED_BOUNDS));
+				wasUpdated = true;
+			}
+			mouseMoveFunction(ide.mouseX, ide.mouseY);
+		};
+	}
+
+	function stopUpdateViewPosition() {
+		if (timerUpdateView != null) {
+			timerUpdateView.stop();
+			timerUpdateView = null;
 		}
 	}
 
@@ -964,10 +984,10 @@ class ShaderEditor extends FileView {
 	}
 
 	// Useful method
-	function isInside(b : Box, min : IPoint, max : IPoint) {
-		if (max.x < gX(b.getX()) || min.x > gX(b.getX() + b.getWidth()))
+	function isInside(b : Box, min : Point, max : Point) {
+		if (max.x < b.getX() || min.x > b.getX() + b.getWidth())
 			return false;
-		if (max.y < gY(b.getY()) || min.y > gY(b.getY() + b.getHeight()))
+		if (max.y < b.getY() || min.y > b.getY() + b.getHeight())
 			return false;
 
 		return true;
