@@ -9,7 +9,9 @@ private typedef Node = {
 	id : Int,
 	type : String,
 	?parameters : Dynamic,
-	?instance : ShaderNode
+	?instance : ShaderNode,
+	?outputs: Array<Node>,
+	?indegree : Int
 };
 
 private typedef Edge = {
@@ -44,6 +46,7 @@ class ShaderGraph {
 	public function generate(nodes : Array<Node>, edges : Array<Edge>) {
 
 		for (n in nodes) {
+			n.outputs = [];
 			n.instance = std.Type.createInstance(std.Type.resolveClass(n.type), []);
 			n.instance.loadProperties(n.parameters);
 			n.instance.setId(n.id);
@@ -63,6 +66,7 @@ class ShaderGraph {
 
 		node.instance = std.Type.createInstance(nameClass, []);
 		node.instance.createOutputs();
+		node.outputs = [];
 
 		this.nodes.set(node.id, node);
 
@@ -74,12 +78,25 @@ class ShaderGraph {
 	}
 
 	public function addEdge(edge : Edge) {
-		this.nodes.get(edge.idInput).instance.setInput(edge.nameInput, new NodeVar(this.nodes.get(edge.idOutput).instance, edge.nameOutput));
-		this.nodes.get(edge.idInput).instance.createOutputs();
+		var node = this.nodes.get(edge.idInput);
+		var output = this.nodes.get(edge.idOutput);
+		node.instance.setInput(edge.nameInput, new NodeVar(output.instance, edge.nameOutput));
+		output.outputs.push(node);
+		updateOutputs(output);
+	}
+
+	function updateOutputs(node : Node) {
+		node.instance.createOutputs();
+		for (o in node.outputs) {
+			updateOutputs(o);
+		}
 	}
 
 	public function removeEdge(idNode, nameInput) {
-		this.nodes.get(idNode).instance.setInput(nameInput, null);
+		var node = this.nodes.get(idNode);
+		this.nodes.get(node.instance.getInput(nameInput).node.id).outputs.remove(node);
+		node.instance.setInput(nameInput, null);
+		updateOutputs(node);
 	}
 
 	public function setPosition(idNode : Int, x : Float, y : Float) {
@@ -90,6 +107,37 @@ class ShaderGraph {
 
 	public function getNodes() {
 		return this.nodes;
+	}
+
+	public function hasCycle() : Bool {
+		var queue : Array<Node> = [];
+
+		var counter = 0;
+		var nbInDegree = 0;
+		for (n in nodes) {
+			n.indegree = n.outputs.length;
+			if (n.indegree == 0) {
+				queue.push(n);
+			}
+			nbInDegree += n.indegree;
+		}
+
+		var currentIndex = 0;
+		while (currentIndex < queue.length) {
+			var node = queue[currentIndex];
+			currentIndex++;
+
+			for (input in node.instance.getInputs()) {
+				var nodeInput = nodes.get(input.node.id);
+				nodeInput.indegree -= 1;
+				if (nodeInput.indegree == 0) {
+					queue.push(nodeInput);
+				}
+			}
+			counter++;
+		}
+		trace(counter, nbInDegree);
+		return counter != nbInDegree;
 	}
 
 	function buildNodeVar(nodeVar : NodeVar) : Array<TExpr>{
@@ -173,7 +221,7 @@ class ShaderGraph {
 
 		var json = haxe.Json.stringify({
 			nodes: [
-				for (n in nodes) { x : n.x, y : n.y, comment: n.comment, id: n.id, type: n.type, parameters : n.instance.saveProperties() }
+				for (n in nodes) { x : n.x, y : n.y, comment: n.comment, id: n.id, type: n.type, parameters : n.instance.savePropertiesNode() }
 			],
 			edges: edgesJson
 		});

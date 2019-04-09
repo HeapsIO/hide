@@ -34,7 +34,7 @@ class ShaderInput extends ShaderNode {
 						parent: null,
 						id: 0,
 						kind: Input,
-						name: "input.uv",
+						name: "uv",
 						type: TVec(2, VFloat)
 					}];
 

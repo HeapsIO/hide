@@ -1,5 +1,7 @@
 package hide.view;
 
+import h3d.shader.LineShader;
+import h3d.shader.ColorAdd;
 using hxsl.Ast.Type;
 
 import haxe.rtti.Rtti;
@@ -29,7 +31,7 @@ class ShaderEditor extends FileView {
 	var editorMatrix : JQuery;
 
 
-	var listOfClasses = new Map<String, Array<NodeInfo>>();
+	var listOfClasses : Map<String, Array<NodeInfo>>;
 	var addMenu : JQuery;
 	var selectedNode : JQuery;
 
@@ -168,7 +170,8 @@ class ShaderEditor extends FileView {
 			}
 			// Edit rectangle selection
 			if (startRecSelection != null) {
-				var endRecSelection = new h2d.col.IPoint(e.offsetX, e.offsetY);
+				var screenOffset = editor.element.offset();
+				var endRecSelection = new h2d.col.IPoint(Std.int(e.clientX - screenOffset.left), Std.int(e.clientY - screenOffset.top));
 				var xMin = startRecSelection.x;
 				var xMax = endRecSelection.x;
 				var yMin = startRecSelection.y;
@@ -288,6 +291,8 @@ class ShaderEditor extends FileView {
 					clearSelectionBoxes();
 				}
 			} else if (e.keyCode == 32) {
+				var test = new LineShader();
+				trace(test);
 				var s = new SharedShader("");
 				s.data = shaderGraph.buildFragment();
 				s.initialize();
@@ -302,9 +307,13 @@ class ShaderEditor extends FileView {
 				}
 			} else if (e.keyCode == 83 && e.ctrlKey) { // CTRL+S : save
 				shaderGraph.save();
+			} else if (e.keyCode == 74 && e.ctrlKey) { // CTRL+S : save
+				trace(shaderGraph.hasCycle());
 			}
 		});
 
+		addMenu = null;
+		listOfClasses = new Map<String, Array<NodeInfo>>();
 		var mapOfNodes = ShaderNode.registeredNodes;
 		for (key in mapOfNodes.keys()) {
 			var metas = haxe.rtti.Meta.getType(mapOfNodes[key]);
@@ -330,29 +339,34 @@ class ShaderEditor extends FileView {
 		listOfBoxes = [];
 		listOfEdges = [];
 
-		new Element("svg").ready(function(e) {
+		updateMatrix();
+
+		new Element("body").ready(function(e) {
 
 			for (node in shaderGraph.getNodes()) {
 				addBox(new Point(node.x, node.y), std.Type.getClass(node.instance), node.instance);
 			}
 
-			for (box in listOfBoxes) {
-				for (key in box.getShaderNode().getInputsKey()) {
-					var input = box.getShaderNode().getInput(key);
-					if (input != null) {
-						var fromBox : Box = null;
-						for (boxFrom in listOfBoxes) {
-							if (boxFrom.getId() == input.node.id) {
-								fromBox = boxFrom;
-								break;
+			new Element(".nodes").ready(function(e) {
+
+				for (box in listOfBoxes) {
+					for (key in box.getShaderNode().getInputsKey()) {
+						var input = box.getShaderNode().getInput(key);
+						if (input != null) {
+							var fromBox : Box = null;
+							for (boxFrom in listOfBoxes) {
+								if (boxFrom.getId() == input.node.id) {
+									fromBox = boxFrom;
+									break;
+								}
 							}
+							var nodeFrom = fromBox.getElement().find('[field=${input.getKey()}]');
+							var nodeTo = box.getElement().find('[field=${key}]');
+							createEdgeInEditorGraph({from: fromBox, nodeFrom: nodeFrom, to : box, nodeTo: nodeTo, elt : createCurve(nodeFrom, nodeTo) });
 						}
-						var nodeFrom = fromBox.getElement().find('[field=${input.getKey()}]');
-						var nodeTo = box.getElement().find('[field=${key}]');
-						createEdgeInEditorGraph({from: fromBox, nodeFrom: nodeFrom, to : box, nodeTo: nodeTo, elt : createCurve(nodeFrom, nodeTo) });
 					}
 				}
-			}
+			});
 		});
 
 	}
@@ -431,8 +445,30 @@ class ShaderEditor extends FileView {
 				if (m == null) continue;
 			}
 			if (Reflect.hasField(m, "input")) {
-				var name : String = (m.input != null && m.input.length > 0) ? Reflect.field(m, "input")[0] : "input";
-				var grNode = box.addInput(editor, name);
+				var inputMeta : Array<Dynamic> = Reflect.field(m, "input");
+				var name : String = (m.input != null && m.input.length > 0) ? inputMeta[0] : "input";
+
+				var defaultValue = null;
+				if (m.input.length >= 2 && inputMeta[1]) {
+					defaultValue = Reflect.field(box.getShaderNode(), 'prop_${f}');
+					if (defaultValue == null) {
+						defaultValue = "0";
+					}
+				}
+				var grNode = box.addInput(editor, name, defaultValue);
+				if (defaultValue != null) {
+					var fieldEditInput = grNode.find("input");
+					fieldEditInput.on("change", function(ev) {
+						var tmpValue = Std.parseFloat(fieldEditInput.val());
+						if (Math.isNaN(tmpValue) ) {
+							fieldEditInput.addClass("error");
+						} else {
+							Reflect.setField(box.getShaderNode(), 'prop_${f}', tmpValue);
+							fieldEditInput.val(tmpValue);
+							fieldEditInput.removeClass("error");
+						}
+					});
+				}
 				grNode.find(".node").attr("field", f);
 				grNode.on("mousedown", function(e : js.jquery.Event) {
 					e.stopPropagation();
@@ -487,6 +523,7 @@ class ShaderEditor extends FileView {
 	function removeEdge(edge : Edge) {
 		edge.elt.remove();
 		edge.nodeTo.removeAttr("hasLink");
+		edge.nodeTo.parent().removeClass("hasLink");
 		shaderGraph.removeEdge(edge.to.getId(), edge.nodeTo.attr("field"));
 		listOfEdges.remove(edge);
 	}
@@ -561,6 +598,7 @@ class ShaderEditor extends FileView {
 	function createEdgeInEditorGraph(edge) {
 		listOfEdges.push(edge);
 		edge.nodeTo.attr("hasLink", "true");
+		edge.nodeTo.parent().addClass("hasLink");
 
 		edge.elt.on("mousedown", function(e) {
 			e.stopPropagation();

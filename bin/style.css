@@ -1122,7 +1122,7 @@ input[type=checkbox]:checked:after {
   fill: none;
 }
 .shader-view .heaps-scene svg .head-box {
-  fill: #424242;
+  fill: #3e3e3e;
 }
 .shader-view .heaps-scene svg .title-box {
   fill: #ffffff;
@@ -1134,13 +1134,16 @@ input[type=checkbox]:checked:after {
 }
 .shader-view .heaps-scene svg .nodes,
 .shader-view .heaps-scene svg .properties {
-  fill: #5c5c5c;
+  fill: #737373;
   opacity: 0.75;
+}
+.shader-view .heaps-scene svg .hasLink .input-field {
+  display: none;
 }
 .shader-view .heaps-scene svg .input-node,
 .shader-view .heaps-scene svg .output-node {
   fill: #c8c8c8;
-  stroke-width: 15px;
+  stroke-width: 13px;
   stroke-opacity: 0;
 }
 .shader-view .heaps-scene svg .input-node.nodeMatch,

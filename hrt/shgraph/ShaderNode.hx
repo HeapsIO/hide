@@ -7,9 +7,7 @@ using hxsl.Ast;
 @:keepSub
 class ShaderNode {
 
-	static public var current_id : Int = 0; // TODO : check concurrency
-
-	public var id : Int = current_id++;
+	public var id : Int;
 
 	static var availableVariables = [{
 						parent: null,
@@ -25,7 +23,6 @@ class ShaderNode {
 
 	public function setId(id : Int) {
 		this.id = id;
-		ShaderNode.current_id = id+1;
 	}
 
 	public function setInput(key : String, s : NodeVar) {
@@ -117,19 +114,53 @@ class ShaderNode {
 		}
 	}
 
-	public function saveProperties() : Dynamic {
-		var parameters = {};
+	public function savePropertiesNode() : Dynamic {
+		var parameters = saveProperties();
 
-		var fields = std.Type.getInstanceFields(std.Type.getClass(this));
-		var metas = haxe.rtti.Meta.getFields(std.Type.getClass(this));
+		var thisClass = std.Type.getClass(this);
+		var fields = std.Type.getInstanceFields(thisClass);
+		var metas = haxe.rtti.Meta.getFields(thisClass);
+		var metaSuperClass = haxe.rtti.Meta.getFields(std.Type.getSuperClass(thisClass));
 
 		for (f in fields) {
 			var m = Reflect.field(metas, f);
 			if (m == null) {
-				continue;
+				m = Reflect.field(metaSuperClass, f);
+				if (m == null)
+					continue;
+			}
+
+			if (Reflect.hasField(m, "prop")) {
+				var metaData : Array<String> = Reflect.field(m, "prop");
+				if (metaData != null && metaData.length >= 1 && metaData[0] == "macro") {
+					Reflect.setField(parameters, f, Reflect.getProperty(this, f));
+				}
+			}
+		}
+
+		return parameters;
+	}
+
+	public function saveProperties() : Dynamic {
+		var parameters = {};
+
+		var thisClass = std.Type.getClass(this);
+		var fields = std.Type.getInstanceFields(thisClass);
+		var metas = haxe.rtti.Meta.getFields(thisClass);
+		var metaSuperClass = haxe.rtti.Meta.getFields(std.Type.getSuperClass(thisClass));
+
+		for (f in fields) {
+			var m = Reflect.field(metas, f);
+			if (m == null) {
+				m = Reflect.field(metaSuperClass, f);
+				if (m == null)
+					continue;
 			}
 			if (Reflect.hasField(m, "prop")) {
-				Reflect.setField(parameters, f, Reflect.getProperty(this, f));
+				var metaData : Array<String> = Reflect.field(m, "prop");
+				if (metaData == null || metaData.length == 0 || metaData[0] != "macro") {
+					Reflect.setField(parameters, f, Reflect.getProperty(this, f));
+				}
 			}
 		}
 		return parameters;

@@ -6,8 +6,8 @@ using hxsl.Ast;
 
 class Operation extends ShaderNode {
 
-	@input("A") var a = SType.Number;
-	@input("B") var b = SType.Number;
+	@input("A", true) var a = SType.Number;
+	@input("B", true) var b = SType.Number;
 
 	@output() var output = SType.Number;
 

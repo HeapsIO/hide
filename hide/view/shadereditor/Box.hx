@@ -16,7 +16,7 @@ class Box {
 	var propsHeight : Int = 0;
 
 	var HEADER_HEIGHT = 27;
-	@const var NODE_MARGIN = 20;
+	@const var NODE_MARGIN = 17;
 	public static var NODE_RADIUS = 5;
 	@const var NODE_TITLE_PADDING = 10;
 	public var selected : Bool = false;
@@ -58,13 +58,18 @@ class Box {
 		editor.line(element, width/2, HEADER_HEIGHT, width/2, 0, {display: "none"}).addClass("nodes-separator");
 	}
 
-	public function addInput(editor : SVG, name : String) {
+	public function addInput(editor : SVG, name : String, valueDefault : String = null) {
 		var node = editor.group(element).addClass("input-node-group");
-		var nodeHeight = HEADER_HEIGHT + (NODE_MARGIN + NODE_RADIUS) * (inputs.length+1);
+		var nodeHeight = HEADER_HEIGHT + NODE_MARGIN * (inputs.length+1) + NODE_RADIUS * inputs.length;
 		var nodeCircle = editor.circle(node, 0, nodeHeight, NODE_RADIUS).addClass("node input-node");
 
 		if (name.length > 0)
 			editor.text(node, NODE_TITLE_PADDING, nodeHeight + 4, name).addClass("title-node");
+		if (valueDefault != null) {
+			var widthInput = width / 2 * 0.7;
+			var fObject = editor.foreignObject(node, NODE_TITLE_PADDING, nodeHeight - 9, widthInput, 20).addClass("input-field");
+			new Element('<input type="text" style="width: ${widthInput - 7}px" value="${valueDefault}" />').appendTo(fObject);
+		}
 
 		inputs.push(nodeCircle);
 		refreshHeight();
@@ -74,7 +79,7 @@ class Box {
 
 	public function addOutput(editor : SVG, name : String) {
 		var node = editor.group(element).addClass("output-node-group");
-		var nodeHeight = HEADER_HEIGHT + (NODE_MARGIN + NODE_RADIUS) * (outputs.length+1);
+		var nodeHeight = HEADER_HEIGHT + NODE_MARGIN * (outputs.length+1) + NODE_RADIUS * outputs.length;
 		var nodeCircle = editor.circle(node, width, nodeHeight, NODE_RADIUS).addClass("node output-node");
 
 		if (name.length > 0)
@@ -99,7 +104,7 @@ class Box {
 
 			// create properties box
 		editor.rect(propertiesGroup, 0, 0, this.width, 0).addClass("properties");
-		propsHeight = 10;
+		propsHeight = 5;
 
 		for (p in props) {
 			var prop = editor.group(propertiesGroup).addClass("prop-group");
@@ -108,7 +113,7 @@ class Box {
 			var propWidth = (p.width() > 0 ? p.width() : this.width);
 			var fObject = editor.foreignObject(prop, (this.width - propWidth) / 2, 5, propWidth, p.height());
 			p.appendTo(fObject);
-			propsHeight += Std.int(p.height()) + 10;
+			propsHeight += Std.int(p.height()) + 5;
 		}
 
 		refreshHeight();
@@ -170,7 +175,7 @@ class Box {
 		if (maxNb == 1 && propsHeight > 0) {
 			return 0;
 		}
-		return (NODE_MARGIN + NODE_RADIUS) * (maxNb+1);
+		return NODE_MARGIN * (maxNb+1) + NODE_RADIUS * maxNb;
 	}
 	public function getHeight() {
 		return HEADER_HEIGHT + getNodesHeight() + propsHeight;

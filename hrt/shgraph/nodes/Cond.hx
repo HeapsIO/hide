@@ -8,8 +8,8 @@ using hxsl.Ast;
 @group("Condition")
 class Cond extends ShaderNode {
 
-	@input("left") var leftVar = SType.Variant;
-	@input("right") var rightVar = SType.Variant;
+	@input("left") var leftVar = SType.Number;
+	@input("right") var rightVar = SType.Number;
 
 	@output("boolean") var output = SType.Bool;
 
@@ -27,7 +27,18 @@ class Cond extends ShaderNode {
 	}
 
 	override public function createOutputs() {
-		addOutput("output", TBool);
+		if (leftVar != null && leftVar.getType() != null && rightVar != null && rightVar.getType() != null) {
+			var type = leftVar.getVar(rightVar.getType()).t;
+			switch(type) {
+				case TVec(s, t):
+					throw "Vector of bools not supported";//addOutput("output", TVec(s, VBool));
+				case TFloat:
+					addOutput("output", TBool);
+				default:
+					removeOutput("output");
+			}
+		} else
+			removeOutput("output");
 	}
 
 	override public function build(key : String) : TExpr {
@@ -40,8 +51,8 @@ class Cond extends ShaderNode {
 						p: null,
 						t: output.type
 					}, {e: TBinop(this.condition,
-							leftVar.getVar(),
-							rightVar.getVar()),
+							leftVar.getVar(rightVar.getType()),
+							rightVar.getVar(leftVar.getType())),
 						p: null, t: output.type })
 			};
 	}

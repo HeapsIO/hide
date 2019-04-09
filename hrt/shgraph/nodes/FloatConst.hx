@@ -3,15 +3,20 @@ package hrt.shgraph.nodes;
 import hide.Element;
 using hxsl.Ast;
 
-@name("Float")
-@description("Float input, it's static")
+@name("Number")
+@description("Number input, it's static")
 @group("Input")
 @width(100)
 class FloatConst extends ShaderConst {
 
 	@output() var output = SType.Float;
 
-	@prop() var value : Float = 0.5;
+	@prop() var value : Float = 0.;
+
+	public function new(?value : Float) {
+		if (value != null)
+			this.value = value;
+	}
 
 	override public function getOutputTExpr(key : String) : TExpr {
 		return {

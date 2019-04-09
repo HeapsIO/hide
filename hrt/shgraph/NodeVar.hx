@@ -31,6 +31,73 @@ class NodeVar {
 		}
 
 		switch(currentType) {
+			case TBool:
+				var tExprBool = node.getOutputTExpr(keyOutput);
+				switch(type) {
+					case TVec(size, VBool):
+						if (size == 2) {
+							return {
+								e: TCall({
+									e: TGlobal(Vec2),
+									p: null,
+									t: TFun([
+										{
+											ret: type,
+											args: [
+											{ name: "u", type : TBool },
+											{ name: "v", type : TBool }]
+										}
+									])
+								}, [tExprBool,
+									tExprBool]),
+								p: null,
+								t: type
+							};
+						} else if (size == 3) {
+							return {
+								e: TCall({
+									e: TGlobal(Vec3),
+									p: null,
+									t: TFun([
+										{
+											ret: type,
+											args: [
+											{ name: "x", type : TBool },
+											{ name: "y", type : TBool },
+											{ name: "z", type : TBool }]
+										}
+									])
+								}, [tExprBool,
+									tExprBool,
+									tExprBool]),
+								p: null,
+								t: type
+							};
+						} else {
+							return {
+								e: TCall({
+									e: TGlobal(Vec4),
+									p: null,
+									t: TFun([
+										{
+											ret: type,
+											args: [
+											{ name: "r", type : TBool },
+											{ name: "g", type : TBool },
+											{ name: "b", type : TBool },
+											{ name: "a", type : TBool }]
+										}
+									])
+								}, [tExprBool,
+									tExprBool,
+									tExprBool,
+									tExprBool]),
+								p: null,
+								t: type
+							};
+						}
+					default:
+				};
 			case TFloat:
 				var tExprFloat = node.getOutputTExpr(keyOutput);
 				switch(type) {

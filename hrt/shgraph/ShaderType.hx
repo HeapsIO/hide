@@ -5,6 +5,12 @@ import hxsl.Ast.Type;
 enum SType {
 	/** Bool **/
 	Bool;
+	/** Vector of bools of size 2 **/
+	VecBool2;
+	/** Vector of bools of size 3 **/
+	VecBool3;
+	/** Vector of bools of size 4 **/
+	VecBool4;
 	/** Float **/
 	Float;
 	/** Vector of size 2 **/
@@ -31,6 +37,12 @@ class ShaderType {
 				return Vec3;
 			case TVec(4, VFloat):
 				return Vec4;
+			case TVec(2, VBool):
+				return VecBool2;
+			case TVec(3, VBool):
+				return VecBool3;
+			case TVec(4, VBool):
+				return VecBool4;
 			case TBool:
 				return Bool;
 			case TFloat:
@@ -56,6 +68,12 @@ class ShaderType {
 				return (from == Float || from == Vec2 || from == Vec3 || from == Vec4);
 			case Bool:
 				return (from == Bool);
+			case VecBool2:
+				return (from == Bool || from == VecBool2);
+			case VecBool3:
+				return (from == Bool || from == VecBool3);
+			case VecBool4:
+				return (from == Bool || from == VecBool4);
 			case Float:
 				return (from == Float);
 			case Number:
