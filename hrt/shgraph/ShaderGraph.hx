@@ -83,7 +83,12 @@ class ShaderGraph {
 		var output = this.nodes.get(edge.idOutput);
 		node.instance.setInput(edge.nameInput, new NodeVar(output.instance, edge.nameOutput));
 		output.outputs.push(node);
+		if (hasCycle()){
+			removeEdge(edge.idInput, edge.nameInput, false);
+			return false;
+		}
 		updateOutputs(output);
+		return true;
 	}
 
 	function updateOutputs(node : Node) {
@@ -93,11 +98,13 @@ class ShaderGraph {
 		}
 	}
 
-	public function removeEdge(idNode, nameInput) {
+	public function removeEdge(idNode, nameInput, update = true) {
 		var node = this.nodes.get(idNode);
 		this.nodes.get(node.instance.getInput(nameInput).node.id).outputs.remove(node);
 		node.instance.setInput(nameInput, null);
-		updateOutputs(node);
+		if (update) {
+			updateOutputs(node);
+		}
 	}
 
 	public function setPosition(idNode : Int, x : Float, y : Float) {
@@ -114,13 +121,13 @@ class ShaderGraph {
 		var queue : Array<Node> = [];
 
 		var counter = 0;
-		var nbInDegree = 0;
+		var nbNodes = 0;
 		for (n in nodes) {
 			n.indegree = n.outputs.length;
 			if (n.indegree == 0) {
 				queue.push(n);
 			}
-			nbInDegree += n.indegree;
+			nbNodes++;
 		}
 
 		var currentIndex = 0;
@@ -137,8 +144,8 @@ class ShaderGraph {
 			}
 			counter++;
 		}
-		trace(counter, nbInDegree);
-		return counter != nbInDegree;
+		trace(counter, nbNodes);
+		return counter != nbNodes;
 	}
 
 	function buildNodeVar(nodeVar : NodeVar) : Array<TExpr>{

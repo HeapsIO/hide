@@ -29,6 +29,7 @@ class ShaderEditor extends FileView {
 	var parent : JQuery;
 	static var editor : SVG;
 	var editorMatrix : JQuery;
+	var statusBar : JQuery;
 
 
 	var listOfClasses : Map<String, Array<NodeInfo>>;
@@ -98,6 +99,7 @@ class ShaderEditor extends FileView {
 		preview.on("mousedown", function(e) { e.stopPropagation(); });
 		preview.on("wheel", function(e) { e.stopPropagation(); });
 		parent.append(preview);
+		statusBar = new Element('<div id="status-bar" ><span> </span></div>').appendTo(parent).find("span");
 
 		var def = new hrt.prefab.Library();
 		new hrt.prefab.RenderProps(def).name = "renderer";
@@ -146,6 +148,15 @@ class ShaderEditor extends FileView {
 				firstClickDrag = new IPoint(e.clientX, e.clientY);
 				isPanning = true;
 			}
+		});
+
+		parent.on("mouseover", function(e) {
+			if (isCreatingLink != None)
+				updateViewPosition();
+			if (currentEdge != null)
+				updateViewPosition();
+			if (startRecSelection != null)
+				updateViewPosition();
 		});
 
 		parent.on("mousemove", function(e : js.jquery.Event) {
@@ -232,8 +243,8 @@ class ShaderEditor extends FileView {
 			if (e.button == 0) {
 				// Stop link creation
 				if (isCreatingLink != None) {
-					if (startLinkBox != null && endLinkBox != null) {
-						createEdgeInShaderGraph();
+					if (startLinkBox != null && endLinkBox != null && createEdgeInShaderGraph()) {
+
 					} else {
 						if (currentLink != null) currentLink.remove();
 						currentLink = null;
@@ -295,6 +306,7 @@ class ShaderEditor extends FileView {
 				trace(test);
 				var s = new SharedShader("");
 				s.data = shaderGraph.buildFragment();
+				info("Shader compiled");
 				s.initialize();
 
 				if (shaderGenerated != null)
@@ -307,7 +319,7 @@ class ShaderEditor extends FileView {
 				}
 			} else if (e.keyCode == 83 && e.ctrlKey) { // CTRL+S : save
 				shaderGraph.save();
-			} else if (e.keyCode == 74 && e.ctrlKey) { // CTRL+S : save
+			} else if (e.keyCode == 74 && e.ctrlKey) { // CTRL+J : test
 				trace(shaderGraph.hasCycle());
 			}
 		});
@@ -568,7 +580,17 @@ class ShaderEditor extends FileView {
 		editor.element.find(".nodeMatch").removeClass("nodeMatch");
 	}
 
-	function createEdgeInShaderGraph() {
+	function error(str : String) {
+		statusBar.html(str);
+		statusBar.addClass("error");
+	}
+
+	function info(str : String) {
+		statusBar.html(str);
+		statusBar.removeClass("error");
+	}
+
+	function createEdgeInShaderGraph() : Bool {
 		var startLinkNode = startLinkGrNode.find(".node");
 		if (isCreatingLink == FromInput) {
 			var tmpBox = startLinkBox;
@@ -589,10 +611,15 @@ class ShaderEditor extends FileView {
 				}
 			}
 		}
-		shaderGraph.addEdge({ idOutput: startLinkBox.getId(), nameOutput: startLinkNode.attr("field"), idInput: endLinkBox.getId(), nameInput: endLinkNode.attr("field") });
-		createEdgeInEditorGraph(newEdge);
-		currentLink.removeClass("draft");
-		currentLink = null;
+		if (shaderGraph.addEdge({ idOutput: startLinkBox.getId(), nameOutput: startLinkNode.attr("field"), idInput: endLinkBox.getId(), nameInput: endLinkNode.attr("field") })) {
+			createEdgeInEditorGraph(newEdge);
+			currentLink.removeClass("draft");
+			currentLink = null;
+			return true;
+		} else {
+			error("This edge creates a cycle.");
+			return false;
+		}
 	}
 
 	function createEdgeInEditorGraph(edge) {
@@ -885,6 +912,26 @@ class ShaderEditor extends FileView {
 		listOfBoxesSelected = [];
 		if (this.currentEdge != null) {
 			currentEdge.elt.removeClass("selected");
+		}
+	}
+
+	function updateViewPosition() {
+		var PADDING_BOUNDS = 40;
+		var SPEED_BOUNDS = 1;
+		var posCursor = new Point(ide.mouseX - parent.offset().left, ide.mouseY - parent.offset().top);
+		if (posCursor.x < PADDING_BOUNDS) {
+			pan(new Point((PADDING_BOUNDS - posCursor.x)*SPEED_BOUNDS, 0));
+		}
+		if (posCursor.y < PADDING_BOUNDS) {
+			pan(new Point(0, (PADDING_BOUNDS - posCursor.y)*SPEED_BOUNDS));
+		}
+		var rightBorder = parent.width() - PADDING_BOUNDS;
+		if (posCursor.x > rightBorder) {
+			pan(new Point((rightBorder - posCursor.x)*SPEED_BOUNDS, 0));
+		}
+		var botBorder = parent.height() - PADDING_BOUNDS;
+		if (posCursor.y > botBorder) {
+			pan(new Point(0, (botBorder - posCursor.y)*SPEED_BOUNDS));
 		}
 	}
 
