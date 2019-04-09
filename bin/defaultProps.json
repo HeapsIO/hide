@@ -41,6 +41,11 @@
 
 	"key.view.fullScreen" : "F11",
 
+	// File tree
+	"filetree.excludes": [
+		"(^|\/)\\.[^.]*$"
+	],
+
 	// cdb keys
 
 	"key.cdb.showReferences" : "Shift+F12",

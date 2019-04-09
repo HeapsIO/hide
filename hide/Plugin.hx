@@ -11,6 +11,7 @@ class Plugin {
 	static var haxelibRoot = sys.io.File.getContent(Sys.getEnv("USERPROFILE")+"/.haxelib");
 	static var EXCLUDES = [
 		"hide",
+		"hrt",
 
 		"h2d",
 		"h3d",
@@ -42,11 +43,11 @@ class Plugin {
 
 	static function getLibraryPath( libName ) {
 		var libPath = haxelibRoot+"/"+libName;
-		var dev = try sys.io.File.getContent(libPath+"/.dev") catch( e : Dynamic ) null;
+		var dev = try StringTools.trim(sys.io.File.getContent(libPath+"/.dev")) catch( e : Dynamic ) null;
 		if( dev != null )
 			libPath = dev;
 		else {
-			var cur = try sys.io.File.getContent(libPath+"/.current") catch( e : Dynamic ) null;
+			var cur = try StringTools.trim(sys.io.File.getContent(libPath+"/.current")) catch( e : Dynamic ) null;
 			if( cur == null )
 				throw "Library not installed '"+libName+"'";
 			libPath += "/"+cur.split(".").join(",");
