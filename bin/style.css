@@ -1103,6 +1103,9 @@ input[type=checkbox]:checked:after {
   box-shadow: inset 0px 0px 12px -1px black;
   z-index: 3;
 }
+.shader-view .heaps-scene {
+  outline: none !important;
+}
 .shader-view .heaps-scene #preview {
   position: absolute;
   width: 300px;

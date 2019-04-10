@@ -83,7 +83,7 @@ class ShaderEditor extends FileView {
 		element.html('
 			<div class="flex vertical">
 				<div class="flex-elt shader-view">
-					<div class="heaps-scene">
+					<div class="heaps-scene" tabindex="0" >
 					</div>
 					<div class="tabs">
 						<span>Parameters</span>
@@ -214,7 +214,7 @@ class ShaderEditor extends FileView {
 			}
 		});
 
-		new Element("body").on("keydown", function(e) {
+		parent.on("keydown", function(e) {
 
 			if (e.shiftKey && e.keyCode != 16) {
 				openAddMenu();
@@ -333,8 +333,7 @@ class ShaderEditor extends FileView {
 		}
 
 
-		var cache = new h3d.prim.ModelCache();
-		obj = cache.loadModel(hxd.Res.load("fx/Common/PrimitiveShapes/Sphere.fbx").toModel());
+		obj = sceneEditor.scene.loadModel("fx/Common/PrimitiveShapes/Sphere.fbx", true);
 		sceneEditor.scene.s3d.addChild(obj);
 
 		element.find("#preview").first().append(sceneEditor.scene.element);
@@ -936,7 +935,7 @@ class ShaderEditor extends FileView {
 
 			if (ev.keyCode == 13) {
 				var key = this.selectedNode.attr("node");
-				var posCursor = new Point(ide.mouseX - parent.offset().left - 25, ide.mouseY - parent.offset().top - 10);
+				var posCursor = new Point(lX(ide.mouseX - 25), lY(ide.mouseY - 10));
 				addNode(posCursor, ShaderNode.registeredNodes[key]);
 				closeAddMenu();
 			} else {
@@ -981,7 +980,7 @@ class ShaderEditor extends FileView {
 				return;
 			}
 			var key = ev.getThis().attr("node");
-			var posCursor = new Point(Std.int(ide.mouseX - parent.offset().left - 25), Std.int(ide.mouseY - parent.offset().top - 10));
+			var posCursor = new Point(lX(ide.mouseX - 25), lY(ide.mouseY - 10));
 			addNode(posCursor, ShaderNode.registeredNodes[key]);
 			closeAddMenu();
 		});
