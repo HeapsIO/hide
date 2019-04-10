@@ -15,21 +15,21 @@ class IfCondition extends ShaderNode {
 
 	override public function checkValidityInput(key : String, type : ShaderType.SType) : Bool {
 
-		if (key == "trueVar" && falseVar != null)
+		if (key == "trueVar" && falseVar != null && !falseVar.isEmpty())
 			return ShaderType.checkCompatibilities(type, ShaderType.getType(falseVar.getType()));
 
-		if (key == "falseVar" && trueVar != null)
+		if (key == "falseVar" && trueVar != null && !trueVar.isEmpty())
 			return ShaderType.checkCompatibilities(type, ShaderType.getType(trueVar.getType()));
 
 		return true;
 	}
 
-	override public function createOutputs() {
-		if (trueVar != null && falseVar != null)
+	override public function computeOutputs() {
+		if (trueVar != null && !trueVar.isEmpty() && falseVar != null && !falseVar.isEmpty())
 			addOutput("output", trueVar.getVar(falseVar.getType()).t);
-		else if (trueVar != null)
+		else if (trueVar != null && !trueVar.isEmpty())
 			addOutput("output", trueVar.getType());
-		else if (falseVar != null)
+		else if (falseVar != null && !falseVar.isEmpty())
 			addOutput("output", falseVar.getType());
 		else
 			removeOutput("output");

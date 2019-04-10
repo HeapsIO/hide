@@ -17,21 +17,22 @@ class Cond extends ShaderNode {
 
 	override public function checkValidityInput(key : String, type : ShaderType.SType) : Bool {
 
-		if (key == "leftVar" && rightVar != null)
+		if (key == "leftVar" && rightVar != null && !rightVar.isEmpty())
 			return ShaderType.checkCompatibilities(type, ShaderType.getType(rightVar.getType()));
 
-		if (key == "rightVar" && leftVar != null)
+		if (key == "rightVar" && leftVar != null && !leftVar.isEmpty())
 			return ShaderType.checkCompatibilities(type, ShaderType.getType(leftVar.getType()));
 
 		return true;
 	}
 
-	override public function createOutputs() {
-		if (leftVar != null && leftVar.getType() != null && rightVar != null && rightVar.getType() != null) {
+	override public function computeOutputs() {
+		if (leftVar != null && !leftVar.isEmpty() && rightVar != null && !rightVar.isEmpty()) {
 			var type = leftVar.getVar(rightVar.getType()).t;
 			switch(type) {
 				case TVec(s, t):
-					throw "Vector of bools not supported";//addOutput("output", TVec(s, VBool));
+					removeOutput("output");
+					throw ShaderException.t("Vector of bools is not supported", this.id); //addOutput("output", TVec(s, VBool));
 				case TFloat:
 					addOutput("output", TBool);
 				default:

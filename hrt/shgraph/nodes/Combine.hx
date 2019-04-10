@@ -39,7 +39,7 @@ class Combine extends ShaderNode {
 				};
 	}
 
-	override public function createOutputs() {
+	override public function computeOutputs() {
 		addOutput("output", TVec(4, VFloat));
 	}
 

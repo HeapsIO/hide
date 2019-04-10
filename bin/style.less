@@ -1249,7 +1249,7 @@ input[type=checkbox] {
 			position: absolute;
 
 			width: 100%;
-			height: 25px;
+			min-height: 20px;
 
 			background-color: #111;
 			border: 1px solid #444;
@@ -1274,6 +1274,11 @@ input[type=checkbox] {
 				&.selected {
 					.outline {
 						stroke: #668fff;
+					}
+				}
+				&.error {
+					.outline {
+						stroke: #ff6666;
 					}
 				}
 			}

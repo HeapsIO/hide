@@ -5,8 +5,6 @@ import haxe.macro.Context;
 import haxe.macro.Expr;
 using haxe.macro.Tools;
 
-typedef SField = { name : String, value : ShaderType.SType };
-
 class ParseFieldsMacro {
 
 #if macro
@@ -15,6 +13,7 @@ class ParseFieldsMacro {
 		var fields = Context.getBuildFields();
 
 		var mapInputs = new Array<Expr>();
+		var inputsList = new Array<String>();
 		var hasInputs = false;
 		var mapOutputs = new Array<Expr>();
 		var hasOutputs = false;
@@ -68,10 +67,12 @@ class ParseFieldsMacro {
 							}
 							if (e == null)
 								Context.error('Input ${sel} has not affectation', f.pos);
+
 							var enumValue = ["ShaderType", "SType", e.toString().split(".").pop()];
-							mapInputs.push(macro $v{sel} => ${enumValue.toFieldExpr()});
+							mapInputs.push(macro $v{sel} => { type : ${enumValue.toFieldExpr()}, hasProperty: $v{hasProperty} });
 							f.kind = FProp("get", "null", TPath({ pack: ["hrt", "shgraph"], name: "NodeVar" }));
 							f.meta = saveMeta;
+							inputsList.push(f.name);
 
 							break;
 						}
@@ -100,11 +101,12 @@ class ParseFieldsMacro {
 			fields.push({
 				name: "inputsInfo",
 				access: [Access.APrivate],
-				kind: FieldType.FVar(macro:Map<String, ShaderType.SType>, macro $a{mapInputs}),
+				kind: FieldType.FVar(macro:Map<String, ShaderNode.InputInfo>, macro $a{mapInputs}),
 				pos: Context.currentPos(),
 			});
 			var sfields = macro class {
-				override public function getInputInfo(key : String) : ShaderType.SType return inputsInfo.get(key);
+				override public function getInputInfo(key : String) : ShaderNode.InputInfo return inputsInfo.get(key);
+				override public function getInputInfoKeys() : Array<String> return $v{inputsList};
 			};
 			for( field in sfields.fields )
 				fields.push(field);

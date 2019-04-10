@@ -300,7 +300,6 @@ class Level3D extends FileView {
 	var showGrid = true;
 	var currentVersion : Int = 0;
 	var lastSyncChange : Float = 0.;
-	var currentSign : String;
 	var sceneFilters : Map<String, Bool>;
 	var statusText : h2d.Text;
 	var lastRenderProps : hrt.prefab.RenderProps = null;
@@ -501,17 +500,6 @@ class Level3D extends FileView {
 
 	override function getDefaultContent() {
 		return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab.l3d.Level3D().saveData()));
-	}
-
-	override function onFileChanged(wasDeleted:Bool) {
-		if( !wasDeleted ) {
-			// double check if content has changed
-			var content = sys.io.File.getContent(getPath());
-			var sign = haxe.crypto.Md5.encode(content);
-			if( sign == currentSign )
-				return;
-		}
-		super.onFileChanged(wasDeleted);
 	}
 
 	override function save() {

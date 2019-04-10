@@ -15,8 +15,8 @@ class Abs extends ShaderFunction {
 		super(Abs);
 	}
 
-	override public function createOutputs() {
-		if (a != null)
+	override public function computeOutputs() {
+		if (a != null && !a.isEmpty())
 			addOutput("output", a.getType());
 		else
 			removeOutput("output");

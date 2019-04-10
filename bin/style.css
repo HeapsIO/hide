@@ -1115,7 +1115,7 @@ input[type=checkbox]:checked:after {
 .shader-view .heaps-scene #status-bar {
   position: absolute;
   width: 100%;
-  height: 25px;
+  min-height: 20px;
   background-color: #111;
   border: 1px solid #444;
   right: -1px;
@@ -1133,6 +1133,9 @@ input[type=checkbox]:checked:after {
 }
 .shader-view .heaps-scene svg g.selected .outline {
   stroke: #668fff;
+}
+.shader-view .heaps-scene svg g.error .outline {
+  stroke: #ff6666;
 }
 .shader-view .heaps-scene svg .outline {
   fill: none;

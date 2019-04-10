@@ -65,7 +65,7 @@ class ShaderGraph {
 
 		node.instance = std.Type.createInstance(nameClass, []);
 		node.instance.setId(current_node_id);
-		node.instance.createOutputs();
+		node.instance.computeOutputs();
 		node.outputs = [];
 
 		this.nodes.set(node.id, node);
@@ -87,12 +87,24 @@ class ShaderGraph {
 			removeEdge(edge.idInput, edge.nameInput, false);
 			return false;
 		}
-		updateOutputs(output);
+		try {
+			updateOutputs(output);
+		} catch (e : Dynamic) {
+			removeEdge(edge.idInput, edge.nameInput);
+			throw e;
+		}
 		return true;
 	}
 
+	public function nodeUpdated(idNode : Int) {
+		var node = this.nodes.get(idNode);
+		if (node != null) {
+			updateOutputs(node);
+		}
+	}
+
 	function updateOutputs(node : Node) {
-		node.instance.createOutputs();
+		node.instance.computeOutputs();
 		for (o in node.outputs) {
 			updateOutputs(o);
 		}
@@ -144,7 +156,7 @@ class ShaderGraph {
 			}
 			counter++;
 		}
-		trace(counter, nbNodes);
+
 		return counter != nbNodes;
 	}
 
@@ -153,9 +165,15 @@ class ShaderGraph {
 		if (node == null)
 			return [];
 		var res = [];
-		var inputs = node.getInputs();
-		for (k in inputs) {
-			res = res.concat(buildNodeVar(k));
+		var keys = node.getInputInfoKeys();
+		for (key in keys) {
+			var input = node.getInput(key);
+			if (input != null) {
+				res = res.concat(buildNodeVar(input));
+			} else if (node.getInputInfo(key).hasProperty) {
+			} else {
+				throw ShaderException.t("This box has inputs not connected", node.id);
+			}
 		}
 		var build = nodeVar.getExpr();
 		res = res.concat(build);
@@ -234,6 +252,6 @@ class ShaderGraph {
 			edges: edgesJson
 		});
 
-		sys.io.File.saveContent(this.filepath, json);
+		return json;
 	}
 }

@@ -16,10 +16,10 @@ class Maximum extends ShaderFunction {
 		super(Max);
 	}
 
-	override public function createOutputs() {
-		if (a != null)
+	override public function computeOutputs() {
+		if (a != null && !a.isEmpty())
 			addOutput("output", a.getType());
-		else if (b != null)
+		else if (b != null && !b.isEmpty())
 			addOutput("output", b.getType());
 		else
 			removeOutput("output");

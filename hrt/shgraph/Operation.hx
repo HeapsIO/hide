@@ -17,12 +17,12 @@ class Operation extends ShaderNode {
 		this.operation = operation;
 	}
 
-	override public function createOutputs() {
-		if (a != null && b != null)
+	override public function computeOutputs() {
+		if (a != null && !a.isEmpty() && b != null && !b.isEmpty())
 			addOutput("output", a.getVar(b.getType()).t);
-		else if (a != null)
+		else if (a != null && !a.isEmpty() )
 			addOutput("output", a.getType());
-		else if (b != null)
+		else if (b != null && !b.isEmpty())
 			addOutput("output", b.getType());
 		else
 			removeOutput("output");

@@ -24,6 +24,10 @@ class NodeVar {
 		return node.getOutputType(keyOutput);
 	}
 
+	public function isEmpty() {
+		return node.getOutputTExpr(keyOutput) == null;
+	}
+
 	public function getVar(?type: Type) : TExpr {
 		var currentType = getType();
 		if (type == null || currentType == type) {

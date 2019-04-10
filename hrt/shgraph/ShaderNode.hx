@@ -3,6 +3,8 @@ package hrt.shgraph;
 import hide.Element;
 using hxsl.Ast;
 
+typedef InputInfo = { type : ShaderType.SType, hasProperty : Bool };
+
 @:autoBuild(hrt.shgraph.ParseFieldsMacro.build())
 @:keepSub
 class ShaderNode {
@@ -61,7 +63,7 @@ class ShaderNode {
 		outputs.set(tVar.name, tVar);
 	}
 
-	public function createOutputs() : Void {}
+	public function computeOutputs() : Void {}
 
 	public function getOutput(key : String) : TVar {
 		return outputs.get(key);
@@ -76,6 +78,8 @@ class ShaderNode {
 
 	public function getOutputTExpr(key : String) : TExpr {
 		var o = getOutput(key);
+		if (o == null)
+			return null;
 		return {
 			e: TVar(o),
 			p: null,
@@ -88,7 +92,7 @@ class ShaderNode {
 	}
 
 	public function checkTypeAndCompatibilyInput(key : String, type : ShaderType.SType) : Bool {
-		var infoKey = getInputInfo(key);
+		var infoKey = getInputInfo(key).type;
 		if (infoKey != null && !(ShaderType.checkConversion(type, infoKey))) {
 			return false;
 		}
@@ -99,7 +103,11 @@ class ShaderNode {
 		return true;
 	}
 
-	public function getInputInfo(key : String) : ShaderType.SType {
+	public function getInputInfoKeys() : Array<String> {
+		return [];
+	}
+
+	public function getInputInfo(key : String) : InputInfo {
 		return null;
 	}
 

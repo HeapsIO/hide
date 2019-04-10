@@ -36,7 +36,8 @@ class Box {
 		}
 		var className = (metas.name != null) ? metas.name[0] : "Undefined";
 
-		element = editor.group(parent).addClass("not-selected");
+		element = editor.group(parent).addClass("box").addClass("not-selected");
+		element.attr("id", node.id);
 		setPosition(x, y);
 
 		// outline of box
@@ -148,10 +149,11 @@ class Box {
 
 	public function setSelected(b : Bool) {
 		selected = b;
-		element.removeClass();
 		if (b) {
+			element.removeClass("not-selected");
 			element.addClass("selected");
 		} else {
+			element.removeClass("selected");
 			element.addClass("not-selected");
 		}
 	}

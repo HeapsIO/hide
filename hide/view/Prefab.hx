@@ -43,23 +43,10 @@ class Prefab extends FileView {
 	var autoSync : Bool;
 	var currentVersion : Int = 0;
 	var lastSyncChange : Float = 0.;
-	var currentSign : String;
 
 	override function getDefaultContent() {
 		return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab.Library().saveData()));
 	}
-
-	override function onFileChanged(wasDeleted:Bool) {
-		if( !wasDeleted ) {
-			// double check if content has changed
-			var content = sys.io.File.getContent(getPath());
-			var sign = haxe.crypto.Md5.encode(content);
-			if( sign == currentSign )
-				return;
-		}
-		super.onFileChanged(wasDeleted);
-	}
-
 	override function save() {
 		var content = ide.toJSON(data.saveData());
 		currentSign = haxe.crypto.Md5.encode(content);

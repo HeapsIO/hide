@@ -13,7 +13,7 @@ class Texture extends ShaderNode {
 
 	@prop() var fileTexture : String;
 
-	override public function createOutputs() {
+	override public function computeOutputs() {
 		addOutput("rgba", TSampler2D);
 	}
 

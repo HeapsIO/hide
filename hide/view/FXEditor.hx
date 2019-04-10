@@ -133,8 +133,6 @@ class FXEditor extends FileView {
 	var autoSync : Bool;
 	var currentVersion : Int = 0;
 	var lastSyncChange : Float = 0.;
-	var currentSign : String;
-
 	var showGrid = true;
 	var grid : h3d.scene.Graphics;
 
@@ -158,17 +156,6 @@ class FXEditor extends FileView {
 
 	override function getDefaultContent() {
 		return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab.fx.FX().saveData()));
-	}
-
-	override function onFileChanged(wasDeleted:Bool) {
-		if( !wasDeleted ) {
-			// double check if content has changed
-			var content = sys.io.File.getContent(getPath());
-			var sign = haxe.crypto.Md5.encode(content);
-			if( sign == currentSign )
-				return;
-		}
-		super.onFileChanged(wasDeleted);
 	}
 
 	override function save() {

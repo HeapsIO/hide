@@ -1,5 +1,6 @@
 package hide.view;
 
+import hrt.shgraph.ShaderException;
 import haxe.Timer;
 import h3d.shader.LineShader;
 import h3d.shader.ColorAdd;
@@ -7,7 +8,7 @@ using hxsl.Ast.Type;
 
 import haxe.rtti.Rtti;
 import haxe.rtti.Meta;
-import hxsl.DynamicShader;
+import hxsl.Shader;
 import hxsl.SharedShader;
 import hide.comp.SceneEditor;
 import js.jquery.JQuery;
@@ -28,7 +29,7 @@ typedef Edge = { from : Box, nodeFrom : JQuery, to : Box, nodeTo : JQuery, elt :
 class ShaderEditor extends FileView {
 
 	var parent : JQuery;
-	static var editor : SVG;
+	var editor : SVG;
 	var editorMatrix : JQuery;
 	var statusBar : JQuery;
 
@@ -40,7 +41,7 @@ class ShaderEditor extends FileView {
 	var listOfBoxes : Array<Box> = [];
 	var listOfEdges : Array<Edge> = [];
 
-	static var transformMatrix : Array<Float> = [1, 0, 0, 1, 0, 0];
+	var transformMatrix : Array<Float> = [1, 0, 0, 1, 0, 0];
 	var isPanning : Bool = false;
 	var timerUpdateView : Timer;
 
@@ -49,6 +50,7 @@ class ShaderEditor extends FileView {
 	var recSelection : JQuery;
 	var startRecSelection : h2d.col.Point;
 	var lastClickDrag : h2d.col.Point;
+	var lastClickPan : h2d.col.Point;
 
 	// used to build edge
 	static var NODE_TRIGGER_NEAR = 2000.0;
@@ -71,9 +73,9 @@ class ShaderEditor extends FileView {
 	var light : h3d.scene.Object;
 	var lightDirection : h3d.Vector;
 
-	static var shaderGraph : ShaderGraph;
+	var shaderGraph : ShaderGraph;
 
-	var shaderGenerated : DynamicShader;
+	var shaderGenerated : Shader;
 
 	override function onDisplay() {
 		shaderGraph = new ShaderGraph(getPath());
@@ -145,10 +147,12 @@ class ShaderEditor extends FileView {
 				}
 
 				clearSelectionBoxes();
+				return;
 			}
 			if (e.button == 1) {
-				lastClickDrag = new Point(lX(e.clientX), lY(e.clientY));
+				lastClickPan = new Point(e.clientX, e.clientY);
 				isPanning = true;
+				return;
 			}
 		});
 
@@ -176,6 +180,7 @@ class ShaderEditor extends FileView {
 					startLinkGrNode = endLinkNode = null;
 					isCreatingLink = None;
 					clearAvailableNodes();
+					return;
 				}
 
 				// Stop rectangle selection
@@ -187,13 +192,16 @@ class ShaderEditor extends FileView {
 					for (b in listOfBoxes)
 						if (b.selected)
 							listOfBoxesSelected.push(b);
+					return;
 				}
+				return;
 			}
 
 			// Stop panning
 			if (e.button == 1) {
 				lastClickDrag = null;
 				isPanning = false;
+				return;
 			}
 		});
 
@@ -224,26 +232,24 @@ class ShaderEditor extends FileView {
 					}
 					clearSelectionBoxes();
 				}
+				return;
 			} else if (e.keyCode == 32) {
-				var test = new LineShader();
-				trace(test);
-				var s = new SharedShader("");
-				s.data = shaderGraph.buildFragment();
-				info("Shader compiled");
-				s.initialize();
 
-				if (shaderGenerated != null)
-					for (m in obj.getMaterials())
-						m.mainPass.removeShader(shaderGenerated);
-
-				shaderGenerated = new DynamicShader(s);
-				for (m in obj.getMaterials()) {
-					m.mainPass.addShader(shaderGenerated);
-				}
 			} else if (e.keyCode == 83 && e.ctrlKey) { // CTRL+S : save
 				shaderGraph.save();
-			} else if (e.keyCode == 74 && e.ctrlKey) { // CTRL+S : save
+			} else if (e.keyCode == 74 && e.ctrlKey) { // CTRL+J : test
 				trace(shaderGraph.hasCycle());
+			}
+		});
+
+		editorMatrix.on("change", "input, select", function(ev) {
+			try {
+				shaderGraph.nodeUpdated(ev.target.closest(".box").id);
+				compileShader();
+			} catch (e : Dynamic) {
+				if (Std.is(e, ShaderException)) {
+					error(e.msg, e.idBox);
+				}
 			}
 		});
 
@@ -276,7 +282,7 @@ class ShaderEditor extends FileView {
 
 		updateMatrix();
 
-		new Element("body").ready(function(e) {
+		new Element("svg").ready(function(e) {
 
 			for (node in shaderGraph.getNodes()) {
 				addBox(new Point(node.x, node.y), std.Type.getClass(node.instance), node.instance);
@@ -301,9 +307,17 @@ class ShaderEditor extends FileView {
 						}
 					}
 				}
+
 			});
 		});
 
+	}
+
+	override function save() {
+		var content = shaderGraph.save();
+		currentSign = haxe.crypto.Md5.encode(content);
+		sys.io.File.saveContent(getPath(), content);
+		super.save();
 	}
 
 	function update(dt : Float) {
@@ -318,15 +332,68 @@ class ShaderEditor extends FileView {
 			lightDirection = this.light.getDirection();
 		}
 
-		var sphere = new h3d.prim.Sphere(1, 32, 32);
-		sphere.addNormals();
-		var mesh = new h3d.scene.Mesh(sphere, sceneEditor.scene.s3d);
-		mesh.material.mainPass.enableLights = true;
-		mesh.material.shadows = true;
-		mesh.material.color.load(new h3d.Vector(1, 1, 1));
-		obj = mesh;
+
+		var cache = new h3d.prim.ModelCache();
+		obj = cache.loadModel(hxd.Res.load("fx/Common/PrimitiveShapes/Sphere.fbx").toModel());
+		sceneEditor.scene.s3d.addChild(obj);
 
 		element.find("#preview").first().append(sceneEditor.scene.element);
+
+		compileShader();
+	}
+
+	function compileShader() {
+		var saveShader : Shader = null;
+		if (shaderGenerated != null)
+			saveShader = shaderGenerated.clone();
+		try {
+			var timeStart = Date.now().getTime();
+			var s = new SharedShader("");
+			s.data = shaderGraph.buildFragment();
+			@:privateAccess s.initialize();
+
+			if (shaderGenerated != null)
+				for (m in obj.getMaterials())
+					m.mainPass.removeShader(shaderGenerated);
+
+			shaderGenerated = new hxsl.DynamicShader(s);
+			for (m in obj.getMaterials()) {
+				m.mainPass.addShader(shaderGenerated);
+			}
+			@:privateAccess sceneEditor.scene.render(sceneEditor.scene.engine);
+			info('Shader compiled in  ${Date.now().getTime() - timeStart}ms');
+
+		} catch (e : Dynamic) {
+			if (Std.is(e, String)) {
+				var str : String = e;
+				if (str.split(":")[0] == "An error occurred compiling the shaders") { // aie
+					error("Compilation of shader failed > " + str);
+					if (shaderGenerated != null)
+						for (m in obj.getMaterials())
+							m.mainPass.removeShader(shaderGenerated);
+					if (saveShader != null) {
+						shaderGenerated = saveShader;
+						for (m in obj.getMaterials()) {
+							m.mainPass.addShader(shaderGenerated);
+						}
+					}
+					return;
+				}
+			} else if (Std.is(e, ShaderException)) {
+				error(e.msg, e.idBox);
+				return;
+			}
+			error("Compilation of shader failed > " + e);
+			if (shaderGenerated != null)
+				for (m in obj.getMaterials())
+					m.mainPass.removeShader(shaderGenerated);
+			if (saveShader != null) {
+				shaderGenerated = saveShader;
+				for (m in obj.getMaterials()) {
+					m.mainPass.addShader(shaderGenerated);
+				}
+			}
+		}
 	}
 
 	function mouseMoveFunction(clientX : Int, clientY : Int) {
@@ -342,9 +409,9 @@ class ShaderEditor extends FileView {
 			// try to use the same code when user clicks on input node already connected and here
 		}
 		if (isPanning) {
-			pan(new Point(lX(clientX) - lastClickDrag.x, lY(clientY) - lastClickDrag.y));
-			lastClickDrag.x = lX(clientX);
-			lastClickDrag.y = lY(clientY);
+			pan(new Point(clientX - lastClickPan.x, clientY - lastClickPan.y));
+			lastClickPan.x = clientX;
+			lastClickPan.y = clientY;
 			return;
 		}
 		// Edit rectangle selection
@@ -540,6 +607,7 @@ class ShaderEditor extends FileView {
 		edge.nodeTo.parent().removeClass("hasLink");
 		shaderGraph.removeEdge(edge.to.getId(), edge.nodeTo.attr("field"));
 		listOfEdges.remove(edge);
+		compileShader();
 	}
 
 	function setAvailableInputNodes(boxOutput : Box, field : String) {
@@ -582,14 +650,21 @@ class ShaderEditor extends FileView {
 		editor.element.find(".nodeMatch").removeClass("nodeMatch");
 	}
 
-	function error(str : String) {
+	function error(str : String, ?idBox : Int) {
 		statusBar.html(str);
 		statusBar.addClass("error");
+
+		new Element(".box").removeClass("error");
+		if (idBox != null) {
+			var elt = new Element('#${idBox}');
+			elt.addClass("error");
+		}
 	}
 
 	function info(str : String) {
 		statusBar.html(str);
 		statusBar.removeClass("error");
+		new Element(".box").removeClass("error");
 	}
 
 	function createEdgeInShaderGraph() : Bool {
@@ -613,13 +688,21 @@ class ShaderEditor extends FileView {
 				}
 			}
 		}
-		if (shaderGraph.addEdge({ idOutput: startLinkBox.getId(), nameOutput: startLinkNode.attr("field"), idInput: endLinkBox.getId(), nameInput: endLinkNode.attr("field") })) {
-			createEdgeInEditorGraph(newEdge);
-			currentLink.removeClass("draft");
-			currentLink = null;
-			return true;
-		} else {
-			error("This edge creates a cycle.");
+		try {
+			if (shaderGraph.addEdge({ idOutput: startLinkBox.getId(), nameOutput: startLinkNode.attr("field"), idInput: endLinkBox.getId(), nameInput: endLinkNode.attr("field") })) {
+				createEdgeInEditorGraph(newEdge);
+				currentLink.removeClass("draft");
+				currentLink = null;
+				compileShader();
+				return true;
+			} else {
+				error("This edge creates a cycle.");
+				return false;
+			}
+		} catch (e : Dynamic) {
+			if (Std.is(e, ShaderException)) {
+				error(e.msg, e.idBox);
+			}
 			return false;
 		}
 	}
@@ -922,7 +1005,7 @@ class ShaderEditor extends FileView {
 			return;
 		var PADDING_BOUNDS = 75;
 		var SPEED_BOUNDS = 0.1;
-		timerUpdateView = new Timer(10);
+		timerUpdateView = new Timer(0);
 		timerUpdateView.run = function() {
 			var posCursor = new Point(ide.mouseX - parent.offset().left, ide.mouseY - parent.offset().top);
 			var wasUpdated = false;
@@ -1004,26 +1087,26 @@ class ShaderEditor extends FileView {
 		var dy = Math.max(Math.abs(y - (element.offset().top + element.height() / 2)) - element.height() / 2, 0);
 		return dx * dx + dy * dy;
 	}
-	static function gX(x : Float) : Float {
+	function gX(x : Float) : Float {
 		return x*transformMatrix[0] + transformMatrix[4];
 	}
-	static function gY(y : Float) : Float {
+	function gY(y : Float) : Float {
 		return y*transformMatrix[3] + transformMatrix[5];
 	}
-	static function gPos(x : Float, y : Float) : Point {
+	function gPos(x : Float, y : Float) : Point {
 		return new Point(gX(x), gY(y));
 	}
-	static function lX(x : Float) : Float {
+	function lX(x : Float) : Float {
 		var screenOffset = editor.element.offset();
 		x -= screenOffset.left;
 		return (x - transformMatrix[4])/transformMatrix[0];
 	}
-	static function lY(y : Float) : Float {
+	function lY(y : Float) : Float {
 		var screenOffset = editor.element.offset();
 		y -= screenOffset.top;
 		return (y - transformMatrix[5])/transformMatrix[3];
 	}
-	static function lPos(x : Float, y : Float) : Point {
+	function lPos(x : Float, y : Float) : Point {
 		return new Point(lX(x), lY(y));
 	}
 

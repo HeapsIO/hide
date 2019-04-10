@@ -19,7 +19,7 @@ class Split extends ShaderNode {
 	var components = [X, Y, Z, W];
 	var componentsString = ["r", "g", "b", "a"];
 
-	override public function createOutputs() {
+	override public function computeOutputs() {
 		addOutput("r", TFloat);
 		addOutput("g", TFloat);
 		addOutput("b", TFloat);
@@ -32,7 +32,7 @@ class Split extends ShaderNode {
 					e: TVar(getOutput(key)),
 					p: null,
 					t: getOutput(key).type
-				}, {e: TSwiz(input.getVar(), [components[compIdx]]), p: null, t: getOutput(key).type }),
+				}, {e: TSwiz(input.getVar(TVec(4, VFloat)), [components[compIdx]]), p: null, t: getOutput(key).type }),
 				p: null,
 				t: getOutput(key).type
 			};

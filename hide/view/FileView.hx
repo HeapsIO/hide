@@ -7,6 +7,8 @@ class FileView extends hide.ui.View<{ path : String }> {
 	var skipNextChange : Bool;
 	var lastSaveTag : Int;
 
+	var currentSign : String;
+
 	public function new(state) {
 		super(state);
 		if( state.path != null )
@@ -20,6 +22,13 @@ class FileView extends hide.ui.View<{ path : String }> {
 	}
 
 	function onFileChanged( wasDeleted : Bool ) {
+		if( !wasDeleted ) {
+			// double check if content has changed
+			var content = sys.io.File.getContent(getPath());
+			var sign = haxe.crypto.Md5.encode(content);
+			if( sign == currentSign )
+				return;
+		}
 		if( wasDeleted ) {
 			if( modified ) return;
 			element.html('${state.path} no longer exists');

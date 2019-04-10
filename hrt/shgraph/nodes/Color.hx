@@ -16,7 +16,7 @@ class Color extends ShaderNode {
 	@prop() var b : Float = 0;
 	@prop() var a : Float = 1;
 
-	override public function createOutputs() {
+	override public function computeOutputs() {
 		addOutput("output", TVec(4, VFloat));
 	}
 
