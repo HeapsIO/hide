@@ -13,7 +13,7 @@ class ShaderInput extends ShaderNode {
 
 	@output() var output = SType.Variant;
 
-	@param("Variable") public var variable : TVar;
+	@prop("Variable") public var variable : TVar;
 
 	override public function getOutput(key : String) : TVar {
 		return variable;

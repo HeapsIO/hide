@@ -88,11 +88,15 @@ class ShaderEditor extends FileView {
 					<div class="tabs">
 						<span>Parameters</span>
 						<div class="tab expand" name="Scene" icon="sitemap">
-							<div class="hide-block" style="height:50%">
+							<div class="hide-block" >
 								<div class="hide-scene-tree hide-list">
 								</div>
 							</div>
-							<div class="hide-scroll"></div>
+							<div class="options-block hide-block">
+								<input id="addParameter" type="button" value="Add parameter" />
+								<input id="compileShader" type="button" value="Compile shader" />
+								<input id="saveShader" type="button" value="Save" />
+							</div>
 						</div>
 					</div>
 				</div>
@@ -242,6 +246,14 @@ class ShaderEditor extends FileView {
 			}
 		});
 
+		element.find("#compileShader").on("click", function() {
+			compileShader();
+		});
+
+		element.find("#saveShader").on("click", function() {
+			save();
+		});
+
 		editorMatrix.on("change", "input, select", function(ev) {
 			try {
 				shaderGraph.nodeUpdated(ev.target.closest(".box").id);
@@ -318,6 +330,7 @@ class ShaderEditor extends FileView {
 		currentSign = haxe.crypto.Md5.encode(content);
 		sys.io.File.saveContent(getPath(), content);
 		super.save();
+		info("Shader saved");
 	}
 
 	function update(dt : Float) {
@@ -332,13 +345,16 @@ class ShaderEditor extends FileView {
 			lightDirection = this.light.getDirection();
 		}
 
-
 		obj = sceneEditor.scene.loadModel("fx/Common/PrimitiveShapes/Sphere.fbx", true);
 		sceneEditor.scene.s3d.addChild(obj);
 
 		element.find("#preview").first().append(sceneEditor.scene.element);
 
 		compileShader();
+	}
+
+	function addParameter() {
+
 	}
 
 	function compileShader() {

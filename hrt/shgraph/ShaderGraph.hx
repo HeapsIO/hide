@@ -8,7 +8,7 @@ private typedef Node = {
 	comment : String,
 	id : Int,
 	type : String,
-	?parameters : Dynamic,
+	?properties : Dynamic,
 	?instance : ShaderNode,
 	?outputs: Array<Node>,
 	?indegree : Int
@@ -21,12 +21,20 @@ private typedef Edge = {
 	nameInput : String
 };
 
+private typedef Parameter = {
+	name : String,
+	type : Type,
+	defaultValue : Dynamic,
+	?variable : TVar
+};
+
 class ShaderGraph {
 
 	var current_node_id = 0;
 	var filepath : String;
 	var nodes : Map<Int, Node> = [];
 	var allVariables : Array<TVar> = [];
+	public var parametersAvailable : Array<Parameter> = [];
 
 	public function new(filepath : String) {
 		if (filepath == null) return;
@@ -48,7 +56,7 @@ class ShaderGraph {
 		for (n in nodes) {
 			n.outputs = [];
 			n.instance = std.Type.createInstance(std.Type.resolveClass(n.type), []);
-			n.instance.loadProperties(n.parameters);
+			n.instance.loadProperties(n.properties);
 			n.instance.setId(n.id);
 			this.nodes.set(n.id, n);
 		}
@@ -160,6 +168,29 @@ class ShaderGraph {
 		return counter != nbNodes;
 	}
 
+	function generateParameter(name : String, type : Type) : TVar {
+		return {
+				parent: null,
+				id: 0,
+				kind:Param,
+				name: name,
+				type: type
+			};
+	}
+
+	public function addParameter(name : String, type : Type, defaultValue : Dynamic) {
+		parametersAvailable.push({name : name, type : type, defaultValue : defaultValue, variable : generateParameter(name, type)});
+	}
+
+	public function removeParameter(name : String) {
+		for (p in parametersAvailable) {
+			if (p.name == name) {
+				parametersAvailable.remove(p);
+				return;
+			}
+		}
+	}
+
 	function buildNodeVar(nodeVar : NodeVar) : Array<TExpr>{
 		var node = nodeVar.node;
 		if (node == null)
@@ -247,9 +278,12 @@ class ShaderGraph {
 
 		var json = haxe.Json.stringify({
 			nodes: [
-				for (n in nodes) { x : n.x, y : n.y, comment: n.comment, id: n.id, type: n.type, parameters : n.instance.savePropertiesNode() }
+				for (n in nodes) { x : n.x, y : n.y, comment: n.comment, id: n.id, type: n.type, properties : n.instance.savePropertiesNode() }
 			],
-			edges: edgesJson
+			edges: edgesJson,
+			parameters: [
+				for (p in parametersAvailable) { name : p.name, type : p.type }
+			]
 		});
 
 		return json;

@@ -17,7 +17,7 @@ class Sampler extends ShaderFunction {
 	}
 
 	override public function computeOutputs() {
-		addOutput("rgba", TVec(4, VFloat));
+		addOutput("output", TVec(4, VFloat));
 	}
 
 }

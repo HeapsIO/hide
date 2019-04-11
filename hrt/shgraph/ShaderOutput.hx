@@ -14,7 +14,7 @@ class ShaderOutput extends ShaderNode {
 
 	@input("input") var input = SType.Variant;
 
-	@param("Variable") public var variable : TVar;
+	@prop("Variable") public var variable : TVar;
 
 	var components = [X, Y, Z, W];
 

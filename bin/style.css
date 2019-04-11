@@ -1030,6 +1030,27 @@ input[type=checkbox]:checked:after {
   visibility: visible;
 }
 /* Shader Editor */
+.shader-view .tabs {
+  z-index: 1;
+  background: #222222;
+}
+.shader-view .tabs .tab {
+  height: 100%;
+}
+.shader-view .tabs .tab .hide-block {
+  height: 70%;
+}
+.shader-view .tabs .tab .hide-block .hide-scene-tree {
+  height: 100%;
+}
+.shader-view .tabs .tab .options-block {
+  height: 25%;
+}
+.shader-view .tabs .tab .options-block > * {
+  display: block;
+  margin-bottom: 10px;
+  width: 100%;
+}
 .shader-view #add-menu {
   position: absolute;
   width: 400px;
@@ -1117,11 +1138,11 @@ input[type=checkbox]:checked:after {
 }
 .shader-view .heaps-scene #status-bar {
   position: absolute;
-  width: 100%;
+  width: 84%;
   min-height: 20px;
   background-color: #111;
   border: 1px solid #444;
-  right: -1px;
+  left: -1px;
   bottom: -1px;
 }
 .shader-view .heaps-scene #status-bar span {

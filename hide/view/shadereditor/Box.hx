@@ -128,7 +128,7 @@ class Box {
 		var height = getNodesHeight();
 		element.find(".nodes").height(height);
 		element.find(".outline").attr("height", getHeight()+2);
-		if (inputs.length > 1 || outputs.length > 1 || propsHeight == 0) {
+		if (inputs.length >= 1 && outputs.length >= 1) {
 			element.find(".nodes-separator").attr("y2", HEADER_HEIGHT + height);
 			element.find(".nodes-separator").show();
 		} else {

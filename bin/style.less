@@ -1146,6 +1146,27 @@ input[type=checkbox] {
 
 /* Shader Editor */
 .shader-view {
+	.tabs {
+		z-index: 1;
+    	background: #222222;
+		.tab {
+			height: 100%;
+			.hide-block {
+				height: 70%;
+				.hide-scene-tree {
+					height: 100%;
+				}
+			}
+			.options-block {
+				height: 25%;
+				& > * {
+					display: block;
+					margin-bottom: 10px;
+					width: 100%;
+				}
+			}
+		}
+	}
 	#add-menu {
 		position: absolute;
 		width: 400px;
@@ -1249,13 +1270,13 @@ input[type=checkbox] {
 		#status-bar {
 			position: absolute;
 
-			width: 100%;
+			width: 84%;
 			min-height: 20px;
 
 			background-color: #111;
 			border: 1px solid #444;
 
-			right: -1px;
+			left: -1px;
 			bottom: -1px;
 
 			span {

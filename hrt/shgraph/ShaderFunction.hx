@@ -25,7 +25,7 @@ class ShaderFunction extends ShaderNode {
 
 		return {
 					p : null,
-					t : TVec(3,VFloat),
+					t : output.type,
 					e : TBinop(OpAssign, {
 						e: TVar(output),
 						p: null,
