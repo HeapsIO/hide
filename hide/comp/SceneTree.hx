@@ -53,7 +53,7 @@ class SceneTree extends IconTree<String> {
 
 		if (obj != null) {
 			if (el.find(".fa-eye").length == 0) {
-				var visibilityToggle = new Element('<i class="fa fa-eye visibility-large-toggle"/>').appendTo(el.find(".jstree-wholerow").first());
+				var visibilityToggle = new Element('<i class="fa fa-eye visibility-large-toggle"/>').appendTo(el.find(".jstree-anchor").first());
 				visibilityToggle.click(function (e) {
 					obj.visible = !obj.visible;
 					el.toggleClass("hidden", !obj.visible);
