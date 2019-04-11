@@ -105,6 +105,8 @@ class Terrain extends Object3D {
 	}
 
 	function loadTiles( ctx : Context, height = true, index = true , weight = true ) {
+		var prevWatch = @:privateAccess hxd.res.Image.ENABLE_AUTO_WATCH;
+		@:privateAccess hxd.res.Image.ENABLE_AUTO_WATCH = false;
 		var resDir = ctx.shared.loadDir(name);
 		if( resDir == null ) return;
 		for( res in resDir ) {
@@ -152,6 +154,7 @@ class Terrain extends Object3D {
 				}
 			}
 		}
+		@:privateAccess hxd.res.Image.ENABLE_AUTO_WATCH = prevWatch;
 	}
 
 	function loadSurfaces( ctx : Context, onEnd : Void -> Void ) {
