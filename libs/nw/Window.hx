@@ -23,6 +23,8 @@ extern class Window {
 	public function maximize() : Void;
 	public function minimize() : Void;
 	public function restore() : Void;
+	public function enterFullscreen() : Void;
+	public function leaveFullscreen() : Void;
 	public function on( event : String, callb : Void -> Void ) : Void;
 
 	public function show( b : Bool ) : Void;

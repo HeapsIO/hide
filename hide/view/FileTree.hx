@@ -330,6 +330,6 @@ class FileTree extends FileView {
 		return null;
 	}
 
-	static var _ = hide.ui.View.register(FileTree, { width : 200, position : Left });
+	static var _ = hide.ui.View.register(FileTree, { width : 350, position : Left });
 
 }

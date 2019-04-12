@@ -33,6 +33,7 @@ class Ide {
 	var ideConfig(get, never) : hide.Config.HideConfig;
 
 	var window : nw.Window;
+	var saveMenu : nw.Menu;
 	var layout : golden.Layout;
 
 	var currentLayout : { name : String, state : Config.LayoutState };
@@ -349,6 +350,18 @@ class Ide {
 	function mainLoop() {
 		for( f in updates )
 			f();
+	}
+
+	public function setFullscreen(b : Bool) {
+		if (b) {
+			window.maximize();
+			saveMenu = window.menu;
+			window.menu = null;
+			window.enterFullscreen();
+		} else {
+			window.menu = saveMenu;
+			window.leaveFullscreen();
+		}
 	}
 
 	function set_currentFullScreen(v) {
@@ -885,38 +898,14 @@ class Ide {
 			}
 
 		var index : Null<Int> = null;
-		var width : Null<Int> = null;
 		var target;
 		if( bestTarget != null )
 			target = bestTarget.parent.parent;
 		else {
 			target = layout.root.contentItems[0];
-			var reqKind : golden.Config.ItemType = options.position == Bottom ? Column : Row;
 			if( target == null ) {
-				layout.root.addChild({ type : Row });
+				layout.root.addChild({ type : Row, isClosable: false });
 				target = layout.root.contentItems[0];
-			} else if( target.type != reqKind ) {
-				// a bit tricky : change the top 'stack' into a 'row'
-				// require closing all and reopening (sadly)
-				var config = layout.toConfig().content;
-				var items = target.getItemsByFilter(function(r) return r.type == Component);
-				var foundViews = [];
-				for( v in views.copy() )
-					if( items.remove(v.container.parent) ) {
-						foundViews.push(v);
-						v.container.close();
-					}
-				layout.root.addChild({ type : reqKind, content : config });
-				target = layout.root.contentItems[0];
-				if( options.position == Left ) index = 0;
-				width = options.width;
-
-				// when opening left/right
-				if( width == null && foundViews.length == 1 ) {
-					var opt = foundViews[0].defaultOptions.width;
-					if( opt != null )
-						width = Std.int(target.element.width()) - opt;
-				}
 			}
 		}
 		if( onCreate != null )
@@ -927,17 +916,29 @@ class Ide {
 		var config : golden.Config.ItemConfig = {
 			type : Component,
 			componentName : component,
-			componentState : state,
+			componentState : state
 		};
 
 		// not working... see https://github.com/deepstreamIO/golden-layout/issues/311
-		if( width != null )
-			config.width = Std.int(width * 100 / target.element.width());
+		if( options.width != null )
+			config.width = Std.int(options.width * 100 / target.element.width());
+
+		if( options.position == Left ) index = 0;
+
+		var needToResizeResourcePanel = false;
+
+		if (views.length == 1) {
+			needToResizeResourcePanel = true;
+		}
 
 		if( index == null )
 			target.addChild(config);
 		else
 			target.addChild(config, index);
+
+		if (needToResizeResourcePanel) {
+			views[0].container.setSize(views[0].defaultOptions.width, views[0].container.height);
+		}
 	}
 
 	public function message( text : String ) {
