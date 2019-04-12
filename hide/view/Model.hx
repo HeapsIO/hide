@@ -47,6 +47,17 @@ class Model extends FileView {
 		super.save();
 	}
 
+	override function onFileChanged( wasDeleted : Bool, rebuildView = true ) {
+		if (wasDeleted ) {
+			super.onFileChanged(wasDeleted);
+		} else if (element.find(".heaps-scene").length == 0) {
+			super.onFileChanged(wasDeleted);
+		} else {
+			super.onFileChanged(wasDeleted, false);
+			onRefresh();
+		}
+	}
+
 	function loadProps() {
 		var propsPath = getPropsPath();
 		var hideData : h3d.prim.ModelCache.HideProps;
@@ -300,7 +311,6 @@ class Model extends FileView {
 	}
 
 	function onRefresh() {
-
 		var r = root.get(hrt.prefab.RenderProps);
 		if( r != null ) r.applyProps(scene.s3d.renderer);
 
@@ -312,7 +322,9 @@ class Model extends FileView {
 
 		undo.onChange = function() {};
 
-		obj = scene.loadModel(state.path, true);
+		if (obj != null)
+			obj.remove();
+		obj = scene.loadModel(state.path, true, true);
 		new h3d.scene.Object(scene.s3d).addChild(obj);
 
 		var autoHide : Array<String> = config.get("scene.autoHide");

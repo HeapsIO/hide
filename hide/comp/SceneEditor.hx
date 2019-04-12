@@ -202,6 +202,24 @@ class SceneEditor {
 		}
 	}
 
+	public function onResourceChanged(lib : hxd.fmt.hmd.Library) {
+
+		var models = sceneData.findAll(p -> Std.instance(p, PrefabElement));
+		var toRebuild : Array<PrefabElement> = [];
+		for(m in models) {
+			@:privateAccess if(m.source == lib.resource.entry.path) {
+				if (toRebuild.indexOf(m) < 0) {
+					toRebuild.push(m);
+				}
+			}
+		}
+
+		for(m in toRebuild) {
+			removeInstance(m);
+			makeInstance(m);
+		}
+	}
+
 	public dynamic function onResize() {
 	}
 

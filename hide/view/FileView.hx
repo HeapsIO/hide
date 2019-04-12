@@ -21,7 +21,7 @@ class FileView extends hide.ui.View<{ path : String }> {
 			}, { checkDelete : true, keepOnRebuild : true });
 	}
 
-	function onFileChanged( wasDeleted : Bool ) {
+	function onFileChanged( wasDeleted : Bool, rebuildView = true ) {
 		if( !wasDeleted ) {
 			// double check if content has changed
 			var content = sys.io.File.getContent(getPath());
@@ -37,7 +37,8 @@ class FileView extends hide.ui.View<{ path : String }> {
 		if( modified && !ide.confirm('${state.path} has been modified, reload and ignore local changes?') )
 			return;
 		modified = false;
-		rebuild();
+		if (rebuildView)
+			rebuild();
 	}
 
 	function get_extension() {

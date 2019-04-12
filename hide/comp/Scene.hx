@@ -289,14 +289,14 @@ class Scene extends Component implements h3d.IDrawable {
 		return { root : root, camera : hsd.camera };
 	}
 
-	public function loadModel( path : String, mainScene = false ) {
+	public function loadModel( path : String, mainScene = false, reload = false ) {
 		checkCurrent();
 		if( StringTools.endsWith(path.toLowerCase(), ".hsd") ) {
 			var hsd = loadHSD(path);
 			if( mainScene ) defaultCamera = hsd.camera;
 			return hsd.root;
 		}
-		var lib = loadHMD(path,false);
+		var lib = loadHMD(path, false, reload);
 		return lib.makeObject(loadTexture.bind(path));
 	}
 
@@ -380,18 +380,18 @@ class Scene extends Component implements h3d.IDrawable {
 		return t;
 	}
 
-	function loadHMD( path : String, isAnimation : Bool ) {
+	function loadHMD( path : String, isAnimation : Bool, reload = false ) {
 		checkCurrent();
 		var fullPath = ide.getPath(path);
 		var key = fullPath;
 		var hmd = hmdCache.get(key);
 
-		if( hmd != null )
+		if( !reload && hmd != null )
 			return hmd;
 
 		var relPath = StringTools.startsWith(path, ide.resourceDir) ? path.substr(ide.resourceDir.length+1) : path;
 		var e = try hxd.res.Loader.currentInstance.load(relPath) catch( e : hxd.res.NotFound ) null;
-		if( e == null ) {
+		if( e == null || reload ) {
 			var data = sys.io.File.getBytes(fullPath);
 			if( data.get(0) != 'H'.code ) {
 				var hmdOut = new hxd.fmt.fbx.HMDOut(fullPath);
@@ -405,6 +405,17 @@ class Scene extends Component implements h3d.IDrawable {
 			hmd = hxd.res.Any.fromBytes(path, data).toModel().toHmd();
 		} else {
 			hmd = e.toModel().toHmd();
+		}
+
+		if (!reload) {
+			e.watch(function() {
+				var lib = e.toModel().toHmd();
+				hmdCache.set(key, lib);
+				editor.onResourceChanged(lib);
+			});
+			cleanup.push(function() {
+				e.watch(null);
+			});
 		}
 
 		hmdCache.set(key, hmd);
