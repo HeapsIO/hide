@@ -903,6 +903,7 @@ class Ide {
 			target = bestTarget.parent.parent;
 		else {
 			target = layout.root.contentItems[0];
+			target.config.isClosable = false;
 			if( target == null ) {
 				layout.root.addChild({ type : Row, isClosable: false });
 				target = layout.root.contentItems[0];
