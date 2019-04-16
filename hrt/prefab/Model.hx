@@ -24,6 +24,7 @@ class Model extends Object3D {
 	}
 
 	function setCullingCollider( o : h3d.scene.Object, cc : h3d.col.Collider ) {
+		return; // TODO: Fix bounds update after object move
 		o.cullingCollider = cc;
 		for( c in @:privateAccess o.children )
 			setCullingCollider(c, cc);
