@@ -21,7 +21,7 @@ class Particles2D extends FileView {
 
 	override function onDisplay() {
 		element.html('
-			<div class="flex-elt">
+			<div class="flex">
 				<div class="heaps-scene"></div>
 				<div class="props"></div>
 			</div>
