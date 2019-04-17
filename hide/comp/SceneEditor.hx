@@ -148,6 +148,7 @@ class SceneEditor {
 		view.keys.register("cancel", deselect);
 		view.keys.register("selectAll", selectAll);
 		view.keys.register("duplicate", duplicate.bind(true));
+		view.keys.register("duplicateInPlace", duplicate.bind(false));
 		view.keys.register("group", groupSelection);
 		view.keys.register("delete", () -> deleteElements(curEdit.rootElements));
 		view.keys.register("search", function() {

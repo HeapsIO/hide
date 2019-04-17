@@ -29,6 +29,7 @@
 	"key.cut" : "Ctrl-X",
 	"key.paste" : "Ctrl-V",
 	"key.duplicate" : "Ctrl-D",
+	"key.duplicateInPlace" : "Ctrl-Shift-D",
 	"key.delete" : "Delete",
 	"key.group" : "Ctrl-G",
 
