@@ -1,5 +1,12 @@
 package hide.comp;
 
+import h3d.scene.Mesh;
+import h3d.col.FPoint;
+import h3d.col.Ray;
+import h3d.col.PolygonBuffer;
+import h3d.prim.HMDModel;
+import h3d.col.Collider.OptimizedCollider;
+import h3d.Vector;
 import hxd.Key as K;
 import hxd.Math as M;
 
@@ -79,6 +86,8 @@ enum RefreshMode {
 	Full;
 }
 
+typedef CustomPivot = { mesh : Mesh, locPos : Vector };
+
 class SceneEditor {
 
 	public var tree : hide.comp.IconTree<PrefabElement>;
@@ -96,6 +105,7 @@ class SceneEditor {
 	var updates : Array<Float -> Void> = [];
 
 	var gizmo : hide.view.l3d.Gizmo;
+	static var customPivot : CustomPivot;
 	var interactives : Map<PrefabElement, h3d.scene.Interactive>;
 	var ide : hide.Ide;
 	public var event(default, null) : hxd.WaitEvent;
@@ -181,6 +191,7 @@ class SceneEditor {
 				reparentElement(children, parent, 0);
 			}
 		});
+		view.keys.register("sceneeditor.editPivot", editPivot);
 
 		// Load display state
 		{
@@ -971,6 +982,7 @@ class SceneEditor {
 	}
 
 	public function selectObjects( elts : Array<PrefabElement>, ?includeTree=true) {
+		customPivot = null;
 		scene.setCurrent();
 		if( curEdit != null )
 			curEdit.cleanup();
@@ -1765,7 +1777,110 @@ class SceneEditor {
 		}
 	}
 
+	function editPivot() {
+		if (curEdit.rootObjects.length == 1) {
+			var ray = scene.s3d.camera.rayFromScreen(scene.s2d.mouseX, scene.s2d.mouseY);
+			var polyColliders = new Array<PolygonBuffer>();
+			var meshes = new Array<Mesh>();
+			for (m in curEdit.rootObjects[0].getMeshes()) {
+				var hmdModel = Std.instance(m.primitive, HMDModel);
+				if (hmdModel != null) {
+					var optiCollider = Std.instance(hmdModel.getCollider(), OptimizedCollider);
+					var polyCollider = Std.instance(optiCollider.b, PolygonBuffer);
+					if (polyCollider != null) {
+						polyColliders.push(polyCollider);
+						meshes.push(m);
+					}
+				}
+			}
+			if (polyColliders.length > 0) {
+				var pivot = getClosestVertex(polyColliders, meshes, ray);
+				if (pivot != null) {
+					customPivot = pivot;
+				} else {
+					// mouse outside
+				}
+			} else {
+				// no collider found
+			}
+		} else {
+			throw "Can't edit when multiple objects are selected";
+		}
+	}
+
+	function getClosestVertex( colliders : Array<PolygonBuffer>, meshes : Array<Mesh>, ray : Ray ) : CustomPivot {
+
+		var best = -1.;
+		var bestVertex : CustomPivot = null;
+		for (idx in 0...colliders.length) {
+			var c = colliders[idx];
+			var m = meshes[idx];
+			var r = ray.clone();
+			r.transform(m.getInvPos());
+			var rdir = new FPoint(r.lx, r.ly, r.lz);
+			var r0 = new FPoint(r.px, r.py, r.pz);
+			@:privateAccess var i = c.startIndex;
+			@:privateAccess for( t in 0...c.triCount ) {
+				var i0 = c.indexes[i++] * 3;
+				var p0 = new FPoint(c.buffer[i0++], c.buffer[i0++], c.buffer[i0]);
+				var i1 = c.indexes[i++] * 3;
+				var p1 = new FPoint(c.buffer[i1++], c.buffer[i1++], c.buffer[i1]);
+				var i2 = c.indexes[i++] * 3;
+				var p2 = new FPoint(c.buffer[i2++], c.buffer[i2++], c.buffer[i2]);
+
+				var e1 = p1.sub(p0);
+				var e2 = p2.sub(p0);
+				var p = rdir.cross(e2);
+				var det = e1.dot(p);
+				if( det < hxd.Math.EPSILON ) continue; // backface culling (negative) and near parallel (epsilon)
+
+				var invDet = 1 / det;
+				var T = r0.sub(p0);
+				var u = T.dot(p) * invDet;
+
+				if( u < 0 || u > 1 ) continue;
+
+				var q = T.cross(e1);
+				var v = rdir.dot(q) * invDet;
+
+				if( v < 0 || u + v > 1 ) continue;
+
+				var t = e2.dot(q) * invDet;
+
+				if( t < hxd.Math.EPSILON ) continue;
+
+				if( best < 0 || t < best ) {
+					best = t;
+					var ptIntersection = r.getPoint(t);
+					var pI = new FPoint(ptIntersection.x, ptIntersection.y, ptIntersection.z);
+					inline function distanceFPoints(a : FPoint, b : FPoint) : Float {
+						var dx = a.x - b.x;
+						var dy = a.y - b.y;
+						var dz = a.z - b.z;
+						return dx * dx + dy * dy + dz * dz;
+					}
+					var test0 = distanceFPoints(p0, pI);
+					var test1 = distanceFPoints(p1, pI);
+					var test2 = distanceFPoints(p2, pI);
+					var locBestVertex : FPoint;
+					if (test0 <= test1 && test0 <= test2) {
+						locBestVertex = p0;
+					} else if (test1 <= test0 && test1 <= test2) {
+						locBestVertex = p1;
+					} else {
+						locBestVertex = p2;
+					}
+					bestVertex = { mesh: m, locPos: new Vector(locBestVertex.x, locBestVertex.y, locBestVertex.z) };
+				}
+			}
+		}
+		return bestVertex;
+	}
+
 	static function getPivot(objects: Array<Object>) {
+		if (customPivot != null) {
+			return customPivot.mesh.localToGlobal(customPivot.locPos.clone());
+		}
 		var pos = new h3d.Vector();
 		for(o in objects) {
 			pos = pos.add(o.getAbsPos().getPosition());

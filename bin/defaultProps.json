@@ -63,6 +63,7 @@
 	"key.sceneeditor.isolate": "I",
 	"key.sceneeditor.selectParent": "Backspace",
 	"key.sceneeditor.reparent": "Ctrl-P",
+	"key.sceneeditor.editPivot" : "P",
 
 	// cdb config
 	"cdb.databaseFile" : "data.cdb",
