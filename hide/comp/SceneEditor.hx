@@ -86,7 +86,7 @@ enum RefreshMode {
 	Full;
 }
 
-typedef CustomPivot = { mesh : Mesh, locPos : Vector };
+typedef CustomPivot = { elt : PrefabElement, mesh : Mesh, locPos : Vector };
 
 class SceneEditor {
 
@@ -982,11 +982,13 @@ class SceneEditor {
 	}
 
 	public function selectObjects( elts : Array<PrefabElement>, ?includeTree=true) {
-		customPivot = null;
 		scene.setCurrent();
 		if( curEdit != null )
 			curEdit.cleanup();
 		var edit = makeEditContext(elts);
+		if (elts.length == 0 || (customPivot != null && customPivot.elt != edit.rootElements[0])) {
+			customPivot = null;
+		}
 		properties.clear();
 		if( elts.length > 0 ) fillProps(edit, elts[0]);
 
@@ -1796,6 +1798,7 @@ class SceneEditor {
 			if (polyColliders.length > 0) {
 				var pivot = getClosestVertex(polyColliders, meshes, ray);
 				if (pivot != null) {
+					pivot.elt = curEdit.rootElements[0];
 					customPivot = pivot;
 				} else {
 					// mouse outside
@@ -1870,7 +1873,7 @@ class SceneEditor {
 					} else {
 						locBestVertex = p2;
 					}
-					bestVertex = { mesh: m, locPos: new Vector(locBestVertex.x, locBestVertex.y, locBestVertex.z) };
+					bestVertex = { elt : null, mesh: m, locPos: new Vector(locBestVertex.x, locBestVertex.y, locBestVertex.z) };
 				}
 			}
 		}
