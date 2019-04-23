@@ -1030,89 +1030,89 @@ input[type=checkbox]:checked:after {
   visibility: visible;
 }
 /* Shader Editor */
-.shader-view .tabs {
+.graph-view .tabs {
   z-index: 1;
   background: #222222;
   height: 100%;
   user-select: none;
 }
-.shader-view .tabs .tab {
+.graph-view .tabs .tab {
   height: 100%;
 }
-.shader-view .tabs .tab .hide-block {
+.graph-view .tabs .tab .hide-block {
   height: 70%;
 }
-.shader-view .tabs .tab .hide-block #parametersList {
+.graph-view .tabs .tab .hide-block #parametersList {
   height: 100%;
 }
-.shader-view .tabs .tab .hide-block #parametersList .parameter {
+.graph-view .tabs .tab .hide-block #parametersList .parameter {
   border: 1px solid;
   margin: 5px;
   background-color: #222;
 }
-.shader-view .tabs .tab .hide-block #parametersList .parameter .header {
+.graph-view .tabs .tab .hide-block #parametersList .parameter .header {
   background-color: #d6d6d6;
   height: 20px;
   padding: 5px;
   color: black;
   cursor: pointer;
 }
-.shader-view .tabs .tab .hide-block #parametersList .parameter .header .title {
+.graph-view .tabs .tab .hide-block #parametersList .parameter .header .title {
   float: left;
 }
-.shader-view .tabs .tab .hide-block #parametersList .parameter .header .title input {
+.graph-view .tabs .tab .hide-block #parametersList .parameter .header .title input {
   width: 130px;
 }
-.shader-view .tabs .tab .hide-block #parametersList .parameter .header .type {
+.graph-view .tabs .tab .hide-block #parametersList .parameter .header .type {
   float: right;
 }
-.shader-view .tabs .tab .hide-block #parametersList .parameter .header .type span {
+.graph-view .tabs .tab .hide-block #parametersList .parameter .header .type span {
   color: black;
   font-style: italic;
   font-size: 13px;
   padding-right: 5px;
 }
-.shader-view .tabs .tab .hide-block #parametersList .parameter .content {
+.graph-view .tabs .tab .hide-block #parametersList .parameter .content {
   background-color: #b3b3b3;
   padding: 5px;
   box-shadow: inset 0px 13px 6px -15px black;
 }
-.shader-view .tabs .tab .hide-block #parametersList .parameter .content div {
+.graph-view .tabs .tab .hide-block #parametersList .parameter .content div {
   width: 100%;
   height: 20px;
 }
-.shader-view .tabs .tab .hide-block #parametersList .parameter .content div span {
+.graph-view .tabs .tab .hide-block #parametersList .parameter .content div span {
   float: left;
   color: black;
   font-size: 13px;
   padding-right: 5px;
   font-weight: normal;
 }
-.shader-view .tabs .tab .hide-block #parametersList .parameter .content .action-btns input {
+.graph-view .tabs .tab .hide-block #parametersList .parameter .content .action-btns input {
   float: right;
 }
-.shader-view .tabs .tab .hide-block #parametersList .parameter > span {
+.graph-view .tabs .tab .hide-block #parametersList .parameter > span {
   font-size: 12px;
 }
-.shader-view .tabs .tab .options-block {
+.graph-view .tabs .tab .options-block {
   height: 25%;
 }
-.shader-view .tabs .tab .options-block > * {
+.graph-view .tabs .tab .options-block > * {
   display: block;
   margin-bottom: 10px;
   width: 100%;
 }
-.shader-view #add-menu {
+.graph-view #add-menu {
   position: absolute;
   width: 400px;
   box-shadow: 0px 0px 25px -4px black;
   background-color: #222222;
   border: 1px solid #444;
 }
-.shader-view #add-menu .search-container {
+.graph-view #add-menu .search-container {
   display: flex;
 }
-.shader-view #add-menu .search-container .icon {
+.graph-view #add-menu .search-container .icon {
   width: 16px;
   font-size: 15px;
   text-align: center;
@@ -1121,61 +1121,61 @@ input[type=checkbox]:checked:after {
   background: #2d2d2d;
   border-width: 0 1px 1px 0;
 }
-.shader-view #add-menu .search-container .search-bar {
+.graph-view #add-menu .search-container .search-bar {
   flex: 1;
   margin: -1px 11px 0px -1px;
 }
-.shader-view #add-menu .search-container .search-bar input {
+.graph-view #add-menu .search-container .search-bar input {
   width: 100%;
   height: 30px;
   padding-left: 10px;
   outline: none;
 }
-.shader-view #add-menu .search-container .search-bar input:focus {
+.graph-view #add-menu .search-container .search-bar input:focus {
   border: 1px solid #888888;
 }
-.shader-view #add-menu #results {
+.graph-view #add-menu #results {
   max-height: 300px;
   overflow-y: auto;
 }
-.shader-view #add-menu #results div {
+.graph-view #add-menu #results div {
   padding: 5px;
   border-top: 1px solid #444444;
   cursor: pointer;
   color: #d4d4d4;
   position: relative;
 }
-.shader-view #add-menu #results div.group {
+.graph-view #add-menu #results div.group {
   background: #474747;
   color: #c0c0c0;
   cursor: default;
   z-index: 1;
   box-shadow: 0px 0px 34px -9px black;
 }
-.shader-view #add-menu #results div.group:hover {
+.graph-view #add-menu #results div.group:hover {
   background: #474747!important;
   color: #dadada!important;
   box-shadow: none;
 }
-.shader-view #add-menu #results div > span:first-child {
+.graph-view #add-menu #results div > span:first-child {
   font-weight: bold;
   padding-left: 10px;
 }
-.shader-view #add-menu #results div > span:last-child {
+.graph-view #add-menu #results div > span:last-child {
   font-style: oblique;
   padding-left: 7px;
 }
-.shader-view #add-menu #results div:first-child {
+.graph-view #add-menu #results div:first-child {
   border-top: 0;
 }
-.shader-view #add-menu #results div:hover,
-.shader-view #add-menu #results div.selected {
+.graph-view #add-menu #results div:hover,
+.graph-view #add-menu #results div.selected {
   background: #5eb7bf;
   color: #000000;
   box-shadow: inset 0px 0px 12px -1px black;
   z-index: 3;
 }
-.shader-view #context-menu {
+.graph-view #context-menu {
   position: absolute;
   width: 100px;
   box-shadow: 0px 0px 25px -4px black;
@@ -1183,51 +1183,51 @@ input[type=checkbox]:checked:after {
   border: 1px solid #444;
   z-index: 2;
 }
-.shader-view #context-menu #options {
+.graph-view #context-menu #options {
   max-height: 300px;
   overflow-y: auto;
 }
-.shader-view #context-menu #options div {
+.graph-view #context-menu #options div {
   padding: 5px;
   border-top: 1px solid #444444;
   cursor: pointer;
   color: #d4d4d4;
   position: relative;
 }
-.shader-view #context-menu #options div.group {
+.graph-view #context-menu #options div.group {
   background: #474747;
   color: #c0c0c0;
   cursor: default;
   z-index: 3;
   box-shadow: 0px 0px 34px -9px black;
 }
-.shader-view #context-menu #options div.group:hover {
+.graph-view #context-menu #options div.group:hover {
   background: #474747!important;
   color: #dadada!important;
   box-shadow: none;
 }
-.shader-view #context-menu #options div > span:first-child {
+.graph-view #context-menu #options div > span:first-child {
   font-weight: bold;
   padding-left: 10px;
 }
-.shader-view #context-menu #options div > span:last-child {
+.graph-view #context-menu #options div > span:last-child {
   font-style: oblique;
   padding-left: 7px;
 }
-.shader-view #context-menu #options div:first-child {
+.graph-view #context-menu #options div:first-child {
   border-top: 0;
 }
-.shader-view #context-menu #options div:hover,
-.shader-view #context-menu #options div.selected {
+.graph-view #context-menu #options div:hover,
+.graph-view #context-menu #options div.selected {
   background: #5eb7bf;
   color: #000000;
   box-shadow: inset 0px 0px 12px -1px black;
   z-index: 3;
 }
-.shader-view .heaps-scene {
+.graph-view .heaps-scene {
   outline: none !important;
 }
-.shader-view .heaps-scene #preview {
+.graph-view .heaps-scene #preview {
   position: absolute;
   width: 300px;
   height: 300px;
@@ -1236,7 +1236,7 @@ input[type=checkbox]:checked:after {
   right: 290px;
   bottom: 35px;
 }
-.shader-view .heaps-scene #status-bar {
+.graph-view .heaps-scene #status-bar {
   position: absolute;
   width: 84%;
   min-height: 20px;
@@ -1245,96 +1245,96 @@ input[type=checkbox]:checked:after {
   left: -1px;
   bottom: -1px;
 }
-.shader-view .heaps-scene #status-bar span {
+.graph-view .heaps-scene #status-bar span {
   padding: 10px;
   vertical-align: sub;
 }
-.shader-view .heaps-scene #status-bar span.error {
+.graph-view .heaps-scene #status-bar span.error {
   color: #c74848;
 }
-.shader-view .heaps-scene svg g {
+.graph-view .heaps-scene svg g {
   stroke: #202020;
 }
-.shader-view .heaps-scene svg g.selected .outline {
+.graph-view .heaps-scene svg g.selected .outline {
   stroke: #668fff;
 }
-.shader-view .heaps-scene svg g.error .outline {
+.graph-view .heaps-scene svg g.error .outline {
   stroke: #ff6666;
 }
-.shader-view .heaps-scene svg .outline {
+.graph-view .heaps-scene svg .outline {
   fill: none;
 }
-.shader-view .heaps-scene svg .head-box {
+.graph-view .heaps-scene svg .head-box {
   fill: #3e3e3e;
 }
-.shader-view .heaps-scene svg .title-box {
+.graph-view .heaps-scene svg .title-box {
   fill: #ffffff;
   stroke: none;
   user-select: none;
 }
-.shader-view .heaps-scene svg .title-box::selection {
+.graph-view .heaps-scene svg .title-box::selection {
   background: none;
 }
-.shader-view .heaps-scene svg .nodes,
-.shader-view .heaps-scene svg .properties {
+.graph-view .heaps-scene svg .nodes,
+.graph-view .heaps-scene svg .properties {
   fill: #737373;
   opacity: 0.75;
 }
-.shader-view .heaps-scene svg .hasLink .input-field {
+.graph-view .heaps-scene svg .hasLink .input-field {
   display: none;
 }
-.shader-view .heaps-scene svg .input-node,
-.shader-view .heaps-scene svg .output-node {
+.graph-view .heaps-scene svg .input-node,
+.graph-view .heaps-scene svg .output-node {
   fill: #c8c8c8;
   stroke-width: 13px;
   stroke-opacity: 0;
 }
-.shader-view .heaps-scene svg .input-node.nodeMatch,
-.shader-view .heaps-scene svg .output-node.nodeMatch {
+.graph-view .heaps-scene svg .input-node.nodeMatch,
+.graph-view .heaps-scene svg .output-node.nodeMatch {
   fill: #5ca4ab;
 }
-.shader-view .heaps-scene svg .title-node {
+.graph-view .heaps-scene svg .title-node {
   fill: #ffffff;
   stroke: none;
   user-select: none;
 }
-.shader-view .heaps-scene svg .title-node::selection {
+.graph-view .heaps-scene svg .title-node::selection {
   background: none;
 }
-.shader-view .heaps-scene svg .properties-group span {
+.graph-view .heaps-scene svg .properties-group span {
   color: #ffffff;
   user-select: none;
 }
-.shader-view .heaps-scene svg .properties-group span::selection {
+.graph-view .heaps-scene svg .properties-group span::selection {
   background: none;
 }
-.shader-view .heaps-scene svg .properties-group input[type=text],
-.shader-view .heaps-scene svg .properties-group select {
+.graph-view .heaps-scene svg .properties-group input[type=text],
+.graph-view .heaps-scene svg .properties-group select {
   width: 100%;
 }
-.shader-view .heaps-scene svg .properties-group input[type=text].error {
+.graph-view .heaps-scene svg .properties-group input[type=text].error {
   border: red 1px solid;
 }
-.shader-view .heaps-scene svg .edge {
+.graph-view .heaps-scene svg .edge {
   stroke-width: 2;
   stroke: #c8c8c8;
   fill: transparent;
 }
-.shader-view .heaps-scene svg .edge:not(.draft):hover,
-.shader-view .heaps-scene svg .edge:not(.draft).selected {
+.graph-view .heaps-scene svg .edge:not(.draft):hover,
+.graph-view .heaps-scene svg .edge:not(.draft).selected {
   stroke-width: 5;
   stroke: #72b4ff;
 }
-.shader-view .heaps-scene svg .rect-selection {
+.graph-view .heaps-scene svg .rect-selection {
   stroke: rgba(0, 0, 255, 0.7);
   fill: rgba(70, 70, 116, 0.08);
 }
-.shader-view .tabs {
+.graph-view .tabs {
   width: 280px;
   padding-top: 10px;
   border-left: 1px solid #444444;
 }
-.shader-view .tabs span {
+.graph-view .tabs span {
   margin-left: 5px;
   font-size: 15px;
   font-weight: bold;

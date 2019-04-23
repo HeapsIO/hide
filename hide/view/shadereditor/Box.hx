@@ -103,7 +103,7 @@ class Box {
 			element.find(".output-node-group > .title-node").html("");
 		}
 
-			// create properties box
+		// create properties box
 		editor.rect(propertiesGroup, 0, 0, this.width, 0).addClass("properties");
 		propsHeight = 5;
 
@@ -160,7 +160,7 @@ class Box {
 	public function getId() {
 		return this.nodeInstance.id;
 	}
-	public function getShaderNode() {
+	public function getInstance() {
 		return this.nodeInstance;
 	}
 	public function getX() {

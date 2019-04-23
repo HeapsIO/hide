@@ -2,7 +2,7 @@ package hrt.shgraph;
 
 using hxsl.Ast;
 
-private typedef Node = {
+typedef Node = {
 	x : Float,
 	y : Float,
 	comment : String,
