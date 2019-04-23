@@ -32,11 +32,13 @@ class ShaderEditor extends FileView {
 	var editor : SVG;
 	var editorMatrix : JQuery;
 	var statusBar : JQuery;
-
+	var parametersList : JQuery;
 
 	var listOfClasses : Map<String, Array<NodeInfo>>;
 	var addMenu : JQuery;
 	var selectedNode : JQuery;
+
+	var contextMenu : JQuery;
 
 	var listOfBoxes : Array<Box> = [];
 	var listOfEdges : Array<Edge> = [];
@@ -75,6 +77,8 @@ class ShaderEditor extends FileView {
 
 	var shaderGraph : ShaderGraph;
 
+	var timerCompileShader : Timer;
+	var COMPILE_SHADER_DEBOUNCE : Int = 100;
 	var shaderGenerated : Shader;
 
 	override function onDisplay() {
@@ -89,12 +93,12 @@ class ShaderEditor extends FileView {
 						<span>Parameters</span>
 						<div class="tab expand" name="Scene" icon="sitemap">
 							<div class="hide-block" >
-								<div class="hide-scene-tree hide-list">
+								<div id="parametersList" class="hide-scene-tree hide-list">
 								</div>
 							</div>
 							<div class="options-block hide-block">
 								<input id="addParameter" type="button" value="Add parameter" />
-								<input id="compileShader" type="button" value="Compile shader" />
+								<input id="launchCompileShader" type="button" value="Compile shader" />
 								<input id="saveShader" type="button" value="Save" />
 							</div>
 						</div>
@@ -246,18 +250,39 @@ class ShaderEditor extends FileView {
 			}
 		});
 
-		element.find("#compileShader").on("click", function() {
-			compileShader();
+		element.find("#addParameter").on("click", function() {
+			function createElement(name : String, type : Type) : Element {
+				var elt = new Element('
+					<div>
+						<span> ${name} </span>
+					</div>');
+				elt.on("click", function() {
+					addParameter(type);
+				});
+				return elt;
+			}
+
+			customContextMenu([
+				createElement("Boolean", TBool),
+				createElement("Color", TVec(4, VFloat)),
+				createElement("Texture", TSampler2D)
+				]);
+		});
+
+		element.find("#launchCompileShader").on("click", function() {
+			launchCompileShader();
 		});
 
 		element.find("#saveShader").on("click", function() {
 			save();
 		});
 
+		parametersList = element.find("#parametersList");
+
 		editorMatrix.on("change", "input, select", function(ev) {
 			try {
 				shaderGraph.nodeUpdated(ev.target.closest(".box").id);
-				compileShader();
+				launchCompileShader();
 			} catch (e : Dynamic) {
 				if (Std.is(e, ShaderException)) {
 					error(e.msg, e.idBox);
@@ -350,11 +375,83 @@ class ShaderEditor extends FileView {
 
 		element.find("#preview").first().append(sceneEditor.scene.element);
 
-		compileShader();
+		launchCompileShader();
 	}
 
-	function addParameter() {
+	function addParameter(type : Type, ?title : String, ?value : Dynamic) {
 
+		//TODO: link with shadergraph
+		//TODO: drag to graph
+		//TODO: edit => edit everywhere
+		//TODO: type sampler => file choosen
+
+		var exist = (title != null);
+
+		var elt = new Element('<div class="parameter"></div>').appendTo(parametersList);
+		var content = new Element('<div class="content" ${(!exist) ? "style='display: none'" : "" } ></div>');
+		var defaultValue = new Element("<div><span>Default: </span></div>").appendTo(content);
+
+		var typeName = "";
+
+		switch(type) {
+			case TBool:
+				var checkbox = new Element('<input type="checkbox" />');
+				checkbox.prop("checked", ${(value != null && value == "true") ? true : false});
+				defaultValue.append(checkbox);
+				typeName = "Boolean";
+			default:
+				defaultValue.append(new Element('<input type="text" value="${(value != null) ? value : ""}" />'));
+				typeName = "String";
+		}
+
+		var header = new Element('<div class="header">
+									<div class="title">
+										<i class="fa fa-chevron-right" ></i>
+										<input class="input-title" type="input" value="${(title != null) ? title : ""}" />
+									</div>
+									<div class="type">
+										<span>${typeName}</span>
+									</div>
+								</div>');
+
+		header.appendTo(elt);
+		content.appendTo(elt);
+		var actionBtns = new Element('<div class="action-btns" ></div>').appendTo(content);
+		var deleteBtn = new Element('<input type="button" value="Delete" />');
+		deleteBtn.on("click", function() {
+			elt.remove();
+		});
+		deleteBtn.appendTo(actionBtns);
+
+
+		var inputTitle = elt.find(".input-title");
+		inputTitle.on("click", function(e) {
+			e.stopPropagation();
+		});
+		inputTitle.on("change", function(e) {
+		});
+		elt.find(".header").on("click", function(e) {
+			content.toggle();
+			var icon = elt.find(".fa");
+			if (icon.hasClass("fa-chevron-right")) {
+				icon.removeClass("fa-chevron-right");
+				icon.addClass("fa-chevron-down");
+			} else {
+				icon.addClass("fa-chevron-right");
+				icon.removeClass("fa-chevron-down");
+			}
+		});
+	}
+
+	function launchCompileShader() {
+		if (timerCompileShader != null) {
+			timerCompileShader.stop();
+		}
+		timerCompileShader = new Timer(COMPILE_SHADER_DEBOUNCE);
+		timerCompileShader.run = function() {
+			compileShader();
+			timerCompileShader.stop();
+		};
 	}
 
 	function compileShader() {
@@ -622,7 +719,7 @@ class ShaderEditor extends FileView {
 		edge.nodeTo.parent().removeClass("hasLink");
 		shaderGraph.removeEdge(edge.to.getId(), edge.nodeTo.attr("field"));
 		listOfEdges.remove(edge);
-		compileShader();
+		launchCompileShader();
 	}
 
 	function setAvailableInputNodes(boxOutput : Box, field : String) {
@@ -708,7 +805,7 @@ class ShaderEditor extends FileView {
 				createEdgeInEditorGraph(newEdge);
 				currentLink.removeClass("draft");
 				currentLink = null;
-				compileShader();
+				launchCompileShader();
 				return true;
 			} else {
 				error("This edge creates a cycle.");
@@ -840,6 +937,44 @@ class ShaderEditor extends FileView {
 			curve.addClass("draft");
 
 		return curve;
+	}
+
+	function customContextMenu( elts : Array<Element> ) {
+			closeCustomContextMenu();
+
+		if (elts.length == 0) return;
+
+		contextMenu = new Element('
+		<div id="context-menu">
+			<div id="options"></div>
+		</div>').appendTo(parent);
+
+		var options = contextMenu.find("#options");
+
+		var posCursor = new IPoint(Std.int(ide.mouseX - parent.offset().left), Std.int(ide.mouseY - parent.offset().top));
+
+		contextMenu.css("left", posCursor.x);
+		contextMenu.css("top", posCursor.y);
+
+		contextMenu.on("mousedown", function(e) {
+			e.stopPropagation();
+		});
+
+		contextMenu.on("click", function(e) {
+			closeCustomContextMenu();
+			e.stopPropagation();
+		});
+
+		for (elt in elts) {
+			elt.appendTo(options);
+		}
+	}
+
+	function closeCustomContextMenu() {
+		if (contextMenu != null) {
+			contextMenu.remove();
+			contextMenu = null;
+		}
 	}
 
 	function openAddMenu() {
@@ -1125,6 +1260,6 @@ class ShaderEditor extends FileView {
 		return new Point(lX(x), lY(y));
 	}
 
-	static var _ = FileTree.registerExtension(ShaderEditor,["shader"],{ icon : "scribd" });
+	static var _ = FileTree.registerExtension(ShaderEditor,["hlshader"],{ icon : "scribd" });
 
 }

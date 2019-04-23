@@ -180,6 +180,18 @@ class ShaderGraph {
 
 	public function addParameter(name : String, type : Type, defaultValue : Dynamic) {
 		parametersAvailable.push({name : name, type : type, defaultValue : defaultValue, variable : generateParameter(name, type)});
+		return parametersAvailable.length-1;
+	}
+
+	public function setParameter(id : Int, ?newName : String, ?newDefaultValue : Dynamic) {
+		if (parametersAvailable[id] != null) {
+			if (newName != null) {
+				parametersAvailable[id].name = newName;
+				parametersAvailable[id].variable = generateParameter(newName, parametersAvailable[id].type);
+			}
+			if (newDefaultValue != null)
+				parametersAvailable[id].defaultValue = newDefaultValue;
+		}
 	}
 
 	public function removeParameter(name : String) {

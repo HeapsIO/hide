@@ -408,9 +408,11 @@ class Scene extends Component implements h3d.IDrawable {
 
 		if (!reload && e != null) {
 			e.watch(function() {
-				var lib = e.toModel().toHmd();
-				hmdCache.set(key, lib);
-				editor.onResourceChanged(lib);
+				if (sys.FileSystem.exists(ide.getPath(e.entry.path))) {
+					var lib = e.toModel().toHmd();
+					hmdCache.set(key, lib);
+					editor.onResourceChanged(lib);
+				}
 			});
 			cleanup.push(function() {
 				e.watch(null);

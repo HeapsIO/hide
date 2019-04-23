@@ -1149,12 +1149,75 @@ input[type=checkbox] {
 	.tabs {
 		z-index: 1;
     	background: #222222;
+		height: 100%;
+		user-select: none;
 		.tab {
 			height: 100%;
 			.hide-block {
 				height: 70%;
-				.hide-scene-tree {
+
+				#parametersList {
 					height: 100%;
+
+					.parameter {
+						border: 1px solid;
+						margin: 5px;
+						background-color: #222;
+
+						.header {
+							background-color: #d6d6d6;
+							height: 20px;
+							padding: 5px;
+							color: black;
+							cursor: pointer;
+
+							.title {
+								float: left;
+								input {
+									width: 130px;
+								}
+							}
+
+							.type {
+								float: right;
+
+								span {
+									color: black;
+									font-style: italic;
+									font-size: 13px;
+									padding-right: 5px;
+								}
+							}
+						}
+
+						.content {
+							background-color: #b3b3b3;
+							padding: 5px;
+							box-shadow: inset 0px 13px 6px -15px black;
+
+							div {
+								width: 100%;
+								height: 20px;
+
+								span {
+									float: left;
+									color: black;
+									font-size: 13px;
+									padding-right: 5px;
+									font-weight: normal;
+								}
+							}
+							.action-btns {
+								input {
+									float: right;
+								}
+							}
+						}
+
+						& > span {
+							font-size: 12px;
+						}
+					}
 				}
 			}
 			.options-block {
@@ -1223,6 +1286,65 @@ input[type=checkbox] {
 					color: #c0c0c0;
 					cursor: default;
 					z-index: 1;
+    				box-shadow: 0px 0px 34px -9px black;
+
+					&:hover {
+						background: #474747!important;
+						color: #dadada!important;
+						box-shadow: none;
+					}
+				}
+
+				& > span:first-child {
+					font-weight: bold;
+					padding-left: 10px;
+				}
+				& > span:last-child {
+					font-style: oblique;
+					padding-left: 7px;
+				}
+				&:first-child {
+					border-top: 0;
+				}
+				&:hover, &.selected {
+					background: #5eb7bf;
+					color: #000000;
+					box-shadow: inset 0px 0px 12px -1px black;
+    				z-index: 3;
+				}
+			}
+		}
+
+	}
+	#context-menu {
+		position: absolute;
+		width: 100px;
+		box-shadow: 0px 0px 25px -4px black;
+
+		background-color: rgb(34, 34, 34);
+		border: 1px solid #444;
+
+		z-index: 2;
+
+		#options {
+			max-height: 300px;
+
+    		overflow-y: auto;
+			div {
+				padding: 5px;
+				border-top: 1px solid #444444;
+				cursor: pointer;
+				color: #d4d4d4;
+
+				& {
+					position: relative;
+				}
+
+				&.group {
+					background: #474747;
+					color: #c0c0c0;
+					cursor: default;
+					z-index: 3;
     				box-shadow: 0px 0px 34px -9px black;
 
 					&:hover {
