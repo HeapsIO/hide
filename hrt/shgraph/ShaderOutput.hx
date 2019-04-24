@@ -1,8 +1,6 @@
 package hrt.shgraph;
 
 import hide.Element;
-import h3d.Vector;
-import hxsl.*;
 
 using hxsl.Ast;
 

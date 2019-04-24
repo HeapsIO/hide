@@ -1,7 +1,6 @@
 package hrt.shgraph;
 
 import hide.Element;
-import hxsl.*;
 
 using hxsl.Ast;
 
@@ -9,7 +8,7 @@ using hxsl.Ast;
 @description("Shader inputs of Heaps, it's dynamic")
 @group("Input")
 @noheader()
-@color("#1F690A")
+@color("#0e8826")
 class ShaderInput extends ShaderNode {
 
 	@output() var output = SType.Variant;

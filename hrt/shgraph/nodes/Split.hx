@@ -1,7 +1,5 @@
 package hrt.shgraph.nodes;
 
-import hxsl.*;
-
 using hxsl.Ast;
 
 @name("Split")

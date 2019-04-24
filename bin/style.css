@@ -1186,7 +1186,7 @@ input[type=checkbox]:checked:after {
 }
 .graph-view #context-menu {
   position: absolute;
-  width: 100px;
+  width: 150px;
   box-shadow: 0px 0px 25px -4px black;
   background-color: #222222;
   border: 1px solid #444;
@@ -1347,6 +1347,12 @@ input[type=checkbox]:checked:after {
   margin-left: 5px;
   font-size: 15px;
   font-weight: bold;
+}
+.graph-view .paramVisible {
+  color: black!important;
+  font-weight: bold;
+  font-style: italic;
+  letter-spacing: -0.5px;
 }
 /* Golden Layout Fixes */
 .lm_header .lm_tabs {

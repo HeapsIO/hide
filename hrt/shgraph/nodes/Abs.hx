@@ -1,11 +1,10 @@
 package hrt.shgraph.nodes;
 
-import hxsl.*;
-
 using hxsl.Ast;
 
 @name("Abs")
 @description("The output is the result of |A|")
+@width(80)
 @group("Math")
 class Abs extends ShaderFunction {
 

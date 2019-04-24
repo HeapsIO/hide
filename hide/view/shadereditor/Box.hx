@@ -67,7 +67,7 @@ class Box {
 		if (!hasHeader && color != null) {
 			bg.css("fill", color);
 		}
-		editor.line(element, width/2, HEADER_HEIGHT, width/2, 0, {display: "none"}).addClass("nodes-separator");
+		//editor.line(element, width/2, HEADER_HEIGHT, width/2, 0, {display: "none"}).addClass("nodes-separator");
 	}
 
 	public function addInput(editor : SVG, name : String, valueDefault : String = null) {

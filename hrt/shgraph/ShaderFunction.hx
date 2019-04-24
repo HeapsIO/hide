@@ -1,12 +1,10 @@
 package hrt.shgraph;
 
-import hxsl.*;
-
 using hxsl.Ast;
 
 class ShaderFunction extends ShaderNode {
 
-	@output() var output = SType.Variant;
+	@output("") var output = SType.Variant;
 
 	var func : TGlobal;
 

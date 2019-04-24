@@ -1,13 +1,12 @@
 package hrt.shgraph;
 
 import hide.Element;
-import hxsl.*;
 
 using hxsl.Ast;
 
 @noheader()
-@width(100)
-@color("#1F690A")
+@width(120)
+@color("#d6d6d6")
 class ShaderParam extends ShaderNode {
 
 	@output() var output = SType.Variant;
@@ -53,8 +52,8 @@ class ShaderParam extends ShaderNode {
 	}
 	override public function getPropertiesHTML(width : Float) : Array<Element> {
 		var elements = super.getPropertiesHTML(width);
-		var element = new Element('<div style="width: 75px; height: 30px"></div>');
-		eltName = new Element('<span class="variable">${parameterName}</span>').appendTo(element);
+		var element = new Element('<div style="width: 110px; height: 25px"></div>');
+		eltName = new Element('<span class="paramVisible" >${parameterName}</span>').appendTo(element);
 
 		elements.push(element);
 

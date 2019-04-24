@@ -1,5 +1,6 @@
 package hide.view.shadereditor;
 
+import h3d.Engine;
 import hrt.shgraph.ShaderParam;
 import hrt.shgraph.ShaderException;
 import haxe.Timer;
@@ -7,7 +8,6 @@ using hxsl.Ast.Type;
 
 import haxe.rtti.Meta;
 import hxsl.Shader;
-import hxsl.SharedShader;
 import hide.comp.SceneEditor;
 import js.jquery.JQuery;
 import h2d.col.Point;
@@ -39,6 +39,7 @@ class ShaderEditor extends hide.view.Graph {
 
 	override function onDisplay() {
 		super.onDisplay();
+		saveDisplayKey = "ShaderGraph:" + getPath().split("\\").join("/").substr(0,-1);
 		shaderGraph = new ShaderGraph(getPath());
 		addMenu = null;
 
@@ -53,6 +54,8 @@ class ShaderEditor extends hide.view.Graph {
 								<input id="createParameter" type="button" value="Add parameter" />
 								<input id="launchCompileShader" type="button" value="Compile shader" />
 								<input id="saveShader" type="button" value="Save" />
+								<input id="changeModel" type="button" value="Change Model" />
+								<input id="centerView" type="button" value="Center View" />
 							</div>
 						</div>)');
 		parent.on("drop", function(e) {
@@ -137,6 +140,12 @@ class ShaderEditor extends hide.view.Graph {
 			}
 		});
 
+		parent.on("contextmenu", function(e) {
+			customContextMenu([]); // TODO: add menu right click
+			e.preventDefault();
+			return false;
+		});
+
 		element.find("#createParameter").on("click", function() {
 			function createElement(name : String, type : Type) : Element {
 				var elt = new Element('
@@ -162,6 +171,21 @@ class ShaderEditor extends hide.view.Graph {
 
 		element.find("#saveShader").on("click", function() {
 			save();
+		});
+
+		element.find("#changeModel").on("click", function() {
+			ide.chooseFile(["fbx"], function(path) {
+				if( path == null ) return; // cancel
+				sceneEditor.scene.s3d.removeChild(obj);
+				obj = sceneEditor.scene.loadModel(path, true);
+				saveDisplayState("customModel", path);
+				sceneEditor.scene.s3d.addChild(obj);
+				compileShader();
+			});
+		});
+
+		element.find("#centerView").on("click", function() {
+			centerView();
 		});
 
 		parametersList = element.find("#parametersList");
@@ -223,25 +247,7 @@ class ShaderEditor extends hide.view.Graph {
 			}
 
 			new Element(".nodes").ready(function(e) {
-
-				for (box in listOfBoxes) {
-					for (key in box.getInstance().getInputsKey()) {
-						var input = box.getInstance().getInput(key);
-						if (input != null) {
-							var fromBox : Box = null;
-							for (boxFrom in listOfBoxes) {
-								if (boxFrom.getId() == input.node.id) {
-									fromBox = boxFrom;
-									break;
-								}
-							}
-							var nodeFrom = fromBox.getElement().find('[field=${input.getKey()}]');
-							var nodeTo = box.getElement().find('[field=${key}]');
-							createEdgeInEditorGraph({from: fromBox, nodeFrom: nodeFrom, to : box, nodeTo: nodeTo, elt : createCurve(nodeFrom, nodeTo) });
-						}
-					}
-				}
-
+				generateEdges();
 			});
 
 
@@ -249,7 +255,6 @@ class ShaderEditor extends hide.view.Graph {
 				addParameter(p.id, p.name, p.type, p.defaultValue);
 			}
 		});
-
 	}
 
 	override function save() {
@@ -268,12 +273,49 @@ class ShaderEditor extends hide.view.Graph {
 			lightDirection = this.light.getDirection();
 		}
 
-		obj = sceneEditor.scene.loadModel("fx/Common/PrimitiveShapes/Sphere.fbx", true);
+		var saveCustomModel = getDisplayState("customModel");
+		if (saveCustomModel != null)
+			obj = sceneEditor.scene.loadModel(saveCustomModel, true);
+		else
+			obj = sceneEditor.scene.loadModel("fx/Common/PrimitiveShapes/Sphere.fbx", true);
 		sceneEditor.scene.s3d.addChild(obj);
 
 		element.find("#preview").first().append(sceneEditor.scene.element);
 
-		launchCompileShader();
+		if (IsVisible()) {
+			launchCompileShader();
+		} else {
+			var timer = new Timer(500);
+			timer.run = function() {
+				if (IsVisible()) {
+					generateEdges();
+					launchCompileShader();
+					timer.stop();
+				}
+			}
+		}
+	}
+
+	function generateEdges() {
+		if (IsVisible()) {
+			for (box in listOfBoxes) {
+				for (key in box.getInstance().getInputsKey()) {
+					var input = box.getInstance().getInput(key);
+					if (input != null) {
+						var fromBox : Box = null;
+						for (boxFrom in listOfBoxes) {
+							if (boxFrom.getId() == input.node.id) {
+								fromBox = boxFrom;
+								break;
+							}
+						}
+						var nodeFrom = fromBox.getElement().find('[field=${input.getKey()}]');
+						var nodeTo = box.getElement().find('[field=${key}]');
+						createEdgeInEditorGraph({from: fromBox, nodeFrom: nodeFrom, to : box, nodeTo: nodeTo, elt : createCurve(nodeFrom, nodeTo) });
+					}
+				}
+			}
+		}
 	}
 
 	function addParameter(id : Int, name : String, type : Type, ?value : Dynamic) {
@@ -351,6 +393,13 @@ class ShaderEditor extends hide.view.Graph {
 		var actionBtns = new Element('<div class="action-btns" ></div>').appendTo(content);
 		var deleteBtn = new Element('<input type="button" value="Delete" />');
 		deleteBtn.on("click", function() {
+			for (b in listOfBoxes) {
+				var shaderParam = Std.instance(b.getInstance(), ShaderParam);
+				if (shaderParam != null && shaderParam.parameterId == id) {
+					error("This parameter is used in the graph.");
+					return;
+				}
+			}
 			shaderGraph.removeParameter(id);
 			elt.remove();
 		});
@@ -391,12 +440,6 @@ class ShaderEditor extends hide.view.Graph {
 	}
 
 	function createParameter(type : Type) {
-
-		//TODO: link with shadergraph
-		//TODO: drag to graph
-		//TODO: edit => edit everywhere
-		//TODO: type sampler => file choosen
-
 		var paramShaderID = shaderGraph.addParameter(type);
 		var paramShader = shaderGraph.getParameter(paramShaderID);
 
@@ -421,6 +464,7 @@ class ShaderEditor extends hide.view.Graph {
 		if (shaderGenerated != null)
 			saveShader = shaderGenerated.clone();
 		try {
+			sceneEditor.scene.setCurrent();
 			var timeStart = Date.now().getTime();
 
 			if (shaderGenerated != null)
@@ -437,8 +481,15 @@ class ShaderEditor extends hide.view.Graph {
 		} catch (e : Dynamic) {
 			if (Std.is(e, String)) {
 				var str : String = e;
-				if (str.split(":")[0] == "An error occurred compiling the shaders") { // aie
-					error("Compilation of shader failed > " + str);
+				if (str.split(":")[0] == "An error occurred compiling the shaders") {
+					var strSplitted = str.split("(output_");
+					var idBox = strSplitted[1].split("_")[0];
+					var idBoxParsed = Std.parseInt(idBox);
+					if (Std.string(idBoxParsed) == idBox) {
+						error("Compilation of shader failed > Invalid inputs", idBoxParsed);
+					} else {
+						error("Compilation of shader failed > " + str);
+					}
 					if (shaderGenerated != null)
 						for (m in obj.getMaterials())
 							m.mainPass.removeShader(shaderGenerated);

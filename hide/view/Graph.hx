@@ -35,7 +35,7 @@ class Graph extends FileView {
 
 	var transformMatrix : Array<Float> = [1, 0, 0, 1, 0, 0];
 	var isPanning : Bool = false;
-
+	static var MAX_ZOOM = 1.2;
 
 	// used for moving when mouse is close to borders
 	static var BORDER_SIZE = 75;
@@ -631,12 +631,42 @@ class Graph extends FileView {
 		}
 	}
 
+	function centerView() {
+		var xMin = listOfBoxes[0].getX();
+		var yMin = listOfBoxes[0].getY();
+		var xMax = xMin + listOfBoxes[0].getWidth();
+		var yMax = yMin + listOfBoxes[0].getHeight();
+		for (i in 1...listOfBoxes.length) {
+			var b = listOfBoxes[i];
+			xMin = Math.min(xMin, b.getX());
+			yMin = Math.min(yMin, b.getY());
+			xMax = Math.max(xMax, b.getX() + b.getWidth());
+			yMax = Math.max(yMax, b.getY() + b.getHeight());
+		}
+		var center = new IPoint(Std.int(xMin + (xMax - xMin)/2), Std.int(yMin + (yMax - yMin)/2));
+		var scale = Math.min(MAX_ZOOM, Math.min((editor.element.width() - 50) / (xMax - xMin), (editor.element.height() - 50) / (yMax - yMin)));
+
+		transformMatrix[4] = editor.element.width()/2 - center.x;
+		transformMatrix[5] = editor.element.height()/2 - center.y;
+
+		transformMatrix[0] = scale;
+		transformMatrix[3] = scale;
+
+		var x = editor.element.width()/2;
+		var y = editor.element.height()/2;
+
+		transformMatrix[4] = x - (x - transformMatrix[4]) * scale;
+		transformMatrix[5] = y - (y - transformMatrix[5]) * scale;
+
+		updateMatrix();
+	}
+
 	function updateMatrix() {
 		editorMatrix.attr({transform: 'matrix(${transformMatrix.join(' ')})'});
 	}
 
 	function zoom(scale : Float, x : Int, y : Int) {
-		if (scale > 1 && transformMatrix[0] > 1.2) {
+		if (scale > 1 && transformMatrix[0] > MAX_ZOOM) {
 			return;
 		}
 
@@ -657,6 +687,10 @@ class Graph extends FileView {
 		transformMatrix[5] += p.y;
 
 		updateMatrix();
+	}
+
+	function IsVisible() : Bool {
+		return editor.element.is(":visible");
 	}
 
 	// Useful method

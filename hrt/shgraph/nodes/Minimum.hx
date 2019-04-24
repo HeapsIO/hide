@@ -1,11 +1,10 @@
 package hrt.shgraph.nodes;
 
-import hxsl.*;
-
 using hxsl.Ast;
 
 @name("Minimum")
 @description("The output is the minimum between A and B")
+@width(80)
 @group("Math")
 class Minimum extends ShaderFunction {
 

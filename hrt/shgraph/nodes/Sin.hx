@@ -1,11 +1,10 @@
 package hrt.shgraph.nodes;
 
-import hxsl.*;
-
 using hxsl.Ast;
 
 @name("Sinus")
 @description("The output is the sinus of A")
+@width(80)
 @group("Math")
 class Sin extends ShaderFunction {
 

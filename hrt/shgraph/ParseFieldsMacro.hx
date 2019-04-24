@@ -1,6 +1,5 @@
 package hrt.shgraph;
 
-import hrt.shgraph.ShaderType;
 import haxe.macro.Context;
 import haxe.macro.Expr;
 using haxe.macro.Tools;

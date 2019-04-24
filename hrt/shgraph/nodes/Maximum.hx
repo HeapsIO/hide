@@ -1,11 +1,10 @@
 package hrt.shgraph.nodes;
 
-import hxsl.*;
-
 using hxsl.Ast;
 
 @name("Maximum")
 @description("The output is the maximum between A and B")
+@width(80)
 @group("Math")
 class Maximum extends ShaderFunction {
 

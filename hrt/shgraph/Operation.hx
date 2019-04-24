@@ -1,7 +1,5 @@
 package hrt.shgraph;
 
-import hxsl.*;
-
 using hxsl.Ast;
 
 class Operation extends ShaderNode {
@@ -9,7 +7,7 @@ class Operation extends ShaderNode {
 	@input("A", true) var a = SType.Number;
 	@input("B", true) var b = SType.Number;
 
-	@output() var output = SType.Number;
+	@output("") var output = SType.Number;
 
 	var operation : Binop;
 

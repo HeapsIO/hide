@@ -280,6 +280,8 @@ class ShaderGraph {
 			}
 		}
 
+		var outputs : Array<String> = [];
+
 		for (n in nodes) {
 			if (Std.is(n.instance, ShaderInput)) {
 				var variable = Std.instance(n.instance, ShaderInput).variable;
@@ -289,6 +291,10 @@ class ShaderGraph {
 			}
 			if (Std.is(n.instance, ShaderOutput)) {
 				var variable = Std.instance(n.instance, ShaderOutput).variable;
+				if (outputs.indexOf(variable.name) != -1) {
+					throw ShaderException.t("This output already exists", n.id);
+				}
+				outputs.push(variable.name);
 				if ( !alreadyAddVariable(allVariables, variable) ) {
 					allVariables.push(variable);
 				}
