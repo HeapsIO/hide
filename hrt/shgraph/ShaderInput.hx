@@ -9,6 +9,7 @@ using hxsl.Ast;
 @description("Shader inputs of Heaps, it's dynamic")
 @group("Input")
 @noheader()
+@color("#1F690A")
 class ShaderInput extends ShaderNode {
 
 	@output() var output = SType.Variant;

@@ -68,18 +68,6 @@ class Graph extends FileView {
 					<div class="heaps-scene" tabindex="0" >
 					</div>
 					<div id="rightPanel" class="tabs">
-						<span>Parameters</span>
-						<div class="tab expand" name="Scene" icon="sitemap">
-							<div class="hide-block" >
-								<div id="parametersList" class="hide-scene-tree hide-list">
-								</div>
-							</div>
-							<div class="options-block hide-block">
-								<input id="addParameter" type="button" value="Add parameter" />
-								<input id="launchCompileShader" type="button" value="Compile shader" />
-								<input id="saveShader" type="button" value="Save" />
-							</div>
-						</div>
 					</div>
 				</div>
 			</div>');

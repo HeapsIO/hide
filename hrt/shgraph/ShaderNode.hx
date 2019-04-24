@@ -88,7 +88,7 @@ class ShaderNode {
 	}
 
 	public function build(key : String) : TExpr {
-		throw "Not implemented";
+		throw "Build function not implemented";
 	}
 
 	public function checkTypeAndCompatibilyInput(key : String, type : ShaderType.SType) : Bool {

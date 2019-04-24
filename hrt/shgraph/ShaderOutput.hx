@@ -10,6 +10,7 @@ using hxsl.Ast;
 @description("Parameters outputs, it's dynamic")
 @group("Output")
 @noheader()
+@color("#A90707")
 class ShaderOutput extends ShaderNode {
 
 	@input("input") var input = SType.Variant;

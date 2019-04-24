@@ -15,7 +15,7 @@ class Box {
 	var height : Int;
 	var propsHeight : Int = 0;
 
-	var HEADER_HEIGHT = 27;
+	var HEADER_HEIGHT = 22;
 	@const var NODE_MARGIN = 17;
 	public static var NODE_RADIUS = 5;
 	@const var NODE_TITLE_PADDING = 10;
@@ -23,6 +23,9 @@ class Box {
 
 	public var inputs : Array<JQuery> = [];
 	public var outputs : Array<JQuery> = [];
+
+	var hasHeader : Bool = true;
+	var color : String;
 
 	var element : JQuery;
 	var propertiesGroup : JQuery;
@@ -33,6 +36,9 @@ class Box {
 		var metas = haxe.rtti.Meta.getType(Type.getClass(node));
 		if (metas.width != null) {
 			this.width = metas.width[0];
+		}
+		if (Reflect.hasField(metas, "color")) {
+			color = Reflect.field(metas, "color");
 		}
 		var className = (metas.name != null) ? metas.name[0] : "Undefined";
 
@@ -47,15 +53,20 @@ class Box {
 
 		if (Reflect.hasField(metas, "noheader")) {
 			HEADER_HEIGHT = 0;
+			hasHeader = false;
 		} else {
-			editor.rect(element, 0, 0, this.width, HEADER_HEIGHT).addClass("head-box");
-			editor.text(element, 10, HEADER_HEIGHT-8, className).addClass("title-box");
+			var header = editor.rect(element, 0, 0, this.width, HEADER_HEIGHT).addClass("head-box");
+			if (color != null) header.css("fill", color);
+			editor.text(element, 7, HEADER_HEIGHT-6, className).addClass("title-box");
 		}
 
 		propertiesGroup = editor.group(element).addClass("properties-group");
 
 		// nodes div
-		editor.rect(element, 0, HEADER_HEIGHT, this.width, 0).addClass("nodes");
+		var bg = editor.rect(element, 0, HEADER_HEIGHT, this.width, 0).addClass("nodes");
+		if (!hasHeader && color != null) {
+			bg.css("fill", color);
+		}
 		editor.line(element, width/2, HEADER_HEIGHT, width/2, 0, {display: "none"}).addClass("nodes-separator");
 	}
 
@@ -104,7 +115,8 @@ class Box {
 		}
 
 		// create properties box
-		editor.rect(propertiesGroup, 0, 0, this.width, 0).addClass("properties");
+		var bgParam = editor.rect(propertiesGroup, 0, 0, this.width, 0).addClass("properties");
+		if (!hasHeader && color != null) bgParam.css("fill", color);
 		propsHeight = 5;
 
 		for (p in props) {
