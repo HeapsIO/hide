@@ -194,6 +194,8 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 					Reflect.setField(p.props, "$cdbtype", typeId);
 					p.name = name;
 					setup(p);
+					if(onMake != null)
+						onMake(p);
 					return p;
 				}
 
