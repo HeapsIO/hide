@@ -556,6 +556,9 @@ class SceneEditor {
 				var parentEl = curEdit.rootElements[0];
 				if(parentEl == null)
 					parentEl = elt;
+				var group = getParentGroup(parentEl);
+				if(group != null)
+					parentEl = group;
 				var newItems = getNewContextMenu(parentEl, function(newElt) {
 					var newObj3d = Std.instance(newElt, Object3D);
 					if(newObj3d != null) {
@@ -1915,5 +1918,14 @@ class SceneEditor {
 			p = p.parent;
 		}
 		return false;
+	}
+
+	static function getParentGroup(elt: PrefabElement) {
+		while(elt != null) {
+			if(elt.type == "object")
+				return elt;
+			elt = elt.parent;
+		}
+		return null;
 	}
 }
