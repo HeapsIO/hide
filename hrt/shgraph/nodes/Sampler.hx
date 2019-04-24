@@ -6,7 +6,7 @@ using hxsl.Ast;
 
 @name("Sampler")
 @description("Get color from texture and UV")
-@group("AAAAA")
+@group("Input")
 class Sampler extends ShaderFunction {
 
 	@input("texture") var texture = SType.Sampler;

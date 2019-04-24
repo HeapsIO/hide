@@ -18,7 +18,7 @@ class ShaderFunction extends ShaderNode {
 		var args = [];
 		var varArgs = [];
 
-		for (k in getInputsKey()) {
+		for (k in getInputInfoKeys()) {
 			args.push({ name: k, type: getInput(k).getType() });
 			varArgs.push(getInput(k).getVar());
 		}

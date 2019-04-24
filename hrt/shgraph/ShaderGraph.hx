@@ -1,8 +1,10 @@
 package hrt.shgraph;
 
+import hxsl.SharedShader;
+import hxsl.DynamicShader;
 using hxsl.Ast;
 
-private typedef Node = {
+typedef Node = {
 	x : Float,
 	y : Float,
 	comment : String,
@@ -25,16 +27,18 @@ private typedef Parameter = {
 	name : String,
 	type : Type,
 	defaultValue : Dynamic,
+	?id : Int,
 	?variable : TVar
 };
 
 class ShaderGraph {
 
 	var current_node_id = 0;
+	var current_param_id = 0;
 	var filepath : String;
 	var nodes : Map<Int, Node> = [];
 	var allVariables : Array<TVar> = [];
-	public var parametersAvailable : Array<Parameter> = [];
+	public var parametersAvailable : Map<Int, Parameter> = [];
 
 	public function new(filepath : String) {
 		if (filepath == null) return;
@@ -47,11 +51,24 @@ class ShaderGraph {
 			throw "Invalid shader graph parsing ("+e+")";
 		}
 
-		generate(Reflect.getProperty(json, "nodes"), Reflect.getProperty(json, "edges"));
+		generate(Reflect.getProperty(json, "nodes"), Reflect.getProperty(json, "edges"), Reflect.getProperty(json, "parameters"));
 
 	}
 
-	public function generate(nodes : Array<Node>, edges : Array<Edge>) {
+	public function generate(nodes : Array<Node>, edges : Array<Edge>, parameters : Array<Parameter>) {
+
+		for (p in parameters) {
+			var typeString : Array<Dynamic> = Reflect.field(p, "type");
+			if (typeString[1] == null || typeString[1].length == 0)
+				p.type = std.Type.createEnum(Type, typeString[0]);
+			else {
+				var paramsEnum = typeString[1].split(",");
+				p.type = std.Type.createEnum(Type, typeString[0], [Std.parseInt(paramsEnum[0]), std.Type.createEnum(VecType, paramsEnum[1])]);
+			}
+			p.variable = generateParameter(p.name, p.type);
+			this.parametersAvailable.set(p.id, p);
+			current_param_id = p.id + 1;
+		}
 
 		for (n in nodes) {
 			n.outputs = [];
@@ -91,6 +108,7 @@ class ShaderGraph {
 		var output = this.nodes.get(edge.idOutput);
 		node.instance.setInput(edge.nameInput, new NodeVar(output.instance, edge.nameOutput));
 		output.outputs.push(node);
+		#if editor
 		if (hasCycle()){
 			removeEdge(edge.idInput, edge.nameInput, false);
 			return false;
@@ -101,6 +119,7 @@ class ShaderGraph {
 			removeEdge(edge.idInput, edge.nameInput);
 			throw e;
 		}
+		#end
 		return true;
 	}
 
@@ -178,29 +197,44 @@ class ShaderGraph {
 			};
 	}
 
-	public function addParameter(name : String, type : Type, defaultValue : Dynamic) {
-		parametersAvailable.push({name : name, type : type, defaultValue : defaultValue, variable : generateParameter(name, type)});
-		return parametersAvailable.length-1;
+	public function addParameter(type : Type) {
+		var name = "Param_" + current_param_id;
+		parametersAvailable.set(current_param_id, {id: current_param_id, name : name, type : type, defaultValue : null, variable : generateParameter(name, type)});
+		current_param_id++;
+		return current_param_id-1;
 	}
 
-	public function setParameter(id : Int, ?newName : String, ?newDefaultValue : Dynamic) {
-		if (parametersAvailable[id] != null) {
+	public function getParameter(id : Int) {
+		return parametersAvailable.get(id);
+	}
+
+	public function setParameterTitle(id : Int, newName : String) {
+		var p = parametersAvailable.get(id);
+		if (p != null) {
 			if (newName != null) {
-				parametersAvailable[id].name = newName;
-				parametersAvailable[id].variable = generateParameter(newName, parametersAvailable[id].type);
+				for (p in parametersAvailable) {
+					if (p.name == newName) {
+						return false;
+					}
+				}
+				p.name = newName;
+				p.variable = generateParameter(newName, p.type);
+				return true;
 			}
+		}
+		return false;
+	}
+
+	public function setParameterDefaultValue(id : Int, newDefaultValue : Dynamic) {
+		var p = parametersAvailable.get(id);
+		if (p != null) {
 			if (newDefaultValue != null)
-				parametersAvailable[id].defaultValue = newDefaultValue;
+				p.defaultValue = newDefaultValue;
 		}
 	}
 
-	public function removeParameter(name : String) {
-		for (p in parametersAvailable) {
-			if (p.name == name) {
-				parametersAvailable.remove(p);
-				return;
-			}
-		}
+	public function removeParameter(id : Int) {
+		parametersAvailable.remove(id);
 	}
 
 	function buildNodeVar(nodeVar : NodeVar) : Array<TExpr>{
@@ -232,13 +266,18 @@ class ShaderGraph {
 		return false;
 	}
 
-	public function buildFragment() : ShaderData {
+	public function compile() : DynamicShader {
 
 		allVariables = [];
+		var allParameters = [];
+		var allParamDefaultValue = [];
 		var content = [];
 
 		for (n in nodes) {
 			n.instance.outputCompiled = [];
+			if (Std.is(n.instance, ShaderInput) || Std.is(n.instance, ShaderParam)) {
+				//updateOutputs(n);
+			}
 		}
 
 		for (n in nodes) {
@@ -256,9 +295,15 @@ class ShaderGraph {
 				var nodeVar = new NodeVar(n.instance, "input");
 				content = content.concat(buildNodeVar(nodeVar));
 			}
+			if (Std.is(n.instance, ShaderParam)) {
+				var shaderParam = Std.instance(n.instance, ShaderParam);
+				allVariables.push(shaderParam.variable);
+				allParameters.push(shaderParam.variable);
+				allParamDefaultValue.push(getParameter(shaderParam.parameterId).defaultValue);
+			}
 		}
 
-		return {
+		var shaderData = {
 			funs : [{
 					ret : TVoid, kind : Fragment,
 					ref : {
@@ -277,6 +322,21 @@ class ShaderGraph {
 			name: "MON_FRAGMENT",
 			vars: allVariables
 		};
+
+		var s = new SharedShader("");
+		s.data = shaderData;
+		@:privateAccess s.initialize();
+		var shaderCompiled = new hxsl.DynamicShader(s);
+
+		for (i in 0...allParameters.length) {
+			switch (allParameters[i].type) {
+				case TSampler2D:
+					shaderCompiled.setParamValue(allParameters[i], hxd.Res.load(allParamDefaultValue[i]).toTexture());
+				default:
+					shaderCompiled.setParamValue(allParameters[i], allParamDefaultValue[i]);
+			}
+		}
+		return shaderCompiled;
 	}
 
 	public function save() {
@@ -294,7 +354,7 @@ class ShaderGraph {
 			],
 			edges: edgesJson,
 			parameters: [
-				for (p in parametersAvailable) { name : p.name, type : p.type }
+				for (p in parametersAvailable) { id : p.id, name : p.name, type : [p.type.getName(), p.type.getParameters().toString()], defaultValue : p.defaultValue }
 			]
 		});
 

@@ -43,7 +43,6 @@ class Cond extends ShaderNode {
 	}
 
 	override public function build(key : String) : TExpr {
-
 		return {
 				p : null,
 				t : output.type,
