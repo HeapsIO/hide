@@ -415,6 +415,7 @@ class SceneEditor {
 				tree.refresh();
 				refreshScene();
 			});
+			refreshScene();
 			return true;
 		};
 		tree.onAllowMove = function(_, _) {
