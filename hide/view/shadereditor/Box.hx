@@ -114,6 +114,13 @@ class Box {
 			element.find(".output-node-group > .title-node").html("");
 		}
 
+		var children = propertiesGroup.children();
+		if (children.length > 0) {
+			for (c in children) {
+				c.remove();
+			}
+		}
+
 		// create properties box
 		var bgParam = editor.rect(propertiesGroup, 0, 0, this.width, 0).addClass("properties");
 		if (!hasHeader && color != null) bgParam.css("fill", color);

@@ -13,7 +13,6 @@ import hrt.shgraph.ShaderType;
 import hrt.shgraph.ShaderType.SType;
 
 enum EdgeState { None; FromInput; FromOutput; }
-typedef NodeInfo = { name : String, description : String, key : String };
 
 typedef Edge = { from : Box, nodeFrom : JQuery, to : Box, nodeTo : JQuery, elt : JQuery };
 
@@ -24,10 +23,6 @@ class Graph extends FileView {
 	var editorMatrix : JQuery;
 	var statusBar : JQuery;
 
-	var listOfClasses : Map<String, Array<NodeInfo>>;
-	var addMenu : JQuery;
-	var selectedNode : JQuery;
-
 	var contextMenu : JQuery;
 
 	var listOfBoxes : Array<Box> = [];
@@ -35,7 +30,8 @@ class Graph extends FileView {
 
 	var transformMatrix : Array<Float> = [1, 0, 0, 1, 0, 0];
 	var isPanning : Bool = false;
-	static var MAX_ZOOM = 1.2;
+	static var MAX_ZOOM = 1.3;
+	static var CENTER_OFFSET_Y = 0.1; // percent of height
 
 	// used for moving when mouse is close to borders
 	static var BORDER_SIZE = 75;
@@ -246,7 +242,7 @@ class Graph extends FileView {
 
 	dynamic function updatePosition(id : Int, x : Float, y : Float) { }
 
-	function addBox(p : Point, nodeClass : Class<ShaderNode>, node : ShaderNode) {
+	function addBox(p : Point, nodeClass : Class<ShaderNode>, node : ShaderNode) : Box {
 
 		var className = std.Type.getClassName(nodeClass);
 		className = className.substr(className.lastIndexOf(".") + 1);
@@ -351,6 +347,8 @@ class Graph extends FileView {
 			}
 		}
 		box.generateProperties(editor);
+
+		return box;
 	}
 
 	function removeBox(box : Box) {
@@ -549,7 +547,7 @@ class Graph extends FileView {
 		return curve;
 	}
 
-	function customContextMenu( elts : Array<Element> ) {
+	function customContextMenu( elts : Array<Element>, ?x : Int, ?y : Int ) {
 		closeCustomContextMenu();
 
 		if (elts.length == 0) return;
@@ -561,7 +559,8 @@ class Graph extends FileView {
 
 		var options = contextMenu.find("#options");
 
-		var posCursor = new IPoint(Std.int(ide.mouseX - parent.offset().left), Std.int(ide.mouseY - parent.offset().top));
+		if (x == null) x = Std.int(ide.mouseX - parent.offset().left);
+		if (y == null) y = Std.int(ide.mouseY - parent.offset().top);
 
 		contextMenu.on("mousedown", function(e) {
 			e.stopPropagation();
@@ -576,8 +575,8 @@ class Graph extends FileView {
 			elt.appendTo(options);
 		}
 
-		contextMenu.css("left", Math.min(posCursor.x, element.width() - contextMenu.width() - 5));
-		contextMenu.css("top", Math.min(posCursor.y, element.height() - contextMenu.height() - 5));
+		contextMenu.css("left", Math.min(x, element.width() - contextMenu.width() - 5));
+		contextMenu.css("top", Math.min(y, element.height() - contextMenu.height() - 5));
 	}
 
 	function closeCustomContextMenu() {
@@ -644,7 +643,8 @@ class Graph extends FileView {
 			yMax = Math.max(yMax, b.getY() + b.getHeight());
 		}
 		var center = new IPoint(Std.int(xMin + (xMax - xMin)/2), Std.int(yMin + (yMax - yMin)/2));
-		var scale = Math.min(MAX_ZOOM, Math.min((editor.element.width() - 50) / (xMax - xMin), (editor.element.height() - 50) / (yMax - yMin)));
+		center.y += Std.int(editor.element.height()*CENTER_OFFSET_Y);
+		var scale = Math.min(1, Math.min((editor.element.width() - 50) / (xMax - xMin), (editor.element.height() - 50) / (yMax - yMin)));
 
 		transformMatrix[4] = editor.element.width()/2 - center.x;
 		transformMatrix[5] = editor.element.height()/2 - center.y;

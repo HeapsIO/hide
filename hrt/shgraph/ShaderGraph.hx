@@ -23,7 +23,7 @@ private typedef Edge = {
 	nameInput : String
 };
 
-private typedef Parameter = {
+typedef Parameter = {
 	name : String,
 	type : Type,
 	defaultValue : Dynamic,
@@ -225,12 +225,15 @@ class ShaderGraph {
 		return false;
 	}
 
-	public function setParameterDefaultValue(id : Int, newDefaultValue : Dynamic) {
+	public function setParameterDefaultValue(id : Int, newDefaultValue : Dynamic) : Bool {
 		var p = parametersAvailable.get(id);
 		if (p != null) {
-			if (newDefaultValue != null)
+			if (newDefaultValue != null) {
 				p.defaultValue = newDefaultValue;
+				return true;
+			}
 		}
+		return false;
 	}
 
 	public function removeParameter(id : Int) {

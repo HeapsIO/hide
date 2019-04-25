@@ -1378,8 +1378,14 @@ input[type=checkbox] {
 				&:hover, &.selected {
 					background: #5eb7bf;
 					color: #000000;
-					box-shadow: inset 0px 0px 12px -1px black;
+					box-shadow: inset 0px 0px 12px -1px black!important;
     				z-index: 3;
+				}
+				&.grey-item {
+					background: #adadad;
+					color: #000000;
+					font-weight: bold;
+					box-shadow: inset 0px 0px 5px -1px black;
 				}
 			}
 		}
@@ -1497,6 +1503,32 @@ input[type=checkbox] {
 				input[type=text].error {
 					border: red 1px solid;
 				}
+
+				.texture-preview {
+					background-size: 50px 50px;
+					height: 50px;
+					width: 50px;
+					margin: auto;
+					margin-bottom: 5px;
+				}
+
+				.color-preview {
+					background-size: 25px 25px;
+					height: 25px;
+					width: 25px;
+					margin: auto;
+					margin-bottom: 5px;
+				}
+
+				.float-preview {
+					background: #222222;
+					font-weight: bold;
+					width: fit-content;
+					padding: 2px 3px;
+					margin: auto;
+					margin-bottom: 3px;
+					user-select: none;
+				}
 			}
 
 			.edge {
@@ -1532,6 +1564,8 @@ input[type=checkbox] {
 		font-weight: bold;
 		font-style: italic;
 		letter-spacing: -.5px;
+		text-align: center;
+		user-select: none;
 	}
 }
 
