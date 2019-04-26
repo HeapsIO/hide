@@ -169,9 +169,16 @@ class Graph extends FileView {
 		}
 		// Moving edge
 		if (currentEdge != null) {
-			startUpdateViewPosition();
-			// TODO: handle moving edge => disconnect closest node
-			// try to use the same code when user clicks on input node already connected and here
+			var distOutput = distanceToElement(currentEdge.nodeFrom, clientX, clientY);
+			var distInput = distanceToElement(currentEdge.nodeTo, clientX, clientY);
+
+			if (distOutput > distInput) {
+				replaceEdge(FromOutput, currentEdge.nodeTo, clientX, clientY);
+			} else {
+				replaceEdge(FromInput, currentEdge.nodeFrom, clientX, clientY);
+			}
+			currentEdge = null;
+			return;
 		}
 		if (isPanning) {
 			pan(new Point(clientX - lastClickPan.x, clientY - lastClickPan.y));
@@ -275,7 +282,6 @@ class Graph extends FileView {
 		});
 		listOfBoxes.push(box);
 
-
 		var fields = std.Type.getInstanceFields(nodeClass);
 
 		var metas = haxe.rtti.Meta.getFields(nodeClass);
@@ -316,17 +322,8 @@ class Graph extends FileView {
 					e.stopPropagation();
 					var node = grNode.find(".node");
 					if (node.attr("hasLink") != null) {
-						isCreatingLink = FromOutput;
-						for (edge in listOfEdges) {
-							if (edge.nodeTo.is(node)) {
-								startLinkGrNode = edge.nodeFrom.parent();
-								startLinkBox = edge.from;
-								setAvailableInputNodes(edge.from, edge.nodeFrom.attr("field"));
-								removeEdge(edge);
-								createLink(e.clientX, e.clientY);
-								return;
-							}
-						}
+						replaceEdge(FromOutput, node, e.clientX, e.clientY);
+						return;
 					}
 					isCreatingLink = FromInput;
 					startLinkGrNode = grNode;
@@ -368,6 +365,35 @@ class Graph extends FileView {
 		edge.nodeTo.removeAttr("hasLink");
 		edge.nodeTo.parent().removeClass("hasLink");
 		listOfEdges.remove(edge);
+	}
+
+	function replaceEdge(state : EdgeState, node : JQuery, x : Int, y : Int) {
+		switch (state) {
+			case FromOutput:
+				for (edge in listOfEdges) {
+					if (edge.nodeTo.is(node)) {
+						isCreatingLink = FromOutput;
+						startLinkGrNode = edge.nodeFrom.parent();
+						startLinkBox = edge.from;
+						setAvailableInputNodes(edge.from, edge.nodeFrom.attr("field"));
+						removeEdge(edge);
+						createLink(x, y);
+					}
+				}
+			case FromInput:
+				for (edge in listOfEdges) {
+					if (edge.nodeFrom.is(node)) {
+						isCreatingLink = FromInput;
+						startLinkGrNode = edge.nodeTo.parent();
+						startLinkBox = edge.to;
+						setAvailableOutputNodes(edge.to, edge.nodeTo.attr("field"));
+						removeEdge(edge);
+						createLink(x, y);
+					}
+				}
+			default:
+				return;
+		}
 	}
 
 	function setAvailableInputNodes(boxOutput : Box, field : String) {

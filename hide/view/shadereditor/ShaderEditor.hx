@@ -2,14 +2,12 @@ package hide.view.shadereditor;
 
 import hxsl.DynamicShader;
 import h3d.Vector;
-import h3d.Engine;
 import hrt.shgraph.ShaderParam;
 import hrt.shgraph.ShaderException;
 import haxe.Timer;
 using hxsl.Ast.Type;
 
 import haxe.rtti.Meta;
-import hxsl.Shader;
 import hide.comp.SceneEditor;
 import js.jquery.JQuery;
 import h2d.col.Point;
@@ -172,7 +170,7 @@ class ShaderEditor extends hide.view.Graph {
 			});
 			elements.push(deleteNode);
 
-			customContextMenu(elements); // TODO: add menu right click
+			customContextMenu(elements);
 			e.preventDefault();
 			return false;
 		});

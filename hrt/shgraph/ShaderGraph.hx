@@ -266,7 +266,6 @@ class ShaderGraph {
 	}
 
 	#if editor
-
 	public function addNode(x : Float, y : Float, nameClass : Class<ShaderNode>) {
 		var node : Node = { x : x, y : y, comment: "", id : current_node_id, type: std.Type.getClassName(nameClass) };
 
