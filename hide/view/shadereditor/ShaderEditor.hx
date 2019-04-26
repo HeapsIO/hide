@@ -357,16 +357,18 @@ class ShaderEditor extends hide.view.Graph {
 		var typeName = "";
 		switch(type) {
 			case TFloat:
-				var inputText = new Element('<input type="text" style="width: 50px" />').appendTo(defaultValue);
-				if (value != null && value.length > 0) inputText.val(value);
-				inputText.on("change", function() {
-					var tmpValue = Std.parseFloat(inputText.val());
-					if (Math.isNaN(tmpValue) ) {
-						inputText.val("0");
-					} else {
-						inputText.val(tmpValue);
-					}
-					if (!shaderGraph.setParameterDefaultValue(id, inputText.val()))
+				var parentRange = new Element('<input type="range" type="range" min="-1" max="1" />').appendTo(defaultValue);
+				var range = new hide.comp.Range(null, parentRange);
+				var rangeInput = @:privateAccess range.f;
+				rangeInput.on("mousedown", function(e) {
+					elt.attr("draggable", "false");
+				});
+				rangeInput.on("mouseup", function(e) {
+					elt.attr("draggable", "true");
+				});
+				if (value != null && value.length > 0) range.value = value;
+				range.onChange = function(temp) {
+					if (!shaderGraph.setParameterDefaultValue(id, range.value))
 						return;
 					var param = shaderGraph.getParameter(id);
 					for (b in listOfBoxes) {
@@ -377,7 +379,7 @@ class ShaderEditor extends hide.view.Graph {
 						}
 					}
 					updateParam(param);
-				});
+				};
 				typeName = "Number";
 			case TVec(4, VFloat):
 				var parentPicker = new Element('<div style="width: 35px; height: 25px; display: inline-block;"></div>').appendTo(defaultValue);
@@ -563,8 +565,8 @@ class ShaderEditor extends hide.view.Graph {
 			for (m in obj.getMaterials()) {
 				m.mainPass.addShader(newShader);
 			}
-			currentShader = newShader;
 			@:privateAccess sceneEditor.scene.render(sceneEditor.scene.engine);
+			currentShader = newShader;
 			info('Shader compiled in  ${Date.now().getTime() - timeStart}ms');
 
 		} catch (e : Dynamic) {
@@ -838,8 +840,10 @@ class ShaderEditor extends hide.view.Graph {
 	}
 
 	function closeAddMenu() {
-		if (addMenu != null)
+		if (addMenu != null) {
 			addMenu.hide();
+			parent.focus();
+		}
 	}
 
 
@@ -867,7 +871,7 @@ class ShaderEditor extends hide.view.Graph {
 			var group = new Element('<div> ${key} </div>');
 			group.on("click", function(e) {
 				var eltsGroup = [];
-				var goBack = new Element("<div class='grey-item' > Go back </div>");
+				var goBack = new Element("<div class='grey-item' > <i class='fa fa-chevron-left' /> Go back </div>");
 				goBack.on("click", function(e) {
 					contextMenuAddNode(Std.parseInt(contextMenu.css("left")), Std.parseInt(contextMenu.css("top")));
 				});
