@@ -907,6 +907,10 @@ class ShaderEditor extends hide.view.Graph {
 				var elt = parametersList.find("#param_" + paramId);
 				if (elt != null && elt.length > 0)
 					toggleParameter(elt, true);
+				var offsetScroll = elt.offset().top - parametersList.offset().top;
+				if (offsetScroll < 0 || offsetScroll + elt.height() > parametersList.height()) {
+					parametersList.scrollTop(parametersList.scrollTop() + offsetScroll);
+				}
 			});
 		}
 

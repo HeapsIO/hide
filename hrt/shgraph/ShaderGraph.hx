@@ -91,24 +91,6 @@ class ShaderGraph {
 		}
 	}
 
-	public function addNode(x : Float, y : Float, nameClass : Class<ShaderNode>) {
-		var node : Node = { x : x, y : y, comment: "", id : current_node_id, type: std.Type.getClassName(nameClass) };
-
-		node.instance = std.Type.createInstance(nameClass, []);
-		node.instance.setId(current_node_id);
-		node.instance.computeOutputs();
-		node.outputs = [];
-
-		this.nodes.set(node.id, node);
-		current_node_id++;
-
-		return node.instance;
-	}
-
-	public function removeNode(idNode : Int) {
-		this.nodes.remove(idNode);
-	}
-
 	public function addEdge(edge : Edge) {
 		var node = this.nodes.get(edge.idInput);
 		var output = this.nodes.get(edge.idOutput);
@@ -162,37 +144,6 @@ class ShaderGraph {
 		return this.nodes;
 	}
 
-	public function hasCycle() : Bool {
-		var queue : Array<Node> = [];
-
-		var counter = 0;
-		var nbNodes = 0;
-		for (n in nodes) {
-			n.indegree = n.outputs.length;
-			if (n.indegree == 0) {
-				queue.push(n);
-			}
-			nbNodes++;
-		}
-
-		var currentIndex = 0;
-		while (currentIndex < queue.length) {
-			var node = queue[currentIndex];
-			currentIndex++;
-
-			for (input in node.instance.getInputs()) {
-				var nodeInput = nodes.get(input.node.id);
-				nodeInput.indegree -= 1;
-				if (nodeInput.indegree == 0) {
-					queue.push(nodeInput);
-				}
-			}
-			counter++;
-		}
-
-		return counter != nbNodes;
-	}
-
 	function generateParameter(name : String, type : Type) : TVar {
 		return {
 				parent: null,
@@ -203,47 +154,8 @@ class ShaderGraph {
 			};
 	}
 
-	public function addParameter(type : Type) {
-		var name = "Param_" + current_param_id;
-		parametersAvailable.set(current_param_id, {id: current_param_id, name : name, type : type, defaultValue : null, variable : generateParameter(name, type)});
-		current_param_id++;
-		return current_param_id-1;
-	}
-
 	public function getParameter(id : Int) {
 		return parametersAvailable.get(id);
-	}
-
-	public function setParameterTitle(id : Int, newName : String) {
-		var p = parametersAvailable.get(id);
-		if (p != null) {
-			if (newName != null) {
-				for (p in parametersAvailable) {
-					if (p.name == newName) {
-						return false;
-					}
-				}
-				p.name = newName;
-				p.variable = generateParameter(newName, p.type);
-				return true;
-			}
-		}
-		return false;
-	}
-
-	public function setParameterDefaultValue(id : Int, newDefaultValue : Dynamic) : Bool {
-		var p = parametersAvailable.get(id);
-		if (p != null) {
-			if (newDefaultValue != null) {
-				p.defaultValue = newDefaultValue;
-				return true;
-			}
-		}
-		return false;
-	}
-
-	public function removeParameter(id : Int) {
-		parametersAvailable.remove(id);
 	}
 
 	function buildNodeVar(nodeVar : NodeVar) : Array<TExpr>{
@@ -285,7 +197,7 @@ class ShaderGraph {
 		for (n in nodes) {
 			n.instance.outputCompiled = [];
 			#if !editor
-			if (Std.is(n.instance, ShaderInput) || Std.is(n.instance, ShaderParam)) {
+			if (!n.instance.hasInputs()) {
 				updateOutputs(n);
 			}
 			#end
@@ -353,6 +265,96 @@ class ShaderGraph {
 		return shaderDef;
 	}
 
+	#if editor
+
+	public function addNode(x : Float, y : Float, nameClass : Class<ShaderNode>) {
+		var node : Node = { x : x, y : y, comment: "", id : current_node_id, type: std.Type.getClassName(nameClass) };
+
+		node.instance = std.Type.createInstance(nameClass, []);
+		node.instance.setId(current_node_id);
+		node.instance.computeOutputs();
+		node.outputs = [];
+
+		this.nodes.set(node.id, node);
+		current_node_id++;
+
+		return node.instance;
+	}
+
+	public function hasCycle() : Bool {
+		var queue : Array<Node> = [];
+
+		var counter = 0;
+		var nbNodes = 0;
+		for (n in nodes) {
+			n.indegree = n.outputs.length;
+			if (n.indegree == 0) {
+				queue.push(n);
+			}
+			nbNodes++;
+		}
+
+		var currentIndex = 0;
+		while (currentIndex < queue.length) {
+			var node = queue[currentIndex];
+			currentIndex++;
+
+			for (input in node.instance.getInputs()) {
+				var nodeInput = nodes.get(input.node.id);
+				nodeInput.indegree -= 1;
+				if (nodeInput.indegree == 0) {
+					queue.push(nodeInput);
+				}
+			}
+			counter++;
+		}
+
+		return counter != nbNodes;
+	}
+
+	public function addParameter(type : Type) {
+		var name = "Param_" + current_param_id;
+		parametersAvailable.set(current_param_id, {id: current_param_id, name : name, type : type, defaultValue : null, variable : generateParameter(name, type)});
+		current_param_id++;
+		return current_param_id-1;
+	}
+
+	public function setParameterTitle(id : Int, newName : String) {
+		var p = parametersAvailable.get(id);
+		if (p != null) {
+			if (newName != null) {
+				for (p in parametersAvailable) {
+					if (p.name == newName) {
+						return false;
+					}
+				}
+				p.name = newName;
+				p.variable = generateParameter(newName, p.type);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public function setParameterDefaultValue(id : Int, newDefaultValue : Dynamic) : Bool {
+		var p = parametersAvailable.get(id);
+		if (p != null) {
+			if (newDefaultValue != null) {
+				p.defaultValue = newDefaultValue;
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public function removeParameter(id : Int) {
+		parametersAvailable.remove(id);
+	}
+
+	public function removeNode(idNode : Int) {
+		this.nodes.remove(idNode);
+	}
+
 	public function save() {
 		var edgesJson : Array<Edge> = [];
 		for (n in nodes) {
@@ -374,4 +376,5 @@ class ShaderGraph {
 
 		return json;
 	}
+	#end
 }

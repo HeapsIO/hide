@@ -45,6 +45,10 @@ class ShaderNode {
 		return [for (k in inputs.keys()) inputs.get(k) ];
 	}
 
+	public function hasInputs() {
+		return inputs.keys().hasNext();
+	}
+
 	function addOutput(key : String, t : Type) {
 		outputs.set(key, { parent: null,
 			id: 0,
