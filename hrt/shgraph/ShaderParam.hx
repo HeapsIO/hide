@@ -1,7 +1,5 @@
 package hrt.shgraph;
 
-import hide.Element;
-
 using hxsl.Ast;
 
 @noheader()
@@ -44,10 +42,10 @@ class ShaderParam extends ShaderNode {
 
 	#if editor
 	private var parameterName : String;
-	private var eltName : Element;
+	private var eltName : hide.Element;
 
 	private var parameterDisplay : String;
-	private var displayDiv : Element;
+	private var displayDiv : hide.Element;
 	public function setName(s : String) {
 		parameterName = s;
 		if (eltName != null)
@@ -68,28 +66,28 @@ class ShaderParam extends ShaderNode {
 			default:
 		}
 	}
-	override public function getPropertiesHTML(width : Float) : Array<Element> {
+	override public function getPropertiesHTML(width : Float) : Array<hide.Element> {
 		var elements = super.getPropertiesHTML(width);
 		var height = 25;
 		switch (this.variable.type) {
 			case TFloat:
-				displayDiv = new Element('<div class="float-preview" ></div>');
+				displayDiv = new hide.Element('<div class="float-preview" ></div>');
 				height += 20;
 			case TSampler2D:
-				displayDiv = new Element('<div class="texture-preview" ></div>');
+				displayDiv = new hide.Element('<div class="texture-preview" ></div>');
 				height += 50;
 			case TVec(4, VFloat):
-				displayDiv = new Element('<div class="color-preview" ></div>');
+				displayDiv = new hide.Element('<div class="color-preview" ></div>');
 				height += 25;
 			default:
 				displayDiv = null;
 		}
-		var element = new Element('<div style="width: 110px; height: ${height}px"></div>');
+		var element = new hide.Element('<div style="width: 110px; height: ${height}px"></div>');
 		if (displayDiv != null) {
 			setDisplayValue(parameterDisplay);
 			displayDiv.appendTo(element);
 		}
-		eltName = new Element('<div class="paramVisible" >${parameterName}</div>').appendTo(element);
+		eltName = new hide.Element('<div class="paramVisible" >${parameterName}</div>').appendTo(element);
 
 		elements.push(element);
 

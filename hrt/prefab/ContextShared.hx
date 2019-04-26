@@ -2,7 +2,7 @@ package hrt.prefab;
 
 typedef ShaderDef = {
 	var shader : hxsl.SharedShader;
-	var inits : Array<{ v : hxsl.Ast.TVar, e : hxsl.Ast.TExpr }>;
+	var inits : Array<{ variable : hxsl.Ast.TVar, value : Dynamic }>;
 }
 
 typedef ShaderDefCache = Map<String, ShaderDef>;

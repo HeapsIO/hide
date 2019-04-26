@@ -1,5 +1,6 @@
 package hide.view.shadereditor;
 
+import hxsl.DynamicShader;
 import h3d.Vector;
 import h3d.Engine;
 import hrt.shgraph.ShaderParam;
@@ -42,7 +43,7 @@ class ShaderEditor extends hide.view.Graph {
 	var timerCompileShader : Timer;
 	var COMPILE_SHADER_DEBOUNCE : Int = 100;
 	var VIEW_VISIBLE_CHECK_TIMER : Int = 500;
-	var shaderGenerated : Shader;
+	var currentShader : DynamicShader;
 
 	override function onDisplay() {
 		super.onDisplay();
@@ -266,10 +267,8 @@ class ShaderEditor extends hide.view.Graph {
 				var paramNode = Std.instance(node.instance, ShaderParam);
 				if (paramNode != null) {
 					var paramShader = shaderGraph.getParameter(paramNode.parameterId);
-					paramNode.variable = paramShader.variable;
 					paramNode.setName(paramShader.name);
 					setDisplayValue(paramNode, paramShader.type, paramShader.defaultValue);
-					paramNode.computeOutputs();
 					shaderGraph.nodeUpdated(paramNode.id);
 					addBox(new Point(node.x, node.y), ShaderParam, paramNode);
 				} else {
@@ -371,15 +370,15 @@ class ShaderEditor extends hide.view.Graph {
 					}
 					if (!shaderGraph.setParameterDefaultValue(id, inputText.val()))
 						return;
+					var param = shaderGraph.getParameter(id);
 					for (b in listOfBoxes) {
 						var shaderParam = Std.instance(b.getInstance(), ShaderParam);
 						if (shaderParam != null && shaderParam.parameterId == id) {
-							var param = shaderGraph.getParameter(shaderParam.parameterId);
 							setDisplayValue(shaderParam, param.type, param.defaultValue);
 							b.generateProperties(editor);
 						}
 					}
-					launchCompileShader();
+					updateParam(param);
 				});
 				typeName = "Number";
 			case TVec(4, VFloat):
@@ -388,23 +387,24 @@ class ShaderEditor extends hide.view.Graph {
 
 				var start : h3d.Vector;
 				if (value != null)
-					start = h3d.Vector.fromArray([value.x, value.y, value.z, value.w]);
+					start = h3d.Vector.fromArray(value);
 				else
 					start = h3d.Vector.fromArray([0, 0, 0, 1]);
 				picker.value = start.toColor();
 
 				picker.onChange = function(move) {
-					if (!shaderGraph.setParameterDefaultValue(id, h3d.Vector.fromColor(picker.value)))
+					var vecColor = h3d.Vector.fromColor(picker.value);
+					if (!shaderGraph.setParameterDefaultValue(id, [vecColor.x, vecColor.y, vecColor.z, vecColor.w]))
 						return;
+					var param = shaderGraph.getParameter(id);
 					for (b in listOfBoxes) {
 						var shaderParam = Std.instance(b.getInstance(), ShaderParam);
 						if (shaderParam != null && shaderParam.parameterId == id) {
-							var param = shaderGraph.getParameter(shaderParam.parameterId);
 							setDisplayValue(shaderParam, param.type, param.defaultValue);
 							b.generateProperties(editor);
 						}
 					}
-					launchCompileShader();
+					updateParam(param);
 				};
 				typeName = "Color";
 			case TSampler2D:
@@ -415,27 +415,18 @@ class ShaderEditor extends hide.view.Graph {
 				tselect.onChange = function() {
 					if (!shaderGraph.setParameterDefaultValue(id, tselect.path))
 						return;
+					var param = shaderGraph.getParameter(id);
 					for (b in listOfBoxes) {
 						var shaderParam = Std.instance(b.getInstance(), ShaderParam);
 						if (shaderParam != null && shaderParam.parameterId == id) {
-							var param = shaderGraph.getParameter(shaderParam.parameterId);
 							setDisplayValue(shaderParam, param.type, param.defaultValue);
 							b.generateProperties(editor);
 						}
 					}
-					launchCompileShader();
+					updateParam(param);
 				}
 				typeName = "Texture";
 			default:
-				var inputText = new Element('<input type="text" />').appendTo(defaultValue);
-				if (value != null && value.length > 0) inputText.val(value);
-				inputText.on("change", function() {
-					if (inputText.val().length > 0) {
-						shaderGraph.setParameterDefaultValue(id, inputText.val());
-						launchCompileShader();
-					}
-				});
-				typeName = "String";
 		}
 
 		var header = new Element('<div class="header">
@@ -496,7 +487,7 @@ class ShaderEditor extends hide.view.Graph {
 			case TSampler2D:
 				node.setDisplayValue('file://${ide.getPath(defaultValue)}');
 			case TVec(4, VFloat):
-				var vec : Vector = defaultValue;
+				var vec = Vector.fromArray(defaultValue);
 				var hexa = StringTools.hex(vec.toColor(),8);
 				var hexaFormatted = "";
 				if (hexa.length == 8) {
@@ -557,21 +548,24 @@ class ShaderEditor extends hide.view.Graph {
 	}
 
 	function compileShader() {
-		var saveShader : Shader = null;
-		if (shaderGenerated != null)
-			saveShader = shaderGenerated.clone();
+		var newShader : DynamicShader = null;
 		try {
 			sceneEditor.scene.setCurrent();
 			var timeStart = Date.now().getTime();
 
-			if (shaderGenerated != null)
+			if (currentShader != null)
 				for (m in obj.getMaterials())
-					m.mainPass.removeShader(shaderGenerated);
+					m.mainPass.removeShader(currentShader);
 
-			shaderGenerated = shaderGraph.compile();
-			for (m in obj.getMaterials()) {
-				m.mainPass.addShader(shaderGenerated);
+			var shaderGraphDef = shaderGraph.compile();
+			newShader = new hxsl.DynamicShader(shaderGraphDef.shader);
+			for (init in shaderGraphDef.inits) {
+				setParamValue(newShader, init.variable, init.value);
 			}
+			for (m in obj.getMaterials()) {
+				m.mainPass.addShader(newShader);
+			}
+			currentShader = newShader;
 			@:privateAccess sceneEditor.scene.render(sceneEditor.scene.engine);
 			info('Shader compiled in  ${Date.now().getTime() - timeStart}ms');
 
@@ -587,13 +581,12 @@ class ShaderEditor extends hide.view.Graph {
 					} else {
 						error("Compilation of shader failed > " + str);
 					}
-					if (shaderGenerated != null)
+					if (newShader != null)
 						for (m in obj.getMaterials())
-							m.mainPass.removeShader(shaderGenerated);
-					if (saveShader != null) {
-						shaderGenerated = saveShader;
+							m.mainPass.removeShader(newShader);
+					if (currentShader != null) {
 						for (m in obj.getMaterials()) {
-							m.mainPass.addShader(shaderGenerated);
+							m.mainPass.addShader(currentShader);
 						}
 					}
 					return;
@@ -603,15 +596,35 @@ class ShaderEditor extends hide.view.Graph {
 				return;
 			}
 			error("Compilation of shader failed > " + e);
-			if (shaderGenerated != null)
+			if (newShader != null)
 				for (m in obj.getMaterials())
-					m.mainPass.removeShader(shaderGenerated);
-			if (saveShader != null) {
-				shaderGenerated = saveShader;
+					m.mainPass.removeShader(newShader);
+			if (currentShader != null) {
 				for (m in obj.getMaterials()) {
-					m.mainPass.addShader(shaderGenerated);
+					m.mainPass.addShader(currentShader);
 				}
 			}
+		}
+	}
+
+	function updateParam(param : Parameter) {
+		setParamValue(currentShader, param.variable, param.defaultValue);
+	}
+
+	function setParamValue(shader : DynamicShader, variable : hxsl.Ast.TVar, value : Dynamic) {
+		try {
+			switch (variable.type) {
+				case TSampler2D:
+					shader.setParamValue(variable, hxd.Res.load(value).toTexture());
+				default:
+					if (variable.name.toLowerCase().indexOf("color") != -1) {
+						shader.setParamValue(variable, Vector.fromArray(value));
+					} else {
+						shader.setParamValue(variable, value);
+					}
+			}
+		} catch (e : Dynamic) {
+			// The parameter is not used
 		}
 	}
 

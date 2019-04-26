@@ -1,7 +1,5 @@
 package hrt.shgraph;
 
-import hide.Element;
-
 using hxsl.Ast;
 
 @name("Outputs")
@@ -63,10 +61,10 @@ class ShaderOutput extends ShaderNode {
 
 
 	#if editor
-	override public function getPropertiesHTML(width : Float) : Array<Element> {
+	override public function getPropertiesHTML(width : Float) : Array<hide.Element> {
 		var elements = super.getPropertiesHTML(width);
-		var element = new Element('<div style="width: 110px; height: 30px"></div>');
-		element.append(new Element('<select id="variable"></select>'));
+		var element = new hide.Element('<div style="width: 110px; height: 30px"></div>');
+		element.append(new hide.Element('<select id="variable"></select>'));
 
 		if (this.variable == null) {
 			this.variable = ShaderNode.availableVariables[0];
@@ -74,14 +72,14 @@ class ShaderOutput extends ShaderNode {
 		var input = element.children("select");
 		var indexOption = 0;
 		for (c in ShaderNode.availableVariables) {
-			input.append(new Element('<option value="${indexOption}">${c.name}</option>'));
+			input.append(new hide.Element('<option value="${indexOption}">${c.name}</option>'));
 			if (this.variable.name == c.name) {
 				input.val(indexOption);
 			}
 			indexOption++;
 		}
 		for (c in ShaderOutput.availableOutputs) {
-			input.append(new Element('<option value="${indexOption}">${c.name}</option>'));
+			input.append(new hide.Element('<option value="${indexOption}">${c.name}</option>'));
 			if (this.variable.name == c.name) {
 				input.val(indexOption);
 			}

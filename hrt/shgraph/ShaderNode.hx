@@ -1,6 +1,5 @@
 package hrt.shgraph;
 
-import hide.Element;
 using hxsl.Ast;
 
 typedef InputInfo = { type : ShaderType.SType, hasProperty : Bool };
@@ -175,7 +174,7 @@ class ShaderNode {
 	}
 
 	#if editor
-	public function getPropertiesHTML(width : Float) : Array<Element> {
+	public function getPropertiesHTML(width : Float) : Array<hide.Element> {
 		return [];
 	}
 

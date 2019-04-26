@@ -57,11 +57,10 @@ class Shader extends Prefab {
 			return ctx;
 		var shader = new hxsl.DynamicShader(shaderDef.shader);
 		for( v in shaderDef.inits ) {
-			var defVal = evalConst(v.e);
 			#if !hscript
 			throw "hscript required";
 			#else
-			shader.hscriptSet(v.v.name, defVal);
+			shader.hscriptSet(v.variable.name, v.value);
 			#end
 		}
 		if(ctx.local3d != null) {
@@ -102,9 +101,8 @@ class Shader extends Prefab {
 		#if editor
 		// TODO: Where to init prefab default values?
 		for( v in shaderDef.inits ) {
-			if(!Reflect.hasField(props, v.v.name)) {
-				var defVal = evalConst(v.e);
-				Reflect.setField(props, v.v.name, defVal);
+			if(!Reflect.hasField(props, v.variable.name)) {
+				Reflect.setField(props, v.variable.name, v.value);
 			}
 		}
 		for(v in shaderDef.shader.data.vars) {

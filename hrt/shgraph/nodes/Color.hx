@@ -1,6 +1,5 @@
 package hrt.shgraph.nodes;
 
-import hide.Element;
 using hxsl.Ast;
 
 @name("Color")
@@ -68,9 +67,9 @@ class Color extends ShaderNode {
 	}
 
 	#if editor
-	override public function getPropertiesHTML(width : Float) : Array<Element> {
+	override public function getPropertiesHTML(width : Float) : Array<hide.Element> {
 		var elements = super.getPropertiesHTML(width);
-		var element = new Element('<div style="width: 47px; height: 35px"></div>');
+		var element = new hide.Element('<div style="width: 47px; height: 35px"></div>');
 		var picker = new hide.comp.ColorPicker(true, element);
 
 

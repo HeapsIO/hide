@@ -1,7 +1,6 @@
 package hrt.shgraph;
 
 import hxsl.SharedShader;
-import hxsl.DynamicShader;
 using hxsl.Ast;
 
 typedef Node = {
@@ -76,6 +75,13 @@ class ShaderGraph {
 			n.instance.loadProperties(n.properties);
 			n.instance.setId(n.id);
 			this.nodes.set(n.id, n);
+
+			var shaderParam = Std.instance(n.instance, ShaderParam);
+			if (shaderParam != null) {
+				var paramShader = getParameter(shaderParam.parameterId);
+				shaderParam.computeOutputs();
+				shaderParam.variable = paramShader.variable;
+			}
 		}
 		if (nodes[nodes.length-1] != null)
 			this.current_node_id = nodes[nodes.length-1].id+1;
@@ -269,7 +275,7 @@ class ShaderGraph {
 		return false;
 	}
 
-	public function compile() : DynamicShader {
+	public function compile() : hrt.prefab.ContextShared.ShaderDef {
 
 		allVariables = [];
 		var allParameters = [];
@@ -278,9 +284,11 @@ class ShaderGraph {
 
 		for (n in nodes) {
 			n.instance.outputCompiled = [];
+			#if !editor
 			if (Std.is(n.instance, ShaderInput) || Std.is(n.instance, ShaderParam)) {
-				//updateOutputs(n);
+				updateOutputs(n);
 			}
+			#end
 		}
 
 		var outputs : Array<String> = [];
@@ -335,17 +343,14 @@ class ShaderGraph {
 		var s = new SharedShader("");
 		s.data = shaderData;
 		@:privateAccess s.initialize();
-		var shaderCompiled = new hxsl.DynamicShader(s);
+		var inits : Array<{ variable : hxsl.Ast.TVar, value : Dynamic }> = [];
 
 		for (i in 0...allParameters.length) {
-			switch (allParameters[i].type) {
-				case TSampler2D:
-					shaderCompiled.setParamValue(allParameters[i], hxd.Res.load(allParamDefaultValue[i]).toTexture());
-				default:
-					shaderCompiled.setParamValue(allParameters[i], allParamDefaultValue[i]);
-			}
+			inits.push({ variable : allParameters[i], value : allParamDefaultValue[i] });
 		}
-		return shaderCompiled;
+
+		var shaderDef = { shader : s, inits : inits };
+		return shaderDef;
 	}
 
 	public function save() {

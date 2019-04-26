@@ -54,7 +54,7 @@ class PropsEditor extends Component {
 			new Element('<font color="red">' + StringTools.htmlEscape(text) + '</font>').appendTo(parent);
 		case PVec(n, min, max):
 			var isColor = p.name.toLowerCase().indexOf("color") >= 0;
-			if(isColor && n == 3) {
+			if(isColor && (n == 3 || n == 4)) {
 				new Element('<input type="color" field="${p.name}">').appendTo(parent);
 			}
 			else {

@@ -1,6 +1,5 @@
 package hrt.shgraph.nodes;
 
-import hide.Element;
 using hxsl.Ast;
 
 @name("Condition")
@@ -73,11 +72,11 @@ class Cond extends ShaderNode {
 	}
 
 	#if editor
-	override public function getPropertiesHTML(width : Float) : Array<Element> {
+	override public function getPropertiesHTML(width : Float) : Array<hide.Element> {
 		var elements = super.getPropertiesHTML(width);
-		var element = new Element('<div style="width: ${width * 0.8}px; height: 40px"></div>');
+		var element = new hide.Element('<div style="width: ${width * 0.8}px; height: 40px"></div>');
 		element.append('<span>Condition</span>');
-		element.append(new Element('<select id="condition"></select>'));
+		element.append(new hide.Element('<select id="condition"></select>'));
 
 		if (this.condition == null) {
 			this.condition = availableConditions[0];
@@ -85,7 +84,7 @@ class Cond extends ShaderNode {
 		var input = element.children("select");
 		var indexOption = 0;
 		for (c in conditionStrings) {
-			input.append(new Element('<option value="${indexOption}">${c}</option>'));
+			input.append(new hide.Element('<option value="${indexOption}">${c}</option>'));
 			if (this.condition == availableConditions[indexOption]) {
 				input.val(indexOption);
 			}

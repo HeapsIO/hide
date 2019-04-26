@@ -145,9 +145,9 @@ class TypesCache {
 							fmap.set(v.name, fl);
 						}
 						for( i in shader.inits ) {
-							var fl = fmap.get(i.v.name);
+							var fl = fmap.get(i.variable.name);
 							if( !fl.t.match(PUnsupported(_)) )
-								fl.def = hrt.prefab.Shader.evalConst(i.e);
+								fl.def = i.value;
 						}
 					}
 					file.models.push({ id : pack + c.name, kind : Shader, file : file, fields : fields });

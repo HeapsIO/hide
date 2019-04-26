@@ -4,7 +4,7 @@ typedef CachedShader = {
 	var file : String;
 	var name : String;
 	var shader : hxsl.SharedShader;
-	var inits : Array<{ v : hxsl.Ast.TVar, e : hxsl.Ast.TExpr }>;
+	var inits : Array<{ variable : hxsl.Ast.TVar, value : Dynamic }>;
 	var watch : Void -> Void;
 }
 
@@ -25,7 +25,7 @@ class ShaderLoader {
 			return null;
 		var d = new hxsl.DynamicShader(s.shader);
 		for( v in s.inits )
-			d.hscriptSet(v.v.name, hxsl.Ast.Tools.evalConst(v.e));
+			d.hscriptSet(v.variable.name, hxsl.Ast.Tools.evalConst(v.value));
 		return d;
 	}
 
@@ -46,7 +46,11 @@ class ShaderLoader {
 		var s = new hxsl.SharedShader("");
 		s.data = chk.check(name, e.expr);
 		@:privateAccess s.initialize();
-		var s : CachedShader = { file : e.file, name : name, shader : s, inits : chk.inits, watch : null };
+		var convertedInits = [];
+		for (init in chk.inits) {
+			convertedInits.push({variable: init.v, value: hrt.prefab.Shader.evalConst(init.e) });
+		}
+		var s : CachedShader = { file : e.file, name : name, shader : s, inits : convertedInits, watch : null };
 		if(sys.FileSystem.exists(s.file)) {
 			s.watch = onShaderChanged.bind(s);
 			ide.fileWatcher.register(s.file, s.watch);

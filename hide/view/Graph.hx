@@ -34,7 +34,7 @@ class Graph extends FileView {
 	static var CENTER_OFFSET_Y = 0.1; // percent of height
 
 	// used for moving when mouse is close to borders
-	static var BORDER_SIZE = 75;
+	static var BORDER_SIZE = 50;
 	static var SPEED_BORDER_MOVE = 0.05;
 	var timerUpdateView : Timer;
 
