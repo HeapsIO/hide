@@ -38,6 +38,8 @@ class ShaderEditor extends hide.view.Graph {
 
 	var shaderGraph : ShaderGraph;
 
+	var lastSnapshot : haxe.Json;
+
 	var timerCompileShader : Timer;
 	var COMPILE_SHADER_DEBOUNCE : Int = 100;
 	var VIEW_VISIBLE_CHECK_TIMER : Int = 500;
@@ -136,17 +138,17 @@ class ShaderEditor extends hide.view.Graph {
 		});
 
 		parent.on("keydown", function(e) {
-
 			if (e.shiftKey && e.keyCode != 16) {
 				if (addMenu == null || !addMenu.is(":visible"))
 					openAddMenu();
 
 				return;
 			}
-			if (e.keyCode == 83 && e.ctrlKey) { // CTRL+S : save
-				shaderGraph.save();
-			}
 		});
+
+		keys = new hide.ui.Keys(element);
+		keys.register("undo", function() undo.undo());
+		keys.register("redo", function() undo.redo());
 
 		parent.on("contextmenu", function(e) {
 			var elements = [];
@@ -219,9 +221,14 @@ class ShaderEditor extends hide.view.Graph {
 
 		parametersList = element.find("#parametersList");
 
+		editorMatrix.on("click", "input, select", function(ev) {
+			beforeChange();
+		});
+
 		editorMatrix.on("change", "input, select", function(ev) {
 			try {
 				shaderGraph.nodeUpdated(ev.target.closest(".box").id);
+				afterChange();
 				launchCompileShader();
 			} catch (e : Dynamic) {
 				if (Std.is(e, ShaderException)) {
@@ -254,38 +261,13 @@ class ShaderEditor extends hide.view.Graph {
 			});
 		}
 
-		listOfBoxes = [];
-		listOfEdges = [];
-
-		updateMatrix();
-
 		new Element("svg").ready(function(e) {
-
-			for (node in shaderGraph.getNodes()) {
-				var paramNode = Std.instance(node.instance, ShaderParam);
-				if (paramNode != null) {
-					var paramShader = shaderGraph.getParameter(paramNode.parameterId);
-					paramNode.setName(paramShader.name);
-					setDisplayValue(paramNode, paramShader.type, paramShader.defaultValue);
-					shaderGraph.nodeUpdated(paramNode.id);
-					addBox(new Point(node.x, node.y), ShaderParam, paramNode);
-				} else {
-					addBox(new Point(node.x, node.y), std.Type.getClass(node.instance), node.instance);
-				}
-			}
-
-			new Element(".nodes").ready(function(e) {
-				if (IsVisible()) {
-					centerView();
-					generateEdges();
-				}
-			});
-
-
-			for (p in shaderGraph.parametersAvailable) {
-				addParameter(p.id, p.name, p.type, p.defaultValue);
+			refreshShaderGraph();
+			if (IsVisible()) {
+				centerView();
 			}
 		});
+
 	}
 
 	override function save() {
@@ -328,6 +310,54 @@ class ShaderEditor extends hide.view.Graph {
 		}
 	}
 
+	function refreshShaderGraph(readyEvent : Bool = true) {
+
+		listOfBoxes = [];
+		listOfEdges = [];
+
+		var saveToggleParams = new Map<Int, Bool>();
+		for (pElt in parametersList.find(".parameter").elements()) {
+			saveToggleParams.set(Std.parseInt(pElt.get()[0].id.split("_")[1]), pElt.find(".content").css("display") != "none");
+		}
+		parametersList.empty();
+		editorMatrix.empty();
+
+		updateMatrix();
+
+		for (node in shaderGraph.getNodes()) {
+			var paramNode = Std.instance(node.instance, ShaderParam);
+			if (paramNode != null) {
+				var paramShader = shaderGraph.getParameter(paramNode.parameterId);
+				paramNode.setName(paramShader.name);
+				setDisplayValue(paramNode, paramShader.type, paramShader.defaultValue);
+				shaderGraph.nodeUpdated(paramNode.id);
+				addBox(new Point(node.x, node.y), ShaderParam, paramNode);
+			} else {
+				addBox(new Point(node.x, node.y), std.Type.getClass(node.instance), node.instance);
+			}
+		}
+
+		if (readyEvent) {
+			new Element(".nodes").ready(function(e) {
+				if (IsVisible()) {
+					generateEdges();
+				}
+			});
+		} else {
+			generateEdges();
+		}
+
+
+		for (p in shaderGraph.parametersAvailable) {
+			var pElt = addParameter(p.id, p.name, p.type, p.defaultValue);
+			if (saveToggleParams.get(p.id)) {
+				toggleParameter(pElt, true);
+			}
+		}
+
+		launchCompileShader();
+	}
+
 	function generateEdges() {
 		for (box in listOfBoxes) {
 			for (key in box.getInstance().getInputsKey()) {
@@ -349,6 +379,7 @@ class ShaderEditor extends hide.view.Graph {
 	}
 
 	function addParameter(id : Int, name : String, type : Type, ?value : Dynamic) {
+
 		var elt = new Element('<div id="param_${id}" class="parameter" draggable="true" ></div>').appendTo(parametersList);
 		var content = new Element('<div class="content" ></div>');
 		content.hide();
@@ -362,23 +393,18 @@ class ShaderEditor extends hide.view.Graph {
 				var rangeInput = @:privateAccess range.f;
 				rangeInput.on("mousedown", function(e) {
 					elt.attr("draggable", "false");
+					beforeChange();
 				});
 				rangeInput.on("mouseup", function(e) {
 					elt.attr("draggable", "true");
+					afterChange();
 				});
-				if (value != null && value.length > 0) range.value = value;
-				range.onChange = function(temp) {
+				if (value != null) range.value = value;
+				range.onChange = function(moving) {
 					if (!shaderGraph.setParameterDefaultValue(id, range.value))
 						return;
-					var param = shaderGraph.getParameter(id);
-					for (b in listOfBoxes) {
-						var shaderParam = Std.instance(b.getInstance(), ShaderParam);
-						if (shaderParam != null && shaderParam.parameterId == id) {
-							setDisplayValue(shaderParam, param.type, param.defaultValue);
-							b.generateProperties(editor);
-						}
-					}
-					updateParam(param);
+					setBoxesParam(id);
+					updateParam(id);
 				};
 				typeName = "Number";
 			case TVec(4, VFloat):
@@ -391,21 +417,19 @@ class ShaderEditor extends hide.view.Graph {
 				else
 					start = h3d.Vector.fromArray([0, 0, 0, 1]);
 				picker.value = start.toColor();
-
 				picker.onChange = function(move) {
 					var vecColor = h3d.Vector.fromColor(picker.value);
 					if (!shaderGraph.setParameterDefaultValue(id, [vecColor.x, vecColor.y, vecColor.z, vecColor.w]))
 						return;
-					var param = shaderGraph.getParameter(id);
-					for (b in listOfBoxes) {
-						var shaderParam = Std.instance(b.getInstance(), ShaderParam);
-						if (shaderParam != null && shaderParam.parameterId == id) {
-							setDisplayValue(shaderParam, param.type, param.defaultValue);
-							b.generateProperties(editor);
-						}
-					}
-					updateParam(param);
+					setBoxesParam(id);
+					updateParam(id);
 				};
+				picker.element.on("dragstart.spectrum", function() {
+					beforeChange();
+				});
+				picker.element.on("dragstop.spectrum", function() {
+					afterChange();
+				});
 				typeName = "Color";
 			case TSampler2D:
 				var parentSampler = new Element('<input type="texturepath" field="sampler2d" />').appendTo(defaultValue);
@@ -413,17 +437,12 @@ class ShaderEditor extends hide.view.Graph {
 				var tselect = new hide.comp.TextureSelect(null, parentSampler);
 				if (value != null && value.length > 0) tselect.path = value;
 				tselect.onChange = function() {
+					beforeChange();
 					if (!shaderGraph.setParameterDefaultValue(id, tselect.path))
 						return;
-					var param = shaderGraph.getParameter(id);
-					for (b in listOfBoxes) {
-						var shaderParam = Std.instance(b.getInstance(), ShaderParam);
-						if (shaderParam != null && shaderParam.parameterId == id) {
-							setDisplayValue(shaderParam, param.type, param.defaultValue);
-							b.generateProperties(editor);
-						}
-					}
-					updateParam(param);
+					afterChange();
+					setBoxesParam(id);
+					updateParam(id);
 				}
 				typeName = "Texture";
 			default:
@@ -451,7 +470,9 @@ class ShaderEditor extends hide.view.Graph {
 					return;
 				}
 			}
+			beforeChange();
 			shaderGraph.removeParameter(id);
+			afterChange();
 			elt.remove();
 		});
 		deleteBtn.appendTo(actionBtns);
@@ -466,7 +487,9 @@ class ShaderEditor extends hide.view.Graph {
 				for (b in listOfBoxes) {
 					var shaderParam = Std.instance(b.getInstance(), ShaderParam);
 					if (shaderParam != null && shaderParam.parameterId == id) {
+						beforeChange();
 						shaderParam.setName(newName);
+						afterChange();
 					}
 				}
 			}
@@ -480,6 +503,17 @@ class ShaderEditor extends hide.view.Graph {
 		});
 
 		return elt;
+	}
+
+	function setBoxesParam(id : Int) {
+		var param = shaderGraph.getParameter(id);
+		for (b in listOfBoxes) {
+			var shaderParam = Std.instance(b.getInstance(), ShaderParam);
+			if (shaderParam != null && shaderParam.parameterId == id) {
+				setDisplayValue(shaderParam, param.type, param.defaultValue);
+				b.generateProperties(editor);
+			}
+		}
 	}
 
 	function setDisplayValue(node : ShaderParam, type : Type, defaultValue : Dynamic) {
@@ -528,7 +562,9 @@ class ShaderEditor extends hide.view.Graph {
 	}
 
 	function createParameter(type : Type) {
+		beforeChange();
 		var paramShaderID = shaderGraph.addParameter(type);
+		afterChange();
 		var paramShader = shaderGraph.getParameter(paramShaderID);
 
 		var elt = addParameter(paramShaderID, paramShader.name, type, null);
@@ -607,7 +643,8 @@ class ShaderEditor extends hide.view.Graph {
 		}
 	}
 
-	function updateParam(param : Parameter) {
+	function updateParam(id : Int) {
+		var param = shaderGraph.getParameter(id);
 		setParamValue(currentShader, param.variable, param.defaultValue);
 	}
 
@@ -629,7 +666,10 @@ class ShaderEditor extends hide.view.Graph {
 	}
 
 	function addNode(p : Point, nodeClass : Class<ShaderNode>) {
+		beforeChange();
+
 		var node = shaderGraph.addNode(p.x, p.y, nodeClass);
+		afterChange();
 
 		addBox(p, nodeClass, node);
 
@@ -658,7 +698,9 @@ class ShaderEditor extends hide.view.Graph {
 			}
 		}
 		try {
+			beforeChange();
 			if (shaderGraph.addEdge({ idOutput: startLinkBox.getId(), nameOutput: startLinkNode.attr("field"), idInput: endLinkBox.getId(), nameInput: endLinkNode.attr("field") })) {
+				afterChange();
 				createEdgeInEditorGraph(newEdge);
 				currentLink.removeClass("draft");
 				currentLink = null;
@@ -894,6 +936,22 @@ class ShaderEditor extends hide.view.Graph {
 		customContextMenu(elements, x, y);
 	}
 
+	function beforeChange() {
+		lastSnapshot = haxe.Json.parse(shaderGraph.save());
+	}
+
+	function afterChange() {
+		var newVal = haxe.Json.parse(shaderGraph.save());
+		var oldVal = lastSnapshot;
+		undo.change(Custom(function(undo) {
+			if (undo)
+				shaderGraph.load(oldVal);
+			else
+				shaderGraph.load(newVal);
+			refreshShaderGraph(false);
+		}));
+	}
+
 	// Graph methods
 
 	override function addBox(p : Point, nodeClass : Class<ShaderNode>, node : ShaderNode) : Box {
@@ -921,12 +979,16 @@ class ShaderEditor extends hide.view.Graph {
 
 	override function removeBox(box : Box) {
 		super.removeBox(box);
+		beforeChange();
 		shaderGraph.removeNode(box.getId());
+		afterChange();
 	}
 
 	override function removeEdge(edge : Graph.Edge) {
 		super.removeEdge(edge);
+		beforeChange();
 		shaderGraph.removeEdge(edge.to.getId(), edge.nodeTo.attr("field"));
+		afterChange();
 		launchCompileShader();
 	}
 

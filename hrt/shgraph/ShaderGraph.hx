@@ -36,7 +36,6 @@ class ShaderGraph {
 	var current_param_id = 0;
 	var filepath : String;
 	var nodes : Map<Int, Node> = [];
-	var allVariables : Array<TVar> = [];
 	public var parametersAvailable : Map<Int, Parameter> = [];
 
 	public function new(filepath : String) {
@@ -50,19 +49,27 @@ class ShaderGraph {
 			throw "Invalid shader graph parsing ("+e+")";
 		}
 
-		generate(Reflect.getProperty(json, "nodes"), Reflect.getProperty(json, "edges"), Reflect.getProperty(json, "parameters"));
+		load(json);
 
+	}
+
+	public function load(json : haxe.Json) {
+		nodes = [];
+		parametersAvailable = [];
+		generate(Reflect.getProperty(json, "nodes"), Reflect.getProperty(json, "edges"), Reflect.getProperty(json, "parameters"));
 	}
 
 	public function generate(nodes : Array<Node>, edges : Array<Edge>, parameters : Array<Parameter>) {
 
 		for (p in parameters) {
 			var typeString : Array<Dynamic> = Reflect.field(p, "type");
-			if (typeString[1] == null || typeString[1].length == 0)
-				p.type = std.Type.createEnum(Type, typeString[0]);
-			else {
-				var paramsEnum = typeString[1].split(",");
-				p.type = std.Type.createEnum(Type, typeString[0], [Std.parseInt(paramsEnum[0]), std.Type.createEnum(VecType, paramsEnum[1])]);
+			if (Std.is(typeString, Array)) {
+				if (typeString[1] == null || typeString[1].length == 0)
+					p.type = std.Type.createEnum(Type, typeString[0]);
+				else {
+					var paramsEnum = typeString[1].split(",");
+					p.type = std.Type.createEnum(Type, typeString[0], [Std.parseInt(paramsEnum[0]), std.Type.createEnum(VecType, paramsEnum[1])]);
+				}
 			}
 			p.variable = generateParameter(p.name, p.type);
 			this.parametersAvailable.set(p.id, p);
@@ -189,7 +196,7 @@ class ShaderGraph {
 
 	public function compile() : hrt.prefab.ContextShared.ShaderDef {
 
-		allVariables = [];
+		var allVariables : Array<TVar> = [];
 		var allParameters = [];
 		var allParamDefaultValue = [];
 		var content = [];
@@ -362,7 +369,6 @@ class ShaderGraph {
 				edgesJson.push({ idOutput: output.node.id, nameOutput: output.keyOutput, idInput: n.id, nameInput: k });
 			}
 		}
-
 		var json = haxe.Json.stringify({
 			nodes: [
 				for (n in nodes) { x : n.x, y : n.y, comment: n.comment, id: n.id, type: n.type, properties : n.instance.savePropertiesNode() }

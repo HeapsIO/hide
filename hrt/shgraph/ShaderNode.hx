@@ -28,7 +28,7 @@ class ShaderNode {
 
 	public function setInput(key : String, s : NodeVar) {
 		if (s == null)
-			inputs.remove(key);
+				inputs.remove(key);
 		else
 			inputs.set(key, s);
 	}
