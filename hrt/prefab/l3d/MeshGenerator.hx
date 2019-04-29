@@ -72,6 +72,7 @@ class MeshGenerator extends Object3D {
 	public var root : MeshPart;
 
 	#if editor
+	static var filterInit = false;
 	static var filter : Array<String> = [];
 	static var customScene : h3d.scene.Scene;
 	#end
@@ -143,23 +144,30 @@ class MeshGenerator extends Object3D {
 	}
 
 	function createMeshPart( ctx : Context, mp : MeshPart, parent : h3d.scene.Object ) {
+
+		#if editor
+		if( mp.previewPos ) {
+			if( mp.isRoot() )
+				parent.addChild(createPreviewSphere());
+			else {
+				var socket = getSocket(parent, mp.socket);
+				if( socket != null )
+					socket.addChild(createPreviewSphere());
+			}
+		}
+		#end
+
 		if( mp.meshPath == null )
 			return;
 
 		var obj = ctx.loadModel(mp.meshPath);
 		if( mp.isRoot() ) {
 			parent.addChild(obj);
-			#if editor
-			if( mp.previewPos ) parent.addChild(createPreviewSphere());
-			#end
 		}
 		else {
 			var socket = getSocket(parent, mp.socket);
 			if( socket != null ) {
 				socket.addChild(obj);
-				#if editor
-				if( mp.previewPos ) socket.addChild(createPreviewSphere());
-				#end
 			}
 		}
 
@@ -443,6 +451,13 @@ class MeshGenerator extends Object3D {
 		super.edit(ctx);
 
 		var families : Array<Dynamic> = ctx.scene.config.get("meshGenerator.families");
+
+		if( !filterInit ) {
+			for( f in families )
+				filter.push(f);
+			filterInit = true;
+		}
+
 		var s = '<div class="group" name="Filter"><dl>';
 		for( f in families )
 			s += '<dt>${f}</dt><dd><input type="checkbox" class="${families.indexOf(f)}"/></dd>';
