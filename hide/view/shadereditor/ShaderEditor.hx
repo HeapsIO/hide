@@ -952,6 +952,10 @@ class ShaderEditor extends hide.view.Graph {
 		}));
 	}
 
+	function removeShaderGraphEdge(edge : Graph.Edge) {
+		shaderGraph.removeEdge(edge.to.getId(), edge.nodeTo.attr("field"));
+	}
+
 	// Graph methods
 
 	override function addBox(p : Point, nodeClass : Class<ShaderNode>, node : ShaderNode) : Box {
@@ -978,16 +982,25 @@ class ShaderEditor extends hide.view.Graph {
 	}
 
 	override function removeBox(box : Box) {
-		super.removeBox(box);
 		beforeChange();
+		var length = listOfEdges.length;
+		for (i in 0...length) {
+			var edge = listOfEdges[length-i-1];
+			if (edge.from == box || edge.to == box) {
+				super.removeEdge(edge);
+				removeShaderGraphEdge(edge);
+			}
+		}
 		shaderGraph.removeNode(box.getId());
 		afterChange();
+		box.dispose();
+		listOfBoxes.remove(box);
 	}
 
 	override function removeEdge(edge : Graph.Edge) {
 		super.removeEdge(edge);
 		beforeChange();
-		shaderGraph.removeEdge(edge.to.getId(), edge.nodeTo.attr("field"));
+		removeShaderGraphEdge(edge);
 		afterChange();
 		launchCompileShader();
 	}
