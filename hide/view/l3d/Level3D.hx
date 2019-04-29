@@ -304,6 +304,7 @@ class Level3D extends FileView {
 	var lastSyncChange : Float = 0.;
 	var sceneFilters : Map<String, Bool>;
 	var statusText : h2d.Text;
+	var posToolTip : h2d.Text;
 	var lastRenderProps : hrt.prefab.RenderProps = null;
 
 	var scene(get, null):  hide.comp.Scene;
@@ -401,6 +402,10 @@ class Level3D extends FileView {
 
 		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		statusText.setPosition(5, 5);
+
+		posToolTip = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
+		posToolTip.dropShadow = { dx : 1, dy : 1, color : 0, alpha : 0.5 };
+
 		updateStats();
 		updateGrid();
 	}
@@ -546,6 +551,15 @@ class Level3D extends FileView {
 	}
 
 	function onUpdate(dt:Float) {
+		if(hxd.Key.isDown(hxd.Key.ALT)) {
+			posToolTip.visible = true;
+			var proj = sceneEditor.screenToWorld(scene.s2d.mouseX, scene.s2d.mouseY);
+			posToolTip.text = proj != null ? '${Math.fmt(proj.x)}, ${Math.fmt(proj.y)}, ${Math.fmt(proj.z)}' : '???';
+			posToolTip.setPosition(scene.s2d.mouseX, scene.s2d.mouseY - 12);
+		}
+		else {
+			posToolTip.visible = false;
+		}
 	}
 
 	function onRefresh() {
