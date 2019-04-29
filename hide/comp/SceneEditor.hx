@@ -855,6 +855,7 @@ class SceneEditor {
 		el.find("a").first().toggleClass("favorite", isFavorite(p));
 
 		if(obj3d != null) {
+			el.toggleClass("disabled", !obj3d.visible);
 			el.toggleClass("hidden", isHidden(obj3d));
 			var tog = el.find(".visibility-toggle").first();
 			if(tog.length == 0) {
