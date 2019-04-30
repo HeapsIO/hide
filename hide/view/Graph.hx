@@ -225,7 +225,7 @@ class Graph extends FileView {
 
 			for (b in listOfBoxesSelected) {
 				b.setPosition(b.getX() + dx, b.getY() + dy);
-				updatePosition(b.getId(), b.getX(), b.getY());
+				updatePosition(b);
 				// move edges from and to this box
 				for (edge in listOfEdges) {
 					if (edge.from == b || edge.to == b) {
@@ -247,7 +247,7 @@ class Graph extends FileView {
 		}
 	}
 
-	dynamic function updatePosition(id : Int, x : Float, y : Float) { }
+	dynamic function updatePosition(box : Box) { }
 
 	function addBox(p : Point, nodeClass : Class<ShaderNode>, node : ShaderNode) : Box {
 
@@ -343,6 +343,7 @@ class Graph extends FileView {
 				});
 			}
 		}
+
 		box.generateProperties(editor);
 
 		return box;

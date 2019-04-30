@@ -1353,6 +1353,11 @@ input[type=checkbox]:checked:after {
   margin-bottom: 3px;
   user-select: none;
 }
+.graph-view .heaps-scene svg .properties-group .preview-parent {
+  position: absolute;
+  height: 100px;
+  width: 100px;
+}
 .graph-view .heaps-scene svg .edge {
   stroke-width: 2;
   stroke: #c8c8c8;

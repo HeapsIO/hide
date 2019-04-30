@@ -32,6 +32,9 @@ typedef Parameter = {
 
 class ShaderGraph {
 
+	var allVariables : Array<TVar> = [];
+	var allParameters = [];
+	var allParamDefaultValue = [];
 	var current_node_id = 0;
 	var current_param_id = 0;
 	var filepath : String;
@@ -182,11 +185,25 @@ class ShaderGraph {
 		}
 		var build = nodeVar.getExpr();
 		res = res.concat(build);
+
+		var shaderInput = Std.instance(node, ShaderInput);
+		if (shaderInput != null) {
+			var variable = shaderInput.variable;
+			if ((variable.kind == Param || variable.kind == Global || variable.kind == Input) && !alreadyAddVariable(variable)) {
+				allVariables.push(variable);
+			}
+		}
+		var shaderParam = Std.instance(node, ShaderParam);
+		if (shaderParam != null && !alreadyAddVariable(shaderParam.variable)) {
+			allVariables.push(shaderParam.variable);
+			allParameters.push(shaderParam.variable);
+			allParamDefaultValue.push(getParameter(shaderParam.parameterId).defaultValue);
+		}
 		return res;
 	}
 
-	static function alreadyAddVariable(array : Array<TVar>, variable : TVar) {
-		for (v in array) {
+	function alreadyAddVariable(variable : TVar) {
+		for (v in allVariables) {
 			if (v.name == variable.name && v.type == variable.type) {
 				return true;
 			}
@@ -194,11 +211,11 @@ class ShaderGraph {
 		return false;
 	}
 
-	public function compile() : hrt.prefab.ContextShared.ShaderDef {
+	public function compile(?specificOutput : ShaderNode) : hrt.prefab.ContextShared.ShaderDef {
 
-		var allVariables : Array<TVar> = [];
-		var allParameters = [];
-		var allParamDefaultValue = [];
+		allVariables = [];
+		allParameters = [];
+		allParamDefaultValue = [];
 		var content = [];
 
 		for (n in nodes) {
@@ -213,29 +230,33 @@ class ShaderGraph {
 		var outputs : Array<String> = [];
 
 		for (n in nodes) {
-			if (Std.is(n.instance, ShaderInput)) {
-				var variable = Std.instance(n.instance, ShaderInput).variable;
-				if ((variable.kind == Param || variable.kind == Global || variable.kind == Input) && !alreadyAddVariable(allVariables, variable)) {
-					allVariables.push(variable);
+			var shaderNode;
+			var variable;
+			if (specificOutput != null) {
+				if (n.instance != specificOutput) continue;
+				shaderNode = specificOutput;
+				variable = Std.instance(specificOutput, hrt.shgraph.nodes.Preview).variable;
+			} else {
+				var shaderOutput = Std.instance(n.instance, ShaderOutput);
+
+				if (shaderOutput != null) {
+					variable = shaderOutput.variable;
+					shaderNode = n.instance;
+				} else {
+					continue;
 				}
 			}
-			if (Std.is(n.instance, ShaderOutput)) {
-				var variable = Std.instance(n.instance, ShaderOutput).variable;
+			if (shaderNode != null) {
 				if (outputs.indexOf(variable.name) != -1) {
 					throw ShaderException.t("This output already exists", n.id);
 				}
 				outputs.push(variable.name);
-				if ( !alreadyAddVariable(allVariables, variable) ) {
+				if ( !alreadyAddVariable(variable) ) {
 					allVariables.push(variable);
 				}
-				var nodeVar = new NodeVar(n.instance, "input");
+				var nodeVar = new NodeVar(shaderNode, "input");
 				content = content.concat(buildNodeVar(nodeVar));
-			}
-			if (Std.is(n.instance, ShaderParam)) {
-				var shaderParam = Std.instance(n.instance, ShaderParam);
-				allVariables.push(shaderParam.variable);
-				allParameters.push(shaderParam.variable);
-				allParamDefaultValue.push(getParameter(shaderParam.parameterId).defaultValue);
+				if (specificOutput != null) break;
 			}
 		}
 

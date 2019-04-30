@@ -325,6 +325,13 @@ class ShaderEditor extends hide.view.Graph {
 		updateMatrix();
 
 		for (node in shaderGraph.getNodes()) {
+			var shaderPreview = Std.instance(node.instance, hrt.shgraph.nodes.Preview);
+			if (shaderPreview != null) {
+				shaderPreview.config = config;
+				shaderPreview.shaderGraph = shaderGraph;
+				addBox(new Point(node.x, node.y), std.Type.getClass(node.instance), shaderPreview);
+				continue;
+			}
 			var paramNode = Std.instance(node.instance, ShaderParam);
 			if (paramNode != null) {
 				var paramShader = shaderGraph.getParameter(paramNode.parameterId);
@@ -652,7 +659,7 @@ class ShaderEditor extends hide.view.Graph {
 		try {
 			switch (variable.type) {
 				case TSampler2D:
-					shader.setParamValue(variable, hxd.Res.load(value).toTexture());
+					shader.setParamValue(variable, sceneEditor.scene.loadTexture("", value));
 				default:
 					if (variable.name.toLowerCase().indexOf("color") != -1) {
 						shader.setParamValue(variable, Vector.fromArray(value));
@@ -1005,10 +1012,23 @@ class ShaderEditor extends hide.view.Graph {
 		launchCompileShader();
 	}
 
-	override function updatePosition(id : Int, x : Float, y : Float) {
-		shaderGraph.setPosition(id, x, y);
+	override function updatePosition(box : Box) {
+		var previewBox = Std.instance(box.getInstance(), hrt.shgraph.nodes.Preview);
+		if (previewBox != null){
+			previewBox.onMove(gX(box.getX()), gY(box.getY()), transformMatrix[0]);
+		}
+		shaderGraph.setPosition(box.getId(), box.getX(), box.getY());
 	}
 
+	override function updateMatrix() {
+		super.updateMatrix();
+		for (b in listOfBoxes) {
+			var previewBox = Std.instance(b.getInstance(), hrt.shgraph.nodes.Preview);
+			if (previewBox != null){
+				previewBox.onMove(gX(b.getX()), gY(b.getY()), transformMatrix[0]);
+			}
+		}
+	}
 
 	static var _ = FileTree.registerExtension(ShaderEditor,["hlshader"],{ icon : "scribd" });
 
