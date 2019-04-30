@@ -175,7 +175,7 @@ class Graph extends FileView {
 			if (distOutput > distInput) {
 				replaceEdge(FromOutput, currentEdge.nodeTo, clientX, clientY);
 			} else {
-				replaceEdge(FromInput, currentEdge.nodeFrom, clientX, clientY);
+				replaceEdge(FromInput, currentEdge, clientX, clientY);
 			}
 			currentEdge = null;
 			return;
@@ -368,28 +368,30 @@ class Graph extends FileView {
 		listOfEdges.remove(edge);
 	}
 
-	function replaceEdge(state : EdgeState, node : JQuery, x : Int, y : Int) {
+	function replaceEdge(state : EdgeState, ?edge : Edge, ?node : JQuery, x : Int, y : Int) {
 		switch (state) {
 			case FromOutput:
-				for (edge in listOfEdges) {
-					if (edge.nodeTo.is(node)) {
+				for (e in listOfEdges) {
+					if (e.nodeTo.is(node)) {
 						isCreatingLink = FromOutput;
-						startLinkGrNode = edge.nodeFrom.parent();
-						startLinkBox = edge.from;
-						setAvailableInputNodes(edge.from, edge.nodeFrom.attr("field"));
-						removeEdge(edge);
+						startLinkGrNode = e.nodeFrom.parent();
+						startLinkBox = e.from;
+						setAvailableInputNodes(e.from, e.nodeFrom.attr("field"));
+						removeEdge(e);
 						createLink(x, y);
+						return;
 					}
 				}
 			case FromInput:
-				for (edge in listOfEdges) {
-					if (edge.nodeFrom.is(node)) {
+				for (e in listOfEdges) {
+					if (e.nodeTo.is(edge.nodeTo) && e.nodeFrom.is(edge.nodeFrom)) {
 						isCreatingLink = FromInput;
-						startLinkGrNode = edge.nodeTo.parent();
-						startLinkBox = edge.to;
-						setAvailableOutputNodes(edge.to, edge.nodeTo.attr("field"));
-						removeEdge(edge);
+						startLinkGrNode = e.nodeTo.parent();
+						startLinkBox = e.to;
+						setAvailableOutputNodes(e.to, e.nodeTo.attr("field"));
+						removeEdge(e);
 						createLink(x, y);
+						return;
 					}
 				}
 			default:

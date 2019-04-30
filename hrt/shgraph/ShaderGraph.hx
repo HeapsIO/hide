@@ -195,6 +195,7 @@ class ShaderGraph {
 		}
 		var shaderParam = Std.instance(node, ShaderParam);
 		if (shaderParam != null && !alreadyAddVariable(shaderParam.variable)) {
+			shaderParam.variable = generateParameter(shaderParam.variable.name, shaderParam.variable.type);
 			allVariables.push(shaderParam.variable);
 			allParameters.push(shaderParam.variable);
 			allParamDefaultValue.push(getParameter(shaderParam.parameterId).defaultValue);

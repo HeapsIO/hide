@@ -44,6 +44,7 @@ class ShaderEditor extends hide.view.Graph {
 	var COMPILE_SHADER_DEBOUNCE : Int = 100;
 	var VIEW_VISIBLE_CHECK_TIMER : Int = 500;
 	var currentShader : DynamicShader;
+	var currentShaderDef : hrt.prefab.ContextShared.ShaderDef;
 
 	override function onDisplay() {
 		super.onDisplay();
@@ -610,6 +611,7 @@ class ShaderEditor extends hide.view.Graph {
 			}
 			@:privateAccess sceneEditor.scene.render(sceneEditor.scene.engine);
 			currentShader = newShader;
+			currentShaderDef = shaderGraphDef;
 			info('Shader compiled in  ${Date.now().getTime() - timeStart}ms');
 
 		} catch (e : Dynamic) {
@@ -651,8 +653,25 @@ class ShaderEditor extends hide.view.Graph {
 	}
 
 	function updateParam(id : Int) {
+		sceneEditor.scene.setCurrent();
 		var param = shaderGraph.getParameter(id);
-		setParamValue(currentShader, param.variable, param.defaultValue);
+		setParamValueByName(currentShader, param.name, param.defaultValue);
+		for (b in listOfBoxes) {
+			var previewBox = Std.instance(b.getInstance(), hrt.shgraph.nodes.Preview);
+			if (previewBox != null) {
+				previewBox.setParamValueByName(param.variable.name, param.defaultValue);
+			}
+		}
+	}
+
+	function setParamValueByName(shader : DynamicShader, varName : String, value : Dynamic) {
+		if (currentShaderDef == null) return;
+		for (init in currentShaderDef.inits) {
+			if (init.variable.name == varName) {
+				setParamValue(shader, init.variable, value);
+				return;
+			}
+		}
 	}
 
 	function setParamValue(shader : DynamicShader, variable : hxsl.Ast.TVar, value : Dynamic) {
@@ -677,6 +696,14 @@ class ShaderEditor extends hide.view.Graph {
 
 		var node = shaderGraph.addNode(p.x, p.y, nodeClass);
 		afterChange();
+
+		var shaderPreview = Std.instance(node, hrt.shgraph.nodes.Preview);
+		if (shaderPreview != null) {
+			shaderPreview.config = config;
+			shaderPreview.shaderGraph = shaderGraph;
+			addBox(p, nodeClass, shaderPreview);
+			return node;
+		}
 
 		addBox(p, nodeClass, node);
 
