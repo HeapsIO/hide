@@ -1,7 +1,7 @@
 package hrt.shgraph.nodes;
 
 import h3d.scene.Mesh;
-import hide.Config;
+
 using hxsl.Ast;
 
 @name("Preview")
@@ -34,7 +34,7 @@ class Preview extends ShaderNode {
 	var cube : Mesh;
 	var scene : hide.comp.Scene;
 	var saveShader : hxsl.DynamicShader;
-	public var config : Config;
+	public var config : hide.Config;
 
 	override public function getPropertiesHTML(width : Float) : Array<hide.Element> {
 		var elements = super.getPropertiesHTML(width);
@@ -48,17 +48,20 @@ class Preview extends ShaderNode {
 			throw ShaderException.t("The preview is not available", this.id);
 		}
 		var element = new hide.Element('<div style="width: 100px; height: 90px"><div class="preview-parent" ><div class="node-preview" style="height: 100px" ></div></div></div>');
-
 		scene = new hide.comp.Scene(config, null, element.find(".node-preview"));
+		element.find(".node-preview").hide();
 		scene.onReady = function() {
-			//new h3d.scene.CameraController(scene.s3d).loadFromCamera();
 			var prim = new h3d.prim.Cube();
 			prim.addUVs();
 			prim.addNormals();
 			cube = new Mesh(prim, scene.s3d);
-			scene.init();
 			element.find(".node-preview").removeClass("hide-scene-container");
+			//var c = new h3d.scene.CameraController(scene.s3d);
+			//trace(cube.getBounds());
+			//c.setPosition(5, 0, 0);
+			//c.setDirection(cube.getAbsPos().getPosition().sub(c.getAbsPos().getPosition()));
 			scene.resetCamera(cube);
+			scene.init();
 			onMove();
 			computeOutputs();
 		};
@@ -74,16 +77,18 @@ class Preview extends ShaderNode {
 		var parent = preview.parent();
 		if (x != null && y != null) {
 			left = x;
-			top = y + 17;
+			top = y;
 		} else {
 			var offsetWindow = preview.closest(".heaps-scene").offset();
 			var offset = preview.closest("foreignObject").offset();
-			top = offset.top - offsetWindow.top - 15;
+			top = offset.top - offsetWindow.top - 32;
 			left = offset.left - offsetWindow.left;
 		}
-		parent.css("top", top/(zoom*1.001));
+		preview.closest(".properties-group").children().first().css("fill", "#000");
+		parent.css("top", top/zoom + 17);
 		parent.css("left", left/zoom);
 		parent.css("zoom", zoom);
+		preview.show();
 	}
 
 	function onResize() {
