@@ -212,12 +212,15 @@ class ShaderGraph {
 		return false;
 	}
 
+	var variableNameAvailableOnlyInVertex = [];
+
 	public function compile(?specificOutput : ShaderNode) : hrt.prefab.ContextShared.ShaderDef {
 
 		allVariables = [];
 		allParameters = [];
 		allParamDefaultValue = [];
-		var content = [];
+		var contentVertex = [];
+		var contentFragment = [];
 
 		for (n in nodes) {
 			n.instance.outputCompiled = [];
@@ -256,13 +259,42 @@ class ShaderGraph {
 					allVariables.push(variable);
 				}
 				var nodeVar = new NodeVar(shaderNode, "input");
-				content = content.concat(buildNodeVar(nodeVar));
+				var isVertex = (variableNameAvailableOnlyInVertex.indexOf(variable.name) != -1);
+				if (isVertex) {
+					contentVertex = contentVertex.concat(buildNodeVar(nodeVar));
+				} else {
+					contentFragment = contentFragment.concat(buildNodeVar(nodeVar));
+				}
 				if (specificOutput != null) break;
 			}
 		}
 
 		var shaderData = {
-			funs : [{
+			funs : [],
+			name: "SHADER_GRAPH",
+			vars: allVariables
+		};
+
+		if (contentVertex.length > 0) {
+			shaderData.funs.push({
+					ret : TVoid, kind : Vertex,
+					ref : {
+						name : "vertex",
+						id : 0,
+						kind : Function,
+						type : TFun([{ ret : TVoid, args : [] }])
+					},
+					expr : {
+						p : null,
+						t : TVoid,
+						e : TBlock(contentVertex)
+					},
+					args : []
+				});
+		}
+
+		if (contentFragment.length > 0) {
+			shaderData.funs.push({
 					ret : TVoid, kind : Fragment,
 					ref : {
 						name : "fragment",
@@ -273,13 +305,11 @@ class ShaderGraph {
 					expr : {
 						p : null,
 						t : TVoid,
-						e : TBlock(content)
+						e : TBlock(contentFragment)
 					},
 					args : []
-				}],
-			name: "MON_FRAGMENT",
-			vars: allVariables
-		};
+				});
+		}
 
 		var s = new SharedShader("");
 		s.data = shaderData;

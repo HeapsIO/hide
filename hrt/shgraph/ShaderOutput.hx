@@ -16,7 +16,7 @@ class ShaderOutput extends ShaderNode {
 	var components = [X, Y, Z, W];
 
 	override public function checkValidityInput(key : String, type : ShaderType.SType) : Bool {
-		return ShaderType.checkCompatibilities(type, ShaderType.getType(variable.type));
+		return ShaderType.checkConversion(type, ShaderType.getType(variable.type));
 	}
 
 	override public function build(key : String) : TExpr {
@@ -32,6 +32,7 @@ class ShaderOutput extends ShaderNode {
 			};
 
 	}
+
 	static var availableOutputs = [];
 
 	override public function loadProperties(props : Dynamic) {
@@ -53,7 +54,7 @@ class ShaderOutput extends ShaderNode {
 
 	override public function saveProperties() : Dynamic {
 		var parameters = {
-			variable: [variable.name, variable.type.getName()]
+			variable: (variable == null) ? [null] : [variable.name, variable.type.getName()]
 		};
 
 		return parameters;
@@ -87,7 +88,11 @@ class ShaderOutput extends ShaderNode {
 		}
 		input.on("change", function(e) {
 			var value = input.val();
-			this.variable = ShaderNode.availableVariables[value];
+			if (value < ShaderNode.availableVariables.length) {
+				this.variable = ShaderNode.availableVariables[value];
+			} else {
+				this.variable = ShaderOutput.availableOutputs[value-ShaderNode.availableVariables.length];
+			}
 		});
 
 		elements.push(element);

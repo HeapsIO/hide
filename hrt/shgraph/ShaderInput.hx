@@ -55,7 +55,7 @@ class ShaderInput extends ShaderNode {
 
 	override public function saveProperties() : Dynamic {
 		var parameters = {
-			variable: variable.name
+			variable: (variable == null) ? null : variable.name
 		};
 
 		return parameters;

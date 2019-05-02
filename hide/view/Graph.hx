@@ -59,11 +59,11 @@ class Graph extends FileView {
 
 	override function onDisplay() {
 		element.html('
-			<div class="flex vertical">
-				<div class="flex-elt graph-view">
-					<div class="heaps-scene" tabindex="0" >
+			<div class="flex vertical" >
+				<div class="flex-elt graph-view" tabindex="0" >
+					<div class="heaps-scene" tabindex="1" >
 					</div>
-					<div id="rightPanel" class="tabs">
+					<div id="rightPanel" class="tabs" >
 					</div>
 				</div>
 			</div>');

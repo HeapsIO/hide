@@ -1030,6 +1030,9 @@ input[type=checkbox]:checked:after {
   visibility: visible;
 }
 /* Shader Editor */
+.graph-view {
+  outline: none !important;
+}
 .graph-view .tabs {
   z-index: 1;
   background: #222222;
@@ -1117,6 +1120,7 @@ input[type=checkbox]:checked:after {
   box-shadow: 0px 0px 25px -4px black;
   background-color: #222222;
   border: 1px solid #444;
+  z-index: 2;
 }
 .graph-view #add-menu .search-container {
   display: flex;

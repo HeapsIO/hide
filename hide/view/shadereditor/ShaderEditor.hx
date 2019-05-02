@@ -105,11 +105,6 @@ class ShaderEditor extends hide.view.Graph {
 		sceneEditor.onRefresh = onRefresh;
 		sceneEditor.onUpdate = function(dt : Float) {};
 		sceneEditor.view.keys = new hide.ui.Keys(null); // Remove SceneEditor Shortcuts
-		sceneEditor.view.keys.register("save", function() {
-			save();
-			skipNextChange = true;
-			modified = false;
-		});
 
 		editorMatrix = editor.group(editor.element);
 
@@ -138,11 +133,14 @@ class ShaderEditor extends hide.view.Graph {
 			}
 		});
 
-		parent.on("keydown", function(e) {
+		element.on("keydown", function(e) {
 			if (e.shiftKey && e.keyCode != 16) {
 				if (addMenu == null || !addMenu.is(":visible"))
 					openAddMenu();
 
+				return;
+			} else if (e.ctrlKey && e.keyCode == 83) {
+				save();
 				return;
 			}
 		});
@@ -208,6 +206,7 @@ class ShaderEditor extends hide.view.Graph {
 		element.find("#changeModel").on("click", function() {
 			ide.chooseFile(["fbx"], function(path) {
 				if( path == null ) return; // cancel
+				sceneEditor.scene.setCurrent();
 				sceneEditor.scene.s3d.removeChild(obj);
 				obj = sceneEditor.scene.loadModel(path, true);
 				saveDisplayState("customModel", path);
@@ -489,6 +488,9 @@ class ShaderEditor extends hide.view.Graph {
 		inputTitle.on("click", function(e) {
 			e.stopPropagation();
 		});
+		inputTitle.on("keydown", function(e) {
+			e.stopPropagation();
+		});
 		inputTitle.on("change", function(e) {
 			var newName = inputTitle.val();
 			if (shaderGraph.setParameterTitle(id, newName)) {
@@ -586,8 +588,8 @@ class ShaderEditor extends hide.view.Graph {
 		}
 		timerCompileShader = new Timer(COMPILE_SHADER_DEBOUNCE);
 		timerCompileShader.run = function() {
-			compileShader();
 			timerCompileShader.stop();
+			compileShader();
 		};
 	}
 
@@ -619,12 +621,25 @@ class ShaderEditor extends hide.view.Graph {
 				var str : String = e;
 				if (str.split(":")[0] == "An error occurred compiling the shaders") {
 					var strSplitted = str.split("(output_");
-					var idBox = strSplitted[1].split("_")[0];
-					var idBoxParsed = Std.parseInt(idBox);
-					if (Std.string(idBoxParsed) == idBox) {
-						error("Compilation of shader failed > Invalid inputs", idBoxParsed);
+					if (strSplitted.length >= 2) {
+						var idBox = strSplitted[1].split("_")[0];
+						var idBoxParsed = Std.parseInt(idBox);
+						if (Std.string(idBoxParsed) == idBox) {
+							error("Compilation of shader failed > Invalid inputs", idBoxParsed);
+						} else {
+							error("Compilation of shader failed > " + str);
+						}
 					} else {
-						error("Compilation of shader failed > " + str);
+						var nameOutput = str.split("(")[1].split(" =")[0];
+						for (b in listOfBoxes) {
+							var shaderOutput = Std.instance(b.getInstance(), hrt.shgraph.ShaderOutput);
+							if (shaderOutput != null) {
+								if (shaderOutput.variable.name == nameOutput) {
+									error("Compilation of shader failed > Invalid inputs", shaderOutput.id);
+									break;
+								}
+							}
+						}
 					}
 					if (newShader != null)
 						for (m in obj.getMaterials())
@@ -649,6 +664,7 @@ class ShaderEditor extends hide.view.Graph {
 					m.mainPass.addShader(currentShader);
 				}
 			}
+			throw e;
 		}
 	}
 
@@ -1029,6 +1045,7 @@ class ShaderEditor extends hide.view.Graph {
 		afterChange();
 		box.dispose();
 		listOfBoxes.remove(box);
+		launchCompileShader();
 	}
 
 	override function removeEdge(edge : Graph.Edge) {
