@@ -18,7 +18,8 @@ class ShaderFunction extends ShaderNode {
 
 		for (k in getInputInfoKeys()) {
 			args.push({ name: k, type: getInput(k).getType() });
-			varArgs.push(getInput(k).getVar());
+			var wantedType = ShaderType.getType(getInputInfo(k).type);
+			varArgs.push(getInput(k).getVar((wantedType != null) ? wantedType : null));
 		}
 
 		return {

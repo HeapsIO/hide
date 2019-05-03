@@ -28,7 +28,7 @@ class BoolConst extends ShaderConst {
 	override public function getPropertiesHTML(width : Float) : Array<hide.Element> {
 		var elements = super.getPropertiesHTML(width);
 		var element = new hide.Element('<div style="width: 15px; height: 30px"></div>');
-		element.append(new hide.Element('<input type="checkbox" id="value" ></select>'));
+		element.append(new hide.Element('<input type="checkbox" id="value" />'));
 
 		var input = element.children("input");
 		input.on("change", function(e) {

@@ -282,66 +282,60 @@ class Graph extends FileView {
 		});
 		listOfBoxes.push(box);
 
-		var fields = std.Type.getInstanceFields(nodeClass);
+		for (inputKey in box.getInstance().getInputInfoKeys()) {
+			var inputInfo = box.getInstance().getInputInfo(inputKey);
 
-		var metas = haxe.rtti.Meta.getFields(nodeClass);
-		var metasParent = haxe.rtti.Meta.getFields(std.Type.getSuperClass(nodeClass));
-		for (f in fields) {
-			var m = Reflect.field(metas, f);
-			if (m == null) {
-				m = Reflect.field(metasParent, f);
-				if (m == null) continue;
+			if (inputInfo == null) {
+				trace(inputKey);
 			}
-			if (Reflect.hasField(m, "input")) {
-				var inputMeta : Array<Dynamic> = Reflect.field(m, "input");
-				var name : String = (m.input != null && m.input.length > 0) ? inputMeta[0] : "input";
 
-				var defaultValue = null;
-				if (m.input.length >= 2 && inputMeta[1]) {
-					defaultValue = Reflect.field(box.getInstance(), 'prop_${f}');
-					if (defaultValue == null) {
-						defaultValue = "0";
-					}
+			var defaultValue = null;
+			if (inputInfo.hasProperty) {
+				defaultValue = Reflect.field(box.getInstance(), 'prop_${inputKey}');
+				if (defaultValue == null) {
+					defaultValue = "0";
 				}
-				var grNode = box.addInput(editor, name, defaultValue);
-				if (defaultValue != null) {
-					var fieldEditInput = grNode.find("input");
-					fieldEditInput.on("change", function(ev) {
-						var tmpValue = Std.parseFloat(fieldEditInput.val());
-						if (Math.isNaN(tmpValue) ) {
-							fieldEditInput.addClass("error");
-						} else {
-							Reflect.setField(box.getInstance(), 'prop_${f}', tmpValue);
-							fieldEditInput.val(tmpValue);
-							fieldEditInput.removeClass("error");
-						}
-					});
-				}
-				grNode.find(".node").attr("field", f);
-				grNode.on("mousedown", function(e : js.jquery.Event) {
-					e.stopPropagation();
-					var node = grNode.find(".node");
-					if (node.attr("hasLink") != null) {
-						replaceEdge(FromOutput, node, e.clientX, e.clientY);
-						return;
+			}
+			var grNode = box.addInput(editor, inputInfo.name, defaultValue);
+			if (defaultValue != null) {
+				var fieldEditInput = grNode.find("input");
+				fieldEditInput.on("change", function(ev) {
+					var tmpValue = Std.parseFloat(fieldEditInput.val());
+					if (Math.isNaN(tmpValue) ) {
+						fieldEditInput.addClass("error");
+					} else {
+						Reflect.setField(box.getInstance(), 'prop_${inputKey}', tmpValue);
+						fieldEditInput.val(tmpValue);
+						fieldEditInput.removeClass("error");
 					}
-					isCreatingLink = FromInput;
-					startLinkGrNode = grNode;
-					startLinkBox = box;
-					setAvailableOutputNodes(box, grNode.find(".node").attr("field"));
-				});
-			} else if (Reflect.hasField(m, "output")) {
-				var name : String = (m.output != null && m.output.length > 0) ? Reflect.field(m, "output")[0] : "output";
-				var grNode = box.addOutput(editor, name);
-				grNode.find(".node").attr("field", f);
-				grNode.on("mousedown", function(e) {
-					e.stopPropagation();
-					isCreatingLink = FromOutput;
-					startLinkGrNode = grNode;
-					startLinkBox = box;
-					setAvailableInputNodes(box, startLinkGrNode.find(".node").attr("field"));
 				});
 			}
+			grNode.find(".node").attr("field", inputKey);
+			grNode.on("mousedown", function(e : js.jquery.Event) {
+				e.stopPropagation();
+				var node = grNode.find(".node");
+				if (node.attr("hasLink") != null) {
+					replaceEdge(FromOutput, node, e.clientX, e.clientY);
+					return;
+				}
+				isCreatingLink = FromInput;
+				startLinkGrNode = grNode;
+				startLinkBox = box;
+				setAvailableOutputNodes(box, grNode.find(".node").attr("field"));
+			});
+		}
+		for (outputKey in box.getInstance().getOutputInfoKeys()) {
+			var outputInfo = box.getInstance().getOutputInfo(outputKey);
+
+			var grNode = box.addOutput(editor, outputInfo.name);
+			grNode.find(".node").attr("field", outputKey);
+			grNode.on("mousedown", function(e) {
+				e.stopPropagation();
+				isCreatingLink = FromOutput;
+				startLinkGrNode = grNode;
+				startLinkBox = box;
+				setAvailableInputNodes(box, startLinkGrNode.find(".node").attr("field"));
+			});
 		}
 
 		box.generateProperties(editor);
@@ -350,6 +344,12 @@ class Graph extends FileView {
 	}
 
 	function removeBox(box : Box) {
+		removeEdges(box);
+		box.dispose();
+		listOfBoxes.remove(box);
+	}
+
+	function removeEdges(box : Box) {
 		var length = listOfEdges.length;
 		for (i in 0...length) {
 			var edge = listOfEdges[length-i-1];
@@ -357,8 +357,6 @@ class Graph extends FileView {
 				removeEdge(edge); // remove edge from listOfEdges
 			}
 		}
-		box.dispose();
-		listOfBoxes.remove(box);
 	}
 
 	function removeEdge(edge : Edge) {
@@ -403,9 +401,9 @@ class Graph extends FileView {
 		var type = boxOutput.getInstance().getOutputType(field);
 		var sType : SType;
 		if (type == null) {
-			sType = boxOutput.getInstance().getOutputInfo(field);
+			sType = boxOutput.getInstance().getOutputInfo(field).type;
 		} else {
-			sType = ShaderType.getType(type);
+			sType = ShaderType.getSType(type);
 		}
 
 		for (box in listOfBoxes) {
@@ -424,9 +422,9 @@ class Graph extends FileView {
 				var type = box.getInstance().getOutputType(outputField);
 				var sType : SType;
 				if (type == null) {
-					sType = box.getInstance().getOutputInfo(outputField);
+					sType = box.getInstance().getOutputInfo(outputField).type;
 				} else {
-					sType = ShaderType.getType(type);
+					sType = ShaderType.getSType(type);
 				}
 				if (boxInput.getInstance().checkTypeAndCompatibilyInput(field, sType)) {
 					output.addClass("nodeMatch");
@@ -660,6 +658,7 @@ class Graph extends FileView {
 	}
 
 	function centerView() {
+		if (listOfBoxes.length == 0) return;
 		var xMin = listOfBoxes[0].getX();
 		var yMin = listOfBoxes[0].getY();
 		var xMax = xMin + listOfBoxes[0].getWidth();

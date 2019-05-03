@@ -33,7 +33,7 @@ class FloatConst extends ShaderConst {
 	override public function getPropertiesHTML(width : Float) : Array<hide.Element> {
 		var elements = super.getPropertiesHTML(width);
 		var element = new hide.Element('<div style="width: 75px; height: 30px"></div>');
-		element.append(new hide.Element('<input type="text" id="value" style="width: ${width*0.65}px" value="${value}" />'));
+		element.append(new hide.Element('<input type="text" id="value" style="width: ${width*0.5}px" value="${value}" />'));
 
 		var input = element.children("input");
 		input.on("change", function(e) {

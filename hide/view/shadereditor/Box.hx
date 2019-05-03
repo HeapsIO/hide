@@ -25,6 +25,7 @@ class Box {
 	public var outputs : Array<JQuery> = [];
 
 	var hasHeader : Bool = true;
+	var hadToShowInputs : Bool = false;
 	var color : String;
 
 	var element : JQuery;
@@ -58,6 +59,10 @@ class Box {
 			var header = editor.rect(element, 0, 0, this.width, HEADER_HEIGHT).addClass("head-box");
 			if (color != null) header.css("fill", color);
 			editor.text(element, 7, HEADER_HEIGHT-6, className).addClass("title-box");
+		}
+
+		if (Reflect.hasField(metas, "alwaysshowinputs")) {
+			hadToShowInputs = true;
 		}
 
 		propertiesGroup = editor.group(element).addClass("properties-group");
@@ -108,7 +113,7 @@ class Box {
 
 		if (props.length == 0) return;
 
-		if (inputs.length <= 1 && outputs.length <= 1) {
+		if (!hadToShowInputs && inputs.length <= 1 && outputs.length <= 1) {
 			element.find(".nodes").remove();
 			element.find(".input-node-group > .title-node").html("");
 			element.find(".output-node-group > .title-node").html("");
@@ -150,7 +155,7 @@ class Box {
 		if (inputs.length >= 1 && outputs.length >= 1) {
 			element.find(".nodes-separator").attr("y2", HEADER_HEIGHT + height);
 			element.find(".nodes-separator").show();
-		} else {
+		} else if (!hadToShowInputs) {
 			element.find(".nodes-separator").hide();
 		}
 
@@ -193,7 +198,7 @@ class Box {
 	}
 	public function getNodesHeight() {
 		var maxNb = Std.int(Math.max(inputs.length, outputs.length));
-		if (maxNb == 1 && propsHeight > 0) {
+		if (!hadToShowInputs && maxNb == 1 && propsHeight > 0) {
 			return 0;
 		}
 		return NODE_MARGIN * (maxNb+1) + NODE_RADIUS * maxNb;

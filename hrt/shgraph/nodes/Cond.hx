@@ -17,10 +17,10 @@ class Cond extends ShaderNode {
 	override public function checkValidityInput(key : String, type : ShaderType.SType) : Bool {
 
 		if (key == "leftVar" && rightVar != null && !rightVar.isEmpty())
-			return ShaderType.checkCompatibilities(type, ShaderType.getType(rightVar.getType()));
+			return ShaderType.checkCompatibilities(type, ShaderType.getSType(rightVar.getType()));
 
 		if (key == "rightVar" && leftVar != null && !leftVar.isEmpty())
-			return ShaderType.checkCompatibilities(type, ShaderType.getType(leftVar.getType()));
+			return ShaderType.checkCompatibilities(type, ShaderType.getSType(leftVar.getType()));
 
 		return true;
 	}

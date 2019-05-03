@@ -16,7 +16,7 @@ class ShaderOutput extends ShaderNode {
 	var components = [X, Y, Z, W];
 
 	override public function checkValidityInput(key : String, type : ShaderType.SType) : Bool {
-		return ShaderType.checkConversion(type, ShaderType.getType(variable.type));
+		return ShaderType.checkConversion(type, ShaderType.getSType(variable.type));
 	}
 
 	override public function build(key : String) : TExpr {

@@ -227,7 +227,26 @@ class ShaderEditor extends hide.view.Graph {
 
 		editorMatrix.on("change", "input, select", function(ev) {
 			try {
-				shaderGraph.nodeUpdated(ev.target.closest(".box").id);
+				var idBox = ev.target.closest(".box").id;
+				for (b in listOfBoxes) {
+					if (b.getId() == idBox) {
+						var subGraph = Std.instance(b.getInstance(), hrt.shgraph.nodes.SubGraph);
+						if (subGraph != null) {
+							var length = listOfEdges.length;
+							for (i in 0...length) {
+								var edge = listOfEdges[length-i-1];
+								if (edge.from == b || edge.to == b) {
+									removeShaderGraphEdge(edge);
+								}
+							}
+							refreshBox(b);
+							afterChange();
+							return;
+						}
+						break;
+					}
+				}
+				shaderGraph.nodeUpdated(idBox);
 				afterChange();
 				launchCompileShader();
 			} catch (e : Dynamic) {
@@ -365,24 +384,76 @@ class ShaderEditor extends hide.view.Graph {
 		launchCompileShader();
 	}
 
-	function generateEdges() {
-		for (box in listOfBoxes) {
-			for (key in box.getInstance().getInputsKey()) {
-				var input = box.getInstance().getInput(key);
-				if (input != null) {
-					var fromBox : Box = null;
-					for (boxFrom in listOfBoxes) {
-						if (boxFrom.getId() == input.node.id) {
-							fromBox = boxFrom;
-							break;
+	function generateEdgesFromBox(box : Box) {
+		for (outputKey in box.getInstance().getOutputInfoKeys()) {
+			var output = box.getInstance().getOutput(outputKey);
+			if (output != null) {
+				for (b in listOfBoxes) {
+					for (key in b.getInstance().getInputsKey()) {
+						var input = b.getInstance().getInput(key);
+						if (input != null && input.node.id == box.getId()) {
+							var nodeFrom = box.getElement().find('[field=${outputKey}]');
+							var nodeTo = b.getElement().find('[field=${key}]');
+							createEdgeInEditorGraph({from: box, nodeFrom: nodeFrom, to : b, nodeTo: nodeTo, elt : createCurve(nodeFrom, nodeTo) });
 						}
 					}
-					var nodeFrom = fromBox.getElement().find('[field=${input.getKey()}]');
-					var nodeTo = box.getElement().find('[field=${key}]');
-					createEdgeInEditorGraph({from: fromBox, nodeFrom: nodeFrom, to : box, nodeTo: nodeTo, elt : createCurve(nodeFrom, nodeTo) });
 				}
 			}
 		}
+	}
+
+	function generateEdgesToBox(box : Box) {
+		for (key in box.getInstance().getInputsKey()) {
+			var input = box.getInstance().getInput(key);
+			if (input != null) {
+				var fromBox : Box = null;
+				for (boxFrom in listOfBoxes) {
+					if (boxFrom.getId() == input.node.id) {
+						fromBox = boxFrom;
+						break;
+					}
+				}
+				var nodeFrom = fromBox.getElement().find('[field=${input.getKey()}]');
+				var nodeTo = box.getElement().find('[field=${key}]');
+				createEdgeInEditorGraph({from: fromBox, nodeFrom: nodeFrom, to : box, nodeTo: nodeTo, elt : createCurve(nodeFrom, nodeTo) });
+			}
+		}
+	}
+
+	function generateEdges() {
+		for (box in listOfBoxes) {
+			generateEdgesToBox(box);
+		}
+	}
+
+	function refreshBox(box : Box) {
+		var length = listOfEdges.length;
+		for (i in 0...length) {
+			var edge = listOfEdges[length-i-1];
+			if (edge.from == box || edge.to == box) {
+				super.removeEdge(edge);
+			}
+		}
+		var indexInputStartLink = -1;
+		if (startLinkBox == box) {
+			var nodeInputJQuery = startLinkGrNode.find(".node");
+			for (i in 0...box.inputs.length) {
+				if (box.inputs[i].is(nodeInputJQuery)) {
+					indexInputStartLink = i;
+					break;
+				}
+			}
+		}
+		var newBox : Box = addBox(new Point(box.getX(), box.getY()), std.Type.getClass(box.getInstance()), box.getInstance());
+		box.dispose();
+		listOfBoxes.remove(box);
+		generateEdgesToBox(newBox);
+		generateEdgesFromBox(newBox);
+		if (indexInputStartLink >= 0) {
+			startLinkBox = newBox;
+			startLinkGrNode = newBox.inputs[indexInputStartLink].parent();
+		}
+		return newBox;
 	}
 
 	function addParameter(id : Int, name : String, type : Type, ?value : Dynamic) {
@@ -529,17 +600,20 @@ class ShaderEditor extends hide.view.Graph {
 	function setDisplayValue(node : ShaderParam, type : Type, defaultValue : Dynamic) {
 		switch (type) {
 			case TSampler2D:
-				node.setDisplayValue('file://${ide.getPath(defaultValue)}');
+				if (defaultValue != null && defaultValue.length > 0)
+					node.setDisplayValue('file://${ide.getPath(defaultValue)}');
 			case TVec(4, VFloat):
-				var vec = Vector.fromArray(defaultValue);
-				var hexa = StringTools.hex(vec.toColor(),8);
-				var hexaFormatted = "";
-				if (hexa.length == 8) {
-					hexaFormatted = hexa.substr(2, 6) + hexa.substr(0, 2);
-				} else {
-					hexaFormatted = hexa;
+				if (defaultValue != null && defaultValue.length > 0) {
+					var vec = Vector.fromArray(defaultValue);
+					var hexa = StringTools.hex(vec.toColor(),8);
+					var hexaFormatted = "";
+					if (hexa.length == 8) {
+						hexaFormatted = hexa.substr(2, 6) + hexa.substr(0, 2);
+					} else {
+						hexaFormatted = hexa;
+					}
+					node.setDisplayValue('#${hexaFormatted}');
 				}
-				node.setDisplayValue('#${hexaFormatted}');
 			default:
 				node.setDisplayValue(defaultValue);
 		}
@@ -631,13 +705,18 @@ class ShaderEditor extends hide.view.Graph {
 						}
 					} else {
 						var nameOutput = str.split("(")[1].split(" =")[0];
+						var errorSent = false;
 						for (b in listOfBoxes) {
 							var shaderOutput = Std.instance(b.getInstance(), hrt.shgraph.ShaderOutput);
 							if (shaderOutput != null) {
 								if (shaderOutput.variable.name == nameOutput) {
 									error("Compilation of shader failed > Invalid inputs", shaderOutput.id);
+									errorSent = true;
 									break;
 								}
+							}
+							if (!errorSent) {
+								error("Compilation of shader failed > " + str);
 							}
 						}
 					}
@@ -649,6 +728,7 @@ class ShaderEditor extends hide.view.Graph {
 							m.mainPass.addShader(currentShader);
 						}
 					}
+					throw e;
 					return;
 				}
 			} else if (Std.is(e, ShaderException)) {
@@ -718,6 +798,13 @@ class ShaderEditor extends hide.view.Graph {
 			shaderPreview.config = config;
 			shaderPreview.shaderGraph = shaderGraph;
 			addBox(p, nodeClass, shaderPreview);
+			return node;
+		}
+
+		var subGraphNode = Std.instance(node, hrt.shgraph.nodes.SubGraph);
+		if (subGraphNode != null) {
+			subGraphNode.loadGraphShader();
+			addBox(p, nodeClass, subGraphNode);
 			return node;
 		}
 
@@ -1006,6 +1093,27 @@ class ShaderEditor extends hide.view.Graph {
 		shaderGraph.removeEdge(edge.to.getId(), edge.nodeTo.attr("field"));
 	}
 
+	function removeEdgeSubGraphUpdate(edge : Graph.Edge) {
+		var subGraph = Std.instance(edge.to.getInstance(), hrt.shgraph.nodes.SubGraph);
+		if (subGraph != null) {
+			var field = "";
+			if (isCreatingLink == FromInput) {
+				field = edge.nodeTo.attr("field");
+			} else {
+				field = edge.nodeFrom.attr("field");
+			}
+			var newBox = refreshBox(edge.to);
+			subGraph.loadGraphShader();
+
+			clearAvailableNodes();
+			if (isCreatingLink == FromInput) {
+				setAvailableOutputNodes(newBox, field);
+			} else {
+				setAvailableInputNodes(edge.from, field);
+			}
+		}
+	}
+
 	// Graph methods
 
 	override function addBox(p : Point, nodeClass : Class<ShaderNode>, node : ShaderNode) : Box {
@@ -1039,6 +1147,7 @@ class ShaderEditor extends hide.view.Graph {
 			if (edge.from == box || edge.to == box) {
 				super.removeEdge(edge);
 				removeShaderGraphEdge(edge);
+				removeEdgeSubGraphUpdate(edge);
 			}
 		}
 		shaderGraph.removeNode(box.getId());
@@ -1053,6 +1162,7 @@ class ShaderEditor extends hide.view.Graph {
 		beforeChange();
 		removeShaderGraphEdge(edge);
 		afterChange();
+		removeEdgeSubGraphUpdate(edge);
 		launchCompileShader();
 	}
 

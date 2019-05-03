@@ -29,7 +29,32 @@ enum SType {
 
 class ShaderType {
 
-	static public function getType(type : hxsl.Type) : SType {
+	static public function getType(type : SType) : hxsl.Type {
+		switch (type) {
+			case Vec2:
+				return TVec(2, VFloat);
+			case Vec3:
+				return TVec(3, VFloat);
+			case Vec4:
+				return TVec(4, VFloat);
+			case VecBool2:
+				return TVec(2, VBool);
+			case VecBool3:
+				return TVec(3, VBool);
+			case VecBool4:
+				return TVec(4, VBool);
+			case Bool:
+				return TBool;
+			case Float:
+				return TFloat;
+			case Sampler:
+				return TSampler2D;
+			default:
+		}
+		return null;
+	}
+
+	static public function getSType(type : hxsl.Type) : SType {
 		switch (type) {
 			case TVec(2, VFloat):
 				return Vec2;

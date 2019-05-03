@@ -15,6 +15,7 @@ class ParseFieldsMacro {
 		var inputsList = new Array<String>();
 		var hasInputs = false;
 		var mapOutputs = new Array<Expr>();
+		var outputsList = new Array<String>();
 		var hasOutputs = false;
 
 		for ( f in fields ) {
@@ -29,6 +30,15 @@ class ParseFieldsMacro {
 							var get_sel = "get_" + sel;
 							var propSel = "prop_" + sel;
 							var hasProperty = false;
+							var nameInput = "input";
+							if (m.params.length >= 1) {
+								switch(m.params[0].expr) {
+									case EConst(CString(s)):
+										if (s.length > 0)
+											nameInput = s;
+									default:
+								}
+							}
 							if (m.params.length >= 2) {
 								switch(m.params[1].expr) {
 									case EConst(CIdent(b)):
@@ -68,14 +78,13 @@ class ParseFieldsMacro {
 								Context.error('Input ${sel} has not affectation', f.pos);
 
 							var enumValue = ["ShaderType", "SType", e.toString().split(".").pop()];
-							mapInputs.push(macro $v{sel} => { type : ${enumValue.toFieldExpr()}, hasProperty: $v{hasProperty} });
+							mapInputs.push(macro $v{sel} => { name : $v{nameInput}, type : ${enumValue.toFieldExpr()}, hasProperty: $v{hasProperty} });
 							f.kind = FProp("get", "null", TPath({ pack: ["hrt", "shgraph"], name: "NodeVar" }));
 							f.meta = saveMeta;
 							inputsList.push(f.name);
 
 							break;
-						}
-						if (m.name == "output") {
+						} else if (m.name == "output") {
 							hasOutputs = true;
 							var sel = f.name;
 							var get_sel = "get_" + sel;
@@ -86,10 +95,21 @@ class ParseFieldsMacro {
 								fields.push(field);
 							if (e == null)
 								Context.error('Output ${sel} has not affectation', f.pos);
+							var nameOutput = "";
+							if (m.params.length > 0) {
+								switch(m.params[0].expr) {
+									case EConst(CString(s)):
+										if (s.length > 0)
+											nameOutput = s;
+									default:
+								}
+							}
 							var enumValue = ["ShaderType", "SType", e.toString().split(".").pop()];
-							mapOutputs.push(macro $v{sel} => ${enumValue.toFieldExpr()});
+							mapOutputs.push(macro $v{sel} => { name : $v{nameOutput}, type : ${enumValue.toFieldExpr()} });
 							f.kind = FProp("get", "null", TPath({ pack: [], name: "TVar" }));
 							f.meta = saveMeta;
+							outputsList.push(f.name);
+
 							break;
 						}
 					}
@@ -114,11 +134,12 @@ class ParseFieldsMacro {
 			fields.push({
 				name: "outputsInfo",
 				access: [Access.APrivate],
-				kind: FieldType.FVar(macro:Map<String, ShaderType.SType>, macro $a{mapOutputs}),
+				kind: FieldType.FVar(macro:Map<String, ShaderNode.OutputInfo>, macro $a{mapOutputs}),
 				pos: Context.currentPos(),
 			});
 			var sfields = macro class {
-				override public function getOutputInfo(key : String) : ShaderType.SType return outputsInfo.get(key);
+				override public function getOutputInfo(key : String) : ShaderNode.OutputInfo return outputsInfo.get(key);
+				override public function getOutputInfoKeys() : Array<String> return $v{outputsList};
 			};
 			for( field in sfields.fields )
 				fields.push(field);

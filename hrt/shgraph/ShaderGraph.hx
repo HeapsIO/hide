@@ -41,13 +41,18 @@ class ShaderGraph {
 	var nodes : Map<Int, Node> = [];
 	public var parametersAvailable : Map<Int, Parameter> = [];
 
+	// subgraph variable
+	var variableNamesAlreadyUpdated = false;
+
 	public function new(filepath : String) {
 		if (filepath == null) return;
 		this.filepath = filepath;
 
 		var json;
 		try {
-			json = haxe.Json.parse(sys.io.File.getContent(this.filepath));
+			var content = sys.io.File.getContent(this.filepath);
+			if (content.length == 0) return;
+			json = haxe.Json.parse(content);
 		} catch( e : Dynamic ) {
 			throw "Invalid shader graph parsing ("+e+")";
 		}
@@ -82,8 +87,8 @@ class ShaderGraph {
 		for (n in nodes) {
 			n.outputs = [];
 			n.instance = std.Type.createInstance(std.Type.resolveClass(n.type), []);
-			n.instance.loadProperties(n.properties);
 			n.instance.setId(n.id);
+			n.instance.loadProperties(n.properties);
 			this.nodes.set(n.id, n);
 
 			var shaderParam = Std.instance(n.instance, ShaderParam);
@@ -170,6 +175,7 @@ class ShaderGraph {
 
 	function buildNodeVar(nodeVar : NodeVar) : Array<TExpr>{
 		var node = nodeVar.node;
+		var isSubGraph = Std.is(node, hrt.shgraph.nodes.SubGraph);
 		if (node == null)
 			return [];
 		var res = [];
@@ -179,12 +185,12 @@ class ShaderGraph {
 			if (input != null) {
 				res = res.concat(buildNodeVar(input));
 			} else if (node.getInputInfo(key).hasProperty) {
+			} else if (isSubGraph) {
 			} else {
 				throw ShaderException.t("This box has inputs not connected", node.id);
 			}
 		}
 		var build = nodeVar.getExpr();
-		res = res.concat(build);
 
 		var shaderInput = Std.instance(node, ShaderInput);
 		if (shaderInput != null) {
@@ -195,11 +201,53 @@ class ShaderGraph {
 		}
 		var shaderParam = Std.instance(node, ShaderParam);
 		if (shaderParam != null && !alreadyAddVariable(shaderParam.variable)) {
-			shaderParam.variable = generateParameter(shaderParam.variable.name, shaderParam.variable.type);
+			if (shaderParam.variable == null) {
+				shaderParam.variable = generateParameter(shaderParam.variable.name, shaderParam.variable.type);
+			}
 			allVariables.push(shaderParam.variable);
 			allParameters.push(shaderParam.variable);
 			allParamDefaultValue.push(getParameter(shaderParam.parameterId).defaultValue);
 		}
+		if (isSubGraph) {
+			var subGraph = Std.instance(node, hrt.shgraph.nodes.SubGraph);
+			var params = subGraph.subShaderGraph.parametersAvailable;
+			for (subVar in subGraph.varsSubGraph) {
+				if (subVar.kind == Param) {
+					if (!alreadyAddVariable(subVar)) {
+						allVariables.push(subVar);
+						allParameters.push(subVar);
+						var defaultValueFound = false;
+						for (param in params) {
+							if (param.variable.name == subVar.name) {
+								allParamDefaultValue.push(param.defaultValue);
+								defaultValueFound = true;
+								break;
+							}
+						}
+						if (!defaultValueFound) {
+							throw ShaderException.t("Default value of '" + subVar.name + "' parameter not found", node.id);
+						}
+					}
+				} else {
+					if (!alreadyAddVariable(subVar)) {
+						allVariables.push(subVar);
+					}
+				}
+			}
+			var buildWithoutTBlock = [];
+			for (i in 0...build.length) {
+				switch (build[i].e) {
+					case TBlock(block):
+						for (b in block) {
+							buildWithoutTBlock.push(b);
+						}
+					default:
+						buildWithoutTBlock.push(build[i]);
+				}
+			}
+			build = buildWithoutTBlock;
+		}
+		res = res.concat(build);
 		return res;
 	}
 
@@ -214,8 +262,7 @@ class ShaderGraph {
 
 	var variableNameAvailableOnlyInVertex = [];
 
-	public function compile(?specificOutput : ShaderNode) : hrt.prefab.ContextShared.ShaderDef {
-
+	public function generateShader(specificOutput : ShaderNode = null, subShaderId : Int = null) : ShaderData {
 		allVariables = [];
 		allParameters = [];
 		allParamDefaultValue = [];
@@ -223,6 +270,14 @@ class ShaderGraph {
 		var contentFragment = [];
 
 		for (n in nodes) {
+			if (subShaderId != null && Std.is(n.instance, hrt.shgraph.nodes.SubGraph)) {
+				throw ShaderException.t("A subgraph can't have a subgraph", -1);
+			}
+			if (!variableNamesAlreadyUpdated && subShaderId != null && !Std.is(n.instance, ShaderInput)) {
+				for (outputKey in n.instance.getOutputInfoKeys()) {
+					n.instance.getOutput(outputKey).name = "sub_" + subShaderId + "_" + n.instance.getOutput(outputKey).name;
+				}
+			}
 			n.instance.outputCompiled = [];
 			#if !editor
 			if (!n.instance.hasInputs()) {
@@ -230,6 +285,7 @@ class ShaderGraph {
 			}
 			#end
 		}
+		variableNamesAlreadyUpdated = true;
 
 		var outputs : Array<String> = [];
 
@@ -310,6 +366,13 @@ class ShaderGraph {
 					args : []
 				});
 		}
+
+		return shaderData;
+	}
+
+	public function compile(?specificOutput : ShaderNode, ?subShaderId : Int) : hrt.prefab.ContextShared.ShaderDef {
+
+		var shaderData = generateShader(specificOutput, subShaderId);
 
 		var s = new SharedShader("");
 		s.data = shaderData;

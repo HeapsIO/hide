@@ -16,10 +16,10 @@ class IfCondition extends ShaderNode {
 	override public function checkValidityInput(key : String, type : ShaderType.SType) : Bool {
 
 		if (key == "trueVar" && falseVar != null && !falseVar.isEmpty())
-			return ShaderType.checkCompatibilities(type, ShaderType.getType(falseVar.getType()));
+			return ShaderType.checkCompatibilities(type, ShaderType.getSType(falseVar.getType()));
 
 		if (key == "falseVar" && trueVar != null && !trueVar.isEmpty())
-			return ShaderType.checkCompatibilities(type, ShaderType.getType(trueVar.getType()));
+			return ShaderType.checkCompatibilities(type, ShaderType.getSType(trueVar.getType()));
 
 		return true;
 	}

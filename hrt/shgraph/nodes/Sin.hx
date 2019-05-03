@@ -8,7 +8,7 @@ using hxsl.Ast;
 @group("Math")
 class Sin extends ShaderFunction {
 
-	@input("A") var a = SType.Number;
+	@input("A") var a = SType.Float;
 
 	public function new() {
 		super(Sin);

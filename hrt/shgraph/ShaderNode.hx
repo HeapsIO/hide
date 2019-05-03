@@ -2,7 +2,8 @@ package hrt.shgraph;
 
 using hxsl.Ast;
 
-typedef InputInfo = { type : ShaderType.SType, hasProperty : Bool };
+typedef InputInfo = { name : String, type : ShaderType.SType, hasProperty : Bool, ?id : Int };
+typedef OutputInfo = { name : String, type : ShaderType.SType, ?id : Int };
 
 @:autoBuild(hrt.shgraph.ParseFieldsMacro.build())
 @:keepSub
@@ -114,7 +115,11 @@ class ShaderNode {
 		return null;
 	}
 
-	public function getOutputInfo(key : String) : ShaderType.SType {
+	public function getOutputInfoKeys() : Array<String> {
+		return [];
+	}
+
+	public function getOutputInfo(key : String) : OutputInfo {
 		return null;
 	}
 
