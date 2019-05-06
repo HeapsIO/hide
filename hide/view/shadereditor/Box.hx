@@ -181,6 +181,11 @@ class Box {
 			element.addClass("not-selected");
 		}
 	}
+	public function setTitle(str : String) {
+		if (hasHeader) {
+			element.find(".title-box").html(str);
+		}
+	}
 	public function getId() {
 		return this.nodeInstance.id;
 	}

@@ -5,7 +5,8 @@ using hxsl.Ast;
 @name("Bool")
 @description("Boolean input, it's static")
 @group("Input")
-@width(75)
+@width(100)
+@noheader()
 class BoolConst extends ShaderConst {
 
 	@output() var fakeOutput = SType.Bool;

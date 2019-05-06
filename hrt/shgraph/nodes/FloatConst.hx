@@ -6,6 +6,7 @@ using hxsl.Ast;
 @description("Number input, it's static")
 @group("Input")
 @width(100)
+@noheader()
 class FloatConst extends ShaderConst {
 
 	@output() var output = SType.Float;

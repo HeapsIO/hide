@@ -1,5 +1,6 @@
 package hide.view.shadereditor;
 
+import hrt.shgraph.nodes.SubGraph;
 import hxsl.DynamicShader;
 import h3d.Vector;
 import hrt.shgraph.ShaderParam;
@@ -49,7 +50,7 @@ class ShaderEditor extends hide.view.Graph {
 	override function onDisplay() {
 		super.onDisplay();
 		saveDisplayKey = "ShaderGraph:" + getPath().split("\\").join("/").substr(0,-1);
-		shaderGraph = new ShaderGraph(getPath());
+		shaderGraph = new ShaderGraph(state.path);
 		addMenu = null;
 
 		element.find("#rightPanel").html('
@@ -232,6 +233,9 @@ class ShaderEditor extends hide.view.Graph {
 					if (b.getId() == idBox) {
 						var subGraph = Std.instance(b.getInstance(), hrt.shgraph.nodes.SubGraph);
 						if (subGraph != null) {
+							if (ev.currentTarget.getAttribute('field') != "filesubgraph") {
+								break;
+							}
 							var length = listOfEdges.length;
 							for (i in 0...length) {
 								var edge = listOfEdges[length-i-1];
@@ -466,7 +470,7 @@ class ShaderEditor extends hide.view.Graph {
 		var typeName = "";
 		switch(type) {
 			case TFloat:
-				var parentRange = new Element('<input type="range" type="range" min="-1" max="1" />').appendTo(defaultValue);
+				var parentRange = new Element('<input type="range" min="-1" max="1" />').appendTo(defaultValue);
 				var range = new hide.comp.Range(null, parentRange);
 				var rangeInput = @:privateAccess range.f;
 				rangeInput.on("mousedown", function(e) {
@@ -728,7 +732,6 @@ class ShaderEditor extends hide.view.Graph {
 							m.mainPass.addShader(currentShader);
 						}
 					}
-					throw e;
 					return;
 				}
 			} else if (Std.is(e, ShaderException)) {
@@ -744,7 +747,6 @@ class ShaderEditor extends hide.view.Graph {
 					m.mainPass.addShader(currentShader);
 				}
 			}
-			throw e;
 		}
 	}
 
@@ -1134,6 +1136,12 @@ class ShaderEditor extends hide.view.Graph {
 					parametersList.scrollTop(parametersList.scrollTop() + offsetScroll);
 				}
 			});
+		} else if (nodeClass == SubGraph) {
+			var subGraphNode = Std.instance(node, SubGraph);
+			if (subGraphNode.pathShaderGraph != null) {
+				var filename = subGraphNode.pathShaderGraph.split("/").pop();
+				box.setTitle("SubGraph: " + filename.split(".")[0]);
+			}
 		}
 
 		return box;
@@ -1141,13 +1149,14 @@ class ShaderEditor extends hide.view.Graph {
 
 	override function removeBox(box : Box) {
 		beforeChange();
+		var isSubShader = Std.is(box.getInstance(), SubGraph);
 		var length = listOfEdges.length;
 		for (i in 0...length) {
 			var edge = listOfEdges[length-i-1];
 			if (edge.from == box || edge.to == box) {
 				super.removeEdge(edge);
 				removeShaderGraphEdge(edge);
-				removeEdgeSubGraphUpdate(edge);
+				if (!isSubShader) removeEdgeSubGraphUpdate(edge);
 			}
 		}
 		shaderGraph.removeNode(box.getId());

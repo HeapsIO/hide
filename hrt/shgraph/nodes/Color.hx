@@ -6,7 +6,8 @@ using hxsl.Ast;
 @description("Color input, it's static")
 @group("Input")
 @width(100)
-class Color extends ShaderNode {
+@noheader()
+class Color extends ShaderConst {
 
 	@output() var output = SType.Vec4;
 

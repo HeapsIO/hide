@@ -9,7 +9,7 @@ using hxsl.Ast;
 @alwaysshowinputs()
 class SubGraph extends ShaderNode {
 
-	@prop() var pathShaderGraph : String;
+	@prop() public var pathShaderGraph : String;
 
 	var inputsInfo : Map<String, ShaderNode.InputInfo>;
 	var inputInfoKeys : Array<String> = [];
@@ -25,7 +25,7 @@ class SubGraph extends ShaderNode {
 	public function loadGraphShader() {
 		if (this.pathShaderGraph != null) {
 			try {
-				subShaderGraph = new ShaderGraph("E:/Projects/arena/trunk/res/" + pathShaderGraph);
+				subShaderGraph = new ShaderGraph(pathShaderGraph);
 			} catch (e : Dynamic) {
 				trace("The shader doesn't not exist.");
 				return;
@@ -62,11 +62,11 @@ class SubGraph extends ShaderNode {
 						var shaderConst = Std.instance(node.instance, ShaderConst);
 						if (shaderConst != null) { // input static become properties
 							if (Std.is(shaderConst, BoolConst)) {
-								parameters.push({ name : "Bool", type : TBool, defaultValue : null, id : shaderConst.id });
+								parameters.push({ name : shaderConst.name, type : TBool, defaultValue : null, id : shaderConst.id });
 							} else if (Std.is(shaderConst, FloatConst)) {
-								parameters.push({ name : "Number", type : TFloat, defaultValue : null, id : shaderConst.id });
+								parameters.push({ name : shaderConst.name, type : TFloat, defaultValue : null, id : shaderConst.id });
 							} else if (Std.is(shaderConst, Color)) {
-								parameters.push({ name : "Color", type : TVec(4, VFloat), defaultValue : null, id : shaderConst.id });
+								parameters.push({ name : shaderConst.name, type : TVec(4, VFloat), defaultValue : null, id : shaderConst.id });
 							}
 						}
 				}
@@ -96,10 +96,33 @@ class SubGraph extends ShaderNode {
 			}
 		}
 
+		for (p in parameters) {
+			if (p.defaultValue != null) {
+				var node = subShaderGraph.getNode(p.id);
+				switch (p.type) {
+					case TBool:
+						var boolConst = Std.instance(node.instance, BoolConst);
+						@:privateAccess boolConst.value = p.defaultValue;
+					case TVec(4, VFloat):
+						var colorConst = Std.instance(node.instance, Color);
+						@:privateAccess {
+							colorConst.r = p.defaultValue.x;
+							colorConst.g = p.defaultValue.y;
+							colorConst.b = p.defaultValue.z;
+							colorConst.a = p.defaultValue.w;
+						}
+					case TFloat:
+						var floatConst = Std.instance(node.instance, FloatConst);
+						@:privateAccess floatConst.value = p.defaultValue;
+					default:
+				}
+			}
+		}
+
 		var shaderDef;
 		try {
 			shaderDef = subShaderGraph.generateShader(null, id);
-		} catch (e : Dynamic) {
+		} catch (e : ShaderException) {
 			throw ShaderException.t(e.msg, id);
 		}
 		if (shaderDef.funs.length > 1) {
@@ -156,11 +179,32 @@ class SubGraph extends ShaderNode {
 	override public function loadProperties(props : Dynamic) {
 		this.pathShaderGraph = Reflect.field(props, "pathShaderGraph");
 		loadGraphShader();
+
+		var parametersValues : Array<hrt.shgraph.ShaderGraph.Parameter> = Reflect.field(props, "parametersValues");
+		if (parametersValues == null) return;
+		var index = 0;
+		for (p in this.parameters) {
+			if (parametersValues.length <= index) break;
+			if (p.id != parametersValues[index].id) {
+				continue;
+			}
+			p.defaultValue = parametersValues[index].defaultValue;
+			index++;
+		}
 	}
 
 	override public function saveProperties() : Dynamic {
+
+		var parametersValues = [];
+		for (p in this.parameters) {
+			if (p.defaultValue != null) {
+				parametersValues.push({id: p.id, defaultValue : p.defaultValue});
+			}
+		}
+
 		var properties = {
-			pathShaderGraph: this.pathShaderGraph
+			pathShaderGraph: this.pathShaderGraph,
+			parametersValues : parametersValues
 		};
 
 		return properties;
@@ -187,17 +231,51 @@ class SubGraph extends ShaderNode {
 		elements.push(new hide.Element('<div style="background: #202020; height: 1px; margin-bottom: 5px;"></div>'));
 
 		for (p in parameters) {
-			var element = new hide.Element('<div style="width: 100px; height: 25px"></div>');
+			var element = new hide.Element('<div class="propertySubShader" style="width: 200px;"></div>');
 			element.on("mousedown", function(e) {
 				e.stopPropagation();
 			});
 			switch (p.type) {
 				case TBool:
-					element.append(new hide.Element('<input type="checkbox" id="value" />'));
+					new hide.Element('<span>${p.name}</span>').appendTo(element);
+					var inputBool = new hide.Element('<input type="checkbox" id="value" />').appendTo(element);
+					inputBool.on("change", function(e) {
+						p.defaultValue = (inputBool.is(":checked")) ? true : false;
+					});
+					if (p.defaultValue) {
+						inputBool.prop("checked", true);
+					}
+					element.css("height", 20);
 				case TFloat:
-					element.append(new hide.Element('<input type="text" id="value" style="width: ${width*0.65}px" value="" />'));
+					new hide.Element('<span>${p.name}</span>').appendTo(element);
+					var parentRange = new hide.Element('<input type="range" min="-1" max="1" value="" />').appendTo(element);
+					var range = new hide.comp.Range(null, parentRange);
+					var rangeInput = @:privateAccess range.f;
+					rangeInput.on("mousedown", function(e) {
+						e.stopPropagation();
+					});
+					rangeInput.on("mouseup", function(e) {
+						e.stopPropagation();
+					});
+					parentRange.parent().css("width", 50);
+					range.onChange = function(moving) {
+						p.defaultValue = range.value;
+					};
+					element.css("height", 40);
 				case TVec(4, VFloat):
-					new hide.comp.ColorPicker(true, element);
+					new hide.Element('<span>${p.name}</span>').appendTo(element);
+					var inputColor = new hide.comp.ColorPicker(true, element);
+
+					if (p.defaultValue != null) {
+						var start = h3d.Vector.fromArray([p.defaultValue.x, p.defaultValue.y, p.defaultValue.z, p.defaultValue.w]);
+						inputColor.value = start.toColor();
+					}
+
+					inputColor.onChange = function(move) {
+						var vec = h3d.Vector.fromColor(inputColor.value);
+						p.defaultValue = vec;
+					};
+					element.css("height", 25);
 				default:
 
 			}

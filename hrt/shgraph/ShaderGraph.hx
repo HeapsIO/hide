@@ -6,7 +6,6 @@ using hxsl.Ast;
 typedef Node = {
 	x : Float,
 	y : Float,
-	comment : String,
 	id : Int,
 	type : String,
 	?properties : Dynamic,
@@ -48,9 +47,9 @@ class ShaderGraph {
 		if (filepath == null) return;
 		this.filepath = filepath;
 
-		var json;
+		var json : Dynamic;
 		try {
-			var content = sys.io.File.getContent(this.filepath);
+			var content = hxd.Res.load(this.filepath).toText();
 			if (content.length == 0) return;
 			json = haxe.Json.parse(content);
 		} catch( e : Dynamic ) {
@@ -61,7 +60,7 @@ class ShaderGraph {
 
 	}
 
-	public function load(json : haxe.Json) {
+	public function load(json : Dynamic) {
 		nodes = [];
 		parametersAvailable = [];
 		generate(Reflect.getProperty(json, "nodes"), Reflect.getProperty(json, "edges"), Reflect.getProperty(json, "parameters"));
@@ -157,6 +156,10 @@ class ShaderGraph {
 
 	public function getNodes() {
 		return this.nodes;
+	}
+
+	public function getNode(id : Int) {
+		return this.nodes.get(id);
 	}
 
 	function generateParameter(name : String, type : Type) : TVar {
@@ -275,7 +278,9 @@ class ShaderGraph {
 			}
 			if (!variableNamesAlreadyUpdated && subShaderId != null && !Std.is(n.instance, ShaderInput)) {
 				for (outputKey in n.instance.getOutputInfoKeys()) {
-					n.instance.getOutput(outputKey).name = "sub_" + subShaderId + "_" + n.instance.getOutput(outputKey).name;
+					var output = n.instance.getOutput(outputKey);
+					if (output != null)
+						output.name = "sub_" + subShaderId + "_" + output.name;
 				}
 			}
 			n.instance.outputCompiled = [];
@@ -389,7 +394,7 @@ class ShaderGraph {
 
 	#if editor
 	public function addNode(x : Float, y : Float, nameClass : Class<ShaderNode>) {
-		var node : Node = { x : x, y : y, comment: "", id : current_node_id, type: std.Type.getClassName(nameClass) };
+		var node : Node = { x : x, y : y, id : current_node_id, type: std.Type.getClassName(nameClass) };
 
 		node.instance = std.Type.createInstance(nameClass, []);
 		node.instance.setId(current_node_id);
@@ -486,7 +491,7 @@ class ShaderGraph {
 		}
 		var json = haxe.Json.stringify({
 			nodes: [
-				for (n in nodes) { x : n.x, y : n.y, comment: n.comment, id: n.id, type: n.type, properties : n.instance.savePropertiesNode() }
+				for (n in nodes) { x : Std.int(n.x), y : Std.int(n.y), id: n.id, type: n.type, properties : n.instance.savePropertiesNode() }
 			],
 			edges: edgesJson,
 			parameters: [
