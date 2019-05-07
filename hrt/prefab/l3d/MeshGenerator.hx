@@ -148,11 +148,11 @@ class MeshGenerator extends Object3D {
 		#if editor
 		if( mp.previewPos ) {
 			if( mp.isRoot() )
-				parent.addChild(createPreviewSphere());
+				parent.addChild(createPreviewSphere(ctx));
 			else {
 				var socket = getSocket(parent, mp.socket);
 				if( socket != null )
-					socket.addChild(createPreviewSphere());
+					socket.addChild(createPreviewSphere(ctx));
 			}
 		}
 		#end
@@ -279,14 +279,26 @@ class MeshGenerator extends Object3D {
 		return false;
 	}
 
-	function createPreviewSphere() {
-		var m = new h3d.scene.Mesh( h3d.prim.Sphere.defaultUnitSphere());
-		m.scale(0.1);
+	function createPreviewSphere( ctx : Context ) {
+		var root = new h3d.scene.Object();
+		root.setRotation(0,0, hxd.Math.degToRad(180));
+		var m : h3d.scene.Mesh = cast ctx.loadModel("${HIDE}/res/meshGeneratorArrow.fbx");
+		root.addChild(m);
+		m.scale(0.5);
+		m.name = "previewSphere";
+		m.material.color.set(0.05,0,0.05,1);
+		m.material.mainPass.depthTest = GreaterEqual;
+		m.material.mainPass.depthWrite = false;
+		m.material.mainPass.setPassName("overlay");
+		var m : h3d.scene.Mesh = cast ctx.loadModel("${HIDE}/res/meshGeneratorArrow.fbx");
+		root.addChild(m);
+		m.scale(0.5);
 		m.name = "previewSphere";
 		m.material.color.set(1,0,0,1);
-		m.material.mainPass.depthTest = Always;
+		m.material.mainPass.depthTest = LessEqual;
+		m.material.mainPass.depthWrite = false;
 		m.material.mainPass.setPassName("overlay");
-		return m;
+		return root;
 	}
 
 	function resetPreview( mp : MeshPart ) {
