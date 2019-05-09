@@ -49,7 +49,13 @@ class ShaderGraph {
 
 		var json : Dynamic;
 		try {
-			var content = hxd.Res.load(this.filepath).toText();
+			var content : String = null;
+			#if editor
+			content = sys.io.File.getContent(hide.Ide.inst.resourceDir + "/" + this.filepath);
+			#else
+			content = hxd.res.Loader.currentInstance.load(this.filepath).toText();
+			//content = hxd.Res.load(this.filepath).toText();
+			#end
 			if (content.length == 0) return;
 			json = haxe.Json.parse(content);
 		} catch( e : Dynamic ) {
