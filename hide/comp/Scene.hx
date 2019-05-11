@@ -101,7 +101,7 @@ class Scene extends Component implements h3d.IDrawable {
 		window = @:privateAccess new hxd.Window(canvas);
 		window.propagateKeyEvents = true;
 		window.setCurrent();
-		engine = new h3d.Engine();
+		engine = @:privateAccess new h3d.Engine();
 		@:privateAccess engine.resCache.set(Scene, this);
 		engine.backgroundColor = 0xFF111111;
 		canvas.id = null;
