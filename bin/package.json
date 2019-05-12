@@ -2,7 +2,7 @@
 	"name" : "HIDE",
 	"window" : {
 		"title" : "HIDE",
-		"icon" : "icon.png",
+		"icon" : "res/hide.png",
 		"width" : 800,
 		"height" : 600,
 		"show" : true
