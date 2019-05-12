@@ -21,6 +21,7 @@ class Ide {
 	public var shaderLoader : hide.tools.ShaderLoader;
 	public var fileWatcher : hide.tools.FileWatcher;
 	public var typesCache : hide.tools.TypesCache;
+	public var isCDB = false;
 
 	var databaseFile : String;
 
@@ -51,6 +52,7 @@ class Ide {
 	static var firstInit = true;
 
 	function new() {
+		isCDB = Sys.getEnv("HIDE_START_CDB") == "1";
 		function wait() {
 			if( monaco.Editor == null ) {
 				haxe.Timer.delay(wait, 10);
@@ -261,15 +263,16 @@ class Ide {
 		}
 
 		defaultLayout = null;
+		var layoutName = isCDB ? "CDB" : "Default";
 		var emptyLayout : Config.LayoutState = { content : [], fullScreen : null };
 		for( p in config.current.current.hide.layouts )
-			if( p.name == "Default" ) {
+			if( p.name == layoutName ) {
 				if( p.state.content == null ) continue; // old version
 				defaultLayout = p;
 				break;
 			}
 		if( defaultLayout == null ) {
-			defaultLayout = { name : "Default", state : emptyLayout };
+			defaultLayout = { name : layoutName, state : emptyLayout };
 			ideConfig.layouts.push(defaultLayout);
 			config.current.sync();
 			config.global.save();
@@ -336,8 +339,12 @@ class Ide {
 				}
 			}
 			initializing = false;
-			if( subView == null && views.length == 0 )
-				open("hide.view.FileTree",{path:""});
+			if( subView == null && views.length == 0 ) {
+				if( isCDB )
+					open("hide.view.CdbTable",{path:null}, function(v) v.fullScreen = true);
+				else
+					open("hide.view.FileTree",{path:""});
+			}
 			if( firstInit ) {
 				firstInit = false;
 				for( file in nw.App.argv ) {
@@ -379,7 +386,7 @@ class Ide {
 	}
 
 	function onLayoutChanged() {
-		if( initializing || !ideConfig.autoSaveLayout )
+		if( initializing || !ideConfig.autoSaveLayout || isCDB )
 			return;
 		defaultLayout.state = saveLayout();
 		if( subView == null ) this.config.global.save();
@@ -469,7 +476,7 @@ class Ide {
 			if( ideConfig.recentProjects.length > 10 ) ideConfig.recentProjects.pop();
 			config.global.save();
 		}
-		window.title = "HIDE - " + dir;
+		window.title = (isCDB ? "CastleDB" : "HIDE") + " - " + dir;
 		config = Config.loadForProject(projectDir, resourceDir);
 		shaderLoader = new hide.tools.ShaderLoader();
 		typesCache = new hide.tools.TypesCache();

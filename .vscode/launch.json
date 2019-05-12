@@ -7,15 +7,24 @@
         {
             "type": "nwjs",
             "request": "launch",
-            "name": "Launch NWjs",
+            "name": "Launch HIDE",
             "nwjsVersion": "any",
             "webRoot": "${workspaceFolder}/bin",
             "preLaunchTask": "Build"
         },
         {
             "type": "nwjs",
+            "request": "launch",
+            "name": "Launch CDB",
+            "nwjsVersion": "any",
+            "webRoot": "${workspaceFolder}/bin",
+            "env": {"HIDE_START_CDB":"1"},
+            "preLaunchTask": "Build"
+        },
+        {
+            "type": "nwjs",
             "request": "attach",
-            "name": "Attach to NWjs",
+            "name": "Attach to HIDE",
             "port": 9222,
             "webRoot": "${workspaceFolder}/bin",
             "preLaunchTask": "Build"

@@ -234,7 +234,7 @@ class View<T> extends hide.comp.Component {
 			new Element("body").toggleClass("fullScreenMode",v);
 		}
 		@:privateAccess if( v ) ide.currentFullScreen = this else ide.currentFullScreen = null;
-		ide.setFullscreen(v);
+		if( !ide.isCDB ) ide.setFullscreen(v);
 		return v;
 	}
 
