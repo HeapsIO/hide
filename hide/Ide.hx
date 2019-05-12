@@ -102,6 +102,12 @@ class Ide {
 
 		fileWatcher = new hide.tools.FileWatcher();
 
+		if( !sys.FileSystem.exists(ideConfig.currentProject) || !sys.FileSystem.isDirectory(ideConfig.currentProject) ) {
+			js.Browser.alert(ideConfig.currentProject+" no longer exists");
+			ideConfig.currentProject = cwd;
+			config.global.save();
+		}
+
 		setProject(ideConfig.currentProject);
 		window.window.document.addEventListener("mousedown", function(e) {
 			mouseX = e.x;
