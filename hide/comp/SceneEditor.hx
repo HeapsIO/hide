@@ -951,22 +951,28 @@ class SceneEditor {
 		scene.init(ctx.local3d);
 	}
 
-	public function addObject(e : PrefabElement) {
-		makeInstance(e);
-		refresh(Partial, () -> selectObjects([e]));
+	public function addObject(elts : Array<PrefabElement>) {
+		for (e in elts) {
+			makeInstance(e);
+		}
+		refresh(Partial, () -> selectObjects(elts));
 		undo.change(Custom(function(undo) {
 			var fullRefresh = false;
 			if(undo) {
 				deselect();
-				if(!removeInstance(e))
-					fullRefresh = true;
-				e.parent.children.remove(e);
+				for (e in elts) {
+					if(!removeInstance(e))
+						fullRefresh = true;
+					e.parent.children.remove(e);
+				}
 				refresh(fullRefresh ? Full : Partial);
 			}
 			else {
-				e.parent.children.push(e);
-				makeInstance(e);
-				refresh(Partial, () -> selectObjects([e]));
+				for (e in elts) {
+					e.parent.children.push(e);
+					makeInstance(e);
+				}
+				refresh(Partial, () -> selectObjects(elts));
 			}
 		}));
 	}
@@ -1370,7 +1376,7 @@ class SceneEditor {
 			ref.rotationY = obj3d.rotationY;
 			ref.rotationZ = obj3d.rotationZ;
 		}
-		addObject(ref);
+		addObject([ref]);
 	}
 
 	function duplicate(thenMove: Bool) {
@@ -1680,10 +1686,10 @@ class SceneEditor {
 					ide.chooseFile(pmodel.inf.fileSource, function(path) {
 						if( path == null ) return;
 						var p = make(path);
-						addObject(p);
+						addObject([p]);
 					});
 				else
-					addObject(make());
+					addObject([make()]);
 			}
 		};
 	}
@@ -1698,7 +1704,7 @@ class SceneEditor {
 					var s = new hrt.prefab.Shader(parentElt);
 					s.source = path;
 					s.name = name;
-					addObject(s);
+					addObject([s]);
 				}
 			}
 		}

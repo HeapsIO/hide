@@ -578,6 +578,9 @@ input[type=checkbox]:checked:after {
 .hide-properties .group > .content {
   margin-bottom: 5px;
 }
+.hide-properties .btn-list * {
+  margin-bottom: 5px;
+}
 .hide-properties .error {
   color: red;
 }

@@ -170,7 +170,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 			}
 
 			autoName(p);
-			haxe.Timer.delay(addObject.bind(p), 0);
+			haxe.Timer.delay(addObject.bind([p]), 0);
 		}
 
 		newItems = newItems.concat(super.getNewContextMenu(current, onMake));
