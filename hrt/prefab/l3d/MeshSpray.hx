@@ -19,6 +19,8 @@ class MeshSpray extends Object3D {
 	var interactive : h2d.Interactive;
 	var gBrush : h3d.scene.Graphics;
 
+	var timerCicle : haxe.Timer;
+
 	var lastSpray : Float = 0;
 
 	override function save() {
@@ -110,6 +112,9 @@ class MeshSpray extends Object3D {
 
 
 	override function setSelected( ctx : Context, b : Bool ) {
+		if (timerCicle != null) {
+			timerCicle.stop();
+		}
 		if( b ) {
 			var s2d = @:privateAccess ctx.local2d.getScene();
 			interactive = new h2d.Interactive(10000, 10000, s2d);
@@ -155,6 +160,11 @@ class MeshSpray extends Object3D {
 		}
 		else{
 			if( interactive != null ) interactive.remove();
+			timerCicle = new haxe.Timer(100);
+			timerCicle.run = function() {
+				timerCicle.stop();
+				if (gBrush != null) gBrush.remove();
+			};
 		}
 	}
 
