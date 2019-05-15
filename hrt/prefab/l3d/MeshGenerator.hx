@@ -122,6 +122,11 @@ class MeshGenerator extends Object3D {
 		#end
 
 		createMeshPart(ctx, root, ctx.local3d.getObjectByName("rootObject"));
+
+		#if editor
+		for(m in ctx.local3d.findAll(o -> Std.instance(o, h3d.scene.Mesh)))
+			m.cullingCollider = new h3d.col.ObjectCollider(m, m.primitive.getBounds().toSphere());
+		#end
 	}
 
 	public function getSocket( obj : h3d.scene.Object, s : Socket ) : h3d.scene.Object {
