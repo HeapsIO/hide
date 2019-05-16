@@ -183,8 +183,11 @@ class Scene extends Component implements h3d.IDrawable {
 		engine.render(this);
 	}
 
+	var loadQueue : Array<Void->Void> = [];
+	var pendingCount : Int = 0;
+
 	function loadTextureData( img : hxd.res.Image, onReady : h3d.mat.Texture -> Void, ?target : h3d.mat.Texture ) {
-		if( img.entry.extension == "tga" ) {
+		if( !img.getFormat().useAsyncDecode ) {
 			// immediate read
 			var pix = img.getPixels();
 			if( target == null )
@@ -198,6 +201,20 @@ class Scene extends Component implements h3d.IDrawable {
 			}
 			return;
 		}
+		if( pendingCount < 10 ) {
+			pendingCount++;
+			_loadTextureData(img,function(t) {
+				pendingCount--;
+				var f = loadQueue.shift();
+				if( f != null ) f();
+				onReady(t);
+			}, target);
+		} else {
+			loadQueue.push(loadTextureData.bind(img,onReady,target));
+		}
+	}
+
+	function _loadTextureData( img : hxd.res.Image, onReady : h3d.mat.Texture -> Void, ?target : h3d.mat.Texture ) {
 		var path = ide.getPath(img.entry.path);
 		var img = new Element('<img src="file://$path" crossorigin="anonymous"/>');
 		function onLoaded() {
