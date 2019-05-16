@@ -55,6 +55,8 @@ class CamController extends h3d.scene.CameraController {
 						var se = level3d.sceneEditor;
 						var fromPt = se.screenToWorld(pushX, pushY);
 						var toPt = se.screenToWorld(e.relX, e.relY);
+						if(fromPt == null || toPt == null)
+							return;
 						var delta = toPt.sub(fromPt).toVector();
 						delta.w = 0;
 						targetOffset = targetOffset.sub(delta);
@@ -394,6 +396,22 @@ class Level3D extends FileView {
 		tools.addToggle("th", "Show grid", function(v) { showGrid = v; updateGrid(); }, showGrid);
 		tools.addButton("sun-o", "Bake Lights", () -> bakeLights());
 		tools.addButton("map", "Bake Volumetric Lightmaps", () -> { bakeLights(); bakeVolumetricLightmaps(); });
+		tools.addButton("info-circle", "Scene information", () -> {
+			var memStats = scene.engine.mem.stats();
+			var texs = @:privateAccess scene.engine.mem.textures;
+			var list = [for(t in texs) {
+				n: '${t.width}x${t.height}  ${t.format}  ${t.name}',
+				size: t.width * t.height
+			}];
+			list.sort((a, b) -> Reflect.compare(b.size, a.size));
+			var content = new Element('<div tabindex="1" class="overlay-info"><h2>Scene info</h2><pre></pre></div>');
+			new Element(element[0].ownerDocument.body).append(content);
+			var pre = content.find("pre");
+			pre.text([for(l in list) l.n].join("\n"));
+			content.blur(function(_) {
+				content.remove();
+			});
+		});
 
 		tools.addColor("Background color", function(v) {
 			scene.engine.backgroundColor = v;
