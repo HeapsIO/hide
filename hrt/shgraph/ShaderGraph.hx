@@ -194,7 +194,7 @@ class ShaderGraph {
 			if (input != null) {
 				res = res.concat(buildNodeVar(input));
 			} else if (node.getInputInfo(key).hasProperty) {
-			} else if (isSubGraph) {
+			} else if (!node.getInputInfo(key).isRequired) {
 			} else {
 				throw ShaderException.t("This box has inputs not connected", node.id);
 			}

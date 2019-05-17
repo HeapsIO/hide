@@ -30,6 +30,7 @@ class ParseFieldsMacro {
 							var get_sel = "get_" + sel;
 							var propSel = "prop_" + sel;
 							var hasProperty = false;
+							var isRequired = true;
 							var nameInput = "input";
 							if (m.params.length >= 1) {
 								switch(m.params[0].expr) {
@@ -51,6 +52,15 @@ class ParseFieldsMacro {
 												pos: Context.currentPos(),
 												meta: [{name: "prop", params: [{expr: EConst(CString("macro")), pos: Context.currentPos() }], pos: Context.currentPos()}]
 											});
+										}
+									default:
+								}
+							}
+							if (m.params.length >= 3) {
+								switch(m.params[2].expr) {
+									case EConst(CIdent(b)):
+										if (b == "false") {
+											isRequired = false;
 										}
 									default:
 								}
@@ -78,7 +88,7 @@ class ParseFieldsMacro {
 								Context.error('Input ${sel} has not affectation', f.pos);
 
 							var enumValue = ["ShaderType", "SType", e.toString().split(".").pop()];
-							mapInputs.push(macro $v{sel} => { name : $v{nameInput}, type : ${enumValue.toFieldExpr()}, hasProperty: $v{hasProperty} });
+							mapInputs.push(macro $v{sel} => { name : $v{nameInput}, type : ${enumValue.toFieldExpr()}, hasProperty: $v{hasProperty}, isRequired : $v{isRequired} });
 							f.kind = FProp("get", "null", TPath({ pack: ["hrt", "shgraph"], name: "NodeVar" }));
 							f.meta = saveMeta;
 							inputsList.push(f.name);

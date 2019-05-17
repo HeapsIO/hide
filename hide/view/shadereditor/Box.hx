@@ -47,15 +47,17 @@ class Box {
 		element.attr("id", node.id);
 		setPosition(x, y);
 
+		if (Reflect.hasField(metas, "noheader")) {
+			HEADER_HEIGHT = 0;
+			hasHeader = false;
+		}
+
 		// outline of box
 		editor.rect(element, -1, -1, width+2, getHeight()+2).addClass("outline");
 
 		// header
 
-		if (Reflect.hasField(metas, "noheader")) {
-			HEADER_HEIGHT = 0;
-			hasHeader = false;
-		} else {
+		if (hasHeader) {
 			var header = editor.rect(element, 0, 0, this.width, HEADER_HEIGHT).addClass("head-box");
 			if (color != null) header.css("fill", color);
 			editor.text(element, 7, HEADER_HEIGHT-6, className).addClass("title-box");
@@ -203,7 +205,7 @@ class Box {
 	}
 	public function getNodesHeight() {
 		var maxNb = Std.int(Math.max(inputs.length, outputs.length));
-		if (!hadToShowInputs && maxNb == 1 && propsHeight > 0) {
+		if (!hadToShowInputs && maxNb <= 1 && propsHeight > 0) {
 			return 0;
 		}
 		return NODE_MARGIN * (maxNb+1) + NODE_RADIUS * maxNb;

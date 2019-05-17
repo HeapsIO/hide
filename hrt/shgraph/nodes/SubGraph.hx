@@ -44,12 +44,12 @@ class SubGraph extends ShaderNode {
 						var shaderParam = Std.instance(node.instance, ShaderParam);
 						var paramName = subShaderGraph.getParameter(shaderParam.parameterId).name;
 
-						inputsInfo.set(prefixSubGraph+node.id, { name : paramName , type: ShaderType.getSType(shaderParam.variable.type), hasProperty: false, id : node.id });
+						inputsInfo.set(prefixSubGraph+node.id, { name : paramName , type: ShaderType.getSType(shaderParam.variable.type), hasProperty: false, isRequired : false, id : node.id });
 						inputInfoKeys.push(prefixSubGraph+node.id);
 					case "ShaderInput":
 						var shaderInput = Std.instance(node.instance, ShaderInput);
 
-						inputsInfo.set(prefixSubGraph+node.id, { name : "*" + shaderInput.variable.name , type: ShaderType.getSType(shaderInput.variable.type), hasProperty: false, id : node.id });
+						inputsInfo.set(prefixSubGraph+node.id, { name : "*" + shaderInput.variable.name , type: ShaderType.getSType(shaderInput.variable.type), hasProperty: false, isRequired : false, id : node.id });
 						inputInfoKeys.push(prefixSubGraph+node.id);
 					case "ShaderOutput":
 						var shaderOutput = Std.instance(node.instance, ShaderOutput);
@@ -61,6 +61,7 @@ class SubGraph extends ShaderNode {
 					default:
 						var shaderConst = Std.instance(node.instance, ShaderConst);
 						if (shaderConst != null) { // input static become properties
+							if (shaderConst.name.length == 0) continue;
 							if (Std.is(shaderConst, BoolConst)) {
 								parameters.push({ name : shaderConst.name, type : TBool, defaultValue : null, id : shaderConst.id });
 							} else if (Std.is(shaderConst, FloatConst)) {
