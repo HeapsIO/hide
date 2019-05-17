@@ -37,6 +37,9 @@ class FloatConst extends ShaderConst {
 		element.append(new hide.Element('<input type="text" id="value" style="width: ${width*0.5}px" value="${value}" />'));
 
 		var input = element.children("input");
+		input.on("keydown", function(e) {
+			e.stopPropagation();
+		});
 		input.on("change", function(e) {
 			var tmpValue = Std.parseFloat(input.val());
 			if (Math.isNaN(tmpValue) ) {

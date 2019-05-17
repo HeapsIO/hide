@@ -135,13 +135,13 @@ class ShaderEditor extends hide.view.Graph {
 		});
 
 		element.on("keydown", function(e) {
-			if (e.shiftKey && e.keyCode != 16) {
+			if (e.ctrlKey && e.keyCode == 83) {
+				save();
+				return;
+			} else if (e.keyCode != 16) {
 				if (addMenu == null || !addMenu.is(":visible"))
 					openAddMenu();
 
-				return;
-			} else if (e.ctrlKey && e.keyCode == 83) {
-				save();
 				return;
 			}
 		});
