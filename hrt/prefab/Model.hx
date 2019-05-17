@@ -27,7 +27,9 @@ class Model extends Object3D {
 		if( source == null)
 			return super.makeInstance(ctx);
 		ctx = ctx.clone(this);
+		#if editor
 		try {
+		#end
 			var obj = ctx.loadModel(source);
 			if(obj.defaultTransform != null && children.length > 0) {
 				obj.name = "root";
@@ -49,10 +51,12 @@ class Model extends Object3D {
 				obj.playAnimation(ctx.loadAnimation(animation));
 
 			return ctx;
+		#if editor
 		} catch( e : Dynamic ) {
 			e.message = "Could not load model " + source + ": " + e.message;
 			ctx.shared.onError(e);
 		}
+		#end
 		ctx.local3d = new h3d.scene.Object(ctx.local3d);
 		ctx.local3d.name = name;
 		updateInstance(ctx);

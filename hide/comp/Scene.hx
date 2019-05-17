@@ -395,9 +395,13 @@ class Scene extends Component implements h3d.IDrawable {
 			hxd.res.Any.fromBytes(path, bytes);
 		};
 		if( onReady == null ) onReady = function(_) {};
-		t = loadTextureData(res.toImage(), onReady, t);
-		t.name = ide.makeRelative(path);
-		texCache.set(path, t);
+		try {
+			t = loadTextureData(res.toImage(), onReady, t);
+			t.name = ide.makeRelative(path);
+			texCache.set(path, t);
+		} catch( error : Dynamic ) {
+			throw "Could not load texure " + texturePath + ":\n" + Std.string(error);
+		};
 		return t;
 	}
 
