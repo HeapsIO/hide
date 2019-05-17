@@ -10,4 +10,5 @@
 -D hscriptPos
 -D multidriver
 -D editor
+-D no-deprecation-warnings
 -cp libs

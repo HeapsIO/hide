@@ -183,33 +183,55 @@ class Scene extends Component implements h3d.IDrawable {
 		engine.render(this);
 	}
 
+	var loadQueue : Array<Void->Void> = [];
+	var pendingCount : Int = 0;
+
 	function loadTextureData( img : hxd.res.Image, onReady : h3d.mat.Texture -> Void, ?target : h3d.mat.Texture ) {
-		if( img.entry.extension == "tga" ) {
+		if( !img.getFormat().useAsyncDecode ) {
 			// immediate read
-			var pix = img.getPixels();
 			if( target == null )
-				target = new h3d.mat.Texture(pix.width, pix.height);
-			else
+				target = img.toTexture();
+			else {
+				var pix = img.getPixels();
 				target.resize(pix.width, pix.height);
-			target.uploadPixels(pix);
+				target.uploadPixels(pix);
+			}
 			if( onReady != null ) {
 				onReady(target);
 				onReady = null;
 			}
-			return;
+			return target;
 		}
+
+		if( target == null ) {
+			var size = img.getSize();
+			target = new h3d.mat.Texture(size.width,size.height);
+			target.clear(0x102030);
+			target.flags.set(Loading);
+		}
+
+		if( pendingCount < 10 ) {
+			pendingCount++;
+			_loadTextureData(img,function() {
+				target.flags.unset(Loading);
+				pendingCount--;
+				var f = loadQueue.shift();
+				if( f != null ) f();
+				onReady(target);
+			}, target);
+		} else {
+			loadQueue.push(loadTextureData.bind(img,onReady,target));
+		}
+		return target;
+	}
+
+	function _loadTextureData( img : hxd.res.Image, onReady : Void -> Void, t : h3d.mat.Texture ) {
 		var path = ide.getPath(img.entry.path);
 		var img = new Element('<img src="file://$path" crossorigin="anonymous"/>');
 		function onLoaded() {
 			setCurrent();
 			var bmp : js.html.ImageElement = cast img[0];
-			var t;
-			if( target == null )
-				t = target = new h3d.mat.Texture(bmp.width, bmp.height);
-			else {
-				t = target;
-				target.resize(bmp.width, bmp.height);
-			}
+			t.resize(bmp.width, bmp.height);
 			untyped bmp.ctx = { getImageData : function(_) return bmp, canvas : { width : 0, height : 0 } };
 			engine.driver.uploadTextureBitmap(t, cast bmp, 0, 0);
 			t.realloc = onLoaded;
@@ -220,7 +242,7 @@ class Scene extends Component implements h3d.IDrawable {
 				for( f in arr ) f();
 			}
 			if( onReady != null ) {
-				onReady(t);
+				onReady();
 				onReady = null;
 			}
 		}
@@ -367,16 +389,15 @@ class Scene extends Component implements h3d.IDrawable {
 			if( onReady != null ) haxe.Timer.delay(onReady.bind(t), 1);
 			return t;
 		}
-		var bytes = sys.io.File.getBytes(path);
-		var img = hxd.res.Any.fromBytes(path, bytes).toImage();
-		var size = img.getSize();
-		t = new h3d.mat.Texture(size.width,size.height);
-		t.clear(0x102030);
-		t.flags.set(Loading);
+		var relPath = StringTools.startsWith(path, ide.resourceDir) ? path.substr(ide.resourceDir.length+1) : path;
+		var res = try hxd.res.Loader.currentInstance.load(relPath) catch( e : hxd.res.NotFound ) {
+			var bytes = sys.io.File.getBytes(path);
+			hxd.res.Any.fromBytes(path, bytes);
+		};
+		if( onReady == null ) onReady = function(_) {};
+		t = loadTextureData(res.toImage(), onReady, t);
 		t.name = ide.makeRelative(path);
 		texCache.set(path, t);
-		if( onReady == null ) onReady = function(_) {};
-		loadTextureData(img, onReady, t);
 		return t;
 	}
 

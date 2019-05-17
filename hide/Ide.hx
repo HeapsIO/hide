@@ -482,7 +482,7 @@ class Ide {
 		typesCache = new hide.tools.TypesCache();
 
 		var localDir = sys.FileSystem.exists(resourceDir) ? resourceDir : projectDir;
-		hxd.res.Loader.currentInstance = new CustomLoader(new hxd.fs.LocalFileSystem(localDir));
+		hxd.res.Loader.currentInstance = new CustomLoader(new hxd.fs.LocalFileSystem(localDir,"default"));
 		renderers = [
 			new hide.Renderer.MaterialSetup("Default"),
 			new hide.Renderer.PbrSetup("PBR"),

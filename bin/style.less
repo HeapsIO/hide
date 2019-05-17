@@ -1122,14 +1122,14 @@ input[type=checkbox] {
 		position: relative;
 	}
 	.surface-preview {
-		@size: 45px;
+		@size: 85px;
 		background-size: @size @size;
 		width: @size;
 		height: @size;
 		outline: 4px solid #4a4a4a;
 	}
 	.surface-preview-selected {
-		@size: 45px;
+		@size: 85px;
 		background-size: @size @size;
 		width: @size;
 		height: @size;
@@ -1849,4 +1849,19 @@ div.sp-container {
 			bottom : 10px;
 		}
 	}
+}
+
+
+/* Level 3D */
+.overlay-info {
+	background: #000000e0;
+	position: absolute;
+	z-index: 1;
+	left : 0px;
+	bottom : 0px;
+	overflow-y: scroll;
+	overflow-x: hidden;
+	padding: 10px;
+	max-height: 800px;
+    min-width: 600px;
 }

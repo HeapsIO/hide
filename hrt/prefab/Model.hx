@@ -23,13 +23,6 @@ class Model extends Object3D {
 		lockAnimation = obj.lockAnimation;
 	}
 
-	function setCullingCollider( o : h3d.scene.Object, cc : h3d.col.Collider ) {
-		return; // TODO: Fix bounds update after object move
-		o.cullingCollider = cc;
-		for( c in @:privateAccess o.children )
-			setCullingCollider(c, cc);
-	}
-
 	override function makeInstance(ctx:Context):Context {
 		if( source == null)
 			return super.makeInstance(ctx);
@@ -42,10 +35,15 @@ class Model extends Object3D {
 				root.addChild(obj);
 				obj = root;
 			}
+			#if editor
+			for(m in obj.findAll(o -> Std.instance(o, h3d.scene.Mesh)))
+				m.cullingCollider = new h3d.col.ObjectCollider(m, m.primitive.getBounds().toSphere());
+			#end
 			obj.name = name;
 			ctx.local3d.addChild(obj);
 			ctx.local3d = obj;
 			updateInstance(ctx);
+
 
 			if( animation != null )
 				obj.playAnimation(ctx.loadAnimation(animation));
@@ -59,16 +57,6 @@ class Model extends Object3D {
 		ctx.local3d.name = name;
 		updateInstance(ctx);
 		return ctx;
-	}
-
-	var tmpBounds = new h3d.col.Bounds();
-	override function updateInstance( ctx: Context, ?propName : String ) {
-		super.updateInstance(ctx, propName);
-		var o = ctx.local3d;
-		#if editor
-		var cc = o.getBounds(tmpBounds).toSphere();
-		setCullingCollider(o, cc);
-		#end
 	}
 
 	#if editor

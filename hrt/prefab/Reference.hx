@@ -80,6 +80,17 @@ class Reference extends Object3D {
 			ctx = super.makeInstance(ctx);
 			ctx.isRef = true;
 			p.make(ctx);
+
+			#if editor
+			var path = hide.Ide.inst.appPath + "/res/icons/fileRef.png";
+			var data = sys.io.File.getBytes(path);
+			var tile = hxd.res.Any.fromBytes(path, data).toTile().center();
+			var objFollow = new h2d.ObjectFollower(ctx.local3d, ctx.shared.root2d);
+			objFollow.followVisibility = true;
+			var bmp = new h2d.Bitmap(tile, objFollow);
+			ctx.local2d = objFollow;
+			#end
+
 		}
 		else {
 			ctx = ctx.clone(this);

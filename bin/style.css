@@ -1008,15 +1008,15 @@ input[type=checkbox]:checked:after {
   position: relative;
 }
 .terrain-surfaces .surface-preview {
-  background-size: 45px 45px;
-  width: 45px;
-  height: 45px;
+  background-size: 85px 85px;
+  width: 85px;
+  height: 85px;
   outline: 4px solid #4a4a4a;
 }
 .terrain-surfaces .surface-preview-selected {
-  background-size: 45px 45px;
-  width: 45px;
-  height: 45px;
+  background-size: 85px 85px;
+  width: 85px;
+  height: 85px;
   outline: 4px solid #5897fb;
 }
 .terrain-surfaces .tooltiptext {
@@ -1630,4 +1630,17 @@ div.sp-container input:hover {
   z-index: 1;
   left: 10px;
   bottom: 10px;
+}
+/* Level 3D */
+.overlay-info {
+  background: #000000e0;
+  position: absolute;
+  z-index: 1;
+  left: 0px;
+  bottom: 0px;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  padding: 10px;
+  max-height: 800px;
+  min-width: 600px;
 }
