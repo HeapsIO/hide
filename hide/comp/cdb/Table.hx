@@ -44,36 +44,8 @@ class Table extends Component {
 		}
 	}
 
-	public function cloneTableHead() {
-		var target = J('.head');
-		if (target.length == 0) {
-			trace("Fail clone table head");
-			return;
-		}
-		var target_children = target.children();
-
-		J(".floating-thead").remove();
-
-		var clone = J("<div>").addClass("floating-thead");
-
-		for (i in 0...target_children.length) {
-			var targetElt = target_children.eq(i);
-			var elt = targetElt.clone(true); // clone with events
-			elt.width(targetElt.width());
-			elt.css("max-width", targetElt.width());
-
-			var txt = elt[0].innerHTML;
-			elt.empty();
-			J("<span>" + txt + "</span>").appendTo(elt);
-
-			clone.append(elt);
-		}
-
-		J('.cdb').prepend(clone);
-	}
-
 	function refreshTable() {
-		var cols = J("<thead>").addClass("head");
+		var cols = J("<tr>").addClass("head").wrap("<thead>");
 		J("<th>").addClass("start").appendTo(cols);
 		lines = [for( index in 0...sheet.lines.length ) {
 			var l = J("<tr>");
@@ -137,7 +109,7 @@ class Table extends Component {
 			}
 		}
 
-		element.append(cols);
+		element.append( cols.parent() );
 
 		var tbody = J("<tbody>");
 
@@ -160,9 +132,6 @@ class Table extends Component {
 			});
 			element.append(l);
 		}
-
-		cols.ready(cloneTableHead);
-		cols.on("resize", cloneTableHead);
 	}
 
 	function makeSeparator( sindex : Int, colCount : Int ) {

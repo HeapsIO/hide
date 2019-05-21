@@ -69,6 +69,10 @@
 			overflow : hidden;
 		}
 
+		td[colspan] {
+			overflow: visible;
+		}
+
 		td.edit {
 			padding : 2px;
 			padding-right : 6px;
@@ -106,15 +110,17 @@
 			background-color : #f8f8f8;
 		}
 
-		tr.head, th {
+		tr.head > th {
+			position: -webkit-sticky;
+			position: sticky;
+			top: 0;
 			font-weight: bold;
 			text-align: center;
-			padding: 1px 10px;
+			padding: 2px 10px;
 			border-bottom : 1px solid #666;
 			border-left: 1px solid #555;
-			background-color : #222;
+			background-color : #111;
 			color : #ddd;
-			width: auto;
 			white-space: nowrap;
 			overflow: hidden;
 		}
@@ -319,23 +325,6 @@
 			}
 		}
 
-	}
-
-	.floating-thead {
-		position: fixed;
-		background-color : #222;
-
-		th:first-child {
-			border-left: 1px solid #222;
-		}
-
-		th {
-			overflow: hidden;
-			color : #ddd;
-			padding: 1px 10px;
-			border-left: 1px solid #555;
-			border-bottom: 2px solid #666;
-		}
 	}
 
 	.content-modal {
