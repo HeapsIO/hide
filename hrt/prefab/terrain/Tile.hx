@@ -121,7 +121,7 @@ class Tile extends h3d.scene.Mesh {
 		if( heightMap == null || heightMap.width != getTerrain().heightMapResolution + 1 ) {
 			var oldHeightMap = heightMap;
 			heightMap = new h3d.mat.Texture(getTerrain().heightMapResolution + 1, getTerrain().heightMapResolution + 1, [Target], RGBA32F );
-			heightMap.name = "terrainHeightMap";
+			heightMap.setName("terrainHeightMap");
 			heightMap.wrap = Clamp;
 			heightMap.filter = Linear;
 			heightMap.preventAutoDispose();
@@ -138,7 +138,7 @@ class Tile extends h3d.scene.Mesh {
 		if( surfaceIndexMap == null || surfaceIndexMap.width != getTerrain().weightMapResolution ) {
 			var oldSurfaceIndexMap = surfaceIndexMap;
 			surfaceIndexMap = new h3d.mat.Texture(getTerrain().weightMapResolution, getTerrain().weightMapResolution, [Target], RGBA);
-			surfaceIndexMap.name = "terrainSurfaceIndexMap";
+			surfaceIndexMap.setName("terrainSurfaceIndexMap");
 			surfaceIndexMap.filter = Nearest;
 			surfaceIndexMap.preventAutoDispose();
 			surfaceIndexMap.realloc = null;
@@ -156,7 +156,7 @@ class Tile extends h3d.scene.Mesh {
 				surfaceWeights = [for( i in 0...getTerrain().surfaceArray.surfaceCount ) null];
 				for( i in 0 ... surfaceWeights.length ) {
 					surfaceWeights[i] = new h3d.mat.Texture(getTerrain().weightMapResolution, getTerrain().weightMapResolution, [Target], R8);
-					surfaceWeights[i].name = "terrainSurfaceWeight"+i;
+					surfaceWeights[i].setName("terrainSurfaceWeight"+i);
 					surfaceWeights[i].wrap = Clamp;
 					surfaceWeights[i].preventAutoDispose();
 					surfaceWeights[i].realloc = null;
@@ -177,10 +177,10 @@ class Tile extends h3d.scene.Mesh {
 	}
 
 	public function generateWeightArray() {
-		if( surfaceWeightArray == null || surfaceWeightArray.width != getTerrain().weightMapResolution || surfaceWeightArray.get_layerCount() != surfaceWeights.length ) {
+		if( surfaceWeightArray == null || surfaceWeightArray.width != getTerrain().weightMapResolution || surfaceWeightArray.layerCount != surfaceWeights.length ) {
 			if( surfaceWeightArray != null ) surfaceWeightArray.dispose();
 			surfaceWeightArray = new h3d.mat.TextureArray(getTerrain().weightMapResolution, getTerrain().weightMapResolution, surfaceWeights.length, [Target], R8);
-			surfaceWeightArray.name = "terrainSurfaceWeightArray";
+			surfaceWeightArray.setName("terrainSurfaceWeightArray");
 			surfaceWeightArray.wrap = Clamp;
 			surfaceWeightArray.preventAutoDispose();
 			surfaceWeightArray.realloc = null;
