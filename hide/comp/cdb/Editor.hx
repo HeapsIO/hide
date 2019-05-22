@@ -126,7 +126,7 @@ class Editor extends Component {
 		if( filter == "" ) filter = null;
 		if( filter != null ) filter = filter.toLowerCase();
 
-		var lines = element.find("table.cdb-sheet > tr").not(".head");
+		var lines = element.find("table.cdb-sheet > tbody > tr");
 		lines.removeClass("filtered");
 		if( filter != null ) {
 			for( t in lines ) {

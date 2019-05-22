@@ -435,6 +435,7 @@ input[type=checkbox]:checked:after {
   display: none;
   width: 200px;
   position: fixed;
+  z-index: 1;
   top: 20px;
   right: 0px;
   background-color: black;
@@ -1169,8 +1170,8 @@ input[type=checkbox]:checked:after {
   box-shadow: 0px 0px 34px -9px black;
 }
 .graph-view #add-menu #results div.group:hover {
-  background: #474747!important;
-  color: #dadada!important;
+  background: #474747 !important;
+  color: #dadada !important;
   box-shadow: none;
 }
 .graph-view #add-menu #results div > span:first-child {
@@ -1218,8 +1219,8 @@ input[type=checkbox]:checked:after {
   box-shadow: 0px 0px 34px -9px black;
 }
 .graph-view #context-menu #options div.group:hover {
-  background: #474747!important;
-  color: #dadada!important;
+  background: #474747 !important;
+  color: #dadada !important;
   box-shadow: none;
 }
 .graph-view #context-menu #options div > span:first-child {
