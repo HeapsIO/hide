@@ -95,7 +95,7 @@ class PbrSetup extends h3d.mat.PbrMaterialSetup {
 		var data = sys.io.File.getBytes(path);
 		var pix = hxd.res.Any.fromBytes(path, data).toImage().getPixels();
 		var t = h3d.mat.Texture.fromPixels(pix); // sync
-		t.name = ide.makeRelative(path);
+		t.setName(ide.makeRelative(path));
 		return t;
 	}
 
