@@ -972,7 +972,7 @@ class Emitter extends Object3D {
 		if(debugShape != null)
 			debugShape.visible = b;
 
-		if( emitterObj.batch != null ) {
+		if( false && emitterObj.batch != null ) {  // Disabling, selection causes crashes
 			if( b ) {
 				var shader = new h3d.shader.FixedColor(0xffffff);
 				var p = emitterObj.batch.material.allocPass("highlight");
