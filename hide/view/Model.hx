@@ -25,6 +25,7 @@ class Model extends FileView {
 	var scene(get,never) : hide.comp.Scene;
 	var rootPath : String;
 	var root : hrt.prefab.Prefab;
+	var selectedAxes : h3d.scene.Object;
 
 	override function save() {
 		if(!modified) return;
@@ -211,6 +212,8 @@ class Model extends FileView {
 	}
 
 	function selectObject( obj : h3d.scene.Object ) {
+		selectedAxes.setTransform(obj.getAbsPos());
+
 		var properties = sceneEditor.properties;
 		properties.clear();
 
@@ -310,6 +313,26 @@ class Model extends FileView {
 		return out;
 	}
 
+	function makeAxes() {
+		var g = new h3d.scene.Graphics(scene.s3d);
+		g.lineStyle(1,0xFF0000);
+		g.lineTo(1,0,0);
+		g.lineStyle(1,0x00FF00);
+		g.moveTo(0,0,0);
+		g.lineTo(0,1,0);
+		g.lineStyle(1,0x0000FF);
+		g.moveTo(0,0,0);
+		g.lineTo(0,0,1);
+		g.lineStyle();
+
+		for(m in g.getMaterials()) {
+			m.mainPass.setPassName("overlay");
+			m.mainPass.depth(false, Always);
+		}
+
+		return g;
+	}
+
 	function onRefresh() {
 		var r = root.get(hrt.prefab.RenderProps);
 		if( r != null ) r.applyProps(scene.s3d.renderer);
@@ -366,20 +389,15 @@ class Model extends FileView {
 			sceneEditor.resetCamera();
 		});
 
-		var axis = new h3d.scene.Graphics(scene.s3d);
-		axis.lineStyle(1,0xFF0000);
-		axis.lineTo(1,0,0);
-		axis.lineStyle(1,0x00FF00);
-		axis.moveTo(0,0,0);
-		axis.lineTo(0,1,0);
-		axis.lineStyle(1,0x0000FF);
-		axis.moveTo(0,0,0);
-		axis.lineTo(0,0,1);
-		axis.lineStyle();
-		axis.visible = false;
+		var axes = makeAxes();
+		axes.visible = false;
+
+		selectedAxes = makeAxes();
+		selectedAxes.visible = false;
 
 		tools.addToggle("location-arrow", "Toggle Axis", function(v) {
-			axis.visible = v;
+			axes.visible = v;
+			selectedAxes.visible = v;
 		});
 
 		tools.addColor("Background color", function(v) {
