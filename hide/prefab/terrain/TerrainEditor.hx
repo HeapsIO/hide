@@ -198,8 +198,12 @@ class TerrainEditor {
 			uvTex.depthBuffer = new h3d.mat.DepthBuffer(uvTex.width, uvTex.height);
 		}
 
-		@:privateAccess customScene.children = [];
-		@:privateAccess customScene.children.push(terrainPrefab.terrain); // Prevent OnRemove() call
+		var prevParent = terrainPrefab.terrain.parent;
+		@:privateAccess {
+			customScene.children = [terrainPrefab.terrain]; // Prevent OnRemove() call
+			terrainPrefab.terrain.parent = customScene;
+		}
+
 		customScene.camera = mainScene.camera;
 		brushPreview.reset();
 
@@ -230,7 +234,10 @@ class TerrainEditor {
 		for( tile in tiles )
 			tile.material.removePass(tile.material.getPass("terrainUV"));
 
-		mainScene.addChild(terrainPrefab.terrain);
+		@:privateAccess {
+			customScene.children = [];
+			terrainPrefab.terrain.parent = prevParent;
+		}
 		customScene.camera = null;
 
 		uvTexPixels = uvTex.capturePixels();
