@@ -158,12 +158,12 @@ class IconTree<T:{}> extends Component {
 			onMove(map.get(e.node.id).value, e.parent == "#" ? null : map.get(e.parent).value, e.position);
 		});
 		element.on('ready.jstree', function () {
-			var lis = element.find("li");
+			/* var lis = element.find("li");
 			for(li in lis) {
 				var item = map.get(li.id);
 				if(item != null)
 					applyStyle(item.value, new Element(li));
-			}
+			} */
 		});
 		element.on('changed.jstree', function (e, data) {
 			var nodes: Array<Dynamic> = data.changed.deselected;
