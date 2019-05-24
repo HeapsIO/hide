@@ -171,7 +171,7 @@ class Scene extends Component implements h3d.IDrawable {
 			ide.unregisterUpdate(sync);
 			return;
 		}
-		if( !visible || (!Ide.inst.isFocused && !refreshIfUnfocused) )
+		if( !visible || (!Ide.inst.isFocused && !refreshIfUnfocused) || pendingCount > 0)
 			return;
 		refreshIfUnfocused = false;
 		setCurrent();
