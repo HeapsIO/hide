@@ -103,6 +103,14 @@ class Reference extends Object3D {
 		return ctx;
 	}
 
+	override function removeInstance(ctx:Context):Bool {
+		if(!super.removeInstance(ctx))
+			return false;
+		if(ctx.local2d != null)
+			ctx.local2d.remove();
+		return true;
+	}
+
 	override function to<T:Prefab>( c : Class<T> ) : Null<T> {
 		var base = super.to(c);
 		if(base != null)
