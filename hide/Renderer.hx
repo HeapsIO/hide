@@ -58,13 +58,13 @@ class Renderer extends h3d.scene.fwd.Renderer {
 		if( has("normal") )
 			renderPass(normal,get("normal"));
 
-		renderPass(defaultPass, getSort("default", true) );
-		renderPass(defaultPass, getSort("alpha") );
+		renderPass(defaultPass, get("default"), frontToBack);
+		renderPass(defaultPass, get("alpha"), backToFront);
 		renderPass(defaultPass, get("additive") );
-		renderPass(defaultPass, getSort("debuggeom") );
-		renderPass(defaultPass, getSort("debuggeom_alpha"));
-		renderPass(defaultPass, getSort("overlay") );
-		renderPass(defaultPass, getSort("ui"));
+		renderPass(defaultPass, get("debuggeom"), backToFront);
+		renderPass(defaultPass, get("debuggeom_alpha"), backToFront);
+		renderPass(defaultPass, get("overlay"), backToFront );
+		renderPass(defaultPass, get("ui"), backToFront);
 
 
 		var outlineTex = allocTarget("outlineBlur", false);
@@ -159,8 +159,8 @@ class PbrRenderer extends h3d.scene.pbr.Renderer {
 	}
 
 	override function mainDraw() {
-		renderPass(output, getSort("default", true));
-		renderPass(output, getSort("alpha"));
+		renderPass(output, get("default"), frontToBack);
+		renderPass(output, get("alpha"), backToFront);
 		renderPass(output, get("additive"));
 
 		var outlineTex = allocTarget("outline", false);
@@ -174,10 +174,10 @@ class PbrRenderer extends h3d.scene.pbr.Renderer {
 	}
 
 	override function postDraw() {
-		renderPass(defaultPass, getSort("debuggeom"));
-		renderPass(defaultPass, getSort("debuggeom_alpha"));
-		renderPass(defaultPass, getSort("overlay"));
-		renderPass(defaultPass, getSort("ui"));
+		renderPass(defaultPass, get("debuggeom"), backToFront);
+		renderPass(defaultPass, get("debuggeom_alpha"), backToFront);
+		renderPass(defaultPass, get("overlay"), backToFront);
+		renderPass(defaultPass, get("ui"), backToFront);
 	}
 }
 
