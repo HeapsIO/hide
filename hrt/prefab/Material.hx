@@ -1,5 +1,7 @@
 package hrt.prefab;
 
+import h3d.mat.PbrMaterial;
+
 class Material extends Prefab {
 
 	public var wrapRepeat = false;
@@ -115,7 +117,7 @@ class Material extends Prefab {
 	#if editor
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
-
+		var isPbr = Std.is(ctx.scene.s3d.renderer, h3d.scene.pbr.Renderer);
 		var mat = h3d.mat.Material.create();
 		mat.props = renderProps();
 		var group = ctx.properties.add(new hide.Element('<div class="group" name="Material"></div>'));
@@ -124,7 +126,151 @@ class Material extends Prefab {
 			ctx.onChange(this, "props");
 		});
 
-		var isPbr = Std.is(ctx.scene.s3d.renderer, h3d.scene.pbr.Renderer);
+		if( isPbr ) {
+			var pbrProps : h3d.mat.PbrMaterial.PbrProps = mat.props;
+
+			var colorMask = new hide.Element('
+			<div class="group" name="Color Mask">
+				<dt>Channels</dt>
+					<dd>
+						R <input type="checkbox" class="colorMaskR"/>
+						G <input type="checkbox" class="colorMaskG"/>
+						B <input type="checkbox" class="colorMaskB"/>
+						A <input type="checkbox" class="colorMaskA"/>
+					</dd>
+			</div>');
+			ctx.properties.add(colorMask, this, function(pname) { ctx.onChange(this, pname); });
+
+			function setBit( e : Element, field : String, className : String, bitIndex : Int ) {
+				var mask = e.find(className);
+				var val : Int = cast Reflect.field(pbrProps, field);
+				mask.prop("checked", val & (1<<bitIndex) > 0 ? true : false);
+				mask.on("change", function(_) {
+					var val : Int = cast Reflect.field(pbrProps, field);
+					var checked : Bool = mask.prop("checked");
+					Reflect.setField(pbrProps, field, checked ? val | (1 << bitIndex) : val & ~(1 << bitIndex));
+					ctx.onChange(this, "props");
+
+					ctx.properties.undo.change(Custom(function(undo) {
+						if( undo )
+							Reflect.setField(pbrProps, field, checked ? val & ~(1 << bitIndex) : val | (1 << bitIndex));
+						else
+							Reflect.setField(pbrProps, field, checked ? val | (1 << bitIndex) : val & ~(1 << bitIndex));
+						mask.prop("checked", val & (1<<bitIndex) > 0 ? true : false);
+					}));
+				});
+			}
+		
+			setBit(colorMask, "colorMask", ".colorMaskR", 0);
+			setBit(colorMask, "colorMask", ".colorMaskG", 1);
+			setBit(colorMask, "colorMask", ".colorMaskB", 2);
+			setBit(colorMask, "colorMask", ".colorMaskA", 3);
+
+			var stencilParams = '
+			<dt>Compare</dt>
+				<dd>
+					<select field="stencilCompare">
+						<option value="Always">Always</option>
+						<option value="Never">Never</option>
+						<option value="Equal">Equal</option>
+						<option value="NotEqual">NotEqual</option>
+						<option value="Greater">Greater</option>
+						<option value="GreaterEqual">GreaterEqual</option>
+						<option value="Less">Less</option>
+						<option value="LessEqual">LessEqual</option>
+					</select>
+				</dd>
+				<dt>Stencil Fail</dt>
+				<dd>
+					<select field="stencilFailOp">
+						<option value="Keep">Keep</option>
+						<option value="Zero">Zero</option>
+						<option value="Replace">Replace</option>
+						<option value="Increment">Increment</option>
+						<option value="IncrementWrap">IncrementWrap</option>
+						<option value="Decrement">Decrement</option>
+						<option value="DecrementWrap">DecrementWrap</option>
+						<option value="Invert">Invert</option>
+					</select>
+				</dd>
+				<dt>Depth Fail</dt>
+				<dd>
+					<select field="depthFailOp">
+						<option value="Keep">Keep</option>
+						<option value="Zero">Zero</option>
+						<option value="Replace">Replace</option>
+						<option value="Increment">Increment</option>
+						<option value="IncrementWrap">IncrementWrap</option>
+						<option value="Decrement">Decrement</option>
+						<option value="DecrementWrap">DecrementWrap</option>
+						<option value="Invert">Invert</option>
+					</select>
+				</dd>
+				<dt>Stencil Pass</dt>
+				<dd>
+					<select field="stencilPassOp">
+						<option value="Keep">Keep</option>
+						<option value="Zero">Zero</option>
+						<option value="Replace">Replace</option>
+						<option value="Increment">Increment</option>
+						<option value="IncrementWrap">IncrementWrap</option>
+						<option value="Decrement">Decrement</option>
+						<option value="DecrementWrap">DecrementWrap</option>
+						<option value="Invert">Invert</option>
+					</select>
+				</dd>
+				<dt>Read Mask</dt>
+					<dd>
+						<input type="checkbox" class="read7"/>
+						<input type="checkbox" class="read6"/>
+						<input type="checkbox" class="read5"/>
+						<input type="checkbox" class="read4"/>
+						<input type="checkbox" class="read3"/>
+						<input type="checkbox" class="read2"/>
+						<input type="checkbox" class="read1"/>
+						<input type="checkbox" class="read0"/>	
+					</dd>
+				<dt>Write Mask</dt>
+					<dd>
+						<input type="checkbox" class="write7"/>
+						<input type="checkbox" class="write6"/>
+						<input type="checkbox" class="write5"/>
+						<input type="checkbox" class="write4"/>
+						<input type="checkbox" class="write3"/>
+						<input type="checkbox" class="write2"/>
+						<input type="checkbox" class="write1"/>
+						<input type="checkbox" class="write0"/>
+					</dd>
+				<dt>Value</dt>
+					<dd>
+						<input type="checkbox" class="value7"/>
+						<input type="checkbox" class="value6"/>
+						<input type="checkbox" class="value5"/>
+						<input type="checkbox" class="value4"/>
+						<input type="checkbox" class="value3"/>
+						<input type="checkbox" class="value2"/>
+						<input type="checkbox" class="value1"/>
+						<input type="checkbox" class="value0"/>						
+					</dd>';
+			var stencil = new hide.Element('
+			<div class="group" name="Stencil">
+				<dt>Enable</dt><dd><input type="checkbox" field="enableStencil"/></dd>' 
+				+ (pbrProps.enableStencil ? stencilParams : "") +'		
+			</div>');
+
+			ctx.properties.add(stencil, pbrProps, function(pname) { 
+				ctx.onChange(this, "props");
+				if( pname == "enableStencil" )
+					ctx.rebuildProperties();
+			});
+
+			for( i in 0 ... 8 ) {
+				setBit(stencil, "stencilWriteMask", ".write"+i, i);
+				setBit(stencil, "stencilReadMask", ".read"+i, i);
+				setBit(stencil, "stencilValue", ".value"+i, i);
+			}	
+		}
+
 		ctx.properties.add(new hide.Element('<div class="group" name="Overrides">
 			<dl>
 				<dt>${isPbr ? "Albedo" : "Diffuse"}</dt><dd><input type="texturepath" field="diffuseMap" style="width:165px"/></dd>

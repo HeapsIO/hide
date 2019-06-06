@@ -90,7 +90,7 @@ class Prefab {
 
 		if( !b ) {
 			for( m in materials ) {
-				m.mainPass.stencil = null;
+				//m.mainPass.stencil = null;
 				m.removePass(m.getPass("highlight"));
 			}
 			return;
