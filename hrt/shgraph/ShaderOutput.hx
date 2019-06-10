@@ -33,7 +33,15 @@ class ShaderOutput extends ShaderNode {
 
 	}
 
-	static var availableOutputs = [];
+	static var availableOutputs = [
+		{
+			parent: null,
+			id: 0,
+			kind: Var,
+			name: "calculatedUV",
+			type: TVec(2, VFloat)
+		}
+	];
 
 	override public function loadProperties(props : Dynamic) {
 		var paramVariable : Array<String> = Reflect.field(props, "variable");
