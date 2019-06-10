@@ -420,7 +420,7 @@ class Scene extends Component implements h3d.IDrawable {
 			var data = sys.io.File.getBytes(fullPath);
 			if( data.get(0) != 'H'.code ) {
 				var hmdOut = new hxd.fmt.fbx.HMDOut(fullPath);
-				hmdOut.absoluteTexturePath = true;
+				hmdOut.absoluteTexturePath = (e == null);
 				hmdOut.loadFile(data);
 				var hmd = hmdOut.toHMD(null, !isAnimation);
 				var out = new haxe.io.BytesOutput();
