@@ -44,6 +44,7 @@ class Light extends Object3D {
 	public var color : Int = 0xffffff;
 	public var power : Float = 1.0;
 	public var shadows : LightShadows = getShadowsDefault();
+	public var occlusionFactor = 0.0;
 	public var isMainLight : Bool = false;
 
 	// Point/Spot
@@ -91,6 +92,7 @@ class Light extends Object3D {
 		obj.fallOff = fallOff;
 		obj.maxRange = maxRange;
 		obj.cookiePath = cookiePath;
+		obj.occlusionFactor = occlusionFactor;
 
 		if( shadows.mode != None ) {
 			obj.shadows = Reflect.copy(shadows);
@@ -112,6 +114,7 @@ class Light extends Object3D {
 		fallOff = obj.fallOff;
 		maxRange = obj.maxRange;
 		cookiePath = obj.cookiePath;
+		occlusionFactor = obj.occlusionFactor == null ? 0.0 : obj.occlusionFactor;
 
 		if( obj.shadows != null ) {
 			var sh : Dynamic = Reflect.copy(obj.shadows);
@@ -200,6 +203,7 @@ class Light extends Object3D {
 		var color = color | 0xff000000;
 		var light = cast(ctx.local3d,h3d.scene.pbr.Light);
 		light.isMainLight = isMainLight;
+		light.occlusionFactor = occlusionFactor;
 
 		switch( kind ) {
 		case Spot:
@@ -414,6 +418,7 @@ class Light extends Object3D {
 						</select></dd>
 					<dt>Color</dt><dd><input type="color" field="color"/></dd>
 					<dt>Power</dt><dd><input type="range" min="0" max="10" field="power"/></dd>
+					<dt>Occlusion Factor</dt><dd><input type="range" min="0" max="1" field="occlusionFactor"/></dd>
 				</dl>
 			</div>
 		');

@@ -436,7 +436,7 @@ class EmitterObject extends h3d.scene.Object {
 		emitCount += count;
 	}
 
-	function createMeshBatch() {
+	function createMeshBatch( startTime : Float ) {
 
 		if( batch != null )
 			batch.remove();
@@ -477,9 +477,9 @@ class EmitterObject extends h3d.scene.Object {
 			// Animated textures animations
 			var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
 			if( frameCount > 1 ) {
-				if( mesh != null && mesh.material != null ) {
+				if( mesh != null && mesh.material != null && mesh.material.texture != null ) {
 					var pshader = new h3d.shader.AnimatedTexture(mesh.material.texture, frameDivisionX, frameDivisionY, frameCount, frameCount * animationRepeat / lifeTime);
-					pshader.startTime = renderTime;
+					pshader.startTime = startTime;
 					pshader.loop = animationLoop;
 					mesh.material.mainPass.addShader(pshader);
 				}
@@ -538,7 +538,9 @@ class EmitterObject extends h3d.scene.Object {
 					var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
 					if( frameCount > 0 && animationRepeat == 0 ) {
 						var s = batch.material.mainPass.getShader(h3d.shader.AnimatedTexture);
-						if( s != null) s.startFrame = p.startFrame;
+						if( s != null){
+							s.startFrame = p.startFrame;
+						}
 					}
 					batch.emitInstance();
 				}
@@ -807,7 +809,7 @@ class Emitter extends Object3D {
 		emitterObj.animationRepeat = getParamVal("animationRepeat");
 		emitterObj.animationLoop = getParamVal("animationLoop");
 
-		emitterObj.createMeshBatch();
+		emitterObj.createMeshBatch(@:privateAccess ctx.local3d.getScene().renderer.ctx.time);
 
 		#if editor
 		if(propName == null || ["emitShape", "emitAngle", "emitRad1", "emitRad2"].indexOf(propName) >= 0)
