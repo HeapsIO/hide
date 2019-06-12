@@ -75,9 +75,13 @@ class ContextShared {
 		var r = shaderCache.get(path);
 		if(r != null)
 			return r;
-		var cl = Type.resolveClass(path.split("/").join("."));
+		var cl : Class<hxsl.Shader> = cast Type.resolveClass(path.split("/").join("."));
 		if(cl == null) return null;
-		var shader = new hxsl.SharedShader(Reflect.field(cl, "SRC"));
+		// make sure to share the SharedShader instance with the real shader
+		// so we don't get a duplicate cache of instances
+		var shaderInst = Type.createEmptyInstance(cl);
+		@:privateAccess shaderInst.initialize();
+		var shader = @:privateAccess shaderInst.shader;
 		r = {
 			shader: shader,
 			inits: []
