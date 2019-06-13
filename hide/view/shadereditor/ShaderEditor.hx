@@ -138,7 +138,7 @@ class ShaderEditor extends hide.view.Graph {
 			if (e.ctrlKey && e.keyCode == 83) {
 				save();
 				return;
-			} else if (e.keyCode != 16) {
+			} else if (e.shiftKey) {
 				if (addMenu == null || !addMenu.is(":visible"))
 					openAddMenu();
 
