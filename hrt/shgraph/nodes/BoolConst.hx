@@ -3,8 +3,8 @@ package hrt.shgraph.nodes;
 using hxsl.Ast;
 
 @name("Bool")
-@description("Boolean input, it's static")
-@group("Input")
+@description("Boolean input (static)")
+@group("Property")
 @width(100)
 @noheader()
 class BoolConst extends ShaderConst {

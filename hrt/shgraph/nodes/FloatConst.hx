@@ -3,8 +3,8 @@ package hrt.shgraph.nodes;
 using hxsl.Ast;
 
 @name("Number")
-@description("Number input, it's static")
-@group("Input")
+@description("Number input (static)")
+@group("Property")
 @width(100)
 @noheader()
 class FloatConst extends ShaderConst {

@@ -7,12 +7,12 @@ using hxsl.Ast;
 @group("Channel")
 class Split extends ShaderNode {
 
-	@input("rgba") var input = SType.Vec4;
+	@input("RGBA") var input = SType.Vec4;
 
-	@output("r") var r = SType.Float;
-	@output("g") var g = SType.Float;
-	@output("b") var b = SType.Float;
-	@output("a") var a = SType.Float;
+	@output("R") var r = SType.Float;
+	@output("G") var g = SType.Float;
+	@output("B") var b = SType.Float;
+	@output("A") var a = SType.Float;
 
 	var components = [X, Y, Z, W];
 	var componentsString = ["r", "g", "b", "a"];

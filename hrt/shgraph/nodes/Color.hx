@@ -3,8 +3,8 @@ package hrt.shgraph.nodes;
 using hxsl.Ast;
 
 @name("Color")
-@description("Color input, it's static")
-@group("Input")
+@description("Color property (static)")
+@group("Property")
 @width(100)
 @noheader()
 class Color extends ShaderConst {

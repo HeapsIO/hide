@@ -4,7 +4,7 @@ using hxsl.Ast;
 
 @name("Inputs")
 @description("Shader inputs of Heaps, it's dynamic")
-@group("Input")
+@group("Property")
 @noheader()
 @color("#0e8826")
 class ShaderInput extends ShaderNode {

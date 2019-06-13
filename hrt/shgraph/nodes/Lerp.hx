@@ -3,14 +3,14 @@ package hrt.shgraph.nodes;
 using hxsl.Ast;
 
 @name("Lerp")
-@description("Linear interpolation between Min and Max using A")
+@description("Linear interpolation between a and b using mix")
 @width(80)
 @group("Math")
 class Lerp extends ShaderFunction {
 
-	@input("min") var x = SType.Number;
-	@input("max") var y = SType.Number;
-	@input("A") var a = SType.Number;
+	@input("a") var x = SType.Number;
+	@input("b") var y = SType.Number;
+	@input("mix") var a = SType.Number;
 
 	public function new() {
 		super(Mix);
