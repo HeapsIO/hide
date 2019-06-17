@@ -545,6 +545,9 @@ class TerrainEditor {
 			previewStrokeBuffers();
 			return;
 		}
+
+		if( currentBrush == null || currentBrush.step <= 0 ) return;
+
 		var dist = (to.sub(from)).length();
 		if( dist + remainingDist >= currentBrush.step ) {
 			var dir = to.sub(from);
