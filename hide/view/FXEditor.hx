@@ -512,9 +512,9 @@ class FXEditor extends FileView {
 
 			function updateSelected() {
 				curves = [];
-				var anyNonEmitter = curveEdits.find(ce -> !isEmitterCurve(ce.curve)) != null;
+				var anyNonEmitter = curveEdits.find(ce -> !isInstanceCurve(ce.curve)) != null;
 				for(ce in curveEdits) {
-					if(anyNonEmitter && isEmitterCurve(ce.curve))
+					if(anyNonEmitter && isInstanceCurve(ce.curve))
 						continue;  // Filter-out emitter curves unless only emitter curves are selected
 					curves.push(ce.curve);
 				}
@@ -864,7 +864,7 @@ class FXEditor extends FileView {
 			curveEdit.xOffset = xOffset;
 			curveEdit.xScale = xScale;
 			curveEdit.curve = curve;
-			if(isEmitterCurve(curve))
+			if(isInstanceCurve(curve))
 				curveEdit.maxLength = 1.0;
 			curveEdit.onChange = function(anim) {
 				refreshDopesheet();
@@ -1309,8 +1309,8 @@ class FXEditor extends FileView {
 		return prop.charAt(0).toUpperCase() + prop.substr(1);
 	}
 
-	static function isEmitterCurve(curve: Curve) {
-		return curve.getParent(hrt.prefab.fx.Emitter) != null;
+	static function isInstanceCurve(curve: Curve) {
+		return curve.getParent(hrt.prefab.fx.Emitter) != null && curve.name.indexOf("inst") == 0;
 	}
 
 	static var _ = FileTree.registerExtension(FXEditor, ["fx"], { icon : "sitemap", createNew : "FX" });
