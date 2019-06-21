@@ -414,6 +414,7 @@ class FXEditor extends FileView {
 		tools.addToggle("refresh", "Auto synchronize", function(b) {
 			autoSync = b;
 		});
+		tools.addToggle("compass", "Local transforms", (v) -> sceneEditor.localTransform = v, sceneEditor.localTransform);
 		pauseButton = tools.addToggle("pause", "Pause animation", function(v) {}, false);
 		tools.addRange("Speed", function(v) {
 			scene.speed = v;
