@@ -30,11 +30,16 @@ typedef CurveKeys = Array<CurveKey>;
 
 class Curve extends Prefab {
 
-	public var duration : Float = 0.; // TODO: optional?
 	public var clampMin : Float = 0.;
 	public var clampMax : Float = 0.;
 	public var keyMode : CurveKeyMode = Linear;
 	public var keys : CurveKeys = [];
+
+	public var duration(get, never): Float;
+	function get_duration() {
+		if(keys.length == 0) return 0.0;
+		return keys[keys.length-1].time;
+	}
 
    	public function new(?parent) {
 		super(parent);
@@ -42,7 +47,6 @@ class Curve extends Prefab {
 	}
 
 	public override function load(o:Dynamic) {
-		duration = o.duration;
 		keys = [];
 		if(o.keys != null) {
 			for(k in (o.keys: Array<Dynamic>)) {
@@ -76,7 +80,6 @@ class Curve extends Prefab {
 			keysDat.push(o);
 		}
 		return {
-			duration: duration,
 			clampMin: clampMin,
 			clampMax: clampMax,
 			keyMode: keyMode,
@@ -228,6 +231,7 @@ class Curve extends Prefab {
 
 	public function sample(numPts: Int) {
 		var vals = [];
+		var duration = this.duration;
 		for(i in 0...numPts) {
 			var v = getVal(duration * i/(numPts-1));
 			vals.push(v);
