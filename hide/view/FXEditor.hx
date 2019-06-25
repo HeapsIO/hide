@@ -153,6 +153,7 @@ class FXEditor extends FileView {
 
 	var scriptEditor : hide.comp.ScriptEditor;
 	var fxScriptParser : hrt.prefab.fx.FXScriptParser;
+	var cullingPreview : h3d.scene.Sphere;
 
 	override function getDefaultContent() {
 		return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab.fx.FX().saveData()));
@@ -374,6 +375,9 @@ class FXEditor extends FileView {
 		axis.material.mainPass.setPassName("debuggeom");
 		axis.visible = showGrid;
 
+		cullingPreview = new h3d.scene.Sphere(0xffffff, data.cullingRadius, true, scene.s3d);
+		cullingPreview.visible = showGrid;
+
 		tools.saveDisplayKey = "FXScene/tools";
 		tools.addButton("video-camera", "Perspective camera", () -> sceneEditor.resetCamera());
 
@@ -405,6 +409,7 @@ class FXEditor extends FileView {
 		tools.addToggle("th", "Show grid", function(v) {
 			showGrid = v;
 			axis.visible = v;
+			cullingPreview.visible = v;
 			updateGrid();
 		}, showGrid);
 		tools.addColor("Background color", function(v) {
@@ -430,6 +435,8 @@ class FXEditor extends FileView {
 		if(p == data) {
 			previewMax = hxd.Math.min(data.duration == 0 ? 5000 : data.duration, previewMax);
 			refreshTimeline(false);
+
+			cullingPreview.radius = data.cullingRadius;
 		}
 
 		if(p.to(Event) != null) {

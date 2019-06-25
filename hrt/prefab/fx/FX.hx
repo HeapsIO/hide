@@ -52,8 +52,9 @@ class FXAnimation extends h3d.scene.Object {
 	public var followVisibility : h3d.scene.Object;
 
 	public var playSpeed : Float;
-	public var localTime(default, null) : Float = 0.0;
+	public var localTime : Float = 0.0;
 	public var duration : Float;
+	public var cullingRadius : Float;
 
 	public var loopAnims : Bool;
 	public var objects: Array<ObjectAnimation> = [];
@@ -93,19 +94,6 @@ class FXAnimation extends h3d.scene.Object {
 	}
 
 	override function syncRec( ctx : h3d.scene.RenderContext ) {
-		#if !editor
-		if(playSpeed > 0) {
-			// Auto-play outside of editor
-			localTime += ctx.elapsedTime * playSpeed;
-			setTime(localTime);
-
-			if(localTime > duration && duration != 0 /*Infinite*/) {
-				if(onEnd != null )
-					onEnd();
-			}
-		}
-		#end
-
 		var visiblity : Bool = true;
 		if(followVisibility != null)
 			visiblity = visiblity && followVisibility.visible;
@@ -221,11 +209,13 @@ class FX extends hrt.prefab.Library {
 	public var duration : Float;
 	public var loopAnims : Bool;
 	public var scriptCode : String;
+	public var cullingRadius : Float;
 
 	public function new() {
 		super();
 		type = "fx";
 		duration = 5.0;
+		cullingRadius = 3.0;
 		loopAnims = true;
 	}
 
@@ -233,6 +223,7 @@ class FX extends hrt.prefab.Library {
 		var obj : Dynamic = super.save();
 		obj.duration = duration;
 		obj.loopAnims = loopAnims;
+		obj.cullingRadius = cullingRadius;
 		if( scriptCode != "" ) obj.scriptCode = scriptCode;
 		return obj;
 	}
@@ -241,6 +232,8 @@ class FX extends hrt.prefab.Library {
 		super.load(obj);
 		duration = obj.duration == null ? 5.0 : obj.duration;
 		loopAnims = obj.loopAnims == null ? true : obj.loopAnims;
+		if(obj.cullingRadius != null)
+			cullingRadius = obj.cullingRadius;
 		scriptCode = obj.scriptCode;
 	}
 
@@ -433,6 +426,7 @@ class FX extends hrt.prefab.Library {
 		var fxanim = createInstance(ctx.local3d);
 		fxanim.duration = duration;
 		fxanim.loopAnims = loopAnims;
+		fxanim.cullingRadius = cullingRadius;
 		ctx.local3d = fxanim;
 		fxanim.playSpeed = 1.0;
 
@@ -469,6 +463,7 @@ class FX extends hrt.prefab.Library {
 		var fxanim = Std.instance(ctx.local3d, FXAnimation);
 		fxanim.duration = duration;
 		fxanim.loopAnims = loopAnims;
+		fxanim.cullingRadius = cullingRadius;
 	}
 
 	#if editor
@@ -477,6 +472,7 @@ class FX extends hrt.prefab.Library {
 			<div class="group" name="FX Scene">
 				<dl>
 					<dt>Duration</dt><dd><input type="number" value="0" field="duration"/></dd>
+					<dt>Culling radius</dt><dd><input type="number" field="cullingRadius"/></dd>
 					<dt>Loop Anims</dt><dd><input type="checkbox" field="loopAnims"/></dd>
 				</dl>
 			</div>');
