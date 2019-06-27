@@ -33,6 +33,8 @@ class TileRevertData {
 	}
 }
 
+@:access(hrt.prefab.terrain.TerrainMesh)
+@:access(hrt.prefab.terrain.Terrain)
 class TerrainEditor {
 
 	public var currentBrush : Brush;
@@ -103,6 +105,7 @@ class TerrainEditor {
 		terrainPrefab.saveWeightTextures(editContext.rootContext);
 		terrainPrefab.saveHeightTextures(editContext.rootContext);
 		terrainPrefab.saveBinary(editContext.rootContext);
+		terrainPrefab.saveNormals(editContext.rootContext);
 		return;
 	}
 
@@ -261,6 +264,15 @@ class TerrainEditor {
 		weightStrokeBufferArray.reset();
 	}
 
+	function refreshTileAlloc() {
+		for( tile in terrainPrefab.terrain.tiles ) {
+			if( tile.needAlloc ) {
+				tile.grid.alloc(h3d.Engine.getCurrent());
+				tile.needAlloc = false;
+			}
+		}
+	}
+
 	function applyStrokeBuffers() {
 		var revertDatas = new Array<TileRevertData>();
 		for( strokeBuffer in heightStrokeBufferArray.strokeBuffers ) {
@@ -302,10 +314,17 @@ class TerrainEditor {
 		for( strokeBuffer in heightStrokeBufferArray.strokeBuffers ) {
 			if( strokeBuffer.used == true ) {
 				var tile = terrainPrefab.terrain.getTile(strokeBuffer.x, strokeBuffer.y);
+				tile.refreshGrid();
+			}
+		}
+		for( strokeBuffer in heightStrokeBufferArray.strokeBuffers ) {
+			if( strokeBuffer.used == true ) {
+				var tile = terrainPrefab.terrain.getTile(strokeBuffer.x, strokeBuffer.y);
 				tile.blendEdges();
 			}
 		}
-		terrainPrefab.terrain.refreshTiles();
+
+		refreshTileAlloc();
 
 		if( revertDatas.length > 0 ) {
 			undo.change(Custom(function(undo) {
@@ -320,7 +339,7 @@ class TerrainEditor {
 					if( tile == null ) continue;
 					tile.blendEdges();
 				}
-				terrainPrefab.terrain.refreshTiles();
+				refreshTileAlloc();
 			}));
 		}
 

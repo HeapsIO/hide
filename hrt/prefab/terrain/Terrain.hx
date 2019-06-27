@@ -13,6 +13,7 @@ typedef SurfaceProps = {
 	maxHeight : Float,
 };
 
+@:access(hrt.prefab.terrain.TerrainMesh)
 class Terrain extends Object3D {
 
 	public var tileSize = 10.0;
@@ -119,18 +120,25 @@ class Terrain extends Object3D {
 			var y = Std.parseInt(coords[1]);
 			if( x == null || y == null ) continue;
 			var type = coords[2];
-			var tile = terrain.createEmptyTile(x, y);
+			var tile = terrain.createTile(x, y, false);
 
 			switch( type ) {
+				case "n":
+				#if !editor
+				var bytes = res.entry.getBytes();
+				tile.createBigPrim(bytes);
+				#end
 				case "h":
 				if( height ) {
 					var bytes = res.entry.getBytes();
 					var pixels : hxd.Pixels.PixelsFloat = new hxd.Pixels(heightMapResolution + 1, heightMapResolution + 1, bytes, RGBA32F);
+					@:privateAccess tile.heightmapPixels = pixels;
+					#if editor
 					if( tile.heightMap == null ) @:privateAccess tile.refreshHeightMap();
 					tile.heightMap.uploadPixels(pixels);
-					@:privateAccess tile.heightmapPixels = pixels;
+					tile.refreshGrid();
+					#end
 				}
-				tile.refreshMesh();
 				case "w":
 				if( weight ) {
 					var tex = res.toTexture();
@@ -207,8 +215,10 @@ class Terrain extends Object3D {
 
 				loadTiles(ctx, height, surface, surface);
 
+				#if editor
 				for( t in terrain.tiles )
 					t.computeEdgesNormals();
+				#end
 
 				initDone = true;
 			}
@@ -232,6 +242,21 @@ class Terrain extends Object3D {
 			var pixels = tile.heightMap.capturePixels();
 			var fileName = tile.tileX + "_" + tile.tileY + "_" + "h";
 			ctx.shared.savePrefabDat(fileName, "heightMap", name, pixels.bytes);
+		}
+	}
+
+	public function saveNormals( ctx : Context ) {
+		for( tile in terrain.tiles ) {
+			if( tile.grid == null || tile.grid.normals == null ) continue;
+			var normals = tile.grid.normals;
+			var fileName = tile.tileX + "_" + tile.tileY + "_" + "n";
+			var bytes = haxe.io.Bytes.alloc(normals.length * 3 * 4);
+			for( i in 0 ... normals.length ) {
+				bytes.setFloat(i*3*4, normals[i].x);
+				bytes.setFloat(i*3*4+4, normals[i].y);
+				bytes.setFloat(i*3*4+8, normals[i].z);
+			}
+			ctx.shared.savePrefabDat(fileName, "normal", name, bytes);
 		}
 	}
 
@@ -319,7 +344,7 @@ class Terrain extends Object3D {
 		terrain.surfaceArray.pbr.uploadPixels(pixels, 0, 2);
 
 		terrain.updateSurfaceParams();
-		terrain.refreshTex();
+		terrain.refreshAllTex();
 		loadTiles(ctx, true, true, true);
 		for( t in terrain.tiles )
 			t.computeEdgesNormals();
@@ -451,10 +476,10 @@ class Terrain extends Object3D {
 			terrain.cellCount = getCellCount();
 			terrain.cellSize = getCellSize();
 			terrain.tileSize = terrain.cellCount * terrain.cellSize;
-			terrain.refreshMesh();
+			terrain.refreshAllGrids();
 			terrain.heightMapResolution = heightMapResolution;
 			terrain.weightMapResolution = weightMapResolution;
-			terrain.refreshTex();
+			terrain.refreshAllTex();
 			for( tile in terrain.tiles )
 				tile.blendEdges();
 			if( editor != null )

@@ -1,24 +1,33 @@
 package hrt.prefab.terrain;
 
+@:access(hrt.prefab.terrain.Tile)
 class TerrainMesh extends h3d.scene.Object {
 
+	// Resolution Vertexes/Pixels
 	public var tileSize : Float;
 	public var cellSize : Float;
 	public var cellCount : Int;
 	public var heightMapResolution : Int;
 	public var weightMapResolution : Int;
+	public var useBigPrim = false;
+
+	// Shader Params
+	#if editor
 	public var showGrid : Bool;
 	public var showChecker : Bool;
 	public var showComplexity : Bool;
+	#end
 	public var parallaxAmount : Float;
 	public var parallaxMinStep : Int;
 	public var parallaxMaxStep : Int;
 	public var heightBlendStrength : Float;
 	public var blendSharpness : Float;
-	public var tiles : Array<Tile> = [];
-	public var surfaces : Array<Surface> = [];
-	public var surfaceArray : Surface.SurfaceArray;
-	public var copyPass : h3d.pass.Copy;
+
+	// Data
+	var tiles : Array<Tile> = [];
+	var surfaces : Array<Surface> = [];
+	var surfaceArray : Surface.SurfaceArray;
+	var copyPass : h3d.pass.Copy;
 
 	public function new(?parent){
 		super(parent);
@@ -40,9 +49,11 @@ class TerrainMesh extends h3d.scene.Object {
 		o.cellCount = cellCount;
 		o.heightMapResolution = heightMapResolution;
 		o.weightMapResolution = weightMapResolution;
+		#if editor
 		o.showGrid = showGrid;
 		o.showChecker = showChecker;
 		o.showComplexity = showComplexity;
+		#end
 		o.parallaxAmount = parallaxAmount;
 		o.parallaxMinStep = parallaxMinStep;
 		o.parallaxMaxStep = parallaxMaxStep;
@@ -50,7 +61,7 @@ class TerrainMesh extends h3d.scene.Object {
 		o.blendSharpness = blendSharpness;
 
 		for( i in 0...tiles.length ) {
-			var t = Std.instance(tiles[i].clone(), Tile);
+			var t = Std.downcast(tiles[i].clone(), Tile);
 			t.parent = o;
 			o.tiles.push(t);
 		}
@@ -115,7 +126,7 @@ class TerrainMesh extends h3d.scene.Object {
 			if( surfaces[i].pbr != null ) copyPass.apply(surfaces[i].pbr, surfaceArray.pbr, null, null, i);
 		}
 		updateSurfaceParams();
-		refreshTex();
+		refreshAllTex();
 	}
 
 	public function updateSurfaceParams() {
@@ -125,51 +136,32 @@ class TerrainMesh extends h3d.scene.Object {
 		}
 	}
 
-	public function refreshTiles() {
-		for( tile in tiles )
-			if( tile.needAlloc ) {
-				tile.grid.alloc(h3d.Engine.getCurrent());
-				tile.needAlloc = false;
-			}
-	}
-
-	public function refreshMesh() {
+	public function refreshAllGrids() {
 		for( tile in tiles ) {
 			tile.x = tile.tileX * tileSize;
 			tile.y = tile.tileY * tileSize;
-			tile.refreshMesh();
+			tile.refreshGrid();
 		}
 		for( tile in tiles )
 			tile.blendEdges();
 	}
 
-	public function refreshTex() {
-		for( tile in tiles ) {
-			tile.refresh();
-		}
+	public function refreshAllTex() {
+		for( tile in tiles ) 
+			tile.refreshTex();
 	}
 
-	public function refresh() {
-		refreshMesh();
-		refreshTex();
+	public function refreshAll() {
+		refreshAllGrids();
+		refreshAllTex();
 	}
 
-	public function createEmptyTile(x : Int, y : Int) : Tile {
+	public function createTile(x : Int, y : Int, ?createTexture = true) : Tile {
 		var tile = getTile(x,y);
 		if(tile == null){
 			tile = new Tile(x, y, this);
-			tile.refreshMesh();
-			tiles.push(tile);
-		}
-		return tile;
-	}
-
-	public function createTile( x : Int, y : Int ) : Tile {
-		var tile = getTile(x,y);
-		if( tile == null ) {
-			tile = new Tile(x, y, this);
-			tile.refreshMesh();
-			tile.refresh();
+			tile.refreshGrid();
+			if( createTexture ) tile.refreshTex();
 			tiles.push(tile);
 		}
 		return tile;
@@ -255,16 +247,6 @@ class TerrainMesh extends h3d.scene.Object {
 			&& Math.abs(pos.y - (tile.tileY * tileSize + tileSize * 0.5)) <= range + (tileSize * 0.5) )
 				result.push(tile);
 		return result;
-	}
-
-	public function getVisibleTiles( c : h3d.Camera ) : Array<Tile> {
-		var res = [];
-		for( tile in tiles ) {
-			var bounds = tile.getBounds();
-			if( c.frustum.hasBounds(bounds) )
-				res.push(tile);
-		}
-		return res;
 	}
 
 	static var tmpVec = new h3d.Vector();

@@ -4,6 +4,7 @@ enum Direction{
 	Up; Down; Left; Right; UpLeft; UpRight; DownLeft; DownRight;
 }
 
+@:access(hrt.prefab.terrain.TerrainMesh)
 class Tile extends h3d.scene.Mesh {
 
 	public var tileX (default, null) : Int;
@@ -15,20 +16,24 @@ class Tile extends h3d.scene.Mesh {
 	public var grid (default, null) : h3d.prim.Grid;
 	public var needAlloc = false;
 	public var needNewPixelCapture = false;
-	public var insideFrustrum = false;
+	public var insideFrustrum(default, null) = false;
+
 	var heightmapPixels : hxd.Pixels.PixelsFloat;
 	var shader : hrt.shader.Terrain;
+	var terrain : TerrainMesh;
+	var bigPrim : h3d.prim.BigPrimitive;
 
-	public function new( x : Int, y : Int , ?parent ) {
+	public function new( x : Int, y : Int, parent : TerrainMesh) {
 		super(null, null, parent);
+		terrain = parent;
 		this.tileX = x;
 		this.tileY = y;
 		shader = new hrt.shader.Terrain();
 		material.mainPass.addShader(shader);
 		material.mainPass.culling = None;
 		material.shadows = false;
-		this.x = x * getTerrain().tileSize;
-		this.y = y * getTerrain().tileSize;
+		this.x = x * terrain.tileSize;
+		this.y = y * terrain.tileSize;
 		name = "tile_" + x + "_" + y;
 	}
 
@@ -41,22 +46,24 @@ class Tile extends h3d.scene.Mesh {
 			if( surfaceWeights[i] != null ) surfaceWeights[i].dispose();
 		if( surfaceWeightArray != null )
 			surfaceWeightArray.dispose();
+		if( bigPrim != null )
+			bigPrim.dispose();
 	}
 
 	public override function clone( ?o : h3d.scene.Object ) : h3d.scene.Object {
-		var o = new Tile(tileX, tileY, parent);
+		var o = new Tile(tileX, tileY, cast parent);
 		o.heightMap = heightMap.clone();
 		o.surfaceIndexMap = surfaceIndexMap.clone();
 
 		for( i in 0...surfaceWeights.length )
 			o.surfaceWeights.push(surfaceWeights[i].clone());
 
-		o.surfaceWeightArray = new h3d.mat.TextureArray(getTerrain().weightMapResolution, getTerrain().weightMapResolution, surfaceWeights.length, [Target], R8);
+		o.surfaceWeightArray = new h3d.mat.TextureArray(terrain.weightMapResolution, terrain.weightMapResolution, surfaceWeights.length, [Target], R8);
 		o.surfaceWeightArray.wrap = Clamp;
 		o.surfaceWeightArray.preventAutoDispose();
 		o.surfaceWeightArray.realloc = null;
 		for( i in 0 ... surfaceWeights.length )
-			if( surfaceWeights[i] != null ) getTerrain().copyPass.apply(surfaceWeights[i], o.surfaceWeightArray, None, null, i);
+			if( surfaceWeights[i] != null ) terrain.copyPass.apply(surfaceWeights[i], o.surfaceWeightArray, None, null, i);
 
 		o.heightmapPixels = heightmapPixels.clone();
 		return o;
@@ -67,41 +74,77 @@ class Tile extends h3d.scene.Mesh {
 		return heightMap = v;
 	}
 
-	inline function getTerrain() {
-		return Std.instance(parent, TerrainMesh);
-	}
-
 	public function getHeightPixels() {
-		if( needNewPixelCapture || heightmapPixels == null )
+		if( needNewPixelCapture || heightmapPixels == null && heightMap != null )
 			heightmapPixels = heightMap.capturePixels();
 		needNewPixelCapture = false;
 		return heightmapPixels;
 	}
 
-	public function refreshMesh() {
-		if( grid == null || grid.width != getTerrain().cellCount || grid.height != getTerrain().cellCount || grid.cellWidth != getTerrain().cellSize || grid.cellHeight != getTerrain().cellSize ) {
-			if(grid != null) grid.dispose();
-		 	grid = new h3d.prim.Grid( getTerrain().cellCount, getTerrain().cellCount, getTerrain().cellSize, getTerrain().cellSize);
+	public function createBigPrim( normals : haxe.io.Bytes ) {
+		if( bigPrim != null ) bigPrim.dispose();
+		bigPrim = new h3d.prim.BigPrimitive(6);
+		var n = new h3d.Vector(0,0,0);
+		inline function addVertice(x : Float, y : Float, i : Int) {
+			// Pos
+			bigPrim.addVertexValue(x);
+			bigPrim.addVertexValue(y);
+			bigPrim.addVertexValue(getHeight(x / terrain.tileSize, y / terrain.tileSize));
+			// Normal
+			bigPrim.addVertexValue(normals.getFloat(i * 3 * 4));
+			bigPrim.addVertexValue(normals.getFloat(i * 3 * 4 + 4));
+			bigPrim.addVertexValue(normals.getFloat(i * 3 * 4 + 8));
+		}
+
+		var cellCount = terrain.cellCount;
+		var cellSize = terrain.cellSize;
+		bigPrim.begin(0,0);
+		for( y in 0 ... cellCount + 1 ) {
+			for( x in 0 ... cellCount + 1 ) {
+				addVertice(x * cellSize, y * cellSize, x + y * (terrain.cellCount + 1));
+			}
+		}
+
+		for( y in 0 ... cellCount ) {
+			for( x in 0 ... cellCount ) {
+				var i = x + y * (cellCount + 1);
+				bigPrim.addIndex(i);
+				bigPrim.addIndex(i + 1);
+				bigPrim.addIndex(i + cellCount + 2);
+				bigPrim.addIndex(i);
+				bigPrim.addIndex(i + cellCount + 2);
+				bigPrim.addIndex(i + cellCount + 1);
+			}
+		}
+		bigPrim.flush();
+		primitive = bigPrim;
+	}
+
+	public function refreshGrid() {
+		if( bigPrim != null )
+			return;
+		if( grid == null || grid.width != terrain.cellCount || grid.height != terrain.cellCount || grid.cellWidth != terrain.cellSize || grid.cellHeight != terrain.cellSize ) {
+			if( grid != null ) grid.dispose();
+		 	grid = new h3d.prim.Grid(terrain.cellCount, terrain.cellCount, terrain.cellSize, terrain.cellSize);
 			primitive = grid;
-			//grid.addUVs(); // Not currently used
 		}
 		computeNormals();
 	}
 
 	public function blendEdges() {
-		var adjTileX = getTerrain().getTile(tileX - 1, tileY);
+		var adjTileX = terrain.getTile(tileX - 1, tileY);
 		if( adjTileX != null ) {
 			var flags = new haxe.EnumFlags<Direction>();
         	flags.set(Left);
 			adjTileX.computeEdgesHeight(flags);
 		}
-		var adjTileY = getTerrain().getTile(tileX, tileY - 1);
+		var adjTileY = terrain.getTile(tileX, tileY - 1);
 		if( adjTileY != null ) {
 			var flags = new haxe.EnumFlags<Direction>();
         	flags.set(Up);
 			adjTileY.computeEdgesHeight(flags);
 		}
-		var adjTileXY = getTerrain().getTile(tileX - 1, tileY - 1);
+		var adjTileXY = terrain.getTile(tileX - 1, tileY - 1);
 		if( adjTileXY != null ) {
 			var flags = new haxe.EnumFlags<Direction>();
         	flags.set(UpLeft);
@@ -113,21 +156,20 @@ class Tile extends h3d.scene.Mesh {
 		flags.set(UpLeft);
 		computeEdgesHeight(flags);
 		computeNormals();
-
 		computeEdgesNormals();
 	}
 
 	function refreshHeightMap() {
-		if( heightMap == null || heightMap.width != getTerrain().heightMapResolution + 1 ) {
+		if( heightMap == null || heightMap.width != terrain.heightMapResolution + 1 ) {
 			var oldHeightMap = heightMap;
-			heightMap = new h3d.mat.Texture(getTerrain().heightMapResolution + 1, getTerrain().heightMapResolution + 1, [Target], RGBA32F );
+			heightMap = new h3d.mat.Texture(terrain.heightMapResolution + 1, terrain.heightMapResolution + 1, [Target], RGBA32F );
 			heightMap.setName("terrainHeightMap");
 			heightMap.wrap = Clamp;
 			heightMap.filter = Linear;
 			heightMap.preventAutoDispose();
 			heightMap.realloc = null;
 			if( oldHeightMap != null ) {
-				getTerrain().copyPass.apply(oldHeightMap, heightMap);
+				terrain.copyPass.apply(oldHeightMap, heightMap);
 				oldHeightMap.dispose();
 			}
 			needNewPixelCapture = true;
@@ -135,33 +177,33 @@ class Tile extends h3d.scene.Mesh {
 	}
 
 	function refreshIndexMap() {
-		if( surfaceIndexMap == null || surfaceIndexMap.width != getTerrain().weightMapResolution ) {
+		if( surfaceIndexMap == null || surfaceIndexMap.width != terrain.weightMapResolution ) {
 			var oldSurfaceIndexMap = surfaceIndexMap;
-			surfaceIndexMap = new h3d.mat.Texture(getTerrain().weightMapResolution, getTerrain().weightMapResolution, [Target], RGBA);
+			surfaceIndexMap = new h3d.mat.Texture(terrain.weightMapResolution, terrain.weightMapResolution, [Target], RGBA);
 			surfaceIndexMap.setName("terrainSurfaceIndexMap");
 			surfaceIndexMap.filter = Nearest;
 			surfaceIndexMap.preventAutoDispose();
 			surfaceIndexMap.realloc = null;
 			if( oldSurfaceIndexMap != null ) {
-				getTerrain().copyPass.apply(oldSurfaceIndexMap, surfaceIndexMap);
+				terrain.copyPass.apply(oldSurfaceIndexMap, surfaceIndexMap);
 				oldSurfaceIndexMap.dispose();
 			}
 		}
 	}
 
 	function refreshSurfaceWeights() {
-		if( getTerrain().surfaceArray.surfaceCount > 0 && (surfaceWeights.length != getTerrain().surfaceArray.surfaceCount || surfaceWeights[0].width != getTerrain().weightMapResolution) ) {
+		if( terrain.surfaceArray.surfaceCount > 0 && (surfaceWeights.length != terrain.surfaceArray.surfaceCount || surfaceWeights[0].width != terrain.weightMapResolution) ) {
 				var oldArray = surfaceWeights;
 				surfaceWeights = new Array<h3d.mat.Texture>();
-				surfaceWeights = [for( i in 0...getTerrain().surfaceArray.surfaceCount ) null];
+				surfaceWeights = [for( i in 0...terrain.surfaceArray.surfaceCount ) null];
 				for( i in 0 ... surfaceWeights.length ) {
-					surfaceWeights[i] = new h3d.mat.Texture(getTerrain().weightMapResolution, getTerrain().weightMapResolution, [Target], R8);
+					surfaceWeights[i] = new h3d.mat.Texture(terrain.weightMapResolution, terrain.weightMapResolution, [Target], R8);
 					surfaceWeights[i].setName("terrainSurfaceWeight"+i);
 					surfaceWeights[i].wrap = Clamp;
 					surfaceWeights[i].preventAutoDispose();
 					surfaceWeights[i].realloc = null;
 					if( i < oldArray.length && oldArray[i] != null )
-						getTerrain().copyPass.apply(oldArray[i], surfaceWeights[i]);
+						terrain.copyPass.apply(oldArray[i], surfaceWeights[i]);
 				}
 				for( t in oldArray )
 					if( t != null)
@@ -169,7 +211,7 @@ class Tile extends h3d.scene.Mesh {
 		}
 	}
 
-	public function refresh() {
+	public function refreshTex() {
 		refreshHeightMap();
 		refreshIndexMap();
 		refreshSurfaceWeights();
@@ -177,16 +219,16 @@ class Tile extends h3d.scene.Mesh {
 	}
 
 	public function generateWeightArray() {
-		if( surfaceWeightArray == null || surfaceWeightArray.width != getTerrain().weightMapResolution || surfaceWeightArray.layerCount != surfaceWeights.length ) {
+		if( surfaceWeightArray == null || surfaceWeightArray.width != terrain.weightMapResolution || surfaceWeightArray.layerCount != surfaceWeights.length ) {
 			if( surfaceWeightArray != null ) surfaceWeightArray.dispose();
-			surfaceWeightArray = new h3d.mat.TextureArray(getTerrain().weightMapResolution, getTerrain().weightMapResolution, surfaceWeights.length, [Target], R8);
+			surfaceWeightArray = new h3d.mat.TextureArray(terrain.weightMapResolution, terrain.weightMapResolution, surfaceWeights.length, [Target], R8);
 			surfaceWeightArray.setName("terrainSurfaceWeightArray");
 			surfaceWeightArray.wrap = Clamp;
 			surfaceWeightArray.preventAutoDispose();
 			surfaceWeightArray.realloc = null;
 		}
 		for( i in 0 ... surfaceWeights.length )
-			if( surfaceWeights[i] != null ) getTerrain().copyPass.apply(surfaceWeights[i], surfaceWeightArray, None, null, i);
+			if( surfaceWeights[i] != null ) terrain.copyPass.apply(surfaceWeights[i], surfaceWeightArray, None, null, i);
 	}
 
 	public function computeEdgesHeight( flag : haxe.EnumFlags<Direction> ) {
@@ -195,7 +237,7 @@ class Tile extends h3d.scene.Mesh {
 		var pixels : hxd.Pixels.PixelsFloat = getHeightPixels();
 
 		if( flag.has(Left) ) {
-			var adjTileX = getTerrain().getTile(tileX + 1, tileY);
+			var adjTileX = terrain.getTile(tileX + 1, tileY);
 			var adjHeightMapX = adjTileX != null ? adjTileX.heightMap : null;
 			if( adjHeightMapX != null ) {
 				var adjpixels : hxd.Pixels.PixelsFloat = adjTileX.getHeightPixels();
@@ -205,7 +247,7 @@ class Tile extends h3d.scene.Mesh {
 			}
 		}
 		if( flag.has(Up) ) {
-			var adjTileY = getTerrain().getTile(tileX, tileY + 1);
+			var adjTileY = terrain.getTile(tileX, tileY + 1);
 			var adjHeightMapY = adjTileY != null ? adjTileY.heightMap : null;
 			if( adjHeightMapY != null ) {
 				var adjpixels : hxd.Pixels.PixelsFloat = adjTileY.getHeightPixels();
@@ -215,7 +257,7 @@ class Tile extends h3d.scene.Mesh {
 			}
 		}
 		if( flag.has(UpLeft) ) {
-			var adjTileXY = getTerrain().getTile(tileX + 1, tileY + 1);
+			var adjTileXY = terrain.getTile(tileX + 1, tileY + 1);
 			var adjHeightMapXY = adjTileXY != null ? adjTileXY.heightMap : null;
 			if( adjHeightMapXY != null ) {
 				var adjpixels : hxd.Pixels.PixelsFloat = adjTileXY.getHeightPixels();
@@ -239,9 +281,9 @@ class Tile extends h3d.scene.Mesh {
 
 		inline function computeVertexPos( tile : Tile ) {
 			t0.load(tile.grid.points[i0]); t1.load(tile.grid.points[i1]); t2.load(tile.grid.points[i2]);
-			t0.z += tile.getHeight(t0.x / getTerrain().tileSize, t0.y / getTerrain().tileSize);
-			t1.z += tile.getHeight(t1.x / getTerrain().tileSize, t1.y / getTerrain().tileSize);
-			t2.z += tile.getHeight(t2.x / getTerrain().tileSize, t2.y / getTerrain().tileSize);
+			t0.z += tile.getHeight(t0.x / terrain.tileSize, t0.y / terrain.tileSize);
+			t1.z += tile.getHeight(t1.x / terrain.tileSize, t1.y / terrain.tileSize);
+			t2.z += tile.getHeight(t2.x / terrain.tileSize, t2.y / terrain.tileSize);
 		}
 
 		inline function computeNormal() : h3d.col.Point {
@@ -252,21 +294,21 @@ class Tile extends h3d.scene.Mesh {
 			return n1.cross(n2);
 		}
 
-		var adjUpTile = getTerrain().getTile(tileX, tileY + 1);
+		var adjUpTile = terrain.getTile(tileX, tileY + 1);
 		var adjUpGrid = adjUpTile != null ? adjUpTile.grid: null;
-		var adjDownTile = getTerrain().getTile(tileX, tileY - 1);
+		var adjDownTile = terrain.getTile(tileX, tileY - 1);
 		var adjDownGrid = adjDownTile != null ? adjDownTile.grid: null;
-		var adjLeftTile = getTerrain().getTile(tileX + 1, tileY);
+		var adjLeftTile = terrain.getTile(tileX + 1, tileY);
 		var adjLeftGrid = adjLeftTile != null ? adjLeftTile.grid: null;
-		var adjRightTile = getTerrain().getTile(tileX - 1, tileY);
+		var adjRightTile = terrain.getTile(tileX - 1, tileY);
 		var adjRightGrid = adjRightTile != null ? adjRightTile.grid: null;
-		var adjUpRightTile = getTerrain().getTile(tileX - 1, tileY + 1);
+		var adjUpRightTile = terrain.getTile(tileX - 1, tileY + 1);
 		var adjUpRightGrid = adjUpRightTile != null ? adjUpRightTile.grid: null;
-		var adjUpLeftTile = getTerrain().getTile(tileX + 1, tileY + 1);
+		var adjUpLeftTile = terrain.getTile(tileX + 1, tileY + 1);
 		var adjUpLeftGrid = adjUpLeftTile != null ? adjUpLeftTile.grid: null;
-		var adjDownLeftTile = getTerrain().getTile(tileX + 1, tileY - 1);
+		var adjDownLeftTile = terrain.getTile(tileX + 1, tileY - 1);
 		var adjDownLeftGrid = adjDownLeftTile != null ? adjDownLeftTile.grid: null;
-		var adjDownRightTile = getTerrain().getTile(tileX - 1, tileY - 1);
+		var adjDownRightTile = terrain.getTile(tileX - 1, tileY - 1);
 		var adjDownRightGrid = adjDownRightTile != null ? adjDownRightTile.grid: null;
 
 		if( adjUpGrid != null && adjUpGrid.normals != null ) {
@@ -477,9 +519,9 @@ class Tile extends h3d.scene.Mesh {
 			}
 			t0.load(grid.points[i0]); t1.load(grid.points[i1]); t2.load(grid.points[i2]);
 			if(heightMap != null){
-				t0.z += getHeight(t0.x / getTerrain().tileSize, t0.y / getTerrain().tileSize);
-				t1.z += getHeight(t1.x / getTerrain().tileSize, t1.y / getTerrain().tileSize);
-				t2.z += getHeight(t2.x / getTerrain().tileSize, t2.y / getTerrain().tileSize);
+				t0.z += getHeight(t0.x / terrain.tileSize, t0.y / terrain.tileSize);
+				t1.z += getHeight(t1.x / terrain.tileSize, t1.y / terrain.tileSize);
+				t2.z += getHeight(t2.x / terrain.tileSize, t2.y / terrain.tileSize);
 			}
 			var n1 = t1.sub(t0);
 			n1.normalizeFast();
@@ -499,12 +541,12 @@ class Tile extends h3d.scene.Mesh {
 	public function getHeight( u : Float, v : Float, ?fast = false ) : Float {
 		var pixels = getHeightPixels();
 		if( pixels == null ) return 0.0;
-		if( heightMap.filter == Linear && !fast ) {
+		if( !fast ) {
 			inline function getPix(u, v) {
 				return pixels.getPixelF(Std.int(hxd.Math.clamp(u, 0, pixels.width - 1)), Std.int(hxd.Math.clamp(v, 0, pixels.height - 1))).r;
 			}
-			var px = u * (heightMap.width - 1) + 0.5;
-            var py = v * (heightMap.width - 1) + 0.5;
+			var px = u * (pixels.width - 1) ;
+            var py = v * (pixels.width - 1) ;
 			var pxi = hxd.Math.floor(px);
             var pyi = hxd.Math.floor(py);
 			var c00 = getPix(pxi, pyi);
@@ -519,37 +561,43 @@ class Tile extends h3d.scene.Mesh {
 
 		}
 		else{
-			var x = hxd.Math.floor(u * (heightMap.width - 1) + 0.5);
-			var y = hxd.Math.floor(v * (heightMap.height - 1) + 0.5);
+			var x = hxd.Math.floor(u * (pixels.width - 1) + 0.5);
+			var y = hxd.Math.floor(v * (pixels.height - 1) + 0.5);
 			return pixels.getPixelF(x, y).r;
 		}
 	}
+
 	var cachedBounds : h3d.col.Bounds;
-	var cachedHeightBound : Bool = false;
 	function computeBounds() {
 		if( cachedBounds == null ) {
-			cachedBounds = getBounds();
-			cachedBounds.zMax = 0;
-			cachedBounds.zMin = 0;
-		}
-		if( cachedBounds != null && cachedHeightBound == false && heightMap != null ) {
-			for( u in 0 ... heightMap.width ) {
-				for( v in 0 ... heightMap.height ) {
-					var h = getHeight(u / heightMap.width, v / heightMap.height, true);
-					cachedBounds.zMin = cachedBounds.zMin > h ? h : cachedBounds.zMin;
-					cachedBounds.zMax = cachedBounds.zMax < h ? h : cachedBounds.zMax;
+			var absPos = getAbsPos();
+			cachedBounds = new h3d.col.Bounds();
+			cachedBounds.xMax = absPos.tx + terrain.tileSize;
+			cachedBounds.xMin = absPos.tx;
+			cachedBounds.yMax = absPos.ty + terrain.tileSize;
+			cachedBounds.yMin = absPos.ty;
+			cachedBounds.zMax = absPos.tz;
+			cachedBounds.zMin = absPos.tz;
+
+			if( heightMap != null ) {
+				var absPos = getAbsPos();
+				for( u in 0 ... heightMap.width ) {
+					for( v in 0 ... heightMap.height ) {
+						var h = getHeight(u / heightMap.width, v / heightMap.height, true);
+						cachedBounds.zMin = cachedBounds.zMin > absPos.tz + h ? absPos.tz + h : cachedBounds.zMin;
+						cachedBounds.zMax = cachedBounds.zMax < absPos.tz + h ? absPos.tz + h : cachedBounds.zMax;
+					}
 				}
 			}
-			var absPos = getAbsPos();
-			cachedBounds.zMax += absPos.tz;
-			cachedBounds.zMin += absPos.tz;
-			cachedHeightBound = true;
+			else if( bigPrim != null ) {
+				// TO DO
+			}
 		}
 	}
 
 	public dynamic function beforeEmit() : Bool { return true; };
 	override function emit( ctx:h3d.scene.RenderContext ) {
-		if( !isReady() ) return;
+		if( !isReadyForDraw() ) return;
 		computeBounds();
 		insideFrustrum = ctx.camera.frustum.hasBounds(cachedBounds);
 		var b = beforeEmit();
@@ -558,43 +606,47 @@ class Tile extends h3d.scene.Mesh {
 	}
 
 	override function sync(ctx:h3d.scene.RenderContext) {
-		if( !isReady() ) return;
+		if( !isReadyForDraw() ) return;
 
-		shader.SHOW_GRID = getTerrain().showGrid;
-		shader.SURFACE_COUNT = getTerrain().surfaceArray.surfaceCount;
-		shader.CHECKER = getTerrain().showChecker;
-		shader.COMPLEXITY = getTerrain().showComplexity;
-		shader.PARALLAX = getTerrain().parallaxAmount != 0;
+		shader.SHOW_GRID = #if editor terrain.showGrid #else false #end;
+		shader.CHECKER = #if editor terrain.showChecker #else false #end;
+		shader.COMPLEXITY = #if editor terrain.showComplexity #else false #end;
+		shader.VERTEX_DISPLACEMENT = bigPrim == null;
+		shader.SURFACE_COUNT = terrain.surfaceArray.surfaceCount;
+		shader.PARALLAX = terrain.parallaxAmount != 0;
 
-		shader.heightMapSize = heightMap.width;
-		shader.primSize = getTerrain().tileSize;
-		shader.cellSize = getTerrain().cellSize;
+		shader.heightMapSize = heightMap != null ? heightMap.width : 0;
+		shader.primSize = terrain.tileSize;
+		shader.cellSize = terrain.cellSize;
 
 		if( !shader.CHECKER && !shader.COMPLEXITY ) {
-			shader.albedoTextures = getTerrain().surfaceArray.albedo;
-			shader.normalTextures = getTerrain().surfaceArray.normal;
-			shader.pbrTextures = getTerrain().surfaceArray.pbr;
+			shader.albedoTextures = terrain.surfaceArray.albedo;
+			shader.normalTextures = terrain.surfaceArray.normal;
+			shader.pbrTextures = terrain.surfaceArray.pbr;
 			shader.weightTextures = surfaceWeightArray;
 			shader.heightMap = heightMap;
 			shader.surfaceIndexMap = surfaceIndexMap;
 
-			shader.surfaceParams = getTerrain().surfaceArray.params;
-			shader.secondSurfaceParams = getTerrain().surfaceArray.secondParams;
+			shader.surfaceParams = terrain.surfaceArray.params;
+			shader.secondSurfaceParams = terrain.surfaceArray.secondParams;
 			shader.tileIndex.set(tileX, tileY);
-			shader.parallaxAmount = getTerrain().parallaxAmount;
-			shader.minStep = getTerrain().parallaxMinStep;
-			shader.maxStep = getTerrain().parallaxMaxStep;
-			shader.heightBlendStrength = getTerrain().heightBlendStrength;
-			shader.blendSharpness = getTerrain().blendSharpness;
+			shader.parallaxAmount = terrain.parallaxAmount;
+			shader.minStep = terrain.parallaxMinStep;
+			shader.maxStep = terrain.parallaxMaxStep;
+			shader.heightBlendStrength = terrain.heightBlendStrength;
+			shader.blendSharpness = terrain.blendSharpness;
 		}
 	}
 
-	function isReady() {
+	function isReadyForDraw() {
 		if( primitive == null )
 			return false;
 
-		if( !getTerrain().showChecker || getTerrain().showComplexity ) {
-			if( getTerrain().surfaceArray == null || getTerrain().surfaceArray.surfaceCount == 0 || surfaceWeights.length != getTerrain().surfaceArray.surfaceCount )
+		var showComplexity = #if editor terrain.showComplexity #else false #end;
+		var showChecker = #if editor terrain.showChecker #else false #end;
+
+		if( showChecker || showComplexity ) {
+			if( terrain.surfaceArray == null || terrain.surfaceArray.surfaceCount == 0 || surfaceWeights.length != terrain.surfaceArray.surfaceCount )
 				return false;
 
 			for( i in 0 ... surfaceWeights.length )
@@ -602,8 +654,10 @@ class Tile extends h3d.scene.Mesh {
 					return false;
 		}
 
+		#if editor
 		if( heightMap == null || heightMap.isDisposed() )
 			return false;
+		#end
 
 		return true;
 	}

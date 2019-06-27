@@ -10,6 +10,7 @@ class Terrain extends hxsl.Shader {
 		@const var CHECKER : Bool;
 		@const var COMPLEXITY : Bool;
 		@const var PARALLAX : Bool;
+		@const var VERTEX_DISPLACEMENT : Bool;
 
 		@param var heightMapSize : Float;
 		@param var primSize : Float;
@@ -46,9 +47,11 @@ class Terrain extends hxsl.Shader {
 
 		function vertex() {
 			calculatedUV = input.position.xy / primSize;
-			var terrainUV = (calculatedUV * (heightMapSize - 1)) / heightMapSize;
-			terrainUV += 0.5 / heightMapSize;
-			transformedPosition += (vec3(0,0, textureLod(heightMap, terrainUV, 0).r) * global.modelView.mat3());
+			if(VERTEX_DISPLACEMENT) {
+				var terrainUV = (calculatedUV * (heightMapSize - 1)) / heightMapSize;
+				terrainUV += 0.5 / heightMapSize;
+				transformedPosition += (vec3(0,0, textureLod(heightMap, terrainUV, 0).r) * global.modelView.mat3());
+			}
 			TBN = mat3(normalize(cross(transformedNormal, vec3(0,1,0))), normalize(cross(transformedNormal,vec3(-1,0,0))), transformedNormal);
 			tangentViewPos = camera.position * TBN;
 			tangentFragPos = transformedPosition * TBN;
