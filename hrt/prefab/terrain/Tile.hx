@@ -606,7 +606,6 @@ class Tile extends h3d.scene.Mesh {
 	}
 
 	override function sync(ctx:h3d.scene.RenderContext) {
-		if( !isReadyForDraw() ) return;
 
 		shader.SHOW_GRID = #if editor terrain.showGrid #else false #end;
 		shader.CHECKER = #if editor terrain.showChecker #else false #end;
@@ -619,50 +618,41 @@ class Tile extends h3d.scene.Mesh {
 		shader.primSize = terrain.tileSize;
 		shader.cellSize = terrain.cellSize;
 
-		if( !shader.CHECKER && !shader.COMPLEXITY ) {
-			shader.albedoTextures = terrain.surfaceArray.albedo;
-			shader.normalTextures = terrain.surfaceArray.normal;
-			shader.pbrTextures = terrain.surfaceArray.pbr;
-			shader.weightTextures = surfaceWeightArray;
-			shader.heightMap = heightMap;
-			shader.surfaceIndexMap = surfaceIndexMap;
+		shader.albedoTextures = terrain.surfaceArray.albedo;
+		shader.normalTextures = terrain.surfaceArray.normal;
+		shader.pbrTextures = terrain.surfaceArray.pbr;
+		shader.weightTextures = surfaceWeightArray;
+		shader.heightMap = heightMap;
+		shader.surfaceIndexMap = surfaceIndexMap;
 
-			shader.surfaceParams = terrain.surfaceArray.params;
-			shader.secondSurfaceParams = terrain.surfaceArray.secondParams;
-			shader.tileIndex.set(tileX, tileY);
-			shader.parallaxAmount = terrain.parallaxAmount;
-			shader.minStep = terrain.parallaxMinStep;
-			shader.maxStep = terrain.parallaxMaxStep;
-			shader.heightBlendStrength = terrain.heightBlendStrength;
-			shader.blendSharpness = terrain.blendSharpness;
-		}
+		shader.surfaceParams = terrain.surfaceArray.params;
+		shader.secondSurfaceParams = terrain.surfaceArray.secondParams;
+		shader.tileIndex.set(tileX, tileY);
+		shader.parallaxAmount = terrain.parallaxAmount;
+		shader.minStep = terrain.parallaxMinStep;
+		shader.maxStep = terrain.parallaxMaxStep;
+		shader.heightBlendStrength = terrain.heightBlendStrength;
+		shader.blendSharpness = terrain.blendSharpness;
+		
 	}
 
 	function isReadyForDraw() {
 		if( primitive == null )
 			return false;
 
-		var showComplexity = #if editor terrain.showComplexity #else false #end;
-		var showChecker = #if editor terrain.showChecker #else false #end;
+		if( bigPrim == null && (heightMap == null || heightMap.isDisposed()) )
+			return false;
 
-		if( showChecker || showComplexity ) {
-			if( terrain.surfaceArray == null || terrain.surfaceArray.surfaceCount == 0 || surfaceWeights.length != terrain.surfaceArray.surfaceCount )
-				return false;
-
-			for( i in 0 ... surfaceWeights.length )
-				if( surfaceWeights[i] == null || surfaceWeights[i].isDisposed() )
-					return false;
+		if( !shader.CHECKER && (shader.weightTextures == null || shader.weightTextures.isDisposed()) ) 
+			return false;
+		
+		if( !shader.CHECKER && !shader.COMPLEXITY ) {
+			if( shader.albedoTextures == null || shader.albedoTextures.isDisposed() ) return false;
+			if( shader.normalTextures == null || shader.normalTextures.isDisposed() ) return false;
+			if( shader.pbrTextures == null || shader.pbrTextures.isDisposed() ) return false;
+			if( shader.surfaceIndexMap == null || shader.surfaceIndexMap.isDisposed() ) return false;
 		}
 
-		#if editor
-		if( heightMap == null || heightMap.isDisposed() )
-			return false;
-		#end
-
 		return true;
-	}
-
-	override function getLocalCollider() : h3d.col.Collider {
-		return null;
 	}
 }
