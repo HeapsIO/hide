@@ -14,21 +14,29 @@ class Temporal extends h3d.shader.ScreenShader {
 		@ignore @param var depthMap : Channel;
 		@param var strength : Float;
 
-		function getPixelPosition() : Vec3 {
-			var depth = depthMap.get(calculatedUV);
-			var temp = vec4(uvToScreen(calculatedUV), depthMap.get(calculatedUV), 1) * cameraInverseViewProj;
+		function getPixelPosition( uv : Vec2 ) : Vec3 {
+			var depth = depthMap.get(uv);
+			var temp = vec4(uvToScreen(uv), depth, 1) * cameraInverseViewProj;
 			var originWS = temp.xyz / temp.w;
 			return originWS;
 		}
 
 		function fragment() {
-			var pixelPos = getPixelPosition();
+			var pixelPos = getPixelPosition(calculatedUV);
 			var prevPos =  vec4(pixelPos, 1.0) * prevCamMat;
 			prevPos.xyz /= prevPos.w;
 			var prevUV = screenToUv(prevPos.xy);
+			var prevPixelPos = getPixelPosition(prevUV);
+			var dist = (pixelPos - prevPixelPos).length();
+
 			var curVal = cur.get(calculatedUV).rgb;
-			var prevVal = prev.get(prevUV).rgb;
+			if( prevUV.x > 1.0 || prevUV.x < 0.0 || prevUV.y > 1.0 || prevUV.y < 0.0 || dist > 1.0 ) {
+				pixelColor.rgb = curVal;
+			}
+			else {
+				var prevVal = prev.get(prevUV).rgb;
 			pixelColor.rgb = mix(curVal, prevVal, strength);
+			}
 		}
 	};
 }
@@ -82,9 +90,37 @@ class Threshold extends h3d.shader.ScreenShader {
 		@param var threshold : Float;
         @param var intensity : Float;
 
+		@const var USE_TEMPORAL_FILTER : Bool;
+		@const var PREVENT_GHOSTING : Bool;
+		@param var cur : Sampler2D;
+		@param var prev : Sampler2D;
+		@param var prevCamMat : Mat4;
+		@param var cameraInverseViewProj : Mat4;
+		@ignore @param var depthMap : Channel;
+		@param var strength : Float;
+
+		function getPixelPosition( uv : Vec2 ) : Vec3 {
+			var depth = depthMap.get(uv);
+			var temp = vec4(uvToScreen(uv), depth, 1) * cameraInverseViewProj;
+			var originWS = temp.xyz / temp.w;
+			return originWS;
+		}
+
 		function fragment() {
-			pixelColor = hdr.get(calculatedUV);
-			pixelColor.rgb = max(pixelColor.rgb - threshold, vec3(0)) * intensity;
+			var curVal = max(hdr.get(calculatedUV).rgb - threshold, 0.0) * intensity;
+			pixelColor.rgb = curVal;
+
+			if( USE_TEMPORAL_FILTER ) {
+				var pixelPos = getPixelPosition(calculatedUV);
+				var prevPos =  vec4(pixelPos, 1.0) * prevCamMat;
+				prevPos.xyz /= prevPos.w;
+				var prevUV = screenToUv(prevPos.xy);
+				
+				if( prevUV.x <= 1.0 && prevUV.x >= 0.0 && prevUV.y <= 1.0 && prevUV.y >= 0.0 ) {
+					var prevVal = prev.get(prevUV).rgb;
+					pixelColor.rgb = mix(curVal, prevVal, strength);
+				}
+			}
 		}
 	};
 }
@@ -116,7 +152,7 @@ class TemporalBloom extends RendererFX {
 			threshold : 0.5,
             intensity : 1.0,
 			useTemporalFilter : true,
-			temporalStrength : 0
+			temporalStrength : 0,
 		} : TemporalBloomProps);
 		prevCamMat = new h3d.Matrix();
 		prevCamMat.identity();
@@ -131,11 +167,29 @@ class TemporalBloom extends RendererFX {
 			ctx.engine.pushTarget(source);
 			thresholdPass.shader.hdr = ctx.getGlobal("hdr");
 			thresholdPass.shader.threshold = pb.threshold;
-            thresholdPass.shader.intensity= pb.intensity;
-			thresholdPass.render();
-			ctx.engine.popTarget();
-
-			var curSize = pb.size ;
+            thresholdPass.shader.intensity = pb.intensity;
+			if( pb.useTemporalFilter ) {
+				thresholdPass.shader.USE_TEMPORAL_FILTER = true;
+				var depth : hxsl.ChannelTexture = ctx.getGlobal("depthMap");
+				prevResult = r.allocTarget("pr", false, pb.size, RGBA16F);
+				thresholdPass.shader.depthMapChannel = depth.channel;
+				thresholdPass.shader.depthMap = depth.texture;
+				thresholdPass.shader.prev = prevResult;
+				thresholdPass.shader.prevCamMat.load(prevCamMat);
+				thresholdPass.shader.cameraInverseViewProj.load(ctx.camera.getInverseViewProj());
+				thresholdPass.shader.strength = pb.temporalStrength;
+				thresholdPass.render();
+				ctx.engine.popTarget();
+				Copy.run(source, prevResult);
+				prevCamMat.load(ctx.camera.m);
+			}
+			else {
+				thresholdPass.shader.USE_TEMPORAL_FILTER = false;
+				thresholdPass.render();
+				ctx.engine.popTarget();
+			}
+				
+			var curSize = pb.size;
 			var curTarget : h3d.mat.Texture = source;
 			for( i in 0 ... pb.downScaleCount ) {
 				curSize *= 0.5;
@@ -158,41 +212,27 @@ class TemporalBloom extends RendererFX {
 				ctx.engine.popTarget();
 			}
 
-			if( pb.useTemporalFilter ) {
-				var finalTarget = r.allocTarget("tpf", false, curSize, RGBA16F);
-				prevResult = r.allocTarget("pr", false, curSize, RGBA16F);
-				ctx.engine.pushTarget(finalTarget);
-				var depth : hxsl.ChannelTexture = ctx.getGlobal("depthMap");
-				temporalPass.shader.depthMapChannel = depth.channel;
-				temporalPass.shader.depthMap = depth.texture;
-				temporalPass.shader.cur = curTarget;
-				temporalPass.shader.prev = prevResult;
-				temporalPass.shader.prevCamMat.load(prevCamMat);
-				temporalPass.shader.cameraInverseViewProj.load(ctx.camera.getInverseViewProj());
-				temporalPass.shader.strength = pb.temporalStrength;
-				temporalPass.render();
-				ctx.engine.popTarget();
-
-				Copy.run(finalTarget, prevResult);
-				ctx.setGlobal("bloom", finalTarget);
-				prevCamMat.load(ctx.camera.m);
-			}
-			else
-				ctx.setGlobal("bloom", curTarget);
+			ctx.setGlobal("bloom", curTarget);
 		}
 	}
 
 	#if editor
 	override function edit( ctx : hide.prefab.EditContext ) {
 		ctx.properties.add(new hide.Element('
+		<div class="group" name="Bloom">
 			<dl>
-			<dt>Threshold</dt><dd><input type="range" min="0" max="1" field="threshold"/></dd>
-            <dt>Intensity</dt><dd><input type="range" min="0" max="1" field="intensity"/></dd>
-			<dt>Size</dt><dd><input type="range" min="0" max="1" field="size"/></dd>
-			<dt>DownScale Count</dt><dd><input type="range" min="1" max="5" field="downScaleCount" step="1"/></dd>
-			<dt>Use Temporal Filter</dt><dd><input type="checkbox" field="useTemporalFilter"/></dd>
-			<dt>Temporal Strength</dt><dd><input type="range" min="0" max="1" field="temporalStrength"/></dd>
+				<dt>Threshold</dt><dd><input type="range" min="0" max="1" field="threshold"/></dd>
+				<dt>Intensity</dt><dd><input type="range" min="0" max="1" field="intensity"/></dd>
+				<dt>Texture Size</dt><dd><input type="range" min="0" max="1" field="size"/></dd>
+				<dt>DownScale/UpScale Count</dt><dd><input type="range" min="1" max="5" field="downScaleCount" step="1"/></dd>
 			</dl>
+		</div>
+		<div class="group" name="Temporal Filtering">
+			<dl>
+			<dt>Enable</dt><dd><input type="checkbox" field="useTemporalFilter"/></dd>
+			<dt>Strength</dt><dd><input type="range" min="0" max="1" field="temporalStrength"/></dd>
+			</dl>
+		</div>
 		'),props);
 	}
 	#end
