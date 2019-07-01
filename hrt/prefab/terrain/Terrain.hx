@@ -169,9 +169,9 @@ class Terrain extends Object3D {
 				"Missing tile" + terrain.tiles.indexOf(t);
 				continue;
 			}
-			if( t.heightMap == null ) "Missing heightmap for tile" + terrain.tiles.indexOf(t);
-			if( t.surfaceIndexMap == null ) "Missing surfaceIndexMap for tile" + terrain.tiles.indexOf(t);
-			if( t.surfaceWeightArray == null ) "Missing surfaceWeightArray for tile" + terrain.tiles.indexOf(t);
+			if( t.heightMap == null ) trace("Missing heightmap for tile" + terrain.tiles.indexOf(t));
+			if( t.surfaceIndexMap == null ) trace("Missing surfaceIndexMap for tile" + terrain.tiles.indexOf(t));
+			if( t.surfaceWeightArray == null ) trace("Missing surfaceWeightArray for tile" + terrain.tiles.indexOf(t));
 		}
 		#end
 
