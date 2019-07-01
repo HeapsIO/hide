@@ -147,20 +147,20 @@ class TerrainEditor {
 			}
 			for( s in tile.surfaceWeights ) {
 				if( s == null || s.isDisposed() ) {
-					trace(error + "surfaceWeights "+ tile.surfaceWeights.indexOf(s) +" is null or sisposed ");
+					trace(error + "surfaceWeights "+ tile.surfaceWeights.indexOf(s) +" is null or disposed ");
 					return false;
 				}
 			}
 			if( tile.heightMap == null || tile.heightMap.isDisposed() ) {
-					trace(error + "heightMap is null or sisposed ");
+					trace(error + "heightMap is null or disposed ");
 					return false;
 			}
 			if( tile.surfaceIndexMap == null || tile.surfaceIndexMap.isDisposed() ) {
-					trace(error + "surfaceIndexMap is null or sisposed ");
+					trace(error + "surfaceIndexMap is null or disposed ");
 					return false;
 			}
 			if( tile.surfaceWeightArray == null || tile.surfaceWeightArray.isDisposed() ) {
-					trace(error + "surfaceWeightArray is null or sisposed ");
+					trace(error + "surfaceWeightArray is null or disposed ");
 					return false;
 			}
 		}
