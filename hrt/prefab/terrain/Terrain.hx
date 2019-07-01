@@ -162,6 +162,19 @@ class Terrain extends Object3D {
 				}
 			}
 		}
+
+		#if editor
+		for( t in terrain.tiles ) {
+			if( t == null ) {
+				"Missing tile" + terrain.tiles.indexOf(t);
+				continue;
+			}
+			if( t.heightMap == null ) "Missing heightmap for tile" + terrain.tiles.indexOf(t);
+			if( t.surfaceIndexMap == null ) "Missing surfaceIndexMap for tile" + terrain.tiles.indexOf(t);
+			if( t.surfaceWeightArray == null ) "Missing surfaceWeightArray for tile" + terrain.tiles.indexOf(t);
+		}
+		#end
+
 		@:privateAccess hxd.res.Image.ENABLE_AUTO_WATCH = prevWatch;
 	}
 

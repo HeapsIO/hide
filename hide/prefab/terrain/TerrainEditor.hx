@@ -110,32 +110,59 @@ class TerrainEditor {
 	}
 
 	function readyToSave() : Bool {
-		if( editContext == null )
-			return false;
-		if( terrainPrefab == null )
-			return false;
-		if( terrainPrefab.terrain == null )
-			return false;
-		if( terrainPrefab.terrain.surfaceArray == null )
-			return false;
-		if( terrainPrefab.terrain.surfaceArray.albedo == null || terrainPrefab.terrain.surfaceArray.albedo.isDisposed() )
-			return false;
-		if( terrainPrefab.terrain.surfaceArray.normal == null || terrainPrefab.terrain.surfaceArray.normal.isDisposed() )
-			return false;
-		if( terrainPrefab.terrain.surfaceArray.pbr == null || terrainPrefab.terrain.surfaceArray.pbr.isDisposed() )
-			return false;
+		var error = "Failed to save terrain : ";
+		if( editContext == null ){
+				trace(error + "editContext is null");
+				return false;
+			}
+		if( terrainPrefab == null ){
+				trace(error + "terrainPrefab is null");
+				return false;
+			}
+		if( terrainPrefab.terrain == null ){
+				trace(error + "terrain is null");
+				return false;
+			}
+		if( terrainPrefab.terrain.surfaceArray == null ){
+				trace(error + "surfaceArray is null");
+				return false;
+			}
+		if( terrainPrefab.terrain.surfaceArray.albedo == null || terrainPrefab.terrain.surfaceArray.albedo.isDisposed() ){
+				trace(error + "surfaceArray.albedo is null");
+				return false;
+			}
+		if( terrainPrefab.terrain.surfaceArray.normal == null || terrainPrefab.terrain.surfaceArray.normal.isDisposed() ){
+				trace(error + "surfaceArray.normal is null");
+				return false;
+			}
+		if( terrainPrefab.terrain.surfaceArray.pbr == null || terrainPrefab.terrain.surfaceArray.pbr.isDisposed() ){
+				trace(error + "surfaceArray.pbr is null");
+				return false;
+			}
+
 		for( tile in terrainPrefab.terrain.tiles ) {
-			if( tile == null )
+			if( tile == null ) {
+				trace(error + "tile is null");
 				return false;
-			for( s in tile.surfaceWeights )
-				if( s == null || s.isDisposed() )
+			}
+			for( s in tile.surfaceWeights ) {
+				if( s == null || s.isDisposed() ) {
+					trace(error + "surfaceWeights "+ tile.surfaceWeights.indexOf(s) +" is null or sisposed ");
 					return false;
-			if( tile.heightMap == null || tile.heightMap.isDisposed() )
-				return false;
-			if( tile.surfaceIndexMap == null || tile.surfaceIndexMap.isDisposed())
-				return false;
-			if( tile.surfaceWeightArray == null || tile.surfaceWeightArray.isDisposed())
-				return false;
+				}
+			}
+			if( tile.heightMap == null || tile.heightMap.isDisposed() ) {
+					trace(error + "heightMap is null or sisposed ");
+					return false;
+			}
+			if( tile.surfaceIndexMap == null || tile.surfaceIndexMap.isDisposed() ) {
+					trace(error + "surfaceIndexMap is null or sisposed ");
+					return false;
+			}
+			if( tile.surfaceWeightArray == null || tile.surfaceWeightArray.isDisposed() ) {
+					trace(error + "surfaceWeightArray is null or sisposed ");
+					return false;
+			}
 		}
 		return true;
 	}
