@@ -10,6 +10,7 @@ typedef DistanceFogProps = {
 	var endColor : Int;
 	var startColorDistance : Float;
 	var endColorDistance : Float;
+	var renderMode : String;
 }
 
 class DistanceFog extends RendererFX {
@@ -27,14 +28,15 @@ class DistanceFog extends RendererFX {
 	    	endColor : 0xffffff,
 			startColorDistance : 0,
 			endColorDistance : 100,
+			renderMode : "AfterTonemapping",
 		} : DistanceFogProps);
 
 		fogPass.pass.setBlendMode(Alpha);
 	}
 
 	override function apply(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
-		if( step == BeforeTonemapping ) {
-			var p : DistanceFogProps = props;
+		var p : DistanceFogProps = props;
+		if( (step == AfterTonemapping && p.renderMode == "AfterTonemapping") || (step == BeforeTonemapping && p.renderMode == "BeforeTonemapping") ) {
 			var ctx = r.ctx;
 			var depth : hxsl.ChannelTexture = ctx.getGlobal("depthMap");
 
@@ -72,6 +74,14 @@ class DistanceFog extends RendererFX {
 					<dt>Start Color</dt><dd><input type="color" field="startColor"/></dd>
 					<dt>End Color</dt><dd><input type="color" field="endColor"/></dd>
 				</div>
+				<div class="group" name="Rendering">
+					<dt>Render Mode</dt>
+						<dd><select field="renderMode">
+							<option value="BeforeTonemapping">Before Tonemapping</option>
+							<option value="AfterTonemapping">After Tonemapping</option>
+						</select></dd>
+				</div>
+
 			</dl>
 		'),props);
 	}

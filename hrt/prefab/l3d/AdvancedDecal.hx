@@ -71,6 +71,13 @@ class AdvancedDecal extends Object3D {
 					mesh.material.mainPass.addShader(shader);
 				}
 				mesh.material.mainPass.setPassName("beforeTonemappingDecal");
+			case AfterTonemapping:
+				var shader = mesh.material.mainPass.getShader(h3d.shader.pbr.VolumeDecal.DecalOverlay);
+				if( shader == null ) {
+					shader = new h3d.shader.pbr.VolumeDecal.DecalOverlay();
+					mesh.material.mainPass.addShader(shader);
+				}
+				mesh.material.mainPass.setPassName("afterTonemappingDecal");
 			default:
 		}
 
@@ -108,7 +115,7 @@ class AdvancedDecal extends Object3D {
 					shader.fadeStart = fadeStart;
 					shader.fadeEnd = fadeEnd;
 				}
-			case BeforeTonemapping:
+			case BeforeTonemapping, AfterTonemapping:
 				var shader = mesh.material.mainPass.getShader(h3d.shader.pbr.VolumeDecal.DecalOverlay);
 				if( shader != null ){
 					shader.colorTexture = albedoMap != null ? ctx.loadTexture(albedoMap) : null;
@@ -192,7 +199,8 @@ class AdvancedDecal extends Object3D {
 						'<dt>Render Mode</dt>
 						<dd><select field="renderMode">
 							<option value="Decal">PBR</option>
-							<option value="BeforeTonemapping">Overlay</option>
+							<option value="BeforeTonemapping">Before Tonemapping</option>
+							<option value="AfterTonemapping">After Tonemapping</option>
 						</select></dd>
 
 						<dt>Blend Mode</dt>
