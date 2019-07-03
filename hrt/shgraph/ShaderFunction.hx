@@ -17,9 +17,17 @@ class ShaderFunction extends ShaderNode {
 		var varArgs = [];
 
 		for (k in getInputInfoKeys()) {
-			args.push({ name: k, type: getInput(k).getType() });
-			var wantedType = ShaderType.getType(getInputInfo(k).type);
-			varArgs.push(getInput(k).getVar((wantedType != null) ? wantedType : null));
+			if (getInputInfo(k).hasProperty && getInput(k) == null) {
+				var value = Reflect.field(this, "prop_"+k);
+				if (value == null)
+					value = 0;
+				args.push({ name: k, type: TFloat });
+				varArgs.push(new NodeVar(new hrt.shgraph.nodes.FloatConst(value), "output").getVar());
+			} else {
+				args.push({ name: k, type: getInput(k).getType() });
+				var wantedType = ShaderType.getType(getInputInfo(k).type);
+				varArgs.push(getInput(k).getVar((wantedType != null) ? wantedType : null));
+			}
 		}
 
 		return {

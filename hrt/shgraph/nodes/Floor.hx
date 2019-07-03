@@ -2,17 +2,16 @@ package hrt.shgraph.nodes;
 
 using hxsl.Ast;
 
-@name("Modulo")
-@description("The output is the result of X modulo MOD")
+@name("Floor")
+@description("The nearest integer less than or equal to X")
 @width(80)
 @group("Math")
-class Mod extends ShaderFunction {
+class Floor extends ShaderFunction {
 
-	@input("x") var x = SType.Float;
-	@input("mod", true) var mod = SType.Float;
+	@input("x") var x = SType.Number;
 
 	public function new() {
-		super(Mod);
+		super(Floor);
 	}
 
 	override public function computeOutputs() {

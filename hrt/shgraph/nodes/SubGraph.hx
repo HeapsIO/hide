@@ -259,6 +259,9 @@ class SubGraph extends ShaderNode {
 						e.stopPropagation();
 					});
 					parentRange.parent().css("width", 50);
+					if (p.defaultValue != null) {
+						range.value = p.defaultValue;
+					}
 					range.onChange = function(moving) {
 						p.defaultValue = range.value;
 					};

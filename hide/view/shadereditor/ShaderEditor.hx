@@ -740,6 +740,7 @@ class ShaderEditor extends hide.view.Graph {
 				return;
 			}
 			error("Compilation of shader failed > " + e);
+			trace(e.stack);
 			if (newShader != null)
 				for (m in obj.getMaterials())
 					m.mainPass.removeShader(newShader);
@@ -1195,11 +1196,7 @@ class ShaderEditor extends hide.view.Graph {
 	}
 	
 	override function getDefaultContent() {
-		var p = {
-			type : "hlshader",
-			html : "",
-			json : {},
-		};
+		var p = { nodes: [], edges: [], parameters: [] };
 		return haxe.io.Bytes.ofString(ide.toJSON(p));
 	}
 
