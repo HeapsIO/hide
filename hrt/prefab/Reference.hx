@@ -117,7 +117,7 @@ class Reference extends Object3D {
 			return base;
 		var p = resolveRef(null);
 		if(p == null) return null;
-		return Std.instance(p, c);
+		return Std.downcast(p, c);
 	}
 
 

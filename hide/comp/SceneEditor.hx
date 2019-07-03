@@ -216,7 +216,7 @@ class SceneEditor {
 
 	public function onResourceChanged(lib : hxd.fmt.hmd.Library) {
 
-		var models = sceneData.findAll(p -> Std.instance(p, PrefabElement));
+		var models = sceneData.findAll(p -> Std.downcast(p, PrefabElement));
 		var toRebuild : Array<PrefabElement> = [];
 		for(m in models) {
 			@:privateAccess if(m.source == lib.resource.entry.path) {
@@ -506,7 +506,7 @@ class SceneEditor {
 	}
 
 	function makeInteractive(elt: PrefabElement) {
-		var obj3d = Std.instance(elt, Object3D);
+		var obj3d = Std.downcast(elt, Object3D);
 		if(obj3d == null)
 			return;
 		var contexts = context.shared.contexts;
@@ -561,7 +561,7 @@ class SceneEditor {
 				if(group != null)
 					parentEl = group;
 				var newItems = getNewContextMenu(parentEl, function(newElt) {
-					var newObj3d = Std.instance(newElt, Object3D);
+					var newObj3d = Std.downcast(newElt, Object3D);
 					if(newObj3d != null) {
 						var newPos = new h3d.Matrix();
 						newPos.identity();
@@ -1364,7 +1364,7 @@ class SceneEditor {
 		var ref = new hrt.prefab.Reference(toParent);
 		ref.name = elt.name;
 		ref.refpath = elt.getAbsPath();
-		var obj3d = Std.instance(elt, Object3D);
+		var obj3d = Std.downcast(elt, Object3D);
 		if(obj3d != null) {
 			ref.x = obj3d.x;
 			ref.y = obj3d.y;
@@ -1440,7 +1440,7 @@ class SceneEditor {
 	}
 
 	function setTransform(elt: PrefabElement, ?mat: h3d.Matrix, ?position: h3d.Vector) {
-		var obj3d = Std.instance(elt, hrt.prefab.Object3D);
+		var obj3d = Std.downcast(elt, hrt.prefab.Object3D);
 		if(obj3d == null)
 			return;
 		if(mat != null)
@@ -1781,7 +1781,7 @@ class SceneEditor {
 		else {
 			var mat = new h3d.Matrix();
 			mat.identity();
-			var o = Std.instance(elt, Object3D);
+			var o = Std.downcast(elt, Object3D);
 			while(o != null) {
 				mat.multiply(mat, o.getTransform());
 				o = o.parent.to(hrt.prefab.Object3D);
@@ -1796,10 +1796,10 @@ class SceneEditor {
 			var polyColliders = new Array<PolygonBuffer>();
 			var meshes = new Array<Mesh>();
 			for (m in curEdit.rootObjects[0].getMeshes()) {
-				var hmdModel = Std.instance(m.primitive, HMDModel);
+				var hmdModel = Std.downcast(m.primitive, HMDModel);
 				if (hmdModel != null) {
-					var optiCollider = Std.instance(hmdModel.getCollider(), OptimizedCollider);
-					var polyCollider = Std.instance(optiCollider.b, PolygonBuffer);
+					var optiCollider = Std.downcast(hmdModel.getCollider(), OptimizedCollider);
+					var polyCollider = Std.downcast(optiCollider.b, PolygonBuffer);
 					if (polyCollider != null) {
 						polyColliders.push(polyCollider);
 						meshes.push(m);

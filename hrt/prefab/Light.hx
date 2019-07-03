@@ -182,7 +182,7 @@ class Light extends Object3D {
 	}
 
 	function loadBaked( ctx : Context ) {
-		var light = Std.instance(ctx.local3d, h3d.scene.pbr.Light);
+		var light = Std.downcast(ctx.local3d, h3d.scene.pbr.Light);
 		if( light == null ) return;
 		if( light.shadows.mode == Static || light.shadows.mode == Mixed ){
 			var res = ctx.shared.loadPrefabDat("shadowMap", "bake", name);
@@ -207,14 +207,14 @@ class Light extends Object3D {
 
 		switch( kind ) {
 		case Spot:
-			var sl = Std.instance(light, h3d.scene.pbr.SpotLight);
+			var sl = Std.downcast(light, h3d.scene.pbr.SpotLight);
 			sl.range = range;
 			sl.maxRange = maxRange;
 			sl.angle = angle;
 			sl.fallOff = fallOff;
 			sl.cookie = cookieTex;
 		case Point:
-			var pl = Std.instance(light, h3d.scene.pbr.PointLight);
+			var pl = Std.downcast(light, h3d.scene.pbr.PointLight);
 			pl.range = range;
 			pl.size = size;
 			pl.zNear = hxd.Math.max(0.02, zNear);
@@ -345,7 +345,7 @@ class Light extends Object3D {
 					sel = g;
 				}
 				else{
-					var g : h3d.scene.Graphics = Std.instance(debugSpot.getChildAt(1), h3d.scene.Graphics);
+					var g : h3d.scene.Graphics = Std.downcast(debugSpot.getChildAt(1), h3d.scene.Graphics);
 					g.clear();
 					g.lineStyle(1, this.color);
 					g.moveTo(0,0,0); g.lineTo(1, 1, 1);

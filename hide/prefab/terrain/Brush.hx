@@ -146,6 +146,6 @@ class TilePreviewMesh extends h3d.scene.Mesh {
 	override function sync(ctx : h3d.scene.RenderContext) {
 		shader.heightMap = heightMap;
 		shader.heightMapSize = heightMap.width;
-		shader.primSize = Std.instance(parent, hrt.prefab.terrain.TerrainMesh).tileSize;
+		shader.primSize = Std.downcast(parent, hrt.prefab.terrain.TerrainMesh).tileSize;
 	}
 }

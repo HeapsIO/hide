@@ -138,7 +138,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		var minDist = -1.;
 		for(polygon in polygons) {
 			var ctx = getContext(polygon);
-			var mesh = Std.instance(ctx.local3d, h3d.scene.Mesh);
+			var mesh = Std.downcast(ctx.local3d, h3d.scene.Mesh);
 			if(mesh == null)
 				continue;
 			var collider = mesh.getGlobalCollider();
@@ -692,7 +692,7 @@ class Level3D extends FileView {
 	}
 
 	function onSelectObjects(elts: Array<PrefabElement>) {
-		var renderProps = Std.instance(elts.find(e -> Std.is(e, hrt.prefab.RenderProps)), hrt.prefab.RenderProps);
+		var renderProps = Std.downcast(elts.find(e -> Std.is(e, hrt.prefab.RenderProps)), hrt.prefab.RenderProps);
 		if(renderProps != null)
 			lastRenderProps = renderProps;
 	}

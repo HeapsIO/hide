@@ -230,8 +230,8 @@ class Model extends FileView {
 			var p = m.primitive;
 			triangleCount += p.triCount();
 			vertexCount += p.vertexCount();
-			var multi = Std.instance(m, h3d.scene.MultiMaterial);
-			var skin = Std.instance(m, h3d.scene.Skin);
+			var multi = Std.downcast(m, h3d.scene.MultiMaterial);
+			var skin = Std.downcast(m, h3d.scene.Skin);
 			if( skin != null )
 				bonesCount += skin.getSkinData().allJoints.length;
 			var count = if( skin != null && skin.getSkinData().splitJoints != null )
@@ -295,7 +295,7 @@ class Model extends FileView {
 			out.push(path.join("."));
 			for( c in o )
 				getRec(path, c);
-			var sk = Std.instance(o, h3d.scene.Skin);
+			var sk = Std.downcast(o, h3d.scene.Skin);
 			if( sk != null ) {
 				var j = sk.getSkinData();
 				for( j in j.rootJoints )

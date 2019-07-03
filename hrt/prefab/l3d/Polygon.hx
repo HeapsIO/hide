@@ -169,7 +169,7 @@ class Polygon extends Object3D {
 			return;
 		if(ctx.local3d == null)
 			return;
-		var mesh = Std.instance(ctx.local3d, h3d.scene.Mesh);
+		var mesh = Std.downcast(ctx.local3d, h3d.scene.Mesh);
 		if(mesh != null)
 			hrt.prefab.Box.setDebugColor(color, mesh.material);
 		#end
@@ -198,8 +198,8 @@ class Polygon extends Object3D {
 	}
 
 	public function getPrimitive( ctx : Context ) : h3d.prim.Polygon {
-		var mesh = Std.instance(ctx.local3d, h3d.scene.Mesh);
-		return Std.instance(mesh.primitive, h3d.prim.Polygon);
+		var mesh = Std.downcast(ctx.local3d, h3d.scene.Mesh);
+		return Std.downcast(mesh.primitive, h3d.prim.Polygon);
 	}
 
 	#if editor
@@ -276,7 +276,7 @@ class Polygon extends Object3D {
 					}
 				}
 				else if( prevKind == Custom ){
-					var mesh = Std.instance(ctx.getContext(this).local3d, h3d.scene.Mesh);
+					var mesh = Std.downcast(ctx.getContext(this).local3d, h3d.scene.Mesh);
 					if( mesh.primitive != null ) mesh.primitive.dispose(); // Dispose custom prim
 				}
 

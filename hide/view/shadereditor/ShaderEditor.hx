@@ -70,7 +70,7 @@ class ShaderEditor extends hide.view.Graph {
 						</div>)');
 		parent.on("drop", function(e) {
 			var posCursor = new Point(lX(ide.mouseX - 25), lY(ide.mouseY - 10));
-			var node = Std.instance(shaderGraph.addNode(posCursor.x, posCursor.y, ShaderParam), ShaderParam);
+			var node = Std.downcast(shaderGraph.addNode(posCursor.x, posCursor.y, ShaderParam), ShaderParam);
 			node.parameterId = draggedParamId;
 			var paramShader = shaderGraph.getParameter(draggedParamId);
 			node.variable = paramShader.variable;
@@ -231,7 +231,7 @@ class ShaderEditor extends hide.view.Graph {
 				var idBox = ev.target.closest(".box").id;
 				for (b in listOfBoxes) {
 					if (b.getId() == idBox) {
-						var subGraph = Std.instance(b.getInstance(), hrt.shgraph.nodes.SubGraph);
+						var subGraph = Std.downcast(b.getInstance(), hrt.shgraph.nodes.SubGraph);
 						if (subGraph != null) {
 							if (ev.currentTarget.getAttribute('field') != "filesubgraph") {
 								break;
@@ -348,14 +348,14 @@ class ShaderEditor extends hide.view.Graph {
 		updateMatrix();
 
 		for (node in shaderGraph.getNodes()) {
-			var shaderPreview = Std.instance(node.instance, hrt.shgraph.nodes.Preview);
+			var shaderPreview = Std.downcast(node.instance, hrt.shgraph.nodes.Preview);
 			if (shaderPreview != null) {
 				shaderPreview.config = config;
 				shaderPreview.shaderGraph = shaderGraph;
 				addBox(new Point(node.x, node.y), std.Type.getClass(node.instance), shaderPreview);
 				continue;
 			}
-			var paramNode = Std.instance(node.instance, ShaderParam);
+			var paramNode = Std.downcast(node.instance, ShaderParam);
 			if (paramNode != null) {
 				var paramShader = shaderGraph.getParameter(paramNode.parameterId);
 				paramNode.setName(paramShader.name);
@@ -546,7 +546,7 @@ class ShaderEditor extends hide.view.Graph {
 		var deleteBtn = new Element('<input type="button" value="Delete" />');
 		deleteBtn.on("click", function() {
 			for (b in listOfBoxes) {
-				var shaderParam = Std.instance(b.getInstance(), ShaderParam);
+				var shaderParam = Std.downcast(b.getInstance(), ShaderParam);
 				if (shaderParam != null && shaderParam.parameterId == id) {
 					error("This parameter is used in the graph.");
 					return;
@@ -570,7 +570,7 @@ class ShaderEditor extends hide.view.Graph {
 			var newName = inputTitle.val();
 			if (shaderGraph.setParameterTitle(id, newName)) {
 				for (b in listOfBoxes) {
-					var shaderParam = Std.instance(b.getInstance(), ShaderParam);
+					var shaderParam = Std.downcast(b.getInstance(), ShaderParam);
 					if (shaderParam != null && shaderParam.parameterId == id) {
 						beforeChange();
 						shaderParam.setName(newName);
@@ -593,7 +593,7 @@ class ShaderEditor extends hide.view.Graph {
 	function setBoxesParam(id : Int) {
 		var param = shaderGraph.getParameter(id);
 		for (b in listOfBoxes) {
-			var shaderParam = Std.instance(b.getInstance(), ShaderParam);
+			var shaderParam = Std.downcast(b.getInstance(), ShaderParam);
 			if (shaderParam != null && shaderParam.parameterId == id) {
 				setDisplayValue(shaderParam, param.type, param.defaultValue);
 				b.generateProperties(editor);
@@ -712,7 +712,7 @@ class ShaderEditor extends hide.view.Graph {
 						var nameOutput = str.split("(")[1].split(" =")[0];
 						var errorSent = false;
 						for (b in listOfBoxes) {
-							var shaderOutput = Std.instance(b.getInstance(), hrt.shgraph.ShaderOutput);
+							var shaderOutput = Std.downcast(b.getInstance(), hrt.shgraph.ShaderOutput);
 							if (shaderOutput != null) {
 								if (shaderOutput.variable.name == nameOutput) {
 									error("Compilation of shader failed > Invalid inputs", shaderOutput.id);
@@ -756,7 +756,7 @@ class ShaderEditor extends hide.view.Graph {
 		var param = shaderGraph.getParameter(id);
 		setParamValueByName(currentShader, param.name, param.defaultValue);
 		for (b in listOfBoxes) {
-			var previewBox = Std.instance(b.getInstance(), hrt.shgraph.nodes.Preview);
+			var previewBox = Std.downcast(b.getInstance(), hrt.shgraph.nodes.Preview);
 			if (previewBox != null) {
 				previewBox.setParamValueByName(param.variable.name, param.defaultValue);
 			}
@@ -796,7 +796,7 @@ class ShaderEditor extends hide.view.Graph {
 		var node = shaderGraph.addNode(p.x, p.y, nodeClass);
 		afterChange();
 
-		var shaderPreview = Std.instance(node, hrt.shgraph.nodes.Preview);
+		var shaderPreview = Std.downcast(node, hrt.shgraph.nodes.Preview);
 		if (shaderPreview != null) {
 			shaderPreview.config = config;
 			shaderPreview.shaderGraph = shaderGraph;
@@ -804,7 +804,7 @@ class ShaderEditor extends hide.view.Graph {
 			return node;
 		}
 
-		var subGraphNode = Std.instance(node, hrt.shgraph.nodes.SubGraph);
+		var subGraphNode = Std.downcast(node, hrt.shgraph.nodes.SubGraph);
 		if (subGraphNode != null) {
 			subGraphNode.loadGraphShader();
 			addBox(p, nodeClass, subGraphNode);
@@ -1097,7 +1097,7 @@ class ShaderEditor extends hide.view.Graph {
 	}
 
 	function removeEdgeSubGraphUpdate(edge : Graph.Edge) {
-		var subGraph = Std.instance(edge.to.getInstance(), hrt.shgraph.nodes.SubGraph);
+		var subGraph = Std.downcast(edge.to.getInstance(), hrt.shgraph.nodes.SubGraph);
 		if (subGraph != null) {
 			var field = "";
 			if (isCreatingLink == FromInput) {
@@ -1123,7 +1123,7 @@ class ShaderEditor extends hide.view.Graph {
 		var box = super.addBox(p, nodeClass, node);
 
 		if (nodeClass == ShaderParam) {
-			var paramId = Std.instance(node, ShaderParam).parameterId;
+			var paramId = Std.downcast(node, ShaderParam).parameterId;
 			box.getElement().on("dblclick", function(e) {
 				var parametersElements = parametersList.find(".parameter");
 				for (elt in parametersElements.elements()) {
@@ -1138,7 +1138,7 @@ class ShaderEditor extends hide.view.Graph {
 				}
 			});
 		} else if (nodeClass == SubGraph) {
-			var subGraphNode = Std.instance(node, SubGraph);
+			var subGraphNode = Std.downcast(node, SubGraph);
 			if (subGraphNode.pathShaderGraph != null) {
 				var filename = subGraphNode.pathShaderGraph.split("/").pop();
 				box.setTitle("SubGraph: " + filename.split(".")[0]);
@@ -1177,7 +1177,7 @@ class ShaderEditor extends hide.view.Graph {
 	}
 
 	override function updatePosition(box : Box) {
-		var previewBox = Std.instance(box.getInstance(), hrt.shgraph.nodes.Preview);
+		var previewBox = Std.downcast(box.getInstance(), hrt.shgraph.nodes.Preview);
 		if (previewBox != null){
 			previewBox.onMove(gX(box.getX()), gY(box.getY()), transformMatrix[0]);
 		}
@@ -1187,13 +1187,22 @@ class ShaderEditor extends hide.view.Graph {
 	override function updateMatrix() {
 		super.updateMatrix();
 		for (b in listOfBoxes) {
-			var previewBox = Std.instance(b.getInstance(), hrt.shgraph.nodes.Preview);
+			var previewBox = Std.downcast(b.getInstance(), hrt.shgraph.nodes.Preview);
 			if (previewBox != null){
 				previewBox.onMove(gX(b.getX()), gY(b.getY()), transformMatrix[0]);
 			}
 		}
 	}
+	
+	override function getDefaultContent() {
+		var p = {
+			type : "hlshader",
+			html : "",
+			json : {},
+		};
+		return haxe.io.Bytes.ofString(ide.toJSON(p));
+	}
 
-	static var _ = FileTree.registerExtension(ShaderEditor,["hlshader"],{ icon : "scribd" });
+	static var _ = FileTree.registerExtension(ShaderEditor,["hlshader"],{ icon : "scribd", createNew: "Shader Graph" });
 
 }

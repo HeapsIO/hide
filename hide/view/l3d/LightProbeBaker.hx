@@ -94,7 +94,7 @@ class LightProbeBaker {
 		}
 		disableFaceCulling(offScreenScene);*/
 
-		var pbrRenderer = Std.instance(offScreenScene.renderer, h3d.scene.pbr.Renderer) ;
+		var pbrRenderer = Std.downcast(offScreenScene.renderer, h3d.scene.pbr.Renderer) ;
 		pbrRenderer.env = env;
 		pbrRenderer.renderMode = LightProbe;
 		offScreenScene.camera = customCamera;
@@ -192,12 +192,12 @@ class LightProbeBaker {
 			}
 			volumetricLightMap.lastBakedProbeIndex = index;
 
-			var pbrRenderer = Std.instance(offScreenScene.renderer, h3d.scene.pbr.Renderer);
+			var pbrRenderer = Std.downcast(offScreenScene.renderer, h3d.scene.pbr.Renderer);
 			if( useGPU ) {
 				drawSHIntoTexture(pbrRenderer, envMap, volumetricLightMap.shOrder, index);
 			}
 			else {
-				var pbrRenderer = Std.instance(offScreenScene.renderer, h3d.scene.pbr.Renderer);
+				var pbrRenderer = Std.downcast(offScreenScene.renderer, h3d.scene.pbr.Renderer);
 				var sh : hrt.prefab.vlm.SphericalHarmonic = convertEnvIntoSH_CPU(envMap, volumetricLightMap.shOrder);
 				for( coef in 0 ... coefCount ) {
 					var u = coords.x + volumetricLightMap.probeCount.x * coef;

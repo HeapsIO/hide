@@ -82,7 +82,7 @@ class Editor extends Component {
 			});
 		keys.register("cdb.closeList", function() {
 			var c = cursor.getCell();
-			var sub = Std.instance(c == null ? cursor.table : c.table, SubTable);
+			var sub = Std.downcast(c == null ? cursor.table : c.table, SubTable);
 			if( sub != null ) {
 				sub.cell.element.click();
 				return;
@@ -363,7 +363,7 @@ class Editor extends Component {
 	}
 
 	function openReference( s : cdb.Sheet, line : Int, column : Int ) {
-		ide.open("hide.view.CdbTable", { path : s.name }, function(view) @:privateAccess Std.instance(view,hide.view.CdbTable).editor.cursor.setDefault(line,column));
+		ide.open("hide.view.CdbTable", { path : s.name }, function(view) @:privateAccess Std.downcast(view,hide.view.CdbTable).editor.cursor.setDefault(line,column));
 	}
 
 	public function syncSheet( ?base ) {

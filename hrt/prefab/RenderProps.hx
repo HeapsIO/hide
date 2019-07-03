@@ -62,7 +62,7 @@ class RenderProps extends Prefab {
 			fx.dispose();
 		renderer.effects = [];
 		for( s in children ) {
-			var fx = Std.instance(s, hrt.prefab.rfx.RendererFX);
+			var fx = Std.downcast(s, hrt.prefab.rfx.RendererFX);
 			if( fx != null )
 				renderer.effects.push(fx);
 		}

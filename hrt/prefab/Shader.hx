@@ -21,7 +21,7 @@ class Shader extends Prefab {
 	}
 
 	override function updateInstance(ctx: Context, ?propName) {
-		var shader = Std.instance(ctx.custom, hxsl.DynamicShader);
+		var shader = Std.downcast(ctx.custom, hxsl.DynamicShader);
 		if(shader == null || shaderDef == null)
 			return;
 		for(v in shaderDef.shader.data.vars) {

@@ -85,7 +85,7 @@ class AdvancedDecal extends Object3D {
 	}
 
 	public function updateRenderParams(ctx) {
-		var mesh = Std.instance(ctx.local3d, h3d.scene.Mesh);
+		var mesh = Std.downcast(ctx.local3d, h3d.scene.Mesh);
 		mesh.material.blendMode = blendMode;
 		switch (renderMode) {
 			case Decal:

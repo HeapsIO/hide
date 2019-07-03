@@ -83,7 +83,7 @@ class MovablePoint {
 
 	public function updateText(ctx : Context){
 		inline function getText(o) : h2d.Text{
-			return Std.instance(o.getChildAt(0), h2d.Text);
+			return Std.downcast(o.getChildAt(0), h2d.Text);
 		}
 		getText(localPosText).visible = showDebug;
 		getText(worldPosText).visible = showDebug;

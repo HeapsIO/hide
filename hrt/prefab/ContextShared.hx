@@ -202,7 +202,7 @@ class ContextShared {
 		var childObjs = getChildrenRoots(root, p, []);
 		var ret = [];
 		function rec(o : h3d.scene.Object) {
-			var m = Std.instance(o, c);
+			var m = Std.downcast(o, c);
 			if(m != null) ret.push(m);
 			for( child in o )
 				if( childObjs.indexOf(child) < 0 )
@@ -222,7 +222,7 @@ class ContextShared {
 		function rec(o : h3d.scene.Object) {
 			if( o.isMesh() ) {
 				var m = o.toMesh();
-				var multi = Std.instance(m, h3d.scene.MultiMaterial);
+				var multi = Std.downcast(m, h3d.scene.MultiMaterial);
 				if( multi != null ) {
 					for( m in multi.materials )
 						if( m != null )

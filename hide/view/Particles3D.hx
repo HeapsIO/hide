@@ -263,7 +263,7 @@ class Particles3D extends FileView {
 					function addRec(o:h3d.scene.Object) {
 						if( o.name != null )
 							new Element('<option value="${o.name}" ${o.name == prev ? "selected='selected'" : ""}>${o.name}</option>').appendTo(attach);
-						var s = Std.instance(o, h3d.scene.Skin);
+						var s = Std.downcast(o, h3d.scene.Skin);
 						if( s != null )
 							for( j in s.getSkinData().allJoints )
 								new Element('<option value="${j.name}" ${j.name == prev ? "selected='selected'" : ""}>${j.name}</option>').appendTo(attach);
@@ -302,7 +302,7 @@ class Particles3D extends FileView {
 		var defAmbient = scene.s3d.lightSystem.ambientLight.clone();
 		extra.find(".lights").change(function(e) {
 			var ls = scene.s3d.lightSystem;
-			var lfw = Std.instance(ls, h3d.scene.fwd.LightSystem);
+			var lfw = Std.downcast(ls, h3d.scene.fwd.LightSystem);
 			var enable = e.getThis().prop("checked");
 			if( lfw != null ) lfw.maxLightsPerObject = enable ? 6 : 0;
 			if( enable ) ls.ambientLight.load(defAmbient) else ls.ambientLight.set(1, 1, 1);

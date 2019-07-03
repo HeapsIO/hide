@@ -88,7 +88,7 @@ class Prefab extends FileView {
 	}
 
 	public function onSceneReady() {
-		light = sceneEditor.scene.s3d.find(function(o) return Std.instance(o, h3d.scene.fwd.DirLight));
+		light = sceneEditor.scene.s3d.find(function(o) return Std.downcast(o, h3d.scene.fwd.DirLight));
 		if( light == null ) {
 			light = new h3d.scene.fwd.DirLight(scene.s3d);
 			light.enableSpecular = true;

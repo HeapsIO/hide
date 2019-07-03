@@ -373,7 +373,7 @@ class Prefab {
 		Returns null if not of this type.
 	**/
 	public function to<T:Prefab>( c : Class<T> ) : Null<T> {
-		return Std.instance(this, c);
+		return Std.downcast(this, c);
 	}
 
 	/**

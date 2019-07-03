@@ -317,7 +317,7 @@ class MeshSpray extends Object3D {
 	public function getZ( x : Float, y : Float ) {
 		var z = this.z;
 
-		@:privateAccess var terrain = sceneEditor.sceneData.find(p -> Std.instance(p, hrt.prefab.terrain.Terrain));
+		@:privateAccess var terrain = sceneEditor.sceneData.find(p -> Std.downcast(p, hrt.prefab.terrain.Terrain));
 
 		if(terrain != null){
 			var pos = new h3d.Vector(x, y, 0);
@@ -340,7 +340,7 @@ class MeshSpray extends Object3D {
 
 	function projectToGround( ray: h3d.col.Ray ) {
 		var minDist = -1.;
-		@:privateAccess var terrainPrefab = sceneEditor.sceneData.find(p -> Std.instance(p, hrt.prefab.terrain.Terrain));
+		@:privateAccess var terrainPrefab = sceneEditor.sceneData.find(p -> Std.downcast(p, hrt.prefab.terrain.Terrain));
 		if (terrainPrefab != null) {
 			var normal = terrainPrefab.terrain.getAbsPos().up();
 			var plane = h3d.col.Plane.fromNormalPoint(normal.toPoint(), new h3d.col.Point(terrainPrefab.terrain.getAbsPos().tx, terrainPrefab.terrain.getAbsPos().ty, terrainPrefab.terrain.getAbsPos().tz));

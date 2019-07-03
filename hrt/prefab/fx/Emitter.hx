@@ -445,16 +445,16 @@ class EmitterObject extends h3d.scene.Object {
 			return;
 
 		var template = particleTemplate.makeInstance(context);
-		var mesh = Std.instance(template.local3d, h3d.scene.Mesh);
+		var mesh = Std.downcast(template.local3d, h3d.scene.Mesh);
 		if( mesh == null ) {
 			for( i in 0...template.local3d.numChildren ) {
-				mesh = Std.instance(template.local3d.getChildAt(i), h3d.scene.Mesh);
+				mesh = Std.downcast(template.local3d.getChildAt(i), h3d.scene.Mesh);
 				if( mesh != null ) break;
 			}
 		}
 
 		if( mesh != null && mesh.primitive != null ) {
-			var meshPrim = Std.instance(mesh.primitive, h3d.prim.MeshPrimitive);
+			var meshPrim = Std.downcast(mesh.primitive, h3d.prim.MeshPrimitive);
 
 			// Setup mats.
 			// Should we do this manually here or make a recursive makeInstance on the template?
@@ -707,7 +707,7 @@ class Emitter extends Object3D {
 	}
 
 	function resetParam(param: ParamDef) {
-		var a = Std.instance(param.def, Array);
+		var a = Std.downcast(param.def, Array);
 		if(a != null)
 			Reflect.setField(props, param.name, a.copy());
 		else
@@ -716,7 +716,7 @@ class Emitter extends Object3D {
 
 	override function updateInstance( ctx: Context, ?propName : String ) {
 		super.updateInstance(ctx, propName);
-		var emitterObj = Std.instance(ctx.local3d, EmitterObject);
+		var emitterObj = Std.downcast(ctx.local3d, EmitterObject);
 
 		var randIdx = 0;
 		var template = children[0] != null ? children[0].to(Object3D) : null;
@@ -967,7 +967,7 @@ class Emitter extends Object3D {
 	}
 
 	override function setSelected( ctx : Context, b : Bool ) {
-		var emitterObj = Std.instance(ctx.local3d, EmitterObject);
+		var emitterObj = Std.downcast(ctx.local3d, EmitterObject);
 		if(emitterObj == null)
 			return;
 		var debugShape : h3d.scene.Object = emitterObj.find(c -> if(c.name == "_highlight") c else null);

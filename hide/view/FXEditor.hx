@@ -359,7 +359,7 @@ class FXEditor extends FileView {
 	}
 
 	public function onSceneReady() {
-		light = sceneEditor.scene.s3d.find(function(o) return Std.instance(o, h3d.scene.fwd.DirLight));
+		light = sceneEditor.scene.s3d.find(function(o) return Std.downcast(o, h3d.scene.fwd.DirLight));
 		if( light == null ) {
 			light = new h3d.scene.fwd.DirLight(scene.s3d);
 			light.enableSpecular = true;
@@ -1014,8 +1014,8 @@ class FXEditor extends FileView {
 				<div class="tracks"></div>
 			</div>').appendTo(scrollPanel);
 			var addTrackEl = objPanel.find(".addtrack");
-			var objElt = Std.instance(sec.elt, hrt.prefab.Object3D);
-			var shaderElt = Std.instance(sec.elt, hrt.prefab.Shader);
+			var objElt = Std.downcast(sec.elt, hrt.prefab.Object3D);
+			var shaderElt = Std.downcast(sec.elt, hrt.prefab.Shader);
 
 			addTrackEl.click(function(e) {
 				var menuItems = getNewTrackMenu(sec.elt);
@@ -1099,9 +1099,9 @@ class FXEditor extends FileView {
 	}
 
 	public function getNewTrackMenu(elt: PrefabElement) : Array<hide.comp.ContextMenu.ContextMenuItem> {
-		var objElt = Std.instance(elt, hrt.prefab.Object3D);
-		var shaderElt = Std.instance(elt, hrt.prefab.Shader);
-		var emitterElt = Std.instance(elt, hrt.prefab.fx.Emitter);
+		var objElt = Std.downcast(elt, hrt.prefab.Object3D);
+		var shaderElt = Std.downcast(elt, hrt.prefab.Shader);
+		var emitterElt = Std.downcast(elt, hrt.prefab.fx.Emitter);
 		var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
 
 		inline function hasTrack(pname) {
@@ -1251,7 +1251,7 @@ class FXEditor extends FileView {
 		var anim : hrt.prefab.fx.FX.FXAnimation = null;
 		var ctx = sceneEditor.getContext(data);
 		if(ctx != null && ctx.local3d != null) {
-			anim = Std.instance(ctx.local3d,hrt.prefab.fx.FX.FXAnimation);
+			anim = Std.downcast(ctx.local3d,hrt.prefab.fx.FX.FXAnimation);
 		}
 		if(!pauseButton.isDown()) {
 			currentTime += scene.speed * dt;

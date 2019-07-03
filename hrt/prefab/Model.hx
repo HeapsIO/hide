@@ -38,7 +38,7 @@ class Model extends Object3D {
 				obj = root;
 			}
 			#if editor
-			for(m in obj.findAll(o -> Std.instance(o, h3d.scene.Mesh)))
+			for(m in obj.findAll(o -> Std.downcast(o, h3d.scene.Mesh)))
 				m.cullingCollider = new h3d.col.ObjectCollider(m, m.primitive.getBounds().toSphere());
 			#end
 			obj.name = name;

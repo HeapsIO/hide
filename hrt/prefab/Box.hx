@@ -7,7 +7,7 @@ class Box extends Object3D {
 		#if editor
 		if(ctx.local3d == null)
 			return;
-		var mesh = Std.instance(ctx.local3d, h3d.scene.Mesh);
+		var mesh = Std.downcast(ctx.local3d, h3d.scene.Mesh);
 		if(mesh != null) {
 			setDebugColor(color, mesh.material);
 		}

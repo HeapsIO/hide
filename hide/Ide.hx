@@ -203,7 +203,7 @@ class Ide {
 	}
 
 	public function getViews<K,T:hide.ui.View<K>>( cl : Class<T> ) {
-		return [for( v in views ) { var t = Std.instance(v,cl); if( t != null ) t; }];
+		return [for( v in views ) { var t = Std.downcast(v,cl); if( t != null ) t; }];
 	}
 
 	function getViewAt(x : Float, y : Float) {

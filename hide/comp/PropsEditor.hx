@@ -299,7 +299,7 @@ class PropsField extends Component {
 			};
 			return;
 		case "color":
-			var arr = Std.instance(current, Array);
+			var arr = Std.downcast(current, Array);
 			var alpha = arr != null && arr.length == 4 || f.attr("alpha") == "true";
 			var picker = new hide.comp.ColorPicker(alpha, null, f);
 

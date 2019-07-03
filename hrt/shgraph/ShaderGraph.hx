@@ -96,7 +96,7 @@ class ShaderGraph {
 			n.instance.loadProperties(n.properties);
 			this.nodes.set(n.id, n);
 
-			var shaderParam = Std.instance(n.instance, ShaderParam);
+			var shaderParam = Std.downcast(n.instance, ShaderParam);
 			if (shaderParam != null) {
 				var paramShader = getParameter(shaderParam.parameterId);
 				shaderParam.computeOutputs();
@@ -201,14 +201,14 @@ class ShaderGraph {
 		}
 		var build = nodeVar.getExpr();
 
-		var shaderInput = Std.instance(node, ShaderInput);
+		var shaderInput = Std.downcast(node, ShaderInput);
 		if (shaderInput != null) {
 			var variable = shaderInput.variable;
 			if ((variable.kind == Param || variable.kind == Global || variable.kind == Input) && !alreadyAddVariable(variable)) {
 				allVariables.push(variable);
 			}
 		}
-		var shaderParam = Std.instance(node, ShaderParam);
+		var shaderParam = Std.downcast(node, ShaderParam);
 		if (shaderParam != null && !alreadyAddVariable(shaderParam.variable)) {
 			if (shaderParam.variable == null) {
 				shaderParam.variable = generateParameter(shaderParam.variable.name, shaderParam.variable.type);
@@ -218,7 +218,7 @@ class ShaderGraph {
 			allParamDefaultValue.push(getParameter(shaderParam.parameterId).defaultValue);
 		}
 		if (isSubGraph) {
-			var subGraph = Std.instance(node, hrt.shgraph.nodes.SubGraph);
+			var subGraph = Std.downcast(node, hrt.shgraph.nodes.SubGraph);
 			var params = subGraph.subShaderGraph.parametersAvailable;
 			for (subVar in subGraph.varsSubGraph) {
 				if (subVar.kind == Param) {
@@ -306,9 +306,9 @@ class ShaderGraph {
 			if (specificOutput != null) {
 				if (n.instance != specificOutput) continue;
 				shaderNode = specificOutput;
-				variable = Std.instance(specificOutput, hrt.shgraph.nodes.Preview).variable;
+				variable = Std.downcast(specificOutput, hrt.shgraph.nodes.Preview).variable;
 			} else {
-				var shaderOutput = Std.instance(n.instance, ShaderOutput);
+				var shaderOutput = Std.downcast(n.instance, ShaderOutput);
 
 				if (shaderOutput != null) {
 					variable = shaderOutput.variable;

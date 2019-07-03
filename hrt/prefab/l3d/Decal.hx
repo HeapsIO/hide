@@ -33,7 +33,7 @@ class Decal extends Object3D {
 	override function updateInstance(ctx:Context,?propName:String) {
 		super.updateInstance(ctx,propName);
 
-		var mesh = Std.instance(ctx.local3d, h3d.scene.Mesh);
+		var mesh = Std.downcast(ctx.local3d, h3d.scene.Mesh);
 		mesh.material.texture = diffuseMap != null ? ctx.loadTexture(diffuseMap) : null;
 		mesh.material.normalMap = normalMap != null ? ctx.loadTexture(normalMap) : null;
 		mesh.material.specularTexture = specularMap != null ? ctx.loadTexture(specularMap) : null;

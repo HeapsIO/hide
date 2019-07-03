@@ -185,9 +185,9 @@ class FXAnimation extends h3d.scene.Object {
 
 			var casterName = caster.name;
 			// Get the Model Name
-			var sk = Std.instance(caster, h3d.scene.Skin);
+			var sk = Std.downcast(caster, h3d.scene.Skin);
 			if( sk != null ) {
-				var prim = Std.instance(sk.getSkinData().primitive, h3d.prim.HMDModel);
+				var prim = Std.downcast(sk.getSkinData().primitive, h3d.prim.HMDModel);
 				casterName = @:privateAccess prim.lib.resource.entry.name.split(".")[0];
 			}
 
@@ -238,7 +238,7 @@ class FX extends hrt.prefab.Library {
 	}
 
 	static function getObjAnimations(ctx:Context, elt: PrefabElement, anims: Array<ObjectAnimation>) {
-		if(Std.instance(elt, hrt.prefab.fx.Emitter) == null) {
+		if(Std.downcast(elt, hrt.prefab.fx.Emitter) == null) {
 			// Don't extract animations for children of Emitters
 			for(c in elt.children) {
 				getObjAnimations(ctx, c, anims);
@@ -309,7 +309,7 @@ class FX extends hrt.prefab.Library {
 	}
 
 	public function refreshObjectAnims(ctx: Context) {
-		var fxanim = Std.instance(ctx.local3d, FXAnimation);
+		var fxanim = Std.downcast(ctx.local3d, FXAnimation);
 		fxanim.objects = [];
 		getObjAnimations(ctx, this, fxanim.objects);
 	}
@@ -362,7 +362,7 @@ class FX extends hrt.prefab.Library {
 	}
 
 	public static function getShaderAnims(ctx: Context, elt: PrefabElement, anims: Array<ShaderAnimation>) {
-		if(Std.instance(elt, hrt.prefab.fx.Emitter) == null) {
+		if(Std.downcast(elt, hrt.prefab.fx.Emitter) == null) {
 			for(c in elt.children) {
 				getShaderAnims(ctx, c, anims);
 			}
@@ -382,7 +382,7 @@ class FX extends hrt.prefab.Library {
 	}
 
 	function getEmitters(ctx: Context, elt: PrefabElement, emitters: Array<hrt.prefab.fx.Emitter.EmitterObject>) {
-		var em = Std.instance(elt, hrt.prefab.fx.Emitter);
+		var em = Std.downcast(elt, hrt.prefab.fx.Emitter);
 		if(em != null)  {
 			for(emCtx in ctx.shared.getContexts(elt)) {
 				if(emCtx.local3d == null) continue;
@@ -409,7 +409,7 @@ class FX extends hrt.prefab.Library {
 	}
 
 	function getConstraints( ctx : Context, elt : PrefabElement, constraints : Array<hrt.prefab.Constraint>){
-		var co = Std.instance(elt, hrt.prefab.Constraint);
+		var co = Std.downcast(elt, hrt.prefab.Constraint);
 		if(co != null)
 			constraints.push(co);
 		else
@@ -436,7 +436,7 @@ class FX extends hrt.prefab.Library {
 		var root = getFXRoot(ctx, this);
 		if(root != null){
 			for( c in root.children ){
-				var co = Std.instance(c , Constraint);
+				var co = Std.downcast(c , Constraint);
 				if(co == null) c.make(ctx);
 			}
 			getConstraints(ctx, root, fxanim.constraints);
@@ -460,7 +460,7 @@ class FX extends hrt.prefab.Library {
 
 	override function updateInstance( ctx: Context, ?propName : String ) {
 		super.updateInstance(ctx, null);
-		var fxanim = Std.instance(ctx.local3d, FXAnimation);
+		var fxanim = Std.downcast(ctx.local3d, FXAnimation);
 		fxanim.duration = duration;
 		fxanim.loopAnims = loopAnims;
 		fxanim.cullingRadius = cullingRadius;

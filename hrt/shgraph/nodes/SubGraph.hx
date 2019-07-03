@@ -41,25 +41,25 @@ class SubGraph extends ShaderNode {
 			for (node in subShaderGraph.getNodes()) {
 				switch (node.type.split(".").pop()) {
 					case "ShaderParam": // params become inputs
-						var shaderParam = Std.instance(node.instance, ShaderParam);
+						var shaderParam = Std.downcast(node.instance, ShaderParam);
 						var paramName = subShaderGraph.getParameter(shaderParam.parameterId).name;
 
 						inputsInfo.set(prefixSubGraph+node.id, { name : paramName , type: ShaderType.getSType(shaderParam.variable.type), hasProperty: false, isRequired : false, id : node.id });
 						inputInfoKeys.push(prefixSubGraph+node.id);
 					case "ShaderInput":
-						var shaderInput = Std.instance(node.instance, ShaderInput);
+						var shaderInput = Std.downcast(node.instance, ShaderInput);
 
 						inputsInfo.set(prefixSubGraph+node.id, { name : "*" + shaderInput.variable.name , type: ShaderType.getSType(shaderInput.variable.type), hasProperty: false, isRequired : false, id : node.id });
 						inputInfoKeys.push(prefixSubGraph+node.id);
 					case "ShaderOutput":
-						var shaderOutput = Std.instance(node.instance, ShaderOutput);
+						var shaderOutput = Std.downcast(node.instance, ShaderOutput);
 
 						outputsInfo.set(prefixSubGraph+node.id, { name : shaderOutput.variable.name , type: ShaderType.getSType(shaderOutput.variable.type), id : node.id });
 						outputInfoKeys.push(prefixSubGraph+node.id);
 
 						addOutput(prefixSubGraph+node.id, shaderOutput.variable.type);
 					default:
-						var shaderConst = Std.instance(node.instance, ShaderConst);
+						var shaderConst = Std.downcast(node.instance, ShaderConst);
 						if (shaderConst != null) { // input static become properties
 							if (shaderConst.name.length == 0) continue;
 							if (Std.is(shaderConst, BoolConst)) {
@@ -102,10 +102,10 @@ class SubGraph extends ShaderNode {
 				var node = subShaderGraph.getNode(p.id);
 				switch (p.type) {
 					case TBool:
-						var boolConst = Std.instance(node.instance, BoolConst);
+						var boolConst = Std.downcast(node.instance, BoolConst);
 						@:privateAccess boolConst.value = p.defaultValue;
 					case TVec(4, VFloat):
-						var colorConst = Std.instance(node.instance, Color);
+						var colorConst = Std.downcast(node.instance, Color);
 						@:privateAccess {
 							colorConst.r = p.defaultValue.x;
 							colorConst.g = p.defaultValue.y;
@@ -113,7 +113,7 @@ class SubGraph extends ShaderNode {
 							colorConst.a = p.defaultValue.w;
 						}
 					case TFloat:
-						var floatConst = Std.instance(node.instance, FloatConst);
+						var floatConst = Std.downcast(node.instance, FloatConst);
 						@:privateAccess floatConst.value = p.defaultValue;
 					default:
 				}

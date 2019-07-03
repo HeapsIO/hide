@@ -92,7 +92,7 @@ class EditContext {
 			out.push(path.join("."));
 			for( c in o )
 				getRec(path, c);
-			var sk = Std.instance(o, h3d.scene.Skin);
+			var sk = Std.downcast(o, h3d.scene.Skin);
 			if( sk != null ) {
 				var j = sk.getSkinData();
 				for( j in j.rootJoints )

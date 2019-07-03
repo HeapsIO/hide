@@ -156,7 +156,7 @@ class VolumetricLightmap extends Object3D {
 		if(propName ==  "strength" && displaySH){
 			var previewSpheres = volumetricLightmap.findAll(c -> if(c.name == "_previewSphere") c else null);
 			for(ps in previewSpheres){
-				var mesh = Std.instance(ps, h3d.scene.Mesh);
+				var mesh = Std.downcast(ps, h3d.scene.Mesh);
 				var shader = mesh.material.mainPass.getShader(hrt.shader.DisplaySH);
 				if(shader != null) shader.strength = volumetricLightmap.strength;
 			}
@@ -291,7 +291,7 @@ class VolumetricLightmap extends Object3D {
 		var s3d = @:privateAccess ctx.rootContext.local3d.getScene();
 		baker = new hide.view.l3d.ProbeBakerProcess(this, resolution, useGPU, 0.032);
 
-		var pbrRenderer = Std.instance(s3d.renderer, h3d.scene.pbr.Renderer);
+		var pbrRenderer = Std.downcast(s3d.renderer, h3d.scene.pbr.Renderer);
 		if(pbrRenderer != null) {
 			if( pbrRenderer.env == null || pbrRenderer.env.env == null || pbrRenderer.env.env.isDisposed() )
 					trace("Environment missing");

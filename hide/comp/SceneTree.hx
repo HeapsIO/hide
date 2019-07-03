@@ -49,7 +49,7 @@ class SceneTree extends IconTree<String> {
 	override function applyStyle(id: String, el: Element) {
 		var v : Dynamic = resolvePath(id);
 
-		var obj = Std.instance(v, h3d.scene.Object);
+		var obj = Std.downcast(v, h3d.scene.Object);
 
 		if (obj != null) {
 			if (el.find(".fa-eye").length == 0) {
