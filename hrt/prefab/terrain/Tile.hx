@@ -30,7 +30,7 @@ class Tile extends h3d.scene.Mesh {
 		this.tileY = y;
 		shader = new hrt.shader.Terrain();
 		material.mainPass.addShader(shader);
-		material.mainPass.culling = None;
+		material.mainPass.culling = Back;
 		material.shadows = false;
 		this.x = x * terrain.tileSize;
 		this.y = y * terrain.tileSize;
