@@ -133,24 +133,17 @@ class FXAnimation extends h3d.scene.Object {
 
 	public function resolveConstraints( caster : h3d.scene.Object ) {
 		for( co in constraints ) {
-
 			if( !co.enabled )
 		 		continue;
 
 			var objectName = co.object.split(".").pop();
 			var targetName = co.target.split(".").pop();
 
-			var casterName = caster.name;
-			// Get the Model Name
-			var sk = Std.downcast(caster, h3d.scene.Skin);
-			if( sk != null ) {
-				var prim = Std.downcast(sk.getSkinData().primitive, h3d.prim.HMDModel);
-				casterName = @:privateAccess prim.lib.resource.entry.name.split(".")[0];
-			}
-
 			var isInFX = co.object.split(".")[1] == "FXRoot";
 			var srcObj = objectName == "FXRoot" ? this : isInFX ? this.getObjectByName(objectName) : caster.getObjectByName(objectName);
-			var targetObj = casterName == targetName ? caster : caster.getObjectByName(targetName);
+			var targetObj = caster.getObjectByName(targetName);
+			if(targetObj == null)
+				targetObj = caster;
 			if( srcObj != null && targetObj != null ){
 				srcObj.follow = targetObj;
 				srcObj.followPositionOnly = co.positionOnly;
