@@ -63,6 +63,11 @@ class Shader extends Prefab {
 			shader.hscriptSet(v.variable.name, v.value);
 			#end
 		}
+		if(ctx.local2d != null) {
+			var drawable = Std.downcast(ctx.local2d, h2d.Drawable);
+			if (drawable != null)
+				drawable.addShader(shader);
+		}
 		if(ctx.local3d != null) {
 			for(m in ctx.local3d.getMaterials()) { // TODO: Only add to self materials, not all children materials
 				m.mainPass.addShader(shader);
@@ -141,7 +146,7 @@ class Shader extends Prefab {
 	}
 
 	override function getHideProps() : HideProps {
-		return { icon : "cog", name : "Shader", fileSource : ["hx"], allowParent : function(p) return p.to(Object3D) != null };
+		return { icon : "cog", name : "Shader", fileSource : ["hx"], allowParent : function(p) return p.to(Object2D) != null || p.to(Object3D) != null };
 	}
 
 	#end

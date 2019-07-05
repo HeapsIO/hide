@@ -1,6 +1,6 @@
 package hrt.prefab.fx;
 import hrt.prefab.Curve;
-import hrt.prefab.fx.FX.ShaderAnimation;
+import hrt.prefab.fx.BaseFX.ShaderAnimation;
 using Lambda;
 
 enum SimulationSpace {
@@ -471,7 +471,7 @@ class EmitterObject extends h3d.scene.Object {
 				if( !shader.enabled ) continue;
 				var shCtx = shader.makeInstance(template);
 				if( shCtx == null ) continue;
-				hrt.prefab.fx.FX.getShaderAnims(template, shader, shaderAnims);
+				hrt.prefab.fx.BaseFX.getShaderAnims(template, shader, shaderAnims);
 			}
 
 			// Animated textures animations

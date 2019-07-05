@@ -73,42 +73,57 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		var allTypes = super.getNewContextMenu(current, onMake);
 
 		var menu = [];
-		for(name in ["Group", "Polygon", "Model", "Shaders", "Emitter"]) {
-			var item = allTypes.find(i -> i.label == name);
-			if(item == null) continue;
-			allTypes.remove(item);
-			menu.push(item);
-		}
-		if(current != null) {
+		if (@:privateAccess parent.is2D) {
+			for(name in ["Group 2D", "Bitmap", "Shaders", "Shader Graph"]) {
+				var item = allTypes.find(i -> i.label == name);
+				if(item == null) continue;
+				allTypes.remove(item);
+				menu.push(item);
+			}
+			if(current != null) {
+				menu.push({
+					label: "Animation",
+					menu: parent.getNewTrackMenu(current)
+				});
+			}
+		} else {
+			for(name in ["Group", "Polygon", "Model", "Shaders", "Emitter"]) {
+				var item = allTypes.find(i -> i.label == name);
+				if(item == null) continue;
+				allTypes.remove(item);
+				menu.push(item);
+			}
+			if(current != null) {
+				menu.push({
+					label: "Animation",
+					menu: parent.getNewTrackMenu(current)
+				});
+			}
+
 			menu.push({
-				label: "Animation",
-				menu: parent.getNewTrackMenu(current)
+				label: "Material",
+				menu: [
+					getNewTypeMenuItem("material", current, onMake, "Default"),
+					getNewTypeMenuItem("material", current, function (p) {
+						// TODO: Move material presets to props.json
+						p.props = {
+							PBR: {
+								mode: "Overlay",
+								blend: "None",
+								shadows: false
+							}
+						}
+						if(onMake != null) onMake(p);
+					}, "Unlit")
+				]
+			});
+			menu.sort(function(l1,l2) return Reflect.compare(l1.label,l2.label));
+			menu.push({label: null, isSeparator: true});
+			menu.push({
+				label: "Other",
+				menu: allTypes
 			});
 		}
-
-		menu.push({
-			label: "Material",
-			menu: [
-				getNewTypeMenuItem("material", current, onMake, "Default"),
-				getNewTypeMenuItem("material", current, function (p) {
-					// TODO: Move material presets to props.json
-					p.props = {
-						PBR: {
-							mode: "Overlay",
-							blend: "None",
-							shadows: false
-						}
-					}
-					if(onMake != null) onMake(p);
-				}, "Unlit")
-			]
-		});
-		menu.sort(function(l1,l2) return Reflect.compare(l1.label,l2.label));
-		menu.push({label: null, isSeparator: true});
-		menu.push({
-			label: "Other",
-			menu: allTypes
-		});
 		return menu;
 	}
 }
@@ -116,7 +131,8 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 class FXEditor extends FileView {
 
 	var sceneEditor : FXSceneEditor;
-	var data : hrt.prefab.fx.FX;
+	var data : hrt.prefab.fx.BaseFX;
+	var is2D : Bool = false;
 	var tabs : hide.comp.Tabs;
 	var fxprops : hide.comp.PropsEditor;
 
@@ -173,9 +189,15 @@ class FXEditor extends FileView {
 		saveDisplayKey = "FXScene/" + getPath().split("\\").join("/").substr(0,-1);
 		currentTime = 0.;
 		xOffset = -timelineLeftMargin / xScale;
-		data = new hrt.prefab.fx.FX();
 		var content = sys.io.File.getContent(getPath());
-		data.loadData(haxe.Json.parse(content));
+		var json = haxe.Json.parse(content);
+		if (json.type == "fx")
+			data = new hrt.prefab.fx.FX();
+		else {
+			is2D = true;
+			data = new hrt.prefab.fx.FX2D();
+		}
+		data.loadData(json);
 		currentSign = haxe.crypto.Md5.encode(content);
 
 		element.html('
@@ -1099,7 +1121,8 @@ class FXEditor extends FileView {
 	}
 
 	public function getNewTrackMenu(elt: PrefabElement) : Array<hide.comp.ContextMenu.ContextMenuItem> {
-		var objElt = Std.downcast(elt, hrt.prefab.Object3D);
+		var obj3dElt = Std.downcast(elt, hrt.prefab.Object3D);
+		var obj2dElt = Std.downcast(elt, hrt.prefab.Object2D);
 		var shaderElt = Std.downcast(elt, hrt.prefab.Shader);
 		var emitterElt = Std.downcast(elt, hrt.prefab.fx.Emitter);
 		var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
@@ -1136,10 +1159,34 @@ class FXEditor extends FileView {
 		var hslTracks : Void -> Array<PropTrackDef> = () -> [{name: "h", def: 0.0}, {name: "s", clamp: [0., 1.], def: 0.0}, {name: "l", clamp: [0., 1.], def: 1.0}];
 		var alphaTrack : Void -> Array<PropTrackDef> = () -> [{name: "a", clamp: [0., 1.], def: 1.0}];
 		var xyzwTracks : Int -> Array<PropTrackDef> = (n) -> [{name: "x"}, {name: "y"}, {name: "z"}, {name: "w"}].slice(0, n);
-		var scaleTracks = groupedTracks("scale", xyzwTracks(3));
-		scaleTracks.unshift(trackItem("Uniform", [{name: "scale"}]));
 
-		if(objElt != null) {
+		if (obj2dElt != null) {
+			var scaleTracks = groupedTracks("scale", xyzwTracks(2));
+			scaleTracks.unshift(trackItem("Uniform", [{name: "scale"}]));
+			menuItems.push({
+				label: "Position",
+				menu: groupedTracks("position", xyzwTracks(2)),
+			});
+			menuItems.push({
+				label: "Rotation",
+				menu: [trackItem("X", [{name: "x"}], "rotation")],
+			});
+			menuItems.push({
+				label: "Scale",
+				menu: scaleTracks,
+			});
+			menuItems.push({
+				label: "Color",
+				menu: [
+					trackItem("HSL", hslTracks(), "color"),
+					trackItem("Alpha", alphaTrack(), "color")
+				]
+			});
+			menuItems.push(trackItem("Visibility", [{name: "visibility", clamp: [0., 1.]}]));
+		}
+		if(obj3dElt != null) {
+			var scaleTracks = groupedTracks("scale", xyzwTracks(3));
+			scaleTracks.unshift(trackItem("Uniform", [{name: "scale"}]));
 			menuItems.push({
 				label: "Position",
 				menu: groupedTracks("position", xyzwTracks(3)),
@@ -1247,7 +1294,63 @@ class FXEditor extends FileView {
 		grid.lineStyle(0);
 	}
 
-	function onUpdate(dt:Float) {
+	function onUpdate(dt : Float) {
+		if (is2D)
+			onUpdate2D(dt);
+		else
+			onUpdate3D(dt);
+	}
+
+	function onUpdate2D(dt:Float) {
+		var anim : hrt.prefab.fx.FX2D.FX2DAnimation = null;
+		var ctx = sceneEditor.getContext(data);
+		if(ctx != null && ctx.local2d != null) {
+			anim = Std.downcast(ctx.local2d, hrt.prefab.fx.FX2D.FX2DAnimation);
+		}
+		if(!pauseButton.isDown()) {
+			currentTime += scene.speed * dt;
+			if(timeLineEl != null)
+				timeLineEl.css({left: xt(currentTime)});
+			if(currentTime >= previewMax) {
+				currentTime = previewMin;
+
+				//if(data.scriptCode != null && data.scriptCode.length > 0)
+					//sceneEditor.refreshScene(); // This allow to reset the scene when values are modified causes edition issues, solves
+
+				anim.setRandSeed(Std.random(0xFFFFFF));
+			}
+		}
+
+		if(anim != null) {
+			anim.setTime(currentTime);
+		}
+
+		if(statusText != null) {
+			var lines : Array<String> = [
+				'Time: ${Math.round(currentTime*1000)} ms',
+				'Scene objects: ${scene.s2d.getObjectsCount()}',
+				'Drawcalls: ${h3d.Engine.getCurrent().drawCalls}',
+			];
+			statusText.text = lines.join("\n");
+		}
+
+		var cam = scene.s3d.camera;
+		if( light != null ) {
+			var angle = Math.atan2(cam.target.y - cam.pos.y, cam.target.x - cam.pos.x);
+			light.setDirection(new h3d.Vector(
+				Math.cos(angle) * lightDirection.x - Math.sin(angle) * lightDirection.y,
+				Math.sin(angle) * lightDirection.x + Math.cos(angle) * lightDirection.y,
+				lightDirection.z
+			));
+		}
+		if( autoSync && (currentVersion != undo.currentID || lastSyncChange != properties.lastChange) ) {
+			save();
+			lastSyncChange = properties.lastChange;
+			currentVersion = undo.currentID;
+		}
+	}
+
+	function onUpdate3D(dt:Float) {
 		var anim : hrt.prefab.fx.FX.FXAnimation = null;
 		var ctx = sceneEditor.getContext(data);
 		if(ctx != null && ctx.local3d != null) {
@@ -1322,4 +1425,5 @@ class FXEditor extends FileView {
 	}
 
 	static var _ = FileTree.registerExtension(FXEditor, ["fx"], { icon : "sitemap", createNew : "FX" });
+	static var _2d = FileTree.registerExtension(FXEditor, ["fx2d"], { icon : "sitemap", createNew : "FX 2D" });
 }

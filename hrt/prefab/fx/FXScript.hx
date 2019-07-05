@@ -1,5 +1,7 @@
 package hrt.prefab.fx;
 
+import hrt.prefab.fx.FX.FXAnimation;
+
 typedef Argument = { name : String, ?value : FxAst };
 
 enum FxAst {
@@ -35,12 +37,12 @@ class FXScript {
 	public var myVars : Map<String, FXVar> = [];
 	public var params : Array<FXParam> = [];
 
-	var fx : FX.FXAnimation;
+	var fx : FXAnimation;
 	var ast : FxAst;
 	var initAst : FxAst;
 	var updateAst : FxAst;
 
-	public function new( fx : FX.FXAnimation ){
+	public function new( fx : FXAnimation ){
 		this.fx = fx;
 	}
 

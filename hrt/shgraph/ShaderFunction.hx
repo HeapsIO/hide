@@ -18,7 +18,7 @@ class ShaderFunction extends ShaderNode {
 
 		for (k in getInputInfoKeys()) {
 			if (getInputInfo(k).hasProperty && getInput(k) == null) {
-				var value = Reflect.field(this, "prop_"+k);
+				var value : Dynamic = Reflect.field(this, "prop_"+k);
 				if (value == null)
 					value = 0;
 				args.push({ name: k, type: TFloat });
