@@ -10,6 +10,7 @@ class Atlas extends Object2D {
 	var loop : Bool = false;
 
 	var h2dAnim : h2d.Anim;
+	var atlas : hxd.res.Atlas;
 
 	override public function load(v:Dynamic) {
 		super.load(v);
@@ -31,12 +32,8 @@ class Atlas extends Object2D {
 		
 		if (propName == null || propName == "src") {
 			if (src != null) {
-				var atlas = hxd.res.Loader.currentInstance.load(src).to(hxd.res.Atlas);
-				try {
-					h2dAnim.play(atlas.getAnim());
-				} catch (e : Dynamic) {
-					h2dAnim.play([]);
-				}
+				atlas = hxd.res.Loader.currentInstance.load(src).to(hxd.res.Atlas);
+				h2dAnim.play(atlas.getAnim());
 			} else {
 				h2dAnim.play([]);
 			}
@@ -55,7 +52,9 @@ class Atlas extends Object2D {
 		h2dAnim = new h2d.Anim([], fpsAnimation, ctx.local2d);
 		ctx.local2d = h2dAnim;
 		ctx.local2d.name = name;
-		ctx.cleanup = function() { h2dAnim = null; }
+		ctx.cleanup = function() {
+			h2dAnim = null;
+		}
 		updateInstance(ctx);
 		return ctx;
 	}

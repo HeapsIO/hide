@@ -51,10 +51,14 @@ class FX2DAnimation extends h2d.Object {
 	}
 
 	public function setTime( time : Float ) {
-		this.localTime = time;
+
+		var newLoop = false;
+
+		if (loop && this.localTime > time)
+			newLoop = true;
 		
-		if (loop)
-			time = this.localTime % duration;
+		this.localTime = time;
+
 		for(anim in objects) {
 			if(anim.scale != null) {
 				var scale = evaluator.getVector(anim.scale, time);
@@ -84,6 +88,20 @@ class FX2DAnimation extends h2d.Object {
 						var drawable = Std.downcast(anim.obj2d, h2d.Drawable);
 						if (drawable != null)
 							drawable.color = evaluator.getVector(anim.color, time);
+				}
+			}
+			
+			var atlas = Std.downcast(anim.elt2d, hrt.prefab.Atlas);
+			if (atlas != null) {
+				@:privateAccess if (!atlas.loop && newLoop)  {
+					atlas.h2dAnim.currentFrame = 0;
+				}
+			} else {
+				var atlas = Std.downcast(anim.elt2d, hrt.prefab.Anim2D);
+				if (atlas != null) {
+					@:privateAccess if (!atlas.loop && newLoop)  {
+						atlas.h2dAnim.currentFrame = 0;
+					}
 				}
 			}
 
@@ -189,6 +207,9 @@ class FX2D extends BaseFX {
 			anim.events.push(eventObj);
 			anyFound = true;
 		}
+
+		if (Std.is(elt, hrt.prefab.Anim2D) || Std.is(elt, hrt.prefab.Atlas))
+			anyFound = true;
 
 		if(anyFound)
 			anims.push(anim);
