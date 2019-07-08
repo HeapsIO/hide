@@ -186,6 +186,7 @@ class AdvancedDecal extends Object3D {
 		var params = switch (renderMode) {
 			case Decal: pbrParams;
 			case BeforeTonemapping: overlayParams;
+			case AfterTonemapping: overlayParams;
 			default: null;
 		}
 
