@@ -74,7 +74,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 
 		var menu = [];
 		if (@:privateAccess parent.is2D) {
-			for(name in ["Group 2D", "Bitmap", "Shaders", "Shader Graph"]) {
+			for(name in ["Group 2D", "Bitmap", "Anim2D", "Atlas", "Shaders", "Shader Graph"]) {
 				var item = allTypes.find(i -> i.label == name);
 				if(item == null) continue;
 				allTypes.remove(item);
