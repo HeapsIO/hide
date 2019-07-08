@@ -3,7 +3,7 @@ package hrt.prefab.fx2d;
 class Bitmap extends Object2D {
 
 	// parameters
-	var color : Int = 0;
+	var color : Int = 16777215;
 
 	var src : String;
 

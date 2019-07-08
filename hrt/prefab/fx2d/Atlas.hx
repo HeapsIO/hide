@@ -6,6 +6,7 @@ class Atlas extends Object2D {
 	var src : String;
 
 	var fpsAnimation : Int = 30;
+	var delayStart : Float = 0;
 	
 	var loop : Bool = false;
 
@@ -16,6 +17,7 @@ class Atlas extends Object2D {
 		super.load(v);
 		this.src = v.src;
 		this.fpsAnimation = v.fpsAnimation;
+		this.delayStart = v.delayStart;
 		this.loop = v.loop;
 	}
 
@@ -23,6 +25,7 @@ class Atlas extends Object2D {
 		var o : Dynamic = super.save();
 		o.src = src;
 		o.fpsAnimation = fpsAnimation;
+		o.delayStart = delayStart;
 		o.loop = loop;
 		return o;
 	}
@@ -44,6 +47,7 @@ class Atlas extends Object2D {
 		if (propName == null || propName == "loop") {
 			h2dAnim.loop = loop;
 		}
+		h2dAnim.pause = !loop;
 		h2dAnim.blendMode = blendMode;
 	}
 
@@ -78,6 +82,7 @@ class Atlas extends Object2D {
 			updateInstance(ctx.getContext(this), "src");
 		}
 		new hide.Element('<dt>FPS</dt><dd><input type="range" min="0" max="60" step="1" field="fpsAnimation"/></dd>').appendTo(gr);
+		new hide.Element('<dt>Delay Start</dt><dd><input type="range" min="0" max="5" field="delayStart"/></dd>').appendTo(gr);
 		new hide.Element('<dt>Loop</dt><dd><input type="checkbox" field="loop"/></dd>').appendTo(gr);
 		
 

@@ -51,11 +51,6 @@ class FX2DAnimation extends h2d.Object {
 	}
 
 	public function setTime( time : Float ) {
-
-		var newLoop = false;
-
-		if (loop && this.localTime > time)
-			newLoop = true;
 		
 		this.localTime = time;
 
@@ -91,16 +86,18 @@ class FX2DAnimation extends h2d.Object {
 				}
 			}
 			
-			var atlas = Std.downcast(anim.elt2d, hrt.prefab.fx2d.Atlas);
+			var atlas : Dynamic = Std.downcast(anim.elt2d, hrt.prefab.fx2d.Atlas);
+			if (atlas == null) {
+				atlas = Std.downcast(anim.elt2d, hrt.prefab.fx2d.Anim2D);
+			}
 			if (atlas != null) {
-				@:privateAccess if (!atlas.loop && newLoop)  {
-					atlas.h2dAnim.currentFrame = 0;
-				}
-			} else {
-				var atlas = Std.downcast(anim.elt2d, hrt.prefab.fx2d.Anim2D);
-				if (atlas != null) {
-					@:privateAccess if (!atlas.loop && newLoop)  {
-						atlas.h2dAnim.currentFrame = 0;
+				@:privateAccess if (!atlas.loop) {
+					var t = time - atlas.delayStart;
+					if (t < 0) {
+						atlas.h2dAnim.curFrame = 0;
+					} else {
+						var nbFrames = Math.floor(t*atlas.fpsAnimation);
+						atlas.h2dAnim.curFrame = Math.min(nbFrames, atlas.h2dAnim.frames.length-1);
 					}
 				}
 			}
@@ -129,6 +126,7 @@ class FX2D extends BaseFX {
 
 	override function save() {
 		var obj : Dynamic = super.save();
+		obj.type = type;
 		obj.loop = loop;
 		return obj;
 	}

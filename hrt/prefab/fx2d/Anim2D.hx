@@ -9,6 +9,8 @@ class Anim2D extends Object2D {
 	var heightFrame : Int = 10;
 	var fpsAnimation : Int = 30;
 	var nbFrames : Int = 30;
+
+	var delayStart : Float = 0;
 	
 	var loop : Bool = false;
 
@@ -22,6 +24,7 @@ class Anim2D extends Object2D {
 		this.heightFrame = v.heightFrame;
 		this.fpsAnimation = v.fpsAnimation;
 		this.nbFrames = v.nbFrames;
+		this.delayStart = v.delayStart;
 		this.loop = v.loop;
 	}
 
@@ -32,6 +35,7 @@ class Anim2D extends Object2D {
 		o.heightFrame = heightFrame;
 		o.fpsAnimation = fpsAnimation;
 		o.nbFrames = nbFrames;
+		o.delayStart = delayStart;
 		o.loop = loop;
 		return o;
 	}
@@ -63,6 +67,7 @@ class Anim2D extends Object2D {
 		if (propName == null || propName == "loop") {
 			h2dAnim.loop = loop;
 		}
+		h2dAnim.pause = !loop;
 		h2dAnim.blendMode = blendMode;
 	}
 
@@ -87,6 +92,7 @@ class Anim2D extends Object2D {
 				<dt>Height Frame</dt><dd><input type="range" min="0" max="100" step="1" field="heightFrame"/></dd>
 				<dt>FPS</dt><dd><input type="range" min="0" max="60" step="1" field="fpsAnimation"/></dd>
 				<dt>nbFrames</dt><dd><input type="range" min="0" max="120" step="1" field="nbFrames"/></dd>
+				<dt>Delay Start</dt><dd><input type="range" min="0" max="10" field="delayStart"/></dd>
 				<dt>Loop</dt><dd><input type="checkbox" field="loop"/></dd>
 			</dl></div>'), this, function(pname) {
 			ctx.onChange(this, pname);
