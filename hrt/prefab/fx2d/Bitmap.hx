@@ -1,4 +1,4 @@
-package hrt.prefab;
+package hrt.prefab.fx2d;
 
 class Bitmap extends Object2D {
 

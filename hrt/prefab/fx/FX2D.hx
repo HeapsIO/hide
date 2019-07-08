@@ -91,13 +91,13 @@ class FX2DAnimation extends h2d.Object {
 				}
 			}
 			
-			var atlas = Std.downcast(anim.elt2d, hrt.prefab.Atlas);
+			var atlas = Std.downcast(anim.elt2d, hrt.prefab.fx2d.Atlas);
 			if (atlas != null) {
 				@:privateAccess if (!atlas.loop && newLoop)  {
 					atlas.h2dAnim.currentFrame = 0;
 				}
 			} else {
-				var atlas = Std.downcast(anim.elt2d, hrt.prefab.Anim2D);
+				var atlas = Std.downcast(anim.elt2d, hrt.prefab.fx2d.Anim2D);
 				if (atlas != null) {
 					@:privateAccess if (!atlas.loop && newLoop)  {
 						atlas.h2dAnim.currentFrame = 0;
@@ -208,7 +208,7 @@ class FX2D extends BaseFX {
 			anyFound = true;
 		}
 
-		if (Std.is(elt, hrt.prefab.Anim2D) || Std.is(elt, hrt.prefab.Atlas))
+		if (Std.is(elt, hrt.prefab.fx2d.Anim2D) || Std.is(elt, hrt.prefab.fx2d.Atlas))
 			anyFound = true;
 
 		if(anyFound)

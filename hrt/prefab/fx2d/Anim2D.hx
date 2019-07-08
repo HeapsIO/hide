@@ -1,4 +1,4 @@
-package hrt.prefab;
+package hrt.prefab.fx2d;
 
 class Anim2D extends Object2D {
 
