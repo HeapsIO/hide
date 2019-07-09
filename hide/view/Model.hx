@@ -27,6 +27,7 @@ class Model extends FileView {
 	var root : hrt.prefab.Prefab;
 	var selectedAxes : h3d.scene.Object;
 
+
 	override function save() {
 		if(!modified) return;
 		// Save current Anim data
@@ -603,7 +604,7 @@ class Model extends FileView {
 		frameIndex.alpha = 0.5;
 
 		var events = @:privateAccess obj.currentAnimation.events;
-		if(events != null) {
+		if( events != null ) {
 			for( i in 0...events.length ) {
 				var el = events[i];
 				if( el == null || el.length == 0 ) continue;
@@ -626,6 +627,43 @@ class Model extends FileView {
 					tf.y = py;
 					tf.alpha = 0.5;
 					py -= 15;
+					var dragIcon = new h2d.Bitmap(null, timeline);
+					dragIcon.scaleX = 5.0;
+					dragIcon.scaleY = 2.0;
+					dragIcon.color.set(0.34, 0.43, 0, 1);
+					dragIcon.x = px - (dragIcon.scaleX * 0.5 * 5);
+					dragIcon.y = py;
+					py -= Std.int(dragIcon.scaleY * 5 * 2);
+					var dragInter = new h2d.Interactive(5, 5, dragIcon, null );
+					dragInter.x = 0;
+					dragInter.y = 0;
+					var curFrame = i;
+					var curPos = (curFrame / obj.currentAnimation.frameCount) * W;
+					dragInter.onPush = function(e) {
+						if( hxd.Key.isDown( hxd.Key.MOUSE_LEFT) ){
+							dragInter.startDrag(function(e) {
+								switch( e.kind ) {
+								case ERelease:
+									dragInter.stopDrag();
+									buildTimeline();
+									buildEventPanel();
+								case EMove:
+									var newFrame = Math.round(( (curPos + e.relX * dragIcon.scaleX) / W) * obj.currentAnimation.frameCount);
+									if( newFrame >= 0 && newFrame < events.length ) {
+										events[curFrame].remove(event);
+										if(events[newFrame] == null) 
+											events[newFrame] = [];
+										events[newFrame].insert(0, event);
+										curFrame = newFrame;
+										buildTimeline();
+										buildEventPanel();
+										@:privateAccess dragInter.scene = scene.s2d;
+									}
+								default:
+								}
+							});
+						}
+					};
 				}
 			}
 		}
