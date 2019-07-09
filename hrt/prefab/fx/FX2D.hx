@@ -12,6 +12,7 @@ class FX2DAnimation extends h2d.Object {
 
 	public var playSpeed : Float;
 	public var localTime : Float = 0.0;
+	public var startLoop : Float = 0.0;
 	public var duration : Float;
 
 	public var loop : Bool;
@@ -118,6 +119,7 @@ class FX2DAnimation extends h2d.Object {
 class FX2D extends BaseFX {
 	
 	var loop : Bool = false;
+	var startLoop : Float = 0.0;
 
 	public function new() {
 		super();
@@ -128,12 +130,14 @@ class FX2D extends BaseFX {
 		var obj : Dynamic = super.save();
 		obj.type = type;
 		obj.loop = loop;
+		obj.startLoop = startLoop;
 		return obj;
 	}
 
 	override function load( obj : Dynamic ) {
 		super.load(obj);
 		loop = obj.loop;
+		startLoop = obj.startLoop;
 	}
 
 	override public function refreshObjectAnims(ctx: Context) {
@@ -218,6 +222,7 @@ class FX2D extends BaseFX {
 		var fxanim = createInstance(ctx.local2d);
 		fxanim.duration = duration;
 		fxanim.loop = loop;
+		fxanim.startLoop = startLoop;
 		ctx.local2d = fxanim;
 		fxanim.playSpeed = 1.0;
 
@@ -260,6 +265,7 @@ class FX2D extends BaseFX {
 				<dl>
 					<dt>Duration</dt><dd><input type="number" value="0" field="duration"/></dd>
 					<dt>Loop</dt><dd><input type="checkbox" field="loop"/></dd>
+					<dt>Start loop</dt><dd><input type="range" min="0" max="5" field="startLoop"/></dd>
 				</dl>
 			</div>');
 		ctx.properties.add(props, this, function(pname) {
