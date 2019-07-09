@@ -648,8 +648,8 @@ class Model extends FileView {
 									buildTimeline();
 									buildEventPanel();
 								case EMove:
-									var newFrame = Math.round(( (curPos + e.relX * dragIcon.scaleX) / W) * obj.currentAnimation.frameCount);
-									if( newFrame >= 0 && newFrame < events.length ) {
+									var newFrame = Math.round(( (curPos + (e.relX - 2.5) * dragIcon.scaleX ) / W ) * obj.currentAnimation.frameCount);
+									if( newFrame >= 0 && newFrame <= obj.currentAnimation.frameCount ) {
 										events[curFrame].remove(event);
 										if(events[newFrame] == null) 
 											events[newFrame] = [];
