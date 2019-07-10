@@ -153,10 +153,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 	}
 
 	override function getNewContextMenu(current: PrefabElement, ?onMake: PrefabElement->Void=null) {
-		var newItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
-
-		if(current != null && current.type == "object" && current.name == "settings" && current.parent == sceneData)
-			newItems.push(getNewTypeMenuItem("renderProps",current, onMake)); // hack : todo
+		var newItems = super.getNewContextMenu(current, onMake);
 
 		function setup(p : PrefabElement) {
 			var proj = screenToWorld(scene.s2d.width/2, scene.s2d.height/2);
@@ -174,8 +171,6 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 			autoName(p);
 			haxe.Timer.delay(addObject.bind([p]), 0);
 		}
-
-		newItems = newItems.concat(super.getNewContextMenu(current, onMake));
 
 		function addNewInstances() {
 			var types = Level3D.getCdbTypes();
@@ -588,17 +583,12 @@ class Level3D extends FileView {
 			lastRenderProps.applyProps(scene.s3d.renderer);
 		}
 		else {
-			// Apply first render props
-			var settings = data.children.find(c -> c.name == "settings");
-			if(settings != null) {
-				for(c in settings.children) {
-					var renderProps = c.to(hrt.prefab.RenderProps);
-					if(renderProps != null) {
-						renderProps.applyProps(scene.s3d.renderer);
-						break;
-					}
-				}
-			}
+			// Apply first render props (either defaults or first found)
+			var renderProps = data.getOpt(hrt.prefab.RenderProps, "defaults");
+			if( renderProps == null )
+				renderProps = data.getOpt(hrt.prefab.RenderProps);
+			if( renderProps != null )
+				renderProps.applyProps(scene.s3d.renderer);
 		}
 	}
 
