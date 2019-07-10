@@ -16,10 +16,10 @@ typedef SurfaceProps = {
 @:access(hrt.prefab.terrain.TerrainMesh)
 class Terrain extends Object3D {
 
-	public var tileSize = 10.0;
+	public var tileSize = 64.0;
 	public var cellSize = 1.0;
-	public var heightMapResolution : Int = 20;
-	public var weightMapResolution : Int = 20;
+	public var heightMapResolution : Int = 64;
+	public var weightMapResolution : Int = 128;
 	public var autoCreateTile = false;
 	var tmpSurfacesProps : Array<SurfaceProps> = [];
 	public var terrain : TerrainMesh;
