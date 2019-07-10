@@ -628,7 +628,11 @@ class Ide {
 		return path;
 	}
 
-	public function chooseFile( exts : Array<String>, onSelect : String -> Void ) {
+	public function chooseImage( onSelect ) {
+		chooseFile(["png","jpeg","jpg","gif"], onSelect);
+	}
+
+	public function chooseFile( exts : Array<String>, onSelect : Null<String> -> Void ) {
 		var e = new Element('<input type="file" style="visibility:hidden" value="" accept="${[for( e in exts ) "."+e].join(",")}"/>');
 		e.change(function(_) {
 			var file = makeRelative(e.val());

@@ -39,7 +39,6 @@ class TerrainEditor {
 
 	public var currentBrush : Brush;
 	public var currentSurface : hrt.prefab.terrain.Surface;
-	public var tmpTexPath : String;
 	public var textureType = ["_Albedo", "_Normal", "_MetallicGlossAO"];
 	public var autoCreateTile = false;
 	public var editContext : hide.prefab.EditContext;
@@ -1010,8 +1009,8 @@ class TerrainEditor {
 	</div>';
 
 	var surfaceParams =
-	'<div class="group" name="Surface">
-		<dt>Add</dt><dd><input type="texturepath" field="editor.tmpTexPath"/></dd>
+	'<div class="group">
+		<div class="title">Surface <input type="button" style="font-weight:bold" id="addSurface" value="+"/></div>
 		<div class="terrain-surfaces"></div>
 		<div class="group" name="Params">
 			<dt>Tilling</dt><dd><input type="range" min="0" max="20" field="editor.currentSurface.tilling"/></dd>
@@ -1027,6 +1026,9 @@ class TerrainEditor {
 		props.append(brushMode);
 		props.append(brushParams);
 		props.append(surfaceParams);
+		props.find("#addSurface").click(function(_) {
+			ctx.ide.chooseImage(onSurfaceAdd.bind(props,ctx));
+		});
 		refreshBrushMode(props, ctx);
 
 		// Save Button
@@ -1088,50 +1090,56 @@ class TerrainEditor {
 		refreshSurfaces(props, ctx);
 	}
 
-	public function onChange( ctx : EditContext, pname : String, props : Element ) {
-		if( pname == "editor.tmpTexPath" && tmpTexPath != null ) {
-			var split : Array<String> = [];
-			var curTypeIndex = 0;
-			while( split.length <= 1 && curTypeIndex < textureType.length) {
-				split = tmpTexPath.split(textureType[curTypeIndex]);
-				curTypeIndex++;
-			}
-			if( split.length > 1 ) {
-				var name = split[0];
-				var albedo = ctx.rootContext.shared.loadTexture(name + textureType[0] + ".png");
-				var normal = ctx.rootContext.shared.loadTexture(name + textureType[1] + ".png");
-				var pbr = ctx.rootContext.shared.loadTexture(name + textureType[2] + ".png");
-				function wait() {
-					if( albedo.flags.has(Loading) || normal.flags.has(Loading)|| pbr.flags.has(Loading))
-						haxe.Timer.delay(wait, 1);
-					else{
-						if( terrainPrefab.terrain.getSurfaceFromTex(name + textureType[0] + ".png", name + textureType[1] + ".png", name + textureType[2] + ".png") == null ) {
-							terrainPrefab.terrain.addSurface(albedo, normal, pbr);
-							terrainPrefab.terrain.generateSurfaceArray();
-							refreshSurfaces(props, ctx);
-							var terrainRevertData = new TerrainRevertData();
-							terrainRevertData.surface = terrainPrefab.terrain.getSurface(terrainPrefab.terrain.surfaces.length - 1);
-							terrainRevertData.surfaceIndex = terrainPrefab.terrain.surfaces.length - 1;
-							undo.change(Custom(function(undo) {
-								if( undo ) {
-									terrainPrefab.terrain.surfaces.remove(terrainRevertData.surface);
-									if( currentSurface == terrainRevertData.surface ) currentSurface = null;
-									currentBrush.index = Std.int(hxd.Math.min(terrainPrefab.terrain.surfaces.length - 1, currentBrush.index));
-								}
-								else
-									terrainPrefab.terrain.surfaces.push(terrainRevertData.surface);
-								terrainPrefab.terrain.generateSurfaceArray();
-								refreshSurfaces(props, ctx);
-							}));
+	function onSurfaceAdd( props : Element, ctx : EditContext, path : String ) {
+		if( path == null )
+			return;
+		var split : Array<String> = [];
+		var curTypeIndex = 0;
+		while( split.length <= 1 && curTypeIndex < textureType.length) {
+			split = path.split(textureType[curTypeIndex]);
+			curTypeIndex++;
+		}
+		if( split.length <= 1 ) {
+			ctx.ide.error("Invalid file name format, should be name_Albedo");
+			return;
+		}
+		var name = split[0];
+		var ext = "."+path.split(".").pop();
+		var albedo = ctx.rootContext.shared.loadTexture(name + textureType[0] + ext);
+		var normal = ctx.rootContext.shared.loadTexture(name + textureType[1] + ext);
+		var pbr = ctx.rootContext.shared.loadTexture(name + textureType[2] + ext);
+
+		if( albedo == null || normal == null || pbr == null ) return;
+
+		function wait() {
+			if( albedo.flags.has(Loading) || normal.flags.has(Loading)|| pbr.flags.has(Loading))
+				haxe.Timer.delay(wait, 1);
+			else{
+				if( terrainPrefab.terrain.getSurfaceFromTex(name + textureType[0] + ext, name + textureType[1] + ext, name + textureType[2] + ext) == null ) {
+					terrainPrefab.terrain.addSurface(albedo, normal, pbr);
+					terrainPrefab.terrain.generateSurfaceArray();
+					refreshSurfaces(props, ctx);
+					var terrainRevertData = new TerrainRevertData();
+					terrainRevertData.surface = terrainPrefab.terrain.getSurface(terrainPrefab.terrain.surfaces.length - 1);
+					terrainRevertData.surfaceIndex = terrainPrefab.terrain.surfaces.length - 1;
+					undo.change(Custom(function(undo) {
+						if( undo ) {
+							terrainPrefab.terrain.surfaces.remove(terrainRevertData.surface);
+							if( currentSurface == terrainRevertData.surface ) currentSurface = null;
+							currentBrush.index = Std.int(hxd.Math.min(terrainPrefab.terrain.surfaces.length - 1, currentBrush.index));
 						}
-						albedo.dispose();
-						normal.dispose();
-						pbr.dispose();
-					}
+						else
+							terrainPrefab.terrain.surfaces.push(terrainRevertData.surface);
+						terrainPrefab.terrain.generateSurfaceArray();
+						refreshSurfaces(props, ctx);
+					}));
 				}
-				wait();
+				albedo.dispose();
+				normal.dispose();
+				pbr.dispose();
 			}
 		}
-		tmpTexPath = null;
+		wait();
 	}
+
 }

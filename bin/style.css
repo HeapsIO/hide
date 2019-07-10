@@ -571,6 +571,18 @@ input[type=checkbox]:checked:after {
   padding: 1px;
   position: relative;
 }
+.hide-properties .group > .title input[type=button] {
+  border: none;
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  width: auto;
+  padding: 1px 5px;
+  background-color: #282828;
+}
+.hide-properties .group > .title input[type=button]:hover {
+  background-color: #464646;
+}
 .hide-properties .group > .title > .checkbox-wrapper {
   position: absolute;
   left: 5px;

@@ -620,6 +620,18 @@ input[type=checkbox] {
 			user-select:none;
 			padding : 1px;
 			position: relative;
+			input[type=button] {
+				border: none;
+				position : absolute;
+				top : 0px;
+				right : 0px;
+				width : auto;
+				padding : 1px 5px;
+				background-color: rgb(40,40,40);
+				&:hover {
+					background-color: rgb(70,70,70);
+				}
+			}
 			>.checkbox-wrapper {
 				position: absolute;
 				left: 5px;

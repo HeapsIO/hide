@@ -94,12 +94,12 @@ class Terrain extends Object3D {
 			surfacesProps.push(surfaceProps);
 		}
 		obj.surfaces = surfacesProps;
-		obj.surfaceCount = terrain.surfaceArray.surfaceCount;
-		obj.surfaceSize = terrain.surfaceArray.albedo.width;
+		obj.surfaceCount = terrain.surfaces.length == 0 ? 0 : terrain.surfaceArray.surfaceCount;
+		obj.surfaceSize = terrain.surfaces.length == 0 ? 0 : terrain.surfaceArray.albedo.width;
 
 		#if editor
 	 	obj.showChecker = terrain.showChecker;
-		if( editor != null ) editor.saveTextures();
+		if( editor != null && terrain.surfaces.length > 0 ) editor.saveTextures();
 		#end
 
 		return obj;
@@ -501,7 +501,6 @@ class Terrain extends Object3D {
 
 		ctx.properties.add(props, this, function(pname) {
 			ctx.onChange(this, pname);
-			editor.onChange(ctx, pname, props);
 		});
 
 		// Reset values if not applied

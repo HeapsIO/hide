@@ -454,7 +454,7 @@ class Cell extends Component {
 			}
 
 			if( file == null ) {
-				ide.chooseFile(["png","jpeg","jpg","gif"],function(path) {
+				ide.chooseImage(function(path) {
 					file = path;
 					setVal();
 					closeEdit();
