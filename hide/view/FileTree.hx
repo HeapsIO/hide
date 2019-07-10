@@ -62,6 +62,9 @@ class FileTree extends FileView {
 		return super.getTitle();
 	}
 
+	override function onFileChanged(wasDeleted:Bool, rebuildView:Bool = true) {
+	}
+
 	override function onDisplay() {
 
 		if( state.path == null ) return;
