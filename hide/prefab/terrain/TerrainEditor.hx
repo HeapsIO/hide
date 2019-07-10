@@ -105,7 +105,7 @@ class TerrainEditor {
 		clearSavedTextures();
 		terrainPrefab.saveWeightTextures(editContext.rootContext);
 		terrainPrefab.saveHeightTextures(editContext.rootContext);
-		terrainPrefab.saveBinary(editContext.rootContext);
+		// terrainPrefab.saveBinary(editContext.rootContext);
 		terrainPrefab.saveNormals(editContext.rootContext);
 		return;
 	}
