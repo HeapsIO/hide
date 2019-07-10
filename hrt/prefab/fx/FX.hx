@@ -7,8 +7,6 @@ import hrt.prefab.fx.BaseFX.ShaderAnimation;
 class FXAnimation extends h3d.scene.Object {
 
 	public var onEnd : Void -> Void;
-	public var followVisibility : h3d.scene.Object;
-
 	public var playSpeed : Float;
 	public var localTime : Float = 0.0;
 	public var duration : Float;
@@ -46,22 +44,23 @@ class FXAnimation extends h3d.scene.Object {
 		}
 	}
 
-	public dynamic function customVisibility(self: FXAnimation) : Bool {
-		return true;
-	}
-
 	override function syncRec( ctx : h3d.scene.RenderContext ) {
-		var visiblity : Bool = true;
-		if(followVisibility != null)
-			visiblity = visiblity && followVisibility.visible;
-		if(customVisibility != null)
-			visiblity = visiblity && customVisibility(this);
+		for(emitter in emitters)
+			emitter.setParticleVibility(visible && !culled);
 
-		for(emitter in emitters){
-			if(emitter.particleVisibility != visiblity)
-				emitter.setParticleVibility(visiblity);
+		#if !editor
+		if(playSpeed > 0) {
+			var curTime = localTime;
+			setTime(curTime);
+
+			localTime += ctx.elapsedTime * playSpeed;
+			if(duration > 0 && curTime < duration && localTime >= duration) {
+				setTime(duration);
+				if(onEnd != null )
+					onEnd();
+			}
 		}
-		this.visible = visiblity;
+		#end
 
 		super.syncRec(ctx);
 	}
@@ -69,6 +68,8 @@ class FXAnimation extends h3d.scene.Object {
 	static var tempMat = new h3d.Matrix();
 	public function setTime( time : Float ) {
 		this.localTime = time;
+		if(culled || !visible)
+			return;
 		for(anim in objects) {
 			var m = tempMat;
 			if(anim.scale != null) {
