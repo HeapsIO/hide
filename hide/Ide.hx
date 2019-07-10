@@ -413,7 +413,7 @@ class Ide {
 			if( sys.FileSystem.exists(prevPath + "/hide.js") )
 				return appPath = prevPath;
 			// nwjs launch
-			var path = Sys.getCwd();
+			var path = Sys.getCwd().split("\\").join("/");
 			if( sys.FileSystem.exists(path+"/hide.js") )
 				return appPath = path;
 			message("Hide application path was not found");
