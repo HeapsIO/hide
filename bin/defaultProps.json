@@ -119,8 +119,6 @@
 	// Brushes for terrain
 	"terrain.brushes": [
         { "name": "Default", "texture" : "${HIDE}/res/brushes/default.jpg", "step" : 3, "size" : 30, "strength" : 1.0 },
-		{ "name": "Crystal", "texture" : "${HIDE}/res/brushes/crystal.jpg", "step" : 0.5, "size" : 12, "strength" : 1.0 },
-		{ "name": "Vortex", "texture" : "${HIDE}/res/brushes/vortex.jpg", "step" : 0.5, "size" : 12, "strength" : 1.0 },
-		{ "name": "Carre", "texture" : "${HIDE}/res/brushes/carre.jpg", "step" : 0.5, "size" : 6, "strength" : 1.0 }
+		{ "name": "Square", "texture" : "${HIDE}/res/brushes/square.jpg", "step" : 3, "size" : 30, "strength" : 1.0 }
 	]
 }
