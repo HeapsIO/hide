@@ -11,7 +11,10 @@ typedef ContextMenuItem = {
 
 class ContextMenu {
 
+	static var MENUS : Array<nw.Menu>;
+
 	public function new( config : Array<ContextMenuItem> ) {
+		MENUS = [];
 		var menu = makeMenu(config);
 		var ide = hide.Ide.inst;
 		// wait until mousedown to get correct mouse pos
@@ -22,6 +25,7 @@ class ContextMenu {
 
 	function makeMenu( config : Array<ContextMenuItem> ) {
 		var m = new nw.Menu({type:ContextMenu});
+		MENUS.push(m);
 		for( i in config )
 			m.append(makeMenuItem(i));
 		return m;
