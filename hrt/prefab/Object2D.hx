@@ -36,7 +36,8 @@ class Object2D extends Prefab {
 
 		visible = obj.visible == null ? true : obj.visible;
 		
-		blendMode = obj.blendMode == null ? None : std.Type.createEnum(h2d.BlendMode, obj.blendMode);
+		if (obj.blendMode != null)
+			blendMode = std.Type.createEnum(h2d.BlendMode, obj.blendMode);
 	}
 
 	override function makeInstance(ctx:Context):Context {
@@ -89,7 +90,7 @@ class Object2D extends Prefab {
 			o.visible = visible;
 
 		if(propName == null || propName == "blendMode")
-			o.blendMode = blendMode;
+			if (blendMode != null) o.blendMode = blendMode;
 	}
 
 	override function removeInstance(ctx: Context):Bool {

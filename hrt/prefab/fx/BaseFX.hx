@@ -110,7 +110,10 @@ class BaseFX extends hrt.prefab.Library {
 					var curve = Curve.getCurve(shaderElt, v.name);
 					var val = Value.VConst(base);
 					if(curve != null)
-						val = Value.VCurveScale(curve, base);
+						if (base != 0.0)
+							val = Value.VCurveScale(curve, base);
+						else
+							val = Value.VCurve(curve);
 					ret.push({
 						def: v,
 						value: val

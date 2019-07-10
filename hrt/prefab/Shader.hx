@@ -67,8 +67,7 @@ class Shader extends Prefab {
 			var drawable = Std.downcast(ctx.local2d, h2d.Drawable);
 			if (drawable != null)
 				drawable.addShader(shader);
-		}
-		if(ctx.local3d != null) {
+		} else if(ctx.local3d != null) {
 			for(m in ctx.local3d.getMaterials()) { // TODO: Only add to self materials, not all children materials
 				m.mainPass.addShader(shader);
 			}

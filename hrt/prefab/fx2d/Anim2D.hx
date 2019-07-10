@@ -43,6 +43,8 @@ class Anim2D extends Object2D {
 	override function updateInstance( ctx: Context, ?propName : String ) {
 		super.updateInstance(ctx, propName);
 		
+		var h2dAnim = (cast ctx.local2d : h2d.Anim);
+		
 		if (propName == null || (propName == "src" || propName == "widthFrame" || propName == "heightFrame" || propName == "nbFrames")) {
 			if (tex != null) {
 				tex = null;
@@ -73,7 +75,7 @@ class Anim2D extends Object2D {
 
 	override function makeInstance(ctx:Context):Context {
 		ctx = ctx.clone(this);
-		h2dAnim = new h2d.Anim([], fpsAnimation, ctx.local2d);
+		var h2dAnim = new h2d.Anim([], fpsAnimation, ctx.local2d);
 		ctx.local2d = h2dAnim;
 		ctx.local2d.name = name;
 		ctx.cleanup = function() { h2dAnim = null; }

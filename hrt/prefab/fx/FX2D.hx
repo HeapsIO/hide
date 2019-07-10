@@ -8,7 +8,6 @@ class FX2DAnimation extends h2d.Object {
 
 	public var prefab : hrt.prefab.Prefab;
 	public var onEnd : Void -> Void;
-	public var followVisibility : h3d.scene.Object;
 
 	public var playSpeed : Float;
 	public var localTime : Float = 0.0;
@@ -18,7 +17,6 @@ class FX2DAnimation extends h2d.Object {
 	public var loop : Bool;
 	public var objects: Array<ObjectAnimation> = [];
 	public var shaderAnims : Array<ShaderAnimation> = [];
-	public var constraints : Array<hrt.prefab.Constraint> = [];
 
 	var evaluator : Evaluator;
 	var random : hxd.Rand;
@@ -33,22 +31,6 @@ class FX2DAnimation extends h2d.Object {
 
 	public function setRandSeed(seed: Int) {
 		random.init(seed);
-	}
-
-	public dynamic function customVisibility(self: FX2DAnimation) : Bool {
-		return true;
-	}
-
-	override function sync( ctx : h2d.RenderContext ) {
-		var visiblity : Bool = true;
-		if(followVisibility != null)
-			visiblity = visiblity && followVisibility.visible;
-		if(customVisibility != null)
-			visiblity = visiblity && customVisibility(this);
-
-		this.visible = visiblity;
-
-		super.sync(ctx);
 	}
 
 	public function setTime( time : Float ) {
@@ -95,10 +77,10 @@ class FX2DAnimation extends h2d.Object {
 				@:privateAccess if (!atlas.loop) {
 					var t = time - atlas.delayStart;
 					if (t < 0) {
-						atlas.h2dAnim.curFrame = 0;
+						(cast anim.obj2d : h2d.Anim).curFrame = 0;
 					} else {
 						var nbFrames = Math.floor(t*atlas.fpsAnimation);
-						atlas.h2dAnim.curFrame = Math.min(nbFrames, atlas.h2dAnim.frames.length-1);
+						(cast anim.obj2d : h2d.Anim).curFrame = Math.min(nbFrames, (cast anim.obj2d : h2d.Anim).frames.length-1);
 					}
 				}
 			}
@@ -146,7 +128,7 @@ class FX2D extends BaseFX {
 		getObjAnimations(ctx, this, fxanim.objects);
 	}
 
-	static function getObjAnimations(ctx:Context, elt: PrefabElement, anims: Array<ObjectAnimation>) {
+	function getObjAnimations(ctx:Context, elt: PrefabElement, anims: Array<ObjectAnimation>) {
 		for(c in elt.children) {
 			getObjAnimations(ctx, c, anims);
 		}
@@ -235,7 +217,6 @@ class FX2D extends BaseFX {
 				var co = Std.downcast(c , Constraint);
 				if(co == null) c.make(ctx);
 			}
-			getConstraints(ctx, root, fxanim.constraints);
 		}
 		else
 			super.make(ctx);
@@ -247,6 +228,10 @@ class FX2D extends BaseFX {
 		return ctx;
 	}
 
+	public function getTargetShader2D( ctx : Context, name : String ) {
+		return ctx.local2d;
+	}
+
 	override function updateInstance( ctx: Context, ?propName : String ) {
 		super.updateInstance(ctx, null);
 		var fxanim = Std.downcast(ctx.local2d, FX2DAnimation);
@@ -255,7 +240,9 @@ class FX2D extends BaseFX {
 	}
 
 	function createInstance(parent: h2d.Object) : FX2DAnimation {
-		return new FX2DAnimation(parent);
+		var inst = new FX2DAnimation(parent);
+		inst.prefab = this;
+		return inst;
 	}
 
 	#if editor

@@ -74,7 +74,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 
 		var menu = [];
 		if (@:privateAccess parent.is2D) {
-			for(name in ["Group 2D", "Bitmap", "Anim2D", "Atlas", "Text", "Shaders", "Shader Graph"]) {
+			for(name in ["Group 2D", "Bitmap", "Anim2D", "Atlas", "Text", "Shaders", "Shader Graph", "Placeholder"]) {
 				var item = allTypes.find(i -> i.label == name);
 				if(item == null) continue;
 				allTypes.remove(item);
@@ -118,12 +118,12 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 				]
 			});
 			menu.sort(function(l1,l2) return Reflect.compare(l1.label,l2.label));
-			menu.push({label: null, isSeparator: true});
-			menu.push({
-				label: "Other",
-				menu: allTypes
-			});
 		}
+		menu.push({label: null, isSeparator: true});
+		menu.push({
+			label: "Other",
+			menu: allTypes
+		});
 		return menu;
 	}
 }
@@ -151,6 +151,7 @@ class FXEditor extends FileView {
 	var lastSyncChange : Float = 0.;
 	var showGrid = true;
 	var grid : h3d.scene.Graphics;
+	var grid2d : h2d.Graphics;
 
 	var timelineLeftMargin = 10;
 	var xScale = 200.;
@@ -395,10 +396,10 @@ class FXEditor extends FileView {
 		axis.lineStyle(1,0x0000FF); axis.moveTo(0,0,0); axis.lineTo(0,0,1);
 		axis.lineStyle();
 		axis.material.mainPass.setPassName("debuggeom");
-		axis.visible = showGrid;
+		axis.visible = (!is2D) ? showGrid : false;
 
 		cullingPreview = new h3d.scene.Sphere(0xffffff, data.cullingRadius, true, scene.s3d);
-		cullingPreview.visible = showGrid;
+		cullingPreview.visible = (!is2D) ? showGrid : false;
 
 		tools.saveDisplayKey = "FXScene/tools";
 		tools.addButton("video-camera", "Perspective camera", () -> sceneEditor.resetCamera());
@@ -430,8 +431,8 @@ class FXEditor extends FileView {
 
 		tools.addToggle("th", "Show grid", function(v) {
 			showGrid = v;
-			axis.visible = v;
-			cullingPreview.visible = v;
+			axis.visible = (is2D) ? false : v;
+			cullingPreview.visible = (is2D) ? false : v;
 			updateGrid();
 		}, showGrid);
 		tools.addColor("Background color", function(v) {
@@ -449,7 +450,7 @@ class FXEditor extends FileView {
 
 		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		statusText.setPosition(5, 5);
-
+		
 		updateGrid();
 	}
 
@@ -1269,6 +1270,36 @@ class FXEditor extends FileView {
 			grid.remove();
 			grid = null;
 		}
+		if(grid2d != null) {
+			grid2d.remove();
+			grid2d = null;
+		}
+		if(!showGrid)
+			return;
+		if (is2D) {
+			grid2d = new h2d.Graphics(scene.s2d);
+			grid2d.x = scene.s2d.width / 2;
+			grid2d.y = scene.s2d.height / 2;
+			grid2d.scale(1);
+
+			grid2d.lineStyle(1.0, 12632256, 1.0);
+			grid2d.moveTo(0, -2000);
+			grid2d.lineTo(0, 2000);
+			grid2d.moveTo(-2000, 0);
+			grid2d.lineTo(2000, 0);
+			grid2d.lineStyle(1.0, 8421504, 1.0);
+			for(ix in -4...4) {
+				if (ix == 0) continue;
+				grid2d.moveTo(ix*200, -2000);
+				grid2d.lineTo(ix*200, 2000);
+				grid2d.moveTo(-2000, ix*200);
+				grid2d.lineTo(2000, ix*200);
+
+			}
+			grid2d.lineStyle(0);
+
+			return;
+		}
 
 		if(!showGrid)
 			return;
@@ -1314,9 +1345,6 @@ class FXEditor extends FileView {
 			if(currentTime >= previewMax) {
 				currentTime = previewMin;
 
-				//if(data.scriptCode != null && data.scriptCode.length > 0)
-					//sceneEditor.refreshScene(); // This allow to reset the scene when values are modified causes edition issues, solves
-
 				anim.setRandSeed(Std.random(0xFFFFFF));
 			}
 		}
@@ -1334,19 +1362,15 @@ class FXEditor extends FileView {
 			statusText.text = lines.join("\n");
 		}
 
-		var cam = scene.s3d.camera;
-		if( light != null ) {
-			var angle = Math.atan2(cam.target.y - cam.pos.y, cam.target.x - cam.pos.x);
-			light.setDirection(new h3d.Vector(
-				Math.cos(angle) * lightDirection.x - Math.sin(angle) * lightDirection.y,
-				Math.sin(angle) * lightDirection.x + Math.cos(angle) * lightDirection.y,
-				lightDirection.z
-			));
-		}
 		if( autoSync && (currentVersion != undo.currentID || lastSyncChange != properties.lastChange) ) {
 			save();
 			lastSyncChange = properties.lastChange;
 			currentVersion = undo.currentID;
+		}
+
+		if (grid2d != null) {
+			grid2d.x = scene.s2d.width / 2;
+			grid2d.y = scene.s2d.height / 2;
 		}
 	}
 

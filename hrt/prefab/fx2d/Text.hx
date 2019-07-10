@@ -4,7 +4,6 @@ class Text extends Object2D {
 
 	// parameters
 
-	var h2dText : h2d.Text;
 	var color : Int = 16777215;
 	var size : Int = 12;
 	var cutoff : Float = 0.5;
@@ -35,6 +34,7 @@ class Text extends Object2D {
 
 	override function updateInstance( ctx: Context, ?propName : String ) {
 		super.updateInstance(ctx, propName);
+		var h2dText = (cast ctx.local2d : h2d.Text);
 		h2dText.visible = visible;
 		h2dText.color = h3d.Vector.fromColor(color);
 		h2dText.color.w = 1;
@@ -46,7 +46,7 @@ class Text extends Object2D {
 
 	override function makeInstance(ctx:Context):Context {
 		ctx = ctx.clone(this);
-		h2dText = new h2d.Text(hxd.res.DefaultFont.get(), ctx.local2d);
+		var h2dText = new h2d.Text(hxd.res.DefaultFont.get(), ctx.local2d);
 		h2dText.text = "Lorem ipsum dolor";
 		h2dText.smooth = true;
 		ctx.local2d = h2dText;

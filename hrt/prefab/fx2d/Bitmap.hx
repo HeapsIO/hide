@@ -10,7 +10,6 @@ class Bitmap extends Object2D {
 	var dx : Float = 0;
 	var dy : Float = 0;
 
-	var bmp : h2d.Bitmap;
 	var tex : h3d.mat.Texture;
 
 	override public function load(v:Dynamic) {
@@ -32,6 +31,7 @@ class Bitmap extends Object2D {
 
 	override function updateInstance( ctx: Context, ?propName : String ) {
 		super.updateInstance(ctx, propName);
+		var bmp = (cast ctx.local2d : h2d.Bitmap);
 		bmp.visible = visible;
 		if (propName == null || propName == "src") {
 			if (tex != null) {
@@ -55,7 +55,7 @@ class Bitmap extends Object2D {
 
 	override function makeInstance(ctx:Context):Context {
 		ctx = ctx.clone(this);
-		bmp = new h2d.Bitmap(null, ctx.local2d);
+		var bmp = new h2d.Bitmap(null, ctx.local2d);
 		bmp.smooth = true;
 		ctx.local2d = bmp;
 		ctx.local2d.name = name;
