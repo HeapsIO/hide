@@ -632,6 +632,16 @@ class Ide {
 		chooseFile(["png","jpeg","jpg","gif"], onSelect);
 	}
 
+	public function chooseFiles( exts : Array<String>, onSelect : Array<String> -> Void ) {
+		var e = new Element('<input type="file" style="visibility:hidden" value="" accept="${[for( e in exts ) "."+e].join(",")}" multiple="multiple"/>');
+		e.change(function(_) {
+			var files = [for( f in (""+e.val()).split(";") ) makeRelative(f)];
+			if( files.length == 1 && files[0] == "" ) files.pop();
+			e.remove();
+			onSelect(files);
+		}).appendTo(window.window.document.body).click();
+	}
+
 	public function chooseFile( exts : Array<String>, onSelect : Null<String> -> Void ) {
 		var e = new Element('<input type="file" style="visibility:hidden" value="" accept="${[for( e in exts ) "."+e].join(",")}"/>');
 		e.change(function(_) {
