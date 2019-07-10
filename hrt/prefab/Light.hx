@@ -196,50 +196,53 @@ class Light extends Object3D {
 	override function updateInstance( ctx : Context, ?propName : String ) {
 		super.updateInstance(ctx, propName);
 
-		var isPbr = Std.is(h3d.mat.MaterialSetup.current, h3d.mat.PbrMaterialSetup);
-		if( !isPbr )
-			return; // TODO
-
 		var color = color | 0xff000000;
-		var light = cast(ctx.local3d,h3d.scene.pbr.Light);
-		light.isMainLight = isMainLight;
-		light.occlusionFactor = occlusionFactor;
+		var light = Std.downcast(ctx.local3d,h3d.scene.pbr.Light);
+		if( light == null ) {
+			// FWD light
+			var light = Std.instance(ctx.local3d, h3d.scene.Light);
+			light.color.setColor(color | 0xFF000000);
+		} else {
+			// PBR light
+			light.isMainLight = isMainLight;
+			light.occlusionFactor = occlusionFactor;
 
-		switch( kind ) {
-		case Spot:
-			var sl = Std.downcast(light, h3d.scene.pbr.SpotLight);
-			sl.range = range;
-			sl.maxRange = maxRange;
-			sl.angle = angle;
-			sl.fallOff = fallOff;
-			sl.cookie = cookieTex;
-		case Point:
-			var pl = Std.downcast(light, h3d.scene.pbr.PointLight);
-			pl.range = range;
-			pl.size = size;
-			pl.zNear = hxd.Math.max(0.02, zNear);
-		default:
-		}
-		light.color.setColor(color);
-		light.power = power;
-		light.shadows.mode = shadows.mode;
-		light.shadows.size = shadows.size;
-		light.shadows.blur.radius = shadows.radius;
-		light.shadows.blur.quality = shadows.quality;
-		light.shadows.bias = shadows.bias * 0.1;
+			switch( kind ) {
+			case Spot:
+				var sl = Std.downcast(light, h3d.scene.pbr.SpotLight);
+				sl.range = range;
+				sl.maxRange = maxRange;
+				sl.angle = angle;
+				sl.fallOff = fallOff;
+				sl.cookie = cookieTex;
+			case Point:
+				var pl = Std.downcast(light, h3d.scene.pbr.PointLight);
+				pl.range = range;
+				pl.size = size;
+				pl.zNear = hxd.Math.max(0.02, zNear);
+			default:
+			}
+			light.color.setColor(color);
+			light.power = power;
+			light.shadows.mode = shadows.mode;
+			light.shadows.size = shadows.size;
+			light.shadows.blur.radius = shadows.radius;
+			light.shadows.blur.quality = shadows.quality;
+			light.shadows.bias = shadows.bias * 0.1;
 
-		switch (shadows.samplingMode.kind) {
-			case None:
-				light.shadows.samplingKind = None;
-			case PCF:
-				var sm : ShadowSamplingPCF = cast shadows.samplingMode;
-				light.shadows.pcfQuality = sm.quality;
-				light.shadows.pcfScale = sm.scale;
-				light.shadows.samplingKind = PCF;
-			case ESM:
-				var sm : ShadowSamplingESM = cast shadows.samplingMode;
-				light.shadows.power = sm.power;
-				light.shadows.samplingKind = ESM;
+			switch (shadows.samplingMode.kind) {
+				case None:
+					light.shadows.samplingKind = None;
+				case PCF:
+					var sm : ShadowSamplingPCF = cast shadows.samplingMode;
+					light.shadows.pcfQuality = sm.quality;
+					light.shadows.pcfScale = sm.scale;
+					light.shadows.samplingKind = PCF;
+				case ESM:
+					var sm : ShadowSamplingESM = cast shadows.samplingMode;
+					light.shadows.power = sm.power;
+					light.shadows.samplingKind = ESM;
+			}
 		}
 
 		#if editor
@@ -381,7 +384,7 @@ class Light extends Object3D {
 		}
 
 		// no "Mixed" in editor (prevent double shadowing)
-		if( light.shadows.mode == Mixed ) light.shadows.mode = Static;
+		if( light != null && light.shadows.mode == Mixed ) light.shadows.mode = Static;
 
 		// when selected, force Dynamic mode (realtime preview)
 		//if( isSelected && shadows.mode != None ) light.shadows.mode = Dynamic;
