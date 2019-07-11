@@ -16,28 +16,36 @@ typedef SurfaceProps = {
 @:access(hrt.prefab.terrain.TerrainMesh)
 class Terrain extends Object3D {
 
-	public var tileSize = 64.0;
-	public var cellSize = 1.0;
+	public var terrain : TerrainMesh;
+
+	// Tile Param
+	public var tileSize = 64.0; // Size of the tile
+	public var cellSize = 1.0; // Size of a quad of the Tile, cellCount = tileSize / cellSize
+	// Texture Param
 	public var heightMapResolution : Int = 64;
 	public var weightMapResolution : Int = 128;
-	public var autoCreateTile = false;
-	var tmpSurfacesProps : Array<SurfaceProps> = [];
-	public var terrain : TerrainMesh;
+	// Parallax Param
 	var parallaxAmount = 0.0;
 	var parallaxMinStep : Int = 1;
 	var parallaxMaxStep : Int = 16;
+	// Blend Param
 	var heightBlendStrength : Float = 0.0;
 	var blendSharpness : Float = 0.0;
-	var unpackWeight = new h3d.pass.ScreenFx(new UnpackWeight());
-
+	// Shadows Param
+	var castShadows = false;
+	// Data for binary save/load
 	var surfaceCount = 0;
 	var surfaceSize = 0;
+	// Utility
+	var tmpSurfacesProps : Array<SurfaceProps> = [];
+	var unpackWeight = new h3d.pass.ScreenFx(new UnpackWeight());
 
 	#if editor
 	var packWeight = new h3d.pass.ScreenFx(new PackWeight());
 	var editor : hide.prefab.terrain.TerrainEditor;
 	var cachedInstance : TerrainMesh;
 	public var showChecker = false;
+	public var autoCreateTile = false;
 	#end
 
 	public function new( ?parent ) {
@@ -57,10 +65,11 @@ class Terrain extends Object3D {
 		parallaxMaxStep = obj.parallaxMaxStep == null ? 1 : obj.parallaxMaxStep;
 		heightBlendStrength = obj.heightBlendStrength == null ? 0 : obj.heightBlendStrength;
 		blendSharpness = obj.blendSharpness == null ? 0 : obj.blendSharpness;
-		autoCreateTile = obj.autoCreateTile == null ? false : obj.autoCreateTile;
 		surfaceCount = obj.surfaceCount == null ? 0 : obj.surfaceCount;
 		surfaceSize = obj.surfaceSize == null ? 0 : obj.surfaceSize;
+		castShadows = obj.castShadows == null ? false : obj.castShadows;
 		#if editor
+		autoCreateTile = obj.autoCreateTile == null ? false : obj.autoCreateTile;
 		showChecker = obj.showChecker == null ? false : obj.showChecker;
 		#end
 	}
@@ -76,7 +85,7 @@ class Terrain extends Object3D {
 		obj.parallaxMaxStep = parallaxMaxStep;
 		obj.heightBlendStrength = heightBlendStrength;
 		obj.blendSharpness = blendSharpness;
-		obj.autoCreateTile = autoCreateTile;
+		obj.castShadows = castShadows;
 		var surfacesProps : Array<SurfaceProps> = [];
 		for(surface in terrain.surfaces){
 			var surfaceProps : SurfaceProps =
@@ -98,6 +107,7 @@ class Terrain extends Object3D {
 		obj.surfaceSize = terrain.surfaces.length == 0 ? 0 : terrain.surfaceArray.albedo.width;
 
 		#if editor
+		obj.autoCreateTile = autoCreateTile;
 	 	obj.showChecker = terrain.showChecker;
 		if( editor != null && terrain.surfaces.length > 0 ) editor.saveTextures();
 		#end
@@ -121,6 +131,13 @@ class Terrain extends Object3D {
 			if( x == null || y == null ) continue;
 			var type = coords[2];
 			var tile = terrain.createTile(x, y, false);
+			tile.material.shadows = castShadows;
+
+			#if editor
+			tile.material.mainPass.stencil = new h3d.mat.Stencil();
+			tile.material.mainPass.stencil.setFunc(Always, 0x01, 0x01, 0x01);
+			tile.material.mainPass.stencil.setOp(Keep, Keep, Replace);
+			#end
 
 			switch( type ) {
 				case "n":
@@ -209,6 +226,7 @@ class Terrain extends Object3D {
 			normal.waitLoad(wait);
 			pbr.waitLoad(wait);
 		}
+		tmpSurfacesProps = null;
 	}
 
 	public function initTerrain( ctx : Context, height = true, surface = true ) {
@@ -416,6 +434,14 @@ class Terrain extends Object3D {
 		terrain.heightBlendStrength = heightBlendStrength;
 		terrain.blendSharpness = blendSharpness;
 		terrain.showChecker = showChecker;
+
+		if( propName == "castShadows" ) {
+			if( terrain != null ) {
+				for( t in terrain.tiles )
+					t.material.castShadows = castShadows;
+			}
+		}
+
 		if( editor != null )
 			editor.update(propName);
 		#end
@@ -453,32 +479,32 @@ class Terrain extends Object3D {
 		editor.editContext = ctx;
 		editor.setupUI(props, ctx);
 		props.append('
-			<div class="group" name="Terrain"><dl>
-				<dt>Show Grid</dt><dd><input type="checkbox" field="terrain.showGrid"/></dd>
-				<dt>Visible</dt><dd><input type="checkbox" field="visible"/></dd>
-				<dt>Mode</dt>
-				<dd><select field="editor.renderMode">
-					<option value="PBR">PBR</option>
-					<option value="ShaderComplexity">Shader Complexity</option>
-					<option value="Checker">Checker</option>
-				</select></dd>
+			<div class="group" name="Rendering"><dl>
+				<dt>Cast Shadows</dt><dd><input type="checkbox" field="castShadows"/></dd>
+				<dt>Height Blend</dt><dd><input type="range" min="0" max="1" field="heightBlendStrength"/></dd>
+				<dt>Sharpness</dt><dd><input type="range" min="0" max="1" field="blendSharpness"/></dd>
 			</dl></div>
-			<div class="group" name="Quality">
+			<div class="group" name="Parallax"><dl>
+				<dt>Amount</dt><dd><input type="range" min="0" max="1" field="parallaxAmount"/></dd>
+				<dt>Min Step</dt><dd><input type="range" min="1" max="64" value="0" step="1" field="parallaxMinStep"/></dd>
+				<dt>Max Step</dt><dd><input type="range" min="1" max="64" value="0" step="1" field="parallaxMaxStep"/></dd>
+			</dl></div>
+			<div class="group" name="Quality"><dl>
 				<dt>Tile Size</dt><dd><input type="range" min="1" max="100" value="0" field="tileSizeSet"/></dd>
 				<dt>Cell Size</dt><dd><input type="range" min="0.01" max="10" value="0" field="cellSizeSet"/></dd>
 				<dt>WeightMap Resolution</dt><dd><input type="range" min="1" max="256" value="0" step="1" field="weightMapResolutionSet"/></dd>
 				<dt>HeightMap Resolution</dt><dd><input type="range" min="1" max="256" value="0" step="1" field="heightMapResolutionSet"/></dd>
 				<div align="center"><input type="button" value="Apply" class="apply"/></div>
-			</div>
-			<div class="group" name="Blend">
-				<dt>Height Blend</dt><dd><input type="range" min="0" max="1" field="heightBlendStrength"/></dd>
-				<dt>Sharpness</dt><dd><input type="range" min="0" max="1" field="blendSharpness"/></dd>
-			</div>
-			<div class="group" name="Parallax">
-				<dt>Amount</dt><dd><input type="range" min="0" max="1" field="parallaxAmount"/></dd>
-				<dt>Min Step</dt><dd><input type="range" min="1" max="64" value="0" step="1" field="parallaxMinStep"/></dd>
-				<dt>Max Step</dt><dd><input type="range" min="1" max="64" value="0" step="1" field="parallaxMaxStep"/></dd>
-			</div>
+			</dl></div>
+			<div class="group" name="Debug"><dl>
+				<dt>Show Grid</dt><dd><input type="checkbox" field="terrain.showGrid"/></dd>
+				<dt>Mode</dt>
+				<dd><select field="editor.renderMode">
+						<option value="PBR">PBR</option>
+						<option value="ShaderComplexity">Shader Complexity</option>
+						<option value="Checker">Checker</option>
+					</select></dd>
+			</dl></div>
 		');
 
 		props.find(".apply").click(function(_) {

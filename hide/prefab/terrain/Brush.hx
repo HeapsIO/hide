@@ -1,4 +1,6 @@
 package hide.prefab.terrain;
+import h3d.mat.Stencil;
+import hrt.prefab.l3d.AdvancedDecal;
 using Lambda;
 import hxd.Key as K;
 
@@ -63,89 +65,51 @@ class BrushMode {
 	public function new(){}
 }
 
-class BrushPreview {
+class BrushPreview extends h3d.scene.Object {
 
 	var terrain : hrt.prefab.terrain.TerrainMesh;
-	var tiles : Array<TilePreviewMesh> = [];
-	var grid : h3d.prim.Grid;
+	var mesh : h3d.scene.pbr.Decal;
+	var shader : h3d.shader.pbr.VolumeDecal.DecalOverlay;
 
-	public function new(terrain){
+	public function new( terrain : hrt.prefab.terrain.TerrainMesh ) {
+		super(terrain.getScene());
 		this.terrain = terrain;
-		grid = new h3d.prim.Grid( terrain.cellCount, terrain.cellCount, terrain.cellSize, terrain.cellSize);
-		grid.addUVs();
-		grid.addNormals();
+		mesh = new h3d.scene.pbr.Decal(h3d.prim.Cube.defaultUnitCube(), this);
+		shader = new h3d.shader.pbr.VolumeDecal.DecalOverlay();
+		mesh.material.mainPass.addShader(shader);
+		mesh.material.mainPass.setPassName("afterTonemappingDecal");
+		mesh.material.mainPass.depthWrite = false;
+		mesh.material.mainPass.depthTest = GreaterEqual;
+		mesh.material.mainPass.culling = Front;
+		mesh.material.shadows = false;
+		mesh.material.blendMode = Alpha;
+		mesh.scaleZ = 1000;
+		shader.fadeStart = 1;
+		shader.fadeEnd = 0;
+		shader.fadePower = 1;
+		shader.emissive = 0;
+		shader.CENTERED = true;
+
+		// Only draw the preview on terrain
+		mesh.material.mainPass.stencil = new h3d.mat.Stencil();
+		mesh.material.mainPass.stencil.setFunc(Equal, 0x01, 0x01, 0x01);
+		mesh.material.mainPass.stencil.setOp(Keep, Keep, Keep);
 	}
 
-	public function dispose(){
-		for(tile in tiles)
-			tile.remove();
+	public function setBrushTexture( texture : h3d.mat.Texture ) {
+		shader.colorTexture = texture;
 	}
 
-	public function addPreviewMeshAt(x : Int, y : Int, brush : Brush, brushPos : h3d.Vector, ctx : hrt.prefab.Context) : TilePreviewMesh {
-		var camera = @:privateAccess ctx.local3d.getScene().camera;
-		var dir = camera.pos.sub(new h3d.Vector(terrain.getAbsPos().tx, terrain.getAbsPos().ty, terrain.getAbsPos().tz));
-		var offsetDir = dir.z < 0 ? -1: 1;
-		var tilePreview = null;
-		for(tile in tiles){
-			if(tile.used) continue;
-			tilePreview = tile;
-		}
-		if(tilePreview == null){
-			tilePreview = new TilePreviewMesh(grid, terrain);
-			tiles.push(tilePreview);
-		}
-		tilePreview.used = true;
-		var t = terrain.getTile(x,y);
-		tilePreview.heightMap = t == null ? null : t.heightMap;
-		tilePreview.shader.heightMapSize = terrain.heightMapResolution;
-		var pos = new h3d.Vector(x * terrain.tileSize, y * terrain.tileSize);
-		tilePreview.setPosition(pos.x, pos.y, pos.z + 0.1 * terrain.scaleZ * offsetDir);
-		tilePreview.visible = true;
-		tilePreview.shader.brushTex = brush.tex;
-		tilePreview.shader.brushSize =  brush.size;
-		tilePreview.shader.brushPos = brushPos;
-		return tilePreview;
+	public function previewAt( brush : Brush, pos : h3d.Vector ) {
+		setPosition(pos.x, pos.y, pos.z);
+		setBrushTexture( brush.tex );
+		setScale(brush.size);
+		visible = true;
 	}
 
-	public function reset(){
-		for(tile in tiles){
-			tile.used = false;
-			tile.visible = false;
-		}
-	}
-
-	public function refreshMesh(){
-		if(grid != null) grid.dispose();
-		grid = new h3d.prim.Grid( terrain.cellCount, terrain.cellCount, terrain.cellSize, terrain.cellSize);
-		grid.addUVs();
-		grid.addNormals();
-		for(tile in tiles)
-			tile.primitive = grid;
-	}
-}
-
-class TilePreviewMesh extends h3d.scene.Mesh {
-	public var used = false;
-	public var heightMap : h3d.mat.Texture;
-	public var shader : hide.prefab.terrain.TilePreview;
-
-	public function new(prim, parent){
-		super(prim, null, parent);
-		material.setDefaultProps("ui");
-		material.shadows = false;
-		material.blendMode = AlphaAdd;
-		shader = new hide.prefab.terrain.TilePreview();
-		material.mainPass.addShader(shader);
-	}
-
-	override function emit( ctx : h3d.scene.RenderContext ) {
-		if(heightMap == null) return;
-		super.emit(ctx);
-	}
-
-	override function sync(ctx : h3d.scene.RenderContext) {
-		shader.heightMap = heightMap;
-		shader.heightMapSize = heightMap.width;
-		shader.primSize = Std.downcast(parent, hrt.prefab.terrain.TerrainMesh).tileSize;
+	public function reset() {
+		setPosition(0,0,0);
+		visible = false;
+		shader.colorTexture = null;
 	}
 }

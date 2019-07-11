@@ -35,63 +35,65 @@ class TileRevertData {
 
 @:access(hrt.prefab.terrain.TerrainMesh)
 @:access(hrt.prefab.terrain.Terrain)
+@:access(hrt.prefab.terrain.Tile)
 class TerrainEditor {
 
-	public var currentBrush : Brush;
+	public var currentBrush = new Brush();
 	public var currentSurface : hrt.prefab.terrain.Surface;
 	public var textureType = ["_Albedo", "_Normal", "_MetallicGlossAO"];
 	public var autoCreateTile = false;
 	public var editContext : hide.prefab.EditContext;
+
+	// Debug
+	var renderMode : RenderMode = PBR;
+	// Edition
 	var brushPreview : hide.prefab.terrain.Brush.BrushPreview;
 	var interactive : h2d.Interactive;
 	var remainingDist = 0.0;
 	var lastPos : h3d.Vector;
-	var copyPass : h3d.pass.Copy;
 	var heightStrokeBufferArray : hide.prefab.terrain.StrokeBuffer.StrokeBufferArray;
 	var weightStrokeBufferArray : hide.prefab.terrain.StrokeBuffer.StrokeBufferArray;
-
+	// Shader for edition
+	var copyPass = new h3d.pass.Copy();
 	var normalizeWeight = new h3d.pass.ScreenFx(new hide.prefab.terrain.NormalizeWeight());
 	var clampWeight = new h3d.pass.ScreenFx(new hide.prefab.terrain.ClampWeight());
 	var generateIndex = new h3d.pass.ScreenFx(new hide.prefab.terrain.GenerateIndex());
 	var swapIndex = new h3d.pass.ScreenFx(new hide.prefab.terrain.SwapIndex());
 	var setHeight = new h3d.pass.ScreenFx(new hide.prefab.terrain.SetHeight());
 	var smoothHeight = new h3d.pass.ScreenFx(new hide.prefab.terrain.SmoothHeight());
-
+	// Revert 
 	var terrainPrefab : hrt.prefab.terrain.Terrain;
 	var undo : hide.ui.UndoHistory;
-	var tileTrashBin : Array<hrt.prefab.terrain.Tile> = [];
+	var tileTrashBin : Array<TileRevertData> = [];
 	var paintRevertDatas : Array<TileRevertData> = [];
+	// Render UV offscreen
 	var uvTexPixels : hxd.Pixels.PixelsFloat;
 	var uvTex : h3d.mat.Texture;
 	var uvTexRes = 0.5;
-	var customScene : h3d.scene.Scene;
-	var customRenderer : hide.prefab.terrain.CustomRenderer;
-	var renderMode : RenderMode = PBR;
+	var customScene = new h3d.scene.Scene(false, false);
+	var customRenderer = new hide.prefab.terrain.CustomRenderer("terrainUV");
 
 	public function new( terrainPrefab : hrt.prefab.terrain.Terrain, undo : hide.ui.UndoHistory ) {
 		this.terrainPrefab = terrainPrefab;
 		this.undo = undo;
+		renderMode = terrainPrefab.showChecker ? Checker : PBR;
 		autoCreateTile = terrainPrefab.autoCreateTile;
+
 		brushPreview = new hide.prefab.terrain.Brush.BrushPreview(terrainPrefab.terrain);
-		brushPreview.refreshMesh();
-		currentBrush = new Brush();
-		copyPass = new h3d.pass.Copy();
+
 		heightStrokeBufferArray = new hide.prefab.terrain.StrokeBuffer.StrokeBufferArray(RGBA32F, terrainPrefab.heightMapResolution + 1);
 		weightStrokeBufferArray = new hide.prefab.terrain.StrokeBuffer.StrokeBufferArray(R8, terrainPrefab.weightMapResolution);
-		customRenderer = new hide.prefab.terrain.CustomRenderer("terrainUV");
-		customScene = new h3d.scene.Scene(false, false);
 		customScene.renderer = customRenderer;
 		#if debug
 		customScene.checkPasses = false;
 		#end
-		renderMode = terrainPrefab.showChecker ? Checker : PBR;
 	}
 
 	public function dispose() {
 		if(uvTex != null) uvTex.dispose();
 		heightStrokeBufferArray.dispose();
 		weightStrokeBufferArray.dispose();
-		brushPreview.dispose();
+		brushPreview.remove();
 	}
 
 	public function saveTextures()  {
@@ -192,7 +194,6 @@ class TerrainEditor {
 	}
 
 	public function refresh() {
-		brushPreview.refreshMesh();
 		heightStrokeBufferArray.refresh(terrainPrefab.heightMapResolution + 1);
 		weightStrokeBufferArray.refresh(terrainPrefab.weightMapResolution);
 	}
@@ -278,7 +279,22 @@ class TerrainEditor {
 			tileTrashBin = [];
 			undo.change(Custom(function(undo) {
 				for( t in tileTrashBinTmp ) {
-					undo ? terrainPrefab.terrain.addTile(t, true) : terrainPrefab.terrain.removeTile(t);
+					if( undo ) {
+						var tile = terrainPrefab.terrain.createTile(t.x, t.y);
+						tile.material.mainPass.stencil = new h3d.mat.Stencil();
+						tile.material.mainPass.stencil.setFunc(Always, 0x01, 0x01, 0x01);
+						tile.material.mainPass.stencil.setOp(Keep, Keep, Replace);
+						tile.refreshHeightMap();
+						tile.refreshIndexMap();
+						tile.refreshSurfaceWeights();
+						tile.heightMap.uploadPixels(t.prevHeightMapPixels);
+						tile.surfaceIndexMap.uploadPixels(t.prevSurfaceIndexMapPixels);
+						for( i in 0 ... t.prevWeightMapPixels.length )
+							tile.surfaceWeights[i].uploadPixels(t.prevWeightMapPixels[i]);
+						tile.generateWeightArray();
+					}
+					else
+						terrainPrefab.terrain.removeTileAt(t.x, t.y);
 				}
 			}));
 			tileTrashBin = [];
@@ -518,7 +534,6 @@ class TerrainEditor {
 
 	function worldToScreen( wx: Float, wy: Float, wz: Float, ctx : Context ) {
 		if( ctx == null || ctx.local3d == null || ctx.local3d.getScene() == null || ctx.local2d == null || ctx.local2d.getScene() == null ) return new h2d.col.Point();
-		var s2d = @:privateAccess ctx.local2d.getScene();
 		var camera = @:privateAccess ctx.local3d.getScene().camera;
 		var pt = camera.project(wx, wy, wz, h3d.Engine.getCurrent().width, h3d.Engine.getCurrent().height);
 		return new h2d.col.Point(hxd.Math.abs(pt.x), hxd.Math.abs(pt.y));
@@ -556,14 +571,7 @@ class TerrainEditor {
 		brushPreview.reset();
 		if( currentBrush.brushMode.mode == Delete || currentBrush.bitmap == null ) return;
 		var brushWorldPos = uvTexPixels == null ? worldPos : getBrushWorldPosFromTex(worldPos, ctx);
-		if( brushWorldPos == null ) return;
-		var tiles = terrainPrefab.terrain.getTiles(brushWorldPos.x, brushWorldPos.y, currentBrush.size / 2.0 , false);
-		for( i in 0 ... tiles.length) {
-			var tile = tiles[i];
-			var brushPos = tile.globalToLocal(brushWorldPos.clone());
-			brushPos.scale3(1.0 / terrainPrefab.tileSize);
-			brushPreview.addPreviewMeshAt(tile.tileX, tile.tileY, currentBrush, brushPos, ctx);
-		}
+		brushPreview.previewAt(currentBrush, brushWorldPos);
 	}
 
 	function applyBrush( pos : h3d.Vector, ctx : Context ) {
@@ -622,8 +630,13 @@ class TerrainEditor {
 		if( brushWorldPos == null ) return;
 		var tile = terrainPrefab.terrain.getTileAtWorldPos(brushWorldPos.x, brushWorldPos.y);
 		if( tile == null ) return;
+		var trd = new TileRevertData(tile.tileX, tile.tileY);
+		trd.prevHeightMapPixels = tile.heightMap.capturePixels();
+		trd.prevSurfaceIndexMapPixels = tile.surfaceIndexMap.capturePixels();
+		for( w in tile.surfaceWeights )
+			trd.prevWeightMapPixels.push(w.capturePixels());
+		tileTrashBin.push(trd);
 		terrainPrefab.terrain.removeTile(tile);
-		tileTrashBin.push(tile);
 		renderTerrainUV(ctx);
 	}
 
@@ -1030,24 +1043,6 @@ class TerrainEditor {
 			ctx.ide.chooseImage(onSurfaceAdd.bind(props,ctx));
 		});
 		refreshBrushMode(props, ctx);
-
-		// Save Button
-		/*props.append(
-			'<div align="center">
-				<input type="button" value="Save" class="save" />
-			</div>');
-		props.find(".save").click(function(_) {
-			var datPath = new haxe.io.Path(ctx.rootContext.shared.currentPath);
-			datPath.ext = "dat";
-			var fullPath = ctx.ide.getPath(datPath.toString() + "/" + terrainPrefab.name);
-			if( sys.FileSystem.isDirectory(fullPath) ) {
-				var files = sys.FileSystem.readDirectory(fullPath);
-				for( f in files )
-					sys.FileSystem.deleteFile(fullPath + "/" + f);
-			}
-			terrainPrefab.saveWeightTextures(ctx.rootContext);
-			terrainPrefab.saveHeightTextures(ctx.rootContext);
-		});*/
 
 		var brushes : Array<Dynamic> = ctx.scene.config.get("terrain.brushes");
 		var brushesContainer = props.find(".terrain-brushes");

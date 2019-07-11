@@ -237,9 +237,16 @@ class TerrainMesh extends h3d.scene.Object {
 			var minTileX = Math.floor((pos.x - range)/ tileSize);
 			var maxTileY = Math.floor((pos.y + range)/ tileSize);
 			var minTileY = Math.floor((pos.y - range)/ tileSize);
-			for( x in minTileX ... maxTileX + 1)
-				for( y in minTileY...maxTileY + 1)
-					createTile(x, y);
+			for( x in minTileX ... maxTileX + 1) {
+				for( y in minTileY...maxTileY + 1) {
+					var t = createTile(x, y);
+					#if editor
+					t.material.mainPass.stencil = new h3d.mat.Stencil();
+					t.material.mainPass.stencil.setFunc(Always, 0x01, 0x01, 0x01);
+					t.material.mainPass.stencil.setOp(Keep, Keep, Replace);
+					#end
+				}
+			}
 		}
 		var result : Array<Tile> = [];
 		for( tile in tiles)
