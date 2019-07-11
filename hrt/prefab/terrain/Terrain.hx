@@ -226,7 +226,6 @@ class Terrain extends Object3D {
 			normal.waitLoad(wait);
 			pbr.waitLoad(wait);
 		}
-		tmpSurfacesProps = null;
 	}
 
 	public function initTerrain( ctx : Context, height = true, surface = true ) {
