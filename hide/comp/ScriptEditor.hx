@@ -12,24 +12,33 @@ class ScriptChecker {
 	static var TYPES_SAVE = new Map();
 	static var ERROR_SAVE = new Map();
 	var ide : hide.Ide;
+	var apiFiles : Array<String>;
+	var config : hide.Config;
+	var documentName : String;
+	var constants : Map<String,Dynamic>;
 	public var checker : hscript.Checker;
 
 	public function new( config : hide.Config, documentName : String, ?constants : Map<String,Dynamic> ) {
-
-		checker = new hscript.Checker();
+		this.config = config;
+		this.documentName = documentName;
+		this.constants = constants == null ? new Map() : constants;
 		ide = hide.Ide.inst;
+		apiFiles = config.get("script.api.files");
+		reload();
+	}
 
-		var files : Array<String> = config.get("script.api.files");
-		if( files != null && files.length >= 0 ) {
-			var types = TYPES_SAVE.get(files.join(";"));
+	public function reload() {
+		checker = new hscript.Checker();
+
+		if( apiFiles != null && apiFiles.length >= 0 ) {
+			var types = TYPES_SAVE.get(apiFiles.join(";"));
 			if( types == null ) {
 				types = new hscript.Checker.CheckerTypes();
-				for( f in files ) {
-					// TODO : reload + recheck script when modified
+				for( f in apiFiles ) {
 					var content = try sys.io.File.getContent(ide.getPath(f)) catch( e : Dynamic ) { error(""+e); continue; };
 					types.addXmlApi(Xml.parse(content).firstElement());
 				}
-				TYPES_SAVE.set(files.join(";"), types);
+				TYPES_SAVE.set(apiFiles.join(";"), types);
 			}
 			checker.types = types;
 		}
@@ -52,7 +61,7 @@ class ScriptChecker {
 					var fields = [];
 					while( path.length > 0 ) {
 						var name = path.join(".");
-						if( constants != null && constants.exists(name) ) {
+						if( constants.exists(name) ) {
 							var value : Dynamic = constants.get(name);
 							for( f in fields )
 								value = Reflect.field(value, f);
@@ -63,7 +72,7 @@ class ScriptChecker {
 					}
 				}
 				if( t == null ) {
-					error('Global type $tname not found in $files ($f)');
+					error('Global type $tname not found in $apiFiles ($f)');
 					continue;
 				}
 				checker.setGlobal(f, t);
@@ -192,6 +201,15 @@ class ScriptEditor extends CodeEditor {
 		if( checker == null ) {
 			checker = new ScriptChecker(new hide.Config(),"");
 			checkTypes = false;
+		} else {
+			var files = @:privateAccess checker.apiFiles;
+			if( files != null ) {
+				for( f in files )
+					ide.fileWatcher.register(f, function() {
+						@:privateAccess ScriptChecker.TYPES_SAVE = [];
+						haxe.Timer.delay(function() { checker.reload(); doCheckScript(); }, 100);
+					}, root);
+			}
 		}
 		this.checker = checker;
 		onChanged = doCheckScript;
