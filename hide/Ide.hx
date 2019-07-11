@@ -621,6 +621,12 @@ class Ide {
 		sys.io.File.saveContent(getPath(databaseFile), database.save());
 	}
 
+	public function createDBSheet() {
+		var value = ask("Sheet name");
+		if( value == "" || value == null ) return null;
+		return database.createSheet(value);
+	}
+
 	public function makeRelative( path : String ) {
 		path = path.split("\\").join("/");
 		if( StringTools.startsWith(path.toLowerCase(), resourceDir.toLowerCase()+"/") )
@@ -822,6 +828,11 @@ class Ide {
 				open("hide.view.CdbTable", { path : s.name });
 			});
 		}
+		db.find(".dbnew").click(function(_) {
+			var sheet = createDBSheet();
+			if( sheet == null ) return;
+			open("hide.view.CdbTable",{ path : sheet.name });
+		});
 		db.find(".dbcompress").prop("checked",database.compress).click(function(_) {
 			database.compress = !database.compress;
 			saveDatabase();

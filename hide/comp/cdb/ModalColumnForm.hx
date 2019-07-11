@@ -12,7 +12,7 @@ class ModalColumnForm extends Modal {
 
 		var editForm = (column != null);
 
-		contentModal = new Element("<div>").addClass("content-modal").appendTo(content);
+		contentModal = new Element("<div tabindex='0'>").addClass("content-modal").appendTo(content);
 
 		if (editForm)
 			new Element("<h2> Edit column </h2>").appendTo(contentModal);
@@ -74,14 +74,14 @@ class ModalColumnForm extends Modal {
 					<br /><br />
 				</div>
 
-				<div class="localizable"><input type="checkbox" name="localizable"/> Localizable<br /><br /></div>
+				<div class="localizable"><label><input type="checkbox" name="localizable"/>&nbsp;Localizable</label><br /><br /></div>
 
 				<div class="custom">
 					Type
 					<select name="ctype"></select>
 					<br /><br />
 				</div>
-				<div class="opt"><input type="checkbox" name="req"/> Required</div>
+				<div class="opt"><label><input type="checkbox" name="req"/>&nbsp;Required</label></div>
 			</div>
 			<br /><br />
 			<p class="buttons">
@@ -133,6 +133,9 @@ class ModalColumnForm extends Modal {
 			form.find("[name=localizable]").prop("checked", false);
 		}
 
+		form.find("[name=name]").focus();
+
+		contentModal.keydown(function(e) if( e.keyCode == 27 ) closeModal());
 		contentModal.click( function(e) e.stopPropagation());
 
 		element.click(function(e) {

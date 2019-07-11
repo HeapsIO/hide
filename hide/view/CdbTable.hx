@@ -44,11 +44,16 @@ class CdbTable extends hide.ui.View<{ path : String }> {
 		}
 		if( sheets.length == 0 ) {
 			element.html("No CDB sheet created, <a href='#'>create one</a>");
-			element.find("a").click(function(_) ide.error("TODO"));
+			element.find("a").click(function(_) {
+				var sheet = ide.createDBSheet();
+				if( sheet == null ) return;
+				updateSheets();
+				rebuild();
+			});
 			return;
 		}
 		element.addClass("cdb-view");
-		var tabs = sheets.length == 1 ? null : new hide.comp.Tabs(element, true);
+		var tabs = state.path != null ? null : new hide.comp.Tabs(element, true);
 		tabContents = [];
 		for( sheet in sheets ) {
 			var tab = tabs == null ? element : tabs.createTab(sheet.name);
