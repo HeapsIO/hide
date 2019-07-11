@@ -21,6 +21,7 @@ typedef EditorApi = {
 class Editor extends Component {
 
 	var base : cdb.Database;
+	var sheetName : String;
 	var sheet : cdb.Sheet;
 	var existsCache : Map<String,{ t : Float, r : Bool }> = new Map();
 	var tables : Array<Table> = [];
@@ -32,6 +33,7 @@ class Editor extends Component {
 		schema : Array<cdb.Data.Column>,
 	};
 	var changesDepth : Int = 0;
+	var currentFilter : String;
 	var api : EditorApi;
 	public var config : hide.Config;
 	public var cursor : Cursor;
@@ -43,6 +45,7 @@ class Editor extends Component {
 		this.api = api;
 		this.config = config;
 		this.sheet = sheet;
+		sheetName = sheet == null ? null : sheet.name;
 		if( api.undoState == null ) api.undoState = [];
 		if( api.editor == null ) api.editor = this;
 		if( api.currentValue == null ) api.currentValue = api.copy();
@@ -66,7 +69,7 @@ class Editor extends Component {
 		keys.addListener(onKey);
 		keys.register("search", function() {
 			searchBox.show();
-			searchBox.find("input").focus().select();
+			searchBox.find("input").val("").focus().select();
 		});
 		keys.register("copy", onCopy);
 		keys.register("paste", onPaste);
@@ -116,8 +119,16 @@ class Editor extends Component {
 		case K.TAB:
 			cursor.move( e.shiftKey ? -1 : 1, 0, false, false);
 			return true;
+		case K.PGUP:
+			cursor.move(0, -10, e.shiftKey, e.ctrlKey);
+			return true;
+		case K.PGDOWN:
+			cursor.move(0, 10, e.shiftKey, e.ctrlKey);
+			return true;
 		case K.SPACE:
 			e.preventDefault(); // prevent scroll
+		case K.ESCAPE:
+			if( currentFilter != null ) searchFilter(null);
 		}
 		return false;
 	}
@@ -126,7 +137,7 @@ class Editor extends Component {
 		if( filter == "" ) filter = null;
 		if( filter != null ) filter = filter.toLowerCase();
 
-		var lines = element.find("table.cdb-sheet > tr").not(".head");
+		var lines = element.find("table.cdb-sheet > tbody > tr").not(".head");
 		lines.removeClass("filtered");
 		if( filter != null ) {
 			for( t in lines ) {
@@ -138,6 +149,7 @@ class Editor extends Component {
 				lines.removeClass("filtered");
 			}
 		}
+		currentFilter = filter;
 	}
 
 	function onCopy() {
@@ -372,13 +384,13 @@ class Editor extends Component {
 
 		// swap sheet if it was modified
 		for( s in base.sheets )
-			if( s.name == this.sheet.name ) {
+			if( s.name == sheetName ) {
 				this.sheet = s;
 				break;
 			}
 	}
 
-	function refreshAll( ?state : UndoState ) {
+	final function refreshAll( ?state : UndoState ) {
 		api.editor.refresh(state);
 	}
 
@@ -393,7 +405,7 @@ class Editor extends Component {
 		element.addClass('cdb');
 
 		searchBox = new Element("<div>").addClass("searchBox").appendTo(element);
-		new Element("<input type='text'>").appendTo(searchBox).keydown(function(e) {
+		var txt = new Element("<input type='text'>").appendTo(searchBox).keydown(function(e) {
 			if( e.keyCode == 27 ) {
 				searchBox.find("i").click();
 				return;
@@ -404,6 +416,9 @@ class Editor extends Component {
 		new Element("<i>").addClass("fa fa-times-circle").appendTo(searchBox).click(function(_) {
 			searchFilter(null);
 			searchBox.toggle();
+			var c = cursor.save();
+			focus();
+			cursor.load(c);
 		});
 
 		if( sheet.columns.length == 0 ) {

@@ -8,10 +8,10 @@ class CdbTable extends hide.ui.View<{ path : String }> {
 
 	public function new( ?state ) {
 		super(state);
-		updateSheet();
+		updateSheets();
 	}
 
-	function updateSheet() {
+	function updateSheets() {
 		if( state.path == null )
 			sheets = [for( s in ide.database.sheets ) if( !s.props.hide ) s];
 		else {
@@ -28,6 +28,7 @@ class CdbTable extends hide.ui.View<{ path : String }> {
 	}
 
 	function setEditor(index:Int) {
+		updateSheets();
 		if( editor != null )
 			editor.remove();
 		editor = new hide.comp.cdb.Editor(sheets[index],config,ide.databaseApi,tabContents[index]);
@@ -41,20 +42,26 @@ class CdbTable extends hide.ui.View<{ path : String }> {
 			element.text("CDB sheet not found '" + state.path + "'");
 			return;
 		}
-		var tabs = sheets.length == 1 ? null : new hide.comp.Tabs(element);
-		if( tabs != null )
-			tabs.onTabChange = setEditor;
+		if( sheets.length == 0 ) {
+			element.html("No CDB sheet created, <a href='#'>create one</a>");
+			element.find("a").click(function(_) ide.error("TODO"));
+			return;
+		}
+		element.addClass("cdb-view");
+		var tabs = sheets.length == 1 ? null : new hide.comp.Tabs(element, true);
 		tabContents = [];
 		for( sheet in sheets ) {
 			var tab = tabs == null ? element : tabs.createTab(sheet.name);
 			var sc = new hide.comp.Scrollable(tab);
 			tabContents.push(sc.element);
 		}
+		if( tabs != null )
+			tabs.onTabChange = setEditor;
 		if( sheets.length > 0 )
 			setEditor(0);
 
 		watch(@:privateAccess ide.databaseFile, () -> {
-			updateSheet();
+			updateSheets();
 			rebuild();
 		});
 	}

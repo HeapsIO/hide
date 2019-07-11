@@ -3,9 +3,6 @@ body {
   padding: 0;
   background-color: black;
 }
-a {
-  text-decoration: none;
-}
 ul,
 li {
   margin: 0;
@@ -25,6 +22,10 @@ body .select2-dropdown {
   font-family: Verdana, serif;
   font-size: 9pt;
   color: #aaa;
+}
+a {
+  color: #aaf;
+  text-decoration: none;
 }
 canvas {
   user-select: none;
@@ -417,10 +418,13 @@ input[type=checkbox]:checked:after {
   user-select: none;
 }
 .hide-tabs .tabs-header > div.active {
-  background-color: #222;
-  color: #ccc;
+  background-color: #333;
+  color: #bbb;
   border-bottom-color: #222;
   border-top-right-radius: 0px;
+}
+.hide-tabs .tabs-header > div.active:hover {
+  background-color: #333;
 }
 .hide-tabs .tabs-header > div:hover {
   background-color: #282828;
@@ -434,6 +438,22 @@ input[type=checkbox]:checked:after {
 .hide-tabs .tab.expand {
   width: 100%;
   height: 100%;
+}
+.hide-tabs.tabs-bottom > .tabs-header {
+  width: 100%;
+  position: fixed;
+  bottom: 0px;
+  padding-top: 0px;
+  padding-bottom: 5px;
+  z-index: 1;
+}
+.hide-tabs.tabs-bottom > .tabs-header > div {
+  border-top: none;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 5px;
+}
+.hide-tabs.tabs-bottom > .tabs-header > div.active {
+  border-radius: 0px;
 }
 .searchBox {
   display: none;

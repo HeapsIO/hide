@@ -79,14 +79,25 @@ class Cursor {
 			select = null;
 		else if( select == null )
 			select = { x : x, y : y };
-		if( dx < 0 && (table.displayMode == Table ? x >= 0 : x > 0) )
-			x--;
-		if( dy < 0 && y > 0 )
-			y--;
-		if( dx > 0 && x < table.sheet.columns.length - 1 )
-			x++;
-		if( dy > 0 && y < table.lines.length - 1 )
-			y++;
+		if( dx < 0 ) {
+			x += dx;
+			var minX = table.displayMode == Table ? -1 : 0;
+			if( x < minX ) x = minX;
+		}
+		if( dy < 0 ) {
+			y += dy;
+			if( y < 0 ) y = 0;
+		}
+		if( dx > 0 ) {
+			x += dx;
+			var max = table.sheet.columns.length;
+			if( x >= max ) x = max - 1;
+		}
+		if( dy > 0 ) {
+			y += dy;
+			var max = table.lines.length;
+			if( y >= max ) y = max - 1;
+		}
 		update();
 	}
 

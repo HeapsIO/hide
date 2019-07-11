@@ -5,9 +5,10 @@ class Tabs extends Component {
 	public var currentTab(default, set) : Element;
 	var header : Element;
 
-	public function new(?parent,?el) {
+	public function new(?parent,?el,bottomTabs=false) {
 		super(parent,el);
 		element.addClass("hide-tabs");
+		if( bottomTabs ) element.addClass("tabs-bottom");
 		header = new Element("<div>").addClass("tabs-header").prependTo(element);
 		syncTabs();
 		var t = getTabs()[0];

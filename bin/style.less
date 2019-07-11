@@ -6,10 +6,6 @@ body {
 
 //:focus { outline: none; }
 
-a {
-	text-decoration : none;
-}
-
 ul, li {
 	margin : 0;
 	padding : 0;
@@ -20,6 +16,11 @@ body, td, th, li, p, a, input, select, textarea, body .select2-dropdown {
 	font-family : Verdana, serif;
 	font-size : 9pt;
 	color: #aaa;
+}
+
+a {
+	color : #aaf;
+	text-decoration : none;
 }
 
 canvas {
@@ -445,10 +446,13 @@ input[type=checkbox] {
 			border-top-right-radius: 5px;
 			user-select: none;
 			&.active {
-				background-color : #222;
-				color : #ccc;
+				background-color : #333;
+				color : #bbb;
 				border-bottom-color : #222;
 				border-top-right-radius: 0px;
+			}
+			&.active:hover {
+				background-color : #333;
 			}
 			&:hover {
 				background-color : #282828;
@@ -463,6 +467,25 @@ input[type=checkbox] {
 		&.expand {
 			width: 100%;
 			height: 100%;
+		}
+	}
+}
+
+.hide-tabs.tabs-bottom {
+	>.tabs-header {
+		width:100%;
+		position: fixed;
+		bottom : 0px;
+		padding-top : 0px;
+		padding-bottom : 5px;
+		z-index: 1;
+		&>div {
+			border-top : none;
+			border-top-right-radius: 0;
+			border-bottom-right-radius: 5px;
+			&.active {
+				border-radius: 0px;
+			}
 		}
 	}
 }
@@ -1894,3 +1917,5 @@ div.sp-container {
 	max-height: 800px;
     min-width: 600px;
 }
+
+// CDB view
