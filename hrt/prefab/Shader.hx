@@ -71,7 +71,8 @@ class Shader extends Prefab {
 					drawable.removeShader(shader);
 				}
 			}
-		} else if(ctx.local3d != null) {
+		}
+		if(ctx.local3d != null) {
 			for(m in ctx.local3d.getMaterials()) { // TODO: Only add to self materials, not all children materials
 				m.mainPass.addShader(shader);
 			}
