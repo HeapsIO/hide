@@ -72,7 +72,7 @@
 	"script.api.files" : [],
 	"script.cdbPackage" : "",
 	"script.api" : {
-		"TableName.fieldName" : {
+		"hx _or_ TableName.fieldName" : {
 			"globals" : { "this" : "ThisClass" },
 			"events" : "EventType",
 			"context" : "ContextClass",

@@ -52,7 +52,7 @@ class ScriptChecker {
 					var fields = [];
 					while( path.length > 0 ) {
 						var name = path.join(".");
-						if( constants.exists(name) ) {
+						if( constants != null && constants.exists(name) ) {
 							var value : Dynamic = constants.get(name);
 							for( f in fields )
 								value = Reflect.field(value, f);

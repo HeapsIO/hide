@@ -17,7 +17,7 @@ class Script extends FileView {
 		}
 		originData = sys.io.File.getContent(getPath());
 		if( extension == "hx" ) {
-			script = new hide.comp.ScriptEditor(originData, element);
+			script = new hide.comp.ScriptEditor(originData, new hide.comp.ScriptEditor.ScriptChecker(config,"hx"), element);
 			script.onSave = function() onSave(script.code);
 			script.onChanged = function() {
 				modified = script.code != originData;
