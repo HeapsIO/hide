@@ -177,7 +177,7 @@ class ScriptEditor extends CodeEditor {
 	var checker : ScriptChecker;
 	var checkTypes : Bool;
 
-	public function new( script : String, ?checker : ScriptChecker, ?parent : Element, ?root : Element ) {
+	public function new( script : String, ?checker : ScriptChecker, ?parent : Element, ?root : Element, ?lang ) {
 		if( !INIT_DONE ) {
 			INIT_DONE = true;
 			(monaco.Languages : Dynamic).typescript.javascriptDefaults.setCompilerOptions({ noLib: true, allowNonTsExtensions: true }); // disable js stdlib completion
@@ -188,7 +188,7 @@ class ScriptEditor extends CodeEditor {
 				}
 			});
 		}
-		super(script, "javascript", parent,root);
+		super(script, lang, parent,root);
 		if( checker == null ) {
 			checker = new ScriptChecker(new hide.Config(),"");
 			checkTypes = false;
@@ -225,7 +225,7 @@ class ScriptEditor extends CodeEditor {
 		}];
 	}
 
-	function doCheckScript() {
+	public function doCheckScript() {
 		var script = code;
 		var error = checker.check(script, checkTypes);
 		if( error == null )

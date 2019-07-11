@@ -1597,6 +1597,7 @@ div.sp-container input:hover {
   display: inline-block;
   width: 50%;
 }
+/* Script Editor */
 .codeeditor .codeErrorLine {
   background: #400;
 }
@@ -1613,6 +1614,14 @@ div.sp-container input:hover {
   margin-top: -20px;
   padding: 2px;
   border: 1px solid #A00;
+}
+.script-editor .codeeditor {
+  height: 100%;
+}
+.script-editor div.codeErrorMessage {
+  right: 12px;
+  bottom: 0px;
+  padding: 5px;
 }
 /* Domkit */
 .domkit {

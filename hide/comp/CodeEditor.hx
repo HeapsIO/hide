@@ -9,13 +9,12 @@ class CodeEditor extends Component {
 
 	public function new( code : String, lang : String, ?parent : Element, ?root : Element ) {
 		super(parent,root);
-
 		var root = element;
 		root.addClass("codeeditor");
 		root.on("keydown", function(e) { if( e.keyCode == 27 && root.find(".suggest-widget.visible").length == 0 ) onClose(); e.stopPropagation(); });
 		editor = monaco.Editor.create(root[0],{
 			value : code,
-			language : lang,
+			language : lang == null ? "javascript" : lang,
 			automaticLayout : true,
 			wordWrap : true,
 			minimap : { enabled : false },
