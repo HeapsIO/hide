@@ -57,9 +57,6 @@ class Atlas extends Object2D {
 		var h2dAnim = new h2d.Anim([], fpsAnimation, ctx.local2d);
 		ctx.local2d = h2dAnim;
 		ctx.local2d.name = name;
-		ctx.cleanup = function() {
-			ctx.local2d = null;
-		}
 		updateInstance(ctx);
 		return ctx;
 	}

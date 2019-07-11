@@ -51,7 +51,6 @@ class Text extends Object2D {
 		h2dText.smooth = true;
 		ctx.local2d = h2dText;
 		ctx.local2d.name = name;
-		ctx.cleanup = function() { h2dText = null; }
 		updateInstance(ctx);
 		return ctx;
 	}

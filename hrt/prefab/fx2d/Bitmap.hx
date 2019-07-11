@@ -59,7 +59,6 @@ class Bitmap extends Object2D {
 		bmp.smooth = true;
 		ctx.local2d = bmp;
 		ctx.local2d.name = name;
-		ctx.cleanup = function() { bmp = null; }
 		updateInstance(ctx);
 		return ctx;
 	}

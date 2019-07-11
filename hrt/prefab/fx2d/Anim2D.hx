@@ -14,7 +14,6 @@ class Anim2D extends Object2D {
 	
 	var loop : Bool = false;
 
-	var h2dAnim : h2d.Anim;
 	var tex : h3d.mat.Texture;
 
 	override public function load(v:Dynamic) {
@@ -78,7 +77,6 @@ class Anim2D extends Object2D {
 		var h2dAnim = new h2d.Anim([], fpsAnimation, ctx.local2d);
 		ctx.local2d = h2dAnim;
 		ctx.local2d.name = name;
-		ctx.cleanup = function() { h2dAnim = null; }
 		updateInstance(ctx);
 		return ctx;
 	}
