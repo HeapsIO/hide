@@ -8,6 +8,7 @@ class Text extends Object2D {
 	var size : Int = 12;
 	var cutoff : Float = 0.5;
 	var smoothing : Float = 1 / 32;
+	var align : Int = 0;
 
 	var pathFont : String;
 
@@ -24,6 +25,7 @@ class Text extends Object2D {
 		this.cutoff = v.cutoff;
 		this.smoothing = v.smoothing;
 		this.pathFont = v.pathFont;
+		this.align = v.align;
 	}
 
 	override function save() {
@@ -33,6 +35,7 @@ class Text extends Object2D {
 		o.cutoff = cutoff;
 		o.smoothing = smoothing;
 		o.pathFont = pathFont;
+		o.align = align;
 		return o;
 	}
 
@@ -42,6 +45,15 @@ class Text extends Object2D {
 		h2dText.visible = visible;
 		h2dText.color = h3d.Vector.fromColor(color);
 		h2dText.color.w = 1;
+		
+		h2dText.textAlign = switch (align) {
+			case 1:
+				Center;
+			case 2:
+				Right;
+			default:
+				Left;
+		}
 		if (pathFont != null && pathFont.length > 0) {
 			var font = hxd.res.Loader.currentInstance.load(pathFont).to(hxd.res.BitmapFont);
 			h2dText.font = font.toSdfFont(size, Alpha, cutoff, smoothing);
@@ -71,6 +83,33 @@ class Text extends Object2D {
 		var parameters = new hide.Element('<div class="group" name="Parameters"></div>');
 
 		var gr = new hide.Element('<dl></dl>').appendTo(parameters);
+
+		new hide.Element('<dt>Align</dt>').appendTo(gr);
+		var element = new hide.Element('<dd></dd>').appendTo(gr);
+		var leftAlign = new hide.Element('<input type="button" style="width: 50px" value="Left" /> ').appendTo(element);
+		var middleAlign = new hide.Element('<input type="button" style="width: 50px" value="Center" /> ').appendTo(element);
+		var rightAlign = new hide.Element('<input type="button" style="width: 50px" value="Right" /> ').appendTo(element);
+		leftAlign.on("click", function(e) {
+			align = 0;
+			leftAlign.attr("disabled", "true");
+			middleAlign.removeAttr("disabled");
+			rightAlign.removeAttr("disabled");
+			updateInstance(ctx.getContext(this), "align");
+		});
+		middleAlign.on("click", function(e) {
+			align = 1;
+			leftAlign.removeAttr("disabled");
+			middleAlign.attr("disabled", "true");
+			rightAlign.removeAttr("disabled");
+			updateInstance(ctx.getContext(this), "align");
+		});
+		rightAlign.on("click", function(e) {
+			align = 2;
+			leftAlign.removeAttr("disabled");
+			middleAlign.removeAttr("disabled");
+			rightAlign.attr("disabled", "true");
+			updateInstance(ctx.getContext(this), "align");
+		});
 
 		new hide.Element('<dt>Font</dt>').appendTo(gr);
 		var element = new hide.Element('<dd></dd>').appendTo(gr);
