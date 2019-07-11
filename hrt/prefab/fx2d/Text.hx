@@ -11,6 +11,10 @@ class Text extends Object2D {
 
 	var pathFont : String;
 
+	#if editor
+	var text : String = "";
+	#end
+
 	override public function load(v:Dynamic) {
 		super.load(v);
 		if (v.blendMode == null)
@@ -42,12 +46,17 @@ class Text extends Object2D {
 			var font = hxd.res.Loader.currentInstance.load(pathFont).to(hxd.res.BitmapFont);
 			h2dText.font = font.toSdfFont(size, Alpha, cutoff, smoothing);
 		}
+		#if editor
+			if (propName == "text") {
+				h2dText.text = text;
+			}
+		#end
 	}
 
 	override function makeInstance(ctx:Context):Context {
 		ctx = ctx.clone(this);
 		var h2dText = new h2d.Text(hxd.res.DefaultFont.get(), ctx.local2d);
-		h2dText.text = "Lorem ipsum dolor";
+		h2dText.text = "";
 		h2dText.smooth = true;
 		ctx.local2d = h2dText;
 		ctx.local2d.name = name;
@@ -80,6 +89,13 @@ class Text extends Object2D {
 		new hide.Element('<dt>Smoothing</dt><dd><input type="range" min="0" max="1" field="smoothing" /></dd>').appendTo(gr);
 		
 		ctx.properties.add(parameters, this, function(pname) {
+			ctx.onChange(this, pname);
+		});
+
+		ctx.properties.add(new hide.Element('<div class="group" name="Responsive">
+			<dl>
+				<dt>Text (not saved)</dt><dd><input type="text" field="text" /></dd>
+			</dl></div>'), this, function(pname) {
 			ctx.onChange(this, pname);
 		});
 	}

@@ -153,6 +153,8 @@ class FXEditor extends FileView {
 	var grid : h3d.scene.Graphics;
 	var grid2d : h2d.Graphics;
 
+	var lastPan : h2d.col.Point;
+
 	var timelineLeftMargin = 10;
 	var xScale = 200.;
 	var xOffset = 0.;
@@ -269,6 +271,42 @@ class FXEditor extends FileView {
 			edit.scene = sceneEditor.scene;
 			edit.cleanups = [];
 			data.edit(edit);
+		}
+
+		if (is2D) {
+			var heapsScene = element.find(".heaps-scene");
+
+			heapsScene.on("mousedown", function(e) {
+				lastPan = null;
+			});
+
+			heapsScene.on("mousemove", function(e : js.jquery.Event) {
+				if (e.buttons == 4) { // middle button 
+					if (lastPan == null) {
+						lastPan = new h2d.col.Point(e.clientX, e.clientY);
+						return;
+					}
+					@:privateAccess {
+						scene.s2d.children[0].x += e.clientX - lastPan.x;
+						scene.s2d.children[0].y += e.clientY - lastPan.y;
+					}
+					
+					lastPan = new h2d.col.Point(e.clientX, e.clientY);
+					updateGrid();
+				}
+			});
+
+			// Zoom control
+			heapsScene.on("wheel", function(e) {
+				@:privateAccess {
+					if (e.originalEvent.deltaY < 0) {
+						scene.s2d.children[0].scale(1.1);
+					} else {
+						scene.s2d.children[0].scale(0.9);
+					}
+					updateGrid();
+				}
+			});
 		}
 
 		var scriptElem = element.find(".fx-script");
@@ -1278,8 +1316,6 @@ class FXEditor extends FileView {
 			return;
 		if (is2D) {
 			grid2d = new h2d.Graphics(scene.s2d);
-			grid2d.x = scene.s2d.width / 2;
-			grid2d.y = scene.s2d.height / 2;
 			grid2d.scale(1);
 
 			grid2d.lineStyle(1.0, 12632256, 1.0);
@@ -1287,17 +1323,8 @@ class FXEditor extends FileView {
 			grid2d.lineTo(0, 2000);
 			grid2d.moveTo(-2000, 0);
 			grid2d.lineTo(2000, 0);
-			grid2d.lineStyle(1.0, 8421504, 1.0);
-			for(ix in -4...4) {
-				if (ix == 0) continue;
-				grid2d.moveTo(ix*200, -2000);
-				grid2d.lineTo(ix*200, 2000);
-				grid2d.moveTo(-2000, ix*200);
-				grid2d.lineTo(2000, ix*200);
-
-			}
 			grid2d.lineStyle(0);
-
+			
 			return;
 		}
 
@@ -1369,9 +1396,10 @@ class FXEditor extends FileView {
 		}
 
 		if (grid2d != null) {
-			grid2d.x = scene.s2d.width / 2;
-			grid2d.y = scene.s2d.height / 2;
+			@:privateAccess grid2d.setPosition(scene.s2d.children[0].x, scene.s2d.children[0].y);
 		}
+
+		
 	}
 
 	function onUpdate3D(dt:Float) {
