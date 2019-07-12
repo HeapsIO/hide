@@ -35,6 +35,8 @@ class Curve extends Prefab {
 	public var keyMode : CurveKeyMode = Linear;
 	public var keys : CurveKeys = [];
 
+	public var loop : Bool = false;
+
 	public var duration(get, never): Float;
 	function get_duration() {
 		if(keys.length == 0) return 0.0;
@@ -63,6 +65,8 @@ class Curve extends Prefab {
 		}
 		clampMin = o.clampMin;
 		clampMax = o.clampMax;
+		if(o.loop != null)
+			loop = o.loop;
 		if(o.keyMode != null)
 			keyMode = o.keyMode;
 	}
@@ -84,6 +88,7 @@ class Curve extends Prefab {
 			clampMax: clampMax,
 			keyMode: keyMode,
 			keys: keysDat,
+			loop: loop
 		};
 	}
 
@@ -139,6 +144,9 @@ class Curve extends Prefab {
 			case 1: return keys[0].value;
 			default:
 		}
+
+		if (loop)
+			time = time % keys[keys.length-1].time;
 
 		var idx = -1;
 		for(ik in 0...keys.length) {
@@ -240,6 +248,19 @@ class Curve extends Prefab {
 	}
 
 	#if editor
+	override function edit( ctx : EditContext ) {
+		super.edit(ctx);
+
+		ctx.properties.add(new hide.Element('
+			<div class="group" name="Parameters">
+				<dl>
+					<dt>Loop curve</dt><dd><input type="checkbox" field="loop"/></dd>
+				</dl>
+			</div>'), this, function(pname) {
+			ctx.onChange(this, pname);
+		});
+	}
+
 	override function getHideProps() : HideProps {
 		return { icon : "paint-brush", name : "Curve" };
 	}
