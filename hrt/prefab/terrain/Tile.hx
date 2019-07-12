@@ -34,6 +34,7 @@ class Tile extends h3d.scene.Mesh {
 		this.x = x * terrain.tileSize;
 		this.y = y * terrain.tileSize;
 		name = "tile_" + x + "_" + y;
+		material.mainPass.setPassName("terrain");
 	}
 
 	override function onRemove() {

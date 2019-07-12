@@ -160,6 +160,7 @@ class PbrRenderer extends h3d.scene.pbr.Renderer {
 
 	override function mainDraw() {
 		renderPass(output, get("default"), frontToBack);
+		renderPass(output, get("terrain"));
 		renderPass(output, get("alpha"), backToFront);
 		renderPass(output, get("additive"));
 
