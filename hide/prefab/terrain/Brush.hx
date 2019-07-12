@@ -1,4 +1,5 @@
 package hide.prefab.terrain;
+import h3d.shader.FixedColor;
 import h3d.mat.Stencil;
 import hrt.prefab.l3d.AdvancedDecal;
 using Lambda;
@@ -88,6 +89,10 @@ class BrushPreview extends h3d.scene.Object {
 		shader.fadeEnd = 0;
 		shader.fadePower = 1;
 		shader.emissive = 0;
+		var colorSet = new FixedColor();
+		colorSet.color.set(1,1,1,1);
+		colorSet.USE_ALPHA = false;
+		mesh.material.mainPass.addShader(colorSet);
 		shader.CENTERED = true;
 
 		// Only draw the preview on terrain

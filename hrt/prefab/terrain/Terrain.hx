@@ -376,8 +376,6 @@ class Terrain extends Object3D {
 		terrain.updateSurfaceParams();
 		terrain.refreshAllTex();
 		loadTiles(ctx, true, true, true);
-		for( t in terrain.tiles )
-			t.computeEdgesNormals();
 	}
 
 	override function makeInstance( ctx : Context ) : Context {
