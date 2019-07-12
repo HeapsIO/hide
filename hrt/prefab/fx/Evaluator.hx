@@ -4,8 +4,17 @@ class Evaluator {
 	var randValues : Array<Float> = [];
 	var random: hxd.Rand;
 
+	var vecPool : Array<h3d.Vector> = null;
+	var vecPoolSize = 0;
+
 	public function new(random: hxd.Rand) {
 		this.random = random;
+	}
+
+	public function begin() {
+		if(vecPool == null)
+			vecPool = [];
+		vecPoolSize = 0;
 	}
 
 	public function getFloat(val: Value, time: Float) : Float {
@@ -44,8 +53,18 @@ class Evaluator {
 	}
 
 	public function getVector(v: Value, time: Float, ?vec: h3d.Vector) : h3d.Vector {
-		if(vec == null)
-			vec = new h3d.Vector();
+		if(vec == null) {
+			if(vecPool != null) {
+				if(vecPoolSize < vecPool.length)
+					vec = vecPool[vecPoolSize++];
+				else {
+					vec = new h3d.Vector();
+					vecPool.push(vec);
+				}
+			}
+			else
+				vec = new h3d.Vector();
+		}
 		switch(v) {
 			case VMult(a, b):
 				var av = getVector(a, time);
