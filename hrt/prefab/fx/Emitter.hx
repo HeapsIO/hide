@@ -90,16 +90,19 @@ private class ParticleTransform {
 			absPos.multiply3x4inline(absPos, parent.getAbsPos());
 	}
 
+	static var tmpMat = new h3d.Matrix();
+	static var tmpVec = new h3d.Vector();
 	public function setTransform( mat : h3d.Matrix ) {
-		var s = mat.getScale();
+		var s = mat.getScale(tmpVec);
 		this.x = mat.tx;
 		this.y = mat.ty;
 		this.z = mat.tz;
 		this.scaleX = s.x;
 		this.scaleY = s.y;
 		this.scaleZ = s.z;
-		mat.prependScale(1.0 / s.x, 1.0 / s.y, 1.0 / s.z);
-		qRot.initRotateMatrix(mat);
+		tmpMat.load(mat);
+		tmpMat.prependScale(1.0 / s.x, 1.0 / s.y, 1.0 / s.z);
+		qRot.initRotateMatrix(tmpMat);
 	}
 }
 
@@ -532,6 +535,7 @@ class EmitterObject extends h3d.scene.Object {
 					batch.worldPosition = p.absPos;
 					for( anim in shaderAnims ) {
 						var t = hxd.Math.clamp(p.life / p.lifeTime, 0.0, 1.0);
+						anim.begin();
 						anim.setTime(t);
 					}
 					// Init the start frame for each particle
