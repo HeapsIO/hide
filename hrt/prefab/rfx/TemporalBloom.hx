@@ -160,6 +160,7 @@ class TemporalBloom extends RendererFX {
 
 	override function apply(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
 		if( step == BeforeTonemapping ) {
+			r.mark("TBloom");
 			var pb : TemporalBloomProps = props;
 			var ctx = r.ctx;
 
