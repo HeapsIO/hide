@@ -28,6 +28,11 @@ class UndoHistory {
 		onChange();
 	}
 
+	public function clear() {
+		undoElts = [];
+		redoElts = [];
+	}
+
 	public function undo() {
 		var h = undoElts.pop();
 		return handleElement(h, redoElts);
