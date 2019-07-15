@@ -19,7 +19,7 @@ class ShaderAnimation extends Evaluator {
 			switch(v.type) {
 				case TFloat:
 					var val = getFloat(param.value, time);
-					shader.setParamValue(v, val);
+					shader.setParamFloatValue(v, val);
 				case TInt:
 					var val = hxd.Math.round(getFloat(param.value, time));
 					shader.setParamValue(v, val);

@@ -44,32 +44,27 @@ class FXAnimation extends h3d.scene.Object {
 		}
 	}
 
-	override function syncRec( ctx : h3d.scene.RenderContext ) {
+	override function sync( ctx : h3d.scene.RenderContext ) {
 		for(emitter in emitters)
-			emitter.setParticleVibility(visible && !culled);
+			emitter.setParticleVibility(ctx.visibleFlag);
 
-		#if !editor
+		#if !editor 
 		if(playSpeed > 0) {
-			var curTime = localTime;
-			setTime(curTime);
-
+			var curTime = localTime;			
+			if( ctx.visibleFlag || alwaysSync ) setTime(curTime);
 			localTime += ctx.elapsedTime * playSpeed;
-			if(duration > 0 && curTime < duration && localTime >= duration) {
-				setTime(duration);
-				if(onEnd != null )
+			if( duration > 0 && curTime < duration && localTime >= duration) {
+				localTime = duration;
+				if( onEnd != null )
 					onEnd();
 			}
 		}
 		#end
-
-		super.syncRec(ctx);
 	}
 
 	static var tempMat = new h3d.Matrix();
-	public function setTime( time : Float ) {
+	public function setTime( time : Float ) {		
 		this.localTime = time;
-		if(culled || !visible)
-			return;
 		for(anim in objects) {
 			var m = tempMat;
 			if(anim.scale != null) {

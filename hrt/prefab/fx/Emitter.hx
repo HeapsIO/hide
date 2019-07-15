@@ -311,7 +311,6 @@ class EmitterObject extends h3d.scene.Object {
 	var emitCount = 0;
 	var lastTime = -1.0;
 	var curTime = 0.0;
-	var renderTime = 0.0;
 	var evaluator : Evaluator;
 
 	public function new(?parent) {
@@ -503,7 +502,7 @@ class EmitterObject extends h3d.scene.Object {
 		return Std.int(camPosTmp.distanceSq(p2.absPos.getPosition(p1PosTmp)) - camPosTmp.distanceSq(p1.absPos.getPosition(p2PosTmp)));
 	}
 
-	function tick( dt : Float ) {
+	function tick( dt : Float, full=true) {
 		if( emitRate == null || emitRate == VZero )
 			return;
 
@@ -515,11 +514,9 @@ class EmitterObject extends h3d.scene.Object {
 		if(enable)
 			doEmit(delta);
 
-		#if editor
 		updateParticles(dt);
-		#end
 
-		if( batch != null ) {
+		if( full && batch != null ) {
 			batch.begin(maxCount);
 			if( particleVisibility ) {
 				camPosTmp = getScene().camera.pos;
@@ -563,14 +560,7 @@ class EmitterObject extends h3d.scene.Object {
 				instances[i].update(dt);
 		}
 	}
-
-	override function sync( ctx : h3d.scene.RenderContext ) {
-		renderTime = ctx.time;
-		#if !editor
-		updateParticles(ctx.elapsedTime);
-		#end
-	}
-
+	
 	public function setRandSeed(seed: Int) {
 		randomSeed = seed;
 		reset();
@@ -584,7 +574,7 @@ class EmitterObject extends h3d.scene.Object {
 		var catchup = time - curTime;
 		var numTicks = hxd.Math.round(hxd.Timer.wantedFPS * catchup);
 		for(i in 0...numTicks) {
-			tick(catchup / numTicks);
+			tick(catchup / numTicks, i == (numTicks - 1));
 		}
 	}
 }
