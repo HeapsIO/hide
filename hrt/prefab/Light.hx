@@ -200,7 +200,7 @@ class Light extends Object3D {
 		var light = Std.downcast(ctx.local3d,h3d.scene.pbr.Light);
 		if( light == null ) {
 			// FWD light
-			var light = Std.instance(ctx.local3d, h3d.scene.Light);
+			var light = Std.downcast(ctx.local3d, h3d.scene.Light);
 			light.color.setColor(color | 0xFF000000);
 		} else {
 			// PBR light
