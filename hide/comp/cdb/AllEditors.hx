@@ -10,7 +10,7 @@ class AllEditors extends Editor {
 	}
 
 	function getEditors() : Array<Editor> {
-		return [for( i in ide.getViews(hide.view.CdbTable) ) @:privateAccess i.editor];
+		return [for( e in new Element(".is-cdb-editor").elements() ) e.data("cdb")];
 	}
 
 	override function refresh( ?state : Editor.UndoState ) {

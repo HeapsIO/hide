@@ -341,7 +341,7 @@ class Ide {
 			initializing = false;
 			if( subView == null && views.length == 0 ) {
 				if( isCDB )
-					open("hide.view.CdbTable",{path:null}, function(v) v.fullScreen = true);
+					open("hide.view.CdbTable",{}, function(v) v.fullScreen = true);
 				else
 					open("hide.view.FileTree",{path:""});
 			}
@@ -495,7 +495,6 @@ class Ide {
 
 		databaseFile = config.project.get("cdb.databaseFile");
 		loadDatabase();
-		fileWatcher.register(databaseFile,function() loadDatabase(true));
 		databaseApi = {
 			copy : () -> (database.save() : Any),
 			load : (v:Any) -> database.load((v:String)),
@@ -504,6 +503,13 @@ class Ide {
 			undoState : [], // common
 		};
 		databaseApi.editor = new hide.comp.cdb.AllEditors();
+		fileWatcher.register(databaseFile,function() {
+			loadDatabase(true);
+			databaseApi.editor.refresh();
+			// reset undo (prevent undoing external changes)
+			databaseApi.undo.clear();
+			databaseApi.undoState = [];
+		});
 
 		if( config.project.get("debug.displayErrors")  ) {
 			js.Browser.window.onerror = function(msg, url, line, col, error) {
@@ -621,10 +627,13 @@ class Ide {
 		sys.io.File.saveContent(getPath(databaseFile), database.save());
 	}
 
-	public function createDBSheet() {
+	public function createDBSheet( ?index : Int ) {
 		var value = ask("Sheet name");
 		if( value == "" || value == null ) return null;
-		return database.createSheet(value);
+		var s = database.createSheet(value, index);
+		saveDatabase();
+		databaseApi.editor.refresh();
+		return s;
 	}
 
 	public function makeRelative( path : String ) {
@@ -818,29 +827,17 @@ class Ide {
 
 		// database
 		var db = menu.find(".database");
-		if( database.sheets.length > 0 )
-			new Element("<menu label='All'>").appendTo(db.find(".dbview")).click(function(_) {
-				open("hide.view.CdbTable", {});
-			});
-		for( s in database.sheets ) {
-			if( s.props.hide ) continue;
-			new Element("<menu>").attr("label", s.name).appendTo(db.find(".dbview")).click(function(_) {
-				open("hide.view.CdbTable", { path : s.name });
-			});
-		}
+		db.find(".dbview").click(function(_) {
+			open("hide.view.CdbTable",{});
+		});
 		db.find(".dbnew").click(function(_) {
 			var sheet = createDBSheet();
 			if( sheet == null ) return;
-			open("hide.view.CdbTable",{ path : sheet.name });
+			open("hide.view.CdbTable",{});
 		});
 		db.find(".dbcompress").prop("checked",database.compress).click(function(_) {
 			database.compress = !database.compress;
 			saveDatabase();
-		});
-		db.find(".dbcleanup").click(function(_) {
-			database.cleanup();
-			saveDatabase();
-			message("Cleanup Done");
 		});
 		db.find(".dbexport").click(function(_) {
 			var lang = new cdb.Lang(@:privateAccess database.data);

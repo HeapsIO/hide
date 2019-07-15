@@ -7,3 +7,11 @@
 /bin/*.map
 /bin/shaders
 /out.hl
+/bin/*.pak
+/bin/*.exe
+/bin/*.dll
+/bin/locales
+/bin/swiftshader
+/bin/*.bin
+/bin/credits.html
+/bin/icudtl.dat

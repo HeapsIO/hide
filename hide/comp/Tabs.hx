@@ -25,6 +25,12 @@ class Tabs extends Component {
 		return e;
 	}
 
+	public function getHeader( tab : Element ) {
+		var index = [for( t in getTabs() ) t].indexOf(tab[0]);
+		if( index < 0 ) return null;
+		return header.find('[index=$index]');
+	}
+
 	function set_currentTab( e : Element ) {
 		var index = Std.parseInt(e.attr("index"));
 		getTabs().hide();
@@ -37,6 +43,9 @@ class Tabs extends Component {
 
 	public function getTabs() : Element {
 		return element.children(".tab");
+	}
+
+	public dynamic function onTabRightClick( index : Int ) {
 	}
 
 	public dynamic function onTabChange( index : Int ) {
@@ -53,7 +62,12 @@ class Tabs extends Component {
 			t.attr("index", index);
 			tab.attr("index", index);
 			tab.appendTo(header);
-			tab.click(function(_) currentTab = t);
+			tab.click(function(e) {
+				currentTab = t;
+			}).contextmenu(function(e) {
+				e.preventDefault();
+				onTabRightClick(index);
+			});
 		}
 		if( currentTab != null )
 			this.currentTab = currentTab;

@@ -8,10 +8,10 @@ class CdbTable extends hide.ui.View<{ path : String }> {
 
 	public function new( ?state ) {
 		super(state);
-		updateSheets();
+		syncSheets();
 	}
 
-	function updateSheets() {
+	function syncSheets() {
 		if( state.path == null )
 			sheets = [for( s in ide.database.sheets ) if( !s.props.hide ) s];
 		else {
@@ -28,7 +28,7 @@ class CdbTable extends hide.ui.View<{ path : String }> {
 	}
 
 	function setEditor(index:Int) {
-		updateSheets();
+		syncSheets();
 		if( editor != null )
 			editor.remove();
 		editor = new hide.comp.cdb.Editor(sheets[index],config,ide.databaseApi,tabContents[index]);
@@ -47,7 +47,7 @@ class CdbTable extends hide.ui.View<{ path : String }> {
 			element.find("a").click(function(_) {
 				var sheet = ide.createDBSheet();
 				if( sheet == null ) return;
-				updateSheets();
+				syncSheets();
 				rebuild();
 			});
 			return;
@@ -60,13 +60,18 @@ class CdbTable extends hide.ui.View<{ path : String }> {
 			var sc = new hide.comp.Scrollable(tab);
 			tabContents.push(sc.element);
 		}
-		if( tabs != null )
+		if( tabs != null ) {
 			tabs.onTabChange = setEditor;
+			tabs.onTabRightClick = function(index) {
+				syncSheets();
+				editor.popupSheet(sheets[index], function() { syncSheets(); rebuild(); });
+			};
+		}
 		if( sheets.length > 0 )
 			setEditor(0);
 
 		watch(@:privateAccess ide.databaseFile, () -> {
-			updateSheets();
+			syncSheets();
 			rebuild();
 		});
 	}

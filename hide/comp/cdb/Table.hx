@@ -80,14 +80,18 @@ class Table extends Component {
 			var head = J("<td>").addClass("start").text("" + index);
 			head.appendTo(l);
 			var line = new Line(this, sheet.columns, index, l);
-			l.mousedown(function(e) {
+			head.mousedown(function(e) {
 				if( e.which == 3 ) {
-					head.click();
 					editor.popupLine(line);
 					e.preventDefault();
 					return;
 				}
-			}).click(function(e) {
+			});
+			l.click(function(e) {
+				if( e.which == 3 ) {
+					e.preventDefault();
+					return;
+				}
 				editor.cursor.clickLine(line, e.shiftKey);
 			});
 			line;

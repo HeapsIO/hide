@@ -56,6 +56,8 @@ class Editor extends Component {
 
 	function init() {
 		element.attr("tabindex", 0);
+		element.addClass("is-cdb-editor");
+		element.data("cdb", this);
 		element.on("focus", function(_) onFocus());
 		element.on("blur", function(_) cursor.hide());
 		element.on("keypress", function(e) {
@@ -674,6 +676,93 @@ class Editor extends Component {
 				endChanges();
 				refresh();
 			} }
+		]);
+	}
+
+	function rename( sheet : cdb.Sheet, name : String ) {
+		if( !base.r_ident.match(name) ) {
+			ide.error("Invalid sheet name");
+			return false;
+		}
+		var f = base.getSheet(name);
+		if( f != null ) {
+			if( f != sheet ) ide.error("Sheet name already in use");
+			return false;
+		}
+		beginChanges();
+		var old = sheet.name;
+		sheet.rename(name);
+		base.mapType(function(t) {
+			return switch( t ) {
+			case TRef(o) if( o == old ):
+				TRef(name);
+			case TLayer(o) if( o == old ):
+				TLayer(name);
+			default:
+				t;
+			}
+		});
+
+		for( s in base.sheets )
+			if( StringTools.startsWith(s.name, old + "@") )
+				s.rename(name + "@" + s.name.substr(old.length + 1));
+		endChanges();
+		return true;
+	}
+
+	public function popupSheet( ?sheet : cdb.Sheet, ?onChange : Void -> Void ) {
+		if( sheet == null ) sheet = this.sheet;
+		if( onChange == null ) onChange = function() {}
+		var index = base.sheets.indexOf(sheet);
+		new hide.comp.ContextMenu([
+			{ label : "Add Sheet", click : function() { beginChanges(); ide.createDBSheet(index+1); endChanges(); onChange(); } },
+			{ label : "Move Left", click : function() { beginChanges(); base.moveSheet(sheet,-1); endChanges(); onChange(); } },
+			{ label : "Move Right", click : function() { beginChanges(); base.moveSheet(sheet,1); endChanges(); onChange(); } },
+			{ label : "Rename", click : function() {
+				var name = ide.ask("New name", sheet.name);
+				if( name == null || name == "" || name == sheet.name ) return;
+				if( !rename(sheet, name) ) return;
+				onChange();
+			}},
+			{ label : "Delete", click : function() {
+				beginChanges();
+				base.deleteSheet(sheet);
+				endChanges();
+				onChange();
+			}},
+			{ label : "", isSeparator: true },
+			{ label : "Add Index", checked : sheet.props.hasIndex, click : function() {
+				beginChanges();
+				if( sheet.props.hasIndex ) {
+					for( o in sheet.getLines() )
+						Reflect.deleteField(o, "index");
+					sheet.props.hasIndex = false;
+				} else {
+					for( c in sheet.columns )
+						if( c.name == "index" ) {
+							ide.error("Column 'index' already exists");
+							return;
+						}
+					sheet.props.hasIndex = true;
+				}
+				endChanges();
+			}},
+			{ label : "Add Group", checked : sheet.props.hasGroup, click : function() {
+				beginChanges();
+				if( sheet.props.hasGroup ) {
+					for( o in sheet.getLines() )
+						Reflect.deleteField(o, "group");
+					sheet.props.hasGroup = false;
+				} else {
+					for( c in sheet.columns )
+						if( c.name == "group" ) {
+							ide.error("Column 'group' already exists");
+							return;
+						}
+					sheet.props.hasGroup = true;
+				}
+				endChanges();
+			}},
 		]);
 	}
 
