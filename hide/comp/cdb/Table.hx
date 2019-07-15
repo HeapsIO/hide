@@ -156,9 +156,14 @@ class Table extends Component {
 		}
 		element.append(tbody);
 
-		if( sheet.lines.length == 0 ) {
-			var l = J('<tr><td colspan="${sheet.columns.length + 1}"><a>Insert Line</a></td></tr>');
-			l.find("a").click(function(_) {
+		if( colCount == 0 ) {
+			var l = J('<tr><td><input type="button" value="Add a column"/></td></tr>').find("input").click(function(_) {
+				editor.newColumn(sheet);
+			});
+			element.append(l);
+		} else if( sheet.lines.length == 0 ) {
+			var l = J('<tr><td colspan="${sheet.columns.length + 1}"><input type="button" value="Insert Line"/></td></tr>');
+			l.find("input").click(function(_) {
 				editor.insertLine(this);
 				editor.cursor.set(this);
 			});

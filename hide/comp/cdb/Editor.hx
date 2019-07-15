@@ -423,11 +423,6 @@ class Editor extends Component {
 			cursor.load(c);
 		});
 
-		if( sheet.columns.length == 0 ) {
-			new Element("<input type='button' value='Add a column'/>").appendTo(element).click(function(_) newColumn(sheet));
-			return;
-		}
-
 		var content = new Element("<table>");
 		tables = [];
 		new Table(this, sheet, content, displayMode);
