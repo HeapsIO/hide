@@ -424,9 +424,7 @@ class Editor extends Component {
 		});
 
 		if( sheet.columns.length == 0 ) {
-			new Element("<a>Add a column</a>").appendTo(element).click(function(_) {
-				newColumn(sheet);
-			});
+			new Element("<input type='button' value='Add a column'/>").appendTo(element).click(function(_) newColumn(sheet));
 			return;
 		}
 
@@ -490,6 +488,8 @@ class Editor extends Component {
 		if (err != null) {
 			return err;
 		}
+		if( sheet.columns.length == 1 )
+			refresh();
 		for( t in tables )
 			if( t.sheet == sheet )
 				t.refresh();
@@ -593,38 +593,26 @@ class Editor extends Component {
 			}
 			indexColumn++;
 		}
-		var menu : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
-		if( col.type == TString && col.kind == Script )
-			menu.push({ label : "Edit all", click : function() editScripts(table,col) });
-
-		menu.push({ label : "Edit", click : function () {
-				editColumn(table.sheet, col);
-			}
-		});
-
-		menu.push({ label : "Add Column", click : function () {
-				newColumn(table.sheet, indexColumn);
-			}
-		});
-
-		menu.push({ label: "sep", isSeparator: true });
-		menu.push({ label : "Move Left", enabled:  (indexColumn > 0), click : function () {
+		var menu : Array<hide.comp.ContextMenu.ContextMenuItem> = [
+			{ label : "Edit", click : function () editColumn(table.sheet, col) },
+			{ label : "Add Column", click : function () newColumn(table.sheet, indexColumn) },
+			{ label : "", isSeparator: true },
+			{ label : "Move Left", enabled:  (indexColumn > 0), click : function () {
 				moveColumnLeft(table.sheet, indexColumn);
-				table.refresh();
-			}
-		});
-		menu.push({ label : "Move Right", enabled: (indexColumn < table.sheet.columns.length - 1), click : function () {
+				refresh();
+			}},
+			{ label : "Move Right", enabled: (indexColumn < table.sheet.columns.length - 1), click : function () {
 				moveColumnRight(table.sheet, indexColumn);
-				table.refresh();
-			}
-		});
-		menu.push({ label: "sep", isSeparator: true });
-
-		menu.push({ label : "Delete", click : function () {
+				refresh();
+			}},
+			{ label: "", isSeparator: true },
+			{ label : "Delete", click : function () {
 				deleteColumn(table.sheet, col.name);
-				table.refresh();
-			}
-		});
+				refresh();
+			}}
+		];
+		if( col.type == TString && col.kind == Script )
+			menu.insert(1,{ label : "Edit all", click : function() editScripts(table,col) });
 		new hide.comp.ContextMenu(menu);
 	}
 
