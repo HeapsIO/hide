@@ -74,7 +74,7 @@ class Polygon extends Object3D {
 		return cache;
 	}
 
-	function makePrimitive() {
+	public function makePrimitive() {
 
 		if(shape == Custom) {
 			#if editor
