@@ -28,7 +28,7 @@ class Polygon extends Object3D {
 				obj.args = shape.getParameters();
 			case Custom:
 				obj.kind = 2;
-				obj.points = points;
+				obj.points = [for( p in points ) { x : p.x, y : p.y }];
 		}
 		#if editor
 		obj.debugColor = debugColor;
