@@ -139,7 +139,7 @@ private class ParticleInstance  {
 		}
 		this.def = def;
 		this.emitter = emitter;
-		this.evaluator = new Evaluator(emitter.random);
+		this.evaluator = emitter.evaluator;
 		emitter.instances.push(this);
 	}
 
@@ -560,7 +560,7 @@ class EmitterObject extends h3d.scene.Object {
 				instances[i].update(dt);
 		}
 	}
-	
+
 	public function setRandSeed(seed: Int) {
 		randomSeed = seed;
 		reset();
