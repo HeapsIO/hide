@@ -18,6 +18,7 @@ class FXAnimation extends h3d.scene.Object {
 	public var constraints : Array<hrt.prefab.Constraint> = [];
 	public var script : hrt.prefab.fx.FXScript;
 
+	public var vecPool = new Evaluator.VecPool();
 	var evaluator : Evaluator;
 	var random : hxd.Rand;
 
@@ -25,6 +26,7 @@ class FXAnimation extends h3d.scene.Object {
 		super(parent);
 		random = new hxd.Rand(Std.random(0xFFFFFF));
 		evaluator = new Evaluator(random);
+		evaluator.vecPool = vecPool;
 		name = "FXAnimation";
 		setTime(0);
 	}
@@ -65,6 +67,7 @@ class FXAnimation extends h3d.scene.Object {
 	static var tempMat = new h3d.Matrix();
 	public function setTime( time : Float ) {		
 		this.localTime = time;
+		vecPool.begin();
 		for(anim in objects) {
 			var m = tempMat;
 			if(anim.scale != null) {
@@ -290,6 +293,8 @@ class FX extends BaseFX {
 		getObjAnimations(ctx, this, fxanim.objects);
 		BaseFX.getShaderAnims(ctx, this, fxanim.shaderAnims);
 		getEmitters(ctx, this, fxanim.emitters);
+		for(s in fxanim.shaderAnims)
+			s.vecPool = fxanim.vecPool;
 
 		if(scriptCode != null && scriptCode != ""){
 			var parser = new FXScriptParser();

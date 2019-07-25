@@ -139,7 +139,8 @@ private class ParticleInstance  {
 		}
 		this.def = def;
 		this.emitter = emitter;
-		this.evaluator = emitter.evaluator;
+		this.evaluator = new Evaluator(emitter.random);
+		evaluator.vecPool = this.emitter.vecPool;
 		emitter.instances.push(this);
 	}
 
@@ -312,12 +313,14 @@ class EmitterObject extends h3d.scene.Object {
 	var lastTime = -1.0;
 	var curTime = 0.0;
 	var evaluator : Evaluator;
+	var vecPool = new Evaluator.VecPool();
 
 	public function new(?parent) {
 		super(parent);
 		randomSeed = Std.random(0xFFFFFF);
 		random = new hxd.Rand(randomSeed);
 		evaluator = new Evaluator(random);
+		evaluator.vecPool = vecPool;
 		invTransform = new h3d.Matrix();
 		reset();
 	}
@@ -475,6 +478,9 @@ class EmitterObject extends h3d.scene.Object {
 				if( shCtx == null ) continue;
 				hrt.prefab.fx.BaseFX.getShaderAnims(template, shader, shaderAnims);
 			}
+			for(s in shaderAnims) {
+				s.vecPool = vecPool;
+			}
 
 			// Animated textures animations
 			var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
@@ -508,6 +514,7 @@ class EmitterObject extends h3d.scene.Object {
 
 		invTransform.load(parent.getAbsPos());
 		invTransform.invert();
+		vecPool.begin();
 
 		var emitTarget = evaluator.getSum(emitRate, curTime);
 		var delta = hxd.Math.ceil(hxd.Math.min(maxCount - instances.length, emitTarget - emitCount));
@@ -532,7 +539,6 @@ class EmitterObject extends h3d.scene.Object {
 					batch.worldPosition = p.absPos;
 					for( anim in shaderAnims ) {
 						var t = hxd.Math.clamp(p.life / p.lifeTime, 0.0, 1.0);
-						anim.begin();
 						anim.setTime(t);
 					}
 					// Init the start frame for each particle
