@@ -37,6 +37,7 @@ class DistanceFog extends RendererFX {
 	override function apply(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
 		var p : DistanceFogProps = props;
 		if( (step == AfterTonemapping && p.renderMode == "AfterTonemapping") || (step == BeforeTonemapping && p.renderMode == "BeforeTonemapping") ) {
+			r.mark("DistanceFog");
 			var ctx = r.ctx;
 			var depth : hxsl.ChannelTexture = ctx.getGlobal("depthMap");
 
