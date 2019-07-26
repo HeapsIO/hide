@@ -221,6 +221,8 @@ class MeshGenerator extends Object3D {
 
 	}
 
+	#if editor
+
 	function generate( ctx : EditContext, mp : MeshPart, maxDepth : Int, curDepth : Int) {
 		if( curDepth >  maxDepth ) return;
 		curDepth++;
@@ -231,7 +233,6 @@ class MeshGenerator extends Object3D {
 			generate(ctx, cmp, maxDepth, curDepth);
 	}
 
-	#if editor
 
 	function createEmptyMeshPart( ctx : Context, mp : MeshPart ) {
 		var sl = getSocketListFromHMD(getHMD(ctx, mp.meshPath));
@@ -420,7 +421,7 @@ class MeshGenerator extends Object3D {
 				}
 			}
 		}
-		if( available.length == 0 ) 
+		if( available.length == 0 )
 			return null;
 		return available[hxd.Math.round(hxd.Math.random() * (available.length - 1))];
 	}
