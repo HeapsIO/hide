@@ -203,7 +203,13 @@ class Curve extends Prefab {
 		return y;
 	}
 
-	public function getSum(time: Float) {
+	public function getSum(time: Float) : Float {
+		var duration = keys[keys.length-1].time;
+		if(loop && time > duration) {
+			var cycles = Math.floor(time / duration);
+			return getSum(duration) * cycles + getSum(time - cycles);
+		}
+
 		var sum = 0.0;
 		for(ik in 0...keys.length) {
 			var key = keys[ik];
