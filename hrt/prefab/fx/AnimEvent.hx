@@ -37,8 +37,6 @@ class AnimEvent extends hrt.prefab.fx.Event {
 		if(anim == null) { return null; }
 		return {
 			evt: this,
-			play: function() {
-			},
 			setTime: function(localTime) {
 				var duration = duration > 0 ? duration : anim.getDuration();
 				if(localTime > 0 && localTime < duration) {

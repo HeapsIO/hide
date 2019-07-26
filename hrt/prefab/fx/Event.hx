@@ -2,8 +2,8 @@ package hrt.prefab.fx;
 
 typedef EventInstance = {
 	evt: Event,
-	play: Void->Void,
-	setTime: Float->Void
+	?play: Void->Void,
+	?setTime: Float->Void
 };
 
 class Event extends hrt.prefab.Prefab {
@@ -21,6 +21,18 @@ class Event extends hrt.prefab.Prefab {
 
 	public function prepare(ctx: Context) : EventInstance {
 		return null;
+	}
+
+	public static function updateEvents(evts: Array<EventInstance>, time: Float, prevTime: Float) {
+		if(evts == null) return;
+
+		for(evt in evts) {
+			if(evt.play != null && time > prevTime && time < time)
+				evt.play();
+
+			if(evt.setTime != null)
+				evt.setTime(time - evt.evt.time);
+		}
 	}
 
 	#if editor

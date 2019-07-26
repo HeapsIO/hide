@@ -72,8 +72,6 @@ class BaseFX extends hrt.prefab.Library {
 		duration = obj.duration == null ? 5.0 : obj.duration;
 	}
 
-	public function refreshObjectAnims(ctx: Context) { }
-
 	public static function makeShaderParams(ctx: Context, shaderElt: hrt.prefab.Shader) {
 		shaderElt.loadShaderDef(ctx);
 		var shaderDef = shaderElt.shaderDef;
@@ -156,12 +154,7 @@ class BaseFX extends hrt.prefab.Library {
 		return null;
 	}
 
-	function getConstraints( ctx : Context, elt : PrefabElement, constraints : Array<hrt.prefab.Constraint>){
-		var co = Std.downcast(elt, hrt.prefab.Constraint);
-		if(co != null)
-			constraints.push(co);
-		else
-			for(c in elt.children)
-				getConstraints(ctx, c, constraints);
-	}
-} 
+	#if editor
+	public function refreshObjectAnims(ctx: Context) { }
+	#end
+}

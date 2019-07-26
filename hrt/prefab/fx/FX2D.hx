@@ -34,7 +34,7 @@ class FX2DAnimation extends h2d.Object {
 	}
 
 	public function setTime( time : Float ) {
-		
+
 		this.localTime = time;
 
 		for(anim in objects) {
@@ -68,7 +68,7 @@ class FX2DAnimation extends h2d.Object {
 							drawable.color = evaluator.getVector(anim.color, time);
 				}
 			}
-			
+
 			var atlas : Dynamic = Std.downcast(anim.elt2d, hrt.prefab.fx2d.Atlas);
 			if (atlas == null) {
 				atlas = Std.downcast(anim.elt2d, hrt.prefab.fx2d.Anim2D);
@@ -99,7 +99,7 @@ class FX2DAnimation extends h2d.Object {
 }
 
 class FX2D extends BaseFX {
-	
+
 	var loop : Bool = false;
 	var startLoop : Float = 0.0;
 
@@ -122,17 +122,11 @@ class FX2D extends BaseFX {
 		startLoop = obj.startLoop;
 	}
 
-	override public function refreshObjectAnims(ctx: Context) {
-		var fxanim = Std.downcast(ctx.local2d, FX2DAnimation);
-		fxanim.objects = [];
-		getObjAnimations(ctx, this, fxanim.objects);
-	}
-
 	function getObjAnimations(ctx:Context, elt: PrefabElement, anims: Array<ObjectAnimation>) {
 		for(c in elt.children) {
 			getObjAnimations(ctx, c, anims);
 		}
-		
+
 		var obj2d = elt.to(hrt.prefab.Object2D);
 		if(obj2d == null)
 			return;
@@ -246,6 +240,12 @@ class FX2D extends BaseFX {
 	}
 
 	#if editor
+	override function refreshObjectAnims(ctx: Context) {
+		var fxanim = Std.downcast(ctx.local2d, FX2DAnimation);
+		fxanim.objects = [];
+		getObjAnimations(ctx, this, fxanim.objects);
+	}
+
 	override function edit( ctx : EditContext ) {
 		var props = new hide.Element('
 			<div class="group" name="FX2D Scene">

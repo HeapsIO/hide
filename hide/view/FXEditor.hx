@@ -73,7 +73,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		var allTypes = super.getNewContextMenu(current, onMake);
 
 		var menu = [];
-		if (@:privateAccess parent.is2D) {
+		if (parent.is2D) {
 			for(name in ["Group 2D", "Bitmap", "Anim2D", "Atlas", "Text", "Shaders", "Shader Graph", "Placeholder"]) {
 				var item = allTypes.find(i -> i.label == name);
 				if(item == null) continue;
@@ -119,6 +119,17 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 			});
 			menu.sort(function(l1,l2) return Reflect.compare(l1.label,l2.label));
 		}
+
+		var events = allTypes.filter(i -> StringTools.endsWith(i.label, "Event"));
+		if(events.length > 0) {
+			menu.push({
+				label: "Events",
+				menu: events
+			});
+			for(e in events)
+				allTypes.remove(e);
+		}
+
 		menu.push({label: null, isSeparator: true});
 		menu.push({
 			label: "Other",

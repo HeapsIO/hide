@@ -4,6 +4,7 @@ import hrt.prefab.Prefab as PrefabElement;
 import hrt.prefab.fx.BaseFX.ObjectAnimation;
 import hrt.prefab.fx.BaseFX.ShaderAnimation;
 
+@:allow(hrt.prefab.fx.FX)
 class FXAnimation extends h3d.scene.Object {
 
 	public var onEnd : Void -> Void;
@@ -12,10 +13,11 @@ class FXAnimation extends h3d.scene.Object {
 	public var duration : Float;
 	public var cullingRadius : Float;
 
-	public var objects: Array<ObjectAnimation> = [];
+	public var objAnims: Array<ObjectAnimation>;
+	public var events: Array<hrt.prefab.fx.Event.EventInstance>;
+	public var emitters : Array<hrt.prefab.fx.Emitter.EmitterObject>;
 	public var shaderAnims : Array<ShaderAnimation> = [];
-	public var emitters : Array<hrt.prefab.fx.Emitter.EmitterObject> = [];
-	public var constraints : Array<hrt.prefab.Constraint> = [];
+	public var constraints : Array<hrt.prefab.Constraint>;
 	public var script : hrt.prefab.fx.FXScript;
 
 	public var vecPool = new Evaluator.VecPool();
@@ -31,28 +33,39 @@ class FXAnimation extends h3d.scene.Object {
 		setTime(0);
 	}
 
+	function init(ctx: Context, prefab: FX) {
+		initObjAnimations(ctx, prefab);
+		initEmitters(ctx, prefab);
+		BaseFX.getShaderAnims(ctx, prefab, shaderAnims);
+		for(s in shaderAnims)
+			s.vecPool = vecPool;
+	}
+
 	override function onRemove() {
 		super.onRemove();
-		for(obj in objects)
-			obj.obj.remove();
-		for(emitter in emitters)
-			emitter.reset();
+		if(objAnims != null)
+			for(obj in objAnims)
+				obj.obj.remove();
+		if(emitters != null)
+			for(emitter in emitters)
+				emitter.reset();
 	}
 
 	public function setRandSeed(seed: Int) {
 		random.init(seed);
-		for(em in emitters) {
-			em.setRandSeed(seed);
-		}
+		if(emitters != null)
+			for(em in emitters)
+				em.setRandSeed(seed);
 	}
 
 	override function sync( ctx : h3d.scene.RenderContext ) {
-		for(emitter in emitters)
-			emitter.setParticleVibility(ctx.visibleFlag);
+		if(emitters != null)
+			for(emitter in emitters)
+				emitter.setParticleVibility(ctx.visibleFlag);
 
-		#if !editor 
+		#if !editor
 		if(playSpeed > 0) {
-			var curTime = localTime;			
+			var curTime = localTime;
 			if( ctx.visibleFlag || alwaysSync ) setTime(curTime);
 			localTime += ctx.elapsedTime * playSpeed;
 			if( duration > 0 && curTime < duration && localTime >= duration) {
@@ -65,127 +78,80 @@ class FXAnimation extends h3d.scene.Object {
 	}
 
 	static var tempMat = new h3d.Matrix();
-	public function setTime( time : Float ) {		
+	public function setTime( time : Float ) {
+		var prevTime = this.localTime;
 		this.localTime = time;
 		vecPool.begin();
-		for(anim in objects) {
-			var m = tempMat;
-			if(anim.scale != null) {
-				var scale = evaluator.getVector(anim.scale, time);
-				m.initScale(scale.x, scale.y, scale.z);
-			}
-			else
-				m.identity();
+		if(objAnims != null) {
+			for(anim in objAnims) {
+				if(anim.scale != null || anim.rotation != null || anim.position != null) {
+					var m = tempMat;
+					if(anim.scale != null) {
+						var scale = evaluator.getVector(anim.scale, time);
+						m.initScale(scale.x, scale.y, scale.z);
+					}
+					else
+						m.identity();
 
-			if(anim.rotation != null) {
-				var rotation = evaluator.getVector(anim.rotation, time);
-				rotation.scale3(Math.PI / 180.0);
-				m.rotate(rotation.x, rotation.y, rotation.z);
-			}
+					if(anim.rotation != null) {
+						var rotation = evaluator.getVector(anim.rotation, time);
+						rotation.scale3(Math.PI / 180.0);
+						m.rotate(rotation.x, rotation.y, rotation.z);
+					}
 
-			var baseMat = anim.elt.getTransform();
-			var offset = baseMat.getPosition();
-			baseMat.tx = baseMat.ty = baseMat.tz = 0.0;  // Ignore
-			m.multiply(baseMat, m);
-			m.translate(offset.x, offset.y, offset.z);
+					var baseMat = anim.elt.getTransform();
+					var offset = baseMat.getPosition();
+					baseMat.tx = baseMat.ty = baseMat.tz = 0.0;  // Ignore
+					m.multiply(baseMat, m);
+					m.translate(offset.x, offset.y, offset.z);
 
-			if(anim.position != null) {
-				var pos = evaluator.getVector(anim.position, time);
-				m.translate(pos.x, pos.y, pos.z);
-			}
+					if(anim.position != null) {
+						var pos = evaluator.getVector(anim.position, time);
+						m.translate(pos.x, pos.y, pos.z);
+					}
 
-			anim.obj.setTransform(m);
-
-			if(anim.visibility != null)
-				anim.obj.visible = anim.elt.visible && evaluator.getFloat(anim.visibility, time) > 0.5;
-
-			if(anim.color != null) {
-				switch(anim.color) {
-					case VCurve(a):
-						for(mat in anim.obj.getMaterials())
-							mat.color.a = evaluator.getFloat(anim.color, time);
-					default:
-						for(mat in anim.obj.getMaterials())
-							mat.color = evaluator.getVector(anim.color, time);
+					anim.obj.setTransform(m);
 				}
-			}
 
-			if(anim.events != null) {
-				for(evt in anim.events) {
-					evt.setTime(time - evt.evt.time);
+				if(anim.visibility != null)
+					anim.obj.visible = anim.elt.visible && evaluator.getFloat(anim.visibility, time) > 0.5;
+
+				if(anim.color != null) {
+					switch(anim.color) {
+						case VCurve(a):
+							for(mat in anim.obj.getMaterials())
+								mat.color.a = evaluator.getFloat(anim.color, time);
+						default:
+							for(mat in anim.obj.getMaterials())
+								mat.color = evaluator.getVector(anim.color, time);
+					}
 				}
+				Event.updateEvents(anim.events, time, prevTime);
 			}
 		}
 
-		for(anim in shaderAnims) {
-			anim.setTime(time);
+		if(shaderAnims != null)
+			for(anim in shaderAnims)
+				anim.setTime(time);
+
+		if(emitters != null) {
+			for(em in emitters) {
+				if(em.visible)
+					em.setTime(time);
+			}
 		}
 
-		for(em in emitters) {
-			if(em.visible)
-				em.setTime(time);
-		}
+		Event.updateEvents(events, time, prevTime);
 
 		if(script != null)
 			script.update();
 	}
 
-	public function resolveConstraints( caster : h3d.scene.Object ) {
-		for( co in constraints ) {
-			if( !co.enabled )
-		 		continue;
-
-			var objectName = co.object.split(".").pop();
-			var targetName = co.target.split(".").pop();
-
-			var isInFX = co.object.split(".")[1] == "FXRoot";
-			var srcObj = objectName == "FXRoot" ? this : isInFX ? this.getObjectByName(objectName) : caster.getObjectByName(objectName);
-			var targetObj = caster.getObjectByName(targetName);
-			if(targetObj == null)
-				targetObj = caster;
-			if( srcObj != null && targetObj != null ){
-				srcObj.follow = targetObj;
-				srcObj.followPositionOnly = co.positionOnly;
-			}
-			else
-				trace ("Failed te resolve constraint for FX : " + name);
-		}
-	}
-}
-
-class FX extends BaseFX {
-
-	public function new() {
-		super();
-		type = "fx";
-		cullingRadius = 3.0;
-	}
-
-	override function save() {
-		var obj : Dynamic = super.save();
-		obj.cullingRadius = cullingRadius;
-		if( scriptCode != "" ) obj.scriptCode = scriptCode;
-		return obj;
-	}
-
-	override function load( obj : Dynamic ) {
-		super.load(obj);
-		if(obj.cullingRadius != null)
-			cullingRadius = obj.cullingRadius;
-		scriptCode = obj.scriptCode;
-	}
-
-	override public function refreshObjectAnims(ctx: Context) {
-		var fxanim = Std.downcast(ctx.local3d, FXAnimation);
-		fxanim.objects = [];
-		getObjAnimations(ctx, this, fxanim.objects);
-	}
-
-	static function getObjAnimations(ctx:Context, elt: PrefabElement, anims: Array<ObjectAnimation>) {
+	function initObjAnimations(ctx:Context, elt: PrefabElement) {
 		if(Std.downcast(elt, hrt.prefab.fx.Emitter) == null) {
 			// Don't extract animations for children of Emitters
 			for(c in elt.children) {
-				getObjAnimations(ctx, c, anims);
+				initObjAnimations(ctx, c);
 			}
 		}
 
@@ -240,7 +206,8 @@ class FX extends BaseFX {
 			visibility: makeVal("visibility", null),
 		};
 
-		for(evt in elt.getAll(Event)) {
+		var childEvents = [for(c in elt.children) if(c.to(Event) != null) c.to(Event)];
+		for(evt in childEvents) {
 			var eventObj = evt.prepare(objCtx);
 			if(eventObj == null) continue;
 			if(anim.events == null) anim.events = [];
@@ -248,23 +215,82 @@ class FX extends BaseFX {
 			anyFound = true;
 		}
 
-		if(anyFound)
-			anims.push(anim);
+		if(anyFound) {
+			if(objAnims == null) objAnims = [];
+			objAnims.push(anim);
+		}
 	}
 
-	function getEmitters(ctx: Context, elt: PrefabElement, emitters: Array<hrt.prefab.fx.Emitter.EmitterObject>) {
+	function initEmitters(ctx: Context, elt: PrefabElement) {
 		var em = Std.downcast(elt, hrt.prefab.fx.Emitter);
 		if(em != null)  {
 			for(emCtx in ctx.shared.getContexts(elt)) {
 				if(emCtx.local3d == null) continue;
+				if(emitters == null) emitters = [];
 				emitters.push(cast emCtx.local3d);
 			}
 		}
 		else {
 			for(c in elt.children) {
-				getEmitters(ctx, c, emitters);
+				initEmitters(ctx, c);
 			}
 		}
+	}
+
+	function initConstraints( ctx : Context, elt : PrefabElement ){
+		var co = Std.downcast(elt, hrt.prefab.Constraint);
+		if(co != null) {
+			if(constraints == null) constraints = [];
+			constraints.push(co);
+		}
+		else
+			for(c in elt.children)
+				initConstraints(ctx, c);
+	}
+
+	public function resolveConstraints( caster : h3d.scene.Object ) {
+		for( co in constraints ) {
+			if( !co.enabled )
+		 		continue;
+
+			var objectName = co.object.split(".").pop();
+			var targetName = co.target.split(".").pop();
+
+			var isInFX = co.object.split(".")[1] == "FXRoot";
+			var srcObj = objectName == "FXRoot" ? this : isInFX ? this.getObjectByName(objectName) : caster.getObjectByName(objectName);
+			var targetObj = caster.getObjectByName(targetName);
+			if(targetObj == null)
+				targetObj = caster;
+			if( srcObj != null && targetObj != null ){
+				srcObj.follow = targetObj;
+				srcObj.followPositionOnly = co.positionOnly;
+			}
+			else
+				trace ("Failed te resolve constraint for FX : " + name);
+		}
+	}
+}
+
+class FX extends BaseFX {
+
+	public function new() {
+		super();
+		type = "fx";
+		cullingRadius = 3.0;
+	}
+
+	override function save() {
+		var obj : Dynamic = super.save();
+		obj.cullingRadius = cullingRadius;
+		if( scriptCode != "" ) obj.scriptCode = scriptCode;
+		return obj;
+	}
+
+	override function load( obj : Dynamic ) {
+		super.load(obj);
+		if(obj.cullingRadius != null)
+			cullingRadius = obj.cullingRadius;
+		scriptCode = obj.scriptCode;
 	}
 
 	override function make( ctx : Context ) : Context {
@@ -284,17 +310,13 @@ class FX extends BaseFX {
 				var co = Std.downcast(c , Constraint);
 				if(co == null) c.make(ctx);
 			}
-			getConstraints(ctx, root, fxanim.constraints);
+			fxanim.initConstraints(ctx, root);
 		}
 		else
 			super.make(ctx);
 		#end
 
-		getObjAnimations(ctx, this, fxanim.objects);
-		BaseFX.getShaderAnims(ctx, this, fxanim.shaderAnims);
-		getEmitters(ctx, this, fxanim.emitters);
-		for(s in fxanim.shaderAnims)
-			s.vecPool = fxanim.vecPool;
+		fxanim.init(ctx, this);
 
 		if(scriptCode != null && scriptCode != ""){
 			var parser = new FXScriptParser();
@@ -317,6 +339,13 @@ class FX extends BaseFX {
 	}
 
 	#if editor
+
+	override function refreshObjectAnims(ctx: Context) {
+		var fxanim = Std.downcast(ctx.local3d, FXAnimation);
+		fxanim.objAnims = null;
+		fxanim.initObjAnimations(ctx, this);
+	}
+
 	override function edit( ctx : EditContext ) {
 		var props = new hide.Element('
 			<div class="group" name="FX Scene">
