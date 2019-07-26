@@ -26,6 +26,23 @@ class MeshPart {
 		socket = new Socket();
 	}
 
+	public function clone() : MeshPart {
+		var clone = new MeshPart();
+		clone.socket.name = socket.name;
+		clone.socket.type = socket.type;
+		clone.meshPath = meshPath;
+		clone.childParts = childParts.copy();
+		clone.childParts.reverse();
+		return clone;
+	}
+
+	public function loadFrom( mp : MeshPart ) {
+		socket.name = mp.socket.name;
+		socket.type = mp.socket.type;
+		meshPath = mp.meshPath;
+		childParts = mp.childParts.copy();
+	}
+
 	public function save() {
 		var o : Dynamic = {};
 		o.socket = { type : socket.type, name : socket.name };
@@ -75,7 +92,10 @@ class MeshGenerator extends Object3D {
 	static var filterInit = false;
 	static var filter : Array<String> = [];
 	static var customScene : h3d.scene.Scene;
+	var undo : hide.ui.UndoHistory;
 	#end
+
+	public var maxDepth = 1;
 
 	override function save() {
 		var obj : Dynamic = super.save();
@@ -195,6 +215,20 @@ class MeshGenerator extends Object3D {
 			}
 		}
 		return null;
+	}
+
+	function getMaxDepth( hmd : hxd.fmt.hmd.Library ) {
+
+	}
+
+	function generate( ctx : EditContext, mp : MeshPart, maxDepth : Int, curDepth : Int) {
+		if( curDepth >  maxDepth ) return;
+		curDepth++;
+		mp.meshPath = getRandomMeshPath(ctx.scene.config, mp.socket);
+		if( root.meshPath == null ) return;
+		mp.childParts = createMeshParts(getSocketListFromHMD(getHMD(ctx.rootContext, mp.meshPath)));
+		for( cmp in mp.childParts )
+			generate(ctx, cmp, maxDepth, curDepth);
 	}
 
 	#if editor
@@ -370,6 +404,27 @@ class MeshGenerator extends Object3D {
 		return ctx.ide.getPath(".tmp/meshGeneratorData/"+ extractMeshName(meshPath) +"_thumbnail.png");
 	}
 
+	function getRandomMeshPath( config : hide.Config, socket : Socket ) : String {
+		var available : Array<String> = [];
+		for( f in filter ) {
+			var meshList : Array<Dynamic> = config.get("meshGenerator." + f);
+			if( meshList == null ) continue;
+			for( m in meshList ) {
+				var sockets : Array<String> = m.socket;
+				if( sockets == null || sockets.length == 0 ) continue;
+				for( s in sockets ) {
+					if( s == socket.type ) {
+						available.push(m.path);
+						break;
+					}
+				}
+			}
+		}
+		if( available.length == 0 ) 
+			return null;
+		return available[hxd.Math.round(hxd.Math.random() * (available.length - 1))];
+	}
+
 	function fillSelectMenu( ctx : EditContext, select : hide.Element, socket : Socket ) {
 		for( f in filter ) {
 			var meshList : Array<Dynamic> = ctx.scene.config.get("meshGenerator." + f);
@@ -407,10 +462,18 @@ class MeshGenerator extends Object3D {
 			fillSelectMenu(ctx, select, mp.socket);
 			if( mp.meshPath != null && select.find('option[value="${mp.meshPath}"]').length == 0 )
 				new hide.Element('<option>').attr("value", mp.meshPath).text(extractMeshName(mp.meshPath)).appendTo(select);
+
 			select.change(function(_) {
 				var val = select.val();
+				var previous = mp.clone();
+				var actual = mp;
 				mp.meshPath = val == "none" ? null : val;
 				mp.childParts = createMeshParts(getSocketListFromHMD(getHMD(ctx.rootContext, mp.meshPath)));
+				ctx.properties.undo.change(Custom(function(undo) {
+					undo ? mp.loadFrom(previous) : mp.loadFrom(actual);
+					ctx.onChange(this, null);
+					ctx.rebuildProperties();
+				}));
 				ctx.onChange(this, null);
 				ctx.rebuildProperties();
 			});
@@ -435,8 +498,15 @@ class MeshGenerator extends Object3D {
 				select.change(function(_) {
 					var mp = mp.childParts[mp.childParts.indexOf(cmp)];
 					var val = select.val();
+					var previous = mp.clone();
+					var actual = mp;
 					mp.meshPath = val == "none" ? null : val;
 					mp.childParts = createMeshParts(getSocketListFromHMD(getHMD(ctx.rootContext, cmp.meshPath)));
+					ctx.properties.undo.change(Custom(function(undo) {
+						undo ? mp.loadFrom(previous) : mp.loadFrom(actual);
+						ctx.onChange(this, null);
+						ctx.rebuildProperties();
+					}));
 					ctx.onChange(this, null);
 					ctx.rebuildProperties();
 				});
@@ -467,6 +537,8 @@ class MeshGenerator extends Object3D {
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
 
+		undo = ctx.properties.undo;
+
 		var families : Array<Dynamic> = ctx.scene.config.get("meshGenerator.families");
 
 		if( !filterInit ) {
@@ -475,7 +547,15 @@ class MeshGenerator extends Object3D {
 			filterInit = true;
 		}
 
-		var s = '<div class="group" name="Filter"><dl>';
+		// Procedural Generation
+		var s = '<div class="group" name="Procedural Generation"><dl>
+					<dt>Max Depth</dt><dd><input type="range" min="0" max="10" step="1" field="maxDepth"/></dd>
+					<div align="center">
+						<input type="button" value="Generate" class="generate" />
+					</div>
+				</div>';
+
+		s += '<div class="group" name="Filter"><dl>';
 		for( f in families )
 			s += '<dt>${f}</dt><dd><input type="checkbox" class="${families.indexOf(f)}"/></dd>';
 		s += '</dl></div>';
@@ -489,6 +569,21 @@ class MeshGenerator extends Object3D {
 				ctx.rebuildProperties();
 			});
 		}
+
+		var generateButton = props.find('.generate');
+		generateButton.click(function(_) {
+			var previous = root.clone();
+			var actual = root;
+			generate(ctx, root, maxDepth, 0);
+			ctx.properties.undo.change(Custom(function(undo) {
+				undo ? root.loadFrom(previous) : root.loadFrom(actual);
+				ctx.onChange(this, null);
+				ctx.rebuildProperties();
+			}));
+			ctx.onChange(this, null);
+			ctx.rebuildProperties();
+		});
+
 		ctx.properties.add(props, this, function(pname) {});
 
 		createMenu(ctx, root);
