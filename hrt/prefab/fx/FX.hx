@@ -23,6 +23,7 @@ class FXAnimation extends h3d.scene.Object {
 	public var vecPool = new Evaluator.VecPool();
 	var evaluator : Evaluator;
 	var random : hxd.Rand;
+	var prevTime = 0.0;
 
 	public function new(?parent) {
 		super(parent);
@@ -33,10 +34,14 @@ class FXAnimation extends h3d.scene.Object {
 		setTime(0);
 	}
 
-	function init(ctx: Context, prefab: FX) {
-		initObjAnimations(ctx, prefab);
-		initEmitters(ctx, prefab);
-		BaseFX.getShaderAnims(ctx, prefab, shaderAnims);
+	function init(ctx: Context, def: FX, ?root: PrefabElement) {
+		if(root == null)
+			root = def;
+		initObjAnimations(ctx, root);
+		initEmitters(ctx, root);
+		BaseFX.getShaderAnims(ctx, root, shaderAnims);
+		events = initEvents(root, ctx);
+		initConstraints(ctx, root);
 		for(s in shaderAnims)
 			s.vecPool = vecPool;
 	}
@@ -79,7 +84,6 @@ class FXAnimation extends h3d.scene.Object {
 
 	static var tempMat = new h3d.Matrix();
 	public function setTime( time : Float ) {
-		var prevTime = this.localTime;
 		this.localTime = time;
 		vecPool.begin();
 		if(objAnims != null) {
@@ -145,6 +149,20 @@ class FXAnimation extends h3d.scene.Object {
 
 		if(script != null)
 			script.update();
+
+		this.prevTime = localTime;
+	}
+
+	function initEvents(elt: PrefabElement, ctx: Context) {
+		var childEvents = [for(c in elt.children) if(c.to(Event) != null) c.to(Event)];
+		var ret = null;
+		for(evt in childEvents) {
+			var eventObj = evt.prepare(ctx);
+			if(eventObj == null) continue;
+			if(ret == null) ret = [];
+			ret.push(eventObj);
+		}
+		return ret;
 	}
 
 	function initObjAnimations(ctx:Context, elt: PrefabElement) {
@@ -206,14 +224,9 @@ class FXAnimation extends h3d.scene.Object {
 			visibility: makeVal("visibility", null),
 		};
 
-		var childEvents = [for(c in elt.children) if(c.to(Event) != null) c.to(Event)];
-		for(evt in childEvents) {
-			var eventObj = evt.prepare(objCtx);
-			if(eventObj == null) continue;
-			if(anim.events == null) anim.events = [];
-			anim.events.push(eventObj);
+		anim.events = initEvents(elt, objCtx);
+		if(anim.events != null)
 			anyFound = true;
-		}
 
 		if(anyFound) {
 			if(objAnims == null) objAnims = [];
@@ -303,6 +316,7 @@ class FX extends BaseFX {
 
 		#if editor
 		super.make(ctx);
+		fxanim.init(ctx, this);
 		#else
 		var root = getFXRoot(ctx, this);
 		if(root != null){
@@ -310,13 +324,11 @@ class FX extends BaseFX {
 				var co = Std.downcast(c , Constraint);
 				if(co == null) c.make(ctx);
 			}
-			fxanim.initConstraints(ctx, root);
 		}
 		else
 			super.make(ctx);
+		fxanim.init(ctx, this, root);
 		#end
-
-		fxanim.init(ctx, this);
 
 		if(scriptCode != null && scriptCode != ""){
 			var parser = new FXScriptParser();
