@@ -524,7 +524,7 @@ class EmitterObject extends h3d.scene.Object {
 		updateParticles(dt);
 
 		if( full && batch != null ) {
-			batch.begin(maxCount);
+			batch.begin(hxd.Math.nextPOT(maxCount));
 			if( particleVisibility ) {
 				camPosTmp = getScene().camera.pos;
 				instances.sort(sortZ);
