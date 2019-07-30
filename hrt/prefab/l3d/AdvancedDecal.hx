@@ -60,7 +60,6 @@ class AdvancedDecal extends Object3D {
 				var shader = mesh.material.mainPass.getShader(h3d.shader.pbr.VolumeDecal.DecalPBR);
 				if( shader == null ) {
 					shader = new h3d.shader.pbr.VolumeDecal.DecalPBR();
-					//mesh.material.mainPass.colorMask
 					mesh.material.mainPass.addShader(shader);
 				}
 				mesh.material.mainPass.setPassName("decal");
