@@ -46,7 +46,7 @@ class FX2DAnimation extends h2d.Object {
 
 			if(anim.rotation != null) {
 				var rotation = evaluator.getVector(anim.rotation, time);
-				anim.obj2d.rotation = rotation.x;
+				anim.obj2d.rotation = rotation.x * (Math.PI / 180.0);
 			}
 
 			if(anim.position != null) {
