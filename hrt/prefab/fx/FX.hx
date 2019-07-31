@@ -23,7 +23,7 @@ class FXAnimation extends h3d.scene.Object {
 	public var vecPool = new Evaluator.VecPool();
 	var evaluator : Evaluator;
 	var random : hxd.Rand;
-	var prevTime = 0.0;
+	var prevTime = -1.0;
 
 	public function new(?parent) {
 		super(parent);
