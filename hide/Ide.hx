@@ -490,8 +490,8 @@ class Ide {
 		];
 
 		var plugins : Array<String> = config.current.get("plugins");
-		for( file in plugins )
-			loadScript(file, function() {});
+		for ( plugin in plugins )
+			loadPlugin(plugin, function() {});
 
 		databaseFile = config.project.get("cdb.databaseFile");
 		loadDatabase();
@@ -568,7 +568,7 @@ class Ide {
 		return false;
 	}
 
-	function loadScript( file : String, callb : Void -> Void ) {
+	function loadPlugin( file : String, callb : Void -> Void, ?forceType : String ) {
 		file = getPath(file);
 		var wait = scripts.get(file);
 		if( wait != null ) {
@@ -580,8 +580,7 @@ class Ide {
 		}
 		wait = [callb];
 		scripts.set(file, wait);
-		var e = js.Browser.document.createScriptElement();
-		e.addEventListener("load", function() {
+		function onLoad() {
 			scripts.set(file, []);
 			for( w in wait )
 				w();
@@ -590,15 +589,35 @@ class Ide {
 				scripts.set("",[]);
 				for( w in wait ) w();
 			}
-		});
-		e.addEventListener("error", function(e) {
+		}
+		function onError() {
 			error("Error while loading "+file);
-		});
-		e.async = false;
-		e.type = "text/javascript";
-		e.src = "file://"+file.split("\\").join("/");
-		js.Browser.document.body.appendChild(e);
+		}
+		var type = forceType == null ? haxe.io.Path.extension(file).toLowerCase() : forceType;
+		switch ( type ) {
+			case "js":
+				var e = js.Browser.document.createScriptElement();
+				e.addEventListener("load", onLoad);
+				e.addEventListener("error", onError);
+				e.async = false;
+				e.type = "text/javascript";
+				e.src = "file://"+file.split("\\").join("/");
+				js.Browser.document.body.appendChild(e);
+			case "css":
+				var e = js.Browser.document.createLinkElement();
+				e.addEventListener("load", onLoad);
+				e.addEventListener("error", onError);
+				e.rel = "stylesheet";
+				e.type = "text/css";
+				e.href = "file://" + file.split("\\").join("/");
+				js.Browser.document.body.appendChild(e);
+			default: error('Unknown plugin type $type for file $file');
+		}
 		fileWatcher.register(file,reload);
+	}
+
+	inline function loadScript( file : String, callb : Void -> Void ) {
+		loadPlugin(file, callb);
 	}
 
 	public function reload() {
