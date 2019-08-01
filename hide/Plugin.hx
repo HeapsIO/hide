@@ -25,6 +25,7 @@ class Plugin {
 		"hscript",
 		"cdb",
 		"format",
+		"domkit",
 
 		"HxOverrides",
 		"Math",
@@ -35,10 +36,13 @@ class Plugin {
 		"Std",
 		"StringBuf",
 		"StringTools",
+		"DateTools",
 		"Sys",
+		"_Sys",
 		"Type",
 		"ValueType",
-		"Xml",		
+		"Xml",
+		"_Xml",		
 	];
 
 	static function getLibraryPath( libName ) {
