@@ -25,6 +25,8 @@ In your project, create an hxml configuration for building the plugin. Example:
     # hide-plugin.hxml
     -cp src
     -lib hide
+    -lib hxnodejs
+    -lib castle
     --macro hide.Plugin.init()
     -js hide-plugin.js
     -debug
