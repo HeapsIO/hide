@@ -70,6 +70,16 @@ class Shader extends Prefab {
 				ctx.cleanup = function() {
 					drawable.removeShader(shader);
 				}
+			} else {
+				var flow = Std.downcast(ctx.local2d, h2d.Flow);
+				if (flow != null) {
+					@:privateAccess if (flow.background != null) {
+						flow.background.addShader(shader);
+						ctx.cleanup = function() {
+							flow.background.removeShader(shader);
+						}
+					}
+				}
 			}
 		}
 		if(ctx.local3d != null) {
