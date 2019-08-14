@@ -1748,6 +1748,23 @@ body.hide-subview {
 	font-size: 14px!important;
 }
 
+.lock-toggle, .lock-large-toggle {
+	position: absolute;
+	right: 24px;
+	padding: 4px;
+}
+.locked {
+	.lock-toggle, .lock-large-toggle {
+		i {
+			color: #555;
+		}
+	}
+}
+
+.lock-large-toggle {
+	font-size: 14px!important;
+}
+
 .jstree.small {
 	@size: 18px;
 
