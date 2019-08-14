@@ -577,6 +577,8 @@ class PolygonEditor {
 			editModeButton.val(editMode ? "Edit Mode : Enabled" : "Edit Mode : Disabled");
 			editModeButton.toggleClass("editModeEnabled", editMode);
 			setSelected(getContext(), true);
+			if(!editMode) 
+				editContext.scene.editor.refreshInteractive(polygonPrefab);
 		});
 
 		props.find(".reset").click(function(_) {

@@ -643,6 +643,15 @@ class SceneEditor {
 		}
 	}
 
+	public function refreshInteractive(elt : PrefabElement) {
+		var int = interactives.get(elt);
+		if(int != null) {
+			int.remove();
+			interactives.remove(elt);
+		}
+		makeInteractive(elt);
+	}
+
 	function refreshInteractives() {
 		var contexts = context.shared.contexts;
 		interactives = new Map();
