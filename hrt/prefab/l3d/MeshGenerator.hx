@@ -96,10 +96,12 @@ class MeshGenerator extends Object3D {
 	#end
 
 	public var maxDepth = 1;
+	public var shadows = true;
 
 	override function save() {
 		var obj : Dynamic = super.save();
 		obj.root = root.save();
+		obj.shadows = shadows;
 		return obj;
 	}
 
@@ -107,6 +109,7 @@ class MeshGenerator extends Object3D {
 		super.load(obj);
 		root = new MeshPart();
 		root.load(obj.root);
+		shadows = obj.shadows == null ? true : obj.shadows;
 	}
 
 	override function makeInstance( ctx : Context ) : Context {
@@ -186,6 +189,10 @@ class MeshGenerator extends Object3D {
 			return;
 
 		var obj = ctx.loadModel(mp.meshPath);
+		for( m in obj.getMaterials() ) {
+			m.castShadows = shadows;
+		}
+
 		if( mp.isRoot() ) {
 			parent.addChild(obj);
 		}
@@ -548,19 +555,26 @@ class MeshGenerator extends Object3D {
 			filterInit = true;
 		}
 
-		// Procedural Generation
-		var s = '<div class="group" name="Procedural Generation"><dl>
-					<dt>Max Depth</dt><dd><input type="range" min="0" max="10" step="1" field="maxDepth"/></dd>
-					<div align="center">
-						<input type="button" value="Generate" class="generate" />
-					</div>
-				</div>';
+		var editMenu : String = "";
 
-		s += '<div class="group" name="Filter"><dl>';
+		// Procedural Generation
+		editMenu += '<div class="group" name="Material"><dl>
+						<dt>Shadows</dt><dd><input type="checkbox" field="shadows"></dd>
+					</div>';
+
+		// Procedural Generation
+		editMenu += '<div class="group" name="Procedural Generation"><dl>
+						<dt>Max Depth</dt><dd><input type="range" min="0" max="10" step="1" field="maxDepth"/></dd>
+						<div align="center">
+							<input type="button" value="Generate" class="generate" />
+						</div>
+					</div>';
+
+		editMenu += '<div class="group" name="Filter"><dl>';
 		for( f in families )
-			s += '<dt>${f}</dt><dd><input type="checkbox" class="${families.indexOf(f)}"/></dd>';
-		s += '</dl></div>';
-		var props = new hide.Element(s);
+			editMenu += '<dt>${f}</dt><dd><input type="checkbox" class="${families.indexOf(f)}"/></dd>';
+		editMenu += '</dl></div>';
+		var props = new hide.Element(editMenu);
 		for( f in families ) {
 			var checkBox = props.find('.${families.indexOf(f)}');
 			checkBox.prop("checked", hasFilter(f));
@@ -585,7 +599,7 @@ class MeshGenerator extends Object3D {
 			ctx.rebuildProperties();
 		});
 
-		ctx.properties.add(props, this, function(pname) {});
+		ctx.properties.add(props, this, function(pname) { ctx.onChange(this, null); });
 
 		createMenu(ctx, root);
 	}
