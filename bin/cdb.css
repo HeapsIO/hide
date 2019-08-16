@@ -188,6 +188,12 @@
   max-height: 32px;
   max-width: 32px;
 }
+.cdb .cdb-sheet td.t_list.parent-sub-table,
+.cdb .cdb-sheet td.t_properties.parent-sub-table {
+  background-color: #40667e;
+  color: black;
+  font-weight: bold;
+}
 .cdb .cdb-sheet td.t_enum {
   padding-left: 5px;
 }

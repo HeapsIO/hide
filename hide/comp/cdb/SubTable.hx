@@ -40,6 +40,7 @@ class SubTable extends Table {
 
 		insertedTR.insertAfter(cell.line.element);
 		cell.element.text("...");
+		cell.element.addClass("parent-sub-table");
 
 		super(editor, sheet, root, mode);
 	}
@@ -92,6 +93,7 @@ class SubTable extends Table {
 			slider.slideUp(100, function() { slider = null; close(); });
 			return;
 		}
+		cell.element.removeClass("parent-sub-table");
 		super.close();
 	}
 
