@@ -17,6 +17,7 @@ class Polygon extends Object3D {
 	public var debugColor : Int = 0xFFFFFFFF;
 	public var editor : hide.prefab.PolygonEditor;
 	public var cachedPrim : h3d.prim.Polygon;
+	var prevScale = [1.0, 1.0];
 	#end
 
 	override function save() {
@@ -189,12 +190,18 @@ class Polygon extends Object3D {
 			polyPrim.alloc(h3d.Engine.getCurrent());
 		}
 		#if editor
-		if(cachedPrim != null)
-			cachedPrim.decref();
+		clearCustomPolygonCache();
 		cachedPrim = polyPrim;
 		cachedPrim.incref();
 		#end
 		return polyPrim;
+	}
+
+	public function clearCustomPolygonCache() {
+		if(cachedPrim != null) {
+			cachedPrim.decref();
+			cachedPrim = null;
+		}
 	}
 
 	public function getPrimitive( ctx : Context ) : h3d.prim.Polygon {
@@ -264,7 +271,8 @@ class Polygon extends Object3D {
 		var updateProps = null;
 
 		ctx.properties.add(group, viewModel, function(pname) {
-			if( pname == "kind" ) {
+			var pIsKind = pname == "kind";
+			if( pIsKind ) {
 				editor.reset();
 
 				if( prevKind != Custom ){
@@ -284,13 +292,23 @@ class Polygon extends Object3D {
 			}
 
 			switch( viewModel.kind ) {
-				case "Quad": shape = Quad;
-				case "Disc": shape = Disc(viewModel.segments, viewModel.angle, viewModel.innerRadius, viewModel.rings);
+				case "Quad": 
+					shape = Quad;
+					if(pIsKind && prevKind == Custom) {
+						scaleX = prevScale[0]; 
+						scaleY = prevScale[1];
+					}
+				case "Disc": 
+					shape = Disc(viewModel.segments, viewModel.angle, viewModel.innerRadius, viewModel.rings);
+					if(pIsKind && prevKind == Custom) {
+						scaleX = prevScale[0]; 
+						scaleY = prevScale[1];
+					}
 				case "Custom":
 					shape = Custom;
-					if(points == null) {
+					if(pIsKind) {
 						if(prevKind == Quad) {
-							var prevScale = [scaleX, scaleY];
+							prevScale = [scaleX, scaleY];
 							function apply() {
 								points = [
 									new Point(-scaleX/2, -scaleY/2),
@@ -309,6 +327,7 @@ class Polygon extends Object3D {
 								else apply();
 								ctx.onChange(this, null);
 							}));
+							clearCustomPolygonCache();
 							apply();
 							ctx.onChange(this, null);
 						}

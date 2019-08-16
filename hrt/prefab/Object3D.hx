@@ -104,18 +104,8 @@ class Object3D extends Prefab {
 
 	override function updateInstance( ctx: Context, ?propName : String ) {
 		var o = ctx.local3d;
-		o.x = x;
-		o.y = y;
-		o.z = z;
-		if(propName == null || propName.indexOf("scale") == 0) {
-			o.scaleX = scaleX;
-			o.scaleY = scaleY;
-			o.scaleZ = scaleZ;
-		}
-		if(propName == null || propName.indexOf("rotation") == 0)
-			o.setRotation(Math.degToRad(rotationX), Math.degToRad(rotationY), Math.degToRad(rotationZ));
-		if(propName == null || propName == "visible")
-			o.visible = visible;
+		applyPos(o);
+		o.visible = visible;
 	}
 
 	override function removeInstance(ctx: Context):Bool {
