@@ -741,8 +741,10 @@ class SceneEditor {
 
 					for(o in objects3d)
 						o.updateInstance(getContext(o));
-
 				}));
+
+				for(o in objects3d)
+					o.updateInstance(getContext(o));
 			}
 		}
 	}
