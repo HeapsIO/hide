@@ -67,7 +67,7 @@ class SubTable extends Table {
 				Reflect.setField(cell.line.obj, cell.column.name, value);
 				// do not save for now
 			}
-			[for( c in 0...Reflect.fields(value).length ) value];
+			[for( f in Reflect.fields(value) ) value];
 		default:
 			throw "assert";
 		}
