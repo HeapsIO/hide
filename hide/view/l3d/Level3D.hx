@@ -383,6 +383,7 @@ class Level3D extends FileView {
 
 	public function onSceneReady() {
 
+
 		tools.saveDisplayKey = "Level3D/toolbar";
 		tools.addButton("video-camera", "Perspective camera", () -> resetCamera(false));
 		tools.addButton("video-camera", "Top camera", () -> resetCamera(true)).find(".icon").css({transform: "rotateZ(90deg)"});
@@ -693,7 +694,6 @@ class Level3D extends FileView {
 			updateGrid();
 			return;
 		}
-
 		var obj3d = p.to(Object3D);
 		if(obj3d != null) {
 			var visible = obj3d.visible && !sceneEditor.isHidden(obj3d) && sceneFilters.get(p.type) != false;
@@ -705,8 +705,14 @@ class Level3D extends FileView {
 			for(ctx in sceneEditor.getContexts(obj3d)) {
 				ctx.local3d.visible = visible;
 			}
+			var interIsVisible = !sceneEditor.isLocked(obj3d);
+			var inters = sceneEditor.getInteractives(p);
+			for(inter in inters) {
+				if(inter != null) {
+					inter.visible = interIsVisible;
+				}
+			}
 		}
-
 		var color = getDisplayColor(p);
 		if(color != null){
 			color = (color & 0xffffff) | 0xa0000000;

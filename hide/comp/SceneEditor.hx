@@ -110,6 +110,7 @@ class SceneEditor {
 	var ide : hide.Ide;
 	public var event(default, null) : hxd.WaitEvent;
 	var hideList : Map<PrefabElement, Bool> = new Map();
+	var lockList : Map<PrefabElement, Bool> = new Map();
 	var favorites : Array<PrefabElement> = [];
 
 	var undo(get, null):hide.ui.UndoHistory;
@@ -202,6 +203,14 @@ class SceneEditor {
 				for(p in all) {
 					if(m.exists(p.getAbsPath()))
 						hideList.set(p, true);
+				}
+			}
+			var list = @:privateAccess view.getDisplayState("lockList");
+			if(list != null) {
+				var m = [for(i in (list:Array<Dynamic>)) i => true];
+				for(p in all) {
+					if(m.exists(p.getAbsPath()))
+						lockList.set(p, true);
 				}
 			}
 			var favList = @:privateAccess view.getDisplayState("favorites");
@@ -379,8 +388,10 @@ class SceneEditor {
 
 			if(current != null && current.to(Object3D) != null && current.to(hrt.prefab.Reference) == null) {
 				var visible = !isHidden(current);
+				var locked = isLocked(current);
 				menuItems = menuItems.concat([
 					{ label : "Visible", checked : visible, click : function() setVisible(curEdit.elements, !visible) },
+					{ label : "Locked", checked : locked, click : function() setLock(curEdit.elements, locked) },
 					{ label : "Select all", click : selectAll },
 					{ label : "Select children", enabled : current != null, click : function() selectObjects(current.flatten()) },
 				]);
@@ -632,6 +643,15 @@ class SceneEditor {
 		}
 	}
 
+	public function refreshInteractive(elt : PrefabElement) {
+		var int = interactives.get(elt);
+		if(int != null) {
+			int.remove();
+			interactives.remove(elt);
+		}
+		makeInteractive(elt);
+	}
+
 	function refreshInteractives() {
 		var contexts = context.shared.contexts;
 		interactives = new Map();
@@ -851,7 +871,7 @@ class SceneEditor {
 		applySceneStyle(p);
 	}
 
-	public function applyTreeStyle(p: PrefabElement, el: Element) {
+	public function applyTreeStyle(p: PrefabElement, el: Element) {		
 		var obj3d  = p.to(Object3D);
 		el.toggleClass("disabled", !p.enabled);
 		el.find("a").first().toggleClass("favorite", isFavorite(p));
@@ -859,10 +879,11 @@ class SceneEditor {
 		if(obj3d != null) {
 			el.toggleClass("disabled", !obj3d.visible);
 			el.toggleClass("hidden", isHidden(obj3d));
-			var tog = el.find(".visibility-toggle").first();
-			if(tog.length == 0) {
-				tog = new Element('<i class="fa fa-eye visibility-toggle"/>').insertAfter(el.find("a.jstree-anchor").first());
-				tog.click(function(e) {
+			el.toggleClass("locked", isLocked(obj3d));
+			var visTog = el.find(".visibility-toggle").first();
+			if(visTog.length == 0) {
+				visTog = new Element('<i class="fa fa-eye visibility-toggle"/>').insertAfter(el.find("a.jstree-anchor").first());
+				visTog.click(function(e) {
 					if(curEdit.elements.indexOf(obj3d) >= 0)
 						setVisible(curEdit.elements, isHidden(obj3d));
 					else
@@ -871,12 +892,30 @@ class SceneEditor {
 					e.preventDefault();
 					e.stopPropagation();
 				});
-				tog.dblclick(function(e) {
+				visTog.dblclick(function(e) {
 					e.preventDefault();
 					e.stopPropagation();
 				});
 			}
-		}
+			var lockTog = el.find(".lock-toggle").first();
+			if(lockTog.length == 0) {
+				lockTog = new Element('<i class="fa fa-lock lock-toggle"/>').insertAfter(el.find("a.jstree-anchor").first());
+				lockTog.click(function(e) {
+					if(curEdit.elements.indexOf(obj3d) >= 0)
+						setLock(curEdit.elements, isLocked(obj3d));
+					else
+						setLock([obj3d], isLocked(obj3d));
+
+					e.preventDefault();
+					e.stopPropagation();
+				});
+				lockTog.dblclick(function(e) {
+					e.preventDefault();
+					e.stopPropagation();
+				});
+			}
+			lockTog.css({visibility: (isLocked(obj3d) ? "visible" : "hidden")});
+		} 
 	}
 
 	public function applySceneStyle(p: PrefabElement) {
@@ -887,6 +926,18 @@ class SceneEditor {
 				ctx.local3d.visible = visible;
 			}
 		}
+	}
+
+	public function getInteractives(elt : PrefabElement) {
+		var r = [getInteractive(elt)];
+		for(c in elt.children) {
+			r = r.concat(getInteractives(c));
+		}
+		return r;
+	}
+
+	public function getInteractive(elt: PrefabElement) {
+		return interactives.get(elt);
 	}
 
 	public function getContext(elt : PrefabElement) {
@@ -1294,9 +1345,17 @@ class SceneEditor {
 		return hideList.exists(e);
 	}
 
+	public function isLocked(e: PrefabElement) {
+		if(e == null)
+			return false;
+		return lockList.exists(e);
+	}
+
 	function saveDisplayState() {
 		var state = [for (h in hideList.keys()) h.getAbsPath()];
 		@:privateAccess view.saveDisplayState("hideList", state);
+		var state = [for (h in lockList.keys()) h.getAbsPath()];
+		@:privateAccess view.saveDisplayState("lockList", state);
 		var state = [for(f in favorites) f.getAbsPath()];
 		@:privateAccess view.saveDisplayState("favorites", state);
 	}
@@ -1334,6 +1393,28 @@ class SceneEditor {
 				var el = tree.getElement(o);
 				applyTreeStyle(o, el);
 				applySceneStyle(o);
+			}
+		}
+		saveDisplayState();
+	}
+
+	public function setLock(elements : Array<PrefabElement>, unlocked: Bool) {
+		for(o in elements) {
+			if(unlocked) {
+				for(c in o.flatten(Object3D)) {
+					lockList.remove(c);
+					var el = tree.getElement(c);
+					applyTreeStyle(c, el);
+					applySceneStyle(c);
+				}
+			}
+			else {
+				for(c in o.flatten(Object3D)) {
+					lockList.set(c, true);
+					var el = tree.getElement(c);
+					applyTreeStyle(c, el);
+					applySceneStyle(c);
+				}
 			}
 		}
 		saveDisplayState();

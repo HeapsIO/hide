@@ -166,6 +166,10 @@ class PolygonEditor {
 		return editContext.getContext(polygonPrefab);
 	}
 
+	inline function refreshInteractive() {
+		editContext.scene.editor.refreshInteractive(polygonPrefab);
+	}
+
 	public function update( ?propName : String) {
 		if(propName == "showDebug"){
 			for(mp in movablePoints){
@@ -178,6 +182,8 @@ class PolygonEditor {
 		}
 		else if(propName == "editMode") {
 			setSelected(getContext(), true);
+		} else {
+			refreshInteractive();
 		}
 	}
 
@@ -577,6 +583,8 @@ class PolygonEditor {
 			editModeButton.val(editMode ? "Edit Mode : Enabled" : "Edit Mode : Disabled");
 			editModeButton.toggleClass("editModeEnabled", editMode);
 			setSelected(getContext(), true);
+			if(!editMode) 
+				refreshInteractive();
 		});
 
 		props.find(".reset").click(function(_) {

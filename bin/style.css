@@ -1205,8 +1205,8 @@ input[type=checkbox]:checked:after {
   box-shadow: 0px 0px 34px -9px black;
 }
 .graph-view #add-menu #results div.group:hover {
-  background: #474747!important;
-  color: #dadada!important;
+  background: #474747 !important;
+  color: #dadada !important;
   box-shadow: none;
 }
 .graph-view #add-menu #results div > span:first-child {
@@ -1254,8 +1254,8 @@ input[type=checkbox]:checked:after {
   box-shadow: 0px 0px 34px -9px black;
 }
 .graph-view #context-menu #options div.group:hover {
-  background: #474747!important;
-  color: #dadada!important;
+  background: #474747 !important;
+  color: #dadada !important;
   box-shadow: none;
 }
 .graph-view #context-menu #options div > span:first-child {
@@ -1544,6 +1544,19 @@ body.hide-subview .lm_controls {
   color: #555;
 }
 .visibility-large-toggle {
+  font-size: 14px!important;
+}
+.lock-toggle,
+.lock-large-toggle {
+  position: absolute;
+  right: 24px;
+  padding: 4px;
+}
+.locked .lock-toggle i,
+.locked .lock-large-toggle i {
+  color: #555;
+}
+.lock-large-toggle {
   font-size: 14px!important;
 }
 .jstree.small a {

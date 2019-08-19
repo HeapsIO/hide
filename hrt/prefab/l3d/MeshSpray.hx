@@ -56,8 +56,52 @@ class MeshSpray extends Object3D {
 		return childParts[childParts.length - 1].split(".")[0];
 	}
 
-	override function edit( ctx : EditContext ) {
-		sceneEditor = ctx.scene.editor;
+	override function edit( ectx : EditContext ) {
+		sceneEditor = ectx.scene.editor;
+
+
+		var ctx = ectx.getContext(this);
+		var s2d = @:privateAccess ctx.local2d.getScene();
+		interactive = new h2d.Interactive(10000, 10000, s2d);
+		interactive.propagateEvents = true;
+		interactive.cancelEvents = false;
+
+		interactive.onWheel = function(e) {
+
+		};
+
+		interactive.onPush = function(e) {
+			e.propagate = false;
+			sprayEnable = true;
+
+		};
+
+		interactive.onRelease = function(e) {
+			e.propagate = false;
+			sprayEnable = false;
+		};
+
+		interactive.onMove = function(e) {
+			var worldPos = screenToWorld(s2d.mouseX, s2d.mouseY);
+
+			drawCircle(ctx, worldPos.x, worldPos.y, getZ(worldPos.x, worldPos.y), radius, 2, 16711680);
+
+			if( K.isDown( K.MOUSE_LEFT) ) {
+				e.propagate = false;
+
+				if (sprayEnable) {
+
+					if (lastSpray < Date.now().getTime() - 50) {
+						if( K.isDown( K.SHIFT) ) {
+							removeMeshesAround(ctx, worldPos);
+						} else {
+							addMeshesAround(ctx, worldPos);
+						}
+						lastSpray = Date.now().getTime();
+					}
+				}
+			}
+		};
 
 		var props = new hide.Element('<div class="group" name="Meshes"></div>');
 		var selectElement = new hide.Element('<select multiple size="6" style="width: 300px" ></select>').appendTo(props);
@@ -103,7 +147,7 @@ class MeshSpray extends Object3D {
 			}
 		});
 
-		ctx.properties.add(props, this, function(pname) {});
+		ectx.properties.add(props, this, function(pname) {});
 
 		var optionsGroup = new hide.Element('<div class="group" name="Options"><dl></dl></div>');
 		optionsGroup.append(hide.comp.PropsEditor.makePropsList([
@@ -114,57 +158,15 @@ class MeshSpray extends Object3D {
 				{ name: "rotation", t: PFloat(0, 180), def: rotation },
 				{ name: "rotationOffset", t: PFloat(0, 30), def: rotationOffset }
 			]));
-		ctx.properties.add(optionsGroup, this, function(pname) {  });
+		ectx.properties.add(optionsGroup, this, function(pname) {  });
 	}
 
 	override function setSelected( ctx : Context, b : Bool ) {
+
 		if (timerCicle != null) {
 			timerCicle.stop();
 		}
-		if( b ) {
-			var s2d = @:privateAccess ctx.local2d.getScene();
-			interactive = new h2d.Interactive(10000, 10000, s2d);
-			interactive.propagateEvents = true;
-			interactive.cancelEvents = false;
-
-			interactive.onWheel = function(e) {
-
-			};
-
-			interactive.onPush = function(e) {
-				e.propagate = false;
-				sprayEnable = true;
-
-			};
-
-			interactive.onRelease = function(e) {
-				e.propagate = false;
-				sprayEnable = false;
-			};
-
-			interactive.onMove = function(e) {
-				var worldPos = screenToWorld(s2d.mouseX, s2d.mouseY);
-
-				drawCircle(ctx, worldPos.x, worldPos.y, getZ(worldPos.x, worldPos.y), radius, 2, 16711680);
-
-				if( K.isDown( K.MOUSE_LEFT) ) {
-					e.propagate = false;
-
-					if (sprayEnable) {
-
-						if (lastSpray < Date.now().getTime() - 50) {
-							if( K.isDown( K.SHIFT) ) {
-								removeMeshesAround(ctx, worldPos);
-							} else {
-								addMeshesAround(ctx, worldPos);
-							}
-							lastSpray = Date.now().getTime();
-						}
-					}
-				}
-			};
-		}
-		else{
+		if( !b ) {
 			if( interactive != null ) interactive.remove();
 			timerCicle = new haxe.Timer(100);
 			timerCicle.run = function() {
