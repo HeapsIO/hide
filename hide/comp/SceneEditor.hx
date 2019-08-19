@@ -1407,10 +1407,6 @@ class SceneEditor {
 				}
 			}
 			else {
-				lockList.set(o, true);
-				var el = tree.getElement(o);
-				applyTreeStyle(o, el);
-				applySceneStyle(o);
 				for(c in o.flatten(Object3D)) {
 					lockList.set(c, true);
 					var el = tree.getElement(c);
