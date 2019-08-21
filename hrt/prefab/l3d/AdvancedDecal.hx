@@ -120,6 +120,7 @@ class AdvancedDecal extends Object3D {
 					shader.colorTexture = albedoMap != null ? ctx.loadTexture(albedoMap) : null;
 					if(shader.colorTexture != null) shader.colorTexture.wrap = Repeat;
 					shader.CENTERED = centered;
+					shader.GAMMA_CORRECT = renderMode == BeforeTonemapping;
 					shader.fadePower = fadePower;
 					shader.fadeStart = fadeStart;
 					shader.fadeEnd = fadeEnd;
