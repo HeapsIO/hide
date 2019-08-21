@@ -57,6 +57,7 @@ class Spline extends Object3D {
 	public var linePrecision : Int = 15;
 	public var lineThickness : Int = 4;
 	public var color : Int = 0xFFFFFFFF;
+	public var loop : Bool = false;
 
 	#if editor
 	public var editor : hide.prefab.SplineEditor;
@@ -71,6 +72,7 @@ class Spline extends Object3D {
 		obj.color = color;
 		obj.linePrecision = linePrecision;
 		obj.lineThickness = lineThickness;
+		obj.loop = loop;
 		return obj;
 	}
 
@@ -81,6 +83,7 @@ class Spline extends Object3D {
 		color = obj.color != null ? obj.color : 0xFFFFFFFF;
 		linePrecision = obj.linePrecision == null ? 15 : obj.linePrecision;
 		lineThickness = obj.lineThickness == null ? 4 : obj.lineThickness;
+		loop = obj.loop == null ? false : obj.loop;
 	}
 
 	override function makeInstance( ctx : hrt.prefab.Context ) : hrt.prefab.Context {
@@ -88,12 +91,6 @@ class Spline extends Object3D {
 
 		ctx.local3d = new h3d.scene.Object(ctx.local3d);
 		ctx.local3d.name = name;
-
-		lineGraphics = new h3d.scene.Graphics(ctx.local3d);
-		lineGraphics.lineStyle(lineThickness, color);
-		lineGraphics.material.mainPass.setPassName("overlay");
-		lineGraphics.material.mainPass.depth(false, LessEqual);
-		lineGraphics.ignoreParentTransform = false;
 	
 		for( pd in pointsData ) {
 			var sp = new SplinePoint(0, 0, 0, ctx.local3d);
@@ -259,6 +256,14 @@ class Spline extends Object3D {
 		if( points == null )
 			return;
 
+		if( lineGraphics == null ) {
+			lineGraphics = new h3d.scene.Graphics(ctx.local3d);
+			lineGraphics.lineStyle(lineThickness, color);
+			lineGraphics.material.mainPass.setPassName("overlay");
+			lineGraphics.material.mainPass.depth(false, LessEqual);
+			lineGraphics.ignoreParentTransform = false;
+		}
+
 		computedLength = -1;
 
 		var curve : Array<h3d.col.Point> = [];
@@ -266,6 +271,8 @@ class Spline extends Object3D {
 			case Linear:
 				for( sp in points )
 					curve.push(sp.getPoint());
+				if( loop && points.length > 1 )
+					curve.push(points[0].getPoint());
 			case Quadratic:
 				var i = 0;
 				while( i < points.length - 1 ) {
@@ -274,6 +281,11 @@ class Spline extends Object3D {
 					}
 					++i;
 				}
+				if( loop && points.length > 1 ) {
+					for( v in 0 ... linePrecision + 1 ) {
+						curve.push(getQuadraticBezierPoint( v / linePrecision, points[points.length - 1].getPoint(), points[points.length - 1].getSecondControlPoint(), points[0].getPoint()));
+					}
+				}
 			case Cubic:
 				var i = 0;
 				while( i < points.length - 1 ) {
@@ -281,6 +293,11 @@ class Spline extends Object3D {
 						curve.push(getCubicBezierPoint( v / linePrecision, points[i].getPoint(), points[i].getSecondControlPoint(), points[i+1].getFirstControlPoint(), points[i+1].getPoint()));
 					}
 					++i;
+				}
+				if( loop && points.length > 1 ) {
+					for( v in 0 ... linePrecision + 1 ) {
+						curve.push(getCubicBezierPoint( v / linePrecision, points[points.length - 1].getPoint(), points[points.length - 1].getSecondControlPoint(), points[0].getFirstControlPoint(), points[0].getPoint()));
+					}
 				}
 		}
 
@@ -312,6 +329,7 @@ class Spline extends Object3D {
 					<dt>Color</dt><dd><input type="color" alpha="true" field="color"/></dd>
 					<dt>Thickness</dt><dd><input type="range" min="1" max="10" field="lineThickness"/></dd>
 					<dt>Precision</dt><dd><input type="range" step="1" min="1" max="100" field="linePrecision"/></dd>
+					<dt>Loop</dt><dd><input type="checkbox" field="loop"/></dd>
 					<dt>Type</dt>
 						<dd>
 							<select field="shape" >

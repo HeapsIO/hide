@@ -4,23 +4,6 @@ import hrt.prefab.l3d.Spline;
 
 #if editor
 
-/*class SplineViewer extends h3d.scene.Object {
-
-	public var gaphics : h3d.scene.Graphics;
-
-	public function new( s : Spline ) {
-		super(s);
-		gaphics = new h3d.scene.Graphics(this);
-		gaphics.lineStyle(4, 0xffffff);
-		gaphics.material.mainPass.setPassName("overlay");
-		gaphics.material.mainPass.depth(false, LessEqual);
-		gaphics.ignoreParentTransform = false;
-		gaphics.clear();
-		gaphics.moveTo(1, 0, 0);
-		gaphics.lineTo(-1, 0, 0);
-	}
-}*/
-
 class NewSplinePointViewer extends h3d.scene.Object {
 
 	var pointViewer : h3d.scene.Mesh;
@@ -30,11 +13,12 @@ class NewSplinePointViewer extends h3d.scene.Object {
 		super(parent);
 		name = "SplinePointViewer";
 		pointViewer = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), null, this);
-		pointViewer.name = "sphereHandle";
+		pointViewer.name = "pointViewer";
 		pointViewer.material.setDefaultProps("ui");
 		pointViewer.material.color.set(1,1,0,1);
 
 		connectionViewer = new h3d.scene.Graphics(this);
+		connectionViewer.name = "connectionViewer";
 		connectionViewer.lineStyle(4, 0xFFFF00);
 		connectionViewer.material.mainPass.setPassName("overlay");
 		connectionViewer.material.mainPass.depth(false, LessEqual);
@@ -65,10 +49,12 @@ class SplinePointViewer extends h3d.scene.Object {
 		super(sp);
 		name = "SplinePointViewer";
 		pointViewer = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), null, this);
-		pointViewer.name = "sphereHandle";
+		pointViewer.name = "pointViewer";
 		pointViewer.material.setDefaultProps("ui");
+		pointViewer.material.color.set(1,1,1,1);
 
 		controlPointsViewer = new h3d.scene.Graphics(this);
+		controlPointsViewer.name = "controlPointsViewer";
 		controlPointsViewer.lineStyle(4, 0xffffff);
 		controlPointsViewer.material.mainPass.setPassName("overlay");
 		controlPointsViewer.material.mainPass.depth(false, LessEqual);
@@ -92,6 +78,11 @@ class SplinePointViewer extends h3d.scene.Object {
 
 	public function interset( ray : h3d.col.Ray ) : Bool {
 		return pointViewer.getCollider().rayIntersection(ray, false) != -1;
+	}
+
+	public function setColor( color : Int ) {
+		controlPointsViewer.setColor(color);
+		pointViewer.material.color.setColor(color);
 	}
 }
 
@@ -145,7 +136,33 @@ class SplineEditor {
 		return editContext.getContext(prefab);
 	}
 
+	function getClosestSplinePointFromMouse( mouseX : Float, mouseY : Float, ctx : hrt.prefab.Context ) : SplinePoint {
+		if( ctx == null || ctx.local3d == null || ctx.local3d.getScene() == null ) 
+			return null;
+
+		var mousePos = new h3d.Vector( mouseX / h3d.Engine.getCurrent().width, 1.0 - mouseY / h3d.Engine.getCurrent().height, 0);
+		var minDist = -1.0;
+		var result : SplinePoint = null;
+		for( sp in prefab.points ) {
+			var screenPos = sp.getPoint().toVector();
+			screenPos.project(ctx.local3d.getScene().camera.m);
+			screenPos.z = 0;
+			screenPos.scale3(0.5);
+			screenPos = screenPos.add(new h3d.Vector(0.5,0.5));
+			var dist = screenPos.distance(mousePos);
+			if( dist < minDist || minDist == -1 ) {
+				minDist = dist;
+				result = sp;
+			}
+		}
+		return result;
+	}
+
 	function getNewPointPosition( mouseX : Float, mouseY : Float, ctx : hrt.prefab.Context, ?precision = 1.0 ) : SplinePointData {
+		if( prefab.points.length == 0 ) {
+			return { pos : ctx.local3d.getAbsPos().getPosition().toPoint(), prev : null, next : null };
+		} 
+
 		var closestPt = getClosestPointFromMouse(mouseX, mouseY, ctx, precision);
 		
 		// If ware are adding a new point at the end/beginning, just make a raycast cursor -> plane with the transform of the frit/last SplinePoint
@@ -227,7 +244,8 @@ class SplineEditor {
 		pos.project(invMatrix);
 
 		var index = -1;
-		if( spd.prev == spd.next ) {
+		if( spd.prev == null && spd.next == null ) index = 0;
+		else if( spd.prev == spd.next && spd.prev != null ) {
 			if( spd.prev ==  prefab.points[0] ) index = 0;
 			else if( spd.prev ==  prefab.points[prefab.points.length - 1] ) index = prefab.points.length;
 		}
@@ -247,7 +265,7 @@ class SplineEditor {
 		removeViewers(); // Security, avoid duplication
 		for( sp in prefab.points ) {
 			var spv = new SplinePointViewer(sp);
-			splinePointViewers.push(spv);
+			splinePointViewers.insert(splinePointViewers.length, spv);
 		}
 	}
 
@@ -269,7 +287,8 @@ class SplineEditor {
 			var worldPos = ctx.local3d.localToGlobal(new h3d.Vector(sp.x, sp.y, sp.z));
 			gizmo.setPosition(worldPos.x, worldPos.y, worldPos.z);
 			@:privateAccess sceneEditor.updates.push( gizmo.update );
-			gizmos.push(gizmo);
+			gizmos.insert(gizmos.length, gizmo);
+			gizmo.visible = false; // Not visible by default, only show the closest in the onMove of interactive
 
 			gizmo.onStartMove = function(mode) {
 				/**/
@@ -366,18 +385,19 @@ class SplineEditor {
 	public function setSelected( ctx : hrt.prefab.Context , b : Bool ) {
 		reset();
 
-		if( !editMode )
+		if( !b ) {
+			editMode = false;
 			return;
-
-		if( b ) {
-			@:privateAccess editContext.scene.editor.gizmo.visible = false;
-			@:privateAccess editContext.scene.editor.curEdit = null;
+		}
+		
+		if( editMode ) {
 			createGizmos(ctx);
 			var s2d = @:privateAccess ctx.local2d.getScene();
 			interactive = new h2d.Interactive(10000, 10000, s2d);
 			interactive.propagateEvents = true;
 			interactive.onPush =
 				function(e) {
+					// Add a new point
 					if( K.isDown( K.MOUSE_LEFT ) && K.isDown( K.CTRL )  ) {
 						e.propagate = false;
 						var pt = getNewPointPosition(s2d.mouseX, s2d.mouseY, ctx, 1);
@@ -385,10 +405,29 @@ class SplineEditor {
 						showViewers(ctx);
 						createGizmos(ctx);
 					}
+					// Delete a point
+					if( K.isDown( K.MOUSE_LEFT ) && K.isDown( K.SHIFT )  ) {
+						e.propagate = false;
+						prefab.points.remove(getClosestSplinePointFromMouse(s2d.mouseX, s2d.mouseY, ctx));
+						prefab.generateBezierCurve(ctx);
+						showViewers(ctx);
+						createGizmos(ctx);
+					}
 				};
 
 			interactive.onMove =
 				function(e) {
+
+					if( prefab.points.length == 0 ) 
+						return;
+
+					// Only show the gizmo of the closest splinePoint
+					var closetSp = getClosestSplinePointFromMouse(s2d.mouseX, s2d.mouseY, ctx);
+					var index = prefab.points.indexOf(closetSp);
+					for( g in gizmos ) {
+						g.visible = gizmos.indexOf(g) == index && !K.isDown( K.CTRL ) && !K.isDown( K.SHIFT );
+					}
+
 					if( K.isDown( K.CTRL ) ) {
 						if( newSplinePointViewer == null ) 
 							newSplinePointViewer = new NewSplinePointViewer(ctx.local3d.getScene());
@@ -401,11 +440,18 @@ class SplineEditor {
 						if( newSplinePointViewer != null ) 
 							newSplinePointViewer.visible = false;
 					}
+
+					if( K.isDown( K.SHIFT ) ) {
+						var index = prefab.points.indexOf(getClosestSplinePointFromMouse(s2d.mouseX, s2d.mouseY, ctx));
+						for( spv in splinePointViewers ) {
+							if( index == splinePointViewers.indexOf(spv) )
+								spv.setColor(0xFFFF0000);
+							else
+								spv.setColor(0xFFFFFFFF);
+						}
+					}
 						
 				};
-		}
-		else {
-			editMode = false;
 		}
 	}
 
@@ -427,11 +473,13 @@ class SplineEditor {
 		</div>');
 
 		var editModeButton = props.find(".editModeButton");
+		editModeButton.toggleClass("editModeEnabled", editMode);
 		editModeButton.click(function(_) {
 			editMode = !editMode;
 			editModeButton.val(editMode ? "Edit Mode : Enabled" : "Edit Mode : Disabled");
 			editModeButton.toggleClass("editModeEnabled", editMode);
 			setSelected(getContext(), true);
+			@:privateAccess editContext.scene.editor.gizmo.visible = !editMode;
 			ctx.onChange(prefab, null);
 		});
 
