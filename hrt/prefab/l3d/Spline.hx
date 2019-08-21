@@ -209,7 +209,6 @@ class Spline extends Object3D {
 		if( t == 0 ) return { pos : points[0].getPoint(), prev : points[0], next : points[0] } ;
 		if( t == 1 ) return { pos : points[points.length - 1].getPoint(), prev : points[points.length - 1], next : points[points.length - 1] };
 
-		var result : SplinePointData;
 		var totalLength = getLength();
 		var length = totalLength * t;
 		var curlength = 0.0;
@@ -316,8 +315,6 @@ class Spline extends Object3D {
 
 		if( editor != null )
 			editor.setSelected(ctx, b);
-
-		//lineGraphics.visible = b;
 	}
 
 	override function edit( ctx : EditContext ) {

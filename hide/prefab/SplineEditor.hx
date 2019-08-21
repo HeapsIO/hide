@@ -16,10 +16,11 @@ class NewSplinePointViewer extends h3d.scene.Object {
 		pointViewer.name = "pointViewer";
 		pointViewer.material.setDefaultProps("ui");
 		pointViewer.material.color.set(1,1,0,1);
+		pointViewer.material.mainPass.depthTest = Always;
 
 		connectionViewer = new h3d.scene.Graphics(this);
 		connectionViewer.name = "connectionViewer";
-		connectionViewer.lineStyle(4, 0xFFFF00);
+		connectionViewer.lineStyle(3, 0xFFFF00);
 		connectionViewer.material.mainPass.setPassName("overlay");
 		connectionViewer.material.mainPass.depth(false, LessEqual);
 		connectionViewer.ignoreParentTransform = false;
@@ -165,8 +166,8 @@ class SplineEditor {
 
 		var closestPt = getClosestPointFromMouse(mouseX, mouseY, ctx, precision);
 		
-		// If ware are adding a new point at the end/beginning, just make a raycast cursor -> plane with the transform of the frit/last SplinePoint
-		if( closestPt.next == closestPt.prev ) {
+		// If we are are adding a new point at the end/beginning, just make a raycast cursor -> plane with the transform of the frit/last SplinePoint
+		if( !prefab.loop && closestPt.next == closestPt.prev ) {
 			var camera = @:privateAccess ctx.local3d.getScene().camera;
 			var ray = camera.rayFromScreen(mouseX, mouseY);
 			var normal = closestPt.prev.getAbsPos().up();
@@ -237,7 +238,7 @@ class SplineEditor {
 		return result;
 	}
 
-	function addSplinePoint( spd : SplinePointData, ctx : hrt.prefab.Context ) {
+	function addSplinePoint( spd : SplinePointData, ctx : hrt.prefab.Context ) : SplinePoint {
 		var invMatrix = prefab.getTransform().clone();
 		invMatrix.initInverse(invMatrix);
 		var pos = spd.pos.toVector();
@@ -251,8 +252,10 @@ class SplineEditor {
 		}
 		else index = prefab.points.indexOf(spd.next);
 
-		prefab.points.insert(index, new SplinePoint(pos.x, pos.y, pos.z, ctx.local3d));
+		var sp = new SplinePoint(pos.x, pos.y, pos.z, ctx.local3d);
+		prefab.points.insert(index, sp);
 		prefab.generateBezierCurve(ctx);
+		return sp;
 	}
 
 	function removeViewers() {
@@ -291,16 +294,13 @@ class SplineEditor {
 			gizmo.visible = false; // Not visible by default, only show the closest in the onMove of interactive
 
 			gizmo.onStartMove = function(mode) {
-				/**/
+				
 				var sceneObj = sp;
 				var pivotPt = sceneObj.getAbsPos().getPosition();
-				var pivot = new h3d.Matrix();
-				pivot.initTranslation(pivotPt.x, pivotPt.y, pivotPt.z);
-				var invPivot = pivot.clone();
-				invPivot.invert();
-				var worldMat : h3d.Matrix = sceneEditor.worldMat(sceneObj);
-				var localMat : h3d.Matrix = worldMat.clone();
-				localMat.multiply(localMat, invPivot);
+				var localMat : h3d.Matrix = sceneEditor.worldMat(sceneObj).clone();
+				localMat.translate(-pivotPt.x, -pivotPt.y, -pivotPt.z);
+				var parentInvMat = sceneObj.parent.getAbsPos().clone();
+				parentInvMat.initInverse(parentInvMat);
 
 				var posQuant = @:privateAccess sceneEditor.view.config.get("sceneeditor.xyzPrecision");
 				var scaleQuant = @:privateAccess sceneEditor.view.config.get("sceneeditor.scalePrecision");
@@ -315,30 +315,21 @@ class SplineEditor {
 				}
 
 				var rot = sceneObj.getRotationQuat().toEuler();
-				var prevState = { 	x : sceneObj.x, y : sceneObj.y, z : sceneObj.z, 
-									scaleX : sceneObj.scaleX, scaleY : sceneObj.scaleY, scaleZ : sceneObj.scaleZ, 
-									rotationX : rot.x, rotationY : rot.y, rotationZ : rot.z };
-
+				var prevState = sceneObj.getAbsPos().clone();
+				prevState.multiply(prevState, parentInvMat);
 				gizmo.onMove = function(translate: h3d.Vector, rot: h3d.Quat, scale: h3d.Vector) {
 					var transf = new h3d.Matrix();
 					transf.identity();
 
-					if(rot != null)
-						rot.toMatrix(transf);
-
-					if(translate != null)
-						transf.translate(translate.x, translate.y, translate.z);
+					if(rot != null) rot.toMatrix(transf);
+					if(translate != null) transf.translate(translate.x, translate.y, translate.z);
 
 					var newMat = localMat.clone();
 					newMat.multiply(newMat, transf);
-					newMat.multiply(newMat, pivot);
-					var invParent = sceneObj.parent.getAbsPos().clone();
-					invParent.invert();
-					newMat.multiply(newMat, invParent);
-					if(scale != null) {
-						newMat.prependScale(scale.x, scale.y, scale.z);
-					}
-
+					newMat.translate(pivotPt.x, pivotPt.y, pivotPt.z);
+					newMat.multiply(newMat, parentInvMat);
+					if(scale != null) newMat.prependScale(scale.x, scale.y, scale.z);
+					
 					var rot = newMat.getEulerAngles();
 					sceneObj.x = quantize(newMat.tx, posQuant);
 					sceneObj.y = quantize(newMat.ty, posQuant);
@@ -362,22 +353,23 @@ class SplineEditor {
 				}
 
 				gizmo.onFinishMove = function() {
-					//var newState = [for(o in objects3d) o.saveTransform()];
-					/*undo.change(Custom(function(undo) {
+					var newState = sceneObj.getAbsPos().clone();
+					newState.multiply(newState, parentInvMat);
+					undo.change(Custom(function(undo) {
 						if( undo ) {
-							for(i in 0...objects3d.length) {
-								objects3d[i].loadTransform(prevState[i]);
-								objects3d[i].applyPos(sceneObjs[i]);
-							}
+							sceneObj.setTransform(prevState);
+							prefab.generateBezierCurve(ctx);
+							showViewers(ctx);
+							createGizmos(ctx);
 						}
 						else {
-							for(i in 0...objects3d.length) {
-								objects3d[i].loadTransform(newState[i]);
-								objects3d[i].applyPos(sceneObjs[i]);
-							}
+							sceneObj.setTransform(newState);
+							prefab.generateBezierCurve(ctx);
+							showViewers(ctx);
+							createGizmos(ctx);
 						}
-					}));*/
-				}/**/
+					}));
+				}
 			}
 		}
 	}
@@ -401,17 +393,49 @@ class SplineEditor {
 					if( K.isDown( K.MOUSE_LEFT ) && K.isDown( K.CTRL )  ) {
 						e.propagate = false;
 						var pt = getNewPointPosition(s2d.mouseX, s2d.mouseY, ctx, 1);
-						addSplinePoint(pt, ctx);
+						var sp = addSplinePoint(pt, ctx);
 						showViewers(ctx);
 						createGizmos(ctx);
+
+						undo.change(Custom(function(undo) {
+							if( undo ) {
+								prefab.points.remove(sp);
+								prefab.generateBezierCurve(ctx);
+								showViewers(ctx);
+								createGizmos(ctx);
+							}
+							else {
+								addSplinePoint(pt, ctx);
+								showViewers(ctx);
+								createGizmos(ctx);
+							}
+						}));
+
 					}
 					// Delete a point
 					if( K.isDown( K.MOUSE_LEFT ) && K.isDown( K.SHIFT )  ) {
 						e.propagate = false;
-						prefab.points.remove(getClosestSplinePointFromMouse(s2d.mouseX, s2d.mouseY, ctx));
+						var sp = getClosestSplinePointFromMouse(s2d.mouseX, s2d.mouseY, ctx);
+						var index = prefab.points.indexOf(sp);
+						prefab.points.remove(sp);
 						prefab.generateBezierCurve(ctx);
 						showViewers(ctx);
 						createGizmos(ctx);
+
+						undo.change(Custom(function(undo) {
+							if( undo ) {
+								prefab.points.insert(index, sp);
+								prefab.generateBezierCurve(ctx);
+								showViewers(ctx);
+								createGizmos(ctx);
+							}
+							else {
+								prefab.points.remove(sp);
+								prefab.generateBezierCurve(ctx);
+								showViewers(ctx);
+								createGizmos(ctx);
+							}
+						}));
 					}
 				};
 
@@ -479,7 +503,7 @@ class SplineEditor {
 			editModeButton.val(editMode ? "Edit Mode : Enabled" : "Edit Mode : Disabled");
 			editModeButton.toggleClass("editModeEnabled", editMode);
 			setSelected(getContext(), true);
-			@:privateAccess editContext.scene.editor.gizmo.visible = !editMode;
+			@:privateAccess editContext.scene.editor.hideGizmo = editMode;
 			ctx.onChange(prefab, null);
 		});
 
