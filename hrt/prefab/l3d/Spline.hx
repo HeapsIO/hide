@@ -8,6 +8,7 @@ enum CurveShape {
 
 typedef SplinePointData = {
 	pos : h3d.col.Point,
+	tangent : h3d.col.Point,
 	prev : SplinePoint,
 	next : SplinePoint
 }
@@ -21,11 +22,8 @@ class SplinePoint extends h3d.scene.Object {
 		setPosition(x,y,z);
 	}
 
-	var p = new h3d.col.Point();
-	public function getPoint() : h3d.col.Point {
-		var absPos = getAbsPos();
-		p.set(absPos.tx, absPos.ty, absPos.tz);
-		return p;
+	inline public function getPoint() : h3d.col.Point {
+		return getAbsPos().getPosition().toPoint();
 	}
 
 	public function getFirstControlPoint() : h3d.col.Point {
@@ -52,7 +50,7 @@ class Spline extends Object3D {
 	public var pointsData : Array<h3d.Matrix> = [];
 	public var points : Array<SplinePoint> = [];
 	public var shape : CurveShape = Quadratic;
-	
+
 	public var lineGraphics : h3d.scene.Graphics;
 	public var linePrecision : Int = 15;
 	public var lineThickness : Int = 4;
@@ -67,17 +65,17 @@ class Spline extends Object3D {
 
 	override function save() {
 		var obj : Dynamic = super.save();
-		
+
 		if( points!= null && points.length > 0 ) {
 			var parentInv = points[0].parent.getAbsPos().clone();
 			parentInv.initInverse(parentInv);
 			obj.points = [ for(sp in points) {
 								var abs = sp.getAbsPos().clone();
-								abs.multiply(parentInv, abs);
+								abs.multiply(abs, parentInv);
 								abs;
 							} ];
 		}
-		obj.shape = shape;
+		obj.shape = shape.getIndex();
 		obj.color = color;
 		obj.linePrecision = linePrecision;
 		obj.lineThickness = lineThickness;
@@ -88,7 +86,7 @@ class Spline extends Object3D {
 	override function load( obj : Dynamic ) {
 		super.load(obj);
 		pointsData = obj.points == null ? [] : obj.points;
-		shape = obj.shape == null ? Linear : obj.shape;
+		shape = obj.shape == null ? Linear : CurveShape.createByIndex(obj.shape);
 		color = obj.color != null ? obj.color : 0xFFFFFFFF;
 		linePrecision = obj.linePrecision == null ? 15 : obj.linePrecision;
 		lineThickness = obj.lineThickness == null ? 4 : obj.lineThickness;
@@ -100,7 +98,7 @@ class Spline extends Object3D {
 
 		ctx.local3d = new h3d.scene.Object(ctx.local3d);
 		ctx.local3d.name = name;
-	
+
 		for( pd in pointsData ) {
 			var sp = new SplinePoint(0, 0, 0, ctx.local3d);
 			sp.setTransform(pd);
@@ -128,7 +126,7 @@ class Spline extends Object3D {
 
 	// Return the length of the spline, use the computed data if available
 	function getLength( ?precision : Float = 1.0 ) : Float {
-		if( computedLength > 0 ) 
+		if( computedLength > 0 )
 			return computedLength;
 		var sum = 0.0;
 		for( i in 0 ... points.length - 1 ) {
@@ -158,7 +156,7 @@ class Spline extends Object3D {
 			return getMinLengthBetween(p1, p2);
 		}
 
-		if( p1.distanceToNextPoint > 0 ) 
+		if( p1.distanceToNextPoint > 0 )
 			return p1.distanceToNextPoint;
 
 		var sum = 0.0;
@@ -200,7 +198,7 @@ class Spline extends Object3D {
 		var length = getLength();
 		var stepCount = hxd.Math.ceil(length * precision);
 		var minDist = -1.0;
-		var result : SplinePointData = { pos : null, prev : null, next : null };
+		var result : SplinePointData = { pos : null, tangent : null, prev : null, next : null };
 		for( i in 0 ... stepCount ) {
 			var pt = getPoint( i / stepCount );
 			var dist = pt.pos.distance(p);
@@ -212,11 +210,24 @@ class Spline extends Object3D {
 		return result;
 	}
 
-	// Return the point on the spline between p1 and p2 at t ( 0 -> 1 )
+	// Return the point on the spline between p1 and p2 at t, 0 <= t <= 1
 	function getPoint( t : Float, ?precision : Float = 1.0 ) : SplinePointData {
 		t = hxd.Math.clamp(t, 0, 1);
-		if( t == 0 ) return { pos : points[0].getPoint(), prev : points[0], next : points[0] } ;
-		if( t == 1 ) return { pos : points[points.length - 1].getPoint(), prev : points[points.length - 1], next : points[points.length - 1] };
+
+		if( points.length == 1 ) return { 	pos : points[0].getPoint(),
+											tangent : points[0].getAbsPos().right().toPoint(),
+											prev : null, 
+											next : null } ;
+
+		if( t == 0 ) return { 	pos : points[0].getPoint(),
+								tangent : points[0].getFirstControlPoint().sub(points[0].getPoint()),
+								prev : points[0], 
+								next : points[0] } ;
+
+		if( t == 1 ) return { 	pos : points[points.length - 1].getPoint(),
+								tangent : points[points.length - 1].getFirstControlPoint().sub(points[points.length - 1].getPoint()),
+								prev : points[points.length - 1], 
+								next : points[points.length - 1] };
 
 		var totalLength = getLength();
 		var length = totalLength * t;
@@ -224,14 +235,16 @@ class Spline extends Object3D {
 		for( i in 0 ... points.length - 1 ) {
 			var curSegmentLength = getLengthBetween(points[i], points[i+1], precision);
 			curlength += curSegmentLength;
-			if( length <= curlength ) 
-				return { pos : getPointBetween( (length - (curlength - curSegmentLength)) / curSegmentLength, points[i], points[i+1]), prev : points[i], next : points[i+1] } ;
+			if( length <= curlength ) {
+				var t = (length - (curlength - curSegmentLength)) / curSegmentLength;
+				return { pos : getPointBetween(t, points[i], points[i+1]), tangent : getTangentBetween(t, points[i], points[i+1]), prev : points[i], next : points[i+1] };
+			}
 		}
-		return { pos : points[points.length - 1].getPoint(), prev : points[points.length - 1], next : points[points.length - 1] };
+		return { pos : null, tangent : null, prev : null, next : null };
 	}
 
-	// Return the point on the curve between p1 and p2 at t ( 0 -> 1 )
-	inline function getPointBetween( t : Float, p1 : SplinePoint, p2 : SplinePoint ) {
+	// Return the point on the curve between p1 and p2 at t, 0 <= t <= 1
+	inline function getPointBetween( t : Float, p1 : SplinePoint, p2 : SplinePoint ) : h3d.col.Point {
 		return switch (shape) {
 			case Linear: getLinearBezierPoint( t, p1.getPoint(), p2.getPoint() );
 			case Quadratic: getQuadraticBezierPoint( t, p1.getPoint(), p1.getSecondControlPoint(), p2.getPoint() );
@@ -239,22 +252,43 @@ class Spline extends Object3D {
 		}
 	}
 
-	// Linear Interpolation 
+	// Return the tangen on the curve between p1 and p2 at t, 0 <= t <= 1
+	inline function getTangentBetween( t : Float, p1 : SplinePoint, p2 : SplinePoint ) : h3d.col.Point {
+		return switch (shape) {
+			case Linear: getLinearBezierTangent( t, p1.getPoint(), p2.getPoint() );
+			case Quadratic: getQuadraticBezierTangent( t, p1.getPoint(), p1.getSecondControlPoint(), p2.getPoint() );
+			case Cubic: getCubicBezierTangent( t, p1.getPoint(), p1.getSecondControlPoint(), p2.getFirstControlPoint(), p2.getPoint() );
+		}
+	}
+
+	// Linear Interpolation
 	// p(t) = p0 + (p1 - p0) * t
 	inline function getLinearBezierPoint( t : Float, p0 : h3d.col.Point, p1 : h3d.col.Point ) : h3d.col.Point {
 		return p0.add((p1.sub(p0).multiply(t)));
 	}
+	// p'(t) = (p1 - p0)
+	inline function getLinearBezierTangent( t : Float, p0 : h3d.col.Point, p1 : h3d.col.Point ) : h3d.col.Point {
+		return p1.sub(p0).normalizeFast();
+	}
 
-	// Quadratic Interpolation 
+	// Quadratic Interpolation
 	// p(t) = p0 * (1 - t)² + p1 * t * 2 * (1 - t) + p2 * t²
 	inline function getQuadraticBezierPoint( t : Float, p0 : h3d.col.Point, p1 : h3d.col.Point, p2 : h3d.col.Point) : h3d.col.Point {
 		return p0.multiply((1 - t) * (1 - t)).add(p1.multiply(t * 2 * (1 - t))).add(p2.multiply(t * t));
+	}
+	// p'(t) = 2 * (1 - t) * (p1 - p2) + 2 * t * (p2 - p1)
+	inline function getQuadraticBezierTangent( t : Float, p0 : h3d.col.Point, p1 : h3d.col.Point, p2 : h3d.col.Point) : h3d.col.Point {
+		return p1.sub(p2).multiply(2 * (1 - t)).add(p2.sub(p1).multiply(2 * t)).normalizeFast();
 	}
 
 	// Cubic Interpolation
 	// p(t) = p0 * (1 - t)³ + p1 * t * 3 * (1 - t)² + p2 * t² * 3 * (1 - t) + p3 * t³
 	inline function getCubicBezierPoint( t : Float, p0 : h3d.col.Point, p1 : h3d.col.Point, p2 : h3d.col.Point, p3 : h3d.col.Point) : h3d.col.Point {
 		return p0.multiply((1 - t) * (1 - t) * (1 - t)).add(p1.multiply(t * 3 * (1 - t) * (1 - t))).add(p2.multiply(t * t * 3 * (1 - t))).add(p3.multiply(t * t * t));
+	}
+	// p'(t) = 3 * (1 - t)² * (p1 - p0) + 6 * (1 - t) * t * (p2 - p1) + 3 * t² * (p3 - p2)
+	inline function getCubicBezierTangent( t : Float, p0 : h3d.col.Point, p1 : h3d.col.Point, p2 : h3d.col.Point, p3 : h3d.col.Point) : h3d.col.Point {
+		return p1.sub(p0).multiply(3 * (1 - t) * (1 - t)).add(p2.sub(p1).multiply(6 * (1 - t) * t)).add(p3.sub(p2).multiply(3 * t * t)).normalizeFast();
 	}
 
 	#if editor

@@ -8,6 +8,7 @@ class NewSplinePointViewer extends h3d.scene.Object {
 
 	var pointViewer : h3d.scene.Mesh;
 	var connectionViewer : h3d.scene.Graphics;
+	var tangentViewer : h3d.scene.Graphics;
 
 	public function new( parent : h3d.scene.Object ) {
 		super(parent);
@@ -23,15 +24,30 @@ class NewSplinePointViewer extends h3d.scene.Object {
 		connectionViewer.lineStyle(3, 0xFFFF00);
 		connectionViewer.material.mainPass.setPassName("overlay");
 		connectionViewer.material.mainPass.depth(false, LessEqual);
-		connectionViewer.ignoreParentTransform = false;
 		connectionViewer.clear();
+
+		tangentViewer = new h3d.scene.Graphics(this);
+		tangentViewer.name = "tangentViewerViewer";
+		tangentViewer.lineStyle(3, 0xFFFF00);
+		tangentViewer.material.mainPass.setPassName("overlay");
+		tangentViewer.material.mainPass.depth(false, LessEqual);
+		tangentViewer.clear();
 	}
 
 	public function update( spd : SplinePointData ) {
-		connectionViewer.clear();
+
 		pointViewer.setPosition(spd.pos.x, spd.pos.y, spd.pos.z);
+		
+		tangentViewer.clear();
+		tangentViewer.visible = spd.tangent != null;
+		if( spd.tangent != null ) {
+			var scale = (spd.prev.scaleX + spd.next.scaleX) * 0.5;
+			tangentViewer.moveTo(spd.pos.x - spd.tangent.x * scale, spd.pos.y - spd.tangent.y * scale, spd.pos.z - spd.tangent.z * scale);
+			tangentViewer.lineTo(spd.pos.x + spd.tangent.x * scale, spd.pos.y + spd.tangent.y * scale, spd.pos.z + spd.tangent.z * scale);
+		}
 
 		// Only display the connection if we are adding the new point at the end or the beggining fo the spline
+		connectionViewer.clear();
 		connectionViewer.visible = spd.prev == spd.next;
 		if( connectionViewer.visible ) {
 			var startPos = spd.prev == null ? spd.next.getPoint() : spd.prev.getPoint();
@@ -126,13 +142,6 @@ class SplineEditor {
 		}
 	}
 
-	function trySelectPoint( ray: h3d.col.Ray ) : SplinePointViewer {
-		for( spv in splinePointViewers )
-			if( spv.interset(ray) )
-				return spv;
-		return null;
-	}
-
 	inline function getContext() {
 		return editContext.getContext(prefab);
 	}
@@ -161,25 +170,26 @@ class SplineEditor {
 
 	function getNewPointPosition( mouseX : Float, mouseY : Float, ctx : hrt.prefab.Context, ?precision = 1.0 ) : SplinePointData {
 		if( prefab.points.length == 0 ) {
-			return { pos : ctx.local3d.getAbsPos().getPosition().toPoint(), prev : null, next : null };
+			return { pos : ctx.local3d.getAbsPos().getPosition().toPoint(), tangent : ctx.local3d.getAbsPos().up().toPoint() , prev : null, next : null };
 		} 
 
 		var closestPt = getClosestPointFromMouse(mouseX, mouseY, ctx, precision);
 		
-		// If we are are adding a new point at the end/beginning, just make a raycast cursor -> plane with the transform of the frit/last SplinePoint
+		// If we are are adding a new point at the beginning/end, just make a raycast 'cursor -> plane' with the transform of the first/last SplinePoint
 		if( !prefab.loop && closestPt.next == closestPt.prev ) {
 			var camera = @:privateAccess ctx.local3d.getScene().camera;
 			var ray = camera.rayFromScreen(mouseX, mouseY);
-			var normal = closestPt.prev.getAbsPos().up();
-			var plane = h3d.col.Plane.fromNormalPoint(normal.toPoint(), new h3d.col.Point(closestPt.prev.getAbsPos().tx, closestPt.prev.getAbsPos().ty, closestPt.prev.getAbsPos().tz));
+			var normal = closestPt.prev.getAbsPos().up().toPoint();
+			var plane = h3d.col.Plane.fromNormalPoint(normal, new h3d.col.Point(closestPt.prev.getAbsPos().tx, closestPt.prev.getAbsPos().ty, closestPt.prev.getAbsPos().tz));
 			var pt = ray.intersect(plane);
-			return { pos : pt, prev : closestPt.prev, next : closestPt.next };
+			return { pos : pt, tangent : closestPt.tangent, prev : closestPt.prev, next : closestPt.next };
 		}
 		else 
 			return closestPt;
 	}
 
 	function getClosestPointFromMouse( mouseX : Float, mouseY : Float, ctx : hrt.prefab.Context, ?precision = 1.0 ) : SplinePointData {
+
 		if( ctx == null || ctx.local3d == null || ctx.local3d.getScene() == null ) 
 			return null;
 
@@ -203,7 +213,7 @@ class SplineEditor {
 		}
 
 		if( result == null ) {
-			result = { pos : null, prev : null, next : null};
+			result = { pos : null, tangent : null, prev : null, next : null};
 
 			var firstPt = prefab.points[0].getPoint();
 			var firstPtScreenPos = firstPt.toVector();
@@ -244,16 +254,34 @@ class SplineEditor {
 		var pos = spd.pos.toVector();
 		pos.project(invMatrix);
 
+		var scale = 1.0;
 		var index = -1;
-		if( spd.prev == null && spd.next == null ) index = 0;
-		else if( spd.prev == spd.next && spd.prev != null ) {
-			if( spd.prev ==  prefab.points[0] ) index = 0;
-			else if( spd.prev ==  prefab.points[prefab.points.length - 1] ) index = prefab.points.length;
+		if( spd.prev == null && spd.next == null ) {
+			index = 0;
+			scale = 1.0;
 		}
-		else index = prefab.points.indexOf(spd.next);
+		else if( spd.prev == spd.next && spd.prev != null && spd.next != null ) {
+			scale = spd.prev.scaleX;
+			if( spd.prev ==  prefab.points[0] ) 
+				index = 0;
+			else if( spd.prev == prefab.points[prefab.points.length - 1] ) 
+				index = prefab.points.length;
+		}
+		else {
+			index = prefab.points.indexOf(spd.next);
+			scale = (spd.prev.scaleX + spd.next.scaleX) * 0.5;
+		}
 
 		var sp = new SplinePoint(pos.x, pos.y, pos.z, ctx.local3d);
 		prefab.points.insert(index, sp);
+		if( spd.tangent != null ) {
+			var dir = spd.tangent.toVector();
+			dir.scale3(-1);
+			dir.project(invMatrix);
+			sp.setDirection(dir);
+		}
+		sp.scale(scale);
+
 		prefab.generateBezierCurve(ctx);
 		return sp;
 	}
@@ -485,7 +513,7 @@ class SplineEditor {
 		<div class="spline-editor">
 			<div class="group" name="Description">
 				<div class="description">
-					<i>Ctrl + Left Click</i> Add a point on the spline
+					<i>Ctrl + Left Click</i> Add a point on the spline <br>
 					<i>Shift + Left Click</i> Delete a point from the spline
 				</div>
 			</div>
