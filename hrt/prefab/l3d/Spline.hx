@@ -1,5 +1,7 @@
 package hrt.prefab.l3d;
 
+import hxd.Math;
+
 enum CurveShape {
 	Linear;
 	Quadratic;
@@ -10,7 +12,21 @@ typedef SplinePointData = {
 	pos : h3d.col.Point,
 	tangent : h3d.col.Point,
 	prev : SplinePoint,
-	next : SplinePoint
+	next : SplinePoint,
+	?lengthPos : Float
+}
+
+class CurveComputedData {
+	public var length : Float;
+	public var points : Array<h3d.col.Point> = [];
+	public function new() {}
+}
+
+class SplineComputedData {
+	public var length : Float;
+	public var precision : Float;
+	public var curves : Array<CurveComputedData> = [];
+	public function new() {}
 }
 
 class SplinePoint extends h3d.scene.Object {
@@ -47,10 +63,14 @@ class SplinePoint extends h3d.scene.Object {
 
 class Spline extends Object3D {
 
-	public var pointsData : Array<h3d.Matrix> = [];
 	public var points : Array<SplinePoint> = [];
 	public var shape : CurveShape = Quadratic;
 
+	// Save/Load the curve as an array of absPos
+	public var pointsData : Array<h3d.Matrix> = [];
+
+	// Graphic
+	public var showSpline : Bool = true;
 	public var lineGraphics : h3d.scene.Graphics;
 	public var linePrecision : Int = 15;
 	public var lineThickness : Int = 4;
@@ -80,6 +100,7 @@ class Spline extends Object3D {
 		obj.linePrecision = linePrecision;
 		obj.lineThickness = lineThickness;
 		obj.loop = loop;
+		obj.showSpline = showSpline;
 		return obj;
 	}
 
@@ -91,6 +112,7 @@ class Spline extends Object3D {
 		linePrecision = obj.linePrecision == null ? 15 : obj.linePrecision;
 		lineThickness = obj.lineThickness == null ? 4 : obj.lineThickness;
 		loop = obj.loop == null ? false : obj.loop;
+		showSpline = obj.showSpline == null ? true : obj.showSpline;
 	}
 
 	override function makeInstance( ctx : hrt.prefab.Context ) : hrt.prefab.Context {
@@ -150,33 +172,45 @@ class Spline extends Object3D {
 	}
 
 	// Approximative length calculation : compute the sum of the euclidean distance between a variable amount of points on the curve
-	function getLengthBetween( p1 : SplinePoint, p2 : SplinePoint, ?precision : Float = 1.0 ) : Float {
+	function getLengthBetween( p1 : SplinePoint, p2 : SplinePoint,  ?stepSize : Float = 1.0, ?threshold : Float = 0.01 ) : Float {
 
-		if( shape == Linear ) {
+		if( shape == Linear ) 
 			return getMinLengthBetween(p1, p2);
-		}
-
+		
 		if( p1.distanceToNextPoint > 0 )
 			return p1.distanceToNextPoint;
 
-		var sum = 0.0;
-		var maxLength = getMaxLengthBetween(p1, p2);
-		var minLength = getMinLengthBetween(p1, p2);
-		var stepCount = hxd.Math.ceil(precision * maxLength);
+		var pointList : Array<h3d.col.Point> = [];
+		pointList.push( points[0].getPoint() );
 
-		var curPt : h3d.col.Point = p1.getPoint();
-		var step = 1.0 / stepCount;
-		var t = step;
-		for( i in 0 ... stepCount ) {
-			var nextPt = getPointBetween(t, p1, p2);
-			sum += curPt.distance(nextPt);
-			curPt = nextPt;
-			t += step;
+		var sumT = 0.0;
+		var t = 1.0;
+		while( sumT < 1 ) {
+			var p = getPointBetween(t, points[0], points[1]);
+			var distance = p.distance(pointList[pointList.length - 1]);
+
+			if( hxd.Math.abs(distance - stepSize) < threshold ) {
+				pointList.push( p );
+				sumT = t;
+				t = 1.0;
+			}
+			else if( distance > stepSize ) 
+				t -= (t - sumT) * 0.5;
+			else if( distance < stepSize ) 
+				t += (t - sumT) * 0.5;
 		}
+
+		var sum = 0.0;
+		for( i in 0 ... pointList.length - 1 ) 
+			sum += pointList[i].distance(pointList[i + 1]);
 
 		p1.distanceToNextPoint = sum;
 
 		return sum;
+	}
+
+	function computeSplineData( ?precision : Float = 1.0 ) {
+		var d = new SplineComputedData();
 	}
 
 	// Return the closest spline point on the spline from p
@@ -195,7 +229,7 @@ class Spline extends Object3D {
 
 	// Return the closest point on the spline from p
 	function getClosestPoint( p : h3d.col.Point, ?precision : Float = 1.0 ) : SplinePointData {
-		var length = getLength();
+		var length = getLength(precision);
 		var stepCount = hxd.Math.ceil(length * precision);
 		var minDist = -1.0;
 		var result : SplinePointData = { pos : null, tangent : null, prev : null, next : null };
@@ -210,8 +244,83 @@ class Spline extends Object3D {
 		return result;
 	}
 
-	// Return the point on the spline between p1 and p2 at t, 0 <= t <= 1
-	function getPoint( t : Float, ?precision : Float = 1.0 ) : SplinePointData {
+	// Return the point on the spline at t, 0 <= t <= 1
+	function getPoint( l : Float, ?step : Float = 1.0, ?threshold : Float = 0.01 ) : SplinePointData {
+		
+		// Early return, easy case
+		if( points.length == 1 ) return { 	pos : points[0].getPoint(),
+											tangent : points[0].getAbsPos().right().toPoint(),
+											prev : null, 
+											next : null, 
+											lengthPos : 0  } ;
+
+		if( l == 0 ) return { 	pos : points[0].getPoint(),
+								tangent : points[0].getFirstControlPoint().sub(points[0].getPoint()),
+								prev : points[0], 
+								next : points[0], 
+								lengthPos : 0  } ;
+
+		if( l == 1 ) return { 	pos : points[points.length - 1].getPoint(),
+								tangent : points[points.length - 1].getFirstControlPoint().sub(points[points.length - 1].getPoint()),
+								prev : points[points.length - 1], 
+								next : points[points.length - 1], 
+								lengthPos : 1  };
+
+		var targetLength = l * getLength(100);
+		//trace("Try to find a point at " + targetLength);
+
+		// Find the curve of the spline wich contain the asked length
+		var p0 : SplinePoint = null;
+		var p1 : SplinePoint = null;
+		var curveLengthSum = 0.0;
+		for( i in 0 ... points.length - 1 ) {
+			var curveLength = getLengthBetween(points[i], points[i+1], step, threshold);
+			// Step on the curve and get the segment wich contain the asked length
+			if( targetLength <= curveLengthSum + curveLength ) {
+				p0 = points[i];
+				p1 = points[i + 1];
+				//trace("Try to find a point on the curve " + i + " -> " + (i + 1));
+			}
+			curveLengthSum += curveLength;
+		}
+
+		// Step on the curve and get the segment wich contain the asked length
+		var lastP = p0.getPoint();
+		var lengthSum = 0.0;
+		var minT = 0.0;
+		var t = 1.0;
+		while( minT < 1 ) {
+			var p = getPointBetween(t, p0, p1);
+			var curSegmentLength = p.distance(lastP);
+			if( curSegmentLength - step < threshold ) {
+				//trace("Try to find the point on the segment" + lastP + " - " + p + " of length " + lengthSum + " -> " + (lengthSum + curSegmentLength));	
+				// Lerp on the segment wich contain the asked length
+				if( curSegmentLength + lengthSum > targetLength ) {
+					//trace("Found the segment of the curve " + lastP + " - " + p );
+					var finalT = hxd.Math.lerp(minT, t, (targetLength - lengthSum ) / curSegmentLength );
+					trace("Found the segment of the curve " + finalT );
+					return { 	pos : getPointBetween(finalT, p0, p1),
+								tangent : getTangentBetween(finalT, p0, p1),
+								prev : p0, 
+								next : p1, 
+								lengthPos : finalT  };
+				}
+				lastP = p;
+				minT = t;
+				lengthSum += curSegmentLength;
+				t = 1.0;
+			}
+			else if( curSegmentLength > threshold ) 
+				t -= (t - minT) * 0.5;
+			else if( curSegmentLength < threshold ) 
+				t += (t - minT) * 0.5;
+		}
+
+		return { pos : null, tangent : null, prev : null, next : null };
+	}
+
+	// Return the point on the spline at t, 0 <= t <= 1
+	/*function getPoint( t : Float, ?precision : Float = 1.0 ) : SplinePointData {
 		t = hxd.Math.clamp(t, 0, 1);
 
 		if( points.length == 1 ) return { 	pos : points[0].getPoint(),
@@ -229,7 +338,7 @@ class Spline extends Object3D {
 								prev : points[points.length - 1], 
 								next : points[points.length - 1] };
 
-		var totalLength = getLength();
+		var totalLength = getLength(precision);
 		var length = totalLength * t;
 		var curlength = 0.0;
 		for( i in 0 ... points.length - 1 ) {
@@ -241,7 +350,7 @@ class Spline extends Object3D {
 			}
 		}
 		return { pos : null, tangent : null, prev : null, next : null };
-	}
+	}*/
 
 	// Return the point on the curve between p1 and p2 at t, 0 <= t <= 1
 	inline function getPointBetween( t : Float, p1 : SplinePoint, p2 : SplinePoint ) : h3d.col.Point {
@@ -294,6 +403,14 @@ class Spline extends Object3D {
 	#if editor
 
 	function generateBezierCurve( ctx : hrt.prefab.Context ) {
+		
+		if( !showSpline ) {
+			if( lineGraphics != null ) {
+				lineGraphics.remove();
+				lineGraphics = null;
+			}
+			return;
+		}
 
 		if( points == null )
 			return;
@@ -307,6 +424,9 @@ class Spline extends Object3D {
 		}
 
 		computedLength = -1;
+		for( sp in points ) {
+			sp.distanceToNextPoint = -1;
+		}
 
 		var curve : Array<h3d.col.Point> = [];
 		switch (shape) {
@@ -369,7 +489,7 @@ class Spline extends Object3D {
 					<dt>Color</dt><dd><input type="color" alpha="true" field="color"/></dd>
 					<dt>Thickness</dt><dd><input type="range" min="1" max="10" field="lineThickness"/></dd>
 					<dt>Precision</dt><dd><input type="range" step="1" min="1" max="100" field="linePrecision"/></dd>
-					<dt>Loop</dt><dd><input type="checkbox" field="loop"/></dd>
+					<dt>Show Spline</dt><dd><input type="checkbox" field="showSpline"/></dd>
 					<dt>Type</dt>
 						<dd>
 							<select field="shape" >

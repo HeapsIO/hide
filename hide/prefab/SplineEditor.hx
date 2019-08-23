@@ -195,7 +195,7 @@ class SplineEditor {
 
 		var result : SplinePointData = null;
 		var mousePos = new h3d.Vector( mouseX / h3d.Engine.getCurrent().width, 1.0 - mouseY / h3d.Engine.getCurrent().height, 0);
-		var length = prefab.getLength();
+		var length = prefab.getLength(precision);
 		var stepCount = hxd.Math.ceil(length * precision);
 		var minDist = -1.0;
 		for( i in 0 ... stepCount ) {
