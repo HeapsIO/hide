@@ -11,7 +11,8 @@ class MeshSpray extends Object3D {
 	var sceneEditor : hide.comp.SceneEditor;
 
 	var density : Int = 10;
-	var radius : Float = 5.0;
+	var densityOffset : Int = 0;
+	var radius : Float = 10.0;
 	var scale : Float = 1.0;
 	var scaleOffset : Float = 0.1;
 	var rotation : Float = 0.0;
@@ -152,6 +153,7 @@ class MeshSpray extends Object3D {
 		var optionsGroup = new hide.Element('<div class="group" name="Options"><dl></dl></div>');
 		optionsGroup.append(hide.comp.PropsEditor.makePropsList([
 				{ name: "density", t: PInt(1, 25), def: density },
+				{ name: "densityOffset", t: PInt(0, 10), def: densityOffset },
 				{ name: "radius", t: PFloat(0, 50), def: radius },
 				{ name: "scale", t: PFloat(0, 10), def: scale },
 				{ name: "scaleOffset", t: PFloat(0, 1), def: scaleOffset },
@@ -196,7 +198,9 @@ class MeshSpray extends Object3D {
 		vecRelat.transform3x4(transform);
 		var point2d = new h2d.col.Point(vecRelat.x, vecRelat.y);
 
-		var minDistanceBetweenMeshesSq = (radius * radius / density);
+		var computedDensity = density + Std.random(densityOffset+1);
+
+		var minDistanceBetweenMeshesSq = (radius * radius / computedDensity);
 
 		var currentPivots : Array<h2d.col.Point> = [];
 		inline function distance(x1 : Float, y1 : Float, x2 : Float, y2 : Float) return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
@@ -208,7 +212,7 @@ class MeshSpray extends Object3D {
 				currentPivots.push(new h2d.col.Point(model.x, model.y));
 			}
 		}
-		var nbMeshesToPlace = density - nbMeshesInZone;
+		var nbMeshesToPlace = computedDensity - nbMeshesInZone;
 		if (nbMeshesToPlace > 0) {
 			var models : Array<hrt.prefab.Prefab> = [];
 
