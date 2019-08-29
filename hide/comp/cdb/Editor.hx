@@ -483,20 +483,6 @@ class Editor extends Component {
 		if (err != null) {
 			return err;
 		}
-		
-		if (sheet.props.isProps) {
-			var def = base.getDefault(c);
-			if (sheet.lines.length > 0) {
-				for (l in sheet.lines) {
-					Reflect.setField(l, c.name, def);
-				}
-				sheet.lines.insert(index, sheet.lines[0]);
-			} else {
-				var v = { };
-				Reflect.setField(v, c.name, def);
-				sheet.lines.insert(index, v);
-			}
-		}
 		if( sheet.columns.length == 1 )
 			refresh();
 		for( t in tables )
