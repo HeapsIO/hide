@@ -1,95 +1,93 @@
 package hrt.prefab.l3d;
+import h3d.scene.MeshBatch;
 import h3d.scene.Mesh;
 import hrt.prefab.l3d.Spline.SplinePoint;
-
 
 class SplineMeshShader extends hxsl.Shader {
 
 	static var SRC = {
 		@:import h3d.shader.BaseMesh;
 
-		@const var POINT_COUNT : Int;
-		@const var CURVE_COUNT : Int;
-		@const var CURVE_TYPE : Int;
-		@param var points : Array<Vec4, POINT_COUNT>;
-		@param var lengths : Array<Vec4, CURVE_COUNT>;
-		@param var totalLength : Float;
+		// Spline Infos
+		@const(4096) var POINT_COUNT : Int;
+		@param var stepSize : Float;
+		@param var points : Buffer<Vec4, POINT_COUNT>;
+
+		// Instance Infos
+		@param var modelMat : Mat4;
 		@param var splinePos : Float;
 
-		function getCubicBezierPoint( t : Float, p0 : Vec4, p1 : Vec4, p2 : Vec4, p3 : Vec4 ) : Vec3 {
-			return (p0 * (1 - t) * (1 - t) * (1 - t) + p1 * t * 3 * (1 - t) * (1 - t) + p2 * t * t * 3 * (1 - t) + p3 * t * t * t).xyz;
-		}
-		function getCubicBezierTangent( t : Float, p0 : Vec4, p1 : Vec4, p2 : Vec4, p3 : Vec4 ) : Vec3 {
-			return (3 * (1 - t) * (1 - t) * (p1 - p0) + 6 * (1 - t) * t * (p2 - p1) + 3 * t * t * (p3 - p2)).xyz.normalize();
-		}
+		var calculatedUV : Vec2;
 
 		function vertex() {
-			var pos = splinePos + relativePosition.y; // TO DO : Add modelView transform
-			pos = clamp(pos, 0, totalLength);
-			var curlength = 0.0;
-			var i = 0;
-			while( i < POINT_COUNT - 3 ) {
-				var curSegmentLength = lengths[i].r;
-				curlength += curSegmentLength;
-				if( pos <= curlength ) {
-					
-					/*var targetL = pos;
-					var curL = 0.0;	
-					var curT = 0.0;
-					var curP = getCubicBezierPoint(curT, points[i * 3 + 1], points[i * 3 + 2], points[i * 3 + 3], points[i * 3 + 4]);
-					var dist = curP.distance()
-					while( abs(targetL - curL) > 0.1 ) {
-						var p = getCubicBezierPoint(curT, points[i * 3 + 1], points[i * 3 + 2], points[i * 3 + 3], points[i * 3 + 4]);
-						var dist = curSegmentLength * p;
-						true ? curT *= 0.5 : curT *= -0.5;
-					}*/
 
-					var t = (pos - (curlength - curSegmentLength)) / curSegmentLength;
+			var modelPos = relativePosition * modelMat.mat3x4();
+			var pos = splinePos + modelPos.y;
+			pos = clamp(pos, 0.0, POINT_COUNT * stepSize);
+			var offsetY = pos - splinePos;
 
-					var point = getCubicBezierPoint(t, points[i * 3 + 1], points[i * 3 + 2], points[i * 3 + 3], points[i * 3 + 4]);
-					var worldUp = vec3(0,0,1);
-					var front = -getCubicBezierTangent(t, points[i * 3 + 1], points[i * 3 + 2], points[i * 3 + 3], points[i * 3 + 4]);
-					var right = -front.cross(worldUp).normalize();
-					var up = front.cross(right).normalize();			
+			// Linear Interpolation between two samples
+			var s1 = floor(pos / stepSize).int();
+			var s2 = ceil(pos / stepSize).int();
+			var t = (pos - (s1 * stepSize)) / stepSize;
+			t.saturate();
+			var point = mix(points[s1 * 2], points[s2 * 2], t).xyz;
+			var tangent = mix(points[s1 * 2 + 1], points[s2 * 2 + 1], t).xyz;
 
-					var rotation = mat4(	vec4(right.x, front.x, up.x, 0), 
-											vec4(right.y, front.y, up.y, 0), 
-											vec4(right.z, front.z, up.z, 0), 
-											vec4(0,0,0,1));
+			// Construct the new transform
+			var worldUp = vec3(0,0,1);
+			var front = -tangent;
+			var right = -front.cross(worldUp).normalize();
+			var up = front.cross(right).normalize();			
 
-					var translation = mat4(	vec4(1,0,0, point.x ), 
-											vec4(0,1,0, point.y ), 
-											vec4(0,0,1, point.z ), 
-											vec4(0,0,0,1));
+			var rotation = mat4(	vec4(right.x, front.x, up.x, 0),
+									vec4(right.y, front.y, up.y, 0),
+									vec4(right.z, front.z, up.z, 0),
+									vec4(0,0,0,1));
 
-					var transform = rotation * translation;
+			var translation = mat4(	vec4(1,0,0, point.x ),
+									vec4(0,1,0, point.y ),
+									vec4(0,0,1, point.z ),
+									vec4(0,0,0,1));
 
-					var localPos = relativePosition - vec3(0,relativePosition.y,0);
+			var transform = rotation * translation;
 
-					transformedPosition = localPos* transform.mat3x4(); 
-					break;
-				}
-				i += 3;
-			}
+			var localPos = (modelPos - vec3(0, offsetY, 0));
+			transformedPosition = localPos * transform.mat3x4();
+			transformedNormal = transformedNormal * modelMat.mat3x4() * rotation.mat3x4();
 		}
 
 		function fragment() {
-			//pixelColor = vec4(1,0,0,1);
 		}
 	}
 }
 
+enum SplineMeshMode {
+	MultiMesh;
+	Instanced;
+	BigGeometry;
+}
 
 class SplineMesh extends Spline {
 
 	var meshPath : String;
 	var meshes : Array<h3d.scene.Mesh> = [];
+
 	var spacing: Float = 0.0;
+	var meshScale = new h3d.Vector(1,1,1);
+	var meshRotation = new h3d.Vector(0,0,0);
+	var modelMat = new h3d.Matrix();
+
+	var meshBatch : h3d.scene.MeshBatch = null;
+	var meshPrimitive : h3d.prim.MeshPrimitive = null;
+	var meshMaterial : h3d.mat.Material = null;
 
 	override function save() {
 		var obj : Dynamic = super.save();
 		obj.meshPath = meshPath;
 		obj.spacing = spacing;
+		obj.meshScale = meshScale;
+		obj.meshRotation = meshRotation;
 		return obj;
 	}
 
@@ -97,24 +95,25 @@ class SplineMesh extends Spline {
 		super.load(obj);
 		meshPath = obj.meshPath;
 		spacing = obj.spacing == null ? 0.0 : obj.spacing;
+		meshScale = obj.meshScale == null ? new h3d.Vector(1,1,1) : obj.meshScale;
+		meshRotation = obj.meshRotation == null ? new h3d.Vector(0,0,0) : obj.meshRotation;
 	}
 
 	override function makeInstance( ctx : hrt.prefab.Context ) : hrt.prefab.Context {
-		var ctx = ctx.clone(this);
 
+		var ctx = ctx.clone(this);
 		ctx.local3d = new h3d.scene.Object(ctx.local3d);
 		ctx.local3d.name = name;
-
+		
 		for( pd in pointsData ) {
 			var sp = new SplinePoint(0, 0, 0, ctx.local3d);
 			sp.setTransform(pd);
 			points.push(sp);
 		}
-		pointsData = null;
+		pointsData = [];
 
-		if( points == null || points.length == 0 ) {
+		if( points == null || points.length == 0 ) 
 			points.push(new SplinePoint(0,0,0, ctx.local3d));
-		}
 
 		updateInstance(ctx);
 		return ctx;
@@ -123,61 +122,121 @@ class SplineMesh extends Spline {
 	override function updateInstance( ctx : hrt.prefab.Context , ?propName : String ) {
 		super.updateInstance(ctx, propName);
 
-		for( m in meshes ) {
-			m.remove();
+		var rot = new h3d.Matrix();
+		rot.initRotation(hxd.Math.degToRad(meshRotation.x), hxd.Math.degToRad(meshRotation.y), hxd.Math.degToRad(meshRotation.z));
+		var scale = new h3d.Matrix();
+		scale.initScale(meshScale.x, meshScale.y, meshScale.z);
+		modelMat.multiply(scale, rot);
+		
+		createMeshPrimitive(ctx);
+		createMeshBatch(ctx);
+
+		// Remake the material
+		for( c in @:privateAccess children ) {
+			var mat = Std.downcast(c, Material);
+			if( mat != null && mat.enabled ) 
+				@:privateAccess mat.updateObject(ctx, meshBatch);
+			var shader = Std.downcast(c, Shader);
+			if( shader != null && shader.enabled ) 
+				shader.makeInstance(ctx);
 		}
-		meshes = [];
-		if( meshPath != null ) {
-			var meshTemplate = ctx.loadModel(meshPath).toMesh();
+
+		//createMultiMeshes(ctx);
+	}
+
+	function createMeshPrimitive( ctx : Context  ) {
+		meshPrimitive = null;
+		meshMaterial = null;
+		if( meshPath != null ) {	
+			var meshTemplate : h3d.scene.Mesh = ctx.loadModel(meshPath).toMesh();
 			if( meshTemplate != null ) {
-				var step = hxd.Math.abs(meshTemplate.primitive.getBounds().yMax) + hxd.Math.abs(meshTemplate.primitive.getBounds().yMin) + spacing;
-				var length = getLength(0.1);
-				var stepCount = hxd.Math.ceil(length / step);
-				for( i in 0 ... stepCount ) {
-					var m : h3d.scene.Mesh = cast meshTemplate.clone();
-					//m.material.mainPass.setPassName("beforeTonemapping");
-					m.material.castShadows = false;
-					m.ignoreParentTransform = true;
-					var p = getPoint(i / stepCount, 1.0, 0.001);
-					if( p.pos != null ) m.setPosition(p.pos.x, p.pos.y, p.pos.z);
-					//var s = createShader();
-					//m.material.mainPass.addShader(s);
-					//s.splinePos = (i / stepCount) * length;
-					ctx.local3d.addChild(m);
-					meshes.push(m);
-				}
+				meshPrimitive = cast meshTemplate.primitive;
+				meshMaterial = meshTemplate.material;
 			}
+		}
+	}
+
+	function createMeshBatch( ctx : Context ) {
+
+		if( meshPrimitive == null ) {
+			if( meshBatch != null ) {
+				meshBatch.remove();
+				meshBatch = null;
+			}
+			return;
+		}
+
+		if( meshBatch != null /*&& meshBatch.primitive != meshPrimitive*/ ) {
+			meshBatch.remove();
+			meshBatch = null;
+		}
+	
+		if( meshBatch == null ) {
+			var material : h3d.mat.Material = cast meshMaterial.clone();
+			var splinemeshShader = createShader();
+			material.mainPass.addShader(splinemeshShader);
+			material.castShadows = false;
+			meshBatch = new MeshBatch(meshPrimitive, material, ctx.local3d);
+			meshBatch.ignoreParentTransform = true;
+		}
+
+		var localBounds = meshPrimitive.getBounds().clone();
+		localBounds.transform(modelMat);
+		var minOffset = hxd.Math.abs(localBounds.yMin);
+		var step = (hxd.Math.abs(localBounds.yMax) + hxd.Math.abs(localBounds.yMin)) + spacing;
+		var stepCount = hxd.Math.ceil((getLength() - minOffset) / step);
+
+		var splinemeshShader = meshBatch.material.mainPass.getShader(SplineMeshShader);
+		
+		meshBatch.begin(stepCount);
+		for( i in 0 ... stepCount ) {
+			splinemeshShader.splinePos = i * step + minOffset;
+			meshBatch.emitInstance();
+		}
+	}
+
+	function createMultiMeshes( ctx : Context ) {
+
+		for( m in meshes ) 
+			m.remove();
+
+		meshes = [];
+
+		if( meshPrimitive == null )
+			return;
+
+		var localBounds = meshPrimitive.getBounds().clone();
+		localBounds.transform(modelMat);
+		var minOffset = hxd.Math.abs(localBounds.yMin);
+		var step = (hxd.Math.abs(localBounds.yMax) + hxd.Math.abs(localBounds.yMin)) + spacing;
+
+		var length = getLength();
+		var stepCount = hxd.Math.ceil((length - minOffset) / step);
+		for( i in 0 ... stepCount ) {
+			var m = new h3d.scene.Mesh(meshPrimitive, cast meshMaterial.clone());
+			m.material.castShadows = false;
+			m.ignoreParentTransform = true;
+			m.material.mainPass.culling = None;
+			var s = createShader();
+			m.material.mainPass.addShader(s);
+			s.splinePos = i * step + minOffset;
+			ctx.local3d.addChild(m);
+			meshes.push(m);
 		}
 	}
 
 	function createShader() {
 		var s = new SplineMeshShader();
-		s.CURVE_COUNT = points.length - 1;
-		s.totalLength = getLength();
-		s.lengths = [ for( i in 0 ...  points.length - 1 ) new h3d.Vector(getLengthBetween(points[i] , points[i + 1])) ];
-		switch shape {
-			case Linear: 
-				s.POINT_COUNT = points.length;
-				s.CURVE_TYPE = 0;
-				s.points = [ for(sp in points) {
-					sp.getPoint().toVector();
-				}];
-			case Quadratic:
-				s.POINT_COUNT = points.length * 3;
-				s.CURVE_TYPE = 1;
-				s.points = [ for(sp in points) {
-					sp.getPoint().toVector();
-					sp.getSecondControlPoint().toVector();
-				}];
-			case Cubic: 
-				s.POINT_COUNT = points.length * 3;
-				s.CURVE_TYPE = 2;
-				for(sp in points) {
-					s.points.push(sp.getFirstControlPoint().toVector());
-					s.points.push(sp.getPoint().toVector());
-					s.points.push(sp.getSecondControlPoint().toVector());
-				}
+		s.POINT_COUNT = data.samples.length;
+		s.stepSize = step;
+		s.modelMat = modelMat;
+		var bufferData = new hxd.FloatBuffer(s.POINT_COUNT * 4 * 2);
+		for( s in data.samples ) {
+			bufferData.push(s.pos.x); bufferData.push(s.pos.y); bufferData.push(s.pos.z); bufferData.push(0.0);
+			bufferData.push(s.tangent.x); bufferData.push(s.tangent.y); bufferData.push(s.tangent.z); bufferData.push(0.0);
 		}
+		s.points = new h3d.Buffer(s.POINT_COUNT, 4 * 2, [UniformBuffer]);
+		s.points.uploadVector(bufferData, 0, s.points.vertices, 0);
 		return s;
 	}
 
@@ -195,6 +254,12 @@ class SplineMesh extends Spline {
 				<dl>
 					<dt>Mesh</dt><dd><input type="model" field="meshPath"/></dd>
 					<dt>Spacing</dt><dd><input type="range" min="0" max="10" field="spacing"/></dd>
+					<dt>Scale X</dt><dd><input type="range" min="0" max="5" value="1" field="meshScale.x"/></dd>
+					<dt>Scale Y</dt><dd><input type="range" min="0" max="5" value="1" field="meshScale.y"/></dd>
+					<dt>Scale Z</dt><dd><input type="range" min="0" max="5" value="1" field="meshScale.z"/></dd>
+					<dt>Rotation X</dt><dd><input type="range" min="-180" max="180" value="0" field="meshRotation.x" /></dd>
+					<dt>Rotation Y</dt><dd><input type="range" min="-180" max="180" value="0" field="meshRotation.y" /></dd>
+					<dt>Rotation Z</dt><dd><input type="range" min="-180" max="180" value="0" field="meshRotation.z" /></dd>
 				</dl>
 			</div>
 			'), this, function(pname) { ctx.onChange(this, pname); });
