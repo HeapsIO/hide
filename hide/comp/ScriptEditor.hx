@@ -4,6 +4,7 @@ typedef GlobalsDef = haxe.DynamicAccess<{
 	var globals : haxe.DynamicAccess<String>;
 	var context : String;
 	var events : String;
+	var evalTo : String;
 	var cdbEnums : Array<String>;
 }>;
 
@@ -16,6 +17,7 @@ class ScriptChecker {
 	var config : hide.Config;
 	var documentName : String;
 	var constants : Map<String,Dynamic>;
+	var evalTo : String;
 	public var checker : hscript.Checker;
 
 	public function new( config : hide.Config, documentName : String, ?constants : Map<String,Dynamic> ) {
@@ -114,6 +116,9 @@ class ScriptChecker {
 					}
 				}
 			}
+
+			if( api.evalTo != null )
+				this.evalTo = api.evalTo;
 		}
 	}
 
@@ -170,7 +175,15 @@ class ScriptChecker {
 			var expr = parser.parseString(script, "");
 			if( checkTypes ) {
 				checker.allowAsync = true;
-				checker.check(expr);
+				var et = checker.check(expr);
+				if( evalTo != null ) {
+					var t = checker.types.resolve(evalTo);
+					if( t == null ) {
+						error('EvalTo type $evalTo not found');
+						return null;
+					}
+					checker.unify(et, t, expr);
+				}
 			}
 			return null;
 		} catch( e : hscript.Expr.Error ) {

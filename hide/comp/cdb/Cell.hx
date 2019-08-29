@@ -202,7 +202,7 @@ class Cell extends Component {
 	}
 
 	public function getDocumentName() {
-		var name = table.sheet.name;
+		var name = table.sheet.name.split("@").join(".");
 		if( table.sheet.props.hasGroup ) {
 			var g = getGroup();
 			if( g != null ) name += "[group="+g+"]";
