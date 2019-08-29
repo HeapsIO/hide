@@ -74,7 +74,15 @@ class ModalColumnForm extends Modal {
 					<br /><br />
 				</div>
 
-				<div class="localizable"><label><input type="checkbox" name="localizable"/>&nbsp;Localizable</label><br /><br /></div>
+				<div class="kind">
+					Kind
+					<br/>
+					<select name="kind">
+					<option value="">Default</option>
+					<option value="localizable">Localizable</option>
+					<option value="script">Script</option>
+					</select>
+				</div>
 
 				<div class="custom">
 					Type
@@ -116,7 +124,7 @@ class ModalColumnForm extends Modal {
 			form.find("[name=type]").val(column.type.getName().substr(1).toLowerCase()).change();
 			form.find("[name=req]").prop("checked", !column.opt);
 			form.find("[name=display]").val(column.display == null ? "0" : Std.string(column.display));
-			form.find("[name=localizable]").prop("checked", column.kind==Localizable);
+			form.find("[name=kind]").val(column.kind == null ? "" : ""+column.kind);
 			switch( column.type ) {
 			case TEnum(values), TFlags(values):
 				form.find("[name=values]").val(values.join(","));
@@ -130,7 +138,7 @@ class ModalColumnForm extends Modal {
 			form.addClass("create");
 			form.find("input").not("[type=submit]").val("");
 			form.find("[name=req]").prop("checked", true);
-			form.find("[name=localizable]").prop("checked", false);
+			form.find("[name=kind]").val("");
 		}
 
 		form.find("[name=name]").focus();
@@ -229,8 +237,10 @@ class ModalColumnForm extends Modal {
 		};
 		if( v.req != "on" ) c.opt = true;
 		if( v.display != "0" ) c.display = cast Std.parseInt(v.display);
-		if( v.localizable == "on" ) c.kind = Localizable;
-
+		switch( v.kind ) {
+		case "localizable": c.kind = Localizable;
+		case "script": c.kind = Script;
+		}
 		return c;
 	}
 
