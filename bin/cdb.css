@@ -190,9 +190,7 @@
 }
 .cdb .cdb-sheet td.t_list.parent-sub-table,
 .cdb .cdb-sheet td.t_properties.parent-sub-table {
-  background-color: #40667e;
-  color: black;
-  font-weight: bold;
+  background-color: #313a48;
 }
 .cdb .cdb-sheet td.t_enum {
   padding-left: 5px;

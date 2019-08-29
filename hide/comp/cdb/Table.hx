@@ -237,7 +237,7 @@ class Table extends Component {
 
 			th.mousedown(function(e) {
 				if( e.which == 3 ) {
-					editor.popupColumn(this, c);
+					editor.popupColumn(this, c, cell);
 					editor.cursor.clickCell(cell, false);
 					e.preventDefault();
 					return;
@@ -262,7 +262,9 @@ class Table extends Component {
 			sel.val("");
 			editor.element.focus();
 			if( v == "$new" ) {
-				editor.newColumn(sheet);
+				editor.newColumn(sheet, null, function(c) {
+					if( c.opt ) insertProperty(c.name);
+				});
 				return;
 			}
 			insertProperty(v);
