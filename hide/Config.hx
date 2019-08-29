@@ -40,7 +40,7 @@ class Config {
 		this.path = path;
 		var fullPath = ide.getPath(path);
 		if( sys.FileSystem.exists(fullPath) )
-			source = ide.parseJSON(sys.io.File.getContent(fullPath))
+			source = try ide.parseJSON(sys.io.File.getContent(fullPath)) catch( e : Dynamic ) throw e+" (in "+fullPath+")";
 		else
 			source = cast {};
 		sync();

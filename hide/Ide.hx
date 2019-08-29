@@ -477,7 +477,12 @@ class Ide {
 			config.global.save();
 		}
 		window.title = (isCDB ? "CastleDB" : "HIDE") + " - " + dir;
-		config = Config.loadForProject(projectDir, resourceDir);
+		try {
+			config = Config.loadForProject(projectDir, resourceDir);
+		} catch( e : Dynamic ) {
+			js.Browser.alert(e);
+			return;
+		}
 		shaderLoader = new hide.tools.ShaderLoader();
 		typesCache = new hide.tools.TypesCache();
 
