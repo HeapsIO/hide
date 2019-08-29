@@ -567,7 +567,6 @@ class Editor extends Component {
 	}
 
 	public function popupColumn( table : Table, col : cdb.Data.Column, ?cell : Cell ) {
-		var col = cell.column;
 		var indexColumn = table.sheet.columns.indexOf(col);
 		var menu : Array<hide.comp.ContextMenu.ContextMenuItem> = [
 			{ label : "Edit", click : function () editColumn(table.sheet, col) },
