@@ -170,8 +170,10 @@ class Table extends Component {
 			element.append(l);
 		}
 
-		cols.ready(cloneTableHead);
-		cols.on("resize", cloneTableHead);
+		if( sheet.parent == null ) {
+			cols.ready(cloneTableHead);
+			cols.on("resize", cloneTableHead);
+		}
 	}
 
 	function makeSeparator( sindex : Int, colCount : Int ) {
