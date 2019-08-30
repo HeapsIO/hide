@@ -23,14 +23,14 @@ class NewSplinePointViewer extends h3d.scene.Object {
 		connectionViewer.name = "connectionViewer";
 		connectionViewer.lineStyle(3, 0xFFFF00);
 		connectionViewer.material.mainPass.setPassName("overlay");
-		connectionViewer.material.mainPass.depth(false, LessEqual);
+		connectionViewer.material.mainPass.depthTest = Always;
 		connectionViewer.clear();
 
 		tangentViewer = new h3d.scene.Graphics(this);
 		tangentViewer.name = "tangentViewerViewer";
 		tangentViewer.lineStyle(3, 0xFFFF00);
 		tangentViewer.material.mainPass.setPassName("overlay");
-		tangentViewer.material.mainPass.depth(false, LessEqual);
+		tangentViewer.material.mainPass.depthTest = Always;
 		tangentViewer.clear();
 	}
 
@@ -72,12 +72,13 @@ class SplinePointViewer extends h3d.scene.Object {
 		pointViewer.name = "pointViewer";
 		pointViewer.material.setDefaultProps("ui");
 		pointViewer.material.color.set(1,1,1,1);
+		pointViewer.material.mainPass.depthTest = Always;
 
 		controlPointsViewer = new h3d.scene.Graphics(this);
 		controlPointsViewer.name = "controlPointsViewer";
 		controlPointsViewer.lineStyle(4, 0xffffff);
 		controlPointsViewer.material.mainPass.setPassName("overlay");
-		controlPointsViewer.material.mainPass.depth(false, LessEqual);
+		controlPointsViewer.material.mainPass.depthTest = Always;
 		controlPointsViewer.ignoreParentTransform = false;
 		controlPointsViewer.clear();
 		controlPointsViewer.moveTo(1, 0, 0);
@@ -282,7 +283,7 @@ class SplineEditor {
 		}
 		sp.scale(scale);
 
-		prefab.generateBezierCurve(ctx);
+		prefab.updateInstance(ctx);
 		return sp;
 	}
 
@@ -386,13 +387,13 @@ class SplineEditor {
 					undo.change(Custom(function(undo) {
 						if( undo ) {
 							sceneObj.setTransform(prevState);
-							prefab.generateBezierCurve(ctx);
+							prefab.updateInstance(ctx);
 							showViewers(ctx);
 							createGizmos(ctx);
 						}
 						else {
 							sceneObj.setTransform(newState);
-							prefab.generateBezierCurve(ctx);
+							prefab.updateInstance(ctx);
 							showViewers(ctx);
 							createGizmos(ctx);
 						}
@@ -428,7 +429,7 @@ class SplineEditor {
 						undo.change(Custom(function(undo) {
 							if( undo ) {
 								prefab.points.remove(sp);
-								prefab.generateBezierCurve(ctx);
+								prefab.updateInstance(ctx);
 								showViewers(ctx);
 								createGizmos(ctx);
 							}
@@ -446,20 +447,20 @@ class SplineEditor {
 						var sp = getClosestSplinePointFromMouse(s2d.mouseX, s2d.mouseY, ctx);
 						var index = prefab.points.indexOf(sp);
 						prefab.points.remove(sp);
-						prefab.generateBezierCurve(ctx);
+						prefab.updateInstance(ctx);
 						showViewers(ctx);
 						createGizmos(ctx);
 
 						undo.change(Custom(function(undo) {
 							if( undo ) {
 								prefab.points.insert(index, sp);
-								prefab.generateBezierCurve(ctx);
+								prefab.updateInstance(ctx);
 								showViewers(ctx);
 								createGizmos(ctx);
 							}
 							else {
 								prefab.points.remove(sp);
-								prefab.generateBezierCurve(ctx);
+								prefab.updateInstance(ctx);
 								showViewers(ctx);
 								createGizmos(ctx);
 							}

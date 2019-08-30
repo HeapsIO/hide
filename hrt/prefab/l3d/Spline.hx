@@ -16,7 +16,6 @@ typedef SplinePointData = {
 	?t : Float
 }
 
-
 class SplineData {
 	public var length : Float;
 	public var step : Float;
@@ -141,11 +140,12 @@ class Spline extends Object3D {
 
 	override function updateInstance( ctx : hrt.prefab.Context , ?propName : String ) {
 		super.updateInstance(ctx, propName);
+		computeSplineData();
+		
 		#if editor
 		if( editor != null )
 			editor.update(ctx, propName);
-
-		generateBezierCurve(ctx);
+		generateSplineGraph(ctx);
 		#end
 	}
 
@@ -166,7 +166,6 @@ class Spline extends Object3D {
 		// Linear interpolation between the two samples
 		else {
 			var segmentLength = data.samples[s1].pos.distance(data.samples[s2].pos);
-			//trace(segmentLength);
 			var t = (l - (s1 * step)) / segmentLength;
 			var result = new h3d.Vector();
 			result.lerp(data.samples[s1].pos.toVector(), data.samples[s2].pos.toVector(), t);
@@ -339,9 +338,7 @@ class Spline extends Object3D {
 
 	#if editor
 
-	function generateBezierCurve( ctx : hrt.prefab.Context ) {
-
-		computeSplineData();
+	function generateSplineGraph( ctx : hrt.prefab.Context ) {
 
 		if( !showSpline ) {
 			if( lineGraphics != null ) {

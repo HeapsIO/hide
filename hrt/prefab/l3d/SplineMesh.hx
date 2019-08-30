@@ -1,4 +1,5 @@
 package hrt.prefab.l3d;
+import format.abc.Data.ABCData;
 import h3d.scene.MeshBatch;
 import h3d.scene.Mesh;
 import hrt.prefab.l3d.Spline.SplinePoint;
@@ -10,6 +11,8 @@ class SplineMeshShader extends hxsl.Shader {
 
 		// Spline Infos
 		@const(4096) var POINT_COUNT : Int;
+		@const var SPLINE_UV_X : Bool;
+		@const var SPLINE_UV_Y : Bool;
 		@param var stepSize : Float;
 		@param var points : Buffer<Vec4, POINT_COUNT>;
 
@@ -27,8 +30,8 @@ class SplineMeshShader extends hxsl.Shader {
 			var offsetY = pos - splinePos;
 
 			// Linear Interpolation between two samples
-			var s1 = floor(pos / stepSize).int();
-			var s2 = ceil(pos / stepSize).int();
+			var s1 = clamp(floor(pos / stepSize), 0.0, POINT_COUNT - 1.0).int();
+			var s2 = clamp(ceil(pos / stepSize), 0.0, POINT_COUNT - 1.0).int();
 			var t = (pos - (s1 * stepSize)) / stepSize;
 			t.saturate();
 			var point = mix(points[s1 * 2], points[s2 * 2], t).xyz;
@@ -55,6 +58,11 @@ class SplineMeshShader extends hxsl.Shader {
 			var localPos = (modelPos - vec3(0, offsetY, 0));
 			transformedPosition = localPos * transform.mat3x4();
 			transformedNormal = transformedNormal * modelMat.mat3x4() * rotation.mat3x4();
+
+			if( SPLINE_UV_X )
+				calculatedUV.x = pos;
+			if( SPLINE_UV_Y )
+				calculatedUV.y = pos;
 		}
 
 		function fragment() {
@@ -73,6 +81,9 @@ class SplineMesh extends Spline {
 	var meshPath : String;
 	var meshes : Array<h3d.scene.Mesh> = [];
 
+	var splineUVx : Bool = false;
+	var splineUVy : Bool = false;
+
 	var spacing: Float = 0.0;
 	var meshScale = new h3d.Vector(1,1,1);
 	var meshRotation = new h3d.Vector(0,0,0);
@@ -88,6 +99,8 @@ class SplineMesh extends Spline {
 		obj.spacing = spacing;
 		obj.meshScale = meshScale;
 		obj.meshRotation = meshRotation;
+		obj.splineUVx = splineUVx;
+		obj.splineUVy = splineUVy;
 		return obj;
 	}
 
@@ -97,10 +110,16 @@ class SplineMesh extends Spline {
 		spacing = obj.spacing == null ? 0.0 : obj.spacing;
 		meshScale = obj.meshScale == null ? new h3d.Vector(1,1,1) : obj.meshScale;
 		meshRotation = obj.meshRotation == null ? new h3d.Vector(0,0,0) : obj.meshRotation;
+		splineUVx = obj.splineUVx == null ? false : obj.splineUVx;
+		splineUVy = obj.splineUVy == null ? false : obj.splineUVy;
+	}
+
+	override function make(ctx: Context) {
+		// Don't make children, which are used to setup particles
+		return makeInstance(ctx);
 	}
 
 	override function makeInstance( ctx : hrt.prefab.Context ) : hrt.prefab.Context {
-
 		var ctx = ctx.clone(this);
 		ctx.local3d = new h3d.scene.Object(ctx.local3d);
 		ctx.local3d.name = name;
@@ -130,55 +149,60 @@ class SplineMesh extends Spline {
 		
 		createMeshPrimitive(ctx);
 		createMeshBatch(ctx);
+		createBatches(ctx);
 
 		// Remake the material
-		for( c in @:privateAccess children ) {
-			var mat = Std.downcast(c, Material);
-			if( mat != null && mat.enabled ) 
-				@:privateAccess mat.updateObject(ctx, meshBatch);
-			var shader = Std.downcast(c, Shader);
-			if( shader != null && shader.enabled ) 
-				shader.makeInstance(ctx);
+		if( meshBatch != null ) {
+			var emptyCtx = new hrt.prefab.Context();
+			emptyCtx.local3d = meshBatch;
+			emptyCtx.shared = ctx.shared;
+			for( c in @:privateAccess children ) {
+				var mat = Std.downcast(c, Material);
+				if( mat != null && mat.enabled ) 
+					@:privateAccess mat.makeInstance(emptyCtx);
+				var shader = Std.downcast(c, Shader);
+				if( shader != null && shader.enabled ) 
+					shader.makeInstance(emptyCtx);
+			}
 		}
-
-		//createMultiMeshes(ctx);
 	}
 
-	function createMeshPrimitive( ctx : Context  ) {
+	function createMeshPrimitive( ctx : Context ) {
 		meshPrimitive = null;
 		meshMaterial = null;
 		if( meshPath != null ) {	
 			var meshTemplate : h3d.scene.Mesh = ctx.loadModel(meshPath).toMesh();
 			if( meshTemplate != null ) {
 				meshPrimitive = cast meshTemplate.primitive;
-				meshMaterial = meshTemplate.material;
+				meshMaterial = cast meshTemplate.material.clone();
 			}
 		}
 	}
 
 	function createMeshBatch( ctx : Context ) {
 
-		if( meshPrimitive == null ) {
-			if( meshBatch != null ) {
-				meshBatch.remove();
-				meshBatch = null;
-			}
-			return;
-		}
-
-		if( meshBatch != null /*&& meshBatch.primitive != meshPrimitive*/ ) {
+		if( meshBatch != null ) {
 			meshBatch.remove();
 			meshBatch = null;
 		}
-	
+
+		if( meshPrimitive == null ) 
+			return;
+
 		if( meshBatch == null ) {
-			var material : h3d.mat.Material = cast meshMaterial.clone();
-			var splinemeshShader = createShader();
-			material.mainPass.addShader(splinemeshShader);
-			material.castShadows = false;
-			meshBatch = new MeshBatch(meshPrimitive, material, ctx.local3d);
+			var splineMaterial : h3d.mat.Material = meshMaterial;
+			var splineMeshShader = createShader();
+			splineMaterial.mainPass.addShader(splineMeshShader);
+			splineMaterial.castShadows = false;
+			meshBatch = new MeshBatch(meshPrimitive, splineMaterial, ctx.local3d);
 			meshBatch.ignoreParentTransform = true;
 		}
+	}
+
+	function createBatches( ctx : Context ) {
+
+		if( meshBatch == null )	
+			return;
 
 		var localBounds = meshPrimitive.getBounds().clone();
 		localBounds.transform(modelMat);
@@ -186,14 +210,16 @@ class SplineMesh extends Spline {
 		var step = (hxd.Math.abs(localBounds.yMax) + hxd.Math.abs(localBounds.yMin)) + spacing;
 		var stepCount = hxd.Math.ceil((getLength() - minOffset) / step);
 
+		if( stepCount > 4096 )
+			return;
+
 		var splinemeshShader = meshBatch.material.mainPass.getShader(SplineMeshShader);
-		
 		meshBatch.begin(stepCount);
 		for( i in 0 ... stepCount ) {
 			splinemeshShader.splinePos = i * step + minOffset;
 			meshBatch.emitInstance();
 		}
-	}
+	}	
 
 	function createMultiMeshes( ctx : Context ) {
 
@@ -237,6 +263,8 @@ class SplineMesh extends Spline {
 		}
 		s.points = new h3d.Buffer(s.POINT_COUNT, 4 * 2, [UniformBuffer]);
 		s.points.uploadVector(bufferData, 0, s.points.vertices, 0);
+		s.SPLINE_UV_X = splineUVx;
+		s.SPLINE_UV_Y = splineUVy;
 		return s;
 	}
 
@@ -249,7 +277,14 @@ class SplineMesh extends Spline {
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
 
-		ctx.properties.add( new hide.Element('
+		var props = new hide.Element('
+			<div class="group" name="Material">
+				<dl>
+					<dt>Use spline UV on X</dt><dd><input type="checkbox" field="splineUVx"/></dd>
+					<dt>Use spline UV on Y</dt><dd><input type="checkbox" field="splineUVy"/></dd>
+					<div align="center"><input type="button" value="Refresh" class="refresh"/></div>
+				</dl>
+			</div>
 			<div class="group" name="Mesh">
 				<dl>
 					<dt>Mesh</dt><dd><input type="model" field="meshPath"/></dd>
@@ -262,7 +297,10 @@ class SplineMesh extends Spline {
 					<dt>Rotation Z</dt><dd><input type="range" min="-180" max="180" value="0" field="meshRotation.z" /></dd>
 				</dl>
 			</div>
-			'), this, function(pname) { ctx.onChange(this, pname); });
+			');
+
+		props.find(".refresh").click(function(_) { ctx.onChange(this, null); });
+		ctx.properties.add(props, this, function(pname) { ctx.onChange(this, pname); });
 	}
 
 	override function getHideProps() : HideProps {
