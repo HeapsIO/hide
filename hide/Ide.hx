@@ -52,7 +52,7 @@ class Ide {
 	static var firstInit = true;
 
 	function new() {
-		isCDB = Sys.getEnv("HIDE_START_CDB") == "1";
+		isCDB = Sys.getEnv("HIDE_START_CDB") == "1" || nw.App.manifest.name == "CDB";
 		function wait() {
 			if( monaco.Editor == null ) {
 				haxe.Timer.delay(wait, 10);

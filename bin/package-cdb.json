@@ -1,0 +1,12 @@
+{
+	"name" : "CDB",
+	"window" : {
+		"title" : "CDB",
+		"icon" : "res/cdb.png",
+		"width" : 800,
+		"height" : 600,
+		"show" : true
+	},
+	"main" : "app.html",
+	"js-flags": "--expose-gc"
+}
