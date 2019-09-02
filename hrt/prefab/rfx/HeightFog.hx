@@ -22,8 +22,8 @@ class HeightFog extends RendererFX {
 		props = ({
 			startHeight : 0,
 			endHeight : 100,
-			startOpacity : 0,
-			endOpacity : 1,
+			startOpacity : 1,
+			endOpacity : 0,
 		 	startColor : 0xffffff,
 	    	endColor : 0xffffff,
 			startColorHeight : 0,
