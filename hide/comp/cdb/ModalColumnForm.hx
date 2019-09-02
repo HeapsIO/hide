@@ -22,11 +22,16 @@ class ModalColumnForm extends Modal {
 
 		form = new Element('<form id="col_form" onsubmit="return false">
 
-			<div>Column name</div> <input type="text" name="name"/>
-			<br /><br />
+			<table>
+				<tr>
+				<td class="first">Column name
+				<td><input type="text" name="name"/>
+				</tr>
 
-			<div>Column type</div>
-			<select name="type" onchange="$(\'#col_options\').attr(\'class\',\'t_\'+this.value)">
+				<tr>
+				<td>Column type
+				<td>
+				<select name="type">
 				<option value="">---- Choose -----</option>
 				<option value="id">Unique Identifier</option>
 				<option value="string">Text</option>
@@ -46,57 +51,58 @@ class ModalColumnForm extends Modal {
 				<option value="layer">Data Layer</option>
 				<option value="tilelayer">Tile Layer</option>
 				<option value="custom">Custom Type</option>
-			</select>
-			<br /><br />
+				</select>
+				</tr>
 
-			<div id="col_options">
-				<div class="values">
-					Possible Values
-					<br />
-					<input type="text" name="values" name="vals"/>
-					<br /><br />
-				</div>
+				<tr class="values">
+				<td>Possible Values
+				<td><input type="text" name="values" name="vals"/>
+				</tr>
 
-				<div class="sheet">
-					Sheet
-					<br />
-					<select name="sheet"></select>
-					<br /><br />
-				</div>
+				<tr class="sheet">
+				<td>Sheet
+				<td><select name="sheet"></select>
+				</tr>
 
-				<div class="disp">
-					Display
-					<br />
+				<tr class="disp">
+				<td>Display
+				<td>
 					<select name="display">
 					<option value="0">Default</option>
 					<option value="1">Percentage</option>
 					</select>
-					<br /><br />
-				</div>
+				</tr>
 
-				<div class="kind">
-					Kind
-					<br/>
+				<tr class="kind">
+					<td>Kind
+					<td>
 					<select name="kind">
 					<option value="">Default</option>
 					<option value="localizable">Localizable</option>
 					<option value="script">Script</option>
 					</select>
-				</div>
+				</tr>
 
-				<div class="custom">
-					Type
-					<select name="ctype"></select>
-					<br /><br />
-				</div>
-				<div class="opt"><label><input type="checkbox" name="req"/>&nbsp;Required</label></div>
-			</div>
-			<br /><br />
-			<p class="buttons">
-				<input class="edit" type="submit" value="Modify" id="editBtn" />
-				<input class="create" type="submit" value="Create" id="createBtn" />
-				<input type="submit" value="Cancel" id="cancelBtn" />
-			</p>
+				<tr class="custom">
+					<td>Type
+					<td><select name="ctype"></select>
+				</tr>
+
+				<tr class="opt">
+					<td>&nbsp;
+					<td><label><input type="checkbox" name="req"/>&nbsp;Required</label>
+				</tr>
+
+				<tr>
+					<td>&nbsp;
+					<td>
+						<p class="buttons">
+							<input class="edit" type="submit" value="Modify" id="editBtn" />
+							<input class="create" type="submit" value="Create" id="createBtn" />
+							<input type="submit" value="Cancel" id="cancelBtn" />
+						</p>
+				</tr>
+			</table>
 
 			</form>').appendTo(contentModal);
 
@@ -108,12 +114,13 @@ class ModalColumnForm extends Modal {
 			new Element("<option>").attr("value", "" + i).text(s.name).appendTo(sheets);
 		}
 
-		var types = form.find("[name=ctype]");
-		types.empty();
-		types.off("change");
-		types.change(function(_) {
-			new Element("#col_options").toggleClass("t_edit",types.val() != "");
-		});
+		var types = form.find("[name=type]");
+		function changeFieldType() {
+			form.find("table").attr("class","").toggleClass("t_"+types.val());
+		}
+		types.change(function(_) changeFieldType());
+		changeFieldType();
+
 		new Element("<option>").attr("value", "").text("--- Select ---").appendTo(types);
 		for( t in base.getCustomTypes() )
 			new Element("<option>").attr("value", "" + t.name).text(t.name).appendTo(types);

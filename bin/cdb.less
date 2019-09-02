@@ -355,17 +355,20 @@
 			input[type=text], input[type=submit], select {
 				height: 28px;
 			}
+			td.first {
+				width : 120px;
+			}
 			.t_int, .t_float {
-				.disp { display : block; }
+				.disp { display : table-row; }
 			}
 			.t_string {
-				.localizable { display : block; }
+				.kind { display : table-row; }
 			}
-			.t_enum .values, .t_flags .values { display : block; }
-			.t_ref .sheet { display : block; }
-			.t_layer .sheet { display : block; }
-			.t_custom .custom { display : block; }
-			.values, .sheet, .custom, .disp, .localizable  { display : none; }
+			.t_enum .values, .t_flags .values { display : table-row; }
+			.t_ref .sheet { display : table-row; }
+			.t_layer .sheet { display : table-row; }
+			.t_custom .custom { display : table-row; }
+			.values, .sheet, .custom, .disp, .kind { display : none; }
 
 		}
 
