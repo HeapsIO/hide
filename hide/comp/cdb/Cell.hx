@@ -455,6 +455,10 @@ class Cell extends Component {
 
 			if( file == null ) {
 				ide.chooseImage(function(path) {
+					if( path == null ) {
+						closeEdit();
+						return;
+					}
 					file = path;
 					setVal();
 					closeEdit();
