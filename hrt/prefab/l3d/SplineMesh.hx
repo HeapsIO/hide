@@ -186,7 +186,7 @@ class SplineMesh extends Spline {
 			meshBatch = null;
 		}
 
-		if( meshPrimitive == null ) 
+		if( meshPrimitive == null || (meshBatch != null && meshBatch.primitive == meshPrimitive) ) 
 			return;
 
 		if( meshBatch == null ) {
