@@ -106,9 +106,9 @@ class AdvancedDecal extends Object3D {
 					shader.albedoStrength = albedoStrength;
 					shader.normalStrength = normalStrength;
 					shader.pbrStrength = pbrStrength;
-					shader.USE_ALBEDO = albedoStrength != 0;
-					shader.USE_NORMAL = normalStrength != 0;
-					shader.USE_PBR = pbrStrength != 0;
+					shader.USE_ALBEDO = albedoStrength != 0&& shader.albedoTexture != null;
+					shader.USE_NORMAL = normalStrength != 0 && shader.normalTexture != null;
+					shader.USE_PBR = pbrStrength != 0 && shader.pbrTexture != null;
 					shader.CENTERED = centered;
 					shader.fadePower = fadePower;
 					shader.fadeStart = fadeStart;
