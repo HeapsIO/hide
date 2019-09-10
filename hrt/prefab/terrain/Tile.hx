@@ -612,7 +612,7 @@ class Tile extends h3d.scene.Mesh {
 		shader.COMPLEXITY = #if editor terrain.showComplexity #else false #end;
 		shader.VERTEX_DISPLACEMENT = bigPrim == null;
 		shader.SURFACE_COUNT = terrain.surfaceArray.surfaceCount;
-		shader.PARALLAX = terrain.parallaxAmount != 0;
+		shader.PARALLAX = terrain.enableParallax && terrain.parallaxAmount != 0;
 
 		shader.heightMapSize = heightMap != null ? heightMap.width : 0;
 		shader.primSize = terrain.tileSize;
@@ -633,7 +633,7 @@ class Tile extends h3d.scene.Mesh {
 		shader.maxStep = terrain.parallaxMaxStep;
 		shader.heightBlendStrength = terrain.heightBlendStrength;
 		shader.blendSharpness = terrain.blendSharpness;
-		
+
 	}
 
 	function isReadyForDraw() {
@@ -643,9 +643,9 @@ class Tile extends h3d.scene.Mesh {
 		if( bigPrim == null && (heightMap == null || heightMap.isDisposed()) )
 			return false;
 
-		if( !shader.CHECKER && (shader.weightTextures == null || shader.weightTextures.isDisposed()) ) 
+		if( !shader.CHECKER && (shader.weightTextures == null || shader.weightTextures.isDisposed()) )
 			return false;
-		
+
 		if( !shader.CHECKER && !shader.COMPLEXITY ) {
 			if( shader.albedoTextures == null || shader.albedoTextures.isDisposed() ) return false;
 			if( shader.normalTextures == null || shader.normalTextures.isDisposed() ) return false;
