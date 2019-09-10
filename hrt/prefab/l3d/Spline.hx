@@ -197,13 +197,17 @@ class Spline extends Object3D {
 	// Sample the spline with the step and threshold
 	function computeSplineData() {
 
+		var sd = new SplineData();
+		data = sd;
+
 		if( step <= 0 ) 
 			return;
-		
-		var sd = new SplineData();
+
+		if( points == null || points.length <= 1 )
+			return;
 
 		// Sample the spline
-		var samples : Array<SplinePointData> = [{ pos : points[0].getPoint(), tangent : points[0].getTangent(), prev : null, next : points[1] }];
+		var samples : Array<SplinePointData> = [{ pos : points[0].getPoint(), tangent : points[0].getTangent(), prev : points[0], next : points[1] }];
 		var i = 0;
 		var sumT = 0.0;
 		var maxT = 1.0;
@@ -224,7 +228,7 @@ class Spline extends Object3D {
 				if( points[i+1].getPoint().distance(samples[samples.length - 1].pos) < step ) {
 					// End of the spline
 					if( i == points.length - 2 ) {
-						samples.insert(samples.length, { pos : points[points.length - 1].getPoint(), tangent : points[points.length - 1].getTangent(), prev : points[points.length - 2], next : null, t : 1.0 });
+						samples.insert(samples.length, { pos : points[points.length - 1].getPoint(), tangent : points[points.length - 1].getTangent(), prev : points[points.length - 2], next : points[points.length - 1], t : 1.0 });
 						break;
 					}
 					// End of the current curve
@@ -252,8 +256,6 @@ class Spline extends Object3D {
 			lengthSum += samples[i].pos.distance(samples[i+1].pos);
 		}
 		sd.length = lengthSum;
-
-		data = sd;
 	}
 
 	// Return the closest spline point on the spline from p

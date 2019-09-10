@@ -34,6 +34,18 @@ class NewSplinePointViewer extends h3d.scene.Object {
 		tangentViewer.clear();
 	}
 
+	override function sync( ctx : h3d.scene.RenderContext ) {
+		var cam = ctx.camera;
+		var gpos = getAbsPos().getPosition();
+		var distToCam = cam.pos.sub(gpos).length();
+		var engine = h3d.Engine.getCurrent();
+		var ratio = 18 / engine.height;
+		var correctionFromParents =  1.0 / getAbsPos().getScale().x;
+		pointViewer.setScale(correctionFromParents * ratio * distToCam * Math.tan(cam.fovY * 0.5 * Math.PI / 180.0));
+		calcAbsPos();
+		super.sync(ctx);
+	}
+
 	public function update( spd : SplinePointData ) {
 
 		pointViewer.setPosition(spd.pos.x, spd.pos.y, spd.pos.z);
@@ -178,12 +190,12 @@ class SplineEditor {
 		} 
 
 		var closestPt = getClosestPointFromMouse(mouseX, mouseY, ctx);
-		
+
 		// If we are are adding a new point at the beginning/end, just make a raycast 'cursor -> plane' with the transform of the first/last SplinePoint
 		if( !prefab.loop && (closestPt.next == null || closestPt.prev == null) ) {
 			var camera = @:privateAccess ctx.local3d.getScene().camera;
 			var ray = camera.rayFromScreen(mouseX, mouseY);
-			var normal = closestPt.next == null ? prefab.points[prefab.points.length - 1].getAbsPos().up().toPoint() : prefab.points[0].getAbsPos().up().toPoint();
+			var normal = closestPt.next == null ? closestPt.prev.getAbsPos().up().toPoint() : closestPt.next.getAbsPos().up().toPoint();
 			var point = closestPt.next == null ? closestPt.prev.getAbsPos().getPosition().toPoint() : closestPt.next.getAbsPos().getPosition().toPoint();
 			var plane = h3d.col.Plane.fromNormalPoint(normal, point);
 			var pt = ray.intersect(plane);
@@ -215,7 +227,7 @@ class SplineEditor {
 		}
 
 		if( result == null ) {
-			result = { pos : null, tangent : null, prev : null, next : null};
+			result = { pos : null, tangent : null, prev : null, next : null };
 
 			var firstSp = prefab.points[0];
 			var firstPt = firstSp.getPoint();
@@ -260,9 +272,13 @@ class SplineEditor {
 	
 		var index = 0;
 		var scale = 1.0;
-		if( spd.prev == null ) {
+		if( spd.prev == null && spd.next == null ) {
+			scale = 1.0;
 			index = 0;
-			scale = prefab.points[0].getAbsPos().getScale().x; 
+		}
+		else if( spd.prev == null ) {
+			index = 0;
+			scale = prefab.points[0].getAbsPos().getScale().x;
 		}
 		else if( spd.next == null ) {
 			index = prefab.points.length;
