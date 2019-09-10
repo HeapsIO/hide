@@ -506,32 +506,6 @@ class Editor extends Component {
 		});
 	}
 
-	public function deleteColumn( sheet : cdb.Sheet, cname : String ) {
-		beginChanges();
-		sheet.deleteColumn(cname);
-		endChanges();
-	}
-
-	public function moveColumnLeft( sheet : cdb.Sheet, index : Int ) {
-		beginChanges();
-		var c = sheet.columns[index];
-		if( index > 0 ) {
-			sheet.columns.remove(c);
-			sheet.columns.insert(index - 1, c);
-		}
-		endChanges();
-	}
-
-	public function moveColumnRight( sheet : cdb.Sheet, index : Int ) {
-		beginChanges();
-		var c = sheet.columns[index];
-		if( index > 0 ) {
-			sheet.columns.remove(c);
-			sheet.columns.insert(index + 1, c);
-		}
-		endChanges();
-	}
-
 	public function insertLine( table : Table, index = 0 ) {
 		if( table.displayMode == Properties ) {
 			var ins = table.element.find("select.insertField");
@@ -573,22 +547,27 @@ class Editor extends Component {
 			{ label : "Add Column", click : function () newColumn(table.sheet, indexColumn) },
 			{ label : "", isSeparator: true },
 			{ label : "Move Left", enabled:  (indexColumn > 0), click : function () {
-				moveColumnLeft(table.sheet, indexColumn);
+				beginChanges();
+				table.sheet.columns.remove(col);
+				table.sheet.columns.insert(indexColumn - 1, col);
+				endChanges();
 				refresh();
 			}},
 			{ label : "Move Right", enabled: (indexColumn < table.sheet.columns.length - 1), click : function () {
-				moveColumnRight(table.sheet, indexColumn);
+				beginChanges();
+				table.sheet.columns.remove(col);
+				table.sheet.columns.insert(indexColumn + 1, col);
+				endChanges();
 				refresh();
 			}},
 			{ label: "", isSeparator: true },
 			{ label : "Delete", click : function () {
-				if( table.displayMode == Properties ) {
-					beginChanges();
+				beginChanges();
+				if( table.displayMode == Properties )
 					changeObject(cell.line, col, base.getDefault(col));
-					endChanges();
-				} else {
-					deleteColumn(table.sheet, col.name);
-				}
+				else
+					table.sheet.deleteColumn(col.name);
+				endChanges();
 				refresh();
 			}}
 		];
@@ -596,7 +575,9 @@ class Editor extends Component {
 			menu.insert(1,{ label : "Edit all", click : function() editScripts(table,col) });
 		if( table.displayMode == Properties ) {
 			menu.push({ label : "Delete All", click : function() {
-				deleteColumn(table.sheet, col.name);
+				beginChanges();
+				table.sheet.deleteColumn(col.name);
+				endChanges();
 				refresh();
 			}});
 		}
