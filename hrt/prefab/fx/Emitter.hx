@@ -809,7 +809,12 @@ class Emitter extends Object3D {
 		emitterObj.animationRepeat = getParamVal("animationRepeat");
 		emitterObj.animationLoop = getParamVal("animationLoop");
 
-		emitterObj.createMeshBatch(@:privateAccess ctx.local3d.getScene().renderer.ctx.time);
+		var startTime = 0.0;
+		var scene = ctx.local3d.getScene();
+		if(scene != null)
+			startTime = @:privateAccess scene.renderer.ctx.time;
+
+		emitterObj.createMeshBatch(startTime);
 
 		#if editor
 		if(propName == null || ["emitShape", "emitAngle", "emitRad1", "emitRad2"].indexOf(propName) >= 0)
