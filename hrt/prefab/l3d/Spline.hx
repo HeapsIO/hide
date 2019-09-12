@@ -159,7 +159,6 @@ class Spline extends Object3D {
 			editor.update(ctx, propName);
 		generateSplineGraph(ctx);
 		#end
-		generateSplineGraph(ctx);
 	}
 
 	// Return an interpolation of two samples at length l, 0 <= l <= splineLength
