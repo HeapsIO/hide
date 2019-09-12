@@ -107,14 +107,25 @@ class Spline extends Object3D {
 
 	override function load( obj : Dynamic ) {
 		super.load(obj);
-		pointsData = obj.points == null ? [] : obj.points;
+		pointsData = [];
+		if( obj.points != null ) {
+			var points : Array<Dynamic> = obj.points;
+			for( p in points ) {
+				var m = new h3d.Matrix();
+				m._11 = p._11; m._21 = p._21; m._31 = p._31; m._41 = p._41;
+				m._12 = p._12; m._22 = p._22; m._32 = p._32; m._42 = p._42;
+				m._13 = p._13; m._23 = p._23; m._33 = p._33; m._43 = p._43;
+				m._14 = p._14; m._24 = p._24; m._34 = p._34; m._44 = p._44;
+				pointsData.insert(pointsData.length, m);
+			}
+		}
 		shape = obj.shape == null ? Linear : CurveShape.createByIndex(obj.shape);
 		color = obj.color != null ? obj.color : 0xFFFFFFFF;
 		lineThickness = obj.lineThickness == null ? 4 : obj.lineThickness;
 		loop = obj.loop == null ? false : obj.loop;
 		showSpline = obj.showSpline == null ? true : obj.showSpline;
 		step = obj.step == null ? 1.0 : obj.step;
-		obj.threshold = obj.threshold == null ? 0.01 : obj.threshold;
+		threshold = obj.threshold == null ? 0.01 : obj.threshold;
 	}
 
 	override function makeInstance( ctx : hrt.prefab.Context ) : hrt.prefab.Context {
@@ -126,6 +137,7 @@ class Spline extends Object3D {
 		for( pd in pointsData ) {
 			var sp = new SplinePoint(0, 0, 0, ctx.local3d);
 			sp.setTransform(pd);
+			sp.getAbsPos();
 			points.push(sp);
 		}
 		pointsData = [];
@@ -141,12 +153,13 @@ class Spline extends Object3D {
 	override function updateInstance( ctx : hrt.prefab.Context , ?propName : String ) {
 		super.updateInstance(ctx, propName);
 		computeSplineData();
-		
+
 		#if editor
 		if( editor != null )
 			editor.update(ctx, propName);
 		generateSplineGraph(ctx);
 		#end
+		generateSplineGraph(ctx);
 	}
 
 	// Return an interpolation of two samples at length l, 0 <= l <= splineLength
@@ -161,7 +174,7 @@ class Spline extends Object3D {
 		s2 = cast hxd.Math.clamp(s2, 0, data.samples.length - 1);
 
 		// End/Beginning of the curve, just return the point
-		if( s1 == s2 ) 
+		if( s1 == s2 )
 			return data.samples[s1].pos;
 		// Linear interpolation between the two samples
 		else {
@@ -200,7 +213,7 @@ class Spline extends Object3D {
 		var sd = new SplineData();
 		data = sd;
 
-		if( step <= 0 ) 
+		if( step <= 0 )
 			return;
 
 		if( points == null || points.length <= 1 )
@@ -217,7 +230,7 @@ class Spline extends Object3D {
 			var t = (maxT + minT) * 0.5;
 			var p = getPointBetween(t, points[i], points[i+1]);
 			var curSegmentLength = p.distance(samples[samples.length - 1].pos);
-			
+
 			// Point found
 			if( hxd.Math.abs(curSegmentLength - step) <= threshold ) {
 				samples.insert(samples.length, { pos : p, tangent : getTangentBetween(t, points[i], points[i+1]), prev : points[i], next : points[i+1], t : t });
@@ -338,7 +351,7 @@ class Spline extends Object3D {
 		return p1.sub(p0).multiply(3 * (1 - t) * (1 - t)).add(p2.sub(p1).multiply(6 * (1 - t) * t)).add(p3.sub(p2).multiply(3 * t * t)).normalizeFast();
 	}
 
-	#if editor
+
 
 	function generateSplineGraph( ctx : hrt.prefab.Context ) {
 
@@ -367,6 +380,8 @@ class Spline extends Object3D {
 			b = false;
 		}
 	}
+
+	#if editor
 
 	override function setSelected( ctx : hrt.prefab.Context , b : Bool ) {
 		super.setSelected(ctx, b);
