@@ -1,5 +1,6 @@
 package hide.comp;
 
+import hrt.prefab.terrain.Terrain;
 import h3d.scene.Mesh;
 import h3d.col.FPoint;
 import h3d.col.Ray;
@@ -521,6 +522,12 @@ class SceneEditor {
 		var obj3d = Std.downcast(elt, Object3D);
 		if(obj3d == null)
 			return;
+
+		// Disable Interactive for the terrain
+		var terrain = Std.downcast(elt, Terrain);
+		if(terrain != null)
+			return;
+
 		var contexts = context.shared.contexts;
 		var ctx = contexts[elt];
 		if(ctx == null)

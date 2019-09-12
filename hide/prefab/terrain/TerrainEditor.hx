@@ -94,6 +94,7 @@ class TerrainEditor {
 		heightStrokeBufferArray.dispose();
 		weightStrokeBufferArray.dispose();
 		brushPreview.remove();
+		if( interactive != null ) interactive.remove();
 	}
 
 	public function saveTextures()  {
@@ -721,6 +722,8 @@ class TerrainEditor {
 	public function setSelected( ctx : Context, b : Bool ) {
 		if( b ) {
 			var s2d = @:privateAccess ctx.local2d.getScene();
+			if( interactive == null ) 
+				interactive.remove();
 			interactive = new h2d.Interactive(10000, 10000, s2d);
 			interactive.propagateEvents = true;
 			interactive.cancelEvents = false;

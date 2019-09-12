@@ -397,6 +397,7 @@ class Terrain extends Object3D {
 		#else
 		terrain = new TerrainMesh(ctx.local3d);
 		#end
+
 		terrain.cellCount = getCellCount();
 		terrain.cellSize = getCellSize();
 		terrain.tileSize = terrain.cellCount * terrain.cellSize;
@@ -442,10 +443,6 @@ class Terrain extends Object3D {
 		if( editor != null )
 			editor.update(propName);
 		#end
-	}
-
-	override function removeInstance( ctx : Context ) : Bool {
-		return false; // TODO
 	}
 
 	function getCellCount() {
