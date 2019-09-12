@@ -254,11 +254,13 @@ class SplineMesh extends Spline {
 		s.stepSize = step;
 		s.modelMat = modelMat;
 		var bufferData = new hxd.FloatBuffer(s.POINT_COUNT * 4 * 2);
-		for( s in data.samples ) {
-			bufferData.push(s.pos.x); bufferData.push(s.pos.y); bufferData.push(s.pos.z); bufferData.push(0.0);
-			bufferData.push(s.tangent.x); bufferData.push(s.tangent.y); bufferData.push(s.tangent.z); bufferData.push(0.0);
+		for( i in 0 ... data.samples.length ) {
+			var index = i * 2 * 4;
+			var s = data.samples[i];
+			bufferData[index] = s.pos.x; bufferData[index + 1] = s.pos.y; bufferData[index + 2] = s.pos.z; bufferData[index + 3] = 0.0;
+			bufferData[index + 4] = s.tangent.x; bufferData[index + 5] = s.tangent.y; bufferData[index + 6] = s.tangent.z; bufferData[index + 7] = 0.0;
 		}
-		s.points = new h3d.Buffer(s.POINT_COUNT, 4 * 2, [UniformBuffer]);
+		s.points = new h3d.Buffer(s.POINT_COUNT * 2, 4, [UniformBuffer,Dynamic]);
 		s.points.uploadVector(bufferData, 0, s.points.vertices, 0);
 		s.SPLINE_UV_X = splineUVx;
 		s.SPLINE_UV_Y = splineUVy;
