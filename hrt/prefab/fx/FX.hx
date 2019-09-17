@@ -31,7 +31,7 @@ class FXAnimation extends h3d.scene.Object {
 		evaluator = new Evaluator(random);
 		evaluator.vecPool = vecPool;
 		name = "FXAnimation";
-		setTime(0);
+		inheritCulled = true;
 	}
 
 	function init(ctx: Context, def: FX, ?root: PrefabElement) {
@@ -83,6 +83,7 @@ class FXAnimation extends h3d.scene.Object {
 	}
 
 	static var tempMat = new h3d.Matrix();
+	static var tempVec = new h3d.Vector();
 	public function setTime( time : Float ) {
 		this.localTime = time;
 		vecPool.begin();
@@ -91,14 +92,14 @@ class FXAnimation extends h3d.scene.Object {
 				if(anim.scale != null || anim.rotation != null || anim.position != null) {
 					var m = tempMat;
 					if(anim.scale != null) {
-						var scale = evaluator.getVector(anim.scale, time);
+						var scale = evaluator.getVector(anim.scale, time, tempVec);
 						m.initScale(scale.x, scale.y, scale.z);
 					}
 					else
 						m.identity();
 
 					if(anim.rotation != null) {
-						var rotation = evaluator.getVector(anim.rotation, time);
+						var rotation = evaluator.getVector(anim.rotation, time, tempVec);
 						rotation.scale3(Math.PI / 180.0);
 						m.rotate(rotation.x, rotation.y, rotation.z);
 					}
@@ -110,7 +111,7 @@ class FXAnimation extends h3d.scene.Object {
 					m.translate(offset.x, offset.y, offset.z);
 
 					if(anim.position != null) {
-						var pos = evaluator.getVector(anim.position, time);
+						var pos = evaluator.getVector(anim.position, time, tempVec);
 						m.translate(pos.x, pos.y, pos.z);
 					}
 

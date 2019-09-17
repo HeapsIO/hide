@@ -62,6 +62,15 @@ private class ParticleTransform {
 
 	}
 
+	public function reset() {
+		x = 0.0;
+		y = 0.0;
+		z = 0.0;
+		scaleX = 1.0;
+		scaleY = 1.0;
+		scaleZ = 1.0;
+	}
+
 	public function setRotation( quat ) {
 		qRot.load(quat);
 	}
@@ -108,6 +117,7 @@ private class ParticleTransform {
 
 @:allow(hrt.prefab.fx.EmitterObject)
 private class ParticleInstance  {
+	public var next : ParticleInstance;
 
 	var emitter : EmitterObject;
 	var evaluator : Evaluator;
@@ -124,13 +134,21 @@ private class ParticleInstance  {
 	public var color = new h3d.Vector();
 	public var startFrame : Int;
 
-
-	public var curVelocity = new h3d.Vector();
 	public var orientation = new h3d.Quat();
 
 	public var def : InstanceDef;
 
-	public function new(emitter: EmitterObject, def: InstanceDef) {
+	public function new() {
+	}
+
+	public function init(emitter: EmitterObject, def: InstanceDef) {
+		transform.reset();
+		childTransform.reset();
+		life = 0;
+		lifeTime = 0;
+		startFrame = 0;
+		orientation.identity();
+
 		switch(emitter.simulationSpace){
 			// Particles in Local are spawned next to emitter in the scene tree,
 			// so emitter shape can be transformed (especially scaled) without affecting children
@@ -141,7 +159,6 @@ private class ParticleInstance  {
 		this.emitter = emitter;
 		this.evaluator = new Evaluator(emitter.random);
 		evaluator.vecPool = this.emitter.vecPool;
-		emitter.instances.push(this);
 	}
 
 	public function setPosition( x, y, z ) {
@@ -157,6 +174,7 @@ private class ParticleInstance  {
 	static var tmpScale = new h3d.Vector();
 	static var tmpLocalSpeed = new h3d.Vector();
 	static var tmpWorldSpeed = new h3d.Vector();
+	static var tmpSpeed = new h3d.Vector();
 	static var tmpMat = new h3d.Matrix();
 	var tmpColor = new h3d.Vector();
 
@@ -172,13 +190,13 @@ private class ParticleInstance  {
 		if(emitter.simulationSpace == Local)
 			tmpWorldSpeed.transform3x3(emitter.invTransform);
 
-		curVelocity.load(tmpLocalSpeed.add(tmpWorldSpeed));
-		if(emitter.emitOrientation == Speed && curVelocity.lengthSq() > 0.01)
-			transform.qRot.initDirection(curVelocity);
+		tmpSpeed.load(tmpLocalSpeed.add(tmpWorldSpeed));
+		if(emitter.emitOrientation == Speed && tmpSpeed.lengthSq() > 0.01)
+			transform.qRot.initDirection(tmpSpeed);
 
-		transform.x += curVelocity.x * dt;
-		transform.y += curVelocity.y * dt;
-		transform.z += curVelocity.z * dt;
+		transform.x += tmpSpeed.x * dt;
+		transform.y += tmpSpeed.y * dt;
+		transform.z += tmpSpeed.z * dt;
 
 		var rot = evaluator.getVector(def.rotation, t, tmpRot);
 		rot.scale3(Math.PI / 180.0);
@@ -261,18 +279,17 @@ private class ParticleInstance  {
 
 		life += dt;
 	}
-
-	function kill() {
-		emitter.instances.remove(this);
-	}
 }
 
 @:allow(hrt.prefab.fx.ParticleInstance)
 @:allow(hrt.prefab.fx.Emitter)
 class EmitterObject extends h3d.scene.Object {
 
+	public static var pool : ParticleInstance;
+	public static var poolSize = 0;
+
 	public var batch : h3d.scene.MeshBatch;
-	public var instances : Array<ParticleInstance> = [];
+	public var particles : ParticleInstance;
 	public var shaderAnims : ShaderAnims;
 
 	public var enable : Bool;
@@ -314,6 +331,7 @@ class EmitterObject extends h3d.scene.Object {
 	var curTime = 0.0;
 	var evaluator : Evaluator;
 	var vecPool = new Evaluator.VecPool();
+	var numInstances = 0;
 
 	public function new(?parent) {
 		super(parent);
@@ -332,13 +350,39 @@ class EmitterObject extends h3d.scene.Object {
 		curTime = 0.0;
 		lastTime = 0.0;
 		emitCount = 0;
-		for(inst in instances.copy()) {
-			inst.kill();
+
+		var p = particles;
+		while(p != null) {
+			var n = p.next;
+			disposeInstance(p);
+			p = n;
 		}
+		particles = null;
 	}
 
 	public function setParticleVibility( b : Bool ){
 		particleVisibility = b;
+	}
+
+	function allocInstance() {
+		++numInstances;
+		if(pool != null) {
+			var p = pool;
+			pool = p.next;
+			--poolSize;
+			return p;
+		}
+		var p = new ParticleInstance();
+		return p;
+	}
+
+	function disposeInstance(p: ParticleInstance) {
+		p.next = pool;
+		pool = p;
+		--numInstances;
+		++poolSize;
+		if(numInstances < 0)
+			throw "assert";
 	}
 
 	function doEmit( count : Int ) {
@@ -354,7 +398,11 @@ class EmitterObject extends h3d.scene.Object {
 		var direction = new h3d.Vector();
 
 		for( i in 0...count ) {
-			var part = new ParticleInstance(this, instDef);
+			var part = allocInstance();
+			part.init(this, instDef);
+			part.next = particles;
+			particles = part;
+
 			part.lifeTime = hxd.Math.max(0.01, lifeTime + hxd.Math.srand(lifeTimeRand));
 			tmpq.identity();
 
@@ -419,7 +467,7 @@ class EmitterObject extends h3d.scene.Object {
 					part.baseMat = particleTemplate.getTransform();
 					localQuat.multiply(localQuat, tmpq);
 					part.setRotation(localQuat);
-					part.orientation = localQuat.clone();
+					part.orientation.load(localQuat);
 				case World:
 					var worldPos = localToGlobal(offset.clone());
 					part.setPosition(worldPos.x, worldPos.y, worldPos.z);
@@ -429,7 +477,7 @@ class EmitterObject extends h3d.scene.Object {
 					worldQuat.normalize();
 					tmpq.multiply(tmpq, worldQuat);
 					part.setRotation(tmpq);
-					part.orientation = tmpq.clone();
+					part.orientation.load(tmpq);
 			}
 
 			var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
@@ -501,10 +549,10 @@ class EmitterObject extends h3d.scene.Object {
 		}
 	}
 
-	var camPosTmp : h3d.Vector;
-	var p1PosTmp = new h3d.Vector();
-	var p2PosTmp = new h3d.Vector();
-	function sortZ( p1 : ParticleInstance, p2 : ParticleInstance ) : Int {
+	static var camPosTmp : h3d.Vector;
+	static var p1PosTmp = new h3d.Vector();
+	static var p2PosTmp = new h3d.Vector();
+	static function sortZ( p1 : ParticleInstance, p2 : ParticleInstance ) : Int {
 		return Std.int(camPosTmp.distanceSq(p2.absPos.getPosition(p1PosTmp)) - camPosTmp.distanceSq(p1.absPos.getPosition(p2PosTmp)));
 	}
 
@@ -517,7 +565,7 @@ class EmitterObject extends h3d.scene.Object {
 		vecPool.begin();
 
 		var emitTarget = evaluator.getSum(emitRate, curTime);
-		var delta = hxd.Math.ceil(hxd.Math.min(maxCount - instances.length, emitTarget - emitCount));
+		var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, emitTarget - emitCount));
 		if(enable)
 			doEmit(delta);
 
@@ -527,8 +575,10 @@ class EmitterObject extends h3d.scene.Object {
 			batch.begin(hxd.Math.nextPOT(maxCount));
 			if( particleVisibility ) {
 				camPosTmp = getScene().camera.pos;
-				instances.sort(sortZ);
-				for( p in instances ) {
+				particles = haxe.ds.ListSort.sortSingleLinked(particles, sortZ);
+				var p = particles;
+				var i = 0;
+				while(p != null) {
 					// Init the color for each particles
 					if( p.def.color != null ) {
 						switch( p.def.color ) {
@@ -550,6 +600,8 @@ class EmitterObject extends h3d.scene.Object {
 						}
 					}
 					batch.emitInstance();
+					p = p.next;
+					++i;
 				}
 			}
 		}
@@ -558,12 +610,22 @@ class EmitterObject extends h3d.scene.Object {
 	}
 
 	function updateParticles(dt: Float) {
-		var i = instances.length;
-		while( i-- > 0 ) {
-			if(instances[i].life > lifeTime)
-				instances[i].kill();
-			else
-				instances[i].update(dt);
+		var p = particles;
+		var prev : ParticleInstance = null;
+		while(p != null) {
+			var next = p.next;
+			if(p.life > lifeTime) {
+				if(prev != null)
+					prev.next = next;
+				else
+					particles = next;
+				disposeInstance(p);
+			}
+			else {
+				p.update(dt);
+				prev = p;
+			}
+			p = next;
 		}
 	}
 
