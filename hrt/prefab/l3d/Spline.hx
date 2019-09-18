@@ -92,7 +92,7 @@ class Spline extends Object3D {
 			obj.points = [ for(sp in points) {
 								var abs = sp.getAbsPos().clone();
 								abs.multiply(abs, parentInv);
-								abs;
+								[for(f in abs.getFloats()) hxd.Math.fmt(f) ];
 							} ];
 		}
 		obj.shape = shape.getIndex();
@@ -112,11 +112,8 @@ class Spline extends Object3D {
 			var points : Array<Dynamic> = obj.points;
 			for( p in points ) {
 				var m = new h3d.Matrix();
-				m._11 = p._11; m._21 = p._21; m._31 = p._31; m._41 = p._41;
-				m._12 = p._12; m._22 = p._22; m._32 = p._32; m._42 = p._42;
-				m._13 = p._13; m._23 = p._23; m._33 = p._33; m._43 = p._43;
-				m._14 = p._14; m._24 = p._24; m._34 = p._34; m._44 = p._44;
-				pointsData.insert(pointsData.length, m);
+				m.loadValues(p);
+				pointsData.push(m);
 			}
 		}
 		shape = obj.shape == null ? Linear : CurveShape.createByIndex(obj.shape);
