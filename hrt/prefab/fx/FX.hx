@@ -105,7 +105,7 @@ class FXAnimation extends h3d.scene.Object {
 					}
 
 					var baseMat = anim.elt.getTransform();
-					var offset = baseMat.getPosition();
+					var offset = baseMat.getPosition(tempVec);
 					baseMat.tx = baseMat.ty = baseMat.tz = 0.0;  // Ignore
 					m.multiply(baseMat, m);
 					m.translate(offset.x, offset.y, offset.z);
@@ -128,7 +128,7 @@ class FXAnimation extends h3d.scene.Object {
 								mat.color.a = evaluator.getFloat(anim.color, time);
 						default:
 							for(mat in anim.obj.getMaterials())
-								mat.color = evaluator.getVector(anim.color, time);
+								mat.color.load(evaluator.getVector(anim.color, time, tempVec));
 					}
 				}
 				Event.updateEvents(anim.events, time, prevTime);

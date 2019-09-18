@@ -307,6 +307,9 @@ class EmitterObject extends h3d.scene.Object {
 	public var emitRad2 : Float = 1.0;
 	public var emitSurface : Bool = false;
 
+	public var catchupSpeed = 4; // Use larger ticks when catching-up to save calculations
+	public var maxCatchupWindow = 0.5; // How many seconds max to simulate when catching up
+
 	public var frameCount : Int = 0;
 	public var frameDivisionX : Int = 1;
 	public var frameDivisionY : Int = 1;
@@ -385,6 +388,9 @@ class EmitterObject extends h3d.scene.Object {
 			throw "assert";
 	}
 
+	static var tmpQuat = new h3d.Quat();
+	static var tmpOffset = new h3d.Vector();
+	static var tmpDir = new h3d.Vector();
 	function doEmit( count : Int ) {
 		if( count == 0 )
 			return;
@@ -393,9 +399,6 @@ class EmitterObject extends h3d.scene.Object {
 			return;
 
 		var shapeAngle = hxd.Math.degToRad(emitAngle) / 2.0;
-		var tmpq = new h3d.Quat();
-		var offset = new h3d.Vector();
-		var direction = new h3d.Vector();
 
 		for( i in 0...count ) {
 			var part = allocInstance();
@@ -404,11 +407,11 @@ class EmitterObject extends h3d.scene.Object {
 			particles = part;
 
 			part.lifeTime = hxd.Math.max(0.01, lifeTime + hxd.Math.srand(lifeTimeRand));
-			tmpq.identity();
+			tmpQuat.identity();
 
 			switch( emitShape ) {
 				case Box:
-					offset.set(random.srand(0.5), random.srand(0.5), random.srand(0.5));
+					tmpOffset.set(random.srand(0.5), random.srand(0.5), random.srand(0.5));
 				case Cylinder:
 					var dx = 0.0, dy = 0.0;
 					if(emitSurface) {
@@ -424,36 +427,36 @@ class EmitterObject extends h3d.scene.Object {
 						while(dx * dx + dy * dy > 1.0);
 					}
 					var x = random.rand();
-					offset.set(x - 0.5, dx * 0.5, dy * 0.5);
+					tmpOffset.set(x - 0.5, dx * 0.5, dy * 0.5);
 					if( emitOrientation == Normal )
-						tmpq.initRotation(0, -hxd.Math.atan2(dy, dx), Math.PI/2);
-					offset.y *= hxd.Math.lerp(emitRad1, emitRad2, x);
-					offset.z *= hxd.Math.lerp(emitRad1, emitRad2, x);
+						tmpQuat.initRotation(0, -hxd.Math.atan2(dy, dx), Math.PI/2);
+					tmpOffset.y *= hxd.Math.lerp(emitRad1, emitRad2, x);
+					tmpOffset.z *= hxd.Math.lerp(emitRad1, emitRad2, x);
 				case Sphere:
 					do {
-						offset.x = random.srand(1.0);
-						offset.y = random.srand(1.0);
-						offset.z = random.srand(1.0);
+						tmpOffset.x = random.srand(1.0);
+						tmpOffset.y = random.srand(1.0);
+						tmpOffset.z = random.srand(1.0);
 					}
-					while( offset.lengthSq() > 1.0 );
+					while( tmpOffset.lengthSq() > 1.0 );
 					if( emitSurface )
-						offset.normalize();
-					offset.scale3(0.5);
+						tmpOffset.normalize();
+					tmpOffset.scale3(0.5);
 					if( emitOrientation == Normal )
-						tmpq.initDirection(offset);
+						tmpQuat.initDirection(tmpOffset);
 				case Cone:
-					offset.set(0, 0, 0);
+					tmpOffset.set(0, 0, 0);
 					var theta = random.rand() * Math.PI * 2;
 					var phi = shapeAngle * random.rand();
-					direction.x = Math.cos(phi) * scaleX;
-					direction.y = Math.sin(phi) * Math.sin(theta) * scaleY;
-					direction.z = Math.sin(phi) * Math.cos(theta) * scaleZ;
-					direction.normalizeFast();
-					tmpq.initDirection(direction);
+					tmpDir.x = Math.cos(phi) * scaleX;
+					tmpDir.y = Math.sin(phi) * Math.sin(theta) * scaleY;
+					tmpDir.z = Math.sin(phi) * Math.cos(theta) * scaleZ;
+					tmpDir.normalizeFast();
+					tmpQuat.initDirection(tmpDir);
 			}
 
 			if( emitOrientation == Random )
-				tmpq.initRotation(hxd.Math.srand(Math.PI), hxd.Math.srand(Math.PI), hxd.Math.srand(Math.PI));
+				tmpQuat.initRotation(hxd.Math.srand(Math.PI), hxd.Math.srand(Math.PI), hxd.Math.srand(Math.PI));
 
 			switch( simulationSpace ) {
 				case Local:
@@ -462,22 +465,22 @@ class EmitterObject extends h3d.scene.Object {
 					var parentInvMat = parent.getAbsPos().clone();
 					parentInvMat.invert();
 					localMat.multiply(localMat, parentInvMat);
-					offset.transform(localMat);
-					part.setPosition(offset.x, offset.y, offset.z);
+					tmpOffset.transform(localMat);
+					part.setPosition(tmpOffset.x, tmpOffset.y, tmpOffset.z);
 					part.baseMat = particleTemplate.getTransform();
-					localQuat.multiply(localQuat, tmpq);
+					localQuat.multiply(localQuat, tmpQuat);
 					part.setRotation(localQuat);
 					part.orientation.load(localQuat);
 				case World:
-					var worldPos = localToGlobal(offset.clone());
+					var worldPos = localToGlobal(tmpOffset.clone());
 					part.setPosition(worldPos.x, worldPos.y, worldPos.z);
 					part.baseMat = particleTemplate.getTransform();
 					var worldQuat = new h3d.Quat();
 					worldQuat.initRotateMatrix(getAbsPos());
 					worldQuat.normalize();
-					tmpq.multiply(tmpq, worldQuat);
-					part.setRotation(tmpq);
-					part.orientation.load(tmpq);
+					tmpQuat.multiply(tmpQuat, worldQuat);
+					part.setRotation(tmpQuat);
+					part.orientation.load(tmpQuat);
 			}
 
 			var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
@@ -639,10 +642,17 @@ class EmitterObject extends h3d.scene.Object {
 			reset();
 		}
 
-		var catchup = time - curTime;
-		var numTicks = hxd.Math.round(hxd.Timer.wantedFPS * catchup);
+		var catchupTime = time - curTime;
+		#if !editor
+		if(catchupTime > maxCatchupWindow) {
+			curTime = time - maxCatchupWindow;
+			catchupTime = maxCatchupWindow;
+		}
+		#end
+		var catchupTickRate = hxd.Timer.wantedFPS / catchupSpeed;
+		var numTicks = hxd.Math.ceil(catchupTickRate * catchupTime);
 		for(i in 0...numTicks) {
-			tick(catchup / numTicks, i == (numTicks - 1));
+			tick(catchupTime / numTicks, i == (numTicks - 1));
 		}
 	}
 }
