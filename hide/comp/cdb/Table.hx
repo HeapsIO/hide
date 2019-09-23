@@ -218,7 +218,7 @@ class Table extends Component {
 		var props = sheet.lines[0];
 		for( c in sheet.columns ) {
 
-			if( c.opt && !Reflect.hasField(props,c.name) && displayMode != AllProperties ) {
+			if( c.opt && props != null && !Reflect.hasField(props,c.name) && displayMode != AllProperties ) {
 				available.push(c);
 				continue;
 			}
