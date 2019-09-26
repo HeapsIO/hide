@@ -87,7 +87,9 @@ class MeshSpray extends Object3D {
 		};
 		interactive.onMove = function(e) {
 			var worldPos = screenToWorld(s2d.mouseX, s2d.mouseY);
-			drawCircle(ctx, worldPos.x, worldPos.y, getZ(worldPos.x, worldPos.y), radius, 2, 16711680);
+			worldPos.z = getZ(worldPos.x, worldPos.y);
+			trace(worldPos);
+			drawCircle(ctx, worldPos.x, worldPos.y, worldPos.z, radius, 2, 16711680);
 			if( K.isDown( K.MOUSE_LEFT) ) {
 				e.propagate = false;
 				if (sprayEnable) {
@@ -284,7 +286,7 @@ class MeshSpray extends Object3D {
 
 	public function drawCircle(ctx : Context, originX : Float, originY : Float, originZ : Float, radius: Float, thickness: Float, color) {
 		if (gBrush != null) gBrush.remove();
-		gBrush = new h3d.scene.Graphics(ctx.local3d);
+		gBrush = new h3d.scene.Graphics(sceneEditor.scene.s3d);
 		gBrush.material.props = h3d.mat.MaterialSetup.current.getDefaults("fx");
 		gBrush.material.mainPass.setPassName("overlay");
 		gBrush.material.shadows = false;
@@ -318,11 +320,7 @@ class MeshSpray extends Object3D {
 	public function screenToWorld(sx: Float, sy: Float) {
 		var camera = sceneEditor.scene.s3d.camera;
 		var ray = camera.rayFromScreen(sx, sy);
-		var dist = projectToGround(ray);
-		if(dist >= 0) {
-			return ray.getPoint(dist);
-		}
-		return null;
+		return ray.intersect(h3d.col.Plane.Z());
 	}
 
 	function projectToGround( ray: h3d.col.Ray ) {
