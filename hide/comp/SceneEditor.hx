@@ -570,7 +570,7 @@ class SceneEditor {
 		int.preciseShape = meshCollider;
 		int.propagateEvents = true;
 		int.enableRightButton = true;
-		int.ignoreMoveEvents = local3d.parent != null && Std.is(local3d.parent, hrt.prefab.l3d.SprayObject);
+		int.onlyMouseClickEvents = local3d.parent != null && Std.is(local3d.parent, hrt.prefab.l3d.SprayObject);
 		var startDrag = null;
 		var dragBtn = -1;
 		int.onClick = function(e) {
@@ -1019,11 +1019,12 @@ class SceneEditor {
 		scene.init(ctx.local3d);
 	}
 
-	public function addObject(elts : Array<PrefabElement>) {
+	public function addObject(elts : Array<PrefabElement>, doRefresh = true) {
 		for (e in elts) {
 			makeInstance(e);
 		}
-		refresh(Partial, () -> selectObjects(elts));
+		if(doRefresh)
+			refresh(Partial, () -> selectObjects(elts));
 		undo.change(Custom(function(undo) {
 			var fullRefresh = false;
 			if(undo) {
@@ -1077,18 +1078,26 @@ class SceneEditor {
 		}
 
 		var map = new Map<PrefabElement,Bool>();
-		function selectRec(e : PrefabElement, b:Bool) {
+		function select(e : PrefabElement, b:Bool) {
 			if( map.exists(e) )
 				return;
 			map.set(e, true);
 			var ectx = context.shared.contexts.get(e);
 			setObjectSelected(e, ectx == null ? context : ectx, b);
+		}
+		function selectRec(e : PrefabElement, b:Bool) {
+			select(e, b);
 			for( e in e.children )
 				selectRec(e,b);
 		}
 
-		for( e in elts )
-			selectRec(e, true);
+		for(e in elts) {
+			if(Std.is(e, hrt.prefab.l3d.MeshSpray)) {
+				select(e, true);
+			} else {
+				selectRec(e, true);
+			}
+		}
 
 		edit.cleanups.push(function() {
 			for( e in map.keys() ) {
@@ -1400,14 +1409,16 @@ class SceneEditor {
 				for(c in o.flatten(Object3D)) {
 					hideList.remove(c);
 					var el = tree.getElement(c);
-					applyTreeStyle(c, el);
+					if(el != null)
+						applyTreeStyle(c, el);
 					applySceneStyle(c);
 				}
 			}
 			else {
 				hideList.set(o, true);
 				var el = tree.getElement(o);
-				applyTreeStyle(o, el);
+				if(el != null)
+					applyTreeStyle(o, el);
 				applySceneStyle(o);
 			}
 		}
@@ -1420,7 +1431,8 @@ class SceneEditor {
 				for(c in o.flatten(Object3D)) {
 					lockList.remove(c);
 					var el = tree.getElement(c);
-					applyTreeStyle(c, el);
+					if(el != null)
+						applyTreeStyle(c, el);
 					applySceneStyle(c);
 				}
 			}
@@ -1428,7 +1440,8 @@ class SceneEditor {
 				for(c in o.flatten(Object3D)) {
 					lockList.set(c, true);
 					var el = tree.getElement(c);
-					applyTreeStyle(c, el);
+					if(el != null)
+						applyTreeStyle(c, el);
 					applySceneStyle(c);
 				}
 			}
@@ -1484,7 +1497,6 @@ class SceneEditor {
 		if(elements == null || elements.length == 0)
 			return;
 		var contexts = context.shared.contexts;
-
 		var undoes = [];
 		var newElements = [];
 		for(elt in elements) {
@@ -1496,7 +1508,6 @@ class SceneEditor {
 			autoName(clone);
 			makeInstance(clone);
 			newElements.push(clone);
-
 			undoes.push(function(undo) {
 				if(undo) elt.parent.children.remove(clone);
 				else elt.parent.children.insert(index, clone);
@@ -1516,7 +1527,6 @@ class SceneEditor {
 
 		undo.change(Custom(function(undo) {
 			deselect();
-
 			var fullRefresh = false;
 			if(undo) {
 				for(elt in newElements) {
@@ -1526,14 +1536,11 @@ class SceneEditor {
 					}
 				}
 			}
-
 			for(u in undoes) u(undo);
-
 			if(!undo) {
 				for(elt in newElements)
 					makeInstance(elt);
 			}
-
 			refresh(fullRefresh ? Full : Partial);
 		}));
 	}
@@ -1577,12 +1584,9 @@ class SceneEditor {
 		undo.change(Custom(function(undo) {
 			if(!undo && !fullRefresh)
 				for(e in elts) removeInstance(e);
-
 			for(u in undoes) u(undo);
-
 			if(undo)
 				for(e in elts) makeInstance(e);
-
 			refreshFunc(then != null ? then : selectObjects.bind(undo ? elts : []));
 		}));
 	}

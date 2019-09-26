@@ -67,14 +67,16 @@ class SprayObject extends h3d.scene.Object {
 	}
 
 	override function emitRec( ctx : h3d.scene.RenderContext ) {
-		var b = blockHead;
-		while(b != null) {
-			if(b.bounds.inFrustum(ctx.camera.frustum)) {
-				for(o in b.objs) {
-					o.emitRec(ctx);
+		if(visible) {
+			var b = blockHead;
+			while(b != null) {
+				if(b.bounds.inFrustum(ctx.camera.frustum)) {
+					for(o in b.objs) {
+						o.emitRec(ctx);
+					}
 				}
+				b = b.next;
 			}
-			b = b.next;
 		}
 	}
 }

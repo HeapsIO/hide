@@ -89,11 +89,11 @@ class MeshSpray extends Object3D {
 			var worldPos = screenToWorld(s2d.mouseX, s2d.mouseY);
 			worldPos.z = getZ(worldPos.x, worldPos.y);
 			drawCircle(ctx, worldPos.x, worldPos.y, worldPos.z, radius, 2, 16711680);
-			if( K.isDown( K.MOUSE_LEFT) ) {
+			if(K.isDown(K.MOUSE_LEFT)) {
 				e.propagate = false;
-				if (sprayEnable) {
-					if (lastSpray < Date.now().getTime() - 50) {
-						if( K.isDown( K.SHIFT) ) {
+				if(sprayEnable) {
+					if(lastSpray < Date.now().getTime() - 50) {
+						if(K.isDown( K.SHIFT)) {
 							removeMeshesAround(ctx, worldPos);
 						} else {
 							addMeshesAround(ctx, worldPos);
@@ -258,8 +258,7 @@ class MeshSpray extends Object3D {
 				models.push(model);
 				currentPivots.push(new h2d.col.Point(model.x, model.y));
 			}
-			sceneEditor.addObject(models);
-			sceneEditor.selectObjects([this]);
+			sceneEditor.addObject(models, false);
 			@:privateAccess Std.downcast(ctx.local3d, SprayObject).blockHead = null;
 		}
 	}
@@ -270,17 +269,20 @@ class MeshSpray extends Object3D {
 		transform.invert();
 		vecRelat.transform3x4(transform);
 		var point2d = new h2d.col.Point(vecRelat.x, vecRelat.y);
-		var childToRemove = [];
-		inline function distance(x1 : Float, y1 : Float, x2 : Float, y2 : Float) return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
-		var fakeRadius = radius * radius;
-		for (child in children) {
-			var model = child.to(hrt.prefab.Object3D);
-			if (distance(point2d.x, point2d.y, model.x, model.y) < fakeRadius) {
-				childToRemove.push(child);
+		var childrenToRemove = [];
+		inline function distance(dx : Float, dy : Float) return dx * dx + dy * dy;
+		var radius2 = radius * radius;
+		for(child in children) {
+			if(!Std.is(child, h3d.scene.Interactive)) {
+				var model = child.to(hrt.prefab.Object3D);
+				if(distance(point2d.x - model.x, point2d.y - model.y) < radius2) {
+					childrenToRemove.push(child);
+				}
 			}
 		}
-		sceneEditor.deleteElements(childToRemove);
+		sceneEditor.deleteElements(childrenToRemove);
 		sceneEditor.selectObjects([this]);
+		@:privateAccess Std.downcast(ctx.local3d, SprayObject).blockHead = null;
 	}
 
 	public function drawCircle(ctx : Context, originX : Float, originY : Float, originZ : Float, radius: Float, thickness: Float, color) {
