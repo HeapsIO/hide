@@ -35,6 +35,7 @@ class Tile extends h3d.scene.Mesh {
 		this.y = y * terrain.tileSize;
 		name = "tile_" + x + "_" + y;
 		material.mainPass.setPassName("terrain");
+		ignoreCollide = true;
 	}
 
 	override function onRemove() {
@@ -633,7 +634,7 @@ class Tile extends h3d.scene.Mesh {
 		shader.maxStep = terrain.parallaxMaxStep;
 		shader.heightBlendStrength = terrain.heightBlendStrength;
 		shader.blendSharpness = terrain.blendSharpness;
-		
+
 	}
 
 	function isReadyForDraw() {
@@ -643,9 +644,9 @@ class Tile extends h3d.scene.Mesh {
 		if( bigPrim == null && (heightMap == null || heightMap.isDisposed()) )
 			return false;
 
-		if( !shader.CHECKER && (shader.weightTextures == null || shader.weightTextures.isDisposed()) ) 
+		if( !shader.CHECKER && (shader.weightTextures == null || shader.weightTextures.isDisposed()) )
 			return false;
-		
+
 		if( !shader.CHECKER && !shader.COMPLEXITY ) {
 			if( shader.albedoTextures == null || shader.albedoTextures.isDisposed() ) return false;
 			if( shader.normalTextures == null || shader.normalTextures.isDisposed() ) return false;

@@ -46,6 +46,15 @@ class MeshSpray extends Object3D {
 			meshes = obj.meshes;
 	}
 
+
+	override function makeInstance(ctx:Context):Context {
+		ctx = ctx.clone(this);
+		ctx.local3d = new SprayObject(ctx.local3d);
+		ctx.local3d.name = name;
+		updateInstance(ctx);
+		return ctx;
+	}
+
 	override function getHideProps() : HideProps {
 		return { icon : "paint-brush", name : "MeshSpray" };
 	}
@@ -58,39 +67,29 @@ class MeshSpray extends Object3D {
 
 	override function edit( ectx : EditContext ) {
 		sceneEditor = ectx.scene.editor;
-
-
 		var ctx = ectx.getContext(this);
 		var s2d = @:privateAccess ctx.local2d.getScene();
 		interactive = new h2d.Interactive(10000, 10000, s2d);
 		interactive.propagateEvents = true;
 		interactive.cancelEvents = false;
-
 		interactive.onWheel = function(e) {
 
 		};
-
 		interactive.onPush = function(e) {
 			e.propagate = false;
 			sprayEnable = true;
 
 		};
-
 		interactive.onRelease = function(e) {
 			e.propagate = false;
 			sprayEnable = false;
 		};
-
 		interactive.onMove = function(e) {
 			var worldPos = screenToWorld(s2d.mouseX, s2d.mouseY);
-
 			drawCircle(ctx, worldPos.x, worldPos.y, getZ(worldPos.x, worldPos.y), radius, 2, 16711680);
-
 			if( K.isDown( K.MOUSE_LEFT) ) {
 				e.propagate = false;
-
 				if (sprayEnable) {
-
 					if (lastSpray < Date.now().getTime() - 50) {
 						if( K.isDown( K.SHIFT) ) {
 							removeMeshesAround(ctx, worldPos);
@@ -195,9 +194,7 @@ class MeshSpray extends Object3D {
 		transform.invert();
 		vecRelat.transform3x4(transform);
 		var point2d = new h2d.col.Point(vecRelat.x, vecRelat.y);
-
 		var minDistanceBetweenMeshesSq = (radius * radius / density);
-
 		var currentPivots : Array<h2d.col.Point> = [];
 		inline function distance(x1 : Float, y1 : Float, x2 : Float, y2 : Float) return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
 		var fakeRadius = radius * radius + minDistanceBetweenMeshesSq;
@@ -211,20 +208,16 @@ class MeshSpray extends Object3D {
 		var nbMeshesToPlace = density - nbMeshesInZone;
 		if (nbMeshesToPlace > 0) {
 			var models : Array<hrt.prefab.Prefab> = [];
-
 			var random = new hxd.Rand(Std.random(0xFFFFFF));
-
 			while (nbMeshesToPlace-- > 0) {
 				var nbTry = 5;
 				var position : h3d.col.Point;
 				do {
 					var randomRadius = radius*Math.sqrt(random.rand());
 					var angle = random.rand() * 2*Math.PI;
-
 					position = new h3d.col.Point(point.x + randomRadius*Math.cos(angle), point.y + randomRadius*Math.sin(angle), 0);
 					var vecRelat = position.toVector();
 					vecRelat.transform3x4(transform);
-
 					var isNextTo = false;
 					for (cPivot in currentPivots) {
 						if (distance(vecRelat.x, vecRelat.y, cPivot.x, cPivot.y) <= minDistanceBetweenMeshesSq) {
@@ -236,43 +229,34 @@ class MeshSpray extends Object3D {
 						break;
 					}
 				} while (nbTry-- > 0);
-
 				var randRotationOffset = random.rand() * rotationOffset;
 				if (Std.random(2) == 0) {
 					randRotationOffset *= -1;
 				}
 				var rotationZ = ((rotation  + randRotationOffset) % 360)/360 * 2*Math.PI;
-
 				var model = new hrt.prefab.Model(this);
 				model.source = meshes[Std.random(meshes.length)];
 				model.name = extractMeshName(model.source);
-
 				var localMat = new h3d.Matrix();
 				localMat.initRotationZ(rotationZ);
-
 				var randScaleOffset = random.rand() * scaleOffset;
 				if (Std.random(2) == 0) {
 					randScaleOffset *= -1;
 				}
 				var currentScale = (scale + randScaleOffset);
-
 				localMat.scale(currentScale, currentScale, currentScale);
-
 				position.z = getZ(position.x, position.y);
 				localMat.setPosition(new Vector(position.x, position.y, position.z));
-
 				var invParent = getTransform().clone();
 				invParent.invert();
 				localMat.multiply(localMat, invParent);
-
 				model.setTransform(localMat);
-
 				models.push(model);
 				currentPivots.push(new h2d.col.Point(model.x, model.y));
 			}
-
 			sceneEditor.addObject(models);
 			sceneEditor.selectObjects([this]);
+			@:privateAccess Std.downcast(ctx.local3d, SprayObject).blockHead = null;
 		}
 	}
 
@@ -282,7 +266,6 @@ class MeshSpray extends Object3D {
 		transform.invert();
 		vecRelat.transform3x4(transform);
 		var point2d = new h2d.col.Point(vecRelat.x, vecRelat.y);
-
 		var childToRemove = [];
 		inline function distance(x1 : Float, y1 : Float, x2 : Float, y2 : Float) return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
 		var fakeRadius = radius * radius;
@@ -310,7 +293,6 @@ class MeshSpray extends Object3D {
 			var theta = Math.PI * 2 * (i+1)/nsegments;
 			gBrush.lineTo(Math.cos(theta) * radius, Math.sin(theta) * radius, 0);
 		}
-
 		gBrush.lineStyle();
 	}
 

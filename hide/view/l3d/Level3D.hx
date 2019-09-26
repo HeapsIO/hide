@@ -34,6 +34,7 @@ class CamController extends h3d.scene.CameraController {
 		case EWheel:
 			zoom(e.wheelDelta);
 		case EPush:
+			@:privateAccess scene.events.startDrag(onEvent, function() pushing = -1, e);
 			pushing = e.button;
 			pushX = e.relX;
 			pushY = e.relY;
@@ -42,6 +43,7 @@ class CamController extends h3d.scene.CameraController {
 			if( pushing == e.button ) {
 				pushing = -1;
 				startPush = null;
+				@:privateAccess scene.events.stopDrag();
 			}
 		case EMove:
 			switch( pushing ) {

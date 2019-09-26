@@ -534,7 +534,6 @@ class SceneEditor {
 		for(mesh in meshes) {
 			if(mesh.ignoreCollide)
 				continue;
-
 			// invisible objects are ignored collision wise
 			var p : h3d.scene.Object = mesh;
 			while( p != local3d ) {
@@ -542,7 +541,6 @@ class SceneEditor {
 				p = p.parent;
 			}
 			if( p != local3d ) continue;
-
 			var localMat = mesh.getAbsPos().clone();
 			localMat.multiply(localMat, invRootMat);
 			var lb = mesh.primitive.getBounds().clone();
@@ -554,12 +552,16 @@ class SceneEditor {
 			if(c != null) c;
 		}]);
 		var boundsCollider = new h3d.col.ObjectCollider(local3d, bounds);
+		var r = Math.max(bounds.getSize().z, Math.max(bounds.getSize().x, bounds.getSize().y));
+		var pos = local3d.getAbsPos();
+		local3d.cullingCollider = new h3d.col.Sphere(pos.tx, pos.ty, pos.tz, r);
 		var int = new h3d.scene.Interactive(boundsCollider, local3d);
 		interactives.set(elt, int);
 		int.ignoreParentTransform = true;
 		int.preciseShape = meshCollider;
 		int.propagateEvents = true;
 		int.enableRightButton = true;
+		int.ignoreMoveEvents = local3d.parent != null && Std.is(local3d.parent, hrt.prefab.l3d.SprayObject);
 		var startDrag = null;
 		var dragBtn = -1;
 		int.onClick = function(e) {
@@ -750,19 +752,22 @@ class SceneEditor {
 							objects3d[i].applyPos(sceneObjs[i]);
 						}
 						refreshProps();
-					}
-					else {
+					} else {
 						for(i in 0...objects3d.length) {
 							objects3d[i].loadTransform(newState[i]);
 							objects3d[i].applyPos(sceneObjs[i]);
 						}
 						refreshProps();
 					}
-
 					for(o in objects3d)
 						o.updateInstance(getContext(o));
-
 				}));
+				for(i in 0...objects3d.length) {
+					var sprayObj = Std.downcast(sceneObjs[i].parent, hrt.prefab.l3d.SprayObject);
+					if(sprayObj != null) {
+						@:privateAccess sprayObj.blockHead = null;
+					}
+				}
 			}
 		}
 	}
@@ -869,7 +874,7 @@ class SceneEditor {
 		applySceneStyle(p);
 	}
 
-	public function applyTreeStyle(p: PrefabElement, el: Element) {		
+	public function applyTreeStyle(p: PrefabElement, el: Element) {
 		var obj3d  = p.to(Object3D);
 		el.toggleClass("disabled", !p.enabled);
 		el.find("a").first().toggleClass("favorite", isFavorite(p));
@@ -913,7 +918,7 @@ class SceneEditor {
 				});
 			}
 			lockTog.css({visibility: (isLocked(obj3d) ? "visible" : "hidden")});
-		} 
+		}
 	}
 
 	public function applySceneStyle(p: PrefabElement) {
@@ -997,8 +1002,9 @@ class SceneEditor {
 		scene.setCurrent();
 		var parentCtx = getContext(elt.parent);
 		var ctx = elt.make(parentCtx);
-		for( p in elt.flatten() )
+		for( p in elt.flatten() ) {
 			makeInteractive(p);
+		}
 		scene.init(ctx.local3d);
 	}
 
