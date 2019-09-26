@@ -1,0 +1,425 @@
+package hrt.prefab.l3d;
+
+import hxd.Math;
+
+enum CurveShape {
+	Linear;
+	Quadratic;
+	Cubic;
+}
+
+typedef SplinePointData = {
+	pos : h3d.col.Point,
+	tangent : h3d.col.Point,
+	prev : SplinePoint,
+	next : SplinePoint,
+	?t : Float
+}
+
+class SplineData {
+	public var length : Float;
+	public var step : Float;
+	public var threshold : Float;
+	public var samples : Array<SplinePointData> = [];
+	public function new() {}
+}
+
+class SplinePoint extends h3d.scene.Object {
+
+	public function new(x : Float, y : Float, z : Float, parent : h3d.scene.Object) {
+		super(parent);
+		setPosition(x,y,z);
+	}
+
+	inline public function getPoint() : h3d.col.Point {
+		return getAbsPos().getPosition().toPoint();
+	}
+
+	public function getTangent() : h3d.col.Point {
+		var tangent = getAbsPos().front().toPoint();
+		tangent.scale(-1);
+		return tangent;
+	}
+
+	public function getFirstControlPoint() : h3d.col.Point {
+		var absPos = getAbsPos();
+		var right = absPos.front();
+		right.scale3(scaleX);
+		var pos = new h3d.col.Point(absPos.tx, absPos.ty, absPos.tz);
+		pos = pos.add(right.toPoint());
+		return pos;
+	}
+
+	public function getSecondControlPoint() : h3d.col.Point {
+		var absPos = getAbsPos();
+		var left = absPos.front();
+		left.scale3(-scaleX);
+		var pos = new h3d.col.Point(absPos.tx, absPos.ty, absPos.tz);
+		pos = pos.add(left.toPoint());
+		return pos;
+	}
+}
+
+class Spline extends Object3D {
+
+	public var points : Array<SplinePoint> = [];
+	public var shape : CurveShape = Quadratic;
+
+	var data : SplineData;
+	var step : Float = 1.0;
+	var threshold : Float = 0.01;
+
+	// Save/Load the curve as an array of absPos
+	public var pointsData : Array<h3d.Matrix> = [];
+
+	// Graphic
+	public var showSpline : Bool = true;
+	public var lineGraphics : h3d.scene.Graphics;
+	public var lineThickness : Int = 4;
+	public var color : Int = 0xFFFFFFFF;
+	public var loop : Bool = false;
+
+	#if editor
+	public var editor : hide.prefab.SplineEditor;
+	#end
+
+	override function save() {
+		var obj : Dynamic = super.save();
+
+		if( points!= null && points.length > 0 ) {
+			var parentInv = points[0].parent.getAbsPos().clone();
+			parentInv.initInverse(parentInv);
+			obj.points = [ for(sp in points) {
+								var abs = sp.getAbsPos().clone();
+								abs.multiply(abs, parentInv);
+								[for(f in abs.getFloats()) hxd.Math.fmt(f) ];
+							} ];
+		}
+		obj.shape = shape.getIndex();
+		obj.color = color;
+		obj.lineThickness = lineThickness;
+		obj.loop = loop;
+		obj.showSpline = showSpline;
+		obj.step = step;
+		obj.threshold = threshold;
+		return obj;
+	}
+
+	override function load( obj : Dynamic ) {
+		super.load(obj);
+		pointsData = [];
+		if( obj.points != null ) {
+			var points : Array<Dynamic> = obj.points;
+			for( p in points ) {
+				var m = new h3d.Matrix();
+				m.loadValues(p);
+				pointsData.push(m);
+			}
+		}
+		shape = obj.shape == null ? Linear : CurveShape.createByIndex(obj.shape);
+		color = obj.color != null ? obj.color : 0xFFFFFFFF;
+		lineThickness = obj.lineThickness == null ? 4 : obj.lineThickness;
+		loop = obj.loop == null ? false : obj.loop;
+		showSpline = obj.showSpline == null ? true : obj.showSpline;
+		step = obj.step == null ? 1.0 : obj.step;
+		threshold = obj.threshold == null ? 0.01 : obj.threshold;
+	}
+
+	override function makeInstance( ctx : hrt.prefab.Context ) : hrt.prefab.Context {
+		var ctx = ctx.clone(this);
+
+		ctx.local3d = new h3d.scene.Object(ctx.local3d);
+		ctx.local3d.name = name;
+
+		for( pd in pointsData ) {
+			var sp = new SplinePoint(0, 0, 0, ctx.local3d);
+			sp.setTransform(pd);
+			sp.getAbsPos();
+			points.push(sp);
+		}
+		pointsData = [];
+
+		if( points == null || points.length == 0 ) {
+			points.push(new SplinePoint(0,0,0, ctx.local3d));
+		}
+
+		updateInstance(ctx);
+		return ctx;
+	}
+
+	override function updateInstance( ctx : hrt.prefab.Context , ?propName : String ) {
+		super.updateInstance(ctx, propName);
+		computeSplineData();
+
+		#if editor
+		if( editor != null )
+			editor.update(ctx, propName);
+		generateSplineGraph(ctx);
+		#end
+	}
+
+	// Return an interpolation of two samples at length l, 0 <= l <= splineLength
+	function getPointAtLength( l : Float ) : h3d.col.Point {
+		if( data == null )
+			computeSplineData();
+
+		// The last point is not at the same distance, be aware of that case
+		var s1 : Int = hxd.Math.floor(l / step);
+		var s2 : Int = hxd.Math.ceil(l / step);
+		s1 = cast hxd.Math.clamp(s1, 0, data.samples.length - 1);
+		s2 = cast hxd.Math.clamp(s2, 0, data.samples.length - 1);
+
+		// End/Beginning of the curve, just return the point
+		if( s1 == s2 )
+			return data.samples[s1].pos;
+		// Linear interpolation between the two samples
+		else {
+			var segmentLength = data.samples[s1].pos.distance(data.samples[s2].pos);
+			var t = (l - (s1 * step)) / segmentLength;
+			var result = new h3d.Vector();
+			result.lerp(data.samples[s1].pos.toVector(), data.samples[s2].pos.toVector(), t);
+			return result.toPoint();
+		}
+	}
+
+	// Return the euclidean distance between the two points
+	inline function getMaxLengthBetween( p1 : SplinePoint, p2 : SplinePoint) : Float {
+		switch shape {
+			case Linear: return p1.getPoint().distance(p2.getPoint());
+			case Quadratic: return p1.getPoint().distance(p1.getSecondControlPoint()) + p1.getFirstControlPoint().distance(p2.getPoint());
+			case Cubic: return p1.getPoint().distance(p1.getSecondControlPoint()) + p1.getFirstControlPoint().distance(p2.getFirstControlPoint()) + p2.getFirstControlPoint().distance(p2.getPoint());
+		}
+	}
+
+	// Return the sum of the euclidean distances between each control points
+	inline function getMinLengthBetween( p1 : SplinePoint, p2 : SplinePoint) : Float {
+		return p1.getPoint().distance(p2.getPoint());
+	}
+
+	// Return the sum of the euclidean distances between each samples
+	public function getLength() {
+		if( data == null )
+			computeSplineData();
+		return data.length;
+	}
+
+	// Sample the spline with the step and threshold
+	function computeSplineData() {
+
+		var sd = new SplineData();
+		data = sd;
+
+		if( step <= 0 )
+			return;
+
+		if( points == null || points.length <= 1 )
+			return;
+
+		// Sample the spline
+		var samples : Array<SplinePointData> = [{ pos : points[0].getPoint(), tangent : points[0].getTangent(), prev : points[0], next : points[1] }];
+		var i = 0;
+		var sumT = 0.0;
+		var maxT = 1.0;
+		var minT = 0.0;
+		while( i < points.length - 1 ) {
+
+			var t = (maxT + minT) * 0.5;
+			var p = getPointBetween(t, points[i], points[i+1]);
+			var curSegmentLength = p.distance(samples[samples.length - 1].pos);
+
+			// Point found
+			if( hxd.Math.abs(curSegmentLength - step) <= threshold ) {
+				samples.insert(samples.length, { pos : p, tangent : getTangentBetween(t, points[i], points[i+1]), prev : points[i], next : points[i+1], t : t });
+				sumT = t;
+				maxT = 1.0;
+				minT = sumT;
+				// Last point of the curve too close from the last sample
+				if( points[i+1].getPoint().distance(samples[samples.length - 1].pos) < step ) {
+					// End of the spline
+					if( i == points.length - 2 ) {
+						samples.insert(samples.length, { pos : points[points.length - 1].getPoint(), tangent : points[points.length - 1].getTangent(), prev : points[points.length - 2], next : points[points.length - 1], t : 1.0 });
+						break;
+					}
+					// End of the current curve
+					else {
+						i++;
+						sumT = 0.0;
+						minT = 0.0;
+						maxT = 1.0;
+					}
+				}
+			}
+			// Point not found
+			else if( curSegmentLength > step ) {
+				maxT = maxT - (maxT - minT) * 0.5;
+			}
+			else if( curSegmentLength < step ) {
+				minT = minT + (maxT - minT) * 0.5;
+			}
+		}
+		sd.samples = samples;
+
+		// Compute the average length of the spline
+		var lengthSum = 0.0;
+		for( i in 0 ... samples.length - 1 ) {
+			lengthSum += samples[i].pos.distance(samples[i+1].pos);
+		}
+		sd.length = lengthSum;
+	}
+
+	// Return the closest spline point on the spline from p
+	function getClosestSplinePoint( p : h3d.col.Point ) : SplinePoint {
+		var minDist = -1.0;
+		var curPt : SplinePoint = null;
+		for( sp in points ) {
+			var dist = p.distance(sp.getPoint());
+			if( dist < minDist || minDist == -1 ) {
+				minDist = dist;
+				curPt = sp;
+			}
+		}
+		return curPt;
+	}
+
+	// Return the closest point on the spline from p
+	function getClosestPoint( p : h3d.col.Point ) : SplinePointData {
+
+		if( data == null )
+			computeSplineData();
+
+		var minDist = -1.0;
+		var result : SplinePointData = null;
+		for( s in data.samples ) {
+			var dist = s.pos.distance(p);
+			if( dist < minDist || minDist == -1 ) {
+				minDist = dist;
+				result = s;
+			}
+		}
+		return result;
+	}
+
+	// Return the point on the curve between p1 and p2 at t, 0 <= t <= 1
+	inline function getPointBetween( t : Float, p1 : SplinePoint, p2 : SplinePoint ) : h3d.col.Point {
+		return switch (shape) {
+			case Linear: getLinearBezierPoint( t, p1.getPoint(), p2.getPoint() );
+			case Quadratic: getQuadraticBezierPoint( t, p1.getPoint(), p1.getSecondControlPoint(), p2.getPoint() );
+			case Cubic: getCubicBezierPoint( t, p1.getPoint(), p1.getSecondControlPoint(), p2.getFirstControlPoint(), p2.getPoint() );
+		}
+	}
+
+	// Return the tangen on the curve between p1 and p2 at t, 0 <= t <= 1
+	inline function getTangentBetween( t : Float, p1 : SplinePoint, p2 : SplinePoint ) : h3d.col.Point {
+		return switch (shape) {
+			case Linear: getLinearBezierTangent( t, p1.getPoint(), p2.getPoint() );
+			case Quadratic: getQuadraticBezierTangent( t, p1.getPoint(), p1.getSecondControlPoint(), p2.getPoint() );
+			case Cubic: getCubicBezierTangent( t, p1.getPoint(), p1.getSecondControlPoint(), p2.getFirstControlPoint(), p2.getPoint() );
+		}
+	}
+
+	// Linear Interpolation
+	// p(t) = p0 + (p1 - p0) * t
+	inline function getLinearBezierPoint( t : Float, p0 : h3d.col.Point, p1 : h3d.col.Point ) : h3d.col.Point {
+		return p0.add((p1.sub(p0).multiply(t)));
+	}
+	// p'(t) = (p1 - p0)
+	inline function getLinearBezierTangent( t : Float, p0 : h3d.col.Point, p1 : h3d.col.Point ) : h3d.col.Point {
+		return p1.sub(p0).normalizeFast();
+	}
+
+	// Quadratic Interpolation
+	// p(t) = p0 * (1 - t)² + p1 * t * 2 * (1 - t) + p2 * t²
+	inline function getQuadraticBezierPoint( t : Float, p0 : h3d.col.Point, p1 : h3d.col.Point, p2 : h3d.col.Point) : h3d.col.Point {
+		return p0.multiply((1 - t) * (1 - t)).add(p1.multiply(t * 2 * (1 - t))).add(p2.multiply(t * t));
+	}
+	// p'(t) = 2 * (1 - t) * (p1 - p2) + 2 * t * (p2 - p1)
+	inline function getQuadraticBezierTangent( t : Float, p0 : h3d.col.Point, p1 : h3d.col.Point, p2 : h3d.col.Point) : h3d.col.Point {
+		return p1.sub(p2).multiply(2 * (1 - t)).add(p2.sub(p1).multiply(2 * t)).normalizeFast();
+	}
+
+	// Cubic Interpolation
+	// p(t) = p0 * (1 - t)³ + p1 * t * 3 * (1 - t)² + p2 * t² * 3 * (1 - t) + p3 * t³
+	inline function getCubicBezierPoint( t : Float, p0 : h3d.col.Point, p1 : h3d.col.Point, p2 : h3d.col.Point, p3 : h3d.col.Point) : h3d.col.Point {
+		return p0.multiply((1 - t) * (1 - t) * (1 - t)).add(p1.multiply(t * 3 * (1 - t) * (1 - t))).add(p2.multiply(t * t * 3 * (1 - t))).add(p3.multiply(t * t * t));
+	}
+	// p'(t) = 3 * (1 - t)² * (p1 - p0) + 6 * (1 - t) * t * (p2 - p1) + 3 * t² * (p3 - p2)
+	inline function getCubicBezierTangent( t : Float, p0 : h3d.col.Point, p1 : h3d.col.Point, p2 : h3d.col.Point, p3 : h3d.col.Point) : h3d.col.Point {
+		return p1.sub(p0).multiply(3 * (1 - t) * (1 - t)).add(p2.sub(p1).multiply(6 * (1 - t) * t)).add(p3.sub(p2).multiply(3 * t * t)).normalizeFast();
+	}
+
+
+
+	function generateSplineGraph( ctx : hrt.prefab.Context ) {
+
+		if( !showSpline ) {
+			if( lineGraphics != null ) {
+				lineGraphics.remove();
+				lineGraphics = null;
+			}
+			return;
+		}
+
+		if( lineGraphics == null ) {
+			lineGraphics = new h3d.scene.Graphics(ctx.local3d);
+			lineGraphics.lineStyle(lineThickness, color);
+			lineGraphics.material.mainPass.setPassName("overlay");
+			lineGraphics.material.mainPass.depth(false, LessEqual);
+			lineGraphics.ignoreParentTransform = false;
+		}
+
+		lineGraphics.lineStyle(lineThickness, color);
+		lineGraphics.clear();
+		var b = true;
+		for( s in data.samples ) {
+			var localPos = ctx.local3d.globalToLocal(s.pos.toVector());
+			b ? lineGraphics.moveTo(localPos.x, localPos.y, localPos.z) : lineGraphics.lineTo(localPos.x, localPos.y, localPos.z);
+			b = false;
+		}
+	}
+
+	#if editor
+
+	override function setSelected( ctx : hrt.prefab.Context , b : Bool ) {
+		super.setSelected(ctx, b);
+
+		if( editor != null )
+			editor.setSelected(ctx, b);
+	}
+
+	override function edit( ctx : EditContext ) {
+		super.edit(ctx);
+
+		ctx.properties.add( new hide.Element('
+			<div class="group" name="Spline">
+				<dl>
+					<dt>Color</dt><dd><input type="color" alpha="true" field="color"/></dd>
+					<dt>Thickness</dt><dd><input type="range" min="1" max="10" field="lineThickness"/></dd>
+					<dt>Step</dt><dd><input type="range" min="0.1" max="10" field="step"/></dd>
+					<dt>Threshold</dt><dd><input type="range" min="0.001" max="1" field="threshold"/></dd>
+					<dt>Show Spline</dt><dd><input type="checkbox" field="showSpline"/></dd>
+					<dt>Type</dt>
+						<dd>
+							<select field="shape" >
+								<option value="Linear">Linear</option>
+								<option value="Quadratic">Quadratic</option>
+								<option value="Cubic">Cubic</option>
+							</select>
+						</dd>
+				</dl>
+			</div>'), this, function(pname) { ctx.onChange(this, pname); });
+
+		if( editor == null ) {
+			editor = new hide.prefab.SplineEditor(this, ctx.properties.undo);
+		}
+
+		editor.editContext = ctx;
+		editor.edit(ctx);
+	}
+
+	override function getHideProps() : HideProps {
+		return { icon : "arrows-v", name : "Spline" };
+	}
+	#end
+
+	static var _ = hrt.prefab.Library.register("spline", Spline);
+}

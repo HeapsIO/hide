@@ -17,6 +17,7 @@ class TerrainMesh extends h3d.scene.Object {
 	public var showChecker : Bool;
 	public var showComplexity : Bool;
 	#end
+	public var enableParallax : Bool = true;
 	public var parallaxAmount : Float;
 	public var parallaxMinStep : Int;
 	public var parallaxMaxStep : Int;
@@ -147,7 +148,7 @@ class TerrainMesh extends h3d.scene.Object {
 	}
 
 	public function refreshAllTex() {
-		for( tile in tiles ) 
+		for( tile in tiles )
 			tile.refreshTex();
 	}
 

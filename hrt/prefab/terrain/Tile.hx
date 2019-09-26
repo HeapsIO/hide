@@ -613,7 +613,7 @@ class Tile extends h3d.scene.Mesh {
 		shader.COMPLEXITY = #if editor terrain.showComplexity #else false #end;
 		shader.VERTEX_DISPLACEMENT = bigPrim == null;
 		shader.SURFACE_COUNT = terrain.surfaceArray.surfaceCount;
-		shader.PARALLAX = terrain.parallaxAmount != 0;
+		shader.PARALLAX = terrain.enableParallax && terrain.parallaxAmount != 0;
 
 		shader.heightMapSize = heightMap != null ? heightMap.width : 0;
 		shader.primSize = terrain.tileSize;

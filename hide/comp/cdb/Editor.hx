@@ -460,90 +460,50 @@ class Editor extends Component {
 		return null;
 	}
 
-	public function newColumn( sheet : cdb.Sheet, ?index : Int ) {
+	public function newColumn( sheet : cdb.Sheet, ?index : Int, ?onDone : cdb.Data.Column -> Void ) {
 		var modal = new hide.comp.cdb.ModalColumnForm(base, null, element);
 		modal.setCallback(function() {
 			var c = modal.getColumn(base, sheet, null);
-			if (c == null) {
+			if (c == null)
 				return;
-			}
-			var err = newColumn_save(sheet, c, index + 1);
+			beginChanges();
+			var err = sheet.addColumn(c, index + 1);
+			endChanges();
 			if (err != null) {
 				modal.error(err);
-			} else {
-				modal.closeModal();
+				return;
 			}
+			// perform side effects before refresh
+			if( onDone != null )
+				onDone(c);
+			// if first column or subtable, refresh all
+			if( sheet.columns.length == 1 || sheet.parent != null )
+				refresh();
+			for( t in tables )
+				if( t.sheet == sheet )
+					t.refresh();
+			modal.closeModal();
 		});
-	}
-
-	function newColumn_save( sheet : cdb.Sheet, c : cdb.Data.Column, ?index : Int ) {
-		beginChanges();
-		var err = sheet.addColumn(c, index);
-		endChanges();
-		if (err != null) {
-			return err;
-		}
-		if( sheet.columns.length == 1 )
-			refresh();
-		for( t in tables )
-			if( t.sheet == sheet )
-				t.refresh();
-		return null;
 	}
 
 	public function editColumn( sheet : cdb.Sheet, col : cdb.Data.Column ) {
 		var modal = new hide.comp.cdb.ModalColumnForm(base, col, element);
 		modal.setCallback(function() {
 			var c = modal.getColumn(base, sheet, col);
-			if (c == null) {
+			if (c == null)
 				return;
-			}
-			var err = editColumn_save(base, sheet, col, c);
+			beginChanges();
+			var err = base.updateColumn(sheet, col, c);
+			endChanges();
 			if (err != null) {
 				modal.error(err);
-			} else {
-				modal.closeModal();
+				return;
 			}
+			for( t in tables )
+				if( t.sheet == sheet )
+					t.refresh();
+			modal.closeModal();
 		});
-	}
-
-	function editColumn_save( base : cdb.Database, sheet : cdb.Sheet, colOld : cdb.Data.Column, colNew : cdb.Data.Column ) {
-		beginChanges();
-		var err = base.updateColumn(sheet, colOld, colNew);
-		endChanges();
-		for( t in tables )
-			if( t.sheet == sheet )
-				t.refresh();
-		if (err != null) {
-			return err;
-		}
-		return null;
-	}
-
-	public function deleteColumn( sheet : cdb.Sheet, cname : String ) {
-		beginChanges();
-		sheet.deleteColumn(cname);
-		endChanges();
-	}
-
-	public function moveColumnLeft( sheet : cdb.Sheet, index : Int ) {
-		beginChanges();
-		var c = sheet.columns[index];
-		if( index > 0 ) {
-			sheet.columns.remove(c);
-			sheet.columns.insert(index - 1, c);
-		}
-		endChanges();
-	}
-
-	public function moveColumnRight( sheet : cdb.Sheet, index : Int ) {
-		beginChanges();
-		var c = sheet.columns[index];
-		if( index > 0 ) {
-			sheet.columns.remove(c);
-			sheet.columns.insert(index + 1, c);
-		}
-		endChanges();
 	}
 
 	public function insertLine( table : Table, index = 0 ) {
@@ -580,38 +540,52 @@ class Editor extends Component {
 		table.refresh();
 	}
 
-	public function popupColumn( table : Table, col : cdb.Data.Column ) {
-		var indexColumn = 0;
-		for (c in table.sheet.columns) {
-			if (c == col) {
-				break;
-			}
-			indexColumn++;
-		}
+	public function popupColumn( table : Table, col : cdb.Data.Column, ?cell : Cell ) {
+		var indexColumn = table.sheet.columns.indexOf(col);
 		var menu : Array<hide.comp.ContextMenu.ContextMenuItem> = [
 			{ label : "Edit", click : function () editColumn(table.sheet, col) },
 			{ label : "Add Column", click : function () newColumn(table.sheet, indexColumn) },
 			{ label : "", isSeparator: true },
 			{ label : "Move Left", enabled:  (indexColumn > 0), click : function () {
-				moveColumnLeft(table.sheet, indexColumn);
+				beginChanges();
+				table.sheet.columns.remove(col);
+				table.sheet.columns.insert(indexColumn - 1, col);
+				endChanges();
 				refresh();
 			}},
 			{ label : "Move Right", enabled: (indexColumn < table.sheet.columns.length - 1), click : function () {
-				moveColumnRight(table.sheet, indexColumn);
+				beginChanges();
+				table.sheet.columns.remove(col);
+				table.sheet.columns.insert(indexColumn + 1, col);
+				endChanges();
 				refresh();
 			}},
 			{ label: "", isSeparator: true },
 			{ label : "Delete", click : function () {
-				deleteColumn(table.sheet, col.name);
+				beginChanges();
+				if( table.displayMode == Properties )
+					changeObject(cell.line, col, base.getDefault(col));
+				else
+					table.sheet.deleteColumn(col.name);
+				endChanges();
 				refresh();
 			}}
 		];
 		if( col.type == TString && col.kind == Script )
 			menu.insert(1,{ label : "Edit all", click : function() editScripts(table,col) });
+		if( table.displayMode == Properties ) {
+			menu.push({ label : "Delete All", click : function() {
+				beginChanges();
+				table.sheet.deleteColumn(col.name);
+				endChanges();
+				refresh();
+			}});
+		}
 		new hide.comp.ContextMenu(menu);
 	}
 
 	function editScripts( table : Table, col : cdb.Data.Column ) {
+		// TODO : create single edit-all script view allowing global search & replace
 	}
 
 	function moveLine( line : Line, delta : Int ) {

@@ -52,7 +52,7 @@ class Ide {
 	static var firstInit = true;
 
 	function new() {
-		isCDB = Sys.getEnv("HIDE_START_CDB") == "1";
+		isCDB = Sys.getEnv("HIDE_START_CDB") == "1" || nw.App.manifest.name == "CDB";
 		function wait() {
 			if( monaco.Editor == null ) {
 				haxe.Timer.delay(wait, 10);
@@ -477,7 +477,12 @@ class Ide {
 			config.global.save();
 		}
 		window.title = (isCDB ? "CastleDB" : "HIDE") + " - " + dir;
-		config = Config.loadForProject(projectDir, resourceDir);
+		try {
+			config = Config.loadForProject(projectDir, resourceDir);
+		} catch( e : Dynamic ) {
+			js.Browser.alert(e);
+			return;
+		}
 		shaderLoader = new hide.tools.ShaderLoader();
 		typesCache = new hide.tools.TypesCache();
 

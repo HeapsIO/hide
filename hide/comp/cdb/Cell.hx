@@ -202,7 +202,7 @@ class Cell extends Component {
 	}
 
 	public function getDocumentName() {
-		var name = table.sheet.name;
+		var name = table.sheet.name.split("@").join(".");
 		if( table.sheet.props.hasGroup ) {
 			var g = getGroup();
 			if( g != null ) name += "[group="+g+"]";
@@ -259,6 +259,7 @@ class Cell extends Component {
 			element.addClass("edit");
 			var i = new Element(longText ? "<textarea>" : "<input>").appendTo(element);
 			i.keypress(function(e) e.stopPropagation());
+			i.dblclick(function(e) e.stopPropagation());
 			//if( str != "" && (table.displayMode == Properties || table.displayMode == AllProperties) )
 			//	i.css({ width : Math.ceil(textWidth - 3) + "px" }); -- bug if small text ?
 			if( longText ) {
@@ -455,6 +456,10 @@ class Cell extends Component {
 
 			if( file == null ) {
 				ide.chooseImage(function(path) {
+					if( path == null ) {
+						closeEdit();
+						return;
+					}
 					file = path;
 					setVal();
 					closeEdit();

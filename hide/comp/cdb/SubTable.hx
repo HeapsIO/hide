@@ -40,6 +40,7 @@ class SubTable extends Table {
 
 		insertedTR.insertAfter(cell.line.element);
 		cell.element.text("...");
+		cell.element.addClass("parent-sub-table");
 
 		super(editor, sheet, root, mode);
 	}
@@ -66,7 +67,7 @@ class SubTable extends Table {
 				Reflect.setField(cell.line.obj, cell.column.name, value);
 				// do not save for now
 			}
-			[for( c in sheet.columns ) value];
+			[for( f in psheet.columns ) value];
 		default:
 			throw "assert";
 		}
@@ -92,6 +93,7 @@ class SubTable extends Table {
 			slider.slideUp(100, function() { slider = null; close(); });
 			return;
 		}
+		cell.element.removeClass("parent-sub-table");
 		super.close();
 	}
 

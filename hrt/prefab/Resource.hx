@@ -5,6 +5,8 @@ class Resource extends hxd.res.Resource {
 	var lib : Prefab;
 
 	override function watch( onChanged: Null<Void -> Void> ) {
+		if( entry == null )
+			return;
 		if( onChanged == null ) {
 			super.watch(null);
 			return;
@@ -20,6 +22,13 @@ class Resource extends hxd.res.Resource {
 		lib.loadData(data);
 		watch(function() {}); // auto lib reload
 		return lib;
+	}
+
+	public static function make( p : Prefab ) {
+		if( p == null ) throw "assert";
+		var r = new Resource(null);
+		r.lib = p;
+		return r;
 	}
 
 }

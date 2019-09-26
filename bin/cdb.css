@@ -188,6 +188,10 @@
   max-height: 32px;
   max-width: 32px;
 }
+.cdb .cdb-sheet td.t_list.parent-sub-table,
+.cdb .cdb-sheet td.t_properties.parent-sub-table {
+  background-color: #313a48;
+}
 .cdb .cdb-sheet td.t_enum {
   padding-left: 5px;
 }
@@ -312,31 +316,34 @@
 .cdb .content-modal form select {
   height: 28px;
 }
+.cdb .content-modal form td.first {
+  width: 120px;
+}
 .cdb .content-modal form .t_int .disp,
 .cdb .content-modal form .t_float .disp {
-  display: block;
+  display: table-row;
 }
-.cdb .content-modal form .t_string .localizable {
-  display: block;
+.cdb .content-modal form .t_string .kind {
+  display: table-row;
 }
 .cdb .content-modal form .t_enum .values,
 .cdb .content-modal form .t_flags .values {
-  display: block;
+  display: table-row;
 }
 .cdb .content-modal form .t_ref .sheet {
-  display: block;
+  display: table-row;
 }
 .cdb .content-modal form .t_layer .sheet {
-  display: block;
+  display: table-row;
 }
 .cdb .content-modal form .t_custom .custom {
-  display: block;
+  display: table-row;
 }
 .cdb .content-modal form .values,
 .cdb .content-modal form .sheet,
 .cdb .content-modal form .custom,
 .cdb .content-modal form .disp,
-.cdb .content-modal form .localizable {
+.cdb .content-modal form .kind {
   display: none;
 }
 .cdb .content-modal form.edit input.create {

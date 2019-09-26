@@ -170,8 +170,10 @@ class Table extends Component {
 			element.append(l);
 		}
 
-		cols.ready(cloneTableHead);
-		cols.on("resize", cloneTableHead);
+		if( sheet.parent == null ) {
+			cols.ready(cloneTableHead);
+			cols.on("resize", cloneTableHead);
+		}
 	}
 
 	function makeSeparator( sindex : Int, colCount : Int ) {
@@ -216,7 +218,7 @@ class Table extends Component {
 		var props = sheet.lines[0];
 		for( c in sheet.columns ) {
 
-			if( c.opt && !Reflect.hasField(props,c.name) && displayMode != AllProperties ) {
+			if( c.opt && props != null && !Reflect.hasField(props,c.name) && displayMode != AllProperties ) {
 				available.push(c);
 				continue;
 			}
@@ -237,7 +239,7 @@ class Table extends Component {
 
 			th.mousedown(function(e) {
 				if( e.which == 3 ) {
-					editor.popupColumn(this, c);
+					editor.popupColumn(this, c, cell);
 					editor.cursor.clickCell(cell, false);
 					e.preventDefault();
 					return;
@@ -262,7 +264,9 @@ class Table extends Component {
 			sel.val("");
 			editor.element.focus();
 			if( v == "$new" ) {
-				editor.newColumn(sheet);
+				editor.newColumn(sheet, null, function(c) {
+					if( c.opt ) insertProperty(c.name);
+				});
 				return;
 			}
 			insertProperty(v);

@@ -1,5 +1,6 @@
 package hide.comp;
 
+import hrt.prefab.terrain.Terrain;
 import h3d.scene.Mesh;
 import h3d.col.FPoint;
 import h3d.col.Ray;
@@ -103,7 +104,8 @@ class SceneEditor {
 
 	var searchBox : Element;
 	var updates : Array<Float -> Void> = [];
-
+	
+	var hideGizmo = false;
 	var gizmo : hide.view.l3d.Gizmo;
 	static var customPivot : CustomPivot;
 	var interactives : Map<PrefabElement, h3d.scene.Interactive>;
@@ -520,6 +522,12 @@ class SceneEditor {
 		var obj3d = Std.downcast(elt, Object3D);
 		if(obj3d == null)
 			return;
+
+		// Disable Interactive for the terrain
+		var terrain = Std.downcast(elt, Terrain);
+		if(terrain != null)
+			return;
+
 		var contexts = context.shared.contexts;
 		var ctx = contexts[elt];
 		if(ctx == null)
@@ -762,7 +770,9 @@ class SceneEditor {
 					for(o in objects3d)
 						o.updateInstance(getContext(o));
 				}));
-				for(i in 0...objects3d.length) {
+				for(o in objects3d)
+					o.updateInstance(getContext(o));
+        for(i in 0...objects3d.length) {
 					var sprayObj = Std.downcast(sceneObjs[i].parent, hrt.prefab.l3d.SprayObject);
 					if(sprayObj != null) {
 						@:privateAccess sprayObj.blockHead = null;
@@ -777,7 +787,7 @@ class SceneEditor {
 		gizmo.getRotationQuat().identity();
 		if(curEdit != null && curEdit.rootObjects.length > 0) {
 			var pos = getPivot(curEdit.rootObjects);
-			gizmo.visible = true;
+			gizmo.visible = hideGizmo ? false : true;
 			gizmo.setPosition(pos.x, pos.y, pos.z);
 
 			if(curEdit.rootObjects.length == 1 && (localTransform || K.isDown(K.ALT))) {
@@ -1046,6 +1056,7 @@ class SceneEditor {
 	}
 
 	function setObjectSelected( p : PrefabElement, ctx : hrt.prefab.Context, b : Bool ) {
+		hideGizmo = false;
 		p.setSelected(ctx, b);
 	}
 

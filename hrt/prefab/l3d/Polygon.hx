@@ -197,19 +197,18 @@ class Polygon extends Object3D {
 		return polyPrim;
 	}
 
-	public function clearCustomPolygonCache() {
-		if(cachedPrim != null) {
-			cachedPrim.decref();
-			cachedPrim = null;
-		}
-	}
-
 	public function getPrimitive( ctx : Context ) : h3d.prim.Polygon {
 		var mesh = Std.downcast(ctx.local3d, h3d.scene.Mesh);
 		return Std.downcast(mesh.primitive, h3d.prim.Polygon);
 	}
 
 	#if editor
+	function clearCustomPolygonCache() {
+		if(cachedPrim != null) {
+			cachedPrim.decref();
+			cachedPrim = null;
+		}
+	}
 
 	override function setSelected( ctx : Context, b : Bool ) {
 		super.setSelected(ctx, b);
@@ -292,16 +291,16 @@ class Polygon extends Object3D {
 			}
 
 			switch( viewModel.kind ) {
-				case "Quad": 
+				case "Quad":
 					shape = Quad;
 					if(pIsKind && prevKind == Custom) {
-						scaleX = prevScale[0]; 
+						scaleX = prevScale[0];
 						scaleY = prevScale[1];
 					}
-				case "Disc": 
+				case "Disc":
 					shape = Disc(viewModel.segments, viewModel.angle, viewModel.innerRadius, viewModel.rings);
 					if(pIsKind && prevKind == Custom) {
-						scaleX = prevScale[0]; 
+						scaleX = prevScale[0];
 						scaleY = prevScale[1];
 					}
 				case "Custom":
