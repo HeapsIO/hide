@@ -570,7 +570,6 @@ class SceneEditor {
 		int.preciseShape = meshCollider;
 		int.propagateEvents = true;
 		int.enableRightButton = true;
-		int.onlyMouseClickEvents = local3d.parent != null && Std.is(local3d.parent, hrt.prefab.l3d.SprayObject);
 		var startDrag = null;
 		var dragBtn = -1;
 		int.onClick = function(e) {
