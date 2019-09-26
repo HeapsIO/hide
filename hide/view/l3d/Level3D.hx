@@ -707,11 +707,13 @@ class Level3D extends FileView {
 			for(ctx in sceneEditor.getContexts(obj3d)) {
 				ctx.local3d.visible = visible;
 			}
-			var interIsVisible = !sceneEditor.isLocked(obj3d);
-			var inters = sceneEditor.getInteractives(p);
-			for(inter in inters) {
-				if(inter != null) {
-					inter.visible = interIsVisible;
+			if(!Std.is(p, hrt.prefab.l3d.MeshSpray)) {
+				var interIsVisible = !sceneEditor.isLocked(obj3d);
+				var inters = sceneEditor.getInteractives(p);
+				for(inter in inters) {
+					if(inter != null) {
+						inter.visible = interIsVisible;
+					}
 				}
 			}
 		}

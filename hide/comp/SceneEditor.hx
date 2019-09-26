@@ -104,7 +104,7 @@ class SceneEditor {
 
 	var searchBox : Element;
 	var updates : Array<Float -> Void> = [];
-	
+
 	var hideGizmo = false;
 	var gizmo : hide.view.l3d.Gizmo;
 	static var customPivot : CustomPivot;
@@ -365,6 +365,7 @@ class SceneEditor {
 			return true;
 		}
 		tree.get = function(o:PrefabElement) {
+			if(Std.is(o, hrt.prefab.l3d.MeshSpray)) return [];
 			var objs = o == null ? sceneData.children : Lambda.array(o);
 			var out = [for( o in objs ) makeItem(o)];
 			return out;
