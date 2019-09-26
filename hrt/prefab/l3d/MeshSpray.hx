@@ -88,7 +88,6 @@ class MeshSpray extends Object3D {
 		interactive.onMove = function(e) {
 			var worldPos = screenToWorld(s2d.mouseX, s2d.mouseY);
 			worldPos.z = getZ(worldPos.x, worldPos.y);
-			trace(worldPos);
 			drawCircle(ctx, worldPos.x, worldPos.y, worldPos.z, radius, 2, 16711680);
 			if( K.isDown( K.MOUSE_LEFT) ) {
 				e.propagate = false;
