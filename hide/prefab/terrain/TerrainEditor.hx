@@ -61,7 +61,7 @@ class TerrainEditor {
 	var swapIndex = new h3d.pass.ScreenFx(new hide.prefab.terrain.SwapIndex());
 	var setHeight = new h3d.pass.ScreenFx(new hide.prefab.terrain.SetHeight());
 	var smoothHeight = new h3d.pass.ScreenFx(new hide.prefab.terrain.SmoothHeight());
-	// Revert 
+	// Revert
 	var terrainPrefab : hrt.prefab.terrain.Terrain;
 	var undo : hide.ui.UndoHistory;
 	var tileTrashBin : Array<TileRevertData> = [];
@@ -722,7 +722,7 @@ class TerrainEditor {
 	public function setSelected( ctx : Context, b : Bool ) {
 		if( b ) {
 			var s2d = @:privateAccess ctx.local2d.getScene();
-			if( interactive == null ) 
+			if( interactive == null )
 				interactive.remove();
 			interactive = new h2d.Interactive(10000, 10000, s2d);
 			interactive.propagateEvents = true;
@@ -735,13 +735,13 @@ class TerrainEditor {
 			};
 
 			interactive.onPush = function(e) {
+				e.propagate = false;
 				currentBrush.brushMode.lockDir = K.isDown(K.ALT);
 				currentBrush.brushMode.subAction = K.isDown(K.SHIFT);
 				currentBrush.brushMode.snapToGrid = K.isDown(K.CTRL);
 				var worldPos = getBrushPlanePos(s2d.mouseX, s2d.mouseY, ctx);
 				if( K.isDown( K.MOUSE_LEFT) ) {
 					currentBrush.firstClick = true;
-					e.propagate = false;
 					lastPos = worldPos.clone();
 					if( currentBrush.isValid() ) {
 						useBrush( lastPos, worldPos, ctx);
@@ -761,6 +761,7 @@ class TerrainEditor {
 				resetStrokeBuffers();
 				drawBrushPreview(worldPos, ctx);
 				checkTrashBin();
+				editContext.scene.editor.projectMeshSprays();
 			};
 
 			interactive.onMove = function(e) {

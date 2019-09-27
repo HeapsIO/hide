@@ -311,14 +311,22 @@ class Prefab {
 	}
 
 	/**
-		Find a single prefab in the tree by calling `f` on each and returning the first not-null value returned, or null if not found.
+		Find a single prefab in the tree by calling `f` on each and returning the first not-null value returned, or null if not found. Search is breadth first.
 	**/
 	public function find<T>( f : Prefab -> Null<T> ) : Null<T> {
 		var v = f(this);
 		if( v != null )
 			return v;
+		return this.doFind(f);
+	}
+
+	public function doFind<T>( f : Prefab -> Null<T> ) : Null<T> {
 		for( p in children ) {
-			var v = p.find(f);
+			var v = f(p);
+			if( v != null ) return v;
+		}
+		for( p in children ) {
+			var v = p.doFind(f);
 			if( v != null ) return v;
 		}
 		return null;

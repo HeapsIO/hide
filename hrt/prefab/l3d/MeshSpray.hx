@@ -49,7 +49,6 @@ class MeshSpray extends Object3D {
 			meshes = obj.meshes;
 	}
 
-
 	override function makeInstance(ctx:Context):Context {
 		ctx = ctx.clone(this);
 		ctx.local3d = new SprayObject(ctx.local3d);
@@ -66,6 +65,20 @@ class MeshSpray extends Object3D {
 		if( path == null ) return "None";
 		var childParts = path.split("/");
 		return childParts[childParts.length - 1].split(".")[0];
+	}
+
+	public function projectOnTerrain(sceneEditor : hide.comp.SceneEditor) {
+		if(terrain == null)
+			@:privateAccess terrain = sceneEditor.sceneData.find(p -> Std.downcast(p, hrt.prefab.terrain.Terrain));
+		for(e in children) {
+			if(!Std.is(e, h3d.scene.Interactive)) {
+				var ctx = sceneEditor.getContext(e);
+				var o = Std.downcast(e, Object3D);
+				if(o != null) {
+					o.z = ctx.local3d.z = getZ(ctx.local3d.x, ctx.local3d.y);
+				}
+			}
+		}
 	}
 
 	override function edit( ectx : EditContext ) {

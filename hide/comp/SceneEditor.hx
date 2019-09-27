@@ -2038,4 +2038,13 @@ class SceneEditor {
 		}
 		return null;
 	}
+
+	public function projectMeshSprays() {
+		var sprays : Array<hrt.prefab.l3d.MeshSpray> = [];
+		for(e in sceneData)
+			if(Std.is(e, hrt.prefab.l3d.MeshSpray))
+				sprays.push(cast e);
+		for(s in sprays)
+			s.projectOnTerrain(this);
+	}
 }
