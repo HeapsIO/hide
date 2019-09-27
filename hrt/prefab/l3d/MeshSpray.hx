@@ -26,6 +26,8 @@ class MeshSpray extends Object3D {
 
 	var lastSpray : Float = 0;
 
+	var terrain : hrt.prefab.terrain.Terrain;
+
 	#end
 
 	public function new( ?parent ) {
@@ -68,6 +70,7 @@ class MeshSpray extends Object3D {
 
 	override function edit( ectx : EditContext ) {
 		sceneEditor = ectx.scene.editor;
+		@:privateAccess terrain = sceneEditor.sceneData.find(p -> Std.downcast(p, hrt.prefab.terrain.Terrain));
 		var ctx = ectx.getContext(this);
 		var s2d = @:privateAccess ctx.local2d.getScene();
 		interactive = new h2d.Interactive(10000, 10000, s2d);
@@ -306,8 +309,6 @@ class MeshSpray extends Object3D {
 
 	public function getZ( x : Float, y : Float ) {
 		var z = this.z;
-
-		@:privateAccess var terrain = sceneEditor.sceneData.find(p -> Std.downcast(p, hrt.prefab.terrain.Terrain));
 
 		if(terrain != null){
 			var pos = new h3d.Vector(x, y, 0);
