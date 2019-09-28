@@ -67,6 +67,7 @@ class Editor extends Component {
 			if( cell != null && cell.isTextInput() && !e.ctrlKey )
 				cell.edit();
 		});
+		element.contextmenu(function(e) e.preventDefault());
 		keys = new hide.ui.Keys(element);
 		keys.addListener(onKey);
 		keys.register("search", function() {
@@ -343,7 +344,7 @@ class Editor extends Component {
 					break;
 				}
 			if( tparent != null )
-				tparent.lines[t.parent.line].cells[t.parent.column].open(true);
+				tparent.lines[t.parent.line].cells[tparent.displayMode == Properties ? 0 : t.parent.column].open(true);
 		}
 
 		if( cur != null ) {
@@ -769,7 +770,7 @@ class Editor extends Component {
 
 	public function focus() {
 		if( element.is(":focus") ) return;
-		element.focus();
+		(element[0] : Dynamic).focus({ preventScroll : true });
 		onFocus();
 	}
 

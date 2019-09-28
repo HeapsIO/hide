@@ -23,6 +23,16 @@ class Cell extends Component {
 		root.addClass("t_" + typeNames[column.type.getIndex()]);
 		if( column.kind == Script ) root.addClass("t_script");
 		refresh();
+		switch( column.type ) {
+		case TList, TProperties:
+			element.click(function(e) {
+				if( e.shiftKey ) return;
+				e.stopPropagation();
+				@:privateAccess line.table.toggleList(this);
+			});
+		default:
+			element.dblclick(function(_) edit());
+		}
 	}
 
 	function get_table() return line.table;
@@ -272,7 +282,7 @@ class Cell extends Component {
 				case K.ESCAPE:
 					refresh();
 					table.editor.element.focus();
-				case K.ENTER if( !e.shiftKey ):
+				case K.ENTER if( !e.shiftKey || !column.type.match(TString|TDynamic|TCustom(_)) ):
 					closeEdit();
 					e.preventDefault();
 				case K.ENTER if( !longText ):

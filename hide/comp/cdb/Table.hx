@@ -127,17 +127,6 @@ class Table extends Component {
 					editor.cursor.clickCell(cell, e.shiftKey);
 					e.stopPropagation();
 				});
-
-				switch( c.type ) {
-				case TList, TProperties:
-					cell.element.click(function(e) {
-						if( e.shiftKey ) return;
-						e.stopPropagation();
-						toggleList(cell);
-					});
-				default:
-					cell.element.dblclick(function(_) cell.edit());
-				}
 			}
 		}
 
@@ -245,8 +234,6 @@ class Table extends Component {
 					return;
 				}
 			});
-
-			cell.element.dblclick(function(_) cell.edit());
 		}
 
 		// add/edit properties
