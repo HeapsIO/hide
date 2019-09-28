@@ -213,6 +213,10 @@
   border: 2px solid white;
   outline: 1px solid black;
 }
+.cdb .cdb-sheet td.t_flags {
+  position: relative;
+  overflow: visible;
+}
 .cdb .cdb-sheet .flagValues {
   position: absolute;
   background-color: #333;

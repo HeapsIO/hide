@@ -90,6 +90,14 @@ class Config {
 		return defaultVal;
 	}
 
+	public function set( key : String, val : Dynamic ) {
+		if( val == null )
+			Reflect.deleteField(source, key);
+		else
+			Reflect.setField(source, key, val);
+		save();
+	}
+
 	public static function loadForProject( projectPath : String, resourcePath : String ) {
 		var hidePath = Ide.inst.appPath;
 

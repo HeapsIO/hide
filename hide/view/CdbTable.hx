@@ -5,10 +5,18 @@ class CdbTable extends hide.ui.View<{ path : String }> {
 	var sheets : Array<cdb.Sheet>;
 	var tabContents : Array<Element>;
 	var editor : hide.comp.cdb.Editor;
+	var currentSheet : Int = 0;
 
 	public function new( ?state ) {
 		super(state);
 		syncSheets();
+		var name = this.config.get("cdb.currentSheet");
+		if( name != null )
+			for( s in sheets )
+				if( s.name == name ) {
+					currentSheet = sheets.indexOf(s);
+					break;
+				}
 	}
 
 	function syncSheets() {
@@ -32,9 +40,14 @@ class CdbTable extends hide.ui.View<{ path : String }> {
 		if( editor != null )
 			editor.remove();
 		editor = new hide.comp.cdb.Editor(sheets[index],config,ide.databaseApi,tabContents[index]);
-		editor.focus();
-		editor.onFocus = activate;
+		haxe.Timer.delay(function() {
+			// delay
+			editor.focus();
+			editor.onFocus = activate;
+		},0);
 		undo = ide.databaseApi.undo;
+		currentSheet = index;
+		ide.currentConfig.set("cdb.currentSheet", sheets[index].name);
 	}
 
 	override function onDisplay() {
@@ -64,11 +77,19 @@ class CdbTable extends hide.ui.View<{ path : String }> {
 			tabs.onTabChange = setEditor;
 			tabs.onTabRightClick = function(index) {
 				syncSheets();
-				editor.popupSheet(sheets[index], function() { syncSheets(); rebuild(); });
+				var sheetCount = sheets.length;
+				editor.popupSheet(sheets[index], function() {
+					syncSheets();
+					if( sheets.length > sheetCount )
+						currentSheet = index + 1;
+					else if( sheets.length < sheetCount )
+						currentSheet = index == 0 ? 0 : index - 1;
+					rebuild();
+				});
 			};
 		}
 		if( sheets.length > 0 )
-			setEditor(0);
+			tabs.currentTab = tabContents[currentSheet].parent();
 
 		watch(@:privateAccess ide.databaseFile, () -> {
 			syncSheets();

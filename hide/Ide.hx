@@ -655,6 +655,10 @@ class Ide {
 		var value = ask("Sheet name");
 		if( value == "" || value == null ) return null;
 		var s = database.createSheet(value, index);
+		if( s == null ) {
+			error("Name already exists");
+			return null;
+		}
 		saveDatabase();
 		databaseApi.editor.refresh();
 		return s;

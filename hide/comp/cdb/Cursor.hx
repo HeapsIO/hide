@@ -50,10 +50,13 @@ class Cursor {
 	}
 
 	public function save() {
+		if( table == null ) return null;
 		return { sheet : table.sheet, x : x, y : y, select : select == null ? null : { x : select.x, y : select.y} };
 	}
 
 	public function load( s ) {
+		if( s == null )
+			return false;
 		var table = null;
 		for( t in editor.tables )
 			if( t.sheet == s.sheet ) {

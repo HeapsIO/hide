@@ -44,8 +44,8 @@ class Table extends Component {
 		}
 	}
 
-	public function cloneTableHead() {
-		var target = J('.head');
+	function cloneTableHead() {
+		var target = element.find('thead').first().find('.head');
 		if (target.length == 0) {
 			trace("Fail clone table head");
 			return;

@@ -347,6 +347,7 @@ class Cell extends Component {
 				var val = s.val();
 				if( val == "~" ) val = null;
 				setValue(val);
+				sel2.close();
 				closeEdit();
 			});
 			s.on("select2:close", function(_) closeEdit());
@@ -363,11 +364,13 @@ class Cell extends Component {
 			(untyped s.select2)(props);
 			(untyped s.select2)("val", currentValue == null ? "" : currentValue);
 			(untyped s.select2)("open");
+			var sel2 = s.data("select2");
 
 			s.change(function(e) {
 				var val = Std.parseInt(s.val());
 				if( val < 0 ) val = null;
 				setValue(val);
+				sel2.close();
 				closeEdit();
 			});
 			s.keydown(function(e) {

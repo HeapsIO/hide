@@ -181,7 +181,46 @@ class Editor extends Component {
 	function onPaste() {
 		var text = ide.getClipboard();
 		if( clipboard == null || text != clipboard.text ) {
-			// TODO : edit and copy text
+			if( cursor.x < 0 || cursor.y < 0 ) return;
+			var x1 = cursor.x;
+			var y1 = cursor.y;
+			var x2 = cursor.select == null ? x1 : cursor.select.x;
+			var y2 = cursor.select == null ? y1 : cursor.select.y;
+			if( x1 > x2 ) {
+				var tmp = x1;
+				x1 = x2;
+				x2 = tmp;
+			}
+			if( y1 > y2 ) {
+				var tmp = y1;
+				y1 = y2;
+				y2 = tmp;
+			}
+			beginChanges();
+			for( x in x1...x2+1 ) {
+				var col = sheet.columns[x];
+				var value : Dynamic = null;
+				switch( col.type ) {
+				case TId:
+					if( ~/^[A-Za-z0-9_]+$/.match(text) ) value = text;
+				case TString:
+					value = text;
+				case TInt:
+					value = Std.parseInt(text);
+				case TFloat:
+					value = Std.parseFloat(text);
+					if( Math.isNaN(value) ) value = null;
+				default:
+				}
+				if( value == null ) continue;
+				for( y in y1...y2+1 ) {
+					var obj = sheet.lines[y];
+					Reflect.setField(obj, col.name, value);
+				}
+			}
+			endChanges();
+			sheet.sync();
+			refreshAll();
 			return;
 		}
 		beginChanges();
@@ -672,7 +711,7 @@ class Editor extends Component {
 		if( onChange == null ) onChange = function() {}
 		var index = base.sheets.indexOf(sheet);
 		new hide.comp.ContextMenu([
-			{ label : "Add Sheet", click : function() { beginChanges(); ide.createDBSheet(index+1); endChanges(); onChange(); } },
+			{ label : "Add Sheet", click : function() { beginChanges(); var db = ide.createDBSheet(index+1); endChanges(); if( db != null ) onChange(); } },
 			{ label : "Move Left", click : function() { beginChanges(); base.moveSheet(sheet,-1); endChanges(); onChange(); } },
 			{ label : "Move Right", click : function() { beginChanges(); base.moveSheet(sheet,1); endChanges(); onChange(); } },
 			{ label : "Rename", click : function() {
