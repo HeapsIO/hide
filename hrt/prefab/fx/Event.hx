@@ -9,6 +9,11 @@ typedef EventInstance = {
 class Event extends hrt.prefab.Prefab {
 	public var time: Float = 0.0;
 
+	public function new(?parent) {
+		super(parent);
+		this.type = "event";
+	}
+
 	override function save() : {} {
 		return {
 			time: time
@@ -36,8 +41,34 @@ class Event extends hrt.prefab.Prefab {
 	}
 
 	#if editor
-	public function getDisplayInfo(ctx: EditContext) : { label: String, length: Float } {
-		throw "Not implemented";
+
+	override function edit( ctx ) {
+		super.edit(ctx);
+		var props = ctx.properties.add(new hide.Element('
+			<div class="group" name="Event">
+				<dl>
+					<dt>Time</dt><dd><input type="number" value="0" field="time"/></dd>
+				</dl>
+			</div>
+		'),this, function(pname) {
+			ctx.onChange(this, pname);
+		});
 	}
+
+	override function getHideProps() : hide.prefab.HideProps {
+		return {
+			icon : "bookmark", name : "Event",
+		};
+	}
+
+	public function getDisplayInfo(ctx) {
+		return {
+			label: name,
+			length: 1.0
+		};
+	}
+
 	#end
+
+	static var _ = Library.register("event", Event);
 }
