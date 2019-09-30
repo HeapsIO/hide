@@ -2040,10 +2040,7 @@ class SceneEditor {
 	}
 
 	public function projectMeshSprays() {
-		var sprays : Array<hrt.prefab.l3d.MeshSpray> = [];
-		for(e in sceneData)
-			if(Std.is(e, hrt.prefab.l3d.MeshSpray))
-				sprays.push(cast e);
+		var sprays = sceneData.findAll((p) -> Std.downcast(p, hrt.prefab.l3d.MeshSpray));
 		for(s in sprays)
 			s.projectOnTerrain(this);
 	}
