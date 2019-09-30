@@ -280,6 +280,10 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 			}
 		}
 	}
+
+	override function getAvailableTags(p:PrefabElement) {
+		return cast ide.currentConfig.get("l3d.tags");
+	}
 }
 
 class Level3D extends FileView {

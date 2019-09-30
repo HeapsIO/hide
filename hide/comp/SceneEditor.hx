@@ -936,10 +936,14 @@ class SceneEditor {
 
 		var tag = getTag(p);
 
-		if(tag != null)
+		if(tag != null) {
 			aEl.css("background", tag.color);
-		else if(pname == "tag")
+			el.find("ul").first().css("background", tag.color + "80");
+		}
+		else if(pname == "tag") {
 			aEl.css("background", "none");
+			el.find("ul").first().css("background", "none");
+		}
 
 		if(obj3d != null) {
 			el.toggleClass("disabled", !obj3d.visible);
