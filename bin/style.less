@@ -910,11 +910,18 @@ input[type=checkbox] {
 	}
 
 	.tracks-header {
+		position: relative;
 		background: #4a4a4a;
 		text-align: left;
-		label {
-			margin-left: 4px;
-			color: white;
+		.name {
+			padding: 1px;
+			padding-left: 5px;
+			padding-right: 5px;
+		}
+		.abspath {
+			position: absolute;
+			opacity: 0.5;
+			left: 200px;
 		}
 		.addtrack {
 			margin-left: 4px;

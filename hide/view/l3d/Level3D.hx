@@ -114,9 +114,9 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		parent.onSceneReady();
 	}
 
-	override function applyTreeStyle(p: PrefabElement, el: Element) {
-		super.applyTreeStyle(p, el);
-		parent.applyTreeStyle(p, el);
+	override function applyTreeStyle(p: PrefabElement, el: Element, ?pname: String) {
+		super.applyTreeStyle(p, el, pname);
+		parent.applyTreeStyle(p, el, pname);
 	}
 
 	override function applySceneStyle(p:PrefabElement) {
@@ -658,7 +658,7 @@ class Level3D extends FileView {
 		initDone = true;
 	}
 
-	function applyTreeStyle(p: PrefabElement, el: Element) {
+	function applyTreeStyle(p: PrefabElement, el: Element, pname: String) {
 		/*
 		var styles = ide.currentConfig.get("l3d.treeStyles");
 		var style: Dynamic = null;

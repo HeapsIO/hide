@@ -104,7 +104,7 @@ class SceneEditor {
 
 	var searchBox : Element;
 	var updates : Array<Float -> Void> = [];
-	
+
 	var hideGizmo = false;
 	var gizmo : hide.view.l3d.Gizmo;
 	static var customPivot : CustomPivot;
@@ -301,6 +301,49 @@ class SceneEditor {
 			tree.revealNode(obj);
 	}
 
+	function getAvailableTags(p: PrefabElement) : Array<{id: String, color: String}>{
+		return null;
+	}
+
+	public function getTag(p: PrefabElement) {
+		if(p.props != null) {
+			var tagId = Reflect.field(p.props, "tag");
+			if(tagId != null) {
+				var tags = getAvailableTags(p);
+				if(tags != null)
+					return Lambda.find(tags, t -> t.id == tagId);
+			}
+		}
+		return null;
+	}
+
+	public function setTag(p: PrefabElement, tag: String) {
+		if(p.props == null)
+			p.props = {};
+		var prevVal = getTag(p);
+		Reflect.setField(p.props, "tag", tag);
+		onPrefabChange(p, "tag");
+		undo.change(Field(p.props, "tag", prevVal), function() {
+			onPrefabChange(p, "tag");
+		});
+	}
+
+	function getTagMenu(p: PrefabElement) : Array<hide.comp.ContextMenu.ContextMenuItem> {
+		var tags = getAvailableTags(p);
+		if(tags == null) return null;
+		var cur = getTag(p);
+		return [for(tag in tags) {
+			label: tag.id,
+			click: function () {
+				if(cur == tag)
+					setTag(p, null);
+				else
+					setTag(p, tag.id);
+			},
+			checked: cur == tag
+		}];
+	}
+
 	function onSceneReady() {
 
 		tree.saveDisplayKey = view.saveDisplayKey + '/tree';
@@ -407,6 +450,12 @@ class SceneEditor {
 				menuItems.push({ label : "Enable", checked : enabled, click : function() setEnabled(curEdit.elements, !enabled) });
 			}
 
+			if(current != null) {
+				var menu = getTagMenu(current);
+				if(menu != null)
+					menuItems.push({ label : "Tag", menu: menu });
+			}
+
 			menuItems.push({ isSeparator : true, label : "" });
 			new hide.comp.ContextMenu(menuItems.concat(actionItems));
 		};
@@ -451,7 +500,7 @@ class SceneEditor {
 				}, 50);
 			}
 		}
-		tree.applyStyle = applyTreeStyle;
+		tree.applyStyle = function(p, el) applyTreeStyle(p, el);
 		selectObjects([]);
 		refresh();
 	}
@@ -873,16 +922,24 @@ class SceneEditor {
 
 		if(p != sceneData) {
 			var el = tree.getElement(p);
-			applyTreeStyle(p, el);
+			applyTreeStyle(p, el, pname);
 		}
 
 		applySceneStyle(p);
 	}
 
-	public function applyTreeStyle(p: PrefabElement, el: Element) {		
+	public function applyTreeStyle(p: PrefabElement, el: Element, ?pname: String) {
 		var obj3d  = p.to(Object3D);
 		el.toggleClass("disabled", !p.enabled);
-		el.find("a").first().toggleClass("favorite", isFavorite(p));
+		var aEl = el.find("a").first();
+		aEl.toggleClass("favorite", isFavorite(p));
+
+		var tag = getTag(p);
+
+		if(tag != null)
+			aEl.css("background", tag.color);
+		else if(pname == "tag")
+			aEl.css("background", "none");
 
 		if(obj3d != null) {
 			el.toggleClass("disabled", !obj3d.visible);
@@ -923,7 +980,7 @@ class SceneEditor {
 				});
 			}
 			lockTog.css({visibility: (isLocked(obj3d) ? "visible" : "hidden")});
-		} 
+		}
 	}
 
 	public function applySceneStyle(p: PrefabElement) {

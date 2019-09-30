@@ -109,6 +109,10 @@
 		"h3d.shader.AnimatedTexture",
 		"h3d.shader.ColorAdd"],
 
+	"fx.tags": [
+		{ "id": "tag", "color": "#802000" }
+	],
+
 	// DomKit css files list
 	"domkit.css" : [],
 

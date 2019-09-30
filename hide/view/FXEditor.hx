@@ -137,6 +137,10 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		});
 		return menu;
 	}
+
+	override function getAvailableTags(p:PrefabElement) {
+		return cast ide.currentConfig.get("fx.tags");
+	}
 }
 
 class FXEditor extends FileView {
@@ -292,7 +296,7 @@ class FXEditor extends FileView {
 			});
 
 			heapsScene.on("mousemove", function(e : js.jquery.Event) {
-				if (e.buttons == 4) { // middle button 
+				if (e.buttons == 4) { // middle button
 					if (lastPan == null) {
 						lastPan = new h2d.col.Point(e.clientX, e.clientY);
 						return;
@@ -301,7 +305,7 @@ class FXEditor extends FileView {
 						scene.s2d.children[0].x += e.clientX - lastPan.x;
 						scene.s2d.children[0].y += e.clientY - lastPan.y;
 					}
-					
+
 					lastPan = new h2d.col.Point(e.clientX, e.clientY);
 					updateGrid();
 				}
@@ -409,18 +413,24 @@ class FXEditor extends FileView {
 			e.preventDefault();
 			e.stopPropagation();
 		});
+
+		var wheelTimer : haxe.Timer;
 		timeline.on("mousewheel", function(e) {
 			var step = e.originalEvent.wheelDelta > 0 ? 1.0 : -1.0;
 			xScale *= Math.pow(1.125, step);
 			e.preventDefault();
 			e.stopPropagation();
 			refreshTimeline(false);
-			for(ce in curveEdits) {
-				ce.xOffset = xOffset;
-				ce.xScale = xScale;
-				ce.refresh();
-			}
-			afterPan(false);
+			if(wheelTimer != null)
+				wheelTimer.stop();
+			wheelTimer = haxe.Timer.delay(function() {
+				for(ce in curveEdits) {
+					ce.xOffset = xOffset;
+					ce.xScale = xScale;
+					ce.refresh();
+				}
+				afterPan(false);
+			}, 50);
 		});
 
 		selectMin = 0.0;
@@ -499,7 +509,7 @@ class FXEditor extends FileView {
 
 		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		statusText.setPosition(5, 5);
-		
+
 		updateGrid();
 	}
 
@@ -709,8 +719,10 @@ class FXEditor extends FileView {
 	}
 
 	function afterPan(anim: Bool) {
-		for(curve in curveEdits) {
-			curve.setPan(xOffset, curve.yOffset);
+		if(!anim) {
+			for(curve in curveEdits) {
+				curve.setPan(xOffset, curve.yOffset);
+			}
 		}
 		for(clb in afterPanRefreshes) {
 			clb(anim);
@@ -1073,6 +1085,17 @@ class FXEditor extends FileView {
 			return sect;
 		}
 
+		function getTagRec(elt : PrefabElement) {
+			var p = elt;
+			while(p != null) {
+				var tag = sceneEditor.getTag(p);
+				if(tag != null)
+					return tag;
+				p = p.parent;
+			}
+			return null;
+		}
+
 		for(sel in selection) {
 			for(curve in sel.flatten(Curve))
 				getSection(curve).curves.push(curve);
@@ -1082,12 +1105,18 @@ class FXEditor extends FileView {
 
 		for(sec in sections) {
 			var objPanel = new Element('<div>
-				<div class="tracks-header"><label>${upperCase(sec.elt.name)}</label><div class="addtrack fa fa-plus-circle"></div></div>
+				<div class="tracks-header">
+					<label class="name">${upperCase(sec.elt.name)}</label> <div class="addtrack fa fa-plus-circle"></div>
+					<label class="abspath">${sec.elt.getAbsPath()}</label>
+				</div>
 				<div class="tracks"></div>
 			</div>').appendTo(scrollPanel);
 			var addTrackEl = objPanel.find(".addtrack");
-			var objElt = Std.downcast(sec.elt, hrt.prefab.Object3D);
-			var shaderElt = Std.downcast(sec.elt, hrt.prefab.Shader);
+
+			var parentTag = getTagRec(sec.elt);
+			if(parentTag != null) {
+				objPanel.find(".name").css("background", parentTag.color);
+			}
 
 			addTrackEl.click(function(e) {
 				var menuItems = getNewTrackMenu(sec.elt);
@@ -1335,7 +1364,7 @@ class FXEditor extends FileView {
 			grid2d.moveTo(-2000, 0);
 			grid2d.lineTo(2000, 0);
 			grid2d.lineStyle(0);
-			
+
 			return;
 		}
 
@@ -1410,7 +1439,7 @@ class FXEditor extends FileView {
 			@:privateAccess grid2d.setPosition(scene.s2d.children[0].x, scene.s2d.children[0].y);
 		}
 
-		
+
 	}
 
 	function onUpdate3D(dt:Float) {
