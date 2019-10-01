@@ -46,10 +46,8 @@ class Table extends Component {
 
 	function cloneTableHead() {
 		var target = element.find('thead').first().find('.head');
-		if (target.length == 0) {
-			trace("Fail clone table head");
+		if (target.length == 0)
 			return;
-		}
 		var target_children = target.children();
 
 		J(".floating-thead").remove();
