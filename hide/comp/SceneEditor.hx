@@ -562,7 +562,6 @@ class SceneEditor {
 		}]);
 		var boundsCollider = new h3d.col.ObjectCollider(local3d, bounds);
 		var r = Math.max(bounds.getSize().z, Math.max(bounds.getSize().x, bounds.getSize().y));
-		var pos = local3d.getAbsPos();
 		local3d.cullingCollider = new h3d.col.ObjectCollider(local3d, new h3d.col.Sphere(0, 0, 0, r));
 		var int = new h3d.scene.Interactive(boundsCollider, local3d);
 		interactives.set(elt, int);
