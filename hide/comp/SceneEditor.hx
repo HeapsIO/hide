@@ -771,9 +771,9 @@ class SceneEditor {
 						o.updateInstance(getContext(o));
 				}));
 				for(i in 0...objects3d.length) {
-					var o = sceneObjs[i];
+					var o = objects3d[i];
 					o.updateInstance(getContext(o));
-					var sprayObj = Std.downcast(o.parent, hrt.prefab.l3d.SprayObject);
+					var sprayObj = Std.downcast(sceneObjs[i].parent, hrt.prefab.l3d.SprayObject);
 					if(sprayObj != null) {
 						@:privateAccess sprayObj.blockHead = null;
 					}
