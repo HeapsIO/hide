@@ -563,7 +563,7 @@ class SceneEditor {
 		var boundsCollider = new h3d.col.ObjectCollider(local3d, bounds);
 		var r = Math.max(bounds.getSize().z, Math.max(bounds.getSize().x, bounds.getSize().y));
 		var pos = local3d.getAbsPos();
-		local3d.cullingCollider = new h3d.col.Sphere(pos.tx, pos.ty, pos.tz, r);
+		local3d.cullingCollider = new h3d.col.ObjectCollider(local3d, new h3d.col.Sphere(0, 0, 0, r));
 		var int = new h3d.scene.Interactive(boundsCollider, local3d);
 		interactives.set(elt, int);
 		int.ignoreParentTransform = true;
@@ -770,10 +770,10 @@ class SceneEditor {
 					for(o in objects3d)
 						o.updateInstance(getContext(o));
 				}));
-				for(o in objects3d)
+				for(i in 0...objects3d.length) {
+					var o = sceneObjs[i];
 					o.updateInstance(getContext(o));
-        for(i in 0...objects3d.length) {
-					var sprayObj = Std.downcast(sceneObjs[i].parent, hrt.prefab.l3d.SprayObject);
+					var sprayObj = Std.downcast(o.parent, hrt.prefab.l3d.SprayObject);
 					if(sprayObj != null) {
 						@:privateAccess sprayObj.blockHead = null;
 					}

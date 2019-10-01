@@ -320,7 +320,7 @@ class Prefab {
 		return this.doFind(f);
 	}
 
-	public function doFind<T>( f : Prefab -> Null<T> ) : Null<T> {
+	function doFind<T>( f : Prefab -> Null<T> ) : Null<T> {
 		for( p in children ) {
 			var v = f(p);
 			if( v != null ) return v;
