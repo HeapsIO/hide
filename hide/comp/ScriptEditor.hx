@@ -46,7 +46,7 @@ class ScriptChecker {
 		}
 
 		var parts = documentName.split(".");
-		var cdbPack : String = config.get("script.cdbPackage");
+		var apis = [];
 		while( parts.length > 0 ) {
 			var path = parts.join(".");
 			parts.pop();
@@ -54,9 +54,18 @@ class ScriptChecker {
 			if( config == null ) continue;
 			var api = (config : GlobalsDef).get(path);
 			if( api == null ) continue;
+			apis.unshift(api);
+		}
 
+		var cdbPack : String = config.get("script.cdbPackage");
+		var context = null;
+		for( api in apis ) {
 			for( f in api.globals.keys() ) {
 				var tname = api.globals.get(f);
+				if( tname == null ) {
+					checker.removeGlobal(f);
+					continue;
+				}
 				var t = checker.types.resolve(tname);
 				if( t == null ) {
 					var path = tname.split(".");
@@ -80,11 +89,8 @@ class ScriptChecker {
 				checker.setGlobal(f, t);
 			}
 
-			if( api.context != null ) {
-				var fields = getFields(api.context);
-				for( f in fields )
-					checker.setGlobal(f.name, f.t);
-			}
+			if( api.context != null )
+				context = api.context;
 
 			if( api.events != null ) {
 				for( f in getFields(api.events) )
@@ -119,6 +125,11 @@ class ScriptChecker {
 
 			if( api.evalTo != null )
 				this.evalTo = api.evalTo;
+		}
+		if( context != null ) {
+			var fields = getFields(context);
+			for( f in fields )
+				checker.setGlobal(f.name, f.t);
 		}
 	}
 

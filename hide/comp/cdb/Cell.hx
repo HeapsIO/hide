@@ -76,7 +76,7 @@ class Cell extends Component {
 		case TId:
 			v == "" ? '<span class="error">#MISSING</span>' : (editor.base.getSheet(sheet.name).index.get(v).obj == obj ? v : '<span class="error">#DUP($v)</span>');
 		case TString if( c.kind == Script ):
-			v == "" ? "&nbsp;" : colorizeScript(v);
+			v == "" ? "&nbsp;" : colorizeScript(c,v);
 		case TString, TLayer(_):
 			v == "" ? "&nbsp;" : StringTools.htmlEscape(v).split("\n").join("<br/>");
 		case TRef(sname):
@@ -188,13 +188,13 @@ class Cell extends Component {
 
 	static var KWDS = ["for","if","var","this","while","else","do","break","continue","switch","function","return","new","throw","try","catch","case","default"];
 	static var KWD_REG = new EReg([for( k in KWDS ) "(\\b"+k+"\\b)"].join("|"),"g");
-	function colorizeScript( ecode : String ) {
+	function colorizeScript( c : cdb.Data.Column, ecode : String ) {
 		var code = ecode;
 		code = StringTools.htmlEscape(code);
 		code = code.split("\n").join("<br/>");
 		code = code.split("\t").join("&nbsp;&nbsp;&nbsp;&nbsp;");
 		// typecheck
-		var error = new ScriptEditor.ScriptChecker(editor.config, "cdb."+getDocumentName(), ["cdb."+table.sheet.name => line.obj]).check(ecode);
+		var error = new ScriptEditor.ScriptChecker(editor.config, "cdb."+getDocumentName()+(c == this.column ? "" : "."+ c.name), ["cdb."+table.sheet.name => line.obj]).check(ecode);
 		if( error != null )
 			return '<span class="error">'+code+'</span>';
 		// strings
