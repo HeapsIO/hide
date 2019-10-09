@@ -520,9 +520,9 @@ class MeshGenerator extends Object3D {
 					s +='<dt>Offset</dt>
 									<dd>
 										<div class="flex">
-											<input type="number" class="x$index" min="-100" max="100">
-											<input type="number" class="y$index" min="-100" max="100">
-											<input type="number" class="z$index" min="-100" max="100">
+											<input type="number" class="x$index" min="-100" max="100" step="0.1">
+											<input type="number" class="y$index" min="-100" max="100" step="0.1">
+											<input type="number" class="z$index" min="-100" max="100" step="0.1">
 										</div>
 									</dd>';
 				}
