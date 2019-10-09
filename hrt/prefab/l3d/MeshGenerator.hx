@@ -16,6 +16,8 @@ class MeshPart {
 
 	public var socket : Socket;
 	public var meshPath : String;
+	public var offset : h3d.Vector;
+	public var enable : Bool = false;
 	public var childParts : Array<MeshPart> = [];
 
 	#if editor
@@ -24,12 +26,15 @@ class MeshPart {
 
 	public function new() {
 		socket = new Socket();
+		offset = new h3d.Vector(0);
 	}
 
 	public function clone() : MeshPart {
 		var clone = new MeshPart();
 		clone.socket.name = socket.name;
 		clone.socket.type = socket.type;
+		clone.offset = offset;
+		clone.enable = enable;
 		clone.meshPath = meshPath;
 		clone.childParts = childParts.copy();
 		clone.childParts.reverse();
@@ -39,14 +44,18 @@ class MeshPart {
 	public function loadFrom( mp : MeshPart ) {
 		socket.name = mp.socket.name;
 		socket.type = mp.socket.type;
+		offset = mp.offset;
 		meshPath = mp.meshPath;
+		enable = mp.enable;
 		childParts = mp.childParts.copy();
 	}
 
 	public function save() {
 		var o : Dynamic = {};
+		if( offset.length() != 0 ) o.offset = offset;
 		o.socket = { type : socket.type, name : socket.name };
 		o.meshPath = meshPath;
+		o.enable = enable;
 
 		if( childParts.length > 0 ) {
 			var sp : Array<Dynamic> = [];
@@ -60,10 +69,13 @@ class MeshPart {
 	}
 
 	public function load( o : Dynamic ) {
+		enable = o.enable == null ? false : o.enable;
 		if( o.socket != null ) {
 			socket.type = o.socket.type;
 			socket.name = o.socket.name;
 		}
+		if( o.offset != null )
+			offset.set(o.offset.x, o.offset.y, o.offset.z, o.offset.w);
 		meshPath = o.meshPath == "none" ? null : o.meshPath;
 		var ps : Array<Dynamic> = o.childParts;
 		if( ps != null ) {
@@ -185,10 +197,14 @@ class MeshGenerator extends Object3D {
 		}
 		#end
 
+		if( !mp.isRoot() && !mp.enable )
+			return;
+
 		if( mp.meshPath == null )
 			return;
 
 		var obj = ctx.loadModel(mp.meshPath);
+		obj.setPosition(mp.offset.x, mp.offset.y, mp.offset.z);
 		for( m in obj.getMaterials() ) {
 			m.castShadows = shadows;
 		}
@@ -330,6 +346,7 @@ class MeshGenerator extends Object3D {
 		var root = new h3d.scene.Object();
 		root.setRotation(0,0, hxd.Math.degToRad(180));
 		var m : h3d.scene.Mesh = cast ctx.loadModel("${HIDE}/res/meshGeneratorArrow.fbx");
+		m.material.shadows = false;
 		root.addChild(m);
 		m.scale(0.5);
 		m.name = "previewSphere";
@@ -338,6 +355,7 @@ class MeshGenerator extends Object3D {
 		m.material.mainPass.depthWrite = false;
 		m.material.mainPass.setPassName("overlay");
 		var m : h3d.scene.Mesh = cast ctx.loadModel("${HIDE}/res/meshGeneratorArrow.fbx");
+		m.material.shadows = false;
 		root.addChild(m);
 		m.scale(0.5);
 		m.name = "previewSphere";
@@ -494,38 +512,114 @@ class MeshGenerator extends Object3D {
 		if( mp.meshPath != null && socketList.length != 0 ) {
 			var s = '<div class="group" name="${extractMeshName(mp.meshPath)}">';
 			s += '<div align="center"><div class="meshGenerator-thumbnail"></div></div><dl>';
-			for( cmp in mp.childParts )
-				s += '<dt>${cmp.getSocketFullName()}</dt><dd><select class="${mp.childParts.indexOf(cmp)}"><option value="none">None</option></select>';
+			for( cmp in mp.childParts ) {
+				var index = mp.childParts.indexOf(cmp);
+				if( cmp.enable ) {
+					s += '<dt><b>${cmp.getSocketFullName()}</b></dt><dd><input type="checkbox" class="enable$index"></dd>';
+					s += '<dt>Mesh</dt><dd><select class="$index"><option value="none">None</option></select>';
+					s +='<dt>Offset</dt>
+									<dd>
+										<div class="flex">
+											<input type="number" class="x$index" min="-100" max="100">
+											<input type="number" class="y$index" min="-100" max="100">
+											<input type="number" class="z$index" min="-100" max="100">
+										</div>
+									</dd>';
+				}
+				else
+					s += '<dt>${cmp.getSocketFullName()}</dt><dd><input type="checkbox" class="enable$index"></dd>';
+			}
 			s += '</dl></div>';
 			var rootElement = new hide.Element(s);
 			for( cmp in mp.childParts ) {
-				var select = rootElement.find('.${mp.childParts.indexOf(cmp)}');
-				fillSelectMenu(ctx, select, cmp.socket);
-				if( cmp.meshPath != null && select.find('option[value="${cmp.meshPath}"]').length == 0 )
-					new hide.Element('<option>').attr("value", cmp.meshPath).text(extractMeshName(cmp.meshPath)).appendTo(select);
-				select.change(function(_) {
-					var mp = mp.childParts[mp.childParts.indexOf(cmp)];
-					var val = select.val();
-					var previous = mp.clone();
-					var actual = mp;
-					mp.meshPath = val == "none" ? null : val;
-					mp.childParts = createMeshParts(getSocketListFromHMD(getHMD(ctx.rootContext, cmp.meshPath)));
+				var index = mp.childParts.indexOf(cmp);
+
+				var enable = rootElement.find('.enable$index');
+				enable.prop("checked", cmp.enable);
+				enable.change(function(_) {
+					cmp.enable = enable.prop("checked"); 
+					ctx.onChange(this, null); 
+					ctx.rebuildProperties();
+
 					ctx.properties.undo.change(Custom(function(undo) {
-						undo ? mp.loadFrom(previous) : mp.loadFrom(actual);
+						cmp.enable = !cmp.enable;
 						ctx.onChange(this, null);
 						ctx.rebuildProperties();
 					}));
-					ctx.onChange(this, null);
-					ctx.rebuildProperties();
 				});
-				select.val(cmp.meshPath);
 
-				select.on("mouseover", function(_) {
+
+				if( cmp.enable ) {
+					// Offset
+					var x = rootElement.find('.x$index');
+					x.val(cmp.offset.x);
+					x.change(function(_) {
+						var prev = cmp.offset.x;
+						var newv = x.val();
+						cmp.offset.x = x.val(); 
+						ctx.onChange(this, null); 
+						ctx.properties.undo.change(Custom(function(undo) {
+							cmp.offset.x = undo ? prev : newv; 
+							ctx.onChange(this, null);
+							ctx.rebuildProperties();
+						}));
+					});
+					var y = rootElement.find('.y$index');
+					y.val(cmp.offset.y);
+					y.change(function(_) {
+						var prev = cmp.offset.y;
+						var newv = y.val();
+						cmp.offset.y = y.val(); 
+						ctx.onChange(this, null); 
+						ctx.properties.undo.change(Custom(function(undo) {
+							cmp.offset.y = undo ? prev : newv; 
+							ctx.onChange(this, null);
+							ctx.rebuildProperties();
+						}));
+					});
+					var z = rootElement.find('.z$index');
+					z.val(cmp.offset.z);
+					z.change(function(_) {
+						var prev = cmp.offset.z;
+						var newv = z.val();
+						cmp.offset.z = z.val(); 
+						ctx.onChange(this, null); 
+						ctx.properties.undo.change(Custom(function(undo) {
+							cmp.offset.z = undo ? prev : newv; 
+							ctx.onChange(this, null);
+							ctx.rebuildProperties();
+						}));
+					});
+
+					// MeshPath
+					var select = rootElement.find('.$index');
+					fillSelectMenu(ctx, select, cmp.socket);
+					if( cmp.meshPath != null && select.find('option[value="${cmp.meshPath}"]').length == 0 )
+						new hide.Element('<option>').attr("value", cmp.meshPath).text(extractMeshName(cmp.meshPath)).appendTo(select);
+					select.change(function(_) {
+						var mp = mp.childParts[index];
+						var val = select.val();
+						var previous = mp.clone();
+						var actual = mp;
+						mp.meshPath = val == "none" ? null : val;
+						mp.childParts = createMeshParts(getSocketListFromHMD(getHMD(ctx.rootContext, cmp.meshPath)));
+						ctx.properties.undo.change(Custom(function(undo) {
+							undo ? mp.loadFrom(previous) : mp.loadFrom(actual);
+							ctx.onChange(this, null);
+							ctx.rebuildProperties();
+						}));
+						ctx.onChange(this, null);
+						ctx.rebuildProperties();
+					});
+					select.val(cmp.meshPath);
+				}
+
+				enable.on("mouseover", function(_) {
 					resetPreview(root);
 					cmp.previewPos = true;
 					ctx.onChange(this, null);
 				});
-				select.on("mouseleave", function(_) {
+				enable.on("mouseleave", function(_) {
 					resetPreview(root);
 					ctx.onChange(this, null);
 				});
@@ -557,7 +651,7 @@ class MeshGenerator extends Object3D {
 
 		var editMenu : String = "";
 
-		// Procedural Generation
+		// Render Params
 		editMenu += '<div class="group" name="Material"><dl>
 						<dt>Shadows</dt><dd><input type="checkbox" field="shadows"></dd>
 					</div>';

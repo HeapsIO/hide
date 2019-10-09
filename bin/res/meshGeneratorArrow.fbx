@@ -401,12 +401,12 @@ Objects:  {
 	Video: 2824613068800, "Video::file40", "Clip" {
 		Type: "Clip"
 		Properties70:  {
-			P: "Path", "KString", "XRefUrl", "", "D:\Projects\arena\trunk\res\environment\Assets\Placeholders\TEST_ColorPalette.jpg"
-			P: "RelPath", "KString", "XRefUrl", "", "..\environment\Assets\Placeholders\TEST_ColorPalette.jpg"
+			P: "Path", "KString", "XRefUrl", "", "TEST_ColorPalette.jpg"
+			P: "RelPath", "KString", "XRefUrl", "", "TEST_ColorPalette.jpg"
 		}
 		UseMipMap: 0
-		Filename: "D:\Projects\arena\trunk\res\environment\Assets\Placeholders\TEST_ColorPalette.jpg"
-		RelativeFilename: "..\environment\Assets\Placeholders\TEST_ColorPalette.jpg"
+		Filename: "TEST_ColorPalette.jpg"
+		RelativeFilename: "TEST_ColorPalette.jpg"
 	}
 	Texture: 2824613061600, "Texture::file40", "" {
 		Type: "TextureVideoClip"
@@ -418,8 +418,8 @@ Objects:  {
 			P: "UseMaterial", "bool", "", "",1
 		}
 		Media: "Video::file40"
-		FileName: "D:\Projects\arena\trunk\res\environment\Assets\Placeholders\TEST_ColorPalette.jpg"
-		RelativeFilename: "..\environment\Assets\Placeholders\TEST_ColorPalette.jpg"
+		FileName: "TEST_ColorPalette.jpg"
+		RelativeFilename: "TEST_ColorPalette.jpg"
 		ModelUVTranslation: 0,0
 		ModelUVScaling: 1,1
 		Texture_Alpha_Source: "None"
