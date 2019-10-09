@@ -52,7 +52,7 @@ class MeshPart {
 
 	public function save() {
 		var o : Dynamic = {};
-		
+
 		if( offset.length() != 0 ) o.offset = { x : offset.x, y : offset.y, z : offset.z };
 		o.socket = { type : socket.type, name : socket.name };
 		o.meshPath = meshPath;
@@ -205,7 +205,6 @@ class MeshGenerator extends Object3D {
 			return;
 
 		var obj = ctx.loadModel(mp.meshPath);
-		obj.setPosition(mp.offset.x, mp.offset.y, mp.offset.z);
 		for( m in obj.getMaterials() ) {
 			m.castShadows = shadows;
 		}
@@ -219,6 +218,8 @@ class MeshGenerator extends Object3D {
 				socket.addChild(obj);
 			}
 		}
+
+		obj.setPosition(mp.offset.x, mp.offset.y, mp.offset.z);
 
 		for( cmp in mp.childParts )
 			createMeshPart(ctx, cmp, obj);
