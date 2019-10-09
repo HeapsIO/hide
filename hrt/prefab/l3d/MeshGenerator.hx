@@ -52,6 +52,7 @@ class MeshPart {
 
 	public function save() {
 		var o : Dynamic = {};
+		
 		if( offset.length() != 0 ) o.offset = { x : offset.x, y : offset.y, z : offset.z };
 		o.socket = { type : socket.type, name : socket.name };
 		o.meshPath = meshPath;
@@ -69,7 +70,7 @@ class MeshPart {
 	}
 
 	public function load( o : Dynamic ) {
-		enable = o.enable == null ? false : o.enable;
+		enable = o.enable == null ? true : o.enable;
 		if( o.socket != null ) {
 			socket.type = o.socket.type;
 			socket.name = o.socket.name;
