@@ -52,7 +52,7 @@ class MeshPart {
 
 	public function save() {
 		var o : Dynamic = {};
-		if( offset.length() != 0 ) o.offset = offset;
+		if( offset.length() != 0 ) o.offset = { x : offset.x, y : offset.y, z : offset.z };
 		o.socket = { type : socket.type, name : socket.name };
 		o.meshPath = meshPath;
 		o.enable = enable;
@@ -75,7 +75,7 @@ class MeshPart {
 			socket.name = o.socket.name;
 		}
 		if( o.offset != null )
-			offset.set(o.offset.x, o.offset.y, o.offset.z, o.offset.w);
+			offset.set(o.offset.x, o.offset.y, o.offset.z, 0.0);
 		meshPath = o.meshPath == "none" ? null : o.meshPath;
 		var ps : Array<Dynamic> = o.childParts;
 		if( ps != null ) {
@@ -517,12 +517,12 @@ class MeshGenerator extends Object3D {
 				if( cmp.enable ) {
 					s += '<dt><b>${cmp.getSocketFullName()}</b></dt><dd><input type="checkbox" class="enable$index"></dd>';
 					s += '<dt>Mesh</dt><dd><select class="$index"><option value="none">None</option></select>';
-					s +='<dt>Offset</dt>
+					s += '<dt>Offset</dt>
 									<dd>
 										<div class="flex">
-											<input type="number" class="x$index" min="-100" max="100" step="0.1">
-											<input type="number" class="y$index" min="-100" max="100" step="0.1">
-											<input type="number" class="z$index" min="-100" max="100" step="0.1">
+											<input type="number" style="max-width:50px" class="x$index" min="-100" max="100" step="0.1">
+											<input type="number" style="max-width:50px" class="y$index" min="-100" max="100" step="0.1">
+											<input type="number" style="max-width:50px" class="z$index" min="-100" max="100" step="0.1">
 										</div>
 									</dd>';
 				}
@@ -537,8 +537,8 @@ class MeshGenerator extends Object3D {
 				var enable = rootElement.find('.enable$index');
 				enable.prop("checked", cmp.enable);
 				enable.change(function(_) {
-					cmp.enable = enable.prop("checked"); 
-					ctx.onChange(this, null); 
+					cmp.enable = enable.prop("checked");
+					ctx.onChange(this, null);
 					ctx.rebuildProperties();
 
 					ctx.properties.undo.change(Custom(function(undo) {
@@ -554,12 +554,12 @@ class MeshGenerator extends Object3D {
 					var x = rootElement.find('.x$index');
 					x.val(cmp.offset.x);
 					x.change(function(_) {
-						var prev = cmp.offset.x;
-						var newv = x.val();
-						cmp.offset.x = x.val(); 
-						ctx.onChange(this, null); 
+						var prev : Float = cmp.offset.x;
+						var newv : Float = Std.parseFloat(x.val());
+						cmp.offset.x = newv;
+						ctx.onChange(this, null);
 						ctx.properties.undo.change(Custom(function(undo) {
-							cmp.offset.x = undo ? prev : newv; 
+							cmp.offset.x = undo ? prev : newv;
 							ctx.onChange(this, null);
 							ctx.rebuildProperties();
 						}));
@@ -567,12 +567,12 @@ class MeshGenerator extends Object3D {
 					var y = rootElement.find('.y$index');
 					y.val(cmp.offset.y);
 					y.change(function(_) {
-						var prev = cmp.offset.y;
-						var newv = y.val();
-						cmp.offset.y = y.val(); 
-						ctx.onChange(this, null); 
+						var prev : Float = cmp.offset.y;
+						var newv : Float = Std.parseFloat(y.val());
+						cmp.offset.y = newv;
+						ctx.onChange(this, null);
 						ctx.properties.undo.change(Custom(function(undo) {
-							cmp.offset.y = undo ? prev : newv; 
+							cmp.offset.y = undo ? prev : newv;
 							ctx.onChange(this, null);
 							ctx.rebuildProperties();
 						}));
@@ -580,12 +580,12 @@ class MeshGenerator extends Object3D {
 					var z = rootElement.find('.z$index');
 					z.val(cmp.offset.z);
 					z.change(function(_) {
-						var prev = cmp.offset.z;
-						var newv = z.val();
-						cmp.offset.z = z.val(); 
-						ctx.onChange(this, null); 
+						var prev : Float = cmp.offset.z;
+						var newv : Float = Std.parseFloat(z.val());
+						cmp.offset.z = newv;
+						ctx.onChange(this, null);
 						ctx.properties.undo.change(Custom(function(undo) {
-							cmp.offset.z = undo ? prev : newv; 
+							cmp.offset.z = undo ? prev : newv;
 							ctx.onChange(this, null);
 							ctx.rebuildProperties();
 						}));
