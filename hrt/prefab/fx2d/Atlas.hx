@@ -37,6 +37,7 @@ class Atlas extends Object2D {
 		super.updateInstance(ctx, propName);
 
 		var h2dAnim = (cast ctx.local2d : h2d.Anim);
+		h2dAnim.smooth = true;
 		
 		if (propName == null || propName == "src" || propName == "forcePivotCenter") {
 			if (src != null) {
