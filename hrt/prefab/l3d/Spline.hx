@@ -158,16 +158,19 @@ class Spline extends Object3D {
 		#end
 	}
 
-	// Return an interpolation of two samples at length l, 0 <= l <= splineLength
-	function getPointAtLength( l : Float ) : h3d.col.Point {
+	// Return an interpolation of two samples at t, 0 <= t <= 0
+	public function getPointAt( t : Float ) : h3d.col.Point {
 		if( data == null )
 			computeSplineData();
 
+		var l = t * data.length;
+
 		// The last point is not at the same distance, be aware of that case
+		t = hxd.Math.clamp(t);
 		var s1 : Int = hxd.Math.floor(l / step);
 		var s2 : Int = hxd.Math.ceil(l / step);
-		s1 = cast hxd.Math.clamp(s1, 0, data.samples.length - 1);
-		s2 = cast hxd.Math.clamp(s2, 0, data.samples.length - 1);
+		s1 = hxd.Math.iclamp(s1, 0, data.samples.length - 1);
+		s2 = hxd.Math.iclamp(s2, 0, data.samples.length - 1);
 
 		// End/Beginning of the curve, just return the point
 		if( s1 == s2 )
