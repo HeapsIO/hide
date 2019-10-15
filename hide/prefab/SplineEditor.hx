@@ -285,8 +285,16 @@ class SplineEditor {
 	}
 
 	function addSplinePoint( spd : SplinePointData, ctx : hrt.prefab.Context ) : SplinePoint {
-		var invMatrix = prefab.getTransform().clone();
+
+		var invMatrix = new h3d.Matrix();
+		invMatrix.identity();
+		var o : hrt.prefab.Object3D = prefab;
+		while(o != null) {
+			invMatrix.multiply(invMatrix, o.getTransform());
+			o = o.parent.to(hrt.prefab.Object3D);
+		}
 		invMatrix.initInverse(invMatrix);
+
 		var pos = spd.pos.toVector();
 		pos.project(invMatrix);
 	
