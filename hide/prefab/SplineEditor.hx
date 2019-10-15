@@ -76,9 +76,12 @@ class SplinePointViewer extends h3d.scene.Object {
 
 	var pointViewer : h3d.scene.Mesh;
 	var controlPointsViewer : h3d.scene.Graphics;
+	var indexText : h2d.ObjectFollower;
+	var spline : Spline;
 
-	public function new( sp : SplinePoint ) {
+	public function new( sp : SplinePoint, spline : Spline, ctx : hrt.prefab.Context ) {
 		super(sp);
+		this.spline = spline;
 		name = "SplinePointViewer";
 		pointViewer = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), null, this);
 		pointViewer.name = "pointViewer";
@@ -95,6 +98,13 @@ class SplinePointViewer extends h3d.scene.Object {
 		controlPointsViewer.clear();
 		controlPointsViewer.moveTo(1, 0, 0);
 		controlPointsViewer.lineTo(-1, 0, 0);
+
+		indexText = new h2d.ObjectFollower(pointViewer,  @:privateAccess ctx.local2d.getScene());
+		var t = new h2d.Text(hxd.res.DefaultFont.get(), indexText);
+		t.textColor = 0xff00ff;
+		t.textAlign = Center;		
+		t.dropShadow = { dx : 0.5, dy : 0.5, color : 0x202020, alpha : 1.0 };
+		t.setScale(2.5);
 	}
 
 	override function sync( ctx : h3d.scene.RenderContext ) {
@@ -106,6 +116,11 @@ class SplinePointViewer extends h3d.scene.Object {
 		var correctionFromParents =  1.0 / getAbsPos().getScale().x;
 		pointViewer.setScale(correctionFromParents * ratio * distToCam * Math.tan(cam.fovY * 0.5 * Math.PI / 180.0));
 		calcAbsPos();
+
+		var t = Std.downcast(indexText.getChildAt(0), h2d.Text);
+		var sp : SplinePoint = cast parent;
+		t.text = "" + spline.points.indexOf(sp);
+
 		super.sync(ctx);
 	}
 
@@ -116,6 +131,11 @@ class SplinePointViewer extends h3d.scene.Object {
 	public function setColor( color : Int ) {
 		controlPointsViewer.setColor(color);
 		pointViewer.material.color.setColor(color);
+	}
+
+	override function onRemove() {
+		super.onRemove();
+		indexText.remove();
 	}
 }
 
@@ -312,7 +332,7 @@ class SplineEditor {
 	function showViewers( ctx : hrt.prefab.Context ) {
 		removeViewers(); // Security, avoid duplication
 		for( sp in prefab.points ) {
-			var spv = new SplinePointViewer(sp);
+			var spv = new SplinePointViewer(sp, prefab, ctx);
 			splinePointViewers.insert(splinePointViewers.length, spv);
 		}
 	}
@@ -528,6 +548,11 @@ class SplineEditor {
 
 		var props = new hide.Element('
 		<div class="spline-editor">
+			<div class="group" name="Utility">
+				<div align="center">
+					<input type="button" value="Reverse" class="reverse"/>
+				</div>
+			</div>
 			<div class="group" name="Description">
 				<div class="description">
 					<i>Ctrl + Left Click</i> Add a point on the spline <br>
@@ -540,6 +565,21 @@ class SplineEditor {
 				</div>
 			</div>
 		</div>');
+
+		var reverseButton = props.find(".reverse");
+		reverseButton.click(function(_) {
+			prefab.points.reverse();
+			for( p in prefab.points ) 
+				p.rotate(0, 0, hxd.Math.degToRad(180));
+
+			undo.change(Custom(function(undo) {
+				prefab.points.reverse();
+				for( p in prefab.points ) 
+					p.rotate(0, 0, hxd.Math.degToRad(180));
+			}));
+			
+			ctx.onChange(prefab, null);
+		});
 
 		var editModeButton = props.find(".editModeButton");
 		editModeButton.toggleClass("editModeEnabled", editMode);

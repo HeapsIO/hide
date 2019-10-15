@@ -212,7 +212,7 @@ class Spline extends Object3D {
 		var sd = new SplineData();
 		data = sd;
 
-		if( step <= 0 )
+		if( step <= 0 || threshold <= 0 )
 			return;
 
 		if( points == null || points.length <= 1 )
@@ -350,8 +350,6 @@ class Spline extends Object3D {
 		return p1.sub(p0).multiply(3 * (1 - t) * (1 - t)).add(p2.sub(p1).multiply(6 * (1 - t) * t)).add(p3.sub(p2).multiply(3 * t * t)).normalizeFast();
 	}
 
-
-
 	function generateSplineGraph( ctx : hrt.prefab.Context ) {
 
 		if( !showSpline ) {
@@ -397,7 +395,7 @@ class Spline extends Object3D {
 				<dl>
 					<dt>Color</dt><dd><input type="color" alpha="true" field="color"/></dd>
 					<dt>Thickness</dt><dd><input type="range" min="1" max="10" field="lineThickness"/></dd>
-					<dt>Step</dt><dd><input type="range" min="0.1" max="10" field="step"/></dd>
+					<dt>Step</dt><dd><input type="range" min="0.1" max="1" field="step"/></dd>
 					<dt>Threshold</dt><dd><input type="range" min="0.001" max="1" field="threshold"/></dd>
 					<dt>Show Spline</dt><dd><input type="checkbox" field="showSpline"/></dd>
 					<dt>Type</dt>
