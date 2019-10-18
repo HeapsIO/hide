@@ -38,6 +38,13 @@ class MeshSpray extends Object3D {
 	override function save() {
 		var obj : Dynamic = super.save();
 		obj.meshes = meshes;
+		obj.density = density;
+		obj.densityOffset = densityOffset;
+		obj.radius = radius;
+		obj.scale = scale;
+		obj.scaleOffset = scaleOffset;
+		obj.rotation = rotation;
+		obj.rotationOffset = rotationOffset;
 		return obj;
 	}
 
@@ -45,6 +52,20 @@ class MeshSpray extends Object3D {
 		super.load(obj);
 		if (obj.meshes != null)
 			meshes = obj.meshes;
+		if (obj.density != null)
+			density = obj.density;
+		if (obj.densityOffset != null)
+			densityOffset = obj.densityOffset;
+		if (obj.radius != null)
+			radius = obj.radius;
+		if (obj.scale != null)
+			scale = obj.scale;
+		if (obj.scaleOffset != null)
+			scaleOffset = obj.scaleOffset;
+		if (obj.rotation != null)
+			rotation = obj.rotation;
+		if (obj.rotationOffset != null)
+			rotationOffset = obj.rotationOffset;
 	}
 
 	override function getHideProps() : HideProps {
