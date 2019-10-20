@@ -1,7 +1,7 @@
 package monaco;
 
 typedef CompletionProvider = {
-	var ?triggerChars : Array<String>;
+	var ?triggerCharacters : Array<String>;
 	function provideCompletionItems( model : Model, position : Position, token : Any, context : CompletionContext ) : Array<CompletionItem>;
 }
 

@@ -18,7 +18,7 @@ class ScriptChecker {
 	var documentName : String;
 	var constants : Map<String,Dynamic>;
 	var evalTo : String;
-	public var checker : hscript.Checker;
+	public var checker(default,null) : hscript.Checker;
 
 	public function new( config : hide.Config, documentName : String, ?constants : Map<String,Dynamic> ) {
 		this.config = config;
@@ -31,6 +31,7 @@ class ScriptChecker {
 
 	public function reload() {
 		checker = new hscript.Checker();
+		checker.allowAsync = true;
 
 		if( apiFiles != null && apiFiles.length >= 0 ) {
 			var types = TYPES_SAVE.get(apiFiles.join(";"));
@@ -116,7 +117,7 @@ class ScriptChecker {
 						for( o in s.all ) {
 							var id = o.id;
 							if( id == null || id == "" ) continue;
-							cl.fields.set(id, { name : id, params : [], t : kind, isPublic: true });
+							cl.fields.set(id, { name : id, params : [], t : kind, isPublic: true, complete : true });
 						}
 						checker.setGlobal(name, TInst(cl,[]));
 					}
@@ -177,15 +178,31 @@ class ScriptChecker {
 		return null;
 	}
 
-	public function check( script : String, checkTypes = true ) {
+	public function makeParser() {
 		var parser = new hscript.Parser();
 		parser.allowMetadata = true;
 		parser.allowTypes = true;
 		parser.allowJSON = true;
+		return parser;
+	}
+	public function getCompletion( script : String ) {
+		var parser = makeParser();
+		parser.resumeErrors = true;
+		var expr = parser.parseString(script,""); // should not error
+		try {
+			var et = checker.check(expr,null,true);
+			return null;
+		} catch( e : hscript.Checker.Completion ) {
+			// ignore
+			return e.t;
+		}
+	}
+
+	public function check( script : String, checkTypes = true ) {
+		var parser = makeParser();
 		try {
 			var expr = parser.parseString(script, "");
 			if( checkTypes ) {
-				checker.allowAsync = true;
 				var et = checker.check(expr);
 				if( evalTo != null ) {
 					var t = checker.types.resolve(evalTo);
@@ -215,9 +232,11 @@ class ScriptEditor extends CodeEditor {
 			INIT_DONE = true;
 			(monaco.Languages : Dynamic).typescript.javascriptDefaults.setCompilerOptions({ noLib: true, allowNonTsExtensions: true }); // disable js stdlib completion
 			monaco.Languages.registerCompletionItemProvider("javascript", {
+				triggerCharacters : ["."],
 				provideCompletionItems : function(model,position,_,_) {
 					var comp : ScriptEditor = (model : Dynamic).__comp__;
-					return comp.getCompletion(position);
+			        var code = model.getValueInRange({startLineNumber: 1, startColumn: 1, endLineNumber: position.lineNumber, endColumn: position.column});
+					return comp.getCompletion(code.length);
 				}
 			});
 		}
@@ -240,11 +259,35 @@ class ScriptEditor extends CodeEditor {
 		haxe.Timer.delay(function() doCheckScript(), 0);
 	}
 
-	function getCompletion( position : monaco.Position ) : Array<monaco.Languages.CompletionItem> {
+	function getCompletion( position : Int ) : Array<monaco.Languages.CompletionItem> {
+		var script = code.substr(0,position);
+		var vars = checker.checker.getGlobals();
+		if( script.charCodeAt(script.length-1) == ".".code ) {
+			vars = [];
+			var t = checker.getCompletion(script);
+			if( t != null ) {
+				switch( checker.checker.follow(t) ) {
+				case TInst(c,args):
+					for( f in c.fields ) {
+						if( !f.isPublic || !f.complete ) continue;
+						var name = f.name;
+						var t = f.t;
+						if( StringTools.startsWith(name,"a_") ) {
+							t = checker.checker.unasync(t);
+							name = name.substr(2);
+						}
+						vars.set(name, t);
+					}
+				case TAnon(fields):
+					for( f in fields )
+						vars.set(f.name, f.t);
+				default:
+				}
+			}
+		}
 		var checker = checker.checker;
-		var globals = checker.getGlobals();
-		return [for( k in globals.keys() ) {
-			var t = globals.get(k);
+		return [for( k in vars.keys() ) {
+			var t = vars.get(k);
 			if( StringTools.startsWith(k,"a_") ) {
 				t = checker.unasync(t);
 				k = k.substr(2);
@@ -252,7 +295,7 @@ class ScriptEditor extends CodeEditor {
 			var isFun = checker.follow(t).match(TFun(_));
 			if( isFun ) {
 				{
-					kind : Field,
+					kind : Method,
 					label : k,
 					detail : hscript.Checker.typeStr(t),
 					commitCharacters: ["("],
