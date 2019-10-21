@@ -28,8 +28,10 @@ class ScriptTable extends SubTable {
 	override function refresh() {
 		var first = script == null;
 		element.html("<div class='cdb-script'></div>");
+		var div = element.children("div");
+		div.on("keypress keydown keyup", (e) -> e.stopPropagation());
 		var checker = new ScriptEditor.ScriptChecker(editor.config,"cdb."+cell.getDocumentName(),[ "cdb."+cell.table.sheet.name => cell.line.obj ]);
-		script = new ScriptEditor(cell.value, checker, element.find("div"));
+		script = new ScriptEditor(cell.value, checker, div);
 		script.onSave = function() cell.setValue(script.code);
 		script.onClose = function() { close(); cell.focus(); }
 		lines = [new Line(this,[],0,script.element)];
