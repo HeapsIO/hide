@@ -18,6 +18,9 @@ class MeshSpray extends Object3D {
 	var rotation : Float = 0.0;
 	var rotationOffset : Float = 0.0;
 
+	var dontRepeatMesh : Bool = false;
+	var lastIndexMesh = -1;
+
 	var sprayEnable : Bool = false;
 	var interactive : h2d.Interactive;
 	var gBrush : h3d.scene.Graphics;
@@ -136,8 +139,14 @@ class MeshSpray extends Object3D {
 		var selectAllBtn = new hide.Element('<input type="button" value="Select all" />').appendTo(options);
 		var addBtn = new hide.Element('<input type="button" value="Add" >').appendTo(options);
 		var removeBtn = new hide.Element('<input type="button" value="Remove" />').appendTo(options);
-		var cleanBtn = new hide.Element('<input type="button" value="Remove all meshes" />').appendTo(options);
+		var cleanBtn = new hide.Element('<input type="button" value="Remove all meshes" /><br />').appendTo(options);
+		var repeatMeshBtn = new hide.Element('<input type="checkbox" style="margin-bottom: -5px;margin-right: 5px;" >Don\'t repeat same mesh in a row</input>').appendTo(options);
 		new hide.Element('<br /><b><i>Hold down SHIFT to remove meshes</i></b>').appendTo(options);
+
+		repeatMeshBtn.on("change", function() {
+			dontRepeatMesh = repeatMeshBtn.is(":checked");
+		});
+		repeatMeshBtn.prop("checked", dontRepeatMesh);
 
 		selectAllBtn.on("click", function() {
 			var options = selectElement.children().elements();
@@ -269,7 +278,17 @@ class MeshSpray extends Object3D {
 				var rotationZ = ((rotation  + randRotationOffset) % 360)/360 * 2*Math.PI;
 
 				var model = new hrt.prefab.Model(this);
-				model.source = meshes[Std.random(meshes.length)];
+				var meshId = -1;
+				if (dontRepeatMesh && lastIndexMesh != -1 && meshes.length > 0) {
+					meshId = Std.random(meshes.length-1);
+					if (meshId >= lastIndexMesh) {
+						meshId++;
+					}
+				} else {
+					meshId = Std.random(meshes.length);
+				}
+				lastIndexMesh = meshId;
+				model.source = meshes[meshId];
 				model.name = extractMeshName(model.source);
 
 				var localMat = new h3d.Matrix();
