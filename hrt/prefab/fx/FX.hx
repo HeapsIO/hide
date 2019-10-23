@@ -24,10 +24,12 @@ class FXAnimation extends h3d.scene.Object {
 	var evaluator : Evaluator;
 	var random : hxd.Rand;
 	var prevTime = -1.0;
+	var randSeed : Int;
 
 	public function new(?parent) {
 		super(parent);
-		random = new hxd.Rand(Std.random(0xFFFFFF));
+		randSeed = Std.random(0xFFFFFF);
+		random = new hxd.Rand(randSeed);
 		evaluator = new Evaluator(random);
 		evaluator.vecPool = vecPool;
 		name = "FXAnimation";
@@ -57,10 +59,11 @@ class FXAnimation extends h3d.scene.Object {
 	}
 
 	public function setRandSeed(seed: Int) {
+		randSeed = seed;
 		random.init(seed);
 		if(emitters != null)
 			for(em in emitters)
-				em.setRandSeed(seed);
+				em.setRandSeed(randSeed);
 	}
 
 	override function sync( ctx : h3d.scene.RenderContext ) {
@@ -241,7 +244,9 @@ class FXAnimation extends h3d.scene.Object {
 			for(emCtx in ctx.shared.getContexts(elt)) {
 				if(emCtx.local3d == null) continue;
 				if(emitters == null) emitters = [];
-				emitters.push(cast emCtx.local3d);
+				var emobj : hrt.prefab.fx.Emitter.EmitterObject = cast emCtx.local3d;
+				emobj.setRandSeed(randSeed);
+				emitters.push(emobj);
 			}
 		}
 		else {

@@ -297,6 +297,7 @@ class EmitterObject extends h3d.scene.Object {
 
 	public var particleTemplate : hrt.prefab.Object3D;
 	public var maxCount = 20;
+	public var seedGroup = 0;
 	public var lifeTime = 2.0;
 	public var lifeTimeRand = 0.0;
 	public var emitShape : EmitShape = Cylinder;
@@ -633,7 +634,7 @@ class EmitterObject extends h3d.scene.Object {
 	}
 
 	public function setRandSeed(seed: Int) {
-		randomSeed = seed;
+		randomSeed = seed ^ seedGroup;
 		reset();
 	}
 
@@ -675,6 +676,7 @@ class Emitter extends Object3D {
 		{ name: "lifeTime", t: PFloat(0, 10), def: 1.0 },
 		{ name: "lifeTimeRand", t: PFloat(0, 1), def: 0.0 },
 		{ name: "maxCount", t: PInt(0, 100), def: 20, },
+		{ name: "seedGroup", t: PInt(0, 100), def: 0, },
 		{ name: "emitShape", t: PEnum(EmitShape), def: EmitShape.Sphere, disp: "Emit Shape", },
 		{ name: "emitAngle", t: PFloat(0, 360.0), disp: "Angle", },
 		{ name: "emitRad1", t: PFloat(0, 1.0), def: 1.0, disp: "Radius 1", },
@@ -865,6 +867,7 @@ class Emitter extends Object3D {
 		emitterObj.lifeTime = getParamVal("lifeTime");
 		emitterObj.lifeTimeRand = getParamVal("lifeTimeRand");
 		emitterObj.maxCount = getParamVal("maxCount");
+		emitterObj.seedGroup = getParamVal("seedGroup");
 		emitterObj.emitRate = makeParam(this, "emitRate");
 		emitterObj.emitShape = getParamVal("emitShape");
 		emitterObj.emitOrientation = getParamVal("emitOrientation");
