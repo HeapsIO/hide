@@ -776,11 +776,17 @@ input[type=checkbox]:checked:after {
   height: 100%;
   overflow: hidden;
 }
-.fx-animpanel .overlay-container .overlay .timeline {
+.fx-animpanel .overlay-container .overlay .time-marker {
   position: absolute;
   height: 100%;
   width: 1px;
   background: green;
+}
+.fx-animpanel .overlay-container .overlay .marker {
+  position: absolute;
+  height: 100%;
+  width: 1px;
+  background: #907a00;
 }
 .fx-animpanel .overlay-container .overlay .selection {
   position: absolute;
@@ -1212,8 +1218,8 @@ input[type=checkbox]:checked:after {
   box-shadow: 0px 0px 34px -9px black;
 }
 .graph-view #add-menu #results div.group:hover {
-  background: #474747!important;
-  color: #dadada!important;
+  background: #474747 !important;
+  color: #dadada !important;
   box-shadow: none;
 }
 .graph-view #add-menu #results div > span:first-child {
@@ -1261,8 +1267,8 @@ input[type=checkbox]:checked:after {
   box-shadow: 0px 0px 34px -9px black;
 }
 .graph-view #context-menu #options div.group:hover {
-  background: #474747!important;
-  color: #dadada!important;
+  background: #474747 !important;
+  color: #dadada !important;
   box-shadow: none;
 }
 .graph-view #context-menu #options div > span:first-child {

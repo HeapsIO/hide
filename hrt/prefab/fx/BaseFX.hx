@@ -53,6 +53,7 @@ class BaseFX extends hrt.prefab.Library {
 	public var duration : Float;
 	public var scriptCode : String;
 	public var cullingRadius : Float;
+	public var markers : Array<{t: Float}> = [];
 
 	public function new() {
 		super();
@@ -64,12 +65,16 @@ class BaseFX extends hrt.prefab.Library {
 	override function save() {
 		var obj : Dynamic = super.save();
 		obj.duration = duration;
+		if(markers != null && markers.length > 0)
+			obj.markers = markers.copy();
 		return obj;
 	}
 
 	override function load( obj : Dynamic ) {
 		super.load(obj);
 		duration = obj.duration == null ? 5.0 : obj.duration;
+		if(obj.markers != null)
+			markers = obj.markers;
 	}
 
 	public static function makeShaderParams(ctx: Context, shaderElt: hrt.prefab.Shader) {

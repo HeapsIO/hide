@@ -346,17 +346,40 @@ class FXEditor extends FileView {
 		var timeline = element.find(".timeline");
 		var sMin = 0.0;
 		var sMax = 0.0;
+		timeline.contextmenu(function(e) {
+			var offset = e.clientX - timeline.offset().left;
+			var marker = data.markers.find(m -> hxd.Math.abs(offset - xt(m.t)) < 4);
+			new hide.comp.ContextMenu([
+			{ label : "Add marker", click : function() {
+				if(data.markers == null)
+					data.markers = [];
+				var prevVal = data.markers.copy();
+				data.markers.push({t : ixt(e.clientX - timeline.offset().left)});
+				undo.change(Field(data, "markers", prevVal), refreshTimeline.bind(false));
+				refreshTimeline(false);
+			} },
+			{ label : "Remove marker", enabled: marker != null, click : function() {
+				var prevVal = data.markers.copy();
+				data.markers.remove(marker);
+				undo.change(Field(data, "markers", prevVal), refreshTimeline.bind(false));
+				refreshTimeline(false);
+			} }
+			]);
+			e.preventDefault();
+			return false;
+		});
 		timeline.mousedown(function(e) {
 			var lastX = e.clientX;
 			var shift = e.shiftKey;
 			var ctrl = e.ctrlKey;
 			var xoffset = timeline.offset().left;
+			var clickTime = ixt(e.clientX - xoffset);
 
 			if(shift) {
-				sMin = hxd.Math.max(0, ixt(e.clientX - xoffset));
+				sMin = hxd.Math.max(0, clickTime);
 			}
 			else if(ctrl) {
-				previewMin = hxd.Math.max(0, ixt(e.clientX - xoffset));
+				previewMin = hxd.Math.max(0, clickTime);
 			}
 
 			function updateMouse(e: js.jquery.Event) {
@@ -387,6 +410,26 @@ class FXEditor extends FileView {
 				else {
 					selectMax = hxd.Math.max(sMin, sMax);
 					selectMin = hxd.Math.min(sMin, sMax);
+				}
+			}
+
+			if(data.markers != null) {
+				var marker = data.markers.find(m -> hxd.Math.abs(xt(clickTime) - xt(m.t)) < 4);
+				if(marker != null) {
+					var prevVal = marker.t;
+					startDrag(function(e) {
+						updateMouse(e);
+						var x = ixt(e.clientX - xoffset);
+						x = hxd.Math.max(0, x);
+						x = untyped parseFloat(x.toFixed(5));
+						marker.t = x;
+						refreshTimeline(true);
+					}, function(e) {
+						undo.change(Field(marker, "t", prevVal), refreshTimeline.bind(false));
+					});
+					e.preventDefault();
+					e.stopPropagation();
+					return;
 				}
 			}
 
@@ -574,8 +617,15 @@ class FXEditor extends FileView {
 
 		var overlay = element.find(".overlay");
 		overlay.empty();
-		timeLineEl = new Element('<span class="timeline"></span>').appendTo(overlay);
+		timeLineEl = new Element('<span class="time-marker"></span>').appendTo(overlay);
 		timeLineEl.css({left: xt(currentTime)});
+
+		if(data.markers != null) {
+			for(m in data.markers) {
+				var el = new Element('<span class="marker"></span>').appendTo(overlay);
+				el.css({left: xt(m.t)});
+			}
+		}
 
 		var select = new Element('<span class="selection"></span>').appendTo(overlay);
 		select.css({left: xt(selectMin), width: xt(selectMax) - xt(selectMin)});
