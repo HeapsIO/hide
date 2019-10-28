@@ -39,6 +39,7 @@ class Terrain extends Object3D {
 	// Utility
 	var tmpSurfacesProps : Array<SurfaceProps> = [];
 	var unpackWeight = new h3d.pass.ScreenFx(new UnpackWeight());
+	var modified = false;
 
 	#if editor
 	var packWeight = new h3d.pass.ScreenFx(new PackWeight());
@@ -109,7 +110,10 @@ class Terrain extends Object3D {
 		#if editor
 		obj.autoCreateTile = autoCreateTile;
 	 	obj.showChecker = terrain.showChecker;
-		if( editor != null && terrain.surfaces.length > 0 ) editor.saveTextures();
+		if( modified ) {
+			modified = false;
+			if( editor != null && terrain.surfaces.length > 0 ) editor.saveTextures();
+		}
 		#end
 
 		return obj;
@@ -517,9 +521,11 @@ class Terrain extends Object3D {
 				tile.blendEdges();
 			if( editor != null )
 				editor.refresh();
+			modified = true;
 		});
 
 		ctx.properties.add(props, this, function(pname) {
+			modified = true;
 			ctx.onChange(this, pname);
 		});
 
