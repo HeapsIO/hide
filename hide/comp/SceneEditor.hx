@@ -1116,44 +1116,56 @@ class SceneEditor {
 	}
 
 	public function selectObjects( elts : Array<PrefabElement>, ?includeTree=true) {
-		scene.setCurrent();
-		if( curEdit != null )
-			curEdit.cleanup();
-		var edit = makeEditContext(elts);
-		if (elts.length == 0 || (customPivot != null && customPivot.elt != edit.rootElements[0])) {
-			customPivot = null;
-		}
-		properties.clear();
-		if( elts.length > 0 ) fillProps(edit, elts[0]);
-
-		if(includeTree) {
-			tree.setSelection(elts);
-		}
-
-		var map = new Map<PrefabElement,Bool>();
-		function selectRec(e : PrefabElement, b:Bool) {
-			if( map.exists(e) )
-				return;
-			map.set(e, true);
-			var ectx = context.shared.contexts.get(e);
-			setObjectSelected(e, ectx == null ? context : ectx, b);
-			for( e in e.children )
-				selectRec(e,b);
-		}
-
-		for( e in elts )
-			selectRec(e, true);
-
-		edit.cleanups.push(function() {
-			for( e in map.keys() ) {
-				if( hasBeenRemoved(e) ) continue;
-				var ectx = context.shared.contexts.get(e);
-				setObjectSelected(e, ectx == null ? context : ectx, false);
+		function impl(elts) {
+			scene.setCurrent();
+			if( curEdit != null )
+				curEdit.cleanup();
+			var edit = makeEditContext(elts);
+			if (elts.length == 0 || (customPivot != null && customPivot.elt != edit.rootElements[0])) {
+				customPivot = null;
 			}
-		});
+			properties.clear();
+			if( elts.length > 0 ) fillProps(edit, elts[0]);
 
-		curEdit = edit;
-		setupGizmo();
+			if(includeTree) {
+				tree.setSelection(elts);
+			}
+
+			var map = new Map<PrefabElement,Bool>();
+			function selectRec(e : PrefabElement, b:Bool) {
+				if( map.exists(e) )
+					return;
+				map.set(e, true);
+				var ectx = context.shared.contexts.get(e);
+				setObjectSelected(e, ectx == null ? context : ectx, b);
+				for( e in e.children )
+					selectRec(e,b);
+			}
+
+			for( e in elts )
+				selectRec(e, true);
+
+			edit.cleanups.push(function() {
+				for( e in map.keys() ) {
+					if( hasBeenRemoved(e) ) continue;
+					var ectx = context.shared.contexts.get(e);
+					setObjectSelected(e, ectx == null ? context : ectx, false);
+				}
+			});
+
+			curEdit = edit;
+			setupGizmo();
+		}
+
+		if(curEdit != null && includeTree) {
+			var prev = curEdit.rootElements.copy();
+			undo.change(Custom(function(u) {
+				if(u) impl(prev);
+				else impl(elts);
+			}));
+		}
+
+		impl(elts);
 	}
 
 	function hasBeenRemoved( e : hrt.prefab.Prefab ) {
