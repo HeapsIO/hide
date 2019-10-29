@@ -18,6 +18,10 @@ class Tile extends h3d.scene.Mesh {
 	public var needNewPixelCapture = false;
 	public var insideFrustrum(default, null) = false;
 
+	// set by prefab loader for CPU access ingame
+	public var weightMapResource : hxd.res.Resource;
+	public var indexMapResource : hxd.res.Resource;
+
 	var heightmapPixels : hxd.Pixels.PixelsFloat;
 	var shader : hrt.shader.Terrain;
 	var terrain : TerrainMesh;

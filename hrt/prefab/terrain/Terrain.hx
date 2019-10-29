@@ -162,20 +162,24 @@ class Terrain extends Object3D {
 				}
 				case "w":
 				if( weight ) {
+					tile.weightMapResource = res;
 					var tex = res.toTexture();
 					if( tile.surfaceWeights.length == 0 ) @:privateAccess tile.refreshSurfaceWeights();
+					var engine = h3d.Engine.getCurrent();
 					for(i in 0 ... tile.surfaceWeights.length){
-						h3d.Engine.getCurrent().pushTarget(tile.surfaceWeights[i]);
+						engine.pushTarget(tile.surfaceWeights[i]);
 						unpackWeight.shader.indexMap = tile.surfaceIndexMap;
 						unpackWeight.shader.packedWeightTexture = tex;
 						unpackWeight.shader.index = i;
 						unpackWeight.render();
+						engine.popTarget();
 					}
 					tile.generateWeightArray();
 					tex.dispose();
 				}
 				case"i":
 				if( index ) {
+					tile.indexMapResource = res;
 					var tex = res.toTexture();
 					if( tile.surfaceIndexMap == null ) @:privateAccess tile.refreshIndexMap();
 					h3d.pass.Copy.run(tex, tile.surfaceIndexMap);
