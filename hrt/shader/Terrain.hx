@@ -122,8 +122,8 @@ class Terrain extends hxsl.Shader {
 				var tile = abs(abs(floor(input.position.x)) % 2 - abs(floor(input.position.y)) % 2);
 				pixelColor = vec4(mix(vec3(0.4), vec3(0.1), tile), 1.0);
 				transformedNormal = vec3(0,0,1) * TBN;
-				roughnessValue = mix(0.9, 0.6, tile);
-				metalnessValue = mix(0.4, 0, tile);
+				roughnessValue = mix(0.1, 0.9, tile);
+				metalnessValue = mix(1.0, 0, tile);
 				occlusionValue = 1;
 				emissiveValue = 0;
 			}

@@ -584,6 +584,7 @@ class TerrainEditor {
 			case Delete: deleteTile(pos, ctx);
 			default:
 		}
+		terrainPrefab.modified = true;
 	}
 
 	function useBrush( from : h3d.Vector, to : h3d.Vector, ctx : Context ) {
@@ -804,6 +805,7 @@ class TerrainEditor {
 	}
 
 	function removeSurface( index :Int, onChange : Void -> Void ) {
+		terrainPrefab.modified = true;
 		var terrainRevertData = new TerrainRevertData();
 		var tileRevertDatas = new Array<TileRevertData>();
 		for( tile in terrainPrefab.terrain.tiles )
@@ -1089,6 +1091,7 @@ class TerrainEditor {
 	}
 
 	function onSurfaceAdd( props : Element, ctx : EditContext, path : String ) {
+		terrainPrefab.modified = true;
 		if( path == null )
 			return;
 		var split : Array<String> = [];

@@ -39,6 +39,7 @@ class Terrain extends Object3D {
 	// Utility
 	var tmpSurfacesProps : Array<SurfaceProps> = [];
 	var unpackWeight = new h3d.pass.ScreenFx(new UnpackWeight());
+	var modified = false;
 
 	#if editor
 	var packWeight = new h3d.pass.ScreenFx(new PackWeight());
@@ -109,7 +110,10 @@ class Terrain extends Object3D {
 		#if editor
 		obj.autoCreateTile = autoCreateTile;
 	 	obj.showChecker = terrain.showChecker;
-		if( editor != null && terrain.surfaces.length > 0 ) editor.saveTextures();
+		if( modified ) {
+			modified = false;
+			if( editor != null && terrain.surfaces.length > 0 ) editor.saveTextures();
+		}
 		#end
 
 		return obj;
@@ -158,20 +162,24 @@ class Terrain extends Object3D {
 				}
 				case "w":
 				if( weight ) {
+					tile.weightMapResource = res;
 					var tex = res.toTexture();
 					if( tile.surfaceWeights.length == 0 ) @:privateAccess tile.refreshSurfaceWeights();
+					var engine = h3d.Engine.getCurrent();
 					for(i in 0 ... tile.surfaceWeights.length){
-						h3d.Engine.getCurrent().pushTarget(tile.surfaceWeights[i]);
+						engine.pushTarget(tile.surfaceWeights[i]);
 						unpackWeight.shader.indexMap = tile.surfaceIndexMap;
 						unpackWeight.shader.packedWeightTexture = tex;
 						unpackWeight.shader.index = i;
 						unpackWeight.render();
+						engine.popTarget();
 					}
 					tile.generateWeightArray();
 					tex.dispose();
 				}
 				case"i":
 				if( index ) {
+					tile.indexMapResource = res;
 					var tex = res.toTexture();
 					if( tile.surfaceIndexMap == null ) @:privateAccess tile.refreshIndexMap();
 					h3d.pass.Copy.run(tex, tile.surfaceIndexMap);
@@ -517,9 +525,11 @@ class Terrain extends Object3D {
 				tile.blendEdges();
 			if( editor != null )
 				editor.refresh();
+			modified = true;
 		});
 
 		ctx.properties.add(props, this, function(pname) {
+			modified = true;
 			ctx.onChange(this, pname);
 		});
 
