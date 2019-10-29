@@ -1315,38 +1315,27 @@ class FXEditor extends FileView {
 			menuItems.push(trackItem("Visibility", [{name: "visibility", clamp: [0., 1.]}]));
 		}
 		if(obj3dElt != null) {
-			/*var light = Std.downcast(obj3dElt, Light);
-			if( light != null ) {
-				menuItems.push({ label: "Position", menu: groupedTracks("position", xyzwTracks(3)), });
-				menuItems.push({ label: "Rotation", menu: groupedTracks("rotation", xyzwTracks(3)), });
-				menuItems.push(trackItem("Color", hslTracks(), "color"));
-				menuItems.push(trackItem("Power", [{name: "power", clamp: [0., 10.]}]));
-				menuItems.push(trackItem("Size", [{name: "size", clamp: [0., 5.]}]));
-				menuItems.push(trackItem("Range", [{name: "visibility", clamp: [1., 20.]}]));
-			}
-			else {
-				var scaleTracks = groupedTracks("scale", xyzwTracks(3));
-				scaleTracks.unshift(trackItem("Uniform", [{name: "scale"}]));
-				menuItems.push({
-					label: "Position",
-					menu: groupedTracks("position", xyzwTracks(3)),
-				});
-				menuItems.push({
-					label: "Rotation",
-					menu: groupedTracks("rotation", xyzwTracks(3)),
-				});
-				menuItems.push({
-					label: "Scale",
-					menu: scaleTracks,
-				});
-				menuItems.push({
-					label: "Color",
-					menu: [
-						trackItem("HSL", hslTracks(), "color"),
-						trackItem("Alpha", alphaTrack(), "color")
-					]
-				});
-			}*/
+			var scaleTracks = groupedTracks("scale", xyzwTracks(3));
+			scaleTracks.unshift(trackItem("Uniform", [{name: "scale"}]));
+			menuItems.push({
+				label: "Position",
+				menu: groupedTracks("position", xyzwTracks(3)),
+			});
+			menuItems.push({
+				label: "Rotation",
+				menu: groupedTracks("rotation", xyzwTracks(3)),
+			});
+			menuItems.push({
+				label: "Scale",
+				menu: scaleTracks,
+			});
+			menuItems.push({
+				label: "Color",
+				menu: [
+					trackItem("HSL", hslTracks(), "color"),
+					trackItem("Alpha", alphaTrack(), "color")
+				]
+			});
 			menuItems.push(trackItem("Visibility", [{name: "visibility", clamp: [0., 1.]}]));
 		}
 		if(shaderElt != null && shaderElt.shaderDef != null) {
