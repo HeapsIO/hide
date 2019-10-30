@@ -57,7 +57,7 @@ class Terrain extends hxsl.Shader {
 			tangentFragPos = transformedPosition * TBN;
 		}
 
-		function getWeight( i : Vec3,  uv : Vec2 ) : Vec3 {
+		function getWeight( i : IVec3,  uv : Vec2 ) : Vec3 {
 			var weight = vec3(0);
 			weight.x = weightTextures.getLod(vec3(uv, i.x), 0).r;
 			if( i.y != i.x ) weight.y = weightTextures.getLod(vec3(uv, i.y), 0).r;
@@ -65,7 +65,7 @@ class Terrain extends hxsl.Shader {
 			return weight;
 		}
 
-		function getDepth( i : Vec3,  uv : Vec2 ) : Vec3 {
+		function getDepth( i : IVec3,  uv : Vec2 ) : Vec3 {
 			var depth = vec3(0);
 			if( w.x > 0 ) depth.x = pbrTextures.getLod(getsurfaceUV(i.x, uv), 0).a;
 			if( w.y > 0 ) depth.y = pbrTextures.getLod(getsurfaceUV(i.y, uv), 0).a;
@@ -74,8 +74,8 @@ class Terrain extends hxsl.Shader {
 		}
 
 		var w : Vec3;
-		var i : Vec3;
-		function getPOMUV( i : Vec3, uv : Vec2 ) : Vec2 {
+		var i : IVec3;
+		function getPOMUV( i : IVec3, uv : Vec2 ) : Vec2 {
 			if( !PARALLAX )
 				return uv;
 			else {
@@ -91,7 +91,7 @@ class Terrain extends hxsl.Shader {
 				while( curLayerDepth < curDepth ) {
 					curUV += delta;
 					prevDepth = curDepth;
-					i = surfaceIndexMap.getLod(curUV, 0).rgb * 255;
+					i = ivec3(surfaceIndexMap.getLod(curUV, 0).rgb * 255);
 					w = getWeight(i, curUV);
 					depth = getDepth(i, curUV);
 					curDepth = depth.dot(w);
@@ -105,14 +105,13 @@ class Terrain extends hxsl.Shader {
 			}
 		}
 
-		function getsurfaceUV( i : Float, uv : Vec2 ) : Vec3 {
-			var id = int(i);
+		function getsurfaceUV( id : Int, uv : Vec2 ) : Vec3 {
 			var angle = surfaceParams[id].w;
 			var offset = vec2(surfaceParams[id].y, surfaceParams[id].z);
 			var tilling = surfaceParams[id].x;
 			var worldUV = (uv + tileIndex) * tilling + offset;
 			var res = vec2( worldUV.x * cos(angle) - worldUV.y * sin(angle) , worldUV.y * cos(angle) + worldUV.x * sin(angle));
-			var surfaceUV = vec3(res % 1, i);
+			var surfaceUV = vec3(res % 1, id);
 			return surfaceUV;
 		}
 
@@ -139,11 +138,11 @@ class Terrain extends hxsl.Shader {
 				occlusionValue = 1;
 			}
 			else {
-				i = surfaceIndexMap.get(calculatedUV).rgb * 255;
+				i = ivec3(surfaceIndexMap.get(calculatedUV).rgb * 255);
 				w = getWeight(i, calculatedUV);
 				var pomUV = getPOMUV(i, calculatedUV);
 				if( PARALLAX ) {
-					i = surfaceIndexMap.get(pomUV).rgb * 255;
+					i = ivec3(surfaceIndexMap.get(pomUV).rgb * 255);
 					w = getWeight(i, pomUV);
 				}
 				var h = vec3(0);
