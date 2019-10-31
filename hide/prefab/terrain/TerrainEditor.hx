@@ -753,6 +753,7 @@ class TerrainEditor {
 			};
 
 			interactive.onRelease = function(e) {
+				e.propagate = false;
 				var worldPos = getBrushPlanePos(s2d.mouseX, s2d.mouseY, ctx);
 				remainingDist = 0;
 				lastPos = null;
