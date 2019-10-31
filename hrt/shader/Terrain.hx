@@ -19,6 +19,11 @@ class Terrain extends hxsl.Shader {
 		@param var albedoTextures : Sampler2DArray;
 		@param var normalTextures : Sampler2DArray;
 		@param var pbrTextures : Sampler2DArray;
+		/*
+			We need to use a texture array so each blend factor is separate.
+			This allows us to fetch in bilinear without worrying about interpolation
+			between weights corresponding to different indexes.
+		*/
 		@param var weightTextures : Sampler2DArray;
 		@param var surfaceIndexMap : Sampler2D;
 		@param var heightMap : Sampler2D;
