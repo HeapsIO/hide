@@ -284,13 +284,14 @@ class Curve extends Prefab {
 	}
 
 	public static function getCurves(parent: Prefab, prefix: String) {
-		var ret = [];
+		var ret = null;
 		for(c in parent.children) {
 			if(!c.enabled) continue;
 			if(c.name.split(".")[0] != prefix)
 				continue;
 			var curve = c.to(Curve);
 			if(curve == null) continue;
+			if (ret == null) ret = [];
 			ret.push(curve);
 		}
 		return ret;
