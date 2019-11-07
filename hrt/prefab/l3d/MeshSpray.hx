@@ -13,6 +13,7 @@ class MeshSpray extends Object3D {
 	var density : Int = 10;
 	var densityOffset : Int = 0;
 	var radius : Float = 10.0;
+	var deleteRadius : Float = 10.0;
 	var scale : Float = 1.0;
 	var scaleOffset : Float = 0.1;
 	var rotation : Float = 0.0;
@@ -45,6 +46,7 @@ class MeshSpray extends Object3D {
 		obj.density = density;
 		obj.densityOffset = densityOffset;
 		obj.radius = radius;
+		obj.deleteRadius = deleteRadius;
 		obj.scale = scale;
 		obj.scaleOffset = scaleOffset;
 		obj.rotation = rotation;
@@ -62,6 +64,8 @@ class MeshSpray extends Object3D {
 			densityOffset = obj.densityOffset;
 		if (obj.radius != null)
 			radius = obj.radius;
+		if (obj.deleteRadius != null)
+			deleteRadius = obj.deleteRadius;
 		if (obj.scale != null)
 			scale = obj.scale;
 		if (obj.scaleOffset != null)
@@ -84,6 +88,8 @@ class MeshSpray extends Object3D {
 	}
 
 	var wasEdited = false;
+
+	var previewModels : Array<hrt.prefab.Prefab> = [];
 	override function edit( ectx : EditContext ) {
 		sceneEditor = ectx.scene.editor;
 
@@ -98,40 +104,75 @@ class MeshSpray extends Object3D {
 
 		};
 
+		interactive.onKeyDown = function(e) {
+			if (e.keyCode == hxd.Key.R) {
+				if (lastSpray < Date.now().getTime() - 100) {
+					if( !K.isDown( K.SHIFT) ) {
+						if (previewModels.length > 0) {
+							sceneEditor.deleteElements(previewModels, () -> { }, false);
+							sceneEditor.selectObjects([this]);
+							previewModels = [];
+						}
+						var worldPos = getMousePicker(s2d.mouseX, s2d.mouseY);
+						previewMeshesAround(ctx, worldPos);
+					}
+					lastSpray = Date.now().getTime();
+				}
+			}
+		}
+
 		interactive.onPush = function(e) {
 			e.propagate = false;
 			sprayEnable = true;
 			var worldPos = getMousePicker(s2d.mouseX, s2d.mouseY);
 			if( K.isDown( K.SHIFT) )
 				removeMeshesAround(ctx, worldPos);
-			else
-				addMeshesAround(ctx, worldPos);
+			else {
+				addMeshes(ctx);
+			}
 		};
 
 		interactive.onRelease = function(e) {
 			e.propagate = false;
 			sprayEnable = false;
+
+			if (previewModels.length > 0) {
+				sceneEditor.deleteElements(previewModels, () -> { }, false);
+				sceneEditor.selectObjects([this]);
+				previewModels = [];
+			}
 		};
 
 		interactive.onMove = function(e) {
 			var worldPos = getMousePicker(s2d.mouseX, s2d.mouseY);
 
-			drawCircle(ctx, worldPos.x, worldPos.y, worldPos.z, radius, 5, 16711680);
+			var shiftPressed = K.isDown( K.SHIFT);
 
-			if( K.isDown( K.MOUSE_LEFT) ) {
-				e.propagate = false;
+			drawCircle(ctx, worldPos.x, worldPos.y, worldPos.z, (shiftPressed) ? deleteRadius : radius, 5, (shiftPressed) ? 9830400 : 38400);
+			
+			if (lastSpray < Date.now().getTime() - 100) {
+				if (previewModels.length > 0) {
+					sceneEditor.deleteElements(previewModels, () -> { }, false);
+					sceneEditor.selectObjects([this]);
+					previewModels = [];
+				}
+				
+				if( !shiftPressed ) {
+					previewMeshesAround(ctx, worldPos);
+				}
 
-				if (sprayEnable) {
+				if( K.isDown( K.MOUSE_LEFT) ) {
+					e.propagate = false;
 
-					if (lastSpray < Date.now().getTime() - 50) {
-						if( K.isDown( K.SHIFT) ) {
+					if (sprayEnable) {
+						if( shiftPressed ) {
 							removeMeshesAround(ctx, worldPos);
 						} else {
-							addMeshesAround(ctx, worldPos);
+							addMeshes(ctx);
 						}
-						lastSpray = Date.now().getTime();
 					}
 				}
+				lastSpray = Date.now().getTime();
 			}
 		};
 
@@ -149,6 +190,7 @@ class MeshSpray extends Object3D {
 		var cleanBtn = new hide.Element('<input type="button" value="Remove all meshes" /><br />').appendTo(options);
 		var repeatMeshBtn = new hide.Element('<input type="checkbox" style="margin-bottom: -5px;margin-right: 5px;" >Don\'t repeat same mesh in a row</input>').appendTo(options);
 		new hide.Element('<br /><b><i>Hold down SHIFT to remove meshes</i></b>').appendTo(options);
+		new hide.Element('<br /><b><i>Hold down R to random preview</i></b>').appendTo(options);
 
 		repeatMeshBtn.on("change", function() {
 			dontRepeatMesh = repeatMeshBtn.is(":checked");
@@ -192,6 +234,7 @@ class MeshSpray extends Object3D {
 				{ name: "density", t: PInt(1, 25), def: density },
 				{ name: "densityOffset", t: PInt(0, 10), def: densityOffset },
 				{ name: "radius", t: PFloat(0, 50), def: radius },
+				{ name: "deleteRadius", t: PFloat(0, 50), def: deleteRadius },
 				{ name: "scale", t: PFloat(0, 10), def: scale },
 				{ name: "scaleOffset", t: PFloat(0, 1), def: scaleOffset },
 				{ name: "rotation", t: PFloat(0, 180), def: rotation },
@@ -228,7 +271,7 @@ class MeshSpray extends Object3D {
 	}
 
 	var localMat = new h3d.Matrix();
-	function addMeshesAround(ctx : Context, point : h3d.col.Point) {
+	function previewMeshesAround(ctx : Context, point : h3d.col.Point) {
 		if (meshes.length == 0) {
 			throw "There is no meshes";
 		}
@@ -254,9 +297,8 @@ class MeshSpray extends Object3D {
 			}
 		}
 		var nbMeshesToPlace = computedDensity - nbMeshesInZone;
+		previewModels = [];
 		if (nbMeshesToPlace > 0) {
-			var models : Array<hrt.prefab.Prefab> = [];
-
 			var random = new hxd.Rand(Std.random(0xFFFFFF));
 
 			while (nbMeshesToPlace-- > 0) {
@@ -321,15 +363,20 @@ class MeshSpray extends Object3D {
 
 				model.setTransform(localMat);
 
-				models.push(model);
+				previewModels.push(model);
 				currentPivots.push(new h2d.col.Point(model.x, model.y));
 			}
-
-			if (models.length > 0) {
-				wasEdited = true;
-				sceneEditor.addObject(models, false, false);
+					
+			if (previewModels.length > 0) {
+				sceneEditor.addObject(previewModels, false, false);
 			}
+		}
+	}
 
+	function addMeshes(ctx : Context) {
+		if (previewModels.length > 0) {
+			wasEdited = true;
+			previewModels = [];
 		}
 	}
 
@@ -342,7 +389,7 @@ class MeshSpray extends Object3D {
 
 		var childToRemove = [];
 		inline function distance(x1 : Float, y1 : Float, x2 : Float, y2 : Float) return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
-		var fakeRadius = radius * radius;
+		var fakeRadius = deleteRadius * deleteRadius;
 		for (child in children) {
 			var model = child.to(hrt.prefab.Object3D);
 			if (distance(point2d.x, point2d.y, model.x, model.y) < fakeRadius) {
@@ -357,21 +404,20 @@ class MeshSpray extends Object3D {
 	}
 
 	public function drawCircle(ctx : Context, originX : Float, originY : Float, originZ : Float, radius: Float, thickness: Float, color) {
-		if (gBrushes == null || gBrushes.length == 0 || gBrushes[0].scaleX != radius) {
+		var newColor = h3d.Vector.fromColor(color);
+		if (gBrushes == null || gBrushes.length == 0 || gBrushes[0].scaleX != radius || gBrushes[0].material.color != newColor) {
 			if (gBrushes == null) gBrushes = [];
 			for (g in gBrushes) g.remove();
 			var gBrush = new h3d.scene.Mesh(makePrimCircle(32, 0.95), ctx.local3d);
 			gBrush.scaleX = gBrush.scaleY = radius;
 			gBrush.material.mainPass.setPassName("overlay");
 			gBrush.material.shadows = false;
-			gBrush.material.color = h3d.Vector.fromColor(color);
-			gBrush.material.color.w = 0.2;
+			gBrush.material.color = newColor;
 			gBrushes.push(gBrush);
 			gBrush = new h3d.scene.Mesh(new h3d.prim.Sphere(Math.min(radius*0.05, 0.35)), ctx.local3d);
 			gBrush.material.mainPass.setPassName("overlay");
 			gBrush.material.shadows = false;
-			gBrush.material.color = h3d.Vector.fromColor(color);
-			gBrush.material.color.w = 0.2;
+			gBrush.material.color = newColor;
 			gBrushes.push(gBrush);
 		}
 		for (g in gBrushes) g.visible = true;
