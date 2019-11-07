@@ -23,7 +23,7 @@ class MeshSpray extends Object3D {
 
 	var sprayEnable : Bool = false;
 	var interactive : h2d.Interactive;
-	var gBrush : h3d.scene.Mesh;
+	var gBrushes : Array<h3d.scene.Mesh>;
 
 	var timerCicle : haxe.Timer;
 
@@ -102,15 +102,15 @@ class MeshSpray extends Object3D {
 			e.propagate = false;
 			sprayEnable = true;
 			var worldPos = getMousePicker(s2d.mouseX, s2d.mouseY);
-			addMeshesAround(ctx, worldPos);
+			if( K.isDown( K.SHIFT) )
+				removeMeshesAround(ctx, worldPos);
+			else
+				addMeshesAround(ctx, worldPos);
 		};
 
 		interactive.onRelease = function(e) {
 			e.propagate = false;
 			sprayEnable = false;
-			if (wasEdited)
-				sceneEditor.refresh(Partial, () -> { });
-			wasEdited = false;
 		};
 
 		interactive.onMove = function(e) {
@@ -210,7 +210,10 @@ class MeshSpray extends Object3D {
 			timerCicle = new haxe.Timer(100);
 			timerCicle.run = function() {
 				timerCicle.stop();
-				gBrush.visible = false;
+				for (g in gBrushes) g.visible = false;
+				if (wasEdited)
+					sceneEditor.refresh(Partial, () -> { });
+				wasEdited = false;
 			};
 		}
 	}
@@ -354,20 +357,29 @@ class MeshSpray extends Object3D {
 	}
 
 	public function drawCircle(ctx : Context, originX : Float, originY : Float, originZ : Float, radius: Float, thickness: Float, color) {
-		if (gBrush == null || gBrush.scaleX != radius) {
-			if (gBrush != null) gBrush.remove();
-			gBrush = new h3d.scene.Mesh(makePrimCircle(32, 0.98), ctx.local3d);
+		if (gBrushes == null || gBrushes.length == 0 || gBrushes[0].scaleX != radius) {
+			if (gBrushes == null) gBrushes = [];
+			for (g in gBrushes) g.remove();
+			var gBrush = new h3d.scene.Mesh(makePrimCircle(32, 0.95), ctx.local3d);
 			gBrush.scaleX = gBrush.scaleY = radius;
 			gBrush.material.mainPass.setPassName("overlay");
 			gBrush.material.shadows = false;
 			gBrush.material.color = h3d.Vector.fromColor(color);
 			gBrush.material.color.w = 0.2;
-			gBrush.material.blendMode = AlphaAdd;
+			gBrushes.push(gBrush);
+			gBrush = new h3d.scene.Mesh(new h3d.prim.Sphere(Math.min(radius*0.05, 0.35)), ctx.local3d);
+			gBrush.material.mainPass.setPassName("overlay");
+			gBrush.material.shadows = false;
+			gBrush.material.color = h3d.Vector.fromColor(color);
+			gBrush.material.color.w = 0.2;
+			gBrushes.push(gBrush);
 		}
-		gBrush.visible = true;
-		gBrush.x = originX;
-		gBrush.y = originY;
-		gBrush.z = originZ+0.1;
+		for (g in gBrushes) g.visible = true;
+		for (g in gBrushes) {
+			g.x = originX;
+			g.y = originY;
+			g.z = originZ + 0.025;
+		}
 	}
 
 	function makePrimCircle(segments: Int, inner : Float = 0, rings : Int = 0) {
