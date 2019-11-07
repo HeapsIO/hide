@@ -106,6 +106,7 @@ class MeshSpray extends Object3D {
 
 		interactive.onKeyDown = function(e) {
 			if (e.keyCode == hxd.Key.R) {
+				lastMeshId = -1;
 				if (lastSpray < Date.now().getTime() - 100) {
 					if( !K.isDown( K.SHIFT) ) {
 						if (previewModels.length > 0) {
@@ -150,13 +151,12 @@ class MeshSpray extends Object3D {
 
 			drawCircle(ctx, worldPos.x, worldPos.y, worldPos.z, (shiftPressed) ? deleteRadius : radius, 5, (shiftPressed) ? 9830400 : 38400);
 			
-			if (lastSpray < Date.now().getTime() - 100) {
+			if (lastSpray < Date.now().getTime() - 100) {	
 				if (previewModels.length > 0) {
 					sceneEditor.deleteElements(previewModels, () -> { }, false);
 					sceneEditor.selectObjects([this]);
 					previewModels = [];
-				}
-				
+				}			
 				if( !shiftPressed ) {
 					previewMeshesAround(ctx, worldPos);
 				}
@@ -254,6 +254,11 @@ class MeshSpray extends Object3D {
 			timerCicle.run = function() {
 				timerCicle.stop();
 				for (g in gBrushes) g.visible = false;
+				if (previewModels.length > 0) {
+					sceneEditor.deleteElements(previewModels, () -> { }, false);
+					sceneEditor.selectObjects([this]);
+					previewModels = [];
+				}
 				if (wasEdited)
 					sceneEditor.refresh(Partial, () -> { });
 				wasEdited = false;
@@ -271,9 +276,16 @@ class MeshSpray extends Object3D {
 	}
 
 	var localMat = new h3d.Matrix();
+	var lastPos : h3d.col.Point;
+	var invParent : h3d.Matrix;
+	var lastMeshId = -1;
 	function previewMeshesAround(ctx : Context, point : h3d.col.Point) {
 		if (meshes.length == 0) {
 			throw "There is no meshes";
+		}
+		if (invParent == null) {
+			invParent = getTransform().clone();
+			invParent.invert();
 		}
 		var nbMeshesInZone = 0;
 		var vecRelat = point.toVector();
@@ -292,12 +304,19 @@ class MeshSpray extends Object3D {
 		for (child in children) {
 			var model = child.to(hrt.prefab.Object3D);
 			if (distance(point2d.x, point2d.y, model.x, model.y) < fakeRadius) {
+				if (previewModels.indexOf(model) != -1) continue;
 				nbMeshesInZone++;
 				currentPivots.push(new h2d.col.Point(model.x, model.y));
 			}
 		}
 		var nbMeshesToPlace = computedDensity - nbMeshesInZone;
-		previewModels = [];
+		if (computedDensity == 1)
+		if (previewModels.length > 0) {
+			sceneEditor.deleteElements(previewModels, () -> { }, false);
+			sceneEditor.selectObjects([this]);
+			previewModels = [];
+		}
+		lastPos = point;
 		if (nbMeshesToPlace > 0) {
 			var random = new hxd.Rand(Std.random(0xFFFFFF));
 
@@ -331,17 +350,24 @@ class MeshSpray extends Object3D {
 				var rotationZ = ((rotation  + randRotationOffset) % 360)/360 * 2*Math.PI;
 
 				var model = new hrt.prefab.Model(this);
-				var meshId = -1;
-				if (dontRepeatMesh && lastIndexMesh != -1 && meshes.length > 0) {
-					meshId = Std.random(meshes.length-1);
-					if (meshId >= lastIndexMesh) {
-						meshId++;
+				var meshId = lastMeshId;
+				if (meshId == -1) {
+					if (dontRepeatMesh && lastIndexMesh != -1 && meshes.length > 0) {
+						meshId = Std.random(meshes.length-1);
+						if (meshId >= lastIndexMesh) {
+							meshId++;
+						}
+					} else {
+						meshId = Std.random(meshes.length);
 					}
-				} else {
-					meshId = Std.random(meshes.length);
 				}
 				lastIndexMesh = meshId;
 				model.source = meshes[meshId];
+				if (computedDensity == 1) {
+					lastMeshId = meshId;
+				} else {
+					lastMeshId = -1;
+				}
 				model.name = extractMeshName(model.source);
 
 				localMat.initRotationZ(rotationZ);
@@ -356,9 +382,6 @@ class MeshSpray extends Object3D {
 
 				position.z = getZ(position.x, position.y);
 				localMat.setPosition(new Vector(position.x, position.y, position.z));
-
-				var invParent = getTransform().clone();
-				invParent.invert();
 				localMat.multiply(localMat, invParent);
 
 				model.setTransform(localMat);
