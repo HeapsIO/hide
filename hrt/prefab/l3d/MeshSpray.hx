@@ -397,6 +397,7 @@ class MeshSpray extends Object3D {
 	}
 
 	function addMeshes(ctx : Context) {
+		lastMeshId = -1;
 		if (previewModels.length > 0) {
 			wasEdited = true;
 			previewModels = [];
