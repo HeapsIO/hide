@@ -161,7 +161,9 @@ class TerrainMesh extends h3d.scene.Object {
 		var tile = getTile(x,y);
 		if(tile == null){
 			tile = new Tile(x, y, this);
+			#if editor
 			tile.refreshGrid();
+			#end
 			if( createTexture ) tile.refreshTex();
 			tiles.push(tile);
 		}
