@@ -73,10 +73,14 @@ class SignedDistanceField3D extends hxsl.Shader {
 		@param var alphaCutoff : Float = 0.5;
 		@param var smoothing : Float = 0.04166666666666666666666666666667; // 1/24
 		var pixelColor : Vec4;
+		@param var color : Vec4;
 
+		function median(r : Float, g : Float, b : Float) : Float {
+			return max(min(r, g), min(max(r, g), b));
+		}
 
-		function fragment() {			
-			pixelColor.a = smoothstep(alphaCutoff - smoothing, alphaCutoff + smoothing, pixelColor.a);
+		function fragment() {		
+			pixelColor = vec4(color.r, color.g, color.b, smoothstep(alphaCutoff - smoothing, alphaCutoff + smoothing, median(pixelColor.r, pixelColor.g, pixelColor.b)));
 		}
 	}
 
@@ -202,7 +206,7 @@ class Text3D extends Object3D {
 			return;
 		var mesh : h3d.scene.Mesh = cast ctx.local3d;
 		var font = hxd.res.Loader.currentInstance.load(pathFont).to(hxd.res.BitmapFont);
-		var h2dFont = font.toSdfFont(size, Alpha, cutoff, smoothing);
+		var h2dFont = font.toSdfFont(size, MultiChannel, cutoff, smoothing);
 		var h2dText = (cast ctx.local2d : h2d.Text);
 		h2dText.font = h2dFont;
 		h2dText.letterSpacing = letterSpacing;
@@ -233,9 +237,8 @@ class Text3D extends Object3D {
 			shader = new SignedDistanceField3D();
 			shader.alphaCutoff = cutoff;
 			shader.smoothing = smoothing;
+			shader.color = h3d.Vector.fromColor(color);
 			mesh.material.mainPass.addShader(shader);
-			mesh.material.color = h3d.Vector.fromColor(color);
-			mesh.material.color.w = 1;
 		}
 	}
 
