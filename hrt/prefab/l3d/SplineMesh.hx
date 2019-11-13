@@ -1,4 +1,5 @@
 package hrt.prefab.l3d;
+
 import h3d.scene.MeshBatch;
 import h3d.scene.Mesh;
 import hrt.prefab.l3d.Spline.SplinePoint;
@@ -87,6 +88,7 @@ class SplineMesh extends Spline {
 	var meshBatch : h3d.scene.MeshBatch = null;
 	var meshPrimitive : h3d.prim.MeshPrimitive = null;
 	var meshMaterial : h3d.mat.Material = null;
+	var customPass : String;
 
 	override function save() {
 		var obj : Dynamic = super.save();
@@ -96,6 +98,7 @@ class SplineMesh extends Spline {
 		obj.meshRotation = meshRotation;
 		obj.splineUVx = splineUVx;
 		obj.splineUVy = splineUVy;
+		obj.customPass = customPass;
 		return obj;
 	}
 
@@ -107,6 +110,7 @@ class SplineMesh extends Spline {
 		meshRotation = obj.meshRotation == null ? new h3d.Vector(0,0,0) : new h3d.Vector(obj.meshRotation.x, obj.meshRotation.y, obj.meshRotation.z);
 		splineUVx = obj.splineUVx == null ? false : obj.splineUVx;
 		splineUVy = obj.splineUVy == null ? false : obj.splineUVy;
+		customPass = obj.customPass;
 	}
 
 	override function make(ctx: Context) {
@@ -190,6 +194,14 @@ class SplineMesh extends Spline {
 			var splineMeshShader = createShader();
 			splineMaterial.mainPass.addShader(splineMeshShader);
 			splineMaterial.castShadows = false;
+
+			if( customPass != null ) {
+				for( p in customPass.split(",") ) {
+					if( ctx.local3d.getScene().renderer.getPassByName(p) != null )
+						splineMaterial.allocPass(p);
+				}
+			}
+
 			meshBatch = new MeshBatch(meshPrimitive, splineMaterial, ctx.local3d);
 			meshBatch.ignoreParentTransform = true;
 		}
@@ -281,6 +293,7 @@ class SplineMesh extends Spline {
 				<dl>
 					<dt>Use spline UV on X</dt><dd><input type="checkbox" field="splineUVx"/></dd>
 					<dt>Use spline UV on Y</dt><dd><input type="checkbox" field="splineUVy"/></dd>
+					<dt>Custom Pass</dt><dd><input type="text" field="customPass"/></dd>
 					<div align="center"><input type="button" value="Refresh" class="refresh"/></div>
 				</dl>
 			</div>
