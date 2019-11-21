@@ -1621,7 +1621,7 @@ class SceneEditor {
 			obj3d.updateInstance(ctx);
 	}
 
-	public function deleteElements(elts : Array<PrefabElement>, ?then: Void->Void, doRefresh : Bool = true) {
+	public function deleteElements(elts : Array<PrefabElement>, ?then: Void->Void, doRefresh : Bool = true, enableUndo : Bool = true) {
 		var fullRefresh = false;
 		var undoes = [];
 		for(elt in elts) {
@@ -1642,17 +1642,19 @@ class SceneEditor {
 		if (doRefresh)
 			refreshFunc(then != null ? then : deselect);
 
-		undo.change(Custom(function(undo) {
-			if(!undo && !fullRefresh)
-				for(e in elts) removeInstance(e);
+		if (enableUndo) {
+			undo.change(Custom(function(undo) {
+				if(!undo && !fullRefresh)
+					for(e in elts) removeInstance(e);
 
-			for(u in undoes) u(undo);
+				for(u in undoes) u(undo);
 
-			if(undo)
-				for(e in elts) makeInstance(e);
+				if(undo)
+					for(e in elts) makeInstance(e);
 
-			refreshFunc(then != null ? then : selectObjects.bind(undo ? elts : []));
-		}));
+				refreshFunc(then != null ? then : selectObjects.bind(undo ? elts : []));
+			}));
+		}
 	}
 
 	function reparentElement(e : Array<PrefabElement>, to : PrefabElement, index : Int) {

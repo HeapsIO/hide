@@ -104,14 +104,14 @@ class MeshSpray extends Object3D {
 
 		};
 
-		interactive.onKeyDown = function(e) {
+		interactive.onKeyUp = function(e) {
 			if (e.keyCode == hxd.Key.R) {
 				lastMeshId = -1;
 				if (lastSpray < Date.now().getTime() - 100) {
 					if( !K.isDown( K.SHIFT) ) {
 						if (previewModels.length > 0) {
 							sceneEditor.deleteElements(previewModels, () -> { }, false);
-							sceneEditor.selectObjects([this]);
+							sceneEditor.selectObjects([this], false);
 							previewModels = [];
 						}
 						var worldPos = getMousePicker(s2d.mouseX, s2d.mouseY);
@@ -139,7 +139,7 @@ class MeshSpray extends Object3D {
 
 			if (previewModels.length > 0) {
 				sceneEditor.deleteElements(previewModels, () -> { }, false);
-				sceneEditor.selectObjects([this]);
+				sceneEditor.selectObjects([this], false);
 				previewModels = [];
 			}
 		};
@@ -153,8 +153,8 @@ class MeshSpray extends Object3D {
 			
 			if (lastSpray < Date.now().getTime() - 100) {	
 				if (previewModels.length > 0) {
-					sceneEditor.deleteElements(previewModels, () -> { }, false);
-					sceneEditor.selectObjects([this]);
+					sceneEditor.deleteElements(previewModels, () -> { }, false, false);
+					sceneEditor.selectObjects([this], false);
 					previewModels = [];
 				}			
 				if( !shiftPressed ) {
@@ -223,7 +223,7 @@ class MeshSpray extends Object3D {
 		cleanBtn.on("click", function() {
 			if (hide.Ide.inst.confirm("Are you sure to remove all meshes for this MeshSpray ?")) {
 				sceneEditor.deleteElements(children.copy());
-				sceneEditor.selectObjects([this]);
+				sceneEditor.selectObjects([this], false);
 			}
 		});
 
@@ -244,7 +244,6 @@ class MeshSpray extends Object3D {
 	}
 
 	override function setSelected( ctx : Context, b : Bool ) {
-
 		if (timerCicle != null) {
 			timerCicle.stop();
 		}
@@ -254,9 +253,8 @@ class MeshSpray extends Object3D {
 			timerCicle.run = function() {
 				timerCicle.stop();
 				for (g in gBrushes) g.visible = false;
-				if (previewModels.length > 0) {
-					sceneEditor.deleteElements(previewModels, () -> { }, false);
-					sceneEditor.selectObjects([this]);
+				if (previewModels != null && previewModels.length > 0) {
+					sceneEditor.deleteElements(previewModels, () -> { }, false, false);
 					previewModels = [];
 				}
 				if (wasEdited)
@@ -281,7 +279,7 @@ class MeshSpray extends Object3D {
 	var lastMeshId = -1;
 	function previewMeshesAround(ctx : Context, point : h3d.col.Point) {
 		if (meshes.length == 0) {
-			throw "There is no meshes";
+			return;
 		}
 		if (invParent == null) {
 			invParent = getTransform().clone();
@@ -313,7 +311,7 @@ class MeshSpray extends Object3D {
 		if (computedDensity == 1)
 		if (previewModels.length > 0) {
 			sceneEditor.deleteElements(previewModels, () -> { }, false);
-			sceneEditor.selectObjects([this]);
+			sceneEditor.selectObjects([this], false);
 			previewModels = [];
 		}
 		lastPos = point;
@@ -351,6 +349,7 @@ class MeshSpray extends Object3D {
 
 				var model = new hrt.prefab.Model(this);
 				var meshId = lastMeshId;
+				trace(meshId);
 				if (meshId == -1) {
 					if (dontRepeatMesh && lastIndexMesh != -1 && meshes.length > 0) {
 						meshId = Std.random(meshes.length-1);
@@ -423,7 +422,7 @@ class MeshSpray extends Object3D {
 		if (childToRemove.length > 0) {
 			wasEdited = true;
 			sceneEditor.deleteElements(childToRemove, () -> { }, false);
-			sceneEditor.selectObjects([this]);
+			sceneEditor.selectObjects([this], false);
 		}
 	}
 
