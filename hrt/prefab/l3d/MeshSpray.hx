@@ -349,7 +349,6 @@ class MeshSpray extends Object3D {
 
 				var model = new hrt.prefab.Model(this);
 				var meshId = lastMeshId;
-				trace(meshId);
 				if (meshId == -1) {
 					if (dontRepeatMesh && lastIndexMesh != -1 && meshes.length > 0) {
 						meshId = Std.random(meshes.length-1);
