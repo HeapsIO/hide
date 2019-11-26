@@ -5,6 +5,7 @@ typedef GlobalsDef = haxe.DynamicAccess<{
 	var context : String;
 	var events : String;
 	var evalTo : String;
+	var allowGlobalsDefine : Bool;
 	var cdbEnums : Array<String>;
 }>;
 
@@ -60,6 +61,7 @@ class ScriptChecker {
 
 		var cdbPack : String = config.get("script.cdbPackage");
 		var context = null;
+		var allowGlobalsDefine = false;
 		for( api in apis ) {
 			for( f in api.globals.keys() ) {
 				var tname = api.globals.get(f);
@@ -92,6 +94,9 @@ class ScriptChecker {
 
 			if( api.context != null )
 				context = api.context;
+
+			if( api.allowGlobalsDefine != null )
+				allowGlobalsDefine = api.allowGlobalsDefine;
 
 			if( api.events != null ) {
 				for( f in getFields(api.events) )
@@ -128,10 +133,15 @@ class ScriptChecker {
 				this.evalTo = api.evalTo;
 		}
 		if( context != null ) {
-			var fields = getFields(context);
-			for( f in fields )
-				checker.setGlobal(f.name, f.t);
+			switch( checker.types.resolve(context) ) {
+			case TInst(c,_):
+				for( f in c.fields ) if( f.t.match(TFun(_)) ) f.isPublic = true; // allow access to private methods
+				checker.setGlobals(c);
+			default: error(context+" is not a class");
+			}
 		}
+		checker.allowUntypedMeta = true;
+		checker.allowGlobalsDefine = allowGlobalsDefine;
 	}
 
 	function getFields( tpath : String ) {
@@ -140,7 +150,7 @@ class ScriptChecker {
 			error("Missing type "+tpath);
 		var fl = checker.getFields(t);
 		if( fl == null )
-			error(tpath+" context is not a class");
+			error(tpath+" is not a class");
 		return fl;
 	}
 
@@ -250,7 +260,7 @@ class ScriptEditor extends CodeEditor {
 				for( f in files )
 					ide.fileWatcher.register(f, function() {
 						@:privateAccess ScriptChecker.TYPES_SAVE = [];
-						haxe.Timer.delay(function() { checker.reload(); doCheckScript(); }, 100);
+						haxe.Timer.delay(function() { try checker.reload() catch( e : Dynamic ) {}; doCheckScript(); }, 100);
 					}, root);
 			}
 		}
