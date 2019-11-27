@@ -1073,11 +1073,12 @@ class SceneEditor {
 		scene.init(ctx.local3d);
 	}
 
-	public function addObject(elts : Array<PrefabElement>) {
+	public function addObject(elts : Array<PrefabElement>, selectObj : Bool = true, doRefresh : Bool = true) {
 		for (e in elts) {
 			makeInstance(e);
 		}
-		refresh(Partial, () -> selectObjects(elts));
+		if (doRefresh)
+			refresh(Partial, if (selectObj) () -> selectObjects(elts) else null);
 		undo.change(Custom(function(undo) {
 			var fullRefresh = false;
 			if(undo) {
@@ -1620,7 +1621,7 @@ class SceneEditor {
 			obj3d.updateInstance(ctx);
 	}
 
-	public function deleteElements(elts : Array<PrefabElement>, ?then: Void->Void) {
+	public function deleteElements(elts : Array<PrefabElement>, ?then: Void->Void, doRefresh : Bool = true, enableUndo : Bool = true) {
 		var fullRefresh = false;
 		var undoes = [];
 		for(elt in elts) {
@@ -1638,19 +1639,22 @@ class SceneEditor {
 			refresh(fullRefresh ? Full : Partial, then);
 		}
 
-		refreshFunc(then != null ? then : deselect);
+		if (doRefresh)
+			refreshFunc(then != null ? then : deselect);
 
-		undo.change(Custom(function(undo) {
-			if(!undo && !fullRefresh)
-				for(e in elts) removeInstance(e);
+		if (enableUndo) {
+			undo.change(Custom(function(undo) {
+				if(!undo && !fullRefresh)
+					for(e in elts) removeInstance(e);
 
-			for(u in undoes) u(undo);
+				for(u in undoes) u(undo);
 
-			if(undo)
-				for(e in elts) makeInstance(e);
+				if(undo)
+					for(e in elts) makeInstance(e);
 
-			refreshFunc(then != null ? then : selectObjects.bind(undo ? elts : []));
-		}));
+				refreshFunc(then != null ? then : selectObjects.bind(undo ? elts : []));
+			}));
+		}
 	}
 
 	function reparentElement(e : Array<PrefabElement>, to : PrefabElement, index : Int) {

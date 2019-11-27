@@ -730,19 +730,20 @@ class TerrainEditor {
 			interactive.cancelEvents = false;
 
 			interactive.onWheel = function(e) {
+				e.propagate = true;
 				var worldPos = getBrushPlanePos(s2d.mouseX, s2d.mouseY, ctx);
 				renderTerrainUV(ctx);
 				drawBrushPreview(worldPos, ctx);
 			};
 
 			interactive.onPush = function(e) {
+				e.propagate = false;
 				currentBrush.brushMode.lockDir = K.isDown(K.ALT);
 				currentBrush.brushMode.subAction = K.isDown(K.SHIFT);
 				currentBrush.brushMode.snapToGrid = K.isDown(K.CTRL);
 				var worldPos = getBrushPlanePos(s2d.mouseX, s2d.mouseY, ctx);
 				if( K.isDown( K.MOUSE_LEFT) ) {
 					currentBrush.firstClick = true;
-					e.propagate = false;
 					lastPos = worldPos.clone();
 					if( currentBrush.isValid() ) {
 						useBrush( lastPos, worldPos, ctx);
@@ -753,6 +754,7 @@ class TerrainEditor {
 			};
 
 			interactive.onRelease = function(e) {
+				e.propagate = false;
 				var worldPos = getBrushPlanePos(s2d.mouseX, s2d.mouseY, ctx);
 				remainingDist = 0;
 				lastPos = null;
@@ -793,8 +795,10 @@ class TerrainEditor {
 						lastPos = worldPos;
 					}
 				}
-				else
+				else {
 					renderTerrainUV(ctx);
+					e.propagate = true;
+				}
 				drawBrushPreview(worldPos, ctx);
 			};
 		}

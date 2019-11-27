@@ -56,7 +56,7 @@ class Text extends Object2D {
 		}
 		if (pathFont != null && pathFont.length > 0) {
 			var font = hxd.res.Loader.currentInstance.load(pathFont).to(hxd.res.BitmapFont);
-			h2dText.font = font.toSdfFont(size, Alpha, cutoff, smoothing);
+			h2dText.font = font.toSdfFont(size, MultiChannel, cutoff, smoothing);
 		}
 		#if editor
 			if (propName == "text") {

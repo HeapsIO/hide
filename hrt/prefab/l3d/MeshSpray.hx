@@ -13,6 +13,7 @@ class MeshSpray extends Object3D {
 	var density : Int = 10;
 	var densityOffset : Int = 0;
 	var radius : Float = 10.0;
+	var deleteRadius : Float = 10.0;
 	var scale : Float = 1.0;
 	var scaleOffset : Float = 0.1;
 	var rotation : Float = 0.0;
@@ -23,7 +24,7 @@ class MeshSpray extends Object3D {
 
 	var sprayEnable : Bool = false;
 	var interactive : h2d.Interactive;
-	var gBrush : h3d.scene.Graphics;
+	var gBrushes : Array<h3d.scene.Mesh>;
 
 	var timerCicle : haxe.Timer;
 
@@ -45,6 +46,7 @@ class MeshSpray extends Object3D {
 		obj.density = density;
 		obj.densityOffset = densityOffset;
 		obj.radius = radius;
+		obj.deleteRadius = deleteRadius;
 		obj.scale = scale;
 		obj.scaleOffset = scaleOffset;
 		obj.rotation = rotation;
@@ -62,6 +64,8 @@ class MeshSpray extends Object3D {
 			densityOffset = obj.densityOffset;
 		if (obj.radius != null)
 			radius = obj.radius;
+		if (obj.deleteRadius != null)
+			deleteRadius = obj.deleteRadius;
 		if (obj.scale != null)
 			scale = obj.scale;
 		if (obj.scaleOffset != null)
@@ -83,6 +87,9 @@ class MeshSpray extends Object3D {
 		return childParts[childParts.length - 1].split(".")[0];
 	}
 
+	var wasEdited = false;
+
+	var previewModels : Array<hrt.prefab.Prefab> = [];
 	override function edit( ectx : EditContext ) {
 		sceneEditor = ectx.scene.editor;
 
@@ -97,36 +104,75 @@ class MeshSpray extends Object3D {
 
 		};
 
+		interactive.onKeyUp = function(e) {
+			if (e.keyCode == hxd.Key.R) {
+				lastMeshId = -1;
+				if (lastSpray < Date.now().getTime() - 100) {
+					if( !K.isDown( K.SHIFT) ) {
+						if (previewModels.length > 0) {
+							sceneEditor.deleteElements(previewModels, () -> { }, false);
+							sceneEditor.selectObjects([this], false);
+							previewModels = [];
+						}
+						var worldPos = getMousePicker(s2d.mouseX, s2d.mouseY);
+						previewMeshesAround(ctx, worldPos);
+					}
+					lastSpray = Date.now().getTime();
+				}
+			}
+		}
+
 		interactive.onPush = function(e) {
 			e.propagate = false;
 			sprayEnable = true;
-
+			var worldPos = getMousePicker(s2d.mouseX, s2d.mouseY);
+			if( K.isDown( K.SHIFT) )
+				removeMeshesAround(ctx, worldPos);
+			else {
+				addMeshes(ctx);
+			}
 		};
 
 		interactive.onRelease = function(e) {
 			e.propagate = false;
 			sprayEnable = false;
+
+			if (previewModels.length > 0) {
+				sceneEditor.deleteElements(previewModels, () -> { }, false);
+				sceneEditor.selectObjects([this], false);
+				previewModels = [];
+			}
 		};
 
 		interactive.onMove = function(e) {
-			var worldPos = screenToWorld(s2d.mouseX, s2d.mouseY);
+			var worldPos = getMousePicker(s2d.mouseX, s2d.mouseY);
 
-			drawCircle(ctx, worldPos.x, worldPos.y, getZ(worldPos.x, worldPos.y), radius, 2, 16711680);
+			var shiftPressed = K.isDown( K.SHIFT);
 
-			if( K.isDown( K.MOUSE_LEFT) ) {
-				e.propagate = false;
+			drawCircle(ctx, worldPos.x, worldPos.y, worldPos.z, (shiftPressed) ? deleteRadius : radius, 5, (shiftPressed) ? 9830400 : 38400);
+			
+			if (lastSpray < Date.now().getTime() - 100) {	
+				if (previewModels.length > 0) {
+					sceneEditor.deleteElements(previewModels, () -> { }, false, false);
+					sceneEditor.selectObjects([this], false);
+					previewModels = [];
+				}			
+				if( !shiftPressed ) {
+					previewMeshesAround(ctx, worldPos);
+				}
 
-				if (sprayEnable) {
+				if( K.isDown( K.MOUSE_LEFT) ) {
+					e.propagate = false;
 
-					if (lastSpray < Date.now().getTime() - 50) {
-						if( K.isDown( K.SHIFT) ) {
+					if (sprayEnable) {
+						if( shiftPressed ) {
 							removeMeshesAround(ctx, worldPos);
 						} else {
-							addMeshesAround(ctx, worldPos);
+							addMeshes(ctx);
 						}
-						lastSpray = Date.now().getTime();
 					}
 				}
+				lastSpray = Date.now().getTime();
 			}
 		};
 
@@ -144,6 +190,7 @@ class MeshSpray extends Object3D {
 		var cleanBtn = new hide.Element('<input type="button" value="Remove all meshes" /><br />').appendTo(options);
 		var repeatMeshBtn = new hide.Element('<input type="checkbox" style="margin-bottom: -5px;margin-right: 5px;" >Don\'t repeat same mesh in a row</input>').appendTo(options);
 		new hide.Element('<br /><b><i>Hold down SHIFT to remove meshes</i></b>').appendTo(options);
+		new hide.Element('<br /><b><i>Hold down R to random preview</i></b>').appendTo(options);
 
 		repeatMeshBtn.on("change", function() {
 			dontRepeatMesh = repeatMeshBtn.is(":checked");
@@ -176,7 +223,7 @@ class MeshSpray extends Object3D {
 		cleanBtn.on("click", function() {
 			if (hide.Ide.inst.confirm("Are you sure to remove all meshes for this MeshSpray ?")) {
 				sceneEditor.deleteElements(children.copy());
-				sceneEditor.selectObjects([this]);
+				sceneEditor.selectObjects([this], false);
 			}
 		});
 
@@ -187,6 +234,7 @@ class MeshSpray extends Object3D {
 				{ name: "density", t: PInt(1, 25), def: density },
 				{ name: "densityOffset", t: PInt(0, 10), def: densityOffset },
 				{ name: "radius", t: PFloat(0, 50), def: radius },
+				{ name: "deleteRadius", t: PFloat(0, 50), def: deleteRadius },
 				{ name: "scale", t: PFloat(0, 10), def: scale },
 				{ name: "scaleOffset", t: PFloat(0, 1), def: scaleOffset },
 				{ name: "rotation", t: PFloat(0, 180), def: rotation },
@@ -196,7 +244,6 @@ class MeshSpray extends Object3D {
 	}
 
 	override function setSelected( ctx : Context, b : Bool ) {
-
 		if (timerCicle != null) {
 			timerCicle.stop();
 		}
@@ -205,7 +252,14 @@ class MeshSpray extends Object3D {
 			timerCicle = new haxe.Timer(100);
 			timerCicle.run = function() {
 				timerCicle.stop();
-				if (gBrush != null) gBrush.remove();
+				for (g in gBrushes) g.visible = false;
+				if (previewModels != null && previewModels.length > 0) {
+					sceneEditor.deleteElements(previewModels, () -> { }, false, false);
+					previewModels = [];
+				}
+				if (wasEdited)
+					sceneEditor.refresh(Partial, () -> { });
+				wasEdited = false;
 			};
 		}
 	}
@@ -219,9 +273,17 @@ class MeshSpray extends Object3D {
 		meshes.remove(path);
 	}
 
-	function addMeshesAround(ctx : Context, point : h3d.col.Point) {
+	var localMat = new h3d.Matrix();
+	var lastPos : h3d.col.Point;
+	var invParent : h3d.Matrix;
+	var lastMeshId = -1;
+	function previewMeshesAround(ctx : Context, point : h3d.col.Point) {
 		if (meshes.length == 0) {
-			throw "There is no meshes";
+			return;
+		}
+		if (invParent == null) {
+			invParent = getTransform().clone();
+			invParent.invert();
 		}
 		var nbMeshesInZone = 0;
 		var vecRelat = point.toVector();
@@ -240,14 +302,20 @@ class MeshSpray extends Object3D {
 		for (child in children) {
 			var model = child.to(hrt.prefab.Object3D);
 			if (distance(point2d.x, point2d.y, model.x, model.y) < fakeRadius) {
+				if (previewModels.indexOf(model) != -1) continue;
 				nbMeshesInZone++;
 				currentPivots.push(new h2d.col.Point(model.x, model.y));
 			}
 		}
 		var nbMeshesToPlace = computedDensity - nbMeshesInZone;
+		if (computedDensity == 1)
+		if (previewModels.length > 0) {
+			sceneEditor.deleteElements(previewModels, () -> { }, false);
+			sceneEditor.selectObjects([this], false);
+			previewModels = [];
+		}
+		lastPos = point;
 		if (nbMeshesToPlace > 0) {
-			var models : Array<hrt.prefab.Prefab> = [];
-
 			var random = new hxd.Rand(Std.random(0xFFFFFF));
 
 			while (nbMeshesToPlace-- > 0) {
@@ -280,20 +348,26 @@ class MeshSpray extends Object3D {
 				var rotationZ = ((rotation  + randRotationOffset) % 360)/360 * 2*Math.PI;
 
 				var model = new hrt.prefab.Model(this);
-				var meshId = -1;
-				if (dontRepeatMesh && lastIndexMesh != -1 && meshes.length > 0) {
-					meshId = Std.random(meshes.length-1);
-					if (meshId >= lastIndexMesh) {
-						meshId++;
+				var meshId = lastMeshId;
+				if (meshId == -1) {
+					if (dontRepeatMesh && lastIndexMesh != -1 && meshes.length > 0) {
+						meshId = Std.random(meshes.length-1);
+						if (meshId >= lastIndexMesh) {
+							meshId++;
+						}
+					} else {
+						meshId = Std.random(meshes.length);
 					}
-				} else {
-					meshId = Std.random(meshes.length);
 				}
 				lastIndexMesh = meshId;
 				model.source = meshes[meshId];
+				if (computedDensity == 1) {
+					lastMeshId = meshId;
+				} else {
+					lastMeshId = -1;
+				}
 				model.name = extractMeshName(model.source);
 
-				var localMat = new h3d.Matrix();
 				localMat.initRotationZ(rotationZ);
 
 				var randScaleOffset = random.rand() * scaleOffset;
@@ -306,19 +380,25 @@ class MeshSpray extends Object3D {
 
 				position.z = getZ(position.x, position.y);
 				localMat.setPosition(new Vector(position.x, position.y, position.z));
-
-				var invParent = getTransform().clone();
-				invParent.invert();
 				localMat.multiply(localMat, invParent);
 
 				model.setTransform(localMat);
 
-				models.push(model);
+				previewModels.push(model);
 				currentPivots.push(new h2d.col.Point(model.x, model.y));
 			}
+					
+			if (previewModels.length > 0) {
+				sceneEditor.addObject(previewModels, false, false);
+			}
+		}
+	}
 
-			sceneEditor.addObject(models);
-			sceneEditor.selectObjects([this]);
+	function addMeshes(ctx : Context) {
+		lastMeshId = -1;
+		if (previewModels.length > 0) {
+			wasEdited = true;
+			previewModels = [];
 		}
 	}
 
@@ -331,50 +411,147 @@ class MeshSpray extends Object3D {
 
 		var childToRemove = [];
 		inline function distance(x1 : Float, y1 : Float, x2 : Float, y2 : Float) return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
-		var fakeRadius = radius * radius;
+		var fakeRadius = deleteRadius * deleteRadius;
 		for (child in children) {
 			var model = child.to(hrt.prefab.Object3D);
 			if (distance(point2d.x, point2d.y, model.x, model.y) < fakeRadius) {
 				childToRemove.push(child);
 			}
 		}
-		sceneEditor.deleteElements(childToRemove);
-		sceneEditor.selectObjects([this]);
+		if (childToRemove.length > 0) {
+			wasEdited = true;
+			sceneEditor.deleteElements(childToRemove, () -> { }, false);
+			sceneEditor.selectObjects([this], false);
+		}
 	}
 
 	public function drawCircle(ctx : Context, originX : Float, originY : Float, originZ : Float, radius: Float, thickness: Float, color) {
-		if (gBrush != null) gBrush.remove();
-		gBrush = new h3d.scene.Graphics(ctx.local3d);
-		gBrush.material.props = h3d.mat.MaterialSetup.current.getDefaults("fx");
-		gBrush.material.mainPass.setPassName("overlay");
-		gBrush.material.shadows = false;
-		gBrush.setPosition(originX, originY, originZ + 0.15);
-		gBrush.lineStyle(thickness, color, 1.0);
-		gBrush.moveTo(radius, 0, 0);
-		var nsegments = 32;
-		for(i in 0...nsegments) {
-			var theta = Math.PI * 2 * (i+1)/nsegments;
-			gBrush.lineTo(Math.cos(theta) * radius, Math.sin(theta) * radius, 0);
+		var newColor = h3d.Vector.fromColor(color);
+		if (gBrushes == null || gBrushes.length == 0 || gBrushes[0].scaleX != radius || gBrushes[0].material.color != newColor) {
+			if (gBrushes == null) gBrushes = [];
+			for (g in gBrushes) g.remove();
+			var gBrush = new h3d.scene.Mesh(makePrimCircle(32, 0.95), ctx.local3d);
+			gBrush.scaleX = gBrush.scaleY = radius;
+			gBrush.material.mainPass.setPassName("overlay");
+			gBrush.material.shadows = false;
+			gBrush.material.color = newColor;
+			gBrushes.push(gBrush);
+			gBrush = new h3d.scene.Mesh(new h3d.prim.Sphere(Math.min(radius*0.05, 0.35)), ctx.local3d);
+			gBrush.material.mainPass.setPassName("overlay");
+			gBrush.material.shadows = false;
+			gBrush.material.color = newColor;
+			gBrushes.push(gBrush);
 		}
-
-		gBrush.lineStyle();
+		for (g in gBrushes) g.visible = true;
+		for (g in gBrushes) {
+			g.x = originX;
+			g.y = originY;
+			g.z = originZ + 0.025;
+		}
 	}
 
-	// GET Z with TERRAIN
+	function makePrimCircle(segments: Int, inner : Float = 0, rings : Int = 0) {
+		var points = [];
+		var uvs = [];
+		var indices = [];
+		++segments;
+		var anglerad = hxd.Math.degToRad(360);
+		for(i in 0...segments) {
+			var t = i / (segments - 1);
+			var a = hxd.Math.lerp(-anglerad/2, anglerad/2, t);
+			var ct = hxd.Math.cos(a);
+			var st = hxd.Math.sin(a);
+			for(r in 0...(rings + 2)) {
+				var v = r / (rings + 1);
+				var r = hxd.Math.lerp(inner, 1.0, v);
+				points.push(new h2d.col.Point(ct * r, st * r));
+				uvs.push(new h2d.col.Point(t, v));
+			}
+		}
+		for(i in 0...segments-1) {
+			for(r in 0...(rings + 1)) {
+				var idx = r + i * (rings + 2);
+				var nxt = r + (i + 1) * (rings + 2);
+				indices.push(idx);
+				indices.push(idx + 1);
+				indices.push(nxt);
+				indices.push(nxt);
+				indices.push(idx + 1);
+				indices.push(nxt + 1);
+			}
+		}
 
+		var verts = [for(p in points) new h3d.col.Point(p.x, p.y, 0.)];
+		var idx = new hxd.IndexBuffer();
+		for(i in indices)
+			idx.push(i);
+		var primitive = new h3d.prim.Polygon(verts, idx);
+		primitive.normals = [for(p in points) new h3d.col.Point(0, 0, 1.)];
+		primitive.tangents = [for(p in points) new h3d.col.Point(0., 1., 0.)];
+		primitive.uvs = [for(uv in uvs) new h3d.prim.UV(uv.x, uv.y)];
+		primitive.colors = [for(p in points) new h3d.col.Point(1,1,1)];
+		primitive.incref();
+		return primitive;
+	}
+
+	var terrainPrefab : hrt.prefab.terrain.Terrain = null;
+	
+	// GET Z with TERRAIN
 	public function getZ( x : Float, y : Float ) {
 		var z = this.z;
 
-		@:privateAccess var terrain = sceneEditor.sceneData.find(p -> Std.downcast(p, hrt.prefab.terrain.Terrain));
+		if (terrainPrefab == null)
+			@:privateAccess terrainPrefab = sceneEditor.sceneData.find(p -> Std.downcast(p, hrt.prefab.terrain.Terrain));
 
-		if(terrain != null){
+		if(terrainPrefab != null){
 			var pos = new h3d.Vector(x, y, 0);
 			pos.transform3x4(this.getTransform());
-			z = terrain.terrain.getHeight(pos.x, pos.y);
+			z = terrainPrefab.terrain.getHeight(pos.x, pos.y);
 		}
 
 		return z;
 	}
+
+	public function  getMousePicker( ?x, ?y ) {
+		var camera = sceneEditor.scene.s3d.camera;
+		var ray = camera.rayFromScreen(x, y);
+		var planePt = ray.intersect(h3d.col.Plane.Z());
+		var offset = ray.getDir();
+
+		// Find rough intersection point in the camera forward direction to get first collision point
+		final maxZBounds = 25;
+		offset.scale(maxZBounds);
+		var pt = planePt.clone();
+		pt.load(pt.sub(offset));
+
+		var step = ray.getDir();
+		step.scale(0.25);
+
+		while(pt.z > -maxZBounds) {
+			var z = getZ(pt.x, pt.y);
+			if(pt.z < z)
+				break;
+			pt.load(pt.add(step));
+		}
+
+		// Bissect search for exact intersection point
+		for(_ in 0...50) {
+			var z = getZ(pt.x, pt.y);
+			var delta = z - pt.z;
+			if(hxd.Math.abs(delta) < 0.05)
+				return pt;
+
+			if(delta < 0)
+				pt.load(pt.add(step));
+			else
+				pt.load(pt.sub(step));
+
+			step.scale(0.5);
+		}
+
+		return planePt;
+	}
+	
 
 	public function screenToWorld(sx: Float, sy: Float) {
 		var camera = sceneEditor.scene.s3d.camera;
@@ -387,15 +564,17 @@ class MeshSpray extends Object3D {
 	}
 
 	function projectToGround( ray: h3d.col.Ray ) {
-		var minDist = -1.;
-		@:privateAccess var terrainPrefab = sceneEditor.sceneData.find(p -> Std.downcast(p, hrt.prefab.terrain.Terrain));
+		var dist = 0.0;
+		if (terrainPrefab == null)
+			@:privateAccess terrainPrefab = sceneEditor.sceneData.find(p -> Std.downcast(p, hrt.prefab.terrain.Terrain));
+		
 		if (terrainPrefab != null) {
 			var normal = terrainPrefab.terrain.getAbsPos().up();
 			var plane = h3d.col.Plane.fromNormalPoint(normal.toPoint(), new h3d.col.Point(terrainPrefab.terrain.getAbsPos().tx, terrainPrefab.terrain.getAbsPos().ty, terrainPrefab.terrain.getAbsPos().tz));
 			var pt = ray.intersect(plane);
-			if(pt != null) { minDist = pt.sub(ray.getPos()).length();}
+			if(pt != null) { dist = pt.sub(ray.getPos()).length();}
 		}
-		return minDist;
+		return dist;
 	}
 
 	#end

@@ -25,6 +25,8 @@ class SubTable extends Table {
 		var group;
 		if( mode == Properties ) {
 			var count = cell.columnIndex + 1;
+			if (count < 3 && cell.table.sheet.columns.length >= 8)
+				count += 2; // fix when a lot of columns but the subproperty is on the left
 			group = new Element("<td>").attr("colspan",""+(count+1)).appendTo(insertedTR);
 			var remain = cell.table.sheet.columns.length - count;
 			if( remain > 0 )
