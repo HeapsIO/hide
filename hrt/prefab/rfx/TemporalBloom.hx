@@ -89,6 +89,7 @@ class Threshold extends h3d.shader.ScreenShader {
 		@param var hdr : Sampler2D;
 		@param var threshold : Float;
         @param var intensity : Float;
+		@param var maxIntensity : Float;
 
 		@const var USE_TEMPORAL_FILTER : Bool;
 		@const var PREVENT_GHOSTING : Bool;
@@ -108,7 +109,7 @@ class Threshold extends h3d.shader.ScreenShader {
 
 		function fragment() {
 			var curVal = max(hdr.get(calculatedUV).rgb - threshold, 0.0) * intensity;
-			pixelColor.rgb = curVal;
+			pixelColor.rgb = min(curVal, maxIntensity);
 
 			if( USE_TEMPORAL_FILTER ) {
 				var pixelPos = getPixelPosition(calculatedUV);
@@ -118,7 +119,7 @@ class Threshold extends h3d.shader.ScreenShader {
 				
 				if( prevUV.x <= 1.0 && prevUV.x >= 0.0 && prevUV.y <= 1.0 && prevUV.y >= 0.0 ) {
 					var prevVal = prev.get(prevUV).rgb;
-					pixelColor.rgb = mix(curVal, prevVal, strength);
+					pixelColor.rgb = min(mix(curVal, prevVal, strength), maxIntensity);
 				}
 			}
 		}
@@ -130,6 +131,7 @@ typedef TemporalBloomProps = {
 	var downScaleCount : Int;
 	var threshold : Float;
     var intensity : Float;
+	var maxValue : Float;
 	var useTemporalFilter : Bool;
 	var temporalStrength : Float;
 }
@@ -151,6 +153,7 @@ class TemporalBloom extends RendererFX {
 			downScaleCount : 5,
 			threshold : 0.5,
             intensity : 1.0,
+			maxValue : 100.0,
 			useTemporalFilter : true,
 			temporalStrength : 0,
 		} : TemporalBloomProps);
@@ -169,6 +172,7 @@ class TemporalBloom extends RendererFX {
 			thresholdPass.shader.hdr = ctx.getGlobal("hdr");
 			thresholdPass.shader.threshold = pb.threshold;
             thresholdPass.shader.intensity = pb.intensity;
+			thresholdPass.shader.maxIntensity = pb.maxValue;
 			if( pb.useTemporalFilter ) {
 				thresholdPass.shader.USE_TEMPORAL_FILTER = true;
 				var depth : hxsl.ChannelTexture = ctx.getGlobal("depthMap");
@@ -224,6 +228,7 @@ class TemporalBloom extends RendererFX {
 			<dl>
 				<dt>Threshold</dt><dd><input type="range" min="0" max="1" field="threshold"/></dd>
 				<dt>Intensity</dt><dd><input type="range" min="0" max="1" field="intensity"/></dd>
+				<dt>Max</dt><dd><input type="range" min="0" max="100" field="maxValue"/></dd>
 				<dt>Texture Size</dt><dd><input type="range" min="0" max="1" field="size"/></dd>
 				<dt>DownScale/UpScale Count</dt><dd><input type="range" min="1" max="5" field="downScaleCount" step="1"/></dd>
 			</dl>
