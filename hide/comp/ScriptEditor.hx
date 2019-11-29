@@ -299,8 +299,11 @@ class ScriptEditor extends CodeEditor {
 		return [for( k in vars.keys() ) {
 			var t = vars.get(k);
 			if( StringTools.startsWith(k,"a_") ) {
-				t = checker.unasync(t);
-				k = k.substr(2);
+				var t2 = checker.unasync(t);
+				if( t2 != null ) {
+					t = t2;
+					k = k.substr(2);
+				}
 			}
 			var isFun = checker.follow(t).match(TFun(_));
 			if( isFun ) {
