@@ -123,12 +123,17 @@ class Terrain extends Object3D {
 		var prevWatch = @:privateAccess hxd.res.Image.ENABLE_AUTO_WATCH;
 		@:privateAccess hxd.res.Image.ENABLE_AUTO_WATCH = false;
 		var resDir = ctx.shared.loadDir(name);
-		if( resDir == null ) return;
+
+		if( resDir == null )
+			return;
+
+		// Avoid texture alloc for unpacking
+		var tmpPackedWeightTexture = new h3d.mat.Texture(terrain.weightMapResolution, terrain.weightMapResolution);
+
 		for( res in resDir ) {
 			var fileInfos = res.name.split(".");
 			var ext = fileInfos[1];
 			var file = fileInfos[0];
-			if( ext == "bin" ) return;
 			var coords = file.split("_");
 			var x = Std.parseInt(coords[0]);
 			var y = Std.parseInt(coords[1]);
@@ -162,30 +167,62 @@ class Terrain extends Object3D {
 				}
 				case "w":
 				if( weight ) {
-					tile.weightMapResource = res;
-					var tex = res.toTexture();
-					if( tile.surfaceWeights.length == 0 ) @:privateAccess tile.refreshSurfaceWeights();
+					if( ext == "png" ) { // Retro-compatibility
+						var weightAsPNG = res.toTexture();
+						h3d.pass.Copy.run(weightAsPNG, tmpPackedWeightTexture);
+						tile.packedWeightMapPixel = tmpPackedWeightTexture.capturePixels();
+						weightAsPNG.dispose();
+					} else {
+						var pixels : hxd.Pixels = new hxd.Pixels(terrain.weightMapResolution, terrain.weightMapResolution, res.entry.getBytes(), RGBA);
+						tmpPackedWeightTexture.uploadPixels(pixels);
+						tile.packedWeightMapPixel = pixels;
+					}
+
+					// Notice that we need the surfaceIndexMap loaded before doing the unpacking
 					var engine = h3d.Engine.getCurrent();
-					for(i in 0 ... tile.surfaceWeights.length){
+					#if editor
+					// Unpack weight from RGBA texture into a array of texture of R8, and create the TextureArray
+					if( tile.surfaceWeights.length == 0 )
+						@:privateAccess tile.refreshSurfaceWeightArray();
+					for( i in 0 ... tile.surfaceWeights.length ) {
 						engine.pushTarget(tile.surfaceWeights[i]);
 						unpackWeight.shader.indexMap = tile.surfaceIndexMap;
-						unpackWeight.shader.packedWeightTexture = tex;
+						unpackWeight.shader.packedWeightTexture = tmpPackedWeightTexture;
 						unpackWeight.shader.index = i;
 						unpackWeight.render();
 						engine.popTarget();
 					}
-					tile.generateWeightArray();
-					tex.dispose();
+					tile.generateWeightTextureArray();
+					#else
+					// Unpack weight from RGBA texture directly into the TextureArray of R8
+					tile.generateWeightTextureArray();
+					for( i in 0 ... terrain.surfaceArray.surfaceCount ) {
+						engine.pushTarget(tile.surfaceWeightArray, i);
+						unpackWeight.shader.indexMap = tile.surfaceIndexMap;
+						unpackWeight.shader.packedWeightTexture = tmpPackedWeightTexture;
+						unpackWeight.shader.index = i;
+						unpackWeight.render();
+						engine.popTarget();
+					}
+					#end
 				}
 				case"i":
 				if( index ) {
-					tile.indexMapResource = res;
-					var tex = res.toTexture();
 					if( tile.surfaceIndexMap == null ) @:privateAccess tile.refreshIndexMap();
-					h3d.pass.Copy.run(tex, tile.surfaceIndexMap);
-					tex.dispose();
+					if( ext == "png" ) { // Retro-compatibility
+						var indexAsPNG = res.toTexture();
+						h3d.pass.Copy.run(indexAsPNG, tile.surfaceIndexMap);
+						tile.indexMapPixels = tile.surfaceIndexMap.capturePixels();
+						indexAsPNG.dispose();
+					}
+					else {
+						var pixels : hxd.Pixels = new hxd.Pixels(terrain.weightMapResolution, terrain.weightMapResolution, res.entry.getBytes(), RGBA);
+						tile.indexMapPixels = pixels;
+						tile.surfaceIndexMap.uploadPixels(pixels);
+					}
 				}
 			}
+			tmpPackedWeightTexture.dispose();
 		}
 
 		#if editor
@@ -279,7 +316,7 @@ class Terrain extends Object3D {
 		for( tile in terrain.tiles ) {
 			var pixels = tile.heightMap.capturePixels();
 			var fileName = tile.tileX + "_" + tile.tileY + "_" + "h";
-			ctx.shared.savePrefabDat(fileName, "heightMap", name, pixels.bytes);
+			ctx.shared.savePrefabDat(fileName, "bin", name, pixels.bytes);
 		}
 	}
 
@@ -294,7 +331,7 @@ class Terrain extends Object3D {
 				bytes.setFloat(i*3*4+4, normals[i].y);
 				bytes.setFloat(i*3*4+8, normals[i].z);
 			}
-			ctx.shared.savePrefabDat(fileName, "normal", name, bytes);
+			ctx.shared.savePrefabDat(fileName, "bin", name, bytes);
 		}
 	}
 
@@ -308,18 +345,16 @@ class Terrain extends Object3D {
 			packWeight.render();
 
 			var pixels = packedWeightsTex.capturePixels();
-			var bytes = pixels.toPNG();
 			var fileName = tile.tileX + "_" + tile.tileY + "_" + "w";
-			ctx.shared.savePrefabDat(fileName, "png", name, bytes);
+			ctx.shared.savePrefabDat(fileName, "bin", name, pixels.bytes);
 
 			var pixels = tile.surfaceIndexMap.capturePixels();
-			var bytes = pixels.toPNG();
 			var fileName = tile.tileX + "_" + tile.tileY + "_" + "i";
-			ctx.shared.savePrefabDat(fileName, "png", name, bytes);
+			ctx.shared.savePrefabDat(fileName, "bin", name, pixels.bytes);
 		}
 	}
 
-	public function saveBinary( ctx : Context ) {
+	public function saveSurfaceArray( ctx : Context ) {
 		var count = terrain.surfaces.length;
 		for( i in 0 ... count ) {
 			var pixels = terrain.surfaceArray.albedo.capturePixels(i);

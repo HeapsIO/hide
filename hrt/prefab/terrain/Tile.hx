@@ -19,8 +19,8 @@ class Tile extends h3d.scene.Mesh {
 	public var insideFrustrum(default, null) = false;
 
 	// set by prefab loader for CPU access ingame
-	public var weightMapResource : hxd.res.Resource;
-	public var indexMapResource : hxd.res.Resource;
+	public var packedWeightMapPixel : hxd.Pixels;
+	public var indexMapPixels : hxd.Pixels;
 
 	var heightmapPixels : hxd.Pixels.PixelsFloat;
 	var shader : hrt.shader.Terrain;
@@ -194,8 +194,8 @@ class Tile extends h3d.scene.Mesh {
 			}
 		}
 	}
-
-	function refreshSurfaceWeights() {
+	
+	function refreshSurfaceWeightArray() {
 		if( terrain.surfaceArray.surfaceCount > 0 && (surfaceWeights.length != terrain.surfaceArray.surfaceCount || surfaceWeights[0].width != terrain.weightMapResolution) ) {
 				var oldArray = surfaceWeights;
 				surfaceWeights = new Array<h3d.mat.Texture>();
@@ -215,17 +215,24 @@ class Tile extends h3d.scene.Mesh {
 		}
 	}
 
+	function disposeSurfaceWeightArray() {
+		if( surfaceWeights != null ) {
+			for( t in surfaceWeights )
+				if( t != null ) t.dispose();
+		}
+	}
+
 	public function refreshTex() {
 		refreshHeightMap();
 		refreshIndexMap();
-		refreshSurfaceWeights();
-		generateWeightArray();
+		refreshSurfaceWeightArray();
+		generateWeightTextureArray();
 	}
 
-	public function generateWeightArray() {
-		if( surfaceWeightArray == null || surfaceWeightArray.width != terrain.weightMapResolution || surfaceWeightArray.layerCount != surfaceWeights.length ) {
+	public function generateWeightTextureArray() {
+		if( surfaceWeightArray == null || surfaceWeightArray.width != terrain.weightMapResolution || surfaceWeightArray.layerCount != terrain.surfaceArray.surfaceCount  ) {
 			if( surfaceWeightArray != null ) surfaceWeightArray.dispose();
-			surfaceWeightArray = new h3d.mat.TextureArray(terrain.weightMapResolution, terrain.weightMapResolution, surfaceWeights.length, [Target], R8);
+			surfaceWeightArray = new h3d.mat.TextureArray(terrain.weightMapResolution, terrain.weightMapResolution, terrain.surfaceArray.surfaceCount, [Target], R8);
 			surfaceWeightArray.setName("terrainSurfaceWeightArray");
 			surfaceWeightArray.wrap = Clamp;
 			surfaceWeightArray.preventAutoDispose();

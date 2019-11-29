@@ -8,5 +8,6 @@
 		"show" : true
 	},
 	"main" : "app.html",
+	"chromium-args":"--enable-spell-checking",
 	"js-flags": "--expose-gc"
 }
