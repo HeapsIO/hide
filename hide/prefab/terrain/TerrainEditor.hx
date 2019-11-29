@@ -106,7 +106,7 @@ class TerrainEditor {
 		clearSavedTextures();
 		terrainPrefab.saveWeightTextures(editContext.rootContext);
 		terrainPrefab.saveHeightTextures(editContext.rootContext);
-		// terrainPrefab.saveBinary(editContext.rootContext);
+		//terrainPrefab.saveSurfaceArray(editContext.rootContext);
 		terrainPrefab.saveNormals(editContext.rootContext);
 		return;
 	}
@@ -287,12 +287,12 @@ class TerrainEditor {
 						tile.material.mainPass.stencil.setOp(Keep, Keep, Replace);
 						tile.refreshHeightMap();
 						tile.refreshIndexMap();
-						tile.refreshSurfaceWeights();
+						tile.refreshSurfaceWeightArray();
 						tile.heightMap.uploadPixels(t.prevHeightMapPixels);
 						tile.surfaceIndexMap.uploadPixels(t.prevSurfaceIndexMapPixels);
 						for( i in 0 ... t.prevWeightMapPixels.length )
 							tile.surfaceWeights[i].uploadPixels(t.prevWeightMapPixels[i]);
-						tile.generateWeightArray();
+						tile.generateWeightTextureArray();
 					}
 					else
 						terrainPrefab.terrain.removeTileAt(t.x, t.y);
@@ -394,7 +394,7 @@ class TerrainEditor {
 				strokeBuffer.prevTex = null;
 
 				copyPass.apply(strokeBuffer.tex, tile.surfaceWeights[currentBrush.index], currentBrush.brushMode.subAction ? Sub : Add);
-				tile.generateWeightArray();
+				tile.generateWeightTextureArray();
 
 				clampWeight.shader.weightTextures = tile.surfaceWeightArray;
 				clampWeight.shader.weightCount = tile.surfaceWeights.length;
@@ -405,7 +405,7 @@ class TerrainEditor {
 					h3d.Engine.getCurrent().pushTarget(tile.surfaceWeights[i]);
 					clampWeight.render();
 				}
-				tile.generateWeightArray();
+				tile.generateWeightTextureArray();
 
 				normalizeWeight.shader.weightTextures = tile.surfaceWeightArray;
 				normalizeWeight.shader.weightCount = tile.surfaceWeights.length;
@@ -415,7 +415,7 @@ class TerrainEditor {
 					h3d.Engine.getCurrent().pushTarget(tile.surfaceWeights[i]);
 					normalizeWeight.render();
 				}
-				tile.generateWeightArray();
+				tile.generateWeightTextureArray();
 
 				var revert : TileRevertData = null;
 				for( r in paintRevertDatas )
@@ -443,7 +443,7 @@ class TerrainEditor {
 					if (tile == null ) continue;
 					for (i in 0 ... tile.surfaceWeights.length )
 						tile.surfaceWeights[i].uploadPixels(undo ? revertData.prevWeightMapPixels[i] : revertData.nextWeightMapPixels[i]);
-					tile.generateWeightArray();
+					tile.generateWeightTextureArray();
 					generateIndex.shader.weightTextures = tile.surfaceWeightArray;
 					generateIndex.shader.weightCount = tile.surfaceWeights.length;
 					h3d.Engine.getCurrent().pushTarget(tile.surfaceIndexMap);
@@ -484,7 +484,7 @@ class TerrainEditor {
 				var tile = terrainPrefab.terrain.getTile(strokeBuffer.x, strokeBuffer.y);
 				copyPass.apply(strokeBuffer.prevTex, strokeBuffer.tempTex);
 				copyPass.apply(strokeBuffer.tex, strokeBuffer.tempTex, currentBrush.brushMode.subAction ? Sub : Add);
-				tile.generateWeightArray();
+				tile.generateWeightTextureArray();
 
 				var engine = h3d.Engine.getCurrent();
 				clampWeight.shader.weightTextures = tile.surfaceWeightArray;
@@ -496,7 +496,7 @@ class TerrainEditor {
 					engine.pushTarget(tile.surfaceWeights[i]);
 					clampWeight.render();
 				}
-				tile.generateWeightArray();
+				tile.generateWeightTextureArray();
 
 				normalizeWeight.shader.weightTextures = tile.surfaceWeightArray;
 				normalizeWeight.shader.weightCount = tile.surfaceWeights.length;
@@ -506,7 +506,7 @@ class TerrainEditor {
 					engine.pushTarget(tile.surfaceWeights[i]);
 					normalizeWeight.render();
 				}
-				tile.generateWeightArray();
+				tile.generateWeightTextureArray();
 
 				generateIndex.shader.weightTextures = tile.surfaceWeightArray;
 				generateIndex.shader.weightCount = tile.surfaceWeights.length;
@@ -844,7 +844,7 @@ class TerrainEditor {
 			swapIndex.render();
 			copyPass.apply(newSurfaceIndexMap, tile.surfaceIndexMap);
 			tile.surfaceWeights.remove(tile.surfaceWeights[index]);
-			tile.generateWeightArray();
+			tile.generateWeightTextureArray();
 		}
 		terrainRevertData.surfaceIndex = index;
 		terrainRevertData.surface = terrainPrefab.terrain.surfaces[index];
@@ -861,7 +861,7 @@ class TerrainEditor {
 				h3d.Engine.getCurrent().pushTarget(tile.surfaceWeights[i]);
 				normalizeWeight.render();
 			}
-			tile.generateWeightArray();
+			tile.generateWeightTextureArray();
 
 			generateIndex.shader.weightTextures = tile.surfaceWeightArray;
 			generateIndex.shader.weightCount = tile.surfaceWeights.length;
@@ -901,7 +901,7 @@ class TerrainEditor {
 				for( i in 0 ... tile.surfaceWeights.length )
 					tile.surfaceWeights[i].uploadPixels(undo ? revertData.prevWeightMapPixels[i] : revertData.nextWeightMapPixels[i]);
 
-				tile.generateWeightArray();
+				tile.generateWeightTextureArray();
 				generateIndex.shader.weightTextures = tile.surfaceWeightArray;
 				generateIndex.shader.weightCount = tile.surfaceWeights.length;
 				h3d.Engine.getCurrent().pushTarget(tile.surfaceIndexMap);
