@@ -128,7 +128,7 @@ class Terrain extends Object3D {
 			return;
 
 		// Avoid texture alloc for unpacking
-		var tmpPackedWeightTexture = new h3d.mat.Texture(terrain.weightMapResolution, terrain.weightMapResolution);
+		var tmpPackedWeightTexture = new h3d.mat.Texture(terrain.weightMapResolution, terrain.weightMapResolution, [Target]);
 
 		for( res in resDir ) {
 			var fileInfos = res.name.split(".");
