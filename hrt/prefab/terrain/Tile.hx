@@ -91,9 +91,7 @@ class Tile extends h3d.scene.Mesh {
 		var n = new h3d.Vector(0,0,0);
 		inline function addVertice(x : Float, y : Float, i : Int) {
 			// Pos
-			bigPrim.addVertexValue(x);
-			bigPrim.addVertexValue(y);
-			bigPrim.addVertexValue(getHeight(x / terrain.tileSize, y / terrain.tileSize));
+			bigPrim.addPoint(x, y, getHeight(x / terrain.tileSize, y / terrain.tileSize)); // Use addPoint() instead of addVertexValue() for the bounds
 			// Normal
 			bigPrim.addVertexValue(normals.getFloat(i * 3 * 4));
 			bigPrim.addVertexValue(normals.getFloat(i * 3 * 4 + 4));
@@ -581,28 +579,24 @@ class Tile extends h3d.scene.Mesh {
 	var cachedBounds : h3d.col.Bounds;
 	function computeBounds() {
 		if( cachedBounds == null ) {
-			var absPos = getAbsPos();
-			cachedBounds = new h3d.col.Bounds();
-			cachedBounds.xMax = absPos.tx + terrain.tileSize;
-			cachedBounds.xMin = absPos.tx;
-			cachedBounds.yMax = absPos.ty + terrain.tileSize;
-			cachedBounds.yMin = absPos.ty;
-			cachedBounds.zMax = absPos.tz;
-			cachedBounds.zMin = absPos.tz;
-
 			if( heightMap != null ) {
-				var absPos = getAbsPos();
+				cachedBounds = new h3d.col.Bounds();
+				cachedBounds.xMax = terrain.tileSize;
+				cachedBounds.xMin = 0.0;
+				cachedBounds.yMax = terrain.tileSize;
+				cachedBounds.yMin = 0.0;
 				for( u in 0 ... heightMap.width ) {
 					for( v in 0 ... heightMap.height ) {
 						var h = getHeight(u / heightMap.width, v / heightMap.height, true);
-						cachedBounds.zMin = cachedBounds.zMin > absPos.tz + h ? absPos.tz + h : cachedBounds.zMin;
-						cachedBounds.zMax = cachedBounds.zMax < absPos.tz + h ? absPos.tz + h : cachedBounds.zMax;
+						if( cachedBounds.zMin > h ) cachedBounds.zMin = h;
+						if( cachedBounds.zMax < h ) cachedBounds.zMax = h;
 					}
 				}
 			}
 			else if( bigPrim != null ) {
-				// TO DO
+				cachedBounds = bigPrim.getBounds();
 			}
+			cachedBounds.transform(getAbsPos());
 		}
 	}
 
@@ -610,7 +604,7 @@ class Tile extends h3d.scene.Mesh {
 	override function emit( ctx:h3d.scene.RenderContext ) {
 		if( !isReadyForDraw() ) return;
 		computeBounds();
-		insideFrustrum = ctx.camera.frustum.hasBounds(cachedBounds);
+		insideFrustrum = cachedBounds != null ? ctx.camera.frustum.hasBounds(cachedBounds) : true;
 		var b = beforeEmit();
 		if( b && insideFrustrum )
 			super.emit(ctx);
