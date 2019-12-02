@@ -278,15 +278,27 @@ class ScriptEditor extends CodeEditor {
 			if( t != null ) {
 				switch( checker.checker.follow(t) ) {
 				case TInst(c,args):
-					for( f in c.fields ) {
-						if( !f.isPublic || !f.complete ) continue;
-						var name = f.name;
-						var t = f.t;
-						if( StringTools.startsWith(name,"a_") ) {
-							t = checker.checker.unasync(t);
-							name = name.substr(2);
+					var map = (t) -> checker.checker.apply(t,c.params,args);
+					while( c != null ) {
+						for( f in c.fields ) {
+							if( !f.isPublic || !f.complete ) continue;
+							var name = f.name;
+							var t = map(f.t);
+							if( StringTools.startsWith(name,"a_") ) {
+								t = checker.checker.unasync(t);
+								name = name.substr(2);
+							}
+							vars.set(name, t);
 						}
-						vars.set(name, t);
+						if( c.superClass == null ) break;
+						switch( c.superClass ) {
+						case TInst(csup,args):
+							var curMap = map;
+							map = (t) -> curMap(checker.checker.apply(t,csup.params,args));
+							c = csup;
+						default:
+							break;
+						}
 					}
 				case TAnon(fields):
 					for( f in fields )
@@ -299,8 +311,11 @@ class ScriptEditor extends CodeEditor {
 		return [for( k in vars.keys() ) {
 			var t = vars.get(k);
 			if( StringTools.startsWith(k,"a_") ) {
-				t = checker.unasync(t);
-				k = k.substr(2);
+				var t2 = checker.unasync(t);
+				if( t2 != null ) {
+					t = t2;
+					k = k.substr(2);
+				}
 			}
 			var isFun = checker.follow(t).match(TFun(_));
 			if( isFun ) {
