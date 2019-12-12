@@ -75,6 +75,10 @@ class TerrainMesh extends h3d.scene.Object {
 		return o;
 	}
 
+	public function onContextlost() {
+		generateSurfaceArray();
+	}
+
 	public function getHeight( x : Float, y : Float ) : Float {
 		var z = 0.0;
 		var t = getTileAtWorldPos(x, y);
@@ -126,6 +130,21 @@ class TerrainMesh extends h3d.scene.Object {
 			if( surfaces[i].normal != null ) copyPass.apply(surfaces[i].normal, surfaceArray.normal, null, null, i);
 			if( surfaces[i].pbr != null ) copyPass.apply(surfaces[i].pbr, surfaceArray.pbr, null, null, i);
 		}
+
+		// OnContextLost support
+		surfaceArray.albedo.realloc = function() {
+			for( i in 0 ... surfaceArray.surfaceCount )
+				copyPass.apply(surfaces[i].albedo, surfaceArray.albedo, null, null, i);
+		}
+		surfaceArray.normal.realloc = function() {
+			for( i in 0 ... surfaceArray.surfaceCount )
+				copyPass.apply(surfaces[i].normal, surfaceArray.normal, null, null, i);
+		}
+		surfaceArray.pbr.realloc = function() {
+			for( i in 0 ... surfaceArray.surfaceCount )
+				copyPass.apply(surfaces[i].pbr, surfaceArray.pbr, null, null, i);
+		}
+
 		updateSurfaceParams();
 		refreshAllTex();
 	}
