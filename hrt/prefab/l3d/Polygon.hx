@@ -89,6 +89,13 @@ class Polygon extends Object3D {
 		if(primitive != null)
 			return primitive;
 
+		primitive = createPrimitive(shape);
+		primitive.incref();
+		cache.set(shape, primitive);
+		return primitive;
+	}
+
+	public static function createPrimitive( shape : Shape ) {
 		var uvs : Array<Point> = null;
 		var points : Array<Point> = null;
 		var indices : Array<Int> = null;
@@ -141,13 +148,11 @@ class Polygon extends Object3D {
 		var idx = new hxd.IndexBuffer();
 		for(i in indices)
 			idx.push(i);
-		primitive = new h3d.prim.Polygon(verts, idx);
+		var primitive = new h3d.prim.Polygon(verts, idx);
 		primitive.normals = [for(p in points) new h3d.col.Point(0, 0, 1.)];
 		primitive.tangents = [for(p in points) new h3d.col.Point(0., 1., 0.)];
 		primitive.uvs = [for(uv in uvs) new h3d.prim.UV(uv.x, uv.y)];
 		primitive.colors = [for(p in points) new h3d.col.Point(1,1,1)];
-		primitive.incref();
-		cache.set(shape, primitive);
 		return primitive;
 	}
 

@@ -806,6 +806,7 @@ class Ide {
 		}
 		menu.find(".project .open").click(function(_) {
 			chooseDirectory(function(dir) {
+				if( dir == null ) return;
 				if( StringTools.endsWith(dir,"/res") || StringTools.endsWith(dir,"\\res") )
 					dir = dir.substr(0,-4);
 				setProject(dir);

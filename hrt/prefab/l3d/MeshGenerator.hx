@@ -97,6 +97,18 @@ class MeshPart {
 	}
 }
 
+class MeshGeneratorRoot extends h3d.scene.Object {
+
+	public function new( ?parent : h3d.scene.Object ) {
+		super(parent);
+	}
+
+	override function syncRec( ctx ) {
+		if( posChanged ) 
+			super.syncRec(ctx);
+	}
+}
+
 class MeshGenerator extends Object3D {
 
 	public var root : MeshPart;
@@ -130,7 +142,7 @@ class MeshGenerator extends Object3D {
 		ctx.local3d = new h3d.scene.Object(ctx.local3d);
 		ctx.local3d.name = name;
 
-		var rootObject = new h3d.scene.Object(ctx.local3d);
+		var rootObject = new MeshGeneratorRoot(ctx.local3d);
 		rootObject.name = "rootObject";
 
 		if( root == null ) {
@@ -157,11 +169,17 @@ class MeshGenerator extends Object3D {
 		createEmptyMeshPart(ctx, root);
 		#end
 
-		createMeshPart(ctx, root, ctx.local3d.getObjectByName("rootObject"));
+		var rootObject = ctx.local3d.getObjectByName("rootObject");
+		createMeshPart(ctx, root, rootObject);
 
 		#if editor
-		for(m in ctx.local3d.findAll(o -> Std.downcast(o, h3d.scene.Mesh)))
-			m.cullingCollider = new h3d.col.ObjectCollider(m, m.primitive.getBounds().toSphere());
+		// Only one CullingCollider for performance
+		var rootPos = rootObject.getAbsPos().getPosition();
+		var mainCullingCollider = new h3d.col.Sphere(rootPos.x, rootPos.y, rootPos.z, 0.0);
+		for( m in ctx.local3d.findAll(o -> Std.downcast(o, h3d.scene.Mesh)) ) {
+			m.cullingCollider = mainCullingCollider;
+			mainCullingCollider.r = hxd.Math.max(mainCullingCollider.r, m.primitive.getBounds().toSphere().r + m.getAbsPos().getPosition().sub(rootPos).length());
+		}
 		#end
 	}
 
@@ -242,10 +260,6 @@ class MeshGenerator extends Object3D {
 		return null;
 	}
 
-	function getMaxDepth( hmd : hxd.fmt.hmd.Library ) {
-
-	}
-
 	#if editor
 
 	function generate( ctx : EditContext, mp : MeshPart, maxDepth : Int, curDepth : Int) {
@@ -257,7 +271,6 @@ class MeshGenerator extends Object3D {
 		for( cmp in mp.childParts )
 			generate(ctx, cmp, maxDepth, curDepth);
 	}
-
 
 	function createEmptyMeshPart( ctx : Context, mp : MeshPart ) {
 		var sl = getSocketListFromHMD(getHMD(ctx, mp.meshPath));

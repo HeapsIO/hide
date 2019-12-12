@@ -21,6 +21,7 @@ class Tile extends h3d.scene.Mesh {
 	// set by prefab loader for CPU access ingame
 	public var packedWeightMapPixel : hxd.Pixels;
 	public var indexMapPixels : hxd.Pixels;
+	public var normalBytes : haxe.io.Bytes;
 
 	var heightmapPixels : hxd.Pixels.PixelsFloat;
 	var shader : hrt.shader.Terrain;
@@ -54,25 +55,6 @@ class Tile extends h3d.scene.Mesh {
 			bigPrim.dispose();
 	}
 
-	public override function clone( ?o : h3d.scene.Object ) : h3d.scene.Object {
-		var o = new Tile(tileX, tileY, cast parent);
-		o.heightMap = heightMap.clone();
-		o.surfaceIndexMap = surfaceIndexMap.clone();
-
-		for( i in 0...surfaceWeights.length )
-			o.surfaceWeights.push(surfaceWeights[i].clone());
-
-		o.surfaceWeightArray = new h3d.mat.TextureArray(terrain.weightMapResolution, terrain.weightMapResolution, surfaceWeights.length, [Target], R8);
-		o.surfaceWeightArray.wrap = Clamp;
-		o.surfaceWeightArray.preventAutoDispose();
-		o.surfaceWeightArray.realloc = null;
-		for( i in 0 ... surfaceWeights.length )
-			if( surfaceWeights[i] != null ) terrain.copyPass.apply(surfaceWeights[i], o.surfaceWeightArray, None, null, i);
-
-		o.heightmapPixels = heightmapPixels.clone();
-		return o;
-	}
-
 	function set_heightMap( v ) {
 		shader.heightMap = v;
 		return heightMap = v;
@@ -87,6 +69,7 @@ class Tile extends h3d.scene.Mesh {
 
 	public function createBigPrim( normals : haxe.io.Bytes ) {
 		if( bigPrim != null ) bigPrim.dispose();
+		normalBytes = normals;
 		bigPrim = new h3d.prim.BigPrimitive(6);
 		var n = new h3d.Vector(0,0,0);
 		inline function addVertice(x : Float, y : Float, i : Int) {
@@ -169,7 +152,11 @@ class Tile extends h3d.scene.Mesh {
 			heightMap.wrap = Clamp;
 			heightMap.filter = Linear;
 			heightMap.preventAutoDispose();
-			heightMap.realloc = null;
+
+			heightMap.realloc = function() {
+				heightMap.uploadPixels(heightmapPixels);
+			}
+
 			if( oldHeightMap != null ) {
 				terrain.copyPass.apply(oldHeightMap, heightMap);
 				oldHeightMap.dispose();
@@ -185,14 +172,18 @@ class Tile extends h3d.scene.Mesh {
 			surfaceIndexMap.setName("terrainSurfaceIndexMap");
 			surfaceIndexMap.filter = Nearest;
 			surfaceIndexMap.preventAutoDispose();
-			surfaceIndexMap.realloc = null;
+
+			surfaceIndexMap.realloc = function() {
+				surfaceIndexMap.uploadPixels(indexMapPixels);
+			}
+
 			if( oldSurfaceIndexMap != null ) {
 				terrain.copyPass.apply(oldSurfaceIndexMap, surfaceIndexMap);
 				oldSurfaceIndexMap.dispose();
 			}
 		}
 	}
-	
+
 	function refreshSurfaceWeightArray() {
 		if( terrain.surfaceArray.surfaceCount > 0 && (surfaceWeights.length != terrain.surfaceArray.surfaceCount || surfaceWeights[0].width != terrain.weightMapResolution) ) {
 				var oldArray = surfaceWeights;
@@ -203,7 +194,6 @@ class Tile extends h3d.scene.Mesh {
 					surfaceWeights[i].setName("terrainSurfaceWeight"+i);
 					surfaceWeights[i].wrap = Clamp;
 					surfaceWeights[i].preventAutoDispose();
-					surfaceWeights[i].realloc = null;
 					if( i < oldArray.length && oldArray[i] != null )
 						terrain.copyPass.apply(oldArray[i], surfaceWeights[i]);
 				}
@@ -234,7 +224,22 @@ class Tile extends h3d.scene.Mesh {
 			surfaceWeightArray.setName("terrainSurfaceWeightArray");
 			surfaceWeightArray.wrap = Clamp;
 			surfaceWeightArray.preventAutoDispose();
-			surfaceWeightArray.realloc = null;
+
+			// OnContextLost support : Restore the textureArray with the pixels from the packedWeight texture
+			surfaceWeightArray.realloc = function() {
+				var engine = h3d.Engine.getCurrent();
+				var unpackWeight = new h3d.pass.ScreenFx(new UnpackWeight());
+				var tmpPackedWeightTexture = new h3d.mat.Texture(terrain.weightMapResolution, terrain.weightMapResolution, [Target]);
+				tmpPackedWeightTexture.uploadPixels(packedWeightMapPixel);
+				for( i in 0 ... surfaceWeightArray.layerCount ) {
+					engine.pushTarget(surfaceWeightArray, i);
+					unpackWeight.shader.indexMap = surfaceIndexMap;
+					unpackWeight.shader.packedWeightTexture = tmpPackedWeightTexture;
+					unpackWeight.shader.index = i;
+					unpackWeight.render();
+					engine.popTarget();
+				}
+			}
 		}
 		for( i in 0 ... surfaceWeights.length )
 			if( surfaceWeights[i] != null ) terrain.copyPass.apply(surfaceWeights[i], surfaceWeightArray, None, null, i);
@@ -639,6 +644,20 @@ class Tile extends h3d.scene.Mesh {
 		shader.heightBlendStrength = terrain.heightBlendStrength;
 		shader.blendSharpness = terrain.blendSharpness;
 
+		// OnContextLost support : re-create the bigPrim
+		var needRealloc = false;
+		if( bigPrim != null ) {
+			for( b in @:privateAccess bigPrim.buffers ) {
+				if( b.isDisposed() ) {
+					needRealloc = true;
+					break;
+				}
+			}
+			if( needRealloc ) {
+				createBigPrim(normalBytes);
+				cachedBounds = null;
+			}
+		}
 	}
 
 	function isReadyForDraw() {
