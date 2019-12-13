@@ -122,7 +122,7 @@ class ScriptChecker {
 						for( o in s.all ) {
 							var id = o.id;
 							if( id == null || id == "" ) continue;
-							cl.fields.set(id, { name : id, params : [], t : kind, isPublic: true, complete : true });
+							cl.fields.set(id, { name : id, params : [], canWrite : false, t : kind, isPublic: true, complete : true });
 						}
 						checker.setGlobal(name, TInst(cl,[]));
 					}
