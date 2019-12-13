@@ -100,9 +100,7 @@ class PbrSetup extends h3d.mat.PbrMaterialSetup {
 	}
 
     override function createRenderer() {
-		var env = new h3d.scene.pbr.Environment(getEnvMap());
-		env.compute();
-		return new PbrRenderer(env);
+		return new PbrRenderer(null);
 	}
 
 	override function getDefaults( ?type : String ) : Any {
