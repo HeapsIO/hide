@@ -39,6 +39,11 @@ class Config {
 		sync();
 	}
 
+	public function isLocal() {
+		if( path == null && parent != null ) return parent.isLocal();
+		return path == null || StringTools.startsWith(path, ide.projectDir);
+	}
+
 	public function load( path : String ) {
 		this.path = path;
 		var fullPath = ide.getPath(path);
@@ -91,6 +96,14 @@ class Config {
 		var val = Reflect.field(current,key);
 		if(val != null) return val;
 		return defaultVal;
+	}
+
+	public function getLocal( key : String, ?defaultVal : Dynamic ) : Dynamic {
+		var v = get(key);
+		if( v == null ) return defaultVal;
+		if( isLocal() ) return v;
+		if( parent == null ) return defaultVal;
+		return parent.getLocal(key,defaultVal);
 	}
 
 	public function set( key : String, val : Dynamic ) {
