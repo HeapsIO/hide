@@ -881,6 +881,8 @@ class Ide {
 		// layout
 		var layouts = menu.find(".layout .content");
 		layouts.html("");
+		if(projectConfig.layouts == null)
+			projectConfig.layouts = [];
 		for( l in projectConfig.layouts ) {
 			if( l.name == "Default" ) continue;
 			new Element("<menu>").attr("label",l.name).addClass(l.name).appendTo(layouts).click(function(_) {
