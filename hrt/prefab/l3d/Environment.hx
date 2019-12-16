@@ -66,19 +66,17 @@ class Environment extends Object3D {
 		var lutPixels = env.lut.capturePixels();
 		var diffusePixels : Array<hxd.Pixels.PixelsFloat> = [ for( i in 0 ... 6) env.diffuse.capturePixels(i) ];
 
-		var mipLevels = env.getMipLevels();
-		var specLevels = mipLevels - ignoredSpecLevels;
 		var specularPixels : Array<hxd.Pixels.PixelsFloat> =
 		 [
 			for( i in 0 ... 6 ) {
-				for( m in 0 ... specLevels ) {
+				for( m in 0 ... env.specLevels ) {
 					env.specular.capturePixels(i, m);
 				}
 			}
 		];
 
 		var totalBytes = 0;
-		totalBytes += 4 + 4 + 4 + 8 + 8; // diffSize + specSize + sampleBits + threshold + scale
+		totalBytes += 4 + 4 + 4 + 4 + 8 + 8; // diffSize + specSize + ignoredSpecLevels + sampleBits + threshold + scale
 		totalBytes += lutPixels.bytes.length;
 		for( p in diffusePixels )
 			totalBytes += p.bytes.length;
@@ -91,6 +89,8 @@ class Environment extends Object3D {
 		bytes.setInt32(curPos, diffSize);
 		curPos += 4;
 		bytes.setInt32(curPos, specSize);
+		curPos += 4;
+		bytes.setInt32(curPos, ignoredSpecLevels);
 		curPos += 4;
 		bytes.setDouble(curPos, threshold);
 		curPos += 8;
@@ -112,7 +112,7 @@ class Environment extends Object3D {
 	function convertFromBinary( bytes : haxe.io.Bytes ) {
 		var curPos = 0;
 
-		var headerSize = 4 + 4 + 4 + 8 + 8;
+		var headerSize = 4 + 4 + 4 + 4 + 8 + 8;
 		if( headerSize > bytes.length )
 			return false;
 
@@ -122,15 +122,19 @@ class Environment extends Object3D {
 		curPos += 4;
 		var bakedSpecSize = bytes.getInt32(curPos);
 		curPos += 4;
+		var bakedIgnoredSpecLevels = bytes.getInt32(curPos);
+		curPos += 4;
 		var bakedThreshold = bytes.getDouble(curPos);
 		curPos += 8;
 		var bakedScale = bytes.getDouble(curPos);
 		curPos += 8;
 
-		if( bakedDiffSize != diffSize || bakedSpecSize != specSize || bakedSampleBits != sampleBits || bakedThreshold != threshold || bakedScale != scale )
+		if( bakedDiffSize != diffSize || bakedSpecSize != specSize || bakedIgnoredSpecLevels != ignoredSpecLevels || bakedSampleBits != sampleBits || bakedThreshold != threshold || bakedScale != scale )
 			return false;
-
-		var lutBytes = bytes.sub(curPos, hxd.Pixels.calcStride(env.lut.width, env.lut.format) * env.lut.height);
+		
+		var lutSize = hxd.Pixels.calcStride(env.lut.width, env.lut.format) * env.lut.height;
+		if( curPos + lutSize > bytes.length ) return false;
+		var lutBytes = bytes.sub(curPos, lutSize);
 		curPos += lutBytes.length;
 		if( curPos > bytes.length ) return false;
 		var lutPixels : hxd.Pixels.PixelsFloat = new hxd.Pixels(env.lut.width, env.lut.height, lutBytes, env.lut.format);
@@ -138,6 +142,7 @@ class Environment extends Object3D {
 
 		var diffSize = hxd.Pixels.calcStride(env.diffuse.width, env.diffuse.format) * env.diffuse.height;
 		for( i in 0 ... 6 ) {
+			if( curPos + diffSize > bytes.length ) return false;
 			var diffByte = bytes.sub(curPos, diffSize);
 			curPos += diffByte.length;
 			if( curPos > bytes.length ) return false;
@@ -146,10 +151,11 @@ class Environment extends Object3D {
 		}
 
 		var mipLevels = env.getMipLevels();
-		var specLevels = mipLevels - ignoredSpecLevels;
+		env.specLevels = mipLevels - ignoredSpecLevels;
 		for( i in 0 ... 6 ) {
-			for( m in 0 ... specLevels ) {
+			for( m in 0 ... env.specLevels ) {
 				var mipMapSize = hxd.Pixels.calcStride(env.specular.width >> m, env.specular.format) * env.specular.height >> m;
+				if( curPos + mipMapSize > bytes.length ) return false;
 				var specByte = bytes.sub(curPos, mipMapSize);
 				curPos += specByte.length;
 				if( curPos > bytes.length ) return false;
@@ -162,6 +168,7 @@ class Environment extends Object3D {
 	}
 
 	function compute( ctx: Context ) {
+		trace("compute");
 		env.compute();
 		#if editor
 		saveAsBinary(ctx);
@@ -247,8 +254,12 @@ class Environment extends Object3D {
 
 	override function edit( ctx : EditContext ) {
 		// super.edit(ctx);
-		ctx.properties.add(new hide.Element('
+
+		var props = new hide.Element('
 			<div class="group" name="Environment">
+				<div align="center" >
+					<input type="button" value="Set Current" class="apply" />
+				</div>
 				<dl>
 					<dt>SkyBox</dt><dd><input type="texturepath" field="sourceMapPath"/></dd>
 					<dt>Rotation</dt><dd><input type="range" min="0" max="360" field="rotation"/></dd>
@@ -269,9 +280,14 @@ class Environment extends Object3D {
 					<dt>Scale</dt><dd><input type="range" min="0" max="10" field="scale"/></dd>
 				</dl>
 			</div>
-			'), this, function(pname) {
-			ctx.onChange(this, pname);
-		});
+			');
+
+			var applyButton = props.find(".apply");
+			applyButton.click(function(_) {
+				applyToRenderer(ctx.rootContext);
+			});
+
+			ctx.properties.add(props, this, function(pname) { ctx.onChange(this, pname); });
 	}
 
 	#end
