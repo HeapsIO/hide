@@ -117,7 +117,7 @@ class Model extends FileView {
 		eventList = element.find(".event-editor");
 
 		if( rootPath == null )
-			rootPath = config.get("scene.renderProps");
+			rootPath = config.getLocal("scene.renderProps");
 
 		if( rootPath != null )
 			root = ide.loadPrefab(rootPath, hrt.prefab.Library);
@@ -651,7 +651,7 @@ class Model extends FileView {
 									var newFrame = Math.round(( (curPos + (e.relX - 2.5) * dragIcon.scaleX ) / W ) * obj.currentAnimation.frameCount);
 									if( newFrame >= 0 && newFrame <= obj.currentAnimation.frameCount ) {
 										events[curFrame].remove(event);
-										if(events[newFrame] == null) 
+										if(events[newFrame] == null)
 											events[newFrame] = [];
 										events[newFrame].insert(0, event);
 										curFrame = newFrame;

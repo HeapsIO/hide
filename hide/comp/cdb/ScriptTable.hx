@@ -20,9 +20,13 @@ class ScriptTable extends SubTable {
 	}
 
 	override public function close() {
-		if( script != null )
-			cell.setValue(script.code);
+		if( script != null ) saveValue();
 		super.close();
+	}
+
+	function saveValue() {
+		var code = [for( line in script.code.split("\r\n").join("\n").split("\n") ) StringTools.rtrim(line)].join("\n");
+		cell.setValue(code);
 	}
 
 	override function refresh() {
@@ -32,7 +36,7 @@ class ScriptTable extends SubTable {
 		div.on("keypress keydown keyup", (e) -> e.stopPropagation());
 		var checker = new ScriptEditor.ScriptChecker(editor.config,"cdb."+cell.getDocumentName(),[ "cdb."+cell.table.sheet.name => cell.line.obj ]);
 		script = new ScriptEditor(cell.value, checker, div);
-		script.onSave = function() cell.setValue(script.code);
+		script.onSave = saveValue;
 		script.onClose = function() { close(); cell.focus(); }
 		lines = [new Line(this,[],0,script.element)];
 		if( first ) script.focus();

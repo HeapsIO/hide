@@ -31,7 +31,8 @@ class Ide {
 		user : Config,
 		current : Config,
 	};
-	var ideConfig(get, never) : hide.Config.HideConfig;
+	var ideConfig(get, never) : hide.Config.HideGlobalConfig;
+	var projectConfig(get, never) : hide.Config.HideProjectConfig;
 
 	var window : nw.Window;
 	var saveMenu : nw.Menu;
@@ -85,7 +86,7 @@ class Ide {
 		}
 
 		if( subView == null ) {
-			var wp = config.global.current.hide.windowPos;
+			var wp = ideConfig.windowPos;
 			if( wp != null ) {
 				if( wp.w > 400 && wp.h > 300 )
 					window.resizeBy(wp.w - Std.int(window.window.outerWidth), wp.h - Std.int(window.window.outerHeight));
@@ -265,7 +266,7 @@ class Ide {
 		defaultLayout = null;
 		var layoutName = isCDB ? "CDB" : "Default";
 		var emptyLayout : Config.LayoutState = { content : [], fullScreen : null };
-		for( p in config.current.current.hide.layouts )
+		for( p in projectConfig.layouts )
 			if( p.name == layoutName ) {
 				if( p.state.content == null ) continue; // old version
 				defaultLayout = p;
@@ -273,9 +274,9 @@ class Ide {
 			}
 		if( defaultLayout == null ) {
 			defaultLayout = { name : layoutName, state : emptyLayout };
-			ideConfig.layouts.push(defaultLayout);
+			projectConfig.layouts.push(defaultLayout);
 			config.current.sync();
-			config.global.save();
+			config.user.save();
 		}
 		if( state == null )
 			state = defaultLayout;
@@ -389,7 +390,7 @@ class Ide {
 		if( initializing || !ideConfig.autoSaveLayout || isCDB )
 			return;
 		defaultLayout.state = saveLayout();
-		if( subView == null ) this.config.global.save();
+		if( subView == null ) this.config.user.save();
 	}
 
 	function saveLayout() : Config.LayoutState {
@@ -399,7 +400,8 @@ class Ide {
 		};
 	}
 
-	function get_ideConfig() return config.global.source.hide;
+	function get_ideConfig() return cast config.global.source.hide;
+	function get_projectConfig() return cast config.user.source.hide;
 	function get_currentConfig() return config.user;
 
 	function get_appPath() {
@@ -542,7 +544,7 @@ class Ide {
 
 			var render = renderers[0];
 			for( r in renderers )
-				if( r.name == config.current.current.hide.renderer ) {
+				if( r.name == projectConfig.renderer ) {
 					render = r;
 					break;
 				}
@@ -830,8 +832,7 @@ class Ide {
 		for( r in renderers ) {
 			new Element("<menu type='checkbox'>").attr("label", r.name).prop("checked",r == h3d.mat.MaterialSetup.current).appendTo(menu.find(".project .renderers")).click(function(_) {
 				if( r != h3d.mat.MaterialSetup.current ) {
-					if( config.user.source.hide == null ) config.user.source.hide = cast {};
-					config.user.source.hide.renderer = r.name;
+					projectConfig.renderer = r.name;
 					config.user.save();
 					setProject(ideConfig.currentProject);
 				}
@@ -880,7 +881,7 @@ class Ide {
 		// layout
 		var layouts = menu.find(".layout .content");
 		layouts.html("");
-		for( l in config.current.current.hide.layouts ) {
+		for( l in projectConfig.layouts ) {
 			if( l.name == "Default" ) continue;
 			new Element("<menu>").attr("label",l.name).addClass(l.name).appendTo(layouts).click(function(_) {
 				initLayout(l);
@@ -894,8 +895,8 @@ class Ide {
 		menu.find(".layout .saveas").click(function(_) {
 			var name = ask("Please enter a layout name:");
 			if( name == null || name == "" ) return;
-			ideConfig.layouts.push({ name : name, state : saveLayout() });
-			config.global.save();
+			projectConfig.layouts.push({ name : name, state : saveLayout() });
+			config.user.save();
 			initMenu();
 		});
 		menu.find(".layout .save").click(function(_) {

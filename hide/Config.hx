@@ -5,20 +5,23 @@ typedef LayoutState = {
 	var fullScreen : { name : String, state : Any };
 }
 
-typedef HideConfig = {
+typedef HideGlobalConfig = {
 	var autoSaveLayout : Null<Bool>;
-	var layouts : Array<{ name : String, state : LayoutState }>;
 
 	var currentProject : String;
 	var recentProjects : Array<String>;
 
 	var windowPos : { x : Int, y : Int, w : Int, h : Int, max : Bool };
+}
+
+typedef HideProjectConfig = {
+	var layouts : Array<{ name : String, state : LayoutState }>;
 	var renderer : String;
 };
 
 typedef ConfigDef = {
 
-	var hide : HideConfig;
+	var hide : {};
 
 };
 
@@ -34,6 +37,11 @@ class Config {
 		ide = Ide.inst;
 		this.parent = parent;
 		sync();
+	}
+
+	public function isLocal() {
+		if( path == null && parent != null ) return parent.isLocal();
+		return path == null || StringTools.startsWith(path, ide.projectDir);
 	}
 
 	public function load( path : String ) {
@@ -90,6 +98,14 @@ class Config {
 		return defaultVal;
 	}
 
+	public function getLocal( key : String, ?defaultVal : Dynamic ) : Dynamic {
+		var v = get(key);
+		if( v == null ) return defaultVal;
+		if( isLocal() ) return v;
+		if( parent == null ) return defaultVal;
+		return parent.getLocal(key,defaultVal);
+	}
+
 	public function set( key : String, val : Dynamic ) {
 		if( val == null )
 			Reflect.deleteField(source, key);
@@ -110,7 +126,7 @@ class Config {
 		if( userGlobals.source.hide == null )
 			userGlobals.source.hide = {
 				autoSaveLayout : true,
-				layouts : [],
+				layouts : null,
 				recentProjects : [],
 				currentProject : projectPath,
 				windowPos : null,
@@ -121,7 +137,10 @@ class Config {
 		perProject.load(resourcePath + "/props.json");
 
 		var projectUserCustom = new Config(perProject);
-		projectUserCustom.load(nw.App.dataPath + "/" + projectPath.split("/").join("_").split(":").join("_") + ".json");
+		projectUserCustom.load(nw.App.dataPath + "/" + projectPath.split("\\").join("/").split("/").join("_").split(":").join("_") + ".json");
+		var p = projectUserCustom;
+		if( p.source.hide == null )
+			p.source.hide = ({ layouts : [], renderer : null } : HideProjectConfig);
 
 		var current = new Config(projectUserCustom);
 
