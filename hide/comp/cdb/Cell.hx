@@ -202,6 +202,9 @@ class Cell extends Component {
 		code = ~/('[^']*')/g.replace(code,'<span class="str">$1</span>');
 		// keywords
 		code = KWD_REG.map(code, function(r) return '<span class="kwd">${r.matched(0)}</span>');
+		// comments
+		code = ~/(\/\*([^\*]+)\*\/)/g.replace(code,'<span class="comment">$1</span>');
+		code = code.split("<br/>").map(function(line) return ~/(\/\/.*)/.replace(line,'<span class="comment">$1</span>')).join("<br/>");
 		return code;
 	}
 
