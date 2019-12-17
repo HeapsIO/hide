@@ -66,10 +66,11 @@ class Environment extends Object3D {
 		var lutPixels = env.lut.capturePixels();
 		var diffusePixels : Array<hxd.Pixels.PixelsFloat> = [ for( i in 0 ... 6) env.diffuse.capturePixels(i) ];
 
+		var mipLevels = env.getMipLevels();
 		var specularPixels : Array<hxd.Pixels.PixelsFloat> =
 		 [
 			for( i in 0 ... 6 ) {
-				for( m in 0 ... env.specLevels ) {
+				for( m in 0 ... mipLevels ) {
 					env.specular.capturePixels(i, m);
 				}
 			}
@@ -153,7 +154,7 @@ class Environment extends Object3D {
 		var mipLevels = env.getMipLevels();
 		env.specLevels = mipLevels - ignoredSpecLevels;
 		for( i in 0 ... 6 ) {
-			for( m in 0 ... env.specLevels ) {
+			for( m in 0 ... mipLevels ) {
 				var mipMapSize = hxd.Pixels.calcStride(env.specular.width >> m, env.specular.format) * env.specular.height >> m;
 				if( curPos + mipMapSize > bytes.length ) return false;
 				var specByte = bytes.sub(curPos, mipMapSize);
@@ -168,7 +169,6 @@ class Environment extends Object3D {
 	}
 
 	function compute( ctx: Context ) {
-		trace("compute");
 		env.compute();
 		#if editor
 		saveAsBinary(ctx);
@@ -200,6 +200,7 @@ class Environment extends Object3D {
 
 		if( sourceMap != env.source ) {
 			env.source = sourceMap;
+			env.equiToCube();
 			needCompute = true;
 		}
 
@@ -229,11 +230,14 @@ class Environment extends Object3D {
 		env.power = power;
 
 		env.createTextures();
-
-		if( needCompute ) {
+		// First Load
+		if( propName == null && needCompute ) {
 			var loadFromBinarySucces = loadFromBinary(ctx);
 			if( !loadFromBinarySucces )
 				compute(ctx);
+		}
+		else if( needCompute ) {
+			compute(ctx);
 		}
 
 		applyToRenderer(ctx);
