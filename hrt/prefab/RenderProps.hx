@@ -65,6 +65,9 @@ class RenderProps extends Prefab {
 			var fx = Std.downcast(s, hrt.prefab.rfx.RendererFX);
 			if( fx != null )
 				renderer.effects.push(fx);
+			var env = Std.downcast(s, hrt.prefab.l3d.Environment);
+			if( env != null )
+				env.applyToRenderer(renderer);
 		}
 		renderer.refreshProps();
 		return true;

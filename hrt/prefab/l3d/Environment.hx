@@ -240,14 +240,13 @@ class Environment extends Object3D {
 			compute(ctx);
 		}
 
-		applyToRenderer(ctx);
+		applyToRenderer(ctx.local3d.getScene().renderer);
 	}
 
-	function applyToRenderer( ctx : Context ) {
-		var pbrRenderer = Std.downcast(ctx.local3d.getScene().renderer, h3d.scene.pbr.Renderer);
-		if( pbrRenderer != null ) {
-			pbrRenderer.env = env;
-		}
+	public function applyToRenderer( r : h3d.scene.Renderer) {
+		var r = Std.downcast(r, h3d.scene.pbr.Renderer);
+		if( r != null ) 
+			r.env = env;
 	}
 
 	#if editor
@@ -288,7 +287,7 @@ class Environment extends Object3D {
 
 			var applyButton = props.find(".apply");
 			applyButton.click(function(_) {
-				applyToRenderer(ctx.rootContext);
+				applyToRenderer(ctx.rootContext.local3d.getScene().renderer);
 			});
 
 			ctx.properties.add(props, this, function(pname) { ctx.onChange(this, pname); });
