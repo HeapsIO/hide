@@ -12,6 +12,12 @@ typedef HideGlobalConfig = {
 	var recentProjects : Array<String>;
 
 	var windowPos : { x : Int, y : Int, w : Int, h : Int, max : Bool };
+	
+	var database:HideCastledbGlobalConfig;
+}
+
+typedef HideCastledbGlobalConfig = {
+	var inlineImageFiles : Bool;
 }
 
 typedef HideProjectConfig = {

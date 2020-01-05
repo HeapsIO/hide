@@ -30,6 +30,16 @@ class Cell extends Component {
 				e.stopPropagation();
 				@:privateAccess line.table.toggleList(this);
 			});
+		case TFile:
+			element.on("drop", function(e : js.jquery.Event) {
+				var e : js.html.DragEvent = untyped e.originalEvent;
+				if (e.dataTransfer.files.length > 0) {
+					e.preventDefault();
+					e.stopPropagation();
+					setValue(ide.makeRelative(untyped e.dataTransfer.files.item(0).path));
+					refresh();
+				}
+			});
 		default:
 			element.dblclick(function(_) edit());
 		}
@@ -165,8 +175,14 @@ class Cell extends Component {
 			var html = v == "" ? '<span class="error">#MISSING</span>' : StringTools.htmlEscape(v);
 			if( v != "" && !editor.quickExists(path) )
 				html = '<span class="error">' + html + '</span>';
-			else if( ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "gif" )
-				html = '<span class="preview">$html<div class="previewContent"><div class="label"></div><img src="$url" onload="$(this).parent().find(\'.label\').text(this.width+\'x\'+this.height)"/></div></span>';
+			else if( ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "gif" ) {
+				var img = '<img src="$url" onload="$(this).parent().find(\'.label\').text(this.width+\'x\'+this.height)"/>';
+				if (@:privateAccess ide.ideConfig.database.inlineImageFiles) {
+					html = '<span class="preview inlineImage">$img<div class="previewContent"><div class="label"></div><div class="file">$html</div></div></span>';
+				} else {
+					html = '<span class="preview">$html<div class="previewContent"><div class="label"></div><img src="$url" onload="$(this).parent().find(\'.label\').text(this.width+\'x\'+this.height)"/></div></span>';
+				}
+			}
 			if( v != "" )
 				html += ' <input type="submit" value="open" onclick="hide.Ide.inst.openFile(\'$path\')"/>';
 			html;
