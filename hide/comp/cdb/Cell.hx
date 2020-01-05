@@ -172,20 +172,21 @@ class Cell extends Component {
 			var path = ide.getPath(v);
 			var url = "file://" + path;
 			var ext = v.split(".").pop().toLowerCase();
-			var html = v == "" ? '<span class="error">#MISSING</span>' : StringTools.htmlEscape(v);
-			if( v != "" && !editor.quickExists(path) )
-				html = '<span class="error">' + html + '</span>';
+			if (v == "") return '<span class="error">#MISSING</span>';
+			var html = StringTools.htmlEscape(v);
+			if (!editor.quickExists(path)) return '<span class="error">$html</span>';
 			else if( ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "gif" ) {
 				var img = '<img src="$url" onload="$(this).parent().find(\'.label\').text(this.width+\'x\'+this.height)"/>';
+				var previewHandler = ' onmouseenter="$(this).find(\'.previewContent\').css(\'top\', (this.getBoundingClientRect().bottom - this.offsetHeight) + \'px\')"';
 				if (@:privateAccess ide.ideConfig.database.inlineImageFiles) {
-					html = '<span class="preview inlineImage">$img<div class="previewContent"><div class="label"></div><div class="file">$html</div></div></span>';
+					html = '<span class="preview inlineImage" $previewHandler>
+						<img src="$url"><div class="previewContent"><div class="inlineImagePath">$html</div><div class="label"></div>$img</div></span>';
 				} else {
-					html = '<span class="preview">$html<div class="previewContent"><div class="label"></div><img src="$url" onload="$(this).parent().find(\'.label\').text(this.width+\'x\'+this.height)"/></div></span>';
+					html = '<span class="preview" $previewHandler>$html
+						<div class="previewContent"><div class="label"></div>$img</div></span>';
 				}
 			}
-			if( v != "" )
-				html += ' <input type="submit" value="open" onclick="hide.Ide.inst.openFile(\'$path\')"/>';
-			html;
+			return html + ' <input type="submit" value="open" onclick="hide.Ide.inst.openFile(\'$path\')"/>';
 		case TTilePos:
 			return tileHtml(v);
 		case TTileLayer:

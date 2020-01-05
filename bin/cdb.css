@@ -271,21 +271,19 @@
 .cdb .cdb-sheet td.t_file .preview .previewContent {
   display: none;
   position: absolute;
-  background-color: #EEE;
+  background-color: #333;
+  color: white;
   border: 1px solid black;
   padding: 5px;
 }
 .cdb .cdb-sheet td.t_file .preview .previewContent .label {
   text-align: center;
   margin-bottom: 5px;
-  background-color: white;
+  background-color: #444;
   font-family: monospace;
 }
-.cdb .cdb-sheet td.t_file .inlineImage img {
+.cdb .cdb-sheet td.t_file .inlineImage > img {
   max-height: 100px;
-}
-.cdb .cdb-sheet td.t_file .inlineImage .file {
-  background-color: white;
 }
 .cdb .cdb-sheet td.t_file .preview:hover .previewContent {
   display: block;
