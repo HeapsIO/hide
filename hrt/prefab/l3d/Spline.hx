@@ -158,7 +158,7 @@ class Spline extends Object3D {
 		#end
 	}
 
-	// Return an interpolation of two samples at t, 0 <= t <= 0
+	// Return an interpolation of two samples at t, 0 <= t <= 1
 	public function getPointAt( t : Float ) : h3d.col.Point {
 		if( data == null )
 			computeSplineData();
@@ -224,28 +224,33 @@ class Spline extends Object3D {
 		var sumT = 0.0;
 		var maxT = 1.0;
 		var minT = 0.0;
-		while( i < points.length - 1 ) {
-
+		var maxI = loop ? points.length : points.length - 1;
+		var curP = points[0];
+		var nextP = points[1];
+		while( i < maxI ) {
 			var t = (maxT + minT) * 0.5;
-			var p = getPointBetween(t, points[i], points[i+1]);
+
+			var p = getPointBetween(t, curP, nextP);
 			var curSegmentLength = p.distance(samples[samples.length - 1].pos);
 
 			// Point found
 			if( hxd.Math.abs(curSegmentLength - step) <= threshold ) {
-				samples.insert(samples.length, { pos : p, tangent : getTangentBetween(t, points[i], points[i+1]), prev : points[i], next : points[i+1], t : t });
+				samples.insert(samples.length, { pos : p, tangent : getTangentBetween(t, curP, nextP), prev : curP, next : nextP, t : t });
 				sumT = t;
 				maxT = 1.0;
 				minT = sumT;
 				// Last point of the curve too close from the last sample
-				if( points[i+1].getPoint().distance(samples[samples.length - 1].pos) < step ) {
+				if( nextP.getPoint().distance(samples[samples.length - 1].pos) < step ) {
 					// End of the spline
-					if( i == points.length - 2 ) {
-						samples.insert(samples.length, { pos : points[points.length - 1].getPoint(), tangent : points[points.length - 1].getTangent(), prev : points[points.length - 2], next : points[points.length - 1], t : 1.0 });
+					if( i == maxI - 1 ) {
+						samples.insert(samples.length, { pos : nextP.getPoint(), tangent : nextP.getTangent(), prev : curP, next : nextP, t : 1.0 });
 						break;
 					}
 					// End of the current curve
 					else {
 						i++;
+						curP = points[i];
+						nextP = points[(i+1) % points.length];
 						sumT = 0.0;
 						minT = 0.0;
 						maxT = 1.0;
@@ -397,6 +402,7 @@ class Spline extends Object3D {
 					<dt>Thickness</dt><dd><input type="range" min="1" max="10" field="lineThickness"/></dd>
 					<dt>Step</dt><dd><input type="range" min="0.1" max="1" field="step"/></dd>
 					<dt>Threshold</dt><dd><input type="range" min="0.001" max="1" field="threshold"/></dd>
+					<dt>Loop</dt><dd><input type="checkbox" field="loop"/></dd>
 					<dt>Show Spline</dt><dd><input type="checkbox" field="showSpline"/></dd>
 					<dt>Type</dt>
 						<dd>
