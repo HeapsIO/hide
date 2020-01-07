@@ -392,8 +392,10 @@ class Level3D extends FileView {
 		tools.addButton("video-camera", "Perspective camera", () -> resetCamera(false));
 		tools.addButton("video-camera", "Top camera", () -> resetCamera(true)).find(".icon").css({transform: "rotateZ(90deg)"});
 		tools.addToggle("anchor", "Snap to ground", (v) -> sceneEditor.snapToGround = v, sceneEditor.snapToGround);
-		tools.addToggle("compass", "Local transforms", (v) -> sceneEditor.localTransform = v, sceneEditor.localTransform);
-		tools.addToggle("th", "Show grid", function(v) { showGrid = v; updateGrid(); }, showGrid);
+		var localToggle = tools.addToggle("compass", "Local transforms", (v) -> sceneEditor.localTransform = v, sceneEditor.localTransform);
+		keys.register("sceneeditor.toggleLocal", () -> localToggle.toggle(!localToggle.isDown()));
+		var gridToggle = tools.addToggle("th", "Show grid", function(v) { showGrid = v; updateGrid(); }, showGrid);
+		keys.register("sceneeditor.toggleGrid", () -> gridToggle.toggle(!gridToggle.isDown()));
 		tools.addButton("sun-o", "Bake Lights", () -> bakeLights());
 		tools.addButton("map", "Bake Volumetric Lightmaps", () -> { bakeLights(); bakeVolumetricLightmaps(); });
 		tools.addButton("info-circle", "Scene information", () -> {

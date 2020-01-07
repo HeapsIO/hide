@@ -64,6 +64,8 @@
 	"key.sceneeditor.selectParent": "Backspace",
 	"key.sceneeditor.reparent": "Ctrl-P",
 	"key.sceneeditor.editPivot" : "P",
+	"key.sceneeditor.toggleLocal": "D",
+	"key.sceneeditor.toggleGrid": "G",
 
 	// cdb config
 	"cdb.databaseFile" : "data.cdb",
