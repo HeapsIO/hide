@@ -57,6 +57,9 @@
   padding: 2px 4px;
   overflow: hidden;
 }
+.cdb .cdb-sheet tr.props td {
+  overflow: visible;
+}
 .cdb .cdb-sheet td.edit {
   padding: 2px;
   padding-right: 6px;
