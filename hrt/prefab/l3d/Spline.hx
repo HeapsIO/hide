@@ -159,7 +159,7 @@ class Spline extends Object3D {
 	}
 
 	// Return an interpolation of two samples at t, 0 <= t <= 1
-	public function getPointAt( t : Float ) : h3d.col.Point {
+	public function getPointAt( t : Float, ?pos: h3d.col.Point, ?tangent: h3d.col.Point ) : h3d.col.Point {
 		if( data == null )
 			computeSplineData();
 
@@ -172,17 +172,24 @@ class Spline extends Object3D {
 		s1 = hxd.Math.iclamp(s1, 0, data.samples.length - 1);
 		s2 = hxd.Math.iclamp(s2, 0, data.samples.length - 1);
 
+		if(pos == null)
+			pos = new h3d.col.Point();
+
 		// End/Beginning of the curve, just return the point
-		if( s1 == s2 )
-			return data.samples[s1].pos;
+		if( s1 == s2 ) {
+			pos.load(data.samples[s1].pos);
+			if(tangent != null)
+				tangent.load(data.samples[s1].tangent);
+		}
 		// Linear interpolation between the two samples
 		else {
 			var segmentLength = data.samples[s1].pos.distance(data.samples[s2].pos);
 			var t = (l - (s1 * step)) / segmentLength;
-			var result = new h3d.Vector();
-			result.lerp(data.samples[s1].pos.toVector(), data.samples[s2].pos.toVector(), t);
-			return result.toPoint();
+			pos.lerp(data.samples[s1].pos, data.samples[s2].pos, t);
+			if(tangent != null)
+				tangent.lerp(data.samples[s1].tangent, data.samples[s2].tangent, t);
 		}
+		return pos;
 	}
 
 	// Return the euclidean distance between the two points
