@@ -104,7 +104,7 @@ class MeshGeneratorRoot extends h3d.scene.Object {
 	}
 
 	override function syncRec( ctx ) {
-		if( posChanged ) 
+		if( posChanged )
 			super.syncRec(ctx);
 	}
 }
@@ -175,10 +175,12 @@ class MeshGenerator extends Object3D {
 		#if editor
 		// Only one CullingCollider for performance
 		var rootPos = rootObject.getAbsPos().getPosition();
-		var mainCullingCollider = new h3d.col.Sphere(rootPos.x, rootPos.y, rootPos.z, 0.0);
+		var sphere = new h3d.col.Sphere();
+		var mainCullingCollider = new h3d.col.ObjectCollider(rootObject, sphere);
 		for( m in ctx.local3d.findAll(o -> Std.downcast(o, h3d.scene.Mesh)) ) {
 			m.cullingCollider = mainCullingCollider;
-			mainCullingCollider.r = hxd.Math.max(mainCullingCollider.r, m.primitive.getBounds().toSphere().r + m.getAbsPos().getPosition().sub(rootPos).length());
+			// TODO: doesn't take scale into account
+			sphere.r = hxd.Math.max(sphere.r, m.primitive.getBounds().toSphere().r + m.getAbsPos().getPosition().sub(rootPos).length());
 		}
 		#end
 	}

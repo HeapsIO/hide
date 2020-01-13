@@ -588,7 +588,7 @@ class SceneEditor {
 		var meshes = context.shared.getObjects(elt, h3d.scene.Mesh);
 		var invRootMat = local3d.getAbsPos().clone();
 		invRootMat.invert();
-		var bounds = new h3d.col.Sphere();
+		var bounds = new h3d.col.Bounds();
 		for(mesh in meshes) {
 			if(mesh.ignoreCollide)
 				continue;
@@ -603,8 +603,9 @@ class SceneEditor {
 
 			var localMat = mesh.getAbsPos().clone();
 			localMat.multiply(localMat, invRootMat);
-			var lb = mesh.primitive.getBounds().toSphere();
-			bounds.r = hxd.Math.max(bounds.r, lb.r + localMat.getPosition().length());
+			var lb = mesh.primitive.getBounds().clone();
+			lb.transform(localMat);
+			bounds.add(lb);
 		}
 		var meshCollider = new h3d.col.Collider.GroupCollider([for(m in meshes) {
 			var c : h3d.col.Collider = try m.getGlobalCollider() catch(e: Dynamic) null;
