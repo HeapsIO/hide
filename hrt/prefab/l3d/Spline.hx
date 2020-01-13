@@ -323,7 +323,7 @@ class Spline extends Object3D {
 		}
 	}
 
-	// Return the tangen on the curve between p1 and p2 at t, 0 <= t <= 1
+	// Return the tangent on the curve between p1 and p2 at t, 0 <= t <= 1
 	inline function getTangentBetween( t : Float, p1 : SplinePoint, p2 : SplinePoint ) : h3d.col.Point {
 		return switch (shape) {
 			case Linear: getLinearBezierTangent( t, p1.getPoint(), p2.getPoint() );
@@ -347,9 +347,9 @@ class Spline extends Object3D {
 	inline function getQuadraticBezierPoint( t : Float, p0 : h3d.col.Point, p1 : h3d.col.Point, p2 : h3d.col.Point) : h3d.col.Point {
 		return p0.multiply((1 - t) * (1 - t)).add(p1.multiply(t * 2 * (1 - t))).add(p2.multiply(t * t));
 	}
-	// p'(t) = 2 * (1 - t) * (p1 - p2) + 2 * t * (p2 - p1)
+	// p'(t) = 2 * (1 - t) * (p1 - p0) + 2 * t * (p2 - p1)
 	inline function getQuadraticBezierTangent( t : Float, p0 : h3d.col.Point, p1 : h3d.col.Point, p2 : h3d.col.Point) : h3d.col.Point {
-		return p1.sub(p2).multiply(2 * (1 - t)).add(p2.sub(p1).multiply(2 * t)).normalizeFast();
+		return p1.sub(p0).multiply(2 * (1 - t)).add(p2.sub(p1).multiply(2 * t)).normalizeFast();
 	}
 
 	// Cubic Interpolation
