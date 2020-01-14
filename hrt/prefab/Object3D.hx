@@ -148,7 +148,7 @@ class Object3D extends Prefab {
 		var boundsCollider = new h3d.col.ObjectCollider(local3d, bounds);
 		var int = new h3d.scene.Interactive(boundsCollider, local3d);
 		int.ignoreParentTransform = true;
-		//int.preciseShape = meshCollider;
+		int.preciseShape = meshCollider;
 		int.propagateEvents = true;
 		int.enableRightButton = true;
 		return int;
