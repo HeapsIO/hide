@@ -501,6 +501,10 @@ class Terrain extends Object3D {
 	}
 
 	#if editor
+	override function makeInteractive( ctx : Context ) : h3d.scene.Interactive {
+		return null;
+	}
+
 	override function setSelected( ctx : Context, b : Bool ) {
 		if( editor != null ) editor.setSelected(ctx, b);
 	}

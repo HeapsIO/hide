@@ -115,6 +115,45 @@ class Object3D extends Prefab {
 	}
 
 	#if editor
+	public function makeInteractive( ctx : Context ) : h3d.scene.Interactive {
+		var local3d = ctx.local3d;
+		if(local3d == null)
+			return null;
+		var meshes = ctx.shared.getObjects(this, h3d.scene.Mesh);
+		var invRootMat = local3d.getAbsPos().clone();
+		invRootMat.invert();
+		var bounds = new h3d.col.Bounds();
+		for(mesh in meshes) {
+			if(mesh.ignoreCollide)
+				continue;
+
+			// invisible objects are ignored collision wise
+			var p : h3d.scene.Object = mesh;
+			while( p != local3d ) {
+				if( !p.visible ) break;
+				p = p.parent;
+			}
+			if( p != local3d ) continue;
+
+			var localMat = mesh.getAbsPos().clone();
+			localMat.multiply(localMat, invRootMat);
+			var lb = mesh.primitive.getBounds().clone();
+			lb.transform(localMat);
+			bounds.add(lb);
+		}
+		var meshCollider = new h3d.col.Collider.GroupCollider([for(m in meshes) {
+			var c : h3d.col.Collider = try m.getGlobalCollider() catch(e: Dynamic) null;
+			if(c != null) c;
+		}]);
+		var boundsCollider = new h3d.col.ObjectCollider(local3d, bounds);
+		var int = new h3d.scene.Interactive(boundsCollider, local3d);
+		int.ignoreParentTransform = true;
+		//int.preciseShape = meshCollider;
+		int.propagateEvents = true;
+		int.enableRightButton = true;
+		return int;
+	}	
+
 	override function edit( ctx : EditContext ) {
 		var props = new hide.Element('
 			<div class="group" name="Position">

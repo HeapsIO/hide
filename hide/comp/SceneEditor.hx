@@ -1,7 +1,6 @@
 package hide.comp;
 
 import h3d.col.Sphere;
-import hrt.prefab.terrain.Terrain;
 import h3d.scene.Mesh;
 import h3d.col.FPoint;
 import h3d.col.Ray;
@@ -568,56 +567,20 @@ class SceneEditor {
 	public dynamic function onRefresh() {
 	}
 
-	function makeInteractive(elt: PrefabElement) {
+	function makeInteractive( elt : PrefabElement ) {
 		var obj3d = Std.downcast(elt, Object3D);
-		if(obj3d == null)
-			return;
-
-		// Disable Interactive for the terrain
-		var terrain = Std.downcast(elt, Terrain);
-		if(terrain != null)
+		if( obj3d == null )
 			return;
 
 		var contexts = context.shared.contexts;
 		var ctx = contexts[elt];
-		if(ctx == null)
+		if( ctx == null )
 			return;
-		var local3d = ctx.local3d;
-		if(local3d == null)
+
+		var int = obj3d.makeInteractive(ctx);
+		if( int == null )
 			return;
-		var meshes = context.shared.getObjects(elt, h3d.scene.Mesh);
-		var invRootMat = local3d.getAbsPos().clone();
-		invRootMat.invert();
-		var bounds = new h3d.col.Bounds();
-		for(mesh in meshes) {
-			if(mesh.ignoreCollide)
-				continue;
 
-			// invisible objects are ignored collision wise
-			var p : h3d.scene.Object = mesh;
-			while( p != local3d ) {
-				if( !p.visible ) break;
-				p = p.parent;
-			}
-			if( p != local3d ) continue;
-
-			var localMat = mesh.getAbsPos().clone();
-			localMat.multiply(localMat, invRootMat);
-			var lb = mesh.primitive.getBounds().clone();
-			lb.transform(localMat);
-			bounds.add(lb);
-		}
-		var meshCollider = new h3d.col.Collider.GroupCollider([for(m in meshes) {
-			var c : h3d.col.Collider = try m.getGlobalCollider() catch(e: Dynamic) null;
-			if(c != null) c;
-		}]);
-		var boundsCollider = new h3d.col.ObjectCollider(local3d, bounds);
-		var int = new h3d.scene.Interactive(boundsCollider, local3d);
-		interactives.set(elt, int);
-		int.ignoreParentTransform = true;
-		int.preciseShape = meshCollider;
-		int.propagateEvents = true;
-		int.enableRightButton = true;
 		var startDrag = null;
 		var dragBtn = -1;
 		int.onClick = function(e) {
@@ -699,6 +662,8 @@ class SceneEditor {
 				}
 			}
 		}
+
+		interactives.set(elt, int);
 	}
 
 	public function refreshInteractive(elt : PrefabElement) {

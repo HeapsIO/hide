@@ -264,6 +264,12 @@ class MeshGenerator extends Object3D {
 
 	#if editor
 
+	override function makeInteractive( ctx : Context ) : h3d.scene.Interactive {
+		var int = super.makeInteractive(ctx);
+		int.preciseShape = null;
+		return int;
+	}
+
 	function generate( ctx : EditContext, mp : MeshPart, maxDepth : Int, curDepth : Int) {
 		if( curDepth >  maxDepth ) return;
 		curDepth++;
