@@ -390,8 +390,13 @@ class EmitterObject extends h3d.scene.Object {
 	}
 
 	static var tmpQuat = new h3d.Quat();
+	static var tmpEmitterQuat = new h3d.Quat();
 	static var tmpOffset = new h3d.Vector();
+	static var tmpVec = new h3d.Vector();
 	static var tmpDir = new h3d.Vector();
+	static var tmpScale = new h3d.Vector();
+	static var tmpMat = new h3d.Matrix();
+	static var tmpMat2 = new h3d.Matrix();
 	function doEmit( count : Int ) {
 		if( count == 0 )
 			return;
@@ -400,12 +405,21 @@ class EmitterObject extends h3d.scene.Object {
 			return;
 
 		var shapeAngle = hxd.Math.degToRad(emitAngle) / 2.0;
+		var emitterQuat : h3d.Quat = null;
+		var emitterBaseMat : h3d.Matrix = null;
 
 		for( i in 0...count ) {
 			var part = allocInstance();
 			part.init(this, instDef);
 			part.next = particles;
 			particles = part;
+
+			if(emitterBaseMat == null) {
+				emitterBaseMat = particleTemplate.getTransform();
+				part.baseMat = emitterBaseMat;
+			}
+			else
+				part.baseMat = emitterBaseMat.clone();
 
 			part.lifeTime = hxd.Math.max(0.01, lifeTime + hxd.Math.srand(lifeTimeRand));
 			tmpQuat.identity();
@@ -461,25 +475,33 @@ class EmitterObject extends h3d.scene.Object {
 
 			switch( simulationSpace ) {
 				case Local:
-					var localQuat = getRotationQuat().clone();
-					var localMat = getAbsPos().clone();
-					var parentInvMat = parent.getAbsPos().clone();
-					parentInvMat.invert();
-					localMat.multiply(localMat, parentInvMat);
-					tmpOffset.transform(localMat);
+					if(emitterQuat == null) {
+						emitterQuat = tmpEmitterQuat;
+						emitterQuat.load(getRotationQuat());
+						tmpMat.load(getAbsPos());
+						tmpMat2.load(parent.getAbsPos());
+						tmpMat2.invert();
+						tmpMat.multiply(tmpMat, tmpMat2);
+					}
+
+					tmpOffset.transform(tmpMat);
 					part.setPosition(tmpOffset.x, tmpOffset.y, tmpOffset.z);
-					part.baseMat = particleTemplate.getTransform();
-					localQuat.multiply(localQuat, tmpQuat);
-					part.setRotation(localQuat);
-					part.orientation.load(localQuat);
+					tmpQuat.multiply(emitterQuat, tmpQuat);
+					part.setRotation(tmpQuat);
+					part.orientation.load(tmpQuat);
 				case World:
-					var worldPos = localToGlobal(tmpOffset.clone());
-					part.setPosition(worldPos.x, worldPos.y, worldPos.z);
-					part.baseMat = particleTemplate.getTransform();
-					var worldQuat = new h3d.Quat();
-					worldQuat.initRotateMatrix(getAbsPos());
-					worldQuat.normalize();
-					tmpQuat.multiply(tmpQuat, worldQuat);
+					tmpVec.load(tmpOffset);
+					localToGlobal(tmpVec);
+					part.setPosition(tmpVec.x, tmpVec.y, tmpVec.z);
+					if(emitterQuat == null) {
+						emitterQuat = tmpEmitterQuat;
+						tmpMat.load(getAbsPos());
+						tmpMat.getScale(tmpScale);
+						tmpMat.prependScale(1.0/tmpScale.x, 1.0/tmpScale.y, 1.0/tmpScale.z);
+						emitterQuat.initRotateMatrix(tmpMat);
+						emitterQuat.normalize();
+					}
+					tmpQuat.multiply(tmpQuat, emitterQuat);
 					part.setRotation(tmpQuat);
 					part.orientation.load(tmpQuat);
 			}
