@@ -478,6 +478,15 @@ class CurveEditor extends Component {
 			var popup = new Element('<div class="keyPopup">
 					<div class="line"><label>Time</label><input class="x" type="number" value="0" step="0.1"/></div>
 					<div class="line"><label>Value</label><input class="y" type="number" value="0" step="0.1"/></div>
+					<div class="line">
+						<label>Mode</label>
+						<select>
+							<option value="0">Aligned</option>
+							<option value="1">Free</option>
+							<option value="2">Linear</option>
+							<option value="3">Constant</option>
+						</select>
+					</div>
 				</div>').appendTo(element);
 			popup.css({top: top, left: left});
 			popup.focusout(function(e) {
@@ -485,6 +494,18 @@ class CurveEditor extends Component {
 					if(popup.find(':focus').length == 0)
 						popup.remove();
 				}, 0);
+			});
+
+			function setMode(m: hrt.prefab.Curve.CurveKeyMode) {
+				key.mode = m;
+				curve.keyMode = m;
+				fixKey(key);
+				refreshGraph();
+			}
+			var select = popup.find("select");
+			select.val(Std.string(key.mode));
+			select.change(function(val) {
+				setMode(cast Std.parseInt(select.val()));
 			});
 
 			function afterEdit() {
@@ -532,7 +553,6 @@ class CurveEditor extends Component {
 					var offset = element.offset();
 					beforeChange();
 
-					var popup = editPopup(key, e.clientY - offset.top - 20, e.clientX - offset.left + 10);
 					startDrag(function(e) {
 						var lx = e.clientX - offset.left;
 						var ly = e.clientY - offset.top;
@@ -548,7 +568,6 @@ class CurveEditor extends Component {
 						}
 						if(lockKeyX)
 							key.time = prevTime;
-						popup.remove();
 						fixKey(key);
 						refreshGraph(true, key);
 						onKeyMove(key, prevTime, prevVal);
@@ -562,21 +581,9 @@ class CurveEditor extends Component {
 					refreshGraph();
 				});
 				keyHandle.contextmenu(function(e) {
+					var offset = element.offset();
+					var popup = editPopup(key, e.clientY - offset.top - 50, e.clientX - offset.left);
 					e.preventDefault();
-					function setMode(m: hrt.prefab.Curve.CurveKeyMode) {
-						key.mode = m;
-						curve.keyMode = m;
-						fixKey(key);
-						refreshGraph();
-					}
-					new ContextMenu([
-						{ label : "Mode", menu :[
-							{ label : "Aligned", checked: key.mode == Aligned, click : setMode.bind(Aligned) },
-							{ label : "Free", checked: key.mode == Free, click : setMode.bind(Free) },
-							{ label : "Linear", checked: key.mode == Linear, click : setMode.bind(Linear) },
-							{ label : "Constant", checked: key.mode == Constant, click : setMode.bind(Constant) },
-						] }
-					]);
 					return false;
 				});
 			}
