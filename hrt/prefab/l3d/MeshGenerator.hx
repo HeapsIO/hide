@@ -151,10 +151,12 @@ class MeshGenerator extends Object3D {
 		}
 		updateInstance(ctx);
 
-		#if editor
+		#if editor 
 		if( customScene == null ) {
 			customScene = new h3d.scene.Scene(true, false);
+			#if debug
 			customScene.checkPasses = false;
+			#end
 		}
 		#end
 
