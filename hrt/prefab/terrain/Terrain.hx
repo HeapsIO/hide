@@ -456,12 +456,13 @@ class Terrain extends Object3D {
 		ctx.local3d = terrain;
 		ctx.local3d.name = name;
 
-		#if editor
-		// Auto init in editor
-		initTerrain(ctx, true, true);
-		#end
-
 		updateInstance(ctx);
+		return ctx;
+	}
+
+	override function make(ctx:Context):Context {
+		ctx = super.make(ctx);
+		initTerrain(ctx);
 		return ctx;
 	}
 
