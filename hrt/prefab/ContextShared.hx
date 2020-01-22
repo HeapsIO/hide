@@ -19,13 +19,14 @@ class ContextShared {
 	var shaderCache : ShaderDefCache;
 	var bakedData : Map<String, haxe.io.Bytes>;
 
-	public function new() {
+	public function new( ?res : hxd.res.Resource ) {
 		root2d = new h2d.Object();
 		root3d = new h3d.scene.Object();
 		contexts = new Map();
 		references = new Map();
 		cache = new h3d.prim.ModelCache();
 		shaderCache = new ShaderDefCache();
+		if( res != null ) currentPath = res.entry.path;
 	}
 
 	public function onError( e : Dynamic ) {
