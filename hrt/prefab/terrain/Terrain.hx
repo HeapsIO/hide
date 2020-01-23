@@ -274,6 +274,11 @@ class Terrain extends Object3D {
 	}
 
 	public function initTerrain( ctx : Context, height = true, surface = true ) {
+
+		// Fix terrain being reloaded after a scene modification
+		if( terrain.surfaceArray != null )
+			return;
+
 		//#if editor
 		if( surface ) {
 			var initDone = false;
