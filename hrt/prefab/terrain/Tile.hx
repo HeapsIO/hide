@@ -21,7 +21,7 @@ class Tile extends h3d.scene.Mesh {
 	// set by prefab loader for CPU access ingame
 	public var packedWeightMapPixel : hxd.Pixels;
 	public var indexMapPixels : hxd.Pixels;
-	public var normalBytes : haxe.io.Bytes;
+	public var normalTangentBytes : haxe.io.Bytes;
 
 	var heightmapPixels : hxd.Pixels.PixelsFloat;
 	var shader : hrt.shader.Terrain;
@@ -67,18 +67,22 @@ class Tile extends h3d.scene.Mesh {
 		return heightmapPixels;
 	}
 
-	public function createBigPrim( normals : haxe.io.Bytes ) {
+	public function createBigPrim( bytes : haxe.io.Bytes ) {
 		if( bigPrim != null ) bigPrim.dispose();
-		normalBytes = normals;
-		bigPrim = new h3d.prim.BigPrimitive(6);
-		var n = new h3d.Vector(0,0,0);
+		normalTangentBytes = bytes;
+		bigPrim = new h3d.prim.BigPrimitive(9, true);
+		var stride = 3 * 4 + 3 * 4; // Normal + Tangent
 		inline function addVertice(x : Float, y : Float, i : Int) {
 			// Pos
 			bigPrim.addPoint(x, y, getHeight(x / terrain.tileSize, y / terrain.tileSize)); // Use addPoint() instead of addVertexValue() for the bounds
 			// Normal
-			bigPrim.addVertexValue(normals.getFloat(i * 3 * 4));
-			bigPrim.addVertexValue(normals.getFloat(i * 3 * 4 + 4));
-			bigPrim.addVertexValue(normals.getFloat(i * 3 * 4 + 8));
+			bigPrim.addVertexValue(bytes.getFloat(i * stride));
+			bigPrim.addVertexValue(bytes.getFloat(i * stride + 4));
+			bigPrim.addVertexValue(bytes.getFloat(i * stride + 8));
+			// Tangents
+			bigPrim.addVertexValue(bytes.getFloat(i * stride + 12));
+			bigPrim.addVertexValue(bytes.getFloat(i * stride + 16));
+			bigPrim.addVertexValue(bytes.getFloat(i * stride + 20));
 		}
 
 		var cellCount = terrain.cellCount;
@@ -105,6 +109,11 @@ class Tile extends h3d.scene.Mesh {
 		primitive = bigPrim;
 	}
 
+	public function computeTangents() {
+		if( grid != null )
+			grid.addTangents();
+	}
+
 	public function refreshGrid() {
 		if( bigPrim != null )
 			return;
@@ -114,6 +123,7 @@ class Tile extends h3d.scene.Mesh {
 			primitive = grid;
 		}
 		computeNormals();
+		computeTangents();
 	}
 
 	public function blendEdges() {
@@ -142,6 +152,7 @@ class Tile extends h3d.scene.Mesh {
 		computeEdgesHeight(flags);
 		computeNormals();
 		computeEdgesNormals();
+		computeTangents();
 	}
 
 	function refreshHeightMap() {
@@ -654,7 +665,7 @@ class Tile extends h3d.scene.Mesh {
 				}
 			}
 			if( needRealloc ) {
-				createBigPrim(normalBytes);
+				createBigPrim(normalTangentBytes);
 				cachedBounds = null;
 			}
 		}

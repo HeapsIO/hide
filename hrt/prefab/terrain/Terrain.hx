@@ -329,12 +329,17 @@ class Terrain extends Object3D {
 		for( tile in terrain.tiles ) {
 			if( tile.grid == null || tile.grid.normals == null ) continue;
 			var normals = tile.grid.normals;
+			var tangents = tile.grid.tangents;
 			var fileName = tile.tileX + "_" + tile.tileY + "_" + "n";
-			var bytes = haxe.io.Bytes.alloc(normals.length * 3 * 4);
+			var stride = 3 * 4 + 3 * 4; // Normal + Tangent
+			var bytes = haxe.io.Bytes.alloc(normals.length * stride);
 			for( i in 0 ... normals.length ) {
-				bytes.setFloat(i*3*4, normals[i].x);
-				bytes.setFloat(i*3*4+4, normals[i].y);
-				bytes.setFloat(i*3*4+8, normals[i].z);
+				bytes.setFloat(i*stride, normals[i].x);
+				bytes.setFloat(i*stride+4, normals[i].y);
+				bytes.setFloat(i*stride+8, normals[i].z);
+				bytes.setFloat(i*stride+12, tangents[i].x);
+				bytes.setFloat(i*stride+16, tangents[i].y);
+				bytes.setFloat(i*stride+20, tangents[i].z);
 			}
 			ctx.shared.savePrefabDat(fileName, "bin", name, bytes);
 		}

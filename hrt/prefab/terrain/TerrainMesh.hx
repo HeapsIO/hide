@@ -164,6 +164,8 @@ class TerrainMesh extends h3d.scene.Object {
 		}
 		for( tile in tiles )
 			tile.blendEdges();
+		for( tile in tiles )
+			tile.computeTangents();
 	}
 
 	public function refreshAllTex() {

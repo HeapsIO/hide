@@ -4,6 +4,7 @@ class Terrain extends hxsl.Shader {
 
 	static var SRC = {
 
+		@input var tangent : Vec3;
 		@:import h3d.shader.BaseMesh;
 		@const var SHOW_GRID : Bool;
 		@const var SURFACE_COUNT : Int;
@@ -49,6 +50,7 @@ class Terrain extends hxsl.Shader {
 
 		var tangentViewPos : Vec3;
 		var tangentFragPos : Vec3;
+		var transformedTangent : Vec4;
 
 		function vertex() {
 			calculatedUV = input.position.xy / primSize;
@@ -57,7 +59,11 @@ class Terrain extends hxsl.Shader {
 				terrainUV += 0.5 / heightMapSize;
 				transformedPosition += (vec3(0,0, textureLod(heightMap, terrainUV, 0).r) * global.modelView.mat3());
 			}
-			TBN = mat3(normalize(cross(transformedNormal, vec3(0,1,0))), normalize(cross(transformedNormal,vec3(-1,0,0))), transformedNormal);
+
+			transformedTangent = vec4(tangent * global.modelView.mat3(),tangent.dot(tangent) > 0.5 ? 1. : -1.);
+			var tanX = transformedTangent.xyz.normalize() * -transformedTangent.w;
+			var tanY = transformedNormal.cross(tanX).normalize();
+			TBN = mat3(tanX, tanY, transformedNormal);
 			tangentViewPos = camera.position * TBN;
 			tangentFragPos = transformedPosition * TBN;
 		}
@@ -84,11 +90,11 @@ class Terrain extends hxsl.Shader {
 			if( !PARALLAX )
 				return uv;
 			else {
-				var viewDir = normalize(tangentViewPos - tangentFragPos);
-				var numLayers = mix(float(maxStep), float(minStep), viewDir.dot(transformedNormal));
+				var viewNS = normalize(tangentViewPos - tangentFragPos);
+				var numLayers = mix(float(maxStep), float(minStep), viewNS.dot(transformedNormal));
 				var layerDepth = 1 / numLayers;
 				var curLayerDepth = 0.;
-				var delta = (viewDir.xy / viewDir.z) * parallaxAmount / numLayers;
+				var delta = (viewNS.xy / viewNS.z) * parallaxAmount / numLayers;
 				var curUV = uv;
 				var depth = getDepth(i, curUV);
 				var curDepth = depth.dot(w);
@@ -125,7 +131,11 @@ class Terrain extends hxsl.Shader {
 			if( CHECKER ) {
 				var tile = abs(abs(floor(input.position.x)) % 2 - abs(floor(input.position.y)) % 2);
 				pixelColor = vec4(mix(vec3(0.4), vec3(0.1), tile), 1.0);
-				transformedNormal = vec3(0,0,1) * TBN;
+				var n = transformedNormal;
+				var nf = vec3(0,0,1);
+				var tanX = transformedTangent.xyz;
+				var tanY = n.cross(tanX) * -transformedTangent.w;
+				transformedNormal = (nf.x * tanX + nf.y * tanY + nf.z * n).normalize();
 				roughnessValue = mix(0.1, 0.9, tile);
 				metalnessValue = mix(1.0, 0, tile);
 				occlusionValue = 1;
@@ -136,7 +146,11 @@ class Terrain extends hxsl.Shader {
 				for(i in 0 ... SURFACE_COUNT)
 					blendCount += ceil(weightTextures.get(vec3(calculatedUV, i)).r);
 				pixelColor = vec4(mix(vec3(0,1,0), vec3(1,0,0), blendCount / 3.0) , 1);
-				transformedNormal = vec3(0,0,1) * TBN;
+				var n = transformedNormal;
+				var nf = vec3(0,0,1);
+				var tanX = transformedTangent.xyz;
+				var tanY = n.cross(tanX) * -transformedTangent.w;
+				transformedNormal = (nf.x * tanX + nf.y * tanY + nf.z * n).normalize();
 				emissiveValue = 1;
 				roughnessValue = 1;
 				metalnessValue = 0;
@@ -195,9 +209,9 @@ class Terrain extends hxsl.Shader {
 				normal /= wSum;
 
 				// Output
-				normal = vec4(unpackNormal(normal), 0.0);
+				var n = unpackNormal(normal);
+				transformedNormal = vec3(n.x * -1, n.y, n.z) * TBN;
 				pixelColor = vec4(albedo, 1.0);
-				transformedNormal = normalize(normal.xyz) * TBN;
 				roughnessValue = 1 - pbr.g * pbr.g;
 				metalnessValue = pbr.r;
 				occlusionValue = pbr.b;
