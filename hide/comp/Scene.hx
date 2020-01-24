@@ -113,7 +113,9 @@ class Scene extends Component implements h3d.IDrawable {
 			engine.setCurrent();
 			window.setCurrent();
 			s2d = new h2d.Scene();
-			s3d = new h3d.scene.Scene();
+			s3d = new hide.Scene();
+			// Unoptimised version of the scene
+			//s3d = new h3d.scene.Scene();
 			sevents = new hxd.SceneEvents(window);
 			sevents.addScene(s2d);
 			sevents.addScene(s3d);
