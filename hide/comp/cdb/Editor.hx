@@ -1,10 +1,15 @@
 package hide.comp.cdb;
 import hxd.Key in K;
 
+typedef UndoSheet = {
+	var sheet : String;
+	var parent : { sheet : UndoSheet, line : Int, column : Int };
+}
+
 typedef UndoState = {
 	var data : Any;
 	var cursor : { sheet : String, x : Int, y : Int, select : Null<{ x : Int, y : Int }> };
-	var tables : Array<{ sheet : String, parent : { sheet : String, line : Int, column : Int } }>;
+	var tables : Array<UndoSheet>;
 }
 
 typedef EditorApi = {
@@ -328,8 +333,15 @@ class Editor extends Component {
 			},
 			tables : [for( i in 1...tables.length ) {
 				var t = tables[i];
-				var tp = t.sheet.parent;
-				{ sheet : t.sheet.name, parent : { sheet : tp.sheet.name, line : tp.line, column : tp.column } }
+				function makeParent(t:Table) : UndoSheet {
+					var tp = t.parent;
+					return { sheet : t.sheet.name, parent : tp == null ? null : {
+						sheet : makeParent(tp),
+						line : t.sheet.parent.line,
+						column : t.sheet.parent.column,
+					} };
+				}
+				makeParent(tables[i]);
 			}],
 		};
 	}
@@ -337,14 +349,23 @@ class Editor extends Component {
 	function setState( state : UndoState ) {
 		var cur = state.cursor;
 		for( t in state.tables ) {
-			var tparent = null;
-			for( tp in tables )
-				if( tp.sheet.name == t.parent.sheet ) {
-					tparent = tp;
-					break;
+			function openRec(s:UndoSheet) : Table {
+				if( s.parent != null ) {
+					var t = openRec(s.parent.sheet);
+					if( t != null ) {
+						var cell = t.lines[s.parent.line].cells[t.displayMode == Properties ? 0 : s.parent.column];
+						if( cell.line.subTable == null )
+							cell.open(true);
+						return cell.line.subTable;
+					}
+				} else {
+					for( tp in tables )
+						if( tp.sheet.name == s.sheet )
+							return tp;
 				}
-			if( tparent != null )
-				tparent.lines[t.parent.line].cells[tparent.displayMode == Properties ? 0 : t.parent.column].open(true);
+				return null;
+			}
+			openRec(t);
 		}
 
 		if( cur != null ) {
