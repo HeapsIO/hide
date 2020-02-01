@@ -181,6 +181,7 @@ class Editor extends Component {
 
 	function onPaste() {
 		var text = ide.getClipboard();
+		var sheet = cursor.table.sheet;
 		if( clipboard == null || text != clipboard.text ) {
 			if( cursor.x < 0 || cursor.y < 0 ) return;
 			var x1 = cursor.x;
@@ -225,7 +226,6 @@ class Editor extends Component {
 			return;
 		}
 		beginChanges();
-		var sheet = cursor.table.sheet;
 		var posX = cursor.x < 0 ? 0 : cursor.x;
 		var posY = cursor.y < 0 ? 0 : cursor.y;
 		for( obj1 in clipboard.data ) {
@@ -630,7 +630,7 @@ class Editor extends Component {
 
 	function moveLine( line : Line, delta : Int ) {
 		beginChanges();
-		var index = sheet.moveLine(line.index, delta);
+		var index = line.table.sheet.moveLine(line.index, delta);
 		if( index != null ) {
 			cursor.set(cursor.table, -1, index);
 			refresh();

@@ -30,6 +30,8 @@ class Cell extends Component {
 				e.stopPropagation();
 				@:privateAccess line.table.toggleList(this);
 			});
+		case TString if( column.kind == Script ):
+			element.click(function(_) edit());
 		default:
 			element.dblclick(function(_) edit());
 		}

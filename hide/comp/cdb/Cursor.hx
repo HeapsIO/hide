@@ -78,6 +78,18 @@ class Cursor {
 			update();
 			return;
 		}
+
+		// take care of current filter
+		var line = getLine();
+		if( line != null && dy != 0 ) {
+			var allLines = line.element.parent().children("tr").not(".separator");
+			var lines = allLines.not(".filtered");
+			var index = lines.index(line.element);
+			var targetLine = lines.get(hxd.Math.imax(index + dy,0));
+			if( targetLine == null || targetLine == line.element.get(0) ) return;
+			dy = allLines.index(targetLine) - allLines.index(line.element);
+		}
+
 		if( !shift )
 			select = null;
 		else if( select == null )

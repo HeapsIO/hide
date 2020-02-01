@@ -1,3 +1,6 @@
+.cdb-view > .hide-tabs > .tab > ::-webkit-scrollbar {
+	width: 12px;
+}
 
 .cdb {
 
@@ -73,6 +76,11 @@
 			overflow : visible; // for flags dropdown
 		}
 
+		&> tbody > tr.props:last-child {
+			border-bottom: 0;
+			background-color: black;
+		}
+
 		td.edit {
 			padding : 2px;
 			padding-right : 6px;
@@ -142,7 +150,7 @@
 			background-color:black;
 			& > td {
 				padding : 0;
-				padding-bottom: 5px;
+				padding-bottom: 20px;
 				border : none;
 			}
 		}
@@ -217,7 +225,7 @@
 				max-width: 32px;
 			}
 			&.parent-sub-table {
-				background-color: #313a48;
+				//background-color: #2b3036;
 			}
 		}
 

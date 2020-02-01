@@ -1,3 +1,6 @@
+.cdb-view > .hide-tabs > .tab > ::-webkit-scrollbar {
+  width: 12px;
+}
 .cdb {
   background-color: black;
   margin-bottom: 350px;
@@ -59,6 +62,10 @@
 }
 .cdb .cdb-sheet tr.props td {
   overflow: visible;
+}
+.cdb .cdb-sheet > tbody > tr.props:last-child {
+  border-bottom: 0;
+  background-color: black;
 }
 .cdb .cdb-sheet td.edit {
   padding: 2px;
@@ -123,7 +130,7 @@
 }
 .cdb .cdb-sheet tr.list > td {
   padding: 0;
-  padding-bottom: 5px;
+  padding-bottom: 20px;
   border: none;
 }
 .cdb .cdb-sheet th.t_tilepos {
@@ -193,10 +200,6 @@
 .cdb .cdb-sheet td.t_properties img {
   max-height: 32px;
   max-width: 32px;
-}
-.cdb .cdb-sheet td.t_list.parent-sub-table,
-.cdb .cdb-sheet td.t_properties.parent-sub-table {
-  background-color: #313a48;
 }
 .cdb .cdb-sheet td.t_enum {
   padding-left: 5px;
