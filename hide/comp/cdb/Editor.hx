@@ -8,6 +8,7 @@ typedef UndoSheet = {
 
 typedef UndoState = {
 	var data : Any;
+	var sheet : String;
 	var cursor : { sheet : String, x : Int, y : Int, select : Null<{ x : Int, y : Int }> };
 	var tables : Array<UndoSheet>;
 }
@@ -16,17 +17,12 @@ typedef EditorApi = {
 	function load( data : Any ) : Void;
 	function copy() : Any;
 	function save() : Void;
-	var ?currentValue : Any;
-	var ?undo : hide.ui.UndoHistory;
-	var ?undoState : Array<UndoState>;
-	var ?editor : Editor;
 }
 
 @:allow(hide.comp.cdb)
 class Editor extends Component {
 
 	var base : cdb.Database;
-	var sheetName : String;
 	var sheet : cdb.Sheet;
 	var existsCache : Map<String,{ t : Float, r : Bool }> = new Map();
 	var tables : Array<Table> = [];
@@ -40,26 +36,31 @@ class Editor extends Component {
 	var changesDepth : Int = 0;
 	var currentFilter : String;
 	var api : EditorApi;
+	var undoState : Array<UndoState> = [];
+	var currentValue : Any;
 	public var config : hide.Config;
 	public var cursor : Cursor;
 	public var keys : hide.ui.Keys;
 	public var undo : hide.ui.UndoHistory;
 
-	public function new(sheet,config,api,?parent) {
-		super(parent,null);
+	public function new(config,api) {
+		super(null,null);
 		this.api = api;
 		this.config = config;
-		this.sheet = sheet;
-		sheetName = sheet == null ? null : sheet.name;
-		if( api.undoState == null ) api.undoState = [];
-		if( api.editor == null ) api.editor = this;
-		if( api.currentValue == null ) api.currentValue = api.copy();
-		this.undo = api.undo == null ? new hide.ui.UndoHistory() : api.undo;
-		api.undo = undo;
-		init();
+		currentValue = api.copy();
+		undo = new hide.ui.UndoHistory();
 	}
 
-	function init() {
+	public function getCurrentSheet() {
+		return sheet == null ? null : sheet.name;
+	}
+
+	public function show( sheet, ?parent : Element ) {
+		if( element != null ) element.remove();
+		element = new Element('<div>');
+		if( parent != null )
+			parent.append(element);
+		this.sheet = sheet;
 		element.attr("tabindex", 0);
 		element.addClass("is-cdb-editor");
 		element.data("cdb", this);
@@ -318,13 +319,14 @@ class Editor extends Component {
 	**/
 	public function beginChanges() {
 		if( changesDepth == 0 )
-			api.undoState.unshift(getState());
+			undoState.unshift(getState());
 		changesDepth++;
 	}
 
 	function getState() : UndoState {
 		return {
-			data : api.currentValue,
+			data : currentValue,
+			sheet : getCurrentSheet(),
 			cursor : cursor.table == null ? null : {
 				sheet : cursor.table.sheet.name,
 				x : cursor.x,
@@ -387,34 +389,48 @@ class Editor extends Component {
 	**/
 	public function endChanges() {
 		changesDepth--;
-		if( changesDepth == 0 ) {
-			var f = makeCustom(api);
-			if( f != null ) undo.change(Custom(f));
-		}
-	}
+		if( changesDepth != 0 ) return;
 
-	// do not reference "this" editor in undo state !
-	static function makeCustom( api : EditorApi ) {
 		var newValue = api.copy();
-		if( newValue == api.currentValue )
-			return null;
-		var state = api.undoState[0];
-		api.currentValue = newValue;
+		if( newValue == currentValue )
+			return;
+		var state = undoState[0];
+		var newSheet = getCurrentSheet();
+		currentValue = newValue;
 		api.save();
-		return function(undo) api.editor.handleUndo(state, newValue, undo);
+		undo.change(Custom(function(undo) {
+			var currentSheet;
+			if( undo ) {
+				undoState.shift();
+				currentValue = state.data;
+				currentSheet = state.sheet;
+			} else {
+				undoState.unshift(state);
+				currentValue = newValue;
+				currentSheet = newSheet;
+			}
+			api.load(currentValue);
+			element.removeClass("is-cdb-editor");
+			refreshAll();
+			element.addClass("is-cdb-editor");
+			syncSheet(currentSheet);
+			refresh(state);
+			api.save();
+		}));
 	}
 
-	function handleUndo( state : UndoState, newValue : Any, undo : Bool ) {
-		if( undo ) {
-			api.undoState.shift();
-			api.currentValue = state.data;
-		} else {
-			api.undoState.unshift(state);
-			api.currentValue = newValue;
+	public static function refreshAll( eraseUndo = false ) {
+		var editors : Array<Editor> = [for( e in new Element(".is-cdb-editor").elements() ) e.data("cdb")];
+		for( e in editors ) {
+			e.syncSheet(Ide.inst.database);
+			e.refresh();
+			// prevent undo over input changes
+			if( eraseUndo ) {
+				e.currentValue = e.api.copy();
+				e.undo.clear();
+				e.undoState = [];
+			}
 		}
-		api.load(api.currentValue);
-		refreshAll(state);
-		api.save();
 	}
 
 	function showReferences() {
@@ -441,20 +457,17 @@ class Editor extends Component {
 		ide.open("hide.view.CdbTable", { path : s.name }, function(view) @:privateAccess Std.downcast(view,hide.view.CdbTable).editor.cursor.setDefault(line,column));
 	}
 
-	public function syncSheet( ?base ) {
+	public function syncSheet( ?base, ?name ) {
 		if( base == null ) base = this.base;
 		this.base = base;
-
+		if( name == null ) name = getCurrentSheet();
 		// swap sheet if it was modified
+		this.sheet = null;
 		for( s in base.sheets )
-			if( s.name == sheetName ) {
+			if( s.name == name ) {
 				this.sheet = s;
 				break;
 			}
-	}
-
-	final function refreshAll( ?state : UndoState ) {
-		api.editor.refresh(state);
 	}
 
 	public function refresh( ?state : UndoState ) {

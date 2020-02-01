@@ -551,7 +551,7 @@ class Cell extends Component {
 			}
 			setValue(newValue);
 			editor.endChanges();
-			editor.refreshAll();
+			Editor.refreshAll();
 			focus();
 			/*
 			// creates or remove a #DUP : need to refresh the whole table

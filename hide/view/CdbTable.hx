@@ -1,34 +1,39 @@
 package hide.view;
 
-class CdbTable extends hide.ui.View<{ path : String }> {
+class CdbTable extends hide.ui.View<{}> {
 
-	var sheets : Array<cdb.Sheet>;
 	var tabContents : Array<Element>;
 	var editor : hide.comp.cdb.Editor;
-	var currentSheet : Int = 0;
+	var currentSheet : String;
+	var tabCache : String;
 
 	public function new( ?state ) {
 		super(state);
-		syncSheets();
-		var name = this.config.get("cdb.currentSheet");
-		if( name != null )
-			for( s in sheets )
-				if( s.name == name ) {
-					currentSheet = sheets.indexOf(s);
-					break;
-				}
+		editor = new hide.comp.cdb.Editor(config,{
+			copy : () -> (ide.database.save() : Any),
+			load : (v:Any) -> ide.database.load((v:String)),
+			save : function() {
+				ide.saveDatabase();
+				haxe.Timer.delay(syncTabs,0);
+			}
+		});
+		undo = editor.undo;
+		currentSheet = this.config.get("cdb.currentSheet");
 	}
 
-	function syncSheets() {
-		if( state.path == null )
-			sheets = [for( s in ide.database.sheets ) if( !s.props.hide ) s];
-		else {
-			for( s in ide.database.sheets )
-				if( s.name == state.path ) {
-					sheets = [s];
-					break;
-				}
+	function syncTabs() {
+		if( getTabCache() != tabCache || editor.getCurrentSheet() != currentSheet ) {
+			currentSheet = editor.getCurrentSheet();
+			rebuild();
 		}
+	}
+
+	function getSheets() {
+		return [for( s in ide.database.sheets ) if( !s.props.hide ) s];
+	}
+
+	function getTabCache() {
+		return [for( s in getSheets() ) s.name].join("|");
 	}
 
 	override function onActivate() {
@@ -36,37 +41,31 @@ class CdbTable extends hide.ui.View<{ path : String }> {
 	}
 
 	function setEditor(index:Int) {
-		syncSheets();
-		if( editor != null )
-			editor.remove();
-		editor = new hide.comp.cdb.Editor(sheets[index],config,ide.databaseApi,tabContents[index]);
+		var sheets = getSheets();
+		editor.show(sheets[index],tabContents[index]);
 		haxe.Timer.delay(function() {
 			// delay
 			editor.focus();
 			editor.onFocus = activate;
 		},0);
-		undo = ide.databaseApi.undo;
-		currentSheet = index;
+		currentSheet = editor.getCurrentSheet();
 		ide.currentConfig.set("cdb.currentSheet", sheets[index].name);
 	}
 
 	override function onDisplay() {
-		if( sheets == null ) {
-			element.text("CDB sheet not found '" + state.path + "'");
-			return;
-		}
+		var sheets = getSheets();
 		if( sheets.length == 0 ) {
 			element.html("No CDB sheet created, <a href='#'>create one</a>");
 			element.find("a").click(function(_) {
 				var sheet = ide.createDBSheet();
 				if( sheet == null ) return;
-				syncSheets();
 				rebuild();
 			});
 			return;
 		}
 		element.addClass("cdb-view");
-		var tabs = state.path != null ? null : new hide.comp.Tabs(element, true);
+		var tabs = new hide.comp.Tabs(element, true);
+		tabCache = getTabCache();
 		tabContents = [];
 		for( sheet in sheets ) {
 			var tab = tabs == null ? element : tabs.createTab(sheet.name);
@@ -76,31 +75,39 @@ class CdbTable extends hide.ui.View<{ path : String }> {
 		if( tabs != null ) {
 			tabs.onTabChange = setEditor;
 			tabs.onTabRightClick = function(index) {
-				syncSheets();
-				var sheetCount = sheets.length;
-				editor.popupSheet(sheets[index], function() {
-					syncSheets();
-					if( sheets.length > sheetCount )
-						currentSheet = index + 1;
-					else if( sheets.length < sheetCount )
-						currentSheet = index == 0 ? 0 : index - 1;
-					rebuild();
+				editor.popupSheet(getSheets()[index], function() {
+					var newSheets = getSheets();
+					var delta = newSheets.length - sheets.length;
+					var sshow = null;
+					if( delta > 0 )
+						sshow = newSheets[index+1];
+					else if( delta < 0 )
+						sshow = newSheets[index-1];
+					else
+						sshow = newSheets[index]; // rename
+					if( sshow != null )
+						currentSheet = sshow.name;
+					if( getTabCache() != tabCache )
+						rebuild();
 				});
 			};
 		}
-		if( sheets.length > 0 )
-			tabs.currentTab = tabContents[currentSheet].parent();
 
-		watch(@:privateAccess ide.databaseFile, () -> {
-			syncSheets();
-			rebuild();
-		});
+		if( sheets.length > 0 ) {
+			var idx = 0;
+			for( i in 0...sheets.length )
+				if( sheets[i].name == currentSheet ) {
+					idx = i;
+					break;
+				}
+			tabs.currentTab = tabContents[idx].parent();
+		}
+
+		watch(@:privateAccess ide.databaseFile, () -> rebuild());
 	}
 
 	override function getTitle() {
-		if( state.path == null )
-			return "CDB";
-		return state.path.charAt(0).toUpperCase() + state.path.substr(1);
+		return "CDB";
 	}
 
 	static var _ = hide.ui.View.register(CdbTable);

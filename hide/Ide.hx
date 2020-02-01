@@ -17,7 +17,6 @@ class Ide {
 	public var isFocused(get, never) : Bool;
 
 	public var database : cdb.Database;
-	public var databaseApi : hide.comp.cdb.Editor.EditorApi;
 	public var shaderLoader : hide.tools.ShaderLoader;
 	public var fileWatcher : hide.tools.FileWatcher;
 	public var typesCache : hide.tools.TypesCache;
@@ -502,20 +501,9 @@ class Ide {
 
 		databaseFile = config.project.get("cdb.databaseFile");
 		loadDatabase();
-		databaseApi = {
-			copy : () -> (database.save() : Any),
-			load : (v:Any) -> database.load((v:String)),
-			save : saveDatabase,
-			undo : new hide.ui.UndoHistory(),
-			undoState : [], // common
-		};
-		databaseApi.editor = new hide.comp.cdb.AllEditors();
 		fileWatcher.register(databaseFile,function() {
 			loadDatabase(true);
-			databaseApi.editor.refresh();
-			// reset undo (prevent undoing external changes)
-			databaseApi.undo.clear();
-			databaseApi.undoState = [];
+			hide.comp.cdb.Editor.refreshAll(true);
 		});
 
 		if( config.project.get("debug.displayErrors")  ) {
@@ -662,7 +650,7 @@ class Ide {
 			return null;
 		}
 		saveDatabase();
-		databaseApi.editor.refresh();
+		hide.comp.cdb.Editor.refreshAll();
 		return s;
 	}
 
@@ -858,11 +846,6 @@ class Ide {
 		// database
 		var db = menu.find(".database");
 		db.find(".dbview").click(function(_) {
-			open("hide.view.CdbTable",{});
-		});
-		db.find(".dbnew").click(function(_) {
-			var sheet = createDBSheet();
-			if( sheet == null ) return;
 			open("hide.view.CdbTable",{});
 		});
 		db.find(".dbcompress").prop("checked",database.compress).click(function(_) {

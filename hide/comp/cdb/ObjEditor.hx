@@ -20,7 +20,8 @@ class ObjEditor extends Editor {
             copy : function() return (haxe.Json.stringify(obj) : Any),
             save : function() {},
         };
-        super(pseudoSheet, props, api, parent);
+		super(props, api);
+		show(pseudoSheet, parent);
     }
 
 	override function changeObject(line:Line, column:cdb.Data.Column, value:Dynamic) {
