@@ -133,11 +133,16 @@ class ScriptChecker {
 				this.evalTo = api.evalTo;
 		}
 		if( context != null ) {
-			switch( checker.types.resolve(context) ) {
-			case TInst(c,_):
-				for( f in c.fields ) if( f.t.match(TFun(_)) ) f.isPublic = true; // allow access to private methods
-				checker.setGlobals(c);
-			default: error(context+" is not a class");
+			var ctx = checker.types.resolve(context);
+			if( ctx == null )
+				error(context+" is not defined");
+			else {
+				switch( ctx ) {
+				case TInst(c,_):
+					for( f in c.fields ) if( f.t.match(TFun(_)) ) f.isPublic = true; // allow access to private methods
+					checker.setGlobals(c);
+				default: error(context+" is not a class");
+				}
 			}
 		}
 		checker.allowUntypedMeta = true;
