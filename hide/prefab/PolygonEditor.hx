@@ -437,8 +437,6 @@ class PolygonEditor {
 			function(e) {
 				//lastPos = null;
 				lastPointSelected = null;
-				refreshEditorDisplay();
-				refreshDebugDisplay();
 				if( beforeMoveList != null ){
 					afterMoveList = copyArray(polygonPrefab.points.points);
 					addUndo(beforeMoveList, afterMoveList);
