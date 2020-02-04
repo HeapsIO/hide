@@ -105,7 +105,7 @@ class Cursor {
 		}
 		if( dx > 0 ) {
 			x += dx;
-			var max = table.sheet.columns.length;
+			var max = table.columns.length;
 			if( x >= max ) x = max - 1;
 		}
 		if( dy > 0 ) {
@@ -136,7 +136,7 @@ class Cursor {
 			y = table.lines.length - 1;
 			select = null;
 		}
-		var max = table.sheet.props.isProps ? 1 : table.sheet.columns.length;
+		var max = table.sheet.props.isProps ? 1 : table.columns.length;
 		if( x >= max ) {
 			x = max - 1;
 			select = null;
@@ -174,7 +174,7 @@ class Cursor {
 		if( table == null )
 			return null;
 		var x1 = if( x < 0 ) 0 else x;
-		var x2 = if( x < 0 ) table.sheet.columns.length-1 else if( select != null ) select.x else x1;
+		var x2 = if( x < 0 ) table.columns.length-1 else if( select != null ) select.x else x1;
 		var y1 = y;
 		var y2 = if( select != null ) select.y else y1;
 		if( x2 < x1 ) {

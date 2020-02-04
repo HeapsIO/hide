@@ -6,6 +6,7 @@ class CdbTable extends hide.ui.View<{}> {
 	var editor : hide.comp.cdb.Editor;
 	var currentSheet : String;
 	var tabCache : String;
+	var view : hide.comp.cdb.ConfigView;
 
 	public function new( ?state ) {
 		super(state);
@@ -19,6 +20,7 @@ class CdbTable extends hide.ui.View<{}> {
 		});
 		undo = editor.undo;
 		currentSheet = this.config.get("cdb.currentSheet");
+		view = cast this.config.get("cdb.view");
 	}
 
 	function syncTabs() {
@@ -29,7 +31,7 @@ class CdbTable extends hide.ui.View<{}> {
 	}
 
 	function getSheets() {
-		return [for( s in ide.database.sheets ) if( !s.props.hide ) s];
+		return [for( s in ide.database.sheets ) if( !s.props.hide && (view == null || view.exists(s.name)) ) s];
 	}
 
 	function getTabCache() {

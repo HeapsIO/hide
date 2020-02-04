@@ -33,12 +33,19 @@ class Cell extends Component {
 		case TString if( column.kind == Script ):
 			element.click(function(_) edit());
 		default:
-			element.dblclick(function(_) edit());
+			if( canEdit() )
+				element.dblclick(function(_) edit());
+			else
+				root.addClass("t_readonly");
 		}
 	}
 
+	public function canEdit() {
+		return table.canEditColumn(column.name);
+	}
+
 	function get_table() return line.table;
-	function get_columnIndex() return table.sheet.columns.indexOf(column);
+	function get_columnIndex() return table.columns.indexOf(column);
 	inline function get_value() return currentValue;
 
 	public function refresh() {
@@ -261,6 +268,8 @@ class Cell extends Component {
 	}
 
 	public function edit() {
+		if( !canEdit() )
+			return;
 		switch( column.type ) {
 		case TString if( column.kind == Script ):
 			open();

@@ -38,6 +38,7 @@ class Editor extends Component {
 	var api : EditorApi;
 	var undoState : Array<UndoState> = [];
 	var currentValue : Any;
+	public var view : ConfigView;
 	public var config : hide.Config;
 	public var cursor : Cursor;
 	public var keys : hide.ui.Keys;
@@ -47,6 +48,7 @@ class Editor extends Component {
 		super(null,null);
 		this.api = api;
 		this.config = config;
+		view = cast this.config.get("cdb.view");
 		currentValue = api.copy();
 		undo = new hide.ui.UndoHistory();
 	}
@@ -170,7 +172,7 @@ class Editor extends Component {
 			var obj = cursor.table.lines[y].obj;
 			var out = {};
 			for( x in sel.x1...sel.x2+1 ) {
-				var c = cursor.table.sheet.columns[x];
+				var c = cursor.table.columns[x];
 				var v = Reflect.field(obj, c.name);
 				if( v != null )
 					Reflect.setField(out, c.name, v);
@@ -180,13 +182,14 @@ class Editor extends Component {
 		clipboard = {
 			data : data,
 			text : Std.string([for( o in data ) cursor.table.sheet.objToString(o,true)]),
-			schema : [for( x in sel.x1...sel.x2+1 ) cursor.table.sheet.columns[x]],
+			schema : [for( x in sel.x1...sel.x2+1 ) cursor.table.columns[x]],
 		};
 		ide.setClipboard(clipboard.text);
 	}
 
 	function onPaste() {
 		var text = ide.getClipboard();
+		var columns = cursor.table.columns;
 		var sheet = cursor.table.sheet;
 		if( clipboard == null || text != clipboard.text ) {
 			if( cursor.x < 0 || cursor.y < 0 ) return;
@@ -206,7 +209,9 @@ class Editor extends Component {
 			}
 			beginChanges();
 			for( x in x1...x2+1 ) {
-				var col = sheet.columns[x];
+				var col = columns[x];
+				if( !cursor.table.canEditColumn(col.name) )
+					continue;
 				var value : Dynamic = null;
 				switch( col.type ) {
 				case TId:
@@ -235,13 +240,19 @@ class Editor extends Component {
 		var posX = cursor.x < 0 ? 0 : cursor.x;
 		var posY = cursor.y < 0 ? 0 : cursor.y;
 		for( obj1 in clipboard.data ) {
-			if( posY == sheet.lines.length )
+			if( posY == sheet.lines.length ) {
+				if( !cursor.table.canInsert() ) break;
 				sheet.newLine();
+			}
 			var obj2 = sheet.lines[posY];
 			for( cid in 0...clipboard.schema.length ) {
 				var c1 = clipboard.schema[cid];
-				var c2 = sheet.columns[cid + posX];
+				var c2 = columns[cid + posX];
 				if( c2 == null ) continue;
+
+				if( !cursor.table.canEditColumn(c2.name) )
+					continue;
+
 				var f = base.getConvFunction(c1.type, c2.type);
 				var v : Dynamic = Reflect.field(obj1, c1.name);
 				if( f == null )
@@ -275,6 +286,10 @@ class Editor extends Component {
 		if( cursor.x < 0 ) {
 			// delete lines
 			var y = sel.y2;
+			if( !cursor.table.canInsert() ) {
+				endChanges();
+				return;
+			}
 			while( y >= sel.y1 ) {
 				var line = cursor.table.lines[y];
 				line.table.sheet.deleteLine(line.index);
@@ -288,6 +303,8 @@ class Editor extends Component {
 				var line = cursor.table.lines[y];
 				for( x in sel.x1...sel.x2+1 ) {
 					var c = line.columns[x];
+					if( !line.cells[x].canEdit() )
+						continue;
 					var old = Reflect.field(line.obj, c.name);
 					var def = base.getDefault(c,false);
 					if( old == def )
@@ -340,7 +357,7 @@ class Editor extends Component {
 					return { sheet : t.sheet.name, parent : tp == null ? null : {
 						sheet : makeParent(tp),
 						line : t.sheet.parent.line,
-						column : t.sheet.parent.column,
+						column : tp.columns.indexOf(tp.sheet.columns[t.sheet.parent.column]),
 					} };
 				}
 				makeParent(tables[i]);
@@ -581,6 +598,8 @@ class Editor extends Component {
 	}
 
 	public function insertLine( table : Table, index = 0 ) {
+		if( !table.canInsert() )
+			return;
 		if( table.displayMode == Properties ) {
 			var ins = table.element.find("select.insertField");
 			var options = [for( o in ins.find("option").elements() ) o.val()];
@@ -615,6 +634,8 @@ class Editor extends Component {
 	}
 
 	public function popupColumn( table : Table, col : cdb.Data.Column, ?cell : Cell ) {
+		if( view != null )
+			return;
 		var indexColumn = table.sheet.columns.indexOf(col);
 		var menu : Array<hide.comp.ContextMenu.ContextMenuItem> = [
 			{ label : "Edit", click : function () editColumn(table.sheet, col) },
@@ -673,6 +694,8 @@ class Editor extends Component {
 	}
 
 	public function popupLine( line : Line ) {
+		if( view != null && !line.table.view.insert )
+			return;
 		var sheet = line.table.sheet;
 		var sepIndex = sheet.separators.indexOf(line.index);
 		new hide.comp.ContextMenu([
@@ -742,6 +765,8 @@ class Editor extends Component {
 	}
 
 	public function popupSheet( ?sheet : cdb.Sheet, ?onChange : Void -> Void ) {
+		if( view != null )
+			return;
 		if( sheet == null ) sheet = this.sheet;
 		if( onChange == null ) onChange = function() {}
 		var index = base.sheets.indexOf(sheet);

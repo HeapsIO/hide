@@ -19,14 +19,14 @@
 
 		tr.cursorLine {
 			background-color: #262d35;
-			td.start {
+			td.start, td.t_readonly {
 				background-color: #313a48;
 			}
 		}
 
 		tr.selected, td.selected {
 			background-color : #313a48;
-			td.start {
+			td.start, td.t_readonly {
 				background-color: #313a48;
 			}
 		}
@@ -163,6 +163,10 @@
 			text-align : center;
 		}
 
+		td.t_readonly {
+			background-color: #333;
+		}
+
 		th.t_bool,
 		th.t_int,
 		th.t_float {
@@ -224,9 +228,9 @@
 				max-height: 32px;
 				max-width: 32px;
 			}
-			&.parent-sub-table {
+			//&.parent-sub-table {
 				//background-color: #2b3036;
-			}
+			//}
 		}
 
 		td.t_enum {

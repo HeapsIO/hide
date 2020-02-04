@@ -14,7 +14,8 @@
 .cdb:focus .cdb-sheet tr.cursorLine {
   background-color: #262d35;
 }
-.cdb:focus .cdb-sheet tr.cursorLine td.start {
+.cdb:focus .cdb-sheet tr.cursorLine td.start,
+.cdb:focus .cdb-sheet tr.cursorLine td.t_readonly {
   background-color: #313a48;
 }
 .cdb:focus .cdb-sheet tr.selected,
@@ -22,7 +23,9 @@
   background-color: #313a48;
 }
 .cdb:focus .cdb-sheet tr.selected td.start,
-.cdb:focus .cdb-sheet td.selected td.start {
+.cdb:focus .cdb-sheet td.selected td.start,
+.cdb:focus .cdb-sheet tr.selected td.t_readonly,
+.cdb:focus .cdb-sheet td.selected td.t_readonly {
   background-color: #313a48;
 }
 .cdb .cdb-sheet {
@@ -138,6 +141,9 @@
 }
 .cdb .cdb-sheet td.t_tilepos {
   text-align: center;
+}
+.cdb .cdb-sheet td.t_readonly {
+  background-color: #333;
 }
 .cdb .cdb-sheet th.t_bool,
 .cdb .cdb-sheet th.t_int,
