@@ -24,6 +24,7 @@ class Ide {
 
 	var databaseFile : String;
 	var pakFile : hxd.fmt.pak.FileSystem;
+	var originDataBase : cdb.Database;
 
 	var config : {
 		global : Config,
@@ -632,20 +633,6 @@ class Ide {
 		js.Browser.location.reload();
 	}
 
-	function loadDatabase( ?checkExists ) {
-		var exists = fileExists(databaseFile);
-		if( checkExists && !exists )
-			return; // cancel load
-		database = new cdb.Database();
-		if( exists ) {
-			try {
-				database.load(getFile(databaseFile).toString());
-			} catch( e : Dynamic ) {
-				error(e);
-			}
-		}
-	}
-
 	public function fileExists( path : String ) {
 		if( sys.FileSystem.exists(getPath(path)) ) return true;
 		if( pakFile != null && pakFile.exists(path) ) return true;
@@ -663,9 +650,39 @@ class Ide {
 		}
 	}
 
+
+	function loadDatabase( ?checkExists ) {
+		var exists = fileExists(databaseFile);
+		if( checkExists && !exists )
+			return; // cancel load
+		database = new cdb.Database();
+		if( !exists ) return;
+		try {
+			database.load(getFile(databaseFile).toString());
+		} catch( e : Dynamic ) {
+			error(e);
+			return;
+		}
+		var diff = config.project.get("cdb.diffFile");
+		if( diff != null ) {
+			originDataBase = new cdb.Database();
+			originDataBase.load(getFile(databaseFile).toString());
+			if( fileExists(diff) ) {
+				var d = new cdb.DiffFile();
+				d.apply(database,parseJSON(getFile(diff).toString()),config.project.get("cdb.view"));
+			}
+		}
+	}
+
 	public function saveDatabase() {
-		fileWatcher.ignoreNextChange(databaseFile);
-		sys.io.File.saveContent(getPath(databaseFile), database.save());
+		var diff = config.project.get("cdb.diffFile");
+		if( diff != null ) {
+			fileWatcher.ignoreNextChange(diff);
+			sys.io.File.saveContent(getPath(diff), toJSON(new cdb.DiffFile().make(originDataBase,database)));
+		} else {
+			fileWatcher.ignoreNextChange(databaseFile);
+			sys.io.File.saveContent(getPath(databaseFile), database.save());
+		}
 	}
 
 	public function createDBSheet( ?index : Int ) {
