@@ -23,6 +23,7 @@ class Ide {
 	public var isCDB = false;
 
 	var databaseFile : String;
+	var pakFile : hxd.fmt.pak.FileSystem;
 
 	var config : {
 		global : Config,
@@ -500,6 +501,16 @@ class Ide {
 			loadPlugin(plugin, function() {});
 
 		databaseFile = config.project.get("cdb.databaseFile");
+		var pak = config.project.get("pak.dataFile");
+		pakFile = null;
+		if( pak != null ) {
+			pakFile = new hxd.fmt.pak.FileSystem();
+			try {
+				pakFile.loadPak(getPath(pak));
+			} catch( e : Dynamic ) {
+				error(""+e);
+			}
+		}
 		loadDatabase();
 		fileWatcher.register(databaseFile,function() {
 			loadDatabase(true);
@@ -622,17 +633,33 @@ class Ide {
 	}
 
 	function loadDatabase( ?checkExists ) {
-		var db = getPath(databaseFile);
-		var exists = sys.FileSystem.exists(db);
+		var exists = fileExists(databaseFile);
 		if( checkExists && !exists )
 			return; // cancel load
 		database = new cdb.Database();
 		if( exists ) {
 			try {
-				database.load(sys.io.File.getContent(db));
+				database.load(getFile(databaseFile).toString());
 			} catch( e : Dynamic ) {
 				error(e);
 			}
+		}
+	}
+
+	public function fileExists( path : String ) {
+		if( sys.FileSystem.exists(getPath(path)) ) return true;
+		if( pakFile != null && pakFile.exists(path) ) return true;
+		return false;
+	}
+
+	public function getFile( path : String ) {
+		var fullPath = getPath(path);
+		try {
+			return sys.io.File.getBytes(fullPath);
+		} catch( e : Dynamic ) {
+			if( pakFile != null )
+				return pakFile.get(path).getBytes();
+			throw e;
 		}
 	}
 
