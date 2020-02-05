@@ -161,6 +161,11 @@ private class ParticleInstance  {
 		evaluator.vecPool = this.emitter.vecPool;
 	}
 
+	public function dispose() {
+		transform.parent = childTransform.parent = null;
+		emitter = null;
+	}
+
 	public function setPosition( x, y, z ) {
 		transform.setPosition(x, y, z);
 	}
@@ -287,6 +292,10 @@ class EmitterObject extends h3d.scene.Object {
 
 	public static var pool : ParticleInstance;
 	public static var poolSize = 0;
+	public static function clearPool() {
+		pool = null;
+		poolSize = 0;
+	}
 
 	public var batch : h3d.scene.MeshBatch;
 	public var particles : ParticleInstance;
@@ -364,6 +373,10 @@ class EmitterObject extends h3d.scene.Object {
 		particles = null;
 	}
 
+	override function onRemove() {
+		reset();
+	}
+
 	public function setParticleVibility( b : Bool ){
 		particleVisibility = b;
 	}
@@ -382,6 +395,7 @@ class EmitterObject extends h3d.scene.Object {
 
 	function disposeInstance(p: ParticleInstance) {
 		p.next = pool;
+		p.dispose();
 		pool = p;
 		--numInstances;
 		++poolSize;
