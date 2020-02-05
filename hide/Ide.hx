@@ -23,6 +23,7 @@ class Ide {
 	public var isCDB = false;
 
 	var databaseFile : String;
+	var databaseDiff : String;
 	var pakFile : hxd.fmt.pak.FileSystem;
 	var originDataBase : cdb.Database;
 
@@ -502,6 +503,7 @@ class Ide {
 			loadPlugin(plugin, function() {});
 
 		databaseFile = config.project.get("cdb.databaseFile");
+		databaseDiff = config.user.get("cdb.databaseDiff");
 		var pak = config.project.get("pak.dataFile");
 		pakFile = null;
 		if( pak != null ) {
@@ -663,23 +665,27 @@ class Ide {
 			error(e);
 			return;
 		}
-		var diff = config.project.get("cdb.diffFile");
-		if( diff != null ) {
+		if( databaseDiff != null ) {
 			originDataBase = new cdb.Database();
 			originDataBase.load(getFile(databaseFile).toString());
-			if( fileExists(diff) ) {
+			if( fileExists(databaseDiff) ) {
 				var d = new cdb.DiffFile();
-				d.apply(database,parseJSON(getFile(diff).toString()),config.project.get("cdb.view"));
+				d.apply(database,parseJSON(getFile(databaseDiff).toString()),config.project.get("cdb.view"));
 			}
 		}
 	}
 
 	public function saveDatabase() {
-		var diff = config.project.get("cdb.diffFile");
-		if( diff != null ) {
-			fileWatcher.ignoreNextChange(diff);
-			sys.io.File.saveContent(getPath(diff), toJSON(new cdb.DiffFile().make(originDataBase,database)));
+		if( databaseDiff != null ) {
+			fileWatcher.ignoreNextChange(databaseDiff);
+			sys.io.File.saveContent(getPath(databaseDiff), toJSON(new cdb.DiffFile().make(originDataBase,database)));
 		} else {
+			if( !sys.FileSystem.exists(databaseFile) && fileExists(databaseFile) ) {
+				// was loaded from pak, cancel changes
+				loadDatabase();
+				hide.comp.cdb.Editor.refreshAll();
+				return;
+			}
 			fileWatcher.ignoreNextChange(databaseFile);
 			sys.io.File.saveContent(getPath(databaseFile), database.save());
 		}
@@ -904,6 +910,37 @@ class Ide {
 				if( f != null ) sys.io.File.saveContent(getPath(f), xml);
 			});
 		});
+		function setDiff(f) {
+			databaseDiff = f;
+			config.user.set("cdb.databaseDiff", f);
+			config.user.save();
+			loadDatabase();
+			hide.comp.cdb.Editor.refreshAll();
+			initMenu();
+			for( v in getViews(hide.view.CdbTable) )
+				v.syncTitle();
+		}
+		db.find(".dbCreateDiff").click(function(_) {
+			var name = ask("File name","data");
+			if( name == null ) return;
+			if( name.indexOf(".") < 0 ) name += ".diff";
+			var path = getPath(name);
+			if( sys.FileSystem.exists(path) ) {
+				error("File already exists "+path);
+				return;
+			}
+			sys.io.File.saveContent(path,"{}");
+			setDiff(name);
+		});
+		db.find(".dbLoadDiff").click(function(_) {
+			chooseFile(["diff"], function(f) {
+				if( f == null ) return;
+				setDiff(f);
+			});
+		});
+		db.find(".dbCloseDiff").click(function(_) {
+			setDiff(null);
+		}).attr("disabled", databaseDiff != null ? "" : "disabled");
 
 		// layout
 		var layouts = menu.find(".layout .content");

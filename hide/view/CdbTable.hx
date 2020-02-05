@@ -109,7 +109,7 @@ class CdbTable extends hide.ui.View<{}> {
 	}
 
 	override function getTitle() {
-		return "CDB";
+		return "CDB"+ @:privateAccess (ide.databaseDiff != null ? " - "+ide.databaseDiff : "");
 	}
 
 	static var _ = hide.ui.View.register(CdbTable);
