@@ -68,10 +68,20 @@ class Tile extends h3d.scene.Mesh {
 	}
 
 	public function createBigPrim( bytes : haxe.io.Bytes ) {
-		if( bigPrim != null ) bigPrim.dispose();
+
+		var stride = 3 * 4 + 3 * 4; // Normal + Tangent
+		var vertexCount = (terrain.cellCount + 1) * (terrain.cellCount + 1);
+		var length = vertexCount * stride;
+		if( bytes.length != stride * vertexCount ) {
+			throw "Bytes length doesn't match with the size of tiles";
+			return;
+		}
+
+		if( bigPrim != null )
+			bigPrim.dispose();
+
 		normalTangentBytes = bytes;
 		bigPrim = new h3d.prim.BigPrimitive(9, true);
-		var stride = 3 * 4 + 3 * 4; // Normal + Tangent
 		inline function addVertice(x : Float, y : Float, i : Int) {
 			// Pos
 			bigPrim.addPoint(x, y, getHeight(x / terrain.tileSize, y / terrain.tileSize)); // Use addPoint() instead of addVertexValue() for the bounds
