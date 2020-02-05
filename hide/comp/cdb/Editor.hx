@@ -684,6 +684,8 @@ class Editor extends Component {
 	}
 
 	function moveLine( line : Line, delta : Int ) {
+		if( !line.table.canInsert() )
+			return;
 		beginChanges();
 		var index = line.table.sheet.moveLine(line.index, delta);
 		if( index != null ) {
@@ -694,7 +696,7 @@ class Editor extends Component {
 	}
 
 	public function popupLine( line : Line ) {
-		if( view != null && !line.table.view.insert )
+		if( !line.table.canInsert() )
 			return;
 		var sheet = line.table.sheet;
 		var sepIndex = sheet.separators.indexOf(line.index);

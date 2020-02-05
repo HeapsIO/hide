@@ -193,6 +193,7 @@ class Table extends Component {
 		var title = if( sheet.props.separatorTitles != null ) sheet.props.separatorTitles[sindex] else null;
 		if( title != null ) content.text(title);
 		sep.dblclick(function(e) {
+			if( !canInsert() ) return;
 			content.empty();
 			J("<input>").appendTo(content).focus().val(title == null ? "" : title).blur(function(_) {
 				title = JTHIS.val();
