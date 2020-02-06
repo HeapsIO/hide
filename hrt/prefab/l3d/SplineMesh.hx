@@ -75,6 +75,7 @@ enum SplineMeshMode {
 // Need to dipose the GPU buffer manually
 class SplineMeshBatch extends h3d.scene.MeshBatch {
 	override function onRemove() {
+		super.onRemove();
 		var splinemeshShader = material.mainPass.getShader(SplineMeshShader);
 		if( splinemeshShader != null ) {
 			splinemeshShader.points.dispose();

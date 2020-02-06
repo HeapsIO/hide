@@ -43,6 +43,7 @@ class Tile extends h3d.scene.Mesh {
 	}
 
 	override function onRemove() {
+		super.onRemove();
 		if( heightMap != null )
 			heightMap.dispose();
 		if( surfaceIndexMap != null )
