@@ -680,7 +680,7 @@ class Ide {
 			fileWatcher.ignoreNextChange(databaseDiff);
 			sys.io.File.saveContent(getPath(databaseDiff), toJSON(new cdb.DiffFile().make(originDataBase,database)));
 		} else {
-			if( !sys.FileSystem.exists(databaseFile) && fileExists(databaseFile) ) {
+			if( !sys.FileSystem.exists(getPath(databaseFile)) && fileExists(databaseFile) ) {
 				// was loaded from pak, cancel changes
 				loadDatabase();
 				hide.comp.cdb.Editor.refreshAll();
