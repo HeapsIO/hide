@@ -72,6 +72,16 @@ enum SplineMeshMode {
 	BigGeometry;
 }
 
+// Need to dipose the GPU buffer manually
+class SplineMeshBatch extends h3d.scene.MeshBatch {
+	override function onRemove() {
+		var splinemeshShader = material.mainPass.getShader(SplineMeshShader);
+		if( splinemeshShader != null ) {
+			splinemeshShader.points.dispose();
+		}
+	}
+}
+
 class SplineMesh extends Spline {
 
 	var meshPath : String;
@@ -85,7 +95,7 @@ class SplineMesh extends Spline {
 	var meshRotation = new h3d.Vector(0,0,0);
 	var modelMat = new h3d.Matrix();
 
-	var meshBatch : h3d.scene.MeshBatch = null;
+	var meshBatch : SplineMeshBatch = null;
 	var meshPrimitive : h3d.prim.MeshPrimitive = null;
 	var meshMaterial : h3d.mat.Material = null;
 	var customPass : String;
@@ -202,7 +212,7 @@ class SplineMesh extends Spline {
 				}
 			}
 
-			meshBatch = new MeshBatch(meshPrimitive, splineMaterial, ctx.local3d);
+			meshBatch = new SplineMeshBatch(meshPrimitive, splineMaterial, ctx.local3d);
 			meshBatch.ignoreParentTransform = true;
 		}
 	}

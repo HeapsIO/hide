@@ -79,13 +79,13 @@ class TerrainMesh extends h3d.scene.Object {
 		generateSurfaceArray();
 	}
 
-	public function getHeight( x : Float, y : Float ) : Float {
+	public function getHeight( x : Float, y : Float, fast = false) : Float {
 		var z = 0.0;
 		var t = getTileAtWorldPos(x, y);
 		if( t != null ) {
 			tmpVec.set(x, y);
 			var pos = t.globalToLocal(tmpVec);
-			z = t.getHeight(pos.x / tileSize, pos.y / tileSize);
+			z = t.getHeight(pos.x / tileSize, pos.y / tileSize, fast);
 		}
 		return z;
 	}
