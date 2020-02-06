@@ -136,7 +136,7 @@ class Cursor {
 			y = table.lines.length - 1;
 			select = null;
 		}
-		var max = table.sheet.props.isProps ? 1 : table.columns.length;
+		var max = table.sheet.props.isProps || table.columns == null ? 1 : table.columns.length;
 		if( x >= max ) {
 			x = max - 1;
 			select = null;
