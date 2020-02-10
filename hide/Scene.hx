@@ -11,12 +11,16 @@ class ChunkScene {
 	public var sceneKey : Float = 0;
 
 	var tmpVec = new h3d.Vector();
+	var tmpBounds = new h3d.col.Bounds();
+	var defaultBounds = new h3d.col.Bounds();
 
 	public function new( chunkSize ) {
 		this.chunkSize = chunkSize;
 		var global = new Chunk(new h3d.col.Point(0,0,0));
 		global.isGlobal = true;
 		chunks.push(global);
+		defaultBounds.setMin(new h3d.col.Point(0,0,0));
+		defaultBounds.setMax(new h3d.col.Point(0,0,0));
 	}
 
 	// Use a stack for an iterarive version
@@ -59,7 +63,7 @@ class ChunkScene {
 				c.inFrustum = c.bounds.inFrustum(ctx.camera.frustum);
 		}
 	}
-
+	
 	public function chunkifyScene( scene : h3d.scene.Scene ) {
 		for( c in chunks ) 
 			c.reset();
@@ -77,8 +81,11 @@ class ChunkScene {
 			else {
 				var oc = Std.downcast(i.shape, h3d.col.ObjectCollider);
 				if( oc != null && oc.obj != null && oc.obj.visible ) {
-					var pos = oc.obj.getAbsPos().getPosition();
-					var chunks = getChunks(new h3d.Vector(pos.x, pos.y), 0.0);
+					var pos = oc.obj.getAbsPos().getPosition().toPoint();
+					// Only a point for interactive
+					tmpBounds.setMin(pos);
+					tmpBounds.setMax(pos);
+					var chunks = getChunks(tmpBounds);
 					for( c in chunks ) 
 						c.addInteractive(i);
 				}
@@ -92,7 +99,7 @@ class ChunkScene {
 		if( Std.downcast(obj, hide.view.l3d.Gizmo) != null ) {
 			var gc = getGlobalChunk();
 			chunkOverride = [gc];
-			gc.addObject(obj,0,0);
+			gc.addObject(obj, null);
 			for( c in @:privateAccess obj.children )
 				chunkifyObjects(c, chunkOverride);
 			return;
@@ -103,33 +110,34 @@ class ChunkScene {
 
 		if( Std.downcast(obj, h3d.scene.Light) != null ) {
 			var gc = getGlobalChunk();
-			gc.addObject(obj,0,0);
+			gc.addObject(obj, null);
 		}
 		else {
-			var absPos = obj.getAbsPos().getPosition(tmpVec);
-			var radius = 0.0;
-
-			// Mesh Support
-			var mesh = Std.downcast(obj, h3d.scene.Mesh);
-			if( mesh != null ) {
-				if( mesh.primitive != null ) {
-					var tmp = mesh.primitive.getBounds();
-					if( !tmp.isEmpty() ) 
-						radius = hxd.Math.max(hxd.Math.max(tmp.xSize * 0.5, tmp.ySize * 0.5), tmp.zSize * 0.5);
-				}
-			}
 			
 			if( chunkOverride == null || chunkOverride.length == 0 ) {
-				var chunks : Array<Chunk> = getChunks(absPos, radius);
+
+				tmpBounds.load(defaultBounds);
+				// Mesh Support
+				var mesh = Std.downcast(obj, h3d.scene.Mesh);
+				if( mesh != null ) {
+					if( mesh.primitive != null ) {
+						var b = mesh.primitive.getBounds();
+						if( b != null && !b.isEmpty() ) 
+							tmpBounds.load(b);
+					}
+				}
+				tmpBounds.transform(obj.getAbsPos());
+
+				var chunks : Array<Chunk> = getChunks(tmpBounds);
 				for( c in chunks ) 
-					c.addObject(obj, radius, absPos.z);
+					c.addObject(obj, null);
 				if( obj.currentAnimation != null ) {
 					chunkOverride = chunks;
 				}
 			}
 			else {
 				for( c in chunkOverride ) {
-					c.addObject(obj, 0, 0);
+					c.addObject(obj, null);
 				}
 			}
 		}
@@ -160,10 +168,10 @@ class ChunkScene {
 		return r;
 	}
 
-	inline function getChunks( pos : h3d.Vector, radius : Float) : Array<Chunk> {
+	inline function getChunks( bounds : h3d.col.Bounds ) : Array<Chunk> {
 		var result = [];
-		for( x in hxd.Math.floor(pos.x / chunkSize) ... hxd.Math.floor((pos.x + radius) / chunkSize) + 1) {
-			for( y in hxd.Math.floor(pos.y / chunkSize) ... hxd.Math.floor((pos.y + radius) / chunkSize) + 1) {
+		for( x in hxd.Math.floor(bounds.xMin / chunkSize) ... hxd.Math.floor(bounds.xMax / chunkSize) + 1) {
+			for( y in hxd.Math.floor(bounds.yMin / chunkSize) ... hxd.Math.floor(bounds.yMax / chunkSize) + 1) {
 				var c = getChunk(x,y);
 				if( c == null ) {
 					c = new Chunk(new h3d.col.Point(x * chunkSize, y * chunkSize));
@@ -210,13 +218,16 @@ class Chunk {
 		bounds.zMax = 0;
 	}
 
-	public inline function addObject( obj : h3d.scene.Object, radius: Float, z : Float ) {
+
+	public inline function addObject( obj : h3d.scene.Object, b : h3d.col.Bounds) {
 		objectCount++;
 		if( objectCount > objects.length )
 			objects.resize(objectCount);
 		objects[objectCount - 1] = { o : obj, emitFlag : false };
-		bounds.zMin = hxd.Math.min(bounds.zMin, z - radius);
-		bounds.zMax = hxd.Math.max(bounds.zMax, z + radius);
+		if( b != null ) {
+			bounds.zMin = hxd.Math.min(bounds.zMin, b.zMin);
+			bounds.zMax = hxd.Math.max(bounds.zMax, b.zMax);
+		}
 	}
 
 	public inline function addInteractive( i : Interactive ) {
