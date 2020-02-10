@@ -278,14 +278,13 @@ class FXAnimation extends h3d.scene.Object {
 			var isInFX = co.object.split(".")[1] == "FXRoot";
 			var srcObj = objectName == "FXRoot" ? this : isInFX ? this.getObjectByName(objectName) : caster.getObjectByName(objectName);
 			var targetObj = caster.getObjectByName(targetName);
-			if(targetObj == null)
-				targetObj = caster;
-			if( srcObj != null && targetObj != null ){
+			if( srcObj != null && targetObj != null ) {
 				srcObj.follow = targetObj;
 				srcObj.followPositionOnly = co.positionOnly;
+				//trace ("Resolve constraint for FX : " + objectName + " to " + targetName);
 			}
 			else
-				trace ("Failed te resolve constraint for FX : " + name);
+				trace ("Failed te resolve constraint for FX : "+ this.toString() + ", from " + objectName + " to " + targetName);
 		}
 	}
 }
