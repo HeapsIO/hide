@@ -147,7 +147,7 @@ class BaseFX extends hrt.prefab.Library {
 		}
 	}
 
-	function getFXRoot( ctx : Context, elt : PrefabElement ) : PrefabElement {
+	public function getFXRoot( ctx : Context, elt : PrefabElement ) : PrefabElement {
 		if( elt.name == "FXRoot" )
 			return elt;
 		else {

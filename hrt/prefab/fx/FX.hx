@@ -43,7 +43,8 @@ class FXAnimation extends h3d.scene.Object {
 		initEmitters(ctx, root);
 		BaseFX.getShaderAnims(ctx, root, shaderAnims);
 		events = initEvents(root, ctx);
-		initConstraints(ctx, root);
+		var root = def.getFXRoot(ctx, def);
+		initConstraints(ctx, root != null ? root : def);
 		for(s in shaderAnims)
 			s.vecPool = vecPool;
 	}
@@ -256,7 +257,7 @@ class FXAnimation extends h3d.scene.Object {
 		}
 	}
 
-	function initConstraints( ctx : Context, elt : PrefabElement ){
+	function initConstraints( ctx : Context, elt : PrefabElement ) {
 		var co = Std.downcast(elt, hrt.prefab.Constraint);
 		if(co != null) {
 			if(constraints == null) constraints = [];
