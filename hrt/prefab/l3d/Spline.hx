@@ -125,6 +125,23 @@ class Spline extends Object3D {
 		threshold = obj.threshold == null ? 0.01 : obj.threshold;
 	}
 
+	// Generate the splineData from a matrix, can't move the spline after that
+	public function makeFromMatrix( m : h3d.Matrix ) {
+		var splineTransform = getTransform();
+		var tmp = new h3d.Matrix();
+		for( pd in pointsData ) {
+			var sp = new SplinePoint(0, 0, 0, null);
+			tmp.load(pd);
+			tmp.multiply(tmp, splineTransform);
+			tmp.multiply(tmp, m);
+			sp.setTransform(tmp);
+			sp.getAbsPos();
+			points.push(sp);
+		}
+		pointsData = [];
+		computeSplineData();
+	}
+
 	override function makeInstance( ctx : hrt.prefab.Context ) : hrt.prefab.Context {
 		var ctx = ctx.clone(this);
 
