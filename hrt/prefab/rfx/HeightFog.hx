@@ -34,27 +34,29 @@ class HeightFog extends RendererFX {
 		fogPass.pass.setBlendMode(Alpha);
 	}
 
+	function sync( r : h3d.scene.Renderer ) {
+		var ctx = r.ctx;
+		var p : HeightFogProps = props;
+		var depth : hxsl.ChannelTexture = ctx.getGlobal("depthMap");
+		fogPass.shader.startHeight = p.startHeight;
+		fogPass.shader.endHeight = p.endHeight;
+		fogPass.shader.startOpacity = p.startOpacity;
+		fogPass.shader.endOpacity = p.endOpacity;
+		fogPass.shader.startColorHeight = p.startColorHeight;
+		fogPass.shader.endColorHeight = p.endColorHeight;
+		fogPass.shader.startColor = h3d.Vector.fromColor(p.startColor);
+		fogPass.shader.endColor = h3d.Vector.fromColor(p.endColor);
+		fogPass.shader.depthTextureChannel = depth.channel;
+		fogPass.shader.depthTexture = depth.texture;
+		fogPass.shader.cameraPos = ctx.camera.pos;
+		fogPass.shader.cameraInverseViewProj.load(ctx.camera.getInverseViewProj());
+	}
+
 	override function apply(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
 		var p : HeightFogProps = props;
 		if( (step == AfterTonemapping && p.renderMode == "AfterTonemapping") || (step == BeforeTonemapping && p.renderMode == "BeforeTonemapping") ) {
 			r.mark("HeightFog");
-			var ctx = r.ctx;
-			var depth : hxsl.ChannelTexture = ctx.getGlobal("depthMap");
-
-			fogPass.shader.startHeight = p.startHeight;
-			fogPass.shader.endHeight = p.endHeight;
-			fogPass.shader.startOpacity = p.startOpacity;
-			fogPass.shader.endOpacity = p.endOpacity;
-			fogPass.shader.startColorHeight = p.startColorHeight;
-			fogPass.shader.endColorHeight = p.endColorHeight;
-			fogPass.shader.startColor = h3d.Vector.fromColor(p.startColor);
-			fogPass.shader.endColor = h3d.Vector.fromColor(p.endColor);
-			fogPass.shader.depthTextureChannel = depth.channel;
-			fogPass.shader.depthTexture = depth.texture;
-
-			fogPass.shader.cameraPos = ctx.camera.pos;
-			fogPass.shader.cameraInverseViewProj.load(ctx.camera.getInverseViewProj());
-
+			sync(r);
 			fogPass.render();
 		}
 	}
