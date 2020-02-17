@@ -75,10 +75,6 @@ class TerrainMesh extends h3d.scene.Object {
 		return o;
 	}
 
-	public function onContextlost() {
-		generateSurfaceArray();
-	}
-
 	public function getHeight( x : Float, y : Float, fast = false) : Float {
 		var z = 0.0;
 		var t = getTileAtWorldPos(x, y);
