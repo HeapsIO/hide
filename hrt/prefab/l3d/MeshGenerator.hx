@@ -151,7 +151,7 @@ class MeshGenerator extends Object3D {
 		}
 		updateInstance(ctx);
 
-		#if editor 
+		#if editor
 		if( customScene == null ) {
 			customScene = new h3d.scene.Scene(true, false);
 			#if debug
@@ -175,14 +175,11 @@ class MeshGenerator extends Object3D {
 		createMeshPart(ctx, root, rootObject);
 
 		#if editor
-		// Only one CullingCollider for performance
-		var rootPos = rootObject.getAbsPos().getPosition();
-		var sphere = new h3d.col.Sphere();
-		var mainCullingCollider = new h3d.col.ObjectCollider(rootObject, sphere);
-		for( m in ctx.local3d.findAll(o -> Std.downcast(o, h3d.scene.Mesh)) ) {
-			m.cullingCollider = mainCullingCollider;
-			// TODO: doesn't take scale into account
-			sphere.r = hxd.Math.max(sphere.r, m.primitive.getBounds().toSphere().r + m.getAbsPos().getPosition().sub(rootPos).length());
+		var int = ctx.local3d.find(o -> Std.downcast(o, h3d.scene.Interactive));
+		if(int != null) {
+			var dummy = makeInteractive(ctx);
+			int.preciseShape = dummy.preciseShape;
+			dummy.remove();
 		}
 		#end
 	}
@@ -268,7 +265,6 @@ class MeshGenerator extends Object3D {
 
 	override function makeInteractive( ctx : Context ) : h3d.scene.Interactive {
 		var int = super.makeInteractive(ctx);
-		int.preciseShape = null;
 		return int;
 	}
 
