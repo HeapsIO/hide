@@ -47,8 +47,10 @@ class CamController extends h3d.scene.CameraController {
 			switch( pushing ) {
 			case 1:
 				if(startPush != null && startPush.distance(new h2d.col.Point(e.relX, e.relY)) > 3) {
-					var m = 0.001 * curPos.x * panSpeed / 25;
-					if(hxd.Key.isDown(hxd.Key.SHIFT)) {
+					var lowAngle = hxd.Math.degToRad(30);
+					var angle = hxd.Math.abs(Math.PI/2 - phi);
+					if(hxd.Key.isDown(hxd.Key.SHIFT) || angle < lowAngle) {
+						var m = 0.001 * curPos.x * panSpeed / 25;
 						pan(-(e.relX - pushX) * m, (e.relY - pushY) * m);
 					}
 					else {
