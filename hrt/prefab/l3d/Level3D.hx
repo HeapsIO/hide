@@ -4,6 +4,7 @@ class Level3D extends hrt.prefab.Library {
 
 	public var width : Int = 100;
 	public var height : Int = 100;
+	public var gridSize : Int = 1;
 
 	public function new() {
 		super();
@@ -14,6 +15,7 @@ class Level3D extends hrt.prefab.Library {
 		var obj : Dynamic = super.save();
 		obj.width = width;
 		obj.height = height;
+		obj.gridSize = gridSize;
 		return obj;
 	}
 
@@ -21,6 +23,7 @@ class Level3D extends hrt.prefab.Library {
 		super.load(obj);
 		width = obj.width == null ? 100 : obj.width;
 		height = obj.height == null ? 100 : obj.height;
+		gridSize = obj.gridSize == null ? 1 : obj.gridSize;
 	}
 
 	#if editor
@@ -35,6 +38,7 @@ class Level3D extends hrt.prefab.Library {
 					<dl>
 					<dt>Width</dt><dd><input type="number" value="0" field="width"/></dd>
 					<dt>Height</dt><dd><input type="number" value="0" field="height"/></dd>
+					<dt>Grid Size</dt><dd><input type="number" value="0" field="gridSize"/></dd>
 				</dl>
 			</div>
 		');

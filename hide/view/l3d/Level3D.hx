@@ -302,6 +302,10 @@ class Level3D extends FileView {
 	var layerButtons : Map<PrefabElement, hide.comp.Toolbar.ToolToggle>;
 
 	var grid : h3d.scene.Graphics;
+	var curGridSize : Int;
+	var curGridWidth : Int;
+	var curGridHeight : Int;
+
 	var showGrid = true;
 	var currentVersion : Int = 0;
 	var lastSyncChange : Float = 0.;
@@ -388,7 +392,6 @@ class Level3D extends FileView {
 	}
 
 	public function onSceneReady() {
-
 
 		tools.saveDisplayKey = "Level3D/toolbar";
 		tools.addButton("video-camera", "Perspective camera", () -> resetCamera(false));
@@ -553,6 +556,9 @@ class Level3D extends FileView {
 		grid = new h3d.scene.Graphics(scene.s3d);
 		grid.scale(1);
 		grid.material.mainPass.setPassName("debuggeom");
+		curGridSize = data.gridSize;
+		curGridWidth = data.width;
+		curGridHeight = data.height;
 
 		var col = h3d.Vector.fromColor(scene.engine.backgroundColor);
 		var hsl = col.toColorHSL();
@@ -561,13 +567,13 @@ class Level3D extends FileView {
 		col.makeColor(hsl.x, hsl.y, hsl.z);
 
 		grid.lineStyle(1.0, col.toColor(), 1.0);
-		for(ix in 0...data.width+1) {
-			grid.moveTo(ix, 0, 0);
-			grid.lineTo(ix, data.height, 0);
+		for(ix in 0... hxd.Math.floor(data.width / data.gridSize )+1) {
+			grid.moveTo(ix * data.gridSize, 0, 0);
+			grid.lineTo(ix * data.gridSize, data.height, 0);
 		}
-		for(iy in 0...data.height+1) {
-			grid.moveTo(0, iy, 0);
-			grid.lineTo(data.width, iy, 0);
+		for(iy in 0...  hxd.Math.floor(data.height / data.gridSize )+1) {
+			grid.moveTo(0, iy * data.gridSize, 0);
+			grid.lineTo(data.width, iy * data.gridSize, 0);
 		}
 		grid.lineStyle(0);
 	}
@@ -582,6 +588,11 @@ class Level3D extends FileView {
 		else {
 			posToolTip.visible = false;
 		}
+
+		if( curGridSize != data.gridSize || curGridWidth != data.width || curGridHeight != data.height ) {
+			updateGrid();
+		}
+
 	}
 
 	function onRefresh() {
