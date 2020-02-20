@@ -84,8 +84,9 @@ class Object3D extends Prefab {
 		rotationZ = Math.radToDeg(rot.z);
 	}
 
-	public function getTransform() {
-		var m = new h3d.Matrix();
+
+	public function getTransform( ?m: h3d.Matrix ) {
+		if( m == null ) m = new h3d.Matrix();
 		m.initScale(scaleX, scaleY, scaleZ);
 		m.rotate(Math.degToRad(rotationX), Math.degToRad(rotationY), Math.degToRad(rotationZ));
 		m.translate(x, y, z);
@@ -152,7 +153,7 @@ class Object3D extends Prefab {
 		int.propagateEvents = true;
 		int.enableRightButton = true;
 		return int;
-	}	
+	}
 
 	override function edit( ctx : EditContext ) {
 		var props = new hide.Element('
