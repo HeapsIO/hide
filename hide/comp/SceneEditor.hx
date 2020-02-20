@@ -513,8 +513,6 @@ class SceneEditor {
 
 	public function collapseTree() {
 		tree.collapseAll();
-		for(fav in favorites)
-			tree.openNode(fav);
 	}
 
 	function refreshTree( ?callb ) {
