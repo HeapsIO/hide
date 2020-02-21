@@ -972,6 +972,17 @@ input[type=checkbox]:checked:after {
   display: block;
   padding: 5px;
 }
+.string-array .array-element {
+  display: block;
+  padding: 5px;
+}
+.string-array .string-field {
+  width: 120px;
+}
+.string-array .delete-button {
+  width: 20px;
+  margin-left: 8px;
+}
 .spline-editor .editModeButton {
   margin: 10px;
   outline: 4px solid #fd5151;
