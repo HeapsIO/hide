@@ -54,10 +54,9 @@ class Text extends Object2D {
 			default:
 				Left;
 		}
-		if (pathFont != null && pathFont.length > 0) {
-			var font = hxd.res.Loader.currentInstance.load(pathFont).to(hxd.res.BitmapFont);
-			h2dText.font = font.toSdfFont(size, MultiChannel, cutoff, smoothing);
-		}
+		var font = loadFont();
+		if (font != null)
+			h2dText.font = font;
 		#if editor
 			if (propName == "text") {
 				h2dText.text = text;
@@ -74,6 +73,23 @@ class Text extends Object2D {
 		ctx.local2d.name = name;
 		updateInstance(ctx);
 		return ctx;
+	}
+
+	public dynamic function loadFont() : h2d.Font {
+		var f = defaultLoadFont(pathFont, size, cutoff, smoothing);
+		if (f == null) {
+			if (pathFont != null && pathFont.length > 0) {
+				var font = hxd.res.Loader.currentInstance.load(pathFont).to(hxd.res.BitmapFont);
+				return font.toSdfFont(size, MultiChannel, cutoff, smoothing);
+			} else {
+				return null;
+			}
+		}
+		else return f;
+	}
+
+	public static dynamic function defaultLoadFont( pathFont : String, size : Int, cutoff : Float, smoothing : Float ) : h2d.Font {
+		return null;
 	}
 
 	#if editor
