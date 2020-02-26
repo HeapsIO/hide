@@ -1111,12 +1111,6 @@ class CustomLoader extends hxd.res.Loader {
 	}
 
 	override function loadCache<T:hxd.res.Resource>( path : String, c : Class<T> ) : T {
-		if( (c:Dynamic) == (hxd.res.Image:Dynamic) || (c:Dynamic) == (hxd.res.Atlas:Dynamic))
-			return cast loadEngineCache(path, c);
-		return super.loadCache(path, c);
-	}
-
-	function loadEngineCache<T:hxd.res.Resource>( path : String, c : Class<T>) : T {
 		var engine = h3d.Engine.getCurrent();
 		var i = Std.downcast(@:privateAccess engine.resCache.get(getKey(path)), c);
 		if( i == null ) {
