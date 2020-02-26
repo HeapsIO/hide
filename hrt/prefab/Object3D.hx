@@ -15,6 +15,11 @@ class Object3D extends Prefab {
 	public var rotationZ : Float = 0.;
 	public var visible : Bool = true;
 
+	public function new(?parent) {
+		super(parent);
+		type = "object";
+	}
+
 	public function loadTransform(t) {
 		x = t.x;
 		y = t.y;
