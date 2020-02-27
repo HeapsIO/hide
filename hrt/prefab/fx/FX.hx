@@ -10,7 +10,9 @@ class FXAnimation extends h3d.scene.Object {
 	public var onEnd : Void -> Void;
 	public var playSpeed : Float;
 	public var localTime : Float = 0.0;
+	var totalTime : Float = 0.0;
 	public var duration : Float;
+	public var additionLoopDuration : Float = 0.0;
 	public var cullingRadius : Float;
 
 	public var objAnims: Array<ObjectAnimation>;
@@ -25,6 +27,9 @@ class FXAnimation extends h3d.scene.Object {
 	var random : hxd.Rand;
 	var prevTime = -1.0;
 	var randSeed : Int;
+
+	var startLoop : Float;
+	var endLoop : Float;
 
 	public function new(?parent) {
 		super(parent);
@@ -43,6 +48,15 @@ class FXAnimation extends h3d.scene.Object {
 		initEmitters(ctx, root);
 		BaseFX.getShaderAnims(ctx, root, shaderAnims);
 		events = initEvents(root, ctx);
+		if (events != null) {
+			for (e in events) {
+				if (e.evt.name == "startLoop") {
+					startLoop = e.evt.time;
+				} else if (e.evt.name == "endLoop") {
+					endLoop = e.evt.time;
+				}
+			}
+		}
 		var root = def.getFXRoot(ctx, def);
 		initConstraints(ctx, root != null ? root : def);
 		for(s in shaderAnims)
@@ -71,12 +85,24 @@ class FXAnimation extends h3d.scene.Object {
 		if(emitters != null)
 			for(emitter in emitters)
 				emitter.setParticleVibility(ctx.visibleFlag);
+		
+		if (additionLoopDuration > 0) {
+			if (totalTime > startLoop) {
+				var timeLeft = endLoop + additionLoopDuration - totalTime;
+				if (timeLeft > 0) {
+					this.localTime = startLoop + ((totalTime - startLoop) % (endLoop - startLoop));
+				} else {
+					this.localTime = endLoop - timeLeft;
+				}
+			}
+		}
 
 		#if !editor
 		if(playSpeed > 0) {
 			var curTime = localTime;
 			if( ctx.visibleFlag || alwaysSync ) setTime(curTime);
 			localTime += ctx.elapsedTime * playSpeed;
+			totalTime += ctx.elapsedTime;
 			if( duration > 0 && curTime < duration && localTime >= duration) {
 				localTime = duration;
 				if( onEnd != null )
@@ -145,6 +171,8 @@ class FXAnimation extends h3d.scene.Object {
 
 		if(emitters != null) {
 			for(em in emitters) {
+				if (prevTime > localTime)
+					@:privateAccess em.curTime = em.lastTime = time;
 				if(em.visible)
 					em.setTime(time);
 			}
@@ -257,7 +285,7 @@ class FXAnimation extends h3d.scene.Object {
 		}
 	}
 
-	function initConstraints( ctx : Context, elt : PrefabElement ) {
+	function initConstraints( ctx : Context, elt : PrefabElement ){
 		var co = Std.downcast(elt, hrt.prefab.Constraint);
 		if(co != null) {
 			if(constraints == null) constraints = [];
