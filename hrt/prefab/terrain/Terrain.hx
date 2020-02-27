@@ -25,14 +25,14 @@ class Terrain extends Object3D {
 	public var heightMapResolution : Int = 64;
 	public var weightMapResolution : Int = 128;
 	// Parallax Param
-	var parallaxAmount = 0.0;
-	var parallaxMinStep : Int = 1;
-	var parallaxMaxStep : Int = 16;
+	public var parallaxAmount = 0.0;
+	public var parallaxMinStep : Int = 1;
+	public var parallaxMaxStep : Int = 16;
 	// Blend Param
-	var heightBlendStrength : Float = 0.0;
-	var blendSharpness : Float = 0.0;
+	public var heightBlendStrength : Float = 0.0;
+	public var blendSharpness : Float = 0.0;
 	// Shadows Param
-	var castShadows = false;
+	public var castShadows = false;
 	// Data for binary save/load
 	var surfaceCount = 0;
 	var surfaceSize = 0;
@@ -87,32 +87,41 @@ class Terrain extends Object3D {
 		obj.heightBlendStrength = heightBlendStrength;
 		obj.blendSharpness = blendSharpness;
 		obj.castShadows = castShadows;
-		var surfacesProps : Array<SurfaceProps> = [];
-		for(surface in terrain.surfaces){
-			var surfaceProps : SurfaceProps =
-			{
-				albedo : surface.albedo.name,
-				normal : surface.normal.name,
-				pbr : surface.pbr.name,
-				tilling : surface.tilling,
-				angle : surface.angle,
-				offsetX : surface.offset.x,
-				offsetY : surface.offset.y,
-				minHeight : surface.minHeight,
-				maxHeight : surface.maxHeight,
-			};
-			surfacesProps.push(surfaceProps);
+		if( terrain != null && terrain.surfaces != null ) {
+
+			obj.surfaceCount = terrain.surfaces.length == 0 ? 0 : terrain.surfaceArray.surfaceCount;
+			obj.surfaceSize = terrain.surfaces.length == 0 ? 0 : terrain.surfaceArray.albedo.width;
+
+			var surfacesProps : Array<SurfaceProps> = [];
+			for(surface in terrain.surfaces){
+				var surfaceProps : SurfaceProps =
+				{
+					albedo : surface.albedo.name,
+					normal : surface.normal.name,
+					pbr : surface.pbr.name,
+					tilling : surface.tilling,
+					angle : surface.angle,
+					offsetX : surface.offset.x,
+					offsetY : surface.offset.y,
+					minHeight : surface.minHeight,
+					maxHeight : surface.maxHeight,
+				};
+				surfacesProps.push(surfaceProps);
+			}
+			obj.surfaces = surfacesProps;
 		}
-		obj.surfaces = surfacesProps;
-		obj.surfaceCount = terrain.surfaces.length == 0 ? 0 : terrain.surfaceArray.surfaceCount;
-		obj.surfaceSize = terrain.surfaces.length == 0 ? 0 : terrain.surfaceArray.albedo.width;
+		else {
+			// When cloning 
+			obj.surfaces = tmpSurfacesProps;
+			obj.surfaceCount = tmpSurfacesProps.length;
+		}
 
 		#if editor
 		obj.autoCreateTile = autoCreateTile;
-	 	obj.showChecker = terrain.showChecker;
+		if( terrain != null ) obj.showChecker = terrain.showChecker;
 		if( modified ) {
 			modified = false;
-			if( editor != null && terrain.surfaces.length > 0 ) editor.saveTextures();
+			if( editor != null && terrain != null && terrain.surfaces != null && terrain.surfaces.length > 0 ) editor.saveTextures();
 		}
 		#end
 
@@ -436,7 +445,7 @@ class Terrain extends Object3D {
 		ctx = ctx.clone(this);
 
 
-		#if editor
+		/*#if editor
 		// Attach the terrain to the scene directly, avoid slow refresh
 		if( cachedInstance != null ) {
 			ctx.local3d = terrain;
@@ -448,9 +457,9 @@ class Terrain extends Object3D {
 			terrain = new TerrainMesh(ctx.local3d.getScene());
 			cachedInstance = terrain;
 		}
-		#else
+		#else*/
 		terrain = new TerrainMesh(ctx.local3d);
-		#end
+		//#end
 
 		terrain.cellCount = getCellCount();
 		terrain.cellSize = getCellSize();
@@ -500,13 +509,13 @@ class Terrain extends Object3D {
 		#end
 	}
 
-	function getCellCount() {
+	public function getCellCount() {
 		var resolution = Math.max(0.1, cellSize);
 		var cellCount = Math.ceil(Math.min(1000, tileSize / resolution));
 		return cellCount;
 	}
 
-	function getCellSize() {
+	public function getCellSize() {
 		var cellCount = getCellCount();
 		var finalCellSize = tileSize / cellCount;
 		return finalCellSize;
