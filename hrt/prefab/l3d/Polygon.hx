@@ -20,6 +20,11 @@ class Polygon extends Object3D {
 	var prevScale = [1.0, 1.0];
 	#end
 
+	public function new(?parent) {
+		super(parent);
+		type = "polygon";
+	}
+
 	override function save() {
 		var obj : Dynamic = super.save();
 		switch(shape){
