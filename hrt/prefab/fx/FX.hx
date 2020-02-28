@@ -91,8 +91,6 @@ class FXAnimation extends h3d.scene.Object {
 				var timeLeft = endLoop + additionLoopDuration - totalTime;
 				if (timeLeft > 0) {
 					this.localTime = startLoop + ((totalTime - startLoop) % (endLoop - startLoop));
-				} else {
-					this.localTime = endLoop - timeLeft;
 				}
 			}
 		}
