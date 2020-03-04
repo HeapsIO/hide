@@ -72,10 +72,12 @@ class Scene extends Component implements h3d.IDrawable {
 	public var visible(default, null) : Bool = true;
 	public var editor : hide.comp.SceneEditor;
 	public var refreshIfUnfocused = false;
+	var chunkifyS3D : Bool = false;
 
-	public function new(config, parent, el) {
+	public function new(chunkifyS3D: Bool = false, config, parent, el) {
 		super(parent,el);
 		this.config = config;
+		this.chunkifyS3D = chunkifyS3D;
 		element.addClass("hide-scene-container");
 		canvas = cast new Element("<canvas class='hide-scene' style='width:100%;height:100%'/>").appendTo(element)[0];
 		canvas.addEventListener("mousemove",function(_) canvas.focus());
@@ -113,9 +115,11 @@ class Scene extends Component implements h3d.IDrawable {
 			engine.setCurrent();
 			window.setCurrent();
 			s2d = new h2d.Scene();
-			s3d = new hide.Scene();
-			// Unoptimised version of the scene
-			//s3d = new h3d.scene.Scene();
+			if (chunkifyS3D) {
+				s3d = new hide.Scene();
+			} else {
+				s3d = new h3d.scene.Scene();
+			}
 			sevents = new hxd.SceneEvents(window);
 			sevents.addScene(s2d);
 			sevents.addScene(s3d);
