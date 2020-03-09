@@ -86,13 +86,19 @@ class Spline extends Object3D {
 	override function save() {
 		var obj : Dynamic = super.save();
 
-		if( points!= null && points.length > 0 ) {
+		if( points != null && points.length > 0 ) {
 			var parentInv = points[0].parent.getAbsPos().clone();
 			parentInv.initInverse(parentInv);
 			obj.points = [ for(sp in points) {
 								var abs = sp.getAbsPos().clone();
 								abs.multiply(abs, parentInv);
 								[for(f in abs.getFloats()) hxd.Math.fmt(f) ];
+							} ];
+		}
+		// Clone support
+		else if( pointsData != null && pointsData.length > 0 ) {
+			obj.points =  [ for(abs in pointsData) { 
+								[for(f in abs.getFloats()) hxd.Math.fmt(f) ]; 
 							} ];
 		}
 		obj.shape = shape.getIndex();
