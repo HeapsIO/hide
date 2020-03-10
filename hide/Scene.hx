@@ -229,7 +229,6 @@ class Chunk {
 		bounds.zMax = 0;
 	}
 
-
 	public inline function addObject( obj : h3d.scene.Object, b : h3d.col.Bounds) {
 		objectCount++;
 		if( objectCount > objects.length )
@@ -256,6 +255,14 @@ class Scene extends h3d.scene.Scene {
 	
 	public function new() {
 		super();
+	}
+
+	public function reset() {
+		for( c in cs.chunks ) {
+			c.reset();
+			c.objects = [];
+			c.interactives = [];
+		}
 	}
 	
 	override function emitRec( ctx : h3d.scene.RenderContext ) {

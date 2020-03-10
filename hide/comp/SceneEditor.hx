@@ -539,6 +539,12 @@ class SceneEditor {
 		var sh = context.shared;
 		sh.root3d.remove();
 		sh.root2d.remove();
+
+		// Prevent leaks
+		var chunkiFiedScene = Std.downcast(scene.s3d, hide.Scene);
+		if( chunkiFiedScene != null )
+			chunkiFiedScene.reset();
+
 		for( c in sh.contexts )
 			if( c != null && c.cleanup != null )
 				c.cleanup();
