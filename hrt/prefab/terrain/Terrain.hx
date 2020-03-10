@@ -47,6 +47,7 @@ class Terrain extends Object3D {
 	var cachedInstance : TerrainMesh;
 	public var showChecker = false;
 	public var autoCreateTile = false;
+	public var brushOpacity : Float;
 	#end
 
 	public function new( ?parent ) {
@@ -72,6 +73,7 @@ class Terrain extends Object3D {
 		#if editor
 		autoCreateTile = obj.autoCreateTile == null ? false : obj.autoCreateTile;
 		showChecker = obj.showChecker == null ? false : obj.showChecker;
+		brushOpacity = obj.brushOpacity == null ? 1.0 : obj.brushOpacity;
 		#end
 	}
 
@@ -117,6 +119,7 @@ class Terrain extends Object3D {
 		}
 
 		#if editor
+		obj.brushOpacity = brushOpacity;
 		obj.autoCreateTile = autoCreateTile;
 		if( terrain != null ) obj.showChecker = terrain.showChecker;
 		if( modified ) {

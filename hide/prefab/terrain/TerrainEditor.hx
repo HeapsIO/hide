@@ -51,6 +51,8 @@ class TerrainEditor {
 	var interactive : h2d.Interactive;
 	var remainingDist = 0.0;
 	var lastPos : h3d.Vector;
+	var lastMousePos : h2d.col.Point;
+	var lastBrushSize : Float;
 	var heightStrokeBufferArray : hide.prefab.terrain.StrokeBuffer.StrokeBufferArray;
 	var weightStrokeBufferArray : hide.prefab.terrain.StrokeBuffer.StrokeBufferArray;
 	// Shader for edition
@@ -190,7 +192,10 @@ class TerrainEditor {
 		|| propName == "editor.currentSurface.maxHeight"
 		|| propName == "editor.currentSurface.parallaxAmount" )
 			terrainPrefab.terrain.updateSurfaceParams();
+
 		autoCreateTile = terrainPrefab.autoCreateTile;
+		brushPreview.opacity = terrainPrefab.brushOpacity;
+
 		if( propName == "editor.renderMode" ) updateRender();
 	}
 
@@ -758,6 +763,8 @@ class TerrainEditor {
 				var worldPos = getBrushPlanePos(s2d.mouseX, s2d.mouseY, ctx);
 				remainingDist = 0;
 				lastPos = null;
+				lastMousePos = null;
+				lastBrushSize = 0;
 				currentBrush.brushMode.lockAxe = NoLock;
 				currentBrush.firstClick = false;
 				applyStrokeBuffers();
@@ -767,9 +774,25 @@ class TerrainEditor {
 			};
 
 			interactive.onMove = function(e) {
+
+				// Brush Scale - Drag left/right
+				if( K.isDown(K.MOUSE_RIGHT) && K.isDown(K.CTRL) ) {
+					if( lastMousePos == null ) {
+						lastMousePos = new h2d.col.Point(s2d.mouseX, s2d.mouseY);
+						lastBrushSize = currentBrush.size;
+					}
+					e.propagate = false;
+					var newMousePos = new h2d.col.Point(s2d.mouseX, s2d.mouseY);
+					var dist = newMousePos.x - lastMousePos.x;
+					var sensibility = 0.5;
+					currentBrush.size = hxd.Math.max(0, lastBrushSize + sensibility * dist);
+					@:privateAccess Lambda.find(editContext.properties.fields, f->f.fname=="editor.currentBrush.size").range.value = currentBrush.size;
+					drawBrushPreview(getBrushPlanePos(lastMousePos.x, lastMousePos.y, ctx), ctx);
+					return;
+				}
+
 				currentBrush.brushMode.snapToGrid = K.isDown(K.CTRL);
 				var worldPos = getBrushPlanePos(s2d.mouseX, s2d.mouseY, ctx);
-
 				if( K.isDown( K.MOUSE_LEFT) ) {
 					currentBrush.firstClick = false;
 					e.propagate = false;
@@ -777,7 +800,6 @@ class TerrainEditor {
 					if( currentBrush.isValid() ) {
 						if( currentBrush.brushMode.lockDir ){
 							var dir = worldPos.sub(lastPos);
-							trace(dir);
 							if( currentBrush.brushMode.lockAxe == NoLock && dir.length() > 0.4 )
 								currentBrush.brushMode.lockAxe = hxd.Math.abs(dir.x) > hxd.Math.abs(dir.y) ? LockX : LockY;
 							if( currentBrush.brushMode.lockAxe == LockX ) {
@@ -802,7 +824,7 @@ class TerrainEditor {
 				drawBrushPreview(worldPos, ctx);
 			};
 		}
-		else{
+		else {
 			if( interactive != null ) interactive.remove();
 			brushPreview.reset();
 		}
@@ -1028,6 +1050,7 @@ class TerrainEditor {
 		<dt>Size</dt><dd><input type="range" min="0.01" max="50" field="editor.currentBrush.size"/></dd>
 		<dt>Strength</dt><dd><input type="range" min="0" max="1" field="editor.currentBrush.strength"/></dd>
 		<dt>Step</dt><dd><input type="range" min="0.01" max="10" field="editor.currentBrush.step"/></dd>
+		<dt>Opacity</dt><dd><input type="range" min="0" max="1" field="brushOpacity"/></dd>
 	</div>';
 
 	var surfaceParams =
@@ -1072,14 +1095,17 @@ class TerrainEditor {
 					currentBrush.texPath = ctx.ide.getPath(brush.texture);
 					currentBrush.tex = loadTexture(ctx, currentBrush.texPath);
 					currentBrush.name = brush.name;
-					if( currentBrush.bitmap != null ) {
-						currentBrush.bitmap.tile.dispose();
-						currentBrush.bitmap.tile = h2d.Tile.fromTexture(currentBrush.tex);
+					if( currentBrush.tex != null ) {
+						if( currentBrush.bitmap != null ) {
+							currentBrush.bitmap.tile.dispose();
+							currentBrush.bitmap.tile = h2d.Tile.fromTexture(currentBrush.tex);
+						}
+						else
+							currentBrush.bitmap = new h2d.Bitmap(h2d.Tile.fromTexture(currentBrush.tex));
+
+						currentBrush.bitmap.smooth = true;
+						currentBrush.bitmap.color = new h3d.Vector(currentBrush.strength);
 					}
-					else
-						currentBrush.bitmap = new h2d.Bitmap(h2d.Tile.fromTexture(currentBrush.tex));
-					currentBrush.bitmap.smooth = true;
-					currentBrush.bitmap.color = new h3d.Vector(currentBrush.strength);
 					refreshBrushes();
 				});
 				brushesContainer.append(brushElem);
@@ -1095,6 +1121,7 @@ class TerrainEditor {
 	}
 
 	function onSurfaceAdd( props : Element, ctx : EditContext, path : String ) {
+		editContext.scene.setCurrent();
 		terrainPrefab.modified = true;
 		if( path == null )
 			return;

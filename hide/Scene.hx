@@ -1,7 +1,6 @@
 package hide;
 
 import h3d.scene.Interactive;
-import h3d.col.Sphere;
 import h3d.scene.RenderContext;
 
 class ChunkScene {
@@ -40,6 +39,10 @@ class ChunkScene {
 
 			var gizmo = Std.downcast(obj, hide.view.l3d.Gizmo);
 			if( gizmo != null ) 
+				continue;
+
+			var terrainBrushPreview = Std.downcast(obj, hide.prefab.terrain.Brush.BrushPreview);
+			if( terrainBrushPreview != null ) 
 				continue;
 
 			// Ignore animated objects
@@ -102,6 +105,14 @@ class ChunkScene {
 			gc.addObject(obj, null);
 			for( c in @:privateAccess obj.children )
 				chunkifyObjects(c, chunkOverride);
+			return;
+		}
+		
+		// Terrain  exception
+		var terrainBrushPreview = Std.downcast(obj, hide.prefab.terrain.Brush.BrushPreview);
+		if( terrainBrushPreview != null ) {
+			var gc = getGlobalChunk();
+			gc.addObject(obj, null);
 			return;
 		}
 
