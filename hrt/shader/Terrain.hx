@@ -108,7 +108,7 @@ class Terrain extends hxsl.Shader {
 		}
 
 		function getsurfaceUV( id : Int, uv : Vec2 ) : Vec3 {
-			uv = transformedPosition.xy + (input.position.xy - uv * primSize); // Local To world
+			uv = transformedPosition.xy + (uv * primSize - input.position.xy); // Local To world
 			var angle = surfaceParams[id].w;
 			var offset = vec2(surfaceParams[id].y, surfaceParams[id].z);
 			var tilling = surfaceParams[id].x;
