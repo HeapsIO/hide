@@ -590,7 +590,7 @@ class SceneEditor {
 		int.onClick = function(e) {
 			if(e.button == K.MOUSE_RIGHT) {
 				e.propagate = false;
-				var parentEl = curEdit.rootElements[0];
+				var parentEl = sceneData; // for now always create at scene root, not `curEdit.rootElements[0];`
 				if(parentEl == null)
 					parentEl = elt;
 				var group = getParentGroup(parentEl);
