@@ -72,8 +72,9 @@ class Tile extends h3d.scene.Mesh {
 	}
 
 	public function getHeightPixels() {
-		if( needNewPixelCapture || heightmapPixels == null && heightMap != null )
+		if( needNewPixelCapture || heightmapPixels == null && heightMap != null ) {
 			heightmapPixels = heightMap.capturePixels();
+		}
 		needNewPixelCapture = false;
 		return heightmapPixels;
 	}
@@ -137,7 +138,6 @@ class Tile extends h3d.scene.Mesh {
 		 	grid = new h3d.prim.Grid(terrain.cellCount.x, terrain.cellCount.y, terrain.cellSize.x, terrain.cellSize.y);
 			primitive = grid;
 		}
-		computeHeight();
 		computeNormals();
 		computeTangents();
 	}
@@ -166,7 +166,6 @@ class Tile extends h3d.scene.Mesh {
 		flags.set(Up);
 		flags.set(UpLeft);
 
-		computeHeight();
 		computeEdgesHeight(flags);
 		computeNormals();
 		computeEdgesNormals();
@@ -183,7 +182,8 @@ class Tile extends h3d.scene.Mesh {
 			heightMap.preventAutoDispose();
 
 			heightMap.realloc = function() {
-				heightMap.uploadPixels(heightmapPixels);
+				if( heightmapPixels != null )
+					heightMap.uploadPixels(heightmapPixels);
 			}
 
 			if( oldHeightMap != null ) {
@@ -203,7 +203,8 @@ class Tile extends h3d.scene.Mesh {
 			surfaceIndexMap.preventAutoDispose();
 
 			surfaceIndexMap.realloc = function() {
-				surfaceIndexMap.uploadPixels(indexMapPixels);
+				if( indexMapPixels != null )
+					surfaceIndexMap.uploadPixels(indexMapPixels);
 			}
 
 			if( oldSurfaceIndexMap != null ) {
@@ -274,14 +275,6 @@ class Tile extends h3d.scene.Mesh {
 			if( surfaceWeights[i] != null ) terrain.copyPass.apply(surfaceWeights[i], surfaceWeightArray, None, null, i);
 	}
 
-	public function computeHeight() {
-		for( p in grid.points ) {
-			p.z = getHeight(p.x / terrain.tileSize.x, p.y / terrain.tileSize.y);
-		}
-		needAlloc = true;
-		return;
-	}
-
 	public function computeEdgesHeight( flag : haxe.EnumFlags<Direction> ) {
 
 		if( heightMap == null ) return;
@@ -322,9 +315,8 @@ class Tile extends h3d.scene.Mesh {
 
 	public function computeEdgesNormals() {
 
-		if( grid.normals == null ) 
+		if( grid.normals == null )
 			return;
-
 
 		inline function isEdgeIndex( grid : Grid, i : Int, side : Int ) : Bool {
 			var v = grid.points[grid.idx[i]];
@@ -337,28 +329,36 @@ class Tile extends h3d.scene.Mesh {
 			}
 		}
 		// Need to recompute the normal before any blend
-		inline function computeNormal( grid : Grid, index : Int,  assignOnSide : Int = -1 ) : h3d.col.Point {
-			var n1 = grid.points[grid.idx[index+1]].sub(grid.points[grid.idx[index]]).normalize();
-			var n2 = grid.points[grid.idx[index+2]].sub(grid.points[grid.idx[index]]).normalize();
+		var t0 = new h3d.col.Point(); var t1 = new h3d.col.Point(); var t2 = new h3d.col.Point();
+		inline function computeNormal( tile : Tile, index : Int,  assignOnSide : Int = -1 ) : h3d.col.Point {
+			var grid = tile.grid;
+			t0.load(grid.points[grid.idx[index]]);
+			t1.load(grid.points[grid.idx[index+1]]);
+			t2.load(grid.points[grid.idx[index+2]]);
+			t0.z = tile.getHeight(t0.x / terrain.tileSize.x, t0.y / terrain.tileSize.y);
+			t1.z = tile.getHeight(t1.x / terrain.tileSize.x, t1.y / terrain.tileSize.y);
+			t2.z = tile.getHeight(t2.x / terrain.tileSize.x, t2.y / terrain.tileSize.y);
+			var n1 = t1.sub(t0).normalize();
+			var n2 = t2.sub(t0).normalize();
 			var n = n1.cross(n2).normalize();
 			if( isEdgeIndex(grid, index, assignOnSide) ) grid.normals[grid.idx[index]] = grid.normals[grid.idx[index]].add(n);
 			if( isEdgeIndex(grid, index+1, assignOnSide) ) grid.normals[grid.idx[index+1]] = grid.normals[grid.idx[index+1]].add(n);
 			if( isEdgeIndex(grid, index+2, assignOnSide) ) grid.normals[grid.idx[index+2]] = grid.normals[grid.idx[index+2]].add(n);
 			return n;
 		}
-		
+
 		var widthVertexCount = grid.width + 1;
 		var heightVertexCount = grid.height + 1;
 		var widthTriangleCount = grid.width * 2;
 		var heightTriangleCount = grid.height * 2;
-		
+
 		var adjUpTile = terrain.getTile(tileX, tileY + 1);
 		var adjUpGrid = adjUpTile != null ? adjUpTile.grid : null;
 		if( adjUpGrid != null && adjUpGrid.normals != null ) {
-			for( i in 0 ... widthVertexCount ) 
+			for( i in 0 ... widthVertexCount )
 				adjUpGrid.normals[i].set(0,0,0);
-			for( i in 0 ... widthTriangleCount ) 
-				computeNormal(adjUpGrid, i * 3, 2);
+			for( i in 0 ... widthTriangleCount )
+				computeNormal(adjUpTile, i * 3, 2);
 			for( i in 0 ... widthVertexCount ) {
 				adjUpGrid.normals[i].normalize();
 				var n = grid.normals[i + widthVertexCount * (heightVertexCount - 1)].add(adjUpGrid.normals[i]).normalize();
@@ -371,10 +371,10 @@ class Tile extends h3d.scene.Mesh {
 		var adjDownTile = terrain.getTile(tileX, tileY - 1);
 		var adjDownGrid = adjDownTile != null ? adjDownTile.grid : null;
 		if( adjDownGrid != null && adjDownGrid.normals != null ) {
-			for( i in 0 ... widthVertexCount ) 
+			for( i in 0 ... widthVertexCount )
 				adjDownGrid.normals[i + widthVertexCount * (heightVertexCount - 1)].set(0,0,0);
-			for( i in 0 ... widthTriangleCount ) 
-				computeNormal(adjDownGrid, i * 3 + widthTriangleCount * 3 * (grid.height - 1), 1);
+			for( i in 0 ... widthTriangleCount )
+				computeNormal(adjDownTile, i * 3 + widthTriangleCount * 3 * (grid.height - 1), 1);
 			for( i in 0 ... widthVertexCount ) {
 				adjDownGrid.normals[i + widthVertexCount * (heightVertexCount - 1)].normalize();
 				var n = grid.normals[i].add(adjDownGrid.normals[i + widthVertexCount * (heightVertexCount - 1)]).normalize();
@@ -387,11 +387,11 @@ class Tile extends h3d.scene.Mesh {
 		var adjLeftTile = terrain.getTile(tileX + 1, tileY);
 		var adjLeftGrid = adjLeftTile != null ? adjLeftTile.grid : null;
 		if( adjLeftGrid != null && adjLeftGrid.normals != null ) {
-			for( i in 0 ... heightVertexCount ) 
+			for( i in 0 ... heightVertexCount )
 				adjLeftGrid.normals[i * widthVertexCount].set(0,0,0);
 			for( i in 0 ... grid.height ) {
-				computeNormal(adjLeftGrid, i * widthTriangleCount * 3, 0);
-				computeNormal(adjLeftGrid, i * widthTriangleCount * 3 + 3, 3);
+				computeNormal(adjLeftTile, i * widthTriangleCount * 3, 0);
+				computeNormal(adjLeftTile, i * widthTriangleCount * 3 + 3, 3);
 			}
 			for( i in 0 ... heightVertexCount ) {
 				adjLeftGrid.normals[i * widthVertexCount].normalize();
@@ -405,11 +405,11 @@ class Tile extends h3d.scene.Mesh {
 		var adjRightTile = terrain.getTile(tileX - 1, tileY);
 		var adjRightGrid = adjRightTile != null ? adjRightTile.grid : null;
 		if( adjRightGrid != null && adjRightGrid.normals != null ) {
-			for( i in 0 ... heightVertexCount ) 
+			for( i in 0 ... heightVertexCount )
 				adjRightGrid.normals[(widthVertexCount - 1) + i * widthVertexCount].set(0,0,0);
 			for( i in 0 ... grid.height ) {
-				computeNormal(adjRightGrid, (widthTriangleCount - 1) * 3 + i * widthTriangleCount * 3, 0);
-				computeNormal(adjRightGrid, (widthTriangleCount - 2) * 3 + i * widthTriangleCount * 3, 0);
+				computeNormal(adjRightTile, (widthTriangleCount - 1) * 3 + i * widthTriangleCount * 3, 0);
+				computeNormal(adjRightTile, (widthTriangleCount - 2) * 3 + i * widthTriangleCount * 3, 0);
 			}
 			for( i in 0 ... heightVertexCount ) {
 				adjRightGrid.normals[(widthVertexCount - 1) + i * widthVertexCount].normalize();
@@ -419,7 +419,7 @@ class Tile extends h3d.scene.Mesh {
 			}
 			adjRightTile.needAlloc = true;
 		}
-		
+
 		var adjUpRightTile = terrain.getTile(tileX - 1, tileY + 1);
 		var adjUpRightGrid = adjUpRightTile != null ? adjUpRightTile.grid : null;
 		var adjUpLeftTile = terrain.getTile(tileX + 1, tileY + 1);
@@ -435,25 +435,25 @@ class Tile extends h3d.scene.Mesh {
 		var upRight = (grid.width + 1) * (grid.height);
 		var n = new h3d.col.Point();
 
-		inline function computeUpLeftNormal( grid : Grid ) : h3d.col.Point {
-			return grid == null ? new h3d.col.Point() : computeNormal(grid, ((widthTriangleCount - 1) + (grid.height - 1) * widthTriangleCount) * 3);
+		inline function computeUpLeftNormal( t : Tile ) : h3d.col.Point {
+			return t == null ? new h3d.col.Point() : computeNormal(t, ((widthTriangleCount - 1) + (grid.height - 1) * widthTriangleCount) * 3);
 		}
-		inline function computeDownLeftNormal( grid : Grid ) : h3d.col.Point {
-			return grid == null ? new h3d.col.Point() : computeNormal(grid, (heightTriangleCount - 1) * 3).add(computeNormal(grid, (heightTriangleCount - 2) * 3));
+		inline function computeDownLeftNormal( t : Tile ) : h3d.col.Point {
+			return t == null ? new h3d.col.Point() : computeNormal(t, (heightTriangleCount - 1) * 3).add(computeNormal(t, (heightTriangleCount - 2) * 3));
 		}
-		inline function computeUpRightNormal( grid : Grid ) : h3d.col.Point {
-			return grid == null ? new h3d.col.Point() : computeNormal(grid, (grid.height - 1) * widthTriangleCount * 3).add(computeNormal(grid, (grid.height - 1) * widthTriangleCount * 3 + 3));
+		inline function computeUpRightNormal( t : Tile ) : h3d.col.Point {
+			return t == null ? new h3d.col.Point() : computeNormal(t, (grid.height - 1) * widthTriangleCount * 3).add(computeNormal(t, (grid.height - 1) * widthTriangleCount * 3 + 3));
 		}
-		inline function computeDownRightNormal( grid : Grid ) : h3d.col.Point {
-			return grid == null ? new h3d.col.Point() : computeNormal(grid, 0);
+		inline function computeDownRightNormal( t : Tile ) : h3d.col.Point {
+			return t == null ? new h3d.col.Point() : computeNormal(t, 0);
 		}
-		
+
 		// Up Right Corner
 		n.set(0,0,0);
-		n = n.add(computeDownLeftNormal(adjUpRightGrid));
-		n = n.add(computeUpLeftNormal(adjRightGrid));
-		n = n.add(computeDownRightNormal(adjUpGrid));
-		n = n.add(computeUpRightNormal(grid));
+		n = n.add(computeDownLeftNormal(adjUpRightTile));
+		n = n.add(computeUpLeftNormal(adjRightTile));
+		n = n.add(computeDownRightNormal(adjUpTile));
+		n = n.add(computeUpRightNormal(this));
 		n.normalize();
 		if(	adjUpRightGrid != null ) adjUpRightGrid.normals[downLeft].load(n);
 		if( adjRightGrid != null ) adjRightGrid.normals[upLeft].load(n);
@@ -463,10 +463,10 @@ class Tile extends h3d.scene.Mesh {
 
 		// Up Left Corner
 		n.set(0,0,0);
-		n = n.add(computeDownLeftNormal(adjUpGrid));
-		n = n.add(computeUpLeftNormal(grid));
-		n = n.add(computeDownRightNormal(adjUpLeftGrid));
-		n = n.add(computeUpRightNormal(adjLeftGrid));
+		n = n.add(computeDownLeftNormal(adjUpTile));
+		n = n.add(computeUpLeftNormal(this));
+		n = n.add(computeDownRightNormal(adjUpLeftTile));
+		n = n.add(computeUpRightNormal(adjLeftTile));
 		n.normalize();
 		if( adjUpLeftGrid != null ) adjUpLeftGrid.normals[downRight].load(n);
 		if( adjLeftGrid != null ) adjLeftGrid.normals[upRight].load(n);
@@ -476,10 +476,10 @@ class Tile extends h3d.scene.Mesh {
 
 		// Down Left Corner
 		n.set(0,0,0);
-		n = n.add(computeDownLeftNormal(grid));
-		n = n.add(computeUpLeftNormal(adjDownGrid));
-		n = n.add(computeDownRightNormal(adjLeftGrid));
-		n = n.add(computeUpRightNormal(adjDownLeftGrid));
+		n = n.add(computeDownLeftNormal(this));
+		n = n.add(computeUpLeftNormal(adjDownTile));
+		n = n.add(computeDownRightNormal(adjLeftTile));
+		n = n.add(computeUpRightNormal(adjDownLeftTile));
 		n.normalize();
 		if( adjDownLeftGrid != null ) adjDownLeftGrid.normals[upRight].load(n);
 		if( adjLeftGrid != null ) adjLeftGrid.normals[downRight].load(n);
@@ -489,17 +489,17 @@ class Tile extends h3d.scene.Mesh {
 
 		// Down Right Corner
 		n.set(0,0,0);
-		n = n.add(computeDownLeftNormal(adjRightGrid));
-		n = n.add(computeUpLeftNormal(adjDownRightGrid));
-		n = n.add(computeDownRightNormal(grid));
-		n = n.add(computeUpRightNormal(adjDownGrid));
+		n = n.add(computeDownLeftNormal(adjRightTile));
+		n = n.add(computeUpLeftNormal(adjDownRightTile));
+		n = n.add(computeDownRightNormal(this));
+		n = n.add(computeUpRightNormal(adjDownTile));
 		n.normalize();
 		if( adjDownRightGrid != null ) adjDownRightGrid.normals[upLeft].load(n);
 		if( adjRightGrid != null ) adjRightGrid.normals[downLeft].load(n);
 		if( adjDownGrid != null ) adjDownGrid.normals[upRight].load(n);
 		grid.normals[downRight].load(n);
 		if( adjDownLeftTile != null ) adjDownLeftTile.needAlloc = true;
-		
+
 		needAlloc = true;
 	}
 
@@ -587,6 +587,7 @@ class Tile extends h3d.scene.Mesh {
 
 		shader.primSize.set(terrain.tileSize.x, terrain.tileSize.y);
 		shader.cellSize.set(terrain.cellSize.x, terrain.cellSize.y);
+		if( heightMap != null ) shader.heightMapSize.set(heightMap.width, heightMap.height);
 
 		shader.albedoTextures = terrain.surfaceArray.albedo;
 		shader.normalTextures = terrain.surfaceArray.normal;
@@ -621,6 +622,7 @@ class Tile extends h3d.scene.Mesh {
 	}
 
 	function isReadyForDraw() {
+
 		if( primitive == null )
 			return false;
 

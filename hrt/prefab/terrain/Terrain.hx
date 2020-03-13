@@ -1,4 +1,5 @@
 package hrt.prefab.terrain;
+import hxd.Pixels.PixelsFloat;
 using Lambda;
 
 typedef SurfaceProps = {
@@ -188,8 +189,10 @@ class Terrain extends Object3D {
 					var pixels : hxd.Pixels.PixelsFloat = new hxd.Pixels(terrain.heightMapResolution.x + 1, terrain.heightMapResolution.y + 1, bytes, RGBA32F);
 					@:privateAccess tile.heightmapPixels = pixels;
 					#if editor
-					if( tile.heightMap == null ) @:privateAccess tile.refreshHeightMap();
+					// Need heightmap texture for editing
+					@:privateAccess tile.refreshHeightMap();
 					tile.heightMap.uploadPixels(pixels);
+					tile.needNewPixelCapture = false;
 					tile.refreshGrid();
 					#end
 				}
@@ -366,7 +369,7 @@ class Terrain extends Object3D {
 
 	public function saveHeightTextures( ctx : Context ) {
 		for( tile in terrain.tiles ) {
-			var pixels = tile.heightMap.capturePixels();
+			var pixels : PixelsFloat = tile.heightMap.capturePixels();
 			var fileName = tile.tileX + "_" + tile.tileY + "_" + "h";
 			ctx.shared.savePrefabDat(fileName, "bin", name, pixels.bytes);
 		}

@@ -15,6 +15,7 @@ class Terrain extends hxsl.Shader {
 
 		@param var primSize : Vec2;
 		@param var cellSize : Vec2;
+		@param var heightMapSize : Vec2;
 
 		@param var albedoTextures : Sampler2DArray;
 		@param var normalTextures : Sampler2DArray;
@@ -54,6 +55,14 @@ class Terrain extends hxsl.Shader {
 		function vertex() {
 			calculatedUV = input.position.xy / primSize;
 			worldUV = transformedPosition.xy;
+			if( VERTEX_DISPLACEMENT ) {
+				// The last pixel is for edge blend
+				var terrainUV = (calculatedUV * (heightMapSize - 1)) / heightMapSize;
+				// Blend with the heightpixel of the adjacent chunk
+				if( input.position.x == primSize.x ) terrainUV.x += 0.5 / heightMapSize.x;
+				if( input.position.y == primSize.y ) terrainUV.y += 0.5 / heightMapSize.y; 
+				transformedPosition += vec3(0,0,textureLod(heightMap, terrainUV, 0).r) * global.modelView.mat3();
+			}
 			transformedTangent = vec4(tangent * global.modelView.mat3(),tangent.dot(tangent) > 0.5 ? 1. : -1.);
 			var tanX = transformedTangent.xyz.normalize() * -transformedTangent.w;
 			var tanY = transformedNormal.cross(tanX).normalize();
