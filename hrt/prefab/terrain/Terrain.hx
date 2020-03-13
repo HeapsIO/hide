@@ -562,6 +562,7 @@ class Terrain extends Object3D {
 
 	override function setSelected( ctx : Context, b : Bool ) {
 		if( editor != null ) editor.setSelected(ctx, b);
+		return true;
 	}
 
 	override function getHideProps() : HideProps {

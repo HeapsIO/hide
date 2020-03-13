@@ -43,7 +43,7 @@ class Camera extends Object3D {
 	#if editor
 
 	override function setSelected( ctx : Context, b : Bool ) {
-
+		return false;
 	}
 
 	override function edit( ctx : hide.prefab.EditContext ) {

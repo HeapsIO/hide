@@ -1083,7 +1083,7 @@ class SceneEditor {
 
 	function setObjectSelected( p : PrefabElement, ctx : hrt.prefab.Context, b : Bool ) {
 		hideGizmo = false;
-		p.setSelected(ctx, b);
+		return p.setSelected(ctx, b);
 	}
 
 	public function selectObjects( elts : Array<PrefabElement>, ?includeTree=true) {
@@ -1108,9 +1108,9 @@ class SceneEditor {
 					return;
 				map.set(e, true);
 				var ectx = context.shared.contexts.get(e);
-				setObjectSelected(e, ectx == null ? context : ectx, b);
-				for( e in e.children )
-					selectRec(e,b);
+				if(setObjectSelected(e, ectx == null ? context : ectx, b))
+					for( e in e.children )
+						selectRec(e,b);
 			}
 
 			for( e in elts )

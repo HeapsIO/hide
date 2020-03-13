@@ -313,10 +313,6 @@ class SplineMesh extends Spline {
 
 	#if editor
 
-	override function setSelected( ctx : hrt.prefab.Context , b : Bool ) {
-		super.setSelected(ctx, b);
-	}
-
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
 

@@ -51,8 +51,8 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 
 	override function setObjectSelected( p : PrefabElement, ctx : hrt.prefab.Context, b : Bool ) {
 		if( p.getParent(hrt.prefab.fx.Emitter) != null )
-			return;
-		super.setObjectSelected(p, ctx, b);
+			return false;
+		return super.setObjectSelected(p, ctx, b);
 	}
 
 	override function selectObjects( elts, ?includeTree=true) {

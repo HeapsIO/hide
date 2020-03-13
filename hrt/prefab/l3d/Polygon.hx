@@ -224,6 +224,7 @@ class Polygon extends Object3D {
 		super.setSelected(ctx, b);
 		if( editor != null && shape == Custom)
 			editor.setSelected(ctx, b);
+		return true;
 	}
 
 	function createEditor( ctx : EditContext ){

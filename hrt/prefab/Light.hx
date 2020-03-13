@@ -195,11 +195,11 @@ class Light extends Object3D {
 
 	override function updateInstance( ctx : Context, ?propName : String ) {
 		super.updateInstance(ctx, propName);
-		
+
 		var color = color | 0xff000000;
 		var pbrLight = Std.downcast(ctx.local3d, h3d.scene.pbr.Light);
 		var light = Std.downcast(ctx.local3d, h3d.scene.pbr.Light);
-		if( pbrLight != null ) { // PBR 
+		if( pbrLight != null ) { // PBR
 			pbrLight.isMainLight = isMainLight;
 			pbrLight.occlusionFactor = occlusionFactor;
 
@@ -240,9 +240,9 @@ class Light extends Object3D {
 					pbrLight.shadows.samplingKind = ESM;
 			}
 		}
-		else if( light != null ) { // FWD 
+		else if( light != null ) { // FWD
 			light.color.setColor(color | 0xFF000000);
-		} 
+		}
 
 		#if editor
 
@@ -403,6 +403,7 @@ class Light extends Object3D {
 		var sel = ctx.local3d.getObjectByName("__selection");
 		if( sel != null ) sel.visible = b;
 		updateInstance(ctx);
+		return true;
 	}
 
 	override function edit( ctx : EditContext ) {

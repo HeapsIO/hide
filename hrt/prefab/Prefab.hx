@@ -83,7 +83,8 @@ class Prefab {
 	}
 
 	/**
-		Allows to customize how the prefab instance changes when selected/unselected within Hide
+		Allows to customize how the prefab instance changes when selected/unselected within Hide.
+		Selection of descendants is skipped if false is returned.
 	**/
 	public function setSelected( ctx : Context, b : Bool ) {
 		var materials = ctx.shared.getMaterials(this);
@@ -93,7 +94,7 @@ class Prefab {
 				//m.mainPass.stencil = null;
 				m.removePass(m.getPass("highlight"));
 			}
-			return;
+			return true;
 		}
 
 		var shader = new h3d.shader.FixedColor(0xffffff);
@@ -103,6 +104,7 @@ class Prefab {
 			p.depthWrite = false;
 			p.addShader(shader);
 		}
+		return true;
 	}
 	#end
 

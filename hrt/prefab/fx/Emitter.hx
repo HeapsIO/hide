@@ -1086,7 +1086,7 @@ class Emitter extends Object3D {
 	override function setSelected( ctx : Context, b : Bool ) {
 		var emitterObj = Std.downcast(ctx.local3d, EmitterObject);
 		if(emitterObj == null)
-			return;
+			return false;
 		var debugShape : h3d.scene.Object = emitterObj.find(c -> if(c.name == "_highlight") c else null);
 		if(debugShape != null)
 			debugShape.visible = b;
@@ -1105,6 +1105,7 @@ class Emitter extends Object3D {
 			}
 			emitterObj.batch.shadersChanged = true;
 		}
+		return false;
 	}
 
 	function updateEmitShape(emitterObj: EmitterObject) {

@@ -97,8 +97,8 @@ class Spline extends Object3D {
 		}
 		// Clone support
 		else if( pointsData != null && pointsData.length > 0 ) {
-			obj.points =  [ for(abs in pointsData) { 
-								[for(f in abs.getFloats()) hxd.Math.fmt(f) ]; 
+			obj.points =  [ for(abs in pointsData) {
+								[for(f in abs.getFloats()) hxd.Math.fmt(f) ];
 							} ];
 		}
 		obj.shape = shape.getIndex();
@@ -418,6 +418,8 @@ class Spline extends Object3D {
 
 		if( editor != null )
 			editor.setSelected(ctx, b);
+
+		return true;
 	}
 
 	override function edit( ctx : EditContext ) {

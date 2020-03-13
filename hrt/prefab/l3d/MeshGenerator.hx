@@ -406,6 +406,7 @@ class MeshGenerator extends Object3D {
 				s.remove();
 			}
 		}
+		return true;
 	}
 
 	function getHMD( ctx : Context, meshPath : String ) : hxd.fmt.hmd.Library {

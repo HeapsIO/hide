@@ -264,6 +264,7 @@ class MeshSpray extends Object3D {
 				wasEdited = false;
 			};
 		}
+		return false;
 	}
 
 	function addMeshPath(path : String) {
