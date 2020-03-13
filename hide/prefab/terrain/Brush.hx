@@ -26,19 +26,19 @@ class Brush {
 		return ( brushMode.mode == Delete || (bitmap != null && tex != null && name != null && step > 0.0 && texPath != null) );
 	}
 
-	public function scaleForTex( tileSize : Float, texResolution : Float ) {
+	public function scaleForTex( tileSize : h2d.col.Point, texResolution : h2d.col.IPoint ) {
 		if( tex != null ) {
-			var scale = size / ((tileSize / texResolution) * tex.width);
-			bitmap.setScale(scale);
+			bitmap.scaleX = size / ((tileSize.x / texResolution.x) * tex.width);
+			bitmap.scaleY = size / ((tileSize.y / texResolution.y) * tex.height);
 		}
 	}
 
-	public function drawTo( target : h3d.mat.Texture, pos : h3d.Vector, tileSize : Float, ?offset = 0 ) {
-		var texSize = target.width + offset;
+	public function drawTo( target : h3d.mat.Texture, pos : h3d.Vector, tileSize : h2d.col.Point, ?offset = 0 ) {
+		var texSize = new h2d.col.IPoint(target.width + offset, target.height + offset);
 		scaleForTex(tileSize, texSize);
 		bitmap.setPosition(
-						(pos.x * texSize - ( size / (tileSize / texSize) * 0.5 )),
-						(pos.y * texSize - ( size / (tileSize / texSize) * 0.5 )));
+						(pos.x * texSize.x - ( size / (tileSize.x / texSize.x) * 0.5 )),
+						(pos.y * texSize.y - ( size / (tileSize.y / texSize.y) * 0.5 )));
 		bitmap.drawTo(target);
 	}
 }

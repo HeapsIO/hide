@@ -13,9 +13,8 @@ class Terrain extends hxsl.Shader {
 		@const var PARALLAX : Bool;
 		@const var VERTEX_DISPLACEMENT : Bool;
 
-		@param var heightMapSize : Float;
-		@param var primSize : Float;
-		@param var cellSize : Float;
+		@param var primSize : Vec2;
+		@param var cellSize : Vec2;
 
 		@param var albedoTextures : Sampler2DArray;
 		@param var normalTextures : Sampler2DArray;
@@ -39,8 +38,8 @@ class Terrain extends hxsl.Shader {
 		@param var maxStep : Int;
 		@param var tileIndex : Vec2;
 
+		var worldUV : Vec2;
 		var calculatedUV : Vec2;
-		var terrainUV : Vec2;
 		var TBN : Mat3;
 
 		var emissiveValue : Float;
@@ -54,12 +53,7 @@ class Terrain extends hxsl.Shader {
 
 		function vertex() {
 			calculatedUV = input.position.xy / primSize;
-			if(VERTEX_DISPLACEMENT) {
-				var terrainUV = (calculatedUV * (heightMapSize - 1)) / heightMapSize;
-				terrainUV += 0.5 / heightMapSize;
-				transformedPosition += (vec3(0,0, textureLod(heightMap, terrainUV, 0).r) * global.modelView.mat3());
-			}
-
+			worldUV = transformedPosition.xy;
 			transformedTangent = vec4(tangent * global.modelView.mat3(),tangent.dot(tangent) > 0.5 ? 1. : -1.);
 			var tanX = transformedTangent.xyz.normalize() * -transformedTangent.w;
 			var tanY = transformedNormal.cross(tanX).normalize();
@@ -87,40 +81,38 @@ class Terrain extends hxsl.Shader {
 		var w : Vec3;
 		var i : IVec3;
 		function getPOMUV( i : IVec3, uv : Vec2 ) : Vec2 {
-			if( !PARALLAX )
-				return uv;
-			else {
-				var viewNS = normalize(tangentViewPos - tangentFragPos);
-				var numLayers = mix(float(maxStep), float(minStep), viewNS.dot(transformedNormal));
-				var layerDepth = 1 / numLayers;
-				var curLayerDepth = 0.;
-				var delta = (viewNS.xy / viewNS.z) * parallaxAmount / numLayers;
-				var curUV = uv;
-				var depth = getDepth(i, curUV);
-				var curDepth = depth.dot(w);
-				var prevDepth = 0.;
-				while( curLayerDepth < curDepth ) {
-					curUV += delta;
-					prevDepth = curDepth;
-					i = ivec3(surfaceIndexMap.getLod(curUV, 0).rgb * 255);
-					w = getWeight(i, curUV);
-					depth = getDepth(i, curUV);
-					curDepth = depth.dot(w);
-					curLayerDepth += layerDepth;
-				}
-				var prevUV = curUV - delta;
-				var after = curDepth - curLayerDepth;
-				var before = prevDepth - curLayerDepth + layerDepth;
-				var pomUV = mix(curUV, prevUV,  after / (after - before));
-				return pomUV;
+			var viewNS = normalize(tangentViewPos - tangentFragPos);
+			var numLayers = mix(float(maxStep), float(minStep), viewNS.dot(transformedNormal));
+			var layerDepth = 1 / numLayers;
+			var curLayerDepth = 0.;
+			var delta = (viewNS.xy / viewNS.z) * parallaxAmount / numLayers;
+			var curUV = uv;
+			var depth = getDepth(i, curUV);
+			var curDepth = depth.dot(w);
+			var prevDepth = 0.;
+			while( curLayerDepth < curDepth ) {
+				curUV += delta;
+				prevDepth = curDepth;
+				i = ivec3(surfaceIndexMap.getLod(curUV, 0).rgb * 255);
+				w = getWeight(i, curUV);
+				depth = getDepth(i, curUV);
+				curDepth = depth.dot(w);
+				curLayerDepth += layerDepth;
 			}
+			var prevUV = curUV - delta;
+			var after = curDepth - curLayerDepth;
+			var before = prevDepth - curLayerDepth + layerDepth;
+			var pomUV = mix(curUV, prevUV,  after / (after - before));
+			return pomUV;
+
 		}
 
 		function getsurfaceUV( id : Int, uv : Vec2 ) : Vec3 {
+			uv = transformedPosition.xy + (input.position.xy - uv * primSize); // Local To world
 			var angle = surfaceParams[id].w;
 			var offset = vec2(surfaceParams[id].y, surfaceParams[id].z);
 			var tilling = surfaceParams[id].x;
-			var worldUV = (uv + tileIndex) * tilling + offset;
+			var worldUV = uv * tilling + offset;
 			var res = vec2( worldUV.x * cos(angle) - worldUV.y * sin(angle) , worldUV.y * cos(angle) + worldUV.x * sin(angle));
 			var surfaceUV = vec3(res % 1, id);
 			return surfaceUV;
@@ -159,7 +151,7 @@ class Terrain extends hxsl.Shader {
 			else {
 				i = ivec3(surfaceIndexMap.get(calculatedUV).rgb * 255);
 				w = getWeight(i, calculatedUV);
-				var pomUV = getPOMUV(i, calculatedUV);
+				var pomUV = PARALLAX ? getPOMUV(i, calculatedUV) : calculatedUV;
 				if( PARALLAX ) {
 					i = ivec3(surfaceIndexMap.get(pomUV).rgb * 255);
 					w = getWeight(i, pomUV);
@@ -210,7 +202,7 @@ class Terrain extends hxsl.Shader {
 
 				// Output
 				var n = unpackNormal(normal);
-				transformedNormal = vec3(n.x * -1, n.y, n.z) * TBN;
+				//transformedNormal = vec3(n.x * -1, n.y, n.z) * TBN;
 				pixelColor = vec4(albedo, 1.0);
 				roughnessValue = 1 - pbr.g * pbr.g;
 				metalnessValue = pbr.r;
@@ -221,7 +213,7 @@ class Terrain extends hxsl.Shader {
 			if( SHOW_GRID ) {
 				var gridColor = vec4(1,0,0,1);
 				var tileEdgeColor = vec4(1,1,0,1);
-				var grid : Vec2 = ((input.position.xy.mod(cellSize) / cellSize ) - 0.5) * 2.0;
+				var grid : Vec2 = ((input.position.xy.mod(cellSize.xy) / cellSize.xy ) - 0.5) * 2.0;
 				grid = ceil(max(vec2(0), abs(grid) - 0.9));
 				var tileEdge = max( (1 - ceil(input.position.xy / primSize - 0.1 / (primSize / cellSize) )), floor(input.position.xy / primSize + 0.1 / (primSize / cellSize)));
 				emissiveValue = max(max(grid.x, grid.y), max(tileEdge.x, tileEdge.y));

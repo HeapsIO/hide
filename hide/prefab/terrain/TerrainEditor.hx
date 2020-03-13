@@ -83,8 +83,8 @@ class TerrainEditor {
 
 		brushPreview = new hide.prefab.terrain.Brush.BrushPreview(terrainPrefab.terrain);
 
-		heightStrokeBufferArray = new hide.prefab.terrain.StrokeBuffer.StrokeBufferArray(RGBA32F, terrainPrefab.heightMapResolution + 1);
-		weightStrokeBufferArray = new hide.prefab.terrain.StrokeBuffer.StrokeBufferArray(R8, terrainPrefab.weightMapResolution);
+		heightStrokeBufferArray = new hide.prefab.terrain.StrokeBuffer.StrokeBufferArray(RGBA32F,new h2d.col.IPoint(terrainPrefab.terrain.heightMapResolution.x + 1, terrainPrefab.terrain.heightMapResolution.y + 1));
+		weightStrokeBufferArray = new hide.prefab.terrain.StrokeBuffer.StrokeBufferArray(R8, terrainPrefab.terrain.weightMapResolution);
 		customScene.renderer = customRenderer;
 		#if debug
 		customScene.checkPasses = false;
@@ -200,8 +200,8 @@ class TerrainEditor {
 	}
 
 	public function refresh() {
-		heightStrokeBufferArray.refresh(terrainPrefab.heightMapResolution + 1);
-		weightStrokeBufferArray.refresh(terrainPrefab.weightMapResolution);
+		heightStrokeBufferArray.refresh(new h2d.col.IPoint(terrainPrefab.terrain.heightMapResolution.x + 1, terrainPrefab.terrain.heightMapResolution.y + 1));
+		weightStrokeBufferArray.refresh(terrainPrefab.terrain.weightMapResolution);
 	}
 
 	function updateRender() {
@@ -253,8 +253,8 @@ class TerrainEditor {
 			p.depthWrite = true;
 			tile.material.addPass(p);
 			var s = new hide.prefab.terrain.CustomUV();
-			s.primSize = terrainPrefab.terrain.tileSize;
-			s.heightMapSize = terrainPrefab.heightMapResolution;
+			s.primSize.set(terrainPrefab.terrain.tileSize.x, terrainPrefab.terrain.tileSize.y);
+			s.heightMapSize.set(terrainPrefab.terrain.heightMapResolution.x, terrainPrefab.terrain.heightMapResolution.y);
 			s.heightMap = tile.heightMap;
 			s.tileIndex = i;
 			p.addShader(s);
@@ -549,9 +549,9 @@ class TerrainEditor {
 		var worldPos = screenToWorld(mouseX, mouseY, ctx).toVector();
 		if( currentBrush.brushMode.snapToGrid ) {
 			var localPos = terrainPrefab.terrain.globalToLocal(worldPos.clone());
-			localPos.x = hxd.Math.round(localPos.x / terrainPrefab.terrain.cellSize) * terrainPrefab.terrain.cellSize;
-			localPos.y = hxd.Math.round(localPos.y / terrainPrefab.terrain.cellSize) * terrainPrefab.terrain.cellSize;
-			localPos.z = hxd.Math.round(localPos.z / terrainPrefab.terrain.cellSize) * terrainPrefab.terrain.cellSize;
+			localPos.x = hxd.Math.round(localPos.x / terrainPrefab.terrain.cellSize.x) * terrainPrefab.terrain.cellSize.x;
+			localPos.y = hxd.Math.round(localPos.y / terrainPrefab.terrain.cellSize.y) * terrainPrefab.terrain.cellSize.y;
+			localPos.z = localPos.z;
 			worldPos = terrainPrefab.terrain.globalToLocal(localPos.clone());
 		}
 		return worldPos;
@@ -568,7 +568,7 @@ class TerrainEditor {
 		var tiles = terrainPrefab.terrain.tiles;
 		for( i in 0 ... tiles.length )
 			if( hxd.Math.ceil(pixel.z) == i )
-				brushWorldPos = tiles[i].localToGlobal(new h3d.Vector(pixel.x * terrainPrefab.tileSize, pixel.y * terrainPrefab.tileSize, 0));
+				brushWorldPos = tiles[i].localToGlobal(new h3d.Vector(pixel.x * terrainPrefab.tileSizeX, pixel.y * terrainPrefab.tileSizeY, 0));
 		return brushWorldPos;
 	}
 
@@ -652,7 +652,7 @@ class TerrainEditor {
 		var brushWorldPos = uvTexPixels == null ? pos : getBrushWorldPosFromTex(pos, ctx);
 		if( brushWorldPos == null ) return;
 		var c = terrainPrefab.terrain.tiles.length;
-		var tiles = terrainPrefab.terrain.getTiles(pos.x, pos.y, currentBrush.size / 2.0, autoCreateTile);
+		var tiles = terrainPrefab.terrain.getTiles(brushWorldPos.x, brushWorldPos.y, currentBrush.size / 2.0, autoCreateTile);
 		if( c != terrainPrefab.terrain.tiles.length ) {
 			renderTerrainUV(ctx);
 			brushWorldPos = getBrushWorldPosFromTex(pos, ctx);
@@ -663,7 +663,7 @@ class TerrainEditor {
 		if( shader == null ) shader = currentBrush.bitmap.addShader(new hrt.shader.Brush());
 		currentBrush.bitmap.blendMode = currentBrush.brushMode.accumulate ? Add : Max;
 		shader.strength = currentBrush.strength;
-		shader.size = currentBrush.size / terrainPrefab.tileSize;
+		shader.size.set(currentBrush.size / terrainPrefab.tileSizeX, currentBrush.size / terrainPrefab.tileSizeY);
 
 		for( tile in tiles ) {
 			var strokeBuffer = weightStrokeBufferArray.getStrokeBuffer(tile.tileX, tile.tileY);
@@ -677,9 +677,10 @@ class TerrainEditor {
 				strokeBuffer.used = true;
 			}
 			var localPos = tile.globalToLocal(brushWorldPos.clone());
-			localPos.scale3(1.0 / terrainPrefab.tileSize);
-			shader.pos = new h3d.Vector(localPos.x - (currentBrush.size  / terrainPrefab.tileSize * 0.5), localPos.y - (currentBrush.size  / terrainPrefab.tileSize * 0.5));
-			currentBrush.drawTo(strokeBuffer.tex, localPos, terrainPrefab.tileSize);
+			localPos.x *= 1.0 / terrainPrefab.tileSizeX;
+			localPos.y *= 1.0 / terrainPrefab.tileSizeY;
+			shader.pos = new h3d.Vector(localPos.x - (currentBrush.size  / terrainPrefab.tileSizeX * 0.5), localPos.y - (currentBrush.size  / terrainPrefab.tileSizeY * 0.5));
+			currentBrush.drawTo(strokeBuffer.tex, localPos, terrainPrefab.terrain.tileSize );
 		}
 	}
 
@@ -696,7 +697,7 @@ class TerrainEditor {
 		var shader : hrt.shader.Brush = currentBrush.bitmap.getShader(hrt.shader.Brush);
 		if( shader == null ) shader = currentBrush.bitmap.addShader(new hrt.shader.Brush());
 		currentBrush.bitmap.color = new h3d.Vector(1.0);
-		shader.size = currentBrush.size / terrainPrefab.tileSize;
+		shader.size.set(currentBrush.size / terrainPrefab.tileSizeX, currentBrush.size / terrainPrefab.tileSizeY);
 
 		switch( currentBrush.brushMode.mode ) {
 			case AddSub :
@@ -713,15 +714,16 @@ class TerrainEditor {
 
 		for( tile in tiles ) {
 			var localPos = tile.globalToLocal(brushWorldPos.clone());
-			localPos.scale3(1.0 / terrainPrefab.tileSize);
+			localPos.x *= 1.0 / terrainPrefab.tileSizeX;
+			localPos.y *= 1.0 / terrainPrefab.tileSizeY;
 			var strokeBuffer = heightStrokeBufferArray.getStrokeBuffer(tile.tileX, tile.tileY);
 			if( strokeBuffer.used == false ) {
 				strokeBuffer.prevTex = tile.heightMap;
 				tile.heightMap = strokeBuffer.tempTex;
 				strokeBuffer.used = true;
 			}
-			shader.pos = new h3d.Vector(localPos.x - (currentBrush.size  / terrainPrefab.tileSize * 0.5), localPos.y - (currentBrush.size  / terrainPrefab.tileSize * 0.5));
-			currentBrush.drawTo(strokeBuffer.tex, localPos, terrainPrefab.tileSize, -1);
+			shader.pos = new h3d.Vector(localPos.x - (currentBrush.size  / terrainPrefab.tileSizeX * 0.5), localPos.y - (currentBrush.size  / terrainPrefab.tileSizeY * 0.5));
+			currentBrush.drawTo(strokeBuffer.tex, localPos, terrainPrefab.terrain.tileSize, -1);
 		}
 	}
 
@@ -855,7 +857,7 @@ class TerrainEditor {
 		swapIndex.shader.INDEX_COUNT = oldIndexes.length;
 		swapIndex.shader.oldIndexes = oldIndexes;
 		swapIndex.shader.newIndexes = newIndexes;
-		var newSurfaceIndexMap = new h3d.mat.Texture(terrainPrefab.weightMapResolution, terrainPrefab.weightMapResolution, [Target], RGBA);
+		var newSurfaceIndexMap = new h3d.mat.Texture(terrainPrefab.terrain.weightMapResolution.x, terrainPrefab.terrain.weightMapResolution.y, [Target], RGBA);
 		for( i in 0 ... terrainPrefab.terrain.tiles.length ) {
 			var tile = terrainPrefab.terrain.tiles[i];
 			var revert = tileRevertDatas[i];
@@ -911,7 +913,7 @@ class TerrainEditor {
 				tile.surfaceWeights = new Array<h3d.mat.Texture>();
 				tile.surfaceWeights = [for( i in 0...terrainPrefab.terrain.surfaces.length ) null];
 				for( i in 0 ... tile.surfaceWeights.length ) {
-					tile.surfaceWeights[i] = new h3d.mat.Texture(terrainPrefab.weightMapResolution, terrainPrefab.weightMapResolution, [Target], R8);
+					tile.surfaceWeights[i] = new h3d.mat.Texture(terrainPrefab.terrain.weightMapResolution.x, terrainPrefab.terrain.weightMapResolution.y, [Target], R8);
 					tile.surfaceWeights[i].wrap = Clamp;
 					tile.surfaceWeights[i].preventAutoDispose();
 				}
@@ -1058,7 +1060,7 @@ class TerrainEditor {
 		<div class="title">Surface <input type="button" style="font-weight:bold" id="addSurface" value="+"/></div>
 		<div class="terrain-surfaces"></div>
 		<div class="group" name="Params">
-			<dt>Tilling</dt><dd><input type="range" min="0" max="20" field="editor.currentSurface.tilling"/></dd>
+			<dt>Tilling</dt><dd><input type="range" min="0" max="2" field="editor.currentSurface.tilling"/></dd>
 			<dt>Offset X</dt><dd><input type="range" min="0" max="1" field="editor.currentSurface.offset.x"/></dd>
 			<dt>Offset Y</dt><dd><input type="range" min="0" max="1" field="editor.currentSurface.offset.y"/></dd>
 			<dt>Rotate</dt><dd><input type="range" min="0" max="360" field="editor.currentSurface.angle"/></dd>
