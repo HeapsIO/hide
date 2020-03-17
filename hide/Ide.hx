@@ -940,7 +940,7 @@ class Ide {
 		});
 		db.find(".dbCloseDiff").click(function(_) {
 			setDiff(null);
-		}).attr("disabled", databaseDiff != null ? "" : "disabled");
+		}).attr("disabled", databaseDiff == null ? "disabled" : null);
 
 		// layout
 		var layouts = menu.find(".layout .content");

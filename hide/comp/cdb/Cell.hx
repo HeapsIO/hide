@@ -114,6 +114,7 @@ class Cell extends Component {
 					case TList, TProperties:
 						continue;
 					default:
+						if( !table.canViewSubColumn(column.name, c.name) ) continue;
 						vals.push(valueHtml(c, Reflect.field(v, c.name), ps, v));
 					}
 				var v = vals.length == 1 ? vals[0] : ""+vals;
@@ -140,6 +141,7 @@ class Cell extends Component {
 			for( c in ps.columns ) {
 				var pval = Reflect.field(v, c.name);
 				if( pval == null && c.opt ) continue;
+				if( !table.canViewSubColumn(column.name, c.name) ) continue;
 				out.push(c.name+" : "+valueHtml(c, pval, ps, v));
 			}
 			return out.join("<br/>");

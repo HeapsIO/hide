@@ -49,6 +49,15 @@ class Table extends Component {
 		return view == null || (view.edit != null && view.edit.indexOf(name) >= 0);
 	}
 
+	public function canViewSubColumn( name : String, column : String ) {
+		if( view == null )
+			return true;
+		var sub = view.sub == null ? null : view.sub.get(name);
+		if( sub == null )
+			return true;
+		return sub.show == null || sub.show.indexOf(column) >= 0;
+	}
+
 	public function close() {
 		element.remove();
 		dispose();
@@ -172,7 +181,7 @@ class Table extends Component {
 				editor.newColumn(sheet);
 			});
 			element.append(l);
-		} else if( sheet.lines.length == 0 ) {
+		} else if( sheet.lines.length == 0 && canInsert() ) {
 			var l = J('<tr><td colspan="${columns.length + 1}"><input type="button" value="Insert Line"/></td></tr>');
 			l.find("input").click(function(_) {
 				editor.insertLine(this);
