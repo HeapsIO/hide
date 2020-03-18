@@ -73,7 +73,7 @@ class FileTree extends FileView {
 		tree = new hide.comp.IconTree(null,panel);
 		tree.async = true;
 		tree.allowRename = true;
-		tree.saveDisplayKey = "FileTree:" + getPath().split("\\").join("/").substr(0,-1);
+		tree.saveDisplayKey = saveDisplayKey;
 		tree.element.addClass("small");
 		tree.get = function(path) {
 			if( path == null ) path = "";

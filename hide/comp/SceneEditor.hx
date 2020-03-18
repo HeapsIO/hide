@@ -108,7 +108,7 @@ class SceneEditor {
 	var hideGizmo = false;
 	var gizmo : hide.view.l3d.Gizmo;
 	static var customPivot : CustomPivot;
-	var interactives : Map<PrefabElement, h3d.scene.Interactive>;
+	var interactives : Map<PrefabElement, hxd.SceneEvents.Interactive>;
 	var ide : hide.Ide;
 	public var event(default, null) : hxd.WaitEvent;
 	var hideList : Map<PrefabElement, Bool> = new Map();
@@ -673,7 +673,8 @@ class SceneEditor {
 	public function refreshInteractive(elt : PrefabElement) {
 		var int = interactives.get(elt);
 		if(int != null) {
-			int.remove();
+			var i3d = Std.downcast(int, h3d.scene.Interactive);
+			if( i3d != null ) i3d.remove() else cast(int,h2d.Interactive).remove();
 			interactives.remove(elt);
 		}
 		makeInteractive(elt);
@@ -854,7 +855,7 @@ class SceneEditor {
 
 			if(K.isDown(K.MOUSE_LEFT)) {
 				var contexts = context.shared.contexts;
-				var all = getAllSelectable();
+				var all = getAllSelectable3D();
 				var inside = [];
 				for(elt in all) {
 					if(elt.to(Object3D) == null)
@@ -1021,7 +1022,8 @@ class SceneEditor {
 
 			var int = interactives.get(e);
 			if(int != null) {
-				int.remove();
+				var i3d = Std.downcast(int, h3d.scene.Interactive);
+				if( i3d != null ) i3d.remove() else cast(int,h2d.Interactive).remove();
 				interactives.remove(e);
 			}
 			for(ctx in getContexts(e)) {
@@ -1347,11 +1349,13 @@ class SceneEditor {
 		return o.visible && !isHidden(o) && (elt.parent != null ? isVisible(elt.parent) : true);
 	}
 
-	public function getAllSelectable() : Array<PrefabElement> {
+	public function getAllSelectable3D() : Array<PrefabElement> {
 		var ret = [];
 		for(elt in interactives.keys()) {
 			var i = interactives.get(elt);
-			var p : h3d.scene.Object = i;
+			var p : h3d.scene.Object = Std.downcast(i, h3d.scene.Interactive);
+			if( p == null )
+				continue;
 			while( p != null && p.visible )
 				p = p.parent;
 			if( p != null ) continue;
@@ -1361,7 +1365,7 @@ class SceneEditor {
 	}
 
 	public function selectAll() {
-		selectObjects(getAllSelectable());
+		selectObjects(getAllSelectable3D());
 	}
 
 	public function deselect() {

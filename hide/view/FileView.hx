@@ -21,6 +21,11 @@ class FileView extends hide.ui.View<{ path : String }> {
 			}, { checkDelete : true, keepOnRebuild : true });
 	}
 
+	override function rebuild() {
+		saveDisplayKey = Type.getClassName(Type.getClass(this)) + ":" + getPath().split("\\").join("/");
+		super.rebuild();
+	}
+
 	function onFileChanged( wasDeleted : Bool, rebuildView = true ) {
 		if( !wasDeleted ) {
 			// double check if content has changed

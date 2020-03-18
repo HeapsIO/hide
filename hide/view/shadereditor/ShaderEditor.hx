@@ -49,7 +49,6 @@ class ShaderEditor extends hide.view.Graph {
 
 	override function onDisplay() {
 		super.onDisplay();
-		saveDisplayKey = "ShaderGraph:" + getPath().split("\\").join("/").substr(0,-1);
 		shaderGraph = new ShaderGraph(state.path);
 		addMenu = null;
 
@@ -1194,7 +1193,7 @@ class ShaderEditor extends hide.view.Graph {
 			}
 		}
 	}
-	
+
 	override function getDefaultContent() {
 		var p = { nodes: [], edges: [], parameters: [] };
 		return haxe.io.Bytes.ofString(ide.toJSON(p));

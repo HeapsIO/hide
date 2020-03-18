@@ -320,7 +320,6 @@ class Level3D extends FileView {
 	function get_properties() return sceneEditor.properties;
 
 	override function onDisplay() {
-		saveDisplayKey = "Level3D:" + getPath().split("\\").join("/").substr(0,-1);
 		data = new hrt.prefab.l3d.Level3D();
 		var content = sys.io.File.getContent(getPath());
 		data.loadData(haxe.Json.parse(content));
@@ -427,6 +426,7 @@ class Level3D extends FileView {
 
 		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		statusText.setPosition(5, 5);
+		statusText.visible = tools.getDisplayState("");
 
 		posToolTip = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		posToolTip.dropShadow = { dx : 1, dy : 1, color : 0, alpha : 0.5 };
@@ -720,7 +720,9 @@ class Level3D extends FileView {
 			var inters = sceneEditor.getInteractives(p);
 			for(inter in inters) {
 				if(inter != null) {
-					inter.visible = interIsVisible;
+					var i3d = Std.downcast(inter,h3d.scene.Interactive);
+					if( i3d != null )
+						i3d.visible = interIsVisible;
 				}
 			}
 		}
@@ -752,39 +754,6 @@ class Level3D extends FileView {
 		return null;
 	}
 
-	public static function getLevelSheet() {
-		return Ide.inst.database.getSheet(Ide.inst.currentConfig.get("l3d.cdbLevel", "level"));
-	}
-
-	static function resolveCdbType(id: String) {
-		var types = Level3D.getCdbTypes();
-		return types.find(t -> getCdbTypeId(t) == id);
-	}
-
-	public static function getCdbTypes() {
-		var levelSheet = getLevelSheet();
-		if(levelSheet == null) return [];
-		return [for(c in levelSheet.columns) if(c.type == TList) levelSheet.getSub(c)];
-	}
-
-	public static function getCdbTypeId(?p: PrefabElement, ?sheet: cdb.Sheet) : String {
-		if(p != null) {
-			if(p.props == null)
-				return null;
-			return Reflect.getProperty(p.props, "$cdbtype");
-		}
-		else {
-			return sheet.name.split("@").pop();
-		}
-	}
-
-	public static function getCdbModel(e:hrt.prefab.Prefab):cdb.Sheet {
-		var typeName : String = getCdbTypeId(e);
-		if(typeName == null)
-			return null;
-		return resolveCdbType(typeName);
-	}
-
 	function getGroundPolys() {
 		var groundGroups = data.findAll(p -> if(p.name == "ground") p else null);
 		var ret = [];
@@ -795,6 +764,39 @@ class Level3D extends FileView {
 				return p.to(hrt.prefab.l3d.Polygon);
 			},ret);
 		return ret;
+	}
+
+	static function getLevelSheet() {
+		return Ide.inst.database.getSheet(Ide.inst.currentConfig.get("l3d.cdbLevel", "level"));
+	}
+
+	static function resolveCdbType(id: String) {
+		var types = Level3D.getCdbTypes();
+		return types.find(t -> getCdbTypeId(t) == id);
+	}
+
+	static function getCdbTypes() {
+		var levelSheet = getLevelSheet();
+		if(levelSheet == null) return [];
+		return [for(c in levelSheet.columns) if(c.type == TList) levelSheet.getSub(c)];
+	}
+
+	static function getCdbTypeId(?p: PrefabElement, ?sheet: cdb.Sheet) : String {
+		if(p != null) {
+			if(p.props == null)
+				return null;
+			return Reflect.getProperty(p.props, "$cdbtype");
+		}
+		else {
+			return sheet.name.split("@").pop();
+		}
+	}
+
+	static function getCdbModel(e:hrt.prefab.Prefab):cdb.Sheet {
+		var typeName : String = getCdbTypeId(e);
+		if(typeName == null)
+			return null;
+		return resolveCdbType(typeName);
 	}
 
 	static var _ = FileTree.registerExtension(Level3D,["l3d"],{ icon : "sitemap", createNew : "Level3D" });

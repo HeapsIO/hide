@@ -47,6 +47,7 @@ class Prefab extends FileView {
 	override function getDefaultContent() {
 		return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab.Library().saveData()));
 	}
+
 	override function save() {
 		var content = ide.toJSON(data.saveData());
 		currentSign = haxe.crypto.Md5.encode(content);
@@ -55,7 +56,6 @@ class Prefab extends FileView {
 	}
 
 	override function onDisplay() {
-		saveDisplayKey = "Prefab:" + getPath().split("\\").join("/").substr(0,-1);
 		data = new hrt.prefab.Library();
 		var content = sys.io.File.getContent(getPath());
 		data.loadData(haxe.Json.parse(content));

@@ -205,7 +205,6 @@ class FXEditor extends FileView {
 	}
 
 	override function onDisplay() {
-		saveDisplayKey = "FXScene/" + getPath().split("\\").join("/").substr(0,-1);
 		currentTime = 0.;
 		xOffset = -timelineLeftMargin / xScale;
 		var content = sys.io.File.getContent(getPath());
