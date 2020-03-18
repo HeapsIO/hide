@@ -87,23 +87,6 @@ class Prefab {
 		Selection of descendants is skipped if false is returned.
 	**/
 	public function setSelected( ctx : Context, b : Bool ) {
-		var materials = ctx.shared.getMaterials(this);
-
-		if( !b ) {
-			for( m in materials ) {
-				//m.mainPass.stencil = null;
-				m.removePass(m.getPass("highlight"));
-			}
-			return true;
-		}
-
-		var shader = new h3d.shader.FixedColor(0xffffff);
-		for( m in materials ) {
-			var p = m.allocPass("highlight");
-			p.culling = None;
-			p.depthWrite = false;
-			p.addShader(shader);
-		}
 		return true;
 	}
 	#end

@@ -121,6 +121,28 @@ class Object3D extends Prefab {
 	}
 
 	#if editor
+
+	override function setSelected(ctx:Context, b:Bool):Bool {
+		var materials = ctx.shared.getMaterials(this);
+
+		if( !b ) {
+			for( m in materials ) {
+				//m.mainPass.stencil = null;
+				m.removePass(m.getPass("highlight"));
+			}
+			return true;
+		}
+
+		var shader = new h3d.shader.FixedColor(0xffffff);
+		for( m in materials ) {
+			var p = m.allocPass("highlight");
+			p.culling = None;
+			p.depthWrite = false;
+			p.addShader(shader);
+		}
+		return true;
+	}
+
 	public function makeInteractive( ctx : Context ) : h3d.scene.Interactive {
 		var local3d = ctx.local3d;
 		if(local3d == null)
