@@ -644,6 +644,7 @@ class SceneEditor {
 			}
 		}
 		int.onPush = function(e) {
+			if( e.button == K.MOUSE_MIDDLE ) return;
 			startDrag = [scene.s2d.mouseX, scene.s2d.mouseY];
 			dragBtn = e.button;
 			if( e.button == K.MOUSE_LEFT && !isSelected(elt) ) {
@@ -676,9 +677,10 @@ class SceneEditor {
 			}
 			// ensure we get onMove even if outside our interactive, allow fast click'n'drag
 			if( e.button == K.MOUSE_LEFT ) scene.sevents.startDrag(int.handleEvent);
-			e.propagate = !isSelected(elt);
+			e.propagate = e.button == K.MOUSE_MIDDLE || !isSelected(elt);
 		}
 		int.onRelease = function(e) {
+			if( e.button == K.MOUSE_MIDDLE ) return;
 			startDrag = null;
 			dragBtn = -1;
 			e.propagate = !(e.button == K.MOUSE_LEFT || isSelected(elt));
