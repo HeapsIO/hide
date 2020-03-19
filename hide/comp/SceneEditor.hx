@@ -12,6 +12,7 @@ import hxd.Key as K;
 import hxd.Math as M;
 
 import hrt.prefab.Prefab as PrefabElement;
+import hrt.prefab.Object2D;
 import hrt.prefab.Object3D;
 import h3d.scene.Object;
 
@@ -355,6 +356,15 @@ class SceneEditor {
 		gizmo.moveStep = view.config.get("sceneeditor.gridSnapStep");
 
 		cameraController = makeCamController();
+		cameraController.onClick = function(e) {
+			if( e.button == K.MOUSE_RIGHT ) {
+				var ray = scene.s3d.camera.rayFromScreen(scene.s2d.mouseX, scene.s2d.mouseY);
+				var pt = ray.intersect(h3d.col.Plane.Z());
+				if( pt == null ) pt = new h3d.col.Point();
+				selectNewObject(pt);
+				e.propagate = false;
+			}
+		};
 
 		resetCamera();
 
@@ -572,46 +582,43 @@ class SceneEditor {
 	}
 
 	function makeInteractive( elt : PrefabElement ) {
-		var obj3d = Std.downcast(elt, Object3D);
-		if( obj3d == null )
-			return;
-
 		var contexts = context.shared.contexts;
 		var ctx = contexts[elt];
 		if( ctx == null )
 			return;
+		var obj3d = Std.downcast(elt, Object3D);
+		var int : hxd.SceneEvents.Interactive = null;
+		if( obj3d != null )
+			int = makeInteractive3D(obj3d, ctx);
+		else {
+			var obj2d = Std.downcast(elt, Object2D);
+			if( obj2d != null )
+				int = makeInteractive2D(obj2d, ctx);
+		}
+		if( int != null )
+			interactives.set(elt, int);
+	}
 
-		var int = obj3d.makeInteractive(ctx);
+	function makeInteractive2D( elt : Object2D, ctx : hrt.prefab.Context ) {
+		var int = elt.makeInteractive(ctx);
 		if( int == null )
-			return;
+			return null;
+		return int;
+	}
+
+	function makeInteractive3D( elt : Object3D, ctx : hrt.prefab.Context ) {
+		var int = elt.makeInteractive(ctx);
+		if( int == null )
+			return null;
 
 		var startDrag = null;
 		var dragBtn = -1;
 		int.onClick = function(e) {
 			if(e.button == K.MOUSE_RIGHT) {
 				e.propagate = false;
-				var parentEl = sceneData; // for now always create at scene root, not `curEdit.rootElements[0];`
-				if(parentEl == null)
-					parentEl = elt;
-				var group = getParentGroup(parentEl);
-				if(group != null)
-					parentEl = group;
-				var newItems = getNewContextMenu(parentEl, function(newElt) {
-					var newObj3d = Std.downcast(newElt, Object3D);
-					if(newObj3d != null) {
-						var newPos = new h3d.Matrix();
-						newPos.identity();
-						newPos.setPosition(@:privateAccess int.hitPoint);
-						var invParent = getObject(parentEl).getAbsPos().clone();
-						invParent.invert();
-						newPos.multiply(newPos, invParent);
-						newObj3d.setTransform(newPos);
-					}
-				});
-				var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [
-					{ label : "New...", menu : newItems },
-				];
-				new hide.comp.ContextMenu(menuItems);
+				var pt = new h3d.Vector(e.relX,e.relY,e.relZ);
+				int.localToGlobal(pt);
+				selectNewObject(pt.toPoint());
 			}
 		}
 		int.onPush = function(e) {
@@ -667,7 +674,31 @@ class SceneEditor {
 			}
 		}
 
-		interactives.set(elt, int);
+		return int;
+	}
+
+	function selectNewObject( pt : h3d.col.Point ) {
+		var parentEl = sceneData;
+		 // for now always create at scene root, not `curEdit.rootElements[0];`
+		var group = getParentGroup(parentEl);
+		if( group != null )
+			parentEl = group;
+		var newItems = getNewContextMenu(parentEl, function(newElt) {
+			var newObj3d = Std.downcast(newElt, Object3D);
+			if(newObj3d != null) {
+				var newPos = new h3d.Matrix();
+				newPos.identity();
+				newPos.setPosition(pt.toVector());
+				var invParent = getObject(parentEl).getAbsPos().clone();
+				invParent.invert();
+				newPos.multiply(newPos, invParent);
+				newObj3d.setTransform(newPos);
+			}
+		});
+		var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [
+			{ label : "New...", menu : newItems },
+		];
+		new hide.comp.ContextMenu(menuItems);
 	}
 
 	public function refreshInteractive(elt : PrefabElement) {

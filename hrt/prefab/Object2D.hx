@@ -35,7 +35,7 @@ class Object2D extends Prefab {
 		rotation = obj.rotation == null ? 0. : obj.rotation;
 
 		visible = obj.visible == null ? true : obj.visible;
-		
+
 		if (obj.blendMode != null)
 			blendMode = std.Type.createEnum(h2d.BlendMode, obj.blendMode);
 	}
@@ -100,6 +100,11 @@ class Object2D extends Prefab {
 	}
 
 	#if editor
+
+	public function makeInteractive(ctx : Context) : h2d.Interactive {
+		return null;
+	}
+
 	override function edit( ctx : EditContext ) {
 		var props = new hide.Element('
 			<div class="group" name="Position">
