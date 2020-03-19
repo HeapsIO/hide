@@ -765,8 +765,6 @@ class TerrainEditor {
 				var worldPos = getBrushPlanePos(s2d.mouseX, s2d.mouseY, ctx);
 				remainingDist = 0;
 				lastPos = null;
-				lastMousePos = null;
-				lastBrushSize = 0;
 				currentBrush.brushMode.lockAxe = NoLock;
 				currentBrush.firstClick = false;
 				applyStrokeBuffers();
@@ -792,8 +790,12 @@ class TerrainEditor {
 					drawBrushPreview(getBrushPlanePos(lastMousePos.x, lastMousePos.y, ctx), ctx);
 					return;
 				}
+				else {
+					lastMousePos = null;
+					lastBrushSize = 0;
+				}
 
-				currentBrush.brushMode.snapToGrid = K.isDown(K.CTRL);
+				currentBrush.brushMode.snapToGrid = /*K.isDown(K.CTRL)*/ false;
 				var worldPos = getBrushPlanePos(s2d.mouseX, s2d.mouseY, ctx);
 				if( K.isDown( K.MOUSE_LEFT) ) {
 					currentBrush.firstClick = false;
