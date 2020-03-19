@@ -120,6 +120,7 @@ class SceneEditor {
 	public var snapToGround = false;
 	public var localTransform = true;
 	public var cameraController : h3d.scene.CameraController;
+	public var cameraController2D : CameraController2D;
 	public var editorDisplay(default,set) : Bool;
 	public var camera2D(default,set) : Bool = false;
 
@@ -166,8 +167,7 @@ class SceneEditor {
 		scene.editor = this;
 		scene.onReady = onSceneReady;
 		scene.onResize = function() {
-			context.shared.root2d.x = scene.width >> 1;
-			context.shared.root2d.y = scene.height >> 1;
+			cameraController2D.toTarget();
 			onResize();
 		};
 
@@ -247,7 +247,8 @@ class SceneEditor {
 	}
 
 	function set_camera2D(b) {
-		cameraController.visible = !b;
+		if( cameraController != null ) cameraController.visible = !b;
+		if( cameraController2D != null ) cameraController2D.visible = b;
 		return camera2D = b;
 	}
 
@@ -304,6 +305,10 @@ class SceneEditor {
 		c.zoomAmount = 1.05;
 		c.smooth = 0.7;
 		return c;
+	}
+
+	function makeCamController2D() {
+		return new CameraController2D(context.shared.root2d);
 	}
 
 	function focusSelection() {
@@ -394,12 +399,26 @@ class SceneEditor {
 		};
 		resetCamera();
 
+
 		var cam = @:privateAccess view.getDisplayState("Camera");
 		if( cam != null ) {
 			scene.s3d.camera.pos.set(cam.x, cam.y, cam.z);
 			scene.s3d.camera.target.set(cam.tx, cam.ty, cam.tz);
 		}
 		cameraController.loadFromCamera();
+
+		scene.s2d.defaultSmooth = true;
+		context.shared.root2d.x = scene.s2d.width >> 1;
+		context.shared.root2d.y = scene.s2d.height >> 1;
+		cameraController2D = makeCamController2D();
+		var cam2d = @:privateAccess view.getDisplayState("Camera2D");
+		if( cam2d != null ) {
+			context.shared.root2d.x = scene.s2d.width*0.5 + cam2d.x;
+			context.shared.root2d.y = scene.s2d.height*0.5 + cam2d.y;
+			context.shared.root2d.setScale(cam2d.z);
+		}
+		cameraController2D.loadFromScene();
+
 		scene.onUpdate = update;
 
 		// BUILD scene tree
@@ -589,6 +608,7 @@ class SceneEditor {
 		sh.currentPath = view.state.path;
 		scene.s3d.addChild(sh.root3d);
 		scene.s2d.addChild(sh.root2d);
+		sh.root2d.addChild(cameraController2D);
 		scene.setCurrent();
 		scene.onResize();
 		context.init();
@@ -1215,10 +1235,14 @@ class SceneEditor {
 	}
 
 	public function resetCamera() {
-		scene.s3d.camera.zNear = scene.s3d.camera.zFar = 0;
-		scene.resetCamera(1.5);
-		cameraController.lockZPlanes = scene.s3d.camera.zNear != 0;
-		cameraController.loadFromCamera();
+		if( camera2D ) {
+			cameraController2D.initFromScene();
+		} else {
+			scene.s3d.camera.zNear = scene.s3d.camera.zFar = 0;
+			scene.resetCamera(1.5);
+			cameraController.lockZPlanes = scene.s3d.camera.zNear != 0;
+			cameraController.loadFromCamera();
+		}
 	}
 
 	public function getPickTransform(parent: PrefabElement) {
@@ -1817,6 +1841,7 @@ class SceneEditor {
 	function update(dt:Float) {
 		var cam = scene.s3d.camera;
 		@:privateAccess view.saveDisplayState("Camera", { x : cam.pos.x, y : cam.pos.y, z : cam.pos.z, tx : cam.target.x, ty : cam.target.y, tz : cam.target.z });
+		@:privateAccess view.saveDisplayState("Camera2D", { x : context.shared.root2d.x - scene.s2d.width*0.5, y : context.shared.root2d.y - scene.s2d.height*0.5, z : context.shared.root2d.scaleX });
 		if(gizmo != null) {
 			if(!gizmo.moving) {
 				moveGizmoToSelection();

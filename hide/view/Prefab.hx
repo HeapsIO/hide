@@ -96,7 +96,9 @@ class Prefab extends FileView {
 			light = null;
 
 		tools.saveDisplayKey = "Prefab/tools";
-		tools.addButton("video-camera", "Perspective camera", () -> sceneEditor.resetCamera());
+
+		tools.addToggle("arrows", "2D Camera", (b) -> sceneEditor.camera2D = b);
+		tools.addButton("video-camera", "Default camera", () -> sceneEditor.resetCamera());
 
 		tools.addColor("Background color", function(v) {
 			scene.engine.backgroundColor = v;
