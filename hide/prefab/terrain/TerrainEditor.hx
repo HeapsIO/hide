@@ -849,7 +849,7 @@ class TerrainEditor {
 		for( i in 0 ... terrainPrefab.terrain.surfaces.length ) {
 			if( i == index ) {
 				offset = -1;
-				newIndexes.push(new h3d.Vector(0));
+				newIndexes.push(new h3d.Vector(0)); // Replace the surface removec by the surface 0
 			}
 			else
 				newIndexes.push(new h3d.Vector(i + offset));
@@ -902,6 +902,7 @@ class TerrainEditor {
 		onChange();
 
 		undo.change(Custom(function(undo) {
+			terrainPrefab.modified = true;
 			if( undo )
 				terrainPrefab.terrain.surfaces.insert(terrainRevertData.surfaceIndex, terrainRevertData.surface);
 			else
