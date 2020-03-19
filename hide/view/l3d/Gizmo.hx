@@ -26,6 +26,8 @@ class Gizmo extends h3d.scene.Object {
 	var gizmo: h3d.scene.Object;
 	var scene : hide.comp.Scene;
 	var updateFunc: Float -> Void;
+	var mouseX(get,never) : Float;
+	var mouseY(get,never) : Float;
 
 	public var onStartMove: TransformMode -> Void;
 	public var onMove: h3d.Vector -> h3d.Quat -> h3d.Vector -> Void;
@@ -81,9 +83,9 @@ class Gizmo extends h3d.scene.Object {
 				mat.color.setColor(color);
 			}
 			interactive.onPush = function(e) {
-				var startPt = new h2d.col.Point(scene.s2d.mouseX, scene.s2d.mouseY);
+				var startPt = new h2d.col.Point(mouseX, mouseY);
 				updateFunc = function(dt) {
-					var mousePt = new h2d.col.Point(scene.s2d.mouseX, scene.s2d.mouseY);
+					var mousePt = new h2d.col.Point(mouseX, mouseY);
 					if(mousePt.distance(startPt) > 5) {
 						startMove(mode);
 					}
@@ -132,7 +134,7 @@ class Gizmo extends h3d.scene.Object {
 		}
 
 		if (mode == MoveX || mode == MoveY || mode == MoveZ || mode == Scale) {
-			var point = scene.s3d.camera.rayFromScreen(scene.s2d.mouseX, scene.s2d.mouseY).getDir();
+			var point = scene.s3d.camera.rayFromScreen(mouseX, mouseY).getDir();
 			dragPlane = h3d.col.Plane.fromNormalPoint(point, startPos);
 		} else {
 			norm.normalize();
@@ -213,6 +215,9 @@ class Gizmo extends h3d.scene.Object {
 		}
 	}
 
+	function get_mouseX() return @:privateAccess scene.window.mouseX;
+	function get_mouseY() return @:privateAccess scene.window.mouseY;
+
 	function finishMove() {
 		updateFunc = null;
 		if(onFinishMove != null)
@@ -227,7 +232,7 @@ class Gizmo extends h3d.scene.Object {
 
 	function getDragPoint(plane: h3d.col.Plane) {
 		var cam = scene.s3d.camera;
-		var ray = cam.rayFromScreen(scene.s2d.mouseX, scene.s2d.mouseY);
+		var ray = cam.rayFromScreen(mouseX, mouseY);
 		return ray.intersect(plane);
 	}
 
