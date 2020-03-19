@@ -647,8 +647,8 @@ class MeshGenerator extends Object3D {
 				});
 			}
 
-			renderMeshThumbnail(ctx.rootContext, mp.meshPath);
-			rootElement.find('.meshGenerator-thumbnail').css("background-image", 'url("file://${getThumbnailPath(ctx, mp.meshPath)}")');
+			//renderMeshThumbnail(ctx.rootContext, mp.meshPath);
+			//rootElement.find('.meshGenerator-thumbnail').css("background-image", 'url("file://${getThumbnailPath(ctx, mp.meshPath)}")');
 
 			ctx.properties.add(rootElement, mp, function(pname) {});
 
