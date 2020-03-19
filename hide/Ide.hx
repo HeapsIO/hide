@@ -51,11 +51,13 @@ class Ide {
 	var subView : { component : String, state : Dynamic, events : {} };
 	var scripts : Map<String,Array<Void->Void>> = new Map();
 	var hasReloaded = false;
+	var hasDebugger = false;
 
 	static var firstInit = true;
 
 	function new() {
 		isCDB = Sys.getEnv("HIDE_START_CDB") == "1" || nw.App.manifest.name == "CDB";
+		hasDebugger = Sys.getEnv("HIDE_DEBUG") == "1";
 		function wait() {
 			if( monaco.Editor == null ) {
 				haxe.Timer.delay(wait, 10);
@@ -128,9 +130,10 @@ class Ide {
 		window.on('resize', function() haxe.Timer.delay(onWindowChange,100));
 		window.on('close', function() {
 			if( hasReloaded ) return;
-			for( v in views )
-				if( !v.onBeforeClose() )
-					return;
+			if( !hasDebugger )
+				for( v in views )
+					if( !v.onBeforeClose() )
+						return;
 			window.close(true);
 		});
 		window.on("blur", function() { if( h3d.Engine.getCurrent() != null && !hasReloaded ) hxd.Key.initialize(); });
