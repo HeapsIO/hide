@@ -37,11 +37,16 @@ class CamController extends h3d.scene.CameraController {
 			pushing = e.button;
 			pushX = e.relX;
 			pushY = e.relY;
+			pushTime = haxe.Timer.stamp();
+			pushStartX = pushX = e.relX;
+			pushStartY = pushY = e.relY;
 			startPush = new h2d.col.Point(pushX, pushY);
 		case ERelease, EReleaseOutside:
 			if( pushing == e.button ) {
 				pushing = -1;
 				startPush = null;
+				if( e.kind == ERelease && haxe.Timer.stamp() - pushTime < 0.2 && hxd.Math.distance(e.relX - pushStartX,e.relY - pushStartY) < 5 )
+					onClick(e);
 			}
 		case EMove:
 			switch( pushing ) {
@@ -130,8 +135,8 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		parent.onPrefabChange(p, pname);
 	}
 
-	override function selectObjects(elts:Array<PrefabElement>, ?includeTree:Bool = true) {
-		super.selectObjects(elts, includeTree);
+	override function selectObjects(elts:Array<PrefabElement>, ?mode ) {
+		super.selectObjects(elts, mode);
 		parent.onSelectObjects(elts);
 	}
 
@@ -154,8 +159,8 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		return super.projectToGround(ray);
 	}
 
-	override function getNewContextMenu(current: PrefabElement, ?onMake: PrefabElement->Void=null) {
-		var newItems = super.getNewContextMenu(current, onMake);
+	override function getNewContextMenu(current: PrefabElement, ?onMake: PrefabElement->Void=null, ?groupByType = true ) {
+		var newItems = super.getNewContextMenu(current, onMake, groupByType);
 
 		function setup(p : PrefabElement) {
 			var proj = screenToWorld(scene.s2d.width/2, scene.s2d.height/2);

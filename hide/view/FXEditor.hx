@@ -55,8 +55,8 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		return super.setObjectSelected(p, ctx, b);
 	}
 
-	override function selectObjects( elts, ?includeTree=true) {
-		super.selectObjects(elts, includeTree);
+	override function selectObjects( elts, ?mode ) {
+		super.selectObjects(elts, mode);
 		parent.onSelect(elts);
 	}
 
@@ -67,11 +67,11 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		parent.onRefreshScene();
 	}
 
-	override function getNewContextMenu(current: PrefabElement, ?onMake: PrefabElement->Void=null) {
+	override function getNewContextMenu(current: PrefabElement, ?onMake: PrefabElement->Void=null, ?groupByType = true ) {
 		if(current != null && current.to(hrt.prefab.Shader) != null) {
 			return parent.getNewTrackMenu(current);
 		}
-		var allTypes = super.getNewContextMenu(current, onMake);
+		var allTypes = super.getNewContextMenu(current, onMake, false);
 
 		var menu = [];
 		if (parent.is2D) {
