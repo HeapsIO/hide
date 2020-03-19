@@ -159,7 +159,7 @@ class View<T> extends hide.comp.Component {
 		onDisplay();
 	}
 
-	public function onDisplay() {
+	function onDisplay() {
 		element.text(viewClass+(state == null ? "" : " "+state));
 	}
 
