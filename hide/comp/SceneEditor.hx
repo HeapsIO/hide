@@ -121,6 +121,7 @@ class SceneEditor {
 	public var localTransform = true;
 	public var cameraController : h3d.scene.CameraController;
 	public var editorDisplay(default,set) : Bool;
+	public var camera2D(default,set) : Bool = false;
 
 	var searchBox : Element;
 	var updates : Array<Float -> Void> = [];
@@ -243,6 +244,11 @@ class SceneEditor {
 				}
 			}
 		}
+	}
+
+	function set_camera2D(b) {
+		cameraController.visible = !b;
+		return camera2D = b;
 	}
 
 	public function onResourceChanged(lib : hxd.fmt.hmd.Library) {
@@ -386,7 +392,6 @@ class SceneEditor {
 				selectObjects([]);
 			}
 		};
-
 		resetCamera();
 
 		var cam = @:privateAccess view.getDisplayState("Camera");
@@ -676,15 +681,19 @@ class SceneEditor {
 					selectObjects(elts);
 			}
 			// ensure we get onMove even if outside our interactive, allow fast click'n'drag
-			if( e.button == K.MOUSE_LEFT ) scene.sevents.startDrag(int.handleEvent);
-			e.propagate = e.button == K.MOUSE_MIDDLE || !isSelected(elt);
+			if( e.button == K.MOUSE_LEFT ) {
+				scene.sevents.startDrag(int.handleEvent);
+				e.propagate = false;
+			}
 		}
 		int.onRelease = function(e) {
 			if( e.button == K.MOUSE_MIDDLE ) return;
 			startDrag = null;
 			dragBtn = -1;
-			e.propagate = !(e.button == K.MOUSE_LEFT || isSelected(elt));
-			if( e.button == K.MOUSE_LEFT ) scene.sevents.stopDrag();
+			if( e.button == K.MOUSE_LEFT ) {
+				scene.sevents.stopDrag();
+				e.propagate = false;
+			}
 		}
 		int.onMove = function(e) {
 			if(startDrag != null && hxd.Math.distance(startDrag[0] - scene.s2d.mouseX, startDrag[1] - scene.s2d.mouseY) > 5 ) {
