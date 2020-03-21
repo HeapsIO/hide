@@ -391,7 +391,8 @@ class SceneEditor {
 		gizmo = new hide.view.l3d.Gizmo(scene);
 		gizmo.moveStep = view.config.get("sceneeditor.gridSnapStep");
 
-		gizmo2d = new hide.view.l3d.Gizmo2D(scene.s2d);
+		gizmo2d = new hide.view.l3d.Gizmo2D();
+		scene.s2d.add(gizmo2d, 1); // over local3d
 
 		cameraController = makeCamController();
 		cameraController.onClick = function(e) {

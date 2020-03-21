@@ -485,7 +485,6 @@ input[type=checkbox]:checked:after {
 }
 /* Properties */
 .hide-properties {
-  flex: 0 0 300px;
   padding: 10px;
   overflow: auto;
   padding-bottom: 80px;
