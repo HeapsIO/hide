@@ -1,4 +1,4 @@
-package hide.comp;
+package hide.view.l3d;
 
 class CameraController2D extends h2d.Object {
 

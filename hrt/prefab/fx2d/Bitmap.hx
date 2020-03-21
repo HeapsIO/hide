@@ -82,7 +82,6 @@ class Bitmap extends Object2D {
 			return null;
 		var bmp = cast(local2d, h2d.Bitmap);
 		var int = new h2d.Interactive(bmp.tile.width, bmp.tile.height);
-		int.backgroundColor = 0x80FF0000;
 		bmp.addChildAt(int, 0);
 		int.propagateEvents = true;
 		int.x = bmp.tile.dx;

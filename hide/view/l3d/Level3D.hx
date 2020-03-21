@@ -407,31 +407,46 @@ class Level3D extends FileView {
 		keys.register("sceneeditor.toggleGrid", () -> gridToggle.toggle(!gridToggle.isDown()));
 		tools.addButton("sun-o", "Bake Lights", () -> bakeLights());
 		tools.addButton("map", "Bake Volumetric Lightmaps", () -> { bakeLights(); bakeVolumetricLightmaps(); });
-		tools.addButton("info-circle", "Scene information", () -> {
-			var memStats = scene.engine.mem.stats();
-			var texs = @:privateAccess scene.engine.mem.textures;
-			var list = [for(t in texs) {
-				n: '${t.width}x${t.height}  ${t.format}  ${t.name}',
-				size: t.width * t.height
-			}];
-			list.sort((a, b) -> Reflect.compare(b.size, a.size));
-			var content = new Element('<div tabindex="1" class="overlay-info"><h2>Scene info</h2><pre></pre></div>');
-			new Element(element[0].ownerDocument.body).append(content);
-			var pre = content.find("pre");
-			pre.text([for(l in list) l.n].join("\n"));
-			content.blur(function(_) {
-				content.remove();
-			});
+
+
+		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
+		statusText.setPosition(5, 5);
+		statusText.visible = false;
+		var texContent : Element = null;
+		tools.addToggle("info-circle", "Scene information", function(b) statusText.visible = b).rightClick(function() {
+			if( texContent != null ) {
+				texContent.remove();
+				texContent = null;
+			}
+			new hide.comp.ContextMenu([
+				{
+					label : "Show Texture Details",
+					click : function() {
+						var memStats = scene.engine.mem.stats();
+						var texs = @:privateAccess scene.engine.mem.textures;
+						var list = [for(t in texs) {
+							n: '${t.width}x${t.height}  ${t.format}  ${t.name}',
+							size: t.width * t.height
+						}];
+						list.sort((a, b) -> Reflect.compare(b.size, a.size));
+						var content = new Element('<div tabindex="1" class="overlay-info"><h2>Scene info</h2><pre></pre></div>');
+						new Element(element[0].ownerDocument.body).append(content);
+						var pre = content.find("pre");
+						pre.text([for(l in list) l.n].join("\n"));
+						texContent = content;
+						content.blur(function(_) {
+							content.remove();
+							texContent = null;
+						});
+					}
+				}
+			]);
 		});
 
 		tools.addColor("Background color", function(v) {
 			scene.engine.backgroundColor = v;
 			updateGrid();
 		}, scene.engine.backgroundColor);
-
-		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
-		statusText.setPosition(5, 5);
-		statusText.visible = tools.getDisplayState("");
 
 		posToolTip = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		posToolTip.dropShadow = { dx : 1, dy : 1, color : 0, alpha : 0.5 };

@@ -4,6 +4,7 @@ typedef ToolToggle = {
 	var element : Element;
 	function toggle( v : Bool ) : Void;
 	function isDown(): Bool;
+	function rightClick( v : Void -> Void ) : Void;
 }
 
 typedef ToolSelect<T> = {
@@ -36,7 +37,7 @@ class Toolbar extends Component {
 			this.saveDisplayState("toggle:" + icon, e.hasClass("toggled"));
 			if( onToggle != null ) onToggle(e.hasClass("toggled"));
 		}
-		e.click(function(_) tog());
+		e.click(function(e) if( e.button == 0 ) tog());
 		e.appendTo(element);
 		if( defValue ) e.addClass("toggled");
 		var def = getDisplayState("toggle:" + icon);
@@ -45,7 +46,11 @@ class Toolbar extends Component {
 		return {
 			element : e,
 			toggle : function(b) tog(),
-			isDown: function() return e.hasClass("toggled") };
+			isDown: function() return e.hasClass("toggled"),
+			rightClick : function(f) {
+				e.contextmenu(function(e) { f(); e.preventDefault(); });
+			}
+		};
 	}
 
 	public function addColor( label : String, onChange : Int -> Void, ?alpha : Bool, ?defValue = 0 ) {

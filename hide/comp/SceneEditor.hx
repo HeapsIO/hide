@@ -125,7 +125,7 @@ class SceneEditor {
 	public var snapToGround = false;
 	public var localTransform = true;
 	public var cameraController : h3d.scene.CameraController;
-	public var cameraController2D : CameraController2D;
+	public var cameraController2D : hide.view.l3d.CameraController2D;
 	public var editorDisplay(default,set) : Bool;
 	public var camera2D(default,set) : Bool = false;
 
@@ -314,7 +314,7 @@ class SceneEditor {
 	}
 
 	function makeCamController2D() {
-		return new CameraController2D(context.shared.root2d);
+		return new hide.view.l3d.CameraController2D(context.shared.root2d);
 	}
 
 	function focusSelection() {
@@ -567,6 +567,7 @@ class SceneEditor {
 		tree.applyStyle = function(p, el) applyTreeStyle(p, el);
 		selectObjects([]);
 		refresh();
+		this.camera2D = camera2D;
 	}
 
 	public function refresh( ?mode: RefreshMode, ?callb: Void->Void) {
