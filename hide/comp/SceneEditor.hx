@@ -41,6 +41,7 @@ class SceneEditorContext extends hide.prefab.EditContext {
 	public var editor(default, null) : SceneEditor;
 	public var elements : Array<PrefabElement>;
 	public var rootObjects(default, null): Array<Object>;
+	public var rootObjects2D(default, null): Array<h2d.Object>;
 	public var rootElements(default, null): Array<PrefabElement>;
 
 	public function new(ctx, elts, editor) {
@@ -49,6 +50,7 @@ class SceneEditorContext extends hide.prefab.EditContext {
 		this.updates = editor.updates;
 		this.elements = elts;
 		rootObjects = [];
+		rootObjects2D = [];
 		rootElements = [];
 		cleanups = [];
 		for(elt in elements) {
@@ -59,8 +61,11 @@ class SceneEditorContext extends hide.prefab.EditContext {
 				var ctx = getContext(elt);
 				if(ctx != null) {
 					var pobj = elt.parent == editor.sceneData ? ctx.shared.root3d : getContextRec(elt.parent).local3d;
+					var pobj2d = elt.parent == editor.sceneData ? ctx.shared.root2d : getContextRec(elt.parent).local2d;
 					if( ctx.local3d != pobj )
 						rootObjects.push(ctx.local3d);
+					if( ctx.local2d != pobj2d )
+						rootObjects2D.push(ctx.local2d);
 				}
 			}
 		}
@@ -127,8 +132,9 @@ class SceneEditor {
 	var searchBox : Element;
 	var updates : Array<Float -> Void> = [];
 
-	var hideGizmo = false;
+	var showGizmo = true;
 	var gizmo : hide.view.l3d.Gizmo;
+	var gizmo2d : hide.view.l3d.Gizmo2D;
 	static var customPivot : CustomPivot;
 	var interactives : Map<PrefabElement, hxd.SceneEvents.Interactive>;
 	var ide : hide.Ide;
@@ -385,6 +391,8 @@ class SceneEditor {
 		gizmo = new hide.view.l3d.Gizmo(scene);
 		gizmo.moveStep = view.config.get("sceneeditor.gridSnapStep");
 
+		gizmo2d = new hide.view.l3d.Gizmo2D(scene.s2d);
+
 		cameraController = makeCamController();
 		cameraController.onClick = function(e) {
 			switch( e.button ) {
@@ -411,6 +419,7 @@ class SceneEditor {
 		context.shared.root2d.x = scene.s2d.width >> 1;
 		context.shared.root2d.y = scene.s2d.height >> 1;
 		cameraController2D = makeCamController2D();
+		cameraController2D.onClick = cameraController.onClick;
 		var cam2d = @:privateAccess view.getDisplayState("Camera2D");
 		if( cam2d != null ) {
 			context.shared.root2d.x = scene.s2d.width*0.5 + cam2d.x;
@@ -633,36 +642,36 @@ class SceneEditor {
 		if( ctx == null )
 			return;
 		var obj3d = Std.downcast(elt, Object3D);
-		var int : hxd.SceneEvents.Interactive = null;
-		if( obj3d != null )
-			int = makeInteractive3D(obj3d, ctx);
-		else {
+		if( obj3d != null ) {
+			var int = obj3d.makeInteractive(ctx);
+			initInteractive(elt,int);
+		} else {
 			var obj2d = Std.downcast(elt, Object2D);
-			if( obj2d != null )
-				int = makeInteractive2D(obj2d, ctx);
+			if( obj2d != null ) {
+				var int = obj2d.makeInteractive(ctx);
+				initInteractive(elt,int);
+			}
 		}
-		if( int != null )
-			interactives.set(elt, int);
 	}
 
-	function makeInteractive2D( elt : Object2D, ctx : hrt.prefab.Context ) {
-		var int = elt.makeInteractive(ctx);
-		if( int == null )
-			return null;
-		return int;
-	}
-
-	function makeInteractive3D( elt : Object3D, ctx : hrt.prefab.Context ) {
-		var int = elt.makeInteractive(ctx);
-		if( int == null )
-			return null;
-
+	function initInteractive( elt : PrefabElement, int : {
+		dynamic function onPush(e:hxd.Event) : Void;
+		dynamic function onMove(e:hxd.Event) : Void;
+		dynamic function onRelease(e:hxd.Event) : Void;
+		dynamic function onClick(e:hxd.Event) : Void;
+		function handleEvent(e:hxd.Event) : Void;
+		function preventClick() : Void;
+	} ) {
+		if( int == null ) return;
 		var startDrag = null;
+		var curDrag = null;
 		var dragBtn = -1;
+		var i3d = Std.instance(int, h3d.scene.Interactive);
+		var i2d = Std.instance(int, h2d.Interactive);
 		int.onClick = function(e) {
 			if(e.button == K.MOUSE_RIGHT) {
 				var pt = new h3d.Vector(e.relX,e.relY,e.relZ);
-				int.localToGlobal(pt);
+				if( i3d != null ) i3d.localToGlobal(pt);
 				selectNewObject(pt.toPoint());
 				e.propagate = false;
 				return;
@@ -705,10 +714,11 @@ class SceneEditor {
 				scene.sevents.startDrag(int.handleEvent);
 				e.propagate = false;
 			}
-		}
+		};
 		int.onRelease = function(e) {
 			if( e.button == K.MOUSE_MIDDLE ) return;
 			startDrag = null;
+			curDrag = null;
 			dragBtn = -1;
 			if( e.button == K.MOUSE_LEFT ) {
 				scene.sevents.stopDrag();
@@ -717,15 +727,34 @@ class SceneEditor {
 		}
 		int.onMove = function(e) {
 			if(startDrag != null && hxd.Math.distance(startDrag[0] - scene.s2d.mouseX, startDrag[1] - scene.s2d.mouseY) > 5 ) {
+				if(dragBtn == K.MOUSE_LEFT) {
+					if( i3d != null ) {
+						moveGizmoToSelection();
+						gizmo.startMove(MoveXY);
+					}
+					if( i2d != null ) {
+						moveGizmoToSelection();
+						gizmo2d.startMove(Pan);
+					}
+				}
 				int.preventClick();
 				startDrag = null;
-				if(dragBtn == K.MOUSE_LEFT) {
-					moveGizmoToSelection();
-					gizmo.startMove(MoveXY);
-				}
 			}
+			/*
+			if( curDrag != null ) {
+				var dx = scene.s2d.mouseX - curDrag[0];
+				var dy = scene.s2d.mouseY - curDrag[1];
+				var obj = getContext(elt).local2d;
+				obj.x += Math.round(dx / context.shared.root2d.scaleX);
+				obj.y += Math.round(dy / context.shared.root2d.scaleY);
+				var o2d = Std.instance(elt,hrt.prefab.Object2D);
+				o2d.x = obj.x;
+				o2d.y = obj.y;
+				curDrag[0] += dx;
+				curDrag[1] += dy;
+			}*/
 		}
-		return int;
+		interactives.set(elt,cast int);
 	}
 
 	function selectNewObject( pt : h3d.col.Point ) {
@@ -744,6 +773,14 @@ class SceneEditor {
 				invParent.invert();
 				newPos.multiply(newPos, invParent);
 				newObj3d.setTransform(newPos);
+			}
+			var newObj2d = Std.downcast(newElt, Object2D);
+			if( newObj2d != null ) {
+				var pt = new h2d.col.Point(scene.s2d.mouseX, scene.s2d.mouseY);
+				var l2d = getContext(parentEl).local2d;
+				l2d.globalToLocal(pt);
+				newObj2d.x = pt.x;
+				newObj2d.y = pt.y;
 			}
 		});
 		var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [
@@ -773,6 +810,18 @@ class SceneEditor {
 
 	function setupGizmo() {
 		if(curEdit == null) return;
+
+		var posQuant = view.config.get("sceneeditor.xyzPrecision");
+		var scaleQuant = view.config.get("sceneeditor.scalePrecision");
+		var rotQuant = view.config.get("sceneeditor.rotatePrecision");
+		inline function quantize(x: Float, step: Float) {
+			if(step > 0) {
+				x = Math.round(x / step) * step;
+				x = untyped parseFloat(x.toFixed(5)); // Snap to closest nicely displayed float :cold_sweat:
+			}
+			return x;
+		}
+
 		gizmo.onStartMove = function(mode) {
 			var objects3d = [for(o in curEdit.rootElements) {
 				var obj3d = o.to(hrt.prefab.Object3D);
@@ -791,18 +840,6 @@ class SceneEditor {
 				m.multiply(m, invPivot);
 				m;
 			}];
-
-			var posQuant = view.config.get("sceneeditor.xyzPrecision");
-			var scaleQuant = view.config.get("sceneeditor.scalePrecision");
-			var rotQuant = view.config.get("sceneeditor.rotatePrecision");
-
-			inline function quantize(x: Float, step: Float) {
-				if(step > 0) {
-					x = Math.round(x / step) * step;
-					x = untyped parseFloat(x.toFixed(5)); // Snap to closest nicely displayed float :cold_sweat:
-				}
-				return x;
-			}
 
 			var prevState = [for(o in objects3d) o.saveTransform()];
 			gizmo.onMove = function(translate: h3d.Vector, rot: h3d.Quat, scale: h3d.Vector) {
@@ -877,6 +914,95 @@ class SceneEditor {
 					o.updateInstance(getContext(o));
 			}
 		}
+		gizmo2d.onStartMove = function(mode) {
+			var objects2d = [for(o in curEdit.rootElements) {
+				var obj = o.to(hrt.prefab.Object2D);
+				if(obj != null) obj;
+			}];
+			var sceneObjs = [for(o in objects2d) getContext(o).local2d];
+			var pivot = getPivot2D(sceneObjs);
+			var center = pivot.getCenter();
+			var prevState = [for(o in objects2d) o.saveTransform()];
+			var startPos = [for(o in sceneObjs) o.getAbsPos()];
+
+			gizmo2d.onMove = function(t) {
+				t.x = Math.round(t.x);
+				t.y = Math.round(t.y);
+				for(i in 0...sceneObjs.length) {
+					var pos = startPos[i].clone();
+					var obj = objects2d[i];
+					switch( mode ) {
+					case Pan:
+						pos.x += t.x;
+						pos.y += t.y;
+					case ScaleX, ScaleY, Scale:
+						// no inherited rotation
+						if( pos.b == 0 && pos.c == 0 ) {
+							pos.x -= center.x;
+							pos.y -= center.y;
+							pos.x *= t.scaleX;
+							pos.y *= t.scaleY;
+							pos.x += center.x;
+							pos.y += center.y;
+							obj.scaleX = quantize(t.scaleX * prevState[i].scaleX, scaleQuant);
+							obj.scaleY = quantize(t.scaleY * prevState[i].scaleY, scaleQuant);
+						} else {
+							var m2 = new h2d.col.Matrix();
+							m2.initScale(t.scaleX, t.scaleY);
+							pos.x -= center.x;
+							pos.y -= center.y;
+							pos.multiply(pos,m2);
+							pos.x += center.x;
+							pos.y += center.y;
+							var s = pos.getScale();
+							obj.scaleX = quantize(s.x, scaleQuant);
+							obj.scaleY = quantize(s.y, scaleQuant);
+						}
+					case Rotation:
+						pos.x -= center.x;
+						pos.y -= center.y;
+						var ca = Math.cos(t.rotation);
+						var sa = Math.sin(t.rotation);
+						var px = pos.x * ca - pos.y * sa;
+						var py = pos.x * sa + pos.y * ca;
+						pos.x = px + center.x;
+						pos.y = py + center.y;
+						var r = M.degToRad(prevState[i].rotation) + t.rotation;
+						r = quantize(M.radToDeg(r), rotQuant);
+						obj.rotation = r;
+					}
+					var pt = pos.getPosition();
+					sceneObjs[i].parent.globalToLocal(pt);
+					obj.x = quantize(pt.x, posQuant);
+					obj.y = quantize(pt.y, posQuant);
+					obj.applyPos(sceneObjs[i]);
+				}
+			};
+			gizmo2d.onFinishMove = function() {
+				var newState = [for(o in objects2d) o.saveTransform()];
+				refreshProps();
+				undo.change(Custom(function(undo) {
+					if( undo ) {
+						for(i in 0...objects2d.length) {
+							objects2d[i].loadTransform(prevState[i]);
+							objects2d[i].applyPos(sceneObjs[i]);
+						}
+						refreshProps();
+					}
+					else {
+						for(i in 0...objects2d.length) {
+							objects2d[i].loadTransform(newState[i]);
+							objects2d[i].applyPos(sceneObjs[i]);
+						}
+						refreshProps();
+					}
+					for(o in objects2d)
+						o.updateInstance(getContext(o));
+				}));
+				for(o in objects2d)
+					o.updateInstance(getContext(o));
+			};
+		};
 	}
 
 	function moveGizmoToSelection() {
@@ -884,7 +1010,7 @@ class SceneEditor {
 		gizmo.getRotationQuat().identity();
 		if(curEdit != null && curEdit.rootObjects.length > 0) {
 			var pos = getPivot(curEdit.rootObjects);
-			gizmo.visible = hideGizmo ? false : true;
+			gizmo.visible = showGizmo;
 			gizmo.setPosition(pos.x, pos.y, pos.z);
 
 			if(curEdit.rootObjects.length == 1 && (localTransform || K.isDown(K.ALT))) {
@@ -899,6 +1025,14 @@ class SceneEditor {
 		}
 		else {
 			gizmo.visible = false;
+		}
+		if( curEdit != null && curEdit.rootObjects2D.length > 0 && !gizmo.visible ) {
+			var pos = getPivot2D(curEdit.rootObjects2D);
+			gizmo2d.visible = showGizmo;
+			gizmo2d.setPosition(pos.getCenter().x, pos.getCenter().y);
+			gizmo2d.setSize(pos.width, pos.height);
+		} else {
+			gizmo2d.visible = false;
 		}
 	}
 
@@ -1166,7 +1300,7 @@ class SceneEditor {
 	}
 
 	function setObjectSelected( p : PrefabElement, ctx : hrt.prefab.Context, b : Bool ) {
-		hideGizmo = false;
+		showGizmo = true;
 		return p.setSelected(ctx, b);
 	}
 
@@ -2171,6 +2305,13 @@ class SceneEditor {
 		}
 		pos.scale3(1.0 / objects.length);
 		return pos;
+	}
+
+	static function getPivot2D( objects : Array<h2d.Object> ) {
+		var b = new h2d.col.Bounds();
+		for( o in objects )
+			b.addBounds(o.getBounds());
+		return b;
 	}
 
 	public static function hasParent(elt: PrefabElement, list: Array<PrefabElement>) {

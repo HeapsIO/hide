@@ -25,6 +25,14 @@ class Object2D extends Prefab {
 		return { x : x, y : y, scaleX : scaleX, scaleY : scaleY, rotation : rotation };
 	}
 
+	public function setTransform(t) {
+		x = t.x;
+		y = t.y;
+		scaleX = t.scaleX;
+		scaleY = t.scaleY;
+		rotation = t.rotation;
+	}
+
 	override function load( obj : Dynamic ) {
 		x = obj.x == null ? 0. : obj.x;
 		y = obj.y == null ? 0. : obj.y;

@@ -41,16 +41,23 @@ class Bitmap extends Object2D {
 				tex = ctx.loadTexture(src);
 				bmp.tile = h2d.Tile.fromTexture(this.tex);
 			} else {
-				bmp.tile = null;
+				bmp.tile = h2d.Tile.fromColor(0xFF00FF,32,32,0.5);
 			}
 		}
 		bmp.color = h3d.Vector.fromColor(color);
 		bmp.color.w = 1;
-		if (bmp.tile != null) {
-			var cRatio = getCenterRatio(dx, dy);
-			bmp.tile.setCenterRatio(cRatio[0], cRatio[1]);
-		}
+		var cRatio = getCenterRatio(dx, dy);
+		bmp.tile.setCenterRatio(cRatio[0], cRatio[1]);
 		bmp.blendMode = blendMode;
+		#if editor
+		var int = Std.instance(bmp.getChildAt(0),h2d.Interactive);
+		if( int != null ) {
+			int.width = bmp.tile.width;
+			int.height = bmp.tile.height;
+			int.x = bmp.tile.dx;
+			int.y = bmp.tile.dy;
+		}
+		#end
 	}
 
 	override function makeInstance(ctx:Context):Context {
@@ -68,6 +75,21 @@ class Bitmap extends Object2D {
 	}
 
 	#if editor
+
+	override function makeInteractive(ctx:Context):h2d.Interactive {
+		var local2d = ctx.local2d;
+		if(local2d == null)
+			return null;
+		var bmp = cast(local2d, h2d.Bitmap);
+		var int = new h2d.Interactive(bmp.tile.width, bmp.tile.height);
+		int.backgroundColor = 0x80FF0000;
+		bmp.addChildAt(int, 0);
+		int.propagateEvents = true;
+		int.x = bmp.tile.dx;
+		int.y = bmp.tile.dy;
+		return int;
+	}
+
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
 

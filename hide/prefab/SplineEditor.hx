@@ -597,7 +597,7 @@ class SplineEditor {
 			editModeButton.val(editMode ? "Edit Mode : Enabled" : "Edit Mode : Disabled");
 			editModeButton.toggleClass("editModeEnabled", editMode);
 			setSelected(getContext(), true);
-			@:privateAccess editContext.scene.editor.hideGizmo = editMode;
+			@:privateAccess editContext.scene.editor.showGizmo = !editMode;
 			ctx.onChange(prefab, null);
 		});
 
