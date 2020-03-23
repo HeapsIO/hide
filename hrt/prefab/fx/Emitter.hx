@@ -31,8 +31,9 @@ enum Orientation {
 
 enum EmitType {
 	Infinity;
-	Burst;
 	Duration;
+	Burst;
+	BurstDuration;
 }
 
 typedef ParamDef = {
@@ -331,8 +332,9 @@ private class ParticleInstance  {
 		if( emitter.useCollision ) {
 			var worldPos = absPos.getPosition();
 			if( worldPos.z < 0 ) {
-				if( emitter.killOnCollision == 1 || hxd.Math.random() < emitter.killOnCollision )
-					life = lifeTime;
+				if( emitter.killOnCollision == 1 || hxd.Math.random() < emitter.killOnCollision ) {
+					life = lifeTime + 1; // No survivor
+				}
 				else {
 					var speedAmount = speedAccumulation.length();
 					speedAccumulation.normalize();
@@ -382,6 +384,7 @@ class EmitterObject extends h3d.scene.Object {
 	// OBJECTS
 	public var particleTemplate : hrt.prefab.Object3D;
 	public var subEmitterTemplate : Emitter;
+	public var trailTemplate : Trail;
 	public var subEmitters : Array<EmitterObject> = [];
 	// LIFE
 	public var lifeTime = 2.0;
@@ -452,10 +455,14 @@ class EmitterObject extends h3d.scene.Object {
 		var p = particles;
 		while(p != null) {
 			var n = p.next;
-			disposeInstance(p);
+			disposeInstance(p, false);
 			p = n;
 		}
 		particles = null;
+		for( s in subEmitters ) {
+			s.remove();
+		}
+		subEmitters = [];
 	}
 
 	override function onRemove() {
@@ -480,7 +487,8 @@ class EmitterObject extends h3d.scene.Object {
 	}
 
 	var tmpPos = new h3d.Vector();
-	function disposeInstance(p: ParticleInstance) {
+	var tmpCtx : hrt.prefab.Context;
+	function disposeInstance(p: ParticleInstance, spawnSubEmitter : Bool) {
 		p.next = pool;
 		p.dispose();
 		pool = p;
@@ -490,11 +498,14 @@ class EmitterObject extends h3d.scene.Object {
 			throw "assert";
 
 		// SUB EMITTER
-		if( subEmitterTemplate != null ) {
-			var ctx = new hrt.prefab.Context();
-			ctx.local3d = this.getScene();
-			ctx.shared = new ContextShared();
-			var emitter : EmitterObject = cast subEmitterTemplate.makeInstance(ctx).local3d;
+		if( spawnSubEmitter && subEmitterTemplate != null ) {
+			if( tmpCtx == null ) {
+				tmpCtx = new hrt.prefab.Context();
+				tmpCtx.local3d = this.getScene();
+				tmpCtx.shared = context.shared;
+			}
+			tmpCtx.local3d = this.getScene();
+			var emitter : EmitterObject = cast subEmitterTemplate.makeInstance(tmpCtx).local3d;
 			var pos = p.absPos.getPosition(tmpPos);
 			emitter.setPosition(pos.x, pos.y, pos.z);
 			emitter.isSubEmitter = true;
@@ -726,6 +737,25 @@ class EmitterObject extends h3d.scene.Object {
 					doEmit(delta);
 					if( isSubEmitter && (parentEmitter == null || parentEmitter.parent == null) )
 						enable = false;
+				case Duration:
+					var emitTarget = evaluator.getSum(emitRate, hxd.Math.min(curTime, emitDuration));
+					var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, emitTarget - emitCount));
+					doEmit(delta);
+					if( isSubEmitter && curTime >= emitDuration )
+						enable = false;
+				case BurstDuration:
+					if( burstDelay > 0 ) {
+						var needBurst = curTime < emitDuration && curTime > nextBurstTime;
+						while( needBurst ) {
+							var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, burstParticleCount));
+							doEmit(delta);
+							nextBurstTime += burstDelay;
+							totalBurstCount++;
+							needBurst = totalBurstCount < burstCount && curTime > nextBurstTime;
+						}
+					}
+					if( isSubEmitter && curTime >= emitDuration )
+						enable = false;
 				case Burst:
 					if( burstDelay > 0 ) {
 						var needBurst = totalBurstCount < burstCount && curTime > nextBurstTime;
@@ -739,12 +769,7 @@ class EmitterObject extends h3d.scene.Object {
 					}
 					if( isSubEmitter && totalBurstCount == burstCount )
 						enable = false;
-				case Duration:
-					var emitTarget = evaluator.getSum(emitRate, hxd.Math.min(curTime, emitDuration));
-					var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, emitTarget - emitCount));
-					doEmit(delta);
-					if( isSubEmitter && curTime >= emitDuration )
-						enable = false;
+				
 			}
 		}
 
@@ -798,7 +823,7 @@ class EmitterObject extends h3d.scene.Object {
 					prev.next = next;
 				else
 					particles = next;
-				disposeInstance(p);
+				disposeInstance(p, true);
 			}
 			else {
 				p.update(dt);
@@ -878,8 +903,8 @@ class Emitter extends Object3D {
 		{ name: "animationLoop", t: PBool, def: true, groupName : "Animation" },
 		// COLLISION
 		{ name: "useCollision", t: PBool, def: false, groupName : "Ground Collision" },
-		{ name: "elasticity", t: PFloat(0, 1.0), disp: "Elasticity", def : 1.0, groupName : "Collision" },
-		{ name: "killOnCollision", t: PFloat(0, 1.0), disp: "Kill On Collision", def : 0.0, groupName : "Collision" },
+		{ name: "elasticity", t: PFloat(0, 1.0), disp: "Elasticity", def : 1.0, groupName : "Ground Collision" },
+		{ name: "killOnCollision", t: PFloat(0, 1.0), disp: "Kill On Collision", def : 0.0, groupName : "Ground Collision" },
 	];
 
 	public static var instanceParams : Array<ParamDef> = [
@@ -1061,6 +1086,9 @@ class Emitter extends Object3D {
 		// SUB-EMITTER
 		var subEmitterTemplate : Emitter = cast children.find( p -> p.enabled && Std.downcast(p, Emitter) != null && p.to(Object3D).visible);
 		emitterObj.subEmitterTemplate = subEmitterTemplate;
+		// TRAIL
+		var trailTemplate : Trail = cast children.find( p -> p.enabled && Std.downcast(p, Trail) != null && p.to(Object3D).visible);
+		emitterObj.trailTemplate = trailTemplate;
 		// RANDOM
 		emitterObj.seedGroup 			= 	getParamVal("seedGroup");
 		// LIFE	
@@ -1176,6 +1204,9 @@ class Emitter extends Object3D {
 				removeParam("burstDelay");
 				removeParam("burstParticleCount");
 				removeParam("emitDuration");
+			case BurstDuration:
+				removeParam("emitRate");
+				removeParam("burstCount");
 			case Burst:
 				removeParam("emitDuration");
 				removeParam("emitRate");
