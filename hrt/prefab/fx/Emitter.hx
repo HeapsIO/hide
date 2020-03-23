@@ -57,6 +57,12 @@ typedef InstanceDef = {
 	color: Value,
 }
 
+typedef EmitterTrail = {
+	particle : ParticleInstance,
+	trail : h3d.scene.Trail,
+	timeBeforeDeath : Float
+}
+
 typedef ShaderAnims = Array<ShaderAnimation>;
 
 private class ParticleTransform {
@@ -386,6 +392,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var subEmitterTemplate : Emitter;
 	public var trailTemplate : Trail;
 	public var subEmitters : Array<EmitterObject> = [];
+	public var trails : Array<EmitterTrail> = [];
 	// LIFE
 	public var lifeTime = 2.0;
 	public var lifeTimeRand = 0.0;
@@ -455,7 +462,7 @@ class EmitterObject extends h3d.scene.Object {
 		var p = particles;
 		while(p != null) {
 			var n = p.next;
-			disposeInstance(p, false);
+			disposeInstance(p);
 			p = n;
 		}
 		particles = null;
@@ -463,6 +470,10 @@ class EmitterObject extends h3d.scene.Object {
 			s.remove();
 		}
 		subEmitters = [];
+		for( t in trails ) {
+			t.trail.remove();
+		}
+		trails = [];
 	}
 
 	override function onRemove() {
@@ -488,7 +499,16 @@ class EmitterObject extends h3d.scene.Object {
 
 	var tmpPos = new h3d.Vector();
 	var tmpCtx : hrt.prefab.Context;
-	function disposeInstance(p: ParticleInstance, spawnSubEmitter : Bool) {
+	function disposeInstance(p: ParticleInstance) {
+
+		// TRAIL
+		for( t in trails ) {
+			if( t.particle == p ) {
+				t.particle = null;
+				break;
+			}
+		}
+
 		p.next = pool;
 		p.dispose();
 		pool = p;
@@ -496,22 +516,6 @@ class EmitterObject extends h3d.scene.Object {
 		++poolSize;
 		if(numInstances < 0)
 			throw "assert";
-
-		// SUB EMITTER
-		if( spawnSubEmitter && subEmitterTemplate != null ) {
-			if( tmpCtx == null ) {
-				tmpCtx = new hrt.prefab.Context();
-				tmpCtx.local3d = this.getScene();
-				tmpCtx.shared = context.shared;
-			}
-			tmpCtx.local3d = this.getScene();
-			var emitter : EmitterObject = cast subEmitterTemplate.makeInstance(tmpCtx).local3d;
-			var pos = p.absPos.getPosition(tmpPos);
-			emitter.setPosition(pos.x, pos.y, pos.z);
-			emitter.isSubEmitter = true;
-			emitter.parentEmitter = this;
-			subEmitters.push(emitter);
-		}
 	}
 
 	static var tmpQuat = new h3d.Quat();
@@ -633,9 +637,19 @@ class EmitterObject extends h3d.scene.Object {
 
 			var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
 			part.startFrame = random.random(frameCount);
+
+			if( trailTemplate != null ) {
+				if( tmpCtx == null ) {
+					tmpCtx = new hrt.prefab.Context();
+					tmpCtx.local3d = this.getScene();
+					tmpCtx.shared = context.shared;
+				}
+				tmpCtx.local3d = this.getScene();
+				var trail : h3d.scene.Trail = cast trailTemplate.make(tmpCtx).local3d;
+				trail.setTransform(part.absPos);
+				trails.push({particle: part, trail: trail, timeBeforeDeath: 0.0});
+			}
 		}
-
-
 		context.local3d = this;
 		emitCount += count;
 	}
@@ -823,13 +837,52 @@ class EmitterObject extends h3d.scene.Object {
 					prev.next = next;
 				else
 					particles = next;
-				disposeInstance(p, true);
+
+				disposeInstance(p);
+				
+				// SUB EMITTER
+				if( subEmitterTemplate != null ) {
+					if( tmpCtx == null ) {
+						tmpCtx = new hrt.prefab.Context();
+						tmpCtx.local3d = this.getScene();
+						tmpCtx.shared = context.shared;
+					}
+					tmpCtx.local3d = this.getScene();
+					var emitter : EmitterObject = cast subEmitterTemplate.makeInstance(tmpCtx).local3d;
+					var pos = p.absPos.getPosition(tmpPos);
+					emitter.setPosition(pos.x, pos.y, pos.z);
+					emitter.isSubEmitter = true;
+					emitter.parentEmitter = this;
+					subEmitters.push(emitter);
+				}
 			}
 			else {
 				p.update(dt);
 				prev = p;
 			}
 			p = next;
+		}
+
+		// TRAIL
+		var i = 0;
+		while( i < trails.length ) {
+			var emitterTrail = trails[i];
+			var trail = emitterTrail.trail;
+			var particle = emitterTrail.particle;
+			if( particle != null ) {
+				trail.setTransform(particle.absPos);
+				i++;
+			}
+			else {
+				emitterTrail.timeBeforeDeath += dt;
+				if( emitterTrail.timeBeforeDeath > trail.duration ) {
+					trail.remove();
+					trails[i] = trails[trails.length - 1];
+					trails.pop();
+				}
+				else 
+					i++;
+			}
 		}
 	}
 
