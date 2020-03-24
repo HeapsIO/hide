@@ -17,7 +17,7 @@ class Cursor {
 	public function set( ?t:Table, ?x=0, ?y=0, ?sel, update = true ) {
 		if( t != null ) {
 			for( t2 in editor.tables )
-				if( t.sheet.name == t2.sheet.name && (t.sheet.parent == null || t.sheet.parent.line == t2.sheet.parent.line) ) {
+				if( t.sheet.getPath() == t2.sheet.getPath() ) {
 					t = t2;
 					break;
 				}

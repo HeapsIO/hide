@@ -1,9 +1,6 @@
 .cdb-view > .hide-tabs > .tab > ::-webkit-scrollbar {
   width: 12px;
 }
-.cdb-view .cdb {
-  margin-bottom: 350px;
-}
 .cdb {
   background-color: black;
 }
@@ -268,6 +265,12 @@
 .cdb .cdb-sheet tr.props > td > div {
   display: inline-block;
   max-width: 600px;
+}
+.cdb .cdb-sheet tr.props > td > div.cdb-large {
+  max-width: 1000px;
+}
+.cdb .cdb-sheet tr.props > td > div.cdb-large .cdb-sheet {
+  min-width: 800px;
 }
 .cdb .cdb-sheet tr.props .cdb-sheet {
   width: auto;

@@ -51,6 +51,7 @@ class CdbCustomTypes extends hide.ui.View<{}> {
 						return;
 					}
 			}
+			base.sync();
 
 			// full rebuild
 			modified = false;

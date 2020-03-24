@@ -2,10 +2,6 @@
 	width: 12px;
 }
 
-.cdb-view .cdb {
-	margin-bottom: 350px;
-}
-
 .cdb {
 
 	background-color : black;
@@ -298,6 +294,12 @@
 				&> div {
 					display: inline-block;
 					max-width: 600px;
+					&.cdb-large {
+						.cdb-sheet {
+							min-width: 800px;
+						}
+						max-width: 1000px;
+					}
 				}
 			}
 			.cdb-sheet {

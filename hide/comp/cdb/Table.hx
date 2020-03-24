@@ -23,6 +23,10 @@ class Table extends Component {
 		this.displayMode = mode;
 		this.editor = editor;
 		this.sheet = sheet;
+		@:privateAccess for( t in editor.tables )
+			if( t.sheet.path == sheet.path )
+				trace("Dup CDB table!");
+
 		@:privateAccess editor.tables.push(this);
 		root.addClass("cdb-sheet");
 		if( editor.view != null ) {
@@ -59,6 +63,9 @@ class Table extends Component {
 	}
 
 	public function close() {
+		for( t in @:privateAccess editor.tables.copy() )
+			if( t.parent == this )
+				t.close();
 		element.remove();
 		dispose();
 	}
@@ -237,7 +244,10 @@ class Table extends Component {
 
 		var available = [];
 		var props = sheet.lines[0];
+		var isLarge = false;
 		for( c in columns ) {
+
+			if( c.type.match(TList | TProperties) ) isLarge = true;
 
 			if( c.opt && props != null && !Reflect.hasField(props,c.name) && displayMode != AllProperties ) {
 				available.push(c);
@@ -267,6 +277,9 @@ class Table extends Component {
 				}
 			});
 		}
+
+		if( isLarge )
+			element.parent().addClass("cdb-large");
 
 		// add/edit properties
 		var end = new Element("<tr>").appendTo(element);
@@ -303,7 +316,7 @@ class Table extends Component {
 		var props = sheet.lines[0];
 		for( c in sheet.columns )
 			if( c.name == p ) {
-				var val = editor.base.getDefault(c, true);
+				var val = editor.base.getDefault(c, true, sheet);
 				editor.beginChanges();
 				Reflect.setField(props, c.name, val);
 				editor.endChanges();

@@ -23,7 +23,7 @@ typedef EditorApi = {
 class Editor extends Component {
 
 	var base : cdb.Database;
-	var sheet : cdb.Sheet;
+	var currentSheet : cdb.Sheet;
 	var existsCache : Map<String,{ t : Float, r : Bool }> = new Map();
 	var tables : Array<Table> = [];
 	var searchBox : Element;
@@ -54,7 +54,7 @@ class Editor extends Component {
 	}
 
 	public function getCurrentSheet() {
-		return sheet == null ? null : sheet.name;
+		return currentSheet == null ? null : currentSheet.name;
 	}
 
 	public function show( sheet, ?parent : Element ) {
@@ -62,7 +62,7 @@ class Editor extends Component {
 		element = new Element('<div>');
 		if( parent != null )
 			parent.append(element);
-		this.sheet = sheet;
+		currentSheet = sheet;
 		element.attr("tabindex", 0);
 		element.addClass("is-cdb-editor");
 		element.data("cdb", this);
@@ -256,7 +256,7 @@ class Editor extends Component {
 				var f = base.getConvFunction(c1.type, c2.type);
 				var v : Dynamic = Reflect.field(obj1, c1.name);
 				if( f == null )
-					v = base.getDefault(c2);
+					v = base.getDefault(c2, sheet);
 				else {
 					// make a deep copy to erase references
 					if( v != null ) v = haxe.Json.parse(haxe.Json.stringify(v));
@@ -264,7 +264,7 @@ class Editor extends Component {
 						v = f.f(v);
 				}
 				if( v == null && !c2.opt )
-					v = base.getDefault(c2);
+					v = base.getDefault(c2, sheet);
 				if( v == null )
 					Reflect.deleteField(obj2, c2.name);
 				else
@@ -306,7 +306,7 @@ class Editor extends Component {
 					if( !line.cells[x].canEdit() )
 						continue;
 					var old = Reflect.field(line.obj, c.name);
-					var def = base.getDefault(c,false);
+					var def = base.getDefault(c,false,cursor.table.sheet);
 					if( old == def )
 						continue;
 					changeObject(line,c,def);
@@ -479,10 +479,10 @@ class Editor extends Component {
 		this.base = base;
 		if( name == null ) name = getCurrentSheet();
 		// swap sheet if it was modified
-		this.sheet = null;
+		this.currentSheet = null;
 		for( s in base.sheets )
 			if( s.name == name ) {
-				this.sheet = s;
+				this.currentSheet = s;
 				break;
 			}
 	}
@@ -516,7 +516,7 @@ class Editor extends Component {
 
 		var content = new Element("<table>");
 		tables = [];
-		new Table(this, sheet, content, displayMode);
+		new Table(this, currentSheet, content, displayMode);
 		content.appendTo(element);
 
 		if( state != null )
@@ -659,7 +659,7 @@ class Editor extends Component {
 			{ label : "Delete", click : function () {
 				beginChanges();
 				if( table.displayMode == Properties )
-					changeObject(cell.line, col, base.getDefault(col));
+					changeObject(cell.line, col, base.getDefault(col,table.sheet));
 				else
 					table.sheet.deleteColumn(col.name);
 				endChanges();
@@ -769,7 +769,7 @@ class Editor extends Component {
 	public function popupSheet( ?sheet : cdb.Sheet, ?onChange : Void -> Void ) {
 		if( view != null )
 			return;
-		if( sheet == null ) sheet = this.sheet;
+		if( sheet == null ) sheet = this.currentSheet;
 		if( onChange == null ) onChange = function() {}
 		var index = base.sheets.indexOf(sheet);
 		new hide.comp.ContextMenu([
