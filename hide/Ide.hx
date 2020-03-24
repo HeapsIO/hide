@@ -898,14 +898,14 @@ class Ide {
 
 		// database
 		var db = menu.find(".database");
-		db.find(".dbview").click(function(_) {
+		db.find(".dbView").click(function(_) {
 			open("hide.view.CdbTable",{});
 		});
-		db.find(".dbcompress").prop("checked",database.compress).click(function(_) {
+		db.find(".dbCompress").prop("checked",database.compress).click(function(_) {
 			database.compress = !database.compress;
 			saveDatabase();
 		});
-		db.find(".dbexport").click(function(_) {
+		db.find(".dbExport").click(function(_) {
 			var lang = new cdb.Lang(@:privateAccess database.data);
 			var xml = lang.buildXML();
 			xml = String.fromCharCode(0xFEFF) + xml; // prefix with BOM
@@ -944,6 +944,9 @@ class Ide {
 		db.find(".dbCloseDiff").click(function(_) {
 			setDiff(null);
 		}).attr("disabled", databaseDiff == null ? "disabled" : null);
+		db.find(".dbCustom").click(function(_) {
+			open("hide.view.CdbCustomTypes",{});
+		});
 
 		// layout
 		var layouts = menu.find(".layout .content");
