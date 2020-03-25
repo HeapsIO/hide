@@ -558,7 +558,7 @@ class Editor extends Component {
 			if (c == null)
 				return;
 			beginChanges();
-			var err = sheet.addColumn(c, index + 1);
+			var err = sheet.addColumn(c, index == null ? null : index + 1);
 			endChanges();
 			if (err != null) {
 				modal.error(err);
