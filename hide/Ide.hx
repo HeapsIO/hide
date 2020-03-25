@@ -856,7 +856,6 @@ class Ide {
 		}
 
 		// database
-		if (ideConfig.database == null) ideConfig.database = { inlineImageFiles: false };
 		var db = menu.find(".database");
 		db.find(".dbview").click(function(_) {
 			open("hide.view.CdbTable",{});
@@ -869,10 +868,6 @@ class Ide {
 		db.find(".dbcompress").prop("checked",database.compress).click(function(_) {
 			database.compress = !database.compress;
 			saveDatabase();
-		});
-		menu.find(".layout .dbinline").prop("checked", ideConfig.database.inlineImageFiles).click(function(_) {
-			ideConfig.database.inlineImageFiles = !ideConfig.database.inlineImageFiles;
-			if (databaseApi.editor != null) databaseApi.editor.refresh();
 		});
 		db.find(".dbexport").click(function(_) {
 			var lang = new cdb.Lang(@:privateAccess database.data);

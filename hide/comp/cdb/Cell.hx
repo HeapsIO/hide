@@ -49,6 +49,17 @@ class Cell extends Component {
 	function get_columnIndex() return table.sheet.columns.indexOf(column);
 	inline function get_value() return currentValue;
 
+	function getCellConfigValue<T>(name:String, ?def:T)
+	{
+		var config = ide.currentConfig.get('cdb.${table.sheet.name}.${column.name}', null);
+		if (config != null && Reflect.hasField(config, name)) return Reflect.field(config, name);
+		config = ide.currentConfig.get('cdb.${table.sheet.name}', null);
+		if (config != null && Reflect.hasField(config, name)) return Reflect.field(config, name);
+		config = ide.currentConfig.get('cdb', null);
+		if (config != null && Reflect.hasField(config, name)) return Reflect.field(config, name);
+		return def;
+	}
+
 	public function refresh() {
 		currentValue = Reflect.field(line.obj, column.name);
 		var html = valueHtml(column, value, line.table.sheet, line.obj);
@@ -178,7 +189,7 @@ class Cell extends Component {
 			else if( ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "gif" ) {
 				var img = '<img src="$url" onload="$(this).parent().find(\'.label\').text(this.width+\'x\'+this.height)"/>';
 				var previewHandler = ' onmouseenter="$(this).find(\'.previewContent\').css(\'top\', (this.getBoundingClientRect().bottom - this.offsetHeight) + \'px\')"';
-				if (@:privateAccess ide.ideConfig.database.inlineImageFiles) {
+				if (getCellConfigValue("inlineImageFiles", false)) {
 					html = '<span class="preview inlineImage" $previewHandler>
 						<img src="$url"><div class="previewContent"><div class="inlineImagePath">$html</div><div class="label"></div>$img</div></span>';
 				} else {

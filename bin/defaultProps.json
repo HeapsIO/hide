@@ -67,6 +67,13 @@
 
 	// cdb config
 	"cdb.databaseFile" : "data.cdb",
+	"cdb": {
+		// When file column contains an image - controls whenever it should provide inline preview of the image instead of file path.
+		"inlineImageFiles": false
+	},
+	// It's possible to separately control CDB configurations per sheet and column with following keys:
+	// "cdb.mySheetName": { /* Applies to all File columns in sheet with mySheetName */ }
+	// "cdb.mySheetName.myColumnName": { /* Applies only to File column with name myColumnName, located in mySheetName */ }
 
 	// script support
 	"script.api.files" : [],
