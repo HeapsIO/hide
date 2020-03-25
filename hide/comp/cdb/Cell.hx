@@ -115,7 +115,9 @@ class Cell extends Component {
 						continue;
 					default:
 						if( !table.canViewSubColumn(column.name, c.name) ) continue;
-						vals.push(valueHtml(c, Reflect.field(v, c.name), ps, v));
+						var h = valueHtml(c, Reflect.field(v, c.name), ps, v);
+						if( h != "" && h != "&nbsp;" )
+							vals.push(h);
 					}
 				var v = vals.length == 1 ? vals[0] : ""+vals;
 				if( size > 200 ) {
