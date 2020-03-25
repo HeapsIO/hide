@@ -10,6 +10,7 @@
             "name": "Launch HIDE",
             "nwjsVersion": "any",
             "webRoot": "${workspaceFolder}/bin",
+            "env": {"HIDE_DEBUG":"1"},
             "preLaunchTask": "Build"
         },
         {
@@ -18,7 +19,7 @@
             "name": "Launch CDB",
             "nwjsVersion": "any",
             "webRoot": "${workspaceFolder}/bin",
-            "env": {"HIDE_START_CDB":"1"},
+            "env": {"HIDE_DEBUG":"1","HIDE_START_CDB":"1"},
             "preLaunchTask": "Build"
         },
         {

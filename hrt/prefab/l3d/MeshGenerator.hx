@@ -104,7 +104,7 @@ class MeshGeneratorRoot extends h3d.scene.Object {
 	}
 
 	override function syncRec( ctx ) {
-		if( posChanged ) 
+		if( posChanged )
 			super.syncRec(ctx);
 	}
 }
@@ -154,7 +154,9 @@ class MeshGenerator extends Object3D {
 		#if editor
 		if( customScene == null ) {
 			customScene = new h3d.scene.Scene(true, false);
+			#if debug
 			customScene.checkPasses = false;
+			#end
 		}
 		#end
 
@@ -173,12 +175,11 @@ class MeshGenerator extends Object3D {
 		createMeshPart(ctx, root, rootObject);
 
 		#if editor
-		// Only one CullingCollider for performance
-		var rootPos = rootObject.getAbsPos().getPosition();
-		var mainCullingCollider = new h3d.col.Sphere(rootPos.x, rootPos.y, rootPos.z, 0.0);
-		for( m in ctx.local3d.findAll(o -> Std.downcast(o, h3d.scene.Mesh)) ) {
-			m.cullingCollider = mainCullingCollider;
-			mainCullingCollider.r = hxd.Math.max(mainCullingCollider.r, m.primitive.getBounds().toSphere().r + m.getAbsPos().getPosition().sub(rootPos).length());
+		var int = ctx.local3d.find(o -> Std.downcast(o, h3d.scene.Interactive));
+		if(int != null) {
+			var dummy = makeInteractive(ctx);
+			int.preciseShape = dummy.preciseShape;
+			dummy.remove();
 		}
 		#end
 	}
@@ -261,6 +262,11 @@ class MeshGenerator extends Object3D {
 	}
 
 	#if editor
+
+	override function makeInteractive( ctx : Context ) : h3d.scene.Interactive {
+		var int = super.makeInteractive(ctx);
+		return int;
+	}
 
 	function generate( ctx : EditContext, mp : MeshPart, maxDepth : Int, curDepth : Int) {
 		if( curDepth >  maxDepth ) return;
@@ -400,6 +406,7 @@ class MeshGenerator extends Object3D {
 				s.remove();
 			}
 		}
+		return true;
 	}
 
 	function getHMD( ctx : Context, meshPath : String ) : hxd.fmt.hmd.Library {
@@ -640,8 +647,8 @@ class MeshGenerator extends Object3D {
 				});
 			}
 
-			renderMeshThumbnail(ctx.rootContext, mp.meshPath);
-			rootElement.find('.meshGenerator-thumbnail').css("background-image", 'url("file://${getThumbnailPath(ctx, mp.meshPath)}")');
+			//renderMeshThumbnail(ctx.rootContext, mp.meshPath);
+			//rootElement.find('.meshGenerator-thumbnail').css("background-image", 'url("file://${getThumbnailPath(ctx, mp.meshPath)}")');
 
 			ctx.properties.add(rootElement, mp, function(pname) {});
 

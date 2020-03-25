@@ -76,9 +76,10 @@ class Decal extends Object3D {
 			for( o in ctx.shared.getObjects(this,h3d.scene.Box) )
 				if( o.name == "_highlight" ) {
 					o.remove();
-					return;
+					return false;
 				}
 		}
+		return true;
 	}
 
 	override function edit( ctx : EditContext ) {

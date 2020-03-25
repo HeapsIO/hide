@@ -22,8 +22,8 @@ class UndoHistory {
 		return undoElts.length == 0 ? 0 : undoElts[undoElts.length - 1].id;
 	}
 
-	public function change(h, ?callb) {
-		undoElts.push({ h : h, id : ++uidGen, callb : callb });
+	public function change(h, ?callb, ?noDataChange) {
+		undoElts.push({ h : h, id : noDataChange ? currentID : ++uidGen, callb : callb });
 		redoElts = [];
 		onChange();
 	}

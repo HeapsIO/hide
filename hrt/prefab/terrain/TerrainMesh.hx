@@ -4,11 +4,12 @@ package hrt.prefab.terrain;
 class TerrainMesh extends h3d.scene.Object {
 
 	// Resolution Vertexes/Pixels
-	public var tileSize : Float;
-	public var cellSize : Float;
-	public var cellCount : Int;
-	public var heightMapResolution : Int;
-	public var weightMapResolution : Int;
+	public var tileSize : h2d.col.Point;
+	public var cellSize : h2d.col.Point;
+	public var cellCount : h2d.col.IPoint;
+
+	public var heightMapResolution : h2d.col.IPoint;
+	public var weightMapResolution : h2d.col.IPoint;
 	public var useBigPrim = false;
 
 	// Shader Params
@@ -43,49 +44,13 @@ class TerrainMesh extends h3d.scene.Object {
 			surfaceArray.dispose();
 	}
 
-	public override function clone( ?o : h3d.scene.Object ) : h3d.scene.Object {
-		var o = new TerrainMesh();
-		o.tileSize = tileSize;
-		o.cellSize = cellSize;
-		o.cellCount = cellCount;
-		o.heightMapResolution = heightMapResolution;
-		o.weightMapResolution = weightMapResolution;
-		#if editor
-		o.showGrid = showGrid;
-		o.showChecker = showChecker;
-		o.showComplexity = showComplexity;
-		#end
-		o.parallaxAmount = parallaxAmount;
-		o.parallaxMinStep = parallaxMinStep;
-		o.parallaxMaxStep = parallaxMaxStep;
-		o.heightBlendStrength = heightBlendStrength;
-		o.blendSharpness = blendSharpness;
-
-		for( i in 0...tiles.length ) {
-			var t = Std.downcast(tiles[i].clone(), Tile);
-			t.parent = o;
-			o.tiles.push(t);
-		}
-
-		for( i in 0...surfaces.length )
-			o.surfaces.push(surfaces[i].clone());
-
-		o.surfaceArray = surfaceArray.clone();
-
-		return o;
-	}
-
-	public function onContextlost() {
-		generateSurfaceArray();
-	}
-
-	public function getHeight( x : Float, y : Float ) : Float {
+	public function getHeight( x : Float, y : Float, fast = false) : Float {
 		var z = 0.0;
 		var t = getTileAtWorldPos(x, y);
 		if( t != null ) {
 			tmpVec.set(x, y);
 			var pos = t.globalToLocal(tmpVec);
-			z = t.getHeight(pos.x / tileSize, pos.y / tileSize);
+			z = t.getHeight(pos.x / tileSize.x, pos.y / tileSize.y, fast);
 		}
 		return z;
 	}
@@ -158,12 +123,14 @@ class TerrainMesh extends h3d.scene.Object {
 
 	public function refreshAllGrids() {
 		for( tile in tiles ) {
-			tile.x = tile.tileX * tileSize;
-			tile.y = tile.tileY * tileSize;
+			tile.x = tile.tileX * tileSize.x;
+			tile.y = tile.tileY * tileSize.y;
 			tile.refreshGrid();
 		}
 		for( tile in tiles )
 			tile.blendEdges();
+		for( tile in tiles )
+			tile.computeTangents();
 	}
 
 	public function refreshAllTex() {
@@ -237,8 +204,8 @@ class TerrainMesh extends h3d.scene.Object {
 	public function getTileAtWorldPos( x : Float, y : Float ) : Tile {
 		var pos = toLocalPos(x, y);
 		var result : Tile = null;
-		var tileX = Math.floor(pos.x / tileSize);
-		var tileY = Math.floor(pos.y / tileSize);
+		var tileX = Math.floor(pos.x / tileSize.x);
+		var tileY = Math.floor(pos.y / tileSize.y);
 		for( tile in tiles )
 			if( tile.tileX == tileX && tile.tileY == tileY ) result = tile;
 		return result;
@@ -246,8 +213,8 @@ class TerrainMesh extends h3d.scene.Object {
 
 	public function createTileAtWorldPos( x : Float, y : Float ) : Tile {
 		var pos = toLocalPos(x, y);
-		var tileX = Math.floor(pos.x / tileSize);
-		var tileY = Math.floor(pos.y / tileSize);
+		var tileX = Math.floor(pos.x / tileSize.x);
+		var tileY = Math.floor(pos.y / tileSize.y);
 		var result = getTile(tileX, tileY);
 		return result == null ? createTile(tileX, tileY) : result;
 	}
@@ -255,10 +222,10 @@ class TerrainMesh extends h3d.scene.Object {
 	public function getTiles( x : Float, y : Float, range : Float, ?create = false ) : Array<Tile> {
 		var pos = toLocalPos(x, y);
 		if( create != null && create ) {
-			var maxTileX = Math.floor((pos.x + range)/ tileSize);
-			var minTileX = Math.floor((pos.x - range)/ tileSize);
-			var maxTileY = Math.floor((pos.y + range)/ tileSize);
-			var minTileY = Math.floor((pos.y - range)/ tileSize);
+			var maxTileX = Math.floor((pos.x + range)/ tileSize.x);
+			var minTileX = Math.floor((pos.x - range)/ tileSize.x);
+			var maxTileY = Math.floor((pos.y + range)/ tileSize.y);
+			var minTileY = Math.floor((pos.y - range)/ tileSize.y);
 			for( x in minTileX ... maxTileX + 1) {
 				for( y in minTileY...maxTileY + 1) {
 					var t = createTile(x, y);
@@ -272,8 +239,8 @@ class TerrainMesh extends h3d.scene.Object {
 		}
 		var result : Array<Tile> = [];
 		for( tile in tiles)
-			if( Math.abs(pos.x - (tile.tileX * tileSize + tileSize * 0.5)) <= range + (tileSize * 0.5)
-			&& Math.abs(pos.y - (tile.tileY * tileSize + tileSize * 0.5)) <= range + (tileSize * 0.5) )
+			if( Math.abs(pos.x - (tile.tileX * tileSize.x + tileSize.x * 0.5)) <= range + (tileSize.x * 0.5)
+			&& Math.abs(pos.y - (tile.tileY * tileSize.y + tileSize.y * 0.5)) <= range + (tileSize.y * 0.5) )
 				result.push(tile);
 		return result;
 	}

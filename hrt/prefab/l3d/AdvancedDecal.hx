@@ -158,6 +158,7 @@ class AdvancedDecal extends Object3D {
 		} else {
 			clearSelection( ctx );
 		}
+		return true;
 	}
 
 	function clearSelection( ctx : Context ) {

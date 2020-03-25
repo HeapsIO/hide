@@ -15,17 +15,57 @@ class Table extends Component {
 	public var lines : Array<Line>;
 	public var displayMode(default,null) : DisplayMode;
 
+	public var columns : Array<cdb.Data.Column>;
+	public var view : ConfigView.SheetView;
+
 	public function new(editor, sheet, root, mode) {
 		super(null,root);
 		this.displayMode = mode;
 		this.editor = editor;
 		this.sheet = sheet;
+		@:privateAccess for( t in editor.tables )
+			if( t.sheet.path == sheet.path )
+				trace("Dup CDB table!");
+
 		@:privateAccess editor.tables.push(this);
 		root.addClass("cdb-sheet");
+		if( editor.view != null ) {
+			var cname = parent == null ? null : sheet.parent.sheet.columns[sheet.parent.column].name;
+			if( parent == null )
+				view = editor.view.get(sheet.name);
+			else if( parent.view.sub != null )
+				view = parent.view.sub.get(cname);
+			if( view == null ) {
+				if( parent != null && parent.canEditColumn(cname) )
+					view = { insert : true, edit : [for( c in sheet.columns ) c.name], sub : {} };
+				else
+					view = { insert : false, edit : [], sub : {} };
+			}
+		}
 		refresh();
 	}
 
+	public function canInsert() {
+		return view == null || view.insert;
+	}
+
+	public function canEditColumn( name : String ) {
+		return view == null || (view.edit != null && view.edit.indexOf(name) >= 0);
+	}
+
+	public function canViewSubColumn( name : String, column : String ) {
+		if( view == null )
+			return true;
+		var sub = view.sub == null ? null : view.sub.get(name);
+		if( sub == null )
+			return true;
+		return sub.show == null || sub.show.indexOf(column) >= 0;
+	}
+
 	public function close() {
+		for( t in @:privateAccess editor.tables.copy() )
+			if( t.parent == this )
+				t.close();
 		element.remove();
 		dispose();
 	}
@@ -36,6 +76,7 @@ class Table extends Component {
 
 	public function refresh() {
 		element.empty();
+		columns = view == null || view.show == null ? sheet.columns : [for( c in sheet.columns ) if( view.show.indexOf(c.name) >= 0 ) c];
 		switch( displayMode ) {
 		case Table:
 			refreshTable();
@@ -77,7 +118,7 @@ class Table extends Component {
 			var l = J("<tr>");
 			var head = J("<td>").addClass("start").text("" + index);
 			head.appendTo(l);
-			var line = new Line(this, sheet.columns, index, l);
+			var line = new Line(this, columns, index, l);
 			head.mousedown(function(e) {
 				if( e.which == 3 ) {
 					editor.popupLine(line);
@@ -95,9 +136,8 @@ class Table extends Component {
 			line;
 		}];
 
-		var colCount = sheet.columns.length;
-		for( cindex in 0...sheet.columns.length ) {
-			var c = sheet.columns[cindex];
+		var colCount = columns.length;
+		for( c in columns ) {
 			var col = J("<th>");
 			col.text(c.name);
 			col.addClass( "t_"+c.type.getName().substr(1).toLowerCase() );
@@ -111,7 +151,7 @@ class Table extends Component {
 				}
 			});
 			col.dblclick(function(_) {
-				editor.editColumn(sheet, c);
+				if( editor.view == null ) editor.editColumn(sheet, c);
 			});
 			cols.append(col);
 
@@ -148,8 +188,8 @@ class Table extends Component {
 				editor.newColumn(sheet);
 			});
 			element.append(l);
-		} else if( sheet.lines.length == 0 ) {
-			var l = J('<tr><td colspan="${sheet.columns.length + 1}"><input type="button" value="Insert Line"/></td></tr>');
+		} else if( sheet.lines.length == 0 && canInsert() ) {
+			var l = J('<tr><td colspan="${columns.length + 1}"><input type="button" value="Insert Line"/></td></tr>');
 			l.find("input").click(function(_) {
 				editor.insertLine(this);
 				editor.cursor.set(this);
@@ -169,6 +209,7 @@ class Table extends Component {
 		var title = if( sheet.props.separatorTitles != null ) sheet.props.separatorTitles[sindex] else null;
 		if( title != null ) content.text(title);
 		sep.dblclick(function(e) {
+			if( !canInsert() ) return;
 			content.empty();
 			J("<input>").appendTo(content).focus().val(title == null ? "" : title).blur(function(_) {
 				title = JTHIS.val();
@@ -203,7 +244,10 @@ class Table extends Component {
 
 		var available = [];
 		var props = sheet.lines[0];
-		for( c in sheet.columns ) {
+		var isLarge = false;
+		for( c in columns ) {
+
+			if( c.type.match(TList | TProperties) ) isLarge = true;
 
 			if( c.opt && props != null && !Reflect.hasField(props,c.name) && displayMode != AllProperties ) {
 				available.push(c);
@@ -234,14 +278,24 @@ class Table extends Component {
 			});
 		}
 
+		if( isLarge )
+			element.parent().addClass("cdb-large");
+
 		// add/edit properties
 		var end = new Element("<tr>").appendTo(element);
 		end = new Element("<td>").attr("colspan", "2").appendTo(end);
 		var sel = new Element("<select class='insertField'>").appendTo(end);
 		new Element("<option>").attr("value", "").text("--- Choose ---").appendTo(sel);
+		var canInsert = false;
 		for( c in available )
-			J("<option>").attr("value",c.name).text(c.name).appendTo(sel);
-		J("<option>").attr("value","$new").text("New property...").appendTo(sel);
+			if( canEditColumn(c.name) ) {
+				J("<option>").attr("value",c.name).text(c.name).appendTo(sel);
+				canInsert = true;
+			}
+		if( editor.view == null )
+			J("<option>").attr("value","$new").text("New property...").appendTo(sel);
+		else if( !canInsert )
+			end.remove();
 		sel.change(function(e) {
 			var v = sel.val();
 			if( v == "" )
@@ -262,7 +316,7 @@ class Table extends Component {
 		var props = sheet.lines[0];
 		for( c in sheet.columns )
 			if( c.name == p ) {
-				var val = editor.base.getDefault(c, true);
+				var val = editor.base.getDefault(c, true, sheet);
 				editor.beginChanges();
 				Reflect.setField(props, c.name, val);
 				editor.endChanges();

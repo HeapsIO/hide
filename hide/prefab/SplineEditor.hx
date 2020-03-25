@@ -49,7 +49,7 @@ class NewSplinePointViewer extends h3d.scene.Object {
 	public function update( spd : SplinePointData ) {
 
 		pointViewer.setPosition(spd.pos.x, spd.pos.y, spd.pos.z);
-		
+
 		tangentViewer.clear();
 		tangentViewer.visible = spd.tangent != null;
 		if( spd.tangent != null ) {
@@ -102,7 +102,7 @@ class SplinePointViewer extends h3d.scene.Object {
 		indexText = new h2d.ObjectFollower(pointViewer,  @:privateAccess ctx.local2d.getScene());
 		var t = new h2d.Text(hxd.res.DefaultFont.get(), indexText);
 		t.textColor = 0xff00ff;
-		t.textAlign = Center;		
+		t.textAlign = Center;
 		t.dropShadow = { dx : 0.5, dy : 0.5, color : 0x202020, alpha : 1.0 };
 		t.setScale(2.5);
 	}
@@ -183,7 +183,7 @@ class SplineEditor {
 	}
 
 	function getClosestSplinePointFromMouse( mouseX : Float, mouseY : Float, ctx : hrt.prefab.Context ) : SplinePoint {
-		if( ctx == null || ctx.local3d == null || ctx.local3d.getScene() == null ) 
+		if( ctx == null || ctx.local3d == null || ctx.local3d.getScene() == null )
 			return null;
 
 		var mousePos = new h3d.Vector( mouseX / h3d.Engine.getCurrent().width, 1.0 - mouseY / h3d.Engine.getCurrent().height, 0);
@@ -207,7 +207,7 @@ class SplineEditor {
 	function getNewPointPosition( mouseX : Float, mouseY : Float, ctx : hrt.prefab.Context ) : SplinePointData {
 		if( prefab.points.length == 0 ) {
 			return { pos : ctx.local3d.getAbsPos().getPosition().toPoint(), tangent : ctx.local3d.getAbsPos().right().toPoint() , prev : null, next : null };
-		} 
+		}
 
 		var closestPt = getClosestPointFromMouse(mouseX, mouseY, ctx);
 
@@ -221,13 +221,13 @@ class SplineEditor {
 			var pt = ray.intersect(plane);
 			return { pos : pt, tangent : closestPt.tangent, prev : closestPt.prev, next : closestPt.next };
 		}
-		else 
+		else
 			return closestPt;
 	}
 
 	function getClosestPointFromMouse( mouseX : Float, mouseY : Float, ctx : hrt.prefab.Context ) : SplinePointData {
 
-		if( ctx == null || ctx.local3d == null || ctx.local3d.getScene() == null ) 
+		if( ctx == null || ctx.local3d == null || ctx.local3d.getScene() == null )
 			return null;
 
 		var result : SplinePointData = null;
@@ -277,7 +277,7 @@ class SplineEditor {
 				result.pos = firstPt;
 				result.tangent = firstSp.getAbsPos().right().toPoint();
 				result.prev = null;
-				result.next = prefab.points[0]; 
+				result.next = prefab.points[0];
 			}
 		}
 
@@ -297,7 +297,7 @@ class SplineEditor {
 
 		var pos = spd.pos.toVector();
 		pos.project(invMatrix);
-	
+
 		var index = 0;
 		var scale = 1.0;
 		if( spd.prev == null && spd.next == null ) {
@@ -310,7 +310,7 @@ class SplineEditor {
 		}
 		else if( spd.next == null ) {
 			index = prefab.points.length;
-			scale = prefab.points[prefab.points.length - 1].getAbsPos().getScale().x; 
+			scale = prefab.points[prefab.points.length - 1].getAbsPos().getScale().x;
 		}
 		else {
 			index = prefab.points.indexOf(spd.next);
@@ -367,7 +367,7 @@ class SplineEditor {
 			gizmo.visible = false; // Not visible by default, only show the closest in the onMove of interactive
 
 			gizmo.onStartMove = function(mode) {
-				
+
 				var sceneObj = sp;
 				var pivotPt = sceneObj.getAbsPos().getPosition();
 				var localMat : h3d.Matrix = sceneEditor.worldMat(sceneObj).clone();
@@ -402,7 +402,7 @@ class SplineEditor {
 					newMat.translate(pivotPt.x, pivotPt.y, pivotPt.z);
 					newMat.multiply(newMat, parentInvMat);
 					if(scale != null) newMat.prependScale(scale.x, scale.y, scale.z);
-					
+
 					var rot = newMat.getEulerAngles();
 					sceneObj.x = quantize(newMat.tx, posQuant);
 					sceneObj.y = quantize(newMat.ty, posQuant);
@@ -420,9 +420,9 @@ class SplineEditor {
 						sceneObj.scaleX = quantize(scaleSnap(s.x), scaleQuant);
 						sceneObj.scaleY = quantize(scaleSnap(s.y), scaleQuant);
 						sceneObj.scaleZ = quantize(scaleSnap(s.z), scaleQuant);
-					}	
+					}
 
-					prefab.updateInstance(ctx);	
+					prefab.updateInstance(ctx);
 				}
 
 				gizmo.onFinishMove = function() {
@@ -454,7 +454,7 @@ class SplineEditor {
 			editMode = false;
 			return;
 		}
-		
+
 		if( editMode ) {
 			createGizmos(ctx);
 			var s2d = @:privateAccess ctx.local2d.getScene();
@@ -515,7 +515,7 @@ class SplineEditor {
 			interactive.onMove =
 				function(e) {
 
-					if( prefab.points.length == 0 ) 
+					if( prefab.points.length == 0 )
 						return;
 
 					// Only show the gizmo of the closest splinePoint
@@ -526,7 +526,7 @@ class SplineEditor {
 					}
 
 					if( K.isDown( K.CTRL ) ) {
-						if( newSplinePointViewer == null ) 
+						if( newSplinePointViewer == null )
 							newSplinePointViewer = new NewSplinePointViewer(ctx.local3d.getScene());
 						newSplinePointViewer.visible = true;
 
@@ -534,7 +534,7 @@ class SplineEditor {
 						newSplinePointViewer.update(npt);
 					}
 					else {
-						if( newSplinePointViewer != null ) 
+						if( newSplinePointViewer != null )
 							newSplinePointViewer.visible = false;
 					}
 
@@ -547,7 +547,7 @@ class SplineEditor {
 								spv.setColor(0xFFFFFFFF);
 						}
 					}
-						
+
 				};
 		}
 	}
@@ -577,16 +577,17 @@ class SplineEditor {
 		var reverseButton = props.find(".reverse");
 		reverseButton.click(function(_) {
 			prefab.points.reverse();
-			for( p in prefab.points ) 
+			for( p in prefab.points )
 				p.rotate(0, 0, hxd.Math.degToRad(180));
 
 			undo.change(Custom(function(undo) {
 				prefab.points.reverse();
-				for( p in prefab.points ) 
+				for( p in prefab.points )
 					p.rotate(0, 0, hxd.Math.degToRad(180));
 			}));
-			
 			ctx.onChange(prefab, null);
+			removeGizmos();
+			createGizmos(getContext());
 		});
 
 		var editModeButton = props.find(".editModeButton");
@@ -596,7 +597,7 @@ class SplineEditor {
 			editModeButton.val(editMode ? "Edit Mode : Enabled" : "Edit Mode : Disabled");
 			editModeButton.toggleClass("editModeEnabled", editMode);
 			setSelected(getContext(), true);
-			@:privateAccess editContext.scene.editor.hideGizmo = editMode;
+			@:privateAccess editContext.scene.editor.showGizmo = !editMode;
 			ctx.onChange(prefab, null);
 		});
 

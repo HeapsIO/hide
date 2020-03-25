@@ -9,10 +9,10 @@ class StrokeBuffer {
 	public var tempTex : h3d.mat.Texture;
 	public var format : hxd.PixelFormat;
 
-	public function new(size, x, y, format){
+	public function new(size : h2d.col.IPoint, x, y, format){
 		this.format = format;
-		tex = new h3d.mat.Texture(size,size, [Target], format);
-		tempTex = new h3d.mat.Texture(size,size, [Target], format);
+		tex = new h3d.mat.Texture(size.x, size.y, [Target], format);
+		tempTex = new h3d.mat.Texture(size.x, size.y, [Target], format);
 		tex.filter = Linear;
 		tempTex.filter = Linear;
 		this.x = x;
@@ -25,11 +25,11 @@ class StrokeBuffer {
 		if(tempTex != null) tempTex.dispose();
 	}
 
-	public function refresh(size){
+	public function refresh(size: h2d.col.IPoint){
 		if(tex != null) tex.dispose();
 		if(tempTex != null) tempTex.dispose();
-		tex = new h3d.mat.Texture(size, size, [Target], format);
-		tempTex = new h3d.mat.Texture(size, size, [Target], format);
+		tex = new h3d.mat.Texture(size.x, size.y, [Target], format);
+		tempTex = new h3d.mat.Texture(size.x, size.y, [Target], format);
 		tex.filter = Linear;
 		tempTex.filter = Linear;
 		tex.preventAutoDispose();
@@ -48,10 +48,10 @@ class StrokeBuffer {
 class StrokeBufferArray{
 
 	public var strokeBuffers(default, null) : Array<StrokeBuffer> = [];
-	var texSize = 0;
+	var texSize = new h2d.col.IPoint(0,0);
 	var format : hxd.PixelFormat;
 
-	public function new(format, texSize){
+	public function new(format, texSize : h2d.col.IPoint ) {
 		this.format = format;
 		this.texSize = texSize;
 	}
@@ -72,7 +72,7 @@ class StrokeBufferArray{
 		return strokeBuffer;
 	}
 
-	public function refresh(size){
+	public function refresh( size : h2d.col.IPoint ){
 		if(texSize == size) return;
 		texSize = size;
 		for(strokeBuffer in strokeBuffers)

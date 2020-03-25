@@ -40,13 +40,22 @@ class Cell extends Component {
 					refresh();
 				}
 			});
+		case TString if( column.kind == Script ):
+			element.click(function(_) edit());
 		default:
-			element.dblclick(function(_) edit());
+			if( canEdit() )
+				element.dblclick(function(_) edit());
+			else
+				root.addClass("t_readonly");
 		}
 	}
 
+	public function canEdit() {
+		return table.canEditColumn(column.name);
+	}
+
 	function get_table() return line.table;
-	function get_columnIndex() return table.sheet.columns.indexOf(column);
+	function get_columnIndex() return table.columns.indexOf(column);
 	inline function get_value() return currentValue;
 
 	function getCellConfigValue<T>(name:String, ?def:T)
@@ -126,7 +135,10 @@ class Cell extends Component {
 					case TList, TProperties:
 						continue;
 					default:
-						vals.push(valueHtml(c, Reflect.field(v, c.name), ps, v));
+						if( !table.canViewSubColumn(column.name, c.name) ) continue;
+						var h = valueHtml(c, Reflect.field(v, c.name), ps, v);
+						if( h != "" && h != "&nbsp;" )
+							vals.push(h);
 					}
 				var v = vals.length == 1 ? vals[0] : ""+vals;
 				if( size > 200 ) {
@@ -152,6 +164,7 @@ class Cell extends Component {
 			for( c in ps.columns ) {
 				var pval = Reflect.field(v, c.name);
 				if( pval == null && c.opt ) continue;
+				if( !table.canViewSubColumn(column.name, c.name) ) continue;
 				out.push(c.name+" : "+valueHtml(c, pval, ps, v));
 			}
 			return out.join("<br/>");
@@ -287,6 +300,8 @@ class Cell extends Component {
 	}
 
 	public function edit() {
+		if( !canEdit() )
+			return;
 		switch( column.type ) {
 		case TString if( column.kind == Script ):
 			open();
@@ -577,7 +592,7 @@ class Cell extends Component {
 			}
 			setValue(newValue);
 			editor.endChanges();
-			editor.refreshAll();
+			Editor.refreshAll();
 			focus();
 			/*
 			// creates or remove a #DUP : need to refresh the whole table

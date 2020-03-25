@@ -1,6 +1,8 @@
+.cdb-view > .hide-tabs > .tab > ::-webkit-scrollbar {
+  width: 12px;
+}
 .cdb {
   background-color: black;
-  margin-bottom: 350px;
 }
 .cdb:focus {
   outline: none;
@@ -11,7 +13,8 @@
 .cdb:focus .cdb-sheet tr.cursorLine {
   background-color: #262d35;
 }
-.cdb:focus .cdb-sheet tr.cursorLine td.start {
+.cdb:focus .cdb-sheet tr.cursorLine td.start,
+.cdb:focus .cdb-sheet tr.cursorLine td.t_readonly {
   background-color: #313a48;
 }
 .cdb:focus .cdb-sheet tr.selected,
@@ -19,7 +22,9 @@
   background-color: #313a48;
 }
 .cdb:focus .cdb-sheet tr.selected td.start,
-.cdb:focus .cdb-sheet td.selected td.start {
+.cdb:focus .cdb-sheet td.selected td.start,
+.cdb:focus .cdb-sheet tr.selected td.t_readonly,
+.cdb:focus .cdb-sheet td.selected td.t_readonly {
   background-color: #313a48;
 }
 .cdb .cdb-sheet {
@@ -56,6 +61,13 @@
 .cdb .cdb-sheet td {
   padding: 2px 4px;
   overflow: hidden;
+}
+.cdb .cdb-sheet tr.props td {
+  overflow: visible;
+}
+.cdb .cdb-sheet > tbody > tr.props:last-child {
+  border-bottom: 0;
+  background-color: black;
 }
 .cdb .cdb-sheet td.edit {
   padding: 2px;
@@ -120,7 +132,7 @@
 }
 .cdb .cdb-sheet tr.list > td {
   padding: 0;
-  padding-bottom: 5px;
+  padding-bottom: 20px;
   border: none;
 }
 .cdb .cdb-sheet th.t_tilepos {
@@ -128,6 +140,9 @@
 }
 .cdb .cdb-sheet td.t_tilepos {
   text-align: center;
+}
+.cdb .cdb-sheet td.t_readonly {
+  background-color: #333;
 }
 .cdb .cdb-sheet th.t_bool,
 .cdb .cdb-sheet th.t_int,
@@ -191,10 +206,6 @@
   max-height: 32px;
   max-width: 32px;
 }
-.cdb .cdb-sheet td.t_list.parent-sub-table,
-.cdb .cdb-sheet td.t_properties.parent-sub-table {
-  background-color: #313a48;
-}
 .cdb .cdb-sheet td.t_enum {
   padding-left: 5px;
 }
@@ -254,6 +265,12 @@
 .cdb .cdb-sheet tr.props > td > div {
   display: inline-block;
   max-width: 600px;
+}
+.cdb .cdb-sheet tr.props > td > div.cdb-large {
+  max-width: 1000px;
+}
+.cdb .cdb-sheet tr.props > td > div.cdb-large .cdb-sheet {
+  min-width: 800px;
 }
 .cdb .cdb-sheet tr.props .cdb-sheet {
   width: auto;

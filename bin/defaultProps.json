@@ -64,6 +64,8 @@
 	"key.sceneeditor.selectParent": "Backspace",
 	"key.sceneeditor.reparent": "Ctrl-P",
 	"key.sceneeditor.editPivot" : "P",
+	"key.sceneeditor.toggleLocal": "D",
+	"key.sceneeditor.toggleGrid": "G",
 
 	// cdb config
 	"cdb.databaseFile" : "data.cdb",
@@ -100,6 +102,8 @@
 	"sceneeditor.xyzPrecision": 0.01,
 	"sceneeditor.scalePrecision": 0.01,
 	"sceneeditor.rotatePrecision": 0.1,
+
+	"sceneeditor.newgroups" : ["2D|hrt.prefab.Object2D","3D|hrt.prefab.Object3D","RFX|hrt.prefab.rfx.RendererFX"],
 
 	// l3d config
 	"l3d.groundLayer": "ground",

@@ -111,7 +111,7 @@ class MeshSpray extends Object3D {
 					if( !K.isDown( K.SHIFT) ) {
 						if (previewModels.length > 0) {
 							sceneEditor.deleteElements(previewModels, () -> { }, false);
-							sceneEditor.selectObjects([this], false);
+							sceneEditor.selectObjects([this]);
 							previewModels = [];
 						}
 						var worldPos = getMousePicker(s2d.mouseX, s2d.mouseY);
@@ -139,7 +139,7 @@ class MeshSpray extends Object3D {
 
 			if (previewModels.length > 0) {
 				sceneEditor.deleteElements(previewModels, () -> { }, false);
-				sceneEditor.selectObjects([this], false);
+				sceneEditor.selectObjects([this], Nothing);
 				previewModels = [];
 			}
 		};
@@ -150,13 +150,13 @@ class MeshSpray extends Object3D {
 			var shiftPressed = K.isDown( K.SHIFT);
 
 			drawCircle(ctx, worldPos.x, worldPos.y, worldPos.z, (shiftPressed) ? deleteRadius : radius, 5, (shiftPressed) ? 9830400 : 38400);
-			
-			if (lastSpray < Date.now().getTime() - 100) {	
+
+			if (lastSpray < Date.now().getTime() - 100) {
 				if (previewModels.length > 0) {
 					sceneEditor.deleteElements(previewModels, () -> { }, false, false);
-					sceneEditor.selectObjects([this], false);
+					sceneEditor.selectObjects([this], Nothing);
 					previewModels = [];
-				}			
+				}
 				if( !shiftPressed ) {
 					previewMeshesAround(ctx, worldPos);
 				}
@@ -223,7 +223,7 @@ class MeshSpray extends Object3D {
 		cleanBtn.on("click", function() {
 			if (hide.Ide.inst.confirm("Are you sure to remove all meshes for this MeshSpray ?")) {
 				sceneEditor.deleteElements(children.copy());
-				sceneEditor.selectObjects([this], false);
+				sceneEditor.selectObjects([this], Nothing);
 			}
 		});
 
@@ -252,7 +252,9 @@ class MeshSpray extends Object3D {
 			timerCicle = new haxe.Timer(100);
 			timerCicle.run = function() {
 				timerCicle.stop();
-				for (g in gBrushes) g.visible = false;
+				if( gBrushes != null ) {
+					for (g in gBrushes) g.visible = false;
+				}
 				if (previewModels != null && previewModels.length > 0) {
 					sceneEditor.deleteElements(previewModels, () -> { }, false, false);
 					previewModels = [];
@@ -262,6 +264,7 @@ class MeshSpray extends Object3D {
 				wasEdited = false;
 			};
 		}
+		return false;
 	}
 
 	function addMeshPath(path : String) {
@@ -311,7 +314,7 @@ class MeshSpray extends Object3D {
 		if (computedDensity == 1)
 		if (previewModels.length > 0) {
 			sceneEditor.deleteElements(previewModels, () -> { }, false);
-			sceneEditor.selectObjects([this], false);
+			sceneEditor.selectObjects([this], Nothing);
 			previewModels = [];
 		}
 		lastPos = point;
@@ -387,7 +390,7 @@ class MeshSpray extends Object3D {
 				previewModels.push(model);
 				currentPivots.push(new h2d.col.Point(model.x, model.y));
 			}
-					
+
 			if (previewModels.length > 0) {
 				sceneEditor.addObject(previewModels, false, false);
 			}
@@ -421,7 +424,7 @@ class MeshSpray extends Object3D {
 		if (childToRemove.length > 0) {
 			wasEdited = true;
 			sceneEditor.deleteElements(childToRemove, () -> { }, false);
-			sceneEditor.selectObjects([this], false);
+			sceneEditor.selectObjects([this], Nothing);
 		}
 	}
 
@@ -495,7 +498,7 @@ class MeshSpray extends Object3D {
 	}
 
 	var terrainPrefab : hrt.prefab.terrain.Terrain = null;
-	
+
 	// GET Z with TERRAIN
 	public function getZ( x : Float, y : Float ) {
 		var z = this.z;
@@ -551,7 +554,7 @@ class MeshSpray extends Object3D {
 
 		return planePt;
 	}
-	
+
 
 	public function screenToWorld(sx: Float, sy: Float) {
 		var camera = sceneEditor.scene.s3d.camera;
@@ -567,7 +570,7 @@ class MeshSpray extends Object3D {
 		var dist = 0.0;
 		if (terrainPrefab == null)
 			@:privateAccess terrainPrefab = sceneEditor.sceneData.find(p -> Std.downcast(p, hrt.prefab.terrain.Terrain));
-		
+
 		if (terrainPrefab != null) {
 			var normal = terrainPrefab.terrain.getAbsPos().up();
 			var plane = h3d.col.Plane.fromNormalPoint(normal.toPoint(), new h3d.col.Point(terrainPrefab.terrain.getAbsPos().tx, terrainPrefab.terrain.getAbsPos().ty, terrainPrefab.terrain.getAbsPos().tz));

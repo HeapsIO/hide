@@ -12,9 +12,9 @@ package hrt.prefab;
 	public function new() {
 	}
 
-	public function init() {
+	public function init( ?res : hxd.res.Resource ) {
 		if( shared == null )
-			shared = new ContextShared();
+			shared = new ContextShared(res);
 		local2d = shared.root2d;
 		local3d = shared.root3d;
 	}

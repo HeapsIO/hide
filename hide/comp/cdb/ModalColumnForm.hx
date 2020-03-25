@@ -121,9 +121,10 @@ class ModalColumnForm extends Modal {
 		types.change(function(_) changeFieldType());
 		changeFieldType();
 
-		new Element("<option>").attr("value", "").text("--- Select ---").appendTo(types);
+		var ctypes = form.find("[name=ctype]");
+		new Element("<option>").attr("value", "").text("--- Select ---").appendTo(ctypes);
 		for( t in base.getCustomTypes() )
-			new Element("<option>").attr("value", "" + t.name).text(t.name).appendTo(types);
+			new Element("<option>").attr("value", "" + t.name).text(t.name).appendTo(ctypes);
 
 		if (editForm) {
 			form.addClass("edit");

@@ -5,6 +5,13 @@ enum abstract NoiseMode(String) {
 	var Ridged;
 }
 
+enum abstract RepeatMode(String) {
+	var Both;
+	var X;
+	var Y;
+	var None;
+}
+
 class Noise extends Prefab {
 
 	public var seed : Int = Std.random(10000);
@@ -16,6 +23,7 @@ class Noise extends Prefab {
 	public var normals : Bool = false;
 	public var contrast : Float = 0.;
 	public var brightness : Float = 0.;
+	public var repeat : RepeatMode = Both;
 
 	public var size : Int = 512;
 	public var octaves : Int = 1;
@@ -46,6 +54,7 @@ class Noise extends Prefab {
 		if( v.turbulence != null ) this.turbulence = v.turbulence else this.turbulence = 0;
 		if( v.turbulenceScale != null ) this.turbulenceScale = v.turbulenceScale;
 		if( v.inverse != null ) this.inverse = v.inverse else this.inverse = false;
+		if( v.repeat != null ) this.repeat = v.repeat else this.repeat = Both;
 	}
 
 	override function save() {
@@ -76,6 +85,8 @@ class Noise extends Prefab {
 			o.turbulence = turbulence;
 			o.turbulenceScale = turbulenceScale;
 		}
+		if( repeat != Both )
+			o.repeat = repeat;
 		if( inverse )
 			o.inverse = inverse;
 		return o;
@@ -106,6 +117,12 @@ class Noise extends Prefab {
 		pass.shader.brightness = brightness;
 		pass.shader.normals = normals;
 		pass.shader.inverse = inverse ? 1 : 0;
+		pass.shader.repeat = switch repeat {
+			case Both: 0;
+			case X: 1;
+			case Y: 2;
+			case None: 3;
+		}
 
 		pass.shader.turbulence = turbulence * 16 / size;
 		pass.shader.turbulenceScale = turbulenceScale;
@@ -142,7 +159,7 @@ class Noise extends Prefab {
 		if( tex.flags.has(IsNPOT) )
 			return t;
 		// make wrapping artefacts apparent, if any
-		return t.sub(tex.width >> 1, tex.height >> 1, tex.width, tex.height);
+		return t.sub(repeat == Both || repeat == X ? tex.width >> 1 : 0, repeat == Both || repeat == Y ? tex.height >> 1 : 0, tex.width, tex.height);
 	}
 
 	override function makeInstance( ctx : Context ) {
@@ -177,6 +194,14 @@ class Noise extends Prefab {
 				<dt>Scale</dt><dd><input type="range" min="0" max="2" field="scale"/></dd>
 				<dt>Channels</dt><dd><input type="range" min="1" max="4" step="1" field="channels"/></dd>
 				<dt>NormalMap</dt><dd><input type="checkbox" field="normals"/></dd>
+				<dt>Repeat<dt><dd>
+					<select field="repeat">
+						<option value="Both">Both</option>
+						<option value="X">X</option>
+						<option value="Y">Y</option>
+						<option value="None">None</option>
+					</select>
+				</dd>
 			</dl>
 			<br/>
 			<dl>
@@ -247,10 +272,11 @@ class NoiseShader extends h3d.shader.ScreenShader {
 
 		@:import h3d.shader.NoiseLib;
 
-		@const var channels : Int = 1;
-		@const var octaves : Int = 1;
-		@const var mode : Int;
+		@const(5) var channels : Int = 1;
+		@const(64) var octaves : Int = 1;
+		@const(4) var mode : Int;
 		@const var normals : Bool;
+		@const(4) var repeat : Int;
 
 		@param var seed : Int;
 		@param var scale : Float = 8;
@@ -266,29 +292,46 @@ class NoiseShader extends h3d.shader.ScreenShader {
 		@param var turbulence : Float;
 		@param var turbulenceScale : Float;
 
+		function makeRepeat( scale : Float ) : Vec2 {
+			var s = int(scale * 0.5) * 2.;
+			return if( repeat == 0 ) vec2(s) else if( repeat == 1 ) vec2(s,scale) else if( repeat == 2 ) vec2(scale,s) else vec2(scale);
+		}
+
+		function makePeriod( scale : Vec2 ) : Vec2 {
+			// TODO : the period is unbound for no-repeat but psrnoise
+			// still exhibits rounding behaviors with low scales
+			if( repeat == 0 )
+				return scale;
+			if( repeat == 1 )
+				return vec2(scale.x, 1e9);
+			if( repeat == 2 )
+				return vec2(1e9, scale.y);
+			return vec2(1e9);
+		}
+
 		function perturb( uv : Vec2, scale : Float, seed : Int ) : Vec2 {
 			if( turbulence > 0. ) {
-				var turbScaleRepeat = int(scale * turbulenceScale * 0.5) * 2.;
+				var turbScaleRepeat = makeRepeat(scale * turbulenceScale);
 				noiseSeed = channels * octaves + 1 + seed;
-				uv.x += psnoise(calculatedUV * turbScaleRepeat, turbScaleRepeat.xx) * turbulence;
+				uv.x += psnoise(calculatedUV * turbScaleRepeat, makePeriod(turbScaleRepeat)) * turbulence;
 				noiseSeed = channels * octaves + 1025 + seed;
-				uv.y += psnoise(calculatedUV * turbScaleRepeat, turbScaleRepeat.xx) * turbulence;
+				uv.y += psnoise(calculatedUV * turbScaleRepeat, makePeriod(turbScaleRepeat)) * turbulence;
 			}
 			return uv;
 		}
 
 		function noise( seed : Int, scale : Float ) : Float {
-			var scaleRepeat = int(scale * 0.5) * 2.;
+			var scaleRepeat = makeRepeat(scale);
 			var uv = perturb(calculatedUV,scale,seed);
 			noiseSeed = seed;
-			return psnoise(uv * scaleRepeat, scaleRepeat.xx);
+			return psnoise(uv * scaleRepeat, makePeriod(scaleRepeat));
 		}
 
 		function noiseNormal( seed : Int, scale : Float ) : Vec3 {
-			var scaleRepeat = int(scale * 0.5) * 2.;
+			var scaleRepeat = makeRepeat(scale);
 			var uv = perturb(calculatedUV, scale,seed);
 			noiseSeed = seed;
-			return psrdnoise(uv * scaleRepeat, scaleRepeat.xx, 0.).yzx;
+			return psrdnoise(uv * scaleRepeat, makePeriod(scaleRepeat), 0.).yzx;
 		}
 
 		function calc( channel : Int ) : Float {

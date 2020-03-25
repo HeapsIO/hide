@@ -6,7 +6,7 @@ class Brush extends hxsl.Shader {
 
 		@:import h3d.shader.Base2d;
 		@param var strength : Float;
-		@param var size : Float;
+		@param var size : Vec2;
 		@param var pos : Vec3;
 
 		function fragment() {

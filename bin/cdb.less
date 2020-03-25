@@ -1,8 +1,10 @@
+.cdb-view > .hide-tabs > .tab > ::-webkit-scrollbar {
+	width: 12px;
+}
 
 .cdb {
 
 	background-color : black;
-	margin-bottom: 350px;
 
 	&:focus {
 		outline: none;
@@ -16,14 +18,14 @@
 
 		tr.cursorLine {
 			background-color: #262d35;
-			td.start {
+			td.start, td.t_readonly {
 				background-color: #313a48;
 			}
 		}
 
 		tr.selected, td.selected {
 			background-color : #313a48;
-			td.start {
+			td.start, td.t_readonly {
 				background-color: #313a48;
 			}
 		}
@@ -67,6 +69,15 @@
 		td {
 			padding : 2px 4px;
 			overflow : hidden;
+		}
+
+		tr.props td {
+			overflow : visible; // for flags dropdown
+		}
+
+		&> tbody > tr.props:last-child {
+			border-bottom: 0;
+			background-color: black;
 		}
 
 		td.edit {
@@ -138,7 +149,7 @@
 			background-color:black;
 			& > td {
 				padding : 0;
-				padding-bottom: 5px;
+				padding-bottom: 20px;
 				border : none;
 			}
 		}
@@ -149,6 +160,10 @@
 		}
 		td.t_tilepos {
 			text-align : center;
+		}
+
+		td.t_readonly {
+			background-color: #333;
 		}
 
 		th.t_bool,
@@ -212,9 +227,9 @@
 				max-height: 32px;
 				max-width: 32px;
 			}
-			&.parent-sub-table {
-				background-color: #313a48;
-			}
+			//&.parent-sub-table {
+				//background-color: #2b3036;
+			//}
 		}
 
 		td.t_enum {
@@ -279,6 +294,12 @@
 				&> div {
 					display: inline-block;
 					max-width: 600px;
+					&.cdb-large {
+						.cdb-sheet {
+							min-width: 800px;
+						}
+						max-width: 1000px;
+					}
 				}
 			}
 			.cdb-sheet {

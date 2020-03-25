@@ -17,13 +17,15 @@ class Ide {
 	public var isFocused(get, never) : Bool;
 
 	public var database : cdb.Database;
-	public var databaseApi : hide.comp.cdb.Editor.EditorApi;
 	public var shaderLoader : hide.tools.ShaderLoader;
 	public var fileWatcher : hide.tools.FileWatcher;
 	public var typesCache : hide.tools.TypesCache;
 	public var isCDB = false;
 
 	var databaseFile : String;
+	var databaseDiff : String;
+	var pakFile : hxd.fmt.pak.FileSystem;
+	var originDataBase : cdb.Database;
 
 	var config : {
 		global : Config,
@@ -49,11 +51,13 @@ class Ide {
 	var subView : { component : String, state : Dynamic, events : {} };
 	var scripts : Map<String,Array<Void->Void>> = new Map();
 	var hasReloaded = false;
+	var hasDebugger = false;
 
 	static var firstInit = true;
 
 	function new() {
 		isCDB = Sys.getEnv("HIDE_START_CDB") == "1" || nw.App.manifest.name == "CDB";
+		hasDebugger = Sys.getEnv("HIDE_DEBUG") == "1";
 		function wait() {
 			if( monaco.Editor == null ) {
 				haxe.Timer.delay(wait, 10);
@@ -126,9 +130,10 @@ class Ide {
 		window.on('resize', function() haxe.Timer.delay(onWindowChange,100));
 		window.on('close', function() {
 			if( hasReloaded ) return;
-			for( v in views )
-				if( !v.onBeforeClose() )
-					return;
+			if( !hasDebugger )
+				for( v in views )
+					if( !v.onBeforeClose() )
+						return;
 			window.close(true);
 		});
 		window.on("blur", function() { if( h3d.Engine.getCurrent() != null && !hasReloaded ) hxd.Key.initialize(); });
@@ -307,7 +312,7 @@ class Ide {
 			layout.registerComponent(vcl.name,function(cont,state) {
 				var view = Type.createInstance(vcl.cl,[state]);
 				view.setContainer(cont);
-				try view.onDisplay() catch( e : Dynamic ) error(vcl.name+":"+e);
+				try view.rebuild() catch( e : Dynamic ) error(vcl.name+":"+e);
 			});
 
 		layout.init();
@@ -501,21 +506,21 @@ class Ide {
 			loadPlugin(plugin, function() {});
 
 		databaseFile = config.project.get("cdb.databaseFile");
+		databaseDiff = config.user.get("cdb.databaseDiff");
+		var pak = config.project.get("pak.dataFile");
+		pakFile = null;
+		if( pak != null ) {
+			pakFile = new hxd.fmt.pak.FileSystem();
+			try {
+				pakFile.loadPak(getPath(pak));
+			} catch( e : Dynamic ) {
+				error(""+e);
+			}
+		}
 		loadDatabase();
-		databaseApi = {
-			copy : () -> (database.save() : Any),
-			load : (v:Any) -> database.load((v:String)),
-			save : saveDatabase,
-			undo : new hide.ui.UndoHistory(),
-			undoState : [], // common
-		};
-		databaseApi.editor = new hide.comp.cdb.AllEditors();
 		fileWatcher.register(databaseFile,function() {
 			loadDatabase(true);
-			databaseApi.editor.refresh();
-			// reset undo (prevent undoing external changes)
-			databaseApi.undo.clear();
-			databaseApi.undoState = [];
+			hide.comp.cdb.Editor.refreshAll(true);
 		});
 
 		if( config.project.get("debug.displayErrors")  ) {
@@ -633,24 +638,60 @@ class Ide {
 		js.Browser.location.reload();
 	}
 
+	public function fileExists( path : String ) {
+		if( sys.FileSystem.exists(getPath(path)) ) return true;
+		if( pakFile != null && pakFile.exists(path) ) return true;
+		return false;
+	}
+
+	public function getFile( path : String ) {
+		var fullPath = getPath(path);
+		try {
+			return sys.io.File.getBytes(fullPath);
+		} catch( e : Dynamic ) {
+			if( pakFile != null )
+				return pakFile.get(path).getBytes();
+			throw e;
+		}
+	}
+
+
 	function loadDatabase( ?checkExists ) {
-		var db = getPath(databaseFile);
-		var exists = sys.FileSystem.exists(db);
+		var exists = fileExists(databaseFile);
 		if( checkExists && !exists )
 			return; // cancel load
 		database = new cdb.Database();
-		if( exists ) {
-			try {
-				database.load(sys.io.File.getContent(db));
-			} catch( e : Dynamic ) {
-				error(e);
+		if( !exists ) return;
+		try {
+			database.load(getFile(databaseFile).toString());
+		} catch( e : Dynamic ) {
+			error(e);
+			return;
+		}
+		if( databaseDiff != null ) {
+			originDataBase = new cdb.Database();
+			originDataBase.load(getFile(databaseFile).toString());
+			if( fileExists(databaseDiff) ) {
+				var d = new cdb.DiffFile();
+				d.apply(database,parseJSON(getFile(databaseDiff).toString()),config.project.get("cdb.view"));
 			}
 		}
 	}
 
 	public function saveDatabase() {
-		fileWatcher.ignoreNextChange(databaseFile);
-		sys.io.File.saveContent(getPath(databaseFile), database.save());
+		if( databaseDiff != null ) {
+			fileWatcher.ignoreNextChange(databaseDiff);
+			sys.io.File.saveContent(getPath(databaseDiff), toJSON(new cdb.DiffFile().make(originDataBase,database)));
+		} else {
+			if( !sys.FileSystem.exists(getPath(databaseFile)) && fileExists(databaseFile) ) {
+				// was loaded from pak, cancel changes
+				loadDatabase();
+				hide.comp.cdb.Editor.refreshAll();
+				return;
+			}
+			fileWatcher.ignoreNextChange(databaseFile);
+			sys.io.File.saveContent(getPath(databaseFile), database.save());
+		}
 	}
 
 	public function createDBSheet( ?index : Int ) {
@@ -662,7 +703,7 @@ class Ide {
 			return null;
 		}
 		saveDatabase();
-		databaseApi.editor.refresh();
+		hide.comp.cdb.Editor.refreshAll();
 		return s;
 	}
 
@@ -857,25 +898,54 @@ class Ide {
 
 		// database
 		var db = menu.find(".database");
-		db.find(".dbview").click(function(_) {
+		db.find(".dbView").click(function(_) {
 			open("hide.view.CdbTable",{});
 		});
-		db.find(".dbnew").click(function(_) {
-			var sheet = createDBSheet();
-			if( sheet == null ) return;
-			open("hide.view.CdbTable",{});
-		});
-		db.find(".dbcompress").prop("checked",database.compress).click(function(_) {
+		db.find(".dbCompress").prop("checked",database.compress).click(function(_) {
 			database.compress = !database.compress;
 			saveDatabase();
 		});
-		db.find(".dbexport").click(function(_) {
+		db.find(".dbExport").click(function(_) {
 			var lang = new cdb.Lang(@:privateAccess database.data);
 			var xml = lang.buildXML();
 			xml = String.fromCharCode(0xFEFF) + xml; // prefix with BOM
 			chooseFileSave("export.xml", function(f) {
 				if( f != null ) sys.io.File.saveContent(getPath(f), xml);
 			});
+		});
+		function setDiff(f) {
+			databaseDiff = f;
+			config.user.set("cdb.databaseDiff", f);
+			config.user.save();
+			loadDatabase();
+			hide.comp.cdb.Editor.refreshAll();
+			initMenu();
+			for( v in getViews(hide.view.CdbTable) )
+				v.syncTitle();
+		}
+		db.find(".dbCreateDiff").click(function(_) {
+			var name = ask("File name","data");
+			if( name == null ) return;
+			if( name.indexOf(".") < 0 ) name += ".diff";
+			var path = getPath(name);
+			if( sys.FileSystem.exists(path) ) {
+				error("File already exists "+path);
+				return;
+			}
+			sys.io.File.saveContent(path,"{}");
+			setDiff(name);
+		});
+		db.find(".dbLoadDiff").click(function(_) {
+			chooseFile(["diff"], function(f) {
+				if( f == null ) return;
+				setDiff(f);
+			});
+		});
+		db.find(".dbCloseDiff").click(function(_) {
+			setDiff(null);
+		}).attr("disabled", databaseDiff == null ? "disabled" : null);
+		db.find(".dbCustom").click(function(_) {
+			open("hide.view.CdbCustomTypes",{});
 		});
 
 		// layout
@@ -1047,12 +1117,6 @@ class CustomLoader extends hxd.res.Loader {
 	}
 
 	override function loadCache<T:hxd.res.Resource>( path : String, c : Class<T> ) : T {
-		if( (c:Dynamic) == (hxd.res.Image:Dynamic) || (c:Dynamic) == (hxd.res.Atlas:Dynamic))
-			return cast loadEngineCache(path, c);
-		return super.loadCache(path, c);
-	}
-
-	function loadEngineCache<T:hxd.res.Resource>( path : String, c : Class<T>) : T {
 		var engine = h3d.Engine.getCurrent();
 		var i = Std.downcast(@:privateAccess engine.resCache.get(getKey(path)), c);
 		if( i == null ) {

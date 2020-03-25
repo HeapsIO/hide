@@ -25,7 +25,9 @@ class Event extends hrt.prefab.Prefab {
 	}
 
 	public function prepare(ctx: Context) : EventInstance {
-		return null;
+		return {
+			evt: this
+		};
 	}
 
 	public static function updateEvents(evts: Array<EventInstance>, time: Float, prevTime: Float) {

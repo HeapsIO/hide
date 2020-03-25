@@ -86,12 +86,18 @@ class Spline extends Object3D {
 	override function save() {
 		var obj : Dynamic = super.save();
 
-		if( points!= null && points.length > 0 ) {
+		if( points != null && points.length > 0 ) {
 			var parentInv = points[0].parent.getAbsPos().clone();
 			parentInv.initInverse(parentInv);
 			obj.points = [ for(sp in points) {
 								var abs = sp.getAbsPos().clone();
 								abs.multiply(abs, parentInv);
+								[for(f in abs.getFloats()) hxd.Math.fmt(f) ];
+							} ];
+		}
+		// Clone support
+		else if( pointsData != null && pointsData.length > 0 ) {
+			obj.points =  [ for(abs in pointsData) {
 								[for(f in abs.getFloats()) hxd.Math.fmt(f) ];
 							} ];
 		}
@@ -123,6 +129,21 @@ class Spline extends Object3D {
 		showSpline = obj.showSpline == null ? true : obj.showSpline;
 		step = obj.step == null ? 1.0 : obj.step;
 		threshold = obj.threshold == null ? 0.01 : obj.threshold;
+	}
+
+	// Generate the splineData from a matrix, can't move the spline after that
+	public function makeFromMatrix( m : h3d.Matrix ) {
+		var tmp = new h3d.Matrix();
+		for( pd in pointsData ) {
+			var sp = new SplinePoint(0, 0, 0, null);
+			tmp.load(pd);
+			tmp.multiply(tmp, m);
+			sp.setTransform(tmp);
+			sp.getAbsPos();
+			points.push(sp);
+		}
+		pointsData = [];
+		computeSplineData();
 	}
 
 	override function makeInstance( ctx : hrt.prefab.Context ) : hrt.prefab.Context {
@@ -158,8 +179,8 @@ class Spline extends Object3D {
 		#end
 	}
 
-	// Return an interpolation of two samples at t, 0 <= t <= 0
-	public function getPointAt( t : Float ) : h3d.col.Point {
+	// Return an interpolation of two samples at t, 0 <= t <= 1
+	public function getPointAt( t : Float, ?pos: h3d.col.Point, ?tangent: h3d.col.Point ) : h3d.col.Point {
 		if( data == null )
 			computeSplineData();
 
@@ -172,17 +193,24 @@ class Spline extends Object3D {
 		s1 = hxd.Math.iclamp(s1, 0, data.samples.length - 1);
 		s2 = hxd.Math.iclamp(s2, 0, data.samples.length - 1);
 
+		if(pos == null)
+			pos = new h3d.col.Point();
+
 		// End/Beginning of the curve, just return the point
-		if( s1 == s2 )
-			return data.samples[s1].pos;
+		if( s1 == s2 ) {
+			pos.load(data.samples[s1].pos);
+			if(tangent != null)
+				tangent.load(data.samples[s1].tangent);
+		}
 		// Linear interpolation between the two samples
 		else {
 			var segmentLength = data.samples[s1].pos.distance(data.samples[s2].pos);
 			var t = (l - (s1 * step)) / segmentLength;
-			var result = new h3d.Vector();
-			result.lerp(data.samples[s1].pos.toVector(), data.samples[s2].pos.toVector(), t);
-			return result.toPoint();
+			pos.lerp(data.samples[s1].pos, data.samples[s2].pos, t);
+			if(tangent != null)
+				tangent.lerp(data.samples[s1].tangent, data.samples[s2].tangent, t);
 		}
+		return pos;
 	}
 
 	// Return the euclidean distance between the two points
@@ -224,28 +252,33 @@ class Spline extends Object3D {
 		var sumT = 0.0;
 		var maxT = 1.0;
 		var minT = 0.0;
-		while( i < points.length - 1 ) {
-
+		var maxI = loop ? points.length : points.length - 1;
+		var curP = points[0];
+		var nextP = points[1];
+		while( i < maxI ) {
 			var t = (maxT + minT) * 0.5;
-			var p = getPointBetween(t, points[i], points[i+1]);
+
+			var p = getPointBetween(t, curP, nextP);
 			var curSegmentLength = p.distance(samples[samples.length - 1].pos);
 
 			// Point found
 			if( hxd.Math.abs(curSegmentLength - step) <= threshold ) {
-				samples.insert(samples.length, { pos : p, tangent : getTangentBetween(t, points[i], points[i+1]), prev : points[i], next : points[i+1], t : t });
+				samples.insert(samples.length, { pos : p, tangent : getTangentBetween(t, curP, nextP), prev : curP, next : nextP, t : t });
 				sumT = t;
 				maxT = 1.0;
 				minT = sumT;
 				// Last point of the curve too close from the last sample
-				if( points[i+1].getPoint().distance(samples[samples.length - 1].pos) < step ) {
+				if( nextP.getPoint().distance(samples[samples.length - 1].pos) < step ) {
 					// End of the spline
-					if( i == points.length - 2 ) {
-						samples.insert(samples.length, { pos : points[points.length - 1].getPoint(), tangent : points[points.length - 1].getTangent(), prev : points[points.length - 2], next : points[points.length - 1], t : 1.0 });
+					if( i == maxI - 1 ) {
+						samples.insert(samples.length, { pos : nextP.getPoint(), tangent : nextP.getTangent(), prev : curP, next : nextP, t : 1.0 });
 						break;
 					}
 					// End of the current curve
 					else {
 						i++;
+						curP = points[i];
+						nextP = points[(i+1) % points.length];
 						sumT = 0.0;
 						minT = 0.0;
 						maxT = 1.0;
@@ -311,7 +344,7 @@ class Spline extends Object3D {
 		}
 	}
 
-	// Return the tangen on the curve between p1 and p2 at t, 0 <= t <= 1
+	// Return the tangent on the curve between p1 and p2 at t, 0 <= t <= 1
 	inline function getTangentBetween( t : Float, p1 : SplinePoint, p2 : SplinePoint ) : h3d.col.Point {
 		return switch (shape) {
 			case Linear: getLinearBezierTangent( t, p1.getPoint(), p2.getPoint() );
@@ -335,9 +368,9 @@ class Spline extends Object3D {
 	inline function getQuadraticBezierPoint( t : Float, p0 : h3d.col.Point, p1 : h3d.col.Point, p2 : h3d.col.Point) : h3d.col.Point {
 		return p0.multiply((1 - t) * (1 - t)).add(p1.multiply(t * 2 * (1 - t))).add(p2.multiply(t * t));
 	}
-	// p'(t) = 2 * (1 - t) * (p1 - p2) + 2 * t * (p2 - p1)
+	// p'(t) = 2 * (1 - t) * (p1 - p0) + 2 * t * (p2 - p1)
 	inline function getQuadraticBezierTangent( t : Float, p0 : h3d.col.Point, p1 : h3d.col.Point, p2 : h3d.col.Point) : h3d.col.Point {
-		return p1.sub(p2).multiply(2 * (1 - t)).add(p2.sub(p1).multiply(2 * t)).normalizeFast();
+		return p1.sub(p0).multiply(2 * (1 - t)).add(p2.sub(p1).multiply(2 * t)).normalizeFast();
 	}
 
 	// Cubic Interpolation
@@ -385,6 +418,8 @@ class Spline extends Object3D {
 
 		if( editor != null )
 			editor.setSelected(ctx, b);
+
+		return true;
 	}
 
 	override function edit( ctx : EditContext ) {
@@ -397,6 +432,7 @@ class Spline extends Object3D {
 					<dt>Thickness</dt><dd><input type="range" min="1" max="10" field="lineThickness"/></dd>
 					<dt>Step</dt><dd><input type="range" min="0.1" max="1" field="step"/></dd>
 					<dt>Threshold</dt><dd><input type="range" min="0.001" max="1" field="threshold"/></dd>
+					<dt>Loop</dt><dd><input type="checkbox" field="loop"/></dd>
 					<dt>Show Spline</dt><dd><input type="checkbox" field="showSpline"/></dd>
 					<dt>Type</dt>
 						<dd>

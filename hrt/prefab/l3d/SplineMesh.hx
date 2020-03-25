@@ -72,6 +72,37 @@ enum SplineMeshMode {
 	BigGeometry;
 }
 
+// Need to dipose the GPU buffer manually
+class SplineMeshBatch extends h3d.scene.MeshBatch {
+
+	public var splineData : Spline.SplineData;
+
+	override function onRemove() {
+		super.onRemove();
+		var splinemeshShader = material.mainPass.getShader(SplineMeshShader);
+		if( splinemeshShader != null ) {
+			splinemeshShader.points.dispose();
+		}
+	}
+
+	override function sync(ctx) {
+		super.sync(ctx);
+		var s = material.mainPass.getShader(SplineMeshShader);
+		if( s != null && s.points == null || s.points.isDisposed() ) {
+			var bufferData = new hxd.FloatBuffer(s.POINT_COUNT * 4 * 2);
+			for( i in 0 ... splineData.samples.length ) {
+				var index = i * 2 * 4;
+				var s = splineData.samples[i];
+				bufferData[index] = s.pos.x; bufferData[index + 1] = s.pos.y; bufferData[index + 2] = s.pos.z; bufferData[index + 3] = 0.0;
+				bufferData[index + 4] = s.tangent.x; bufferData[index + 5] = s.tangent.y; bufferData[index + 6] = s.tangent.z; bufferData[index + 7] = 0.0;
+			}
+			s.points = new h3d.Buffer(s.POINT_COUNT * 2, 4, [UniformBuffer,Dynamic]);
+			s.points.uploadVector(bufferData, 0, s.points.vertices, 0);
+		}
+	}
+
+}
+
 class SplineMesh extends Spline {
 
 	var meshPath : String;
@@ -85,7 +116,7 @@ class SplineMesh extends Spline {
 	var meshRotation = new h3d.Vector(0,0,0);
 	var modelMat = new h3d.Matrix();
 
-	var meshBatch : h3d.scene.MeshBatch = null;
+	var meshBatch : SplineMeshBatch = null;
 	var meshPrimitive : h3d.prim.MeshPrimitive = null;
 	var meshMaterial : h3d.mat.Material = null;
 	var customPass : String;
@@ -202,8 +233,9 @@ class SplineMesh extends Spline {
 				}
 			}
 
-			meshBatch = new MeshBatch(meshPrimitive, splineMaterial, ctx.local3d);
+			meshBatch = new SplineMeshBatch(meshPrimitive, splineMaterial, ctx.local3d);
 			meshBatch.ignoreParentTransform = true;
+			meshBatch.splineData = this.data;
 		}
 	}
 
@@ -280,10 +312,6 @@ class SplineMesh extends Spline {
 	}
 
 	#if editor
-
-	override function setSelected( ctx : hrt.prefab.Context , b : Bool ) {
-		super.setSelected(ctx, b);
-	}
 
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);

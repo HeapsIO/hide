@@ -149,12 +149,7 @@ class Reference extends Object3D {
 			}
 		});
 
-		var parentCtx = ctx.getContext(parent);
-		var selfCtx = ctx.getContext(this);
-		var p = resolveRef(ctx.rootContext.shared);
-		if(selfCtx != null && parentCtx != null && parentCtx.local3d != selfCtx.local3d) {
-			super.edit(ctx);
-		}
+		super.edit(ctx);
 	}
 
 	override function getHideProps() : HideProps {

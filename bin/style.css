@@ -485,7 +485,6 @@ input[type=checkbox]:checked:after {
 }
 /* Properties */
 .hide-properties {
-  flex: 0 0 300px;
   padding: 10px;
   overflow: auto;
   padding-bottom: 80px;
@@ -971,6 +970,17 @@ input[type=checkbox]:checked:after {
 .poly-editor .poly-vector2 {
   display: block;
   padding: 5px;
+}
+.string-array .array-element {
+  display: block;
+  padding: 5px;
+}
+.string-array .string-field {
+  width: 120px;
+}
+.string-array .delete-button {
+  width: 20px;
+  margin-left: 8px;
 }
 .spline-editor .editModeButton {
   margin: 10px;

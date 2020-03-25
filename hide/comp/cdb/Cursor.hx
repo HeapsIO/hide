@@ -17,7 +17,7 @@ class Cursor {
 	public function set( ?t:Table, ?x=0, ?y=0, ?sel, update = true ) {
 		if( t != null ) {
 			for( t2 in editor.tables )
-				if( t.sheet.name == t2.sheet.name && (t.sheet.parent == null || t.sheet.parent.line == t2.sheet.parent.line) ) {
+				if( t.sheet.getPath() == t2.sheet.getPath() ) {
 					t = t2;
 					break;
 				}
@@ -78,6 +78,18 @@ class Cursor {
 			update();
 			return;
 		}
+
+		// take care of current filter
+		var line = getLine();
+		if( line != null && dy != 0 ) {
+			var allLines = line.element.parent().children("tr").not(".separator");
+			var lines = allLines.not(".filtered");
+			var index = lines.index(line.element);
+			var targetLine = lines.get(hxd.Math.imax(index + dy,0));
+			if( targetLine == null || targetLine == line.element.get(0) ) return;
+			dy = allLines.index(targetLine) - allLines.index(line.element);
+		}
+
 		if( !shift )
 			select = null;
 		else if( select == null )
@@ -93,7 +105,7 @@ class Cursor {
 		}
 		if( dx > 0 ) {
 			x += dx;
-			var max = table.sheet.columns.length;
+			var max = table.columns.length;
 			if( x >= max ) x = max - 1;
 		}
 		if( dy > 0 ) {
@@ -124,7 +136,7 @@ class Cursor {
 			y = table.lines.length - 1;
 			select = null;
 		}
-		var max = table.sheet.props.isProps ? 1 : table.sheet.columns.length;
+		var max = table.sheet.props.isProps || table.columns == null ? 1 : table.columns.length;
 		if( x >= max ) {
 			x = max - 1;
 			select = null;
@@ -162,7 +174,7 @@ class Cursor {
 		if( table == null )
 			return null;
 		var x1 = if( x < 0 ) 0 else x;
-		var x2 = if( x < 0 ) table.sheet.columns.length-1 else if( select != null ) select.x else x1;
+		var x2 = if( x < 0 ) table.columns.length-1 else if( select != null ) select.x else x1;
 		var y1 = y;
 		var y2 = if( select != null ) select.y else y1;
 		if( x2 < x1 ) {

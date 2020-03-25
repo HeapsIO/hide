@@ -1,28 +1,29 @@
 package hide.comp.cdb;
 import hxd.Key in K;
 
+typedef UndoSheet = {
+	var sheet : String;
+	var parent : { sheet : UndoSheet, line : Int, column : Int };
+}
+
 typedef UndoState = {
 	var data : Any;
+	var sheet : String;
 	var cursor : { sheet : String, x : Int, y : Int, select : Null<{ x : Int, y : Int }> };
-	var tables : Array<{ sheet : String, parent : { sheet : String, line : Int, column : Int } }>;
+	var tables : Array<UndoSheet>;
 }
 
 typedef EditorApi = {
 	function load( data : Any ) : Void;
 	function copy() : Any;
 	function save() : Void;
-	var ?currentValue : Any;
-	var ?undo : hide.ui.UndoHistory;
-	var ?undoState : Array<UndoState>;
-	var ?editor : Editor;
 }
 
 @:allow(hide.comp.cdb)
 class Editor extends Component {
 
 	var base : cdb.Database;
-	var sheetName : String;
-	var sheet : cdb.Sheet;
+	var currentSheet : cdb.Sheet;
 	var existsCache : Map<String,{ t : Float, r : Bool }> = new Map();
 	var tables : Array<Table> = [];
 	var searchBox : Element;
@@ -35,26 +36,33 @@ class Editor extends Component {
 	var changesDepth : Int = 0;
 	var currentFilter : String;
 	var api : EditorApi;
+	var undoState : Array<UndoState> = [];
+	var currentValue : Any;
+	public var view : ConfigView;
 	public var config : hide.Config;
 	public var cursor : Cursor;
 	public var keys : hide.ui.Keys;
 	public var undo : hide.ui.UndoHistory;
 
-	public function new(sheet,config,api,?parent) {
-		super(parent,null);
+	public function new(config,api) {
+		super(null,null);
 		this.api = api;
 		this.config = config;
-		this.sheet = sheet;
-		sheetName = sheet == null ? null : sheet.name;
-		if( api.undoState == null ) api.undoState = [];
-		if( api.editor == null ) api.editor = this;
-		if( api.currentValue == null ) api.currentValue = api.copy();
-		this.undo = api.undo == null ? new hide.ui.UndoHistory() : api.undo;
-		api.undo = undo;
-		init();
+		view = cast this.config.get("cdb.view");
+		currentValue = api.copy();
+		undo = new hide.ui.UndoHistory();
 	}
 
-	function init() {
+	public function getCurrentSheet() {
+		return currentSheet == null ? null : currentSheet.name;
+	}
+
+	public function show( sheet, ?parent : Element ) {
+		if( element != null ) element.remove();
+		element = new Element('<div>');
+		if( parent != null )
+			parent.append(element);
+		currentSheet = sheet;
 		element.attr("tabindex", 0);
 		element.addClass("is-cdb-editor");
 		element.data("cdb", this);
@@ -164,7 +172,7 @@ class Editor extends Component {
 			var obj = cursor.table.lines[y].obj;
 			var out = {};
 			for( x in sel.x1...sel.x2+1 ) {
-				var c = cursor.table.sheet.columns[x];
+				var c = cursor.table.columns[x];
 				var v = Reflect.field(obj, c.name);
 				if( v != null )
 					Reflect.setField(out, c.name, v);
@@ -174,13 +182,15 @@ class Editor extends Component {
 		clipboard = {
 			data : data,
 			text : Std.string([for( o in data ) cursor.table.sheet.objToString(o,true)]),
-			schema : [for( x in sel.x1...sel.x2+1 ) cursor.table.sheet.columns[x]],
+			schema : [for( x in sel.x1...sel.x2+1 ) cursor.table.columns[x]],
 		};
 		ide.setClipboard(clipboard.text);
 	}
 
 	function onPaste() {
 		var text = ide.getClipboard();
+		var columns = cursor.table.columns;
+		var sheet = cursor.table.sheet;
 		if( clipboard == null || text != clipboard.text ) {
 			if( cursor.x < 0 || cursor.y < 0 ) return;
 			var x1 = cursor.x;
@@ -199,7 +209,9 @@ class Editor extends Component {
 			}
 			beginChanges();
 			for( x in x1...x2+1 ) {
-				var col = sheet.columns[x];
+				var col = columns[x];
+				if( !cursor.table.canEditColumn(col.name) )
+					continue;
 				var value : Dynamic = null;
 				switch( col.type ) {
 				case TId:
@@ -225,21 +237,26 @@ class Editor extends Component {
 			return;
 		}
 		beginChanges();
-		var sheet = cursor.table.sheet;
 		var posX = cursor.x < 0 ? 0 : cursor.x;
 		var posY = cursor.y < 0 ? 0 : cursor.y;
 		for( obj1 in clipboard.data ) {
-			if( posY == sheet.lines.length )
+			if( posY == sheet.lines.length ) {
+				if( !cursor.table.canInsert() ) break;
 				sheet.newLine();
+			}
 			var obj2 = sheet.lines[posY];
 			for( cid in 0...clipboard.schema.length ) {
 				var c1 = clipboard.schema[cid];
-				var c2 = sheet.columns[cid + posX];
+				var c2 = columns[cid + posX];
 				if( c2 == null ) continue;
+
+				if( !cursor.table.canEditColumn(c2.name) )
+					continue;
+
 				var f = base.getConvFunction(c1.type, c2.type);
 				var v : Dynamic = Reflect.field(obj1, c1.name);
 				if( f == null )
-					v = base.getDefault(c2);
+					v = base.getDefault(c2, sheet);
 				else {
 					// make a deep copy to erase references
 					if( v != null ) v = haxe.Json.parse(haxe.Json.stringify(v));
@@ -247,7 +264,7 @@ class Editor extends Component {
 						v = f.f(v);
 				}
 				if( v == null && !c2.opt )
-					v = base.getDefault(c2);
+					v = base.getDefault(c2, sheet);
 				if( v == null )
 					Reflect.deleteField(obj2, c2.name);
 				else
@@ -269,6 +286,10 @@ class Editor extends Component {
 		if( cursor.x < 0 ) {
 			// delete lines
 			var y = sel.y2;
+			if( !cursor.table.canInsert() ) {
+				endChanges();
+				return;
+			}
 			while( y >= sel.y1 ) {
 				var line = cursor.table.lines[y];
 				line.table.sheet.deleteLine(line.index);
@@ -282,8 +303,10 @@ class Editor extends Component {
 				var line = cursor.table.lines[y];
 				for( x in sel.x1...sel.x2+1 ) {
 					var c = line.columns[x];
+					if( !line.cells[x].canEdit() )
+						continue;
 					var old = Reflect.field(line.obj, c.name);
-					var def = base.getDefault(c,false);
+					var def = base.getDefault(c,false,cursor.table.sheet);
 					if( old == def )
 						continue;
 					changeObject(line,c,def);
@@ -313,13 +336,14 @@ class Editor extends Component {
 	**/
 	public function beginChanges() {
 		if( changesDepth == 0 )
-			api.undoState.unshift(getState());
+			undoState.unshift(getState());
 		changesDepth++;
 	}
 
 	function getState() : UndoState {
 		return {
-			data : api.currentValue,
+			data : currentValue,
+			sheet : getCurrentSheet(),
 			cursor : cursor.table == null ? null : {
 				sheet : cursor.table.sheet.name,
 				x : cursor.x,
@@ -328,8 +352,15 @@ class Editor extends Component {
 			},
 			tables : [for( i in 1...tables.length ) {
 				var t = tables[i];
-				var tp = t.sheet.parent;
-				{ sheet : t.sheet.name, parent : { sheet : tp.sheet.name, line : tp.line, column : tp.column } }
+				function makeParent(t:Table) : UndoSheet {
+					var tp = t.parent;
+					return { sheet : t.sheet.name, parent : tp == null ? null : {
+						sheet : makeParent(tp),
+						line : t.sheet.parent.line,
+						column : tp.columns.indexOf(tp.sheet.columns[t.sheet.parent.column]),
+					} };
+				}
+				makeParent(tables[i]);
 			}],
 		};
 	}
@@ -337,14 +368,23 @@ class Editor extends Component {
 	function setState( state : UndoState ) {
 		var cur = state.cursor;
 		for( t in state.tables ) {
-			var tparent = null;
-			for( tp in tables )
-				if( tp.sheet.name == t.parent.sheet ) {
-					tparent = tp;
-					break;
+			function openRec(s:UndoSheet) : Table {
+				if( s.parent != null ) {
+					var t = openRec(s.parent.sheet);
+					if( t != null ) {
+						var cell = t.lines[s.parent.line].cells[t.displayMode == Properties ? 0 : s.parent.column];
+						if( cell.line.subTable == null )
+							cell.open(true);
+						return cell.line.subTable;
+					}
+				} else {
+					for( tp in tables )
+						if( tp.sheet.name == s.sheet )
+							return tp;
 				}
-			if( tparent != null )
-				tparent.lines[t.parent.line].cells[tparent.displayMode == Properties ? 0 : t.parent.column].open(true);
+				return null;
+			}
+			openRec(t);
 		}
 
 		if( cur != null ) {
@@ -366,34 +406,48 @@ class Editor extends Component {
 	**/
 	public function endChanges() {
 		changesDepth--;
-		if( changesDepth == 0 ) {
-			var f = makeCustom(api);
-			if( f != null ) undo.change(Custom(f));
-		}
-	}
+		if( changesDepth != 0 ) return;
 
-	// do not reference "this" editor in undo state !
-	static function makeCustom( api : EditorApi ) {
 		var newValue = api.copy();
-		if( newValue == api.currentValue )
-			return null;
-		var state = api.undoState[0];
-		api.currentValue = newValue;
+		if( newValue == currentValue )
+			return;
+		var state = undoState[0];
+		var newSheet = getCurrentSheet();
+		currentValue = newValue;
 		api.save();
-		return function(undo) api.editor.handleUndo(state, newValue, undo);
+		undo.change(Custom(function(undo) {
+			var currentSheet;
+			if( undo ) {
+				undoState.shift();
+				currentValue = state.data;
+				currentSheet = state.sheet;
+			} else {
+				undoState.unshift(state);
+				currentValue = newValue;
+				currentSheet = newSheet;
+			}
+			api.load(currentValue);
+			element.removeClass("is-cdb-editor");
+			refreshAll();
+			element.addClass("is-cdb-editor");
+			syncSheet(currentSheet);
+			refresh(state);
+			api.save();
+		}));
 	}
 
-	function handleUndo( state : UndoState, newValue : Any, undo : Bool ) {
-		if( undo ) {
-			api.undoState.shift();
-			api.currentValue = state.data;
-		} else {
-			api.undoState.unshift(state);
-			api.currentValue = newValue;
+	public static function refreshAll( eraseUndo = false ) {
+		var editors : Array<Editor> = [for( e in new Element(".is-cdb-editor").elements() ) e.data("cdb")];
+		for( e in editors ) {
+			e.syncSheet(Ide.inst.database);
+			e.refresh();
+			// prevent undo over input changes
+			if( eraseUndo ) {
+				e.currentValue = e.api.copy();
+				e.undo.clear();
+				e.undoState = [];
+			}
 		}
-		api.load(api.currentValue);
-		refreshAll(state);
-		api.save();
 	}
 
 	function showReferences() {
@@ -420,20 +474,17 @@ class Editor extends Component {
 		ide.open("hide.view.CdbTable", { path : s.name }, function(view) @:privateAccess Std.downcast(view,hide.view.CdbTable).editor.cursor.setDefault(line,column));
 	}
 
-	public function syncSheet( ?base ) {
+	public function syncSheet( ?base, ?name ) {
 		if( base == null ) base = this.base;
 		this.base = base;
-
+		if( name == null ) name = getCurrentSheet();
 		// swap sheet if it was modified
+		this.currentSheet = null;
 		for( s in base.sheets )
-			if( s.name == sheetName ) {
-				this.sheet = s;
+			if( s.name == name ) {
+				this.currentSheet = s;
 				break;
 			}
-	}
-
-	final function refreshAll( ?state : UndoState ) {
-		api.editor.refresh(state);
 	}
 
 	public function refresh( ?state : UndoState ) {
@@ -465,7 +516,7 @@ class Editor extends Component {
 
 		var content = new Element("<table>");
 		tables = [];
-		new Table(this, sheet, content, displayMode);
+		new Table(this, currentSheet, content, displayMode);
 		content.appendTo(element);
 
 		if( state != null )
@@ -507,7 +558,7 @@ class Editor extends Component {
 			if (c == null)
 				return;
 			beginChanges();
-			var err = sheet.addColumn(c, index + 1);
+			var err = sheet.addColumn(c, index == null ? null : index + 1);
 			endChanges();
 			if (err != null) {
 				modal.error(err);
@@ -547,6 +598,8 @@ class Editor extends Component {
 	}
 
 	public function insertLine( table : Table, index = 0 ) {
+		if( !table.canInsert() )
+			return;
 		if( table.displayMode == Properties ) {
 			var ins = table.element.find("select.insertField");
 			var options = [for( o in ins.find("option").elements() ) o.val()];
@@ -581,6 +634,8 @@ class Editor extends Component {
 	}
 
 	public function popupColumn( table : Table, col : cdb.Data.Column, ?cell : Cell ) {
+		if( view != null )
+			return;
 		var indexColumn = table.sheet.columns.indexOf(col);
 		var menu : Array<hide.comp.ContextMenu.ContextMenuItem> = [
 			{ label : "Edit", click : function () editColumn(table.sheet, col) },
@@ -604,7 +659,7 @@ class Editor extends Component {
 			{ label : "Delete", click : function () {
 				beginChanges();
 				if( table.displayMode == Properties )
-					changeObject(cell.line, col, base.getDefault(col));
+					changeObject(cell.line, col, base.getDefault(col,table.sheet));
 				else
 					table.sheet.deleteColumn(col.name);
 				endChanges();
@@ -629,8 +684,10 @@ class Editor extends Component {
 	}
 
 	function moveLine( line : Line, delta : Int ) {
+		if( !line.table.canInsert() )
+			return;
 		beginChanges();
-		var index = sheet.moveLine(line.index, delta);
+		var index = line.table.sheet.moveLine(line.index, delta);
 		if( index != null ) {
 			cursor.set(cursor.table, -1, index);
 			refresh();
@@ -639,6 +696,8 @@ class Editor extends Component {
 	}
 
 	public function popupLine( line : Line ) {
+		if( !line.table.canInsert() )
+			return;
 		var sheet = line.table.sheet;
 		var sepIndex = sheet.separators.indexOf(line.index);
 		new hide.comp.ContextMenu([
@@ -708,7 +767,9 @@ class Editor extends Component {
 	}
 
 	public function popupSheet( ?sheet : cdb.Sheet, ?onChange : Void -> Void ) {
-		if( sheet == null ) sheet = this.sheet;
+		if( view != null )
+			return;
+		if( sheet == null ) sheet = this.currentSheet;
 		if( onChange == null ) onChange = function() {}
 		var index = base.sheets.indexOf(sheet);
 		new hide.comp.ContextMenu([

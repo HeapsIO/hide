@@ -25,15 +25,15 @@ class SubTable extends Table {
 		var group;
 		if( mode == Properties ) {
 			var count = cell.columnIndex + 1;
-			if (count < 3 && cell.table.sheet.columns.length >= 8)
+			if (count < 3 && cell.table.columns.length >= 8)
 				count += 2; // fix when a lot of columns but the subproperty is on the left
 			group = new Element("<td>").attr("colspan",""+(count+1)).appendTo(insertedTR);
-			var remain = cell.table.sheet.columns.length - count;
+			var remain = cell.table.columns.length - count;
 			if( remain > 0 )
 				new Element("<td>").attr("colspan", "" + remain).appendTo(insertedTR);
 		} else {
 			new Element("<td>").appendTo(insertedTR);
-			group = new Element("<td>").attr("colspan",""+cell.table.sheet.columns.length).appendTo(insertedTR);
+			group = new Element("<td>").attr("colspan",""+cell.table.columns.length).appendTo(insertedTR);
 		}
 		slider = new Element("<div>").appendTo(group);
 		slider.hide();
@@ -81,7 +81,7 @@ class SubTable extends Table {
 			name : psheet.name, // same
 			lines : lines, // ref
 			separators : [], // none
-		},key, { sheet : sheet, column : cell.columnIndex, line : index });
+		},key, { sheet : sheet, column : cell.table.sheet.columns.indexOf(c), line : index });
 	}
 
 	public function show( ?immediate ) {

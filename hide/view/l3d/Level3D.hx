@@ -37,18 +37,25 @@ class CamController extends h3d.scene.CameraController {
 			pushing = e.button;
 			pushX = e.relX;
 			pushY = e.relY;
+			pushTime = haxe.Timer.stamp();
+			pushStartX = pushX = e.relX;
+			pushStartY = pushY = e.relY;
 			startPush = new h2d.col.Point(pushX, pushY);
 		case ERelease, EReleaseOutside:
 			if( pushing == e.button ) {
 				pushing = -1;
 				startPush = null;
+				if( e.kind == ERelease && haxe.Timer.stamp() - pushTime < 0.2 && hxd.Math.distance(e.relX - pushStartX,e.relY - pushStartY) < 5 )
+					onClick(e);
 			}
 		case EMove:
 			switch( pushing ) {
 			case 1:
 				if(startPush != null && startPush.distance(new h2d.col.Point(e.relX, e.relY)) > 3) {
-					var m = 0.001 * curPos.x * panSpeed / 25;
-					if(hxd.Key.isDown(hxd.Key.SHIFT)) {
+					var lowAngle = hxd.Math.degToRad(30);
+					var angle = hxd.Math.abs(Math.PI/2 - phi);
+					if(hxd.Key.isDown(hxd.Key.SHIFT) || angle < lowAngle) {
+						var m = 0.001 * curPos.x * panSpeed / 25;
 						pan(-(e.relX - pushX) * m, (e.relY - pushY) * m);
 					}
 					else {
@@ -80,7 +87,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 	var parent : Level3D;
 
 	public function new(view, data) {
-		super(view, data);
+		super(view, data, true);
 		parent = cast view;
 		this.localTransform = false; // TODO: Expose option
 	}
@@ -128,8 +135,8 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		parent.onPrefabChange(p, pname);
 	}
 
-	override function selectObjects(elts:Array<PrefabElement>, ?includeTree:Bool = true) {
-		super.selectObjects(elts, includeTree);
+	override function selectObjects(elts:Array<PrefabElement>, ?mode ) {
+		super.selectObjects(elts, mode);
 		parent.onSelectObjects(elts);
 	}
 
@@ -152,8 +159,8 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		return super.projectToGround(ray);
 	}
 
-	override function getNewContextMenu(current: PrefabElement, ?onMake: PrefabElement->Void=null) {
-		var newItems = super.getNewContextMenu(current, onMake);
+	override function getNewContextMenu(current: PrefabElement, ?onMake: PrefabElement->Void=null, ?groupByType = true ) {
+		var newItems = super.getNewContextMenu(current, onMake, groupByType);
 
 		function setup(p : PrefabElement) {
 			var proj = screenToWorld(scene.s2d.width/2, scene.s2d.height/2);
@@ -300,6 +307,10 @@ class Level3D extends FileView {
 	var layerButtons : Map<PrefabElement, hide.comp.Toolbar.ToolToggle>;
 
 	var grid : h3d.scene.Graphics;
+	var curGridSize : Int;
+	var curGridWidth : Int;
+	var curGridHeight : Int;
+
 	var showGrid = true;
 	var currentVersion : Int = 0;
 	var lastSyncChange : Float = 0.;
@@ -314,7 +325,6 @@ class Level3D extends FileView {
 	function get_properties() return sceneEditor.properties;
 
 	override function onDisplay() {
-		saveDisplayKey = "Level3D:" + getPath().split("\\").join("/").substr(0,-1);
 		data = new hrt.prefab.l3d.Level3D();
 		var content = sys.io.File.getContent(getPath());
 		data.loadData(haxe.Json.parse(content));
@@ -387,39 +397,56 @@ class Level3D extends FileView {
 
 	public function onSceneReady() {
 
-
 		tools.saveDisplayKey = "Level3D/toolbar";
 		tools.addButton("video-camera", "Perspective camera", () -> resetCamera(false));
 		tools.addButton("video-camera", "Top camera", () -> resetCamera(true)).find(".icon").css({transform: "rotateZ(90deg)"});
 		tools.addToggle("anchor", "Snap to ground", (v) -> sceneEditor.snapToGround = v, sceneEditor.snapToGround);
-		tools.addToggle("compass", "Local transforms", (v) -> sceneEditor.localTransform = v, sceneEditor.localTransform);
-		tools.addToggle("th", "Show grid", function(v) { showGrid = v; updateGrid(); }, showGrid);
+		var localToggle = tools.addToggle("compass", "Local transforms", (v) -> sceneEditor.localTransform = v, sceneEditor.localTransform);
+		keys.register("sceneeditor.toggleLocal", () -> localToggle.toggle(!localToggle.isDown()));
+		var gridToggle = tools.addToggle("th", "Show grid", function(v) { showGrid = v; updateGrid(); }, showGrid);
+		keys.register("sceneeditor.toggleGrid", () -> gridToggle.toggle(!gridToggle.isDown()));
 		tools.addButton("sun-o", "Bake Lights", () -> bakeLights());
 		tools.addButton("map", "Bake Volumetric Lightmaps", () -> { bakeLights(); bakeVolumetricLightmaps(); });
-		tools.addButton("info-circle", "Scene information", () -> {
-			var memStats = scene.engine.mem.stats();
-			var texs = @:privateAccess scene.engine.mem.textures;
-			var list = [for(t in texs) {
-				n: '${t.width}x${t.height}  ${t.format}  ${t.name}',
-				size: t.width * t.height
-			}];
-			list.sort((a, b) -> Reflect.compare(b.size, a.size));
-			var content = new Element('<div tabindex="1" class="overlay-info"><h2>Scene info</h2><pre></pre></div>');
-			new Element(element[0].ownerDocument.body).append(content);
-			var pre = content.find("pre");
-			pre.text([for(l in list) l.n].join("\n"));
-			content.blur(function(_) {
-				content.remove();
-			});
+
+
+		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
+		statusText.setPosition(5, 5);
+		statusText.visible = false;
+		var texContent : Element = null;
+		tools.addToggle("info-circle", "Scene information", function(b) statusText.visible = b).rightClick(function() {
+			if( texContent != null ) {
+				texContent.remove();
+				texContent = null;
+			}
+			new hide.comp.ContextMenu([
+				{
+					label : "Show Texture Details",
+					click : function() {
+						var memStats = scene.engine.mem.stats();
+						var texs = @:privateAccess scene.engine.mem.textures;
+						var list = [for(t in texs) {
+							n: '${t.width}x${t.height}  ${t.format}  ${t.name}',
+							size: t.width * t.height
+						}];
+						list.sort((a, b) -> Reflect.compare(b.size, a.size));
+						var content = new Element('<div tabindex="1" class="overlay-info"><h2>Scene info</h2><pre></pre></div>');
+						new Element(element[0].ownerDocument.body).append(content);
+						var pre = content.find("pre");
+						pre.text([for(l in list) l.n].join("\n"));
+						texContent = content;
+						content.blur(function(_) {
+							content.remove();
+							texContent = null;
+						});
+					}
+				}
+			]);
 		});
 
 		tools.addColor("Background color", function(v) {
 			scene.engine.backgroundColor = v;
 			updateGrid();
 		}, scene.engine.backgroundColor);
-
-		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
-		statusText.setPosition(5, 5);
 
 		posToolTip = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		posToolTip.dropShadow = { dx : 1, dy : 1, color : 0, alpha : 0.5 };
@@ -549,6 +576,9 @@ class Level3D extends FileView {
 		grid = new h3d.scene.Graphics(scene.s3d);
 		grid.scale(1);
 		grid.material.mainPass.setPassName("debuggeom");
+		curGridSize = data.gridSize;
+		curGridWidth = data.width;
+		curGridHeight = data.height;
 
 		var col = h3d.Vector.fromColor(scene.engine.backgroundColor);
 		var hsl = col.toColorHSL();
@@ -557,13 +587,13 @@ class Level3D extends FileView {
 		col.makeColor(hsl.x, hsl.y, hsl.z);
 
 		grid.lineStyle(1.0, col.toColor(), 1.0);
-		for(ix in 0...data.width+1) {
-			grid.moveTo(ix, 0, 0);
-			grid.lineTo(ix, data.height, 0);
+		for(ix in 0... hxd.Math.floor(data.width / data.gridSize )+1) {
+			grid.moveTo(ix * data.gridSize, 0, 0);
+			grid.lineTo(ix * data.gridSize, data.height, 0);
 		}
-		for(iy in 0...data.height+1) {
-			grid.moveTo(0, iy, 0);
-			grid.lineTo(data.width, iy, 0);
+		for(iy in 0...  hxd.Math.floor(data.height / data.gridSize )+1) {
+			grid.moveTo(0, iy * data.gridSize, 0);
+			grid.lineTo(data.width, iy * data.gridSize, 0);
 		}
 		grid.lineStyle(0);
 	}
@@ -578,6 +608,11 @@ class Level3D extends FileView {
 		else {
 			posToolTip.visible = false;
 		}
+
+		if( curGridSize != data.gridSize || curGridWidth != data.width || curGridHeight != data.height ) {
+			updateGrid();
+		}
+
 	}
 
 	function onRefresh() {
@@ -608,15 +643,7 @@ class Level3D extends FileView {
 		}
 		if(paths.length > 0) {
 			if(isDrop) {
-				var curSel = sceneEditor.getSelection();
 				var parent : PrefabElement = data;
-				if(curSel.length > 0) {
-					var sel = curSel[0];
-					if(Type.getClass(sel) == Object3D)
-						parent = sel;
-					else if(sel.parent != null && Type.getClass(sel.parent) == Object3D)
-						parent = sel.parent;
-				}
 				sceneEditor.dropObjects(paths, parent);
 			}
 			return true;
@@ -713,7 +740,9 @@ class Level3D extends FileView {
 			var inters = sceneEditor.getInteractives(p);
 			for(inter in inters) {
 				if(inter != null) {
-					inter.visible = interIsVisible;
+					var i3d = Std.downcast(inter,h3d.scene.Interactive);
+					if( i3d != null )
+						i3d.visible = interIsVisible;
 				}
 			}
 		}
@@ -745,39 +774,6 @@ class Level3D extends FileView {
 		return null;
 	}
 
-	public static function getLevelSheet() {
-		return Ide.inst.database.getSheet(Ide.inst.currentConfig.get("l3d.cdbLevel", "level"));
-	}
-
-	static function resolveCdbType(id: String) {
-		var types = Level3D.getCdbTypes();
-		return types.find(t -> getCdbTypeId(t) == id);
-	}
-
-	public static function getCdbTypes() {
-		var levelSheet = getLevelSheet();
-		if(levelSheet == null) return [];
-		return [for(c in levelSheet.columns) if(c.type == TList) levelSheet.getSub(c)];
-	}
-
-	public static function getCdbTypeId(?p: PrefabElement, ?sheet: cdb.Sheet) : String {
-		if(p != null) {
-			if(p.props == null)
-				return null;
-			return Reflect.getProperty(p.props, "$cdbtype");
-		}
-		else {
-			return sheet.name.split("@").pop();
-		}
-	}
-
-	public static function getCdbModel(e:hrt.prefab.Prefab):cdb.Sheet {
-		var typeName : String = getCdbTypeId(e);
-		if(typeName == null)
-			return null;
-		return resolveCdbType(typeName);
-	}
-
 	function getGroundPolys() {
 		var groundGroups = data.findAll(p -> if(p.name == "ground") p else null);
 		var ret = [];
@@ -788,6 +784,39 @@ class Level3D extends FileView {
 				return p.to(hrt.prefab.l3d.Polygon);
 			},ret);
 		return ret;
+	}
+
+	static function getLevelSheet() {
+		return Ide.inst.database.getSheet(Ide.inst.currentConfig.get("l3d.cdbLevel", "level"));
+	}
+
+	static function resolveCdbType(id: String) {
+		var types = Level3D.getCdbTypes();
+		return types.find(t -> getCdbTypeId(t) == id);
+	}
+
+	static function getCdbTypes() {
+		var levelSheet = getLevelSheet();
+		if(levelSheet == null) return [];
+		return [for(c in levelSheet.columns) if(c.type == TList) levelSheet.getSub(c)];
+	}
+
+	static function getCdbTypeId(?p: PrefabElement, ?sheet: cdb.Sheet) : String {
+		if(p != null) {
+			if(p.props == null)
+				return null;
+			return Reflect.getProperty(p.props, "$cdbtype");
+		}
+		else {
+			return sheet.name.split("@").pop();
+		}
+	}
+
+	static function getCdbModel(e:hrt.prefab.Prefab):cdb.Sheet {
+		var typeName : String = getCdbTypeId(e);
+		if(typeName == null)
+			return null;
+		return resolveCdbType(typeName);
 	}
 
 	static var _ = FileTree.registerExtension(Level3D,["l3d"],{ icon : "sitemap", createNew : "Level3D" });

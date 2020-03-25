@@ -1,4 +1,5 @@
 package hrt.prefab.fx;
+import hrt.prefab.l3d.Polygon;
 import hrt.prefab.Curve;
 import hrt.prefab.fx.BaseFX.ShaderAnimation;
 using Lambda;
@@ -28,20 +29,38 @@ enum Orientation {
 	Random;
 }
 
+enum EmitType {
+	Infinity;
+	Duration;
+	Burst;
+	BurstDuration;
+}
+
 typedef ParamDef = {
 	> hrt.prefab.Props.PropDef,
 	?animate: Bool,
-	?instance: Bool
+	?instance: Bool,
+	?groupName: String
 }
 
 typedef InstanceDef = {
 	localSpeed: Value,
 	worldSpeed: Value,
+	startSpeed: Value,
+	startWorldSpeed: Value,
+	acceleration: Value,
+	worldAcceleration: Value,
 	localOffset: Value,
 	scale: Value,
 	stretch: Value,
 	rotation: Value,
 	color: Value,
+}
+
+typedef EmitterTrail = {
+	particle : ParticleInstance,
+	trail : h3d.scene.Trail,
+	timeBeforeDeath : Float
 }
 
 typedef ShaderAnims = Array<ShaderAnimation>;
@@ -133,6 +152,7 @@ private class ParticleInstance  {
 	public var lifeTime = 0.0;
 	public var color = new h3d.Vector();
 	public var startFrame : Int;
+	public var speedAccumulation = new h3d.Vector();
 
 	public var orientation = new h3d.Quat();
 
@@ -147,6 +167,7 @@ private class ParticleInstance  {
 		life = 0;
 		lifeTime = 0;
 		startFrame = 0;
+		speedAccumulation.set(0,0,0);
 		orientation.identity();
 
 		switch(emitter.simulationSpace){
@@ -159,6 +180,11 @@ private class ParticleInstance  {
 		this.emitter = emitter;
 		this.evaluator = new Evaluator(emitter.random);
 		evaluator.vecPool = this.emitter.vecPool;
+	}
+
+	public function dispose() {
+		transform.parent = childTransform.parent = null;
+		emitter = null;
 	}
 
 	public function setPosition( x, y, z ) {
@@ -174,6 +200,8 @@ private class ParticleInstance  {
 	static var tmpScale = new h3d.Vector();
 	static var tmpLocalSpeed = new h3d.Vector();
 	static var tmpWorldSpeed = new h3d.Vector();
+	static var tmpSpeedAccumulation = new h3d.Vector();
+	static var tmpGroundNormal = new h3d.Vector(0,0,1);
 	static var tmpSpeed = new h3d.Vector();
 	static var tmpMat = new h3d.Matrix();
 	var tmpColor = new h3d.Vector();
@@ -182,37 +210,65 @@ private class ParticleInstance  {
 
 		var t = hxd.Math.clamp(life / lifeTime, 0.0, 1.0);
 
+		if( life == 0 ) {
+			// START LOCAL SPEED
+			evaluator.getVector(def.startSpeed, 0.0, tmpSpeedAccumulation);
+			if(tmpSpeedAccumulation.length() > 0.001)
+				tmpSpeedAccumulation.transform3x3(orientation.toMatrix(tmpMat));
+			speedAccumulation = speedAccumulation.add(tmpSpeedAccumulation);
+			// START WORLD SPEED
+			evaluator.getVector(def.startWorldSpeed, 0.0, tmpSpeedAccumulation);
+			if(tmpSpeedAccumulation.length() > 0.001)
+				tmpSpeedAccumulation.transform3x3(emitter.invTransform);
+			speedAccumulation = speedAccumulation.add(tmpSpeedAccumulation);
+		}
+
+		// ACCELERATION
+		evaluator.getVector(def.acceleration, t, tmpSpeedAccumulation);
+		tmpSpeedAccumulation.scale3(dt);
+		if(tmpSpeedAccumulation.length() > 0.001)
+			tmpSpeedAccumulation.transform3x3(orientation.toMatrix(tmpMat));
+		speedAccumulation = speedAccumulation.add(tmpSpeedAccumulation);
+		// WORLD ACCELERATION
+		evaluator.getVector(def.worldAcceleration, t, tmpSpeedAccumulation);
+		tmpSpeedAccumulation.scale3(dt);
+		if(tmpSpeedAccumulation.length() > 0.001 && emitter.simulationSpace == Local)
+			tmpSpeedAccumulation.transform3x3(emitter.invTransform);
+		speedAccumulation = speedAccumulation.add(tmpSpeedAccumulation);
+		// SPEED
 		evaluator.getVector(def.localSpeed, t, tmpLocalSpeed);
 		if(tmpLocalSpeed.length() > 0.001)
 			tmpLocalSpeed.transform3x3(orientation.toMatrix(tmpMat));
-
+		// WORLD SPEED
 		evaluator.getVector(def.worldSpeed, t, tmpWorldSpeed);
 		if(emitter.simulationSpace == Local)
 			tmpWorldSpeed.transform3x3(emitter.invTransform);
 
-		tmpSpeed.load(tmpLocalSpeed.add(tmpWorldSpeed));
-		if(emitter.emitOrientation == Speed && tmpSpeed.lengthSq() > 0.01)
-			transform.qRot.initDirection(tmpSpeed);
-
+		tmpSpeed.load(tmpLocalSpeed.add(tmpWorldSpeed).add(speedAccumulation));
 		transform.x += tmpSpeed.x * dt;
 		transform.y += tmpSpeed.y * dt;
 		transform.z += tmpSpeed.z * dt;
 
+		// SPEED ORIENTATION
+		if(emitter.emitOrientation == Speed && tmpSpeed.lengthSq() > 0.01)
+			transform.qRot.initDirection(tmpSpeed);
+
+		// ROTATION
 		var rot = evaluator.getVector(def.rotation, t, tmpRot);
 		rot.scale3(Math.PI / 180.0);
 		var offset = evaluator.getVector(def.localOffset, t, tmpOffset);
 		var scaleVec = evaluator.getVector(def.stretch, t, tmpScale);
 		scaleVec.scale3(evaluator.getFloat(def.scale, t));
 
+		// TRANSFORM
 		childMat.initScale(scaleVec.x, scaleVec.y, scaleVec.z);
 		childMat.rotate(rot.x, rot.y, rot.z);
 		childMat.translate(offset.x, offset.y, offset.z);
-
 		if( baseMat != null )
 			childMat.multiply(baseMat, childMat);
-
 		childTransform.setTransform(childMat);
 
+		// COLOR
 		if( def.color != null ) {
 			switch( def.color ) {
 				case VCurve(a): color.a = evaluator.getFloat(def.color, t);
@@ -220,6 +276,7 @@ private class ParticleInstance  {
 			}
 		}
 
+		// ALIGNMENT
 		switch( emitter.alignMode ) {
 			case Screen:
 				tmpMat.load(emitter.getScene().camera.mcam);
@@ -277,6 +334,26 @@ private class ParticleInstance  {
 				absPos.multiply(childTransform.absPos, transform.absPos);
 		}
 
+		// COLLISION
+		if( emitter.useCollision ) {
+			var worldPos = absPos.getPosition();
+			if( worldPos.z < 0 ) {
+				if( emitter.killOnCollision == 1 || hxd.Math.random() < emitter.killOnCollision ) {
+					life = lifeTime + 1; // No survivor
+				}
+				else {
+					var speedAmount = speedAccumulation.length();
+					speedAccumulation.normalize();
+					var newDir = speedAccumulation.reflect(tmpGroundNormal);
+					newDir.scale3(emitter.elasticity);
+					newDir.scale3(speedAmount);
+					speedAccumulation.set(newDir.x, newDir.y, newDir.z);
+					transform.z = 0;
+					absPos.multiply(childTransform.absPos, transform.absPos);
+				}
+			}
+		}
+
 		life += dt;
 	}
 }
@@ -287,43 +364,68 @@ class EmitterObject extends h3d.scene.Object {
 
 	public static var pool : ParticleInstance;
 	public static var poolSize = 0;
+	public static function clearPool() {
+		pool = null;
+		poolSize = 0;
+	}
+
+	public var instDef : InstanceDef;
 
 	public var batch : h3d.scene.MeshBatch;
 	public var particles : ParticleInstance;
 	public var shaderAnims : ShaderAnims;
 
+	public var isSubEmitter : Bool = false;
+	public var parentEmitter : EmitterObject = null;
 	public var enable : Bool;
 	public var particleVisibility(default, null) : Bool;
 
-	public var particleTemplate : hrt.prefab.Object3D;
-	public var maxCount = 20;
+	public var catchupSpeed = 4; // Use larger ticks when catching-up to save calculations
+	public var maxCatchupWindow = 0.5; // How many seconds max to simulate when catching up
+	public var nextBurstTime : Float = 0.0; // Keep tack of burst timing
+	public var totalBurstCount : Int = 0; // Keep tack of burst count
+
+	// RANDOM
 	public var seedGroup = 0;
+	// OBJECTS
+	public var particleTemplate : hrt.prefab.Object3D;
+	public var subEmitterTemplate : Emitter;
+	public var trailTemplate : Trail;
+	public var subEmitters : Array<EmitterObject> = [];
+	public var trails : Array<EmitterTrail> = [];
+	// LIFE
 	public var lifeTime = 2.0;
 	public var lifeTimeRand = 0.0;
-	public var emitShape : EmitShape = Cylinder;
+	// EMIT PARAMS
 	public var emitOrientation : Orientation = Forward;
 	public var simulationSpace : SimulationSpace = Local;
+	public var emitType : EmitType = Infinity;
+	public var burstCount : Int = 1;
+	public var burstParticleCount : Int = 5;
+	public var burstDelay : Float = 1.0;
+	public var emitDuration : Float = 1.0;
+	public var emitRate : Value;
+	public var maxCount = 20;
+	// EMIT SHAPE
+	public var emitShape : EmitShape = Cylinder;
 	public var emitAngle : Float = 0.0;
 	public var emitRad1 : Float = 1.0;
 	public var emitRad2 : Float = 1.0;
 	public var emitSurface : Bool = false;
-
-	public var catchupSpeed = 4; // Use larger ticks when catching-up to save calculations
-	public var maxCatchupWindow = 0.5; // How many seconds max to simulate when catching up
-
+	// ANIMATION
 	public var frameCount : Int = 0;
 	public var frameDivisionX : Int = 1;
 	public var frameDivisionY : Int = 1;
 	public var animationRepeat : Float = 1;
 	public var animationLoop : Bool = true;
-
+	// ALIGNMENT
 	public var alignMode : AlignMode;
 	public var alignAxis : h3d.Vector;
 	public var alignLockAxis : h3d.Vector;
-
-	public var emitRate : Value;
-
-	public var instDef : InstanceDef;
+	// COLLISION
+	public var elasticity : Float = 1.0;
+	public var killOnCollision : Float = 0.0;
+	public var useCollision : Bool = false;
 
 	public var invTransform : h3d.Matrix;
 
@@ -354,6 +456,8 @@ class EmitterObject extends h3d.scene.Object {
 		curTime = 0.0;
 		lastTime = 0.0;
 		emitCount = 0;
+		totalBurstCount = 0;
+		nextBurstTime = 0.0;
 
 		var p = particles;
 		while(p != null) {
@@ -362,6 +466,19 @@ class EmitterObject extends h3d.scene.Object {
 			p = n;
 		}
 		particles = null;
+		for( s in subEmitters ) {
+			s.remove();
+		}
+		subEmitters = [];
+		for( t in trails ) {
+			t.trail.remove();
+		}
+		trails = [];
+	}
+
+	override function onRemove() {
+		super.onRemove();
+		reset();
 	}
 
 	public function setParticleVibility( b : Bool ){
@@ -380,8 +497,20 @@ class EmitterObject extends h3d.scene.Object {
 		return p;
 	}
 
+	var tmpPos = new h3d.Vector();
+	var tmpCtx : hrt.prefab.Context;
 	function disposeInstance(p: ParticleInstance) {
+
+		// TRAIL
+		for( t in trails ) {
+			if( t.particle == p ) {
+				t.particle = null;
+				break;
+			}
+		}
+
 		p.next = pool;
+		p.dispose();
 		pool = p;
 		--numInstances;
 		++poolSize;
@@ -390,8 +519,13 @@ class EmitterObject extends h3d.scene.Object {
 	}
 
 	static var tmpQuat = new h3d.Quat();
+	static var tmpEmitterQuat = new h3d.Quat();
 	static var tmpOffset = new h3d.Vector();
+	static var tmpVec = new h3d.Vector();
 	static var tmpDir = new h3d.Vector();
+	static var tmpScale = new h3d.Vector();
+	static var tmpMat = new h3d.Matrix();
+	static var tmpMat2 = new h3d.Matrix();
 	function doEmit( count : Int ) {
 		if( count == 0 )
 			return;
@@ -400,12 +534,21 @@ class EmitterObject extends h3d.scene.Object {
 			return;
 
 		var shapeAngle = hxd.Math.degToRad(emitAngle) / 2.0;
+		var emitterQuat : h3d.Quat = null;
+		var emitterBaseMat : h3d.Matrix = null;
 
 		for( i in 0...count ) {
 			var part = allocInstance();
 			part.init(this, instDef);
 			part.next = particles;
 			particles = part;
+
+			if(emitterBaseMat == null) {
+				emitterBaseMat = particleTemplate.getTransform();
+				part.baseMat = emitterBaseMat;
+			}
+			else
+				part.baseMat = emitterBaseMat.clone();
 
 			part.lifeTime = hxd.Math.max(0.01, lifeTime + hxd.Math.srand(lifeTimeRand));
 			tmpQuat.identity();
@@ -461,34 +604,52 @@ class EmitterObject extends h3d.scene.Object {
 
 			switch( simulationSpace ) {
 				case Local:
-					var localQuat = getRotationQuat().clone();
-					var localMat = getAbsPos().clone();
-					var parentInvMat = parent.getAbsPos().clone();
-					parentInvMat.invert();
-					localMat.multiply(localMat, parentInvMat);
-					tmpOffset.transform(localMat);
+					if(emitterQuat == null) {
+						emitterQuat = tmpEmitterQuat;
+						emitterQuat.load(getRotationQuat());
+						tmpMat.load(getAbsPos());
+						tmpMat2.load(parent.getAbsPos());
+						tmpMat2.invert();
+						tmpMat.multiply(tmpMat, tmpMat2);
+					}
+
+					tmpOffset.transform(tmpMat);
 					part.setPosition(tmpOffset.x, tmpOffset.y, tmpOffset.z);
-					part.baseMat = particleTemplate.getTransform();
-					localQuat.multiply(localQuat, tmpQuat);
-					part.setRotation(localQuat);
-					part.orientation.load(localQuat);
+					tmpQuat.multiply(emitterQuat, tmpQuat);
+					part.setRotation(tmpQuat);
+					part.orientation.load(tmpQuat);
 				case World:
-					var worldPos = localToGlobal(tmpOffset.clone());
-					part.setPosition(worldPos.x, worldPos.y, worldPos.z);
-					part.baseMat = particleTemplate.getTransform();
-					var worldQuat = new h3d.Quat();
-					worldQuat.initRotateMatrix(getAbsPos());
-					worldQuat.normalize();
-					tmpQuat.multiply(tmpQuat, worldQuat);
+					tmpVec.load(tmpOffset);
+					localToGlobal(tmpVec);
+					part.setPosition(tmpVec.x, tmpVec.y, tmpVec.z);
+					if(emitterQuat == null) {
+						emitterQuat = tmpEmitterQuat;
+						tmpMat.load(getAbsPos());
+						tmpMat.getScale(tmpScale);
+						tmpMat.prependScale(1.0/tmpScale.x, 1.0/tmpScale.y, 1.0/tmpScale.z);
+						emitterQuat.initRotateMatrix(tmpMat);
+						emitterQuat.normalize();
+					}
+					tmpQuat.multiply(tmpQuat, emitterQuat);
 					part.setRotation(tmpQuat);
 					part.orientation.load(tmpQuat);
 			}
 
 			var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
 			part.startFrame = random.random(frameCount);
+
+			if( trailTemplate != null ) {
+				if( tmpCtx == null ) {
+					tmpCtx = new hrt.prefab.Context();
+					tmpCtx.local3d = this.getScene();
+					tmpCtx.shared = context.shared;
+				}
+				tmpCtx.local3d = this.getScene();
+				var trail : h3d.scene.Trail = cast trailTemplate.make(tmpCtx).local3d;
+				trail.setTransform(part.absPos);
+				trails.push({particle: part, trail: trail, timeBeforeDeath: 0.0});
+			}
 		}
-
-
 		context.local3d = this;
 		emitCount += count;
 	}
@@ -561,17 +722,70 @@ class EmitterObject extends h3d.scene.Object {
 	}
 
 	function tick( dt : Float, full=true) {
+
+		// Auto remove of sub emitters
+		if( !enable && particles == null && isSubEmitter ) {
+			parentEmitter.subEmitters.remove(this);
+			remove();
+			return;
+		}
+
+		for( se in subEmitters ) {
+			se.tick(dt);
+		}
+
 		if( emitRate == null || emitRate == VZero )
 			return;
 
-		invTransform.load(parent.getAbsPos());
-		invTransform.invert();
+		if( parent != null ) {
+			invTransform.load(parent.getAbsPos());
+			invTransform.invert();
+		}
 		vecPool.begin();
 
-		var emitTarget = evaluator.getSum(emitRate, curTime);
-		var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, emitTarget - emitCount));
-		if(enable)
-			doEmit(delta);
+		if( enable ) {
+			switch emitType {
+				case Infinity:
+					var emitTarget = evaluator.getSum(emitRate, curTime);
+					var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, emitTarget - emitCount));
+					doEmit(delta);
+					if( isSubEmitter && (parentEmitter == null || parentEmitter.parent == null) )
+						enable = false;
+				case Duration:
+					var emitTarget = evaluator.getSum(emitRate, hxd.Math.min(curTime, emitDuration));
+					var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, emitTarget - emitCount));
+					doEmit(delta);
+					if( isSubEmitter && curTime >= emitDuration )
+						enable = false;
+				case BurstDuration:
+					if( burstDelay > 0 ) {
+						var needBurst = curTime < emitDuration && curTime > nextBurstTime;
+						while( needBurst ) {
+							var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, burstParticleCount));
+							doEmit(delta);
+							nextBurstTime += burstDelay;
+							totalBurstCount++;
+							needBurst = totalBurstCount < burstCount && curTime > nextBurstTime;
+						}
+					}
+					if( isSubEmitter && curTime >= emitDuration )
+						enable = false;
+				case Burst:
+					if( burstDelay > 0 ) {
+						var needBurst = totalBurstCount < burstCount && curTime > nextBurstTime;
+						while( needBurst ) {
+							var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, burstParticleCount));
+							doEmit(delta);
+							nextBurstTime += burstDelay;
+							totalBurstCount++;
+							needBurst = totalBurstCount < burstCount && curTime > nextBurstTime;
+						}
+					}
+					if( isSubEmitter && totalBurstCount == burstCount )
+						enable = false;
+				
+			}
+		}
 
 		updateParticles(dt);
 
@@ -623,13 +837,52 @@ class EmitterObject extends h3d.scene.Object {
 					prev.next = next;
 				else
 					particles = next;
+
 				disposeInstance(p);
+				
+				// SUB EMITTER
+				if( subEmitterTemplate != null ) {
+					if( tmpCtx == null ) {
+						tmpCtx = new hrt.prefab.Context();
+						tmpCtx.local3d = this.getScene();
+						tmpCtx.shared = context.shared;
+					}
+					tmpCtx.local3d = this.getScene();
+					var emitter : EmitterObject = cast subEmitterTemplate.makeInstance(tmpCtx).local3d;
+					var pos = p.absPos.getPosition(tmpPos);
+					emitter.setPosition(pos.x, pos.y, pos.z);
+					emitter.isSubEmitter = true;
+					emitter.parentEmitter = this;
+					subEmitters.push(emitter);
+				}
 			}
 			else {
 				p.update(dt);
 				prev = p;
 			}
 			p = next;
+		}
+
+		// TRAIL
+		var i = 0;
+		while( i < trails.length ) {
+			var emitterTrail = trails[i];
+			var trail = emitterTrail.trail;
+			var particle = emitterTrail.particle;
+			if( particle != null ) {
+				trail.setTransform(particle.absPos);
+				i++;
+			}
+			else {
+				emitterTrail.timeBeforeDeath += dt;
+				if( emitterTrail.timeBeforeDeath > trail.duration ) {
+					trail.remove();
+					trails[i] = trails[trails.length - 1];
+					trails.pop();
+				}
+				else 
+					i++;
+			}
 		}
 	}
 
@@ -658,7 +911,6 @@ class EmitterObject extends h3d.scene.Object {
 	}
 }
 
-
 class Emitter extends Object3D {
 
 	public function new(?parent) {
@@ -671,37 +923,54 @@ class Emitter extends Object3D {
 	}
 
 	public static var emitterParams : Array<ParamDef> = [
-		{ name: "simulationSpace", t: PEnum(SimulationSpace), def: SimulationSpace.Local, disp: "Simulation Space", },
-		{ name: "emitRate", t: PInt(0, 100), def: 5, disp: "Rate", animate: true },
-		{ name: "lifeTime", t: PFloat(0, 10), def: 1.0 },
-		{ name: "lifeTimeRand", t: PFloat(0, 1), def: 0.0 },
-		{ name: "maxCount", t: PInt(0, 100), def: 20, },
-		{ name: "seedGroup", t: PInt(0, 100), def: 0, },
-		{ name: "emitShape", t: PEnum(EmitShape), def: EmitShape.Sphere, disp: "Emit Shape", },
-		{ name: "emitAngle", t: PFloat(0, 360.0), disp: "Angle", },
-		{ name: "emitRad1", t: PFloat(0, 1.0), def: 1.0, disp: "Radius 1", },
-		{ name: "emitRad2", t: PFloat(0, 1.0), def: 1.0, disp: "Radius 2", },
-		{ name: "emitSurface", t: PBool, def: false, disp: "Surface" },
-
-		{ name: "emitOrientation", t: PEnum(Orientation), def: Orientation.Forward, disp: "Orientation", },
-		{ name: "alignMode", t: PEnum(AlignMode), def: AlignMode.None, disp: "Alignment" },
-		{ name: "alignAxis", t: PVec(3, -1.0, 1.0), def: [0.,0.,0.], disp: "Axis" },
-		{ name: "alignLockAxis", t: PVec(3, -1.0, 1.0), def: [0.,0.,0.], disp: "Lock Axis" },
-
-		{ name: "frameCount", t: PInt(0), def: 0 },
-		{ name: "frameDivisionX", t: PInt(1), def: 1 },
-		{ name: "frameDivisionY", t: PInt(1), def: 1 },
-		{ name: "animationRepeat", t: PFloat(0, 2.0), def: 1.0 },
-		{ name: "animationLoop", t: PBool, def: true },
+		// RANDOM
+		{ name: "seedGroup", t: PInt(0, 100), def: 0, groupName : "Random"},
+		// LIFE
+		{ name: "lifeTime", t: PFloat(0, 10), def: 1.0, groupName : "Life" },
+		{ name: "lifeTimeRand", t: PFloat(0, 1), def: 0.0, groupName : "Life" },
+		// EMIT PARAMS
+		{ name: "emitType", t: PEnum(EmitType), def: EmitType.Infinity, disp: "Type", groupName : "Emit Params"  },
+		{ name: "emitDuration", t: PFloat(0, 10.0), disp: "Duration", def : 1.0, groupName : "Emit Params" },
+		{ name: "emitRate", t: PInt(0, 100), def: 5, disp: "Rate", animate: true, groupName : "Emit Params" },
+		{ name: "burstCount", t: PInt(1, 10), disp: "Count", def : 1, groupName : "Emit Params" },
+		{ name: "burstDelay", t: PFloat(0, 1.0), disp: "Delay", def : 1.0, groupName : "Emit Params" },
+		{ name: "burstParticleCount", t: PInt(1, 10), disp: "Particle Count", def : 1, groupName : "Emit Params" },
+		{ name: "simulationSpace", t: PEnum(SimulationSpace), def: SimulationSpace.Local, disp: "Simulation Space", groupName : "Emit Params" },
+		{ name: "emitOrientation", t: PEnum(Orientation), def: Orientation.Forward, disp: "Orientation", groupName : "Emit Params" },
+		{ name: "maxCount", t: PInt(0, 100), def: 20, groupName : "Emit Params" },
+		// EMIT SHAPE
+		{ name: "emitShape", t: PEnum(EmitShape), def: EmitShape.Sphere, disp: "Shape", groupName : "Emit Shape" },
+		{ name: "emitAngle", t: PFloat(0, 360.0), disp: "Angle", groupName : "Emit Shape" },
+		{ name: "emitRad1", t: PFloat(0, 1.0), def: 1.0, disp: "Radius 1", groupName : "Emit Shape" },
+		{ name: "emitRad2", t: PFloat(0, 1.0), def: 1.0, disp: "Radius 2", groupName : "Emit Shape" },
+		{ name: "emitSurface", t: PBool, def: false, disp: "Surface", groupName : "Emit Shape" },
+		// ALIGNMENT
+		{ name: "alignMode", t: PEnum(AlignMode), def: AlignMode.None, disp: "Mode", groupName : "Alignment" },
+		{ name: "alignAxis", t: PVec(3, -1.0, 1.0), def: [0.,0.,0.], disp: "Axis", groupName : "Alignment" },
+		{ name: "alignLockAxis", t: PVec(3, -1.0, 1.0), def: [0.,0.,0.], disp: "Lock Axis", groupName : "Alignment" },
+		// ANIMATION
+		{ name: "frameCount", t: PInt(0), def: 0, groupName : "Animation" },
+		{ name: "frameDivisionX", t: PInt(1), def: 1, groupName : "Animation" },
+		{ name: "frameDivisionY", t: PInt(1), def: 1, groupName : "Animation" },
+		{ name: "animationRepeat", t: PFloat(0, 2.0), def: 1.0, groupName : "Animation" },
+		{ name: "animationLoop", t: PBool, def: true, groupName : "Animation" },
+		// COLLISION
+		{ name: "useCollision", t: PBool, def: false, groupName : "Ground Collision" },
+		{ name: "elasticity", t: PFloat(0, 1.0), disp: "Elasticity", def : 1.0, groupName : "Ground Collision" },
+		{ name: "killOnCollision", t: PFloat(0, 1.0), disp: "Kill On Collision", def : 0.0, groupName : "Ground Collision" },
 	];
 
 	public static var instanceParams : Array<ParamDef> = [
-		{ name: "instSpeed",      t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Speed" },
-		{ name: "instWorldSpeed", t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "World Speed" },
-		{ name: "instScale",      t: PFloat(0, 2.0),    def: 1.,         disp: "Scale" },
-		{ name: "instStretch",    t: PVec(3, 0.0, 2.0), def: [1.,1.,1.], disp: "Stretch" },
-		{ name: "instRotation",   t: PVec(3, 0, 360),   def: [0.,0.,0.], disp: "Rotation" },
-		{ name: "instOffset",     t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Offset" }
+		{ name: "instSpeed",      			t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Fixed Speed" },
+		{ name: "instWorldSpeed", 			t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Fixed World Speed" },
+		{ name: "instStartSpeed",      		t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Start Speed" },
+		{ name: "instStartWorldSpeed", 		t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Start World Speed" },
+		{ name: "instAcceleration",			t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Acceleration" },
+		{ name: "instWorldAcceleration",	t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "World Acceleration" },
+		{ name: "instScale",      			t: PFloat(0, 2.0),    def: 1.,         disp: "Scale" },
+		{ name: "instStretch",    			t: PVec(3, 0.0, 2.0), def: [1.,1.,1.], disp: "Stretch" },
+		{ name: "instRotation",   			t: PVec(3, 0, 360),   def: [0.,0.,0.], disp: "Rotation" },
+		{ name: "instOffset",     			t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Offset" }
 	];
 
 	public static var PARAMS : Array<ParamDef> = {
@@ -793,7 +1062,7 @@ class Emitter extends Object3D {
 		var emitterObj = Std.downcast(ctx.local3d, EmitterObject);
 
 		var randIdx = 0;
-		var template = children[0] != null ? children[0].to(Object3D) : null;
+		var template : Object3D = cast children.find( c -> c.enabled && (c.name == null || c.name.indexOf("collision") == -1) && c.to(Object3D) != null && c.to(Object3D).visible );
 
 		function makeParam(scope: Prefab, name: String): Value {
 			var getCurve = hrt.prefab.Curve.getCurve.bind(scope);
@@ -853,6 +1122,10 @@ class Emitter extends Object3D {
 			emitterObj.instDef = {
 				localSpeed: makeParam(this, "instSpeed"),
 				worldSpeed: makeParam(this, "instWorldSpeed"),
+				startSpeed: makeParam(this, "instStartSpeed"),
+				startWorldSpeed: makeParam(this, "instStartWorldSpeed"),
+				acceleration: makeParam(this, "instAcceleration"),
+				worldAcceleration: makeParam(this, "instWorldAcceleration"),
 				localOffset: makeParam(this, "instOffset"),
 				scale: makeParam(this, "instScale"),
 				stretch: makeParam(this, "instStretch"),
@@ -863,26 +1136,47 @@ class Emitter extends Object3D {
 			emitterObj.particleTemplate = template;
 		}
 
-		emitterObj.simulationSpace = getParamVal("simulationSpace");
-		emitterObj.lifeTime = getParamVal("lifeTime");
-		emitterObj.lifeTimeRand = getParamVal("lifeTimeRand");
-		emitterObj.maxCount = getParamVal("maxCount");
-		emitterObj.seedGroup = getParamVal("seedGroup");
-		emitterObj.emitRate = makeParam(this, "emitRate");
-		emitterObj.emitShape = getParamVal("emitShape");
-		emitterObj.emitOrientation = getParamVal("emitOrientation");
-		emitterObj.emitAngle = getParamVal("emitAngle");
-		emitterObj.emitRad1 = getParamVal("emitRad1");
-		emitterObj.emitRad2 = getParamVal("emitRad2");
-		emitterObj.emitSurface = getParamVal("emitSurface");
-		emitterObj.alignMode = getParamVal("alignMode");
-		emitterObj.alignAxis = getParamVal("alignAxis");
-		emitterObj.alignLockAxis = getParamVal("alignLockAxis");
-		emitterObj.frameCount = getParamVal("frameCount");
-		emitterObj.frameDivisionX = getParamVal("frameDivisionX");
-		emitterObj.frameDivisionY = getParamVal("frameDivisionY");
-		emitterObj.animationRepeat = getParamVal("animationRepeat");
-		emitterObj.animationLoop = getParamVal("animationLoop");
+		// SUB-EMITTER
+		var subEmitterTemplate : Emitter = cast children.find( p -> p.enabled && Std.downcast(p, Emitter) != null && p.to(Object3D).visible);
+		emitterObj.subEmitterTemplate = subEmitterTemplate;
+		// TRAIL
+		var trailTemplate : Trail = cast children.find( p -> p.enabled && Std.downcast(p, Trail) != null && p.to(Object3D).visible);
+		emitterObj.trailTemplate = trailTemplate;
+		// RANDOM
+		emitterObj.seedGroup 			= 	getParamVal("seedGroup");
+		// LIFE	
+		emitterObj.lifeTime 			= 	getParamVal("lifeTime");
+		emitterObj.lifeTimeRand 		= 	getParamVal("lifeTimeRand");
+		// EMIT PARAMS	
+		emitterObj.emitType 			= 	getParamVal("emitType");
+		emitterObj.burstCount 			= 	getParamVal("burstCount");
+		emitterObj.burstDelay 			= 	getParamVal("burstDelay");
+		emitterObj.burstParticleCount 	= 	getParamVal("burstParticleCount");
+		emitterObj.emitDuration 		= 	getParamVal("emitDuration");
+		emitterObj.simulationSpace 		= 	getParamVal("simulationSpace");
+		emitterObj.emitOrientation 		= 	getParamVal("emitOrientation");
+		emitterObj.maxCount 			= 	getParamVal("maxCount");
+		emitterObj.emitRate 			= 	makeParam(this, "emitRate");
+		emitterObj.emitShape 			= 	getParamVal("emitShape");
+		// EMIT SHAPE	
+		emitterObj.emitAngle 			= 	getParamVal("emitAngle");
+		emitterObj.emitRad1 			= 	getParamVal("emitRad1");
+		emitterObj.emitRad2 			= 	getParamVal("emitRad2");
+		emitterObj.emitSurface 			= 	getParamVal("emitSurface");
+		// ALIGNMENT	
+		emitterObj.alignMode 			= 	getParamVal("alignMode");
+		emitterObj.alignAxis 			= 	getParamVal("alignAxis");
+		emitterObj.alignLockAxis 		= 	getParamVal("alignLockAxis");
+		// ANIMATION	
+		emitterObj.frameCount 			= 	getParamVal("frameCount");
+		emitterObj.frameDivisionX 		= 	getParamVal("frameDivisionX");
+		emitterObj.frameDivisionY 		= 	getParamVal("frameDivisionY");
+		emitterObj.animationRepeat 		= 	getParamVal("animationRepeat");
+		emitterObj.animationLoop 		= 	getParamVal("animationLoop");
+		// COLLISION	
+		emitterObj.useCollision 		= 	getParamVal("useCollision");
+		emitterObj.killOnCollision 		= 	getParamVal("killOnCollision");
+		emitterObj.elasticity 			= 	getParamVal("elasticity");
 
 		var startTime = 0.0;
 		var scene = ctx.local3d.getScene();
@@ -925,7 +1219,7 @@ class Emitter extends Object3D {
 		function onChange(?pname: String) {
 			ctx.onChange(this, pname);
 
-			if(pname == "emitShape" || pname == "alignMode")
+			if( pname == "emitShape" || pname == "alignMode" || pname == "useCollision" || pname == "emitType" )
 				refresh();
 		}
 
@@ -950,11 +1244,48 @@ class Emitter extends Object3D {
 			default:
 		}
 
+		var useCollision = getParamVal("useCollision");
+		if( !useCollision ) {
+			removeParam("elasticity");
+			removeParam("killOnCollision");
+		}
+
+		var emitType : EmitType = getParamVal("emitType");
+		switch (emitType) {
+			case Infinity:
+				removeParam("burstCount");
+				removeParam("burstDelay");
+				removeParam("burstParticleCount");
+				removeParam("emitDuration");
+			case BurstDuration:
+				removeParam("emitRate");
+				removeParam("burstCount");
+			case Burst:
+				removeParam("emitDuration");
+				removeParam("emitRate");
+			case Duration:
+				removeParam("burstCount");
+				removeParam("burstDelay");
+				removeParam("burstParticleCount");
+		}
+
 		// Emitter
 		{
-			var emGroup = new Element('<div class="group" name="Emitter"></div>');
-			emGroup.append(hide.comp.PropsEditor.makePropsList(params));
-			var props = ctx.properties.add(emGroup, this.props, onChange);
+			// Sort by groupName
+			var groupNames : Array<String> = [];
+			for( p in params ) {
+				if( p.groupName == null && groupNames.indexOf("Emitter") == -1 )
+					groupNames.push("Emitter");
+				else if( p.groupName != null && groupNames.indexOf(p.groupName) == -1 ) 
+					groupNames.push(p.groupName);
+			}
+
+			for( gn in groupNames ) {
+				var params = params.filter( p -> p.groupName == (gn == "Emitter" ? null : gn) );
+				var group = new Element('<div class="group" name="$gn"></div>');
+				group.append(hide.comp.PropsEditor.makePropsList(params));
+				ctx.properties.add(group, this.props, onChange);
+			}
 		}
 
 		// Instances
@@ -1049,7 +1380,7 @@ class Emitter extends Object3D {
 	override function setSelected( ctx : Context, b : Bool ) {
 		var emitterObj = Std.downcast(ctx.local3d, EmitterObject);
 		if(emitterObj == null)
-			return;
+			return false;
 		var debugShape : h3d.scene.Object = emitterObj.find(c -> if(c.name == "_highlight") c else null);
 		if(debugShape != null)
 			debugShape.visible = b;
@@ -1068,6 +1399,7 @@ class Emitter extends Object3D {
 			}
 			emitterObj.batch.shadersChanged = true;
 		}
+		return false;
 	}
 
 	function updateEmitShape(emitterObj: EmitterObject) {

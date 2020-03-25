@@ -47,6 +47,7 @@ class Prefab extends FileView {
 	override function getDefaultContent() {
 		return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab.Library().saveData()));
 	}
+
 	override function save() {
 		var content = ide.toJSON(data.saveData());
 		currentSign = haxe.crypto.Md5.encode(content);
@@ -55,7 +56,6 @@ class Prefab extends FileView {
 	}
 
 	override function onDisplay() {
-		saveDisplayKey = "Prefab:" + getPath().split("\\").join("/").substr(0,-1);
 		data = new hrt.prefab.Library();
 		var content = sys.io.File.getContent(getPath());
 		data.loadData(haxe.Json.parse(content));
@@ -96,7 +96,9 @@ class Prefab extends FileView {
 			light = null;
 
 		tools.saveDisplayKey = "Prefab/tools";
-		tools.addButton("video-camera", "Perspective camera", () -> sceneEditor.resetCamera());
+
+		tools.addToggle("arrows", "2D Camera", (b) -> sceneEditor.camera2D = b);
+		tools.addButton("video-camera", "Default camera", () -> sceneEditor.resetCamera());
 
 		tools.addColor("Background color", function(v) {
 			scene.engine.backgroundColor = v;
@@ -124,6 +126,25 @@ class Prefab extends FileView {
 			lastSyncChange = properties.lastChange;
 			currentVersion = undo.currentID;
 		}
+	}
+
+	override function onDragDrop(items : Array<String>, isDrop : Bool) {
+		var supported = ["fbx", "fx"];
+		var paths = [];
+		for(path in items) {
+			var ext = haxe.io.Path.extension(path).toLowerCase();
+			if(supported.indexOf(ext) >= 0) {
+				paths.push(path);
+			}
+		}
+		if(paths.length > 0) {
+			if(isDrop) {
+				var parent : PrefabElement = data;
+				sceneEditor.dropObjects(paths, parent);
+			}
+			return true;
+		}
+		return false;
 	}
 
 	static var _ = FileTree.registerExtension(Prefab,["prefab"],{ icon : "sitemap", createNew : "Prefab" });
