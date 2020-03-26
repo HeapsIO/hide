@@ -39,10 +39,14 @@ class Toolbar extends Component {
 		}
 		e.click(function(e) if( e.button == 0 ) tog());
 		e.appendTo(element);
-		if( defValue ) e.addClass("toggled");
 		var def = getDisplayState("toggle:" + icon);
-		if( def == null ) def = false;
-		if( def != defValue ) e.click();
+		if( def == null ) def = defValue;
+		if( def )
+			tog(); // false -> true
+		else if( defValue ) {
+			e.toggleClass("toggled");
+			tog(); // true -> false
+		}
 		return {
 			element : e,
 			toggle : function(b) tog(),

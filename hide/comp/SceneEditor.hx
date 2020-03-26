@@ -683,7 +683,7 @@ class SceneEditor {
 			if( e.button == K.MOUSE_MIDDLE ) return;
 			startDrag = [scene.s2d.mouseX, scene.s2d.mouseY];
 			dragBtn = e.button;
-			if( e.button == K.MOUSE_LEFT && !isSelected(elt) ) {
+			if( e.button == K.MOUSE_LEFT ) {
 				var elts = null;
 				if(K.isDown(K.SHIFT)) {
 					if(Type.getClass(elt.parent) == hrt.prefab.Object3D)
