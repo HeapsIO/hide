@@ -49,6 +49,7 @@ class Terrain extends Object3D {
 	public var showChecker = false;
 	public var autoCreateTile = false;
 	public var brushOpacity : Float;
+	var myContext : Context;
 	#end
 
 	// Backward Compatibility
@@ -141,7 +142,7 @@ class Terrain extends Object3D {
 		if( terrain != null ) obj.showChecker = terrain.showChecker;
 		if( modified ) {
 			modified = false;
-			if( editor != null && terrain != null && terrain.surfaces != null && terrain.surfaces.length > 0 ) editor.saveTextures();
+			saveTextures(myContext);
 		}
 		#end
 
@@ -346,7 +347,6 @@ class Terrain extends Object3D {
 
 		// Backward Compatibility
 		if( needFormatUpdate ) {
-
 			for( s in terrain.surfaces )
 				s.tilling /= tileSizeX;
 			terrain.updateSurfaceParams();
@@ -361,11 +361,89 @@ class Terrain extends Object3D {
 			for( tile in terrain.tiles )
 				tile.blendEdges();
 			modified = true;
+			var shared : hide.prefab.ContextShared = cast myContext.shared;
+			@:privateAccess shared.scene.editor.view.save();
+			trace("Terrain : " + name +  " is now up to date.");
 			#end
 		}
 	}
 
 	#if editor
+
+	public function saveTextures( ctx : Context )  {
+		if( !readyToSave(ctx) ) {
+			throw "Failed to save terrain";
+			return;
+		}
+		var shared : hide.prefab.ContextShared = cast myContext.shared;
+		@:privateAccess shared.scene.setCurrent();
+		clearSavedTextures(ctx);
+		saveWeightTextures(ctx);
+		saveHeightTextures(ctx);
+		saveNormals(ctx);
+		return;
+	}
+
+	function readyToSave( ctx : Context ) : Bool {
+		var error = "Failed to save terrain : ";
+		if( terrain == null ){
+			trace(error + "terrain is null");
+			return false;
+		}
+		if( terrain.surfaceArray == null ) {
+			trace(error + "surfaceArray is null");
+			return false;
+		}
+		if( terrain.surfaceArray.albedo == null || terrain.surfaceArray.albedo.isDisposed() ){
+			trace(error + "surfaceArray.albedo is null");
+			return false;
+		}
+		if( terrain.surfaceArray.normal == null || terrain.surfaceArray.normal.isDisposed() ){
+			trace(error + "surfaceArray.normal is null");
+			return false;
+		}
+		if( terrain.surfaceArray.pbr == null || terrain.surfaceArray.pbr.isDisposed() ){
+			trace(error + "surfaceArray.pbr is null");
+			return false;
+		}
+
+		for( tile in terrain.tiles ) {
+			if( tile == null ) {
+				trace(error + "tile is null");
+				return false;
+			}
+			for( s in tile.surfaceWeights ) {
+				if( s == null || s.isDisposed() ) {
+					trace(error + "surfaceWeights "+ tile.surfaceWeights.indexOf(s) +" is null or disposed ");
+					return false;
+				}
+			}
+			if( tile.heightMap == null || tile.heightMap.isDisposed() ) {
+					trace(error + "heightMap is null or disposed ");
+					return false;
+			}
+			if( tile.surfaceIndexMap == null || tile.surfaceIndexMap.isDisposed() ) {
+					trace(error + "surfaceIndexMap is null or disposed ");
+					return false;
+			}
+			if( tile.surfaceWeightArray == null || tile.surfaceWeightArray.isDisposed() ) {
+					trace(error + "surfaceWeightArray is null or disposed ");
+					return false;
+			}
+		}
+		return true;
+	}
+
+	function clearSavedTextures( ctx : Context ) {
+		var datPath = new haxe.io.Path(ctx.shared.currentPath);
+		datPath.ext = "dat";
+		var fullPath = hide.Ide.inst.getPath(datPath.toString() + "/" + name);
+		if( sys.FileSystem.isDirectory(fullPath) ) {
+			var files = sys.FileSystem.readDirectory(fullPath);
+			for( f in files )
+				sys.FileSystem.deleteFile(fullPath + "/" + f);
+		}
+	}
 
 	public function saveHeightTextures( ctx : Context ) {
 		for( tile in terrain.tiles ) {
@@ -415,75 +493,11 @@ class Terrain extends Object3D {
 		}
 	}
 
-	public function saveSurfaceArray( ctx : Context ) {
-		var count = terrain.surfaces.length;
-		for( i in 0 ... count ) {
-			var pixels = terrain.surfaceArray.albedo.capturePixels(i);
-			ctx.shared.savePrefabDat("albedo_" + i, "bin", name, pixels.bytes);
-			var pixels = terrain.surfaceArray.pbr.capturePixels(i);
-			ctx.shared.savePrefabDat("pbr_" + i, "bin", name, pixels.bytes);
-			var pixels = terrain.surfaceArray.normal.capturePixels(i);
-			ctx.shared.savePrefabDat("normal_" + i, "bin", name, pixels.bytes);
-		}
-	}
-
 	#end
-
-	public function loadBinary( ctx : Context ) {
-
-		terrain.surfaceArray = new Surface.SurfaceArray(surfaceCount, surfaceSize);
-
-		var resDir = ctx.shared.loadDir(name);
-		if( resDir == null ) return;
-
-		/*for( res in resDir ) {
-			var fileInfos = res.name.split(".");
-			var ext = fileInfos[1];
-			var file = fileInfos[0];
-			if( ext != "bin" ) continue;
-			var texInfos = file.split("_");
-			var texType = texInfos[0];
-			var face = Std.parseInt(texInfos[1]);
-			var bytes = res.entry.getBytes();
-			var pixels = new hxd.Pixels(surfaceSize, surfaceSize, bytes, RGBA);
-			switch( texType ) {
-				case "albedo" : terrain.surfaceArray.albedo.uploadPixels(pixels, 0, face);
-				case "pbr" : terrain.surfaceArray.pbr.uploadPixels(pixels, 0, face);
-				case "normal" : terrain.surfaceArray.normal.uploadPixels(pixels, 0, face);
-			}
-		}*/
-
-		var pixels = hxd.Pixels.alloc(surfaceSize, surfaceSize, RGBA);
-		for(i in 0 ... pixels.width)
-			for(j in 0 ... pixels.height)
-				pixels.setPixel(i,j, 0xFF0000);
-		terrain.surfaceArray.albedo.uploadPixels(pixels, 0, 0);
-		for(i in 0 ... pixels.width)
-			for(j in 0 ... pixels.height)
-				pixels.setPixel(i,j, 0x00FF00);
-		terrain.surfaceArray.albedo.uploadPixels(pixels, 0, 1);
-		for(i in 0 ... pixels.width)
-			for(j in 0 ... pixels.height)
-				pixels.setPixel(i,j, 0x0000FF);
-		terrain.surfaceArray.albedo.uploadPixels(pixels, 0, 2);
-
-		var pixels = hxd.Pixels.alloc(surfaceSize, surfaceSize, RGBA);
-		terrain.surfaceArray.normal.uploadPixels(pixels, 0, 0);
-		terrain.surfaceArray.normal.uploadPixels(pixels, 0, 1);
-		terrain.surfaceArray.normal.uploadPixels(pixels, 0, 2);
-
-		var pixels = hxd.Pixels.alloc(surfaceSize, surfaceSize, RGBA);
-		terrain.surfaceArray.pbr.uploadPixels(pixels, 0, 0);
-		terrain.surfaceArray.pbr.uploadPixels(pixels, 0, 1);
-		terrain.surfaceArray.pbr.uploadPixels(pixels, 0, 2);
-
-		terrain.updateSurfaceParams();
-		terrain.refreshAllTex();
-		loadTiles(ctx, true, true, true);
-	}
 
 	override function makeInstance( ctx : Context ) : Context {
 		ctx = ctx.clone(this);
+		myContext = ctx;
 
 		terrain = new TerrainMesh(ctx.local3d);
 		terrain.tileSize = new h2d.col.Point(tileSizeX, tileSizeY);
