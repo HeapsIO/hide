@@ -497,7 +497,9 @@ class Terrain extends Object3D {
 
 	override function makeInstance( ctx : Context ) : Context {
 		ctx = ctx.clone(this);
+		#if editor
 		myContext = ctx;
+		#end
 
 		terrain = new TerrainMesh(ctx.local3d);
 		terrain.tileSize = new h2d.col.Point(tileSizeX, tileSizeY);
