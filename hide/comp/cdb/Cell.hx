@@ -58,14 +58,18 @@ class Cell extends Component {
 	function get_columnIndex() return table.columns.indexOf(column);
 	inline function get_value() return currentValue;
 
-	function getCellConfigValue<T>(name:String, ?def:T)
+	function getCellConfigValue<T>( name : String, ?def : T ) : T
 	{
-		var config = ide.currentConfig.get('cdb.${table.sheet.name}.${column.name}', null);
-		if (config != null && Reflect.hasField(config, name)) return Reflect.field(config, name);
-		config = ide.currentConfig.get('cdb.${table.sheet.name}', null);
-		if (config != null && Reflect.hasField(config, name)) return Reflect.field(config, name);
-		config = ide.currentConfig.get('cdb', null);
-		if (config != null && Reflect.hasField(config, name)) return Reflect.field(config, name);
+		var cfg = ide.currentConfig;
+		var paths = table.sheet.name.split("@");
+		paths.unshift("cdb");
+		paths.push(column.name);
+		while ( paths.length != 0 ) {
+			var config = cfg.get(paths.join("."), null);
+			if ( config != null && Reflect.hasField(config, name) )
+				return Reflect.field(config, name);
+			paths.pop();
+		}
 		return def;
 	}
 
