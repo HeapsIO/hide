@@ -45,11 +45,14 @@ class CdbCustomTypes extends hide.ui.View<{}> {
 			for( p in tpairs ) {
 				if( p.b == null )
 					base.getCustomTypes().remove(p.a);
-				else
+				else if( ide.isDebugger )
+					base.updateType(p.a, p.b);
+				else {
 					try base.updateType(p.a, p.b) catch( msg : String ) {
 						ide.error("Error while updating " + p.b.name + " : " + msg);
 						return;
 					}
+				}
 			}
 			base.sync();
 

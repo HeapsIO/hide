@@ -21,6 +21,7 @@ class Ide {
 	public var fileWatcher : hide.tools.FileWatcher;
 	public var typesCache : hide.tools.TypesCache;
 	public var isCDB = false;
+	public var isDebugger = false;
 
 	var databaseFile : String;
 	var databaseDiff : String;
@@ -51,13 +52,12 @@ class Ide {
 	var subView : { component : String, state : Dynamic, events : {} };
 	var scripts : Map<String,Array<Void->Void>> = new Map();
 	var hasReloaded = false;
-	var hasDebugger = false;
 
 	static var firstInit = true;
 
 	function new() {
 		isCDB = Sys.getEnv("HIDE_START_CDB") == "1" || nw.App.manifest.name == "CDB";
-		hasDebugger = Sys.getEnv("HIDE_DEBUG") == "1";
+		isDebugger = Sys.getEnv("HIDE_DEBUG") == "1";
 		function wait() {
 			if( monaco.Editor == null ) {
 				haxe.Timer.delay(wait, 10);
@@ -130,7 +130,7 @@ class Ide {
 		window.on('resize', function() haxe.Timer.delay(onWindowChange,100));
 		window.on('close', function() {
 			if( hasReloaded ) return;
-			if( !hasDebugger )
+			if( !isDebugger )
 				for( v in views )
 					if( !v.onBeforeClose() )
 						return;
