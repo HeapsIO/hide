@@ -1399,6 +1399,7 @@ class SceneEditor {
 	}
 
 	public function dropObjects(paths: Array<String>, parent: PrefabElement) {
+		scene.setCurrent();
 		var localMat = getPickTransform(parent);
 		if(localMat == null) return;
 
