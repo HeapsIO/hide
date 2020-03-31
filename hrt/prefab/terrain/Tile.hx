@@ -95,7 +95,7 @@ class Tile extends h3d.scene.Mesh {
 		bigPrim = new h3d.prim.BigPrimitive(9, true);
 		inline function addVertice(x : Float, y : Float, i : Int) {
 			// Pos
-			bigPrim.addPoint(x, y, getHeight(x / terrain.tileSize.x, y / terrain.tileSize.y)); // Use addPoint() instead of addVertexValue() for the bounds
+			bigPrim.addPoint(x, y, getHeight(x / terrain.tileSize.x, y / terrain.tileSize.y, true)); // Use addPoint() instead of addVertexValue() for the bounds
 			// Normal
 			bigPrim.addVertexValue(bytes.getFloat(i * stride));
 			bigPrim.addVertexValue(bytes.getFloat(i * stride + 4));
@@ -536,8 +536,8 @@ class Tile extends h3d.scene.Mesh {
 
 		}
 		else{
-			var x = hxd.Math.floor(u * (pixels.width - 1) + 0.5);
-			var y = hxd.Math.floor(v * (pixels.height - 1) + 0.5);
+			var x = hxd.Math.floor(u * (pixels.width - 1));
+			var y = hxd.Math.floor(v * (pixels.height - 1));
 			return pixels.getPixelF(x, y).r;
 		}
 	}
