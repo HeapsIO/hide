@@ -1044,6 +1044,7 @@ class SceneEditor {
 			inLassoMode = false;
 			return;
 		}
+		scene.setCurrent();
 		inLassoMode = true;
 		var g = new h2d.Object(scene.s2d);
 		var overlay = new h2d.Bitmap(h2d.Tile.fromColor(0xffffff, 10000, 10000, 0.1), g);
