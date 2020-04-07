@@ -40,6 +40,10 @@ class Cell extends Component {
 					refresh();
 				}
 			});
+			if ( canEdit() )
+				element.dblclick(function(_) edit());
+			else
+				root.addClass("t_readonly");
 		case TString if( column.kind == Script ):
 			element.click(function(_) edit());
 		default:
