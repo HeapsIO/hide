@@ -1,5 +1,7 @@
 # Hide
 
+![image](https://haxe.org/img/blog/2020-04-06-shirogames-stack/hide.png)
+
 Hide (Heaps IDE) is an extensible editor that can be used as a middleware for various tasks, such as:
 - preview 3D models and textures
 - edit materials properties
