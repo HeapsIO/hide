@@ -924,16 +924,12 @@ class Ide {
 				v.syncTitle();
 		}
 		db.find(".dbCreateDiff").click(function(_) {
-			var name = ask("File name","data");
-			if( name == null ) return;
-			if( name.indexOf(".") < 0 ) name += ".diff";
-			var path = getPath(name);
-			if( sys.FileSystem.exists(path) ) {
-				error("File already exists "+path);
-				return;
-			}
-			sys.io.File.saveContent(path,"{}");
-			setDiff(name);
+			chooseFileSave("cdb.diff", function(name) {
+				if( name == null ) return;
+				if( name.indexOf(".") < 0 ) name += ".diff";
+				sys.io.File.saveContent(getPath(name),"{}");
+				setDiff(name);
+			});
 		});
 		db.find(".dbLoadDiff").click(function(_) {
 			chooseFile(["diff"], function(f) {
