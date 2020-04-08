@@ -69,6 +69,8 @@ class ScriptChecker {
 					checker.removeGlobal(f);
 					continue;
 				}
+				var isClass = tname.charCodeAt(0) == '#'.code;
+				if( isClass ) tname = tname.substr(1);
 				var t = checker.types.resolve(tname);
 				if( t == null ) {
 					var path = tname.split(".");
@@ -88,6 +90,14 @@ class ScriptChecker {
 				if( t == null ) {
 					error('Global type $tname not found in $apiFiles ($f)');
 					continue;
+				}
+				if( isClass ) {
+					switch( t ) {
+					case TEnum(e,_):
+						t = TAnon([for( c in e.constructors ) { name : c.name, opt : false, t : c.args == null ? t : TFun(c.args,t) }]);
+					default:
+						error('Cannot process class type $tname');
+					}
 				}
 				checker.setGlobal(f, t);
 			}
@@ -112,7 +122,7 @@ class ScriptChecker {
 						if( cdbPack != "" ) kname = cdbPack + "." + kname;
 						var kind = checker.types.resolve(kname);
 						if( kind == null )
-							kind = TEnum({ name : kname, params : [], constructors : new Map() },[]);
+							kind = TEnum({ name : kname, params : [], constructors : [] },[]);
 						var cl : hscript.Checker.CClass = {
 							name : name,
 							params : [],
