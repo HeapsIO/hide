@@ -284,6 +284,9 @@
 .cdb .cdb-sheet tr.props .cdb-sheet th {
   width: 200px;
 }
+.cdb .cdb-sheet tr.props .cdb-sheet th.start {
+  width: 20px;
+}
 .cdb .cdb-sheet tr.props .cdb-sheet td,
 .cdb .cdb-sheet tr.props .cdb-sheet td > input {
   text-align: left;
