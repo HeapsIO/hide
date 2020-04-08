@@ -13,30 +13,32 @@ Hide (Heaps IDE) is an extensible editor that can be used as a middleware for va
 - extend with your own game specific editors
 
 
-## Compile from sources:
-1. Install Prerequisites
-* Install [Haxe](https://haxe.org/) using approriate installer from https://haxe.org/download/
-* Install these libraries:
-    * `haxelib git heaps https://github.com/HeapsIO/heaps`
-    * `haxelib git castle https://github.com/ncannasse/castle`
-    * `haxelib git hxbit https://github.com/ncannasse/hxbit`
-    * `haxelib git hscript https://github.com/HaxeFoundation/hscript`
-    * `haxelib git hxnodejs https://github.com/HaxeFoundation/hxnodejs`
-    * `haxelib git domkit https://github.com/HeapsIO/domkit`
-    * `haxelib git hx3compat https://github.com/HaxeFoundation/hx3compat`
+## Compiling from source
+#### 1. Install Prerequisites
+- Install [Haxe](https://haxe.org/) using approriate installer from https://haxe.org/download/
+- Install these libraries:
+```
+haxelib git heaps https://github.com/HeapsIO/heaps
+haxelib git castle https://github.com/ncannasse/castle
+haxelib git hxbit https://github.com/ncannasse/hxbit
+haxelib git hscript https://github.com/HaxeFoundation/hscript
+haxelib git hxnodejs https://github.com/HaxeFoundation/hxnodejs
+haxelib git domkit https://github.com/HeapsIO/domkit
+haxelib git hx3compat https://github.com/HaxeFoundation/hx3compat
+```
 
-2. Build Heaps IDE
-* Clone this repo
-* Run `haxe hide.hxml`
-* This will create **hide.js** in the _bin_ folder
-* If there are errors when compiling, make sure you are using the latest libraries from git
+#### 2. Build Heaps IDE
+- Clone this repo
+- Run `haxe hide.hxml`
+- This will create hide.js in the bin folder
+- If there are errors when compiling, make sure you are using the latest libraries from git
 
-3. Run with NWJS
-* Download and copy [NWJS](https://nwjs.io/) into the _/bin/nwjs_ directory
-* Build with `haxe hide.hxml -cmd bin/hide.cmd`
-    * Windows: Run hide.cmd
-    * Linux: Run nwjs/nwjs from _bin_ directory
-    * OSX: Copy all bin files into _bin/nwjs.app/Contents/Resources/app.nw_ folder, then open the NWJS application
+#### 3. Run with NWJS
+- Download and copy [NWJS](https://nwjs.io/) into the /bin/nwjs directory
+- Build with `haxe hide.hxml -cmd bin/hide.cmd`
+    - Windows: Run hide.cmd
+    - Linux: Run nwjs/nwjs from bin directory
+    - OSX: Copy all files from bin into bin/nwjs.app/Contents/Resources/app.nw folder, then open the NWJS application
 
 
 ## Configuration
