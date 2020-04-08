@@ -150,7 +150,7 @@ class FileView extends hide.ui.View<{ path : String }> {
 	override function syncTitle() {
 		super.syncTitle();
 		if( state.path != null )
-			haxe.Timer.delay(function() container.tab.element.attr("title",getPath()), 100);
+			haxe.Timer.delay(function() if( container.tab != null ) container.tab.element.attr("title",getPath()), 100);
 	}
 
 	override function buildTabMenu() {
