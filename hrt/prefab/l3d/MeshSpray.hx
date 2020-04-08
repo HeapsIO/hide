@@ -351,16 +351,11 @@ class MeshSpray extends Object3D {
 				var rotationZ = ((rotation  + randRotationOffset) % 360)/360 * 2*Math.PI;
 
 				var model = new hrt.prefab.Model(this);
-				var meshId = lastMeshId;
-				if (meshId == -1) {
-					if (dontRepeatMesh && lastIndexMesh != -1 && meshes.length > 0) {
-						meshId = Std.random(meshes.length-1);
-						if (meshId >= lastIndexMesh) {
-							meshId++;
-						}
-					} else {
-						meshId = Std.random(meshes.length);
-					}
+				var meshId = 0;
+				if(meshes.length > 1) {
+					do
+						meshId = Std.random(meshes.length)
+					while(dontRepeatMesh && meshId == lastMeshId);
 				}
 				lastIndexMesh = meshId;
 				model.source = meshes[meshId];
