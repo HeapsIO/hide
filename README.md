@@ -1,5 +1,7 @@
 # Hide
 
+[![CI](https://img.shields.io/github/workflow/status/HeapsIO/hide/CI.svg?logo=github)](https://github.com/HeapsIO/hide/actions?query=workflow%3ACI)
+
 ![image](https://haxe.org/img/blog/2020-04-06-shirogames-stack/hide.png)
 
 Hide (Heaps IDE) is an extensible editor that can be used as a middleware for various tasks, such as:
@@ -12,6 +14,9 @@ Hide (Heaps IDE) is an extensible editor that can be used as a middleware for va
 - extend by adding game specific prefabs
 - extend with your own game specific editors
 
+## Nightly builds
+
+If you don't want to build Hide from source, you can download a nightly build from [here](http://37.187.145.134:8080/hide-builds/).
 
 ## Compiling from source
 #### 1. Install Prerequisites
@@ -33,13 +38,15 @@ haxelib git hx3compat https://github.com/HaxeFoundation/hx3compat
 - This will create hide.js in the bin folder
 - If there are errors when compiling, make sure you are using the latest libraries from git
 
-#### 3. Run with NWJS
-- Download and copy [NWJS](https://nwjs.io/) into the /bin/nwjs directory
-- Build with `haxe hide.hxml -cmd bin/hide.cmd`
-    - Windows: Run hide.cmd
-    - Linux: Run nwjs/nwjs from bin directory
-    - OSX: Copy all files from bin into bin/nwjs.app/Contents/Resources/app.nw folder, then open the NWJS application
+#### 3. Install NWJS
+- Download and copy [NWJS](https://nwjs.io/) into the `/bin/nwjs` directory
+- On OSX, copy all files from `bin` into the `bin/nwjs.app/Contents/Resources/app.nw` folder
 
+## Running
+
+- Windows: Run `hide.cmd`
+- Linux: Run `nwjs/nwjs`
+- OSX: Open the NWJS application
 
 ## Configuration
 
