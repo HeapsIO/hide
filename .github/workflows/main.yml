@@ -1,0 +1,63 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      nwjs-version: v0.45.1
+    steps:
+    - uses: actions/checkout@v2
+    - uses: krdlab/setup-haxe@v1
+    - name: Build
+      run: |
+        haxelib git heaps https://github.com/HeapsIO/heaps
+        haxelib git castle https://github.com/ncannasse/castle
+        haxelib git hxbit https://github.com/ncannasse/hxbit
+        haxelib git hscript https://github.com/HaxeFoundation/hscript
+        haxelib git hxnodejs https://github.com/HaxeFoundation/hxnodejs
+        haxelib git domkit https://github.com/HeapsIO/domkit
+        haxelib git hx3compat https://github.com/HaxeFoundation/hx3compat
+        haxe hide.hxml
+    - run: sudo apt-get install p7zip-full
+    - name: Windows
+      run: |
+        wget -O nwjs-win.zip https://dl.nwjs.io/${{env.nwjs-version}}/nwjs-sdk-${{env.nwjs-version}}-win-x64.zip
+        unzip nwjs-win.zip
+        mkdir -p zips
+        cp -r bin zips/windows
+        cp -r nwjs-sdk-${{env.nwjs-version}}-win-x64 zips/windows/nwjs
+        cd zips/windows
+        7z a -mm=Deflate -mx=9 ../windows.zip *
+        cd ../..
+        rm -rf zips/windows
+    - name: Linux
+      run: |
+        wget -O nwjs-linux.tar.gz https://dl.nwjs.io/${{env.nwjs-version}}/nwjs-sdk-${{env.nwjs-version}}-linux-x64.tar.gz
+        tar -xvzf nwjs-linux.tar.gz
+        mkdir -p zips
+        cp -r bin zips/linux
+        cp -r nwjs-sdk-${{env.nwjs-version}}-linux-x64 zips/linux/nwjs
+        cd zips/linux
+        7z a -mm=Deflate -mx=9 ../linux.zip *
+        cd ../..
+        rm -rf zips/linux
+    - name: Mac
+      run: |
+        wget -O nwjs-mac.zip https://dl.nwjs.io/${{env.nwjs-version}}/nwjs-sdk-${{env.nwjs-version}}-osx-x64.zip
+        unzip nwjs-mac.zip
+        mkdir -p zips/mac
+        cp -r nwjs-sdk-${{env.nwjs-version}}-osx-x64/nwjs.app zips/mac/nwjs.app
+        cp -r bin zips/mac/nwjs.app/Contents/Resources/app.nw
+        cd zips/mac
+        7z a -mm=Deflate -mx=9 ../mac.zip *
+        cd ../..
+        rm -rf zips/mac
+    - name: Deploy
+      run: |
+        mkdir ~/.ssh
+        echo "${{secrets.DEPLOY_KEY}}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        scp -o StrictHostKeyChecking=no zips/* gama11@community.heaps.io:hide-builds
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
