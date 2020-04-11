@@ -105,6 +105,12 @@ class PropsEditor extends Component {
 		e.find("input[type=checkbox]").wrap("<div class='checkbox-wrapper'></div>");
 		e.find("input[type=range]").not("[step]").attr({step: "any", tabindex:"-1"});
 
+		// Wrap dt+dd for nw versions of 0.4x+
+		for ( el in e.find("dt").wrap("<div></div>").parent().elements() ) {
+			var n = el.next();
+			if (n.length != 0 && n[0].tagName == "DD") n.appendTo(el);
+		}
+
 		// -- reload states ---
 		for( h in e.find(".section > h1").elements() )
 			if( getDisplayState("section:" + StringTools.trim(h.text())) != false )
