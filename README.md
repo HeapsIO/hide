@@ -16,7 +16,7 @@ Hide (Heaps IDE) is an extensible editor that can be used as a middleware for va
 
 ## Nightly builds
 
-If you don't want to build Hide from source, you can download a nightly build from [here](http://37.187.145.134:8080/hide-builds/).
+If you don't want to build Hide from source, you can download a nightly build from [here](http://build.heaps.io:8080/hide/).
 
 ## Compiling from source
 #### 1. Install Prerequisites
