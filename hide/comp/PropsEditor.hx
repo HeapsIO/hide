@@ -81,6 +81,18 @@ class PropsEditor extends Component {
 			if ( p.def != null ) e.attr("value", "" + p.def);
 		}
 	}
+	
+	public static function makeGroupEl(name: String, content: Element) {
+		var el = new Element('<div class="group" name="${name}"></div>');
+		content.appendTo(el);
+		return el;
+	}
+	
+	public static function makeSectionEl(name: String, content: Element) {
+		var el = new Element('<div class="section"><h1>${name}</h1><div class="content"></div></div>');
+		content.appendTo(el.find(".content"));
+		return el;
+	}
 
 	static function upperCase(prop: String) {
 		return prop.charAt(0).toUpperCase() + prop.substr(1);
