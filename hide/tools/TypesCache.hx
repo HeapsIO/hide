@@ -238,6 +238,8 @@ class TypesCache {
 			return e.getConstructors()[0];
 		case PFile(_):
 			return null;
+		case PString(_):
+			return null;
 		}
 	}
 
@@ -249,6 +251,8 @@ class TypesCache {
 			PFloat();
 		case CTPath(["Bool"]):
 			PBool;
+		case CTPath(["String"]):
+			PString();
 		default:
 			PUnsupported(new hscript.Printer().typeToString(t));
 		}

@@ -75,6 +75,10 @@ class PropsEditor extends Component {
 			var e = new Element('<select field="${p.name}"></select>').appendTo(parent);
 		case PFile(exts):
 			new Element('<input type="texturepath" extensions="${exts.join(" ")}" field="${p.name}">').appendTo(parent);
+		case PString(len):
+			var e = new Element('<input type="text" field="${p.name}">').appendTo(parent);
+			if ( len != null ) e.attr("maxlength", "" + len);
+			if ( p.def != null ) e.attr("value", "" + p.def);
 		}
 	}
 
