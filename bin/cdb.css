@@ -65,7 +65,8 @@
   padding: 2px 4px;
   overflow: hidden;
 }
-.cdb .cdb-sheet tr.props td {
+.cdb .cdb-sheet tr.props td,
+.cdb .cdb-sheet tr.code td {
   overflow: visible;
 }
 .cdb .cdb-sheet > tbody > tr.props:last-child {

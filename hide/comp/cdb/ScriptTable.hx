@@ -39,6 +39,7 @@ class ScriptTable extends SubTable {
 		script.onSave = saveValue;
 		script.onClose = function() { close(); cell.focus(); }
 		lines = [new Line(this,[],0,script.element)];
+		insertedTR.addClass("code");
 		if( first ) script.focus();
 	}
 
