@@ -1,6 +1,11 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  repository_dispatch:
+  schedule:
+    - cron: '0 4 * * *'
 
 jobs:
   build:
@@ -60,4 +65,4 @@ jobs:
         echo "${{secrets.DEPLOY_KEY}}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         scp -o StrictHostKeyChecking=no zips/* gama11@community.heaps.io:builds/hide
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      if: github.ref == 'refs/heads/master'
