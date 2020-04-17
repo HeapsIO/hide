@@ -173,13 +173,13 @@ class AdvancedDecal extends Object3D {
 			o.remove();
 	}
 
-	var pbrParams = '<dt>Albedo</dt><dd><input type="texturepath" field="albedoMap"/></dd>
+	var pbrParams = '<dt>Albedo</dt><dd><input type="texturepath" field="albedoMap"/>
 					<br/><input type="range" min="0" max="1" field="albedoStrength"/></dd>
 
-					<dt>Normal</dt><dd><input type="texturepath" field="normalMap"/></dd>
+					<dt>Normal</dt><dd><input type="texturepath" field="normalMap"/>
 					<br/><input type="range" min="0" max="1" field="normalStrength"/></dd>
 
-					<dt>PBR</dt><dd><input type="texturepath" field="pbrMap"/></dd>
+					<dt>PBR</dt><dd><input type="texturepath" field="pbrMap"/>
 					<br/><input type="range" min="0" max="1" field="pbrStrength"/></dd>';
 
 	var overlayParams = '<dt>Color</dt><dd><input type="texturepath" field="albedoMap"/></dd>
