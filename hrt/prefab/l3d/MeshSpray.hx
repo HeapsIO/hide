@@ -7,7 +7,7 @@ class MeshSpray extends Object3D {
 
 	#if editor
 
-	var meshes : Array<String> = [];
+	var meshes : Array<{ path: String, isRef: Bool }> = [];
 	var sceneEditor : hide.comp.SceneEditor;
 
 	var density : Int = 10;
@@ -178,9 +178,16 @@ class MeshSpray extends Object3D {
 
 		var props = new hide.Element('<div class="group" name="Meshes"></div>');
 		var selectElement = new hide.Element('<select multiple size="6" style="width: 300px" ></select>').appendTo(props);
-		for (m in meshes) {
-			addMeshPath(m);
-			selectElement.append(new hide.Element('<option value="${m}">${extractMeshName(m)}</option>'));
+		for (m in meshes.copy()) {
+			var path : String = null;
+			if (Std.is(m, String)) { // retro-compatibility
+				path = cast m;
+				meshes.remove(m);
+				addMeshPath(path);
+			} else {
+				path = m.path;
+			}
+			selectElement.append(new hide.Element('<option value="${path}">${extractMeshName(path)}</option>'));
 		}
 		var options = new hide.Element('<div class="btn-list" align="center" ></div>').appendTo(props);
 
@@ -204,7 +211,7 @@ class MeshSpray extends Object3D {
 			}
 		});
 		addBtn.on("click", function () {
-			hide.Ide.inst.chooseFiles(["fbx"], function(path) {
+			hide.Ide.inst.chooseFiles(["fbx", "l3d"], function(path) {
 				for( m in path ) {
 					addMeshPath(m);
 					selectElement.append(new hide.Element('<option value="$m">${extractMeshName(m)}</option>'));
@@ -268,12 +275,14 @@ class MeshSpray extends Object3D {
 	}
 
 	function addMeshPath(path : String) {
-		if (meshes.indexOf(path) == -1)
-			meshes.push(path);
+		if (meshes.filter(m -> m.path == path).length == 0)
+			meshes.push({ path: path, isRef: path.indexOf(".fbx") == -1 });
 	}
 
 	function removeMeshPath(path : String) {
-		meshes.remove(path);
+		var mesh = meshes.filter(m -> m.path == path);
+		if (mesh.length > 0)
+			meshes.remove(mesh[0]);
 	}
 
 	var localMat = new h3d.Matrix();
@@ -350,7 +359,6 @@ class MeshSpray extends Object3D {
 				}
 				var rotationZ = ((rotation  + randRotationOffset) % 360)/360 * 2*Math.PI;
 
-				var model = new hrt.prefab.Model(this);
 				var meshId = 0;
 				if(meshes.length > 1) {
 					do
@@ -358,13 +366,26 @@ class MeshSpray extends Object3D {
 					while(dontRepeatMesh && meshId == lastMeshId);
 				}
 				lastIndexMesh = meshId;
-				model.source = meshes[meshId];
-				if (computedDensity == 1) {
+				if (computedDensity == 1)
 					lastMeshId = meshId;
-				} else {
+				else
 					lastMeshId = -1;
+
+				var meshUsed = meshes[meshId];
+				
+				var newPrefab : hrt.prefab.Object3D = null;
+
+				if (meshUsed.isRef) {
+					var refPrefab = new hrt.prefab.Reference(this);
+					refPrefab.refpath = "/"+meshUsed.path;
+					newPrefab = refPrefab;
+				} else {
+					var model = new hrt.prefab.Model(this);
+					model.source = meshUsed.path;
+					newPrefab = model;
 				}
-				model.name = extractMeshName(model.source);
+
+				newPrefab.name = extractMeshName(meshUsed.path);
 
 				localMat.initRotationZ(rotationZ);
 
@@ -380,10 +401,10 @@ class MeshSpray extends Object3D {
 				localMat.setPosition(new Vector(position.x, position.y, position.z));
 				localMat.multiply(localMat, invParent);
 
-				model.setTransform(localMat);
+				newPrefab.setTransform(localMat);
 
-				previewModels.push(model);
-				currentPivots.push(new h2d.col.Point(model.x, model.y));
+				previewModels.push(newPrefab);
+				currentPivots.push(new h2d.col.Point(newPrefab.x, newPrefab.y));
 			}
 
 			if (previewModels.length > 0) {
