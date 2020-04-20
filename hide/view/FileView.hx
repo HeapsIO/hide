@@ -68,6 +68,8 @@ class FileView extends hide.ui.View<{ path : String }> {
 		keys.register("undo", function() undo.undo());
 		keys.register("redo", function() undo.redo());
 		keys.register("save", function() save());
+		keys.register("view.refresh", function() rebuild());
+		keys.register("view.refreshApp", function() untyped chrome.runtime.reload());
 	}
 
 	public function save() {

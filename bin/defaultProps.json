@@ -41,6 +41,8 @@
 	// view keys
 
 	"key.view.fullScreen" : "F11",
+	"key.view.refresh" : "F5",
+	"key.view.refreshApp" : "Ctrl-F5",
 
 	// File tree
 	"filetree.excludes": [
