@@ -202,15 +202,15 @@ class Text3D extends Object3D {
 		if (pathFont == null || pathFont.length == 0) {
 			return;
 		}
-		if (contentText == null || contentText.length == 0)
+		var text = loadText();
+		if (text == null || text.length == 0)
 			return;
 		var mesh : h3d.scene.Mesh = cast ctx.local3d;
-		var font = hxd.res.Loader.currentInstance.load(pathFont).to(hxd.res.BitmapFont);
-		var h2dFont = font.toSdfFont(size, MultiChannel, cutoff, smoothing);
+		var h2dFont = loadFont();
 		var h2dText = (cast ctx.local2d : h2d.Text);
 		h2dText.font = h2dFont;
 		h2dText.letterSpacing = letterSpacing;
-		h2dText.text = contentText;
+		h2dText.text = text;
 		h2dText.smooth = true;
         h2dText.textAlign = switch (align) {
 			case 1:
@@ -222,7 +222,7 @@ class Text3D extends Object3D {
 		}
 		@:privateAccess h2dText.glyphs.content = (cast mesh.primitive : Text3DPrimitive);
 		@:privateAccess {
-			h2dText.initGlyphs(contentText);
+			h2dText.initGlyphs(text);
 			h2dText.glyphs.setDefaultColor(color, 1);
 			mesh.primitive = h2dText.glyphs.content;
 			mesh.material.texture = h2dFont.tile.getTexture();
@@ -240,6 +240,35 @@ class Text3D extends Object3D {
 			shader.color = h3d.Vector.fromColor(color);
 			mesh.material.mainPass.addShader(shader);
 		}
+	}
+
+	public dynamic function loadFont() : h2d.Font {
+		var f = defaultLoadFont(pathFont, size, cutoff, smoothing);
+		if (f == null) {
+			if (pathFont != null && pathFont.length > 0) {
+				var font = hxd.res.Loader.currentInstance.load(pathFont).to(hxd.res.BitmapFont);
+				return font.toSdfFont(size, MultiChannel, cutoff, smoothing);
+			} else {
+				return null;
+			}
+		}
+		else return f;
+	}
+
+	public static dynamic function defaultLoadFont( pathFont : String, size : Int, cutoff : Float, smoothing : Float ) : h2d.Font {
+		return null;
+	}
+
+	public dynamic function loadText() : String {
+		var str = defaultLoadText(contentText);
+		if (str == null) {
+			return contentText;
+		}
+		else return str;
+	}
+
+	public static dynamic function defaultLoadText(id: String) : String {
+		return null;
 	}
 
 	override function makeInstance(ctx:Context):Context {
