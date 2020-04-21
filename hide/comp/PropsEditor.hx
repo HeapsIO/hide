@@ -88,8 +88,9 @@ class PropsEditor extends Component {
 		return el;
 	}
 	
-	public static function makeSectionEl(name: String, content: Element) {
-		var el = new Element('<div class="section"><h1>${name}</h1><div class="content"></div></div>');
+	public static function makeSectionEl(name: String, content: Element, ?headerContent: Element) {
+		var el = new Element('<div class="section"><h1><span>${name}</span></h1><div class="content"></div></div>');
+		if (headerContent != null) headerContent.appendTo(el.find("h1"));
 		content.appendTo(el.find(".content"));
 		return el;
 	}
@@ -135,6 +136,10 @@ class PropsEditor extends Component {
 			section.children(".content").slideToggle(100);
 			saveDisplayState("section:" + StringTools.trim(e.getThis().text()), section.hasClass("open"));
 		}).find("input").mousedown(function(e) e.stopPropagation());
+		
+		e.find("input[type=section_name]").change(function(e) {
+			e.getThis().closest(".section").find(">h1 span").text(e.getThis().val());
+		});
 
 		// init groups
 		var gindex = 0;
@@ -167,6 +172,10 @@ class PropsEditor extends Component {
 			saveDisplayState("group:" + key, group.hasClass("open"));
 
 		}).find("input").mousedown(function(e) e.stopPropagation());
+		
+		e.find("input[type=group_name]").change(function(e) {
+			e.getThis().closest(".group").find(">.title").val(e.getThis().val());
+		});
 
 		// init input reflection
 		for( f in e.find("[field]").elements() ) {
