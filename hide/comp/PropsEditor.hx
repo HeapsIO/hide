@@ -94,6 +94,18 @@ class PropsEditor extends Component {
 		content.appendTo(el.find(".content"));
 		return el;
 	}
+	
+	public static function makeLabelEl(name: String, content: Element) {
+		var el = new Element('<dt>${name}</dt><dd></dd>');
+		content.appendTo(el.find("dd"));
+		return el;
+	}
+	
+	public static function makeListEl(content:Array<Element>) {
+		var el = new Element("<dl>");
+		for ( e in content ) e.appendTo(el);
+		return el;
+	}
 
 	static function upperCase(prop: String) {
 		return prop.charAt(0).toUpperCase() + prop.substr(1);
