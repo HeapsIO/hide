@@ -9,6 +9,7 @@ enum PropType {
 	PChoice( choices : Array<String> );
 	PFile( exts : Array<String> );
 	PEnum( e : Enum<Dynamic>);
+	PString( ?maxLen : Int );
 	PUnsupported( debug : String );
 }
 
