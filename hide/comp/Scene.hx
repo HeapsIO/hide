@@ -181,6 +181,7 @@ class Scene extends Component implements h3d.IDrawable {
 			return;
 		refreshIfUnfocused = false;
 		setCurrent();
+		hxd.Timer.update();
 		sevents.checkEvents();
 		var dt = hxd.Timer.tmod * speed / 60;
 		s2d.setElapsedTime(dt);
