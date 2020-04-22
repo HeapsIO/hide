@@ -3,11 +3,26 @@ package hrt.prefab.l3d;
 import h3d.Vector;
 import hxd.Key as K;
 
+typedef Mesh = {
+	var path: String;
+	var isRef: Bool;
+}
+
+typedef Set = {
+	var name: String;
+	var meshes: Array<Mesh>;
+}
+
+typedef SetGroup = {
+	var name: String;
+	var sets: Array<Set>;
+}
+
 class MeshSpray extends Object3D {
 
 	#if editor
 
-	var meshes : Array<{ path: String, isRef: Bool }> = [];
+	var meshes : Array<Mesh> = []; // specific set for this mesh spray
 	var sceneEditor : hide.comp.SceneEditor;
 
 	var density : Int = 10;
@@ -21,6 +36,21 @@ class MeshSpray extends Object3D {
 
 	var dontRepeatMesh : Bool = false;
 	var lastIndexMesh = -1;
+	
+	var currentPresetName : String = null;
+	var currentSetName : String = null;
+
+	var allSetGroups : Array<SetGroup>;
+	var setGroup : SetGroup;
+	var currentSet : Set;
+
+	var currentMeshes(get, null) : Array<Mesh>;
+	function get_currentMeshes() {
+		if (currentSet != null) 
+			return currentSet.meshes;
+		else
+			return meshes;
+	}
 
 	var sprayEnable : Bool = false;
 	var interactive : h2d.Interactive;
@@ -29,6 +59,8 @@ class MeshSpray extends Object3D {
 	var timerCicle : haxe.Timer;
 
 	var lastSpray : Float = 0;
+
+	var HIDE_CONFIG_KEY = "meshSpray";
 
 	#end
 
@@ -43,6 +75,8 @@ class MeshSpray extends Object3D {
 		var obj : Dynamic = super.save();
 		obj.meshes = meshes;
 		obj.dontRepeatMesh = dontRepeatMesh;
+		obj.currentPresetName = currentPresetName;
+		obj.currentSetName = currentSetName;
 		obj.density = density;
 		obj.densityOffset = densityOffset;
 		obj.radius = radius;
@@ -75,6 +109,10 @@ class MeshSpray extends Object3D {
 		if (obj.rotationOffset != null)
 			rotationOffset = obj.rotationOffset;
 		dontRepeatMesh = obj.dontRepeatMesh;
+		if (obj.currentPresetName != null)
+			currentPresetName = obj.currentPresetName;
+		if (obj.currentSetName != null)
+			currentSetName = obj.currentSetName;
 	}
 
 	override function getHideProps() : HideProps {
@@ -87,10 +125,20 @@ class MeshSpray extends Object3D {
 		return childParts[childParts.length - 1].split(".")[0];
 	}
 
+	function saveConfigMeshBatch() {
+		hide.Ide.inst.currentConfig.set(HIDE_CONFIG_KEY, allSetGroups);
+	}
+
 	var wasEdited = false;
 
 	var previewModels : Array<hrt.prefab.Prefab> = [];
 	override function edit( ectx : EditContext ) {
+		if (sceneEditor == null) {
+			allSetGroups = hide.Ide.inst.currentConfig.get(HIDE_CONFIG_KEY);
+			if (allSetGroups == null) {
+				allSetGroups = [];
+			}
+		}
 		sceneEditor = ectx.scene.editor;
 
 
@@ -154,7 +202,6 @@ class MeshSpray extends Object3D {
 			if (lastSpray < Date.now().getTime() - 100) {
 				if (previewModels.length > 0) {
 					sceneEditor.deleteElements(previewModels, () -> { }, false, false);
-					sceneEditor.selectObjects([this], Nothing);
 					previewModels = [];
 				}
 				if( !shiftPressed ) {
@@ -169,6 +216,7 @@ class MeshSpray extends Object3D {
 							removeMeshesAround(ctx, worldPos);
 						} else {
 							addMeshes(ctx);
+							if (density == 1) sprayEnable = false;
 						}
 					}
 				}
@@ -177,18 +225,125 @@ class MeshSpray extends Object3D {
 		};
 
 		var props = new hide.Element('<div class="group" name="Meshes"></div>');
-		var selectElement = new hide.Element('<select multiple size="6" style="width: 300px" ></select>').appendTo(props);
-		for (m in meshes.copy()) {
-			var path : String = null;
-			if (Std.is(m, String)) { // retro-compatibility
-				path = cast m;
-				meshes.remove(m);
-				addMeshPath(path);
-			} else {
-				path = m.path;
+		
+		var preset = new hide.Element('<div class="btn-list" align="center" ></div>').appendTo(props);
+
+		var selectPresetElt = new hide.Element('<select style="width: 150px" ></select>').appendTo(preset);
+
+		function updateSelectPreset() {
+			selectPresetElt.empty();
+			var allSetGroupsName = [null];
+			for (g in allSetGroups) allSetGroupsName.push(g.name);
+			for (presetValue in allSetGroupsName) {
+				var selected = (currentPresetName == presetValue);
+				var presetName = (presetValue == null) ? "No preset" : presetValue;
+				selectPresetElt.append(new hide.Element('<option ${(selected) ? 'selected=selected' : ''} value="${presetValue}"" >${presetName}</option>'));
 			}
-			selectElement.append(new hide.Element('<option value="${path}">${extractMeshName(path)}</option>'));
+			selectPresetElt.append(new hide.Element('<option value="#add">-- Add preset --</option>'));
 		}
+		updateSelectPreset();
+
+		var setsList = new hide.Element('<div align="center" ></div>').appendTo(preset);
+
+		var selectElement = new hide.Element('<select multiple size="6" style="width: 300px" ></select>').appendTo(props);
+
+		function onChangeSet() {
+			selectElement.empty();
+			for (m in currentMeshes.copy()) {
+				var path : String = null;
+				if (Std.is(m, String)) { // retro-compatibility
+					path = cast m;
+					currentMeshes.remove(m);
+					addMeshPath(path);
+				} else {
+					path = m.path;
+				}
+				selectElement.append(new hide.Element('<option value="${path}">${extractMeshName(path)}</option>'));
+			}
+		}
+		
+		var selectedSetElt : hide.Element = null;
+		inline function setSet(set: Set, setElt : hide.Element) {
+			currentSetName = (set != null) ? set.name : null;
+			currentSet = set;
+			if (selectedSetElt != null)
+				selectedSetElt.css("border-color", "#444444");
+			selectedSetElt = setElt;
+			if (selectedSetElt != null)
+				selectedSetElt.css("border-color", "green");
+			onChangeSet();
+		}
+
+		function onChangePreset() {
+			if (currentPresetName != null) {
+				var tmp = allSetGroups.filter(g -> g.name == currentPresetName);
+				if (tmp.length > 0)
+					setGroup = tmp[0];
+				else
+					return;
+			} else {
+				setGroup = null;
+				setSet(null, null);
+			}
+			setsList.empty();
+			if (setGroup != null) {
+				for (s in setGroup.sets) {
+					var setElt = new hide.Element('<div style="margin: 5px; padding: 10px; border: solid 1px #444444; display: inline-block;" ></div>').appendTo(setsList);
+					var inputSetElt = new hide.Element('<input type="text" style="width: 75px; border: none; padding: 0; text-align: center;" value="${s.name}" />').appendTo(setElt);
+					setElt.on("click", function(e) {
+						setSet(s, setElt);
+					});
+					inputSetElt.on("change", function(e) {
+						var value : String = inputSetElt.val();
+						if (value != null && value.length > 0) {
+							s.name = value;
+							saveConfigMeshBatch();
+						} else {
+							inputSetElt.val(s.name);
+						}
+					});
+					if (s.name == currentSetName) setSet(s, setElt);
+				}
+				var addSet = new hide.Element('<div style="margin: 5px; padding: 10px; border: solid 1px #444444; display: inline-block;" >Add set</div>').appendTo(setsList);
+				addSet.on("click", function(e) {
+					var name = hide.Ide.inst.ask("Name set:");
+					if (name == null || name.length == 0) return;
+					setGroup.sets.push({
+						name: name,
+						meshes: []
+					});
+					currentSetName = name;
+					onChangePreset();
+				});
+			}
+		}
+		selectPresetElt.on("change", function() {
+			var value = selectPresetElt.val();
+			if (value == "null") value = null;
+			if (value == "#add") {
+				var name = hide.Ide.inst.ask("Name preset:");
+				var groups = allSetGroups.filter(g -> g.name == name);
+				if (name == null || name.length == 0 || groups.length > 0)
+					return;
+				allSetGroups.push({
+					name: name,
+					sets: [{
+						name: "set",
+						meshes: []
+					}]
+				});
+				currentPresetName = name;
+				currentSetName = "set";
+				saveConfigMeshBatch();
+				updateSelectPreset();
+				onChangePreset();
+				return;
+			}
+			currentPresetName = value;
+			onChangePreset();
+		});
+		onChangePreset();
+
 		var options = new hide.Element('<div class="btn-list" align="center" ></div>').appendTo(props);
 
 		var selectAllBtn = new hide.Element('<input type="button" value="Select all" />').appendTo(options);
@@ -275,14 +430,19 @@ class MeshSpray extends Object3D {
 	}
 
 	function addMeshPath(path : String) {
-		if (meshes.filter(m -> m.path == path).length == 0)
-			meshes.push({ path: path, isRef: path.indexOf(".fbx") == -1 });
+		var mesh = { path: path, isRef: path.indexOf(".fbx") == -1 };
+		if (currentMeshes.filter(m -> m.path == path).length == 0)
+			currentMeshes.push(mesh);
+		if (currentSet != null)
+			saveConfigMeshBatch();
 	}
 
 	function removeMeshPath(path : String) {
-		var mesh = meshes.filter(m -> m.path == path);
+		var mesh = currentMeshes.filter(m -> m.path == path);
 		if (mesh.length > 0)
-			meshes.remove(mesh[0]);
+			currentMeshes.remove(mesh[0]);
+		if (currentSet != null)
+			saveConfigMeshBatch();
 	}
 
 	var localMat = new h3d.Matrix();
@@ -290,7 +450,7 @@ class MeshSpray extends Object3D {
 	var invParent : h3d.Matrix;
 	var lastMeshId = -1;
 	function previewMeshesAround(ctx : Context, point : h3d.col.Point) {
-		if (meshes.length == 0) {
+		if (currentMeshes.length == 0) {
 			return;
 		}
 		if (invParent == null) {
@@ -360,9 +520,9 @@ class MeshSpray extends Object3D {
 				var rotationZ = ((rotation  + randRotationOffset) % 360)/360 * 2*Math.PI;
 
 				var meshId = 0;
-				if(meshes.length > 1) {
+				if(currentMeshes.length > 1) {
 					do
-						meshId = Std.random(meshes.length)
+						meshId = Std.random(currentMeshes.length)
 					while(dontRepeatMesh && meshId == lastMeshId);
 				}
 				lastIndexMesh = meshId;
@@ -371,7 +531,7 @@ class MeshSpray extends Object3D {
 				else
 					lastMeshId = -1;
 
-				var meshUsed = meshes[meshId];
+				var meshUsed = currentMeshes[meshId];
 				
 				var newPrefab : hrt.prefab.Object3D = null;
 
