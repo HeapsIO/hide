@@ -367,6 +367,7 @@ class Ide {
 	}
 
 	function mainLoop() {
+		hxd.Timer.update();
 		for( f in updates )
 			f();
 	}
