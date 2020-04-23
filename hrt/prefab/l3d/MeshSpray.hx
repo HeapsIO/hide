@@ -60,8 +60,6 @@ class MeshSpray extends Object3D {
 
 	var lastSpray : Float = 0;
 
-	var HIDE_CONFIG_KEY = "meshSpray";
-
 	#end
 
 	public function new( ?parent ) {
@@ -70,6 +68,12 @@ class MeshSpray extends Object3D {
 	}
 
 	#if editor
+
+	var MESH_SPRAY_CONFIG_FILE = "meshSprayProps.json";
+	var MESH_SPRAY_CONFIG_PATH(get, null) : String;
+	function get_MESH_SPRAY_CONFIG_PATH() {
+		return hide.Ide.inst.resourceDir + "/" + MESH_SPRAY_CONFIG_FILE;
+	}
 
 	override function save() {
 		var obj : Dynamic = super.save();
@@ -126,7 +130,7 @@ class MeshSpray extends Object3D {
 	}
 
 	function saveConfigMeshBatch() {
-		hide.Ide.inst.currentConfig.set(HIDE_CONFIG_KEY, allSetGroups);
+		sys.io.File.saveContent(MESH_SPRAY_CONFIG_PATH, hide.Ide.inst.toJSON(allSetGroups));
 	}
 
 	var wasEdited = false;
@@ -134,10 +138,10 @@ class MeshSpray extends Object3D {
 	var previewModels : Array<hrt.prefab.Prefab> = [];
 	override function edit( ectx : EditContext ) {
 		if (sceneEditor == null) {
-			allSetGroups = hide.Ide.inst.currentConfig.get(HIDE_CONFIG_KEY);
-			if (allSetGroups == null) {
-				allSetGroups = [];
-			}
+			allSetGroups = if( sys.FileSystem.exists(MESH_SPRAY_CONFIG_PATH) )
+				try hide.Ide.inst.parseJSON(sys.io.File.getContent(MESH_SPRAY_CONFIG_PATH)) catch( e : Dynamic ) throw e+" (in "+MESH_SPRAY_CONFIG_PATH+")";
+			else
+				[];
 		}
 		sceneEditor = ectx.scene.editor;
 
@@ -263,7 +267,7 @@ class MeshSpray extends Object3D {
 		}
 		
 		var selectedSetElt : hide.Element = null;
-		inline function setSet(set: Set, setElt : hide.Element) {
+		function setSet(set: Set, setElt : hide.Element) {
 			currentSetName = (set != null) ? set.name : null;
 			currentSet = set;
 			if (selectedSetElt != null)
@@ -328,12 +332,12 @@ class MeshSpray extends Object3D {
 				allSetGroups.push({
 					name: name,
 					sets: [{
-						name: "set",
+						name: "SetName",
 						meshes: []
 					}]
 				});
 				currentPresetName = name;
-				currentSetName = "set";
+				currentSetName = "SetName";
 				saveConfigMeshBatch();
 				updateSelectPreset();
 				onChangePreset();
