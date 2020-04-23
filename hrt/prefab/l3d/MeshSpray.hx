@@ -76,7 +76,8 @@ class MeshSpray extends Object3D {
 	}
 
 	override function save() {
-		var obj : Dynamic = super.save();
+		var obj : Dynamic = {};
+		obj.x = obj.y = obj.z = 0;
 		obj.meshes = meshes;
 		obj.dontRepeatMesh = dontRepeatMesh;
 		obj.currentPresetName = currentPresetName;
@@ -93,7 +94,7 @@ class MeshSpray extends Object3D {
 	}
 
 	override function load( obj : Dynamic ) {
-		super.load(obj);
+		x = y = z = 0;
 		if (obj.meshes != null)
 			meshes = obj.meshes;
 		if (obj.density != null)
@@ -232,7 +233,9 @@ class MeshSpray extends Object3D {
 		
 		var preset = new hide.Element('<div class="btn-list" align="center" ></div>').appendTo(props);
 
-		var selectPresetElt = new hide.Element('<select style="width: 150px" ></select>').appendTo(preset);
+		var presetChoice = new hide.Element('<div align="center" ></div>').appendTo(preset);
+
+		var selectPresetElt = new hide.Element('<select style="width: 150px" ></select>').appendTo(presetChoice);
 
 		function updateSelectPreset() {
 			selectPresetElt.empty();
@@ -246,6 +249,9 @@ class MeshSpray extends Object3D {
 			selectPresetElt.append(new hide.Element('<option value="#add">-- Add preset --</option>'));
 		}
 		updateSelectPreset();
+
+		var editPresetName = new hide.Element('<button>Edit</button>').appendTo(presetChoice);
+		var deletePreset = new hide.Element('<button>Del.</button>').appendTo(presetChoice);
 
 		var setsList = new hide.Element('<div align="center" ></div>').appendTo(preset);
 
@@ -346,6 +352,32 @@ class MeshSpray extends Object3D {
 			currentPresetName = value;
 			onChangePreset();
 		});
+
+		editPresetName.on("click", function() {
+			if (currentPresetName == null) return;
+			var preset = allSetGroups.filter(s -> s.name == currentPresetName);
+			if (preset.length == 0) return;
+			var name = hide.Ide.inst.ask("New name preset:");
+			if (name == null || name.length == 0) return;
+			preset[0].name = name;
+			currentPresetName = name;
+			saveConfigMeshBatch();
+			updateSelectPreset();
+			onChangePreset();
+		});
+		
+		deletePreset.on("click", function() {
+			if (currentPresetName == null) return;
+			var preset = allSetGroups.filter(s -> s.name == currentPresetName);
+			if (preset.length == 0) return;
+			allSetGroups.remove(preset[0]);
+			currentPresetName = null;
+			currentSetName = null;
+			saveConfigMeshBatch();
+			updateSelectPreset();
+			onChangePreset();
+		});
+
 		onChangePreset();
 
 		var options = new hide.Element('<div class="btn-list" align="center" ></div>').appendTo(props);
