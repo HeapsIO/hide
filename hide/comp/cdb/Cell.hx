@@ -31,19 +31,20 @@ class Cell extends Component {
 				@:privateAccess line.table.toggleList(this);
 			});
 		case TFile:
-			element.on("drop", function(e : js.jquery.Event) {
-				var e : js.html.DragEvent = untyped e.originalEvent;
-				if (e.dataTransfer.files.length > 0) {
-					e.preventDefault();
-					e.stopPropagation();
-					setValue(ide.makeRelative(untyped e.dataTransfer.files.item(0).path));
-					refresh();
-				}
-			});
-			if ( canEdit() )
+			if (canEdit()) {
+				element.on("drop", function(e : js.jquery.Event) {
+					var e : js.html.DragEvent = untyped e.originalEvent;
+					if (e.dataTransfer.files.length > 0) {
+						e.preventDefault();
+						e.stopPropagation();
+						setValue(ide.makeRelative(untyped e.dataTransfer.files.item(0).path));
+						refresh();
+					}
+				});
 				element.dblclick(function(_) edit());
-			else
+			} else {
 				root.addClass("t_readonly");
+			}
 		case TString if( column.kind == Script ):
 			element.click(function(_) edit());
 		default:
