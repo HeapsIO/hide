@@ -5,8 +5,9 @@ import h2d.Particles.ParticleGroup in ParticleGroup;
 class Particles2D extends FileView {
 
 	var scene : hide.comp.Scene;
+	var camera : hide.view.l3d.CameraController2D;
 	var parts : h2d.Particles;
-	var partsProps : { ?backgroundPath : String, ?dx : Int, ?dy : Int };
+	var partsProps : { ?backgroundPath : String, ?dx : Int, ?dy : Int, ?smooth:Bool };
 
 	var uiProps : { showBounds : Bool };
 	var debugBounds : Array<Graphics> = [];
@@ -38,7 +39,10 @@ class Particles2D extends FileView {
 	}
 
 	function init() {
-		parts = new h2d.Particles(scene.s2d);
+		camera = new hide.view.l3d.CameraController2D(scene.s2d);
+		camera.set(0, 0, 1);
+		@:privateAccess camera.curPos.set(0, 0, 1);
+		parts = new h2d.Particles(camera);
 		parts.smooth = true;
 		parts.load(haxe.Json.parse(sys.io.File.getContent(getPath())));
 		uiProps = { showBounds: false };
@@ -51,13 +55,13 @@ class Particles2D extends FileView {
 
 	override function onResize() {
 		if (parts != null) {
-			parts.x = scene.width >> 1;
-			parts.y = scene.height >> 1;
-		}
-		if (background != null) {
-			background.setPosition(parts.x - background.tile.width / 2, parts.y - background.tile.height / 2);
-			background.tile.dx = partsProps.dx;
-			background.tile.dy = partsProps.dy;
+			camera.set(0, 0);
+			parts.smooth = partsProps.smooth;
+			if (background != null) {
+				background.setPosition(-background.tile.width / 2, -background.tile.height / 2);
+				background.tile.dx = partsProps.dx;
+				background.tile.dy = partsProps.dy;
+			}
 		}
 	}
 
@@ -74,6 +78,7 @@ class Particles2D extends FileView {
 							<dt>Texture</dt><dd><input type="texture" field="texture"/></dd>
 							<dt>Color Gradient</dt><dd><input type="texture" field="colorGradient"/></dd>
 							<dt>Sort Mode</dt><dd><select field="sortMode"/></dd></dd>
+							<dt>Relative</dt><dd><input type="checkbox" field="isRelative"/></dd>
 						</dl>
 					</div>
 
@@ -87,7 +92,7 @@ class Particles2D extends FileView {
 							<dt>Count</dt><dd><input type="range" field="nparts" min="0" max="300" step="1"/></dd>
 							<dt>Distance</dt><dd><input type="range" field="emitDist" min="0" max="1000" step="1"/></dd>
 							<dt>Distance Y</dt><dd><input type="range" field="emitDistY" min="0" max="1000" step="1"/></dd>
-							<dt>Angle</dt><dd><input type="range" field="emitAngle" min="-1" max="1" step="0.1"/></dd>
+							<dt>Angle</dt><dd><input type="range" field="emitAngle" min="-1.571" max="1.571" step="0.0524"/></dd>
 							<dt>Sync</dt><dd><input type="range" field="emitSync" min="0" max="1"/></dd>
 							<dt>Delay</dt><dd><input type="range" field="emitDelay" min="0" max="10"/></dd>
 							<dt>Loop</dt><dd><input type="checkbox" field="emitLoop"/></dd>
@@ -215,7 +220,7 @@ class Particles2D extends FileView {
 				</div>
 			</div>
 		');
-
+		
 		extra = properties.add(extra, uiProps);
 		extra.find(".new").click(function(_) {
 			var g = parts.addGroup();
@@ -236,16 +241,18 @@ class Particles2D extends FileView {
 	function addBackgroundParams() {
 		partsProps = @:privateAccess parts.hideProps;
 		if( partsProps == null ) {
-			partsProps = {dx: 0, dy: 0};
+			partsProps = {dx: 0, dy: 0, smooth: true};
 			@:privateAccess parts.hideProps = partsProps;
+		} else if (partsProps.smooth == null) {
+			partsProps.smooth = true;
 		}
 
 		function createBackground() {
 			if (partsProps.backgroundPath != null) {
 				var tile = h2d.Tile.fromTexture(scene.loadTexture(state.path, partsProps.backgroundPath));
 				background = new h2d.Bitmap(tile);
-				scene.s2d.add(background, 0);
-				scene.s2d.addChild(parts);
+				camera.addChildAt(background, 0);
+				camera.addChildAt(parts, 1);
 			}
 		}
 		createBackground();
@@ -258,6 +265,7 @@ class Particles2D extends FileView {
 						<dt>Texture</dt><dd><input type="texturepath" field="backgroundPath"/></dd>
 						<dt>X</dt><dd><input type="range" field="dx" min="-500" max="500" step="1"/></dd>
 						<dt>Y</dt><dd><input type="range" field="dy" min="-500" max="500" step="1"/></dd>
+						<dt>Smooth parts</td><dd><input type="checkbox" field="smooth"/></dt>
 					</dl>
 				</div>
 			</div>
@@ -271,6 +279,8 @@ class Particles2D extends FileView {
 				}
 
 				createBackground();
+			} else if (propName == "smooth") {
+				parts.smooth = partsProps.smooth;
 			}
 
 			onResize();
