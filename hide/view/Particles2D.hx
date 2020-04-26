@@ -5,11 +5,11 @@ import h2d.Particles.ParticleGroup in ParticleGroup;
 class Particles2D extends FileView {
 
 	var scene : hide.comp.Scene;
-	var scaler : h2d.Object;
+	var camera : hide.view.l3d.CameraController2D;
 	var parts : h2d.Particles;
 	var partsProps : { ?backgroundPath : String, ?dx : Int, ?dy : Int, ?smooth:Bool };
 
-	var uiProps : { showBounds : Bool, sceneScale : Float, partsX : Float, partsY : Float };
+	var uiProps : { showBounds : Bool };
 	var debugBounds : Array<Graphics> = [];
 	var background : h2d.Bitmap = null;
 	var properties : hide.comp.PropsEditor;
@@ -39,11 +39,13 @@ class Particles2D extends FileView {
 	}
 
 	function init() {
-		scaler = new h2d.Object(scene.s2d);
-		parts = new h2d.Particles(scaler);
+		camera = new hide.view.l3d.CameraController2D(scene.s2d);
+		camera.set(0, 0, 1);
+		@:privateAccess camera.curPos.set(0, 0, 1);
+		parts = new h2d.Particles(camera);
 		parts.smooth = true;
 		parts.load(haxe.Json.parse(sys.io.File.getContent(getPath())));
-		uiProps = { showBounds: false, sceneScale: 1, partsX: 0, partsY: 0 };
+		uiProps = { showBounds: false };
 
 		initProperties();
 		scene.init();
@@ -53,8 +55,7 @@ class Particles2D extends FileView {
 
 	override function onResize() {
 		if (parts != null) {
-			scaler.x = scene.width >> 1;
-			scaler.y = scene.height >> 1;
+			camera.set(0, 0);
 			parts.smooth = partsProps.smooth;
 			if (background != null) {
 				background.setPosition(-background.tile.width / 2, -background.tile.height / 2);
@@ -215,24 +216,12 @@ class Particles2D extends FileView {
 					<dl>
 					<dt></dt><dd><input type="button" class="new" value="New Group"/></dd>
 					<dt>Show bounds</dt><dd><input type="checkbox" field="showBounds"/></dt>
-					<dt>Scene scale</td><dd><input type="range" field="sceneScale" min="0.1" max="10" step="0.1"/></dt>
-					<dt>Parts X</td><dd><input type="range" field="partsX" min="-300" max="300" step="0.1"/></dt>
-					<dt>Parts Y</td><dd><input type="range" field="partsY" min="-300" max="300" step="0.1"/></dt>
 					</dl>
 				</div>
 			</div>
 		');
 		
-		function onExtrasChange(propName:String) {
-			if (propName == "sceneScale") {
-				scaler.setScale(uiProps.sceneScale);
-			} else if (propName == "partsX") {
-				parts.x = uiProps.partsX;
-			} else if (propName == "partsY") {
-				parts.y = uiProps.partsY;
-			}
-		}
-		extra = properties.add(extra, uiProps, onExtrasChange);
+		extra = properties.add(extra, uiProps);
 		extra.find(".new").click(function(_) {
 			var g = parts.addGroup();
 			g.name = "Group#" + Lambda.count({ iterator : parts.getGroups });
@@ -262,8 +251,8 @@ class Particles2D extends FileView {
 			if (partsProps.backgroundPath != null) {
 				var tile = h2d.Tile.fromTexture(scene.loadTexture(state.path, partsProps.backgroundPath));
 				background = new h2d.Bitmap(tile);
-				scaler.addChildAt(background, 0);
-				scaler.addChildAt(parts, 1);
+				camera.addChildAt(background, 0);
+				camera.addChildAt(parts, 1);
 			}
 		}
 		createBackground();
