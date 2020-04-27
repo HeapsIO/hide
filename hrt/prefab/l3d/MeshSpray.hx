@@ -466,7 +466,7 @@ class MeshSpray extends Object3D {
 	}
 
 	function addMeshPath(path : String) {
-		var mesh = { path: path, isRef: path.indexOf(".fbx") == -1 };
+		var mesh = { path: path, isRef: path.toLowerCase().indexOf(".fbx") == -1 };
 		if (currentMeshes.filter(m -> m.path == path).length == 0)
 			currentMeshes.push(mesh);
 		if (currentSet != null)
