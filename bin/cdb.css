@@ -40,6 +40,7 @@
 .cdb .cdb-sheet th.start {
   width: 30px;
   border-left-color: #333;
+  cursor: default;
 }
 .cdb .cdb-sheet td.start {
   text-align: center;
@@ -120,6 +121,8 @@
   width: auto;
   white-space: nowrap;
   overflow: hidden;
+  cursor: pointer;
+  user-select: none;
 }
 .cdb .cdb-sheet tr.head .display {
   font-style: italic;

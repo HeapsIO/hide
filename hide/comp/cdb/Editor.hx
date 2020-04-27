@@ -666,6 +666,28 @@ class Editor extends Component {
 				refresh();
 			}}
 		];
+
+		if( table.parent == null ) {
+			var props = table.sheet.props;
+			switch( col.type ) {
+			case TString, TRef(_):
+				menu.push({ label : "Display Name", click : function() {
+					beginChanges();
+					props.displayColumn = (props.displayColumn == col.name ? null : col.name);
+					endChanges();
+					refresh();
+				}, checked: props.displayColumn == col.name });
+			case TTilePos:
+				menu.push({ label : "Display Icon", click : function() {
+					beginChanges();
+					props.displayIcon = (props.displayIcon == col.name ? null : col.name);
+					endChanges();
+					refresh();
+				}, checked: props.displayIcon == col.name });
+			default:
+			}
+		}
+
 		if( col.type == TString && col.kind == Script )
 			menu.insert(1,{ label : "Edit all", click : function() editScripts(table,col) });
 		if( table.displayMode == Properties ) {
