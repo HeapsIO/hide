@@ -43,7 +43,10 @@ class MeshSpray extends Object3D {
 	var lastIndexMesh = -1;
 	
 	var currentPresetName : String = null;
-	var currentSetName : String = null;
+	var currentSetName(default, set) : String = null;
+	function set_currentSetName(v: String) {
+		return this.currentSetName = v;
+	}
 
 	var allSetGroups : Array<SetGroup>;
 	var setGroup : SetGroup;
@@ -293,7 +296,7 @@ class MeshSpray extends Object3D {
 			onChangeSet();
 		}
 
-		function onChangePreset() {
+		function onChangePreset(init : Bool = false) {
 			if (currentPresetName != null) {
 				var tmp = allSetGroups.filter(g -> g.name == currentPresetName);
 				if (tmp.length > 0)
@@ -306,7 +309,8 @@ class MeshSpray extends Object3D {
 			}
 			setsList.empty();
 			if (setGroup != null) {
-				currentSetName = setGroup.sets[0].name;				
+				if (!init)
+					currentSetName = setGroup.sets[0].name;
 				for (s in setGroup.sets) {
 					var setElt = new hide.Element('<div style="margin: 5px; padding: 10px; border: solid 1px #444444; display: inline-block;" ></div>').appendTo(setsList);
 					var inputSetElt = new hide.Element('<input type="text" style="width: 75px; border: none; padding: 0; text-align: center;" value="${s.name}" />').appendTo(setElt);
@@ -390,7 +394,7 @@ class MeshSpray extends Object3D {
 			onChangePreset();
 		});
 
-		onChangePreset();
+		onChangePreset(true);
 
 		var options = new hide.Element('<div class="btn-list" align="center" ></div>').appendTo(props);
 
