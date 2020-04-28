@@ -11,6 +11,7 @@ typedef Mesh = {
 typedef Set = {
 	var name: String;
 	var meshes: Array<Mesh>;
+	var config: MeshSprayConfig;
 }
 
 typedef SetGroup = {
@@ -18,23 +19,27 @@ typedef SetGroup = {
 	var sets: Array<Set>;
 }
 
+typedef MeshSprayConfig = {
+	var density : Int;
+	var densityOffset : Int;
+	var radius : Float;
+	var deleteRadius : Float;
+	var scale : Float;
+	var scaleOffset : Float;
+	var rotation : Float;
+	var rotationOffset : Float;
+	var dontRepeatMesh : Bool;
+}
+
 class MeshSpray extends Object3D {
 
 	#if editor
 
 	var meshes : Array<Mesh> = []; // specific set for this mesh spray
+	var defaultConfig: MeshSprayConfig;
+
 	var sceneEditor : hide.comp.SceneEditor;
 
-	var density : Int = 10;
-	var densityOffset : Int = 0;
-	var radius : Float = 10.0;
-	var deleteRadius : Float = 10.0;
-	var scale : Float = 1.0;
-	var scaleOffset : Float = 0.1;
-	var rotation : Float = 0.0;
-	var rotationOffset : Float = 0.0;
-
-	var dontRepeatMesh : Bool = false;
 	var lastIndexMesh = -1;
 	
 	var currentPresetName : String = null;
@@ -50,6 +55,16 @@ class MeshSpray extends Object3D {
 			return currentSet.meshes;
 		else
 			return meshes;
+	}
+
+	var currentConfig(get, null) : MeshSprayConfig;
+	function get_currentConfig() {
+		if (currentSet != null) {
+			if (currentSet.config == null)
+				currentSet.config = getDefaultConfig();
+			return currentSet.config;
+		} else
+			return defaultConfig;
 	}
 
 	var sprayEnable : Bool = false;
@@ -79,41 +94,34 @@ class MeshSpray extends Object3D {
 		var obj : Dynamic = {};
 		obj.x = obj.y = obj.z = 0;
 		obj.meshes = meshes;
-		obj.dontRepeatMesh = dontRepeatMesh;
 		obj.currentPresetName = currentPresetName;
 		obj.currentSetName = currentSetName;
-		obj.density = density;
-		obj.densityOffset = densityOffset;
-		obj.radius = radius;
-		obj.deleteRadius = deleteRadius;
-		obj.scale = scale;
-		obj.scaleOffset = scaleOffset;
-		obj.rotation = rotation;
-		obj.rotationOffset = rotationOffset;
+		obj.defaultConfig = defaultConfig;
 		return obj;
+	}
+
+	function getDefaultConfig() : MeshSprayConfig {	
+		return {
+			density: 1,
+			densityOffset: 0,
+			radius: 0.1,
+			deleteRadius: 5,
+			scale: 1,
+			scaleOffset: 0.1,
+			rotation: 184,
+			rotationOffset: 0,
+			dontRepeatMesh: true
+		};
 	}
 
 	override function load( obj : Dynamic ) {
 		x = y = z = 0;
 		if (obj.meshes != null)
 			meshes = obj.meshes;
-		if (obj.density != null)
-			density = obj.density;
-		if (obj.densityOffset != null)
-			densityOffset = obj.densityOffset;
-		if (obj.radius != null)
-			radius = obj.radius;
-		if (obj.deleteRadius != null)
-			deleteRadius = obj.deleteRadius;
-		if (obj.scale != null)
-			scale = obj.scale;
-		if (obj.scaleOffset != null)
-			scaleOffset = obj.scaleOffset;
-		if (obj.rotation != null)
-			rotation = obj.rotation;
-		if (obj.rotationOffset != null)
-			rotationOffset = obj.rotationOffset;
-		dontRepeatMesh = obj.dontRepeatMesh;
+		if (obj.defaultConfig != null)
+			defaultConfig = obj.defaultConfig;
+		else
+			defaultConfig = getDefaultConfig();
 		if (obj.currentPresetName != null)
 			currentPresetName = obj.currentPresetName;
 		if (obj.currentSetName != null)
@@ -202,7 +210,7 @@ class MeshSpray extends Object3D {
 
 			var shiftPressed = K.isDown( K.SHIFT);
 
-			drawCircle(ctx, worldPos.x, worldPos.y, worldPos.z, (shiftPressed) ? deleteRadius : radius, 5, (shiftPressed) ? 9830400 : 38400);
+			drawCircle(ctx, worldPos.x, worldPos.y, worldPos.z, (shiftPressed) ? currentConfig.deleteRadius : currentConfig.radius, 5, (shiftPressed) ? 9830400 : 38400);
 
 			if (lastSpray < Date.now().getTime() - 100) {
 				if (previewModels.length > 0) {
@@ -221,7 +229,7 @@ class MeshSpray extends Object3D {
 							removeMeshesAround(ctx, worldPos);
 						} else {
 							addMeshes(ctx);
-							if (density == 1) sprayEnable = false;
+							if (currentConfig.density == 1) sprayEnable = false;
 						}
 					}
 				}
@@ -270,6 +278,7 @@ class MeshSpray extends Object3D {
 				}
 				selectElement.append(new hide.Element('<option value="${path}">${extractMeshName(path)}</option>'));
 			}
+			updateConfig();
 		}
 		
 		var selectedSetElt : hide.Element = null;
@@ -297,6 +306,7 @@ class MeshSpray extends Object3D {
 			}
 			setsList.empty();
 			if (setGroup != null) {
+				currentSetName = setGroup.sets[0].name;				
 				for (s in setGroup.sets) {
 					var setElt = new hide.Element('<div style="margin: 5px; padding: 10px; border: solid 1px #444444; display: inline-block;" ></div>').appendTo(setsList);
 					var inputSetElt = new hide.Element('<input type="text" style="width: 75px; border: none; padding: 0; text-align: center;" value="${s.name}" />').appendTo(setElt);
@@ -320,7 +330,8 @@ class MeshSpray extends Object3D {
 					if (name == null || name.length == 0) return;
 					setGroup.sets.push({
 						name: name,
-						meshes: []
+						meshes: [],
+						config: getDefaultConfig()
 					});
 					currentSetName = name;
 					onChangePreset();
@@ -339,7 +350,8 @@ class MeshSpray extends Object3D {
 					name: name,
 					sets: [{
 						name: "SetName",
-						meshes: []
+						meshes: [],
+						config: getDefaultConfig()
 					}]
 				});
 				currentPresetName = name;
@@ -386,14 +398,14 @@ class MeshSpray extends Object3D {
 		var addBtn = new hide.Element('<input type="button" value="Add" >').appendTo(options);
 		var removeBtn = new hide.Element('<input type="button" value="Remove" />').appendTo(options);
 		var cleanBtn = new hide.Element('<input type="button" value="Remove all meshes" /><br />').appendTo(options);
-		var repeatMeshBtn = new hide.Element('<input type="checkbox" style="margin-bottom: -5px;margin-right: 5px;" >Don\'t repeat same mesh in a row</input>').appendTo(options);
+		var repeatMeshBtn = new hide.Element('<input type="checkbox" id="repeatMeshBtn" style="margin-bottom: -5px;margin-right: 5px;" >Don\'t repeat same mesh in a row</input>').appendTo(options);
 		new hide.Element('<br /><b><i>Hold down SHIFT to remove meshes</i></b>').appendTo(options);
 		new hide.Element('<br /><b><i>Hold down R to random preview</i></b>').appendTo(options);
 
 		repeatMeshBtn.on("change", function() {
-			dontRepeatMesh = repeatMeshBtn.is(":checked");
+			currentConfig.dontRepeatMesh = repeatMeshBtn.is(":checked");
 		});
-		repeatMeshBtn.prop("checked", dontRepeatMesh);
+		repeatMeshBtn.prop("checked", currentConfig.dontRepeatMesh);
 
 		selectAllBtn.on("click", function() {
 			var options = selectElement.children().elements();
@@ -427,18 +439,33 @@ class MeshSpray extends Object3D {
 
 		ectx.properties.add(props, this, function(pname) {});
 
-		var optionsGroup = new hide.Element('<div class="group" name="Options"><dl></dl></div>');
+		var optionsGroup = new hide.Element('<div class="group" id="groupConfig" name="Options"><dl></dl></div>');
 		optionsGroup.append(hide.comp.PropsEditor.makePropsList([
-				{ name: "density", t: PInt(1, 25), def: density },
-				{ name: "densityOffset", t: PInt(0, 10), def: densityOffset },
-				{ name: "radius", t: PFloat(0, 50), def: radius },
-				{ name: "deleteRadius", t: PFloat(0, 50), def: deleteRadius },
-				{ name: "scale", t: PFloat(0, 10), def: scale },
-				{ name: "scaleOffset", t: PFloat(0, 1), def: scaleOffset },
-				{ name: "rotation", t: PFloat(0, 180), def: rotation },
-				{ name: "rotationOffset", t: PFloat(0, 30), def: rotationOffset }
+				{ name: "density", t: PInt(1, 25), def: currentConfig.density },
+				{ name: "densityOffset", t: PInt(0, 10), def: currentConfig.densityOffset },
+				{ name: "radius", t: PFloat(0, 50), def: currentConfig.radius },
+				{ name: "deleteRadius", t: PFloat(0, 50), def: currentConfig.deleteRadius },
+				{ name: "scale", t: PFloat(0, 10), def: currentConfig.scale },
+				{ name: "scaleOffset", t: PFloat(0, 1), def: currentConfig.scaleOffset },
+				{ name: "rotation", t: PFloat(0, 180), def: currentConfig.rotation },
+				{ name: "rotationOffset", t: PFloat(0, 30), def: currentConfig.rotationOffset }
 			]));
-		ectx.properties.add(optionsGroup, this, function(pname) {  });
+		ectx.properties.add(optionsGroup, this, function(pname) {
+			var value = sceneEditor.properties.element.find("input[field="+ pname + "]").val();
+			Reflect.setField(currentConfig, pname, Std.parseFloat(value));
+			saveConfigMeshBatch();
+		});
+	}
+
+	function updateConfig() {
+		var fields = Reflect.fields(currentConfig);
+		for (fieldName in fields) {
+			var input = sceneEditor.properties.element.find("input[field="+ fieldName + "]");
+			input.val(Reflect.field(currentConfig, fieldName));
+			input.change();
+		}
+
+		sceneEditor.properties.element.find("#repeatMeshBtn").prop("checked", currentConfig.dontRepeatMesh);
 	}
 
 	override function setSelected( ctx : Context, b : Bool ) {
@@ -500,13 +527,15 @@ class MeshSpray extends Object3D {
 		vecRelat.transform3x4(transform);
 		var point2d = new h2d.col.Point(vecRelat.x, vecRelat.y);
 
-		var computedDensity = density + Std.random(densityOffset+1);
+		final CONFIG = currentConfig;
 
-		var minDistanceBetweenMeshesSq = (radius * radius / computedDensity);
+		var computedDensity = CONFIG.density + Std.random(CONFIG.densityOffset+1);
+
+		var minDistanceBetweenMeshesSq = (CONFIG.radius * CONFIG.radius / computedDensity);
 
 		var currentPivots : Array<h2d.col.Point> = [];
 		inline function distance(x1 : Float, y1 : Float, x2 : Float, y2 : Float) return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
-		var fakeRadius = radius * radius + minDistanceBetweenMeshesSq;
+		var fakeRadius = CONFIG.radius * CONFIG.radius + minDistanceBetweenMeshesSq;
 		for (child in children) {
 			var model = child.to(hrt.prefab.Object3D);
 			if (distance(point2d.x, point2d.y, model.x, model.y) < fakeRadius) {
@@ -530,7 +559,7 @@ class MeshSpray extends Object3D {
 				var nbTry = 5;
 				var position : h3d.col.Point;
 				do {
-					var randomRadius = radius*Math.sqrt(random.rand());
+					var randomRadius = CONFIG.radius*Math.sqrt(random.rand());
 					var angle = random.rand() * 2*Math.PI;
 
 					position = new h3d.col.Point(point.x + randomRadius*Math.cos(angle), point.y + randomRadius*Math.sin(angle), 0);
@@ -549,17 +578,17 @@ class MeshSpray extends Object3D {
 					}
 				} while (nbTry-- > 0);
 
-				var randRotationOffset = random.rand() * rotationOffset;
+				var randRotationOffset = random.rand() * CONFIG.rotationOffset;
 				if (Std.random(2) == 0) {
 					randRotationOffset *= -1;
 				}
-				var rotationZ = ((rotation  + randRotationOffset) % 360)/360 * 2*Math.PI;
+				var rotationZ = ((CONFIG.rotation  + randRotationOffset) % 360)/360 * 2*Math.PI;
 
 				var meshId = 0;
 				if(currentMeshes.length > 1) {
 					do
 						meshId = Std.random(currentMeshes.length)
-					while(dontRepeatMesh && meshId == lastMeshId);
+					while(CONFIG.dontRepeatMesh && meshId == lastMeshId);
 				}
 				lastIndexMesh = meshId;
 				if (computedDensity == 1)
@@ -585,11 +614,11 @@ class MeshSpray extends Object3D {
 
 				localMat.initRotationZ(rotationZ);
 
-				var randScaleOffset = random.rand() * scaleOffset;
+				var randScaleOffset = random.rand() * CONFIG.scaleOffset;
 				if (Std.random(2) == 0) {
 					randScaleOffset *= -1;
 				}
-				var currentScale = (scale + randScaleOffset);
+				var currentScale = (CONFIG.scale + randScaleOffset);
 
 				localMat.scale(currentScale, currentScale, currentScale);
 
@@ -626,7 +655,7 @@ class MeshSpray extends Object3D {
 
 		var childToRemove = [];
 		inline function distance(x1 : Float, y1 : Float, x2 : Float, y2 : Float) return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
-		var fakeRadius = deleteRadius * deleteRadius;
+		var fakeRadius = currentConfig.deleteRadius * currentConfig.deleteRadius;
 		for (child in children) {
 			var model = child.to(hrt.prefab.Object3D);
 			if (distance(point2d.x, point2d.y, model.x, model.y) < fakeRadius) {
