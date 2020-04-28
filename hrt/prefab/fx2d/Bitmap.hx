@@ -50,7 +50,7 @@ class Bitmap extends Object2D {
 		bmp.tile.setCenterRatio(cRatio[0], cRatio[1]);
 		bmp.blendMode = blendMode;
 		#if editor
-		var int = Std.instance(bmp.getChildAt(0),h2d.Interactive);
+		var int = Std.downcast(bmp.getChildAt(0),h2d.Interactive);
 		if( int != null ) {
 			int.width = bmp.tile.width;
 			int.height = bmp.tile.height;

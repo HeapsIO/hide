@@ -35,6 +35,7 @@ class Gizmo2D extends h2d.Object {
 			switch( z ) {
 			case Pan:
 				e.cancel = true;
+				int.cursor = Button;
 			case Scale:
 				int.cursor = cScale;
 			case ScaleX:
@@ -79,22 +80,26 @@ class Gizmo2D extends h2d.Object {
 				inline function scale( m : Float, size : Float ) {
 					return Math.max(0, (m + size * 0.5) / (size * 0.5));
 				}
+				inline function snap(value : Float, step : Float) {
+					if (hxd.Key.isDown(hxd.Key.CTRL))
+						return Math.round(value / step) * step;
+					return value;
+				}
 				var m = { x : 0., y : 0., scaleX : 1., scaleY : 1., rotation : 0. };
 				switch( t ) {
 				case Pan:
-					m.x = dx;
-					m.y = dy;
+					m.x = snap(dx, 10);
+					m.y = snap(dy, 10);
 				case ScaleX:
-					m.scaleX = scale(dx * scaleSign, dragWidth);
+					m.scaleX = snap(scale(dx * scaleSign, dragWidth), 0.1);
 				case ScaleY:
-					m.scaleY = scale(dy * scaleSign, dragHeight);
+					m.scaleY = snap(scale(dy * scaleSign, dragHeight), 0.1);
 				case Scale:
-					m.scaleX = m.scaleY = Math.max(scale(dx,dragWidth), scale(dy, dragHeight));
+					m.scaleX = m.scaleY = Math.max(snap(scale(dx, dragWidth), 0.1), snap(scale(dy, dragHeight), 0.1));
 				case Rotation:
 					var startAng =  Math.atan2(dragStartY - center.y, dragStartX - center.x);
-					m.rotation = hxd.Math.angle(Math.atan2(scene.mouseY - center.y,scene.mouseX - center.x) - startAng);
-					if( hxd.Key.isDown(hxd.Key.CTRL) )
-						m.rotation = Math.round(m.rotation / (Math.PI/8)) * (Math.PI/8);
+					var tmpRotation = hxd.Math.angle(Math.atan2(scene.mouseY - center.y,scene.mouseX - center.x) - startAng);
+					m.rotation = snap(tmpRotation, (Math.PI/8));
 				default:
 				}
 				onMove(m);

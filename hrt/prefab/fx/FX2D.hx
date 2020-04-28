@@ -4,6 +4,7 @@ import hrt.prefab.Prefab as PrefabElement;
 import hrt.prefab.fx.BaseFX.ObjectAnimation;
 import hrt.prefab.fx.BaseFX.ShaderAnimation;
 
+@:allow(hrt.prefab.fx.FX2D)
 class FX2DAnimation extends h2d.Object {
 
 	public var prefab : hrt.prefab.Prefab;
@@ -17,6 +18,7 @@ class FX2DAnimation extends h2d.Object {
 	public var loop : Bool;
 	public var objects: Array<ObjectAnimation> = [];
 	public var shaderAnims : Array<ShaderAnimation> = [];
+	public var emitters : Array<hrt.prefab.fx2d.Particle2D.Particles>;
 
 	var evaluator : Evaluator;
 	var random : hxd.Rand;
@@ -31,6 +33,27 @@ class FX2DAnimation extends h2d.Object {
 
 	public function setRandSeed(seed: Int) {
 		random.init(seed);
+	}
+
+	function init(ctx: Context, def: FX2D) {
+		initEmitters(ctx, def);
+	}
+
+	function initEmitters(ctx: Context, elt: PrefabElement) {
+		var em = Std.downcast(elt, hrt.prefab.fx2d.Particle2D);
+		if(em != null)  {
+			for(emCtx in ctx.shared.getContexts(elt)) {
+				if(emCtx.local2d == null) continue;
+				if(emitters == null) emitters = [];
+				var emobj : hrt.prefab.fx2d.Particle2D.Particles = cast emCtx.local2d;
+				emitters.push(emobj);
+			}
+		}
+		else {
+			for(c in elt.children) {
+				initEmitters(ctx, c);
+			}
+		}
 	}
 
 	public function setTime( time : Float ) {
@@ -95,6 +118,11 @@ class FX2DAnimation extends h2d.Object {
 		for(anim in shaderAnims) {
 			anim.setTime(time);
 		}
+		if (emitters != null)
+			for(em in emitters) {
+				if(em.visible)
+					em.setTime(time);
+			}
 	}
 }
 
@@ -215,6 +243,7 @@ class FX2D extends BaseFX {
 		else
 			super.make(ctx);
 		#end
+		fxanim.init(ctx, this);
 
 		getObjAnimations(ctx, this, fxanim.objects);
 		BaseFX.getShaderAnims(ctx, this, fxanim.shaderAnims);

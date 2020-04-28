@@ -75,7 +75,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 
 		var menu = [];
 		if (parent.is2D) {
-			for(name in ["Group 2D", "Bitmap", "Anim2D", "Atlas", "Text", "Shaders", "Shader Graph", "Placeholder"]) {
+			for(name in ["Group 2D", "Bitmap", "Anim2D", "Atlas", "Particle2D", "Text", "Shaders", "Shader Graph", "Placeholder"]) {
 				var item = allTypes.find(i -> i.label == name);
 				if(item == null) continue;
 				allTypes.remove(item);
@@ -289,39 +289,7 @@ class FXEditor extends FileView {
 		}
 
 		if (is2D) {
-			var heapsScene = element.find(".heaps-scene");
-
-			heapsScene.on("mousedown", function(e) {
-				lastPan = null;
-			});
-
-			heapsScene.on("mousemove", function(e : js.jquery.Event) {
-				if (e.buttons == 4) { // middle button
-					if (lastPan == null) {
-						lastPan = new h2d.col.Point(e.clientX, e.clientY);
-						return;
-					}
-					@:privateAccess {
-						scene.s2d.children[0].x += e.clientX - lastPan.x;
-						scene.s2d.children[0].y += e.clientY - lastPan.y;
-					}
-
-					lastPan = new h2d.col.Point(e.clientX, e.clientY);
-					updateGrid();
-				}
-			});
-
-			// Zoom control
-			heapsScene.on("wheel", function(e) {
-				@:privateAccess {
-					if (e.originalEvent.deltaY < 0) {
-						scene.s2d.children[0].scale(1.1);
-					} else {
-						scene.s2d.children[0].scale(0.9);
-					}
-					updateGrid();
-				}
-			});
+			sceneEditor.camera2D = true;
 		}
 
 		var scriptElem = element.find(".fx-script");
@@ -574,6 +542,7 @@ class FXEditor extends FileView {
 		var renderProps = data.find(e -> e.to(hrt.prefab.RenderProps));
 		if(renderProps != null)
 			renderProps.applyProps(scene.s3d.renderer);
+		updateGrid();
 	}
 
 	override function onDragDrop(items : Array<String>, isDrop : Bool) {
@@ -1254,6 +1223,7 @@ class FXEditor extends FileView {
 		var obj2dElt = Std.downcast(elt, hrt.prefab.Object2D);
 		var shaderElt = Std.downcast(elt, hrt.prefab.Shader);
 		var emitterElt = Std.downcast(elt, hrt.prefab.fx.Emitter);
+		var particle2dElt = Std.downcast(elt, hrt.prefab.fx2d.Particle2D);
 		var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
 
 		inline function hasTrack(pname) {
@@ -1365,20 +1335,20 @@ class FXEditor extends FileView {
 					menuItems.push(item);
 			}
 		}
+		function addParam(param : hrt.prefab.fx.Emitter.ParamDef, prefix: String) {
+			var label = prefix + (param.disp != null ? param.disp : upperCase(param.name));
+			var item : hide.comp.ContextMenu.ContextMenuItem = switch(param.t) {
+				case PVec(n, _):
+					{
+						label: label,
+						menu: groupedTracks(param.name, xyzwTracks(n)),
+					}
+				default:
+					trackItem(label, [{name: param.name}]);
+			};
+			menuItems.push(item);
+		}
 		if(emitterElt != null) {
-			function addParam(param : hrt.prefab.fx.Emitter.ParamDef, prefix: String) {
-				var label = prefix + (param.disp != null ? param.disp : upperCase(param.name));
-				var item : hide.comp.ContextMenu.ContextMenuItem = switch(param.t) {
-					case PVec(n, _):
-						{
-							label: label,
-							menu: groupedTracks(param.name, xyzwTracks(n)),
-						}
-					default:
-						trackItem(label, [{name: param.name}]);
-				};
-				menuItems.push(item);
-			}
 			for(param in hrt.prefab.fx.Emitter.emitterParams) {
 				if(!param.animate)
 					continue;
@@ -1388,6 +1358,13 @@ class FXEditor extends FileView {
 				if(!param.animate)
 					continue;
 				addParam(param, "Instance ");
+			}
+		}
+		if (particle2dElt != null) {
+			for(param in hrt.prefab.fx2d.Particle2D.emitter2dParams) {
+				if(!param.animate)
+					continue;
+				addParam(param, "");
 			}
 		}
 		return menuItems;
@@ -1402,10 +1379,12 @@ class FXEditor extends FileView {
 			grid2d.remove();
 			grid2d = null;
 		}
+		
 		if(!showGrid)
 			return;
+
 		if (is2D) {
-			grid2d = new h2d.Graphics(scene.s2d);
+			grid2d = new h2d.Graphics(scene.editor.context.local2d);
 			grid2d.scale(1);
 
 			grid2d.lineStyle(1.0, 12632256, 1.0);
@@ -1417,9 +1396,6 @@ class FXEditor extends FileView {
 
 			return;
 		}
-
-		if(!showGrid)
-			return;
 
 		grid = new h3d.scene.Graphics(scene.s3d);
 		grid.scale(1);
@@ -1567,5 +1543,14 @@ class FXEditor extends FileView {
 	}
 
 	static var _ = FileTree.registerExtension(FXEditor, ["fx"], { icon : "sitemap", createNew : "FX" });
-	static var _2d = FileTree.registerExtension(FXEditor, ["fx2d"], { icon : "sitemap", createNew : "FX 2D" });
+}
+
+
+class FX2DEditor extends FXEditor {
+
+	override function getDefaultContent() {
+		return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab.fx.FX2D().saveData()));
+	}
+
+	static var _2d = FileTree.registerExtension(FX2DEditor, ["fx2d"], { icon : "sitemap", createNew : "FX 2D" });
 }

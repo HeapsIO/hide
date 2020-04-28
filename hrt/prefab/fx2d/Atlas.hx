@@ -58,6 +58,14 @@ class Atlas extends Object2D {
 		}
 		h2dAnim.pause = !loop;
 		h2dAnim.blendMode = blendMode;
+		
+		#if editor
+			var int = Std.downcast(h2dAnim.getChildAt(0),h2d.Interactive);
+			if( int != null ) {
+				int.width = h2dAnim.getFrame().width;
+				int.height = h2dAnim.getFrame().height;
+			}
+		#end
 	}
 
 	override function makeInstance(ctx:Context):Context {
@@ -70,6 +78,18 @@ class Atlas extends Object2D {
 	}
 
 	#if editor
+
+	override function makeInteractive(ctx:Context):h2d.Interactive {
+		var local2d = ctx.local2d;
+		if(local2d == null)
+			return null;
+		var h2dAnim = cast(local2d, h2d.Anim);
+		var int = new h2d.Interactive(h2dAnim.getFrame().width, h2dAnim.getFrame().height);
+		h2dAnim.addChildAt(int, 0);
+		int.propagateEvents = true;
+		return int;
+	}
+
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
 

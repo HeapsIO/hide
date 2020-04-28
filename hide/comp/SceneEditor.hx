@@ -406,7 +406,6 @@ class SceneEditor {
 				selectObjects([]);
 			}
 		};
-		resetCamera();
 
 
 		var cam = @:privateAccess view.getDisplayState("Camera");
@@ -430,6 +429,7 @@ class SceneEditor {
 		cameraController2D.loadFromScene();
 
 		scene.onUpdate = update;
+		resetCamera();
 
 		// BUILD scene tree
 
@@ -668,8 +668,8 @@ class SceneEditor {
 		var startDrag = null;
 		var curDrag = null;
 		var dragBtn = -1;
-		var i3d = Std.instance(int, h3d.scene.Interactive);
-		var i2d = Std.instance(int, h2d.Interactive);
+		var i3d = Std.downcast(int, h3d.scene.Interactive);
+		var i2d = Std.downcast(int, h2d.Interactive);
 		int.onClick = function(e) {
 			if(e.button == K.MOUSE_RIGHT) {
 				var pt = new h3d.Vector(e.relX,e.relY,e.relZ);

@@ -58,8 +58,24 @@ class Text extends Object2D {
 		if (font != null)
 			h2dText.font = font;
 		#if editor
-			if (propName == "text") {
+			if (propName == null || propName == "text") {
 				h2dText.text = text;
+			}
+			var int = Std.downcast(h2dText.getChildAt(0),h2d.Interactive);
+			if( int != null ) {
+				@:privateAccess {
+					h2dText.rebuild();
+					int.width = h2dText.calcWidth;
+					int.height = h2dText.calcHeight;
+					switch (h2dText.textAlign) {
+						case Center:
+							int.x = -int.width/2;
+						case Right:
+							int.x = -int.width;
+						default:
+							int.x = 0;
+					}
+				}
 			}
 		#end
 	}
@@ -93,6 +109,19 @@ class Text extends Object2D {
 	}
 
 	#if editor
+
+	override function makeInteractive(ctx:Context):h2d.Interactive {
+		var local2d = ctx.local2d;
+		if(local2d == null)
+			return null;
+		var text = cast(local2d, h2d.Text);
+		@:privateAccess { text.rebuild(); text.updateSize(); }
+		@:privateAccess var int = new h2d.Interactive(text.calcWidth, text.calcHeight);
+		text.addChildAt(int, 0);
+		int.propagateEvents = true;
+		return int;
+	}
+
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
 		
@@ -105,27 +134,35 @@ class Text extends Object2D {
 		var leftAlign = new hide.Element('<input type="button" style="width: 50px" value="Left" /> ').appendTo(element);
 		var middleAlign = new hide.Element('<input type="button" style="width: 50px" value="Center" /> ').appendTo(element);
 		var rightAlign = new hide.Element('<input type="button" style="width: 50px" value="Right" /> ').appendTo(element);
-		leftAlign.on("click", function(e) {
-			align = 0;
-			leftAlign.attr("disabled", "true");
+		inline function updateDisabled() {
+			leftAlign.removeAttr("disabled");
 			middleAlign.removeAttr("disabled");
 			rightAlign.removeAttr("disabled");
+			switch (align) {
+				case 1:
+					middleAlign.attr("disabled", "true");
+				case 2:
+					rightAlign.attr("disabled", "true");
+				default:
+					leftAlign.attr("disabled", "true");
+			}
+		}
+		leftAlign.on("click", function(e) {
+			align = 0;
+			updateDisabled();
 			updateInstance(ctx.getContext(this), "align");
 		});
 		middleAlign.on("click", function(e) {
 			align = 1;
-			leftAlign.removeAttr("disabled");
-			middleAlign.attr("disabled", "true");
-			rightAlign.removeAttr("disabled");
+			updateDisabled();
 			updateInstance(ctx.getContext(this), "align");
 		});
 		rightAlign.on("click", function(e) {
 			align = 2;
-			leftAlign.removeAttr("disabled");
-			middleAlign.removeAttr("disabled");
-			rightAlign.attr("disabled", "true");
+			updateDisabled();
 			updateInstance(ctx.getContext(this), "align");
 		});
+		updateDisabled();
 
 		new hide.Element('<dt>Font</dt>').appendTo(gr);
 		var element = new hide.Element('<dd></dd>').appendTo(gr);
