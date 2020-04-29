@@ -28,6 +28,7 @@ typedef MeshSprayConfig = {
 	var scaleOffset : Float;
 	var rotation : Float;
 	var rotationOffset : Float;
+	var zOffset: Float;
 	var dontRepeatMesh : Bool;
 }
 
@@ -43,10 +44,7 @@ class MeshSpray extends Object3D {
 	var lastIndexMesh = -1;
 	
 	var currentPresetName : String = null;
-	var currentSetName(default, set) : String = null;
-	function set_currentSetName(v: String) {
-		return this.currentSetName = v;
-	}
+	var currentSetName : String = null;
 
 	var allSetGroups : Array<SetGroup>;
 	var setGroup : SetGroup;
@@ -62,12 +60,9 @@ class MeshSpray extends Object3D {
 
 	var currentConfig(get, null) : MeshSprayConfig;
 	function get_currentConfig() {
-		if (currentSet != null) {
-			if (currentSet.config == null)
-				currentSet.config = getDefaultConfig();
-			return currentSet.config;
-		} else
-			return defaultConfig;
+		var config = (currentSet != null) ? currentSet.config : defaultConfig;
+		if (config == null) config = getDefaultConfig();
+		return config;
 	}
 
 	var sprayEnable : Bool = false;
@@ -113,6 +108,7 @@ class MeshSpray extends Object3D {
 			scaleOffset: 0.1,
 			rotation: 184,
 			rotationOffset: 0,
+			zOffset: 0,
 			dontRepeatMesh: true
 		};
 	}
@@ -123,8 +119,6 @@ class MeshSpray extends Object3D {
 			meshes = obj.meshes;
 		if (obj.defaultConfig != null)
 			defaultConfig = obj.defaultConfig;
-		else
-			defaultConfig = getDefaultConfig();
 		if (obj.currentPresetName != null)
 			currentPresetName = obj.currentPresetName;
 		if (obj.currentSetName != null)
@@ -149,6 +143,7 @@ class MeshSpray extends Object3D {
 
 	var previewModels : Array<hrt.prefab.Prefab> = [];
 	override function edit( ectx : EditContext ) {
+		if (defaultConfig == null) defaultConfig = getDefaultConfig();
 		if (sceneEditor == null) {
 			allSetGroups = if( sys.FileSystem.exists(MESH_SPRAY_CONFIG_PATH) )
 				try hide.Ide.inst.parseJSON(sys.io.File.getContent(MESH_SPRAY_CONFIG_PATH)) catch( e : Dynamic ) throw e+" (in "+MESH_SPRAY_CONFIG_PATH+")";
@@ -386,12 +381,14 @@ class MeshSpray extends Object3D {
 			if (currentPresetName == null) return;
 			var preset = allSetGroups.filter(s -> s.name == currentPresetName);
 			if (preset.length == 0) return;
-			allSetGroups.remove(preset[0]);
-			currentPresetName = null;
-			currentSetName = null;
-			saveConfigMeshBatch();
-			updateSelectPreset();
-			onChangePreset();
+			if(hide.Ide.inst.confirm("Are-you sure ?")) {
+				allSetGroups.remove(preset[0]);
+				currentPresetName = null;
+				currentSetName = null;
+				saveConfigMeshBatch();
+				updateSelectPreset();
+				onChangePreset();
+			}
 		});
 
 		onChangePreset(true);
@@ -452,7 +449,8 @@ class MeshSpray extends Object3D {
 				{ name: "scale", t: PFloat(0, 10), def: currentConfig.scale },
 				{ name: "scaleOffset", t: PFloat(0, 1), def: currentConfig.scaleOffset },
 				{ name: "rotation", t: PFloat(0, 180), def: currentConfig.rotation },
-				{ name: "rotationOffset", t: PFloat(0, 30), def: currentConfig.rotationOffset }
+				{ name: "rotationOffset", t: PFloat(0, 30), def: currentConfig.rotationOffset },
+				{ name: "zOffset", t: PFloat(0, 10), def: currentConfig.zOffset }
 			]));
 		ectx.properties.add(optionsGroup, this, function(pname) {
 			var value = sceneEditor.properties.element.find("input[field="+ pname + "]").val();
@@ -462,14 +460,21 @@ class MeshSpray extends Object3D {
 	}
 
 	function updateConfig() {
-		var fields = Reflect.fields(currentConfig);
+		var CONFIG = currentConfig;
+		var defaultConfig = getDefaultConfig();
+		var fields = Reflect.fields(defaultConfig);
 		for (fieldName in fields) {
+			var fieldValue = Reflect.field(CONFIG, fieldName);
+			if (fieldValue == null) {
+				fieldValue = Reflect.field(defaultConfig, fieldName);
+				Reflect.setField(CONFIG, fieldName, fieldValue);
+			}
 			var input = sceneEditor.properties.element.find("input[field="+ fieldName + "]");
-			input.val(Reflect.field(currentConfig, fieldName));
+			input.val(fieldValue);
 			input.change();
 		}
 
-		sceneEditor.properties.element.find("#repeatMeshBtn").prop("checked", currentConfig.dontRepeatMesh);
+		sceneEditor.properties.element.find("#repeatMeshBtn").prop("checked", CONFIG.dontRepeatMesh);
 	}
 
 	override function setSelected( ctx : Context, b : Bool ) {
@@ -626,7 +631,7 @@ class MeshSpray extends Object3D {
 
 				localMat.scale(currentScale, currentScale, currentScale);
 
-				position.z = getZ(position.x, position.y);
+				position.z = getZ(position.x, position.y) + CONFIG.zOffset;
 				localMat.setPosition(new Vector(position.x, position.y, position.z));
 				localMat.multiply(localMat, invParent);
 
