@@ -98,6 +98,21 @@ class Cell extends Component {
 		}
 	}
 
+	function canViewSubColumn( sheet : cdb.Sheet, column : String ) {
+		var view = table.editor.view;
+		if( view == null )
+			return true;
+		var path = sheet.name.split("@");
+		var view = view.get(path.shift());
+		for( name in path ) {
+			var sub = view.sub == null ? null : view.sub.get(name);
+			if( sub == null )
+				return true;
+			view = sub;
+		}
+		return view.show == null || view.show.indexOf(column) >= 0;
+	}
+
 	public function valueHtml( c : cdb.Data.Column, v : Dynamic, sheet : cdb.Sheet, obj : Dynamic ) : String {
 		if( v == null ) {
 			if( c.opt )
@@ -144,7 +159,7 @@ class Cell extends Component {
 					case TList, TProperties:
 						continue;
 					default:
-						if( !table.canViewSubColumn(column.name, c.name) ) continue;
+						if( !canViewSubColumn(ps, c.name) ) continue;
 						var h = valueHtml(c, Reflect.field(v, c.name), ps, v);
 						if( h != "" && h != "&nbsp;" )
 							vals.push(h);
@@ -173,7 +188,7 @@ class Cell extends Component {
 			for( c in ps.columns ) {
 				var pval = Reflect.field(v, c.name);
 				if( pval == null && c.opt ) continue;
-				if( !table.canViewSubColumn(column.name, c.name) ) continue;
+				if( !canViewSubColumn(ps, c.name) ) continue;
 				out.push(c.name+" : "+valueHtml(c, pval, ps, v));
 			}
 			return out.join("<br/>");

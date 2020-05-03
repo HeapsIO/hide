@@ -53,15 +53,6 @@ class Table extends Component {
 		return view == null || (view.edit != null && view.edit.indexOf(name) >= 0);
 	}
 
-	public function canViewSubColumn( name : String, column : String ) {
-		if( view == null )
-			return true;
-		var sub = view.sub == null ? null : view.sub.get(name);
-		if( sub == null )
-			return true;
-		return sub.show == null || sub.show.indexOf(column) >= 0;
-	}
-
 	public function close() {
 		for( t in @:privateAccess editor.tables.copy() )
 			if( t.parent == this )
