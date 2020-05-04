@@ -72,6 +72,7 @@ class MeshSpray extends Object3D {
 	var timerCicle : haxe.Timer;
 
 	var lastSpray : Float = 0;
+	var invParent : h3d.Matrix;
 
 	#end
 
@@ -89,8 +90,7 @@ class MeshSpray extends Object3D {
 	}
 
 	override function save() {
-		var obj : Dynamic = {};
-		obj.x = obj.y = obj.z = 0;
+		var obj : Dynamic = super.save();
 		obj.meshes = meshes;
 		obj.currentPresetName = currentPresetName;
 		obj.currentSetName = currentSetName;
@@ -114,7 +114,7 @@ class MeshSpray extends Object3D {
 	}
 
 	override function load( obj : Dynamic ) {
-		x = y = z = 0;
+		super.load(obj);
 		if (obj.meshes != null)
 			meshes = obj.meshes;
 		if (obj.defaultConfig != null)
@@ -140,9 +140,25 @@ class MeshSpray extends Object3D {
 	}
 
 	var wasEdited = false;
-
 	var previewModels : Array<hrt.prefab.Prefab> = [];
 	override function edit( ectx : EditContext ) {
+		if (x != 0 || y != 0) {
+			// move meshSpray to origin
+			for (c in this.children) {
+				var obj3d = Std.downcast(c, Object3D);
+				if (obj3d != null) {
+					obj3d.x += x;
+					obj3d.y += y;
+				}
+			}
+			x = 0;
+			y = 0;
+			updateInstance(ectx.getContext(this));
+		}
+		if (invParent == null) {
+			invParent = getTransform().clone();
+			invParent.invert();
+		}
 		if (defaultConfig == null) defaultConfig = getDefaultConfig();
 		if (sceneEditor == null) {
 			allSetGroups = if( sys.FileSystem.exists(MESH_SPRAY_CONFIG_PATH) )
@@ -519,21 +535,14 @@ class MeshSpray extends Object3D {
 
 	var localMat = new h3d.Matrix();
 	var lastPos : h3d.col.Point;
-	var invParent : h3d.Matrix;
 	var lastMeshId = -1;
 	function previewMeshesAround(ctx : Context, point : h3d.col.Point) {
 		if (currentMeshes.length == 0) {
 			return;
 		}
-		if (invParent == null) {
-			invParent = getTransform().clone();
-			invParent.invert();
-		}
 		var nbMeshesInZone = 0;
 		var vecRelat = point.toVector();
-		var transform = this.getTransform().clone();
-		transform.invert();
-		vecRelat.transform3x4(transform);
+		vecRelat.transform3x4(invParent);
 		var point2d = new h2d.col.Point(vecRelat.x, vecRelat.y);
 
 		final CONFIG = currentConfig;
@@ -573,7 +582,7 @@ class MeshSpray extends Object3D {
 
 					position = new h3d.col.Point(point.x + randomRadius*Math.cos(angle), point.y + randomRadius*Math.sin(angle), 0);
 					var vecRelat = position.toVector();
-					vecRelat.transform3x4(transform);
+					vecRelat.transform3x4(invParent);
 
 					var isNextTo = false;
 					for (cPivot in currentPivots) {
@@ -657,9 +666,7 @@ class MeshSpray extends Object3D {
 
 	function removeMeshesAround(ctx : Context, point : h3d.col.Point) {
 		var vecRelat = point.toVector();
-		var transform = this.getTransform().clone();
-		transform.invert();
-		vecRelat.transform3x4(transform);
+		vecRelat.transform3x4(invParent);
 		var point2d = new h2d.col.Point(vecRelat.x, vecRelat.y);
 
 		var childToRemove = [];
