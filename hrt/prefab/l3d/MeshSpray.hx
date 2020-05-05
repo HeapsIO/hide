@@ -142,13 +142,14 @@ class MeshSpray extends Object3D {
 	var wasEdited = false;
 	var previewModels : Array<hrt.prefab.Prefab> = [];
 	override function edit( ectx : EditContext ) {
-		if (x != 0 || y != 0) {
+		if ( x != 0 || y != 0 ) {
 			// move meshSpray to origin
 			for (c in this.children) {
 				var obj3d = Std.downcast(c, Object3D);
 				if (obj3d != null) {
 					obj3d.x += x;
 					obj3d.y += y;
+					obj3d.updateInstance(ectx.getContext(obj3d));
 				}
 			}
 			x = 0;

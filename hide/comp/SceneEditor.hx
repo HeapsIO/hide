@@ -406,6 +406,8 @@ class SceneEditor {
 				selectObjects([]);
 			}
 		};
+		if (!camera2D) 
+			resetCamera();
 
 
 		var cam = @:privateAccess view.getDisplayState("Camera");
@@ -427,9 +429,10 @@ class SceneEditor {
 			context.shared.root2d.setScale(cam2d.z);
 		}
 		cameraController2D.loadFromScene();
+		if (camera2D) 
+			resetCamera();
 
 		scene.onUpdate = update;
-		resetCamera();
 
 		// BUILD scene tree
 
