@@ -528,7 +528,7 @@ class Terrain extends Object3D {
 		else
 			terrain.weightMapResolution = new h2d.col.IPoint(Math.round(tileSizeX * weightMapPixelPerMeter), Math.round(tileSizeY * weightMapPixelPerMeter));
 
-		terrain.parallaxAmount = parallaxAmount / 10;
+		terrain.parallaxAmount = parallaxAmount;
 		terrain.parallaxMinStep = parallaxMinStep;
 		terrain.parallaxMaxStep = parallaxMaxStep;
 		terrain.heightBlendStrength = heightBlendStrength;
@@ -552,7 +552,7 @@ class Terrain extends Object3D {
 		super.updateInstance(ctx, null);
 
 		#if editor
-		terrain.parallaxAmount = parallaxAmount / 10.0;
+		terrain.parallaxAmount = parallaxAmount;
 		terrain.parallaxMinStep = parallaxMinStep;
 		terrain.parallaxMaxStep = parallaxMaxStep;
 		terrain.heightBlendStrength = heightBlendStrength;

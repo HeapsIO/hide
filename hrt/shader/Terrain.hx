@@ -60,15 +60,15 @@ class Terrain extends hxsl.Shader {
 				var terrainUV = (calculatedUV * (heightMapSize - 1)) / heightMapSize;
 				// Blend with the heightpixel of the adjacent chunk
 				if( input.position.x == primSize.x ) terrainUV.x += 0.5 / heightMapSize.x;
-				if( input.position.y == primSize.y ) terrainUV.y += 0.5 / heightMapSize.y; 
+				if( input.position.y == primSize.y ) terrainUV.y += 0.5 / heightMapSize.y;
 				transformedPosition += vec3(0,0,textureLod(heightMap, terrainUV, 0).r) * global.modelView.mat3();
 			}
 			transformedTangent = vec4(tangent * global.modelView.mat3(),tangent.dot(tangent) > 0.5 ? 1. : -1.);
 			var tanX = transformedTangent.xyz.normalize() * -transformedTangent.w;
 			var tanY = transformedNormal.cross(tanX).normalize();
 			TBN = mat3(tanX, tanY, transformedNormal);
-			tangentViewPos = camera.position * TBN;
-			tangentFragPos = transformedPosition * TBN;
+			tangentViewPos = (camera.position * TBN);
+			tangentFragPos = (transformedPosition * TBN);
 		}
 
 		function getWeight( i : IVec3,  uv : Vec2 ) : Vec3 {
@@ -91,10 +91,11 @@ class Terrain extends hxsl.Shader {
 		var i : IVec3;
 		function getPOMUV( i : IVec3, uv : Vec2 ) : Vec2 {
 			var viewNS = normalize(tangentViewPos - tangentFragPos);
+			viewNS.xy /= viewNS.z;
 			var numLayers = mix(float(maxStep), float(minStep), viewNS.dot(transformedNormal));
 			var layerDepth = 1 / numLayers;
 			var curLayerDepth = 0.;
-			var delta = (viewNS.xy / viewNS.z) * parallaxAmount / numLayers;
+			var delta = (viewNS.xy * parallaxAmount / primSize) / numLayers;
 			var curUV = uv;
 			var depth = getDepth(i, curUV);
 			var curDepth = depth.dot(w);
