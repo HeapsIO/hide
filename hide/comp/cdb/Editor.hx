@@ -326,7 +326,7 @@ class Editor extends Component {
 			Reflect.deleteField(line.obj, column.name);
 		else
 			Reflect.setField(line.obj, column.name, value);
-		line.table.sheet.updateValue(column, line.index, prev);
+		line.table.getRealSheet().updateValue(column, line.index, prev);
 		endChanges();
 	}
 
@@ -552,7 +552,7 @@ class Editor extends Component {
 	}
 
 	public function newColumn( sheet : cdb.Sheet, ?index : Int, ?onDone : cdb.Data.Column -> Void ) {
-		var modal = new hide.comp.cdb.ModalColumnForm(base, null, element);
+		var modal = new hide.comp.cdb.ModalColumnForm(base, sheet, null, element);
 		modal.setCallback(function() {
 			var c = modal.getColumn(base, sheet, null);
 			if (c == null)
@@ -578,7 +578,7 @@ class Editor extends Component {
 	}
 
 	public function editColumn( sheet : cdb.Sheet, col : cdb.Data.Column ) {
-		var modal = new hide.comp.cdb.ModalColumnForm(base, col, element);
+		var modal = new hide.comp.cdb.ModalColumnForm(base, sheet, col, element);
 		modal.setCallback(function() {
 			var c = modal.getColumn(base, sheet, col);
 			if (c == null)
@@ -636,22 +636,23 @@ class Editor extends Component {
 	public function popupColumn( table : Table, col : cdb.Data.Column, ?cell : Cell ) {
 		if( view != null )
 			return;
-		var indexColumn = table.sheet.columns.indexOf(col);
+		var sheet = table.getRealSheet();
+		var indexColumn = sheet.columns.indexOf(col);
 		var menu : Array<hide.comp.ContextMenu.ContextMenuItem> = [
-			{ label : "Edit", click : function () editColumn(table.sheet, col) },
-			{ label : "Add Column", click : function () newColumn(table.sheet, indexColumn) },
+			{ label : "Edit", click : function () editColumn(sheet, col) },
+			{ label : "Add Column", click : function () newColumn(sheet, indexColumn) },
 			{ label : "", isSeparator: true },
 			{ label : "Move Left", enabled:  (indexColumn > 0), click : function () {
 				beginChanges();
-				table.sheet.columns.remove(col);
-				table.sheet.columns.insert(indexColumn - 1, col);
+				sheet.columns.remove(col);
+				sheet.columns.insert(indexColumn - 1, col);
 				endChanges();
 				refresh();
 			}},
-			{ label : "Move Right", enabled: (indexColumn < table.sheet.columns.length - 1), click : function () {
+			{ label : "Move Right", enabled: (indexColumn < sheet.columns.length - 1), click : function () {
 				beginChanges();
-				table.sheet.columns.remove(col);
-				table.sheet.columns.insert(indexColumn + 1, col);
+				sheet.columns.remove(col);
+				sheet.columns.insert(indexColumn + 1, col);
 				endChanges();
 				refresh();
 			}},
@@ -659,9 +660,9 @@ class Editor extends Component {
 			{ label : "Delete", click : function () {
 				beginChanges();
 				if( table.displayMode == Properties )
-					changeObject(cell.line, col, base.getDefault(col,table.sheet));
+					changeObject(cell.line, col, base.getDefault(col,sheet));
 				else
-					table.sheet.deleteColumn(col.name);
+					sheet.deleteColumn(col.name);
 				endChanges();
 				refresh();
 			}}

@@ -45,6 +45,10 @@ class Table extends Component {
 		refresh();
 	}
 
+	public function getRealSheet() {
+		return sheet;
+	}
+
 	public function canInsert() {
 		return view == null || view.insert;
 	}
@@ -142,7 +146,7 @@ class Table extends Component {
 				}
 			});
 			col.dblclick(function(_) {
-				if( editor.view == null ) editor.editColumn(sheet, c);
+				if( editor.view == null ) editor.editColumn(getRealSheet(), c);
 			});
 			cols.append(col);
 

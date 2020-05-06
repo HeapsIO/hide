@@ -47,7 +47,11 @@ class SubTable extends Table {
 		super(editor, sheet, root, mode);
 	}
 
-	public function makeSubSheet() {
+	override function getRealSheet() {
+		return cell.table.sheet.getSub(cell.column);
+	}
+
+	function makeSubSheet() {
 		var sheet = cell.table.sheet;
 		var c = cell.column;
 		var index = cell.line.index;
