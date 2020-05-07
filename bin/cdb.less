@@ -401,6 +401,9 @@
 			input[type=text], input[type=submit], select {
 				height: 28px;
 			}
+			td {
+				vertical-align: top;
+			}
 			td.first {
 				width : 120px;
 			}
@@ -416,6 +419,15 @@
 			.t_custom .custom { display : table-row; }
 			.t_id .scope { display : table-row; }
 			.values, .sheet, .custom, .disp, .kind, .scope { display : none; }
+			#doctog {
+				cursor:pointer;
+				color : #888;
+			}
+			.doc.hide {
+				span, textarea {
+					display: none;
+				}
+			}
 		}
 
 		form.edit {

@@ -136,6 +136,8 @@ class Table extends Component {
 			var col = J("<th>");
 			col.text(c.name);
 			col.addClass( "t_"+c.type.getName().substr(1).toLowerCase() );
+			if( c.documentation != null )
+				col.attr("title", c.documentation);
 			if( sheet.props.displayColumn == c.name )
 				col.addClass("display");
 			col.mousedown(function(e) {
@@ -254,6 +256,9 @@ class Table extends Component {
 			var th = new Element("<th>").text(c.name).appendTo(l);
 			var td = new Element("<td>").addClass("c").appendTo(l);
 
+			if( c.documentation != null )
+				th.attr("title", c.documentation);
+
 			var line = new Line(this, [c], lines.length, l);
 			var cell = new Cell(td, line, c);
 			lines.push(line);
@@ -284,7 +289,8 @@ class Table extends Component {
 		var canInsert = false;
 		for( c in available )
 			if( canEditColumn(c.name) ) {
-				J("<option>").attr("value",c.name).text(c.name).appendTo(sel);
+				var opt = J("<option>").attr("value",c.name).text(c.name).appendTo(sel);
+				if( c.documentation != null ) opt.attr("title", c.documentation);
 				canInsert = true;
 			}
 		if( editor.view == null )

@@ -357,6 +357,9 @@
 .cdb .content-modal form select {
   height: 28px;
 }
+.cdb .content-modal form td {
+  vertical-align: top;
+}
 .cdb .content-modal form td.first {
   width: 120px;
 }
@@ -389,6 +392,14 @@
 .cdb .content-modal form .disp,
 .cdb .content-modal form .kind,
 .cdb .content-modal form .scope {
+  display: none;
+}
+.cdb .content-modal form #doctog {
+  cursor: pointer;
+  color: #888;
+}
+.cdb .content-modal form .doc.hide span,
+.cdb .content-modal form .doc.hide textarea {
   display: none;
 }
 .cdb .content-modal form.edit input.create {
