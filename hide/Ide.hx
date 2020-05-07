@@ -838,7 +838,8 @@ class Ide {
 
 		if( subView != null ) return;
 
-		var menu = new Element(new Element("#mainmenu").get(0).outerHTML);
+		var menuHTML = "<content>"+new Element("#mainmenu").html() + config.project.get("menu.extra")+"</content>";
+		var menu = new Element(menuHTML);
 
 		// project
 		if( ideConfig.recentProjects.length > 0 )

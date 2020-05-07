@@ -3,6 +3,9 @@
 	"hmd.animPaths" : [],
 	"hmd.savePropsByAnimation" : false,
 
+	// extra main menu content
+	"menu.extra" : "",
+
 	// path to js scripts containing hide plugins
 	"plugins" : [],
 
