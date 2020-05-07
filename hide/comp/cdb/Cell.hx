@@ -207,7 +207,7 @@ class Cell extends Component {
 				var vals = [];
 				for( c in ps.columns )
 					switch( c.type ) {
-					case TList, TProperties:
+					case TList, TProperties if( c != ps.columns[0] ):
 						continue;
 					default:
 						if( !canViewSubColumn(ps, c.name) ) continue;
