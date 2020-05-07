@@ -73,6 +73,11 @@ class Ide {
 		window = nw.Window.get();
 		var cwd = Sys.getCwd();
 		config = Config.loadForProject(cwd, cwd+"/res");
+		if( ideConfig.currentProject == "" ) {
+			ideConfig.currentProject = cwd;
+			if( StringTools.endsWith(cwd,"package.nw") && sys.FileSystem.exists(cwd.substr(0,-10)+"res") )
+				ideConfig.currentProject = cwd.substr(0,-11);
+		}
 
 		var args = js.Browser.document.URL.split("?")[1];
 		if( args != null ) {

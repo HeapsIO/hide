@@ -128,7 +128,7 @@ class Config {
 				autoSaveLayout : true,
 				layouts : null,
 				recentProjects : [],
-				currentProject : projectPath,
+				currentProject : "",
 				windowPos : null,
 				renderer : null,
 			};
