@@ -6,7 +6,7 @@ class CdbTable extends hide.ui.View<{}> {
 	var editor : hide.comp.cdb.Editor;
 	var currentSheet : String;
 	var tabCache : String;
-	var view : hide.comp.cdb.ConfigView;
+	var view : cdb.DiffFile.ConfigView;
 
 	public function new( ?state ) {
 		super(state);

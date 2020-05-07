@@ -100,7 +100,8 @@
 .cdb .cdb-sheet td.edit_long {
   padding-bottom: 0px;
 }
-.cdb .cdb-sheet tr.filtered {
+.cdb .cdb-sheet tr.filtered,
+.cdb .cdb-sheet tr.hidden {
   display: none;
 }
 .cdb .cdb-sheet tr.clickable {

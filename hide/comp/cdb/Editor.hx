@@ -38,7 +38,7 @@ class Editor extends Component {
 	var api : EditorApi;
 	var undoState : Array<UndoState> = [];
 	var currentValue : Any;
-	public var view : ConfigView;
+	public var view : cdb.DiffFile.ConfigView;
 	public var config : hide.Config;
 	public var cursor : Cursor;
 	public var keys : hide.ui.Keys;

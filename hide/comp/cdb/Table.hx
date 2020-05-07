@@ -16,7 +16,7 @@ class Table extends Component {
 	public var displayMode(default,null) : DisplayMode;
 
 	public var columns : Array<cdb.Data.Column>;
-	public var view : ConfigView.SheetView;
+	public var view : cdb.DiffFile.SheetView;
 
 	public function new(editor, sheet, root, mode) {
 		super(null,root);
@@ -157,7 +157,8 @@ class Table extends Component {
 				var line = lines[index];
 				v.appendTo(line.element);
 				var cell = new Cell(v, line, c);
-
+				if( c.type == TId && view != null && view.forbid != null && view.forbid.indexOf(cell.value) >= 0 )
+					line.element.addClass("hidden");
 				v.click(function(e) {
 					editor.cursor.clickCell(cell, e.shiftKey);
 					e.stopPropagation();

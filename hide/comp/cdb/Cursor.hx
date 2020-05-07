@@ -83,7 +83,7 @@ class Cursor {
 		var line = getLine();
 		if( line != null && dy != 0 ) {
 			var allLines = line.element.parent().children("tr").not(".separator");
-			var lines = allLines.not(".filtered");
+			var lines = allLines.not(".filtered").not(".hidden");
 			var index = lines.index(line.element);
 			var targetLine = lines.get(hxd.Math.imax(index + dy,0));
 			if( targetLine == null || targetLine == line.element.get(0) ) return;
