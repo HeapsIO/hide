@@ -98,19 +98,24 @@ class Cell extends Component {
 		}
 	}
 
-	function canViewSubColumn( sheet : cdb.Sheet, column : String ) {
+	function getSheetView( sheet : cdb.Sheet ) {
 		var view = table.editor.view;
 		if( view == null )
-			return true;
+			return null;
 		var path = sheet.name.split("@");
 		var view = view.get(path.shift());
 		for( name in path ) {
 			var sub = view.sub == null ? null : view.sub.get(name);
 			if( sub == null )
-				return true;
+				return null;
 			view = sub;
 		}
-		return view.show == null || view.show.indexOf(column) >= 0;
+		return view;
+	}
+
+	function canViewSubColumn( sheet : cdb.Sheet, column : String ) {
+		var view = getSheetView(sheet);
+		return view == null || view.show == null || view.show.indexOf(column) >= 0;
 	}
 
 	var _cachedScope : Array<{ s : cdb.Sheet, obj : Dynamic }>;
@@ -263,6 +268,11 @@ class Cell extends Component {
 			str;
 		case TFlags(values):
 			var v : Int = v;
+			var view = getSheetView(sheet);
+			if( view != null && view.options != null ) {
+				var mask = Reflect.field(view.options,c.name);
+				if( mask != null ) v &= mask;
+			}
 			var flags = [];
 			for( i in 0...values.length )
 				if( v & (1 << i) != 0 )
@@ -554,8 +564,15 @@ class Cell extends Component {
 		case TFlags(values):
 			var div = new Element("<div>").addClass("flagValues");
 			div.click(function(e) e.stopPropagation()).dblclick(function(e) e.stopPropagation());
+			var view = table.view;
+			var mask = -1;
+			if( view != null && view.options != null ) {
+				var m = Reflect.field(view.options,column.name);
+				if( m != null ) mask = m;
+			}
 			var val = currentValue;
 			for( i in 0...values.length ) {
+				if( mask & (1<<i) == 0 ) continue;
 				var f = new Element("<input>").attr("type", "checkbox").prop("checked", val & (1 << i) != 0).change(function(e) {
 					val &= ~(1 << i);
 					if( e.getThis().prop("checked") ) val |= 1 << i;
