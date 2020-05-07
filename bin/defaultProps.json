@@ -48,6 +48,8 @@
 	"filetree.excludes": [
 		"(^|\/)\\.[^.]*$"
 	],
+	// allowed new extensions
+	"filetree.allowednew": ["*"],
 
 	// cdb keys
 

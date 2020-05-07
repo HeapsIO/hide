@@ -120,8 +120,11 @@ class FileTree extends FileView {
 			if( current != null )
 				tree.setSelection([current]);
 			e.preventDefault();
-			var newMenu = [for( e in EXTENSIONS ) if( e.options.createNew != null ) { label : e.options.createNew, click : createNew.bind(current, e) }];
-			newMenu.unshift({ label : "Directory", click : createNew.bind(current, { options : { createNew : "Directory" }, extensions : null, component : null }) });
+			var allowedNew : Array<String> = config.get("filetree.allowednew");
+			function allowed( ext : String ) return allowedNew.indexOf(ext) >= 0 || allowedNew.indexOf("*") >= 0;
+			var newMenu = [for( e in EXTENSIONS ) if( e.options.createNew != null && Lambda.exists(e.extensions, allowed) ) { label : e.options.createNew, click : createNew.bind(current, e) }];
+			if( allowed("dir") )
+				newMenu.unshift({ label : "Directory", click : createNew.bind(current, { options : { createNew : "Directory" }, extensions : null, component : null }) });
 			new hide.comp.ContextMenu([
 				{ label : "New..", menu:newMenu },
 				{ label : "Explore", enabled : current != null, click : function() { onExploreFile(current); } },
