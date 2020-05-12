@@ -671,10 +671,13 @@ class SceneEditor {
 		var startDrag = null;
 		var curDrag = null;
 		var dragBtn = -1;
+		var lastPush : Array<Float> = null;
 		var i3d = Std.downcast(int, h3d.scene.Interactive);
 		var i2d = Std.downcast(int, h2d.Interactive);
 		int.onClick = function(e) {
 			if(e.button == K.MOUSE_RIGHT) {
+				var dist = hxd.Math.distance(scene.s2d.mouseX - lastPush[0], scene.s2d.mouseY - lastPush[1]);
+				if( dist > 5 ) return;
 				var pt = new h3d.Vector(e.relX,e.relY,e.relZ);
 				if( i3d != null ) i3d.localToGlobal(pt);
 				selectNewObject(pt.toPoint());
@@ -685,6 +688,8 @@ class SceneEditor {
 		int.onPush = function(e) {
 			if( e.button == K.MOUSE_MIDDLE ) return;
 			startDrag = [scene.s2d.mouseX, scene.s2d.mouseY];
+			if( e.button == K.MOUSE_RIGHT )
+				lastPush = startDrag;
 			dragBtn = e.button;
 			if( e.button == K.MOUSE_LEFT ) {
 				var elts = null;
