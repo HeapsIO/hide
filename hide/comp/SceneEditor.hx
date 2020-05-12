@@ -406,7 +406,7 @@ class SceneEditor {
 				selectObjects([]);
 			}
 		};
-		if (!camera2D) 
+		if (!camera2D)
 			resetCamera();
 
 
@@ -429,7 +429,7 @@ class SceneEditor {
 			context.shared.root2d.setScale(cam2d.z);
 		}
 		cameraController2D.loadFromScene();
-		if (camera2D) 
+		if (camera2D)
 			resetCamera();
 
 		scene.onUpdate = update;
@@ -610,7 +610,7 @@ class SceneEditor {
 		sh.root2d.remove();
 
 		// Prevent leaks
-		var chunkiFiedScene = Std.downcast(scene.s3d, hide.Scene);
+		var chunkiFiedScene = Std.downcast(scene.s3d, hide.tools.ChunkedScene);
 		if( chunkiFiedScene != null )
 			chunkiFiedScene.reset();
 
