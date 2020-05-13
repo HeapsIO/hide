@@ -578,6 +578,9 @@ class Tile extends h3d.scene.Mesh {
 
 	override function sync(ctx:h3d.scene.RenderContext) {
 
+		if( terrain.surfaceArray == null )
+			return;
+
 		shader.SHOW_GRID = #if editor terrain.showGrid #else false #end;
 		shader.CHECKER = #if editor terrain.showChecker #else false #end;
 		shader.COMPLEXITY = #if editor terrain.showComplexity #else false #end;

@@ -297,7 +297,8 @@ class Terrain extends Object3D {
 				surface.angle = surfaceProps.angle;
 				surface.tilling = surfaceProps.tilling;
 				surface.minHeight = surfaceProps.minHeight;
-				onEnd();
+				if( onEnd != null )
+					onEnd();
 			}
 			albedo.waitLoad(wait);
 			normal.waitLoad(wait);
