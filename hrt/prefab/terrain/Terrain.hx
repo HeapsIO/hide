@@ -630,6 +630,8 @@ class Terrain extends Object3D {
 			terrain.weightMapResolution.y = Std.int(hxd.Math.max(1, terrain.weightMapResolution.y));
 			terrain.tileSize = new h2d.col.Point(tileSizeX, tileSizeY);
 			terrain.cellCount = new h2d.col.IPoint(Math.ceil(tileSizeX * vertexPerMeter), Math.ceil(tileSizeY * vertexPerMeter) );
+			terrain.cellCount.x = Std.int(hxd.Math.max(1, terrain.cellCount.x));
+			terrain.cellCount.y = Std.int(hxd.Math.max(1, terrain.cellCount.y));
 			terrain.cellSize = new h2d.col.Point(tileSizeX / terrain.cellCount.x, tileSizeY / terrain.cellCount.y );
 			terrain.heightMapResolution = new h2d.col.IPoint(terrain.cellCount.x + 1, terrain.cellCount.y + 1);
 			terrain.refreshAllGrids();
