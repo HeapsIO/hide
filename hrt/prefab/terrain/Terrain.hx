@@ -623,9 +623,11 @@ class Terrain extends Object3D {
 		props.find(".apply").click(function(_) {
 			tileSizeX = @:privateAccess Lambda.find(ctx.properties.fields, f->f.fname=="tileSizeSetX").range.value;
 			tileSizeY = @:privateAccess Lambda.find(ctx.properties.fields, f->f.fname=="tileSizeSetY").range.value;
-			weightMapPixelPerMeter = Std.int(@:privateAccess Lambda.find(ctx.properties.fields, f->f.fname=="weightMapPixelPerMeter").range.value);
+			weightMapPixelPerMeter = @:privateAccess Lambda.find(ctx.properties.fields, f->f.fname=="weightMapPixelPerMeter").range.value;
 			vertexPerMeter = @:privateAccess Lambda.find(ctx.properties.fields, f->f.fname=="vertexPerMeter").range.value;
 			terrain.weightMapResolution = new h2d.col.IPoint(Math.round(tileSizeX * weightMapPixelPerMeter), Math.round(tileSizeY * weightMapPixelPerMeter));
+			terrain.weightMapResolution.x = Std.int(hxd.Math.max(1, terrain.weightMapResolution.x));
+			terrain.weightMapResolution.y = Std.int(hxd.Math.max(1, terrain.weightMapResolution.y));
 			terrain.tileSize = new h2d.col.Point(tileSizeX, tileSizeY);
 			terrain.cellCount = new h2d.col.IPoint(Math.ceil(tileSizeX * vertexPerMeter), Math.ceil(tileSizeY * vertexPerMeter) );
 			terrain.cellSize = new h2d.col.Point(tileSizeX / terrain.cellCount.x, tileSizeY / terrain.cellCount.y );

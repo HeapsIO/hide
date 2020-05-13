@@ -34,14 +34,18 @@ class StrokeBuffer {
 		tempTex.filter = Linear;
 		tex.preventAutoDispose();
 		tempTex.preventAutoDispose();
-		tex.realloc = null;
-		tempTex.realloc = null;
 	}
 
 	public function reset(){
 		used = false;
-		if(tex != null) tex.clear(0);
-		if(tempTex != null) tempTex.clear(0);
+		switch tex.format {
+			case RGB16F, RGB32F:
+				if(tex != null) tex.clearF(0);
+				if(tempTex != null) tempTex.clearF(0);
+			default:
+				if(tex != null) tex.clear(0);
+				if(tempTex != null) tempTex.clear(0);
+		}
 	}
 }
 
