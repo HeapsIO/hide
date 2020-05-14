@@ -73,11 +73,10 @@ class Ide {
 		window = nw.Window.get();
 		var cwd = Sys.getCwd();
 		config = Config.loadForProject(cwd, cwd+"/res");
-		if( ideConfig.currentProject == "" ) {
-			ideConfig.currentProject = cwd;
-			if( StringTools.endsWith(cwd,"package.nw") && sys.FileSystem.exists(cwd.substr(0,-10)+"res") )
-				ideConfig.currentProject = cwd.substr(0,-11);
-		}
+		var current = ideConfig.currentProject;
+		if( StringTools.endsWith(cwd,"package.nw") && sys.FileSystem.exists(cwd.substr(0,-10)+"res") )
+			cwd = cwd.substr(0,-11);
+		if( current == "" ) cwd;
 
 		var args = js.Browser.document.URL.split("?")[1];
 		if( args != null ) {
@@ -114,13 +113,12 @@ class Ide {
 
 		fileWatcher = new hide.tools.FileWatcher();
 
-		if( !sys.FileSystem.exists(ideConfig.currentProject) || !sys.FileSystem.isDirectory(ideConfig.currentProject) ) {
-			js.Browser.alert(ideConfig.currentProject+" no longer exists");
-			ideConfig.currentProject = cwd;
-			config.global.save();
+		if( !sys.FileSystem.exists(current) || !sys.FileSystem.isDirectory(current) ) {
+			js.Browser.alert(current+" no longer exists");
+			current = cwd;
 		}
 
-		setProject(ideConfig.currentProject);
+		setProject(current);
 		window.window.document.addEventListener("mousedown", function(e) {
 			mouseX = e.x;
 			mouseY = e.y;
@@ -489,13 +487,14 @@ class Ide {
 			if( ideConfig.recentProjects.length > 10 ) ideConfig.recentProjects.pop();
 			config.global.save();
 		}
-		window.title = (isCDB ? "CastleDB" : "HIDE") + " - " + dir;
 		try {
 			config = Config.loadForProject(projectDir, resourceDir);
 		} catch( e : Dynamic ) {
 			js.Browser.alert(e);
 			return;
 		}
+		var title = config.current.get("hide.windowTitle");
+		window.title = title != null ? title : ((isCDB ? "CastleDB" : "HIDE") + " - " + dir);
 		shaderLoader = new hide.tools.ShaderLoader();
 		typesCache = new hide.tools.TypesCache();
 
