@@ -108,19 +108,13 @@ class Particle2D extends Object2D {
 			var c = Curve.getCurve(this, name);
 			return c != null ? VCurve(c) : def;
 		}
-
-		function makeVector(name: String, defVal: Float) {
-			var curves = Curve.getCurves(this, name);
-			if(curves == null || curves.length == 0)
-				return null;
-
-			return Curve.getVectorValue(curves, defVal);
-		}
 		
-		particles2d.enable = makeVal("enable", VConst((paramsParticleGroup.enable) ? 1 : 0));
-		particles2d.speed = makeVal("speed", VConst(paramsParticleGroup.speed));
-		particles2d.speedIncr = makeVal("speedIncr", VConst(paramsParticleGroup.speedIncr));
-		particles2d.gravity = makeVal("gravity", VConst(paramsParticleGroup.gravity));
+		if (paramsParticleGroup != null) {
+			particles2d.enable = makeVal("enable", VConst((paramsParticleGroup.enable) ? 1 : 0));
+			particles2d.speed = makeVal("speed", VConst(paramsParticleGroup.speed));
+			particles2d.speedIncr = makeVal("speedIncr", VConst(paramsParticleGroup.speedIncr));
+			particles2d.gravity = makeVal("gravity", VConst(paramsParticleGroup.gravity));
+		}
 	}
 
 	override function makeInstance(ctx:Context):Context {
@@ -133,6 +127,8 @@ class Particle2D extends Object2D {
 		particle2d.addGroup(group);
 		if (paramsParticleGroup != null)
 			group.load(1, paramsParticleGroup);
+		else
+			paramsParticleGroup = group.save();
 		group.rebuildOnChange = false;
 
 		updateInstance(ctx);
