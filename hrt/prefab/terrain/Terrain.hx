@@ -351,6 +351,7 @@ class Terrain extends Object3D {
 			for( s in terrain.surfaces )
 				s.tilling /= tileSizeX;
 			terrain.updateSurfaceParams();
+			/* // Disable auto-upgrade for now
 			#if editor
 			// Need to create a terrain with the new params before saving
 			terrain.weightMapResolution = new h2d.col.IPoint(Math.round(tileSizeX * weightMapPixelPerMeter), Math.round(tileSizeY * weightMapPixelPerMeter));
@@ -366,6 +367,7 @@ class Terrain extends Object3D {
 			@:privateAccess shared.scene.editor.view.save();
 			trace("Terrain : " + name +  " is now up to date.");
 			#end
+			*/
 		}
 	}
 
