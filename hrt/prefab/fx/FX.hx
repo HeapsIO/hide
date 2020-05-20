@@ -85,7 +85,7 @@ class FXAnimation extends h3d.scene.Object {
 		if(emitters != null)
 			for(emitter in emitters)
 				emitter.setParticleVibility(ctx.visibleFlag);
-		
+
 		if (additionLoopDuration > 0) {
 			if (totalTime > startLoop) {
 				var timeLeft = endLoop + additionLoopDuration - totalTime;
@@ -310,10 +310,7 @@ class FXAnimation extends h3d.scene.Object {
 			if( srcObj != null && targetObj != null ) {
 				srcObj.follow = targetObj;
 				srcObj.followPositionOnly = co.positionOnly;
-				//trace ("Resolve constraint for FX : " + objectName + " to " + targetName);
 			}
-			else
-				trace ("Failed te resolve constraint for FX : "+ this.toString() + ", from " + objectName + " to " + targetName);
 		}
 	}
 }
