@@ -74,8 +74,8 @@ class FX2DAnimation extends h2d.Object {
 
 			if(anim.position != null) {
 				var pos = evaluator.getVector(anim.position, time);
-				anim.obj2d.x = pos.x;
-				anim.obj2d.y = pos.y;
+				anim.obj2d.x = anim.elt2d.x + pos.x;
+				anim.obj2d.y = anim.elt2d.y + pos.y;
 			}
 
 			if(anim.visibility != null)
