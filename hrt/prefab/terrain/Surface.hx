@@ -44,15 +44,17 @@ class SurfaceArray {
 
 	public function new( count, res ) {
 		surfaceCount = count;
-		albedo = new h3d.mat.TextureArray(res, res, count, [Target], RGBA);
-		normal = new h3d.mat.TextureArray(res, res, count, [Target], RGBA);
-		pbr = new h3d.mat.TextureArray(res, res, count, [Target], RGBA);
-		albedo.wrap = Repeat;
-		albedo.preventAutoDispose();
-		normal.wrap = Repeat;
-		normal.preventAutoDispose();
-		pbr.wrap = Repeat;
-		pbr.preventAutoDispose();
+		if( count > 0 && res > 0 ) {
+			albedo = new h3d.mat.TextureArray(res, res, count, [Target], RGBA);
+			normal = new h3d.mat.TextureArray(res, res, count, [Target], RGBA);
+			pbr = new h3d.mat.TextureArray(res, res, count, [Target], RGBA);
+			albedo.wrap = Repeat;
+			albedo.preventAutoDispose();
+			normal.wrap = Repeat;
+			normal.preventAutoDispose();
+			pbr.wrap = Repeat;
+			pbr.preventAutoDispose();
+		}
 	}
 
 	public function clone() : SurfaceArray {
