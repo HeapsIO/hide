@@ -177,7 +177,7 @@ class MeshGenerator extends Object3D {
 		#if editor
 		var int = ctx.local3d.find(o -> Std.downcast(o, h3d.scene.Interactive));
 		if(int != null) {
-			var dummy = makeInteractive(ctx);
+			var dummy = Std.downcast(makeInteractive(ctx), h3d.scene.Interactive);
 			int.preciseShape = dummy.preciseShape;
 			dummy.remove();
 		}
@@ -262,11 +262,6 @@ class MeshGenerator extends Object3D {
 	}
 
 	#if editor
-
-	override function makeInteractive( ctx : Context ) : h3d.scene.Interactive {
-		var int = super.makeInteractive(ctx);
-		return int;
-	}
 
 	function generate( ctx : EditContext, mp : MeshPart, maxDepth : Int, curDepth : Int) {
 		if( curDepth >  maxDepth ) return;

@@ -143,7 +143,7 @@ class Object3D extends Prefab {
 		return true;
 	}
 
-	public function makeInteractive( ctx : Context ) : h3d.scene.Interactive {
+	override function makeInteractive( ctx : Context ) : hxd.SceneEvents.Interactive {
 		var local3d = ctx.local3d;
 		if(local3d == null)
 			return null;
@@ -151,6 +151,7 @@ class Object3D extends Prefab {
 		var invRootMat = local3d.getAbsPos().clone();
 		invRootMat.invert();
 		var bounds = new h3d.col.Bounds();
+		var visibleMeshes = [];
 		for(mesh in meshes) {
 			if(mesh.ignoreCollide)
 				continue;
@@ -168,8 +169,11 @@ class Object3D extends Prefab {
 			var lb = mesh.primitive.getBounds().clone();
 			lb.transform(localMat);
 			bounds.add(lb);
+			visibleMeshes.push(mesh);
 		}
-		var meshCollider = new h3d.col.Collider.GroupCollider([for(m in meshes) {
+		if( visibleMeshes.length == 0 )
+			return null;
+		var meshCollider = new h3d.col.Collider.GroupCollider([for(m in visibleMeshes) {
 			var c : h3d.col.Collider = try m.getGlobalCollider() catch(e: Dynamic) null;
 			if(c != null) c;
 		}]);

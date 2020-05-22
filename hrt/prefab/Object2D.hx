@@ -109,10 +109,6 @@ class Object2D extends Prefab {
 
 	#if editor
 
-	public function makeInteractive(ctx : Context) : h2d.Interactive {
-		return null;
-	}
-
 	override function edit( ctx : EditContext ) {
 		var props = new hide.Element('
 			<div class="group" name="Position">

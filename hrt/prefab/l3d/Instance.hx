@@ -13,10 +13,9 @@ class Instance extends Object3D {
 		#if editor
 		var ctx = super.makeInstance(ctx);
 		var kind = getCdbKind(this);
-		if(kind == null || kind.idx == null)
-			return ctx;
+		var unknown = kind == null || kind.idx == null;
 
-		var modelPath = findModelPath(kind.sheet, kind.idx.obj);
+		var modelPath = unknown ? null : findModelPath(kind.sheet, kind.idx.obj);
 		if(modelPath != null) {
 			try {
 				if(hrt.prefab.Library.getPrefabType(modelPath) != null) {
@@ -36,20 +35,80 @@ class Instance extends Object3D {
 			}
 		}
 		else {
-			var tile = findTile(kind.sheet, kind.idx.obj).center();
+			var tile = unknown ? getDefaultTile().center() : findTile(kind.sheet, kind.idx.obj).center();
 			var objFollow = new h2d.ObjectFollower(ctx.local3d, ctx.shared.root2d);
 			objFollow.followVisibility = true;
 			var bmp = new h2d.Bitmap(tile, objFollow);
 			ctx.local2d = objFollow;
-			var mesh = new h3d.scene.Mesh(h3d.prim.Cube.defaultUnitCube(), ctx.local3d);
-			mesh.scale(0.5);
-			var mat = mesh.material;
-			mat.color.setColor(0xff00ff);
-			mat.shadows = false;
 		}
+		addRanges(ctx, true);
 		#end
 		return ctx;
 	}
+
+	#if editor
+
+	public function addRanges( ctx : Context, init = false ) {
+		if( !init ) {
+			for( r in ctx.shared.getObjects(this,h3d.scene.Object) )
+				if( r.name == "RANGE")
+					r.remove();
+		}
+		// add ranges
+		var shared = Std.downcast(ctx.shared, hide.prefab.ContextShared);
+		if( shared != null && shared.editorDisplay ) {
+			var sheet = getCdbModel();
+			if( sheet != null ) {
+				var ranges = Reflect.field(shared.scene.config.get("sceneeditor.ranges"), sheet.name);
+				if( ranges != null ) {
+					for( key in Reflect.fields(ranges) ) {
+						var color = Std.parseInt(Reflect.field(ranges,key));
+						var value : Dynamic = props;
+						for( p in key.split(".") )
+							value = Reflect.field(value, p);
+						if( value != null ) {
+							var mesh = new h3d.scene.Mesh(h3d.prim.Cylinder.defaultUnitCylinder(128), ctx.local3d);
+							mesh.name = "RANGE";
+							mesh.ignoreCollide = true;
+							mesh.ignoreBounds = true;
+							mesh.material.mainPass.culling = None;
+							mesh.material.name = "RANGE";
+							mesh.setScale(value * 2);
+							mesh.scaleZ = 0.01;
+							mesh.material.color.setColor(color|0xFF000000);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	override function setSelected(ctx:Context, b:Bool):Bool {
+		var b = super.setSelected(ctx, b);
+		for( m in ctx.shared.getMaterials(this) )
+			if( m.name == "RANGE" )
+				m.removePass(m.getPass("highlight"));
+		return b;
+	}
+
+	override function makeInteractive(ctx:Context):hxd.SceneEvents.Interactive {
+		var int = super.makeInteractive(ctx);
+		if( int == null ) {
+			// no meshes ? do we have an icon instead...
+			var follow = Std.downcast(ctx.local2d, h2d.ObjectFollower);
+			if( follow != null ) {
+				var bmp = Std.downcast(follow.getChildAt(0), h2d.Bitmap);
+				if( bmp != null ) {
+					var i = new h2d.Interactive(bmp.tile.width, bmp.tile.height, bmp);
+					i.x = bmp.tile.dx;
+					i.y = bmp.tile.dy;
+					int = i;
+				}
+			}
+		}
+		return int;
+	}
+	#end
 
 	override function removeInstance(ctx:Context):Bool {
 		if(!super.removeInstance(ctx))
@@ -125,12 +184,6 @@ class Instance extends Object3D {
 
 	#if editor
 
-	override function edit( ctx : EditContext ) {
-		super.edit(ctx);
-		var sheet = getCdbModel();
-		if( sheet == null ) return;
-	}
-
 	override function getHideProps() : HideProps {
 		return { icon : "circle", name : "Instance" };
 	}
@@ -153,7 +206,17 @@ class Instance extends Object3D {
 			if(tile != null)
 				return makeTile(tile);
 		}
-		return h2d.Tile.fromColor(0xFF00FF, 16, 16, 0.8).sub(0, 0, 8, 8);
+		return getDefaultTile();
+	}
+
+	static function getDefaultTile() : h2d.Tile {
+		var engine = h3d.Engine.getCurrent();
+		var t = @:privateAccess engine.resCache.get(Instance);
+		if( t == null ) {
+			t = hxd.res.Any.fromBytes("",sys.io.File.getBytes(hide.Ide.inst.getPath("${HIDE}/res/icons/unknown.png"))).toTile();
+			@:privateAccess engine.resCache.set(Instance, t);
+		}
+		return t.clone();
 	}
 
 	static function makeTile(p:cdb.Types.TilePos) : h2d.Tile {

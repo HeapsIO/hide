@@ -2,7 +2,7 @@ package hide.prefab;
 
 class ContextShared extends hrt.prefab.ContextShared {
 	#if editor
-	var scene : hide.comp.Scene;
+	public var scene : hide.comp.Scene;
 
 	public function new(scene) {
 		super();

@@ -187,10 +187,8 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 				var label = typeId.charAt(0).toUpperCase() + typeId.substr(1);
 
 				var refCol = Instance.findRefColumn(type);
-				if(refCol == null)
-					continue;
-				var refSheet = type.base.getSheet(refCol.sheet);
-				var idCol = Instance.findIDColumn(refSheet);
+				var refSheet = refCol == null ? null : type.base.getSheet(refCol.sheet);
+				var idCol = refCol == null ? null : Instance.findIDColumn(refSheet);
 
 				function make(name) {
 					var p = new hrt.prefab.l3d.Instance(current == null ? sceneData : current);
@@ -203,7 +201,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 					return p;
 				}
 
-				if(idCol != null) {
+				if(idCol != null && refSheet.props.dataFiles == null ) {
 					var kindItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
 					for(line in refSheet.lines) {
 						var kind : String = Reflect.getProperty(line, idCol.name);
@@ -284,6 +282,8 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 			editor.undo = properties.undo;
 			editor.onChange = function(pname) {
 				edit.onChange(e, 'props.$pname');
+				var e = Std.instance(e, hrt.prefab.l3d.Instance);
+				if( e != null ) e.addRanges(context.shared.contexts.get(e));
 			}
 		}
 	}

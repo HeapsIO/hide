@@ -89,6 +89,14 @@ class Prefab {
 	public function setSelected( ctx : Context, b : Bool ) {
 		return true;
 	}
+
+	/**
+		Allows the prefab to create an interactive so it can be selected in the scene.
+	**/
+	public function makeInteractive( ctx : Context ) : hxd.SceneEvents.Interactive {
+		return null;
+	}
+
 	#end
 
 	/**

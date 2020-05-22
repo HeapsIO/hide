@@ -436,12 +436,21 @@ class SceneEditor {
 
 		// BUILD scene tree
 
+		var icons = new Map();
+		var iconsConfig = view.config.get("sceneeditor.icons");
+		for( f in Reflect.fields(iconsConfig) )
+			icons.set(f, Reflect.field(iconsConfig,f));
+
 		function makeItem(o:PrefabElement, ?state) : hide.comp.IconTree.IconTreeItem<PrefabElement> {
 			var p = o.getHideProps();
+			var icon = p.icon;
+			var ct = o.getCdbModel();
+			if( ct != null && icons.exists(ct.name) )
+				icon = icons.get(ct.name);
 			var r : hide.comp.IconTree.IconTreeItem<PrefabElement> = {
 				value : o,
 				text : o.name,
-				icon : "fa fa-"+p.icon,
+				icon : "fa fa-"+icon,
 				children : o.children.length > 0,
 				state: state
 			};
@@ -646,17 +655,9 @@ class SceneEditor {
 		var ctx = contexts[elt];
 		if( ctx == null )
 			return;
-		var obj3d = Std.downcast(elt, Object3D);
-		if( obj3d != null ) {
-			var int = obj3d.makeInteractive(ctx);
-			initInteractive(elt,int);
-		} else {
-			var obj2d = Std.downcast(elt, Object2D);
-			if( obj2d != null ) {
-				var int = obj2d.makeInteractive(ctx);
-				initInteractive(elt,int);
-			}
-		}
+		var int = elt.makeInteractive(ctx);
+		if( int == null ) return;
+		initInteractive(elt,cast int);
 	}
 
 	function initInteractive( elt : PrefabElement, int : {

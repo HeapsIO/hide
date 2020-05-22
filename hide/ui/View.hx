@@ -120,7 +120,7 @@ class View<T> extends hide.comp.Component {
 		});
 		container.on("destroy",function(e) {
 			if( !onBeforeClose() ) {
-				e.preventDefault();
+				try e.preventDefault() catch( _ : Dynamic ) {};
 				return;
 			}
 			destroy();
