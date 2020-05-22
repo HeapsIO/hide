@@ -49,7 +49,6 @@ class Editor extends Component {
 		this.api = api;
 		this.config = config;
 		view = cast this.config.get("cdb.view");
-		currentValue = api.copy();
 		undo = new hide.ui.UndoHistory();
 	}
 
@@ -110,6 +109,8 @@ class Editor extends Component {
 		base = sheet.base;
 		cursor = new Cursor(this);
 		if( displayMode == null ) displayMode = Table;
+		DataFiles.load();
+		if( currentValue == null ) currentValue = api.copy();
 		refresh();
 	}
 
@@ -414,7 +415,7 @@ class Editor extends Component {
 		var state = undoState[0];
 		var newSheet = getCurrentSheet();
 		currentValue = newValue;
-		api.save();
+		save();
 		undo.change(Custom(function(undo) {
 			var currentSheet;
 			if( undo ) {
@@ -427,13 +428,18 @@ class Editor extends Component {
 				currentSheet = newSheet;
 			}
 			api.load(currentValue);
+			DataFiles.save(true); // save reloaded data
 			element.removeClass("is-cdb-editor");
 			refreshAll();
 			element.addClass("is-cdb-editor");
 			syncSheet(currentSheet);
 			refresh(state);
-			api.save();
+			save();
 		}));
+	}
+
+	function save() {
+		DataFiles.save(function() api.save());
 	}
 
 	public static function refreshAll( eraseUndo = false ) {
@@ -795,7 +801,7 @@ class Editor extends Component {
 		if( sheet == null ) sheet = this.currentSheet;
 		if( onChange == null ) onChange = function() {}
 		var index = base.sheets.indexOf(sheet);
-		new hide.comp.ContextMenu([
+		var content : Array<ContextMenu.ContextMenuItem> = [
 			{ label : "Add Sheet", click : function() { beginChanges(); var db = ide.createDBSheet(index+1); endChanges(); if( db != null ) onChange(); } },
 			{ label : "Move Left", click : function() { beginChanges(); base.moveSheet(sheet,-1); endChanges(); onChange(); } },
 			{ label : "Move Right", click : function() { beginChanges(); base.moveSheet(sheet,1); endChanges(); onChange(); } },
@@ -812,39 +818,62 @@ class Editor extends Component {
 				onChange();
 			}},
 			{ label : "", isSeparator: true },
-			{ label : "Add Index", checked : sheet.props.hasIndex, click : function() {
-				beginChanges();
-				if( sheet.props.hasIndex ) {
-					for( o in sheet.getLines() )
-						Reflect.deleteField(o, "index");
-					sheet.props.hasIndex = false;
-				} else {
-					for( c in sheet.columns )
-						if( c.name == "index" ) {
-							ide.error("Column 'index' already exists");
-							return;
-						}
-					sheet.props.hasIndex = true;
+		];
+		if( sheet.props.dataFiles == null )
+			content = content.concat([
+				{ label : "Add Index", checked : sheet.props.hasIndex, click : function() {
+					beginChanges();
+					if( sheet.props.hasIndex ) {
+						for( o in sheet.getLines() )
+							Reflect.deleteField(o, "index");
+						sheet.props.hasIndex = false;
+					} else {
+						for( c in sheet.columns )
+							if( c.name == "index" ) {
+								ide.error("Column 'index' already exists");
+								return;
+							}
+						sheet.props.hasIndex = true;
+					}
+					endChanges();
+				}},
+				{ label : "Add Group", checked : sheet.props.hasGroup, click : function() {
+					beginChanges();
+					if( sheet.props.hasGroup ) {
+						for( o in sheet.getLines() )
+							Reflect.deleteField(o, "group");
+						sheet.props.hasGroup = false;
+					} else {
+						for( c in sheet.columns )
+							if( c.name == "group" ) {
+								ide.error("Column 'group' already exists");
+								return;
+							}
+						sheet.props.hasGroup = true;
+					}
+					endChanges();
+				}},
+			]);
+		if( sheet.lines.length == 0 || sheet.props.dataFiles != null )
+			content.push({
+				label : "Data Files",
+				checked : sheet.props.dataFiles != null,
+				click : function() {
+					beginChanges();
+					var txt = StringTools.trim(ide.ask("Data Files Path", sheet.props.dataFiles));
+					if( txt == "" ) {
+						Reflect.deleteField(sheet.props,"dataFile");
+						@:privateAccess sheet.sheet.lines = [];
+					} else {
+						sheet.props.dataFiles = txt;
+						@:privateAccess sheet.sheet.lines = null;
+						DataFiles.load();
+					}
+					endChanges();
+					refresh();
 				}
-				endChanges();
-			}},
-			{ label : "Add Group", checked : sheet.props.hasGroup, click : function() {
-				beginChanges();
-				if( sheet.props.hasGroup ) {
-					for( o in sheet.getLines() )
-						Reflect.deleteField(o, "group");
-					sheet.props.hasGroup = false;
-				} else {
-					for( c in sheet.columns )
-						if( c.name == "group" ) {
-							ide.error("Column 'group' already exists");
-							return;
-						}
-					sheet.props.hasGroup = true;
-				}
-				endChanges();
-			}},
-		]);
+			});
+		new ContextMenu(content);
 	}
 
 	public function close() {

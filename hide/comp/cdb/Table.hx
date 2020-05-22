@@ -50,6 +50,7 @@ class Table extends Component {
 	}
 
 	public function canInsert() {
+		if( sheet.props.dataFiles != null ) return false;
 		return view == null || view.insert;
 	}
 

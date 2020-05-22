@@ -786,9 +786,6 @@ class Level3D extends FileView {
 		return ret;
 	}
 
-	static function getLevelSheet() {
-		return Ide.inst.database.getSheet(Ide.inst.currentConfig.get("l3d.cdbLevel", "level"));
-	}
 
 	static function resolveCdbType(id: String) {
 		var types = Level3D.getCdbTypes();
@@ -796,9 +793,18 @@ class Level3D extends FileView {
 	}
 
 	static function getCdbTypes() {
-		var levelSheet = getLevelSheet();
-		if(levelSheet == null) return [];
-		return [for(c in levelSheet.columns) if(c.type == TList) levelSheet.getSub(c)];
+		var sheets = [];
+		var ide = Ide.inst;
+		var levelSheet = ide.database.getSheet(Ide.inst.currentConfig.get("l3d.cdbLevel", "level"));
+		for( s in ide.database.sheets )
+			if( s.props.dataFiles != null )
+				sheets.push(s);
+		if(levelSheet != null) {
+			for(c in levelSheet.columns)
+				if( c.type == TList )
+					sheets.push(levelSheet.getSub(c));
+		}
+		return sheets;
 	}
 
 	static function getCdbTypeId(?p: PrefabElement, ?sheet: cdb.Sheet) : String {
