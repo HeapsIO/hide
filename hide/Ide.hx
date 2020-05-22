@@ -667,7 +667,9 @@ class Ide {
 			return; // cancel load
 		database = new cdb.Database();
 		if( !exists ) return;
-		try {
+		if( isDebugger ) {
+			database.load(getFile(databaseFile).toString());
+		} else try {
 			database.load(getFile(databaseFile).toString());
 		} catch( e : Dynamic ) {
 			error(e);

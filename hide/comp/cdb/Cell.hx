@@ -181,8 +181,7 @@ class Cell extends Component {
 				'<span class="error">#MISSING</span>';
 			else {
 				var id = c.scope != null ? makeId(scope,c.scope,v) : v;
-				var uniq = editor.base.getSheet(sheet.name).index.get(id);
-				uniq == null || uniq.obj == obj ? v : '<span class="error">#DUP($v)</span>';
+				editor.isUniqueID(sheet,obj,id) ? v : '<span class="error">#DUP($v)</span>';
 			}
 		case TString if( c.kind == Script ):
 			v == "" ? "&nbsp;" : colorizeScript(c,v);

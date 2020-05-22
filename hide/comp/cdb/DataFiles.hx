@@ -44,13 +44,18 @@ class DataFiles {
 		var ide = Ide.inst;
 		var lines : Array<Dynamic> = [];
 		var linesData : Array<DataProps> = [];
+		var separators = [];
+		var separatorTitles = [];
 		@:privateAccess {
 			sheet.sheet.lines = lines;
 			sheet.sheet.linesData = linesData;
+			sheet.sheet.separators = separators;
+			sheet.props.separatorTitles = separatorTitles;
 		}
-		if( !sys.FileSystem.exists(ide.getPath(sheet.props.dataFiles)) )
-			return;
 		function loadFile( file : String ) {
+			var needSep = true;
+			var levelID = file.split("/").pop().split(".").shift();
+			levelID = levelID.charAt(0).toUpperCase()+levelID.substr(1);
 			function loadRec( p : hrt.prefab.Prefab ) {
 				if( p.getCdbModel() == sheet ) {
 					var dprops : DataProps = {
@@ -58,6 +63,13 @@ class DataFiles {
 						path : p.getAbsPath(),
 						origin : haxe.Json.stringify(p.props),
 					};
+					if( needSep ) {
+						separators.push(lines.length);
+						separatorTitles.push(file);
+						needSep = false;
+					}
+					if( sheet.idCol != null && Reflect.field(p.props,sheet.idCol.name) == "" )
+						Reflect.setField(p.props,sheet.idCol.name,levelID+"_"+p.name);
 					linesData.push(dprops);
 					lines.push(p.props);
 				}
@@ -70,20 +82,52 @@ class DataFiles {
 				ide.fileWatcher.register(file, onFileChanged);
 			}
 		}
-		loadFile(sheet.props.dataFiles);
+
+		var path = sheet.props.dataFiles.split("/");
+		function gatherRec( curPath : Array<String>, i : Int ) {
+			var part = path[i++];
+			if( part == null ) {
+				var file = curPath.join("/");
+				if( sys.FileSystem.exists(ide.getPath(file)) ) loadFile(file);
+				return;
+			}
+			if( part.indexOf("*") < 0 ) {
+				curPath.push(part);
+				gatherRec(curPath,i);
+				curPath.pop();
+			} else {
+				var path = curPath.join("/");
+				var dir = ide.getPath(path);
+				if( !sys.FileSystem.isDirectory(dir) )
+					return;
+				if( !watching.exists(path) ) {
+					watching.set(path, true);
+					ide.fileWatcher.register(path, onFileChanged, true);
+				}
+				var reg = new EReg("^"+part.split(".").join("\\.").split("*").join(".*")+"$","");
+				for( f in sys.FileSystem.readDirectory(dir) ) {
+					if( !reg.match(f) ) continue;
+					curPath.push(f);
+					gatherRec(curPath,i);
+					curPath.pop();
+				}
+			}
+		}
+		gatherRec([],0);
 	}
 
 	public static function save( ?onSaveBase, ?force ) {
 		var ide = Ide.inst;
 		var temp = [];
+		var titles = [];
 		var prefabs = new Map();
 		for( s in base.sheets )
 			if( s.props.dataFiles != null ) {
-				var ldata = @:privateAccess s.sheet.linesData;
-				temp.push({ lines : s.lines, data : ldata });
+				var sheet = @:privateAccess s.sheet;
+				var ldata = sheet.linesData;
 				for( i in 0...s.lines.length ) {
 					var o = s.lines[i];
-					var p : DataProps = ldata[i];
+					var p : DataProps = sheet.linesData[i];
 					var str = haxe.Json.stringify(o);
 					if( str != p.origin || force ) {
 						p.origin = str;
@@ -99,10 +143,12 @@ class DataFiles {
 							inst.props = o;
 					}
 				}
-				@:privateAccess {
-					Reflect.deleteField(s.sheet,"lines");
-					Reflect.deleteField(s.sheet,"linesData");
-				}
+				temp.push(Reflect.copy(sheet));
+				titles.push(sheet.props.separatorTitles);
+				Reflect.deleteField(sheet,"lines");
+				Reflect.deleteField(sheet,"linesData");
+				Reflect.deleteField(sheet.props,"separatorTitles");
+				sheet.separators = [];
 			}
 		for( file => pf in prefabs ) {
 			skip++;
@@ -113,10 +159,11 @@ class DataFiles {
 		for( s in base.sheets ) {
 			if( s.props.dataFiles != null ) {
 				var d = temp.shift();
-				@:privateAccess {
-					s.sheet.lines = d.lines;
-					s.sheet.linesData = d.data;
-				}
+				var sheet = @:privateAccess s.sheet;
+				sheet.lines = d.lines;
+				sheet.linesData = d.linesData;
+				sheet.separators = d.separators;
+				sheet.props.separatorTitles = titles.shift();
 			}
 		}
 	}

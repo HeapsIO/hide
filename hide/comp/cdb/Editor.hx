@@ -493,6 +493,11 @@ class Editor extends Component {
 			}
 	}
 
+	function isUniqueID( sheet : cdb.Sheet, obj : {}, id : String ) {
+		var uniq = base.getSheet(sheet.name).index.get(id);
+		return uniq == null || uniq.obj == obj;
+	}
+
 	public function refresh( ?state : UndoState ) {
 
 		if( state == null )
