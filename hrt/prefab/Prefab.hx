@@ -262,6 +262,29 @@ class Prefab {
 	}
 
 	/**
+		Search the prefab tree for the prefab matching the given path, returns null if not found
+	**/
+	public function getPrefabByPath( path : String ) {
+		if( path == "" )
+			return this;
+		var parts = path.split(".");
+		var p = this;
+		for( i in 0...parts.length ) {
+			var name = parts[i];
+			var next = null;
+			for( c in p.children )
+				if( c.name == name || (c.name == null && c.getDefaultName() == name) ) {
+					next = c;
+					break;
+				}
+			if( next == null )
+				return null;
+			p = next;
+		}
+		return p;
+	}
+
+	/**
 		Simlar to get() but returns null if not found.
 	**/
 	public function getOpt<T:Prefab>( cl : Class<T>, ?name : String ) : T {
