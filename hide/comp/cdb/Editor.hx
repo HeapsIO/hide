@@ -65,7 +65,6 @@ class Editor extends Component {
 		element.attr("tabindex", 0);
 		element.addClass("is-cdb-editor");
 		element.data("cdb", this);
-		element.on("focus", function(_) onFocus());
 		element.on("blur", function(_) cursor.hide());
 		element.on("keypress", function(e) {
 			if( e.target.nodeName == "INPUT" )
@@ -366,14 +365,14 @@ class Editor extends Component {
 		};
 	}
 
-	function setState( state : UndoState ) {
+	function setState( state : UndoState, doFocus : Bool ) {
 		var cur = state.cursor;
 		for( t in state.tables ) {
 			function openRec(s:UndoSheet) : Table {
 				if( s.parent != null ) {
 					var t = openRec(s.parent.sheet);
 					if( t != null ) {
-						var cell = t.lines[s.parent.line].cells[t.displayMode == Properties ? 0 : s.parent.column];
+						var cell = t.lines[s.parent.line].cells[t.displayMode == Properties || t.displayMode == AllProperties ? 0 : s.parent.column];
 						if( cell.line.subTable == null )
 							cell.open(true);
 						return cell.line.subTable;
@@ -395,7 +394,7 @@ class Editor extends Component {
 					table = t;
 					break;
 				}
-			if( table != null )
+			if( table != null && doFocus )
 				focus();
 			cursor.set(table, cur.x, cur.y, cur.select == null ? null : { x : cur.select.x, y : cur.select.y } );
 		} else
@@ -503,6 +502,8 @@ class Editor extends Component {
 		if( state == null )
 			state = getState();
 
+		var hasFocus = element.find(":focus").length > 0;
+
 		base.sync();
 
 		element.empty();
@@ -531,7 +532,7 @@ class Editor extends Component {
 		content.appendTo(element);
 
 		if( state != null )
-			setState(state);
+			setState(state, hasFocus);
 
 		if( cursor.table != null ) {
 			for( t in tables )
@@ -889,10 +890,6 @@ class Editor extends Component {
 	public function focus() {
 		if( element.is(":focus") ) return;
 		(element[0] : Dynamic).focus({ preventScroll : true });
-		onFocus();
-	}
-
-	public dynamic function onFocus() {
 	}
 
 }

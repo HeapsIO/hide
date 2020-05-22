@@ -45,11 +45,6 @@ class CdbTable extends hide.ui.View<{}> {
 	function setEditor(index:Int) {
 		var sheets = getSheets();
 		editor.show(sheets[index],tabContents[index]);
-		haxe.Timer.delay(function() {
-			// delay
-			editor.focus();
-			editor.onFocus = activate;
-		},0);
 		currentSheet = editor.getCurrentSheet();
 		ide.currentConfig.set("cdb.currentSheet", sheets[index].name);
 	}
