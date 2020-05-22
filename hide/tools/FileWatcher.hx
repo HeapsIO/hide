@@ -50,6 +50,18 @@ class FileWatcher {
 		}
 	}
 
+	public function unregisterElement( element : Element ) {
+		for( path => w in watches ) {
+			for( e in w.events.copy() )
+				if( e.element == element[0] )
+					w.events.remove(e);
+			if( w.events.length == 0 ) {
+				watches.remove(path);
+				if( w.w != null ) w.w.close();
+			}
+		}
+	}
+
 	function cleanEvents() {
 		for( w in watches )
 			for( e in w.events.copy() )
