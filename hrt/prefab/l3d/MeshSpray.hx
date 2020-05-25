@@ -32,6 +32,77 @@ typedef MeshSprayConfig = {
 	var dontRepeatMesh : Bool;
 }
 
+#if editor
+@:access(hrt.prefab.l3d.MeshSpray)
+class MeshSprayObject extends h3d.scene.Object {
+
+	var childCount : Int = -1;
+	var batches : Array<h3d.scene.MeshBatch> = [];
+	var blookup : Map<h3d.prim.Primitive, Array<h3d.scene.MeshBatch>> = new Map();
+	var mp : MeshSpray;
+
+	static inline var MAX_INST = 512;
+
+	public function new(mp,?parent) {
+		this.mp = mp;
+		super(parent);
+	}
+
+	override function emitRec(ctx:h3d.scene.RenderContext) {
+		super.emitRec(ctx);
+		var count = children.length;
+		count -= batches.length;
+		count -= mp.previewModels.length;
+		if( mp.gBrushes != null ) count -= mp.gBrushes.length;
+
+		if( childCount != count ) {
+			childCount = count;
+			for( b in batches )
+				b.begin(MAX_INST);
+			for( c in children ) {
+				c.culled = false;
+				if( c.alwaysSync ) continue;
+				var m = c.toMesh();
+				if( m == null ) continue;
+				var prim = Std.downcast(m.primitive, h3d.prim.MeshPrimitive);
+				if( prim == null ) continue;
+
+				var l = blookup.get(m.primitive);
+				if( l == null ) {
+					l = [];
+					blookup.set(m.primitive, l);
+				}
+				var batch = null;
+				for( b in l ) {
+					if( b.canEmitInstance() ) {
+						batch = b;
+						break;
+					}
+				}
+				if( batch == null )	{
+					batch = new h3d.scene.MeshBatch(prim, m.material, this);
+					batch.alwaysSync = true;
+					batch.begin(MAX_INST);
+					batches.push(batch);
+					l.unshift(batch);
+				}
+				@:privateAccess {
+					batch.absPos.load(c.absPos);
+					batch.posChanged = false;
+				}
+				batch.emitInstance();
+				if( !batch.canEmitInstance() ) {
+					l.remove(batch);
+					l.push(batch);
+				}
+				c.culled = true;
+			}
+		}
+	}
+
+}
+#end
+
 class MeshSpray extends Object3D {
 
 	#if editor
@@ -42,7 +113,7 @@ class MeshSpray extends Object3D {
 	var sceneEditor : hide.comp.SceneEditor;
 
 	var lastIndexMesh = -1;
-	
+
 	var currentPresetName : String = null;
 	var currentSetName : String = null;
 
@@ -52,7 +123,7 @@ class MeshSpray extends Object3D {
 
 	var currentMeshes(get, null) : Array<Mesh>;
 	function get_currentMeshes() {
-		if (currentSet != null) 
+		if (currentSet != null)
 			return currentSet.meshes;
 		else
 			return meshes;
@@ -98,7 +169,7 @@ class MeshSpray extends Object3D {
 		return obj;
 	}
 
-	function getDefaultConfig() : MeshSprayConfig {	
+	function getDefaultConfig() : MeshSprayConfig {
 		return {
 			density: 1,
 			densityOffset: 0,
@@ -253,7 +324,7 @@ class MeshSpray extends Object3D {
 		};
 
 		var props = new hide.Element('<div class="group" name="Meshes"></div>');
-		
+
 		var preset = new hide.Element('<div class="btn-list" align="center" ></div>').appendTo(props);
 
 		var presetChoice = new hide.Element('<div align="center" ></div>').appendTo(preset);
@@ -295,7 +366,7 @@ class MeshSpray extends Object3D {
 			}
 			updateConfig();
 		}
-		
+
 		var selectedSetElt : hide.Element = null;
 		function setSet(set: Set, setElt : hide.Element) {
 			currentSetName = (set != null) ? set.name : null;
@@ -393,7 +464,7 @@ class MeshSpray extends Object3D {
 			updateSelectPreset();
 			onChangePreset();
 		});
-		
+
 		deletePreset.on("click", function() {
 			if (currentPresetName == null) return;
 			var preset = allSetGroups.filter(s -> s.name == currentPresetName);
@@ -410,28 +481,37 @@ class MeshSpray extends Object3D {
 
 		onChangePreset(true);
 
-		var options = new hide.Element('<div class="btn-list" align="center" ></div>').appendTo(props);
+		var options = new hide.Element('
+		<div>
+			<div class="btn-list" align="center">
+				<input type="button" value="Select all" id="select"/>
+				<input type="button" value="Add" id="add"/>
+				<input type="button" value="Remove" id="remove"/>
+				<input type="button" value="Remove all meshes" id="clean"/>
+			</div>
+			<p align="center">
+				<label><input type="checkbox" id="repeatMesh" style="margin-right: 5px;"/> Don\'t repeat same mesh in a row</label>
+			</p>
+			<p>
+				<b><i>
+				Hold down SHIFT to remove meshes
+				<br/>Push R to randomize preview
+			</p>
+		</div>
+		').appendTo(props);
 
-		var selectAllBtn = new hide.Element('<input type="button" value="Select all" />').appendTo(options);
-		var addBtn = new hide.Element('<input type="button" value="Add" >').appendTo(options);
-		var removeBtn = new hide.Element('<input type="button" value="Remove" />').appendTo(options);
-		var cleanBtn = new hide.Element('<input type="button" value="Remove all meshes" /><br />').appendTo(options);
-		var repeatMeshBtn = new hide.Element('<input type="checkbox" id="repeatMeshBtn" style="margin-bottom: -5px;margin-right: 5px;" >Don\'t repeat same mesh in a row</input>').appendTo(options);
-		new hide.Element('<br /><b><i>Hold down SHIFT to remove meshes</i></b>').appendTo(options);
-		new hide.Element('<br /><b><i>Hold down R to random preview</i></b>').appendTo(options);
+		var repeat = options.find("#repeatMesh");
+		repeat.on("change", function() {
+			currentConfig.dontRepeatMesh = repeat.is(":checked");
+		}).prop("checked", currentConfig.dontRepeatMesh);
 
-		repeatMeshBtn.on("change", function() {
-			currentConfig.dontRepeatMesh = repeatMeshBtn.is(":checked");
-		});
-		repeatMeshBtn.prop("checked", currentConfig.dontRepeatMesh);
-
-		selectAllBtn.on("click", function() {
+		options.find("#select").click(function(_) {
 			var options = selectElement.children().elements();
 			for (opt in options) {
 				opt.prop("selected", true);
 			}
 		});
-		addBtn.on("click", function () {
+		options.find("#add").click(function(_) {
 			hide.Ide.inst.chooseFiles(["fbx", "l3d"], function(path) {
 				for( m in path ) {
 					addMeshPath(m);
@@ -439,7 +519,7 @@ class MeshSpray extends Object3D {
 				}
 			});
 		});
-		removeBtn.on("click", function () {
+		options.find("#remove").click(function(_) {
 			var options = selectElement.children().elements();
 			for (opt in options) {
 				if (opt.prop("selected")) {
@@ -448,12 +528,13 @@ class MeshSpray extends Object3D {
 				}
 			}
 		});
-		cleanBtn.on("click", function() {
+		options.find("#clean").click(function(_) {
 			if (hide.Ide.inst.confirm("Are you sure to remove all meshes for this MeshSpray ?")) {
 				sceneEditor.deleteElements(children.copy());
 				sceneEditor.selectObjects([this], Nothing);
 			}
 		});
+
 
 		ectx.properties.add(props, this, function(pname) {});
 
@@ -616,7 +697,7 @@ class MeshSpray extends Object3D {
 					lastMeshId = -1;
 
 				var meshUsed = currentMeshes[meshId];
-				
+
 				var newPrefab : hrt.prefab.Object3D = null;
 
 				if (meshUsed.isRef) {
@@ -709,6 +790,14 @@ class MeshSpray extends Object3D {
 			g.y = originY;
 			g.z = originZ + 0.025;
 		}
+	}
+
+	override function makeInstance(ctx:Context):Context {
+		ctx = ctx.clone(this);
+		ctx.local3d = new MeshSprayObject(this, ctx.local3d);
+		ctx.local3d.name = name;
+		updateInstance(ctx);
+		return ctx;
 	}
 
 	function makePrimCircle(segments: Int, inner : Float = 0, rings : Int = 0) {
