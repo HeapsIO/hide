@@ -74,8 +74,11 @@ class Instance extends Object3D {
 							mesh.material.mainPass.culling = None;
 							mesh.material.name = "RANGE";
 							mesh.setScale(value * 2);
-							mesh.scaleZ = 0.01;
+							mesh.scaleZ = 0.1;
 							mesh.material.color.setColor(color|0xFF000000);
+							mesh.material.mainPass.enableLights = false;
+							mesh.material.shadows = false;
+							mesh.material.mainPass.setPassName("overlay");
 						}
 					}
 				}
