@@ -56,8 +56,7 @@ class ComputeSH extends h3d.shader.ScreenShader {
 
 		function getDir(u: Float, v:Float, face:Int) : Vec3 {
 			var dir = vec3(u, v, 1) * cubeDir[face];
-			dir.normalize();
-			return dir;
+			return dir.normalize();
 		}
 
 		function evalCoefL00(dir: Vec3) : Float { return 0.282095; }
