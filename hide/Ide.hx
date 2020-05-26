@@ -461,6 +461,8 @@ class Ide {
 	}
 
 	public function getPath( relPath : String ) {
+		if( relPath == null )
+			return null;
 		relPath = relPath.split("${HIDE}").join(appPath);
 		if( haxe.io.Path.isAbsolute(relPath) )
 			return relPath;
@@ -1051,37 +1053,29 @@ class Ide {
 			}
 			target.config.isClosable = false;
 		}
-		if( onCreate != null )
-			target.on("componentCreated", function(c) {
-				target.off("componentCreated");
-				onCreate(untyped c.origin.__view);
-			});
+		var needResize = options.width != null;
+		target.on("componentCreated", function(c) {
+			target.off("componentCreated");
+			var view : hide.ui.View<Dynamic> = untyped c.origin.__view;
+			if( onCreate != null ) onCreate(view);
+			if( needResize ) {
+				haxe.Timer.delay(function() {
+					view.container.setSize(options.width, view.container.height);
+				},0);
+			}
+		});
 		var config : golden.Config.ItemConfig = {
 			type : Component,
 			componentName : component,
 			componentState : state
 		};
 
-		// not working... see https://github.com/deepstreamIO/golden-layout/issues/311
-		if( options.width != null )
-			config.width = Std.int(options.width * 100 / target.element.width());
-
 		if( options.position == Left ) index = 0;
-
-		var needToResizeResourcePanel = false;
-
-		if (views.length == 1) {
-			needToResizeResourcePanel = true;
-		}
 
 		if( index == null )
 			target.addChild(config);
 		else
 			target.addChild(config, index);
-
-		if (needToResizeResourcePanel) {
-			views[0].container.setSize(views[0].defaultOptions.width, views[0].container.height);
-		}
 	}
 
 	public function message( text : String ) {
