@@ -62,7 +62,7 @@ class MeshSprayObject extends h3d.scene.Object {
 			for( c in children ) {
 				c.culled = false;
 				if( c.alwaysSync ) continue;
-				var m = c.toMesh();
+				var m = Std.downcast(c, h3d.scene.Mesh);
 				if( m == null ) continue;
 				var prim = Std.downcast(m.primitive, h3d.prim.MeshPrimitive);
 				if( prim == null ) continue;
