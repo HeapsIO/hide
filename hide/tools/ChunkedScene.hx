@@ -97,9 +97,10 @@ class ChunkScene {
 	}
 
 	function chunkifyObjects( obj : h3d.scene.Object, chunkOverride : Array<Chunk> ) {
+		var shared = { o : obj, emitFlag : false };
 
 		if( isGlobal(obj) ) {
-			global.addObject(obj, null);
+			global.addObject(obj, shared);
 			return;
 		}
 
@@ -122,13 +123,13 @@ class ChunkScene {
 
 			var chunks : Array<Chunk> = getChunks(tmpBounds);
 			for( c in chunks )
-				c.addObject(obj, null);
+				c.addObject(obj, shared);
 			if( obj.currentAnimation != null )
 				chunkOverride = chunks;
 		}
 		else {
 			for( c in chunkOverride ) {
-				c.addObject(obj, null);
+				c.addObject(obj, shared);
 			}
 		}
 
@@ -172,20 +173,17 @@ class Chunk {
 	public var pos : h3d.col.Point;
 
 	public var objects : Array<{o : h3d.scene.Object, emitFlag : Bool}> = [];
-	public var objectCount = 0;
-
 	public var interactives : Array<h3d.scene.Interactive> = [];
-	public var interactiveCount = 0;
 
 	public function new( pos : h3d.col.Point ) {
 		this.pos = pos;
 	}
 
-	public inline function reset() {
-		objectCount = 0;
-		interactiveCount = 0;
+	public function reset() {
 		bounds.zMin = 0;
 		bounds.zMax = 0;
+		objects = [];
+		interactives = [];
 	}
 
 	public inline function updateBounds( chunkSize : Float ) {
@@ -197,22 +195,12 @@ class Chunk {
 		bounds.zMax = 0;
 	}
 
-	public inline function addObject( obj : h3d.scene.Object, b : h3d.col.Bounds) {
-		objectCount++;
-		if( objectCount > objects.length )
-			objects.resize(objectCount);
-		objects[objectCount - 1] = { o : obj, emitFlag : false };
-		if( b != null ) {
-			bounds.zMin = hxd.Math.min(bounds.zMin, b.zMin);
-			bounds.zMax = hxd.Math.max(bounds.zMax, b.zMax);
-		}
+	public inline function addObject( obj : h3d.scene.Object, shared ) {
+		objects.push(shared);
 	}
 
 	public inline function addInteractive( i : Interactive ) {
-		interactiveCount++;
-		if( interactiveCount > interactives.length )
-			interactives.resize(interactiveCount);
-		interactives[interactiveCount - 1] = i;
+		interactives.push(i);
 	}
 }
 
@@ -252,13 +240,13 @@ class ChunkedScene extends h3d.scene.Scene {
 			if( !c.isGlobal && !c.inFrustum )
 				continue;
 
-			for( i in 0 ... c.objectCount ) {
+			for( obj in c.objects ) {
 
-				if( c.objects[i].emitFlag )
+				if( obj.emitFlag )
 					continue;
-				c.objects[i].emitFlag = true;
+				obj.emitFlag = true;
 
-				var o = c.objects[i].o;
+				var o = obj.o;
 				if( c.isGlobal ) {
 					if( o == this ) continue;
 					o.emitRec(ctx);
@@ -289,11 +277,9 @@ class ChunkedScene extends h3d.scene.Scene {
 			}
 		}
 
-		for( c in cs.chunks ) {
-			for( i in 0 ... c.objectCount ) {
-				c.objects[i].emitFlag = false;
-			}
-		}
+		for( c in cs.chunks )
+			for( obj in c.objects )
+				obj.emitFlag = false;
 	}
 
 	override function handleEvent( event : hxd.Event, last : hxd.SceneEvents.Interactive ) {
@@ -303,7 +289,7 @@ class ChunkedScene extends h3d.scene.Scene {
 		for( c in cs.chunks ) {
 			if( !c.isGlobal && !c.inFrustum )
 				continue;
-			interactiveCount += c.interactiveCount;
+			interactiveCount += c.interactives.length;
 		}
 		visibleInteractives.resize(interactiveCount);
 
@@ -311,7 +297,7 @@ class ChunkedScene extends h3d.scene.Scene {
 		for( c in cs.chunks ) {
 			if( !c.isGlobal && !c.inFrustum )
 				continue;
-			for( j in 0 ... c.interactiveCount ) {
+			for( j in 0...c.interactives.length ) {
 				visibleInteractives[i] = c.interactives[j];
 				i++;
 			}
