@@ -32,8 +32,7 @@ class SplineMeshShader extends hxsl.Shader {
 			// Linear Interpolation between two samples
 			var s1 = clamp(floor(pos / stepSize), 0.0, POINT_COUNT - 1.0).int();
 			var s2 = clamp(ceil(pos / stepSize), 0.0, POINT_COUNT - 1.0).int();
-			var t = (pos - (s1 * stepSize)) / stepSize;
-			t.saturate();
+			var t = saturate((pos - (s1 * stepSize)) / stepSize);
 			var point = mix(points[s1 * 2], points[s2 * 2], t).xyz;
 			var tangent = mix(points[s1 * 2 + 1], points[s2 * 2 + 1], t).xyz;
 
