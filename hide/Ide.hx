@@ -1059,9 +1059,17 @@ class Ide {
 			var view : hide.ui.View<Dynamic> = untyped c.origin.__view;
 			if( onCreate != null ) onCreate(view);
 			if( needResize ) {
+				// when opening restricted size after free size
 				haxe.Timer.delay(function() {
 					view.container.setSize(options.width, view.container.height);
 				},0);
+			} else {
+				// when opening free size after restricted size
+				var v0 = views[0];
+				if( views.length == 2 && views[1] == view && v0.defaultOptions.width != null )
+					haxe.Timer.delay(function() {
+						v0.container.setSize(v0.defaultOptions.width, v0.container.height);
+					},0);
 			}
 		});
 		var config : golden.Config.ItemConfig = {
