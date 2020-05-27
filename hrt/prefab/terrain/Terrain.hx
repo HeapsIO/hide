@@ -150,12 +150,13 @@ class Terrain extends Object3D {
 	}
 
 	function loadTiles( ctx : Context, height = true, index = true , weight = true ) {
-		var prevWatch = @:privateAccess hxd.res.Image.ENABLE_AUTO_WATCH;
-		@:privateAccess hxd.res.Image.ENABLE_AUTO_WATCH = false;
 		var resDir = ctx.shared.loadDir(name);
 
 		if( resDir == null )
 			return;
+
+		var prevWatch = @:privateAccess hxd.res.Image.ENABLE_AUTO_WATCH;
+		@:privateAccess hxd.res.Image.ENABLE_AUTO_WATCH = false;
 
 		// Avoid texture alloc for unpacking
 		var tmpPackedWeightTexture = new h3d.mat.Texture(terrain.weightMapResolution.x, terrain.weightMapResolution.y, [Target]);
