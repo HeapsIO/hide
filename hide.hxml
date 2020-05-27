@@ -1,4 +1,5 @@
 common.hxml
+-D hide
 -js bin/hide.js
 -main hide.Ide
 --macro include("h3d.shader")

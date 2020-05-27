@@ -69,7 +69,7 @@ class ContextShared {
 	}
 
 	public function loadPrefab( path : String ) : Prefab {
-		throw "Not implemented";
+		return hxd.res.Loader.currentInstance.load(path).toPrefab().load();
 	}
 
 	public function loadShader( path : String ) : ShaderDef {
