@@ -22,8 +22,14 @@ class FileView extends hide.ui.View<{ path : String }> {
 	}
 
 	override function rebuild() {
-		if( state.path != null )
-			saveDisplayKey = Type.getClassName(Type.getClass(this)) + ":" + getPath().split("\\").join("/");
+		var path = getPath();
+		if( path != null ) {
+			saveDisplayKey = Type.getClassName(Type.getClass(this)) + ":" + path.split("\\").join("/");
+			if( !sys.FileSystem.exists(path) ) {
+				element.html('${state.path} no longer exists');
+				return;
+			}
+		}
 		super.rebuild();
 	}
 
