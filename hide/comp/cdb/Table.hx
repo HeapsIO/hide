@@ -46,7 +46,7 @@ class Table extends Component {
 	}
 
 	public function getRealSheet() {
-		return sheet;
+		return sheet.realSheet;
 	}
 
 	public function canInsert() {
