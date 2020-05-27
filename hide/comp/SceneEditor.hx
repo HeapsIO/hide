@@ -444,9 +444,9 @@ class SceneEditor {
 		function makeItem(o:PrefabElement, ?state) : hide.comp.IconTree.IconTreeItem<PrefabElement> {
 			var p = o.getHideProps();
 			var icon = p.icon;
-			var ct = o.getCdbModel();
-			if( ct != null && icons.exists(ct.name) )
-				icon = icons.get(ct.name);
+			var ct = o.getCdbType();
+			if( ct != null && icons.exists(ct) )
+				icon = icons.get(ct);
 			var r : hide.comp.IconTree.IconTreeItem<PrefabElement> = {
 				value : o,
 				text : o.name,

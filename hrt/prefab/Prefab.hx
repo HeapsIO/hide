@@ -242,18 +242,14 @@ class Prefab {
 		return ctx;
 	}
 
-	#if castle
 	/**
-		Returns which CDB model this prefab props represents
-	**/
-	public function getCdbModel( ?p : Prefab ) : cdb.Sheet {
-		if( p == null )
-			p = this;
-		if( parent != null )
-			return parent.getCdbModel(p);
-		return null;
+	 	If the prefab `props` represent CDB data, returns the sheet name of it, or null.
+	 **/
+	public function getCdbType() : String {
+		if( props == null )
+			return null;
+		return Reflect.field(props, "$cdbtype");
 	}
-	#end
 
 	/**
 		Search the prefab tree for the prefab matching the given name, returns null if not found

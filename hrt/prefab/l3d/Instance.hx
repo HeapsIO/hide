@@ -9,10 +9,10 @@ class Instance extends Object3D {
 		props = {};
 	}
 
+	#if editor
 	override function makeInstance(ctx:Context):Context {
-		#if editor
 		var ctx = super.makeInstance(ctx);
-		var kind = getCdbKind(this);
+		var kind = getRefSheet(this);
 		var unknown = kind == null || kind.idx == null;
 
 		var modelPath = unknown ? null : findModelPath(kind.sheet, kind.idx.obj);
@@ -42,11 +42,8 @@ class Instance extends Object3D {
 			ctx.local2d = objFollow;
 		}
 		addRanges(ctx, true);
-		#end
 		return ctx;
 	}
-
-	#if editor
 
 	public function addRanges( ctx : Context, init = false ) {
 		if( !init ) {
@@ -57,9 +54,9 @@ class Instance extends Object3D {
 		// add ranges
 		var shared = Std.downcast(ctx.shared, hide.prefab.ContextShared);
 		if( shared != null && shared.editorDisplay ) {
-			var sheet = getCdbModel();
+			var sheet = getCdbType();
 			if( sheet != null ) {
-				var ranges = Reflect.field(shared.scene.config.get("sceneeditor.ranges"), sheet.name);
+				var ranges = Reflect.field(shared.scene.config.get("sceneeditor.ranges"), sheet);
 				if( ranges != null ) {
 					for( key in Reflect.fields(ranges) ) {
 						var color = Std.parseInt(Reflect.field(ranges,key));
@@ -111,7 +108,6 @@ class Instance extends Object3D {
 		}
 		return int;
 	}
-	#end
 
 	override function removeInstance(ctx:Context):Bool {
 		if(!super.removeInstance(ctx))
@@ -121,10 +117,13 @@ class Instance extends Object3D {
 		return true;
 	}
 
-	public static function getCdbKind(p: Prefab) {
-		if(p.props == null)
+	// ---- statics
+
+	public static function getRefSheet(p: Prefab) {
+		var name = p.getCdbType();
+		if( name == null )
 			return null;
-		var sheet = p.getCdbModel();
+		var sheet = hide.comp.cdb.DataFiles.resolveType(name);
 		if( sheet == null )
 			return null;
 		var refCol = findRefColumn(sheet);
@@ -184,8 +183,6 @@ class Instance extends Object3D {
 		}
 		return path;
 	}
-
-	#if editor
 
 	override function getHideProps() : HideProps {
 		return { icon : "circle", name : "Instance" };
