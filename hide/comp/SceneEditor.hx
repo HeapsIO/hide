@@ -508,7 +508,10 @@ class SceneEditor {
 				{ label : "Reference", enabled : current != null, click : function() createRef(current, current.parent) },
 			];
 
-			if(current != null && current.to(Object3D) != null && current.to(hrt.prefab.Reference) == null) {
+			var isObj = current != null && (current.to(Object3D) != null || current.to(Object2D) != null);
+			var isRef = current != null && current.to(hrt.prefab.Reference) != null;
+
+			if( isObj ) {
 				var visible = !isHidden(current);
 				var locked = isLocked(current);
 				menuItems = menuItems.concat([
@@ -517,17 +520,18 @@ class SceneEditor {
 					{ label : "Select all", click : selectAll },
 					{ label : "Select children", enabled : current != null, click : function() selectObjects(current.flatten()) },
 				]);
-				actionItems = actionItems.concat([
-					{ label : "Isolate", click : function() isolate(curEdit.elements) },
-					{ label : "Group", enabled : curEdit != null && canGroupSelection(), click : groupSelection }
-				]);
+				if( !isRef )
+					actionItems = actionItems.concat([
+						{ label : "Isolate", click : function() isolate(curEdit.elements) },
+						{ label : "Group", enabled : curEdit != null && canGroupSelection(), click : groupSelection }
+					]);
 			}
-			else if(current != null) {
+			if( current != null && (!isObj || isRef) ) {
 				var enabled = current.enabled;
 				menuItems.push({ label : "Enable", checked : enabled, click : function() setEnabled(curEdit.elements, !enabled) });
 			}
 
-			if(current != null) {
+			if( current != null ) {
 				var menu = getTagMenu(current);
 				if(menu != null)
 					menuItems.push({ label : "Tag", menu: menu });
@@ -1672,19 +1676,14 @@ class SceneEditor {
 
 	public function setVisible(elements : Array<PrefabElement>, visible: Bool) {
 		for(o in elements) {
-			if(visible) {
-				for(c in o.flatten(Object3D)) {
+			for(c in o.flatten(Object3D)) {
+				if( visible )
 					hideList.remove(c);
-					var el = tree.getElement(c);
-					applyTreeStyle(c, el);
-					applySceneStyle(c);
-				}
-			}
-			else {
-				hideList.set(o, true);
-				var el = tree.getElement(o);
-				applyTreeStyle(o, el);
-				applySceneStyle(o);
+				else
+					hideList.set(o, true);
+				var el = tree.getElement(c);
+				applyTreeStyle(c, el);
+				applySceneStyle(c);
 			}
 		}
 		saveDisplayState();
@@ -1692,21 +1691,14 @@ class SceneEditor {
 
 	public function setLock(elements : Array<PrefabElement>, unlocked: Bool) {
 		for(o in elements) {
-			if(unlocked) {
-				for(c in o.flatten(Object3D)) {
+			for(c in o.flatten(Object3D) ) {
+				if( unlocked )
 					lockList.remove(c);
-					var el = tree.getElement(c);
-					applyTreeStyle(c, el);
-					applySceneStyle(c);
-				}
-			}
-			else {
-				for(c in o.flatten(Object3D)) {
+				else
 					lockList.set(c, true);
-					var el = tree.getElement(c);
-					applyTreeStyle(c, el);
-					applySceneStyle(c);
-				}
+				var el = tree.getElement(c);
+				applyTreeStyle(c, el);
+				applySceneStyle(c);
 			}
 		}
 		saveDisplayState();
@@ -1718,9 +1710,7 @@ class SceneEditor {
 		function hideSiblings(elt: PrefabElement) {
 			var p = elt.parent;
 			for(c in p.children) {
-				var needsVisible = c == elt
-					|| toShow.indexOf(c) >= 0
-					|| hasChild(c, toShow);
+				var needsVisible = c == elt || toShow.indexOf(c) >= 0 || hasChild(c, toShow);
 				if(!needsVisible) {
 					toHide.push(c);
 				}

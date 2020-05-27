@@ -720,7 +720,7 @@ class Level3D extends FileView {
 	}
 
 	function applySceneStyle(p: PrefabElement) {
-		var level3d = p.to(hrt.prefab.l3d.Level3D);
+		var level3d = Std.downcast(p, hrt.prefab.l3d.Level3D); // don't use "to" (Reference)
 		if(level3d != null) {
 			updateGrid();
 			return;
