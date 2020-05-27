@@ -16,6 +16,8 @@ import hrt.prefab.Object2D;
 import hrt.prefab.Object3D;
 import h3d.scene.Object;
 
+import hide.comp.cdb.DataFiles;
+
 enum SelectMode {
 	/**
 		Update tree, add undo command
@@ -1304,8 +1306,73 @@ class SceneEditor {
 		}));
 	}
 
+	function makeCdbProps( e : PrefabElement, type : cdb.Sheet ) {
+		var props = type.getDefaults();
+		Reflect.setField(props, "$cdbtype", DataFiles.getTypeName(type));
+		if( type.idCol != null && !type.idCol.opt ) {
+			var id = new haxe.io.Path(view.state.path).file;
+			id = id.charAt(0).toUpperCase() + id.substr(1);
+			id += "_"+e.name;
+			Reflect.setField(props, type.idCol.name, id);
+		}
+		return props;
+	}
+
 	function fillProps( edit, e : PrefabElement ) {
 		e.edit(edit);
+
+		var typeName = e.getCdbType();
+		if( typeName == null && e.props != null )
+			return; // don't allow CDB data with props already used !
+
+		var types = DataFiles.getAvailableTypes();
+		if( types.length == 0 )
+			return;
+
+		var group = new hide.Element('
+			<div class="group" name="CDB">
+				<dl><dt>Type</dt><dd><select><option value="">- No props -</option></select></dd>
+			</div>
+		');
+
+		var select = group.find("select");
+		for(t in types) {
+			var id = DataFiles.getTypeName(t);
+			new hide.Element("<option>").attr("value", id).text(id).appendTo(select);
+		}
+
+		var curType = DataFiles.resolveType(typeName);
+		if(curType != null) select.val(DataFiles.getTypeName(curType));
+
+		function changeProps(props: Dynamic) {
+			properties.undo.change(Field(e, "props", e.props), ()->edit.rebuildProperties());
+			e.props = props;
+			edit.onChange(e, "props");
+			edit.rebuildProperties();
+		}
+
+		select.change(function(v) {
+			var typeId = select.val();
+			if(typeId == null || typeId == "") {
+				changeProps(null);
+				return;
+			}
+			var props = makeCdbProps(e, DataFiles.resolveType(typeId));
+			changeProps(props);
+		});
+
+		edit.properties.add(group);
+
+		if(curType != null) {
+			var props = new hide.Element('<div></div>').appendTo(group.find(".content"));
+			var editor = new hide.comp.cdb.ObjEditor(curType, view.config, e.props, props);
+			editor.undo = properties.undo;
+			editor.onChange = function(pname) {
+				edit.onChange(e, 'props.$pname');
+				var e = Std.instance(e, hrt.prefab.l3d.Instance);
+				if( e != null ) e.addRanges(context.shared.contexts.get(e));
+			}
+		}
 	}
 
 	public function showProps(e: PrefabElement) {

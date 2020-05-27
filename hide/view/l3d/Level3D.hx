@@ -192,9 +192,8 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 
 				function make(name) {
 					var p = new hrt.prefab.l3d.Instance(current == null ? sceneData : current);
-					p.props = type.getDefaults();
-					Reflect.setField(p.props, "$cdbtype", typeId);
 					p.name = name;
+					p.props = makeCdbProps(p, type);
 					setup(p);
 					if(onMake != null)
 						onMake(p);
@@ -232,61 +231,6 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		};
 		addNewInstances();
 		return newItems;
-	}
-
-	override function fillProps(edit:hide.prefab.EditContext, e:PrefabElement) {
-		super.fillProps(edit, e);
-
-		var typeName = e.getCdbType();
-		if( typeName == null && e.props != null )
-			return; // don't allow CDB data with props already used !
-
-		var group = new hide.Element('
-			<div class="group" name="CDB">
-				<dl><dt>Type</dt><dd><select><option value="">- No props -</option></select></dd>
-			</div>
-		');
-
-		var select = group.find("select");
-		for(t in DataFiles.getAvailableTypes()) {
-			var id = DataFiles.getTypeName(t);
-			new hide.Element("<option>").attr("value", id).text(id).appendTo(select);
-		}
-
-		var curType = DataFiles.resolveType(typeName);
-		if(curType != null) select.val(DataFiles.getTypeName(curType));
-
-		function changeProps(props: Dynamic) {
-			properties.undo.change(Field(e, "props", e.props), ()->edit.rebuildProperties());
-			e.props = props;
-			edit.onChange(e, "props");
-			edit.rebuildProperties();
-		}
-
-		select.change(function(v) {
-			var typeId = select.val();
-			if(typeId == null || typeId == "") {
-				changeProps(null);
-				return;
-			}
-			var cdbSheet = DataFiles.resolveType(typeId);
-			var props = cdbSheet.getDefaults();
-			Reflect.setField(props, "$cdbtype", typeId);
-			changeProps(props);
-		});
-
-		edit.properties.add(group);
-
-		if(curType != null) {
-			var props = new hide.Element('<div></div>').appendTo(group.find(".content"));
-			var editor = new hide.comp.cdb.ObjEditor(curType, parent.config, e.props, props);
-			editor.undo = properties.undo;
-			editor.onChange = function(pname) {
-				edit.onChange(e, 'props.$pname');
-				var e = Std.instance(e, hrt.prefab.l3d.Instance);
-				if( e != null ) e.addRanges(context.shared.contexts.get(e));
-			}
-		}
 	}
 
 	override function getAvailableTags(p:PrefabElement) {
