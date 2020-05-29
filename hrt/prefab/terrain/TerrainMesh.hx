@@ -38,8 +38,6 @@ class TerrainMesh extends h3d.scene.Object {
 
 	override function onRemove() {
 		super.onRemove();
-		for( s in surfaces )
-			s.dispose();
 		if( surfaceArray != null )
 			surfaceArray.dispose();
 	}
