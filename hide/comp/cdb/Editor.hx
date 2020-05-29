@@ -563,14 +563,18 @@ class Editor extends Component {
 		return null;
 	}
 
-	public function newColumn( sheet : cdb.Sheet, ?index : Int, ?onDone : cdb.Data.Column -> Void ) {
-		var modal = new hide.comp.cdb.ModalColumnForm(base, sheet, null, element);
+	public function newColumn( sheet : cdb.Sheet, ?index : Int, ?onDone : cdb.Data.Column -> Void, ?col ) {
+		var modal = new hide.comp.cdb.ModalColumnForm(base, sheet, col, element);
 		modal.setCallback(function() {
-			var c = modal.getColumn(base, sheet, null);
+			var c = modal.getColumn(base, sheet, col);
 			if (c == null)
 				return;
 			beginChanges();
-			var err = sheet.addColumn(c, index == null ? null : index + 1);
+			var err;
+			if( col != null )
+				err = base.updateColumn(sheet, col, c);
+			else
+				err = sheet.addColumn(c, index == null ? null : index + 1);
 			endChanges();
 			if (err != null) {
 				modal.error(err);
@@ -580,7 +584,7 @@ class Editor extends Component {
 			if( onDone != null )
 				onDone(c);
 			// if first column or subtable, refresh all
-			if( sheet.columns.length == 1 || sheet.parent != null )
+			if( sheet.columns.length == 1 || sheet.name.indexOf("@") > 0 )
 				refresh();
 			for( t in tables )
 				if( t.sheet == sheet )
@@ -590,23 +594,7 @@ class Editor extends Component {
 	}
 
 	public function editColumn( sheet : cdb.Sheet, col : cdb.Data.Column ) {
-		var modal = new hide.comp.cdb.ModalColumnForm(base, sheet, col, element);
-		modal.setCallback(function() {
-			var c = modal.getColumn(base, sheet, col);
-			if (c == null)
-				return;
-			beginChanges();
-			var err = base.updateColumn(sheet, col, c);
-			endChanges();
-			if (err != null) {
-				modal.error(err);
-				return;
-			}
-			for( t in tables )
-				if( t.sheet == sheet )
-					t.refresh();
-			modal.closeModal();
-		});
+		newColumn(sheet,col);
 	}
 
 	public function insertLine( table : Table, index = 0 ) {
