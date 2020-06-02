@@ -193,7 +193,6 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 				function make(name) {
 					var p = new hrt.prefab.l3d.Instance(current == null ? sceneData : current);
 					p.props = type.getDefaults();
-					trace(typeId);
 					Reflect.setField(p.props, "$cdbtype", typeId);
 					p.name = name;
 					setup(p);
@@ -247,7 +246,6 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 
 		var select = group.find("select");
 		var cdbTypes = Level3D.getCdbTypes();
-		trace(cdbTypes);
 		for(t in cdbTypes) {
 			var current = sheet != null && sheet.name == t.name;
 			var id = Level3D.getCdbTypeId(t);
