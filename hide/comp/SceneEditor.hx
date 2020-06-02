@@ -16,6 +16,8 @@ import hrt.prefab.Object2D;
 import hrt.prefab.Object3D;
 import h3d.scene.Object;
 
+import hide.comp.cdb.DataFiles;
+
 enum SelectMode {
 	/**
 		Update tree, add undo command
@@ -444,9 +446,9 @@ class SceneEditor {
 		function makeItem(o:PrefabElement, ?state) : hide.comp.IconTree.IconTreeItem<PrefabElement> {
 			var p = o.getHideProps();
 			var icon = p.icon;
-			var ct = o.getCdbModel();
-			if( ct != null && icons.exists(ct.name) )
-				icon = icons.get(ct.name);
+			var ct = o.getCdbType();
+			if( ct != null && icons.exists(ct) )
+				icon = icons.get(ct);
 			var r : hide.comp.IconTree.IconTreeItem<PrefabElement> = {
 				value : o,
 				text : o.name,
@@ -508,7 +510,10 @@ class SceneEditor {
 				{ label : "Reference", enabled : current != null, click : function() createRef(current, current.parent) },
 			];
 
-			if(current != null && current.to(Object3D) != null && current.to(hrt.prefab.Reference) == null) {
+			var isObj = current != null && (current.to(Object3D) != null || current.to(Object2D) != null);
+			var isRef = current != null && current.to(hrt.prefab.Reference) != null;
+
+			if( isObj ) {
 				var visible = !isHidden(current);
 				var locked = isLocked(current);
 				menuItems = menuItems.concat([
@@ -517,17 +522,18 @@ class SceneEditor {
 					{ label : "Select all", click : selectAll },
 					{ label : "Select children", enabled : current != null, click : function() selectObjects(current.flatten()) },
 				]);
-				actionItems = actionItems.concat([
-					{ label : "Isolate", click : function() isolate(curEdit.elements) },
-					{ label : "Group", enabled : curEdit != null && canGroupSelection(), click : groupSelection }
-				]);
+				if( !isRef )
+					actionItems = actionItems.concat([
+						{ label : "Isolate", click : function() isolate(curEdit.elements) },
+						{ label : "Group", enabled : curEdit != null && canGroupSelection(), click : groupSelection }
+					]);
 			}
-			else if(current != null) {
+			if( current != null && (!isObj || isRef) ) {
 				var enabled = current.enabled;
 				menuItems.push({ label : "Enable", checked : enabled, click : function() setEnabled(curEdit.elements, !enabled) });
 			}
 
-			if(current != null) {
+			if( current != null ) {
 				var menu = getTagMenu(current);
 				if(menu != null)
 					menuItems.push({ label : "Tag", menu: menu });
@@ -1300,8 +1306,73 @@ class SceneEditor {
 		}));
 	}
 
+	function makeCdbProps( e : PrefabElement, type : cdb.Sheet ) {
+		var props = type.getDefaults();
+		Reflect.setField(props, "$cdbtype", DataFiles.getTypeName(type));
+		if( type.idCol != null && !type.idCol.opt ) {
+			var id = new haxe.io.Path(view.state.path).file;
+			id = id.charAt(0).toUpperCase() + id.substr(1);
+			id += "_"+e.name;
+			Reflect.setField(props, type.idCol.name, id);
+		}
+		return props;
+	}
+
 	function fillProps( edit, e : PrefabElement ) {
 		e.edit(edit);
+
+		var typeName = e.getCdbType();
+		if( typeName == null && e.props != null )
+			return; // don't allow CDB data with props already used !
+
+		var types = DataFiles.getAvailableTypes();
+		if( types.length == 0 )
+			return;
+
+		var group = new hide.Element('
+			<div class="group" name="CDB">
+				<dl><dt>Type</dt><dd><select><option value="">- No props -</option></select></dd>
+			</div>
+		');
+
+		var select = group.find("select");
+		for(t in types) {
+			var id = DataFiles.getTypeName(t);
+			new hide.Element("<option>").attr("value", id).text(id).appendTo(select);
+		}
+
+		var curType = DataFiles.resolveType(typeName);
+		if(curType != null) select.val(DataFiles.getTypeName(curType));
+
+		function changeProps(props: Dynamic) {
+			properties.undo.change(Field(e, "props", e.props), ()->edit.rebuildProperties());
+			e.props = props;
+			edit.onChange(e, "props");
+			edit.rebuildProperties();
+		}
+
+		select.change(function(v) {
+			var typeId = select.val();
+			if(typeId == null || typeId == "") {
+				changeProps(null);
+				return;
+			}
+			var props = makeCdbProps(e, DataFiles.resolveType(typeId));
+			changeProps(props);
+		});
+
+		edit.properties.add(group);
+
+		if(curType != null) {
+			var props = new hide.Element('<div></div>').appendTo(group.find(".content"));
+			var editor = new hide.comp.cdb.ObjEditor(curType, view.config, e.props, props);
+			editor.undo = properties.undo;
+			editor.onChange = function(pname) {
+				edit.onChange(e, 'props.$pname');
+				var e = Std.instance(e, hrt.prefab.l3d.Instance);
+				if( e != null ) e.addRanges(context.shared.contexts.get(e));
+			}
+		}
 	}
 
 	public function showProps(e: PrefabElement) {
@@ -1672,19 +1743,14 @@ class SceneEditor {
 
 	public function setVisible(elements : Array<PrefabElement>, visible: Bool) {
 		for(o in elements) {
-			if(visible) {
-				for(c in o.flatten(Object3D)) {
+			for(c in o.flatten(Object3D)) {
+				if( visible )
 					hideList.remove(c);
-					var el = tree.getElement(c);
-					applyTreeStyle(c, el);
-					applySceneStyle(c);
-				}
-			}
-			else {
-				hideList.set(o, true);
-				var el = tree.getElement(o);
-				applyTreeStyle(o, el);
-				applySceneStyle(o);
+				else
+					hideList.set(o, true);
+				var el = tree.getElement(c);
+				applyTreeStyle(c, el);
+				applySceneStyle(c);
 			}
 		}
 		saveDisplayState();
@@ -1692,21 +1758,14 @@ class SceneEditor {
 
 	public function setLock(elements : Array<PrefabElement>, unlocked: Bool) {
 		for(o in elements) {
-			if(unlocked) {
-				for(c in o.flatten(Object3D)) {
+			for(c in o.flatten(Object3D) ) {
+				if( unlocked )
 					lockList.remove(c);
-					var el = tree.getElement(c);
-					applyTreeStyle(c, el);
-					applySceneStyle(c);
-				}
-			}
-			else {
-				for(c in o.flatten(Object3D)) {
+				else
 					lockList.set(c, true);
-					var el = tree.getElement(c);
-					applyTreeStyle(c, el);
-					applySceneStyle(c);
-				}
+				var el = tree.getElement(c);
+				applyTreeStyle(c, el);
+				applySceneStyle(c);
 			}
 		}
 		saveDisplayState();
@@ -1718,9 +1777,7 @@ class SceneEditor {
 		function hideSiblings(elt: PrefabElement) {
 			var p = elt.parent;
 			for(c in p.children) {
-				var needsVisible = c == elt
-					|| toShow.indexOf(c) >= 0
-					|| hasChild(c, toShow);
+				var needsVisible = c == elt || toShow.indexOf(c) >= 0 || hasChild(c, toShow);
 				if(!needsVisible) {
 					toHide.push(c);
 				}

@@ -897,12 +897,15 @@ class EmitterObject extends h3d.scene.Object {
 		}
 
 		var catchupTime = time - curTime;
+
 		#if !editor
 		if(catchupTime > maxCatchupWindow) {
 			curTime = time - maxCatchupWindow;
+			emitCount = hxd.Math.ceil(evaluator.getSum(emitRate, curTime));
 			catchupTime = maxCatchupWindow;
 		}
 		#end
+
 		var catchupTickRate = hxd.Timer.wantedFPS / catchupSpeed;
 		var numTicks = hxd.Math.ceil(catchupTickRate * catchupTime);
 		for(i in 0...numTicks) {

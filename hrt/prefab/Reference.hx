@@ -79,7 +79,10 @@ class Reference extends Object3D {
 		if(isFile()) {
 			ctx = super.makeInstance(ctx);
 			ctx.isRef = true;
+			var prevPath = ctx.shared.currentPath;
+			ctx.shared.currentPath = refpath;
 			p.make(ctx);
+			ctx.shared.currentPath = prevPath;
 
 			#if editor
 			if (ctx.local2d == null) {

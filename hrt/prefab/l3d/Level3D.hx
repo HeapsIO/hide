@@ -28,11 +28,6 @@ class Level3D extends hrt.prefab.Library {
 
 	#if editor
 
-	override function getCdbModel(?p:hrt.prefab.Prefab) : cdb.Sheet {
-		if( p == null ) p = this;
-		return @:privateAccess hide.view.l3d.Level3D.getCdbModel(p);
-	}
-
 	override function edit( ctx : EditContext ) {
 		var props = new hide.Element('
 			<div class="group" name="Level">

@@ -46,6 +46,7 @@ class DataFiles {
 		var linesData : Array<DataProps> = [];
 		var separators = [];
 		var separatorTitles = [];
+		var sheetName = getTypeName(sheet);
 		@:privateAccess {
 			sheet.sheet.lines = lines;
 			sheet.sheet.linesData = linesData;
@@ -57,7 +58,7 @@ class DataFiles {
 			var levelID = file.split("/").pop().split(".").shift();
 			levelID = levelID.charAt(0).toUpperCase()+levelID.substr(1);
 			function loadRec( p : hrt.prefab.Prefab ) {
-				if( p.getCdbModel() == sheet ) {
+				if( p.getCdbType() == sheetName ) {
 					var dprops : DataProps = {
 						file : file,
 						path : p.getAbsPath(),
@@ -124,6 +125,7 @@ class DataFiles {
 		for( s in base.sheets )
 			if( s.props.dataFiles != null ) {
 				var sheet = @:privateAccess s.sheet;
+				var sheetName = getTypeName(s);
 				var ldata = sheet.linesData;
 				for( i in 0...s.lines.length ) {
 					var o = s.lines[i];
@@ -137,7 +139,7 @@ class DataFiles {
 							prefabs.set(p.file, pf);
 						}
 						var inst : hrt.prefab.Prefab = pf.getPrefabByPath(p.path);
-						if( inst == null || inst.getCdbModel() != s )
+						if( inst == null || inst.getCdbType() != sheetName )
 							ide.error("Can't save prefab data "+p.path);
 						else
 							inst.props = o;
@@ -167,5 +169,36 @@ class DataFiles {
 			}
 		}
 	}
+
+	// ---- TYPES Instances API -----
+
+	public static function getTypeName( sheet : cdb.Sheet ) {
+		return sheet.name.split("@").pop();
+	}
+
+	public static function getAvailableTypes() {
+		var sheets = [];
+		var ide = Ide.inst;
+		var levelSheet = ide.database.getSheet(ide.currentConfig.get("l3d.cdbLevel", "level"));
+		for( s in ide.database.sheets )
+			if( s.props.dataFiles != null )
+				sheets.push(s);
+		if(levelSheet != null) {
+			for(c in levelSheet.columns)
+				if( c.type == TList )
+					sheets.push(levelSheet.getSub(c));
+		}
+		return sheets;
+	}
+
+	public static function resolveType( name : String ) {
+		if( name == null )
+			return null;
+		for( s in getAvailableTypes() )
+			if( getTypeName(s) == name )
+				return s;
+		return null;
+	}
+
 
 }
