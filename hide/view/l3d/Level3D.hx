@@ -193,6 +193,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 				function make(name) {
 					var p = new hrt.prefab.l3d.Instance(current == null ? sceneData : current);
 					p.props = type.getDefaults();
+					trace(typeId);
 					Reflect.setField(p.props, "$cdbtype", typeId);
 					p.name = name;
 					setup(p);
@@ -246,6 +247,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 
 		var select = group.find("select");
 		var cdbTypes = Level3D.getCdbTypes();
+		trace(cdbTypes);
 		for(t in cdbTypes) {
 			var current = sheet != null && sheet.name == t.name;
 			var id = Level3D.getCdbTypeId(t);
@@ -336,7 +338,7 @@ class Level3D extends FileView {
 					<span class="tools-buttons"></span>
 					<span class="layer-buttons"></span>
 				</div>
-				<div style="display: flex; flex-direction: row; flex: 1;">
+				<div style="display: flex; flex-direction: row; flex: 1; overflow: hidden;">
 					<div class="heaps-scene">
 					</div>
 					<div class="hide-scene-outliner">
