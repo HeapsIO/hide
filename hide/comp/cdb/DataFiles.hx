@@ -107,7 +107,14 @@ class DataFiles {
 				}
 				var reg = new EReg("^"+part.split(".").join("\\.").split("*").join(".*")+"$","");
 				for( f in sys.FileSystem.readDirectory(dir) ) {
-					if( !reg.match(f) ) continue;
+					if( !reg.match(f) ) {
+						if( sys.FileSystem.isDirectory(dir+"/"+f) ) {
+							curPath.push(f);
+							gatherRec(curPath,i-1);
+							curPath.pop();
+						}
+						continue;
+					}
 					curPath.push(f);
 					gatherRec(curPath,i);
 					curPath.pop();
