@@ -40,6 +40,7 @@ class MeshSprayObject extends h3d.scene.Object {
 	var batches : Array<h3d.scene.MeshBatch> = [];
 	var blookup : Map<h3d.prim.Primitive, Array<h3d.scene.MeshBatch>> = new Map();
 	var mp : MeshSpray;
+	var currentChk : Float = 0;
 
 	static inline var MAX_INST = 512;
 
@@ -49,14 +50,33 @@ class MeshSprayObject extends h3d.scene.Object {
 	}
 
 	override function emitRec(ctx:h3d.scene.RenderContext) {
+		for( b in batches ) {
+			var p = b.material.getPass("highlight");
+			if( p != null ) b.material.removePass(p);
+		}
 		super.emitRec(ctx);
+
 		var count = children.length;
 		count -= batches.length;
 		count -= mp.previewModels.length;
 		if( mp.gBrushes != null ) count -= mp.gBrushes.length;
-
+		var redraw = false;
 		if( childCount != count ) {
 			childCount = count;
+			redraw = true;
+		}
+
+		var chk = 0.;
+		for( c in children ) {
+			if( c.alwaysSync ) continue;
+			chk += c.x - c.y + c.scaleX + c.scaleY + c.scaleZ + c.qRot.x + c.qRot.y + c.qRot.z;
+		}
+		if( chk != currentChk ) {
+			currentChk = chk;
+			redraw = true;
+		}
+
+		if( redraw ) {
 			for( b in batches )
 				b.begin(MAX_INST);
 			for( c in children ) {
