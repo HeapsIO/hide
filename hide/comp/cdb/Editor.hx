@@ -191,6 +191,7 @@ class Editor extends Component {
 		var text = ide.getClipboard();
 		var columns = cursor.table.columns;
 		var sheet = cursor.table.sheet;
+		var realSheet = cursor.table.getRealSheet();
 		if( clipboard == null || text != clipboard.text ) {
 			if( cursor.x < 0 || cursor.y < 0 ) return;
 			var x1 = cursor.x;
@@ -232,7 +233,7 @@ class Editor extends Component {
 				}
 			}
 			endChanges();
-			sheet.sync();
+			realSheet.sync();
 			refreshAll();
 			return;
 		}
@@ -273,7 +274,7 @@ class Editor extends Component {
 			posY++;
 		}
 		endChanges();
-		sheet.sync();
+		realSheet.sync();
 		refreshAll();
 	}
 
