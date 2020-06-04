@@ -126,24 +126,39 @@ class Instance extends Object3D {
 		var sheet = hide.comp.cdb.DataFiles.resolveType(name);
 		if( sheet == null )
 			return null;
-		var refCol = findRefColumn(sheet);
-		if(refCol == null)
+		var refCols = findRefColumns(sheet);
+		if(refCols == null)
 			return null;
-		var refId = Reflect.getProperty(p.props, refCol.col.name);
+		var refId : Dynamic = p.props;
+		for( c in refCols.cols )
+			refId = Reflect.field(refId, c.name);
 		if(refId == null)
 			return null;
-		var refSheet = sheet.base.getSheet(refCol.sheet);
+		var refSheet = sheet.base.getSheet(refCols.sheet);
 		if(refSheet == null)
 			return null;
 		return {sheet: refSheet, idx: refSheet.index.get(refId)};
 	}
 
-	public static function findRefColumn(sheet : cdb.Sheet) {
+	public static function findRefColumns(sheet : cdb.Sheet) {
 		for(col in sheet.columns) {
 			switch(col.type) {
 				case TRef(sheet):
-					return {col: col, sheet: sheet};
+					return {cols: [col], sheet: sheet};
 				default:
+			}
+		}
+		for(col in sheet.columns) {
+			switch(col.type) {
+			case TProperties:
+				var sub = sheet.getSub(col);
+				for( col2 in sub.columns )
+					switch( col2.type ) {
+					case TRef(sheet2):
+						return {cols: [col,col2], sheet: sheet2};
+					default:
+					}
+			default:
 			}
 		}
 		return null;
