@@ -114,7 +114,7 @@ class Ide {
 		fileWatcher = new hide.tools.FileWatcher();
 
 		if( !sys.FileSystem.exists(current) || !sys.FileSystem.isDirectory(current) ) {
-			js.Browser.alert(current+" no longer exists");
+			if( current != "" ) js.Browser.alert(current+" no longer exists");
 			current = cwd;
 		}
 
