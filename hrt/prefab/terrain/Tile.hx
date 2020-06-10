@@ -56,12 +56,18 @@ class Tile extends h3d.scene.Mesh {
 			surfaceWeightArray.dispose();
 		if( bigPrim != null )
 			bigPrim.dispose();
-		if(packedWeightMapPixel != null)
+		if(packedWeightMapPixel != null) {
 			packedWeightMapPixel.dispose();
-		if(indexMapPixels != null)
+			packedWeightMapPixel = null;
+		}
+		if(indexMapPixels != null) {
 			indexMapPixels.dispose();
-		if(heightmapPixels != null)
+			indexMapPixels = null;
+		}
+		if(heightmapPixels != null) {
 			heightmapPixels.dispose();
+			heightmapPixels = null;
+		}
 		normalTangentBytes = null;
 
 	}
