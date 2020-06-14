@@ -293,7 +293,7 @@ class Level3D extends FileView {
 					<span class="tools-buttons"></span>
 					<span class="layer-buttons"></span>
 				</div>
-				<div style="display: flex; flex-direction: row; flex: 1;">
+				<div style="display: flex; flex-direction: row; flex: 1; overflow: hidden;">
 					<div class="heaps-scene">
 					</div>
 					<div class="hide-scene-outliner">
