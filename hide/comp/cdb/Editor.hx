@@ -477,7 +477,7 @@ class Editor extends Component {
 	}
 
 	function openReference( s : cdb.Sheet, line : Int, column : Int ) {
-		ide.open("hide.view.CdbTable", { path : s.name }, function(view) @:privateAccess Std.downcast(view,hide.view.CdbTable).editor.cursor.setDefault(line,column));
+		ide.open("hide.view.CdbTable", {}, function(view) Std.downcast(view,hide.view.CdbTable).goto(s,line,column));
 	}
 
 	public function syncSheet( ?base, ?name ) {
