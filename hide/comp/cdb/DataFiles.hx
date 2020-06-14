@@ -3,6 +3,7 @@ package hide.comp.cdb;
 typedef DataProps = {
 	var file : String;
 	var path : String;
+	var index : Int;
 	var origin : String;
 }
 
@@ -57,27 +58,34 @@ class DataFiles {
 			var needSep = true;
 			var levelID = file.split("/").pop().split(".").shift();
 			levelID = levelID.charAt(0).toUpperCase()+levelID.substr(1);
-			function loadRec( p : hrt.prefab.Prefab ) {
+			function loadRec( p : hrt.prefab.Prefab, parent : hrt.prefab.Prefab ) {
 				if( p.getCdbType() == sheetName ) {
 					var dprops : DataProps = {
 						file : file,
 						path : p.getAbsPath(),
+						index : 0,
 						origin : haxe.Json.stringify(p.props),
 					};
+					if( parent != null ) {
+						for( c in parent.children ) {
+							if( c == p ) break;
+							if( c.name == p.name ) dprops.index++;
+						}
+					}
 					if( needSep ) {
 						separators.push(lines.length);
 						separatorTitles.push(file);
 						needSep = false;
 					}
 					if( sheet.idCol != null && Reflect.field(p.props,sheet.idCol.name) == "" )
-						Reflect.setField(p.props,sheet.idCol.name,levelID+"_"+p.name);
+						Reflect.setField(p.props,sheet.idCol.name,levelID+"_"+p.name+(dprops.index == 0 ? "" : ""+dprops.index));
 					linesData.push(dprops);
 					lines.push(p.props);
 				}
-				for( p in p ) loadRec(p);
+				for( c in p ) loadRec(c,p);
 			}
 			var p = ide.loadPrefab(file);
-			loadRec(p);
+			loadRec(p,null);
 			if( !watching.exists(file) ) {
 				watching.set(file, true);
 				ide.fileWatcher.register(file, onFileChanged);
@@ -145,7 +153,8 @@ class DataFiles {
 							pf = ide.loadPrefab(p.file);
 							prefabs.set(p.file, pf);
 						}
-						var inst : hrt.prefab.Prefab = pf.getPrefabByPath(p.path);
+						var all = pf.getPrefabsByPath(p.path);
+						var inst : hrt.prefab.Prefab = all[p.index];
 						if( inst == null || inst.getCdbType() != sheetName )
 							ide.error("Can't save prefab data "+p.path);
 						else
