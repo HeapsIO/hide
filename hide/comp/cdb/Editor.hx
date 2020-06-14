@@ -439,7 +439,7 @@ class Editor extends Component {
 	}
 
 	function save() {
-		DataFiles.save(function() api.save());
+		api.save();
 	}
 
 	public static function refreshAll( eraseUndo = false ) {
