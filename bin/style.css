@@ -459,6 +459,7 @@ input[type=checkbox]:checked:after {
   display: none;
   width: 200px;
   position: fixed;
+  z-index: 99;
   top: 20px;
   right: 0px;
   background-color: black;
