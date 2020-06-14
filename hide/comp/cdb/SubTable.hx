@@ -39,6 +39,7 @@ class SubTable extends Table {
 		slider.hide();
 		var root = new Element("<table>");
 		root.appendTo(slider);
+		root.addClass("cdb-sub-sheet");
 
 		insertedTR.insertAfter(cell.line.element);
 		cell.element.text("...");

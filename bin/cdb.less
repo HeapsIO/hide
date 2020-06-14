@@ -60,14 +60,16 @@
 		}
 
 		tr.separator {
-			background-color : #444;
 			height : 10px;
 			td {
+				position: sticky;
+				top: 20px;
 				border-left: none;
 				padding-top: 6px;
 				color : #bbb;
 				font-weight : bold;
 				padding-left : 20px;
+				background-color : #444;
 			}
 		}
 
@@ -122,12 +124,17 @@
 			background-color : #f8f8f8;
 		}
 
+		&:not(.cdb-sub-sheet) > thead.head > th {
+			position: sticky;
+			top: 0;
+		}
+
 		tr.head, th {
 			font-weight: bold;
 			text-align: center;
-			padding: 1px 10px;
-			border-bottom : 1px solid #666;
-			border-left: 1px solid #555;
+			padding: 1px 10px 4px 10px;
+			box-shadow: inset 0px -1px 1px #666;
+			border-left: 1px solid #444;
 			background-color : #222;
 			color : #ddd;
 			width: auto;
@@ -230,6 +237,9 @@
 		td.t_list, td.t_properties {
 			white-space: nowrap;
 			cursor : pointer;
+			text-overflow: ellipsis;
+			max-width: 900;
+			overflow: hidden!important;
 			img {
 				max-height: 32px;
 				max-width: 32px;
