@@ -52,15 +52,17 @@
   cursor: nw-resize;
 }
 .cdb .cdb-sheet tr.separator {
-  background-color: #444;
   height: 10px;
 }
 .cdb .cdb-sheet tr.separator td {
+  position: sticky;
+  top: 19px;
   border-left: none;
   padding-top: 6px;
   color: #bbb;
   font-weight: bold;
   padding-left: 20px;
+  background-color: #444;
 }
 .cdb .cdb-sheet td {
   padding: 2px 4px;
@@ -110,13 +112,17 @@
 .cdb .cdb-sheet tr.clickable:hover {
   background-color: #f8f8f8;
 }
+.cdb .cdb-sheet:not(.cdb-sub-sheet) > thead.head > th {
+  position: sticky;
+  top: 0;
+}
 .cdb .cdb-sheet tr.head,
 .cdb .cdb-sheet th {
   font-weight: bold;
   text-align: center;
-  padding: 1px 10px;
-  border-bottom: 1px solid #666;
-  border-left: 1px solid #555;
+  padding: 1px 10px 4px 10px;
+  box-shadow: inset 0px -1px 1px #666;
+  border-left: 1px solid #444;
   background-color: #222;
   color: #ddd;
   width: auto;
@@ -208,6 +214,9 @@
 .cdb .cdb-sheet td.t_properties {
   white-space: nowrap;
   cursor: pointer;
+  text-overflow: ellipsis;
+  max-width: 900;
+  overflow: hidden!important;
 }
 .cdb .cdb-sheet td.t_list img,
 .cdb .cdb-sheet td.t_properties img {

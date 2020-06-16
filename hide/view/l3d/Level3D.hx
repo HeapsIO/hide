@@ -186,9 +186,9 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 				var typeId = DataFiles.getTypeName(type);
 				var label = typeId.charAt(0).toUpperCase() + typeId.substr(1);
 
-				var refCol = Instance.findRefColumn(type);
-				var refSheet = refCol == null ? null : type.base.getSheet(refCol.sheet);
-				var idCol = refCol == null ? null : Instance.findIDColumn(refSheet);
+				var refCols = Instance.findRefColumns(type);
+				var refSheet = refCols == null ? null : type.base.getSheet(refCols.sheet);
+				var idCol = refCols == null ? null : Instance.findIDColumn(refSheet);
 
 				function make(name) {
 					var p = new hrt.prefab.l3d.Instance(current == null ? sceneData : current);
@@ -208,7 +208,19 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 							label : kind,
 							click : function() {
 								var p = make(kind.charAt(0).toLowerCase() + kind.substr(1));
-								Reflect.setField(p.props, refCol.col.name, kind);
+								var obj : Dynamic = p.props;
+								for( c in refCols.cols ) {
+									if( c == refCols.cols[refCols.cols.length-1] )
+										Reflect.setField(obj, c.name, kind);
+									else {
+										var s = Reflect.field(obj,c.name);
+										if( s == null ) {
+											s = {};
+											Reflect.setField(obj, c.name, s);
+										}
+										obj = s;
+									}
+								}
 							}
 						});
 					}

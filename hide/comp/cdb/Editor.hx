@@ -191,6 +191,7 @@ class Editor extends Component {
 		var text = ide.getClipboard();
 		var columns = cursor.table.columns;
 		var sheet = cursor.table.sheet;
+		var realSheet = cursor.table.getRealSheet();
 		if( clipboard == null || text != clipboard.text ) {
 			if( cursor.x < 0 || cursor.y < 0 ) return;
 			var x1 = cursor.x;
@@ -232,7 +233,7 @@ class Editor extends Component {
 				}
 			}
 			endChanges();
-			sheet.sync();
+			realSheet.sync();
 			refreshAll();
 			return;
 		}
@@ -273,7 +274,7 @@ class Editor extends Component {
 			posY++;
 		}
 		endChanges();
-		sheet.sync();
+		realSheet.sync();
 		refreshAll();
 	}
 
@@ -438,7 +439,7 @@ class Editor extends Component {
 	}
 
 	function save() {
-		DataFiles.save(function() api.save());
+		api.save();
 	}
 
 	public static function refreshAll( eraseUndo = false ) {
@@ -476,7 +477,7 @@ class Editor extends Component {
 	}
 
 	function openReference( s : cdb.Sheet, line : Int, column : Int ) {
-		ide.open("hide.view.CdbTable", { path : s.name }, function(view) @:privateAccess Std.downcast(view,hide.view.CdbTable).editor.cursor.setDefault(line,column));
+		ide.open("hide.view.CdbTable", {}, function(view) Std.downcast(view,hide.view.CdbTable).goto(s,line,column));
 	}
 
 	public function syncSheet( ?base, ?name ) {

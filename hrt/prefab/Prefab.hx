@@ -266,26 +266,31 @@ class Prefab {
 	}
 
 	/**
-		Search the prefab tree for the prefab matching the given path, returns null if not found
+		Search the prefab tree for the prefabs matching the given path.
+		Can use wildcards, such as `*`/level`*`/collision
 	**/
-	public function getPrefabByPath( path : String ) {
+	public function getPrefabsByPath( path : String ) {
+		var out = [];
 		if( path == "" )
-			return this;
-		var parts = path.split(".");
-		var p = this;
-		for( i in 0...parts.length ) {
-			var name = parts[i];
-			var next = null;
-			for( c in p.children )
-				if( c.name == name || (c.name == null && c.getDefaultName() == name) ) {
-					next = c;
-					break;
-				}
-			if( next == null )
-				return null;
-			p = next;
+			out.push(this);
+		else
+			getPrefabsByPathRec(path.split("."), 0, out);
+		return out;
+	}
+
+	function getPrefabsByPathRec( parts : Array<String>, index : Int, out : Array<Prefab> ) {
+		var name = parts[index++];
+		if( name == null ) {
+			out.push(this);
+			return;
 		}
-		return p;
+		var r = name.indexOf('*') < 0 ? null : new EReg("^"+name.split("*").join(".*")+"$","");
+		for( c in children ) {
+			var cname = c.name;
+			if( cname == null ) cname = c.getDefaultName();
+			if( r == null ? c.name == name : r.match(cname) )
+				c.getPrefabsByPathRec(parts, index, out);
+		}
 	}
 
 	/**

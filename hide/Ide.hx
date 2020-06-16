@@ -114,7 +114,7 @@ class Ide {
 		fileWatcher = new hide.tools.FileWatcher();
 
 		if( !sys.FileSystem.exists(current) || !sys.FileSystem.isDirectory(current) ) {
-			js.Browser.alert(current+" no longer exists");
+			if( current != "" ) js.Browser.alert(current+" no longer exists");
 			current = cwd;
 		}
 
@@ -688,19 +688,21 @@ class Ide {
 	}
 
 	public function saveDatabase() {
-		if( databaseDiff != null ) {
-			fileWatcher.ignoreNextChange(databaseDiff);
-			sys.io.File.saveContent(getPath(databaseDiff), toJSON(new cdb.DiffFile().make(originDataBase,database)));
-		} else {
-			if( !sys.FileSystem.exists(getPath(databaseFile)) && fileExists(databaseFile) ) {
-				// was loaded from pak, cancel changes
-				loadDatabase();
-				hide.comp.cdb.Editor.refreshAll();
-				return;
+		hide.comp.cdb.DataFiles.save(function() {
+			if( databaseDiff != null ) {
+				fileWatcher.ignoreNextChange(databaseDiff);
+				sys.io.File.saveContent(getPath(databaseDiff), toJSON(new cdb.DiffFile().make(originDataBase,database)));
+			} else {
+				if( !sys.FileSystem.exists(getPath(databaseFile)) && fileExists(databaseFile) ) {
+					// was loaded from pak, cancel changes
+					loadDatabase();
+					hide.comp.cdb.Editor.refreshAll();
+					return;
+				}
+				fileWatcher.ignoreNextChange(databaseFile);
+				sys.io.File.saveContent(getPath(databaseFile), database.save());
 			}
-			fileWatcher.ignoreNextChange(databaseFile);
-			sys.io.File.saveContent(getPath(databaseFile), database.save());
-		}
+		});
 	}
 
 	public function createDBSheet( ?index : Int ) {
