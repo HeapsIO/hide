@@ -8,7 +8,7 @@ class TextureSelect extends FileSelect {
 
 	public function new(?parent,?root) {
 		preview = new Element("<div class='texture-preview'>");
-		super(["jpg", "jpeg", "gif", "png"], parent, root);
+		super(hide.Ide.IMG_EXTS, parent, root);
 		preview.insertAfter(root);
 	}
 

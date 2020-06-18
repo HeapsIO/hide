@@ -735,8 +735,9 @@ class Ide {
 		return path;
 	}
 
+	public static var IMG_EXTS = ["jpg", "jpeg", "gif", "png", "raw"];
 	public function chooseImage( onSelect ) {
-		chooseFile(["png","jpeg","jpg","gif"], onSelect);
+		chooseFile(IMG_EXTS, onSelect);
 	}
 
 	public function chooseFiles( exts : Array<String>, onSelect : Array<String> -> Void ) {
