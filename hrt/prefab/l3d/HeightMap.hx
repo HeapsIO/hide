@@ -21,6 +21,10 @@ class HeightMapShader extends hxsl.Shader {
 		@param var normalScale : Float;
 		@param var cellSize : Vec2;
 
+		@const var SplatCount : Int;
+		@param var splats : Array<Sampler2D,SplatCount>;
+		@param var albedos : Array<Sampler2D,SplatCount>;
+
 		@input var input2 : { uv : Vec2 };
 
 		var calculatedUV : Vec2;
@@ -54,6 +58,13 @@ class HeightMapShader extends hxsl.Shader {
 				var n = unpackNormal(normalMap.get(calculatedUV));
 				n.z *= normalScale;
 				transformedNormal = (n * global.modelView.mat3()).normalize();
+			}
+			if( SplatCount > 0 ) {
+				var color = pixelColor;
+				for( i in 0...SplatCount )
+					color = mix( color, albedos[i].get(calculatedUV), splats[i].get(calculatedUV).rrrr );
+				color.a = 1;
+				pixelColor = color;
 			}
 		}
 
@@ -115,20 +126,25 @@ class HeightMap extends Object3D {
 			mesh.primitive = grid;
 		}
 
+		var splat = getTextures(ctx, SplatMap);
 		var albedo = getTextures(ctx, Albedo);
-		mesh.material.texture = albedo.length == 1 ? albedo[0] : null;
-
 		var normal = getTextures(ctx,Normal)[0];
+		mesh.material.texture = albedo.shift();
 
 		var shader = mesh.material.mainPass.getShader(HeightMapShader);
 		shader.hasHeight = hmap != null;
 		shader.heightMap = hmap;
 		shader.hasNormal = normal != null;
 		shader.normalMap = normal;
-		shader.heightScale = heightScale * size;
+		shader.heightScale = heightScale * size * 0.1;
 		shader.normalScale = 1 / normalScale;
 		shader.cellSize.set(cw,ch);
 		if( hmap != null ) shader.heightOffset.set(1 / hmap.width,1 / hmap.height);
+
+		var scount = hxd.Math.imin(splat.length, albedo.length);
+		shader.SplatCount = scount;
+		shader.splats = [for( i in 0...scount ) splat[i]];
+		shader.albedos = [for( i in 0...scount ) albedo[i]];
 	}
 
 	#if editor
@@ -151,17 +167,34 @@ class HeightMap extends Object3D {
 		for( tex in textures ) {
 			var prevTex = tex.path;
 			var e = new hide.Element('<li>
-				<input type="texturepath" field="path"/>
-				<select field="kind" style="width:80px">
+				<input type="checkbox" field="enable"/>
+				<input type="texturepath" style="width:170px" field="path"/>
+				<select field="kind" style="width:70px">
 					<option value="albedo">Albedo
 					<option value="height">Height
 					<option value="normal">Normal
 					<option value="splatmap">SplatMap
 					<option value="delete">-- Delete --
 				</select>
-				<input type="checkbox" field="enable"/>
+				<a href="#" class="up">🡅</a>
+				<a href="#" class="down">🡇</a>
 			</li>
 			');
+			e.find(".up").click(function(_) {
+				var index = textures.indexOf(tex);
+				if( index <= 0 ) return;
+				textures.remove(tex);
+				textures.insert(index-1, tex);
+				ectx.rebuildProperties();
+				updateInstance(ctx);
+			});
+			e.find(".down").click(function(_) {
+				var index = textures.indexOf(tex);
+				textures.remove(tex);
+				textures.insert(index+1, tex);
+				ectx.rebuildProperties();
+				updateInstance(ctx);
+			});
 			e.appendTo(list);
 			ectx.properties.build(e, tex, (_) -> {
 				if( tex.path != prevTex ) {
@@ -175,7 +208,7 @@ class HeightMap extends Object3D {
 				updateInstance(ctx);
 			});
 		}
-		var add = new hide.Element('<li><a href="#">[+]</a></li>');
+		var add = new hide.Element('<li><p><a href="#">[+]</a></p></li>');
 		add.appendTo(list);
 		add.find("a").click(function(_) {
 			textures.push({ path : null, kind : Albedo, enable: true });
