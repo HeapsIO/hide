@@ -83,4 +83,10 @@ package hrt.prefab;
 		return root;
 	}
 
+	#if editor
+	public function setCurrent() {
+		cast(shared, hide.prefab.ContextShared).scene.setCurrent();
+	}
+	#end
+
 }
