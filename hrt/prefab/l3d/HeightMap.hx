@@ -18,7 +18,9 @@ class HeightMapShader extends hxsl.Shader {
 		@param var normalMap : Sampler2D;
 		@param var heightScale : Float;
 		@param var heightOffset : Vec2;
+		@param var normalScale : Float;
 		@param var cellSize : Vec2;
+
 		@input var input2 : { uv : Vec2 };
 
 		var calculatedUV : Vec2;
@@ -41,14 +43,18 @@ class HeightMapShader extends hxsl.Shader {
 					var px1 = getPoint(1, 0);
 					var py1 = getPoint(0, 1);
 					var n = px1.cross(py1) + py1.cross(px0) + px0.cross(py0) + py0.cross(px1);
+					n.z *= normalScale;
 					transformedNormal = (n.normalize() * global.modelView.mat3()).normalize();
 				}
 			}
 		}
 
 		function __init__fragment() {
-			if( hasNormal )
-				transformedNormal = (unpackNormal(normalMap.get(calculatedUV)) * global.modelView.mat3()).normalize();
+			if( hasNormal ) {
+				var n = unpackNormal(normalMap.get(calculatedUV));
+				n.z *= normalScale;
+				transformedNormal = (n * global.modelView.mat3()).normalize();
+			}
 		}
 
 	};
@@ -59,12 +65,14 @@ class HeightMap extends Object3D {
 	var textures : Array<{ path : String, kind : HeightMapTextureKind, enable : Bool }> = [];
 	var size = 128.;
 	var heightScale = 0.2;
+	var normalScale = 1.;
 
 	override function save():{} {
 		var o : Dynamic = super.save();
 		o.textures = [for( t in textures ) { path : t.path, kind : t.kind }];
 		o.size = size;
 		o.heightScale = heightScale;
+		o.normalScale = normalScale;
 		return o;
 	}
 
@@ -73,6 +81,7 @@ class HeightMap extends Object3D {
 		textures = [for( o in (obj.textures:Array<Dynamic>) ) { path : o.path, kind : o.kind, enable : true }];
 		size = obj.size;
 		heightScale = obj.heightScale;
+		normalScale = obj.normalScale;
 	}
 
 	function getTextures( ctx : Context, k : HeightMapTextureKind ) {
@@ -117,6 +126,7 @@ class HeightMap extends Object3D {
 		shader.hasNormal = normal != null;
 		shader.normalMap = normal;
 		shader.heightScale = heightScale * size;
+		shader.normalScale = 1 / normalScale;
 		shader.cellSize.set(cw,ch);
 		if( hmap != null ) shader.heightOffset.set(1 / hmap.width,1 / hmap.height);
 	}
@@ -130,6 +140,7 @@ class HeightMap extends Object3D {
 			<dl>
 				<dt>Size</dt><dd><input type="range" min="0" max="1000" value="128" field="size"/></dd>
 				<dt>Height Scale</dt><dd><input type="range" min="0" max="1" field="heightScale"/></dd>
+				<dt>Normal Scale</dt><dd><input type="range" min="0" max="2" field="normalScale"/></dd>
 			</dl>
 			<div class="group" name="Textures">
 			<ul></ul>
@@ -138,6 +149,7 @@ class HeightMap extends Object3D {
 		var list = props.find("ul");
 		ectx.properties.add(props,this, (_) -> updateInstance(ctx));
 		for( tex in textures ) {
+			var prevTex = tex.path;
 			var e = new hide.Element('<li>
 				<input type="texturepath" field="path"/>
 				<select field="kind" style="width:80px">
@@ -152,6 +164,10 @@ class HeightMap extends Object3D {
 			');
 			e.appendTo(list);
 			ectx.properties.build(e, tex, (_) -> {
+				if( tex.path != prevTex ) {
+					tex.enable = true; // enable on change texture !
+					prevTex = tex.path;
+				}
 				if( ""+tex.kind == "delete" ) {
 					textures.remove(tex);
 					ectx.rebuildProperties();
