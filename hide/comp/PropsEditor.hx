@@ -317,7 +317,7 @@ class PropsField extends Component {
 				onChange(false);
 			};
 			return;
-		case "file":
+		case "filepicker":
 			fselect = new hide.comp.FileSelect(f.attr("extensions").split(" "), null, f);
 			fselect.path = current;
 			fselect.onChange = function() {
