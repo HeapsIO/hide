@@ -563,7 +563,7 @@ input[type=checkbox]:checked:after {
   width: 200px;
   margin-left: 10px;
 }
-.hide-properties dd .texture-preview {
+.hide-properties .texture-preview {
   pointer-events: none;
   display: inline-block;
   width: 15px;

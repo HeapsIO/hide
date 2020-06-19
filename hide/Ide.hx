@@ -311,11 +311,18 @@ class Ide {
 
 		layout = new golden.Layout(config);
 
+		var initViews = [];
+		function initView(view:hide.ui.View<Dynamic>) {
+			if( isDebugger ) view.rebuild() else try view.rebuild() catch( e : Dynamic ) error(view+":"+e);
+		}
 		for( vcl in hide.ui.View.viewClasses )
 			layout.registerComponent(vcl.name,function(cont,state) {
 				var view = Type.createInstance(vcl.cl,[state]);
 				view.setContainer(cont);
-				if( isDebugger ) view.rebuild() else try view.rebuild() catch( e : Dynamic ) error(vcl.name+":"+e);
+				if( initializing )
+					initViews.push(view);
+				else
+					initView(view);
 			});
 
 		layout.init();
@@ -348,6 +355,9 @@ class Ide {
 				}
 			}
 			initializing = false;
+			for( v in initViews )
+				initView(v);
+			initViews = null;
 			if( subView == null && views.length == 0 ) {
 				if( isCDB )
 					open("hide.view.CdbTable",{}, function(v) v.fullScreen = true);
@@ -725,8 +735,9 @@ class Ide {
 		return path;
 	}
 
+	public static var IMG_EXTS = ["jpg", "jpeg", "gif", "png", "raw"];
 	public function chooseImage( onSelect ) {
-		chooseFile(["png","jpeg","jpg","gif"], onSelect);
+		chooseFile(IMG_EXTS, onSelect);
 	}
 
 	public function chooseFiles( exts : Array<String>, onSelect : Array<String> -> Void ) {

@@ -81,26 +81,26 @@ class PropsEditor extends Component {
 			if ( p.def != null ) e.attr("value", "" + p.def);
 		}
 	}
-	
+
 	public static function makeGroupEl(name: String, content: Element) {
 		var el = new Element('<div class="group" name="${name}"></div>');
 		content.appendTo(el);
 		return el;
 	}
-	
+
 	public static function makeSectionEl(name: String, content: Element, ?headerContent: Element) {
 		var el = new Element('<div class="section"><h1><span>${name}</span></h1><div class="content"></div></div>');
 		if (headerContent != null) headerContent.appendTo(el.find("h1"));
 		content.appendTo(el.find(".content"));
 		return el;
 	}
-	
+
 	public static function makeLabelEl(name: String, content: Element) {
 		var el = new Element('<dt>${name}</dt><dd></dd>');
 		content.appendTo(el.find("dd"));
 		return el;
 	}
-	
+
 	public static function makeListEl(content:Array<Element>) {
 		var el = new Element("<dl>");
 		for ( e in content ) e.appendTo(el);
@@ -127,8 +127,11 @@ class PropsEditor extends Component {
 	}
 
 	public function add( e : Element, ?context : Dynamic, ?onChange : String -> Void ) {
-
 		e.appendTo(element);
+		return build(e,context,onChange);
+	}
+
+	public function build( e : Element, ?context : Dynamic, ?onChange : String -> Void ) {
 		e = e.wrap("<div></div>").parent(); // necessary to have find working on top level element
 
 		e.find("input[type=checkbox]").wrap("<div class='checkbox-wrapper'></div>");
@@ -154,7 +157,7 @@ class PropsEditor extends Component {
 			section.children(".content").slideToggle(100);
 			saveDisplayState("section:" + StringTools.trim(e.getThis().text()), section.hasClass("open"));
 		}).find("input").mousedown(function(e) e.stopPropagation());
-		
+
 		e.find("input[type=section_name]").change(function(e) {
 			e.getThis().closest(".section").find(">h1 span").text(e.getThis().val());
 		});
@@ -190,7 +193,7 @@ class PropsEditor extends Component {
 			saveDisplayState("group:" + key, group.hasClass("open"));
 
 		}).find("input").mousedown(function(e) e.stopPropagation());
-		
+
 		e.find("input[type=group_name]").change(function(e) {
 			e.getThis().closest(".group").find(">.title").val(e.getThis().val());
 		});
