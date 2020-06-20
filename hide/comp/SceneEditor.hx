@@ -150,6 +150,7 @@ class SceneEditor {
 
 	public var view(default, null) : hide.view.FileView;
 	var sceneData : PrefabElement;
+	var lastRenderProps : hrt.prefab.RenderProps;
 
 	public function new(view, data, ?chunkifyS3D : Bool = false) {
 		ide = hide.Ide.inst;
@@ -518,7 +519,10 @@ class SceneEditor {
 				var locked = isLocked(current);
 				menuItems = menuItems.concat([
 					{ label : "Visible", checked : visible, click : function() setVisible(curEdit.elements, !visible) },
-					{ label : "Locked", checked : locked, click : function() setLock(curEdit.elements, locked) },
+					{ label : "Locked", checked : locked, click : function() {
+						locked = !locked;
+						setLock(curEdit.elements, locked);
+					} },
 					{ label : "Select all", click : selectAll },
 					{ label : "Select children", enabled : current != null, click : function() selectObjects(current.flatten()) },
 				]);
@@ -650,6 +654,20 @@ class SceneEditor {
 		var all = sceneData.flatten(hrt.prefab.Prefab);
 		for(elt in all)
 			applySceneStyle(elt);
+
+		if( lastRenderProps == null ) {
+			var renderProps = sceneData.getAll(hrt.prefab.RenderProps);
+			for( r in renderProps )
+				if( @:privateAccess r.isDefault ) {
+					lastRenderProps = r;
+					break;
+				}
+			if( lastRenderProps == null )
+				lastRenderProps = renderProps[0];
+		}
+		if(lastRenderProps != null)
+			lastRenderProps.applyProps(scene.s3d.renderer);
+
 		onRefresh();
 	}
 
@@ -664,6 +682,16 @@ class SceneEditor {
 		var int = elt.makeInteractive(ctx);
 		if( int == null ) return;
 		initInteractive(elt,cast int);
+		if( isLocked(elt) ) toggleInteractive(elt, false);
+	}
+
+	function toggleInteractive( e : PrefabElement, visible : Bool ) {
+		var int = getInteractive(e);
+		if( int == null ) return;
+		var i2d = Std.downcast(int,h2d.Interactive);
+		var i3d = Std.downcast(int,h3d.scene.Interactive);
+		if( i2d != null ) i2d.visible = visible;
+		if( i3d != null ) i3d.visible = visible;
 	}
 
 	function initInteractive( elt : PrefabElement, int : {
@@ -744,7 +772,7 @@ class SceneEditor {
 		}
 		int.onMove = function(e) {
 			if(startDrag != null && hxd.Math.distance(startDrag[0] - scene.s2d.mouseX, startDrag[1] - scene.s2d.mouseY) > 5 ) {
-				if(dragBtn == K.MOUSE_LEFT) {
+				if(dragBtn == K.MOUSE_LEFT ) {
 					if( i3d != null ) {
 						moveGizmoToSelection();
 						gizmo.startMove(MoveXY);
@@ -757,19 +785,6 @@ class SceneEditor {
 				int.preventClick();
 				startDrag = null;
 			}
-			/*
-			if( curDrag != null ) {
-				var dx = scene.s2d.mouseX - curDrag[0];
-				var dy = scene.s2d.mouseY - curDrag[1];
-				var obj = getContext(elt).local2d;
-				obj.x += Math.round(dx / context.shared.root2d.scaleX);
-				obj.y += Math.round(dy / context.shared.root2d.scaleY);
-				var o2d = Std.instance(elt,hrt.prefab.Object2D);
-				o2d.x = obj.x;
-				o2d.y = obj.y;
-				curDrag[0] += dx;
-				curDrag[1] += dy;
-			}*/
 		}
 		interactives.set(elt,cast int);
 	}
@@ -1176,9 +1191,9 @@ class SceneEditor {
 				lockTog = new Element('<i class="fa fa-lock lock-toggle"/>').insertAfter(el.find("a.jstree-anchor").first());
 				lockTog.click(function(e) {
 					if(curEdit.elements.indexOf(obj3d) >= 0)
-						setLock(curEdit.elements, isLocked(obj3d));
+						setLock(curEdit.elements, !isLocked(obj3d));
 					else
-						setLock([obj3d], isLocked(obj3d));
+						setLock([obj3d], !isLocked(obj3d));
 
 					e.preventDefault();
 					e.stopPropagation();
@@ -1383,7 +1398,6 @@ class SceneEditor {
 	}
 
 	function setObjectSelected( p : PrefabElement, ctx : hrt.prefab.Context, b : Bool ) {
-		showGizmo = true;
 		return p.setSelected(ctx, b);
 	}
 
@@ -1428,6 +1442,12 @@ class SceneEditor {
 			});
 
 			curEdit = edit;
+			showGizmo = false;
+			for( e in elts )
+				if( !isLocked(e) ) {
+					showGizmo = true;
+					break;
+				}
 			setupGizmo();
 		}
 
@@ -1756,19 +1776,23 @@ class SceneEditor {
 		saveDisplayState();
 	}
 
-	public function setLock(elements : Array<PrefabElement>, unlocked: Bool) {
+	function setLock(elements : Array<PrefabElement>, locked: Bool) {
 		for(o in elements) {
 			for(c in o.flatten(Object3D) ) {
-				if( unlocked )
-					lockList.remove(c);
-				else
+				if( locked )
 					lockList.set(c, true);
+				else
+					lockList.remove(c);
 				var el = tree.getElement(c);
 				applyTreeStyle(c, el);
 				applySceneStyle(c);
 			}
 		}
 		saveDisplayState();
+		showGizmo = !locked;
+		moveGizmoToSelection();
+		for( e in elements )
+			toggleInteractive(e,!locked);
 	}
 
 	function isolate(elts : Array<PrefabElement>) {

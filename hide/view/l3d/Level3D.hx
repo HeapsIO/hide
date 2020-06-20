@@ -107,11 +107,6 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		super.refresh(mode, callback);
 	}
 
-	override function refreshScene() {
-		super.refreshScene();
-		parent.onRefreshScene();
-	}
-
 	override function update(dt) {
 		super.update(dt);
 		parent.onUpdate(dt);
@@ -134,11 +129,6 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 	override function onPrefabChange(p: PrefabElement, ?pname: String) {
 		super.onPrefabChange(p, pname);
 		parent.onPrefabChange(p, pname);
-	}
-
-	override function selectObjects(elts:Array<PrefabElement>, ?mode ) {
-		super.selectObjects(elts, mode);
-		parent.onSelectObjects(elts);
 	}
 
 	override function projectToGround(ray: h3d.col.Ray) {
@@ -274,7 +264,6 @@ class Level3D extends FileView {
 	var sceneFilters : Map<String, Bool>;
 	var statusText : h2d.Text;
 	var posToolTip : h2d.Text;
-	var lastRenderProps : hrt.prefab.RenderProps = null;
 
 	var scene(get, null):  hide.comp.Scene;
 	function get_scene() return sceneEditor.scene;
@@ -575,20 +564,6 @@ class Level3D extends FileView {
 	function onRefresh() {
 	}
 
-	function onRefreshScene() {
-		if(lastRenderProps != null) {
-			lastRenderProps.applyProps(scene.s3d.renderer);
-		}
-		else {
-			// Apply first render props (either defaults or first found)
-			var renderProps = data.getOpt(hrt.prefab.RenderProps, "defaults");
-			if( renderProps == null )
-				renderProps = data.getOpt(hrt.prefab.RenderProps);
-			if( renderProps != null )
-				renderProps.applyProps(scene.s3d.renderer);
-		}
-	}
-
 	override function onDragDrop(items : Array<String>, isDrop : Bool) {
 		var supported = ["fbx", "fx", "l3d", "prefab"];
 		var paths = [];
@@ -671,12 +646,6 @@ class Level3D extends FileView {
 
 	}
 
-	function onSelectObjects(elts: Array<PrefabElement>) {
-		var renderProps = Std.downcast(elts.find(e -> Std.is(e, hrt.prefab.RenderProps)), hrt.prefab.RenderProps);
-		if(renderProps != null)
-			lastRenderProps = renderProps;
-	}
-
 	function applySceneStyle(p: PrefabElement) {
 		var level3d = Std.downcast(p, hrt.prefab.l3d.Level3D); // don't use "to" (Reference)
 		if(level3d != null) {
@@ -693,15 +662,6 @@ class Level3D extends FileView {
 			}
 			for(ctx in sceneEditor.getContexts(obj3d)) {
 				ctx.local3d.visible = visible;
-			}
-			var interIsVisible = !sceneEditor.isLocked(obj3d);
-			var inters = sceneEditor.getInteractives(p);
-			for(inter in inters) {
-				if(inter != null) {
-					var i3d = Std.downcast(inter,h3d.scene.Interactive);
-					if( i3d != null )
-						i3d.visible = interIsVisible;
-				}
 			}
 		}
 		var color = getDisplayColor(p);
