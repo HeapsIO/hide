@@ -77,6 +77,8 @@ class HeightMap extends Object3D {
 	var size = 128.;
 	var heightScale = 0.2;
 	var normalScale = 1.;
+	var tileX = 1;
+	var tileY = 1;
 
 	override function save():{} {
 		var o : Dynamic = super.save();
@@ -84,6 +86,10 @@ class HeightMap extends Object3D {
 		o.size = size;
 		o.heightScale = heightScale;
 		o.normalScale = normalScale;
+		if( o.tileX != 1 || o.tileY != 1 ) {
+			o.tileX = tileX;
+			o.tileY = tileY;
+		}
 		return o;
 	}
 
@@ -93,10 +99,34 @@ class HeightMap extends Object3D {
 		size = obj.size;
 		heightScale = obj.heightScale;
 		normalScale = obj.normalScale;
+		if( obj.tileX != null ) {
+			tileX = obj.tileX;
+			tileY = obj.tileY;
+		} else {
+			tileX = 1;
+			tileY = 1;
+		}
 	}
 
-	function getTextures( ctx : Context, k : HeightMapTextureKind ) {
-		return [for( t in textures ) if( t.kind == k && t.path != null && t.enable ) ctx.loadTexture(t.path)];
+	function getTextures( ctx : Context, k : HeightMapTextureKind, x : Int, y : Int ) {
+		var tl = [];
+		for( t in textures )
+			if( t.kind == k && t.path != null && t.enable ) {
+				var path = t.path;
+				if( x != 0 && y != 0 ) {
+					var parts = path.split("0");
+					switch( parts.length ) {
+					case 2:
+						path = x + parts[0] + y + parts[1];
+					case 3:
+						path = parts[0] + x + parts[1] + y + parts[2];
+					default:
+						// pattern not recognized - should contain 2 zeroes
+					}
+				}
+				tl.push(ctx.loadTexture(path));
+			}
+		return tl;
 	}
 
 	override function makeInstance(ctx:Context):Context {
@@ -115,7 +145,7 @@ class HeightMap extends Object3D {
 		var mesh = cast(ctx.local3d, h3d.scene.Mesh);
 		var grid = cast(mesh.primitive, HeightGrid);
 
-		var hmap = getTextures(ctx,Height)[0];
+		var hmap = getTextures(ctx,Height, 0, 0)[0];
 		var width = hmap == null ? Std.int(size) : hmap.width;
 		var height = hmap == null ? Std.int(size) : hmap.height;
 		var cw = size/width, ch = size/height;
@@ -125,10 +155,37 @@ class HeightMap extends Object3D {
 			grid.addNormals();
 			mesh.primitive = grid;
 		}
+		updateMesh(ctx, mesh, 0, 0);
+		var prev = new Map();
+		for( c in mesh )
+			if( c.name != null && c.name.charCodeAt(0) == '$'.code )
+				prev.set(c.name, c.toMesh());
+		for( x in 0...tileX ) {
+			for( y in 0...tileY ) {
+				var name = "$h_"+x+"_"+y;
+				var sub = prev.get(name);
+				if( sub == null ) {
+					sub = new h3d.scene.Mesh(mesh.primitive, mesh);
+					sub.name = name;
+					sub.material.mainPass.addShader(new HeightMapShader());
+				} else
+					prev.remove(name);
+				sub.x = x * (width * cw);
+				sub.y = y * (height * ch);
+				updateMesh(ctx, sub, x, y);
+			}
+		}
+		for( p in prev ) p.remove();
+	}
 
-		var splat = getTextures(ctx, SplatMap);
-		var albedo = getTextures(ctx, Albedo);
-		var normal = getTextures(ctx,Normal)[0];
+	function updateMesh( ctx : Context, mesh : h3d.scene.Mesh, x : Int, y : Int ) {
+		inline function getTextures(k) return this.getTextures(ctx,k,x,y);
+
+		var prim = cast(mesh.primitive, HeightGrid);
+		var hmap = getTextures(Height)[0];
+		var splat = getTextures(SplatMap);
+		var albedo = getTextures(Albedo);
+		var normal = getTextures(Normal)[0];
 		mesh.material.texture = albedo.shift();
 
 		var shader = mesh.material.mainPass.getShader(HeightMapShader);
@@ -138,7 +195,7 @@ class HeightMap extends Object3D {
 		shader.normalMap = normal;
 		shader.heightScale = heightScale * size * 0.1;
 		shader.normalScale = 1 / normalScale;
-		shader.cellSize.set(cw,ch);
+		shader.cellSize.set(prim.cellWidth,prim.cellHeight);
 		if( hmap != null ) shader.heightOffset.set(1 / hmap.width,1 / hmap.height);
 
 		var scount = hxd.Math.imin(splat.length, albedo.length);
@@ -160,6 +217,12 @@ class HeightMap extends Object3D {
 			</dl>
 			<div class="group" name="Textures">
 			<ul></ul>
+			</div>
+			<div class="group" name="Tiling">
+			<dl>
+				<dt>X</dt><dd><input type="range" min="1" max="16" step="1" field="tileX"/></dd>
+				<dt>Y</dt><dd><input type="range" min="1" max="16" step="1" field="tileY"/></dd>
+			</dl>
 			</div>
 		');
 		var list = props.find("ul");
