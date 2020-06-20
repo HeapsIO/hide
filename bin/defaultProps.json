@@ -11,6 +11,7 @@
 
 	// custom renderers in the form of { "Name" : "MaterialSetupClassName" }
 	"renderers" : {},
+	"defaultRenderer" : "PBR",
 
 	// set default renderer setup
 	"scene.renderProps" : null,

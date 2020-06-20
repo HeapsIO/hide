@@ -565,6 +565,8 @@ class Ide {
 			}
 
 			var render = renderers[0];
+			if( projectConfig.renderer == null )
+				projectConfig.renderer = config.current.get("defaultRenderer");
 			for( r in renderers )
 				if( r.name == projectConfig.renderer ) {
 					render = r;
