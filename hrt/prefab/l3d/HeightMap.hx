@@ -319,9 +319,9 @@ class HeightMap extends Object3D {
 		ectx.properties.add(props,this, (_) -> updateInstance(ctx));
 		for( tex in textures ) {
 			var prevTex = tex.path;
-			var e = new hide.Element('<li>
+			var e = new hide.Element('<li style="position:relative">
 				<input type="checkbox" field="enable"/>
-				<input type="texturepath" style="width:170px" field="path"/>
+				<input type="texturepath" style="width:165px" field="path"/>
 				<select field="kind" style="width:70px">
 					<option value="albedo">Albedo
 					<option value="height">Height

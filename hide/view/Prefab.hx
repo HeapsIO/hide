@@ -62,7 +62,7 @@ class Prefab extends FileView {
 		currentSign = haxe.crypto.Md5.encode(content);
 
 		element.html('
-			<div class="flex vertical">
+			<div class="flex vertical prefabview">
 				<div class="toolbar"></div>
 				<div class="flex-elt">
 					<div class="heaps-scene">

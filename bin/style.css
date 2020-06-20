@@ -224,6 +224,9 @@ input[type=checkbox]:checked:after {
 .hide-scene-layer .jstree-container-ul {
   padding-right: 5px;
 }
+.prefabview .scenetree {
+  max-height: 350px;
+}
 .hide-scenetree {
   flex: 1;
   background-color: #111;
