@@ -61,8 +61,8 @@ class CamController extends h3d.scene.CameraController {
 					}
 					else {
 						var se = level3d.sceneEditor;
-						var fromPt = se.screenToWorld(pushX, pushY);
-						var toPt = se.screenToWorld(e.relX, e.relY);
+						var fromPt = se.screenToGround(pushX, pushY);
+						var toPt = se.screenToGround(e.relX, e.relY);
 						if(fromPt == null || toPt == null)
 							return;
 						var delta = toPt.sub(fromPt).toVector();
@@ -131,30 +131,15 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		parent.onPrefabChange(p, pname);
 	}
 
-	override function projectToGround(ray: h3d.col.Ray) {
-		var polygons = parent.getGroundPolys();
-		var minDist = -1.;
-		for(polygon in polygons) {
-			var ctx = getContext(polygon);
-			var mesh = Std.downcast(ctx.local3d, h3d.scene.Mesh);
-			if(mesh == null)
-				continue;
-			var collider = mesh.getGlobalCollider();
-			var d = collider.rayIntersection(ray, true);
-			if(d > 0 && (d < minDist || minDist < 0)) {
-				minDist = d;
-			}
-		}
-		if(minDist >= 0)
-			return minDist;
-		return super.projectToGround(ray);
+	override function getGroundPrefabs():Array<PrefabElement> {
+		return parent.getGroundPrefabs();
 	}
 
 	override function getNewContextMenu(current: PrefabElement, ?onMake: PrefabElement->Void=null, ?groupByType = true ) {
 		var newItems = super.getNewContextMenu(current, onMake, groupByType);
 
 		function setup(p : PrefabElement) {
-			var proj = screenToWorld(scene.s2d.width/2, scene.s2d.height/2);
+			var proj = screenToGround(scene.s2d.width/2, scene.s2d.height/2);
 			var obj3d = p.to(hrt.prefab.Object3D);
 			var autoCenter = proj != null && obj3d != null && (Type.getClass(p) != Object3D || p.parent != sceneData);
 			if(autoCenter) {
@@ -548,7 +533,7 @@ class Level3D extends FileView {
 	function onUpdate(dt:Float) {
 		if(hxd.Key.isDown(hxd.Key.ALT)) {
 			posToolTip.visible = true;
-			var proj = sceneEditor.screenToWorld(scene.s2d.mouseX, scene.s2d.mouseY);
+			var proj = sceneEditor.screenToGround(scene.s2d.mouseX, scene.s2d.mouseY);
 			posToolTip.text = proj != null ? '${Math.fmt(proj.x)}, ${Math.fmt(proj.y)}, ${Math.fmt(proj.z)}' : '???';
 			posToolTip.setPosition(scene.s2d.mouseX, scene.s2d.mouseY - 12);
 		}
@@ -693,14 +678,16 @@ class Level3D extends FileView {
 		return null;
 	}
 
-	function getGroundPolys() {
+	function getGroundPrefabs() {
 		var groundGroups = data.findAll(p -> if(p.name == "ground") p else null);
-		var ret = [];
+		if( groundGroups.length == 0 )
+			return null;
+		var ret : Array<hrt.prefab.Prefab> = [];
 		for(group in groundGroups)
-			group.findAll(function(p) {
+			group.findAll(function(p) : hrt.prefab.Prefab {
 				if(p.name == "nocollide")
 					return null;
-				return p.to(hrt.prefab.l3d.Polygon);
+				return p;
 			},ret);
 		return ret;
 	}

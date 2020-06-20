@@ -73,6 +73,14 @@ class SceneEditorContext extends hide.prefab.EditContext {
 		}
 	}
 
+	override function screenToGround(x:Float, y:Float, ?forPrefab:hrt.prefab.Prefab) {
+		return editor.screenToGround(x, y, forPrefab);
+	}
+
+	override function positionToGroundZ(x:Float, y:Float, ?forPrefab:hrt.prefab.Prefab):Float {
+		return editor.getZ(x, y, forPrefab);
+	}
+
 	override function getCurrentProps( p : hrt.prefab.Prefab ) {
 		var cur = editor.curEdit;
 		return cur != null && cur.elements[0] == p ? editor.properties.element : new Element();
@@ -1483,7 +1491,7 @@ class SceneEditor {
 	}
 
 	public function getPickTransform(parent: PrefabElement) {
-		var proj = screenToWorld(scene.s2d.mouseX, scene.s2d.mouseY);
+		var proj = screenToGround(scene.s2d.mouseX, scene.s2d.mouseY);
 		if(proj == null) return null;
 
 		var localMat = new h3d.Matrix();
@@ -2228,30 +2236,55 @@ class SceneEditor {
 		};
 	}
 
-	public function getZ(x: Float, y: Float) {
-		var offset = 1000;
+	public function getZ(x: Float, y: Float, ?paintOn : hrt.prefab.Prefab) {
+		var offset = 1000000;
 		var ray = h3d.col.Ray.fromValues(x, y, offset, 0, 0, -1);
-		var dist = projectToGround(ray);
+		var dist = projectToGround(ray, paintOn);
 		if(dist >= 0) {
 			return offset - dist;
 		}
 		return 0.;
 	}
 
-	public function projectToGround(ray: h3d.col.Ray) {
+	function getGroundPrefabs() : Array<PrefabElement> {
+		return sceneData.findAll((p) -> p);
+	}
+
+	public function projectToGround(ray: h3d.col.Ray, ?paintOn : hrt.prefab.Prefab ) {
 		var minDist = -1.;
+
+		for( elt in (paintOn == null ? getGroundPrefabs() : [paintOn]) ) {
+			var obj = Std.downcast(elt, Object3D);
+			if( obj == null ) continue;
+			var ctx = getContext(elt);
+			if( ctx == null ) continue;
+
+			var lray = ray.clone();
+			lray.transform(ctx.local3d.getInvPos());
+			var dist = obj.localRayIntersection(ctx, lray);
+			if( dist > 0 ) {
+				var pt = lray.getPoint(dist);
+				pt.transform(ctx.local3d.getAbsPos());
+				var dist = pt.sub(ray.getPos()).length();
+				if( minDist < 0 || dist < minDist )
+					minDist = dist;
+			}
+		}
+		if( minDist >= 0 )
+			return minDist;
+
 		var zPlane = h3d.col.Plane.Z(0);
 		var pt = ray.intersect(zPlane);
-		if(pt != null) {
+		if( pt != null )
 			minDist = pt.sub(ray.getPos()).length();
-		}
+
 		return minDist;
 	}
 
-	public function screenToWorld(sx: Float, sy: Float) {
+	public function screenToGround(sx: Float, sy: Float, ?paintOn : hrt.prefab.Prefab ) {
 		var camera = scene.s3d.camera;
 		var ray = camera.rayFromScreen(sx, sy);
-		var dist = projectToGround(ray);
+		var dist = projectToGround(ray, paintOn);
 		if(dist >= 0) {
 			return ray.getPoint(dist);
 		}

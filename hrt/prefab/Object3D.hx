@@ -36,6 +36,10 @@ class Object3D extends Prefab {
 		return { x : x, y : y, z : z, scaleX : scaleX, scaleY : scaleY, scaleZ : scaleZ, rotationX : rotationX, rotationY : rotationY, rotationZ : rotationZ };
 	}
 
+	public function localRayIntersection( ctx : Context, ray : h3d.col.Ray ) : Float {
+		return -1;
+	}
+
 	override function load( obj : Dynamic ) {
 		x = obj.x == null ? 0. : obj.x;
 		y = obj.y == null ? 0. : obj.y;

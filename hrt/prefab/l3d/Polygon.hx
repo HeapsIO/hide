@@ -100,6 +100,12 @@ class Polygon extends Object3D {
 		return primitive;
 	}
 
+	override function localRayIntersection(ctx : hrt.prefab.Context, ray:h3d.col.Ray):Float {
+		var prim = makePrimitive();
+		var col = prim.getCollider();
+		return col.rayIntersection(ray, true);
+	}
+
 	public static function createPrimitive( shape : Shape ) {
 		var uvs : Array<Point> = null;
 		var points : Array<Point> = null;
