@@ -401,6 +401,33 @@ input[type=checkbox]:checked:after {
   position: relative;
   height: 100%;
 }
+.hide-tabs.masked {
+  flex: none;
+  position: absolute;
+  height: 20px;
+  width: 20px;
+  right: 0px;
+}
+.hide-tabs.masked > * {
+  display: none !important;
+}
+.hide-tabs.masked > .maskToggle:before {
+  content: "«";
+}
+.hide-tabs > .maskToggle {
+  display: block !important;
+  position: absolute;
+  margin-top: -2px;
+  right: 5px;
+  color: #aaa;
+  font-size: 24px;
+}
+.hide-tabs > .maskToggle:before {
+  content: "»";
+}
+.hide-tabs > .maskToggle:hover {
+  color: white;
+}
 .hide-tabs .tabs-header {
   background-color: #111;
   padding: 2px;

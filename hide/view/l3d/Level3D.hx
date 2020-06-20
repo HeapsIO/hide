@@ -313,6 +313,7 @@ class Level3D extends FileView {
 		tools = new hide.comp.Toolbar(null,element.find(".tools-buttons"));
 		layerToolbar = new hide.comp.Toolbar(null,element.find(".layer-buttons"));
 		tabs = new hide.comp.Tabs(null,element.find(".tabs"));
+		tabs.allowMask();
 		currentVersion = undo.currentID;
 
 		levelProps = new hide.comp.PropsEditor(undo,null,element.find(".level-props"));

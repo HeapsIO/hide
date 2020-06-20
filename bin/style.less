@@ -431,6 +431,35 @@ input[type=checkbox] {
 	position: relative;
 	height: 100%;
 
+	&.masked {
+		& > * {
+			display : none !important;
+		}
+		flex : none;
+		position: absolute;
+		height : 20px;
+		width : 20px;
+		right : 0px;
+		>.maskToggle:before {
+			content : "«";
+		}
+	}
+
+	>.maskToggle {
+		&:before {
+			content : "»";
+		}
+		display : block !important;
+		position : absolute;
+		margin-top : -2px;
+		right : 5px;
+		color : #aaa;
+		font-size: 24px;
+		&:hover {
+			color : white;
+		}
+	}
+
 	.tabs-header {
 		background-color : #111;
 		padding : 2px;
