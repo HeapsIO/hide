@@ -1484,6 +1484,7 @@ class SceneEditor {
 			cameraController2D.initFromScene();
 		} else {
 			scene.s3d.camera.zNear = scene.s3d.camera.zFar = 0;
+			scene.s3d.camera.fovY = 25; // reset to default fov
 			scene.resetCamera(1.5);
 			cameraController.lockZPlanes = scene.s3d.camera.zNear != 0;
 			cameraController.loadFromCamera();
