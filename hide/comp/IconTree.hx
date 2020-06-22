@@ -128,6 +128,7 @@ class IconTree<T:{}> extends Component {
 				return;
 
 			var node = new Element(event.target).closest("li");
+			if( node == null ) return;
    			var i = map.get(node[0].id);
 			if(onDblClick(i.value))
 				return;
