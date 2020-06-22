@@ -70,7 +70,7 @@ class Sao extends RendererFX {
 			sao.shader.microOcclusionChannel = occlu.channel;
 			sao.shader.microOcclusionIntensity = props.microIntensity;
 			sao.shader.noiseScale.set(props.noiseScale, props.noiseScale);
-			if( props.noiseTexturePath != null ) 
+			if( props.noiseTexturePath != null )
 				sao.shader.noiseTexture = loadNoiseTexture(props.noiseTexturePath, Repeat);
 			else
 				sao.shader.noiseTexture = h3d.mat.Texture.genNoise(128);
@@ -95,7 +95,7 @@ class Sao extends RendererFX {
 				<dt>Radius</dt><dd><input type="range" min="0" max="10" field="radius"/></dd>
 				<dt>Bias</dt><dd><input type="range" min="0" max="0.5" field="bias"/></dd>
 				<dt>Texture Size</dt><dd><input type="range" min="0" max="1" field="size"/></dd>
-				<dt>Samples</dt><dd><input type="range" min="3" max="256" field="samples" step="1"/></dd>
+				<dt>Samples</dt><dd><input type="range" min="3" max="255" field="samples" step="1"/></dd>
 				<dt>Micro Intensity</dt><dd><input type="range" min="0" max="1" field="microIntensity"/></dd>
 			</dl>
 		</div>

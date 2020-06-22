@@ -73,6 +73,14 @@ class SceneEditorContext extends hide.prefab.EditContext {
 		}
 	}
 
+	override function screenToGround(x:Float, y:Float, ?forPrefab:hrt.prefab.Prefab) {
+		return editor.screenToGround(x, y, forPrefab);
+	}
+
+	override function positionToGroundZ(x:Float, y:Float, ?forPrefab:hrt.prefab.Prefab):Float {
+		return editor.getZ(x, y, forPrefab);
+	}
+
 	override function getCurrentProps( p : hrt.prefab.Prefab ) {
 		var cur = editor.curEdit;
 		return cur != null && cur.elements[0] == p ? editor.properties.element : new Element();
@@ -150,6 +158,7 @@ class SceneEditor {
 
 	public var view(default, null) : hide.view.FileView;
 	var sceneData : PrefabElement;
+	var lastRenderProps : hrt.prefab.RenderProps;
 
 	public function new(view, data, ?chunkifyS3D : Bool = false) {
 		ide = hide.Ide.inst;
@@ -518,7 +527,10 @@ class SceneEditor {
 				var locked = isLocked(current);
 				menuItems = menuItems.concat([
 					{ label : "Visible", checked : visible, click : function() setVisible(curEdit.elements, !visible) },
-					{ label : "Locked", checked : locked, click : function() setLock(curEdit.elements, locked) },
+					{ label : "Locked", checked : locked, click : function() {
+						locked = !locked;
+						setLock(curEdit.elements, locked);
+					} },
 					{ label : "Select all", click : selectAll },
 					{ label : "Select children", enabled : current != null, click : function() selectObjects(current.flatten()) },
 				]);
@@ -650,6 +662,20 @@ class SceneEditor {
 		var all = sceneData.flatten(hrt.prefab.Prefab);
 		for(elt in all)
 			applySceneStyle(elt);
+
+		if( lastRenderProps == null ) {
+			var renderProps = sceneData.getAll(hrt.prefab.RenderProps);
+			for( r in renderProps )
+				if( @:privateAccess r.isDefault ) {
+					lastRenderProps = r;
+					break;
+				}
+			if( lastRenderProps == null )
+				lastRenderProps = renderProps[0];
+		}
+		if(lastRenderProps != null)
+			lastRenderProps.applyProps(scene.s3d.renderer);
+
 		onRefresh();
 	}
 
@@ -664,6 +690,16 @@ class SceneEditor {
 		var int = elt.makeInteractive(ctx);
 		if( int == null ) return;
 		initInteractive(elt,cast int);
+		if( isLocked(elt) ) toggleInteractive(elt, false);
+	}
+
+	function toggleInteractive( e : PrefabElement, visible : Bool ) {
+		var int = getInteractive(e);
+		if( int == null ) return;
+		var i2d = Std.downcast(int,h2d.Interactive);
+		var i3d = Std.downcast(int,h3d.scene.Interactive);
+		if( i2d != null ) i2d.visible = visible;
+		if( i3d != null ) i3d.visible = visible;
 	}
 
 	function initInteractive( elt : PrefabElement, int : {
@@ -744,7 +780,7 @@ class SceneEditor {
 		}
 		int.onMove = function(e) {
 			if(startDrag != null && hxd.Math.distance(startDrag[0] - scene.s2d.mouseX, startDrag[1] - scene.s2d.mouseY) > 5 ) {
-				if(dragBtn == K.MOUSE_LEFT) {
+				if(dragBtn == K.MOUSE_LEFT ) {
 					if( i3d != null ) {
 						moveGizmoToSelection();
 						gizmo.startMove(MoveXY);
@@ -757,19 +793,6 @@ class SceneEditor {
 				int.preventClick();
 				startDrag = null;
 			}
-			/*
-			if( curDrag != null ) {
-				var dx = scene.s2d.mouseX - curDrag[0];
-				var dy = scene.s2d.mouseY - curDrag[1];
-				var obj = getContext(elt).local2d;
-				obj.x += Math.round(dx / context.shared.root2d.scaleX);
-				obj.y += Math.round(dy / context.shared.root2d.scaleY);
-				var o2d = Std.instance(elt,hrt.prefab.Object2D);
-				o2d.x = obj.x;
-				o2d.y = obj.y;
-				curDrag[0] += dx;
-				curDrag[1] += dy;
-			}*/
 		}
 		interactives.set(elt,cast int);
 	}
@@ -1176,9 +1199,9 @@ class SceneEditor {
 				lockTog = new Element('<i class="fa fa-lock lock-toggle"/>').insertAfter(el.find("a.jstree-anchor").first());
 				lockTog.click(function(e) {
 					if(curEdit.elements.indexOf(obj3d) >= 0)
-						setLock(curEdit.elements, isLocked(obj3d));
+						setLock(curEdit.elements, !isLocked(obj3d));
 					else
-						setLock([obj3d], isLocked(obj3d));
+						setLock([obj3d], !isLocked(obj3d));
 
 					e.preventDefault();
 					e.stopPropagation();
@@ -1383,7 +1406,6 @@ class SceneEditor {
 	}
 
 	function setObjectSelected( p : PrefabElement, ctx : hrt.prefab.Context, b : Bool ) {
-		showGizmo = true;
 		return p.setSelected(ctx, b);
 	}
 
@@ -1428,6 +1450,12 @@ class SceneEditor {
 			});
 
 			curEdit = edit;
+			showGizmo = false;
+			for( e in elts )
+				if( !isLocked(e) ) {
+					showGizmo = true;
+					break;
+				}
 			setupGizmo();
 		}
 
@@ -1456,6 +1484,7 @@ class SceneEditor {
 			cameraController2D.initFromScene();
 		} else {
 			scene.s3d.camera.zNear = scene.s3d.camera.zFar = 0;
+			scene.s3d.camera.fovY = 25; // reset to default fov
 			scene.resetCamera(1.5);
 			cameraController.lockZPlanes = scene.s3d.camera.zNear != 0;
 			cameraController.loadFromCamera();
@@ -1463,7 +1492,7 @@ class SceneEditor {
 	}
 
 	public function getPickTransform(parent: PrefabElement) {
-		var proj = screenToWorld(scene.s2d.mouseX, scene.s2d.mouseY);
+		var proj = screenToGround(scene.s2d.mouseX, scene.s2d.mouseY);
 		if(proj == null) return null;
 
 		var localMat = new h3d.Matrix();
@@ -1756,19 +1785,23 @@ class SceneEditor {
 		saveDisplayState();
 	}
 
-	public function setLock(elements : Array<PrefabElement>, unlocked: Bool) {
+	function setLock(elements : Array<PrefabElement>, locked: Bool) {
 		for(o in elements) {
 			for(c in o.flatten(Object3D) ) {
-				if( unlocked )
-					lockList.remove(c);
-				else
+				if( locked )
 					lockList.set(c, true);
+				else
+					lockList.remove(c);
 				var el = tree.getElement(c);
 				applyTreeStyle(c, el);
 				applySceneStyle(c);
 			}
 		}
 		saveDisplayState();
+		showGizmo = !locked;
+		moveGizmoToSelection();
+		for( e in elements )
+			toggleInteractive(e,!locked);
 	}
 
 	function isolate(elts : Array<PrefabElement>) {
@@ -2204,30 +2237,55 @@ class SceneEditor {
 		};
 	}
 
-	public function getZ(x: Float, y: Float) {
-		var offset = 1000;
+	public function getZ(x: Float, y: Float, ?paintOn : hrt.prefab.Prefab) {
+		var offset = 1000000;
 		var ray = h3d.col.Ray.fromValues(x, y, offset, 0, 0, -1);
-		var dist = projectToGround(ray);
+		var dist = projectToGround(ray, paintOn);
 		if(dist >= 0) {
 			return offset - dist;
 		}
 		return 0.;
 	}
 
-	public function projectToGround(ray: h3d.col.Ray) {
+	function getGroundPrefabs() : Array<PrefabElement> {
+		return sceneData.findAll((p) -> p);
+	}
+
+	public function projectToGround(ray: h3d.col.Ray, ?paintOn : hrt.prefab.Prefab ) {
 		var minDist = -1.;
+
+		for( elt in (paintOn == null ? getGroundPrefabs() : [paintOn]) ) {
+			var obj = Std.downcast(elt, Object3D);
+			if( obj == null ) continue;
+			var ctx = getContext(elt);
+			if( ctx == null ) continue;
+
+			var lray = ray.clone();
+			lray.transform(ctx.local3d.getInvPos());
+			var dist = obj.localRayIntersection(ctx, lray);
+			if( dist > 0 ) {
+				var pt = lray.getPoint(dist);
+				pt.transform(ctx.local3d.getAbsPos());
+				var dist = pt.sub(ray.getPos()).length();
+				if( minDist < 0 || dist < minDist )
+					minDist = dist;
+			}
+		}
+		if( minDist >= 0 )
+			return minDist;
+
 		var zPlane = h3d.col.Plane.Z(0);
 		var pt = ray.intersect(zPlane);
-		if(pt != null) {
+		if( pt != null )
 			minDist = pt.sub(ray.getPos()).length();
-		}
+
 		return minDist;
 	}
 
-	public function screenToWorld(sx: Float, sy: Float) {
+	public function screenToGround(sx: Float, sy: Float, ?paintOn : hrt.prefab.Prefab ) {
 		var camera = scene.s3d.camera;
 		var ray = camera.rayFromScreen(sx, sy);
-		var dist = projectToGround(ray);
+		var dist = projectToGround(ray, paintOn);
 		if(dist >= 0) {
 			return ray.getPoint(dist);
 		}

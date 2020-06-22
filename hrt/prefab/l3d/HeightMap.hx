@@ -77,6 +77,9 @@ class HeightMap extends Object3D {
 	var size = 128.;
 	var heightScale = 0.2;
 	var normalScale = 1.;
+	var tileX = 1;
+	var tileY = 1;
+	var heightTexturesCache : Array<hxd.Pixels>;
 
 	override function save():{} {
 		var o : Dynamic = super.save();
@@ -84,6 +87,10 @@ class HeightMap extends Object3D {
 		o.size = size;
 		o.heightScale = heightScale;
 		o.normalScale = normalScale;
+		if( o.tileX != 1 || o.tileY != 1 ) {
+			o.tileX = tileX;
+			o.tileY = tileY;
+		}
 		return o;
 	}
 
@@ -93,10 +100,117 @@ class HeightMap extends Object3D {
 		size = obj.size;
 		heightScale = obj.heightScale;
 		normalScale = obj.normalScale;
+		if( obj.tileX != null ) {
+			tileX = obj.tileX;
+			tileY = obj.tileY;
+		} else {
+			tileX = 1;
+			tileY = 1;
+		}
 	}
 
-	function getTextures( ctx : Context, k : HeightMapTextureKind ) {
-		return [for( t in textures ) if( t.kind == k && t.path != null && t.enable ) ctx.loadTexture(t.path)];
+	override function localRayIntersection(ctx:Context, ray:h3d.col.Ray):Float {
+		if( ray.lz > 0 )
+			return -1; // only from top
+		var maxZ = getHScale() * 100;
+		var b = h3d.col.Bounds.fromValues(0,0,0,size * tileX, size * tileY, maxZ);
+		var dist = b.rayIntersection(ray, false);
+		if( dist < 0 )
+			return -1;
+		var prim = cast(ctx.local3d.toMesh().primitive, HeightGrid);
+		var pt = ray.getPoint(dist);
+		var m = hxd.Math.min(prim.cellWidth, prim.cellHeight) * 0.5;
+		var isTiled = tileX != 1 || tileY != 1;
+		var curX = -1, curY = -1, curMap = null, offX = 0., offY = 0., cw = 0., ch = 0.;
+		if( !isTiled ) {
+			curX = 0;
+			curY = 0;
+			curMap = getHeightMap(0,0);
+			cw = curMap.width / size;
+			ch = curMap.height / size;
+		}
+		var prevH = pt.z;
+		var hscale = getHScale();
+		while( true ) {
+			pt.x += ray.lx * m;
+			pt.y += ray.ly * m;
+			pt.z += ray.lz * m;
+			if( !b.contains(pt) )
+				break;
+			if( isTiled ) {
+				var px = Std.int(pt.x / size);
+				var py = Std.int(pt.y / size);
+				if( px != curX || py != curY ) {
+					curX = px;
+					curY = py;
+					offX = -px * size;
+					offY = -py * size;
+					curMap = getHeightMap(px, py);
+					cw = curMap.width / size;
+					ch = curMap.height / size;
+				}
+			}
+			var ix = Std.int((pt.x + offX)*cw);
+			var iy = Std.int((pt.y + offY)*ch);
+			var h = curMap.bytes.getFloat( (ix + iy * curMap.width) << 2 );
+			h *= hscale;
+			if( pt.z < h ) {
+				// todo : fix interpolation using getZ dichotomy
+				var k = 1 - (prevH - (pt.z - ray.lz * m)) / (ray.lz * m - (h - prevH));
+				pt.x -= k * ray.lx * m;
+				pt.y -= k * ray.ly * m;
+				pt.z -= k * ray.lz * m;
+				return pt.sub(ray.getPos()).length();
+			}
+			prevH = h;
+		}
+		return -1;
+	}
+
+	function getHeightMap( x : Int, y : Int ) {
+		var id = x + y * tileX;
+		if( heightTexturesCache == null )
+			heightTexturesCache = [];
+		else {
+			var b = heightTexturesCache[id];
+			if( b != null ) return b;
+		}
+		var pix : hxd.Pixels = null;
+		for( t in textures )
+			if( t.kind == Height && t.enable && t.path != null ) {
+				var path = resolveTexturePath(t.path, x, y);
+				pix = try hxd.res.Loader.currentInstance.load(path).toImage().getPixels() catch( e : hxd.res.NotFound ) null;
+				break;
+			}
+		if( pix == null ) pix = hxd.Pixels.alloc(1, 1, R32F);
+		pix.convert(R32F);
+		heightTexturesCache[id] = pix;
+		return pix;
+	}
+
+	function resolveTexturePath( path : String, x : Int, y : Int ) {
+		if( x != 0 && y != 0 ) {
+			var parts = path.split("0");
+			switch( parts.length ) {
+			case 2:
+				path = x + parts[0] + y + parts[1];
+			case 3:
+				path = parts[0] + x + parts[1] + y + parts[2];
+			default:
+				// pattern not recognized - should contain 2 zeroes
+			}
+		}
+		return path;
+	}
+
+	function getTextures( ctx : Context, k : HeightMapTextureKind, x : Int, y : Int ) {
+		var tl = [];
+		for( t in textures )
+			if( t.kind == k && t.path != null && t.enable ) {
+				var path = resolveTexturePath(t.path,x,y);
+				tl.push(ctx.loadTexture(path));
+			}
+		return tl;
 	}
 
 	override function makeInstance(ctx:Context):Context {
@@ -112,10 +226,12 @@ class HeightMap extends Object3D {
 	override function updateInstance( ctx : Context, ?propName : String ) {
 		super.updateInstance(ctx, propName);
 
+		heightTexturesCache = null;
+
 		var mesh = cast(ctx.local3d, h3d.scene.Mesh);
 		var grid = cast(mesh.primitive, HeightGrid);
 
-		var hmap = getTextures(ctx,Height)[0];
+		var hmap = getTextures(ctx,Height, 0, 0)[0];
 		var width = hmap == null ? Std.int(size) : hmap.width;
 		var height = hmap == null ? Std.int(size) : hmap.height;
 		var cw = size/width, ch = size/height;
@@ -125,10 +241,41 @@ class HeightMap extends Object3D {
 			grid.addNormals();
 			mesh.primitive = grid;
 		}
+		updateMesh(ctx, mesh, 0, 0);
+		var prev = new Map();
+		for( c in mesh )
+			if( c.name != null && c.name.charCodeAt(0) == '$'.code )
+				prev.set(c.name, c.toMesh());
+		for( x in 0...tileX ) {
+			for( y in 0...tileY ) {
+				var name = "$h_"+x+"_"+y;
+				var sub = prev.get(name);
+				if( sub == null ) {
+					sub = new h3d.scene.Mesh(mesh.primitive, mesh);
+					sub.name = name;
+					sub.material.mainPass.addShader(new HeightMapShader());
+				} else
+					prev.remove(name);
+				sub.x = x * (width * cw);
+				sub.y = y * (height * ch);
+				updateMesh(ctx, sub, x, y);
+			}
+		}
+		for( p in prev ) p.remove();
+	}
 
-		var splat = getTextures(ctx, SplatMap);
-		var albedo = getTextures(ctx, Albedo);
-		var normal = getTextures(ctx,Normal)[0];
+	function getHScale() {
+		return heightScale * size * 0.1;
+	}
+
+	function updateMesh( ctx : Context, mesh : h3d.scene.Mesh, x : Int, y : Int ) {
+		inline function getTextures(k) return this.getTextures(ctx,k,x,y);
+
+		var prim = cast(mesh.primitive, HeightGrid);
+		var hmap = getTextures(Height)[0];
+		var splat = getTextures(SplatMap);
+		var albedo = getTextures(Albedo);
+		var normal = getTextures(Normal)[0];
 		mesh.material.texture = albedo.shift();
 
 		var shader = mesh.material.mainPass.getShader(HeightMapShader);
@@ -136,9 +283,9 @@ class HeightMap extends Object3D {
 		shader.heightMap = hmap;
 		shader.hasNormal = normal != null;
 		shader.normalMap = normal;
-		shader.heightScale = heightScale * size * 0.1;
+		shader.heightScale = getHScale();
 		shader.normalScale = 1 / normalScale;
-		shader.cellSize.set(cw,ch);
+		shader.cellSize.set(prim.cellWidth,prim.cellHeight);
 		if( hmap != null ) shader.heightOffset.set(1 / hmap.width,1 / hmap.height);
 
 		var scount = hxd.Math.imin(splat.length, albedo.length);
@@ -161,14 +308,20 @@ class HeightMap extends Object3D {
 			<div class="group" name="Textures">
 			<ul></ul>
 			</div>
+			<div class="group" name="Tiling">
+			<dl>
+				<dt>X</dt><dd><input type="range" min="1" max="16" step="1" field="tileX"/></dd>
+				<dt>Y</dt><dd><input type="range" min="1" max="16" step="1" field="tileY"/></dd>
+			</dl>
+			</div>
 		');
 		var list = props.find("ul");
 		ectx.properties.add(props,this, (_) -> updateInstance(ctx));
 		for( tex in textures ) {
 			var prevTex = tex.path;
-			var e = new hide.Element('<li>
+			var e = new hide.Element('<li style="position:relative">
 				<input type="checkbox" field="enable"/>
-				<input type="texturepath" style="width:170px" field="path"/>
+				<input type="texturepath" style="width:165px" field="path"/>
 				<select field="kind" style="width:70px">
 					<option value="albedo">Albedo
 					<option value="height">Height

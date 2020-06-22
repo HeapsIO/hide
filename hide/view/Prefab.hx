@@ -62,7 +62,7 @@ class Prefab extends FileView {
 		currentSign = haxe.crypto.Md5.encode(content);
 
 		element.html('
-			<div class="flex vertical">
+			<div class="flex vertical prefabview">
 				<div class="toolbar"></div>
 				<div class="flex-elt">
 					<div class="heaps-scene">
@@ -80,6 +80,7 @@ class Prefab extends FileView {
 		');
 		tools = new hide.comp.Toolbar(null,element.find(".toolbar"));
 		tabs = new hide.comp.Tabs(null,element.find(".tabs"));
+		tabs.allowMask();
 		sceneEditor = new PrefabSceneEditor(this, data);
 		element.find(".scenetree").first().append(sceneEditor.tree.element);
 		element.find(".tab").first().append(sceneEditor.properties.element);

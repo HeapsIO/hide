@@ -31,6 +31,10 @@ class Tabs extends Component {
 		return header.find('[index=$index]');
 	}
 
+	public function allowMask() {
+		new Element('<a href="#" class="maskToggle"></a>').prependTo(element).click((_) -> element.toggleClass("masked"));
+	}
+
 	function set_currentTab( e : Element ) {
 		var index = Std.parseInt(e.attr("index"));
 		getTabs().hide();

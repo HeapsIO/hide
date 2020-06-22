@@ -28,17 +28,18 @@ class Camera extends Object3D {
 	public function applyTo(c: h3d.Camera) {
 		var front = getTransform().front();
 		var ray = h3d.col.Ray.fromValues(x, y, z, front.x, front.y, front.z);
+		c.pos.set(x, y, z);
+		c.target = c.pos.add(front);
+
+		// this does not change camera rotation but allows for better navigation in editor
 		var plane = h3d.col.Plane.Z();
 		var pt = ray.intersect(plane);
-		c.pos.set(x, y, z);
-		if(pt != null)
+		if( pt != null && pt.sub(c.pos.toPoint()).length() > 1 )
 			c.target = pt.toVector();
-		else
-			c.target = c.pos.add(front);
+
 		c.fovY = fovY;
 		c.zFar = zFar;
 	}
-
 
 	#if editor
 
@@ -54,6 +55,7 @@ class Camera extends Object3D {
 				<dl>
 					<dt>Fov Y</dt><dd><input type="range" min="0" max="180" field="fovY"/></dd>
 					<dt>Z Far</dt><dd><input type="range" min="0" max="180" field="zFar"/></dd>
+					<dt></dt><dd><input class="copy" type="button" value="Copy Current"/></dd>
 					<dt></dt><dd><input class="preview" type="button" value="Preview" /></dd>
 					<dt></dt><dd><input class="reset" type="button" value="Reset" /></dd>
 				</dl>
@@ -68,6 +70,27 @@ class Camera extends Object3D {
 			}
 		});
 
+		props.find(".copy").click(function(e) {
+			var cam = ctx.scene.s3d.camera;
+			var q = new h3d.Quat();
+			q.initDirection(cam.target.sub(cam.pos));
+			var angles = q.toEuler();
+			this.rotationX = hxd.Math.fmt(angles.x * 180 / Math.PI);
+			this.rotationY = hxd.Math.fmt(angles.y * 180 / Math.PI);
+			this.rotationZ = hxd.Math.fmt(angles.z * 180 / Math.PI);
+			this.scaleX = this.scaleY = this.scaleZ = 1;
+			this.x = hxd.Math.fmt(cam.pos.x);
+			this.y = hxd.Math.fmt(cam.pos.y);
+			this.z = hxd.Math.fmt(cam.pos.z);
+			this.zFar = cam.zFar;
+			this.fovY = cam.fovY;
+			applyTo(cam);
+			ctx.scene.editor.cameraController.lockZPlanes = true;
+			ctx.scene.editor.cameraController.loadFromCamera();
+			ctx.rebuildProperties();
+		});
+
+
 		props.find(".preview").click(function(e) {
 			applyTo(ctx.scene.s3d.camera);
 			ctx.scene.editor.cameraController.lockZPlanes = true;
@@ -75,9 +98,7 @@ class Camera extends Object3D {
 		});
 
 		props.find(".reset").click(function(e) {
-			ctx.scene.s3d.camera.zFar = 150;
-			ctx.scene.editor.cameraController.lockZPlanes = false;
-			ctx.scene.editor.cameraController.loadFromCamera();
+			ctx.scene.editor.resetCamera();
 		});
 	}
 
