@@ -23,6 +23,8 @@ class Ide {
 	public var isCDB = false;
 	public var isDebugger = false;
 
+	public var gamePad(default,null) : hxd.Pad;
+
 	var databaseFile : String;
 	var databaseDiff : String;
 	var pakFile : hxd.fmt.pak.FileSystem;
@@ -56,6 +58,7 @@ class Ide {
 	static var firstInit = true;
 
 	function new() {
+		initPad();
 		isCDB = Sys.getEnv("HIDE_START_CDB") == "1" || nw.App.manifest.name == "CDB";
 		isDebugger = Sys.getEnv("HIDE_DEBUG") == "1";
 		function wait() {
@@ -66,6 +69,11 @@ class Ide {
 			startup();
 		}
 		wait();
+	}
+
+	function initPad() {
+		gamePad = hxd.Pad.createDummy();
+		hxd.Pad.wait((p) -> gamePad = p);
 	}
 
 	function startup() {
@@ -381,6 +389,7 @@ class Ide {
 
 	function mainLoop() {
 		hxd.Timer.update();
+		@:privateAccess hxd.Pad.syncPads();
 		for( f in updates )
 			f();
 	}
