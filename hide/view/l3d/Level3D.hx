@@ -132,7 +132,10 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 	}
 
 	override function getGroundPrefabs():Array<PrefabElement> {
-		return parent.getGroundPrefabs();
+		var prefabs = parent.getGroundPrefabs();
+		if( prefabs != null )
+			return prefabs;
+		return super.getGroundPrefabs();
 	}
 
 	override function getNewContextMenu(current: PrefabElement, ?onMake: PrefabElement->Void=null, ?groupByType = true ) {
