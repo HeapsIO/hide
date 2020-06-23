@@ -47,17 +47,21 @@ class HeightMapShader extends hxsl.Shader {
 					var px1 = getPoint(1, 0);
 					var py1 = getPoint(0, 1);
 					var n = px1.cross(py1) + py1.cross(px0) + px0.cross(py0) + py0.cross(px1);
-					n.z *= normalScale;
-					transformedNormal = (n.normalize() * global.modelView.mat3()).normalize();
+					setNormal(n);
 				}
 			}
+		}
+
+		function setNormal(n:Vec3) {
+			transformedNormal = (n.normalize() * global.modelView.mat3()).normalize();
 		}
 
 		function __init__fragment() {
 			if( hasNormal ) {
 				var n = unpackNormal(normalMap.get(calculatedUV));
-				n.z *= normalScale;
-				transformedNormal = (n * global.modelView.mat3()).normalize();
+				n = n.normalize();
+				n.xy *= normalScale;
+				setNormal(n);
 			}
 			if( SplatCount > 0 ) {
 				var color = pixelColor;
@@ -284,7 +288,7 @@ class HeightMap extends Object3D {
 		shader.hasNormal = normal != null;
 		shader.normalMap = normal;
 		shader.heightScale = getHScale();
-		shader.normalScale = 1 / normalScale;
+		shader.normalScale = heightScale * normalScale;
 		shader.cellSize.set(prim.cellWidth,prim.cellHeight);
 		if( hmap != null ) shader.heightOffset.set(1 / hmap.width,1 / hmap.height);
 

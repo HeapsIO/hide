@@ -184,7 +184,7 @@ class SceneEditor {
 		scene.editor = this;
 		scene.onReady = onSceneReady;
 		scene.onResize = function() {
-			cameraController2D.toTarget();
+			if( cameraController2D != null ) cameraController2D.toTarget();
 			onResize();
 		};
 
@@ -322,6 +322,15 @@ class SceneEditor {
 		c.zoomAmount = 1.05;
 		c.smooth = 0.7;
 		return c;
+	}
+
+	public function setFullScreen( b : Bool ) {
+		view.fullScreen = b;
+		if( b ) {
+			view.element.find(".tabs").hide();
+		} else {
+			view.element.find(".tabs").show();
+		}
 	}
 
 	function makeCamController2D() {
