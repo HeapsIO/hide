@@ -2,7 +2,7 @@ package hrt.prefab.l3d;
 
 class GameController extends Object3D {
 
-	public var moveSpeed : Float = 10.;
+	public var moveSpeed : Float = 1.;
 	public var followGround : Bool = true;
 	public var cameraFollowGround : Bool = true;
 
@@ -61,6 +61,7 @@ class GameController extends Object3D {
 
 		function onUpdate( dt : Float ) {
 			var pad = ctx.ide.gamePad;
+			var force = false;
 			if( pad.isPressed(pad.config.start) ) {
 				active = !active;
 				if( !active ) {
@@ -70,12 +71,13 @@ class GameController extends Object3D {
 					camSave = { pos : cam.pos.clone(), target : cam.target.clone() };
 					if( obj.numChildren == 0 )
 						dummy = new h3d.scene.Box(obj);
+					force = true;
 				}
 			}
 			if( !active )
 				return;
 
-			if( pad.xAxis == 0 && pad.yAxis == 0 )
+			if( !force && pad.xAxis == 0 && pad.yAxis == 0 )
 				return;
 
 
