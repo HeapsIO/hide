@@ -189,7 +189,7 @@ class HeightMap extends Object3D {
 	}
 
 	function resolveTexturePath( path : String, x : Int, y : Int ) {
-		if( x != 0 && y != 0 ) {
+		if( x != 0 || y != 0 ) {
 			var parts = path.split("0");
 			switch( parts.length ) {
 			case 2:
