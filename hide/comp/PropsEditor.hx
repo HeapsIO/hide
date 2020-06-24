@@ -320,8 +320,10 @@ class PropsField extends Component {
 				onChange(false);
 			};
 			return;
-		case "file":
-			fselect = new hide.comp.FileSelect(f.attr("extensions").split(" "), null, f);
+		case "fileselect":
+			var exts = f.attr("extensions");
+			if( exts == null ) exts = "*";
+			fselect = new hide.comp.FileSelect(exts.split(" "), null, f);
 			fselect.path = current;
 			fselect.onChange = function() {
 				undo(function() {
