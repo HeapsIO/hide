@@ -69,7 +69,7 @@ class MeshSprayObject extends h3d.scene.Object {
 		var chk = 0.;
 		for( c in children ) {
 			if( c.alwaysSync ) continue;
-			chk += c.x - c.y + c.scaleX + c.scaleY + c.scaleZ + c.qRot.x + c.qRot.y + c.qRot.z;
+			chk += c.x - c.y + c.z * 1.5456 + c.scaleX + c.scaleY + c.scaleZ + c.qRot.x + c.qRot.y + c.qRot.z;
 		}
 		if( chk != currentChk ) {
 			currentChk = chk;
