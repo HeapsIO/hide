@@ -1311,12 +1311,14 @@ class SceneEditor {
 		scene.init(ctx.local3d);
 	}
 
-	public function addObject(elts : Array<PrefabElement>, selectObj : Bool = true, doRefresh : Bool = true) {
+	public function addObject(elts : Array<PrefabElement>, selectObj : Bool = true, doRefresh : Bool = true, isTemporary = false) {
 		for (e in elts) {
 			makeInstance(e);
 		}
 		if (doRefresh)
 			refresh(Partial, if (selectObj) () -> selectObjects(elts, NoHistory) else null);
+		if( isTemporary )
+			return;
 		undo.change(Custom(function(undo) {
 			var fullRefresh = false;
 			if(undo) {

@@ -753,7 +753,7 @@ class MeshSpray extends Object3D {
 			}
 
 			if (previewModels.length > 0) {
-				sceneEditor.addObject(previewModels, false, false);
+				sceneEditor.addObject(previewModels, false, false, true);
 			}
 		}
 	}
