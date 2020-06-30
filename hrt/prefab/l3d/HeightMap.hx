@@ -91,10 +91,15 @@ class HeightMap extends Object3D {
 	var objects : {
 		var file : String;
 		var assetsPath : String;
+		var scale : Float;
 	};
 
 	var heightTexturesCache : Array<hxd.Pixels>;
 	var objectsCache : Array<{ obj : String, x : Float, y : Float, scale : Float, rot : Float, tint : Int }>;
+	#if editor
+	var missingObjects : Map<String,Bool> = new Map();
+	var checkModels : Bool = true;
+	#end
 
 	override function save():{} {
 		var o : Dynamic = super.save();
@@ -316,16 +321,38 @@ class HeightMap extends Object3D {
 				world.name = "$world";
 			} else @:privateAccess {
 				prev.remove(world.name);
-				for( c in world.allChunks )
+				for( c in world.allChunks ) {
 					world.cleanChunk(c);
+					c.elements = [];
+				}
 			}
+			var parts = objects.assetsPath.split("$");
 			for( o in objectsCache ) {
 				var m = models.get(o.obj);
 				if( m == null ) {
-					var path = objects.assetsPath + "/" + o.obj;
+					var path = parts.length > 1 ? parts.join(o.obj) : objects.assetsPath + "/" + o.obj;
 					var r = try hxd.res.Loader.currentInstance.load(path + ".FBX").toModel() catch( e : hxd.res.NotFound )
-						try hxd.res.Loader.currentInstance.load(path + ".fbx").toModel() catch( e : hxd.res.NotFound ) null;
-					m = r == null ? nullModel : world.loadModel(r);
+						try hxd.res.Loader.currentInstance.load(path + ".fbx").toModel() catch( e : hxd.res.NotFound ) {
+							#if editor
+							if( checkModels && !missingObjects.exists(path) ) {
+								missingObjects.set(path, true);
+								hide.Ide.inst.error(path+".fbx is missing");
+							}
+							#end
+							null;
+						};
+					m = nullModel;
+					if( r != null ) {
+						#if editor
+						try {
+							m = world.loadModel(r);
+						} catch( e : Dynamic ) {
+							hide.Ide.inst.error(e+'\n(while loading ${r.entry.path})');
+						}
+						#else
+						m = world.loadModel(r);
+						#end
+					}
 					models.set(o.obj, m);
 				}
 				if( m == nullModel ) continue;
@@ -343,8 +370,9 @@ class HeightMap extends Object3D {
 		if( data == null ) return;
 		objectsCache = [];
 		var xml = new haxe.xml.Access(Xml.parse(data.toString()).firstElement());
-		var resolution = Std.parseFloat(xml.node.Surface.att.ResolutionX);
-		var scale = size * tileX / resolution;
+		var terrainWidth = Std.parseFloat(xml.node.Surface.att.Width);
+		var scale = size * tileX / terrainWidth;
+		var localScale = objects.scale * scale;
 		for( layer in xml.node.Objects.node.Layers.nodes.Layer ) {
 			var obj = layer.node.Object;
 			var name = obj.att.MeshAssetFileName;
@@ -353,11 +381,10 @@ class HeightMap extends Object3D {
 				var p = i * 40;
 				var x = data.getFloat(p); p += 4;
 				p += 4; // skip
-				var y = resolution - data.getFloat(p); p += 4;
+				var y = terrainWidth - data.getFloat(p); p += 4;
 
 				x *= scale;
 				y *= scale;
-				if( x < 0 || y < 0 || x >= size * tileX || y >= size * tileY ) continue;
 
 				var scW = data.getFloat(p); p += 4;
 				var scH = data.getFloat(p); p += 4;
@@ -372,7 +399,7 @@ class HeightMap extends Object3D {
 					obj : name,
 					x : x,
 					y : y,
-					scale : scW * scale,
+					scale : scW * localScale,
 					rot : rotY,
 					tint : tint,
 				});
@@ -497,20 +524,26 @@ class HeightMap extends Object3D {
 				objects = {
 					file : "",
 					assetsPath : "",
+					scale : 1,
 				};
+				checkModels = false;
 				ectx.rebuildProperties();
+				checkModels = true;
 			});
 		} else {
 			var e = new hide.Element('
 			<dl>
 				<dt>File</dt><dd><input type="fileselect" field="file"/></dd>
 				<dt>Assets Path</dt><dd><input field="assetsPath"/></dd>
+				<dt>Scale</dt><dd><input type="range" min="0" max="2" field="scale"/></dd>
 				<dt></dt><dd><a class="button" href="#">Remove</a></dd>
 			</dl>
 			');
 			ectx.properties.build(e, objects, function(_) {
 				objectsCache = null;
+				checkModels = false;
 				updateInstance(ctx);
+				checkModels = true;
 			});
 			e.appendTo(objs).find("a.button").click(function(_) {
 				objects = null;
