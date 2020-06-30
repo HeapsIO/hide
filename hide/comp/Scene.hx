@@ -436,7 +436,11 @@ class Scene extends Component implements h3d.IDrawable {
 			return hmd;
 
 		var relPath = StringTools.startsWith(path, ide.resourceDir) ? path.substr(ide.resourceDir.length+1) : path;
-		var e = try hxd.res.Loader.currentInstance.load(relPath) catch( e : hxd.res.NotFound ) null;
+		var e;
+		if( ide.isDebugger )
+			e = hxd.res.Loader.currentInstance.load(relPath);
+		else
+			e = try hxd.res.Loader.currentInstance.load(relPath) catch( e : hxd.res.NotFound ) null;
 		if( e == null || reload ) {
 			var data = sys.io.File.getBytes(fullPath);
 			if( data.get(0) != 'H'.code ) {
