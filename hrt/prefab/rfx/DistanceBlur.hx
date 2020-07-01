@@ -90,7 +90,7 @@ class DistanceBlur extends RendererFX {
 		blurPass.pass.setBlendMode(Alpha);
 	}
 
-	override function apply(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
+	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
 		var p : DistanceBlurProps = props;
 		if( step == AfterTonemapping ) {
 			var ctx = r.ctx;
@@ -105,7 +105,7 @@ class DistanceBlur extends RendererFX {
 			blurPass.shader.farEndIntensity = p.farEndIntensity;
 			var lbrBlurred : h3d.mat.Texture = ctx.getGlobal("ldrBlurred");
 			if( lbrBlurred == null ) {
-				var ldr : h3d.mat.Texture = ctx.getGlobal("ldr");
+				var ldr : h3d.mat.Texture = ctx.getGlobal("ldrMap");
 				lbrBlurred = r.allocTarget("ldrBlurred", false, 0.25, RGBA);
 				r.copy(ldr, lbrBlurred);
 				lbrBlur.apply(ctx, lbrBlurred);

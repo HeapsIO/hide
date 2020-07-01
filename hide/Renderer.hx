@@ -158,27 +158,25 @@ class PbrRenderer extends h3d.scene.pbr.Renderer {
 		return props;
 	}
 
-	override function mainDraw() {
-		renderPass(output, get("default"), frontToBack);
-		renderPass(output, get("terrain"));
-		renderPass(output, get("alpha"), backToFront);
-		renderPass(output, get("additive"));
+	override function end() {
+		switch( currentStep ) {
+		case MainDraw:
+			var outlineTex = allocTarget("outline", false);
+			setTarget(outlineTex);
+			clear(0);
+			draw("highlight");
 
-		var outlineTex = allocTarget("outline", false);
-		setTarget(outlineTex);
-		clear(0);
-		draw("highlight");
-
-		var outlineBlurTex = allocTarget("outlineBlur", false);
-		outlineBlur.apply(ctx, outlineTex, outlineBlurTex);
-		outline.texture = outlineBlurTex;
+			var outlineBlurTex = allocTarget("outlineBlur", false);
+			outlineBlur.apply(ctx, outlineTex, outlineBlurTex);
+			outline.texture = outlineBlurTex;
+		case AfterTonemapping:
+			renderPass(defaultPass, get("debuggeom"), backToFront);
+			renderPass(defaultPass, get("debuggeom_alpha"), backToFront);
+			renderPass(defaultPass, get("ui"), backToFront);
+		default:
+		}
+		super.end();
 	}
 
-	override function postDraw() {
-		renderPass(defaultPass, get("debuggeom"), backToFront);
-		renderPass(defaultPass, get("debuggeom_alpha"), backToFront);
-		renderPass(defaultPass, get("overlay"), backToFront);
-		renderPass(defaultPass, get("ui"), backToFront);
-	}
 }
 
