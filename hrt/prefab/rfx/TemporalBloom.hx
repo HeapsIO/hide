@@ -66,7 +66,7 @@ class DualFilterUp extends h3d.shader.ScreenShader {
 
 		@param var source : Sampler2D;
 		@param var halfPixel : Vec2;
-		
+
 		function fragment() {
 			var sum = vec3(0,0,0);
 			sum += texture(source, calculatedUV + vec2(-halfPixel.x * 2.0, 0.0)).rgb;
@@ -116,7 +116,7 @@ class Threshold extends h3d.shader.ScreenShader {
 				var prevPos =  vec4(pixelPos, 1.0) * prevCamMat;
 				prevPos.xyz /= prevPos.w;
 				var prevUV = screenToUv(prevPos.xy);
-				
+
 				if( prevUV.x <= 1.0 && prevUV.x >= 0.0 && prevUV.y <= 1.0 && prevUV.y >= 0.0 ) {
 					var prevVal = prev.get(prevUV).rgb;
 					pixelColor.rgb = min(mix(curVal, prevVal, strength), maxIntensity);
@@ -146,6 +146,8 @@ class TemporalBloom extends RendererFX {
 	var prevResult : h3d.mat.Texture;
 	var prevCamMat : h3d.Matrix;
 
+	var tonemap = new Bloom.BloomTonemap();
+
 	public function new(?parent) {
 		super(parent);
 		props = ({
@@ -161,7 +163,7 @@ class TemporalBloom extends RendererFX {
 		prevCamMat.identity();
 	}
 
-	override function apply(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
+	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
 		if( step == BeforeTonemapping ) {
 			r.mark("TBloom");
 			var pb : TemporalBloomProps = props;
@@ -169,7 +171,7 @@ class TemporalBloom extends RendererFX {
 
 			var source = r.allocTarget("source", false, pb.size, RGBA16F);
 			ctx.engine.pushTarget(source);
-			thresholdPass.shader.hdr = ctx.getGlobal("hdr");
+			thresholdPass.shader.hdr = ctx.getGlobal("hdrMap");
 			thresholdPass.shader.threshold = pb.threshold;
             thresholdPass.shader.intensity = pb.intensity;
 			thresholdPass.shader.maxIntensity = pb.maxValue;
@@ -193,7 +195,7 @@ class TemporalBloom extends RendererFX {
 				thresholdPass.render();
 				ctx.engine.popTarget();
 			}
-				
+
 			var curSize = pb.size;
 			var curTarget : h3d.mat.Texture = source;
 			for( i in 0 ... pb.downScaleCount ) {
@@ -217,7 +219,7 @@ class TemporalBloom extends RendererFX {
 				ctx.engine.popTarget();
 			}
 
-			ctx.setGlobal("bloom", curTarget);
+			r.addShader(tonemap);
 		}
 	}
 

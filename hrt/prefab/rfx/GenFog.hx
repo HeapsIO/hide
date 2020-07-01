@@ -115,7 +115,7 @@ class GenFog extends RendererFX {
 		fogPass.pass.setBlendMode(Alpha);
 	}
 
-	override function apply(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
+	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
 		var p : GenFogProps = props;
 		if( (step == AfterTonemapping && p.renderMode == "AfterTonemapping") || (step == BeforeTonemapping && p.renderMode == "BeforeTonemapping") ) {
 			r.mark("DistanceFog");
