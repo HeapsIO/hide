@@ -326,11 +326,24 @@ class HeightMap extends Object3D {
 					c.elements = [];
 				}
 			}
-			var parts = objects.assetsPath.split("$");
+			var isComplex = objects.assetsPath.indexOf("$") >= 0;
 			for( o in objectsCache ) {
 				var m = models.get(o.obj);
 				if( m == null ) {
-					var path = parts.length > 1 ? parts.join(o.obj) : objects.assetsPath + "/" + o.obj;
+					var path = objects.assetsPath + "/" + o.obj;
+					if( isComplex ) {
+						path = objects.assetsPath;
+						path = path.split("$NAME").join(o.obj);
+						var base = o.obj;
+						while( true ) {
+							var c = base.charCodeAt(base.length-1);
+							if( c == '_'.code || (c >= '0'.code && c <= '9'.code) )
+								base = base.substr(0,-1);
+							else
+								break;
+						}
+						path = path.split("$BASE").join(base);
+					}
 					var r = try hxd.res.Loader.currentInstance.load(path + ".FBX").toModel() catch( e : hxd.res.NotFound )
 						try hxd.res.Loader.currentInstance.load(path + ".fbx").toModel() catch( e : hxd.res.NotFound ) {
 							#if editor
