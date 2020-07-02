@@ -176,10 +176,7 @@ class Environment extends Object3D {
 	}
 
 	override function makeInstance( ctx : Context ) : Context {
-		ctx = ctx.clone(this);
-		var obj = new h3d.scene.Object(ctx.local3d);
-		ctx.local3d = obj;
-		ctx.local3d.name = name;
+		super.makeInstance(ctx);
 		updateInstance(ctx);
 		return ctx;
 	}
