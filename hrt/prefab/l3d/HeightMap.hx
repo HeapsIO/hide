@@ -387,35 +387,37 @@ class HeightMap extends Object3D {
 		var scale = size * tileX / terrainWidth;
 		var localScale = objects.scale * scale;
 		for( layer in xml.node.Objects.node.Layers.nodes.Layer ) {
-			var obj = layer.node.Object;
-			var name = obj.att.MeshAssetFileName;
-			var data = haxe.crypto.Base64.decode(obj.node.Data.innerData);
-			for( i in 0...Std.int(data.length/40) ) {
-				var p = i * 40;
-				var x = data.getFloat(p); p += 4;
-				p += 4; // skip
-				var y = terrainWidth - data.getFloat(p); p += 4;
+			for( obj in layer.nodes.Object ) {
+				var name = obj.att.MeshAssetFileName;
+				var data = haxe.crypto.Base64.decode(obj.node.Data.innerData);
+				for( i in 0...Std.int(data.length/40) ) {
+					var p = i * 40;
+					var x = data.getFloat(p); p += 4;
+					p += 4; // skip
+					var y = terrainWidth - data.getFloat(p); p += 4;
 
-				x *= scale;
-				y *= scale;
+					x *= scale;
+					y *= scale;
 
-				var scW = data.getFloat(p); p += 4;
-				var scH = data.getFloat(p); p += 4;
-				var rotX = data.getFloat(p); p += 4;
-				var rotY = data.getFloat(p); p += 4;
-				var rotZ = data.getFloat(p); p += 4;
-				p += 4; // ???
-				var tint = data.getInt32(p);
-				tint = tint & 0xFFFFFF;
-				tint = ((tint & 0xFF) << 16) | (tint & 0xFF00) | (tint >> 16);
-				objectsCache.push({
-					obj : name,
-					x : x,
-					y : y,
-					scale : scW * localScale,
-					rot : rotY,
-					tint : tint,
-				});
+					var scW = data.getFloat(p); p += 4;
+					var scH = data.getFloat(p); p += 4;
+					var rotX = data.getFloat(p); p += 4;
+					var rotY = data.getFloat(p); p += 4;
+					var rotZ = data.getFloat(p); p += 4;
+					p += 4; // ???
+					var tint = data.getInt32(p);
+					tint = tint & 0xFFFFFF;
+					tint = ((tint & 0xFF) << 16) | (tint & 0xFF00) | (tint >> 16);
+
+ 					objectsCache.push({
+						obj : name,
+						x : x,
+						y : y,
+						scale : scW * localScale,
+						rot : rotY * Math.PI * 2,
+						tint : tint,
+					});
+				}
 			}
 		}
 	}
