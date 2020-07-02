@@ -61,7 +61,7 @@ class Sao extends RendererFX {
 			ctx.engine.pushTarget(saoTex);
 			sao.shader.numSamples = props.samples;
 			sao.shader.sampleRadius	= props.radius;
-			sao.shader.intensity = props.intensity;
+			sao.shader.intensity = props.intensity - 1;
 			sao.shader.bias = props.bias * props.bias;
 			sao.shader.depthTextureChannel = depth.channel;
 			sao.shader.normalTextureChannel = normal.channel;
@@ -103,7 +103,7 @@ class Sao extends RendererFX {
 			<dl>
 				<dt>Scale</dt><dd><input type="range" min="0" max="1" field="noiseScale"/></dd>
 				<dt>Use World UV</dt><dd><input type="checkbox" field="useWorldUV"/></dd>
-				<dt>Texture</dt><input type="texturepath" field="noiseTexturePath"/>
+				<dt>Texture</dt><dd><input type="texturepath" field="noiseTexturePath"/></dd>
 			</dl>
 		</div>
 		<div class="group" name="Blur">
