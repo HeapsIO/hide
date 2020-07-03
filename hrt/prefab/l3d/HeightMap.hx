@@ -8,8 +8,29 @@ enum abstract HeightMapTextureKind(String) {
 }
 
 private class WorldNoSoil extends h3d.scene.World {
+
+	public var killAlpha = 0.5;
+
 	override function initChunkSoil(c:h3d.scene.World.WorldChunk) {
 	}
+
+	override function loadMaterialTexture(r:hxd.res.Model, mat:hxd.fmt.hmd.Data.Material, modelName:String):h3d.scene.World.WorldMaterial {
+		var m = super.loadMaterialTexture(r, mat, modelName);
+		// load real material to apply killAlpha / culling properties
+		var wmat = h3d.mat.MaterialSetup.current.createMaterial();
+		wmat.name = mat.name;
+		wmat.texture = h3d.mat.Texture.fromColor(0); // allow set killAlpha
+		wmat.model = r;
+		var props = h3d.mat.MaterialSetup.current.loadMaterialProps(wmat);
+		if( props == null ) props = wmat.getDefaultModelProps();
+		wmat.props = props;
+		if( wmat.textureShader != null && wmat.textureShader.killAlpha != null )
+			m.killAlpha = killAlpha;
+		if( wmat.mainPass.culling == None )
+			m.culling = false;
+		return m;
+	}
+
 }
 
 class HeightMapShader extends hxsl.Shader {
@@ -92,6 +113,7 @@ class HeightMap extends Object3D {
 		var file : String;
 		var assetsPath : String;
 		var scale : Float;
+		var killAlpha : Float;
 	};
 
 	var heightTexturesCache : Array<hxd.Pixels>;
@@ -275,6 +297,16 @@ class HeightMap extends Object3D {
 		var mesh = cast(ctx.local3d, h3d.scene.Mesh);
 		var grid = cast(mesh.primitive, HeightGrid);
 
+		if( propName == "killAlpha" ) {
+			var world : WorldNoSoil = Std.downcast(mesh.getObjectByName("$world"), WorldNoSoil);
+			if( world != null ) {
+				for( c in @:privateAccess world.allChunks )
+					for( m in c.root )
+						m.toMesh().material.textureShader.killAlphaThreshold = objects.killAlpha;
+			}
+			return;
+		}
+
 		var hmap = getTextures(ctx,Height, 0, 0)[0];
 		var width = hmap == null ? Std.int(size) : hmap.width;
 		var height = hmap == null ? Std.int(size) : hmap.height;
@@ -311,13 +343,16 @@ class HeightMap extends Object3D {
 			loadObjectCache(ctx);
 
 		if( objectsCache != null ) {
-			var world : h3d.scene.World = cast prev.get("$world");
+			var world : WorldNoSoil = cast prev.get("$world");
 			var csize = Std.int(size/2);
 			var wsize = Std.int(size * hxd.Math.max(tileX, tileY));
 			var models = new Map();
 			var nullModel = new h3d.scene.World.WorldModel(null);
+			var first = false;
 			if( world == null || world.worldSize != wsize || world.chunkSize != csize ) {
 				world = new WorldNoSoil(csize, wsize, mesh);
+				world.enableNormalMaps = true;
+				world.enableSpecular = true;
 				world.name = "$world";
 			} else @:privateAccess {
 				prev.remove(world.name);
@@ -326,6 +361,7 @@ class HeightMap extends Object3D {
 					c.elements = [];
 				}
 			}
+			world.killAlpha = objects.killAlpha;
 			var isComplex = objects.assetsPath.indexOf("$") >= 0;
 			for( o in objectsCache ) {
 				var m = models.get(o.obj);
@@ -509,7 +545,7 @@ class HeightMap extends Object3D {
 				updateInstance(ctx);
 			});
 			e.appendTo(list);
-			ectx.properties.build(e, tex, (_) -> {
+			ectx.properties.build(e, tex, (pname) -> {
 				if( tex.path != prevTex ) {
 					tex.enable = true; // enable on change texture !
 					prevTex = tex.path;
@@ -518,7 +554,7 @@ class HeightMap extends Object3D {
 					textures.remove(tex);
 					ectx.rebuildProperties();
 				}
-				updateInstance(ctx);
+				updateInstance(ctx, pname);
 			});
 		}
 		var add = new hide.Element('<li><p><a href="#">[+]</a></p></li>');
@@ -540,6 +576,7 @@ class HeightMap extends Object3D {
 					file : "",
 					assetsPath : "",
 					scale : 1,
+					killAlpha : 0.5,
 				};
 				checkModels = false;
 				ectx.rebuildProperties();
@@ -551,13 +588,14 @@ class HeightMap extends Object3D {
 				<dt>File</dt><dd><input type="fileselect" field="file"/></dd>
 				<dt>Assets Path</dt><dd><input field="assetsPath"/></dd>
 				<dt>Scale</dt><dd><input type="range" min="0" max="2" field="scale"/></dd>
+				<dt>KillAlpha</dt><dd><input type="range" min="0" max="1" field="killAlpha"/></dd>
 				<dt></dt><dd><a class="button" href="#">Remove</a></dd>
 			</dl>
 			');
-			ectx.properties.build(e, objects, function(_) {
+			ectx.properties.build(e, objects, function(pname) {
 				objectsCache = null;
 				checkModels = false;
-				updateInstance(ctx);
+				updateInstance(ctx,pname);
 				checkModels = true;
 			});
 			e.appendTo(objs).find("a.button").click(function(_) {
