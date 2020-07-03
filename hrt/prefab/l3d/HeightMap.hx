@@ -493,25 +493,29 @@ class HeightMap extends Object3D {
 		super.edit(ectx);
 		var ctx = ectx.getContext(this);
 		var props = new hide.Element('
+		<div>
 			<div class="group" name="View">
 			<dl>
 				<dt>Size</dt><dd><input type="range" min="0" max="1000" value="128" field="size"/></dd>
 				<dt>Height Scale</dt><dd><input type="range" min="0" max="1" field="heightScale"/></dd>
 				<dt>Normal Scale</dt><dd><input type="range" min="0" max="2" field="normalScale"/></dd>
 			</dl>
+			</div>
 			<div class="group" name="Textures">
-			<ul></ul>
+				<ul id="tex"></ul>
 			</div>
 			<div class="group" name="Tiling">
 			<dl>
 				<dt>X</dt><dd><input type="range" min="1" max="16" step="1" field="tileX"/></dd>
 				<dt>Y</dt><dd><input type="range" min="1" max="16" step="1" field="tileY"/></dd>
 			</dl>
+			</div>
 			<div class="group" name="Objects">
 			</div>
+		</div>
 		');
 
-		var list = props.find("ul");
+		var list = props.find("ul#tex");
 		ectx.properties.add(props,this, (_) -> updateInstance(ctx));
 		for( tex in textures ) {
 			var prevTex = tex.path;
@@ -564,7 +568,7 @@ class HeightMap extends Object3D {
 			ectx.rebuildProperties();
 		});
 
-		var objs = props.find("[name=Objects]");
+		var objs = props.find("[name=Objects] .content");
 		if( objects == null ) {
 			var e = new hide.Element('
 			<dl>
