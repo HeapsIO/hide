@@ -24,7 +24,7 @@ private class WorldNoSoil extends h3d.scene.World {
 		var props = h3d.mat.MaterialSetup.current.loadMaterialProps(wmat);
 		if( props == null ) props = wmat.getDefaultModelProps();
 		wmat.props = props;
-		if( wmat.textureShader != null && wmat.textureShader.killAlpha != null )
+		if( wmat.textureShader != null && wmat.textureShader.killAlpha )
 			m.killAlpha = killAlpha;
 		if( wmat.mainPass.culling == None )
 			m.culling = false;
