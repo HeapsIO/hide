@@ -11,7 +11,7 @@ class DistortionTonemap extends hxsl.Shader {
 
 		function fragment() {
 			var distortionVal = distortionMap.get(calculatedUV).rg;
-			calculatedUV += distortionVal ;
+			calculatedUV += distortionVal;
 		}
 	}
 }
