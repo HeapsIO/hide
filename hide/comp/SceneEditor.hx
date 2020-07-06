@@ -1,5 +1,6 @@
 package hide.comp;
 
+import hrt.prefab.Reference;
 import h3d.col.Sphere;
 import h3d.scene.Mesh;
 import h3d.col.FPoint;
@@ -158,6 +159,7 @@ class SceneEditor {
 
 	public var view(default, null) : hide.view.FileView;
 	var sceneData : PrefabElement;
+	var lastRenderProps : hrt.prefab.RenderProps;
 
 	public function new(view, data, ?chunkifyS3D : Bool = false) {
 		ide = hide.Ide.inst;
@@ -670,6 +672,28 @@ class SceneEditor {
 		var all = sceneData.flatten(hrt.prefab.Prefab);
 		for(elt in all)
 			applySceneStyle(elt);
+
+		if( lastRenderProps == null ) {
+			var renderProps = sceneData.getAll(hrt.prefab.RenderProps);
+			for( r in renderProps )
+				if( @:privateAccess r.isDefault ) {
+					lastRenderProps = r;
+					break;
+				}
+			if( lastRenderProps == null )
+				lastRenderProps = renderProps[0];
+		}
+
+		if( lastRenderProps != null )
+			lastRenderProps.applyProps(scene.s3d.renderer);
+		else {
+			var refPrefab = new Reference();
+			refPrefab.refpath = view.config.getLocal("scene.renderProps");
+			refPrefab.makeInstance(context);
+			var renderProps = @:privateAccess refPrefab.ref.get(hrt.prefab.RenderProps);
+			if( renderProps != null )
+				renderProps.applyProps(scene.s3d.renderer);
+		}
 
 		onRefresh();
 	}
