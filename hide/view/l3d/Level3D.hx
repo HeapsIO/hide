@@ -115,6 +115,18 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 	override function onSceneReady() {
 		super.onSceneReady();
 		parent.onSceneReady();
+		
+		// Render Props
+		var propsPath = parent.config.getLocal("scene.renderProps");
+		var rp = ide.loadPrefab(propsPath, hrt.prefab.RenderProps);
+		if( rp != null ) {
+			var prevPath = context.shared.currentPath;
+			var datPath = propsPath.substr(0, propsPath.indexOf(".prefab"))+".dat";
+			context.shared.currentPath = datPath;
+			rp.make(context); 
+			context.shared.currentPath = prevPath;
+			rp.applyProps(scene.s3d.renderer);
+		}
 	}
 
 	override function applyTreeStyle(p: PrefabElement, el: Element, ?pname: String) {
