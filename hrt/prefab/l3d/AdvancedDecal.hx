@@ -95,7 +95,7 @@ class AdvancedDecal extends Object3D {
 
 	public function updateRenderParams(ctx) {
 		var mesh = Std.downcast(ctx.local3d, h3d.scene.Mesh);
-		mesh.material.blendMode = blendMode;
+		mesh.material.mainPass.setBlendMode(blendMode);
 		switch (renderMode) {
 			case Decal:
 				var shader = mesh.material.mainPass.getShader(h3d.shader.pbr.VolumeDecal.DecalPBR);
