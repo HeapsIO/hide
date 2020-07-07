@@ -94,7 +94,7 @@ class BrushPreview extends h3d.scene.Mesh {
 		material.mainPass.depthWrite = false;
 		material.mainPass.depthTest = GreaterEqual;
 		material.mainPass.culling = Front;
-		material.blendMode = Alpha;
+		material.mainPass.setBlendMode(Alpha);
 		material.shadows = false;
 		super(h3d.prim.Cube.defaultUnitCube(), material, terrain.getScene());
 		decalShader = new h3d.shader.pbr.VolumeDecal.DecalOverlay();
