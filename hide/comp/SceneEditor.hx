@@ -690,9 +690,11 @@ class SceneEditor {
 			var refPrefab = new Reference();
 			refPrefab.refpath = view.config.getLocal("scene.renderProps");
 			refPrefab.makeInstance(context);
-			var renderProps = @:privateAccess refPrefab.ref.get(hrt.prefab.RenderProps);
-			if( renderProps != null )
-				renderProps.applyProps(scene.s3d.renderer);
+			if( @:privateAccess refPrefab.ref != null ) {
+				var renderProps = @:privateAccess refPrefab.ref.get(hrt.prefab.RenderProps);
+				if( renderProps != null )
+					renderProps.applyProps(scene.s3d.renderer);
+			}
 		}
 
 		onRefresh();
