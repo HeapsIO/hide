@@ -1,5 +1,7 @@
 package hide;
 
+import h3d.pass.ScreenFx;
+
 // ----- Default Rendering --------------------------------
 
 class DefaultForwardComposite extends h3d.shader.ScreenShader {
@@ -122,26 +124,22 @@ class ScreenOutline extends h3d.shader.ScreenShader {
 
 		@param var texture: Sampler2D;
 
-		function vertex() {
-		}
-
 		function fragment() {
-			var uv = input.uv;
-			var outval = texture.get(uv).rgb;
-			if(outval.r > 0.1 && outval.r < 0.5)
-				pixelColor.rgb += outval.rgb*3.0 + 0.1;
+			var outval = texture.get(calculatedUV).rgb;
+			pixelColor.a = outval.r > 0.1 && outval.r < 0.5 ? 1.0 : 0.0;
+			pixelColor.rgb = vec3(1,1,1);
 		}
 	};
 }
 
 class PbrRenderer extends h3d.scene.pbr.Renderer {
 
-	var outline = new ScreenOutline();
+	var outline = new h3d.pass.ScreenFx(new ScreenOutline());
 	var outlineBlur = new h3d.pass.Blur(4);
 
 	public function new(env) {
 		super(env);
-		tonemap.addShader(outline);
+		outline.pass.setBlendMode(Alpha);
 	}
 
 	override function getPassByName(name:String):h3d.pass.Base {
@@ -165,13 +163,15 @@ class PbrRenderer extends h3d.scene.pbr.Renderer {
 			setTarget(outlineTex);
 			clear(0);
 			draw("highlight");
-
 			var outlineBlurTex = allocTarget("outlineBlur", false);
 			outlineBlur.apply(ctx, outlineTex, outlineBlurTex);
-			outline.texture = outlineBlurTex;
+			outline.shader.texture = outlineBlurTex;
 		case AfterTonemapping:
+			outline.render();
 			renderPass(defaultPass, get("debuggeom"), backToFront);
 			renderPass(defaultPass, get("debuggeom_alpha"), backToFront);
+		case Overlay:
+			renderPass(defaultPass, get("overlay"), backToFront);
 			renderPass(defaultPass, get("ui"), backToFront);
 		default:
 		}
