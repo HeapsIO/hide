@@ -17,7 +17,7 @@ class ColorGradingTonemap extends hxsl.Shader {
 		var pixelColor : Vec4;
 
 		function fragment() {
-			var uv = min(hdrColor.rgb, vec3(1,1,1));
+			var uv = min(pixelColor.rgb, vec3(1,1,1));
 			var innerWidth = size - 1.0;
 			var sliceSize = 1.0 / size;
 			var slicePixelSize = sliceSize / size;
