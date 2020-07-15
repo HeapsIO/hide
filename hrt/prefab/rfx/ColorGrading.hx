@@ -1,5 +1,7 @@
 package hrt.prefab.rfx;
 
+import hxd.Pixels;
+
 typedef ColorGradingProps = {
 	var size : Int;
 	var texturePath : String;
@@ -17,7 +19,7 @@ class ColorGradingTonemap extends hxsl.Shader {
 		var pixelColor : Vec4;
 
 		function fragment() {
-			var uv = min(pixelColor.rgb, vec3(1,1,1));
+			var uv = pixelColor.rgb;
 			var innerWidth = size - 1.0;
 			var sliceSize = 1.0 / size;
 			var slicePixelSize = sliceSize / size;
@@ -64,8 +66,10 @@ class ColorGrading extends RendererFX {
 	}
 
 	#if editor
+
 	override function edit( ctx : hide.prefab.EditContext ) {
-		ctx.properties.add(new hide.Element('
+
+		var e = new hide.Element('
 			<div class="group" name="Color Grading">
 				<dl>
 					<dt>LUT</dt><dd><input type="texturepath" field="texturePath"/></dd>
@@ -73,7 +77,34 @@ class ColorGrading extends RendererFX {
 					<dt>Intensity</dt><dd><input type="range" min="0" max="1" field="intensity"/></dd>
 				</dl>
 			</div>
-		'),props);
+			<div class="group" name="Debug">
+				<div align="center" >
+					<input type="button" value="Create default" class="createDefault" />
+				</div>
+			</div>
+		');
+
+		var but = e.find(".createDefault");
+		but.click(function(_) {
+			function saveTexture( name : String ) {
+				var size = 16;
+				var step = hxd.Math.ceil(255/(size - 1));
+				var p = hxd.Pixels.alloc(size * size, size, RGBA);
+				for( r in 0 ... size ) {
+					for( g in 0 ... size ) {
+						for( b in 0 ... size ) {
+							p.setPixel(r + b * size, g, 255 << 24 | ((r*step) << 16) | ((g*step) << 8 ) | (b*step));
+						}
+					}
+				}
+				var path = ctx.ide.getPath(name)+"/defaultLUT.png";
+				sys.io.File.saveBytes(path, p.toPNG());
+				p.dispose();
+			}
+			ctx.ide.chooseDirectory(saveTexture);
+		});
+
+		ctx.properties.add(e, props);
 	}
 	#end
 
