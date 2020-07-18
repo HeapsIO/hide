@@ -213,21 +213,26 @@ class Editor extends Component {
 				var col = columns[x];
 				if( !cursor.table.canEditColumn(col.name) )
 					continue;
-				var value : Dynamic = null;
-				switch( col.type ) {
-				case TId:
-					if( ~/^[A-Za-z0-9_]+$/.match(text) ) value = text;
-				case TString:
-					value = text;
-				case TInt:
-					value = Std.parseInt(text);
-				case TFloat:
-					value = Std.parseFloat(text);
-					if( Math.isNaN(value) ) value = null;
-				default:
-				}
-				if( value == null ) continue;
+				var lines = y1 == y2 ? [text] : text.split("\n");
 				for( y in y1...y2+1 ) {
+					var value : Dynamic = null;
+					var text = lines[y - y1];
+					if( text == null ) text = lines[lines.length - 1];
+					switch( col.type ) {
+					case TId:
+						if( ~/^[A-Za-z0-9_]+$/.match(text) ) value = text;
+					case TString:
+						value = text;
+					case TInt:
+						text = text.split(",").join("").split(" ").join("");
+						value = Std.parseInt(text);
+					case TFloat:
+						text = text.split(",").join("").split(" ").join("");
+						value = Std.parseFloat(text);
+						if( Math.isNaN(value) ) value = null;
+					default:
+					}
+					if( value == null ) continue;
 					var obj = sheet.lines[y];
 					Reflect.setField(obj, col.name, value);
 				}
