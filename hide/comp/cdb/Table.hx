@@ -226,7 +226,19 @@ class Table extends Component {
 			toggle.css({ display : title == null ? "none" : "" });
 			toggle.text(hidden ? "🡆" : "🡇");
 			content.text(title == null ? "" : title+(hidden ? " ("+getLines().length+")" : ""));
+			sep.toggleClass("sep-hidden", hidden == true);
 		}
+
+		sep.contextmenu(function(e) {
+			new hide.comp.ContextMenu([
+				{ label : "Expand All", click : function() {
+					element.find("tr.separator.sep-hidden a.toggle").click();
+				}},
+				{ label : "Collapse All", click : function() {
+					element.find("tr.separator").not(".sep-hidden").find("a.toggle").click();
+				}},
+			]);
+		});
 
 		sep.dblclick(function(e) {
 			if( !canInsert() ) return;
@@ -259,7 +271,7 @@ class Table extends Component {
 
 		sync();
 		toggle.dblclick(function(e) e.stopPropagation());
-		toggle.click(function(_) {
+		toggle.click(function(e) {
 			hidden = !hidden;
 			saveDisplayState("sep/"+title, !hidden);
 			sync();

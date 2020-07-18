@@ -21,6 +21,7 @@ class Line extends Component {
 
 	public function create() {
 		var view = table.view;
+		element.removeClass("hidden");
 		for( c in columns ) {
 			var v = new Element("<td>").addClass("c");
 			v.appendTo(this.element);
@@ -32,12 +33,12 @@ class Line extends Component {
 				e.stopPropagation();
 			});
 		}
-		element.css({ display : "" });
 	}
 
 	public function hide() {
+		cells = [];
 		element.children('td.c').remove();
-		element.css({ display : "none" });
+		element.addClass("hidden");
 	}
 
 }
