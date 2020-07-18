@@ -4,6 +4,10 @@
 .cdb-view .cdb {
   margin-bottom: 350px;
 }
+.cdb-view.cdb-diff .cdb-sheet th,
+.cdb-view.cdb-diff th.start {
+  background-color: #d60;
+}
 .cdb {
   background-color: black;
 }

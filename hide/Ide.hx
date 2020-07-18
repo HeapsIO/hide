@@ -955,7 +955,7 @@ class Ide {
 			hide.comp.cdb.Editor.refreshAll();
 			initMenu();
 			for( v in getViews(hide.view.CdbTable) )
-				v.syncTitle();
+				v.rebuild();
 		}
 		db.find(".dbCreateDiff").click(function(_) {
 			chooseFileSave("cdb.diff", function(name) {

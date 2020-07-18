@@ -73,6 +73,7 @@ class CdbTable extends hide.ui.View<{}> {
 			return;
 		}
 		element.addClass("cdb-view");
+		element.toggleClass("cdb-diff", @:privateAccess ide.databaseDiff != null);
 		tabs = new hide.comp.Tabs(element, true);
 		tabCache = getTabCache();
 		tabContents = [];
