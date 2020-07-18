@@ -6,4 +6,6 @@ extern class Tab {
 	public var header : Header;
 	public var element : js.jquery.JQuery;
 
+	dynamic function onClose() : Bool;
+
 }

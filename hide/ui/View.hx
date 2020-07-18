@@ -120,10 +120,6 @@ class View<T> extends hide.comp.Component {
 			onResize();
 		});
 		container.on("destroy",function(e) {
-			if( !onBeforeClose() ) {
-				try e.preventDefault() catch( _ : Dynamic ) {};
-				return;
-			}
 			destroy();
 		});
 		container.on("show", function(_) {
@@ -136,6 +132,9 @@ class View<T> extends hide.comp.Component {
 		});
 
 		container.on("tab", function(e) {
+			container.tab.onClose = function() {
+				return onBeforeClose();
+			};
 			container.tab.element.contextmenu(function(e) {
 				var menu = buildTabMenu();
 				if( menu.length > 0 ) new hide.comp.ContextMenu(menu);

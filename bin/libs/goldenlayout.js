@@ -2873,6 +2873,8 @@ lm.utils.copy( lm.controls.Tab.prototype, {
 		}
 	},
 
+	onClose : function() { return true; },
+
 	/**
 	 * Callback when the tab's close button is
 	 * clicked
@@ -2884,6 +2886,7 @@ lm.utils.copy( lm.controls.Tab.prototype, {
 	 */
 	_onCloseClick: function( event ) {
 		event.stopPropagation();
+		if( !this.onClose() ) return;
 		this.header.parent.removeChild( this.contentItem );
 	}
 } );
