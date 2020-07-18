@@ -139,17 +139,26 @@ class Editor extends Component {
 		case K.SPACE:
 			e.preventDefault(); // prevent scroll
 		case K.ESCAPE:
-			if( currentFilter != null ) searchFilter(null);
+			if( currentFilter != null ) {
+				searchFilter(null);
+				searchBox.hide();
+			}
 		}
 		return false;
+	}
+
+	public function updateFilter() {
+		searchFilter(currentFilter);
 	}
 
 	function searchFilter( filter : String ) {
 		if( filter == "" ) filter = null;
 		if( filter != null ) filter = filter.toLowerCase();
 
-		var lines = element.find("table.cdb-sheet > tbody > tr").not(".head");
-		lines.removeClass("filtered");
+		var all = element.find("table.cdb-sheet > tbody > tr").not(".head");
+		var seps = all.filter(".separator");
+		var lines = all.not(".separator");
+		all.removeClass("filtered");
 		if( filter != null ) {
 			for( t in lines ) {
 				if( t.textContent.toLowerCase().indexOf(filter) < 0 )
@@ -159,8 +168,16 @@ class Editor extends Component {
 				lines = lines.filter(".list").not(".filtered").prev();
 				lines.removeClass("filtered");
 			}
+			all = all.not(".filtered").not(".hidden");
+			for( s in seps.elements() ) {
+				var idx = all.index(s);
+				if( idx == all.length - 1 || new Element(all.get(idx+1)).hasClass("separator") ) {
+					s.addClass("filtered");
+				}
+			}
 		}
 		currentFilter = filter;
+		cursor.update();
 	}
 
 	function onCopy() {

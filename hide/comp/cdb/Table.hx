@@ -278,6 +278,7 @@ class Table extends Component {
 			for( l in getLines() ) {
 				if( hidden ) l.hide() else l.create();
 			}
+			editor.updateFilter();
 		});
 		return { hidden : hidden, element : sep };
 	}
