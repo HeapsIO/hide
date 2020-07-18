@@ -23,6 +23,8 @@ class Table extends Component {
 		this.displayMode = mode;
 		this.editor = editor;
 		this.sheet = sheet;
+		saveDisplayKey = "cdb/"+sheet.name;
+
 		@:privateAccess for( t in editor.tables )
 			if( t.sheet.path == sheet.path )
 				trace("Dup CDB table!");
@@ -133,6 +135,7 @@ class Table extends Component {
 		}];
 
 		var colCount = columns.length;
+
 		for( c in columns ) {
 			var col = J("<th>");
 			col.text(c.name);
@@ -152,33 +155,27 @@ class Table extends Component {
 				if( editor.view == null ) editor.editColumn(getRealSheet(), c);
 			});
 			cols.append(col);
-
-			for( index in 0...sheet.lines.length ) {
-				var v = J("<td>").addClass("c");
-				var line = lines[index];
-				v.appendTo(line.element);
-				var cell = new Cell(v, line, c);
-				if( c.type == TId && view != null && view.forbid != null && view.forbid.indexOf(cell.value) >= 0 )
-					line.element.addClass("hidden");
-				v.click(function(e) {
-					editor.cursor.clickCell(cell, e.shiftKey);
-					e.stopPropagation();
-				});
-			}
 		}
 
 		element.append(cols);
 
 		var tbody = J("<tbody>");
 
-		var snext = 0;
+		var snext = 0, hidden = false;
 		for( i in 0...lines.length+1 ) {
 			while( sheet.separators[snext] == i ) {
-				makeSeparator(snext, colCount).appendTo(tbody);
+				var sep = makeSeparator(snext, colCount);
+				sep.element.appendTo(tbody);
+				if( sep.hidden != null ) hidden = sep.hidden;
 				snext++;
 			}
 			if( i == lines.length ) break;
-			tbody.append(lines[i].element);
+			var line = lines[i];
+			if( hidden )
+				line.hide();
+			else
+				line.create();
+			tbody.append(line.element);
 		}
 		element.append(tbody);
 
@@ -202,32 +199,56 @@ class Table extends Component {
 		}
 	}
 
-	function makeSeparator( sindex : Int, colCount : Int ) {
-		var sep = J("<tr>").addClass("separator").append('<td colspan="${colCount+1}">');
-		var content = sep.find("td");
+	function makeSeparator( sindex : Int, colCount : Int ) : { element : Element, hidden : Null<Bool> } {
+		var sep = J("<tr>").addClass("separator").append('<td colspan="${colCount+1}"><a href="#" class="toggle"></a><span></span></td>');
+		var content = sep.find("span");
+		var toggle = sep.find("a");
 		var title = if( sheet.props.separatorTitles != null ) sheet.props.separatorTitles[sindex] else null;
-		if( title != null ) content.text(title);
+
+		function getLines() {
+			var snext = 0, sref = -1;
+			var out = [];
+			for( i in 0...lines.length ) {
+				while( sheet.separators[snext] == i ) {
+					var title = if( sheet.props.separatorTitles != null ) sheet.props.separatorTitles[snext] else null;
+					if( title != null ) sref = snext;
+					snext++;
+				}
+				if( sref == sindex )
+					out.push(lines[i]);
+			}
+			return out;
+		}
+
+		var hidden : Bool;
+		function sync() {
+			hidden = title == null ? null : getDisplayState("sep/"+title) == false;
+			toggle.css({ display : title == null ? "none" : "" });
+			toggle.text(hidden ? "🡆" : "🡇");
+			content.text(title == null ? "" : title+(hidden ? " ("+getLines().length+")" : ""));
+		}
+
 		sep.dblclick(function(e) {
 			if( !canInsert() ) return;
 			content.empty();
 			J("<input>").appendTo(content).focus().val(title == null ? "" : title).blur(function(_) {
 				title = JTHIS.val();
 				JTHIS.remove();
-				content.text(title);
+				if( title == "" ) title = null;
 
 				var old = sheet.props.separatorTitles;
 				var titles = sheet.props.separatorTitles;
 				if( titles == null ) titles = [] else titles = titles.copy();
 				while( titles.length < sindex )
 					titles.push(null);
-				titles[sindex] = title == "" ? null : title;
+				titles[sindex] = title;
 				while( titles[titles.length - 1] == null && titles.length > 0 )
 					titles.pop();
 				if( titles.length == 0 ) titles = null;
 				editor.beginChanges();
 				sheet.props.separatorTitles = titles;
 				editor.endChanges();
-
+				sync();
 			}).keypress(function(e) {
 				e.stopPropagation();
 			}).keydown(function(e) {
@@ -235,7 +256,18 @@ class Table extends Component {
 				e.stopPropagation();
 			});
 		});
-		return sep;
+
+		sync();
+		toggle.dblclick(function(e) e.stopPropagation());
+		toggle.click(function(_) {
+			hidden = !hidden;
+			saveDisplayState("sep/"+title, !hidden);
+			sync();
+			for( l in getLines() ) {
+				if( hidden ) l.hide() else l.create();
+			}
+		});
+		return { hidden : hidden, element : sep };
 	}
 
 	function refreshProperties() {

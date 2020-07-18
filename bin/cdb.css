@@ -64,6 +64,13 @@
   padding-left: 20px;
   background-color: #444;
 }
+.cdb .cdb-sheet tr.separator td .toggle {
+  padding: 0px 4px;
+  color: #aaa;
+}
+.cdb .cdb-sheet tr.separator td .toggle:hover {
+  color: #ccc;
+}
 .cdb .cdb-sheet td {
   padding: 2px 4px;
   overflow: hidden;
