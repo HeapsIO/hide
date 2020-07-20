@@ -219,6 +219,7 @@ class TemporalBloom extends RendererFX {
 				ctx.engine.popTarget();
 			}
 
+			tonemap.bloomTexture = curTarget;
 			r.addShader(tonemap);
 		}
 	}
