@@ -65,8 +65,8 @@ class Light extends Object3D {
 		return {
 			mode : None,
 			size : 256,
-			radius : 1,
-			quality : 0.5,
+			radius : 0,
+			quality : 1.0,
 			bias : 0.1,
 			samplingMode : {
 				kind : None,
