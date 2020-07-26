@@ -347,6 +347,21 @@
   min-width: 500px;
   min-height: 200px;
 }
+.cdb.cdb-obj-editor {
+  margin-top: 10px;
+}
+.cdb.cdb-obj-editor > .cdb-sheet {
+  border: 2px solid #333;
+}
+.cdb.cdb-obj-editor > .cdb-sheet > tr > th {
+  width: 50px;
+}
+.cdb.cdb-obj-editor > .cdb-sheet tr.props .cdb-sheet > tr > th {
+  width: 50px;
+}
+.cdb.cdb-obj-editor div.cdb-large .cdb-sheet {
+  min-width: 0 !important;
+}
 .cdb .floating-thead {
   position: fixed;
   background-color: #222;

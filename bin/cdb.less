@@ -393,6 +393,22 @@
 
 	}
 
+	&.cdb-obj-editor {
+		margin-top : 10px;
+		>.cdb-sheet {
+			border : 2px solid #333;
+			>tr>th {
+				width : 50px;
+			}
+			tr.props .cdb-sheet > tr > th {
+				width : 50px;
+			}
+		}
+		div.cdb-large .cdb-sheet {
+			min-width: 0 !important;
+		}
+	}
+
 	.floating-thead {
 		position: fixed;
 		background-color : #222;

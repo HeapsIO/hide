@@ -25,6 +25,11 @@ class ObjEditor extends Editor {
 		show(sheet, parent);
 	}
 
+	override function show(sheet:cdb.Sheet, ?parent:Element) {
+		super.show(sheet, parent);
+		element.addClass("cdb-obj-editor");
+	}
+
 	override function isUniqueID( sheet : cdb.Sheet, obj : {}, id : String ) {
         // we don't know yet how to make sure that our object view
         // is the same as the object in CDB indexed data
