@@ -62,7 +62,7 @@ class Ide {
 		isCDB = Sys.getEnv("HIDE_START_CDB") == "1" || nw.App.manifest.name == "CDB";
 		isDebugger = Sys.getEnv("HIDE_DEBUG") == "1";
 		function wait() {
-			if( monaco.Editor == null ) {
+			if( monaco.ScriptEditor == null ) {
 				haxe.Timer.delay(wait, 10);
 				return;
 			}
