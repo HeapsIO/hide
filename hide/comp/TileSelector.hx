@@ -12,11 +12,12 @@ class TileSelector extends Component {
     var valueDisp : Element;
     var cursor : Element;
     var image : Element;
-	var movePos : { x : Int, y : Int, moving : Bool } = { x : 0, y : 0, moving : false };
-    var cursorPos : { x : Int, y : Int, x2 : Int, y2 : Int, down : Bool };
+	var movePos = { x : 0, y : 0, moving : false, moved : false };
+    var cursorPos : { x : Int, y : Int, x2 : Int, y2 : Int, select : Bool };
     var width : Int;
     var height : Int;
-    var zoom : Float;
+	var zoom : Float;
+	var imageElt : js.html.ImageElement;
 
 	public function new(file,size,?parent,?el) {
 		super(parent,el);
@@ -84,7 +85,7 @@ class TileSelector extends Component {
 
 		element.empty();
 		element.off();
-        element.click(function(e) e.stopPropagation());
+		element.click((e) -> e.stopPropagation());
 		element.attr("tabindex","0");
 		element.focus();
 		element.on("keydown", function(e) {
@@ -118,9 +119,12 @@ class TileSelector extends Component {
 
         valueDisp = new Element('<div class="valueDisp">').appendTo(image);
 		cursor = new Element('<div class="cursor">').appendTo(image);
-        cursorPos = { x : -1, y : -1, x2 : -1, y2 : -1, down : false };
+        cursorPos = { x : -1, y : -1, x2 : -1, y2 : -1, select : false };
 		var i = js.Browser.document.createImageElement();
+		this.imageElt = i;
+
 		i.onload = function(_) {
+			if( imageElt != i ) return;
             width = i.width;
             height = i.height;
 			zoom = Math.floor(hxd.Math.min(800 / width, 580 / height));
@@ -134,7 +138,7 @@ class TileSelector extends Component {
 				e.preventDefault();
 			});
 			scroll.parent().on("mousedown", function(e) {
-				if( e.button != 0 ) {
+				if( e.button == 0 ) {
 					movePos.moving = true;
 					movePos.x = e.offsetX;
 					movePos.y = e.offsetY;
@@ -145,15 +149,18 @@ class TileSelector extends Component {
 					var dx = e.offsetX - movePos.x;
 					var dy = e.offsetY - movePos.y;
 					scroll[0].scrollBy(-dx,-dy);
+					movePos.moved = true;
 				}
 			});
 			image.on("mousemove", function(e:js.jquery.Event) {
+				if( movePos.moving )
+					return;
 				var k = zoom * size;
 				var x = Math.floor(e.offsetX / k);
 				var y = Math.floor(e.offsetY / k);
 				if( (x+1) * size > i.width ) x--;
 				if( (y+1) * size > i.height ) y--;
-				if( cursorPos.down ) {
+				if( cursorPos.select ) {
 					cursorPos.x2 = x;
 					cursorPos.y2 = y;
 				} else {
@@ -163,15 +170,16 @@ class TileSelector extends Component {
 				updateCursor();
 			});
             image.on("mousedown", function(e:js.jquery.Event) {
-				if( e.button != 0 )
-					return;
-				cursorPos.down = true;
+				if( e.button == 2 && allowRectSelect )
+					cursorPos.select = true;
             });
             image.on("mouseup", function(e:js.jquery.Event) {
-                e.preventDefault();
+				e.preventDefault();
+				var moved = movePos.moved;
+				movePos.moved = false;
 				movePos.moving = false;
-                cursorPos.down = false;
-				if( e.button != 0 || !allowRectSelect )
+                cursorPos.select = false;
+				if( e.button == 0 && moved )
 					return;
                 if( cursorPos.x2 >= cursorPos.x ) {
                     value.x = cursorPos.x;
@@ -189,7 +197,9 @@ class TileSelector extends Component {
                 }
                 onChange(false);
             });
-			image.on("contextmenu", function(e) e.preventDefault());
+			image.on("contextmenu", function(e) {
+				e.preventDefault();
+			});
 			rescale();
 		};
 		i.src = url;
