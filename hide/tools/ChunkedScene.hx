@@ -93,7 +93,7 @@ class ChunkScene {
 	}
 
 	inline function isGlobal( obj : h3d.scene.Object ) {
-		return Std.is(obj,hide.view.l3d.Gizmo) || Std.is(obj, hide.prefab.terrain.Brush.BrushPreview) || Std.is(obj, hrt.prefab.l3d.MeshSpray.MeshSprayObject) || Std.is(obj, h3d.scene.Light);
+		return Std.is(obj,hide.view.l3d.Gizmo) || Std.is(obj, hide.prefab.terrain.Brush.BrushPreview) || Std.is(obj, hrt.prefab.l3d.MeshSpray.MeshSprayObject) || Std.is(obj, h3d.scene.Light) || Std.is(obj, hrt.prefab.l3d.SplineMesh.SplineMeshBatch);
 	}
 
 	function chunkifyObjects( obj : h3d.scene.Object, chunkOverride : Array<Chunk> ) {
