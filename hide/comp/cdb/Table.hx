@@ -230,14 +230,22 @@ class Table extends Component {
 		}
 
 		sep.contextmenu(function(e) {
-			new hide.comp.ContextMenu([
+			var opts : Array<hide.comp.ContextMenu.ContextMenuItem> = [
 				{ label : "Expand All", click : function() {
 					element.find("tr.separator.sep-hidden a.toggle").click();
 				}},
 				{ label : "Collapse All", click : function() {
 					element.find("tr.separator").not(".sep-hidden").find("a.toggle").click();
 				}},
-			]);
+			];
+			if( sheet.props.dataFiles != null && title != null )
+				opts.unshift({
+					label : "Open",
+					click : function() {
+						ide.openFile(title);
+					},
+				});
+			new hide.comp.ContextMenu(opts);
 		});
 
 		sep.dblclick(function(e) {
