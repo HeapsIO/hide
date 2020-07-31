@@ -382,8 +382,7 @@ class EmitterObject extends h3d.scene.Object {
 
 	public var catchupSpeed = 4; // Use larger ticks when catching-up to save calculations
 	public var maxCatchupWindow = 0.5; // How many seconds max to simulate when catching up
-	public var nextBurstTime : Float = 0.0; // Keep tack of burst timing
-	public var totalBurstCount : Int = 0; // Keep tack of burst count
+	public var totalBurstCount : Int = 0; // Keep track of burst count
 
 	// RANDOM
 	public var seedGroup = 0;
@@ -457,7 +456,6 @@ class EmitterObject extends h3d.scene.Object {
 		lastTime = 0.0;
 		emitCount = 0;
 		totalBurstCount = 0;
-		nextBurstTime = 0.0;
 
 		var p = particles;
 		while(p != null) {
@@ -759,26 +757,28 @@ class EmitterObject extends h3d.scene.Object {
 						enable = false;
 				case BurstDuration:
 					if( burstDelay > 0 ) {
-						var needBurst = curTime < emitDuration && curTime > nextBurstTime;
+						var burstTarget = hxd.Math.floor(curTime / burstDelay);
+						var lastBurstTime = totalBurstCount * burstDelay;
+						var nextBurstTime = lastBurstTime + burstDelay;
+						var needBurst = nextBurstTime <= emitDuration && totalBurstCount < burstTarget;
 						while( needBurst ) {
 							var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, burstParticleCount));
 							doEmit(delta);
-							nextBurstTime += burstDelay;
 							totalBurstCount++;
-							needBurst = totalBurstCount < burstCount && curTime > nextBurstTime;
+							lastBurstTime += burstDelay;
+							nextBurstTime = lastBurstTime + burstDelay;
+							needBurst = nextBurstTime <= emitDuration && totalBurstCount < burstTarget;
 						}
 					}
-					if( isSubEmitter && curTime >= emitDuration )
+					if( isSubEmitter && curTime > emitDuration )
 						enable = false;
 				case Burst:
 					if( burstDelay > 0 ) {
-						var needBurst = totalBurstCount < burstCount && curTime > nextBurstTime;
-						while( needBurst ) {
+						var burstTarget = hxd.Math.floor(curTime / burstDelay);
+						while( totalBurstCount < burstTarget ) {
 							var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, burstParticleCount));
 							doEmit(delta);
-							nextBurstTime += burstDelay;
 							totalBurstCount++;
-							needBurst = totalBurstCount < burstCount && curTime > nextBurstTime;
 						}
 					}
 					if( isSubEmitter && totalBurstCount == burstCount )
