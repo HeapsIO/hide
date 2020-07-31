@@ -1013,6 +1013,13 @@ input[type=checkbox]:checked:after {
   width: 20px;
   margin-left: 8px;
 }
+.editModeButton {
+  margin: 10px;
+  outline: 4px solid #fd5151;
+}
+.editModeEnabled {
+  outline: 4px solid #5897fb;
+}
 .spline-editor .editModeButton {
   margin: 10px;
   outline: 4px solid #fd5151;

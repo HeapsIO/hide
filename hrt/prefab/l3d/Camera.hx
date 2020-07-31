@@ -1,6 +1,30 @@
 package hrt.prefab.l3d;
+import h3d.scene.Object;
 import hrt.prefab.Context;
 import hrt.prefab.Library;
+
+class CameraSyncObject extends h3d.scene.Object {
+
+	public var enable : Bool;
+	public var dir : h3d.Vector;
+	public var pos : h3d.Vector;
+	public var fovY : Float;
+	public var zFar : Float;
+	public var zNear : Float;
+
+	override function sync( ctx ) {
+		if( enable ) {
+			var c = getScene().camera;
+			if( c != null ) {
+				c.pos.load(pos);
+				c.target.load(pos.add(dir));
+				c.fovY = fovY;
+				c.zFar = zFar;
+				c.zNear = zNear;
+			}
+		}
+	}
+}
 
 class Camera extends Object3D {
 
@@ -8,6 +32,7 @@ class Camera extends Object3D {
 	var zFar : Float = 200;
 	var zNear : Float = 0.02;
 	var showFrustum = true;
+	var preview = false;
 
 	public function new(?parent) {
 		super(parent);
@@ -93,9 +118,26 @@ class Camera extends Object3D {
 		}
 	}
 
-	override function updateInstance( ctx, ?p ) {
+	override function makeInstance( ctx : hrt.prefab.Context ) {
+		ctx = ctx.clone(this);
+		ctx.local3d = new CameraSyncObject(ctx.local3d);
+		ctx.local3d.name = name;
+		updateInstance(ctx);
+		return ctx;
+	}
+
+	override function updateInstance( ctx : hrt.prefab.Context, ?p ) {
 		super.updateInstance(ctx, p);
 		drawFrustum(ctx);
+		var cso = Std.downcast(ctx.local3d, CameraSyncObject);
+		if( cso != null ) {
+			cso.pos = getTransform().getPosition();
+			cso.dir = getTransform().front();
+			cso.fovY = fovY;
+			cso.zFar = zFar;
+			cso.zNear = zNear;
+			cso.enable = preview;
+		}
 	}
 
 	public function applyTo(c: h3d.Camera) {
@@ -118,6 +160,10 @@ class Camera extends Object3D {
 	#if editor
 
 	override function setSelected( ctx : Context, b : Bool ) {
+		if( !b ) {
+			preview = false;
+			updateInstance(ctx);
+		}
 		return false;
 	}
 
@@ -131,27 +177,28 @@ class Camera extends Object3D {
 					<dt>Z Far</dt><dd><input type="range" min="0" max="1000" field="zFar"/></dd>
 					<dt>Z Near</dt><dd><input type="range" min="0" max="10" field="zNear"/></dd>
 					<dt></dt><dd><input class="copy" type="button" value="Copy Current"/></dd>
-					<dt></dt><dd><input class="preview" type="button" value="Preview" /></dd>
+					<dt></dt><dd><input class="apply" type="button" value="Apply" /></dd>
 					<dt></dt><dd><input class="reset" type="button" value="Reset" /></dd>
 				</dl>
 			</div>
 			<div class="group" name="Debug">
 				<dl>
 					<dt>Show Frustum</dt><dd><input type="checkbox" field="showFrustum"/></dd>
+					<div align="center">
+						<input type="button" value="Preview Mode : Disabled" class="editModeButton" />
+					</div>
 				</dl>
 			</div>
 		'),this, function(pname) {
 			ctx.onChange(this, pname);
-			if( pname != "showFrustum" ) {
-				var c = ctx.scene.s3d.camera;
-				if(c != null) {
-					c.fovY = fovY;
-					c.zFar = zFar;
-					c.zNear = zNear;
-					ctx.scene.editor.cameraController.lockZPlanes = true;
-					ctx.scene.editor.cameraController.loadFromCamera();
-				}
-			}
+		});
+
+		var editModeButton = props.find(".editModeButton");
+		editModeButton.click(function(_) {
+			preview = !preview;
+			editModeButton.val(preview ? "Preview Mode : Enabled" : "Preview Mode : Disabled");
+			editModeButton.toggleClass("editModeEnabled", preview);
+			updateInstance(ctx.getContext(this));
 		});
 
 		props.find(".copy").click(function(e) {
@@ -176,7 +223,7 @@ class Camera extends Object3D {
 		});
 
 
-		props.find(".preview").click(function(e) {
+		props.find(".apply").click(function(e) {
 			applyTo(ctx.scene.s3d.camera);
 			ctx.scene.editor.cameraController.lockZPlanes = true;
 			ctx.scene.editor.cameraController.loadFromCamera();
