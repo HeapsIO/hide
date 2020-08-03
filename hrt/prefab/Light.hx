@@ -55,7 +55,6 @@ class Light extends Object3D {
 	public var zNear : Float = 0.02;
 
 	// Spot
-	public var maxRange : Float = 20;
 	public var angle : Float = 90;
 	public var fallOff : Float = 80;
 	public var cookieTex : h3d.mat.Texture = null;
@@ -90,7 +89,6 @@ class Light extends Object3D {
 		obj.isMainLight = isMainLight;
 		obj.angle = angle;
 		obj.fallOff = fallOff;
-		obj.maxRange = maxRange;
 		obj.cookiePath = cookiePath;
 		obj.occlusionFactor = occlusionFactor;
 
@@ -112,7 +110,6 @@ class Light extends Object3D {
 		isMainLight = obj.isMainLight;
 		angle = obj.angle;
 		fallOff = obj.fallOff;
-		maxRange = obj.maxRange;
 		cookiePath = obj.cookiePath;
 		occlusionFactor = obj.occlusionFactor == null ? 0.0 : obj.occlusionFactor;
 
@@ -207,7 +204,6 @@ class Light extends Object3D {
 			case Spot:
 				var sl = Std.downcast(light, h3d.scene.pbr.SpotLight);
 				sl.range = range;
-				sl.maxRange = maxRange;
 				sl.angle = angle;
 				sl.fallOff = fallOff;
 				sl.cookie = cookieTex;
@@ -245,7 +241,6 @@ class Light extends Object3D {
 		}
 
 		#if editor
-
 		var debugPoint = ctx.local3d.find(c -> if(c.name == "_debugPoint") c else null);
 		var debugDir = ctx.local3d.find(c -> if(c.name == "_debugDir") c else null);
 		var debugSpot = ctx.local3d.find(c -> if(c.name == "_debugSpot") c else null);
@@ -363,7 +358,7 @@ class Light extends Object3D {
 					sel = g;
 				}
 
-				mesh.setScale(0.2/maxRange);
+				mesh.setScale(0.2/range);
 		}
 
 		if(mesh != null){
@@ -429,8 +424,7 @@ class Light extends Object3D {
 		switch( kind ) {
 		case Spot:
 			group.append(hide.comp.PropsEditor.makePropsList([
-				{ name: "range", t: PFloat(1, 200), def: 10 },
-				{ name: "maxRange", t: PFloat(1, 200), def: 10 },
+				{ name: "range", t: PFloat(1, 20), def: 10 },
 				{ name: "angle", t: PFloat(1, 90), def: 90 },
 				{ name: "fallOff", t: PFloat(1, 90), def: 80 },
 				{ name: "cookiePath", t: PTexture },
