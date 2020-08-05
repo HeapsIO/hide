@@ -11,7 +11,6 @@ typedef ColorGradingProps = {
 class ColorGradingTonemap extends hxsl.Shader {
 	static var SRC = {
 
-		@param var pixelSize : Vec2;
 		@param var size : Int;
 		@param var intensity : Float;
 		@param var lut : Sampler2D;
@@ -55,7 +54,6 @@ class ColorGrading extends RendererFX {
 		if( step == BeforeTonemapping ) {
 			r.mark("ColorGrading");
 			var p : ColorGradingProps = props;
-			tonemap.pixelSize = new h3d.Vector(1.0/r.ctx.engine.width, 1.0/r.ctx.engine.height);
 			tonemap.intensity = p.intensity;
 			tonemap.size = p.size;
 			if( p.texturePath != null )
