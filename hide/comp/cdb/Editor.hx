@@ -466,6 +466,7 @@ class Editor extends Component {
 
 	public static function refreshAll( eraseUndo = false ) {
 		var editors : Array<Editor> = [for( e in new Element(".is-cdb-editor").elements() ) e.data("cdb")];
+		DataFiles.load();
 		for( e in editors ) {
 			e.syncSheet(Ide.inst.database);
 			e.refresh();
