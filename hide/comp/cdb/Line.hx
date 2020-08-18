@@ -36,6 +36,10 @@ class Line extends Component {
 	}
 
 	public function hide() {
+		if( subTable != null ) {
+			subTable.close();
+			subTable = null;
+		}
 		cells = [];
 		element.children('td.c').remove();
 		element.addClass("hidden");
