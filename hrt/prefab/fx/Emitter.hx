@@ -757,7 +757,7 @@ class EmitterObject extends h3d.scene.Object {
 						enable = false;
 				case BurstDuration:
 					if( burstDelay > 0 ) {
-						var burstTarget = hxd.Math.floor(curTime / burstDelay);
+						var burstTarget = 1 + hxd.Math.floor(curTime / burstDelay);
 						var lastBurstTime = totalBurstCount * burstDelay;
 						var nextBurstTime = lastBurstTime + burstDelay;
 						var needBurst = nextBurstTime <= emitDuration && totalBurstCount < burstTarget;
@@ -774,7 +774,7 @@ class EmitterObject extends h3d.scene.Object {
 						enable = false;
 				case Burst:
 					if( burstDelay > 0 ) {
-						var burstTarget = hxd.Math.min(burstCount, hxd.Math.floor(curTime / burstDelay));
+						var burstTarget = hxd.Math.min(burstCount, 1 + hxd.Math.floor(curTime / burstDelay));
 						while( totalBurstCount < burstTarget ) {
 							var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, burstParticleCount));
 							doEmit(delta);
