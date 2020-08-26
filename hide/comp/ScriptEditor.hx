@@ -161,7 +161,15 @@ class ScriptChecker {
 			else {
 				switch( ctx ) {
 				case TInst(c,_):
-					for( f in c.fields ) if( f.t.match(TFun(_)) ) f.isPublic = true; // allow access to private methods
+					var cc = c;
+					while( true ) {
+						for( f in cc.fields ) if( f.t.match(TFun(_)) ) f.isPublic = true; // allow access to private methods
+						if( cc.superClass == null ) break;
+						cc = switch( cc.superClass ) {
+						case TInst(c,_): c;
+						default: throw "assert";
+						}
+					}
 					checker.setGlobals(c);
 				default: error(context+" is not a class");
 				}
