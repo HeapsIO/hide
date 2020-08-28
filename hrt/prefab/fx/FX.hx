@@ -115,6 +115,7 @@ class FXAnimation extends h3d.scene.Object {
 	}
 
 	static var tempMat = new h3d.Matrix();
+	static var tempTransform = new h3d.Matrix();
 	static var tempVec = new h3d.Vector();
 	public function setTime( time : Float ) {
 		this.localTime = time;
@@ -136,7 +137,7 @@ class FXAnimation extends h3d.scene.Object {
 						m.rotate(rotation.x, rotation.y, rotation.z);
 					}
 
-					var baseMat = anim.elt.getTransform(tempMat);
+					var baseMat = anim.elt.getTransform(tempTransform);
 					var offset = baseMat.getPosition(tempVec);
 					baseMat.tx = baseMat.ty = baseMat.tz = 0.0;  // Ignore
 					m.multiply(baseMat, m);
