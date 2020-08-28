@@ -136,7 +136,7 @@ class FXAnimation extends h3d.scene.Object {
 						m.rotate(rotation.x, rotation.y, rotation.z);
 					}
 
-					var baseMat = anim.elt.getTransform();
+					var baseMat = anim.elt.getTransform(tempMat);
 					var offset = baseMat.getPosition(tempVec);
 					baseMat.tx = baseMat.ty = baseMat.tz = 0.0;  // Ignore
 					m.multiply(baseMat, m);
