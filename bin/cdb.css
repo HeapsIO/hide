@@ -226,7 +226,7 @@
   white-space: nowrap;
   cursor: pointer;
   text-overflow: ellipsis;
-  max-width: 900;
+  max-width: 900px;
   overflow: hidden!important;
 }
 .cdb .cdb-sheet td.t_list img,
