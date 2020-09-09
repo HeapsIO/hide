@@ -101,14 +101,245 @@ class HeightMapShader extends hxsl.Shader {
 	};
 }
 
+class HeightMapTile {
+
+	public var tx(default,null) : Int;
+	public var ty(default,null) : Int;
+	public var bounds(default, null) : h3d.col.Bounds;
+	public var root(default,null) : h3d.scene.Mesh;
+
+	var hmap : HeightMap;
+	var height : hxd.Pixels;
+
+	public function new(hmap, tx, ty) {
+		this.hmap = hmap;
+		this.tx = tx;
+		this.ty = ty;
+		bounds = h3d.col.Bounds.fromValues(tx * hmap.size, ty * hmap.size, hmap.minZ, hmap.size, hmap.size, hmap.maxZ - hmap.minZ);
+	}
+
+	public function remove() {
+		if( root != null ) {
+			root.remove();
+			root = null;
+		}
+	}
+
+	public function isEmpty() {
+		getHeight();
+		return height.width == 1;
+	}
+
+	public function getHeight() {
+		if( height == null ) {
+			for( t in hmap.textures )
+				if( t.kind == Height && t.enable && t.path != null ) {
+					var path = resolveTexturePath(t.path);
+					height = try hxd.res.Loader.currentInstance.load(path).toImage().getPixels() catch( e : hxd.res.NotFound ) null;
+					break;
+				}
+			if( height == null ) height = hxd.Pixels.alloc(1, 1, R32F);
+			height.convert(R32F);
+		}
+		return height;
+	}
+
+	@:access(hrt.prefab.l3d.HeightMapMesh)
+	public function create(mesh:HeightMapMesh) {
+		if( root != null ) throw "assert";
+		root = new h3d.scene.Mesh(mesh.grid);
+		root.x = hmap.size * tx;
+		root.y = hmap.size * ty;
+
+		inline function getTextures(k) return hmap.getTextures(k,tx,ty);
+		var htex = getTextures(Height)[0];
+		var splat = getTextures(SplatMap);
+		var albedo = getTextures(Albedo);
+		var normal = getTextures(Normal)[0];
+		root.material.texture = albedo.shift();
+
+		var shader = root.material.mainPass.addShader(new HeightMapShader());
+		shader.hasHeight = htex != null;
+		shader.heightMap = htex;
+		shader.hasNormal = normal != null;
+		shader.normalMap = normal;
+		shader.heightScale = hmap.getHScale();
+		shader.normalScale = hmap.heightScale * hmap.normalScale;
+		shader.cellSize.set(mesh.grid.cellWidth,mesh.grid.cellHeight);
+		if( htex != null ) shader.heightOffset.set(1 / htex.width,1 / htex.height);
+
+		var scount = hxd.Math.imin(splat.length, albedo.length);
+		shader.SplatCount = scount;
+		shader.splats = [for( i in 0...scount ) splat[i]];
+		shader.albedos = [for( i in 0...scount ) albedo[i]];
+
+		addObjects(mesh);
+	}
+
+	function addObjects( mesh : HeightMapMesh ) {
+		var data = hmap.storedCtx.shared.loadBytes(hmap.resolveTexturePath(hmap.objects.file,tx,ty));
+		if( data == null ) return;
+		var xml = new haxe.xml.Access(Xml.parse(data.toString()).firstElement());
+		var terrainWidth = Std.parseFloat(xml.node.Surface.att.Width);
+		var scale = hmap.size / terrainWidth;
+		var localScale = hmap.objects.scale * scale;
+		var posX = tx * hmap.size;
+		var posY = ty * hmap.size;
+
+		var xMax = 0., yMax = 0.;
+
+		for( layer in xml.node.Objects.node.Layers.nodes.Layer ) {
+			for( obj in layer.nodes.Object ) {
+				var model = mesh.resolveAssetModel(obj.att.MeshAssetFileName);
+				if( model == null ) continue;
+				var data = haxe.crypto.Base64.decode(obj.node.Data.innerData);
+				for( i in 0...Std.int(data.length/40) ) {
+					var p = i * 40;
+					var x = data.getFloat(p); p += 4;
+					p += 4;
+					var y = terrainWidth - data.getFloat(p); p += 4;
+					if( x > xMax ) xMax = x;
+					if( y > yMax ) yMax = y;
+
+					x *= scale;
+					y *= scale;
+
+					var scW = data.getFloat(p); p += 4;
+					var scH = data.getFloat(p); p += 4;
+					var rotX = data.getFloat(p); p += 4;
+					var rotY = data.getFloat(p); p += 4;
+					var rotZ = data.getFloat(p); p += 4;
+					p += 4; // ???
+					var tint = data.getInt32(p);
+					tint = tint & 0xFFFFFF;
+					tint = ((tint & 0xFF) << 16) | (tint & 0xFF00) | (tint >> 16);
+
+					var mat = new h3d.Matrix();
+					mat.initScale(scW * localScale, scW * localScale, scH * localScale);
+					mat.rotate(rotX * Math.PI * 2, rotZ * Math.PI * 2, rotY * Math.PI * 2);
+					mat.tx = x + posX;
+					mat.ty = y + posY;
+					mat.tz = hmap.getZ(mat.tx, mat.ty);
+
+					@:privateAccess mesh.world.addTransform(model, mat);
+				}
+			}
+		}
+	}
+
+	inline function resolveTexturePath( path : String ) {
+		return hmap.resolveTexturePath(path, tx, ty);
+	}
+
+}
+
+class HeightMapMesh extends h3d.scene.Object {
+
+	var hmap : HeightMap;
+	var grid : HeightGrid;
+	var world : WorldNoSoil;
+	var modelCache : Map<String, h3d.scene.World.WorldModel> = new Map();
+	var nullModel = new h3d.scene.World.WorldModel(null);
+
+	public function new(hmap, ?parent) {
+		super(parent);
+		this.hmap = hmap;
+	}
+
+	override function sync(ctx:h3d.scene.RenderContext) {
+		super.sync(ctx);
+
+		var r = h3d.col.Ray.fromPoints(ctx.camera.unproject(0,0,0).toPoint(), ctx.camera.unproject(0,0,1).toPoint());
+		var pt0 = r.intersect(h3d.col.Plane.Z(0));
+		var x0 = Math.round(pt0.x / hmap.size);
+		var y0 = Math.round(pt0.y / hmap.size);
+
+		// spiral for-loop
+		var dx = 0, dy = 0, d = 1, m = 1, out = 0;
+		while( true ) {
+			var xyOut = true;
+			while( m > 2 * dx * d ) {
+				if( checkTile(ctx,dx+x0,dy+y0) ) xyOut = false;
+				dx += d;
+			}
+			while( m > 2 * dy * d ) {
+				if( checkTile(ctx,dx+x0,dy+y0) ) xyOut = false;
+				dy += d;
+			}
+			if( xyOut ) {
+				out++;
+				if( out == 2 ) break;
+			} else
+				out = 0;
+			d = -d;
+			m++;
+		}
+		world.done();
+	}
+
+	function checkTile( ctx : h3d.scene.RenderContext, x : Int, y : Int ) {
+		var t = hmap.getTile(x,y);
+		if( !ctx.camera.frustum.hasBounds(t.bounds) || t.isEmpty() ) {
+			if( t.root != null ) t.root.visible = false;
+			return false;
+		}
+		if( t.root != null )
+			t.root.visible = true;
+		else {
+			t.create(this);
+			addChild(t.root);
+		}
+		return true;
+	}
+
+	public function init() {
+		var htex = hmap.getTextures(Height, 0, 0)[0];
+		var size = hmap.size;
+		var width = htex == null ? Std.int(size) : htex.width;
+		var height = htex == null ? Std.int(size) : htex.height;
+		var cw = size/width, ch = size/height;
+		if( grid == null || grid.width != width || grid.height != height || grid.cellWidth != cw || grid.cellHeight != ch ) {
+			grid = new HeightGrid(width,height,cw,ch);
+			grid.addUVs();
+			grid.addNormals();
+		}
+		modelCache = new Map();
+		if( world != null ) {
+			world.dispose();
+			world = null;
+		}
+		if( hmap.objects != null ) {
+			world = new WorldNoSoil(Std.int(size),Std.int(size) * 32,this);
+			world.killAlpha = hmap.objects.killAlpha;
+		}
+	}
+
+	public function resolveAssetModel( name : String ) {
+		var m = modelCache.get(name);
+		if( m != null ) return m == nullModel ? null : m;
+		var res = hmap.resolveAssetModel(name);
+		if( res == null ) {
+			modelCache.set(name, nullModel);
+			return null;
+		}
+		m = world.loadModel(res);
+		modelCache.set(name, m);
+		return m;
+	}
+
+
+}
+
+@:allow(hrt.prefab.l3d)
 class HeightMap extends Object3D {
 
+	var tilesCache : Map<Int,HeightMapTile> = new Map();
 	var textures : Array<{ path : String, kind : HeightMapTextureKind, enable : Bool }> = [];
 	var size = 128.;
 	var heightScale = 0.2;
 	var normalScale = 1.;
-	var tileX = 1;
-	var tileY = 1;
+	var minZ = -10;
+	var maxZ = 30;
 	var objects : {
 		var file : String;
 		var assetsPath : String;
@@ -116,8 +347,8 @@ class HeightMap extends Object3D {
 		var killAlpha : Float;
 	};
 
-	var heightTexturesCache : Array<hxd.Pixels>;
-	var objectsCache : Array<{ obj : String, x : Float, y : Float, scale : Float, rot : Float, tint : Int }>;
+	// todo : instead of storing the context, we should find a way to have a texture loader
+	var storedCtx : hrt.prefab.Context;
 	#if editor
 	var missingObjects : Map<String,Bool> = new Map();
 	var checkModels : Bool = true;
@@ -129,10 +360,8 @@ class HeightMap extends Object3D {
 		o.size = size;
 		o.heightScale = heightScale;
 		o.normalScale = normalScale;
-		if( o.tileX != 1 || o.tileY != 1 ) {
-			o.tileX = tileX;
-			o.tileY = tileY;
-		}
+		o.minZ = minZ;
+		o.maxZ = maxZ;
 		if( objects != null )
 			o.objects = objects;
 		return o;
@@ -144,13 +373,8 @@ class HeightMap extends Object3D {
 		size = obj.size;
 		heightScale = obj.heightScale;
 		normalScale = obj.normalScale;
-		if( obj.tileX != null ) {
-			tileX = obj.tileX;
-			tileY = obj.tileY;
-		} else {
-			tileX = 1;
-			tileY = 1;
-		}
+		if( obj.minZ != null ) minZ = obj.minZ;
+		if( obj.maxZ != null ) maxZ = obj.maxZ;
 		objects = obj.objects;
 	}
 
@@ -159,9 +383,9 @@ class HeightMap extends Object3D {
 		var ry = y / size;
 		var tx = Math.floor(rx);
 		var ty = Math.floor(ry);
-		if( tx < 0 || ty < 0 || tx >= tileX || ty >= tileY )
+		var curMap = getTile(tx, ty).getHeight();
+		if( curMap == null )
 			return null;
-		var curMap = getHeightMap(tx, ty);
 		var w = curMap.width;
 		var ix = Std.int( (rx - tx) * w );
 		var iy = Std.int( (ry - ty) * w );
@@ -178,44 +402,54 @@ class HeightMap extends Object3D {
 			if( z == null || z > ray.pz ) return -1;
 			return ray.pz - z;
 		}
-		var maxZ = getHScale() * 100;
-		var b = h3d.col.Bounds.fromValues(0,0,0,size * tileX, size * tileY, maxZ);
-		var dist = b.rayIntersection(ray, false);
-		if( dist < 0 )
-			return -1;
-		var prim = cast(ctx.local3d.toMesh().primitive, HeightGrid);
-		var pt = ray.getPoint(dist);
-		var m = hxd.Math.min(prim.cellWidth, prim.cellHeight) * 0.5;
-		var isTiled = tileX != 1 || tileY != 1;
-		var curX = -1, curY = -1, curMap = null, offX = 0., offY = 0., cw = 0., ch = 0.;
-		if( !isTiled ) {
-			curX = 0;
-			curY = 0;
-			curMap = getHeightMap(0,0);
-			cw = curMap.width / size;
-			ch = curMap.height / size;
+		var dist = 0.;
+		if( ray.pz > maxZ ) {
+			if( ray.lz == 0 )
+				return -1;
+			dist = (ray.pz - maxZ) / ray.pz;
 		}
+		var pt = ray.getPoint(dist);
+		if( pt.z < minZ )
+			return -1;
+
+		var prim = cast(ctx.local3d.toMesh().primitive, HeightGrid);
+		var m = hxd.Math.min(prim.cellWidth, prim.cellHeight) * 0.5;
+		var curX = -1, curY = -1, curMap = null, offX = 0., offY = 0., cw = 0., ch = 0.;
 		var prevH = pt.z;
 		var hscale = getHScale();
+
+		var bounds : h3d.col.Bounds = null, isLoaded = false;
+
 		while( true ) {
 			pt.x += ray.lx * m;
 			pt.y += ray.ly * m;
 			pt.z += ray.lz * m;
-			if( !b.contains(pt) )
-				break;
-			if( isTiled ) {
-				var px = Std.int(pt.x / size);
-				var py = Std.int(pt.y / size);
-				if( px != curX || py != curY ) {
-					curX = px;
-					curY = py;
-					offX = -px * size;
-					offY = -py * size;
-					curMap = getHeightMap(px, py);
+			if( pt.z < minZ )
+				return -1;
+			var px = Std.int(pt.x / size);
+			var py = Std.int(pt.y / size);
+			if( px != curX || py != curY ) {
+				bounds = h3d.col.Bounds.fromValues(px * size,py * size,minZ,size,size, maxZ - minZ);
+				curX = px;
+				curY = py;
+				isLoaded = false;
+			}
+			if( !bounds.contains(pt) )
+				continue;
+			if( !isLoaded ) {
+				isLoaded = true;
+				offX = -px * size;
+				offY = -py * size;
+				var t = getTile(px, py);
+				curMap = t.getHeight();
+				if( t.isEmpty() )
+					curMap = null;
+				else {
 					cw = curMap.width / size;
 					ch = curMap.height / size;
 				}
-			}
+			} else if( curMap == null )
+				continue;
 			var ix = Std.int((pt.x + offX)*cw);
 			var iy = Std.int((pt.y + offY)*ch);
 			var h = curMap.bytes.getFloat( (ix + iy * curMap.width) << 2 );
@@ -233,35 +467,24 @@ class HeightMap extends Object3D {
 		return -1;
 	}
 
-	function getHeightMap( x : Int, y : Int ) {
-		var id = x + y * tileX;
-		if( heightTexturesCache == null )
-			heightTexturesCache = [];
-		else {
-			var b = heightTexturesCache[id];
-			if( b != null ) return b;
-		}
-		var pix : hxd.Pixels = null;
-		for( t in textures )
-			if( t.kind == Height && t.enable && t.path != null ) {
-				var path = resolveTexturePath(t.path, x, y);
-				pix = try hxd.res.Loader.currentInstance.load(path).toImage().getPixels() catch( e : hxd.res.NotFound ) null;
-				break;
-			}
-		if( pix == null ) pix = hxd.Pixels.alloc(1, 1, R32F);
-		pix.convert(R32F);
-		heightTexturesCache[id] = pix;
-		return pix;
+	function getTile( x : Int, y : Int ) {
+		var id = x + y * 65535;
+		var t = tilesCache[id];
+		if( t != null )
+			return t;
+		t = new HeightMapTile(this, x, y);
+		tilesCache[id] = t;
+		return t;
 	}
 
-	function resolveTexturePath( path : String, x : Int, y : Int ) {
-		if( x != 0 || y != 0 ) {
+	function resolveTexturePath( path : String, tx : Int, ty : Int ) {
+		if( tx != 0 || ty != 0 ) {
 			var parts = path.split("0");
 			switch( parts.length ) {
 			case 2:
-				path = x + parts[0] + y + parts[1];
+				path = tx + parts[0] + ty + parts[1];
 			case 3:
-				path = parts[0] + x + parts[1] + y + parts[2];
+				path = parts[0] + tx + parts[1] + ty + parts[2];
 			default:
 				// pattern not recognized - should contain 2 zeroes
 			}
@@ -269,34 +492,61 @@ class HeightMap extends Object3D {
 		return path;
 	}
 
-	function getTextures( ctx : Context, k : HeightMapTextureKind, x : Int, y : Int ) {
+	function resolveAssetModel( name : String ) : hxd.res.Model {
+		var path = objects.assetsPath + "/" + name;
+		if( objects.assetsPath.indexOf("$") >= 0 ) {
+			path = objects.assetsPath;
+			path = path.split("$NAME").join(name);
+			var base = name;
+			while( true ) {
+				var c = base.charCodeAt(base.length-1);
+				if( c == '_'.code || (c >= '0'.code && c <= '9'.code) )
+					base = base.substr(0,-1);
+				else
+					break;
+			}
+			path = path.split("$BASE").join(base);
+		}
+		var res = try hxd.res.Loader.currentInstance.load(path + ".FBX").toModel() catch( e : hxd.res.NotFound )
+			try hxd.res.Loader.currentInstance.load(path + ".fbx").toModel() catch( e : hxd.res.NotFound ) {
+				#if editor
+				if( checkModels && !missingObjects.exists(path) ) {
+					missingObjects.set(path, true);
+					hide.Ide.inst.error(path+".fbx is missing");
+				}
+				#end
+				return null;
+			};
+		return res;
+	}
+
+	function getTextures( k : HeightMapTextureKind, tx : Int, ty : Int ) {
 		var tl = [];
 		for( t in textures )
 			if( t.kind == k && t.path != null && t.enable ) {
-				var path = resolveTexturePath(t.path,x,y);
-				tl.push(ctx.loadTexture(path));
+				var path = resolveTexturePath(t.path,tx,ty);
+				tl.push(loadTexture(path));
 			}
 		return tl;
 	}
 
+	function loadTexture( path : String ) {
+		return storedCtx.loadTexture(path);
+	}
+
 	override function makeInstance(ctx:Context):Context {
 		ctx = ctx.clone(this);
-		var mesh = new h3d.scene.Mesh(null, ctx.local3d);
-		mesh.material.mainPass.addShader(new HeightMapShader());
+		var mesh = new HeightMapMesh(this, ctx.local3d);
 		ctx.local3d = mesh;
 		ctx.local3d.name = name;
+		storedCtx = ctx;
 		updateInstance(ctx);
 		return ctx;
 	}
 
 	override function updateInstance( ctx : Context, ?propName : String ) {
 		super.updateInstance(ctx, propName);
-
-		heightTexturesCache = null;
-
-		var mesh = cast(ctx.local3d, h3d.scene.Mesh);
-		var grid = cast(mesh.primitive, HeightGrid);
-
+/*
 		if( propName == "killAlpha" ) {
 			var world : WorldNoSoil = Std.downcast(mesh.getObjectByName("$world"), WorldNoSoil);
 			if( world != null ) {
@@ -306,186 +556,16 @@ class HeightMap extends Object3D {
 			}
 			return;
 		}
-
-		var hmap = getTextures(ctx,Height, 0, 0)[0];
-		var width = hmap == null ? Std.int(size) : hmap.width;
-		var height = hmap == null ? Std.int(size) : hmap.height;
-		var cw = size/width, ch = size/height;
-		if( grid == null || grid.width != width || grid.height != height || grid.cellWidth != cw || grid.cellHeight != ch ) {
-			grid = new HeightGrid(width,height,cw,ch);
-			grid.addUVs();
-			grid.addNormals();
-			mesh.primitive = grid;
-		}
-
-		updateMesh(ctx, mesh, 0, 0);
-		var prev = new Map();
-		for( c in mesh )
-			if( c.name != null && c.name.charCodeAt(0) == '$'.code )
-				prev.set(c.name, c);
-		for( x in 0...tileX ) {
-			for( y in 0...tileY ) {
-				var name = "$h_"+x+"_"+y;
-				var sub = Std.downcast(prev.get(name), h3d.scene.Mesh);
-				if( sub == null ) {
-					sub = new h3d.scene.Mesh(mesh.primitive, mesh);
-					sub.name = name;
-					sub.material.mainPass.addShader(new HeightMapShader());
-				} else
-					prev.remove(name);
-				sub.x = x * (width * cw);
-				sub.y = y * (height * ch);
-				updateMesh(ctx, sub, x, y);
-			}
-		}
-
-		if( objects != null && objects.file != "" )
-			loadObjectCache(ctx);
-
-		if( objectsCache != null ) {
-			var world : WorldNoSoil = cast prev.get("$world");
-			var csize = Std.int(size/2);
-			var wsize = Std.int(size * hxd.Math.max(tileX, tileY));
-			var models = new Map();
-			var nullModel = new h3d.scene.World.WorldModel(null);
-			var first = false;
-			if( world == null || world.worldSize != wsize || world.chunkSize != csize ) {
-				world = new WorldNoSoil(csize, wsize, mesh);
-				world.enableNormalMaps = true;
-				world.enableSpecular = true;
-				world.name = "$world";
-			} else @:privateAccess {
-				prev.remove(world.name);
-				for( c in world.allChunks ) {
-					world.cleanChunk(c);
-					c.elements = [];
-				}
-			}
-			world.killAlpha = objects.killAlpha;
-			var isComplex = objects.assetsPath.indexOf("$") >= 0;
-			for( o in objectsCache ) {
-				var m = models.get(o.obj);
-				if( m == null ) {
-					var path = objects.assetsPath + "/" + o.obj;
-					if( isComplex ) {
-						path = objects.assetsPath;
-						path = path.split("$NAME").join(o.obj);
-						var base = o.obj;
-						while( true ) {
-							var c = base.charCodeAt(base.length-1);
-							if( c == '_'.code || (c >= '0'.code && c <= '9'.code) )
-								base = base.substr(0,-1);
-							else
-								break;
-						}
-						path = path.split("$BASE").join(base);
-					}
-					var r = try hxd.res.Loader.currentInstance.load(path + ".FBX").toModel() catch( e : hxd.res.NotFound )
-						try hxd.res.Loader.currentInstance.load(path + ".fbx").toModel() catch( e : hxd.res.NotFound ) {
-							#if editor
-							if( checkModels && !missingObjects.exists(path) ) {
-								missingObjects.set(path, true);
-								hide.Ide.inst.error(path+".fbx is missing");
-							}
-							#end
-							null;
-						};
-					m = nullModel;
-					if( r != null ) {
-						#if editor
-						try {
-							m = world.loadModel(r);
-						} catch( e : Dynamic ) {
-							hide.Ide.inst.error(e+'\n(while loading ${r.entry.path})');
-						}
-						#else
-						m = world.loadModel(r);
-						#end
-					}
-					models.set(o.obj, m);
-				}
-				if( m == nullModel ) continue;
-				world.add(m, o.x, o.y, getZ(o.x, o.y), o.scale, o.rot);
-				// TODO : add o.tint
-			}
-			world.done();
-		}
-
-		for( p in prev ) p.remove();
-	}
-
-	function loadObjectCache( ctx : Context ) {
-		var data = ctx.shared.loadBytes(objects.file);
-		if( data == null ) return;
-		objectsCache = [];
-		var xml = new haxe.xml.Access(Xml.parse(data.toString()).firstElement());
-		var terrainWidth = Std.parseFloat(xml.node.Surface.att.Width);
-		var scale = size * tileX / terrainWidth;
-		var localScale = objects.scale * scale;
-		for( layer in xml.node.Objects.node.Layers.nodes.Layer ) {
-			for( obj in layer.nodes.Object ) {
-				var name = obj.att.MeshAssetFileName;
-				var data = haxe.crypto.Base64.decode(obj.node.Data.innerData);
-				for( i in 0...Std.int(data.length/40) ) {
-					var p = i * 40;
-					var x = data.getFloat(p); p += 4;
-					p += 4; // skip
-					var y = terrainWidth - data.getFloat(p); p += 4;
-
-					x *= scale;
-					y *= scale;
-
-					var scW = data.getFloat(p); p += 4;
-					var scH = data.getFloat(p); p += 4;
-					var rotX = data.getFloat(p); p += 4;
-					var rotY = data.getFloat(p); p += 4;
-					var rotZ = data.getFloat(p); p += 4;
-					p += 4; // ???
-					var tint = data.getInt32(p);
-					tint = tint & 0xFFFFFF;
-					tint = ((tint & 0xFF) << 16) | (tint & 0xFF00) | (tint >> 16);
-
- 					objectsCache.push({
-						obj : name,
-						x : x,
-						y : y,
-						scale : scW * localScale,
-						rot : rotY * Math.PI * 2,
-						tint : tint,
-					});
-				}
-			}
-		}
+*/
+		for( t in tilesCache )
+			t.remove();
+		tilesCache = new Map();
+		var mesh = cast(ctx.local3d, HeightMapMesh);
+		mesh.init();
 	}
 
 	function getHScale() {
 		return heightScale * size * 0.1;
-	}
-
-	function updateMesh( ctx : Context, mesh : h3d.scene.Mesh, x : Int, y : Int ) {
-		inline function getTextures(k) return this.getTextures(ctx,k,x,y);
-
-		var prim = cast(mesh.primitive, HeightGrid);
-		var hmap = getTextures(Height)[0];
-		var splat = getTextures(SplatMap);
-		var albedo = getTextures(Albedo);
-		var normal = getTextures(Normal)[0];
-		mesh.material.texture = albedo.shift();
-
-		var shader = mesh.material.mainPass.getShader(HeightMapShader);
-		shader.hasHeight = hmap != null;
-		shader.heightMap = hmap;
-		shader.hasNormal = normal != null;
-		shader.normalMap = normal;
-		shader.heightScale = getHScale();
-		shader.normalScale = heightScale * normalScale;
-		shader.cellSize.set(prim.cellWidth,prim.cellHeight);
-		if( hmap != null ) shader.heightOffset.set(1 / hmap.width,1 / hmap.height);
-
-		var scount = hxd.Math.imin(splat.length, albedo.length);
-		shader.SplatCount = scount;
-		shader.splats = [for( i in 0...scount ) splat[i]];
-		shader.albedos = [for( i in 0...scount ) albedo[i]];
 	}
 
 	#if editor
@@ -499,16 +579,12 @@ class HeightMap extends Object3D {
 				<dt>Size</dt><dd><input type="range" min="0" max="1000" value="128" field="size"/></dd>
 				<dt>Height Scale</dt><dd><input type="range" min="0" max="1" field="heightScale"/></dd>
 				<dt>Normal Scale</dt><dd><input type="range" min="0" max="2" field="normalScale"/></dd>
+				<dt>MinZ</dt><dd><input type="range" min="-1000" max="0" field="minZ"/></dd>
+				<dt>MaxZ</dt><dd><input type="range" min="0" max="1000" field="maxZ"/></dd>
 			</dl>
 			</div>
 			<div class="group" name="Textures">
 				<ul id="tex"></ul>
-			</div>
-			<div class="group" name="Tiling">
-			<dl>
-				<dt>X</dt><dd><input type="range" min="1" max="16" step="1" field="tileX"/></dd>
-				<dt>Y</dt><dd><input type="range" min="1" max="16" step="1" field="tileY"/></dd>
-			</dl>
 			</div>
 			<div class="group" name="Objects">
 			</div>
@@ -597,7 +673,6 @@ class HeightMap extends Object3D {
 			</dl>
 			');
 			ectx.properties.build(e, objects, function(pname) {
-				objectsCache = null;
 				checkModels = false;
 				updateInstance(ctx,pname);
 				checkModels = true;
