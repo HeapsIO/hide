@@ -406,18 +406,17 @@ class HeightMap extends Object3D {
 		if( ray.pz > maxZ ) {
 			if( ray.lz == 0 )
 				return -1;
-			dist = (ray.pz - maxZ) / ray.pz;
+			dist = (maxZ - ray.pz) / ray.lz;
 		}
 		var pt = ray.getPoint(dist);
 		if( pt.z < minZ )
 			return -1;
 
-		var prim = cast(ctx.local3d.toMesh().primitive, HeightGrid);
+		var prim = @:privateAccess cast(ctx.local3d, HeightMapMesh).grid;
 		var m = hxd.Math.min(prim.cellWidth, prim.cellHeight) * 0.5;
 		var curX = -1, curY = -1, curMap = null, offX = 0., offY = 0., cw = 0., ch = 0.;
 		var prevH = pt.z;
 		var hscale = getHScale();
-
 		var bounds : h3d.col.Bounds = null, isLoaded = false;
 
 		while( true ) {
