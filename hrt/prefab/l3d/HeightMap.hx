@@ -277,6 +277,9 @@ class HeightMapMesh extends h3d.scene.Object {
 		world.done();
 	}
 
+	public dynamic function onTileReady( t : HeightMapTile ) {
+	}
+
 	function checkTile( ctx : h3d.scene.RenderContext, x : Int, y : Int ) {
 		var t = hmap.getTile(x,y);
 		if( !ctx.camera.frustum.hasBounds(t.bounds) || t.isEmpty() ) {
@@ -288,6 +291,7 @@ class HeightMapMesh extends h3d.scene.Object {
 		else {
 			t.create(this);
 			addChild(t.root);
+			onTileReady(t);
 		}
 		return true;
 	}
@@ -417,7 +421,6 @@ class HeightMap extends Object3D {
 		var curX = -1, curY = -1, curMap = null, offX = 0., offY = 0., cw = 0., ch = 0.;
 		var prevH = pt.z;
 		var hscale = getHScale();
-		var bounds : h3d.col.Bounds = null, isLoaded = false;
 
 		while( true ) {
 			pt.x += ray.lx * m;
@@ -425,18 +428,11 @@ class HeightMap extends Object3D {
 			pt.z += ray.lz * m;
 			if( pt.z < minZ )
 				return -1;
-			var px = Std.int(pt.x / size);
-			var py = Std.int(pt.y / size);
+			var px = Math.floor(pt.x / size);
+			var py = Math.floor(pt.y / size);
 			if( px != curX || py != curY ) {
-				bounds = h3d.col.Bounds.fromValues(px * size,py * size,minZ,size,size, maxZ - minZ);
 				curX = px;
 				curY = py;
-				isLoaded = false;
-			}
-			if( !bounds.contains(pt) )
-				continue;
-			if( !isLoaded ) {
-				isLoaded = true;
 				offX = -px * size;
 				offY = -py * size;
 				var t = getTile(px, py);
@@ -447,7 +443,8 @@ class HeightMap extends Object3D {
 					cw = curMap.width / size;
 					ch = curMap.height / size;
 				}
-			} else if( curMap == null )
+			}
+			if( curMap == null )
 				continue;
 			var ix = Std.int((pt.x + offX)*cw);
 			var iy = Std.int((pt.y + offY)*ch);
