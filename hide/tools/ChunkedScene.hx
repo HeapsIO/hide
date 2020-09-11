@@ -13,6 +13,7 @@ class ChunkScene {
 	var tmpBounds = new h3d.col.Bounds();
 	var defaultBounds = new h3d.col.Bounds();
 	var global : Chunk;
+	var hchunks : Map<Int,Map<Int,Chunk>> = [];
 
 	public function new( chunkSize ) {
 		this.chunkSize = chunkSize;
@@ -138,14 +139,8 @@ class ChunkScene {
 	}
 
 	function getChunk( x : Int, y : Int ) {
-		var r = null;
-		for( c in chunks ) {
-			if( c.pos.x == x * chunkSize && c.pos.y == y * chunkSize && !c.isGlobal ) {
-				r = c;
-				break;
-			}
-		}
-		return r;
+		var cx = hchunks.get(x);
+		return cx == null ? null : cx.get(y);
 	}
 
 	function getChunks( bounds : h3d.col.Bounds ) : Array<Chunk> {
@@ -155,6 +150,12 @@ class ChunkScene {
 				var c = getChunk(x,y);
 				if( c == null ) {
 					c = new Chunk(new h3d.col.Point(x * chunkSize, y * chunkSize));
+					var cx = hchunks.get(x);
+					if( cx == null ) {
+						cx = new Map();
+						hchunks.set(x, cx);
+					}
+					cx.set(y, c);
 					c.updateBounds(chunkSize);
 					chunks.push(c);
 				}
