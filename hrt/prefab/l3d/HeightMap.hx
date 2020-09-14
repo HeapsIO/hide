@@ -314,6 +314,8 @@ class HeightMapMesh extends h3d.scene.Object {
 		}
 		if( hmap.objects != null ) {
 			world = new WorldNoSoil(Std.int(size),Std.int(size) * 32,this);
+			world.enableNormalMaps = true;
+			world.enableSpecular = true;
 			world.killAlpha = hmap.objects.killAlpha;
 		}
 	}
