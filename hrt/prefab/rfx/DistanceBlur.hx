@@ -56,12 +56,14 @@ typedef DistanceBlurProps = {
 	var farEndIntensity : Float;
 
 	var showDebug : Bool;
+	var blurTextureSize : Float;
+	var blurRange : Int;
 }
 
 class DistanceBlur extends RendererFX {
 
 	var blurPass = new h3d.pass.ScreenFx(new DistanceBlurShader());
-	var lbrBlur = new h3d.pass.Blur(9);
+	var lbrBlur = new h3d.pass.Blur();
 
 	public function new(?parent) {
 		super(parent);
@@ -75,6 +77,8 @@ class DistanceBlur extends RendererFX {
 			farStartIntensity : 0,
 			farEndIntensity : 1,
 			showDebug : false,
+			blurTextureSize : 0.5,
+			blurRange : 6,
 		} : DistanceBlurProps);
 
 		blurPass.pass.setBlendMode(Alpha);
@@ -94,13 +98,12 @@ class DistanceBlur extends RendererFX {
 			blurPass.shader.farEndIntensity = p.farEndIntensity;
 			blurPass.shader.DEBUG = #if editor p.showDebug #else false #end;
 
-			var lbrBlurred : h3d.mat.Texture = ctx.getGlobal("ldrBlurred");
-			if( lbrBlurred == null ) {
-				var ldr : h3d.mat.Texture = ctx.getGlobal("ldrMap");
-				lbrBlurred = r.allocTarget("ldrBlurred", false, 0.25, RGBA);
-				r.copy(ldr, lbrBlurred);
-				lbrBlur.apply(ctx, lbrBlurred);
-			}
+			var ldr : h3d.mat.Texture = ctx.getGlobal("ldrMap");
+			var lbrBlurred = r.allocTarget("ldrBlurred", false, p.blurTextureSize, RGBA);
+			r.copy(ldr, lbrBlurred);
+			lbrBlur.radius = p.blurRange;
+			lbrBlur.apply(ctx, lbrBlurred);
+	
 			blurPass.shader.blurredTexture = lbrBlurred;
 			blurPass.setGlobals(ctx);
 			blurPass.render();
@@ -121,6 +124,10 @@ class DistanceBlur extends RendererFX {
 					<dt>End Distance</dt><dd><input type="range" min="0" max="1000" field="farEndDistance"/></dd>
 					<dt>Start Opacity</dt><dd><input type="range" min="0" max="1" field="farStartIntensity"/></dd>
 					<dt>End Opacity</dt><dd><input type="range" min="0" max="1" field="farEndIntensity"/></dd>
+				</div>
+				<div class="group" name="Blur">
+					<dt>Texture Size</dt><dd><input type="range" min="0" max="1" field="blurTextureSize"/></dd>
+					<dt>Range</dt><dd><input type="range" min="0" max="20" step="2" field="blurRange"/></dd>
 				</div>
 				<div class="group" name="Debug">
 					<dt>Show Debug</dt><dd><input type="checkbox" field="showDebug"/></dd>
