@@ -16,22 +16,24 @@ class DistanceBlurShader extends PbrShader {
 
 		@param var blurredTexture : Sampler2D;
 
+		@const var DEBUG : Bool = false;
+
 		function fragment() {
 			var origin = getPosition();
 			var distance = (origin - camera.position).length();
-
-			if( distance > nearEndDistance && distance < farStartDistance )
+			
+			if( distance < nearEndDistance ) {
+				var nearIntensityFactor = clamp((distance - nearStartDistance) / (nearEndDistance - nearStartDistance), 0, 1);
+				var nearIntensity = mix(nearStartIntensity, nearEndIntensity, nearIntensityFactor);
+				pixelColor = DEBUG ? vec4(vec3(nearIntensity), 1.0) : vec4(blurredTexture.get(calculatedUV).rgb, nearIntensity);
+			}
+			else if( distance > farStartDistance ) {
+				var farIntensityFactor = clamp((distance - farStartDistance) / (farEndDistance - farStartDistance), 0, 1);
+				var farIntensity = mix(farStartIntensity, farEndIntensity, farIntensityFactor);
+				pixelColor = DEBUG ? vec4(vec3(farIntensity), 1.0) : vec4(blurredTexture.get(calculatedUV).rgb, farIntensity);
+			}
+			else 
 				discard;
-
-			var nearIntensityFactor = clamp((distance - nearStartDistance) / (nearEndDistance - nearStartDistance), 0, 1);
-			var farIntensityFactor = clamp((distance - farStartDistance) / (farEndDistance - farStartDistance), 0, 1);
-			var nearIntensity = mix(nearStartIntensity, nearEndIntensity, nearIntensityFactor);
-			var farIntensity = mix(farStartIntensity, farEndIntensity, farIntensityFactor);
-			var intensity = max(nearIntensity, farIntensity);
-
-			if( intensity <= 0 ) discard;
-
-			pixelColor = vec4(blurredTexture.get(calculatedUV).rgb, intensity);
 		}
 	};
 
@@ -52,6 +54,8 @@ typedef DistanceBlurProps = {
 	var farEndDistance : Float;
 	var farStartIntensity : Float;
 	var farEndIntensity : Float;
+
+	var showDebug : Bool;
 }
 
 class DistanceBlur extends RendererFX {
@@ -70,6 +74,7 @@ class DistanceBlur extends RendererFX {
 			farEndDistance : 500,
 			farStartIntensity : 0,
 			farEndIntensity : 1,
+			showDebug : false,
 		} : DistanceBlurProps);
 
 		blurPass.pass.setBlendMode(Alpha);
@@ -87,6 +92,8 @@ class DistanceBlur extends RendererFX {
 			blurPass.shader.farEndDistance = p.farEndDistance;
 			blurPass.shader.farStartIntensity = p.farStartIntensity;
 			blurPass.shader.farEndIntensity = p.farEndIntensity;
+			blurPass.shader.DEBUG = #if editor p.showDebug #else false #end;
+
 			var lbrBlurred : h3d.mat.Texture = ctx.getGlobal("ldrBlurred");
 			if( lbrBlurred == null ) {
 				var ldr : h3d.mat.Texture = ctx.getGlobal("ldrMap");
@@ -114,6 +121,9 @@ class DistanceBlur extends RendererFX {
 					<dt>End Distance</dt><dd><input type="range" min="0" max="1000" field="farEndDistance"/></dd>
 					<dt>Start Opacity</dt><dd><input type="range" min="0" max="1" field="farStartIntensity"/></dd>
 					<dt>End Opacity</dt><dd><input type="range" min="0" max="1" field="farEndIntensity"/></dd>
+				</div>
+				<div class="group" name="Debug">
+					<dt>Show Debug</dt><dd><input type="checkbox" field="showDebug"/></dd>
 				</div>
 		'),props);
 	}
