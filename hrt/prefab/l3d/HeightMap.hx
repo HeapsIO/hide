@@ -289,12 +289,16 @@ class HeightMapMesh extends h3d.scene.Object {
 		}
 		if( t.root != null )
 			t.root.visible = true;
-		else {
-			t.create(this);
-			addChild(t.root);
-			onTileReady(t);
-		}
+		else
+			initTile(t);
 		return true;
+	}
+
+	public function initTile( t : HeightMapTile ) {
+		if( t.root != null ) return;
+		t.create(this);
+		addChild(t.root);
+		onTileReady(t);
 	}
 
 	public function init() {
