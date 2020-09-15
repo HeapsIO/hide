@@ -240,6 +240,7 @@ class HeightMapMesh extends h3d.scene.Object {
 	var world : WorldNoSoil;
 	var modelCache : Map<String, h3d.scene.World.WorldModel> = new Map();
 	var nullModel = new h3d.scene.World.WorldModel(null);
+	var epsilon = 0.5;
 
 	public function new(hmap, ?parent) {
 		super(parent);
@@ -303,7 +304,7 @@ class HeightMapMesh extends h3d.scene.Object {
 		var height = htex == null ? Std.int(size) : htex.height;
 		var cw = size/width, ch = size/height;
 		if( grid == null || grid.width != width || grid.height != height || grid.cellWidth != cw || grid.cellHeight != ch ) {
-			grid = new HeightGrid(width,height,cw,ch);
+			grid = new HeightGrid(width,height,cw+epsilon/width,ch+epsilon/height);
 			grid.addUVs();
 			grid.addNormals();
 		}
