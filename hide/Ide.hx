@@ -29,6 +29,7 @@ class Ide {
 	var databaseDiff : String;
 	var pakFile : hxd.fmt.pak.FileSystem;
 	var originDataBase : cdb.Database;
+	var dbWatcher : hide.tools.FileWatcher.FileWatchEvent;
 
 	var config : {
 		global : Config,
@@ -544,7 +545,7 @@ class Ide {
 			}
 		}
 		loadDatabase();
-		fileWatcher.register(databaseFile,function() {
+		dbWatcher = fileWatcher.register(databaseFile,function() {
 			loadDatabase(true);
 			hide.comp.cdb.Editor.refreshAll(true);
 		});
@@ -711,8 +712,8 @@ class Ide {
 	public function saveDatabase() {
 		hide.comp.cdb.DataFiles.save(function() {
 			if( databaseDiff != null ) {
-				fileWatcher.ignoreNextChange(databaseDiff);
 				sys.io.File.saveContent(getPath(databaseDiff), toJSON(new cdb.DiffFile().make(originDataBase,database)));
+				fileWatcher.ignorePrevChange(dbWatcher);
 			} else {
 				if( !sys.FileSystem.exists(getPath(databaseFile)) && fileExists(databaseFile) ) {
 					// was loaded from pak, cancel changes
@@ -720,8 +721,8 @@ class Ide {
 					hide.comp.cdb.Editor.refreshAll();
 					return;
 				}
-				fileWatcher.ignoreNextChange(databaseFile);
 				sys.io.File.saveContent(getPath(databaseFile), database.save());
+				fileWatcher.ignorePrevChange(dbWatcher);
 			}
 		});
 	}

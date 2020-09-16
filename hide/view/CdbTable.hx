@@ -113,7 +113,7 @@ class CdbTable extends hide.ui.View<{}> {
 			tabs.currentTab = tabContents[idx].parent();
 		}
 
-		watch(@:privateAccess ide.databaseFile, () -> rebuild());
+		watch(@:privateAccess ide.databaseFile, () -> syncTabs());
 	}
 
 	override function getTitle() {
