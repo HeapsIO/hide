@@ -2,7 +2,6 @@ package hide.prefab.terrain;
 import h3d.shader.pbr.AlphaMultiply;
 import h3d.shader.FixedColor;
 import h3d.mat.Stencil;
-import hrt.prefab.l3d.AdvancedDecal;
 using Lambda;
 import hxd.Key as K;
 
