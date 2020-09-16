@@ -1,6 +1,13 @@
 package hrt.prefab.l3d;
 
-class AdvancedDecal extends Object3D {
+@:enum abstract DecalMode(String) {
+	var Default = "Decal";
+	var BeforeTonemapping = "BeforeTonemapping";
+	var AfterTonemapping = "AfterTonemapping";
+	var Terrain = "Terrain";
+}
+
+class Decal extends Object3D {
 
 	var albedoMap : String;
 	var normalMap : String;
@@ -13,7 +20,7 @@ class AdvancedDecal extends Object3D {
 	var fadeEnd : Float = 1.0;
 	var emissive : Float = 0.0;
 	var blendMode : h2d.BlendMode = Alpha;
-	var renderMode : h3d.mat.PbrMaterial.PbrMode = Decal;
+	var renderMode : DecalMode = Default;
 	var centered : Bool = true;
 	var autoAlpha : Bool = true;
 
@@ -30,7 +37,7 @@ class AdvancedDecal extends Object3D {
 		if(fadePower != 1) obj.fadePower = fadePower;
 		if(fadeStart != 0) obj.fadeStart = fadeStart;
 		if(fadeEnd != 1) obj.fadeEnd = fadeEnd;
-		if(renderMode != Decal) obj.renderMode = renderMode;
+		if(renderMode != Default) obj.renderMode = renderMode;
 		if(emissive != 0.0) obj.emissive = emissive;
 		if(autoAlpha != true) obj.autoAlpha = autoAlpha;
 		return obj;
@@ -49,7 +56,7 @@ class AdvancedDecal extends Object3D {
 		fadePower = obj.fadePower != null ? obj.fadePower : 1;
 		fadeStart = obj.fadeStart != null ? obj.fadeStart : 0;
 		fadeEnd = obj.fadeEnd != null ? obj.fadeEnd : 1;
-		renderMode = obj.renderMode != null ? obj.renderMode : Decal;
+		renderMode = obj.renderMode != null ? obj.renderMode : Default;
 		emissive = obj.emissive != null ? obj.emissive : 0.0;
 		if( obj.autoAlpha != null ) autoAlpha = obj.autoAlpha;
 	}
@@ -59,13 +66,13 @@ class AdvancedDecal extends Object3D {
 		var mesh = new h3d.scene.pbr.Decal(h3d.prim.Cube.defaultUnitCube(), ctx.local3d);
 
 		switch (renderMode) {
-			case Decal:
+			case Default, Terrain:
 				var shader = mesh.material.mainPass.getShader(h3d.shader.pbr.VolumeDecal.DecalPBR);
 				if( shader == null ) {
 					shader = new h3d.shader.pbr.VolumeDecal.DecalPBR();
 					mesh.material.mainPass.addShader(shader);
 				}
-				mesh.material.mainPass.setPassName("decal");
+				mesh.material.mainPass.setPassName(renderMode == Default ? "decal" : "terrainDecal");
 			case BeforeTonemapping:
 				var shader = mesh.material.mainPass.getShader(h3d.shader.pbr.VolumeDecal.DecalOverlay);
 				if( shader == null ) {
@@ -80,7 +87,6 @@ class AdvancedDecal extends Object3D {
 					mesh.material.mainPass.addShader(shader);
 				}
 				mesh.material.mainPass.setPassName("afterTonemappingDecal");
-			default:
 		}
 
 		mesh.material.mainPass.depthWrite = false;
@@ -97,7 +103,7 @@ class AdvancedDecal extends Object3D {
 		var mesh = Std.downcast(ctx.local3d, h3d.scene.Mesh);
 		mesh.material.mainPass.setBlendMode(blendMode);
 		switch (renderMode) {
-			case Decal:
+			case Default, Terrain:
 				var shader = mesh.material.mainPass.getShader(h3d.shader.pbr.VolumeDecal.DecalPBR);
 				if( shader != null ){
 					shader.albedoTexture = albedoMap != null ? ctx.loadTexture(albedoMap) : null;
@@ -130,7 +136,6 @@ class AdvancedDecal extends Object3D {
 					shader.fadeEnd = fadeEnd;
 					shader.emissive = emissive;
 				}
-			default:
 		}
 	}
 
@@ -141,7 +146,7 @@ class AdvancedDecal extends Object3D {
 
 	#if editor
 	override function getHideProps() : HideProps {
-		return { icon : "paint-brush", name : "AdvancedDecal" };
+		return { icon : "paint-brush", name : "Decal" };
 	}
 
 	override function setSelected( ctx : Context, b : Bool ) {
@@ -190,10 +195,9 @@ class AdvancedDecal extends Object3D {
 						<dt>AutoAlpha</dt><dd><input type="checkbox" field="autoAlpha"/></dd>';
 
 		var params = switch (renderMode) {
-			case Decal: pbrParams;
+			case Default, Terrain: pbrParams;
 			case BeforeTonemapping: overlayParams;
 			case AfterTonemapping: overlayParams;
-			default: null;
 		}
 
 		function refreshProps() {
@@ -205,9 +209,10 @@ class AdvancedDecal extends Object3D {
 						+ params +
 						'<dt>Render Mode</dt>
 						<dd><select field="renderMode">
-							<option value="Decal">PBR</option>
+							<option value="Decal">Default</option>
 							<option value="BeforeTonemapping">Before Tonemapping</option>
 							<option value="AfterTonemapping">After Tonemapping</option>
+							<option value="Terrain">Terrain</option>
 						</select></dd>
 
 						<dt>Blend Mode</dt>
@@ -239,6 +244,6 @@ class AdvancedDecal extends Object3D {
 	}
 	#end
 
-	static var _ = Library.register("advancedDecal", AdvancedDecal);
+	static var _ = Library.register("advancedDecal", Decal);
 
 }
