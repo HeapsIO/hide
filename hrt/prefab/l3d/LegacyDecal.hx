@@ -1,6 +1,6 @@
 package hrt.prefab.l3d;
 
-class Decal extends Object3D {
+class LegacyDecal extends Object3D {
 
 	var diffuseMap : String;
 	var normalMap : String;
@@ -61,7 +61,7 @@ class Decal extends Object3D {
 
 	#if editor
 	override function getHideProps() : HideProps {
-		return { icon : "paint-brush", name : "Decal" };
+		return { icon : "paint-brush", name : "Legacy Decal" };
 	}
 
 	override function setSelected( ctx : Context, b : Bool ) {
@@ -107,6 +107,6 @@ class Decal extends Object3D {
 	}
 	#end
 
-	static var _ = Library.register("decal", Decal);
+	static var _ = Library.register("decal", LegacyDecal);
 
 }
