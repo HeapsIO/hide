@@ -148,6 +148,7 @@ class HeightMapTile {
 	public function create(mesh:HeightMapMesh) {
 		if( root != null ) throw "assert";
 		root = new h3d.scene.Mesh(mesh.grid);
+		root.material.mainPass.setPassName("terrain");
 		root.x = hmap.size * tx;
 		root.y = hmap.size * ty;
 
