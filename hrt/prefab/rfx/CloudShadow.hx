@@ -1,5 +1,7 @@
 package hrt.prefab.rfx;
 
+import hxd.res.Loader;
+
 typedef CloudShadowProps = {
 	var opacity : Float;
 	var scale : Float;
@@ -8,7 +10,7 @@ typedef CloudShadowProps = {
 	var texturePath : String;
 }
 
-private class CloudShader extends h3d.shader.ScreenShader {
+class DirLightWithClouds extends h3d.shader.pbr.Light {
 
 	static var SRC = {
 
@@ -18,30 +20,27 @@ private class CloudShader extends h3d.shader.ScreenShader {
 		@param var opacity : Float;
 		@param var rotation : Mat3;
 
-		@global var global : { time : Float };
-		@param var cameraInverse : Mat4;
+		@param var time : Float;
 		@param var cameraPosition : Vec3;
 
-		function getPosition() : Vec2 {
-			var uv = uvToScreen(calculatedUV);
-			var near = vec4(uv, 0, 1) * cameraInverse;
-			var far = vec4(uv, 0.5, 1) * cameraInverse;
-			var ray = (far.xyz - near.xyz).normalize();
-			return near.xy + ray.xy * near.z;
-		}
+		@param var lightDir : Vec3;
 
 		function fragment() {
-			var pos = getPosition() * scale;
-			pixelColor = clouds.get(pos + global.time * speed) * opacity;
-		}
+			pbrLightDirection = lightDir;
+			pbrLightColor = lightColor;
+			pbrOcclusionFactor = occlusionFactor;
 
-	}
+			var pos = transformedPosition.xy * scale;
+			var cloudIntensity = clouds.get(pos + time * speed).r * opacity;
+			pbrLightColor *= 1.0 - cloudIntensity.saturate();
+		}
+	};
 }
 
+@:access(h3d.scene.pbr.DirLight)
 class CloudShadow extends RendererFX {
 
-	var fx = new h3d.pass.ScreenFx(new CloudShader());
-	var texture : h3d.mat.Texture;
+	var dlwc = new DirLightWithClouds();
 
 	public function new(?parent) {
 		super(parent);
@@ -60,36 +59,39 @@ class CloudShadow extends RendererFX {
 		return ctx;
 	}
 
-	override function updateInstance(ctx:Context, ?propName:Null<String>) {
-		var path = (props:CloudShadowProps).texturePath;
-		texture = path == null ? h3d.mat.Texture.fromColor(0xFFFFFF) : ctx.loadTexture(path);
-		texture.wrap = Repeat;
-	}
-
 	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
 		if( step == Shadows ) {
+			var ctx = r.ctx;
 			var props : CloudShadowProps = props;
-			var shadowMap = r.ctx.getGlobal("mainLightShadowMap");
-			var shadowCam : h3d.Matrix = r.ctx.getGlobal("mainLightViewProj");
-			var shadowCamPos : h3d.Vector = r.ctx.getGlobal("mainLightPos");
-			if( shadowMap == null ) return;
-			var engine = r.ctx.engine;
-			engine.pushTarget(shadowMap);
-			shadowCam = shadowCam.clone();
-			shadowCam.invert();
 
-			var angle = props.angle * Math.PI / 180;
-			var speed = props.speed / props.scale;
-			fx.shader.speed.set(Math.cos(angle) * speed, Math.sin(angle) * speed);
-			fx.shader.scale = 1 / props.scale;
-			fx.shader.opacity = props.opacity;
-			fx.shader.clouds = texture;
-			fx.shader.cameraInverse = shadowCam;
-			fx.shader.cameraPosition = shadowCamPos;
-			fx.setGlobals(r.ctx);
-			fx.pass.blend(Zero, OneMinusSrcColor);
-			fx.render();
-			engine.popTarget();
+			var mainLight : h3d.scene.pbr.DirLight = null;
+			var l = @:privateAccess ctx.lights;
+			while( l != null ) {
+				var pbrLight = Std.downcast(l, h3d.scene.pbr.DirLight);
+				if( pbrLight != null && pbrLight.isMainLight ) {
+					mainLight = pbrLight;
+					break;
+				}
+				l = l.next;
+			}
+			
+			if( mainLight != null ) {
+				mainLight.shader = dlwc;
+				dlwc.lightDir = mainLight.pbr.lightDir;
+				dlwc.lightColor.load(mainLight._color);
+				dlwc.lightColor.scale3(mainLight.power * mainLight.power);
+				dlwc.occlusionFactor = mainLight.occlusionFactor;
+				var angle = props.angle * Math.PI / 180;
+				var speed = props.speed / props.scale;
+				dlwc.speed.set(Math.cos(angle) * speed, Math.sin(angle) * speed);
+				dlwc.scale = 1.0 / props.scale;
+				dlwc.opacity = props.opacity;
+				dlwc.time = ctx.time;
+				if( props.texturePath != null )
+					dlwc.clouds = Loader.currentInstance.load(props.texturePath).toTexture();
+				if( dlwc.clouds != null ) 
+					dlwc.clouds.wrap = Repeat;
+			}
 		}
 	}
 
@@ -103,9 +105,7 @@ class CloudShadow extends RendererFX {
 				<dt>Angle</dt><dd><input type="range" min="-180" max="180" field="angle"/></dd>
 				<dt>Texture</dt><dd><input type="texturepath" field="texturePath"/></dd>
 			</div>
-		'),props, function(n) {
-			if( n == "texturePath" ) updateInstance(ctx.getContext(this));
-		});
+		'),props);
 	}
 	#end
 
