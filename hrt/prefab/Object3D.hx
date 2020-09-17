@@ -41,6 +41,7 @@ class Object3D extends Prefab {
 	}
 
 	override function load( obj : Dynamic ) {
+		super.load(obj);
 		x = obj.x == null ? 0. : obj.x;
 		y = obj.y == null ? 0. : obj.y;
 		z = obj.z == null ? 0. : obj.z;
@@ -65,7 +66,7 @@ class Object3D extends Prefab {
 	}
 
 	override function save() {
-		var o : Dynamic = {};
+		var o : Dynamic = super.save();
 		if( x != 0 ) o.x = x;
 		if( y != 0 ) o.y = y;
 		if( z != 0 ) o.z = z;
