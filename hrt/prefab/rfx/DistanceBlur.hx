@@ -18,23 +18,28 @@ class DistanceBlurShader extends PbrShader {
 
 		@const var DEBUG : Bool = false;
 
-		function fragment() {
-			var origin = getPosition();
-			var distance = (origin - camera.position).length();
-			
+		var currentPosition : Vec3;
+		var blurAmount : Float;
+
+		function __init__fragment() {{
+			currentPosition = getPosition();
+			var distance = (currentPosition - camera.position).length();
+			blurAmount = 0;
 			if( distance < nearEndDistance ) {
 				var nearIntensityFactor = clamp((distance - nearStartDistance) / (nearEndDistance - nearStartDistance), 0, 1);
-				var nearIntensity = mix(nearStartIntensity, nearEndIntensity, nearIntensityFactor);
-				pixelColor = DEBUG ? vec4(vec3(nearIntensity), 1.0) : vec4(blurredTexture.get(calculatedUV).rgb, nearIntensity);
+				blurAmount = mix(nearStartIntensity, nearEndIntensity, nearIntensityFactor);
 			}
 			else if( distance > farStartDistance ) {
 				var farIntensityFactor = clamp((distance - farStartDistance) / (farEndDistance - farStartDistance), 0, 1);
-				var farIntensity = mix(farStartIntensity, farEndIntensity, farIntensityFactor);
-				pixelColor = DEBUG ? vec4(vec3(farIntensity), 1.0) : vec4(blurredTexture.get(calculatedUV).rgb, farIntensity);
+				blurAmount = mix(farStartIntensity, farEndIntensity, farIntensityFactor);
 			}
-			else 
-				discard;
+		}}
+
+		function fragment() {
+			if( blurAmount <= 0.004 ) discard;
+			pixelColor = DEBUG ? vec4(blurAmount.xxx, 1.0) : vec4(blurredTexture.get(calculatedUV).rgb, blurAmount);
 		}
+
 	};
 
 	public function new() {
@@ -103,7 +108,7 @@ class DistanceBlur extends RendererFX {
 			r.copy(ldr, lbrBlurred);
 			lbrBlur.radius = p.blurRange;
 			lbrBlur.apply(ctx, lbrBlurred);
-	
+
 			blurPass.shader.blurredTexture = lbrBlurred;
 			blurPass.setGlobals(ctx);
 			blurPass.render();
