@@ -2288,7 +2288,18 @@ class SceneEditor {
 	}
 
 	function getGroundPrefabs() : Array<PrefabElement> {
-		return sceneData.findAll((p) -> p);
+		function getAll(data:PrefabElement) {
+			var all = data.findAll((p) -> p);
+			for( a in all.copy() ) {
+				var r = Std.downcast(a, hrt.prefab.Reference);
+				if( r != null ) {
+					var sub = @:privateAccess r.ref;
+					if( sub != null ) all = all.concat(getAll(sub));
+				}
+			}
+			return all;
+		}
+		return getAll(sceneData);
 	}
 
 	public function projectToGround(ray: h3d.col.Ray, ?paintOn : hrt.prefab.Prefab ) {
