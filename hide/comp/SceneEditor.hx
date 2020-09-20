@@ -223,8 +223,10 @@ class SceneEditor {
 		view.keys.register("sceneeditor.isolate", function() {	isolate(curEdit.elements); });
 		view.keys.register("sceneeditor.showAll", function() {	setVisible(context.shared.elements(), true); });
 		view.keys.register("sceneeditor.selectParent", function() {
-			if(curEdit.rootElements.length > 0)
-				selectObjects([curEdit.rootElements[0].parent]);
+			if(curEdit.rootElements.length > 0) {
+				var p = curEdit.rootElements[0].parent;
+				if( p != null && p != sceneData ) selectObjects([p]);
+			}
 		});
 		view.keys.register("sceneeditor.reparent", function() {
 			if(curEdit.rootElements.length > 1) {
