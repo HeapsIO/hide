@@ -1538,9 +1538,9 @@ class SceneEditor {
 		var localMat = getPickTransform(parent);
 		if(localMat == null) return;
 
-		localMat.tx = hxd.Math.round(localMat.tx);
-		localMat.ty = hxd.Math.round(localMat.ty);
-		localMat.tz = hxd.Math.round(localMat.tz);
+		localMat.tx = hxd.Math.round(localMat.tx * 10) / 10;
+		localMat.ty = hxd.Math.round(localMat.ty * 10) / 10;
+		localMat.tz = hxd.Math.floor(localMat.tz * 10) / 10;
 
 		var elts: Array<PrefabElement> = [];
 		for(path in paths) {
