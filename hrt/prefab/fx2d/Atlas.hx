@@ -7,7 +7,7 @@ class Atlas extends Object2D {
 
 	var fpsAnimation : Int = 30;
 	var delayStart : Float = 0;
-	
+
 	var loop : Bool = false;
 
 	var forcePivotCenter : Bool = false;
@@ -38,7 +38,7 @@ class Atlas extends Object2D {
 
 		var h2dAnim = (cast ctx.local2d : h2d.Anim);
 		h2dAnim.smooth = true;
-		
+
 		if (propName == null || propName == "src" || propName == "forcePivotCenter") {
 			if (src != null) {
 				atlas = hxd.res.Loader.currentInstance.load(src).to(hxd.res.Atlas);
@@ -58,7 +58,7 @@ class Atlas extends Object2D {
 		}
 		h2dAnim.pause = !loop;
 		h2dAnim.blendMode = blendMode;
-		
+
 		#if editor
 			var int = Std.downcast(h2dAnim.getChildAt(0),h2d.Interactive);
 			if( int != null ) {
@@ -84,7 +84,10 @@ class Atlas extends Object2D {
 		if(local2d == null)
 			return null;
 		var h2dAnim = cast(local2d, h2d.Anim);
-		var int = new h2d.Interactive(h2dAnim.getFrame().width, h2dAnim.getFrame().height);
+		var frame = h2dAnim.getFrame();
+		if( frame == null )
+			return null;
+		var int = new h2d.Interactive(frame.width, frame.height);
 		h2dAnim.addChildAt(int, 0);
 		int.propagateEvents = true;
 		return int;
@@ -111,7 +114,7 @@ class Atlas extends Object2D {
 		new hide.Element('<dt>Delay Start</dt><dd><input type="range" min="0" max="5" field="delayStart"/></dd>').appendTo(gr);
 		new hide.Element('<dt>Loop</dt><dd><input type="checkbox" field="loop"/></dd>').appendTo(gr);
 		new hide.Element('<dt>Force Pivot Center</dt><dd><input type="checkbox" field="forcePivotCenter"/></dd>').appendTo(gr);
-		
+
 
 		ctx.properties.add(parameters, this, function(pname) {
 			ctx.onChange(this, pname);
