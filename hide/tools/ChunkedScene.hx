@@ -88,7 +88,8 @@ class ChunkScene {
 					var chunks = getChunks(tmpBounds);
 					for( c in chunks )
 						c.addInteractive(i);
-				}
+				} else
+					global.addInteractive(i);
 			}
 		}
 	}
