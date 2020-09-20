@@ -38,7 +38,13 @@ class ContextMenu {
 		var m = new nw.MenuItem(mconf);
 		if( i.checked != null ) m.checked = i.checked;
 		if( i.enabled != null ) m.enabled = i.enabled;
-		m.click = i.click;
+		m.click = function() {
+			try {
+				i.click();
+			} catch( e : Dynamic ) {
+				hide.Ide.inst.error(e);
+			}
+		}
 		return m;
 	}
 
