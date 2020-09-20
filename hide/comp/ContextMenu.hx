@@ -19,7 +19,8 @@ class ContextMenu {
 		var ide = hide.Ide.inst;
 		// wait until mousedown to get correct mouse pos
 		haxe.Timer.delay(function() {
-			menu.popup(ide.mouseX, ide.mouseY);
+			if( MENUS[0] == menu )
+				menu.popup(ide.mouseX, ide.mouseY);
 		},0);
 	}
 
