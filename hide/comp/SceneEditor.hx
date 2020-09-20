@@ -1533,7 +1533,22 @@ class SceneEditor {
 		return localMat;
 	}
 
-	public function dropObjects(paths: Array<String>, parent: PrefabElement) {
+	public function onDragDrop( items : Array<String>, isDrop : Bool ) {
+		var supported = @:privateAccess hrt.prefab.Library.registeredExtensions;
+		var paths = [];
+		for(path in items) {
+			var ext = haxe.io.Path.extension(path).toLowerCase();
+			if( supported.exists(ext) )
+				paths.push(path);
+		}
+		if( paths.length == 0 )
+			return false;
+		if(isDrop)
+			dropObjects(paths, sceneData);
+		return true;
+	}
+
+	function dropObjects(paths: Array<String>, parent: PrefabElement) {
 		scene.setCurrent();
 		var localMat = getPickTransform(parent);
 		if(localMat == null) return;

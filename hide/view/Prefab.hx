@@ -130,22 +130,7 @@ class Prefab extends FileView {
 	}
 
 	override function onDragDrop(items : Array<String>, isDrop : Bool) {
-		var supported = ["fbx", "fx"];
-		var paths = [];
-		for(path in items) {
-			var ext = haxe.io.Path.extension(path).toLowerCase();
-			if(supported.indexOf(ext) >= 0) {
-				paths.push(path);
-			}
-		}
-		if(paths.length > 0) {
-			if(isDrop) {
-				var parent : PrefabElement = data;
-				sceneEditor.dropObjects(paths, parent);
-			}
-			return true;
-		}
-		return false;
+		return sceneEditor.onDragDrop(items,isDrop);
 	}
 
 	static var _ = FileTree.registerExtension(Prefab,["prefab"],{ icon : "sitemap", createNew : "Prefab" });

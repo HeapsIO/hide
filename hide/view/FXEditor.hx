@@ -546,22 +546,7 @@ class FXEditor extends FileView {
 	}
 
 	override function onDragDrop(items : Array<String>, isDrop : Bool) {
-		var supported = ["fbx"];
-		var models = [];
-		for(path in items) {
-			var ext = haxe.io.Path.extension(path).toLowerCase();
-			if(supported.indexOf(ext) >= 0) {
-				models.push(path);
-			}
-		}
-		if(models.length > 0) {
-			if(isDrop) {
-				var parent : PrefabElement = data;
-				sceneEditor.dropObjects(models, parent);
-			}
-			return true;
-		}
-		return false;
+		return sceneEditor.onDragDrop(items,isDrop);
 	}
 
 	function onSelect(elts : Array<PrefabElement>) {
@@ -1376,7 +1361,7 @@ class FXEditor extends FileView {
 						menu: [	trackItem("Color", hslTracks(), "color"),
 								trackItem("Power",[{name: "power"}]),
 								trackItem("Size", [{name: "size"}]),
-								trackItem("Range", [{name: "range"}]), 
+								trackItem("Range", [{name: "range"}]),
 								]
 					});
 				case Directional:
@@ -1393,7 +1378,7 @@ class FXEditor extends FileView {
 								trackItem("Power",[{name: "power"}]),
 								trackItem("Range", [{name: "range"}]),
 								trackItem("Angle", [{name: "angle"}]),
-								trackItem("FallOff", [{name: "fallOff"}]), 
+								trackItem("FallOff", [{name: "fallOff"}]),
 								]
 					});
 			}
@@ -1410,7 +1395,7 @@ class FXEditor extends FileView {
 			grid2d.remove();
 			grid2d = null;
 		}
-		
+
 		if(!showGrid)
 			return;
 
