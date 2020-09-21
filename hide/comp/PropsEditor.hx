@@ -96,7 +96,7 @@ class PropsEditor extends Component {
 	}
 
 	public static function makeLabelEl(name: String, content: Element) {
-		var el = new Element('<dt>${name}</dt><dd></dd>');
+		var el = new Element('<span><dt>${name}</dt><dd></dd></span>');
 		content.appendTo(el.find("dd"));
 		return el;
 	}
