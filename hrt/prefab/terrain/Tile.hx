@@ -41,10 +41,10 @@ class Tile extends h3d.scene.Mesh {
 
 	// TEXTURE & PIXEL
 	public var heightMap : h3d.mat.Texture;
-	public var heightMapPixels(get, default) : hxd.Pixels.PixelsFloat;
+	var heightMapPixels : hxd.Pixels.PixelsFloat;
 
 	public var normalMap(default, null) : h3d.mat.Texture;
-	public var normalMapPixels(get, default) : hxd.Pixels.Pixels;
+	var normalMapPixels : hxd.Pixels.Pixels;
 	var needNormalBake = true;
 
 	public var surfaceIndexMap : h3d.mat.Texture;
@@ -99,14 +99,14 @@ class Tile extends h3d.scene.Mesh {
 		if( bigPrim != null ) bigPrim.dispose();
 	}
 
-	public inline function get_heightMapPixels() {
+	public inline function getHeightMapPixels() {
 		if( (needNewPixelCapture || heightMapPixels == null) && heightMap != null )
 			heightMapPixels = heightMap.capturePixels();
 		needNewPixelCapture = false;
 		return heightMapPixels;
 	}
 
-	public inline function get_normalMapPixels() {
+	public inline function getNormalMapPixels() {
 		if( normalMapPixels == null && normalMap != null )
 			normalMapPixels = normalMap.capturePixels();
 		return normalMapPixels;
