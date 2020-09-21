@@ -1,6 +1,7 @@
 package hide.prefab.terrain;
-
 using Lambda;
+import hxd.Pixels;
+import hrt.prefab.terrain.Tile;
 import hxd.Key as K;
 import hrt.prefab.Context;
 
@@ -83,7 +84,7 @@ class TerrainEditor {
 
 		brushPreview = new hide.prefab.terrain.Brush.BrushPreview(terrainPrefab.terrain);
 
-		heightStrokeBufferArray = new hide.prefab.terrain.StrokeBuffer.StrokeBufferArray(RGBA32F,new h2d.col.IPoint(terrainPrefab.terrain.heightMapResolution.x + 1, terrainPrefab.terrain.heightMapResolution.y + 1));
+		heightStrokeBufferArray = new hide.prefab.terrain.StrokeBuffer.StrokeBufferArray(R32F,new h2d.col.IPoint(terrainPrefab.terrain.heightMapResolution.x, terrainPrefab.terrain.heightMapResolution.y));
 		weightStrokeBufferArray = new hide.prefab.terrain.StrokeBuffer.StrokeBufferArray(R8, terrainPrefab.terrain.weightMapResolution);
 		customScene.renderer = customRenderer;
 		#if debug
@@ -207,6 +208,7 @@ class TerrainEditor {
 						tile.material.mainPass.stencil.setFunc(Always, 0x01, 0x01, 0x01);
 						tile.material.mainPass.stencil.setOp(Keep, Keep, Replace);
 						tile.refreshHeightMap();
+						tile.refreshNormalMap();
 						tile.refreshIndexMap();
 						tile.refreshSurfaceWeightArray();
 						tile.heightMap.uploadPixels(t.prevHeightMapPixels);
@@ -223,22 +225,172 @@ class TerrainEditor {
 		}
 	}
 
+	function blendEdges( modifiedTile : Array<Tile> ) {
+
+		// Adjust the edge for each modified tiles and their neighbors
+		var tiles : Array<Tile> = [];
+		for( t in modifiedTile ) {
+			for( i in -1 ... 2 ) {
+				for( j in - 1 ... 2 ) {
+					var adj = t.terrain.getTile(t.tileX + i, t.tileY + j);
+					if( adj != null && tiles.indexOf(adj) == -1 )
+						tiles.push(adj);
+				}	
+			}
+		}
+
+		// Adjust the height to avoid seams
+		for( t in tiles ) {
+			var pixels : hxd.Pixels.PixelsFloat = t.heightMapPixels;
+			if( pixels == null )
+				throw("Try to blend the edges of a null heightmap.");
+			var adjTileX = t.terrain.getTile(t.tileX + 1, t.tileY);
+			var adjHeightMapX = adjTileX != null ? adjTileX.heightMap : null;
+			if( adjHeightMapX != null ) {
+				var adjpixels : hxd.Pixels.PixelsFloat = adjTileX.heightMapPixels;
+				for( i in 0 ... t.heightMap.height ) {
+					pixels.setPixelF(t.heightMap.width - 1, i, adjpixels.getPixelF(0,i) );
+				}
+			}
+		
+			var adjTileY = t.terrain.getTile(t.tileX, t.tileY + 1);
+			var adjHeightMapY = adjTileY != null ? adjTileY.heightMap : null;
+			if( adjHeightMapY != null ) {
+				var adjpixels : hxd.Pixels.PixelsFloat = adjTileY.heightMapPixels;
+				for( i in 0 ... t.heightMap.width ) {
+					pixels.setPixelF(i, t.heightMap.height - 1, adjpixels.getPixelF(i,0) );
+				}
+			}
+		
+			var adjTileXY = t.terrain.getTile(t.tileX + 1, t.tileY + 1);
+			var adjHeightMapXY = adjTileXY != null ? adjTileXY.heightMap : null;
+			if( adjHeightMapXY != null ) {
+				var adjpixels : hxd.Pixels.PixelsFloat = adjTileXY.heightMapPixels;
+				pixels.setPixelF(t.heightMap.width - 1, t.heightMap.height - 1, adjpixels.getPixelF(0,0));
+			}
+			
+			t.heightMapPixels = pixels;
+			t.heightMap.uploadPixels(pixels);
+			t.needNewPixelCapture = false;
+		}
+
+		// Compute the normal for each tile, but there's seam on the edge
+		for( t in tiles )  {
+			t.bakeNormal();
+			t.normalMapPixels = t.normalMap.capturePixels();
+		}
+		
+		// Compute the average normal on edge 
+		for( t in tiles ) {
+
+			var pixelsAfterBlend = t.normalMapPixels;
+			var left = t.terrain.getTile(t.tileX - 1, t.tileY);
+			var right = t.terrain.getTile(t.tileX + 1, t.tileY);
+			var up = t.terrain.getTile(t.tileX, t.tileY - 1);
+			var down = t.terrain.getTile(t.tileX, t.tileY + 1);
+			var upRight = t.terrain.getTile(t.tileX + 1, t.tileY - 1);
+			var upLeft = t.terrain.getTile(t.tileX - 1, t.tileY - 1);
+			var downRight = t.terrain.getTile(t.tileX + 1, t.tileY + 1);
+			var downLeft = t.terrain.getTile(t.tileX - 1, t.tileY + 1);
+			var width = pixelsAfterBlend.width - 1;
+			var height = pixelsAfterBlend.height - 1;
+
+			// Return the normal of tile t at (x,y) without any blend
+			function getNormalFromHeightMap(t : Tile, x : Int, y : Int ) {
+				var h = t.heightMapPixels.getPixelF(x, y).x;
+				var h1 = y + 1 >= t.heightMapPixels.height ? h : t.heightMapPixels.getPixelF(x, y + 1).x;
+				var h2 = x + 1 >= t.heightMapPixels.width ? h : t.heightMapPixels.getPixelF(x + 1, y).x;
+				var h3 = y - 1 < 0 ? h : t.heightMapPixels.getPixelF(x, y - 1).x;
+				var h4 = x - 1 < 0 ? h : t.heightMapPixels.getPixelF(x - 1, y).x;
+				var v1 = new h3d.Vector(0, 1, h1 - h);
+				var v2 = new h3d.Vector(1, 0, h2 - h);
+				var v3 = new h3d.Vector(0, -1, h3 - h);
+				var v4 = new h3d.Vector(-1, 0, h4 - h);
+				var n = v1.cross(v2).add(v2.cross(v3).add(v3.cross(v4).add(v4.cross(v1))));
+				n.scale3(-1.0);
+				n.normalize();
+				return n;
+			}
+
+			inline function packNormal( n : h3d.Vector ) {
+				n.scale3(0.5);
+				return n.add(new h3d.Vector(0.5, 0.5, 0.5)).toColor();
+			}
+
+			inline function unpackNormal( n : Int ) {
+				var n = h3d.Vector.fromColor(n);
+				n = n.add(new h3d.Vector(-0.5, -0.5, -0.5));
+				n.scale3(2.0);
+				return n;
+			}
+
+			for( i in 1 ... pixelsAfterBlend.width - 1 ) {
+				if( up != null ) {
+					var n = unpackNormal(pixelsAfterBlend.getPixel(i, 0)).add(getNormalFromHeightMap(up, i, height));
+					n.normalize();
+					pixelsAfterBlend.setPixel(i, 0, packNormal(n));
+				}
+				if( down != null ) {
+					var n = unpackNormal(pixelsAfterBlend.getPixel(i, height)).add(getNormalFromHeightMap(down, i, 0));
+					n.normalize();
+					pixelsAfterBlend.setPixel(i, height, packNormal(n));
+				}
+			}
+			for( i in 1 ... pixelsAfterBlend.height - 1 ) {
+				if( left != null ) {
+					var n = unpackNormal(pixelsAfterBlend.getPixel(0, i)).add(getNormalFromHeightMap(left, width, i));
+					n.normalize();
+					pixelsAfterBlend.setPixel(0, i, packNormal(n));
+				}
+				if( right != null ) {
+					var n = unpackNormal(pixelsAfterBlend.getPixel(width, i)).add(getNormalFromHeightMap(right, 0, i));
+					n.normalize();
+					pixelsAfterBlend.setPixel(width, i, packNormal(n));
+				}
+			}
+
+			var n = unpackNormal(pixelsAfterBlend.getPixel(0, 0));
+			if( up != null ) n = n.add(getNormalFromHeightMap(up, 0, height));
+			if( left != null ) n = n.add(getNormalFromHeightMap(left, width, 0));
+			if( upLeft != null ) n = n.add(getNormalFromHeightMap(upLeft, width, height));
+			n.normalize();
+			pixelsAfterBlend.setPixel(0, 0, packNormal(n));
+
+			var n = unpackNormal(pixelsAfterBlend.getPixel(width, 0));
+			if( up != null ) n = n.add(getNormalFromHeightMap(up, width, height));
+			if( right != null ) n = n.add(getNormalFromHeightMap(right, 0, 0));
+			if( upRight != null ) n = n.add(getNormalFromHeightMap(upRight, 0, height));
+			n.normalize();
+			pixelsAfterBlend.setPixel(width, 0, packNormal(n));
+
+			var n = unpackNormal(pixelsAfterBlend.getPixel(0, height));
+			if( down != null ) n = n.add(getNormalFromHeightMap(down, 0, 0));
+			if( left != null ) n = n.add(getNormalFromHeightMap(left, width, height));
+			if( downLeft != null ) n = n.add(getNormalFromHeightMap(downLeft, width, 0));
+			n.normalize();
+			pixelsAfterBlend.setPixel(0, height, packNormal(n));
+
+			var n = unpackNormal(pixelsAfterBlend.getPixel(width, height));
+			if( down != null ) n = n.add(getNormalFromHeightMap(down, width, 0));
+			if( right != null ) n = n.add(getNormalFromHeightMap(right, 0, height));
+			if( downRight != null ) n = n.add(getNormalFromHeightMap(downRight, 0, 0));
+			n.normalize();
+			pixelsAfterBlend.setPixel(width, height, packNormal(n));
+			
+			t.normalMap.uploadPixels(pixelsAfterBlend);
+			t.needNormalBake = false;
+		}
+	}
+
 	function resetStrokeBuffers() {
 		heightStrokeBufferArray.reset();
 		weightStrokeBufferArray.reset();
 	}
 
-	function refreshTileAlloc() {
-		for( tile in terrainPrefab.terrain.tiles ) {
-			if( tile.needAlloc ) {
-				tile.grid.alloc(h3d.Engine.getCurrent());
-				tile.needAlloc = false;
-			}
-		}
-	}
-
 	function applyStrokeBuffers() {
+		
 		var revertDatas = new Array<TileRevertData>();
+
 		for( strokeBuffer in heightStrokeBufferArray.strokeBuffers ) {
 			if( strokeBuffer.used == true ) {
 				var tile = terrainPrefab.terrain.getTile(strokeBuffer.x, strokeBuffer.y);
@@ -246,12 +398,11 @@ class TerrainEditor {
 				tile.heightMap = strokeBuffer.prevTex;
 				strokeBuffer.prevTex = null;
 				var revert = new TileRevertData(strokeBuffer.x, strokeBuffer.y);
-				revert.prevHeightMapPixels = tile.getHeightPixels();
+				revert.prevHeightMapPixels = tile.heightMapPixels;
 
 				switch( currentBrush.brushMode.mode ) {
 					case AddSub :
 						copyPass.apply(strokeBuffer.tex, tile.heightMap, currentBrush.brushMode.subAction ? Sub : Add);
-						tile.needNewPixelCapture = true;
 					case Set :
 						copyPass.apply(tile.heightMap, strokeBuffer.tempTex);
 						setHeight.shader.prevHeight = strokeBuffer.tempTex;
@@ -269,26 +420,14 @@ class TerrainEditor {
 						smoothHeight.render();
 					default:
 				}
-
-				tile.needNewPixelCapture = true;
-				revert.nextHeightMapPixels = tile.getHeightPixels();
 				revertDatas.push(revert);
+				tile.heightMapPixels = tile.heightMap.capturePixels();
+				revert.nextHeightMapPixels = tile.heightMapPixels;
+				tile.cachedBounds = null;
 			}
 		}
-		for( strokeBuffer in heightStrokeBufferArray.strokeBuffers ) {
-			if( strokeBuffer.used == true ) {
-				var tile = terrainPrefab.terrain.getTile(strokeBuffer.x, strokeBuffer.y);
-				tile.refreshGrid();
-			}
-		}
-		for( strokeBuffer in heightStrokeBufferArray.strokeBuffers ) {
-			if( strokeBuffer.used == true ) {
-				var tile = terrainPrefab.terrain.getTile(strokeBuffer.x, strokeBuffer.y);
-				tile.blendEdges();
-			}
-		}
-
-		refreshTileAlloc();
+		var tiles = [ for( sb in heightStrokeBufferArray.strokeBuffers ) { if( sb.used ) terrainPrefab.terrain.getTile(sb.x, sb.y); }];
+		blendEdges(tiles);
 
 		if( revertDatas.length > 0 ) {
 			undo.change(Custom(function(undo) {
@@ -296,14 +435,10 @@ class TerrainEditor {
 					var tile = terrainPrefab.terrain.getTile(revertData.x, revertData.y);
 					if( tile == null ) continue;
 					tile.heightMap.uploadPixels(undo ? revertData.prevHeightMapPixels : revertData.nextHeightMapPixels);
-					tile.needNewPixelCapture = true;
+					tile.heightMapPixels = undo ? revertData.prevHeightMapPixels : revertData.nextHeightMapPixels;
 				}
-				for( revertData in revertDatas ) {
-					var tile = terrainPrefab.terrain.getTile(revertData.x, revertData.y);
-					if( tile == null ) continue;
-					tile.blendEdges();
-				}
-				refreshTileAlloc();
+				var tiles = [ for( rd in revertDatas ) { terrainPrefab.terrain.getTile(rd.x, rd.y); }];
+				blendEdges(tiles);	
 			}));
 		}
 

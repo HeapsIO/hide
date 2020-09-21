@@ -15,9 +15,9 @@ class CustomUV extends hxsl.Shader {
 		var terrainUV : Vec2;
 
 		function vertex() {
-			terrainUV = input.position.xy / primSize.xy * (heightMapSize.xy - 1) / heightMapSize.xy + 0.5 / heightMapSize.xy;
 			calculatedUV = input.position.xy / primSize.xy;
-			transformedPosition += (vec3(0,0, heightMap.get(terrainUV).r) * global.modelView.mat3());
+			transformedPosition += (vec3(0,0, heightMap.get(calculatedUV).r) * global.modelView.mat3());
+			transformedNormal = vec3(0,0,0);
 		}
 
 		function fragment() {

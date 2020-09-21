@@ -1,7 +1,11 @@
 package hrt.prefab.terrain;
 
+import h3d.mat.Texture;
+
 @:access(hrt.prefab.terrain.Tile)
 class TerrainMesh extends h3d.scene.Object {
+
+	var primitive : h3d.prim.BigPrimitive;
 
 	// Resolution Vertexes/Pixels
 	public var tileSize : h2d.col.Point;
@@ -29,11 +33,9 @@ class TerrainMesh extends h3d.scene.Object {
 	var tiles : Array<Tile> = [];
 	var surfaces : Array<Surface> = [];
 	var surfaceArray : Surface.SurfaceArray;
-	var copyPass : h3d.pass.Copy;
 
 	public function new(?parent){
 		super(parent);
-		copyPass = new h3d.pass.Copy();
 	}
 
 	override function onRemove() {
@@ -42,15 +44,24 @@ class TerrainMesh extends h3d.scene.Object {
 			surfaceArray.dispose();
 	}
 
-	public function getHeight( x : Float, y : Float, fast = false) : Float {
-		var z = 0.0;
+	public function getLocalHeight( x : Float, y : Float, fast = false) : Null<Float> {
+		var xi = hxd.Math.floor(x/tileSize.x);
+		var yi = hxd.Math.floor(y/tileSize.y);
+		var t = getTile(xi, yi);
+		if( t != null ) {
+			return t.getHeight((x - xi * tileSize.x) / tileSize.x, (y - yi * tileSize.y) / tileSize.y, fast);
+		}
+		return null;
+	}
+
+	public function getHeight( x : Float, y : Float, fast = false) : Null<Float> {
 		var t = getTileAtWorldPos(x, y);
 		if( t != null ) {
 			tmpVec.set(x, y);
 			var pos = t.globalToLocal(tmpVec);
-			z = t.getHeight(pos.x / tileSize.x, pos.y / tileSize.y, fast);
+			return t.getHeight(pos.x / tileSize.x, pos.y / tileSize.y, fast);
 		}
-		return z;
+		return null;
 	}
 
 	public function getSurface( i : Int ) : Surface {
@@ -89,23 +100,23 @@ class TerrainMesh extends h3d.scene.Object {
 		if(surfaceArray != null) surfaceArray.dispose();
 		surfaceArray = new Surface.SurfaceArray(surfaces.length, surfaceSize);
 		for( i in 0 ... surfaces.length ) {
-			if( surfaces[i].albedo != null ) copyPass.apply(surfaces[i].albedo, surfaceArray.albedo, null, null, i);
-			if( surfaces[i].normal != null ) copyPass.apply(surfaces[i].normal, surfaceArray.normal, null, null, i);
-			if( surfaces[i].pbr != null ) copyPass.apply(surfaces[i].pbr, surfaceArray.pbr, null, null, i);
+			if( surfaces[i].albedo != null ) h3d.pass.Copy.run(surfaces[i].albedo, surfaceArray.albedo, null, null, i);
+			if( surfaces[i].normal != null ) h3d.pass.Copy.run(surfaces[i].normal, surfaceArray.normal, null, null, i);
+			if( surfaces[i].pbr != null ) h3d.pass.Copy.run(surfaces[i].pbr, surfaceArray.pbr, null, null, i);
 		}
 
 		// OnContextLost support
 		surfaceArray.albedo.realloc = function() {
 			for( i in 0 ... surfaceArray.surfaceCount )
-				copyPass.apply(surfaces[i].albedo, surfaceArray.albedo, null, null, i);
+				h3d.pass.Copy.run(surfaces[i].albedo, surfaceArray.albedo, null, null, i);
 		}
 		surfaceArray.normal.realloc = function() {
 			for( i in 0 ... surfaceArray.surfaceCount )
-				copyPass.apply(surfaces[i].normal, surfaceArray.normal, null, null, i);
+				h3d.pass.Copy.run(surfaces[i].normal, surfaceArray.normal, null, null, i);
 		}
 		surfaceArray.pbr.realloc = function() {
 			for( i in 0 ... surfaceArray.surfaceCount )
-				copyPass.apply(surfaces[i].pbr, surfaceArray.pbr, null, null, i);
+				h3d.pass.Copy.run(surfaces[i].pbr, surfaceArray.pbr, null, null, i);
 		}
 
 		updateSurfaceParams();
@@ -119,16 +130,50 @@ class TerrainMesh extends h3d.scene.Object {
 		}
 	}
 
-	public function refreshAllGrids() {
-		for( tile in tiles ) {
-			tile.x = tile.tileX * tileSize.x;
-			tile.y = tile.tileY * tileSize.y;
-			tile.refreshGrid();
+	function createBigPrimitive() {
+
+		if( primitive != null )
+			primitive.dispose();
+
+		primitive = new h3d.prim.BigPrimitive(3, true);
+
+		inline function addVertice(x : Float, y : Float, i : Int) {
+			primitive.addPoint(x, y, 0);
 		}
-		for( tile in tiles )
-			tile.blendEdges();
-		for( tile in tiles )
-			tile.computeTangents();
+
+		primitive.begin(0,0);
+		for( y in 0 ... cellCount.y + 1 ) {
+			for( x in 0 ... cellCount.x + 1 ) {
+				addVertice(x * cellSize.x, y * cellSize.y, x + y * (cellCount.x + 1));
+			}
+		}
+
+		for( y in 0 ... cellCount.y ) {
+			for( x in 0 ... cellCount.x ) {
+				var i = x + y * (cellCount.x + 1);
+				if( i % 2 == 0 ) {
+					primitive.addIndex(i);
+					primitive.addIndex(i + 1);
+					primitive.addIndex(i + cellCount.x + 2);
+					primitive.addIndex(i);
+					primitive.addIndex(i + cellCount.x + 2);
+					primitive.addIndex(i + cellCount.x + 1);
+				}
+				else {
+					primitive.addIndex(i + cellCount.x + 1);
+					primitive.addIndex(i);
+					primitive.addIndex(i + 1);
+					primitive.addIndex(i + 1);
+					primitive.addIndex(i + cellCount.x + 2);
+					primitive.addIndex(i + cellCount.x + 1);
+				}
+			}
+		}
+		primitive.flush();
+	}
+
+	public function refreshAllGrids() {
+		createBigPrimitive();
 	}
 
 	public function refreshAllTex() {
@@ -145,9 +190,6 @@ class TerrainMesh extends h3d.scene.Object {
 		var tile = getTile(x,y);
 		if(tile == null){
 			tile = new Tile(x, y, this);
-			#if editor
-			tile.refreshGrid();
-			#end
 			if( createTexture ) tile.refreshTex();
 			tiles.push(tile);
 		}

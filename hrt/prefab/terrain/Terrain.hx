@@ -1,5 +1,4 @@
 package hrt.prefab.terrain;
-import hxd.Pixels.PixelsFloat;
 using Lambda;
 
 typedef SurfaceProps = {
@@ -15,6 +14,7 @@ typedef SurfaceProps = {
 };
 
 @:access(hrt.prefab.terrain.TerrainMesh)
+@:access(hrt.prefab.terrain.Tile)
 class Terrain extends Object3D {
 
 	public var terrain : TerrainMesh;
@@ -45,18 +45,14 @@ class Terrain extends Object3D {
 	#if editor
 	var packWeight = new h3d.pass.ScreenFx(new PackWeight());
 	var editor : hide.prefab.terrain.TerrainEditor;
-	var cachedInstance : TerrainMesh;
 	public var showChecker = false;
 	public var autoCreateTile = false;
 	public var brushOpacity : Float;
 	var myContext : Context;
 	#end
 
-	// Backward Compatibility
-	var oldHeightMapResolution : Int = -1;
-	var oldWeightMapResolution : Int = -1;
-	var oldCellSize : Float = -1;
-	var needFormatUpdate = false;
+	static final version : Int = 1;
+	var currentVersion : Int;
 
 	public function new( ?parent ) {
 		super(parent);
@@ -65,21 +61,15 @@ class Terrain extends Object3D {
 
 	override function load( obj : Dynamic ) {
 		super.load(obj);
-		// Backward Compatibility
-		if( obj.cellSize != null ) oldCellSize = obj.cellSize;
-		if( obj.heightMapResolution != null ) oldHeightMapResolution = hxd.Math.ceil(obj.heightMapResolution);
-		if( obj.weightMapResolution != null ) oldWeightMapResolution = hxd.Math.ceil(obj.weightMapResolution);
-		if( obj.tileSize != null ) {
-			tileSizeX = obj.tileSize;
-			tileSizeY = obj.tileSize;
-		}
-		else {
-			tileSizeX = obj.tileSizeX == null ? 1 : obj.tileSizeX;
-			tileSizeY = obj.tileSizeY == null ? 1 : obj.tileSizeY;
-		}
+
+		currentVersion = obj.currentVersion == null ? 0 : obj.currentVersion;
+
+		if( obj.tileSizeX != null ) tileSizeX = obj.tileSizeX;
+		if( obj.tileSizeY != null ) tileSizeY = obj.tileSizeY;
 		if( obj.vertexPerMeter != null ) vertexPerMeter = obj.vertexPerMeter;
 		if( obj.weightMapPixelPerMeter != null ) weightMapPixelPerMeter = obj.weightMapPixelPerMeter;
 		if( obj.surfaces != null ) tmpSurfacesProps = obj.surfaces;
+
 		parallaxAmount = obj.parallaxAmount == null ? 0.0 : obj.parallaxAmount;
 		parallaxMinStep = obj.parallaxMinStep == null ? 1 : obj.parallaxMinStep;
 		parallaxMaxStep = obj.parallaxMaxStep == null ? 1 : obj.parallaxMaxStep;
@@ -97,6 +87,7 @@ class Terrain extends Object3D {
 
 	override function save() {
 		var obj : Dynamic = super.save();
+		obj.currentVersion = currentVersion;
 		obj.tileSizeX = tileSizeX;
 		obj.tileSizeY = tileSizeY;
 		obj.vertexPerMeter = vertexPerMeter;
@@ -149,9 +140,54 @@ class Terrain extends Object3D {
 		return obj;
 	}
 
-	function loadTiles( ctx : Context, height = true, index = true , weight = true ) {
-		var resDir = ctx.shared.loadDir(name);
+	override function localRayIntersection(ctx:Context, ray:h3d.col.Ray):Float {
+		if( ray.lz > 0 )
+			return -1; // only from top
+		if( ray.lx == 0 && ray.ly == 0 ) {
+			var z = terrain.getLocalHeight(ray.px, ray.py);
+			if( z == null || z > ray.pz ) return -1;
+			return ray.pz - z;
+		}
 
+		var b = new h3d.col.Bounds();
+		for( t in terrain.tiles ) {
+			var cb = t.getCachedBounds();
+			if( cb != null )
+				b.add(cb);
+			else {
+				b.addPos(t.x, t.y, -10000);
+				b.addPos(t.x + terrain.cellSize.x * terrain.cellCount.x, t.y + terrain.cellSize.y * terrain.cellCount.y, 10000);
+			}
+		}
+
+		var dist = b.rayIntersection(ray, false);
+		if( dist < 0 )
+			return -1;
+		var pt = ray.getPoint(dist);
+		var m = this.vertexPerMeter;
+		var prevH = pt.z;
+		while( true ) {
+			pt.x += ray.lx * m;
+			pt.y += ray.ly * m;
+			pt.z += ray.lz * m;
+			if( !b.contains(pt) )
+				break;
+			var h = terrain.getLocalHeight(pt.x, pt.y);
+			if( pt.z < h ) {
+				var k = 1 - (prevH - (pt.z - ray.lz * m)) / (ray.lz * m - (h - prevH));
+				pt.x -= k * ray.lx * m;
+				pt.y -= k * ray.ly * m;
+				pt.z -= k * ray.lz * m;
+				return pt.sub(ray.getPos()).length();
+			}
+			prevH = h;
+		}
+		return -1;
+	}
+
+	function loadTiles( ctx : Context ) {
+
+		var resDir = ctx.shared.loadDir(name);
 		if( resDir == null )
 			return;
 
@@ -160,7 +196,12 @@ class Terrain extends Object3D {
 
 		// Avoid texture alloc for unpacking
 		var tmpPackedWeightTexture = new h3d.mat.Texture(terrain.weightMapResolution.x, terrain.weightMapResolution.y, [Target]);
+		var bakeHeightAndNormalInGeometry = #if editor false #else true #end;
 
+		var heightData = [];
+		var weightData = [];
+		var normalData = [];
+		var indexData = [];
 		for( res in resDir ) {
 			var fileInfos = res.name.split(".");
 			var ext = fileInfos[1];
@@ -170,92 +211,108 @@ class Terrain extends Object3D {
 			var y = Std.parseInt(coords[1]);
 			if( x == null || y == null ) continue;
 			var type = coords[2];
+			var data = { res : res, x : x, y : y, ext : ext };
+			switch( type ) {
+				case "n": normalData.push(data);
+				case "h": heightData.push(data);
+				case "w": weightData.push(data);
+				case "i": indexData.push(data);
+			}
+
 			var tile = terrain.createTile(x, y, false);
 			tile.material.shadows = castShadows;
-
-			#if editor
 			tile.material.mainPass.stencil = new h3d.mat.Stencil();
 			tile.material.mainPass.stencil.setFunc(Always, 0x01, 0x01, 0x01);
 			tile.material.mainPass.stencil.setOp(Keep, Keep, Replace);
-			#end
+		}
 
-			switch( type ) {
-				case "n":
-				#if !editor
-				var bytes = res.entry.getBytes();
-				tile.createBigPrim(bytes);
-				#end
-				case "h":
-				if( height ) {
-					var bytes = res.entry.getBytes();
-					var pixels : hxd.Pixels.PixelsFloat = new hxd.Pixels(terrain.heightMapResolution.x + 1, terrain.heightMapResolution.y + 1, bytes, RGBA32F);
-					@:privateAccess tile.heightmapPixels = pixels;
-					#if editor
-					// Need heightmap texture for editing
-					@:privateAccess tile.refreshHeightMap();
-					tile.heightMap.uploadPixels(pixels);
-					tile.needNewPixelCapture = false;
-					tile.refreshGrid();
-					#end
-				}
-				case "w":
-				if( weight ) {
-					if( ext == "png" ) { // Retro-compatibility
-						var weightAsPNG = res.toTexture();
-						h3d.pass.Copy.run(weightAsPNG, tmpPackedWeightTexture);
-						tile.packedWeightMapPixel = tmpPackedWeightTexture.capturePixels();
-						weightAsPNG.dispose();
-					} else {
-						var pixels : hxd.Pixels = new hxd.Pixels(terrain.weightMapResolution.x, terrain.weightMapResolution.y, res.entry.getBytes(), RGBA);
-						tmpPackedWeightTexture.uploadPixels(pixels);
-						tile.packedWeightMapPixel = pixels;
-					}
-
-					// Notice that we need the surfaceIndexMap loaded before doing the unpacking
-					var engine = h3d.Engine.getCurrent();
-					#if editor
-					// Unpack weight from RGBA texture into a array of texture of R8, and create the TextureArray
-					if( tile.surfaceWeights.length == 0 )
-						@:privateAccess tile.refreshSurfaceWeightArray();
-					for( i in 0 ... tile.surfaceWeights.length ) {
-						engine.pushTarget(tile.surfaceWeights[i]);
-						unpackWeight.shader.indexMap = tile.surfaceIndexMap;
-						unpackWeight.shader.packedWeightTexture = tmpPackedWeightTexture;
-						unpackWeight.shader.index = i;
-						unpackWeight.render();
-						engine.popTarget();
-					}
-					tile.generateWeightTextureArray();
-					#else
-					// Unpack weight from RGBA texture directly into the TextureArray of R8
-					tile.generateWeightTextureArray();
-					for( i in 0 ... terrain.surfaceArray.surfaceCount ) {
-						engine.pushTarget(tile.surfaceWeightArray, i);
-						unpackWeight.shader.indexMap = tile.surfaceIndexMap;
-						unpackWeight.shader.packedWeightTexture = tmpPackedWeightTexture;
-						unpackWeight.shader.index = i;
-						unpackWeight.render();
-						engine.popTarget();
-					}
-					#end
-				}
-				case"i":
-				if( index ) {
-					if( tile.surfaceIndexMap == null ) @:privateAccess tile.refreshIndexMap();
-					if( ext == "png" ) { // Retro-compatibility
-						var indexAsPNG = res.toTexture();
-						h3d.pass.Copy.run(indexAsPNG, tile.surfaceIndexMap);
-						tile.indexMapPixels = tile.surfaceIndexMap.capturePixels();
-						indexAsPNG.dispose();
-					}
-					else {
-						var pixels : hxd.Pixels = new hxd.Pixels(terrain.weightMapResolution.x, terrain.weightMapResolution.y, res.entry.getBytes(), RGBA);
-						tile.indexMapPixels = pixels;
-						tile.surfaceIndexMap.uploadPixels(pixels);
-					}
-				}
+		// NORMAL
+		for( nd in normalData ) {
+			var t = terrain.getTile(nd.x, nd.y);
+			var bytes = nd.res.entry.getBytes();
+			var pixels = new hxd.Pixels(terrain.heightMapResolution.x, terrain.heightMapResolution.y, bytes, RGBA);
+			t.normalMapPixels = pixels;
+			if( !bakeHeightAndNormalInGeometry ) {
+				t.refreshNormalMap();
+				t.normalMap.uploadPixels(pixels);
+				t.needNormalBake = false;
 			}
-			tmpPackedWeightTexture.dispose();
+		}
+
+		// INDEX
+		for( id in indexData ) {
+			var t = terrain.getTile(id.x, id.y);
+			if( t.surfaceIndexMap == null )
+				@:privateAccess t.refreshIndexMap();
+			if( id.ext == "png" ) { // Retro-compatibility
+				var indexAsPNG = id.res.toTexture();
+				h3d.pass.Copy.run(indexAsPNG, t.surfaceIndexMap);
+				t.indexMapPixels = t.surfaceIndexMap.capturePixels();
+				indexAsPNG.dispose();
+			}
+			else {
+				var pixels : hxd.Pixels = new hxd.Pixels(terrain.weightMapResolution.x, terrain.weightMapResolution.y, id.res.entry.getBytes(), RGBA);
+				t.indexMapPixels = pixels;
+				t.surfaceIndexMap.uploadPixels(pixels);
+			}
+		}
+
+		// WEIGHT
+		for( wd in weightData ) {
+			var t = terrain.getTile(wd.x, wd.y);
+			var pixels : hxd.Pixels = new hxd.Pixels(terrain.weightMapResolution.x, terrain.weightMapResolution.y, wd.res.entry.getBytes(), RGBA);
+			tmpPackedWeightTexture.uploadPixels(pixels);
+			t.packedWeightMapPixel = pixels;
+			
+			// Notice that we need the surfaceIndexMap loaded before doing the unpacking
+			var engine = h3d.Engine.getCurrent();
+			#if editor
+			// Unpack weight from RGBA texture into a array of texture of R8, and create the TextureArray
+			if( t.surfaceWeights.length == 0 )
+				@:privateAccess t.refreshSurfaceWeightArray();
+			for( i in 0 ... t.surfaceWeights.length ) {
+				engine.pushTarget(t.surfaceWeights[i]);
+				unpackWeight.shader.indexMap = t.surfaceIndexMap;
+				unpackWeight.shader.packedWeightTexture = tmpPackedWeightTexture;
+				unpackWeight.shader.index = i;
+				unpackWeight.render();
+				engine.popTarget();
+			}
+			t.generateWeightTextureArray();
+			#else
+			// Unpack weight from RGBA texture directly into the TextureArray of R8
+			t.generateWeightTextureArray();
+			for( i in 0 ... terrain.surfaceArray.surfaceCount ) {
+				engine.pushTarget(t.surfaceWeightArray, i);
+				unpackWeight.shader.indexMap = t.surfaceIndexMap;
+				unpackWeight.shader.packedWeightTexture = tmpPackedWeightTexture;
+				unpackWeight.shader.index = i;
+				unpackWeight.render();
+				engine.popTarget();
+			}
+			#end
+		}
+
+		// HEIGHT
+		for( hd in heightData ) {
+			var t = terrain.getTile(hd.x, hd.y);
+			var bytes = hd.res.entry.getBytes();
+			var pixels : hxd.Pixels.PixelsFloat = new hxd.Pixels(terrain.heightMapResolution.x, terrain.heightMapResolution.y, bytes, R32F);
+			t.heightMapPixels = pixels;
+
+			if( !bakeHeightAndNormalInGeometry ) {
+				// Need heightmap texture for editing
+				t.refreshHeightMap();
+				t.heightMap.uploadPixels(pixels);
+				t.needNewPixelCapture = false;
+			}
+		}
+
+		// BAKE HEIGHT & NORMAL
+		if( bakeHeightAndNormalInGeometry ) {
+			for( t in terrain.tiles ) {
+				t.createBigPrim();
+			}
 		}
 
 		#if editor
@@ -265,11 +322,13 @@ class Terrain extends Object3D {
 				continue;
 			}
 			if( t.heightMap == null ) trace("Missing heightmap for tile" + terrain.tiles.indexOf(t));
+			if( t.normalMap == null ) trace("Missing normalmap for tile" + terrain.tiles.indexOf(t));
 			if( t.surfaceIndexMap == null ) trace("Missing surfaceIndexMap for tile" + terrain.tiles.indexOf(t));
 			if( t.surfaceWeightArray == null ) trace("Missing surfaceWeightArray for tile" + terrain.tiles.indexOf(t));
 		}
 		#end
 
+		tmpPackedWeightTexture.dispose();
 		@:privateAccess hxd.res.Image.ENABLE_AUTO_WATCH = prevWatch;
 	}
 
@@ -307,69 +366,36 @@ class Terrain extends Object3D {
 		}
 	}
 
-	public function initTerrain( ctx : Context, height = true, surface = true ) {
+	public function initTerrain( ctx : Context ) {
+
+		terrain.createBigPrimitive();
 
 		// Fix terrain being reloaded after a scene modification
 		if( terrain.surfaceArray != null )
 			return;
 
-		//#if editor
-		if( surface ) {
-			var initDone = false;
-			function waitAll() {
+		#if editor
+		var shared : hide.prefab.ContextShared = cast myContext.shared;
+		@:privateAccess shared.scene.setCurrent();
+		#end
 
-				if( initDone )
+		var initDone = false;
+		function waitAll() {
+
+			if( initDone )
+				return;
+
+			for( surface in terrain.surfaces ) {
+				if( surface == null || surface.albedo == null || surface.normal == null || surface.pbr == null )
 					return;
-
-				for( surface in terrain.surfaces ) {
-					if( surface == null || surface.albedo == null || surface.normal == null || surface.pbr == null )
-						return;
-				}
-				terrain.generateSurfaceArray();
-
-				loadTiles(ctx, height, surface, surface);
-
-				#if editor
-				for( t in terrain.tiles )
-					t.computeEdgesNormals();
-				#end
-
-				initDone = true;
 			}
-			loadSurfaces(ctx, waitAll);
-		}
-		else {
-			loadTiles(ctx, height, surface, surface);
-			for( t in terrain.tiles )
-				t.computeEdgesNormals();
-		}
-		//#else
-		//loadBinary(ctx);
-		//#end
+			terrain.generateSurfaceArray();
 
-		// Backward Compatibility
-		if( needFormatUpdate ) {
-			for( s in terrain.surfaces )
-				s.tilling /= tileSizeX;
-			terrain.updateSurfaceParams();
-			/* // Disable auto-upgrade for now
-			#if editor
-			// Need to create a terrain with the new params before saving
-			terrain.weightMapResolution = new h2d.col.IPoint(Math.round(tileSizeX * weightMapPixelPerMeter), Math.round(tileSizeY * weightMapPixelPerMeter));
-			terrain.cellCount = new h2d.col.IPoint(Math.ceil(tileSizeX * vertexPerMeter), Math.ceil(tileSizeY * vertexPerMeter) );
-			terrain.cellSize = new h2d.col.Point(tileSizeX / terrain.cellCount.x, tileSizeY / terrain.cellCount.y );
-			terrain.heightMapResolution = new h2d.col.IPoint(terrain.cellCount.x + 1, terrain.cellCount.y + 1);
-			terrain.refreshAllGrids();
-			terrain.refreshAllTex();
-			for( tile in terrain.tiles )
-				tile.blendEdges();
-			modified = true;
-			var shared : hide.prefab.ContextShared = cast myContext.shared;
-			@:privateAccess shared.scene.editor.view.save();
-			trace("Terrain : " + name +  " is now up to date.");
-			#end
-			*/
+			loadTiles(ctx);
+
+			initDone = true;
 		}
+		loadSurfaces(ctx, waitAll);
 	}
 
 	#if editor
@@ -384,7 +410,7 @@ class Terrain extends Object3D {
 		clearSavedTextures(ctx);
 		saveWeightTextures(ctx);
 		saveHeightTextures(ctx);
-		saveNormals(ctx);
+		saveNormalTextures(ctx);
 		return;
 	}
 
@@ -451,30 +477,17 @@ class Terrain extends Object3D {
 
 	public function saveHeightTextures( ctx : Context ) {
 		for( tile in terrain.tiles ) {
-			var pixels : PixelsFloat = tile.heightMap.capturePixels();
+			var pixels : hxd.Pixels.PixelsFloat = tile.heightMap.capturePixels();
 			var fileName = tile.tileX + "_" + tile.tileY + "_" + "h";
 			ctx.shared.savePrefabDat(fileName, "bin", name, pixels.bytes);
 		}
 	}
 
-	public function saveNormals( ctx : Context ) {
+	public function saveNormalTextures( ctx : Context ) {
 		for( tile in terrain.tiles ) {
-			if( tile.grid == null || tile.grid.normals == null || tile.grid.tangents == null ) continue;
-			var normals = tile.grid.normals;
-			var tangents = tile.grid.tangents;
+			var pixels : hxd.Pixels = tile.normalMap.capturePixels();
 			var fileName = tile.tileX + "_" + tile.tileY + "_" + "n";
-			var stride = 3 * 4 + 3 * 4; // Normal + Tangent
-			var vertexCount = normals.length;
-			var bytes = haxe.io.Bytes.alloc(vertexCount * stride);
-			for( i in 0 ... normals.length ) {
-				bytes.setFloat(i*stride, normals[i].x);
-				bytes.setFloat(i*stride+4, normals[i].y);
-				bytes.setFloat(i*stride+8, normals[i].z);
-				bytes.setFloat(i*stride+12, tangents[i].x);
-				bytes.setFloat(i*stride+16, tangents[i].y);
-				bytes.setFloat(i*stride+20, tangents[i].z);
-			}
-			ctx.shared.savePrefabDat(fileName, "bin", name, bytes);
+			ctx.shared.savePrefabDat(fileName, "bin", name, pixels.bytes);
 		}
 	}
 
@@ -499,39 +512,22 @@ class Terrain extends Object3D {
 
 	#end
 
+	function createTerrain( ctx : Context ) {
+		return new TerrainMesh(ctx.local3d);
+	}
+
 	override function makeInstance( ctx : Context ) : Context {
 		ctx = ctx.clone(this);
 		#if editor
 		myContext = ctx;
 		#end
 
-		terrain = new TerrainMesh(ctx.local3d);
+		terrain = createTerrain(ctx);
 		terrain.tileSize = new h2d.col.Point(tileSizeX, tileSizeY);
-
-		// Backward Compatibility
-		if( oldHeightMapResolution != -1 && oldCellSize != -1 ) {
-			terrain.heightMapResolution = new h2d.col.IPoint(oldHeightMapResolution, oldHeightMapResolution);
-			var resolution = Math.max(0.1, oldCellSize);
-			var cellCount = Math.ceil(Math.min(1000, tileSizeX / resolution));
-			var finalCellSize = tileSizeX / cellCount;
-			terrain.cellCount = new h2d.col.IPoint(cellCount, cellCount);
-			terrain.cellSize = new h2d.col.Point(finalCellSize, finalCellSize);
-			vertexPerMeter = terrain.cellCount.x / tileSizeX;
-			needFormatUpdate = true;
-		}
-		else {
-			terrain.cellCount = new h2d.col.IPoint(Math.ceil(tileSizeX * vertexPerMeter), Math.ceil(tileSizeY * vertexPerMeter) );
-			terrain.cellSize = new h2d.col.Point(tileSizeX / terrain.cellCount.x, tileSizeY / terrain.cellCount.y );
-			terrain.heightMapResolution = new h2d.col.IPoint(terrain.cellCount.x + 1, terrain.cellCount.y + 1);
-		}
-		if( oldWeightMapResolution != -1 ) {
-			terrain.weightMapResolution = new h2d.col.IPoint(oldWeightMapResolution, oldWeightMapResolution);
-			weightMapPixelPerMeter = oldWeightMapResolution / tileSizeX;
-			needFormatUpdate = true;
-		}
-		else
-			terrain.weightMapResolution = new h2d.col.IPoint(Math.round(tileSizeX * weightMapPixelPerMeter), Math.round(tileSizeY * weightMapPixelPerMeter));
-
+		terrain.cellCount = new h2d.col.IPoint(Math.ceil(tileSizeX * vertexPerMeter), Math.ceil(tileSizeY * vertexPerMeter) );
+		terrain.cellSize = new h2d.col.Point(tileSizeX / terrain.cellCount.x, tileSizeY / terrain.cellCount.y );
+		terrain.heightMapResolution = new h2d.col.IPoint(terrain.cellCount.x + 1, terrain.cellCount.y + 1);
+		terrain.weightMapResolution = new h2d.col.IPoint(Math.round(tileSizeX * weightMapPixelPerMeter), Math.round(tileSizeY * weightMapPixelPerMeter));
 		terrain.parallaxAmount = parallaxAmount;
 		terrain.parallaxMinStep = parallaxMinStep;
 		terrain.parallaxMaxStep = parallaxMaxStep;
@@ -640,10 +636,10 @@ class Terrain extends Object3D {
 			terrain.heightMapResolution = new h2d.col.IPoint(terrain.cellCount.x + 1, terrain.cellCount.y + 1);
 			terrain.refreshAllGrids();
 			terrain.refreshAllTex();
-			for( tile in terrain.tiles )
-				tile.blendEdges();
-			if( editor != null )
+			if( editor != null ) {
 				editor.refresh();
+				@:privateAccess editor.blendEdges(terrain.tiles);
+			}
 			modified = true;
 		});
 

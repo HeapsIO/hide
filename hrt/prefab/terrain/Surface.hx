@@ -28,9 +28,6 @@ class Surface {
 	}
 
 	public function dispose() {
-		if( albedo != null ) albedo.dispose();
-		if( normal != null ) normal.dispose();
-		if( pbr != null ) pbr.dispose();
 	}
 }
 
