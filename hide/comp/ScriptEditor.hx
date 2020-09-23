@@ -115,10 +115,17 @@ class ScriptChecker {
 
 			if( api.cdbEnums != null ) {
 				for( c in api.cdbEnums ) {
+					var path = c.split(".");
+					var sname = path.join("@");
+					var objPath = null;
+					if( path.length > 1 ) // might be a scoped id
+						objPath = this.constants.get("cdb.objID").split(":");
 					for( s in ide.database.sheets ) {
-						if( s.name != c ) continue;
-						var name = s.name.charAt(0).toUpperCase() + s.name.substr(1);
-						var kname = name+"Kind";
+						if( s.name != sname ) continue;
+						var name = path[path.length - 1];
+						name = name.charAt(0).toUpperCase() + name.substr(1);
+						var kname = path.join("_")+"Kind";
+						kname = kname.charAt(0).toUpperCase() + kname.substr(1);
 						if( cdbPack != "" ) kname = cdbPack + "." + kname;
 						var kind = checker.types.resolve(kname);
 						if( kind == null )
@@ -129,9 +136,14 @@ class ScriptChecker {
 							fields : new Map(),
 							statics : new Map()
 						};
+						var refPath = s.idCol.scope == null ? null : objPath.slice(0, s.idCol.scope).join(":")+":";
 						for( o in s.all ) {
 							var id = o.id;
 							if( id == null || id == "" ) continue;
+							if( refPath != null ) {
+								if( !StringTools.startsWith(id, refPath) ) continue;
+								id = id.substr(refPath.length);
+							}
 							cl.fields.set(id, { name : id, params : [], canWrite : false, t : kind, isPublic: true, complete : true });
 						}
 						checker.setGlobal(name, TInst(cl,[]));
@@ -149,7 +161,15 @@ class ScriptChecker {
 			else {
 				switch( ctx ) {
 				case TInst(c,_):
-					for( f in c.fields ) if( f.t.match(TFun(_)) ) f.isPublic = true; // allow access to private methods
+					var cc = c;
+					while( true ) {
+						for( f in cc.fields ) if( f.t.match(TFun(_)) ) f.isPublic = true; // allow access to private methods
+						if( cc.superClass == null ) break;
+						cc = switch( cc.superClass ) {
+						case TInst(c,_): c;
+						default: throw "assert";
+						}
+					}
 					checker.setGlobals(c);
 				default: error(context+" is not a class");
 				}

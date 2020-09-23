@@ -13,8 +13,8 @@ class Polygon extends Object3D {
 
 	public var shape(default, null) : Shape = Quad;
 	public var points : h2d.col.Polygon;
+	public var color : Int = 0xFFFFFFFF;
 	#if editor
-	public var debugColor : Int = 0xFFFFFFFF;
 	public var editor : hide.prefab.PolygonEditor;
 	public var cachedPrim : h3d.prim.Polygon;
 	var prevScale = [1.0, 1.0];
@@ -36,9 +36,8 @@ class Polygon extends Object3D {
 				obj.kind = 2;
 				obj.points = [for( p in points ) { x : p.x, y : p.y }];
 		}
-		#if editor
-		obj.debugColor = debugColor;
-		#end
+		if( color != -1 )
+			obj.color = color;
 		return obj;
 	}
 
@@ -52,11 +51,8 @@ class Polygon extends Object3D {
 				var list : Array<Dynamic> = obj.points;
 				points = [for(pt in list) new h2d.col.Point(pt.x, pt.y)];
 		}
-		#if editor
-		debugColor = obj.debugColor != null ? obj.debugColor : 0xFFFFFF;
-		if((debugColor >> 24) == 0)
-			debugColor = 0x80000000 | debugColor;
-		#end
+		color = obj.color != null ? obj.color : -1;
+
 	}
 
 	override function updateInstance( ctx : Context, ?propName : String) {
@@ -64,9 +60,11 @@ class Polygon extends Object3D {
 		var mesh : h3d.scene.Mesh = cast ctx.local3d;
 		mesh.primitive = makePrimitive();
 		#if editor
-		setColor(ctx, debugColor);
+		setColor(ctx, color);
 		if(editor != null)
 			editor.update(propName);
+		#else
+		mesh.material.color.setColor(color);
 		#end
 	}
 
@@ -98,6 +96,12 @@ class Polygon extends Object3D {
 		primitive.incref();
 		cache.set(shape, primitive);
 		return primitive;
+	}
+
+	override function localRayIntersection(ctx : hrt.prefab.Context, ray:h3d.col.Ray):Float {
+		var prim = makePrimitive();
+		var col = prim.getCollider();
+		return col.rayIntersection(ray, true);
 	}
 
 	public static function createPrimitive( shape : Shape ) {
@@ -174,8 +178,8 @@ class Polygon extends Object3D {
 		return ctx;
 	}
 
+	#if editor
 	public function setColor(ctx: Context, color: Int) {
-		#if editor
 		if(hrt.prefab.Material.hasOverride(this))
 			return;
 		if(ctx.local3d == null)
@@ -183,8 +187,8 @@ class Polygon extends Object3D {
 		var mesh = Std.downcast(ctx.local3d, h3d.scene.Mesh);
 		if(mesh != null)
 			hrt.prefab.Box.setDebugColor(color, mesh.material);
-		#end
 	}
+	#end
 
 	public function generateCustomPolygon(){
 		var polyPrim : h3d.prim.Polygon = null;
@@ -369,7 +373,7 @@ class Polygon extends Object3D {
 
 		ctx.properties.add( new hide.Element('
 			<div class="group" name="Params">
-				<dl><dt>Color</dt><dd><input type="color" alpha="true" field="debugColor"/></dd> </dl>
+				<dl><dt>Color</dt><dd><input type="color" alpha="true" field="color"/></dd> </dl>
 			</div>'), this, function(pname) { ctx.onChange(this, pname); });
 
 		updateProps();

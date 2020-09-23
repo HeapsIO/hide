@@ -4,6 +4,10 @@
 .cdb-view .cdb {
   margin-bottom: 350px;
 }
+.cdb-view.cdb-diff .cdb-sheet th,
+.cdb-view.cdb-diff th.start {
+  background-color: #d60;
+}
 .cdb {
   background-color: black;
 }
@@ -63,6 +67,13 @@
   font-weight: bold;
   padding-left: 20px;
   background-color: #444;
+}
+.cdb .cdb-sheet tr.separator td .toggle {
+  padding: 0px 4px;
+  color: #aaa;
+}
+.cdb .cdb-sheet tr.separator td .toggle:hover {
+  color: #ccc;
 }
 .cdb .cdb-sheet td {
   padding: 2px 4px;
@@ -215,7 +226,7 @@
   white-space: nowrap;
   cursor: pointer;
   text-overflow: ellipsis;
-  max-width: 900;
+  max-width: 900px;
   overflow: hidden!important;
 }
 .cdb .cdb-sheet td.t_list img,
@@ -335,6 +346,21 @@
 .cdb .cdb-sheet div.cdb-script .codeeditor {
   min-width: 500px;
   min-height: 200px;
+}
+.cdb.cdb-obj-editor {
+  margin-top: 10px;
+}
+.cdb.cdb-obj-editor > .cdb-sheet {
+  border: 2px solid #333;
+}
+.cdb.cdb-obj-editor > .cdb-sheet > tr > th {
+  width: 50px;
+}
+.cdb.cdb-obj-editor > .cdb-sheet tr.props .cdb-sheet > tr > th {
+  width: 50px;
+}
+.cdb.cdb-obj-editor div.cdb-large .cdb-sheet {
+  min-width: 0 !important;
 }
 .cdb .floating-thead {
   position: fixed;

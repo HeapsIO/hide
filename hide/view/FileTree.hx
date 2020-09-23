@@ -14,7 +14,6 @@ typedef ExtensionDesc = {
 class FileTree extends FileView {
 
 	var tree : hide.comp.IconTree<String>;
-	var lastOpen : hide.ui.View<Dynamic>;
 	var ignorePatterns : Array<EReg> = [];
 
 	public function new(state) {
@@ -99,22 +98,6 @@ class FileTree extends FileView {
 
 		tree.onRename = onRename;
 
-		// prevent dummy mouseLeft from breaking our quickOpen feature
-		var mouseLeft = false;
-		var leftCount = 0;
-		element.on("mouseenter", function(_) {
-			mouseLeft = false;
-		});
-		element.on("mouseleave", function(_) {
-			mouseLeft = true;
-			leftCount++;
-			var k = leftCount;
-			if( lastOpen != null )
-				haxe.Timer.delay(function() {
-					if( !mouseLeft || leftCount != k ) return;
-					lastOpen = null;
-				},1000);
-		});
 		element.contextmenu(function(e) {
 			var current = tree.getCurrentOver();
 			if( current != null )
@@ -273,12 +256,7 @@ class FileTree extends FileView {
 		var ext = getExtension(fullPath);
 		if( ext == null )
 			return false;
-		var prev = lastOpen;
-		lastOpen = null;
-		ide.openFile(fullPath, function(c) {
-			if( prev != null ) prev.close();
-			lastOpen = c;
-		});
+		ide.openFile(fullPath);
 		return true;
 	}
 

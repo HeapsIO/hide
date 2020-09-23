@@ -204,7 +204,33 @@ private class ParticleInstance  {
 	static var tmpGroundNormal = new h3d.Vector(0,0,1);
 	static var tmpSpeed = new h3d.Vector();
 	static var tmpMat = new h3d.Matrix();
+	static var tmpPos = new h3d.Vector();
+	static var tmpCamRotAxis = new h3d.Vector();
+	static var tmpCamAlign = new h3d.Vector();
+	static var tmpCamVec = new h3d.Vector();
+	static var tmpCamVec2 = new h3d.Vector();
+	static var tmpQuat = new h3d.Quat();
 	var tmpColor = new h3d.Vector();
+
+
+	inline function add( v1 : h3d.Vector, v2 : h3d.Vector ) {
+		v1.x += v2.x;
+		v1.y += v2.y;
+		v1.z += v2.z;
+	}
+
+	inline function sub( v1 : h3d.Vector, v2 : h3d.Vector ) {
+		v1.x -= v2.x;
+		v1.y -= v2.y;
+		v1.z -= v2.z;
+	}
+
+	inline function cross( v1 : h3d.Vector, v2 : h3d.Vector ) {
+		v1.x -= v1.y * v2.z - v1.z * v2.y;
+		v1.y -= v1.z * v2.x - v1.x * v2.z;
+		v1.z -= v1.x * v2.y - v1.y * v2.x;
+		v1.w = 1.0;
+	}
 
 	public function update( dt : Float ) {
 
@@ -215,12 +241,12 @@ private class ParticleInstance  {
 			evaluator.getVector(def.startSpeed, 0.0, tmpSpeedAccumulation);
 			if(tmpSpeedAccumulation.length() > 0.001)
 				tmpSpeedAccumulation.transform3x3(orientation.toMatrix(tmpMat));
-			speedAccumulation = speedAccumulation.add(tmpSpeedAccumulation);
+			add(speedAccumulation, tmpSpeedAccumulation);
 			// START WORLD SPEED
 			evaluator.getVector(def.startWorldSpeed, 0.0, tmpSpeedAccumulation);
 			if(tmpSpeedAccumulation.length() > 0.001)
 				tmpSpeedAccumulation.transform3x3(emitter.invTransform);
-			speedAccumulation = speedAccumulation.add(tmpSpeedAccumulation);
+			add(speedAccumulation, tmpSpeedAccumulation);
 		}
 
 		// ACCELERATION
@@ -228,13 +254,13 @@ private class ParticleInstance  {
 		tmpSpeedAccumulation.scale3(dt);
 		if(tmpSpeedAccumulation.length() > 0.001)
 			tmpSpeedAccumulation.transform3x3(orientation.toMatrix(tmpMat));
-		speedAccumulation = speedAccumulation.add(tmpSpeedAccumulation);
+		add(speedAccumulation, tmpSpeedAccumulation);
 		// WORLD ACCELERATION
 		evaluator.getVector(def.worldAcceleration, t, tmpSpeedAccumulation);
 		tmpSpeedAccumulation.scale3(dt);
 		if(tmpSpeedAccumulation.length() > 0.001 && emitter.simulationSpace == Local)
 			tmpSpeedAccumulation.transform3x3(emitter.invTransform);
-		speedAccumulation = speedAccumulation.add(tmpSpeedAccumulation);
+		add(speedAccumulation, tmpSpeedAccumulation);
 		// SPEED
 		evaluator.getVector(def.localSpeed, t, tmpLocalSpeed);
 		if(tmpLocalSpeed.length() > 0.001)
@@ -244,7 +270,10 @@ private class ParticleInstance  {
 		if(emitter.simulationSpace == Local)
 			tmpWorldSpeed.transform3x3(emitter.invTransform);
 
-		tmpSpeed.load(tmpLocalSpeed.add(tmpWorldSpeed).add(speedAccumulation));
+		tmpSpeed.set(0,0,0);
+		add(tmpSpeed, tmpLocalSpeed);
+		add(tmpSpeed, tmpWorldSpeed);
+		add(tmpSpeed, speedAccumulation);
 		transform.x += tmpSpeed.x * dt;
 		transform.y += tmpSpeed.y * dt;
 		transform.z += tmpSpeed.z * dt;
@@ -299,30 +328,32 @@ private class ParticleInstance  {
 
 				var absChildMat = tmpMat;
 				absChildMat.multiply3x4(transform.absPos, childMat);
-				var alignVec = emitter.alignAxis.clone();
-				alignVec.transform3x3(absChildMat);
-				alignVec.normalizeFast();
+				tmpCamAlign.load(emitter.alignAxis);
+				tmpCamAlign.transform3x3(absChildMat);
+				tmpCamAlign.normalizeFast();
 
-				var rotAxis = emitter.alignLockAxis.clone();
-				rotAxis.transform3x3(transform.absPos);
-				rotAxis.normalizeFast();
+				tmpCamRotAxis.load(emitter.alignLockAxis);
+				tmpCamRotAxis.transform3x3(transform.absPos);
+				tmpCamRotAxis.normalizeFast();
 
-				var camVec : h3d.Vector = emitter.getScene().camera.pos.sub(transform.absPos.getPosition());
-				camVec.normalizeFast();
+				tmpCamVec.load(emitter.getScene().camera.pos);
+				sub(tmpCamVec, transform.absPos.getPosition(tmpPos));
+				tmpCamVec.normalizeFast();
 
-				var d = camVec.clone();
-				d.scale3(camVec.dot3(rotAxis));
-				d = camVec.sub(d);
-				d.normalizeFast();
-				var angle = hxd.Math.acos(alignVec.dot3(d));
-				var cross = alignVec.cross(d);
-				if(rotAxis.dot3(cross) < 0)
+				tmpCamVec2.load(tmpCamVec);
+				tmpCamVec2.scale3(tmpCamVec.dot3(tmpCamRotAxis));
+				sub(tmpCamVec, tmpCamVec2);
+				tmpCamVec.normalizeFast();
+
+				var angle = hxd.Math.acos(tmpCamAlign.dot3(tmpCamVec));
+				cross(tmpCamAlign, tmpCamVec2);
+				if(tmpCamRotAxis.dot3(tmpCamAlign) < 0)
 					angle = -angle;
 
-				var q = new h3d.Quat();
-				q.initRotateAxis(emitter.alignLockAxis.x, emitter.alignLockAxis.y, emitter.alignLockAxis.z, angle);
+				tmpQuat.identity();
+				tmpQuat.initRotateAxis(emitter.alignLockAxis.x, emitter.alignLockAxis.y, emitter.alignLockAxis.z, angle);
 				var cq = childTransform.qRot;
-				cq.multiply(cq, q);
+				cq.multiply(cq, tmpQuat);
 				childTransform.setRotation(cq);
 
 				childTransform.calcAbsPos();
@@ -336,7 +367,7 @@ private class ParticleInstance  {
 
 		// COLLISION
 		if( emitter.useCollision ) {
-			var worldPos = absPos.getPosition();
+			var worldPos = absPos.getPosition(tmpPos);
 			if( worldPos.z < 0 ) {
 				if( emitter.killOnCollision == 1 || hxd.Math.random() < emitter.killOnCollision ) {
 					life = lifeTime + 1; // No survivor
@@ -382,8 +413,7 @@ class EmitterObject extends h3d.scene.Object {
 
 	public var catchupSpeed = 4; // Use larger ticks when catching-up to save calculations
 	public var maxCatchupWindow = 0.5; // How many seconds max to simulate when catching up
-	public var nextBurstTime : Float = 0.0; // Keep tack of burst timing
-	public var totalBurstCount : Int = 0; // Keep tack of burst count
+	public var totalBurstCount : Int = 0; // Keep track of burst count
 
 	// RANDOM
 	public var seedGroup = 0;
@@ -457,7 +487,6 @@ class EmitterObject extends h3d.scene.Object {
 		lastTime = 0.0;
 		emitCount = 0;
 		totalBurstCount = 0;
-		nextBurstTime = 0.0;
 
 		var p = particles;
 		while(p != null) {
@@ -759,31 +788,33 @@ class EmitterObject extends h3d.scene.Object {
 						enable = false;
 				case BurstDuration:
 					if( burstDelay > 0 ) {
-						var needBurst = curTime < emitDuration && curTime > nextBurstTime;
+						var burstTarget = 1 + hxd.Math.floor(curTime / burstDelay);
+						var lastBurstTime = totalBurstCount * burstDelay;
+						var nextBurstTime = lastBurstTime + burstDelay;
+						var needBurst = nextBurstTime <= emitDuration && totalBurstCount < burstTarget;
 						while( needBurst ) {
 							var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, burstParticleCount));
 							doEmit(delta);
-							nextBurstTime += burstDelay;
 							totalBurstCount++;
-							needBurst = totalBurstCount < burstCount && curTime > nextBurstTime;
+							lastBurstTime += burstDelay;
+							nextBurstTime = lastBurstTime + burstDelay;
+							needBurst = nextBurstTime <= emitDuration && totalBurstCount < burstTarget;
 						}
 					}
-					if( isSubEmitter && curTime >= emitDuration )
+					if( isSubEmitter && curTime > emitDuration )
 						enable = false;
 				case Burst:
 					if( burstDelay > 0 ) {
-						var needBurst = totalBurstCount < burstCount && curTime > nextBurstTime;
-						while( needBurst ) {
+						var burstTarget = hxd.Math.min(burstCount, 1 + hxd.Math.floor(curTime / burstDelay));
+						while( totalBurstCount < burstTarget ) {
 							var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, burstParticleCount));
 							doEmit(delta);
-							nextBurstTime += burstDelay;
 							totalBurstCount++;
-							needBurst = totalBurstCount < burstCount && curTime > nextBurstTime;
 						}
 					}
 					if( isSubEmitter && totalBurstCount == burstCount )
 						enable = false;
-				
+
 			}
 		}
 
@@ -839,7 +870,7 @@ class EmitterObject extends h3d.scene.Object {
 					particles = next;
 
 				disposeInstance(p);
-				
+
 				// SUB EMITTER
 				if( subEmitterTemplate != null ) {
 					if( tmpCtx == null ) {
@@ -880,7 +911,7 @@ class EmitterObject extends h3d.scene.Object {
 					trails[i] = trails[trails.length - 1];
 					trails.pop();
 				}
-				else 
+				else
 					i++;
 			}
 		}
@@ -1147,10 +1178,10 @@ class Emitter extends Object3D {
 		emitterObj.trailTemplate = trailTemplate;
 		// RANDOM
 		emitterObj.seedGroup 			= 	getParamVal("seedGroup");
-		// LIFE	
+		// LIFE
 		emitterObj.lifeTime 			= 	getParamVal("lifeTime");
 		emitterObj.lifeTimeRand 		= 	getParamVal("lifeTimeRand");
-		// EMIT PARAMS	
+		// EMIT PARAMS
 		emitterObj.emitType 			= 	getParamVal("emitType");
 		emitterObj.burstCount 			= 	getParamVal("burstCount");
 		emitterObj.burstDelay 			= 	getParamVal("burstDelay");
@@ -1161,22 +1192,22 @@ class Emitter extends Object3D {
 		emitterObj.maxCount 			= 	getParamVal("maxCount");
 		emitterObj.emitRate 			= 	makeParam(this, "emitRate");
 		emitterObj.emitShape 			= 	getParamVal("emitShape");
-		// EMIT SHAPE	
+		// EMIT SHAPE
 		emitterObj.emitAngle 			= 	getParamVal("emitAngle");
 		emitterObj.emitRad1 			= 	getParamVal("emitRad1");
 		emitterObj.emitRad2 			= 	getParamVal("emitRad2");
 		emitterObj.emitSurface 			= 	getParamVal("emitSurface");
-		// ALIGNMENT	
+		// ALIGNMENT
 		emitterObj.alignMode 			= 	getParamVal("alignMode");
 		emitterObj.alignAxis 			= 	getParamVal("alignAxis");
 		emitterObj.alignLockAxis 		= 	getParamVal("alignLockAxis");
-		// ANIMATION	
+		// ANIMATION
 		emitterObj.frameCount 			= 	getParamVal("frameCount");
 		emitterObj.frameDivisionX 		= 	getParamVal("frameDivisionX");
 		emitterObj.frameDivisionY 		= 	getParamVal("frameDivisionY");
 		emitterObj.animationRepeat 		= 	getParamVal("animationRepeat");
 		emitterObj.animationLoop 		= 	getParamVal("animationLoop");
-		// COLLISION	
+		// COLLISION
 		emitterObj.useCollision 		= 	getParamVal("useCollision");
 		emitterObj.killOnCollision 		= 	getParamVal("killOnCollision");
 		emitterObj.elasticity 			= 	getParamVal("elasticity");
@@ -1279,7 +1310,7 @@ class Emitter extends Object3D {
 			for( p in params ) {
 				if( p.groupName == null && groupNames.indexOf("Emitter") == -1 )
 					groupNames.push("Emitter");
-				else if( p.groupName != null && groupNames.indexOf(p.groupName) == -1 ) 
+				else if( p.groupName != null && groupNames.indexOf(p.groupName) == -1 )
 					groupNames.push(p.groupName);
 			}
 

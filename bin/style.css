@@ -224,6 +224,9 @@ input[type=checkbox]:checked:after {
 .hide-scene-layer .jstree-container-ul {
   padding-right: 5px;
 }
+.prefabview .scenetree {
+  max-height: 350px;
+}
 .hide-scenetree {
   flex: 1;
   background-color: #111;
@@ -275,7 +278,7 @@ input[type=checkbox]:checked:after {
 }
 .hide-range input[type=range] {
   display: inline-block;
-  width: 145px;
+  width: 140px;
 }
 .hide-range input[type=range].small {
   width: 123px;
@@ -400,6 +403,33 @@ input[type=checkbox]:checked:after {
   flex: 0 0 320px;
   position: relative;
   height: 100%;
+}
+.hide-tabs.masked {
+  flex: none;
+  position: absolute;
+  height: 20px;
+  width: 20px;
+  right: 0px;
+}
+.hide-tabs.masked > * {
+  display: none !important;
+}
+.hide-tabs.masked > .maskToggle:before {
+  content: "«";
+}
+.hide-tabs > .maskToggle {
+  display: block !important;
+  position: absolute;
+  margin-top: -2px;
+  right: 5px;
+  color: #aaa;
+  font-size: 24px;
+}
+.hide-tabs > .maskToggle:before {
+  content: "»";
+}
+.hide-tabs > .maskToggle:hover {
+  color: white;
 }
 .hide-tabs .tabs-header {
   background-color: #111;
@@ -982,6 +1012,13 @@ input[type=checkbox]:checked:after {
 .string-array .delete-button {
   width: 20px;
   margin-left: 8px;
+}
+.editModeButton {
+  margin: 10px;
+  outline: 4px solid #fd5151;
+}
+.editModeEnabled {
+  outline: 4px solid #5897fb;
 }
 .spline-editor .editModeButton {
   margin: 10px;

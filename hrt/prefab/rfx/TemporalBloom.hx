@@ -3,44 +3,6 @@ package hrt.prefab.rfx;
 import hxsl.Eval;
 import h3d.pass.Copy;
 
-class Temporal extends h3d.shader.ScreenShader {
-
-	static var SRC = {
-
-		@param var cur : Sampler2D;
-		@param var prev : Sampler2D;
-		@param var prevCamMat : Mat4;
-		@param var cameraInverseViewProj : Mat4;
-		@ignore @param var depthMap : Channel;
-		@param var strength : Float;
-
-		function getPixelPosition( uv : Vec2 ) : Vec3 {
-			var depth = depthMap.get(uv);
-			var temp = vec4(uvToScreen(uv), depth, 1) * cameraInverseViewProj;
-			var originWS = temp.xyz / temp.w;
-			return originWS;
-		}
-
-		function fragment() {
-			var pixelPos = getPixelPosition(calculatedUV);
-			var prevPos =  vec4(pixelPos, 1.0) * prevCamMat;
-			prevPos.xyz /= prevPos.w;
-			var prevUV = screenToUv(prevPos.xy);
-			var prevPixelPos = getPixelPosition(prevUV);
-			var dist = (pixelPos - prevPixelPos).length();
-
-			var curVal = cur.get(calculatedUV).rgb;
-			if( prevUV.x > 1.0 || prevUV.x < 0.0 || prevUV.y > 1.0 || prevUV.y < 0.0 || dist > 1.0 ) {
-				pixelColor.rgb = curVal;
-			}
-			else {
-				var prevVal = prev.get(prevUV).rgb;
-			pixelColor.rgb = mix(curVal, prevVal, strength);
-			}
-		}
-	};
-}
-
 class DualFilterDown extends h3d.shader.ScreenShader {
 
 	static var SRC = {
@@ -66,7 +28,7 @@ class DualFilterUp extends h3d.shader.ScreenShader {
 
 		@param var source : Sampler2D;
 		@param var halfPixel : Vec2;
-		
+
 		function fragment() {
 			var sum = vec3(0,0,0);
 			sum += texture(source, calculatedUV + vec2(-halfPixel.x * 2.0, 0.0)).rgb;
@@ -97,30 +59,21 @@ class Threshold extends h3d.shader.ScreenShader {
 		@param var prev : Sampler2D;
 		@param var prevCamMat : Mat4;
 		@param var cameraInverseViewProj : Mat4;
-		@ignore @param var depthMap : Channel;
 		@param var strength : Float;
-
-		function getPixelPosition( uv : Vec2 ) : Vec3 {
-			var depth = depthMap.get(uv);
-			var temp = vec4(uvToScreen(uv), depth, 1) * cameraInverseViewProj;
-			var originWS = temp.xyz / temp.w;
-			return originWS;
-		}
 
 		function fragment() {
 			var curVal = max(hdr.get(calculatedUV).rgb - threshold, 0.0) * intensity;
 			pixelColor.rgb = min(curVal, maxIntensity);
 
 			if( USE_TEMPORAL_FILTER ) {
-				var pixelPos = getPixelPosition(calculatedUV);
-				var prevPos =  vec4(pixelPos, 1.0) * prevCamMat;
+				var pixelPos = vec4(uvToScreen(calculatedUV), 1, 1) * cameraInverseViewProj;
+				pixelPos.xyz /= pixelPos.w;
+				var prevPos = vec4(pixelPos.xyz, 1.0) * prevCamMat;
 				prevPos.xyz /= prevPos.w;
 				var prevUV = screenToUv(prevPos.xy);
-				
-				if( prevUV.x <= 1.0 && prevUV.x >= 0.0 && prevUV.y <= 1.0 && prevUV.y >= 0.0 ) {
-					var prevVal = prev.get(prevUV).rgb;
-					pixelColor.rgb = min(mix(curVal, prevVal, strength), maxIntensity);
-				}
+				var blendStrengh = strength * ceil(1 - max(abs(prevPos.x), abs(prevPos.y)));
+				var prevVal = prev.get(prevUV).rgb;
+				pixelColor.rgb = mix(curVal, prevVal, blendStrengh);
 			}
 		}
 	};
@@ -139,12 +92,13 @@ typedef TemporalBloomProps = {
 class TemporalBloom extends RendererFX {
 
 	var thresholdPass = new h3d.pass.ScreenFx(new Threshold());
-	var temporalPass = new h3d.pass.ScreenFx(new Temporal());
 	var downScale = new h3d.pass.ScreenFx(new DualFilterDown());
 	var upScale = new h3d.pass.ScreenFx(new DualFilterUp());
 
 	var prevResult : h3d.mat.Texture;
 	var prevCamMat : h3d.Matrix;
+
+	var tonemap = new Bloom.BloomTonemap();
 
 	public function new(?parent) {
 		super(parent);
@@ -161,7 +115,7 @@ class TemporalBloom extends RendererFX {
 		prevCamMat.identity();
 	}
 
-	override function apply(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
+	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
 		if( step == BeforeTonemapping ) {
 			r.mark("TBloom");
 			var pb : TemporalBloomProps = props;
@@ -169,16 +123,13 @@ class TemporalBloom extends RendererFX {
 
 			var source = r.allocTarget("source", false, pb.size, RGBA16F);
 			ctx.engine.pushTarget(source);
-			thresholdPass.shader.hdr = ctx.getGlobal("hdr");
+			thresholdPass.shader.hdr = ctx.getGlobal("hdrMap");
 			thresholdPass.shader.threshold = pb.threshold;
             thresholdPass.shader.intensity = pb.intensity;
 			thresholdPass.shader.maxIntensity = pb.maxValue;
 			if( pb.useTemporalFilter ) {
 				thresholdPass.shader.USE_TEMPORAL_FILTER = true;
-				var depth : hxsl.ChannelTexture = ctx.getGlobal("depthMap");
 				prevResult = r.allocTarget("pr", false, pb.size, RGBA16F);
-				thresholdPass.shader.depthMapChannel = depth.channel;
-				thresholdPass.shader.depthMap = depth.texture;
 				thresholdPass.shader.prev = prevResult;
 				thresholdPass.shader.prevCamMat.load(prevCamMat);
 				thresholdPass.shader.cameraInverseViewProj.load(ctx.camera.getInverseViewProj());
@@ -193,7 +144,7 @@ class TemporalBloom extends RendererFX {
 				thresholdPass.render();
 				ctx.engine.popTarget();
 			}
-				
+
 			var curSize = pb.size;
 			var curTarget : h3d.mat.Texture = source;
 			for( i in 0 ... pb.downScaleCount ) {
@@ -207,7 +158,7 @@ class TemporalBloom extends RendererFX {
 				ctx.engine.popTarget();
 			}
 			for( i in 0 ... pb.downScaleCount ) {
-				curSize *= 1.5;
+				curSize *= 2.0;
 				var prevTarget = curTarget;
 				curTarget = r.allocTarget("uso_"+i, false, curSize, RGBA16F);
 				ctx.engine.pushTarget(curTarget);
@@ -217,7 +168,8 @@ class TemporalBloom extends RendererFX {
 				ctx.engine.popTarget();
 			}
 
-			ctx.setGlobal("bloom", curTarget);
+			tonemap.bloomTexture = curTarget;
+			r.addShader(tonemap);
 		}
 	}
 

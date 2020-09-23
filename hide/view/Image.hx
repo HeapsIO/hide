@@ -71,6 +71,6 @@ class Image extends FileView {
 		bmp.y = (scene.s2d.height - Std.int(bmp.tile.height * bmp.scaleY)) >> 1;
 	}
 
-	static var _ = FileTree.registerExtension(Image,["png","jpg","jpeg","gif"],{ icon : "picture-o" });
+	static var _ = FileTree.registerExtension(Image,hide.Ide.IMG_EXTS,{ icon : "picture-o" });
 
 }

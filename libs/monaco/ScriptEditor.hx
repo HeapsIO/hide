@@ -1,7 +1,7 @@
 package monaco;
 
 @:native("monaco.editor")
-extern class Editor {
+extern class ScriptEditor {
 
 
 	function addCommand( command : Int, callback : Void -> Void ) : Void;
@@ -16,6 +16,6 @@ extern class Editor {
 	function getPosition() : Position;
 	function setPosition( p : Position ) : Void;
 
-	public static function create( elt : js.html.Element, ?options : Dynamic ) : Editor;
+	public static function create( elt : js.html.Element, ?options : Dynamic ) : ScriptEditor;
 
 }

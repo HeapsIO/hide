@@ -48,8 +48,8 @@ class Sao extends RendererFX {
 		return null;
 	}
 
-	override function apply( r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {
-		if( step == BeforeLighting ) {
+	override function begin( r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {
+		if( step == Lighting ) {
 			r.mark("SSAO");
 			if( sao == null ) sao = new h3d.pass.ScalableAO();
 			var props : SaoProps = props;
@@ -61,7 +61,7 @@ class Sao extends RendererFX {
 			ctx.engine.pushTarget(saoTex);
 			sao.shader.numSamples = props.samples;
 			sao.shader.sampleRadius	= props.radius;
-			sao.shader.intensity = props.intensity;
+			sao.shader.intensity = props.intensity - 1;
 			sao.shader.bias = props.bias * props.bias;
 			sao.shader.depthTextureChannel = depth.channel;
 			sao.shader.normalTextureChannel = normal.channel;
@@ -70,7 +70,7 @@ class Sao extends RendererFX {
 			sao.shader.microOcclusionChannel = occlu.channel;
 			sao.shader.microOcclusionIntensity = props.microIntensity;
 			sao.shader.noiseScale.set(props.noiseScale, props.noiseScale);
-			if( props.noiseTexturePath != null ) 
+			if( props.noiseTexturePath != null )
 				sao.shader.noiseTexture = loadNoiseTexture(props.noiseTexturePath, Repeat);
 			else
 				sao.shader.noiseTexture = h3d.mat.Texture.genNoise(128);
@@ -95,7 +95,7 @@ class Sao extends RendererFX {
 				<dt>Radius</dt><dd><input type="range" min="0" max="10" field="radius"/></dd>
 				<dt>Bias</dt><dd><input type="range" min="0" max="0.5" field="bias"/></dd>
 				<dt>Texture Size</dt><dd><input type="range" min="0" max="1" field="size"/></dd>
-				<dt>Samples</dt><dd><input type="range" min="3" max="256" field="samples" step="1"/></dd>
+				<dt>Samples</dt><dd><input type="range" min="3" max="255" field="samples" step="1"/></dd>
 				<dt>Micro Intensity</dt><dd><input type="range" min="0" max="1" field="microIntensity"/></dd>
 			</dl>
 		</div>
@@ -103,7 +103,7 @@ class Sao extends RendererFX {
 			<dl>
 				<dt>Scale</dt><dd><input type="range" min="0" max="1" field="noiseScale"/></dd>
 				<dt>Use World UV</dt><dd><input type="checkbox" field="useWorldUV"/></dd>
-				<dt>Texture</dt><input type="texturepath" field="noiseTexturePath"/>
+				<dt>Texture</dt><dd><input type="texturepath" field="noiseTexturePath"/></dd>
 			</dl>
 		</div>
 		<div class="group" name="Blur">

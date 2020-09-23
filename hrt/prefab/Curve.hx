@@ -287,7 +287,9 @@ class Curve extends Prefab {
 		var ret = null;
 		for(c in parent.children) {
 			if(!c.enabled) continue;
-			if(c.name.split(".")[0] != prefix)
+			var idx = c.name.indexOf(".");
+			var curvePrefix = (idx >= 0) ? c.name.substr(0, idx) : c.name;
+			if(curvePrefix != prefix)
 				continue;
 			var curve = c.to(Curve);
 			if(curve == null) continue;

@@ -1,63 +1,148 @@
 package hrt.prefab.l3d;
 
+@:enum abstract DecalMode(String) {
+	var Default = "Decal";
+	var BeforeTonemapping = "BeforeTonemapping";
+	var AfterTonemapping = "AfterTonemapping";
+	var Terrain = "Terrain";
+}
+
 class Decal extends Object3D {
 
-	var diffuseMap : String;
+	var albedoMap : String;
 	var normalMap : String;
-	var specularMap : String;
-	var diffuseStrength : Float = 1.;
-	var normalStrength : Float = 1.;
-	var specularStrength : Float = 1.;
+	var pbrMap : String;
+	var albedoStrength : Float = 1.0;
+	var normalStrength: Float = 1.0;
+	var pbrStrength: Float = 1.0;
+	var fadePower : Float = 1.0;
+	var fadeStart : Float = 0;
+	var fadeEnd : Float = 1.0;
+	var emissive : Float = 0.0;
+	var blendMode : h2d.BlendMode = Alpha;
+	var renderMode : DecalMode = Default;
+	var centered : Bool = true;
+	var autoAlpha : Bool = true;
 
 	override function save() {
 		var obj : Dynamic = super.save();
-		if(diffuseMap != null) obj.diffuseMap = diffuseMap;
+		if(albedoMap != null) obj.albedoMap = albedoMap;
 		if(normalMap != null) obj.normalMap = normalMap;
-		if(specularMap != null) obj.specularMap = specularMap;
-		if(diffuseStrength != 1) obj.diffuseStrength = diffuseStrength;
+		if(pbrMap != null) obj.pbrMap = pbrMap;
+		if(albedoStrength != 1) obj.albedoStrength = albedoStrength;
 		if(normalStrength != 1) obj.normalStrength = normalStrength;
-		if(specularStrength != 1) obj.specularStrength = specularStrength;
+		if(pbrStrength != 1) obj.pbrStrength = pbrStrength;
+		if(blendMode != Alpha) obj.blendMode = blendMode.getIndex();
+		if(centered != true) obj.centered = centered;
+		if(fadePower != 1) obj.fadePower = fadePower;
+		if(fadeStart != 0) obj.fadeStart = fadeStart;
+		if(fadeEnd != 1) obj.fadeEnd = fadeEnd;
+		if(renderMode != Default) obj.renderMode = renderMode;
+		if(emissive != 0.0) obj.emissive = emissive;
+		if(autoAlpha != true) obj.autoAlpha = autoAlpha;
 		return obj;
 	}
 
 	override function load( obj : Dynamic ) {
 		super.load(obj);
-		diffuseMap = obj.diffuseMap;
+		albedoMap = obj.albedoMap;
 		normalMap = obj.normalMap;
-		specularMap = obj.specularMap;
-		diffuseStrength = obj.diffuseStrength != null ? obj.diffuseStrength : 1;
+		pbrMap = obj.pbrMap;
+		albedoStrength = obj.albedoStrength != null ? obj.albedoStrength : 1;
 		normalStrength = obj.normalStrength != null ? obj.normalStrength : 1;
-		specularStrength = obj.specularStrength != null ? obj.specularStrength : 1;
+		pbrStrength = obj.pbrStrength != null ? obj.pbrStrength : 1;
+		blendMode = obj.blendMode != null ? h2d.BlendMode.createByIndex(obj.blendMode) : Alpha;
+		centered = obj.centered != null ? obj.centered : true;
+		fadePower = obj.fadePower != null ? obj.fadePower : 1;
+		fadeStart = obj.fadeStart != null ? obj.fadeStart : 0;
+		fadeEnd = obj.fadeEnd != null ? obj.fadeEnd : 1;
+		renderMode = obj.renderMode != null ? obj.renderMode : Default;
+		emissive = obj.emissive != null ? obj.emissive : 0.0;
+		if( obj.autoAlpha != null ) autoAlpha = obj.autoAlpha;
 	}
 
-	override function updateInstance(ctx:Context,?propName:String) {
-		super.updateInstance(ctx,propName);
-
-		var mesh = Std.downcast(ctx.local3d, h3d.scene.Mesh);
-		mesh.material.texture = diffuseMap != null ? ctx.loadTexture(diffuseMap) : null;
-		mesh.material.normalMap = normalMap != null ? ctx.loadTexture(normalMap) : null;
-		mesh.material.specularTexture = specularMap != null ? ctx.loadTexture(specularMap) : null;
-		var sh = mesh.material.mainPass.getShader(h3d.shader.pbr.StrengthValues);
-		if( sh != null ) {
-			sh.albedoStrength = diffuseStrength;
-			sh.normalStrength = normalStrength;
-			sh.pbrStrength = specularStrength;
-		}
-	}
-
-	override function makeInstance(ctx:Context):Context {
+	override function makeInstance(ctx:Context) : Context {
 		ctx = ctx.clone(this);
+		var mesh = new h3d.scene.pbr.Decal(h3d.prim.Cube.defaultUnitCube(), ctx.local3d);
 
-		var mesh = new h3d.scene.Mesh(h3d.prim.Cube.defaultUnitCube(), ctx.local3d);
-		mesh.material.setDefaultProps("decal");
-		mesh.material.name = "decal";
+		switch (renderMode) {
+			case Default, Terrain:
+				var shader = mesh.material.mainPass.getShader(h3d.shader.pbr.VolumeDecal.DecalPBR);
+				if( shader == null ) {
+					shader = new h3d.shader.pbr.VolumeDecal.DecalPBR();
+					mesh.material.mainPass.addShader(shader);
+				}
+				mesh.material.mainPass.setPassName(renderMode == Default ? "decal" : "terrainDecal");
+			case BeforeTonemapping:
+				var shader = mesh.material.mainPass.getShader(h3d.shader.pbr.VolumeDecal.DecalOverlay);
+				if( shader == null ) {
+					shader = new h3d.shader.pbr.VolumeDecal.DecalOverlay();
+					mesh.material.mainPass.addShader(shader);
+				}
+				mesh.material.mainPass.setPassName("beforeTonemappingDecal");
+			case AfterTonemapping:
+				var shader = mesh.material.mainPass.getShader(h3d.shader.pbr.VolumeDecal.DecalOverlay);
+				if( shader == null ) {
+					shader = new h3d.shader.pbr.VolumeDecal.DecalOverlay();
+					mesh.material.mainPass.addShader(shader);
+				}
+				mesh.material.mainPass.setPassName("afterTonemappingDecal");
+		}
 
+		mesh.material.mainPass.depthWrite = false;
+		mesh.material.mainPass.depthTest = GreaterEqual;
+		mesh.material.mainPass.culling = Front;
+		mesh.material.shadows = false;
 		ctx.local3d = mesh;
 		ctx.local3d.name = name;
 		updateInstance(ctx);
 		return ctx;
 	}
 
+	public function updateRenderParams(ctx) {
+		var mesh = Std.downcast(ctx.local3d, h3d.scene.Mesh);
+		mesh.material.mainPass.setBlendMode(blendMode);
+		switch (renderMode) {
+			case Default, Terrain:
+				var shader = mesh.material.mainPass.getShader(h3d.shader.pbr.VolumeDecal.DecalPBR);
+				if( shader != null ){
+					shader.albedoTexture = albedoMap != null ? ctx.loadTexture(albedoMap) : null;
+					shader.normalTexture = normalMap != null ? ctx.loadTexture(normalMap) : null;
+					shader.pbrTexture = pbrMap != null ? ctx.loadTexture(pbrMap) : null;
+					if(shader.albedoTexture != null) shader.albedoTexture.wrap = Repeat;
+					if(shader.normalTexture != null) shader.normalTexture.wrap = Repeat;
+					if(shader.pbrTexture != null) shader.pbrTexture.wrap = Repeat;
+					shader.albedoStrength = albedoStrength;
+					shader.normalStrength = normalStrength;
+					shader.pbrStrength = pbrStrength;
+					shader.USE_ALBEDO = albedoStrength != 0&& shader.albedoTexture != null;
+					shader.USE_NORMAL = normalStrength != 0 && shader.normalTexture != null;
+					shader.USE_PBR = pbrStrength != 0 && shader.pbrTexture != null;
+					shader.CENTERED = centered;
+					shader.fadePower = fadePower;
+					shader.fadeStart = fadeStart;
+					shader.fadeEnd = fadeEnd;
+				}
+			case BeforeTonemapping, AfterTonemapping:
+				var shader = mesh.material.mainPass.getShader(h3d.shader.pbr.VolumeDecal.DecalOverlay);
+				if( shader != null ){
+					shader.colorTexture = albedoMap != null ? ctx.loadTexture(albedoMap) : null;
+					if(shader.colorTexture != null) shader.colorTexture.wrap = Repeat;
+					shader.CENTERED = centered;
+					shader.GAMMA_CORRECT = renderMode == BeforeTonemapping;
+					shader.AUTO_ALPHA = autoAlpha;
+					shader.fadePower = fadePower;
+					shader.fadeStart = fadeStart;
+					shader.fadeEnd = fadeEnd;
+					shader.emissive = emissive;
+				}
+		}
+	}
+
+	override function updateInstance( ctx : Context, ?propName : String ) {
+		super.updateInstance(ctx,propName);
+		updateRenderParams(ctx);
+	}
 
 	#if editor
 	override function getHideProps() : HideProps {
@@ -72,41 +157,93 @@ class Decal extends Object3D {
 			wire.material.setDefaultProps("ui");
 			wire.ignoreCollide = true;
 			wire.material.shadows = false;
+			var wireCenter = new h3d.scene.Box(0xFFFF00, obj);
+			wireCenter.scaleZ = 0;
+			wireCenter.name = "_highlight";
+			wireCenter.material.setDefaultProps("ui");
+			wireCenter.ignoreCollide = true;
+			wireCenter.material.shadows = false;
+			wireCenter.material.mainPass.depthTest = Always;
 		} else {
-			for( o in ctx.shared.getObjects(this,h3d.scene.Box) )
-				if( o.name == "_highlight" ) {
-					o.remove();
-					return false;
-				}
+			clearSelection( ctx );
 		}
 		return true;
 	}
 
+	function clearSelection( ctx : Context ) {
+
+		var obj = ctx.shared.contexts.get(this).local3d;
+		var objs = obj.findAll( o -> if(o.name == "_highlight") o else null );
+		for( o in objs )
+			o.remove();
+	}
+
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
-		var props = ctx.properties.add(new hide.Element('
-			<div class="group" name="Decal">
-				<dl>
-					<dt>Diffuse</dt><dd>
-						<input type="texturepath" field="diffuseMap"/>
-						<br/><input type="range" field="diffuseStrength"/>
-					</dd>
-					<dt>Normal</dt><dd>
-						<input type="texturepath" field="normalMap"/>
-						<br/><input type="range" field="normalStrength"/>
-					</dd>
-					<dt>Specular</dt><dd>
-						<input type="texturepath" field="specularMap"/>
-						<br/><input type="range" field="specularStrength"/>
-					</dd>
-				</dl>
+
+		var pbrParams = '<dt>Albedo</dt><dd><input type="texturepath" field="albedoMap"/>
+					<br/><input type="range" min="0" max="1" field="albedoStrength"/></dd>
+
+					<dt>Normal</dt><dd><input type="texturepath" field="normalMap"/>
+					<br/><input type="range" min="0" max="1" field="normalStrength"/></dd>
+
+					<dt>PBR</dt><dd><input type="texturepath" field="pbrMap"/>
+					<br/><input type="range" min="0" max="1" field="pbrStrength"/></dd>';
+
+		var overlayParams = '<dt>Color</dt><dd><input type="texturepath" field="albedoMap"/></dd>
+						<dt>Emissive</dt><dd> <input type="range" min="0" max="10" field="emissive"/></dd>
+						<dt>AutoAlpha</dt><dd><input type="checkbox" field="autoAlpha"/></dd>';
+
+		var params = switch (renderMode) {
+			case Default, Terrain: pbrParams;
+			case BeforeTonemapping: overlayParams;
+			case AfterTonemapping: overlayParams;
+		}
+
+		function refreshProps() {
+			var props = ctx.properties.add(new hide.Element('
+			<div class="decal">
+				<div class="group" name="Decal">
+					<dl>
+						<dt>Centered</dt><dd><input type="checkbox" field="centered"/></dd>'
+						+ params +
+						'<dt>Render Mode</dt>
+						<dd><select field="renderMode">
+							<option value="Decal">Default</option>
+							<option value="BeforeTonemapping">Before Tonemapping</option>
+							<option value="AfterTonemapping">After Tonemapping</option>
+							<option value="Terrain">Terrain</option>
+						</select></dd>
+
+						<dt>Blend Mode</dt>
+						<dd><select field="blendMode">
+							<option value="Alpha">Alpha</option>
+							<option value="Add">Add</option>
+							<option value="Multiply">Multiply</option>
+						</select></dd>
+					</dl>
+				</div>
+				<div class="group" name="Fade">
+					<dt>FadePower</dt><dd> <input type="range" min="0" max="3" field="fadePower"/></dd>
+					<dt>Start</dt><dd> <input type="range" min="0" max="1" field="fadeStart"/></dd>
+					<dt>End</dt><dd> <input type="range" min="0" max="1" field="fadeEnd"/></dd>
+				</div>
 			</div>
-		'),this, function(pname) {
-			ctx.onChange(this, pname);
-		});
+			'),this, function(pname) {
+				if( pname == "renderMode" ) {
+					clearSelection( ctx.rootContext );
+					ctx.rebuildPrefab(this);
+					ctx.rebuildProperties();
+				}
+				else
+					ctx.onChange(this, pname);
+			});
+		}
+
+		refreshProps();
 	}
 	#end
 
-	static var _ = Library.register("decal", Decal);
+	static var _ = Library.register("advancedDecal", Decal);
 
 }

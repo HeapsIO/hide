@@ -23,7 +23,9 @@ class SubTable extends Table {
 
 		insertedTR = new Element("<tr>").addClass(cell.column.type == TProperties ? "props" : "list");
 		var group;
-		if( mode == Properties ) {
+		if( editor.displayMode == AllProperties && cell.table.parent == null ) {
+			group = new Element("<td>").attr("colspan","2").appendTo(insertedTR);
+		} else if( mode == Properties ) {
 			var count = cell.columnIndex + 1;
 			if (count < 3 && cell.table.columns.length >= 8)
 				count += 2; // fix when a lot of columns but the subproperty is on the left

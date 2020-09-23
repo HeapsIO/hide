@@ -10,10 +10,22 @@ typedef BloomProps = {
 	var blurLinear : Float;
 }
 
+class BloomTonemap extends hxsl.Shader {
+	static var SRC = {
+		@param var bloomTexture : Sampler2D;
+		var calculatedUV : Vec2;
+		var hdrColor : Vec4;
+		function fragment() {
+			hdrColor += bloomTexture.get(calculatedUV);
+		}
+	}
+}
+
 class Bloom extends RendererFX {
 
 	var bloomPass = new h3d.pass.ScreenFx(new hrt.shader.Bloom());
 	var bloomBlur = new h3d.pass.Blur();
+	var tonemap = new BloomTonemap();
 
 	public function new(?parent) {
 		super(parent);
@@ -28,14 +40,14 @@ class Bloom extends RendererFX {
 		} : BloomProps);
 	}
 
-	override function apply(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
+	override function end( r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step ) {
 		if( step == BeforeTonemapping ) {
 			r.mark("Bloom");
 			var pb : BloomProps = props;
 			var bloom = r.allocTarget("bloom", false, pb.size, RGBA16F);
 			var ctx = r.ctx;
 			ctx.engine.pushTarget(bloom);
-			bloomPass.shader.hdr = ctx.getGlobal("hdr");
+			bloomPass.shader.texture = ctx.getGlobal("hdrMap");
 			bloomPass.shader.threshold = pb.threshold;
 			bloomPass.shader.intensity = pb.intensity;
 			bloomPass.shader.colorMatrix.identity();
@@ -47,7 +59,9 @@ class Bloom extends RendererFX {
 			bloomBlur.quality = pb.blurQuality;
 			bloomBlur.linear = pb.blurLinear;
 			bloomBlur.apply(ctx, bloom);
-			ctx.setGlobal("bloom",bloom);
+
+			tonemap.bloomTexture = bloom;
+			r.addShader(tonemap);
 		}
 	}
 

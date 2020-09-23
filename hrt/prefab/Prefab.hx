@@ -110,15 +110,14 @@ class Prefab {
 		Override to implement your custom prefab data loading
 	**/
 	function load( v : Dynamic ) {
-		throw "Not implemented";
+
 	}
 
 	/**
 		Override to implement your custom prefab data saving
 	**/
 	function save() : {} {
-		throw "Not implemented";
-		return null;
+		return {};
 	}
 
 	/**

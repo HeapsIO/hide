@@ -2,7 +2,7 @@ package hide.view;
 
 class Script extends FileView {
 
-	var editor : monaco.Editor;
+	var editor : monaco.ScriptEditor;
 	var script : hide.comp.ScriptEditor;
 	var originData : String;
 
@@ -24,7 +24,7 @@ class Script extends FileView {
 				script.doCheckScript();
 			}
 		} else {
-			editor = monaco.Editor.create(element[0],{
+			editor = monaco.ScriptEditor.create(element[0],{
 				value : originData,
 				language : lang,
 				automaticLayout : true,

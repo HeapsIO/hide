@@ -7,6 +7,13 @@ typedef ShaderParam = {
 	value: Value
 };
 
+enum AdditionalProperies {
+	None;
+	PointLight(color : Value, power : Value, size : Value, range : Value );
+	SpotLight(color : Value, power : Value, range : Value, angle : Value, fallOff : Value );
+	DirLight(color : Value, power : Value);
+}
+
 typedef ShaderParams = Array<ShaderParam>;
 
 class ShaderAnimation extends Evaluator {
@@ -45,7 +52,8 @@ typedef ObjectAnimation = {
 	?scale: Value,
 	?rotation: Value,
 	?color: Value,
-	?visibility: Value
+	?visibility: Value,
+	?additionalProperies : AdditionalProperies
 };
 
 class BaseFX extends hrt.prefab.Library {

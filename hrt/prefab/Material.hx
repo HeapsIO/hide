@@ -1,5 +1,7 @@
 package hrt.prefab;
 
+import h3d.scene.Mesh;
+import h3d.scene.Object;
 import h3d.mat.PbrMaterial;
 
 class Material extends Prefab {
@@ -9,6 +11,7 @@ class Material extends Prefab {
 	public var normalMap : String;
 	public var specularMap : String;
 	public var color : Array<Float> = [1,1,1,1];
+	public var materialName : String;
 
 	public function new(?parent) {
 		super(parent);
@@ -22,6 +25,7 @@ class Material extends Prefab {
 		if(o.normalMap != null) normalMap = o.normalMap;
 		if(o.specularMap != null) specularMap = o.specularMap;
 		if(o.color != null) color = o.color;
+		if(o.materialName != null) materialName = o.materialName;
 
 		// Backward compat
 		if(o.props != null && Reflect.hasField(o.props, "PBR")) {
@@ -43,6 +47,7 @@ class Material extends Prefab {
 		if(normalMap != null) o.normalMap = normalMap;
 		if(specularMap != null) o.specularMap = specularMap;
 		if(color != null && h3d.Vector.fromArray(color).toColor() != 0xffffffff) o.color = color;
+		if(materialName != null && materialName != "none" ) o.materialName = materialName;
 		return o;
 	}
 
@@ -80,7 +85,7 @@ class Material extends Prefab {
 		}
 
 		var mats = obj.getMaterials();
-		var mat = Lambda.find(mats, m -> m.name == this.name);
+		var mat = Lambda.find(mats, m -> m.name == this.name || m.name == materialName);
 		var props = renderProps();
 		if(mat != null) {
 			update(mat, props);
@@ -89,6 +94,7 @@ class Material extends Prefab {
 			for(m in mats)
 				update(m, props);
 		}
+		
 	}
 
 	override function updateInstance(ctx: Context, ?propName) {
@@ -271,14 +277,45 @@ class Material extends Prefab {
 			}	
 		}
 
-		ctx.properties.add(new hide.Element('<div class="group" name="Overrides">
-			<dl>
-				<dt>${isPbr ? "Albedo" : "Diffuse"}</dt><dd><input type="texturepath" field="diffuseMap" style="width:165px"/></dd>
-				<dt>Normal</dt><dd><input type="texturepath" field="normalMap" style="width:165px"/></dd>
-				<dt>Specular</dt><dd><input type="texturepath" field="specularMap" style="width:165px"/></dd>
-				<dt>Wrap</dt><dd><input type="checkbox" field="wrapRepeat"/></dd>
-				<dt>Color</dt><dd><input type="color" field="color"/></dd>
-			</dl></div>'), this, function(pname) {
+		var dropDownMaterials = new hide.Element('
+				<dl>
+					<dt>Name</dt><dd><select><option value="none">Any</option></select>
+				</dl> ');
+		var select = dropDownMaterials.find("select");
+		var materialList = ctx.rootContext.local3d.getMaterials();
+		for( m in materialList )
+			if( m.name != null && m.name != "" )
+				new hide.Element('<option>').attr("value", m.name).text(m.name).appendTo(select);
+
+		select.change(function(_) {
+			trace(select.val());
+			var previous = materialName;
+			materialName = select.val();
+			var actual = materialName;
+			ctx.properties.undo.change(Custom(function(undo) {
+				materialName = undo ? previous : actual;
+				ctx.onChange(this, null);
+				ctx.rebuildProperties();
+				ctx.scene.editor.refresh(Partial);
+			}));
+			ctx.onChange(this, null);
+			ctx.rebuildProperties();
+			ctx.scene.editor.refresh(Partial);
+		});
+		select.val(materialName);
+
+
+		var matProps = new hide.Element('<div class="group" name="Overrides">
+		<dl>
+			<dt>${isPbr ? "Albedo" : "Diffuse"}</dt><dd><input type="texturepath" field="diffuseMap" style="width:165px"/></dd>
+			<dt>Normal</dt><dd><input type="texturepath" field="normalMap" style="width:165px"/></dd>
+			<dt>Specular</dt><dd><input type="texturepath" field="specularMap" style="width:165px"/></dd>
+			<dt>Wrap</dt><dd><input type="checkbox" field="wrapRepeat"/></dd>
+			<dt>Color</dt><dd><input type="color" field="color"/></dd>
+		</dl></div>');
+
+		dropDownMaterials.appendTo(matProps);
+		ctx.properties.add(matProps, this, function(pname) {
 			ctx.onChange(this, pname);
 		});
 	}

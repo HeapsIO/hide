@@ -36,7 +36,12 @@ class Object3D extends Prefab {
 		return { x : x, y : y, z : z, scaleX : scaleX, scaleY : scaleY, scaleZ : scaleZ, rotationX : rotationX, rotationY : rotationY, rotationZ : rotationZ };
 	}
 
+	public function localRayIntersection( ctx : Context, ray : h3d.col.Ray ) : Float {
+		return -1;
+	}
+
 	override function load( obj : Dynamic ) {
+		super.load(obj);
 		x = obj.x == null ? 0. : obj.x;
 		y = obj.y == null ? 0. : obj.y;
 		z = obj.z == null ? 0. : obj.z;
@@ -61,7 +66,7 @@ class Object3D extends Prefab {
 	}
 
 	override function save() {
-		var o : Dynamic = {};
+		var o : Dynamic = super.save();
 		if( x != 0 ) o.x = x;
 		if( y != 0 ) o.y = y;
 		if( z != 0 ) o.z = z;
@@ -151,7 +156,14 @@ class Object3D extends Prefab {
 		var invRootMat = local3d.getAbsPos().clone();
 		invRootMat.invert();
 		var bounds = new h3d.col.Bounds();
+		var localBounds = [];
+		var totalSeparateBounds = 0.;
 		var visibleMeshes = [];
+
+		inline function getVolume(b:h3d.col.Bounds) {
+			var c = b.getSize();
+			return c.x * c.y * c.z;
+		}
 		for(mesh in meshes) {
 			if(mesh.ignoreCollide)
 				continue;
@@ -169,6 +181,15 @@ class Object3D extends Prefab {
 			var lb = mesh.primitive.getBounds().clone();
 			lb.transform(localMat);
 			bounds.add(lb);
+
+			totalSeparateBounds += getVolume(lb);
+			for( b in localBounds ) {
+				var tmp = new h3d.col.Bounds();
+				tmp.intersection(lb, b);
+				totalSeparateBounds -= getVolume(tmp);
+			}
+			localBounds.push(lb);
+
 			visibleMeshes.push(mesh);
 		}
 		if( visibleMeshes.length == 0 )
@@ -177,8 +198,12 @@ class Object3D extends Prefab {
 			var c : h3d.col.Collider = try m.getGlobalCollider() catch(e: Dynamic) null;
 			if(c != null) c;
 		}]);
-		var boundsCollider = new h3d.col.ObjectCollider(local3d, bounds);
-		var int = new h3d.scene.Interactive(boundsCollider, local3d);
+		var collider : h3d.col.Collider = new h3d.col.ObjectCollider(local3d, bounds);
+		if( totalSeparateBounds / getVolume(bounds) < 0.5 ) {
+			collider = new h3d.col.Collider.OptimizedCollider(collider, meshCollider);
+			meshCollider = null;
+		}
+		var int = new h3d.scene.Interactive(collider, local3d);
 		int.ignoreParentTransform = true;
 		int.preciseShape = meshCollider;
 		int.propagateEvents = true;

@@ -11,4 +11,5 @@
 -D multidriver
 -D editor
 -D no-deprecation-warnings
+-D manual_sync_pad
 -cp libs

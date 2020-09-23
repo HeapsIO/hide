@@ -61,8 +61,8 @@ class CamController extends h3d.scene.CameraController {
 					}
 					else {
 						var se = level3d.sceneEditor;
-						var fromPt = se.screenToWorld(pushX, pushY);
-						var toPt = se.screenToWorld(e.relX, e.relY);
+						var fromPt = se.screenToGround(pushX, pushY);
+						var toPt = se.screenToGround(e.relX, e.relY);
 						if(fromPt == null || toPt == null)
 							return;
 						var delta = toPt.sub(fromPt).toVector();
@@ -107,11 +107,6 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		super.refresh(mode, callback);
 	}
 
-	override function refreshScene() {
-		super.refreshScene();
-		parent.onRefreshScene();
-	}
-
 	override function update(dt) {
 		super.update(dt);
 		parent.onUpdate(dt);
@@ -136,35 +131,18 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		parent.onPrefabChange(p, pname);
 	}
 
-	override function selectObjects(elts:Array<PrefabElement>, ?mode ) {
-		super.selectObjects(elts, mode);
-		parent.onSelectObjects(elts);
-	}
-
-	override function projectToGround(ray: h3d.col.Ray) {
-		var polygons = parent.getGroundPolys();
-		var minDist = -1.;
-		for(polygon in polygons) {
-			var ctx = getContext(polygon);
-			var mesh = Std.downcast(ctx.local3d, h3d.scene.Mesh);
-			if(mesh == null)
-				continue;
-			var collider = mesh.getGlobalCollider();
-			var d = collider.rayIntersection(ray, true);
-			if(d > 0 && (d < minDist || minDist < 0)) {
-				minDist = d;
-			}
-		}
-		if(minDist >= 0)
-			return minDist;
-		return super.projectToGround(ray);
+	override function getGroundPrefabs():Array<PrefabElement> {
+		var prefabs = parent.getGroundPrefabs();
+		if( prefabs != null )
+			return prefabs;
+		return super.getGroundPrefabs();
 	}
 
 	override function getNewContextMenu(current: PrefabElement, ?onMake: PrefabElement->Void=null, ?groupByType = true ) {
 		var newItems = super.getNewContextMenu(current, onMake, groupByType);
 
 		function setup(p : PrefabElement) {
-			var proj = screenToWorld(scene.s2d.width/2, scene.s2d.height/2);
+			var proj = screenToGround(scene.s2d.width/2, scene.s2d.height/2);
 			var obj3d = p.to(hrt.prefab.Object3D);
 			var autoCenter = proj != null && obj3d != null && (Type.getClass(p) != Object3D || p.parent != sceneData);
 			if(autoCenter) {
@@ -274,7 +252,6 @@ class Level3D extends FileView {
 	var sceneFilters : Map<String, Bool>;
 	var statusText : h2d.Text;
 	var posToolTip : h2d.Text;
-	var lastRenderProps : hrt.prefab.RenderProps = null;
 
 	var scene(get, null):  hide.comp.Scene;
 	function get_scene() return sceneEditor.scene;
@@ -324,6 +301,7 @@ class Level3D extends FileView {
 		tools = new hide.comp.Toolbar(null,element.find(".tools-buttons"));
 		layerToolbar = new hide.comp.Toolbar(null,element.find(".layer-buttons"));
 		tabs = new hide.comp.Tabs(null,element.find(".tabs"));
+		tabs.allowMask();
 		currentVersion = undo.currentID;
 
 		levelProps = new hide.comp.PropsEditor(undo,null,element.find(".level-props"));
@@ -558,7 +536,7 @@ class Level3D extends FileView {
 	function onUpdate(dt:Float) {
 		if(hxd.Key.isDown(hxd.Key.ALT)) {
 			posToolTip.visible = true;
-			var proj = sceneEditor.screenToWorld(scene.s2d.mouseX, scene.s2d.mouseY);
+			var proj = sceneEditor.screenToGround(scene.s2d.mouseX, scene.s2d.mouseY);
 			posToolTip.text = proj != null ? '${Math.fmt(proj.x)}, ${Math.fmt(proj.y)}, ${Math.fmt(proj.z)}' : '???';
 			posToolTip.setPosition(scene.s2d.mouseX, scene.s2d.mouseY - 12);
 		}
@@ -575,37 +553,8 @@ class Level3D extends FileView {
 	function onRefresh() {
 	}
 
-	function onRefreshScene() {
-		if(lastRenderProps != null) {
-			lastRenderProps.applyProps(scene.s3d.renderer);
-		}
-		else {
-			// Apply first render props (either defaults or first found)
-			var renderProps = data.getOpt(hrt.prefab.RenderProps, "defaults");
-			if( renderProps == null )
-				renderProps = data.getOpt(hrt.prefab.RenderProps);
-			if( renderProps != null )
-				renderProps.applyProps(scene.s3d.renderer);
-		}
-	}
-
 	override function onDragDrop(items : Array<String>, isDrop : Bool) {
-		var supported = ["fbx", "fx", "l3d", "prefab"];
-		var paths = [];
-		for(path in items) {
-			var ext = haxe.io.Path.extension(path).toLowerCase();
-			if(supported.indexOf(ext) >= 0) {
-				paths.push(path);
-			}
-		}
-		if(paths.length > 0) {
-			if(isDrop) {
-				var parent : PrefabElement = data;
-				sceneEditor.dropObjects(paths, parent);
-			}
-			return true;
-		}
-		return false;
+		return sceneEditor.onDragDrop(items, isDrop);
 	}
 
 	function applySceneFilter(typeid: String, visible: Bool) {
@@ -671,12 +620,6 @@ class Level3D extends FileView {
 
 	}
 
-	function onSelectObjects(elts: Array<PrefabElement>) {
-		var renderProps = Std.downcast(elts.find(e -> Std.is(e, hrt.prefab.RenderProps)), hrt.prefab.RenderProps);
-		if(renderProps != null)
-			lastRenderProps = renderProps;
-	}
-
 	function applySceneStyle(p: PrefabElement) {
 		var level3d = Std.downcast(p, hrt.prefab.l3d.Level3D); // don't use "to" (Reference)
 		if(level3d != null) {
@@ -693,15 +636,6 @@ class Level3D extends FileView {
 			}
 			for(ctx in sceneEditor.getContexts(obj3d)) {
 				ctx.local3d.visible = visible;
-			}
-			var interIsVisible = !sceneEditor.isLocked(obj3d);
-			var inters = sceneEditor.getInteractives(p);
-			for(inter in inters) {
-				if(inter != null) {
-					var i3d = Std.downcast(inter,h3d.scene.Interactive);
-					if( i3d != null )
-						i3d.visible = interIsVisible;
-				}
 			}
 		}
 		var color = getDisplayColor(p);
@@ -732,14 +666,16 @@ class Level3D extends FileView {
 		return null;
 	}
 
-	function getGroundPolys() {
+	function getGroundPrefabs() {
 		var groundGroups = data.findAll(p -> if(p.name == "ground") p else null);
-		var ret = [];
+		if( groundGroups.length == 0 )
+			return null;
+		var ret : Array<hrt.prefab.Prefab> = [];
 		for(group in groundGroups)
-			group.findAll(function(p) {
+			group.findAll(function(p) : hrt.prefab.Prefab {
 				if(p.name == "nocollide")
 					return null;
-				return p.to(hrt.prefab.l3d.Polygon);
+				return p;
 			},ret);
 		return ret;
 	}

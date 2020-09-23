@@ -45,7 +45,7 @@ haxelib git hx3compat https://github.com/HaxeFoundation/hx3compat
 ## Running
 
 - Windows: Run `hide.cmd`
-- Linux: Run `nwjs/nwjs`
+- Linux: Run `nwjs/nw .` (don't miss the trailing space and dot)
 - OSX: Open the NWJS application
 
 ## Configuration

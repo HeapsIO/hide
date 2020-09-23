@@ -1,20 +1,23 @@
 package hide.tools;
 
-private typedef FileEvent = {path:String,fun:Void->Void,checkDel:Bool,element:js.html.Element};
+typedef FileWatchEvent = {path:String,fun:Void->Void,checkDel:Bool,element:js.html.Element,?ignoreCheck:String};
 
 class FileWatcher {
 
 	var ide : hide.Ide;
-	var watches : Map<String,{ events : Array<FileEvent>, w : js.node.fs.FSWatcher, ignoreNext : Bool, wasChanged : Bool, changed : Bool, isDir : Bool }> = new Map();
+	var watches : Map<String,{ events : Array<FileWatchEvent>, w : js.node.fs.FSWatcher, wasChanged : Bool, changed : Bool, isDir : Bool }> = new Map();
 	var timer : haxe.Timer;
 
 	public function new() {
 		ide = hide.Ide.inst;
 	}
 
-	public function ignoreNextChange( path : String ) {
-		var w = getWatches(path);
-		w.ignoreNext = true;
+	public function ignorePrevChange( f : FileWatchEvent ) {
+		f.ignoreCheck = getSignature(f.path);
+	}
+
+	function getSignature( path : String ) {
+		return try haxe.crypto.Md5.make(sys.io.File.getBytes(ide.getPath(path))).toHex() catch( e : Dynamic ) null;
 	}
 
 	public function dispose() {
@@ -28,13 +31,15 @@ class FileWatcher {
 		watches = new Map();
 	}
 
-	public function register( path : String, updateFun, ?checkDelete : Bool, ?element : Element ) {
+	public function register( path : String, updateFun, ?checkDelete : Bool, ?element : Element ) : FileWatchEvent {
 		var w = getWatches(path);
-		w.events.push({ path : path, fun : updateFun, checkDel : checkDelete, element : element == null ? null : element[0] });
+		var f : FileWatchEvent = { path : path, fun : updateFun, checkDel : checkDelete, element : element == null ? null : element[0] };
+		w.events.push(f);
 		if( element != null && timer == null ) {
 			timer = new haxe.Timer(1000);
 			timer.run = cleanEvents;
 		}
+		return f;
 	}
 
 	public function unregister( path : String, updateFun : Void -> Void ) {
@@ -68,7 +73,7 @@ class FileWatcher {
 				isLive(w.events, e);
 	}
 
-	function isLive( events : Array<FileEvent>, e : FileEvent ) {
+	function isLive( events : Array<FileWatchEvent>, e : FileWatchEvent ) {
 		if( e.element == null ) return true;
 		var elt = e.element;
 		while( elt != null ) {
@@ -88,7 +93,6 @@ class FileWatcher {
 				w : null,
 				changed : false,
 				isDir : try sys.FileSystem.isDirectory(fullPath) catch( e : Dynamic ) false,
-				ignoreNext : false,
 				wasChanged : false,
 			};
 			w.w = try js.node.Fs.watch(fullPath, function(k:String, file:String) {
@@ -99,13 +103,16 @@ class FileWatcher {
 				haxe.Timer.delay(function() {
 					if( !w.changed ) return;
 					w.changed = false;
-					if( w.ignoreNext ) {
-						w.ignoreNext = false;
-						return;
-					}
+					var sign = null;
 					for( e in w.events.copy() )
-						if( isLive(w.events,e) && (w.wasChanged || e.checkDel) )
+						if( isLive(w.events,e) && (w.wasChanged || e.checkDel) ) {
+							if( e.ignoreCheck != null ) {
+								if( sign == null ) sign = getSignature(path);
+								if( sign == e.ignoreCheck ) continue;
+								e.ignoreCheck = null;
+							}
 							e.fun();
+						}
 					w.wasChanged = false;
 				}, 100);
 			}) catch( e : Dynamic ) {

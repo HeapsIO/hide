@@ -96,7 +96,7 @@ class PropsEditor extends Component {
 	}
 
 	public static function makeLabelEl(name: String, content: Element) {
-		var el = new Element('<dt>${name}</dt><dd></dd>');
+		var el = new Element('<span><dt>${name}</dt><dd></dd></span>');
 		content.appendTo(el.find("dd"));
 		return el;
 	}
@@ -320,8 +320,10 @@ class PropsField extends Component {
 				onChange(false);
 			};
 			return;
-		case "filepicker":
-			fselect = new hide.comp.FileSelect(f.attr("extensions").split(" "), null, f);
+		case "fileselect":
+			var exts = f.attr("extensions");
+			if( exts == null ) exts = "*";
+			fselect = new hide.comp.FileSelect(exts.split(" "), null, f);
 			fselect.path = current;
 			fselect.onChange = function() {
 				undo(function() {

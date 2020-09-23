@@ -1,8 +1,10 @@
 package hrt.prefab.fx;
+import hrt.prefab.fx.BaseFX.AdditionalProperies;
 import hrt.prefab.Curve;
 import hrt.prefab.Prefab as PrefabElement;
 import hrt.prefab.fx.BaseFX.ObjectAnimation;
 import hrt.prefab.fx.BaseFX.ShaderAnimation;
+
 
 @:allow(hrt.prefab.fx.FX)
 class FXAnimation extends h3d.scene.Object {
@@ -28,7 +30,7 @@ class FXAnimation extends h3d.scene.Object {
 	var prevTime = -1.0;
 	var randSeed : Int;
 
-	var startLoop : Float;
+	var startLoop : Float = -1.0;
 	var endLoop : Float;
 
 	public function new(?parent) {
@@ -86,7 +88,7 @@ class FXAnimation extends h3d.scene.Object {
 			for(emitter in emitters)
 				emitter.setParticleVibility(ctx.visibleFlag);
 
-		if (additionLoopDuration > 0) {
+		if (additionLoopDuration > 0 && startLoop >= 0) {
 			if (totalTime > startLoop) {
 				var timeLeft = endLoop + additionLoopDuration - totalTime;
 				if (timeLeft > 0) {
@@ -113,6 +115,7 @@ class FXAnimation extends h3d.scene.Object {
 	}
 
 	static var tempMat = new h3d.Matrix();
+	static var tempTransform = new h3d.Matrix();
 	static var tempVec = new h3d.Vector();
 	public function setTime( time : Float ) {
 		this.localTime = time;
@@ -134,7 +137,7 @@ class FXAnimation extends h3d.scene.Object {
 						m.rotate(rotation.x, rotation.y, rotation.z);
 					}
 
-					var baseMat = anim.elt.getTransform();
+					var baseMat = anim.elt.getTransform(tempTransform);
 					var offset = baseMat.getPosition(tempVec);
 					baseMat.tx = baseMat.ty = baseMat.tz = 0.0;  // Ignore
 					m.multiply(baseMat, m);
@@ -162,6 +165,35 @@ class FXAnimation extends h3d.scene.Object {
 					}
 				}
 				Event.updateEvents(anim.events, time, prevTime);
+
+				if( anim.additionalProperies != null ) {
+					switch(anim.additionalProperies) {
+						case None :
+						case PointLight( color, power, size, range ) :
+							var l = Std.downcast(anim.obj, h3d.scene.pbr.PointLight);
+							if( l != null ) {
+								if( color != null ) l.color = evaluator.getVector(color, time, tempVec);
+								if( power != null ) l.power = evaluator.getFloat(power, time);
+								if( size != null ) l.size = evaluator.getFloat(size, time);
+								if( range != null ) l.range = evaluator.getFloat(range, time);
+							}
+						case DirLight(color, power):
+							var l = Std.downcast(anim.obj, h3d.scene.pbr.DirLight);
+							if( l != null ) {
+								if( color != null ) l.color = evaluator.getVector(color, time, tempVec);
+								if( power != null ) l.power = evaluator.getFloat(power, time);
+							}
+						case SpotLight(color, power, range, angle, fallOff):
+							var l = Std.downcast(anim.obj, h3d.scene.pbr.SpotLight);
+							if( l != null ) {
+								if( color != null ) l.color = evaluator.getVector(color, time, tempVec);
+								if( power != null ) l.power = evaluator.getFloat(power, time);
+								if( range != null ) l.range = evaluator.getFloat(range, time);
+								if( angle != null ) l.angle = evaluator.getFloat(angle, time);
+								if( fallOff != null ) l.fallOff = evaluator.getFloat(fallOff, time);
+							}
+					}
+				}
 			}
 		}
 
@@ -171,8 +203,12 @@ class FXAnimation extends h3d.scene.Object {
 
 		if(emitters != null) {
 			for(em in emitters) {
-				if (prevTime > localTime)
+				if (prevTime > localTime) {
 					@:privateAccess em.curTime = em.lastTime = time;
+					#if editor
+					em.reset();
+					#end
+				}
 				if(em.visible)
 					em.setTime(time);
 			}
@@ -246,6 +282,17 @@ class FXAnimation extends h3d.scene.Object {
 			return Curve.getColorValue(curves);
 		}
 
+		var ap : AdditionalProperies = null;
+		if( Std.is(objCtx.local3d, h3d.scene.pbr.PointLight)) {
+			ap = PointLight(makeColor("color"), makeVal("power", null), makeVal("size", null), makeVal("range", null) );
+		}
+		else if( Std.is(objCtx.local3d, h3d.scene.pbr.SpotLight)) {
+			ap = SpotLight(makeColor("color"), makeVal("power", null), makeVal("range", null), makeVal("angle", null), makeVal("fallOff", null) );
+		}
+		else if( Std.is(objCtx.local3d, h3d.scene.pbr.DirLight)) {
+			ap = DirLight(makeColor("color"), makeVal("power", null));
+		}
+
 		var anim : ObjectAnimation = {
 			elt: obj3d,
 			obj: objCtx.local3d,
@@ -255,6 +302,7 @@ class FXAnimation extends h3d.scene.Object {
 			rotation: makeVector("rotation", 0.0, 360.0),
 			color: makeColor("color"),
 			visibility: makeVal("visibility", null),
+			additionalProperies: ap,
 		};
 
 		anim.events = initEvents(elt, objCtx);

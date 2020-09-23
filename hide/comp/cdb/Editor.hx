@@ -139,17 +139,26 @@ class Editor extends Component {
 		case K.SPACE:
 			e.preventDefault(); // prevent scroll
 		case K.ESCAPE:
-			if( currentFilter != null ) searchFilter(null);
+			if( currentFilter != null ) {
+				searchFilter(null);
+				searchBox.hide();
+			}
 		}
 		return false;
+	}
+
+	public function updateFilter() {
+		searchFilter(currentFilter);
 	}
 
 	function searchFilter( filter : String ) {
 		if( filter == "" ) filter = null;
 		if( filter != null ) filter = filter.toLowerCase();
 
-		var lines = element.find("table.cdb-sheet > tbody > tr").not(".head");
-		lines.removeClass("filtered");
+		var all = element.find("table.cdb-sheet > tbody > tr").not(".head");
+		var seps = all.filter(".separator");
+		var lines = all.not(".separator");
+		all.removeClass("filtered");
 		if( filter != null ) {
 			for( t in lines ) {
 				if( t.textContent.toLowerCase().indexOf(filter) < 0 )
@@ -159,8 +168,16 @@ class Editor extends Component {
 				lines = lines.filter(".list").not(".filtered").prev();
 				lines.removeClass("filtered");
 			}
+			all = all.not(".filtered").not(".hidden");
+			for( s in seps.elements() ) {
+				var idx = all.index(s);
+				if( idx == all.length - 1 || new Element(all.get(idx+1)).hasClass("separator") ) {
+					s.addClass("filtered");
+				}
+			}
 		}
 		currentFilter = filter;
+		cursor.update();
 	}
 
 	function onCopy() {
@@ -213,21 +230,26 @@ class Editor extends Component {
 				var col = columns[x];
 				if( !cursor.table.canEditColumn(col.name) )
 					continue;
-				var value : Dynamic = null;
-				switch( col.type ) {
-				case TId:
-					if( ~/^[A-Za-z0-9_]+$/.match(text) ) value = text;
-				case TString:
-					value = text;
-				case TInt:
-					value = Std.parseInt(text);
-				case TFloat:
-					value = Std.parseFloat(text);
-					if( Math.isNaN(value) ) value = null;
-				default:
-				}
-				if( value == null ) continue;
+				var lines = y1 == y2 ? [text] : text.split("\n");
 				for( y in y1...y2+1 ) {
+					var value : Dynamic = null;
+					var text = lines[y - y1];
+					if( text == null ) text = lines[lines.length - 1];
+					switch( col.type ) {
+					case TId:
+						if( ~/^[A-Za-z0-9_]+$/.match(text) ) value = text;
+					case TString:
+						value = text;
+					case TInt:
+						text = text.split(",").join("").split(" ").join("");
+						value = Std.parseInt(text);
+					case TFloat:
+						text = text.split(",").join("").split(" ").join("");
+						value = Std.parseFloat(text);
+						if( Math.isNaN(value) ) value = null;
+					default:
+					}
+					if( value == null ) continue;
 					var obj = sheet.lines[y];
 					Reflect.setField(obj, col.name, value);
 				}
@@ -444,6 +466,7 @@ class Editor extends Component {
 
 	public static function refreshAll( eraseUndo = false ) {
 		var editors : Array<Editor> = [for( e in new Element(".is-cdb-editor").elements() ) e.data("cdb")];
+		DataFiles.load();
 		for( e in editors ) {
 			e.syncSheet(Ide.inst.database);
 			e.refresh();

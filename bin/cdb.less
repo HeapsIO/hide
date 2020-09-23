@@ -6,6 +6,12 @@
 	margin-bottom: 350px;
 }
 
+.cdb-view.cdb-diff {
+	.cdb-sheet th, th.start {
+		background-color: #d60;
+	}
+}
+
 .cdb {
 
 	background-color : black;
@@ -70,6 +76,13 @@
 				font-weight : bold;
 				padding-left : 20px;
 				background-color : #444;
+				.toggle {
+					padding : 0px 4px;
+					color : #aaa;
+					&:hover {
+						color : #ccc;
+					}
+				}
 			}
 		}
 
@@ -238,7 +251,7 @@
 			white-space: nowrap;
 			cursor : pointer;
 			text-overflow: ellipsis;
-			max-width: 900;
+			max-width: 900px;
 			overflow: hidden!important;
 			img {
 				max-height: 32px;
@@ -378,6 +391,22 @@
 			}
 		}
 
+	}
+
+	&.cdb-obj-editor {
+		margin-top : 10px;
+		>.cdb-sheet {
+			border : 2px solid #333;
+			>tr>th {
+				width : 50px;
+			}
+			tr.props .cdb-sheet > tr > th {
+				width : 50px;
+			}
+		}
+		div.cdb-large .cdb-sheet {
+			min-width: 0 !important;
+		}
 	}
 
 	.floating-thead {

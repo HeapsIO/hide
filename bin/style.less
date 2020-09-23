@@ -238,6 +238,10 @@ input[type=checkbox] {
 
 }
 
+.prefabview .scenetree {
+	max-height : 350px;
+}
+
 .hide-scenetree {
 	flex: 1;
 	background-color : #111;
@@ -294,7 +298,7 @@ input[type=checkbox] {
 
 	input[type=range] {
 		display : inline-block;
-		width: 145px;
+		width: 140px;
 	}
 
 	input[type=range].small {
@@ -430,6 +434,35 @@ input[type=checkbox] {
 	flex : 0 0 320px;
 	position: relative;
 	height: 100%;
+
+	&.masked {
+		& > * {
+			display : none !important;
+		}
+		flex : none;
+		position: absolute;
+		height : 20px;
+		width : 20px;
+		right : 0px;
+		>.maskToggle:before {
+			content : "«";
+		}
+	}
+
+	>.maskToggle {
+		&:before {
+			content : "»";
+		}
+		display : block !important;
+		position : absolute;
+		margin-top : -2px;
+		right : 5px;
+		color : #aaa;
+		font-size: 24px;
+		&:hover {
+			color : white;
+		}
+	}
 
 	.tabs-header {
 		background-color : #111;
@@ -1084,6 +1117,15 @@ input[type=checkbox] {
 		width: 20px;
 		margin-left: 8px;
 	}
+}
+
+// Default Edit Button
+.editModeButton{
+	margin: 10px;
+	outline: 4px solid #fd5151;
+}
+.editModeEnabled {
+	outline: 4px solid #5897fb;
 }
 
 // Spline editor

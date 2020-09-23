@@ -19,7 +19,8 @@ class ContextMenu {
 		var ide = hide.Ide.inst;
 		// wait until mousedown to get correct mouse pos
 		haxe.Timer.delay(function() {
-			menu.popup(ide.mouseX, ide.mouseY);
+			if( MENUS[0] == menu )
+				menu.popup(ide.mouseX, ide.mouseY);
 		},0);
 	}
 
@@ -37,7 +38,13 @@ class ContextMenu {
 		var m = new nw.MenuItem(mconf);
 		if( i.checked != null ) m.checked = i.checked;
 		if( i.enabled != null ) m.enabled = i.enabled;
-		m.click = i.click;
+		m.click = function() {
+			try {
+				i.click();
+			} catch( e : Dynamic ) {
+				hide.Ide.inst.error(e);
+			}
+		}
 		return m;
 	}
 

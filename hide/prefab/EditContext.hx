@@ -64,6 +64,23 @@ class EditContext {
 	}
 
 	/**
+		Converts screen mouse coordinates into projection into ground.
+		If "forPrefab" is used, only this prefab is taken into account for ground consideration (self painting)
+	**/
+	public function screenToGround( x : Float, y : Float, ?forPrefab : Prefab ) : h3d.col.Point {
+		throw "Not implemented";
+		return null;
+	}
+
+	/**
+		Similar to screenToGround but based on 3D coordinates instead of screen ones
+	**/
+	public function positionToGroundZ( x : Float, y : Float, ?forPrefab : Prefab ) : Float {
+		throw "Not implemented";
+		return null;
+	}
+
+	/**
 		Rebuild the edit window
 	**/
 	public function rebuildProperties() {

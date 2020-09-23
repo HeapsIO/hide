@@ -69,7 +69,7 @@ class MeshSprayObject extends h3d.scene.Object {
 		var chk = 0.;
 		for( c in children ) {
 			if( c.alwaysSync ) continue;
-			chk += c.x - c.y + c.scaleX + c.scaleY + c.scaleZ + c.qRot.x + c.qRot.y + c.qRot.z;
+			chk += c.x - c.y + c.z * 1.5456 + c.scaleX + c.scaleY + c.scaleZ + c.qRot.x + c.qRot.y + c.qRot.z;
 		}
 		if( chk != currentChk ) {
 			currentChk = chk;
@@ -281,8 +281,8 @@ class MeshSpray extends Object3D {
 							sceneEditor.selectObjects([this]);
 							previewModels = [];
 						}
-						var worldPos = getMousePicker(s2d.mouseX, s2d.mouseY);
-						previewMeshesAround(ctx, worldPos);
+						var worldPos = ectx.screenToGround(s2d.mouseX, s2d.mouseY);
+						previewMeshesAround(ectx, ctx, worldPos);
 					}
 					lastSpray = Date.now().getTime();
 				}
@@ -292,7 +292,7 @@ class MeshSpray extends Object3D {
 		interactive.onPush = function(e) {
 			e.propagate = false;
 			sprayEnable = true;
-			var worldPos = getMousePicker(s2d.mouseX, s2d.mouseY);
+			var worldPos = ectx.screenToGround(s2d.mouseX, s2d.mouseY);
 			if( K.isDown( K.SHIFT) )
 				removeMeshesAround(ctx, worldPos);
 			else {
@@ -312,7 +312,7 @@ class MeshSpray extends Object3D {
 		};
 
 		interactive.onMove = function(e) {
-			var worldPos = getMousePicker(s2d.mouseX, s2d.mouseY);
+			var worldPos = ectx.screenToGround(s2d.mouseX, s2d.mouseY);
 
 			var shiftPressed = K.isDown( K.SHIFT);
 
@@ -324,7 +324,7 @@ class MeshSpray extends Object3D {
 					previewModels = [];
 				}
 				if( !shiftPressed ) {
-					previewMeshesAround(ctx, worldPos);
+					previewMeshesAround(ectx, ctx, worldPos);
 				}
 
 				if( K.isDown( K.MOUSE_LEFT) ) {
@@ -638,7 +638,7 @@ class MeshSpray extends Object3D {
 	var localMat = new h3d.Matrix();
 	var lastPos : h3d.col.Point;
 	var lastMeshId = -1;
-	function previewMeshesAround(ctx : Context, point : h3d.col.Point) {
+	function previewMeshesAround(ectx : hide.prefab.EditContext, ctx : Context, point : h3d.col.Point) {
 		if (currentMeshes.length == 0) {
 			return;
 		}
@@ -742,7 +742,7 @@ class MeshSpray extends Object3D {
 
 				localMat.scale(currentScale, currentScale, currentScale);
 
-				position.z = getZ(position.x, position.y) + CONFIG.zOffset;
+				position.z = ectx.positionToGroundZ(position.x, position.y) + CONFIG.zOffset;
 				localMat.setPosition(new Vector(position.x, position.y, position.z));
 				localMat.multiply(localMat, invParent);
 
@@ -753,7 +753,7 @@ class MeshSpray extends Object3D {
 			}
 
 			if (previewModels.length > 0) {
-				sceneEditor.addObject(previewModels, false, false);
+				sceneEditor.addObject(previewModels, false, false, true);
 			}
 		}
 	}
@@ -862,89 +862,6 @@ class MeshSpray extends Object3D {
 		primitive.colors = [for(p in points) new h3d.col.Point(1,1,1)];
 		primitive.incref();
 		return primitive;
-	}
-
-	var terrainPrefab : hrt.prefab.terrain.Terrain = null;
-
-	// GET Z with TERRAIN
-	public function getZ( x : Float, y : Float ) {
-		var z = this.z;
-
-		if (terrainPrefab == null)
-			@:privateAccess terrainPrefab = sceneEditor.sceneData.find(p -> Std.downcast(p, hrt.prefab.terrain.Terrain));
-
-		if(terrainPrefab != null){
-			var pos = new h3d.Vector(x, y, 0);
-			pos.transform3x4(this.getTransform());
-			z = terrainPrefab.terrain.getHeight(pos.x, pos.y);
-		}
-
-		return z;
-	}
-
-	public function  getMousePicker( ?x, ?y ) {
-		var camera = sceneEditor.scene.s3d.camera;
-		var ray = camera.rayFromScreen(x, y);
-		var planePt = ray.intersect(h3d.col.Plane.Z());
-		var offset = ray.getDir();
-
-		// Find rough intersection point in the camera forward direction to get first collision point
-		final maxZBounds = 25;
-		offset.scale(maxZBounds);
-		var pt = planePt.clone();
-		pt.load(pt.sub(offset));
-
-		var step = ray.getDir();
-		step.scale(0.25);
-
-		while(pt.z > -maxZBounds) {
-			var z = getZ(pt.x, pt.y);
-			if(pt.z < z)
-				break;
-			pt.load(pt.add(step));
-		}
-
-		// Bissect search for exact intersection point
-		for(_ in 0...50) {
-			var z = getZ(pt.x, pt.y);
-			var delta = z - pt.z;
-			if(hxd.Math.abs(delta) < 0.05)
-				return pt;
-
-			if(delta < 0)
-				pt.load(pt.add(step));
-			else
-				pt.load(pt.sub(step));
-
-			step.scale(0.5);
-		}
-
-		return planePt;
-	}
-
-
-	public function screenToWorld(sx: Float, sy: Float) {
-		var camera = sceneEditor.scene.s3d.camera;
-		var ray = camera.rayFromScreen(sx, sy);
-		var dist = projectToGround(ray);
-		if(dist >= 0) {
-			return ray.getPoint(dist);
-		}
-		return null;
-	}
-
-	function projectToGround( ray: h3d.col.Ray ) {
-		var dist = 0.0;
-		if (terrainPrefab == null)
-			@:privateAccess terrainPrefab = sceneEditor.sceneData.find(p -> Std.downcast(p, hrt.prefab.terrain.Terrain));
-
-		if (terrainPrefab != null) {
-			var normal = terrainPrefab.terrain.getAbsPos().up();
-			var plane = h3d.col.Plane.fromNormalPoint(normal.toPoint(), new h3d.col.Point(terrainPrefab.terrain.getAbsPos().tx, terrainPrefab.terrain.getAbsPos().ty, terrainPrefab.terrain.getAbsPos().tz));
-			var pt = ray.intersect(plane);
-			if(pt != null) { dist = pt.sub(ray.getPos()).length();}
-		}
-		return dist;
 	}
 
 	#end

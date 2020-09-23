@@ -144,6 +144,16 @@ class Reference extends Object3D {
 		}
 		updateProps();
 
+		element.find("input").contextmenu((e) -> {
+			e.preventDefault();
+			if( isFile() ) {
+				new hide.comp.ContextMenu([{
+					label : "Open",
+					click : () -> ctx.ide.openFile(ctx.ide.getPath(refpath.substr(1))),
+				}]);
+			}
+		});
+
 		var props = ctx.properties.add(element, this, function(pname) {
 			ctx.onChange(this, pname);
 			if(pname == "refpath") {

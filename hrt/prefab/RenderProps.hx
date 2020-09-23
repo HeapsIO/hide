@@ -2,6 +2,8 @@ package hrt.prefab;
 
 class RenderProps extends Prefab {
 
+	var isDefault = false;
+
 	public function new(?parent) {
 		super(parent);
 		type = "renderProps";
@@ -9,10 +11,11 @@ class RenderProps extends Prefab {
 	}
 
 	override function load(o:Dynamic) {
+		isDefault = o.isDefault;
 	}
 
 	override function save() {
-		return {};
+		return { isDefault : isDefault };
 	}
 
 	public function getProps(renderer: h3d.scene.Renderer) {
@@ -91,6 +94,7 @@ class RenderProps extends Prefab {
 			}
 			applyProps(renderer);
 		});
+		ctx.properties.add(new Element('<dl><dt>Make Default</dt><dd><input type="checkbox" field="isDefault"/></dd></dl>'), this);
 		applyProps(renderer);
 	}
 

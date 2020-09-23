@@ -13,6 +13,7 @@ class ChunkScene {
 	var tmpBounds = new h3d.col.Bounds();
 	var defaultBounds = new h3d.col.Bounds();
 	var global : Chunk;
+	var hchunks : Map<Int,Map<Int,Chunk>> = [];
 
 	public function new( chunkSize ) {
 		this.chunkSize = chunkSize;
@@ -87,13 +88,14 @@ class ChunkScene {
 					var chunks = getChunks(tmpBounds);
 					for( c in chunks )
 						c.addInteractive(i);
-				}
+				} else
+					global.addInteractive(i);
 			}
 		}
 	}
 
 	inline function isGlobal( obj : h3d.scene.Object ) {
-		return Std.is(obj,hide.view.l3d.Gizmo) || Std.is(obj, hide.prefab.terrain.Brush.BrushPreview) || Std.is(obj, hrt.prefab.l3d.MeshSpray.MeshSprayObject) || Std.is(obj, h3d.scene.Light);
+		return Std.is(obj,hide.view.l3d.Gizmo) || Std.is(obj, hide.prefab.terrain.Brush.BrushPreview) || Std.is(obj, hrt.prefab.l3d.MeshSpray.MeshSprayObject) || Std.is(obj, h3d.scene.Light) || Std.is(obj, hrt.prefab.l3d.SplineMesh.SplineMeshBatch);
 	}
 
 	function chunkifyObjects( obj : h3d.scene.Object, chunkOverride : Array<Chunk> ) {
@@ -138,14 +140,8 @@ class ChunkScene {
 	}
 
 	function getChunk( x : Int, y : Int ) {
-		var r = null;
-		for( c in chunks ) {
-			if( c.pos.x == x * chunkSize && c.pos.y == y * chunkSize && !c.isGlobal ) {
-				r = c;
-				break;
-			}
-		}
-		return r;
+		var cx = hchunks.get(x);
+		return cx == null ? null : cx.get(y);
 	}
 
 	function getChunks( bounds : h3d.col.Bounds ) : Array<Chunk> {
@@ -155,6 +151,12 @@ class ChunkScene {
 				var c = getChunk(x,y);
 				if( c == null ) {
 					c = new Chunk(new h3d.col.Point(x * chunkSize, y * chunkSize));
+					var cx = hchunks.get(x);
+					if( cx == null ) {
+						cx = new Map();
+						hchunks.set(x, cx);
+					}
+					cx.set(y, c);
 					c.updateBounds(chunkSize);
 					chunks.push(c);
 				}

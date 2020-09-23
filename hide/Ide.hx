@@ -23,10 +23,13 @@ class Ide {
 	public var isCDB = false;
 	public var isDebugger = false;
 
+	public var gamePad(default,null) : hxd.Pad;
+
 	var databaseFile : String;
 	var databaseDiff : String;
 	var pakFile : hxd.fmt.pak.FileSystem;
 	var originDataBase : cdb.Database;
+	var dbWatcher : hide.tools.FileWatcher.FileWatchEvent;
 
 	var config : {
 		global : Config,
@@ -56,16 +59,22 @@ class Ide {
 	static var firstInit = true;
 
 	function new() {
+		initPad();
 		isCDB = Sys.getEnv("HIDE_START_CDB") == "1" || nw.App.manifest.name == "CDB";
 		isDebugger = Sys.getEnv("HIDE_DEBUG") == "1";
 		function wait() {
-			if( monaco.Editor == null ) {
+			if( monaco.ScriptEditor == null ) {
 				haxe.Timer.delay(wait, 10);
 				return;
 			}
 			startup();
 		}
 		wait();
+	}
+
+	function initPad() {
+		gamePad = hxd.Pad.createDummy();
+		hxd.Pad.wait((p) -> gamePad = p);
 	}
 
 	function startup() {
@@ -181,9 +190,9 @@ class Ide {
 		if( subView != null ) body.className +=" hide-subview";
 
 		// Listen to FileTree dnd
-		new Element(window.window.document).on("dnd_stop.vakata.jstree", function(e, data) {
+		function treeDragFun(data,drop) {
 			var nodeIds : Array<String> = cast data.data.nodes;
-			if(data.data.jstree == null) return;
+			if(data.data.jstree == null) return false;
 			for( ft in getViews(hide.view.FileTree) ) {
 				var paths = [];
 				@:privateAccess {
@@ -197,11 +206,16 @@ class Ide {
 				if(paths.length == 0)
 					continue;
 				var view = getViewAt(mouseX, mouseY);
-				if(view != null) {
-					view.onDragDrop(paths, true);
-					return;
-				}
+				if(view != null)
+					return view.onDragDrop(paths, drop);
 			}
+			return false;
+		}
+		new Element(window.window.document).on("dnd_move.vakata.jstree", function(e, data:Dynamic) {
+			(data.helper:hide.Element).css(treeDragFun(data,false) ? { filter : "brightness(120%)", opacity : 1 } : { filter : "", opacity : 0.5 });
+		});
+		new Element(window.window.document).on("dnd_stop.vakata.jstree", function(e, data) {
+			treeDragFun(data,true);
 		});
 
 		// dispatch global keys based on mouse position
@@ -381,6 +395,7 @@ class Ide {
 
 	function mainLoop() {
 		hxd.Timer.update();
+		@:privateAccess hxd.Pad.syncPads();
 		for( f in updates )
 			f();
 	}
@@ -535,7 +550,7 @@ class Ide {
 			}
 		}
 		loadDatabase();
-		fileWatcher.register(databaseFile,function() {
+		dbWatcher = fileWatcher.register(databaseFile,function() {
 			loadDatabase(true);
 			hide.comp.cdb.Editor.refreshAll(true);
 		});
@@ -565,6 +580,8 @@ class Ide {
 			}
 
 			var render = renderers[0];
+			if( projectConfig.renderer == null )
+				projectConfig.renderer = config.current.get("defaultRenderer");
 			for( r in renderers )
 				if( r.name == projectConfig.renderer ) {
 					render = r;
@@ -700,8 +717,8 @@ class Ide {
 	public function saveDatabase() {
 		hide.comp.cdb.DataFiles.save(function() {
 			if( databaseDiff != null ) {
-				fileWatcher.ignoreNextChange(databaseDiff);
 				sys.io.File.saveContent(getPath(databaseDiff), toJSON(new cdb.DiffFile().make(originDataBase,database)));
+				fileWatcher.ignorePrevChange(dbWatcher);
 			} else {
 				if( !sys.FileSystem.exists(getPath(databaseFile)) && fileExists(databaseFile) ) {
 					// was loaded from pak, cancel changes
@@ -709,8 +726,8 @@ class Ide {
 					hide.comp.cdb.Editor.refreshAll();
 					return;
 				}
-				fileWatcher.ignoreNextChange(databaseFile);
 				sys.io.File.saveContent(getPath(databaseFile), database.save());
+				fileWatcher.ignorePrevChange(dbWatcher);
 			}
 		});
 	}
@@ -735,7 +752,7 @@ class Ide {
 		return path;
 	}
 
-	public static var IMG_EXTS = ["jpg", "jpeg", "gif", "png", "raw"];
+	public static var IMG_EXTS = ["jpg", "jpeg", "gif", "png", "raw", "dds"];
 	public function chooseImage( onSelect ) {
 		chooseFile(IMG_EXTS, onSelect);
 	}
@@ -944,7 +961,7 @@ class Ide {
 			hide.comp.cdb.Editor.refreshAll();
 			initMenu();
 			for( v in getViews(hide.view.CdbTable) )
-				v.syncTitle();
+				v.rebuild();
 		}
 		db.find(".dbCreateDiff").click(function(_) {
 			chooseFileSave("cdb.diff", function(name) {

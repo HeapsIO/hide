@@ -12,6 +12,7 @@ class FX2DAnimation extends h2d.Object {
 
 	public var playSpeed : Float;
 	public var localTime : Float = 0.0;
+	var prevTime = -1.0;
 	public var startLoop : Float = 0.0;
 	public var duration : Float;
 
@@ -19,6 +20,7 @@ class FX2DAnimation extends h2d.Object {
 	public var objects: Array<ObjectAnimation> = [];
 	public var shaderAnims : Array<ShaderAnimation> = [];
 	public var emitters : Array<hrt.prefab.fx2d.Particle2D.Particles>;
+	public var events: Array<hrt.prefab.fx.Event.EventInstance>;
 
 	var evaluator : Evaluator;
 	var random : hxd.Rand;
@@ -37,6 +39,10 @@ class FX2DAnimation extends h2d.Object {
 
 	function init(ctx: Context, def: FX2D) {
 		initEmitters(ctx, def);
+		if (def.children.length == 1 && def.children[0].name == "FXRoot")
+			events = initEvents(def.children[0], ctx);
+		else
+			events = initEvents(def, ctx);
 	}
 
 	function initEmitters(ctx: Context, elt: PrefabElement) {
@@ -55,6 +61,19 @@ class FX2DAnimation extends h2d.Object {
 			}
 		}
 	}
+
+	function initEvents(elt: PrefabElement, ctx: Context) {
+		var childEvents = [for(c in elt.children) if(c.to(Event) != null) c.to(Event)];
+		var ret = null;
+		for(evt in childEvents) {
+			var eventObj = evt.prepare(ctx);
+			if(eventObj == null) continue;
+			if(ret == null) ret = [];
+			ret.push(eventObj);
+		}
+		return ret;
+	}
+
 
 	public function setTime( time : Float ) {
 
@@ -107,22 +126,21 @@ class FX2DAnimation extends h2d.Object {
 					}
 				}
 			}
-
-			if(anim.events != null) {
-				for(evt in anim.events) {
-					evt.setTime(time - evt.evt.time);
-				}
-			}
 		}
 
 		for(anim in shaderAnims) {
 			anim.setTime(time);
 		}
-		if (emitters != null)
+		if (emitters != null) {
 			for(em in emitters) {
 				if(em.visible)
 					em.setTime(time);
 			}
+		}
+		
+		Event.updateEvents(events, time, prevTime);
+
+		this.prevTime = localTime;
 	}
 }
 

@@ -2,7 +2,10 @@ package hrt.prefab.rfx;
 
 class RendererFX extends Prefab implements h3d.impl.RendererFX {
 
-	public function apply( r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {
+	public function begin( r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {
+	}
+
+	public function end( r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {
 	}
 
 	override function save() {
