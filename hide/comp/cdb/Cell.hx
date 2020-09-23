@@ -559,7 +559,11 @@ class Cell extends Component {
 			};
 			modal.click(function(_) color.close());
 		case TFile:
-			ide.chooseFile(["*"], function(file) {
+				var extensions = ["*"];
+				if (column.extension != null && column.extension.length > 0) {
+					extensions = column.extension.split(",").map(s -> StringTools.trim(s));
+				}
+				ide.chooseFile(extensions, function(file) {
 				if( file != null ) {
 					setValue(file);
 					refresh();

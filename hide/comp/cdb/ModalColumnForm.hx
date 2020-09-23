@@ -88,6 +88,12 @@ class ModalColumnForm extends Modal {
 					<td><select name="ctype"></select>
 				</tr>
 
+				<tr class="extension">
+					<td title="Comma separated list of file extensions">Extension
+					<td>
+					<input placeholder="*" name="extension" />
+				</tr>
+
 				<tr class="scope">
 					<td>Scope
 					<td>
@@ -166,6 +172,7 @@ class ModalColumnForm extends Modal {
 			form.find("[name=req]").prop("checked", !column.opt);
 			form.find("[name=display]").val(column.display == null ? "0" : Std.string(column.display));
 			form.find("[name=kind]").val(column.kind == null ? "" : ""+column.kind);
+			form.find("[name=extension]").val(column.extension == null ? "" : "" + column.extension);
 			form.find("[name=scope]").val(column.scope == null ? "" : ""+column.scope);
 			if( column.documentation != null ) {
 				form.find("[name=doc]").val(column.documentation);
@@ -285,6 +292,7 @@ class ModalColumnForm extends Modal {
 		case "localizable": c.kind = Localizable;
 		case "script": c.kind = Script;
 		}
+		if (t == TFile && v.extension != "") c.extension = v.extension;
 		if( t == TId && v.scope != "" ) c.scope = Std.parseInt(v.scope);
 		if( v.doc != "" ) c.documentation = v.doc;
 		return c;

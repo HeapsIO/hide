@@ -422,11 +422,15 @@
 .cdb .content-modal form .t_id .scope {
   display: table-row;
 }
+.cdb .content-modal form .t_file .extension {
+  display: table-row;
+}
 .cdb .content-modal form .values,
 .cdb .content-modal form .sheet,
 .cdb .content-modal form .custom,
 .cdb .content-modal form .disp,
 .cdb .content-modal form .kind,
+.cdb .content-modal form .extension,
 .cdb .content-modal form .scope {
   display: none;
 }
