@@ -1538,7 +1538,7 @@ class SceneEditor {
 		var paths = [];
 		for(path in items) {
 			var ext = haxe.io.Path.extension(path).toLowerCase();
-			if( supported.exists(ext) )
+			if( supported.exists(ext) || ext == "fbx" || ext == "hmd" )
 				paths.push(path);
 		}
 		if( paths.length == 0 )
