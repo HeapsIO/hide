@@ -310,6 +310,8 @@ class HeightMapMesh extends h3d.scene.Object {
 		var cw = size/width, ch = size/height;
 		if( grid == null || grid.width != width || grid.height != height || grid.cellWidth != cw || grid.cellHeight != ch ) {
 			grid = new HeightGrid(width,height,cw+epsilon/width,ch+epsilon/height);
+			grid.zMin = hmap.minZ;
+			grid.zMax = hmap.maxZ;
 			grid.addUVs();
 			grid.addNormals();
 		}
@@ -716,6 +718,16 @@ class HeightGrid extends h3d.prim.MeshPrimitive {
 	**/
 	public var cellHeight (default, null)  : Float;
 
+	/**
+	 *  Minimal Z value, used for reporting bounds.
+	 **/
+	public var zMin = 0.;
+
+	/**
+	 *  Maximal Z value, used for reporting bounds.
+	 **/
+	 public var zMax = 0.;
+
 	var hasNormals : Bool;
 	var hasUVs : Bool;
 
@@ -735,7 +747,7 @@ class HeightGrid extends h3d.prim.MeshPrimitive {
 	}
 
 	override function getBounds():h3d.col.Bounds {
-		return h3d.col.Bounds.fromValues(0,0,0,width*cellWidth,height*cellHeight,0);
+		return h3d.col.Bounds.fromValues(0,0,zMin,width*cellWidth,height*cellHeight,zMax-zMin);
 	}
 
 	override function alloc(engine:h3d.Engine) {
