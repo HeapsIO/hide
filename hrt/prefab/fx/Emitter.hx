@@ -341,13 +341,13 @@ private class ParticleInstance  {
 				tmpCamVec.normalizeFast();
 
 				tmpCamVec2.load(tmpCamVec);
-				tmpCamVec2.scale3(tmpCamVec.dot3(tmpCamRotAxis));
+				tmpCamVec2.scale3(tmpCamVec.dot(tmpCamRotAxis));
 				sub(tmpCamVec, tmpCamVec2);
 				tmpCamVec.normalizeFast();
 
-				var angle = hxd.Math.acos(tmpCamAlign.dot3(tmpCamVec));
+				var angle = hxd.Math.acos(tmpCamAlign.dot(tmpCamVec));
 				cross(tmpCamAlign, tmpCamVec2);
-				if(tmpCamRotAxis.dot3(tmpCamAlign) < 0)
+				if(tmpCamRotAxis.dot(tmpCamAlign) < 0)
 					angle = -angle;
 
 				tmpQuat.identity();

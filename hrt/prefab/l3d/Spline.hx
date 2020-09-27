@@ -360,7 +360,7 @@ class Spline extends Object3D {
 	}
 	// p'(t) = (p1 - p0)
 	inline function getLinearBezierTangent( t : Float, p0 : h3d.col.Point, p1 : h3d.col.Point ) : h3d.col.Point {
-		return p1.sub(p0).normalizeFast();
+		return p1.sub(p0).normalized();
 	}
 
 	// Quadratic Interpolation
@@ -370,7 +370,7 @@ class Spline extends Object3D {
 	}
 	// p'(t) = 2 * (1 - t) * (p1 - p0) + 2 * t * (p2 - p1)
 	inline function getQuadraticBezierTangent( t : Float, p0 : h3d.col.Point, p1 : h3d.col.Point, p2 : h3d.col.Point) : h3d.col.Point {
-		return p1.sub(p0).multiply(2 * (1 - t)).add(p2.sub(p1).multiply(2 * t)).normalizeFast();
+		return p1.sub(p0).multiply(2 * (1 - t)).add(p2.sub(p1).multiply(2 * t)).normalized();
 	}
 
 	// Cubic Interpolation
@@ -380,7 +380,7 @@ class Spline extends Object3D {
 	}
 	// p'(t) = 3 * (1 - t)² * (p1 - p0) + 6 * (1 - t) * t * (p2 - p1) + 3 * t² * (p3 - p2)
 	inline function getCubicBezierTangent( t : Float, p0 : h3d.col.Point, p1 : h3d.col.Point, p2 : h3d.col.Point, p3 : h3d.col.Point) : h3d.col.Point {
-		return p1.sub(p0).multiply(3 * (1 - t) * (1 - t)).add(p2.sub(p1).multiply(6 * (1 - t) * t)).add(p3.sub(p2).multiply(3 * t * t)).normalizeFast();
+		return p1.sub(p0).multiply(3 * (1 - t) * (1 - t)).add(p2.sub(p1).multiply(6 * (1 - t) * t)).add(p3.sub(p2).multiply(3 * t * t)).normalized();
 	}
 
 	function generateSplineGraph( ctx : hrt.prefab.Context ) {

@@ -53,10 +53,10 @@ class LookAtObject extends h3d.scene.Object {
 			var targetOnPlane = h3d.col.Plane.fromNormalPoint(lockAxis.toPoint(), new h3d.col.Point()).project(deltaVec.toPoint()).toVector();
 			targetOnPlane.normalize();
 			var frontAxis = new h3d.Vector(1, 0, 0);
-			var angle = hxd.Math.acos(frontAxis.dot3(targetOnPlane));
+			var angle = hxd.Math.acos(frontAxis.dot(targetOnPlane));
 
 			var cross = frontAxis.cross(deltaVec);
-			if(lockAxis.dot3(cross) < 0)
+			if(lockAxis.dot(cross) < 0)
 				angle = -angle;
 
 			var q = getRotationQuat();

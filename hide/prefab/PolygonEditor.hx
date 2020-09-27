@@ -297,7 +297,7 @@ class PolygonEditor {
 			l = l * l;
 			if(l == 0) return p.distance(s1);
 			var t = hxd.Math.max(0, hxd.Math.min(1, p.sub(s1).dot(s2.sub(s1)) / l));
-			var proj = s1.add((s2.sub(s1).scale(t)));
+			var proj = s1.add((s2.sub(s1).multiply(t)));
 			return p.distance(proj);
 		}
 		if(polygonPrefab.points.length < 2) return null;
@@ -581,7 +581,7 @@ class PolygonEditor {
 			editModeButton.val(editMode ? "Edit Mode : Enabled" : "Edit Mode : Disabled");
 			editModeButton.toggleClass("editModeEnabled", editMode);
 			setSelected(getContext(), true);
-			if(!editMode) 
+			if(!editMode)
 				refreshInteractive();
 		});
 
