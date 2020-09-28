@@ -322,6 +322,7 @@ class SplineEditor {
 		if( spd.tangent != null ) {
 			var dir = spd.tangent.toVector();
 			dir.transform3x3(invMatrix); // Don't take the translation
+			dir.scale3(-1);
 			var rot = h3d.Matrix.lookAtX(dir);
 			sp.setDirection(rot.front());
 		}

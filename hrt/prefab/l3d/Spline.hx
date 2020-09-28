@@ -86,13 +86,29 @@ class Spline extends Object3D {
 	override function save() {
 		var obj : Dynamic = super.save();
 
+		var tmp = new h3d.Matrix();
+		inline function getTransform( o : h3d.scene.Object, m : h3d.Matrix ) : h3d.Matrix {
+			m.identity();
+			@:privateAccess o.qRot.toMatrix(m);
+			m._11 *= o.scaleX;
+			m._12 *= o.scaleX;
+			m._13 *= o.scaleX;
+			m._21 *= o.scaleY;
+			m._22 *= o.scaleY;
+			m._23 *= o.scaleY;
+			m._31 *= o.scaleZ;
+			m._32 *= o.scaleZ;
+			m._33 *= o.scaleZ;
+			m._41 = o.x;
+			m._42 = o.y;
+			m._43 = o.z;
+			return m;
+		}
+
 		if( points != null && points.length > 0 ) {
-			var parentInv = points[0].parent.getAbsPos().clone();
-			parentInv.initInverse(parentInv);
 			obj.points = [ for(sp in points) {
-								var abs = sp.getAbsPos().clone();
-								abs.multiply(abs, parentInv);
-								[for(f in abs.getFloats()) hxd.Math.fmt(f) ];
+								var m = getTransform(sp, tmp);
+								[for(f in m.getFloats()) hxd.Math.fmt(f) ];
 							} ];
 		}
 		// Clone support
