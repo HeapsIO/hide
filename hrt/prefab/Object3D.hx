@@ -178,6 +178,8 @@ class Object3D extends Prefab {
 
 			var localMat = mesh.getAbsPos().clone();
 			localMat.multiply(localMat, invRootMat);
+
+			if( mesh.primitive == null ) continue;
 			var lb = mesh.primitive.getBounds().clone();
 			lb.transform(localMat);
 			bounds.add(lb);
