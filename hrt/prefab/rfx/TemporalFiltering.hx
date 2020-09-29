@@ -144,19 +144,23 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 			var ctx = r.ctx;
 			var p : TemporalFilteringProps = props;
 			var s = pass.shader;
-			s.prevJitterUV.set(-frustumJitter.prevSample.x / ctx.engine.width, frustumJitter.prevSample.y / ctx.engine.height);
+
 			frustumJitter.curPattern = p.jitterPattern;
 			frustumJitter.patternScale = p.jitterScale;
 			frustumJitter.update();
+
+			// Translation Matrix for Jittering
 			jitterMat.identity();
 			jitterMat.translate(frustumJitter.curSample.x / ctx.engine.width, frustumJitter.curSample.y / ctx.engine.height);
+
+			s.prevJitterUV.set(-frustumJitter.prevSample.x / ctx.engine.width, frustumJitter.prevSample.y / ctx.engine.height);
 			s.jitterUV.set(-frustumJitter.curSample.x / ctx.engine.width, frustumJitter.curSample.y / ctx.engine.height);
+
 			ctx.camera.update();
 			curMatNoJitter.load(ctx.camera.m);
 			ctx.camera.mproj.multiply(ctx.camera.mproj, jitterMat);
 			ctx.camera.m.multiply(ctx.camera.mcam, ctx.camera.mproj);
 			s.cameraInverseViewProj.initInverse(curMatNoJitter);
-			@:privateAccess ctx.camera.needInv = true;
 		}
 	}
 
@@ -164,13 +168,13 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 		var p : TemporalFilteringProps = props;
 		if( ( step == AfterTonemapping && p.renderMode == "AfterTonemapping") || (step == BeforeTonemapping && p.renderMode == "BeforeTonemapping" ) ) {
 			r.mark("TemporalFiltering");
-			var ctx = r.ctx;
-			var s = pass.shader;
-			var output : h3d.mat.Texture = ctx.engine.getCurrentTarget();
-			var depthMap = ctx.getGlobal("depthMap");
+			var output : h3d.mat.Texture = r.ctx.engine.getCurrentTarget();
+			var depthMap = r.ctx.getGlobal("depthMap");
 			var prevFrame = r.allocTarget("prevFrame", false, 1.0, output.format);
 			var curFrame = r.allocTarget("curFrame", false, 1.0, output.format);
 			h3d.pass.Copy.run(output, curFrame);
+
+			var s = pass.shader;
 			s.curFrame = curFrame;
 			s.prevFrame = prevFrame;
 			s.amount = p.amount;
@@ -180,10 +184,14 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 			s.VARIANCE_CLIPPING = p.varianceClipping;
 			s.YCOCG = p.ycocg;
 			s.UNJITTER = p.unjitter;
+
 			r.setTarget(output);
 			pass.render();
+
 			h3d.pass.Copy.run(output, prevFrame);
 			s.prevCamMat.load(curMatNoJitter);
+			r.ctx.camera.m.load(curMatNoJitter);
+			@:privateAccess r.ctx.camera.needInv = true;
 		}
 	}
 
