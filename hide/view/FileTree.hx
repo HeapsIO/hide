@@ -170,30 +170,106 @@ class FileTree extends FileView {
 		}
 
 		var isDir = sys.FileSystem.isDirectory(ide.getPath(path));
-		if( isDir )
-			throw "TODO : rename directory";
-		ide.filterPrefabs(function(p:hrt.prefab.Prefab) {
-			var changed = false;
-			function filter(p:String) {
-				if( p == null )
-					return null;
-				if( p == path ) {
-					changed = true;
-					return newPath;
+		var wasRenamed = false;
+		if( sys.FileSystem.exists(ide.projectDir+"/.svn") ) {
+			if( Sys.command("svn",["--version"]) != 0 ) {
+				if( isDir && !ide.confirm("Renaming a SVN directory, but 'svn' system command was not found. Continue ?") )
+					return false;
+			} else {
+				var cwd = Sys.getCwd();
+				Sys.setCwd(ide.resourceDir);
+				var code = Sys.command("svn",["rename",path,newPath]);
+				Sys.setCwd(cwd);
+				if( code != 0 ) {
+					ide.error("SVN rename failure");
+					return false;
 				}
-				if( isDir && StringTools.startsWith(p,path+"/") ) {
-					changed = true;
-					return newPath + p.substr(path.length, p.length - path.length);
-				}
-				return p;
+				wasRenamed = true;
 			}
+		}
+		if( !wasRenamed )
+			sys.FileSystem.rename(ide.getPath(path), ide.getPath(newPath));
+
+		var changed = false;
+		function filter(p:String) {
+			if( p == null )
+				return null;
+			if( p == path ) {
+				changed = true;
+				return newPath;
+			}
+			if( p == "/"+path ) {
+				changed = true;
+				return "/"+newPath;
+			}
+			if( isDir ) {
+				if( StringTools.startsWith(p,path+"/") ) {
+					changed = true;
+					return newPath + p.substr(path.length);
+				}
+				if( StringTools.startsWith(p,"/"+path+"/") ) {
+					changed = true;
+					return "/"+newPath + p.substr(path.length+1);
+				}
+			}
+			return p;
+		}
+
+		ide.filterPrefabs(function(p:hrt.prefab.Prefab) {
+			changed = false;
 			p.source = filter(p.source);
 			var h = p.getHideProps();
 			if( h.onResourceRenamed != null )
 				h.onResourceRenamed(filter);
+			else {
+				var visited = new Array<Dynamic>();
+				function browseRec(obj:Dynamic) : Dynamic {
+					switch( Type.typeof(obj) ) {
+					case TObject:
+						if( visited.indexOf(obj) >= 0 ) return null;
+						visited.push(obj);
+						for( f in Reflect.fields(obj) ) {
+							var v : Dynamic = Reflect.field(obj, f);
+							v = browseRec(v);
+							if( v != null ) Reflect.setField(obj, f, v);
+						}
+					case TClass(Array):
+						if( visited.indexOf(obj) >= 0 ) return null;
+						visited.push(obj);
+						var arr : Array<Dynamic> = obj;
+						for( i in 0...arr.length ) {
+							var v : Dynamic = arr[i];
+							v = browseRec(v);
+							if( v != null ) arr[i] = v;
+						}
+					case TClass(String):
+						return filter(obj);
+					default:
+					}
+					return null;
+				}
+				browseRec(p);
+			}
 			return changed;
 		});
-		sys.FileSystem.rename(ide.getPath(path), ide.getPath(newPath));
+
+		changed = false;
+		for( sheet in ide.database.sheets ) {
+			for( c in sheet.columns ) {
+				switch( c.type ) {
+				case TFile:
+					for( o in sheet.getLines() ) {
+						var v : Dynamic = filter(Reflect.field(o, c.name));
+						if( v != null ) Reflect.setField(o, c.name, v);
+					}
+				default:
+				}
+			}
+		}
+		if( changed ) {
+			ide.saveDatabase();
+			hide.comp.cdb.Editor.refreshAll(true);
+		}
 		return true;
 	}
 

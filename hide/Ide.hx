@@ -855,6 +855,7 @@ class Ide {
 
 	function browseFiles( callb : String -> Void ) {
 		function browseRec(path) {
+			if( path == ".tmp" ) return;
 			for( p in sys.FileSystem.readDirectory(resourceDir + "/" + path) ) {
 				var p = path == "" ? p : path + "/" + p;
 				if( sys.FileSystem.isDirectory(resourceDir+"/"+p) ) {
