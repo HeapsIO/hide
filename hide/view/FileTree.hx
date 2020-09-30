@@ -254,7 +254,13 @@ class FileTree extends FileView {
 		});
 
 		changed = false;
+		var tmpSheets = [];
 		for( sheet in ide.database.sheets ) {
+			if( sheet.props.dataFiles != null && sheet.lines == null ) {
+				// we already updated prefabs, no need to load data files
+				tmpSheets.push(sheet);
+				@:privateAccess sheet.sheet.lines = [];
+			}
 			for( c in sheet.columns ) {
 				switch( c.type ) {
 				case TFile:
@@ -270,6 +276,8 @@ class FileTree extends FileView {
 			ide.saveDatabase();
 			hide.comp.cdb.Editor.refreshAll(true);
 		}
+		for( sheet in tmpSheets )
+			@:privateAccess sheet.sheet.lines = null;
 		return true;
 	}
 
