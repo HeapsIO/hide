@@ -60,6 +60,11 @@ class Light extends Object3D {
 	public var cookieTex : h3d.mat.Texture = null;
 	public var cookiePath : String = null;
 
+	// Dir
+	public var maxDist : Float = -1;
+	public var minDist : Float = -1;
+	public var autoShrink : Bool = true;
+
 	static function getShadowsDefault() : LightShadows {
 		return {
 			mode : None,
@@ -91,6 +96,9 @@ class Light extends Object3D {
 		obj.fallOff = fallOff;
 		obj.cookiePath = cookiePath;
 		obj.occlusionFactor = occlusionFactor;
+		obj.maxDist = maxDist;
+		obj.minDist = minDist;
+		obj.autoShrink = autoShrink;
 
 		if( shadows.mode != None ) {
 			obj.shadows = Reflect.copy(shadows);
@@ -112,6 +120,9 @@ class Light extends Object3D {
 		fallOff = obj.fallOff;
 		cookiePath = obj.cookiePath;
 		occlusionFactor = obj.occlusionFactor == null ? 0.0 : obj.occlusionFactor;
+		if( obj.maxDist != null ) maxDist = obj.maxDist;
+		if( obj.minDist != null ) minDist = obj.minDist;
+		if( obj.autoShrink != null ) autoShrink = obj.autoShrink;
 
 		if( obj.shadows != null ) {
 			var sh : Dynamic = Reflect.copy(obj.shadows);
@@ -201,6 +212,14 @@ class Light extends Object3D {
 			pbrLight.occlusionFactor = occlusionFactor;
 
 			switch( kind ) {
+			case Directional:
+				var dl = Std.downcast(light, h3d.scene.pbr.DirLight);
+				if( dl.shadows != null ) {
+					var s = Std.downcast(dl.shadows, h3d.pass.DirShadowMap);
+					s.maxDist = maxDist;
+					s.minDist = minDist;
+					s.autoShrink = autoShrink;
+				}
 			case Spot:
 				var sl = Std.downcast(light, h3d.scene.pbr.SpotLight);
 				sl.range = range;
@@ -422,6 +441,12 @@ class Light extends Object3D {
 		');
 
 		switch( kind ) {
+		case Directional:
+			group.append(hide.comp.PropsEditor.makePropsList([
+				{ name: "maxDist", t: PFloat(0, 1000), def: -1 },
+				{ name: "minDist", t: PFloat(0, 50), def: -1 },
+				{ name: "autoShrink", t: PBool, def: true },
+			]));
 		case Spot:
 			group.append(hide.comp.PropsEditor.makePropsList([
 				{ name: "range", t: PFloat(1, 20), def: 10 },
