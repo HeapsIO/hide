@@ -256,7 +256,10 @@ class FileTree extends FileView {
 					}
 					return null;
 				}
-				browseRec(p);
+				for( f in Reflect.fields(p) ) {
+					var v = browseRec(Reflect.field(p,f));
+					if( v != null ) Reflect.setField(p,f,v);
+				}
 			}
 			return changed;
 		});
