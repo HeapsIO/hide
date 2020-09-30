@@ -160,12 +160,19 @@ class FileTree extends FileView {
 		var newPath = name.charAt(0) == "/" ? name.substr(1) : parts.join("/");
 
 		if( sys.FileSystem.exists(ide.getPath(newPath)) ) {
-			if( !ide.confirm(newPath+" already exists, invert files?") )
-				return false;
-			var rand = "__tmp"+Std.random(10000);
-			onRename(path, "/"+path+rand);
-			onRename(newPath, "/"+path);
-			onRename(path+rand, name);
+			if( path.toLowerCase() == newPath.toLowerCase() ) {
+				// case change
+				var rand = "__tmp"+Std.random(10000);
+				onRename(path, "/"+path+rand);
+				onRename(path+rand, name);
+			} else {
+				if( !ide.confirm(newPath+" already exists, invert files?") )
+					return false;
+				var rand = "__tmp"+Std.random(10000);
+				onRename(path, "/"+path+rand);
+				onRename(newPath, "/"+path);
+				onRename(path+rand, name);
+			}
 			return false;
 		}
 
@@ -180,11 +187,12 @@ class FileTree extends FileView {
 				Sys.setCwd(ide.resourceDir);
 				var code = Sys.command("svn",["rename",path,newPath]);
 				Sys.setCwd(cwd);
-				if( code != 0 ) {
-					ide.error("SVN rename failure");
-					return false;
+				if( code == 0 )
+					wasRenamed = true;
+				else {
+					if( !ide.confirm("SVN rename failure, perform file rename ?") )
+						return false;
 				}
-				wasRenamed = true;
 			}
 		}
 		if( !wasRenamed )
