@@ -305,8 +305,8 @@ class HeightMapMesh extends h3d.scene.Object {
 	public function init() {
 		var htex = hmap.getTextures(Height, 0, 0)[0];
 		var size = hmap.size;
-		var width = htex == null ? Std.int(size) : htex.width;
-		var height = htex == null ? Std.int(size) : htex.height;
+		var width = htex == null ? Std.int(size) : Math.ceil(htex.width * hmap.heightPrecision);
+		var height = htex == null ? Std.int(size) : Math.ceil(htex.height * hmap.heightPrecision);
 		var cw = size/width, ch = size/height;
 		if( grid == null || grid.width != width || grid.height != height || grid.cellWidth != cw || grid.cellHeight != ch ) {
 			grid = new HeightGrid(width,height,cw+epsilon/width,ch+epsilon/height);
@@ -352,6 +352,7 @@ class HeightMap extends Object3D {
 	var size = 128.;
 	var heightScale = 0.2;
 	var normalScale = 1.;
+	var heightPrecision = 1.;
 	var minZ = -10;
 	var maxZ = 30;
 	var objects : {
@@ -374,6 +375,8 @@ class HeightMap extends Object3D {
 		o.size = size;
 		o.heightScale = heightScale;
 		o.normalScale = normalScale;
+		if( heightPrecision != 1 )
+			o.heightPrecision = heightPrecision;
 		o.minZ = minZ;
 		o.maxZ = maxZ;
 		if( objects != null )
@@ -387,6 +390,7 @@ class HeightMap extends Object3D {
 		size = obj.size;
 		heightScale = obj.heightScale;
 		normalScale = obj.normalScale;
+		if( obj.heightPrecision != null ) heightPrecision = obj.heightPrecision;
 		if( obj.minZ != null ) minZ = obj.minZ;
 		if( obj.maxZ != null ) maxZ = obj.maxZ;
 		objects = obj.objects;
@@ -584,6 +588,7 @@ class HeightMap extends Object3D {
 			<dl>
 				<dt>Size</dt><dd><input type="range" min="0" max="1000" value="128" field="size"/></dd>
 				<dt>Height Scale</dt><dd><input type="range" min="0" max="1" field="heightScale"/></dd>
+				<dt>Height Precision</dt><dd><input type="range" min="0.1" max="1" field="heightPrecision"/></dd>
 				<dt>Normal Scale</dt><dd><input type="range" min="0" max="2" field="normalScale"/></dd>
 				<dt>MinZ</dt><dd><input type="range" min="-1000" max="0" field="minZ"/></dd>
 				<dt>MaxZ</dt><dd><input type="range" min="0" max="1000" field="maxZ"/></dd>
