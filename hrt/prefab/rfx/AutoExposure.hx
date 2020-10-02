@@ -5,8 +5,8 @@ class AutoExposure extends RendererFX {
 	var lightFront : Float = 0.;
 	var lightBack : Float = 0.;
 	var lightPower : Float = 1.;
-
 	var transitionSpeed : Float = 1.;
+	var useLightZ : Bool = true;
 
 	override function save() {
 		var o : Dynamic = super.save();
@@ -14,6 +14,7 @@ class AutoExposure extends RendererFX {
 		o.lightBack = lightBack;
 		o.lightPower = lightPower;
 		o.transitionSpeed = transitionSpeed;
+		o.useLightZ = useLightZ;
 		return o;
 	}
 
@@ -23,6 +24,7 @@ class AutoExposure extends RendererFX {
 		lightBack = o.lightBack;
 		lightPower = o.lightPower;
 		transitionSpeed = o.transitionSpeed;
+		useLightZ = o.useLightZ;
 	}
 
 	override function begin( r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step ) {
@@ -40,8 +42,15 @@ class AutoExposure extends RendererFX {
 			l = l.next;
 		}
 		if( mainLight != null ) {
-			var dir = mainLight.getDirection().dot(r.ctx.camera.target.sub(r.ctx.camera.pos).normalized());
-			dir = (dir + 1) * 0.5;
+			var lightDir = mainLight.getDirection();
+			var camDir = r.ctx.camera.target.sub(r.ctx.camera.pos);
+			if( !useLightZ ) {
+				lightDir.z = 0;
+				camDir.z = 0;
+			}
+			lightDir.normalize();
+			camDir.normalize();
+			var dir = (lightDir.dot(camDir) + 1) * 0.5;
 			exp += hxd.Math.lerp(lightFront, lightBack, Math.pow(dir, lightPower * lightPower));
 		}
 		var render = cast(r,h3d.scene.pbr.Renderer);
@@ -56,6 +65,7 @@ class AutoExposure extends RendererFX {
 			<dt>Light Front</dt><dd><input type="range" min="-2" max="2" field="lightFront"/></dd>
 			<dt>Light Back</dt><dd><input type="range" min="-2" max="2" field="lightBack"/></dd>
 			<dt>Light Power</dt><dd><input type="range" min="0" max="3" field="lightPower"/></dd>
+			<dt>Use Light-Z</dt><dd><input type="checkbox" field="useLightZ"/></dd>
 			<dt>Transition Speed</dt><dd><input type="range" min="0" max="1" field="transitionSpeed"/></dd>
 			</dl>
 			<dl>
