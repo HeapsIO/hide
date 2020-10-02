@@ -42,7 +42,7 @@ class AutoExposure extends RendererFX {
 			l = l.next;
 		}
 		if( mainLight != null ) {
-			var lightDir = mainLight.getDirection();
+			var lightDir = mainLight.getAbsPos().front();
 			var camDir = r.ctx.camera.target.sub(r.ctx.camera.pos);
 			if( !useLightZ ) {
 				lightDir.z = 0;
