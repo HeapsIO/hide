@@ -130,7 +130,7 @@ class Model extends FileView {
 			l.kind = Directional;
 			l.power = 1.5;
 			var q = new h3d.Quat();
-			q.initDirection(new h3d.Vector(-1,-1.5,-3));
+			q.initDirection(new h3d.Vector(-0.28,0.83,-0.47));
 			var a = q.toEuler();
 			l.rotationX = Math.round(a.x * 180 / Math.PI);
 			l.rotationY = Math.round(a.y * 180 / Math.PI);
@@ -341,7 +341,7 @@ class Model extends FileView {
 		plight = root.getAll(hrt.prefab.Light)[0];
 		if( plight != null ) {
 			this.light = sceneEditor.context.shared.contexts.get(plight).local3d;
-			lightDirection = this.light.getDirection();
+			lightDirection = this.light.getLocalDirection();
 		}
 
 		undo.onChange = function() {};
@@ -674,7 +674,7 @@ class Model extends FileView {
 		saveDisplayState("Camera", { x : cam.pos.x, y : cam.pos.y, z : cam.pos.z, tx : cam.target.x, ty : cam.target.y, tz : cam.target.z });
 		if( light != null ) {
 			if( sceneEditor.isSelected(plight) )
-				lightDirection = light.getDirection();
+				lightDirection = light.getLocalDirection();
 			else {
 				var angle = Math.atan2(cam.target.y - cam.pos.y, cam.target.x - cam.pos.x);
 				light.setDirection(new h3d.Vector(

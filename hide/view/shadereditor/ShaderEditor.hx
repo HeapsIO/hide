@@ -33,10 +33,6 @@ class ShaderEditor extends hide.view.Graph {
 
 	var root : hrt.prefab.Prefab;
 	var obj : h3d.scene.Object;
-	var plight : hrt.prefab.Prefab;
-	var light : h3d.scene.Object;
-	var lightDirection : h3d.Vector;
-
 	var shaderGraph : ShaderGraph;
 
 	var lastSnapshot : haxe.Json;
@@ -301,13 +297,6 @@ class ShaderEditor extends hide.view.Graph {
 	}
 
 	function onRefresh() {
-
-		plight = root.getAll(hrt.prefab.Light)[0];
-		if( plight != null ) {
-			this.light = sceneEditor.context.shared.contexts.get(plight).local3d;
-			lightDirection = this.light.getDirection();
-		}
-
 		var saveCustomModel = getDisplayState("customModel");
 		if (saveCustomModel != null)
 			obj = sceneEditor.scene.loadModel(saveCustomModel, true);
