@@ -92,9 +92,8 @@ class DataFiles {
 			}
 		}
 
-		var path = sheet.props.dataFiles.split("/");
-		function gatherRec( curPath : Array<String>, i : Int ) {
-			var part = path[i++];
+		function gatherRec( basePath : Array<String>, curPath : Array<String>, i : Int ) {
+			var part = basePath[i++];
 			if( part == null ) {
 				var file = curPath.join("/");
 				if( sys.FileSystem.exists(ide.getPath(file)) ) loadFile(file);
@@ -102,7 +101,7 @@ class DataFiles {
 			}
 			if( part.indexOf("*") < 0 ) {
 				curPath.push(part);
-				gatherRec(curPath,i);
+				gatherRec(basePath,curPath,i);
 				curPath.pop();
 			} else {
 				var path = curPath.join("/");
@@ -118,18 +117,20 @@ class DataFiles {
 					if( !reg.match(f) ) {
 						if( sys.FileSystem.isDirectory(dir+"/"+f) ) {
 							curPath.push(f);
-							gatherRec(curPath,i-1);
+							gatherRec(basePath,curPath,i-1);
 							curPath.pop();
 						}
 						continue;
 					}
 					curPath.push(f);
-					gatherRec(curPath,i);
+					gatherRec(basePath,curPath,i);
 					curPath.pop();
 				}
 			}
 		}
-		gatherRec([],0);
+
+		for( dir in sheet.props.dataFiles.split(";") )
+			gatherRec(dir.split("/"),[],0);
 	}
 
 	public static function save( ?onSaveBase, ?force ) {
