@@ -85,7 +85,9 @@ package hrt.prefab;
 
 	#if editor
 	public function setCurrent() {
-		cast(shared, hide.prefab.ContextShared).scene.setCurrent();
+		var shared = Std.downcast(shared, hide.prefab.ContextShared);
+		if( shared == null ) throw "This context was not created by editor!";
+		shared.scene.setCurrent();
 	}
 	#end
 
