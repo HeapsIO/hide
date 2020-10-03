@@ -23,6 +23,7 @@ class IconTree<T:{}> extends Component {
 
 	var waitRefresh = new Array<Void->Void>();
 	var map : Map<String, IconTreeItem<T>> = new Map();
+	var values : Map<String, T> = new Map();
 	var revMapString : haxe.ds.StringMap<IconTreeItem<T>> = new haxe.ds.StringMap();
 	var revMap : haxe.ds.ObjectMap<T, IconTreeItem<T>> = new haxe.ds.ObjectMap();
 	public var allowRename : Bool;
@@ -62,17 +63,31 @@ class IconTree<T:{}> extends Component {
 	public dynamic function applyStyle( e : T, element : Element ) {
 	}
 
+	function getValue( c : IconTreeItem<T> ) {
+		if( c.value != null )
+			return c.value;
+		return values.get(c.id);
+	}
+
+	function getVal( id : String ) : T {
+		var c = map.get(id);
+		return getValue(c);
+	}
+
 	function makeContent(parent:IconTreeItem<T>) {
-		var content : Array<IconTreeItem<T>> = get(parent == null ? null : parent.value);
+		var content : Array<IconTreeItem<T>> = get(parent == null ? null : getValue(parent));
 		for( c in content ) {
 			var key = (parent == null ? "" : parent.absKey + "/") + c.text;
 			if( c.absKey == null ) c.absKey = key;
-			c.id = "titem$" + (UID++);
+			c.id = "titem__" + (UID++);
 			map.set(c.id, c);
 			if( Std.is(c.value, String) )
 				revMapString.set(cast c.value, c);
-			else
+			else {
 				revMap.set(c.value, c);
+				values.set(c.id, c.value);
+				c.value = null;
+			}
 			if( c.state == null ) {
 				var s = getDisplayState(key);
 				if( s != null ) c.state = { opened : s } else c.state = {};
@@ -102,11 +117,11 @@ class IconTree<T:{}> extends Component {
 						return false;
 					if( operation == "rename_node" ) {
 						if( node.text == value ) return true; // no change
-						return onRename(map.get(node.id).value, value);
+						return onRename(getVal(node.id), value);
 					}
 					if( operation == "move_node" ) {
 						if( extra.ref == null ) return true;
-						return onAllowMove(map.get(node.id).value, map.get(extra.ref.id).value);
+						return onAllowMove(getVal(node.id), getVal(extra.ref.id));
 					}
 					return false;
 				},
@@ -119,8 +134,8 @@ class IconTree<T:{}> extends Component {
 		element.on("click.jstree", function (event) {
 			var node = new Element(event.target).closest("li");
 			if(node == null || node.length == 0) return;
-   			var i = map.get(node[0].id);
-			onClick(i.value, event);
+   			var v = getVal(node[0].id);
+			onClick(v, event);
 		});
 		element.on("dblclick.jstree", function (event) {
 			// ignore dblclick on open/close arrow
@@ -129,26 +144,26 @@ class IconTree<T:{}> extends Component {
 
 			var node = new Element(event.target).closest("li");
 			if( node == null || node.length == 0 ) return;
-   			var i = map.get(node[0].id);
-			if(onDblClick(i.value))
+   			var v = getVal(node[0].id);
+			if(onDblClick(v))
 				return;
 			if( allowRename ) {
 				// ignore rename on icon
 				if( event.target.className.indexOf("jstree-icon") >= 0 )
 					return;
-				editNode(i.value);
+				editNode(v);
 				return;
 			}
 		});
 		element.on("open_node.jstree", function(event, e) {
 			var i = map.get(e.node.id);
 			saveDisplayState(i.absKey, true);
-			onToggle(i.value, true);
+			onToggle(getValue(i), true);
 		});
 		element.on("close_node.jstree", function(event,e) {
 			var i = map.get(e.node.id);
 			saveDisplayState(i.absKey, false);
-			onToggle(i.value, false);
+			onToggle(getValue(i), false);
 		});
 		element.on("refresh.jstree", function(_) {
 			var old = waitRefresh;
@@ -156,26 +171,26 @@ class IconTree<T:{}> extends Component {
 			for( f in old ) f();
 		});
 		element.on("move_node.jstree", function(event, e) {
-			onMove(map.get(e.node.id).value, e.parent == "#" ? null : map.get(e.parent).value, e.position);
+			onMove(getVal(e.node.id), e.parent == "#" ? null : getVal(e.parent), e.position);
 		});
 		element.on('ready.jstree', function () {
 			/* var lis = element.find("li");
 			for(li in lis) {
 				var item = map.get(li.id);
 				if(item != null)
-					applyStyle(item.value, new Element(li));
+					applyStyle(getValue(item), new Element(li));
 			} */
 		});
 		element.on('changed.jstree', function (e, data) {
 			var nodes: Array<Dynamic> = data.changed.deselected;
 			for(id in nodes) {
-				var item = map.get(id).value;
+				var item = getVal(id);
 				var el = getElement(item);
 				applyStyle(item, el);
 			}
 		});
 		element.on("rename_node.jstree", function(e, data) {
-			var item = map.get(data.node.id).value;
+			var item = getVal(data.node.id);
 			var el = getElement(item);
 			applyStyle(item, el);
 		});
@@ -184,7 +199,7 @@ class IconTree<T:{}> extends Component {
 			for(li in lis) {
 				var item = map.get(li.id);
 				if(item != null)
-					applyStyle(item.value, new Element(li));
+					applyStyle(getValue(item), new Element(li));
 			}
 		});
 	}
@@ -213,7 +228,7 @@ class IconTree<T:{}> extends Component {
 		if( id == null )
 			return null;
 		var i = map.get(id.substr(0, -7)); // remove _anchor
-		return i == null ? null : i.value;
+		return i == null ? null : getValue(i);
 	}
 
 	public function setSelection( objects : Array<T> ) {
@@ -229,13 +244,14 @@ class IconTree<T:{}> extends Component {
 		map = new Map();
 		revMap = new haxe.ds.ObjectMap();
 		revMapString = new haxe.ds.StringMap();
+		values = new Map();
 		if( onReady != null ) waitRefresh.push(onReady);
 		(element:Dynamic).jstree('refresh',true);
 	}
 
 	public function getSelection() : Array<T> {
 		var ids : Array<String> = (element:Dynamic).jstree('get_selected');
-		return [for( id in ids ) map.get(id).value];
+		return [for( id in ids ) getVal(id)];
 	}
 
 	public function collapseAll() {
