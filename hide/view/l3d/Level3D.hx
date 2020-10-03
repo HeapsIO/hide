@@ -404,7 +404,7 @@ class Level3D extends FileView {
 			'Draw Calls: ${scene.engine.drawCalls}',
 		];
 		statusText.text = lines.join("\n");
-		sceneEditor.event.wait(0.5, updateStats);
+		haxe.Timer.delay(function() sceneEditor.event.wait(0.5, updateStats), 0);
 	}
 
 	function bakeLights() {
