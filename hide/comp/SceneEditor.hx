@@ -1331,14 +1331,29 @@ class SceneEditor {
 		scene.init(ctx.local3d);
 	}
 
+	function refreshParents( elts : Array<PrefabElement> ) {
+		var parents = new Map();
+		for( e in elts )
+			parents.set(e.parent, true);
+		for( p in parents.keys() ) {
+			var h = p.getHideProps();
+			if( h.onChildListChanged != null ) h.onChildListChanged();
+		}
+		if( lastRenderProps != null && parents.exists(lastRenderProps) )
+			lastRenderProps.applyProps(scene.s3d.renderer);
+	}
+
 	public function addObject(elts : Array<PrefabElement>, selectObj : Bool = true, doRefresh : Bool = true, isTemporary = false) {
 		for (e in elts) {
 			makeInstance(e);
 		}
-		if (doRefresh)
+		if (doRefresh) {
 			refresh(Partial, if (selectObj) () -> selectObjects(elts, NoHistory) else null);
+			refreshParents(elts);
+		}
 		if( isTemporary )
 			return;
+
 		undo.change(Custom(function(undo) {
 			var fullRefresh = false;
 			if(undo) {
@@ -1356,6 +1371,7 @@ class SceneEditor {
 					makeInstance(e);
 				}
 				refresh(Partial, () -> selectObjects(elts,NoHistory));
+				refreshParents(elts);
 			}
 		}));
 	}
@@ -1982,6 +1998,7 @@ class SceneEditor {
 
 		function refreshFunc(then) {
 			refresh(fullRefresh ? Full : Partial, then);
+			if( !fullRefresh ) refreshParents(elts);
 		}
 
 		if (doRefresh)
