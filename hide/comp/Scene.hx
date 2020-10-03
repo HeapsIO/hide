@@ -72,8 +72,8 @@ class Scene extends Component implements h3d.IDrawable {
 	public var speed : Float = 1.0;
 	public var visible(default, null) : Bool = true;
 	public var editor : hide.comp.SceneEditor;
-	public var refreshIfUnfocused = false;
 	var chunkifyS3D : Bool = false;
+	var unFocusedTime = 0.;
 
 	public function new(chunkifyS3D: Bool = false, config, parent, el) {
 		super(parent,el);
@@ -190,12 +190,19 @@ class Scene extends Component implements h3d.IDrawable {
 			ide.unregisterUpdate(sync);
 			return;
 		}
-		if( !visible || (!Ide.inst.isFocused && !refreshIfUnfocused) || pendingCount > 0)
+		if( !visible || pendingCount > 0)
 			return;
-		refreshIfUnfocused = false;
+		var dt = hxd.Timer.tmod * speed / 60;
+		if( !Ide.inst.isFocused ) {
+			// refresh at 1FPS
+			unFocusedTime += dt;
+			if( unFocusedTime < 1 ) return;
+			unFocusedTime -= 1;
+			dt = 1;
+		} else
+			unFocusedTime = 0;
 		setCurrent();
 		sevents.checkEvents();
-		var dt = hxd.Timer.tmod * speed / 60;
 		s2d.setElapsedTime(dt);
 		s3d.setElapsedTime(dt);
 		for( f in listeners )
