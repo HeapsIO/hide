@@ -190,9 +190,14 @@ class Environment extends Object3D {
 
 		#if editor
 		if( sourceMap.flags.has(Loading) ) {
+			var path = ctx.shared.currentPath;
+			if( path == null ) return;
 			haxe.Timer.delay(function() {
 				ctx.setCurrent();
+				var prev = ctx.shared.currentPath;
+				ctx.shared.currentPath = path;
 				updateInstance(ctx,propName);
+				ctx.shared.currentPath = prev;
 			},100);
 			return;
 		}
