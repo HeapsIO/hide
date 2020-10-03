@@ -595,6 +595,7 @@ class SplineEditor {
 		editModeButton.toggleClass("editModeEnabled", editMode);
 		editModeButton.click(function(_) {
 			editMode = !editMode;
+			prefab.onEdit(editMode);
 			editModeButton.val(editMode ? "Edit Mode : Enabled" : "Edit Mode : Disabled");
 			editModeButton.toggleClass("editModeEnabled", editMode);
 			setSelected(getContext(), true);

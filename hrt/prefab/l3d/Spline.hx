@@ -82,6 +82,7 @@ class Spline extends Object3D {
 	#if editor
 	public var editor : hide.prefab.SplineEditor;
 	#end
+	public var wasEdited = false;
 
 	override function save() {
 		var obj : Dynamic = super.save();
@@ -105,7 +106,7 @@ class Spline extends Object3D {
 			return m;
 		}
 
-		if( points != null && points.length > 0 ) {
+		if( points != null && points.length > 0 && wasEdited ) {
 			obj.points = [ for(sp in points) {
 								var m = getTransform(sp, tmp);
 								[for(f in m.getFloats()) hxd.Math.fmt(f) ];
@@ -150,6 +151,7 @@ class Spline extends Object3D {
 	// Generate the splineData from a matrix, can't move the spline after that
 	public function makeFromMatrix( m : h3d.Matrix ) {
 		var tmp = new h3d.Matrix();
+		points = [];
 		for( pd in pointsData ) {
 			var sp = new SplinePoint(0, 0, 0, null);
 			tmp.load(pd);
@@ -158,27 +160,24 @@ class Spline extends Object3D {
 			sp.getAbsPos();
 			points.push(sp);
 		}
-		pointsData = [];
 		computeSplineData();
 	}
 
 	override function makeInstance( ctx : hrt.prefab.Context ) : hrt.prefab.Context {
 		var ctx = ctx.clone(this);
-
 		ctx.local3d = new h3d.scene.Object(ctx.local3d);
 		ctx.local3d.name = name;
 
+		points = [];
 		for( pd in pointsData ) {
 			var sp = new SplinePoint(0, 0, 0, ctx.local3d);
 			sp.setTransform(pd);
 			sp.getAbsPos();
 			points.push(sp);
 		}
-		pointsData = [];
 
-		if( points == null || points.length == 0 ) {
+		if( points.length == 0 )
 			points.push(new SplinePoint(0,0,0, ctx.local3d));
-		}
 
 		updateInstance(ctx);
 		return ctx;
@@ -428,6 +427,10 @@ class Spline extends Object3D {
 	}
 
 	#if editor
+
+	public function onEdit( b : Bool ) {
+		if( b ) wasEdited = true;
+	}
 
 	override function setSelected( ctx : hrt.prefab.Context , b : Bool ) {
 		super.setSelected(ctx, b);

@@ -148,26 +148,6 @@ class SplineMesh extends Spline {
 		return makeInstance(ctx);
 	}
 
-	override function makeInstance( ctx : hrt.prefab.Context ) : hrt.prefab.Context {
-		var ctx = ctx.clone(this);
-		ctx.local3d = new h3d.scene.Object(ctx.local3d);
-		ctx.local3d.name = name;
-
-		for( pd in pointsData ) {
-			var sp = new SplinePoint(0, 0, 0, ctx.local3d);
-			sp.setTransform(pd);
-			sp.getAbsPos();
-			points.push(sp);
-		}
-		pointsData = [];
-
-		if( points == null || points.length == 0 )
-			points.push(new SplinePoint(0,0,0, ctx.local3d));
-
-		updateInstance(ctx);
-		return ctx;
-	}
-
 	override function updateInstance( ctx : hrt.prefab.Context , ?propName : String ) {
 		super.updateInstance(ctx, propName);
 
