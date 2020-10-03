@@ -749,6 +749,19 @@ class Ide {
 		path = path.split("\\").join("/");
 		if( StringTools.startsWith(path.toLowerCase(), resourceDir.toLowerCase()+"/") )
 			return path.substr(resourceDir.length+1);
+
+		var resParts = resourceDir.split("/");
+		var pathParts = path.split("/");
+		for( i in 0...resParts.length ) {
+			if( pathParts[i].toLowerCase() != resParts[i].toLowerCase() ) {
+				if( pathParts[i].charCodeAt(pathParts[i].length-1) == ":".code )
+					return path; // drive letter change
+				var newPath = pathParts.splice(i, pathParts.length - i);
+				for( k in 0...resParts.length - i )
+					newPath.unshift("..");
+				return newPath.join("/");
+			}
+		}
 		return path;
 	}
 
