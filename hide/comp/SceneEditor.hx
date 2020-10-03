@@ -1318,7 +1318,13 @@ class SceneEditor {
 
 	function makeInstance(elt: PrefabElement) {
 		scene.setCurrent();
-		var parentCtx = getContext(elt.parent);
+		var p = elt.parent;
+		var parentCtx = null;
+		while( p != null ) {
+			parentCtx = getContext(p);
+			if( parentCtx != null ) break;
+			p = p.parent;
+		}
 		var ctx = elt.make(parentCtx);
 		for( p in elt.flatten() )
 			makeInteractive(p);
