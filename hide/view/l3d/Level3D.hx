@@ -246,7 +246,7 @@ class Level3D extends FileView {
 	var curGridWidth : Int;
 	var curGridHeight : Int;
 
-	var showGrid = true;
+	var showGrid = false;
 	var currentVersion : Int = 0;
 	var lastSyncChange : Float = 0.;
 	var sceneFilters : Map<String, Bool>;
