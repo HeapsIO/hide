@@ -116,8 +116,10 @@ class Instance extends Object3D {
 	override function removeInstance(ctx:Context):Bool {
 		if(!super.removeInstance(ctx))
 			return false;
-		if(ctx.local2d != null)
-			ctx.local2d.remove();
+		if(ctx.local2d != null ) {
+			var pctx = ctx.shared.getContexts(parent)[0];
+			if( pctx != null && pctx.local2d != ctx.local2d ) ctx.local2d.remove();
+		}
 		return true;
 	}
 
