@@ -750,6 +750,10 @@ class Ide {
 		if( StringTools.startsWith(path.toLowerCase(), resourceDir.toLowerCase()+"/") )
 			return path.substr(resourceDir.length+1);
 
+		// is already a relative path
+		if( path.charCodeAt(0) != "/".code && path.charCodeAt(1) != ":".code )
+			return path;
+
 		var resParts = resourceDir.split("/");
 		var pathParts = path.split("/");
 		for( i in 0...resParts.length ) {
