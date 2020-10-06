@@ -773,8 +773,9 @@ class Ide {
 	public function chooseFiles( exts : Array<String>, onSelect : Array<String> -> Void ) {
 		var e = new Element('<input type="file" style="visibility:hidden" value="" accept="${[for( e in exts ) "."+e].join(",")}" multiple="multiple"/>');
 		e.change(function(_) {
-			var files = [for( f in (""+e.val()).split(";") ) makeRelative(f)];
+			var files = [for( f in (""+e.val()).split(";") ) f];
 			if( files.length == 1 && files[0] == "" ) files.pop();
+			var files = [for( f in files ) makeRelative(f)];
 			e.remove();
 			onSelect(files);
 		}).appendTo(window.window.document.body).click();
@@ -783,9 +784,9 @@ class Ide {
 	public function chooseFile( exts : Array<String>, onSelect : Null<String> -> Void ) {
 		var e = new Element('<input type="file" style="visibility:hidden" value="" accept="${[for( e in exts ) "."+e].join(",")}"/>');
 		e.change(function(_) {
-			var file = makeRelative(e.val());
+			var file = e.val();
 			e.remove();
-			onSelect(file == "" ? null : file);
+			onSelect(file == "" ? null : makeRelative(file));
 		}).appendTo(window.window.document.body).click();
 	}
 
@@ -796,17 +797,17 @@ class Ide {
 		var path = path.join(c);
 		var e = new Element('<input type="file" style="visibility:hidden" value="" nwworkingdir="$path" nwsaveas="$file"/>');
 		e.change(function(_) {
-			var file = makeRelative(e.val());
+			var file = e.val();
 			e.remove();
-			onSelect(file == "" ? null : file);
+			onSelect(file == "" ? null : makeRelative(file));
 		}).appendTo(window.window.document.body).click();
 	}
 
 	public function chooseDirectory( onSelect : String -> Void ) {
 		var e = new Element('<input type="file" style="visibility:hidden" value="" nwdirectory/>');
 		e.change(function(ev) {
-			var dir = makeRelative(ev.getThis().val());
-			onSelect(dir == "" ? null : dir);
+			var dir = ev.getThis().val();
+			onSelect(dir == "" ? null : makeRelative(dir));
 			e.remove();
 		}).appendTo(window.window.document.body).click();
 	}
