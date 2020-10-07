@@ -18,6 +18,14 @@ class RenderProps extends Prefab {
 		return { isDefault : isDefault };
 	}
 
+	override function makeInstance(ctx:Context):Context {
+		ctx = ctx.clone(this);
+		ctx.local3d = new h3d.scene.Object(ctx.local3d);
+		ctx.local3d.name = name;
+		updateInstance(ctx);
+		return ctx;
+	}
+
 	public function getProps(renderer: h3d.scene.Renderer) {
 		var p = Reflect.field(this.props, h3d.mat.MaterialSetup.current.name);
 		var defaults = renderer.getDefaultProps();
