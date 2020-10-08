@@ -1,5 +1,9 @@
 package hrt.prefab;
 
+class RenderPropsObject extends h3d.scene.Object {
+
+}
+
 class RenderProps extends Prefab {
 
 	var isDefault = false;
@@ -20,7 +24,7 @@ class RenderProps extends Prefab {
 
 	override function makeInstance(ctx:Context):Context {
 		ctx = ctx.clone(this);
-		ctx.local3d = new h3d.scene.Object(ctx.local3d);
+		ctx.local3d = new RenderPropsObject(ctx.local3d);
 		ctx.local3d.name = name;
 		updateInstance(ctx);
 		return ctx;
