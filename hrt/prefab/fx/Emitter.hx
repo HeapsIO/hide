@@ -1462,6 +1462,7 @@ class Emitter extends Object3D {
 				var rad1 = getParamVal("emitRad1") * 0.5;
 				var rad2 = getParamVal("emitRad2") * 0.5;
 				var g = new h3d.scene.Graphics(debugShape);
+				g.material.mainPass.setPassName("overlay");
 				g.lineStyle(1, 0xffffff);
 				circle(32, function(i, c, s) {
 					if(i == 0)
@@ -1488,6 +1489,7 @@ class Emitter extends Object3D {
 			}
 			case Cone: {
 				var g = new h3d.scene.Graphics(debugShape);
+				g.material.mainPass.setPassName("overlay");
 				var angle = hxd.Math.degToRad(getParamVal("emitAngle")) / 2.0;
 				var rad = hxd.Math.sin(angle);
 				var dist = hxd.Math.cos(angle);
