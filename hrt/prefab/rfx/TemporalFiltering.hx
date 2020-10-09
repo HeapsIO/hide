@@ -27,7 +27,10 @@ class TemporalFilteringShader extends h3d.shader.ScreenShader {
 
 		@param var prevCamMat : Mat4;
 		@param var cameraInverseViewProj : Mat4;
-		@param var depthTexture : Channel;
+
+		@const var PACKED_DEPTH : Bool;
+		@param var depthChannel : Channel;
+		@param var depthTexture : Sampler2D;
 
 		function rgb2ycocg( rgb : Vec3 ) : Vec3 {
 			if( YCOCG ) {
@@ -76,7 +79,8 @@ class TemporalFilteringShader extends h3d.shader.ScreenShader {
 		}
 
 		function getPixelPosition( uv : Vec2 ) : Vec3 {
-			var tmp = vec4(uvToScreen(uv), depthTexture.get(uv).r, 1) * cameraInverseViewProj;
+			var d = PACKED_DEPTH ? unpack(depthTexture.get(uv)) : depthChannel.get(uv).r;
+			var tmp = vec4(uvToScreen(uv), d, 1) * cameraInverseViewProj;
 			tmp.xyz /= tmp.w;
 			return tmp.xyz;
 		}
@@ -122,7 +126,7 @@ class TemporalFilteringShader extends h3d.shader.ScreenShader {
 class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 
 	var frustumJitter = new FrustumJitter();
-	var pass = new h3d.pass.ScreenFx(new TemporalFilteringShader());
+	public var pass = new h3d.pass.ScreenFx(new TemporalFilteringShader());
 	var curMatNoJitter = new h3d.Matrix();
 	var jitterMat = new h3d.Matrix();
 
@@ -169,7 +173,7 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 		if( ( step == AfterTonemapping && p.renderMode == "AfterTonemapping") || (step == BeforeTonemapping && p.renderMode == "BeforeTonemapping" ) ) {
 			r.mark("TemporalFiltering");
 			var output : h3d.mat.Texture = r.ctx.engine.getCurrentTarget();
-			var depthMap = r.ctx.getGlobal("depthMap");
+			var depthMap : Dynamic = r.ctx.getGlobal("depthMap");
 			var prevFrame = r.allocTarget("prevFrame", false, 1.0, output.format);
 			var curFrame = r.allocTarget("curFrame", false, 1.0, output.format);
 			h3d.pass.Copy.run(output, curFrame);
@@ -178,8 +182,16 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 			s.curFrame = curFrame;
 			s.prevFrame = prevFrame;
 			s.amount = p.amount;
-			s.depthTexture = depthMap.texture;
-			s.depthTextureChannel = depthMap.channel;
+
+			s.PACKED_DEPTH = depthMap.packed != null && depthMap.packed == true;
+			if( s.PACKED_DEPTH ) {
+				s.depthTexture = depthMap.texture;
+			}
+			else {
+				s.depthChannel = depthMap.texture;
+				s.depthChannelChannel = depthMap.channel == null ? hxsl.Channel.R : depthMap.channel;
+			}
+
 			s.resolution.set(output.width, output.height);
 			s.VARIANCE_CLIPPING = p.varianceClipping;
 			s.YCOCG = p.ycocg;
