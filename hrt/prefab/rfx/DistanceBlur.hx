@@ -22,9 +22,9 @@ class DistanceBlurShader extends PbrShader {
 		var blurAmount : Float;
 
 		function __init__fragment() {{
-			currentPosition = getPosition();
+			var currentPosition = getPosition();
 			var distance = (currentPosition - camera.position).length();
-			blurAmount = 0;
+			blurAmount = 0.0;
 			if( distance < nearEndDistance ) {
 				var nearIntensityFactor = clamp((distance - nearStartDistance) / (nearEndDistance - nearStartDistance), 0, 1);
 				blurAmount = mix(nearStartIntensity, nearEndIntensity, nearIntensityFactor);
