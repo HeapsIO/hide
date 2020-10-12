@@ -252,7 +252,8 @@ class Environment extends Object3D {
 			compute(ctx);
 		}
 
-		applyToRenderer(ctx.local3d.getScene().renderer);
+		var scene = ctx.local3d.getScene();
+		if( scene != null ) applyToRenderer(scene.renderer);
 	}
 
 	public function applyToRenderer( r : h3d.scene.Renderer) {
