@@ -807,11 +807,11 @@ class Ide {
 		}).appendTo(window.window.document.body).click();
 	}
 
-	public function chooseDirectory( onSelect : String -> Void ) {
+	public function chooseDirectory( onSelect : String -> Void, ?isAbsolute = false ) {
 		var e = new Element('<input type="file" style="visibility:hidden" value="" nwdirectory/>');
 		e.change(function(ev) {
 			var dir = ev.getThis().val();
-			onSelect(dir == "" ? null : makeRelative(dir));
+			onSelect(dir == "" ? null : (isAbsolute ? dir : makeRelative(dir)));
 			e.remove();
 		}).appendTo(window.window.document.body).click();
 	}
@@ -912,7 +912,7 @@ class Ide {
 				if( StringTools.endsWith(dir,"/res") || StringTools.endsWith(dir,"\\res") )
 					dir = dir.substr(0,-4);
 				setProject(dir);
-			});
+			}, true);
 		});
 		menu.find(".project .clear").click(function(_) {
 			ideConfig.recentProjects = [];
