@@ -1,4 +1,5 @@
 package hrt.prefab.fx;
+import h3d.Matrix;
 import hrt.prefab.l3d.Polygon;
 import hrt.prefab.Curve;
 import hrt.prefab.fx.BaseFX.ShaderAnimation;
@@ -100,6 +101,7 @@ private class ParticleTransform {
 		this.z = z;
 	}
 
+	var tmpScale = new h3d.Vector();
 	public function calcAbsPos() {
 		qRot.toMatrix(absPos);
 		absPos._11 *= scaleX;
@@ -114,8 +116,13 @@ private class ParticleTransform {
 		absPos._41 = x;
 		absPos._42 = y;
 		absPos._43 = z;
-		if( parent != null )
-			absPos.multiply3x4inline(absPos, parent.getAbsPos());
+		if( parent != null ) {
+			// Ignore Scale
+			var parentAbsPos = parent.getAbsPos();
+			parentAbsPos.getScale(tmpScale);
+			parentAbsPos.scale(1.0 / tmpScale.x, 1.0 / tmpScale.y, 1.0 / tmpScale.z);
+			absPos.multiply3x4inline(absPos, parentAbsPos);
+		}
 	}
 
 	static var tmpMat = new h3d.Matrix();
