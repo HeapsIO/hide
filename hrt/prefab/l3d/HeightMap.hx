@@ -178,6 +178,16 @@ class HeightMapTile {
 	}
 
 	function addObjects( mesh : HeightMapMesh ) {
+		var model = null;
+		decodeObjects(function(name) {
+			model = mesh.resolveAssetModel(name);
+			return model != null;
+		},function(pos) {
+			@:privateAccess mesh.world.addTransform(model, pos);
+		});
+	}
+
+	public inline function decodeObjects( onModel : String -> Bool, onAdd : h3d.Matrix -> Void ) {
 		var data = hmap.storedCtx.shared.loadBytes(hmap.resolveTexturePath(hmap.objects.file,tx,ty));
 		if( data == null ) return;
 		var xml = new haxe.xml.Access(Xml.parse(data.toString()).firstElement());
@@ -191,8 +201,7 @@ class HeightMapTile {
 
 		for( layer in xml.node.Objects.node.Layers.nodes.Layer ) {
 			for( obj in layer.nodes.Object ) {
-				var model = mesh.resolveAssetModel(obj.att.MeshAssetFileName);
-				if( model == null ) continue;
+				if( !onModel(obj.att.MeshAssetFileName) ) continue;
 				var data = haxe.crypto.Base64.decode(obj.node.Data.innerData);
 				for( i in 0...Std.int(data.length/40) ) {
 					var p = i * 40;
@@ -222,7 +231,7 @@ class HeightMapTile {
 					mat.ty = y + posY;
 					mat.tz = hmap.getZ(mat.tx, mat.ty);
 
-					@:privateAccess mesh.world.addTransform(model, mat);
+					onAdd(mat);
 				}
 			}
 		}
