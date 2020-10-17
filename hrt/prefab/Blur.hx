@@ -84,7 +84,7 @@ class Blur extends Prefab {
 	}
 
 	override function edit( ctx : EditContext ) {
-		var e : hide.Element;
+		var e : hide.Element = null;
 		function sync( bmp : h2d.Bitmap ) {
 			var k = @:privateAccess Std.downcast(bmp.filter, h2d.filter.Blur).pass.getKernelSize();
 			e.find("[name=fetches]").text( (k + k) +"x" );

@@ -425,7 +425,7 @@ class FXEditor extends FileView {
 			e.stopPropagation();
 		});
 
-		var wheelTimer : haxe.Timer;
+		var wheelTimer : haxe.Timer = null;
 		timeline.on("mousewheel", function(e) {
 			var step = e.originalEvent.wheelDelta > 0 ? 1.0 : -1.0;
 			xScale *= Math.pow(1.125, step);
