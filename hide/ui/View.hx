@@ -101,7 +101,7 @@ class View<T> extends hide.comp.Component {
 			return true;
 		if( active.nodeName == "INPUT" ) {
 			var type = (""+active.getAttribute("type")).toLowerCase();
-			if( type == "text" || type == "null" )
+			if( type == "text" || type == "null" || type == "number" || type == "password" || type == "date" )
 				return true;
 		}
 		return false;
