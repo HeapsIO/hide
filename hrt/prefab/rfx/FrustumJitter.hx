@@ -98,11 +98,11 @@ class FrustumJitter {
 	];
 
 	public var points_Pentagram : Array<Float> = [
-		0.000000*0.,  0.525731*0.,// head
-		-0.309017*0., -0.42532*0.,// lleg
-		0.500000*0.,  0.162460*0.,// rarm
-		-0.500000*0.,  0.162460*0.,// larm
-		0.309017*0., -0.42532*0.,// rleg
+		0.000000,  0.525731,// head
+		-0.309017, -0.42532,// lleg
+		0.500000,  0.162460,// rarm
+		-0.500000,  0.162460,// larm
+		0.309017, -0.42532,// rleg
 	];
 
 	public var points_Halton_2_3_x8 : Array<Float> = [];
@@ -151,13 +151,6 @@ class FrustumJitter {
 	public var curPattern : Pattern = Still;
 
 	public function new() {
-		
-		// points_Pentagram
-		var vh = new h3d.Vector(points_Pentagram[0] - points_Pentagram[2], points_Pentagram[1] - points_Pentagram[3]);
-		var vu = new h3d.Vector(0.0, 1.0);
-		transformPattern(points_Pentagram, hxd.Math.degToRad(0.5 * hxd.Math.atan2(vh.y - vu.y, vh.x - vu.x)), 1.0);
-
-		// points_Halton_2_3_xN
 		points_Halton_2_3_x8.resize(8);
 		initializeHalton_2_3(points_Halton_2_3_x8);
 		points_Halton_2_3_x16.resize(16);

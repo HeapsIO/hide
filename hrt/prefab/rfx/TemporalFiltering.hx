@@ -164,16 +164,18 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 			curMatNoJitter.load(ctx.camera.m);
 			ctx.camera.mproj.multiply(ctx.camera.mproj, jitterMat);
 			ctx.camera.m.multiply(ctx.camera.mcam, ctx.camera.mproj);
+			@:privateAccess ctx.camera.needInv = true;
 			s.cameraInverseViewProj.initInverse(curMatNoJitter);
 		}
 	}
 
 	override function end( r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step ) {
+		var ctx = r.ctx;
 		var p : TemporalFilteringProps = props;
 		if( ( step == AfterTonemapping && p.renderMode == "AfterTonemapping") || (step == BeforeTonemapping && p.renderMode == "BeforeTonemapping" ) ) {
 			r.mark("TemporalFiltering");
-			var output : h3d.mat.Texture = r.ctx.engine.getCurrentTarget();
-			var depthMap : Dynamic = r.ctx.getGlobal("depthMap");
+			var output : h3d.mat.Texture = ctx.engine.getCurrentTarget();
+			var depthMap : Dynamic = ctx.getGlobal("depthMap");
 			var prevFrame = r.allocTarget("prevFrame", false, 1.0, output.format);
 			var curFrame = r.allocTarget("curFrame", false, 1.0, output.format);
 			h3d.pass.Copy.run(output, curFrame);
@@ -202,8 +204,9 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 
 			h3d.pass.Copy.run(output, prevFrame);
 			s.prevCamMat.load(curMatNoJitter);
-			r.ctx.camera.m.load(curMatNoJitter);
-			@:privateAccess r.ctx.camera.needInv = true;
+
+			// Remove Jitter for effects post TAA
+			r.ctx.camera.update();
 		}
 	}
 

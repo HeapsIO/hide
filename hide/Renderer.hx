@@ -159,14 +159,15 @@ class PbrRenderer extends h3d.scene.pbr.Renderer {
 	override function end() {
 		switch( currentStep ) {
 		case MainDraw:
+		case AfterTonemapping:
 			var outlineTex = allocTarget("outline", false);
-			setTarget(outlineTex);
+			ctx.engine.pushTarget(outlineTex);
 			clear(0);
 			draw("highlight");
+			ctx.engine.popTarget();
 			var outlineBlurTex = allocTarget("outlineBlur", false);
 			outlineBlur.apply(ctx, outlineTex, outlineBlurTex);
 			outline.shader.texture = outlineBlurTex;
-		case AfterTonemapping:
 			outline.render();
 			renderPass(defaultPass, get("debuggeom"), backToFront);
 			renderPass(defaultPass, get("debuggeom_alpha"), backToFront);
