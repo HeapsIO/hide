@@ -65,6 +65,9 @@ class Light extends Object3D {
 	public var minDist : Float = -1;
 	public var autoShrink : Bool = true;
 
+	// Debug
+	public var debugDisplay : Bool = true;
+
 	static function getShadowsDefault() : LightShadows {
 		return {
 			mode : None,
@@ -99,6 +102,7 @@ class Light extends Object3D {
 		obj.maxDist = maxDist;
 		obj.minDist = minDist;
 		obj.autoShrink = autoShrink;
+		obj.debugDisplay = debugDisplay;
 
 		if( shadows.mode != None ) {
 			obj.shadows = Reflect.copy(shadows);
@@ -123,6 +127,7 @@ class Light extends Object3D {
 		if( obj.maxDist != null ) maxDist = obj.maxDist;
 		if( obj.minDist != null ) minDist = obj.minDist;
 		if( obj.autoShrink != null ) autoShrink = obj.autoShrink;
+		if( obj.debugDisplay =! null ) debugDisplay = obj.debugDisplay;
 
 		if( obj.shadows != null ) {
 			var sh : Dynamic = Reflect.copy(obj.shadows);
@@ -390,9 +395,9 @@ class Light extends Object3D {
 		var isSelected = false;
 		if(sel != null){
 			isSelected = sel.visible;
-			if( debugPoint != null ) debugPoint.visible = isSelected || ctx.shared.editorDisplay;
-			if( debugDir != null ) debugDir.visible = isSelected || ctx.shared.editorDisplay;
-			if( debugSpot != null ) debugSpot.visible = isSelected || ctx.shared.editorDisplay;
+			if( debugPoint != null ) debugPoint.visible = (isSelected || ctx.shared.editorDisplay) && debugDisplay;
+			if( debugDir != null ) debugDir.visible = (isSelected || ctx.shared.editorDisplay) && debugDisplay;
+			if( debugSpot != null ) debugSpot.visible = (isSelected || ctx.shared.editorDisplay) && debugDisplay;
 			sel.name = "__selection";
 		}
 
@@ -426,6 +431,7 @@ class Light extends Object3D {
 		var group = new hide.Element('
 			<div class="group" name="Light">
 				<dl>
+					<dt>Debug Display</dt><dd><input type="checkbox" field="debugDisplay"/></dd>
 					<dt>Main Light</dt><dd><input type="checkbox" field="isMainLight"/></dd>
 					<dt>Kind</dt><dd>
 						<select field="kind">
