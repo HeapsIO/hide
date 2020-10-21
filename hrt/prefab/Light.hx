@@ -127,7 +127,7 @@ class Light extends Object3D {
 		if( obj.maxDist != null ) maxDist = obj.maxDist;
 		if( obj.minDist != null ) minDist = obj.minDist;
 		if( obj.autoShrink != null ) autoShrink = obj.autoShrink;
-		if( obj.debugDisplay =! null ) debugDisplay = obj.debugDisplay;
+		if( obj.debugDisplay != null ) debugDisplay = obj.debugDisplay;
 
 		if( obj.shadows != null ) {
 			var sh : Dynamic = Reflect.copy(obj.shadows);
