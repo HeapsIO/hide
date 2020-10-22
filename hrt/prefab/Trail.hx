@@ -23,7 +23,7 @@ class Trail extends Object3D {
 	public function create( ?parent : h3d.scene.Object ) {
 		var tr = new h3d.scene.Trail(parent);
 		tr.load(data);
-		applyPos(tr);
+		applyTransform(tr);
 		tr.name = name;
 		return tr;
 	}
@@ -43,7 +43,7 @@ class Trail extends Object3D {
 
 	override public function edit(ctx:EditContext) {
 		super.edit(ctx);
-		
+
 		var trailContext = ctx.getContext(this);
 		var trail = trailContext == null ? create(null) : Std.downcast(trailContext.local3d, h3d.scene.Trail);
 		var props = ctx.properties.add(new hide.Element('

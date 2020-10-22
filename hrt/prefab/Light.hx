@@ -150,8 +150,8 @@ class Light extends Object3D {
 			shadows = getShadowsDefault();
 	}
 
-	override function applyPos( o : h3d.scene.Object ) {
-		//super.applyPos(o); // Disable scaling
+	override function applyTransform( o : h3d.scene.Object ) {
+		//super.applyTransform(o); // Disable scaling
 		o.x = x;
 		o.y = y;
 		o.z = z;

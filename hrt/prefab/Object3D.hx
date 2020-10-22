@@ -103,7 +103,7 @@ class Object3D extends Prefab {
 		return m;
 	}
 
-	public function applyPos( o : h3d.scene.Object ) {
+	public function applyTransform( o : h3d.scene.Object ) {
 		o.x = x;
 		o.y = y;
 		o.z = z;
@@ -115,7 +115,7 @@ class Object3D extends Prefab {
 
 	override function updateInstance( ctx: Context, ?propName : String ) {
 		var o = ctx.local3d;
-		applyPos(o);
+		applyTransform(o);
 		o.visible = visible;
 	}
 

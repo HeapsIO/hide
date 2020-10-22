@@ -76,7 +76,7 @@ class Object2D extends Prefab {
 		return m;
 	}
 
-	public function applyPos( o : h2d.Object ) {
+	public function applyTransform( o : h2d.Object ) {
 		o.x = x;
 		o.y = y;
 		o.scaleX = scaleX;
