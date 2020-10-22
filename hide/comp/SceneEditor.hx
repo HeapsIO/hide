@@ -946,7 +946,7 @@ class SceneEditor {
 						obj3d.scaleY = quantize(scaleSnap(s.y), scaleQuant);
 						obj3d.scaleZ = quantize(scaleSnap(s.z), scaleQuant);
 					}
-					obj3d.applyPos(sceneObjs[i]);
+					obj3d.applyTransform(sceneObjs[i]);
 				}
 			}
 
@@ -957,14 +957,14 @@ class SceneEditor {
 					if( undo ) {
 						for(i in 0...objects3d.length) {
 							objects3d[i].loadTransform(prevState[i]);
-							objects3d[i].applyPos(sceneObjs[i]);
+							objects3d[i].applyTransform(sceneObjs[i]);
 						}
 						refreshProps();
 					}
 					else {
 						for(i in 0...objects3d.length) {
 							objects3d[i].loadTransform(newState[i]);
-							objects3d[i].applyPos(sceneObjs[i]);
+							objects3d[i].applyTransform(sceneObjs[i]);
 						}
 						refreshProps();
 					}
@@ -1038,7 +1038,7 @@ class SceneEditor {
 					sceneObjs[i].parent.globalToLocal(pt);
 					obj.x = quantize(pt.x, posQuant);
 					obj.y = quantize(pt.y, posQuant);
-					obj.applyPos(sceneObjs[i]);
+					obj.applyTransform(sceneObjs[i]);
 				}
 			};
 			gizmo2d.onFinishMove = function() {
@@ -1048,14 +1048,14 @@ class SceneEditor {
 					if( undo ) {
 						for(i in 0...objects2d.length) {
 							objects2d[i].loadTransform(prevState[i]);
-							objects2d[i].applyPos(sceneObjs[i]);
+							objects2d[i].applyTransform(sceneObjs[i]);
 						}
 						refreshProps();
 					}
 					else {
 						for(i in 0...objects2d.length) {
 							objects2d[i].loadTransform(newState[i]);
-							objects2d[i].applyPos(sceneObjs[i]);
+							objects2d[i].applyTransform(sceneObjs[i]);
 						}
 						refreshProps();
 					}
