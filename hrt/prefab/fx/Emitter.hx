@@ -555,6 +555,7 @@ class EmitterObject extends h3d.scene.Object {
 	static var tmpScale = new h3d.Vector();
 	static var tmpMat = new h3d.Matrix();
 	static var tmpMat2 = new h3d.Matrix();
+	static var tmpPt = new h3d.col.Point();
 	function doEmit( count : Int ) {
 		if( count == 0 )
 			return;
@@ -648,9 +649,9 @@ class EmitterObject extends h3d.scene.Object {
 					part.setRotation(tmpQuat);
 					part.orientation.load(tmpQuat);
 				case World:
-					tmpVec.load(tmpOffset);
-					localToGlobal(tmpVec);
-					part.setPosition(tmpVec.x, tmpVec.y, tmpVec.z);
+					tmpPt.set(tmpOffset.x, tmpOffset.y, tmpOffset.z);
+					localToGlobal(tmpPt);
+					part.setPosition(tmpPt.x, tmpPt.y, tmpPt.z);
 					if(emitterQuat == null) {
 						emitterQuat = tmpEmitterQuat;
 						tmpMat.load(getAbsPos());

@@ -361,7 +361,7 @@ class SplineEditor {
 			var gizmo = new hide.view.l3d.Gizmo(editContext.scene);
 			gizmo.getRotationQuat().identity();
 			gizmo.visible = true;
-			var worldPos = ctx.local3d.localToGlobal(new h3d.Vector(sp.x, sp.y, sp.z));
+			var worldPos = ctx.local3d.localToGlobal(new h3d.col.Point(sp.x, sp.y, sp.z));
 			gizmo.setPosition(worldPos.x, worldPos.y, worldPos.z);
 			@:privateAccess sceneEditor.updates.push( gizmo.update );
 			gizmos.insert(gizmos.length, gizmo);

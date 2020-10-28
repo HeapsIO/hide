@@ -81,7 +81,7 @@ class VolumetricMesh extends h3d.scene.Mesh {
 	}
 
 	public function getProbePosition(coords : h3d.col.IPoint){
-		var probePos : h3d.Vector = new h3d.Vector( coords.x/(probeCount.x - 1),  coords.y/(probeCount.y - 1), coords.z/(probeCount.z - 1));
+		var probePos = new h3d.col.Point( coords.x/(probeCount.x - 1),  coords.y/(probeCount.y - 1), coords.z/(probeCount.z - 1));
 		localToGlobal(probePos);
 		return probePos;
 	}
@@ -168,7 +168,7 @@ class VolumetricMesh extends h3d.scene.Mesh {
 		return result;
 	}
 
-	public function isInsideVolume(worldPos: h3d.Vector) : Bool {
+	public function isInsideVolume(worldPos: h3d.col.Point) : Bool {
 		var localPos = worldPos.clone();
 		globalToLocal(localPos);
 		return (localPos.x >= 0 && localPos.y >= 0 && localPos.z >= 0 && localPos.x <= 1 && localPos.y <= 1 && localPos.z <= 1);

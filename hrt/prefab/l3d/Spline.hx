@@ -420,7 +420,7 @@ class Spline extends Object3D {
 		lineGraphics.clear();
 		var b = true;
 		for( s in data.samples ) {
-			var localPos = ctx.local3d.globalToLocal(s.pos.toVector());
+			var localPos = ctx.local3d.globalToLocal(s.pos);
 			b ? lineGraphics.moveTo(localPos.x, localPos.y, localPos.z) : lineGraphics.lineTo(localPos.x, localPos.y, localPos.z);
 			b = false;
 		}

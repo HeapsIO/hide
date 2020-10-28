@@ -182,7 +182,7 @@ class LightProbeBaker {
 			// Bake a Probe
 			for( f in 0...6 ) {
 				engine.begin();
-				customCamera.setCubeMap(f, volumetricLightMap.getProbePosition(coords));
+				customCamera.setCubeMap(f, volumetricLightMap.getProbePosition(coords).toVector());
 				customCamera.update();
 				engine.pushTarget(envMap, f);
 				engine.clear(0,1,0);

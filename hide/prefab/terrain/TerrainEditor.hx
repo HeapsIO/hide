@@ -51,7 +51,7 @@ class TerrainEditor {
 	var brushPreview : hide.prefab.terrain.Brush.BrushPreview;
 	var interactive : h2d.Interactive;
 	var remainingDist = 0.0;
-	var lastPos : h3d.Vector;
+	var lastPos : h3d.col.Point;
 	var lastMousePos : h2d.col.Point;
 	var lastBrushSize : Float;
 	var heightStrokeBufferArray : hide.prefab.terrain.StrokeBuffer.StrokeBufferArray;
@@ -64,7 +64,7 @@ class TerrainEditor {
 	var swapIndex = new h3d.pass.ScreenFx(new hide.prefab.terrain.SwapIndex());
 	var setHeight = new h3d.pass.ScreenFx(new hide.prefab.terrain.SetHeight());
 	var smoothHeight = new h3d.pass.ScreenFx(new hide.prefab.terrain.SmoothHeight());
-	// Revert 
+	// Revert
 	var terrainPrefab : hrt.prefab.terrain.Terrain;
 	var undo : hide.ui.UndoHistory;
 	var tileTrashBin : Array<TileRevertData> = [];
@@ -235,7 +235,7 @@ class TerrainEditor {
 					var adj = t.terrain.getTile(t.tileX + i, t.tileY + j);
 					if( adj != null && tiles.indexOf(adj) == -1 )
 						tiles.push(adj);
-				}	
+				}
 			}
 		}
 
@@ -252,7 +252,7 @@ class TerrainEditor {
 					pixels.setPixelF(t.heightMap.width - 1, i, adjpixels.getPixelF(0,i) );
 				}
 			}
-		
+
 			var adjTileY = t.terrain.getTile(t.tileX, t.tileY + 1);
 			var adjHeightMapY = adjTileY != null ? adjTileY.heightMap : null;
 			if( adjHeightMapY != null ) {
@@ -261,14 +261,14 @@ class TerrainEditor {
 					pixels.setPixelF(i, t.heightMap.height - 1, adjpixels.getPixelF(i,0) );
 				}
 			}
-		
+
 			var adjTileXY = t.terrain.getTile(t.tileX + 1, t.tileY + 1);
 			var adjHeightMapXY = adjTileXY != null ? adjTileXY.heightMap : null;
 			if( adjHeightMapXY != null ) {
 				var adjpixels : hxd.Pixels.PixelsFloat = adjTileXY.heightMapPixels;
 				pixels.setPixelF(t.heightMap.width - 1, t.heightMap.height - 1, adjpixels.getPixelF(0,0));
 			}
-			
+
 			t.heightMapPixels = pixels;
 			t.heightMap.uploadPixels(pixels);
 			t.needNewPixelCapture = false;
@@ -279,8 +279,8 @@ class TerrainEditor {
 			t.bakeNormal();
 			t.normalMapPixels = t.normalMap.capturePixels();
 		}
-		
-		// Compute the average normal on edge 
+
+		// Compute the average normal on edge
 		for( t in tiles ) {
 
 			var pixelsAfterBlend = t.normalMapPixels;
@@ -376,7 +376,7 @@ class TerrainEditor {
 			if( downRight != null ) n = n.add(getNormalFromHeightMap(downRight, 0, 0));
 			n.normalize();
 			pixelsAfterBlend.setPixel(width, height, packNormal(n));
-			
+
 			t.normalMap.uploadPixels(pixelsAfterBlend);
 			t.needNormalBake = false;
 		}
@@ -388,7 +388,7 @@ class TerrainEditor {
 	}
 
 	function applyStrokeBuffers() {
-		
+
 		var revertDatas = new Array<TileRevertData>();
 
 		for( strokeBuffer in heightStrokeBufferArray.strokeBuffers ) {
@@ -438,7 +438,7 @@ class TerrainEditor {
 					tile.heightMapPixels = undo ? revertData.prevHeightMapPixels : revertData.nextHeightMapPixels;
 				}
 				var tiles = [ for( rd in revertDatas ) { terrainPrefab.terrain.getTile(rd.x, rd.y); }];
-				blendEdges(tiles);	
+				blendEdges(tiles);
 			}));
 		}
 
@@ -597,7 +597,7 @@ class TerrainEditor {
 	}
 
 	function getBrushPlanePos( mouseX : Float, mouseY : Float, ctx : Context ) {
-		var worldPos = screenToWorld(mouseX, mouseY, ctx).toVector();
+		var worldPos = screenToWorld(mouseX, mouseY, ctx);
 		if( currentBrush.brushMode.snapToGrid ) {
 			var localPos = terrainPrefab.terrain.globalToLocal(worldPos.clone());
 			localPos.x = hxd.Math.round(localPos.x / terrainPrefab.terrain.cellSize.x) * terrainPrefab.terrain.cellSize.x;
@@ -608,10 +608,10 @@ class TerrainEditor {
 		return worldPos;
 	}
 
-	function getBrushWorldPosFromTex( worldPos : h3d.Vector, ctx : Context ) : h3d.Vector {
+	function getBrushWorldPosFromTex( worldPos : h3d.col.Point, ctx : Context ) : h3d.col.Point {
 		if(currentBrush.brushMode.snapToGrid) return worldPos;
 		var screenPos = worldToScreen(worldPos.x, worldPos.y, worldPos.z, ctx);
-		var brushWorldPos : h3d.Vector = worldPos.clone();
+		var brushWorldPos = worldPos.clone();
 		var fetchPos = new h2d.col.Point(hxd.Math.floor(screenPos.x * uvTexRes), hxd.Math.floor(screenPos.y * uvTexRes));
 		fetchPos.x = hxd.Math.clamp(fetchPos.x, 0, uvTexPixels.width - 1);
 		fetchPos.y = hxd.Math.clamp(fetchPos.y, 0, uvTexPixels.height - 1);
@@ -619,11 +619,11 @@ class TerrainEditor {
 		var tiles = terrainPrefab.terrain.tiles;
 		for( i in 0 ... tiles.length )
 			if( hxd.Math.ceil(pixel.z) == i )
-				brushWorldPos = tiles[i].localToGlobal(new h3d.Vector(pixel.x * terrainPrefab.tileSizeX, pixel.y * terrainPrefab.tileSizeY, 0));
+				brushWorldPos = tiles[i].localToGlobal(new h3d.col.Point(pixel.x * terrainPrefab.tileSizeX, pixel.y * terrainPrefab.tileSizeY, 0));
 		return brushWorldPos;
 	}
 
-	function drawBrushPreview( worldPos : h3d.Vector, ctx : Context ) {
+	function drawBrushPreview( worldPos : h3d.col.Point, ctx : Context ) {
 		if( ctx == null || ctx.local3d == null || ctx.local3d.getScene() == null ) return;
 		brushPreview.reset();
 		if( currentBrush.brushMode.mode == Delete || currentBrush.bitmap == null ) return;
@@ -631,7 +631,7 @@ class TerrainEditor {
 		brushPreview.previewAt(currentBrush, brushWorldPos);
 	}
 
-	function applyBrush( pos : h3d.Vector, ctx : Context ) {
+	function applyBrush( pos : h3d.col.Point, ctx : Context ) {
 		switch ( currentBrush.brushMode.mode ) {
 			case Paint: drawSurface(pos, ctx);
 			case AddSub: drawHeight(pos, ctx);
@@ -643,7 +643,7 @@ class TerrainEditor {
 		terrainPrefab.modified = true;
 	}
 
-	function useBrush( from : h3d.Vector, to : h3d.Vector, ctx : Context ) {
+	function useBrush( from : h3d.col.Point, to : h3d.col.Point, ctx : Context ) {
 		var dist = (to.sub(from)).length();
 		if( currentBrush.firstClick ) {
 			if( currentBrush.brushMode.mode == Set ) {
@@ -665,11 +665,11 @@ class TerrainEditor {
 			dir.normalize();
 			var pos = from.clone();
 			var step = dir.clone();
-			step.scale3(currentBrush.step);
+			step.scale(currentBrush.step);
 			while( dist + remainingDist >= currentBrush.step ) {
 				if( remainingDist > 0 ) {
 					var firstStep = dir.clone();
-					firstStep.scale3(currentBrush.step - remainingDist);
+					firstStep.scale(currentBrush.step - remainingDist);
 					pos = pos.add(firstStep);
 				}else
 					pos = pos.add(step);
@@ -683,7 +683,7 @@ class TerrainEditor {
 			remainingDist += dist;
 	}
 
-	public function deleteTile( pos : h3d.Vector, ctx : Context ) {
+	public function deleteTile( pos : h3d.col.Point, ctx : Context ) {
 		var brushWorldPos = uvTexPixels == null ? pos : getBrushWorldPosFromTex(pos, ctx);
 		if( brushWorldPos == null ) return;
 		var tile = terrainPrefab.terrain.getTileAtWorldPos(brushWorldPos.x, brushWorldPos.y);
@@ -698,7 +698,7 @@ class TerrainEditor {
 		renderTerrainUV(ctx);
 	}
 
-	public function drawSurface( pos : h3d.Vector, ctx : Context ) {
+	public function drawSurface( pos : h3d.col.Point, ctx : Context ) {
 		if( currentBrush.index == -1 ) return;
 		var brushWorldPos = uvTexPixels == null ? pos : getBrushWorldPosFromTex(pos, ctx);
 		if( brushWorldPos == null ) return;
@@ -735,7 +735,7 @@ class TerrainEditor {
 		}
 	}
 
-	public function drawHeight( pos : h3d.Vector, ctx : Context ) {
+	public function drawHeight( pos : h3d.col.Point, ctx : Context ) {
 		var brushWorldPos = uvTexPixels == null ? pos : getBrushWorldPosFromTex(pos, ctx);
 		if( brushWorldPos == null ) return;
 		var c = terrainPrefab.terrain.tiles.length;
@@ -781,7 +781,7 @@ class TerrainEditor {
 	public function setSelected( ctx : Context, b : Bool ) {
 		if( b ) {
 			var s2d = @:privateAccess ctx.local2d.getScene();
-			if( interactive == null ) 
+			if( interactive == null )
 				interactive.remove();
 			interactive = new h2d.Interactive(10000, 10000, s2d);
 			interactive.propagateEvents = true;

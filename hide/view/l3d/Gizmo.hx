@@ -245,7 +245,7 @@ class Gizmo extends h3d.scene.Object {
 		gizmo.setScale(ratio * distToCam * Math.tan(cam.fovY * 0.5 * Math.PI / 180.0));
 
 		if( !moving ) {
-			var dir = cam.pos.sub(gpos);
+			var dir = cam.pos.sub(gpos).toPoint();
 			dir = gizmo.globalToLocal(dir);
 			gizmo.getObjectByName("xAxis").setRotation(0, 0, dir.x < 0 ? Math.PI : 0);
 			gizmo.getObjectByName("yAxis").setRotation(0, 0, dir.y < 0 ? Math.PI : 0);

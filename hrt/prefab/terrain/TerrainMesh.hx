@@ -57,8 +57,8 @@ class TerrainMesh extends h3d.scene.Object {
 	public function getHeight( x : Float, y : Float, fast = false) : Null<Float> {
 		var t = getTileAtWorldPos(x, y);
 		if( t != null ) {
-			tmpVec.set(x, y);
-			var pos = t.globalToLocal(tmpVec);
+			tmpPt.set(x, y);
+			var pos = t.globalToLocal(tmpPt);
 			return t.getHeight(pos.x / tileSize.x, pos.y / tileSize.y, fast);
 		}
 		return null;
@@ -285,11 +285,11 @@ class TerrainMesh extends h3d.scene.Object {
 		return result;
 	}
 
-	static var tmpVec = new h3d.Vector();
+	static var tmpPt = new h3d.col.Point();
 	inline function toLocalPos( x : Float, y : Float ) {
-		tmpVec.set(x, y);
-		globalToLocal(tmpVec);
-		return tmpVec;
+		tmpPt.set(x, y);
+		globalToLocal(tmpPt);
+		return tmpPt;
 	}
 }
 

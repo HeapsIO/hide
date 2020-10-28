@@ -744,9 +744,9 @@ class SceneEditor {
 			if(e.button == K.MOUSE_RIGHT) {
 				var dist = hxd.Math.distance(scene.s2d.mouseX - lastPush[0], scene.s2d.mouseY - lastPush[1]);
 				if( dist > 5 ) return;
-				var pt = new h3d.Vector(e.relX,e.relY,e.relZ);
+				var pt = new h3d.col.Point(e.relX,e.relY,e.relZ);
 				if( i3d != null ) i3d.localToGlobal(pt);
-				selectNewObject(pt.toPoint());
+				selectNewObject(pt);
 				e.propagate = false;
 				return;
 			}
@@ -2499,13 +2499,13 @@ class SceneEditor {
 
 	static function getPivot(objects: Array<Object>) {
 		if (customPivot != null) {
-			return customPivot.mesh.localToGlobal(customPivot.locPos.clone());
+			return customPivot.mesh.localToGlobal(customPivot.locPos.toPoint());
 		}
-		var pos = new h3d.Vector();
+		var pos = new h3d.col.Point();
 		for(o in objects) {
-			pos = pos.add(o.getAbsPos().getPosition());
+			pos = pos.add(o.getAbsPos().getPosition().toPoint());
 		}
-		pos.scale3(1.0 / objects.length);
+		pos.scale(1.0 / objects.length);
 		return pos;
 	}
 
