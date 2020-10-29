@@ -1,5 +1,4 @@
 package hrt.prefab;
-import hide.comp.CurveEditor;
 using Lambda;
 
 class CurveHandle {
@@ -271,7 +270,7 @@ class Curve extends Prefab {
 			ctx.onChange(this, pname);
 		});
 
-		var ce = new CurveEditor(ctx.properties.undo, ctx.properties.element);
+		var ce = new hide.comp.CurveEditor(ctx.properties.undo, ctx.properties.element);
 		ce.curve = this;
 	}
 
