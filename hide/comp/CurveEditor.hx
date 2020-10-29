@@ -286,14 +286,14 @@ class CurveEditor extends Component {
 	}
 
 	public function setYZoom(yMin: Float, yMax: Float) {
-		var margin = 20;
-		yScale = (height - margin*2) / (yMax - yMin);
-		yOffset = (yMax + yMin) / 2.0;
+		var margin = 20.0;
+		yScale = (height - margin * 2.0) / (yMax - yMin);
+		yOffset = (yMax + yMin) * 0.5;
 	}
 
 	public function setXZoom(xMin: Float, xMax: Float) {
-		var margin = 20;
-		xScale = (width - margin*2) / (xMax - xMin);
+		var margin = 10.0;
+		xScale = (width - margin * 2.0) / (xMax - xMin);
 		xOffset = xMin;
 	}
 
@@ -317,7 +317,7 @@ class CurveEditor extends Component {
 			setYZoom(bounds.yMin, bounds.yMax);
 		}
 		if(!lockViewX) {
-			setYZoom(bounds.xMax, bounds.xMax);
+			setXZoom(bounds.xMin, bounds.xMax);
 		}
 		saveView();
 	}
