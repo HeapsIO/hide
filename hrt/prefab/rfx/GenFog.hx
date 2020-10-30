@@ -154,6 +154,7 @@ class GenFog extends RendererFX {
 			}
 
 			// TAA Support
+			fogPass.shader.TAA_UNJITTER = false;
 			for( e in r.effects ) {
 				var taa = Std.downcast(e, hrt.prefab.rfx.TemporalFiltering);
 				if( taa != null ) {
