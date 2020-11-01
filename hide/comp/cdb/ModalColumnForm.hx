@@ -184,7 +184,8 @@ class ModalColumnForm extends Modal {
 		} else {
 			form.addClass("create");
 			form.find("input").not("[type=submit]").val("");
-			form.find("[name=req]").prop("checked", true);
+			var isProp = sheet.parent != null && sheet.parent.sheet.columns[sheet.parent.column].type == TProperties;
+			form.find("[name=req]").prop("checked", !isProp);
 			form.find("[name=kind]").val("");
 		}
 
