@@ -564,6 +564,12 @@ class Editor extends Component {
 					cursor.table = t;
 			cursor.update();
 		}
+
+		if( currentFilter != null ) {
+			updateFilter();
+			searchBox.show();
+			txt.val(currentFilter);
+		}
 	}
 
 	function quickExists(path) {
