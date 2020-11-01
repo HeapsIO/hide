@@ -79,6 +79,20 @@ class Cursor {
 			return;
 		}
 
+		// enter/leave subtable
+		if( dx == 0 && !shift && !ctrl ) {
+			var c = getCell();
+			if( c != null && dy == 1 && c.line.subTable != null && c.line.subTable.cell == c ) {
+				set(c.line.subTable);
+				return;
+			}
+			var st = Std.downcast(table, SubTable);
+			if( c != null && dy == -1 && st != null && c.line.index == 0 ) {
+				set(st.parent, st.cell.columnIndex, st.cell.line.index);
+				return;
+			}
+		}
+
 		// take care of current filter
 		var line = getLine();
 		if( line != null && dy != 0 ) {
