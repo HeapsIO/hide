@@ -95,7 +95,9 @@ class View<T> extends hide.comp.Component {
 
 	function isKeysLocked( e : js.jquery.Event ) {
 		var active = js.Browser.document.activeElement;
-		if( active == null || e.altKey || e.ctrlKey )
+		if( active == null || e.altKey )
+			return false;
+		if( e.ctrlKey && e.keyCode != "A".code && e.keyCode != "C".code && e.keyCode != "V".code && e.keyCode != "X".code )
 			return false;
 		if( active.nodeName == "TEXTAREA" )
 			return true;
