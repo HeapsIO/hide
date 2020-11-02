@@ -104,6 +104,32 @@ class Polygon extends Object3D {
 		return col.rayIntersection(ray, true);
 	}
 
+	public function getPolygonBounds() : h2d.col.Polygon {
+		return switch( shape ) {
+		case Quad:
+			[
+				new Point(-0.5, -0.5),
+				new Point(0.5, -0.5),
+				new Point(0.5,  0.5),
+				new Point(-0.5,  0.5)
+			];
+		case Disc(segments, angle, _):
+			if(angle >= 360)
+				angle = 360;
+			++segments;
+			var anglerad = hxd.Math.degToRad(angle);
+			[for(i in 0...segments) {
+				var t = i / (segments - 1);
+				var a = hxd.Math.lerp(-anglerad/2, anglerad/2, t);
+				var ct = hxd.Math.cos(a);
+				var st = hxd.Math.sin(a);
+				new Point(ct, st);
+			}];
+		case Custom:
+			[for( p in points ) p.clone()];
+		};
+	}
+
 	public static function createPrimitive( shape : Shape ) {
 		var uvs : Array<Point> = null;
 		var points : Array<Point> = null;
