@@ -183,7 +183,8 @@ class HeightMapTile {
 			model = mesh.resolveAssetModel(name);
 			return model != null;
 		},function(pos) {
-			@:privateAccess mesh.world.addTransform(model, pos);
+			if( !mesh.isAssetFiltered(model,pos) )
+				@:privateAccess mesh.world.addTransform(model, pos);
 		});
 	}
 
@@ -289,6 +290,10 @@ class HeightMapMesh extends h3d.scene.Object {
 	}
 
 	public dynamic function onTileReady( t : HeightMapTile ) {
+	}
+
+	public dynamic function isAssetFiltered( obj : h3d.scene.World.WorldModel, pos : h3d.Matrix ) {
+		return false;
 	}
 
 	function checkTile( ctx : h3d.scene.RenderContext, x : Int, y : Int ) {
