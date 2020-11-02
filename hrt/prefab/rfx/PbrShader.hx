@@ -23,21 +23,16 @@ class PbrShader extends h3d.shader.ScreenShader {
 			var time : Float;
 		};
 
-		// TAA Support
-		@const var TAA_UNJITTER = false;
-		@param var uvJitter : Vec2;
-		@param var inverseViewProjNoJitter : Mat4;
-
 		function getPositionAt( uv: Vec2 ) : Vec3 {
 			var depth = depthMap.get(uv);
 			var uv2 = uvToScreen(uv);
-			var temp = vec4(uv2, depth, 1) * (TAA_UNJITTER ? inverseViewProjNoJitter : camera.inverseViewProj);
+			var temp = vec4(uv2, depth, 1) * camera.inverseViewProj;
 			var originWS = temp.xyz / temp.w;
 			return originWS;
 		}
 
 		function getPosition() : Vec3 {
-			return getPositionAt(TAA_UNJITTER ? calculatedUV - uvJitter : calculatedUV);
+			return getPositionAt(calculatedUV);
 		}
 
 	};

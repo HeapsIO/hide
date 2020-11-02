@@ -88,7 +88,7 @@ class TemporalFilteringShader extends h3d.shader.ScreenShader {
 		function fragment() {
 			var unJitteredUV = calculatedUV;
 			if( UNJITTER )
-				unJitteredUV -= jitterUV;
+				unJitteredUV -= jitterUV * 0.5;
 
 			var curPos = getPixelPosition(calculatedUV);
 			var prevPos = vec4(curPos, 1.0) * prevCamMat;
@@ -123,9 +123,7 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 	public var frustumJitter = new FrustumJitter();
 	public var pass = new h3d.pass.ScreenFx(new TemporalFilteringShader());
 	public var jitterMat = new h3d.Matrix();
-
-	public var curMatNoJitter = new h3d.Matrix();
-	public var curMatJitter = new h3d.Matrix();
+	var curMatNoJitter = new h3d.Matrix();
 
 	public function new(?parent) {
 		super(parent);
@@ -162,12 +160,11 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 			jitterMat.identity();
 			jitterMat.translate(frustumJitter.curSample.x / ctx.engine.width, frustumJitter.curSample.y / ctx.engine.height);
 
-			s.prevJitterUV.set(s.jitterUV.x, s.jitterUV.y);
-			s.jitterUV.set(-frustumJitter.curSample.x / ctx.engine.width * 0.5, frustumJitter.curSample.y / ctx.engine.height * 0.5);
+			s.prevJitterUV.set(-frustumJitter.prevSample.x / ctx.engine.width, frustumJitter.prevSample.y / ctx.engine.height);
+			s.jitterUV.set(-frustumJitter.curSample.x / ctx.engine.width, frustumJitter.curSample.y / ctx.engine.height);
 
 			curMatNoJitter.load(ctx.camera.m);
-			curMatJitter.multiply(curMatNoJitter, jitterMat);
-			ctx.camera.m.load(curMatJitter);
+			ctx.camera.m.load(getMatrixJittered(ctx.camera));
 			@:privateAccess ctx.camera.needInv = true;
 			s.cameraInverseViewProj.initInverse(curMatNoJitter);
 		}

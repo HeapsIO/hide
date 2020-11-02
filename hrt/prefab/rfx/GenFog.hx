@@ -153,17 +153,6 @@ class GenFog extends RendererFX {
 				fogPass.shader.noiseAmount.set(p.noise.amount * p.noise.distAmount, p.noise.amount * p.noise.distAmount, p.noise.amount);
 			}
 
-			// TAA Support
-			fogPass.shader.TAA_UNJITTER = false;
-			for( e in r.effects ) {
-				var taa = Std.downcast(e, hrt.prefab.rfx.TemporalFiltering);
-				if( taa != null ) {
-					fogPass.shader.TAA_UNJITTER = true;
-					fogPass.shader.uvJitter.load(taa.pass.shader.jitterUV);
-					fogPass.shader.inverseViewProjNoJitter.initInverse(taa.curMatJitter);
-					break;
-				}
-			}
 
 			fogPass.setGlobals(ctx);
 			fogPass.render();
