@@ -80,7 +80,7 @@ class Reference extends Object3D {
 			ctx = super.makeInstance(ctx);
 			ctx.isRef = true;
 			var prevPath = ctx.shared.currentPath;
-			ctx.shared.currentPath = refpath;
+			ctx.shared.currentPath = refpath.substr(1);
 			p.make(ctx);
 			ctx.shared.currentPath = prevPath;
 
