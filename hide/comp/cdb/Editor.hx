@@ -19,6 +19,10 @@ typedef EditorApi = {
 	function save() : Void;
 }
 
+typedef EditorColumnProps = {
+	var ?formula : String;
+}
+
 @:allow(hide.comp.cdb)
 class Editor extends Component {
 
@@ -377,11 +381,12 @@ class Editor extends Component {
 	public function changeObject( line : Line, column : cdb.Data.Column, value : Dynamic ) {
 		beginChanges();
 		var prev = Reflect.field(line.obj, column.name);
-		if( value == null )
-			Reflect.deleteField(line.obj, column.name);
-		else
+		if( value == null ) {
+			formulas.setForValue(line.obj, line.table.sheet, column, null);
+		} else {
 			Reflect.setField(line.obj, column.name, value);
-		formulas.removeFromValue(line.obj, column);
+			formulas.removeFromValue(line.obj, column);
+		}
 		line.table.getRealSheet().updateValue(column, line.index, prev);
 		line.evaluate(); // propagate
 		endChanges();
@@ -628,10 +633,16 @@ class Editor extends Component {
 		return null;
 	}
 
+	public function getColumnProps( c : cdb.Data.Column ) {
+		var pr : EditorColumnProps = c.editor;
+		if( pr == null ) pr = {};
+		return pr;
+	}
+
 	public function newColumn( sheet : cdb.Sheet, ?index : Int, ?onDone : cdb.Data.Column -> Void, ?col ) {
-		var modal = new hide.comp.cdb.ModalColumnForm(base, sheet, col, element);
+		var modal = new hide.comp.cdb.ModalColumnForm(this, sheet, col, element);
 		modal.setCallback(function() {
-			var c = modal.getColumn(base, sheet, col);
+			var c = modal.getColumn(col);
 			if (c == null)
 				return;
 			beginChanges();

@@ -6,11 +6,16 @@ class ModalColumnForm extends Modal {
 
 	var contentModal : Element;
 	var form : Element;
+	var editor : Editor;
+	var sheet : cdb.Sheet;
 
-	public function new(base : cdb.Database, sheet : cdb.Sheet, column : cdb.Data.Column, ?parent,?el) {
+	public function new( editor : Editor, sheet : cdb.Sheet, column : cdb.Data.Column, ?parent,?el) {
 		super(parent,el);
 
 		var editForm = (column != null);
+		var base = editor.base;
+		this.editor = editor;
+		this.sheet = sheet;
 
 		contentModal = new Element("<div tabindex='0'>").addClass("content-modal").appendTo(content);
 
@@ -96,9 +101,25 @@ class ModalColumnForm extends Modal {
 					</select>
 				</tr>
 
+				<tr class="formula hide">
+					<td>Formula</td>
+					<td>
+						<select name="formula">
+						<option value="">None</option>
+						</select>
+					</td>
+				</tr>
+
 				<tr class="doc hide">
-					<td><a href="#" id="doctog">[+]</a><span>Documentation</span>
+					<td>Documentation
 					<td><textarea name="doc"></textarea>
+				</tr>
+
+				<tr class="more">
+					<td>
+						<a href="#" class="doctog can-hide">[+]</a>
+						<a href="#" class="doctog hide">[-]</a>
+					</td>
 				</tr>
 
 				<tr class="opt">
@@ -155,8 +176,13 @@ class ModalColumnForm extends Modal {
 		for( t in base.getCustomTypes() )
 			new Element("<option>").attr("value", "" + t.name).text(t.name).appendTo(ctypes);
 
-		form.find("#doctog").click(function(_) {
-			form.find(".doc").toggleClass("hide");
+		var cforms = form.find("[name=formula]");
+		for( f in editor.formulas.getList(sheet) )
+			new Element("<option>").attr("value", f.name).text(f.name).appendTo(cforms);
+
+		form.find(".hide").addClass("can-hide");
+		form.find(".doctog").click(function(_) {
+			form.find(".can-hide").toggleClass("hide");
 		});
 
 		if (editForm) {
@@ -179,6 +205,9 @@ class ModalColumnForm extends Modal {
 				form.find("[name=sheet]").val( "" + index);
 			case TCustom(name):
 				form.find("[name=ctype]").val(name);
+			case TInt, TFloat:
+				var f = editor.getColumnProps(column).formula;
+				form.find("[name=formula]").val( f == null ? "" : f );
 			default:
 			}
 		} else {
@@ -208,8 +237,8 @@ class ModalColumnForm extends Modal {
 		close();
 	}
 
-	public function getColumn(base : cdb.Database, sheet : cdb.Sheet, refColumn : cdb.Data.Column) : Column{
-
+	public function getColumn( refColumn : cdb.Data.Column) : Column{
+		var base = editor.base;
 		var v : Dynamic<String> = { };
 		var cols = form.find("input, select, textarea").not("[type=submit]");
 		for( i in cols.elements() )
@@ -286,8 +315,23 @@ class ModalColumnForm extends Modal {
 		case "localizable": c.kind = Localizable;
 		case "script": c.kind = Script;
 		}
+		var props = editor.getColumnProps(c);
+		switch( t ) {
+		case TFloat, TInt:
+			props.formula = form.find("[name=formula]").val();
+			if( props.formula == "" ) props.formula = null;
+		default:
+		}
 		if( t == TId && v.scope != "" ) c.scope = Std.parseInt(v.scope);
 		if( v.doc != "" ) c.documentation = v.doc;
+
+		var hasProp = false;
+		for( f in Reflect.fields(props) )
+			if( Reflect.field(props,f) == null )
+				Reflect.deleteField(props, f);
+			else
+				hasProp = true;
+		c.editor = hasProp ? props : js.Lib.undefined;
 		return c;
 	}
 

@@ -246,13 +246,13 @@
 		td.t_int.zero, td.t_float.zero {
 			color: #888;
 		}
+		td.nan {
+			color : #C44;
+		}
 
 		td.formula {
 			font-style : italic;
 			color : #888;
-			&.error {
-				color : #C44;
-			}
 		}
 
 		td.t_list, td.t_properties {
@@ -455,8 +455,12 @@
 			td.first {
 				width : 120px;
 			}
+			.formula {
+				display: none;
+			}
 			.t_int, .t_float {
 				.disp { display : table-row; }
+				.formula { display: table-row; }
 			}
 			.t_string {
 				.kind { display : table-row; }
@@ -467,14 +471,12 @@
 			.t_custom .custom { display : table-row; }
 			.t_id .scope { display : table-row; }
 			.values, .sheet, .custom, .disp, .kind, .scope { display : none; }
-			#doctog {
+			.doctog {
 				cursor:pointer;
 				color : #888;
 			}
-			.doc.hide {
-				span, textarea {
-					display: none;
-				}
+			.hide {
+				display: none !important;
 			}
 		}
 

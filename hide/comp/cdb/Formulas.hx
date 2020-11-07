@@ -32,18 +32,24 @@ class Formulas {
 			if( sheet != null && sheet != s ) continue;
 			var forms = fmap.get(s.name);
 			if( forms == null ) continue;
-			var columns = [for( c in s.columns ) if( c.type == TInt || c.type == TFloat ) c];
+			var columns = [];
+			for( c in s.columns )
+				if( c.type == TInt || c.type == TFloat ) {
+					var def = editor.getColumnProps(c).formula;
+					columns.push({ name : c.name, def : def, opt : c.opt });
+				}
 			for( o in s.getLines() ) {
 				for( c in columns ) {
-					var fname = Reflect.field(o,c.name+"__f");
+					var fname : String = Reflect.field(o,c.name+"__f");
+					if( fname == null ) fname = c.def;
 					if( fname == null ) continue;
-					var f = forms.get(fname);
-					if( f == null ) continue;
-					var v = try f.call(o) catch( e : Dynamic ) Math.NaN;
-					if( v == null )
+					var v = try forms.get(fname).call(o) catch( e : Dynamic ) Math.NaN;
+					if( v == null && c.opt )
 						Reflect.deleteField(o, c.name);
-					else
+					else {
+						if( v == null || !Std.is(v, Float) ) v = Math.NaN;
 						Reflect.setField(o, c.name, v);
+					}
 				}
 			}
 		}
@@ -99,30 +105,25 @@ class Formulas {
 		browseRec(expr);
 	}
 
-	public function getList( c : Cell ) : Array<Formula> {
-		var type = getTypeName(c.table.sheet);
+	public function getList( s : cdb.Sheet ) : Array<Formula> {
+		var type = getTypeName(s);
 		return [for( f in formulas ) if( f.type == type ) f];
 	}
 
 	public function get( c : Cell ) : Null<Formula> {
-		var f = Reflect.field(c.line.obj, c.column.name+"__f");
-		if( f == null )
-			return null;
 		var tmap = fmap.get(c.table.sheet.name);
 		if( tmap == null )
 			return null;
+		var f = Reflect.field(c.line.obj, c.column.name+"__f");
+		if( f == null && c.column.editor != null ) {
+			f = (c.column.editor:Editor.EditorColumnProps).formula;
+			if( f == null ) return null;
+		}
 		return tmap.get(f);
 	}
 
 	public function set( c : Cell, f : Formula ) {
-		var obj = c.line.obj;
-		var field = c.column.name+"__f";
-		if( f == null ) {
-			Reflect.deleteField(obj, field);
-			var def = c.table.editor.base.getDefault(c.column,c.table.sheet);
-			if( def == null ) Reflect.deleteField(obj, c.column.name) else Reflect.setField(obj, c.column.name, def);
-		} else
-			Reflect.setField(obj, field, f.name);
+		setForValue(c.line.obj, c.table.getRealSheet(), c.column, f == null ? null : f.name);
 	}
 
 	public inline function has(c:Cell) {
@@ -134,16 +135,20 @@ class Formulas {
 	}
 
 	public function setForValue( obj : Dynamic, sheet : cdb.Sheet, c : cdb.Data.Column, fname : String ) {
-		Reflect.setField(obj, c.name+"__f", fname);
-		Reflect.deleteField(obj, c.name);
-		var tmap = fmap.get(sheet.name);
-		if( tmap != null ) {
-			var f = tmap.get(fname);
-			if( f != null ) {
-				var v = f.call(obj);
-				if( v != null ) Reflect.setField(obj, c.name, v);
+		var field = c.name+"__f";
+		var fdef = editor.getColumnProps(c).formula;
+		if( fname != null && fdef == fname )
+			fname = null;
+		if( fname == null ) {
+			Reflect.deleteField(obj, field);
+			var def = editor.base.getDefault(c,sheet);
+			if( fdef != null ) {
+				var tmap = fmap.get(sheet.name);
+				def = try tmap.get(fdef).call(obj) catch( e : Dynamic ) Math.NaN;
 			}
-		}
+			if( def == null ) Reflect.deleteField(obj, c.name) else Reflect.setField(obj, c.name, def);
+		} else
+			Reflect.setField(obj, field, fname);
 	}
 
 	function getFormulaNameFromValue( obj : Dynamic, c : cdb.Data.Column ) {

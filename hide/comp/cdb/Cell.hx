@@ -94,7 +94,7 @@ class Cell extends Component {
 			}
 			var forms : Array<hide.comp.ContextMenu.ContextMenuItem>;
 			var current = editor.formulas.get(this);
-			forms = [for( f in editor.formulas.getList(this) ) { label : f.name, click : () -> if( f == current ) setF(null) else setF(f), checked : f == current }];
+			forms = [for( f in editor.formulas.getList(table.sheet) ) { label : f.name, click : () -> if( f == current ) setF(null) else setF(f), checked : f == current }];
 			forms.push({ label : "New...", click : () -> editor.formulas.createNew(this, setF) });
 			menu = [
 				{ label : "Formula", menu : forms }
@@ -146,7 +146,7 @@ class Cell extends Component {
 			element.toggleClass("false", value == false);
 		case TInt, TFloat:
 			element.toggleClass("zero", value == 0 );
-			element.toggleClass("error", Math.isNaN(value));
+			element.toggleClass("nan", Math.isNaN(value));
 			element.toggleClass("formula", editor.formulas.has(this) );
 		default:
 		}

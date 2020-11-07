@@ -221,12 +221,12 @@
 .cdb .cdb-sheet td.t_float.zero {
   color: #888;
 }
+.cdb .cdb-sheet td.nan {
+  color: #C44;
+}
 .cdb .cdb-sheet td.formula {
   font-style: italic;
   color: #888;
-}
-.cdb .cdb-sheet td.formula.error {
-  color: #C44;
 }
 .cdb .cdb-sheet td.t_list,
 .cdb .cdb-sheet td.t_properties {
@@ -407,8 +407,15 @@
 .cdb .content-modal form td.first {
   width: 120px;
 }
+.cdb .content-modal form .formula {
+  display: none;
+}
 .cdb .content-modal form .t_int .disp,
 .cdb .content-modal form .t_float .disp {
+  display: table-row;
+}
+.cdb .content-modal form .t_int .formula,
+.cdb .content-modal form .t_float .formula {
   display: table-row;
 }
 .cdb .content-modal form .t_string .kind {
@@ -438,13 +445,12 @@
 .cdb .content-modal form .scope {
   display: none;
 }
-.cdb .content-modal form #doctog {
+.cdb .content-modal form .doctog {
   cursor: pointer;
   color: #888;
 }
-.cdb .content-modal form .doc.hide span,
-.cdb .content-modal form .doc.hide textarea {
-  display: none;
+.cdb .content-modal form .hide {
+  display: none !important;
 }
 .cdb .content-modal form.edit input.create {
   display: none;
