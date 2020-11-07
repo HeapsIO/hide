@@ -127,7 +127,7 @@ class Formulas {
 	}
 
 	public inline function has(c:Cell) {
-		return Reflect.field(c.line.obj, c.column.name+"__f") != null;
+		return Reflect.field(c.line.obj, c.column.name+"__f") != null || (c.column.editor != null && (c.column.editor:Editor.EditorColumnProps).formula != null);
 	}
 
 	public function removeFromValue( obj : Dynamic, c : cdb.Data.Column ) {
