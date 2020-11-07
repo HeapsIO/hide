@@ -3,7 +3,6 @@ import hxd.Key in K;
 
 class Cell extends Component {
 
-	static var UID = 0;
 	static var typeNames = [for( t in Type.getEnumConstructs(cdb.Data.ColumnType) ) t.substr(1).toLowerCase()];
 
 	var editor : Editor;
@@ -417,16 +416,51 @@ class Cell extends Component {
 			if( isInline ) return "";
 			return '<span class="error">' + v.file + '</span>';
 		}
-		var id = UID++;
 		var width = v.size * (v.width == null?1:v.width);
 		var height = v.size * (v.height == null?1:v.height);
 		var max = width > height ? width : height;
 		var zoom = max <= 32 ? 2 : 64 / max;
 		var inl = isInline ? 'display:inline-block;' : '';
 		var url = "file://" + path;
-		var html = '<div class="tile" id="_c${id}" style="width : ${Std.int(width * zoom)}px; height : ${Std.int(height * zoom)}px; background : url(\'$url\') -${Std.int(v.size*v.x*zoom)}px -${Std.int(v.size*v.y*zoom)}px; opacity:0; $inl"></div>';
-		html += '<img src="$url" style="display:none" onload="$(\'#_c$id\').css({opacity:1, backgroundSize : ((this.width*$zoom)|0)+\'px \' + ((this.height*$zoom)|0)+\'px\' '+(zoom > 1 ? ", imageRendering : 'pixelated'" : "") +'}); if( this.parentNode != null ) this.parentNode.removeChild(this)"/>';
+
+		var px = Std.int(v.size*v.x*zoom);
+		var py = Std.int(v.size*v.y*zoom);
+		var html = '<div class="tile toload" path="$path" pos="$px:$py:$zoom" style="width : ${Std.int(width * zoom)}px; height : ${Std.int(height * zoom)}px; opacity:0; $inl"></div>';
+		html += '<script>hide.comp.cdb.Cell.startTileLoading()</script>';
 		return html;
+	}
+
+	static function startTileLoading() {
+		var tiles = new Element(".tile.toload");
+		if( tiles.length == 0 ) return;
+		tiles.removeClass("toload");
+		var imap = new Map();
+		for( t in tiles )
+			imap.set(t.getAttribute("path"), t);
+		for( path => elt in imap ) {
+			var img = js.Browser.document.createImageElement();
+			img.src = "file://"+path;
+			img.setAttribute("style","display:none");
+			img.onload = function() {
+				var iwidth = img.width;
+				var iheight = img.height;
+				for( t in tiles )
+					if( t.getAttribute("path") == path ) {
+						var pos = t.getAttribute("pos").split(":");
+						var px = Std.parseInt(pos[0]);
+						var py = Std.parseInt(pos[1]);
+						var zoom = Std.parseFloat(pos[2]);
+						var bgw = Std.int(iwidth*zoom);
+						var bgh = Std.int(iheight*zoom);
+						var bg = 'url("$path") -${px}px -${py}px / ${bgw}px ${bgh}px';
+						if( zoom > 1 )
+							bg += ";image-rendering:pixelated";
+						t.setAttribute("style", t.getAttribute("style")+" background : "+bg+"; opacity : 1;");
+					}
+				img.remove();
+			};
+			elt.parentElement.append(img);
+		}
 	}
 
 	public function isTextInput() {
