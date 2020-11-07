@@ -53,6 +53,30 @@ class Cell extends Component {
 			else
 				root.addClass("t_readonly");
 		}
+
+		root.click(function(e) {
+			editor.cursor.clickCell(this, e.shiftKey);
+			e.stopPropagation();
+		});
+		root.contextmenu(function(e) {
+			showMenu();
+			e.stopPropagation();
+			e.preventDefault();
+		});
+	}
+
+	function showMenu() {
+		var menu : Array<hide.comp.ContextMenu.ContextMenuItem> = null;
+		switch( column.type ) {
+		case TRef(_):
+			if( value != null && value != "" )
+				menu = [
+					{ label : "Goto", click : () -> @:privateAccess editor.gotoReference(this) },
+				];
+		default:
+		}
+		if( menu != null )
+			new ContextMenu(menu);
 	}
 
 	public function canEdit() {

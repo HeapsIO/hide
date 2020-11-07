@@ -318,11 +318,6 @@ class Table extends Component {
 			var cell = new Cell(td, line, c);
 			lines.push(line);
 
-			td.click(function(e) {
-				editor.cursor.clickCell(cell, e.shiftKey);
-				e.stopPropagation();
-			});
-
 			th.mousedown(function(e) {
 				if( e.which == 3 ) {
 					editor.popupColumn(this, c, cell);

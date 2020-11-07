@@ -104,7 +104,7 @@ class Editor extends Component {
 				cursor.update();
 			}
 		});
-		keys.register("cdb.gotoReference", gotoReference);
+		keys.register("cdb.gotoReference", () -> gotoReference(cursor.getCell()));
 		base = sheet.base;
 		cursor = new Cursor(this);
 		if( displayMode == null ) displayMode = Table;
@@ -149,6 +149,18 @@ class Editor extends Component {
 
 	public function updateFilter() {
 		searchFilter(currentFilter);
+	}
+
+	public function setFilter( f : String ) {
+		if( searchBox != null ) {
+			if( f == null )
+				searchBox.hide();
+			else {
+				searchBox.show();
+				searchBox.find("input").val(f);
+			}
+		}
+		searchFilter(f);
 	}
 
 	function searchFilter( filter : String ) {
@@ -484,8 +496,7 @@ class Editor extends Component {
 		// todo : port from old cdb
 	}
 
-	function gotoReference() {
-		var c = cursor.getCell();
+	function gotoReference( c : Cell ) {
 		if( c == null || c.value == null ) return;
 		switch( c.column.type ) {
 		case TRef(s):

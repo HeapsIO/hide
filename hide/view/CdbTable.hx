@@ -29,6 +29,7 @@ class CdbTable extends hide.ui.View<{}> {
 		var index = sheets.indexOf(s.name);
 		if( index < 0 ) return;
 		tabs.currentTab = tabContents[index].parent();
+		editor.setFilter(null);
 		editor.cursor.setDefault(line, column);
 		editor.focus();
 		haxe.Timer.delay(() -> editor.cursor.update(), 1); // scroll

@@ -28,10 +28,6 @@ class Line extends Component {
 			var cell = new Cell(v, this, c);
 			if( c.type == TId && view != null && view.forbid != null && view.forbid.indexOf(cell.value) >= 0 )
 				element.addClass("hidden");
-			v.click(function(e) {
-				table.editor.cursor.clickCell(cell, e.shiftKey);
-				e.stopPropagation();
-			});
 		}
 	}
 
