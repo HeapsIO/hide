@@ -43,6 +43,7 @@ class Editor extends Component {
 	public var cursor : Cursor;
 	public var keys : hide.ui.Keys;
 	public var undo : hide.ui.UndoHistory;
+	public var formulas : Formulas;
 
 	public function new(config,api) {
 		super(null,null);
@@ -202,6 +203,11 @@ class Editor extends Component {
 			var out = {};
 			for( x in sel.x1...sel.x2+1 ) {
 				var c = cursor.table.columns[x];
+				var form = @:privateAccess formulas.getFormulaNameFromValue(obj, c);
+				if( form != null ) {
+					Reflect.setField(out, c.name+"__f", form);
+					continue;
+				}
 				var v = Reflect.field(obj, c.name);
 				if( v != null )
 					Reflect.setField(out, c.name, v);
@@ -221,22 +227,24 @@ class Editor extends Component {
 		var columns = cursor.table.columns;
 		var sheet = cursor.table.sheet;
 		var realSheet = cursor.table.getRealSheet();
+
+		var x1 = cursor.x;
+		var y1 = cursor.y;
+		var x2 = cursor.select == null ? x1 : cursor.select.x;
+		var y2 = cursor.select == null ? y1 : cursor.select.y;
+		if( x1 > x2 ) {
+			var tmp = x1;
+			x1 = x2;
+			x2 = tmp;
+		}
+		if( y1 > y2 ) {
+			var tmp = y1;
+			y1 = y2;
+			y2 = tmp;
+		}
+
 		if( clipboard == null || text != clipboard.text ) {
 			if( cursor.x < 0 || cursor.y < 0 ) return;
-			var x1 = cursor.x;
-			var y1 = cursor.y;
-			var x2 = cursor.select == null ? x1 : cursor.select.x;
-			var y2 = cursor.select == null ? y1 : cursor.select.y;
-			if( x1 > x2 ) {
-				var tmp = x1;
-				x1 = x2;
-				x2 = tmp;
-			}
-			if( y1 > y2 ) {
-				var tmp = y1;
-				y1 = y2;
-				y2 = tmp;
-			}
 			beginChanges();
 			for( x in x1...x2+1 ) {
 				var col = columns[x];
@@ -263,9 +271,11 @@ class Editor extends Component {
 					}
 					if( value == null ) continue;
 					var obj = sheet.lines[y];
+					formulas.removeFromValue(obj, col);
 					Reflect.setField(obj, col.name, value);
 				}
 			}
+			formulas.evaluateAll(realSheet);
 			endChanges();
 			realSheet.sync();
 			refreshAll();
@@ -274,7 +284,10 @@ class Editor extends Component {
 		beginChanges();
 		var posX = cursor.x < 0 ? 0 : cursor.x;
 		var posY = cursor.y < 0 ? 0 : cursor.y;
-		for( obj1 in clipboard.data ) {
+		var data = clipboard.data;
+		if( data.length == 1 && y1 != y2 )
+			data = [for( i in y1...y2+1 ) data[0]];
+		for( obj1 in data ) {
 			if( posY == sheet.lines.length ) {
 				if( !cursor.table.canInsert() ) break;
 				sheet.newLine();
@@ -287,6 +300,12 @@ class Editor extends Component {
 
 				if( !cursor.table.canEditColumn(c2.name) )
 					continue;
+
+				var form = Reflect.field(obj1, c1.name+"__f");
+				if( form != null && c2.type.equals(c2.type) ) {
+					formulas.setForValue(obj2, sheet, c2, form);
+					continue;
+				}
 
 				var f = base.getConvFunction(c1.type, c2.type);
 				var v : Dynamic = Reflect.field(obj1, c1.name);
@@ -307,6 +326,7 @@ class Editor extends Component {
 			}
 			posY++;
 		}
+		formulas.evaluateAll(realSheet);
 		endChanges();
 		realSheet.sync();
 		refreshAll();
@@ -361,7 +381,9 @@ class Editor extends Component {
 			Reflect.deleteField(line.obj, column.name);
 		else
 			Reflect.setField(line.obj, column.name, value);
+		formulas.removeFromValue(line.obj, column);
 		line.table.getRealSheet().updateValue(column, line.index, prev);
+		line.evaluate(); // propagate
 		endChanges();
 	}
 
@@ -560,6 +582,8 @@ class Editor extends Component {
 			focus();
 			cursor.load(c);
 		});
+
+		formulas = new Formulas(this);
 
 		var content = new Element("<table>");
 		tables = [];

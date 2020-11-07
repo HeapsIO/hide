@@ -1002,6 +1002,9 @@ class Ide {
 		db.find(".dbCustom").click(function(_) {
 			open("hide.view.CdbCustomTypes",{});
 		});
+		db.find(".dbFormulas").click(function(_) {
+			open("hide.comp.cdb.FormulasView",{ path : config.current.get("cdb.formulasFile") });
+		});
 
 		// layout
 		var layouts = menu.find(".layout .content");

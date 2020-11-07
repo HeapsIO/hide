@@ -65,6 +65,17 @@ class Cell extends Component {
 		});
 	}
 
+	function evaluate() {
+		var f = editor.formulas.get(this);
+		if( f == null ) return;
+		var newV : Float = try f.call(line.obj) catch( e : Dynamic ) Math.NaN;
+		if( newV != currentValue ) {
+			currentValue = newV;
+			Reflect.setField(line.obj, column.name, newV);
+			refresh();
+		}
+	}
+
 	function showMenu() {
 		var menu : Array<hide.comp.ContextMenu.ContextMenuItem> = null;
 		switch( column.type ) {
@@ -73,10 +84,27 @@ class Cell extends Component {
 				menu = [
 					{ label : "Goto", click : () -> @:privateAccess editor.gotoReference(this) },
 				];
+		case TInt, TFloat:
+			function setF( f : Formulas.Formula ) {
+				editor.beginChanges();
+				editor.formulas.set(this, f);
+				line.evaluate();
+				editor.endChanges();
+				refresh();
+			}
+			var forms : Array<hide.comp.ContextMenu.ContextMenuItem>;
+			var current = editor.formulas.get(this);
+			forms = [for( f in editor.formulas.getList(this) ) { label : f.name, click : () -> if( f == current ) setF(null) else setF(f), checked : f == current }];
+			forms.push({ label : "New...", click : () -> editor.formulas.createNew(this, setF) });
+			menu = [
+				{ label : "Formula", menu : forms }
+			];
 		default:
 		}
-		if( menu != null )
+		if( menu != null ) {
+			focus();
 			new ContextMenu(menu);
+		}
 	}
 
 	public function canEdit() {
@@ -114,10 +142,12 @@ class Cell extends Component {
 		element.removeClass("edit_long");
 		switch( column.type ) {
 		case TBool:
-			element.removeClass("true false").addClass( value==true ? "true" : "false" );
+			element.toggleClass("true", value == true);
+			element.toggleClass("false", value == false);
 		case TInt, TFloat:
-			element.removeClass("zero");
-			if( value == 0 ) element.addClass("zero");
+			element.toggleClass("zero", value == 0 );
+			element.toggleClass("error", Math.isNaN(value));
+			element.toggleClass("formula", editor.formulas.has(this) );
 		default:
 		}
 	}

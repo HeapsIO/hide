@@ -31,6 +31,11 @@ class Line extends Component {
 		}
 	}
 
+	public function evaluate() {
+		for( c in cells )
+			@:privateAccess c.evaluate();
+	}
+
 	public function hide() {
 		if( subTable != null ) {
 			subTable.close();

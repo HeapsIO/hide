@@ -221,6 +221,13 @@
 .cdb .cdb-sheet td.t_float.zero {
   color: #888;
 }
+.cdb .cdb-sheet td.formula {
+  font-style: italic;
+  color: #888;
+}
+.cdb .cdb-sheet td.formula.error {
+  color: #C44;
+}
 .cdb .cdb-sheet td.t_list,
 .cdb .cdb-sheet td.t_properties {
   white-space: nowrap;
@@ -323,6 +330,7 @@
   color: white;
   border: 1px solid black;
   padding: 5px;
+  z-index: 1;
 }
 .cdb .cdb-sheet td.t_file .preview .previewContent .label {
   text-align: center;
