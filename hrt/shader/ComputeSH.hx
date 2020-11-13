@@ -30,13 +30,12 @@ class ComputeSH extends h3d.shader.ScreenShader {
 		var coefL21Final : Vec3;
 		var coefL22Final : Vec3;
 
-		function vertex(){
+		function vertex() {
 			var position = vec3(input.position.x, input.position.y * flipY, 0);
 			output.position = vec4(position, 1.0);
 		}
 
-		function evalSH(dir:Vec3) {
-
+		function evalSH( dir : Vec3 ) {
 			if (ORDER >= 1){
 				shCoefL00 = evalCoefL00(dir);
 			}
@@ -54,13 +53,13 @@ class ComputeSH extends h3d.shader.ScreenShader {
 			}
 		}
 
-		function getDir(u: Float, v:Float, face:Int) : Vec3 {
+		function getDir( u : Float, v : Float, face : Int ) : Vec3 {
 			var dir = vec3(u, v, 1) * cubeDir[face];
 			return dir.normalize();
 		}
 
-		function evalCoefL00(dir: Vec3) : Float { return 0.282095; }
-		function evalCoefL1n1(dir: Vec3) : Float { return -0.488603 * dir.y; }
+		function evalCoefL00(dir: Vec3) : 	Float { return 0.282095; }
+		function evalCoefL1n1(dir: Vec3) : 	Float { return -0.488603 * dir.y; }
 		function evalCoefL10(dir: Vec3) : Float { return 0.488603 * dir.z; }
 		function evalCoefL11(dir: Vec3) : Float { return -0.488603 * dir.x; }
 		function evalCoefL2n2(dir: Vec3) : Float { return 1.092548 * dir.y * dir.x; }
@@ -84,15 +83,15 @@ class ComputeSH extends h3d.shader.ScreenShader {
 
 		function fragment() {
 
-			if (ORDER >= 1){
+			if( ORDER >= 1 ) {
 				coefL00Final = vec3(0);
 			}
-			if (ORDER >= 2){
+			if( ORDER >= 2 ) {
 				coefL1n1Final = vec3(0);
 				coefL10Final = vec3(0);
 				coefL11Final = vec3(0);
 			}
-			if (ORDER >= 3){
+			if( ORDER >= 3 ) {
 				coefL2n2Final = vec3(0);
 				coefL2n1Final = vec3(0);
 				coefL20Final = vec3(0);
@@ -104,12 +103,12 @@ class ComputeSH extends h3d.shader.ScreenShader {
 			var fWidth : Float = width;
 			var invWidth : Float = 1.0 / fWidth;
 
-			for(f in 0...6) {
-				for (u in 0...width) {
+			for( f in 0...6 ) {
+				for( u in 0...width ) {
 					var fU : Float = (u / fWidth - 0.5) * 2.0;// Texture coordinate U in range [-1 to 1]
 					fU *= fU;
 					var uCoord = 2.0 * u * invWidth + invWidth;
-					for (v in 0...width) {
+					for( v in 0...width ) {
 						var fV : Float = (v / fWidth - 0.5) * 2.0;// Texture coordinate V in range [-1 to 1]
 						fV *= fV;
 						var vCoord = 2.0 * v * invWidth + invWidth;
@@ -124,15 +123,15 @@ class ComputeSH extends h3d.shader.ScreenShader {
 
 						evalSH(dir);// Calculate coefficients of spherical harmonics for current direction
 
-						if (ORDER >= 1){
+						if( ORDER >= 1 ) {
 							coefL00Final += shCoefL00 * color * diffSolid;
 						}
-						if (ORDER >= 2){
+						if( ORDER >= 2 ) {
 							coefL1n1Final += shCoefL1n1 * color * diffSolid;
 							coefL10Final += shCoefL10 * color * diffSolid;
 							coefL11Final += shCoefL11 * color * diffSolid;
 						}
-						if (ORDER >= 3){
+						if( ORDER >= 3 ) {
 							coefL2n2Final += shCoefL2n2 * color * diffSolid;
 							coefL2n1Final += shCoefL2n1 * color * diffSolid;
 							coefL20Final += shCoefL20 * color * diffSolid;
@@ -146,25 +145,21 @@ class ComputeSH extends h3d.shader.ScreenShader {
 			// Final scale for coefficients
 			var normProj = (4.0 * PI) / weightSum;
 
-			if (ORDER >= 1){
+			if( ORDER >= 1 ) {
 				out.coefL00 = coefL00Final * normProj;
 			}
-
-			if (ORDER >= 2){
+			if( ORDER >= 2 ) {
 				out.coefL1n1 = coefL1n1Final * normProj;
 				out.coefL10 = coefL10Final * normProj;
 				out.coefL11 = coefL11Final * normProj;
 			}
-			else{ out.coefL1n1 = vec3(0); out.coefL10 = vec3(0); out.coefL11 = vec3(0); }
-
-			if (ORDER >= 3){
+			if( ORDER >= 3 ) {
 				out.coefL2n2 = coefL2n2Final * normProj;
 				out.coefL2n1 = coefL2n1Final * normProj;
 				out.coefL20 = coefL20Final * normProj;
 				out.coefL21 = coefL21Final * normProj;
 				out.coefL22 = coefL22Final * normProj;
 			}
-			else{ out.coefL2n2 = vec3(0); out.coefL2n1 = vec3(0); out.coefL20 = vec3(0); out.coefL21 = vec3(0); out.coefL22 = vec3(0); }
 		}
 	}
 

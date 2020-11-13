@@ -138,8 +138,10 @@ class Environment extends Object3D {
 		var lutBytes = bytes.sub(curPos, lutSize);
 		curPos += lutBytes.length;
 		if( curPos > bytes.length ) return false;
-		var lutPixels : hxd.Pixels.PixelsFloat = new hxd.Pixels(env.lut.width, env.lut.height, lutBytes, env.lut.format);
-		env.lut.uploadPixels(lutPixels);
+
+		// TO DO : Remove LUT from save 
+		/*var lutPixels : hxd.Pixels.PixelsFloat = new hxd.Pixels(env.lut.width, env.lut.height, lutBytes, env.lut.format);
+		env.lut.uploadPixels(lutPixels);*/
 
 		var diffSize = hxd.Pixels.calcStride(env.diffuse.width, env.diffuse.format) * env.diffuse.height;
 		for( i in 0 ... 6 ) {
@@ -207,6 +209,7 @@ class Environment extends Object3D {
 
 		if( env == null ) {
 			env = new h3d.scene.pbr.Environment(sourceMap);
+			env.equiToCube();
 			needCompute = true;
 		}
 
@@ -253,7 +256,10 @@ class Environment extends Object3D {
 		}
 
 		var scene = ctx.local3d.getScene();
-		if( scene != null ) applyToRenderer(scene.renderer);
+
+		// Auto Apply on change
+		if( scene != null ) 
+			applyToRenderer(scene.renderer);
 	}
 
 	public function applyToRenderer( r : h3d.scene.Renderer) {
