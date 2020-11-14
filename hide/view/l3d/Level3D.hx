@@ -306,7 +306,6 @@ class Level3D extends FileView {
 
 		levelProps = new hide.comp.PropsEditor(undo,null,element.find(".level-props"));
 		sceneEditor = new Level3DSceneEditor(this, data);
-		sceneEditor.addSearchBox(element.find(".hide-scenetree").first());
 		element.find(".hide-scenetree").first().append(sceneEditor.tree.element);
 		element.find(".favorites-tree").first().append(sceneEditor.favTree.element);
 		element.find(".hide-scroll").first().append(sceneEditor.properties.element);

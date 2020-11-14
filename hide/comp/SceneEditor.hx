@@ -204,10 +204,10 @@ class SceneEditor {
 		view.keys.register("group", groupSelection);
 		view.keys.register("delete", () -> deleteElements(curEdit.rootElements));
 		view.keys.register("search", function() {
-			if(searchBox != null) {
-				searchBox.show();
-				searchBox.find("input").focus().select();
-			}
+			if( searchBox == null )
+				addSearchBox(tree.element);
+			searchBox.show();
+			searchBox.find("input").focus().select();
 		});
 		view.keys.register("rename", function () {
 			if(curEdit.rootElements.length > 0)
@@ -302,7 +302,7 @@ class SceneEditor {
 		return curEdit != null ? curEdit.elements : [];
 	}
 
-	public function addSearchBox(parent : Element) {
+	function addSearchBox(parent : Element) {
 		searchBox = new Element("<div>").addClass("searchBox").appendTo(parent);
 		new Element("<input type='text'>").appendTo(searchBox).keydown(function(e) {
 			if( e.keyCode == 27 ) {
@@ -466,6 +466,7 @@ class SceneEditor {
 
 		function makeItem(o:PrefabElement, ?state) : hide.comp.IconTree.IconTreeItem<PrefabElement> {
 			var p = o.getHideProps();
+			var ref = o.to(Reference);
 			var icon = p.icon;
 			var ct = o.getCdbType();
 			if( ct != null && icons.exists(ct) )
@@ -474,7 +475,7 @@ class SceneEditor {
 				value : o,
 				text : o.name,
 				icon : "fa fa-"+icon,
-				children : o.children.length > 0,
+				children : o.children.length > 0 || (ref != null && @:privateAccess ref.editMode),
 				state: state
 			};
 			return r;
@@ -509,6 +510,11 @@ class SceneEditor {
 		}
 		tree.get = function(o:PrefabElement) {
 			var objs = o == null ? sceneData.children : Lambda.array(o);
+			var ref = o == null ? null : o.to(Reference);
+			@:privateAccess if( ref != null && ref.editMode && ref.ref != null ) {
+				for( c in ref.ref )
+					objs.push(c);
+			}
 			var out = [for( o in objs ) makeItem(o)];
 			return out;
 		};
@@ -676,7 +682,7 @@ class SceneEditor {
 			applySceneStyle(elt);
 
 		if( lastRenderProps == null ) {
-			var renderProps = sceneData.getAll(hrt.prefab.RenderProps);
+			var renderProps = getAllWithRefs(sceneData,hrt.prefab.RenderProps);
 			for( r in renderProps )
 				if( @:privateAccess r.isDefault ) {
 					lastRenderProps = r;
@@ -700,6 +706,17 @@ class SceneEditor {
 		}
 
 		onRefresh();
+	}
+
+	function getAllWithRefs<T:hrt.prefab.Prefab>( p : hrt.prefab.Prefab, cl : Class<T>, ?arr : Array<T> ) : Array<T> {
+		if( arr == null ) arr = [];
+		var v = p.to(cl);
+		if( v != null ) arr.push(v);
+		for( c in p.children )
+			getAllWithRefs(c, cl, arr);
+		var ref = p.to(Reference);
+		@:privateAccess if( ref != null && ref.ref != null ) getAllWithRefs(ref.ref, cl, arr);
+		return arr;
 	}
 
 	public dynamic function onRefresh() {
@@ -1474,13 +1491,19 @@ class SceneEditor {
 			case Nothing, NoTree:
 			}
 
+			function getSelContext( e : PrefabElement ) {
+				var ectx = context.shared.contexts.get(e);
+				if( ectx == null ) ectx = context.shared.getContexts(e)[0];
+				if( ectx == null ) ectx = context;
+				return ectx;
+			}
+
 			var map = new Map<PrefabElement,Bool>();
 			function selectRec(e : PrefabElement, b:Bool) {
 				if( map.exists(e) )
 					return;
 				map.set(e, true);
-				var ectx = context.shared.contexts.get(e);
-				if(setObjectSelected(e, ectx == null ? context : ectx, b))
+				if(setObjectSelected(e, getSelContext(e), b))
 					for( e in e.children )
 						selectRec(e,b);
 			}
@@ -1491,8 +1514,7 @@ class SceneEditor {
 			edit.cleanups.push(function() {
 				for( e in map.keys() ) {
 					if( hasBeenRemoved(e) ) continue;
-					var ectx = context.shared.contexts.get(e);
-					setObjectSelected(e, ectx == null ? context : ectx, false);
+					setObjectSelected(e, getSelContext(e), false);
 				}
 			});
 
