@@ -98,7 +98,7 @@ class SceneEditorContext extends hide.prefab.EditContext {
 
 	override function rebuildProperties() {
 		editor.scene.setCurrent();
-		editor.selectObjects(elements);
+		editor.selectObjects(elements, NoHistory);
 	}
 
 	override function rebuildPrefab( p : hrt.prefab.Prefab ) {

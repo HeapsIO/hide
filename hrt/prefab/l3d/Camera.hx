@@ -203,23 +203,21 @@ class Camera extends Object3D {
 
 		props.find(".copy").click(function(e) {
 			var cam = ctx.scene.s3d.camera;
-			var q = new h3d.Quat();
-			q.initDirection(cam.target.sub(cam.pos));
-			var angles = q.toEuler();
-			this.rotationX = hxd.Math.fmt(angles.x * 180 / Math.PI);
-			this.rotationY = hxd.Math.fmt(angles.y * 180 / Math.PI);
-			this.rotationZ = hxd.Math.fmt(angles.z * 180 / Math.PI);
-			this.scaleX = this.scaleY = this.scaleZ = 1;
-			this.x = hxd.Math.fmt(cam.pos.x);
-			this.y = hxd.Math.fmt(cam.pos.y);
-			this.z = hxd.Math.fmt(cam.pos.z);
-			this.zFar = cam.zFar;
-			this.zNear = cam.zNear;
-			this.fovY = cam.fovY;
-			applyTo(cam);
-			ctx.scene.editor.cameraController.lockZPlanes = true;
-			ctx.scene.editor.cameraController.loadFromCamera();
-			ctx.rebuildProperties();
+			ctx.makeChanges(this, function() {
+				var q = new h3d.Quat();
+				q.initDirection(cam.target.sub(cam.pos));
+				var angles = q.toEuler();
+				this.rotationX = hxd.Math.fmt(angles.x * 180 / Math.PI);
+				this.rotationY = hxd.Math.fmt(angles.y * 180 / Math.PI);
+				this.rotationZ = hxd.Math.fmt(angles.z * 180 / Math.PI);
+				this.scaleX = this.scaleY = this.scaleZ = 1;
+				this.x = hxd.Math.fmt(cam.pos.x);
+				this.y = hxd.Math.fmt(cam.pos.y);
+				this.z = hxd.Math.fmt(cam.pos.z);
+				this.zFar = cam.zFar;
+				this.zNear = cam.zNear;
+				this.fovY = cam.fovY;
+			});
 		});
 
 
