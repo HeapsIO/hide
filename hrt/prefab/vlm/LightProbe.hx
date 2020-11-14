@@ -33,7 +33,7 @@ class DebugView extends hxsl.Shader {
 class BoundsFade extends hxsl.Shader {
 
 	static var SRC = {
-		
+
 		@const var SMOOTHSTEP : Bool;
 		@const var POWER2 : Bool;
 
@@ -117,7 +117,7 @@ class LightProbeObject extends h3d.scene.Mesh {
 	}
 
 	public function clear() {
-		if( env.env != null ) 
+		if( env.env != null )
 			env.env.clear(0);
 		if( env.diffuse != null )
 			env.diffuse.clear(0);
@@ -136,7 +136,7 @@ class LightProbeObject extends h3d.scene.Mesh {
 		indirectShader.irrSpecular = env.specular;
 		indirectShader.irrSpecularLevels = env.specLevels;
 		indirectShader.irrPower = env.power * env.power;
-		indirectShader.rot = env.rot;
+		indirectShader.irrRotation.set(Math.cos(env.rot), Math.sin(env.rot));
 		super.emit(ctx);
 	}
 
@@ -162,12 +162,12 @@ class LightProbeObject extends h3d.scene.Mesh {
 
 @:access(h3d.scene.pbr.Environment)
 class LightProbe extends Object3D {
-	
-	// Probe 
+
+	// Probe
 	public var mode : ProbeMode = Texture;
 	public var priority : Int = 0;
 
-	// Fade 
+	// Fade
 	public var fadeDist : Float = 0.0;
 	public var fadeMode : ProbeFadeMode = Linear;
 
@@ -180,7 +180,7 @@ class LightProbe extends Object3D {
 	// Capture Mode
 	public var bounce : Int = 1;
 
-	// Shared 
+	// Shared
 	public var power : Float = 1.0;
 	public var sampleBits : Int = 12;
 	public var diffSize : Int = 16;
@@ -301,7 +301,7 @@ class LightProbe extends Object3D {
 		lpo.fadeMode = fadeMode;
 		lpo.priority = priority;
 
-		// Full Reset 
+		// Full Reset
 		if( propName == "mode" ) {
 			if( lpo.env != null ) {
 				lpo.env.dispose();
@@ -339,7 +339,7 @@ class LightProbe extends Object3D {
 					}
 					lpo.env.diffSize = diffSize;
 
-					if( propName == "threshold" || propName == "scale" || 
+					if( propName == "threshold" || propName == "scale" ||
 						propName == "sampleBits" || propName == "ignoredSpecLevels" )
 						needCompute = true;
 
@@ -361,7 +361,7 @@ class LightProbe extends Object3D {
 				lpo.env.power = power;
 				lpo.env.ignoredSpecLevels = ignoredSpecLevels;
 
-				if( propName == "threshold" || propName == "scale" || 
+				if( propName == "threshold" || propName == "scale" ||
 					propName == "sampleBits" || propName == "ignoredSpecLevels" )
 					needCompute = true;
 
@@ -370,7 +370,7 @@ class LightProbe extends Object3D {
 					loadBinary(lpo.env, res.entry.getBytes());
 					needCompute = false; // No Env available with binary load, everything else is already baked
 				}
-				
+
 				if( needCompute )
 					lpo.env.compute();
 		}
@@ -385,7 +385,7 @@ class LightProbe extends Object3D {
 		var previewSphereSpecular : h3d.scene.Mesh = Std.downcast(lpo.find( o -> o.name == "preview_sphere_specular" ? o : null), h3d.scene.Mesh);
 		var parentScale = lpo.getAbsPos().getScale();
 
-		// Don't use scale from parent for preview phere 
+		// Don't use scale from parent for preview phere
 		function updateScale( m : h3d.scene.Mesh ) {
 			m.scaleX = sphereRadius / parentScale.x;
 			m.scaleY = sphereRadius / parentScale.y;
@@ -399,8 +399,8 @@ class LightProbe extends Object3D {
 			if( lpo.env != null ) {
 				if( lpo.env.source != null && lpo.env.source.flags.has(Loading) )
 					lpo.env.source.waitLoad( () ->  s.source = lpo.env.diffuse );
-				else 
-					s.source = lpo.env.diffuse; 
+				else
+					s.source = lpo.env.diffuse;
 			}
 			updateScale(previewSphereDiffuse);
 		}
@@ -411,8 +411,8 @@ class LightProbe extends Object3D {
 			if( lpo.env != null ) {
 				if( lpo.env.source != null && lpo.env.source.flags.has(Loading) )
 					lpo.env.source.waitLoad( () -> s.source = lpo.env.specular );
-				else 
-					s.source = lpo.env.specular; 
+				else
+					s.source = lpo.env.specular;
 			}
 			updateScale(previewSphereSpecular);
 		}
@@ -517,7 +517,7 @@ class LightProbe extends Object3D {
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
 
-		var captureModeParams = 
+		var captureModeParams =
 		'<div class="group" name="Environment" >
 			<dt>Power</dt><dd><input type="range" min="0" max="10" field="power"/></dd>
 			<dt>Bounce</dt><dd><input type="range" min="1" max="3" step="1" field="bounce"/></dd>
@@ -546,7 +546,7 @@ class LightProbe extends Object3D {
 			</dl>
 		</div>';
 
-		var textureModeParams = 
+		var textureModeParams =
 		'<div class="group" name="Environment">
 			<dl>
 				<dt>Texture</dt><dd><input type="texturepath" field="texturePath"/></dd>
@@ -644,7 +644,7 @@ class LightProbe extends Object3D {
 		var importButton = props.find(".import");
 		if( importButton != null ) {
 			importButton.click(function(_) {
-				
+
 				var lpo : LightProbeObject = cast ctx.getContext(this).local3d;
 
 				function loadData( name : String ) {
@@ -659,7 +659,7 @@ class LightProbe extends Object3D {
 
 					lpo.env = new Environment(null);
 					loadBinary(lpo.env, b);
-					
+
 					// Upate the prefab
 					sampleBits = lpo.env.sampleBits;
 					diffSize = lpo.env.diffSize;
@@ -676,14 +676,14 @@ class LightProbe extends Object3D {
 				}
 
 				ctx.ide.chooseFile(["bake"], loadData);
-				
+
 				ctx.properties.undo.change(Custom(function(undo) {
 					// TO DO
 				}));
 
 			});
 		}
-	
+
 		var bakeButton = props.find(".bake");
 		if( bakeButton != null ) {
 			bakeButton.click(function(_) {
