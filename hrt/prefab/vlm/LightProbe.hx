@@ -87,6 +87,7 @@ class LightProbeObject extends h3d.scene.Mesh {
 	public var fadeMode : ProbeFadeMode;
 	public var priority : Int;
 
+
 	public function new(?parent) {
 		var probeMaterial = h3d.mat.MaterialSetup.current.createMaterial();
 		super(h3d.prim.Cube.defaultUnitCube(), probeMaterial, parent);
@@ -105,13 +106,6 @@ class LightProbeObject extends h3d.scene.Mesh {
 		material.mainPass.culling = Front;
 		material.mainPass.depthWrite = false;
 
-		var r : h3d.scene.pbr.Renderer = cast getScene().renderer;
-		if( r != null ) {
-			@:privateAccess material.mainPass.addShader(r.pbrProps);
-			var props : h3d.scene.pbr.Renderer.RenderProps = r.props;
-			indirectShader.emissivePower = props.emissive;
-		}
-
 		boundFadeShader = new BoundsFade();
 		material.mainPass.addShader(boundFadeShader);
 	}
@@ -128,8 +122,10 @@ class LightProbeObject extends h3d.scene.Mesh {
 	}
 
 	override function emit( ctx : h3d.scene.RenderContext ) {
-		if( env == null )
+
+		if( env == null || env.diffuse == null || env.specular == null )
 			return;
+
 		indirectShader.cameraPosition = ctx.camera.pos;
 		indirectShader.irrLut = env.lut;
 		indirectShader.irrDiffuse = env.diffuse;
@@ -137,11 +133,21 @@ class LightProbeObject extends h3d.scene.Mesh {
 		indirectShader.irrSpecularLevels = env.specLevels;
 		indirectShader.irrPower = env.power * env.power;
 		indirectShader.irrRotation.set(Math.cos(env.rot), Math.sin(env.rot));
+
 		super.emit(ctx);
 	}
 
 	override function sync( ctx : h3d.scene.RenderContext ) {
 		super.sync(ctx);
+
+		var r : h3d.scene.pbr.Renderer = cast ctx.scene.renderer;
+		if( r != null ) {
+			if( material.mainPass.getShader(h3d.shader.pbr.PropsImport) == null )
+				@:privateAccess material.mainPass.addShader(r.pbrProps);
+			var props : h3d.scene.pbr.Renderer.RenderProps = r.props;
+			indirectShader.emissivePower = props.emissive;
+		}
+
 		getAbsPos().getScale(boundFadeShader.scale);
 		getAbsPos()._44 = priority;
 		boundFadeShader.fadeDist = fadeDist;
