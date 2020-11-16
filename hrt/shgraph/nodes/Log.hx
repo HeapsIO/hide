@@ -2,18 +2,17 @@ package hrt.shgraph.nodes;
 
 using hxsl.Ast;
 
-@name("Clamp")
-@description("Limits value between min and max")
+@name("Log")
+@description("The output is the result of log(x)")
 @width(80)
 @group("Math")
-class Clamp extends ShaderFunction {
+class Log extends ShaderFunction {
 
 	@input("x") var x = SType.Number;
-	@input("min", true) var min = SType.Number;
-	@input("max", true) var max = SType.Number;
+	@input("p", true) var p = SType.Number;
 
 	public function new() {
-		super(Saturate);
+		super(Log);
 	}
 
 	override public function computeOutputs() {

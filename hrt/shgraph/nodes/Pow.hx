@@ -2,18 +2,17 @@ package hrt.shgraph.nodes;
 
 using hxsl.Ast;
 
-@name("Clamp")
-@description("Limits value between min and max")
+@name("Pow")
+@description("The output is the result of x ^ b")
 @width(80)
 @group("Math")
-class Clamp extends ShaderFunction {
+class Pow extends ShaderFunction {
 
 	@input("x") var x = SType.Number;
-	@input("min", true) var min = SType.Number;
-	@input("max", true) var max = SType.Number;
+	@input("p", true) var p = SType.Number;
 
 	public function new() {
-		super(Saturate);
+		super(Pow);
 	}
 
 	override public function computeOutputs() {

@@ -11,7 +11,8 @@ class ShaderNode {
 
 	public var id : Int;
 
-	static var availableVariables = [{
+	static var availableVariables = [
+					{
 						parent: null,
 						id: 0,
 						kind: Global,

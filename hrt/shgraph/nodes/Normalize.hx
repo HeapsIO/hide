@@ -2,18 +2,16 @@ package hrt.shgraph.nodes;
 
 using hxsl.Ast;
 
-@name("Clamp")
-@description("Limits value between min and max")
+@name("Normalize")
+@description("The output is the result of normalize(x)")
 @width(80)
 @group("Math")
-class Clamp extends ShaderFunction {
+class Normalize extends ShaderFunction {
 
 	@input("x") var x = SType.Number;
-	@input("min", true) var min = SType.Number;
-	@input("max", true) var max = SType.Number;
 
 	public function new() {
-		super(Saturate);
+		super(Normalize);
 	}
 
 	override public function computeOutputs() {

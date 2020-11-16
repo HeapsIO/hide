@@ -5,7 +5,6 @@ using hxsl.Ast;
 @name("Outputs")
 @description("Parameters outputs, it's dynamic")
 @group("Output")
-@noheader()
 @color("#A90707")
 class ShaderOutput extends ShaderNode {
 
@@ -40,6 +39,34 @@ class ShaderOutput extends ShaderNode {
 			kind: Var,
 			name: "calculatedUV",
 			type: TVec(2, VFloat)
+		},
+		{
+			parent: null,
+			id: 0,
+			kind: Var,
+			name: "transformedNormal",
+			type: TVec(3, VFloat)
+		},
+		{
+			parent: null,
+			id: 0,
+			kind: Var,
+			name: "metalnessValue",
+			type: TFloat
+		},
+		{
+			parent: null,
+			id: 0,
+			kind: Var,
+			name: "roughnessValue",
+			type: TFloat
+		},
+		{
+			parent: null,
+			id: 0,
+			kind: Var,
+			name: "emissiveValue",
+			type: TFloat
 		}
 	];
 

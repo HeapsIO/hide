@@ -51,6 +51,16 @@ class SubGraph extends ShaderNode {
 
 						inputsInfo.set(prefixSubGraph+node.id, { name : "*" + shaderInput.variable.name , type: ShaderType.getSType(shaderInput.variable.type), hasProperty: false, isRequired : false, id : node.id });
 						inputInfoKeys.push(prefixSubGraph+node.id);
+					case "ShaderGlobalInput":
+						var shaderInput = Std.downcast(node.instance, ShaderGlobalInput);
+
+						inputsInfo.set(prefixSubGraph+node.id, { name : "*" + shaderInput.variable.name , type: ShaderType.getSType(shaderInput.variable.type), hasProperty: false, isRequired : false, id : node.id });
+						inputInfoKeys.push(prefixSubGraph+node.id);
+					case "ShaderCameraInput":
+						var shaderInput = Std.downcast(node.instance, ShaderCameraInput);
+
+						inputsInfo.set(prefixSubGraph+node.id, { name : "*" + shaderInput.variable.name , type: ShaderType.getSType(shaderInput.variable.type), hasProperty: false, isRequired : false, id : node.id });
+						inputInfoKeys.push(prefixSubGraph+node.id);
 					case "ShaderOutput":
 						var shaderOutput = Std.downcast(node.instance, ShaderOutput);
 

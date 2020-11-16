@@ -5,7 +5,6 @@ using hxsl.Ast;
 @name("Inputs")
 @description("Shader inputs of Heaps, it's dynamic")
 @group("Property")
-@noheader()
 @color("#0e8826")
 class ShaderInput extends ShaderNode {
 
@@ -21,20 +20,20 @@ class ShaderInput extends ShaderNode {
 		return null;
 	}
 
-	static var availableInputs = [{
-						parent: null,
-						id: 0,
-						kind: Global,
-						name: "global.time",
-						type: TFloat
-					},
-					{
-						parent: null,
-						id: 0,
-						kind: Input,
-						name: "uv",
-						type: TVec(2, VFloat)
-					}];
+	static var availableInputs = [ 	{ parent: null, id: 0, kind: Input, name: "position", type: TVec(3, VFloat) },
+									{ parent: null, id: 0, kind: Input, name: "color", type: TVec(3, VFloat) },
+									{ parent: null, id: 0, kind: Input, name: "uv", type: TVec(2, VFloat) },
+									{ parent: null, id: 0, kind: Input, name: "normal", type: TVec(3, VFloat) },
+									{ parent: null, id: 0, kind: Input, name: "tangent", type: TVec(3, VFloat) },
+									{ parent: null, id: 0, kind: Input, name: "relativePosition", type: TVec(3, VFloat) },
+									{ parent: null, id: 0, kind: Input, name: "transformedPosition", type: TVec(3, VFloat) },
+									{ parent: null, id: 0, kind: Input, name: "projectedPosition", type: TVec(4, VFloat) },
+									{ parent: null, id: 0, kind: Input, name: "transformedNormal", type: TVec(3, VFloat) },
+									{ parent: null, id: 0, kind: Input, name: "screenUV", type: TVec(2, VFloat) } ];
+
+	function getAvailableInputs() {
+		return ShaderInput.availableInputs;
+	}
 
 	override public function loadProperties(props : Dynamic) {
 		var paramVariable : String = Reflect.field(props, "variable");
@@ -64,7 +63,7 @@ class ShaderInput extends ShaderNode {
 	#if editor
 	override public function getPropertiesHTML(width : Float) : Array<hide.Element> {
 		var elements = super.getPropertiesHTML(width);
-		var element = new hide.Element('<div style="width: 110px; height: 30px"></div>');
+		var element = new hide.Element('<div style="width: 120px; height: 30px"></div>');
 		element.append(new hide.Element('<select id="variable"></select>'));
 
 		if (this.variable == null) {
@@ -73,7 +72,7 @@ class ShaderInput extends ShaderNode {
 		var input = element.children("select");
 		var indexOption = 0;
 		for (c in ShaderNode.availableVariables) {
-			input.append(new hide.Element('<option value="${indexOption}">${c.name}</option>'));
+			input.append(new hide.Element('<option value="${indexOption}">${c.name.split(".")[1]}</option>'));
 			if (this.variable.name == c.name) {
 				input.val(indexOption);
 			}

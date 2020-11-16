@@ -73,7 +73,7 @@ class Combine extends ShaderNode {
 		}
 		if (numberOutputs >= 3) {
 			args.push({ name: "b", type : TFloat });
-			valueArgs.push(g.getVar());
+			valueArgs.push(b.getVar());
 			opTGlobal = Vec3;
 		}
 		if (numberOutputs >= 4) {
