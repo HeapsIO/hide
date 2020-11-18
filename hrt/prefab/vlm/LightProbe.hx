@@ -20,10 +20,13 @@ class DebugView extends hxsl.Shader {
 
 		var pixelColor : Vec4;
 		@param var source : SamplerCube;
+		@param var irrRotation : Vec2;
+		@param var power : Float;
 		var transformedNormal : Vec3;
 
 		function fragment() {
-			var color = source.get(transformedNormal).rgb;
+			var n = vec3(transformedNormal.x * irrRotation.x - transformedNormal.y * irrRotation.y, transformedNormal.x * irrRotation.y + transformedNormal.y * irrRotation.x, transformedNormal.z);
+			var color = source.get(n).rgb * power;
 			pixelColor = vec4(color, 1);
 		}
 
@@ -407,7 +410,10 @@ class LightProbe extends Object3D {
 					lpo.env.source.waitLoad( () ->  s.source = lpo.env.diffuse );
 				else
 					s.source = lpo.env.diffuse;
+				s.irrRotation.set(Math.cos(lpo.env.rot), Math.sin(lpo.env.rot));
+				s.power = lpo.env.power * lpo.env.power;
 			}
+			
 			updateScale(previewSphereDiffuse);
 		}
 		if( previewSphereSpecular != null ) {
@@ -419,7 +425,10 @@ class LightProbe extends Object3D {
 					lpo.env.source.waitLoad( () -> s.source = lpo.env.specular );
 				else
 					s.source = lpo.env.specular;
+				s.irrRotation.set(Math.cos(lpo.env.rot), Math.sin(lpo.env.rot));
+				s.power = lpo.env.power * lpo.env.power;
 			}
+			
 			updateScale(previewSphereSpecular);
 		}
 		#end
