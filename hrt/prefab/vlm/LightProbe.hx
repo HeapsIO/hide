@@ -413,7 +413,7 @@ class LightProbe extends Object3D {
 				s.irrRotation.set(Math.cos(lpo.env.rot), Math.sin(lpo.env.rot));
 				s.power = lpo.env.power * lpo.env.power;
 			}
-			
+
 			updateScale(previewSphereDiffuse);
 		}
 		if( previewSphereSpecular != null ) {
@@ -428,7 +428,7 @@ class LightProbe extends Object3D {
 				s.irrRotation.set(Math.cos(lpo.env.rot), Math.sin(lpo.env.rot));
 				s.power = lpo.env.power * lpo.env.power;
 			}
-			
+
 			updateScale(previewSphereSpecular);
 		}
 		#end
@@ -713,12 +713,12 @@ class LightProbe extends Object3D {
 				if( lpo.env.env == null || lpo.env.env.width != captureSize ) {
 					if( lpo.env.env != null )
 						lpo.env.env.dispose();
-					lpo.env.env = new h3d.mat.Texture(captureSize, captureSize, [Cube, Target]);
+					lpo.env.env = new h3d.mat.Texture(captureSize, captureSize, [Cube, Target], RGBA32F);
 				}
 
 				var probeBaker = new ProbeBaker();
 				if( bounce > 1 ) {
-					var tmpTexture = new h3d.mat.Texture(captureSize, captureSize, [Cube, Target]);
+					var tmpTexture = new h3d.mat.Texture(captureSize, captureSize, [Cube, Target], RGBA32F);
 					var curCapture : h3d.mat.Texture = tmpTexture;
 					for( b in 0 ... bounce ) {
 						probeBaker.captureEnvironment(lpo.getAbsPos().getPosition(), captureSize, ctx.scene.s3d, curCapture);
