@@ -14,6 +14,11 @@ class Library extends Prefab {
 		return {};
 	}
 
+	override function makeInstance(ctx:Context):Context {
+		if( ctx.shared.parent != null ) ctx = ctx.clone(this);
+		return super.makeInstance(ctx);
+	}
+
 	/**
 		Returns the prefab within children that matches the given absolute path
 	**/

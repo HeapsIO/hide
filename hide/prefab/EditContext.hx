@@ -10,12 +10,12 @@ class EditContext {
 
 	var updates : Array<Float->Void> = [];
 
-	public var prefabPath : String;
 	public var ide(get,never) : hide.Ide;
 	public var scene : hide.comp.Scene;
 	public var properties : hide.comp.PropsEditor;
 	public var cleanups : Array<Void->Void>;
 	function get_ide() return hide.Ide.inst;
+
 	public function onChange(p : Prefab, propName : String) {
 		var ctx = getContext(p);
 		scene.setCurrent();
@@ -28,12 +28,9 @@ class EditContext {
 				parent = parent.parent;
 			}
 		}
-
-		var refs = rootContext.shared.references.get(p);
-		if(refs != null) {
-			for(ctx in refs)
-				p.updateInstance(ctx, propName);
-		}
+		for( ctx2 in rootContext.shared.getContexts(p) )
+			if( ctx2 != ctx )
+				p.updateInstance(ctx2, propName);
 	}
 
 	public function getCurrentProps( p : Prefab ) : Element {
@@ -132,7 +129,17 @@ class EditContext {
 			path.pop();
 		}
 
-		for( o in rootContext.shared.root3d )
+		// for references, we have an extra root level
+		var roots;
+		if( rootContext.shared.parent == null )
+			roots = [rootContext.shared.root3d];
+		else {
+			roots = [];
+			for( o in rootContext.shared.root3d )
+				roots.push(o);
+		}
+
+		for( o in roots )
 			getRec([], o);
 
 		return out;

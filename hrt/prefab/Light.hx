@@ -189,7 +189,7 @@ class Light extends Object3D {
 		cookieTex = initTexture(cookiePath);
 		updateInstance(ctx);
 
-		if(!ctx.isRef)
+		if( ctx.shared.parent == null )
 			loadBaked(ctx);
 		return ctx;
 	}

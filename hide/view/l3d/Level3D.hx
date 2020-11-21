@@ -319,7 +319,6 @@ class Level3D extends FileView {
 		// Level edit
 		{
 			var edit = new LevelEditContext(this, sceneEditor.context);
-			edit.prefabPath = state.path;
 			edit.properties = levelProps;
 			edit.scene = sceneEditor.scene;
 			edit.cleanups = [];

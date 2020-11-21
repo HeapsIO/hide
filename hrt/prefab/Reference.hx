@@ -85,11 +85,10 @@ class Reference extends Object3D {
 
 		if(isFile()) {
 			ctx = super.makeInstance(ctx);
-			ctx.isRef = !editMode;
-			var prevPath = ctx.shared.currentPath;
-			ctx.shared.currentPath = refpath.substr(1);
+			var prevShared = ctx.shared;
+			ctx.shared = ctx.shared.cloneRef(this, refpath.substr(1));
 			p.make(ctx);
-			ctx.shared.currentPath = prevPath;
+			ctx.shared = prevShared;
 
 			#if editor
 			if (ctx.local2d == null) {
@@ -106,7 +105,7 @@ class Reference extends Object3D {
 		}
 		else {
 			ctx = ctx.clone(this);
-			ctx.isRef = true;
+			ctx.isSceneReference = true;
 			var refCtx = p.make(ctx);
 			ctx.local3d = refCtx.local3d;
 			updateInstance(ctx);

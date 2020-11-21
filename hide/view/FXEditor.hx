@@ -281,7 +281,6 @@ class FXEditor extends FileView {
 		fxprops = new hide.comp.PropsEditor(undo,null,element.find(".fx-props"));
 		{
 			var edit = new FXEditContext(this, sceneEditor.context);
-			edit.prefabPath = state.path;
 			edit.properties = fxprops;
 			edit.scene = sceneEditor.scene;
 			edit.cleanups = [];

@@ -7,7 +7,13 @@ package hrt.prefab;
 	public var shared : ContextShared;
 	public var cleanup : Void -> Void;
 	public var custom : Dynamic;
-	public var isRef : Bool = false;
+
+	/**
+		isSceneReference is set to true when this
+		context is a local reference to another prefab
+		within the same scene.
+	**/
+	public var isSceneReference : Bool;
 
 	public function new() {
 	}
@@ -25,15 +31,17 @@ package hrt.prefab;
 		c.local2d = local2d;
 		c.local3d = local3d;
 		c.custom = custom;
-		c.isRef = isRef;
+		c.isSceneReference = isSceneReference;
 		if( p != null ) {
-			if(!isRef)
+			if( !isSceneReference )
 				shared.contexts.set(p, c);
-			else {
-				if(!shared.references.exists(p))
-					shared.references.set(p, [c])
-				else
-					shared.references[p].push(c);
+			else @:privateAccess {
+				var arr = shared.sceneReferences.get(p);
+				if( arr == null ) {
+					arr = [];
+					shared.sceneReferences.set(p, arr);
+				}
+				arr.push(c);
 			}
 		}
 		return c;

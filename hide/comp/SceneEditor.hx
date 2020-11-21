@@ -1277,15 +1277,19 @@ class SceneEditor {
 		return interactives.get(elt);
 	}
 
-	public function getContext(elt : PrefabElement) {
+	public function getContext(elt : PrefabElement, ?shared : hrt.prefab.ContextShared) {
 		if(elt == null) return null;
-		var ctx = null;
-		if(elt == sceneData) {
-			ctx = context.shared.contexts.get(sceneData);
-			if(ctx != null) return ctx; // Some libs make their own instances
-			return context;
+		if( shared == null ) shared = context.shared;
+		var ctx = shared.contexts.get(elt);
+		if( ctx == null ) {
+			for( r in @:privateAccess shared.refsContexts ) {
+				ctx = getContext(elt, r);
+				if( ctx != null ) break;
+			}
 		}
-		return context.shared.contexts.get(elt);
+		if( ctx == null && elt == sceneData )
+			ctx = context;
+		return ctx;
 	}
 
 	public function getContexts(elt: PrefabElement) {
@@ -1540,12 +1544,19 @@ class SceneEditor {
 	}
 
 	function hasBeenRemoved( e : hrt.prefab.Prefab ) {
-		while( e != null && e != sceneData ) {
+		var root = sceneData;
+		var eltCtx = context.shared.getContexts(e)[0];
+		if( eltCtx != null && eltCtx.shared.parent != null ) {
+			if( hasBeenRemoved(eltCtx.shared.parent.prefab) )
+				return true;
+			root = null;
+		}
+		while( e != null && e != root ) {
 			if( e.parent != null && e.parent.children.indexOf(e) < 0 )
 				return true;
 			e = e.parent;
 		}
-		return e == null;
+		return e != root;
 	}
 
 	public function resetCamera() {
@@ -2181,8 +2192,15 @@ class SceneEditor {
 
 	// Override
 	function makeEditContext(elts : Array<PrefabElement>) : SceneEditorContext {
-		var edit = new SceneEditorContext(context, elts, this);
-		edit.prefabPath = view.state.path;
+		var p = elts[0];
+		var rootCtx = context;
+		while( p != null ) {
+			var ctx = context.shared.getContexts(p)[0];
+			if( ctx != null ) rootCtx = ctx;
+			p = p.parent;
+		}
+		// rootCtx might not be == context depending on references
+		var edit = new SceneEditorContext(rootCtx, elts, this);
 		edit.properties = properties;
 		edit.scene = scene;
 		return edit;

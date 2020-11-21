@@ -20,13 +20,11 @@ class Instance extends Object3D {
 			try {
 				if(hrt.prefab.Library.getPrefabType(modelPath) != null) {
 					var ref = ctx.shared.loadPrefab(modelPath);
-					var ctx = ctx.clone(this);
-					ctx.isRef = true;
 					if(ref != null) {
-						var prev = ctx.shared.root3d;
-						ctx.shared.root3d = ctx.local3d; // allows Context.locateObject to work (constraints)
+						var prevShared = ctx.shared;
+						ctx.shared = ctx.shared.cloneRef(this, modelPath);
 						ref.make(ctx);
-						ctx.shared.root3d = prev;
+						ctx.shared = prevShared;
 					}
 				}
 				else {

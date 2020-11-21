@@ -11,21 +11,35 @@ class ContextShared {
 	public var root2d : h2d.Object;
 	public var root3d : h3d.scene.Object;
 	public var contexts : Map<Prefab,Context>;
-	public var references : Map<Prefab,Array<Context>>;
 	public var currentPath : String;
 	public var editorDisplay : Bool;
+
+	/**
+		If is a reference to another prefab file, this is the parent prefab.
+		See refContexts for children.
+	**/
+	public var parent : { prefab : Prefab, shared : ContextShared };
 
 	var cache : h3d.prim.ModelCache;
 	var shaderCache : ShaderDefCache;
 	var bakedData : Map<String, haxe.io.Bytes>;
+	/**
+		References to prefab within the same scene
+	**/
+	var sceneReferences : Map<Prefab,Array<Context>>;
+	/**
+		Contexts of references to other prefabs
+	**/
+	var refsContexts : Map<Prefab, ContextShared>;
 
 	public function new( ?res : hxd.res.Resource ) {
 		root2d = new h2d.Object();
 		root3d = new h3d.scene.Object();
 		contexts = new Map();
-		references = new Map();
 		cache = new h3d.prim.ModelCache();
 		shaderCache = new ShaderDefCache();
+		sceneReferences = new Map();
+		refsContexts = new Map();
 		if( res != null ) currentPath = res.entry.path;
 	}
 
@@ -37,15 +51,50 @@ class ContextShared {
 		return [for(e in contexts.keys()) e];
 	}
 
-	public function getContexts(p: Prefab) {
+	public function getContexts(p: Prefab) : Array<Context> {
 		var ret : Array<Context> = [];
 		var ctx = contexts.get(p);
 		if(ctx != null)
 			ret.push(ctx);
-		var ctxs = references.get(p);
-		if(ctxs != null)
-			return ret.concat(ctxs);
+		var ctxs = sceneReferences.get(p);
+		if( ctxs != null )
+			for( v in ctxs )
+				ret.push(v);
+		for( ref in refsContexts )
+			for( v in ref.getContexts(p) )
+				ret.push(v);
 		return ret;
+	}
+
+	public function cloneRef( prefab : Prefab, newPath : String ) {
+		var ctx = contexts.get(prefab);
+		if( ctx == null )
+			throw "Prefab reference has no context created";
+		var sh = refsContexts.get(prefab);
+		if( sh != null ) {
+			sh.root2d = ctx.local2d;
+			sh.root3d = ctx.local3d;
+			return sh;
+		}
+		sh = allocForRef();
+		refsContexts.set(prefab, sh);
+
+		sh.root2d = ctx.local2d;
+		sh.root3d = ctx.local3d;
+		// own contexts
+		// own references
+		sh.currentPath = newPath;
+		sh.editorDisplay = editorDisplay;
+		sh.parent = { shared : this, prefab : prefab };
+		sh.cache = cache;
+		sh.shaderCache = shaderCache;
+		// own bakedData
+		// own refsContext
+		return sh;
+	}
+
+	function allocForRef() {
+		return new ContextShared();
 	}
 
 	public function loadDir(p : String, ?dir : String ) : Array<hxd.res.Any> {
