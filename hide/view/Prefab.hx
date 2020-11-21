@@ -56,6 +56,8 @@ class Prefab extends FileView {
 	}
 
 	override function onDisplay() {
+		if( sceneEditor != null ) sceneEditor.dispose();
+
 		data = new hrt.prefab.Library();
 		var content = sys.io.File.getContent(getPath());
 		data.loadData(haxe.Json.parse(content));

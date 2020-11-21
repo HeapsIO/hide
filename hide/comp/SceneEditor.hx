@@ -266,6 +266,12 @@ class SceneEditor {
 		}
 	}
 
+	public function dispose() {
+		scene.dispose();
+		tree.dispose();
+		favTree.dispose();
+	}
+
 	function set_camera2D(b) {
 		if( cameraController != null ) cameraController.visible = !b;
 		if( cameraController2D != null ) cameraController2D.visible = b;

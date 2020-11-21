@@ -259,6 +259,8 @@ class Level3D extends FileView {
 	function get_properties() return sceneEditor.properties;
 
 	override function onDisplay() {
+		if( sceneEditor != null ) sceneEditor.dispose();
+
 		data = cast(hrt.prefab.Library.create("l3d"), hrt.prefab.l3d.Level3D);
 		var content = sys.io.File.getContent(getPath());
 		data.loadData(haxe.Json.parse(content));

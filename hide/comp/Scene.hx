@@ -97,6 +97,9 @@ class Scene extends Component implements h3d.IDrawable {
 			c();
 		cleanup = [];
 		engine.dispose();
+		@:privateAccess engine.driver = null;
+		untyped canvas.__scene = null;
+		canvas = null;
 	}
 
 	public function addListener(f) {

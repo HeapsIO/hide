@@ -204,6 +204,13 @@ class IconTree<T:{}> extends Component {
 		});
 	}
 
+	public function dispose() {
+		(element:Dynamic).jstree("detroy");
+		element.remove();
+		for( f in Reflect.fields(this) )
+			try Reflect.deleteField(this,f) catch(e:Dynamic) {}
+	}
+
 	function getRev( o : T ) {
 		if( Std.is(o, String) )
 			return revMapString.get(cast o);
