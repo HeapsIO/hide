@@ -1138,7 +1138,7 @@
     /**
     * Define a jQuery plugin
     */
-    var dataID = "spectrum.id";
+    var dataID = "__spectrum_id";
     $.fn.spectrum = function (opts, extra) {
 
         if (typeof opts == "string") {
@@ -1147,7 +1147,8 @@
             var args = Array.prototype.slice.call( arguments, 1 );
 
             this.each(function () {
-                var spect = spectrums[$(this).data(dataID)];
+				var id = this[dataID];
+                var spect = spectrums[id];
                 if (spect) {
                     var method = spect[opts];
                     if (!method) {
@@ -1165,7 +1166,7 @@
                     }
                     else if (opts == "destroy") {
                         spect.destroy();
-                        $(this).removeData(dataID);
+                        this[dataID] = undefined;
                     }
                     else {
                         method.apply(spect, args);
@@ -1180,7 +1181,7 @@
         return this.spectrum("destroy").each(function () {
             var options = $.extend({}, opts, $(this).data());
             var spect = spectrum(this, options);
-            $(this).data(dataID, spect.id);
+			this[dataID] = spect.id;
         });
     };
 

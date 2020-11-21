@@ -32,11 +32,10 @@ class ColorPicker extends Component {
 		});
 
 		// cleanup
-		var container = (element:Dynamic).spectrum("container");
 		var timer = new haxe.Timer(1000);
 		timer.run = function() {
 			if( root.parents("body").length == 0 ) {
-				container.remove();
+				(element:Dynamic).spectrum("destroy");
 				timer.stop();
 			}
 		};
