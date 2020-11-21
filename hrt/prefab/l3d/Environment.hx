@@ -139,7 +139,7 @@ class Environment extends Object3D {
 		curPos += lutBytes.length;
 		if( curPos > bytes.length ) return false;
 
-		// TO DO : Remove LUT from save 
+		// TO DO : Remove LUT from save
 		/*var lutPixels : hxd.Pixels.PixelsFloat = new hxd.Pixels(env.lut.width, env.lut.height, lutBytes, env.lut.format);
 		env.lut.uploadPixels(lutPixels);*/
 
@@ -192,14 +192,9 @@ class Environment extends Object3D {
 
 		#if editor
 		if( sourceMap.flags.has(Loading) ) {
-			var path = ctx.shared.currentPath;
-			if( path == null ) return;
 			haxe.Timer.delay(function() {
 				ctx.setCurrent();
-				var prev = ctx.shared.currentPath;
-				ctx.shared.currentPath = path;
 				updateInstance(ctx,propName);
-				ctx.shared.currentPath = prev;
 			},100);
 			return;
 		}
@@ -258,7 +253,7 @@ class Environment extends Object3D {
 		var scene = ctx.local3d.getScene();
 
 		// Auto Apply on change
-		if( scene != null ) 
+		if( scene != null )
 			applyToRenderer(scene.renderer);
 	}
 
