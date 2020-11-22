@@ -183,7 +183,7 @@ class Object3D extends Prefab {
 			if( mesh.primitive == null ) continue;
 			visibleMeshes.push(mesh);
 
-			if( Std.isOfType(mesh, h3d.scene.Skin) ) {
+			if( Std.downcast(mesh, h3d.scene.Skin) != null ) {
 				hasSkin = true;
 				continue;
 			}
