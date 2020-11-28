@@ -177,7 +177,7 @@ class PropsEditor extends Component {
 
 			var s = g.closest(".section");
 			var key = (s.length == 0 ? "" : StringTools.trim(s.children("h1").text()) + "/") + name;
-			if( getDisplayState("group:" + key) != false )
+			if( getDisplayState("group:" + key) != false && !g.hasClass("closed") )
 				g.addClass("open");
 		}
 
