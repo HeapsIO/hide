@@ -5,6 +5,7 @@ package hrt.prefab.l3d;
 class Environment extends Object3D {
 
 	var sourceMapPath : String;
+	var configName : String;
 	var env : h3d.scene.pbr.Environment;
 
 	public var power : Float = 1.0;
@@ -32,6 +33,7 @@ class Environment extends Object3D {
 		specSize = obj.specSize != null ? obj.specSize : 512;
 		ignoredSpecLevels = obj.ignoredSpecLevels != null ? obj.ignoredSpecLevels : 1;
 		sourceMapPath = obj.sourceMapPath != null ? obj.sourceMapPath : null;
+		configName = obj.configName;
 	}
 
 	override function save() {
@@ -45,135 +47,39 @@ class Environment extends Object3D {
 		obj.specSize = specSize;
 		obj.ignoredSpecLevels = ignoredSpecLevels;
 		obj.sourceMapPath = sourceMapPath;
+		if( configName != null ) obj.configName = configName;
 		return obj;
 	}
 
-	function saveAsBinary( ctx : Context ) {
-		if( env == null || env.diffuse == null || env.specular == null || env.lut == null )
-			return;
-		var bytes = convertToBinary();
-		ctx.shared.savePrefabDat("environment", "bake", name, bytes);
-	}
-
-	function loadFromBinary( ctx : Context ) : Bool {
-		if( env == null || env.diffuse == null || env.specular == null || env.lut == null )
+	function loadFromBinary() {
+		var path = new haxe.io.Path(sourceMapPath);
+		try {
+			env.dispose();
+			if( configName != null )
+				path.file += "-" + configName;
+			path.ext = "envd.dds";
+			env.diffuse = hxd.res.Loader.currentInstance.load(path.toString()).toImage().toTexture();
+			path.ext = "envs.dds";
+			env.specular = hxd.res.Loader.currentInstance.load(path.toString()).toImage().toTexture();
+			return true;
+		} catch( e : hxd.res.NotFound ) {
 			return false;
-		var res = ctx.shared.loadPrefabDat("environment", "bake", name);
-		return res != null ? convertFromBinary(res.entry.getBytes()) : false;
+		}
 	}
 
-	function convertToBinary() : haxe.io.Bytes {
-		var lutPixels = env.lut.capturePixels();
-		var diffusePixels : Array<hxd.Pixels.PixelsFloat> = [ for( i in 0 ... 6) env.diffuse.capturePixels(i) ];
-
-		var mipLevels = env.getMipLevels();
-		var specularPixels : Array<hxd.Pixels.PixelsFloat> =
-		 [
-			for( i in 0 ... 6 ) {
-				for( m in 0 ... mipLevels ) {
-					env.specular.capturePixels(i, m);
-				}
-			}
-		];
-
-		var totalBytes = 0;
-		totalBytes += 4 + 4 + 4 + 4 + 8 + 8; // diffSize + specSize + ignoredSpecLevels + sampleBits + threshold + scale
-		totalBytes += lutPixels.bytes.length;
-		for( p in diffusePixels )
-			totalBytes += p.bytes.length;
-		for( p in specularPixels )
-			totalBytes += p.bytes.length;
-		var bytes = haxe.io.Bytes.alloc(totalBytes);
-		var curPos = 0;
-		bytes.setInt32(curPos, sampleBits);
-		curPos += 4;
-		bytes.setInt32(curPos, diffSize);
-		curPos += 4;
-		bytes.setInt32(curPos, specSize);
-		curPos += 4;
-		bytes.setInt32(curPos, ignoredSpecLevels);
-		curPos += 4;
-		bytes.setDouble(curPos, threshold);
-		curPos += 8;
-		bytes.setDouble(curPos, scale);
-		curPos += 8;
-		bytes.blit(curPos, lutPixels.bytes, 0, lutPixels.bytes.length);
-		curPos += lutPixels.bytes.length;
-		for( p in diffusePixels ) {
-			bytes.blit(curPos, p.bytes, 0, p.bytes.length);
-			curPos += p.bytes.length;
-		}
-		for( p in specularPixels ) {
-			bytes.blit(curPos, p.bytes, 0, p.bytes.length);
-			curPos += p.bytes.length;
-		}
-		return bytes;
-	}
-
-	function convertFromBinary( bytes : haxe.io.Bytes ) {
-		var curPos = 0;
-
-		var headerSize = 4 + 4 + 4 + 4 + 8 + 8;
-		if( headerSize > bytes.length )
-			return false;
-
-		var bakedSampleBits = bytes.getInt32(curPos);
-		curPos += 4;
-		var bakedDiffSize = bytes.getInt32(curPos);
-		curPos += 4;
-		var bakedSpecSize = bytes.getInt32(curPos);
-		curPos += 4;
-		var bakedIgnoredSpecLevels = bytes.getInt32(curPos);
-		curPos += 4;
-		var bakedThreshold = bytes.getDouble(curPos);
-		curPos += 8;
-		var bakedScale = bytes.getDouble(curPos);
-		curPos += 8;
-
-		if( bakedDiffSize != diffSize || bakedSpecSize != specSize || bakedIgnoredSpecLevels != ignoredSpecLevels || bakedSampleBits != sampleBits || bakedThreshold != threshold || bakedScale != scale )
-			return false;
-
-		var lutSize = hxd.Pixels.calcStride(env.lut.width, env.lut.format) * env.lut.height;
-		if( curPos + lutSize > bytes.length ) return false;
-		var lutBytes = bytes.sub(curPos, lutSize);
-		curPos += lutBytes.length;
-		if( curPos > bytes.length ) return false;
-
-		// TO DO : Remove LUT from save
-		/*var lutPixels : hxd.Pixels.PixelsFloat = new hxd.Pixels(env.lut.width, env.lut.height, lutBytes, env.lut.format);
-		env.lut.uploadPixels(lutPixels);*/
-
-		var diffSize = hxd.Pixels.calcStride(env.diffuse.width, env.diffuse.format) * env.diffuse.height;
-		for( i in 0 ... 6 ) {
-			if( curPos + diffSize > bytes.length ) return false;
-			var diffByte = bytes.sub(curPos, diffSize);
-			curPos += diffByte.length;
-			if( curPos > bytes.length ) return false;
-			var diffPixels : hxd.Pixels.PixelsFloat = new hxd.Pixels(env.diffuse.width, env.diffuse.height, diffByte, env.diffuse.format);
-			env.diffuse.uploadPixels(diffPixels, 0, i);
-		}
-
-		var mipLevels = env.getMipLevels();
-		env.specLevels = mipLevels - ignoredSpecLevels;
-		for( i in 0 ... 6 ) {
-			for( m in 0 ... mipLevels ) {
-				var mipMapSize = hxd.Pixels.calcStride(env.specular.width >> m, env.specular.format) * env.specular.height >> m;
-				if( curPos + mipMapSize > bytes.length ) return false;
-				var specByte = bytes.sub(curPos, mipMapSize);
-				curPos += specByte.length;
-				if( curPos > bytes.length ) return false;
-				var specPixels : hxd.Pixels.PixelsFloat = new hxd.Pixels(env.specular.width >> m, env.specular.height >> m, specByte, env.specular.format);
-				env.specular.uploadPixels(specPixels, m, i);
-			}
-		}
-
-		return true;
-	}
-
-	function compute( ctx: Context ) {
-		env.compute();
-		#if editor
-		saveAsBinary(ctx);
+	function saveToBinary() {
+		#if (hl || hxnodejs)
+		var fs = cast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
+		if( fs == null ) return;
+		var path = new haxe.io.Path(fs.baseDir+sourceMapPath);
+		if( configName != null )
+			path.file += "-" + configName;
+		var diffuse = hxd.Pixels.toDDS([for( i in 0...6 ) env.diffuse.capturePixels(i)],true);
+		path.ext = "envd.dds";
+		sys.io.File.saveBytes(path.toString(), diffuse);
+		var specular = hxd.Pixels.toDDS([for( i in 0...6 ) for( mip in 0...env.getMipLevels() ) env.specular.capturePixels(i,mip)],true);
+		path.ext = "envs.dds";
+		sys.io.File.saveBytes(path.toString(), specular);
 		#end
 	}
 
@@ -194,64 +100,46 @@ class Environment extends Object3D {
 		if( sourceMap.flags.has(Loading) ) {
 			haxe.Timer.delay(function() {
 				ctx.setCurrent();
+				if( h3d.Engine.getCurrent().driver == null ) return; // was disposed
 				updateInstance(ctx,propName);
 			},100);
 			return;
 		}
 		#end
 
-		var needCompute = false;
+		var needLoad = false;
+		if( env == null )
+			env = new h3d.scene.pbr.Environment(null);
 
-		if( env == null ) {
-			env = new h3d.scene.pbr.Environment(sourceMap);
-			env.equiToCube();
-			needCompute = true;
+		if( configName != null ) {
+			configName = StringTools.trim(configName);
+			if( configName == "" ) configName = null;
 		}
 
-		if( sourceMap != env.source ) {
+		if( env.source != sourceMap ) {
 			env.source = sourceMap;
-			env.equiToCube();
-			needCompute = true;
+			needLoad = true;
 		}
 
-		if( env.specSize != specSize ) {
-			if( env.specular != null ) env.specular.dispose();
-			env.specular = null;
-			needCompute = true;
-		}
 		env.specSize = specSize;
-
-		if( env.diffSize != diffSize ) {
-			if( env.diffuse != null ) env.diffuse.dispose();
-			env.diffuse = null;
-			needCompute = true;
-		}
 		env.diffSize = diffSize;
-
-		if( propName == null || propName == "sampleBits" || propName == "ignoredSpecLevels" || propName == "threshold" || propName == "scale" ) {
-			env.sampleBits = sampleBits;
-			env.ignoredSpecLevels = ignoredSpecLevels;
-			env.threshold = threshold;
-			env.scale = scale;
-			needCompute = true;
-		}
+		env.sampleBits = sampleBits;
+		env.ignoredSpecLevels = ignoredSpecLevels;
+		env.threshold = threshold;
+		env.scale = scale;
 
 		env.rot = rotation;
 		env.power = power;
 
-		env.createTextures();
-		// First Load
-		if( propName == null && needCompute ) {
-			var loadFromBinarySucces = loadFromBinary(ctx);
-			if( !loadFromBinarySucces )
-				compute(ctx);
-		}
-		else if( needCompute ) {
-			compute(ctx);
+		if( propName == "force" || (needLoad && !loadFromBinary()) ) {
+			env.dispose();
+			env.specular = null;
+			env.diffuse = null;
+			env.compute();
+			saveToBinary();
 		}
 
 		var scene = ctx.local3d.getScene();
-
 		// Auto Apply on change
 		if( scene != null )
 			applyToRenderer(scene.renderer);
@@ -283,28 +171,32 @@ class Environment extends Object3D {
 					<dt>Power</dt><dd><input type="range" min="0" max="10" field="power"/></dd>
 				</dl>
 			</div>
-			<div class="group" name="Resolution">
+			<div class="group closed" name="Generation">
 				<dl>
 					<dt>Diffuse</dt><dd><input type="range" min="1" max="512" step="1" field="diffSize"/></dd>
 					<dt>Specular</dt><dd><input type="range" min="1" max="2048" step="1" field="specSize"/></dd>
 					<dt>Sample Count</dt><dd><input type="range" min="1" max="12" step="1" field="sampleBits"/></dd>
 					<dt>Ignored Spec Levels</dt><dd><input type="range" min="0" max="3" step="1" field="ignoredSpecLevels"/></dd>
+					<dt>HDR Threshold</dt><dd><input type="range" min="0" max="1" step="0.1" field="threshold"/></dd>
+					<dt>HDR Scale</dt><dd><input type="range" min="0" max="10" field="scale"/></dd>
+					<dt>Config Name</dt><dd><input type="text" field="configName"/></dd>
+					<dt>&nbsp;</dt><dd><input type="button" class="compute" value="Compute"/></dd>
 				</dl>
 			</div>
-			<div class="group" name="HDR">
-				<dl>
-					<dt>Threshold</dt><dd><input type="range" min="0" max="1" step="0.1" field="threshold"/></dd>
-					<dt>Scale</dt><dd><input type="range" min="0" max="10" field="scale"/></dd>
-				</dl>
-			</div>
-			');
+		');
 
-			var applyButton = props.find(".apply");
-			applyButton.click(function(_) {
-				applyToRenderer(ctx.rootContext.local3d.getScene().renderer);
-			});
+		var applyButton = props.find(".apply");
+		applyButton.click(function(_) {
+			applyToRenderer(ctx.rootContext.local3d.getScene().renderer);
+		});
 
-			ctx.properties.add(props, this, function(pname) { ctx.onChange(this, pname); });
+		props.find(".compute").click(function(_) {
+			ctx.onChange(this,"force");
+		});
+
+		ctx.properties.add(props, this, function(pname) {
+			ctx.onChange(this, pname);
+		});
 	}
 
 	#end
