@@ -40,6 +40,7 @@ class ColorGradingTonemap extends hxsl.Shader {
 class ColorGrading extends RendererFX {
 
 	var tonemap = new ColorGradingTonemap();
+	public var customLut : h3d.mat.Texture;
 
 	public function new(?parent) {
 		super(parent);
@@ -50,14 +51,19 @@ class ColorGrading extends RendererFX {
 		} : ColorGradingProps);
 	}
 
+	public function getLutTexture() {
+		var p : ColorGradingProps = props;
+		if( p.texturePath == null ) return null;
+		return hxd.res.Loader.currentInstance.load(p.texturePath).toTexture();
+	}
+
 	override function end( r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step ) {
 		if( step == BeforeTonemapping ) {
 			r.mark("ColorGrading");
 			var p : ColorGradingProps = props;
 			tonemap.intensity = p.intensity;
 			tonemap.size = p.size;
-			if( p.texturePath != null )
-				tonemap.lut = hxd.res.Loader.currentInstance.load(p.texturePath).toTexture();
+			tonemap.lut = customLut != null ? customLut : getLutTexture();
 			if( tonemap.lut != null && p.intensity > 0 )
 				r.addShader(tonemap);
 		}
