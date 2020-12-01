@@ -182,8 +182,6 @@ class LightProbe extends Object3D {
 
 	// Texture Mode
 	public var texturePath : String = null;
-	public var threshold : Float = 1.0;
-	public var scale : Float = 1.0;
 	public var rotation : Float = 0.0;
 
 	// Capture Mode
@@ -234,8 +232,6 @@ class LightProbe extends Object3D {
 		if( obj.fadeDist != null ) fadeDist = obj.fadeDist;
 		if( obj.fadeMode != null ) fadeMode = obj.fadeMode;
 		if( obj.power != null ) power = obj.power;
-		if( obj.threshold != null ) threshold = obj.threshold;
-		if( obj.scale != null ) scale = obj.scale;
 		if( obj.rotation != null ) rotation = obj.rotation;
 		if( obj.sampleBits != null ) sampleBits = obj.sampleBits;
 		if( obj.diffSize != null ) diffSize = obj.diffSize;
@@ -254,8 +250,6 @@ class LightProbe extends Object3D {
 		o.fadeDist = fadeDist;
 		o.fadeMode = fadeMode;
 		o.power = power;
-		o.threshold = threshold;
-		o.scale = scale;
 		o.rotation = rotation;
 		o.sampleBits = sampleBits;
 		o.diffSize = diffSize;
@@ -330,8 +324,6 @@ class LightProbe extends Object3D {
 				}
 				if( lpo.env != null ) {
 					lpo.env.power = power;
-					lpo.env.threshold = threshold;
-					lpo.env.scale = scale;
 					lpo.env.rot = hxd.Math.degToRad(rotation);
 					lpo.env.sampleBits = sampleBits;
 					lpo.env.ignoredSpecLevels = ignoredSpecLevels;
@@ -466,8 +458,6 @@ class LightProbe extends Object3D {
 		bytes.setInt32(curPos, env.diffSize); 			curPos += 4;
 		bytes.setInt32(curPos, env.specSize); 			curPos += 4;
 		bytes.setInt32(curPos, env.ignoredSpecLevels); 	curPos += 4;
-		bytes.setDouble(curPos, env.threshold); 		curPos += 8;
-		bytes.setDouble(curPos, env.scale);			 	curPos += 8;
 
 		for( p in diffusePixels ) {
 			bytes.blit(curPos, p.bytes, 0, p.bytes.length);
@@ -490,8 +480,6 @@ class LightProbe extends Object3D {
 		env.diffSize = bytes.getInt32(curPos); 			curPos += 4;
 		env.specSize = bytes.getInt32(curPos); 			curPos += 4;
 		env.ignoredSpecLevels = bytes.getInt32(curPos); curPos += 4;
-		env.threshold = bytes.getDouble(curPos); 		curPos += 8;
-		env.scale = bytes.getDouble(curPos); 			curPos += 8;
 
 		env.createTextures();
 
@@ -680,8 +668,6 @@ class LightProbe extends Object3D {
 					diffSize = lpo.env.diffSize;
 					specSize = lpo.env.specSize;
 					ignoredSpecLevels = lpo.env.ignoredSpecLevels;
-					threshold = lpo.env.threshold;
-					scale = lpo.env.scale;
 
 					// Save the import
 					ctx.rootContext.shared.savePrefabDat("probe", "bake", this.name, b);
