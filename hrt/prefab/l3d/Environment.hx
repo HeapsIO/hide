@@ -62,6 +62,7 @@ class Environment extends Object3D {
 			path.ext = "envs.dds";
 			env.specular = hxd.res.Loader.currentInstance.load(path.toString()).toImage().toTexture();
 			env.specular.mipMap = Linear;
+			env.specLevels = env.getMipLevels() - ignoredSpecLevels;
 			return true;
 		} catch( e : hxd.res.NotFound ) {
 			return false;
