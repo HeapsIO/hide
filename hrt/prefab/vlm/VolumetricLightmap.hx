@@ -118,7 +118,7 @@ class VolumetricLightmap extends Object3D {
 
 		if(volumetricLightmap == null) return;
 
-		var pixels : hxd.Pixels.PixelsFloat = null;
+		var pixels : hxd.Pixels = null;
 		if(volumetricLightmap.lightProbeTexture != null)
 			pixels = volumetricLightmap.lightProbeTexture.capturePixels();
 

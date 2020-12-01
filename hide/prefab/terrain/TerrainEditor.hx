@@ -22,8 +22,8 @@ class TerrainRevertData {
 class TileRevertData {
 	public var x : Int;
 	public var y : Int;
-	public var prevHeightMapPixels : hxd.Pixels.PixelsFloat;
-	public var nextHeightMapPixels : hxd.Pixels.PixelsFloat;
+	public var prevHeightMapPixels : hxd.Pixels;
+	public var nextHeightMapPixels : hxd.Pixels;
 	public var prevWeightMapPixels : Array<hxd.Pixels> = [];
 	public var nextWeightMapPixels : Array<hxd.Pixels> = [];
 	public var prevSurfaceIndexMapPixels : hxd.Pixels;
@@ -70,7 +70,7 @@ class TerrainEditor {
 	var tileTrashBin : Array<TileRevertData> = [];
 	var paintRevertDatas : Array<TileRevertData> = [];
 	// Render UV offscreen
-	var uvTexPixels : hxd.Pixels.PixelsFloat;
+	var uvTexPixels : hxd.Pixels;
 	var uvTex : h3d.mat.Texture;
 	var uvTexRes = 0.5;
 	var customScene = new h3d.scene.Scene(false, false);
@@ -241,13 +241,13 @@ class TerrainEditor {
 
 		// Adjust the height to avoid seams
 		for( t in tiles ) {
-			var pixels : hxd.Pixels.PixelsFloat = t.heightMapPixels;
+			var pixels = t.heightMapPixels;
 			if( pixels == null )
 				throw("Try to blend the edges of a null heightmap.");
 			var adjTileX = t.terrain.getTile(t.tileX + 1, t.tileY);
 			var adjHeightMapX = adjTileX != null ? adjTileX.heightMap : null;
 			if( adjHeightMapX != null ) {
-				var adjpixels : hxd.Pixels.PixelsFloat = adjTileX.heightMapPixels;
+				var adjpixels = adjTileX.heightMapPixels;
 				for( i in 0 ... t.heightMap.height ) {
 					pixels.setPixelF(t.heightMap.width - 1, i, adjpixels.getPixelF(0,i) );
 				}
@@ -256,7 +256,7 @@ class TerrainEditor {
 			var adjTileY = t.terrain.getTile(t.tileX, t.tileY + 1);
 			var adjHeightMapY = adjTileY != null ? adjTileY.heightMap : null;
 			if( adjHeightMapY != null ) {
-				var adjpixels : hxd.Pixels.PixelsFloat = adjTileY.heightMapPixels;
+				var adjpixels = adjTileY.heightMapPixels;
 				for( i in 0 ... t.heightMap.width ) {
 					pixels.setPixelF(i, t.heightMap.height - 1, adjpixels.getPixelF(i,0) );
 				}
@@ -265,7 +265,7 @@ class TerrainEditor {
 			var adjTileXY = t.terrain.getTile(t.tileX + 1, t.tileY + 1);
 			var adjHeightMapXY = adjTileXY != null ? adjTileXY.heightMap : null;
 			if( adjHeightMapXY != null ) {
-				var adjpixels : hxd.Pixels.PixelsFloat = adjTileXY.heightMapPixels;
+				var adjpixels = adjTileXY.heightMapPixels;
 				pixels.setPixelF(t.heightMap.width - 1, t.heightMap.height - 1, adjpixels.getPixelF(0,0));
 			}
 

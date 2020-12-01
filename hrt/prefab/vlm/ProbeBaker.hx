@@ -29,9 +29,9 @@ class ProbeBaker {
 	var output6 : h3d.mat.Texture;
 	var output7 : h3d.mat.Texture;
 	var textureArray: Array<h3d.mat.Texture>;
-	
+
 	// Tmp Buffer
-	var pixels : hxd.Pixels.PixelsFloat = null;
+	var pixels : hxd.Pixels = null;
 	var prim : h3d.prim.Plane2D;
 
 	public function new(){
@@ -183,7 +183,7 @@ class ProbeBaker {
 		@:privateAccess renderer.ctx.engine.flushTarget();
 	}
 
-	function convertOuputTexturesIntoSH( volumetricLightMap : hrt.prefab.vlm.VolumetricMesh, pixelsOut : hxd.Pixels.PixelsFloat ) {
+	function convertOuputTexturesIntoSH( volumetricLightMap : hrt.prefab.vlm.VolumetricMesh, pixelsOut : hxd.Pixels ) {
 
 		var order = volumetricLightMap.shOrder;
 		var sh = new hrt.prefab.vlm.SphericalHarmonic(order);
@@ -191,7 +191,7 @@ class ProbeBaker {
 		var maxCoef : Int = Std.int(Math.min(8, coefCount));
 
 		for(coef in 0 ... maxCoef){
-			var pixels : hxd.Pixels.PixelsFloat = textureArray[coef].capturePixels();
+			var pixels = textureArray[coef].capturePixels();
 			for( index in 0 ... pixels.width){
 				var coefs : h3d.Vector = pixels.getPixelF(index, 0);
 				var coords = volumetricLightMap.getProbeCoords(index);
@@ -216,7 +216,7 @@ class ProbeBaker {
 	function convertEnvIntoSH_CPU( env : h3d.mat.Texture, order : Int ) : hrt.prefab.vlm.SphericalHarmonic {
 		var coefCount = order * order;
 		var sphericalHarmonic = new hrt.prefab.vlm.SphericalHarmonic(order);
-		var face : hxd.Pixels.PixelsFloat;
+		var face : hxd.Pixels;
 		var weightSum = 0.0;
 		var invWidth = 1.0 / env.width;
 		var shData : Array<Float> = [for ( value in 0...coefCount ) 0];

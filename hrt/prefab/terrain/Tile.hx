@@ -41,7 +41,7 @@ class Tile extends h3d.scene.Mesh {
 
 	// TEXTURE & PIXEL
 	public var heightMap : h3d.mat.Texture;
-	var heightMapPixels : hxd.Pixels.PixelsFloat;
+	var heightMapPixels : hxd.Pixels;
 
 	public var normalMap(default, null) : h3d.mat.Texture;
 	var normalMapPixels : hxd.Pixels.Pixels;

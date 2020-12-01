@@ -53,7 +53,7 @@ class VolumetricMesh extends h3d.scene.Mesh {
 		return vm;
 	}
 
-	public function getProbeSH(coords : h3d.col.IPoint, ?pixels : hxd.Pixels.PixelsFloat ) : SphericalHarmonic {
+	public function getProbeSH(coords : h3d.col.IPoint, ?pixels : hxd.Pixels ) : SphericalHarmonic {
 
 		if(lightProbeTexture == null)
 			return new SphericalHarmonic(shOrder);

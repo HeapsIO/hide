@@ -263,7 +263,7 @@ class Terrain extends Object3D {
 			var pixels : hxd.Pixels = new hxd.Pixels(terrain.weightMapResolution.x, terrain.weightMapResolution.y, wd.res.entry.getBytes(), RGBA);
 			tmpPackedWeightTexture.uploadPixels(pixels);
 			t.packedWeightMapPixel = pixels;
-			
+
 			// Notice that we need the surfaceIndexMap loaded before doing the unpacking
 			var engine = h3d.Engine.getCurrent();
 			#if editor
@@ -297,7 +297,7 @@ class Terrain extends Object3D {
 		for( hd in heightData ) {
 			var t = terrain.getTile(hd.x, hd.y);
 			var bytes = hd.res.entry.getBytes();
-			var pixels : hxd.Pixels.PixelsFloat = new hxd.Pixels(terrain.heightMapResolution.x, terrain.heightMapResolution.y, bytes, R32F);
+			var pixels = new hxd.Pixels(terrain.heightMapResolution.x, terrain.heightMapResolution.y, bytes, R32F);
 			t.heightMapPixels = pixels;
 
 			if( !bakeHeightAndNormalInGeometry ) {
@@ -477,7 +477,7 @@ class Terrain extends Object3D {
 
 	public function saveHeightTextures( ctx : Context ) {
 		for( tile in terrain.tiles ) {
-			var pixels : hxd.Pixels.PixelsFloat = tile.heightMap.capturePixels();
+			var pixels = tile.heightMap.capturePixels();
 			var fileName = tile.tileX + "_" + tile.tileY + "_" + "h";
 			ctx.shared.savePrefabDat(fileName, "bin", name, pixels.bytes);
 		}

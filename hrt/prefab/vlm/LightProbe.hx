@@ -441,9 +441,9 @@ class LightProbe extends Object3D {
 
 	function serialize( env : Environment ) : haxe.io.Bytes {
 
-		var diffusePixels : Array<hxd.Pixels.PixelsFloat> = [ for( i in 0 ... 6) env.diffuse.capturePixels(i) ];
+		var diffusePixels : Array<hxd.Pixels> = [ for( i in 0 ... 6) env.diffuse.capturePixels(i) ];
 		var mipLevels = env.getMipLevels();
-		var specularPixels : Array<hxd.Pixels.PixelsFloat> =
+		var specularPixels : Array<hxd.Pixels> =
 		 [
 			for( i in 0 ... 6 ) {
 				for( m in 0 ... mipLevels ) {
@@ -499,7 +499,7 @@ class LightProbe extends Object3D {
 		for( i in 0 ... 6 ) {
 			var diffByte = bytes.sub(curPos, diffSize);
 			curPos += diffByte.length;
-			var diffPixels : hxd.Pixels.PixelsFloat = new hxd.Pixels(env.diffuse.width, env.diffuse.height, diffByte, env.diffuse.format);
+			var diffPixels = new hxd.Pixels(env.diffuse.width, env.diffuse.height, diffByte, env.diffuse.format);
 			env.diffuse.uploadPixels(diffPixels, 0, i);
 		}
 
@@ -510,7 +510,7 @@ class LightProbe extends Object3D {
 				var mipMapSize = hxd.Pixels.calcStride(env.specular.width >> m, env.specular.format) * env.specular.height >> m;
 				var specByte = bytes.sub(curPos, mipMapSize);
 				curPos += specByte.length;
-				var specPixels : hxd.Pixels.PixelsFloat = new hxd.Pixels(env.specular.width >> m, env.specular.height >> m, specByte, env.specular.format);
+				var specPixels = new hxd.Pixels(env.specular.width >> m, env.specular.height >> m, specByte, env.specular.format);
 				env.specular.uploadPixels(specPixels, m, i);
 			}
 		}
