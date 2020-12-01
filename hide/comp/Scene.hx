@@ -124,6 +124,7 @@ class Scene extends Component implements h3d.IDrawable {
 		engine.backgroundColor = 0xFF111111;
 		canvas.id = null;
 		engine.onReady = function() {
+			if( engine.driver == null ) return;
 			new Element(canvas).on("resize", function() {
 				@:privateAccess window.checkResize();
 			});
