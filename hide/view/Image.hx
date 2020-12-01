@@ -7,6 +7,7 @@ private class ChannelSelectShader extends hxsl.Shader {
 		@param var texture : Sampler2D;
 		@param var textureCube : SamplerCube;
 		@param var mipLod : Float;
+		@param var exposure : Float;
 
 		@const var channels : Int;
 		@const var isCube : Bool;
@@ -17,6 +18,7 @@ private class ChannelSelectShader extends hxsl.Shader {
 
 		function fragment() {
 			pixelColor = isCube ? textureCube.getLod(transformedNormal, mipLod) : texture.getLod(calculatedUV, mipLod);
+			pixelColor.rgb *= pow(2, exposure);
 			switch( channels ) {
 			case 0, 15:
 				// nothing
@@ -69,6 +71,7 @@ class Image extends FileView {
 					bmp = new h2d.Bitmap(h2d.Tile.fromTexture(t), scene.s2d);
 					bmp.addShader(channelSelect);
 					channelSelect.texture = t;
+					new hide.view.l3d.CameraController2D(scene.s2d);
 				} else {
 					var r = new h3d.scene.fwd.Renderer();
 					scene.s3d.lightSystem.ambientLight.set(1,1,1,1);
@@ -81,11 +84,15 @@ class Image extends FileView {
 					var sp = new h3d.scene.Mesh(sp, scene.s3d);
 					sp.material.texture = t;
 					sp.material.mainPass.addShader(channelSelect);
-					new h3d.scene.CameraController(4,scene.s3d);
+					sp.material.shadows = false;
+					new h3d.scene.CameraController(5,scene.s3d);
 				}
 				if( t.flags.has(MipMapped) ) {
 					t.mipMap = Linear;
 					tools.addRange("MipMap", function(f) channelSelect.mipLod = f, 0, 0, t.mipLevels);
+				}
+				if( hxd.Pixels.isFloatFormat(t.format) ) {
+					tools.addRange("Exposure", function(f) channelSelect.exposure = f, 0, -10, 10);
 				}
 				onResize();
 			});
@@ -94,10 +101,10 @@ class Image extends FileView {
 
 	override function onResize() {
 		if( bmp == null ) return;
-		var scale = Math.min(1,Math.min(contentWidth / bmp.tile.width, contentHeight / bmp.tile.height));
+		var scale = Math.min(1,Math.min((contentWidth - 20) / bmp.tile.width, (contentHeight - 20) / bmp.tile.height));
 		bmp.setScale(scale * js.Browser.window.devicePixelRatio);
-		bmp.x = (scene.s2d.width - Std.int(bmp.tile.width * bmp.scaleX)) >> 1;
-		bmp.y = (scene.s2d.height - Std.int(bmp.tile.height * bmp.scaleY)) >> 1;
+		bmp.x = -Std.int(bmp.tile.width * bmp.scaleX) >> 1;
+		bmp.y = -Std.int(bmp.tile.height * bmp.scaleY) >> 1;
 	}
 
 	static var _ = FileTree.registerExtension(Image,hide.Ide.IMG_EXTS,{ icon : "picture-o" });
