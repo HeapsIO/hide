@@ -4,10 +4,19 @@ private class ChannelSelectShader extends hxsl.Shader {
 
 	static var SRC = {
 
+		@param var texture : Sampler2D;
+		@param var textureCube : SamplerCube;
+		@param var mipLod : Float;
+
 		@const var channels : Int;
+		@const var isCube : Bool;
+
 		var pixelColor : Vec4;
+		var calculatedUV : Vec2;
+		var transformedNormal : Vec3;
 
 		function fragment() {
+			pixelColor = isCube ? textureCube.getLod(transformedNormal, mipLod) : texture.getLod(calculatedUV, mipLod);
 			switch( channels ) {
 			case 0, 15:
 				// nothing
@@ -56,8 +65,28 @@ class Image extends FileView {
 		scene = new hide.comp.Scene(config, null, element.find(".heaps-scene"));
 		scene.onReady = function() {
 			scene.loadTexture(state.path, state.path, function(t) {
-				bmp = new h2d.Bitmap(h2d.Tile.fromTexture(t), scene.s2d);
-				bmp.addShader(channelSelect);
+				if( !t.flags.has(Cube) ) {
+					bmp = new h2d.Bitmap(h2d.Tile.fromTexture(t), scene.s2d);
+					bmp.addShader(channelSelect);
+					channelSelect.texture = t;
+				} else {
+					var r = new h3d.scene.fwd.Renderer();
+					scene.s3d.lightSystem.ambientLight.set(1,1,1,1);
+					scene.s3d.renderer = r;
+					var sp = new h3d.prim.Sphere(1,64,64);
+					sp.addNormals();
+					sp.addUVs();
+					channelSelect.textureCube = t;
+					channelSelect.isCube = true;
+					var sp = new h3d.scene.Mesh(sp, scene.s3d);
+					sp.material.texture = t;
+					sp.material.mainPass.addShader(channelSelect);
+					new h3d.scene.CameraController(4,scene.s3d);
+				}
+				if( t.flags.has(MipMapped) ) {
+					t.mipMap = Linear;
+					tools.addRange("MipMap", function(f) channelSelect.mipLod = f, 0, 0, t.mipLevels);
+				}
 				onResize();
 			});
 		};
