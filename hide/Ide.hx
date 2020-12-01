@@ -769,7 +769,7 @@ class Ide {
 		return path;
 	}
 
-	public static var IMG_EXTS = ["jpg", "jpeg", "gif", "png", "raw", "dds"];
+	public static var IMG_EXTS = ["jpg", "jpeg", "gif", "png", "raw", "dds", "hdr", "tga"];
 	public function chooseImage( onSelect ) {
 		chooseFile(IMG_EXTS, onSelect);
 	}
