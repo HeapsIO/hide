@@ -379,6 +379,7 @@ class Cell extends Component {
 			[
 				"cdb."+table.sheet.name => line.obj,
 				"cdb.objID" => objID,
+				"cdb.groupID" => line.getGroupID(),
 			]
 		).check(ecode);
 		if( error != null )

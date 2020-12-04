@@ -31,6 +31,25 @@ class Line extends Component {
 		}
 	}
 
+	public function getGroupID() {
+		var t = table;
+		var line = this;
+		while( t.parent != null ) {
+			line = Std.downcast(t, SubTable).cell.line;
+			t = t.parent;
+		}
+		var seps = t.sheet.separators;
+		var i = seps.length - 1;
+		while( i >= 0 ) {
+			if( seps[i] < line.index ) {
+				var t = t.sheet.props.separatorTitles[i];
+				if( t != null ) return t;
+			}
+			i--;
+		}
+		return null;
+	}
+
 	public function evaluate() {
 		for( c in cells )
 			@:privateAccess c.evaluate();

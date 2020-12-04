@@ -52,6 +52,7 @@ class ScriptTable extends SubTable {
 		var checker = new ScriptEditor.ScriptChecker(editor.config,"cdb."+cell.getDocumentName(),[
 			"cdb."+cell.table.sheet.name => cell.line.obj,
 			"cdb.objID" => ids.join(":"),
+			"cdb.groupID" => cell.line.getGroupID(),
 		]);
 		script = new ScriptEditor(cell.value, checker, div);
 		script.onSave = saveValue;
