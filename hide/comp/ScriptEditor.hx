@@ -13,12 +13,13 @@ class ScriptChecker {
 
 	static var TYPES_SAVE = new Map();
 	static var ERROR_SAVE = new Map();
+	static var TYPE_CHECK_HOOKS : Array<ScriptChecker->Void> = [];
 	var ide : hide.Ide;
 	var apiFiles : Array<String>;
-	var config : hide.Config;
-	var documentName : String;
-	var constants : Map<String,Dynamic>;
-	var evalTo : String;
+	public var config : hide.Config;
+	public var documentName : String;
+	public var constants : Map<String,Dynamic>;
+	public var evalTo : String;
 	public var checker(default,null) : hscript.Checker;
 
 	public function new( config : hide.Config, documentName : String, ?constants : Map<String,Dynamic> ) {
@@ -144,6 +145,8 @@ class ScriptChecker {
 		}
 		checker.allowUntypedMeta = true;
 		checker.allowGlobalsDefine = allowGlobalsDefine;
+		for( c in TYPE_CHECK_HOOKS )
+			c(this);
 	}
 
 	function getFields( tpath : String ) {
@@ -384,6 +387,13 @@ class ScriptEditor extends CodeEditor {
 			clearError();
 		else
 			setError(hscript.Printer.errorToString(error), error.line, error.pmin, error.pmax);
+	}
+
+	public static function register( cl : Class<Dynamic> ) : Bool {
+		@:privateAccess ScriptChecker.TYPE_CHECK_HOOKS.push(function(checker) {
+			Type.createInstance(cl,[checker]);
+		});
+		return true;
 	}
 
 }
