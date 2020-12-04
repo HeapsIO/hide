@@ -26,7 +26,7 @@ class DebugView extends hxsl.Shader {
 
 		function fragment() {
 			var n = vec3(transformedNormal.x * irrRotation.x - transformedNormal.y * irrRotation.y, transformedNormal.x * irrRotation.y + transformedNormal.y * irrRotation.x, transformedNormal.z);
-			var color = source.get(n).rgb * power;
+			var color = source.getLod(n, 0).rgb * power;
 			pixelColor = vec4(color, 1);
 		}
 
@@ -89,7 +89,6 @@ class LightProbeObject extends h3d.scene.Mesh {
 	public var fadeDist : Float;
 	public var fadeMode : ProbeFadeMode;
 	public var priority : Int;
-
 
 	public function new(?parent) {
 		var probeMaterial = h3d.mat.MaterialSetup.current.createMaterial();
@@ -182,6 +181,7 @@ class LightProbe extends Object3D {
 
 	// Texture Mode
 	public var texturePath : String = null;
+	public var hdrMax : Float = 10.0;
 	public var rotation : Float = 0.0;
 
 	// Capture Mode
@@ -232,6 +232,7 @@ class LightProbe extends Object3D {
 		if( obj.fadeDist != null ) fadeDist = obj.fadeDist;
 		if( obj.fadeMode != null ) fadeMode = obj.fadeMode;
 		if( obj.power != null ) power = obj.power;
+		if( obj.hdrMax != null ) hdrMax = obj.hdrMax;
 		if( obj.rotation != null ) rotation = obj.rotation;
 		if( obj.sampleBits != null ) sampleBits = obj.sampleBits;
 		if( obj.diffSize != null ) diffSize = obj.diffSize;
@@ -250,6 +251,7 @@ class LightProbe extends Object3D {
 		o.fadeDist = fadeDist;
 		o.fadeMode = fadeMode;
 		o.power = power;
+		o.hdrMax = hdrMax;
 		o.rotation = rotation;
 		o.sampleBits = sampleBits;
 		o.diffSize = diffSize;
@@ -324,6 +326,7 @@ class LightProbe extends Object3D {
 				}
 				if( lpo.env != null ) {
 					lpo.env.power = power;
+					lpo.env.hdrMax = hdrMax;
 					lpo.env.rot = hxd.Math.degToRad(rotation);
 					lpo.env.sampleBits = sampleBits;
 					lpo.env.ignoredSpecLevels = ignoredSpecLevels;
@@ -340,8 +343,7 @@ class LightProbe extends Object3D {
 					}
 					lpo.env.diffSize = diffSize;
 
-					if( propName == "threshold" || propName == "scale" ||
-						propName == "sampleBits" || propName == "ignoredSpecLevels" )
+					if( propName == "hdrMax" || propName == "sampleBits" )
 						needCompute = true;
 
 					if( needCompute ) {
@@ -360,17 +362,14 @@ class LightProbe extends Object3D {
 					lpo.env = new Environment(null);
 
 				lpo.env.power = power;
+				lpo.env.sampleBits = sampleBits;
 				lpo.env.ignoredSpecLevels = ignoredSpecLevels;
 
-				if( propName == "threshold" || propName == "scale" ||
-					propName == "sampleBits" || propName == "ignoredSpecLevels" )
+				if( propName == "sampleBits" || propName == "ignoredSpecLevels" )
 					needCompute = true;
 
-				var res = ctx.shared.loadPrefabDat("probe", "bake", name);
-				if( res != null ) {
-					loadBinary(lpo.env, res.entry.getBytes());
+				if( loadBinary(lpo.env, ctx) ) 
 					needCompute = false; // No Env available with binary load, everything else is already baked
-				}
 
 				if( needCompute )
 					lpo.env.compute();
@@ -431,7 +430,49 @@ class LightProbe extends Object3D {
 		updatePreviewSphere(o);
 	}
 
-	function serialize( env : Environment ) : haxe.io.Bytes {
+	function saveBinary( env : Environment, ctx : Context ) {
+
+		var diffuse = hxd.Pixels.toDDS([for( i in 0...6 ) env.diffuse.capturePixels(i)], true);
+		var specular = hxd.Pixels.toDDS([for( i in 0...6 ) for( mip in 0...env.getMipLevels() ) env.specular.capturePixels(i,mip)],true);
+
+		var totalBytes = 4 + 4; //ignoredSpecLevels + sampleBits
+		var data = haxe.io.Bytes.alloc(totalBytes);
+		var curPos = 0;
+		data.setInt32(curPos, env.sampleBits); 			curPos += 4;
+		data.setInt32(curPos, env.ignoredSpecLevels); 	curPos += 4;
+
+		ctx.shared.savePrefabDat("envd", "dds", name, diffuse);
+		ctx.shared.savePrefabDat("envs", "dds", name, specular);
+		ctx.shared.savePrefabDat("data", "bake", name, data);
+	}
+
+	function loadBinary( env : Environment, ctx : Context ) {
+
+		var diffuse = ctx.shared.loadPrefabDat("envd", "dds", name);
+		var specular = ctx.shared.loadPrefabDat("envs", "dds", name);
+		var data = ctx.shared.loadPrefabDat("data", "bake", name);
+
+		if( data == null || specular == null || diffuse == null )
+			return false;
+
+		env.diffuse = diffuse.toImage().toTexture();
+		env.diffSize = env.diffuse.width;
+		env.specular = specular.toImage().toTexture();
+		env.specular.mipMap = Linear;
+		env.specSize = env.specular.width;
+		env.specLevels = @:privateAccess env.getMipLevels() - env.ignoredSpecLevels;
+
+		var curPos = 0;
+		var bytes = data.entry.getBytes();
+		env.sampleBits = bytes.getInt32(curPos); 		curPos += 4;
+		env.ignoredSpecLevels = bytes.getInt32(curPos); curPos += 4;
+
+		return true;
+	}
+
+	#if editor
+
+	function exportData( env : Environment ) : haxe.io.Bytes {
 
 		var diffusePixels : Array<hxd.Pixels> = [ for( i in 0 ... 6) env.diffuse.capturePixels(i) ];
 		var mipLevels = env.getMipLevels();
@@ -443,9 +484,9 @@ class LightProbe extends Object3D {
 				}
 			}
 		];
-
+		
 		var totalBytes = 0;
-		totalBytes += 4 + 4 + 4 + 4 + 8 + 8; // diffSize + specSize + ignoredSpecLevels + sampleBits + threshold + scale
+		totalBytes += 4 + 4 + 4 + 4; // diffSize + specSize + ignoredSpecLevels + sampleBits
 		for( p in diffusePixels )
 			totalBytes += p.bytes.length;
 		for( p in specularPixels )
@@ -472,15 +513,13 @@ class LightProbe extends Object3D {
 		return bytes;
 	}
 
-	function loadBinary( env : Environment, bytes : haxe.io.Bytes ) {
+	function importData( env : Environment, bytes : haxe.io.Bytes ) {
 
 		var curPos = 0;
-
 		env.sampleBits = bytes.getInt32(curPos); 		curPos += 4;
 		env.diffSize = bytes.getInt32(curPos); 			curPos += 4;
 		env.specSize = bytes.getInt32(curPos); 			curPos += 4;
 		env.ignoredSpecLevels = bytes.getInt32(curPos); curPos += 4;
-
 		env.createTextures();
 
 		var diffSize = hxd.Pixels.calcStride(env.diffuse.width, env.diffuse.format) * env.diffuse.height;
@@ -503,8 +542,6 @@ class LightProbe extends Object3D {
 			}
 		}
 	}
-
-	#if editor
 
 	override function getHideProps() : HideProps {
 		return { icon : "map-o", name : "LightProbe" };
@@ -634,7 +671,7 @@ class LightProbe extends Object3D {
 					return;
 				}
 
-				var data = serialize(lpo.env);
+				var data = exportData(lpo.env);
 				function saveData( name : String ) {
 					var path = ctx.ide.getPath(name)+"/"+this.name+"_export.bake";
 					sys.io.File.saveBytes(path, data);
@@ -661,7 +698,7 @@ class LightProbe extends Object3D {
 						lpo.env.dispose();
 
 					lpo.env = new Environment(null);
-					loadBinary(lpo.env, b);
+					importData(lpo.env, b);
 
 					// Upate the prefab
 					sampleBits = lpo.env.sampleBits;
@@ -722,8 +759,7 @@ class LightProbe extends Object3D {
 
 				probeBaker.dispose();
 
-				var bytes = serialize(lpo.env);
-				ctx.rootContext.shared.savePrefabDat("probe", "bake", name, bytes);
+				saveBinary(lpo.env, ctx.rootContext);
 
 				ctx.onChange(this, null);
 			});
