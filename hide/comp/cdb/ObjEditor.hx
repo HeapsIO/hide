@@ -33,14 +33,7 @@ class ObjEditor extends Editor {
 			copy : function() return ((makeStructSign() + haxe.Json.stringify(obj)) : Any),
 			save : function() {
 				// allow save in case structure was changed
-				ide.saveDatabase(true);
-				if( structureWasChanged ) {
-					structureWasChanged = false;
-					haxe.Timer.delay(function() {
-						fileView.modified = false; // prevent message prompt
-						@:privateAccess fileView.onFileChanged(false);
-					},0);
-				}
+				ide.saveDatabase();
 			}
 		};
 		super(props, api);
@@ -54,11 +47,25 @@ class ObjEditor extends Editor {
 				We are about to change structure, but our prefab will not see its data changed...
 				Let's save first our file and reload it in DataFiles so the changes gets applied to it
 			*/
-			fileView.save();
-			DataFiles.load();
+			if( fileView.modified ) {
+				fileView.save();
+				@:privateAccess DataFiles.reload();
+			}
 			structureWasChanged = true;
 		}
 		super.beginChanges(structure);
+	}
+
+	override function endChanges() {
+		super.endChanges();
+		if( structureWasChanged && changesDepth == 0 ) {
+			structureWasChanged = false;
+			// force reload if was changed on disk because of structural change
+			@:privateAccess if( fileView.currentSign == null || fileView.currentSign != fileView.makeSign() ) {
+				fileView.modified = false;
+				fileView.onFileChanged(false);
+			}
+		}
 	}
 
 	override function show(sheet:cdb.Sheet, ?parent:Element) {

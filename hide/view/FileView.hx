@@ -33,12 +33,15 @@ class FileView extends hide.ui.View<{ path : String }> {
 		super.onRebuild();
 	}
 
+	function makeSign() {
+		var content = sys.io.File.getContent(getPath());
+		return haxe.crypto.Md5.encode(content);
+	}
+
 	function onFileChanged( wasDeleted : Bool, rebuildView = true ) {
 		if( !wasDeleted && currentSign != null ) {
 			// double check if content has changed
-			var content = sys.io.File.getContent(getPath());
-			var sign = haxe.crypto.Md5.encode(content);
-			if( sign == currentSign )
+			if( makeSign() == currentSign )
 				return;
 		}
 		if( wasDeleted ) {

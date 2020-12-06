@@ -31,14 +31,18 @@ class DataFiles {
 		haxe.Timer.delay(function() {
 			if( !changed ) return;
 			changed = false;
-			for( s in base.sheets )
-				if( s.props.dataFiles != null ) @:privateAccess {
-					s.sheet.lines = null;
-					s.sheet.linesData = null;
-				}
-			load();
+			reload();
 			Editor.refreshAll(true);
 		},0);
+	}
+
+	static function reload() {
+		for( s in base.sheets )
+			if( s.props.dataFiles != null ) @:privateAccess {
+				s.sheet.lines = null;
+				s.sheet.linesData = null;
+			}
+		load();
 	}
 
 	static function loadSheet( sheet : cdb.Sheet ) {
