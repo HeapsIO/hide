@@ -1464,6 +1464,7 @@ class SceneEditor {
 			var props = new hide.Element('<div></div>').appendTo(group.find(".content"));
 			var editor = new hide.comp.cdb.ObjEditor(curType, view.config, e.props, props);
 			editor.undo = properties.undo;
+			editor.fileView = view;
 			editor.onChange = function(pname) {
 				edit.onChange(e, 'props.$pname');
 				var e = Std.instance(e, hrt.prefab.l3d.Instance);

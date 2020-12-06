@@ -2,27 +2,63 @@ package hide.comp.cdb;
 
 class ObjEditor extends Editor {
 
-	public dynamic function onChange(propName : String) {}
+	public var fileView : hide.view.FileView;
 
 	var obj : {};
+	var structureWasChanged = false;
 
 	public function new( sheet : cdb.Sheet, props, obj : {}, ?parent : Element ) {
 		this.displayMode = AllProperties;
 		this.obj = obj;
+
+		// track changes in columns and props (structure changes made within local editor)
+		function makeStructSign() {
+			var sheets = [for( s in sheet.base.sheets ) Reflect.copy(@:privateAccess s.sheet)];
+			for( s in sheets ) {
+				s.separators = null;
+				s.lines = null;
+				s.linesData = null;
+			}
+			return haxe.crypto.Md5.encode(haxe.Serializer.run(sheets)).substr(0,16);
+		}
+
 		var api = {
 			load : function(v:Any) {
-				var obj2 = haxe.Json.parse((v:String));
+				var obj2 = haxe.Json.parse((v:String).substr(16));
 				for( f in Reflect.fields(obj) )
 					Reflect.deleteField(obj,f);
 				for( f in Reflect.fields(obj2) )
 					Reflect.setField(obj, f, Reflect.field(obj2,f));
 			},
-			copy : function() return (haxe.Json.stringify(obj) : Any),
-			save : function() throw "assert",
+			copy : function() return ((makeStructSign() + haxe.Json.stringify(obj)) : Any),
+			save : function() {
+				// allow save in case structure was changed
+				ide.saveDatabase(true);
+				if( structureWasChanged ) {
+					structureWasChanged = false;
+					haxe.Timer.delay(function() {
+						fileView.modified = false; // prevent message prompt
+						@:privateAccess fileView.onFileChanged(false);
+					},0);
+				}
+			}
 		};
 		super(props, api);
 		sheet = makePseudoSheet(sheet);
 		show(sheet, parent);
+	}
+
+	override function beginChanges( ?structure ) {
+		if( structure && fileView != null ) {
+			/*
+				We are about to change structure, but our prefab will not see its data changed...
+				Let's save first our file and reload it in DataFiles so the changes gets applied to it
+			*/
+			fileView.save();
+			DataFiles.load();
+			structureWasChanged = true;
+		}
+		super.beginChanges(structure);
 	}
 
 	override function show(sheet:cdb.Sheet, ?parent:Element) {
@@ -50,12 +86,11 @@ class ObjEditor extends Editor {
 		return s;
 	}
 
-	override function save() {
-	}
-
 	override function changeObject(line:Line, column:cdb.Data.Column, value:Dynamic) {
 		super.changeObject(line, column, value);
 		onChange(column.name);
 	}
+
+	public dynamic function onChange(propName : String) {}
 
 }

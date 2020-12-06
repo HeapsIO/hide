@@ -714,7 +714,7 @@ class Ide {
 		}
 	}
 
-	public function saveDatabase() {
+	public function saveDatabase( ?forcePrefabs ) {
 		hide.comp.cdb.DataFiles.save(function() {
 			if( databaseDiff != null ) {
 				sys.io.File.saveContent(getPath(databaseDiff), toJSON(new cdb.DiffFile().make(originDataBase,database)));
@@ -729,7 +729,7 @@ class Ide {
 				sys.io.File.saveContent(getPath(databaseFile), database.save());
 				fileWatcher.ignorePrevChange(dbWatcher);
 			}
-		});
+		}, forcePrefabs);
 	}
 
 	public function createDBSheet( ?index : Int ) {

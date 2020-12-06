@@ -396,7 +396,7 @@ class Editor extends Component {
 		Call before modifying the database, allow to group several changes together.
 		Allow recursion, only last endChanges() will trigger db save and undo point creation.
 	**/
-	public function beginChanges() {
+	public function beginChanges( ?structure : Bool ) {
 		if( changesDepth == 0 )
 			undoState.unshift(getState());
 		changesDepth++;
@@ -645,7 +645,7 @@ class Editor extends Component {
 			var c = modal.getColumn(col);
 			if (c == null)
 				return;
-			beginChanges();
+			beginChanges(true);
 			var err;
 			if( col != null )
 				err = base.updateColumn(sheet, col, c);
@@ -734,11 +734,13 @@ class Editor extends Component {
 			}},
 			{ label: "", isSeparator: true },
 			{ label : "Delete", click : function () {
-				beginChanges();
-				if( table.displayMode == Properties )
+				if( table.displayMode == Properties ) {
+					beginChanges();
 					changeObject(cell.line, col, base.getDefault(col,sheet));
-				else
+				} else {
+					beginChanges(true);
 					sheet.deleteColumn(col.name);
+				}
 				endChanges();
 				refresh();
 			}}
@@ -769,7 +771,7 @@ class Editor extends Component {
 			menu.insert(1,{ label : "Edit all", click : function() editScripts(table,col) });
 		if( table.displayMode == Properties ) {
 			menu.push({ label : "Delete All", click : function() {
-				beginChanges();
+				beginChanges(true);
 				table.sheet.deleteColumn(col.name);
 				endChanges();
 				refresh();
