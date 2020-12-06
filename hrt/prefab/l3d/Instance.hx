@@ -38,7 +38,7 @@ class Instance extends Object3D {
 		}
 		else {
 			var tile = unknown ? getDefaultTile().center() : findTile(kind.sheet, kind.idx.obj).center();
-			var objFollow = new h2d.ObjectFollower(ctx.local3d, ctx.shared.root2d);
+			var objFollow = new h2d.ObjectFollower(ctx.local3d, ctx.local2d);
 			objFollow.followVisibility = true;
 			var bmp = new h2d.Bitmap(tile, objFollow);
 			ctx.local2d = objFollow;
@@ -115,8 +115,14 @@ class Instance extends Object3D {
 		if(!super.removeInstance(ctx))
 			return false;
 		if(ctx.local2d != null ) {
-			var pctx = ctx.shared.getContexts(parent)[0];
-			if( pctx != null && pctx.local2d != ctx.local2d ) ctx.local2d.remove();
+			var p = parent;
+			var pctx = null;
+			while( p != null ) {
+				pctx = ctx.shared.getContexts(p)[0];
+				if( pctx != null ) break;
+				p = p.parent;
+			}
+			if( ctx.local2d != (pctx == null ? ctx.shared.root2d : pctx.local2d) ) ctx.local2d.remove();
 		}
 		return true;
 	}
