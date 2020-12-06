@@ -50,6 +50,7 @@ class FileView extends hide.ui.View<{ path : String }> {
 		if( modified && !ide.confirm('${state.path} has been modified, reload and ignore local changes?') )
 			return;
 		modified = false;
+		lastSaveTag = 0;
 		undo.clear(); // prevent any undo that would reset past reload
 		if( rebuildView )
 			rebuild();
