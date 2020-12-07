@@ -122,6 +122,7 @@ class GenFog extends RendererFX {
 	}
 
 	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
+		if( !checkEnabled() ) return;
 		var p : GenFogProps = props;
 		if( (step == AfterTonemapping && p.renderMode == "AfterTonemapping") || (step == BeforeTonemapping && p.renderMode == "BeforeTonemapping") ) {
 			r.mark("DistanceFog");
@@ -231,6 +232,7 @@ class GenFog extends RendererFX {
 				ctx.rebuildProperties();
 			});
 		}
+		super.edit(ctx);
 	}
 	#end
 
