@@ -66,6 +66,20 @@ class ContextShared {
 		return ret;
 	}
 
+	public function find<T:hrt.prefab.Prefab>( cl : Class<T>, ?name, ?references ) : T {
+		for( p in contexts.keys() ) {
+			var v = Std.downcast(p,cl);
+			if( v != null && (name == null || v.name == name) ) return v;
+		}
+		if( references ) {
+			for( ref in refsContexts ) {
+				var v = ref.find(cl, name, true);
+				if( v != null ) return v;
+			}
+		}
+		return null;
+	}
+
 	public function cloneRef( prefab : Prefab, newPath : String ) {
 		var ctx = contexts.get(prefab);
 		if( ctx == null )
