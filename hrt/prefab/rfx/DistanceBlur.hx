@@ -90,6 +90,7 @@ class DistanceBlur extends RendererFX {
 	}
 
 	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
+		if( !checkEnabled() ) return;
 		var p : DistanceBlurProps = props;
 		if( step == AfterTonemapping ) {
 			var ctx = r.ctx;
@@ -138,6 +139,7 @@ class DistanceBlur extends RendererFX {
 					<dt>Show Debug</dt><dd><input type="checkbox" field="showDebug"/></dd>
 				</div>
 		'),props);
+		super.edit(ctx);
 	}
 	#end
 

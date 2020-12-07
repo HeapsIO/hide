@@ -54,6 +54,7 @@ class Vignetting extends RendererFX {
 	}
 
 	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
+		if( !checkEnabled() ) return;
 		if( step == AfterTonemapping ) {
 			r.mark("Vignetting");
 			sync(r);
@@ -71,6 +72,7 @@ class Vignetting extends RendererFX {
 				<dt>Softness</dt><dd><input type="range" min="0" max="1" field="softness"/></dd>
 			</dl>
 		'),props);
+		super.edit(ctx);
 	}
 	#end
 
