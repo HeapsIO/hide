@@ -28,6 +28,7 @@ class Formulas {
 	}
 
 	public function evaluateAll( ?sheet : cdb.Sheet ) {
+		var maps = new Map();
 		for( s in editor.base.sheets ) {
 			if( sheet != null && sheet != s ) continue;
 			var forms = fmap.get(s.name);
@@ -39,11 +40,14 @@ class Formulas {
 					columns.push({ name : c.name, def : def, opt : c.opt });
 				}
 			for( o in s.getLines() ) {
+				var omapped : Dynamic = null;
 				for( c in columns ) {
 					var fname : String = Reflect.field(o,c.name+"__f");
 					if( fname == null ) fname = c.def;
 					if( fname == null ) continue;
-					var v = try forms.get(fname).call(o) catch( e : Dynamic ) Math.NaN;
+					if( omapped == null )
+						omapped = remap(o, s, maps);
+					var v = try forms.get(fname).call(omapped) catch( e : Dynamic ) Math.NaN;
 					if( v == null && c.opt )
 						Reflect.deleteField(o, c.name);
 					else {
@@ -53,6 +57,37 @@ class Formulas {
 				}
 			}
 		}
+	}
+
+	function remap( o : Dynamic, s : cdb.Sheet, maps : Map<String,Dynamic> ) : Dynamic {
+		var id = s.idCol != null ? Reflect.field(o, s.idCol.name) : null;
+		var m = if( id != null ) maps.get(s.name+":"+id) else null;
+		if( m != null )
+			return m;
+		m = {};
+		if( id != null )
+			maps.set(s.name+":"+id, m);
+		for( c in s.columns ) {
+			var v : Dynamic = Reflect.field(o, c.name);
+			if( v == null ) continue;
+			switch( c.type ) {
+			case TRef(other):
+				var sother = editor.base.getSheet(other);
+				var o2 = sother.index.get(v);
+				if( o2 == null ) continue;
+				v = remap(o2.obj, sother, maps);
+			case TProperties:
+				v = remap(v, s.getSub(c), maps);
+			case TList:
+				var sub = s.getSub(c);
+				v = [for( o in (v:Array<Dynamic>) ) remap(o, sub, maps)];
+			//case TEnum(values) -- TODO later (remap String?)
+			//case TFlags(values) -- TODO later
+			default:
+			}
+			Reflect.setField(m, c.name, v);
+		}
+		return m;
 	}
 
 	function load() {
@@ -78,6 +113,7 @@ class Formulas {
 		formulas = [];
 		fmap = new Map();
 		var interp = new hscript.Interp();
+		interp.variables.set("Math", Math);
 		try interp.execute(expr) catch( e : hscript.Expr.Error ) {
 			ide.error(formulasFile+": "+e.toString());
 			return;
@@ -203,6 +239,31 @@ class FormulasView extends hide.view.Script {
 			if( s.idCol != null )
 				skind.set(s.name, check.addCDBEnum(s.name.split("@").join(".")));
 		}
+
+		var mfields = new Map<String,CField>();
+		inline function field(name,t,r,?r2) {
+			mfields.set(name, {
+				name : name,
+				t : r2 == null ? TFun([{ name : "v", t : t, opt : false }], r) : TFun([{ name : "v1", t: t, opt : false },{ name : "v2", t : r, opt : false }],r2),
+				isPublic : true,
+				complete : true,
+				canWrite : false,
+				params : [],
+			});
+		}
+		field("ceil",TFloat,TInt);
+		field("floor",TFloat,TInt);
+		field("round",TFloat,TInt);
+		field("sqrt",TFloat,TInt);
+		field("abs",TFloat,TFloat);
+		field("pow",TFloat,TFloat,TFloat);
+		@:privateAccess check.checker.setGlobal("Math", TInst({
+			name : "Math",
+			fields : mfields,
+			statics : [],
+			params : [],
+		},[]));
+
 		var tstring = check.checker.types.resolve("String");
 		var cdefs = new Map();
 		for( s in ide.database.sheets ) {
@@ -223,7 +284,7 @@ class FormulasView extends hide.view.Script {
 				case TFloat: TFloat;
 				case TBool: TBool;
 				case TDynamic: TDynamic;
-				case TRef(other): skind.get(other);
+				case TRef(other): TInst(cdefs.get(other),[]);
 				case TCustom(_), TImage, TLayer(_), TTileLayer, TTilePos: null;
 				case TList, TProperties:
 					var t = TInst(cdefs.get(s.name+"@"+c.name),[]);

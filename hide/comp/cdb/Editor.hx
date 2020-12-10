@@ -21,6 +21,7 @@ typedef EditorApi = {
 
 typedef EditorColumnProps = {
 	var ?formula : String;
+	var ?ignoreExport : Bool;
 }
 
 @:allow(hide.comp.cdb)
@@ -589,6 +590,7 @@ class Editor extends Component {
 		});
 
 		formulas = new Formulas(this);
+		formulas.evaluateAll(currentSheet.realSheet);
 
 		var content = new Element("<table>");
 		tables = [];

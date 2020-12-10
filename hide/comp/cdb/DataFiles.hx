@@ -142,7 +142,21 @@ class DataFiles {
 		var temp = [];
 		var titles = [];
 		var prefabs = new Map();
-		for( s in base.sheets )
+		for( s in base.sheets ) {
+			for( c in s.columns ) {
+				var p : Editor.EditorColumnProps = c.editor;
+				if( p != null && p.ignoreExport ) {
+					var prev = [for( o in s.lines ) Reflect.field(o, c.name)];
+					for( o in s.lines ) Reflect.deleteField(o, c.name);
+					temp.push(function() {
+						for( i in 0...prev.length ) {
+							var v = prev[i];
+							if( v == null ) continue;
+							Reflect.setField(s.lines[i], c.name, v);
+						}
+					});
+				}
+			}
 			if( s.props.dataFiles != null ) {
 				var sheet = @:privateAccess s.sheet;
 				var sheetName = getTypeName(s);
@@ -166,29 +180,29 @@ class DataFiles {
 							inst.props = o;
 					}
 				}
-				temp.push(Reflect.copy(sheet));
-				titles.push(sheet.props.separatorTitles);
+				var old = Reflect.copy(sheet);
+				var oldTitles = sheet.props.separatorTitles;
+				temp.push(function() {
+					sheet.lines = old.lines;
+					sheet.linesData = old.linesData;
+					sheet.separators = old.separators;
+					sheet.props.separatorTitles = oldTitles;
+				});
 				Reflect.deleteField(sheet,"lines");
 				Reflect.deleteField(sheet,"linesData");
-				Reflect.deleteField(sheet.props,"separatorTitles");
 				sheet.separators = [];
+				Reflect.deleteField(sheet.props,"separatorTitles");
 			}
+		}
 		for( file => pf in prefabs ) {
 			skip++;
 			sys.io.File.saveContent(ide.getPath(file), ide.toJSON(pf.saveData()));
 		}
 		if( onSaveBase != null )
 			onSaveBase();
-		for( s in base.sheets ) {
-			if( s.props.dataFiles != null ) {
-				var d = temp.shift();
-				var sheet = @:privateAccess s.sheet;
-				sheet.lines = d.lines;
-				sheet.linesData = d.linesData;
-				sheet.separators = d.separators;
-				sheet.props.separatorTitles = titles.shift();
-			}
-		}
+		temp.reverse();
+		for( t in temp )
+			t();
 	}
 
 	// ---- TYPES Instances API -----
