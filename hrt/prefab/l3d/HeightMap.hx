@@ -321,6 +321,8 @@ class HeightMapMesh extends h3d.scene.Object {
 		var size = hmap.size;
 		var width = htex == null ? Std.int(size) : Math.ceil(htex.width * hmap.heightPrecision);
 		var height = htex == null ? Std.int(size) : Math.ceil(htex.height * hmap.heightPrecision);
+		width >>= (4 - hmap.quality);
+		height >>= (4 - hmap.quality);
 		var cw = size/width, ch = size/height;
 		if( grid == null || grid.width != width || grid.height != height || grid.cellWidth != cw || grid.cellHeight != ch ) {
 			grid = new HeightGrid(width,height,cw+epsilon/width,ch+epsilon/height);
@@ -369,6 +371,7 @@ class HeightMap extends Object3D {
 	var heightPrecision = 1.;
 	var minZ = -10;
 	var maxZ = 30;
+	public var quality = 4;
 	var objects : {
 		var file : String;
 		var assetsPath : String;
@@ -391,6 +394,7 @@ class HeightMap extends Object3D {
 		o.normalScale = normalScale;
 		if( heightPrecision != 1 )
 			o.heightPrecision = heightPrecision;
+		o.quality = quality;
 		o.minZ = minZ;
 		o.maxZ = maxZ;
 		if( objects != null )
@@ -407,6 +411,7 @@ class HeightMap extends Object3D {
 		if( obj.heightPrecision != null ) heightPrecision = obj.heightPrecision;
 		if( obj.minZ != null ) minZ = obj.minZ;
 		if( obj.maxZ != null ) maxZ = obj.maxZ;
+		if( obj.quality != null ) quality = obj.quality;
 		objects = obj.objects;
 	}
 
@@ -606,6 +611,7 @@ class HeightMap extends Object3D {
 				<dt>Normal Scale</dt><dd><input type="range" min="0" max="2" field="normalScale"/></dd>
 				<dt>MinZ</dt><dd><input type="range" min="-1000" max="0" field="minZ"/></dd>
 				<dt>MaxZ</dt><dd><input type="range" min="0" max="1000" field="maxZ"/></dd>
+				<dt>Quality</dt><dd><input type="range" min="0" max="4" field="quality" step="1"/></dd>
 			</dl>
 			</div>
 			<div class="group" name="Textures">
