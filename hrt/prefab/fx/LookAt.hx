@@ -12,6 +12,7 @@ class LookAtObject extends h3d.scene.Object {
 	}
 
 	static var tmpMat = new h3d.Matrix();
+	static var tmpVec = new h3d.Vector();
 	static var deltaVec = new h3d.Vector();
 	static var lookAtPos = new h3d.Vector();
 	static var lockAxis = new h3d.Vector();
@@ -32,7 +33,7 @@ class LookAtObject extends h3d.scene.Object {
 		}
 
 		super.calcAbsPos();
-		deltaVec.load(lookAtPos.sub(absPos.getPosition()));
+		deltaVec.load(lookAtPos.sub(absPos.getPosition(tmpVec)));
 		if(deltaVec.lengthSq() < 0.001)
 			return;
 
