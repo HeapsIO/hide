@@ -158,12 +158,12 @@ class IconTree<T:{}> extends Component {
 		});
 		element.on("open_node.jstree", function(event, e) {
 			var i = map.get(e.node.id);
-			saveDisplayState(i.absKey, true);
+			if( filter == null ) saveDisplayState(i.absKey, true);
 			onToggle(getValue(i), true);
 		});
 		element.on("close_node.jstree", function(event,e) {
 			var i = map.get(e.node.id);
-			saveDisplayState(i.absKey, false);
+			if( filter == null ) saveDisplayState(i.absKey, false);
 			onToggle(getValue(i), false);
 		});
 		element.on("refresh.jstree", function(_) {
@@ -206,6 +206,9 @@ class IconTree<T:{}> extends Component {
 				if(item != null)
 					applyStyle(getValue(item), new Element(li));
 			}
+		});
+		element.keydown(function(e:js.jquery.Event) {
+			if( e.keyCode == 27 ) closeFilter();
 		});
 	}
 
@@ -286,9 +289,13 @@ class IconTree<T:{}> extends Component {
 	public function searchFilter( flt : String ) {
 		this.filter = flt;
 		if( filter == "" ) filter = null;
-		if( filter != null )
+		if( filter != null ) {
 			filter = filter.toLowerCase();
-
+			// open all nodes that might contain data
+			for( id => v in map )
+				if( v.text.toLowerCase().indexOf(filter) >= 0 )
+					(element:Dynamic).jstree('_open_to', id);
+		}
 		var lines = element.find(".jstree-node");
 		lines.removeClass("filtered");
 		if( filter != null ) {
@@ -305,6 +312,18 @@ class IconTree<T:{}> extends Component {
 
 	var searchBox : Element;
 
+	public function closeFilter() {
+		if( searchBox != null ) {
+			searchBox.remove();
+			searchBox = null;
+		}
+		if( filter != null ) {
+			searchFilter(null);
+			var sel = getSelection();
+			refresh(() -> setSelection(sel));
+		}
+	}
+
 	public function openFilter() {
 		if( async ) {
 			async = false;
@@ -312,7 +331,7 @@ class IconTree<T:{}> extends Component {
 			return;
 		}
 		if( searchBox == null ) {
-			searchBox = new Element("<div>").addClass("searchBox").appendTo(element);
+			searchBox = new Element("<div>").addClass("searchBox").prependTo(element);
 			new Element("<input type='text'>").appendTo(searchBox).keydown(function(e) {
 				if( e.keyCode == 27 ) {
 					searchBox.find("i").click();
@@ -322,9 +341,7 @@ class IconTree<T:{}> extends Component {
 				searchFilter(e.getThis().val());
 			});
 			new Element("<i>").addClass("fa fa-times-circle").appendTo(searchBox).click(function(_) {
-				searchFilter(null);
-				searchBox.remove();
-				searchBox = null;
+				closeFilter();
 			});
 		}
 		searchBox.show();

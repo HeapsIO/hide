@@ -515,8 +515,14 @@ input[type=checkbox]:checked:after {
   color: #EEE;
 }
 .tree > .searchBox {
-  position: absolute;
+  position: sticky;
+  float: right;
   top: 0px;
+  right: 0px;
+  width: 130px;
+}
+.tree > .searchBox input {
+  width: 100px;
 }
 /* Properties */
 .hide-properties {
