@@ -928,6 +928,43 @@ class Ide {
 			try sys.FileSystem.deleteFile(Ide.inst.appPath + "/props.json") catch( e : Dynamic ) {};
 			untyped chrome.runtime.reload();
 		});
+		menu.find(".build-files").click(function(_) {
+			var lastTime = haxe.Timer.stamp();
+			var all = [""];
+			var done = 0;
+			var prevTitle = window.title;
+			function loop() {
+				while( true ) {
+					if( all.length == 0 ) {
+						window.title = prevTitle;
+						return;
+					}
+					if( haxe.Timer.stamp() - lastTime > 0.1 ) {
+						lastTime = haxe.Timer.stamp();
+						window.title = '(${Std.int(done*1000/(done+all.length))/10}%) '+all[0];
+						haxe.Timer.delay(loop,0);
+						return;
+					}
+					var path = all.shift();
+					var e = try hxd.res.Loader.currentInstance.load(path).entry catch( e : hxd.res.NotFound ) null;
+					if( e == null && path == "" ) e = hxd.res.Loader.currentInstance.fs.getRoot();
+					if( e != null ) done++;
+					if( e != null && e.isDirectory ) {
+						var base = path;
+						if( base != "" ) base += "/";
+						for( f in sys.FileSystem.readDirectory(getPath(path)) ) {
+							var path = base + f;
+							if( path == ".tmp" ) continue;
+							if( sys.FileSystem.isDirectory(getPath(path)) )
+								all.unshift(path);
+							else
+								all.push(path);
+						}
+					}
+				}
+			}
+			loop();
+		});
 
 		for( r in renderers ) {
 			new Element("<menu type='checkbox'>").attr("label", r.name).prop("checked",r == h3d.mat.MaterialSetup.current).appendTo(menu.find(".project .renderers")).click(function(_) {
