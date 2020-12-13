@@ -29,6 +29,7 @@ class IconTree<T:{}> extends Component {
 	public var allowRename : Bool;
 	public var async : Bool = false;
 	public var autoOpenNodes = true;
+	public var filter(default,null) : String;
 
 	public function new(?parent,?el) {
 		super(parent,el);
@@ -168,6 +169,10 @@ class IconTree<T:{}> extends Component {
 		element.on("refresh.jstree", function(_) {
 			var old = waitRefresh;
 			waitRefresh = [];
+			if( searchBox != null ) {
+				element.append(searchBox);
+				searchFilter(this.filter);
+			}
 			for( f in old ) f();
 		});
 		element.on("move_node.jstree", function(event, e) {
@@ -278,9 +283,11 @@ class IconTree<T:{}> extends Component {
 			(el[0] : Dynamic).scrollIntoViewIfNeeded();
 	}
 
-	public function searchFilter( filter : String ) {
+	public function searchFilter( flt : String ) {
+		this.filter = flt;
 		if( filter == "" ) filter = null;
-		if( filter != null ) filter = filter.toLowerCase();
+		if( filter != null )
+			filter = filter.toLowerCase();
 
 		var lines = element.find(".jstree-node");
 		lines.removeClass("filtered");
@@ -295,4 +302,34 @@ class IconTree<T:{}> extends Component {
 			}
 		}
 	}
+
+	var searchBox : Element;
+
+	public function openFilter() {
+		if( async ) {
+			async = false;
+			refresh(openFilter);
+			return;
+		}
+		if( searchBox == null ) {
+			searchBox = new Element("<div>").addClass("searchBox").appendTo(element);
+			new Element("<input type='text'>").appendTo(searchBox).keydown(function(e) {
+				if( e.keyCode == 27 ) {
+					searchBox.find("i").click();
+					return;
+				}
+			}).keyup(function(e) {
+				searchFilter(e.getThis().val());
+			});
+			new Element("<i>").addClass("fa fa-times-circle").appendTo(searchBox).click(function(_) {
+				searchFilter(null);
+				searchBox.remove();
+				searchBox = null;
+			});
+		}
+		searchBox.show();
+		searchBox.find("input").focus().select();
+	}
+
+
 }

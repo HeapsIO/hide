@@ -140,7 +140,6 @@ class SceneEditor {
 	public var editorDisplay(default,set) : Bool;
 	public var camera2D(default,set) : Bool = false;
 
-	var searchBox : Element;
 	var updates : Array<Float -> Void> = [];
 
 	var showGizmo = true;
@@ -203,12 +202,7 @@ class SceneEditor {
 		view.keys.register("duplicateInPlace", duplicate.bind(false));
 		view.keys.register("group", groupSelection);
 		view.keys.register("delete", () -> deleteElements(curEdit.rootElements));
-		view.keys.register("search", function() {
-			if( searchBox == null )
-				addSearchBox(tree.element);
-			searchBox.show();
-			searchBox.find("input").focus().select();
-		});
+		view.keys.register("search", function() tree.openFilter());
 		view.keys.register("rename", function () {
 			if(curEdit.rootElements.length > 0)
 				tree.editNode(curEdit.rootElements[0]);
@@ -306,22 +300,6 @@ class SceneEditor {
 
 	public function getSelection() {
 		return curEdit != null ? curEdit.elements : [];
-	}
-
-	function addSearchBox(parent : Element) {
-		searchBox = new Element("<div>").addClass("searchBox").appendTo(parent);
-		new Element("<input type='text'>").appendTo(searchBox).keydown(function(e) {
-			if( e.keyCode == 27 ) {
-				searchBox.find("i").click();
-				return;
-			}
-		}).keyup(function(e) {
-			tree.searchFilter(e.getThis().val());
-		});
-		new Element("<i>").addClass("fa fa-times-circle").appendTo(searchBox).click(function(_) {
-			tree.searchFilter(null);
-			searchBox.toggle();
-		});
 	}
 
 	function makeCamController() {

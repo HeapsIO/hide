@@ -514,6 +514,10 @@ input[type=checkbox]:checked:after {
 .searchBox i:hover {
   color: #EEE;
 }
+.tree > .searchBox {
+  position: absolute;
+  top: 0px;
+}
 /* Properties */
 .hide-properties {
   padding: 10px;

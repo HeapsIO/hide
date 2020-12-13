@@ -34,6 +34,8 @@ class FileTree extends FileView {
 				rebuild();
 			});
 		}
+
+		keys.register("search", function() tree.openFilter());
 	}
 
 	static function getExtension( file : String ) {
