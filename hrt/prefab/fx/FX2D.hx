@@ -246,6 +246,7 @@ class FX2D extends BaseFX {
 		fxanim.loop = loop;
 		fxanim.startLoop = startLoop;
 		ctx.local2d = fxanim;
+		ctx.local3d = null;
 		fxanim.playSpeed = 1.0;
 
 		#if editor
