@@ -17,6 +17,7 @@ class Model extends FileView {
 	var aspeed : hide.comp.Range;
 	var aloop : { function toggle( v : Bool ) : Void; var element : Element; }
 	var apause : { function toggle( v : Bool ) : Void; var element : Element; };
+	var aretarget : { var element : Element; };
 	var timeline : h2d.Graphics;
 	var timecursor : h2d.Bitmap;
 	var frameIndex : h2d.Text;
@@ -418,6 +419,10 @@ class Model extends FileView {
 			if( obj.currentAnimation != null ) obj.currentAnimation.pause = v;
 		});
 
+		aretarget = tools.addToggle("share-square-o", "Retarget Animation", function(b) {
+			setRetargetAnim(b);
+		});
+
 		aspeed = tools.addRange("Animation speed", function(v) {
 			if( obj.currentAnimation != null ) obj.currentAnimation.speed = v;
 		}, 1, 0, 2);
@@ -426,6 +431,17 @@ class Model extends FileView {
 
 		sceneEditor.onResize = buildTimeline;
 		setAnimation(null);
+	}
+
+	function setRetargetAnim(b:Bool) {
+		for( m in obj.getMeshes() ) {
+			var sk = Std.downcast(m, h3d.scene.Skin);
+			if( sk == null ) continue;
+			for( j in sk.getSkinData().allJoints ) {
+				if( j.parent == null ) continue; // skip root join (might contain feet translation)
+				j.retargetAnim = b;
+			}
+		}
 	}
 
 	function initConsole() {
@@ -486,6 +502,7 @@ class Model extends FileView {
 		aloop.element.toggle(file != null);
 		aspeed.element.toggle(file != null);
 		apause.element.toggle(file != null);
+		aretarget.element.toggle(file != null);
 		if( file == null ) {
 			obj.stopAnimation();
 			currentAnimation = null;
