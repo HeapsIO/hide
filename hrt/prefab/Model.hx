@@ -4,6 +4,8 @@ class Model extends Object3D {
 
 	var animation : Null<String>;
 	var lockAnimation : Bool = false;
+	var retargetAnim : Bool = false;
+	var retargetIgnore : String = null;
 
 	public function new(?parent) {
 		super(parent);
@@ -14,6 +16,8 @@ class Model extends Object3D {
 		var obj : Dynamic = super.save();
 		if( animation != null ) obj.animation = animation;
 		if( lockAnimation ) obj.lockAnimation = lockAnimation;
+		if( retargetAnim ) obj.retargetAnim = retargetAnim;
+		if( retargetIgnore != null && retargetIgnore != "" ) obj.retargetIgnore = retargetIgnore;
 		return obj;
 	}
 
@@ -21,6 +25,8 @@ class Model extends Object3D {
 		super.load(obj);
 		animation = obj.animation;
 		lockAnimation = obj.lockAnimation;
+		retargetAnim = obj.retargetAnim;
+		retargetIgnore = obj.retargetIgnore;
 	}
 
 	override function makeInstance(ctx:Context):Context {
@@ -38,9 +44,35 @@ class Model extends Object3D {
 				obj = root;
 			}
 			#if editor
-			for(m in obj.findAll(o -> Std.downcast(o, h3d.scene.Mesh)))
+			for(m in obj.getMeshes())
 				m.cullingCollider = new h3d.col.ObjectCollider(m, m.primitive.getBounds().toSphere());
 			#end
+			if( retargetAnim ) {
+				var ignorePrefix = [], ignoreNames = new Map();
+				if( retargetIgnore != null ) {
+					for( i in retargetIgnore.split(",") ) {
+						if( i.charCodeAt(i.length-1) == "*".code )
+							ignorePrefix.push(i.substr(0,-1));
+						else
+							ignoreNames.set(i, true);
+					}
+				}
+				for( o in obj.getMeshes() ) {
+					var sk = Std.downcast(o, h3d.scene.Skin);
+					if( sk == null ) continue;
+					for( j in sk.getSkinData().allJoints ) {
+						var ignored = ignoreNames.get(j.name);
+						if( ignored ) continue;
+						for( i in ignorePrefix )
+							if( StringTools.startsWith(j.name,i) ) {
+								ignored = true;
+								break;
+							}
+						if( !ignored )
+							j.retargetAnim = true;
+					}
+				}
+			}
 			obj.name = name;
 			ctx.local3d.addChild(obj);
 			ctx.local3d = obj;
@@ -71,10 +103,13 @@ class Model extends Object3D {
 				<dl>
 					<dt>Model</dt><dd><input type="model" field="source"/></dd>
 					<dt>Animation</dt><dd><select><option value="">-- Choose --</option></select>
-					<dt title="Don\'t save animation changes">Lock</dt><dd><input type="checkbox" field="lockAnimation"></select>
+					<dt title="Don\'t save animation changes">Lock</dt><dd><input type="checkbox" field="lockAnimation"></dd>
+					<dt>Retarget</dt><dd><input type="checkbox" field="retargetAnim"></dd>
+					<dt>Retarget Ignore</dt><dd><input type="text" field="retargetIgnore"></dd>
 				</dl>
 			</div>
 		'),this, function(pname) {
+			if( pname == "retargetIgnore" && ctx.properties.isTempChange ) return;
 			ctx.onChange(this, pname);
 		});
 
