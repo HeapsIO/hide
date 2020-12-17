@@ -214,7 +214,7 @@ class Model extends FileView {
 	}
 
 	function selectObject( obj : h3d.scene.Object ) {
-		selectedAxes.setTransform(obj.getAbsPos());
+		selectedAxes.follow = obj;
 
 		var properties = sceneEditor.properties;
 		properties.clear();
