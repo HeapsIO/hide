@@ -321,35 +321,9 @@ class ScriptEditor extends CodeEditor {
 			vars = [];
 			var t = checker.getCompletion(script);
 			if( t != null ) {
-				switch( checker.checker.follow(t) ) {
-				case TInst(c,args):
-					var map = (t) -> checker.checker.apply(t,c.params,args);
-					while( c != null ) {
-						for( f in c.fields ) {
-							if( !f.isPublic || !f.complete ) continue;
-							var name = f.name;
-							var t = map(f.t);
-							if( StringTools.startsWith(name,"a_") ) {
-								t = checker.checker.unasync(t);
-								name = name.substr(2);
-							}
-							vars.set(name, t);
-						}
-						if( c.superClass == null ) break;
-						switch( c.superClass ) {
-						case TInst(csup,args):
-							var curMap = map;
-							map = (t) -> curMap(checker.checker.apply(t,csup.params,args));
-							c = csup;
-						default:
-							break;
-						}
-					}
-				case TAnon(fields):
-					for( f in fields )
-						vars.set(f.name, f.t);
-				default:
-				}
+				var fields = checker.checker.getFields(t);
+				for( f in fields )
+					vars.set(f.name, f.t);
 			}
 		}
 		var checker = checker.checker;
