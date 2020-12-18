@@ -181,7 +181,7 @@ class FileTree extends FileView {
 		var isDir = sys.FileSystem.isDirectory(ide.getPath(path));
 		var wasRenamed = false;
 		if( sys.FileSystem.exists(ide.projectDir+"/.svn") ) {
-			if( Sys.command("svn",["--version"]) != 0 ) {
+			if( js.node.ChildProcess.spawnSync("svn",["--version"]).status != 0 ) {
 				if( isDir && !ide.confirm("Renaming a SVN directory, but 'svn' system command was not found. Continue ?") )
 					return false;
 			} else {
