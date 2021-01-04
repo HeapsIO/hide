@@ -289,6 +289,9 @@
 .cdb .cdb-sheet span.error {
   color: #C44;
 }
+.cdb .cdb-sheet span.minor {
+  color: #666;
+}
 .cdb .cdb-sheet tr.props {
   background-color: #111;
 }

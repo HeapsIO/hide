@@ -262,17 +262,14 @@ class Cell extends Component {
 			scope.push({ s : sheet, obj : obj });
 			for( v in a ) {
 				var vals = [];
-				for( c in ps.columns )
-					switch( c.type ) {
-					case TList, TProperties if( c != ps.columns[0] ):
-						continue;
-					default:
-						if( !canViewSubColumn(ps, c.name) ) continue;
-						var h = valueHtml(c, Reflect.field(v, c.name), ps, v, scope);
-						if( h != "" && h != "&nbsp;" )
-							vals.push(h);
-					}
-				var v = vals.length == 1 ? vals[0] : ""+vals;
+				for( c in ps.columns ) {
+					if( !canViewSubColumn(ps, c.name) ) continue;
+					var h = valueHtml(c, Reflect.field(v, c.name), ps, v, scope);
+					if( h != "" && h != "&nbsp;" )
+						vals.push(h);
+				}
+				inline function char(s) return '<span class="minor">$s</span>';
+				var v = vals.length == 1 ? vals[0] : (char('[') + vals.join(char(',')) + char(']'));
 				if( size > 200 ) {
 					out.push("...");
 					break;
