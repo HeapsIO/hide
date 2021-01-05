@@ -13,6 +13,7 @@ class LookAtObject extends h3d.scene.Object {
 
 	static var tmpMat = new h3d.Matrix();
 	static var tmpVec = new h3d.Vector();
+	static var tmpScale = new h3d.Vector();
 	static var deltaVec = new h3d.Vector();
 	static var lookAtPos = new h3d.Vector();
 	static var lockAxis = new h3d.Vector();
@@ -69,7 +70,7 @@ class LookAtObject extends h3d.scene.Object {
 		else
 		{
 			tmpMat.load(absPos);
-			var scale = tmpMat.getScale();
+			var scale = tmpMat.getScale(tmpScale);
 			qRot.initDirection(deltaVec);
 			qRot.toMatrix(absPos);
 			absPos._11 *= scale.x;
