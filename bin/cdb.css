@@ -267,7 +267,7 @@
   overflow: visible;
 }
 .cdb .cdb-sheet .flagValues {
-  position: absolute;
+  position: fixed;
   background-color: #333;
   width: 150px;
   padding: 5px;
