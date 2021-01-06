@@ -129,17 +129,7 @@ class EditContext {
 			path.pop();
 		}
 
-		// for references, we have an extra root level
-		var roots;
-		if( rootContext.shared.parent == null )
-			roots = [rootContext.shared.root3d];
-		else {
-			roots = [];
-			for( o in rootContext.shared.root3d )
-				roots.push(o);
-		}
-
-		for( o in roots )
+		for( o in rootContext.shared.root3d )
 			getRec([], o);
 
 		return out;
