@@ -1,14 +1,30 @@
 package hrt.prefab.pbr;
 
+import h3d.pass.Default;
 import hrt.shader.AnisotropicFoward.FlatValue;
 import hrt.shader.AnisotropicFoward.NoiseTexture;
+import hrt.shader.AnisotropicFoward.FrequencyValue;
 import hrt.shader.AnisotropicFoward;
+
+enum abstract AnisotropyMode(String) {
+	var Flat;
+	var Texture;
+	var Frequency;
+}
 
 class Anisotropy extends Prefab {
 
-	public var amount : Float = 0.0;
+	public var mode : AnisotropyMode = Flat;
+
+	public var intensity : Float = 0.0;
 	public var direction : Float = 0.0;
-	public var noiseTexturePath : String = null;
+
+	public var noiseFrequency : Float = 0.0;
+	public var noiseIntensity : Float = 1.0;
+
+	public var intensityFactor = 1.0;
+	public var noiseIntensityPath : String = null;
+	public var noiseDirectionPath : String = null;
 
 	public function new(?parent) {
 		super(parent);
@@ -17,16 +33,26 @@ class Anisotropy extends Prefab {
 
 	override function load( obj : Dynamic ) {
 		super.load(obj);
-		if( obj.amount != null ) amount = obj.amount;
+		if( obj.mode != null ) mode = obj.mode;
+		if( obj.intensity != null ) intensity = obj.intensity;
 		if( obj.direction != null ) direction = obj.direction;
-		if( obj.noiseTexturePath != null ) noiseTexturePath = obj.direcnoiseTexturePathtion;
+		if( obj.noiseFrequency != null ) noiseFrequency = obj.noiseFrequency;
+		if( obj.noiseIntensity != null ) noiseIntensity = obj.noiseIntensity;
+		if( obj.intensityFactor != null ) intensityFactor = obj.intensityFactor;
+		if( obj.noiseIntensityPath != null ) noiseIntensityPath = obj.noiseIntensityPath;
+		if( obj.noiseDirectionPath != null ) noiseDirectionPath = obj.noiseDirectionPath;
 	}
 
 	override function save() {
 		var obj : Dynamic = super.save();
-		obj.amount = amount;
+		obj.mode = mode;
+		obj.intensity = intensity;
 		obj.direction = direction;
-		obj.noiseTexturePath = noiseTexturePath;
+		obj.noiseFrequency = noiseFrequency;
+		obj.noiseIntensity = noiseIntensity;
+		obj.intensityFactor = intensityFactor;
+		obj.noiseIntensityPath = noiseIntensityPath;
+		obj.noiseDirectionPath = noiseDirectionPath;
 		return obj;
 	}
 
@@ -38,47 +64,66 @@ class Anisotropy extends Prefab {
 	}
 
 	function refreshShaders( ctx : Context ) {
-		var af = new FlatValue();
+		var fv = new FlatValue();
 		var as = new AnisotropicFoward();
-		as.setPriority(-1);
-		var an = new NoiseTexture();
-		var noiseTexture = noiseTexturePath != null ? ctx.loadTexture(noiseTexturePath) : null;
+		var nt = new NoiseTexture();
+		var ff = new FrequencyValue();
+
+		var noiseIntensityTexture = noiseIntensityPath != null ? ctx.loadTexture(noiseIntensityPath) : null;
+		var noiseDirectionTexture = noiseDirectionPath != null ? ctx.loadTexture(noiseDirectionPath) : null;
+
 		var o = ctx.local3d;
 		for( m in o.getMaterials() ) {
 			m.mainPass.removeShader(m.mainPass.getShader(NoiseTexture));
 			m.mainPass.removeShader(m.mainPass.getShader(FlatValue));
+			m.mainPass.removeShader(m.mainPass.getShader(FrequencyValue));
 			m.mainPass.removeShader(m.mainPass.getShader(AnisotropicFoward));
 		}
+
 		for( m in o.getMaterials() ) {
 
 			if( m.mainPass.name != "forward" )
 				continue;
 
-			if( noiseTexture != null ) {
-				if( m.mainPass.getShader(NoiseTexture) == null )
-					m.mainPass.addShader(an);
+			if( mode == Texture && noiseIntensityTexture != null && noiseDirectionTexture != null ) {
+				m.mainPass.addShader(nt);
 			}
-			else if( m.mainPass.getShader(FlatValue) == null ) {
-				m.mainPass.addShader(af);
+			else {
+				switch mode {
+					case Flat: m.mainPass.addShader(fv);
+					case Frequency:	m.mainPass.addShader(ff);
+					default:
+				}
 			}
 
-			if( m.mainPass.getShader(AnisotropicFoward) == null ) {
-				m.mainPass.addShader(as);
-			}
+			m.mainPass.addShader(as);
 		}
 	}
 
 	override function updateInstance( ctx : Context, ?propName : String ) {
 		for( m in ctx.local3d.getMaterials() ) {
-			var af = m.mainPass.getShader(FlatValue);
-			var an = m.mainPass.getShader(NoiseTexture);
-			if( af != null ) {
-				af.amount = amount;
+			
+			var fv = m.mainPass.getShader(FlatValue);
+			if( fv != null ) {
+				fv.intensity = intensity;
 				var angle = hxd.Math.degToRad(direction);
-				af.dirVector.set(hxd.Math.cos(angle), hxd.Math.sin(angle), 0);
+				fv.dirVector.set(hxd.Math.cos(angle), hxd.Math.sin(angle), 0);
 			}
-			if( an != null ) {
-				an.noiseTexture = noiseTexturePath != null ? ctx.loadTexture(noiseTexturePath) : null;
+
+			var ff = m.mainPass.getShader(FrequencyValue);
+			if( ff != null ) {
+				ff.intensity = intensity;
+				ff.noiseFrequency = noiseFrequency;
+				ff.noiseIntensity = noiseIntensity;
+				var angle = hxd.Math.degToRad(direction);
+				ff.dirVector.set(hxd.Math.cos(angle), hxd.Math.sin(angle), 0);
+			}
+
+			var nt = m.mainPass.getShader(NoiseTexture);
+			if( nt != null ) {
+				nt.noiseIntensityTexture = noiseIntensityPath != null ? ctx.loadTexture(noiseIntensityPath) : null;
+				nt.noiseDirectionTexture = noiseDirectionPath != null ? ctx.loadTexture(noiseDirectionPath) : null;
+				nt.intensityFactor = intensityFactor;
 			}
 		}
 	}
@@ -93,19 +138,45 @@ class Anisotropy extends Prefab {
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
 
+		var flatParams = 	'<dt>Intensity</dt><dd><input type="range" min="0" max="1" field="intensity"/></dd>
+							<dt>Direction</dt><dd><input type="range" min="0" max="180" field="direction"/></dd>';
+
+		var textureParams = '<dt>Factor</dt><dd><input type="range" min="0" max="1" field="intensityFactor"/></dd>
+							<dt>Intensity</dt><dd><input type="texturepath" field="noiseIntensityPath"/>
+							<dt>Direction</dt><dd><input type="texturepath" field="noiseDirectionPath"/>';
+
+		var frequencyParams =	'<dt>Intensity</dt><dd><input type="range" min="0" max="1" field="intensity"/></dd>
+								<dt>Noise Intensity</dt><dd><input type="range" min="0" max="1" field="noiseIntensity"/></dd>
+								<dt>Noise Frequency</dt><dd><input type="range" min="0" max="180" field="noiseFrequency"/></dd>
+								<dt>Direction</dt><dd><input type="range" min="0" max="180" field="direction"/></dd>';
+
+		var params = switch mode {
+			case Flat: flatParams;
+			case Texture: textureParams;
+			case Frequency: frequencyParams;
+		};
+
 		var props = new hide.Element('
 			<div class="group" name="Anisotropy">
 				<dl>
-					<dt>Amount</dt><dd><input type="range" min="0" max="1" field="amount"/></dd>
-					<dt>Direction</dt><dd><input type="range" min="0" max="180" field="direction"/></dd>
-					<dt>Noise Texture</dt><dd><input type="texturepath" field="noiseTexturePath"/>
+					<dt>Mode</dt>
+						<dd>
+							<select field="mode">
+								<option value="Flat">Flat</option>
+								<option value="Texture">Texture</option>
+								<option value="Frequency">Frequency</option>
+							</select>
+						</dd>
+					' + params + '
 				</dl>
 			</div>
 		');
 
 		ctx.properties.add(props, this, function(pname) {
-			if( pname == "noiseTexturePath" )
+			if( pname == "mode" ) {
+				ctx.rebuildProperties();
 				refreshShaders(ctx.getContext(this));
+			}
 			ctx.onChange(this, pname);
 		});
 	}

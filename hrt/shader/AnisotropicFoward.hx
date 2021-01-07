@@ -1,16 +1,41 @@
 package hrt.shader;
 
+class FrequencyValue extends hxsl.Shader {
+	static var SRC = {
+
+		@param var intensity : Float;
+		@param var noiseIntensity : Float;
+		@param var noiseFrequency : Float;
+
+		@param var dirVector : Vec3;
+		
+		var calculatedUV : Vec2;
+		var anisotropy : Float;
+		var direction : Vec3;
+
+		function fragment()  {
+			anisotropy = intensity;
+			var theta = dot(dirVector.xy, calculatedUV.xy) * noiseFrequency;
+			var ctheta = cos(theta);
+			var stheta = sin(theta);
+			var noiseDir = vec3(dirVector.x * ctheta - dirVector.y * stheta, dirVector.x * stheta + dirVector.y * ctheta, 0.0);
+			direction = mix(dirVector, noiseDir, noiseIntensity);
+
+		}
+	}
+}
+
 class FlatValue extends hxsl.Shader {
 	static var SRC = {
 
-		@param var amount : Float;
+		@param var intensity : Float;
 		@param var dirVector : Vec3;
 
 		var anisotropy : Float;
 		var direction : Vec3;
 
 		function fragment()  {
-			anisotropy = amount;
+			anisotropy = intensity;
 			direction = dirVector;
 		}
 	}
@@ -19,15 +44,16 @@ class FlatValue extends hxsl.Shader {
 class NoiseTexture extends hxsl.Shader {
 	static var SRC = {
 
-		@param var noiseTexture : Sampler2D;
+		@param var intensityFactor : Float;
+		@param var noiseIntensityTexture : Sampler2D;
+		@param var noiseDirectionTexture : Sampler2D;
 		var anisotropy : Float;
 		var direction : Vec3;
 		var calculatedUV : Vec2;
 
 		function fragment()  {
-			var noise = noiseTexture.get(calculatedUV).rg;
-			anisotropy = noise.r;
-			var angle = noise.g * 2 * PI;
+			anisotropy = noiseIntensityTexture.get(calculatedUV % 1.0).r * intensityFactor;
+			var angle = noiseDirectionTexture.get(calculatedUV % 1.0).r * 2 * PI;
 			direction = vec3(cos(angle), sin(angle), 0.0);
 		}
 	}
