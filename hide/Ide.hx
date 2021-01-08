@@ -582,11 +582,13 @@ class Ide {
 			var render = renderers[0];
 			if( projectConfig.renderer == null )
 				projectConfig.renderer = config.current.get("defaultRenderer");
-			for( r in renderers )
-				if( r.name == projectConfig.renderer ) {
+			for( r in renderers ) {
+				var name = r.displayName == null ? r.name : r.displayName;
+				if( name == projectConfig.renderer ) {
 					render = r;
 					break;
 				}
+			}
 			h3d.mat.MaterialSetup.current = render;
 
 			initMenu();
@@ -967,9 +969,10 @@ class Ide {
 		});
 
 		for( r in renderers ) {
-			new Element("<menu type='checkbox'>").attr("label", r.name).prop("checked",r == h3d.mat.MaterialSetup.current).appendTo(menu.find(".project .renderers")).click(function(_) {
+			var name = r.displayName != null ? r.displayName : r.name;
+			new Element("<menu type='checkbox'>").attr("label", name).prop("checked",r == h3d.mat.MaterialSetup.current).appendTo(menu.find(".project .renderers")).click(function(_) {
 				if( r != h3d.mat.MaterialSetup.current ) {
-					projectConfig.renderer = r.name;
+					projectConfig.renderer = name;
 					config.user.save();
 					setProject(ideConfig.currentProject);
 				}
