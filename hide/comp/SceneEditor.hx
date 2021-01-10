@@ -405,10 +405,7 @@ class SceneEditor {
 		cameraController.onClick = function(e) {
 			switch( e.button ) {
 			case K.MOUSE_RIGHT:
-				var ray = scene.s3d.camera.rayFromScreen(scene.s2d.mouseX, scene.s2d.mouseY);
-				var pt = ray.intersect(h3d.col.Plane.Z());
-				if( pt == null ) pt = new h3d.col.Point();
-				selectNewObject(pt);
+				selectNewObject();
 			case K.MOUSE_LEFT:
 				selectObjects([]);
 			}
@@ -745,9 +742,7 @@ class SceneEditor {
 			if(e.button == K.MOUSE_RIGHT) {
 				var dist = hxd.Math.distance(scene.s2d.mouseX - lastPush[0], scene.s2d.mouseY - lastPush[1]);
 				if( dist > 5 ) return;
-				var pt = new h3d.col.Point(e.relX,e.relY,e.relZ);
-				if( i3d != null ) i3d.localToGlobal(pt);
-				selectNewObject(pt);
+				selectNewObject();
 				e.propagate = false;
 				return;
 			}
@@ -821,18 +816,19 @@ class SceneEditor {
 		interactives.set(elt,cast int);
 	}
 
-	function selectNewObject( pt : h3d.col.Point ) {
+	function selectNewObject() {
 		var parentEl = sceneData;
 		 // for now always create at scene root, not `curEdit.rootElements[0];`
 		var group = getParentGroup(parentEl);
 		if( group != null )
 			parentEl = group;
+		var originPt = getPickTransform(parentEl).getPosition();
 		var newItems = getNewContextMenu(parentEl, function(newElt) {
 			var newObj3d = Std.downcast(newElt, Object3D);
 			if(newObj3d != null) {
 				var newPos = new h3d.Matrix();
 				newPos.identity();
-				newPos.setPosition(pt.toVector());
+				newPos.setPosition(originPt);
 				var invParent = getObject(parentEl).getAbsPos().clone();
 				invParent.invert();
 				newPos.multiply(newPos, invParent);

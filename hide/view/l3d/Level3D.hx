@@ -142,18 +142,6 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		var newItems = super.getNewContextMenu(current, onMake, groupByType);
 
 		function setup(p : PrefabElement) {
-			var proj = screenToGround(scene.s2d.width/2, scene.s2d.height/2);
-			var obj3d = p.to(hrt.prefab.Object3D);
-			var autoCenter = proj != null && obj3d != null && (Type.getClass(p) != Object3D || p.parent != sceneData);
-			if(autoCenter) {
-				var parentMat = worldMat(getObject(p.parent));
-				parentMat.invert();
-				var localMat = new h3d.Matrix();
-				localMat.initTranslation(proj.x, proj.y, proj.z);
-				localMat.multiply(localMat, parentMat);
-				obj3d.setTransform(localMat);
-			}
-
 			autoName(p);
 			haxe.Timer.delay(addObject.bind([p]), 0);
 		}
