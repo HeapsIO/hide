@@ -110,7 +110,7 @@ class TemporalFilteringShader extends h3d.shader.ScreenShader {
 				}
 				m1 /= 5.0;
 				m2 = sqrt(m2 / 5.0 - m1 * m1);
-				prevColor = ycocg2rgb(clipToAABB(rgb2ycocg(prevColor), rgb2ycocg(curColor), m1, m2));
+				prevColor = max(vec3(0.0), ycocg2rgb(clipToAABB(rgb2ycocg(prevColor), rgb2ycocg(curColor), m1, m2)));
 			}
 			pixelColor.rgb = mix(curColor, prevColor, amount);
 			pixelColor.a = 1.0;
