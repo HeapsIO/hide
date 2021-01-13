@@ -59,7 +59,7 @@ class NoiseTexture extends hxsl.Shader {
 	}
 }
 
-class AnisotropicFoward extends h3d.shader.pbr.DefaultFoward {
+class AnisotropicFoward extends h3d.shader.pbr.DefaultForward {
 	static var SRC = {
 
 		@global var global : {
