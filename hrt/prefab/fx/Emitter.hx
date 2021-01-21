@@ -1057,8 +1057,24 @@ class Emitter extends Object3D {
 	}
 
 	override function make(ctx: Context) {
+		if( ctx == null ) {
+			ctx = new Context();
+			ctx.init();
+		}
+
+		ctx = makeInstance(ctx);
+
 		// Don't make children, which are used to setup particles
-		return makeInstance(ctx);
+		for( c in children ) {
+			var shader = Std.downcast(c, hrt.prefab.Shader);
+			if( shader != null )
+				shader.make(ctx);
+			var lit = Std.downcast(c, hrt.prefab.pbr.ParticleLit);
+			if( lit != null )
+				lit.make(ctx);
+		}
+
+		return ctx;
 	}
 
 	static inline function randProp(name: String) {
