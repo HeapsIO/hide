@@ -2,6 +2,7 @@ package hrt.prefab.l3d;
 import hxd.Math;
 import h2d.col.Point;
 
+
 enum Shape {
 	Quad(subdivision : Int);
 	Disc(segments: Int, angle: Float, inner: Float, rings:Int);
@@ -47,7 +48,7 @@ class Polygon extends Object3D {
 	override function load( obj : Dynamic ) {
 		super.load(obj);
 		switch(obj.kind){
-			case 0, 1: shape = Type.createEnumIndex(Shape, obj.kind, obj.args);
+			case 0, 1: shape = Type.createEnumIndex(Shape, obj.kind, obj.args == null ? [0] : obj.args);
 			case 2:
 				shape = Custom;
 				var list : Array<Dynamic> = obj.points;
@@ -139,7 +140,7 @@ class Polygon extends Object3D {
 
 		switch(shape) {
 			case Quad(subdivision):
-				
+
 				var size = subdivision + 1;
 				var cellCount = size;
 				cellCount *= cellCount;
@@ -173,9 +174,9 @@ class Polygon extends Object3D {
 						}
 					}
 				}
-				
+
 				// Setup UVs so that image up (Y) is aligned with forward axis (X)
-				uvs = [for(v in points) new Point(v.y + 0.5, -v.x + 0.5)]; 
+				uvs = [for(v in points) new Point(v.y + 0.5, -v.x + 0.5)];
 
 			case Disc(segments, angle, inner, rings):
 				points = [];
