@@ -831,12 +831,15 @@ class Ide {
 		return str;
 	}
 
-	public function loadPrefab<T:hrt.prefab.Prefab>( file : String, ?cl : Class<T> ) : T {
+	public function loadPrefab<T:hrt.prefab.Prefab>( file : String, ?cl : Class<T>, ?checkExists ) : T {
 		if( file == null )
 			return null;
 		var l = hrt.prefab.Library.create(file.split(".").pop().toLowerCase());
 		try {
-			l.loadData(parseJSON(sys.io.File.getContent(getPath(file))));
+			var path = getPath(file);
+			if( checkExists && !sys.FileSystem.exists(path) )
+				return null;
+			l.loadData(parseJSON(sys.io.File.getContent(path)));
 		} catch( e : Dynamic ) {
 			error("Invalid prefab ("+e+")");
 			throw e;

@@ -42,7 +42,7 @@ class Reference extends Object3D {
 		if(isFile()) {
 			if(shared == null) { // Allow resolving ref in Hide prefore makeInstance
 				#if editor
-				ref = hide.Ide.inst.loadPrefab(refpath.substr(1));
+				ref = hide.Ide.inst.loadPrefab(refpath.substr(1), null, true);
 				#else
 				return null;
 				#end
