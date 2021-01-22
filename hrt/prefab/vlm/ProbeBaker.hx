@@ -63,10 +63,8 @@ class ProbeBaker {
 
 		var prevCam = scene.camera;
 		var prevRenderMode = pbrRenderer.renderMode;
-		var prevSkyMode = pbrRenderer.skyMode;
 		pbrRenderer.renderMode = LightProbe;
 		scene.camera = customCamera;
-		pbrRenderer.skyMode = Env;
 
 		setupEnvMap(resolution);
 
@@ -85,7 +83,6 @@ class ProbeBaker {
 
 		scene.camera = prevCam;
 		pbrRenderer.renderMode = prevRenderMode;
-		pbrRenderer.skyMode = prevSkyMode;
 	}
 
 	function setupEnvMap( resolution : Int ) {
