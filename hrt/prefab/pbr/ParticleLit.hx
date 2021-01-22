@@ -91,12 +91,15 @@ class ParticleLit extends Prefab {
 		var o = ctx.local3d;
 
 		for( m in o.getMaterials() ) {
-			if( m.mainPass.name != "forward" )
-				continue;
+			
 			m.mainPass.removeShader(m.mainPass.getShader(ParticleForward));
 			m.mainPass.removeShader(m.mainPass.getShader(CurvedNormal));
 			m.mainPass.removeShader(m.mainPass.getShader(BackLightingMask));
 			m.mainPass.removeShader(m.mainPass.getShader(BackLightingFlat));
+
+			if( m.mainPass.name != "forward" )
+				continue;
+
 			m.mainPass.addShader(bl);
 			m.mainPass.addShader(pf);
 			m.mainPass.addShader(cn);
