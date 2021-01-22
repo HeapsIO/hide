@@ -7,20 +7,28 @@ class ParticleForward extends h3d.shader.pbr.DefaultForward implements h3d.scene
 	static var SRC = {
 
 		@const var VERTEX : Bool = true;
+		@param var directLightingIntensity : Float;
+		@param var indirectLightingIntensity : Float;
+		var backLightingIntensity : Float;
 		var lighting : Vec3;
 
 		function indirectLighting() : Vec3 {
 			var rotatedNormal = rotateNormal(transformedNormal);
 			var diffuse = irrDiffuse.get(rotatedNormal).rgb;
-			var indirect = diffuse * irrPower;
+			var indirect = diffuse * irrPower * indirectLightingIntensity;
 			return indirect;
 		}
 		
 		function directLighting( lightColor : Vec3, lightDirection : Vec3) : Vec3 {
 			var result = vec3(0);
-			var NdL = clamp(transformedNormal.dot(lightDirection), 0.0, 1.0);
-			result = lightColor * NdL;
-			return result;
+
+			var NdL = transformedNormal.dot(lightDirection);
+			result += lightColor * clamp(NdL, 0.0, 1.0);
+
+			var bNdL = clamp(-NdL, 0.0, 1.0);
+			result += (lightColor * bNdL) * backLightingIntensity;
+
+			return result * directLightingIntensity;
 		}
 
 		function evaluateLighting() : Vec3 {
