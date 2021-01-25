@@ -1061,10 +1061,12 @@ class Emitter extends Object3D {
 			ctx = new Context();
 			ctx.init();
 		}
-
 		ctx = makeInstance(ctx);
+		return ctx;
+	}
 
-		// Don't make children, which are used to setup particles
+	function refreshChildren(ctx: Context) {
+		// Don't make all children, which are used to setup particles
 		for( c in children ) {
 			var shader = Std.downcast(c, hrt.prefab.Shader);
 			if( shader != null )
@@ -1073,8 +1075,6 @@ class Emitter extends Object3D {
 			if( lit != null )
 				lit.make(ctx);
 		}
-
-		return ctx;
 	}
 
 	static inline function randProp(name: String) {
@@ -1235,6 +1235,7 @@ class Emitter extends Object3D {
 			startTime = @:privateAccess scene.renderer.ctx.time;
 
 		emitterObj.createMeshBatch(startTime);
+		refreshChildren(ctx);
 
 		#if editor
 		if(propName == null || ["emitShape", "emitAngle", "emitRad1", "emitRad2"].indexOf(propName) >= 0)
