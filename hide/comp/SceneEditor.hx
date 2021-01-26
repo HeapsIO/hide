@@ -1334,8 +1334,10 @@ class SceneEditor {
 
 	function refreshParents( elts : Array<PrefabElement> ) {
 		var parents = new Map();
-		for( e in elts )
+		for( e in elts ) {
+			if( e.parent == null ) throw e+" is missing parent";
 			parents.set(e.parent, true);
+		}
 		for( p in parents.keys() ) {
 			var h = p.getHideProps();
 			if( h.onChildListChanged != null ) h.onChildListChanged();
