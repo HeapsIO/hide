@@ -20,7 +20,7 @@ If you don't want to build Hide from source, you can download a nightly build fr
 
 ## Compiling from source
 #### 1. Install Prerequisites
-- Install [Haxe](https://haxe.org/) using approriate installer from https://haxe.org/download/
+- Install [Haxe](https://haxe.org/) using appropriate installer from https://haxe.org/download/
 - Install these libraries:
 ```
 haxelib git heaps https://github.com/HeapsIO/heaps
