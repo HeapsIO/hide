@@ -6886,7 +6886,7 @@
 		};
 		$.vakata.dnd = {
 			settings : {
-				scroll_speed		: 10,
+				scroll_speed		: 80,
 				scroll_proximity	: 20,
 				helper_left			: 5,
 				helper_top			: 10,
