@@ -20,6 +20,7 @@ class Cell extends Component {
 		this.column = column;
 		@:privateAccess line.cells.push(this);
 		root.addClass("t_" + typeNames[column.type.getIndex()]);
+		root.addClass("n_" + column.name);
 		if( column.kind == Script ) root.addClass("t_script");
 		refresh();
 		switch( column.type ) {
