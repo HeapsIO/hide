@@ -90,7 +90,7 @@ class Anisotropy extends Prefab {
 			}
 			else {
 				switch mode {
-					case Flat: m.mainPass.addShader(fv);
+					case Texture,Flat: m.mainPass.addShader(fv);
 					case Frequency:	m.mainPass.addShader(ff);
 					default:
 				}
