@@ -173,7 +173,7 @@ class Anisotropy extends Prefab {
 		');
 
 		ctx.properties.add(props, this, function(pname) {
-			if( pname == "mode" ) {
+			if( pname == "mode" || pname == "noiseIntensityPath" || pname == "noiseDirectionPath" ) {
 				ctx.rebuildProperties();
 				refreshShaders(ctx.getContext(this));
 			}
