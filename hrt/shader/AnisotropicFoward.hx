@@ -45,6 +45,7 @@ class NoiseTexture extends hxsl.Shader {
 	static var SRC = {
 
 		@param var intensityFactor : Float;
+		@param var rotationOffset : Float;
 		@param var noiseIntensityTexture : Sampler2D;
 		@param var noiseDirectionTexture : Sampler2D;
 		var anisotropy : Float;
@@ -53,7 +54,7 @@ class NoiseTexture extends hxsl.Shader {
 
 		function fragment()  {
 			anisotropy = noiseIntensityTexture.get(calculatedUV % 1.0).r * intensityFactor;
-			var angle = noiseDirectionTexture.get(calculatedUV % 1.0).r * 2 * PI;
+			var angle = noiseDirectionTexture.get(calculatedUV % 1.0).r * 2 * PI + rotationOffset;
 			direction = vec3(cos(angle), sin(angle), 0.0);
 		}
 	}

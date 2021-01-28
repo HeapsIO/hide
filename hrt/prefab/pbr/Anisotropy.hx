@@ -25,6 +25,7 @@ class Anisotropy extends Prefab {
 	public var intensityFactor = 1.0;
 	public var noiseIntensityPath : String = null;
 	public var noiseDirectionPath : String = null;
+	public var rotationOffset : Float = 0.0;
 
 	public function new(?parent) {
 		super(parent);
@@ -41,6 +42,7 @@ class Anisotropy extends Prefab {
 		if( obj.intensityFactor != null ) intensityFactor = obj.intensityFactor;
 		if( obj.noiseIntensityPath != null ) noiseIntensityPath = obj.noiseIntensityPath;
 		if( obj.noiseDirectionPath != null ) noiseDirectionPath = obj.noiseDirectionPath;
+		if( obj.rotationOffset != null ) rotationOffset = obj.rotationOffset;
 	}
 
 	override function save() {
@@ -53,6 +55,7 @@ class Anisotropy extends Prefab {
 		obj.intensityFactor = intensityFactor;
 		obj.noiseIntensityPath = noiseIntensityPath;
 		obj.noiseDirectionPath = noiseDirectionPath;
+		obj.rotationOffset = rotationOffset;
 		return obj;
 	}
 
@@ -124,6 +127,7 @@ class Anisotropy extends Prefab {
 				nt.noiseIntensityTexture = noiseIntensityPath != null ? ctx.loadTexture(noiseIntensityPath) : null;
 				nt.noiseDirectionTexture = noiseDirectionPath != null ? ctx.loadTexture(noiseDirectionPath) : null;
 				nt.intensityFactor = intensityFactor;
+				nt.rotationOffset = hxd.Math.degToRad(rotationOffset);
 			}
 		}
 	}
@@ -139,16 +143,17 @@ class Anisotropy extends Prefab {
 		super.edit(ctx);
 
 		var flatParams = 	'<dt>Intensity</dt><dd><input type="range" min="0" max="1" field="intensity"/></dd>
-							<dt>Direction</dt><dd><input type="range" min="0" max="180" field="direction"/></dd>';
+							<dt>Direction</dt><dd><input type="range" min="0" max="360" field="direction"/></dd>';
 
 		var textureParams = '<dt>Factor</dt><dd><input type="range" min="0" max="1" field="intensityFactor"/></dd>
+							<dt>Rotation Offset</dt><dd><input type="range" min="0" max="360" field="rotationOffset"/></dd>
 							<dt>Intensity</dt><dd><input type="texturepath" field="noiseIntensityPath"/>
 							<dt>Direction</dt><dd><input type="texturepath" field="noiseDirectionPath"/>';
 
 		var frequencyParams =	'<dt>Intensity</dt><dd><input type="range" min="0" max="1" field="intensity"/></dd>
 								<dt>Noise Intensity</dt><dd><input type="range" min="0" max="1" field="noiseIntensity"/></dd>
-								<dt>Noise Frequency</dt><dd><input type="range" min="0" max="180" field="noiseFrequency"/></dd>
-								<dt>Direction</dt><dd><input type="range" min="0" max="180" field="direction"/></dd>';
+								<dt>Noise Frequency</dt><dd><input type="range" min="0" max="100" field="noiseFrequency"/></dd>
+								<dt>Direction</dt><dd><input type="range" min="0" max="360" field="direction"/></dd>';
 
 		var params = switch mode {
 			case Flat: flatParams;
