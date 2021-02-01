@@ -83,8 +83,15 @@ class Shader extends Prefab {
 			}
 		}
 		if(ctx.local3d != null) {
-			for(m in ctx.local3d.getMaterials()) { // TODO: Only add to self materials, not all children materials
-				m.mainPass.addShader(shader);
+			if( Std.is(parent, Material) ) {
+				var material : Material = cast parent;
+				for( m in material.getMaterials(ctx) )
+					m.mainPass.addShader(shader);
+			}
+			else {
+				for(m in ctx.local3d.getMaterials()) { // TODO: Only add to self materials, not all children materials
+					m.mainPass.addShader(shader);
+				}
 			}
 		}
 		ctx.custom = shader;
@@ -160,7 +167,7 @@ class Shader extends Prefab {
 	}
 
 	override function getHideProps() : HideProps {
-		return { icon : "cog", name : "Shader", fileSource : ["hx"], allowParent : function(p) return p.to(Object2D) != null || p.to(Object3D) != null };
+		return { icon : "cog", name : "Shader", fileSource : ["hx"], allowParent : function(p) return p.to(Object2D) != null || p.to(Object3D) != null || p.to(Material) != null  };
 	}
 
 	#end

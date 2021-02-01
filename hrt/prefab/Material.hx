@@ -62,7 +62,16 @@ class Material extends Prefab {
 		return r;
 	}
 
-	function updateObject(ctx: Context, obj: h3d.scene.Object) {
+	public function getMaterials( ctx : Context ) {
+		var mats = ctx.local3d.getMaterials();
+		var mat = Lambda.find(mats, m -> m.name == this.name || m.name == materialName);
+		return mat == null ? mats : [mat];
+	}
+
+	override function updateInstance( ctx : Context, ?propName ) {
+		if( ctx.local3d == null) 
+			return;
+
 		function update(mat : h3d.mat.Material, props) {
 			mat.props = props;
 			if(color != null)
@@ -79,36 +88,15 @@ class Material extends Prefab {
 				return tex;
 			}
 
-			mat.texture = getTex("diffuseMap");
-			mat.normalMap = getTex("normalMap");
-			mat.specularTexture = getTex("specularMap");
+			if( getTex("diffuseMap") != null ) mat.texture = getTex("diffuseMap");
+			if( getTex("normalMap") != null ) mat.normalMap = getTex("normalMap");
+			if( getTex("specularMap") != null ) mat.specularTexture = getTex("specularMap");
 		}
 
-		var mats = obj.getMaterials();
-		var mat = Lambda.find(mats, m -> m.name == this.name || m.name == materialName);
+		var mats = getMaterials(ctx);
 		var props = renderProps();
-		if(mat != null) {
-			update(mat, props);
-		}
-		else {
-			for(m in mats)
-				update(m, props);
-		}
-		
-	}
-
-	override function updateInstance(ctx: Context, ?propName) {
-		if(ctx.local3d == null)
-			return;
-
-		var obj = ctx.local3d;
-		if(parent != null && Type.getClass(parent) == Object3D) {
-			for(i in 0...obj.numChildren) {
-				updateObject(ctx, obj.getChildAt(i));
-			}
-		}
-		else
-			updateObject(ctx, obj);
+		for( m in mats )
+			update(m, props);
 	}
 
 	override function makeInstance(ctx:Context):Context {
@@ -279,7 +267,7 @@ class Material extends Prefab {
 
 		var dropDownMaterials = new hide.Element('
 				<dl>
-					<dt>Name</dt><dd><select><option value="none">Any</option></select>
+					<dt>Name</dt><dd><select><option value="any">Any</option></select>
 				</dl> ');
 		var select = dropDownMaterials.find("select");
 		var materialList = ctx.rootContext.local3d.getMaterials();
@@ -302,7 +290,7 @@ class Material extends Prefab {
 			ctx.rebuildProperties();
 			ctx.scene.editor.refresh(Partial);
 		});
-		select.val(materialName);
+		select.val(materialName == null ? "any" : materialName);
 
 
 		var matProps = new hide.Element('<div class="group" name="Overrides">
