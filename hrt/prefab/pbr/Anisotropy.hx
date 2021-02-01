@@ -59,6 +59,16 @@ class Anisotropy extends Prefab {
 		return obj;
 	}
 
+	function getMaterials( ctx : Context ) {
+		if( Std.is(parent, Material) ) {
+			var material : Material = cast parent;
+			return material.getMaterials(ctx);
+		}
+		else {
+			return ctx.local3d.getMaterials();
+		}
+	}
+
 	override function makeInstance( ctx : Context ):Context {
 		ctx = ctx.clone(this);
 		refreshShaders(ctx);
@@ -75,15 +85,16 @@ class Anisotropy extends Prefab {
 		var noiseIntensityTexture = noiseIntensityPath != null ? ctx.loadTexture(noiseIntensityPath) : null;
 		var noiseDirectionTexture = noiseDirectionPath != null ? ctx.loadTexture(noiseDirectionPath) : null;
 
-		var o = ctx.local3d;
-		for( m in o.getMaterials() ) {
+		var mat = getMaterials(ctx);
+
+		for( m in mat ) {
 			m.mainPass.removeShader(m.mainPass.getShader(NoiseTexture));
 			m.mainPass.removeShader(m.mainPass.getShader(FlatValue));
 			m.mainPass.removeShader(m.mainPass.getShader(FrequencyValue));
 			m.mainPass.removeShader(m.mainPass.getShader(AnisotropicFoward));
 		}
 
-		for( m in o.getMaterials() ) {
+		for( m in mat ) {
 
 			if( m.mainPass.name != "forward" )
 				continue;
@@ -104,7 +115,7 @@ class Anisotropy extends Prefab {
 	}
 
 	override function updateInstance( ctx : Context, ?propName : String ) {
-		for( m in ctx.local3d.getMaterials() ) {
+		for( m in getMaterials(ctx) ) {
 			
 			var fv = m.mainPass.getShader(FlatValue);
 			if( fv != null ) {

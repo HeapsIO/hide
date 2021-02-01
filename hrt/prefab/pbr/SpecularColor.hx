@@ -49,6 +49,16 @@ class SpecularColor extends Prefab {
 		return obj;
 	}
 
+	function getMaterials( ctx : Context ) {
+		if( Std.is(parent, Material) ) {
+			var material : Material = cast parent;
+			return material.getMaterials(ctx);
+		}
+		else {
+			return ctx.local3d.getMaterials();
+		}
+	}
+
 	override function makeInstance( ctx : Context ):Context {
 		ctx = ctx.clone(this);
 		refreshShaders(ctx);
@@ -57,7 +67,7 @@ class SpecularColor extends Prefab {
 	}
 
 	override function updateInstance( ctx : Context, ?propName : String ) {
-		for( m in ctx.local3d.getMaterials() ) {
+		for( m in getMaterials(ctx) ) {
 			var sca = m.mainPass.getShader(hrt.shader.SpecularColorAlbedo);
 			if( sca != null ) {
 				// No params
@@ -87,14 +97,14 @@ class SpecularColor extends Prefab {
 
 		var specularColorTexture = specularColorPath != null ? ctx.loadTexture(specularColorPath) : null;
 
-		var o = ctx.local3d;
-		for( m in o.getMaterials() ) {
+		var mat = getMaterials(ctx);
+		for( m in mat ) {
 			m.mainPass.removeShader(m.mainPass.getShader(SpecularColorAlbedo));
 			m.mainPass.removeShader(m.mainPass.getShader(SpecularColorFlat));
 			m.mainPass.removeShader(m.mainPass.getShader(SpecularColorTexture));
 			m.mainPass.removeShader(m.mainPass.getShader(hrt.shader.SpecularColor));
 		}
-		for( m in o.getMaterials() ) {
+		for( m in mat ) {
 
 			if( m.mainPass.name != "forward" )
 				continue;
