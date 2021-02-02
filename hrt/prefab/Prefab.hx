@@ -237,8 +237,13 @@ class Prefab {
 		}
 		ctx = makeInstance(ctx);
 		for( c in children )
-			c.make(ctx);
+			if( filterChildren(ctx, c) )
+				c.make(ctx);
 		return ctx;
+	}
+
+	function filterChildren( ctx : Context, p : Prefab ) {
+		return ctx.shared.filterChildren == null || ctx.shared.filterChildren(ctx, p);
 	}
 
 	/**

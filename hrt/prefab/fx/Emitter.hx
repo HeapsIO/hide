@@ -1068,6 +1068,8 @@ class Emitter extends Object3D {
 	function refreshChildren(ctx: Context) {
 		// Don't make all children, which are used to setup particles
 		for( c in children ) {
+			if( !filterChildren(ctx,c) )
+				continue;
 			var shader = Std.downcast(c, hrt.prefab.Shader);
 			if( shader != null )
 				shader.make(ctx);

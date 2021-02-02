@@ -15,6 +15,12 @@ class ContextShared {
 	public var editorDisplay : Bool;
 
 	/**
+		When make() is called on prefab, it will call filterChildren on
+		each child with current context and only make() it if returns true.
+	 **/
+	public var filterChildren : Context -> Prefab -> Bool;
+
+	/**
 		If is a reference to another prefab file, this is the parent prefab.
 		See refContexts for children.
 	**/
@@ -102,6 +108,7 @@ class ContextShared {
 		sh.parent = { shared : this, prefab : prefab };
 		sh.cache = cache;
 		sh.shaderCache = shaderCache;
+		sh.filterChildren = filterChildren;
 		// own bakedData
 		// own refsContext
 		return sh;

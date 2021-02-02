@@ -137,7 +137,7 @@ class FX2DAnimation extends h2d.Object {
 					em.setTime(time);
 			}
 		}
-		
+
 		Event.updateEvents(events, time, prevTime);
 
 		this.prevTime = localTime;
@@ -253,13 +253,11 @@ class FX2D extends BaseFX {
 		super.make(ctx);
 		#else
 		var root = getFXRoot(ctx, this);
-		if(root != null){
-			for( c in root.children ){
-				var co = Std.downcast(c , Constraint);
-				if(co == null) c.make(ctx);
-			}
-		}
-		else
+		if( root != null ) {
+			for( c in root.children )
+				if( filterChildren(ctx, c) )
+					c.make(ctx);
+		} else
 			super.make(ctx);
 		#end
 		fxanim.init(ctx, this);
