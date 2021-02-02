@@ -143,7 +143,7 @@ class AnisotropicFoward extends h3d.shader.pbr.DefaultForward {
 				var G = 1. / (1. + lambda_wo + lambda_wi);
 
 				var specular = (D * F * G) / ( 4. * cos_theta(wi) * cos_theta(wo) ) ;
-				var diffuse = albedo / PI * (1.0 - metalness);
+				var diffuse = albedoGamma / PI * (1.0 - metalness);
 
 				result = (diffuse + specular) * lightColor * wg_dot_wi;
 			}
@@ -162,7 +162,7 @@ class AnisotropicFoward extends h3d.shader.pbr.DefaultForward {
 			var rotatedReflecVec = rotateNormal(reflectVec);
 
 			var F = F0 + (max(vec3(1 - roughness), F0) - F0) * exp2( ( -5.55473 * NdV - 6.98316) * NdV );
-			var diffuse = irrDiffuse.get(rotatedNormal).rgb * albedo;
+			var diffuse = irrDiffuse.get(rotatedNormal).rgb * albedoGamma;
 			var envSpec = textureLod(irrSpecular, rotatedReflecVec, roughness * irrSpecularLevels).rgb;
 			var envBRDF = irrLut.get(vec2(roughness, NdV));
 			var specular = envSpec * (F * envBRDF.x + envBRDF.y);
@@ -174,10 +174,6 @@ class AnisotropicFoward extends h3d.shader.pbr.DefaultForward {
 		function init() {
 			view = (cameraPosition - transformedPosition).normalize();
 			NdV = transformedNormal.dot(view).max(0.);
-			metalness = output.metalness;
-			roughness = output.roughness;
-			occlusion = output.occlusion;
-			emissive = output.emissive;
 			var tmp = cross(direction * global.modelView.mat3(), transformedNormal).normalize();
 			bitangentWorld = cross(tmp, transformedNormal).normalize();
 			tangentWorld = cross(bitangentWorld, transformedNormal).normalize();

@@ -2,10 +2,10 @@ package hrt.shader;
 
 class SpecularColorAlbedo extends hxsl.Shader {
 	static var SRC = {
-		var albedo : Vec3;
+		var albedoGamma : Vec3;
 		var customSpecularColor : Vec3;
 		function fragment() {
-			customSpecularColor = albedo;
+			customSpecularColor = albedoGamma;
 		}
 	}
 }
@@ -38,7 +38,6 @@ class SpecularColor extends hxsl.Shader {
 		@param var specularTint : Float;
 		var customSpecularColor : Vec3;
 		var pbrSpecularColor : Vec3;
-		var albedo : Vec3;
 		
 		function fragment() {
 			pbrSpecularColor = mix(vec3(1.0), customSpecularColor, specularTint) * vec3(specular * 0.08);

@@ -18,7 +18,7 @@ class ParticleForward extends h3d.shader.pbr.DefaultForward implements h3d.scene
 			var indirect = diffuse * irrPower * indirectLightingIntensity;
 			return indirect;
 		}
-		
+
 		function directLighting( lightColor : Vec3, lightDirection : Vec3) : Vec3 {
 			var result = vec3(0);
 
@@ -45,7 +45,7 @@ class ParticleForward extends h3d.shader.pbr.DefaultForward implements h3d.scene
 				lightAccumulation += evaluateSpotLight(l);
 
 			// Indirect only support the main env from the scene at the moment
-			if( USE_INDIRECT > 0.0)
+			if( USE_INDIRECT )
 				lightAccumulation += indirectLighting();
 
 			return lightAccumulation;
