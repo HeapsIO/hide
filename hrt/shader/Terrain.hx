@@ -42,10 +42,10 @@ class Terrain extends hxsl.Shader {
 		var calculatedUV : Vec2;
 		var TBN : Mat3;
 
-		var emissiveValue : Float;
-		var metalnessValue : Float;
-		var roughnessValue : Float;
-		var occlusionValue : Float;
+		var emissive : Float;
+		var metalness : Float;
+		var roughness : Float;
+		var occlusion : Float;
 
 		var tangentViewPos : Vec3;
 		var tangentFragPos : Vec3;
@@ -150,20 +150,20 @@ class Terrain extends hxsl.Shader {
 			if( CHECKER ) {
 				var tile = abs(abs(floor(input.position.x)) % 2 - abs(floor(input.position.y)) % 2);
 				pixelColor = vec4(mix(vec3(0.4), vec3(0.1), tile), 1.0);
-				roughnessValue = mix(0.1, 0.9, tile);
-				metalnessValue = mix(1.0, 0, tile);
-				occlusionValue = 1;
-				emissiveValue = 0;
+				roughness = mix(0.1, 0.9, tile);
+				metalness = mix(1.0, 0, tile);
+				occlusion = 1;
+				emissive = 0;
 			}
 			else if( COMPLEXITY ) {
 				var blendCount = 0 + weightTextures.get(vec3(0)).r * 0;
 				for(i in 0 ... SURFACE_COUNT)
 					blendCount += ceil(weightTextures.get(vec3(calculatedUV, i)).r);
 				pixelColor = vec4(mix(vec3(0,1,0), vec3(1,0,0), blendCount / 3.0) , 1);
-				emissiveValue = 1;
-				roughnessValue = 1;
-				metalnessValue = 0;
-				occlusionValue = 1;
+				emissive = 1;
+				roughness = 1;
+				metalness = 0;
+				occlusion = 1;
 			}
 			else {
 				i = ivec3(surfaceIndexMap.get(calculatedUV).rgb * 255);
@@ -226,10 +226,10 @@ class Terrain extends hxsl.Shader {
 				// Output
 				transformedNormal = unpackNormal(normal) * TBN;
 				pixelColor = vec4(albedo, 1.0);
-				roughnessValue = 1 - pbr.g * pbr.g;
-				metalnessValue = pbr.r;
-				occlusionValue = pbr.b;
-				emissiveValue = 0;
+				roughness = 1 - pbr.g * pbr.g;
+				metalness = pbr.r;
+				occlusion = pbr.b;
+				emissive = 0;
 			}
 
 			if( SHOW_GRID ) {
@@ -238,13 +238,13 @@ class Terrain extends hxsl.Shader {
 				var grid : Vec2 = ((input.position.xy.mod(cellSize.xy) / cellSize.xy ) - 0.5) * 2.0;
 				grid = ceil(max(vec2(0), abs(grid) - 0.9));
 				var tileEdge = max( (1 - ceil(input.position.xy / primSize - 0.1 / (primSize / cellSize) )), floor(input.position.xy / primSize + 0.1 / (primSize / cellSize)));
-				emissiveValue = max(max(grid.x, grid.y), max(tileEdge.x, tileEdge.y));
+				emissive = max(max(grid.x, grid.y), max(tileEdge.x, tileEdge.y));
 				pixelColor = mix( pixelColor, gridColor, clamp(0,1,max(grid.x, grid.y)));
 				pixelColor = mix( pixelColor, tileEdgeColor, clamp(0,1,max(tileEdge.x, tileEdge.y)));
-				metalnessValue =  mix(metalnessValue, 0, emissiveValue);
-				roughnessValue = mix(roughnessValue, 1, emissiveValue);
-				occlusionValue = mix(occlusionValue, 1, emissiveValue);
-				transformedNormal = mix(transformedNormal, vec3(0,1,0), emissiveValue);
+				metalness =  mix(metalness, 0, emissive);
+				roughness = mix(roughness, 1, emissive);
+				occlusion = mix(occlusion, 1, emissive);
+				transformedNormal = mix(transformedNormal, vec3(0,1,0), emissive);
 			}
 		}
 	};
