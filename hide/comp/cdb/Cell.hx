@@ -130,10 +130,12 @@ class Cell extends Component {
 		return def;
 	}
 
+	static var R_HTML = ~/[<&]/;
+
 	public function refresh() {
 		currentValue = Reflect.field(line.obj, column.name);
 		var html = valueHtml(column, value, line.table.getRealSheet(), line.obj, []);
-		if( html == "&nbsp;" ) element.text(" ") else if( html.indexOf('<') < 0 && html.indexOf('&') < 0 ) element.text(html) else element.html(html);
+		if( html == "&nbsp;" ) element.text(" ") else if( !R_HTML.match(html) ) element.text(html) else element.html(html);
 		updateClasses();
 	}
 
@@ -327,7 +329,7 @@ class Cell extends Component {
 			for( i in 0...values.length )
 				if( v & (1 << i) != 0 )
 					flags.push(StringTools.htmlEscape(values[i]));
-			flags.length == 0 ? String.fromCharCode(0x2205) : flags.join("|<wbr>");
+			flags.length == 0 ? String.fromCharCode(0x2205) : flags.join("|"+String.fromCharCode(0x200B));
 		case TColor:
 			'<div class="color" style="background-color:#${StringTools.hex(v,6)}"></div>';
 		case TFile:
