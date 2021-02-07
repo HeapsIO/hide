@@ -15,10 +15,10 @@ class ContextShared {
 	public var editorDisplay : Bool;
 
 	/**
-		When make() is called on prefab, it will call filterChildren on
-		each child with current context and only make() it if returns true.
+		When make() is called on prefab, it will instead call customMake on
+		each child with current which can either intercept or call make() recursively.
 	 **/
-	public var filterChildren : Context -> Prefab -> Bool;
+	public var customMake : Context -> Prefab -> Void;
 
 	/**
 		If is a reference to another prefab file, this is the parent prefab.
@@ -108,7 +108,7 @@ class ContextShared {
 		sh.parent = { shared : this, prefab : prefab };
 		sh.cache = cache;
 		sh.shaderCache = shaderCache;
-		sh.filterChildren = filterChildren;
+		sh.customMake = customMake;
 		// own bakedData
 		// own refsContext
 		return sh;

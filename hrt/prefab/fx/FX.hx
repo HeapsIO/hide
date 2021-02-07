@@ -401,8 +401,8 @@ class FX extends BaseFX {
 		if(root != null){
 			for( c in root.children ) {
 				var co = Std.downcast(c , Constraint);
-				if( co == null && filterChildren(ctx,c) )
-					c.make(ctx);
+				if( co == null )
+					makeChildren(ctx,c);
 			}
 		}
 		else

@@ -87,8 +87,7 @@ class Reference extends Object3D {
 			ctx = super.makeInstance(ctx);
 			var prevShared = ctx.shared;
 			ctx.shared = ctx.shared.cloneRef(this, refpath.substr(1));
-			if( filterChildren(ctx, p) )
-				p.make(ctx);
+			makeChildren(ctx, p);
 			ctx.shared = prevShared;
 
 			#if editor
@@ -107,11 +106,9 @@ class Reference extends Object3D {
 		else {
 			ctx = ctx.clone(this);
 			ctx.isSceneReference = true;
-			if( filterChildren(ctx,p) ) {
-				var refCtx = p.make(ctx);
-				ctx.local3d = refCtx.local3d;
-				updateInstance(ctx);
-			}
+			var refCtx = p.make(ctx); // no customMake here
+			ctx.local3d = refCtx.local3d;
+			updateInstance(ctx);
 		}
 
 		return ctx;

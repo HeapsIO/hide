@@ -255,8 +255,7 @@ class FX2D extends BaseFX {
 		var root = getFXRoot(ctx, this);
 		if( root != null ) {
 			for( c in root.children )
-				if( filterChildren(ctx, c) )
-					c.make(ctx);
+				makeChildren(ctx, c);
 		} else
 			super.make(ctx);
 		#end
