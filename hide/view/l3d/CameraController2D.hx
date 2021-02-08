@@ -146,7 +146,7 @@ class CameraController2D extends h2d.Object {
 
 	function syncCamera() {
 		var scene = getScene();
-		//if( scene == null ) return;
+		if( scene == null ) return;
 		parent.setScale(curPos.z);
 		parent.x = scene.width * 0.5 - curPos.x * parent.scaleX;
 		parent.y = scene.height * 0.5 - curPos.y * parent.scaleY;
