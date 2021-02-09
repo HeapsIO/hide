@@ -103,6 +103,22 @@ class Object3D extends Prefab {
 		return m;
 	}
 
+	public function getAbsPos() {
+		var p = parent;
+		while( p != null ) {
+			var obj = p.to(Object3D);
+			if( obj == null ) {
+				p = p.parent;
+				continue;
+			}
+			var m = getTransform();
+			var abs = obj.getAbsPos();
+			m.multiply3x4(m, abs);
+			return m;
+		}
+		return getTransform();
+	}
+
 	public function applyTransform( o : h3d.scene.Object ) {
 		o.x = x;
 		o.y = y;
