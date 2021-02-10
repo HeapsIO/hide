@@ -217,7 +217,7 @@ class MeshSpray extends Object3D {
 	}
 
 	override function getHideProps() : HideProps {
-		return { icon : "paint-brush", name : "MeshSpray" };
+		return { icon : "paint-brush", name : "MeshSpray", hideChildren : true };
 	}
 
 	function extractMeshName( path : String ) : String {
@@ -862,6 +862,39 @@ class MeshSpray extends Object3D {
 		primitive.colors = [for(p in points) new h3d.col.Point(1,1,1)];
 		primitive.incref();
 		return primitive;
+	}
+
+	#else
+
+	override function makeInstance( ctx : Context ) {
+		ctx = super.makeInstance(ctx);
+		var batches = new Map();
+		for( c in children ) {
+			if( c.type != "model" )
+				continue;
+			var b = batches.get(c.source);
+			if( b == null ) {
+				b = [];
+				batches.set(c.source, b);
+			}
+			b.push(c.to(Model));
+		}
+		for( source => models in batches ) {
+			var obj = ctx.loadModel(source).toMesh();
+			var batch = new h3d.scene.MeshBatch(cast(obj.primitive,h3d.prim.MeshPrimitive), obj.material, ctx.local3d);
+			batch.begin(models.length);
+			for( m in models ) {
+				batch.setTransform(m.getTransform());
+				batch.emitInstance();
+			}
+		}
+		return ctx;
+	}
+
+	override function makeChildren( ctx : Context, p : hrt.prefab.Prefab ) {
+		if( p.type == "model" )
+			return;
+		super.makeChildren(ctx, p);
 	}
 
 	#end
