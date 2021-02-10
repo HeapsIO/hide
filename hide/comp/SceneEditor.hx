@@ -456,7 +456,7 @@ class SceneEditor {
 				value : o,
 				text : o.name,
 				icon : "fa fa-"+icon,
-				children : o.children.length > 0 || (ref != null && @:privateAccess ref.editMode),
+				children : (o.children.length > 0 && !p.hideChildren) || (ref != null && @:privateAccess ref.editMode),
 				state: state
 			};
 			return r;
