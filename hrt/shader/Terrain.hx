@@ -71,18 +71,18 @@ class Terrain extends hxsl.Shader {
 
 			calculatedUV = input.position.xy / primSize;
 			worldUV = transformedPosition.xy;
-			
+
 			if( VERTEX_DISPLACEMENT ) { // Use heightMap and normalMap
 				transformedPosition += vec3(0, 0, textureLod(heightMap, calculatedUV, 0).r);
 				terrainNormal = unpackNormal(textureLod(normalMap, calculatedUV, 0).rgba);
 			}
 			else { // The normal and height are in the vertex
-				terrainNormal = input.normal * global.modelView.mat3();
+				terrainNormal = normalize(input.normal * global.modelView.mat3());
 			}
 
 			// Make the TBN matrix for normal mapping and parallax
-			var bitangent = cross(vec3(1, 0, 0), terrainNormal);
-			var tangent = cross(terrainNormal, bitangent);
+			var bitangent = normalize(cross(vec3(1, 0, 0), terrainNormal));
+			var tangent = normalize(cross(terrainNormal, bitangent));
 			TBN = mat3(	vec3(tangent.x, bitangent.x, terrainNormal.x),
 						vec3(tangent.y, bitangent.y, terrainNormal.y),
 						vec3(tangent.z, bitangent.z, terrainNormal.z));
@@ -201,30 +201,31 @@ class Terrain extends hxsl.Shader {
 
 				// Blend
 				var albedo = vec3(0);
-				var normal = vec4(0);
+				var normal = vec3(0);
 				var pbr = vec4(0);
 				if( w.x > 0 ) {
 					albedo += albedoTextures.get(surfaceUV1).rgb * w.x;
-					normal += normalTextures.get(surfaceUV1).rgba * w.x;
+					normal += unpackNormal(normalTextures.get(surfaceUV1).rgba) * w.x;
 					pbr += pbr1 * w.x;
 				}
 				if( w.y > 0 ) {
 					albedo += albedoTextures.get(surfaceUV2).rgb * w.y;
-					normal += normalTextures.get(surfaceUV2).rgba * w.y;
+					normal += unpackNormal(normalTextures.get(surfaceUV2).rgba) * w.y;
 					pbr += pbr2 * w.y;
 				}
 				if( w.z > 0 ) {
 					albedo += albedoTextures.get(surfaceUV3).rgb * w.z;
-					normal += normalTextures.get(surfaceUV3).rgba * w.z;
+					normal += unpackNormal(normalTextures.get(surfaceUV3).rgba) * w.z;
 					pbr += pbr3 * w.z;
 				}
 				var wSum = w.x + w.y + w.z;
 				albedo /= wSum;
 				pbr /= wSum;
 				normal /= wSum;
+				normal = normal.normalize();
 
 				// Output
-				transformedNormal = unpackNormal(normal) * TBN;
+				transformedNormal = normalize(normal * TBN);
 				pixelColor = vec4(albedo, 1.0);
 				roughness = 1 - pbr.g * pbr.g;
 				metalness = pbr.r;
