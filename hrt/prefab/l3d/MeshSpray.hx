@@ -38,11 +38,9 @@ class MeshSprayObject extends h3d.scene.Object {
 
 	var childCount : Int = -1;
 	var batches : Array<h3d.scene.MeshBatch> = [];
-	var blookup : Map<h3d.prim.Primitive, Array<h3d.scene.MeshBatch>> = new Map();
+	var blookup : Map<h3d.prim.Primitive, h3d.scene.MeshBatch> = new Map();
 	var mp : MeshSpray;
 	var currentChk : Float = 0;
-
-	static inline var MAX_INST = 512;
 
 	public function new(mp,?parent) {
 		this.mp = mp;
@@ -54,7 +52,6 @@ class MeshSprayObject extends h3d.scene.Object {
 			var p = b.material.getPass("highlight");
 			if( p != null ) b.material.removePass(p);
 		}
-		super.emitRec(ctx);
 
 		var count = children.length;
 		count -= batches.length;
@@ -78,7 +75,7 @@ class MeshSprayObject extends h3d.scene.Object {
 
 		if( redraw ) {
 			for( b in batches )
-				b.begin(MAX_INST);
+				b.begin();
 			for( c in children ) {
 				c.culled = false;
 				if( c.alwaysSync ) continue;
@@ -87,37 +84,24 @@ class MeshSprayObject extends h3d.scene.Object {
 				var prim = Std.downcast(m.primitive, h3d.prim.MeshPrimitive);
 				if( prim == null ) continue;
 
-				var l = blookup.get(m.primitive);
-				if( l == null ) {
-					l = [];
-					blookup.set(m.primitive, l);
-				}
-				var batch = null;
-				for( b in l ) {
-					if( b.canEmitInstance() ) {
-						batch = b;
-						break;
-					}
-				}
-				if( batch == null )	{
+				var batch = blookup.get(m.primitive);
+				if( batch == null ) {
 					batch = new h3d.scene.MeshBatch(prim, m.material, this);
 					batch.alwaysSync = true;
-					batch.begin(MAX_INST);
+					batch.begin();
 					batches.push(batch);
-					l.unshift(batch);
+					blookup.set(m.primitive, batch);
 				}
 				@:privateAccess {
 					batch.absPos.load(c.absPos);
 					batch.posChanged = false;
 				}
 				batch.emitInstance();
-				if( !batch.canEmitInstance() ) {
-					l.remove(batch);
-					l.push(batch);
-				}
 				c.culled = true;
 			}
 		}
+
+		super.emitRec(ctx);
 	}
 
 }
@@ -868,25 +852,17 @@ class MeshSpray extends Object3D {
 
 	override function makeInstance( ctx : Context ) {
 		ctx = super.makeInstance(ctx);
-		var batches = new Map();
 		for( c in children ) {
 			if( c.type != "model" )
 				continue;
-			var b = batches.get(c.source);
-			if( b == null ) {
-				b = [];
-				batches.set(c.source, b);
+			var batch = batches.get(c.source);
+			if( batch  == null ) {
+				var obj = ctx.loadModel(source).toMesh();
+				batch = new h3d.scene.MeshBatch(cast(obj.primitive,h3d.prim.MeshPrimitive), obj.material, ctx.local3d);
+				batches.set(c.source, batch);
 			}
-			b.push(c.to(Model));
-		}
-		for( source => models in batches ) {
-			var obj = ctx.loadModel(source).toMesh();
-			var batch = new h3d.scene.MeshBatch(cast(obj.primitive,h3d.prim.MeshPrimitive), obj.material, ctx.local3d);
-			batch.begin(models.length);
-			for( m in models ) {
-				batch.setTransform(m.getTransform());
-				batch.emitInstance();
-			}
+			batch.setTransform(m.getTransform());
+			batch.emitInstance();
 		}
 		return ctx;
 	}
