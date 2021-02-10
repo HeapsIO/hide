@@ -858,7 +858,7 @@ class MeshSpray extends Object3D {
 				continue;
 			var batch = batches.get(c.source);
 			if( batch  == null ) {
-				var obj = ctx.loadModel(source).toMesh();
+				var obj = ctx.loadModel(c.source).toMesh();
 				batch = new h3d.scene.MeshBatch(cast(obj.primitive,h3d.prim.MeshPrimitive), obj.material, ctx.local3d);
 				batches.set(c.source, batch);
 			}
