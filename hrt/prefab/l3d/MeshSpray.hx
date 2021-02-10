@@ -852,6 +852,7 @@ class MeshSpray extends Object3D {
 
 	override function makeInstance( ctx : Context ) {
 		ctx = super.makeInstance(ctx);
+		var batches = new Map();
 		for( c in children ) {
 			if( c.type != "model" )
 				continue;
@@ -861,7 +862,7 @@ class MeshSpray extends Object3D {
 				batch = new h3d.scene.MeshBatch(cast(obj.primitive,h3d.prim.MeshPrimitive), obj.material, ctx.local3d);
 				batches.set(c.source, batch);
 			}
-			batch.setTransform(m.getTransform());
+			batch.setTransform(c.to(Object3D).getTransform());
 			batch.emitInstance();
 		}
 		return ctx;
