@@ -354,6 +354,7 @@ class FileTree extends FileView {
 		if( ext == null )
 			return false;
 		ide.openFile(fullPath);
+		tree.closeFilter();
 		return true;
 	}
 
