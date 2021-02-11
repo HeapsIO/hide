@@ -748,9 +748,13 @@ class Cell extends Component {
 
 	public function open( ?immediate : Bool ) {
 		if( column.type == TString && column.kind == Script ) {
-			if( immediate ) return;
+
+			// prevent opening the script if we are undo/redo-ing as this
+			// will get our script windowed focus and prevent further undo/redo action
+			if( immediate && !Editor.inRefreshAll ) return;
+
 			var str = value == null ? "" : editor.base.valToString(column.type, value);
-			@:privateAccess table.toggleList(this, function() return new ScriptTable(editor, this));
+			@:privateAccess table.toggleList(this, immediate, function() return new ScriptTable(editor, this));
 		} else
 			@:privateAccess table.toggleList(this, immediate);
 	}

@@ -504,9 +504,11 @@ class Editor extends Component {
 		api.save();
 	}
 
+	public static var inRefreshAll(default,null) : Bool;
 	public static function refreshAll( eraseUndo = false ) {
 		var editors : Array<Editor> = [for( e in new Element(".is-cdb-editor").elements() ) e.data("cdb")];
 		DataFiles.load();
+		inRefreshAll = true;
 		for( e in editors ) {
 			e.syncSheet(Ide.inst.database);
 			e.refresh();
@@ -517,6 +519,7 @@ class Editor extends Component {
 				e.undoState = [];
 			}
 		}
+		inRefreshAll = false;
 	}
 
 	function showReferences() {

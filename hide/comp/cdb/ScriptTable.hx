@@ -48,7 +48,10 @@ class ScriptTable extends SubTable {
 			if( st != null ) obj = st.cell.line.obj;
 		}
 
-		div.on("keypress keydown keyup", (e) -> e.stopPropagation());
+		div.on("keypress keydown keyup", (e) -> {
+			// let pass Ctrl+S if ObjEditor (allow save script)
+			if( e.keyCode != "S".code || !Std.is(editor, ObjEditor) ) e.stopPropagation();
+		});
 		var checker = new ScriptEditor.ScriptChecker(editor.config,"cdb."+cell.getDocumentName(),[
 			"cdb."+cell.table.sheet.name => cell.line.obj,
 			"cdb.objID" => ids.join(":"),
@@ -56,6 +59,7 @@ class ScriptTable extends SubTable {
 		]);
 		script = new ScriptEditor(cell.value, checker, div);
 		script.onSave = saveValue;
+		script.propagateKeys = true;
 		script.onClose = function() { close(); cell.focus(); }
 		lines = [new Line(this,[],0,script.element)];
 		insertedTR.addClass("code");

@@ -1404,9 +1404,22 @@ class SceneEditor {
 
 		var group = new hide.Element('
 			<div class="group" name="CDB">
-				<dl><dt>Type</dt><dd><select><option value="">- No props -</option></select></dd>
+				<dl>
+				<dt>
+					<div class="btn-cdb-large fa fa-file-text"></div>
+					Type
+				</dt>
+				<dd><select><option value="">- No props -</option></select></dd>
 			</div>
 		');
+
+		var cdbLarge = @:privateAccess view.getDisplayState("cdbLarge");
+		group.find(".btn-cdb-large").click((_) -> {
+			cdbLarge = !cdbLarge;
+			@:privateAccess view.saveDisplayState("cdbLarge", cdbLarge);
+			group.toggleClass("cdb-large", cdbLarge);
+		});
+		group.toggleClass("cdb-large", cdbLarge == true);
 
 		var select = group.find("select");
 		for(t in types) {
