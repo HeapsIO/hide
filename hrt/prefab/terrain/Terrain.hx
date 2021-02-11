@@ -586,6 +586,7 @@ class Terrain extends Object3D {
 		if( editor == null ) editor = new hide.prefab.terrain.TerrainEditor(this, ctx.properties.undo);
 		editor.editContext = ctx;
 		editor.setupUI(props, ctx);
+
 		props.append('
 			<div class="group" name="Rendering"><dl>
 				<dt>Cast Shadows</dt><dd><input type="checkbox" field="castShadows"/></dd>
@@ -597,29 +598,32 @@ class Terrain extends Object3D {
 				<dt>Min Step</dt><dd><input type="range" min="1" max="64" value="0" step="1" field="parallaxMinStep"/></dd>
 				<dt>Max Step</dt><dd><input type="range" min="1" max="64" value="0" step="1" field="parallaxMaxStep"/></dd>
 			</dl></div>
-			<div class="group" name="Quality"><dl>
-				<dt>Tile Size X</dt><dd><input type="range" min="1" max="100" value="0" field="tileSizeSetX"/></dd>
-				<dt>Tile Size Y</dt><dd><input type="range" min="1" max="100" value="0" field="tileSizeSetY"/></dd>
-				<dt>Vertex/Unit</dt><dd><input type="range" min="0.1" max="2" " value="0" field="vertexPerMeter"/></dd>
-				<dt>Pixel/Unit</dt><dd><input type="range" min="0.1" max="2" value="0" field="weightMapPixelPerMeter"/></dd>
-				<div align="center"><input type="button" value="Apply" class="apply"/></div>
-			</dl></div>
-			<div class="group" name="Debug"><dl>
-				<dt>Show Grid</dt><dd><input type="checkbox" field="terrain.showGrid"/></dd>
-				<dt>Mode</dt>
-				<dd><select field="editor.renderMode">
-						<option value="PBR">PBR</option>
-						<option value="ShaderComplexity">Shader Complexity</option>
-						<option value="Checker">Checker</option>
-					</select></dd>
-			</dl></div>
 		');
 
-		props.find(".apply").click(function(_) {
-			tileSizeX = @:privateAccess Lambda.find(ctx.properties.fields, f->f.fname=="tileSizeSetX").range.value;
-			tileSizeY = @:privateAccess Lambda.find(ctx.properties.fields, f->f.fname=="tileSizeSetY").range.value;
-			weightMapPixelPerMeter = @:privateAccess Lambda.find(ctx.properties.fields, f->f.fname=="weightMapPixelPerMeter").range.value;
-			vertexPerMeter = @:privateAccess Lambda.find(ctx.properties.fields, f->f.fname=="vertexPerMeter").range.value;
+		ctx.properties.add(props, this, function(pname) {
+			modified = true;
+			ctx.onChange(this, pname);
+		});
+
+		var obj = {
+			tileSize : tileSizeX,
+			vertexes : vertexPerMeter,
+			pixels : weightMapPixelPerMeter,
+		};
+		var options = new hide.Element('
+		<div class="group" name="Quality"><dl>
+			<dt>Tile Size (Units 3D)</dt><dd><input type="range" min="1" max="100" step="1" field="tileSize"/></dd>
+			<dt>Vertexes and HeightMap<br/>(per Unit)</dt><dd><input type="range" min="0.1" max="2" field="vertexes"/></dd>
+			<dt>Painting Weight Pixels<br/>(per Unit)</dt><dd><input type="range" min="0.1" max="2" field="pixels"/></dd>
+			<div align="center"><input type="button" value="Apply" class="apply"/></div>
+		</dl></div>
+		');
+		ctx.properties.add(options,obj);
+
+		options.find('.apply').click(function(_) {
+			tileSizeY = tileSizeX = obj.tileSize;
+			weightMapPixelPerMeter = obj.pixels;
+			vertexPerMeter = obj.vertexes;
 			terrain.weightMapResolution = new h2d.col.IPoint(Math.round(tileSizeX * weightMapPixelPerMeter), Math.round(tileSizeY * weightMapPixelPerMeter));
 			terrain.weightMapResolution.x = Std.int(hxd.Math.max(1, terrain.weightMapResolution.x));
 			terrain.weightMapResolution.y = Std.int(hxd.Math.max(1, terrain.weightMapResolution.y));
@@ -638,16 +642,17 @@ class Terrain extends Object3D {
 			modified = true;
 		});
 
-		ctx.properties.add(props, this, function(pname) {
-			modified = true;
-			ctx.onChange(this, pname);
-		});
-
-		// Reset values if not applied
-		@:privateAccess Lambda.find(ctx.properties.fields, f->f.fname=="tileSizeSetX").range.value = tileSizeX;
-		@:privateAccess Lambda.find(ctx.properties.fields, f->f.fname=="tileSizeSetY").range.value = tileSizeY;
-		@:privateAccess Lambda.find(ctx.properties.fields, f->f.fname=="weightMapPixelPerMeter").range.value = weightMapPixelPerMeter;
-		@:privateAccess Lambda.find(ctx.properties.fields, f->f.fname=="vertexPerMeter").range.value = vertexPerMeter;
+		ctx.properties.add(new hide.Element('
+			<div class="group" name="Debug"><dl>
+				<dt>Show Grid</dt><dd><input type="checkbox" field="terrain.showGrid"/></dd>
+				<dt>Mode</dt>
+				<dd><select field="editor.renderMode">
+						<option value="PBR">PBR</option>
+						<option value="ShaderComplexity">Shader Complexity</option>
+						<option value="Checker">Checker</option>
+					</select></dd>
+			</dl></div>
+		'), this);
 	}
 	#end
 
