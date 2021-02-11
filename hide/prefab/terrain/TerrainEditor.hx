@@ -241,13 +241,13 @@ class TerrainEditor {
 
 		// Adjust the height to avoid seams
 		for( t in tiles ) {
-			var pixels = t.heightMapPixels;
+			var pixels = t.getHeightMapPixels();
 			if( pixels == null )
 				throw("Try to blend the edges of a null heightmap.");
 			var adjTileX = t.terrain.getTile(t.tileX + 1, t.tileY);
 			var adjHeightMapX = adjTileX != null ? adjTileX.heightMap : null;
 			if( adjHeightMapX != null ) {
-				var adjpixels = adjTileX.heightMapPixels;
+				var adjpixels = adjTileX.getHeightMapPixels();
 				for( i in 0 ... t.heightMap.height ) {
 					pixels.setPixelF(t.heightMap.width - 1, i, adjpixels.getPixelF(0,i) );
 				}
@@ -256,7 +256,7 @@ class TerrainEditor {
 			var adjTileY = t.terrain.getTile(t.tileX, t.tileY + 1);
 			var adjHeightMapY = adjTileY != null ? adjTileY.heightMap : null;
 			if( adjHeightMapY != null ) {
-				var adjpixels = adjTileY.heightMapPixels;
+				var adjpixels = adjTileY.getHeightMapPixels();
 				for( i in 0 ... t.heightMap.width ) {
 					pixels.setPixelF(i, t.heightMap.height - 1, adjpixels.getPixelF(i,0) );
 				}
@@ -265,7 +265,7 @@ class TerrainEditor {
 			var adjTileXY = t.terrain.getTile(t.tileX + 1, t.tileY + 1);
 			var adjHeightMapXY = adjTileXY != null ? adjTileXY.heightMap : null;
 			if( adjHeightMapXY != null ) {
-				var adjpixels = adjTileXY.heightMapPixels;
+				var adjpixels = adjTileXY.getHeightMapPixels();
 				pixels.setPixelF(t.heightMap.width - 1, t.heightMap.height - 1, adjpixels.getPixelF(0,0));
 			}
 
