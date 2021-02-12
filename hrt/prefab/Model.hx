@@ -2,7 +2,7 @@ package hrt.prefab;
 
 class Model extends Object3D {
 
-	var animation : Null<String>;
+	public var animation : Null<String>;
 	var lockAnimation : Bool = false;
 	var retargetAnim : Bool = false;
 	var retargetIgnore : String = null;
