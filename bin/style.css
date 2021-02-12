@@ -678,6 +678,8 @@ input[type=checkbox]:checked:after {
   overflow: auto;
   padding: 10px;
   background: #111;
+  max-height: 80%;
+  overflow-y: auto;
 }
 .hide-properties .cdb-large .btn-cdb-large {
   opacity: 1;
