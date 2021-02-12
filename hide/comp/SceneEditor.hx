@@ -2267,8 +2267,11 @@ class SceneEditor {
 			}
 		sortByLabel(gother);
 		sortByLabel(newItems);
-		if( gother.length > 0 )
+		if( gother.length > 0 ) {
+			if( newItems.length == 0 )
+				return gother;
 			newItems.push({ label : "Other", menu : gother });
+		}
 		return newItems;
 	}
 
