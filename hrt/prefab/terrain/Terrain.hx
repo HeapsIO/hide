@@ -622,6 +622,7 @@ class Terrain extends Object3D {
 
 		options.find('.apply').click(function(_) {
 			tileSizeY = tileSizeX = obj.tileSize;
+			TerrainResize.resize(this, new h2d.col.Point(tileSizeX, tileSizeY) );
 			weightMapPixelPerMeter = obj.pixels;
 			vertexPerMeter = obj.vertexes;
 			terrain.weightMapResolution = new h2d.col.IPoint(Math.round(tileSizeX * weightMapPixelPerMeter), Math.round(tileSizeY * weightMapPixelPerMeter));
