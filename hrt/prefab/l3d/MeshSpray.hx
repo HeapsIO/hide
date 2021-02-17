@@ -854,12 +854,15 @@ class MeshSpray extends Object3D {
 		ctx = super.makeInstance(ctx);
 		var batches = new Map();
 		for( c in children ) {
+			if (!c.enabled)
+				continue;
 			if( c.type != "model" )
 				continue;
 			var batch = batches.get(c.source);
 			if( batch  == null ) {
 				var obj = ctx.loadModel(c.source).toMesh();
 				batch = new h3d.scene.MeshBatch(cast(obj.primitive,h3d.prim.MeshPrimitive), obj.material, ctx.local3d);
+				batch.begin();
 				batches.set(c.source, batch);
 			}
 			batch.setTransform(c.to(Object3D).getTransform());
