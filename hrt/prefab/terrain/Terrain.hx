@@ -196,7 +196,7 @@ class Terrain extends Object3D {
 
 		// Avoid texture alloc for unpacking
 		var tmpPackedWeightTexture = new h3d.mat.Texture(terrain.weightMapResolution.x, terrain.weightMapResolution.y, [Target]);
-		var bakeHeightAndNormalInGeometry = #if editor false #else true #end;
+		var bakeHeightAndNormalInGeometry = false;
 
 		var heightData = [];
 		var weightData = [];
