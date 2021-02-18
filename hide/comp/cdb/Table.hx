@@ -138,10 +138,17 @@ class Table extends Component {
 		var colCount = columns.length;
 
 		for( c in columns ) {
+			var editProps = editor.getColumnProps(c);
 			var col = J("<th>");
 			col.text(c.name);
 			col.addClass( "t_"+c.type.getName().substr(1).toLowerCase() );
 			col.addClass( "n_" + c.name );
+			col.toggleClass("hidden", !editor.isColumnVisible(c));
+			col.toggleClass("cat", editProps.categories != null);
+			if(editProps.categories != null)
+				for(c in editProps.categories)
+					col.addClass("cat-" + c);
+
 			if( c.documentation != null )
 				col.attr("title", c.documentation);
 			if( sheet.props.displayColumn == c.name )

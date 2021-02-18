@@ -21,6 +21,17 @@ class Cell extends Component {
 		@:privateAccess line.cells.push(this);
 		root.addClass("t_" + typeNames[column.type.getIndex()]);
 		root.addClass("n_" + column.name);
+		if(line.table.parent == null) {
+			var editProps = editor.getColumnProps(column);
+			root.toggleClass("cat", editProps.categories != null);
+			if(editProps.categories != null)
+				for(c in editProps.categories)
+					root.addClass("cat-" + c);
+			var visible = editor.isColumnVisible(column);
+			root.toggleClass("hidden", !visible);
+			if(!visible)
+				return;
+		}
 		if( column.kind == Script ) root.addClass("t_script");
 		refresh();
 		switch( column.type ) {

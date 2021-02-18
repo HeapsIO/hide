@@ -22,6 +22,11 @@ typedef EditorApi = {
 typedef EditorColumnProps = {
 	var ?formula : String;
 	var ?ignoreExport : Bool;
+	var ?categories : Array<String>;
+}
+
+typedef EditorSheetProps = {
+	var ?categories : Array<String>;
 }
 
 @:allow(hide.comp.cdb)
@@ -644,6 +649,12 @@ class Editor extends Component {
 		return pr;
 	}
 
+	public function isColumnVisible( c : cdb.Data.Column ) {
+		var props = getColumnProps(c);
+		var cats = ide.projectConfig.dbCategories;
+		return cats == null || props.categories == null || cats.filter(c -> props.categories.indexOf(c) >= 0).length > 0;
+	}
+
 	public function newColumn( sheet : cdb.Sheet, ?index : Int, ?onDone : cdb.Data.Column -> Void, ?col ) {
 		var modal = new hide.comp.cdb.ModalColumnForm(this, sheet, col, element);
 		modal.setCallback(function() {
@@ -770,6 +781,15 @@ class Editor extends Component {
 				}, checked: props.displayIcon == col.name });
 			default:
 			}
+
+			var editProps = getColumnProps(col);
+			menu.push({ label : "Categories", menu: categoriesMenu(editProps.categories, function(cats) {
+				beginChanges();
+				editProps.categories = cats;
+				col.editor = editProps;
+				endChanges();
+				refresh();
+			})});
 		}
 
 		if( col.type == TString && col.kind == Script )
@@ -872,12 +892,45 @@ class Editor extends Component {
 		return true;
 	}
 
+	function categoriesMenu(categories: Array<String>, setFunc : Array<String> -> Void) {
+		var menu : Array<ContextMenu.ContextMenuItem> = [{ label : "Set...", click : function() {
+			var wstr = "";
+			if(categories != null)
+				wstr = categories.join(",");
+			wstr = ide.ask("Set Categories (comma separated)", wstr);
+			if(wstr == null)
+				return;
+			categories = [for(s in wstr.split(",")) { var t = StringTools.trim(s); if(t.length > 0) t; }];
+			setFunc(categories.length > 0 ? categories : null);
+			ide.initMenu();
+		}}];
+
+		for(name in getCategories(base)) {
+			var has = categories != null && categories.indexOf(name) >= 0;
+			menu.push({
+				label: name, checked: has, click: function() {
+					if(has)
+						categories.remove(name);
+					else {
+						if(categories == null)
+							categories = [];
+						categories.push(name);
+					}
+					setFunc(categories.length > 0 ? categories : null);
+				}
+			});
+		}
+
+		return menu;
+	}
+
 	public function popupSheet( ?sheet : cdb.Sheet, ?onChange : Void -> Void ) {
 		if( view != null )
 			return;
 		if( sheet == null ) sheet = this.currentSheet;
 		if( onChange == null ) onChange = function() {}
 		var index = base.sheets.indexOf(sheet);
+
 		var content : Array<ContextMenu.ContextMenuItem> = [
 			{ label : "Add Sheet", click : function() { beginChanges(); var db = ide.createDBSheet(index+1); endChanges(); if( db != null ) onChange(); } },
 			{ label : "Move Left", click : function() { beginChanges(); base.moveSheet(sheet,-1); endChanges(); onChange(); } },
@@ -894,7 +947,16 @@ class Editor extends Component {
 				endChanges();
 				onChange();
 			}},
+			{ label : "Categories", menu: categoriesMenu(getSheetProps(sheet).categories, function(cats) {
+				beginChanges();
+				var props = getSheetProps(sheet);
+				props.categories = cats;
+				sheet.props.editor = props;
+				endChanges();
+				onChange();
+			})},
 			{ label : "", isSeparator: true },
+
 		];
 		if( sheet.props.dataFiles == null )
 			content = content.concat([
@@ -963,5 +1025,24 @@ class Editor extends Component {
 		(element[0] : Dynamic).focus({ preventScroll : true });
 	}
 
+	static public function getSheetProps( s : cdb.Sheet ) {
+		var pr : EditorSheetProps = s.props.editor;
+		if( pr == null ) pr = {};
+		return pr;
+	}
+
+	static public function getCategories(db: cdb.Database) : Array<String> {
+		var names : Array<String> = [];
+		for( s in db.sheets ) {
+			var props = getSheetProps(s);
+			if(props.categories != null) {
+				for(n in props.categories)
+					if(names.indexOf(n) < 0)
+						names.push(n);
+			}
+		}
+		names.sort((a, b) -> Reflect.compare(a, b));
+		return names;
+	}
 }
 

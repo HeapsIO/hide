@@ -448,7 +448,7 @@ input[type=checkbox]:checked:after {
   user-select: none;
 }
 .hide-tabs .tabs-header > div.active {
-  background-color: #333;
+  background-color: #444;
   color: #bbb;
   border-bottom-color: #222;
   border-top-right-radius: 0px;
@@ -458,6 +458,9 @@ input[type=checkbox]:checked:after {
 }
 .hide-tabs .tabs-header > div:hover {
   background-color: #282828;
+}
+.hide-tabs .tabs-header > div.hidden {
+  display: none;
 }
 .hide-tabs .tab {
   max-height: 100%;

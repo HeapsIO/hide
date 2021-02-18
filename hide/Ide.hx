@@ -38,7 +38,7 @@ class Ide {
 		current : Config,
 	};
 	var ideConfig(get, never) : hide.Config.HideGlobalConfig;
-	var projectConfig(get, never) : hide.Config.HideProjectConfig;
+	public var projectConfig(get, never) : hide.Config.HideProjectConfig;
 
 	var window : nw.Window;
 	var saveMenu : nw.Menu;
@@ -891,7 +891,7 @@ class Ide {
 		browseRec("");
 	}
 
-	function initMenu() {
+	public function initMenu() {
 
 		if( subView != null ) return;
 
@@ -1048,6 +1048,42 @@ class Ide {
 		db.find(".dbFormulas").click(function(_) {
 			open("hide.comp.cdb.FormulasView",{ path : config.current.get("cdb.formulasFile") });
 		});
+
+		// Categories
+		{
+			function applyCategories() {
+				for( v in getViews(hide.view.CdbTable) )
+					v.applyCategories(projectConfig.dbCategories);
+				initMenu();
+			}
+			var allCats = hide.comp.cdb.Editor.getCategories(database);
+			var showAll = db.find(".dbCatShowAll");
+			for(cat in allCats) {
+				var isShown = projectConfig.dbCategories == null || projectConfig.dbCategories.indexOf(cat) >= 0;
+				new Element("<menu type='checkbox'>").attr("label",cat).prop("checked", isShown).insertBefore(showAll).click(function(_){
+					if(projectConfig.dbCategories == null)
+						projectConfig.dbCategories = allCats; // Init with all cats
+					if(isShown)
+						projectConfig.dbCategories.remove(cat);
+					else
+						projectConfig.dbCategories.push(cat);
+					config.global.save();
+					applyCategories();
+				});
+			}
+			new Element("<separator>").insertBefore(showAll);
+
+			db.find(".dbCatShowAll").click(function(_) {
+				projectConfig.dbCategories = null;
+				config.global.save();
+				applyCategories();
+			});
+			db.find(".dbCatHideAll").click(function(_) {
+				projectConfig.dbCategories = [];
+				config.global.save();
+				applyCategories();
+			});
+		}
 
 		// layout
 		var layouts = menu.find(".layout .content");

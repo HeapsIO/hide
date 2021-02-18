@@ -100,6 +100,7 @@ class CdbTable extends hide.ui.View<{}> {
 						currentSheet = sshow.name;
 					if( getTabCache() != tabCache )
 						rebuild();
+					applyCategories(ide.projectConfig.dbCategories);
 				});
 			};
 		}
@@ -114,7 +115,26 @@ class CdbTable extends hide.ui.View<{}> {
 			tabs.currentTab = tabContents[idx].parent();
 		}
 
+		applyCategories(ide.projectConfig.dbCategories);
+
 		watch(@:privateAccess ide.databaseFile, () -> syncTabs());
+	}
+
+	public function applyCategories(cats: Array<String>) {
+		var sheets = getSheets();
+		var header = @:privateAccess tabs.header;
+		for(i in 0...sheets.length) {
+			var props = hide.comp.cdb.Editor.getSheetProps(sheets[i]);
+			var show = cats == null || props.categories == null || cats.filter(c -> props.categories.indexOf(c) >= 0).length > 0;
+			var tab = header.find('[index=$i]');
+			tab.toggleClass("hidden", !show);
+			tab.toggleClass("cat", props.categories != null);
+			tab[0].className = ~/(cat-[^\s]+)/g.replace(tab[0].className, "");
+			if(props.categories != null)
+				for(c in props.categories)
+					tab.addClass("cat-" + c);
+		}
+		editor.refresh();
 	}
 
 	override function getTitle() {
