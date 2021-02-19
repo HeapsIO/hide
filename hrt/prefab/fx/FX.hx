@@ -10,7 +10,7 @@ import hrt.prefab.fx.BaseFX.ShaderAnimation;
 class FXAnimation extends h3d.scene.Object {
 
 	public var onEnd : Void -> Void;
-	public var playSpeed : Float;
+	public var playSpeed : Float = 0;
 	public var localTime : Float = 0.0;
 	var totalTime : Float = 0.0;
 	public var duration : Float;
@@ -99,7 +99,6 @@ class FXAnimation extends h3d.scene.Object {
 			}
 		}
 
-		#if !editor
 		if(playSpeed > 0) {
 			var curTime = localTime;
 			if( ctx.visibleFlag || alwaysSync ) setTime(curTime);
@@ -111,7 +110,6 @@ class FXAnimation extends h3d.scene.Object {
 					onEnd();
 			}
 		}
-		#end
 	}
 
 	static var tempMat = new h3d.Matrix();
@@ -391,7 +389,12 @@ class FX extends BaseFX {
 		fxanim.duration = duration;
 		fxanim.cullingRadius = cullingRadius;
 		ctx.local3d = fxanim;
+		#if editor
+		// only play if we are as a reference
+		if( ctx.shared.parent != null ) fxanim.playSpeed = 1.0;
+		#else
 		fxanim.playSpeed = 1.0;
+		#end
 
 		#if editor
 		super.make(ctx);
