@@ -87,11 +87,9 @@ class Shader extends Prefab {
 				var material : Material = cast parent;
 				for( m in material.getMaterials(ctx) )
 					m.mainPass.addShader(shader);
-			}
-			else {
-				for(m in ctx.local3d.getMaterials()) { // TODO: Only add to self materials, not all children materials
+			} else {
+				for(m in ctx.local3d.getMaterials(false) )
 					m.mainPass.addShader(shader);
-				}
 			}
 		}
 		ctx.custom = shader;
