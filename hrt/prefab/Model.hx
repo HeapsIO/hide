@@ -101,6 +101,43 @@ class Model extends Object3D {
 	}
 
 	#if editor
+
+	override function updateInstance( ctx: Context, ?propName : String ) {
+		super.updateInstance(ctx, propName);
+		polys3D = null;
+		boundingSphere = null;
+	}
+
+    var polys3D = null;
+    var boundingSphere = null;
+    override function localRayIntersection( ctx : Context, ray : h3d.col.Ray ) : Float {
+        if( polys3D == null ) {
+            polys3D = [];
+            var bounds = ctx.local3d.getBounds();
+			bounds.transform(ctx.local3d.getAbsPos().getInverse());
+            boundingSphere = bounds.toSphere();
+            for( m in ctx.local3d.getMeshes() ) {
+                var p = cast(m.primitive, h3d.prim.HMDModel);
+               	var col = cast(cast(p.getCollider(), h3d.col.Collider.OptimizedCollider).b, h3d.col.PolygonBuffer);
+                polys3D.push({ col : col, mat : m.getRelPos(ctx.local3d).getInverse() });
+            }
+        }
+
+        if( boundingSphere.rayIntersection(ray,false) < 0 )
+            return -1.;
+
+        var minD = -1.;
+        for( p in polys3D ) {
+            var ray2 = ray.clone();
+            ray2.transform(p.mat);
+            var d = p.col.rayIntersection(ray2, true);
+            if( d > 0 && (d < minD || minD == -1)  )
+                minD = d;
+        }
+
+        return minD;
+    }
+
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
 		var props = ctx.properties.add(new hide.Element('
