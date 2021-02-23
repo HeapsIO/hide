@@ -72,6 +72,7 @@ class IconTree<T:{}> extends Component {
 
 	function getVal( id : String ) : T {
 		var c = map.get(id);
+		if( c == null ) return null; // id is loading ?
 		return getValue(c);
 	}
 
@@ -136,6 +137,7 @@ class IconTree<T:{}> extends Component {
 			var node = new Element(event.target).closest("li");
 			if(node == null || node.length == 0) return;
    			var v = getVal(node[0].id);
+			if( v == null ) return;
 			onClick(v, event);
 		});
 		element.on("dblclick.jstree", function (event) {
