@@ -66,8 +66,6 @@ class ProbeBaker {
 		pbrRenderer.renderMode = LightProbe;
 		scene.camera = customCamera;
 
-		setupEnvMap(resolution);
-
 		// Bake a Probe
 		var engine = h3d.Engine.getCurrent();
 		for( f in 0 ... 6 ) {
