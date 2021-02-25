@@ -178,13 +178,12 @@ class Object3D extends Prefab {
 		if( shared != null && shared.editorDisplay ) {
 			var sheet = getCdbType();
 			if( sheet != null ) {
+				var ide = hide.Ide.inst;
 				var ranges = Reflect.field(shared.scene.config.get("sceneeditor.ranges"), sheet);
 				if( ranges != null ) {
 					for( key in Reflect.fields(ranges) ) {
 						var color = Std.parseInt(Reflect.field(ranges,key));
-						var value : Dynamic = props;
-						for( p in key.split(".") )
-							value = Reflect.field(value, p);
+						var value : Dynamic = ide.resolveCDBValue(sheet+"."+key, props);
 						if( value != null ) {
 							var mesh = new h3d.scene.Mesh(h3d.prim.Cylinder.defaultUnitCylinder(128), ctx.local3d);
 							mesh.name = "$UI.RANGE";
@@ -199,6 +198,23 @@ class Object3D extends Prefab {
 							mesh.material.shadows = false;
 							mesh.material.mainPass.setPassName("overlay");
 						}
+					}
+				}
+				var icon : String = Reflect.field(shared.scene.config.get("sceneeditor.huds"), sheet);
+				if( icon != null ) {
+					var t : cdb.Types.TilePos = ide.resolveCDBValue(sheet+"."+icon, props);
+					if( t != null && t.file != null ) {
+						var obj = Std.downcast(ctx.local2d, h2d.ObjectFollower);
+						if( obj == null || obj.follow != ctx.local3d )
+							ctx.local2d = obj = new h2d.ObjectFollower(ctx.local3d, ctx.local2d);
+						var bmp = cast(obj.getChildAt(0), h2d.Bitmap);
+						if( bmp == null ) bmp = new h2d.Bitmap(null, obj);
+						bmp.tile = h2d.Tile.fromTexture(ctx.loadTexture(t.file)).sub(
+							t.x * t.size,
+							t.y * t.size,
+							(t.width == null ? 1 : t.width) * t.size,
+							(t.height == null ? 1 : t.height) * t.size
+						).center();
 					}
 				}
 			}

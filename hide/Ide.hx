@@ -494,6 +494,41 @@ class Ide {
 		return resourceDir+"/"+relPath;
 	}
 
+	public function resolveCDBValue( path : String, obj : Dynamic ) : Dynamic {
+		var path = path.split(".");
+		var sheet = database.getSheet(path.shift());
+		if( sheet == null )
+			return null;
+		while( path.length > 0 && sheet != null ) {
+			var f = path.shift();
+			var value = Reflect.field(obj, f);
+			if( value == null )
+				return null;
+			var current = sheet;
+			sheet = null;
+			for( c in current.columns ) {
+				if( c.name == f ) {
+					switch( c.type ) {
+					case TRef(name):
+						sheet = database.getSheet(name);
+						var ref = sheet.index.get(value);
+						if( ref == null )
+							return null;
+						value = ref.obj;
+					case TProperties:
+						sheet = current.getSub(c);
+					default:
+					}
+					break;
+				}
+			}
+			obj = value;
+		}
+		for( f in path )
+			obj = Reflect.field(obj, f);
+		return obj;
+	}
+
 	var showErrors = true;
 	public function error( e : Dynamic ) {
 		if( showErrors && !js.Browser.window.confirm(e) )

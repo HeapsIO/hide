@@ -117,6 +117,7 @@
 
 	"sceneeditor.icons" : {},
 	"sceneeditor.ranges" : {},
+	"sceneeditor.huds" : {},
 
 	// l3d config
 	"l3d.groundLayer": "ground",
