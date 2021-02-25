@@ -116,7 +116,7 @@ class Model extends Object3D {
             var bounds = ctx.local3d.getBounds();
 			bounds.transform(ctx.local3d.getAbsPos().getInverse());
             boundingSphere = bounds.toSphere();
-            for( m in ctx.local3d.getMeshes() ) {
+            for( m in ctx.shared.getObjects(this, h3d.scene.Mesh) ) {
                 var p = cast(m.primitive, h3d.prim.HMDModel);
                	var col = cast(cast(p.getCollider(), h3d.col.Collider.OptimizedCollider).b, h3d.col.PolygonBuffer);
                 polys3D.push({ col : col, mat : m.getRelPos(ctx.local3d).getInverse() });
