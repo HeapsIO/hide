@@ -72,7 +72,8 @@ class ShaderInput extends ShaderNode {
 		var input = element.children("select");
 		var indexOption = 0;
 		for (c in ShaderNode.availableVariables) {
-			input.append(new hide.Element('<option value="${indexOption}">${c.name.split(".")[1]}</option>'));
+			var nameSplitted = c.name.split(".");
+			input.append(new hide.Element('<option value="${indexOption}">${nameSplitted[nameSplitted.length-1]}</option>'));
 			if (this.variable.name == c.name) {
 				input.val(indexOption);
 			}

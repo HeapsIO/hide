@@ -8,6 +8,7 @@ using hxsl.Ast;
 @description("Preview node, just to debug :)")
 @group("Output")
 @width(100)
+@noheader()
 class Preview extends ShaderNode {
 
 	@input("input") var input = SType.Vec4;
@@ -48,23 +49,20 @@ class Preview extends ShaderNode {
 		if (this.variable == null) {
 			throw ShaderException.t("The preview is not available", this.id);
 		}
-		var element = new hide.Element('<div style="width: 100px; height: 90px"><div class="preview-parent" ><div class="node-preview" style="height: 100px" ></div></div></div>');
+		var element = new hide.Element('<div style="width: 100px; height: 100px"><div class="preview-parent" top="-10px" ><div class="node-preview" style="height: 100px" ></div></div></div>');
 		nodePreview = element.find(".node-preview");
 		scene = new hide.comp.Scene(config, null, nodePreview);
-		nodePreview.hide();
+		
 		scene.onReady = function() {
 			var prim = new h3d.prim.Cube();
 			prim.addUVs();
 			prim.addNormals();
 			cube = new Mesh(prim, scene.s3d);
-			nodePreview.removeClass("hide-scene-container");
-			var c = new h3d.scene.CameraController(scene.s3d);
 			scene.s3d.camera.pos = new h3d.Vector(0.5, 3.4, 0.5);
 			scene.s3d.camera.target = new h3d.Vector(0.5, 0.5, 0.5);
 			var light = new h3d.scene.pbr.DirLight(scene.s3d.camera.target.sub(scene.s3d.camera.pos), scene.s3d);
 			light.setPosition(scene.s3d.camera.pos.x, scene.s3d.camera.pos.y, scene.s3d.camera.pos.z);
 			scene.s3d.camera.zoom = 1;
-			c.loadFromCamera();
 			scene.init();
 			onMove();
 			computeOutputs();
@@ -75,24 +73,24 @@ class Preview extends ShaderNode {
 	}
 
 	public function onMove(?x : Float, ?y : Float, zoom : Float = 1.) {
-		var top : Float;
-		var left : Float;
-		var parent = nodePreview.parent();
-		if (x != null && y != null) {
-			left = x;
-			top = y;
-		} else {
-			var offsetWindow = nodePreview.closest(".heaps-scene").offset();
-			var offset = nodePreview.closest("foreignObject").offset();
-			if (offsetWindow == null || offset == null) return;
-			top = offset.top - offsetWindow.top - 32;
-			left = offset.left - offsetWindow.left;
-		}
+		// var top : Float;
+		// var left : Float;
+		// var parent = nodePreview.parent();
+		// if (x != null && y != null) {
+		// 	left = x;
+		// 	top = y;
+		// } else {
+		// 	var offsetWindow = nodePreview.closest(".heaps-scene").offset();
+		// 	var offset = nodePreview.closest("foreignObject").offset();
+		// 	if (offsetWindow == null || offset == null) return;
+		// 	top = offset.top - offsetWindow.top - 32;
+		// 	left = offset.left - offsetWindow.left;
+		// }
+		// nodePreview.closest(".prop-group").attr("transform", 'translate(0, -5)');
 		nodePreview.closest(".properties-group").children().first().css("fill", "#000");
-		parent.css("top", top/zoom + 17);
-		parent.css("left", left/zoom);
-		parent.css("zoom", zoom);
-		nodePreview.show();
+		// parent.css("top", top/zoom + 17);
+		// parent.css("left", left/zoom);
+		// parent.css("zoom", zoom);
 	}
 
 	function onResize() {

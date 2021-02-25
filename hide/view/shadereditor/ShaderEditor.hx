@@ -300,8 +300,13 @@ class ShaderEditor extends hide.view.Graph {
 		var saveCustomModel = getDisplayState("customModel");
 		if (saveCustomModel != null)
 			obj = sceneEditor.scene.loadModel(saveCustomModel, true);
-		else
-			obj = sceneEditor.scene.loadModel("fx/Common/PrimitiveShapes/Sphere.fbx", true);
+		else {
+			// obj = sceneEditor.scene.loadModel("res/PrimitiveShapes/Sphere.fbx", true);
+			var sp = new h3d.prim.Sphere(1, 128, 128);
+			sp.addNormals();
+			sp.addUVs();
+			obj = new h3d.scene.Mesh(sp);
+		}
 		sceneEditor.scene.s3d.addChild(obj);
 
 		element.find("#preview").first().append(sceneEditor.scene.element);
@@ -767,12 +772,10 @@ class ShaderEditor extends hide.view.Graph {
 			switch (variable.type) {
 				case TSampler2D:
 					shader.setParamValue(variable, sceneEditor.scene.loadTexture("", value));
+				case TVec(size, _):
+					shader.setParamValue(variable, Vector.fromArray(value));
 				default:
-					if (variable.name.toLowerCase().indexOf("color") != -1) {
-						shader.setParamValue(variable, Vector.fromArray(value));
-					} else {
-						shader.setParamValue(variable, value);
-					}
+					shader.setParamValue(variable, value);
 			}
 		} catch (e : Dynamic) {
 			// The parameter is not used

@@ -64,6 +64,8 @@ class Cond extends ShaderNode {
 	}
 
 	override public function saveProperties() : Dynamic {
+		if (this.condition == null)
+			this.condition = availableConditions[0];
 		var properties = {
 			condition: this.condition.getName()
 		};

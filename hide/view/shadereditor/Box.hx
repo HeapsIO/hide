@@ -131,7 +131,7 @@ class Box {
 		// create properties box
 		var bgParam = editor.rect(propertiesGroup, 0, 0, this.width, 0).addClass("properties");
 		if (!hasHeader && color != null) bgParam.css("fill", color);
-		propsHeight = 5;
+		propsHeight = 0;
 
 		for (p in props) {
 			var prop = editor.group(propertiesGroup).addClass("prop-group");
