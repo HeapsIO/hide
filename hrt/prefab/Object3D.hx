@@ -133,6 +133,9 @@ class Object3D extends Prefab {
 		var o = ctx.local3d;
 		applyTransform(o);
 		o.visible = visible;
+		#if editor
+		addEditorUI(ctx);
+		#end
 	}
 
 	override function removeInstance(ctx: Context):Bool {
@@ -156,12 +159,50 @@ class Object3D extends Prefab {
 
 		var shader = new h3d.shader.FixedColor(0xffffff);
 		for( m in materials ) {
+			if( m.name != null && StringTools.startsWith(m.name,"$UI.") )
+				continue;
 			var p = m.allocPass("highlight");
 			p.culling = None;
 			p.depthWrite = false;
 			p.addShader(shader);
 		}
 		return true;
+	}
+
+	public function addEditorUI( ctx : Context ) {
+		for( r in ctx.shared.getObjects(this,h3d.scene.Object) )
+			if( r.name != null && StringTools.startsWith(r.name,"$UI.") )
+				r.remove();
+		// add ranges
+		var shared = Std.downcast(ctx.shared, hide.prefab.ContextShared);
+		if( shared != null && shared.editorDisplay ) {
+			var sheet = getCdbType();
+			if( sheet != null ) {
+				var ranges = Reflect.field(shared.scene.config.get("sceneeditor.ranges"), sheet);
+				if( ranges != null ) {
+					for( key in Reflect.fields(ranges) ) {
+						var color = Std.parseInt(Reflect.field(ranges,key));
+						var value : Dynamic = props;
+						for( p in key.split(".") )
+							value = Reflect.field(value, p);
+						if( value != null ) {
+							var mesh = new h3d.scene.Mesh(h3d.prim.Cylinder.defaultUnitCylinder(128), ctx.local3d);
+							mesh.name = "$UI.RANGE";
+							mesh.ignoreCollide = true;
+							mesh.ignoreBounds = true;
+							mesh.material.mainPass.culling = None;
+							mesh.material.name = "$UI.RANGE";
+							mesh.setScale(value * 2);
+							mesh.scaleZ = 0.1;
+							mesh.material.color.setColor(color|0xFF000000);
+							mesh.material.mainPass.enableLights = false;
+							mesh.material.shadows = false;
+							mesh.material.mainPass.setPassName("overlay");
+						}
+					}
+				}
+			}
+		}
 	}
 
 	override function makeInteractive( ctx : Context ) : hxd.SceneEvents.Interactive {

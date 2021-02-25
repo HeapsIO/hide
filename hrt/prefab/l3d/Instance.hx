@@ -43,54 +43,7 @@ class Instance extends Object3D {
 			var bmp = new h2d.Bitmap(tile, objFollow);
 			ctx.local2d = objFollow;
 		}
-		addRanges(ctx, true);
 		return ctx;
-	}
-
-	public function addRanges( ctx : Context, init = false ) {
-		if( !init ) {
-			for( r in ctx.shared.getObjects(this,h3d.scene.Object) )
-				if( r.name == "RANGE")
-					r.remove();
-		}
-		// add ranges
-		var shared = Std.downcast(ctx.shared, hide.prefab.ContextShared);
-		if( shared != null && shared.editorDisplay ) {
-			var sheet = getCdbType();
-			if( sheet != null ) {
-				var ranges = Reflect.field(shared.scene.config.get("sceneeditor.ranges"), sheet);
-				if( ranges != null ) {
-					for( key in Reflect.fields(ranges) ) {
-						var color = Std.parseInt(Reflect.field(ranges,key));
-						var value : Dynamic = props;
-						for( p in key.split(".") )
-							value = Reflect.field(value, p);
-						if( value != null ) {
-							var mesh = new h3d.scene.Mesh(h3d.prim.Cylinder.defaultUnitCylinder(128), ctx.local3d);
-							mesh.name = "RANGE";
-							mesh.ignoreCollide = true;
-							mesh.ignoreBounds = true;
-							mesh.material.mainPass.culling = None;
-							mesh.material.name = "RANGE";
-							mesh.setScale(value * 2);
-							mesh.scaleZ = 0.1;
-							mesh.material.color.setColor(color|0xFF000000);
-							mesh.material.mainPass.enableLights = false;
-							mesh.material.shadows = false;
-							mesh.material.mainPass.setPassName("overlay");
-						}
-					}
-				}
-			}
-		}
-	}
-
-	override function setSelected(ctx:Context, b:Bool):Bool {
-		var b = super.setSelected(ctx, b);
-		for( m in ctx.shared.getMaterials(this) )
-			if( m.name == "RANGE" )
-				m.removePass(m.getPass("highlight"));
-		return b;
 	}
 
 	override function makeInteractive(ctx:Context):hxd.SceneEvents.Interactive {

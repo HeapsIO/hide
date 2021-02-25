@@ -1456,8 +1456,8 @@ class SceneEditor {
 			editor.fileView = view;
 			editor.onChange = function(pname) {
 				edit.onChange(e, 'props.$pname');
-				var e = Std.instance(e, hrt.prefab.l3d.Instance);
-				if( e != null ) e.addRanges(context.shared.contexts.get(e));
+				var e = Std.instance(e, Object3D);
+				if( e != null ) e.addEditorUI(context.shared.contexts.get(e));
 			}
 		}
 	}
