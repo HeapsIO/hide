@@ -501,7 +501,15 @@ class Ide {
 			return null;
 		while( path.length > 0 && sheet != null ) {
 			var f = path.shift();
-			var value = Reflect.field(obj, f);
+			var value : Dynamic;
+			if( f.charCodeAt(f.length-1) == "]".code ) {
+				var parts = f.split("[");
+				f = parts[0];
+				value = Reflect.field(obj, f);
+				if( value != null )
+					value = value[Std.parseInt(parts[1])];
+			} else
+ 				value = Reflect.field(obj, f);
 			if( value == null )
 				return null;
 			var current = sheet;
@@ -515,7 +523,7 @@ class Ide {
 						if( ref == null )
 							return null;
 						value = ref.obj;
-					case TProperties:
+					case TProperties, TList:
 						sheet = current.getSub(c);
 					default:
 					}
