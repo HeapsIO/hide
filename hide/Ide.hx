@@ -494,7 +494,18 @@ class Ide {
 		return resourceDir+"/"+relPath;
 	}
 
-	public function resolveCDBValue( path : String, obj : Dynamic ) : Dynamic {
+	public function resolveCDBValue( path : String, key : Dynamic, obj : Dynamic ) : Dynamic {
+
+		// allow Array as key (first choice)
+		if( Std.is(key,Array) ) {
+			for( v in (key:Array<Dynamic>) ) {
+				var value = resolveCDBValue(path, v, obj);
+				if( value != null ) return value;
+			}
+			return null;
+		}
+		path += "."+key;
+
 		var path = path.split(".");
 		var sheet = database.getSheet(path.shift());
 		if( sheet == null )
