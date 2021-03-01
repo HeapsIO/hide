@@ -202,19 +202,36 @@ class Object3D extends Prefab {
 				}
 				var icon : String = Reflect.field(shared.scene.config.get("sceneeditor.huds"), sheet);
 				if( icon != null ) {
-					var t : cdb.Types.TilePos = ide.resolveCDBValue(sheet+"."+icon, props);
-					if( t != null && t.file != null ) {
+					var t : Dynamic = ide.resolveCDBValue(sheet+"."+icon, props);
+					if( t != null && (t.file != null || Std.is(t,String)) ) {
 						var obj = Std.downcast(ctx.local2d, h2d.ObjectFollower);
-						if( obj == null || obj.follow != ctx.local3d )
+						if( obj == null || obj.follow != ctx.local3d ) {
 							ctx.local2d = obj = new h2d.ObjectFollower(ctx.local3d, ctx.local2d);
-						var bmp = cast(obj.getChildAt(0), h2d.Bitmap);
-						if( bmp == null ) bmp = new h2d.Bitmap(null, obj);
-						bmp.tile = h2d.Tile.fromTexture(ctx.loadTexture(t.file)).sub(
-							t.x * t.size,
-							t.y * t.size,
-							(t.width == null ? 1 : t.width) * t.size,
-							(t.height == null ? 1 : t.height) * t.size
-						).center();
+							obj.horizontalAlign = Middle;
+						}
+						if( t.file != null ) {
+							var t : cdb.Types.TilePos = t;
+							var bmp = cast(obj.getChildAt(0), h2d.Bitmap);
+							if( bmp == null ) bmp = new h2d.Bitmap(null, obj);
+							bmp.tile = h2d.Tile.fromTexture(ctx.loadTexture(t.file)).sub(
+								t.x * t.size,
+								t.y * t.size,
+								(t.width == null ? 1 : t.width) * t.size,
+								(t.height == null ? 1 : t.height) * t.size
+							);
+						} else {
+							var f = cast(obj.getChildAt(0), h2d.Flow);
+							if( f == null ) {
+								f = new h2d.Flow(obj);
+								f.padding = 3;
+								f.paddingTop = 1;
+								f.backgroundTile = h2d.Tile.fromColor(0,1,1,0.5);
+							}
+							var tf = cast(f.getChildAt(1), h2d.Text);
+							if( tf == null )
+								tf = new h2d.Text(hxd.res.DefaultFont.get(), f);
+							tf.text = t;
+						}
 					}
 				}
 			}
