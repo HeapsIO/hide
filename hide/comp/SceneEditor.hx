@@ -456,7 +456,7 @@ class SceneEditor {
 				value : o,
 				text : o.name,
 				icon : "fa fa-"+icon,
-				children : (o.children.length > 0 && !p.hideChildren) || (ref != null && @:privateAccess ref.editMode),
+				children : o.children.length > 0 || (ref != null && @:privateAccess ref.editMode),
 				state: state
 			};
 			return r;
@@ -491,6 +491,16 @@ class SceneEditor {
 		}
 		tree.get = function(o:PrefabElement) {
 			var objs = o == null ? sceneData.children : Lambda.array(o);
+			if( o != null && o.getHideProps().hideChildren != null ) {
+				var hideChildren = o.getHideProps().hideChildren;
+				var visibleObjs = [];
+				for( o in objs ) {
+					if( hideChildren(o) )
+						continue;
+					visibleObjs.push(o);
+				}
+				objs = visibleObjs;
+			}
 			var ref = o == null ? null : o.to(Reference);
 			@:privateAccess if( ref != null && ref.editMode && ref.ref != null ) {
 				for( c in ref.ref )

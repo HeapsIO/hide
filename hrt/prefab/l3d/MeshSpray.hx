@@ -201,7 +201,7 @@ class MeshSpray extends Object3D {
 	}
 
 	override function getHideProps() : HideProps {
-		return { icon : "paint-brush", name : "MeshSpray", hideChildren : true };
+		return { icon : "paint-brush", name : "MeshSpray", hideChildren : p -> return Std.is(p, Model) };
 	}
 
 	function extractMeshName( path : String ) : String {
@@ -534,7 +534,13 @@ class MeshSpray extends Object3D {
 		});
 		options.find("#clean").click(function(_) {
 			if (hide.Ide.inst.confirm("Are you sure to remove all meshes for this MeshSpray ?")) {
-				sceneEditor.deleteElements(children.copy());
+				var meshes = [];
+				for( c in children ) {
+					if( Std.is(c, Model) ) {
+						meshes.push(c);
+					}
+				}
+				sceneEditor.deleteElements(meshes);
 				sceneEditor.selectObjects([this], Nothing);
 			}
 		});
