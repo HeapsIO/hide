@@ -50,6 +50,11 @@ class ParticleLit extends Prefab {
 	public var backLightingMask : String = null;
 	public var curvature : Float = 0.0;
 
+	public var normalFlipY : Bool;
+	public var normalFlipX : Bool;
+	public var normalMap : String = null;
+	public var normalIntensity : Float = 1.0;
+
 	public function new(?parent) {
 		super(parent);
 		type = "particleLit";
@@ -63,6 +68,11 @@ class ParticleLit extends Prefab {
 		if( obj.backLightingIntensity != null ) backLightingIntensity = obj.backLightingIntensity;
 		if( obj.backLightingMask != null ) backLightingMask = obj.backLightingMask;
 		if( obj.curvature != null ) curvature = obj.curvature;
+
+		if( obj.normalMap != null ) normalMap = obj.normalMap;
+		if( obj.normalIntensity != null ) normalIntensity = obj.normalIntensity;
+		if( obj.normalFlipY != null ) normalFlipY = obj.normalFlipY;
+		if( obj.normalFlipX != null ) normalFlipX = obj.normalFlipX;
 	}
 
 	override function save() {
@@ -73,6 +83,11 @@ class ParticleLit extends Prefab {
 		obj.backLightingIntensity = backLightingIntensity;
 		obj.backLightingMask = backLightingMask;
 		obj.curvature = curvature;
+
+		obj.normalMap = normalMap;
+		obj.normalIntensity = normalIntensity;
+		obj.normalFlipY = normalFlipY;
+		obj.normalFlipX = normalFlipX;
 		return obj;
 	}
 
@@ -113,6 +128,14 @@ class ParticleLit extends Prefab {
 				pf.VERTEX = vertexShader;
 				pf.indirectLightingIntensity = indirectLightingIntensity;
 				pf.directLightingIntensity = directLightingIntensity;
+				pf.normalMap = normalMap == null ? null : ctx.loadTexture(normalMap);
+				pf.normalIntensity = normalIntensity;
+				pf.NORMAL = pf.normalMap != null;
+				pf.NORMAL_FLIP_Y = normalFlipY;
+				pf.NORMAL_FLIP_X = normalFlipX;
+				pf.hl2_basis0.set(-1.0 / hxd.Math.sqrt(6.0), -1.0 / hxd.Math.sqrt(3.0), 1.0 / hxd.Math.sqrt(3.0));
+				pf.hl2_basis1.set(-1.0 / hxd.Math.sqrt(6.0), 1.0 / hxd.Math.sqrt(2.0), 1.0 / hxd.Math.sqrt(3.0));
+				pf.hl2_basis2.set(hxd.Math.sqrt(2.0/3.0), 0.0, 1.0 / hxd.Math.sqrt(3.0));
 			}
 			var cn = m.mainPass.getShader(CurvedNormal);
 			if( cn != null ) {
@@ -155,6 +178,14 @@ class ParticleLit extends Prefab {
 				<dl>
 					<dt>Intensity</dt><dd><input type="range" min="0.0" max="1.0" field="backLightingIntensity"/></dd>
 					<dt>Mask</dt><dd><input type="texturepath" field="backLightingMask"/>
+				</dl>
+			</div>
+			<div class="group" name="Normal Mapping">
+				<dl>
+					<dt>Texture</dt><dd><input type="texturepath" field="normalMap"/>
+					<dt>Intensity</dt><dd><input type="range" min="0.0" max="1.0" field="normalIntensity"/></dd>
+					<dt>Flip Y</dt><dd><input type="checkbox" field="normalFlipY"/></dd>
+					<dt>Flip X</dt><dd><input type="checkbox" field="normalFlipX"/></dd>
 				</dl>
 			</div>
 		');
