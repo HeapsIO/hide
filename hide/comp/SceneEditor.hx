@@ -1475,7 +1475,10 @@ class SceneEditor {
 			editor.onChange = function(pname) {
 				edit.onChange(e, 'props.$pname');
 				var e = Std.instance(e, Object3D);
-				if( e != null ) e.addEditorUI(context.shared.contexts.get(e));
+				if( e != null ) {
+					for( ctx in context.shared.getContexts(e) )
+						e.addEditorUI(ctx);
+				}
 			}
 		}
 	}
@@ -1958,8 +1961,6 @@ class SceneEditor {
 		var elements = curEdit.rootElements;
 		if(elements == null || elements.length == 0)
 			return;
-		var contexts = context.shared.contexts;
-
 		var undoes = [];
 		var newElements = [];
 		for(elt in elements) {
