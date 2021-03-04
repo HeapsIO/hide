@@ -134,6 +134,11 @@ class Reference extends Object3D {
 
 	#if editor
 
+	override function makeInteractive(ctx) {
+		if( editMode )
+			return null;
+		return super.makeInteractive(ctx);
+	}
 
 	override function edit( ctx : EditContext ) {
 		var element = new hide.Element('

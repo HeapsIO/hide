@@ -86,6 +86,10 @@ class ContextShared {
 		return null;
 	}
 
+	public function getRef( prefab : Prefab ) {
+		return refsContexts.get(prefab);
+	}
+
 	public function cloneRef( prefab : Prefab, newPath : String ) {
 		var ctx = contexts.get(prefab);
 		if( ctx == null )

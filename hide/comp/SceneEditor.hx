@@ -713,15 +713,23 @@ class SceneEditor {
 	public dynamic function onRefresh() {
 	}
 
-	function makeInteractive( elt : PrefabElement ) {
-		var contexts = context.shared.contexts;
-		var ctx = contexts[elt];
+	function makeInteractive( elt : PrefabElement, ?shared : hrt.prefab.ContextShared ) {
+		if( shared == null )
+			shared = context.shared;
+		var ctx = shared.contexts[elt];
 		if( ctx == null )
 			return;
 		var int = elt.makeInteractive(ctx);
-		if( int == null ) return;
-		initInteractive(elt,cast int);
-		if( isLocked(elt) ) toggleInteractive(elt, false);
+		if( int != null ) {
+			initInteractive(elt,cast int);
+			if( isLocked(elt) ) toggleInteractive(elt, false);
+		}
+		var ref = Std.downcast(elt,Reference);
+		@:privateAccess if( ref != null && ref.editMode ) {
+			var ctx = shared.getRef(elt);
+			for( p in ref.ref.flatten() )
+				makeInteractive(p, ctx);
+		}
 	}
 
 	function toggleInteractive( e : PrefabElement, visible : Bool ) {
@@ -2062,6 +2070,11 @@ class SceneEditor {
 		if( to == null )
 			to = sceneData;
 
+		{
+			var ref = Std.downcast(to, Reference);
+			@:privateAccess if( ref != null && ref.editMode ) to = ref.ref;
+		}
+
 		var effectFunc = reparentImpl(e, to, index);
 		undo.change(Custom(function(undo) {
 			refresh(effectFunc(undo) ? Full : Partial);
@@ -2098,8 +2111,8 @@ class SceneEditor {
 			var obj = getObject(elt);
 			var prevState = null, newState = null;
 			if(obj3d != null && toObj != null && obj != null && !preserveTransform) {
-				var mat = worldMat(elt);
-				var parentMat = worldMat(toElt);
+				var mat = worldMat(obj);
+				var parentMat = worldMat(toObj);
 				parentMat.invert();
 				mat.multiply(mat, parentMat);
 				prevState = obj3d.saveTransform();
