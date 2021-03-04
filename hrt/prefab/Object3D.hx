@@ -212,8 +212,11 @@ class Object3D extends Prefab {
 						}
 						if( t.file != null ) {
 							var t : cdb.Types.TilePos = t;
-							var bmp = cast(obj.getChildAt(0), h2d.Bitmap);
-							if( bmp == null ) bmp = new h2d.Bitmap(null, obj);
+							var bmp = Std.downcast(obj.getObjectByName("$huds"), h2d.Bitmap);
+							if( bmp == null ) {
+								bmp = new h2d.Bitmap(null, obj);
+								bmp.name = "$huds";
+							}
 							bmp.tile = h2d.Tile.fromTexture(ctx.loadTexture(t.file)).sub(
 								t.x * t.size,
 								t.y * t.size,
@@ -221,9 +224,10 @@ class Object3D extends Prefab {
 								(t.height == null ? 1 : t.height) * t.size
 							);
 						} else {
-							var f = cast(obj.getChildAt(0), h2d.Flow);
+							var f = Std.downcast(obj.getObjectByName("$huds_f"), h2d.Flow);
 							if( f == null ) {
 								f = new h2d.Flow(obj);
+								f.name = "$huds_f";
 								f.padding = 3;
 								f.paddingTop = 1;
 								f.backgroundTile = h2d.Tile.fromColor(0,1,1,0.5);
