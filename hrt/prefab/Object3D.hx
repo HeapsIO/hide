@@ -208,6 +208,7 @@ class Object3D extends Prefab {
 						if( obj == null || obj.follow != ctx.local3d ) {
 							ctx.local2d = obj = new h2d.ObjectFollower(ctx.local3d, ctx.local2d);
 							obj.horizontalAlign = Middle;
+							obj.followVisibility = true;
 						}
 						if( t.file != null ) {
 							var t : cdb.Types.TilePos = t;
