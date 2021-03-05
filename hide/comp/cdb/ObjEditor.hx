@@ -6,10 +6,12 @@ class ObjEditor extends Editor {
 
 	var obj : {};
 	var structureWasChanged = false;
+	var fileReference : String;
 
-	public function new( sheet : cdb.Sheet, props, obj : {}, ?parent : Element ) {
+	public function new( sheet : cdb.Sheet, props, obj : {}, fileReference, ?parent : Element ) {
 		this.displayMode = AllProperties;
 		this.obj = obj;
+		this.fileReference = fileReference;
 
 		// track changes in columns and props (structure changes made within local editor)
 		function makeStructSign() {
@@ -88,6 +90,8 @@ class ObjEditor extends Editor {
 		var sheetData = Reflect.copy(@:privateAccess sheet.sheet);
 		sheetData.linesData = null;
 		sheetData.lines = [for( i in 0...sheetData.columns.length ) obj];
+		sheetData.separators = [0];
+		sheetData.props = { separatorTitles: [fileReference] };
 		var s = new cdb.Sheet(sheet.base, sheetData);
 		s.realSheet = sheet;
 		return s;

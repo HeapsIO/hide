@@ -1469,7 +1469,11 @@ class SceneEditor {
 
 		if(curType != null) {
 			var props = new hide.Element('<div></div>').appendTo(group.find(".content"));
-			var editor = new hide.comp.cdb.ObjEditor(curType, view.config, e.props, props);
+			var fileRef = view.state.path;
+			var ctx = context.shared.getContexts(e)[0];
+			if( ctx != null )
+				fileRef = ctx.shared.currentPath;
+			var editor = new hide.comp.cdb.ObjEditor(curType, view.config, e.props, fileRef, props);
 			editor.undo = properties.undo;
 			editor.fileView = view;
 			editor.onChange = function(pname) {
