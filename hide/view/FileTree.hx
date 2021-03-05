@@ -151,6 +151,7 @@ class FileTree extends FileView {
 	}
 
 	function onRename(path:String, name:String) {
+
 		var parts = path.split("/");
 		parts.pop();
 		for( n in name.split("/") ) {
@@ -161,19 +162,30 @@ class FileTree extends FileView {
 		}
 		var newPath = name.charAt(0) == "/" ? name.substr(1) : parts.join("/");
 
+		if( newPath == path )
+			return false;
+
 		if( sys.FileSystem.exists(ide.getPath(newPath)) ) {
+			function addPath(path:String,rand:String) {
+				var p = path.split(".");
+				if( p.length > 1 )
+					p[p.length-2] += rand;
+				else
+					p[p.length-1] += rand;
+				return p.join(".");
+			}
 			if( path.toLowerCase() == newPath.toLowerCase() ) {
 				// case change
 				var rand = "__tmp"+Std.random(10000);
-				onRename(path, "/"+path+rand);
-				onRename(path+rand, name);
+				onRename(path, "/"+addPath(path,rand));
+				onRename(addPath(path,rand), name);
 			} else {
 				if( !ide.confirm(newPath+" already exists, invert files?") )
 					return false;
 				var rand = "__tmp"+Std.random(10000);
-				onRename(path, "/"+path+rand);
+				onRename(path, "/"+addPath(path,rand));
 				onRename(newPath, "/"+path);
-				onRename(path+rand, name);
+				onRename(addPath(path,rand), name);
 			}
 			return false;
 		}
@@ -291,6 +303,18 @@ class FileTree extends FileView {
 		}
 		for( sheet in tmpSheets )
 			@:privateAccess sheet.sheet.lines = null;
+
+		var dataDir = new haxe.io.Path(path);
+		if( dataDir.ext != "dat" ) {
+			dataDir.ext = "dat";
+			var dataPath = dataDir.toString();
+			if( sys.FileSystem.isDirectory(ide.getPath(dataPath)) ) {
+				var destPath = new haxe.io.Path(name);
+				destPath.ext = "dat";
+				onRename(dataPath, destPath.toString());
+			}
+		}
+
 		return true;
 	}
 
