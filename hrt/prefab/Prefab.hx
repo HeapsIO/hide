@@ -186,6 +186,21 @@ class Prefab {
 	public function reload( p : Dynamic ) {
 		name = p.name;
 		enabled = p.enabled == null ? true : p.enabled;
+		if( p.props == null || props == null )
+			props = p.props;
+		else {
+			var old = Reflect.fields(props);
+			for( k in Reflect.fields(p.props) ) {
+				if( haxe.Json.stringify(Reflect.field(props,k)) == haxe.Json.stringify(Reflect.field(p.props,k)) ) {
+					old.remove(k);
+					continue;
+				}
+				Reflect.setField(props, k, Reflect.field(p.props,k));
+				old.remove(k);
+			}
+			for( k in old )
+				Reflect.deleteField(props, k);
+		}
 		props = p.props;
 		source = p.source;
 		load(p);
@@ -195,14 +210,28 @@ class Prefab {
 			return;
 		}
 		var curChild = new Map();
-		for( c in children )
-			curChild.set(c.name, c);
+		for( c in children ) {
+			var cl = curChild.get(c.name);
+			if( cl == null ) {
+				cl = [];
+				curChild.set(c.name, cl);
+			}
+			cl.push(c);
+		}
 		var newchild = [];
 		for( v in childData ) {
 			var name : String = v.name;
-			var prev = curChild.get(name);
-			if( prev != null && prev.type == v.type ) {
-				curChild.remove(name);
+			var cl = curChild.get(name);
+			var prev = null;
+			if( cl != null ) {
+				for( c in cl )
+					if( c.type == v.type ) {
+						prev = c;
+						cl.remove(prev);
+						break;
+					}
+			}
+			if( prev != null ) {
 				prev.reload(v);
 				newchild.push(prev);
 			} else {
