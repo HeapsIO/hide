@@ -201,7 +201,6 @@ class Prefab {
 			for( k in old )
 				Reflect.deleteField(props, k);
 		}
-		props = p.props;
 		source = p.source;
 		load(p);
 		var childData : Array<Dynamic> = p.children;
