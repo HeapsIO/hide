@@ -11,7 +11,13 @@ class Resource extends hxd.res.Resource {
 			super.watch(null);
 			return;
 		}
-		super.watch(function() { if( lib != null ) lib.reload(haxe.Json.parse(entry.getText())); onChanged(); });
+		super.watch(function() {
+			if( lib != null ) {
+				var data = try haxe.Json.parse(entry.getText()) catch( e : Dynamic ) return; // parsing error (conflict ?)
+				lib.reload(data);
+			}
+			onChanged();
+		});
 	}
 
 	public function load() : Prefab {
