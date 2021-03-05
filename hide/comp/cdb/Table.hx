@@ -391,6 +391,35 @@ class Table extends Component {
 		return false;
 	}
 
+	public function sortBy(col: cdb.Data.Column) {
+		editor.beginChanges();
+		var group : Array<Dynamic> = [];
+		var startIndex = 0;
+		function sort() {
+			group.sort(function(a, b) {
+				var val1 = Reflect.field(a, col.name);
+				var val2 = Reflect.field(b, col.name);
+				return Reflect.compare(val1, val2);
+			});
+			for(i in 0...group.length)
+				sheet.lines[startIndex + i] = group[i];
+		}
+
+		for(i in 0...lines.length) {
+			var sep = sheet.separators.indexOf(i) >= 0;
+			if(sep) {
+				sort();
+				group = [];
+				startIndex = i;
+			}
+			group.push(lines[i].obj);
+		}
+		sort();
+
+		editor.endChanges();
+		refresh();
+	}
+
 	function toggleList( cell : Cell, ?immediate : Bool, ?make : Void -> SubTable ) {
 		var line = cell.line;
 		var cur = line.subTable;

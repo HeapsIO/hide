@@ -790,6 +790,12 @@ class Editor extends Component {
 				endChanges();
 				refresh();
 			})});
+
+			switch(col.type) {
+			case TId | TString: 
+				menu.push({ label : "Sort", click: () -> table.sortBy(col) });
+			default:
+			}
 		}
 
 		if( col.type == TString && col.kind == Script )
