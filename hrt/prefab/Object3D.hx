@@ -141,6 +141,12 @@ class Object3D extends Prefab {
 	override function removeInstance(ctx: Context):Bool {
 		if(ctx.local3d != null)
 			ctx.local3d.remove();
+		#if editor
+		if( ctx.local2d != null ) {
+			var f = Std.downcast(ctx.local2d, h2d.ObjectFollower);
+			if( f != null && f.follow == ctx.local3d ) f.remove();
+		}
+		#end
 		return true;
 	}
 
