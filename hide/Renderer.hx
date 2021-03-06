@@ -71,9 +71,10 @@ class Renderer extends h3d.scene.fwd.Renderer {
 
 		var outlineTex = allocTarget("outlineBlur", false);
 		{
-			var outlineSrcTex = allocTarget("outline", false);
+			var outlineSrcTex = allocTarget("outline", true);
 			setTarget(outlineSrcTex);
 			clear(0);
+			draw("highlightBack");
 			draw("highlight");
 			resetTarget();
 			outlineBlur.apply(ctx, outlineSrcTex, outlineTex);
@@ -127,7 +128,7 @@ class ScreenOutline extends h3d.shader.ScreenShader {
 		function fragment() {
 			var outval = texture.get(calculatedUV).rgb;
 			pixelColor.a = outval.r > 0.1 && outval.r < 0.5 ? 1.0 : 0.0;
-			pixelColor.rgb = vec3(1,1,1);
+			pixelColor.rgb = (outval.r > outval.g ? 0.5 : 1.0).xxx;
 		}
 	};
 }
@@ -144,7 +145,7 @@ class PbrRenderer extends h3d.scene.pbr.Renderer {
 
 	override function getPassByName(name:String):h3d.pass.Base {
 		switch( name ) {
-		case "highlight":
+		case "highlight", "hightlightBack":
 			return defaultPass;
 		}
 		return super.getPassByName(name);
@@ -159,15 +160,17 @@ class PbrRenderer extends h3d.scene.pbr.Renderer {
 	override function end() {
 		switch( currentStep ) {
 		case MainDraw:
-		case AfterTonemapping:
-			var outlineTex = allocTarget("outline", false);
+		case BeforeTonemapping:
+			var outlineTex = allocTarget("outline", true);
 			ctx.engine.pushTarget(outlineTex);
 			clear(0);
+			draw("highlightBack");
 			draw("highlight");
 			ctx.engine.popTarget();
 			var outlineBlurTex = allocTarget("outlineBlur", false);
 			outlineBlur.apply(ctx, outlineTex, outlineBlurTex);
 			outline.shader.texture = outlineBlurTex;
+		case AfterTonemapping:
 			outline.render();
 			renderPass(defaultPass, get("debuggeom"), backToFront);
 			renderPass(defaultPass, get("debuggeom_alpha"), backToFront);
