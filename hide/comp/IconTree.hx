@@ -340,7 +340,15 @@ class IconTree<T:{}> extends Component {
 					return;
 				}
 			}).keyup(function(e) {
-				searchFilter(e.getThis().val());
+				var elt = e.getThis();
+				function filter() {
+					if( searchBox == null ) return;
+					var val = StringTools.trim(elt.val());
+					if( val == "" ) val = null;
+					if( val != this.filter ) searchFilter(val);
+				}
+				var val = elt.val();
+				haxe.Timer.delay(filter, val.length == 1 ? 500 : 100);
 			});
 			new Element("<i>").addClass("fa fa-times-circle").appendTo(searchBox).click(function(_) {
 				closeFilter();
