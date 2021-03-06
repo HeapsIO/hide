@@ -150,7 +150,6 @@ class SceneEditor {
 	var ide : hide.Ide;
 	public var event(default, null) : hxd.WaitEvent;
 	var hideList : Map<PrefabElement, Bool> = new Map();
-	var lockList : Map<PrefabElement, Bool> = new Map();
 	var favorites : Array<PrefabElement> = [];
 
 	var undo(get, null):hide.ui.UndoHistory;
@@ -240,14 +239,6 @@ class SceneEditor {
 				for(p in all) {
 					if(m.exists(p.getAbsPath()))
 						hideList.set(p, true);
-				}
-			}
-			var list = @:privateAccess view.getDisplayState("lockList");
-			if(list != null) {
-				var m = [for(i in (list:Array<Dynamic>)) i => true];
-				for(p in all) {
-					if(m.exists(p.getAbsPath()))
-						lockList.set(p, true);
 				}
 			}
 			var favList = @:privateAccess view.getDisplayState("favorites");
@@ -533,12 +524,11 @@ class SceneEditor {
 
 			if( isObj ) {
 				var visible = !isHidden(current);
-				var locked = isLocked(current);
 				menuItems = menuItems.concat([
-					{ label : "Visible", checked : visible, click : function() setVisible(curEdit.elements, !visible) },
-					{ label : "Locked", checked : locked, click : function() {
-						locked = !locked;
-						setLock(curEdit.elements, locked);
+					{ label : "Show in editor", checked : visible, click : function() setVisible(curEdit.elements, !visible) },
+					{ label : "Locked", checked : current.locked, click : function() {
+						current.locked = !current.locked;
+						setLock(curEdit.elements, current.locked);
 					} },
 					{ label : "Select all", click : selectAll },
 					{ label : "Select children", enabled : current != null, click : function() selectObjects(current.flatten()) },
@@ -1214,7 +1204,8 @@ class SceneEditor {
 		if(obj3d != null) {
 			el.toggleClass("disabled", !obj3d.visible);
 			el.toggleClass("hidden", isHidden(obj3d));
-			el.toggleClass("locked", isLocked(obj3d));
+			el.toggleClass("locked", p.locked);
+
 			var visTog = el.find(".visibility-toggle").first();
 			if(visTog.length == 0) {
 				visTog = new Element('<i class="fa fa-eye visibility-toggle"/>').insertAfter(el.find("a.jstree-anchor").first());
@@ -1237,9 +1228,9 @@ class SceneEditor {
 				lockTog = new Element('<i class="fa fa-lock lock-toggle"/>').insertAfter(el.find("a.jstree-anchor").first());
 				lockTog.click(function(e) {
 					if(curEdit.elements.indexOf(obj3d) >= 0)
-						setLock(curEdit.elements, !isLocked(obj3d));
+						setLock(curEdit.elements, !obj3d.locked);
 					else
-						setLock([obj3d], !isLocked(obj3d));
+						setLock([obj3d], !obj3d.locked);
 
 					e.preventDefault();
 					e.stopPropagation();
@@ -1249,7 +1240,7 @@ class SceneEditor {
 					e.stopPropagation();
 				});
 			}
-			lockTog.css({visibility: (isLocked(obj3d) ? "visible" : "hidden")});
+			lockTog.css({visibility: p.locked ? "visible" : "hidden"});
 		}
 	}
 
@@ -1854,16 +1845,16 @@ class SceneEditor {
 	}
 
 	public function isLocked(e: PrefabElement) {
-		if(e == null)
-			return false;
-		return lockList.exists(e);
+		while( e != null ) {
+			if( e.locked ) return true;
+			e = e.parent;
+		}
+		return false;
 	}
 
 	function saveDisplayState() {
 		var state = [for (h in hideList.keys()) h.getAbsPath()];
 		@:privateAccess view.saveDisplayState("hideList", state);
-		var state = [for (h in lockList.keys()) h.getAbsPath()];
-		@:privateAccess view.saveDisplayState("lockList", state);
 		var state = [for(f in favorites) f.getAbsPath()];
 		@:privateAccess view.saveDisplayState("favorites", state);
 	}
@@ -1902,22 +1893,26 @@ class SceneEditor {
 	}
 
 	function setLock(elements : Array<PrefabElement>, locked: Bool) {
+		var prev = [for( o in elements ) o.locked];
 		for(o in elements) {
-			for(c in o.flatten(Object3D) ) {
-				if( locked )
-					lockList.set(c, true);
-				else
-					lockList.remove(c);
+			o.locked = locked;
+			for( c in o.flatten(hrt.prefab.Prefab) ) {
 				var el = tree.getElement(c);
 				applyTreeStyle(c, el);
 				applySceneStyle(c);
+				toggleInteractive(c,!isLocked(c));
 			}
 		}
+		undo.change(Custom(function(redo) {
+			for( i in 0...elements.length )
+				elements[i].locked = redo ? locked : prev[i];
+		}), function() {
+			tree.refresh();
+			refreshScene();
+		});
 		saveDisplayState();
 		showGizmo = !locked;
 		moveGizmoToSelection();
-		for( e in elements )
-			toggleInteractive(e,!locked);
 	}
 
 	function isolate(elts : Array<PrefabElement>) {

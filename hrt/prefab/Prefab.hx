@@ -36,6 +36,10 @@ class Prefab {
 	**/
 	public var enabled : Bool = true;
 
+	/**
+		Prevent the prefab from being selected in Hide. Also apply to this prefab children.
+	**/
+	public var locked : Bool;
 
 	/**
 		A storage for some extra properties
@@ -151,6 +155,8 @@ class Prefab {
 		obj.type = type;
 		if( !enabled )
 			obj.enabled = false;
+		if( locked )
+			obj.locked = true;
 		if( name != null )
 			obj.name = name;
 		if( source != null )
@@ -169,6 +175,7 @@ class Prefab {
 		type = v.type;
 		name = v.name;
 		enabled = v.enabled == null ? true : v.enabled;
+		locked = v.locked == null ? false : v.locked;
 		props = v.props;
 		source = v.source;
 		load(v);
@@ -186,6 +193,7 @@ class Prefab {
 	public function reload( p : Dynamic ) {
 		name = p.name;
 		enabled = p.enabled == null ? true : p.enabled;
+		locked = p.locked == null ? false : p.locked;
 		if( p.props == null || props == null )
 			props = p.props;
 		else {
