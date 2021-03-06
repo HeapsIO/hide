@@ -372,7 +372,7 @@ class Table extends Component {
 		});
 	}
 
-	public function insertProperty( p : String ) {
+	function insertProperty( p : String ) {
 		var props = sheet.lines[0];
 		for( c in sheet.columns )
 			if( c.name == p ) {
@@ -381,6 +381,11 @@ class Table extends Component {
 				Reflect.setField(props, c.name, val);
 				editor.endChanges();
 				refresh();
+				for( l in lines )
+					if( l.cells[0].column == c ) {
+						l.cells[0].focus();
+						break;
+					}
 				return true;
 			}
 		return false;

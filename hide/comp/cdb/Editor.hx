@@ -711,7 +711,7 @@ class Editor extends Component {
 				case K.DOWN if( index < options.length - 1 ):
 					ins.val(options[++index]);
 				case K.ENTER:
-					table.insertProperty(ins.val());
+					@:privateAccess table.insertProperty(ins.val());
 				default:
 				}
 				e.stopPropagation();
