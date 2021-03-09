@@ -16,6 +16,7 @@ class ScriptChecker {
 	static var TYPE_CHECK_HOOKS : Array<ScriptChecker->Void> = [];
 	var ide : hide.Ide;
 	var apiFiles : Array<String>;
+	var checkEvents : Bool;
 	public var config : hide.Config;
 	public var documentName : String;
 	public var constants : Map<String,Dynamic>;
@@ -63,6 +64,8 @@ class ScriptChecker {
 		var cdbPack : String = config.get("script.cdbPackage");
 		var context = null;
 		var allowGlobalsDefine = false;
+		checkEvents = false;
+
 		for( api in apis ) {
 			for( f in api.globals.keys() ) {
 				var tname = api.globals.get(f);
@@ -112,6 +115,7 @@ class ScriptChecker {
 			if( api.events != null ) {
 				for( f in getFields(api.events) )
 					checker.setEvent(f.name, f.t);
+				checkEvents = true;
 			}
 
 			if( api.cdbEnums != null ) {
@@ -240,6 +244,7 @@ class ScriptChecker {
 		parser.allowJSON = true;
 		return parser;
 	}
+
 	public function getCompletion( script : String ) {
 		var parser = makeParser();
 		parser.resumeErrors = true;
@@ -257,6 +262,20 @@ class ScriptChecker {
 		var parser = makeParser();
 		try {
 			var expr = parser.parseString(script, "");
+
+			if( checkEvents ) {
+				function checkRec(e:hscript.Expr) {
+					switch( e.e ) {
+					case EFunction(_,_,name,_):
+						if( name != null && StringTools.startsWith(name,"on") && name.charCodeAt(2) > 'A'.code && name.charCodeAt(2) < 'Z'.code && @:privateAccess !checker.events.exists(name) )
+							@:privateAccess checker.error('Unknown event $name', e);
+					default:
+						hscript.Tools.iter(e, checkRec);
+					}
+				}
+				checkRec(expr);
+			}
+
 			if( checkTypes ) {
 				var et = checker.check(expr);
 				if( evalTo != null ) {
