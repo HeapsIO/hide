@@ -3,6 +3,7 @@ package hide.comp;
 typedef GlobalsDef = haxe.DynamicAccess<{
 	var globals : haxe.DynamicAccess<String>;
 	var context : String;
+	var contexts : Array<String>;
 	var events : String;
 	var evalTo : String;
 	var allowGlobalsDefine : Bool;
@@ -62,7 +63,7 @@ class ScriptChecker {
 		}
 
 		var cdbPack : String = config.get("script.cdbPackage");
-		var context = null;
+		var contexts = [];
 		var allowGlobalsDefine = false;
 		checkEvents = false;
 
@@ -107,7 +108,10 @@ class ScriptChecker {
 			}
 
 			if( api.context != null )
-				context = api.context;
+				contexts = [api.context];
+
+			if( api.contexts != null )
+				contexts = api.contexts;
 
 			if( api.allowGlobalsDefine != null )
 				allowGlobalsDefine = api.allowGlobalsDefine;
@@ -126,7 +130,7 @@ class ScriptChecker {
 			if( api.evalTo != null )
 				this.evalTo = api.evalTo;
 		}
-		if( context != null ) {
+		for( context in contexts ) {
 			var ctx = checker.types.resolve(context);
 			if( ctx == null )
 				error(context+" is not defined");
