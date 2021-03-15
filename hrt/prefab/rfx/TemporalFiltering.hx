@@ -78,10 +78,13 @@ class TemporalFilteringShader extends h3d.shader.ScreenShader {
 			}
 		}
 
+		var isSky : Bool;
+
 		function getPixelPosition( uv : Vec2 ) : Vec3 {
 			var d = PACKED_DEPTH ? unpack(depthTexture.get(uv)) : depthChannel.get(uv).r;
 			var tmp = vec4(uvToScreen(uv), d, 1) * cameraInverseViewProj;
 			tmp.xyz /= tmp.w;
+			isSky = d <= 0;
 			return tmp.xyz;
 		}
 
@@ -112,7 +115,7 @@ class TemporalFilteringShader extends h3d.shader.ScreenShader {
 				m2 = sqrt(m2 / 5.0 - m1 * m1);
 				prevColor = max(vec3(0.0), ycocg2rgb(clipToAABB(rgb2ycocg(prevColor), rgb2ycocg(curColor), m1, m2)));
 			}
-			pixelColor.rgb = mix(curColor, prevColor, amount);
+			pixelColor.rgb = isSky ? curColor : mix(curColor, prevColor, amount);
 			pixelColor.a = 1.0;
 		}
 	}
