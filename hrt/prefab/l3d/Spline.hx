@@ -278,7 +278,7 @@ class Spline extends Object3D {
 
 			// Point found
 			if( hxd.Math.abs(curSegmentLength - step) <= threshold ) {
-				samples.insert(samples.length, { pos : p, tangent : getTangentBetween(t, curP, nextP), prev : curP, next : nextP, t : t });
+				samples.insert(samples.length, { pos : p, tangent : getTangentBetween(t, curP, nextP), prev : curP, next : nextP });
 				sumT = t;
 				maxT = 1.0;
 				minT = sumT;
@@ -314,6 +314,11 @@ class Spline extends Object3D {
 		var lengthSum = 0.0;
 		for( i in 0 ... samples.length - 1 ) {
 			lengthSum += samples[i].pos.distance(samples[i+1].pos);
+		}
+		var l = 0.0;
+		for( i in 0 ... samples.length - 1 ) {
+			samples[i].t = l/lengthSum;
+			l += samples[i].pos.distance(samples[i+1].pos);
 		}
 		sd.length = lengthSum;
 	}
