@@ -103,6 +103,7 @@ class IconTree<T:{}> extends Component {
 	}
 
 	public function init() {
+		var inInit = true;
 		(element:Dynamic).jstree({
 			core : {
 				dblclick_toggle: false,
@@ -128,7 +129,7 @@ class IconTree<T:{}> extends Component {
 					return false;
 				},
 				data : function(obj, callb) {
-					if( checkRemoved() )
+					if( !inInit && checkRemoved() )
 						return;
 					callb.call(this, makeContent(obj.parent == null ? null : map.get(obj.id)));
 				}
@@ -214,10 +215,11 @@ class IconTree<T:{}> extends Component {
 		element.keydown(function(e:js.jquery.Event) {
 			if( e.keyCode == 27 ) closeFilter();
 		});
+		inInit = false;
 	}
 
 	function checkRemoved() {
-		if( element[0].parentNode == null )
+		if( element == null || element[0].parentNode == null )
 			return true;
 		if( !js.Browser.document.contains(element[0]) ) {
 			dispose();
