@@ -42,7 +42,7 @@ class Sharpen extends RendererFX {
 		if( step == AfterTonemapping ) {
 			r.mark("Sharpen");
 			var pb : SharpenProps = props;
-			var sharpen = r.allocTarget("sharpen", false, 1.0, RGBA);
+			var sharpen = r.allocTarget("sharpen", true, 1.0, RGBA);
 			var ctx = r.ctx;
 			ctx.engine.pushTarget(sharpen);
 			sharpenPass.shader.source = ctx.getGlobal("ldrMap");
