@@ -998,8 +998,10 @@ class Editor extends Component {
 				label : "Data Files",
 				checked : sheet.props.dataFiles != null,
 				click : function() {
+					var txt = ide.ask("Data Files Path", sheet.props.dataFiles);
+					if( txt == null ) return;
+					txt = StringTools.trim(txt);
 					beginChanges();
-					var txt = StringTools.trim(ide.ask("Data Files Path", sheet.props.dataFiles));
 					if( txt == "" ) {
 						Reflect.deleteField(sheet.props,"dataFile");
 						@:privateAccess sheet.sheet.lines = [];
