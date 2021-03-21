@@ -87,6 +87,7 @@ typedef MeshSprayConfig = {
 	var rotationOffset : Float;
 	var zOffset: Float;
 	var dontRepeatMesh : Bool;
+	var orientTerrain : Float;
 }
 
 
@@ -221,6 +222,11 @@ class MeshSpray extends Object3D {
 	}
 
 	override function save() {
+
+		// prevent saving preview
+		if( previewModels.length > 0 )
+			sceneEditor.deleteElements(previewModels, () -> { }, false);
+
 		var obj : Dynamic = super.save();
 		obj.meshes = meshes;
 		obj.currentPresetName = currentPresetName;
@@ -240,7 +246,8 @@ class MeshSpray extends Object3D {
 			rotation: 184,
 			rotationOffset: 0,
 			zOffset: 0,
-			dontRepeatMesh: true
+			dontRepeatMesh: true,
+			orientTerrain : 0,
 		};
 	}
 
@@ -270,27 +277,42 @@ class MeshSpray extends Object3D {
 		sys.io.File.saveContent(MESH_SPRAY_CONFIG_PATH, hide.Ide.inst.toJSON(allSetGroups));
 	}
 
+	function setGroundPos( ectx : EditContext, obj : Object3D ) {
+		var pos = obj.getAbsPos();
+		var config = currentConfig;
+		var tz = ectx.positionToGroundZ(pos.tx, pos.ty);
+		var mz = config.zOffset + tz - pos.tz;
+		obj.z += mz;
+		var orient = config.orientTerrain;
+
+		var r = config.radius * 0.2;
+		inline function getPoint(dx,dy) {
+			var dz = ectx.positionToGroundZ(pos.tx + r * dx, pos.ty + r * dy) - tz;
+			return new h3d.col.Point(r * dx, r * dy, dz * orient);
+		}
+
+		var px0 = getPoint(-1,0);
+		var py0 = getPoint(0, -1);
+		var px1 = getPoint(1, 0);
+		var py1 = getPoint(0, 1);
+		var n = px1.cross(py1).add(py1.cross(px0)).add(px0.cross(py0)).add(py0.cross(px1)).normalized();
+		var q = new h3d.Quat();
+		q.initNormal(n);
+		var m = q.toMatrix();
+		m.prependRotation(0,0,  (config.rotation + (Std.random(2) == 0 ? -1 : 1) * Math.round(Math.random() * config.rotationOffset)) * Math.PI / 180);
+		var a = m.getEulerAngles();
+		obj.rotationX = hxd.Math.fmt(a.x * 180 / Math.PI);
+		obj.rotationY = hxd.Math.fmt(a.y * 180 / Math.PI);
+		obj.rotationZ = hxd.Math.fmt(a.z * 180 / Math.PI);
+	}
+
 	var wasEdited = false;
 	var previewModels : Array<hrt.prefab.Prefab> = [];
 	override function edit( ectx : EditContext ) {
-		if ( x != 0 || y != 0 ) {
-			// move meshSpray to origin
-			for (c in this.children) {
-				var obj3d = Std.downcast(c, Object3D);
-				if (obj3d != null) {
-					obj3d.x += x;
-					obj3d.y += y;
-					obj3d.updateInstance(ectx.getContext(obj3d));
-				}
-			}
-			x = 0;
-			y = 0;
-			updateInstance(ectx.getContext(this));
-		}
-		if (invParent == null) {
-			invParent = getTransform().clone();
-			invParent.invert();
-		}
+
+		invParent = getAbsPos().clone();
+		invParent.invert();
+
 		if (defaultConfig == null) defaultConfig = getDefaultConfig();
 		if (sceneEditor == null) {
 			allSetGroups = if( sys.FileSystem.exists(MESH_SPRAY_CONFIG_PATH) )
@@ -548,6 +570,7 @@ class MeshSpray extends Object3D {
 				<input type="button" value="Add" id="add"/>
 				<input type="button" value="Remove" id="remove"/>
 				<input type="button" value="Remove all meshes" id="clean"/>
+				<input type="button" value="Set to Ground" id="toground"/>
 			</div>
 			<p align="center">
 				<label><input type="checkbox" id="repeatMesh" style="margin-right: 5px;"/> Don\'t repeat same mesh in a row</label>
@@ -579,6 +602,17 @@ class MeshSpray extends Object3D {
 				}
 			});
 		});
+
+		options.find("#toground").click(function(_) {
+			for( c in children ) {
+				var obj = c.to(Object3D);
+				if( obj == null ) continue;
+				setGroundPos(ectx, obj);
+				var ctx = ectx.getContext(obj);
+				if( ctx != null ) obj.applyTransform(ctx.local3d);
+			}
+		});
+
 		options.find("#remove").click(function(_) {
 			var options = selectElement.children().elements();
 			for (opt in options) {
@@ -614,13 +648,16 @@ class MeshSpray extends Object3D {
 				{ name: "scaleOffset", t: PFloat(0, 1), def: currentConfig.scaleOffset },
 				{ name: "rotation", t: PFloat(0, 180), def: currentConfig.rotation },
 				{ name: "rotationOffset", t: PFloat(0, 30), def: currentConfig.rotationOffset },
-				{ name: "zOffset", t: PFloat(0, 10), def: currentConfig.zOffset }
+				{ name: "zOffset", t: PFloat(0, 10), def: currentConfig.zOffset },
+				{ name: "orientTerrain", t: PFloat(0, 1), def: currentConfig.orientTerrain },
 			]));
 		ectx.properties.add(optionsGroup, this, function(pname) {
 			var value = sceneEditor.properties.element.find("input[field="+ pname + "]").val();
 			Reflect.setField(currentConfig, pname, Std.parseFloat(value));
 			saveConfigMeshBatch();
 		});
+
+		super.edit(ectx);
 	}
 
 	function updateConfig() {
@@ -721,14 +758,12 @@ class MeshSpray extends Object3D {
 		}
 		lastPos = point;
 		if (nbMeshesToPlace > 0) {
-			var random = new hxd.Rand(Std.random(0xFFFFFF));
-
 			while (nbMeshesToPlace-- > 0) {
 				var nbTry = 5;
 				var position : h3d.col.Point;
 				do {
-					var randomRadius = CONFIG.radius*Math.sqrt(random.rand());
-					var angle = random.rand() * 2*Math.PI;
+					var randomRadius = CONFIG.radius*Math.sqrt(Math.random());
+					var angle = Math.random() * 2*Math.PI;
 
 					position = new h3d.col.Point(point.x + randomRadius*Math.cos(angle), point.y + randomRadius*Math.sin(angle), 0);
 					var vecRelat = position.toVector();
@@ -745,12 +780,6 @@ class MeshSpray extends Object3D {
 						break;
 					}
 				} while (nbTry-- > 0);
-
-				var randRotationOffset = random.rand() * CONFIG.rotationOffset;
-				if (Std.random(2) == 0) {
-					randRotationOffset *= -1;
-				}
-				var rotationZ = ((CONFIG.rotation  + randRotationOffset) % 360)/360 * 2*Math.PI;
 
 				var meshId = 0;
 				if(currentMeshes.length > 1) {
@@ -780,21 +809,22 @@ class MeshSpray extends Object3D {
 
 				newPrefab.name = extractMeshName(meshUsed.path);
 
-				localMat.initRotationZ(rotationZ);
+				localMat.identity();
 
-				var randScaleOffset = random.rand() * CONFIG.scaleOffset;
+				var randScaleOffset = Math.random() * CONFIG.scaleOffset;
 				if (Std.random(2) == 0) {
 					randScaleOffset *= -1;
 				}
-				var currentScale = (CONFIG.scale + randScaleOffset);
+				var currentScale = hxd.Math.fmt(CONFIG.scale + randScaleOffset);
 
 				localMat.scale(currentScale, currentScale, currentScale);
 
 				position.z = ectx.positionToGroundZ(position.x, position.y) + CONFIG.zOffset;
-				localMat.setPosition(new Vector(position.x, position.y, position.z));
+				localMat.setPosition(new Vector(hxd.Math.fmt(position.x), hxd.Math.fmt(position.y), position.z));
 				localMat.multiply(localMat, invParent);
 
 				newPrefab.setTransform(localMat);
+				setGroundPos(ectx, newPrefab);
 
 				previewModels.push(newPrefab);
 				currentPivots.push(new h2d.col.Point(newPrefab.x, newPrefab.y));
@@ -844,11 +874,13 @@ class MeshSpray extends Object3D {
 			gBrushes = [];
 			var gBrush = new h3d.scene.Mesh(makePrimCircle(32, 0.95), ctx.local3d);
 			gBrush.scaleX = gBrush.scaleY = radius;
+			gBrush.ignoreParentTransform = true;
 			gBrush.material.mainPass.setPassName("overlay");
 			gBrush.material.shadows = false;
 			gBrush.material.color = newColor;
 			gBrushes.push(gBrush);
 			gBrush = new h3d.scene.Mesh(new h3d.prim.Sphere(Math.min(radius*0.05, 0.35)), ctx.local3d);
+			gBrush.ignoreParentTransform = true;
 			gBrush.material.mainPass.setPassName("overlay");
 			gBrush.material.shadows = false;
 			gBrush.material.color = newColor;
