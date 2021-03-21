@@ -83,12 +83,18 @@ class Shader extends Prefab {
 			}
 		}
 		if(ctx.local3d != null) {
+			var parent = parent;
+			var shared = ctx.shared;
+			while( parent != null && parent.parent == null && shared.parent != null ) {
+				parent = shared.parent.prefab.parent; // reference parent
+				shared = shared.parent.shared;
+			}
 			if( Std.is(parent, Material) ) {
 				var material : Material = cast parent;
 				for( m in material.getMaterials(ctx) )
 					m.mainPass.addShader(shader);
 			} else {
-				for( obj in  ctx.shared.getObjects(parent, h3d.scene.Mesh) )
+				for( obj in shared.getObjects(parent, h3d.scene.Object) )
 					for( m in obj.getMaterials(false) )
 						m.mainPass.addShader(shader);
 			}
