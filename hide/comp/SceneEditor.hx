@@ -2372,6 +2372,24 @@ class SceneEditor {
 		return 0.;
 	}
 
+	/*
+
+		function getGroundPrefabs() {
+		var groundGroups = data.findAll(p -> if(p.name == "ground") p else null);
+		if( groundGroups.length == 0 )
+			return null;
+		var ret : Array<hrt.prefab.Prefab> = [];
+		for(group in groundGroups)
+			group.findAll(function(p) : hrt.prefab.Prefab {
+				if(p.name == "nocollide")
+					return null;
+				return p;
+			},ret);
+		return ret;
+	}
+
+	*/
+
 	function getGroundPrefabs() : Array<PrefabElement> {
 		function getAll(data:PrefabElement) {
 			var all = data.findAll((p) -> p);
@@ -2384,7 +2402,12 @@ class SceneEditor {
 			}
 			return all;
 		}
-		return getAll(sceneData);
+		var all = getAll(sceneData);
+		var grounds = [for( p in all ) if( p.getHideProps().isGround || p.name == "terrain" || p.name == "ground" ) p];
+		var results = [];
+		for( g in grounds )
+			results = results.concat(getAll(g));
+		return results;
 	}
 
 	public function projectToGround(ray: h3d.col.Ray, ?paintOn : hrt.prefab.Prefab ) {

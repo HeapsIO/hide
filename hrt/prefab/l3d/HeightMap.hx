@@ -598,6 +598,11 @@ class HeightMap extends Object3D {
 	}
 
 	#if editor
+
+	override function getHideProps() : HideProps {
+		return { icon : "industry", name : "HeightMap", isGround : true };
+	}
+
 	override function edit(ectx:EditContext) {
 		super.edit(ectx);
 		var ctx = ectx.getContext(this);

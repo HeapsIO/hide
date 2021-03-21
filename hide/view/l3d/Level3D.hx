@@ -131,13 +131,6 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		parent.onPrefabChange(p, pname);
 	}
 
-	override function getGroundPrefabs():Array<PrefabElement> {
-		var prefabs = parent.getGroundPrefabs();
-		if( prefabs != null )
-			return prefabs;
-		return super.getGroundPrefabs();
-	}
-
 	override function getNewContextMenu(current: PrefabElement, ?onMake: PrefabElement->Void=null, ?groupByType = true ) {
 		var newItems = super.getNewContextMenu(current, onMake, groupByType);
 
@@ -652,20 +645,6 @@ class Level3D extends FileView {
 			}
 		}
 		return null;
-	}
-
-	function getGroundPrefabs() {
-		var groundGroups = data.findAll(p -> if(p.name == "ground") p else null);
-		if( groundGroups.length == 0 )
-			return null;
-		var ret : Array<hrt.prefab.Prefab> = [];
-		for(group in groundGroups)
-			group.findAll(function(p) : hrt.prefab.Prefab {
-				if(p.name == "nocollide")
-					return null;
-				return p;
-			},ret);
-		return ret;
 	}
 
 	static var _ = FileTree.registerExtension(Level3D,["l3d"],{ icon : "sitemap", createNew : "Level3D" });
