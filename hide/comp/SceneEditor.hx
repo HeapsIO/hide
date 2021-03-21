@@ -1767,7 +1767,7 @@ class SceneEditor {
 		if(obj != null) {
 			var p = hrt.prefab.Prefab.loadPrefab(obj, parent);
 			autoName(p);
-			refresh();
+			addObject([p]);
 		}
 		else {
 			obj = view.getClipboard("library");
@@ -1777,7 +1777,7 @@ class SceneEditor {
 					autoName(c);
 					c.parent = parent;
 				}
-				refresh();
+				addObject(lib.children);
 			}
 		}
 	}
