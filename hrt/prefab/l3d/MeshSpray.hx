@@ -1,5 +1,62 @@
 package hrt.prefab.l3d;
 
+#if !editor
+
+class MeshSprayObject extends h3d.scene.Object {
+	public var batches : Array<h3d.scene.MeshBatch> = [];
+	override function getMaterials( ?arr : Array<h3d.mat.Material>, recursive=true ) {
+		if( !recursive ) {
+			// batches materials are considered local materials
+			if( arr == null ) arr = [];
+			for( b in batches )
+				arr = b.getMaterials(arr, false);
+		}
+		return super.getMaterials(arr,recursive);
+	}
+}
+
+class MeshSpray extends Object3D {
+
+	override function makeInstance( ctx : Context ) {
+
+		ctx = ctx.clone(this);
+		var mspray = new MeshSprayObject(ctx.local3d);
+		ctx.local3d = mspray;
+		ctx.local3d.name = name;
+		updateInstance(ctx);
+
+		var batches = new Map();
+		for( c in children ) {
+			if (!c.enabled)
+				continue;
+			if( c.type != "model" )
+				continue;
+			var batch = batches.get(c.source);
+			if( batch  == null ) {
+				var obj = ctx.loadModel(c.source).toMesh();
+				batch = new h3d.scene.MeshBatch(cast(obj.primitive,h3d.prim.MeshPrimitive), obj.material, ctx.local3d);
+				batch.begin();
+				batches.set(c.source, batch);
+				mspray.batches.push(batch);
+			}
+			batch.setTransform(c.to(Object3D).getTransform());
+			batch.emitInstance();
+		}
+		return ctx;
+	}
+
+	override function makeChildren( ctx : Context, p : hrt.prefab.Prefab ) {
+		if( p.type == "model" )
+			return;
+		super.makeChildren(ctx, p);
+	}
+
+	static var _ = Library.register("meshSpray", MeshSpray);
+
+}
+
+#else
+
 import h3d.Vector;
 import hxd.Key as K;
 
@@ -32,7 +89,7 @@ typedef MeshSprayConfig = {
 	var dontRepeatMesh : Bool;
 }
 
-#if editor
+
 @:access(hrt.prefab.l3d.MeshSpray)
 class MeshSprayObject extends h3d.scene.Object {
 
@@ -45,6 +102,16 @@ class MeshSprayObject extends h3d.scene.Object {
 	public function new(mp,?parent) {
 		this.mp = mp;
 		super(parent);
+	}
+
+	override function getMaterials( ?arr : Array<h3d.mat.Material>, recursive=true ) {
+		if( !recursive ) {
+			// batches materials are considered local materials
+			if( arr == null ) arr = [];
+			for( b in batches )
+				arr = b.getMaterials(arr, false);
+		}
+		return super.getMaterials(arr,recursive);
 	}
 
 	override function emitRec(ctx:h3d.scene.RenderContext) {
@@ -73,43 +140,41 @@ class MeshSprayObject extends h3d.scene.Object {
 			redraw = true;
 		}
 
-		if( redraw ) {
-			for( b in batches )
-				b.begin();
-			for( c in children ) {
-				c.culled = false;
-				if( c.alwaysSync ) continue;
-				var m = Std.downcast(c, h3d.scene.Mesh);
-				if( m == null ) continue;
-				var prim = Std.downcast(m.primitive, h3d.prim.MeshPrimitive);
-				if( prim == null ) continue;
-
-				var batch = blookup.get(m.primitive);
-				if( batch == null ) {
-					batch = new h3d.scene.MeshBatch(prim, m.material, this);
-					batch.alwaysSync = true;
-					batch.begin();
-					batches.push(batch);
-					blookup.set(m.primitive, batch);
-				}
-				@:privateAccess {
-					batch.absPos.load(c.absPos);
-					batch.posChanged = false;
-				}
-				batch.emitInstance();
-				c.culled = true;
-			}
-		}
-
+		if( redraw ) this.redraw();
 		super.emitRec(ctx);
 	}
 
+	public function redraw() {
+		for( b in batches )
+			b.begin();
+		for( c in children ) {
+			c.culled = false;
+			if( c.alwaysSync ) continue;
+			var m = Std.downcast(c, h3d.scene.Mesh);
+			if( m == null ) continue;
+			var prim = Std.downcast(m.primitive, h3d.prim.MeshPrimitive);
+			if( prim == null ) continue;
+
+			var batch = blookup.get(m.primitive);
+			if( batch == null ) {
+				batch = new h3d.scene.MeshBatch(prim, m.material, this);
+				batch.alwaysSync = true;
+				batch.begin();
+				batches.push(batch);
+				blookup.set(m.primitive, batch);
+			}
+			@:privateAccess {
+				batch.absPos.load(c.absPos);
+				batch.posChanged = false;
+			}
+			batch.emitInstance();
+			c.culled = true;
+		}
+	}
+
 }
-#end
 
 class MeshSpray extends Object3D {
-
-	#if editor
 
 	var meshes : Array<Mesh> = []; // specific set for this mesh spray
 	var defaultConfig: MeshSprayConfig;
@@ -148,15 +213,6 @@ class MeshSpray extends Object3D {
 
 	var lastSpray : Float = 0;
 	var invParent : h3d.Matrix;
-
-	#end
-
-	public function new( ?parent ) {
-		super(parent);
-		type = "meshBatch";
-	}
-
-	#if editor
 
 	var MESH_SPRAY_CONFIG_FILE = "meshSprayProps.json";
 	var MESH_SPRAY_CONFIG_PATH(get, null) : String;
@@ -590,13 +646,14 @@ class MeshSpray extends Object3D {
 			timerCicle.stop();
 		}
 		if( !b ) {
+			if( gBrushes != null ) {
+				for (g in gBrushes) g.remove();
+				gBrushes = null;
+			}
 			if( interactive != null ) interactive.remove();
 			timerCicle = new haxe.Timer(100);
 			timerCicle.run = function() {
 				timerCicle.stop();
-				if( gBrushes != null ) {
-					for (g in gBrushes) g.visible = false;
-				}
 				if (previewModels != null && previewModels.length > 0) {
 					sceneEditor.deleteElements(previewModels, () -> { }, false, false);
 					previewModels = [];
@@ -648,6 +705,7 @@ class MeshSpray extends Object3D {
 		var fakeRadius = CONFIG.radius * CONFIG.radius + minDistanceBetweenMeshesSq;
 		for (child in children) {
 			var model = child.to(hrt.prefab.Object3D);
+			if( model == null ) continue;
 			if (distance(point2d.x, point2d.y, model.x, model.y) < fakeRadius) {
 				if (previewModels.indexOf(model) != -1) continue;
 				nbMeshesInZone++;
@@ -780,8 +838,10 @@ class MeshSpray extends Object3D {
 	public function drawCircle(ctx : Context, originX : Float, originY : Float, originZ : Float, radius: Float, thickness: Float, color) {
 		var newColor = h3d.Vector.fromColor(color);
 		if (gBrushes == null || gBrushes.length == 0 || gBrushes[0].scaleX != radius || gBrushes[0].material.color != newColor) {
-			if (gBrushes == null) gBrushes = [];
-			for (g in gBrushes) g.remove();
+			if (gBrushes != null) {
+				for (g in gBrushes) g.remove();
+			}
+			gBrushes = [];
 			var gBrush = new h3d.scene.Mesh(makePrimCircle(32, 0.95), ctx.local3d);
 			gBrush.scaleX = gBrush.scaleY = radius;
 			gBrush.material.mainPass.setPassName("overlay");
@@ -807,6 +867,22 @@ class MeshSpray extends Object3D {
 		ctx.local3d = new MeshSprayObject(this, ctx.local3d);
 		ctx.local3d.name = name;
 		updateInstance(ctx);
+		return ctx;
+	}
+
+	override function make(ctx:Context):Context {
+		if( !enabled )
+			return ctx;
+		ctx = makeInstance(ctx);
+		// add all children then build meshspray
+		for( c in children )
+			if( c.type == "model" )
+				makeChildren(ctx, c);
+		cast(ctx.local3d, MeshSprayObject).redraw();
+		// then add other children (shaders etc.)
+		for( c in children )
+			if( c.type != "model" )
+				makeChildren(ctx, c);
 		return ctx;
 	}
 
@@ -854,40 +930,8 @@ class MeshSpray extends Object3D {
 		return primitive;
 	}
 
-	#else
-
-	function getMaterial( o : h3d.scene.Mesh ) {
-		return o.material;
-	}
-
-	override function makeInstance( ctx : Context ) {
-		ctx = super.makeInstance(ctx);
-		var batches = new Map();
-		for( c in children ) {
-			if (!c.enabled)
-				continue;
-			if( c.type != "model" )
-				continue;
-			var batch = batches.get(c.source);
-			if( batch  == null ) {
-				var obj = ctx.loadModel(c.source).toMesh();
-				batch = new h3d.scene.MeshBatch(cast(obj.primitive,h3d.prim.MeshPrimitive), getMaterial(obj), ctx.local3d);
-				batch.begin();
-				batches.set(c.source, batch);
-			}
-			batch.setTransform(c.to(Object3D).getTransform());
-			batch.emitInstance();
-		}
-		return ctx;
-	}
-
-	override function makeChildren( ctx : Context, p : hrt.prefab.Prefab ) {
-		if( p.type == "model" )
-			return;
-		super.makeChildren(ctx, p);
-	}
-
-	#end
-
 	static var _ = Library.register("meshSpray", MeshSpray);
+
 }
+
+#end
