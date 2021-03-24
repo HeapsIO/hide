@@ -7,12 +7,9 @@ enum abstract HeightMapTextureKind(String) {
 	var SplatMap = "splatmap";
 }
 
-private class WorldNoSoil extends h3d.scene.World {
+private class WorldObjects extends h3d.scene.World {
 
 	public var killAlpha = 0.5;
-
-	override function initChunkSoil(c:h3d.scene.World.WorldChunk) {
-	}
 
 	override function loadMaterialTexture(r:hxd.res.Model, mat:hxd.fmt.hmd.Data.Material, modelName:String):h3d.scene.World.WorldMaterial {
 		var m = super.loadMaterialTexture(r, mat, modelName);
@@ -248,7 +245,7 @@ class HeightMapMesh extends h3d.scene.Object {
 
 	var hmap : HeightMap;
 	var grid : HeightGrid;
-	var world : WorldNoSoil;
+	var world : WorldObjects;
 	var modelCache : Map<String, h3d.scene.World.WorldModel> = new Map();
 	var nullModel = new h3d.scene.World.WorldModel(null);
 	var epsilon = 0.5;
@@ -337,7 +334,7 @@ class HeightMapMesh extends h3d.scene.Object {
 			world = null;
 		}
 		if( hmap.objects != null ) {
-			world = new WorldNoSoil(Std.int(size),Std.int(size) * 32,this);
+			world = new WorldObjects(Std.int(size),this);
 			world.enableNormalMaps = true;
 			world.enableSpecular = true;
 			world.killAlpha = hmap.objects.killAlpha;
