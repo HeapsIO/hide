@@ -8,6 +8,13 @@ typedef CloudShadowProps = {
 	var speed : Float;
 	var angle : Float;
 	var texturePath : String;
+	var ?distort : {
+		var path : String;
+		var scale : Float;
+		var speed : Float;
+		var angle : Float;
+		var amount : Float;
+	};
 }
 
 class DirLightWithClouds extends h3d.shader.pbr.Light {
@@ -20,6 +27,12 @@ class DirLightWithClouds extends h3d.shader.pbr.Light {
 		@param var opacity : Float;
 		@param var rotation : Mat3;
 
+		@const var hasDistort : Bool;
+		@param var distort : Sampler2D;
+		@param var distortSpeed : Vec2;
+		@param var distortScale : Float;
+		@param var distortAmount : Float;
+
 		@param var time : Float;
 		@param var cameraPosition : Vec3;
 
@@ -31,7 +44,10 @@ class DirLightWithClouds extends h3d.shader.pbr.Light {
 			pbrOcclusionFactor = occlusionFactor;
 
 			var pos = transformedPosition.xy * scale;
-			var cloudIntensity = clouds.get(pos + time * speed).r * opacity;
+			var uv = pos + time * speed;
+			if( hasDistort )
+				uv += (distort.get(pos * distortScale + time * distortSpeed).xy - 0.5) * distortAmount;
+			var cloudIntensity = clouds.get(uv).r * opacity;
 			pbrLightColor *= 1.0 - cloudIntensity.saturate();
 		}
 	};
@@ -74,7 +90,7 @@ class CloudShadow extends RendererFX {
 				}
 				l = l.next;
 			}
-			
+
 			if( mainLight != null ) {
 				mainLight.shader = dlwc;
 				dlwc.lightDir = mainLight.pbr.lightDir;
@@ -89,8 +105,18 @@ class CloudShadow extends RendererFX {
 				dlwc.time = ctx.time;
 				if( props.texturePath != null )
 					dlwc.clouds = Loader.currentInstance.load(props.texturePath).toTexture();
-				if( dlwc.clouds != null ) 
+				if( dlwc.clouds != null )
 					dlwc.clouds.wrap = Repeat;
+				var dist = props.distort;
+				dlwc.hasDistort = dist != null;
+				if( dist != null ) {
+					var angle = dist.angle * Math.PI / 180;
+					dlwc.distort = Loader.currentInstance.load(dist.path).toTexture();
+					if( dlwc.distort != null ) dlwc.distort.wrap = Repeat;
+					dlwc.distortAmount = dist.amount * 0.01;
+					dlwc.distortSpeed.set(Math.cos(angle) * dist.speed * 0.1, Math.sin(angle) * dist.speed * 0.1);
+					dlwc.distortScale = dist.scale;
+				}
 			}
 		}
 	}
@@ -106,6 +132,32 @@ class CloudShadow extends RendererFX {
 				<dt>Texture</dt><dd><input type="texturepath" field="texturePath"/></dd>
 			</div>
 		'),props);
+		var p : CloudShadowProps = props;
+		var dist = p.distort;
+		if( dist == null )
+			dist = {
+				path : null,
+				scale : 1,
+				speed : 0,
+				angle : 0,
+				amount : 1,
+			};
+		ctx.properties.add(new hide.Element('
+			<div class="group" name="Distort">
+				<dt>Texture</dt><dd><input type="texturepath" field="path"/></dd>
+				<dt>Amount</dt><dd><input type="range" min="0" max="1" field="amount"/></dd>
+				<dt>Scale</dt><dd><input type="range" min="0.1" max="2" field="scale"/></dd>
+				<dt>Speed</dt><dd><input type="range" min="-1" max="1" field="speed"/></dd>
+				<dt>Angle</dt><dd><input type="range" min="-180" max="180" field="angle"/></dd>
+			</div>
+		'),dist, function(name) {
+			if( name == "path" ) {
+				if( dist.path == null )
+					p.distort = js.Lib.undefined;
+				else
+					p.distort = dist;
+			}
+		});
 	}
 	#end
 
