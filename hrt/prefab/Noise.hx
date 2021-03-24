@@ -14,7 +14,7 @@ enum abstract RepeatMode(String) {
 
 class Noise extends Prefab {
 
-	public var seed : Int = Std.random(10000);
+	public var seed : Int = Std.random(100);
 
 	public var mode : NoiseMode = Perlin;
 
@@ -194,7 +194,7 @@ class Noise extends Prefab {
 				<dt>Scale</dt><dd><input type="range" min="0" max="2" field="scale"/></dd>
 				<dt>Channels</dt><dd><input type="range" min="1" max="4" step="1" field="channels"/></dd>
 				<dt>NormalMap</dt><dd><input type="checkbox" field="normals"/></dd>
-				<dt>Repeat<dt><dd>
+				<dt>Repeat</dt><dd>
 					<select field="repeat">
 						<option value="Both">Both</option>
 						<option value="X">X</option>
@@ -229,7 +229,7 @@ class Noise extends Prefab {
 			</dl>
 			<br/>
 			<dl>
-				<dt>Seed</dt><dd><input type="range" step="1" min="0" max="9999" field="seed"/></dd>
+				<dt>Seed</dt><dd><input type="range" step="1" min="0" max="100" field="seed"/></dd>
 				<dt>&nbsp;</dt><dd><input type="button" value="Download" name="dl"/></dd>
 			</dl>
 		'),this,function(pname)  {
