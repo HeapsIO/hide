@@ -91,7 +91,8 @@ class ColorGrading extends RendererFX {
 		var but = e.find(".createDefault");
 		but.click(function(_) {
 			function saveTexture( name : String ) {
-				var size = 16;
+				if( name == null ) return;
+				var size = (props:ColorGradingProps).size;
 				var step = hxd.Math.ceil(255/(size - 1));
 				var p = hxd.Pixels.alloc(size * size, size, RGBA);
 				for( r in 0 ... size ) {
@@ -101,11 +102,11 @@ class ColorGrading extends RendererFX {
 						}
 					}
 				}
-				var path = ctx.ide.getPath(name)+"/defaultLUT.png";
+				var path = ctx.ide.getPath(name);
 				sys.io.File.saveBytes(path, p.toPNG());
 				p.dispose();
 			}
-			ctx.ide.chooseDirectory(saveTexture);
+			ctx.ide.chooseFileSave("defaultLUT.png", saveTexture);
 		});
 
 		ctx.properties.add(e, props);
