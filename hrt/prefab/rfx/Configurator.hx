@@ -123,7 +123,9 @@ class Configurator extends RendererFX {
 	override function makeInstance(ctx:Context):Context {
 		for( v in vars )
 			values.set(v.name, v.defValue);
+		#if hscript
 		interp = null;
+		#end
 		return super.makeInstance(ctx);
 	}
 
@@ -165,10 +167,12 @@ class Configurator extends RendererFX {
 		#end
 	}
 
+	#if hscript
 	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
 		if( step == Overlay )
 			interp.restoreVars();
 	}
+	#end
 
 	#if editor
 	override function getHideProps() : HideProps {
