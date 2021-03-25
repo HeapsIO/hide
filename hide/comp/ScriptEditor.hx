@@ -318,6 +318,7 @@ class ScriptEditor extends CodeEditor {
 				}
 			});
 		}
+		if( root == null ) root = parent;
 		super(script, lang, parent,root);
 		if( checker == null ) {
 			checker = new ScriptChecker(new hide.Config(),"");
