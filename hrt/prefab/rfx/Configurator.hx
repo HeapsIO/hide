@@ -228,7 +228,8 @@ class Configurator extends RendererFX {
 			});
 		}
 
-		var editor = new hide.comp.ScriptEditor(this.script, props.find("#script"));
+		var selt = props.find("#script");
+		var editor = new hide.comp.ScriptEditor(this.script, selt, selt);
 		editor.onSave = function() {
 			script = editor.code;
 			parsedExpr = null;
