@@ -57,9 +57,13 @@ class Object3D extends Prefab {
 		visible = obj.visible == null ? true : obj.visible;
 	}
 
+	function createObject(ctx:Context) {
+		return new h3d.scene.Object(ctx.local3d);
+	}
+
 	override function makeInstance(ctx:Context):Context {
 		ctx = ctx.clone(this);
-		ctx.local3d = new h3d.scene.Object(ctx.local3d);
+		ctx.local3d = createObject(ctx);
 		ctx.local3d.name = name;
 		updateInstance(ctx);
 		return ctx;
