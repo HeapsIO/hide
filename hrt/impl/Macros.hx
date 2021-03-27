@@ -46,7 +46,7 @@ class Macros {
 				}
 
 				if( serCond == null ) {
-					var defVal = e.expr.match(EConst(_)) ? e : macro null;
+					var defVal = e.expr.match(EConst(_) | EBinop(_) | EUnop(_)) ? e : macro @:pos(f.pos) null;
 					serCond = macro @:pos(pos) this.$name != $defVal;
 				}
 

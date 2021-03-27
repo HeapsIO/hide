@@ -14,7 +14,7 @@ enum abstract RepeatMode(String) {
 
 class NoiseGenerator extends Prefab {
 
-	@:s public var seed : Int = Std.random(100);
+	@:s public var seed : Int;
 
 	@:s public var mode : NoiseMode = Perlin;
 
@@ -36,6 +36,11 @@ class NoiseGenerator extends Prefab {
 	@:s public var inverse : Bool;
 
 	var tex : h3d.mat.Texture;
+
+	function new(?parent) {
+		super(parent);
+		seed = Std.random(100);
+	}
 
 	public function updateTexture( t : h3d.mat.Texture ) {
 		var e = h3d.Engine.getCurrent();
