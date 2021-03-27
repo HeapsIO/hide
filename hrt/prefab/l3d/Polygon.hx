@@ -246,7 +246,7 @@ class Polygon extends Object3D {
 			return;
 		var mesh = Std.downcast(ctx.local3d, h3d.scene.Mesh);
 		if(mesh != null)
-			hrt.prefab.Box.setDebugColor(color, mesh.material);
+			hrt.prefab.l3d.Box.setDebugColor(color, mesh.material);
 	}
 	#end
 

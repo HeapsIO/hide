@@ -21,7 +21,7 @@ class FXAnimation extends h3d.scene.Object {
 	public var events: Array<hrt.prefab.fx.Event.EventInstance>;
 	public var emitters : Array<hrt.prefab.fx.Emitter.EmitterObject>;
 	public var shaderAnims : Array<ShaderAnimation> = [];
-	public var constraints : Array<hrt.prefab.Constraint>;
+	public var constraints : Array<hrt.prefab.l3d.Constraint>;
 	public var script : hrt.prefab.fx.FXScript;
 
 	public var vecPool = new Evaluator.VecPool();
@@ -332,7 +332,7 @@ class FXAnimation extends h3d.scene.Object {
 	}
 
 	function initConstraints( ctx : Context, elt : PrefabElement ){
-		var co = Std.downcast(elt, hrt.prefab.Constraint);
+		var co = Std.downcast(elt, hrt.prefab.l3d.Constraint);
 		if(co != null) {
 			if(constraints == null) constraints = [];
 			constraints.push(co);

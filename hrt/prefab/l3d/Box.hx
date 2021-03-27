@@ -1,4 +1,4 @@
-package hrt.prefab;
+package hrt.prefab.l3d;
 
 class Box extends Object3D {
 

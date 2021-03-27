@@ -622,7 +622,7 @@ class Level3D extends FileView {
 		var color = getDisplayColor(p);
 		if(color != null){
 			color = (color & 0xffffff) | 0xa0000000;
-			var box = p.to(hrt.prefab.Box);
+			var box = p.to(hrt.prefab.l3d.Box);
 			if(box != null) {
 				var ctx = sceneEditor.getContext(box);
 				box.setColor(ctx, color);
