@@ -8,7 +8,7 @@ class FrequencyValue extends hxsl.Shader {
 		@param var noiseFrequency : Float;
 
 		@param var dirVector : Vec3;
-		
+
 		var calculatedUV : Vec2;
 		var anisotropy : Float;
 		var direction : Vec3;
@@ -60,7 +60,7 @@ class NoiseTexture extends hxsl.Shader {
 	}
 }
 
-class AnisotropicFoward extends h3d.shader.pbr.DefaultForward {
+class AnisotropicForward extends h3d.shader.pbr.DefaultForward {
 	static var SRC = {
 
 		@global var global : {

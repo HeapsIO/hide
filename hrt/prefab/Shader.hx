@@ -161,7 +161,7 @@ class Shader extends Prefab {
 		for(v in shaderDef.shader.data.vars) {
 			if(v.kind != Param)
 				continue;
-			var prop = hide.tools.TypesCache.makeShaderType(v);
+			var prop = makeShaderType(v);
 			props.push({name: v.name, t: prop});
 		}
 		group.append(hide.comp.PropsEditor.makePropsList(props));
@@ -171,6 +171,29 @@ class Shader extends Prefab {
 		});
 	}
 
+	function makeShaderType( v : hxsl.Ast.TVar ) : hrt.prefab.Props.PropType {
+		var min : Null<Float> = null, max : Null<Float> = null;
+		if( v.qualifiers != null )
+			for( q in v.qualifiers )
+				switch( q ) {
+				case Range(rmin, rmax): min = rmin; max = rmax;
+				default:
+				}
+		return switch( v.type ) {
+		case TInt:
+			PInt(min == null ? null : Std.int(min), max == null ? null : Std.int(max));
+		case TFloat:
+			PFloat(min != null ? min : 0.0, max != null ? max : 1.0);
+		case TBool:
+			PBool;
+		case TSampler2D:
+			PTexture;
+		case TVec(n, VFloat):
+			PVec(n);
+		default:
+			PUnsupported(hxsl.Ast.Tools.toString(v.type));
+		}
+	}
 	override function getHideProps() : HideProps {
 		return { icon : "cog", name : "Shader", fileSource : ["hx"], allowParent : function(p) return p.to(Object2D) != null || p.to(Object3D) != null || p.to(Material) != null  };
 	}

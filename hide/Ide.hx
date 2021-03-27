@@ -19,7 +19,6 @@ class Ide {
 	public var database : cdb.Database;
 	public var shaderLoader : hide.tools.ShaderLoader;
 	public var fileWatcher : hide.tools.FileWatcher;
-	public var typesCache : hide.tools.TypesCache;
 	public var isCDB = false;
 	public var isDebugger = false;
 
@@ -577,7 +576,6 @@ class Ide {
 		var title = config.current.get("hide.windowTitle");
 		window.title = title != null ? title : ((isCDB ? "CastleDB" : "HIDE") + " - " + dir);
 		shaderLoader = new hide.tools.ShaderLoader();
-		typesCache = new hide.tools.TypesCache();
 
 		var localDir = sys.FileSystem.exists(resourceDir) ? resourceDir : projectDir;
 		var fsconf = config.current.get("fs.config", "default");

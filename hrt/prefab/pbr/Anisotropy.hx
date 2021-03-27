@@ -1,10 +1,7 @@
 package hrt.prefab.pbr;
 
 import h3d.pass.Default;
-import hrt.shader.AnisotropicFoward.FlatValue;
-import hrt.shader.AnisotropicFoward.NoiseTexture;
-import hrt.shader.AnisotropicFoward.FrequencyValue;
-import hrt.shader.AnisotropicFoward;
+import hrt.shader.AnisotropicForward;
 
 enum abstract AnisotropyMode(String) {
 	var Flat;
@@ -78,7 +75,7 @@ class Anisotropy extends Prefab {
 
 	function refreshShaders( ctx : Context ) {
 		var fv = new FlatValue();
-		var as = new AnisotropicFoward();
+		var as = new AnisotropicForward();
 		var nt = new NoiseTexture();
 		var ff = new FrequencyValue();
 
@@ -91,7 +88,7 @@ class Anisotropy extends Prefab {
 			m.mainPass.removeShader(m.mainPass.getShader(NoiseTexture));
 			m.mainPass.removeShader(m.mainPass.getShader(FlatValue));
 			m.mainPass.removeShader(m.mainPass.getShader(FrequencyValue));
-			m.mainPass.removeShader(m.mainPass.getShader(AnisotropicFoward));
+			m.mainPass.removeShader(m.mainPass.getShader(AnisotropicForward));
 		}
 
 		for( m in mat ) {
@@ -116,7 +113,7 @@ class Anisotropy extends Prefab {
 
 	override function updateInstance( ctx : Context, ?propName : String ) {
 		for( m in getMaterials(ctx) ) {
-			
+
 			var fv = m.mainPass.getShader(FlatValue);
 			if( fv != null ) {
 				fv.intensity = intensity;
@@ -145,7 +142,7 @@ class Anisotropy extends Prefab {
 
 	#if editor
 	override function getHideProps() : HideProps {
-		return { 	icon : "cube", 
+		return { 	icon : "cube",
 					name : "Anisotropy",
 					allowParent : function(p) return p.to(Material) != null  };
 	}
