@@ -14,83 +14,28 @@ enum abstract RepeatMode(String) {
 
 class NoiseGenerator extends Prefab {
 
-	public var seed : Int = Std.random(100);
+	@:s public var seed : Int = Std.random(100);
 
-	public var mode : NoiseMode = Perlin;
+	@:s public var mode : NoiseMode = Perlin;
 
-	public var scale : Float = 1.;
-	public var channels : Int = 1;
-	public var normals : Bool = false;
-	public var contrast : Float = 0.;
-	public var brightness : Float = 0.;
-	public var repeat : RepeatMode = Both;
+	@:s public var scale : Float = 1.;
+	@:s public var channels : Int = 1;
+	@:s public var normals : Bool = false;
+	@:s public var contrast : Float = 0.;
+	@:s public var brightness : Float = 0.;
+	@:s public var repeat : RepeatMode = Both;
 
-	public var size : Int = 512;
-	public var octaves : Int = 1;
-	public var persist : Float = 0.5;
-	public var lacunarity : Float = 2.;
-	public var gain : Float = 2.0;
-	public var offset : Float = 0.5;
-	public var turbulence : Float = 0.;
-	public var turbulenceScale : Float = 1.;
-	public var inverse : Bool;
+	@:s public var size : Int = 512;
+	@:s public var octaves : Int = 1;
+	@:s public var persist : Float = 0.5;
+	@:s public var lacunarity : Float = 2.;
+	@:s public var gain : Float = 2.0;
+	@:s public var offset : Float = 0.5;
+	@:s public var turbulence : Float = 0.;
+	@:s public var turbulenceScale : Float = 1.;
+	@:s public var inverse : Bool;
 
 	var tex : h3d.mat.Texture;
-
-	override public function load(v:Dynamic) {
-		this.mode = v.mode;
-		this.seed = v.seed;
-		this.size = v.size;
-		this.scale = v.scale;
-		if( v.channels != null ) this.channels = v.channels else this.channels = 1;
-		this.octaves = v.octaves;
-		this.persist = v.persist;
-		this.lacunarity = v.lacunarity;
-		if( v.gain != null ) this.gain = v.gain;
-		if( v.offset != null ) this.offset = v.offset;
-		if( v.contrast != null ) this.contrast = v.contrast else this.contrast = 0;
-		if( v.brightness != null ) this.brightness = v.brightness else this.brightness = 0;
-		if( v.normals != null ) this.normals = v.normals else this.normals = false;
-		if( v.turbulence != null ) this.turbulence = v.turbulence else this.turbulence = 0;
-		if( v.turbulenceScale != null ) this.turbulenceScale = v.turbulenceScale;
-		if( v.inverse != null ) this.inverse = v.inverse else this.inverse = false;
-		if( v.repeat != null ) this.repeat = v.repeat else this.repeat = Both;
-	}
-
-	override function save() {
-		var o : Dynamic = {
-			seed : seed,
-			size : size,
-			scale : scale,
-			octaves : octaves,
-			persist : persist,
-			lacunarity : lacunarity,
-		};
-		if( channels != 1 )
-			o.channels = channels;
-		o.mode = mode;
-		switch( mode ) {
-		case Perlin:
-		case Ridged:
-			o.gain = gain;
-			o.offset = offset;
-		}
-		if( contrast != 0 )
-			o.contrast = contrast;
-		if( brightness != 0 )
-			o.brightness = brightness;
-		if( normals )
-			o.normals = normals;
-		if( turbulence != 0 ) {
-			o.turbulence = turbulence;
-			o.turbulenceScale = turbulenceScale;
-		}
-		if( repeat != Both )
-			o.repeat = repeat;
-		if( inverse )
-			o.inverse = inverse;
-		return o;
-	}
 
 	public function updateTexture( t : h3d.mat.Texture ) {
 		var e = h3d.Engine.getCurrent();

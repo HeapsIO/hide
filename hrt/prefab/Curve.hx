@@ -30,12 +30,12 @@ typedef CurveKeys = Array<CurveKey>;
 
 class Curve extends Prefab {
 
-	public var clampMin : Float = 0.;
-	public var clampMax : Float = 0.;
-	public var keyMode : CurveKeyMode = Linear;
+	@:s public var clampMin : Float = 0.;
+	@:s public var clampMax : Float = 0.;
+	@:s public var keyMode : CurveKeyMode = Linear;
 	public var keys : CurveKeys = [];
 
-	public var loop : Bool = false;
+	@:s public var loop : Bool = false;
 
 	public var duration(get, never): Float;
 	function get_duration() {
@@ -49,6 +49,7 @@ class Curve extends Prefab {
 	}
 
 	public override function load(o:Dynamic) {
+		super.load(o);
 		keys = [];
 		if(o.keys != null) {
 			for(k in (o.keys: Array<Dynamic>)) {
@@ -63,13 +64,6 @@ class Curve extends Prefab {
 				keys.push(nk);
 			}
 		}
-		clampMin = o.clampMin;
-		clampMax = o.clampMax;
-		if(o.loop != null)
-			loop = o.loop;
-		if(o.keyMode != null)
-			keyMode = o.keyMode;
-
 		if( keys.length == 0 ) {
 			addKey(0.0, 0.0);
 			addKey(1.0, 1.0);
@@ -77,6 +71,7 @@ class Curve extends Prefab {
 	}
 
 	public override function save() {
+		var obj : Dynamic = super.save();
 		var keysDat = [];
 		for(k in keys) {
 			var o = {
@@ -88,13 +83,8 @@ class Curve extends Prefab {
 			if(k.nextHandle != null) Reflect.setField(o, "nextHandle", { dv: k.nextHandle.dv, dt: k.nextHandle.dt });
 			keysDat.push(o);
 		}
-		return {
-			clampMin: clampMin,
-			clampMax: clampMax,
-			keyMode: keyMode,
-			keys: keysDat,
-			loop: loop
-		};
+		obj.keys = keysDat;
+		return obj;
 	}
 
 	static inline function bezier(c0: Float, c1:Float, c2:Float, c3: Float, t:Float) {

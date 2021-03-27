@@ -4,13 +4,13 @@ using Lambda;
 
 class Object2D extends Prefab {
 
-	public var x : Float = 0.;
-	public var y : Float = 0.;
-	public var scaleX : Float = 1.;
-	public var scaleY : Float = 1.;
-	public var rotation : Float = 0.;
+	@:s public var x : Float = 0.;
+	@:s public var y : Float = 0.;
+	@:s public var scaleX : Float = 1.;
+	@:s public var scaleY : Float = 1.;
+	@:s public var rotation : Float = 0.;
 
-	public var visible : Bool = true;
+	@:s public var visible : Bool = true;
 	public var blendMode : h2d.BlendMode = None;
 
 	public function loadTransform(t) {
@@ -34,17 +34,8 @@ class Object2D extends Prefab {
 	}
 
 	override function load( obj : Dynamic ) {
-		x = obj.x == null ? 0. : obj.x;
-		y = obj.y == null ? 0. : obj.y;
-
-		scaleX = obj.scaleX == null ? 1. : obj.scaleX;
-		scaleY = obj.scaleY == null ? 1. : obj.scaleY;
-
-		rotation = obj.rotation == null ? 0. : obj.rotation;
-
-		visible = obj.visible == null ? true : obj.visible;
-
-		if (obj.blendMode != null)
+		super.load(obj);
+		if( obj.blendMode != null )
 			blendMode = std.Type.createEnum(h2d.BlendMode, obj.blendMode);
 	}
 
@@ -57,14 +48,8 @@ class Object2D extends Prefab {
 	}
 
 	override function save() {
-		var o : Dynamic = {};
-		if( x != 0 ) o.x = x;
-		if( y != 0 ) o.y = y;
-		if( scaleX != 1 ) o.scaleX = scaleX;
-		if( scaleY != 1 ) o.scaleY = scaleY;
-		if( rotation != 0 ) o.rotation = rotation;
-		if( !visible ) o.visible = visible;
-		if ( blendMode != None) o.blendMode = blendMode.getName();
+		var o : Dynamic = super.save();
+		if( blendMode != None ) o.blendMode = blendMode.getName();
 		return o;
 	}
 

@@ -7,13 +7,6 @@ class Library extends Prefab {
 		type = "prefab";
 	}
 
-	override function load( obj : Dynamic ) {
-	}
-
-	override function save() {
-		return {};
-	}
-
 	override function makeInstance(ctx:Context):Context {
 		if( ctx.shared.parent != null ) ctx = ctx.clone(this);
 		return super.makeInstance(ctx);

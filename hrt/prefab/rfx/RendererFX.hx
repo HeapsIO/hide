@@ -2,22 +2,12 @@ package hrt.prefab.rfx;
 
 class RendererFX extends Prefab implements h3d.impl.RendererFX {
 
-	var enableInEditor = true;
+	@:s var enableInEditor = true;
 
 	public function begin( r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {
 	}
 
 	public function end( r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {
-	}
-
-	override function save() {
-		var obj : Dynamic = {};
-		if( !enableInEditor ) obj.enableInEditor = false;
-		return obj;
-	}
-
-	override function load(v:Dynamic) {
-		enableInEditor = v.enableInEditor != false;
 	}
 
 	public function dispose() {

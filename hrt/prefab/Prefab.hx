@@ -3,18 +3,18 @@ package hrt.prefab;
 /**
 	Prefab is an data-oriented tree container capable of creating instances of Heaps objects.
 **/
-@:keepSub
+@:keepSub @:build(hrt.impl.Macros.buildPrefab()) @:autoBuild(hrt.impl.Macros.buildPrefab())
 class Prefab {
 
 	/**
 		The type of prefab, allows to identify which class it should be loaded with.
 	**/
-	public var type(default, null) : String;
+	@:s public var type(default, null) : String;
 
 	/**
 		The name of the prefab in the tree view
 	**/
-	public var name(default, set) : String;
+	@:s public var name : String;
 
 	/**
 		The parent of the prefab in the tree view
@@ -24,7 +24,7 @@ class Prefab {
 	/**
 		The associated source file (an image, a 3D model, etc.) if the prefab type needs it.
 	**/
-	public var source(default, set) : String;
+	@:s public var source : String;
 
 	/**
 		The list of children prefab in the tree view
@@ -34,17 +34,17 @@ class Prefab {
 	/**
 		Tells if the prefab will create an instance when calling make() or be ignored. Also apply to this prefab children.
 	**/
-	public var enabled : Bool = true;
+	@:s public var enabled : Bool = true;
 
 	/**
 		Prevent the prefab from being selected in Hide. Also apply to this prefab children.
 	**/
-	public var locked : Bool;
+	@:s public var locked : Bool = false;
 
 	/**
 		A storage for some extra properties
 	**/
-	public var props : Any;
+	@:s public var props : Any;
 
 	/**
 		Creates a new prefab with the given parent.
@@ -52,14 +52,6 @@ class Prefab {
 	public function new(?parent) {
 		this.parent = parent;
 		children = [];
-	}
-
-	function set_name(n) {
-		return name = n;
-	}
-
-	function set_source(f) {
-		return source = f;
 	}
 
 	function set_parent(p) {
@@ -114,14 +106,16 @@ class Prefab {
 		Override to implement your custom prefab data loading
 	**/
 	function load( v : Dynamic ) {
-
+		loadSerializedFields(v);
 	}
 
 	/**
 		Override to implement your custom prefab data saving
 	**/
 	function save() : {} {
-		return {};
+		var o = {};
+		saveSerializedFields(o);
+		return o;
 	}
 
 	/**
@@ -152,19 +146,8 @@ class Prefab {
 	**/
 	@:final public function saveData() : {} {
 		var obj : Dynamic = save();
-		obj.type = type;
-		if( !enabled )
-			obj.enabled = false;
-		if( locked )
-			obj.locked = true;
-		if( name != null )
-			obj.name = name;
-		if( source != null )
-			obj.source = source;
 		if( children.length > 0 )
 			obj.children = [for( s in children ) s.saveData()];
-		if( props != null && obj.props == null )
-			obj.props = props;
 		return obj;
 	}
 
@@ -172,12 +155,6 @@ class Prefab {
 		Load the whole prefab data and creates its children.
 	**/
 	@:final public function loadData( v : Dynamic ) {
-		type = v.type;
-		name = v.name;
-		enabled = v.enabled == null ? true : v.enabled;
-		locked = v.locked == null ? false : v.locked;
-		props = v.props;
-		source = v.source;
 		load(v);
 		if( children.length > 0 )
 			children = [];
@@ -191,26 +168,25 @@ class Prefab {
 		Updates in-place the whole prefab data and its children.
 	**/
 	public function reload( p : Dynamic ) {
-		name = p.name;
-		enabled = p.enabled == null ? true : p.enabled;
-		locked = p.locked == null ? false : p.locked;
-		if( p.props == null || props == null )
-			props = p.props;
-		else {
-			var old = Reflect.fields(props);
-			for( k in Reflect.fields(p.props) ) {
-				if( haxe.Json.stringify(Reflect.field(props,k)) == haxe.Json.stringify(Reflect.field(p.props,k)) ) {
+		var prevProps = props;
+		load(p);
+
+		if( props != null && prevProps != null ) {
+			// update prev props object instead of rebinding it : allow to propagate cdb changes
+			var old = Reflect.fields(prevProps);
+			for( k in Reflect.fields(props) ) {
+				if( haxe.Json.stringify(Reflect.field(props,k)) == haxe.Json.stringify(Reflect.field(prevProps,k)) ) {
 					old.remove(k);
 					continue;
 				}
-				Reflect.setField(props, k, Reflect.field(p.props,k));
+				Reflect.setField(prevProps, k, Reflect.field(props,k));
 				old.remove(k);
 			}
 			for( k in old )
-				Reflect.deleteField(props, k);
+				Reflect.deleteField(prevProps, k);
+			props = prevProps;
 		}
-		source = p.source;
-		load(p);
+
 		var childData : Array<Dynamic> = p.children;
 		if( childData == null ) {
 			if( this.children.length > 0 ) this.children = [];
@@ -463,10 +439,10 @@ class Prefab {
 	}
 
 	/**
-		Clone this prefab and all its children
+		Clone this prefab, and all its children if recursive=true
 	**/
-	public function clone() : Prefab {
-		var obj = saveData();
+	public function clone( recursive = true ) : Prefab {
+		var obj = recursive ? saveData() : save();
 		return loadPrefab(haxe.Json.parse(haxe.Json.stringify(obj)));
 	}
 }

@@ -4,16 +4,16 @@ using Lambda;
 
 class Object3D extends Prefab {
 
-	public var x : Float = 0.;
-	public var y : Float = 0.;
-	public var z : Float = 0.;
-	public var scaleX : Float = 1.;
-	public var scaleY : Float = 1.;
-	public var scaleZ : Float = 1.;
-	public var rotationX : Float = 0.;
-	public var rotationY : Float = 0.;
-	public var rotationZ : Float = 0.;
-	public var visible : Bool = true;
+	@:s public var x : Float = 0.;
+	@:s public var y : Float = 0.;
+	@:s public var z : Float = 0.;
+	@:s public var scaleX : Float = 1.;
+	@:s public var scaleY : Float = 1.;
+	@:s public var scaleZ : Float = 1.;
+	@:s public var rotationX : Float = 0.;
+	@:s public var rotationY : Float = 0.;
+	@:s public var rotationZ : Float = 0.;
+	@:s public var visible : Bool = true;
 
 	public function new(?parent) {
 		super(parent);
@@ -40,23 +40,6 @@ class Object3D extends Prefab {
 		return -1;
 	}
 
-	override function load( obj : Dynamic ) {
-		super.load(obj);
-		x = obj.x == null ? 0. : obj.x;
-		y = obj.y == null ? 0. : obj.y;
-		z = obj.z == null ? 0. : obj.z;
-
-		scaleX = obj.scaleX == null ? 1. : obj.scaleX;
-		scaleY = obj.scaleY == null ? 1. : obj.scaleY;
-		scaleZ = obj.scaleZ == null ? 1. : obj.scaleZ;
-
-		rotationX = obj.rotationX == null ? 0. : obj.rotationX;
-		rotationY = obj.rotationY == null ? 0. : obj.rotationY;
-		rotationZ = obj.rotationZ == null ? 0. : obj.rotationZ;
-
-		visible = obj.visible == null ? true : obj.visible;
-	}
-
 	function createObject(ctx:Context) {
 		return new h3d.scene.Object(ctx.local3d);
 	}
@@ -67,21 +50,6 @@ class Object3D extends Prefab {
 		ctx.local3d.name = name;
 		updateInstance(ctx);
 		return ctx;
-	}
-
-	override function save() {
-		var o : Dynamic = super.save();
-		if( x != 0 ) o.x = x;
-		if( y != 0 ) o.y = y;
-		if( z != 0 ) o.z = z;
-		if( scaleX != 1 ) o.scaleX = scaleX;
-		if( scaleY != 1 ) o.scaleY = scaleY;
-		if( scaleZ != 1 ) o.scaleZ = scaleZ;
-		if( rotationX != 0 ) o.rotationX = rotationX;
-		if( rotationY != 0 ) o.rotationY = rotationY;
-		if( rotationZ != 0 ) o.rotationZ = rotationZ;
-		if( !visible ) o.visible = visible;
-		return o;
 	}
 
 	public function setTransform(mat : h3d.Matrix) {

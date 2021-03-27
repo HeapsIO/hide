@@ -6,12 +6,12 @@ import h3d.mat.PbrMaterial;
 
 class Material extends Prefab {
 
-	public var wrapRepeat = false;
-	public var diffuseMap : String;
-	public var normalMap : String;
-	public var specularMap : String;
+	@:s public var wrapRepeat = false;
+	@:s public var diffuseMap : String;
+	@:s public var normalMap : String;
+	@:s public var specularMap : String;
+	@:s public var materialName : String;
 	public var color : Array<Float> = [1,1,1,1];
-	public var materialName : String;
 
 	public function new(?parent) {
 		super(parent);
@@ -19,36 +19,15 @@ class Material extends Prefab {
 		props = {};
 	}
 
-	override function load(o:Dynamic) {
-		if(o.wrapRepeat) wrapRepeat = o.wrapRepeat;
-		if(o.diffuseMap != null) diffuseMap = o.diffuseMap;
-		if(o.normalMap != null) normalMap = o.normalMap;
-		if(o.specularMap != null) specularMap = o.specularMap;
-		if(o.color != null) color = o.color;
-		if(o.materialName != null) materialName = o.materialName;
-
-		// Backward compat
-		if(o.props != null && Reflect.hasField(o.props, "PBR")) {
-			var pbrProps = Reflect.field(o.props, "PBR");
-			for(pname in ["diffuseMap", "normalMap", "specularMap"]) {
-				var p : String = Reflect.field(pbrProps, pname);
-				if(p != null) {
-					Reflect.setField(this, pname, p);
-				}
-				Reflect.deleteField(pbrProps, pname);
-			}
-		}
+	override function load(obj:Dynamic) {
+		super.load(obj);
+		color = obj.color != null ? obj.color : [1,1,1,1];
 	}
 
 	override function save() {
-		var o : Dynamic = {};
-		if(wrapRepeat) o.wrapRepeat = true;
-		if(diffuseMap != null) o.diffuseMap = diffuseMap;
-		if(normalMap != null) o.normalMap = normalMap;
-		if(specularMap != null) o.specularMap = specularMap;
-		if(color != null && h3d.Vector.fromArray(color).toColor() != 0xffffffff) o.color = color;
-		if(materialName != null && materialName != "none" ) o.materialName = materialName;
-		return o;
+		var obj : Dynamic = super.save();
+		if(color != null && h3d.Vector.fromArray(color).toColor() != 0xffffffff) obj.color = color;
+		return obj;
 	}
 
 	function renderProps() {
@@ -69,7 +48,7 @@ class Material extends Prefab {
 	}
 
 	override function updateInstance( ctx : Context, ?propName ) {
-		if( ctx.local3d == null) 
+		if( ctx.local3d == null )
 			return;
 
 		function update(mat : h3d.mat.Material, props) {
@@ -154,7 +133,7 @@ class Material extends Prefab {
 					}));
 				});
 			}
-		
+
 			setBit(colorMask, "colorMask", ".colorMaskR", 0);
 			setBit(colorMask, "colorMask", ".colorMaskG", 1);
 			setBit(colorMask, "colorMask", ".colorMaskB", 2);
@@ -222,7 +201,7 @@ class Material extends Prefab {
 						<input type="checkbox" class="read3"/>
 						<input type="checkbox" class="read2"/>
 						<input type="checkbox" class="read1"/>
-						<input type="checkbox" class="read0"/>	
+						<input type="checkbox" class="read0"/>
 					</dd>
 				<dt>Write Mask</dt>
 					<dd>
@@ -244,15 +223,15 @@ class Material extends Prefab {
 						<input type="checkbox" class="value3"/>
 						<input type="checkbox" class="value2"/>
 						<input type="checkbox" class="value1"/>
-						<input type="checkbox" class="value0"/>						
+						<input type="checkbox" class="value0"/>
 					</dd>';
 			var stencil = new hide.Element('
 			<div class="group" name="Stencil">
-				<dt>Enable</dt><dd><input type="checkbox" field="enableStencil"/></dd>' 
-				+ (pbrProps.enableStencil ? stencilParams : "") +'		
+				<dt>Enable</dt><dd><input type="checkbox" field="enableStencil"/></dd>'
+				+ (pbrProps.enableStencil ? stencilParams : "") +'
 			</div>');
 
-			ctx.properties.add(stencil, pbrProps, function(pname) { 
+			ctx.properties.add(stencil, pbrProps, function(pname) {
 				ctx.onChange(this, "props");
 				if( pname == "enableStencil" )
 					ctx.rebuildProperties();
@@ -262,7 +241,7 @@ class Material extends Prefab {
 				setBit(stencil, "stencilWriteMask", ".write"+i, i);
 				setBit(stencil, "stencilReadMask", ".read"+i, i);
 				setBit(stencil, "stencilValue", ".value"+i, i);
-			}	
+			}
 		}
 
 		var dropDownMaterials = new hide.Element('
@@ -276,7 +255,6 @@ class Material extends Prefab {
 				new hide.Element('<option>').attr("value", m.name).text(m.name).appendTo(select);
 
 		select.change(function(_) {
-			trace(select.val());
 			var previous = materialName;
 			materialName = select.val();
 			var actual = materialName;

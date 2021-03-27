@@ -7,21 +7,11 @@ typedef EventInstance = {
 };
 
 class Event extends hrt.prefab.Prefab {
-	public var time: Float = 0.0;
+	@:s public var time: Float = 0.0;
 
 	public function new(?parent) {
 		super(parent);
 		this.type = "event";
-	}
-
-	override function save() : {} {
-		return {
-			time: time
-		};
-	}
-
-	override function load(obj: Dynamic) {
-		this.time = obj.time;
 	}
 
 	public function prepare(ctx: Context) : EventInstance {

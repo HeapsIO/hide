@@ -2,36 +2,16 @@ package hrt.prefab.l2d;
 
 class Blur extends Prefab {
 
-	public var radius : Float = 1.;
-	public var quality : Float = 1;
-	public var gain : Float = 1.;
-	public var linear : Float = 0.;
+	@:s public var radius : Float = 1.;
+	@:s public var quality : Float = 1;
+	@:s public var gain : Float = 1.;
+	@:s public var linear : Float = 0.;
 
 	// mostly testing
-	public var image : String;
-	public var zoom : Int = 1;
+	@:s public var image : String;
+	@:s public var zoom : Int = 1;
 
 	var pass : h3d.pass.Blur;
-
-	override function load(o:Dynamic) {
-		radius = o.radius;
-		quality = o.quality;
-		gain = o.gain;
-		linear = o.linear;
-		image = o.image;
-		zoom = o.zoom;
-	}
-
-	override function save() {
-		return {
-			radius:radius,
-			quality:quality,
-			gain:gain,
-			linear:linear,
-			image : image,
-			zoom : zoom,
-		};
-	}
 
 	public function makeFilter() {
 		var f = new h2d.filter.Blur(radius, gain, quality);

@@ -10,14 +10,9 @@ class Shader extends Prefab {
 		props = {};
 	}
 
-	override function load(o:Dynamic) {
-
-	}
-
 	override function save() {
 		fixSourcePath();
-		return {
-		};
+		return super.save();
 	}
 
 	override function updateInstance(ctx: Context, ?propName) {

@@ -6,20 +6,12 @@ class RenderPropsObject extends h3d.scene.Object {
 
 class RenderProps extends Prefab {
 
-	var isDefault = false;
+	@:s var isDefault = false;
 
 	public function new(?parent) {
 		super(parent);
 		type = "renderProps";
 		props = {};
-	}
-
-	override function load(o:Dynamic) {
-		isDefault = o.isDefault;
-	}
-
-	override function save() {
-		return { isDefault : isDefault };
 	}
 
 	override function makeInstance(ctx:Context):Context {

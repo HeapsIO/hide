@@ -2,19 +2,9 @@ package hrt.prefab.l3d;
 
 class Constraint extends Prefab {
 
-	public var object(default,null) : String;
-	public var target(default,null) : String;
-	public var positionOnly(default,null) : Bool;
-
-	override public function load(v:Dynamic) {
-		object = v.object;
-		target = v.target;
-		positionOnly = v.positionOnly;
-	}
-
-	override function save() {
-		return { object : object, target : target, positionOnly : positionOnly };
-	}
+	@:s public var object(default,null) : String;
+	@:s public var target(default,null) : String;
+	@:s public var positionOnly(default,null) : Bool;
 
 	public function apply( root : h3d.scene.Object ) {
 		var srcObj = root.getObjectByName(object.split(".").pop());
