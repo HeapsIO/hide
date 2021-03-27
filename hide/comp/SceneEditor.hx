@@ -677,7 +677,7 @@ class SceneEditor {
 			lastRenderProps.applyProps(scene.s3d.renderer);
 		else {
 			var refPrefab = new Reference();
-			refPrefab.refpath = view.config.getLocal("scene.renderProps");
+			refPrefab.source = view.config.getLocal("scene.renderProps");
 			refPrefab.makeInstance(context);
 			if( @:privateAccess refPrefab.ref != null ) {
 				var renderProps = @:privateAccess refPrefab.ref.get(hrt.prefab.RenderProps);
@@ -1631,7 +1631,7 @@ class SceneEditor {
 
 			if(hrt.prefab.Library.getPrefabType(path) != null) {
 				var ref = new hrt.prefab.Reference(parent);
-				ref.refpath = "/" + relative;
+				ref.source = relative;
 				obj3d = ref;
 				obj3d.name = new haxe.io.Path(relative).file;
 			}
@@ -1939,7 +1939,7 @@ class SceneEditor {
 	function createRef(elt: PrefabElement, toParent: PrefabElement) {
 		var ref = new hrt.prefab.Reference(toParent);
 		ref.name = elt.name;
-		ref.refpath = elt.getAbsPath();
+		ref.source = "/"+elt.getAbsPath();
 		var obj3d = Std.downcast(elt, Object3D);
 		if(obj3d != null) {
 			ref.x = obj3d.x;

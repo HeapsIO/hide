@@ -2,7 +2,6 @@ package hrt.prefab;
 
 class Reference extends Object3D {
 
-	@:s public var refpath : String;
 	@:s var editMode : Bool = false;
 	public var ref: Prefab = null;
 
@@ -11,19 +10,27 @@ class Reference extends Object3D {
 		type = "reference";
 	}
 
+	override function load(v:Dynamic) {
+		super.load(v);
+		// backward compatibility
+		var old : String = v.refpath;
+		if( old != null ) {
+			source = old.charCodeAt(0) == "/".code ? old.substr(1) : "/"+old;
+		}
+	}
+
 	public function isFile() {
-		// TODO: Use source instead?
-		return refpath != null && refpath.charAt(0) == "/";
+		return source != null && source.charCodeAt(0) != "/".code;
 	}
 
 	override function save() {
-		var obj : Dynamic = super.save();
 		// Recalc abs path if ref has been resolved to supprot renaming
 		if( ref != null && !isFile() )
-			obj.refpath = ref.getAbsPath();
+			source = "/"+ref.getAbsPath();
+		var obj : Dynamic = super.save();
 		#if editor
 		if( editMode && isFile() && ref != null )
-			hide.Ide.inst.savePrefab(refpath.substr(1), ref);
+			hide.Ide.inst.savePrefab(source, ref);
 		#end
 		return obj;
 	}
@@ -31,18 +38,18 @@ class Reference extends Object3D {
 	public function resolveRef(shared : hrt.prefab.ContextShared) {
 		if(ref != null)
 			return ref;
-		if(refpath == null)
+		if(source == null)
 			return null;
 		if(isFile()) {
 			if(shared == null) { // Allow resolving ref in Hide prefore makeInstance
 				#if editor
-				ref = hide.Ide.inst.loadPrefab(refpath.substr(1), null, true);
+				ref = hide.Ide.inst.loadPrefab(source, null, true);
 				#else
 				return null;
 				#end
 			}
 			else
-				ref = shared.loadPrefab(refpath.substr(1));
+				ref = shared.loadPrefab(source);
 			return ref;
 		}
 		else {
@@ -50,8 +57,9 @@ class Reference extends Object3D {
 			if(lib == null)
 				return null;
 			var all = lib.getAll(Prefab);
+			var path = source.substr(1);
 			for(p in all) {
-				if(!Std.is(p, Reference) && p.getAbsPath() == refpath) {
+				if(!Std.is(p, Reference) && p.getAbsPath() == path) {
 					ref = p;
 					return ref;
 				}
@@ -80,7 +88,7 @@ class Reference extends Object3D {
 		if(isFile()) {
 			ctx = super.makeInstance(ctx);
 			var prevShared = ctx.shared;
-			ctx.shared = ctx.shared.cloneRef(this, refpath.substr(1));
+			ctx.shared = ctx.shared.cloneRef(this, source);
 			makeChildren(ctx, p);
 			ctx.shared = prevShared;
 
@@ -153,10 +161,9 @@ class Reference extends Object3D {
 		element.find("input").contextmenu((e) -> {
 			e.preventDefault();
 			if( isFile() ) {
-				new hide.comp.ContextMenu([{
-					label : "Open",
-					click : () -> ctx.ide.openFile(ctx.ide.getPath(refpath.substr(1))),
-				}]);
+				new hide.comp.ContextMenu([
+					{ label : "Open", click : () -> ctx.ide.openFile(ctx.ide.getPath(source)) },
+				]);
 			}
 		});
 

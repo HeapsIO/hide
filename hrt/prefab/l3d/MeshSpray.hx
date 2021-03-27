@@ -778,7 +778,7 @@ class MeshSpray extends Object3D {
 
 				if (meshUsed.isRef) {
 					var refPrefab = new hrt.prefab.Reference(this);
-					refPrefab.refpath = "/"+meshUsed.path;
+					refPrefab.source = meshUsed.path;
 					newPrefab = refPrefab;
 				} else {
 					var model = new hrt.prefab.Model(this);
