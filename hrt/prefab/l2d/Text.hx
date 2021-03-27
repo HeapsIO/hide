@@ -3,96 +3,40 @@ package hrt.prefab.l2d;
 class Text extends Object2D {
 
 	// parameters
-	var color : Int = 0xFFFFFF;
-	var size : Int = 12;
-	var cutoff : Float = 0.5;
-	var smoothing : Float = 1 / 32;
-	var align : Int = 0;
+	@:s var color : Int = 0xFFFFFF;
+	@:s var size : Int = 12;
+	@:s var cutoff : Float = 0.5;
+	@:s var smoothing : Float = 1 / 32;
+	@:s var align : Int = 0;
 
-	var pathFont : String;
+	@:s var pathFont : String;
 
 	// TextShadow
-	var enableTextShadow : Bool = false;
-	var tsDx: Float = 0;
-	var tsDy: Float = 0;
-	var tsColor: Int;
-	var tsAlpha: Float = 1;
+	@:s var enableTextShadow : Bool = false;
+	@:s var tsDx: Float = 0;
+	@:s var tsDy: Float = 0;
+	@:s var tsColor: Int;
+	@:s var tsAlpha: Float = 1;
 
 	// DropShadow
-	var enableDropShadow : Bool = false;
-	var dsDistance: Float = 0;
-	var dsAngle: Float = 0;
-	var dsColor: Int;
-	var dsAlpha: Float = 1;
-	var dsRadius: Float = 0;
-	var dsGain: Float = 1;
-	var dsQuality: Float = 1;
-	var dsSmoothColor: Bool = true;
+	@:s var enableDropShadow : Bool = false;
+	@:s var dsDistance: Float = 0;
+	@:s var dsAngle: Float = 0;
+	@:s var dsColor: Int;
+	@:s var dsAlpha: Float = 1;
+	@:s var dsRadius: Float = 0;
+	@:s var dsGain: Float = 1;
+	@:s var dsQuality: Float = 1;
+	@:s var dsSmoothColor: Bool = true;
 
 	#if editor
-	var text : String = "";
+	@:s var text : String = "";
 	#end
 
 	override public function load(v:Dynamic) {
 		super.load(v);
-		if (v.blendMode == null)
+		if( v.blendMode == null )
 			blendMode = Alpha;
-		this.color = v.color;
-		this.size = v.size;
-		this.cutoff = v.cutoff;
-		this.smoothing = v.smoothing;
-		this.pathFont = v.pathFont;
-		this.align = v.align;
-
-		if (v.enableTextShadow != null) this.enableTextShadow = v.enableTextShadow;
-		if (v.tsDx != null) this.tsDx = v.tsDx;
-		if (v.tsDy != null) this.tsDy = v.tsDy;
-		if (v.tsColor != null) this.tsColor = v.tsColor;
-		if (v.tsAlpha != null) this.tsAlpha = v.tsAlpha;
-
-		if (v.enableDropShadow != null) this.enableDropShadow = v.enableDropShadow;
-		if (v.dsDistance != null) this.dsDistance = v.dsDistance;
-		if (v.dsAngle != null)	this.dsAngle = v.dsAngle;
-		if (v.dsColor != null) this.dsColor = v.dsColor;
-		if (v.dsAlpha != null) this.dsAlpha = v.dsAlpha;
-		if (v.dsRadius != null) this.dsRadius = v.dsRadius;
-		if (v.dsGain != null) this.dsGain = v.dsGain;
-		if (v.dsQuality != null) this.dsQuality = v.dsQuality;
-		if (v.dsSmoothColor != null) this.dsSmoothColor = v.dsSmoothColor;
-
-		#if editor
-		this.text = v.text;
-		#end
-	}
-
-	override function save() {
-		var o : Dynamic = super.save();
-		o.color = color;
-		o.size = size;
-		o.cutoff = cutoff;
-		o.smoothing = smoothing;
-		o.pathFont = pathFont;
-		o.align = align;
-		o.dsDistance = dsDistance;
-
-		o.enableTextShadow = enableTextShadow;
-		o.tsDx = tsDx;
-		o.tsDy = tsDy;
-		o.tsColor = tsColor;
-		o.tsAlpha = tsAlpha;
-
-		o.enableDropShadow = enableDropShadow;
-		o.dsAngle = dsAngle;
-		o.dsColor = dsColor;
-		o.dsAlpha = dsAlpha;
-		o.dsRadius = dsRadius;
-		o.dsGain = dsGain;
-		o.dsQuality = dsQuality;
-		o.dsSmoothColor = dsSmoothColor;
-		#if editor
-		o.text = text;
-		#end
-		return o;
 	}
 
 	override function updateInstance( ctx: Context, ?propName : String ) {

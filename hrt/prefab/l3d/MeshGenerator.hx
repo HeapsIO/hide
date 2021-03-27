@@ -121,12 +121,11 @@ class MeshGenerator extends Object3D {
 	#end
 
 	public var maxDepth = 1;
-	public var shadows = true;
+	@:s public var shadows = true;
 
 	override function save() {
 		var obj : Dynamic = super.save();
 		obj.root = root.save();
-		obj.shadows = shadows;
 		return obj;
 	}
 
@@ -134,7 +133,6 @@ class MeshGenerator extends Object3D {
 		super.load(obj);
 		root = new MeshPart();
 		root.load(obj.root);
-		shadows = obj.shadows == null ? true : obj.shadows;
 	}
 
 	override function makeInstance( ctx : Context ) : Context {

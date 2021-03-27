@@ -4,13 +4,6 @@ import hrt.prefab.rfx.RendererFX;
 import hrt.prefab.Library;
 import hxd.Math;
 
-typedef VignettingProps = {
-	var color : Int;
-	var alpha : Float;
-	var radius : Float;
-	var softness : Float;
-}
-
 class VignettingShader extends h3d.shader.ScreenShader {
 	static var SRC = {
 
@@ -32,24 +25,17 @@ class Vignetting extends RendererFX {
 
 	var vignettingPass = new h3d.pass.ScreenFx(new VignettingShader());
 
-	public function new(?parent) {
-		super(parent);
-		props = ({
-	    	color : 0xffffff,
-			alpha : 1.0,
-			radius : 1.0,
-			softness : 0.0,
-		} : VignettingProps);
-	}
+	@:s public var color : Int = 0xFFFFFF;
+	@:s public var alpha : Float = 1;
+	@:s public var radius : Float = 1;
+	@:s public var softness : Float;
 
 	function sync( r : h3d.scene.Renderer ) {
 		var ctx = r.ctx;
-		var props : VignettingProps = props;
-		var color = h3d.Vector.fromColor(props.color);
-		color.a = props.alpha;
-		vignettingPass.shader.color.load(color);
-		vignettingPass.shader.radius = props.radius;
-		vignettingPass.shader.softness = props.softness;
+		vignettingPass.shader.color.setColor(color);
+		vignettingPass.shader.color.a = alpha;
+		vignettingPass.shader.radius = radius;
+		vignettingPass.shader.softness = softness;
 		vignettingPass.pass.setBlendMode(Alpha);
 	}
 
@@ -71,7 +57,7 @@ class Vignetting extends RendererFX {
 				<dt>Radius</dt><dd><input type="range" min="0" max="1" field="radius"/></dd>
 				<dt>Softness</dt><dd><input type="range" min="0" max="1" field="softness"/></dd>
 			</dl>
-		'),props);
+		'),this);
 		super.edit(ctx);
 	}
 	#end

@@ -3,15 +3,15 @@ package hrt.prefab.vlm;
 import hrt.prefab.l3d.Level3D;
 import h3d.scene.pbr.Environment;
 
-@:enum abstract ProbeMode(String) {
-	var Texture = "Texture";
-	var Capture = "Capture";
+enum abstract ProbeMode(String) {
+	var Texture;
+	var Capture;
 }
 
-@:enum abstract ProbeFadeMode(String) {
-	var Linear = "Linear";
-	var Smoothstep = "Smoothstep";
-	var Pow2 = "Pow2";
+enum abstract ProbeFadeMode(String) {
+	var Linear;
+	var Smoothstep;
+	var Pow2;
 }
 
 class DebugView extends hxsl.Shader {
@@ -172,31 +172,31 @@ class LightProbeObject extends h3d.scene.Mesh {
 class LightProbe extends Object3D {
 
 	// Probe
-	public var mode : ProbeMode = Texture;
-	public var priority : Int = 0;
+	@:s public var mode : ProbeMode = Texture;
+	@:s public var priority : Int = 0;
 
 	// Fade
-	public var fadeDist : Float = 0.0;
-	public var fadeMode : ProbeFadeMode = Linear;
+	@:s public var fadeDist : Float = 0.0;
+	@:s public var fadeMode : ProbeFadeMode = Linear;
 
 	// Texture Mode
-	public var texturePath : String = null;
-	public var hdrMax : Float = 10.0;
-	public var rotation : Float = 0.0;
+	@:s public var texturePath : String = null;
+	@:s public var hdrMax : Float = 10.0;
+	@:s public var rotation : Float = 0.0;
 
 	// Capture Mode
-	public var bounce : Int = 1;
+	@:s public var bounce : Int = 1;
 
 	// Shared
-	public var power : Float = 1.0;
-	public var sampleBits : Int = 12;
-	public var diffSize : Int = 16;
-	public var specSize : Int = 64;
-	public var ignoredSpecLevels : Int = 2;
+	@:s public var power : Float = 1.0;
+	@:s public var sampleBits : Int = 12;
+	@:s public var diffSize : Int = 16;
+	@:s public var specSize : Int = 64;
+	@:s public var ignoredSpecLevels : Int = 2;
 
 	// Debug
-	public var debugDisplay : Bool = true;
-	public var sphereRadius : Float = 0.5;
+	@:s public var debugDisplay : Bool = true;
+	@:s public var sphereRadius : Float = 0.5;
 
 	public function new( ?parent : Prefab ) {
 		super(parent);
@@ -221,45 +221,6 @@ class LightProbe extends Object3D {
 			}
 		}
 		name = "lightProbe_" + curIndex;
-	}
-
-	override function load( obj : Dynamic ) {
-		super.load(obj);
-		if( obj.mode != null ) mode = obj.mode;
-		if( obj.bounce != null ) bounce = obj.bounce;
-		if( obj.priority != null ) priority = obj.priority;
-		if( obj.texturePath != null) texturePath = obj.texturePath;
-		if( obj.fadeDist != null ) fadeDist = obj.fadeDist;
-		if( obj.fadeMode != null ) fadeMode = obj.fadeMode;
-		if( obj.power != null ) power = obj.power;
-		if( obj.hdrMax != null ) hdrMax = obj.hdrMax;
-		if( obj.rotation != null ) rotation = obj.rotation;
-		if( obj.sampleBits != null ) sampleBits = obj.sampleBits;
-		if( obj.diffSize != null ) diffSize = obj.diffSize;
-		if( obj.specSize != null ) specSize = obj.specSize;
-		if( obj.ignoredSpecLevels != null ) ignoredSpecLevels = obj.ignoredSpecLevels;
-		if( obj.debugDisplay != null ) debugDisplay = obj.debugDisplay;
-		if( obj.sphereRadius != null ) sphereRadius = obj.sphereRadius;
-	}
-
-	override function save() {
-		var o : Dynamic = super.save();
-		o.mode = mode;
-		o.bounce = bounce;
-		o.priority = priority;
-		o.texturePath = texturePath;
-		o.fadeDist = fadeDist;
-		o.fadeMode = fadeMode;
-		o.power = power;
-		o.hdrMax = hdrMax;
-		o.rotation = rotation;
-		o.sampleBits = sampleBits;
-		o.diffSize = diffSize;
-		o.specSize = specSize;
-		o.ignoredSpecLevels = ignoredSpecLevels;
-		o.debugDisplay = debugDisplay;
-		o.sphereRadius = sphereRadius;
-		return o;
 	}
 
 	override function makeInstance( ctx : Context ) : Context {
@@ -368,7 +329,7 @@ class LightProbe extends Object3D {
 				if( propName == "sampleBits" || propName == "ignoredSpecLevels" )
 					needCompute = true;
 
-				if( loadBinary(lpo.env, ctx) ) 
+				if( loadBinary(lpo.env, ctx) )
 					needCompute = false; // No Env available with binary load, everything else is already baked
 
 				if( needCompute )
@@ -484,7 +445,7 @@ class LightProbe extends Object3D {
 				}
 			}
 		];
-		
+
 		var totalBytes = 0;
 		totalBytes += 4 + 4 + 4 + 4; // diffSize + specSize + ignoredSpecLevels + sampleBits
 		for( p in diffusePixels )

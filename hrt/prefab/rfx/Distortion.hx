@@ -1,16 +1,14 @@
 package hrt.prefab.rfx;
 
-typedef DistortionProps = {
-}
-
 class DistortionTonemap extends hxsl.Shader {
 	static var SRC = {
 
 		var calculatedUV : Vec2;
 		@param var distortionMap : Sampler2D;
+		@param var amount : Float;
 
 		function fragment() {
-			var distortionVal = distortionMap.get(calculatedUV).rg;
+			var distortionVal = distortionMap.get(calculatedUV).rg * amount;
 			calculatedUV += distortionVal;
 		}
 	}
@@ -19,17 +17,11 @@ class DistortionTonemap extends hxsl.Shader {
 class Distortion extends RendererFX {
 
 	var tonemap = new DistortionTonemap();
-
-	public function new(?parent) {
-		super(parent);
-		props = ({
-		} : DistortionProps);
-	}
+	@:s public var amount : Float = 1;
 
 	override function end( r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step ) {
 		if( step == BeforeTonemapping ) {
 			r.mark("Distortion");
-			var p : DistortionProps = props;
 
 			r.mark("Distortion");
 			var distortionMap = r.allocTarget("distortion", true, 1.0, RG16F);
@@ -38,6 +30,7 @@ class Distortion extends RendererFX {
 			r.clear(0);
 			r.draw("distortion");
 
+			tonemap.amount = amount;
 			tonemap.distortionMap = distortionMap;
 			r.addShader(tonemap);
 		}
@@ -48,9 +41,10 @@ class Distortion extends RendererFX {
 		ctx.properties.add(new hide.Element('
 			<div class="group" name="Distortion">
 				<dl>
+					<dt>Amount</dt><dd><input type="range" min="0" max="1" field="amount"/></dd>
 				</dl>
 			</div>
-		'),props);
+		'),this);
 	}
 	#end
 

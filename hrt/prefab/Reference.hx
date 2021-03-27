@@ -2,9 +2,9 @@ package hrt.prefab;
 
 class Reference extends Object3D {
 
-	public var refpath : String;
-	var ref: Prefab = null;
-	var editMode : Bool = false;
+	@:s public var refpath : String;
+	@:s var editMode : Bool = false;
+	public var ref: Prefab = null;
 
 	public function new(?parent) {
 		super(parent);
@@ -19,19 +19,13 @@ class Reference extends Object3D {
 	override function save() {
 		var obj : Dynamic = super.save();
 		// Recalc abs path if ref has been resolved to supprot renaming
-		obj.refpath = ref != null && !isFile() ? ref.getAbsPath() : refpath;
-		obj.editMode = editMode;
+		if( ref != null && !isFile() )
+			obj.refpath = ref.getAbsPath();
 		#if editor
 		if( editMode && isFile() && ref != null )
 			hide.Ide.inst.savePrefab(refpath.substr(1), ref);
 		#end
 		return obj;
-	}
-
-	override function load( o : Dynamic ) {
-		super.load(o);
-		refpath = o.refpath;
-		editMode = o.editMode;
 	}
 
 	public function resolveRef(shared : hrt.prefab.ContextShared) {

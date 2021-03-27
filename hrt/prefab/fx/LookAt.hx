@@ -92,26 +92,12 @@ class LookAtObject extends h3d.scene.Object {
 @:allow(hrt.prefab.fx.LookAt.LookAtInstance)
 class LookAt extends Object3D {
 
-	var target(default,null) : String;
-	var lockAxis: Array<Float> = [0,0,0];
+	@:s var target(default,null) : String;
+	@:s var lockAxis: Array<Float> = [0,0,0];
 
 	public function new(?parent) {
 		super(parent);
 		type = "lookAt";
-	}
-
-	override public function load(v:Dynamic) {
-		super.load(v);
-		target = v.target;
-		if(v.lockAxis != null)
-			lockAxis = v.lockAxis;
-	}
-
-	override function save() {
-		var obj : Dynamic = super.save();
-		obj.target = target;
-		obj.lockAxis = lockAxis;
-		return obj;
 	}
 
 	override function updateInstance(ctx:hrt.prefab.Context, ?propName:String) {

@@ -28,32 +28,15 @@ class CameraSyncObject extends h3d.scene.Object {
 
 class Camera extends Object3D {
 
-	var fovY : Float = 45;
-	var zFar : Float = 200;
-	var zNear : Float = 0.02;
-	var showFrustum = true;
+	@:s var fovY : Float = 45;
+	@:s var zFar : Float = 200;
+	@:s var zNear : Float = 0.02;
+	@:s var showFrustum = true;
 	var preview = false;
 
 	public function new(?parent) {
 		super(parent);
 		type = "camera";
-	}
-
-	override function save() {
-		var obj : Dynamic = super.save();
-		obj.fovY = fovY;
-		obj.zFar = zFar;
-		obj.zNear = zNear;
-		obj.showFrustum = showFrustum;
-		return obj;
-	}
-
-	override function load(obj:Dynamic) {
-		super.load(obj);
-		if(obj.fovY != null) this.fovY = obj.fovY;
-		if(obj.zFar != null) this.zFar = obj.zFar;
-		if(obj.zNear != null) this.zNear = obj.zNear;
-		if(obj.showFrustum != null) this.showFrustum = obj.showFrustum;
 	}
 
 	var g : h3d.scene.Graphics;

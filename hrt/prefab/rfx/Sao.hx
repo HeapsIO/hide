@@ -1,40 +1,29 @@
 package hrt.prefab.rfx;
 
-typedef SaoProps = {
-	var size : Float;
-	var blur : Float;
-	var blurQuality : Float;
-	var noiseScale : Float;
-	var samples : Int;
-	var radius : Float;
-	var intensity : Float;
-	var bias : Float;
-	var microIntensity : Float;
-	var useWorldUV : Bool;
-	var noiseTexturePath: String;
-}
-
 class Sao extends RendererFX {
+
+	@:s public var size : Float = 1;
+	@:s public var blur : Float;
+	@:s public var blurQuality : Float = 1;
+	@:s public var noiseScale : Float = 1;
+	@:s public var samples : Int;
+	@:s public var radius : Float;
+	@:s public var intensity : Float = 1;
+	@:s public var bias : Float;
+	@:s public var microIntensity : Float = 1;
+	@:s public var useWorldUV : Bool;
+	@:s public var noiseTexturePath: String;
 
 	var sao : h3d.pass.ScalableAO;
 	var saoBlur = new h3d.pass.Blur();
 	var saoCopy = new h3d.pass.Copy();
 
-	public function new(?parent) {
+	function new(?parent) {
 		super(parent);
-		props = ({
-			size : 1,
-			blur : 5,
-			blurQuality : 1.0,
-			noiseScale : 1.0,
-			samples : 30,
-			radius : 1,
-			intensity : 1,
-			bias : 0.1,
-			microIntensity : 1.0,
-			useWorldUV : false,
-			noiseTexturePath : null,
-		} : SaoProps);
+		blur = 5;
+		samples = 30;
+		radius = 1;
+		bias = 0.1;
 	}
 
 	function loadNoiseTexture(path : String, ?wrap : h3d.mat.Data.Wrap){
@@ -52,33 +41,32 @@ class Sao extends RendererFX {
 		if( step == Lighting ) {
 			r.mark("SSAO");
 			if( sao == null ) sao = new h3d.pass.ScalableAO();
-			var props : SaoProps = props;
 			var ctx = r.ctx;
-			var saoTex = r.allocTarget("sao",false, props.size);
+			var saoTex = r.allocTarget("sao",false, size);
 			var normal : hxsl.ChannelTexture = ctx.getGlobal("normalMap");
 			var depth : hxsl.ChannelTexture = ctx.getGlobal("depthMap");
 			var occlu : hxsl.ChannelTexture = ctx.getGlobal("occlusionMap");
 			ctx.engine.pushTarget(saoTex);
-			sao.shader.numSamples = props.samples;
-			sao.shader.sampleRadius	= props.radius;
-			sao.shader.intensity = props.intensity - 1;
-			sao.shader.bias = props.bias * props.bias;
+			sao.shader.numSamples = samples;
+			sao.shader.sampleRadius	= radius;
+			sao.shader.intensity = intensity - 1;
+			sao.shader.bias = bias * bias;
 			sao.shader.depthTextureChannel = depth.channel;
 			sao.shader.normalTextureChannel = normal.channel;
-			sao.shader.useWorldUV = props.useWorldUV;
+			sao.shader.useWorldUV = useWorldUV;
 			sao.shader.microOcclusion = occlu.texture;
 			sao.shader.microOcclusionChannel = occlu.channel;
-			sao.shader.microOcclusionIntensity = props.microIntensity;
-			sao.shader.noiseScale.set(props.noiseScale, props.noiseScale);
-			if( props.noiseTexturePath != null )
-				sao.shader.noiseTexture = loadNoiseTexture(props.noiseTexturePath, Repeat);
+			sao.shader.microOcclusionIntensity = microIntensity;
+			sao.shader.noiseScale.set(noiseScale, noiseScale);
+			if( noiseTexturePath != null )
+				sao.shader.noiseTexture = loadNoiseTexture(noiseTexturePath, Repeat);
 			else
 				sao.shader.noiseTexture = h3d.mat.Texture.genNoise(128);
 			sao.apply(depth.texture,normal.texture,ctx.camera);
 			ctx.engine.popTarget();
 
-			saoBlur.radius = props.blur;
-			saoBlur.quality = props.blurQuality;
+			saoBlur.radius = blur;
+			saoBlur.quality = blurQuality;
 			saoBlur.apply(ctx, saoTex);
 
 			saoCopy.pass.setColorChannel(occlu.channel);
@@ -113,7 +101,7 @@ class Sao extends RendererFX {
 			</dl>
 			</dl>
 		</div>
-		'),props);
+		'),this);
 	}
 	#end
 

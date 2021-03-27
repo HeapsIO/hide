@@ -15,7 +15,7 @@ class Polygon extends Object3D {
 
 	public var shape(default, null) : Shape = Quad(0);
 	public var points : h2d.col.Polygon;
-	public var color : Int = 0xFFFFFFFF;
+	@:s public var color : Int = 0xFFFFFFFF;
 	#if editor
 	public var editor : hide.prefab.PolygonEditor;
 	public var cachedPrim : h3d.prim.Polygon;
@@ -29,19 +29,15 @@ class Polygon extends Object3D {
 
 	override function save() {
 		var obj : Dynamic = super.save();
+		obj.kind = shape.getIndex();
 		switch(shape){
-			case Quad(subdivision):
-				obj.kind = shape.getIndex();
-				obj.args = shape.getParameters();
-			case Disc(segments, angle, inner, rings):
-				obj.kind = shape.getIndex();
-				obj.args = shape.getParameters();
-			case Custom:
-				obj.kind = 2;
-				obj.points = [for( p in points ) { x : p.x, y : p.y }];
+		case Quad(subdivision):
+			obj.args = shape.getParameters();
+		case Disc(segments, angle, inner, rings):
+			obj.args = shape.getParameters();
+		case Custom:
+			obj.points = [for( p in points ) { x : p.x, y : p.y }];
 		}
-		if( color != -1 )
-			obj.color = color;
 		return obj;
 	}
 
@@ -54,8 +50,6 @@ class Polygon extends Object3D {
 				var list : Array<Dynamic> = obj.points;
 				points = [for(pt in list) new h2d.col.Point(pt.x, pt.y)];
 		}
-		color = obj.color != null ? obj.color : -1;
-
 	}
 
 	override function updateInstance( ctx : Context, ?propName : String) {

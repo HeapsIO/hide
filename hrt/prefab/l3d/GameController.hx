@@ -2,27 +2,10 @@ package hrt.prefab.l3d;
 
 class GameController extends Object3D {
 
-	public var moveSpeed : Float = 1.;
-	public var followGround : Bool = true;
-	public var cameraFollowGround : Bool = true;
-	public var startFullScreen : Bool = true;
-
-	override function load(obj:Dynamic) {
-		super.load(obj);
-		moveSpeed = obj.moveSpeed;
-		followGround = obj.followGround;
-		cameraFollowGround = obj.cameraFollowGround;
-		startFullScreen = obj.startFullScreen;
-	}
-
-	override function save():{} {
-		var obj : Dynamic = super.save();
-		obj.moveSpeed = moveSpeed;
-		obj.followGround = followGround;
-		obj.cameraFollowGround = cameraFollowGround;
-		obj.startFullScreen = startFullScreen;
-		return obj;
-	}
+	@:s public var moveSpeed : Float = 1.;
+	@:s public var followGround : Bool = true;
+	@:s public var cameraFollowGround : Bool = true;
+	@:s public var startFullScreen : Bool = true;
 
 	#if editor
 

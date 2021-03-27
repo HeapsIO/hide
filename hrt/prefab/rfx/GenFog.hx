@@ -1,6 +1,6 @@
 package hrt.prefab.rfx;
 
-class GenFogShader extends PbrShader {
+class GenFogShader extends hrt.shader.PbrShader {
 
 	static var SRC = {
 
@@ -65,93 +65,79 @@ typedef GenFogNoise = {
 	var distAmount : Float;
 }
 
-typedef GenFogProps = {
- 	var startDistance : Float;
-	var endDistance : Float;
-	var distanceOpacity : Float;
-	var distanceFixed : Bool;
-
-	var startHeight : Float;
-	var endHeight : Float;
-	var heightOpacity : Float;
-
-	var startOpacity : Float;
-	var endOpacity : Float;
-
-	var startColor : Int;
-	var endColor : Int;
-	var renderMode : String;
-
-	var ?noise : GenFogNoise;
-
-	var posX : Float;
-	var posY : Float;
-	var posZ : Float;
-	var usePosition : Bool;
+enum abstract GenFogRenderMode(String) {
+	var BeforeTonemapping;
+	var AfterTonemapping;
 }
 
 class GenFog extends RendererFX {
 
 	var fogPass = new h3d.pass.ScreenFx(new GenFogShader());
 
+	@:s public var startDistance : Float;
+	@:s public var endDistance : Float;
+	@:s public var distanceOpacity : Float;
+	@:s public var distanceFixed : Bool;
+
+	@:s public var startHeight : Float;
+	@:s public var endHeight : Float;
+	@:s public var heightOpacity : Float;
+
+	@:s public var startOpacity : Float;
+	@:s public var endOpacity : Float;
+
+	@:s public var startColor : Int;
+	@:s public var endColor : Int;
+	@:s public var renderMode : GenFogRenderMode;
+
+	@:s public var noise : GenFogNoise;
+
+	@:s public var posX : Float;
+	@:s public var posY : Float;
+	@:s public var posZ : Float;
+	@:s public var usePosition : Bool;
+
 	public function new(?parent) {
 		super(parent);
-		props = ({
-			startDistance : 0,
-			endDistance : 100,
-			distanceOpacity : 0,
-			distanceFixed : false,
-
-			startHeight : 100,
-			endHeight : 0,
-			heightOpacity : 0,
-
-			posX : 0,
-			posY : 0,
-			posZ : 0,
-			usePosition : false,
-
-			startOpacity : 0,
-			endOpacity : 1,
-		 	startColor : 0xffffff,
-	    	endColor : 0xffffff,
-			renderMode : "AfterTonemapping",
-		} : GenFogProps);
-
+		renderMode = AfterTonemapping;
+		endDistance = 100;
+		startHeight = 100;
+		endOpacity = 1;
+		startColor = 0xffffff;
+	    endColor = 0xffffff;
 		fogPass.pass.setBlendMode(Alpha);
 	}
 
 	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
 		if( !checkEnabled() ) return;
-		var p : GenFogProps = props;
-		if( (step == AfterTonemapping && p.renderMode == "AfterTonemapping") || (step == BeforeTonemapping && p.renderMode == "BeforeTonemapping") ) {
+		if( (step == AfterTonemapping && renderMode == AfterTonemapping) || (step == BeforeTonemapping && renderMode == BeforeTonemapping) ) {
 			r.mark("DistanceFog");
 			var ctx = r.ctx;
 
-			fogPass.shader.startDistance = p.startDistance;
-			fogPass.shader.distanceScale = 1 / (p.endDistance - p.startDistance);
-			fogPass.shader.distanceOpacity = p.distanceOpacity;
-			fogPass.shader.cameraDistance = p.distanceFixed ? r.ctx.camera.pos.sub(r.ctx.camera.target).length() : 0;
+			fogPass.shader.startDistance = startDistance;
+			fogPass.shader.distanceScale = 1 / (endDistance - startDistance);
+			fogPass.shader.distanceOpacity = distanceOpacity;
+			fogPass.shader.cameraDistance = distanceFixed ? r.ctx.camera.pos.sub(r.ctx.camera.target).length() : 0;
 
-			fogPass.shader.startHeight = p.startHeight;
-			fogPass.shader.heightScale = 1 / (p.endHeight - p.startHeight);
-			fogPass.shader.heightOpacity = p.heightOpacity;
+			fogPass.shader.startHeight = startHeight;
+			fogPass.shader.heightScale = 1 / (endHeight - startHeight);
+			fogPass.shader.heightOpacity = heightOpacity;
 
-			fogPass.shader.startColor.setColor(p.startColor);
-			fogPass.shader.endColor.setColor(p.endColor);
-			fogPass.shader.startColor.a = p.startOpacity;
-			fogPass.shader.endColor.a = p.endOpacity;
+			fogPass.shader.startColor.setColor(startColor);
+			fogPass.shader.endColor.setColor(endColor);
+			fogPass.shader.startColor.a = startOpacity;
+			fogPass.shader.endColor.a = endOpacity;
 
-			fogPass.shader.position.set(p.posX, p.posY, p.posZ);
-			fogPass.shader.usePosition = p.usePosition;
+			fogPass.shader.position.set(posX, posY, posZ);
+			fogPass.shader.usePosition = usePosition;
 
-			fogPass.shader.useNoise = p.noise != null && p.noise.texture != null;
-			if( p.noise != null && p.noise.texture != null ) {
-				fogPass.shader.noiseTex = hxd.res.Loader.currentInstance.load(p.noise.texture).toTexture();
+			fogPass.shader.useNoise = noise != null && noise.texture != null;
+			if( noise != null && noise.texture != null ) {
+				fogPass.shader.noiseTex = hxd.res.Loader.currentInstance.load(noise.texture).toTexture();
 				fogPass.shader.noiseTex.wrap = Repeat;
-				fogPass.shader.noiseScale = 1 / p.noise.scale;
-				fogPass.shader.noiseSpeed = p.noise.speed / p.noise.scale;
-				fogPass.shader.noiseAmount.set(p.noise.amount * p.noise.distAmount, p.noise.amount * p.noise.distAmount, p.noise.amount);
+				fogPass.shader.noiseScale = 1 / noise.scale;
+				fogPass.shader.noiseSpeed = noise.speed / noise.scale;
+				fogPass.shader.noiseAmount.set(noise.amount * noise.distAmount, noise.amount * noise.distAmount, noise.amount);
 			}
 
 
@@ -196,16 +182,15 @@ class GenFog extends RendererFX {
 				</div>
 
 			</dl>
-		'),props);
-		var props : GenFogProps = props;
-		if( props.noise == null ) {
+		'),this);
+		if( noise == null ) {
 			var e = ctx.properties.add(new hide.Element('
 			<div class="group" name="Noise">
 			<dl><dt></dt><dd><a class="button" href="#">Add</a></dd></dl>
 			</div>
 			'));
 			e.find("a.button").click(function(_) {
-				props.noise = {
+				noise = {
 					texture : null,
 					amount : 1,
 					scale : 1,
@@ -226,9 +211,9 @@ class GenFog extends RendererFX {
 				<dt></dt><dd><a class="button" href="#">Remove</a></dd>
 			</dl>
 			</div>
-			'),props.noise);
+			'),noise);
 			e.find("a.button").click(function(_) {
-				props.noise = null;
+				noise = null;
 				ctx.rebuildProperties();
 			});
 		}

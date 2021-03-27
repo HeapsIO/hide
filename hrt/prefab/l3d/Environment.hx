@@ -4,48 +4,21 @@ package hrt.prefab.l3d;
 @:access(h3d.scene.pbr.Environment)
 class Environment extends Object3D {
 
-	var sourceMapPath : String;
-	var configName : String;
-	var env : h3d.scene.pbr.Environment;
+	@:s public var power : Float = 1.0;
+	@:s public var hdrMax : Float = 10.0;
+	@:s public var rotation : Float = 0.0;
+	@:s public var sampleBits : Int = 12;
+	@:s public var diffSize : Int = 64;
+	@:s public var specSize : Int = 512;
+	@:s public var ignoredSpecLevels : Int = 1;
 
-	public var power : Float = 1.0;
-	public var hdrMax : Float = 10.0;
-	public var rotation : Float = 0.0;
-	public var sampleBits : Int = 12;
-	public var diffSize : Int = 64;
-	public var specSize : Int = 512;
-	public var ignoredSpecLevels : Int = 1;
+	@:s var sourceMapPath : String;
+	@:s var configName : String;
+	var env : h3d.scene.pbr.Environment;
 
 	public function new( ?parent ) {
 		super(parent);
 		type = "environment";
-	}
-
-	override function load( obj : Dynamic ) {
-		super.load(obj);
-	 	power = obj.power != null ? obj.power : 1.0;
-		hdrMax = obj.hdrMax != null ? obj.hdrMax : 10.0;
-		rotation = obj.rotation != null ? obj.rotation : 0.0;
-		sampleBits = obj.sampleBits != null ? obj.sampleBits : 12;
-		diffSize = obj.diffSize != null ? obj.diffSize : 64;
-		specSize = obj.specSize != null ? obj.specSize : 512;
-		ignoredSpecLevels = obj.ignoredSpecLevels != null ? obj.ignoredSpecLevels : 1;
-		sourceMapPath = obj.sourceMapPath != null ? obj.sourceMapPath : null;
-		configName = obj.configName;
-	}
-
-	override function save() {
-		var obj : Dynamic = super.save();
-		obj.power = power;
-		obj.rotation = rotation;
-		obj.sampleBits = sampleBits;
-		obj.diffSize = diffSize;
-		obj.specSize = specSize;
-		obj.ignoredSpecLevels = ignoredSpecLevels;
-		obj.sourceMapPath = sourceMapPath;
-		obj.hdrMax = hdrMax;
-		if( configName != null ) obj.configName = configName;
-		return obj;
 	}
 
 	function loadFromBinary() {

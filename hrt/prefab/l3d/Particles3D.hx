@@ -2,22 +2,11 @@ package hrt.prefab.l3d;
 
 class Particules3D extends Object3D {
 
-	var data : Any;
+	@:s var data : Any;
 
 	public function new(?parent) {
 		super(parent);
 		type = "particules3D";
-	}
-
-	override function save():{} {
-		var obj : Dynamic = super.save();
-		obj.data = data;
-		return obj;
-	}
-
-	override function load( obj : Dynamic ) {
-		super.load(obj);
-		data = obj.data;
 	}
 
 	override function createObject(ctx:Context) {

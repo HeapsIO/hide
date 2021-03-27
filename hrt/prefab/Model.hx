@@ -2,10 +2,10 @@ package hrt.prefab;
 
 class Model extends Object3D {
 
-	public var animation : Null<String>;
-	var lockAnimation : Bool = false;
-	var retargetAnim : Bool = false;
-	var retargetIgnore : String = null;
+	@:s public var animation : Null<String>;
+	@:s var lockAnimation : Bool = false;
+	@:s var retargetAnim : Bool = false;
+	@:s var retargetIgnore : String;
 
 	public function new(?parent) {
 		super(parent);
@@ -13,20 +13,8 @@ class Model extends Object3D {
 	}
 
 	override function save() {
-		var obj : Dynamic = super.save();
-		if( animation != null ) obj.animation = animation;
-		if( lockAnimation ) obj.lockAnimation = lockAnimation;
-		if( retargetAnim ) obj.retargetAnim = retargetAnim;
-		if( retargetIgnore != null && retargetIgnore != "" ) obj.retargetIgnore = retargetIgnore;
-		return obj;
-	}
-
-	override function load( obj : Dynamic ) {
-		super.load(obj);
-		animation = obj.animation;
-		lockAnimation = obj.lockAnimation;
-		retargetAnim = obj.retargetAnim;
-		retargetIgnore = obj.retargetIgnore;
+		if( retargetIgnore == "" ) retargetIgnore = null;
+		return super.save();
 	}
 
 	override function makeInstance(ctx:Context):Context {

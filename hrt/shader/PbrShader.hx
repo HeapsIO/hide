@@ -1,4 +1,4 @@
-package hrt.prefab.rfx;
+package hrt.shader;
 
 class PbrShader extends h3d.shader.ScreenShader {
 

@@ -66,18 +66,18 @@ class Spline extends Object3D {
 	public var shape : CurveShape = Quadratic;
 
 	var data : SplineData;
-	var step : Float = 1.0;
-	var threshold : Float = 0.01;
+	@:s var step : Float = 1.0;
+	@:s var threshold : Float = 0.01;
 
 	// Save/Load the curve as an array of absPos
 	public var pointsData : Array<h3d.Matrix> = [];
 
 	// Graphic
-	public var showSpline : Bool = true;
+	@:s public var showSpline : Bool = true;
 	public var lineGraphics : h3d.scene.Graphics;
-	public var lineThickness : Int = 4;
-	public var color : Int = 0xFFFFFFFF;
-	public var loop : Bool = false;
+	@:s public var lineThickness : Int = 4;
+	@:s public var color : Int = 0xFFFFFFFF;
+	@:s public var loop : Bool = false;
 
 	#if editor
 	public var editor : hide.prefab.SplineEditor;
@@ -119,12 +119,6 @@ class Spline extends Object3D {
 							} ];
 		}
 		obj.shape = shape.getIndex();
-		obj.color = color;
-		obj.lineThickness = lineThickness;
-		obj.loop = loop;
-		obj.showSpline = showSpline;
-		obj.step = step;
-		obj.threshold = threshold;
 		return obj;
 	}
 
@@ -140,12 +134,6 @@ class Spline extends Object3D {
 			}
 		}
 		shape = obj.shape == null ? Linear : CurveShape.createByIndex(obj.shape);
-		color = obj.color != null ? obj.color : 0xFFFFFFFF;
-		lineThickness = obj.lineThickness == null ? 4 : obj.lineThickness;
-		loop = obj.loop == null ? false : obj.loop;
-		showSpline = obj.showSpline == null ? true : obj.showSpline;
-		step = obj.step == null ? 1.0 : obj.step;
-		threshold = obj.threshold == null ? 0.01 : obj.threshold;
 	}
 
 	// Generate the splineData from a matrix, can't move the spline after that

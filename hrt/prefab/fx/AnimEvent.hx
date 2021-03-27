@@ -2,31 +2,14 @@ package hrt.prefab.fx;
 
 class AnimEvent extends hrt.prefab.fx.Event {
 
-	public var animation: String;
-	public var speed : Float = 1.0;
-	public var duration : Float = 0.0;
-	public var offset : Float = 0.0;
+	@:s public var animation: String;
+	@:s public var speed : Float = 1.0;
+	@:s public var duration : Float = 0.0;
+	@:s public var offset : Float = 0.0;
 
 	public function new(?parent) {
 		super(parent);
 		this.type = "animEvent";
-	}
-
-	override function save() {
-		var obj : Dynamic = super.save();
-		obj.animation = animation;
-		if(speed != 1.0) obj.speed = speed;
-		if(duration > 0) obj.duration = duration;
-		if(offset > 0) obj.offset = offset;
-		return obj;
-	}
-
-	override function load(obj:Dynamic) {
-		super.load(obj);
-		this.animation = obj.animation;
-		if(obj.speed != null) speed = obj.speed;
-		if(obj.duration != null) duration = obj.duration;
-		if(obj.offset != null) offset = obj.offset;
 	}
 
 	override function prepare(ctx: Context) : Event.EventInstance {

@@ -9,11 +9,12 @@ class Unknown extends Prefab {
 	}
 
 	override function load(v:Dynamic) {
-		this.data = v;
+		this.data = Reflect.copy(v);
+		Reflect.deleteField(this.data, "children");
 	}
 
 	override function save() {
-		return data;
+		return Reflect.copy(data);
 	}
 
 	#if editor

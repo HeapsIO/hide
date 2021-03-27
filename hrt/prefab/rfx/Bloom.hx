@@ -1,15 +1,5 @@
 package hrt.prefab.rfx;
 
-typedef BloomProps = {
-	var size : Float;
-	var threshold : Float;
-	var intensity : Float;
-	var blur : Float;
-	var saturation : Float;
-	var blurQuality : Float;
-	var blurLinear : Float;
-}
-
 class BloomTonemap extends hxsl.Shader {
 	static var SRC = {
 		@param var bloomTexture : Sampler2D;
@@ -27,37 +17,38 @@ class Bloom extends RendererFX {
 	var bloomBlur = new h3d.pass.Blur();
 	var tonemap = new BloomTonemap();
 
-	public function new(?parent) {
+	@:s public var size : Float;
+	@:s public var threshold : Float;
+	@:s public var intensity : Float = 1;
+	@:s public var blur : Float;
+	@:s public var saturation : Float;
+	@:s public var blurQuality : Float = 1;
+	@:s public var blurLinear : Float;
+
+	function new(?parent) {
 		super(parent);
-		props = ({
-			size : 0.5,
-			blur : 3,
-			intensity : 1.,
-			threshold : 0.5,
-			saturation: 0,
-			blurQuality: 1.0,
-			blurLinear : 0.0,
-		} : BloomProps);
+		size = 0.5;
+		blur = 3;
+		threshold = 0.5;
 	}
 
 	override function end( r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step ) {
 		if( step == BeforeTonemapping ) {
 			r.mark("Bloom");
-			var pb : BloomProps = props;
-			var bloom = r.allocTarget("bloom", false, pb.size, RGBA16F);
+			var bloom = r.allocTarget("bloom", false, size, RGBA16F);
 			var ctx = r.ctx;
 			ctx.engine.pushTarget(bloom);
 			bloomPass.shader.texture = ctx.getGlobal("hdrMap");
-			bloomPass.shader.threshold = pb.threshold;
-			bloomPass.shader.intensity = pb.intensity;
+			bloomPass.shader.threshold = threshold;
+			bloomPass.shader.intensity = intensity;
 			bloomPass.shader.colorMatrix.identity();
-			bloomPass.shader.colorMatrix.colorSaturate(pb.saturation);
+			bloomPass.shader.colorMatrix.colorSaturate(saturation);
 			bloomPass.render();
 			ctx.engine.popTarget();
 
-			bloomBlur.radius = pb.blur;
-			bloomBlur.quality = pb.blurQuality;
-			bloomBlur.linear = pb.blurLinear;
+			bloomBlur.radius = blur;
+			bloomBlur.quality = blurQuality;
+			bloomBlur.linear = blurLinear;
 			bloomBlur.apply(ctx, bloom);
 
 			tonemap.bloomTexture = bloom;
@@ -77,7 +68,7 @@ class Bloom extends RendererFX {
 			<dt>Blur Quality</dt><dd><input type="range" min="0" max="1" field="blurQuality"/></dd>
 			<dt>Blur Linear</dt><dd><input type="range" min="0" max="1" field="blurLinear"/></dd>
 			</dl>
-		'),props);
+		'),this);
 	}
 	#end
 

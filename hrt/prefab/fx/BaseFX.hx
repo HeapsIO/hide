@@ -58,7 +58,7 @@ typedef ObjectAnimation = {
 
 class BaseFX extends hrt.prefab.Library {
 
-	public var duration : Float;
+	@:s public var duration : Float;
 	public var scriptCode : String;
 	public var cullingRadius : Float;
 	public var markers : Array<{t: Float}> = [];
@@ -72,17 +72,14 @@ class BaseFX extends hrt.prefab.Library {
 
 	override function save() {
 		var obj : Dynamic = super.save();
-		obj.duration = duration;
-		if(markers != null && markers.length > 0)
-			obj.markers = markers.copy();
+		if( markers != null && markers.length > 0 )
+			obj.markers = markers;
 		return obj;
 	}
 
 	override function load( obj : Dynamic ) {
 		super.load(obj);
-		duration = obj.duration == null ? 5.0 : obj.duration;
-		if(obj.markers != null)
-			markers = obj.markers;
+		markers = obj.markers == null ? [] : obj.markers;
 	}
 
 	public static function makeShaderParams(ctx: Context, shaderElt: hrt.prefab.Shader) {

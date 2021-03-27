@@ -84,18 +84,7 @@ class Particles extends h2d.Particles {
 
 class Particle2D extends Object2D {
 
-	var paramsParticleGroup : Dynamic;
-
-	override public function load(v:Dynamic) {
-		super.load(v);
-		paramsParticleGroup = v.paramsParticleGroup;
-	}
-
-	override function save() {
-		var o : Dynamic = super.save();
-		o.paramsParticleGroup = paramsParticleGroup;
-		return o;
-	}
+	@:s var paramsParticleGroup : Dynamic;
 
 	override function updateInstance( ctx: Context, ?propName : String ) {
 		super.updateInstance(ctx, propName);

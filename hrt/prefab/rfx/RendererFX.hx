@@ -13,6 +13,16 @@ class RendererFX extends Prefab implements h3d.impl.RendererFX {
 	public function dispose() {
 	}
 
+	override function load(obj:Dynamic) {
+		if( obj.props != null ) {
+			// backward compatibility : copy all props to object
+			for( f in Reflect.fields(obj.props) )
+				Reflect.setField(obj, f, Reflect.field(obj.props,f));
+			Reflect.deleteField(obj,"props");
+		}
+		super.load(obj);
+	}
+
 	inline function checkEnabled() {
 		#if editor
 		return enableInEditor;

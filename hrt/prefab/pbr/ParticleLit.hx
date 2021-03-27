@@ -42,53 +42,22 @@ class BackLightingMask extends hxsl.Shader implements h3d.scene.MeshBatch.MeshBa
 }
 
 class ParticleLit extends Prefab {
-	
-	public var directLightingIntensity : Float = 1.0;
-	public var indirectLightingIntensity : Float = 1.0;
-	public var vertexShader : Bool = true;
-	public var backLightingIntensity : Float = 0.0;
-	public var backLightingMask : String = null;
-	public var curvature : Float = 0.0;
 
-	public var normalFlipY : Bool;
-	public var normalFlipX : Bool;
-	public var normalMap : String = null;
-	public var normalIntensity : Float = 1.0;
+	@:s public var directLightingIntensity : Float = 1.0;
+	@:s public var indirectLightingIntensity : Float = 1.0;
+	@:s public var vertexShader : Bool = true;
+	@:s public var backLightingIntensity : Float = 0.0;
+	@:s public var backLightingMask : String = null;
+	@:s public var curvature : Float = 0.0;
+
+	@:s public var normalFlipY : Bool;
+	@:s public var normalFlipX : Bool;
+	@:s public var normalMap : String = null;
+	@:s public var normalIntensity : Float = 1.0;
 
 	public function new(?parent) {
 		super(parent);
 		type = "particleLit";
-	}
-
-	override function load( obj : Dynamic ) {
-		super.load(obj);
-		if( obj.vertexShader != null ) vertexShader = obj.vertexShader;
-		if( obj.directLightingIntensity != null ) directLightingIntensity = obj.directLightingIntensity;
-		if( obj.indirectLightingIntensity != null ) indirectLightingIntensity = obj.indirectLightingIntensity;
-		if( obj.backLightingIntensity != null ) backLightingIntensity = obj.backLightingIntensity;
-		if( obj.backLightingMask != null ) backLightingMask = obj.backLightingMask;
-		if( obj.curvature != null ) curvature = obj.curvature;
-
-		if( obj.normalMap != null ) normalMap = obj.normalMap;
-		if( obj.normalIntensity != null ) normalIntensity = obj.normalIntensity;
-		if( obj.normalFlipY != null ) normalFlipY = obj.normalFlipY;
-		if( obj.normalFlipX != null ) normalFlipX = obj.normalFlipX;
-	}
-
-	override function save() {
-		var obj : Dynamic = super.save();
-		obj.vertexShader = vertexShader;
-		obj.directLightingIntensity = directLightingIntensity;
-		obj.indirectLightingIntensity = indirectLightingIntensity;
-		obj.backLightingIntensity = backLightingIntensity;
-		obj.backLightingMask = backLightingMask;
-		obj.curvature = curvature;
-
-		obj.normalMap = normalMap;
-		obj.normalIntensity = normalIntensity;
-		obj.normalFlipY = normalFlipY;
-		obj.normalFlipX = normalFlipX;
-		return obj;
 	}
 
 	override function makeInstance( ctx : Context ):Context {
@@ -106,7 +75,7 @@ class ParticleLit extends Prefab {
 		var o = ctx.local3d;
 
 		for( m in o.getMaterials() ) {
-			
+
 			m.mainPass.removeShader(m.mainPass.getShader(ParticleForward));
 			m.mainPass.removeShader(m.mainPass.getShader(CurvedNormal));
 			m.mainPass.removeShader(m.mainPass.getShader(BackLightingMask));
@@ -157,7 +126,7 @@ class ParticleLit extends Prefab {
 
 	#if editor
 	override function getHideProps() : HideProps {
-		return { 	icon : "cube", 
+		return { 	icon : "cube",
 					name : "ParticleLit",
 					allowParent : function(p) return Std.is(p, Emitter)  };
 	}

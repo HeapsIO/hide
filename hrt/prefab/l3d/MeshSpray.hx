@@ -177,16 +177,14 @@ class MeshSprayObject extends h3d.scene.Object {
 
 class MeshSpray extends Object3D {
 
-	var meshes : Array<Mesh> = []; // specific set for this mesh spray
-	var defaultConfig: MeshSprayConfig;
+	@:s var meshes : Array<Mesh> = []; // specific set for this mesh spray
+	@:s var defaultConfig: MeshSprayConfig;
+	@:s var currentPresetName : String = null;
+	@:s var currentSetName : String = null;
 
 	var sceneEditor : hide.comp.SceneEditor;
 
 	var lastIndexMesh = -1;
-
-	var currentPresetName : String = null;
-	var currentSetName : String = null;
-
 	var allSetGroups : Array<SetGroup>;
 	var setGroup : SetGroup;
 	var currentSet : Set;
@@ -222,17 +220,10 @@ class MeshSpray extends Object3D {
 	}
 
 	override function save() {
-
 		// prevent saving preview
 		if( previewModels.length > 0 )
 			sceneEditor.deleteElements(previewModels, () -> { }, false);
-
-		var obj : Dynamic = super.save();
-		obj.meshes = meshes;
-		obj.currentPresetName = currentPresetName;
-		obj.currentSetName = currentSetName;
-		obj.defaultConfig = defaultConfig;
-		return obj;
+		return super.save();
 	}
 
 	function getDefaultConfig() : MeshSprayConfig {
@@ -249,18 +240,6 @@ class MeshSpray extends Object3D {
 			dontRepeatMesh: true,
 			orientTerrain : 0,
 		};
-	}
-
-	override function load( obj : Dynamic ) {
-		super.load(obj);
-		if (obj.meshes != null)
-			meshes = obj.meshes;
-		if (obj.defaultConfig != null)
-			defaultConfig = obj.defaultConfig;
-		if (obj.currentPresetName != null)
-			currentPresetName = obj.currentPresetName;
-		if (obj.currentSetName != null)
-			currentSetName = obj.currentSetName;
 	}
 
 	override function getHideProps() : HideProps {

@@ -104,13 +104,13 @@ class SplineMeshBatch extends h3d.scene.MeshBatch {
 
 class SplineMesh extends Spline {
 
-	var meshPath : String;
+	@:s var meshPath : String;
 	var meshes : Array<h3d.scene.Mesh> = [];
 
-	var splineUVx : Bool = false;
-	var splineUVy : Bool = false;
+	@:s var splineUVx : Bool = false;
+	@:s var splineUVy : Bool = false;
 
-	var spacing: Float = 0.0;
+	@:s var spacing: Float = 0.0;
 	var meshScale = new h3d.Vector(1,1,1);
 	var meshRotation = new h3d.Vector(0,0,0);
 	var modelMat = new h3d.Matrix();
@@ -118,29 +118,19 @@ class SplineMesh extends Spline {
 	var meshBatch : SplineMeshBatch = null;
 	var meshPrimitive : h3d.prim.MeshPrimitive = null;
 	var meshMaterial : h3d.mat.Material = null;
-	var customPass : String;
+	@:s var customPass : String;
 
 	override function save() {
 		var obj : Dynamic = super.save();
-		obj.meshPath = meshPath;
-		obj.spacing = spacing;
 		obj.meshScale = meshScale;
 		obj.meshRotation = meshRotation;
-		obj.splineUVx = splineUVx;
-		obj.splineUVy = splineUVy;
-		obj.customPass = customPass;
 		return obj;
 	}
 
 	override function load( obj : Dynamic ) {
 		super.load(obj);
-		meshPath = obj.meshPath;
-		spacing = obj.spacing == null ? 0.0 : obj.spacing;
 		meshScale = obj.meshScale == null ? new h3d.Vector(1,1,1) : new h3d.Vector(obj.meshScale.x, obj.meshScale.y, obj.meshScale.z);
 		meshRotation = obj.meshRotation == null ? new h3d.Vector(0,0,0) : new h3d.Vector(obj.meshRotation.x, obj.meshRotation.y, obj.meshRotation.z);
-		splineUVx = obj.splineUVx == null ? false : obj.splineUVx;
-		splineUVy = obj.splineUVy == null ? false : obj.splineUVy;
-		customPass = obj.customPass;
 	}
 
 	override function make(ctx: Context) {

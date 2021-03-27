@@ -2,21 +2,6 @@ package hrt.prefab.rfx;
 
 import hxd.res.Loader;
 
-typedef CloudShadowProps = {
-	var opacity : Float;
-	var scale : Float;
-	var speed : Float;
-	var angle : Float;
-	var texturePath : String;
-	var ?distort : {
-		var path : String;
-		var scale : Float;
-		var speed : Float;
-		var angle : Float;
-		var amount : Float;
-	};
-}
-
 class DirLightWithClouds extends h3d.shader.pbr.Light {
 
 	static var SRC = {
@@ -58,16 +43,18 @@ class CloudShadow extends RendererFX {
 
 	var dlwc = new DirLightWithClouds();
 
-	public function new(?parent) {
-		super(parent);
-		props = ({
-			opacity : 1,
-			scale : 1,
-			speed : 0,
-			angle : 0,
-			texturePath : null,
-		}:CloudShadowProps);
-	}
+	@:s public var opacity : Float = 1;
+	@:s public var scale : Float = 1;
+	@:s public var speed : Float;
+	@:s public var angle : Float;
+	@:s public var texturePath : String;
+	@:s public var distort : {
+		var path : String;
+		var scale : Float;
+		var speed : Float;
+		var angle : Float;
+		var amount : Float;
+	};
 
 	override function makeInstance( ctx : Context ) : Context {
 		ctx = super.makeInstance(ctx);
@@ -78,7 +65,6 @@ class CloudShadow extends RendererFX {
 	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
 		if( step == Shadows ) {
 			var ctx = r.ctx;
-			var props : CloudShadowProps = props;
 
 			var mainLight : h3d.scene.pbr.DirLight = null;
 			var l = @:privateAccess ctx.lights;
@@ -97,17 +83,17 @@ class CloudShadow extends RendererFX {
 				dlwc.lightColor.load(mainLight._color);
 				dlwc.lightColor.scale3(mainLight.power * mainLight.power);
 				dlwc.occlusionFactor = mainLight.occlusionFactor;
-				var angle = props.angle * Math.PI / 180;
-				var speed = props.speed / props.scale;
+				var angle = angle * Math.PI / 180;
+				var speed = speed / scale;
 				dlwc.speed.set(Math.cos(angle) * speed, Math.sin(angle) * speed);
-				dlwc.scale = 1.0 / props.scale;
-				dlwc.opacity = props.opacity;
+				dlwc.scale = 1.0 / scale;
+				dlwc.opacity = opacity;
 				dlwc.time = ctx.time;
-				if( props.texturePath != null )
-					dlwc.clouds = Loader.currentInstance.load(props.texturePath).toTexture();
+				if( texturePath != null )
+					dlwc.clouds = Loader.currentInstance.load(texturePath).toTexture();
 				if( dlwc.clouds != null )
 					dlwc.clouds.wrap = Repeat;
-				var dist = props.distort;
+				var dist = distort;
 				dlwc.hasDistort = dist != null;
 				if( dist != null ) {
 					var angle = dist.angle * Math.PI / 180;
@@ -131,9 +117,8 @@ class CloudShadow extends RendererFX {
 				<dt>Angle</dt><dd><input type="range" min="-180" max="180" field="angle"/></dd>
 				<dt>Texture</dt><dd><input type="texturepath" field="texturePath"/></dd>
 			</div>
-		'),props);
-		var p : CloudShadowProps = props;
-		var dist = p.distort;
+		'),this);
+		var dist = distort;
 		if( dist == null )
 			dist = {
 				path : null,
@@ -153,9 +138,9 @@ class CloudShadow extends RendererFX {
 		'),dist, function(name) {
 			if( name == "path" ) {
 				if( dist.path == null )
-					p.distort = js.Lib.undefined;
+					distort = js.Lib.undefined;
 				else
-					p.distort = dist;
+					distort = dist;
 			}
 		});
 	}

@@ -79,17 +79,15 @@ class Threshold extends h3d.shader.ScreenShader {
 	};
 }
 
-typedef TemporalBloomProps = {
-	var size : Float;
-	var downScaleCount : Int;
-	var threshold : Float;
-    var intensity : Float;
-	var maxValue : Float;
-	var useTemporalFilter : Bool;
-	var temporalStrength : Float;
-}
-
 class TemporalBloom extends RendererFX {
+
+	@:s public var size : Float;
+	@:s public var downScaleCount : Int;
+	@:s public var threshold : Float;
+    @:s public var intensity : Float = 1;
+	@:s public var maxValue : Float;
+	@:s public var useTemporalFilter : Bool = true;
+	@:s public var temporalStrength : Float;
 
 	var thresholdPass = new h3d.pass.ScreenFx(new Threshold());
 	var downScale = new h3d.pass.ScreenFx(new DualFilterDown());
@@ -100,17 +98,12 @@ class TemporalBloom extends RendererFX {
 
 	var tonemap = new Bloom.BloomTonemap();
 
-	public function new(?parent) {
+	function new(?parent) {
 		super(parent);
-		props = ({
-			size : 0.5,
-			downScaleCount : 5,
-			threshold : 0.5,
-            intensity : 1.0,
-			maxValue : 100.0,
-			useTemporalFilter : true,
-			temporalStrength : 0,
-		} : TemporalBloomProps);
+		size = 0.5;
+		downScaleCount = 5;
+		threshold = 0.5;
+		maxValue = 100.0;
 		prevCamMat = new h3d.Matrix();
 		prevCamMat.identity();
 	}
@@ -118,22 +111,21 @@ class TemporalBloom extends RendererFX {
 	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
 		if( step == BeforeTonemapping ) {
 			r.mark("TBloom");
-			var pb : TemporalBloomProps = props;
 			var ctx = r.ctx;
 
-			var source = r.allocTarget("source", false, pb.size, RGBA16F);
+			var source = r.allocTarget("source", false, size, RGBA16F);
 			ctx.engine.pushTarget(source);
 			thresholdPass.shader.hdr = ctx.getGlobal("hdrMap");
-			thresholdPass.shader.threshold = pb.threshold;
-            thresholdPass.shader.intensity = pb.intensity;
-			thresholdPass.shader.maxIntensity = pb.maxValue;
-			if( pb.useTemporalFilter ) {
+			thresholdPass.shader.threshold = threshold;
+            thresholdPass.shader.intensity = intensity;
+			thresholdPass.shader.maxIntensity = maxValue;
+			if( useTemporalFilter ) {
 				thresholdPass.shader.USE_TEMPORAL_FILTER = true;
-				prevResult = r.allocTarget("pr", false, pb.size, RGBA16F);
+				prevResult = r.allocTarget("pr", false, size, RGBA16F);
 				thresholdPass.shader.prev = prevResult;
 				thresholdPass.shader.prevCamMat.load(prevCamMat);
 				thresholdPass.shader.cameraInverseViewProj.load(ctx.camera.getInverseViewProj());
-				thresholdPass.shader.strength = pb.temporalStrength;
+				thresholdPass.shader.strength = temporalStrength;
 				thresholdPass.render();
 				ctx.engine.popTarget();
 				Copy.run(source, prevResult);
@@ -145,9 +137,9 @@ class TemporalBloom extends RendererFX {
 				ctx.engine.popTarget();
 			}
 
-			var curSize = pb.size;
+			var curSize = size;
 			var curTarget : h3d.mat.Texture = source;
-			for( i in 0 ... pb.downScaleCount ) {
+			for( i in 0 ... downScaleCount ) {
 				curSize *= 0.5;
 				var prevTarget = curTarget;
 				curTarget = r.allocTarget("dso_"+i, false, curSize, RGBA16F);
@@ -157,7 +149,7 @@ class TemporalBloom extends RendererFX {
 				downScale.render();
 				ctx.engine.popTarget();
 			}
-			for( i in 0 ... pb.downScaleCount ) {
+			for( i in 0 ... downScaleCount ) {
 				curSize *= 2.0;
 				var prevTarget = curTarget;
 				curTarget = r.allocTarget("uso_"+i, false, curSize, RGBA16F);
@@ -191,7 +183,7 @@ class TemporalBloom extends RendererFX {
 			<dt>Strength</dt><dd><input type="range" min="0" max="1" field="temporalStrength"/></dd>
 			</dl>
 		</div>
-		'),props);
+		'),this);
 	}
 	#end
 

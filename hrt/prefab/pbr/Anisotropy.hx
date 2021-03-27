@@ -11,49 +11,22 @@ enum abstract AnisotropyMode(String) {
 
 class Anisotropy extends Prefab {
 
-	public var mode : AnisotropyMode = Flat;
+	@:s public var mode : AnisotropyMode = Flat;
 
-	public var intensity : Float = 0.0;
-	public var direction : Float = 0.0;
+	@:s public var intensity : Float = 0.0;
+	@:s public var direction : Float = 0.0;
 
-	public var noiseFrequency : Float = 0.0;
-	public var noiseIntensity : Float = 1.0;
+	@:s public var noiseFrequency : Float = 0.0;
+	@:s public var noiseIntensity : Float = 1.0;
 
-	public var intensityFactor = 1.0;
-	public var noiseIntensityPath : String = null;
-	public var noiseDirectionPath : String = null;
-	public var rotationOffset : Float = 0.0;
+	@:s public var intensityFactor = 1.0;
+	@:s public var noiseIntensityPath : String = null;
+	@:s public var noiseDirectionPath : String = null;
+	@:s public var rotationOffset : Float = 0.0;
 
 	public function new(?parent) {
 		super(parent);
 		type = "anisotropy";
-	}
-
-	override function load( obj : Dynamic ) {
-		super.load(obj);
-		if( obj.mode != null ) mode = obj.mode;
-		if( obj.intensity != null ) intensity = obj.intensity;
-		if( obj.direction != null ) direction = obj.direction;
-		if( obj.noiseFrequency != null ) noiseFrequency = obj.noiseFrequency;
-		if( obj.noiseIntensity != null ) noiseIntensity = obj.noiseIntensity;
-		if( obj.intensityFactor != null ) intensityFactor = obj.intensityFactor;
-		if( obj.noiseIntensityPath != null ) noiseIntensityPath = obj.noiseIntensityPath;
-		if( obj.noiseDirectionPath != null ) noiseDirectionPath = obj.noiseDirectionPath;
-		if( obj.rotationOffset != null ) rotationOffset = obj.rotationOffset;
-	}
-
-	override function save() {
-		var obj : Dynamic = super.save();
-		obj.mode = mode;
-		obj.intensity = intensity;
-		obj.direction = direction;
-		obj.noiseFrequency = noiseFrequency;
-		obj.noiseIntensity = noiseIntensity;
-		obj.intensityFactor = intensityFactor;
-		obj.noiseIntensityPath = noiseIntensityPath;
-		obj.noiseDirectionPath = noiseDirectionPath;
-		obj.rotationOffset = rotationOffset;
-		return obj;
 	}
 
 	function getMaterials( ctx : Context ) {

@@ -1,15 +1,5 @@
 package hrt.prefab.rfx;
 
-typedef TemporalFilteringProps = {
-	var amount : Float;
-	var varianceClipping : Bool;
-	var ycocg : Bool;
-	var unjitter : Bool;
-	var jitterPattern : FrustumJitter.Pattern;
-	var jitterScale : Float;
-	var renderMode : String;
-}
-
 class TemporalFilteringShader extends h3d.shader.ScreenShader {
 
 	static var SRC = {
@@ -123,23 +113,18 @@ class TemporalFilteringShader extends h3d.shader.ScreenShader {
 
 class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 
+	@:s public var amount : Float;
+	@:s public var varianceClipping : Bool = true;
+	@:s public var ycocg : Bool = true;
+	@:s public var unjitter : Bool = true;
+	@:s public var jitterPattern : FrustumJitter.Pattern = Still;
+	@:s public var jitterScale : Float = 1;
+	@:s public var renderMode : String = "AfterTonemapping";
+
 	public var frustumJitter = new FrustumJitter();
 	public var pass = new h3d.pass.ScreenFx(new TemporalFilteringShader());
 	public var jitterMat = new h3d.Matrix();
 	var curMatNoJitter = new h3d.Matrix();
-
-	public function new(?parent) {
-		super(parent);
-		props = ({
-			amount : 0.0,
-			varianceClipping : true,
-			ycocg : true,
-			unjitter : true,
-			jitterPattern : Still,
-			jitterScale : 1.0,
-			renderMode : "AfterTonemapping",
-		} : TemporalFilteringProps);
-	}
 
 	var tmp = new h3d.Matrix();
 	public function getMatrixJittered( camera : h3d.Camera ) : h3d.Matrix {
@@ -152,11 +137,10 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 	override function begin( r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step ) {
 		if( step == MainDraw ) {
 			var ctx = r.ctx;
-			var p : TemporalFilteringProps = props;
 			var s = pass.shader;
 
-			frustumJitter.curPattern = p.jitterPattern;
-			frustumJitter.patternScale = p.jitterScale;
+			frustumJitter.curPattern = jitterPattern;
+			frustumJitter.patternScale = jitterScale;
 			frustumJitter.update();
 
 			// Translation Matrix for Jittering
@@ -175,8 +159,7 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 
 	override function end( r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step ) {
 		var ctx = r.ctx;
-		var p : TemporalFilteringProps = props;
-		if( ( step == AfterTonemapping && p.renderMode == "AfterTonemapping") || (step == BeforeTonemapping && p.renderMode == "BeforeTonemapping" ) ) {
+		if( ( step == AfterTonemapping && renderMode == "AfterTonemapping") || (step == BeforeTonemapping && renderMode == "BeforeTonemapping" ) ) {
 			r.mark("TemporalFiltering");
 			var output : h3d.mat.Texture = ctx.engine.getCurrentTarget();
 			var depthMap : Dynamic = ctx.getGlobal("depthMap");
@@ -187,7 +170,7 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 			var s = pass.shader;
 			s.curFrame = curFrame;
 			s.prevFrame = prevFrame;
-			s.amount = p.amount;
+			s.amount = amount;
 
 			s.PACKED_DEPTH = depthMap.packed != null && depthMap.packed == true;
 			if( s.PACKED_DEPTH ) {
@@ -199,9 +182,9 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 			}
 
 			s.resolution.set(output.width, output.height);
-			s.VARIANCE_CLIPPING = p.varianceClipping;
-			s.YCOCG = p.ycocg;
-			s.UNJITTER = p.unjitter;
+			s.VARIANCE_CLIPPING = varianceClipping;
+			s.YCOCG = ycocg;
+			s.UNJITTER = unjitter;
 
 			r.setTarget(output);
 			pass.render();
@@ -255,7 +238,7 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 						</select></dd>
 				</div>
 			</dl>
-		'),props);
+		'),this);
 	}
 	#end
 

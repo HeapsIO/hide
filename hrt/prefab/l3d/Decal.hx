@@ -1,64 +1,38 @@
 package hrt.prefab.l3d;
 
-@:enum abstract DecalMode(String) {
-	var Default = "Decal";
-	var BeforeTonemapping = "BeforeTonemapping";
-	var AfterTonemapping = "AfterTonemapping";
-	var Terrain = "Terrain";
+enum abstract DecalMode(String) {
+	var Default;
+	var BeforeTonemapping;
+	var AfterTonemapping;
+	var Terrain;
 }
 
 class Decal extends Object3D {
 
-	var albedoMap : String;
-	var normalMap : String;
-	var pbrMap : String;
-	var albedoStrength : Float = 1.0;
-	var normalStrength: Float = 1.0;
-	var pbrStrength: Float = 1.0;
-	var fadePower : Float = 1.0;
-	var fadeStart : Float = 0;
-	var fadeEnd : Float = 1.0;
-	var emissive : Float = 0.0;
+	@:s var albedoMap : String;
+	@:s var normalMap : String;
+	@:s var pbrMap : String;
+	@:s var albedoStrength : Float = 1.0;
+	@:s var normalStrength: Float = 1.0;
+	@:s var pbrStrength: Float = 1.0;
+	@:s var fadePower : Float = 1.0;
+	@:s var fadeStart : Float = 0;
+	@:s var fadeEnd : Float = 1.0;
+	@:s var emissive : Float = 0.0;
+	@:s var renderMode : DecalMode = Default;
+	@:s var centered : Bool = true;
+	@:s var autoAlpha : Bool = true;
 	var blendMode : h2d.BlendMode = Alpha;
-	var renderMode : DecalMode = Default;
-	var centered : Bool = true;
-	var autoAlpha : Bool = true;
 
 	override function save() {
 		var obj : Dynamic = super.save();
-		if(albedoMap != null) obj.albedoMap = albedoMap;
-		if(normalMap != null) obj.normalMap = normalMap;
-		if(pbrMap != null) obj.pbrMap = pbrMap;
-		if(albedoStrength != 1) obj.albedoStrength = albedoStrength;
-		if(normalStrength != 1) obj.normalStrength = normalStrength;
-		if(pbrStrength != 1) obj.pbrStrength = pbrStrength;
 		if(blendMode != Alpha) obj.blendMode = blendMode.getIndex();
-		if(centered != true) obj.centered = centered;
-		if(fadePower != 1) obj.fadePower = fadePower;
-		if(fadeStart != 0) obj.fadeStart = fadeStart;
-		if(fadeEnd != 1) obj.fadeEnd = fadeEnd;
-		if(renderMode != Default) obj.renderMode = renderMode;
-		if(emissive != 0.0) obj.emissive = emissive;
-		if(autoAlpha != true) obj.autoAlpha = autoAlpha;
 		return obj;
 	}
 
 	override function load( obj : Dynamic ) {
 		super.load(obj);
-		albedoMap = obj.albedoMap;
-		normalMap = obj.normalMap;
-		pbrMap = obj.pbrMap;
-		albedoStrength = obj.albedoStrength != null ? obj.albedoStrength : 1;
-		normalStrength = obj.normalStrength != null ? obj.normalStrength : 1;
-		pbrStrength = obj.pbrStrength != null ? obj.pbrStrength : 1;
 		blendMode = obj.blendMode != null ? h2d.BlendMode.createByIndex(obj.blendMode) : Alpha;
-		centered = obj.centered != null ? obj.centered : true;
-		fadePower = obj.fadePower != null ? obj.fadePower : 1;
-		fadeStart = obj.fadeStart != null ? obj.fadeStart : 0;
-		fadeEnd = obj.fadeEnd != null ? obj.fadeEnd : 1;
-		renderMode = obj.renderMode != null ? obj.renderMode : Default;
-		emissive = obj.emissive != null ? obj.emissive : 0.0;
-		if( obj.autoAlpha != null ) autoAlpha = obj.autoAlpha;
 	}
 
 	override function makeInstance(ctx:Context) : Context {

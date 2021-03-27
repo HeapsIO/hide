@@ -146,26 +146,12 @@ class FX2DAnimation extends h2d.Object {
 
 class FX2D extends BaseFX {
 
-	var loop : Bool = false;
-	var startLoop : Float = 0.0;
+	@:s var loop : Bool = false;
+	@:s var startLoop : Float = 0.0;
 
 	public function new() {
 		super();
 		type = "fx2d";
-	}
-
-	override function save() {
-		var obj : Dynamic = super.save();
-		obj.type = type;
-		obj.loop = loop;
-		obj.startLoop = startLoop;
-		return obj;
-	}
-
-	override function load( obj : Dynamic ) {
-		super.load(obj);
-		loop = obj.loop;
-		startLoop = obj.startLoop;
 	}
 
 	function getObjAnimations(ctx:Context, elt: PrefabElement, anims: Array<ObjectAnimation>) {

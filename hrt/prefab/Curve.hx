@@ -10,7 +10,7 @@ class CurveHandle {
 	}
 }
 
-@:enum abstract CurveKeyMode(Int) {
+enum abstract CurveKeyMode(Int) {
 	var Aligned = 0;
 	var Free = 1;
 	var Linear = 2;

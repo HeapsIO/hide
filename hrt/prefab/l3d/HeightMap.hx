@@ -362,14 +362,14 @@ class HeightMap extends Object3D {
 
 	var tilesCache : Map<Int,HeightMapTile> = new Map();
 	var textures : Array<{ path : String, kind : HeightMapTextureKind, enable : Bool }> = [];
-	var size = 128.;
-	var heightScale = 0.2;
-	var normalScale = 1.;
-	var heightPrecision = 1.;
-	var minZ = -10;
-	var maxZ = 30;
-	public var quality = 4;
-	var objects : {
+	@:s var size = 128.;
+	@:s var heightScale = 0.2;
+	@:s var normalScale = 1.;
+	@:s var heightPrecision = 1.;
+	@:s var minZ = -10;
+	@:s var maxZ = 30;
+	@:s public var quality = 4;
+	@:s var objects : {
 		var file : String;
 		var assetsPath : String;
 		var scale : Float;
@@ -386,30 +386,12 @@ class HeightMap extends Object3D {
 	override function save():{} {
 		var o : Dynamic = super.save();
 		o.textures = [for( t in textures ) { path : t.path, kind : t.kind }];
-		o.size = size;
-		o.heightScale = heightScale;
-		o.normalScale = normalScale;
-		if( heightPrecision != 1 )
-			o.heightPrecision = heightPrecision;
-		o.quality = quality;
-		o.minZ = minZ;
-		o.maxZ = maxZ;
-		if( objects != null )
-			o.objects = objects;
 		return o;
 	}
 
 	override function load(obj:Dynamic) {
 		super.load(obj);
 		textures = [for( o in (obj.textures:Array<Dynamic>) ) { path : o.path, kind : o.kind, enable : true }];
-		size = obj.size;
-		heightScale = obj.heightScale;
-		normalScale = obj.normalScale;
-		if( obj.heightPrecision != null ) heightPrecision = obj.heightPrecision;
-		if( obj.minZ != null ) minZ = obj.minZ;
-		if( obj.maxZ != null ) maxZ = obj.maxZ;
-		if( obj.quality != null ) quality = obj.quality;
-		objects = obj.objects;
 	}
 
 	public function getZ( x : Float, y : Float ) : Null<Float> {

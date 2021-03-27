@@ -2,12 +2,6 @@ package hrt.prefab.rfx;
 
 import hxd.Pixels;
 
-typedef ColorGradingProps = {
-	var size : Int;
-	var texturePath : String;
-	var intensity : Float;
-}
-
 class ColorGradingTonemap extends hxsl.Shader {
 	static var SRC = {
 
@@ -42,29 +36,22 @@ class ColorGrading extends RendererFX {
 	var tonemap = new ColorGradingTonemap();
 	public var customLut : h3d.mat.Texture;
 
-	public function new(?parent) {
-		super(parent);
-		props = ({
-			size : 16,
-			texturePath : null,
-			intensity : 1.0,
-		} : ColorGradingProps);
-	}
+	@:s var size : Int = 16;
+	@:s var texturePath : String;
+	@:s public var intensity : Float = 1;
 
 	public function getLutTexture() {
-		var p : ColorGradingProps = props;
-		if( p.texturePath == null ) return null;
-		return hxd.res.Loader.currentInstance.load(p.texturePath).toTexture();
+		if( texturePath == null ) return null;
+		return hxd.res.Loader.currentInstance.load(texturePath).toTexture();
 	}
 
 	override function end( r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step ) {
 		if( step == BeforeTonemapping ) {
 			r.mark("ColorGrading");
-			var p : ColorGradingProps = props;
-			tonemap.intensity = p.intensity;
-			tonemap.size = p.size;
+			tonemap.intensity = intensity;
+			tonemap.size = size;
 			tonemap.lut = customLut != null ? customLut : getLutTexture();
-			if( tonemap.lut != null && p.intensity > 0 )
+			if( tonemap.lut != null && intensity > 0 )
 				r.addShader(tonemap);
 		}
 	}
@@ -92,7 +79,6 @@ class ColorGrading extends RendererFX {
 		but.click(function(_) {
 			function saveTexture( name : String ) {
 				if( name == null ) return;
-				var size = (props:ColorGradingProps).size;
 				var step = hxd.Math.ceil(255/(size - 1));
 				var p = hxd.Pixels.alloc(size * size, size, RGBA);
 				for( r in 0 ... size ) {
@@ -109,7 +95,7 @@ class ColorGrading extends RendererFX {
 			ctx.ide.chooseFileSave("defaultLUT.png", saveTexture);
 		});
 
-		ctx.properties.add(e, props);
+		ctx.properties.add(e, this);
 	}
 	#end
 

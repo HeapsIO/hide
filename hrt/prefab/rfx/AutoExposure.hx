@@ -2,30 +2,11 @@ package hrt.prefab.rfx;
 
 class AutoExposure extends RendererFX {
 
-	var lightFront : Float = 0.;
-	var lightBack : Float = 0.;
-	var lightPower : Float = 1.;
-	var transitionSpeed : Float = 1.;
-	var useLightZ : Bool = true;
-
-	override function save() {
-		var o : Dynamic = super.save();
-		o.lightFront = lightFront;
-		o.lightBack = lightBack;
-		o.lightPower = lightPower;
-		o.transitionSpeed = transitionSpeed;
-		o.useLightZ = useLightZ;
-		return o;
-	}
-
-	override function load(o:Dynamic) {
-		super.load(o);
-		lightFront = o.lightFront;
-		lightBack = o.lightBack;
-		lightPower = o.lightPower;
-		transitionSpeed = o.transitionSpeed;
-		useLightZ = o.useLightZ;
-	}
+	@:s var lightFront : Float = 0.;
+	@:s var lightBack : Float = 0.;
+	@:s var lightPower : Float = 1.;
+	@:s var transitionSpeed : Float = 1.;
+	@:s var useLightZ : Bool = true;
 
 	override function begin( r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step ) {
 		if( step != BeforeTonemapping )

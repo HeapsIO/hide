@@ -50,7 +50,7 @@ class Text3DPrimitive extends h2d.TileGroup.TileLayerContent {
 			if( y > yMax ) yMax = y;
 		}
 	}
-	
+
 	override public function render( engine : h3d.Engine ) {
 		if( tmp == null || tmp.length == 0) return;
 		super.render(engine);
@@ -79,7 +79,7 @@ class SignedDistanceField3D extends hxsl.Shader {
 			return max(min(r, g), min(max(r, g), b));
 		}
 
-		function fragment() {		
+		function fragment() {
 			pixelColor = vec4(color.r, color.g, color.b, smoothstep(alphaCutoff - smoothing, alphaCutoff + smoothing, median(pixelColor.r, pixelColor.g, pixelColor.b)));
 		}
 	}
@@ -88,46 +88,22 @@ class SignedDistanceField3D extends hxsl.Shader {
 
 class Text3D extends Object3D {
 
-	var color : Int = 16777215;
-	var size : Int = 12;
-	var cutoff : Float = 0.5;
-	var smoothing : Float = 1 / 32;
-	var letterSpacing : Float = 0;
-	var align : Int = 0;
-	
-	var pathFont : String;
+	@:s var color : Int = 0xFFFFFF;
+	@:s var size : Int = 12;
+	@:s var cutoff : Float = 0.5;
+	@:s var smoothing : Float = 1 / 32;
+	@:s var letterSpacing : Float = 0;
+	@:s var align : Int = 0;
+	@:s var pathFont : String;
 
-	public var contentText : String = "Empty string";
+	@:s public var contentText : String = "Empty string";
 
 	public function new( ?parent ) {
 		super(parent);
 		type = "text3d";
 	}
 
-	override function load( obj : Dynamic ) {
-		super.load(obj);
-		this.color = obj.color;
-		this.size = obj.size;
-		this.cutoff = obj.cutoff;
-		this.smoothing = obj.smoothing;
-		this.pathFont = obj.pathFont;
-		this.contentText = obj.contentText;
-		this.align = obj.align;
-	}
-
 	#if editor
-
-	override function save() {
-		var obj : Dynamic = super.save();
-		obj.color = color;
-		obj.size = size;
-		obj.cutoff = cutoff;
-		obj.smoothing = smoothing;
-		obj.pathFont = pathFont;
-		obj.contentText = contentText;
-		obj.align = align;
-		return obj;
-	}
 
 	override function getHideProps() : HideProps {
 		return { icon : "font", name : "Text3D" };
@@ -135,9 +111,9 @@ class Text3D extends Object3D {
 
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
-		
+
 		var parameters = new hide.Element('<div class="group" name="Parameters"></div>');
-		
+
 		var gr = new hide.Element('<dl></dl>').appendTo(parameters);
 
 		new hide.Element('<dt>Font</dt>').appendTo(gr);
@@ -182,7 +158,7 @@ class Text3D extends Object3D {
 		new hide.Element('<dt>Cutoff</dt><dd><input type="range" min="0" max="1" field="cutoff" /></dd>').appendTo(gr);
 		new hide.Element('<dt>Smoothing</dt><dd><input type="range" min="0" max="1" field="smoothing" /></dd>').appendTo(gr);
 		new hide.Element('<dt>Letter Spacing</dt><dd><input type="range" min="-5" max="5" field="letterSpacing" /></dd>').appendTo(gr);
-		
+
 		ctx.properties.add(parameters, this, function(pname) {
 			ctx.onChange(this, pname);
 		});
@@ -196,7 +172,7 @@ class Text3D extends Object3D {
 	}
 
 	#end
-	
+
 	override function updateInstance( ctx : Context, ?propName : String) {
 		super.updateInstance(ctx, propName);
 		if (pathFont == null || pathFont.length == 0) {
@@ -229,7 +205,7 @@ class Text3D extends Object3D {
 			mesh.material.shadows = false;
 			mesh.material.mainPass.setPassName("overlay");
 			mesh.material.mainPass.depth(false, LessEqual);
-			
+
 			var shader = mesh.material.mainPass.getShader(SignedDistanceField3D);
 			if (shader != null) {
 				mesh.material.mainPass.removeShader(shader);

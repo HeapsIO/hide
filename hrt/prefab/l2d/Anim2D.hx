@@ -3,41 +3,15 @@ package hrt.prefab.l2d;
 class Anim2D extends Object2D {
 
 	// parameters
-	var src : String;
-
-	var widthFrame : Int = 10;
-	var heightFrame : Int = 10;
-	var fpsAnimation : Int = 30;
-	var nbFrames : Int = 30;
-
-	var delayStart : Float = 0;
-
-	var loop : Bool = false;
+	@:s var src : String;
+	@:s var widthFrame : Int = 10;
+	@:s var heightFrame : Int = 10;
+	@:s var fpsAnimation : Int = 30;
+	@:s var nbFrames : Int = 30;
+	@:s var delayStart : Float = 0;
+	@:s var loop : Bool = false;
 
 	var tex : h3d.mat.Texture;
-
-	override public function load(v:Dynamic) {
-		super.load(v);
-		this.src = v.src;
-		this.widthFrame = v.widthFrame;
-		this.heightFrame = v.heightFrame;
-		this.fpsAnimation = v.fpsAnimation;
-		this.nbFrames = v.nbFrames;
-		this.delayStart = v.delayStart;
-		this.loop = v.loop;
-	}
-
-	override function save() {
-		var o : Dynamic = super.save();
-		o.src = src;
-		o.widthFrame = widthFrame;
-		o.heightFrame = heightFrame;
-		o.fpsAnimation = fpsAnimation;
-		o.nbFrames = nbFrames;
-		o.delayStart = delayStart;
-		o.loop = loop;
-		return o;
-	}
 
 	override function updateInstance( ctx: Context, ?propName : String ) {
 		super.updateInstance(ctx, propName);

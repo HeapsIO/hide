@@ -2,20 +2,20 @@ package hrt.prefab.vlm;
 
 class VolumetricLightmap extends Object3D {
 
-	var voxelsize_x : Float = 1.0;
-	var voxelsize_y : Float = 1.0;
-	var voxelsize_z : Float = 1.0;
-	var strength :  Float = 1.0;
-	var order : Int = 1;
-	var displaySH_field = false;
+	@:s var voxelsize_x : Float = 1.0;
+	@:s var voxelsize_y : Float = 1.0;
+	@:s var voxelsize_z : Float = 1.0;
+	@:s var strength :  Float = 1.0;
+	@:s var order : Int = 1;
 
 	public var volumetricLightmap : VolumetricMesh;
-	var useWorldAlignedProbe = false;
-	var displaySH = false;
-	var resolution : Int = 16;
+	@:s var useWorldAlignedProbe = false;
+	@:s var displaySH = false;
+	@:s var resolution : Int = 16;
 	var useGPU = true;
 
 	#if editor
+	var displaySH_field = false;
 	var maxOrderBaked = 0;
 	var baker : hide.view.l3d.ProbeBakerProcess;
 	#end
@@ -25,31 +25,12 @@ class VolumetricLightmap extends Object3D {
 		type = "volumetricLightmap";
 	}
 
+	#if editor
 	override function load( obj : Dynamic ) {
 		super.load(obj);
-		voxelsize_x =  obj.voxelsize_x == null ? 1 : obj.voxelsize_x;
-		voxelsize_y =  obj.voxelsize_y == null ? 1 : obj.voxelsize_y;
-		voxelsize_z =  obj.voxelsize_z == null ? 1 : obj.voxelsize_z;
-		strength =  obj.strength == null ? 1 : obj.strength;
-		order =  obj.order == null ? 1 : obj.order;
-		displaySH = obj.displaySH == null ? false : obj.displaySH;
 		displaySH_field = displaySH;
-		useWorldAlignedProbe = obj.useWorldAlignedProbe == null ? false : obj.useWorldAlignedProbe;
-		resolution = obj.resolution == null ? 16 : obj.resolution;
 	}
-
-	override function save() {
-		var o : Dynamic = super.save();
-		if( voxelsize_x > 0 ) o.voxelsize_x = voxelsize_x;
-		if( voxelsize_y > 0 ) o.voxelsize_y = voxelsize_y;
-		if( voxelsize_z > 0 ) o.voxelsize_z = voxelsize_z;
-		o.strength = strength;
-		o.order = order;
-		o.displaySH = displaySH;
-		o.useWorldAlignedProbe = useWorldAlignedProbe;
-		o.resolution = resolution;
-		return o;
-	}
+	#end
 
 	function initProbes(){
 		createDebugPreview();

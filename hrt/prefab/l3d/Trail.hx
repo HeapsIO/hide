@@ -2,22 +2,11 @@ package hrt.prefab.l3d;
 
 class Trail extends Object3D {
 
-	var data : Dynamic;
+	@:s var data : Dynamic;
 
 	function new(?parent) {
 		super(parent);
 		data = new h3d.scene.Trail().save();
-	}
-
-	override function load(obj:Dynamic) {
-		super.load(obj);
-		data = obj.data;
-	}
-
-	override function save() : {} {
-		var obj : Dynamic = super.save();
-		obj.data = data;
-		return obj;
 	}
 
 	public function create( ?parent : h3d.scene.Object ) {

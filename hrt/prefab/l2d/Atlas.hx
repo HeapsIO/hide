@@ -3,35 +3,13 @@ package hrt.prefab.l2d;
 class Atlas extends Object2D {
 
 	// parameters
-	var src : String;
-
-	var fpsAnimation : Int = 30;
-	var delayStart : Float = 0;
-
-	var loop : Bool = false;
-
-	var forcePivotCenter : Bool = false;
+	@:s var src : String;
+	@:s var fpsAnimation : Int = 30;
+	@:s var delayStart : Float = 0;
+	@:s var loop : Bool = false;
+	@:s var forcePivotCenter : Bool = false;
 
 	var atlas : hxd.res.Atlas;
-
-	override public function load(v:Dynamic) {
-		super.load(v);
-		this.src = v.src;
-		this.fpsAnimation = v.fpsAnimation;
-		this.delayStart = v.delayStart;
-		this.loop = v.loop;
-		this.forcePivotCenter = v.forcePivotCenter;
-	}
-
-	override function save() {
-		var o : Dynamic = super.save();
-		o.src = src;
-		o.fpsAnimation = fpsAnimation;
-		o.delayStart = delayStart;
-		o.loop = loop;
-		o.forcePivotCenter = forcePivotCenter;
-		return o;
-	}
 
 	override function updateInstance( ctx: Context, ?propName : String ) {
 		super.updateInstance(ctx, propName);

@@ -3,31 +3,12 @@ package hrt.prefab.l2d;
 class Bitmap extends Object2D {
 
 	// parameters
-	var color : Int = 0xFFFFFF;
-
-	var src : String;
-
-	var dx : Float = 0;
-	var dy : Float = 0;
+	@:s var color : Int = 0xFFFFFF;
+	@:s var src : String;
+	@:s var dx : Float = 0;
+	@:s var dy : Float = 0;
 
 	var tex : h3d.mat.Texture;
-
-	override public function load(v:Dynamic) {
-		super.load(v);
-		this.color = v.color;
-		this.src = v.src;
-		this.dx = v.dx;
-		this.dy = v.dy;
-	}
-
-	override function save() {
-		var o : Dynamic = super.save();
-		o.color = color;
-		o.src = src;
-		o.dx = dx;
-		o.dy = dy;
-		return o;
-	}
 
 	override function updateInstance( ctx: Context, ?propName : String ) {
 		super.updateInstance(ctx, propName);

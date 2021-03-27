@@ -1,13 +1,9 @@
 package hrt.prefab;
 
-@:enum abstract LightKind(String) {
-	var Point = "Point";
-	var Directional = "Directional";
-	var Spot = "Spot";
-
-	inline function new(v) {
-		this = v;
-	}
+enum abstract LightKind(String) {
+	var Point;
+	var Directional;
+	var Spot;
 }
 
 typedef LightShadows = {
@@ -40,33 +36,33 @@ typedef ShadowSamplingPCF = {> ShadowSamplingMode,
 
 class Light extends Object3D {
 
-	public var kind : LightKind = Point;
-	public var color : Int = 0xffffff;
-	public var power : Float = 1.0;
+	@:s public var kind : LightKind = Point;
+	@:s public var color : Int = 0xffffff;
+	@:s public var power : Float = 1.0;
+	@:s public var occlusionFactor = 0.0;
+	@:s public var isMainLight : Bool = false;
 	public var shadows : LightShadows = getShadowsDefault();
-	public var occlusionFactor = 0.0;
-	public var isMainLight : Bool = false;
 
 	// Point/Spot
-	public var range : Float = 10;
+	@:s public var range : Float;
 
 	// Point
-	public var size : Float = 1.0;
-	public var zNear : Float = 0.02;
+	@:s public var size : Float = 1.0;
+	@:s public var zNear : Float;
 
 	// Spot
-	public var angle : Float = 90;
-	public var fallOff : Float = 80;
+	@:s public var angle : Float = 90;
+	@:s public var fallOff : Float = 80;
+	@:s public var cookiePath : String = null;
 	public var cookieTex : h3d.mat.Texture = null;
-	public var cookiePath : String = null;
 
 	// Dir
-	public var maxDist : Float = -1;
-	public var minDist : Float = -1;
-	public var autoShrink : Bool = true;
+	@:s public var maxDist : Float = -1;
+	@:s public var minDist : Float = -1;
+	@:s public var autoShrink : Bool = true;
 
 	// Debug
-	public var debugDisplay : Bool = true;
+	@:s public var debugDisplay : Bool = true;
 
 	static function getShadowsDefault() : LightShadows {
 		return {
@@ -84,26 +80,12 @@ class Light extends Object3D {
 	public function new(?parent) {
 		super(parent);
 		type = "light";
+		range = 10;
+		zNear = 0.02;
 	}
 
 	override function save() {
 		var obj : Dynamic = super.save();
-		obj.kind = kind;
-		obj.color = color;
-		obj.range = range;
-		obj.size = size;
-		obj.zNear = zNear;
-		obj.power = power;
-		obj.isMainLight = isMainLight;
-		obj.angle = angle;
-		obj.fallOff = fallOff;
-		obj.cookiePath = cookiePath;
-		obj.occlusionFactor = occlusionFactor;
-		obj.maxDist = maxDist;
-		obj.minDist = minDist;
-		obj.autoShrink = autoShrink;
-		obj.debugDisplay = debugDisplay;
-
 		if( shadows.mode != None ) {
 			obj.shadows = Reflect.copy(shadows);
 			obj.shadows.mode = shadows.mode.getName();
@@ -113,39 +95,10 @@ class Light extends Object3D {
 
 	override function load( obj : Dynamic ) {
 		super.load(obj);
-		kind = obj.kind;
-		color = obj.color;
-		range = obj.range;
-		size = obj.size;
-		zNear = obj.zNear == null ?  0.02 : obj.zNear;
-		power = obj.power;
-		isMainLight = obj.isMainLight;
-		angle = obj.angle;
-		fallOff = obj.fallOff;
-		cookiePath = obj.cookiePath;
-		occlusionFactor = obj.occlusionFactor == null ? 0.0 : obj.occlusionFactor;
-		if( obj.maxDist != null ) maxDist = obj.maxDist;
-		if( obj.minDist != null ) minDist = obj.minDist;
-		if( obj.autoShrink != null ) autoShrink = obj.autoShrink;
-		if( obj.debugDisplay != null ) debugDisplay = obj.debugDisplay;
-
 		if( obj.shadows != null ) {
 			var sh : Dynamic = Reflect.copy(obj.shadows);
 			sh.mode = h3d.pass.Shadows.RenderMode.createByName(sh.mode);
 			shadows = sh;
-
-			// Retro compatibility
-			if( shadows.samplingMode == null ) {
-				if( obj.shadows.power != null ) {
-					shadows.samplingMode = cast {
-						kind : ESM,
-						power : obj.shadows.power,
-						};
-				}
-				else
-					shadows.samplingMode = { kind : None };
-			}
-
 		} else
 			shadows = getShadowsDefault();
 	}

@@ -1,27 +1,27 @@
 package hrt.prefab.rfx;
 
-@:enum abstract Pattern(String) {
-	var Still = "Still";
-	var Uniform2 = "Uniform2";
-	var Uniform4 = "Uniform4";
-	var Uniform4_Helix = "Uniform4_Helix";
-	var Uniform4_DoubleHelix = "Uniform4_DoubleHelix";
-	var SkewButterfly = "SkewButterfly";
-	var Rotated4 = "Rotated4";
-	var Rotated4_Helix = "Rotated4_Helix";
-	var Rotated4_Helix2 = "Rotated4_Helix2";
-	var Poisson10 = "Poisson10";
-	var Pentagram = "Pentagram";
-	var Halton_2_3_x8 = "Halton_2_3_x8";
-	var Halton_2_3_x16 = "Halton_2_3_x16";
-	var Halton_2_3_x32 = "Halton_2_3_x32";
-	var Halton_2_3_x256 = "Halton_2_3_x256";
-	var MotionPerp2 = "MotionPerp2";
-	var MotionVPerp2 = "MotionVPerp2";
+enum abstract Pattern(String) {
+	var Still;
+	var Uniform2;
+	var Uniform4;
+	var Uniform4_Helix;
+	var Uniform4_DoubleHelix;
+	var SkewButterfly;
+	var Rotated4;
+	var Rotated4_Helix;
+	var Rotated4_Helix2;
+	var Poisson10;
+	var Pentagram;
+	var Halton_2_3_x8;
+	var Halton_2_3_x16;
+	var Halton_2_3_x32;
+	var Halton_2_3_x256;
+	var MotionPerp2;
+	var MotionVPerp2;
 }
 
 class FrustumJitter {
-	
+
 	public var points_Still : Array<Float> = [
 		0.0, 0.0,
 	];
@@ -120,7 +120,7 @@ class FrustumJitter {
 	];
 
 
-	
+
     private inline function getSeq( pattern : Pattern ) : Array<Float> {
        return switch (pattern) {
 			case Still: points_Still;
@@ -182,7 +182,7 @@ class FrustumJitter {
 
         var x = patternScale * pattern[2 * i + 0];
 		var y = patternScale * pattern[2 * i + 1];
-		
+
 		return new h2d.col.Point(x, y);
 
         /*if (pattern != Pattern.MotionPerp2)

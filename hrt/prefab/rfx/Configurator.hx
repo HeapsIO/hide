@@ -65,8 +65,8 @@ class ConfiguratorInterp extends hscript.Interp {
 
 class Configurator extends RendererFX {
 
-	public var vars : Array<{ name : String, defValue : Float }> = [];
-	var script : String = "";
+	@:s public var vars : Array<{ name : String, defValue : Float }> = [];
+	@:s var script : String = "";
 	var values : Map<String, Float> = new Map();
 
 	var prefabCache : Map<String, Prefab> = new Map();
@@ -82,19 +82,6 @@ class Configurator extends RendererFX {
 	public function new(?parent) {
 		super(parent);
 		type = "configurator";
-	}
-
-	override function save():{} {
-		var obj : Dynamic = super.save();
-		obj.vars = vars;
-		obj.script = script;
-		return obj;
-	}
-
-	override function load(v:Dynamic) {
-		super.load(v);
-		vars = v.vars;
-		script = v.script;
 	}
 
 	public function set( name : String, value : Float ) {
