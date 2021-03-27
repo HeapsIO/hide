@@ -403,7 +403,7 @@ class FX extends BaseFX {
 		var root = getFXRoot(ctx, this);
 		if(root != null){
 			for( c in root.children ) {
-				var co = Std.downcast(c , Constraint);
+				var co = Std.downcast(c , hrt.prefab.l3d.Constraint);
 				if( co == null )
 					makeChildren(ctx,c);
 			}
