@@ -1,9 +1,9 @@
-package hrt.prefab.fx2d;
+package hrt.prefab.l2d;
 
 class Text extends Object2D {
 
 	// parameters
-	var color : Int = 16777215;
+	var color : Int = 0xFFFFFF;
 	var size : Int = 12;
 	var cutoff : Float = 0.5;
 	var smoothing : Float = 1 / 32;
@@ -59,7 +59,7 @@ class Text extends Object2D {
 		if (v.dsGain != null) this.dsGain = v.dsGain;
 		if (v.dsQuality != null) this.dsQuality = v.dsQuality;
 		if (v.dsSmoothColor != null) this.dsSmoothColor = v.dsSmoothColor;
-			
+
 		#if editor
 		this.text = v.text;
 		#end
@@ -124,9 +124,9 @@ class Text extends Object2D {
 				dsQuality,
 				dsSmoothColor
 			);
-		} else 
+		} else
 			h2dText.filter = null;
-		
+
 		h2dText.textAlign = switch (align) {
 			case 1:
 				Center;
@@ -205,7 +205,7 @@ class Text extends Object2D {
 
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
-		
+
 		var parameters = new hide.Element('<div class="group" name="Parameters"></div>');
 
 		var gr = new hide.Element('<dl></dl>').appendTo(parameters);
@@ -260,7 +260,7 @@ class Text extends Object2D {
 		new hide.Element('<dt>Size</dt><dd><input type="range" min="1" max="50" step="1" field="size" /></dd>').appendTo(gr);
 		new hide.Element('<dt>Cutoff</dt><dd><input type="range" min="0" max="1" field="cutoff" /></dd>').appendTo(gr);
 		new hide.Element('<dt>Smoothing</dt><dd><input type="range" min="0" max="1" field="smoothing" /></dd>').appendTo(gr);
-		
+
 		ctx.properties.add(parameters, this, function(pname) {
 			ctx.onChange(this, pname);
 		});

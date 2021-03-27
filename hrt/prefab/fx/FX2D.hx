@@ -19,7 +19,7 @@ class FX2DAnimation extends h2d.Object {
 	public var loop : Bool;
 	public var objects: Array<ObjectAnimation> = [];
 	public var shaderAnims : Array<ShaderAnimation> = [];
-	public var emitters : Array<hrt.prefab.fx2d.Particle2D.Particles>;
+	public var emitters : Array<hrt.prefab.l2d.Particle2D.Particles>;
 	public var events: Array<hrt.prefab.fx.Event.EventInstance>;
 
 	var evaluator : Evaluator;
@@ -46,12 +46,12 @@ class FX2DAnimation extends h2d.Object {
 	}
 
 	function initEmitters(ctx: Context, elt: PrefabElement) {
-		var em = Std.downcast(elt, hrt.prefab.fx2d.Particle2D);
+		var em = Std.downcast(elt, hrt.prefab.l2d.Particle2D);
 		if(em != null)  {
 			for(emCtx in ctx.shared.getContexts(elt)) {
 				if(emCtx.local2d == null) continue;
 				if(emitters == null) emitters = [];
-				var emobj : hrt.prefab.fx2d.Particle2D.Particles = cast emCtx.local2d;
+				var emobj : hrt.prefab.l2d.Particle2D.Particles = cast emCtx.local2d;
 				emitters.push(emobj);
 			}
 		}
@@ -111,9 +111,9 @@ class FX2DAnimation extends h2d.Object {
 				}
 			}
 
-			var atlas : Dynamic = Std.downcast(anim.elt2d, hrt.prefab.fx2d.Atlas);
+			var atlas : Dynamic = Std.downcast(anim.elt2d, hrt.prefab.l2d.Atlas);
 			if (atlas == null) {
-				atlas = Std.downcast(anim.elt2d, hrt.prefab.fx2d.Anim2D);
+				atlas = Std.downcast(anim.elt2d, hrt.prefab.l2d.Anim2D);
 			}
 			if (atlas != null) {
 				@:privateAccess if (!atlas.loop) {
@@ -232,7 +232,7 @@ class FX2D extends BaseFX {
 			anyFound = true;
 		}
 
-		if (Std.is(elt, hrt.prefab.fx2d.Anim2D) || Std.is(elt, hrt.prefab.fx2d.Atlas))
+		if (Std.is(elt, hrt.prefab.l2d.Anim2D) || Std.is(elt, hrt.prefab.l2d.Atlas))
 			anyFound = true;
 
 		if(anyFound)

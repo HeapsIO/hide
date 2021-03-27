@@ -37,7 +37,7 @@ class Shader extends Prefab {
 				case TSampler2D:
 					if(val != null)
 						val = ctx.loadTexture(val);
-					var childNoise = getOpt(Noise, v.name);
+					var childNoise = getOpt(hrt.prefab.l2d.NoiseGenerator, v.name);
 					if(childNoise != null)
 						val = childNoise.toTexture();
 				default:

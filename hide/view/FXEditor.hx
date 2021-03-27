@@ -1207,7 +1207,7 @@ class FXEditor extends FileView {
 		var obj2dElt = Std.downcast(elt, hrt.prefab.Object2D);
 		var shaderElt = Std.downcast(elt, hrt.prefab.Shader);
 		var emitterElt = Std.downcast(elt, hrt.prefab.fx.Emitter);
-		var particle2dElt = Std.downcast(elt, hrt.prefab.fx2d.Particle2D);
+		var particle2dElt = Std.downcast(elt, hrt.prefab.l2d.Particle2D);
 		var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
 		var lightElt = Std.downcast(elt, Light);
 
@@ -1346,7 +1346,7 @@ class FXEditor extends FileView {
 			}
 		}
 		if (particle2dElt != null) {
-			for(param in hrt.prefab.fx2d.Particle2D.emitter2dParams) {
+			for(param in hrt.prefab.l2d.Particle2D.emitter2dParams) {
 				if(!param.animate)
 					continue;
 				addParam(param, "");

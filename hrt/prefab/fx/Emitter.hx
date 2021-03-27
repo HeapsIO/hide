@@ -420,7 +420,7 @@ class EmitterObject extends h3d.scene.Object {
 	// OBJECTS
 	public var particleTemplate : hrt.prefab.Object3D;
 	public var subEmitterTemplate : Emitter;
-	public var trailTemplate : Trail;
+	public var trailTemplate : hrt.prefab.l3d.Trail;
 	public var subEmitters : Array<EmitterObject> = [];
 	public var trails : Array<EmitterTrail> = [];
 	// LIFE
@@ -1191,7 +1191,7 @@ class Emitter extends Object3D {
 		var subEmitterTemplate : Emitter = cast children.find( p -> p.enabled && Std.downcast(p, Emitter) != null && p.to(Object3D).visible);
 		emitterObj.subEmitterTemplate = subEmitterTemplate;
 		// TRAIL
-		var trailTemplate : Trail = cast children.find( p -> p.enabled && Std.downcast(p, Trail) != null && p.to(Object3D).visible);
+		var trailTemplate : hrt.prefab.l3d.Trail = cast children.find( p -> p.enabled && Std.is(p, hrt.prefab.l3d.Trail) && p.to(Object3D).visible);
 		emitterObj.trailTemplate = trailTemplate;
 		// RANDOM
 		emitterObj.seedGroup 			= 	getParamVal("seedGroup");

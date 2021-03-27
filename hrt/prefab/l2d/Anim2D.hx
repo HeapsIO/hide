@@ -1,4 +1,4 @@
-package hrt.prefab.fx2d;
+package hrt.prefab.l2d;
 
 class Anim2D extends Object2D {
 
@@ -11,7 +11,7 @@ class Anim2D extends Object2D {
 	var nbFrames : Int = 30;
 
 	var delayStart : Float = 0;
-	
+
 	var loop : Bool = false;
 
 	var tex : h3d.mat.Texture;
@@ -41,9 +41,9 @@ class Anim2D extends Object2D {
 
 	override function updateInstance( ctx: Context, ?propName : String ) {
 		super.updateInstance(ctx, propName);
-		
+
 		var h2dAnim = (cast ctx.local2d : h2d.Anim);
-		
+
 		if (propName == null || (propName == "src" || propName == "widthFrame" || propName == "heightFrame" || propName == "nbFrames")) {
 			if (tex != null) {
 				tex = null;

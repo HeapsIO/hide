@@ -1,4 +1,4 @@
-package hrt.prefab;
+package hrt.prefab.l2d;
 
 class Blur extends Prefab {
 

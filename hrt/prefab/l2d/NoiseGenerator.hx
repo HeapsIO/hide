@@ -1,4 +1,4 @@
-package hrt.prefab;
+package hrt.prefab.l2d;
 
 enum abstract NoiseMode(String) {
 	var Perlin;
@@ -12,7 +12,7 @@ enum abstract RepeatMode(String) {
 	var None;
 }
 
-class Noise extends Prefab {
+class NoiseGenerator extends Prefab {
 
 	public var seed : Int = Std.random(100);
 
@@ -262,7 +262,7 @@ class Noise extends Prefab {
 
 	#end
 
-	static var _ = Library.register("noise", Noise);
+	static var _ = Library.register("noise", NoiseGenerator);
 
 }
 

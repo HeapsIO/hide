@@ -1,4 +1,4 @@
-package hrt.prefab.fx2d;
+package hrt.prefab.l2d;
 
 class Atlas extends Object2D {
 
