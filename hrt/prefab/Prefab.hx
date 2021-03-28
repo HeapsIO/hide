@@ -126,6 +126,11 @@ class Prefab {
 		copySerializedFields(p);
 	}
 
+	function copyValue<T>( v : T ) : T {
+		// copy in-depth - might be optimized by macros when called in copy()
+		return haxe.Unserializer.run(haxe.Serializer.run(v));
+	}
+
 	/**
 		Creates an instance for this prefab only (and not its children).
 		Use make(ctx) to creates the whole instances tree;
