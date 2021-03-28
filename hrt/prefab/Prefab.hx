@@ -105,17 +105,25 @@ class Prefab {
 	/**
 		Override to implement your custom prefab data loading
 	**/
-	function load( v : Dynamic ) {
-		loadSerializedFields(v);
+	function load( obj : Dynamic ) {
+		loadSerializedFields(obj);
 	}
 
 	/**
 		Override to implement your custom prefab data saving
 	**/
 	function save() : {} {
-		var o = {};
-		saveSerializedFields(o);
-		return o;
+		var obj = {};
+		saveSerializedFields(obj);
+		return obj;
+	}
+
+	/**
+		Override to implement your custom prefab data copying.
+		You should copy the field from `p` to `this`, p being an instance of your class
+	**/
+	function copy( p : Prefab ) {
+		copySerializedFields(p);
 	}
 
 	/**
@@ -144,7 +152,7 @@ class Prefab {
 	/**
 		Save the whole prefab data and its children.
 	**/
-	@:final public function saveData() : {} {
+	public final function saveData() : {} {
 		var obj : Dynamic = save();
 		if( children.length > 0 )
 			obj.children = [for( s in children ) s.saveData()];
@@ -154,7 +162,7 @@ class Prefab {
 	/**
 		Load the whole prefab data and creates its children.
 	**/
-	@:final public function loadData( v : Dynamic ) {
+	public final function loadData( v : Dynamic ) {
 		load(v);
 		if( children.length > 0 )
 			children = [];
@@ -439,10 +447,25 @@ class Prefab {
 	}
 
 	/**
-		Clone this prefab, and all its children if recursive=true
+		Clone this prefab, and all its children if recursive=true.
 	**/
-	public function clone( recursive = true ) : Prefab {
-		var obj = recursive ? saveData() : save();
-		return loadPrefab(haxe.Json.parse(haxe.Json.stringify(obj)));
+	public final function clone( ?parent : Prefab, recursive = true ) : Prefab {
+		var obj = Type.createInstance(Type.getClass(this),[parent]);
+		obj.copy(this);
+		if( recursive ) {
+			for( c in children )
+				c.clone(obj);
+		}
+		return obj;
 	}
+
+	/**
+		Similar to clone() but uses full data copying to guarantee a whole copy with no data reference (but is slower).
+	**/
+	public final function cloneData( recursive = true ) {
+		var data = recursive ? saveData() : save();
+		data = haxe.Json.parse(haxe.Json.stringify(data));
+		return loadPrefab(data);
+	}
+
 }

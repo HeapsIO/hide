@@ -1963,7 +1963,7 @@ class SceneEditor {
 		var undoes = [];
 		var newElements = [];
 		for(elt in elements) {
-			var clone = elt.clone();
+			var clone = elt.cloneData();
 			var index = elt.parent.children.indexOf(elt) + 1;
 			clone.parent = elt.parent;
 			elt.parent.children.remove(clone);

@@ -2,7 +2,7 @@ package hrt.prefab;
 
 class Unknown extends Prefab {
 
-	var data : Dynamic;
+	@:c var data : Dynamic;
 
 	public function getPrefabType() {
 		return data.type;

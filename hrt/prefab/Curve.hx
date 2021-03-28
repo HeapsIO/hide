@@ -33,7 +33,7 @@ class Curve extends Prefab {
 	@:s public var clampMin : Float = 0.;
 	@:s public var clampMax : Float = 0.;
 	@:s public var keyMode : CurveKeyMode = Linear;
-	public var keys : CurveKeys = [];
+	@:c public var keys : CurveKeys = [];
 
 	@:s public var loop : Bool = false;
 

@@ -35,10 +35,10 @@ class Terrain extends Object3D {
 	// Shadows Param
 	@:s public var castShadows = false;
 	// Data for binary save/load
-	var surfaceCount = 0;
-	var surfaceSize = 0;
+	@:c var surfaceCount = 0;
+	@:c var surfaceSize = 0;
 	// Utility
-	var tmpSurfacesProps : Array<SurfaceProps> = [];
+	@:c var tmpSurfacesProps : Array<SurfaceProps> = [];
 	var unpackWeight = new h3d.pass.ScreenFx(new UnpackWeight());
 	var modified = false;
 

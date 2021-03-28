@@ -11,7 +11,7 @@ class Object2D extends Prefab {
 	@:s public var rotation : Float = 0.;
 
 	@:s public var visible : Bool = true;
-	public var blendMode : h2d.BlendMode = None;
+	@:c public var blendMode : h2d.BlendMode = None;
 
 	public function loadTransform(t) {
 		x = t.x;

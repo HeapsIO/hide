@@ -22,7 +22,7 @@ class Decal extends Object3D {
 	@:s var renderMode : DecalMode = Default;
 	@:s var centered : Bool = true;
 	@:s var autoAlpha : Bool = true;
-	var blendMode : h2d.BlendMode = Alpha;
+	@:c var blendMode : h2d.BlendMode = Alpha;
 
 	override function save() {
 		var obj : Dynamic = super.save();

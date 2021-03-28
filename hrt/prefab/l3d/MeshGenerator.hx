@@ -111,7 +111,7 @@ class MeshGeneratorRoot extends h3d.scene.Object {
 
 class MeshGenerator extends Object3D {
 
-	public var root : MeshPart;
+	@:c public var root : MeshPart;
 
 	#if editor
 	static var filterInit = false;

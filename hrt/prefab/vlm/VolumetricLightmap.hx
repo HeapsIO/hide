@@ -15,7 +15,7 @@ class VolumetricLightmap extends Object3D {
 	var useGPU = true;
 
 	#if editor
-	var displaySH_field = false;
+	@:c var displaySH_field = false;
 	var maxOrderBaked = 0;
 	var baker : hide.view.l3d.ProbeBakerProcess;
 	#end
@@ -281,7 +281,7 @@ class VolumetricLightmap extends Object3D {
 			trace("Invalid renderer");
 
 		var sceneData = @:privateAccess ctx.scene.editor.sceneData;
-		baker.init(pbrRenderer.env, sceneData.clone(), cast ctx.rootContext.shared, ctx.scene);
+		baker.init(pbrRenderer.env, sceneData.cloneData(), cast ctx.rootContext.shared, ctx.scene);
 
 		baker.onEnd = function() {
 			if( onEnd != null ) onEnd();

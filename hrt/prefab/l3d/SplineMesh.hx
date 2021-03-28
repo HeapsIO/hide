@@ -111,8 +111,8 @@ class SplineMesh extends Spline {
 	@:s var splineUVy : Bool = false;
 
 	@:s var spacing: Float = 0.0;
-	var meshScale = new h3d.Vector(1,1,1);
-	var meshRotation = new h3d.Vector(0,0,0);
+	@:c var meshScale = new h3d.Vector(1,1,1);
+	@:c var meshRotation = new h3d.Vector(0,0,0);
 	var modelMat = new h3d.Matrix();
 
 	var meshBatch : SplineMeshBatch = null;

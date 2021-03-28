@@ -13,8 +13,8 @@ typedef PrimCache = Map<Shape, h3d.prim.Polygon>;
 
 class Polygon extends Object3D {
 
-	public var shape(default, null) : Shape = Quad(0);
-	public var points : h2d.col.Polygon;
+	@:c public var shape(default, null) : Shape = Quad(0);
+	@:c public var points : h2d.col.Polygon;
 	@:s public var color : Int = 0xFFFFFFFF;
 	#if editor
 	public var editor : hide.prefab.PolygonEditor;

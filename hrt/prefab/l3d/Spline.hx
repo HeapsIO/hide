@@ -63,14 +63,14 @@ class SplinePoint extends h3d.scene.Object {
 class Spline extends Object3D {
 
 	public var points : Array<SplinePoint> = [];
-	public var shape : CurveShape = Quadratic;
+	@:c public var shape : CurveShape = Quadratic;
 
 	var data : SplineData;
 	@:s var step : Float = 1.0;
 	@:s var threshold : Float = 0.01;
 
 	// Save/Load the curve as an array of absPos
-	public var pointsData : Array<h3d.Matrix> = [];
+	@:c public var pointsData : Array<h3d.Matrix> = [];
 
 	// Graphic
 	@:s public var showSpline : Bool = true;

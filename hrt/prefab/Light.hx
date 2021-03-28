@@ -41,7 +41,7 @@ class Light extends Object3D {
 	@:s public var power : Float = 1.0;
 	@:s public var occlusionFactor = 0.0;
 	@:s public var isMainLight : Bool = false;
-	public var shadows : LightShadows = getShadowsDefault();
+	@:c public var shadows : LightShadows = getShadowsDefault();
 
 	// Point/Spot
 	@:s public var range : Float;
@@ -101,6 +101,11 @@ class Light extends Object3D {
 			shadows = sh;
 		} else
 			shadows = getShadowsDefault();
+	}
+
+	override function copy(p:Prefab) {
+		super.copy(p);
+		shadows = copyValue(p.shadows);
 	}
 
 	override function applyTransform( o : h3d.scene.Object ) {

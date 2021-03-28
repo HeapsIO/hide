@@ -361,7 +361,7 @@ class HeightMapMesh extends h3d.scene.Object {
 class HeightMap extends Object3D {
 
 	var tilesCache : Map<Int,HeightMapTile> = new Map();
-	var textures : Array<{ path : String, kind : HeightMapTextureKind, enable : Bool }> = [];
+	@:c var textures : Array<{ path : String, kind : HeightMapTextureKind, enable : Bool }> = [];
 	@:s var size = 128.;
 	@:s var heightScale = 0.2;
 	@:s var normalScale = 1.;

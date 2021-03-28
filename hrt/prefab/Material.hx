@@ -11,7 +11,7 @@ class Material extends Prefab {
 	@:s public var normalMap : String;
 	@:s public var specularMap : String;
 	@:s public var materialName : String;
-	public var color : Array<Float> = [1,1,1,1];
+	@:c public var color : Array<Float> = [1,1,1,1];
 
 	public function new(?parent) {
 		super(parent);
