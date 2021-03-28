@@ -20,20 +20,20 @@ class Terrain extends Object3D {
 	public var terrain : TerrainMesh;
 
 	// Tile Param
-	public var tileSizeX : Float = 64.0;
-	public var tileSizeY : Float = 64.0;
-	public var vertexPerMeter : Float = 1.0;
+	@:s public var tileSizeX : Float = 64.0;
+	@:s public var tileSizeY : Float = 64.0;
+	@:s public var vertexPerMeter : Float = 1.0;
 	// Texture Param
-	public var weightMapPixelPerMeter : Float = 1.0;
+	@:s public var weightMapPixelPerMeter : Float = 1.0;
 	// Parallax Param
-	public var parallaxAmount = 0.0;
-	public var parallaxMinStep : Int = 1;
-	public var parallaxMaxStep : Int = 16;
+	@:s public var parallaxAmount = 0.0;
+	@:s public var parallaxMinStep : Int = 1;
+	@:s public var parallaxMaxStep : Int = 16;
 	// Blend Param
-	public var heightBlendStrength : Float = 0.0;
-	public var blendSharpness : Float = 0.0;
+	@:s public var heightBlendStrength : Float = 0.0;
+	@:s public var blendSharpness : Float = 0.0;
 	// Shadows Param
-	public var castShadows = false;
+	@:s public var castShadows = false;
 	// Data for binary save/load
 	var surfaceCount = 0;
 	var surfaceSize = 0;
@@ -45,14 +45,11 @@ class Terrain extends Object3D {
 	#if editor
 	var packWeight = new h3d.pass.ScreenFx(new PackWeight());
 	var editor : hide.prefab.terrain.TerrainEditor;
-	public var showChecker = false;
-	public var autoCreateTile = false;
-	public var brushOpacity : Float;
+	@:s public var showChecker = false;
+	@:s public var autoCreateTile = false;
+	@:s public var brushOpacity : Float = 1.0;
 	var myContext : Context;
 	#end
-
-	static final version : Int = 1;
-	var currentVersion : Int;
 
 	public function new( ?parent ) {
 		super(parent);
@@ -61,43 +58,13 @@ class Terrain extends Object3D {
 
 	override function load( obj : Dynamic ) {
 		super.load(obj);
-
-		currentVersion = obj.currentVersion == null ? 0 : obj.currentVersion;
-
-		if( obj.tileSizeX != null ) tileSizeX = obj.tileSizeX;
-		if( obj.tileSizeY != null ) tileSizeY = obj.tileSizeY;
-		if( obj.vertexPerMeter != null ) vertexPerMeter = obj.vertexPerMeter;
-		if( obj.weightMapPixelPerMeter != null ) weightMapPixelPerMeter = obj.weightMapPixelPerMeter;
 		if( obj.surfaces != null ) tmpSurfacesProps = obj.surfaces;
-
-		parallaxAmount = obj.parallaxAmount == null ? 0.0 : obj.parallaxAmount;
-		parallaxMinStep = obj.parallaxMinStep == null ? 1 : obj.parallaxMinStep;
-		parallaxMaxStep = obj.parallaxMaxStep == null ? 1 : obj.parallaxMaxStep;
-		heightBlendStrength = obj.heightBlendStrength == null ? 0 : obj.heightBlendStrength;
-		blendSharpness = obj.blendSharpness == null ? 0 : obj.blendSharpness;
 		surfaceCount = obj.surfaceCount == null ? 0 : obj.surfaceCount;
 		surfaceSize = obj.surfaceSize == null ? 0 : obj.surfaceSize;
-		castShadows = obj.castShadows == null ? false : obj.castShadows;
-		#if editor
-		autoCreateTile = obj.autoCreateTile == null ? false : obj.autoCreateTile;
-		showChecker = obj.showChecker == null ? false : obj.showChecker;
-		brushOpacity = obj.brushOpacity == null ? 1.0 : obj.brushOpacity;
-		#end
 	}
 
 	override function save() {
 		var obj : Dynamic = super.save();
-		obj.currentVersion = currentVersion;
-		obj.tileSizeX = tileSizeX;
-		obj.tileSizeY = tileSizeY;
-		obj.vertexPerMeter = vertexPerMeter;
-		obj.weightMapPixelPerMeter = weightMapPixelPerMeter;
-		obj.parallaxAmount = parallaxAmount;
-		obj.parallaxMinStep = parallaxMinStep;
-		obj.parallaxMaxStep = parallaxMaxStep;
-		obj.heightBlendStrength = heightBlendStrength;
-		obj.blendSharpness = blendSharpness;
-		obj.castShadows = castShadows;
 		if( terrain != null && terrain.surfaces != null ) {
 
 			obj.surfaceCount = terrain.surfaces.length == 0 ? 0 : terrain.surfaceArray.surfaceCount;
@@ -128,8 +95,6 @@ class Terrain extends Object3D {
 		}
 
 		#if editor
-		obj.brushOpacity = brushOpacity;
-		obj.autoCreateTile = autoCreateTile;
 		if( terrain != null ) obj.showChecker = terrain.showChecker;
 		if( modified ) {
 			modified = false;
