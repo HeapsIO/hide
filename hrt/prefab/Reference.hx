@@ -72,7 +72,7 @@ class Reference extends Object3D {
 		var p = resolveRef(ctx.shared);
 		if(p == null)
 			return;
-		var parentCtx = ctx.shared.contexts.get(parent);
+		var parentCtx = parent == null ? null : ctx.shared.contexts.get(parent);
 		if(parentCtx == null || parentCtx.local3d != ctx.local3d) {
 			// Only apply reference Object3D properties (pos, scale...) to own local3D
 			// Not all refs will create their own scene object
