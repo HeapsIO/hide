@@ -124,7 +124,7 @@ class Configurator extends RendererFX {
 			var errorMessage = null;
 			if( parsedExpr == null ) {
 				var parser = new hscript.Parser();
-				parsedExpr = try parser.parseString(script) catch( e : hscript.Expr.Error ) { errorMessage = e.toString(); null; };
+				parsedExpr = try parser.parseString(script) catch( e : hscript.Expr.Error ) { errorMessage = hscript.Printer.errorToString(e); null; };
 			}
 			if( interp == null ) {
 				interp = new ConfiguratorInterp();
