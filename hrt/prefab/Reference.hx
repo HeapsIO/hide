@@ -146,7 +146,7 @@ class Reference extends Object3D {
 		var element = new hide.Element('
 			<div class="group" name="Reference">
 			<dl>
-				<dt>Reference</dt><dd><input type="text" field="refpath"/></dd>
+				<dt>Reference</dt><dd><input type="text" field="source"/></dd>
 				<dt>Edit</dt><dd><input type="checkbox" field="editMode"/></dd>
 			</dl>
 			</div>');
@@ -169,7 +169,7 @@ class Reference extends Object3D {
 
 		var props = ctx.properties.add(element, this, function(pname) {
 			ctx.onChange(this, pname);
-			if(pname == "refpath" || pname=="editMode") {
+			if(pname == "source" || pname=="editMode") {
 				ref = null;
 				updateProps();
 				if(!ctx.properties.isTempChange)
