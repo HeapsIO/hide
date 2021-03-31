@@ -25,6 +25,9 @@ class GenFogShader extends hrt.shader.PbrShader {
 		@param var noiseSpeed : Float;
 		@param var noiseAmount : Vec3;
 
+		@param var lightDirection : Vec3;
+		@param var lightColor : Vec3;
+
 		function fragment() {
 			var origin = getPosition();
 			var amount = 0.;
@@ -46,6 +49,7 @@ class GenFogShader extends hrt.shader.PbrShader {
 			}
 
 			var fogColor = mix(startColor, endColor, clamp(amount,0,1));
+			fogColor.rgb += (origin - camera.position).normalize().dot(lightDirection).max(0) * lightColor;
 			pixelColor = fogColor;
 		}
 
@@ -97,6 +101,9 @@ class GenFog extends RendererFX {
 	@:s public var posZ : Float;
 	@:s public var usePosition : Bool;
 
+	@:s public var lightColor = 0xFFFFFF;
+	@:s public var lightColorAmount : Float;
+
 	public function new(?parent) {
 		super(parent);
 		renderMode = AfterTonemapping;
@@ -140,6 +147,14 @@ class GenFog extends RendererFX {
 				fogPass.shader.noiseAmount.set(noise.amount * noise.distAmount, noise.amount * noise.distAmount, noise.amount);
 			}
 
+			var ls = r.getLightSystem().shadowLight;
+			if( ls == null )
+				fogPass.shader.lightDirection.set(0,0,0);
+			else
+				fogPass.shader.lightDirection.load(@:privateAccess ls.getShadowDirection());
+			fogPass.shader.lightColor.setColor(lightColor);
+			fogPass.shader.lightColor.scale3(lightColorAmount);
+
 
 			fogPass.setGlobals(ctx);
 			fogPass.render();
@@ -172,6 +187,10 @@ class GenFog extends RendererFX {
 					<dt>End Color</dt><dd><input type="color" field="endColor"/></dd>
 					<dt>Start Opacity</dt><dd><input type="range" min="0" max="1" field="startOpacity"/></dd>
 					<dt>End Opacity</dt><dd><input type="range" min="0" max="1" field="endOpacity"/></dd>
+				</div>
+				<div class="group" name="Light">
+					<dt>Light Color</dt><dd><input type="color" field="lightColor"/></dd>
+					<dt>Amount</dt><dd><input type="range" min="0" max="1" field="lightColorAmount"/></dd>
 				</div>
 				<div class="group" name="Rendering">
 					<dt>Render Mode</dt>
