@@ -4,6 +4,7 @@ package hrt.prefab.l3d;
 
 class MeshSprayObject extends h3d.scene.Object {
 	public var batches : Array<h3d.scene.MeshBatch> = [];
+	public var batchesMap : Map<String,h3d.scene.MeshBatch> = [];
 	override function getMaterials( ?arr : Array<h3d.mat.Material>, recursive=true ) {
 		if( !recursive ) {
 			// batches materials are considered local materials
@@ -17,28 +18,33 @@ class MeshSprayObject extends h3d.scene.Object {
 
 class MeshSpray extends Object3D {
 
-	override function makeInstance( ctx : Context ) {
-
-		ctx = ctx.clone(this);
+	override function createObject( ctx : Context ) {
 		var mspray = new MeshSprayObject(ctx.local3d);
-		ctx.local3d = mspray;
-		ctx.local3d.name = name;
-		updateInstance(ctx);
-
-		var batches = new Map();
+		// preallocate batches so their materials can be resolved
 		for( c in children ) {
-			if (!c.enabled)
-				continue;
-			if( c.type != "model" )
-				continue;
-			var batch = batches.get(c.source);
-			if( batch  == null ) {
+			if( !c.enabled || c.type != "model ") continue;
+			var batch = mspray.batchesMap.get(c.source);
+			if( batch == null ) {
 				var obj = ctx.loadModel(c.source).toMesh();
-				batch = new h3d.scene.MeshBatch(cast(obj.primitive,h3d.prim.MeshPrimitive), obj.material, ctx.local3d);
-				batch.begin();
-				batches.set(c.source, batch);
+				batch = new h3d.scene.MeshBatch(cast(obj.primitive,h3d.prim.MeshPrimitive), obj.material, mspray);
+				mspray.batchesMap.set(c.source, batch);
 				mspray.batches.push(batch);
 			}
+		}
+		return mspray;
+	}
+
+	override function make( ctx : Context ) {
+		if( !enabled )
+			return ctx;
+		ctx = super.make(ctx);
+		var mspray = Std.downcast(ctx.local3d, MeshSprayObject);
+		for( b in mspray.batches )
+			b.begin();
+		for( c in children ) {
+			if( !c.enabled || c.type != "model" )
+				continue;
+			var batch = mspray.batchesMap.get(c.source);
 			batch.setTransform(c.to(Object3D).getTransform());
 			batch.emitInstance();
 		}
@@ -894,6 +900,8 @@ class MeshSpray extends Object3D {
 		for( c in children )
 			if( c.type != "model" )
 				makeChildren(ctx, c);
+		// rebuild to apply per instance shaders
+		cast(ctx.local3d, MeshSprayObject).redraw();
 		return ctx;
 	}
 
