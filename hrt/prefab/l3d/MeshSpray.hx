@@ -22,7 +22,7 @@ class MeshSpray extends Object3D {
 		var mspray = new MeshSprayObject(ctx.local3d);
 		// preallocate batches so their materials can be resolved
 		for( c in children ) {
-			if( !c.enabled || c.type != "model ") continue;
+			if( !c.enabled || c.type != "model" ) continue;
 			var batch = mspray.batchesMap.get(c.source);
 			if( batch == null ) {
 				var obj = ctx.loadModel(c.source).toMesh();
