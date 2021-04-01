@@ -1293,7 +1293,7 @@ class FXEditor extends FileView {
 			menuItems.push(trackItem("Visibility", [{name: "visibility", clamp: [0., 1.]}]));
 		}
 		if(shaderElt != null && shaderElt.shaderDef != null) {
-			var params = shaderElt.shaderDef.shader.data.vars.filter(v -> v.kind == Param);
+			var params = shaderElt.shaderDef.shader.data.vars.filter(isPerInstance);
 			for(param in params) {
 				var tracks = null;
 				var isColor = false;
@@ -1383,6 +1383,17 @@ class FXEditor extends FileView {
 			}
 		}
 		return menuItems;
+	}
+
+	function isPerInstance( v : hxsl.Ast.TVar ) {
+		if( v.kind != Param )
+			return false;
+		if( v.qualifiers == null )
+			return false;
+		for( q in v.qualifiers )
+			if( q.match(PerInstance(_)) )
+				return true;
+		return false;
 	}
 
 	function updateGrid() {
