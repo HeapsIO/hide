@@ -4,8 +4,7 @@ import hrt.shader.CurvedNormal;
 import hrt.prefab.fx.Emitter;
 import hrt.shader.ParticleForward;
 
-class BackLightingFlat extends hxsl.Shader implements h3d.scene.MeshBatch.MeshBatchAccess {
-	public var perInstance : Bool = false;
+class BackLightingFlat extends hxsl.Shader {
 	static var SRC = {
 
 		@param var backLightingValue : Float;
@@ -17,8 +16,7 @@ class BackLightingFlat extends hxsl.Shader implements h3d.scene.MeshBatch.MeshBa
 	};
 }
 
-class BackLightingMask extends hxsl.Shader implements h3d.scene.MeshBatch.MeshBatchAccess {
-	public var perInstance : Bool = false;
+class BackLightingMask extends hxsl.Shader {
 	static var SRC = {
 
 		@const var VERTEX : Bool;

@@ -1,8 +1,6 @@
 package hrt.shader;
 
-class ParticleForward extends h3d.shader.pbr.DefaultForward implements h3d.scene.MeshBatch.MeshBatchAccess {
-
-	public var perInstance : Bool = false;
+class ParticleForward extends h3d.shader.pbr.DefaultForward {
 
 	static var SRC = {
 
@@ -75,13 +73,13 @@ class ParticleForward extends h3d.shader.pbr.DefaultForward implements h3d.scene
 				var TBN = mat3(	vec3(localTangent.x, localBitangent.x, localNormal.x),
 								vec3(localTangent.y, localBitangent.y, localNormal.y),
 								vec3(localTangent.z, localBitangent.z, localNormal.z));
-				
+
 				hl2_basis0Transformed = normalize(hl2_basis0 * TBN * global.modelView.mat3());
 				hl2_basis1Transformed = normalize(hl2_basis1 * TBN * global.modelView.mat3());
 				hl2_basis2Transformed = normalize(hl2_basis2 * TBN * global.modelView.mat3());
 
-				var weights = saturate(vec3(lightDirection.dot(hl2_basis0Transformed), 
-											lightDirection.dot(hl2_basis1Transformed), 
+				var weights = saturate(vec3(lightDirection.dot(hl2_basis0Transformed),
+											lightDirection.dot(hl2_basis1Transformed),
 											lightDirection.dot(hl2_basis2Transformed)));
 
 				color0 += weights.x * lightColor * directLightingIntensity;
@@ -138,9 +136,9 @@ class ParticleForward extends h3d.shader.pbr.DefaultForward implements h3d.scene
 		function init() {
 
 			// Normal Mapping with pixel mode
-			if( NORMAL && !VERTEX ) 
+			if( NORMAL && !VERTEX )
 				normalMapping();
-			
+
 			view = (cameraPosition - transformedPosition).normalize();
 			NdV = transformedNormal.dot(view).max(0.);
 		}
@@ -156,8 +154,8 @@ class ParticleForward extends h3d.shader.pbr.DefaultForward implements h3d.scene
 			if( VERTEX && NORMAL ) {
 				// Normal Mapping with vertex mode
 				normalMapping();
-				var w = saturate(vec3(	transformedNormal.dot(hl2_basis0Transformed), 
-										transformedNormal.dot(hl2_basis1Transformed), 
+				var w = saturate(vec3(	transformedNormal.dot(hl2_basis0Transformed),
+										transformedNormal.dot(hl2_basis1Transformed),
 										transformedNormal.dot(hl2_basis2Transformed)));
 				lighting += color0 * w.x + color1 * w.y + color2 * w.z;
 			}

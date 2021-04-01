@@ -1,8 +1,6 @@
 package hrt.shader;
 
-class CurvedNormal extends hxsl.Shader implements h3d.scene.MeshBatch.MeshBatchAccess {
-
-	public var perInstance : Bool = false;
+class CurvedNormal extends hxsl.Shader {
 
 	static var SRC = {
 
@@ -18,7 +16,7 @@ class CurvedNormal extends hxsl.Shader implements h3d.scene.MeshBatch.MeshBatchA
 		};
 
 		var relativePosition: Vec3;
-		
+
 		var transformedNormal : Vec3;
 		var localNormal : Vec3;
 		var localTangent : Vec3;
