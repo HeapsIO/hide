@@ -151,9 +151,11 @@ class MeshSprayObject extends h3d.scene.Object {
 		super.emitRec(ctx);
 	}
 
-	public function redraw() {
-		for( b in batches )
+	public function redraw(updateShaders=false) {
+		for( b in batches ) {
+			if( updateShaders ) b.shadersChanged = true;
 			b.begin();
+		}
 		for( c in children ) {
 			c.culled = false;
 			if( c.alwaysSync ) continue;
@@ -901,7 +903,7 @@ class MeshSpray extends Object3D {
 			if( c.type != "model" )
 				makeChildren(ctx, c);
 		// rebuild to apply per instance shaders
-		cast(ctx.local3d, MeshSprayObject).redraw();
+		cast(ctx.local3d, MeshSprayObject).redraw(true);
 		return ctx;
 	}
 
