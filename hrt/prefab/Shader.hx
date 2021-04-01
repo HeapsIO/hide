@@ -43,13 +43,10 @@ class Shader extends Prefab {
 		}
 	}
 
-	override function makeInstance(ctx:Context):Context {
-		if(source == null)
-			return ctx;
-		ctx = ctx.clone(this);
+	public function makeShader(ctx:Context,withInit=true) {
 		loadShaderDef(ctx);
 		if(shaderDef == null)
-			return ctx;
+			return null;
 		var shader = new hxsl.DynamicShader(shaderDef.shader);
 		for( v in shaderDef.inits ) {
 			#if !hscript
@@ -58,6 +55,22 @@ class Shader extends Prefab {
 			shader.hscriptSet(v.variable.name, v.value);
 			#end
 		}
+		if( withInit ) {
+			var prev = ctx.custom;
+			ctx.custom = shader;
+			updateInstance(ctx);
+			ctx.custom = prev;
+		}
+		return shader;
+	}
+
+	override function makeInstance(ctx:Context):Context {
+		if(source == null)
+			return ctx;
+		ctx = ctx.clone(this);
+		var shader = makeShader(ctx,false);
+		if( shader == null )
+			return ctx;
 		if(ctx.local2d != null) {
 			var drawable = Std.downcast(ctx.local2d, h2d.Drawable);
 			if (drawable != null) {
