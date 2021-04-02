@@ -69,7 +69,7 @@ class Spline extends Object3D {
 	@:s var step : Float = 1.0;
 	@:s var threshold : Float = 0.01;
 
-	// Save/Load the curve as an array of absPos
+	// Save/Load the curve as an array of local transform
 	@:c public var pointsData : Array<h3d.Matrix> = [];
 
 	// Graphic
@@ -413,7 +413,7 @@ class Spline extends Object3D {
 		lineGraphics.clear();
 		var b = true;
 		for( s in data.samples ) {
-			var localPos = ctx.local3d.globalToLocal(s.pos);
+			var localPos = ctx.local3d.globalToLocal(s.pos.clone());
 			b ? lineGraphics.moveTo(localPos.x, localPos.y, localPos.z) : lineGraphics.lineTo(localPos.x, localPos.y, localPos.z);
 			b = false;
 		}
