@@ -45,9 +45,11 @@ class MeshSpray extends Object3D {
 			if( !c.enabled || c.type != "model" )
 				continue;
 			var batch = mspray.batchesMap.get(c.source);
-			batch.setTransform(c.to(Object3D).getTransform());
+			batch.worldPosition = c.to(Object3D).getTransform();
 			batch.emitInstance();
 		}
+		for( b in mspray.batches )
+			b.worldPosition = null;
 		return ctx;
 	}
 
@@ -172,13 +174,12 @@ class MeshSprayObject extends h3d.scene.Object {
 				batches.push(batch);
 				blookup.set(m.primitive, batch);
 			}
-			@:privateAccess {
-				batch.absPos.load(c.absPos);
-				batch.posChanged = false;
-			}
+			batch.worldPosition = c.absPos;
 			batch.emitInstance();
 			c.culled = true;
 		}
+		for( b in batches )
+			b.worldPosition = null;
 	}
 
 }
