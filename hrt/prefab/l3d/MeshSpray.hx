@@ -39,13 +39,17 @@ class MeshSpray extends Object3D {
 			return ctx;
 		ctx = super.make(ctx);
 		var mspray = Std.downcast(ctx.local3d, MeshSprayObject);
-		for( b in mspray.batches )
+		var pos = mspray.getAbsPos();
+		var tmp = new h3d.Matrix();
+		for( b in mspray.batches ) {
 			b.begin();
+			b.worldPosition = tmp;
+		}
 		for( c in children ) {
 			if( !c.enabled || c.type != "model" )
 				continue;
 			var batch = mspray.batchesMap.get(c.source);
-			batch.worldPosition = c.to(Object3D).getTransform();
+			tmp.multiply3x4(c.to(Object3D).getTransform(), pos);
 			batch.emitInstance();
 		}
 		for( b in mspray.batches )
