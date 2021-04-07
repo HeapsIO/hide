@@ -145,7 +145,7 @@ class PbrRenderer extends h3d.scene.pbr.Renderer {
 
 	override function getPassByName(name:String):h3d.pass.Base {
 		switch( name ) {
-		case "highlight", "hightlightBack":
+		case "highlight", "highlightBack":
 			return defaultPass;
 		}
 		return super.getPassByName(name);
