@@ -49,7 +49,7 @@ class GenFogShader extends hrt.shader.PbrShader {
 			}
 
 			var fogColor = mix(startColor, endColor, clamp(amount,0,1));
-			fogColor.rgb += (origin - camera.position).normalize().dot(lightDirection).max(0) * lightColor;
+			fogColor.rgb += (camera.position - origin).normalize().dot(lightDirection).max(0) * lightColor;
 			pixelColor = fogColor;
 		}
 
