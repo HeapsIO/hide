@@ -362,7 +362,7 @@ class LightProbe extends Object3D {
 					lpo.env.source.waitLoad( () ->  s.source = lpo.env.diffuse );
 				else
 					s.source = lpo.env.diffuse;
-				s.irrRotation.set(Math.cos(lpo.env.rot), Math.sin(lpo.env.rot));
+				s.irrRotation.set(Math.cos(lpo.env.rotation), Math.sin(lpo.env.rotation));
 				s.power = lpo.env.power * lpo.env.power;
 			}
 
@@ -377,7 +377,7 @@ class LightProbe extends Object3D {
 					lpo.env.source.waitLoad( () -> s.source = lpo.env.specular );
 				else
 					s.source = lpo.env.specular;
-				s.irrRotation.set(Math.cos(lpo.env.rot), Math.sin(lpo.env.rot));
+				s.irrRotation.set(Math.cos(lpo.env.rotation), Math.sin(lpo.env.rotation));
 				s.power = lpo.env.power * lpo.env.power;
 			}
 
