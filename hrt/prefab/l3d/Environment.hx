@@ -97,7 +97,7 @@ class Environment extends Object3D {
 		env.ignoredSpecLevels = ignoredSpecLevels;
 		env.hdrMax = hdrMax;
 
-		env.rot = rotation;
+		env.rotation = hxd.Math.degToRad(rotation);
 		env.power = power;
 
 		if( propName == "force" || (needLoad && !loadFromBinary()) ) {

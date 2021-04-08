@@ -134,7 +134,7 @@ class LightProbeObject extends h3d.scene.Mesh {
 		indirectShader.irrSpecular = env.specular;
 		indirectShader.irrSpecularLevels = env.specLevels;
 		indirectShader.irrPower = env.power * env.power;
-		indirectShader.irrRotation.set(Math.cos(env.rot), Math.sin(env.rot));
+		indirectShader.irrRotation.set(Math.cos(env.rotation), Math.sin(env.rotation));
 
 		super.emit(ctx);
 	}
@@ -288,7 +288,7 @@ class LightProbe extends Object3D {
 				if( lpo.env != null ) {
 					lpo.env.power = power;
 					lpo.env.hdrMax = hdrMax;
-					lpo.env.rot = hxd.Math.degToRad(rotation);
+					lpo.env.rotation = hxd.Math.degToRad(rotation);
 					lpo.env.sampleBits = sampleBits;
 					lpo.env.ignoredSpecLevels = ignoredSpecLevels;
 					if( lpo.env.specSize != specSize ) {
