@@ -83,20 +83,19 @@ class BaseFX extends hrt.prefab.Library {
 	}
 
 	public static function makeShaderParams(ctx: Context, shaderElt: hrt.prefab.Shader) {
-		shaderElt.loadShaderDef(ctx);
-		var shaderDef = shaderElt.shaderDef;
+		var shaderDef = shaderElt.getShaderDefinition(ctx);
 		if(shaderDef == null)
 			return null;
 
 		var ret : ShaderParams = [];
 
-		for(v in shaderDef.shader.data.vars) {
+		for(v in shaderDef.data.vars) {
 			if(v.kind != Param)
 				continue;
 
 			var prop = Reflect.field(shaderElt.props, v.name);
 			if(prop == null)
-				prop = hrt.prefab.Shader.getDefault(v.type);
+				prop = hrt.prefab.DynamicShader.getDefault(v.type);
 
 			var curves = Curve.getCurves(shaderElt, v.name);
 			if(curves == null || curves.length == 0)
@@ -139,7 +138,7 @@ class BaseFX extends hrt.prefab.Library {
 			}
 		}
 
-		var shader = elt.to(hrt.prefab.Shader);
+		var shader = elt.to(hrt.prefab.DynamicShader);
 		if(shader == null)
 			return;
 

@@ -48,7 +48,7 @@ class ShaderLoader {
 		@:privateAccess s.initialize();
 		var convertedInits = [];
 		for (init in chk.inits) {
-			convertedInits.push({variable: init.v, value: hrt.prefab.Shader.evalConst(init.e) });
+			convertedInits.push({variable: init.v, value: hrt.prefab.DynamicShader.evalConst(init.e) });
 		}
 		var s : CachedShader = { file : e.file, name : name, shader : s, inits : convertedInits, watch : null };
 		if(sys.FileSystem.exists(s.file)) {

@@ -1292,8 +1292,9 @@ class FXEditor extends FileView {
 			});
 			menuItems.push(trackItem("Visibility", [{name: "visibility", clamp: [0., 1.]}]));
 		}
-		if(shaderElt != null && shaderElt.shaderDef != null) {
-			var params = shaderElt.shaderDef.shader.data.vars.filter(isPerInstance);
+		if(shaderElt != null) {
+			var shader = shaderElt.makeShader();
+			var params = shader == null ? [] : @:privateAccess shader.shader.data.vars.filter(isPerInstance);
 			for(param in params) {
 				var tracks = null;
 				var isColor = false;

@@ -1,6 +1,6 @@
 package hrt.prefab;
 
-class ShaderGraph extends Shader {
+class ShaderGraph extends DynamicShader {
 
 	public function new(?parent) {
 		super(parent);
