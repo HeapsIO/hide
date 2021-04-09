@@ -7,7 +7,6 @@ class DynamicShader extends Shader {
 	public function new(?parent) {
 		super(parent);
 		type = "shader";
-		props = {};
 	}
 
 	override function save() {
@@ -15,35 +14,11 @@ class DynamicShader extends Shader {
 		return super.save();
 	}
 
-	override function updateInstance(ctx: Context, ?propName) {
-		var shader = Std.downcast(ctx.custom, hxsl.DynamicShader);
-		if(shader == null || shaderDef == null)
-			return;
-		for(v in shaderDef.shader.data.vars) {
-			if(v.kind != Param)
-				continue;
-			var val : Dynamic = Reflect.field(props, v.name);
-			switch(v.type) {
-				case TVec(_, VFloat):
-					if(val != null)
-						val = h3d.Vector.fromArray(val);
-					else
-						val = new h3d.Vector();
-				case TSampler2D:
-					if(val != null)
-						val = ctx.loadTexture(val);
-					var childNoise = getOpt(hrt.prefab.l2d.NoiseGenerator, v.name);
-					if(childNoise != null)
-						val = childNoise.toTexture();
-				default:
-			}
-			if(val == null)
-				continue;
-			shader.setParamValue(v, val);
-		}
+	override function setShaderParam(shader:hxsl.Shader, v:hxsl.Ast.TVar, value:Dynamic) {
+		cast(shader,hxsl.DynamicShader).setParamValue(v, value);
 	}
 
-	override function getShaderDefinition(?ctx:Context):hxsl.SharedShader {
+	override function getShaderDefinition(ctx:Context):hxsl.SharedShader {
 		if( shaderDef == null && ctx != null )
 			loadShaderDef(ctx);
 		return shaderDef == null ? null : shaderDef.shader;
@@ -60,10 +35,7 @@ class DynamicShader extends Shader {
 			shader.hscriptSet(v.variable.name, v.value);
 			#end
 		}
-		var prev = ctx.custom;
-		ctx.custom = shader;
-		updateInstance(ctx);
-		ctx.custom = prev;
+		syncShaderVars(shader, shaderDef.shader);
 		return shader;
 	}
 
@@ -114,60 +86,6 @@ class DynamicShader extends Shader {
 		}
 		#end
 	}
-
-	#if editor
-
-	override function edit( ctx : EditContext ) {
-		super.edit(ctx);
-
-		loadShaderDef(ctx.rootContext);
-		if(shaderDef == null)
-			return;
-
-		var group = new hide.Element('<div class="group" name="Shader"></div>');
-
-		var props = [];
-		for(v in shaderDef.shader.data.vars) {
-			if(v.kind != Param)
-				continue;
-			var prop = makeShaderType(v);
-			props.push({name: v.name, t: prop});
-		}
-		group.append(hide.comp.PropsEditor.makePropsList(props));
-
-		ctx.properties.add(group,this.props, function(pname) {
-			ctx.onChange(this, pname);
-		});
-	}
-
-	function makeShaderType( v : hxsl.Ast.TVar ) : hrt.prefab.Props.PropType {
-		var min : Null<Float> = null, max : Null<Float> = null;
-		if( v.qualifiers != null )
-			for( q in v.qualifiers )
-				switch( q ) {
-				case Range(rmin, rmax): min = rmin; max = rmax;
-				default:
-				}
-		return switch( v.type ) {
-		case TInt:
-			PInt(min == null ? null : Std.int(min), max == null ? null : Std.int(max));
-		case TFloat:
-			PFloat(min != null ? min : 0.0, max != null ? max : 1.0);
-		case TBool:
-			PBool;
-		case TSampler2D:
-			PTexture;
-		case TVec(n, VFloat):
-			PVec(n);
-		default:
-			PUnsupported(hxsl.Ast.Tools.toString(v.type));
-		}
-	}
-	override function getHideProps() : HideProps {
-		return { icon : "cog", name : "Shader", fileSource : ["hx"], allowParent : function(p) return p.to(Object2D) != null || p.to(Object3D) != null || p.to(Material) != null  };
-	}
-
-	#end
 
 	public static function evalConst( e : hxsl.Ast.TExpr ) : Dynamic {
 		return switch( e.e ) {
