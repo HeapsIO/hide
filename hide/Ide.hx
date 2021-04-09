@@ -576,6 +576,7 @@ class Ide {
 		var title = config.current.get("hide.windowTitle");
 		window.title = title != null ? title : ((isCDB ? "CastleDB" : "HIDE") + " - " + dir);
 		shaderLoader = new hide.tools.ShaderLoader();
+		hxsl.Cache.clear();
 
 		var localDir = sys.FileSystem.exists(resourceDir) ? resourceDir : projectDir;
 		var fsconf = config.current.get("fs.config", "default");
