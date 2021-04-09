@@ -115,7 +115,7 @@ class Shader extends Prefab {
 		for(v in shaderDef.data.vars) {
 			if( v.kind != Param )
 				continue;
-			var prop = makeShaderType(v);
+			var prop = makeShaderParam(v);
 			if( prop == null ) continue;
 			props.push({name: v.name, t: prop});
 		}
@@ -125,7 +125,7 @@ class Shader extends Prefab {
 		});
 	}
 
-	function makeShaderType( v : hxsl.Ast.TVar ) : hrt.prefab.Props.PropType {
+	function makeShaderParam( v : hxsl.Ast.TVar ) : hrt.prefab.Props.PropType {
 		var min : Null<Float> = null, max : Null<Float> = null;
 		if( v.qualifiers != null )
 			for( q in v.qualifiers )
