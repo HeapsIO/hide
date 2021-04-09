@@ -90,7 +90,16 @@ class Shader extends Prefab {
 				for( m in material.getMaterials(ctx) )
 					m.mainPass.addShader(shader);
 			} else {
-				for( obj in shared.getObjects(parent, h3d.scene.Object) )
+				var objs;
+				if( parent.type == "object" ) {
+					// apply to all immediate children
+					objs = [];
+					for( c in parent.children )
+						for( o in shared.getObjects(c, h3d.scene.Object) )
+							objs.push(o);
+				} else
+					objs = shared.getObjects(parent, h3d.scene.Object);
+				for( obj in objs )
 					for( m in obj.getMaterials(false) )
 						m.mainPass.addShader(shader);
 			}
