@@ -18,9 +18,29 @@ typedef ShaderParams = Array<ShaderParam>;
 
 class ShaderAnimation extends Evaluator {
 	public var params : ShaderParams;
-	public var shader : hxsl.DynamicShader;
+	public var shader : hxsl.Shader;
 
 	public function setTime(time: Float) {
+		for(param in params) {
+			var v = param.def;
+			var val : Dynamic;
+			switch(v.type) {
+			case TFloat: val = getFloat(param.value, time);
+			case TInt: val = hxd.Math.round(getFloat(param.value, time));
+			case TBool: val = getFloat(param.value, time) >= 0.5;
+			case TVec(_, VFloat): val = getVector(param.value, time);
+			default:
+				continue;
+			}
+			Reflect.setProperty(shader, v.name, val);
+		}
+	}
+}
+
+class ShaderDynAnimation extends ShaderAnimation {
+
+	override function setTime(time: Float) {
+		var shader : hxsl.DynamicShader = cast shader;
 		for(param in params) {
 			var v = param.def;
 			switch(v.type) {
@@ -138,13 +158,13 @@ class BaseFX extends hrt.prefab.Library {
 			}
 		}
 
-		var shader = elt.to(hrt.prefab.DynamicShader);
+		var shader = elt.to(hrt.prefab.Shader);
 		if(shader == null)
 			return;
 
 		for(shCtx in ctx.shared.getContexts(elt)) {
 			if(shCtx.custom == null) continue;
-			var anim: ShaderAnimation = new ShaderAnimation(new hxd.Rand(0));
+			var anim = Std.is(shCtx.custom,hxsl.DynamicShader) ? new ShaderDynAnimation(new hxd.Rand(0)) : new ShaderAnimation(new hxd.Rand(0));
 			anim.shader = shCtx.custom;
 			anim.params = makeShaderParams(ctx, shader);
 			anims.push(anim);
