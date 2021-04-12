@@ -2,7 +2,7 @@ package hrt.prefab;
 
 class Shader extends Prefab {
 
-	public function new(?parent) {
+	function new(?parent) {
 		super(parent);
 		props = {};
 	}

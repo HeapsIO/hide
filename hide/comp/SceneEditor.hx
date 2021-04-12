@@ -2333,7 +2333,7 @@ class SceneEditor {
 			return {
 				label : name,
 				click : function() {
-					var s = new hrt.prefab.Shader(parentElt);
+					var s = new hrt.prefab.DynamicShader(parentElt);
 					s.source = path;
 					s.name = name;
 					addObject([s]);
