@@ -297,7 +297,7 @@ class HeightMapMesh extends h3d.scene.Object {
 		var t = hmap.getTile(x,y);
 		if( !ctx.camera.frustum.hasBounds(t.bounds) || t.isEmpty() ) {
 			if( t.root != null ) t.root.visible = false;
-			return false;
+			return x >= 0 && y >= 0 && x < hmap.sizeX && y < hmap.sizeY;
 		}
 		if( t.root != null )
 			t.root.visible = true;
@@ -361,6 +361,7 @@ class HeightMapMesh extends h3d.scene.Object {
 class HeightMap extends Object3D {
 
 	var tilesCache : Map<Int,HeightMapTile> = new Map();
+	var emptyTile : HeightMapTile;
 	@:c var textures : Array<{ path : String, kind : HeightMapTextureKind, enable : Bool }> = [];
 	@:s var size = 128.;
 	@:s var heightScale = 0.2;
@@ -375,6 +376,8 @@ class HeightMap extends Object3D {
 		var scale : Float;
 		var killAlpha : Float;
 	};
+	@:s var sizeX = 0;
+	@:s var sizeY = 0;
 
 	// todo : instead of storing the context, we should find a way to have a texture loader
 	var storedCtx : hrt.prefab.Context;
@@ -476,6 +479,11 @@ class HeightMap extends Object3D {
 	}
 
 	function getTile( x : Int, y : Int ) {
+		if( sizeX > 0 && sizeY > 0 && (x < 0 || y < 0 || x >= sizeX || y >= sizeY) ) {
+			if( emptyTile == null )
+				emptyTile = new HeightMapTile(this, -1, -1);
+			return emptyTile;
+		}
 		var id = x + y * 65535;
 		var t = tilesCache[id];
 		if( t != null )
@@ -554,9 +562,10 @@ class HeightMap extends Object3D {
 
 	override function updateInstance( ctx : Context, ?propName : String ) {
 		super.updateInstance(ctx, propName);
-/*
+
+		var mesh = cast(ctx.local3d, HeightMapMesh);
 		if( propName == "killAlpha" ) {
-			var world : WorldNoSoil = Std.downcast(mesh.getObjectByName("$world"), WorldNoSoil);
+			var world = @:privateAccess mesh.world;
 			if( world != null ) {
 				for( c in @:privateAccess world.allChunks )
 					for( m in c.root )
@@ -564,11 +573,10 @@ class HeightMap extends Object3D {
 			}
 			return;
 		}
-*/
+
 		for( t in tilesCache )
 			t.remove();
 		tilesCache = new Map();
-		var mesh = cast(ctx.local3d, HeightMapMesh);
 		mesh.init();
 	}
 
@@ -596,6 +604,7 @@ class HeightMap extends Object3D {
 				<dt>MinZ</dt><dd><input type="range" min="-1000" max="0" field="minZ"/></dd>
 				<dt>MaxZ</dt><dd><input type="range" min="0" max="1000" field="maxZ"/></dd>
 				<dt>Quality</dt><dd><input type="range" min="0" max="4" field="quality" step="1"/></dd>
+				<dt>Fixed Size</dt><dd><input type="number" style="width:50px" field="sizeX"/><input type="number" style="width:50px" field="sizeY"/></dd>
 			</dl>
 			</div>
 			<div class="group" name="Textures">
