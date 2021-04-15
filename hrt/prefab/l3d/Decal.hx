@@ -82,10 +82,8 @@ class Decal extends Object3D {
 				if( shader != null ){
 					shader.albedoTexture = albedoMap != null ? ctx.loadTexture(albedoMap) : null;
 					shader.normalTexture = normalMap != null ? ctx.loadTexture(normalMap) : null;
-					shader.pbrTexture = pbrMap != null ? ctx.loadTexture(pbrMap) : null;
 					if(shader.albedoTexture != null) shader.albedoTexture.wrap = Repeat;
 					if(shader.normalTexture != null) shader.normalTexture.wrap = Repeat;
-					if(shader.pbrTexture != null) shader.pbrTexture.wrap = Repeat;
 					shader.albedoStrength = albedoStrength;
 					shader.normalStrength = normalStrength;
 					shader.pbrStrength = pbrStrength;
@@ -95,6 +93,17 @@ class Decal extends Object3D {
 					shader.fadePower = fadePower;
 					shader.fadeStart = fadeStart;
 					shader.fadeEnd = fadeEnd;
+				}
+				var pbrTexture = pbrMap != null ? ctx.loadTexture(pbrMap) : null;
+				if( pbrTexture != null ) {
+					var propsTexture = mesh.material.mainPass.getShader(h3d.shader.pbr.PropsTexture);
+					if( propsTexture == null ) 
+						propsTexture = mesh.material.mainPass.addShader(new h3d.shader.pbr.PropsTexture());
+					propsTexture.texture = pbrTexture;
+					propsTexture.texture.wrap = Repeat;
+				}
+				else {
+					mesh.material.mainPass.removeShader(mesh.material.mainPass.getShader( h3d.shader.pbr.PropsTexture));
 				}
 			case BeforeTonemapping, AfterTonemapping:
 				var shader = mesh.material.mainPass.getShader(h3d.shader.pbr.VolumeDecal.DecalOverlay);
@@ -182,7 +191,7 @@ class Decal extends Object3D {
 						+ params +
 						'<dt>Render Mode</dt>
 						<dd><select field="renderMode">
-							<option value="Decal">Default</option>
+							<option value="Default">Default</option>
 							<option value="BeforeTonemapping">Before Tonemapping</option>
 							<option value="AfterTonemapping">After Tonemapping</option>
 							<option value="Terrain">Terrain</option>
