@@ -60,6 +60,7 @@ class Light extends Object3D {
 	@:s public var maxDist : Float = -1;
 	@:s public var minDist : Float = -1;
 	@:s public var autoShrink : Bool = true;
+	@:s public var autoZPlanes : Bool = false;
 
 	// Debug
 	@:s public var debugDisplay : Bool = true;
@@ -182,6 +183,7 @@ class Light extends Object3D {
 					s.maxDist = maxDist;
 					s.minDist = minDist;
 					s.autoShrink = autoShrink;
+					s.autoZPlanes = autoZPlanes;
 				}
 			case Spot:
 				var sl = Std.downcast(light, h3d.scene.pbr.SpotLight);
@@ -410,6 +412,7 @@ class Light extends Object3D {
 				{ name: "maxDist", t: PFloat(0, 1000), def: -1 },
 				{ name: "minDist", t: PFloat(0, 50), def: -1 },
 				{ name: "autoShrink", t: PBool, def: true },
+				{ name: "autoZPlanes", t: PBool, def: false },
 			]));
 		case Spot:
 			group.append(hide.comp.PropsEditor.makePropsList([
