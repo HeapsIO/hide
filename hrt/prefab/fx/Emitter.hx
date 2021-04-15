@@ -100,6 +100,12 @@ private class ParticleTransform {
 		this.z = z;
 	}
 
+	public function setScale( x, y, z ) {
+		this.scaleX = x;
+		this.scaleY = y;
+		this.scaleZ = z;
+	}
+
 	public function calcAbsPos() {
 		qRot.toMatrix(absPos);
 		absPos._11 *= scaleX;
@@ -187,14 +193,6 @@ private class ParticleInstance  {
 		emitter = null;
 	}
 
-	public function setPosition( x, y, z ) {
-		transform.setPosition(x, y, z);
-	}
-
-	public function setRotation( quat ) {
-		transform.setRotation(quat);
-	}
-
 	static var tmpRot = new h3d.Vector();
 	static var tmpOffset = new h3d.Vector();
 	static var tmpScale = new h3d.Vector();
@@ -239,12 +237,12 @@ private class ParticleInstance  {
 		if( life == 0 ) {
 			// START LOCAL SPEED
 			evaluator.getVector(def.startSpeed, 0.0, tmpSpeedAccumulation);
-			if(tmpSpeedAccumulation.length() > 0.001)
+			if(tmpSpeedAccumulation.lengthSq() > 0.001)
 				tmpSpeedAccumulation.transform3x3(orientation.toMatrix(tmpMat));
 			add(speedAccumulation, tmpSpeedAccumulation);
 			// START WORLD SPEED
 			evaluator.getVector(def.startWorldSpeed, 0.0, tmpSpeedAccumulation);
-			if(tmpSpeedAccumulation.length() > 0.001)
+			if(tmpSpeedAccumulation.lengthSq() > 0.001)
 				tmpSpeedAccumulation.transform3x3(emitter.invTransform);
 			add(speedAccumulation, tmpSpeedAccumulation);
 		}
@@ -252,18 +250,18 @@ private class ParticleInstance  {
 		// ACCELERATION
 		evaluator.getVector(def.acceleration, t, tmpSpeedAccumulation);
 		tmpSpeedAccumulation.scale3(dt);
-		if(tmpSpeedAccumulation.length() > 0.001)
+		if(tmpSpeedAccumulation.lengthSq() > 0.001)
 			tmpSpeedAccumulation.transform3x3(orientation.toMatrix(tmpMat));
 		add(speedAccumulation, tmpSpeedAccumulation);
 		// WORLD ACCELERATION
 		evaluator.getVector(def.worldAcceleration, t, tmpSpeedAccumulation);
 		tmpSpeedAccumulation.scale3(dt);
-		if(tmpSpeedAccumulation.length() > 0.001 && emitter.simulationSpace == Local)
+		if(tmpSpeedAccumulation.lengthSq() > 0.001 && emitter.simulationSpace == Local)
 			tmpSpeedAccumulation.transform3x3(emitter.invTransform);
 		add(speedAccumulation, tmpSpeedAccumulation);
 		// SPEED
 		evaluator.getVector(def.localSpeed, t, tmpLocalSpeed);
-		if(tmpLocalSpeed.length() > 0.001)
+		if(tmpLocalSpeed.lengthSq() > 0.001)
 			tmpLocalSpeed.transform3x3(orientation.toMatrix(tmpMat));
 		// WORLD SPEED
 		evaluator.getVector(def.worldSpeed, t, tmpWorldSpeed);
@@ -274,6 +272,13 @@ private class ParticleInstance  {
 		add(tmpSpeed, tmpLocalSpeed);
 		add(tmpSpeed, tmpWorldSpeed);
 		add(tmpSpeed, speedAccumulation);
+
+		if(emitter.simulationSpace == World) {
+			tmpSpeed.x *= emitter.worldScale.x;
+			tmpSpeed.y *= emitter.worldScale.y;
+			tmpSpeed.z *= emitter.worldScale.z;
+		}
+
 		transform.x += tmpSpeed.x * dt;
 		transform.y += tmpSpeed.y * dt;
 		transform.z += tmpSpeed.z * dt;
@@ -458,6 +463,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var useCollision : Bool = false;
 
 	public var invTransform : h3d.Matrix;
+	public var worldScale = new h3d.Vector(1,1,1);
 
 	var random: hxd.Rand;
 	var randomSeed = 0;
@@ -644,25 +650,24 @@ class EmitterObject extends h3d.scene.Object {
 					}
 
 					tmpOffset.transform(tmpMat);
-					part.setPosition(tmpOffset.x, tmpOffset.y, tmpOffset.z);
+					part.transform.setPosition(tmpOffset.x, tmpOffset.y, tmpOffset.z);
 					tmpQuat.multiply(emitterQuat, tmpQuat);
-					part.setRotation(tmpQuat);
+					part.transform.setRotation(tmpQuat);
 					part.orientation.load(tmpQuat);
 				case World:
 					tmpPt.set(tmpOffset.x, tmpOffset.y, tmpOffset.z);
 					localToGlobal(tmpPt);
-					part.setPosition(tmpPt.x, tmpPt.y, tmpPt.z);
-					if(emitterQuat == null) {
-						emitterQuat = tmpEmitterQuat;
-						tmpMat.load(getAbsPos());
-						tmpMat.getScale(tmpScale);
-						tmpMat.prependScale(1.0/tmpScale.x, 1.0/tmpScale.y, 1.0/tmpScale.z);
-						emitterQuat.initRotateMatrix(tmpMat);
-						emitterQuat.normalize();
-					}
+					part.transform.setPosition(tmpPt.x, tmpPt.y, tmpPt.z);
+					emitterQuat = tmpEmitterQuat;
+					tmpMat.load(getAbsPos());
+					tmpMat.getScale(tmpScale);
+					tmpMat.prependScale(1.0/tmpScale.x, 1.0/tmpScale.y, 1.0/tmpScale.z);
+					emitterQuat.initRotateMatrix(tmpMat);
+					emitterQuat.normalize();
 					tmpQuat.multiply(tmpQuat, emitterQuat);
-					part.setRotation(tmpQuat);
+					part.transform.setRotation(tmpQuat);
 					part.orientation.load(tmpQuat);
+					part.transform.setScale(worldScale.x, worldScale.y, worldScale.z);
 			}
 
 			var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
@@ -770,6 +775,7 @@ class EmitterObject extends h3d.scene.Object {
 		if( parent != null ) {
 			invTransform.load(parent.getAbsPos());
 			invTransform.invert();
+			parent.getAbsPos().getScale(worldScale);
 		}
 		vecPool.begin();
 
