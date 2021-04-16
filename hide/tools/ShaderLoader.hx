@@ -82,6 +82,7 @@ class ShaderLoader {
 
 	function loadShaderString( file : String, content : String, name : String ) {
 		var parser = new hscript.Parser();
+		parser.preprocesorValues.set("editor", true);
 		var decls = parser.parseModule(content, file);
 		var cl = null, cf = null;
 		for( d in decls ) {
