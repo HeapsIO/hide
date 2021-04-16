@@ -3,6 +3,8 @@ package hrt.prefab;
 class DynamicShader extends Shader {
 
 	var shaderDef : hrt.prefab.ContextShared.ShaderDef;
+	var shaderClass : Class<hxsl.Shader>;
+	@:s var isInstance : Bool;
 
 	public function new(?parent) {
 		super(parent);
@@ -15,6 +17,10 @@ class DynamicShader extends Shader {
 	}
 
 	override function setShaderParam(shader:hxsl.Shader, v:hxsl.Ast.TVar, value:Dynamic) {
+		if( isInstance ) {
+			super.setShaderParam(shader,v,value);
+			return;
+		}
 		cast(shader,hxsl.DynamicShader).setParamValue(v, value);
 	}
 
@@ -27,13 +33,19 @@ class DynamicShader extends Shader {
 	override function makeShader( ?ctx:Context ) {
 		if( getShaderDefinition(ctx) == null )
 			return null;
-		var shader = new hxsl.DynamicShader(shaderDef.shader);
-		for( v in shaderDef.inits ) {
-			#if !hscript
-			throw "hscript required";
-			#else
-			shader.hscriptSet(v.variable.name, v.value);
-			#end
+		var shader;
+		if( isInstance )
+			shader = Type.createInstance(shaderClass,[]);
+		else {
+			var dshader = new hxsl.DynamicShader(shaderDef.shader);
+			for( v in shaderDef.inits ) {
+				#if !hscript
+				throw "hscript required";
+				#else
+				dshader.hscriptSet(v.variable.name, v.value);
+				#end
+			}
+			shader = dshader;
 		}
 		syncShaderVars(shader, shaderDef.shader);
 		return shader;
@@ -58,14 +70,31 @@ class DynamicShader extends Shader {
 		#end
 	}
 
+	function loadShaderClass(opt=false) : Class<hxsl.Shader> {
+		var path = source;
+		if(StringTools.endsWith(path, ".hx")) path = path.substr(0, -3);
+		var cpath = path.split("/").join(".");
+		var cl = cast Type.resolveClass(cpath);
+		if( cl == null && !opt ) throw "Missing shader class"+cpath;
+		return cl;
+	}
+
 	public function loadShaderDef(ctx: Context) {
 		if(shaderDef == null) {
 			fixSourcePath();
-			var path = source;
-			if(StringTools.endsWith(path, ".hx")) {
-				path = path.substr(0, -3);
+			if( isInstance ) {
+				shaderClass = loadShaderClass();
+				var shared : hxsl.SharedShader = (shaderClass:Dynamic)._SHADER;
+				if( shared == null ) {
+					@:privateAccess Type.createEmptyInstance(shaderClass).initialize();
+					shared = (shaderClass:Dynamic)._SHADER;
+				}
+				shaderDef = { shader : shared, inits : [] };
+			} else {
+				var path = source;
+				if(StringTools.endsWith(path, ".hx")) path = path.substr(0, -3);
+				shaderDef = ctx.loadShader(path);
 			}
-			shaderDef = ctx.loadShader(path);
 		}
 		if(shaderDef == null)
 			return;
@@ -86,6 +115,18 @@ class DynamicShader extends Shader {
 		}
 		#end
 	}
+
+	#if editor
+	override function edit( ectx ) {
+		super.edit(ectx);
+		if( isInstance || loadShaderClass(true) != null ) {
+			ectx.properties.add(hide.comp.PropsEditor.makePropsList([{
+				name : "isInstance",
+				t : PBool,
+			}]), this);
+		}
+	}
+	#end
 
 	public static function evalConst( e : hxsl.Ast.TExpr ) : Dynamic {
 		return switch( e.e ) {
