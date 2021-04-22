@@ -31,7 +31,7 @@ class Camera extends Object3D {
 	@:s var fovY : Float = 45;
 	@:s var zFar : Float = 200;
 	@:s var zNear : Float = 0.02;
-	@:s var showFrustum = true;
+	@:s var showFrustum = false;
 	var preview = false;
 
 	public function new(?parent) {
