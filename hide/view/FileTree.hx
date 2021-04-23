@@ -129,6 +129,11 @@ class FileTree extends FileView {
 						js.Browser.window.alert(e);
 					}
 					} },
+				{ label : "Move", enabled : current != null, click : function() {
+					ide.chooseDirectory(function(dir) {
+						onRename(current, "/"+dir+"/"+current.split("/").pop());
+					});
+				}},
 				{ label : "Delete", enabled : current != null, click : function() if( js.Browser.window.confirm("Delete " + current + "?") ) { onDeleteFile(current); tree.refresh(); } },
 			]);
 		});
