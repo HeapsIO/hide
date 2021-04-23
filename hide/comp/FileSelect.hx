@@ -16,7 +16,6 @@ class FileSelect extends Component {
 			e.preventDefault();
 			if( e.button == 0 ) {
 				ide.chooseFile(extensions, function(path) {
-					if( path == null ) return; // cancel
 					this.path = path;
 					onChange();
 				});
@@ -28,6 +27,7 @@ class FileSelect extends Component {
 			new ContextMenu([
 				{ label : "View", enabled : fpath != null, click : function() ide.openFile(fpath) },
 				{ label : "Clear", enabled : path != null, click : function() { path = null; onChange(); } },
+				{ label : "Open in explorer", enabled : fpath != null, click : function() Sys.command("explorer.exe",["/select,"+fpath.split("/").join("\\")]) },
 			]);
 			return false;
 		});
