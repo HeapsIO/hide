@@ -650,7 +650,7 @@ class LightProbe extends Object3D {
 
 				function loadData( name : String ) {
 
-					if( name == null || name == "null" )
+					if( name == "null" )
 						return;
 
 					var b = hxd.res.Loader.currentInstance.load(name).entry.getBytes();

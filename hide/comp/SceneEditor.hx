@@ -2316,7 +2316,6 @@ class SceneEditor {
 
 				if( pmodel.inf.fileSource != null )
 					ide.chooseFile(pmodel.inf.fileSource, function(path) {
-						if( path == null ) return;
 						var p = make(path);
 						addObject([p]);
 					});

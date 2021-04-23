@@ -201,7 +201,6 @@ class ShaderEditor extends hide.view.Graph {
 
 		element.find("#changeModel").on("click", function() {
 			ide.chooseFile(["fbx"], function(path) {
-				if( path == null ) return; // cancel
 				sceneEditor.scene.setCurrent();
 				sceneEditor.scene.s3d.removeChild(obj);
 				obj = sceneEditor.scene.loadModel(path, true);

@@ -661,10 +661,8 @@ class Cell extends Component {
 			modal.click(function(_) color.close());
 		case TFile:
 			ide.chooseFile(["*"], function(file) {
-				if( file != null ) {
-					setValue(file);
-					refresh();
-				}
+				setValue(file);
+				refresh();
 			});
 		case TFlags(values):
 			var div = new Element("<div>").addClass("flagValues");
@@ -730,7 +728,7 @@ class Cell extends Component {
 					setVal();
 					closeEdit();
 					edit();
-				});
+				},true);
 				return;
 			}
 

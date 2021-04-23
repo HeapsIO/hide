@@ -162,7 +162,6 @@ class Model extends FileView {
 		});
 		element.find("input[value=Import]").click(function(_) {
 			ide.chooseFile(["prefab"], function(f) {
-				if( f == null ) return;
 				if( ide.loadPrefab(f, hrt.prefab.RenderProps) == null ) {
 					ide.error("This prefab does not have renderer properties");
 					return;

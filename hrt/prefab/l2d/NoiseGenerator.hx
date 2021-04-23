@@ -197,7 +197,7 @@ class NoiseGenerator extends Prefab {
 		});
 		var bmp = cast(ctx.getContext(this).local2d, h2d.Bitmap);
 		e.find("[name=dl]").click(function(_) {
-			ctx.ide.chooseFileSave("noise.png", function(f) if( f != null ) {
+			ctx.ide.chooseFileSave("noise.png", function(f) {
 				try {
 					var data = cast(ctx.getContext(this).local2d, h2d.Bitmap).tile.getTexture().capturePixels().toPNG();
 					sys.io.File.saveBytes(ctx.ide.getPath(f), data);

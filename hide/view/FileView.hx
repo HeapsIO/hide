@@ -120,7 +120,6 @@ class FileView extends hide.ui.View<{ path : String }> {
 
 	public function saveAs() {
 		ide.chooseFileSave(state.path, function(target) {
-			if( target == null ) return;
 			state.path = target;
 			save();
 			skipNextChange = false;

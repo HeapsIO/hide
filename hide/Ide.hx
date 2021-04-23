@@ -825,11 +825,11 @@ class Ide {
 	}
 
 	public static var IMG_EXTS = ["jpg", "jpeg", "gif", "png", "raw", "dds", "hdr", "tga"];
-	public function chooseImage( onSelect ) {
-		chooseFile(IMG_EXTS, onSelect);
+	public function chooseImage( onSelect, allowNull=false ) {
+		chooseFile(IMG_EXTS, onSelect, allowNull);
 	}
 
-	public function chooseFiles( exts : Array<String>, onSelect : Array<String> -> Void ) {
+	public function chooseFiles( exts : Array<String>, onSelect : Array<String> -> Void, allowNull=false ) {
 		var e = new Element('<input type="file" style="visibility:hidden" value="" accept="${[for( e in exts ) "."+e].join(",")}" multiple="multiple"/>');
 		e.change(function(_) {
 			var files = [for( f in (""+e.val()).split(";") ) f];
@@ -840,16 +840,17 @@ class Ide {
 		}).appendTo(window.window.document.body).click();
 	}
 
-	public function chooseFile( exts : Array<String>, onSelect : Null<String> -> Void ) {
+	public function chooseFile( exts : Array<String>, onSelect : Null<String> -> Void, allowNull=false ) {
 		var e = new Element('<input type="file" style="visibility:hidden" value="" accept="${[for( e in exts ) "."+e].join(",")}"/>');
 		e.change(function(_) {
 			var file = e.val();
+			if( file == "" && !allowNull ) return;
 			e.remove();
 			onSelect(file == "" ? null : makeRelative(file));
 		}).appendTo(window.window.document.body).click();
 	}
 
-	public function chooseFileSave( defaultPath : String, onSelect : String -> Void ) {
+	public function chooseFileSave( defaultPath : String, onSelect : String -> Void, allowNull=false ) {
 		var path = getPath(defaultPath).split("/");
 		var file = path.pop();
 		var c = isWindows ? "\\" : "/";
@@ -857,15 +858,17 @@ class Ide {
 		var e = new Element('<input type="file" style="visibility:hidden" value="" nwworkingdir="$path" nwsaveas="$file"/>');
 		e.change(function(_) {
 			var file = e.val();
+			if( file == "" && !allowNull ) return;
 			e.remove();
 			onSelect(file == "" ? null : makeRelative(file));
 		}).appendTo(window.window.document.body).click();
 	}
 
-	public function chooseDirectory( onSelect : String -> Void, ?isAbsolute = false ) {
+	public function chooseDirectory( onSelect : String -> Void, ?isAbsolute = false, allowNull=false ) {
 		var e = new Element('<input type="file" style="visibility:hidden" value="" nwdirectory/>');
 		e.change(function(ev) {
 			var dir = ev.getThis().val();
+			if( dir == "" && !allowNull ) return;
 			onSelect(dir == "" ? null : (isAbsolute ? dir : makeRelative(dir)));
 			e.remove();
 		}).appendTo(window.window.document.body).click();

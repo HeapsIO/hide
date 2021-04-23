@@ -1179,8 +1179,6 @@ class TerrainEditor {
 	function onSurfaceAdd( props : Element, ctx : EditContext, path : String ) {
 		editContext.scene.setCurrent();
 		terrainPrefab.modified = true;
-		if( path == null )
-			return;
 		var split : Array<String> = [];
 		var curTypeIndex = 0;
 		while( split.length <= 1 && curTypeIndex < textureType.length) {

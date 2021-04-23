@@ -78,7 +78,6 @@ class ColorGrading extends RendererFX {
 		var but = e.find(".createDefault");
 		but.click(function(_) {
 			function saveTexture( name : String ) {
-				if( name == null ) return;
 				var step = hxd.Math.ceil(255/(size - 1));
 				var p = hxd.Pixels.alloc(size * size, size, RGBA);
 				for( r in 0 ... size ) {

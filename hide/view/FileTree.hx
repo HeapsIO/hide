@@ -32,7 +32,7 @@ class FileTree extends FileView {
 				state.path = dir.split("\\").join("/")+"/";
 				saveState();
 				rebuild();
-			});
+			},true);
 		}
 
 		keys.register("search", function() tree.openFilter());
