@@ -107,6 +107,6 @@ class Image extends FileView {
 		bmp.y = -Std.int(bmp.tile.height * bmp.scaleY) >> 1;
 	}
 
-	static var _ = FileTree.registerExtension(Image,hide.Ide.IMG_EXTS,{ icon : "picture-o" });
+	static var _ = FileTree.registerExtension(Image,hide.Ide.IMG_EXTS.concat(["envd","envs"]),{ icon : "picture-o" });
 
 }

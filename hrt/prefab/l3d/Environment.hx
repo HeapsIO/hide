@@ -38,7 +38,7 @@ class Environment extends Object3D {
 		var path = new haxe.io.Path(sourceMapPath);
 		if( configName != null )
 			path.file += "-" + configName;
-		path.ext = diffuse ? "envd.dds" : "envs.dds";
+		path.ext = diffuse ? "envd" : "envs";
 		return path.toString();
 	}
 
