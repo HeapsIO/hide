@@ -103,10 +103,13 @@ class Preview extends ShaderNode {
 			for (m in cube.getMaterials()) {
 				m.mainPass.removeShader(currentShaderPreview);
 			}
+			currentShaderPreview = null;
 		}
 
 		if (scene == null || input == null || input.isEmpty()) return;
 
+		if (@:privateAccess scene.window == null)
+			return;
 		scene.setCurrent();
 
 		var shader : hxsl.DynamicShader = null;
@@ -146,12 +149,10 @@ class Preview extends ShaderNode {
 			switch (variable.type) {
 				case TSampler2D:
 					shader.setParamValue(variable, scene.loadTexture("", value));
+				case TVec(size, _):
+					shader.setParamValue(variable, h3d.Vector.fromArray(value));
 				default:
-					if (variable.name.toLowerCase().indexOf("color") != -1) {
-						shader.setParamValue(variable, h3d.Vector.fromArray(value));
-					} else {
-						shader.setParamValue(variable, value);
-					}
+					shader.setParamValue(variable, value);
 			}
 		} catch (e : Dynamic) {
 			// variable not used

@@ -2,7 +2,7 @@ package hrt.shgraph.nodes;
 
 using hxsl.Ast;
 
-@name("Number")
+@name("Value")
 @description("Number input (static)")
 @group("Property")
 @width(100)

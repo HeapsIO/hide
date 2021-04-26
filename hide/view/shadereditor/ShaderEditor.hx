@@ -135,7 +135,7 @@ class ShaderEditor extends hide.view.Graph {
 				return;
 			} else if (e.shiftKey) {
 				if (addMenu == null || !addMenu.is(":visible"))
-					openAddMenu();
+					openAddMenu(-40, -70);
 
 				return;
 			}
@@ -473,7 +473,9 @@ class ShaderEditor extends hide.view.Graph {
 					elt.attr("draggable", "true");
 					afterChange();
 				});
-				if (value != null) range.value = value;
+				if (value == null) value = 0;
+				range.value = value;
+				shaderGraph.setParameterDefaultValue(id, value);
 				range.onChange = function(moving) {
 					if (!shaderGraph.setParameterDefaultValue(id, range.value))
 						return;
@@ -485,11 +487,11 @@ class ShaderEditor extends hide.view.Graph {
 				var parentPicker = new Element('<div style="width: 35px; height: 25px; display: inline-block;"></div>').appendTo(defaultValue);
 				var picker = new hide.comp.ColorPicker(true, parentPicker);
 
-				var start : h3d.Vector;
-				if (value != null)
-					start = h3d.Vector.fromArray(value);
-				else
-					start = h3d.Vector.fromArray([0, 0, 0, 1]);
+				
+				if (value == null)
+					value = [0, 0, 0, 1];
+				var start : h3d.Vector = h3d.Vector.fromArray(value);
+				shaderGraph.setParameterDefaultValue(id, value);
 				picker.value = start.toColor();
 				picker.onChange = function(move) {
 					var vecColor = h3d.Vector.fromColor(picker.value);
@@ -648,6 +650,7 @@ class ShaderEditor extends hide.view.Graph {
 		var paramShader = shaderGraph.getParameter(paramShaderID);
 
 		var elt = addParameter(paramShaderID, paramShader.name, type, null);
+		updateParam(paramShaderID);
 
 		elt.find(".input-title").focus();
 	}
@@ -861,6 +864,9 @@ class ShaderEditor extends hide.view.Graph {
 
 			addMenu.css("left", posCursor.x);
 			addMenu.css("top", posCursor.y);
+			for (c in addMenu.find("#results").children().elements()) {
+				c.show();
+			}
 			return;
 		}
 
@@ -1188,6 +1194,27 @@ class ShaderEditor extends hide.view.Graph {
 	override function getDefaultContent() {
 		var p = { nodes: [], edges: [], parameters: [] };
 		return haxe.io.Bytes.ofString(ide.toJSON(p));
+	}
+
+	override function onDragDrop(items : Array<String>, isDrop : Bool) {
+		var valid = false;
+		var offset = 0;
+		for (i in items) {
+			if (i.indexOf("hlshader") != -1 && i != state.path) {
+				if (isDrop) {
+					var posCursor = new Point(lX(ide.mouseX - 25 + offset), lY(ide.mouseY - 10 + offset));
+					var node : SubGraph = cast addNode(posCursor, SubGraph);
+					@:privateAccess node.pathShaderGraph = i;
+					node.loadGraphShader();
+					offset += 25;
+				}
+				valid = true;
+			}
+		}
+		if (valid && isDrop) {
+			refreshShaderGraph();
+		}
+		return valid;
 	}
 
 	static var _ = FileTree.registerExtension(ShaderEditor,["hlshader"],{ icon : "scribd", createNew: "Shader Graph" });

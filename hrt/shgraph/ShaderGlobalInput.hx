@@ -8,10 +8,10 @@ using hxsl.Ast;
 @color("#0e8826")
 class ShaderGlobalInput extends ShaderInput {
 
-	static var globalInputs = [	{ parent: null, id: 0, kind: Global, name: "global.time", type: TFloat },
-								{ parent: null, id: 0, kind: Global, name: "global.pixelSize", type: TVec(2, VFloat) },
-								{ parent: null, id: 0, kind: Global, name: "global.modelView", type: TMat4 },
-								{ parent: null, id: 0, kind: Global, name: "global.modelViewInverse", type: TMat4 } ];
+	static public var globalInputs = [	{ parent: null, id: 0, kind: Global, name: "global.time", type: TFloat },
+										{ parent: null, id: 0, kind: Global, name: "global.pixelSize", type: TVec(2, VFloat) },
+										{ parent: null, id: 0, kind: Global, name: "global.modelView", type: TMat4 },
+										{ parent: null, id: 0, kind: Global, name: "global.modelViewInverse", type: TMat4 } ];
 
 	override public function loadProperties(props : Dynamic) {
 		var paramVariable : String = Reflect.field(props, "variable");

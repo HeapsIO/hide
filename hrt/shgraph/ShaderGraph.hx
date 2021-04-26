@@ -300,6 +300,10 @@ class ShaderGraph {
 
 		var outputs : Array<String> = [];
 
+		for (g in ShaderGlobalInput.globalInputs) {
+			allVariables.push(g);
+		}
+
 		for (n in nodes) {
 			var shaderNode;
 			var variable;
