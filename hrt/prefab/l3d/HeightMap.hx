@@ -37,46 +37,68 @@ class HeightMapShader extends hxsl.Shader {
 		@const var hasHeight : Bool;
 		@const var hasNormal : Bool;
 
+		@param var albedo : Sampler2D;
 		@param var heightMap : Sampler2D;
+		@param var heightMapFrag : Sampler2D;
 		@param var normalMap : Sampler2D;
 		@param var heightScale : Float;
 		@param var heightOffset : Vec2;
 		@param var normalScale : Float;
 		@param var cellSize : Vec2;
+		@const var heightFlipX : Bool;
+		@const var heightFlipY : Bool;
 
 		@const var SplatCount : Int;
+		@const var AlbedoCount : Int;
+		@const var SplatChannels : Int = 4;
+		@const var splatLod : Bool;
+		@param var albedoSplatScale : Float;
 		@param var splats : Array<Sampler2D,SplatCount>;
-		@param var albedos : Array<Sampler2D,SplatCount>;
+		@param var albedos : Array<Sampler2D,AlbedoCount>;
 
 		@input var input2 : { uv : Vec2 };
 
+		@const var hasAlbedoProps : Bool;
+		@param var albedoGamma : Float;
+		@param var albedoProps : Array<Vec4,AlbedoCount>;
+
 		var calculatedUV : Vec2;
+		var heightUV : Vec2;
 
 		function getPoint( dx : Float, dy : Float ) : Vec3 {
 			var v = vec2(dx,dy);
-			return vec3( cellSize * v , heightMap.get(calculatedUV + heightOffset * v).r * heightScale - relativePosition.z);
+			return vec3( cellSize * v , heightMapFrag.get(heightUV + heightOffset * v).r * heightScale - relativePosition.z);
 		}
 
 		function vertex() {
 			calculatedUV = input2.uv;
+			heightUV = calculatedUV;
+			if( heightFlipX ) heightUV.x = 1 - heightUV.x;
+			if( heightFlipY ) heightUV.y = 1 - heightUV.y;
 			if( hasHeight ) {
-				var z = heightMap.get(calculatedUV).x * heightScale;
+				var z = heightMap.get(heightUV).x * heightScale;
 				relativePosition.z = z;
-
-				// calc normal
-				if( !hasNormal ) {
-					var px0 = getPoint(-1,0);
-					var py0 = getPoint(0, -1);
-					var px1 = getPoint(1, 0);
-					var py1 = getPoint(0, 1);
-					var n = px1.cross(py1) + py1.cross(px0) + px0.cross(py0) + py0.cross(px1);
-					setNormal(n);
-				}
 			}
 		}
 
 		function setNormal(n:Vec3) {
 			transformedNormal = (n.normalize() * global.modelView.mat3()).normalize();
+		}
+
+		function getAlbedo( color : Vec4 ) : Vec4 {
+			if( albedoGamma != 1 )
+				color = color.pow(albedoGamma.xxxx);
+			return color;
+		}
+
+		function splat( color : Vec4, index : Int, amount : Float ) : Vec4 {
+			if( index >= AlbedoCount || amount <= 0 )
+				return color;
+			else if( hasAlbedoProps ) {
+				var p = albedoProps[index];
+				return color + getAlbedo(albedos[index].get(calculatedUV * p.w)) * vec4(p.rgb,1) * amount;
+			} else
+				return color + getAlbedo(albedos[index].get(calculatedUV * albedoSplatScale)) * amount;
 		}
 
 		function __init__fragment() {
@@ -85,13 +107,31 @@ class HeightMapShader extends hxsl.Shader {
 				n = n.normalize();
 				n.xy *= normalScale;
 				setNormal(n);
+			} else {
+				var px0 = getPoint(-1,0);
+				var py0 = getPoint(0, -1);
+				var px1 = getPoint(1, 0);
+				var py1 = getPoint(0, 1);
+				var n = px1.cross(py1) + py1.cross(px0) + px0.cross(py0) + py0.cross(px1);
+				n.xy *= normalScale;
+				setNormal(n);
 			}
 			if( SplatCount > 0 ) {
-				var color = pixelColor;
-				for( i in 0...SplatCount )
-					color = mix( color, albedos[i].get(calculatedUV), splats[i].get(calculatedUV).rrrr );
+				var color = vec4(0.);
+				@unroll for( i in 0...SplatCount ) {
+					var s = splatLod ? splats[i].getLod(calculatedUV,0) : splats[i].get(calculatedUV);
+					color = splat(color, i*SplatChannels, s.r);
+					if( SplatChannels > 1 )
+						color = splat( color, i*SplatChannels+1, s.g);
+					if( SplatChannels > 2 )
+						color = splat( color, i*SplatChannels+2, s.b);
+					if( SplatChannels > 3 )
+						color = splat( color, i*SplatChannels+3, s.a);
+				}
 				color.a = 1;
 				pixelColor = color;
+			} else {
+				pixelColor = getAlbedo(albedo.get(calculatedUV));
 			}
 		}
 
@@ -123,6 +163,8 @@ class HeightMapTile {
 	}
 
 	public function isEmpty() {
+		if( tx == 0 && ty == 0 && hmap.sizeX == 0 && hmap.sizeY == 0 && !hmap.autoSize )
+			return false;
 		getHeight();
 		return height.width == 1;
 	}
@@ -132,7 +174,10 @@ class HeightMapTile {
 			for( t in hmap.textures )
 				if( t.kind == Height && t.enable && t.path != null ) {
 					var path = resolveTexturePath(t.path);
-					height = try hxd.res.Loader.currentInstance.load(path).toImage().getPixels() catch( e : hxd.res.NotFound ) null;
+					if( path == t.path && (tx != 0 || ty != 0) ) continue;
+					height = try hxd.res.Loader.currentInstance.load(path).toImage().getPixels() catch( e : hxd.res.NotFound )
+					#if editor try hxd.res.Any.fromBytes(path, sys.io.File.getBytes(hide.Ide.inst.getPath(path))).toImage().getPixels() catch( e : Dynamic ) #end
+					null;
 					break;
 				}
 			if( height == null ) height = hxd.Pixels.alloc(1, 1, R32F);
@@ -154,27 +199,43 @@ class HeightMapTile {
 		var splat = getTextures(SplatMap);
 		var albedo = getTextures(Albedo);
 		var normal = getTextures(Normal)[0];
-		root.material.texture = albedo.shift();
 
 		var shader = root.material.mainPass.addShader(new HeightMapShader());
+		shader.albedo = albedo[0];
+		if( shader.albedo == null )
+			shader.albedo = h3d.mat.Texture.fromColor(0x808080);
 		shader.hasHeight = htex != null;
-		shader.heightMap = htex;
+		shader.heightMap = shader.heightMapFrag = htex;
 		shader.hasNormal = normal != null;
 		shader.normalMap = normal;
 		shader.heightScale = hmap.getHScale();
 		shader.normalScale = hmap.heightScale * hmap.normalScale;
-		shader.cellSize.set(mesh.grid.cellWidth,mesh.grid.cellHeight);
-		if( htex != null ) shader.heightOffset.set(1 / htex.width,1 / htex.height);
+		var qsize = Math.pow(2,4 - hmap.quality);
+		shader.cellSize.set(mesh.grid.cellWidth / qsize,mesh.grid.cellHeight / qsize);
+		shader.heightFlipX = hmap.heightFlipX;
+		shader.heightFlipY = hmap.heightFlipY;
+		if( htex != null ) shader.heightOffset.set( (hmap.heightFlipX ? -1 : 1) / htex.width, (hmap.heightFlipY ? -1 : 1) / htex.height);
 
-		var scount = hxd.Math.imin(splat.length, albedo.length);
+		var channels = hmap.splatChannels;
+		var scount = hxd.Math.imin(splat.length, Math.ceil(albedo.length/channels));
 		shader.SplatCount = scount;
+		shader.AlbedoCount = albedo.length;
+		shader.SplatChannels = channels;
+		shader.albedoSplatScale = hmap.albedoSplatScale;
+		shader.albedoGamma = hmap.albedoGamma;
+		shader.splatLod = hmap.splatLod;
 		shader.splats = [for( i in 0...scount ) splat[i]];
-		shader.albedos = [for( i in 0...scount ) albedo[i]];
+		shader.albedos = [for( i in 0...albedo.length ) { var t = albedo[i]; t.wrap = Repeat; t; }];
+		if( scount > 0 ) shader.albedo = null;
+
+		shader.albedoProps = hmap.getAlbedoProps();
+		shader.hasAlbedoProps = shader.albedoProps.length > 0;
 
 		addObjects(mesh);
 	}
 
 	function addObjects( mesh : HeightMapMesh ) {
+		if( hmap.objects == null ) return;
 		var model = null;
 		decodeObjects(function(name) {
 			model = mesh.resolveAssetModel(name);
@@ -283,7 +344,8 @@ class HeightMapMesh extends h3d.scene.Object {
 			d = -d;
 			m++;
 		}
-		world.done();
+		if( world != null )
+			world.done();
 	}
 
 	public dynamic function onTileReady( t : HeightMapTile ) {
@@ -320,6 +382,8 @@ class HeightMapMesh extends h3d.scene.Object {
 		var height = htex == null ? Std.int(size) : Math.ceil(htex.height * hmap.heightPrecision);
 		width >>= (4 - hmap.quality);
 		height >>= (4 - hmap.quality);
+		if( width < 4 ) width = 4;
+		if( height < 4 ) height = 4;
 		var cw = size/width, ch = size/height;
 		if( grid == null || grid.width != width || grid.height != height || grid.cellWidth != cw || grid.cellHeight != ch ) {
 			grid = new HeightGrid(width,height,cw+epsilon/width,ch+epsilon/height);
@@ -362,9 +426,11 @@ class HeightMap extends Object3D {
 
 	var tilesCache : Map<Int,HeightMapTile> = new Map();
 	var emptyTile : HeightMapTile;
-	@:c var textures : Array<{ path : String, kind : HeightMapTextureKind, enable : Bool }> = [];
+	@:c var textures : Array<{ path : String, kind : HeightMapTextureKind, enable : Bool, ?props : { color : Int, scale : Float } }> = [];
 	@:s var size = 128.;
 	@:s var heightScale = 0.2;
+	@:s var heightFlipX = false;
+	@:s var heightFlipY = false;
 	@:s var normalScale = 1.;
 	@:s var heightPrecision = 1.;
 	@:s var minZ = -10;
@@ -378,6 +444,12 @@ class HeightMap extends Object3D {
 	};
 	@:s var sizeX = 0;
 	@:s var sizeY = 0;
+	@:s var autoSize = false;
+	@:s var splatChannels = 4;
+	@:s var albedoSplatScale = 1.;
+	@:s var albedoGamma = 1.;
+	@:s var albedoColorGamma = 1.;
+	@:s var splatLod = false;
 
 	// todo : instead of storing the context, we should find a way to have a texture loader
 	var storedCtx : hrt.prefab.Context;
@@ -385,16 +457,44 @@ class HeightMap extends Object3D {
 	var missingObjects : Map<String,Bool> = new Map();
 	var checkModels : Bool = true;
 	#end
+	var albedoProps : Array<h3d.Vector>;
 
 	override function save():{} {
 		var o : Dynamic = super.save();
-		o.textures = [for( t in textures ) { path : t.path, kind : t.kind }];
+		o.textures = [for( t in textures ) {
+			var v : Dynamic = { path : t.path, kind : t.kind };
+			if( !t.enable ) v.enable = false;
+			if( t.props != null ) v.props = t.props;
+			v;
+		}];
 		return o;
 	}
 
 	override function load(obj:Dynamic) {
 		super.load(obj);
-		textures = [for( o in (obj.textures:Array<Dynamic>) ) { path : o.path, kind : o.kind, enable : true }];
+		textures = [for( o in (obj.textures:Array<Dynamic>) ) { path : o.path, kind : o.kind, enable : o.enable == null ? true : o.enable, props : o.props }];
+	}
+
+	function getAlbedoProps() {
+		if( albedoProps != null )
+			return albedoProps;
+		var hasProps = false;
+		for( t in textures )
+			if( t.kind == Albedo && t.props != null )
+				hasProps = true;
+		if( !hasProps ) {
+			albedoProps = [];
+			return albedoProps;
+		}
+		albedoProps = [for( t in textures ) if( t.kind == Albedo ) t.props == null ? new h3d.Vector(1,1,1,albedoSplatScale) : {
+			var v = h3d.Vector.fromColor(t.props.color);
+			v.r = Math.pow(v.r,albedoColorGamma);
+			v.g = Math.pow(v.g,albedoColorGamma);
+			v.b = Math.pow(v.b,albedoColorGamma);
+			v.a = t.props.scale * albedoSplatScale;
+			v;
+		}];
+		return albedoProps;
 	}
 
 	public function getZ( x : Float, y : Float ) : Null<Float> {
@@ -479,7 +579,7 @@ class HeightMap extends Object3D {
 	}
 
 	function getTile( x : Int, y : Int ) {
-		if( sizeX > 0 && sizeY > 0 && (x < 0 || y < 0 || x >= sizeX || y >= sizeY) ) {
+		if( (sizeX > 0 && sizeY > 0 && (x < 0 || y < 0 || x >= sizeX || y >= sizeY)) || (sizeX == 0 && sizeY == 0 && (x != 0 || y != 0) && !autoSize) ) {
 			if( emptyTile == null )
 				emptyTile = new HeightMapTile(this, -1, -1);
 			return emptyTile;
@@ -561,6 +661,15 @@ class HeightMap extends Object3D {
 	}
 
 	override function updateInstance( ctx : Context, ?propName : String ) {
+
+		#if editor
+		if( (propName == "albedoSplatScale" || propName == "albedoColorGamma") && albedoProps != null ) {
+			updateAlbedoProps();
+			return;
+		}
+		#end
+
+		albedoProps = null;
 		super.updateInstance(ctx, propName);
 
 		var mesh = cast(ctx.local3d, HeightMapMesh);
@@ -590,6 +699,15 @@ class HeightMap extends Object3D {
 		return { icon : "industry", name : "HeightMap", isGround : true };
 	}
 
+	function updateAlbedoProps() {
+		var prev = albedoProps;
+		while( prev.length > 0 ) prev.pop();
+		albedoProps = null;
+		for( x in getAlbedoProps() )
+			prev.push(x);
+		albedoProps = prev;
+	}
+
 	override function edit(ectx:EditContext) {
 		super.edit(ectx);
 		var ctx = ectx.getContext(this);
@@ -600,11 +718,22 @@ class HeightMap extends Object3D {
 				<dt>Size</dt><dd><input type="range" min="0" max="1000" value="128" field="size"/></dd>
 				<dt>Height Scale</dt><dd><input type="range" min="0" max="1" field="heightScale"/></dd>
 				<dt>Height Precision</dt><dd><input type="range" min="0.1" max="1" field="heightPrecision"/></dd>
+				<dt>Height Flip</dt><dd>
+					<label><input type="checkbox"field="heightFlipX"/> X</label>
+					<label><input type="checkbox"field="heightFlipY"/> Y</label>
+				</dd>
 				<dt>Normal Scale</dt><dd><input type="range" min="0" max="2" field="normalScale"/></dd>
 				<dt>MinZ</dt><dd><input type="range" min="-1000" max="0" field="minZ"/></dd>
 				<dt>MaxZ</dt><dd><input type="range" min="0" max="1000" field="maxZ"/></dd>
 				<dt>Quality</dt><dd><input type="range" min="0" max="4" field="quality" step="1"/></dd>
-				<dt>Fixed Size</dt><dd><input type="number" style="width:50px" field="sizeX"/><input type="number" style="width:50px" field="sizeY"/></dd>
+				<dt>Splat</dt><dd>
+					Channels <input type="number" style="width:50px" field="splatChannels"/>
+					<label><input type="checkbox" field="splatLod"/> Lod</label>
+				</dd>
+				<dt>Splat Scale</dt><dd><input type="range" field="albedoSplatScale"/>
+				<dt>Gamma</dt><dd><input type="range" min="0" max="4" field="albedoGamma"/></dd>
+				<dt>Gamma Color</dt><dd><input type="range" min="0" max="4" field="albedoColorGamma"/></dd>
+				<dt>Fixed Size</dt><dd><input type="number" style="width:50px" field="sizeX"/><input type="number" style="width:50px" field="sizeY"/> <label><input type="checkBox" field="autoSize"> Auto</label></dd>
 			</dl>
 			</div>
 			<div class="group" name="Textures">
@@ -621,12 +750,13 @@ class HeightMap extends Object3D {
 			var prevTex = tex.path;
 			var e = new hide.Element('<li style="position:relative">
 				<input type="checkbox" field="enable"/>
-				<input type="texturepath" style="width:165px" field="path"/>
+				<input type="texturepath" style="width:160px" field="path"/>
 				<select field="kind" style="width:70px">
 					<option value="albedo">Albedo
 					<option value="height">Height
 					<option value="normal">Normal
 					<option value="splatmap">SplatMap
+					<option value="albedoProps">Albedo + Props
 					<option value="delete">-- Delete --
 				</select>
 				<a href="#" class="up">🡅</a>
@@ -650,6 +780,19 @@ class HeightMap extends Object3D {
 			});
 			e.appendTo(list);
 			ectx.properties.build(e, tex, (pname) -> {
+				if( ""+tex.kind == "albedoProps" ) {
+					tex.kind = Albedo;
+					if( tex.props == null ) {
+						tex.props = {
+							color : 0xFFFFFF,
+							scale : 1,
+						};
+						ectx.rebuildProperties();
+					}
+				} else if( tex.props != null ) {
+					tex.props = null;
+					ectx.rebuildProperties();
+				}
 				if( tex.path != prevTex ) {
 					tex.enable = true; // enable on change texture !
 					prevTex = tex.path;
@@ -660,6 +803,14 @@ class HeightMap extends Object3D {
 				}
 				updateInstance(ctx, pname);
 			});
+			if( tex.props != null ) {
+				var e = new hide.Element('<li style="position:relative">
+					Scale <input type="range" min="0" max="10" field="scale"/>
+					<input type="color" field="color"/>
+ 				</li>');
+				e.appendTo(list);
+				ectx.properties.build(e, tex.props, (pname) -> updateAlbedoProps());
+			}
 		}
 		var add = new hide.Element('<li><p><a href="#">[+]</a></p></li>');
 		add.appendTo(list);
@@ -744,7 +895,7 @@ class HeightGrid extends h3d.prim.MeshPrimitive {
 	/**
 	 *  Maximal Z value, used for reporting bounds.
 	 **/
-	 public var zMax = 0.;
+	public var zMax = 0.;
 
 	var hasNormals : Bool;
 	var hasUVs : Bool;
