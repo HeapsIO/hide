@@ -175,7 +175,6 @@ class PbrRenderer extends h3d.scene.pbr.Renderer {
 			renderPass(defaultPass, get("debuggeom"), backToFront);
 			renderPass(defaultPass, get("debuggeom_alpha"), backToFront);
 		case Overlay:
-			renderPass(defaultPass, get("overlay"), backToFront);
 			renderPass(defaultPass, get("ui"), backToFront);
 		default:
 		}
