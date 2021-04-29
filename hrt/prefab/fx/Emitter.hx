@@ -313,17 +313,7 @@ private class ParticleInstance  {
 		// ALIGNMENT
 		switch( emitter.alignMode ) {
 			case Screen:
-				tmpMat.load(emitter.getScene().camera.mcam);
-				tmpMat.invert();
-				switch( emitter.simulationSpace ) {
-					case Local: tmpMat.multiply3x4(tmpMat, emitter.invTransform);
-					case World:
-				}
-				tmpMat.prependRotation(0, Math.PI, 0);
-				var q = transform.qRot;
-				q.initRotateMatrix(tmpMat);
-				q.normalize();
-
+				transform.qRot.load(emitter.screenQuat);
 				transform.calcAbsPos();
 				childTransform.calcAbsPos();
 				absPos.multiply(childTransform.absPos, transform.absPos);
@@ -462,7 +452,8 @@ class EmitterObject extends h3d.scene.Object {
 	public var killOnCollision : Float = 0.0;
 	public var useCollision : Bool = false;
 
-	public var invTransform : h3d.Matrix;
+	public var invTransform = new h3d.Matrix();
+	public var screenQuat = new h3d.Quat();
 	public var worldScale = new h3d.Vector(1,1,1);
 
 	var random: hxd.Rand;
@@ -481,7 +472,6 @@ class EmitterObject extends h3d.scene.Object {
 		random = new hxd.Rand(randomSeed);
 		evaluator = new Evaluator(random);
 		evaluator.vecPool = vecPool;
-		invTransform = new h3d.Matrix();
 		reset();
 	}
 
@@ -775,6 +765,22 @@ class EmitterObject extends h3d.scene.Object {
 		if( parent != null ) {
 			invTransform.load(parent.getAbsPos());
 			invTransform.invert();
+
+			if(alignMode == Screen) {
+				var cam = getScene().camera;
+				tmpMat.load(cam.mcam);
+				tmpMat.invert();
+
+				if(simulationSpace == Local) {  // Compensate parent rotation
+					tmpMat2.load(parent.getAbsPos());
+					var s = tmpMat2.getScale();
+					tmpMat2.prependScale(1.0 / s.x, 1.0 / s.y, 1.0 / s.z);
+					tmpMat2.invert();
+					tmpMat.multiply(tmpMat, tmpMat2);
+				}
+				screenQuat.initRotateMatrix(tmpMat);
+			}
+
 			parent.getAbsPos().getScale(worldScale);
 		}
 		vecPool.begin();
