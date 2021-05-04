@@ -169,8 +169,7 @@ class Polygon extends Object3D {
 					}
 				}
 
-				// Setup UVs so that image up (Y) is aligned with forward axis (X)
-				uvs = [for(v in points) new Point(v.y + 0.5, -v.x + 0.5)];
+				uvs = [for(v in points) new Point(v.x + 0.5, v.y + 0.5)];
 
 			case Disc(segments, angle, inner, rings):
 				points = [];

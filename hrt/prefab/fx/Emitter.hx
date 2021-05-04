@@ -582,6 +582,12 @@ class EmitterObject extends h3d.scene.Object {
 			switch( emitShape ) {
 				case Box:
 					tmpOffset.set(random.srand(0.5), random.srand(0.5), random.srand(0.5));
+					if( emitSurface ) {
+						var max = Math.max(Math.max(Math.abs(tmpOffset.x), Math.abs(tmpOffset.y)), Math.abs(tmpOffset.z));
+						tmpOffset.scale(0.5 / max);
+					}
+					if( emitOrientation == Normal )
+						tmpQuat.initDirection(tmpOffset);
 				case Cylinder:
 					var dx = 0.0, dy = 0.0;
 					if(emitSurface) {
@@ -596,12 +602,13 @@ class EmitterObject extends h3d.scene.Object {
 						}
 						while(dx * dx + dy * dy > 1.0);
 					}
-					var x = random.rand();
-					tmpOffset.set(x - 0.5, dx * 0.5, dy * 0.5);
+					var z = random.rand();
+					tmpOffset.set(dx * 0.5, dy * 0.5, z - 0.5);
 					if( emitOrientation == Normal )
-						tmpQuat.initRotation(0, -hxd.Math.atan2(dy, dx), Math.PI/2);
+						tmpQuat.initRotation(0, 0, hxd.Math.atan2(dy, dx));
+
+					tmpOffset.x *= hxd.Math.lerp(emitRad1, emitRad2, x);
 					tmpOffset.y *= hxd.Math.lerp(emitRad1, emitRad2, x);
-					tmpOffset.z *= hxd.Math.lerp(emitRad1, emitRad2, x);
 				case Sphere:
 					do {
 						tmpOffset.x = random.srand(1.0);
@@ -779,6 +786,8 @@ class EmitterObject extends h3d.scene.Object {
 					tmpMat.multiply(tmpMat, tmpMat2);
 				}
 				screenQuat.initRotateMatrix(tmpMat);
+				tmpQuat.initRotateAxis(1,0,0,Math.PI);  // Flip Y axis so Y is pointing down
+				screenQuat.multiply(screenQuat, tmpQuat);
 			}
 
 			parent.getAbsPos().getScale(worldScale);
@@ -1496,20 +1505,20 @@ class Emitter extends Object3D {
 				g.lineStyle(1, 0xffffff);
 				circle(32, function(i, c, s) {
 					if(i == 0)
-						g.moveTo(-0.5, c * rad1, s * rad1);
+						g.moveTo(c * rad1, s * rad1, -0.5);
 					else
-						g.lineTo(-0.5, c * rad1, s * rad1);
+						g.lineTo(c * rad1, s * rad1, -0.5);
 				});
 				circle(32, function(i, c, s) {
 					if(i == 0)
-						g.moveTo(0.5, c * rad2, s * rad2);
+						g.moveTo(c * rad2, s * rad2, 0.5);
 					else
-						g.lineTo(0.5, c * rad2, s * rad2);
+						g.lineTo(c * rad2, s * rad2, 0.5);
 				});
 				g.lineStyle(1, 0xffffff);
 				circle(8, function(i, c, s) {
-					g.moveTo(-0.5, c * rad1, s * rad1);
-					g.lineTo(0.5, c * rad2, s * rad2);
+					g.moveTo(c * rad1, s * rad1, -0.5);
+					g.lineTo(c * rad2, s * rad2, 0.5);
 				});
 				g.ignoreCollide = true;
 				mesh = g;
