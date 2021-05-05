@@ -46,9 +46,9 @@ class Environment extends Object3D {
 		#if (hl || hxnodejs)
 		var fs = cast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
 		if( fs == null ) return;
-		var diffuse = hxd.Pixels.toDDS([for( i in 0...6 ) env.diffuse.capturePixels(i)],true);
+		var diffuse = hxd.Pixels.toDDSLayers([for( i in 0...6 ) env.diffuse.capturePixels(i)],true);
 		sys.io.File.saveBytes(fs.baseDir + getBinaryPath(true), diffuse);
-		var specular = hxd.Pixels.toDDS([for( i in 0...6 ) for( mip in 0...env.getMipLevels() ) env.specular.capturePixels(i,mip)],true);
+		var specular = hxd.Pixels.toDDSLayers([for( i in 0...6 ) for( mip in 0...env.getMipLevels() ) env.specular.capturePixels(i,mip)],true);
 		sys.io.File.saveBytes(fs.baseDir + getBinaryPath(false), specular);
 		#end
 	}

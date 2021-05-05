@@ -393,8 +393,8 @@ class LightProbe extends Object3D {
 
 	function saveBinary( env : Environment, ctx : Context ) {
 
-		var diffuse = hxd.Pixels.toDDS([for( i in 0...6 ) env.diffuse.capturePixels(i)], true);
-		var specular = hxd.Pixels.toDDS([for( i in 0...6 ) for( mip in 0...env.getMipLevels() ) env.specular.capturePixels(i,mip)],true);
+		var diffuse = hxd.Pixels.toDDSLayers([for( i in 0...6 ) env.diffuse.capturePixels(i)], true);
+		var specular = hxd.Pixels.toDDSLayers([for( i in 0...6 ) for( mip in 0...env.getMipLevels() ) env.specular.capturePixels(i,mip)],true);
 
 		var totalBytes = 4 + 4; //ignoredSpecLevels + sampleBits
 		var data = haxe.io.Bytes.alloc(totalBytes);
