@@ -39,7 +39,7 @@ haxelib git hx3compat https://github.com/HaxeFoundation/hx3compat
 - If there are errors when compiling, make sure you are using the latest libraries from git
 
 #### 3. Install NWJS
-- Download and copy [NWJS](https://nwjs.io/) into the `/bin/nwjs` directory
+- Download and copy [NWJS](https://nwjs.io/) SDK into the `/bin/nwjs` directory
 - On OSX, copy all files from `bin` into the `bin/nwjs.app/Contents/Resources/app.nw` folder
 
 ## Running
