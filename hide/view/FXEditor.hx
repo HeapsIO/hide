@@ -69,7 +69,12 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 
 	override function getNewContextMenu(current: PrefabElement, ?onMake: PrefabElement->Void=null, ?groupByType = true ) {
 		if(current != null && current.to(hrt.prefab.Shader) != null) {
-			return parent.getNewTrackMenu(current);
+			var ret : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
+			ret.push({
+				label: "Animation",
+				menu: parent.getNewTrackMenu(current)
+			});
+			return ret;
 		}
 		var allTypes = super.getNewContextMenu(current, onMake, false);
 
@@ -1294,10 +1299,9 @@ class FXEditor extends FileView {
 		}
 		if(shaderElt != null) {
 			var shader = shaderElt.makeShader();
-			var params = shader == null ? [] : @:privateAccess shader.shader.data.vars.filter(isPerInstance);
+			var inEmitter = shaderElt.getParent(hrt.prefab.fx.Emitter) != null;
+			var params = shader == null ? [] : @:privateAccess shader.shader.data.vars.filter(inEmitter ? isPerInstance : v -> v.kind == Param);
 			for(param in params) {
-				var tracks = null;
-				var isColor = false;
 				var item : hide.comp.ContextMenu.ContextMenuItem = switch(param.type) {
 					case TVec(n, VFloat):
 						var color = param.name.toLowerCase().indexOf("color") >= 0;
