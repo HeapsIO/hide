@@ -657,12 +657,15 @@ class Model extends FileView {
 					var curPos = (curFrame / obj.currentAnimation.frameCount) * W;
 					dragInter.onPush = function(e) {
 						if( hxd.Key.isDown( hxd.Key.MOUSE_LEFT) ){
+							var startFrame = curFrame;
 							dragInter.startDrag(function(e) {
 								switch( e.kind ) {
 								case ERelease:
 									dragInter.stopDrag();
 									buildTimeline();
 									buildEventPanel();
+									if( curFrame != startFrame )
+										modified = true;
 								case EMove:
 									var newFrame = Math.round(( (curPos + (e.relX - 2.5) * dragIcon.scaleX ) / W ) * obj.currentAnimation.frameCount);
 									if( newFrame >= 0 && newFrame <= obj.currentAnimation.frameCount ) {
