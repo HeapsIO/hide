@@ -27,6 +27,8 @@ class MeshSpray extends Object3D {
 			if( batch == null ) {
 				var obj = ctx.loadModel(c.source).toMesh();
 				batch = new h3d.scene.MeshBatch(cast(obj.primitive,h3d.prim.MeshPrimitive), obj.material, mspray);
+				var multi = Std.downcast(obj, h3d.scene.MultiMaterial);
+				if( multi != null ) batch.materials = multi.materials;
 				mspray.batchesMap.set(c.source, batch);
 				mspray.batches.push(batch);
 			}
@@ -173,6 +175,8 @@ class MeshSprayObject extends h3d.scene.Object {
 			var batch = blookup.get(m.primitive);
 			if( batch == null ) {
 				batch = new h3d.scene.MeshBatch(prim, m.material, this);
+				var multi = Std.downcast(m, h3d.scene.MultiMaterial);
+				if( multi != null ) batch.materials = multi.materials;
 				batch.alwaysSync = true;
 				batch.begin();
 				batches.push(batch);
