@@ -54,6 +54,10 @@ class Shader extends Prefab {
 		Reflect.setProperty(shader, v.name, value);
 	}
 
+	function applyShader( obj : h3d.scene.Object, material : h3d.mat.Material, shader : hxsl.Shader ) {
+		material.mainPass.addShader(shader);
+	}
+
 	override function makeInstance(ctx:Context):Context {
 		ctx = ctx.clone(this);
 		var shader = makeShader(ctx);
@@ -101,7 +105,7 @@ class Shader extends Prefab {
 					objs = shared.getObjects(parent, h3d.scene.Object);
 				for( obj in objs )
 					for( m in obj.getMaterials(false) )
-						m.mainPass.addShader(shader);
+						applyShader(obj, m, shader);
 			}
 		}
 		ctx.custom = shader;
