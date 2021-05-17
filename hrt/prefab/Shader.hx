@@ -163,7 +163,14 @@ class Shader extends Prefab {
 	}
 
 	override function getHideProps() : HideProps {
-		return { icon : "cog", name : "Shader", fileSource : ["hx"], allowParent : function(p) return p.to(Object2D) != null || p.to(Object3D) != null || p.to(Material) != null  };
+		var cl = Type.getClass(this);
+		var name = Type.getClassName(cl).split(".").pop();
+		return {
+			icon : "cog",
+			name : name,
+			fileSource : cl == hrt.prefab.Shader ? ["hx"] : null,
+			allowParent : function(p) return p.to(Object2D) != null || p.to(Object3D) != null || p.to(Material) != null
+		};
 	}
 
 	#end
