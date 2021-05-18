@@ -63,8 +63,14 @@ class HeightMapShader extends hxsl.Shader {
 		@param var albedoProps : Array<Vec4,AlbedoCount>;
 		@param var albedoGamma : Float;
 
+		@const var hasAlbedoNormals : Bool;
+		@param var albedoNormals : Sampler2DArray;
+		@param var albedoNormalsStrength : Float;
+		@param var albedoRoughness : Float;
+
 		var calculatedUV : Vec2;
 		var heightUV : Vec2;
+		var roughness : Float;
 
 		function getPoint( dx : Float, dy : Float ) : Vec3 {
 			var v = vec2(dx,dy);
@@ -133,8 +139,27 @@ class HeightMapShader extends hxsl.Shader {
 						color += splat(i*3+1, s.g);
 						color += splat(i*3+2, s.b);
 					case 2:
-						color += splat(int(s.r*16.1),s.b);
-						color += splat(int(s.g*16.1),s.a);
+						var i1 = int(s.r*16.001);
+						var i2 = int(s.g*16.001);
+						color += splat(i1,s.b);
+						color += splat(i2,s.a);
+						if( hasAlbedoNormals ) {
+							var uv1 = calculatedUV * albedoProps[i1].w;
+							var uv2 = calculatedUV * albedoProps[i2].w;
+							var normal1 = albedoNormals.get(vec3(uv1,albedoIndexes[i1].r));
+							var normal2 = albedoNormals.get(vec3(uv2,albedoIndexes[i2].r));
+							var med = mix(normal1,normal2,s.a);
+							var nf = unpackNormal(med);
+							nf.xy *= albedoNormalsStrength;
+							nf = nf.normalize();
+
+							var n = transformedNormal;
+							var tanX = vec3(1,0,0);
+							var tanY = transformedNormal.cross(tanX);
+							transformedNormal = (nf.x * tanX + nf.y * tanY + nf.z * n).normalize();
+
+							roughness *= 1 - med.a * med.a * albedoRoughness;
+						}
 					}
 				}
 				color.a = 1;
@@ -239,6 +264,12 @@ class HeightMapTile {
 			shader.albedoArray = arr.texture;
 			shader.albedoIndexes = [for( i in arr.indexes ) new h3d.Vector(i)];
 			shader.AlbedoCount = arr.indexes.length;
+			if( hmap.albedoNormals > 0 ) {
+				shader.hasAlbedoNormals = true;
+				shader.albedoNormals = hmap.getTextureArray(Normal).texture;
+				shader.albedoNormalsStrength = hmap.albedoNormals;
+				shader.albedoRoughness = hmap.albedoRoughness;
+			}
 		} else {
 			var albedo = getTextures(Albedo);
 			shader.AlbedoCount = albedo.length;
@@ -486,6 +517,8 @@ class HeightMap extends Object3D {
 	@:s var albedoColorGamma = 1.;
 	@:s var splatNearest = false;
 	@:s var splatMode : SplatMode = Weights4;
+	@:s var albedoNormals : Float = 0.;
+	@:s var albedoRoughness : Float = 0.;
 
 	// todo : instead of storing the context, we should find a way to have a texture loader
 	var storedCtx : hrt.prefab.Context;
@@ -695,8 +728,21 @@ class HeightMap extends Object3D {
 		var arr = texArrayCache.get(k);
 		if( arr != null && !arr.texture.isDisposed() )
 			return arr;
-		var tl = getTextures(k, 0, 0);
-		if( tl.length == 0 ) tl = [h3d.mat.Texture.fromColor(0xFF00FF)];
+		var tl = switch( k ) {
+		case Albedo: getTextures(k, 0, 0);
+		case Normal:
+			var tl = [];
+			for( t in textures )
+				if( t.kind == Albedo && t.path != null && t.enable ) {
+					var path = new haxe.io.Path(t.path);
+					path.file = path.file.split("_Albedo").join("");
+					path.file += "_Normal";
+					tl.push(loadTexture(path.toString()));
+				}
+			tl;
+		default: throw "assert";
+		}
+		if( tl.length == 0 ) tl = [h3d.mat.Texture.fromColor(k == Normal ? 0x8080FF : 0xFF00FF)];
 		var indexes = [];
 		var layers = [];
 		for( t in tl ) {
@@ -788,6 +834,12 @@ class HeightMap extends Object3D {
 	override function edit(ectx:EditContext) {
 		super.edit(ectx);
 		var ctx = ectx.getContext(this);
+		var hasSplat = false;
+		for( t in textures )
+			if( t.kind == SplatMap ) {
+				hasSplat = true;
+				break;
+			}
 		var props = new hide.Element('
 		<div>
 			<div class="group" name="View">
@@ -799,11 +851,12 @@ class HeightMap extends Object3D {
 					<label><input type="checkbox"field="heightFlipX"/> X</label>
 					<label><input type="checkbox"field="heightFlipY"/> Y</label>
 				</dd>
-				<dt>Albedo Tiling</dt><dd><input type="range" field="albedoTiling"/>
 				<dt>Normal Scale</dt><dd><input type="range" min="0" max="2" field="normalScale"/></dd>
 				<dt>MinZ</dt><dd><input type="range" min="-1000" max="0" field="minZ"/></dd>
 				<dt>MaxZ</dt><dd><input type="range" min="0" max="1000" field="maxZ"/></dd>
 				<dt>Quality</dt><dd><input type="range" min="0" max="4" field="quality" step="1"/></dd>
+			'+(hasSplat ? '
+				<dt>Albedo Tiling</dt><dd><input type="range" field="albedoTiling"/>
 				<dt>Splat Mode</dt><dd>
 					<select style="width:120px" field="splatMode">
 						<option value="Weights4">Weights4
@@ -812,6 +865,9 @@ class HeightMap extends Object3D {
 					</select>
 					<label><input type="checkbox" field="splatNearest"/> Nearest</label>
 				</dd>
+				<dt>Albedo Normals</dt><dd><input type="range" min="0" max="1" field="albedoNormals"/></label>
+				<dt>Albedo Roughness</dt><dd><input type="range" min="0" max="1" field="albedoRoughness"/></label>
+			': '')+'
 				<dt>Gamma</dt><dd><input type="range" min="0" max="4" field="albedoGamma"/></dd>
 				<dt>Gamma Color</dt><dd><input type="range" min="0" max="4" field="albedoColorGamma"/></dd>
 				<dt>Fixed Size</dt><dd><input type="number" style="width:50px" field="sizeX"/><input type="number" style="width:50px" field="sizeY"/> <label><input type="checkBox" field="autoSize"> Auto</label></dd>
