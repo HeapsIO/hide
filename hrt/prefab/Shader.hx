@@ -30,9 +30,14 @@ class Shader extends Prefab {
 			var val : Dynamic = Reflect.field(props, v.name);
 			switch(v.type) {
 			case TVec(_, VFloat):
-				if(val != null)
-					val = h3d.Vector.fromArray(val);
-				else
+				if(val != null) {
+					if( Std.is(val,Int) ) {
+						var v = new h3d.Vector();
+						v.setColor(val);
+						val = v;
+					} else
+						val = h3d.Vector.fromArray(val);
+				} else
 					val = new h3d.Vector();
 			case TSampler2D:
 				if( val != null )
@@ -127,6 +132,8 @@ class Shader extends Prefab {
 		var props = [];
 		for(v in shaderDef.data.vars) {
 			if( v.kind != Param )
+				continue;
+			if( v.qualifiers != null && v.qualifiers.indexOf(Ignore) >= 0 )
 				continue;
 			var prop = makeShaderParam(v);
 			if( prop == null ) continue;
