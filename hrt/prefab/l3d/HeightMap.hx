@@ -139,8 +139,8 @@ class HeightMapShader extends hxsl.Shader {
 						color += splat(i*3+1, s.g);
 						color += splat(i*3+2, s.b);
 					case 2:
-						var i1 = int(s.r*16.001);
-						var i2 = int(s.g*16.001);
+						var i1 = int(s.r*256);
+						var i2 = int(s.g*256);
 						color += splat(i1,s.b);
 						color += splat(i2,s.a);
 						if( hasAlbedoNormals ) {
