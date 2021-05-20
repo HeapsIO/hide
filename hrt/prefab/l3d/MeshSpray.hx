@@ -102,6 +102,7 @@ typedef MeshSprayConfig = {
 	var zOffset: Float;
 	var dontRepeatMesh : Bool;
 	var orientTerrain : Float;
+	var tiltAmount : Float;
 }
 
 
@@ -256,6 +257,7 @@ class MeshSpray extends Object3D {
 			zOffset: 0,
 			dontRepeatMesh: true,
 			orientTerrain : 0,
+			tiltAmount : 0,
 		};
 	}
 
@@ -280,6 +282,7 @@ class MeshSpray extends Object3D {
 		var mz = config.zOffset + tz - pos.tz;
 		obj.z += mz;
 		var orient = config.orientTerrain;
+		var tilt = config.tiltAmount;
 
 		var r = config.radius * 0.2;
 		inline function getPoint(dx,dy) {
@@ -295,7 +298,7 @@ class MeshSpray extends Object3D {
 		var q = new h3d.Quat();
 		q.initNormal(n);
 		var m = q.toMatrix();
-		m.prependRotation(0,0,  (config.rotation + (Std.random(2) == 0 ? -1 : 1) * Math.round(Math.random() * config.rotationOffset)) * Math.PI / 180);
+		m.prependRotation(Math.random()*tilt*Math.PI/8,0,  (config.rotation + (Std.random(2) == 0 ? -1 : 1) * Math.round(Math.random() * config.rotationOffset)) * Math.PI / 180);
 		var a = m.getEulerAngles();
 		obj.rotationX = hxd.Math.fmt(a.x * 180 / Math.PI);
 		obj.rotationY = hxd.Math.fmt(a.y * 180 / Math.PI);
@@ -646,6 +649,7 @@ class MeshSpray extends Object3D {
 				{ name: "rotationOffset", t: PFloat(0, 30), def: currentConfig.rotationOffset },
 				{ name: "zOffset", t: PFloat(0, 10), def: currentConfig.zOffset },
 				{ name: "orientTerrain", t: PFloat(0, 1), def: currentConfig.orientTerrain },
+				{ name: "tiltAmount", t: PFloat(0, 1), def: currentConfig.tiltAmount },
 			]));
 		ectx.properties.add(optionsGroup, this, function(pname) {
 			var value = sceneEditor.properties.element.find("input[field="+ pname + "]").val();

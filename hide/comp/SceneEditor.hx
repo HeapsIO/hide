@@ -1885,7 +1885,7 @@ class SceneEditor {
 				else
 					hideList.set(o, true);
 				var el = tree.getElement(c);
-				applyTreeStyle(c, el);
+				if( el != null ) applyTreeStyle(c, el);
 				applySceneStyle(c);
 			}
 		}
