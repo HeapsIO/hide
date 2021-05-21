@@ -209,6 +209,7 @@ class HeightMapTile {
 		var shadows = new h3d.scene.Mesh(mesh.shadowGrid, root);
 		shadows.material.shadows = false;
 		shadows.material.mainPass.setPassName("shadow");
+		@:bypassAccessor shadows.material.castShadows = true; // trigger DirShadowMap
 
 		inline function getTextures(k) return hmap.getTextures(k,tx,ty);
 		var htex = getTextures(Height)[0];
@@ -255,10 +256,10 @@ class HeightMapTile {
 			}
 		} else {
 			var albedo = getTextures(Albedo);
+			if( albedo.length == 0 )
+				albedo = [h3d.mat.Texture.fromColor(0x808080)];
 			shader.AlbedoCount = albedo.length;
 			shader.albedos = albedo;
-			if( shader.albedos.length == 0 )
-				shader.albedos = [h3d.mat.Texture.fromColor(0x808080)];
 		}
 
 		shader.albedoProps = hmap.getAlbedoProps();
