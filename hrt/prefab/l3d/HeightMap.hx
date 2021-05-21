@@ -202,8 +202,13 @@ class HeightMapTile {
 		if( root != null ) throw "assert";
 		root = new h3d.scene.Mesh(mesh.grid);
 		root.material.mainPass.setPassName("terrain");
+		root.material.shadows = false;
 		root.x = hmap.size * tx;
 		root.y = hmap.size * ty;
+
+		var shadows = new h3d.scene.Mesh(mesh.shadowGrid, root);
+		shadows.material.shadows = false;
+		shadows.material.mainPass.setPassName("shadow");
 
 		inline function getTextures(k) return hmap.getTextures(k,tx,ty);
 		var htex = getTextures(Height)[0];
@@ -211,6 +216,7 @@ class HeightMapTile {
 		var normal = getTextures(Normal)[0];
 
 		var shader = root.material.mainPass.addShader(new HeightMapShader());
+		shadows.material.mainPass.addShader(shader);
 		shader.hasHeight = htex != null;
 		shader.heightMap = shader.heightMapFrag = htex;
 		shader.hasNormal = normal != null;
@@ -269,6 +275,7 @@ class HeightMapMesh extends h3d.scene.Object {
 
 	var hmap : HeightMap;
 	var grid : HeightGrid;
+	var shadowGrid : HeightGrid;
 
 	public function new(hmap, ?parent) {
 		super(parent);
@@ -347,6 +354,8 @@ class HeightMapMesh extends h3d.scene.Object {
 		var size = hmap.size;
 		var width = htex == null ? Std.int(size) : Math.ceil(htex.width * hmap.heightPrecision);
 		var height = htex == null ? Std.int(size) : Math.ceil(htex.height * hmap.heightPrecision);
+		var swidth = width >> (4 - hmap.shadowQuality);
+		var sheight = width >> (4 - hmap.shadowQuality);
 		width >>= (4 - hmap.quality);
 		height >>= (4 - hmap.quality);
 		if( width < 4 ) width = 4;
@@ -358,6 +367,17 @@ class HeightMapMesh extends h3d.scene.Object {
 			grid.zMax = hmap.maxZ;
 			grid.addUVs();
 			grid.addNormals();
+		}
+		var cw = size/swidth, ch = size/sheight;
+		if( shadowGrid == null || shadowGrid.width != swidth || shadowGrid.height != sheight || shadowGrid.cellWidth != cw || shadowGrid.cellHeight != ch ) {
+			if( swidth == width )
+				shadowGrid = grid;
+			else {
+				shadowGrid = new HeightGrid(swidth,sheight,cw,ch);
+				shadowGrid.zMin = hmap.minZ;
+				shadowGrid.zMax = hmap.maxZ;
+				shadowGrid.addUVs();
+			}
 		}
 	}
 
@@ -384,6 +404,7 @@ class HeightMap extends Object3D {
 	@:s var minZ = -10;
 	@:s var maxZ = 30;
 	@:s public var quality = 4;
+	@:s public var shadowQuality = 4;
 	@:s var sizeX = 0;
 	@:s var sizeY = 0;
 	@:s var autoSize = false;
@@ -641,6 +662,8 @@ class HeightMap extends Object3D {
 		for( t in tilesCache )
 			t.remove();
 		tilesCache = new Map();
+		var mesh = cast(ctx.local3d,HeightMapMesh);
+		mesh.init();
 	}
 
 	function getHScale() {
@@ -686,6 +709,7 @@ class HeightMap extends Object3D {
 				<dt>MinZ</dt><dd><input type="range" min="-1000" max="0" field="minZ"/></dd>
 				<dt>MaxZ</dt><dd><input type="range" min="0" max="1000" field="maxZ"/></dd>
 				<dt>Quality</dt><dd><input type="range" min="0" max="4" field="quality" step="1"/></dd>
+				<dt>Shadows Quality</dt><dd><input type="range" min="0" max="4" field="shadowQuality" step="1"/></dd>
 			'+(hasSplat ? '
 				<dt>Albedo Tiling</dt><dd><input type="range" field="albedoTiling"/>
 				<dt>Splat Mode</dt><dd>
