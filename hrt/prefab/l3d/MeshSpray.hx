@@ -4,7 +4,7 @@ package hrt.prefab.l3d;
 
 class MeshSprayObject extends h3d.scene.Object {
 	public var batches : Array<h3d.scene.MeshBatch> = [];
-	public var batchesMap : Map<String,h3d.scene.MeshBatch> = [];
+	public var batchesMap : Map<String,{ batch : h3d.scene.MeshBatch, pivot : h3d.Matrix }> = [];
 	override function getMaterials( ?arr : Array<h3d.mat.Material>, recursive=true ) {
 		if( !recursive ) {
 			// batches materials are considered local materials
@@ -26,10 +26,10 @@ class MeshSpray extends Object3D {
 			var batch = mspray.batchesMap.get(c.source);
 			if( batch == null ) {
 				var obj = ctx.loadModel(c.source).toMesh();
-				batch = new h3d.scene.MeshBatch(cast(obj.primitive,h3d.prim.MeshPrimitive), obj.material, mspray);
+				var batch = new h3d.scene.MeshBatch(cast(obj.primitive,h3d.prim.MeshPrimitive), obj.material, mspray);
 				var multi = Std.downcast(obj, h3d.scene.MultiMaterial);
 				if( multi != null ) batch.materials = multi.materials;
-				mspray.batchesMap.set(c.source, batch);
+				mspray.batchesMap.set(c.source, { batch : batch, pivot : obj.defaultTransform.isIdentity() ? null : obj.defaultTransform });
 				mspray.batches.push(batch);
 			}
 		}
@@ -50,9 +50,10 @@ class MeshSpray extends Object3D {
 		for( c in children ) {
 			if( !c.enabled || c.type != "model" )
 				continue;
-			var batch = mspray.batchesMap.get(c.source);
+			var inf = mspray.batchesMap.get(c.source);
 			tmp.multiply3x4(c.to(Object3D).getTransform(), pos);
-			batch.emitInstance();
+			if( inf.pivot != null ) tmp.multiply3x4(inf.pivot, tmp);
+			inf.batch.emitInstance();
 		}
 		for( b in mspray.batches )
 			b.worldPosition = null;
