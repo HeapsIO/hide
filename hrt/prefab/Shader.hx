@@ -2,6 +2,8 @@ package hrt.prefab;
 
 class Shader extends Prefab {
 
+	@:s var targetMaterial : String;
+
 	function new(?parent) {
 		super(parent);
 		props = {};
@@ -63,6 +65,33 @@ class Shader extends Prefab {
 		material.mainPass.addShader(shader);
 	}
 
+	function iterMaterials(ctx:Context, callb) {
+		var parent = parent;
+		var shared = ctx.shared;
+		while( parent != null && parent.parent == null && shared.parent != null ) {
+			parent = shared.parent.prefab.parent; // reference parent
+			shared = shared.parent.shared;
+		}
+		if( Std.is(parent, Material) ) {
+			var material : Material = cast parent;
+			for( m in material.getMaterials(ctx) )
+				callb(null, m);
+		} else {
+			var objs;
+			if( parent.type == "object" ) {
+				// apply to all immediate children
+				objs = [];
+				for( c in parent.children )
+					for( o in shared.getObjects(c, h3d.scene.Object) )
+						objs.push(o);
+			} else
+				objs = shared.getObjects(parent, h3d.scene.Object);
+			for( obj in objs )
+				for( m in obj.getMaterials(false) )
+					callb(obj, m);
+		}
+	}
+
 	override function makeInstance(ctx:Context):Context {
 		ctx = ctx.clone(this);
 		var shader = makeShader(ctx);
@@ -87,32 +116,8 @@ class Shader extends Prefab {
 				}
 			}
 		}
-		if( ctx.local3d != null ) {
-			var parent = parent;
-			var shared = ctx.shared;
-			while( parent != null && parent.parent == null && shared.parent != null ) {
-				parent = shared.parent.prefab.parent; // reference parent
-				shared = shared.parent.shared;
-			}
-			if( Std.is(parent, Material) ) {
-				var material : Material = cast parent;
-				for( m in material.getMaterials(ctx) )
-					m.mainPass.addShader(shader);
-			} else {
-				var objs;
-				if( parent.type == "object" ) {
-					// apply to all immediate children
-					objs = [];
-					for( c in parent.children )
-						for( o in shared.getObjects(c, h3d.scene.Object) )
-							objs.push(o);
-				} else
-					objs = shared.getObjects(parent, h3d.scene.Object);
-				for( obj in objs )
-					for( m in obj.getMaterials(false) )
-						applyShader(obj, m, shader);
-			}
-		}
+		if( ctx.local3d != null )
+			iterMaterials(ctx, function(obj,mat) if( targetMaterial == null || targetMaterial == mat.name ) applyShader(obj, mat, shader));
 		ctx.custom = shader;
 		updateInstance(ctx);
 		return ctx;
@@ -127,6 +132,25 @@ class Shader extends Prefab {
 		var shaderDef = getShaderDefinition(ctx);
 		if( shaderDef == null )
 			return;
+
+		var materials = [];
+		iterMaterials(ctx, function(_,m) if( m.name != null && materials.indexOf(m.name) < 0 ) materials.push(m.name));
+		if( targetMaterial != null && materials.indexOf(targetMaterial) < 0 )
+			materials.push(targetMaterial);
+		if( materials.length >= 2 || targetMaterial != null ) {
+			ectx.properties.add(new hide.Element('
+			<dl>
+				<dt>Material</dt>
+				<dd>
+					<select field="targetMaterial">
+						<option value="">All</option>
+						${[for( m in materials ) '<option value="$m"${targetMaterial == m ? " selected":""}>$m</option>'].join("")}
+					</select>
+				</dd>
+			</dl>'), this, function(_) {
+				if( targetMaterial == "" ) targetMaterial = null;
+			});
+		}
 
 		var group = new hide.Element('<div class="group" name="Shader"></div>');
 		var props = [];
