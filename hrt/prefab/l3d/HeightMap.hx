@@ -7,29 +7,6 @@ enum abstract HeightMapTextureKind(String) {
 	var SplatMap = "splatmap";
 }
 
-private class WorldObjects extends h3d.scene.World {
-
-	public var killAlpha = 0.5;
-
-	override function loadMaterialTexture(r:hxd.res.Model, mat:hxd.fmt.hmd.Data.Material, modelName:String):h3d.scene.World.WorldMaterial {
-		var m = super.loadMaterialTexture(r, mat, modelName);
-		// load real material to apply killAlpha / culling properties
-		var wmat = h3d.mat.MaterialSetup.current.createMaterial();
-		wmat.name = mat.name;
-		wmat.texture = h3d.mat.Texture.fromColor(0); // allow set killAlpha
-		wmat.model = r;
-		var props = h3d.mat.MaterialSetup.current.loadMaterialProps(wmat);
-		if( props == null ) props = wmat.getDefaultModelProps();
-		wmat.props = props;
-		if( wmat.textureShader != null && wmat.textureShader.killAlpha )
-			m.killAlpha = killAlpha;
-		if( wmat.mainPass.culling == None )
-			m.culling = false;
-		return m;
-	}
-
-}
-
 class HeightMapShader extends hxsl.Shader {
 	static var SRC = {
 		@:import h3d.shader.BaseMesh;
@@ -280,70 +257,6 @@ class HeightMapTile {
 
 		shader.albedoProps = hmap.getAlbedoProps();
 		shader.hasAlbedoProps = shader.albedoProps.length > 0;
-
-		addObjects(mesh);
-	}
-
-	function addObjects( mesh : HeightMapMesh ) {
-		if( hmap.objects == null ) return;
-		var model = null;
-		decodeObjects(function(name) {
-			model = mesh.resolveAssetModel(name);
-			return model != null;
-		},function(pos) {
-			if( !mesh.isAssetFiltered(model,pos) )
-				@:privateAccess mesh.world.addTransform(model, pos);
-		});
-	}
-
-	public inline function decodeObjects( onModel : String -> Bool, onAdd : h3d.Matrix -> Void ) {
-		var data = hmap.storedCtx.shared.loadBytes(hmap.resolveTexturePath(hmap.objects.file,tx,ty));
-		if( data == null ) return;
-		var xml = new haxe.xml.Access(Xml.parse(data.toString()).firstElement());
-		var terrainWidth = Std.parseFloat(xml.node.Surface.att.Width);
-		var scale = hmap.size / terrainWidth;
-		var localScale = hmap.objects.scale * scale;
-		var posX = tx * hmap.size;
-		var posY = ty * hmap.size;
-
-		var xMax = 0., yMax = 0.;
-
-		for( layer in xml.node.Objects.node.Layers.nodes.Layer ) {
-			for( obj in layer.nodes.Object ) {
-				if( !onModel(obj.att.MeshAssetFileName) ) continue;
-				var data = haxe.crypto.Base64.decode(obj.node.Data.innerData);
-				for( i in 0...Std.int(data.length/40) ) {
-					var p = i * 40;
-					var x = data.getFloat(p); p += 4;
-					p += 4;
-					var y = terrainWidth - data.getFloat(p); p += 4;
-					if( x > xMax ) xMax = x;
-					if( y > yMax ) yMax = y;
-
-					x *= scale;
-					y *= scale;
-
-					var scW = data.getFloat(p); p += 4;
-					var scH = data.getFloat(p); p += 4;
-					var rotX = data.getFloat(p); p += 4;
-					var rotY = data.getFloat(p); p += 4;
-					var rotZ = data.getFloat(p); p += 4;
-					p += 4; // ???
-					var tint = data.getInt32(p);
-					tint = tint & 0xFFFFFF;
-					tint = ((tint & 0xFF) << 16) | (tint & 0xFF00) | (tint >> 16);
-
-					var mat = new h3d.Matrix();
-					mat.initScale(scW * localScale, scW * localScale, scH * localScale);
-					mat.rotate(rotX * Math.PI * 2, rotZ * Math.PI * 2, rotY * Math.PI * 2);
-					mat.tx = x + posX;
-					mat.ty = y + posY;
-					mat.tz = hmap.getZ(mat.tx, mat.ty);
-
-					onAdd(mat);
-				}
-			}
-		}
 	}
 
 	inline function resolveTexturePath( path : String ) {
@@ -356,9 +269,6 @@ class HeightMapMesh extends h3d.scene.Object {
 
 	var hmap : HeightMap;
 	var grid : HeightGrid;
-	var world : WorldObjects;
-	var modelCache : Map<String, h3d.scene.World.WorldModel> = new Map();
-	var nullModel = new h3d.scene.World.WorldModel(null);
 
 	public function new(hmap, ?parent) {
 		super(parent);
@@ -375,8 +285,6 @@ class HeightMapMesh extends h3d.scene.Object {
 
 		if( hmap.sizeX == 0 && hmap.sizeY == 0 && !hmap.autoSize ) {
 			checkTile(ctx,0,0);
-			if( world != null )
-				world.done();
 			return;
 		}
 
@@ -405,8 +313,6 @@ class HeightMapMesh extends h3d.scene.Object {
 			d = -d;
 			m++;
 		}
-		if( world != null )
-			world.done();
 	}
 
 	public dynamic function onTileReady( t : HeightMapTile ) {
@@ -453,32 +359,7 @@ class HeightMapMesh extends h3d.scene.Object {
 			grid.addUVs();
 			grid.addNormals();
 		}
-		modelCache = new Map();
-		if( world != null ) {
-			world.dispose();
-			world = null;
-		}
-		if( hmap.objects != null ) {
-			world = new WorldObjects(Std.int(size),this);
-			world.enableNormalMaps = true;
-			world.enableSpecular = true;
-			world.killAlpha = hmap.objects.killAlpha;
-		}
 	}
-
-	public function resolveAssetModel( name : String ) {
-		var m = modelCache.get(name);
-		if( m != null ) return m == nullModel ? null : m;
-		var res = hmap.resolveAssetModel(name);
-		if( res == null ) {
-			modelCache.set(name, nullModel);
-			return null;
-		}
-		m = world.loadModel(res);
-		modelCache.set(name, m);
-		return m;
-	}
-
 
 }
 
@@ -503,12 +384,6 @@ class HeightMap extends Object3D {
 	@:s var minZ = -10;
 	@:s var maxZ = 30;
 	@:s public var quality = 4;
-	@:s var objects : {
-		var file : String;
-		var assetsPath : String;
-		var scale : Float;
-		var killAlpha : Float;
-	};
 	@:s var sizeX = 0;
 	@:s var sizeY = 0;
 	@:s var autoSize = false;
@@ -522,10 +397,6 @@ class HeightMap extends Object3D {
 
 	// todo : instead of storing the context, we should find a way to have a texture loader
 	var storedCtx : hrt.prefab.Context;
-	#if editor
-	var missingObjects : Map<String,Bool> = new Map();
-	var checkModels : Bool = true;
-	#end
 	var albedoProps : Array<h3d.Vector>;
 	var texArrayCache : Map<HeightMapTextureKind, { texture : h3d.mat.TextureArray, indexes : Array<Int> }>;
 
@@ -678,34 +549,6 @@ class HeightMap extends Object3D {
 		return path;
 	}
 
-	function resolveAssetModel( name : String ) : hxd.res.Model {
-		var path = objects.assetsPath + "/" + name;
-		if( objects.assetsPath.indexOf("$") >= 0 ) {
-			path = objects.assetsPath;
-			path = path.split("$NAME").join(name);
-			var base = name;
-			while( true ) {
-				var c = base.charCodeAt(base.length-1);
-				if( c == '_'.code || (c >= '0'.code && c <= '9'.code) )
-					base = base.substr(0,-1);
-				else
-					break;
-			}
-			path = path.split("$BASE").join(base);
-		}
-		var res = try hxd.res.Loader.currentInstance.load(path + ".FBX").toModel() catch( e : hxd.res.NotFound )
-			try hxd.res.Loader.currentInstance.load(path + ".fbx").toModel() catch( e : hxd.res.NotFound ) {
-				#if editor
-				if( checkModels && !missingObjects.exists(path) ) {
-					missingObjects.set(path, true);
-					hide.Ide.inst.error(path+".fbx is missing");
-				}
-				#end
-				return null;
-			};
-		return res;
-	}
-
 	function getTextures( k : HeightMapTextureKind, tx : Int, ty : Int ) {
 		var tl = [];
 		for( t in textures )
@@ -795,21 +638,9 @@ class HeightMap extends Object3D {
 		cleanCache();
 		super.updateInstance(ctx, propName);
 
-		var mesh = cast(ctx.local3d, HeightMapMesh);
-		if( propName == "killAlpha" ) {
-			var world = @:privateAccess mesh.world;
-			if( world != null ) {
-				for( c in @:privateAccess world.allChunks )
-					for( m in c.root )
-						m.toMesh().material.textureShader.killAlphaThreshold = objects.killAlpha;
-			}
-			return;
-		}
-
 		for( t in tilesCache )
 			t.remove();
 		tilesCache = new Map();
-		mesh.init();
 	}
 
 	function getHScale() {
@@ -875,8 +706,6 @@ class HeightMap extends Object3D {
 			</div>
 			<div class="group" name="Textures">
 				<ul id="tex"></ul>
-			</div>
-			<div class="group" name="Objects">
 			</div>
 		</div>
 		');
@@ -957,45 +786,6 @@ class HeightMap extends Object3D {
 			textures.push({ path : null, kind : Albedo, enable: true });
 			ectx.rebuildProperties();
 		});
-
-		var objs = props.find("[name=Objects] .content");
-		if( objects == null ) {
-			var e = new hide.Element('
-			<dl>
-				<dt></dt><dd><a class="button" href="#">Add</a></dd>
-			</dl>
-			');
-			e.appendTo(objs).find("a.button").click(function(_) {
-				objects = {
-					file : "",
-					assetsPath : "",
-					scale : 1,
-					killAlpha : 0.5,
-				};
-				checkModels = false;
-				ectx.rebuildProperties();
-				checkModels = true;
-			});
-		} else {
-			var e = new hide.Element('
-			<dl>
-				<dt>File</dt><dd><input type="fileselect" field="file"/></dd>
-				<dt>Assets Path</dt><dd><input field="assetsPath"/></dd>
-				<dt>Scale</dt><dd><input type="range" min="0" max="2" field="scale"/></dd>
-				<dt>KillAlpha</dt><dd><input type="range" min="0" max="1" field="killAlpha"/></dd>
-				<dt></dt><dd><a class="button" href="#">Remove</a></dd>
-			</dl>
-			');
-			ectx.properties.build(e, objects, function(pname) {
-				checkModels = false;
-				updateInstance(ctx,pname);
-				checkModels = true;
-			});
-			e.appendTo(objs).find("a.button").click(function(_) {
-				objects = null;
-				ectx.rebuildProperties();
-			});
-		}
 	}
 	#end
 
