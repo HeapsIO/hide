@@ -12,6 +12,7 @@ class Material extends Prefab {
 	@:s public var specularMap : String;
 	@:s public var materialName : String;
 	@:c public var color : Array<Float> = [1,1,1,1];
+	@:s public var mainPassName : String;
 
 	public function new(?parent) {
 		super(parent);
@@ -55,6 +56,7 @@ class Material extends Prefab {
 			mat.props = props;
 			if(color != null)
 				mat.color.setColor(h3d.Vector.fromArray(color).toColor());
+			mat.mainPass.setPassName(mainPassName != null ? mainPassName : "default");
 
 			inline function getTex(pname: String) {
 				var p : String = Reflect.field(this, pname);
@@ -278,6 +280,7 @@ class Material extends Prefab {
 			<dt>Specular</dt><dd><input type="texturepath" field="specularMap" style="width:165px"/></dd>
 			<dt>Wrap</dt><dd><input type="checkbox" field="wrapRepeat"/></dd>
 			<dt>Color</dt><dd><input type="color" field="color"/></dd>
+			<dt>Pass Name</dt><dd><input type="text" field="mainPassName"/></dd>
 		</dl></div>');
 
 		dropDownMaterials.appendTo(matProps);
