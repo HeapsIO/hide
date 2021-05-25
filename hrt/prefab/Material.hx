@@ -56,7 +56,8 @@ class Material extends Prefab {
 			mat.props = props;
 			if(color != null)
 				mat.color.setColor(h3d.Vector.fromArray(color).toColor());
-			mat.mainPass.setPassName(mainPassName != null ? mainPassName : "default");
+			if(mainPassName != null)
+				mat.mainPass.setPassName(mainPassName);
 
 			inline function getTex(pname: String) {
 				var p : String = Reflect.field(this, pname);
