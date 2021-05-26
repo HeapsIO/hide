@@ -54,10 +54,15 @@ class DynamicShader extends Shader {
 
 	function fixSourcePath() {
 		#if editor
+		// shader source is loaded with ../src/path/to/Shader.hx
+		// but we want the path relative to source path path/to/Shader.hx only
 		var ide = hide.Ide.inst;
 		var shadersPath = ide.projectDir + "/src";  // TODO: serach in haxe.classPath?
 
-		var path = sys.FileSystem.fullPath(ide.getPath(source)).split("\\").join("/");
+		var path = ide.getPath(source);
+		var fpath = sys.FileSystem.fullPath(path);
+		if( fpath != null ) path = fpath;
+		path = path.split("\\").join("/");
 		if( StringTools.startsWith(path.toLowerCase(), shadersPath.toLowerCase()+"/") ) {
 			path = path.substr(shadersPath.length + 1);
 		}
