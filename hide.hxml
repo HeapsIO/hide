@@ -8,5 +8,6 @@ common.hxml
 --macro include("hxd.poly2tri")
 --macro include("hxd.clipper")
 --macro include("hxd.earcut")
+--macro include("hrt.prefab")
 -dce no
 -debug

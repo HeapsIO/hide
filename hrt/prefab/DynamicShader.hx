@@ -65,8 +65,8 @@ class DynamicShader extends Shader {
 		path = path.split("\\").join("/");
 		if( StringTools.startsWith(path.toLowerCase(), shadersPath.toLowerCase()+"/") ) {
 			path = path.substr(shadersPath.length + 1);
+			source = path;
 		}
-		source = path;
 		#end
 	}
 
