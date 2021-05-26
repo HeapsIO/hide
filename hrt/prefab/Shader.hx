@@ -199,7 +199,7 @@ class Shader extends Prefab {
 		return {
 			icon : "cog",
 			name : name,
-			fileSource : cl == hrt.prefab.Shader ? ["hx"] : null,
+			fileSource : cl == DynamicShader ? ["hx"] : null,
 			allowParent : function(p) return p.to(Object2D) != null || p.to(Object3D) != null || p.to(Material) != null
 		};
 	}

@@ -11,11 +11,6 @@ class DynamicShader extends Shader {
 		type = "shader";
 	}
 
-	override function save() {
-		fixSourcePath();
-		return super.save();
-	}
-
 	override function setShaderParam(shader:hxsl.Shader, v:hxsl.Ast.TVar, value:Dynamic) {
 		if( isInstance ) {
 			super.setShaderParam(shader,v,value);
@@ -62,7 +57,7 @@ class DynamicShader extends Shader {
 		var ide = hide.Ide.inst;
 		var shadersPath = ide.projectDir + "/src";  // TODO: serach in haxe.classPath?
 
-		var path = source.split("\\").join("/");
+		var path = sys.FileSystem.fullPath(ide.getPath(source)).split("\\").join("/");
 		if( StringTools.startsWith(path.toLowerCase(), shadersPath.toLowerCase()+"/") ) {
 			path = path.substr(shadersPath.length + 1);
 		}
