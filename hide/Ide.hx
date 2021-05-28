@@ -1064,6 +1064,7 @@ class Ide {
 			saveDatabase();
 		});
 		db.find(".dbExport").click(function(_) {
+			hide.comp.cdb.DataFiles.load();
 			var lang = new cdb.Lang(@:privateAccess database.data);
 			var xml = lang.buildXML();
 			xml = String.fromCharCode(0xFEFF) + xml; // prefix with BOM
