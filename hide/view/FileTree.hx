@@ -129,6 +129,13 @@ class FileTree extends FileView {
 						js.Browser.window.alert(e);
 					}
 					} },
+				{ label : "Copy Relative Path", enabled : current != null, click : function() {
+					try {
+						ide.setClipboard(current);
+					} catch (e : Dynamic) {
+						js.Browser.window.alert(e);
+					}
+					} },
 				{ label : "Move", enabled : current != null, click : function() {
 					ide.chooseDirectory(function(dir) {
 						onRename(current, "/"+dir+"/"+current.split("/").pop());
