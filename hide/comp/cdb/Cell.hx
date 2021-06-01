@@ -349,6 +349,7 @@ class Cell extends Component {
 			var ext = v.split(".").pop().toLowerCase();
 			if (v == "") return '<span class="error">#MISSING</span>';
 			var html = StringTools.htmlEscape(v);
+			html = '<span title=\'$html\' >' + html  + '</span>';
 			if (!editor.quickExists(path)) return '<span class="error">$html</span>';
 			else if( ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "gif" ) {
 				var img = '<img src="$url" onload="$(this).parent().find(\'.label\').text(this.width+\'x\'+this.height)"/>';
