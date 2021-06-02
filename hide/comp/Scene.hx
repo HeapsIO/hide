@@ -55,7 +55,7 @@ class Scene extends Component implements h3d.IDrawable {
 
 	var id = ++UID;
 	var window : hxd.Window;
-	var canvas : js.html.CanvasElement;
+	public var canvas : js.html.CanvasElement;
 	var hmdCache = new Map<String, hxd.fmt.hmd.Library>();
 	var texCache = new Map<String, h3d.mat.Texture>();
 	var pathsMap = new Map<String, String>();

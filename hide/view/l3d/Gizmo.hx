@@ -1,4 +1,7 @@
 package hide.view.l3d;
+import js.html.Document;
+import js.html.CanvasElement;
+import hxd.System;
 import hxd.Math;
 import hxd.Key as K;
 
@@ -112,6 +115,7 @@ class Gizmo extends h3d.scene.Object {
 	}
 
 	public function startMove(mode: TransformMode, ?duplicating=false) {
+		scene.canvas.requestPointerLock();
 		moving = true;
 		if(onStartMove != null) onStartMove(mode);
 		var startMat = getAbsPos().clone();
@@ -219,6 +223,7 @@ class Gizmo extends h3d.scene.Object {
 	function get_mouseY() return @:privateAccess scene.window.mouseY;
 
 	function finishMove() {
+		scene.canvas.ownerDocument.exitPointerLock();
 		updateFunc = null;
 		if(onFinishMove != null)
 			onFinishMove();
