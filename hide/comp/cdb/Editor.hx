@@ -738,6 +738,8 @@ class Editor extends Component {
 				beginChanges();
 				sheet.columns.remove(col);
 				sheet.columns.insert(indexColumn - 1, col);
+				if (cursor.x == indexColumn) cursor.set(cursor.table, cursor.x - 1, cursor.y);
+				else if (cursor.x == indexColumn - 1) cursor.set(cursor.table, cursor.x + 1, cursor.y);
 				endChanges();
 				refresh();
 			}},
@@ -745,6 +747,8 @@ class Editor extends Component {
 				beginChanges();
 				sheet.columns.remove(col);
 				sheet.columns.insert(indexColumn + 1, col);
+				if (cursor.x == indexColumn) cursor.set(cursor.table, cursor.x + 1, cursor.y);
+				else if (cursor.x == indexColumn + 1) cursor.set(cursor.table, cursor.x - 1, cursor.y);
 				endChanges();
 				refresh();
 			}},
@@ -821,7 +825,8 @@ class Editor extends Component {
 		beginChanges();
 		var index = line.table.sheet.moveLine(line.index, delta);
 		if( index != null ) {
-			cursor.set(cursor.table, -1, index);
+			if (cursor.y == index - delta) cursor.set(cursor.table, cursor.x, index);
+			else if (cursor.y == index) cursor.set(cursor.table, cursor.x, index - delta);
 			refresh();
 		}
 		endChanges();
