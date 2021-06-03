@@ -842,9 +842,8 @@ class Ide {
 
 	public function chooseFile( workingdir : String =null, exts : Array<String>, onSelect : Null<String> -> Void, allowNull=false ) {
 		var path = "";
-		if (workingdir != null)
+		if (workingdir != null && workingdir != "#MISSING")
 		{
-			if (workingdir.split("/")[0] == "..") workingdir = "";
 			var pathArray = getPath(workingdir).split("/");
 			var c = isWindows ? "\\" : "/";
 			path = pathArray.join(c);
