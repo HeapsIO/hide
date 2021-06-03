@@ -1,7 +1,4 @@
 package hide.view.l3d;
-import js.html.Document;
-import js.html.CanvasElement;
-import hxd.System;
 import hxd.Math;
 import hxd.Key as K;
 
