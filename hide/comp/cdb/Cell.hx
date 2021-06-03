@@ -657,7 +657,7 @@ class Cell extends Component {
 			};
 			modal.click(function(_) color.close());
 		case TFile:
-			ide.chooseFile(["*"], function(file) {
+			ide.chooseFile(currentValue, ["*"], function(file) {
 				setValue(file);
 				refresh();
 			});
