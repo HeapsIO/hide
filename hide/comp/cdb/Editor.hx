@@ -838,8 +838,8 @@ class Editor extends Component {
 		var sheet = line.table.sheet;
 		var sepIndex = sheet.separators.indexOf(line.index);
 		new hide.comp.ContextMenu([
-			{ label : "Move Up", click : moveLine.bind(line,-1) },
-			{ label : "Move Down", click : moveLine.bind(line,1) },
+			{ label : "Move Up", enabled:  (line.index > 0), click : moveLine.bind(line,-1) },
+			{ label : "Move Down", enabled:  (line.index < sheet.lines.length - 1), click : moveLine.bind(line,1) },
 			{ label : "Insert", click : function() {
 				insertLine(line.table,line.index);
 				cursor.move(0,1,false,false);
