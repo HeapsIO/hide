@@ -32,6 +32,9 @@ class Cell extends Component {
 			if(!visible)
 				return;
 		}
+
+		// Used to get the Cell component back from its DOM/Jquery element
+		root.prop("cellComp", this);
 		if( column.kind == Script ) root.addClass("t_script");
 		refresh();
 		switch( column.type ) {
@@ -41,21 +44,6 @@ class Cell extends Component {
 				e.stopPropagation();
 				@:privateAccess line.table.toggleList(this);
 			});
-		case TFile:
-			if (canEdit()) {
-				element.on("drop", function(e : js.jquery.Event) {
-					var e : js.html.DragEvent = untyped e.originalEvent;
-					if (e.dataTransfer.files.length > 0) {
-						e.preventDefault();
-						e.stopPropagation();
-						setValue(ide.makeRelative(untyped e.dataTransfer.files.item(0).path));
-						refresh();
-					}
-				});
-				element.dblclick(function(_) edit());
-			} else {
-				root.addClass("t_readonly");
-			}
 		case TString if( column.kind == Script ):
 			element.click(function(_) edit());
 		default:
@@ -74,6 +62,15 @@ class Cell extends Component {
 			e.stopPropagation();
 			e.preventDefault();
 		});
+	}
+
+	public function dragDropFile( relativePath : String, isDrop : Bool = false ) : Bool {
+		if ( !canEdit() || column.type != TFile) return false;
+		if ( isDrop ) {
+			setValue(relativePath);
+			refresh();
+		}
+		return true;
 	}
 
 	function evaluate() {
@@ -349,6 +346,7 @@ class Cell extends Component {
 			var ext = v.split(".").pop().toLowerCase();
 			if (v == "") return '<span class="error">#MISSING</span>';
 			var html = StringTools.htmlEscape(v);
+			html = '<span title=\'$html\' >' + html  + '</span>';
 			if (!editor.quickExists(path)) return '<span class="error">$html</span>';
 			else if( ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "gif" ) {
 				var img = '<img src="$url" onload="$(this).parent().find(\'.label\').text(this.width+\'x\'+this.height)"/>';
@@ -660,7 +658,7 @@ class Cell extends Component {
 			};
 			modal.click(function(_) color.close());
 		case TFile:
-			ide.chooseFile(["*"], function(file) {
+			ide.chooseFile(currentValue, ["*"], function(file) {
 				setValue(file);
 				refresh();
 			});

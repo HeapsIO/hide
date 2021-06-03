@@ -137,6 +137,42 @@ class CdbTable extends hide.ui.View<{}> {
 		editor.refresh();
 	}
 
+	/**
+		Hovers and drops dragged in from an item tree
+	**/
+	override public function onDragDrop( items : Array<String>, isDrop : Bool ) {
+		if( items.length == 0 )
+			return false;
+		var path = ide.makeRelative(items[0]);
+		var cell = getCellFromMousePos(ide.mouseX, ide.mouseY);
+		if( cell == null )
+			return false;
+		return cell.dragDropFile(path, isDrop);
+	}
+
+	/**
+		Returns the Cell Component that is currently under position (x, y) in pixels
+		returns null otherwise.
+
+		This will not give a cell in row/column coordinates.
+	**/
+	public function getCellFromMousePos( x : Int, y : Int ) : Null<hide.comp.cdb.Cell> {
+		var pickedEl = js.Browser.document.elementFromPoint(x, y);
+		var el = pickedEl;
+		while (el != null) {
+			if(el.classList.contains("c")) {
+				// el is a cell's root DOM element
+
+				var cellRoot = new Element(el);
+				var cell : hide.comp.cdb.Cell = cellRoot.prop("cellComp");
+				return cell;
+			}
+			el = el.parentElement;
+		}
+		return null;
+	}
+
+
 	override function getTitle() {
 		return "CDB"+ @:privateAccess (ide.databaseDiff != null ? " - "+ide.databaseDiff : "");
 	}

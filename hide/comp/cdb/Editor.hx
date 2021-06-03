@@ -270,6 +270,8 @@ class Editor extends Component {
 						if( ~/^[A-Za-z0-9_]+$/.match(text) ) value = text;
 					case TString:
 						value = text;
+					case TFile:
+						value = ide.makeRelative(text);
 					case TInt:
 						text = text.split(",").join("").split(" ").join("");
 						value = Std.parseInt(text);
