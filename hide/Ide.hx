@@ -840,8 +840,16 @@ class Ide {
 		}).appendTo(window.window.document.body).click();
 	}
 
-	public function chooseFile( exts : Array<String>, onSelect : Null<String> -> Void, allowNull=false ) {
-		var e = new Element('<input type="file" style="visibility:hidden" value="" accept="${[for( e in exts ) "."+e].join(",")}"/>');
+	public function chooseFile( workingdir : String =null, exts : Array<String>, onSelect : Null<String> -> Void, allowNull=false ) {
+		var path = "";
+		if (workingdir != null && workingdir != "#MISSING")
+		{
+			var pathArray = getPath(workingdir).split("/");
+			var c = isWindows ? "\\" : "/";
+			path = pathArray.join(c);
+		}
+		
+		var e = new Element('<input type="file" style="visibility:hidden" value="" nwworkingdir="$path" accept="${[for( e in exts ) "."+e].join(",")}"/>');
 		e.change(function(_) {
 			var file = e.val();
 			if( file == "" && !allowNull ) return;
