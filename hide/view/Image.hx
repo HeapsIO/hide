@@ -99,6 +99,12 @@ class Image extends FileView {
 		};
 	}
 
+	override function onRebuild() {
+		if ( scene != null )
+			scene.dispose();
+		super.onRebuild();
+	}
+
 	override function onResize() {
 		if( bmp == null ) return;
 		var scale = Math.min(1,Math.min((contentWidth - 20) / bmp.tile.width, (contentHeight - 20) / bmp.tile.height));
