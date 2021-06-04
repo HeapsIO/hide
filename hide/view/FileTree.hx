@@ -112,7 +112,10 @@ class FileTree extends FileView {
 				newMenu.unshift({ label : "Directory", click : createNew.bind(current, { options : { createNew : "Directory" }, extensions : null, component : null }) });
 			new hide.comp.ContextMenu([
 				{ label : "New..", menu:newMenu },
+				{ label : "", isSeparator: true },
 				{ label : "Explore", enabled : current != null, click : function() { onExploreFile(current); } },
+				{ label : "Copy Path", enabled : current != null, click : function() { ide.setClipboard(current); } },
+				{ label : "", isSeparator: true },
 				{ label : "Clone", enabled : current != null, click : function() {
 						try {
 							if (onCloneFile(current)) {
