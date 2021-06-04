@@ -5,6 +5,7 @@ class Script extends FileView {
 	var editor : monaco.ScriptEditor;
 	var script : hide.comp.ScriptEditor;
 	var originData : String;
+	var lang : String;
 
 	function getScriptChecker() {
 		if( extension != "hx" )
@@ -12,9 +13,32 @@ class Script extends FileView {
 		return new hide.comp.ScriptEditor.ScriptChecker(config,"hx");
 	}
 
+	override function buildTabMenu():Array<hide.comp.ContextMenu.ContextMenuItem> {
+		var arr = super.buildTabMenu();
+		if( lang == "xml" ) {
+			arr.push({ label : "Count Words", click : function() {
+				var x = try Xml.parse(editor.getValue()) catch( e : Dynamic ) { ide.error(e); return; };
+				var count = 0;
+				function countRec(x:Xml) {
+					switch( x.nodeType ) {
+					case CData, PCData:
+						count += StringTools.trim(~/[ \n\t\r]/g.replace(" ",x.nodeValue)).split(" ").length;
+					case Element, Document:
+						for( x in x )
+							countRec(x);
+					default:
+					}
+				}
+				countRec(x);
+				ide.message("Words : "+count);
+			}});
+		}
+		return arr;
+	}
+
 	override function onDisplay() {
 		element.addClass("script-editor");
-		var lang = switch( extension ) {
+		lang = switch( extension ) {
 		case "js", "hx": "javascript";
 		case "json": "json";
 		case "xml": "xml";
