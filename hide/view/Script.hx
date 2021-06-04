@@ -19,18 +19,48 @@ class Script extends FileView {
 			arr.push({ label : "Count Words", click : function() {
 				var x = try Xml.parse(editor.getValue()) catch( e : Dynamic ) { ide.error(e); return; };
 				var count = 0;
-				function countRec(x:Xml) {
+				var cats = [];
+				var hcats = new Map();
+				var firstElement = true;
+				function countRec(x:Xml,category:{name:String,count:Int}) {
 					switch( x.nodeType ) {
 					case CData, PCData:
-						count += StringTools.trim(~/[ \n\t\r]/g.replace(" ",x.nodeValue)).split(" ").length;
-					case Element, Document:
+						var text = StringTools.trim(~/[^a-zA-Z0-9]+/g.replace(" ",x.nodeValue));
+						if( text != "" ) {
+							var n = text.split(" ").length;
+							count += n;
+							category.count += n;
+						}
+					case Document:
 						for( x in x )
-							countRec(x);
+							countRec(x, category);
+					case Element:
+						if( firstElement )
+							firstElement = false;
+						else if( category == null ) {
+							var name = x.get("name");
+							if( name == null ) name = "Other";
+							category = hcats.get(name);
+							if( category == null ) {
+								category = { name : name, count : 0 };
+								hcats.set(name, category);
+								cats.push(category);
+							}
+						}
+						for( x in x )
+							countRec(x,category);
 					default:
 					}
 				}
-				countRec(x);
-				ide.message("Words : "+count);
+				countRec(x,null);
+				cats.sort(function(c1,c2) return c2.count - c1.count);
+				var txt = ["Words : " + count];
+				if( cats.length > 1 && cats.length < 30 ) {
+					txt.push("");
+					for( c in cats )
+						txt.push(c.name+": "+c.count);
+				}
+				ide.message(txt.join("\n"));
 			}});
 		}
 		return arr;
