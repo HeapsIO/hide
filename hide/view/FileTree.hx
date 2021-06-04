@@ -112,7 +112,10 @@ class FileTree extends FileView {
 				newMenu.unshift({ label : "Directory", click : createNew.bind(current, { options : { createNew : "Directory" }, extensions : null, component : null }) });
 			new hide.comp.ContextMenu([
 				{ label : "New..", menu:newMenu },
+				{ label : "", isSeparator: true },
 				{ label : "Explore", enabled : current != null, click : function() { onExploreFile(current); } },
+				{ label : "Copy Path", enabled : current != null, click : function() { ide.setClipboard(current); } },
+				{ label : "", isSeparator: true },
 				{ label : "Clone", enabled : current != null, click : function() {
 						try {
 							if (onCloneFile(current)) {
@@ -125,13 +128,6 @@ class FileTree extends FileView {
 				{ label : "Rename", enabled : current != null, click : function() {
 					try {
 						onRenameFile(current);
-					} catch (e : Dynamic) {
-						js.Browser.window.alert(e);
-					}
-					} },
-				{ label : "Copy Relative Path", enabled : current != null, click : function() {
-					try {
-						ide.setClipboard(current);
 					} catch (e : Dynamic) {
 						js.Browser.window.alert(e);
 					}
