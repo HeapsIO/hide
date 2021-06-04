@@ -137,6 +137,28 @@ class CdbTable extends hide.ui.View<{}> {
 		editor.refresh();
 	}
 
+	override public function onDragDrop( items : Array<String>, isDrop : Bool ) {
+		if( items.length == 0 )
+			return false;
+		var path = ide.makeRelative(items[0]);
+		var cell = getCellFromMousePos(ide.mouseX, ide.mouseY);
+		if( cell == null )
+			return false;
+		return cell.dragDropFile(path, isDrop);
+	}
+
+	public function getCellFromMousePos( x : Int, y : Int ) : Null<hide.comp.cdb.Cell> {
+		var pickedEl = js.Browser.document.elementFromPoint(x, y);
+		var el = pickedEl;
+		while (el != null) {
+			var cellRoot = new Element(el);
+			var cell : hide.comp.cdb.Cell = cellRoot.prop("cellComp");
+			if (cell != null) return cell;
+			el = el.parentElement;
+		}
+		return null;
+	}
+
 	override function getTitle() {
 		return "CDB"+ @:privateAccess (ide.databaseDiff != null ? " - "+ide.databaseDiff : "");
 	}
