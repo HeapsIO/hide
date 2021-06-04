@@ -742,28 +742,28 @@ class Editor extends Component {
 			{ label : "Add Column", click : function () newColumn(sheet, indexColumn) },
 			{ label : "", isSeparator: true },
 			{ label : "Move Left", enabled:  (indexColumn > 0 && 
-				NextVisibleColumnIndex(table, indexColumn, Left) > -1), click : function () {
+				nextVisibleColumnIndex(table, indexColumn, Left) > -1), click : function () {
 				beginChanges();
-				var nextVisibleColumnIndex = NextVisibleColumnIndex(table, indexColumn, Left);
+				var nextIndex = nextVisibleColumnIndex(table, indexColumn, Left);
 				sheet.columns.remove(col);
-				sheet.columns.insert(nextVisibleColumnIndex, col);
+				sheet.columns.insert(nextIndex, col);
 				if (cursor.x == indexColumn) 
-					cursor.set(cursor.table, nextVisibleColumnIndex, cursor.y);
-				else if (cursor.x == nextVisibleColumnIndex) 
-					cursor.set(cursor.table, nextVisibleColumnIndex + 1, cursor.y);
+					cursor.set(cursor.table, nextIndex, cursor.y);
+				else if (cursor.x == nextIndex) 
+					cursor.set(cursor.table, nextIndex + 1, cursor.y);
 				endChanges();
 				refresh();
 			}},
 			{ label : "Move Right", enabled: (indexColumn < sheet.columns.length - 1 && 
-				NextVisibleColumnIndex(table, indexColumn, Right) < sheet.columns.length), click : function () {
+				nextVisibleColumnIndex(table, indexColumn, Right) < sheet.columns.length), click : function () {
 				beginChanges();
-				var nextVisibleColumnIndex = NextVisibleColumnIndex(table, indexColumn, Right);
+				var nextIndex = nextVisibleColumnIndex(table, indexColumn, Right);
 				sheet.columns.remove(col);
-				sheet.columns.insert(nextVisibleColumnIndex, col);
+				sheet.columns.insert(nextIndex, col);
 				if (cursor.x == indexColumn) 
-					cursor.set(cursor.table, nextVisibleColumnIndex, cursor.y);
-				else if (cursor.x == nextVisibleColumnIndex) 
-					cursor.set(cursor.table, nextVisibleColumnIndex - 1, cursor.y);
+					cursor.set(cursor.table, nextIndex, cursor.y);
+				else if (cursor.x == nextIndex) 
+					cursor.set(cursor.table, nextIndex - 1, cursor.y);
 				endChanges();
 				refresh();
 			}},
@@ -830,12 +830,12 @@ class Editor extends Component {
 		new hide.comp.ContextMenu(menu);
 	}
 
-	function NextVisibleColumnIndex( table : Table, index : Int, dir : Direction){
-		var next = index + (dir == Left ? -1 : 1);
-		while (next >= 0 && next <= table.columns.length - 1 && !isColumnVisible(table.columns[next]))
-		{
+	function nextVisibleColumnIndex( table : Table, index : Int, dir : Direction){
+		var next = index;
+		do {
 			next += (dir == Left ? -1 : 1);
 		}
+		while (next >= 0 && next <= table.columns.length - 1 && !isColumnVisible(table.columns[next]));
 		return next;
 	}
 
