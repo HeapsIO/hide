@@ -5,6 +5,7 @@ class Script extends FileView {
 	var editor : monaco.ScriptEditor;
 	var script : hide.comp.ScriptEditor;
 	var originData : String;
+	var lang : String;
 
 	function getScriptChecker() {
 		if( extension != "hx" )
@@ -12,9 +13,62 @@ class Script extends FileView {
 		return new hide.comp.ScriptEditor.ScriptChecker(config,"hx");
 	}
 
+	override function buildTabMenu():Array<hide.comp.ContextMenu.ContextMenuItem> {
+		var arr = super.buildTabMenu();
+		if( lang == "xml" ) {
+			arr.push({ label : "Count Words", click : function() {
+				var x = try Xml.parse(editor.getValue()) catch( e : Dynamic ) { ide.error(e); return; };
+				var count = 0;
+				var cats = [];
+				var hcats = new Map();
+				var firstElement = true;
+				function countRec(x:Xml,category:{name:String,count:Int}) {
+					switch( x.nodeType ) {
+					case CData, PCData:
+						var text = StringTools.trim(~/[^a-zA-Z0-9]+/g.replace(" ",x.nodeValue));
+						if( text != "" ) {
+							var n = text.split(" ").length;
+							count += n;
+							category.count += n;
+						}
+					case Document:
+						for( x in x )
+							countRec(x, category);
+					case Element:
+						if( firstElement )
+							firstElement = false;
+						else if( category == null ) {
+							var name = x.get("name");
+							if( name == null ) name = "Other";
+							category = hcats.get(name);
+							if( category == null ) {
+								category = { name : name, count : 0 };
+								hcats.set(name, category);
+								cats.push(category);
+							}
+						}
+						for( x in x )
+							countRec(x,category);
+					default:
+					}
+				}
+				countRec(x,null);
+				cats.sort(function(c1,c2) return c2.count - c1.count);
+				var txt = ["Words : " + count];
+				if( cats.length > 1 && cats.length < 30 ) {
+					txt.push("");
+					for( c in cats )
+						txt.push(c.name+": "+c.count);
+				}
+				ide.message(txt.join("\n"));
+			}});
+		}
+		return arr;
+	}
+
 	override function onDisplay() {
 		element.addClass("script-editor");
-		var lang = switch( extension ) {
+		lang = switch( extension ) {
 		case "js", "hx": "javascript";
 		case "json": "json";
 		case "xml": "xml";

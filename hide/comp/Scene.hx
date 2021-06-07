@@ -280,10 +280,11 @@ class Scene extends Component implements h3d.IDrawable {
 			}
 		}
 		img.on("load", onLoaded);
-		var w = js.node.Fs.watch(path, function(_, _) {
-			img.attr("src", 'file://$path?t='+Date.now().getTime());
-		});
-		cleanup.push(w.close);
+		function onChange() {
+			img.attr("src", 'file://$path?t=' + Std.int(Date.now().getTime() / 1000));
+		}
+		ide.fileWatcher.register( path, onChange, true, element );
+		cleanup.push(function() { ide.fileWatcher.unregister( path, onChange ); });
 	}
 
 	public function listAnims( path : String ) {
