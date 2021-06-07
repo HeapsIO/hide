@@ -1,6 +1,11 @@
 package hide.comp.cdb;
 import hxd.Key in K;
 
+
+enum Direction {
+	Left;
+	Right;
+}
 typedef UndoSheet = {
 	var sheet : String;
 	var parent : { sheet : UndoSheet, line : Int, column : Int };
@@ -736,17 +741,29 @@ class Editor extends Component {
 			{ label : "Edit", click : function () editColumn(sheet, col) },
 			{ label : "Add Column", click : function () newColumn(sheet, indexColumn) },
 			{ label : "", isSeparator: true },
-			{ label : "Move Left", enabled:  (indexColumn > 0), click : function () {
+			{ label : "Move Left", enabled:  (indexColumn > 0 && 
+				nextVisibleColumnIndex(table, indexColumn, Left) > -1), click : function () {
 				beginChanges();
+				var nextIndex = nextVisibleColumnIndex(table, indexColumn, Left);
 				sheet.columns.remove(col);
-				sheet.columns.insert(indexColumn - 1, col);
+				sheet.columns.insert(nextIndex, col);
+				if (cursor.x == indexColumn) 
+					cursor.set(cursor.table, nextIndex, cursor.y);
+				else if (cursor.x == nextIndex) 
+					cursor.set(cursor.table, nextIndex + 1, cursor.y);
 				endChanges();
 				refresh();
 			}},
-			{ label : "Move Right", enabled: (indexColumn < sheet.columns.length - 1), click : function () {
+			{ label : "Move Right", enabled: (indexColumn < sheet.columns.length - 1 && 
+				nextVisibleColumnIndex(table, indexColumn, Right) < sheet.columns.length), click : function () {
 				beginChanges();
+				var nextIndex = nextVisibleColumnIndex(table, indexColumn, Right);
 				sheet.columns.remove(col);
-				sheet.columns.insert(indexColumn + 1, col);
+				sheet.columns.insert(nextIndex, col);
+				if (cursor.x == indexColumn) 
+					cursor.set(cursor.table, nextIndex, cursor.y);
+				else if (cursor.x == nextIndex) 
+					cursor.set(cursor.table, nextIndex - 1, cursor.y);
 				endChanges();
 				refresh();
 			}},
@@ -813,6 +830,15 @@ class Editor extends Component {
 		new hide.comp.ContextMenu(menu);
 	}
 
+	function nextVisibleColumnIndex( table : Table, index : Int, dir : Direction){
+		var next = index;
+		do {
+			next += (dir == Left ? -1 : 1);
+		}
+		while (next >= 0 && next <= table.columns.length - 1 && !isColumnVisible(table.columns[next]));
+		return next;
+	}
+
 	function editScripts( table : Table, col : cdb.Data.Column ) {
 		// TODO : create single edit-all script view allowing global search & replace
 	}
@@ -823,7 +849,8 @@ class Editor extends Component {
 		beginChanges();
 		var index = line.table.sheet.moveLine(line.index, delta);
 		if( index != null ) {
-			cursor.set(cursor.table, -1, index);
+			if (cursor.y == index - delta) cursor.set(cursor.table, cursor.x, index);
+			else if (cursor.y == index) cursor.set(cursor.table, cursor.x, index - delta);
 			refresh();
 		}
 		endChanges();
@@ -835,8 +862,8 @@ class Editor extends Component {
 		var sheet = line.table.sheet;
 		var sepIndex = sheet.separators.indexOf(line.index);
 		new hide.comp.ContextMenu([
-			{ label : "Move Up", click : moveLine.bind(line,-1) },
-			{ label : "Move Down", click : moveLine.bind(line,1) },
+			{ label : "Move Up", enabled:  (line.index > 0), click : moveLine.bind(line,-1) },
+			{ label : "Move Down", enabled:  (line.index < sheet.lines.length - 1), click : moveLine.bind(line,1) },
 			{ label : "Insert", click : function() {
 				insertLine(line.table,line.index);
 				cursor.move(0,1,false,false);
