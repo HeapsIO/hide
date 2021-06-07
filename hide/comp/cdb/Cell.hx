@@ -7,6 +7,7 @@ class Cell extends Component {
 
 	var editor : Editor;
 	var currentValue : Dynamic;
+	var watches : Array<String> = new Array<String>();
 	public var line(default,null) : Line;
 	public var column(default, null) : cdb.Data.Column;
 	public var columnIndex(get, never) : Int;
@@ -145,6 +146,14 @@ class Cell extends Component {
 		var html = valueHtml(column, value, line.table.getRealSheet(), line.obj, []);
 		if( html == "&nbsp;" ) element.text(" ") else if( !R_HTML.match(html) ) element.text(html) else element.html(html);
 		updateClasses();
+	}
+
+	function watchFile( file : String ) {
+		if( file == null ) return;
+		if( watches.indexOf(file) != -1 ) return;
+
+		watches.push(file);
+		ide.fileWatcher.register(file, function() { refresh(); }, true, element);
 	}
 
 	function updateClasses() {
@@ -437,6 +446,7 @@ class Cell extends Component {
 		var py = Std.int(v.size*v.y*zoom);
 		var html = '<div class="tile toload" path="$path" pos="$px:$py:$zoom" style="width : ${Std.int(width * zoom)}px; height : ${Std.int(height * zoom)}px; opacity:0; $inl"></div>';
 		html += '<script>hide.comp.cdb.Cell.startTileLoading()</script>';
+		watchFile(path);
 		return html;
 	}
 
@@ -445,6 +455,7 @@ class Cell extends Component {
 		if( tiles.length == 0 ) return;
 		tiles.removeClass("toload");
 		var imap = new Map();
+		var timestamp = Std.int(Date.now().getTime() / 1000);
 		for( t in tiles )
 			imap.set(t.getAttribute("path"), t);
 		for( path => elt in imap ) {
@@ -462,7 +473,7 @@ class Cell extends Component {
 						var zoom = Std.parseFloat(pos[2]);
 						var bgw = Std.int(iwidth*zoom);
 						var bgh = Std.int(iheight*zoom);
-						var bg = 'url("$path") -${px}px -${py}px / ${bgw}px ${bgh}px';
+						var bg = 'url("$path?t=$timestamp") -${px}px -${py}px / ${bgw}px ${bgh}px';
 						if( zoom > 1 )
 							bg += ";image-rendering:pixelated";
 						t.setAttribute("style", t.getAttribute("style")+" background : "+bg+"; opacity : 1;");
