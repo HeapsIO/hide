@@ -28,6 +28,7 @@ class Gizmo extends h3d.scene.Object {
 	var updateFunc: Float -> Void;
 	var mouseX(get,never) : Float;
 	var mouseY(get,never) : Float;
+	var mouseLock(get, set) : Bool;
 
 	public var onStartMove: TransformMode -> Void;
 	public var onMove: h3d.Vector -> h3d.Quat -> h3d.Vector -> Void;
@@ -112,6 +113,7 @@ class Gizmo extends h3d.scene.Object {
 	}
 
 	public function startMove(mode: TransformMode, ?duplicating=false) {
+		mouseLock = true;
 		moving = true;
 		if(onStartMove != null) onStartMove(mode);
 		var startMat = getAbsPos().clone();
@@ -217,8 +219,11 @@ class Gizmo extends h3d.scene.Object {
 
 	function get_mouseX() return @:privateAccess scene.window.mouseX;
 	function get_mouseY() return @:privateAccess scene.window.mouseY;
+	function get_mouseLock() return @:privateAccess scene.window.mouseLock;
+	function set_mouseLock(v : Bool) return @:privateAccess scene.window.mouseLock = v; 
 
 	function finishMove() {
+		mouseLock = false;
 		updateFunc = null;
 		if(onFinishMove != null)
 			onFinishMove();
