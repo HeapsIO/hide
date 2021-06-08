@@ -340,10 +340,50 @@ class ShaderGraph {
 			}
 		}
 
+		var shvars = [];
+		var inputVar : TVar = null, inputVars = [], inputMap = new Map();
+		for( v in allVariables ) {
+			if( v.id == 0 )
+				v.id = hxsl.Tools.allocVarId();
+			if( v.kind != Input ) {
+				shvars.push(v);
+				continue;
+			}
+			if( inputVar == null ) {
+				inputVar = {
+					id : hxsl.Tools.allocVarId(),
+					name : "input",
+					kind : Input,
+					type : TStruct(inputVars),
+				};
+				shvars.push(inputVar);
+			}
+			var prevId = v.id;
+			v = Reflect.copy(v);
+			v.id = hxsl.Tools.allocVarId();
+			v.parent = inputVar;
+			inputVars.push(v);
+			inputMap.set(prevId, v);
+		}
+
+		if( inputVars.length > 0 ) {
+			function remap(e:TExpr) {
+				return switch( e.e ) {
+				case TVar(v):
+					var i = inputMap.get(v.id);
+					if( i == null ) e else { e : TVar(i), p : e.p, t : e.t };
+				default:
+					hxsl.Tools.map(e, remap);
+				}
+			}
+			contentVertex = [for( e in contentVertex ) remap(e)];
+			contentFragment = [for( e in contentFragment ) remap(e)];
+		}
+
 		var shaderData = {
 			funs : [],
 			name: "SHADER_GRAPH",
-			vars: allVariables
+			vars: shvars
 		};
 
 		if (contentVertex.length > 0) {
