@@ -17,6 +17,10 @@ class Unknown extends Prefab {
 		return Reflect.copy(data);
 	}
 
+	override function getDefaultName():String {
+		return "unknown";
+	}
+
 	#if editor
 	override function edit(ctx:hide.prefab.EditContext) {
 		ctx.properties.add(new hide.Element('<font color="red">Unknown prefab $type</font>'));
