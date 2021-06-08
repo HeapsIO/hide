@@ -848,16 +848,45 @@ class Editor extends Component {
 			return;
 		beginChanges();
 		var prevIndex = line.index;
-		var index = line.table.sheet.moveLine(line.index, delta);
+
+		var distance = (delta >= 0 ? delta : -1 * delta);
+		var index : Null<Int> = null;
+		var currIndex : Null<Int> = line.index;
+		for( _ in 0...distance ) {
+			currIndex = line.table.sheet.moveLine( currIndex, delta );
+			if( currIndex == null )
+				break;
+			else
+				index = currIndex;
+		}
 
 		if( index != null ) {
 			if (index != prevIndex) {
-				if (cursor.y == index - delta) cursor.set(cursor.table, cursor.x, index);
-				else if (cursor.y == index) cursor.set(cursor.table, cursor.x, index - delta);
+				if ( cursor.y == prevIndex ) cursor.set(cursor.table, cursor.x, index);
+				else if ( cursor.y > prevIndex && cursor.y <= index) cursor.set(cursor.table, cursor.x, cursor.y - 1);
+				else if ( cursor.y < prevIndex && cursor.y >= index) cursor.set(cursor.table, cursor.x, cursor.y + 1);
 			}
 			refresh();
 		}
 		endChanges();
+	}
+
+	function separatorCount( sheet : cdb.Sheet, fromLine : Int, toSep : Int ) {
+		var count = 0;
+		if( fromLine >= sheet.separators[toSep] ) {
+			for( i in (toSep + 1)...sheet.separators.length ) {
+				if( sheet.separators[i] > fromLine )
+					break;
+				count--;
+			}
+		} else {
+			for( i in 0...(toSep + 1) ) {
+				if( sheet.separators[i] <= fromLine )
+					continue;
+				count++;
+			}
+		}
+		return count;
 	}
 
 	public function popupLine( line : Line ) {
@@ -865,9 +894,25 @@ class Editor extends Component {
 			return;
 		var sheet = line.table.sheet;
 		var sepIndex = sheet.separators.indexOf(line.index);
+		var moveSubmenu : Array<hide.comp.ContextMenu.ContextMenuItem> = new Array<hide.comp.ContextMenu.ContextMenuItem>();
+		if( sheet.props.separatorTitles != null ) {
+			for( i in 0...sheet.separators.length ) {
+				if( sheet.props.separatorTitles[i] == null )
+					continue;
+				var lastOfGroup = (i == sheet.separators.length - 1) ? line.table.lines.length : sheet.separators[i + 1];
+				if( lastOfGroup > line.index ) lastOfGroup--;
+				var delta = lastOfGroup - line.index + separatorCount(sheet, line.index, i);
+				moveSubmenu.push({
+					label : sheet.props.separatorTitles[i],
+					enabled : true,
+					click : moveLine.bind(line, delta)
+				});
+			}
+		}
 		new hide.comp.ContextMenu([
 			{ label : "Move Up", enabled:  (line.index > 0), click : moveLine.bind(line,-1) },
 			{ label : "Move Down", enabled:  (line.index < sheet.lines.length - 1), click : moveLine.bind(line,1) },
+			{ label : "Move to Group", enabled : sheet.props.separatorTitles != null, menu : moveSubmenu },
 			{ label : "Insert", click : function() {
 				insertLine(line.table,line.index);
 				cursor.move(0,1,false,false);
