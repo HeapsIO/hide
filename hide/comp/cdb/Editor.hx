@@ -847,10 +847,14 @@ class Editor extends Component {
 		if( !line.table.canInsert() )
 			return;
 		beginChanges();
+		var prevIndex = line.index;
 		var index = line.table.sheet.moveLine(line.index, delta);
+
 		if( index != null ) {
-			if (cursor.y == index - delta) cursor.set(cursor.table, cursor.x, index);
-			else if (cursor.y == index) cursor.set(cursor.table, cursor.x, index - delta);
+			if (index != prevIndex) {
+				if (cursor.y == index - delta) cursor.set(cursor.table, cursor.x, index);
+				else if (cursor.y == index) cursor.set(cursor.table, cursor.x, index - delta);
+			}
 			refresh();
 		}
 		endChanges();
