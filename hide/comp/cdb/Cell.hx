@@ -669,10 +669,10 @@ class Cell extends Component {
 			};
 			modal.click(function(_) color.close());
 		case TFile:
-			ide.chooseFile(currentValue, ["*"], function(file) {
+			ide.chooseFile(["*"], function(file) {
 				setValue(file);
 				refresh();
-			});
+			}, false, currentValue);
 		case TFlags(values):
 			var div = new Element("<div>").addClass("flagValues");
 			div.click(function(e) e.stopPropagation()).dblclick(function(e) e.stopPropagation());

@@ -149,8 +149,10 @@ class Table extends Component {
 				for(c in editProps.categories)
 					col.addClass("cat-" + c);
 
-			if( c.documentation != null )
+			if( c.documentation != null ) {
 				col.attr("title", c.documentation);
+				new Element('<i style="margin-left: 5px" class="fa fa-book"/>').appendTo(col);
+			}
 			if( sheet.props.displayColumn == c.name )
 				col.addClass("display");
 			col.mousedown(function(e) {
@@ -320,8 +322,10 @@ class Table extends Component {
 			var th = new Element("<th>").text(c.name).appendTo(l);
 			var td = new Element("<td>").addClass("c").appendTo(l);
 
-			if( c.documentation != null )
+			if( c.documentation != null ) {
 				th.attr("title", c.documentation);
+				new Element('<i style="margin-left: 5px" class="fa fa-book"/>').appendTo(th);
+			}
 
 			var line = new Line(this, [c], lines.length, l);
 			var cell = new Cell(td, line, c);

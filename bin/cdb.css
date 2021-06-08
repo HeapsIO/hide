@@ -80,7 +80,8 @@
   overflow: hidden;
 }
 .cdb .cdb-sheet tr.props td,
-.cdb .cdb-sheet tr.code td {
+.cdb .cdb-sheet tr.code td,
+.cdb .cdb-sheet tr.list td {
   overflow: visible;
 }
 .cdb .cdb-sheet > tbody > tr.props:last-child {
