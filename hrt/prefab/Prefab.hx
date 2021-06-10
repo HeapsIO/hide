@@ -327,13 +327,13 @@ class Prefab {
 	/**
 		Simlar to get() but returns null if not found.
 	**/
-	public function getOpt<T:Prefab>( cl : Class<T>, ?name : String ) : T {
+	public function getOpt<T:Prefab>( cl : Class<T>, ?name : String, ?followRefs : Bool ) : T {
 		if( name == null || this.name == name ) {
 			var cval = to(cl);
 			if( cval != null ) return cval;
 		}
 		for( c in children ) {
-			var p = c.getOpt(cl, name);
+			var p = c.getOpt(cl, name, followRefs);
 			if( p != null )
 				return p;
 		}
@@ -354,19 +354,19 @@ class Prefab {
 	/**
 		Return all prefabs in the tree matching the given prefab class.
 	**/
-	public function getAll<T:Prefab>( cl : Class<T>, ?arr: Array<T> ) : Array<T> {
-		return findAll(function(p) return p.to(cl));
+	public function getAll<T:Prefab>( cl : Class<T>, ?followRefs : Bool, ?arr: Array<T> ) : Array<T> {
+		return findAll(function(p) return p.to(cl), followRefs, arr);
 	}
 
 	/**
 		Find a single prefab in the tree by calling `f` on each and returning the first not-null value returned, or null if not found.
 	**/
-	public function find<T>( f : Prefab -> Null<T> ) : Null<T> {
+	public function find<T>( f : Prefab -> Null<T>, ?followRefs : Bool ) : Null<T> {
 		var v = f(this);
 		if( v != null )
 			return v;
 		for( p in children ) {
-			var v = p.find(f);
+			var v = p.find(f, followRefs);
 			if( v != null ) return v;
 		}
 		return null;
@@ -375,13 +375,13 @@ class Prefab {
 	/**
 		Find several prefabs in the tree by calling `f` on each and returning all the not-null values returned.
 	**/
-	public function findAll<T>( f : Prefab -> Null<T>, ?arr : Array<T> ) : Array<T> {
+	public function findAll<T>( f : Prefab -> Null<T>, ?followRefs : Bool, ?arr : Array<T> ) : Array<T> {
 		if( arr == null ) arr = [];
 		var v = f(this);
 		if( v != null )
 			arr.push(v);
 		for( o in children )
-			o.findAll(f,arr);
+			o.findAll(f,followRefs,arr);
 		return arr;
 	}
 
