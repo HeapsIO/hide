@@ -33,8 +33,10 @@ class ConfiguratorInterp extends hscript.Interp {
 						break;
 					c = Type.getSuperClass(c);
 				}
-				if( c == null )
-					throw o+" has no field "+f;
+				if( c == null ) {
+					var cl = Type.getClass(o);
+					throw (cl == null ? ""+o : Type.getClassName(cl)) + " has no field "+f;
+				}
 			}
 			#end
 			found = { obj : o, field : f, value : null, set : false };
@@ -69,7 +71,7 @@ class Configurator extends RendererFX {
 	@:s var script : String = "";
 	var values : Map<String, Float> = new Map();
 
-	var prefabCache : Map<String, Prefab> = new Map();
+	var prefabCache : Map<String, { r : Prefab }> = new Map();
 
 	#if hscript
 	var interp : ConfiguratorInterp;
@@ -78,6 +80,7 @@ class Configurator extends RendererFX {
 	#if editor
 	var errorTarget : hide.Element;
 	#end
+	var rootPrefab : Prefab;
 
 	public function new(?parent) {
 		super(parent);
@@ -93,16 +96,17 @@ class Configurator extends RendererFX {
 		return bpow / (bpow + Math.pow(1 - v, easing + 1));
 	}
 
-	function getPrefab( id : String ) {
+	function getPrefab( opt : Bool, id : String ) {
 		var p = prefabCache.get(id);
 		if( p != null )
-			return p;
-		var root : Prefab = this;
-		while( root.parent != null ) root = root.parent;
-		var p = root.getOpt(hrt.prefab.Prefab,id);
-		if( p == null ) throw "Missing prefab #"+id;
+			return p.r;
+		var p = rootPrefab.getOpt(hrt.prefab.Prefab,id,true);
+		if( p == null ) {
+			if( opt ) return null;
+			throw "Missing prefab #"+id;
+		}
 		#if !editor
-		prefabCache.set(id, p);
+		prefabCache.set(id, { r : p });
 		#end
 		return p;
 	}
@@ -110,6 +114,14 @@ class Configurator extends RendererFX {
 	override function makeInstance(ctx:Context):Context {
 		for( v in vars )
 			values.set(v.name, v.defValue);
+		rootPrefab = this;
+		var shared = ctx.shared;
+		while( shared.parent != null ) {
+			rootPrefab = shared.parent.prefab;
+			shared = shared.parent.shared;
+		}
+		while( rootPrefab.parent != null )
+			rootPrefab = rootPrefab.parent;
 		#if hscript
 		interp = null;
 		#end
@@ -128,7 +140,8 @@ class Configurator extends RendererFX {
 			}
 			if( interp == null ) {
 				interp = new ConfiguratorInterp();
-				interp.variables.set("get", getPrefab);
+				interp.variables.set("get", getPrefab.bind(false));
+				interp.variables.set("getOpt", getPrefab.bind(true));
 				interp.variables.set("smooth", smoothValue);
 			}
 			for( k => v in values )
