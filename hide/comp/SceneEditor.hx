@@ -1601,6 +1601,14 @@ class SceneEditor {
 	}
 
 	public function onDragDrop( items : Array<String>, isDrop : Bool ) {
+		var pickedEl = js.Browser.document.elementFromPoint(ide.mouseX, ide.mouseY);
+		var propEl = properties.element[0];
+		while( pickedEl != null ) {
+			if( pickedEl == propEl )
+				return properties.onDragDrop(items, isDrop);
+			pickedEl = pickedEl.parentElement;
+		}
+
 		var supported = @:privateAccess hrt.prefab.Library.registeredExtensions;
 		var paths = [];
 		for(path in items) {
