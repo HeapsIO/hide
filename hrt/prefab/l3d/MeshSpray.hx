@@ -613,10 +613,10 @@ class MeshSpray extends Object3D {
 			}
 		});
 		options.find("#add").click(function(_) {
-			hide.Ide.inst.chooseFiles(["fbx", "l3d"], function(path) {
-				for( m in path ) {
-					addMeshPath(m);
-					selectElement.append(new hide.Element('<option value="$m">${extractMeshName(m)}</option>'));
+			hide.Ide.inst.chooseFiles(["fbx", "l3d"], function(paths) {
+				for( path in paths ) {
+					addMeshPath(path);
+					selectElement.append(new hide.Element('<option value="$path">${extractMeshName(path)}</option>'));
 				}
 			});
 		});
