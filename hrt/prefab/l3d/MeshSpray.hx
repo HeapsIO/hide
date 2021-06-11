@@ -203,6 +203,9 @@ class MeshSpray extends Object3D {
 
 	var sceneEditor : hide.comp.SceneEditor;
 
+	var undo(get, null):hide.ui.UndoHistory;
+	function get_undo() { return sceneEditor.view.undo; }
+
 	var lastIndexMesh = -1;
 	var allSetGroups : Array<SetGroup>;
 	var setGroup : SetGroup;
@@ -308,6 +311,7 @@ class MeshSpray extends Object3D {
 
 	var wasEdited = false;
 	var previewModels : Array<hrt.prefab.Prefab> = [];
+	var sprayedModels : Array<hrt.prefab.Prefab> = [];
 	override function edit( ectx : EditContext ) {
 
 		invParent = getAbsPos().clone();
@@ -366,6 +370,30 @@ class MeshSpray extends Object3D {
 		interactive.onRelease = function(e) {
 			e.propagate = false;
 			sprayEnable = false;
+			var addedModels = sprayedModels.copy();
+			if (sprayedModels.length > 0) {
+				undo.change(Custom(function(undo) {
+					var fullRefresh = false;
+					if(undo) {
+						for (e in addedModels) {
+							if(@:privateAccess !sceneEditor.removeInstance(e))
+								fullRefresh = true;
+							e.parent.children.remove(e);
+						}
+						sceneEditor.refresh(fullRefresh ? Full : Partial, () -> reset());
+					}
+					else {
+						for (e in addedModels) {
+							e.parent.children.push(e);
+							@:privateAccess sceneEditor.makeInstance(e);
+						}
+						sceneEditor.refresh(Partial);
+						@:privateAccess sceneEditor.refreshParents(addedModels);
+					}
+				}));
+				sprayedModels = [];
+			}
+			
 
 			if (previewModels.length > 0) {
 				sceneEditor.deleteElements(previewModels, () -> { }, false);
@@ -847,6 +875,7 @@ class MeshSpray extends Object3D {
 		lastMeshId = -1;
 		if (previewModels.length > 0) {
 			wasEdited = true;
+			sprayedModels = sprayedModels.concat(previewModels);
 			previewModels = [];
 		}
 	}
@@ -931,6 +960,7 @@ class MeshSpray extends Object3D {
 		super.applyTransform(o);
 		cast(o, MeshSprayObject).redraw();
 	}
+
 
 	function makePrimCircle(segments: Int, inner : Float = 0, rings : Int = 0) {
 		var points = [];
