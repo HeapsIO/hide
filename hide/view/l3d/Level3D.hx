@@ -42,12 +42,14 @@ class CamController extends h3d.scene.CameraController {
 			pushStartX = pushX = e.relX;
 			pushStartY = pushY = e.relY;
 			startPush = new h2d.col.Point(pushX, pushY);
+			@:privateAccess scene.window.mouseLock = true;
 		case ERelease, EReleaseOutside:
 			if( pushing == e.button ) {
 				pushing = -1;
 				startPush = null;
 				if( e.kind == ERelease && haxe.Timer.stamp() - pushTime < 0.2 && hxd.Math.distance(e.relX - pushStartX,e.relY - pushStartY) < 5 )
 					onClick(e);
+				@:privateAccess scene.window.mouseLock = false;
 			}
 		case EMove:
 			switch( pushing ) {
@@ -136,7 +138,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 
 		function setup(p : PrefabElement) {
 			autoName(p);
-			haxe.Timer.delay(addObject.bind([p]), 0);
+			haxe.Timer.delay(addElements.bind([p]), 0);
 		}
 
 		function addNewInstances() {
@@ -390,7 +392,7 @@ class Level3D extends FileView {
 
 	function bakeLights() {
 		var curSel = sceneEditor.curEdit.elements;
-		sceneEditor.selectObjects([]);
+		sceneEditor.selectElements([]);
 		var passes = [];
 		for( m in scene.s3d.getMaterials() ) {
 			var s = m.getPass("shadow");
@@ -429,7 +431,7 @@ class Level3D extends FileView {
 				continue;
 			l.saveBaked(sceneEditor.context);
 		}
-		sceneEditor.selectObjects(curSel);
+		sceneEditor.selectElements(curSel);
 	}
 
 	function bakeVolumetricLightmaps(){
@@ -448,7 +450,7 @@ class Level3D extends FileView {
 				return;
 			}
 			v.startBake(sceneEditor.curEdit, bakeNext);
-			sceneEditor.selectObjects([v]);
+			sceneEditor.selectElements([v]);
 		}
 		bakeNext();
 	}
