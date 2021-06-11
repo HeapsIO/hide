@@ -1,5 +1,4 @@
 package hide;
-import hxd.inspect.Group;
 
 @:expose
 class Ide {
