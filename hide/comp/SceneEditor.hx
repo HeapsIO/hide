@@ -98,7 +98,7 @@ class SceneEditorContext extends hide.prefab.EditContext {
 
 	override function rebuildProperties() {
 		editor.scene.setCurrent();
-		editor.selectObjects(elements, NoHistory);
+		editor.selectElements(elements, NoHistory);
 	}
 
 	override function rebuildPrefab( p : hrt.prefab.Prefab ) {
@@ -218,7 +218,7 @@ class SceneEditor {
 		view.keys.register("sceneeditor.selectParent", function() {
 			if(curEdit.rootElements.length > 0) {
 				var p = curEdit.rootElements[0].parent;
-				if( p != null && p != sceneData ) selectObjects([p]);
+				if( p != null && p != sceneData ) selectElements([p]);
 			}
 		});
 		view.keys.register("sceneeditor.reparent", function() {
@@ -398,7 +398,7 @@ class SceneEditor {
 			case K.MOUSE_RIGHT:
 				selectNewObject();
 			case K.MOUSE_LEFT:
-				selectObjects([]);
+				selectElements([]);
 			}
 		};
 		if (!camera2D)
@@ -469,14 +469,14 @@ class SceneEditor {
 			if(evt.ctrlKey) {
 				var sel = tree.getSelection();
 				sel.push(e);
-				selectObjects(sel);
+				selectElements(sel);
 				tree.revealNode(e);
 			}
 			else
-				selectObjects([e]);
+				selectElements([e]);
 		}
 		favTree.onDblClick = function(e) {
-			selectObjects([e]);
+			selectElements([e]);
 			tree.revealNode(e);
 			return true;
 		}
@@ -504,7 +504,7 @@ class SceneEditor {
 			e.preventDefault();
 			var current = tree.getCurrentOver();
 			if(current != null && (curEdit == null || curEdit.elements.indexOf(current) < 0)) {
-				selectObjects([current]);
+				selectElements([current]);
 			}
 
 			var newItems = getNewContextMenu(current);
@@ -531,7 +531,7 @@ class SceneEditor {
 						setLock(curEdit.elements, current.locked);
 					} },
 					{ label : "Select all", click : selectAll },
-					{ label : "Select children", enabled : current != null, click : function() selectObjects(current.flatten()) },
+					{ label : "Select children", enabled : current != null, click : function() selectElements(current.flatten()) },
 				]);
 				if( !isRef )
 					actionItems = actionItems.concat([
@@ -558,7 +558,7 @@ class SceneEditor {
 		tree.allowRename = true;
 		tree.init();
 		tree.onClick = function(e, _) {
-			selectObjects(tree.getSelection(), NoTree);
+			selectElements(tree.getSelection(), NoTree);
 		}
 		tree.onDblClick = function(e) {
 			focusSelection();
@@ -595,7 +595,7 @@ class SceneEditor {
 			}
 		}
 		tree.applyStyle = function(p, el) applyTreeStyle(p, el);
-		selectObjects([]);
+		selectElements([]);
 		refresh();
 		this.camera2D = camera2D;
 	}
@@ -627,7 +627,7 @@ class SceneEditor {
 	}
 
 	function refreshProps() {
-		selectObjects(curEdit.elements, Nothing);
+		selectElements(curEdit.elements, Nothing);
 	}
 
 	public function refreshScene() {
@@ -784,10 +784,10 @@ class SceneEditor {
 						for(e in elts)
 							current.remove(e);
 					}
-					selectObjects(current);
+					selectElements(current);
 				}
 				else
-					selectObjects(elts);
+					selectElements(elts);
 			}
 			// ensure we get onMove even if outside our interactive, allow fast click'n'drag
 			if( e.button == K.MOUSE_LEFT ) {
@@ -1155,7 +1155,7 @@ class SceneEditor {
 						inside.push(elt);
 					}
 				}
-				selectObjects(inside);
+				selectElements(inside);
 				finish = true;
 			}
 
@@ -1355,12 +1355,12 @@ class SceneEditor {
 			lastRenderProps.applyProps(scene.s3d.renderer);
 	}
 
-	public function addObject(elts : Array<PrefabElement>, selectObj : Bool = true, doRefresh : Bool = true, isTemporary = false) {
+	public function addElements(elts : Array<PrefabElement>, selectObj : Bool = true, doRefresh : Bool = true, isTemporary = false) {
 		for (e in elts) {
 			makeInstance(e);
 		}
 		if (doRefresh) {
-			refresh(Partial, if (selectObj) () -> selectObjects(elts, NoHistory) else null);
+			refresh(Partial, if (selectObj) () -> selectElements(elts, NoHistory) else null);
 			refreshParents(elts);
 		}
 		if( isTemporary )
@@ -1369,7 +1369,7 @@ class SceneEditor {
 		undo.change(Custom(function(undo) {
 			var fullRefresh = false;
 			if(undo) {
-				selectObjects([], NoHistory);
+				selectElements([], NoHistory);
 				for (e in elts) {
 					if(!removeInstance(e))
 						fullRefresh = true;
@@ -1382,7 +1382,7 @@ class SceneEditor {
 					e.parent.children.push(e);
 					makeInstance(e);
 				}
-				refresh(Partial, () -> selectObjects(elts,NoHistory));
+				refresh(Partial, () -> selectElements(elts,NoHistory));
 				refreshParents(elts);
 			}
 		}));
@@ -1485,11 +1485,11 @@ class SceneEditor {
 		fillProps(edit, e);
 	}
 
-	function setObjectSelected( p : PrefabElement, ctx : hrt.prefab.Context, b : Bool ) {
+	function setElementSelected( p : PrefabElement, ctx : hrt.prefab.Context, b : Bool ) {
 		return p.setSelected(ctx, b);
 	}
 
-	public function selectObjects( elts : Array<PrefabElement>, ?mode : SelectMode = Default ) {
+	public function selectElements( elts : Array<PrefabElement>, ?mode : SelectMode = Default ) {
 		function impl(elts,mode:SelectMode) {
 			scene.setCurrent();
 			if( curEdit != null )
@@ -1519,7 +1519,7 @@ class SceneEditor {
 				if( map.exists(e) )
 					return;
 				map.set(e, true);
-				if(setObjectSelected(e, getSelContext(e), b))
+				if(setElementSelected(e, getSelContext(e), b))
 					for( e in e.children )
 						selectRec(e,b);
 			}
@@ -1530,7 +1530,7 @@ class SceneEditor {
 			edit.cleanups.push(function() {
 				for( e in map.keys() ) {
 					if( hasBeenRemoved(e) ) continue;
-					setObjectSelected(e, getSelContext(e), false);
+					setElementSelected(e, getSelContext(e), false);
 				}
 			});
 
@@ -1611,11 +1611,11 @@ class SceneEditor {
 		if( paths.length == 0 )
 			return false;
 		if(isDrop)
-			dropObjects(paths, sceneData);
+			dropElements(paths, sceneData);
 		return true;
 	}
 
-	function dropObjects(paths: Array<String>, parent: PrefabElement) {
+	function dropElements(paths: Array<String>, parent: PrefabElement) {
 		scene.setCurrent();
 		var localMat = getPickTransform(parent);
 		if(localMat == null) return;
@@ -1647,7 +1647,7 @@ class SceneEditor {
 
 		for(e in elts)
 			makeInstance(e);
-		refresh(Partial, () -> selectObjects(elts));
+		refresh(Partial, () -> selectElements(elts));
 
 		undo.change(Custom(function(undo) {
 			if( undo ) {
@@ -1737,11 +1737,11 @@ class SceneEditor {
 				effectFunc(false);
 			}
 			if(undo)
-				refresh(()->selectObjects([],NoHistory));
+				refresh(()->selectElements([],NoHistory));
 			else
-				refresh(()->selectObjects([group],NoHistory));
+				refresh(()->selectElements([group],NoHistory));
 		}));
-		refresh(effectFunc(false) ? Full : Partial, () -> selectObjects([group],NoHistory));
+		refresh(effectFunc(false) ? Full : Partial, () -> selectElements([group],NoHistory));
 	}
 
 	function onCopy() {
@@ -1767,7 +1767,7 @@ class SceneEditor {
 		if(obj != null) {
 			var p = hrt.prefab.Prefab.loadPrefab(obj, parent);
 			autoName(p);
-			addObject([p]);
+			addElements([p]);
 		}
 		else {
 			obj = view.getClipboard("library");
@@ -1777,7 +1777,7 @@ class SceneEditor {
 					autoName(c);
 					c.parent = parent;
 				}
-				addObject(lib.children);
+				addElements(lib.children);
 			}
 		}
 	}
@@ -1807,11 +1807,11 @@ class SceneEditor {
 	}
 
 	public function selectAll() {
-		selectObjects(getAllSelectable3D());
+		selectElements(getAllSelectable3D());
 	}
 
 	public function deselect() {
-		selectObjects([]);
+		selectElements([]);
 	}
 
 	public function isSelected( p : PrefabElement ) {
@@ -1952,7 +1952,7 @@ class SceneEditor {
 			ref.rotationY = obj3d.rotationY;
 			ref.rotationZ = obj3d.rotationZ;
 		}
-		addObject([ref]);
+		addElements([ref]);
 	}
 
 	function duplicate(thenMove: Bool) {
@@ -1979,7 +1979,7 @@ class SceneEditor {
 		}
 
 		refreshTree(function() {
-			selectObjects(newElements);
+			selectElements(newElements);
 			tree.setSelection(newElements);
 			if(thenMove && curEdit.rootObjects.length > 0) {
 				gizmo.startMove(MoveXY, true);
@@ -1990,7 +1990,7 @@ class SceneEditor {
 		});
 
 		undo.change(Custom(function(undo) {
-			selectObjects([], NoHistory);
+			selectElements([], NoHistory);
 
 			var fullRefresh = false;
 			if(undo) {
@@ -2049,7 +2049,7 @@ class SceneEditor {
 		}
 
 		if (doRefresh)
-			refreshFunc(then != null ? then : () -> selectObjects([],NoHistory));
+			refreshFunc(then != null ? then : () -> selectElements([],NoHistory));
 
 		if (enableUndo) {
 			undo.change(Custom(function(undo) {
@@ -2061,7 +2061,7 @@ class SceneEditor {
 				if(undo)
 					for(e in elts) makeInstance(e);
 
-				refreshFunc(then != null ? then : selectObjects.bind(undo ? elts : [],NoHistory));
+				refreshFunc(then != null ? then : selectElements.bind(undo ? elts : [],NoHistory));
 			}));
 		}
 	}
@@ -2317,10 +2317,10 @@ class SceneEditor {
 				if( pmodel.inf.fileSource != null )
 					ide.chooseFile(pmodel.inf.fileSource, function(path) {
 						var p = make(path);
-						addObject([p]);
+						addElements([p]);
 					});
 				else
-					addObject([make()]);
+					addElements([make()]);
 			}
 		};
 	}
@@ -2335,7 +2335,7 @@ class SceneEditor {
 					var s = new hrt.prefab.DynamicShader(parentElt);
 					s.source = path;
 					s.name = name;
-					addObject([s]);
+					addElements([s]);
 				}
 			}
 		}
