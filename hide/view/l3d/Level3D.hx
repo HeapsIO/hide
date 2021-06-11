@@ -138,7 +138,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 
 		function setup(p : PrefabElement) {
 			autoName(p);
-			haxe.Timer.delay(addObject.bind([p]), 0);
+			haxe.Timer.delay(addElements.bind([p]), 0);
 		}
 
 		function addNewInstances() {
@@ -392,7 +392,7 @@ class Level3D extends FileView {
 
 	function bakeLights() {
 		var curSel = sceneEditor.curEdit.elements;
-		sceneEditor.selectObjects([]);
+		sceneEditor.selectElements([]);
 		var passes = [];
 		for( m in scene.s3d.getMaterials() ) {
 			var s = m.getPass("shadow");
@@ -431,7 +431,7 @@ class Level3D extends FileView {
 				continue;
 			l.saveBaked(sceneEditor.context);
 		}
-		sceneEditor.selectObjects(curSel);
+		sceneEditor.selectElements(curSel);
 	}
 
 	function bakeVolumetricLightmaps(){
@@ -450,7 +450,7 @@ class Level3D extends FileView {
 				return;
 			}
 			v.startBake(sceneEditor.curEdit, bakeNext);
-			sceneEditor.selectObjects([v]);
+			sceneEditor.selectElements([v]);
 		}
 		bakeNext();
 	}
