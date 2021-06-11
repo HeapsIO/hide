@@ -373,22 +373,11 @@ class MeshSpray extends Object3D {
 			var addedModels = sprayedModels.copy();
 			if (sprayedModels.length > 0) {
 				undo.change(Custom(function(undo) {
-					var fullRefresh = false;
 					if(undo) {
-						for (e in addedModels) {
-							if(@:privateAccess !sceneEditor.removeInstance(e))
-								fullRefresh = true;
-							e.parent.children.remove(e);
-						}
-						sceneEditor.refresh(fullRefresh ? Full : Partial, () -> reset());
+						sceneEditor.deleteElements(addedModels, () -> reset(), true, false);
 					}
 					else {
-						for (e in addedModels) {
-							e.parent.children.push(e);
-							@:privateAccess sceneEditor.makeInstance(e);
-						}
-						sceneEditor.refresh(Partial);
-						@:privateAccess sceneEditor.refreshParents(addedModels);
+						sceneEditor.addObject(addedModels, false, true, true);
 					}
 				}));
 				sprayedModels = [];
