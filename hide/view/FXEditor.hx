@@ -49,14 +49,14 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		parent.onUpdate(dt);
 	}
 
-	override function setObjectSelected( p : PrefabElement, ctx : hrt.prefab.Context, b : Bool ) {
+	override function setElementSelected( p : PrefabElement, ctx : hrt.prefab.Context, b : Bool ) {
 		if( p.getParent(hrt.prefab.fx.Emitter) != null )
 			return false;
-		return super.setObjectSelected(p, ctx, b);
+		return super.setElementSelected(p, ctx, b);
 	}
 
-	override function selectObjects( elts, ?mode ) {
-		super.selectObjects(elts, mode);
+	override function selectElements( elts, ?mode ) {
+		super.selectElements(elts, mode);
 		parent.onSelect(elts);
 	}
 
@@ -1202,7 +1202,7 @@ class FXEditor extends FileView {
 			sceneEditor.refresh();
 		}));
 		sceneEditor.refresh(function() {
-			sceneEditor.selectObjects([element]);
+			sceneEditor.selectElements([element]);
 		});
 		return added;
 	}
