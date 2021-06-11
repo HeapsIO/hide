@@ -377,7 +377,7 @@ class MeshSpray extends Object3D {
 						sceneEditor.deleteElements(addedModels, () -> reset(), true, false);
 					}
 					else {
-						sceneEditor.addObject(addedModels, false, true, true);
+						sceneEditor.addElements(addedModels, false, true, true);
 					}
 				}));
 				sprayedModels = [];
