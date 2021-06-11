@@ -618,7 +618,7 @@ class HeightMap extends Object3D {
 			}
 			indexes.push(idx);
 		}
-		var tex = new h3d.mat.TextureArray(layers[0].width, layers[0].height, layers.length, null, switch( layers[0].format ) {
+		var tex = new h3d.mat.TextureArray(layers[0].width, layers[0].height, layers.length, [Target], switch( layers[0].format ) {
 		case S3TC(_): RGBA;
 		case fmt: fmt;
 		});

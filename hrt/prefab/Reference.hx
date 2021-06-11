@@ -80,6 +80,29 @@ class Reference extends Object3D {
 		}
 	}
 
+	override function find<T>( f : Prefab -> Null<T>, ?followRefs : Bool ) : T {
+		if( followRefs && ref != null ) {
+			var v = ref.find(f, followRefs);
+			if( v != null ) return v;
+		}
+		return super.find(f, followRefs);
+	}
+
+	override function findAll<T>( f : Prefab -> Null<T>, ?followRefs : Bool, ?arr : Array<T> ) : Array<T> {
+		if( followRefs && ref != null )
+			arr = ref.findAll(f, followRefs, arr);
+		return super.findAll(f, followRefs, arr);
+	}
+
+	override function getOpt<T:Prefab>( cl : Class<T>, ?name : String, ?followRefs ) : T {
+		if( followRefs && ref != null ) {
+			var v = ref.getOpt(cl, name, true);
+			if( v != null )
+				return v;
+		}
+		return super.getOpt(cl, name, followRefs);
+	}
+
 	override function makeInstance(ctx: Context) : Context {
 		var p = resolveRef(ctx.shared);
 		if(p == null)
