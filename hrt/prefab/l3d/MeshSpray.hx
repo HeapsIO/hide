@@ -325,6 +325,7 @@ class MeshSpray extends Object3D {
 
 		var ctx = ectx.getContext(this);
 		var s2d = @:privateAccess ctx.local2d.getScene();
+		reset();
 		interactive = new h2d.Interactive(10000, 10000, s2d);
 		interactive.propagateEvents = true;
 		interactive.cancelEvents = false;
@@ -680,28 +681,29 @@ class MeshSpray extends Object3D {
 	}
 
 	override function setSelected( ctx : Context, b : Bool ) {
-		if (timerCicle != null) {
-			timerCicle.stop();
-		}
 		if( !b ) {
+			reset();
 			if( gBrushes != null ) {
 				for (g in gBrushes) g.remove();
 				gBrushes = null;
 			}
-			if( interactive != null ) interactive.remove();
-			timerCicle = new haxe.Timer(100);
-			timerCicle.run = function() {
-				timerCicle.stop();
-				if (previewModels != null && previewModels.length > 0) {
-					sceneEditor.deleteElements(previewModels, () -> { }, false, false);
-					previewModels = [];
-				}
-				if (wasEdited)
-					sceneEditor.refresh(Partial, () -> { });
-				wasEdited = false;
-			};
 		}
 		return false;
+	}
+
+	function reset() {
+		if( interactive != null ) interactive.remove();
+		if (previewModels != null && previewModels.length > 0) {
+			sceneEditor.deleteElements(previewModels, () -> { }, false, false);
+			previewModels = [];
+		}
+		if (wasEdited)
+			sceneEditor.refresh(Partial, () -> { });
+		wasEdited = false;
+		if( gBrushes != null ) {
+			for (g in gBrushes) g.remove();
+			gBrushes = null;
+		}
 	}
 
 	function addMeshPath(path : String) {
