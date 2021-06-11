@@ -414,8 +414,8 @@ class MeshSpray extends Object3D {
 						if( shiftPressed ) {
 							removeMeshesAround(ctx, worldPos);
 						} else {
-							addMeshes(ctx);
 							if (currentConfig.density == 1) sprayEnable = false;
+							else addMeshes(ctx);
 						}
 					}
 				}
