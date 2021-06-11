@@ -923,6 +923,11 @@ class MeshSpray extends Object3D {
 		return ctx;
 	}
 
+	override function applyTransform(o : h3d.scene.Object) {
+		super.applyTransform(o);
+		cast(o, MeshSprayObject).redraw();
+	}
+
 	function makePrimCircle(segments: Int, inner : Float = 0, rings : Int = 0) {
 		var points = [];
 		var uvs = [];
