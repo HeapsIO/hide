@@ -42,12 +42,14 @@ class CamController extends h3d.scene.CameraController {
 			pushStartX = pushX = e.relX;
 			pushStartY = pushY = e.relY;
 			startPush = new h2d.col.Point(pushX, pushY);
+			@:privateAccess scene.window.mouseLock = true;
 		case ERelease, EReleaseOutside:
 			if( pushing == e.button ) {
 				pushing = -1;
 				startPush = null;
 				if( e.kind == ERelease && haxe.Timer.stamp() - pushTime < 0.2 && hxd.Math.distance(e.relX - pushStartX,e.relY - pushStartY) < 5 )
 					onClick(e);
+				@:privateAccess scene.window.mouseLock = false;
 			}
 		case EMove:
 			switch( pushing ) {
