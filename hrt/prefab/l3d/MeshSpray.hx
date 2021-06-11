@@ -340,7 +340,7 @@ class MeshSpray extends Object3D {
 					if( !K.isDown( K.SHIFT) ) {
 						if (previewModels.length > 0) {
 							sceneEditor.deleteElements(previewModels, () -> { }, false);
-							sceneEditor.selectObjects([this]);
+							sceneEditor.selectElements([this]);
 							previewModels = [];
 						}
 						var worldPos = ectx.screenToGround(s2d.mouseX, s2d.mouseY);
@@ -368,7 +368,7 @@ class MeshSpray extends Object3D {
 
 			if (previewModels.length > 0) {
 				sceneEditor.deleteElements(previewModels, () -> { }, false);
-				sceneEditor.selectObjects([this], Nothing);
+				sceneEditor.selectElements([this], Nothing);
 				previewModels = [];
 			}
 		};
@@ -631,7 +631,7 @@ class MeshSpray extends Object3D {
 					}
 				}
 				sceneEditor.deleteElements(meshes);
-				sceneEditor.selectObjects([this], Nothing);
+				sceneEditor.selectElements([this], Nothing);
 			}
 		});
 
@@ -754,7 +754,7 @@ class MeshSpray extends Object3D {
 		if (computedDensity == 1)
 		if (previewModels.length > 0) {
 			sceneEditor.deleteElements(previewModels, () -> { }, false);
-			sceneEditor.selectObjects([this], Nothing);
+			sceneEditor.selectElements([this], Nothing);
 			previewModels = [];
 		}
 		lastPos = point;
@@ -832,7 +832,7 @@ class MeshSpray extends Object3D {
 			}
 
 			if (previewModels.length > 0) {
-				sceneEditor.addObject(previewModels, false, false, true);
+				sceneEditor.addElements(previewModels, false, false, true);
 			}
 		}
 	}
@@ -862,7 +862,7 @@ class MeshSpray extends Object3D {
 		if (childToRemove.length > 0) {
 			wasEdited = true;
 			sceneEditor.deleteElements(childToRemove, () -> { }, false);
-			sceneEditor.selectObjects([this], Nothing);
+			sceneEditor.selectElements([this], Nothing);
 		}
 	}
 
