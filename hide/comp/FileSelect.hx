@@ -18,7 +18,7 @@ class FileSelect extends Component {
 				ide.chooseFile(extensions, function(path) {
 					this.path = path;
 					onChange();
-				});
+				}, false, path);
 			}
 		});
 		root.contextmenu(function(e) {
