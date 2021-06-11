@@ -20,6 +20,26 @@ class PropsEditor extends Component {
 		fields = [];
 	}
 
+	public function onDragDrop( items : Array<String>, isDrop : Bool ) : Bool {
+		if( items.length == 0 )
+			return false;
+
+		var pickedEl = js.Browser.document.elementFromPoint(ide.mouseX, ide.mouseY);
+		var rootEl = element[0];
+		while( pickedEl != null ) {
+			if( pickedEl == rootEl )
+				return false;
+			for( field in fields ) {
+				if( field.tselect != null && field.tselect.element[0] == pickedEl )
+					return field.tselect.onDragDrop(items, isDrop);
+				if( field.fselect != null && field.fselect.element[0] == pickedEl )
+					return field.fselect.onDragDrop(items, isDrop);
+			}
+			pickedEl = pickedEl.parentElement;
+		}
+		return false;
+	}
+
 	public function addMaterial( m : h3d.mat.Material, ?parent : Element, ?onChange ) {
 		var def = m.editProps();
 		def = add(def, m.props, function(name) {
@@ -235,10 +255,10 @@ class PropsEditor extends Component {
 }
 
 
+@:allow(hide.comp.PropsEditor)
 class PropsField extends Component {
-
 	public var fname : String;
-	public var isTempChange : Bool;
+	var isTempChange : Bool;
 	var props : PropsEditor;
 	var context : Dynamic;
 	var current : Dynamic;

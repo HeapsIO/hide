@@ -31,41 +31,41 @@ class FileSelect extends Component {
 			]);
 			return false;
 		});
+
 		// allow drag files
 		root.on("dragover", function(e) {
 			root.addClass("dragover");
-			e.preventDefault();
 		});
 		root.on("dragleave", function(e) {
 			root.removeClass("dragover");
 		});
-		root.on("drop", function(e:js.jquery.Event) {
+		root.on("drop", function(e) {
 			root.removeClass("dragover");
-			var file = getTransferFile(e);
-			if( file != null ) {
-				path = file;
-				onChange();
-			}
-			e.preventDefault();
 		});
 	}
 
-	function getTransferFile( e : js.jquery.Event ) {
-		var data : js.html.DataTransfer = untyped e.originalEvent.dataTransfer;
-		var text = data.getData("text/html");
-		var path : String = null;
-
-		if( data.files.length > 0 )
-			path = untyped data.files[0].path;
-		else if( StringTools.startsWith(text, "<a") && text.indexOf("jstree-anchor") > 0 ) {
-			var rpath = ~/id="([^"]+)_anchor"/;
-			if( rpath.match(text) )
-				path = rpath.matched(1);
+	public function onDragDrop( items : Array<String>, isDrop : Bool ) : Bool {
+		if( items.length == 0 )
+			return false;
+		var newPath = ide.makeRelative(items[0]);
+		if( pathIsValid(newPath) ) {
+			if( isDrop ) {
+				path = newPath;
+				onChange();
+			}
+			return true;
 		}
-		if( path != null && sys.FileSystem.exists(ide.getPath(path)) && extensions.indexOf(path.split(".").pop().toLowerCase()) >= 0 )
-			return ide.makeRelative(path);
-		return null;
+		return false;
 	}
+
+	function pathIsValid( path : String ) : Bool {
+		return (
+			path != null
+			&& sys.FileSystem.exists(ide.getPath(path))
+			&& extensions.indexOf(path.split(".").pop().toLowerCase()) >= 0
+		);
+	}
+
 
 	public function getFullPath() {
 		if( path == null )
