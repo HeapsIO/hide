@@ -680,6 +680,10 @@ class MeshSpray extends Object3D {
 		sceneEditor.properties.element.find("#repeatMeshBtn").prop("checked", CONFIG.dontRepeatMesh);
 	}
 
+	override function removeInstance(ctx : Context):Bool {
+		reset();
+		return super.removeInstance(ctx);
+	}
 	override function setSelected( ctx : Context, b : Bool ) {
 		if( !b ) {
 			reset();
