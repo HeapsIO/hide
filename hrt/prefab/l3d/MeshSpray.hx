@@ -4,7 +4,7 @@ package hrt.prefab.l3d;
 
 class MeshSprayObject extends h3d.scene.Object {
 	public var batches : Array<h3d.scene.MeshBatch> = [];
-	public var batchesMap : Map<String,{ batch : h3d.scene.MeshBatch, pivot : h3d.Matrix }> = [];
+	public var batchesMap : Map<Int,Map<String,{ batch : h3d.scene.MeshBatch, pivot : h3d.Matrix }>> = [];
 	override function getMaterials( ?arr : Array<h3d.mat.Material>, recursive=true ) {
 		if( !recursive ) {
 			// batches materials are considered local materials
@@ -18,18 +18,42 @@ class MeshSprayObject extends h3d.scene.Object {
 
 class MeshSpray extends Object3D {
 
+	@:s var split : Int;
+
+	inline function getSplitID( c : Prefab ) {
+		var c = c.to(Object3D);
+		return (Math.floor(c.x/split) * 39119 + Math.floor(c.y/split)) % 0x7FFFFFFF;
+	}
+
 	override function createObject( ctx : Context ) {
 		var mspray = new MeshSprayObject(ctx.local3d);
 		// preallocate batches so their materials can be resolved
+		var curID = 0, curMap = mspray.batchesMap.get(0);
+		if( curMap == null ) {
+			curMap = new Map();
+			mspray.batchesMap.set(0, curMap);
+		}
 		for( c in children ) {
 			if( !c.enabled || c.type != "model" ) continue;
-			var batch = mspray.batchesMap.get(c.source);
+			if( split > 0 ) {
+				var sid = getSplitID(c);
+				if( sid != curID ) {
+					curID = sid;
+					curMap = mspray.batchesMap.get(sid);
+					if( curMap == null ) {
+						curMap = new Map();
+						mspray.batchesMap.set(sid, curMap);
+					}
+				}
+			}
+			var batch = curMap.get(c.source);
 			if( batch == null ) {
 				var obj = ctx.loadModel(c.source).toMesh();
 				var batch = new h3d.scene.MeshBatch(cast(obj.primitive,h3d.prim.MeshPrimitive), obj.material, mspray);
+				batch.cullingCollider = @:privateAccess batch.instanced.bounds;
 				var multi = Std.downcast(obj, h3d.scene.MultiMaterial);
 				if( multi != null ) batch.materials = multi.materials;
-				mspray.batchesMap.set(c.source, { batch : batch, pivot : obj.defaultTransform.isIdentity() ? null : obj.defaultTransform });
+				curMap.set(c.source, { batch : batch, pivot : obj.defaultTransform.isIdentity() ? null : obj.defaultTransform });
 				mspray.batches.push(batch);
 			}
 		}
@@ -47,10 +71,18 @@ class MeshSpray extends Object3D {
 			b.begin();
 			b.worldPosition = tmp;
 		}
+		var curID = 0, curMap = mspray.batchesMap.get(0);
 		for( c in children ) {
 			if( !c.enabled || c.type != "model" )
 				continue;
-			var inf = mspray.batchesMap.get(c.source);
+			if( split > 0 ) {
+				var sid = getSplitID(c);
+				if( sid != curID ) {
+					curMap = mspray.batchesMap.get(sid);
+					curID = sid;
+				}
+			}
+			var inf = curMap.get(c.source);
 			tmp.multiply3x4(c.to(Object3D).getTransform(), pos);
 			if( inf.pivot != null ) tmp.multiply3x4(inf.pivot, tmp);
 			inf.batch.emitInstance();
@@ -200,6 +232,7 @@ class MeshSpray extends Object3D {
 	@:s var defaultConfig: MeshSprayConfig;
 	@:s var currentPresetName : String = null;
 	@:s var currentSetName : String = null;
+	@:s var split : Int = 0;
 
 	var sceneEditor : hide.comp.SceneEditor;
 
@@ -382,7 +415,7 @@ class MeshSpray extends Object3D {
 				}));
 				sprayedModels = [];
 			}
-			
+
 
 			if (previewModels.length > 0) {
 				sceneEditor.deleteElements(previewModels, () -> { }, false);
@@ -677,6 +710,13 @@ class MeshSpray extends Object3D {
 		});
 
 		super.edit(ectx);
+
+		ectx.properties.add(new Element('
+		<div class="group" name="Extra">
+		<dl>
+			<dt>Split</dt><dd><input type="range" min="0" max="2048" field="split"/></dd>
+		</dl>
+		</div>'), this);
 	}
 
 	function updateConfig() {
