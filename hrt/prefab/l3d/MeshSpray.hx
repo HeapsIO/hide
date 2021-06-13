@@ -717,7 +717,7 @@ class MeshSpray extends Object3D {
 			input.change();
 		}
 
-		sceneEditor.properties.element.find("#repeatMeshBtn").prop("checked", CONFIG.dontRepeatMesh);
+		sceneEditor.properties.element.find("#repeatMesh").prop("checked", CONFIG.dontRepeatMesh);
 	}
 
 	override function removeInstance(ctx : Context):Bool {
