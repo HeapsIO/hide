@@ -1900,7 +1900,7 @@ class SceneEditor {
 		saveDisplayState();
 	}
 
-	function setLock(elements : Array<PrefabElement>, locked: Bool) {
+	public function setLock(elements : Array<PrefabElement>, locked: Bool) {
 		var prev = [for( o in elements ) o.locked];
 		for(o in elements) {
 			o.locked = locked;
