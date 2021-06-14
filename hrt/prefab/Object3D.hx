@@ -186,7 +186,8 @@ class Object3D extends Prefab {
 						}
 					}
 				}
-				var icon = Reflect.field(shared.scene.config.get("sceneeditor.huds"), sheet);
+				var huds : Dynamic = shared.scene.config.get("sceneeditor.huds");
+				var icon = Reflect.field(huds, sheet);
 				if( icon != null ) {
 					var t : Dynamic = ide.resolveCDBValue(sheet,icon, props);
 					if( t != null && (t.file != null || Std.is(t,String)) ) {
@@ -209,6 +210,9 @@ class Object3D extends Prefab {
 								(t.width == null ? 1 : t.width) * t.size,
 								(t.height == null ? 1 : t.height) * t.size
 							);
+							var maxWidth : Dynamic = huds.maxWidth;
+							if( maxWidth != null && bmp.tile.width > maxWidth )
+								bmp.width = maxWidth;
 						} else {
 							var f = Std.downcast(obj.getObjectByName("$huds_f"), h2d.Flow);
 							if( f == null ) {
