@@ -901,9 +901,12 @@ class MeshSpray extends Object3D {
 		var fakeRadius = currentConfig.deleteRadius * currentConfig.deleteRadius;
 		for (child in children) {
 			var model = child.to(hrt.prefab.Object3D);
-			if (distance(point2d.x, point2d.y, model.x, model.y) < fakeRadius) {
-				childToRemove.push(child);
+			if (model != null) {
+				if (distance(point2d.x, point2d.y, model.x, model.y) < fakeRadius) {
+					childToRemove.push(child);
+				}
 			}
+			
 		}
 		if (childToRemove.length > 0) {
 			wasEdited = true;
