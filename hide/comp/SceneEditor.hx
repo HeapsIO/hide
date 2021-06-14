@@ -1899,7 +1899,7 @@ class SceneEditor {
 		saveDisplayState();
 	}
 
-	public function setLock(elements : Array<PrefabElement>, locked: Bool) {
+	public function setLock(elements : Array<PrefabElement>, locked: Bool, enableUndo : Bool = true) {
 		var prev = [for( o in elements ) o.locked];
 		for(o in elements) {
 			o.locked = locked;
@@ -1910,13 +1910,16 @@ class SceneEditor {
 				toggleInteractive(c,!isLocked(c));
 			}
 		}
-		undo.change(Custom(function(redo) {
-			for( i in 0...elements.length )
-				elements[i].locked = redo ? locked : prev[i];
-		}), function() {
-			tree.refresh();
-			refreshScene();
-		});
+		if (enableUndo) {
+			undo.change(Custom(function(redo) {
+				for( i in 0...elements.length )
+					elements[i].locked = redo ? locked : prev[i];
+			}), function() {
+				tree.refresh();
+				refreshScene();
+			});
+		}
+		
 		saveDisplayState();
 		showGizmo = !locked;
 		moveGizmoToSelection();
