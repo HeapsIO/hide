@@ -134,6 +134,7 @@ typedef MeshSprayConfig = {
 	var rotationOffset : Float;
 	var zOffset: Float;
 	var dontRepeatMesh : Bool;
+	var enableBrush : Bool;
 	var orientTerrain : Float;
 	var tiltAmount : Float;
 }
@@ -293,6 +294,7 @@ class MeshSpray extends Object3D {
 			rotationOffset: 0,
 			zOffset: 0,
 			dontRepeatMesh: true,
+			enableBrush: true,
 			orientTerrain : 0,
 			tiltAmount : 0,
 		};
@@ -358,103 +360,6 @@ class MeshSpray extends Object3D {
 				[];
 		}
 		sceneEditor = ectx.scene.editor;
-
-
-		var ctx = ectx.getContext(this);
-		var s2d = @:privateAccess ctx.local2d.getScene();
-		reset();
-		interactive = new h2d.Interactive(10000, 10000, s2d);
-		interactive.propagateEvents = true;
-		interactive.cancelEvents = false;
-
-		interactive.onWheel = function(e) {
-
-		};
-
-		interactive.onKeyUp = function(e) {
-			if (e.keyCode == hxd.Key.R) {
-				lastMeshId = -1;
-				if (lastSpray < Date.now().getTime() - 100) {
-					if( !K.isDown( K.SHIFT) ) {
-						if (previewModels.length > 0) {
-							sceneEditor.deleteElements(previewModels, () -> { }, false);
-							sceneEditor.selectElements([this]);
-							previewModels = [];
-						}
-						var worldPos = ectx.screenToGround(s2d.mouseX, s2d.mouseY);
-						previewMeshesAround(ectx, ctx, worldPos);
-					}
-					lastSpray = Date.now().getTime();
-				}
-			}
-		}
-
-		interactive.onPush = function(e) {
-			e.propagate = false;
-			sprayEnable = true;
-			var worldPos = ectx.screenToGround(s2d.mouseX, s2d.mouseY);
-			if( K.isDown( K.SHIFT) )
-				removeMeshesAround(ctx, worldPos);
-			else {
-				addMeshes(ctx);
-			}
-		};
-
-		interactive.onRelease = function(e) {
-			e.propagate = false;
-			sprayEnable = false;
-			var addedModels = sprayedModels.copy();
-			if (sprayedModels.length > 0) {
-				undo.change(Custom(function(undo) {
-					if(undo) {
-						sceneEditor.deleteElements(addedModels, () -> reset(), true, false);
-					}
-					else {
-						sceneEditor.addElements(addedModels, false, true, true);
-					}
-				}));
-				sprayedModels = [];
-			}
-
-
-			if (previewModels.length > 0) {
-				sceneEditor.deleteElements(previewModels, () -> { }, false);
-				sceneEditor.selectElements([this], Nothing);
-				previewModels = [];
-			}
-		};
-
-		interactive.onMove = function(e) {
-			var worldPos = ectx.screenToGround(s2d.mouseX, s2d.mouseY);
-
-			var shiftPressed = K.isDown( K.SHIFT);
-
-			drawCircle(ctx, worldPos.x, worldPos.y, worldPos.z, (shiftPressed) ? currentConfig.deleteRadius : currentConfig.radius, 5, (shiftPressed) ? 9830400 : 38400);
-
-			if (lastSpray < Date.now().getTime() - 100) {
-				if (previewModels.length > 0) {
-					sceneEditor.deleteElements(previewModels, () -> { }, false, false);
-					previewModels = [];
-				}
-				if( !shiftPressed ) {
-					previewMeshesAround(ectx, ctx, worldPos);
-				}
-
-				if( K.isDown( K.MOUSE_LEFT) ) {
-					e.propagate = false;
-
-					if (sprayEnable) {
-						if( shiftPressed ) {
-							removeMeshesAround(ctx, worldPos);
-						} else {
-							addMeshes(ctx);
-							if (currentConfig.density == 1) sprayEnable = false;
-						}
-					}
-				}
-				lastSpray = Date.now().getTime();
-			}
-		};
 
 		var props = new hide.Element('<div class="group" name="Meshes"></div>');
 
@@ -631,6 +536,10 @@ class MeshSpray extends Object3D {
 				Hold down SHIFT to remove meshes
 				<br/>Push R to randomize preview
 			</p>
+			<p align="center">
+				<label><input type="checkbox" id="enableBrush" style="margin-right: 5px;"/> Enable Brush</label>
+			</p>
+
 		</div>
 		').appendTo(props);
 
@@ -638,6 +547,21 @@ class MeshSpray extends Object3D {
 		repeat.on("change", function() {
 			currentConfig.dontRepeatMesh = repeat.is(":checked");
 		}).prop("checked", currentConfig.dontRepeatMesh);
+
+		var enableBrush = options.find("#enableBrush");
+		enableBrush.on("change", function() {
+			currentConfig.enableBrush = enableBrush.is(":checked");
+			sceneEditor.setLock([this], currentConfig.enableBrush);
+			removeInteractiveBrush();
+			if (currentConfig.enableBrush)
+				createInteractiveBrush(ectx);
+			else {
+				interactive.cancelEvents = true;
+				sceneEditor.setLock([this], currentConfig.enableBrush);
+			}
+			
+		}).prop("checked", currentConfig.enableBrush);
+		
 
 		options.find("#select").click(function(_) {
 			var options = selectElement.children().elements();
@@ -682,7 +606,6 @@ class MeshSpray extends Object3D {
 					}
 				}
 				sceneEditor.deleteElements(meshes);
-				sceneEditor.selectElements([this], Nothing);
 			}
 		});
 
@@ -709,6 +632,10 @@ class MeshSpray extends Object3D {
 			saveConfigMeshBatch();
 		});
 
+		sceneEditor.setLock([this], currentConfig.enableBrush);
+		removeInteractiveBrush();
+		if (currentConfig.enableBrush)
+			createInteractiveBrush(ectx);
 		super.edit(ectx);
 
 		ectx.properties.add(new Element('
@@ -717,6 +644,102 @@ class MeshSpray extends Object3D {
 			<dt>Split</dt><dd><input type="range" min="0" max="2048" field="split"/></dd>
 		</dl>
 		</div>'), this);
+	}
+
+	function createInteractiveBrush(ectx : EditContext) {
+		var ctx = ectx.getContext(this);
+		var s2d = @:privateAccess ctx.local2d.getScene();
+		interactive = new h2d.Interactive(10000, 10000, s2d);
+		interactive.propagateEvents = true;
+		interactive.cancelEvents = false;
+
+		interactive.onWheel = function(e) {
+
+		};
+
+		interactive.onKeyUp = function(e) {
+			if (e.keyCode == hxd.Key.R) {
+				lastMeshId = -1;
+				if (lastSpray < Date.now().getTime() - 100) {
+					if( !K.isDown( K.SHIFT) ) {
+						if (previewModels.length > 0) {
+							sceneEditor.deleteElements(previewModels, () -> { }, false);
+							previewModels = [];
+						}
+						var worldPos = ectx.screenToGround(s2d.mouseX, s2d.mouseY);
+						previewMeshesAround(ectx, ctx, worldPos);
+					}
+					lastSpray = Date.now().getTime();
+				}
+			}
+		}
+
+		interactive.onPush = function(e) {
+			e.propagate = false;
+			sprayEnable = true;
+			var worldPos = ectx.screenToGround(s2d.mouseX, s2d.mouseY);
+			if( K.isDown( K.SHIFT) )
+				removeMeshesAround(ctx, worldPos);
+			else {
+				addMeshes(ctx);
+			}
+		};
+
+		interactive.onRelease = function(e) {
+			e.propagate = false;
+			sprayEnable = false;
+			var addedModels = sprayedModels.copy();
+			if (sprayedModels.length > 0) {
+				undo.change(Custom(function(undo) {
+					if(undo) {
+						sceneEditor.deleteElements(addedModels, () -> removeInteractiveBrush(), true, false);
+					}
+					else {
+						sceneEditor.addElements(addedModels, false, true, true);
+					}
+				}));
+				sprayedModels = [];
+			}
+			
+
+			if (previewModels.length > 0) {
+				sceneEditor.deleteElements(previewModels, () -> { }, false);
+				previewModels = [];
+			}
+		};
+
+		interactive.onMove = function(e) {
+			var worldPos = ectx.screenToGround(s2d.mouseX, s2d.mouseY);
+
+			var shiftPressed = K.isDown( K.SHIFT);
+
+			drawCircle(ctx, worldPos.x, worldPos.y, worldPos.z, (shiftPressed) ? currentConfig.deleteRadius : currentConfig.radius, 5, (shiftPressed) ? 9830400 : 38400);
+
+			if (lastSpray < Date.now().getTime() - 100) {
+				if (previewModels.length > 0) {
+					sceneEditor.deleteElements(previewModels, () -> { }, false, false);
+					previewModels = [];
+				}
+				if( !shiftPressed ) {
+					previewMeshesAround(ectx, ctx, worldPos);
+				}
+
+				if( K.isDown( K.MOUSE_LEFT) ) {
+					e.propagate = false;
+
+					if (sprayEnable) {
+						if( shiftPressed ) {
+							removeMeshesAround(ctx, worldPos);
+						} else {
+							if (currentConfig.density == 1) sprayEnable = false;
+							else addMeshes(ctx);
+						}
+					}
+				}
+				lastSpray = Date.now().getTime();
+			}
+		};
+
 	}
 
 	function updateConfig() {
@@ -734,16 +757,16 @@ class MeshSpray extends Object3D {
 			input.change();
 		}
 
-		sceneEditor.properties.element.find("#repeatMeshBtn").prop("checked", CONFIG.dontRepeatMesh);
+		sceneEditor.properties.element.find("#repeatMesh").prop("checked", CONFIG.dontRepeatMesh);
 	}
 
 	override function removeInstance(ctx : Context):Bool {
-		reset();
+		removeInteractiveBrush();
 		return super.removeInstance(ctx);
 	}
 	override function setSelected( ctx : Context, b : Bool ) {
 		if( !b ) {
-			reset();
+			removeInteractiveBrush();
 			if( gBrushes != null ) {
 				for (g in gBrushes) g.remove();
 				gBrushes = null;
@@ -752,7 +775,7 @@ class MeshSpray extends Object3D {
 		return false;
 	}
 
-	function reset() {
+	function removeInteractiveBrush() {
 		if( interactive != null ) interactive.remove();
 		if (previewModels != null && previewModels.length > 0) {
 			sceneEditor.deleteElements(previewModels, () -> { }, false, false);
@@ -817,7 +840,6 @@ class MeshSpray extends Object3D {
 		if (computedDensity == 1)
 		if (previewModels.length > 0) {
 			sceneEditor.deleteElements(previewModels, () -> { }, false);
-			sceneEditor.selectElements([this], Nothing);
 			previewModels = [];
 		}
 		lastPos = point;
@@ -919,14 +941,16 @@ class MeshSpray extends Object3D {
 		var fakeRadius = currentConfig.deleteRadius * currentConfig.deleteRadius;
 		for (child in children) {
 			var model = child.to(hrt.prefab.Object3D);
-			if (distance(point2d.x, point2d.y, model.x, model.y) < fakeRadius) {
-				childToRemove.push(child);
+			if (model != null) {
+				if (distance(point2d.x, point2d.y, model.x, model.y) < fakeRadius) {
+					childToRemove.push(child);
+				}
 			}
+			
 		}
 		if (childToRemove.length > 0) {
 			wasEdited = true;
 			sceneEditor.deleteElements(childToRemove, () -> { }, false);
-			sceneEditor.selectElements([this], Nothing);
 		}
 	}
 
@@ -1033,6 +1057,19 @@ class MeshSpray extends Object3D {
 		primitive.colors = [for(p in points) new h3d.col.Point(1,1,1)];
 		primitive.incref();
 		return primitive;
+	}
+
+	override function flatten<T:Prefab>( ?cl : Class<T>, ?arr: Array<T> ) : Array<T> {
+		if(arr == null)
+			arr = [];
+		if( cl == null )
+			arr.push(cast this);
+		else {
+			var i = to(cl);
+			if(i != null)
+				arr.push(i);
+		}
+		return arr;
 	}
 
 	static var _ = Library.register("meshSpray", MeshSpray);
