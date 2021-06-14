@@ -1016,8 +1016,6 @@ class MeshSpray extends Object3D {
 		return primitive;
 	}
 
-	static var _ = Library.register("meshSpray", MeshSpray);
-
 	override function flatten<T:Prefab>( ?cl : Class<T>, ?arr: Array<T> ) : Array<T> {
 		if(arr == null)
 			arr = [];
@@ -1030,6 +1028,8 @@ class MeshSpray extends Object3D {
 		}
 		return arr;
 	}
+
+	static var _ = Library.register("meshSpray", MeshSpray);
 
 }
 
