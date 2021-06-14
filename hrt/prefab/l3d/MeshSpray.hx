@@ -551,13 +551,12 @@ class MeshSpray extends Object3D {
 		var enableBrush = options.find("#enableBrush");
 		enableBrush.on("change", function() {
 			currentConfig.enableBrush = enableBrush.is(":checked");
-			sceneEditor.setLock([this], currentConfig.enableBrush);
+			sceneEditor.setLock([this], currentConfig.enableBrush, false);
 			removeInteractiveBrush();
 			if (currentConfig.enableBrush)
 				createInteractiveBrush(ectx);
 			else {
 				interactive.cancelEvents = true;
-				sceneEditor.setLock([this], currentConfig.enableBrush);
 			}
 			
 		}).prop("checked", currentConfig.enableBrush);
@@ -632,7 +631,7 @@ class MeshSpray extends Object3D {
 			saveConfigMeshBatch();
 		});
 
-		sceneEditor.setLock([this], currentConfig.enableBrush);
+		sceneEditor.setLock([this], currentConfig.enableBrush, false);
 		removeInteractiveBrush();
 		if (currentConfig.enableBrush)
 			createInteractiveBrush(ectx);
