@@ -823,6 +823,11 @@ class Ide {
 		return path;
 	}
 
+	public function getUnCachedUrl( path : String ) {
+		var timestamp = Std.int(Date.now().getTime() / 1000);
+		return "file://" + getPath(path) + "?t=" + timestamp;
+	}
+
 	public static var IMG_EXTS = ["jpg", "jpeg", "gif", "png", "raw", "dds", "hdr", "tga"];
 	public function chooseImage( onSelect, allowNull=false ) {
 		chooseFile(IMG_EXTS, onSelect, allowNull);

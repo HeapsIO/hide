@@ -455,12 +455,12 @@ class Cell extends Component {
 		if( tiles.length == 0 ) return;
 		tiles.removeClass("toload");
 		var imap = new Map();
-		var timestamp = Std.int(Date.now().getTime() / 1000);
 		for( t in tiles )
 			imap.set(t.getAttribute("path"), t);
 		for( path => elt in imap ) {
 			var img = js.Browser.document.createImageElement();
-			img.src = "file://"+path;
+			var url = Ide.inst.getUnCachedUrl(path);
+			img.src = url;
 			img.setAttribute("style","display:none");
 			img.onload = function() {
 				var iwidth = img.width;
@@ -473,7 +473,7 @@ class Cell extends Component {
 						var zoom = Std.parseFloat(pos[2]);
 						var bgw = Std.int(iwidth*zoom);
 						var bgh = Std.int(iheight*zoom);
-						var bg = 'url("$path?t=$timestamp") -${px}px -${py}px / ${bgw}px ${bgh}px';
+						var bg = 'url("$url") -${px}px -${py}px / ${bgw}px ${bgh}px';
 						if( zoom > 1 )
 							bg += ";image-rendering:pixelated";
 						t.setAttribute("style", t.getAttribute("style")+" background : "+bg+"; opacity : 1;");
