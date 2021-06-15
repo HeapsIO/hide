@@ -80,6 +80,8 @@ class CamController extends h3d.scene.CameraController {
 				pushY = e.relY;
 			default:
 			}
+		case EFocus:
+			@:privateAccess scene.window.mouseLock = false;
 		default:
 		}
 	}

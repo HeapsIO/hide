@@ -516,11 +516,10 @@ class SceneEditor {
 				{ label : "Rename", enabled : current != null, click : function() tree.editNode(current) },
 				{ label : "Delete", enabled : current != null, click : function() deleteElements(curEdit.rootElements) },
 				{ label : "Duplicate", enabled : current != null, click : duplicate.bind(false) },
-				{ label : "Reference", enabled : current != null, click : function() createRef(current, current.parent) },
 			];
 
 			var isObj = current != null && (current.to(Object3D) != null || current.to(Object2D) != null);
-			var isRef = current != null && current.to(hrt.prefab.Reference) != null;
+			var isRef = isReference(current);
 
 			if( isObj ) {
 				var visible = !isHidden(current);
@@ -1828,7 +1827,7 @@ class SceneEditor {
 
 	public function setEnabled(elements : Array<PrefabElement>, enable: Bool) {
 		// Don't disable/enable Object3Ds, too confusing with visibility
-		elements = [for(e in elements) if(e.to(Object3D) == null || e.to(hrt.prefab.Reference) != null) e];
+		elements = [for(e in elements) if(e.to(Object3D) == null || isReference(e)) e];
 		var old = [for(e in elements) e.enabled];
 		function apply(on) {
 			for(i in 0...elements.length) {
@@ -1900,7 +1899,7 @@ class SceneEditor {
 		saveDisplayState();
 	}
 
-	function setLock(elements : Array<PrefabElement>, locked: Bool) {
+	public function setLock(elements : Array<PrefabElement>, locked: Bool, enableUndo : Bool = true) {
 		var prev = [for( o in elements ) o.locked];
 		for(o in elements) {
 			o.locked = locked;
@@ -1911,13 +1910,16 @@ class SceneEditor {
 				toggleInteractive(c,!isLocked(c));
 			}
 		}
-		undo.change(Custom(function(redo) {
-			for( i in 0...elements.length )
-				elements[i].locked = redo ? locked : prev[i];
-		}), function() {
-			tree.refresh();
-			refreshScene();
-		});
+		if (enableUndo) {
+			undo.change(Custom(function(redo) {
+				for( i in 0...elements.length )
+					elements[i].locked = redo ? locked : prev[i];
+			}), function() {
+				tree.refresh();
+				refreshScene();
+			});
+		}
+		
 		saveDisplayState();
 		showGizmo = !locked;
 		moveGizmoToSelection();
@@ -1942,25 +1944,6 @@ class SceneEditor {
 			hideSiblings(e);
 		}
 		setVisible(toHide, false);
-	}
-
-	function createRef(elt: PrefabElement, toParent: PrefabElement) {
-		var ref = new hrt.prefab.Reference(toParent);
-		ref.name = elt.name;
-		ref.source = "/"+elt.getAbsPath();
-		var obj3d = Std.downcast(elt, Object3D);
-		if(obj3d != null) {
-			ref.x = obj3d.x;
-			ref.y = obj3d.y;
-			ref.z = obj3d.z;
-			ref.scaleX = obj3d.scaleX;
-			ref.scaleY = obj3d.scaleY;
-			ref.scaleZ = obj3d.scaleZ;
-			ref.rotationX = obj3d.rotationX;
-			ref.rotationY = obj3d.rotationY;
-			ref.rotationZ = obj3d.rotationZ;
-		}
-		addElements([ref]);
 	}
 
 	function duplicate(thenMove: Bool) {
@@ -2078,10 +2061,8 @@ class SceneEditor {
 		if( to == null )
 			to = sceneData;
 
-		{
-			var ref = Std.downcast(to, Reference);
-			@:privateAccess if( ref != null && ref.editMode ) to = ref.ref;
-		}
+		var ref = Std.downcast(to, Reference);
+		@:privateAccess if( ref != null && ref.editMode ) to = ref.ref;
 
 		var effectFunc = reparentImpl(e, to, index);
 		undo.change(Custom(function(undo) {
@@ -2587,6 +2568,10 @@ class SceneEditor {
 			}
 		}
 		return bestVertex;
+	}
+
+	static function isReference( what : PrefabElement ) : Bool {
+		return what != null && what.to(hrt.prefab.Reference) != null;
 	}
 
 	static function getPivot(objects: Array<Object>) {

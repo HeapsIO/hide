@@ -258,7 +258,7 @@ class Scene extends Component implements h3d.IDrawable {
 
 	function _loadTextureData( img : hxd.res.Image, onReady : Void -> Void, t : h3d.mat.Texture ) {
 		var path = ide.getPath(img.entry.path);
-		var img = new Element('<img src="file://$path" crossorigin="anonymous"/>');
+		var img = new Element('<img src="${ide.getUnCachedUrl(path)}" crossorigin="anonymous"/>');
 		function onLoaded() {
 			if( engine.driver == null ) return;
 			setCurrent();
@@ -280,7 +280,7 @@ class Scene extends Component implements h3d.IDrawable {
 		}
 		img.on("load", onLoaded);
 		function onChange() {
-			img.attr("src", 'file://$path?t=' + Std.int(Date.now().getTime() / 1000));
+			img.attr("src", ide.getUnCachedUrl(path));
 		}
 		ide.fileWatcher.register( path, onChange, true, element );
 		cleanup.push(function() { ide.fileWatcher.unregister( path, onChange ); });
