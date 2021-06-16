@@ -5,7 +5,14 @@ typedef FileWatchEvent = {path:String,fun:Void->Void,checkDel:Bool,element:js.ht
 class FileWatcher {
 
 	var ide : hide.Ide;
-	var watches : Map<String,{ events : Array<FileWatchEvent>, w : js.node.fs.FSWatcher, wasChanged : Bool, changed : Bool, isDir : Bool }> = new Map();
+	var watches : Map<String, {
+		events : Array<FileWatchEvent>,
+		w : js.node.fs.FSWatcher,
+		wasChanged : Bool,
+		changed : Bool,
+		isDir : Bool,
+		version : Int
+	}> = new Map();
 	var timer : haxe.Timer;
 
 	public function new() {
@@ -32,6 +39,7 @@ class FileWatcher {
 	}
 
 	public function register( path : String, updateFun, ?checkDelete : Bool, ?element : Element ) : FileWatchEvent {
+		path = ide.getPath(path);
 		var w = getWatches(path);
 		var f : FileWatchEvent = { path : path, fun : updateFun, checkDel : checkDelete, element : element == null ? null : element[0] };
 		w.events.push(f);
@@ -43,6 +51,7 @@ class FileWatcher {
 	}
 
 	public function unregister( path : String, updateFun : Void -> Void ) {
+		path = ide.getPath(path);
 		var w = getWatches(path);
 		for( e in w.events )
 			if( Reflect.compareMethods(e.fun, updateFun) ) {
@@ -65,6 +74,13 @@ class FileWatcher {
 				if( w.w != null ) w.w.close();
 			}
 		}
+	}
+
+	public function getVersion( path : String ) : Int {
+		var w = watches.get(ide.getPath(path));
+		if( w == null )
+			return 0;
+		return w.version;
 	}
 
 	function cleanEvents() {
@@ -94,12 +110,14 @@ class FileWatcher {
 				changed : false,
 				isDir : try sys.FileSystem.isDirectory(fullPath) catch( e : Dynamic ) false,
 				wasChanged : false,
+				version : 0,
 			};
 			w.w = try js.node.Fs.watch(fullPath, function(k:String, file:String) {
 				if( w.isDir && k == "change" ) return;
 				if( k == "change" ) w.wasChanged = true;
 				if( w.changed ) return;
 				w.changed = true;
+				w.version++;
 				haxe.Timer.delay(function() {
 					if( !w.changed ) return;
 					w.changed = false;
