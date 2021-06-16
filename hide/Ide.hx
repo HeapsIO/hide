@@ -824,8 +824,7 @@ class Ide {
 	}
 
 	public function getUnCachedUrl( path : String ) {
-		var timestamp = Std.int(Date.now().getTime() / 1000);
-		return "file://" + getPath(path) + "?t=" + timestamp;
+		return "file://" + getPath(path) + "?t=" + fileWatcher.getVersion(path);
 	}
 
 	public static var IMG_EXTS = ["jpg", "jpeg", "gif", "png", "raw", "dds", "hdr", "tga"];
