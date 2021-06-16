@@ -1,5 +1,13 @@
 package hide.comp.cdb;
 
+
+typedef CursorState = {
+	var sheet : String;
+	var x : Int;
+	var y : Int;
+	var select : Null<{ x : Int, y : Int }>;
+}
+
 class Cursor {
 
 	var editor : Editor;
@@ -12,6 +20,22 @@ class Cursor {
 	public function new(editor) {
 		this.editor = editor;
 		set();
+	}
+
+	public function setState(state : CursorState, ?table : Table) {
+		if( state == null )
+			set(table);
+		else
+			set(table, state.x, state.y, state.select);
+	}
+
+	public function getState() : CursorState {
+		return table == null ? null : {
+			sheet : table.sheet.getPath(),
+			x : x,
+			y : y,
+			select : Reflect.copy(select)
+		};
 	}
 
 	public function set( ?t:Table, ?x=0, ?y=0, ?sel, update = true ) {
@@ -210,8 +234,10 @@ class Cursor {
 		if( shiftKey && this.table == line.table && x < 0 ) {
 			select = { x : -1, y : line.index };
 			update();
-		} else
+		} else {
+			editor.pushCursorState();
 			set(line.table, -1, line.index);
+		}
 	}
 
 	public function clickCell( cell : Cell, shiftKey = false ) {
@@ -219,8 +245,10 @@ class Cursor {
 		if( shiftKey && table == cell.table ) {
 			select = { x : xIndex, y : cell.line.index };
 			update();
-		} else
+		} else {
+			editor.pushCursorState();
 			set(cell.table, xIndex, cell.line.index);
+		}
 	}
 
 }
