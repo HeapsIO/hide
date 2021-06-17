@@ -94,7 +94,9 @@ class Editor extends Component {
 				cell.edit();
 		});
 		element.contextmenu(function(e) e.preventDefault());
-		element.mousedown(onMouseDown);
+
+		cdbTable.element.mousedown(onMouseDown);
+
 		keys = new hide.ui.Keys(element);
 		keys.addListener(onKey);
 		keys.register("search", function() {
@@ -107,8 +109,8 @@ class Editor extends Component {
 		keys.register("cdb.showReferences", showReferences);
 		keys.register("undo", function() undo.undo());
 		keys.register("redo", function() undo.redo());
-		keys.register("cdb.moveBack", cursorMoveBack);
-		keys.register("cdb.moveAhead", cursorMoveAhead);
+		keys.register("cdb.moveBack", () -> cursorJump(true));
+		keys.register("cdb.moveAhead", () -> cursorJump(false));
 		keys.register("cdb.insertLine", function() { insertLine(cursor.table,cursor.y); cursor.move(0,1,false,false); });
 		for( k in ["cdb.editCell","rename"] )
 			keys.register(k, function() {
@@ -142,10 +144,10 @@ class Editor extends Component {
 	function onMouseDown( e : js.jquery.Event ) {
 		switch ( e.which ) {
 		case 4:
-			cursorMoveBack();
+			cursorJump(true);
 			return false;
 		case 5:
-			cursorMoveAhead();
+			cursorJump(false);
 			return false;
 		}
 		return true;
@@ -466,7 +468,7 @@ class Editor extends Component {
 					var t = openRec(s.parent.sheet);
 					if( t != null ) {
 						var cell = t.lines[s.parent.line].cells[t.displayMode == Properties || t.displayMode == AllProperties ? 0 : s.parent.column];
-						if( cell.line.subTable == null )
+						if( cell.line.subTable == null && (cell.column.type == TList || cell.column.type == TProperties) )
 							cell.open(true);
 						return cell.line.subTable;
 					}
@@ -537,12 +539,7 @@ class Editor extends Component {
 	}
 
 
-	public function pushCursorState() {
-		if ( cursor == null )
-			return;
-		var state = getState();
-		state.data = null;
-
+	function undoStatesEqual( s1 : UndoState, s2 : UndoState, cmpCursors = true ) {
 		function cursorEqual(c1 : Cursor.CursorState, c2 : Cursor.CursorState) {
 			if( c1 == c2 )
 				return true;
@@ -559,63 +556,77 @@ class Editor extends Component {
 				return false;
 			return undoSheetEqual(s1.parent.sheet, s2.parent.sheet);
 		}
-		function statesEqual( s1 : UndoState, s2 : UndoState, cmpCursors = true ) {
-			if( s1.tables.length != s2.tables.length )
+		if ( s1.sheet != s2.sheet )
+			return false;
+		if( s1.tables.length != s2.tables.length )
+			return false;
+		for( i in 0...s1.tables.length ) {
+			if( !undoSheetEqual(s1.tables[i], s2.tables[i]) )
 				return false;
-			for( i in 0...s1.tables.length ) {
-				if( !undoSheetEqual(s1.tables[i], s2.tables[i]) )
-					return false;
+		}
+		if( !cmpCursors )
+			return true;
+		if( cursorEqual(s1.cursor, s2.cursor) )
+			return true;
+		if( s1.cursor == null || s2.cursor == null )
+			return false;
+		return s1.cursor.y == -1 && s2.cursor.y == -1;
+	}
+
+	public function pushCursorState() {
+		if ( cursor == null )
+			return;
+		var state = getState();
+		state.data = null;
+
+		var stateBehind = (cursorStates.length <= 0) ? null : cursorStates[cursorIndex];
+		if( stateBehind != null && undoStatesEqual(state, stateBehind) )
+			return;
+		var stateAhead = (cursorStates.length <= 0 || cursorIndex >= cursorStates.length - 1) ? null : cursorStates[cursorIndex + 1];
+		if ( stateAhead != null && undoStatesEqual(state, stateAhead) ) {
+			cursorIndex++;
+			return;
+		}
+
+		if( cursorIndex < cursorStates.length - 1 && cursorIndex >= 0 ) {
+			if( stateBehind != null && !undoStatesEqual(state, stateBehind, false) ) {
+				cursorStates.splice(cursorIndex + 1, cursorStates.length);
 			}
-			if( !cmpCursors )
-				return true;
-			if( cursorEqual(s1.cursor, s2.cursor) )
-				return true;
-			if( s1.cursor == null || s2.cursor == null )
-				return false;
-			return s1.cursor.y == -1 && s2.cursor.y == -1;
 		}
 
-		if( cursorIndex < cursorStates.length && cursorIndex >= 0 ) {
-			if( !statesEqual(state, cursorStates[cursorIndex], false) )
-				cursorStates.splice(cursorIndex, cursorStates.length);
-		}
-		var stateBehind = (cursorStates.length <= 0 || cursorIndex <= 0) ? null : cursorStates[cursorIndex - 1];
-		var stateAhead = (cursorStates.length <= 0 || cursorIndex >= cursorStates.length) ? null : cursorStates[cursorIndex];
-		if( (stateBehind != null && statesEqual(state, stateBehind)) ||
-			(stateAhead != null && statesEqual(state, stateAhead)) ) {
-			return;
-		}
-
-		cursorStates.insert(cursorIndex, state);
-		cursorIndex++;
+		cursorStates.insert(cursorIndex + 1, state);
+		if( cursorIndex < cursorStates.length - 1 )
+			cursorIndex++;
 	}
 
-	function cursorMoveBack() {
+	function cursorJump(back = true) {
 		focus();
 
-		if( cursorIndex <= 0 )
+		if( (back && cursorIndex <= 0) || (!back && cursorIndex >= cursorStates.length - 1) )
 			return;
-		var newIndex = cursorIndex - 1;
 		pushCursorState();
-		cursorIndex = newIndex;
+		if(back)
+			cursorIndex--;
+		else
+			cursorIndex++;
 
 		var state = cursorStates[cursorIndex];
 		syncSheet(null, state.sheet);
-		refresh(state);
-		@:privateAccess cdbTable.syncTabs();
-	}
 
-	function cursorMoveAhead() {
-		focus();
+		if( undoStatesEqual(state, getState(), false) ) {
+			setState(state, true);
+			if( cursor.table != null ) {
+				for( t in tables ) {
+					if( t.sheet.getPath() == cursor.table.sheet.getPath() )
+						cursor.table = t;
+				}
+				cursor.update();
+			}
+		} else
+			refresh(state);
 
-		if( cursorIndex >= cursorStates.length - 1)
-			return;
-		cursorIndex++;
-
-		var state = cursorStates[cursorIndex];
-		syncSheet(null, state.sheet);
-		refresh(state);
-		@:privateAccess cdbTable.syncTabs();
+		if( cdbTable != null )
+			@:privateAccess cdbTable.syncTabs();
 	}
 
 	public static var inRefreshAll(default,null) : Bool;
