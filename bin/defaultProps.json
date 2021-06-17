@@ -62,6 +62,8 @@
 	"key.cdb.closeList" : "Escape",
 	"key.cdb.editCell" : "Enter",
 	"key.cdb.insertLine" : "Insert",
+	"key.cdb.moveBack" : "Alt-Left",
+	"key.cdb.moveAhead" : "Alt-Right",
 
 	// Scene editor config
 	"key.sceneeditor.focus": "F",

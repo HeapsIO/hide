@@ -38,6 +38,11 @@ class Cell extends Component {
 		root.prop("cellComp", this);
 		if( column.kind == Script ) root.addClass("t_script");
 		refresh();
+
+		root.click(function(e) {
+			editor.cursor.clickCell(this, e.shiftKey);
+			e.stopPropagation();
+		});
 		switch( column.type ) {
 		case TList, TProperties:
 			element.click(function(e) {
@@ -54,10 +59,6 @@ class Cell extends Component {
 				root.addClass("t_readonly");
 		}
 
-		root.click(function(e) {
-			editor.cursor.clickCell(this, e.shiftKey);
-			e.stopPropagation();
-		});
 		root.contextmenu(function(e) {
 			showMenu();
 			e.stopPropagation();
