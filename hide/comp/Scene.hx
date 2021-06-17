@@ -147,7 +147,9 @@ class Scene extends Component implements h3d.IDrawable {
 		};
 		engine.onResized = function() {
 			if( s2d == null ) return;
+			setCurrent();
 			visible = engine.width > 32 && engine.height > 32; // 32x32 when hidden !
+			s2d.scaleMode = Resize; // setter call
 			onResize();
 		};
 		engine.init();
