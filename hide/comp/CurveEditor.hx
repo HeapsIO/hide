@@ -440,31 +440,35 @@ class CurveEditor extends Component {
 		// Draw curve
 		if(curve.keys.length > 0) {
 			var keys = curve.keys;
-			var lines = ['M ${xScale*(keys[0].time)},${-yScale*(keys[0].value)}'];
-			for(ik in 1...keys.length) {
-				var prev = keys[ik-1];
-				var cur = keys[ik];
-				if(prev.mode == Constant) {
-					lines.push('L ${xScale*(prev.time)} ${-yScale*(prev.value)}
-					L ${xScale*(cur.time)} ${-yScale*(prev.value)}
-					L ${xScale*(cur.time)} ${-yScale*(cur.value)}');
+			if(false) {  // Bezier draw, faster but less accurate
+				var lines = ['M ${xScale*(keys[0].time)},${-yScale*(keys[0].value)}'];
+				for(ik in 1...keys.length) {
+					var prev = keys[ik-1];
+					var cur = keys[ik];
+					if(prev.mode == Constant) {
+						lines.push('L ${xScale*(prev.time)} ${-yScale*(prev.value)}
+						L ${xScale*(cur.time)} ${-yScale*(prev.value)}
+						L ${xScale*(cur.time)} ${-yScale*(cur.value)}');
+					}
+					else {
+						lines.push('C
+							${xScale*(prev.time + (prev.nextHandle != null ? prev.nextHandle.dt : 0.))},${-yScale*(prev.value + (prev.nextHandle != null ? prev.nextHandle.dv : 0.))}
+							${xScale*(cur.time + (cur.prevHandle != null ? cur.prevHandle.dt : 0.))}, ${-yScale*(cur.value + (cur.prevHandle != null ? cur.prevHandle.dv : 0.))}
+							${xScale*(cur.time)}, ${-yScale*(cur.value)} ');
+					}
 				}
-				else {
-					lines.push('C
-						${xScale*(prev.time + (prev.nextHandle != null ? prev.nextHandle.dt : 0.))},${-yScale*(prev.value + (prev.nextHandle != null ? prev.nextHandle.dv : 0.))}
-						${xScale*(cur.time + (cur.prevHandle != null ? cur.prevHandle.dt : 0.))}, ${-yScale*(cur.value + (cur.prevHandle != null ? cur.prevHandle.dv : 0.))}
-						${xScale*(cur.time)}, ${-yScale*(cur.value)} ');
-				}
+				svg.make(curveGroup, "path", {d: lines.join("")});
 			}
-			svg.make(curveGroup, "path", {d: lines.join("")});
-			// var pts = curve.sample(200);
-			// var poly = [];
-			// for(i in 0...pts.length) {
-			// 	var x = xScale * (curve.duration * i / (pts.length - 1));
-			// 	var y = yScale * (pts[i]);
-			// 	poly.push(new h2d.col.Point(x, y));
-			// }
-			// svg.polygon(curveGroup, poly);
+			else {
+				var pts = curve.sample(200);
+				var poly = [];
+				for(i in 0...pts.length) {
+					var x = xScale * (curve.duration * i / (pts.length - 1));
+					var y = yScale * (-pts[i]);
+					poly.push(new h2d.col.Point(x, y));
+				}
+				svg.polygon(curveGroup, poly);
+			}
 		}
 
 
@@ -552,6 +556,7 @@ class CurveEditor extends Component {
 					e.stopPropagation();
 					var offset = element.offset();
 					beforeChange();
+					var startT = key.time;
 
 					startDrag(function(e) {
 						var lx = e.clientX - offset.left;
@@ -566,8 +571,8 @@ class CurveEditor extends Component {
 							key.time = Math.round(key.time * 10) / 10.;
 							key.value = Math.round(key.value * 10) / 10.;
 						}
-						if(lockKeyX)
-							key.time = prevTime;
+						if(lockKeyX || e.shiftKey)
+							key.time = startT;
 						fixKey(key);
 						refreshGraph(true, key);
 						onKeyMove(key, prevTime, prevVal);
