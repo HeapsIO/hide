@@ -95,7 +95,10 @@ class Editor extends Component {
 		});
 		element.contextmenu(function(e) e.preventDefault());
 
-		cdbTable.element.mousedown(onMouseDown);
+		if( cdbTable != null )
+			cdbTable.element.mousedown(onMouseDown);
+		else
+			element.mousedown(onMouseDown);
 
 		keys = new hide.ui.Keys(element);
 		keys.addListener(onKey);
