@@ -2,11 +2,11 @@ package hrt.shgraph.nodes;
 
 using hxsl.Ast;
 
-@name("Lerp")
+@name("Mix")
 @description("Linear interpolation between a and b using mix")
 @width(80)
 @group("Math")
-class Lerp extends ShaderFunction {
+class Mix extends ShaderFunction {
 
 	@input("a") var x = SType.Number;
 	@input("b") var y = SType.Number;

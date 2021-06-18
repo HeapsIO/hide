@@ -9,5 +9,6 @@ common.hxml
 --macro include("hxd.clipper")
 --macro include("hxd.earcut")
 --macro include("hrt.prefab")
+--macro include("hrt.shgraph.nodes")
 -dce no
 -debug

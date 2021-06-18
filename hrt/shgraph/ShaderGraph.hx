@@ -547,7 +547,7 @@ class ShaderGraph {
 			parameters: [
 				for (p in parametersAvailable) { id : p.id, name : p.name, type : [p.type.getName(), p.type.getParameters().toString()], defaultValue : p.defaultValue }
 			]
-		});
+		}, "\t");
 
 		return json;
 	}
