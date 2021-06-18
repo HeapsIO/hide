@@ -91,7 +91,9 @@ class ShaderGraph {
 
 		for (n in nodes) {
 			n.outputs = [];
-			n.instance = std.Type.createInstance(std.Type.resolveClass(n.type), []);
+			var cl = std.Type.resolveClass(n.type);
+			if( cl == null ) throw "Missing shader node "+n.type;
+			n.instance = std.Type.createInstance(cl, []);
 			n.instance.setId(n.id);
 			n.instance.loadProperties(n.properties);
 			this.nodes.set(n.id, n);
