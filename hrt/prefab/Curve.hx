@@ -30,8 +30,6 @@ typedef CurveKeys = Array<CurveKey>;
 
 class Curve extends Prefab {
 
-	@:s public var clampMin : Float = 0.;
-	@:s public var clampMax : Float = 0.;
 	@:s public var keyMode : CurveKeyMode = Linear;
 	@:c public var keys : CurveKeys = [];
 

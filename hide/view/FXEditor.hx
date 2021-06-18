@@ -9,7 +9,6 @@ import hrt.prefab.fx.Event;
 
 typedef PropTrackDef = {
 	name: String,
-	?clamp: Array<Float>,
 	?def: Float
 };
 
@@ -948,6 +947,7 @@ class FXEditor extends FileView {
 		}
 
 		var minHeight = 40;
+		var ctx = sceneEditor.getContext(data);
 		for(curve in curves) {
 			var dispKey = getPath() + "/" + curve.getAbsPath();
 			var curveContainer = new Element('<div class="curve"><label class="curve-label">${curve.name}</alpha></div>').appendTo(curvesContainer);
@@ -961,6 +961,26 @@ class FXEditor extends FileView {
 			curveEdit.lockViewX = true;
 			if(curves.length > 1)
 				curveEdit.lockKeyX = true;
+			if(["visibility", "s", "l", "a"].indexOf(curve.name.split(".").pop()) >= 0) {
+				curveEdit.minValue = 0;
+				curveEdit.maxValue = 1;
+			}
+			var shader = curve.parent.to(hrt.prefab.Shader);
+			if(shader != null) {
+				var sh = shader.getShaderDefinition(ctx);
+				if(sh != null) {
+					var v = sh.data.vars.find(v -> v.kind == Param && v.name == curve.name);
+					if(v != null && v.qualifiers != null) {
+						for( q in v.qualifiers )
+							switch( q ) {
+							case Range(rmin, rmax): 
+								curveEdit.minValue = rmin;
+								curveEdit.maxValue = rmax;
+							default:
+						}
+					}
+				}
+			}
 			curveEdit.xOffset = xOffset;
 			curveEdit.xScale = xScale;
 			curveEdit.curve = curve;
@@ -1179,13 +1199,8 @@ class FXEditor extends FileView {
 				continue;
 			var curve = new Curve(element);
 			curve.name = id;
-			if(prop.clamp != null) {
-				curve.clampMin = prop.clamp[0];
-				curve.clampMax = prop.clamp[1];
-			}
-			if(prop.def != null) {
+			if(prop.def != null)
 				curve.addKey(0, prop.def, Linear);
-			}
 			added.push(curve);
 		}
 
@@ -1245,8 +1260,8 @@ class FXEditor extends FileView {
 			return ret;
 		}
 
-		var hslTracks : Void -> Array<PropTrackDef> = () -> [{name: "h", def: 0.0}, {name: "s", clamp: [0., 1.], def: 0.0}, {name: "l", clamp: [0., 1.], def: 1.0}];
-		var alphaTrack : Void -> Array<PropTrackDef> = () -> [{name: "a", clamp: [0., 1.], def: 1.0}];
+		var hslTracks : Void -> Array<PropTrackDef> = () -> [{name: "h", def: 0.0}, {name: "s", def: 0.0}, {name: "l", def: 1.0}];
+		var alphaTrack : Void -> Array<PropTrackDef> = () -> [{name: "a", def: 1.0}];
 		var xyzwTracks : Int -> Array<PropTrackDef> = (n) -> [{name: "x"}, {name: "y"}, {name: "z"}, {name: "w"}].slice(0, n);
 
 		if (obj2dElt != null) {
@@ -1271,7 +1286,7 @@ class FXEditor extends FileView {
 					trackItem("Alpha", alphaTrack(), "color")
 				]
 			});
-			menuItems.push(trackItem("Visibility", [{name: "visibility", clamp: [0., 1.]}]));
+			menuItems.push(trackItem("Visibility", [{name: "visibility"}]));
 		}
 		if(obj3dElt != null) {
 			var scaleTracks = groupedTracks("scale", xyzwTracks(3));
@@ -1295,7 +1310,7 @@ class FXEditor extends FileView {
 					trackItem("Alpha", alphaTrack(), "color")
 				]
 			});
-			menuItems.push(trackItem("Visibility", [{name: "visibility", clamp: [0., 1.]}]));
+			menuItems.push(trackItem("Visibility", [{name: "visibility"}]));
 		}
 		if(shaderElt != null) {
 			var shader = shaderElt.makeShader();

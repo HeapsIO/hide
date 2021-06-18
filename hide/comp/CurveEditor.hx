@@ -16,6 +16,8 @@ class CurveEditor extends Component {
 	public var lockViewY = false;
 	public var lockKeyX = false;
 	public var maxLength = 0.0;
+	public var minValue : Float = 0.;
+	public var maxValue : Float = 0.;
 
 	var svg : hide.comp.SVG;
 	var width = 0;
@@ -148,8 +150,8 @@ class CurveEditor extends Component {
 
 	function addKey(time: Float, ?val: Float) {
 		beforeChange();
-		if(curve.clampMin != curve.clampMax)
-			val = hxd.Math.clamp(val, curve.clampMin, curve.clampMax);
+		if(minValue < maxValue)
+			val = hxd.Math.clamp(val, minValue, maxValue);
 		curve.addKey(time, val, curve.keyMode);
 		afterChange();
 	}
@@ -198,9 +200,8 @@ class CurveEditor extends Component {
 		if(next != null && key.time > next.time)
 			key.time = next.time - 0.01;
 
-		if(curve.clampMin != curve.clampMax) {
-			key.value = hxd.Math.clamp(key.value, curve.clampMin, curve.clampMax);
-		}
+		if(minValue < maxValue)
+			key.value = hxd.Math.clamp(key.value, minValue, maxValue);
 
 		if(false) {
 			// TODO: This sorta works but is annoying.
@@ -304,9 +305,9 @@ class CurveEditor extends Component {
 			bounds.xMax = 1.0;
 		}
 		if(bounds.height <= 0) {
-			if(curve.clampMax != curve.clampMin) {
-				bounds.yMin = curve.clampMin;
-				bounds.yMax = curve.clampMax;
+			if(minValue < maxValue) {
+				bounds.yMin = minValue;
+				bounds.yMax = maxValue;
 			}
 			else {
 				bounds.yMin = -1.0;
