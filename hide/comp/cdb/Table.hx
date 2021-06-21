@@ -143,6 +143,7 @@ class Table extends Component {
 			col.text(c.name);
 			col.addClass( "t_"+c.type.getName().substr(1).toLowerCase() );
 			col.addClass( "n_" + c.name );
+			col.attr("title", c.name);
 			col.toggleClass("hidden", !editor.isColumnVisible(c));
 			col.toggleClass("cat", editProps.categories != null);
 			if(editProps.categories != null)
