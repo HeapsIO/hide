@@ -24,12 +24,7 @@ class SplineData {
 	public function new() {}
 }
 
-class SplinePoint extends h3d.scene.Object {
-
-	public function new(x : Float, y : Float, z : Float, parent : h3d.scene.Object) {
-		super(parent);
-		setPosition(x,y,z);
-	}
+class SplinePoint extends hrt.prefab.Object3D {
 
 	inline public function getPoint() : h3d.col.Point {
 		return getAbsPos().getPosition().toPoint();
@@ -62,7 +57,24 @@ class SplinePoint extends h3d.scene.Object {
 
 class Spline extends Object3D {
 
-	public var points : Array<SplinePoint> = [];
+	public var points(get, set) : Array<SplinePoint>;
+	function get_points() {
+		var splinePoints : Array<SplinePoint> = [];
+		for (o in children) {
+			var sp : SplinePoint = cast (o, SplinePoint);
+			if (sp != null) {
+				splinePoints.push(sp);
+			}
+		}
+		return splinePoints;
+	}
+
+	function set_points(newPoints : Array<SplinePoint>) {
+		for (sp in newPoints) {
+			if (!children.contains(sp)) children.push(sp);
+		}
+		return newPoints;
+	}
 	@:c public var shape : CurveShape = Quadratic;
 
 	var data : SplineData;
@@ -88,27 +100,15 @@ class Spline extends Object3D {
 		var obj : Dynamic = super.save();
 
 		var tmp = new h3d.Matrix();
-		inline function getTransform( o : h3d.scene.Object, m : h3d.Matrix ) : h3d.Matrix {
-			m.identity();
-			@:privateAccess o.qRot.toMatrix(m);
-			m._11 *= o.scaleX;
-			m._12 *= o.scaleX;
-			m._13 *= o.scaleX;
-			m._21 *= o.scaleY;
-			m._22 *= o.scaleY;
-			m._23 *= o.scaleY;
-			m._31 *= o.scaleZ;
-			m._32 *= o.scaleZ;
-			m._33 *= o.scaleZ;
-			m._41 = o.x;
-			m._42 = o.y;
-			m._43 = o.z;
-			return m;
-		}
+		// inline function getTransform( o : hrt.prefab.Object3D, m : h3d.Matrix ) : h3d.Matrix {
+		// 	m.identity();
+		// 	m = o.getTransform(m); 
+		// 	return m;
+		// }
 
 		if( points != null && points.length > 0 && wasEdited ) {
 			obj.points = [ for(sp in points) {
-								var m = getTransform(sp, tmp);
+								var m = sp.getTransform(tmp);
 								[for(f in m.getFloats()) hxd.Math.fmt(f) ];
 							} ];
 		}
@@ -141,7 +141,7 @@ class Spline extends Object3D {
 		var tmp = new h3d.Matrix();
 		points = [];
 		for( pd in pointsData ) {
-			var sp = new SplinePoint(0, 0, 0, null);
+			var sp = new SplinePoint(this);
 			tmp.load(pd);
 			tmp.multiply(tmp, m);
 			sp.setTransform(tmp);
@@ -158,14 +158,14 @@ class Spline extends Object3D {
 
 		points = [];
 		for( pd in pointsData ) {
-			var sp = new SplinePoint(0, 0, 0, ctx.local3d);
+			var sp = new SplinePoint(this);
 			sp.setTransform(pd);
 			sp.getAbsPos();
 			points.push(sp);
 		}
 
 		if( points.length == 0 )
-			points.push(new SplinePoint(0,0,0, ctx.local3d));
+			points.push(new SplinePoint(this));
 
 		updateInstance(ctx);
 		return ctx;

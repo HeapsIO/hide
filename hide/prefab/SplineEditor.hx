@@ -22,14 +22,14 @@ class NewSplinePointViewer extends h3d.scene.Object {
 		connectionViewer = new h3d.scene.Graphics(this);
 		connectionViewer.name = "connectionViewer";
 		connectionViewer.lineStyle(3, 0xFFFF00);
-		connectionViewer.material.mainPass.setPassName("overlay");
+		connectionViewer.material.mainPass.setPassName("ui");
 		connectionViewer.material.mainPass.depthTest = Always;
 		connectionViewer.clear();
 
 		tangentViewer = new h3d.scene.Graphics(this);
 		tangentViewer.name = "tangentViewerViewer";
 		tangentViewer.lineStyle(3, 0xFFFF00);
-		tangentViewer.material.mainPass.setPassName("overlay");
+		tangentViewer.material.mainPass.setPassName("ui");
 		tangentViewer.material.mainPass.depthTest = Always;
 		tangentViewer.clear();
 	}
@@ -80,7 +80,7 @@ class SplinePointViewer extends h3d.scene.Object {
 	var spline : Spline;
 
 	public function new( sp : SplinePoint, spline : Spline, ctx : hrt.prefab.Context ) {
-		super(sp);
+		super(ctx.local3d);
 		this.spline = spline;
 		name = "SplinePointViewer";
 		pointViewer = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), null, this);
@@ -92,7 +92,7 @@ class SplinePointViewer extends h3d.scene.Object {
 		controlPointsViewer = new h3d.scene.Graphics(this);
 		controlPointsViewer.name = "controlPointsViewer";
 		controlPointsViewer.lineStyle(4, 0xffffff);
-		controlPointsViewer.material.mainPass.setPassName("overlay");
+		controlPointsViewer.material.mainPass.setPassName("ui");
 		controlPointsViewer.material.mainPass.depthTest = Always;
 		controlPointsViewer.ignoreParentTransform = false;
 		controlPointsViewer.clear();
@@ -317,15 +317,16 @@ class SplineEditor {
 			scale = (spd.prev.scaleX + spd.next.scaleX) * 0.5;
 		}
 
-		var sp = new SplinePoint(pos.x, pos.y, pos.z, ctx.local3d);
+		var sp = new SplinePoint(prefab);
 		prefab.points.insert(index, sp);
 		if( spd.tangent != null ) {
 			var dir = spd.tangent.toVector();
 			dir.transform3x3(invMatrix); // Don't take the translation
 			dir.scale3(-1);
 			var rot = h3d.Matrix.lookAtX(dir);
-			sp.setDirection(rot.front());
+			sp.setTransform(rot);
 		}
+		
 		sp.scale(scale);
 
 		prefab.updateInstance(ctx);
@@ -599,7 +600,7 @@ class SplineEditor {
 			editModeButton.val(editMode ? "Edit Mode : Enabled" : "Edit Mode : Disabled");
 			editModeButton.toggleClass("editModeEnabled", editMode);
 			setSelected(getContext(), true);
-			@:privateAccess editContext.scene.editor.showGizmo = !editMode;
+			editContext.scene.editor.setLock([this.prefab], editMode, false);
 			ctx.onChange(prefab, null);
 		});
 
