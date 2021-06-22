@@ -57,24 +57,8 @@ class SplinePoint extends hrt.prefab.Object3D {
 
 class Spline extends Object3D {
 
-	public var points(get, set) : Array<SplinePoint>;
-	function get_points() {
-		var splinePoints : Array<SplinePoint> = [];
-		for (o in children) {
-			var sp : SplinePoint = cast (o, SplinePoint);
-			if (sp != null) {
-				splinePoints.push(sp);
-			}
-		}
-		return splinePoints;
-	}
+	public var points : Array<SplinePoint> = [];
 
-	function set_points(newPoints : Array<SplinePoint>) {
-		for (sp in newPoints) {
-			if (!children.contains(sp)) children.push(sp);
-		}
-		return newPoints;
-	}
 	@:c public var shape : CurveShape = Quadratic;
 
 	var data : SplineData;
@@ -141,7 +125,7 @@ class Spline extends Object3D {
 		var tmp = new h3d.Matrix();
 		points = [];
 		for( pd in pointsData ) {
-			var sp = new SplinePoint(this);
+			var sp = new SplinePoint(null);
 			tmp.load(pd);
 			tmp.multiply(tmp, m);
 			sp.setTransform(tmp);
@@ -153,7 +137,7 @@ class Spline extends Object3D {
 
 	override function makeInstance( ctx : hrt.prefab.Context ) : hrt.prefab.Context {
 		var ctx = ctx.clone(this);
-		ctx.local3d = new h3d.scene.Object(ctx.local3d);
+		ctx.local3d = createObject(ctx);
 		ctx.local3d.name = name;
 
 		points = [];
