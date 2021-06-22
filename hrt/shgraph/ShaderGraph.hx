@@ -444,6 +444,30 @@ class ShaderGraph {
 		return shaderDef;
 	}
 
+	public function makeInstance(ctx: hrt.prefab.ContextShared) : hxsl.DynamicShader {
+		var def = compile();
+		var s = new hxsl.DynamicShader(def.shader);
+		for (init in def.inits)
+			setParamValue(ctx, s, init.variable, init.value);
+		return s;
+	}
+	
+	static function setParamValue(ctx: hrt.prefab.ContextShared, shader : hxsl.DynamicShader, variable : hxsl.Ast.TVar, value : Dynamic) {
+		try {
+			switch (variable.type) {
+				case TSampler2D:
+					shader.setParamValue(variable, ctx.loadTexture(value));
+				case TVec(size, _):
+					shader.setParamValue(variable, h3d.Vector.fromArray(value));
+				default:
+					shader.setParamValue(variable, value);
+			}
+		} catch (e : Dynamic) {
+			// The parameter is not used
+		}
+	}
+
+
 	#if editor
 	public function addNode(x : Float, y : Float, nameClass : Class<ShaderNode>) {
 		var node : Node = { x : x, y : y, id : current_node_id, type: std.Type.getClassName(nameClass) };
