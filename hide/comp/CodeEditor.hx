@@ -23,6 +23,10 @@ class CodeEditor extends Component {
 			wordWrap : true,
 			minimap : { enabled : false },
 			theme : "vs-dark",
+			lineNumbersMinChars: 3,
+			fontSize: "13px",
+			mouseWheelZoom: true,
+			scrollBeyondLastLine: false
 		});
 		root.on("mousewheel", function(e) {
 			return false;

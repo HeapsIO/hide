@@ -257,8 +257,8 @@ class Cell extends Component {
 				var id = c.scope != null ? makeId(scope,c.scope,v) : v;
 				editor.isUniqueID(sheet,obj,id) ? v : '<span class="error">#DUP($v)</span>';
 			}
-		case TString if( c.kind == Script ):
-			v == "" ? "&nbsp;" : colorizeScript(c,v, sheet.idCol == null ? null : Reflect.field(obj, sheet.idCol.name));
+		case TString if( c.kind == Script ):  // wrap content in div because td cannot have max-height
+			v == "" ? "&nbsp;" : '<div class="script">${colorizeScript(c,v, sheet.idCol == null ? null : Reflect.field(obj, sheet.idCol.name))}</div>';
 		case TString, TLayer(_):
 			v == "" ? "&nbsp;" : StringTools.htmlEscape(v).split("\n").join("<br/>");
 		case TRef(sname):
