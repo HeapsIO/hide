@@ -308,7 +308,8 @@ class NodeVar {
 		node.outputCompiled.set(keyOutput, true);
 		var res = [];
 		var nodeBuild = node.build(keyOutput);
-		if (getTVar() != null && getTVar().kind == Local)
+		var tvar = getTVar();
+		if (tvar != null && tvar.kind == Local && ShaderInput.availableInputs.indexOf(tvar) < 0)
 			res.push({ e : TVarDecl(getTVar()), t : getType(), p : null });
 		if (nodeBuild != null)
 			res.push(nodeBuild);
