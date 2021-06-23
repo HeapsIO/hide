@@ -24,6 +24,9 @@ class CodeEditor extends Component {
 			minimap : { enabled : false },
 			theme : "vs-dark",
 		});
+		root.on("mousewheel", function(e) {
+			return false;
+		});
 		var model = editor.getModel();
 		(model : Dynamic).__comp__ = this;
 		model.updateOptions({ insertSpaces:false, trimAutoWhitespace:true });
