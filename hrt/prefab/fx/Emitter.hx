@@ -154,6 +154,7 @@ private class ParticleInstance  {
 	public var childMat = new h3d.Matrix();
 	public var baseMat : h3d.Matrix;
 
+	public var startTime = 0.0;
 	public var life = 0.0;
 	public var lifeTime = 0.0;
 	public var color = new h3d.Vector();
@@ -406,6 +407,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var enable : Bool;
 	public var particleVisibility(default, null) : Bool;
 
+	public var startTime = 0.0;
 	public var catchupSpeed = 4; // Use larger ticks when catching-up to save calculations
 	public var maxCatchupWindow = 0.5; // How many seconds max to simulate when catching up
 	public var totalBurstCount : Int = 0; // Keep track of burst count
@@ -438,6 +440,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var emitRad2 : Float = 1.0;
 	public var emitSurface : Bool = false;
 	// ANIMATION
+	public var spriteSheet : String;
 	public var frameCount : Int = 0;
 	public var frameDivisionX : Int = 1;
 	public var frameDivisionY : Int = 1;
@@ -576,6 +579,7 @@ class EmitterObject extends h3d.scene.Object {
 			else
 				part.baseMat = emitterBaseMat.clone();
 
+			part.startTime = startTime + curTime;
 			part.lifeTime = hxd.Math.max(0.01, lifeTime + hxd.Math.srand(lifeTimeRand));
 			tmpQuat.identity();
 
@@ -668,7 +672,8 @@ class EmitterObject extends h3d.scene.Object {
 			}
 
 			var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
-			part.startFrame = random.random(frameCount);
+			if(animationLoop)
+				part.startFrame = random.random(frameCount);
 
 			if( trailTemplate != null ) {
 				if( tmpCtx == null ) {
@@ -686,7 +691,7 @@ class EmitterObject extends h3d.scene.Object {
 		emitCount += count;
 	}
 
-	function createMeshBatch( startTime : Float ) {
+	function createMeshBatch() {
 
 		if( batch != null )
 			batch.remove();
@@ -729,13 +734,12 @@ class EmitterObject extends h3d.scene.Object {
 
 			// Animated textures animations
 			var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
-			if( frameCount > 1 ) {
-				if( mesh != null && mesh.material != null && mesh.material.texture != null ) {
-					var pshader = new h3d.shader.AnimatedTexture(mesh.material.texture, frameDivisionX, frameDivisionY, frameCount, frameCount * animationRepeat / lifeTime);
-					pshader.startTime = startTime;
-					pshader.loop = animationLoop;
-					mesh.material.mainPass.addShader(pshader);
-				}
+			if( frameCount > 1 && spriteSheet != null ) {
+				var tex = hxd.res.Loader.currentInstance.load(spriteSheet).toTexture();
+				var pshader = new h3d.shader.AnimatedTexture(tex, frameDivisionX, frameDivisionY, frameCount, frameCount * animationRepeat / lifeTime);
+				pshader.startTime = startTime;
+				pshader.loop = animationLoop;
+				mesh.material.mainPass.addShader(pshader);
 			}
 
 			if( meshPrim != null ) {
@@ -844,6 +848,7 @@ class EmitterObject extends h3d.scene.Object {
 
 		if( full && batch != null ) {
 			batch.begin(hxd.Math.nextPOT(maxCount));
+			var animTex = batch.material.mainPass.getShader(h3d.shader.AnimatedTexture);
 			if( particleVisibility ) {
 				camPosTmp = getScene().camera.pos;
 				particles = haxe.ds.ListSort.sortSingleLinked(particles, sortZ);
@@ -862,13 +867,9 @@ class EmitterObject extends h3d.scene.Object {
 						var t = hxd.Math.clamp(p.life / p.lifeTime, 0.0, 1.0);
 						anim.setTime(t);
 					}
-					// Init the start frame for each particle
-					var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
-					if( frameCount > 0 && animationRepeat == 0 ) {
-						var s = batch.material.mainPass.getShader(h3d.shader.AnimatedTexture);
-						if( s != null){
-							s.startFrame = p.startFrame;
-						}
+					if( animTex != null ){
+						animTex.startTime = p.startTime;
+						animTex.startFrame = p.startFrame;
 					}
 					batch.emitInstance();
 					p = p.next;
@@ -1005,6 +1006,7 @@ class Emitter extends Object3D {
 		{ name: "alignAxis", t: PVec(3, -1.0, 1.0), def: [0.,0.,0.], disp: "Axis", groupName : "Alignment" },
 		{ name: "alignLockAxis", t: PVec(3, -1.0, 1.0), def: [0.,0.,0.], disp: "Lock Axis", groupName : "Alignment" },
 		// ANIMATION
+		{ name: "spriteSheet", t: PFile(["jpg","png"]), def: null, groupName : "Animation" },
 		{ name: "frameCount", t: PInt(0), def: 0, groupName : "Animation" },
 		{ name: "frameDivisionX", t: PInt(1), def: 1, groupName : "Animation" },
 		{ name: "frameDivisionY", t: PInt(1), def: 1, groupName : "Animation" },
@@ -1240,6 +1242,7 @@ class Emitter extends Object3D {
 		emitterObj.alignAxis 			= 	getParamVal("alignAxis");
 		emitterObj.alignLockAxis 		= 	getParamVal("alignLockAxis");
 		// ANIMATION
+		emitterObj.spriteSheet 			= 	getParamVal("spriteSheet");
 		emitterObj.frameCount 			= 	getParamVal("frameCount");
 		emitterObj.frameDivisionX 		= 	getParamVal("frameDivisionX");
 		emitterObj.frameDivisionY 		= 	getParamVal("frameDivisionY");
@@ -1250,12 +1253,11 @@ class Emitter extends Object3D {
 		emitterObj.killOnCollision 		= 	getParamVal("killOnCollision");
 		emitterObj.elasticity 			= 	getParamVal("elasticity");
 
-		var startTime = 0.0;
 		var scene = ctx.local3d.getScene();
 		if(scene != null)
-			startTime = @:privateAccess scene.renderer.ctx.time;
+			emitterObj.startTime = @:privateAccess scene.renderer.ctx.time;
 
-		emitterObj.createMeshBatch(startTime);
+		emitterObj.createMeshBatch();
 		refreshChildren(ctx);
 
 		#if editor
