@@ -235,6 +235,7 @@ class Level3D extends FileView {
 	var currentVersion : Int = 0;
 	var lastSyncChange : Float = 0.;
 	var sceneFilters : Map<String, Bool>;
+	var graphicsFilters : Map<String, Bool>;
 	var statusText : h2d.Text;
 	var posToolTip : h2d.Text;
 
@@ -313,6 +314,7 @@ class Level3D extends FileView {
 		}
 
 		refreshSceneFilters();
+		refreshGraphicsFilters();
 	}
 
 	public function onSceneReady() {
@@ -373,6 +375,7 @@ class Level3D extends FileView {
 
 		updateStats();
 		updateGrid();
+		initGraphicsFilters();
 	}
 
 	function updateStats() {
@@ -542,6 +545,20 @@ class Level3D extends FileView {
 		return sceneEditor.onDragDrop(items, isDrop);
 	}
 
+	function applyGraphicsFilters(typeid: String, enable: Bool)
+	{
+		saveDisplayState("graphicsFilters/" + typeid, enable);
+
+		var r : h3d.scene.Renderer = scene.s3d.renderer;
+
+		switch (typeid)
+		{
+		case "shadows":
+			r.shadows = enable;
+		default:
+		}
+	}
+
 	function applySceneFilter(typeid: String, visible: Bool) {
 		saveDisplayState("sceneFilters/" + typeid, visible);
 		var all = data.flatten(hrt.prefab.Prefab);
@@ -576,6 +593,38 @@ class Level3D extends FileView {
 					applySceneFilter(typeid, on);
 			});
 			if(sceneFilters.get(typeid) != false)
+				btn.toggle(true);
+		}
+		initDone = true;
+	}
+
+	function initGraphicsFilters() {
+		for (typeid in graphicsFilters.keys())
+		{
+			applyGraphicsFilters(typeid, graphicsFilters.get(typeid));
+		}
+	}
+
+	function refreshGraphicsFilters() {
+		var filters : Array<String> = ["shadows"];
+		filters = filters.copy();
+		graphicsFilters = new Map();
+		for(f in filters) {
+			graphicsFilters.set(f, getDisplayState("graphicsFilters/" + f) != false);
+		}
+		if(layerButtons != null) {
+			for(b in layerButtons)
+				b.element.remove();
+		}
+		layerButtons = new Map<PrefabElement, hide.comp.Toolbar.ToolToggle>();
+		var initDone = false;
+		for(typeid in graphicsFilters.keys()) {
+			var btn = layerToolbar.addToggle("", typeid, typeid.charAt(0).toLowerCase() + typeid.substr(1), function(on) {
+				graphicsFilters.set(typeid, on);
+				if (initDone)
+					applyGraphicsFilters(typeid, on);
+			});
+			if(graphicsFilters.get(typeid) != false)
 				btn.toggle(true);
 		}
 		initDone = true;
