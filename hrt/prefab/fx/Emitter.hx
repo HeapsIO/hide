@@ -444,7 +444,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var frameCount : Int = 0;
 	public var frameDivisionX : Int = 1;
 	public var frameDivisionY : Int = 1;
-	public var animationRepeat : Float = 1;
+	public var animationSpeed : Float = 1;
 	public var animationLoop : Bool = true;
 	// ALIGNMENT
 	public var alignMode : AlignMode;
@@ -736,7 +736,7 @@ class EmitterObject extends h3d.scene.Object {
 			var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
 			if( frameCount > 1 && spriteSheet != null ) {
 				var tex = hxd.res.Loader.currentInstance.load(spriteSheet).toTexture();
-				var pshader = new h3d.shader.AnimatedTexture(tex, frameDivisionX, frameDivisionY, frameCount, frameCount * animationRepeat / lifeTime);
+				var pshader = new h3d.shader.AnimatedTexture(tex, frameDivisionX, frameDivisionY, frameCount, frameCount * animationSpeed / lifeTime);
 				pshader.startTime = startTime;
 				pshader.loop = animationLoop;
 				mesh.material.mainPass.addShader(pshader);
@@ -981,7 +981,7 @@ class Emitter extends Object3D {
 
 	public static var emitterParams : Array<ParamDef> = [
 		// RANDOM
-		{ name: "seedGroup", t: PInt(0, 100), def: 0, groupName : "Random"},
+		{ name: "seedGroup", t: PInt(0, 100), def: 0, groupName : "Random", disp: "Seed"},
 		// LIFE
 		{ name: "lifeTime", t: PFloat(0, 10), def: 1.0, groupName : "Life" },
 		{ name: "lifeTimeRand", t: PFloat(0, 1), def: 0.0, groupName : "Life" },
@@ -1006,12 +1006,12 @@ class Emitter extends Object3D {
 		{ name: "alignAxis", t: PVec(3, -1.0, 1.0), def: [0.,0.,0.], disp: "Axis", groupName : "Alignment" },
 		{ name: "alignLockAxis", t: PVec(3, -1.0, 1.0), def: [0.,0.,0.], disp: "Lock Axis", groupName : "Alignment" },
 		// ANIMATION
-		{ name: "spriteSheet", t: PFile(["jpg","png"]), def: null, groupName : "Animation" },
-		{ name: "frameCount", t: PInt(0), def: 0, groupName : "Animation" },
-		{ name: "frameDivisionX", t: PInt(1), def: 1, groupName : "Animation" },
-		{ name: "frameDivisionY", t: PInt(1), def: 1, groupName : "Animation" },
-		{ name: "animationRepeat", t: PFloat(0, 2.0), def: 1.0, groupName : "Animation" },
-		{ name: "animationLoop", t: PBool, def: true, groupName : "Animation" },
+		{ name: "spriteSheet", t: PFile(["jpg","png"]), def: null, groupName : "Animation", disp: "Sheet" },
+		{ name: "frameCount", t: PInt(0), def: 0, groupName : "Animation", disp: "Frames" },
+		{ name: "frameDivisionX", t: PInt(1), def: 1, groupName : "Animation", disp: "Divisions X" },
+		{ name: "frameDivisionY", t: PInt(1), def: 1, groupName : "Animation", disp: "Divisions Y" },
+		{ name: "animationSpeed", t: PFloat(0, 2.0), def: 1.0, groupName : "Animation", disp: "Speed" },
+		{ name: "animationLoop", t: PBool, def: true, groupName : "Animation", disp: "Loop" },
 		// COLLISION
 		{ name: "useCollision", t: PBool, def: false, groupName : "Ground Collision" },
 		{ name: "elasticity", t: PFloat(0, 1.0), disp: "Elasticity", def : 1.0, groupName : "Ground Collision" },
@@ -1246,7 +1246,7 @@ class Emitter extends Object3D {
 		emitterObj.frameCount 			= 	getParamVal("frameCount");
 		emitterObj.frameDivisionX 		= 	getParamVal("frameDivisionX");
 		emitterObj.frameDivisionY 		= 	getParamVal("frameDivisionY");
-		emitterObj.animationRepeat 		= 	getParamVal("animationRepeat");
+		emitterObj.animationSpeed 		= 	getParamVal("animationSpeed");
 		emitterObj.animationLoop 		= 	getParamVal("animationLoop");
 		// COLLISION
 		emitterObj.useCollision 		= 	getParamVal("useCollision");
