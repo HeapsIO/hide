@@ -95,10 +95,12 @@ class Editor extends Component {
 		});
 		element.contextmenu(function(e) e.preventDefault());
 
-		if( cdbTable != null )
-			cdbTable.element.mousedown(onMouseDown);
-		else
+		if( cdbTable == null )
 			element.mousedown(onMouseDown);
+		else {
+			cdbTable.element.off("mousedown", onMouseDown);
+			cdbTable.element.mousedown(onMouseDown);
+		}
 
 		keys = new hide.ui.Keys(element);
 		keys.addListener(onKey);
@@ -592,12 +594,10 @@ class Editor extends Component {
 		}
 
 		if( cursorIndex < cursorStates.length - 1 && cursorIndex >= 0 ) {
-			if( stateBehind != null && !undoStatesEqual(state, stateBehind, false) ) {
-				cursorStates.splice(cursorIndex + 1, cursorStates.length);
-			}
+			cursorStates.splice(cursorIndex + 1, cursorStates.length);
 		}
 
-		cursorStates.insert(cursorIndex + 1, state);
+		cursorStates.push(state);
 		if( cursorIndex < cursorStates.length - 1 )
 			cursorIndex++;
 	}
@@ -607,7 +607,9 @@ class Editor extends Component {
 
 		if( (back && cursorIndex <= 0) || (!back && cursorIndex >= cursorStates.length - 1) )
 			return;
-		pushCursorState();
+		if( back && cursorIndex == cursorStates.length - 1)
+			pushCursorState();
+
 		if(back)
 			cursorIndex--;
 		else
