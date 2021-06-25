@@ -1469,6 +1469,8 @@ class FXEditor extends FileView {
 			onUpdate2D(dt);
 		else
 			onUpdate3D(dt);
+
+		@:privateAccess scene.s3d.renderer.ctx.time = currentTime - scene.s3d.renderer.ctx.elapsedTime;
 	}
 
 	function onUpdate2D(dt:Float) {
