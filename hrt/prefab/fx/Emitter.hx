@@ -1253,9 +1253,11 @@ class Emitter extends Object3D {
 		emitterObj.killOnCollision 		= 	getParamVal("killOnCollision");
 		emitterObj.elasticity 			= 	getParamVal("elasticity");
 
+		#if !editor  // Keep startTime at 0 in Editor, since global.time is synchronized to timeline
 		var scene = ctx.local3d.getScene();
 		if(scene != null)
 			emitterObj.startTime = @:privateAccess scene.renderer.ctx.time;
+		#end
 
 		emitterObj.createMeshBatch();
 		refreshChildren(ctx);
