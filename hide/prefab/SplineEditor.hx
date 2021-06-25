@@ -80,14 +80,12 @@ class SplinePointViewer extends h3d.scene.Object {
 	var spline : Spline;
 	var splinePoint : SplinePoint;
 
-	public function new( sp : SplinePoint, spline : Spline, ctx : hrt.prefab.Context, ?spctx : hrt.prefab.Context ) {
-		if (spctx != null) super(spctx.local3d);
-		else super(ctx.local3d);
+	public function new( sp : SplinePoint, spline : Spline, ctx : hrt.prefab.Context) {
+		super(sp.obj);
 		this.spline = spline;
 		this.splinePoint = sp;
 		name = "SplinePointViewer";
 		pointViewer = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), null, this);
-		//pointViewer.setPosition(splinePoint.x, splinePoint.y, splinePoint.z);
 		pointViewer.name = "pointViewer";
 		pointViewer.material.setDefaultProps("ui");
 		pointViewer.material.color.set(1,1,1,1);
@@ -320,7 +318,7 @@ class SplineEditor {
 			scale = (spd.prev.scaleX + spd.next.scaleX) * 0.5;
 		}
 
-		var sp = new SplinePoint(prefab);
+		var sp = new SplinePoint(prefab, ctx);
 		sp.x = pos.x;
 		sp.y = pos.y;
 		sp.z = pos.z;
@@ -337,10 +335,10 @@ class SplineEditor {
 		sp.scaleX = scale;
 		sp.scaleY = scale;
 		sp.scaleZ = scale;
-		var spctx = sp.makeInstance(ctx);
+		sp.applyTransform(sp.obj);
 
 		prefab.updateInstance(ctx);
-		showViewers(ctx, spctx);
+		showViewers(ctx);
 		return sp;
 	}
 
@@ -350,10 +348,10 @@ class SplineEditor {
 		splinePointViewers = [];
 	}
 
-	function showViewers( ctx : hrt.prefab.Context, ?spctx : hrt.prefab.Context ) {
-		if (spctx == null) removeViewers(); // Security, avoid duplication
+	function showViewers( ctx : hrt.prefab.Context) {
+		removeViewers(); // Security, avoid duplication
 		for( sp in prefab.points ) {
-			var spv = new SplinePointViewer(sp, prefab, ctx, spctx);
+			var spv = new SplinePointViewer(sp, prefab, ctx);
 			splinePointViewers.insert(splinePointViewers.length, spv);
 		}
 	}
@@ -436,7 +434,7 @@ class SplineEditor {
 						sceneObj.scaleY = quantize(scaleSnap(s.y), scaleQuant);
 						sceneObj.scaleZ = quantize(scaleSnap(s.z), scaleQuant);
 					}
-
+					sceneObj.applyTransform(sp.obj);
 					prefab.updateInstance(ctx);
 				}
 

@@ -26,6 +26,40 @@ class SplineData {
 
 class SplinePoint extends hrt.prefab.Object3D {
 
+	public var obj : h3d.scene.Object;
+	var spline : Spline;
+
+	public function new(?parent : Prefab, ?ctx : hrt.prefab.Context) {
+		super(parent);
+		if (ctx != null) obj = new h3d.scene.Object(ctx.local3d);
+		spline = parent.to(Spline);
+	}
+
+	override function applyTransform(o : h3d.scene.Object) {
+		super.applyTransform(o);
+		#if editor 
+			if (spline != null && spline.editor != null)
+				spline.updateInstance(@:privateAccess spline.editor.getContext());
+		#end
+	}
+
+	override public function setTransform(mat : h3d.Matrix) {
+		super.setTransform(mat);
+		applyTransform(obj);
+	}
+
+	override function updateInstance( ctx: Context, ?propName : String ) {
+		super.updateInstance(ctx, propName);
+		applyTransform(obj);
+	}
+	override function edit(ctx : EditContext) {
+		super.edit(ctx);
+		if( spline.editor == null ) {
+			spline.editor = new hide.prefab.SplineEditor(spline, ctx.properties.undo);
+		}
+		spline.editor.editContext = ctx;
+	}
+
 	inline public function getPoint() : h3d.col.Point {
 		return getAbsPos().getPosition().toPoint();
 	}
@@ -81,6 +115,7 @@ class Spline extends Object3D {
 	public var wasEdited = false;
 
 	override function save() {
+		for (p in points) children.remove(p);
 		var obj : Dynamic = super.save();
 
 		var tmp = new h3d.Matrix();
@@ -142,14 +177,14 @@ class Spline extends Object3D {
 
 		points = [];
 		for( pd in pointsData ) {
-			var sp = new SplinePoint(this);
+			var sp = new SplinePoint(this, ctx);
 			sp.setTransform(pd);
 			sp.getAbsPos();
 			points.push(sp);
 		}
 
 		if( points.length == 0 )
-			points.push(new SplinePoint(this));
+			points.push(new SplinePoint(this, ctx));
 
 		updateInstance(ctx);
 		return ctx;
