@@ -411,6 +411,7 @@
   background: #292929;
   border: 2px solid #555;
   color: #dadada;
+  text-align: left;
 }
 .cdb .content-modal form {
   font-size: 14px;
