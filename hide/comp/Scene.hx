@@ -128,6 +128,7 @@ class Scene extends Component implements h3d.IDrawable {
 			new Element(canvas).on("resize", function() {
 				@:privateAccess window.checkResize();
 			});
+			@:privateAccess window.checkResize();
 			hxd.Key.initialize();
 			engine.setCurrent();
 			window.setCurrent();
