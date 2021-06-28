@@ -270,50 +270,20 @@ class Spline extends Object3D {
 
 		// Sample the spline
 		var samples : Array<SplinePointData> = [{ pos : points[0].getPoint(), tangent : points[0].getTangent(), prev : points[0], next : points[1] }];
-		var i = 0;
-		var sumT = 0.0;
-		var maxT = 1.0;
-		var minT = 0.0;
 		var maxI = loop ? points.length : points.length - 1;
 		var curP = points[0];
 		var nextP = points[1];
-		while( i < maxI ) {
-			var t = (maxT + minT) * 0.5;
-
-			var p = getPointBetween(t, curP, nextP);
-			var curSegmentLength = p.distance(samples[samples.length - 1].pos);
-
-			// Point found
-			if( hxd.Math.abs(curSegmentLength - step) <= threshold ) {
+		for (i in 1...maxI) {
+			var t = 0.;
+			while (t <= 1.) {
+				var p = getPointBetween(t, curP, nextP);
 				samples.insert(samples.length, { pos : p, tangent : getTangentBetween(t, curP, nextP), prev : curP, next : nextP });
-				sumT = t;
-				maxT = 1.0;
-				minT = sumT;
-				// Last point of the curve too close from the last sample
-				if( nextP.getPoint().distance(samples[samples.length - 1].pos) < step ) {
-					// End of the spline
-					if( i == maxI - 1 ) {
-						samples.insert(samples.length, { pos : nextP.getPoint(), tangent : nextP.getTangent(), prev : curP, next : nextP, t : 1.0 });
-						break;
-					}
-					// End of the current curve
-					else {
-						i++;
-						curP = points[i];
-						nextP = points[(i+1) % points.length];
-						sumT = 0.0;
-						minT = 0.0;
-						maxT = 1.0;
-					}
-				}
+				t += step;
 			}
-			// Point not found
-			else if( curSegmentLength > step ) {
-				maxT = maxT - (maxT - minT) * 0.5;
-			}
-			else if( curSegmentLength < step ) {
-				minT = minT + (maxT - minT) * 0.5;
-			}
+			samples.insert(samples.length, { pos : nextP.getPoint(), tangent : nextP.getTangent(), prev : curP, next : nextP, t : 1.0 });
+			curP = points[i];
+			nextP = points[(i + 1) % points.length];
+
 		}
 		sd.samples = samples;
 
