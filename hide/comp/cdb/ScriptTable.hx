@@ -59,7 +59,11 @@ class ScriptTable extends SubTable {
 		]);
 		script = new ScriptEditor(cell.value, checker, div);
 		script.onSave = saveValue;
-		script.onChanged = saveValue;
+		var onChanged = script.onChanged;
+		script.onChanged = function() {
+			if( onChanged != null ) onChanged();
+			saveValue();
+		}
 		script.propagateKeys = true;
 		script.onClose = function() { close(); cell.focus(); }
 		lines = [new Line(this,[],0,script.element)];
