@@ -183,6 +183,7 @@ input[type=checkbox]:checked:after {
 .hide-modal > .content {
   display: table-cell;
   vertical-align: middle;
+  text-align: center;
 }
 ::-webkit-scrollbar {
   width: 5px;
@@ -1797,4 +1798,3 @@ div.sp-container input:hover {
   max-height: 800px;
   min-width: 600px;
 }
-/* Monaco */
