@@ -19,7 +19,7 @@ typedef SplinePointData = {
 class SplineData {
 	public var length : Float;
 	public var step : Float;
-	public var threshold : Float;
+	//public var threshold : Float;
 	public var samples : Array<SplinePointData> = [];
 	public function new() {}
 }
@@ -93,11 +93,11 @@ class Spline extends Object3D {
 
 	public var points : Array<SplinePoint> = [];
 
-	@:c public var shape : CurveShape = Quadratic;
+	@:c public var shape : CurveShape = Linear;
 
 	var data : SplineData;
 	@:s var step : Float = 1.0;
-	@:s var threshold : Float = 0.01;
+	//@:s var threshold : Float = 0.01;
 
 	// Save/Load the curve as an array of local transform
 	@:c public var pointsData : Array<h3d.Matrix> = [];
@@ -262,7 +262,7 @@ class Spline extends Object3D {
 		var sd = new SplineData();
 		data = sd;
 
-		if( step <= 0 || threshold <= 0 )
+		if( step <= 0 )
 			return;
 
 		if( points == null || points.length <= 1 )
@@ -273,7 +273,7 @@ class Spline extends Object3D {
 		var maxI = loop ? points.length : points.length - 1;
 		var curP = points[0];
 		var nextP = points[1];
-		for (i in 1...maxI) {
+		for (i in 1...maxI + 1) {
 			var t = 0.;
 			while (t <= 1.) {
 				var p = getPointBetween(t, curP, nextP);
@@ -431,16 +431,14 @@ class Spline extends Object3D {
 				<dl>
 					<dt>Color</dt><dd><input type="color" alpha="true" field="color"/></dd>
 					<dt>Thickness</dt><dd><input type="range" min="1" max="10" field="lineThickness"/></dd>
-					<dt>Step</dt><dd><input type="range" min="0.1" max="1" field="step"/></dd>
-					<dt>Threshold</dt><dd><input type="range" min="0.001" max="1" field="threshold"/></dd>
+					<dt>Step</dt><dd><input type="range" min="0.01" max="1" field="step"/></dd>
 					<dt>Loop</dt><dd><input type="checkbox" field="loop"/></dd>
 					<dt>Show Spline</dt><dd><input type="checkbox" field="showSpline"/></dd>
 					<dt>Type</dt>
 						<dd>
 							<select field="shape" >
 								<option value="Linear">Linear</option>
-								<option value="Quadratic">Quadratic</option>
-								<option value="Cubic">Cubic</option>
+								<option value="Cubic">Curve</option>
 							</select>
 						</dd>
 				</dl>
