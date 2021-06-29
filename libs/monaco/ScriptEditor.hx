@@ -7,6 +7,8 @@ extern class ScriptEditor {
 	function addCommand( command : Int, callback : Void -> Void ) : Void;
 	function getValue( ?options : { ?lineEnding : String, ?preserveBOM : Bool } ) : String;
 	function onDidChangeModelContent( listener : Void -> Void ) : Void;
+	function onDidBlurEditorText( listener : Void -> Void ) : Void;
+	function onDidFocusEditorText( listener : Void -> Void ) : Void;
 	function focus() : Void;
 	function dispose() : Void;
 	function getModel() : Model;

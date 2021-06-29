@@ -28,13 +28,11 @@ class CodeEditor extends Component {
 			mouseWheelZoom: true,
 			scrollBeyondLastLine: false
 		});
-		root.on("mousewheel", function(e) {
-			return false;
-		});
 		var model = editor.getModel();
 		(model : Dynamic).__comp__ = this;
 		model.updateOptions({ insertSpaces:false, trimAutoWhitespace:true });
 		editor.onDidChangeModelContent(function() onChanged());
+		editor.onDidBlurEditorText(function() onSave());
 		editor.addCommand(monaco.KeyCode.KEY_S | monaco.KeyMod.CtrlCmd, function() { clearSpaces(); onSave(); });
 		errorMessage = new Element('<div class="codeErrorMessage"></div>').appendTo(root).hide();
 	}
