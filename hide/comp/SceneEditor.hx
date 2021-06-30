@@ -149,6 +149,12 @@ class SceneEditor {
 	public var editorDisplay(default,set) : Bool;
 	public var camera2D(default,set) : Bool = false;
 
+	// TODO: Get this from the system settings. 500ms is the default on Windows
+	public var dblClickDuration = 0.5;
+	var prevClickObj : Any;
+	var prevClickTime : Float = -1e20;
+
+
 	var updates : Array<Float -> Void> = [];
 
 	var showGizmo = true;
@@ -796,6 +802,15 @@ class SceneEditor {
 				}
 				else
 					selectElements(elts);
+
+				var curTime = haxe.Timer.stamp();
+				if( curTime - prevClickTime < dblClickDuration && prevClickObj == elt) {
+					focusSelection();
+					prevClickTime = -1e20;
+				}
+				else
+					prevClickTime = curTime;
+				prevClickObj = elt;
 			}
 			// ensure we get onMove even if outside our interactive, allow fast click'n'drag
 			if( e.button == K.MOUSE_LEFT ) {
@@ -2369,24 +2384,6 @@ class SceneEditor {
 		return 0.;
 	}
 
-	/*
-
-		function getGroundPrefabs() {
-		var groundGroups = data.findAll(p -> if(p.name == "ground") p else null);
-		if( groundGroups.length == 0 )
-			return null;
-		var ret : Array<hrt.prefab.Prefab> = [];
-		for(group in groundGroups)
-			group.findAll(function(p) : hrt.prefab.Prefab {
-				if(p.name == "nocollide")
-					return null;
-				return p;
-			},ret);
-		return ret;
-	}
-
-	*/
-
 	function getGroundPrefabs() : Array<PrefabElement> {
 		function getAll(data:PrefabElement) {
 			var all = data.findAll((p) -> p);
@@ -2400,7 +2397,7 @@ class SceneEditor {
 			return all;
 		}
 		var all = getAll(sceneData);
-		var grounds = [for( p in all ) if( p.getHideProps().isGround || p.name == "terrain" || p.name == "ground" ) p];
+		var grounds = [for( p in all ) if( p.getHideProps().isGround ) p];
 		var results = [];
 		for( g in grounds )
 			results = results.concat(getAll(g));
