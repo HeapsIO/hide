@@ -92,7 +92,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 	var parent : Level3D;
 
 	public function new(view, data) {
-		super(view, data, true);
+		super(view, data);
 		parent = cast view;
 		this.localTransform = false; // TODO: Expose option
 	}
