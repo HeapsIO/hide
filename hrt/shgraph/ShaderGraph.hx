@@ -91,7 +91,9 @@ class ShaderGraph {
 
 		for (n in nodes) {
 			n.outputs = [];
-			n.instance = std.Type.createInstance(std.Type.resolveClass(n.type), []);
+			var cl = std.Type.resolveClass(n.type);
+			if( cl == null ) throw "Missing shader node "+n.type;
+			n.instance = std.Type.createInstance(cl, []);
 			n.instance.setId(n.id);
 			n.instance.loadProperties(n.properties);
 			this.nodes.set(n.id, n);
@@ -204,7 +206,7 @@ class ShaderGraph {
 		var shaderInput = Std.downcast(node, ShaderInput);
 		if (shaderInput != null) {
 			var variable = shaderInput.variable;
-			if ((variable.kind == Param || variable.kind == Global || variable.kind == Input) && !alreadyAddVariable(variable)) {
+			if ((variable.kind == Param || variable.kind == Global || variable.kind == Input || variable.kind == Local) && !alreadyAddVariable(variable)) {
 				allVariables.push(variable);
 			}
 		}
@@ -305,32 +307,32 @@ class ShaderGraph {
 		}
 
 		for (n in nodes) {
-			var shaderNode;
-			var variable;
+			var outNode;
+			var outVar;
 			if (specificOutput != null) {
 				if (n.instance != specificOutput) continue;
-				shaderNode = specificOutput;
-				variable = Std.downcast(specificOutput, hrt.shgraph.nodes.Preview).variable;
+				outNode = specificOutput;
+				outVar = Std.downcast(specificOutput, hrt.shgraph.nodes.Preview).variable;
 			} else {
 				var shaderOutput = Std.downcast(n.instance, ShaderOutput);
 
 				if (shaderOutput != null) {
-					variable = shaderOutput.variable;
-					shaderNode = n.instance;
+					outVar = shaderOutput.variable;
+					outNode = n.instance;
 				} else {
 					continue;
 				}
 			}
-			if (shaderNode != null) {
-				if (outputs.indexOf(variable.name) != -1) {
+			if (outNode != null) {
+				if (outputs.indexOf(outVar.name) != -1) {
 					throw ShaderException.t("This output already exists", n.id);
 				}
-				outputs.push(variable.name);
-				if ( !alreadyAddVariable(variable) ) {
-					allVariables.push(variable);
+				outputs.push(outVar.name);
+				if ( !alreadyAddVariable(outVar) ) {
+					allVariables.push(outVar);
 				}
-				var nodeVar = new NodeVar(shaderNode, "input");
-				var isVertex = (variableNameAvailableOnlyInVertex.indexOf(variable.name) != -1);
+				var nodeVar = new NodeVar(outNode, "input");
+				var isVertex = (variableNameAvailableOnlyInVertex.indexOf(outVar.name) != -1);
 				if (isVertex) {
 					contentVertex = contentVertex.concat(buildNodeVar(nodeVar));
 				} else {
@@ -442,6 +444,32 @@ class ShaderGraph {
 		return shaderDef;
 	}
 
+	public function makeInstance(ctx: hrt.prefab.ContextShared) : hxsl.DynamicShader {
+		var def = compile();
+		var s = new hxsl.DynamicShader(def.shader);
+		for (init in def.inits)
+			setParamValue(ctx, s, init.variable, init.value);
+		return s;
+	}
+
+	static function setParamValue(ctx: hrt.prefab.ContextShared, shader : hxsl.DynamicShader, variable : hxsl.Ast.TVar, value : Dynamic) {
+		try {
+			switch (variable.type) {
+				case TSampler2D:
+					var t = ctx.loadTexture(value);
+					t.wrap = Repeat;
+					shader.setParamValue(variable, t);
+				case TVec(size, _):
+					shader.setParamValue(variable, h3d.Vector.fromArray(value));
+				default:
+					shader.setParamValue(variable, value);
+			}
+		} catch (e : Dynamic) {
+			// The parameter is not used
+		}
+	}
+
+
 	#if editor
 	public function addNode(x : Float, y : Float, nameClass : Class<ShaderNode>) {
 		var node : Node = { x : x, y : y, id : current_node_id, type: std.Type.getClassName(nameClass) };
@@ -547,7 +575,7 @@ class ShaderGraph {
 			parameters: [
 				for (p in parametersAvailable) { id : p.id, name : p.name, type : [p.type.getName(), p.type.getParameters().toString()], defaultValue : p.defaultValue }
 			]
-		});
+		}, "\t");
 
 		return json;
 	}

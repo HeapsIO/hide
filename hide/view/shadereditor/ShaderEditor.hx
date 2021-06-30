@@ -133,11 +133,12 @@ class ShaderEditor extends hide.view.Graph {
 			if (e.ctrlKey && e.keyCode == 83) {
 				save();
 				return;
-			} else if (e.shiftKey) {
+			}
+		});
+		element.on("keyup", function(e) {
+			if (e.keyCode == 32) {
 				if (addMenu == null || !addMenu.is(":visible"))
 					openAddMenu(-40, -70);
-
-				return;
 			}
 		});
 
@@ -770,18 +771,7 @@ class ShaderEditor extends hide.view.Graph {
 	}
 
 	function setParamValue(shader : DynamicShader, variable : hxsl.Ast.TVar, value : Dynamic) {
-		try {
-			switch (variable.type) {
-				case TSampler2D:
-					shader.setParamValue(variable, sceneEditor.scene.loadTexture("", value));
-				case TVec(size, _):
-					shader.setParamValue(variable, Vector.fromArray(value));
-				default:
-					shader.setParamValue(variable, value);
-			}
-		} catch (e : Dynamic) {
-			// The parameter is not used
-		}
+		@:privateAccess ShaderGraph.setParamValue(sceneEditor.context.shared, shader, variable, value);
 	}
 
 	function addNode(p : Point, nodeClass : Class<ShaderNode>) {
@@ -972,7 +962,7 @@ class ShaderEditor extends hide.view.Graph {
 			} else {
 				if (this.selectedNode != null)
 					this.selectedNode.removeClass("selected");
-				var value = input.val();
+				var value = StringTools.trim(input.val());
 				var children = divs.elements();
 				var isFirst = true;
 				var lastGroup = null;

@@ -221,10 +221,20 @@
 		}
 
 		td.t_script {
-			font-family : Courier;
-			input, textarea {
-				font-family : Courier;
+			div.script {
+				white-space: nowrap;
+				font-family : Consolas, Courier;
+				font-size: 80%;
+				max-height: 200px;
+				overflow: hidden;
 			}
+			input, textarea {
+				font-family : Consolas, Courier;
+			}
+			span {
+				display: inline-block;
+			}
+
 			color : #CCC;
 			.kwd {
 				color : #88F;
@@ -398,16 +408,11 @@
 			}
 		}
 
-		td.t_script {
-			white-space: nowrap;
-			overflow: hidden;
-		}
-
 		div.cdb-script {
 			position : relative;
 			.codeeditor {
 				min-width: 500px;
-				min-height: 200px;
+				min-height: 500px;
 			}
 		}
 
@@ -426,6 +431,11 @@
 		}
 		div.cdb-large .cdb-sheet {
 			min-width: 0 !important;
+		}
+		div.cdb-script {
+			.codeeditor {
+				min-height: 300px;
+			}
 		}
 	}
 
@@ -454,6 +464,7 @@
 		background: #292929;
 		border: 2px solid #555;
 		color: #dadada;
+		text-align: left;
 
 		form {
 			font-size: 14px;

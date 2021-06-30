@@ -38,6 +38,15 @@ enum SelectMode {
 	Nothing;
 }
 
+class CameraController extends h3d.scene.CameraController {
+	override function sync(ctx:h3d.scene.RenderContext) {
+		var old = ctx.elapsedTime;
+		ctx.elapsedTime = hxd.Timer.dt;
+		super.sync(ctx);
+		ctx.elapsedTime = old;
+	}
+}
+
 @:access(hide.comp.SceneEditor)
 class SceneEditorContext extends hide.prefab.EditContext {
 
@@ -293,8 +302,8 @@ class SceneEditor {
 		return curEdit != null ? curEdit.elements : [];
 	}
 
-	function makeCamController() {
-		var c = new h3d.scene.CameraController(scene.s3d);
+	function makeCamController() : h3d.scene.CameraController {
+		var c = new CameraController(scene.s3d);
 		c.friction = 0.9;
 		c.panSpeed = 0.6;
 		c.zoomAmount = 1.05;
