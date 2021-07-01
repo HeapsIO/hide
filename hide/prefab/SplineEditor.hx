@@ -345,6 +345,9 @@ class SplineEditor {
 					var newMat = localMat.clone();
 					newMat.multiply(newMat, transf);
 					newMat.multiply(newMat, pivot);
+					if(sceneEditor.snapToGround && mode == MoveXY) {
+						newMat.tz = sceneEditor.getZ(newMat.tx, newMat.ty);
+					}
 
 					var parentInvMat = sceneObj.parent.getAbsPos().clone();
 					parentInvMat.initInverse(parentInvMat);
