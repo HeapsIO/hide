@@ -308,6 +308,7 @@ class SceneEditor {
 		c.panSpeed = 0.6;
 		c.zoomAmount = 1.05;
 		c.smooth = 0.7;
+		c.minDistance = 1;
 		return c;
 	}
 
