@@ -318,7 +318,7 @@ class SplineEditor {
 			scale = (spd.prev.scaleX + spd.next.scaleX) * 0.5;
 		}
 
-		var sp = new SplinePoint(prefab, ctx);
+		var sp = new SplinePoint(prefab);
 		sp.x = pos.x;
 		sp.y = pos.y;
 		sp.z = pos.z;
@@ -335,7 +335,8 @@ class SplineEditor {
 		sp.scaleX = scale;
 		sp.scaleY = scale;
 		sp.scaleZ = scale;
-		sp.applyTransform(sp.obj);
+		editContext.scene.editor.addElements([sp], false, false);
+		@:privateAccess editContext.scene.editor.refresh(Partial);
 
 		prefab.updateInstance(ctx);
 		showViewers(ctx);
@@ -377,30 +378,32 @@ class SplineEditor {
 			gizmos.insert(gizmos.length, gizmo);
 			gizmo.visible = false; // Not visible by default, only show the closest in the onMove of interactive
 
+			var posQuant = @:privateAccess sceneEditor.view.config.get("sceneeditor.xyzPrecision");
+			var scaleQuant = @:privateAccess sceneEditor.view.config.get("sceneeditor.scalePrecision");
+			var rotQuant = @:privateAccess sceneEditor.view.config.get("sceneeditor.rotatePrecision");
+
+			inline function quantize(x: Float, step: Float) {
+				if(step > 0) {
+					x = Math.round(x / step) * step;
+					x = untyped parseFloat(x.toFixed(5)); // Snap to closest nicely displayed float :cold_sweat:
+				}
+				return x;
+			}
+
 			gizmo.onStartMove = function(mode) {
 
-				var sceneObj = sp;
+				var sceneObj = sceneEditor.getContext(sp).local3d;
+				var obj3d = sp.to(hrt.prefab.Object3D);
 				var pivotPt = sceneObj.getAbsPos().getPosition();
+				var pivot = new h3d.Matrix();
+				pivot.initTranslation(pivotPt.x, pivotPt.y, pivotPt.z);
+				var invPivot = pivot.clone();
+				invPivot.invert();
+
 				var localMat : h3d.Matrix = sceneEditor.worldMat(sceneObj).clone();
-				localMat.translate(-pivotPt.x, -pivotPt.y, -pivotPt.z);
-				var parentInvMat = cast (sceneObj.parent, hrt.prefab.Object3D).getAbsPos();
-				parentInvMat.initInverse(parentInvMat);
+				localMat.multiply(localMat, invPivot);
 
-				var posQuant = @:privateAccess sceneEditor.view.config.get("sceneeditor.xyzPrecision");
-				var scaleQuant = @:privateAccess sceneEditor.view.config.get("sceneeditor.scalePrecision");
-				var rotQuant = @:privateAccess sceneEditor.view.config.get("sceneeditor.rotatePrecision");
-
-				inline function quantize(x: Float, step: Float) {
-					if(step > 0) {
-						x = Math.round(x / step) * step;
-						x = untyped parseFloat(x.toFixed(5)); // Snap to closest nicely displayed float :cold_sweat:
-					}
-					return x;
-				}
-
-				//var rot = sceneObj.getTransform();
-				var prevState = sceneObj.getAbsPos().clone();
-				prevState.multiply(prevState, parentInvMat);
+				var prevState = obj3d.saveTransform();
 				gizmo.onMove = function(translate: h3d.Vector, rot: h3d.Quat, scale: h3d.Vector) {
 					var transf = new h3d.Matrix();
 					transf.identity();
@@ -410,17 +413,20 @@ class SplineEditor {
 
 					var newMat = localMat.clone();
 					newMat.multiply(newMat, transf);
-					newMat.translate(pivotPt.x, pivotPt.y, pivotPt.z);
+					newMat.multiply(newMat, pivot);
+
+					var parentInvMat = sceneObj.parent.getAbsPos().clone();
+					parentInvMat.initInverse(parentInvMat);
 					newMat.multiply(newMat, parentInvMat);
 					if(scale != null) newMat.prependScale(scale.x, scale.y, scale.z);
 
 					var rot = newMat.getEulerAngles();
-					sceneObj.x = quantize(newMat.tx, posQuant);
-					sceneObj.y = quantize(newMat.ty, posQuant);
-					sceneObj.z = quantize(newMat.tz, posQuant);
-					sceneObj.rotationX = hxd.Math.degToRad(quantize(hxd.Math.radToDeg(rot.x), rotQuant));
-					sceneObj.rotationY = hxd.Math.degToRad(quantize(hxd.Math.radToDeg(rot.y), rotQuant));
-					sceneObj.rotationZ = hxd.Math.degToRad(quantize(hxd.Math.radToDeg(rot.z), rotQuant));
+					obj3d.x = quantize(newMat.tx, posQuant);
+					obj3d.y = quantize(newMat.ty, posQuant);
+					obj3d.z = quantize(newMat.tz, posQuant);
+					obj3d.rotationX = quantize(hxd.Math.radToDeg(rot.x), rotQuant);
+					obj3d.rotationY = quantize(hxd.Math.radToDeg(rot.y), rotQuant);
+					obj3d.rotationZ = quantize(hxd.Math.radToDeg(rot.z), rotQuant);
 					if(scale != null) {
 						inline function scaleSnap(x: Float) {
 							if(K.isDown(K.CTRL)) {
@@ -430,17 +436,16 @@ class SplineEditor {
 							return x;
 						}
 						var s = newMat.getScale();
-						sceneObj.scaleX = quantize(scaleSnap(s.x), scaleQuant);
-						sceneObj.scaleY = quantize(scaleSnap(s.y), scaleQuant);
-						sceneObj.scaleZ = quantize(scaleSnap(s.z), scaleQuant);
+						obj3d.scaleX = quantize(scaleSnap(s.x), scaleQuant);
+						obj3d.scaleY = quantize(scaleSnap(s.y), scaleQuant);
+						obj3d.scaleZ = quantize(scaleSnap(s.z), scaleQuant);
 					}
-					sceneObj.applyTransform(sp.obj);
-					prefab.updateInstance(ctx);
+					obj3d.applyTransform(sceneObj);
 				}
 
 				gizmo.onFinishMove = function() {
-					var newState = sceneObj.getAbsPos().clone();
-					newState.multiply(newState, parentInvMat);
+					var newState = obj3d.saveTransform();
+					trace("obj3d rotationZ : " + hxd.Math.radToDeg(obj3d.rotationZ));
 					undo.change(Custom(function(undo) {
 						if( undo ) {
 							sceneObj.setTransform(prevState);
@@ -503,7 +508,7 @@ class SplineEditor {
 						e.propagate = false;
 						var sp = getClosestSplinePointFromMouse(s2d.mouseX, s2d.mouseY, ctx);
 						var index = prefab.points.indexOf(sp);
-						prefab.points.remove(sp);
+						editContext.scene.editor.deleteElements([sp]);
 						prefab.updateInstance(ctx);
 						showViewers(ctx);
 						createGizmos(ctx);

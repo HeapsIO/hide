@@ -23,15 +23,26 @@ class SplineData {
 	public function new() {}
 }
 
-class SplinePoint extends hrt.prefab.Object3D {
+class SplinePoint extends Object3D {
 
-	public var obj : h3d.scene.Object;
-	var spline : Spline;
+	var spline(get, default) : Spline;
+	function get_spline() {
+		return parent.to(Spline);
+	}
 
-	public function new(?parent : Prefab, ?ctx : hrt.prefab.Context) {
+	override public function new(?parent) {
 		super(parent);
-		if (ctx != null) obj = new h3d.scene.Object(ctx.local3d);
-		spline = parent.to(Spline);
+		type = "splinePoint";
+	}
+
+	override function makeInstance(ctx:Context):Context {
+		ctx = ctx.clone(this);
+		ctx.local3d = createObject(ctx);
+		ctx.local3d.name = name;
+		//name = "SplinePoint" + spline.points.indexOf(this);
+		applyTransform(ctx.local3d);
+		updateInstance(ctx);
+		return ctx;
 	}
 
 	override function applyTransform(o : h3d.scene.Object) {
@@ -42,15 +53,6 @@ class SplinePoint extends hrt.prefab.Object3D {
 		#end
 	}
 
-	override public function setTransform(mat : h3d.Matrix) {
-		super.setTransform(mat);
-		applyTransform(obj);
-	}
-
-	override function updateInstance( ctx: Context, ?propName : String ) {
-		super.updateInstance(ctx, propName);
-		applyTransform(obj);
-	}
 	override function edit(ctx : EditContext) {
 		super.edit(ctx);
 		if( spline.editor == null ) {
@@ -86,19 +88,26 @@ class SplinePoint extends hrt.prefab.Object3D {
 		pos = pos.add(left.toPoint());
 		return pos;
 	}
+	static var _ = hrt.prefab.Library.register("splinePoint", SplinePoint);
 }
 
 class Spline extends Object3D {
 
-	public var points : Array<SplinePoint> = [];
+	// public var points : Array<SplinePoint> = [];
+	public var points(get, null) : Array<SplinePoint>;
+	function get_points() {
+		var pts : Array<SplinePoint> = [];
+		for (c in children) {
+			var sp = c.to(SplinePoint);
+			if (sp != null) pts.push(sp); 
+		}
+		return pts;
+	}
 
 	@:c public var shape : CurveShape = Linear;
 
 	var data : SplineData;
 	@:s var step : Float = 1.0;
-
-	// Save/Load the curve as an array of local transform
-	@:c public var pointsData : Array<h3d.Matrix> = [];
 
 	// Graphic
 	@:s public var showSpline : Bool = true;
@@ -113,59 +122,16 @@ class Spline extends Object3D {
 	public var wasEdited = false;
 
 	override function save() {
-		for (p in points) children.remove(p);
 		var obj : Dynamic = super.save();
 
-		var tmp = new h3d.Matrix();
-		// inline function getTransform( o : hrt.prefab.Object3D, m : h3d.Matrix ) : h3d.Matrix {
-		// 	m.identity();
-		// 	m = o.getTransform(m); 
-		// 	return m;
-		// }
-
-		if( points != null && points.length > 0 && wasEdited ) {
-			obj.points = [ for(sp in points) {
-								var m = sp.getTransform(tmp);
-								[for(f in m.getFloats()) hxd.Math.fmt(f) ];
-							} ];
-		}
-		// Clone support
-		else if( pointsData != null && pointsData.length > 0 ) {
-			obj.points =  [ for(abs in pointsData) {
-								[for(f in abs.getFloats()) hxd.Math.fmt(f) ];
-							} ];
-		}
 		obj.shape = shape.getIndex();
 		return obj;
 	}
 
 	override function load( obj : Dynamic ) {
 		super.load(obj);
-		pointsData = [];
-		if( obj.points != null ) {
-			var points : Array<Dynamic> = obj.points;
-			for( p in points ) {
-				var m = new h3d.Matrix();
-				m.loadValues(p);
-				pointsData.push(m);
-			}
 		}
 		shape = obj.shape == null ? Linear : CurveShape.createByIndex(obj.shape);
-	}
-
-	// Generate the splineData from a matrix, can't move the spline after that
-	public function makeFromMatrix( m : h3d.Matrix ) {
-		var tmp = new h3d.Matrix();
-		points = [];
-		for( pd in pointsData ) {
-			var sp = new SplinePoint(null);
-			tmp.load(pd);
-			tmp.multiply(tmp, m);
-			sp.setTransform(tmp);
-			sp.getAbsPos();
-			points.push(sp);
-		}
-		computeSplineData();
 	}
 
 	override function makeInstance( ctx : hrt.prefab.Context ) : hrt.prefab.Context {
@@ -173,16 +139,8 @@ class Spline extends Object3D {
 		ctx.local3d = createObject(ctx);
 		ctx.local3d.name = name;
 
-		points = [];
-		for( pd in pointsData ) {
-			var sp = new SplinePoint(this, ctx);
-			sp.setTransform(pd);
-			sp.getAbsPos();
-			points.push(sp);
-		}
-
 		if( points.length == 0 )
-			points.push(new SplinePoint(this, ctx));
+			new SplinePoint(this);
 
 		updateInstance(ctx);
 		return ctx;
