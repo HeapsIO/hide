@@ -382,13 +382,17 @@ class SplineEditor {
 					trace("obj3d rotationZ : " + hxd.Math.radToDeg(obj3d.rotationZ));
 					undo.change(Custom(function(undo) {
 						if( undo ) {
-							sceneObj.setTransform(prevState);
+							obj3d.loadTransform(prevState);
+							obj3d.applyTransform(sceneObj);
 							prefab.updateInstance(ctx);
 							showViewers(ctx);
+							@:privateAccess editContext.scene.editor.refresh(Partial);
+							showViewers();
 							createGizmos(ctx);
 						}
 						else {
-							sceneObj.setTransform(newState);
+							obj3d.loadTransform(newState);
+							obj3d.applyTransform(sceneObj);
 							prefab.updateInstance(ctx);
 							showViewers(ctx);
 							createGizmos(ctx);
