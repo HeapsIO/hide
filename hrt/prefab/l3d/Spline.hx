@@ -19,7 +19,6 @@ typedef SplinePointData = {
 class SplineData {
 	public var length : Float;
 	public var step : Float;
-	//public var threshold : Float;
 	public var samples : Array<SplinePointData> = [];
 	public function new() {}
 }
@@ -97,7 +96,6 @@ class Spline extends Object3D {
 
 	var data : SplineData;
 	@:s var step : Float = 1.0;
-	//@:s var threshold : Float = 0.01;
 
 	// Save/Load the curve as an array of local transform
 	@:c public var pointsData : Array<h3d.Matrix> = [];
@@ -256,7 +254,7 @@ class Spline extends Object3D {
 		return data.length;
 	}
 
-	// Sample the spline with the step and threshold
+	// Sample the spline with the step
 	function computeSplineData() {
 
 		var sd = new SplineData();
