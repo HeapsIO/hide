@@ -209,6 +209,7 @@ class FXEditor extends FileView {
 	}
 
 	override function onDisplay() {
+		if( sceneEditor != null ) sceneEditor.dispose();
 		currentTime = 0.;
 		xOffset = -timelineLeftMargin / xScale;
 		var content = sys.io.File.getContent(getPath());
@@ -224,8 +225,10 @@ class FXEditor extends FileView {
 
 		element.html('
 			<div class="flex vertical">
-				<div class="toolbar"></div>
-				<div class="flex-elt">
+				<div style="flex: 0 0 30px;">
+					<span class="tools-buttons"></span>
+				</div>
+				<div style="display: flex; flex-direction: row; flex: 1; overflow: hidden;">
 					<div class="flex vertical">
 						<div class="flex heaps-scene"></div>
 						<div class="fx-animpanel">
@@ -268,7 +271,7 @@ class FXEditor extends FileView {
 					</div>
 				</div>
 			</div>');
-		tools = new hide.comp.Toolbar(null,element.find(".toolbar"));
+		tools = new hide.comp.Toolbar(null,element.find(".tools-buttons"));
 		tabs = new hide.comp.Tabs(null,element.find(".tabs"));
 		sceneEditor = new FXSceneEditor(this, data);
 		element.find(".hide-scenetree").first().append(sceneEditor.tree.element);
