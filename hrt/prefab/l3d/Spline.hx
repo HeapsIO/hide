@@ -25,6 +25,9 @@ class SplineData {
 
 class SplinePoint extends Object3D {
 
+	var pointViewer : h3d.scene.Mesh;
+	var controlPointsViewer : h3d.scene.Graphics;
+	var indexText : h2d.ObjectFollower;
 	var spline(get, default) : Spline;
 	function get_spline() {
 		return parent.to(Spline);
@@ -40,7 +43,31 @@ class SplinePoint extends Object3D {
 		ctx.local3d = createObject(ctx);
 		ctx.local3d.name = name;
 		//name = "SplinePoint" + spline.points.indexOf(this);
+		pointViewer = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), null, ctx.local3d);
+		pointViewer.setScale(0.2);
+		pointViewer.name = "pointViewer";
+		pointViewer.material.setDefaultProps("ui");
+		pointViewer.material.color.set(1,1,1,1);
+		pointViewer.material.mainPass.depthTest = Always;
+
+		controlPointsViewer = new h3d.scene.Graphics(ctx.local3d);
+		controlPointsViewer.name = "controlPointsViewer";
+		controlPointsViewer.lineStyle(4, 0xffffff);
+		controlPointsViewer.material.mainPass.setPassName("ui");
+		controlPointsViewer.material.mainPass.depthTest = Always;
+		controlPointsViewer.ignoreParentTransform = false;
+		controlPointsViewer.clear();
+		controlPointsViewer.moveTo(1, 0, 0);
+		controlPointsViewer.lineTo(-1, 0, 0);
+
+		indexText = new h2d.ObjectFollower(pointViewer,  @:privateAccess ctx.local2d.getScene());
+		var t = new h2d.Text(hxd.res.DefaultFont.get(), indexText);
+		t.textColor = 0xff00ff;
+		t.textAlign = Center;
+		t.dropShadow = { dx : 0.5, dy : 0.5, color : 0x202020, alpha : 1.0 };
+		t.setScale(2.5);
 		applyTransform(ctx.local3d);
+		setViewerVisible(false);
 		updateInstance(ctx);
 		return ctx;
 	}
@@ -88,6 +115,15 @@ class SplinePoint extends Object3D {
 		pos = pos.add(left.toPoint());
 		return pos;
 	}
+	public function setViewerVisible(visible : Bool) {
+		pointViewer.visible = visible;
+		controlPointsViewer.visible = visible;
+	}
+	public function setColor( color : Int ) {
+		controlPointsViewer.setColor(color);
+		pointViewer.material.color.setColor(color);
+	}
+
 	static var _ = hrt.prefab.Library.register("splinePoint", SplinePoint);
 }
 
@@ -130,7 +166,6 @@ class Spline extends Object3D {
 
 	override function load( obj : Dynamic ) {
 		super.load(obj);
-		}
 		shape = obj.shape == null ? Linear : CurveShape.createByIndex(obj.shape);
 	}
 

@@ -72,74 +72,6 @@ class NewSplinePointViewer extends h3d.scene.Object {
 	}
 }
 
-class SplinePointViewer extends h3d.scene.Object {
-
-	var pointViewer : h3d.scene.Mesh;
-	var controlPointsViewer : h3d.scene.Graphics;
-	var indexText : h2d.ObjectFollower;
-	var spline : Spline;
-	var splinePoint : SplinePoint;
-
-	public function new( sp : SplinePoint, spline : Spline, ctx : hrt.prefab.Context) {
-		super(sp.obj);
-		this.spline = spline;
-		this.splinePoint = sp;
-		name = "SplinePointViewer";
-		pointViewer = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), null, this);
-		pointViewer.name = "pointViewer";
-		pointViewer.material.setDefaultProps("ui");
-		pointViewer.material.color.set(1,1,1,1);
-		pointViewer.material.mainPass.depthTest = Always;
-
-		controlPointsViewer = new h3d.scene.Graphics(this);
-		controlPointsViewer.name = "controlPointsViewer";
-		controlPointsViewer.lineStyle(4, 0xffffff);
-		controlPointsViewer.material.mainPass.setPassName("ui");
-		controlPointsViewer.material.mainPass.depthTest = Always;
-		controlPointsViewer.ignoreParentTransform = false;
-		controlPointsViewer.clear();
-		controlPointsViewer.moveTo(1, 0, 0);
-		controlPointsViewer.lineTo(-1, 0, 0);
-
-		indexText = new h2d.ObjectFollower(pointViewer,  @:privateAccess ctx.local2d.getScene());
-		var t = new h2d.Text(hxd.res.DefaultFont.get(), indexText);
-		t.textColor = 0xff00ff;
-		t.textAlign = Center;
-		t.dropShadow = { dx : 0.5, dy : 0.5, color : 0x202020, alpha : 1.0 };
-		t.setScale(2.5);
-	}
-
-	override function sync( ctx : h3d.scene.RenderContext ) {
-		var cam = ctx.camera;
-		var gpos = getAbsPos().getPosition();
-		var distToCam = cam.pos.sub(gpos).length();
-		var engine = h3d.Engine.getCurrent();
-		var ratio = 18 / engine.height;
-		var correctionFromParents =  1.0 / getAbsPos().getScale().x;
-		pointViewer.setScale(correctionFromParents * ratio * distToCam * Math.tan(cam.fovY * 0.5 * Math.PI / 180.0));
-		calcAbsPos();
-
-		var t = Std.downcast(indexText.getChildAt(0), h2d.Text);
-		t.text = "" + spline.points.indexOf(splinePoint);
-
-		super.sync(ctx);
-	}
-
-	public function interset( ray : h3d.col.Ray ) : Bool {
-		return pointViewer.getCollider().rayIntersection(ray, false) != -1;
-	}
-
-	public function setColor( color : Int ) {
-		controlPointsViewer.setColor(color);
-		pointViewer.material.color.setColor(color);
-	}
-
-	override function onRemove() {
-		super.onRemove();
-		indexText.remove();
-	}
-}
-
 @:access(hrt.prefab.l3d.Spline)
 class SplineEditor {
 
@@ -151,7 +83,7 @@ class SplineEditor {
 	var interactive : h2d.Interactive;
 
 	 // Easy way to keep track of viewers
-	var splinePointViewers : Array<SplinePointViewer> = [];
+	// var splinePointViewers : Array<SplinePointViewer> = [];
 	var gizmos : Array<hide.view.l3d.Gizmo> = [];
 	var newSplinePointViewer : NewSplinePointViewer;
 
@@ -162,7 +94,7 @@ class SplineEditor {
 
 	public function update( ctx : hrt.prefab.Context , ?propName : String ) {
 		if( editMode ) {
-			showViewers(ctx);
+			showViewers();
 		}
 	}
 
@@ -339,21 +271,20 @@ class SplineEditor {
 		@:privateAccess editContext.scene.editor.refresh(Partial);
 
 		prefab.updateInstance(ctx);
-		showViewers(ctx);
+		showViewers();
 		return sp;
 	}
 
 	function removeViewers() {
-		for( v in splinePointViewers )
-			v.remove();
-		splinePointViewers = [];
+		for( sp in prefab.points ) {
+			sp.setViewerVisible(false);
+		}
+		//splinePointViewers = [];
 	}
 
-	function showViewers( ctx : hrt.prefab.Context) {
-		removeViewers(); // Security, avoid duplication
+	function showViewers() {
 		for( sp in prefab.points ) {
-			var spv = new SplinePointViewer(sp, prefab, ctx);
-			splinePointViewers.insert(splinePointViewers.length, spv);
+			sp.setViewerVisible(true);
 		}
 	}
 
@@ -485,7 +416,7 @@ class SplineEditor {
 						e.propagate = false;
 						var pt = getNewPointPosition(s2d.mouseX, s2d.mouseY, ctx);
 						var sp = addSplinePoint(pt, ctx);
-						showViewers(ctx);
+						showViewers();
 						createGizmos(ctx);
 
 						undo.change(Custom(function(undo) {
@@ -510,7 +441,7 @@ class SplineEditor {
 						var index = prefab.points.indexOf(sp);
 						editContext.scene.editor.deleteElements([sp]);
 						prefab.updateInstance(ctx);
-						showViewers(ctx);
+						showViewers();
 						createGizmos(ctx);
 
 						undo.change(Custom(function(undo) {
@@ -558,11 +489,11 @@ class SplineEditor {
 
 					if( K.isDown( K.SHIFT ) ) {
 						var index = prefab.points.indexOf(getClosestSplinePointFromMouse(s2d.mouseX, s2d.mouseY, ctx));
-						for( spv in splinePointViewers ) {
-							if( index == splinePointViewers.indexOf(spv) )
-								spv.setColor(0xFFFF0000);
+						for( sp in prefab.points ) {
+							if( index == prefab.points.indexOf(sp) )
+								sp.setColor(0xFFFF0000);
 							else
-								spv.setColor(0xFFFFFFFF);
+								sp.setColor(0xFFFFFFFF);
 						}
 					}
 
