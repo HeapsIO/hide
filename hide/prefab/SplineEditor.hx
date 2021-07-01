@@ -83,7 +83,6 @@ class SplineEditor {
 	var interactive : h2d.Interactive;
 
 	 // Easy way to keep track of viewers
-	// var splinePointViewers : Array<SplinePointViewer> = [];
 	var gizmos : Array<hide.view.l3d.Gizmo> = [];
 	var newSplinePointViewer : NewSplinePointViewer;
 
