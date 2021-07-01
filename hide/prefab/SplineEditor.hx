@@ -384,7 +384,7 @@ class SplineEditor {
 							obj3d.loadTransform(prevState);
 							obj3d.applyTransform(sceneObj);
 							prefab.updateInstance(ctx);
-							showViewers(ctx);
+							showViewers();
 							@:privateAccess editContext.scene.editor.refresh(Partial);
 							showViewers();
 							createGizmos(ctx);
@@ -393,7 +393,7 @@ class SplineEditor {
 							obj3d.loadTransform(newState);
 							obj3d.applyTransform(sceneObj);
 							prefab.updateInstance(ctx);
-							showViewers(ctx);
+							showViewers();
 							createGizmos(ctx);
 						}
 					}));
@@ -429,12 +429,12 @@ class SplineEditor {
 							if( undo ) {
 								prefab.points.remove(sp);
 								prefab.updateInstance(ctx);
-								showViewers(ctx);
+								showViewers();
 								createGizmos(ctx);
 							}
 							else {
 								addSplinePoint(pt, ctx);
-								showViewers(ctx);
+								showViewers();
 								createGizmos(ctx);
 							}
 						}));
@@ -454,13 +454,13 @@ class SplineEditor {
 							if( undo ) {
 								prefab.points.insert(index, sp);
 								prefab.updateInstance(ctx);
-								showViewers(ctx);
+								showViewers();
 								createGizmos(ctx);
 							}
 							else {
 								prefab.points.remove(sp);
 								prefab.updateInstance(ctx);
-								showViewers(ctx);
+								showViewers();
 								createGizmos(ctx);
 							}
 						}));
