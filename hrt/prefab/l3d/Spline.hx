@@ -57,7 +57,6 @@ class SplinePoint extends Object3D {
 	override function makeInstance(ctx:Context):Context {
 		ctx = ctx.clone(this);
 		ctx.local3d = createObject(ctx);
-		ctx.local3d.name = name;
 		pointViewer = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), null, ctx.local3d);
 		pointViewer.setScale(0.2);
 		pointViewer.name = "pointViewer";
@@ -111,6 +110,18 @@ class SplinePoint extends Object3D {
 			if (spline != null && spline.editor != null)
 				@:privateAccess spline.generateSplineGraph(spline.editor.editContext.getContext(spline));
 		#end
+	}
+
+	override function updateInstance(ctx : Context, ?propName : String) {
+		super.updateInstance(ctx, propName);
+		for (sp in spline.points) {
+			sp.computeName(ctx);
+		}
+	}
+
+	function computeName(ctx) {
+		name = "SplinePoint" + spline.points.indexOf(this);
+		ctx.local3d.name = name;
 	}
 
 	override function edit(ctx : EditContext) {
