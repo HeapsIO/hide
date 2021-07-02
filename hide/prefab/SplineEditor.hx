@@ -397,6 +397,8 @@ class SplineEditor {
 							createGizmos(ctx);
 						}
 					}));
+					obj3d.updateInstance(ctx);
+					createGizmos(ctx);
 				}
 			}
 		}
