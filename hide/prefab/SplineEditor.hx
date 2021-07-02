@@ -253,7 +253,8 @@ class SplineEditor {
 		sp.x = pos.x;
 		sp.y = pos.y;
 		sp.z = pos.z;
-		prefab.points.insert(index, sp);
+		prefab.children.remove(sp);
+		prefab.children.insert(index, sp);
 		if( spd.tangent != null ) {
 			var dir = spd.tangent.toVector();
 			dir.transform3x3(invMatrix); // Don't take the translation
