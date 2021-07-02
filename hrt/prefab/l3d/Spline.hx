@@ -119,7 +119,7 @@ class SplinePoint extends Object3D {
 		}
 	}
 
-	function computeName(ctx) {
+	public function computeName(ctx) {
 		name = "SplinePoint" + spline.points.indexOf(this);
 		ctx.local3d.name = name;
 	}

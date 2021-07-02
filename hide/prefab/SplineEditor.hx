@@ -530,7 +530,7 @@ class SplineEditor {
 
 		var reverseButton = props.find(".reverse");
 		reverseButton.click(function(_) {
-			prefab.points.reverse();
+			prefab.children.reverse();
 			for( p in prefab.points )
 				p.rotationZ += hxd.Math.degToRad(180);
 
@@ -540,6 +540,11 @@ class SplineEditor {
 					p.rotationZ += hxd.Math.degToRad(180);
 			}));
 			ctx.onChange(prefab, null);
+			for (sp in prefab.points) {
+				sp.computeName(editContext.getContext(sp));
+			}
+			@:privateAccess editContext.scene.editor.refresh(Partial);
+			
 			removeGizmos();
 			createGizmos(getContext());
 		});
