@@ -145,6 +145,9 @@ class Spline extends Object3D {
 	var data : SplineData;
 	@:s var step : Float = 1.0;
 
+	// Save/Load the curve as an array of local transform
+	@:c public var pointsData : Array<h3d.Matrix> = [];
+
 	// Graphic
 	@:s public var showSpline : Bool = true;
 	public var lineGraphics : h3d.scene.Graphics;
@@ -166,6 +169,17 @@ class Spline extends Object3D {
 
 	override function load( obj : Dynamic ) {
 		super.load(obj);
+
+		// Backward compatibility
+		pointsData = [];
+		if( obj.points != null ) {
+			var points : Array<Dynamic> = obj.points;
+			for( p in points ) {
+				var m = new h3d.Matrix();
+				m.loadValues(p);
+				pointsData.push(m);
+			}
+		}
 		shape = obj.shape == null ? Linear : CurveShape.createByIndex(obj.shape);
 	}
 
@@ -173,6 +187,14 @@ class Spline extends Object3D {
 		var ctx = ctx.clone(this);
 		ctx.local3d = createObject(ctx);
 		ctx.local3d.name = name;
+
+		// Backward compatibility
+		for( pd in pointsData ) {
+			var sp = new SplinePoint(this);
+			sp.setTransform(pd);
+			sp.getAbsPos();
+			//points.push(sp);
+		}
 
 		if( points.length == 0 )
 			new SplinePoint(this);
