@@ -267,7 +267,7 @@ class SplineEditor {
 		sp.scaleX = scale;
 		sp.scaleY = scale;
 		sp.scaleZ = scale;
-		editContext.scene.editor.addElements([sp], false);
+		editContext.scene.editor.addElements([sp], false, true, true);
 
 		prefab.updateInstance(ctx);
 		showViewers();
@@ -426,7 +426,10 @@ class SplineEditor {
 
 						undo.change(Custom(function(undo) {
 							if( undo ) {
-								prefab.points.remove(sp);
+								editContext.scene.editor.deleteElements([sp], () -> {}, false, false);
+								for (sp in prefab.points)
+									sp.computeName(editContext.getContext(sp));
+								@:privateAccess editContext.scene.editor.refresh(Partial);
 								prefab.updateInstance(ctx);
 								showViewers();
 								createGizmos(ctx);
@@ -444,20 +447,28 @@ class SplineEditor {
 						e.propagate = false;
 						var sp = getClosestSplinePointFromMouse(s2d.mouseX, s2d.mouseY, ctx);
 						var index = prefab.points.indexOf(sp);
-						editContext.scene.editor.deleteElements([sp]);
+						editContext.scene.editor.deleteElements([sp], () -> {}, false, false);
+						for (sp in prefab.points)
+							sp.computeName(editContext.getContext(sp));
+						@:privateAccess editContext.scene.editor.refresh(Partial);
+						
 						prefab.updateInstance(ctx);
 						showViewers();
 						createGizmos(ctx);
 
 						undo.change(Custom(function(undo) {
 							if( undo ) {
-								prefab.points.insert(index, sp);
+								prefab.children.insert(index, sp);
+								editContext.scene.editor.addElements([sp], false, true, true);
 								prefab.updateInstance(ctx);
 								showViewers();
 								createGizmos(ctx);
 							}
 							else {
-								prefab.points.remove(sp);
+								editContext.scene.editor.deleteElements([sp], () -> {}, false, false);
+								for (sp in prefab.points)
+									sp.computeName(editContext.getContext(sp));
+								@:privateAccess editContext.scene.editor.refresh(Partial);
 								prefab.updateInstance(ctx);
 								showViewers();
 								createGizmos(ctx);
@@ -498,7 +509,7 @@ class SplineEditor {
 							if( index == prefab.points.indexOf(sp) )
 								sp.setColor(0xFFFF0000);
 							else
-								sp.setColor(0xFFFFFFFF);
+								sp.setColor(0xFF0000FF);
 						}
 					}
 
@@ -531,20 +542,22 @@ class SplineEditor {
 		var reverseButton = props.find(".reverse");
 		reverseButton.click(function(_) {
 			prefab.children.reverse();
-			for( p in prefab.points )
-				p.rotationZ += hxd.Math.degToRad(180);
-
-			undo.change(Custom(function(undo) {
-				prefab.points.reverse();
-				for( p in prefab.points )
-					p.rotationZ += hxd.Math.degToRad(180);
-			}));
-			ctx.onChange(prefab, null);
 			for (sp in prefab.points) {
+				sp.rotationZ += hxd.Math.degToRad(180);
 				sp.computeName(editContext.getContext(sp));
 			}
 			@:privateAccess editContext.scene.editor.refresh(Partial);
-			
+
+			undo.change(Custom(function(undo) {
+				prefab.children.reverse();
+				for (sp in prefab.points) {
+					sp.rotationZ += hxd.Math.degToRad(180);
+					sp.computeName(editContext.getContext(sp));
+				}
+				@:privateAccess editContext.scene.editor.refresh(Partial);
+				
+			}));
+			ctx.onChange(prefab, null);
 			removeGizmos();
 			createGizmos(getContext());
 		});
