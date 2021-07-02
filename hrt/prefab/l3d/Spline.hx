@@ -23,12 +23,28 @@ class SplineData {
 	public function new() {}
 }
 
+class SplinePointObject extends h3d.scene.Object {
+	override function sync(ctx : h3d.scene.RenderContext)
+	{
+		onSync(ctx);
+		super.sync(ctx);
+	}
+
+	override function onRemove() {
+		super.onRemove();
+		onRemoveDynamic();
+	}
+	public dynamic function onRemoveDynamic() {}
+	public dynamic function onSync(rctx: h3d.scene.RenderContext) {}
+}
+
 class SplinePoint extends Object3D {
 
 	var pointViewer : h3d.scene.Mesh;
 	var controlPointsViewer : h3d.scene.Graphics;
 	var indexText : h2d.ObjectFollower;
 	var spline(get, default) : Spline;
+	var obj : SplinePointObject;
 	function get_spline() {
 		return parent.to(Spline);
 	}
@@ -47,7 +63,7 @@ class SplinePoint extends Object3D {
 		pointViewer.setScale(0.2);
 		pointViewer.name = "pointViewer";
 		pointViewer.material.setDefaultProps("ui");
-		pointViewer.material.color.set(1,1,1,1);
+		pointViewer.material.color.set(0,0,1,1);
 		pointViewer.material.mainPass.depthTest = Always;
 
 		controlPointsViewer = new h3d.scene.Graphics(ctx.local3d);
@@ -68,6 +84,23 @@ class SplinePoint extends Object3D {
 		t.setScale(2.5);
 		applyTransform(ctx.local3d);
 		setViewerVisible(false);
+		obj = new SplinePointObject(ctx.local3d);
+		obj.onSync = function(rctx) {
+			var cam = rctx.camera;
+			var gpos = obj.getAbsPos().getPosition();
+			var distToCam = cam.pos.sub(gpos).length();
+			var engine = h3d.Engine.getCurrent();
+			var ratio = 18 / engine.height;
+			var correctionFromParents =  1.0 / getAbsPos().getScale().x;
+			pointViewer.setScale(correctionFromParents * ratio * distToCam * Math.tan(cam.fovY * 0.5 * Math.PI / 180.0));
+			@:privateAccess obj.calcAbsPos();
+
+			var t = Std.downcast(indexText.getChildAt(0), h2d.Text);
+			t.text = "" + spline.points.indexOf(this);
+		}
+		obj.onRemoveDynamic = function() {
+			indexText.remove();
+		}
 		updateInstance(ctx);
 		return ctx;
 	}
@@ -117,6 +150,7 @@ class SplinePoint extends Object3D {
 	}
 	public function setViewerVisible(visible : Bool) {
 		pointViewer.visible = visible;
+		indexText.visible = visible;
 		controlPointsViewer.visible = visible;
 	}
 	public function setColor( color : Int ) {
