@@ -135,7 +135,7 @@ class Spline extends Object3D {
 		var pts : Array<SplinePoint> = [];
 		for (c in children) {
 			var sp = c.to(SplinePoint);
-			if (sp != null) pts.push(sp); 
+			if (sp != null) pts.push(sp);
 		}
 		return pts;
 	}
@@ -182,6 +182,21 @@ class Spline extends Object3D {
 		}
 		shape = obj.shape == null ? Linear : CurveShape.createByIndex(obj.shape);
 	}
+
+	// Generate the splineData from a matrix, can't move the spline after that
+	public function makeFromMatrix( m : h3d.Matrix ) {
+		var tmp = new h3d.Matrix();
+		points = [];
+		for( pd in pointsData ) {
+			var sp = new SplinePoint(this);
+			tmp.load(pd);
+			tmp.multiply(tmp, m);
+			sp.setTransform(tmp);
+			sp.getAbsPos();
+		}
+		computeSplineData();
+	}
+
 
 	override function makeInstance( ctx : hrt.prefab.Context ) : hrt.prefab.Context {
 		var ctx = ctx.clone(this);
