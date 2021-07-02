@@ -58,7 +58,6 @@ class SplinePoint extends Object3D {
 		ctx = ctx.clone(this);
 		ctx.local3d = createObject(ctx);
 		ctx.local3d.name = name;
-		//name = "SplinePoint" + spline.points.indexOf(this);
 		pointViewer = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), null, ctx.local3d);
 		pointViewer.setScale(0.2);
 		pointViewer.name = "pointViewer";
@@ -107,9 +106,10 @@ class SplinePoint extends Object3D {
 
 	override function applyTransform(o : h3d.scene.Object) {
 		super.applyTransform(o);
-		#if editor 
+		@:privateAccess spline.computeSplineData();
+		#if editor
 			if (spline != null && spline.editor != null)
-				spline.updateInstance(@:privateAccess spline.editor.getContext());
+				@:privateAccess spline.generateSplineGraph(spline.editor.editContext.getContext(spline));
 		#end
 	}
 
