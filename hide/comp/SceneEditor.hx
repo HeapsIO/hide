@@ -149,6 +149,9 @@ class SceneEditor {
 	public var editorDisplay(default,set) : Bool;
 	public var camera2D(default,set) : Bool = false;
 
+	// Windows default is 0.5
+	public var dblClickDuration = 0.2;
+
 	var updates : Array<Float -> Void> = [];
 
 	var showGizmo = true;
@@ -755,6 +758,8 @@ class SceneEditor {
 		var lastPush : Array<Float> = null;
 		var i3d = Std.downcast(int, h3d.scene.Interactive);
 		var i2d = Std.downcast(int, h2d.Interactive);
+		var prevClickTime : Float = -1e20;
+
 		int.onClick = function(e) {
 			if(e.button == K.MOUSE_RIGHT) {
 				var dist = hxd.Math.distance(scene.s2d.mouseX - lastPush[0], scene.s2d.mouseY - lastPush[1]);
@@ -797,6 +802,7 @@ class SceneEditor {
 				}
 				else
 					selectElements(elts);
+
 			}
 			// ensure we get onMove even if outside our interactive, allow fast click'n'drag
 			if( e.button == K.MOUSE_LEFT ) {
@@ -813,6 +819,14 @@ class SceneEditor {
 				scene.sevents.stopDrag();
 				e.propagate = false;
 			}
+
+			var curTime = haxe.Timer.stamp();
+			if( curTime - prevClickTime < dblClickDuration && !(elt.getHideProps().isGround)) {
+				focusSelection();
+				prevClickTime = -1e20;
+			}
+			else
+				prevClickTime = curTime;
 		}
 		int.onMove = function(e) {
 			if(startDrag != null && hxd.Math.distance(startDrag[0] - scene.s2d.mouseX, startDrag[1] - scene.s2d.mouseY) > 5 ) {
@@ -2370,24 +2384,6 @@ class SceneEditor {
 		return 0.;
 	}
 
-	/*
-
-		function getGroundPrefabs() {
-		var groundGroups = data.findAll(p -> if(p.name == "ground") p else null);
-		if( groundGroups.length == 0 )
-			return null;
-		var ret : Array<hrt.prefab.Prefab> = [];
-		for(group in groundGroups)
-			group.findAll(function(p) : hrt.prefab.Prefab {
-				if(p.name == "nocollide")
-					return null;
-				return p;
-			},ret);
-		return ret;
-	}
-
-	*/
-
 	function getGroundPrefabs() : Array<PrefabElement> {
 		function getAll(data:PrefabElement) {
 			var all = data.findAll((p) -> p);
@@ -2401,7 +2397,7 @@ class SceneEditor {
 			return all;
 		}
 		var all = getAll(sceneData);
-		var grounds = [for( p in all ) if( p.getHideProps().isGround || p.name == "terrain" || p.name == "ground" ) p];
+		var grounds = [for( p in all ) if( p.getHideProps().isGround ) p];
 		var results = [];
 		for( g in grounds )
 			results = results.concat(getAll(g));
