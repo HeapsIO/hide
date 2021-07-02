@@ -249,14 +249,14 @@ class SceneEditor {
 			if(list != null) {
 				var m = [for(i in (list:Array<Dynamic>)) i => true];
 				for(p in all) {
-					if(m.exists(p.getAbsPath()))
+					if(m.exists(p.getAbsPath(true)))
 						hideList.set(p, true);
 				}
 			}
 			var favList = @:privateAccess view.getDisplayState("favorites");
 			if(favList != null) {
 				for(p in all) {
-					if(favList.indexOf(p.getAbsPath()) >= 0)
+					if(favList.indexOf(p.getAbsPath(true)) >= 0)
 						favorites.push(p);
 				}
 			}
@@ -1884,9 +1884,9 @@ class SceneEditor {
 	}
 
 	function saveDisplayState() {
-		var state = [for (h in hideList.keys()) h.getAbsPath()];
+		var state = [for (h in hideList.keys()) h.getAbsPath(true)];
 		@:privateAccess view.saveDisplayState("hideList", state);
-		var state = [for(f in favorites) f.getAbsPath()];
+		var state = [for(f in favorites) f.getAbsPath(true)];
 		@:privateAccess view.saveDisplayState("favorites", state);
 	}
 
@@ -1943,7 +1943,7 @@ class SceneEditor {
 				refreshScene();
 			});
 		}
-		
+
 		saveDisplayState();
 		showGizmo = !locked;
 		moveGizmoToSelection();
