@@ -267,8 +267,7 @@ class SplineEditor {
 		sp.scaleX = scale;
 		sp.scaleY = scale;
 		sp.scaleZ = scale;
-		editContext.scene.editor.addElements([sp], false, false);
-		@:privateAccess editContext.scene.editor.refresh(Partial);
+		editContext.scene.editor.addElements([sp], false);
 
 		prefab.updateInstance(ctx);
 		showViewers();
@@ -279,7 +278,6 @@ class SplineEditor {
 		for( sp in prefab.points ) {
 			sp.setViewerVisible(false);
 		}
-		//splinePointViewers = [];
 	}
 
 	function showViewers() {
@@ -379,7 +377,6 @@ class SplineEditor {
 
 				gizmo.onFinishMove = function() {
 					var newState = obj3d.saveTransform();
-					trace("obj3d rotationZ : " + hxd.Math.radToDeg(obj3d.rotationZ));
 					undo.change(Custom(function(undo) {
 						if( undo ) {
 							obj3d.loadTransform(prevState);
@@ -398,7 +395,6 @@ class SplineEditor {
 							createGizmos(ctx);
 						}
 					}));
-					obj3d.updateInstance(ctx);
 					createGizmos(ctx);
 				}
 			}

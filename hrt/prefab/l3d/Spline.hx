@@ -173,8 +173,6 @@ class SplinePoint extends Object3D {
 }
 
 class Spline extends Object3D {
-
-	// public var points : Array<SplinePoint> = [];
 	public var points(get, null) : Array<SplinePoint>;
 	function get_points() {
 		var pts : Array<SplinePoint> = [];
@@ -253,7 +251,6 @@ class Spline extends Object3D {
 			var sp = new SplinePoint(this);
 			sp.setTransform(pd);
 			sp.getAbsPos();
-			//points.push(sp);
 		}
 
 		if( points.length == 0 )
