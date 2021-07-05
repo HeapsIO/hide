@@ -1,10 +1,13 @@
 package hrt.prefab.rfx;
 
+import h3d.scene.Renderer;
+
 #if hscript
 
 private typedef ChangedVar = { obj : Dynamic, field : String, value : Dynamic, set : Bool };
 
 class ConfiguratorInterp extends hscript.Interp {
+	public var allowChanges : Bool = false;
 	var prevVars : Map<String,Array<ChangedVar>> = [];
 	var allVars : Array<ChangedVar> = [];
 	public function new() {
@@ -40,7 +43,8 @@ class ConfiguratorInterp extends hscript.Interp {
 			}
 			#end
 			found = { obj : o, field : f, value : null, set : false };
-			allVars.push(found);
+			if ( !allowChanges )
+				allVars.push(found);
 			prev.push(found);
 			if( allVars.length > 200 ) throw "Vars are leaking";
 		}
@@ -72,6 +76,7 @@ class Configurator extends RendererFX {
 	var values : Map<String, Float> = new Map();
 
 	var prefabCache : Map<String, { r : Prefab }> = new Map();
+	var particlesCache : Map<String, { v : h3d.scene.Object }> = new Map();
 
 	#if hscript
 	var interp : ConfiguratorInterp;
@@ -96,6 +101,19 @@ class Configurator extends RendererFX {
 		return bpow / (bpow + Math.pow(1 - v, easing + 1));
 	}
 
+	function getParts( r : Renderer, id : String) {
+		var p = particlesCache.get(id);
+		if (p != null)
+			return p.v;
+		var obj = r.ctx.scene.getObjectByName(id);
+		if ( obj == null)
+			throw "Missing object #"+id;
+		#if !editor
+		particlesCache.set(id, { v : obj });
+		#end
+		return obj;
+	}
+
 	function getPrefab( opt : Bool, id : String ) {
 		var p = prefabCache.get(id);
 		if( p != null )
@@ -109,6 +127,10 @@ class Configurator extends RendererFX {
 		prefabCache.set(id, { r : p });
 		#end
 		return p;
+	}
+
+	function allowChanges( v : Bool ) {
+		interp.allowChanges = v;
 	}
 
 	override function makeInstance(ctx:Context):Context {
@@ -141,8 +163,10 @@ class Configurator extends RendererFX {
 			if( interp == null ) {
 				interp = new ConfiguratorInterp();
 				interp.variables.set("get", getPrefab.bind(false));
+				interp.variables.set("getParts", getParts.bind(r));
 				interp.variables.set("getOpt", getPrefab.bind(true));
 				interp.variables.set("smooth", smoothValue);
+				interp.variables.set("allowChanges", allowChanges);
 			}
 			for( k => v in values )
 				interp.variables.set(k, v);
@@ -170,7 +194,7 @@ class Configurator extends RendererFX {
 	#if hscript
 	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
 		if( step == Overlay )
-			interp.restoreVars();
+		 	interp.restoreVars();
 	}
 	#end
 
