@@ -18,7 +18,7 @@ typedef SplinePointData = {
 
 class SplineData {
 	public var length : Float;
-	public var step : Float;
+	public var step : Int;
 	public var samples : Array<SplinePointData> = [];
 	public function new() {}
 }
@@ -210,7 +210,7 @@ class Spline extends Object3D {
 	@:c public var shape : CurveShape = Linear;
 
 	var data : SplineData;
-	@:s var step : Float = 1.0;
+	@:s var step : Int = 1;
 
 	// Save/Load the curve as an array of local transform
 	@:c public var pointsData : Array<h3d.Matrix> = [];
@@ -304,8 +304,8 @@ class Spline extends Object3D {
 
 		// The last point is not at the same distance, be aware of that case
 		t = hxd.Math.clamp(t);
-		var s1 : Int = hxd.Math.floor(l / step);
-		var s2 : Int = hxd.Math.ceil(l / step);
+		var s1 : Int = hxd.Math.floor(l / (1./step));
+		var s2 : Int = hxd.Math.ceil(l / (1./step));
 		s1 = hxd.Math.iclamp(s1, 0, data.samples.length - 1);
 		s2 = hxd.Math.iclamp(s2, 0, data.samples.length - 1);
 
@@ -321,7 +321,7 @@ class Spline extends Object3D {
 		// Linear interpolation between the two samples
 		else {
 			var segmentLength = data.samples[s1].pos.distance(data.samples[s2].pos);
-			var t = (l - (s1 * step)) / segmentLength;
+			var t = (l - (s1 * 1./step)) / segmentLength;
 			pos.lerp(data.samples[s1].pos, data.samples[s2].pos, t);
 			if(tangent != null)
 				tangent.lerp(data.samples[s1].tangent, data.samples[s2].tangent, t);
@@ -372,7 +372,7 @@ class Spline extends Object3D {
 			while (t <= 1.) {
 				var p = getPointBetween(t, curP, nextP);
 				samples.insert(samples.length, { pos : p, tangent : getTangentBetween(t, curP, nextP), prev : curP, next : nextP });
-				t += step;
+				t += 1./step;
 			}
 			samples.insert(samples.length, { pos : nextP.getPoint(), tangent : nextP.getTangent(), prev : curP, next : nextP, t : 1.0 });
 			curP = points[i];
@@ -525,7 +525,7 @@ class Spline extends Object3D {
 				<dl>
 					<dt>Color</dt><dd><input type="color" alpha="true" field="color"/></dd>
 					<dt>Thickness</dt><dd><input type="range" min="1" max="10" field="lineThickness"/></dd>
-					<dt>Step</dt><dd><input type="range" min="0.01" max="1" field="step"/></dd>
+					<dt>Step</dt><dd><input type="range" min="1" max="100" field="step"/></dd>
 					<dt>Loop</dt><dd><input type="checkbox" field="loop"/></dd>
 					<dt>Show Spline</dt><dd><input type="checkbox" field="showSpline"/></dd>
 					<dt>Type</dt>
