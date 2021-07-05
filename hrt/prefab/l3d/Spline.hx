@@ -114,6 +114,13 @@ class SplinePoint extends Object3D {
 
 	override function updateInstance(ctx : Context, ?propName : String) {
 		super.updateInstance(ctx, propName);
+		#if editor
+		if( spline != null && spline.editor != null ) {
+			spline.editor.setSelected(spline.editor.editContext.getContext(spline), true);
+			spline.editor.update(spline.editor.editContext.getContext(spline), propName);
+		}
+			
+		#end
 		for (sp in spline.points) {
 			sp.computeName(ctx);
 		}
