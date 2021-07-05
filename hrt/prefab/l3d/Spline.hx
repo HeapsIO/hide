@@ -117,7 +117,7 @@ class SplinePoint extends Object3D {
 		#if editor
 		if( spline != null && spline.editor != null ) {
 			spline.editor.setSelected(spline.editor.editContext.getContext(spline), true);
-			spline.editor.update(spline.editor.editContext.getContext(spline), propName);
+			spline.editor.update(spline.editor.editContext.getContext(spline));
 		}
 			
 		#end

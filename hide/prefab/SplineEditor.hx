@@ -395,7 +395,8 @@ class SplineEditor {
 							createGizmos(ctx);
 						}
 					}));
-					setSelected(ctx, true);
+					var worldPos = ctx.local3d.localToGlobal(new h3d.col.Point(sp.x, sp.y, sp.z));
+					gizmo.setPosition(worldPos.x, worldPos.y, worldPos.z);
 				}
 			}
 		}
