@@ -152,7 +152,7 @@ class SplinePoint extends Object3D {
 	public function getFirstControlPoint() : h3d.col.Point {
 		var absPos = getAbsPos();
 		var right = absPos.front();
-		right.scale3(scaleX);
+		right.scale3(scaleX*scaleY);
 		var pos = new h3d.col.Point(absPos.tx, absPos.ty, absPos.tz);
 		pos = pos.add(right.toPoint());
 		return pos;
@@ -161,7 +161,7 @@ class SplinePoint extends Object3D {
 	public function getSecondControlPoint() : h3d.col.Point {
 		var absPos = getAbsPos();
 		var left = absPos.front();
-		left.scale3(-scaleX);
+		left.scale3(-scaleX*scaleZ);
 		var pos = new h3d.col.Point(absPos.tx, absPos.ty, absPos.tz);
 		pos = pos.add(left.toPoint());
 		return pos;
