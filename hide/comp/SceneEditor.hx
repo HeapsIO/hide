@@ -2428,10 +2428,23 @@ class SceneEditor {
 
 		var zPlane = h3d.col.Plane.Z(0);
 		var pt = ray.intersect(zPlane);
-		if( pt != null )
+		if( pt != null ) {
 			minDist = pt.sub(ray.getPos()).length();
+			var dirToPt = pt.sub(ray.getPos());
+			if( dirToPt.dot(ray.getDir()) < 0 )
+				return -1;
+		}
 
 		return minDist;
+	}
+
+	public function screenDistToGround(sx : Float, sy : Float, ?paintOn : hrt.prefab.Prefab) : Null<Float> {
+		var camera = scene.s3d.camera;
+		var ray = camera.rayFromScreen(sx, sy);
+		var dist = projectToGround(ray, paintOn);
+		if( dist >= 0 )
+			return dist + camera.zNear;
+		return null;
 	}
 
 	public function screenToGround(sx: Float, sy: Float, ?paintOn : hrt.prefab.Prefab ) {
