@@ -57,7 +57,10 @@ class SplinePoint extends Object3D {
 	override function makeInstance(ctx:Context):Context {
 		ctx = ctx.clone(this);
 		ctx.local3d = createObject(ctx);
-		pointViewer = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), null, ctx.local3d);
+		pointViewer = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), null, ctx.local3d.getScene());
+		pointViewer.ignoreParentTransform = true;
+		pointViewer.follow = ctx.local3d;
+		pointViewer.followPositionOnly = true;
 		pointViewer.setScale(0.2);
 		pointViewer.name = "pointViewer";
 		pointViewer.material.setDefaultProps("ui");
@@ -89,8 +92,7 @@ class SplinePoint extends Object3D {
 			var distToCam = cam.pos.sub(gpos).length();
 			var engine = h3d.Engine.getCurrent();
 			var ratio = 18 / engine.height;
-			var correctionFromParents =  1.0 / getAbsPos().getScale().x;
-			pointViewer.setScale(correctionFromParents * ratio * distToCam * Math.tan(cam.fovY * 0.5 * Math.PI / 180.0));
+			pointViewer.setScale(ratio * distToCam * Math.tan(cam.fovY * 0.5 * Math.PI / 180.0));
 			@:privateAccess obj.calcAbsPos();
 
 			var t = Std.downcast(indexText.getChildAt(0), h2d.Text);
@@ -98,6 +100,7 @@ class SplinePoint extends Object3D {
 		}
 		obj.onRemoveDynamic = function() {
 			indexText.remove();
+			pointViewer.remove();
 		}
 		updateInstance(ctx);
 		return ctx;
