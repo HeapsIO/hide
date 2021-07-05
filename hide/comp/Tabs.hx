@@ -31,8 +31,11 @@ class Tabs extends Component {
 		return header.find('[index=$index]');
 	}
 
-	public function allowMask() {
-		new Element('<a href="#" class="maskToggle"></a>').prependTo(element).click((_) -> element.toggleClass("masked"));
+	public function allowMask(scene : hide.comp.Scene) {
+		new Element('<a href="#" class="maskToggle"></a>').prependTo(element).click((_) -> {
+			element.toggleClass("masked");
+			@:privateAccess scene.window.checkResize();
+		});
 	}
 
 	function set_currentTab( e : Element ) {
