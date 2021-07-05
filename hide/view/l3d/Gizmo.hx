@@ -113,7 +113,7 @@ class Gizmo extends h3d.scene.Object {
 	}
 
 	public function startMove(mode: TransformMode, ?duplicating=false) {
-		if (mode == Scale)
+		if (mode == Scale || mode == RotateX || mode == RotateY || mode == RotateZ)
 			mouseLock = true;
 		moving = true;
 		if(onStartMove != null) onStartMove(mode);
