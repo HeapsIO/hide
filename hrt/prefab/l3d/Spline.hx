@@ -108,11 +108,13 @@ class SplinePoint extends Object3D {
 
 	override function applyTransform(o : h3d.scene.Object) {
 		super.applyTransform(o);
-		@:privateAccess spline.computeSplineData();
-		#if editor
-			if (spline != null && spline.editor != null)
+		if (spline != null) {
+			@:privateAccess spline.computeSplineData();
+			#if editor
+			if (spline.editor != null)
 				@:privateAccess spline.generateSplineGraph(spline.editor.editContext.getContext(spline));
-		#end
+			#end
+		}
 	}
 
 	override function updateInstance(ctx : Context, ?propName : String) {
@@ -122,11 +124,23 @@ class SplinePoint extends Object3D {
 			spline.editor.setSelected(spline.editor.editContext.getContext(spline), true);
 			spline.editor.update(spline.editor.editContext.getContext(spline));
 		}
-			
 		#end
 		for (sp in spline.points) {
 			sp.computeName(ctx);
 		}
+	}
+
+	override  function removeInstance( ctx : Context) : Bool {
+		haxe.Timer.delay(() -> {
+			if (spline != null) {
+				@:privateAccess spline.computeSplineData();
+				#if editor
+				if (spline.editor != null)
+					@:privateAccess spline.generateSplineGraph(spline.editor.editContext.getContext(spline));
+				#end
+			}
+		}, 0);
+		return super.removeInstance(ctx);
 	}
 
 	public function computeName(ctx) {
