@@ -21,6 +21,7 @@ class LevelEditContext extends hide.prefab.EditContext {
 
 @:access(hide.view.l3d.Level3D)
 class CamController extends h3d.scene.CameraController {
+	public var groundSnapAngle = hxd.Math.degToRad(30);
 	var level3d : Level3D;
 	var startPush : h2d.col.Point;
 
@@ -36,12 +37,22 @@ class CamController extends h3d.scene.CameraController {
 			zoom(e.wheelDelta);
 		case EPush:
 			pushing = e.button;
-			pushX = e.relX;
-			pushY = e.relY;
 			pushTime = haxe.Timer.stamp();
 			pushStartX = pushX = e.relX;
 			pushStartY = pushY = e.relY;
 			startPush = new h2d.col.Point(pushX, pushY);
+			if( pushing == 2 ) {
+				var se = level3d.sceneEditor;
+				var selection = se.getSelection();
+				var angle = hxd.Math.abs(Math.PI/2 - phi);
+				if( selection.length == 0 && angle > groundSnapAngle ) {
+					var visGround = se.screenToGround(se.scene.s2d.width / 2, se.scene.s2d.height / 2);
+					var dist = se.screenDistToGround(se.scene.s2d.width / 2, se.scene.s2d.height / 2);
+					if( dist != null ) {
+						set(dist, null, null, visGround);
+					}
+				}
+			}
 			@:privateAccess scene.window.mouseLock = true;
 		case ERelease, EReleaseOutside:
 			if( pushing == e.button ) {
@@ -55,9 +66,8 @@ class CamController extends h3d.scene.CameraController {
 			switch( pushing ) {
 			case 1:
 				if(startPush != null && startPush.distance(new h2d.col.Point(e.relX, e.relY)) > 3) {
-					var lowAngle = hxd.Math.degToRad(30);
 					var angle = hxd.Math.abs(Math.PI/2 - phi);
-					if(hxd.Key.isDown(hxd.Key.SHIFT) || angle < lowAngle) {
+					if(hxd.Key.isDown(hxd.Key.SHIFT) || angle < groundSnapAngle) {
 						var m = 0.001 * curPos.x * panSpeed / 25;
 						pan(-(e.relX - pushX) * m, (e.relY - pushY) * m);
 					}
