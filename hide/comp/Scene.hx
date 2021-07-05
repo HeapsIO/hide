@@ -123,14 +123,21 @@ class Scene extends Component implements h3d.IDrawable {
 		@:privateAccess engine.resCache.set(Scene, this);
 		engine.backgroundColor = 0xFF111111;
 		canvas.id = null;
+		engine.onResized = function() {
+			if( s2d == null ) return;
+			setCurrent();
+			visible = engine.width > 32 && engine.height > 32; // 32x32 when hidden !
+			s2d.scaleMode = Resize; // setter call
+			onResize();
+		};
 		engine.onReady = function() {
 			if( engine.driver == null ) return;
 			new Element(canvas).on("resize", function() {
+				window.setCurrent();
 				@:privateAccess window.checkResize();
 			});
+			setCurrent();
 			hxd.Key.initialize();
-			engine.setCurrent();
-			window.setCurrent();
 			s2d = new h2d.Scene();
 			if (chunkifyS3D) {
 				s3d = new hide.tools.ChunkedScene();
@@ -140,16 +147,11 @@ class Scene extends Component implements h3d.IDrawable {
 			sevents = new hxd.SceneEvents(window);
 			sevents.addScene(s2d);
 			sevents.addScene(s3d);
+			@:privateAccess window.checkResize();
 			onReady();
 			onResize();
 			sync();
 			ide.registerUpdate(sync);
-		};
-		engine.onResized = function() {
-			if( s2d == null ) return;
-			visible = engine.width > 32 && engine.height > 32; // 32x32 when hidden !
-			s2d.scaleMode = Stretch(engine.width, engine.height);
-			onResize();
 		};
 		engine.init();
 	}
@@ -259,7 +261,7 @@ class Scene extends Component implements h3d.IDrawable {
 
 	function _loadTextureData( img : hxd.res.Image, onReady : Void -> Void, t : h3d.mat.Texture ) {
 		var path = ide.getPath(img.entry.path);
-		var img = new Element('<img src="file://$path" crossorigin="anonymous"/>');
+		var img = new Element('<img src="${ide.getUnCachedUrl(path)}" crossorigin="anonymous"/>');
 		function onLoaded() {
 			if( engine.driver == null ) return;
 			setCurrent();
@@ -281,7 +283,7 @@ class Scene extends Component implements h3d.IDrawable {
 		}
 		img.on("load", onLoaded);
 		function onChange() {
-			img.attr("src", 'file://$path?t=' + Std.int(Date.now().getTime() / 1000));
+			img.attr("src", ide.getUnCachedUrl(path));
 		}
 		ide.fileWatcher.register( path, onChange, true, element );
 		cleanup.push(function() { ide.fileWatcher.unregister( path, onChange ); });

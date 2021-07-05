@@ -19,6 +19,7 @@ class Polygon extends Object3D {
 	#if editor
 	public var editor : hide.prefab.PolygonEditor;
 	public var cachedPrim : h3d.prim.Polygon;
+	public var hasDebugColor : Bool = true;
 	var prevScale = [1.0, 1.0];
 	#end
 
@@ -238,7 +239,7 @@ class Polygon extends Object3D {
 		if(ctx.local3d == null)
 			return;
 		var mesh = Std.downcast(ctx.local3d, h3d.scene.Mesh);
-		if(mesh != null)
+		if(mesh != null && hasDebugColor)
 			hrt.prefab.l3d.Box.setDebugColor(color, mesh.material);
 	}
 	#end

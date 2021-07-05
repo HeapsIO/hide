@@ -1,5 +1,4 @@
 package hide;
-import hxd.inspect.Group;
 
 @:expose
 class Ide {
@@ -822,6 +821,10 @@ class Ide {
 			}
 		}
 		return path;
+	}
+
+	public function getUnCachedUrl( path : String ) {
+		return "file://" + getPath(path) + "?t=" + fileWatcher.getVersion(path);
 	}
 
 	public static var IMG_EXTS = ["jpg", "jpeg", "gif", "png", "raw", "dds", "hdr", "tga"];

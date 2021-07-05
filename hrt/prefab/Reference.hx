@@ -19,17 +19,10 @@ class Reference extends Object3D {
 		}
 	}
 
-	public function isFile() {
-		return source != null && source.charCodeAt(0) != "/".code;
-	}
-
 	override function save() {
-		// Recalc abs path if ref has been resolved to supprot renaming
-		if( ref != null && !isFile() )
-			source = "/"+ref.getAbsPath();
 		var obj : Dynamic = super.save();
 		#if editor
-		if( editMode && isFile() && ref != null )
+		if( editMode && ref != null )
 			hide.Ide.inst.savePrefab(source, ref);
 		#end
 		return obj;
@@ -40,32 +33,16 @@ class Reference extends Object3D {
 			return ref;
 		if(source == null)
 			return null;
-		if(isFile()) {
-			if(shared == null) { // Allow resolving ref in Hide prefore makeInstance
-				#if editor
-				ref = hide.Ide.inst.loadPrefab(source, null, true);
-				#else
-				return null;
-				#end
-			}
-			else
-				ref = shared.loadPrefab(source);
-			return ref;
+		if(shared == null) { // Allow resolving ref in Hide prefore makeInstance
+			#if editor
+			ref = hide.Ide.inst.loadPrefab(source, null, true);
+			#else
+			return null;
+			#end
 		}
-		else {
-			var lib = getParent(hrt.prefab.Library);
-			if(lib == null)
-				return null;
-			var all = lib.getAll(Prefab);
-			var path = source.substr(1);
-			for(p in all) {
-				if(!Std.is(p, Reference) && p.getAbsPath() == path) {
-					ref = p;
-					return ref;
-				}
-			}
-		}
-		return null;
+		else
+			ref = shared.loadPrefab(source);
+		return ref;
 	}
 
 	override function updateInstance( ctx: Context, ?propName : String ) {
@@ -108,33 +85,23 @@ class Reference extends Object3D {
 		if(p == null)
 			return ctx;
 
-		if(isFile()) {
-			ctx = super.makeInstance(ctx);
-			var prevShared = ctx.shared;
-			ctx.shared = ctx.shared.cloneRef(this, source);
-			makeChildren(ctx, p);
-			ctx.shared = prevShared;
+		ctx = super.makeInstance(ctx);
+		var prevShared = ctx.shared;
+		ctx.shared = ctx.shared.cloneRef(this, source);
+		makeChildren(ctx, p);
+		ctx.shared = prevShared;
 
-			#if editor
-			if (ctx.local2d == null) {
-				var path = hide.Ide.inst.appPath + "/res/icons/fileRef.png";
-				var data = sys.io.File.getBytes(path);
-				var tile = hxd.res.Any.fromBytes(path, data).toTile().center();
-				var objFollow = new h2d.ObjectFollower(ctx.local3d, ctx.shared.root2d);
-				objFollow.followVisibility = true;
-				var bmp = new h2d.Bitmap(tile, objFollow);
-				ctx.local2d = objFollow;
-			}
-			#end
-
+		#if editor
+		if (ctx.local2d == null) {
+			var path = hide.Ide.inst.appPath + "/res/icons/fileRef.png";
+			var data = sys.io.File.getBytes(path);
+			var tile = hxd.res.Any.fromBytes(path, data).toTile().center();
+			var objFollow = new h2d.ObjectFollower(ctx.local3d, ctx.shared.root2d);
+			objFollow.followVisibility = true;
+			var bmp = new h2d.Bitmap(tile, objFollow);
+			ctx.local2d = objFollow;
 		}
-		else {
-			ctx = ctx.clone(this);
-			ctx.isSceneReference = true;
-			var refCtx = p.make(ctx); // no customMake here
-			ctx.local3d = refCtx.local3d;
-			updateInstance(ctx);
-		}
+		#end
 
 		return ctx;
 	}
@@ -169,7 +136,7 @@ class Reference extends Object3D {
 		var element = new hide.Element('
 			<div class="group" name="Reference">
 			<dl>
-				<dt>Reference</dt><dd><input type="text" field="source"/></dd>
+				<dt>Reference</dt><dd><input type="fileselect" extensions="prefab l3d" field="source"/></dd>
 				<dt>Edit</dt><dd><input type="checkbox" field="editMode"/></dd>
 			</dl>
 			</div>');
@@ -181,18 +148,9 @@ class Reference extends Object3D {
 		}
 		updateProps();
 
-		element.find("input").contextmenu((e) -> {
-			e.preventDefault();
-			if( isFile() ) {
-				new hide.comp.ContextMenu([
-					{ label : "Open", click : () -> ctx.ide.openFile(ctx.ide.getPath(source)) },
-				]);
-			}
-		});
-
 		var props = ctx.properties.add(element, this, function(pname) {
 			ctx.onChange(this, pname);
-			if(pname == "source" || pname=="editMode") {
+			if(pname == "source" || pname == "editMode") {
 				ref = null;
 				updateProps();
 				if(!ctx.properties.isTempChange)

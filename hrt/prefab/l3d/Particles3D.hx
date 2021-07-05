@@ -49,6 +49,8 @@ class Particules3D extends Object3D {
 								<dt>Sort</dt><dd><select field="sortMode"></select></dd>
 								<dt>3D&nbsp;Transform</dt><dd><input type="checkbox" field="transform3D"/></dd>
 								<dt>Relative position</dt><dd><input type="checkbox" field="isRelative"/></dd>
+								<dt>Attach to cam</dt><dd><input type="checkbox" field="attachToCam"/></dd>
+								<dt>Distance to cam</dt><dd><input type="range" min="0" max="10" field="distanceToCam"/></dd>
 							</dl>
 						</div>
 

@@ -11,14 +11,14 @@ class CdbTable extends hide.ui.View<{}> {
 
 	public function new( ?state ) {
 		super(state);
-		editor = new hide.comp.cdb.Editor(config,{
+		editor = new hide.comp.cdb.Editor(config, {
 			copy : () -> (ide.database.save() : Any),
 			load : (v:Any) -> ide.database.load((v:String)),
 			save : function() {
 				ide.saveDatabase();
 				haxe.Timer.delay(syncTabs,0);
 			}
-		});
+		}, this);
 		undo = editor.undo;
 		currentSheet = this.config.get("cdb.currentSheet");
 		view = cast this.config.get("cdb.view");
@@ -56,6 +56,7 @@ class CdbTable extends hide.ui.View<{}> {
 
 	function setEditor(index:Int) {
 		var sheets = getSheets();
+		editor.pushCursorState();
 		editor.show(sheets[index],tabContents[index]);
 		currentSheet = editor.getCurrentSheet();
 		ide.currentConfig.set("cdb.currentSheet", sheets[index].name);

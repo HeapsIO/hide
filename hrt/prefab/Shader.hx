@@ -130,7 +130,7 @@ class Shader extends Prefab {
 
 		var ctx = ectx.getContext(this);
 		var shaderDef = getShaderDefinition(ctx);
-		if( shaderDef == null )
+		if( shaderDef == null || ctx == null )
 			return;
 
 		var materials = [];

@@ -16,6 +16,8 @@ class CurveEditor extends Component {
 	public var lockViewY = false;
 	public var lockKeyX = false;
 	public var maxLength = 0.0;
+	public var minValue : Float = 0.;
+	public var maxValue : Float = 0.;
 
 	var svg : hide.comp.SVG;
 	var width = 0;
@@ -148,8 +150,8 @@ class CurveEditor extends Component {
 
 	function addKey(time: Float, ?val: Float) {
 		beforeChange();
-		if(curve.clampMin != curve.clampMax)
-			val = hxd.Math.clamp(val, curve.clampMin, curve.clampMax);
+		if(minValue < maxValue)
+			val = hxd.Math.clamp(val, minValue, maxValue);
 		curve.addKey(time, val, curve.keyMode);
 		afterChange();
 	}
@@ -198,9 +200,8 @@ class CurveEditor extends Component {
 		if(next != null && key.time > next.time)
 			key.time = next.time - 0.01;
 
-		if(curve.clampMin != curve.clampMax) {
-			key.value = hxd.Math.clamp(key.value, curve.clampMin, curve.clampMax);
-		}
+		if(minValue < maxValue)
+			key.value = hxd.Math.clamp(key.value, minValue, maxValue);
 
 		if(false) {
 			// TODO: This sorta works but is annoying.
@@ -304,9 +305,9 @@ class CurveEditor extends Component {
 			bounds.xMax = 1.0;
 		}
 		if(bounds.height <= 0) {
-			if(curve.clampMax != curve.clampMin) {
-				bounds.yMin = curve.clampMin;
-				bounds.yMax = curve.clampMax;
+			if(minValue < maxValue) {
+				bounds.yMin = minValue;
+				bounds.yMax = maxValue;
 			}
 			else {
 				bounds.yMin = -1.0;
@@ -440,31 +441,35 @@ class CurveEditor extends Component {
 		// Draw curve
 		if(curve.keys.length > 0) {
 			var keys = curve.keys;
-			var lines = ['M ${xScale*(keys[0].time)},${-yScale*(keys[0].value)}'];
-			for(ik in 1...keys.length) {
-				var prev = keys[ik-1];
-				var cur = keys[ik];
-				if(prev.mode == Constant) {
-					lines.push('L ${xScale*(prev.time)} ${-yScale*(prev.value)}
-					L ${xScale*(cur.time)} ${-yScale*(prev.value)}
-					L ${xScale*(cur.time)} ${-yScale*(cur.value)}');
+			if(false) {  // Bezier draw, faster but less accurate
+				var lines = ['M ${xScale*(keys[0].time)},${-yScale*(keys[0].value)}'];
+				for(ik in 1...keys.length) {
+					var prev = keys[ik-1];
+					var cur = keys[ik];
+					if(prev.mode == Constant) {
+						lines.push('L ${xScale*(prev.time)} ${-yScale*(prev.value)}
+						L ${xScale*(cur.time)} ${-yScale*(prev.value)}
+						L ${xScale*(cur.time)} ${-yScale*(cur.value)}');
+					}
+					else {
+						lines.push('C
+							${xScale*(prev.time + (prev.nextHandle != null ? prev.nextHandle.dt : 0.))},${-yScale*(prev.value + (prev.nextHandle != null ? prev.nextHandle.dv : 0.))}
+							${xScale*(cur.time + (cur.prevHandle != null ? cur.prevHandle.dt : 0.))}, ${-yScale*(cur.value + (cur.prevHandle != null ? cur.prevHandle.dv : 0.))}
+							${xScale*(cur.time)}, ${-yScale*(cur.value)} ');
+					}
 				}
-				else {
-					lines.push('C
-						${xScale*(prev.time + (prev.nextHandle != null ? prev.nextHandle.dt : 0.))},${-yScale*(prev.value + (prev.nextHandle != null ? prev.nextHandle.dv : 0.))}
-						${xScale*(cur.time + (cur.prevHandle != null ? cur.prevHandle.dt : 0.))}, ${-yScale*(cur.value + (cur.prevHandle != null ? cur.prevHandle.dv : 0.))}
-						${xScale*(cur.time)}, ${-yScale*(cur.value)} ');
-				}
+				svg.make(curveGroup, "path", {d: lines.join("")});
 			}
-			svg.make(curveGroup, "path", {d: lines.join("")});
-			// var pts = curve.sample(200);
-			// var poly = [];
-			// for(i in 0...pts.length) {
-			// 	var x = xScale * (curve.duration * i / (pts.length - 1));
-			// 	var y = yScale * (pts[i]);
-			// 	poly.push(new h2d.col.Point(x, y));
-			// }
-			// svg.polygon(curveGroup, poly);
+			else {
+				var pts = curve.sample(200);
+				var poly = [];
+				for(i in 0...pts.length) {
+					var x = xScale * (curve.duration * i / (pts.length - 1));
+					var y = yScale * (-pts[i]);
+					poly.push(new h2d.col.Point(x, y));
+				}
+				svg.polygon(curveGroup, poly);
+			}
 		}
 
 
@@ -552,6 +557,7 @@ class CurveEditor extends Component {
 					e.stopPropagation();
 					var offset = element.offset();
 					beforeChange();
+					var startT = key.time;
 
 					startDrag(function(e) {
 						var lx = e.clientX - offset.left;
@@ -566,8 +572,8 @@ class CurveEditor extends Component {
 							key.time = Math.round(key.time * 10) / 10.;
 							key.value = Math.round(key.value * 10) / 10.;
 						}
-						if(lockKeyX)
-							key.time = prevTime;
+						if(lockKeyX || e.shiftKey)
+							key.time = startT;
 						fixKey(key);
 						refreshGraph(true, key);
 						onKeyMove(key, prevTime, prevVal);

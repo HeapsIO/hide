@@ -21,6 +21,7 @@ class LevelEditContext extends hide.prefab.EditContext {
 
 @:access(hide.view.l3d.Level3D)
 class CamController extends h3d.scene.CameraController {
+	public var groundSnapAngle = hxd.Math.degToRad(30);
 	var level3d : Level3D;
 	var startPush : h2d.col.Point;
 
@@ -36,12 +37,22 @@ class CamController extends h3d.scene.CameraController {
 			zoom(e.wheelDelta);
 		case EPush:
 			pushing = e.button;
-			pushX = e.relX;
-			pushY = e.relY;
 			pushTime = haxe.Timer.stamp();
 			pushStartX = pushX = e.relX;
 			pushStartY = pushY = e.relY;
 			startPush = new h2d.col.Point(pushX, pushY);
+			if( pushing == 2 ) {
+				var se = level3d.sceneEditor;
+				var selection = se.getSelection();
+				var angle = hxd.Math.abs(Math.PI/2 - phi);
+				if( selection.length == 0 && angle > groundSnapAngle ) {
+					var visGround = se.screenToGround(se.scene.s2d.width / 2, se.scene.s2d.height / 2);
+					var dist = se.screenDistToGround(se.scene.s2d.width / 2, se.scene.s2d.height / 2);
+					if( dist != null ) {
+						set(dist, null, null, visGround);
+					}
+				}
+			}
 			@:privateAccess scene.window.mouseLock = true;
 		case ERelease, EReleaseOutside:
 			if( pushing == e.button ) {
@@ -55,9 +66,8 @@ class CamController extends h3d.scene.CameraController {
 			switch( pushing ) {
 			case 1:
 				if(startPush != null && startPush.distance(new h2d.col.Point(e.relX, e.relY)) > 3) {
-					var lowAngle = hxd.Math.degToRad(30);
 					var angle = hxd.Math.abs(Math.PI/2 - phi);
-					if(hxd.Key.isDown(hxd.Key.SHIFT) || angle < lowAngle) {
+					if(K.isDown(K.SHIFT) || angle < groundSnapAngle) {
 						var m = 0.001 * curPos.x * panSpeed / 25;
 						pan(-(e.relX - pushX) * m, (e.relY - pushY) * m);
 					}
@@ -80,8 +90,41 @@ class CamController extends h3d.scene.CameraController {
 				pushY = e.relY;
 			default:
 			}
+		case EFocus:
+			@:privateAccess scene.window.mouseLock = false;
 		default:
 		}
+	}
+
+	function moveKeys() {
+		var mov = new h3d.Vector();
+		if( K.isDown(K.UP) || K.isDown(K.Z) || K.isDown(K.W) )
+			mov.x += 1;
+		if( K.isDown(K.DOWN) || K.isDown(K.S) )
+			mov.x -= 1;
+		if( K.isDown(K.LEFT) || K.isDown(K.Q) || K.isDown(K.A) )
+			mov.y -= 1;
+		if( K.isDown(K.RIGHT) || K.isDown(K.D) )
+			mov.y += 1;
+
+		if( mov.x == 0 && mov.y == 0 )
+			return;
+		var dir = new h3d.Vector(
+			mov.x * Math.cos(theta) + mov.y * Math.cos(Math.PI / 2 + theta),
+			mov.x * Math.sin(theta) + mov.y * Math.sin(Math.PI / 2 + theta)
+		);
+		var moveSpeed = Ide.inst.currentConfig.get("l3d.camera.moveSpeed", 1.5);
+
+		var delta = dir.multiply(0.01 * moveSpeed * (distance + scene.camera.zNear));
+		delta.w = 0;
+		targetOffset = targetOffset.sub(delta);
+	}
+
+	override function sync(ctx : h3d.scene.RenderContext) {
+		if( pushing == 2 ) {
+			moveKeys();
+		}
+		super.sync(ctx);
 	}
 }
 
@@ -90,7 +133,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 	var parent : Level3D;
 
 	public function new(view, data) {
-		super(view, data, true);
+		super(view, data);
 		parent = cast view;
 		this.localTransform = false; // TODO: Expose option
 	}
@@ -101,6 +144,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 		c.panSpeed = 0.6;
 		c.zoomAmount = 1.05;
 		c.smooth = 0.7;
+		c.minDistance = 1;
 		return c;
 	}
 
@@ -138,7 +182,7 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 
 		function setup(p : PrefabElement) {
 			autoName(p);
-			haxe.Timer.delay(addObject.bind([p]), 0);
+			haxe.Timer.delay(addElements.bind([p]), 0);
 		}
 
 		function addNewInstances() {
@@ -233,6 +277,7 @@ class Level3D extends FileView {
 	var currentVersion : Int = 0;
 	var lastSyncChange : Float = 0.;
 	var sceneFilters : Map<String, Bool>;
+	var graphicsFilters : Map<String, Bool>;
 	var statusText : h2d.Text;
 	var posToolTip : h2d.Text;
 
@@ -256,8 +301,7 @@ class Level3D extends FileView {
 					<span class="layer-buttons"></span>
 				</div>
 				<div style="display: flex; flex-direction: row; flex: 1; overflow: hidden;">
-					<div class="heaps-scene">
-					</div>
+					<div class="heaps-scene"></div>
 					<div class="hide-scene-outliner">
 						<div class="favorites" style="height:20%;">
 							<label>Favorites</label>
@@ -311,6 +355,7 @@ class Level3D extends FileView {
 		}
 
 		refreshSceneFilters();
+		refreshGraphicsFilters();
 	}
 
 	public function onSceneReady() {
@@ -371,6 +416,7 @@ class Level3D extends FileView {
 
 		updateStats();
 		updateGrid();
+		initGraphicsFilters();
 	}
 
 	function updateStats() {
@@ -392,7 +438,7 @@ class Level3D extends FileView {
 
 	function bakeLights() {
 		var curSel = sceneEditor.curEdit.elements;
-		sceneEditor.selectObjects([]);
+		sceneEditor.selectElements([]);
 		var passes = [];
 		for( m in scene.s3d.getMaterials() ) {
 			var s = m.getPass("shadow");
@@ -431,7 +477,7 @@ class Level3D extends FileView {
 				continue;
 			l.saveBaked(sceneEditor.context);
 		}
-		sceneEditor.selectObjects(curSel);
+		sceneEditor.selectElements(curSel);
 	}
 
 	function bakeVolumetricLightmaps(){
@@ -450,7 +496,7 @@ class Level3D extends FileView {
 				return;
 			}
 			v.startBake(sceneEditor.curEdit, bakeNext);
-			sceneEditor.selectObjects([v]);
+			sceneEditor.selectElements([v]);
 		}
 		bakeNext();
 	}
@@ -517,7 +563,7 @@ class Level3D extends FileView {
 	}
 
 	function onUpdate(dt:Float) {
-		if(hxd.Key.isDown(hxd.Key.ALT)) {
+		if(K.isDown(K.ALT)) {
 			posToolTip.visible = true;
 			var proj = sceneEditor.screenToGround(scene.s2d.mouseX, scene.s2d.mouseY);
 			posToolTip.text = proj != null ? '${Math.fmt(proj.x)}, ${Math.fmt(proj.y)}, ${Math.fmt(proj.z)}' : '???';
@@ -538,6 +584,20 @@ class Level3D extends FileView {
 
 	override function onDragDrop(items : Array<String>, isDrop : Bool) {
 		return sceneEditor.onDragDrop(items, isDrop);
+	}
+
+	function applyGraphicsFilters(typeid: String, enable: Bool)
+	{
+		saveDisplayState("graphicsFilters/" + typeid, enable);
+
+		var r : h3d.scene.Renderer = scene.s3d.renderer;
+
+		switch (typeid)
+		{
+		case "shadows":
+			r.shadows = enable;
+		default:
+		}
 	}
 
 	function applySceneFilter(typeid: String, visible: Bool) {
@@ -574,6 +634,38 @@ class Level3D extends FileView {
 					applySceneFilter(typeid, on);
 			});
 			if(sceneFilters.get(typeid) != false)
+				btn.toggle(true);
+		}
+		initDone = true;
+	}
+
+	function initGraphicsFilters() {
+		for (typeid in graphicsFilters.keys())
+		{
+			applyGraphicsFilters(typeid, graphicsFilters.get(typeid));
+		}
+	}
+
+	function refreshGraphicsFilters() {
+		var filters : Array<String> = ["shadows"];
+		filters = filters.copy();
+		graphicsFilters = new Map();
+		for(f in filters) {
+			graphicsFilters.set(f, getDisplayState("graphicsFilters/" + f) != false);
+		}
+		if(layerButtons != null) {
+			for(b in layerButtons)
+				b.element.remove();
+		}
+		layerButtons = new Map<PrefabElement, hide.comp.Toolbar.ToolToggle>();
+		var initDone = false;
+		for(typeid in graphicsFilters.keys()) {
+			var btn = layerToolbar.addToggle("", typeid, typeid.charAt(0).toLowerCase() + typeid.substr(1), function(on) {
+				graphicsFilters.set(typeid, on);
+				if (initDone)
+					applyGraphicsFilters(typeid, on);
+			});
+			if(graphicsFilters.get(typeid) != false)
 				btn.toggle(true);
 		}
 		initDone = true;

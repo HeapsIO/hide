@@ -20,20 +20,19 @@ class ShaderInput extends ShaderNode {
 		return null;
 	}
 
-	static var availableInputs = [ 	{ parent: null, id: 0, kind: Input, name: "position", type: TVec(3, VFloat) },
+	public static var availableInputs : Array<TVar> = [
+									{ parent: null, id: 0, kind: Input, name: "position", type: TVec(3, VFloat) },
 									{ parent: null, id: 0, kind: Input, name: "color", type: TVec(3, VFloat) },
 									{ parent: null, id: 0, kind: Input, name: "uv", type: TVec(2, VFloat) },
 									{ parent: null, id: 0, kind: Input, name: "normal", type: TVec(3, VFloat) },
 									{ parent: null, id: 0, kind: Input, name: "tangent", type: TVec(3, VFloat) },
-									{ parent: null, id: 0, kind: Input, name: "relativePosition", type: TVec(3, VFloat) },
-									{ parent: null, id: 0, kind: Input, name: "transformedPosition", type: TVec(3, VFloat) },
-									{ parent: null, id: 0, kind: Input, name: "projectedPosition", type: TVec(4, VFloat) },
-									{ parent: null, id: 0, kind: Input, name: "transformedNormal", type: TVec(3, VFloat) },
-									{ parent: null, id: 0, kind: Input, name: "screenUV", type: TVec(2, VFloat) } ];
-
-	function getAvailableInputs() {
-		return ShaderInput.availableInputs;
-	}
+									{ parent: null, id: 0, kind: Local, name: "relativePosition", type: TVec(3, VFloat) },
+									{ parent: null, id: 0, kind: Local, name: "transformedPosition", type: TVec(3, VFloat) },
+									{ parent: null, id: 0, kind: Local, name: "projectedPosition", type: TVec(4, VFloat) },
+									{ parent: null, id: 0, kind: Local, name: "transformedNormal", type: TVec(3, VFloat) },
+									{ parent: null, id: 0, kind: Local, name: "screenUV", type: TVec(2, VFloat) },
+									{ parent: null, id: 0, kind: Local, name: "calculatedUV", type: TVec(2, VFloat) },
+								];
 
 	override public function loadProperties(props : Dynamic) {
 		var paramVariable : String = Reflect.field(props, "variable");

@@ -183,6 +183,7 @@ input[type=checkbox]:checked:after {
 .hide-modal > .content {
   display: table-cell;
   vertical-align: middle;
+  text-align: center;
 }
 ::-webkit-scrollbar {
   width: 5px;
@@ -674,14 +675,14 @@ input[type=checkbox]:checked:after {
 }
 .hide-properties .cdb-large .cdb-obj-editor {
   position: fixed;
-  bottom: 0px;
-  right: 0px;
+  bottom: 20px;
+  max-height: 800px;
+  left: 20%;
+  right: 620px;
   z-index: 99;
-  width: 600px;
   overflow: auto;
-  padding: 10px;
+  padding: 2px;
   background: #111;
-  max-height: 50%;
   overflow-y: auto;
 }
 .hide-properties .cdb-large .btn-cdb-large {

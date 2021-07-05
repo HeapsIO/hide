@@ -113,7 +113,7 @@ class TileSelector extends Component {
 		if( tool.element.children().length == 0 )
 			tool.remove();
 
-		var url = "file://" + ide.getPath(file);
+		var url = ide.getUnCachedUrl(file);
 		var scroll = new Element("<div class='flex-scroll'><div class='scroll'>").appendTo(element).find(".scroll");
 		image = new Element('<div class="tile" style="background-image:url(\'$url\')"></div>').appendTo(scroll);
 

@@ -23,11 +23,16 @@ class CodeEditor extends Component {
 			wordWrap : true,
 			minimap : { enabled : false },
 			theme : "vs-dark",
+			lineNumbersMinChars: 3,
+			fontSize: "13px",
+			mouseWheelZoom: true,
+			scrollBeyondLastLine: false
 		});
 		var model = editor.getModel();
 		(model : Dynamic).__comp__ = this;
 		model.updateOptions({ insertSpaces:false, trimAutoWhitespace:true });
 		editor.onDidChangeModelContent(function() onChanged());
+		editor.onDidBlurEditorText(function() onSave());
 		editor.addCommand(monaco.KeyCode.KEY_S | monaco.KeyMod.CtrlCmd, function() { clearSpaces(); onSave(); });
 		errorMessage = new Element('<div class="codeErrorMessage"></div>').appendTo(root).hide();
 	}

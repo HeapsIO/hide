@@ -9,7 +9,6 @@ import hrt.prefab.fx.Event;
 
 typedef PropTrackDef = {
 	name: String,
-	?clamp: Array<Float>,
 	?def: Float
 };
 
@@ -49,14 +48,14 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		parent.onUpdate(dt);
 	}
 
-	override function setObjectSelected( p : PrefabElement, ctx : hrt.prefab.Context, b : Bool ) {
+	override function setElementSelected( p : PrefabElement, ctx : hrt.prefab.Context, b : Bool ) {
 		if( p.getParent(hrt.prefab.fx.Emitter) != null )
 			return false;
-		return super.setObjectSelected(p, ctx, b);
+		return super.setElementSelected(p, ctx, b);
 	}
 
-	override function selectObjects( elts, ?mode ) {
-		super.selectObjects(elts, mode);
+	override function selectElements( elts, ?mode ) {
+		super.selectElements(elts, mode);
 		parent.onSelect(elts);
 	}
 
@@ -210,6 +209,7 @@ class FXEditor extends FileView {
 	}
 
 	override function onDisplay() {
+		if( sceneEditor != null ) sceneEditor.dispose();
 		currentTime = 0.;
 		xOffset = -timelineLeftMargin / xScale;
 		var content = sys.io.File.getContent(getPath());
@@ -225,8 +225,10 @@ class FXEditor extends FileView {
 
 		element.html('
 			<div class="flex vertical">
-				<div class="toolbar"></div>
-				<div class="flex-elt">
+				<div style="flex: 0 0 30px;">
+					<span class="tools-buttons"></span>
+				</div>
+				<div style="display: flex; flex-direction: row; flex: 1; overflow: hidden;">
 					<div class="flex vertical">
 						<div class="flex heaps-scene"></div>
 						<div class="fx-animpanel">
@@ -269,7 +271,7 @@ class FXEditor extends FileView {
 					</div>
 				</div>
 			</div>');
-		tools = new hide.comp.Toolbar(null,element.find(".toolbar"));
+		tools = new hide.comp.Toolbar(null,element.find(".tools-buttons"));
 		tabs = new hide.comp.Tabs(null,element.find(".tabs"));
 		sceneEditor = new FXSceneEditor(this, data);
 		element.find(".hide-scenetree").first().append(sceneEditor.tree.element);
@@ -759,7 +761,7 @@ class FXEditor extends FileView {
 		var trackToggle = trackEl.find(".track-toggle");
 		tracksEl.append(trackEl);
 		var curvesContainer = trackEl.find(".curves");
-		var trackKey = "trackVisible:" + parent.getAbsPath() + "/" + trackName;
+		var trackKey = "trackVisible:" + parent.getAbsPath(true) + "/" + trackName;
 		var expand = getDisplayState(trackKey) == true;
 		function updateExpanded() {
 			var icon = trackToggle.find(".icon");
@@ -948,8 +950,9 @@ class FXEditor extends FileView {
 		}
 
 		var minHeight = 40;
+		var ctx = sceneEditor.getContext(data);
 		for(curve in curves) {
-			var dispKey = getPath() + "/" + curve.getAbsPath();
+			var dispKey = getPath() + "/" + curve.getAbsPath(true);
 			var curveContainer = new Element('<div class="curve"><label class="curve-label">${curve.name}</alpha></div>').appendTo(curvesContainer);
 			var height = getDisplayState(dispKey + "/height");
 			if(height == null)
@@ -961,6 +964,26 @@ class FXEditor extends FileView {
 			curveEdit.lockViewX = true;
 			if(curves.length > 1)
 				curveEdit.lockKeyX = true;
+			if(["visibility", "s", "l", "a"].indexOf(curve.name.split(".").pop()) >= 0) {
+				curveEdit.minValue = 0;
+				curveEdit.maxValue = 1;
+			}
+			var shader = curve.parent.to(hrt.prefab.Shader);
+			if(shader != null) {
+				var sh = shader.getShaderDefinition(ctx);
+				if(sh != null) {
+					var v = sh.data.vars.find(v -> v.kind == Param && v.name == curve.name);
+					if(v != null && v.qualifiers != null) {
+						for( q in v.qualifiers )
+							switch( q ) {
+							case Range(rmin, rmax):
+								curveEdit.minValue = rmin;
+								curveEdit.maxValue = rmax;
+							default:
+						}
+					}
+				}
+			}
 			curveEdit.xOffset = xOffset;
 			curveEdit.xScale = xScale;
 			curveEdit.curve = curve;
@@ -1115,7 +1138,7 @@ class FXEditor extends FileView {
 			var objPanel = new Element('<div>
 				<div class="tracks-header">
 					<label class="name">${upperCase(sec.elt.name)}</label> <div class="addtrack fa fa-plus-circle"></div>
-					<label class="abspath">${sec.elt.getAbsPath()}</label>
+					<label class="abspath">${sec.elt.getAbsPath(true)}</label>
 				</div>
 				<div class="tracks"></div>
 			</div>').appendTo(scrollPanel);
@@ -1179,13 +1202,8 @@ class FXEditor extends FileView {
 				continue;
 			var curve = new Curve(element);
 			curve.name = id;
-			if(prop.clamp != null) {
-				curve.clampMin = prop.clamp[0];
-				curve.clampMax = prop.clamp[1];
-			}
-			if(prop.def != null) {
+			if(prop.def != null)
 				curve.addKey(0, prop.def, Linear);
-			}
 			added.push(curve);
 		}
 
@@ -1202,7 +1220,7 @@ class FXEditor extends FileView {
 			sceneEditor.refresh();
 		}));
 		sceneEditor.refresh(function() {
-			sceneEditor.selectObjects([element]);
+			sceneEditor.selectElements([element]);
 		});
 		return added;
 	}
@@ -1245,8 +1263,8 @@ class FXEditor extends FileView {
 			return ret;
 		}
 
-		var hslTracks : Void -> Array<PropTrackDef> = () -> [{name: "h", def: 0.0}, {name: "s", clamp: [0., 1.], def: 0.0}, {name: "l", clamp: [0., 1.], def: 1.0}];
-		var alphaTrack : Void -> Array<PropTrackDef> = () -> [{name: "a", clamp: [0., 1.], def: 1.0}];
+		var hslTracks : Void -> Array<PropTrackDef> = () -> [{name: "h", def: 0.0}, {name: "s", def: 0.0}, {name: "l", def: 1.0}];
+		var alphaTrack : Void -> Array<PropTrackDef> = () -> [{name: "a", def: 1.0}];
 		var xyzwTracks : Int -> Array<PropTrackDef> = (n) -> [{name: "x"}, {name: "y"}, {name: "z"}, {name: "w"}].slice(0, n);
 
 		if (obj2dElt != null) {
@@ -1271,7 +1289,7 @@ class FXEditor extends FileView {
 					trackItem("Alpha", alphaTrack(), "color")
 				]
 			});
-			menuItems.push(trackItem("Visibility", [{name: "visibility", clamp: [0., 1.]}]));
+			menuItems.push(trackItem("Visibility", [{name: "visibility"}]));
 		}
 		if(obj3dElt != null) {
 			var scaleTracks = groupedTracks("scale", xyzwTracks(3));
@@ -1295,7 +1313,7 @@ class FXEditor extends FileView {
 					trackItem("Alpha", alphaTrack(), "color")
 				]
 			});
-			menuItems.push(trackItem("Visibility", [{name: "visibility", clamp: [0., 1.]}]));
+			menuItems.push(trackItem("Visibility", [{name: "visibility"}]));
 		}
 		if(shaderElt != null) {
 			var shader = shaderElt.makeShader();
@@ -1454,6 +1472,8 @@ class FXEditor extends FileView {
 			onUpdate2D(dt);
 		else
 			onUpdate3D(dt);
+
+		@:privateAccess scene.s3d.renderer.ctx.time = currentTime - scene.s3d.renderer.ctx.elapsedTime;
 	}
 
 	function onUpdate2D(dt:Float) {
