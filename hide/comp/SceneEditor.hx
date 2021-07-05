@@ -534,6 +534,11 @@ class SceneEditor {
 			var isObj = current != null && (current.to(Object3D) != null || current.to(Object2D) != null);
 			var isRef = isReference(current);
 
+			if( current != null ) {
+				var enabled = current.enabled;
+				menuItems.push({ label : "Enable", checked : enabled, click : function() setEnabled(curEdit.elements, !enabled) });
+			}
+
 			if( isObj ) {
 				var visible = !isHidden(current);
 				menuItems = menuItems.concat([
@@ -550,10 +555,6 @@ class SceneEditor {
 						{ label : "Isolate", click : function() isolate(curEdit.elements) },
 						{ label : "Group", enabled : curEdit != null && canGroupSelection(), click : groupSelection }
 					]);
-			}
-			if( current != null && (!isObj || isRef) ) {
-				var enabled = current.enabled;
-				menuItems.push({ label : "Enable", checked : enabled, click : function() setEnabled(curEdit.elements, !enabled) });
 			}
 
 			if( current != null ) {
@@ -1225,7 +1226,7 @@ class SceneEditor {
 		}
 
 		if(obj3d != null) {
-			el.toggleClass("disabled", !obj3d.visible);
+			el.toggleClass("disabled", !p.enabled || !obj3d.visible);
 			el.toggleClass("hidden", isHidden(obj3d));
 			el.toggleClass("locked", p.locked);
 
@@ -1850,8 +1851,6 @@ class SceneEditor {
 	}
 
 	public function setEnabled(elements : Array<PrefabElement>, enable: Bool) {
-		// Don't disable/enable Object3Ds, too confusing with visibility
-		elements = [for(e in elements) if(e.to(Object3D) == null || isReference(e)) e];
 		var old = [for(e in elements) e.enabled];
 		function apply(on) {
 			for(i in 0...elements.length) {
