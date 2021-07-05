@@ -67,7 +67,7 @@ class CamController extends h3d.scene.CameraController {
 			case 1:
 				if(startPush != null && startPush.distance(new h2d.col.Point(e.relX, e.relY)) > 3) {
 					var angle = hxd.Math.abs(Math.PI/2 - phi);
-					if(hxd.Key.isDown(hxd.Key.SHIFT) || angle < groundSnapAngle) {
+					if(K.isDown(K.SHIFT) || angle < groundSnapAngle) {
 						var m = 0.001 * curPos.x * panSpeed / 25;
 						pan(-(e.relX - pushX) * m, (e.relY - pushY) * m);
 					}
@@ -94,6 +94,37 @@ class CamController extends h3d.scene.CameraController {
 			@:privateAccess scene.window.mouseLock = false;
 		default:
 		}
+	}
+
+	function moveKeys() {
+		var mov = new h3d.Vector();
+		if( K.isDown(K.UP) || K.isDown(K.Z) || K.isDown(K.W) )
+			mov.x += 1;
+		if( K.isDown(K.DOWN) || K.isDown(K.S) )
+			mov.x -= 1;
+		if( K.isDown(K.LEFT) || K.isDown(K.Q) || K.isDown(K.A) )
+			mov.y -= 1;
+		if( K.isDown(K.RIGHT) || K.isDown(K.D) )
+			mov.y += 1;
+
+		if( mov.x == 0 && mov.y == 0 )
+			return;
+		var dir = new h3d.Vector(
+			mov.x * Math.cos(theta) + mov.y * Math.cos(Math.PI / 2 + theta),
+			mov.x * Math.sin(theta) + mov.y * Math.sin(Math.PI / 2 + theta)
+		);
+		var moveSpeed = Ide.inst.currentConfig.get("l3d.camera.moveSpeed", 1.5);
+
+		var delta = dir.multiply(0.01 * moveSpeed * (distance + scene.camera.zNear));
+		delta.w = 0;
+		targetOffset = targetOffset.sub(delta);
+	}
+
+	override function sync(ctx : h3d.scene.RenderContext) {
+		if( pushing == 2 ) {
+			moveKeys();
+		}
+		super.sync(ctx);
 	}
 }
 
@@ -532,7 +563,7 @@ class Level3D extends FileView {
 	}
 
 	function onUpdate(dt:Float) {
-		if(hxd.Key.isDown(hxd.Key.ALT)) {
+		if(K.isDown(K.ALT)) {
 			posToolTip.visible = true;
 			var proj = sceneEditor.screenToGround(scene.s2d.mouseX, scene.s2d.mouseY);
 			posToolTip.text = proj != null ? '${Math.fmt(proj.x)}, ${Math.fmt(proj.y)}, ${Math.fmt(proj.z)}' : '???';
