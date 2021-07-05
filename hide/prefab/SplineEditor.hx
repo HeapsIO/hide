@@ -395,7 +395,7 @@ class SplineEditor {
 							createGizmos(ctx);
 						}
 					}));
-					createGizmos(ctx);
+					setSelected(ctx, true);
 				}
 			}
 		}
