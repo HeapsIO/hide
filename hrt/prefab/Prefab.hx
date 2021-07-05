@@ -427,9 +427,11 @@ class Prefab {
 	/**
 		Returns the absolute name path for this prefab
 	**/
-	public function getAbsPath() {
+	public function getAbsPath(unique=false) {
+		if(parent == null)
+			return "";
 		var path = name != null ? name : getDefaultName();
-		if(parent != null) {
+		if(unique) {
 			var suffix = 0;
 			for(i in 0...parent.children.length) {
 				var c = parent.children[i];
@@ -443,9 +445,9 @@ class Prefab {
 			}
 			if(suffix > 0)
 				path += "-" + suffix;
-
-			path = parent.getAbsPath() + "." + path;
 		}
+		if(parent.parent != null)
+			path = parent.getAbsPath(unique) + "." + path;
 		return path;
 	}
 

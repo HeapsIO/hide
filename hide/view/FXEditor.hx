@@ -761,7 +761,7 @@ class FXEditor extends FileView {
 		var trackToggle = trackEl.find(".track-toggle");
 		tracksEl.append(trackEl);
 		var curvesContainer = trackEl.find(".curves");
-		var trackKey = "trackVisible:" + parent.getAbsPath() + "/" + trackName;
+		var trackKey = "trackVisible:" + parent.getAbsPath(true) + "/" + trackName;
 		var expand = getDisplayState(trackKey) == true;
 		function updateExpanded() {
 			var icon = trackToggle.find(".icon");
@@ -952,7 +952,7 @@ class FXEditor extends FileView {
 		var minHeight = 40;
 		var ctx = sceneEditor.getContext(data);
 		for(curve in curves) {
-			var dispKey = getPath() + "/" + curve.getAbsPath();
+			var dispKey = getPath() + "/" + curve.getAbsPath(true);
 			var curveContainer = new Element('<div class="curve"><label class="curve-label">${curve.name}</alpha></div>').appendTo(curvesContainer);
 			var height = getDisplayState(dispKey + "/height");
 			if(height == null)
@@ -976,7 +976,7 @@ class FXEditor extends FileView {
 					if(v != null && v.qualifiers != null) {
 						for( q in v.qualifiers )
 							switch( q ) {
-							case Range(rmin, rmax): 
+							case Range(rmin, rmax):
 								curveEdit.minValue = rmin;
 								curveEdit.maxValue = rmax;
 							default:
@@ -1138,7 +1138,7 @@ class FXEditor extends FileView {
 			var objPanel = new Element('<div>
 				<div class="tracks-header">
 					<label class="name">${upperCase(sec.elt.name)}</label> <div class="addtrack fa fa-plus-circle"></div>
-					<label class="abspath">${sec.elt.getAbsPath()}</label>
+					<label class="abspath">${sec.elt.getAbsPath(true)}</label>
 				</div>
 				<div class="tracks"></div>
 			</div>').appendTo(scrollPanel);
