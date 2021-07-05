@@ -131,6 +131,7 @@
 	},
 	"l3d.filterTypes": ["terrain", "model", "polygon", "box", "instance", "light"],
 	"l3d.tags": [ { "id": "tag", "color": "#802000" } ],
+	"l3d.camera.moveSpeed": 1.5,
 
 	// FX editor
 	"fx.shaders": [
