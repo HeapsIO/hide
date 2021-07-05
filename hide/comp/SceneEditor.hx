@@ -819,15 +819,15 @@ class SceneEditor {
 			if( e.button == K.MOUSE_LEFT ) {
 				scene.sevents.stopDrag();
 				e.propagate = false;
-			}
 
-			var curTime = haxe.Timer.stamp();
-			if( curTime - prevClickTime < dblClickDuration && !(elt.getHideProps().isGround)) {
-				focusSelection();
-				prevClickTime = -1e20;
+				var curTime = haxe.Timer.stamp();
+				if( curTime - prevClickTime < dblClickDuration && !(elt.getHideProps().isGround)) {
+					focusSelection();
+					prevClickTime = -1e20;
+				}
+				else
+					prevClickTime = curTime;
 			}
-			else
-				prevClickTime = curTime;
 		}
 		int.onMove = function(e) {
 			if(startDrag != null && hxd.Math.distance(startDrag[0] - scene.s2d.mouseX, startDrag[1] - scene.s2d.mouseY) > 5 ) {
