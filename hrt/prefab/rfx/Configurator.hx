@@ -129,9 +129,11 @@ class Configurator extends RendererFX {
 		return p;
 	}
 
+	#if hscript
 	function allowChanges( v : Bool ) {
 		interp.allowChanges = v;
 	}
+	#end
 
 	override function makeInstance(ctx:Context):Context {
 		for( v in vars )
