@@ -303,6 +303,7 @@ class SplineEditor {
 			gizmo.visible = true;
 			var worldPos = ctx.local3d.localToGlobal(new h3d.col.Point(sp.x, sp.y, sp.z));
 			gizmo.setPosition(worldPos.x, worldPos.y, worldPos.z);
+			gizmo.setRotation(hxd.Math.degToRad(sp.rotationX), hxd.Math.degToRad(sp.rotationY), hxd.Math.degToRad(sp.rotationZ));
 			@:privateAccess sceneEditor.updates.push( gizmo.update );
 			gizmos.insert(gizmos.length, gizmo);
 			gizmo.visible = false; // Not visible by default, only show the closest in the onMove of interactive

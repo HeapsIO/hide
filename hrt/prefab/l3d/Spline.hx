@@ -526,7 +526,7 @@ class Spline extends Object3D {
 				<dl>
 					<dt>Color</dt><dd><input type="color" alpha="true" field="color"/></dd>
 					<dt>Thickness</dt><dd><input type="range" min="1" max="10" field="lineThickness"/></dd>
-					<dt>Step</dt><dd><input type="range" min="1" max="100" field="step"/></dd>
+					<dt>Step</dt><dd><input type="range" min="1" max="100" step="1" field="step"/></dd>
 					<dt>Loop</dt><dd><input type="checkbox" field="loop"/></dd>
 					<dt>Show Spline</dt><dd><input type="checkbox" field="showSpline"/></dd>
 					<dt>Type</dt>
