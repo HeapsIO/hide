@@ -1184,7 +1184,7 @@ class SceneEditor {
 
 		if(p != sceneData) {
 			var el = tree.getElement(p);
-			if( el != null ) applyTreeStyle(p, el, pname);
+			if( el != null && el.toggleClass != null ) applyTreeStyle(p, el, pname);
 		}
 
 		applySceneStyle(p);
