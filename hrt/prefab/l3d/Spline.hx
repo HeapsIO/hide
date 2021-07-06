@@ -148,6 +148,7 @@ class SplinePoint extends Object3D {
 		ctx.local3d.name = name;
 	}
 
+	#if editor
 	override function edit(ctx : EditContext) {
 		super.edit(ctx);
 		if( spline.editor == null ) {
@@ -155,6 +156,10 @@ class SplinePoint extends Object3D {
 		}
 		spline.editor.editContext = ctx;
 	}
+	override function getHideProps() : HideProps {
+		return { icon : "arrows-v", name : "SplinePoint", allowParent: function(p) return p.to(Spline) != null, allowChildren: function(s) return false};
+	}
+	#end
 
 	inline public function getPoint() : h3d.col.Point {
 		return getAbsPos().getPosition().toPoint();
@@ -547,7 +552,7 @@ class Spline extends Object3D {
 	}
 
 	override function getHideProps() : HideProps {
-		return { icon : "arrows-v", name : "Spline" };
+		return { icon : "arrows-v", name : "Spline", allowChildren: function(s) return Library.isOfType(s, SplinePoint) };
 	}
 	#end
 

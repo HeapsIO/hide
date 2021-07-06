@@ -182,6 +182,7 @@ class IconTree<T:{}> extends Component {
 		});
 		element.on("move_node.jstree", function(event, e) {
 			onMove(getVal(e.node.id), e.parent == "#" ? null : getVal(e.parent), e.position);
+			refresh();
 		});
 		element.on('ready.jstree', function () {
 			/* var lis = element.find("li");

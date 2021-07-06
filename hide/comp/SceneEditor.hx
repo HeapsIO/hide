@@ -587,7 +587,14 @@ class SceneEditor {
 				}
 				moved.push(e);
 				movetimer = haxe.Timer.delay(function() {
-					reparentElement(moved, to, idx);
+					var doReparent = false;
+					if (to == null && e.getHideProps().allowParent == null) doReparent = true;
+					else if (to == null) doReparent = false;
+					else if (to.getHideProps().allowChildren != null && to.getHideProps().allowChildren(e.type) 
+					&& e.getHideProps().allowParent != null && e.getHideProps().allowParent(to))
+						doReparent = true;
+
+					if (doReparent) reparentElement(moved, to, idx);
 					movetimer = null;
 					moved = [];
 				}, 50);
