@@ -135,7 +135,7 @@ class SplinePoint extends Object3D {
 			if (spline != null) {
 				@:privateAccess spline.computeSplineData();
 				#if editor
-				if (spline.editor != null)
+				if (spline.editor != null && spline.editor.editContext.getContext(spline) != null)
 					@:privateAccess spline.generateSplineGraph(spline.editor.editContext.getContext(spline));
 				#end
 			}
