@@ -139,11 +139,8 @@ class Scene extends Component implements h3d.IDrawable {
 			setCurrent();
 			hxd.Key.initialize();
 			s2d = new h2d.Scene();
-			if (chunkifyS3D) {
-				s3d = new hide.tools.ChunkedScene();
-			} else {
-				s3d = new h3d.scene.Scene();
-			}
+			s3d = new h3d.scene.Scene();
+			
 			sevents = new hxd.SceneEvents(window);
 			sevents.addScene(s2d);
 			sevents.addScene(s3d);
