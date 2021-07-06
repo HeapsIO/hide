@@ -171,7 +171,7 @@ class SceneEditor {
 	var sceneData : PrefabElement;
 	var lastRenderProps : hrt.prefab.RenderProps;
 
-	public function new(view, data, ?chunkifyS3D : Bool = false) {
+	public function new(view, data) {
 		ide = hide.Ide.inst;
 		this.view = view;
 		this.sceneData = data;
@@ -191,7 +191,7 @@ class SceneEditor {
 		favTree.autoOpenNodes = false;
 
 		var sceneEl = new Element('<div class="heaps-scene"></div>');
-		scene = new hide.comp.Scene(chunkifyS3D, view.config, null, sceneEl);
+		scene = new hide.comp.Scene(view.config, null, sceneEl);
 		scene.editor = this;
 		scene.onReady = onSceneReady;
 		scene.onResize = function() {

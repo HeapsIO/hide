@@ -72,13 +72,11 @@ class Scene extends Component implements h3d.IDrawable {
 	public var speed : Float = 1.0;
 	public var visible(default, null) : Bool = true;
 	public var editor : hide.comp.SceneEditor;
-	var chunkifyS3D : Bool = false;
 	var unFocusedTime = 0.;
 
-	public function new(chunkifyS3D: Bool = false, config, parent, el) {
+	public function new(config, parent, el) {
 		super(parent,el);
 		this.config = config;
-		this.chunkifyS3D = chunkifyS3D;
 		element.addClass("hide-scene-container");
 		canvas = cast new Element("<canvas class='hide-scene' style='width:100%;height:100%'/>").appendTo(element)[0];
 		canvas.addEventListener("mousemove",function(_) canvas.focus());
