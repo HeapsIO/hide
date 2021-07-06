@@ -82,7 +82,6 @@ class Prefab extends FileView {
 		');
 		tools = new hide.comp.Toolbar(null,element.find(".toolbar"));
 		tabs = new hide.comp.Tabs(null,element.find(".tabs"));
-		tabs.allowMask();
 		sceneEditor = new PrefabSceneEditor(this, data);
 		element.find(".scenetree").first().append(sceneEditor.tree.element);
 		element.find(".tab").first().append(sceneEditor.properties.element);
@@ -91,6 +90,7 @@ class Prefab extends FileView {
 	}
 
 	public function onSceneReady() {
+		tabs.allowMask(scene);
 		light = sceneEditor.scene.s3d.find(function(o) return Std.downcast(o, h3d.scene.fwd.DirLight));
 		if( light == null ) {
 			light = new h3d.scene.fwd.DirLight(scene.s3d);

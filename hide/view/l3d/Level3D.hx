@@ -330,7 +330,6 @@ class Level3D extends FileView {
 		tools = new hide.comp.Toolbar(null,element.find(".tools-buttons"));
 		layerToolbar = new hide.comp.Toolbar(null,element.find(".layer-buttons"));
 		tabs = new hide.comp.Tabs(null,element.find(".tabs"));
-		tabs.allowMask();
 		currentVersion = undo.currentID;
 
 		levelProps = new hide.comp.PropsEditor(undo,null,element.find(".level-props"));
@@ -359,7 +358,7 @@ class Level3D extends FileView {
 	}
 
 	public function onSceneReady() {
-
+		tabs.allowMask(scene);
 		tools.saveDisplayKey = "Level3D/toolbar";
 		tools.addButton("video-camera", "Perspective camera", () -> resetCamera(false));
 		tools.addButton("video-camera", "Top camera", () -> resetCamera(true)).find(".icon").css({transform: "rotateZ(90deg)"});
