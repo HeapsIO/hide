@@ -109,7 +109,7 @@ class SplinePoint extends Object3D {
 	override function applyTransform(o : h3d.scene.Object) {
 		super.applyTransform(o);
 		@:privateAccess spline.computeSplineData();
-			#if editor
+		#if editor
 			if (spline.editor != null)
 				@:privateAccess spline.generateSplineGraph(spline.editor.editContext.getContext(spline));
 		#end
@@ -118,17 +118,17 @@ class SplinePoint extends Object3D {
 	override function updateInstance(ctx : Context, ?propName : String) {
 		super.updateInstance(ctx, propName);
 		#if editor
-		if( spline.editor != null ) {
-			spline.editor.setSelected(spline.editor.editContext.getContext(spline), true);
-			spline.editor.update(spline.editor.editContext.getContext(spline));
-		}
+			if( spline.editor != null ) {
+				spline.editor.setSelected(spline.editor.editContext.getContext(spline), true);
+				spline.editor.update(spline.editor.editContext.getContext(spline));
+			}
 		#end
 		for (sp in spline.points) {
 			sp.computeName(ctx);
 		}
 	}
 
-	override  function removeInstance( ctx : Context) : Bool {
+	override function removeInstance( ctx : Context) : Bool {
 		haxe.Timer.delay(() -> { // wait for next frame, need the point to be removed from children to recompute spline accurately
 			@:privateAccess spline.computeSplineData();
 			#if editor
