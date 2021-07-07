@@ -24,6 +24,7 @@ class CamController extends h3d.scene.CameraController {
 	public var groundSnapAngle = hxd.Math.degToRad(30);
 	var level3d : Level3D;
 	var startPush : h2d.col.Point;
+	var moveCount = 0;
 
 	public function new(parent, level3d) {
 		super(null, parent);
@@ -53,6 +54,7 @@ class CamController extends h3d.scene.CameraController {
 					}
 				}
 			}
+			moveCount = 0;
 			@:privateAccess scene.window.mouseLock = true;
 		case ERelease, EReleaseOutside:
 			if( pushing == e.button ) {
@@ -63,6 +65,14 @@ class CamController extends h3d.scene.CameraController {
 				@:privateAccess scene.window.mouseLock = false;
 			}
 		case EMove:
+			// Windows bug that jumps movementX/Y on all browsers
+			if( moveCount < 10 && Math.distanceSq(pushX - e.relX, pushY - e.relY) > 100000 ) {
+				pushX = e.relX;
+				pushY = e.relY;
+				return;
+			}
+			moveCount++;
+
 			switch( pushing ) {
 			case 1:
 				if(startPush != null && startPush.distance(new h2d.col.Point(e.relX, e.relY)) > 3) {
