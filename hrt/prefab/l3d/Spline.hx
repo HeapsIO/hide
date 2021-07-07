@@ -108,16 +108,11 @@ class SplinePoint extends Object3D {
 
 	override function applyTransform(o : h3d.scene.Object) {
 		super.applyTransform(o);
-		// @:privateAccess spline.computeSplineData();
-		// #if editor
-		// 	if (spline.editor != null)
-		// 		@:privateAccess spline.generateSplineGraph(spline.editor.editContext.getContext(spline));
-		// #end
+		@:privateAccess spline.computeSplineData();
 		#if editor
 			if (spline.editor != null)
-				@:privateAccess spline.updateInstance(spline.editor.editContext.getContext(spline));
+				@:privateAccess spline.generateSplineGraph(spline.editor.editContext.getContext(spline));
 		#end
-
 	}
 
 	override function updateInstance(ctx : Context, ?propName : String) {
