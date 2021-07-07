@@ -124,7 +124,7 @@ class IconTree<T:{}> extends Component {
 					}
 					if( operation == "move_node" ) {
 						if( extra.ref == null ) return true;
-						return onAllowMove(getVal(node.id), getVal(extra.ref.id));
+						return onAllowMove(getVal(node.id), getVal(node_parent.id));
 					}
 					return false;
 				},

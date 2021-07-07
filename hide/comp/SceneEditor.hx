@@ -587,8 +587,14 @@ class SceneEditor {
 			refreshScene();
 			return true;
 		};
-		tree.onAllowMove = function(_, _) {
-			return true;
+		tree.onAllowMove = function(e, to) {
+			var allowMove = false;
+			if (to == null && e.getHideProps().allowParent == null) allowMove = true;
+			else if (to == null) allowMove = false;
+			else if (to.getHideProps().allowChildren != null && to.getHideProps().allowChildren(e.type) 
+			&& e.getHideProps().allowParent != null && e.getHideProps().allowParent(to))
+				allowMove = true;
+			return allowMove;
 		};
 
 		// Batch tree.onMove, which is called for every node moved, causing problems with undo and refresh
@@ -1197,7 +1203,7 @@ class SceneEditor {
 
 		if(p != sceneData) {
 			var el = tree.getElement(p);
-			if( el != null ) applyTreeStyle(p, el, pname);
+			if( el != null && el.toggleClass != null ) applyTreeStyle(p, el, pname);
 		}
 
 		applySceneStyle(p);

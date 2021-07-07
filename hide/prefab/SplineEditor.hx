@@ -22,14 +22,14 @@ class NewSplinePointViewer extends h3d.scene.Object {
 		connectionViewer = new h3d.scene.Graphics(this);
 		connectionViewer.name = "connectionViewer";
 		connectionViewer.lineStyle(3, 0xFFFF00);
-		connectionViewer.material.mainPass.setPassName("overlay");
+		connectionViewer.material.mainPass.setPassName("ui");
 		connectionViewer.material.mainPass.depthTest = Always;
 		connectionViewer.clear();
 
 		tangentViewer = new h3d.scene.Graphics(this);
 		tangentViewer.name = "tangentViewerViewer";
 		tangentViewer.lineStyle(3, 0xFFFF00);
-		tangentViewer.material.mainPass.setPassName("overlay");
+		tangentViewer.material.mainPass.setPassName("ui");
 		tangentViewer.material.mainPass.depthTest = Always;
 		tangentViewer.clear();
 	}
@@ -72,73 +72,6 @@ class NewSplinePointViewer extends h3d.scene.Object {
 	}
 }
 
-class SplinePointViewer extends h3d.scene.Object {
-
-	var pointViewer : h3d.scene.Mesh;
-	var controlPointsViewer : h3d.scene.Graphics;
-	var indexText : h2d.ObjectFollower;
-	var spline : Spline;
-
-	public function new( sp : SplinePoint, spline : Spline, ctx : hrt.prefab.Context ) {
-		super(sp);
-		this.spline = spline;
-		name = "SplinePointViewer";
-		pointViewer = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), null, this);
-		pointViewer.name = "pointViewer";
-		pointViewer.material.setDefaultProps("ui");
-		pointViewer.material.color.set(1,1,1,1);
-		pointViewer.material.mainPass.depthTest = Always;
-
-		controlPointsViewer = new h3d.scene.Graphics(this);
-		controlPointsViewer.name = "controlPointsViewer";
-		controlPointsViewer.lineStyle(4, 0xffffff);
-		controlPointsViewer.material.mainPass.setPassName("overlay");
-		controlPointsViewer.material.mainPass.depthTest = Always;
-		controlPointsViewer.ignoreParentTransform = false;
-		controlPointsViewer.clear();
-		controlPointsViewer.moveTo(1, 0, 0);
-		controlPointsViewer.lineTo(-1, 0, 0);
-
-		indexText = new h2d.ObjectFollower(pointViewer,  @:privateAccess ctx.local2d.getScene());
-		var t = new h2d.Text(hxd.res.DefaultFont.get(), indexText);
-		t.textColor = 0xff00ff;
-		t.textAlign = Center;
-		t.dropShadow = { dx : 0.5, dy : 0.5, color : 0x202020, alpha : 1.0 };
-		t.setScale(2.5);
-	}
-
-	override function sync( ctx : h3d.scene.RenderContext ) {
-		var cam = ctx.camera;
-		var gpos = getAbsPos().getPosition();
-		var distToCam = cam.pos.sub(gpos).length();
-		var engine = h3d.Engine.getCurrent();
-		var ratio = 18 / engine.height;
-		var correctionFromParents =  1.0 / getAbsPos().getScale().x;
-		pointViewer.setScale(correctionFromParents * ratio * distToCam * Math.tan(cam.fovY * 0.5 * Math.PI / 180.0));
-		calcAbsPos();
-
-		var t = Std.downcast(indexText.getChildAt(0), h2d.Text);
-		var sp : SplinePoint = cast parent;
-		t.text = "" + spline.points.indexOf(sp);
-
-		super.sync(ctx);
-	}
-
-	public function interset( ray : h3d.col.Ray ) : Bool {
-		return pointViewer.getCollider().rayIntersection(ray, false) != -1;
-	}
-
-	public function setColor( color : Int ) {
-		controlPointsViewer.setColor(color);
-		pointViewer.material.color.setColor(color);
-	}
-
-	override function onRemove() {
-		super.onRemove();
-		indexText.remove();
-	}
-}
-
 @:access(hrt.prefab.l3d.Spline)
 class SplineEditor {
 
@@ -150,7 +83,6 @@ class SplineEditor {
 	var interactive : h2d.Interactive;
 
 	 // Easy way to keep track of viewers
-	var splinePointViewers : Array<SplinePointViewer> = [];
 	var gizmos : Array<hide.view.l3d.Gizmo> = [];
 	var newSplinePointViewer : NewSplinePointViewer;
 
@@ -161,7 +93,7 @@ class SplineEditor {
 
 	public function update( ctx : hrt.prefab.Context , ?propName : String ) {
 		if( editMode ) {
-			showViewers(ctx);
+			showViewers();
 		}
 	}
 
@@ -317,32 +249,40 @@ class SplineEditor {
 			scale = (spd.prev.scaleX + spd.next.scaleX) * 0.5;
 		}
 
-		var sp = new SplinePoint(pos.x, pos.y, pos.z, ctx.local3d);
-		prefab.points.insert(index, sp);
+		var sp = new SplinePoint(prefab);
+		sp.x = pos.x;
+		sp.y = pos.y;
+		sp.z = pos.z;
+		prefab.children.remove(sp);
+		prefab.children.insert(index, sp);
 		if( spd.tangent != null ) {
 			var dir = spd.tangent.toVector();
 			dir.transform3x3(invMatrix); // Don't take the translation
 			dir.scale3(-1);
-			var rot = h3d.Matrix.lookAtX(dir);
-			sp.setDirection(rot.front());
+			sp.rotationX = h3d.Matrix.lookAtX(dir).getFloats()[0];
+			sp.rotationY = h3d.Matrix.lookAtX(dir).getFloats()[1];
+			sp.rotationZ = h3d.Matrix.lookAtX(dir).getFloats()[2];
+			
 		}
-		sp.scale(scale);
+		sp.scaleX = scale;
+		sp.scaleY = scale;
+		sp.scaleZ = scale;
+		editContext.scene.editor.addElements([sp], false, true, true);
 
 		prefab.updateInstance(ctx);
+		showViewers();
 		return sp;
 	}
 
 	function removeViewers() {
-		for( v in splinePointViewers )
-			v.remove();
-		splinePointViewers = [];
+		for( sp in prefab.points ) {
+			sp.setViewerVisible(false);
+		}
 	}
 
-	function showViewers( ctx : hrt.prefab.Context ) {
-		removeViewers(); // Security, avoid duplication
+	function showViewers() {
 		for( sp in prefab.points ) {
-			var spv = new SplinePointViewer(sp, prefab, ctx);
-			splinePointViewers.insert(splinePointViewers.length, spv);
+			sp.setViewerVisible(true);
 		}
 	}
 
@@ -361,36 +301,42 @@ class SplineEditor {
 			var gizmo = new hide.view.l3d.Gizmo(editContext.scene);
 			gizmo.getRotationQuat().identity();
 			gizmo.visible = true;
-			var worldPos = ctx.local3d.localToGlobal(new h3d.col.Point(sp.x, sp.y, sp.z));
-			gizmo.setPosition(worldPos.x, worldPos.y, worldPos.z);
+			var tmpMat = new h3d.Matrix();
+			tmpMat.load(sp.getAbsPos());
+			var tmpScale = new h3d.Vector();
+			tmpMat.getScale(tmpScale);
+			tmpMat.prependScale(1.0/tmpScale.x, 1.0/tmpScale.y, 1.0/tmpScale.z);
+			gizmo.setTransform(tmpMat);
 			@:privateAccess sceneEditor.updates.push( gizmo.update );
 			gizmos.insert(gizmos.length, gizmo);
 			gizmo.visible = false; // Not visible by default, only show the closest in the onMove of interactive
 
+			var posQuant = @:privateAccess sceneEditor.view.config.get("sceneeditor.xyzPrecision");
+			var scaleQuant = @:privateAccess sceneEditor.view.config.get("sceneeditor.scalePrecision");
+			var rotQuant = @:privateAccess sceneEditor.view.config.get("sceneeditor.rotatePrecision");
+
+			inline function quantize(x: Float, step: Float) {
+				if(step > 0) {
+					x = Math.round(x / step) * step;
+					x = untyped parseFloat(x.toFixed(5)); // Snap to closest nicely displayed float :cold_sweat:
+				}
+				return x;
+			}
+
 			gizmo.onStartMove = function(mode) {
 
-				var sceneObj = sp;
+				var sceneObj = sceneEditor.getContext(sp).local3d;
+				var obj3d = sp.to(hrt.prefab.Object3D);
 				var pivotPt = sceneObj.getAbsPos().getPosition();
+				var pivot = new h3d.Matrix();
+				pivot.initTranslation(pivotPt.x, pivotPt.y, pivotPt.z);
+				var invPivot = pivot.clone();
+				invPivot.invert();
+
 				var localMat : h3d.Matrix = sceneEditor.worldMat(sceneObj).clone();
-				localMat.translate(-pivotPt.x, -pivotPt.y, -pivotPt.z);
-				var parentInvMat = sceneObj.parent.getAbsPos().clone();
-				parentInvMat.initInverse(parentInvMat);
+				localMat.multiply(localMat, invPivot);
 
-				var posQuant = @:privateAccess sceneEditor.view.config.get("sceneeditor.xyzPrecision");
-				var scaleQuant = @:privateAccess sceneEditor.view.config.get("sceneeditor.scalePrecision");
-				var rotQuant = @:privateAccess sceneEditor.view.config.get("sceneeditor.rotatePrecision");
-
-				inline function quantize(x: Float, step: Float) {
-					if(step > 0) {
-						x = Math.round(x / step) * step;
-						x = untyped parseFloat(x.toFixed(5)); // Snap to closest nicely displayed float :cold_sweat:
-					}
-					return x;
-				}
-
-				var rot = sceneObj.getRotationQuat().toEuler();
-				var prevState = sceneObj.getAbsPos().clone();
-				prevState.multiply(prevState, parentInvMat);
+				var prevState = obj3d.saveTransform();
 				gizmo.onMove = function(translate: h3d.Vector, rot: h3d.Quat, scale: h3d.Vector) {
 					var transf = new h3d.Matrix();
 					transf.identity();
@@ -400,15 +346,23 @@ class SplineEditor {
 
 					var newMat = localMat.clone();
 					newMat.multiply(newMat, transf);
-					newMat.translate(pivotPt.x, pivotPt.y, pivotPt.z);
+					newMat.multiply(newMat, pivot);
+					if(sceneEditor.snapToGround && mode == MoveXY) {
+						newMat.tz = sceneEditor.getZ(newMat.tx, newMat.ty);
+					}
+
+					var parentInvMat = sceneObj.parent.getAbsPos().clone();
+					parentInvMat.initInverse(parentInvMat);
 					newMat.multiply(newMat, parentInvMat);
 					if(scale != null) newMat.prependScale(scale.x, scale.y, scale.z);
 
 					var rot = newMat.getEulerAngles();
-					sceneObj.x = quantize(newMat.tx, posQuant);
-					sceneObj.y = quantize(newMat.ty, posQuant);
-					sceneObj.z = quantize(newMat.tz, posQuant);
-					sceneObj.setRotation(hxd.Math.degToRad(quantize(hxd.Math.radToDeg(rot.x), rotQuant)), hxd.Math.degToRad(quantize(hxd.Math.radToDeg(rot.y), rotQuant)), hxd.Math.degToRad(quantize(hxd.Math.radToDeg(rot.z), rotQuant)));
+					obj3d.x = quantize(newMat.tx, posQuant);
+					obj3d.y = quantize(newMat.ty, posQuant);
+					obj3d.z = quantize(newMat.tz, posQuant);
+					obj3d.rotationX = quantize(hxd.Math.radToDeg(rot.x), rotQuant);
+					obj3d.rotationY = quantize(hxd.Math.radToDeg(rot.y), rotQuant);
+					obj3d.rotationZ = quantize(hxd.Math.radToDeg(rot.z), rotQuant);
 					if(scale != null) {
 						inline function scaleSnap(x: Float) {
 							if(K.isDown(K.CTRL)) {
@@ -418,31 +372,35 @@ class SplineEditor {
 							return x;
 						}
 						var s = newMat.getScale();
-						sceneObj.scaleX = quantize(scaleSnap(s.x), scaleQuant);
-						sceneObj.scaleY = quantize(scaleSnap(s.y), scaleQuant);
-						sceneObj.scaleZ = quantize(scaleSnap(s.z), scaleQuant);
+						obj3d.scaleX = quantize(scaleSnap(s.x), scaleQuant);
+						obj3d.scaleY = quantize(scaleSnap(s.y), scaleQuant);
+						obj3d.scaleZ = quantize(scaleSnap(s.z), scaleQuant);
 					}
-
-					prefab.updateInstance(ctx);
+					obj3d.applyTransform(sceneObj);
 				}
 
 				gizmo.onFinishMove = function() {
-					var newState = sceneObj.getAbsPos().clone();
-					newState.multiply(newState, parentInvMat);
+					var newState = obj3d.saveTransform();
 					undo.change(Custom(function(undo) {
 						if( undo ) {
-							sceneObj.setTransform(prevState);
+							obj3d.loadTransform(prevState);
+							obj3d.applyTransform(sceneObj);
 							prefab.updateInstance(ctx);
-							showViewers(ctx);
+							showViewers();
+							@:privateAccess editContext.scene.editor.refresh(Partial);
+							showViewers();
 							createGizmos(ctx);
 						}
 						else {
-							sceneObj.setTransform(newState);
+							obj3d.loadTransform(newState);
+							obj3d.applyTransform(sceneObj);
 							prefab.updateInstance(ctx);
-							showViewers(ctx);
+							showViewers();
 							createGizmos(ctx);
 						}
 					}));
+					var worldPos = ctx.local3d.localToGlobal(new h3d.col.Point(sp.x, sp.y, sp.z));
+					gizmo.setPosition(worldPos.x, worldPos.y, worldPos.z);
 				}
 			}
 		}
@@ -468,19 +426,22 @@ class SplineEditor {
 						e.propagate = false;
 						var pt = getNewPointPosition(s2d.mouseX, s2d.mouseY, ctx);
 						var sp = addSplinePoint(pt, ctx);
-						showViewers(ctx);
+						showViewers();
 						createGizmos(ctx);
 
 						undo.change(Custom(function(undo) {
 							if( undo ) {
-								prefab.points.remove(sp);
+								editContext.scene.editor.deleteElements([sp], () -> {}, false, false);
+								for (sp in prefab.points)
+									sp.computeName(editContext.getContext(sp));
+								@:privateAccess editContext.scene.editor.refresh(Partial);
 								prefab.updateInstance(ctx);
-								showViewers(ctx);
+								showViewers();
 								createGizmos(ctx);
 							}
 							else {
 								addSplinePoint(pt, ctx);
-								showViewers(ctx);
+								showViewers();
 								createGizmos(ctx);
 							}
 						}));
@@ -491,22 +452,30 @@ class SplineEditor {
 						e.propagate = false;
 						var sp = getClosestSplinePointFromMouse(s2d.mouseX, s2d.mouseY, ctx);
 						var index = prefab.points.indexOf(sp);
-						prefab.points.remove(sp);
+						editContext.scene.editor.deleteElements([sp], () -> {}, false, false);
+						for (sp in prefab.points)
+							sp.computeName(editContext.getContext(sp));
+						@:privateAccess editContext.scene.editor.refresh(Partial);
+						
 						prefab.updateInstance(ctx);
-						showViewers(ctx);
+						showViewers();
 						createGizmos(ctx);
 
 						undo.change(Custom(function(undo) {
 							if( undo ) {
-								prefab.points.insert(index, sp);
+								prefab.children.insert(index, sp);
+								editContext.scene.editor.addElements([sp], false, true, true);
 								prefab.updateInstance(ctx);
-								showViewers(ctx);
+								showViewers();
 								createGizmos(ctx);
 							}
 							else {
-								prefab.points.remove(sp);
+								editContext.scene.editor.deleteElements([sp], () -> {}, false, false);
+								for (sp in prefab.points)
+									sp.computeName(editContext.getContext(sp));
+								@:privateAccess editContext.scene.editor.refresh(Partial);
 								prefab.updateInstance(ctx);
-								showViewers(ctx);
+								showViewers();
 								createGizmos(ctx);
 							}
 						}));
@@ -541,11 +510,11 @@ class SplineEditor {
 
 					if( K.isDown( K.SHIFT ) ) {
 						var index = prefab.points.indexOf(getClosestSplinePointFromMouse(s2d.mouseX, s2d.mouseY, ctx));
-						for( spv in splinePointViewers ) {
-							if( index == splinePointViewers.indexOf(spv) )
-								spv.setColor(0xFFFF0000);
+						for( sp in prefab.points ) {
+							if( index == prefab.points.indexOf(sp) )
+								sp.setColor(0xFFFF0000);
 							else
-								spv.setColor(0xFFFFFFFF);
+								sp.setColor(0xFF0000FF);
 						}
 					}
 
@@ -577,14 +546,21 @@ class SplineEditor {
 
 		var reverseButton = props.find(".reverse");
 		reverseButton.click(function(_) {
-			prefab.points.reverse();
-			for( p in prefab.points )
-				p.rotate(0, 0, hxd.Math.degToRad(180));
+			prefab.children.reverse();
+			for (sp in prefab.points) {
+				sp.rotationZ += hxd.Math.degToRad(180);
+				sp.computeName(editContext.getContext(sp));
+			}
+			@:privateAccess editContext.scene.editor.refresh(Partial);
 
 			undo.change(Custom(function(undo) {
-				prefab.points.reverse();
-				for( p in prefab.points )
-					p.rotate(0, 0, hxd.Math.degToRad(180));
+				prefab.children.reverse();
+				for (sp in prefab.points) {
+					sp.rotationZ += hxd.Math.degToRad(180);
+					sp.computeName(editContext.getContext(sp));
+				}
+				@:privateAccess editContext.scene.editor.refresh(Partial);
+				
 			}));
 			ctx.onChange(prefab, null);
 			removeGizmos();

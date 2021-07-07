@@ -49,7 +49,7 @@ class Prefab {
 	/**
 		Creates a new prefab with the given parent.
 	**/
-	public function new(?parent) {
+	public function new(?parent : Prefab) {
 		this.parent = parent;
 		children = [];
 	}
