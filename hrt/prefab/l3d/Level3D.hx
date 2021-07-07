@@ -30,7 +30,7 @@ class Level3D extends hrt.prefab.Library {
 	}
 
 	override function getHideProps() : HideProps {
-		return { icon : "cube", name : "Level3D", allowChildren : function(t) return Library.isOfType(t,Object3D) || t == "renderProps", allowParent: _ -> false};
+		return { icon : "cube", name : "Level3D", allowParent: _ -> false};
 	}
 
 	#end
