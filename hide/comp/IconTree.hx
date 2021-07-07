@@ -124,7 +124,7 @@ class IconTree<T:{}> extends Component {
 					}
 					if( operation == "move_node" ) {
 						if( extra.ref == null ) return true;
-						return onAllowMove(getVal(node.id), getVal(extra.ref.id));
+						return onAllowMove(getVal(node.id), getVal(node_parent.id));
 					}
 					return false;
 				},
@@ -182,7 +182,6 @@ class IconTree<T:{}> extends Component {
 		});
 		element.on("move_node.jstree", function(event, e) {
 			onMove(getVal(e.node.id), e.parent == "#" ? null : getVal(e.parent), e.position);
-			refresh();
 		});
 		element.on('ready.jstree', function () {
 			/* var lis = element.find("li");

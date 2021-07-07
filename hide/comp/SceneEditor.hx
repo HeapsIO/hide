@@ -573,8 +573,14 @@ class SceneEditor {
 			refreshScene();
 			return true;
 		};
-		tree.onAllowMove = function(_, _) {
-			return true;
+		tree.onAllowMove = function(e, to) {
+			var allowMove = false;
+			if (to == null && e.getHideProps().allowParent == null) allowMove = true;
+			else if (to == null) allowMove = false;
+			else if (to.getHideProps().allowChildren != null && to.getHideProps().allowChildren(e.type) 
+			&& e.getHideProps().allowParent != null && e.getHideProps().allowParent(to))
+				allowMove = true;
+			return allowMove;
 		};
 
 		// Batch tree.onMove, which is called for every node moved, causing problems with undo and refresh
@@ -587,14 +593,7 @@ class SceneEditor {
 				}
 				moved.push(e);
 				movetimer = haxe.Timer.delay(function() {
-					var doReparent = false;
-					if (to == null && e.getHideProps().allowParent == null) doReparent = true;
-					else if (to == null) doReparent = false;
-					else if (to.getHideProps().allowChildren != null && to.getHideProps().allowChildren(e.type) 
-					&& e.getHideProps().allowParent != null && e.getHideProps().allowParent(to))
-						doReparent = true;
-
-					if (doReparent) reparentElement(moved, to, idx);
+					reparentElement(moved, to, idx);
 					movetimer = null;
 					moved = [];
 				}, 50);
