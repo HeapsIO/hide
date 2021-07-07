@@ -108,10 +108,9 @@ class SplinePoint extends Object3D {
 
 	override function applyTransform(o : h3d.scene.Object) {
 		super.applyTransform(o);
-		@:privateAccess spline.computeSplineData();
 		#if editor
 			if (spline.editor != null)
-				@:privateAccess spline.generateSplineGraph(spline.editor.editContext.getContext(spline));
+				@:privateAccess spline.computeSpline(spline.editor.editContext.getContext(spline));
 		#end
 	}
 
@@ -130,10 +129,9 @@ class SplinePoint extends Object3D {
 
 	override function removeInstance( ctx : Context) : Bool {
 		haxe.Timer.delay(() -> { // wait for next frame, need the point to be removed from children to recompute spline accurately
-			@:privateAccess spline.computeSplineData();
 			#if editor
 				if (spline.editor != null && spline.editor.editContext.getContext(spline) != null)
-					@:privateAccess spline.generateSplineGraph(spline.editor.editContext.getContext(spline));
+					@:privateAccess spline.computeSpline(spline.editor.editContext.getContext(spline));
 			#end
 		}, 0);
 		return super.removeInstance(ctx);
@@ -287,13 +285,11 @@ class Spline extends Object3D {
 
 	override function updateInstance( ctx : hrt.prefab.Context , ?propName : String ) {
 		super.updateInstance(ctx, propName);
-		computeSplineData();
-
 		#if editor
 		if( editor != null )
 			editor.update(ctx, propName);
-		generateSplineGraph(ctx);
 		#end
+		computeSpline(ctx);
 	}
 
 	// Return an interpolation of two samples at t, 0 <= t <= 1
@@ -503,6 +499,13 @@ class Spline extends Object3D {
 		}
 	}
 
+	public function computeSpline(ctx : hrt.prefab.Context) {
+		computeSplineData();
+		#if editor
+			generateSplineGraph(ctx);
+		#end
+	}
+
 	#if editor
 
 	public function onEdit( b : Bool ) {
@@ -526,7 +529,7 @@ class Spline extends Object3D {
 				<dl>
 					<dt>Color</dt><dd><input type="color" alpha="true" field="color"/></dd>
 					<dt>Thickness</dt><dd><input type="range" min="1" max="10" field="lineThickness"/></dd>
-					<dt>Step</dt><dd><input type="range" min="1" max="100" step="1" field="step"/></dd>
+					<dt>Step</dt><dd><input type="range" min="1" max="10" step="1" field="step"/></dd>
 					<dt>Loop</dt><dd><input type="checkbox" field="loop"/></dd>
 					<dt>Show Spline</dt><dd><input type="checkbox" field="showSpline"/></dd>
 					<dt>Type</dt>
