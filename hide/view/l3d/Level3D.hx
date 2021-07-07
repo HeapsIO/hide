@@ -284,6 +284,8 @@ class Level3D extends FileView {
 	var curGridHeight : Int;
 
 	var showGrid = false;
+	// autoSync
+	var autoSync : Bool;
 	var currentVersion : Int = 0;
 	var lastSyncChange : Float = 0.;
 	var sceneFilters : Map<String, Bool>;
@@ -372,6 +374,7 @@ class Level3D extends FileView {
 		tools.saveDisplayKey = "Level3D/toolbar";
 		tools.addButton("video-camera", "Perspective camera", () -> resetCamera(false));
 		tools.addButton("video-camera", "Top camera", () -> resetCamera(true)).find(".icon").css({transform: "rotateZ(90deg)"});
+		tools.addToggle("arrows", "2D Camera", (b) -> sceneEditor.camera2D = b);
 		tools.addToggle("anchor", "Snap to ground", (v) -> sceneEditor.snapToGround = v, sceneEditor.snapToGround);
 		var localToggle = tools.addToggle("compass", "Local transforms", (v) -> sceneEditor.localTransform = v, sceneEditor.localTransform);
 		keys.register("sceneeditor.toggleLocal", () -> localToggle.toggle(!localToggle.isDown()));
@@ -419,6 +422,12 @@ class Level3D extends FileView {
 			scene.engine.backgroundColor = v;
 			updateGrid();
 		}, scene.engine.backgroundColor);
+		tools.addToggle("refresh", "Auto synchronize", function(b) {
+			autoSync = b;
+		});
+		tools.addRange("Speed", function(v) {
+			scene.speed = v;
+		}, scene.speed);
 
 		posToolTip = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		posToolTip.dropShadow = { dx : 1, dy : 1, color : 0, alpha : 0.5 };
@@ -584,6 +593,11 @@ class Level3D extends FileView {
 
 		if( curGridSize != data.gridSize || curGridWidth != data.width || curGridHeight != data.height ) {
 			updateGrid();
+		}
+		if( autoSync && (currentVersion != undo.currentID || lastSyncChange != properties.lastChange) ) {
+			save();
+			lastSyncChange = properties.lastChange;
+			currentVersion = undo.currentID;
 		}
 
 	}
