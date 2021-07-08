@@ -2254,8 +2254,15 @@ class SceneEditor {
 			}
 		}
 
+		var grecent = [];
 		var groups = [];
 		var gother = [];
+		var recents : Array<String> = ide.currentConfig.get("sceneeditor.newrecents", []);
+		for( g in recents) {
+			grecent.push(getNewTypeMenuItem(g, parent, onMake));
+
+		}
+
 		for( g in (view.config.get("sceneeditor.newgroups") : Array<String>) ) {
 			var parts = g.split("|");
 			var cl : Dynamic = Type.resolveClass(parts[1]);
@@ -2308,6 +2315,9 @@ class SceneEditor {
 				return gother;
 			newItems.push({ label : "Other", menu : gother });
 		}
+
+		newItems.unshift({label : "Recents", menu : grecent});
+
 		return newItems;
 	}
 
@@ -2324,6 +2334,11 @@ class SceneEditor {
 					autoName(p);
 					if(onMake != null)
 						onMake(p);
+					var recents : Array<String> = ide.currentConfig.get("sceneeditor.newrecents", []);
+					recents.remove(p.type);
+					recents.unshift(p.type);
+					if (recents.length > 10) recents.pop();
+					ide.currentConfig.set("sceneeditor.newrecents", recents);
 					return p;
 				}
 
@@ -2331,6 +2346,11 @@ class SceneEditor {
 					ide.chooseFile(pmodel.inf.fileSource, function(path) {
 						var p = make(path);
 						addElements([p]);
+						var recents : Array<String> = ide.currentConfig.get("sceneeditor.newrecents", []);
+						recents.remove(p.type);
+						recents.unshift(p.type);
+						if (recents.length > 10) recents.pop();
+						ide.currentConfig.set("sceneeditor.newrecents", recents);
 					});
 				else
 					addElements([make()]);
