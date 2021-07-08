@@ -2337,7 +2337,8 @@ class SceneEditor {
 					var recents : Array<String> = ide.currentConfig.get("sceneeditor.newrecents", []);
 					recents.remove(p.type);
 					recents.unshift(p.type);
-					if (recents.length > 10) recents.pop();
+					var recentSize : Int = view.config.get("sceneeditor.recentsize");
+					if (recents.length > recentSize) recents.splice(recentSize, recents.length - recentSize);
 					ide.currentConfig.set("sceneeditor.newrecents", recents);
 					return p;
 				}
@@ -2349,7 +2350,8 @@ class SceneEditor {
 						var recents : Array<String> = ide.currentConfig.get("sceneeditor.newrecents", []);
 						recents.remove(p.type);
 						recents.unshift(p.type);
-						if (recents.length > 10) recents.pop();
+						var recentSize : Int = view.config.get("sceneeditor.recentsize");
+						if (recents.length > recentSize) recents.splice(recentSize, recents.length - recentSize);
 						ide.currentConfig.set("sceneeditor.newrecents", recents);
 					});
 				else

@@ -116,6 +116,7 @@
 	"sceneeditor.rotatePrecision": 0.1,
 
 	"sceneeditor.newgroups" : ["2D|hrt.prefab.Object2D","3D|hrt.prefab.Object3D","RFX|hrt.prefab.rfx.RendererFX"],
+	"sceneeditor.recentsize" : 6,
 
 	"sceneeditor.icons" : {},
 	"sceneeditor.ranges" : {},
