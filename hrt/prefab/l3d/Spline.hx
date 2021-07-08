@@ -318,10 +318,18 @@ class Spline extends Object3D {
 		// Linear interpolation between the two samples
 		else {
 			var segmentLength = data.samples[s1].pos.distance(data.samples[s2].pos);
-			var t = (l - (s1 * 1./step)) / segmentLength;
-			pos.lerp(data.samples[s1].pos, data.samples[s2].pos, t);
-			if(tangent != null)
-				tangent.lerp(data.samples[s1].tangent, data.samples[s2].tangent, t);
+			if (segmentLength == 0) {
+				pos.load(data.samples[s1].pos);
+				if(tangent != null)
+					tangent.load(data.samples[s1].tangent);
+			}
+			else {
+				var t = (l - (s1 * 1./step)) / segmentLength;
+				pos.lerp(data.samples[s1].pos, data.samples[s2].pos, t);
+				if(tangent != null)
+					tangent.lerp(data.samples[s1].tangent, data.samples[s2].tangent, t);
+			}
+			
 		}
 		return pos;
 	}
@@ -368,10 +376,12 @@ class Spline extends Object3D {
 			var t = 0.;
 			while (t <= 1.) {
 				var p = getPointBetween(t, curP, nextP);
-				samples.insert(samples.length, { pos : p, tangent : getTangentBetween(t, curP, nextP), prev : curP, next : nextP });
+				if (p.distance(samples[samples.length - 1].pos) >= 1./step)
+					samples.insert(samples.length, { pos : p, tangent : getTangentBetween(t, curP, nextP), prev : curP, next : nextP });
 				t += 1./step;
 			}
-			samples.insert(samples.length, { pos : nextP.getPoint(), tangent : nextP.getTangent(), prev : curP, next : nextP, t : 1.0 });
+			if (nextP.getPoint().distance(samples[samples.length - 1].pos) >= 1./step)
+				samples.insert(samples.length, { pos : nextP.getPoint(), tangent : nextP.getTangent(), prev : curP, next : nextP, t : 1.0 });
 			curP = points[i];
 			nextP = points[(i + 1) % points.length];
 
