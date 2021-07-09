@@ -116,6 +116,19 @@ private class ParticleTransform {
 		this.scaleZ = z;
 	}
 
+	public inline function getWorldPosition() {
+		var ppos = parent.getAbsPos();
+		return new h3d.Vector(x + ppos.tx, y + ppos.ty, z + ppos.tz);
+	}
+
+	public inline function setWorldPosition(v: h3d.Vector) {
+		var ppos = parent.getAbsPos();
+		x = v.x - ppos.tx;
+		y = v.y - ppos.ty;
+		z = v.z - ppos.tz;
+	}
+
+
 	public function calcAbsPos() {
 		qRot.toMatrix(absPos);
 		absPos._11 *= scaleX;
@@ -156,12 +169,11 @@ private class ParticleInstance  {
 
 	var emitter : EmitterObject;
 	var evaluator : Evaluator;
-	var parent : h3d.scene.Object;
 
 	var transform = new ParticleTransform();
-	var childTransform = new ParticleTransform();
+	var localTransform = new ParticleTransform();
 	public var absPos = new h3d.Matrix();
-	public var childMat = new h3d.Matrix();
+	public var localMat = new h3d.Matrix();
 	public var baseMat : h3d.Matrix;
 
 	public var startTime = 0.0;
@@ -180,7 +192,7 @@ private class ParticleInstance  {
 
 	public function init(emitter: EmitterObject, def: InstanceDef) {
 		transform.reset();
-		childTransform.reset();
+		localTransform.reset();
 		life = 0;
 		lifeTime = 0;
 		startFrame = 0;
@@ -200,7 +212,7 @@ private class ParticleInstance  {
 	}
 
 	public function dispose() {
-		transform.parent = childTransform.parent = null;
+		transform.parent = localTransform.parent = null;
 		emitter = null;
 	}
 
@@ -214,6 +226,7 @@ private class ParticleInstance  {
 	static var tmpSpeed = new h3d.Vector();
 	static var tmpMat = new h3d.Matrix();
 	static var tmpPos = new h3d.Vector();
+	static var tmpPos2 = new h3d.Vector();
 	static var tmpCamRotAxis = new h3d.Vector();
 	static var tmpCamAlign = new h3d.Vector();
 	static var tmpCamVec = new h3d.Vector();
@@ -302,7 +315,12 @@ private class ParticleInstance  {
 		if(def.orbitSpeed != VZero) {
 			evaluator.getVector(def.orbitSpeed, t, tmpLocalSpeed);
 			tmpMat.initRotation(tmpLocalSpeed.x * dt, tmpLocalSpeed.y * dt, tmpLocalSpeed.z * dt);
-			transform.transform3x3(tmpMat);
+			// Rotate in emitter space and convert back to world space
+			var pos = transform.getWorldPosition();
+			pos.transform3x4(emitter.getInvPos());
+			pos.transform3x3(tmpMat);
+			pos.transform3x4(emitter.getAbsPos());
+			transform.setWorldPosition(pos);
 		}
 
 		// SPEED ORIENTATION
@@ -317,12 +335,12 @@ private class ParticleInstance  {
 		scaleVec.scale3(evaluator.getFloat(def.scale, t));
 
 		// TRANSFORM
-		childMat.initScale(scaleVec.x, scaleVec.y, scaleVec.z);
-		childMat.rotate(rot.x, rot.y, rot.z);
-		childMat.translate(offset.x, offset.y, offset.z);
+		localMat.initScale(scaleVec.x, scaleVec.y, scaleVec.z);
+		localMat.rotate(rot.x, rot.y, rot.z);
+		localMat.translate(offset.x, offset.y, offset.z);
 		if( baseMat != null )
-			childMat.multiply(baseMat, childMat);
-		childTransform.setTransform(childMat);
+			localMat.multiply(baseMat, localMat);
+		localTransform.setTransform(localMat);
 
 		// COLOR
 		if( def.color != null ) {
@@ -337,14 +355,14 @@ private class ParticleInstance  {
 			case Screen:
 				transform.qRot.load(emitter.screenQuat);
 				transform.calcAbsPos();
-				childTransform.calcAbsPos();
-				absPos.multiply(childTransform.absPos, transform.absPos);
+				localTransform.calcAbsPos();
+				absPos.multiply(localTransform.absPos, transform.absPos);
 
 			case Axis:
 				transform.calcAbsPos();
 
 				var absChildMat = tmpMat;
-				absChildMat.multiply3x4(transform.absPos, childMat);
+				absChildMat.multiply3x4(transform.absPos, localMat);
 				tmpCamAlign.load(emitter.alignAxis);
 				tmpCamAlign.transform3x3(absChildMat);
 				tmpCamAlign.normalizeFast();
@@ -369,17 +387,17 @@ private class ParticleInstance  {
 
 				tmpQuat.identity();
 				tmpQuat.initRotateAxis(emitter.alignLockAxis.x, emitter.alignLockAxis.y, emitter.alignLockAxis.z, angle);
-				var cq = childTransform.qRot;
+				var cq = localTransform.qRot;
 				cq.multiply(cq, tmpQuat);
-				childTransform.setRotation(cq);
+				localTransform.setRotation(cq);
 
-				childTransform.calcAbsPos();
-				absPos.multiply(childTransform.absPos, transform.absPos);
+				localTransform.calcAbsPos();
+				absPos.multiply(localTransform.absPos, transform.absPos);
 
 			case None:
 				transform.calcAbsPos();
-				childTransform.calcAbsPos();
-				absPos.multiply(childTransform.absPos, transform.absPos);
+				localTransform.calcAbsPos();
+				absPos.multiply(localTransform.absPos, transform.absPos);
 		}
 
 		// COLLISION
@@ -397,7 +415,7 @@ private class ParticleInstance  {
 					newDir.scale3(speedAmount);
 					speedAccumulation.set(newDir.x, newDir.y, newDir.z);
 					transform.z = 0;
-					absPos.multiply(childTransform.absPos, transform.absPos);
+					absPos.multiply(localTransform.absPos, transform.absPos);
 				}
 			}
 		}
@@ -795,8 +813,7 @@ class EmitterObject extends h3d.scene.Object {
 			return;
 
 		if( parent != null ) {
-			invTransform.load(parent.getAbsPos());
-			invTransform.invert();
+			invTransform.load(parent.getInvPos());
 
 			if(alignMode == Screen) {
 				var cam = getScene().camera;
