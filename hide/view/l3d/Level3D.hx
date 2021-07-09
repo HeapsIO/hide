@@ -7,7 +7,6 @@ import hxd.Key as K;
 import hrt.prefab.Prefab as PrefabElement;
 import hrt.prefab.Object3D;
 import hrt.prefab.l3d.Instance;
-import h3d.scene.Object;
 import hide.comp.cdb.DataFiles;
 
 
@@ -273,15 +272,13 @@ class Level3D extends FileView {
 
 	var tools : hide.comp.Toolbar;
 
-	var levelProps : hide.comp.PropsEditor;
-
 	var layerToolbar : hide.comp.Toolbar;
 	var layerButtons : Map<PrefabElement, hide.comp.Toolbar.ToolToggle>;
 
 	var grid : h3d.scene.Graphics;
-	var curGridSize : Int;
-	var curGridWidth : Int;
-	var curGridHeight : Int;
+
+	var gridStep : Int;
+	var gridSize : Int;
 
 	var showGrid = false;
 	// autoSync
@@ -364,7 +361,6 @@ class Level3D extends FileView {
 		layerToolbar = new hide.comp.Toolbar(null,element.find(".layer-buttons"));
 		currentVersion = undo.currentID;
 
-		levelProps = new hide.comp.PropsEditor(undo,null,element.find(".level-props"));
 		sceneEditor = new Level3DSceneEditor(this, data);
 		element.find(".hide-scenetree").first().append(sceneEditor.tree.element);
 		element.find(".hide-scroll").first().append(sceneEditor.properties.element);
@@ -409,15 +405,6 @@ class Level3D extends FileView {
 		element.find(".collapse-btn").click(function(e) {
 			sceneEditor.collapseTree();
 		});
-
-		// Level edit
-		{
-			var edit = new LevelEditContext(this, sceneEditor.context);
-			edit.properties = levelProps;
-			edit.scene = sceneEditor.scene;
-			edit.cleanups = [];
-			data.edit(edit);
-		}
 
 		refreshSceneFilters();
 		refreshGraphicsFilters();
@@ -611,9 +598,8 @@ class Level3D extends FileView {
 		grid = new h3d.scene.Graphics(scene.s3d);
 		grid.scale(1);
 		grid.material.mainPass.setPassName("debuggeom");
-		curGridSize = data.gridSize;
-		curGridWidth = data.width;
-		curGridHeight = data.height;
+		gridStep = ide.currentConfig.get("l3d.gridStep");
+		gridSize = ide.currentConfig.get("l3d.gridSize");
 
 		var col = h3d.Vector.fromColor(scene.engine.backgroundColor);
 		var hsl = col.toColorHSL();
@@ -622,15 +608,16 @@ class Level3D extends FileView {
 		col.makeColor(hsl.x, hsl.y, hsl.z);
 
 		grid.lineStyle(1.0, col.toColor(), 1.0);
-		for(ix in 0... hxd.Math.floor(data.width / data.gridSize )+1) {
-			grid.moveTo(ix * data.gridSize, 0, 0);
-			grid.lineTo(ix * data.gridSize, data.height, 0);
-		}
-		for(iy in 0...  hxd.Math.floor(data.height / data.gridSize )+1) {
-			grid.moveTo(0, iy * data.gridSize, 0);
-			grid.lineTo(data.width, iy * data.gridSize, 0);
+		//width
+		for(i in 0...(hxd.Math.floor(gridSize / gridStep) + 1)) {
+			grid.moveTo(i * gridStep, 0, 0);
+			grid.lineTo(i * gridStep, gridSize, 0);
+
+			grid.moveTo(0, i * gridStep, 0);
+			grid.lineTo(gridSize, i * gridStep, 0);
 		}
 		grid.lineStyle(0);
+		grid.setPosition(-1 * gridSize / 2, -1 * gridSize / 2, 0);
 	}
 
 	function onUpdate(dt:Float) {
@@ -644,9 +631,6 @@ class Level3D extends FileView {
 			posToolTip.visible = false;
 		}
 
-		if( curGridSize != data.gridSize || curGridWidth != data.width || curGridHeight != data.height ) {
-			updateGrid();
-		}
 		if( autoSync && (currentVersion != undo.currentID || lastSyncChange != properties.lastChange) ) {
 			save();
 			lastSyncChange = properties.lastChange;

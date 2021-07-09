@@ -2,14 +2,9 @@ package hrt.prefab.l3d;
 
 class Level3D extends hrt.prefab.Library {
 
-	@:s public var width : Int;
-	@:s public var height : Int;
-	@:s public var gridSize : Int = 1;
-
 	public function new() {
 		super();
 		type = "level3d";
-		width = height = 100;
 	}
 
 	#if editor
