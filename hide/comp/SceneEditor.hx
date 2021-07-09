@@ -137,7 +137,6 @@ typedef CustomPivot = { elt : PrefabElement, mesh : Mesh, locPos : Vector };
 class SceneEditor {
 
 	public var tree : hide.comp.IconTree<PrefabElement>;
-	public var favTree : hide.comp.IconTree<PrefabElement>;
 	public var scene : hide.comp.Scene;
 	public var properties : hide.comp.PropsEditor;
 	public var context(default,null) : hrt.prefab.Context;
@@ -162,7 +161,6 @@ class SceneEditor {
 	var ide : hide.Ide;
 	public var event(default, null) : hxd.WaitEvent;
 	var hideList : Map<PrefabElement, Bool> = new Map();
-	var favorites : Array<PrefabElement> = [];
 
 	var undo(get, null):hide.ui.UndoHistory;
 	function get_undo() { return view.undo; }
@@ -185,10 +183,6 @@ class SceneEditor {
 		tree = new hide.comp.IconTree();
 		tree.async = false;
 		tree.autoOpenNodes = false;
-
-		favTree = new hide.comp.IconTree();
-		favTree.async = false;
-		favTree.autoOpenNodes = false;
 
 		var sceneEl = new Element('<div class="heaps-scene"></div>');
 		scene = new hide.comp.Scene(view.config, null, sceneEl);
@@ -253,20 +247,12 @@ class SceneEditor {
 						hideList.set(p, true);
 				}
 			}
-			var favList = @:privateAccess view.getDisplayState("favorites");
-			if(favList != null) {
-				for(p in all) {
-					if(favList.indexOf(p.getAbsPath(true)) >= 0)
-						favorites.push(p);
-				}
-			}
 		}
 	}
 
 	public function dispose() {
 		scene.dispose();
 		tree.dispose();
-		favTree.dispose();
 	}
 
 	function set_camera2D(b) {
@@ -465,34 +451,6 @@ class SceneEditor {
 			};
 			return r;
 		}
-		favTree.get = function (o:PrefabElement) {
-			if(o == null) {
-				return [for(f in favorites) makeItem(f, {
-					disabled: true
-				})];
-			}
-			return [];
-		}
-		favTree.allowRename = false;
-		favTree.init();
-		favTree.onAllowMove = function(_, _) {
-			return false;
-		};
-		favTree.onClick = function(e, evt) {
-			if(evt.ctrlKey) {
-				var sel = tree.getSelection();
-				sel.push(e);
-				selectElements(sel);
-				tree.revealNode(e);
-			}
-			else
-				selectElements([e]);
-		}
-		favTree.onDblClick = function(e) {
-			selectElements([e]);
-			tree.revealNode(e);
-			return true;
-		}
 		tree.get = function(o:PrefabElement) {
 			var objs = o == null ? sceneData.children : Lambda.array(o);
 			if( o != null && o.getHideProps().hideChildren != null ) {
@@ -525,7 +483,6 @@ class SceneEditor {
 				{ label : "New...", menu : newItems },
 			];
 			var actionItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [
-				{ label : "Favorite", checked : current != null && isFavorite(current), click : function() setFavorite(current, !isFavorite(current)) },
 				{ label : "Rename", enabled : current != null, click : function() tree.editNode(current) },
 				{ label : "Delete", enabled : current != null, click : function() deleteElements(curEdit.rootElements) },
 				{ label : "Duplicate", enabled : current != null, click : duplicate.bind(false) },
@@ -567,7 +524,6 @@ class SceneEditor {
 			new hide.comp.ContextMenu(menuItems.concat(actionItems));
 		};
 		tree.element.parent().contextmenu(ctxMenu.bind(tree));
-		favTree.element.parent().contextmenu(ctxMenu.bind(favTree));
 		tree.allowRename = true;
 		tree.init();
 		tree.onClick = function(e, _) {
@@ -621,7 +577,6 @@ class SceneEditor {
 
 	public function refresh( ?mode: RefreshMode, ?callb: Void->Void) {
 		if(mode == null || mode == Full) refreshScene();
-		refreshFavs();
 		refreshTree(callb);
 	}
 
@@ -639,10 +594,6 @@ class SceneEditor {
 			}
 			if(callb != null) callb();
 		});
-	}
-
-	function refreshFavs() {
-		favTree.refresh();
 	}
 
 	function refreshProps() {
@@ -1213,7 +1164,6 @@ class SceneEditor {
 		var obj3d  = p.to(Object3D);
 		el.toggleClass("disabled", !p.enabled);
 		var aEl = el.find("a").first();
-		aEl.toggleClass("favorite", isFavorite(p));
 
 		var tag = getTag(p);
 
@@ -1886,26 +1836,6 @@ class SceneEditor {
 	function saveDisplayState() {
 		var state = [for (h in hideList.keys()) h.getAbsPath(true)];
 		@:privateAccess view.saveDisplayState("hideList", state);
-		var state = [for(f in favorites) f.getAbsPath(true)];
-		@:privateAccess view.saveDisplayState("favorites", state);
-	}
-
-	public function isFavorite(e: PrefabElement) {
-		return favorites.indexOf(e) >= 0;
-	}
-
-	public function setFavorite(e: PrefabElement, fav: Bool) {
-		if(fav && !isFavorite(e))
-			favorites.push(e);
-		else if(!fav && isFavorite(e))
-			favorites.remove(e);
-
-		var el = tree.getElement(e);
-		if(el != null)
-			applyTreeStyle(e, el);
-
-		refreshFavs();
-		saveDisplayState();
 	}
 
 	public function setVisible(elements : Array<PrefabElement>, visible: Bool) {

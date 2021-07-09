@@ -225,18 +225,23 @@ input[type=checkbox]:checked:after {
 .hide-scene-layer .jstree-container-ul {
   padding-right: 5px;
 }
-.prefabview .scenetree {
-  max-height: 350px;
+.scene-partition.reduced-columns .hide-scenetree {
+  max-height: 40%;
+}
+.scene-partition.reduced-columns .props-column {
+  max-height: 60%;
+  padding-bottom: 36px;
 }
 .hide-scenetree {
   flex: 1;
   background-color: #111;
   border: 1px solid #444;
-  width: 300px;
+  min-width: 300px;
   overflow-y: auto;
+  min-height: 350px;
 }
 .hide-scenetree .jstree {
-  width: 300px;
+  min-width: 300px;
   overflow-x: hidden;
 }
 .hide-scenetree .jstree-container-ul {
@@ -310,6 +315,11 @@ input[type=checkbox]:checked:after {
 .flex.vertical {
   flex-direction: column;
 }
+.scene-partition .show-cols-btn {
+  position: absolute;
+  margin-top: 2px;
+  right: 0px;
+}
 .hide-toolbar {
   flex: none;
   padding-top: 2px;
@@ -317,8 +327,30 @@ input[type=checkbox]:checked:after {
   background-color: #222222;
   display: inline-block;
 }
+.hide-toolbar .layout-btn {
+  position: absolute;
+  right: 31px;
+}
+.hide-toolbar .close-btn {
+  position: absolute;
+  right: 0px;
+}
+.hide-toolbar .toolbar-label {
+  margin-right: 5px;
+  display: inline-block;
+  min-width: 20px;
+  height: 20px;
+  padding: 2px;
+  text-align: center;
+  border-radius: 1px;
+  text-shadow: 1px 2px 2px black;
+}
+.hide-toolbar .toolbar-label > .icon {
+  vertical-align: center;
+}
 .hide-toolbar .button,
-.hide-toolbar .toggle {
+.hide-toolbar .toggle,
+.scene-partition .show-cols-btn {
   margin-right: 5px;
   display: inline-block;
   user-select: none;
@@ -339,7 +371,8 @@ input[type=checkbox]:checked:after {
   vertical-align: center;
 }
 .hide-toolbar .button:hover,
-.hide-toolbar .toggle:hover {
+.hide-toolbar .toggle:hover,
+.scene-partition .show-cols-btn:hover {
   color: white;
   border-color: white;
   background-color: #666;
@@ -529,6 +562,15 @@ input[type=checkbox]:checked:after {
   width: 100px;
 }
 /* Properties */
+.props-column {
+  height: 100%;
+  background-color: #111;
+  width: 320px;
+}
+.props-column .hide-toolbar {
+  width: 100%;
+  vertical-align: middle;
+}
 .hide-properties {
   padding: 10px;
   overflow: auto;
@@ -1581,10 +1623,6 @@ body.hide-subview .lm_controls {
 .jstree .hidden a {
   color: #555;
 }
-.jstree a.favorite {
-  color: white;
-  font-weight: bold;
-}
 .jstree .disabled a {
   color: #533 !important;
   display: inline;
@@ -1609,16 +1647,6 @@ body.hide-subview .lm_controls {
 }
 .jstree-node {
   padding-right: 10px!important;
-}
-.hide-scene-outliner .favorites {
-  overflow-y: auto;
-  background: #111;
-}
-.hide-scene-outliner .favorites label {
-  font-weight: bold;
-}
-.hide-scene-outliner .favorites-tree {
-  padding: 4px;
 }
 .visibility-toggle,
 .visibility-large-toggle {

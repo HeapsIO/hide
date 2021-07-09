@@ -312,46 +312,100 @@ class Level3D extends FileView {
 					<span class="tools-buttons"></span>
 					<span class="layer-buttons"></span>
 				</div>
-				<div style="display: flex; flex-direction: row; flex: 1; overflow: hidden;">
+
+				<div class="scene-partition" style="display: flex; flex-direction: row; flex: 1; overflow: hidden;">
 					<div class="heaps-scene"></div>
-					<div class="hide-scene-outliner">
-						<div class="favorites" style="height:20%;">
-							<label>Favorites</label>
-							<div class="favorites-tree"></div>
-						</div>
-						<div style="height:80%;" class="flex vertical">
-							<div class="hide-toolbar" style="zoom: 80%">
+
+					<div class="tree-column">
+						<div class="flex vertical">
+							<div class="hide-toolbar">
+								<div class="toolbar-label">
+									<div class="icon fa fa-sitemap"></div>
+									Scene
+								</div>
 								<div class="button collapse-btn" title="Collapse all">
 									<div class="icon fa fa-reply-all"></div>
 								</div>
+
+								<div class="button combine-btn layout-btn" title="Move to bottom of tree">
+									<div class="icon fa fa-compress"></div>
+								</div>
+								<div class="button separate-btn layout-btn" title="Move to own column">
+									<div class="icon fa fa-expand"></div>
+								</div>
+
+								<div class="button hide-cols-btn close-btn" title="Hide Tree & Props">
+									<div class="icon fa fa-chevron-right"></div>
+								</div>
 							</div>
+
 							<div class="hide-scenetree"></div>
 						</div>
 					</div>
-					<div class="tabs">
-						<div class="tab expand" name="Scene" icon="sitemap">
+
+					<div class="props-column">
+						<div class="hide-toolbar">
+							<div class="toolbar-label">
+								<div class="icon fa fa-sitemap"></div>
+								Properties
+							</div>
+						</div>
 							<div class="hide-scroll"></div>
-						</div>
-						<div class="tab expand" name="Properties" icon="cog">
-							<div class="level-props"></div>
-						</div>
+					</div>
+
+					<div class="button show-cols-btn close-btn" title="Show Tree & Props">
+						<div class="icon fa fa-chevron-down"></div>
 					</div>
 				</div>
 			</div>
 		');
+
 		tools = new hide.comp.Toolbar(null,element.find(".tools-buttons"));
 		layerToolbar = new hide.comp.Toolbar(null,element.find(".layer-buttons"));
-		tabs = new hide.comp.Tabs(null,element.find(".tabs"));
 		currentVersion = undo.currentID;
 
 		levelProps = new hide.comp.PropsEditor(undo,null,element.find(".level-props"));
 		sceneEditor = new Level3DSceneEditor(this, data);
 		element.find(".hide-scenetree").first().append(sceneEditor.tree.element);
-		element.find(".favorites-tree").first().append(sceneEditor.favTree.element);
 		element.find(".hide-scroll").first().append(sceneEditor.properties.element);
 		element.find(".heaps-scene").first().append(sceneEditor.scene.element);
 		sceneEditor.tree.element.addClass("small");
-		sceneEditor.favTree.element.addClass("small");
+
+		element.find(".show-cols-btn").first().hide();
+		element.find(".show-cols-btn").first().click(function(_) {
+			element.find(".tree-column").first().show();
+			element.find(".props-column").first().show();
+			element.find(".show-cols-btn").first().hide();
+			@:privateAccess scene.window.checkResize();
+		});
+		element.find(".hide-cols-btn").first().click(function(_) {
+			element.find(".tree-column").first().hide();
+			element.find(".props-column").first().hide();
+			element.find(".show-cols-btn").first().show();
+			@:privateAccess scene.window.checkResize();
+		});
+		function setCombine(val) {
+			var fullscene = element.find(".scene-partition").first();
+			var props = element.find(".props-column").first();
+			fullscene.toggleClass("reduced-columns", val);
+			if( val ) {
+				element.find(".hide-scenetree").first().parent().append(props);
+				element.find(".combine-btn").first().hide();
+				element.find(".separate-btn").first().show();
+			} else {
+				fullscene.append(props);
+				element.find(".combine-btn").first().show();
+				element.find(".separate-btn").first().hide();
+			}
+			@:privateAccess
+			if( scene.window != null)
+				scene.window.checkResize();
+		}
+
+		element.find(".combine-btn").first().click((_) -> setCombine(true));
+		element.find(".separate-btn").first().click((_) -> setCombine(false));
+		setCombine(false);
+
 		element.find(".collapse-btn").click(function(e) {
 			sceneEditor.collapseTree();
 		});
@@ -370,7 +424,6 @@ class Level3D extends FileView {
 	}
 
 	public function onSceneReady() {
-		tabs.allowMask(scene);
 		tools.saveDisplayKey = "Level3D/toolbar";
 		tools.addButton("video-camera", "Perspective camera", () -> resetCamera(false));
 		tools.addButton("video-camera", "Top camera", () -> resetCamera(true)).find(".icon").css({transform: "rotateZ(90deg)"});
