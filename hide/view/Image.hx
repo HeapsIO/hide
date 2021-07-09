@@ -74,7 +74,7 @@ class Image extends FileView {
 					new hide.view.l3d.CameraController2D(scene.s2d);
 				} else {
 					var r = new h3d.scene.fwd.Renderer();
-					scene.s3d.lightSystem.ambientLight.set(1,1,1,1);
+					cast(scene.s3d.lightSystem,h3d.scene.fwd.LightSystem).ambientLight.set(1,1,1,1);
 					scene.s3d.renderer = r;
 					var sp = new h3d.prim.Sphere(1,64,64);
 					sp.addNormals();
