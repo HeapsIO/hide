@@ -232,47 +232,52 @@ private class ParticleInstance  {
 	}
 
 	public function update( dt : Float ) {
-
 		var t = hxd.Math.clamp(life / lifeTime, 0.0, 1.0);
+		tmpSpeed.set(0,0,0);
 
 		if( life == 0 ) {
 			// START LOCAL SPEED
 			evaluator.getVector(def.startSpeed, 0.0, tmpSpeedAccumulation);
-			if(tmpSpeedAccumulation.lengthSq() > 0.001)
-				tmpSpeedAccumulation.transform3x3(orientation.toMatrix(tmpMat));
+			tmpSpeedAccumulation.transform3x3(orientation.toMatrix(tmpMat));
 			add(speedAccumulation, tmpSpeedAccumulation);
 			// START WORLD SPEED
 			evaluator.getVector(def.startWorldSpeed, 0.0, tmpSpeedAccumulation);
-			if(tmpSpeedAccumulation.lengthSq() > 0.001)
-				tmpSpeedAccumulation.transform3x3(emitter.invTransform);
+			tmpSpeedAccumulation.transform3x3(emitter.invTransform);
 			add(speedAccumulation, tmpSpeedAccumulation);
 		}
 
 		// ACCELERATION
-		evaluator.getVector(def.acceleration, t, tmpSpeedAccumulation);
-		tmpSpeedAccumulation.scale3(dt);
-		if(tmpSpeedAccumulation.lengthSq() > 0.001)
+		if(def.acceleration != VZero) {
+			evaluator.getVector(def.acceleration, t, tmpSpeedAccumulation);
+			tmpSpeedAccumulation.scale3(dt);
 			tmpSpeedAccumulation.transform3x3(orientation.toMatrix(tmpMat));
-		add(speedAccumulation, tmpSpeedAccumulation);
-		// WORLD ACCELERATION
-		evaluator.getVector(def.worldAcceleration, t, tmpSpeedAccumulation);
-		tmpSpeedAccumulation.scale3(dt);
-		if(tmpSpeedAccumulation.lengthSq() > 0.001 && emitter.simulationSpace == Local)
-			tmpSpeedAccumulation.transform3x3(emitter.invTransform);
-		add(speedAccumulation, tmpSpeedAccumulation);
-		// SPEED
-		evaluator.getVector(def.localSpeed, t, tmpLocalSpeed);
-		if(tmpLocalSpeed.lengthSq() > 0.001)
-			tmpLocalSpeed.transform3x3(orientation.toMatrix(tmpMat));
-		// WORLD SPEED
-		evaluator.getVector(def.worldSpeed, t, tmpWorldSpeed);
-		if(emitter.simulationSpace == Local)
-			tmpWorldSpeed.transform3x3(emitter.invTransform);
+			add(speedAccumulation, tmpSpeedAccumulation);
+		}
 
-		tmpSpeed.set(0,0,0);
-		add(tmpSpeed, tmpLocalSpeed);
-		add(tmpSpeed, tmpWorldSpeed);
+		// WORLD ACCELERATION
+		if(def.worldAcceleration != VZero) {
+			evaluator.getVector(def.worldAcceleration, t, tmpSpeedAccumulation);
+			tmpSpeedAccumulation.scale3(dt);
+			if(emitter.simulationSpace == Local)
+				tmpSpeedAccumulation.transform3x3(emitter.invTransform);
+			add(speedAccumulation, tmpSpeedAccumulation);
+		}
+		
 		add(tmpSpeed, speedAccumulation);
+
+		// SPEED
+		if(def.localSpeed != VZero) {
+			evaluator.getVector(def.localSpeed, t, tmpLocalSpeed);
+			tmpLocalSpeed.transform3x3(orientation.toMatrix(tmpMat));
+			add(tmpSpeed, tmpLocalSpeed);
+		}
+		// WORLD SPEED
+		if(def.worldSpeed != VZero) {
+			evaluator.getVector(def.worldSpeed, t, tmpWorldSpeed);
+			if(emitter.simulationSpace == Local)
+				tmpWorldSpeed.transform3x3(emitter.invTransform);
+			add(tmpSpeed, tmpWorldSpeed);
+		}
 
 		if(emitter.simulationSpace == World) {
 			tmpSpeed.x *= emitter.worldScale.x;
@@ -1145,10 +1150,14 @@ class Emitter extends Object3D {
 				var xCurve = getCurve(pname + suffix);
 				if(xCurve != null)
 					xVal = VCurveScale(xCurve, baseProp != null ? baseProp : 1.0);
-				else if(baseProp != null)
-					xVal = VConst(baseProp);
-				else
-					xVal = defVal == 0.0 ? VZero : VConst(defVal);
+				else {
+					var rv = baseProp != null ? baseProp : defVal;
+					xVal = switch(rv) {
+						case 0.0: VZero;
+						case 1.0: VOne;
+						default: VConst(rv);
+					}
+				}
 
 				var randCurve = getCurve(pname + suffix + ".rand");
 				var randVal : Value = VZero;
@@ -1176,10 +1185,16 @@ class Emitter extends Object3D {
 							randProp != null ? (randProp[idx] : Float) : null,
 							param.name, suffix);
 					}
-					return VVector(
+					var v : Value = VVector(
 						makeComp(0, ".x"),
 						makeComp(1, ".y"),
 						makeComp(2, ".z"));
+					if(v.match(VVector(VZero, VZero, VZero)))
+						v = VZero;
+					else if(v.match(VVector(VOne, VOne, VOne)))
+						v = VOne;
+					return v;
+					
 				default:
 					return makeCompVal(baseProp, param.def != null ? param.def : 0.0, randProp, param.name, "");
 			}

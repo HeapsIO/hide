@@ -2,6 +2,7 @@ package hrt.prefab.fx;
 
 enum Value {
 	VZero;
+	VOne;
 	VConst(v: Float);
 	VCurve(c: Curve);
 	VCurveScale(c: Curve, scale: Float);
