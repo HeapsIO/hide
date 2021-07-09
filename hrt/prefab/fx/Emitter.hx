@@ -48,6 +48,7 @@ typedef InstanceDef = {
 	worldSpeed: Value,
 	startSpeed: Value,
 	startWorldSpeed: Value,
+	orbitSpeed: Value,
 	acceleration: Value,
 	worldAcceleration: Value,
 	localOffset: Value,
@@ -94,13 +95,22 @@ private class ParticleTransform {
 		qRot.load(quat);
 	}
 
-	public function setPosition( x, y, z ) {
+	public inline function setPosition( x, y, z ) {
 		this.x = x;
 		this.y = y;
 		this.z = z;
 	}
 
-	public function setScale( x, y, z ) {
+	public inline function transform3x3( m : h3d.Matrix ) {
+		var px = x * m._11 + y * m._21 + z * m._31;
+		var py = x * m._12 + y * m._22 + z * m._32;
+		var pz = x * m._13 + y * m._23 + z * m._33;
+		x = px;
+		y = py;
+		z = pz;
+	}
+
+	public inline function setScale( x, y, z ) {
 		this.scaleX = x;
 		this.scaleY = y;
 		this.scaleZ = z;
@@ -288,6 +298,12 @@ private class ParticleInstance  {
 		transform.x += tmpSpeed.x * dt;
 		transform.y += tmpSpeed.y * dt;
 		transform.z += tmpSpeed.z * dt;
+
+		if(def.orbitSpeed != VZero) {
+			evaluator.getVector(def.orbitSpeed, t, tmpLocalSpeed);
+			tmpMat.initRotation(tmpLocalSpeed.x * dt, tmpLocalSpeed.y * dt, tmpLocalSpeed.z * dt);
+			transform.transform3x3(tmpMat);
+		}
 
 		// SPEED ORIENTATION
 		if(emitter.emitOrientation == Speed && tmpSpeed.lengthSq() > 0.01)
@@ -1028,6 +1044,7 @@ class Emitter extends Object3D {
 		{ name: "instWorldSpeed", 			t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Fixed World Speed" },
 		{ name: "instStartSpeed",      		t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Start Speed" },
 		{ name: "instStartWorldSpeed", 		t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Start World Speed" },
+		{ name: "instOrbitSpeed", 			t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Orbit Speed" },
 		{ name: "instAcceleration",			t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Acceleration" },
 		{ name: "instWorldAcceleration",	t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "World Acceleration" },
 		{ name: "instScale",      			t: PFloat(0, 2.0),    def: 1.,         disp: "Scale" },
@@ -1213,6 +1230,7 @@ class Emitter extends Object3D {
 				worldSpeed: makeParam(this, "instWorldSpeed"),
 				startSpeed: makeParam(this, "instStartSpeed"),
 				startWorldSpeed: makeParam(this, "instStartWorldSpeed"),
+				orbitSpeed: makeParam(this, "instOrbitSpeed"),
 				acceleration: makeParam(this, "instAcceleration"),
 				worldAcceleration: makeParam(this, "instWorldAcceleration"),
 				localOffset: makeParam(this, "instOffset"),
