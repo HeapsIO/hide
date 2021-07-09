@@ -58,8 +58,12 @@ class ScriptChecker {
 			var config = config.get("script.api");
 			if( config == null ) continue;
 			var api = (config : GlobalsDef).get(path);
-			if( api == null ) continue;
-			apis.unshift(api);
+			if( api == null ) {
+				path = ~/\[group=[^\]]+?\]/g.replace(path,"");
+				api = (config : GlobalsDef).get(path);
+			}
+			if( api != null )
+				apis.unshift(api);
 		}
 
 		var cdbPack : String = config.get("script.cdbPackage");
