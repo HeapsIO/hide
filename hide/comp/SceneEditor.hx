@@ -483,7 +483,6 @@ class SceneEditor {
 				{ label : "New...", menu : newItems },
 			];
 			var actionItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [
-				{ label : "Favorite", checked : current != null && isFavorite(current), click : function() setFavorite(current, !isFavorite(current)) },
 				{ label : "Rename" + ((view.config.get("key.rename") != null)? "	" + view.config.get("key.rename") : ""), enabled : current != null, click : function() tree.editNode(current) },
 				{ label : "Delete" + ((view.config.get("key.delete") != null)? "	" + view.config.get("key.delete") : ""), enabled : current != null, click : function() deleteElements(curEdit.rootElements) },
 				{ label : "Duplicate" + ((view.config.get("key.duplicate") != null)? "	" + view.config.get("key.duplicate") : ""), enabled : current != null, click : duplicate.bind(false) },
