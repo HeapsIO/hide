@@ -106,7 +106,7 @@ class CameraController2D extends h2d.Object {
 		case EWheel:
 			zoom(e.wheelDelta);
 		case EPush:
-			@:privateAccess scene.events.startDrag(onEvent, function() pushing = -1, e);
+			@:privateAccess scene.events.startCapture(onEvent, function() pushing = -1, e.touchId);
 			pushing = e.button;
 			pushTime = haxe.Timer.stamp();
 			pushStartX = pushX = e.relX;
@@ -114,7 +114,7 @@ class CameraController2D extends h2d.Object {
 		case ERelease, EReleaseOutside:
 			if( pushing == e.button ) {
 				pushing = -1;
-				@:privateAccess scene.events.stopDrag();
+				@:privateAccess scene.events.stopCapture();
 				if( e.kind == ERelease && haxe.Timer.stamp() - pushTime < 0.2 && hxd.Math.distance(e.relX - pushStartX,e.relY - pushStartY) < 5 )
 					onClick(e);
 			}

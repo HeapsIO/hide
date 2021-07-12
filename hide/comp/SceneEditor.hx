@@ -808,7 +808,7 @@ class SceneEditor {
 			}
 			// ensure we get onMove even if outside our interactive, allow fast click'n'drag
 			if( e.button == K.MOUSE_LEFT ) {
-				scene.sevents.startDrag(int.handleEvent);
+				scene.sevents.startCapture(int.handleEvent);
 				e.propagate = false;
 			}
 		};
@@ -818,7 +818,7 @@ class SceneEditor {
 			curDrag = null;
 			dragBtn = -1;
 			if( e.button == K.MOUSE_LEFT ) {
-				scene.sevents.stopDrag();
+				scene.sevents.stopCapture();
 				e.propagate = false;
 
 				var curTime = haxe.Timer.stamp();
@@ -1494,7 +1494,7 @@ class SceneEditor {
 			editor.fileView = view;
 			editor.onChange = function(pname) {
 				edit.onChange(e, 'props.$pname');
-				var e = Std.instance(e, Object3D);
+				var e = Std.downcast(e, Object3D);
 				if( e != null ) {
 					for( ctx in context.shared.getContexts(e) )
 						e.addEditorUI(ctx);
