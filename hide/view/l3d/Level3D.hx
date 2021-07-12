@@ -412,63 +412,92 @@ class Level3D extends FileView {
 
 	public function onSceneReady() {
 		tools.saveDisplayKey = "Level3D/toolbar";
-		tools.addButton("video-camera", "Perspective camera", () -> resetCamera(false));
-		tools.addButton("video-camera", "Top camera", () -> resetCamera(true)).find(".icon").css({transform: "rotateZ(90deg)"});
-		//tools.addToggle("arrows", "2D Camera", (b) -> sceneEditor.camera2D = b);
-		tools.addToggle("anchor", "Snap to ground", (v) -> sceneEditor.snapToGround = v, sceneEditor.snapToGround);
-		var localToggle = tools.addToggle("compass", "Local transforms", (v) -> sceneEditor.localTransform = v, sceneEditor.localTransform);
-		keys.register("sceneeditor.toggleLocal", () -> localToggle.toggle(!localToggle.isDown()));
-		var gridToggle = tools.addToggle("th", "Show grid", function(v) { showGrid = v; updateGrid(); }, showGrid);
-		keys.register("sceneeditor.toggleGrid", () -> gridToggle.toggle(!gridToggle.isDown()));
-		tools.addButton("sun-o", "Bake Lights", () -> bakeLights());
-		tools.addButton("map", "Bake Volumetric Lightmaps", () -> { bakeLights(); bakeVolumetricLightmaps(); });
 
+		var toolButtonFunctions = new Map<String, Void -> Void>();
+		toolButtonFunctions.set("perspectiveCamera", () -> resetCamera(false));
+		toolButtonFunctions.set("topCamera", () -> resetCamera(true));
+		toolButtonFunctions.set("bakeLights", () -> bakeLights());
 
+		var toolToggleFunctions = new Map<String, Bool -> Void>();
+		toolToggleFunctions.set("snapToGroundToggle", (v) -> sceneEditor.snapToGround = v);
+		toolToggleFunctions.set("localTransformsToggle", (v) -> sceneEditor.localTransform = v);
+		toolToggleFunctions.set("gridToggle", function(v) { showGrid = v; updateGrid(); });
 		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		statusText.setPosition(5, 5);
 		statusText.visible = false;
-		var texContent : Element = null;
-		tools.addToggle("info-circle", "Scene information", function(b) statusText.visible = b).rightClick(function() {
-			if( texContent != null ) {
-				texContent.remove();
-				texContent = null;
-			}
-			new hide.comp.ContextMenu([
-				{
-					label : "Show Texture Details",
-					click : function() {
-						var memStats = scene.engine.mem.stats();
-						var texs = @:privateAccess scene.engine.mem.textures;
-						var list = [for(t in texs) {
-							n: '${t.width}x${t.height}  ${t.format}  ${t.name}',
-							size: t.width * t.height
-						}];
-						list.sort((a, b) -> Reflect.compare(b.size, a.size));
-						var content = new Element('<div tabindex="1" class="overlay-info"><h2>Scene info</h2><pre></pre></div>');
-						new Element(element[0].ownerDocument.body).append(content);
-						var pre = content.find("pre");
-						pre.text([for(l in list) l.n].join("\n"));
-						texContent = content;
-						content.blur(function(_) {
-							content.remove();
-							texContent = null;
-						});
-					}
-				}
-			]);
-		});
-
-		tools.addColor("Background color", function(v) {
+		toolToggleFunctions.set("sceneInformationToggle", function(b) statusText.visible = b);
+		toolToggleFunctions.set("autoSyncToggle", function(b) autoSync = b);
+		var toolToggleRightClickFunctions = new Map<String, Void -> Void>();
+		var toolColorFunctions = new Map<String, Int -> Void>();
+		toolColorFunctions.set("backgroundColor", function(v) {
 			scene.engine.backgroundColor = v;
 			updateGrid();
-		}, scene.engine.backgroundColor);
-		tools.addToggle("refresh", "Auto synchronize", function(b) {
-			autoSync = b;
 		});
-		tools.addRange("Speed", function(v) {
-			scene.speed = v;
-		}, scene.speed);
+		var toolRangeFunctions = new Map<String, Float -> Void>();
+		toolRangeFunctions.set("sceneSpeed", function(v) scene.speed = v);
 
+		var texContent : Element = null;
+		toolToggleRightClickFunctions.set("sceneInformationToggle", function() {
+				if( texContent != null ) {
+					texContent.remove();
+					texContent = null;
+				}
+				new hide.comp.ContextMenu([
+					{
+						label : "Show Texture Details",
+						click : function() {
+							var memStats = scene.engine.mem.stats();
+							var texs = @:privateAccess scene.engine.mem.textures;
+							var list = [for(t in texs) {
+								n: '${t.width}x${t.height}  ${t.format}  ${t.name}',
+								size: t.width * t.height
+							}];
+							list.sort((a, b) -> Reflect.compare(b.size, a.size));
+							var content = new Element('<div tabindex="1" class="overlay-info"><h2>Scene info</h2><pre></pre></div>');
+							new Element(element[0].ownerDocument.body).append(content);
+							var pre = content.find("pre");
+							pre.text([for(l in list) l.n].join("\n"));
+							texContent = content;
+							content.blur(function(_) {
+								content.remove();
+								texContent = null;
+							});
+						}
+					}
+				]);
+			});
+
+		var toolsNames : Array<String> = config.get("sceneeditor.tools");
+		for (toolName in toolsNames) {
+			var tool = config.get("sceneeditor." + toolName);
+			if (tool != null) {
+				switch(tool.type) {
+					case "Button":
+						var shortcut = (config.get("key.sceneeditor." + toolName) != null)? "	" + config.get("key.sceneeditor." + toolName) : "";
+						var button = tools.addButton(tool.icon, tool.title +  shortcut, toolButtonFunctions[toolName]);
+						if (tool.iconTransform != null) {
+							button.find(".icon").css({transform: tool.iconTransform});
+						}
+						
+					case "Toggle":
+						var shortcut = (config.get("key.sceneeditor." + toolName) != null)? "	" + config.get("key.sceneeditor." + toolName) : "";
+						var toggle = tools.addToggle(tool.icon, tool.title + shortcut, toolToggleFunctions[toolName]);
+						if (tool.iconTransform != null) {
+							toggle.element.find(".icon").css({transform: tool.iconTransform});
+						}
+						keys.register("sceneeditor." + toolName, () -> toggle.toggle(!toggle.isDown()));
+						if (tool.customRightClick != null && tool.customRightClick) {
+							toggle.rightClick(toolToggleRightClickFunctions[toolName]);
+						}
+					case "Color":
+						tools.addColor(tool.title, toolColorFunctions[toolName]);
+					case "Range":
+						tools.addRange(tool.title, toolRangeFunctions[toolName], 1.);
+					
+				}
+			}
+			
+		}
 		posToolTip = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		posToolTip.dropShadow = { dx : 1, dy : 1, color : 0, alpha : 0.5 };
 
@@ -681,21 +710,19 @@ class Level3D extends FileView {
 			sceneFilters.set(f, getDisplayState("sceneFilters/" + f) != false);
 		}
 
-		if(layerButtons != null) {
-			for(b in layerButtons)
-				b.element.remove();
-		}
-		layerButtons = new Map<PrefabElement, hide.comp.Toolbar.ToolToggle>();
+		var sceneFiltersMenu = layerToolbar.addMenu("", "Scene filters");
+		var content : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
 		var initDone = false;
 		for(typeid in sceneFilters.keys()) {
-			var btn = layerToolbar.addToggle("", typeid, typeid.charAt(0).toLowerCase() + typeid.substr(1), function(on) {
+			content.push({label : typeid, checked : sceneFilters[typeid], click : function() {
+				var on = !sceneFilters[typeid];
 				sceneFilters.set(typeid, on);
 				if(initDone)
 					applySceneFilter(typeid, on);
-			});
-			if(sceneFilters.get(typeid) != false)
-				btn.toggle(true);
+				content.find(function(item) return item.label == typeid).checked = on;
+			}});
 		}
+		sceneFiltersMenu.setContent(content);
 		initDone = true;
 	}
 
@@ -713,21 +740,19 @@ class Level3D extends FileView {
 		for(f in filters) {
 			graphicsFilters.set(f, getDisplayState("graphicsFilters/" + f) != false);
 		}
-		if(layerButtons != null) {
-			for(b in layerButtons)
-				b.element.remove();
-		}
-		layerButtons = new Map<PrefabElement, hide.comp.Toolbar.ToolToggle>();
+		var graphicsFiltersMenu = layerToolbar.addMenu("", "Graphics filters");
+		var content : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
 		var initDone = false;
 		for(typeid in graphicsFilters.keys()) {
-			var btn = layerToolbar.addToggle("", typeid, typeid.charAt(0).toLowerCase() + typeid.substr(1), function(on) {
+			content.push({label : typeid, checked : graphicsFilters[typeid], click : function() {
+				var on = !graphicsFilters[typeid];
 				graphicsFilters.set(typeid, on);
-				if (initDone)
+				if(initDone)
 					applyGraphicsFilters(typeid, on);
-			});
-			if(graphicsFilters.get(typeid) != false)
-				btn.toggle(true);
+				content.find(function(item) return item.label == typeid).checked = on;
+			}});
 		}
+		graphicsFiltersMenu.setContent(content);
 		initDone = true;
 	}
 
