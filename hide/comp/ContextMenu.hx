@@ -7,6 +7,10 @@ typedef ContextMenuItem = {
 	@:optional var enabled : Bool;
 	@:optional var checked : Bool;
 	@:optional var isSeparator : Bool;
+	@:optional var keys : {
+		@:optional var key : String;
+		@:optional var modifiers : String;
+	};
 }
 
 class ContextMenu {
@@ -34,6 +38,10 @@ class ContextMenu {
 
 	function makeMenuItem(i:ContextMenuItem) {
 		var mconf : nw.MenuItem.MenuItemOptions = { label : i.label, type : i.checked != null ? Checkbox : i.isSeparator ? Separator : Normal };
+		if( i.keys != null ) {
+			mconf.key = i.keys.key;
+			mconf.modifiers = i.keys.modifiers;
+		}
 		if( i.menu != null ) mconf.submenu = makeMenu(i.menu);
 		var m = new nw.MenuItem(mconf);
 		if( i.checked != null ) m.checked = i.checked;

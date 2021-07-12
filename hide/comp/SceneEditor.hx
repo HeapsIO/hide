@@ -483,9 +483,9 @@ class SceneEditor {
 				{ label : "New...", menu : newItems },
 			];
 			var actionItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [
-				{ label : "Rename" + ((view.config.get("key.rename") != null)? "	" + view.config.get("key.rename") : ""), enabled : current != null, click : function() tree.editNode(current) },
-				{ label : "Delete" + ((view.config.get("key.delete") != null)? "	" + view.config.get("key.delete") : ""), enabled : current != null, click : function() deleteElements(curEdit.rootElements) },
-				{ label : "Duplicate" + ((view.config.get("key.duplicate") != null)? "	" + view.config.get("key.duplicate") : ""), enabled : current != null, click : duplicate.bind(false) },
+				{ label : "Rename", enabled : current != null, click : function() tree.editNode(current), keys : hide.ui.Keys.getKeys("rename", view.config) },
+				{ label : "Delete", enabled : current != null, click : function() deleteElements(curEdit.rootElements), keys : hide.ui.Keys.getKeys("delete", view.config) },
+				{ label : "Duplicate", enabled : current != null, click : duplicate.bind(false), keys : hide.ui.Keys.getKeys("duplicate", view.config) },
 			];
 
 			var isObj = current != null && (current.to(Object3D) != null || current.to(Object2D) != null);
@@ -499,18 +499,18 @@ class SceneEditor {
 			if( isObj ) {
 				var visible = !isHidden(current);
 				menuItems = menuItems.concat([
-					{ label : "Show in editor" + ((view.config.get("key.sceneeditor.hide") != null)? "	" + view.config.get("key.sceneeditor.hide") : ""), checked : visible, click : function() setVisible(curEdit.elements, !visible) },
+					{ label : "Show in editor" , checked : visible, click : function() setVisible(curEdit.elements, !visible), keys : hide.ui.Keys.getKeys("sceneeditor.hide", view.config) },
 					{ label : "Locked", checked : current.locked, click : function() {
 						current.locked = !current.locked;
 						setLock(curEdit.elements, current.locked);
 					} },
-					{ label : "Select all" + ((view.config.get("key.selectAll") != null)? "	" + view.config.get("key.selectAll") : ""), click : selectAll },
+					{ label : "Select all", click : selectAll, keys : hide.ui.Keys.getKeys("selectAll", view.config) },
 					{ label : "Select children", enabled : current != null, click : function() selectElements(current.flatten()) },
 				]);
 				if( !isRef )
 					actionItems = actionItems.concat([
-						{ label : "Isolate" + ((view.config.get("key.sceneeditor.isolate") != null)? "	" + view.config.get("key.sceneeditor.isolate") : ""), click : function() isolate(curEdit.elements) },
-						{ label : "Group" + ((view.config.get("key.group") != null)? "	" + view.config.get("key.group") : ""), enabled : curEdit != null && canGroupSelection(), click : groupSelection }
+						{ label : "Isolate", click : function() isolate(curEdit.elements), keys : hide.ui.Keys.getKeys("sceneeditor.isolate", view.config) },
+						{ label : "Group", enabled : curEdit != null && canGroupSelection(), click : groupSelection, keys : hide.ui.Keys.getKeys("group", view.config) },
 					]);
 			}
 

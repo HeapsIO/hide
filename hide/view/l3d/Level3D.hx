@@ -463,16 +463,14 @@ class Level3D extends FileView {
 		for (toolName in toolsNames) {
 			var tool = config.get("sceneeditor." + toolName);
 			if (tool != null) {
+				var shortcut = (config.get("key.sceneeditor." + toolName) != null)? " (" + config.get("key.sceneeditor." + toolName) + ")" : "";
 				switch(tool.type) {
 					case "Button":
-						var shortcut = (config.get("key.sceneeditor." + toolName) != null)? "	" + config.get("key.sceneeditor." + toolName) : "";
-						var button = tools.addButton(tool.icon, tool.title +  shortcut, toolButtonFunctions[toolName]);
+						var button = tools.addButton(tool.icon, tool.title + shortcut, toolButtonFunctions[toolName]);
 						if (tool.iconTransform != null) {
 							button.find(".icon").css({transform: tool.iconTransform});
 						}
-
 					case "Toggle":
-						var shortcut = (config.get("key.sceneeditor." + toolName) != null)? "	" + config.get("key.sceneeditor." + toolName) : "";
 						var toggle = tools.addToggle(tool.icon, tool.title + shortcut, toolToggleFunctions[toolName]);
 						if (tool.iconTransform != null) {
 							toggle.element.find(".icon").css({transform: tool.iconTransform});
