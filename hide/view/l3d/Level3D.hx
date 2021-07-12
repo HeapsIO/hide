@@ -10,24 +10,16 @@ import hrt.prefab.l3d.Instance;
 import hide.comp.cdb.DataFiles;
 
 
-class LevelEditContext extends hide.prefab.EditContext {
-	public var parent : Level3D;
-	public function new(parent, context) {
-		super(context);
-		this.parent = parent;
-	}
-}
-
 @:access(hide.view.l3d.Level3D)
 class CamController extends h3d.scene.CameraController {
 	public var groundSnapAngle = hxd.Math.degToRad(30);
-	var level3d : Level3D;
+	var prefab : Level3D;
 	var startPush : h2d.col.Point;
 	var moveCount = 0;
 
-	public function new(parent, level3d) {
+	public function new(parent, prefab) {
 		super(null, parent);
-		this.level3d = level3d;
+		this.prefab = prefab;
 	}
 
 	override function onEvent( e : hxd.Event ) {
@@ -42,7 +34,7 @@ class CamController extends h3d.scene.CameraController {
 			pushStartY = pushY = e.relY;
 			startPush = new h2d.col.Point(pushX, pushY);
 			if( pushing == 2 ) {
-				var se = level3d.sceneEditor;
+				var se = prefab.sceneEditor;
 				var selection = se.getSelection();
 				var angle = hxd.Math.abs(Math.PI/2 - phi);
 				if( selection.length == 0 && angle > groundSnapAngle ) {
@@ -81,7 +73,7 @@ class CamController extends h3d.scene.CameraController {
 						pan(-(e.relX - pushX) * m, (e.relY - pushY) * m);
 					}
 					else {
-						var se = level3d.sceneEditor;
+						var se = prefab.sceneEditor;
 						var fromPt = se.screenToGround(pushX, pushY);
 						var toPt = se.screenToGround(e.relX, e.relY);
 						if(fromPt == null || toPt == null)
@@ -138,7 +130,7 @@ class CamController extends h3d.scene.CameraController {
 }
 
 @:access(hide.view.l3d.Level3D)
-private class Level3DSceneEditor extends hide.comp.SceneEditor {
+private class PrefabSceneEditor extends hide.comp.SceneEditor {
 	var parent : Level3D;
 
 	public function new(view, data) {
@@ -264,11 +256,11 @@ private class Level3DSceneEditor extends hide.comp.SceneEditor {
 	}
 }
 
+// TODO TOMORROW rename to Prefab
 class Level3D extends FileView {
 
-	public var sceneEditor : Level3DSceneEditor;
-	var data : hrt.prefab.l3d.Level3D;
-	var tabs : hide.comp.Tabs;
+	public var sceneEditor : PrefabSceneEditor;
+	var data : hrt.prefab.Library;
 
 	var tools : hide.comp.Toolbar;
 
@@ -279,8 +271,8 @@ class Level3D extends FileView {
 
 	var gridStep : Int;
 	var gridSize : Int;
-
 	var showGrid = false;
+
 	// autoSync
 	var autoSync : Bool;
 	var currentVersion : Int = 0;
@@ -298,7 +290,7 @@ class Level3D extends FileView {
 	override function onDisplay() {
 		if( sceneEditor != null ) sceneEditor.dispose();
 
-		data = cast(hrt.prefab.Library.create("l3d"), hrt.prefab.l3d.Level3D);
+		data = new hrt.prefab.Library();
 		var content = sys.io.File.getContent(getPath());
 		data.loadData(haxe.Json.parse(content));
 		currentSign = haxe.crypto.Md5.encode(content);
@@ -361,10 +353,10 @@ class Level3D extends FileView {
 		layerToolbar = new hide.comp.Toolbar(null,element.find(".layer-buttons"));
 		currentVersion = undo.currentID;
 
-		sceneEditor = new Level3DSceneEditor(this, data);
+		sceneEditor = new PrefabSceneEditor(this, data);
 		element.find(".hide-scenetree").first().append(sceneEditor.tree.element);
-		element.find(".hide-scroll").first().append(sceneEditor.properties.element);
-		element.find(".heaps-scene").first().append(sceneEditor.scene.element);
+		element.find(".hide-scroll").first().append(properties.element);
+		element.find(".heaps-scene").first().append(scene.element);
 		sceneEditor.tree.element.addClass("small");
 
 		element.find(".show-cols-btn").first().hide();
@@ -411,7 +403,7 @@ class Level3D extends FileView {
 	}
 
 	public function onSceneReady() {
-		tools.saveDisplayKey = "Level3D/toolbar";
+		tools.saveDisplayKey = "Prefab/toolbar";
 
 		var toolButtonFunctions = new Map<String, Void -> Void>();
 		toolButtonFunctions.set("perspectiveCamera", () -> resetCamera(false));
@@ -478,7 +470,7 @@ class Level3D extends FileView {
 						if (tool.iconTransform != null) {
 							button.find(".icon").css({transform: tool.iconTransform});
 						}
-						
+
 					case "Toggle":
 						var shortcut = (config.get("key.sceneeditor." + toolName) != null)? "	" + config.get("key.sceneeditor." + toolName) : "";
 						var toggle = tools.addToggle(tool.icon, tool.title + shortcut, toolToggleFunctions[toolName]);
@@ -493,10 +485,9 @@ class Level3D extends FileView {
 						tools.addColor(tool.title, toolColorFunctions[toolName]);
 					case "Range":
 						tools.addRange(tool.title, toolRangeFunctions[toolName], 1.);
-					
+
 				}
 			}
-			
 		}
 		posToolTip = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		posToolTip.dropShadow = { dx : 1, dy : 1, color : 0, alpha : 0.5 };
@@ -602,7 +593,7 @@ class Level3D extends FileView {
 	}
 
 	override function getDefaultContent() {
-		return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab.l3d.Level3D().saveData()));
+		return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab.Library().saveData()));
 	}
 
 	override function save() {
@@ -757,23 +748,6 @@ class Level3D extends FileView {
 	}
 
 	function applyTreeStyle(p: PrefabElement, el: Element, pname: String) {
-		/*
-		var styles = ide.currentConfig.get("l3d.treeStyles");
-		var style: Dynamic = null;
-		var typeId = getCdbTypeId(p);
-		if(typeId != null) {
-			style = Reflect.field(styles, typeId);
-		}
-		if(style == null) {
-			style = Reflect.field(styles, p.name);
-		}
-		var a = el.find("a").first();
-		a.addClass("crop");
-		if(style == null)
-			a.removeAttr("style");
-		else
-			a.css(style);
-			*/
 	}
 
 	function onPrefabChange(p: PrefabElement, ?pname: String) {
@@ -781,11 +755,12 @@ class Level3D extends FileView {
 	}
 
 	function applySceneStyle(p: PrefabElement) {
-		var level3d = Std.downcast(p, hrt.prefab.l3d.Level3D); // don't use "to" (Reference)
-		if(level3d != null) {
+		var prefabView = Std.downcast(p, hrt.prefab.Library); // don't use "to" (Reference)
+		if( prefabView != null && prefabView.parent == null ) {
 			updateGrid();
 			return;
 		}
+
 		var obj3d = p.to(Object3D);
 		if(obj3d != null) {
 			var visible = obj3d.visible && !sceneEditor.isHidden(obj3d) && sceneFilters.get(p.type) != false;
@@ -826,5 +801,7 @@ class Level3D extends FileView {
 		return null;
 	}
 
-	static var _ = FileTree.registerExtension(Level3D,["l3d"],{ icon : "sitemap", createNew : "Level3D" });
+	static var _ = FileTree.registerExtension(Level3D, ["prefab"], { icon : "sitemap", createNew : "Prefab" });
+	static var _1 = FileTree.registerExtension(Level3D, ["l3d"], { icon : "sitemap" });
+
 }

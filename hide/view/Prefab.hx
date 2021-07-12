@@ -33,7 +33,6 @@ class Prefab extends FileView {
 	var light : h3d.scene.fwd.DirLight;
 	var lightDirection = new h3d.Vector( 1, 2, -4 );
 
-
 	var scene(get, null):  hide.comp.Scene;
 	function get_scene() return sceneEditor.scene;
 	var properties(get, null):  hide.comp.PropsEditor;
@@ -91,12 +90,16 @@ class Prefab extends FileView {
 
 	public function onSceneReady() {
 		tabs.allowMask(scene);
-		light = sceneEditor.scene.s3d.find(function(o) return Std.downcast(o, h3d.scene.fwd.DirLight));
-		if( light == null ) {
-			light = new h3d.scene.fwd.DirLight(scene.s3d);
-			light.enableSpecular = true;
-		} else
-			light = null;
+
+		// TOMORROW this isn't in the Level3D view
+		{
+			light = sceneEditor.scene.s3d.find(function(o) return Std.downcast(o, h3d.scene.fwd.DirLight));
+			if( light == null ) {
+				light = new h3d.scene.fwd.DirLight(scene.s3d);
+				light.enableSpecular = true;
+			} else
+				light = null;
+		}
 
 		tools.saveDisplayKey = "Prefab/tools";
 
@@ -116,14 +119,19 @@ class Prefab extends FileView {
 
 	function onUpdate(dt:Float) {
 		var cam = scene.s3d.camera;
-		if( light != null ) {
-			var angle = Math.atan2(cam.target.y - cam.pos.y, cam.target.x - cam.pos.x);
-			light.setDirection(new h3d.Vector(
-				Math.cos(angle) * lightDirection.x - Math.sin(angle) * lightDirection.y,
-				Math.sin(angle) * lightDirection.x + Math.cos(angle) * lightDirection.y,
-				lightDirection.z
-			));
+
+		// TOMORROW this isn't in the Level3D view
+		{
+			if( light != null ) {
+				var angle = Math.atan2(cam.target.y - cam.pos.y, cam.target.x - cam.pos.x);
+				light.setDirection(new h3d.Vector(
+					Math.cos(angle) * lightDirection.x - Math.sin(angle) * lightDirection.y,
+					Math.sin(angle) * lightDirection.x + Math.cos(angle) * lightDirection.y,
+					lightDirection.z
+				));
+			}
 		}
+
 		if( autoSync && (currentVersion != undo.currentID || lastSyncChange != properties.lastChange) ) {
 			save();
 			lastSyncChange = properties.lastChange;
@@ -135,5 +143,6 @@ class Prefab extends FileView {
 		return sceneEditor.onDragDrop(items,isDrop);
 	}
 
-	static var _ = FileTree.registerExtension(Prefab,["prefab"],{ icon : "sitemap", createNew : "Prefab" });
+	// TOMORROW Comment this? but then the transition breaks existing tabs
+	static var _ = FileTree.registerExtension(Prefab,["prefab"],{ icon : "sitemap" });
 }
