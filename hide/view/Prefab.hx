@@ -143,5 +143,6 @@ class Prefab extends FileView {
 		return sceneEditor.onDragDrop(items,isDrop);
 	}
 
-	// static var _ = FileTree.registerExtension(Prefab,["prefab"],{ icon : "sitemap", createNew : "Prefab" });
+	// TOMORROW Comment this? but then the transition breaks existing tabs
+	static var _ = FileTree.registerExtension(Prefab,["prefab"],{ icon : "sitemap" });
 }
