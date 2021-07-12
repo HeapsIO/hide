@@ -673,21 +673,19 @@ class Level3D extends FileView {
 			sceneFilters.set(f, getDisplayState("sceneFilters/" + f) != false);
 		}
 
-		if(layerButtons != null) {
-			for(b in layerButtons)
-				b.element.remove();
-		}
-		layerButtons = new Map<PrefabElement, hide.comp.Toolbar.ToolToggle>();
+		var sceneFiltersMenu = layerToolbar.addMenu("", "Scene filters");
+		var content : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
 		var initDone = false;
 		for(typeid in sceneFilters.keys()) {
-			var btn = layerToolbar.addToggle("", typeid, typeid.charAt(0).toLowerCase() + typeid.substr(1), function(on) {
+			content.push({label : typeid, checked : sceneFilters[typeid], click : function() {
+				var on = !sceneFilters[typeid];
 				sceneFilters.set(typeid, on);
 				if(initDone)
 					applySceneFilter(typeid, on);
-			});
-			if(sceneFilters.get(typeid) != false)
-				btn.toggle(true);
+				content.find(function(item) return item.label == typeid).checked = on;
+			}});
 		}
+		sceneFiltersMenu.setContent(content);
 		initDone = true;
 	}
 
@@ -705,21 +703,19 @@ class Level3D extends FileView {
 		for(f in filters) {
 			graphicsFilters.set(f, getDisplayState("graphicsFilters/" + f) != false);
 		}
-		if(layerButtons != null) {
-			for(b in layerButtons)
-				b.element.remove();
-		}
-		layerButtons = new Map<PrefabElement, hide.comp.Toolbar.ToolToggle>();
+		var graphicsFiltersMenu = layerToolbar.addMenu("", "Graphics filters");
+		var content : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
 		var initDone = false;
 		for(typeid in graphicsFilters.keys()) {
-			var btn = layerToolbar.addToggle("", typeid, typeid.charAt(0).toLowerCase() + typeid.substr(1), function(on) {
+			content.push({label : typeid, checked : graphicsFilters[typeid], click : function() {
+				var on = !graphicsFilters[typeid];
 				graphicsFilters.set(typeid, on);
-				if (initDone)
+				if(initDone)
 					applyGraphicsFilters(typeid, on);
-			});
-			if(graphicsFilters.get(typeid) != false)
-				btn.toggle(true);
+				content.find(function(item) return item.label == typeid).checked = on;
+			}});
 		}
+		graphicsFiltersMenu.setContent(content);
 		initDone = true;
 	}
 
