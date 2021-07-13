@@ -214,7 +214,7 @@ class DataFiles {
 	public static function getAvailableTypes() {
 		var sheets = [];
 		var ide = Ide.inst;
-		var levelSheet = ide.database.getSheet(ide.currentConfig.get("l3d.cdbLevel", "level"));
+		var levelSheet = ide.database.getSheet(ide.currentConfig.get("sceneeditor.cdbLevel", "level"));
 		for( s in ide.database.sheets )
 			if( s.props.dataFiles != null )
 				sheets.push(s);

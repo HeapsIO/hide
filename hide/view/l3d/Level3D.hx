@@ -114,7 +114,7 @@ class CamController extends h3d.scene.CameraController {
 			mov.x * Math.cos(theta) + mov.y * Math.cos(Math.PI / 2 + theta),
 			mov.x * Math.sin(theta) + mov.y * Math.sin(Math.PI / 2 + theta)
 		);
-		var moveSpeed = Ide.inst.currentConfig.get("l3d.camera.moveSpeed", 1.5);
+		var moveSpeed = Ide.inst.currentConfig.get("sceneeditor.camera.moveSpeed", 1.5);
 
 		var delta = dir.multiply(0.01 * moveSpeed * (distance + scene.camera.zNear));
 		delta.w = 0;
@@ -252,7 +252,7 @@ private class PrefabSceneEditor extends hide.comp.SceneEditor {
 	}
 
 	override function getAvailableTags(p:PrefabElement) {
-		return cast ide.currentConfig.get("l3d.tags");
+		return cast ide.currentConfig.get("sceneeditor.tags");
 	}
 }
 
@@ -628,8 +628,8 @@ class Level3D extends FileView {
 		grid = new h3d.scene.Graphics(scene.s3d);
 		grid.scale(1);
 		grid.material.mainPass.setPassName("debuggeom");
-		gridStep = ide.currentConfig.get("l3d.gridStep");
-		gridSize = ide.currentConfig.get("l3d.gridSize");
+		gridStep = ide.currentConfig.get("sceneeditor.gridStep");
+		gridSize = ide.currentConfig.get("sceneeditor.gridSize");
 
 		var col = h3d.Vector.fromColor(scene.engine.backgroundColor);
 		var hsl = col.toColorHSL();
@@ -701,7 +701,7 @@ class Level3D extends FileView {
 	}
 
 	function refreshSceneFilters() {
-		var filters : Array<String> = ide.currentConfig.get("l3d.filterTypes");
+		var filters : Array<String> = ide.currentConfig.get("sceneeditor.filterTypes");
 		filters = filters.copy();
 		for(sheet in DataFiles.getAvailableTypes()) {
 			filters.push(DataFiles.getTypeName(sheet));
@@ -802,7 +802,7 @@ class Level3D extends FileView {
 	function getDisplayColor(p: PrefabElement) : Null<Int> {
 		var typeId = p.getCdbType();
 		if(typeId != null) {
-			var colors = ide.currentConfig.get("l3d.colors");
+			var colors = ide.currentConfig.get("sceneeditor.colors");
 			var color = Reflect.field(colors, typeId);
 			if(color != null) {
 				return Std.parseInt("0x"+color.substr(1)) | 0xff000000;
