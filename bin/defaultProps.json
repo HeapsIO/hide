@@ -123,18 +123,14 @@
 	"sceneeditor.huds" : {},
 
 	// l3d config
-	"l3d.groundLayer": "ground",
-	"l3d.cdbLevel": "level",
-	"l3d.colors": {
+	"sceneeditor.cdbLevel": "level",
+	"sceneeditor.colors": {
 	},
-	"l3d.treeStyles": {
-		"settings": {"color": "#ffffff", "font-weight": "bold"}
-	},
-	"l3d.filterTypes": ["terrain", "model", "polygon", "box", "instance", "light"],
-	"l3d.tags": [ { "id": "tag", "color": "#802000" } ],
-	"l3d.camera.moveSpeed": 1.5,
-	"l3d.gridSize": 100,
-	"l3d.gridStep": 1,
+	"sceneeditor.filterTypes": ["terrain", "model", "polygon", "box", "instance", "light"],
+	"sceneeditor.tags": [ { "id": "tag", "color": "#802000" } ],
+	"sceneeditor.camera.moveSpeed": 1.5,
+	"sceneeditor.gridSize": 100,
+	"sceneeditor.gridStep": 1,
 
 	// FX editor
 	"fx.shaders": [

@@ -12,6 +12,8 @@ typedef HideGlobalConfig = {
 	var recentProjects : Array<String>;
 
 	var windowPos : { x : Int, y : Int, w : Int, h : Int, max : Bool };
+
+	@:optional var sceneEditorLayout : { colsVisible : Bool, colsCombined : Bool };
 }
 
 typedef HideProjectConfig = {

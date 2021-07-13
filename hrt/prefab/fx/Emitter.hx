@@ -48,6 +48,7 @@ typedef InstanceDef = {
 	worldSpeed: Value,
 	startSpeed: Value,
 	startWorldSpeed: Value,
+	orbitSpeed: Value,
 	acceleration: Value,
 	worldAcceleration: Value,
 	localOffset: Value,
@@ -94,17 +95,39 @@ private class ParticleTransform {
 		qRot.load(quat);
 	}
 
-	public function setPosition( x, y, z ) {
+	public inline function setPosition( x, y, z ) {
 		this.x = x;
 		this.y = y;
 		this.z = z;
 	}
 
-	public function setScale( x, y, z ) {
+	public inline function transform3x3( m : h3d.Matrix ) {
+		var px = x * m._11 + y * m._21 + z * m._31;
+		var py = x * m._12 + y * m._22 + z * m._32;
+		var pz = x * m._13 + y * m._23 + z * m._33;
+		x = px;
+		y = py;
+		z = pz;
+	}
+
+	public inline function setScale( x, y, z ) {
 		this.scaleX = x;
 		this.scaleY = y;
 		this.scaleZ = z;
 	}
+
+	public inline function getWorldPosition() {
+		var ppos = parent.getAbsPos();
+		return new h3d.Vector(x + ppos.tx, y + ppos.ty, z + ppos.tz);
+	}
+
+	public inline function setWorldPosition(v: h3d.Vector) {
+		var ppos = parent.getAbsPos();
+		x = v.x - ppos.tx;
+		y = v.y - ppos.ty;
+		z = v.z - ppos.tz;
+	}
+
 
 	public function calcAbsPos() {
 		qRot.toMatrix(absPos);
@@ -146,12 +169,11 @@ private class ParticleInstance  {
 
 	var emitter : EmitterObject;
 	var evaluator : Evaluator;
-	var parent : h3d.scene.Object;
 
 	var transform = new ParticleTransform();
-	var childTransform = new ParticleTransform();
+	var localTransform = new ParticleTransform();
 	public var absPos = new h3d.Matrix();
-	public var childMat = new h3d.Matrix();
+	public var localMat = new h3d.Matrix();
 	public var baseMat : h3d.Matrix;
 
 	public var startTime = 0.0;
@@ -170,7 +192,7 @@ private class ParticleInstance  {
 
 	public function init(emitter: EmitterObject, def: InstanceDef) {
 		transform.reset();
-		childTransform.reset();
+		localTransform.reset();
 		life = 0;
 		lifeTime = 0;
 		startFrame = 0;
@@ -190,7 +212,7 @@ private class ParticleInstance  {
 	}
 
 	public function dispose() {
-		transform.parent = childTransform.parent = null;
+		transform.parent = localTransform.parent = null;
 		emitter = null;
 	}
 
@@ -204,6 +226,7 @@ private class ParticleInstance  {
 	static var tmpSpeed = new h3d.Vector();
 	static var tmpMat = new h3d.Matrix();
 	static var tmpPos = new h3d.Vector();
+	static var tmpPos2 = new h3d.Vector();
 	static var tmpCamRotAxis = new h3d.Vector();
 	static var tmpCamAlign = new h3d.Vector();
 	static var tmpCamVec = new h3d.Vector();
@@ -232,47 +255,52 @@ private class ParticleInstance  {
 	}
 
 	public function update( dt : Float ) {
-
 		var t = hxd.Math.clamp(life / lifeTime, 0.0, 1.0);
+		tmpSpeed.set(0,0,0);
 
 		if( life == 0 ) {
 			// START LOCAL SPEED
 			evaluator.getVector(def.startSpeed, 0.0, tmpSpeedAccumulation);
-			if(tmpSpeedAccumulation.lengthSq() > 0.001)
-				tmpSpeedAccumulation.transform3x3(orientation.toMatrix(tmpMat));
+			tmpSpeedAccumulation.transform3x3(orientation.toMatrix(tmpMat));
 			add(speedAccumulation, tmpSpeedAccumulation);
 			// START WORLD SPEED
 			evaluator.getVector(def.startWorldSpeed, 0.0, tmpSpeedAccumulation);
-			if(tmpSpeedAccumulation.lengthSq() > 0.001)
-				tmpSpeedAccumulation.transform3x3(emitter.invTransform);
+			tmpSpeedAccumulation.transform3x3(emitter.invTransform);
 			add(speedAccumulation, tmpSpeedAccumulation);
 		}
 
 		// ACCELERATION
-		evaluator.getVector(def.acceleration, t, tmpSpeedAccumulation);
-		tmpSpeedAccumulation.scale3(dt);
-		if(tmpSpeedAccumulation.lengthSq() > 0.001)
+		if(def.acceleration != VZero) {
+			evaluator.getVector(def.acceleration, t, tmpSpeedAccumulation);
+			tmpSpeedAccumulation.scale3(dt);
 			tmpSpeedAccumulation.transform3x3(orientation.toMatrix(tmpMat));
-		add(speedAccumulation, tmpSpeedAccumulation);
-		// WORLD ACCELERATION
-		evaluator.getVector(def.worldAcceleration, t, tmpSpeedAccumulation);
-		tmpSpeedAccumulation.scale3(dt);
-		if(tmpSpeedAccumulation.lengthSq() > 0.001 && emitter.simulationSpace == Local)
-			tmpSpeedAccumulation.transform3x3(emitter.invTransform);
-		add(speedAccumulation, tmpSpeedAccumulation);
-		// SPEED
-		evaluator.getVector(def.localSpeed, t, tmpLocalSpeed);
-		if(tmpLocalSpeed.lengthSq() > 0.001)
-			tmpLocalSpeed.transform3x3(orientation.toMatrix(tmpMat));
-		// WORLD SPEED
-		evaluator.getVector(def.worldSpeed, t, tmpWorldSpeed);
-		if(emitter.simulationSpace == Local)
-			tmpWorldSpeed.transform3x3(emitter.invTransform);
+			add(speedAccumulation, tmpSpeedAccumulation);
+		}
 
-		tmpSpeed.set(0,0,0);
-		add(tmpSpeed, tmpLocalSpeed);
-		add(tmpSpeed, tmpWorldSpeed);
+		// WORLD ACCELERATION
+		if(def.worldAcceleration != VZero) {
+			evaluator.getVector(def.worldAcceleration, t, tmpSpeedAccumulation);
+			tmpSpeedAccumulation.scale3(dt);
+			if(emitter.simulationSpace == Local)
+				tmpSpeedAccumulation.transform3x3(emitter.invTransform);
+			add(speedAccumulation, tmpSpeedAccumulation);
+		}
+		
 		add(tmpSpeed, speedAccumulation);
+
+		// SPEED
+		if(def.localSpeed != VZero) {
+			evaluator.getVector(def.localSpeed, t, tmpLocalSpeed);
+			tmpLocalSpeed.transform3x3(orientation.toMatrix(tmpMat));
+			add(tmpSpeed, tmpLocalSpeed);
+		}
+		// WORLD SPEED
+		if(def.worldSpeed != VZero) {
+			evaluator.getVector(def.worldSpeed, t, tmpWorldSpeed);
+			if(emitter.simulationSpace == Local)
+				tmpWorldSpeed.transform3x3(emitter.invTransform);
+			add(tmpSpeed, tmpWorldSpeed);
+		}
 
 		if(emitter.simulationSpace == World) {
 			tmpSpeed.x *= emitter.worldScale.x;
@@ -283,6 +311,17 @@ private class ParticleInstance  {
 		transform.x += tmpSpeed.x * dt;
 		transform.y += tmpSpeed.y * dt;
 		transform.z += tmpSpeed.z * dt;
+
+		if(def.orbitSpeed != VZero) {
+			evaluator.getVector(def.orbitSpeed, t, tmpLocalSpeed);
+			tmpMat.initRotation(tmpLocalSpeed.x * dt, tmpLocalSpeed.y * dt, tmpLocalSpeed.z * dt);
+			// Rotate in emitter space and convert back to world space
+			var pos = transform.getWorldPosition();
+			pos.transform3x4(emitter.getInvPos());
+			pos.transform3x3(tmpMat);
+			pos.transform3x4(emitter.getAbsPos());
+			transform.setWorldPosition(pos);
+		}
 
 		// SPEED ORIENTATION
 		if(emitter.emitOrientation == Speed && tmpSpeed.lengthSq() > 0.01)
@@ -296,12 +335,12 @@ private class ParticleInstance  {
 		scaleVec.scale3(evaluator.getFloat(def.scale, t));
 
 		// TRANSFORM
-		childMat.initScale(scaleVec.x, scaleVec.y, scaleVec.z);
-		childMat.rotate(rot.x, rot.y, rot.z);
-		childMat.translate(offset.x, offset.y, offset.z);
+		localMat.initScale(scaleVec.x, scaleVec.y, scaleVec.z);
+		localMat.rotate(rot.x, rot.y, rot.z);
+		localMat.translate(offset.x, offset.y, offset.z);
 		if( baseMat != null )
-			childMat.multiply(baseMat, childMat);
-		childTransform.setTransform(childMat);
+			localMat.multiply(baseMat, localMat);
+		localTransform.setTransform(localMat);
 
 		// COLOR
 		if( def.color != null ) {
@@ -316,14 +355,14 @@ private class ParticleInstance  {
 			case Screen:
 				transform.qRot.load(emitter.screenQuat);
 				transform.calcAbsPos();
-				childTransform.calcAbsPos();
-				absPos.multiply(childTransform.absPos, transform.absPos);
+				localTransform.calcAbsPos();
+				absPos.multiply(localTransform.absPos, transform.absPos);
 
 			case Axis:
 				transform.calcAbsPos();
 
 				var absChildMat = tmpMat;
-				absChildMat.multiply3x4(transform.absPos, childMat);
+				absChildMat.multiply3x4(transform.absPos, localMat);
 				tmpCamAlign.load(emitter.alignAxis);
 				tmpCamAlign.transform3x3(absChildMat);
 				tmpCamAlign.normalizeFast();
@@ -348,17 +387,17 @@ private class ParticleInstance  {
 
 				tmpQuat.identity();
 				tmpQuat.initRotateAxis(emitter.alignLockAxis.x, emitter.alignLockAxis.y, emitter.alignLockAxis.z, angle);
-				var cq = childTransform.qRot;
+				var cq = localTransform.qRot;
 				cq.multiply(cq, tmpQuat);
-				childTransform.setRotation(cq);
+				localTransform.setRotation(cq);
 
-				childTransform.calcAbsPos();
-				absPos.multiply(childTransform.absPos, transform.absPos);
+				localTransform.calcAbsPos();
+				absPos.multiply(localTransform.absPos, transform.absPos);
 
 			case None:
 				transform.calcAbsPos();
-				childTransform.calcAbsPos();
-				absPos.multiply(childTransform.absPos, transform.absPos);
+				localTransform.calcAbsPos();
+				absPos.multiply(localTransform.absPos, transform.absPos);
 		}
 
 		// COLLISION
@@ -376,7 +415,7 @@ private class ParticleInstance  {
 					newDir.scale3(speedAmount);
 					speedAccumulation.set(newDir.x, newDir.y, newDir.z);
 					transform.z = 0;
-					absPos.multiply(childTransform.absPos, transform.absPos);
+					absPos.multiply(localTransform.absPos, transform.absPos);
 				}
 			}
 		}
@@ -774,8 +813,7 @@ class EmitterObject extends h3d.scene.Object {
 			return;
 
 		if( parent != null ) {
-			invTransform.load(parent.getAbsPos());
-			invTransform.invert();
+			invTransform.load(parent.getInvPos());
 
 			if(alignMode == Screen) {
 				var cam = getScene().camera;
@@ -1023,6 +1061,7 @@ class Emitter extends Object3D {
 		{ name: "instWorldSpeed", 			t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Fixed World Speed" },
 		{ name: "instStartSpeed",      		t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Start Speed" },
 		{ name: "instStartWorldSpeed", 		t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Start World Speed" },
+		{ name: "instOrbitSpeed", 			t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Orbit Speed" },
 		{ name: "instAcceleration",			t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Acceleration" },
 		{ name: "instWorldAcceleration",	t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "World Acceleration" },
 		{ name: "instScale",      			t: PFloat(0, 2.0),    def: 1.,         disp: "Scale" },
@@ -1145,10 +1184,14 @@ class Emitter extends Object3D {
 				var xCurve = getCurve(pname + suffix);
 				if(xCurve != null)
 					xVal = VCurveScale(xCurve, baseProp != null ? baseProp : 1.0);
-				else if(baseProp != null)
-					xVal = VConst(baseProp);
-				else
-					xVal = defVal == 0.0 ? VZero : VConst(defVal);
+				else {
+					var rv = baseProp != null ? baseProp : defVal;
+					xVal = switch(rv) {
+						case 0.0: VZero;
+						case 1.0: VOne;
+						default: VConst(rv);
+					}
+				}
 
 				var randCurve = getCurve(pname + suffix + ".rand");
 				var randVal : Value = VZero;
@@ -1176,10 +1219,16 @@ class Emitter extends Object3D {
 							randProp != null ? (randProp[idx] : Float) : null,
 							param.name, suffix);
 					}
-					return VVector(
+					var v : Value = VVector(
 						makeComp(0, ".x"),
 						makeComp(1, ".y"),
 						makeComp(2, ".z"));
+					if(v.match(VVector(VZero, VZero, VZero)))
+						v = VZero;
+					else if(v.match(VVector(VOne, VOne, VOne)))
+						v = VOne;
+					return v;
+					
 				default:
 					return makeCompVal(baseProp, param.def != null ? param.def : 0.0, randProp, param.name, "");
 			}
@@ -1198,6 +1247,7 @@ class Emitter extends Object3D {
 				worldSpeed: makeParam(this, "instWorldSpeed"),
 				startSpeed: makeParam(this, "instStartSpeed"),
 				startWorldSpeed: makeParam(this, "instStartWorldSpeed"),
+				orbitSpeed: makeParam(this, "instOrbitSpeed"),
 				acceleration: makeParam(this, "instAcceleration"),
 				worldAcceleration: makeParam(this, "instWorldAcceleration"),
 				localOffset: makeParam(this, "instOffset"),

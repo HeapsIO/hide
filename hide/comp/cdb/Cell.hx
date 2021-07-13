@@ -409,8 +409,11 @@ class Cell extends Component {
 		// keywords
 		code = KWD_REG.map(code, function(r) return '<span class="kwd">${r.matched(0)}</span>');
 		// comments
-		code = ~/(\/\*([^\*]+)\*\/)/g.replace(code,'<span class="comment">$1</span>');
-		code = code.split("<br/>").map(function(line) return ~/(\/\/.*)/.replace(line,'<span class="comment">$1</span>')).join("<br/>");
+		function unspan(str:String) {
+			return str.split('<span class="').join('<span class="_');
+		}
+		code = ~/(\/\*([^\*]+)\*\/)/g.map(code,function(r) return '<span class="comment">'+unspan(r.matched(1))+'</span>');
+		code = code.split("<br/>").map(function(line) return ~/(\/\/.*)/.map(line,(r) -> '<span class="comment">'+unspan(r.matched(1))+'</span>')).join("<br/>");
 		return code;
 	}
 

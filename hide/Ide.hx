@@ -35,7 +35,7 @@ class Ide {
 		user : Config,
 		current : Config,
 	};
-	var ideConfig(get, never) : hide.Config.HideGlobalConfig;
+	public var ideConfig(get, never) : hide.Config.HideGlobalConfig;
 	public var projectConfig(get, never) : hide.Config.HideProjectConfig;
 
 	var window : nw.Window;
