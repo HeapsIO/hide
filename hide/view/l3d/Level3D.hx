@@ -433,85 +433,34 @@ class Level3D extends FileView {
 
 	public function onSceneReady() {
 		tools.saveDisplayKey = "Prefab/toolbar";
-
-		var toolButtonFunctions = new Map<String, Void -> Void>();
-		toolButtonFunctions.set("perspectiveCamera", () -> resetCamera(false));
-		toolButtonFunctions.set("topCamera", () -> resetCamera(true));
-		toolButtonFunctions.set("bakeLights", () -> bakeLights());
-
-		var toolToggleFunctions = new Map<String, Bool -> Void>();
-		toolToggleFunctions.set("snapToGroundToggle", (v) -> sceneEditor.snapToGround = v);
-		toolToggleFunctions.set("localTransformsToggle", (v) -> sceneEditor.localTransform = v);
-		toolToggleFunctions.set("gridToggle", function(v) { showGrid = v; updateGrid(); });
 		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		statusText.setPosition(5, 5);
 		statusText.visible = false;
-		toolToggleFunctions.set("sceneInformationToggle", function(b) statusText.visible = b);
-		toolToggleFunctions.set("autoSyncToggle", function(b) autoSync = b);
-		var toolToggleRightClickFunctions = new Map<String, Void -> Void>();
-		var toolColorFunctions = new Map<String, Int -> Void>();
-		toolColorFunctions.set("backgroundColor", function(v) {
-			scene.engine.backgroundColor = v;
-			updateGrid();
-		});
-		var toolRangeFunctions = new Map<String, Float -> Void>();
-		toolRangeFunctions.set("sceneSpeed", function(v) scene.speed = v);
-
-		var texContent : Element = null;
-		toolToggleRightClickFunctions.set("sceneInformationToggle", function() {
-				if( texContent != null ) {
-					texContent.remove();
-					texContent = null;
-				}
-				new hide.comp.ContextMenu([
-					{
-						label : "Show Texture Details",
-						click : function() {
-							var memStats = scene.engine.mem.stats();
-							var texs = @:privateAccess scene.engine.mem.textures;
-							var list = [for(t in texs) {
-								n: '${t.width}x${t.height}  ${t.format}  ${t.name}',
-								size: t.width * t.height
-							}];
-							list.sort((a, b) -> Reflect.compare(b.size, a.size));
-							var content = new Element('<div tabindex="1" class="overlay-info"><h2>Scene info</h2><pre></pre></div>');
-							new Element(element[0].ownerDocument.body).append(content);
-							var pre = content.find("pre");
-							pre.text([for(l in list) l.n].join("\n"));
-							texContent = content;
-							content.blur(function(_) {
-								content.remove();
-								texContent = null;
-							});
-						}
-					}
-				]);
-			});
-
-		var toolsNames : Array<String> = config.get("sceneeditor.tools");
+		hide.comp.Toolbar.ToolsObject.level3D = this;
+		var toolsNames : Iterator<String> = hide.comp.Toolbar.ToolsObject.tools.keys();
 		for (toolName in toolsNames) {
-			var tool = config.get("sceneeditor." + toolName);
+			var tool = hide.comp.Toolbar.ToolsObject.tools.get(toolName);
 			if (tool != null) {
 				var shortcut = (config.get("key.sceneeditor." + toolName) != null)? " (" + config.get("key.sceneeditor." + toolName) + ")" : "";
 				switch(tool.type) {
-					case "Button":
-						var button = tools.addButton(tool.icon, tool.title + shortcut, toolButtonFunctions[toolName]);
+					case Button:
+						var button = tools.addButton(tool.icon, tool.title + shortcut, tool.buttonFunction);
 						if (tool.iconTransform != null) {
 							button.find(".icon").css({transform: tool.iconTransform});
 						}
-					case "Toggle":
-						var toggle = tools.addToggle(tool.icon, tool.title + shortcut, toolToggleFunctions[toolName]);
+					case Toggle:
+						var toggle = tools.addToggle(tool.icon, tool.title + shortcut, tool.toggleFunction);
 						if (tool.iconTransform != null) {
 							toggle.element.find(".icon").css({transform: tool.iconTransform});
 						}
 						keys.register("sceneeditor." + toolName, () -> toggle.toggle(!toggle.isDown()));
-						if (tool.customRightClick != null && tool.customRightClick) {
-							toggle.rightClick(toolToggleRightClickFunctions[toolName]);
+						if (tool.rightClick != null) {
+							toggle.rightClick(tool.rightClick);
 						}
-					case "Color":
-						tools.addColor(tool.title, toolColorFunctions[toolName]);
-					case "Range":
-						tools.addRange(tool.title, toolRangeFunctions[toolName], 1.);
+					case Color:
+						tools.addColor(tool.title, tool.colorFunction);
+					case Range:
+						tools.addRange(tool.title, tool.rangeFunction, 1.);
 
 				}
 			}
