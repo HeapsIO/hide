@@ -432,7 +432,9 @@ class Level3D extends FileView {
 						tools.addColor(tool.title, tool.colorFunction);
 					case Range:
 						tools.addRange(tool.title, tool.rangeFunction, 1.);
-
+					case Menu:
+						var menu = tools.addMenu(tool.icon, tool.title);
+						menu.setContent(tool.menuItems());
 				}
 			}
 		}
@@ -647,21 +649,6 @@ class Level3D extends FileView {
 		for(f in filters) {
 			sceneFilters.set(f, getDisplayState("sceneFilters/" + f) != false);
 		}
-
-		var sceneFiltersMenu = layerToolbar.addMenu("", "Scene filters");
-		var content : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
-		var initDone = false;
-		for(typeid in sceneFilters.keys()) {
-			content.push({label : typeid, checked : sceneFilters[typeid], click : function() {
-				var on = !sceneFilters[typeid];
-				sceneFilters.set(typeid, on);
-				if(initDone)
-					applySceneFilter(typeid, on);
-				content.find(function(item) return item.label == typeid).checked = on;
-			}});
-		}
-		sceneFiltersMenu.setContent(content);
-		initDone = true;
 	}
 
 	function initGraphicsFilters() {
@@ -678,20 +665,28 @@ class Level3D extends FileView {
 		for(f in filters) {
 			graphicsFilters.set(f, getDisplayState("graphicsFilters/" + f) != false);
 		}
-		var graphicsFiltersMenu = layerToolbar.addMenu("", "Graphics filters");
+	}
+
+	function filtersToMenuItem(filters : Map<String, Bool>, type : String) : Array<hide.comp.ContextMenu.ContextMenuItem> {
 		var content : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
 		var initDone = false;
-		for(typeid in graphicsFilters.keys()) {
-			content.push({label : typeid, checked : graphicsFilters[typeid], click : function() {
-				var on = !graphicsFilters[typeid];
-				graphicsFilters.set(typeid, on);
+		for(typeid in filters.keys()) {
+			content.push({label : typeid, checked : filters[typeid], click : function() {
+				var on = !filters[typeid];
+				filters.set(typeid, on);
 				if(initDone)
-					applyGraphicsFilters(typeid, on);
+					switch (type){
+						case "Graphics":
+							applyGraphicsFilters(typeid, on);
+						case "Scene":
+							applySceneFilter(typeid, on);
+					}
+					
 				content.find(function(item) return item.label == typeid).checked = on;
 			}});
 		}
-		graphicsFiltersMenu.setContent(content);
 		initDone = true;
+		return content;
 	}
 
 	function applyTreeStyle(p: PrefabElement, el: Element, pname: String) {
