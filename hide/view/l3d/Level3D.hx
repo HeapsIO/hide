@@ -359,19 +359,12 @@ class Level3D extends FileView {
 		element.find(".heaps-scene").first().append(scene.element);
 		sceneEditor.tree.element.addClass("small");
 
+		refreshColLayout();
 		element.find(".combine-btn").first().click((_) -> setCombine(true));
 		element.find(".separate-btn").first().click((_) -> setCombine(false));
-		var columnComb = getDisplayState("columnsCombined");
-		if( columnComb == null ) columnComb = false;
-		setCombine(columnComb);
 
 		element.find(".show-cols-btn").first().click(showColumns);
 		element.find(".hide-cols-btn").first().click(hideColumns);
-		var columnVis = getDisplayState("columnsVisible");
-		if( columnVis == null || columnVis )
-			showColumns();
-		else
-			hideColumns();
 
 		element.find(".collapse-btn").click(function(e) {
 			sceneEditor.collapseTree();
@@ -381,11 +374,33 @@ class Level3D extends FileView {
 		refreshGraphicsFilters();
 	}
 
+	function refreshColLayout() {
+		var config = ide.ideConfig;
+		if( config.sceneEditorLayout == null ) {
+			config.sceneEditorLayout = {
+				colsVisible: true,
+				colsCombined: false,
+			};
+		}
+		setCombine(config.sceneEditorLayout.colsCombined);
+
+		if( config.sceneEditorLayout.colsVisible )
+			showColumns();
+		else
+			hideColumns();
+	}
+
+	override function onActivate() {
+		if( sceneEditor != null )
+			refreshColLayout();
+	}
+
 	function hideColumns(?_) {
 		element.find(".tree-column").first().hide();
 		element.find(".props-column").first().hide();
 		element.find(".show-cols-btn").first().show();
-		saveDisplayState("columnsVisible", false);
+		ide.ideConfig.sceneEditorLayout.colsVisible = false;
+		@:privateAccess ide.config.global.save();
 		@:privateAccess if( scene.window != null) scene.window.checkResize();
 	}
 
@@ -393,7 +408,8 @@ class Level3D extends FileView {
 		element.find(".tree-column").first().show();
 		element.find(".props-column").first().show();
 		element.find(".show-cols-btn").first().hide();
-		saveDisplayState("columnsVisible", true);
+		ide.ideConfig.sceneEditorLayout.colsVisible = true;
+		@:privateAccess ide.config.global.save();
 		@:privateAccess if( scene.window != null) scene.window.checkResize();
 	}
 
@@ -410,7 +426,8 @@ class Level3D extends FileView {
 			element.find(".combine-btn").first().show();
 			element.find(".separate-btn").first().hide();
 		}
-		saveDisplayState("columnsCombined", val);
+		ide.ideConfig.sceneEditorLayout.colsCombined = val;
+		@:privateAccess ide.config.global.save();
 		@:privateAccess if( scene.window != null) scene.window.checkResize();
 	}
 
