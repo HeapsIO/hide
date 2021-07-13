@@ -359,40 +359,19 @@ class Level3D extends FileView {
 		element.find(".heaps-scene").first().append(scene.element);
 		sceneEditor.tree.element.addClass("small");
 
-		element.find(".show-cols-btn").first().hide();
-		element.find(".show-cols-btn").first().click(function(_) {
-			element.find(".tree-column").first().show();
-			element.find(".props-column").first().show();
-			element.find(".show-cols-btn").first().hide();
-			@:privateAccess scene.window.checkResize();
-		});
-		element.find(".hide-cols-btn").first().click(function(_) {
-			element.find(".tree-column").first().hide();
-			element.find(".props-column").first().hide();
-			element.find(".show-cols-btn").first().show();
-			@:privateAccess scene.window.checkResize();
-		});
-		function setCombine(val) {
-			var fullscene = element.find(".scene-partition").first();
-			var props = element.find(".props-column").first();
-			fullscene.toggleClass("reduced-columns", val);
-			if( val ) {
-				element.find(".hide-scenetree").first().parent().append(props);
-				element.find(".combine-btn").first().hide();
-				element.find(".separate-btn").first().show();
-			} else {
-				fullscene.append(props);
-				element.find(".combine-btn").first().show();
-				element.find(".separate-btn").first().hide();
-			}
-			@:privateAccess
-			if( scene.window != null)
-				scene.window.checkResize();
-		}
-
 		element.find(".combine-btn").first().click((_) -> setCombine(true));
 		element.find(".separate-btn").first().click((_) -> setCombine(false));
-		setCombine(false);
+		var columnComb = getDisplayState("columnsCombined");
+		if( columnComb == null ) columnComb = false;
+		setCombine(columnComb);
+
+		element.find(".show-cols-btn").first().click(showColumns);
+		element.find(".hide-cols-btn").first().click(hideColumns);
+		var columnVis = getDisplayState("columnsVisible");
+		if( columnVis == null || columnVis )
+			showColumns();
+		else
+			hideColumns();
 
 		element.find(".collapse-btn").click(function(e) {
 			sceneEditor.collapseTree();
@@ -400,6 +379,39 @@ class Level3D extends FileView {
 
 		refreshSceneFilters();
 		refreshGraphicsFilters();
+	}
+
+	function hideColumns(?_) {
+		element.find(".tree-column").first().hide();
+		element.find(".props-column").first().hide();
+		element.find(".show-cols-btn").first().show();
+		saveDisplayState("columnsVisible", false);
+		@:privateAccess if( scene.window != null) scene.window.checkResize();
+	}
+
+	function showColumns(?_) {
+		element.find(".tree-column").first().show();
+		element.find(".props-column").first().show();
+		element.find(".show-cols-btn").first().hide();
+		saveDisplayState("columnsVisible", true);
+		@:privateAccess if( scene.window != null) scene.window.checkResize();
+	}
+
+	function setCombine(val) {
+		var fullscene = element.find(".scene-partition").first();
+		var props = element.find(".props-column").first();
+		fullscene.toggleClass("reduced-columns", val);
+		if( val ) {
+			element.find(".hide-scenetree").first().parent().append(props);
+			element.find(".combine-btn").first().hide();
+			element.find(".separate-btn").first().show();
+		} else {
+			fullscene.append(props);
+			element.find(".combine-btn").first().show();
+			element.find(".separate-btn").first().hide();
+		}
+		saveDisplayState("columnsCombined", val);
+		@:privateAccess if( scene.window != null) scene.window.checkResize();
 	}
 
 	public function onSceneReady() {
