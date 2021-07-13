@@ -1,5 +1,56 @@
 package hide.comp;
-
+enum ToolType {
+	Button;
+	Toggle;
+	Range;
+	Color;
+}
+class ToolsObject {
+	static public var level3D : hide.view.l3d.Level3D;
+	static var texContent : Element = null;
+	static public var tools : Map<String, {title : String, ?icon : String, type : ToolType, ?iconTransform : String, ?rightClick : Void -> Void, ?buttonFunction : Void -> Void, ?toggleFunction : Bool -> Void, ?rangeFunction : Float -> Void, ?colorFunction : Int -> Void}> = [
+		"perspectiveCamera" => {title : "Perspective camera", icon : "video-camera", type : Button, buttonFunction : () -> @:privateAccess level3D.resetCamera(false)},
+		"topCamera" => {title : "Top camera", icon : "video-camera", type : Button, iconTransform : "rotateZ(90deg)", buttonFunction : () -> @:privateAccess level3D.resetCamera(true)},
+		"snapToGroundToggle" => {title : "Snap to ground", icon : "anchor", type : Toggle, toggleFunction : (v) -> level3D.sceneEditor.snapToGround = v},
+		"localTransformsToggle"=> {title : "Local transforms", icon : "compass", type : Toggle, toggleFunction : (v) -> level3D.sceneEditor.localTransform = v},
+		"gridToggle" => {title : "Toggle grid", icon : "th", type : Toggle, toggleFunction : (v) -> { @:privateAccess level3D.showGrid = v; @:privateAccess level3D.updateGrid(); }},
+		"bakeLights" => {title : "Bake lights", icon : "lightbulb-o", type : Button, buttonFunction : () -> @:privateAccess level3D.bakeLights()},
+		"sceneeditor.sceneInformationToggle" => {title : "Scene information", icon : "info-circle", type : Toggle, toggleFunction : (b) -> @:privateAccess level3D.statusText.visible = b, rightClick : () -> {
+			if( texContent != null ) {
+				texContent.remove();
+				texContent = null;
+			}
+			new hide.comp.ContextMenu([
+				{
+					label : "Show Texture Details",
+					click : function() {
+						var memStats = @:privateAccess level3D.scene.engine.mem.stats();
+						var texs = @:privateAccess level3D.scene.engine.mem.textures;
+						var list = [for(t in texs) {
+							n: '${t.width}x${t.height}  ${t.format}  ${t.name}',
+							size: t.width * t.height
+						}];
+						list.sort((a, b) -> Reflect.compare(b.size, a.size));
+						var content = new Element('<div tabindex="1" class="overlay-info"><h2>Scene info</h2><pre></pre></div>');
+						new Element(@:privateAccess level3D.element[0].ownerDocument.body).append(content);
+						var pre = content.find("pre");
+						pre.text([for(l in list) l.n].join("\n"));
+						texContent = content;
+						content.blur(function(_) {
+							content.remove();
+							texContent = null;
+						});
+					}
+				}
+			]);
+		}},
+		"sceneeditor.autoSyncToggle" => {title : "Auto synchronize", icon : "refresh", type : Toggle, toggleFunction : (b) -> @:privateAccess level3D.autoSync = b},
+		"sceneeditor.backgroundColor" => {title : "Background Color", type : Color, colorFunction :  function(v) {
+			@:privateAccess level3D.scene.engine.backgroundColor = v;
+			@:privateAccess level3D.updateGrid();}},
+		"sceneeditor.sceneSpeed" => {title : "Speed", type : Range, rangeFunction : function(v) @:privateAccess level3D.scene.speed = v}
+	];
+}
 typedef ToolToggle = {
 	var element : Element;
 	function toggle( v : Bool ) : Void;

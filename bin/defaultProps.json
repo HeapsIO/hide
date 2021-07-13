@@ -121,17 +121,6 @@
 	"sceneeditor.icons" : {},
 	"sceneeditor.ranges" : {},
 	"sceneeditor.huds" : {},
-	"sceneeditor.tools" : ["perspectiveCamera", "topCamera", "snapToGroundToggle", "localTransformsToggle", "gridToggle", "bakeLights", "sceneInformationToggle", "backgroundColor", "autoSyncToggle", "sceneSpeed"],
-	"sceneeditor.perspectiveCamera": {"title" : "Perspective camera", "icon" : "video-camera", "type" : "Button"},
-	"sceneeditor.topCamera": {"title" : "Top camera", "icon" : "video-camera", "iconTransform" : "rotateZ(90deg)", "type" : "Button"},
-	"sceneeditor.snapToGroundToggle": {"title" : "Snap to ground", "icon" : "anchor", "type" : "Toggle"},
-	"sceneeditor.localTransformsToggle": {"title" : "Local transforms", "icon" : "compass", "type" : "Toggle"},
-	"sceneeditor.gridToggle": {"title" : "Toggle grid", "icon" : "th", "type" : "Toggle"},
-	"sceneeditor.bakeLights": {"title" : "Bake lights", "icon" : "lightbulb-o", "type" : "Button"},
-	"sceneeditor.sceneInformationToggle" : {"title" : "Scene information", "icon" : "info-circle", "type" : "Toggle", "customRightClick" : true},
-	"sceneeditor.backgroundColor" : {"title" : "Background Color", "type" : "Color"},
-	"sceneeditor.autoSyncToggle" : {"title" : "Auto synchronize", "icon" : "refresh", "type" : "Toggle"},
-	"sceneeditor.sceneSpeed" : {"title" : "Speed", "type" : "Range"},
 
 	// l3d config
 	"l3d.groundLayer": "ground",
