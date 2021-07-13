@@ -315,6 +315,12 @@ input[type=checkbox]:checked:after {
 .flex.vertical {
   flex-direction: column;
 }
+.scene-partition .hide-toolbar .button,
+.scene-partition .show-cols-btn {
+  min-width: 16px !important;
+  height: 16px !important;
+  font-size: 12px !important;
+}
 .scene-partition .show-cols-btn {
   position: absolute;
   margin-top: 2px;
@@ -403,7 +409,8 @@ input[type=checkbox]:checked:after {
   padding-top: 3px;
   border-top-color: white;
 }
-.hide-toolbar .button:active {
+.hide-toolbar .button:active,
+.scene-partition .show-cols-btn:active {
   padding-top: 3px;
   padding-bottom: 1px;
 }

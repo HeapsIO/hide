@@ -343,7 +343,7 @@ class Level3D extends FileView {
 					</div>
 
 					<div class="button show-cols-btn close-btn" title="Show Tree & Props">
-						<div class="icon fa fa-chevron-down"></div>
+						<div class="icon fa fa-chevron-left"></div>
 					</div>
 				</div>
 			</div>

@@ -144,5 +144,5 @@ class Prefab extends FileView {
 	}
 
 	// TOMORROW Comment this? but then the transition breaks existing tabs
-	static var _ = FileTree.registerExtension(Prefab,["prefab"],{ icon : "sitemap" });
+	// static var _ = FileTree.registerExtension(Prefab,["prefab"],{ icon : "sitemap" });
 }

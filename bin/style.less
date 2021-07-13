@@ -347,14 +347,26 @@ input[type=checkbox] {
 	flex-direction: column;
 }
 
+.scene-partition .hide-toolbar .button {
+	min-width : 16px !important;
+	height : 16px !important;
+	font-size: 12px !important;
+}
+
 .scene-partition .show-cols-btn {
 	&:extend(.hide-toolbar .button);
+	&:extend(.scene-partition .hide-toolbar .button);
+
 	position: absolute;
 	margin-top: 2px;
 	right: 0px;
 
 	&:hover {
 		&:extend(.hide-toolbar .button:hover);
+	}
+
+	&:active {
+		&:extend(.hide-toolbar .button:active);
 	}
 }
 
