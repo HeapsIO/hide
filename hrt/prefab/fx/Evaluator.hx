@@ -38,6 +38,7 @@ class Evaluator {
 			return 0.0;
 		switch(val) {
 			case VZero: return 0.0;
+			case VOne: return 1.0;
 			case VConst(v): return v;
 			case VCurve(c): return c.getVal(time);
 			case VCurveScale(c, scale): return c.getVal(time) * scale;
@@ -59,6 +60,7 @@ class Evaluator {
 
 	public function getSum(val: Value, time: Float) : Float {
 		switch(val) {
+			case VOne: return time;
 			case VConst(v): return v * time;
 			case VCurveScale(c, scale): return c.getSum(time) * scale;
 			case VAdd(a, b):
@@ -87,6 +89,10 @@ class Evaluator {
 				var aval = getFloat(a, time);
 				vec.makeColor(hval, sval, lval);
 				vec.a = aval;
+			case VZero:
+				vec.set(0,0,0,1);
+			case VOne:
+				vec.set(1,1,1,1);
 			default:
 				var f = getFloat(v, time);
 				vec.set(f, f, f, 1.0);

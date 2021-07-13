@@ -575,11 +575,11 @@ class Model extends FileView {
 				var prevPause = obj.currentAnimation.pause;
 				obj.currentAnimation.pause = true;
 				obj.currentAnimation.setFrame( (e.relX / W) * obj.currentAnimation.frameCount );
-				int.startDrag(function(e) {
+				int.startCapture(function(e) {
 					switch(e.kind ) {
 					case ERelease:
 						obj.currentAnimation.pause = prevPause;
-						int.stopDrag();
+						int.stopCapture();
 					case EMove:
 						obj.currentAnimation.setFrame( (e.relX / W) * obj.currentAnimation.frameCount );
 					default:
@@ -658,10 +658,10 @@ class Model extends FileView {
 					dragInter.onPush = function(e) {
 						if( hxd.Key.isDown( hxd.Key.MOUSE_LEFT) ){
 							var startFrame = curFrame;
-							dragInter.startDrag(function(e) {
+							dragInter.startCapture(function(e) {
 								switch( e.kind ) {
 								case ERelease:
-									dragInter.stopDrag();
+									dragInter.stopCapture();
 									buildTimeline();
 									buildEventPanel();
 									if( curFrame != startFrame )

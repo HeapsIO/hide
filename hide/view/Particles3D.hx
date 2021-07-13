@@ -299,14 +299,16 @@ class Particles3D extends FileView {
 		extra = properties.add(extra, props, function(_) syncProps());
 
 		extra.find(".bounds").change(function(e) bounds.visible = e.getThis().prop("checked"));
-		var defAmbient = scene.s3d.lightSystem.ambientLight.clone();
-		extra.find(".lights").change(function(e) {
-			var ls = scene.s3d.lightSystem;
-			var lfw = Std.downcast(ls, h3d.scene.fwd.LightSystem);
-			var enable = e.getThis().prop("checked");
-			if( lfw != null ) lfw.maxLightsPerObject = enable ? 6 : 0;
-			if( enable ) ls.ambientLight.load(defAmbient) else ls.ambientLight.set(1, 1, 1);
-		});
+		var lfw = Std.downcast(scene.s3d.lightSystem,h3d.scene.fwd.LightSystem);
+		if( lfw != null ) {
+			var defAmbient = lfw.ambientLight.clone();
+			extra.find(".lights").change(function(e) {
+				lfw = Std.downcast(scene.s3d.lightSystem, h3d.scene.fwd.LightSystem);
+				var enable = e.getThis().prop("checked");
+				if( lfw != null ) lfw.maxLightsPerObject = enable ? 6 : 0;
+				if( enable ) lfw.ambientLight.load(defAmbient) else lfw.ambientLight.set(1, 1, 1);
+			});
+		}
 		extra.find(".new").click(function(_) {
 			var g = parts.addGroup();
 			g.name = "Group#" + Lambda.count({ iterator : parts.getGroups });
