@@ -263,7 +263,6 @@
 }
 .cdb .cdb-sheet td.t_color {
   text-align: center;
-  position: relative;
 }
 .cdb .cdb-sheet td.t_color ._hide-modal {
   opacity: 0;
