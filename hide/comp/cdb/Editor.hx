@@ -857,28 +857,28 @@ class Editor extends Component {
 			{ label : "Edit", click : function () editColumn(sheet, col) },
 			{ label : "Add Column", click : function () newColumn(sheet, indexColumn) },
 			{ label : "", isSeparator: true },
-			{ label : "Move Left", enabled:  (indexColumn > 0 && 
+			{ label : "Move Left", enabled:  (indexColumn > 0 &&
 				nextVisibleColumnIndex(table, indexColumn, Left) > -1), click : function () {
 				beginChanges();
 				var nextIndex = nextVisibleColumnIndex(table, indexColumn, Left);
 				sheet.columns.remove(col);
 				sheet.columns.insert(nextIndex, col);
-				if (cursor.x == indexColumn) 
+				if (cursor.x == indexColumn)
 					cursor.set(cursor.table, nextIndex, cursor.y);
-				else if (cursor.x == nextIndex) 
+				else if (cursor.x == nextIndex)
 					cursor.set(cursor.table, nextIndex + 1, cursor.y);
 				endChanges();
 				refresh();
 			}},
-			{ label : "Move Right", enabled: (indexColumn < sheet.columns.length - 1 && 
+			{ label : "Move Right", enabled: (indexColumn < sheet.columns.length - 1 &&
 				nextVisibleColumnIndex(table, indexColumn, Right) < sheet.columns.length), click : function () {
 				beginChanges();
 				var nextIndex = nextVisibleColumnIndex(table, indexColumn, Right);
 				sheet.columns.remove(col);
 				sheet.columns.insert(nextIndex, col);
-				if (cursor.x == indexColumn) 
+				if (cursor.x == indexColumn)
 					cursor.set(cursor.table, nextIndex, cursor.y);
-				else if (cursor.x == nextIndex) 
+				else if (cursor.x == nextIndex)
 					cursor.set(cursor.table, nextIndex - 1, cursor.y);
 				endChanges();
 				refresh();
@@ -927,7 +927,7 @@ class Editor extends Component {
 			})});
 
 			switch(col.type) {
-			case TId | TString: 
+			case TId | TString:
 				menu.push({ label : "Sort", click: () -> table.sortBy(col) });
 			default:
 			}
@@ -1089,6 +1089,7 @@ class Editor extends Component {
 			if( StringTools.startsWith(s.name, old + "@") )
 				s.rename(name + "@" + s.name.substr(old.length + 1));
 		endChanges();
+		DataFiles.save(true,[ sheet.name => old ]);
 		return true;
 	}
 

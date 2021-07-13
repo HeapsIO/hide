@@ -68,11 +68,11 @@ class Gizmo2D extends h2d.Object {
 		var center = localToGlobal();
 		moving = true;
 		onStartMove(t);
-		int.startDrag(function(e:hxd.Event) {
+		int.startCapture(function(e:hxd.Event) {
 			switch( e.kind ) {
 			case ERelease, EReleaseOutside:
 				moving = false;
-				int.stopDrag();
+				int.stopCapture();
 				onFinishMove();
 			case EMove:
 				var dx = scene.mouseX - dragStartX;

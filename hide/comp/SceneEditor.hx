@@ -544,13 +544,13 @@ class SceneEditor {
 			return true;
 		};
 		tree.onAllowMove = function(e, to) {
-			var allowMove = false;
-			if (to == null && e.getHideProps().allowParent == null) allowMove = true;
-			else if (to == null) allowMove = false;
-			else if (to.getHideProps().allowChildren != null && to.getHideProps().allowChildren(e.type) 
-			&& e.getHideProps().allowParent != null && e.getHideProps().allowParent(to))
-				allowMove = true;
-			return allowMove;
+			// var allowMove = false;
+			// if (to == null && e.getHideProps().allowParent == null) allowMove = true;
+			// else if (to == null) allowMove = false;
+			// else if (to.getHideProps().allowChildren != null && to.getHideProps().allowChildren(e.type) 
+			// && e.getHideProps().allowParent != null && e.getHideProps().allowParent(to))
+			// 	allowMove = true;
+			return true;
 		};
 
 		// Batch tree.onMove, which is called for every node moved, causing problems with undo and refresh
@@ -759,7 +759,7 @@ class SceneEditor {
 			}
 			// ensure we get onMove even if outside our interactive, allow fast click'n'drag
 			if( e.button == K.MOUSE_LEFT ) {
-				scene.sevents.startDrag(int.handleEvent);
+				scene.sevents.startCapture(int.handleEvent);
 				e.propagate = false;
 			}
 		};
@@ -769,7 +769,7 @@ class SceneEditor {
 			curDrag = null;
 			dragBtn = -1;
 			if( e.button == K.MOUSE_LEFT ) {
-				scene.sevents.stopDrag();
+				scene.sevents.stopCapture();
 				e.propagate = false;
 
 				var curTime = haxe.Timer.stamp();
@@ -1444,7 +1444,7 @@ class SceneEditor {
 			editor.fileView = view;
 			editor.onChange = function(pname) {
 				edit.onChange(e, 'props.$pname');
-				var e = Std.instance(e, Object3D);
+				var e = Std.downcast(e, Object3D);
 				if( e != null ) {
 					for( ctx in context.shared.getContexts(e) )
 						e.addEditorUI(ctx);

@@ -137,7 +137,7 @@ class DataFiles {
 			gatherRec(dir.split("/"),[],0);
 	}
 
-	public static function save( ?onSaveBase, ?force ) {
+	public static function save( ?onSaveBase, ?force, ?prevSheetNames : Map<String,String> ) {
 		var ide = Ide.inst;
 		var temp = [];
 		var titles = [];
@@ -160,6 +160,9 @@ class DataFiles {
 			if( s.props.dataFiles != null ) {
 				var sheet = @:privateAccess s.sheet;
 				var sheetName = getTypeName(s);
+				var prevName = sheetName;
+				if( prevSheetNames != null && prevSheetNames.exists(sheetName) )
+					prevName = prevSheetNames.get(sheetName);
 				var ldata = sheet.linesData;
 				for( i in 0...s.lines.length ) {
 					var o = s.lines[i];
@@ -174,10 +177,12 @@ class DataFiles {
 						}
 						var all = pf.getPrefabsByPath(p.path);
 						var inst : hrt.prefab.Prefab = all[p.index];
-						if( inst == null || inst.getCdbType() != sheetName )
+						if( inst == null || inst.getCdbType() != prevName )
 							ide.error("Can't save prefab data "+p.path);
-						else
+						else {
+							if( prevName != sheetName ) Reflect.setField(o,"$cdbtype", sheetName);
 							inst.props = o;
+						}
 					}
 				}
 				var old = Reflect.copy(sheet);
