@@ -1183,7 +1183,7 @@ class SceneEditor {
 
 			var visTog = el.find(".visibility-toggle").first();
 			if(visTog.length == 0) {
-				visTog = new Element('<i class="fa fa-eye visibility-toggle" title = "Hide	${view.config.get("key.sceneeditor.hide")}"/>').insertAfter(el.find("a.jstree-anchor").first());
+				visTog = new Element('<i class="fa fa-eye visibility-toggle" title = "Hide (${view.config.get("key.sceneeditor.hide")})"/>').insertAfter(el.find("a.jstree-anchor").first());
 				visTog.click(function(e) {
 					if(curEdit.elements.indexOf(obj3d) >= 0)
 						setVisible(curEdit.elements, isHidden(obj3d));
