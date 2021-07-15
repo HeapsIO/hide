@@ -1026,7 +1026,7 @@ class Editor extends Component {
 			}
 		}
 		new hide.comp.ContextMenu([
-			{ label : "Move Up", enabled:  (line.index > 0), click : moveLine.bind(line,-1) },
+			{ label : "Move Up", enabled:  (line.index > 0 || sepIndex >= 0), click : moveLine.bind(line,-1) },
 			{ label : "Move Down", enabled:  (line.index < sheet.lines.length - 1), click : moveLine.bind(line,1) },
 			{ label : "Move to Group", enabled : sheet.props.separatorTitles != null, menu : moveSubmenu },
 			{ label : "Insert", click : function() {
