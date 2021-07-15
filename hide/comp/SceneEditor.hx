@@ -543,21 +543,7 @@ class SceneEditor {
 			refreshScene();
 			return true;
 		};
-		tree.onAllowMove = function(e, to) {
-			if (e.getHideProps().allowParent == null)
-				if (to == null || to.getHideProps().allowChildren == null || (to.getHideProps().allowChildren != null && to.getHideProps().allowChildren(e.type)))
-					return true;
-				else return false;
-			if (to == null)
-				if (e.getHideProps().allowParent(sceneData))
-					return true;
-				else return false;
-
-			if ((to.getHideProps().allowChildren == null || to.getHideProps().allowChildren != null && to.getHideProps().allowChildren(e.type))
-			&& e.getHideProps().allowParent(to))
-				return true;
-			return false;
-		};
+		tree.onAllowMove = function(e, to) return checkAllowParent({cl : e.type, inf : e.getHideProps()}, to);
 
 		// Batch tree.onMove, which is called for every node moved, causing problems with undo and refresh
 		{
@@ -580,6 +566,23 @@ class SceneEditor {
 		refresh();
 		this.camera2D = camera2D;
 	}
+
+	function checkAllowParent(prefabInf, prefabParent : PrefabElement) : Bool {
+		if (prefabInf.inf.allowParent == null)
+			if (prefabParent == null || prefabParent.getHideProps().allowChildren == null || (prefabParent.getHideProps().allowChildren != null && prefabParent.getHideProps().allowChildren(prefabInf.cl)))
+				return true;
+			else return false;
+
+		if (prefabParent == null)
+			if (prefabInf.inf.allowParent(sceneData))
+				return true;
+			else return false;
+
+		if ((prefabParent.getHideProps().allowChildren == null || prefabParent.getHideProps().allowChildren != null && prefabParent.getHideProps().allowChildren(prefabInf.cl))
+		&& prefabInf.inf.allowParent(prefabParent))
+			return true;
+		return false;
+	};
 
 	public function refresh( ?mode: RefreshMode, ?callb: Void->Void) {
 		if(mode == null || mode == Full) refreshScene();
@@ -2195,7 +2198,9 @@ class SceneEditor {
 		var gother = [];
 		var recents : Array<String> = ide.currentConfig.get("sceneeditor.newrecents", []);
 		for( g in recents) {
-			grecent.push(getNewTypeMenuItem(g, parent, onMake));
+			var pmodel = hrt.prefab.Library.getRegistered().get(g);
+			if (checkAllowParent({cl : g, inf : pmodel.inf}, parent)) 
+				grecent.push(getNewTypeMenuItem(g, parent, onMake));
 
 		}
 
@@ -2211,13 +2216,7 @@ class SceneEditor {
 		}
 		for( ptype in allRegs.keys() ) {
 			var pinf = allRegs.get(ptype);
-			if( allowChildren != null && !allowChildren(ptype) ) {
-				if( pinf.inf.allowParent == null || !pinf.inf.allowParent(parent) )
-					continue;
-			} else {
-				if( pinf.inf.allowParent != null && !pinf.inf.allowParent(parent) )
-					continue;
-			}
+			if (!checkAllowParent({cl : ptype, inf : pinf.inf}, parent)) continue;
 			if(ptype == "shader") {
 				newItems.push(getNewShaderMenu(parent, onMake));
 				continue;
