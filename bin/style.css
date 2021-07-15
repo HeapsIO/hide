@@ -525,7 +525,7 @@ input[type=checkbox]:checked:after {
   bottom: 0px;
   padding-top: 0px;
   padding-bottom: 5px;
-  z-index: 1;
+  z-index: 10;
 }
 .hide-tabs.tabs-bottom > .tabs-header > div {
   border-top: none;
