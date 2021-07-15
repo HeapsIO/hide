@@ -1,5 +1,22 @@
 package hide.comp;
 
+enum ToolType {
+	Button(click: Void->Void);
+	Toggle(toggle: Bool->Void);
+	Range(onChange: Float->Void);
+	Color(onChange: Int -> Void);
+	Menu(items: Array<hide.comp.ContextMenu.ContextMenuItem>);
+}
+
+typedef ToolDef = {
+	id: String,
+	title : String,
+	type : ToolType,
+	?icon : String,
+	?iconStyle: Dynamic,
+	?rightClick : Void -> Void,
+}
+
 typedef ToolToggle = {
 	var element : Element;
 	function toggle( v : Bool ) : Void;
@@ -10,6 +27,12 @@ typedef ToolToggle = {
 typedef ToolSelect<T> = {
 	var element : Element;
 	function setContent( elements : Array<{ label : String, value : T }> ) : Void;
+	dynamic function onSelect( v : T ) : Void;
+}
+
+typedef ToolMenu<T> = {
+	var element : Element;
+	function setContent( elements : Array<hide.comp.ContextMenu.ContextMenuItem> ) : Void;
 	dynamic function onSelect( v : T ) : Void;
 }
 
@@ -85,6 +108,23 @@ class Toolbar extends Component {
 			onSelect : function(_) {},
 		};
 		select.change(function(_) tool.onSelect(content[Std.parseInt(select.val())].value));
+		e.appendTo(element);
+		return tool;
+	}
+
+	public function addMenu<T>( icon : String, label : String ) : ToolMenu<T> {
+		var e = new Element('<div class="menu"><div class="icon fa fa-$icon"/>${label==null ? "" : label}</div>');
+		var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
+		var tool : ToolMenu<T> = {
+			element : e,
+			setContent : function(c) {
+					menuItems = c;
+			},
+			onSelect : function(_) {},
+		};
+		e.click(function(ev) if( ev.button == 0 ){
+			new hide.comp.ContextMenu(menuItems);
+		});
 		e.appendTo(element);
 		return tool;
 	}

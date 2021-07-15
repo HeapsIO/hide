@@ -2,6 +2,7 @@ body {
   margin: 0;
   padding: 0;
   background-color: black;
+  user-select: none;
 }
 ul,
 li {
@@ -225,18 +226,23 @@ input[type=checkbox]:checked:after {
 .hide-scene-layer .jstree-container-ul {
   padding-right: 5px;
 }
-.prefabview .scenetree {
-  max-height: 350px;
+.scene-partition.reduced-columns .hide-scenetree {
+  max-height: 40%;
+}
+.scene-partition.reduced-columns .props-column {
+  max-height: 60%;
+  padding-bottom: 36px;
 }
 .hide-scenetree {
   flex: 1;
   background-color: #111;
   border: 1px solid #444;
-  width: 300px;
+  min-width: 300px;
   overflow-y: auto;
+  min-height: 350px;
 }
 .hide-scenetree .jstree {
-  width: 300px;
+  min-width: 300px;
   overflow-x: hidden;
 }
 .hide-scenetree .jstree-container-ul {
@@ -310,6 +316,17 @@ input[type=checkbox]:checked:after {
 .flex.vertical {
   flex-direction: column;
 }
+.scene-partition .hide-toolbar .button,
+.scene-partition .show-cols-btn {
+  min-width: 16px !important;
+  height: 16px !important;
+  font-size: 12px !important;
+}
+.scene-partition .show-cols-btn {
+  position: absolute;
+  margin-top: 2px;
+  right: 0px;
+}
 .hide-toolbar {
   flex: none;
   padding-top: 2px;
@@ -317,14 +334,42 @@ input[type=checkbox]:checked:after {
   background-color: #222222;
   display: inline-block;
 }
+.hide-toolbar .layout-btn {
+  position: absolute;
+  right: 31px;
+}
+.hide-toolbar .close-btn {
+  position: absolute;
+  right: 0px;
+}
+.hide-toolbar .toolbar-label,
+.hide-toolbar .menu {
+  margin-right: 5px;
+  display: inline-block;
+  min-width: 20px;
+  padding: 2px;
+  text-align: center;
+  text-shadow: 1px 2px 2px black;
+}
+.hide-toolbar .toolbar-label > .icon,
+.hide-toolbar .menu > .icon {
+  vertical-align: center;
+}
+.hide-toolbar .menu {
+  user-select: none;
+  cursor: pointer;
+  background: #444;
+  padding-left: 5px;
+  padding-right: 5px;
+}
 .hide-toolbar .button,
-.hide-toolbar .toggle {
+.hide-toolbar .toggle,
+.scene-partition .show-cols-btn {
   margin-right: 5px;
   display: inline-block;
   user-select: none;
   border: 1px solid #5a5a5a;
   min-width: 20px;
-  height: 20px;
   padding: 2px;
   text-align: center;
   border-radius: 1px;
@@ -332,14 +377,15 @@ input[type=checkbox]:checked:after {
   background: -webkit-linear-gradient(top, #5a5a5a, #323232);
   cursor: pointer;
   font-size: 16px;
-  vertical-align: top;
+  vertical-align: middle;
 }
 .hide-toolbar .button > .icon,
 .hide-toolbar .toggle > .icon {
   vertical-align: center;
 }
 .hide-toolbar .button:hover,
-.hide-toolbar .toggle:hover {
+.hide-toolbar .toggle:hover,
+.scene-partition .show-cols-btn:hover {
   color: white;
   border-color: white;
   background-color: #666;
@@ -370,12 +416,12 @@ input[type=checkbox]:checked:after {
   padding-top: 3px;
   border-top-color: white;
 }
-.hide-toolbar .button:active {
+.hide-toolbar .button:active,
+.scene-partition .show-cols-btn:active {
   padding-top: 3px;
   padding-bottom: 1px;
 }
 .hide-toolbar .select {
-  height: 20px;
   padding: 2px;
   padding-top: 4px;
   margin-right: 5px;
@@ -529,6 +575,15 @@ input[type=checkbox]:checked:after {
   width: 100px;
 }
 /* Properties */
+.props-column {
+  height: 100%;
+  background-color: #111;
+  width: 320px;
+}
+.props-column .hide-toolbar {
+  width: 100%;
+  vertical-align: middle;
+}
 .hide-properties {
   padding: 10px;
   overflow: auto;
@@ -1581,10 +1636,6 @@ body.hide-subview .lm_controls {
 .jstree .hidden a {
   color: #555;
 }
-.jstree a.favorite {
-  color: white;
-  font-weight: bold;
-}
 .jstree .disabled a {
   color: #533 !important;
   display: inline;
@@ -1609,16 +1660,6 @@ body.hide-subview .lm_controls {
 }
 .jstree-node {
   padding-right: 10px!important;
-}
-.hide-scene-outliner .favorites {
-  overflow-y: auto;
-  background: #111;
-}
-.hide-scene-outliner .favorites label {
-  font-weight: bold;
-}
-.hide-scene-outliner .favorites-tree {
-  padding: 4px;
 }
 .visibility-toggle,
 .visibility-large-toggle {
