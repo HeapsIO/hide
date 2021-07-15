@@ -8,54 +8,8 @@ enum ToolType {
 	Menu;
 }
 
-class ToolsObject {
-	static public var prefabView : hide.view.Prefab;
-	static var texContent : Element = null;
-	static public var tools : Map<String, {title : String, ?icon : String, type : ToolType, ?iconTransform : String, ?rightClick : Void -> Void, ?buttonFunction : Void -> Void, ?toggleFunction : Bool -> Void, ?rangeFunction : Float -> Void, ?colorFunction : Int -> Void, ?menuItems : () -> Array<hide.comp.ContextMenu.ContextMenuItem>}> = [
-		"perspectiveCamera" => {title : "Perspective camera", icon : "video-camera", type : Button, buttonFunction : () -> @:privateAccess prefabView.resetCamera(false)},
-		"topCamera" => {title : "Top camera", icon : "video-camera", type : Button, iconTransform : "rotateZ(90deg)", buttonFunction : () -> @:privateAccess prefabView.resetCamera(true)},
-		"snapToGroundToggle" => {title : "Snap to ground", icon : "anchor", type : Toggle, toggleFunction : (v) -> prefabView.sceneEditor.snapToGround = v},
-		"localTransformsToggle"=> {title : "Local transforms", icon : "compass", type : Toggle, toggleFunction : (v) -> prefabView.sceneEditor.localTransform = v},
-		"gridToggle" => {title : "Toggle grid", icon : "th", type : Toggle, toggleFunction : (v) -> { @:privateAccess prefabView.showGrid = v; @:privateAccess prefabView.updateGrid(); }},
-		"bakeLights" => {title : "Bake lights", icon : "lightbulb-o", type : Button, buttonFunction : () -> @:privateAccess prefabView.bakeLights()},
-		"sceneeditor.sceneInformationToggle" => {title : "Scene information", icon : "info-circle", type : Toggle, toggleFunction : (b) -> @:privateAccess prefabView.statusText.visible = b, rightClick : () -> {
-			if( texContent != null ) {
-				texContent.remove();
-				texContent = null;
-			}
-			new hide.comp.ContextMenu([
-				{
-					label : "Show Texture Details",
-					click : function() {
-						var memStats = @:privateAccess prefabView.scene.engine.mem.stats();
-						var texs = @:privateAccess prefabView.scene.engine.mem.textures;
-						var list = [for(t in texs) {
-							n: '${t.width}x${t.height}  ${t.format}  ${t.name}',
-							size: t.width * t.height
-						}];
-						list.sort((a, b) -> Reflect.compare(b.size, a.size));
-						var content = new Element('<div tabindex="1" class="overlay-info"><h2>Scene info</h2><pre></pre></div>');
-						new Element(@:privateAccess prefabView.element[0].ownerDocument.body).append(content);
-						var pre = content.find("pre");
-						pre.text([for(l in list) l.n].join("\n"));
-						texContent = content;
-						content.blur(function(_) {
-							content.remove();
-							texContent = null;
-						});
-					}
-				}
-			]);
-		}},
-		"sceneeditor.autoSyncToggle" => {title : "Auto synchronize", icon : "refresh", type : Toggle, toggleFunction : (b) -> @:privateAccess prefabView.autoSync = b},
-		"graphicsFilters" => {title : "Graphics filters", type : Menu, menuItems : () -> @:privateAccess prefabView.filtersToMenuItem(prefabView.graphicsFilters, "Graphics")},
-		"sceneFilters" => {title : "Scene filters", type : Menu, menuItems : () -> @:privateAccess prefabView.filtersToMenuItem(prefabView.sceneFilters, "Scene")},
-		"sceneeditor.backgroundColor" => {title : "Background Color", type : Color, colorFunction :  function(v) {
-			@:privateAccess prefabView.scene.engine.backgroundColor = v;
-			@:privateAccess prefabView.updateGrid();}},
-		"sceneeditor.sceneSpeed" => {title : "Speed", type : Range, rangeFunction : function(v) @:privateAccess prefabView.scene.speed = v}
-	];
-}
+typedef ToolsMap = Map<String, {title : String, ?icon : String, type : ToolType, ?iconTransform : String, ?rightClick : Void -> Void, ?buttonFunction : Void -> Void, ?toggleFunction : Bool -> Void, ?rangeFunction : Float -> Void, ?colorFunction : Int -> Void, ?menuItems : () -> Array<hide.comp.ContextMenu.ContextMenuItem>}>;
+
 typedef ToolToggle = {
 	var element : Element;
 	function toggle( v : Bool ) : Void;

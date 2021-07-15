@@ -435,10 +435,56 @@ class Prefab extends FileView {
 		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		statusText.setPosition(5, 5);
 		statusText.visible = false;
-		hide.comp.Toolbar.ToolsObject.prefabView = this;
-		var toolsNames : Iterator<String> = hide.comp.Toolbar.ToolsObject.tools.keys();
+		var toolsMap = new hide.comp.Toolbar.ToolsMap();
+		toolsMap.set("perspectiveCamera", {title : "Perspective camera", icon : "video-camera", type : Button, buttonFunction : () -> resetCamera(false)});
+		toolsMap.set("topCamera", {title : "Top camera", icon : "video-camera", type : Button, iconTransform : "rotateZ(90deg)", buttonFunction : () -> resetCamera(true)});
+		toolsMap.set("snapToGroundToggle", {title : "Snap to ground", icon : "anchor", type : Toggle, toggleFunction : (v) -> sceneEditor.snapToGround = v});
+		toolsMap.set("localTransformsToggle", {title : "Local transforms", icon : "compass", type : Toggle, toggleFunction : (v) -> sceneEditor.localTransform = v});
+		toolsMap.set("gridToggle", {title : "Toggle grid", icon : "th", type : Toggle, toggleFunction : (v) -> { showGrid = v; updateGrid(); }});
+		toolsMap.set("bakeLights", {title : "Bake lights", icon : "lightbulb-o", type : Button, buttonFunction : () -> bakeLights()});
+		var texContent : Element = null;
+		toolsMap.set("sceneInformationToggle", {title : "Scene information", icon : "info-circle", type : Toggle, toggleFunction : (b) -> statusText.visible = b, rightClick : () -> {
+			if( texContent != null ) {
+				texContent.remove();
+				texContent = null;
+			}
+			new hide.comp.ContextMenu([
+				{
+					label : "Show Texture Details",
+					click : function() {
+						var memStats = scene.engine.mem.stats();
+						var texs = @:privateAccess scene.engine.mem.textures;
+						var list = [for(t in texs) {
+							n: '${t.width}x${t.height}  ${t.format}  ${t.name}',
+							size: t.width * t.height
+						}];
+						list.sort((a, b) -> Reflect.compare(b.size, a.size));
+						var content = new Element('<div tabindex="1" class="overlay-info"><h2>Scene info</h2><pre></pre></div>');
+						new Element(element[0].ownerDocument.body).append(content);
+						var pre = content.find("pre");
+						pre.text([for(l in list) l.n].join("\n"));
+						texContent = content;
+						content.blur(function(_) {
+							content.remove();
+							texContent = null;
+						});
+					}
+				}
+			]);
+		}});
+		toolsMap.set("autoSyncToggle", {title : "Auto synchronize", icon : "refresh", type : Toggle, toggleFunction : (b) -> autoSync = b});
+		toolsMap.set("graphicsFilters", {title : "Graphics filters", type : Menu, menuItems : () -> filtersToMenuItem(graphicsFilters, "Graphics")});
+		toolsMap.set("sceneFilters", {title : "Scene filters", type : Menu, menuItems : () -> filtersToMenuItem(sceneFilters, "Scene")});
+		toolsMap.set("backgroundColor", {title : "Background Color", type : Color, colorFunction :  function(v) {
+			scene.engine.backgroundColor = v;
+			updateGrid();
+		}});
+		toolsMap.set("sceneSpeed", {title : "Speed", type : Range, rangeFunction : function(v) scene.speed = v});
+
+
+		var toolsNames : Iterator<String> = toolsMap.keys();
 		for (toolName in toolsNames) {
-			var tool = hide.comp.Toolbar.ToolsObject.tools.get(toolName);
+			var tool = toolsMap.get(toolName);
 			if (tool != null) {
 				var shortcut = (config.get("key.sceneeditor." + toolName) != null)? " (" + config.get("key.sceneeditor." + toolName) + ")" : "";
 				switch(tool.type) {
