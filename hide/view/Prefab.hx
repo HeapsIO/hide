@@ -369,6 +369,13 @@ class Prefab extends FileView {
 			sceneEditor.collapseTree();
 		});
 
+		keys.register("sceneeditor.toggleLayout", () -> {
+			if( element.find(".tree-column").first().css('display') == 'none' )
+				showColumns();
+			else
+				hideColumns();
+		});
+
 		refreshSceneFilters();
 		refreshGraphicsFilters();
 	}

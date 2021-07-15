@@ -76,6 +76,7 @@
 	"key.sceneeditor.editPivot" : "P",
 	"key.sceneeditor.localTransformsToggle": "D",
 	"key.sceneeditor.gridToggle": "G",
+	"key.sceneeditor.toggleLayout": "Tab",
 
 	// cdb config
 	"cdb.databaseFile" : "data.cdb",
