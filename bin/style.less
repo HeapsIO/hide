@@ -2,6 +2,7 @@ body {
 	margin : 0;
 	padding : 0;
 	background-color : black;
+	user-select:none;
 }
 
 //:focus { outline: none; }
@@ -239,19 +240,28 @@ input[type=checkbox] {
 
 }
 
-.prefabview .scenetree {
-	max-height : 350px;
+
+.scene-partition.reduced-columns {
+	.hide-scenetree {
+		max-height: 40%;
+	}
+
+	.props-column {
+		max-height: 60%;
+		padding-bottom: 36px;
+	}
 }
 
 .hide-scenetree {
 	flex: 1;
 	background-color : #111;
 	border : 1px solid #444;
-	width: 300px;
+	min-width: 300px;
 	overflow-y: auto;
+	min-height : 350px;
 
 	.jstree {
-		width: 300px;
+		min-width: 300px;
 		overflow-x: hidden;
 	}
 
@@ -338,6 +348,29 @@ input[type=checkbox] {
 	flex-direction: column;
 }
 
+.scene-partition .hide-toolbar .button {
+	min-width : 16px !important;
+	height : 16px !important;
+	font-size: 12px !important;
+}
+
+.scene-partition .show-cols-btn {
+	&:extend(.hide-toolbar .button);
+	&:extend(.scene-partition .hide-toolbar .button);
+
+	position: absolute;
+	margin-top: 2px;
+	right: 0px;
+
+	&:hover {
+		&:extend(.hide-toolbar .button:hover);
+	}
+
+	&:active {
+		&:extend(.hide-toolbar .button:active);
+	}
+}
+
 .hide-toolbar {
 
 	flex: none;
@@ -346,13 +379,42 @@ input[type=checkbox] {
 	background-color : rgb(34,34,34);
 	display: inline-block;
 
+	.layout-btn {
+		position: absolute;
+		right: 31px;
+	}
+
+	.close-btn {
+		position: absolute;
+		right: 0px;
+	}
+
+	.toolbar-label, .menu {
+		margin-right : 5px;
+		display: inline-block;
+		min-width : 20px;
+		padding : 2px;
+		text-align: center;
+		text-shadow: 1px 2px 2px black;
+		>.icon {
+			vertical-align: center;
+		}
+	}
+
+	.menu {
+		user-select:none;
+		cursor : pointer;
+		background : #444;
+		padding-left: 5px;
+		padding-right: 5px;
+	}
+
 	.button, .toggle {
 		margin-right : 5px;
 		display: inline-block;
 		user-select:none;
 		border: 1px solid rgb(90,90,90);
 		min-width : 20px;
-		height : 20px;
 		padding : 2px;
 		text-align: center;
 		border-radius: 1px;
@@ -360,7 +422,7 @@ input[type=checkbox] {
 		background: -webkit-linear-gradient(top, rgb(90,90,90), rgb(50,50,50));
 		cursor : pointer;
 		font-size: 16px;
-		vertical-align: top;
+		vertical-align: middle;
 		>.icon {
 			vertical-align: center;
 		}
@@ -402,7 +464,6 @@ input[type=checkbox] {
 	}
 
 	.select {
-		height : 20px;
 		padding : 2px;
 		padding-top: 4px;
 		margin-right : 5px;
@@ -416,6 +477,13 @@ input[type=checkbox] {
 			min-width : 100px;
 		}
 	}
+}
+
+.tools-buttons {
+	.select, .button, .menu {
+		
+	}
+
 }
 
 .hide-list {
@@ -570,6 +638,16 @@ input[type=checkbox] {
 }
 
 /* Properties */
+.props-column {
+	height : 100%;
+	background-color: #111;
+	width: 320px;
+
+	.hide-toolbar {
+		width: 100%;
+		vertical-align: middle;
+	}
+}
 
 .hide-properties {
 	//flex : 0 0 300px;
@@ -1781,11 +1859,6 @@ body.hide-subview {
 		}
 	}
 
-	a.favorite {
-		color: white;
-		font-weight: bold;
-	}
-
 	.disabled {
 		a {
 			color: #533 !important;
@@ -1819,19 +1892,6 @@ body.hide-subview {
 
 .jstree-node {
 	padding-right: 10px!important;
-}
-
-.hide-scene-outliner {
-	.favorites {
-		overflow-y: auto;
-		label {
-			font-weight: bold;
-		}
-		background: #111;
-	}
-	.favorites-tree {
-		padding: 4px;
-	}
 }
 
 .visibility-toggle, .visibility-large-toggle {

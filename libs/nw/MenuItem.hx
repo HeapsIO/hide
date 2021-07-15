@@ -6,7 +6,7 @@ package nw;
 	var Separator = "separator";
 }
 
-typedef MenuItemOptions = { label : String, ?icon : String, ?type : MenuItemType, ?submenu : Menu };
+typedef MenuItemOptions = { label : String, ?icon : String, ?type : MenuItemType, ?submenu : Menu, ?key : String, ?modifiers : String };
 
 extern class MenuItem {
 

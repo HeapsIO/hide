@@ -137,7 +137,6 @@ typedef CustomPivot = { elt : PrefabElement, mesh : Mesh, locPos : Vector };
 class SceneEditor {
 
 	public var tree : hide.comp.IconTree<PrefabElement>;
-	public var favTree : hide.comp.IconTree<PrefabElement>;
 	public var scene : hide.comp.Scene;
 	public var properties : hide.comp.PropsEditor;
 	public var context(default,null) : hrt.prefab.Context;
@@ -162,7 +161,6 @@ class SceneEditor {
 	var ide : hide.Ide;
 	public var event(default, null) : hxd.WaitEvent;
 	var hideList : Map<PrefabElement, Bool> = new Map();
-	var favorites : Array<PrefabElement> = [];
 
 	var undo(get, null):hide.ui.UndoHistory;
 	function get_undo() { return view.undo; }
@@ -185,10 +183,6 @@ class SceneEditor {
 		tree = new hide.comp.IconTree();
 		tree.async = false;
 		tree.autoOpenNodes = false;
-
-		favTree = new hide.comp.IconTree();
-		favTree.async = false;
-		favTree.autoOpenNodes = false;
 
 		var sceneEl = new Element('<div class="heaps-scene"></div>');
 		scene = new hide.comp.Scene(view.config, null, sceneEl);
@@ -253,20 +247,12 @@ class SceneEditor {
 						hideList.set(p, true);
 				}
 			}
-			var favList = @:privateAccess view.getDisplayState("favorites");
-			if(favList != null) {
-				for(p in all) {
-					if(favList.indexOf(p.getAbsPath(true)) >= 0)
-						favorites.push(p);
-				}
-			}
 		}
 	}
 
 	public function dispose() {
 		scene.dispose();
 		tree.dispose();
-		favTree.dispose();
 	}
 
 	function set_camera2D(b) {
@@ -465,34 +451,6 @@ class SceneEditor {
 			};
 			return r;
 		}
-		favTree.get = function (o:PrefabElement) {
-			if(o == null) {
-				return [for(f in favorites) makeItem(f, {
-					disabled: true
-				})];
-			}
-			return [];
-		}
-		favTree.allowRename = false;
-		favTree.init();
-		favTree.onAllowMove = function(_, _) {
-			return false;
-		};
-		favTree.onClick = function(e, evt) {
-			if(evt.ctrlKey) {
-				var sel = tree.getSelection();
-				sel.push(e);
-				selectElements(sel);
-				tree.revealNode(e);
-			}
-			else
-				selectElements([e]);
-		}
-		favTree.onDblClick = function(e) {
-			selectElements([e]);
-			tree.revealNode(e);
-			return true;
-		}
 		tree.get = function(o:PrefabElement) {
 			var objs = o == null ? sceneData.children : Lambda.array(o);
 			if( o != null && o.getHideProps().hideChildren != null ) {
@@ -525,10 +483,9 @@ class SceneEditor {
 				{ label : "New...", menu : newItems },
 			];
 			var actionItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [
-				{ label : "Favorite", checked : current != null && isFavorite(current), click : function() setFavorite(current, !isFavorite(current)) },
-				{ label : "Rename", enabled : current != null, click : function() tree.editNode(current) },
-				{ label : "Delete", enabled : current != null, click : function() deleteElements(curEdit.rootElements) },
-				{ label : "Duplicate", enabled : current != null, click : duplicate.bind(false) },
+				{ label : "Rename", enabled : current != null, click : function() tree.editNode(current), keys : hide.ui.Keys.getKeys("rename", view.config) },
+				{ label : "Delete", enabled : current != null, click : function() deleteElements(curEdit.rootElements), keys : hide.ui.Keys.getKeys("delete", view.config) },
+				{ label : "Duplicate", enabled : current != null, click : duplicate.bind(false), keys : hide.ui.Keys.getKeys("duplicate", view.config) },
 			];
 
 			var isObj = current != null && (current.to(Object3D) != null || current.to(Object2D) != null);
@@ -542,18 +499,18 @@ class SceneEditor {
 			if( isObj ) {
 				var visible = !isHidden(current);
 				menuItems = menuItems.concat([
-					{ label : "Show in editor", checked : visible, click : function() setVisible(curEdit.elements, !visible) },
+					{ label : "Show in editor" , checked : visible, click : function() setVisible(curEdit.elements, !visible), keys : hide.ui.Keys.getKeys("sceneeditor.hide", view.config) },
 					{ label : "Locked", checked : current.locked, click : function() {
 						current.locked = !current.locked;
 						setLock(curEdit.elements, current.locked);
 					} },
-					{ label : "Select all", click : selectAll },
+					{ label : "Select all", click : selectAll, keys : hide.ui.Keys.getKeys("selectAll", view.config) },
 					{ label : "Select children", enabled : current != null, click : function() selectElements(current.flatten()) },
 				]);
 				if( !isRef )
 					actionItems = actionItems.concat([
-						{ label : "Isolate", click : function() isolate(curEdit.elements) },
-						{ label : "Group", enabled : curEdit != null && canGroupSelection(), click : groupSelection }
+						{ label : "Isolate", click : function() isolate(curEdit.elements), keys : hide.ui.Keys.getKeys("sceneeditor.isolate", view.config) },
+						{ label : "Group", enabled : curEdit != null && canGroupSelection(), click : groupSelection, keys : hide.ui.Keys.getKeys("group", view.config) },
 					]);
 			}
 
@@ -567,7 +524,6 @@ class SceneEditor {
 			new hide.comp.ContextMenu(menuItems.concat(actionItems));
 		};
 		tree.element.parent().contextmenu(ctxMenu.bind(tree));
-		favTree.element.parent().contextmenu(ctxMenu.bind(favTree));
 		tree.allowRename = true;
 		tree.init();
 		tree.onClick = function(e, _) {
@@ -627,7 +583,6 @@ class SceneEditor {
 
 	public function refresh( ?mode: RefreshMode, ?callb: Void->Void) {
 		if(mode == null || mode == Full) refreshScene();
-		refreshFavs();
 		refreshTree(callb);
 	}
 
@@ -645,10 +600,6 @@ class SceneEditor {
 			}
 			if(callb != null) callb();
 		});
-	}
-
-	function refreshFavs() {
-		favTree.refresh();
 	}
 
 	function refreshProps() {
@@ -1219,7 +1170,6 @@ class SceneEditor {
 		var obj3d  = p.to(Object3D);
 		el.toggleClass("disabled", !p.enabled);
 		var aEl = el.find("a").first();
-		aEl.toggleClass("favorite", isFavorite(p));
 
 		var tag = getTag(p);
 
@@ -1239,7 +1189,7 @@ class SceneEditor {
 
 			var visTog = el.find(".visibility-toggle").first();
 			if(visTog.length == 0) {
-				visTog = new Element('<i class="fa fa-eye visibility-toggle"/>').insertAfter(el.find("a.jstree-anchor").first());
+				visTog = new Element('<i class="fa fa-eye visibility-toggle" title = "Hide (${view.config.get("key.sceneeditor.hide")})"/>').insertAfter(el.find("a.jstree-anchor").first());
 				visTog.click(function(e) {
 					if(curEdit.elements.indexOf(obj3d) >= 0)
 						setVisible(curEdit.elements, isHidden(obj3d));
@@ -1892,26 +1842,6 @@ class SceneEditor {
 	function saveDisplayState() {
 		var state = [for (h in hideList.keys()) h.getAbsPath(true)];
 		@:privateAccess view.saveDisplayState("hideList", state);
-		var state = [for(f in favorites) f.getAbsPath(true)];
-		@:privateAccess view.saveDisplayState("favorites", state);
-	}
-
-	public function isFavorite(e: PrefabElement) {
-		return favorites.indexOf(e) >= 0;
-	}
-
-	public function setFavorite(e: PrefabElement, fav: Bool) {
-		if(fav && !isFavorite(e))
-			favorites.push(e);
-		else if(!fav && isFavorite(e))
-			favorites.remove(e);
-
-		var el = tree.getElement(e);
-		if(el != null)
-			applyTreeStyle(e, el);
-
-		refreshFavs();
-		saveDisplayState();
 	}
 
 	public function setVisible(elements : Array<PrefabElement>, visible: Bool) {
@@ -2260,8 +2190,15 @@ class SceneEditor {
 			}
 		}
 
+		var grecent = [];
 		var groups = [];
 		var gother = [];
+		var recents : Array<String> = ide.currentConfig.get("sceneeditor.newrecents", []);
+		for( g in recents) {
+			grecent.push(getNewTypeMenuItem(g, parent, onMake));
+
+		}
+
 		for( g in (view.config.get("sceneeditor.newgroups") : Array<String>) ) {
 			var parts = g.split("|");
 			var cl : Dynamic = Type.resolveClass(parts[1]);
@@ -2314,6 +2251,9 @@ class SceneEditor {
 				return gother;
 			newItems.push({ label : "Other", menu : gother });
 		}
+
+		newItems.unshift({label : "Recents", menu : grecent});
+
 		return newItems;
 	}
 
@@ -2330,6 +2270,12 @@ class SceneEditor {
 					autoName(p);
 					if(onMake != null)
 						onMake(p);
+					var recents : Array<String> = ide.currentConfig.get("sceneeditor.newrecents", []);
+					recents.remove(p.type);
+					recents.unshift(p.type);
+					var recentSize : Int = view.config.get("sceneeditor.recentsize");
+					if (recents.length > recentSize) recents.splice(recentSize, recents.length - recentSize);
+					ide.currentConfig.set("sceneeditor.newrecents", recents);
 					return p;
 				}
 
@@ -2337,6 +2283,12 @@ class SceneEditor {
 					ide.chooseFile(pmodel.inf.fileSource, function(path) {
 						var p = make(path);
 						addElements([p]);
+						var recents : Array<String> = ide.currentConfig.get("sceneeditor.newrecents", []);
+						recents.remove(p.type);
+						recents.unshift(p.type);
+						var recentSize : Int = view.config.get("sceneeditor.recentsize");
+						if (recents.length > recentSize) recents.splice(recentSize, recents.length - recentSize);
+						ide.currentConfig.set("sceneeditor.newrecents", recents);
 					});
 				else
 					addElements([make()]);

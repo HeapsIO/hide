@@ -74,8 +74,9 @@
 	"key.sceneeditor.selectParent": "Backspace",
 	"key.sceneeditor.reparent": "Ctrl-P",
 	"key.sceneeditor.editPivot" : "P",
-	"key.sceneeditor.toggleLocal": "D",
-	"key.sceneeditor.toggleGrid": "G",
+	"key.sceneeditor.localTransformsToggle": "D",
+	"key.sceneeditor.gridToggle": "G",
+	"key.sceneeditor.toggleLayout": "Tab",
 
 	// cdb config
 	"cdb.databaseFile" : "data.cdb",
@@ -116,22 +117,20 @@
 	"sceneeditor.rotatePrecision": 0.1,
 
 	"sceneeditor.newgroups" : ["2D|hrt.prefab.Object2D","3D|hrt.prefab.Object3D","RFX|hrt.prefab.rfx.RendererFX"],
+	"sceneeditor.recentsize" : 6,
 
 	"sceneeditor.icons" : {},
 	"sceneeditor.ranges" : {},
 	"sceneeditor.huds" : {},
 
 	// l3d config
-	"l3d.groundLayer": "ground",
-	"l3d.cdbLevel": "level",
-	"l3d.colors": {
+	"sceneeditor.colors": {
 	},
-	"l3d.treeStyles": {
-		"settings": {"color": "#ffffff", "font-weight": "bold"}
-	},
-	"l3d.filterTypes": ["terrain", "model", "polygon", "box", "instance", "light"],
-	"l3d.tags": [ { "id": "tag", "color": "#802000" } ],
-	"l3d.camera.moveSpeed": 1.5,
+	"sceneeditor.filterTypes": ["terrain", "model", "polygon", "box", "instance", "light"],
+	"sceneeditor.tags": [ { "id": "tag", "color": "#802000" } ],
+	"sceneeditor.camera.moveSpeed": 1.5,
+	"sceneeditor.gridSize": 100,
+	"sceneeditor.gridStep": 1,
 
 	// FX editor
 	"fx.shaders": [
