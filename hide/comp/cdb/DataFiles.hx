@@ -219,15 +219,9 @@ class DataFiles {
 	public static function getAvailableTypes() {
 		var sheets = [];
 		var ide = Ide.inst;
-		var levelSheet = ide.database.getSheet(ide.currentConfig.get("sceneeditor.cdbLevel", "level"));
 		for( s in ide.database.sheets )
 			if( s.props.dataFiles != null )
 				sheets.push(s);
-		if(levelSheet != null) {
-			for(c in levelSheet.columns)
-				if( c.type == TList )
-					sheets.push(levelSheet.getSub(c));
-		}
 		return sheets;
 	}
 

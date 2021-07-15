@@ -124,7 +124,6 @@
 	"sceneeditor.huds" : {},
 
 	// l3d config
-	"sceneeditor.cdbLevel": "level",
 	"sceneeditor.colors": {
 	},
 	"sceneeditor.filterTypes": ["terrain", "model", "polygon", "box", "instance", "light"],
