@@ -298,7 +298,6 @@ class Prefab extends FileView {
 			<div class="flex vertical">
 				<div style="flex: 0 0 30px;">
 					<span class="tools-buttons"></span>
-					<span class="layer-buttons"></span>
 				</div>
 
 				<div class="scene-partition" style="display: flex; flex-direction: row; flex: 1; overflow: hidden;">
@@ -448,15 +447,15 @@ class Prefab extends FileView {
 		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		statusText.setPosition(5, 5);
 		statusText.visible = false;
-		var toolsMap = new hide.comp.Toolbar.ToolsMap();
-		toolsMap.set("perspectiveCamera", {title : "Perspective camera", icon : "video-camera", type : Button, buttonFunction : () -> resetCamera(false)});
-		toolsMap.set("topCamera", {title : "Top camera", icon : "video-camera", type : Button, iconTransform : "rotateZ(90deg)", buttonFunction : () -> resetCamera(true)});
-		toolsMap.set("snapToGroundToggle", {title : "Snap to ground", icon : "anchor", type : Toggle, toggleFunction : (v) -> sceneEditor.snapToGround = v});
-		toolsMap.set("localTransformsToggle", {title : "Local transforms", icon : "compass", type : Toggle, toggleFunction : (v) -> sceneEditor.localTransform = v});
-		toolsMap.set("gridToggle", {title : "Toggle grid", icon : "th", type : Toggle, toggleFunction : (v) -> { showGrid = v; updateGrid(); }});
-		toolsMap.set("bakeLights", {title : "Bake lights", icon : "lightbulb-o", type : Button, buttonFunction : () -> bakeLights()});
+		var toolsDefs = new Array<hide.comp.Toolbar.ToolDef>();
+		toolsDefs.push({id: "perspectiveCamera", title : "Perspective camera", icon : "video-camera", type : Button(() -> resetCamera(false)) });
+		toolsDefs.push({id: "topCamera", title : "Top camera", icon : "video-camera", iconStyle: { transform: "rotateZ(90deg)" }, type : Button(() -> resetCamera(true))});
+		toolsDefs.push({id: "snapToGroundToggle", title : "Snap to ground", icon : "anchor", type : Toggle((v) -> sceneEditor.snapToGround = v)});
+		toolsDefs.push({id: "localTransformsToggle", title : "Local transforms", icon : "compass", type : Toggle((v) -> sceneEditor.localTransform = v)});
+		toolsDefs.push({id: "gridToggle", title : "Toggle grid", icon : "th", type : Toggle((v) -> { showGrid = v; updateGrid(); }) });
+		toolsDefs.push({id: "bakeLights", title : "Bake lights", icon : "lightbulb-o", type : Button(() -> bakeLights()) });
 		var texContent : Element = null;
-		toolsMap.set("sceneInformationToggle", {title : "Scene information", icon : "info-circle", type : Toggle, toggleFunction : (b) -> statusText.visible = b, rightClick : () -> {
+		toolsDefs.push({id: "sceneInformationToggle", title : "Scene information", icon : "info-circle", type : Toggle((b) -> statusText.visible = b), rightClick: () -> {
 			if( texContent != null ) {
 				texContent.remove();
 				texContent = null;
@@ -485,46 +484,41 @@ class Prefab extends FileView {
 				}
 			]);
 		}});
-		toolsMap.set("autoSyncToggle", {title : "Auto synchronize", icon : "refresh", type : Toggle, toggleFunction : (b) -> autoSync = b});
-		toolsMap.set("graphicsFilters", {title : "Graphics filters", type : Menu, menuItems : () -> filtersToMenuItem(graphicsFilters, "Graphics")});
-		toolsMap.set("sceneFilters", {title : "Scene filters", type : Menu, menuItems : () -> filtersToMenuItem(sceneFilters, "Scene")});
-		toolsMap.set("backgroundColor", {title : "Background Color", type : Color, colorFunction :  function(v) {
+		toolsDefs.push({id: "autoSyncToggle", title : "Auto synchronize", icon : "refresh", type : Toggle((b) -> autoSync = b)});
+		toolsDefs.push({id: "backgroundColor", title : "Background Color", type : Color(function(v) {
 			scene.engine.backgroundColor = v;
 			updateGrid();
-		}});
-		toolsMap.set("sceneSpeed", {title : "Speed", type : Range, rangeFunction : function(v) scene.speed = v});
+		})});
+		toolsDefs.push({id: "graphicsFilters", title : "Graphics filters", type : Menu(filtersToMenuItem(graphicsFilters, "Graphics"))});
+		toolsDefs.push({id: "sceneFilters", title : "Scene filters", type : Menu(filtersToMenuItem(sceneFilters, "Scene"))});
+		toolsDefs.push({id: "sceneSpeed", title : "Speed", type : Range((v) -> scene.speed = v)});
 
-
-		var toolsNames : Iterator<String> = toolsMap.keys();
-		for (toolName in toolsNames) {
-			var tool = toolsMap.get(toolName);
-			if (tool != null) {
-				var shortcut = (config.get("key.sceneeditor." + toolName) != null)? " (" + config.get("key.sceneeditor." + toolName) + ")" : "";
-				switch(tool.type) {
-					case Button:
-						var button = tools.addButton(tool.icon, tool.title + shortcut, tool.buttonFunction);
-						if (tool.iconTransform != null) {
-							button.find(".icon").css({transform: tool.iconTransform});
-						}
-					case Toggle:
-						var toggle = tools.addToggle(tool.icon, tool.title + shortcut, tool.toggleFunction);
-						if (tool.iconTransform != null) {
-							toggle.element.find(".icon").css({transform: tool.iconTransform});
-						}
-						keys.register("sceneeditor." + toolName, () -> toggle.toggle(!toggle.isDown()));
-						if (tool.rightClick != null) {
-							toggle.rightClick(tool.rightClick);
-						}
-					case Color:
-						tools.addColor(tool.title, tool.colorFunction);
-					case Range:
-						tools.addRange(tool.title, tool.rangeFunction, 1.);
-					case Menu:
-						var menu = tools.addMenu(tool.icon, tool.title);
-						menu.setContent(tool.menuItems());
-
-				}
+		for (tool in toolsDefs) {
+			var key = config.get("key.sceneeditor." + tool.id);
+			var shortcut = key != null ? " (" + key + ")" : "";
+			var el : Element = null;
+			switch(tool.type) {
+				case Button(f):
+					el = tools.addButton(tool.icon, tool.title + shortcut, f);
+				case Toggle(f):
+					var toggle = tools.addToggle(tool.icon, tool.title + shortcut, f);
+					el = toggle.element;
+					keys.register("sceneeditor." + tool.id, () -> toggle.toggle(!toggle.isDown()));
+					if (tool.rightClick != null)
+						toggle.rightClick(tool.rightClick);
+				case Color(f):
+					el = tools.addColor(tool.title, f).element;
+				case Range(f):
+					el = tools.addRange(tool.title, f, 1.).element;
+				case Menu(items):
+					var menu = tools.addMenu(tool.icon, tool.title);
+					menu.setContent(items);
+					el = menu.element;
 			}
+
+			el.addClass(tool.id);
+			if(tool.iconStyle != null)
+				el.find(".icon").css(tool.iconStyle);
 		}
 		posToolTip = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		posToolTip.dropShadow = { dx : 1, dy : 1, color : 0, alpha : 0.5 };

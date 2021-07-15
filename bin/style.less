@@ -2,6 +2,7 @@ body {
 	margin : 0;
 	padding : 0;
 	background-color : black;
+	user-select:none;
 }
 
 //:focus { outline: none; }
@@ -388,18 +389,24 @@ input[type=checkbox] {
 		right: 0px;
 	}
 
-	.toolbar-label {
+	.toolbar-label, .menu {
 		margin-right : 5px;
 		display: inline-block;
 		min-width : 20px;
-		height : 20px;
 		padding : 2px;
 		text-align: center;
-		border-radius: 1px;
 		text-shadow: 1px 2px 2px black;
 		>.icon {
 			vertical-align: center;
 		}
+	}
+
+	.menu {
+		user-select:none;
+		cursor : pointer;
+		background : #444;
+		padding-left: 5px;
+		padding-right: 5px;
 	}
 
 	.button, .toggle {
@@ -408,7 +415,6 @@ input[type=checkbox] {
 		user-select:none;
 		border: 1px solid rgb(90,90,90);
 		min-width : 20px;
-		height : 20px;
 		padding : 2px;
 		text-align: center;
 		border-radius: 1px;
@@ -416,7 +422,7 @@ input[type=checkbox] {
 		background: -webkit-linear-gradient(top, rgb(90,90,90), rgb(50,50,50));
 		cursor : pointer;
 		font-size: 16px;
-		vertical-align: top;
+		vertical-align: middle;
 		>.icon {
 			vertical-align: center;
 		}
@@ -458,7 +464,6 @@ input[type=checkbox] {
 	}
 
 	.select {
-		height : 20px;
 		padding : 2px;
 		padding-top: 4px;
 		margin-right : 5px;
@@ -472,6 +477,13 @@ input[type=checkbox] {
 			min-width : 100px;
 		}
 	}
+}
+
+.tools-buttons {
+	.select, .button, .menu {
+		
+	}
+
 }
 
 .hide-list {

@@ -2,6 +2,7 @@ body {
   margin: 0;
   padding: 0;
   background-color: black;
+  user-select: none;
 }
 ul,
 li {
@@ -341,18 +342,25 @@ input[type=checkbox]:checked:after {
   position: absolute;
   right: 0px;
 }
-.hide-toolbar .toolbar-label {
+.hide-toolbar .toolbar-label,
+.hide-toolbar .menu {
   margin-right: 5px;
   display: inline-block;
   min-width: 20px;
-  height: 20px;
   padding: 2px;
   text-align: center;
-  border-radius: 1px;
   text-shadow: 1px 2px 2px black;
 }
-.hide-toolbar .toolbar-label > .icon {
+.hide-toolbar .toolbar-label > .icon,
+.hide-toolbar .menu > .icon {
   vertical-align: center;
+}
+.hide-toolbar .menu {
+  user-select: none;
+  cursor: pointer;
+  background: #444;
+  padding-left: 5px;
+  padding-right: 5px;
 }
 .hide-toolbar .button,
 .hide-toolbar .toggle,
@@ -362,7 +370,6 @@ input[type=checkbox]:checked:after {
   user-select: none;
   border: 1px solid #5a5a5a;
   min-width: 20px;
-  height: 20px;
   padding: 2px;
   text-align: center;
   border-radius: 1px;
@@ -370,7 +377,7 @@ input[type=checkbox]:checked:after {
   background: -webkit-linear-gradient(top, #5a5a5a, #323232);
   cursor: pointer;
   font-size: 16px;
-  vertical-align: top;
+  vertical-align: middle;
 }
 .hide-toolbar .button > .icon,
 .hide-toolbar .toggle > .icon {
@@ -415,7 +422,6 @@ input[type=checkbox]:checked:after {
   padding-bottom: 1px;
 }
 .hide-toolbar .select {
-  height: 20px;
   padding: 2px;
   padding-top: 4px;
   margin-right: 5px;

@@ -1,14 +1,21 @@
 package hide.comp;
 
 enum ToolType {
-	Button;
-	Toggle;
-	Range;
-	Color;
-	Menu;
+	Button(click: Void->Void);
+	Toggle(toggle: Bool->Void);
+	Range(onChange: Float->Void);
+	Color(onChange: Int -> Void);
+	Menu(items: Array<hide.comp.ContextMenu.ContextMenuItem>);
 }
 
-typedef ToolsMap = Map<String, {title : String, ?icon : String, type : ToolType, ?iconTransform : String, ?rightClick : Void -> Void, ?buttonFunction : Void -> Void, ?toggleFunction : Bool -> Void, ?rangeFunction : Float -> Void, ?colorFunction : Int -> Void, ?menuItems : () -> Array<hide.comp.ContextMenu.ContextMenuItem>}>;
+typedef ToolDef = {
+	id: String,
+	title : String,
+	type : ToolType,
+	?icon : String,
+	?iconStyle: Dynamic,
+	?rightClick : Void -> Void,
+}
 
 typedef ToolToggle = {
 	var element : Element;
@@ -106,7 +113,7 @@ class Toolbar extends Component {
 	}
 
 	public function addMenu<T>( icon : String, label : String ) : ToolMenu<T> {
-		var e = new Element('<div class="button"><div class="icon fa fa-$icon"/>${label==null ? "" : label}</div>');
+		var e = new Element('<div class="menu"><div class="icon fa fa-$icon"/>${label==null ? "" : label}</div>');
 		var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
 		var tool : ToolMenu<T> = {
 			element : e,
