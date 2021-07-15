@@ -315,10 +315,10 @@ class Prefab extends FileView {
 									<div class="icon fa fa-reply-all"></div>
 								</div>
 
-								<div class="button combine-btn layout-btn" title="Move to bottom of tree">
+								<div class="button combine-btn layout-btn" title="Toggle columns layout">
 									<div class="icon fa fa-compress"></div>
 								</div>
-								<div class="button separate-btn layout-btn" title="Move to own column">
+								<div class="button separate-btn layout-btn" title="Toggle columns layout">
 									<div class="icon fa fa-expand"></div>
 								</div>
 
