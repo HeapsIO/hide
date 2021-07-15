@@ -60,6 +60,7 @@
 }
 .cdb .cdb-sheet tr.separator td {
   position: sticky;
+  z-index: 1;
   top: 19px;
   border-left: none;
   padding-top: 6px;
@@ -127,6 +128,7 @@
 }
 .cdb .cdb-sheet:not(.cdb-sub-sheet) > thead.head > th {
   position: sticky;
+  z-index: 1;
   top: 0;
 }
 .cdb .cdb-sheet tr.head,
@@ -263,6 +265,7 @@
 }
 .cdb .cdb-sheet td.t_color {
   text-align: center;
+  position: relative;
 }
 .cdb .cdb-sheet td.t_color ._hide-modal {
   opacity: 0;
