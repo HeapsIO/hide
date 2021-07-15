@@ -322,7 +322,10 @@ class Prefab extends FileView {
 									<div class="icon fa fa-expand"></div>
 								</div>
 
-								<div class="button hide-cols-btn close-btn" title="Hide Tree & Props">
+								<div
+									class="button hide-cols-btn close-btn"
+									title="Hide Tree & Props (${config.get("key.sceneeditor.toggleLayout")})"
+								>
 									<div class="icon fa fa-chevron-right"></div>
 								</div>
 							</div>
@@ -341,7 +344,10 @@ class Prefab extends FileView {
 							<div class="hide-scroll"></div>
 					</div>
 
-					<div class="button show-cols-btn close-btn" title="Show Tree & Props">
+					<div
+						class="button show-cols-btn close-btn"
+						title="Show Tree & Props (${config.get("key.sceneeditor.toggleLayout")})"
+					>
 						<div class="icon fa fa-chevron-left"></div>
 					</div>
 				</div>
@@ -367,6 +373,13 @@ class Prefab extends FileView {
 
 		element.find(".collapse-btn").click(function(e) {
 			sceneEditor.collapseTree();
+		});
+
+		keys.register("sceneeditor.toggleLayout", () -> {
+			if( element.find(".tree-column").first().css('display') == 'none' )
+				showColumns();
+			else
+				hideColumns();
 		});
 
 		refreshSceneFilters();
