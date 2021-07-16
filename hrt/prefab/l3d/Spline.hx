@@ -297,12 +297,11 @@ class Spline extends Object3D {
 		if( data == null )
 			computeSplineData();
 
-		var l = t * data.length;
-
 		// The last point is not at the same distance, be aware of that case
 		t = hxd.Math.clamp(t);
-		var s1 : Int = hxd.Math.floor(l / (1./step));
-		var s2 : Int = hxd.Math.ceil(l / (1./step));
+		var l = t * (data.samples.length - 1);
+		var s1 : Int = hxd.Math.floor(l);
+		var s2 : Int = hxd.Math.ceil(l);
 		s1 = hxd.Math.iclamp(s1, 0, data.samples.length - 1);
 		s2 = hxd.Math.iclamp(s2, 0, data.samples.length - 1);
 
@@ -324,12 +323,12 @@ class Spline extends Object3D {
 					tangent.load(data.samples[s1].tangent);
 			}
 			else {
-				var t = (l - (s1 * 1./step)) / segmentLength;
+				var t = (l - s1) / segmentLength;
 				pos.lerp(data.samples[s1].pos, data.samples[s2].pos, t);
 				if(tangent != null)
 					tangent.lerp(data.samples[s1].tangent, data.samples[s2].tangent, t);
 			}
-			
+
 		}
 		return pos;
 	}
