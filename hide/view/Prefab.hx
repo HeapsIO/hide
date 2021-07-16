@@ -297,7 +297,7 @@ class Prefab extends FileView {
 		element.html('
 			<div class="flex vertical">
 				<div style="flex: 0 0 30px;">
-					<span class="tools-buttons"></span>
+					<span class="prefab-toolbar"></span>
 				</div>
 
 				<div class="scene-partition" style="display: flex; flex-direction: row; flex: 1; overflow: hidden;">
@@ -353,7 +353,7 @@ class Prefab extends FileView {
 			</div>
 		');
 
-		tools = new hide.comp.Toolbar(null,element.find(".tools-buttons"));
+		tools = new hide.comp.Toolbar(null,element.find(".prefab-toolbar"));
 		layerToolbar = new hide.comp.Toolbar(null,element.find(".layer-buttons"));
 		currentVersion = undo.currentID;
 

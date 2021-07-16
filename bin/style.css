@@ -336,7 +336,7 @@ input[type=checkbox]:checked:after {
 }
 .hide-toolbar .layout-btn {
   position: absolute;
-  right: 31px;
+  right: 26px;
 }
 .hide-toolbar .close-btn {
   position: absolute;
@@ -344,7 +344,6 @@ input[type=checkbox]:checked:after {
 }
 .hide-toolbar .toolbar-label,
 .hide-toolbar .menu {
-  margin-right: 5px;
   display: inline-block;
   min-width: 20px;
   padding: 2px;
@@ -365,7 +364,6 @@ input[type=checkbox]:checked:after {
 .hide-toolbar .button,
 .hide-toolbar .toggle,
 .scene-partition .show-cols-btn {
-  margin-right: 5px;
   display: inline-block;
   user-select: none;
   border: 1px solid #5a5a5a;
@@ -434,6 +432,10 @@ input[type=checkbox]:checked:after {
 .hide-toolbar .select > select {
   margin-left: 5px;
   min-width: 100px;
+}
+.prefab-toolbar .button,
+.prefab-toolbar .toggle {
+  margin-right: 5px;
 }
 .hide-list {
   width: 100%;
