@@ -125,7 +125,11 @@ class CamController extends h3d.scene.CameraController {
 		if( pushing == 2 ) {
 			moveKeys();
 		}
+
+		var old = ctx.elapsedTime;
+		ctx.elapsedTime = hxd.Timer.dt;
 		super.sync(ctx);
+		ctx.elapsedTime = old;
 	}
 }
 

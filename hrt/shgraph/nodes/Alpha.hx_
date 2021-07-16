@@ -1,0 +1,21 @@
+package hrt.shgraph.nodes;
+
+using hxsl.Ast;
+
+@name("Alpha")
+@description("Set the alpha channel of the RGBA vector")
+@width(80)
+@group("Channel")
+class Alpha extends ShaderNode {
+
+	@input("RGBA") var input = SType.Vec4;
+	@output("A") var a = SType.Float;
+
+	@output() var output = SType.Vec4;
+
+	override public function build(key : String) : TExpr {
+		return {
+			e: TSwiz(input.getVar(TVec(4, VFloat)), [components[compIdx]]), p: null, t: getOutput(key).type 
+		};
+	}
+}
