@@ -274,6 +274,7 @@ class Editor extends Component {
 		var sheet = cursor.table.sheet;
 		var realSheet = cursor.table.getRealSheet();
 
+		var isProps = (cursor.table.displayMode != Table);
 		var x1 = cursor.x;
 		var y1 = cursor.y;
 		var x2 = cursor.select == null ? x1 : cursor.select.x;
@@ -291,36 +292,58 @@ class Editor extends Component {
 
 		if( clipboard == null || text != clipboard.text ) {
 			if( cursor.x < 0 || cursor.y < 0 ) return;
-			beginChanges();
-			for( x in x1...x2+1 ) {
-				var col = columns[x];
+			function parseText(text, type : cdb.Data.ColumnType) : Dynamic {
+				switch( type ) {
+				case TId:
+					if( ~/^[A-Za-z0-9_]+$/.match(text) )
+						return text;
+				case TString:
+					return text;
+				case TFile:
+					return ide.makeRelative(text);
+				case TInt:
+					text = text.split(",").join("").split(" ").join("");
+					return Std.parseInt(text);
+				case TFloat:
+					text = text.split(",").join("").split(" ").join("");
+					var value = Std.parseFloat(text);
+					if( Math.isNaN(value) )
+						return null;
+					return value;
+				default:
+				}
+				return null;
+			}
+			if( isProps ) {
+				var line = cursor.getLine();
+				var col = line.columns[x1];
+
 				if( !cursor.table.canEditColumn(col.name) )
-					continue;
-				var lines = y1 == y2 ? [text] : text.split("\n");
-				for( y in y1...y2+1 ) {
-					var value : Dynamic = null;
-					var text = lines[y - y1];
-					if( text == null ) text = lines[lines.length - 1];
-					switch( col.type ) {
-					case TId:
-						if( ~/^[A-Za-z0-9_]+$/.match(text) ) value = text;
-					case TString:
-						value = text;
-					case TFile:
-						value = ide.makeRelative(text);
-					case TInt:
-						text = text.split(",").join("").split(" ").join("");
-						value = Std.parseInt(text);
-					case TFloat:
-						text = text.split(",").join("").split(" ").join("");
-						value = Std.parseFloat(text);
-						if( Math.isNaN(value) ) value = null;
-					default:
+					return;
+
+				var value = parseText(text, col.type);
+				if( value == null )
+					return;
+				beginChanges();
+				var obj = line.obj;
+				formulas.removeFromValue(obj, col);
+				Reflect.setField(obj, col.name, value);
+			} else {
+				beginChanges();
+				for( x in x1...x2+1 ) {
+					var col = columns[x];
+					if( !cursor.table.canEditColumn(col.name) )
+						continue;
+					var lines = y1 == y2 ? [text] : text.split("\n");
+					for( y in y1...y2+1 ) {
+						var text = lines[y - y1];
+						if( text == null ) text = lines[lines.length - 1];
+						var value = parseText(text, col.type);
+						if( value == null ) continue;
+						var obj = sheet.lines[y];
+						formulas.removeFromValue(obj, col);
+						Reflect.setField(obj, col.name, value);
 					}
-					if( value == null ) continue;
-					var obj = sheet.lines[y];
-					formulas.removeFromValue(obj, col);
-					Reflect.setField(obj, col.name, value);
 				}
 			}
 			formulas.evaluateAll(realSheet);
@@ -329,50 +352,73 @@ class Editor extends Component {
 			refreshAll();
 			return;
 		}
-		beginChanges();
+
+		function setValue(cliObj, destObj, clipSchema : cdb.Data.Column, destCol : cdb.Data.Column) {
+			var form = Reflect.field(cliObj, clipSchema.name+"__f");
+
+			if( form != null && destCol.type.equals(clipSchema.type) ) {
+				formulas.setForValue(destObj, sheet, destCol, form);
+				return;
+			}
+
+			var f = base.getConvFunction(clipSchema.type, destCol.type);
+			var v : Dynamic = Reflect.field(cliObj, clipSchema.name);
+			if( f == null )
+				v = base.getDefault(destCol, sheet);
+			else {
+				// make a deep copy to erase references
+				if( v != null ) v = haxe.Json.parse(haxe.Json.stringify(v));
+				if( f.f != null )
+					v = f.f(v);
+			}
+			if( v == null && !destCol.opt )
+				v = base.getDefault(destCol, sheet);
+			if( v == null )
+				Reflect.deleteField(destObj, destCol.name);
+			else
+				Reflect.setField(destObj, destCol.name, v);
+		}
+
 		var posX = cursor.x < 0 ? 0 : cursor.x;
 		var posY = cursor.y < 0 ? 0 : cursor.y;
 		var data = clipboard.data;
-		if( data.length == 1 && y1 != y2 )
-			data = [for( i in y1...y2+1 ) data[0]];
-		for( obj1 in data ) {
-			if( posY == sheet.lines.length ) {
-				if( !cursor.table.canInsert() ) break;
-				sheet.newLine();
-			}
-			var obj2 = sheet.lines[posY];
-			for( cid in 0...clipboard.schema.length ) {
-				var c1 = clipboard.schema[cid];
-				var c2 = columns[cid + posX];
-				if( c2 == null ) continue;
+		if( data.length == 0 )
+			return;
 
-				if( !cursor.table.canEditColumn(c2.name) )
-					continue;
-
-				var form = Reflect.field(obj1, c1.name+"__f");
-				if( form != null && c2.type.equals(c2.type) ) {
-					formulas.setForValue(obj2, sheet, c2, form);
-					continue;
+		if( isProps ) {
+			var obj1 = data[0];
+			var line = cursor.getLine();
+			var destCol = line.columns[posX];
+			var obj2 = line.obj;
+			var clipSchema = clipboard.schema[0];
+			if( clipSchema == null || destCol == null)
+				return;
+			if( !cursor.table.canEditColumn(destCol.name) )
+				return;
+			beginChanges();
+			setValue(obj1, obj2, clipSchema, destCol);
+		} else {
+			beginChanges();
+			if( data.length == 1 && y1 != y2 )
+				data = [for( i in y1...y2+1 ) data[0]];
+			for( obj1 in data ) {
+				if( posY == sheet.lines.length ) {
+					if( !cursor.table.canInsert() ) break;
+					sheet.newLine();
 				}
+				var obj2 = sheet.lines[posY];
+				for( cid in 0...clipboard.schema.length ) {
+					var c1 = clipboard.schema[cid];
+					var c2 = columns[cid + posX];
+					if( c2 == null ) continue;
 
-				var f = base.getConvFunction(c1.type, c2.type);
-				var v : Dynamic = Reflect.field(obj1, c1.name);
-				if( f == null )
-					v = base.getDefault(c2, sheet);
-				else {
-					// make a deep copy to erase references
-					if( v != null ) v = haxe.Json.parse(haxe.Json.stringify(v));
-					if( f.f != null )
-						v = f.f(v);
+					if( !cursor.table.canEditColumn(c2.name) )
+						continue;
+
+					setValue(obj1, obj2, c1, c2);
 				}
-				if( v == null && !c2.opt )
-					v = base.getDefault(c2, sheet);
-				if( v == null )
-					Reflect.deleteField(obj2, c2.name);
-				else
-					Reflect.setField(obj2, c2.name, v);
+				posY++;
 			}
-			posY++;
 		}
 		formulas.evaluateAll(realSheet);
 		endChanges();
