@@ -231,6 +231,8 @@ input[type=checkbox]:checked:after {
 }
 .scene-partition.reduced-columns .hide-scenetree {
   max-height: 40%;
+  min-width: 320px;
+  max-width: 1400px;
 }
 .scene-partition.reduced-columns .props-column {
   max-height: 60%;
@@ -241,6 +243,7 @@ input[type=checkbox]:checked:after {
   background-color: #111;
   border: 1px solid #444;
   min-width: 300px;
+  max-width: 1000px;
   overflow-y: auto;
   min-height: 350px;
 }

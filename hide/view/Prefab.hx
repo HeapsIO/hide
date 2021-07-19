@@ -306,7 +306,7 @@ class Prefab extends FileView {
 
 				<div class="scene-partition" style="display: flex; flex-direction: row; flex: 1; overflow: hidden;">
 					<div class="heaps-scene"></div>
-
+					<div class="lm_splitter lm_horizontal" style="width: 5px;"><div class="lm_drag_handle"></div></div>
 					<div class="tree-column">
 						<div class="flex vertical">
 							<div class="hide-toolbar">
@@ -362,9 +362,38 @@ class Prefab extends FileView {
 		currentVersion = undo.currentID;
 
 		sceneEditor = new PrefabSceneEditor(this, data);
-		element.find(".hide-scenetree").first().append(sceneEditor.tree.element);
+		var sceneTree = element.find(".hide-scenetree").first();
+		sceneTree.append(sceneEditor.tree.element);
 		element.find(".hide-scroll").first().append(properties.element);
 		element.find(".heaps-scene").first().append(scene.element);
+
+		var treeColumn = element.find(".tree-column").first();
+		var treeDrag = false;
+		var treeStartWidth = 0;
+		var treeStartX = 0;
+		var treeHandle = element.find(".lm_drag_handle").first();
+		treeHandle.mousedown((e) -> {
+			treeDrag = true;
+			treeStartWidth = Std.int(treeColumn.width());
+			treeStartX = e.clientX;
+		});
+		treeHandle.mouseup((e) -> treeDrag = false);
+		treeHandle.dblclick((e) -> {
+			setColumnWidth(Std.parseInt(sceneTree.css("min-width")) + 2*Std.parseInt(sceneTree.css("border")));
+		});
+		var scenePartition = element.find(".scene-partition").first();
+		scenePartition.mousemove((e) -> {
+			if (treeDrag){
+				setColumnWidth(treeStartWidth - (e.clientX - treeStartX));
+			}
+		});
+		scenePartition.mouseup((e) -> {
+			treeDrag = false;
+		});
+		scenePartition.mouseleave((e) -> {
+			treeDrag = false;
+		});
+
 		sceneEditor.tree.element.addClass("small");
 
 		refreshColLayout();
@@ -389,12 +418,24 @@ class Prefab extends FileView {
 		refreshGraphicsFilters();
 	}
 
+	function setColumnWidth(newWidth : Int) {
+		var config = ide.ideConfig;
+		var treeColumn = element.find(".tree-column").first();
+		var sceneTree = element.find(".hide-scenetree").first();
+		var clampedWidth = hxd.Math.iclamp(newWidth, Std.parseInt(sceneTree.css("min-width")) + 2*Std.parseInt(sceneTree.css("border")), Std.parseInt(sceneTree.css("max-width")) + 2*Std.parseInt(sceneTree.css("border")));
+		treeColumn.width(clampedWidth);
+		if (newWidth != clampedWidth) hxd.System.setCursor(Move);
+		config.sceneEditorLayout.treeWidth = newWidth;
+	}
+
 	function refreshColLayout() {
 		var config = ide.ideConfig;
+		var sceneTree = element.find(".hide-scenetree").first();
 		if( config.sceneEditorLayout == null ) {
 			config.sceneEditorLayout = {
 				colsVisible: true,
 				colsCombined: false,
+				treeWidth: Std.parseInt(sceneTree.css("min-width"))
 			};
 		}
 		setCombine(config.sceneEditorLayout.colsCombined);
@@ -403,6 +444,7 @@ class Prefab extends FileView {
 			showColumns();
 		else
 			hideColumns();
+		setColumnWidth(config.sceneEditorLayout.treeWidth);
 	}
 
 	override function onActivate() {
@@ -413,6 +455,7 @@ class Prefab extends FileView {
 	function hideColumns(?_) {
 		element.find(".tree-column").first().hide();
 		element.find(".props-column").first().hide();
+		element.find(".lm_splitter").first().hide();
 		element.find(".show-cols-btn").first().show();
 		ide.ideConfig.sceneEditorLayout.colsVisible = false;
 		@:privateAccess ide.config.global.save();
@@ -422,6 +465,7 @@ class Prefab extends FileView {
 	function showColumns(?_) {
 		element.find(".tree-column").first().show();
 		element.find(".props-column").first().show();
+		element.find(".lm_splitter").first().show();
 		element.find(".show-cols-btn").first().hide();
 		ide.ideConfig.sceneEditorLayout.colsVisible = true;
 		@:privateAccess ide.config.global.save();
@@ -436,6 +480,11 @@ class Prefab extends FileView {
 			element.find(".hide-scenetree").first().parent().append(props);
 			element.find(".combine-btn").first().hide();
 			element.find(".separate-btn").first().show();
+			var sceneTree = element.find(".hide-scenetree").first();
+			var treeColumn = element.find(".tree-column").first();
+			var newWidth = hxd.Math.iclamp(Std.int(treeColumn.width()), Std.parseInt(sceneTree.css("min-width")) + 2*Std.parseInt(sceneTree.css("border")), Std.parseInt(sceneTree.css("max-width")) + 2*Std.parseInt(sceneTree.css("border")));
+			treeColumn.width(newWidth);
+			@:privateAccess if (scene.window != null) scene.window.checkResize();
 		} else {
 			fullscene.append(props);
 			element.find(".combine-btn").first().show();
