@@ -226,6 +226,9 @@ input[type=checkbox]:checked:after {
 .hide-scene-layer .jstree-container-ul {
   padding-right: 5px;
 }
+.scene-partition > .props-column .hide-toolbar {
+  padding-bottom: 4px;
+}
 .scene-partition.reduced-columns .hide-scenetree {
   max-height: 40%;
 }
