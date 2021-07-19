@@ -94,6 +94,10 @@ private class ParticleTransform {
 		qRot.load(quat);
 	}
 
+	public inline function getPosition() {
+		return new h3d.Vector(x, y, z);
+	}
+
 	public inline function setPosition( x, y, z ) {
 		this.x = x;
 		this.y = y;
@@ -315,10 +319,16 @@ private class ParticleInstance  {
 			tmpMat.initRotation(tmpLocalSpeed.x * dt, tmpLocalSpeed.y * dt, tmpLocalSpeed.z * dt);
 			// Rotate in emitter space and convert back to world space
 			var pos = transform.getWorldPosition();
+			var prevPos = transform.getPosition();
 			pos.transform3x4(emitter.getInvPos());
 			pos.transform3x3(tmpMat);
 			pos.transform3x4(emitter.getAbsPos());
 			transform.setWorldPosition(pos);
+
+			// Take transform into account into local speed
+			var delta = transform.getPosition().sub(prevPos);
+			delta.scale(1 / dt);
+			add(tmpSpeed, delta);
 		}
 
 		// SPEED ORIENTATION
