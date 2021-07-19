@@ -361,6 +361,9 @@ class Curve extends Prefab {
 		if(a != null && r == null && g == null && b == null)
 			return VCurve(a);
 
+		if(a == null && r == null && g == null && b == null)
+			return VOne; // White by default
+
 		return VVector(
 			r != null ? VCurve(r) : VConst(1.0),
 			g != null ? VCurve(g) : VConst(1.0),

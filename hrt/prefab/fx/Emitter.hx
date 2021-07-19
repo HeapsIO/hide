@@ -54,8 +54,7 @@ typedef InstanceDef = {
 	localOffset: Value,
 	scale: Value,
 	stretch: Value,
-	rotation: Value,
-	color: Value,
+	rotation: Value
 }
 
 typedef EmitterTrail = {
@@ -179,9 +178,9 @@ private class ParticleInstance  {
 	public var startTime = 0.0;
 	public var life = 0.0;
 	public var lifeTime = 0.0;
-	public var color = new h3d.Vector();
 	public var startFrame : Int;
 	public var speedAccumulation = new h3d.Vector();
+	public var colorMult : h3d.Vector;
 
 	public var orientation = new h3d.Quat();
 
@@ -232,7 +231,6 @@ private class ParticleInstance  {
 	static var tmpCamVec = new h3d.Vector();
 	static var tmpCamVec2 = new h3d.Vector();
 	static var tmpQuat = new h3d.Quat();
-	var tmpColor = new h3d.Vector();
 
 
 	inline function add( v1 : h3d.Vector, v2 : h3d.Vector ) {
@@ -341,14 +339,6 @@ private class ParticleInstance  {
 		if( baseMat != null )
 			localMat.multiply(baseMat, localMat);
 		localTransform.setTransform(localMat);
-
-		// COLOR
-		if( def.color != null ) {
-			switch( def.color ) {
-				case VCurve(a): color.a = evaluator.getFloat(def.color, t);
-				default: color.load(evaluator.getVector(def.color, t, tmpColor));
-			}
-		}
 
 		// ALIGNMENT
 		switch( emitter.alignMode ) {
@@ -493,6 +483,10 @@ class EmitterObject extends h3d.scene.Object {
 	public var elasticity : Float = 1.0;
 	public var killOnCollision : Float = 0.0;
 	public var useCollision : Bool = false;
+	// RANDOM COLOR
+	public var useRandomColor : Bool = false;
+	public var randomColor1 : h3d.Vector;
+	public var randomColor2 : h3d.Vector;
 
 	public var invTransform = new h3d.Matrix();
 	public var screenQuat = new h3d.Quat();
@@ -507,6 +501,8 @@ class EmitterObject extends h3d.scene.Object {
 	var evaluator : Evaluator;
 	var vecPool = new Evaluator.VecPool();
 	var numInstances = 0;
+	var animatedTextureShader : h3d.shader.AnimatedTexture = null;
+	var colorMultShader : h3d.shader.ColorMult = null;
 
 	public function new(?parent) {
 		super(parent);
@@ -620,6 +616,13 @@ class EmitterObject extends h3d.scene.Object {
 
 			part.startTime = startTime + curTime;
 			part.lifeTime = hxd.Math.max(0.01, lifeTime + hxd.Math.srand(lifeTimeRand));
+
+			if(useRandomColor) {
+				var col = new h3d.Vector();
+				col.lerp(randomColor1, randomColor2, random.rand());
+				part.colorMult = col;
+			}
+
 			tmpQuat.identity();
 
 			switch( emitShape ) {
@@ -775,10 +778,15 @@ class EmitterObject extends h3d.scene.Object {
 			var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
 			if( frameCount > 1 && spriteSheet != null ) {
 				var tex = hxd.res.Loader.currentInstance.load(spriteSheet).toTexture();
-				var pshader = new h3d.shader.AnimatedTexture(tex, frameDivisionX, frameDivisionY, frameCount, frameCount * animationSpeed / lifeTime);
-				pshader.startTime = startTime;
-				pshader.loop = animationLoop;
-				mesh.material.mainPass.addShader(pshader);
+				animatedTextureShader = new h3d.shader.AnimatedTexture(tex, frameDivisionX, frameDivisionY, frameCount, frameCount * animationSpeed / lifeTime);
+				animatedTextureShader.startTime = startTime;
+				animatedTextureShader.loop = animationLoop;
+				mesh.material.mainPass.addShader(animatedTextureShader);
+			}
+
+			if(useRandomColor) {
+				colorMultShader = new h3d.shader.ColorMult();
+				mesh.material.mainPass.addShader(colorMultShader);
 			}
 
 			if( meshPrim != null ) {
@@ -886,29 +894,23 @@ class EmitterObject extends h3d.scene.Object {
 
 		if( full && batch != null ) {
 			batch.begin(hxd.Math.nextPOT(maxCount));
-			var animTex = batch.material.mainPass.getShader(h3d.shader.AnimatedTexture);
 			if( particleVisibility ) {
 				camPosTmp = getScene().camera.pos;
 				particles = haxe.ds.ListSort.sortSingleLinked(particles, sortZ);
 				var p = particles;
 				var i = 0;
 				while(p != null) {
-					// Init the color for each particles
-					if( p.def.color != null ) {
-						switch( p.def.color ) {
-							case VCurve(a): batch.material.color.a = p.color.a;
-							default: batch.material.color = p.color;
-						}
-					}
 					batch.worldPosition = p.absPos;
 					for( anim in shaderAnims ) {
 						var t = hxd.Math.clamp(p.life / p.lifeTime, 0.0, 1.0);
 						anim.setTime(t);
 					}
-					if( animTex != null ){
-						animTex.startTime = p.startTime;
-						animTex.startFrame = p.startFrame;
+					if( animatedTextureShader != null ){
+						animatedTextureShader.startTime = p.startTime;
+						animatedTextureShader.startFrame = p.startFrame;
 					}
+					if(colorMultShader != null)
+						colorMultShader.color = p.colorMult;
 					batch.emitInstance();
 					p = p.next;
 					++i;
@@ -1043,6 +1045,10 @@ class Emitter extends Object3D {
 		{ name: "alignMode", t: PEnum(AlignMode), def: AlignMode.None, disp: "Mode", groupName : "Alignment" },
 		{ name: "alignAxis", t: PVec(3, -1.0, 1.0), def: [0.,0.,0.], disp: "Axis", groupName : "Alignment" },
 		{ name: "alignLockAxis", t: PVec(3, -1.0, 1.0), def: [0.,0.,0.], disp: "Lock Axis", groupName : "Alignment" },
+		// COLOR
+		{ name: "useRandomColor", t: PBool, def: false, disp: "Random Color", groupName : "Color" },
+		{ name: "randomColor1", t: PVec(4), disp: "Color 1", def : [0,0,0,1], groupName : "Color" },
+		{ name: "randomColor2", t: PVec(4), disp: "Color 2", def : [1,1,1,1], groupName : "Color" },
 		// ANIMATION
 		{ name: "spriteSheet", t: PFile(["jpg","png"]), def: null, groupName : "Animation", disp: "Sheet" },
 		{ name: "frameCount", t: PInt(0), def: 0, groupName : "Animation", disp: "Frames" },
@@ -1253,8 +1259,7 @@ class Emitter extends Object3D {
 				localOffset: makeParam(this, "instOffset"),
 				scale: makeParam(this, "instScale"),
 				stretch: makeParam(this, "instStretch"),
-				rotation: makeParam(this, "instRotation"),
-				color: makeColor(template, "color"),
+				rotation: makeParam(this, "instRotation")
 			};
 
 			emitterObj.particleTemplate = template;
@@ -1302,6 +1307,11 @@ class Emitter extends Object3D {
 		emitterObj.useCollision 		= 	getParamVal("useCollision");
 		emitterObj.killOnCollision 		= 	getParamVal("killOnCollision");
 		emitterObj.elasticity 			= 	getParamVal("elasticity");
+		// RANDOM COLOR
+		emitterObj.useRandomColor 		= 	getParamVal("useRandomColor");
+		emitterObj.randomColor1 		= 	getParamVal("randomColor1");
+		emitterObj.randomColor2 		= 	getParamVal("randomColor2");
+
 
 		#if !editor  // Keep startTime at 0 in Editor, since global.time is synchronized to timeline
 		var scene = ctx.local3d.getScene();
@@ -1341,12 +1351,14 @@ class Emitter extends Object3D {
 			this.edit(ctx);
 		}
 
-		var angleProp = null;
-
 		function onChange(?pname: String) {
 			ctx.onChange(this, pname);
 
-			if( pname == "emitShape" || pname == "alignMode" || pname == "useCollision" || pname == "emitType" )
+			if(["emitShape",
+				"alignMode",
+				"useCollision",
+				"emitType",
+				"useRandomColor"].indexOf(pname) >= 0)
 				refresh();
 		}
 
@@ -1375,6 +1387,11 @@ class Emitter extends Object3D {
 		if( !useCollision ) {
 			removeParam("elasticity");
 			removeParam("killOnCollision");
+		}
+
+		if(!getParamVal("useRandomColor")) {
+			removeParam("randomColor1");
+			removeParam("randomColor2");
 		}
 
 		var emitType : EmitType = getParamVal("emitType");
