@@ -389,19 +389,17 @@ class FX extends BaseFX {
 		fxanim.duration = duration;
 		fxanim.cullingRadius = cullingRadius;
 		ctx.local3d = fxanim;
+		var fromRef = ctx.shared.parent != null;
 		#if editor
 		// only play if we are as a reference
-		if( ctx.shared.parent != null ) fxanim.playSpeed = 1.0;
+		if( fromRef ) fxanim.playSpeed = 1.0;
 		#else
 		fxanim.playSpeed = 1.0;
 		#end
 
-		#if editor
-		super.make(ctx);
-		fxanim.init(ctx, this);
-		#else
+		var useFXRoot = #if editor fromRef #else true #end;
 		var root = getFXRoot(ctx, this);
-		if(root != null){
+		if(useFXRoot && root != null){
 			for( c in root.children ) {
 				var co = Std.downcast(c , hrt.prefab.l3d.Constraint);
 				if( co == null )
@@ -411,8 +409,7 @@ class FX extends BaseFX {
 		else
 			super.make(ctx);
 		fxanim.init(ctx, this, root);
-		#end
-
+		
 		if(scriptCode != null && scriptCode != ""){
 			var parser = new FXScriptParser();
 			fxanim.script = parser.createFXScript(scriptCode, fxanim);
