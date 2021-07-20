@@ -869,6 +869,8 @@ input[type=checkbox]:checked:after {
   overflow-y: scroll;
   overflow-x: hidden;
   height: 400px;
+  min-height: 120px;
+  max-height: 800px;
 }
 .fx-animpanel .top-bar {
   margin-left: 120px;
