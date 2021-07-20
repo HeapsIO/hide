@@ -1991,7 +1991,7 @@ class SceneEditor {
 				fullRefresh = true;
 			var index = elt.parent.children.indexOf(elt);
 			elt.parent.children.remove(elt);
-			undoes.push(function(undo) {
+			undoes.unshift(function(undo) {
 				if(undo) elt.parent.children.insert(index, elt);
 				else elt.parent.children.remove(elt);
 			});
