@@ -694,12 +694,11 @@ class MeshSpray extends Object3D {
 						sceneEditor.deleteElements(addedModels, () -> removeInteractiveBrush(), true, false);
 					}
 					else {
-						sceneEditor.addElements(addedModels, false, true, true);
+						sceneEditor.addElements(addedModels, false, true, false);
 					}
 				}));
 				sprayedModels = [];
 			}
-			
 
 			if (previewModels.length > 0) {
 				sceneEditor.deleteElements(previewModels, () -> { }, false);
@@ -916,7 +915,7 @@ class MeshSpray extends Object3D {
 			}
 
 			if (previewModels.length > 0) {
-				sceneEditor.addElements(previewModels, false, false, true);
+				sceneEditor.addElements(previewModels, false, false, false);
 			}
 		}
 	}
@@ -945,7 +944,6 @@ class MeshSpray extends Object3D {
 					childToRemove.push(child);
 				}
 			}
-			
 		}
 		if (childToRemove.length > 0) {
 			wasEdited = true;

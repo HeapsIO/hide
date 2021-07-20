@@ -1339,7 +1339,7 @@ class SceneEditor {
 			lastRenderProps.applyProps(scene.s3d.renderer);
 	}
 
-	public function addElements(elts : Array<PrefabElement>, selectObj : Bool = true, doRefresh : Bool = true, isTemporary = false) {
+	public function addElements(elts : Array<PrefabElement>, selectObj : Bool = true, doRefresh : Bool = true, enableUndo = true) {
 		for (e in elts) {
 			makeInstance(e);
 		}
@@ -1347,7 +1347,7 @@ class SceneEditor {
 			refresh(Partial, if (selectObj) () -> selectElements(elts, NoHistory) else null);
 			refreshParents(elts);
 		}
-		if( isTemporary )
+		if( !enableUndo )
 			return;
 
 		undo.change(Custom(function(undo) {

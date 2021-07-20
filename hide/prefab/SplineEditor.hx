@@ -262,12 +262,11 @@ class SplineEditor {
 			sp.rotationX = h3d.Matrix.lookAtX(dir).getFloats()[0];
 			sp.rotationY = h3d.Matrix.lookAtX(dir).getFloats()[1];
 			sp.rotationZ = h3d.Matrix.lookAtX(dir).getFloats()[2];
-			
 		}
 		sp.scaleX = scale;
 		sp.scaleY = scale;
 		sp.scaleZ = scale;
-		editContext.scene.editor.addElements([sp], false, true, true);
+		editContext.scene.editor.addElements([sp], false, true, false);
 
 		prefab.updateInstance(ctx);
 		showViewers();
@@ -456,7 +455,7 @@ class SplineEditor {
 						for (sp in prefab.points)
 							sp.computeName(editContext.getContext(sp));
 						@:privateAccess editContext.scene.editor.refresh(Partial);
-						
+
 						prefab.updateInstance(ctx);
 						showViewers();
 						createGizmos(ctx);
@@ -464,7 +463,7 @@ class SplineEditor {
 						undo.change(Custom(function(undo) {
 							if( undo ) {
 								prefab.children.insert(index, sp);
-								editContext.scene.editor.addElements([sp], false, true, true);
+								editContext.scene.editor.addElements([sp], false, true, false);
 								prefab.updateInstance(ctx);
 								showViewers();
 								createGizmos(ctx);
