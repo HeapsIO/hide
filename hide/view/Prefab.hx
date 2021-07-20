@@ -424,8 +424,9 @@ class Prefab extends FileView {
 		var sceneTree = element.find(".hide-scenetree").first();
 		var clampedWidth = hxd.Math.iclamp(newWidth, Std.parseInt(sceneTree.css("min-width")) + 2*Std.parseInt(sceneTree.css("border")), Std.parseInt(sceneTree.css("max-width")) + 2*Std.parseInt(sceneTree.css("border")));
 		treeColumn.width(clampedWidth);
-		if (newWidth != clampedWidth) hxd.System.setCursor(Move);
-		config.sceneEditorLayout.treeWidth = newWidth;
+		config.sceneEditorLayout.treeWidth = clampedWidth;
+		@:privateAccess if( scene.window != null) scene.window.checkResize();
+		@:privateAccess ide.config.global.save();
 	}
 
 	function refreshColLayout() {
