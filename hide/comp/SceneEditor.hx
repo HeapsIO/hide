@@ -1767,7 +1767,7 @@ class SceneEditor {
 				var lib = hrt.prefab.Prefab.loadPrefab(obj);
 				for(c in lib.children) {
 					autoName(c);
-					c.parent = parent;
+					parent.children.push(c);
 				}
 				addElements(lib.children);
 			}
