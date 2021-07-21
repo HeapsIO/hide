@@ -368,8 +368,9 @@ class Prefab extends FileView {
 		element.find(".heaps-scene").first().append(scene.element);
 
 		var treeColumn = element.find(".tree-column").first();
-		resizablePanel = new hide.comp.ResizablePanel(Horizontal, treeColumn, scene);
+		resizablePanel = new hide.comp.ResizablePanel(Horizontal, treeColumn);
 		resizablePanel.saveDisplayKey = "treeColumn";
+		resizablePanel.onResize = () -> @:privateAccess if( scene.window != null) scene.window.checkResize();
 
 		sceneEditor.tree.element.addClass("small");
 

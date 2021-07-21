@@ -277,12 +277,14 @@ class FXEditor extends FileView {
 		element.find(".heaps-scene").first().append(sceneEditor.scene.element);
 
 		var treeColumn = element.find(".tree-column").first();
-		treePanel = new hide.comp.ResizablePanel(Horizontal, treeColumn, scene);
+		treePanel = new hide.comp.ResizablePanel(Horizontal, treeColumn);
 		treePanel.saveDisplayKey = "treeColumn";
+		treePanel.onResize = () -> @:privateAccess if( scene.window != null) scene.window.checkResize();
 
 		var fxPanel = element.find(".fx-animpanel").first();
-		animPanel = new hide.comp.ResizablePanel(Vertical, fxPanel, scene);
+		animPanel = new hide.comp.ResizablePanel(Vertical, fxPanel);
 		animPanel.saveDisplayKey = "animPanel";
+		animPanel.onResize = () -> @:privateAccess if( scene.window != null) scene.window.checkResize();
 
 		refreshLayout();
 		element.resize(function(e) {

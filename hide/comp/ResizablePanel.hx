@@ -6,12 +6,10 @@ enum LayoutDirection {
 }
 class ResizablePanel extends hide.comp.Component {
 
-	var scene : hide.comp.Scene;
 	var layoutDirection : LayoutDirection;
 
-	public function new(layoutDirection : LayoutDirection, element : Element, scene : hide.comp.Scene) {
+	public function new(layoutDirection : LayoutDirection, element : Element) {
 		super(null, element);
-		this.scene = scene;
 		this.layoutDirection = layoutDirection;
 		var splitter = new Element('<div class="splitter"><div class="drag_handle"></div></div>');
 		switch (layoutDirection) {
@@ -63,6 +61,9 @@ class ResizablePanel extends hide.comp.Component {
 				element.height(clampedSize);
 		}
 		if (newSize != null) saveDisplayState("size", clampedSize);
-		@:privateAccess if( scene.window != null) scene.window.checkResize();
+
+		onResize(); //@:privateAccess if( scene.window != null) scene.window.checkResize();
 	}
+
+    public dynamic function onResize() {}
 }
