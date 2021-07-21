@@ -231,8 +231,10 @@ input[type=checkbox]:checked:after {
 }
 .scene-partition.reduced-columns .hide-scenetree {
   max-height: 40%;
-  min-width: 320px;
-  max-width: 1400px;
+}
+.scene-partition.reduced-columns .tree-column {
+  min-width: 322px;
+  max-width: 1402px;
 }
 .scene-partition.reduced-columns .props-column {
   max-height: 60%;

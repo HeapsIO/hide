@@ -445,11 +445,7 @@ class Prefab extends FileView {
 			element.find(".hide-scenetree").first().parent().append(props);
 			element.find(".combine-btn").first().hide();
 			element.find(".separate-btn").first().show();
-			var sceneTree = element.find(".hide-scenetree").first();
-			var treeColumn = element.find(".tree-column").first();
-			var newWidth = hxd.Math.iclamp(Std.int(treeColumn.width()), Std.parseInt(sceneTree.css("min-width")) + 2*Std.parseInt(sceneTree.css("border")), Std.parseInt(sceneTree.css("max-width")) + 2*Std.parseInt(sceneTree.css("border")));
-			treeColumn.width(newWidth);
-			@:privateAccess if (scene.window != null) scene.window.checkResize();
+			resizablePanel.setSize(resizablePanel.getDisplayState("size"));
 		} else {
 			fullscene.append(props);
 			element.find(".combine-btn").first().show();

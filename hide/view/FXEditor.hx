@@ -272,8 +272,7 @@ class FXEditor extends FileView {
 		tools = new hide.comp.Toolbar(null,element.find(".tools-buttons"));
 		tabs = new hide.comp.Tabs(null,element.find(".tabs"));
 		sceneEditor = new FXSceneEditor(this, data);
-		var sceneTree = element.find(".hide-scenetree").first();
-		sceneTree.append(sceneEditor.tree.element);
+		element.find(".hide-scenetree").first().append(sceneEditor.tree.element);
 		element.find(".hide-scroll").first().append(sceneEditor.properties.element);
 		element.find(".heaps-scene").first().append(sceneEditor.scene.element);
 
