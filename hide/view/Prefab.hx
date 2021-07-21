@@ -270,7 +270,7 @@ class Prefab extends FileView {
 	var layerToolbar : hide.comp.Toolbar;
 	var layerButtons : Map<PrefabElement, hide.comp.Toolbar.ToolToggle>;
 
-	var resizablePanel : hide.view.FileView.ResizablePanel;
+	var resizablePanel : hide.comp.ResizablePanel;
 
 	var grid : h3d.scene.Graphics;
 
@@ -368,7 +368,7 @@ class Prefab extends FileView {
 		element.find(".heaps-scene").first().append(scene.element);
 
 		var treeColumn = element.find(".tree-column").first();
-		resizablePanel = new hide.view.FileView.ResizablePanel(Horizontal, treeColumn, scene);
+		resizablePanel = new hide.comp.ResizablePanel(Horizontal, treeColumn, scene);
 		resizablePanel.saveDisplayKey = "treeColumn";
 
 		sceneEditor.tree.element.addClass("small");
