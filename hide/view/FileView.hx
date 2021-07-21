@@ -50,17 +50,19 @@ class ResizablePanel extends hide.comp.Component {
 		});
 	}
 
-	public function setSize(newSize : Int) {
+	public function setSize(?newSize : Int) {
 		var minSize = (layoutDirection == Horizontal? Std.parseInt(element.css("min-width")) : Std.parseInt(element.css("min-height")));
 		var maxSize = (layoutDirection == Horizontal? Std.parseInt(element.css("max-width")) : Std.parseInt(element.css("max-height")));
-		var clampedSize = hxd.Math.iclamp(newSize, minSize, maxSize);
+		var clampedSize = 0;
+		if (newSize !=  null) clampedSize = hxd.Math.iclamp(newSize, minSize, maxSize);
+		else clampedSize = hxd.Math.iclamp(getDisplayState("size"), minSize, maxSize);
 		switch (layoutDirection) {
 			case Horizontal :
 				element.width(clampedSize);
 			case Vertical :
 				element.height(clampedSize);
 		}
-		saveDisplayState("size", clampedSize);
+		if (newSize != null) saveDisplayState("size", clampedSize);
 		@:privateAccess if( scene.window != null) scene.window.checkResize();
 	}
 }

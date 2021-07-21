@@ -409,7 +409,7 @@ class Prefab extends FileView {
 			showColumns();
 		else
 			hideColumns();
-		if (resizablePanel != null) resizablePanel.setSize(resizablePanel.getDisplayState("size"));
+		if (resizablePanel != null) resizablePanel.setSize();
 	}
 
 	override function onActivate() {
@@ -445,7 +445,7 @@ class Prefab extends FileView {
 			element.find(".hide-scenetree").first().parent().append(props);
 			element.find(".combine-btn").first().hide();
 			element.find(".separate-btn").first().show();
-			resizablePanel.setSize(resizablePanel.getDisplayState("size"));
+			resizablePanel.setSize();
 		} else {
 			fullscene.append(props);
 			element.find(".combine-btn").first().show();

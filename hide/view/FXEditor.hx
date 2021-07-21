@@ -464,8 +464,8 @@ class FXEditor extends FileView {
 	}
 
 	function refreshLayout() {
-		if (animPanel != null) animPanel.setSize(animPanel.getDisplayState("size"));
-		if (treePanel != null) treePanel.setSize(treePanel.getDisplayState("size"));
+		if (animPanel != null) animPanel.setSize();
+		if (treePanel != null) treePanel.setSize();
 	}
 
 	override function onActivate() {
