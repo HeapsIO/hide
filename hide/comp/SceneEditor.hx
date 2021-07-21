@@ -1181,8 +1181,8 @@ class SceneEditor {
 			el.find("ul").first().css("background", tag.color + "80");
 		}
 		else if(pname == "tag") {
-			aEl.css("background", "none");
-			el.find("ul").first().css("background", "none");
+			aEl.css("background", "");
+			el.find("ul").first().css("background", "");
 		}
 
 		if(obj3d != null) {
