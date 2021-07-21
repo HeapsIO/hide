@@ -270,6 +270,8 @@ class Prefab extends FileView {
 	var layerToolbar : hide.comp.Toolbar;
 	var layerButtons : Map<PrefabElement, hide.comp.Toolbar.ToolToggle>;
 
+	var resizablePanel : hide.view.FileView.ResizablePanel;
+
 	var grid : h3d.scene.Graphics;
 
 	var gridStep : Int;
@@ -306,7 +308,6 @@ class Prefab extends FileView {
 
 				<div class="scene-partition" style="display: flex; flex-direction: row; flex: 1; overflow: hidden;">
 					<div class="heaps-scene"></div>
-					<div class="lm_splitter lm_horizontal" style="width: 5px;"><div class="lm_drag_handle"></div></div>
 					<div class="tree-column">
 						<div class="flex vertical">
 							<div class="hide-toolbar">
@@ -362,37 +363,13 @@ class Prefab extends FileView {
 		currentVersion = undo.currentID;
 
 		sceneEditor = new PrefabSceneEditor(this, data);
-		var sceneTree = element.find(".hide-scenetree").first();
-		sceneTree.append(sceneEditor.tree.element);
+		element.find(".hide-scenetree").first().append(sceneEditor.tree.element);
 		element.find(".hide-scroll").first().append(properties.element);
 		element.find(".heaps-scene").first().append(scene.element);
 
 		var treeColumn = element.find(".tree-column").first();
-		var treeDrag = false;
-		var treeStartWidth = 0;
-		var treeStartX = 0;
-		var treeHandle = element.find(".lm_drag_handle").first();
-		treeHandle.mousedown((e) -> {
-			treeDrag = true;
-			treeStartWidth = Std.int(treeColumn.width());
-			treeStartX = e.clientX;
-		});
-		treeHandle.mouseup((e) -> treeDrag = false);
-		treeHandle.dblclick((e) -> {
-			setColumnWidth(Std.parseInt(sceneTree.css("min-width")) + 2*Std.parseInt(sceneTree.css("border")));
-		});
-		var scenePartition = element.find(".scene-partition").first();
-		scenePartition.mousemove((e) -> {
-			if (treeDrag){
-				setColumnWidth(treeStartWidth - (e.clientX - treeStartX));
-			}
-		});
-		scenePartition.mouseup((e) -> {
-			treeDrag = false;
-		});
-		scenePartition.mouseleave((e) -> {
-			treeDrag = false;
-		});
+		resizablePanel = new hide.view.FileView.ResizablePanel(Horizontal, treeColumn, scene);
+		resizablePanel.saveDisplayKey = "treeColumn";
 
 		sceneEditor.tree.element.addClass("small");
 
@@ -418,25 +395,12 @@ class Prefab extends FileView {
 		refreshGraphicsFilters();
 	}
 
-	function setColumnWidth(newWidth : Int) {
-		var config = ide.ideConfig;
-		var treeColumn = element.find(".tree-column").first();
-		var sceneTree = element.find(".hide-scenetree").first();
-		var clampedWidth = hxd.Math.iclamp(newWidth, Std.parseInt(sceneTree.css("min-width")) + 2*Std.parseInt(sceneTree.css("border")), Std.parseInt(sceneTree.css("max-width")) + 2*Std.parseInt(sceneTree.css("border")));
-		treeColumn.width(clampedWidth);
-		config.sceneEditorLayout.treeWidth = clampedWidth;
-		@:privateAccess if( scene.window != null) scene.window.checkResize();
-		@:privateAccess ide.config.global.save();
-	}
-
 	function refreshColLayout() {
 		var config = ide.ideConfig;
-		var sceneTree = element.find(".hide-scenetree").first();
 		if( config.sceneEditorLayout == null ) {
 			config.sceneEditorLayout = {
 				colsVisible: true,
 				colsCombined: false,
-				treeWidth: Std.parseInt(sceneTree.css("min-width"))
 			};
 		}
 		setCombine(config.sceneEditorLayout.colsCombined);
@@ -445,7 +409,7 @@ class Prefab extends FileView {
 			showColumns();
 		else
 			hideColumns();
-		setColumnWidth(config.sceneEditorLayout.treeWidth);
+		if (resizablePanel != null) resizablePanel.setSize(resizablePanel.getDisplayState("size"));
 	}
 
 	override function onActivate() {

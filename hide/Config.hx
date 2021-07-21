@@ -13,7 +13,7 @@ typedef HideGlobalConfig = {
 
 	var windowPos : { x : Int, y : Int, w : Int, h : Int, max : Bool };
 
-	@:optional var sceneEditorLayout : { colsVisible : Bool, colsCombined : Bool, treeWidth : Int, ?animPanelHeight : Int };
+	@:optional var sceneEditorLayout : { colsVisible : Bool, colsCombined : Bool };
 }
 
 typedef HideProjectConfig = {

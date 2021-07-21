@@ -238,6 +238,10 @@ input[type=checkbox]:checked:after {
   max-height: 60%;
   padding-bottom: 36px;
 }
+.tree-column {
+  min-width: 302px;
+  max-width: 1002px;
+}
 .hide-scenetree {
   flex: 1;
   background-color: #111;
@@ -863,14 +867,14 @@ input[type=checkbox]:checked:after {
   float: none;
 }
 .fx-animpanel {
+  min-height: 120px;
+  max-height: 800px;
   position: relative;
 }
 .fx-animpanel .anim-scroll {
   overflow-y: scroll;
   overflow-x: hidden;
   height: 400px;
-  min-height: 120px;
-  max-height: 800px;
 }
 .fx-animpanel .top-bar {
   margin-left: 120px;

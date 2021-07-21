@@ -260,6 +260,11 @@ input[type=checkbox] {
 	}
 }
 
+.tree-column {
+	min-width: 302px;
+	max-width: 1002px;
+}
+
 .hide-scenetree {
 	flex: 1;
 	background-color : #111;
@@ -971,14 +976,14 @@ input[type=checkbox] {
 .fx-animpanel {
 	@leftPanelWidth: 120px;
 	@timelineHeight: 20px;
+	min-height: 120px;
+	max-height: 800px;
 	position: relative;
 
 	.anim-scroll {
 		overflow-y: scroll;
 		overflow-x: hidden;
 		height: 400px;
-		min-height: 120px;
-		max-height: 800px;
 	}
 	.top-bar {
 		margin-left: @leftPanelWidth;

@@ -157,6 +157,8 @@ class FXEditor extends FileView {
 	var fxprops : hide.comp.PropsEditor;
 
 	var tools : hide.comp.Toolbar;
+	var treePanel : hide.view.FileView.ResizablePanel;
+	var animPanel : hide.view.FileView.ResizablePanel;
 	var light : h3d.scene.fwd.DirLight;
 	var lightDirection = new h3d.Vector( 1, 2, -4 );
 
@@ -231,7 +233,6 @@ class FXEditor extends FileView {
 				<div class="scene-partition" style="display: flex; flex-direction: row; flex: 1; overflow: hidden;">
 					<div style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
 						<div class="flex heaps-scene"></div>
-						<div class="lm_splitter lm_vertical" style="height: 5px;"><div class="lm_drag_handle"></div></div>
 						<div class="fx-animpanel">
 							<div class="top-bar">
 								<div class="timeline">
@@ -244,7 +245,6 @@ class FXEditor extends FileView {
 							</div>
 						</div>
 					</div>
-					<div class="lm_splitter lm_horizontal" style="width: 5px;"><div class="lm_drag_handle"></div></div>
 					<div class="tree-column">
 						<div class="flex vertical">
 							<div class="hide-toolbar" style="zoom: 80%">
@@ -278,52 +278,13 @@ class FXEditor extends FileView {
 		element.find(".heaps-scene").first().append(sceneEditor.scene.element);
 
 		var treeColumn = element.find(".tree-column").first();
-		var treeDrag = false;
-		var treeStartWidth = 0;
-		var treeStartX = 0;
-		var treeHandle = element.find(".lm_drag_handle").last();
-		treeHandle.mousedown((e) -> {
-			treeDrag = true;
-			treeStartWidth = Std.int(treeColumn.width());
-			treeStartX = e.clientX;
-		});
-		treeHandle.mouseup((e) -> treeDrag = false);
-		treeHandle.dblclick((e) -> {
-			setColumnWidth(Std.parseInt(sceneTree.css("min-width")) + 2*Std.parseInt(sceneTree.css("border")));
-		});
+		treePanel = new hide.view.FileView.ResizablePanel(Horizontal, treeColumn, scene);
+		treePanel.saveDisplayKey = "treeColumn";
 
-		var animPanel = element.find(".fx-animpanel").first();
-		var animPanelDrag = false;
-		var animPanelStartHeight = 0;
-		var animPanelStartY = 0;
-		var animPanelHandle = element.find(".lm_drag_handle").first();
-		animPanelHandle.mousedown((e) -> {
-			animPanelDrag = true;
-			animPanelStartHeight = Std.int(animPanel.height());
-			animPanelStartY = e.clientY;
-		});
-		animPanelHandle.mouseup((e) -> animPanelDrag = false);
-		var animScroll = element.find(".anim-scroll").first();
-		animPanelHandle.dblclick((e) -> {
-			setAnimPanelHeight(Std.parseInt(animScroll.css("min-height")) + 2*Std.parseInt(animScroll.css("border")));
-		});
-		var scenePartition = element.find(".scene-partition").first();
-		scenePartition.mousemove((e) -> {
-			if (treeDrag){
-				setColumnWidth(treeStartWidth - (e.clientX - treeStartX));
-			}
-			if (animPanelDrag){
-				setAnimPanelHeight(animPanelStartHeight - (e.clientY - animPanelStartY));
-			}
-		});
-		scenePartition.mouseup((e) -> {
-			treeDrag = false;
-			animPanelDrag = false;
-		});
-		scenePartition.mouseleave((e) -> {
-			treeDrag = false;
-			animPanelDrag = false;
-		});
+		var fxPanel = element.find(".fx-animpanel").first();
+		animPanel = new hide.view.FileView.ResizablePanel(Vertical, fxPanel, scene);
+		animPanel.saveDisplayKey = "animPanel";
+
 		refreshLayout();
 		element.resize(function(e) {
 			refreshTimeline(false);
@@ -503,42 +464,9 @@ class FXEditor extends FileView {
 		refreshTimeline(false);
 	}
 
-	function setColumnWidth(newWidth : Int) {
-		var config = ide.ideConfig;
-		var treeColumn = element.find(".tree-column").first();
-		var sceneTree = element.find(".hide-scenetree").first();
-		var clampedWidth = hxd.Math.iclamp(newWidth, Std.parseInt(sceneTree.css("min-width")) + 2*Std.parseInt(sceneTree.css("border")), Std.parseInt(sceneTree.css("max-width")) + 2*Std.parseInt(sceneTree.css("border")));
-		treeColumn.width(clampedWidth);
-		config.sceneEditorLayout.treeWidth = clampedWidth;
-		@:privateAccess if( scene.window != null) scene.window.checkResize();
-		@:privateAccess ide.config.global.save();
-	}
-
-	function setAnimPanelHeight(newHeight : Int) {
-		var config = ide.ideConfig;
-		var animPanel = element.find(".fx-animpanel").first();
-		var animScroll = element.find(".anim-scroll").first();
-		var clampedHeight = hxd.Math.iclamp(newHeight, Std.parseInt(animScroll.css("min-height")) + 2*Std.parseInt(animScroll.css("border")), Std.parseInt(animScroll.css("max-height")) + 2*Std.parseInt(animScroll.css("border")));
-		animPanel.height(clampedHeight);
-		config.sceneEditorLayout.animPanelHeight = clampedHeight;
-		@:privateAccess if( scene.window != null) scene.window.checkResize();
-		@:privateAccess ide.config.global.save();
-	}
-
 	function refreshLayout() {
-		var config = ide.ideConfig;
-		var sceneTree = element.find(".hide-scenetree").first();
-		var animScroll = element.find(".anim-scroll").first();
-		if( config.sceneEditorLayout == null ) {
-			config.sceneEditorLayout = {
-				colsVisible: true,
-				colsCombined: false,
-				treeWidth: Std.parseInt(sceneTree.css("min-width")),
-				animPanelHeight: Std.parseInt(animScroll.css("height"))
-			};
-		}
-		setColumnWidth(config.sceneEditorLayout.treeWidth);
-		setAnimPanelHeight(config.sceneEditorLayout.animPanelHeight);
+		if (animPanel != null) animPanel.setSize(animPanel.getDisplayState("size"));
+		if (treePanel != null) treePanel.setSize(treePanel.getDisplayState("size"));
 	}
 
 	override function onActivate() {
