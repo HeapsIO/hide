@@ -181,7 +181,7 @@ class Model extends Object3D {
 	override function getHideProps() : HideProps {
 		return {
 			icon : "cube", name : "Model", fileSource : ["fbx","hmd"],
-			allowChildren : function(t) return Library.isOfType(t,Object3D) || ["material", "shader"].indexOf(t) >= 0,
+			allowChildren : function(t) return Library.isOfType(t,Object3D) || Library.isOfType(t,Material) || Library.isOfType(t,Shader),
 			onResourceRenamed : function(f) animation = f(animation),
 		};
 	}
