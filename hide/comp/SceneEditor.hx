@@ -1339,7 +1339,7 @@ class SceneEditor {
 			lastRenderProps.applyProps(scene.s3d.renderer);
 	}
 
-	public function addElements(elts : Array<PrefabElement>, selectObj : Bool = true, doRefresh : Bool = true, isTemporary = false) {
+	public function addElements(elts : Array<PrefabElement>, selectObj : Bool = true, doRefresh : Bool = true, enableUndo = true) {
 		for (e in elts) {
 			makeInstance(e);
 		}
@@ -1347,7 +1347,7 @@ class SceneEditor {
 			refresh(Partial, if (selectObj) () -> selectElements(elts, NoHistory) else null);
 			refreshParents(elts);
 		}
-		if( isTemporary )
+		if( !enableUndo )
 			return;
 
 		undo.change(Custom(function(undo) {
@@ -1767,7 +1767,7 @@ class SceneEditor {
 				var lib = hrt.prefab.Prefab.loadPrefab(obj);
 				for(c in lib.children) {
 					autoName(c);
-					c.parent = parent;
+					parent.children.push(c);
 				}
 				addElements(lib.children);
 			}
@@ -1991,7 +1991,7 @@ class SceneEditor {
 				fullRefresh = true;
 			var index = elt.parent.children.indexOf(elt);
 			elt.parent.children.remove(elt);
-			undoes.push(function(undo) {
+			undoes.unshift(function(undo) {
 				if(undo) elt.parent.children.insert(index, elt);
 				else elt.parent.children.remove(elt);
 			});
