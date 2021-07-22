@@ -308,6 +308,7 @@ class Ide {
 
 		var config : golden.Config = {
 			content: state.state.content,
+			settings: {reorderEnabled : false, showPopoutIcon : false, showMaximiseIcon : false}
 		};
 		var comps = new Map();
 		for( vcl in hide.ui.View.viewClasses )
