@@ -7,42 +7,130 @@ typedef ContextMenuItem = {
 	@:optional var enabled : Bool;
 	@:optional var checked : Bool;
 	@:optional var isSeparator : Bool;
-	@:optional var keys : {
-		@:optional var key : String;
-		@:optional var modifiers : String;
-	};
+	@:optional var icon : String;
+	@:optional var stayOpen : Bool;
+	@:optional var keys : String;
 }
 
 class ContextMenu {
 
 	static var MENUS : Array<nw.Menu>;
 
+	static var CTX_ANCHOR : Element;
+	static final CONTEXTMENU_LAYER = 900;
+
 	public function new( config : Array<ContextMenuItem> ) {
-		MENUS = [];
-		var menu = makeMenu(config);
 		var ide = hide.Ide.inst;
+
+		var args = {
+			selector: '#ctx-menu-anchor',
+			trigger: "none",
+			items: makeMenu(config),
+			position: (opt, x, y) -> {
+				opt.$menu.css({ left: ide.mouseX, top: ide.mouseY });
+			},
+			zIndex: CONTEXTMENU_LAYER + 2,
+		}
 		// wait until mousedown to get correct mouse pos
 		haxe.Timer.delay(function() {
-			if( MENUS[0] == menu )
-				menu.popup(ide.mouseX, ide.mouseY);
-		},0);
+			if( CTX_ANCHOR == null ) {
+				CTX_ANCHOR = new Element('<div id="ctx-menu-anchor">');
+				new Element("body").append(CTX_ANCHOR);
+			}
+			untyped jQuery.contextMenu('destroy', '#ctx-menu-anchor');
+			untyped jQuery.contextMenu(args);
+			(CTX_ANCHOR : Dynamic).contextMenu();
+		}, 0);
+
+		// Old version that uses nwjs context menu
+		// MENUS = [];
+		// var menu = makeNwMenu(config);
+		// // wait until mousedown to get correct mouse pos
+		// haxe.Timer.delay(function() {
+		// 	if( MENUS[0] == menu )
+		// 		menu.popup(ide.mouseX, ide.mouseY);
+		// }, 0);
+	}
+
+	public static function hideMenu() {
+		if( CTX_ANCHOR != null )
+			(CTX_ANCHOR : Dynamic).contextMenu("hide");
 	}
 
 	function makeMenu( config : Array<ContextMenuItem> ) {
+		var ret : Dynamic = {};
+		for( i in 0...config.length ) {
+			Reflect.setField(ret, "" + i, makeMenuItem(config[i]));
+		}
+		return ret;
+	}
+
+	function makeMenuItem( i:ContextMenuItem ) : Dynamic {
+		if( i.isSeparator) {
+			return {
+				type: "cm_separator",
+			};
+		}
+		var name = i.label;
+		if( i.keys != null ) {
+			name += '<span class="contextmenu-keys">' + toKeyString(i.keys) + "</span>";
+		}
+		var autoclose = (i.stayOpen == null) ? true : !i.stayOpen;
+		var ret : Dynamic = {
+			name : name,
+			isHtmlName : true,
+			icon : i.icon, // is currently overridden by checkboxes or radio buttons
+			callback : function(itemKey, opt, rootMenu, originalEvent) {
+				i.click();
+				return autoclose;
+			},
+			disabled : i.enabled == null ? false : !i.enabled,
+			items : i.menu == null ? null : makeMenu(i.menu),
+		};
+		if( i.checked != null ) {
+			ret.type = 'checkbox';
+			ret.selected = i.checked;
+			ret.events = {
+				change : function(event) {
+					if( autoclose )
+						hideMenu();
+					i.click();
+				},
+			};
+		}
+		return ret;
+	}
+
+	function toKeyString( keyCode : String ) {
+		return keyCode.split("-").join("+");
+	}
+
+	function toNwKeys( keyCode : String ) {
+		if( keyCode == null )
+			return null;
+		var splitKeys = keyCode.split("-");
+		return {
+			key: splitKeys[splitKeys.length - 1],
+			modifiers: [for( i in 0...(splitKeys.length - 1)) splitKeys[i]].join("+"),
+		};
+	}
+
+	function makeNwMenu( config : Array<ContextMenuItem> ) {
 		var m = new nw.Menu({type:ContextMenu});
 		MENUS.push(m);
 		for( i in config )
-			m.append(makeMenuItem(i));
+			m.append(makeNwMenuItem(i));
 		return m;
 	}
 
-	function makeMenuItem(i:ContextMenuItem) {
+	function makeNwMenuItem(i:ContextMenuItem) {
 		var mconf : nw.MenuItem.MenuItemOptions = { label : i.label, type : i.checked != null ? Checkbox : i.isSeparator ? Separator : Normal };
-		if( i.keys != null ) {
-			mconf.key = i.keys.key;
-			mconf.modifiers = i.keys.modifiers;
+		var keys = toNwKeys(i.keys);
+		if( keys != null ) {
+			mconf.key = keys.key;
+			mconf.modifiers = keys.modifiers;
 		}
-		if( i.menu != null ) mconf.submenu = makeMenu(i.menu);
+		if( i.menu != null ) mconf.submenu = makeNwMenu(i.menu);
 		var m = new nw.MenuItem(mconf);
 		if( i.checked != null ) m.checked = i.checked;
 		if( i.enabled != null ) m.enabled = i.enabled;

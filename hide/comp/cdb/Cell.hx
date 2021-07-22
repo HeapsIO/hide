@@ -92,7 +92,11 @@ class Cell extends Component {
 		case TRef(_):
 			if( value != null && value != "" )
 				menu = [
-					{ label : "Goto", click : () -> @:privateAccess editor.gotoReference(this) },
+					{
+						label : "Goto",
+						click : () -> @:privateAccess editor.gotoReference(this),
+						keys : this.editor.config.get("key.cdb.gotoReference"),
+					},
 				];
 		case TInt, TFloat:
 			function setF( f : Formulas.Formula ) {

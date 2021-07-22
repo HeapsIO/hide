@@ -77,17 +77,6 @@ class Keys {
 		keys.set(name, callb);
 	}
 
-	public static function getKeys( eventName : String, config : Config ) {
-		var keyCode : String = config.get("key." + eventName);
-		if( keyCode == null )
-			return null;
-		var splitKeys = keyCode.split('-');
-		return {
-			key: splitKeys[splitKeys.length - 1],
-			modifiers: [for( i in 0...(splitKeys.length - 1)) splitKeys[i]].join("+"),
-		};
-	}
-
 	public static function get( e : Element ) : Keys {
 		return Reflect.field(e[0], "__keys");
 	}
