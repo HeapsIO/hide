@@ -365,17 +365,22 @@ class SceneEditor {
 	function getTagMenu(p: PrefabElement) : Array<hide.comp.ContextMenu.ContextMenuItem> {
 		var tags = getAvailableTags(p);
 		if(tags == null) return null;
-		var cur = getTag(p);
-		return [for(tag in tags) {
-			label: tag.id,
-			click: function () {
-				if(cur == tag)
-					setTag(p, null);
-				else
-					setTag(p, tag.id);
-			},
-			checked: cur == tag
-		}];
+		var ret = [];
+		for(tag in tags) {
+			var style = 'background-color: ${tag.color};';
+			ret.push({
+				label: '<span class="tag-disp-expand"><span class="tag-disp" style="$style">${tag.id}</span></span>',
+				click: function () {
+					if(getTag(p) == tag)
+						setTag(p, null);
+					else
+						setTag(p, tag.id);
+				},
+				checked: getTag(p) == tag,
+				stayOpen: true,
+			});
+		}
+		return ret;
 	}
 
 	function onSceneReady() {
@@ -483,34 +488,32 @@ class SceneEditor {
 				{ label : "New...", menu : newItems },
 			];
 			var actionItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [
-				{ label : "Rename", enabled : current != null, click : function() tree.editNode(current), keys : hide.ui.Keys.getKeys("rename", view.config) },
-				{ label : "Delete", enabled : current != null, click : function() deleteElements(curEdit.rootElements), keys : hide.ui.Keys.getKeys("delete", view.config) },
-				{ label : "Duplicate", enabled : current != null, click : duplicate.bind(false), keys : hide.ui.Keys.getKeys("duplicate", view.config) },
+				{ label : "Rename", enabled : current != null, click : function() tree.editNode(current), keys : view.config.get("key.rename") },
+				{ label : "Delete", enabled : current != null, click : function() deleteElements(curEdit.rootElements), keys : view.config.get("key.delete") },
+				{ label : "Duplicate", enabled : current != null, click : duplicate.bind(false), keys : view.config.get("key.duplicate") },
 			];
 
 			var isObj = current != null && (current.to(Object3D) != null || current.to(Object2D) != null);
 			var isRef = isReference(current);
 
 			if( current != null ) {
-				var enabled = current.enabled;
-				menuItems.push({ label : "Enable", checked : enabled, click : function() setEnabled(curEdit.elements, !enabled) });
+				menuItems.push({ label : "Enable", checked : current.enabled, stayOpen : true, click : function() setEnabled(curEdit.elements, !current.enabled) });
 			}
 
 			if( isObj ) {
-				var visible = !isHidden(current);
 				menuItems = menuItems.concat([
-					{ label : "Show in editor" , checked : visible, click : function() setVisible(curEdit.elements, !visible), keys : hide.ui.Keys.getKeys("sceneeditor.hide", view.config) },
-					{ label : "Locked", checked : current.locked, click : function() {
+					{ label : "Show in editor" , checked : !isHidden(current), stayOpen : true, click : function() setVisible(curEdit.elements, isHidden(current)), keys : view.config.get("key.sceneeditor.hide") },
+					{ label : "Locked", checked : current.locked, stayOpen : true, click : function() {
 						current.locked = !current.locked;
 						setLock(curEdit.elements, current.locked);
 					} },
-					{ label : "Select all", click : selectAll, keys : hide.ui.Keys.getKeys("selectAll", view.config) },
+					{ label : "Select all", click : selectAll, keys : view.config.get("key.selectAll") },
 					{ label : "Select children", enabled : current != null, click : function() selectElements(current.flatten()) },
 				]);
 				if( !isRef )
 					actionItems = actionItems.concat([
-						{ label : "Isolate", click : function() isolate(curEdit.elements), keys : hide.ui.Keys.getKeys("sceneeditor.isolate", view.config) },
-						{ label : "Group", enabled : curEdit != null && canGroupSelection(), click : groupSelection, keys : hide.ui.Keys.getKeys("group", view.config) },
+						{ label : "Isolate", click : function() isolate(curEdit.elements), keys : view.config.get("key.sceneeditor.isolate") },
+						{ label : "Group", enabled : curEdit != null && canGroupSelection(), click : groupSelection, keys : view.config.get("key.group") },
 					]);
 			}
 

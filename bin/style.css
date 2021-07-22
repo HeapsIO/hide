@@ -1882,3 +1882,26 @@ div.sp-container input:hover {
   max-height: 800px;
   min-width: 600px;
 }
+.context-menu-item .contextmenu-keys {
+  float: right;
+  font-size: 8pt;
+  color: #8d8d8d;
+}
+.context-menu-item .tag-disp-expand {
+  display: flex;
+}
+.context-menu-item .tag-disp-expand .tag-disp {
+  color: white;
+  flex-grow: 1;
+  padding: 2px;
+}
+.context-menu-item.context-menu-input input[type=checkbox] {
+  top: auto !important;
+}
+.context-menu-item.context-menu-input input[type=checkbox]:after {
+  background-color: white;
+  color: black;
+  box-shadow: none;
+  border: 1px solid black;
+  border-radius: 2px;
+}

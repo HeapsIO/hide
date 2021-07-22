@@ -1078,7 +1078,7 @@ class Editor extends Component {
 			{ label : "Insert", click : function() {
 				insertLine(line.table,line.index);
 				cursor.move(0,1,false,false);
-			} },
+			}, keys : config.get("key.cdb.insertLine") },
 			{ label : "Delete", click : function() {
 				beginChanges();
 				sheet.deleteLine(line.index);
@@ -1155,7 +1155,7 @@ class Editor extends Component {
 		for(name in getCategories(base)) {
 			var has = categories != null && categories.indexOf(name) >= 0;
 			menu.push({
-				label: name, checked: has, click: function() {
+				label: name, checked: has, stayOpen: true, click: function() {
 					if(has)
 						categories.remove(name);
 					else {
@@ -1163,6 +1163,7 @@ class Editor extends Component {
 							categories = [];
 						categories.push(name);
 					}
+					has = !has;
 					setFunc(categories.length > 0 ? categories : null);
 				}
 			});
