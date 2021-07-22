@@ -226,18 +226,56 @@ input[type=checkbox]:checked:after {
 .hide-scene-layer .jstree-container-ul {
   padding-right: 5px;
 }
+.scene-partition > .props-column .hide-toolbar {
+  padding-bottom: 4px;
+}
 .scene-partition.reduced-columns .hide-scenetree {
   max-height: 40%;
+}
+.scene-partition.reduced-columns .tree-column {
+  min-width: 322px;
+  max-width: 1402px;
 }
 .scene-partition.reduced-columns .props-column {
   max-height: 60%;
   padding-bottom: 36px;
+}
+.tree-column {
+  min-width: 302px;
+  max-width: 1002px;
+}
+.splitter {
+  position: relative;
+  z-index: 20;
+  background: #000000;
+  opacity: 0.001;
+  transition: opacity 200ms ease;
+}
+.splitter:hover,
+.splitter.dragging {
+  background: #444444;
+  opacity: 1;
+}
+.splitter.vertical .drag_handle {
+  width: 100%;
+  height: 15px;
+  position: absolute;
+  top: -5px;
+  cursor: ns-resize;
+}
+.splitter.horizontal .drag_handle {
+  width: 15px;
+  height: 100%;
+  position: absolute;
+  left: -5px;
+  cursor: ew-resize;
 }
 .hide-scenetree {
   flex: 1;
   background-color: #111;
   border: 1px solid #444;
   min-width: 300px;
+  max-width: 1000px;
   overflow-y: auto;
   min-height: 350px;
 }
@@ -857,6 +895,8 @@ input[type=checkbox]:checked:after {
   float: none;
 }
 .fx-animpanel {
+  min-height: 120px;
+  max-height: 800px;
   position: relative;
 }
 .fx-animpanel .anim-scroll {

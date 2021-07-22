@@ -157,6 +157,8 @@ class FXEditor extends FileView {
 	var fxprops : hide.comp.PropsEditor;
 
 	var tools : hide.comp.Toolbar;
+	var treePanel : hide.comp.ResizablePanel;
+	var animPanel : hide.comp.ResizablePanel;
 	var light : h3d.scene.fwd.DirLight;
 	var lightDirection = new h3d.Vector( 1, 2, -4 );
 
@@ -228,8 +230,8 @@ class FXEditor extends FileView {
 				<div style="flex: 0 0 30px;">
 					<span class="tools-buttons"></span>
 				</div>
-				<div style="display: flex; flex-direction: row; flex: 1; overflow: hidden;">
-					<div class="flex vertical">
+				<div class="scene-partition" style="display: flex; flex-direction: row; flex: 1; overflow: hidden;">
+					<div style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
 						<div class="flex heaps-scene"></div>
 						<div class="fx-animpanel">
 							<div class="top-bar">
@@ -243,7 +245,7 @@ class FXEditor extends FileView {
 							</div>
 						</div>
 					</div>
-					<div class="hide-scene-outliner">
+					<div class="tree-column">
 						<div class="flex vertical">
 							<div class="hide-toolbar" style="zoom: 80%">
 								<div class="button collapse-btn" title="Collapse all">
@@ -273,6 +275,18 @@ class FXEditor extends FileView {
 		element.find(".hide-scenetree").first().append(sceneEditor.tree.element);
 		element.find(".hide-scroll").first().append(sceneEditor.properties.element);
 		element.find(".heaps-scene").first().append(sceneEditor.scene.element);
+
+		var treeColumn = element.find(".tree-column").first();
+		treePanel = new hide.comp.ResizablePanel(Horizontal, treeColumn);
+		treePanel.saveDisplayKey = "treeColumn";
+		treePanel.onResize = () -> @:privateAccess if( scene.window != null) scene.window.checkResize();
+
+		var fxPanel = element.find(".fx-animpanel").first();
+		animPanel = new hide.comp.ResizablePanel(Vertical, fxPanel);
+		animPanel.saveDisplayKey = "animPanel";
+		animPanel.onResize = () -> @:privateAccess if( scene.window != null) scene.window.checkResize();
+
+		refreshLayout();
 		element.resize(function(e) {
 			refreshTimeline(false);
 			rebuildAnimPanel();
@@ -450,6 +464,17 @@ class FXEditor extends FileView {
 		previewMax = data.duration == 0 ? 5000 : data.duration;
 		refreshTimeline(false);
 	}
+
+	function refreshLayout() {
+		if (animPanel != null) animPanel.setSize();
+		if (treePanel != null) treePanel.setSize();
+	}
+
+	override function onActivate() {
+		if( sceneEditor != null )
+			refreshLayout();
+	}
+
 
 	public function onSceneReady() {
 		light = sceneEditor.scene.s3d.find(function(o) return Std.downcast(o, h3d.scene.fwd.DirLight));

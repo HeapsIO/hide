@@ -270,6 +270,8 @@ class Prefab extends FileView {
 	var layerToolbar : hide.comp.Toolbar;
 	var layerButtons : Map<PrefabElement, hide.comp.Toolbar.ToolToggle>;
 
+	var resizablePanel : hide.comp.ResizablePanel;
+
 	var grid : h3d.scene.Graphics;
 
 	var gridStep : Int;
@@ -306,7 +308,6 @@ class Prefab extends FileView {
 
 				<div class="scene-partition" style="display: flex; flex-direction: row; flex: 1; overflow: hidden;">
 					<div class="heaps-scene"></div>
-
 					<div class="tree-column">
 						<div class="flex vertical">
 							<div class="hide-toolbar">
@@ -365,6 +366,12 @@ class Prefab extends FileView {
 		element.find(".hide-scenetree").first().append(sceneEditor.tree.element);
 		element.find(".hide-scroll").first().append(properties.element);
 		element.find(".heaps-scene").first().append(scene.element);
+
+		var treeColumn = element.find(".tree-column").first();
+		resizablePanel = new hide.comp.ResizablePanel(Horizontal, treeColumn);
+		resizablePanel.saveDisplayKey = "treeColumn";
+		resizablePanel.onResize = () -> @:privateAccess if( scene.window != null) scene.window.checkResize();
+
 		sceneEditor.tree.element.addClass("small");
 
 		refreshColLayout();
@@ -403,6 +410,7 @@ class Prefab extends FileView {
 			showColumns();
 		else
 			hideColumns();
+		if (resizablePanel != null) resizablePanel.setSize();
 	}
 
 	override function onActivate() {
@@ -413,6 +421,7 @@ class Prefab extends FileView {
 	function hideColumns(?_) {
 		element.find(".tree-column").first().hide();
 		element.find(".props-column").first().hide();
+		element.find(".splitter").first().hide();
 		element.find(".show-cols-btn").first().show();
 		ide.ideConfig.sceneEditorLayout.colsVisible = false;
 		@:privateAccess ide.config.global.save();
@@ -422,6 +431,7 @@ class Prefab extends FileView {
 	function showColumns(?_) {
 		element.find(".tree-column").first().show();
 		element.find(".props-column").first().show();
+		element.find(".splitter").first().show();
 		element.find(".show-cols-btn").first().hide();
 		ide.ideConfig.sceneEditorLayout.colsVisible = true;
 		@:privateAccess ide.config.global.save();
@@ -436,6 +446,7 @@ class Prefab extends FileView {
 			element.find(".hide-scenetree").first().parent().append(props);
 			element.find(".combine-btn").first().hide();
 			element.find(".separate-btn").first().show();
+			resizablePanel.setSize();
 		} else {
 			fullscene.append(props);
 			element.find(".combine-btn").first().show();
