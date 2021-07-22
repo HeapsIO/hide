@@ -421,7 +421,7 @@ class Prefab extends FileView {
 	function hideColumns(?_) {
 		element.find(".tree-column").first().hide();
 		element.find(".props-column").first().hide();
-		element.find(".lm_splitter").first().hide();
+		element.find(".splitter").first().hide();
 		element.find(".show-cols-btn").first().show();
 		ide.ideConfig.sceneEditorLayout.colsVisible = false;
 		@:privateAccess ide.config.global.save();
@@ -431,7 +431,7 @@ class Prefab extends FileView {
 	function showColumns(?_) {
 		element.find(".tree-column").first().show();
 		element.find(".props-column").first().show();
-		element.find(".lm_splitter").first().show();
+		element.find(".splitter").first().show();
 		element.find(".show-cols-btn").first().hide();
 		ide.ideConfig.sceneEditorLayout.colsVisible = true;
 		@:privateAccess ide.config.global.save();
