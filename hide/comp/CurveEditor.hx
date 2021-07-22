@@ -663,16 +663,27 @@ class CurveEditor extends Component {
 					if(e.which != 1) return;
 					e.preventDefault();
 					e.stopPropagation();
+					var deltaX = 0;
 					var lastX = e.clientX;
 					var lastY = e.clientY;
 					startDrag(function(e) {
 						var dx = e.clientX - lastX;
 						var dy = e.clientY - lastY;
+						if(lockKeyX || e.shiftKey)
+							dx = 0;
 						for(key in selectedKeys) {
 							key.time += dx / xScale;
+							if(lockKeyX || e.shiftKey)
+								key.time -= deltaX / xScale;
 							key.value -= dy / yScale;
 						}
-						lastX = e.clientX;
+						deltaX += dx;
+						if(lockKeyX || e.shiftKey) {
+							lastX -= deltaX;
+							deltaX = 0;
+						}
+						else
+							lastX = e.clientX;
 						lastY = e.clientY;
 						refreshGraph(true);
 						onChange(true);
