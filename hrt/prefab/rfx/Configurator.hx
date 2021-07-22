@@ -135,6 +135,11 @@ class Configurator extends RendererFX {
 	}
 	#end
 
+	function resetCache() {
+		prefabCache = [];
+		particlesCache = [];
+	}
+
 	override function makeInstance(ctx:Context):Context {
 		for( v in vars )
 			values.set(v.name, v.defValue);
@@ -146,6 +151,7 @@ class Configurator extends RendererFX {
 		}
 		while( rootPrefab.parent != null )
 			rootPrefab = rootPrefab.parent;
+		resetCache();
 		#if hscript
 		interp = null;
 		#end
