@@ -558,6 +558,7 @@ class CurveEditor extends Component {
 					var offset = element.offset();
 					beforeChange();
 					var startT = key.time;
+					var startV = key.value;
 
 					startDrag(function(e) {
 						var lx = e.clientX - offset.left;
@@ -574,6 +575,8 @@ class CurveEditor extends Component {
 						}
 						if(lockKeyX || e.shiftKey)
 							key.time = startT;
+						if(e.altKey)
+							key.value = startV;
 						fixKey(key);
 						refreshGraph(true, key);
 						onKeyMove(key, prevTime, prevVal);
