@@ -134,8 +134,13 @@
 
 	// FX editor
 	"fx.shaders": [
-		"h3d.shader.AnimatedTexture",
-		"h3d.shader.ColorAdd"],
+		"h3d.shader.AlphaChannel",
+		"h3d.shader.AlphaMult",
+		"h3d.shader.ColorAdd",
+		"h3d.shader.ColorMult",
+		"h3d.shader.UVDelta",
+		"h3d.shader.UVScroll"
+	],
 
 	"fx.tags": [ { "id": "tag", "color": "#802000" } ],
 
