@@ -134,7 +134,7 @@
 
 	// FX editor
 	"fx.shaders": [
-		"h3d.shader.AlphaChannel",
+		"h3d.shader.AlphaMap",
 		"h3d.shader.AlphaMult",
 		"h3d.shader.ColorAdd",
 		"h3d.shader.ColorMult",
