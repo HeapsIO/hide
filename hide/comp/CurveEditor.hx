@@ -664,6 +664,7 @@ class CurveEditor extends Component {
 					e.preventDefault();
 					e.stopPropagation();
 					var deltaX = 0;
+					var deltaY = 0;
 					var lastX = e.clientX;
 					var lastY = e.clientY;
 					startDrag(function(e) {
@@ -671,20 +672,30 @@ class CurveEditor extends Component {
 						var dy = e.clientY - lastY;
 						if(lockKeyX || e.shiftKey)
 							dx = 0;
+						if(e.altKey)
+							dy = 0;
 						for(key in selectedKeys) {
 							key.time += dx / xScale;
 							if(lockKeyX || e.shiftKey)
 								key.time -= deltaX / xScale;
 							key.value -= dy / yScale;
+							if(e.altKey)
+								key.value += deltaY / yScale;
 						}
 						deltaX += dx;
+						deltaY += dy;
 						if(lockKeyX || e.shiftKey) {
 							lastX -= deltaX;
 							deltaX = 0;
 						}
 						else
 							lastX = e.clientX;
-						lastY = e.clientY;
+						if(e.altKey) {
+							lastY -= deltaY;
+							deltaY = 0;
+						}
+						else
+							lastY = e.clientY;
 						refreshGraph(true);
 						onChange(true);
 					}, function(e) {
