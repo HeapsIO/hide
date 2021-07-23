@@ -678,6 +678,8 @@ class FXEditor extends FileView {
 				refreshViews();
 			}
 
+			var duplicateMode = false;
+			var previewKeys = [];
 			function setupSelectDrag(element: js.jquery.JQuery, update: Float->Float->Void) {
 				element.mousedown(function(e) {
 					updateSelected();
@@ -689,7 +691,36 @@ class FXEditor extends FileView {
 					e.stopPropagation();
 					var lastTime = ixt(e.clientX);
 					beforeChange();
+					var duplicateTrigger = false;
+					var duplicateGate = true;
 					startDrag(function(e) {
+						if (!e.altKey) {
+							if (!duplicateGate) {
+								allKeys = [];
+								for (pKey in previewKeys) {
+									var curve = curves.find((curve) -> return curve.previewKeys.contains(pKey));
+									curve.previewKeys.remove(pKey);
+									allKeys.push(curve.addKey(pKey.time, pKey.value));
+								}
+								previewKeys = [];
+								afterChange();
+							}
+							duplicateMode = false;
+							duplicateGate = true;
+						}
+						if (duplicateGate && e.altKey) {
+							duplicateMode = true;
+							duplicateTrigger = true;
+							duplicateGate = false;
+						}
+						if (duplicateTrigger) {
+							duplicateTrigger = false;
+							for (key in allKeys) {
+								var curve = curves.find((curve) -> return curve.keys.contains(key));
+								var pKey = curve.addPreviewKey(key.time, key.value);
+								previewKeys.push(pKey);
+							}
+						}
 						var time = ixt(e.clientX);
 						update(time, lastTime);
 						for(ce in curveEdits) {
@@ -699,6 +730,11 @@ class FXEditor extends FileView {
 						updateSelectPos();
 						lastTime = time;
 					}, function(e) {
+						for (pKey in previewKeys) {
+							var curve = curves.find((curve) -> return curve.previewKeys.contains(pKey));
+							curve.previewKeys.remove(pKey);
+						}
+						previewKeys = [];
 						afterChange();
 					});
 				});
@@ -709,8 +745,14 @@ class FXEditor extends FileView {
 				if(selectMax > selectMin + 0.1) {
 					var scaleFactor = (selectMax + shift - selectMin) / (selectMax - selectMin);
 
-					for(key in allKeys)
-						key.time = (key.time - selectMin) * scaleFactor + selectMin;
+					if (duplicateMode) {
+						for (key in previewKeys)
+							key.time = (key.time - selectMin) * scaleFactor + selectMin;
+					}
+					else {
+						for(key in allKeys)
+							key.time = (key.time - selectMin) * scaleFactor + selectMin;
+					}
 
 					selectMax += shift;
 				}
@@ -721,8 +763,14 @@ class FXEditor extends FileView {
 				if(selectMax > selectMin + 0.1) {
 					var scaleFactor = (selectMax - (selectMin + shift)) / (selectMax - selectMin);
 
-					for(key in allKeys)
-						key.time = selectMax - (selectMax - key.time) * scaleFactor;
+					if (duplicateMode) {
+						for(key in previewKeys)
+							key.time = selectMax - (selectMax - key.time) * scaleFactor;
+					}
+					else {
+						for(key in allKeys)
+							key.time = selectMax - (selectMax - key.time) * scaleFactor;
+					}
 
 					selectMin += shift;
 				}
@@ -731,11 +779,17 @@ class FXEditor extends FileView {
 			setupSelectDrag(select, function(time, lastTime) {
 				var shift = time - lastTime;
 
-				for(key in allKeys)
-					key.time += shift;
-
+				if (duplicateMode) {
+					for(key in previewKeys)
+						key.time += shift;
+				}
+				else {
+					for(key in allKeys)
+						key.time += shift;
+				}
 				selectMin += shift;
 				selectMax += shift;
+
 			});
 		}
 

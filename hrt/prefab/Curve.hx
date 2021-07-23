@@ -32,6 +32,7 @@ class Curve extends Prefab {
 
 	@:s public var keyMode : CurveKeyMode = Linear;
 	@:c public var keys : CurveKeys = [];
+	@:c public var previewKeys : CurveKeys = [];
 
 	@:s public var loop : Bool = false;
 
@@ -119,6 +120,14 @@ class Curve extends Prefab {
 		key.value = val;
 		key.mode = mode != null ? mode : (keys[index] != null ? keys[index].mode : keyMode);
 		keys.insert(index, key);
+		return key;
+	}
+
+	public function addPreviewKey(time: Float, val: Float) {
+		var key = new hrt.prefab.Curve.CurveKey();
+		key.time = time;
+		key.value = val;
+		previewKeys.push(key);
 		return key;
 	}
 

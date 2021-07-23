@@ -30,6 +30,7 @@ class CurveEditor extends Component {
 	var lastValue : Dynamic;
 
 	var selectedKeys: Array<CurveKey> = [];
+	var previewKeys: Array<CurveKey> = [];
 
 	public function new(undo, ?parent) {
 		super(parent,null);
@@ -153,6 +154,14 @@ class CurveEditor extends Component {
 		if(minValue < maxValue)
 			val = hxd.Math.clamp(val, minValue, maxValue);
 		curve.addKey(time, val, curve.keyMode);
+		afterChange();
+	}
+
+	function addPreviewKey(time: Float, ?val: Float) {
+		beforeChange();
+		if(minValue < maxValue)
+			val = hxd.Math.clamp(val, minValue, maxValue);
+		curve.addPreviewKey(time, val);
 		afterChange();
 	}
 
@@ -543,6 +552,12 @@ class CurveEditor extends Component {
 			return popup;
 		}
 
+		for(key in curve.previewKeys) {
+			var kx = xScale*(key.time);
+			var ky = -yScale*(key.value);
+			var keyHandle = addRect(keyHandles, kx, ky);
+			keyHandle.addClass("preview");
+		}
 		for(key in curve.keys) {
 			var kx = xScale*(key.time);
 			var ky = -yScale*(key.value);
