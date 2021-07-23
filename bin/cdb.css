@@ -60,7 +60,7 @@
 }
 .cdb .cdb-sheet tr.separator td {
   position: sticky;
-  z-index: 1;
+  z-index: 100;
   top: 19px;
   border-left: none;
   padding-top: 6px;
@@ -106,7 +106,7 @@
 .cdb .cdb-sheet td.edit > div.error {
   margin-top: 5px;
   position: absolute;
-  z-index: 2;
+  z-index: 300;
   color: red;
   background-color: #633;
   border: 1px solid #833;
@@ -128,7 +128,7 @@
 }
 .cdb .cdb-sheet:not(.cdb-sub-sheet) > thead.head > th {
   position: sticky;
-  z-index: 10;
+  z-index: 600;
   top: 0;
 }
 .cdb .cdb-sheet tr.head,
@@ -291,7 +291,7 @@
   width: 150px;
   padding: 5px;
   border: 1px solid #666;
-  z-index: 100;
+  z-index: 500;
 }
 .cdb .cdb-sheet .flagValues label {
   display: block;
@@ -352,7 +352,7 @@
   color: white;
   border: 1px solid black;
   padding: 5px;
-  z-index: 1;
+  z-index: 510;
 }
 .cdb .cdb-sheet td.t_file .preview .previewContent .label {
   text-align: center;

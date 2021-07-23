@@ -177,7 +177,7 @@ input[type=checkbox]:checked:after {
   left: 0px;
   width: 100%;
   height: 100%;
-  z-index: 99;
+  z-index: 800;
   background-color: rgba(0, 0, 0, 0.2);
   display: table;
 }
@@ -217,7 +217,7 @@ input[type=checkbox]:checked:after {
 .hide-scene-layer {
   width: auto;
   position: absolute;
-  z-index: 1;
+  z-index: 200;
   max-height: 100%;
 }
 .hide-scene-layer .jstree {
@@ -246,7 +246,7 @@ input[type=checkbox]:checked:after {
 }
 .splitter {
   position: relative;
-  z-index: 20;
+  z-index: 200;
   background: #000000;
   opacity: 0.001;
   transition: opacity 200ms ease;
@@ -565,7 +565,7 @@ input[type=checkbox]:checked:after {
   bottom: 0px;
   padding-top: 0px;
   padding-bottom: 5px;
-  z-index: 10;
+  z-index: 600;
 }
 .hide-tabs.tabs-bottom > .tabs-header > div {
   border-top: none;
@@ -579,7 +579,7 @@ input[type=checkbox]:checked:after {
   display: none;
   width: 200px;
   position: fixed;
-  z-index: 99;
+  z-index: 500;
   top: 20px;
   right: 0px;
   background-color: black;
@@ -774,7 +774,7 @@ input[type=checkbox]:checked:after {
   max-height: 800px;
   left: 20%;
   right: 620px;
-  z-index: 99;
+  z-index: 500;
   overflow: auto;
   padding: 2px;
   background: #111;
@@ -1224,7 +1224,7 @@ input[type=checkbox]:checked:after {
   text-align: left;
   border-radius: 6px;
   position: absolute;
-  z-index: 1;
+  z-index: 200;
   padding: 4px;
   width: 90px;
 }
@@ -1255,7 +1255,7 @@ input[type=checkbox]:checked:after {
   text-align: left;
   border-radius: 6px;
   position: absolute;
-  z-index: 1;
+  z-index: 200;
   padding: 4px;
 }
 .terrain-surfaces .surface:hover .tooltiptext {
@@ -1266,7 +1266,7 @@ input[type=checkbox]:checked:after {
   outline: none !important;
 }
 .graph-view .tabs {
-  z-index: 1;
+  z-index: 205;
   background: #222222;
   height: 100%;
   user-select: none;
@@ -1352,7 +1352,7 @@ input[type=checkbox]:checked:after {
   box-shadow: 0px 0px 25px -4px black;
   background-color: #222222;
   border: 1px solid #444;
-  z-index: 2;
+  z-index: 210;
 }
 .graph-view #add-menu .search-container {
   display: flex;
@@ -1394,7 +1394,7 @@ input[type=checkbox]:checked:after {
   background: #474747;
   color: #c0c0c0;
   cursor: default;
-  z-index: 1;
+  z-index: 205;
   box-shadow: 0px 0px 34px -9px black;
 }
 .graph-view #add-menu #results div.group:hover {
@@ -1418,7 +1418,7 @@ input[type=checkbox]:checked:after {
   background: #5eb7bf;
   color: #000000;
   box-shadow: inset 0px 0px 12px -1px black;
-  z-index: 3;
+  z-index: 215;
 }
 .graph-view #context-menu {
   position: absolute;
@@ -1426,7 +1426,7 @@ input[type=checkbox]:checked:after {
   box-shadow: 0px 0px 25px -4px black;
   background-color: #222222;
   border: 1px solid #444;
-  z-index: 2;
+  z-index: 210;
 }
 .graph-view #context-menu #options {
   max-height: 300px;
@@ -1443,7 +1443,7 @@ input[type=checkbox]:checked:after {
   background: #474747;
   color: #c0c0c0;
   cursor: default;
-  z-index: 3;
+  z-index: 215;
   box-shadow: 0px 0px 34px -9px black;
 }
 .graph-view #context-menu #options div.group:hover {
@@ -1467,7 +1467,7 @@ input[type=checkbox]:checked:after {
   background: #5eb7bf;
   color: #000000;
   box-shadow: inset 0px 0px 12px -1px black !important;
-  z-index: 3;
+  z-index: 215;
 }
 .graph-view #context-menu #options div.grey-item {
   background: #adadad;
@@ -1632,7 +1632,7 @@ input[type=checkbox]:checked:after {
 }
 /* Golden Layout Fixes */
 .lm_header .lm_tabs {
-  z-index: 1;
+  z-index: 200;
 }
 .lm_dropTargetIndicator {
   box-shadow: none;
@@ -1865,7 +1865,7 @@ div.sp-container input:hover {
   color: #F80;
   padding: 10px;
   position: absolute;
-  z-index: 1;
+  z-index: 400;
   left: 10px;
   bottom: 10px;
 }
@@ -1873,7 +1873,7 @@ div.sp-container input:hover {
 .overlay-info {
   background: #000000e0;
   position: absolute;
-  z-index: 1;
+  z-index: 200;
   left: 0px;
   bottom: 0px;
   overflow-y: scroll;

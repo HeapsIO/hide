@@ -1,3 +1,5 @@
+@import "common.less";
+
 body {
 	margin : 0;
 	padding : 0;
@@ -179,7 +181,7 @@ input[type=checkbox] {
 	left:0px;
 	width: 100%;
 	height: 100%;
-	z-index: 99;
+	z-index: @hidemodal-layer;
 	background-color: rgba(0,0,0,0.2);
 	display: table;
 	&> .content {
@@ -227,7 +229,7 @@ input[type=checkbox] {
 .hide-scene-layer {
 	width:auto;
 	position: absolute;
-	z-index: 1;
+	z-index: @default-layer;
 	max-height: 100%;
 
 	.jstree {
@@ -269,31 +271,31 @@ input[type=checkbox] {
 
 .splitter {
 	position : relative;
-	z-index:20;
-	background:#000000;
-	opacity:.001;
-	transition:opacity 200ms ease;
-}
+	z-index: @splitter-layer;
+	background: #000000;
+	opacity: .001;
+	transition: opacity 200ms ease;
 
-.splitter:hover, .splitter.dragging {
-	background : #444444;
-	opacity : 1;
-}
+	&:hover, &.dragging {
+		background : #444444;
+		opacity : 1;
+	}
 
-.splitter.vertical .drag_handle {
-	width : 100%;
-	height : 15px;
-	position : absolute;
-	top : -5px;
-	cursor : ns-resize;
-}
+	&.vertical .drag_handle {
+		width : 100%;
+		height : 15px;
+		position : absolute;
+		top : -5px;
+		cursor : ns-resize;
+	}
 
-.splitter.horizontal .drag_handle {
-	width : 15px;
-	height : 100%;
-	position : absolute;
-	left  :-5px;
-	cursor : ew-resize;
+	&.horizontal .drag_handle {
+		width : 15px;
+		height : 100%;
+		position : absolute;
+		left  : -5px;
+		cursor : ew-resize;
+	}
 }
 
 .hide-scenetree {
@@ -625,7 +627,7 @@ input[type=checkbox] {
 		bottom : 0px;
 		padding-top : 0px;
 		padding-bottom : 5px;
-		z-index: 10;
+		z-index: @header-layer;
 		&>div {
 			border-top : none;
 			border-top-right-radius: 0;
@@ -642,7 +644,7 @@ input[type=checkbox] {
 	display : none;
 	width : 200px;
 	position : fixed;
-	z-index: 99;
+	z-index: @popup-layer;
 	top : 20px;
 	right : 0px;
 	background-color : black;
@@ -866,7 +868,7 @@ input[type=checkbox] {
 			max-height: 800px;
 			left: 20%;
 			right: 620px;
-			z-index: 99;
+			z-index: @popup-layer;
 			overflow: auto;
 			padding: 2px;
 			background: #111;
@@ -1376,7 +1378,7 @@ input[type=checkbox] {
 		text-align: left;
 		border-radius: 6px;
 		position: absolute;
-		z-index: 1;
+		z-index: @tooltip-layer;
 		padding: 4px;
 		width: 90px;
 	}
@@ -1412,7 +1414,7 @@ input[type=checkbox] {
 		text-align: left;
 		border-radius: 6px;
 		position: absolute;
-		z-index: 1;
+		z-index: @tooltip-layer;
 		padding: 4px;
 	}
 	.surface:hover .tooltiptext {
@@ -1424,7 +1426,7 @@ input[type=checkbox] {
 .graph-view {
 	outline: none !important;
 	.tabs {
-		z-index: 1;
+		z-index: @default-layer + 5;
     	background: #222222;
 		height: 100%;
 		user-select: none;
@@ -1524,7 +1526,7 @@ input[type=checkbox] {
 
 		background-color: rgb(34, 34, 34);
 		border: 1px solid #444;
-		z-index: 2;
+		z-index: @default-layer + 10;
 
 		.search-container {
 			display: flex;
@@ -1573,7 +1575,7 @@ input[type=checkbox] {
 					background: #474747;
 					color: #c0c0c0;
 					cursor: default;
-					z-index: 1;
+					z-index: @default-layer + 5;
     				box-shadow: 0px 0px 34px -9px black;
 
 					&:hover {
@@ -1598,7 +1600,7 @@ input[type=checkbox] {
 					background: #5eb7bf;
 					color: #000000;
 					box-shadow: inset 0px 0px 12px -1px black;
-    				z-index: 3;
+					z-index: @default-layer + 15;
 				}
 			}
 		}
@@ -1612,7 +1614,7 @@ input[type=checkbox] {
 		background-color: rgb(34, 34, 34);
 		border: 1px solid #444;
 
-		z-index: 2;
+		z-index: @default-layer + 10;
 
 		#options {
 			max-height: 300px;
@@ -1632,7 +1634,7 @@ input[type=checkbox] {
 					background: #474747;
 					color: #c0c0c0;
 					cursor: default;
-					z-index: 3;
+					z-index: @default-layer + 15;
     				box-shadow: 0px 0px 34px -9px black;
 
 					&:hover {
@@ -1657,7 +1659,7 @@ input[type=checkbox] {
 					background: #5eb7bf;
 					color: #000000;
 					box-shadow: inset 0px 0px 12px -1px black!important;
-    				z-index: 3;
+					z-index: @default-layer + 15;
 				}
 				&.grey-item {
 					background: #adadad;
@@ -1863,7 +1865,7 @@ input[type=checkbox] {
 /* Golden Layout Fixes */
 
 .lm_header .lm_tabs {
-	z-index : 1;
+	z-index : @default-layer;
 }
 
 .lm_dropTargetIndicator {
@@ -2127,7 +2129,7 @@ div.sp-container {
 			color : #F80;
 			padding : 10px;
 			position: absolute;
-			z-index: 1;
+			z-index: @domkit-layer;
 			left : 10px;
 			bottom : 10px;
 		}
@@ -2139,7 +2141,7 @@ div.sp-container {
 .overlay-info {
 	background: #000000e0;
 	position: absolute;
-	z-index: 1;
+	z-index: @default-layer;
 	left : 0px;
 	bottom : 0px;
 	overflow-y: scroll;

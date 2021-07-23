@@ -1,3 +1,5 @@
+@import "common.less";
+
 .cdb-view > .hide-tabs > .tab > ::-webkit-scrollbar {
 	width: 12px;
 }
@@ -69,7 +71,7 @@
 			height : 10px;
 			td {
 				position: sticky;
-				z-index: 1;
+				z-index: @cdb-separator-layer;
 				top: 19px;
 				border-left: none;
 				padding-top: 6px;
@@ -115,7 +117,7 @@
 			&> div.error {
 				margin-top : 5px;
 				position : absolute;
-				z-index : 2;
+				z-index : @cdb-error-layer;
 				color : red;
 				background-color : #633;
 				border : 1px solid #833;
@@ -141,7 +143,7 @@
 
 		&:not(.cdb-sub-sheet) > thead.head > th {
 			position: sticky;
-			z-index: 10;
+			z-index: @header-layer;
 			top: 0;
 		}
 
@@ -323,7 +325,7 @@
 			width : 150px;
 			padding : 5px;
 			border : 1px solid #666;
-			z-index: 100;
+			z-index: @cdb-flageditor-layer;
 			label {
 				display : block;
 				clear : both;
@@ -395,7 +397,7 @@
 					color: white;
 					border : 1px solid black;
 					padding : 5px;
-					z-index : 1;
+					z-index : @cdb-preview-layer;
 				}
 			}
 			.inlineImage {
