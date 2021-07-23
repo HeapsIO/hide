@@ -291,7 +291,7 @@
   width: 150px;
   padding: 5px;
   border: 1px solid #666;
-  z-index: 500;
+  z-index: 800;
 }
 .cdb .cdb-sheet .flagValues label {
   display: block;
@@ -352,7 +352,7 @@
   color: white;
   border: 1px solid black;
   padding: 5px;
-  z-index: 510;
+  z-index: 810;
 }
 .cdb .cdb-sheet td.t_file .preview .previewContent .label {
   text-align: center;
