@@ -709,7 +709,7 @@ class Cell extends Component {
 			});
 		case TTilePos:
 			var modal = new hide.comp.Modal(element);
-			modal.element.click(function(_) closeEdit());
+			modal.modalClick = function(_) closeEdit();
 
 			var t : cdb.Types.TilePos = currentValue;
 			var file = t == null ? null : t.file;
