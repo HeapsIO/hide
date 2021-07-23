@@ -691,36 +691,7 @@ class FXEditor extends FileView {
 					e.stopPropagation();
 					var lastTime = ixt(e.clientX);
 					beforeChange();
-					var duplicateTrigger = false;
-					var duplicateGate = true;
 					startDrag(function(e) {
-						if (!e.altKey) {
-							if (!duplicateGate) {
-								allKeys = [];
-								for (pKey in previewKeys) {
-									var curve = curves.find((curve) -> return curve.previewKeys.contains(pKey));
-									curve.previewKeys.remove(pKey);
-									allKeys.push(curve.addKey(pKey.time, pKey.value));
-								}
-								previewKeys = [];
-								afterChange();
-							}
-							duplicateMode = false;
-							duplicateGate = true;
-						}
-						if (duplicateGate && e.altKey) {
-							duplicateMode = true;
-							duplicateTrigger = true;
-							duplicateGate = false;
-						}
-						if (duplicateTrigger) {
-							duplicateTrigger = false;
-							for (key in allKeys) {
-								var curve = curves.find((curve) -> return curve.keys.contains(key));
-								var pKey = curve.addPreviewKey(key.time, key.value);
-								previewKeys.push(pKey);
-							}
-						}
 						var time = ixt(e.clientX);
 						update(time, lastTime);
 						for(ce in curveEdits) {
@@ -735,7 +706,43 @@ class FXEditor extends FileView {
 							curve.previewKeys.remove(pKey);
 						}
 						previewKeys = [];
+						for(ce in curveEdits) {
+							ce.refreshGraph(true);
+							ce.onChange(true);
+						}
 						afterChange();
+					}, function(e) {
+						if (e.keyCode == hxd.Key.ALT){
+							if (!duplicateMode) {
+								duplicateMode = !duplicateMode;
+								for (key in allKeys) {
+									var curve = curves.find((curve) -> return curve.keys.contains(key));
+									var pKey = curve.addPreviewKey(key.time, key.value);
+									previewKeys.push(pKey);
+								}
+								allKeys = [];
+								for(ce in curveEdits) {
+									ce.refreshGraph(true);
+									ce.onChange(true);
+								}
+							}
+						}
+					}, function(e) {
+						if (e.keyCode == hxd.Key.ALT){
+							if (duplicateMode) {
+								duplicateMode = !duplicateMode;
+								for (pKey in previewKeys) {
+									var curve = curves.find((curve) -> return curve.previewKeys.contains(pKey));
+									curve.previewKeys.remove(pKey);
+									allKeys.push(curve.addKey(pKey.time, pKey.value));
+								}
+								previewKeys = [];
+								for(ce in curveEdits) {
+									ce.refreshGraph(true);
+									ce.onChange(true);
+								}
+							}
+						}
 					});
 				});
 			}
@@ -1238,11 +1245,13 @@ class FXEditor extends FileView {
 		}
 	}
 
-	function startDrag(onMove: js.jquery.Event->Void, onStop: js.jquery.Event->Void) {
+	function startDrag(onMove: js.jquery.Event->Void, onStop: js.jquery.Event->Void, ?onKeyDown: js.jquery.Event->Void, ?onKeyUp: js.jquery.Event->Void) {
 		var el = new Element(element[0].ownerDocument.body);
 		var startX = null, startY = null;
 		var dragging = false;
 		var threshold = 3;
+		el.keydown(onKeyDown);
+		el.keyup(onKeyUp);
 		el.on("mousemove.fxedit", function(e: js.jquery.Event) {
 			if(startX == null) {
 				startX = e.clientX;

@@ -1244,7 +1244,7 @@ class Emitter extends Object3D {
 					else if(v.match(VVector(VOne, VOne, VOne)))
 						v = VOne;
 					return v;
-					
+
 				default:
 					return makeCompVal(baseProp, param.def != null ? param.def : 0.0, randProp, param.name, "");
 			}
