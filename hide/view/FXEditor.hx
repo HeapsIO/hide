@@ -678,6 +678,8 @@ class FXEditor extends FileView {
 				refreshViews();
 			}
 
+			var duplicateMode = false;
+			var previewKeys = [];
 			function setupSelectDrag(element: js.jquery.JQuery, update: Float->Float->Void) {
 				element.mousedown(function(e) {
 					updateSelected();
@@ -699,7 +701,48 @@ class FXEditor extends FileView {
 						updateSelectPos();
 						lastTime = time;
 					}, function(e) {
+						for (pKey in previewKeys) {
+							var curve = curves.find((curve) -> return curve.previewKeys.contains(pKey));
+							curve.previewKeys.remove(pKey);
+						}
+						previewKeys = [];
+						for(ce in curveEdits) {
+							ce.refreshGraph(true);
+							ce.onChange(true);
+						}
 						afterChange();
+					}, function(e) {
+						if (e.keyCode == hxd.Key.ALT){
+							if (!duplicateMode) {
+								duplicateMode = !duplicateMode;
+								for (key in allKeys) {
+									var curve = curves.find((curve) -> return curve.keys.contains(key));
+									var pKey = curve.addPreviewKey(key.time, key.value);
+									previewKeys.push(pKey);
+								}
+								allKeys = [];
+								for(ce in curveEdits) {
+									ce.refreshGraph(true);
+									ce.onChange(true);
+								}
+							}
+						}
+					}, function(e) {
+						if (e.keyCode == hxd.Key.ALT){
+							if (duplicateMode) {
+								duplicateMode = !duplicateMode;
+								for (pKey in previewKeys) {
+									var curve = curves.find((curve) -> return curve.previewKeys.contains(pKey));
+									curve.previewKeys.remove(pKey);
+									allKeys.push(curve.addKey(pKey.time, pKey.value));
+								}
+								previewKeys = [];
+								for(ce in curveEdits) {
+									ce.refreshGraph(true);
+									ce.onChange(true);
+								}
+							}
+						}
 					});
 				});
 			}
@@ -709,8 +752,14 @@ class FXEditor extends FileView {
 				if(selectMax > selectMin + 0.1) {
 					var scaleFactor = (selectMax + shift - selectMin) / (selectMax - selectMin);
 
-					for(key in allKeys)
-						key.time = (key.time - selectMin) * scaleFactor + selectMin;
+					if (duplicateMode) {
+						for (key in previewKeys)
+							key.time = (key.time - selectMin) * scaleFactor + selectMin;
+					}
+					else {
+						for(key in allKeys)
+							key.time = (key.time - selectMin) * scaleFactor + selectMin;
+					}
 
 					selectMax += shift;
 				}
@@ -721,8 +770,14 @@ class FXEditor extends FileView {
 				if(selectMax > selectMin + 0.1) {
 					var scaleFactor = (selectMax - (selectMin + shift)) / (selectMax - selectMin);
 
-					for(key in allKeys)
-						key.time = selectMax - (selectMax - key.time) * scaleFactor;
+					if (duplicateMode) {
+						for(key in previewKeys)
+							key.time = selectMax - (selectMax - key.time) * scaleFactor;
+					}
+					else {
+						for(key in allKeys)
+							key.time = selectMax - (selectMax - key.time) * scaleFactor;
+					}
 
 					selectMin += shift;
 				}
@@ -731,11 +786,17 @@ class FXEditor extends FileView {
 			setupSelectDrag(select, function(time, lastTime) {
 				var shift = time - lastTime;
 
-				for(key in allKeys)
-					key.time += shift;
-
+				if (duplicateMode) {
+					for(key in previewKeys)
+						key.time += shift;
+				}
+				else {
+					for(key in allKeys)
+						key.time += shift;
+				}
 				selectMin += shift;
 				selectMax += shift;
+
 			});
 		}
 
@@ -1184,11 +1245,13 @@ class FXEditor extends FileView {
 		}
 	}
 
-	function startDrag(onMove: js.jquery.Event->Void, onStop: js.jquery.Event->Void) {
+	function startDrag(onMove: js.jquery.Event->Void, onStop: js.jquery.Event->Void, ?onKeyDown: js.jquery.Event->Void, ?onKeyUp: js.jquery.Event->Void) {
 		var el = new Element(element[0].ownerDocument.body);
 		var startX = null, startY = null;
 		var dragging = false;
 		var threshold = 3;
+		el.keydown(onKeyDown);
+		el.keyup(onKeyUp);
 		el.on("mousemove.fxedit", function(e: js.jquery.Event) {
 			if(startX == null) {
 				startX = e.clientX;

@@ -869,6 +869,9 @@ input[type=checkbox]:checked:after {
 .hide-curve-editor svg .graph .handles rect:hover.selected {
   fill: #ffffff;
 }
+.hide-curve-editor svg .graph .handles rect.preview {
+  fill: #c06f06;
+}
 .hide-curve-editor svg .selection-overlay rect {
   mix-blend-mode: multiply;
   fill: #888;

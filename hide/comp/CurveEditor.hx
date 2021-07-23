@@ -30,6 +30,7 @@ class CurveEditor extends Component {
 	var lastValue : Dynamic;
 
 	var selectedKeys: Array<CurveKey> = [];
+	var previewKeys: Array<CurveKey> = [];
 
 	public function new(undo, ?parent) {
 		super(parent,null);
@@ -153,6 +154,14 @@ class CurveEditor extends Component {
 		if(minValue < maxValue)
 			val = hxd.Math.clamp(val, minValue, maxValue);
 		curve.addKey(time, val, curve.keyMode);
+		afterChange();
+	}
+
+	function addPreviewKey(time: Float, ?val: Float) {
+		beforeChange();
+		if(minValue < maxValue)
+			val = hxd.Math.clamp(val, minValue, maxValue);
+		curve.addPreviewKey(time, val);
 		afterChange();
 	}
 
@@ -543,6 +552,12 @@ class CurveEditor extends Component {
 			return popup;
 		}
 
+		for(key in curve.previewKeys) {
+			var kx = xScale*(key.time);
+			var ky = -yScale*(key.value);
+			var keyHandle = addRect(keyHandles, kx, ky);
+			keyHandle.addClass("preview");
+		}
 		for(key in curve.keys) {
 			var kx = xScale*(key.time);
 			var ky = -yScale*(key.value);
@@ -558,6 +573,7 @@ class CurveEditor extends Component {
 					var offset = element.offset();
 					beforeChange();
 					var startT = key.time;
+					var startV = key.value;
 
 					startDrag(function(e) {
 						var lx = e.clientX - offset.left;
@@ -574,6 +590,8 @@ class CurveEditor extends Component {
 						}
 						if(lockKeyX || e.shiftKey)
 							key.time = startT;
+						if(e.altKey)
+							key.value = startV;
 						fixKey(key);
 						refreshGraph(true, key);
 						onKeyMove(key, prevTime, prevVal);
@@ -663,17 +681,39 @@ class CurveEditor extends Component {
 					if(e.which != 1) return;
 					e.preventDefault();
 					e.stopPropagation();
+					var deltaX = 0;
+					var deltaY = 0;
 					var lastX = e.clientX;
 					var lastY = e.clientY;
 					startDrag(function(e) {
 						var dx = e.clientX - lastX;
 						var dy = e.clientY - lastY;
+						if(lockKeyX || e.shiftKey)
+							dx = 0;
+						if(e.altKey)
+							dy = 0;
 						for(key in selectedKeys) {
 							key.time += dx / xScale;
+							if(lockKeyX || e.shiftKey)
+								key.time -= deltaX / xScale;
 							key.value -= dy / yScale;
+							if(e.altKey)
+								key.value += deltaY / yScale;
 						}
-						lastX = e.clientX;
-						lastY = e.clientY;
+						deltaX += dx;
+						deltaY += dy;
+						if(lockKeyX || e.shiftKey) {
+							lastX -= deltaX;
+							deltaX = 0;
+						}
+						else
+							lastX = e.clientX;
+						if(e.altKey) {
+							lastY -= deltaY;
+							deltaY = 0;
+						}
+						else
+							lastY = e.clientY;
 						refreshGraph(true);
 						onChange(true);
 					}, function(e) {
