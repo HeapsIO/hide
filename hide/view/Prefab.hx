@@ -518,7 +518,8 @@ class Prefab extends FileView {
 				case Toggle(f):
 					var toggle = tools.addToggle(tool.icon, tool.title + shortcut, f);
 					el = toggle.element;
-					keys.register("sceneeditor." + tool.id, () -> toggle.toggle(!toggle.isDown()));
+					if( key != null )
+						keys.register("sceneeditor." + tool.id, () -> toggle.toggle(!toggle.isDown()));
 					if (tool.rightClick != null)
 						toggle.rightClick(tool.rightClick);
 				case Color(f):
