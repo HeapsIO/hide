@@ -76,6 +76,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 			return ret;
 		}
 		var allTypes = super.getNewContextMenu(current, onMake, false);
+		var recents = getNewRecentContextMenu(current, onMake);
 
 		var menu = [];
 		if (parent.is2D) {
@@ -139,6 +140,10 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		menu.push({
 			label: "Other",
 			menu: allTypes
+		});
+		menu.unshift({
+			label : "Recents",
+			menu : recents,
 		});
 		return menu;
 	}

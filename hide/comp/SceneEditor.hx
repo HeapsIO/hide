@@ -2180,6 +2180,18 @@ class SceneEditor {
 		return edit;
 	}
 
+	function getNewRecentContextMenu(current, ?onMake: PrefabElement->Void=null) : Array<hide.comp.ContextMenu.ContextMenuItem> {
+		var parent = current == null ? sceneData : current;
+		var grecent = [];
+		var recents : Array<String> = ide.currentConfig.get("sceneeditor.newrecents", []);
+		for( g in recents) {
+			var pmodel = hrt.prefab.Library.getRegistered().get(g);
+			if (checkAllowParent({cl : g, inf : pmodel.inf}, parent))
+				grecent.push(getNewTypeMenuItem(g, parent, onMake));
+		}
+		return grecent;
+	}
+
 	// Override
 	function getNewContextMenu(current: PrefabElement, ?onMake: PrefabElement->Void=null, ?groupByType=true ) : Array<hide.comp.ContextMenu.ContextMenuItem> {
 		var newItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
@@ -2187,25 +2199,9 @@ class SceneEditor {
 		allRegs.remove("reference");
 		allRegs.remove("unknown");
 		var parent = current == null ? sceneData : current;
-		var allowChildren = null;
-		{
-			var cur = parent;
-			while( allowChildren == null && cur != null ) {
-				allowChildren = cur.getHideProps().allowChildren;
-				cur = cur.parent;
-			}
-		}
 
-		var grecent = [];
 		var groups = [];
 		var gother = [];
-		var recents : Array<String> = ide.currentConfig.get("sceneeditor.newrecents", []);
-		for( g in recents) {
-			var pmodel = hrt.prefab.Library.getRegistered().get(g);
-			if (checkAllowParent({cl : g, inf : pmodel.inf}, parent)) 
-				grecent.push(getNewTypeMenuItem(g, parent, onMake));
-
-		}
 
 		for( g in (view.config.get("sceneeditor.newgroups") : Array<String>) ) {
 			var parts = g.split("|");
@@ -2253,8 +2249,6 @@ class SceneEditor {
 				return gother;
 			newItems.push({ label : "Other", menu : gother });
 		}
-
-		newItems.unshift({label : "Recents", menu : grecent});
 
 		return newItems;
 	}

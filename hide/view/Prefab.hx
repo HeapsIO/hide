@@ -184,6 +184,7 @@ private class PrefabSceneEditor extends hide.comp.SceneEditor {
 
 	override function getNewContextMenu(current: PrefabElement, ?onMake: PrefabElement->Void=null, ?groupByType = true ) {
 		var newItems = super.getNewContextMenu(current, onMake, groupByType);
+		var recents = getNewRecentContextMenu(current, onMake);
 
 		function setup(p : PrefabElement) {
 			autoName(p);
@@ -252,6 +253,10 @@ private class PrefabSceneEditor extends hide.comp.SceneEditor {
 			});
 		};
 		addNewInstances();
+		newItems.unshift({
+			label : "Recents",
+			menu : recents,
+		});
 		return newItems;
 	}
 
