@@ -177,7 +177,7 @@ input[type=checkbox]:checked:after {
   left: 0px;
   width: 100%;
   height: 100%;
-  z-index: 800;
+  z-index: 700;
   background-color: rgba(0, 0, 0, 0.2);
   display: table;
 }
@@ -579,7 +579,7 @@ input[type=checkbox]:checked:after {
   display: none;
   width: 200px;
   position: fixed;
-  z-index: 500;
+  z-index: 800;
   top: 20px;
   right: 0px;
   background-color: black;
@@ -774,7 +774,7 @@ input[type=checkbox]:checked:after {
   max-height: 800px;
   left: 20%;
   right: 620px;
-  z-index: 500;
+  z-index: 800;
   overflow: auto;
   padding: 2px;
   background: #111;
