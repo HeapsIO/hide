@@ -48,6 +48,73 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		parent.onUpdate(dt);
 	}
 
+	override function duplicate(thenMove : Bool) {
+		if(curEdit == null) return;
+		var elements = curEdit.rootElements;
+		if(elements == null || elements.length == 0)
+			return;
+		if( isDuplicating )
+			return;
+		isDuplicating = true;
+		if( gizmo.moving ) {
+			@:privateAccess gizmo.finishMove();
+		}
+		var undoes = [];
+		var newElements = [];
+		for(elt in elements) {
+			var clone = elt.cloneData();
+			var index = elt.parent.children.indexOf(elt) + 1;
+			clone.parent = elt.parent;
+			elt.parent.children.remove(clone);
+			elt.parent.children.insert(index, clone);
+			autoName(clone);
+			makeInstance(clone);
+			newElements.push(clone);
+
+			undoes.push(function(undo) {
+				if(undo) elt.parent.children.remove(clone);
+				else elt.parent.children.insert(index, clone);
+			});
+		}
+		refresh(Full, function() {
+			selectElements(newElements);
+			tree.setSelection(newElements);
+			if(thenMove && curEdit.rootObjects.length > 0) {
+				gizmo.startMove(MoveXY, true);
+				gizmo.onFinishMove = function() {
+					refreshProps();
+				}
+			}
+			isDuplicating = false;
+		});
+		refreshParents(elements);
+
+		undo.change(Custom(function(undo) {
+			selectElements([], NoHistory);
+
+			var fullRefresh = false;
+			if(undo) {
+				for(elt in newElements) {
+					if(!removeInstance(elt)) {
+						fullRefresh = true;
+						break;
+					}
+				}
+			}
+
+			for(u in undoes) u(undo);
+
+			if(!undo) {
+				for(elt in newElements)
+					makeInstance(elt);
+			}
+
+			refresh(fullRefresh ? Full : Partial);
+		}));
+		//parent.data.updateInstance(getContext(parent.data));
+		
+	}
+
 	override function setElementSelected( p : PrefabElement, ctx : hrt.prefab.Context, b : Bool ) {
 		if( p.getParent(hrt.prefab.fx.Emitter) != null )
 			return false;
