@@ -490,7 +490,7 @@ class SceneEditor {
 			var actionItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [
 				{ label : "Rename", enabled : current != null, click : function() tree.editNode(current), keys : view.config.get("key.rename") },
 				{ label : "Delete", enabled : current != null, click : function() deleteElements(curEdit.rootElements), keys : view.config.get("key.delete") },
-				{ label : "Duplicate", enabled : current != null, click : duplicate.bind(false), keys : view.config.get("key.duplicate") },
+				{ label : "Duplicate", enabled : current != null, click : duplicate.bind(false), keys : view.config.get("key.duplicateInPlace") },
 			];
 
 			var isObj = current != null && (current.to(Object3D) != null || current.to(Object2D) != null);
@@ -1912,11 +1912,18 @@ class SceneEditor {
 		setVisible(toHide, false);
 	}
 
+	var isDuplicating = false;
 	function duplicate(thenMove: Bool) {
 		if(curEdit == null) return;
 		var elements = curEdit.rootElements;
 		if(elements == null || elements.length == 0)
 			return;
+		if( isDuplicating )
+			return;
+		isDuplicating = true;
+		if( gizmo.moving ) {
+			@:privateAccess gizmo.finishMove();
+		}
 		var undoes = [];
 		var newElements = [];
 		for(elt in elements) {
@@ -1944,6 +1951,7 @@ class SceneEditor {
 					refreshProps();
 				}
 			}
+			isDuplicating = false;
 		});
 
 		undo.change(Custom(function(undo) {
