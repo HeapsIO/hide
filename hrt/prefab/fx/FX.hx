@@ -409,7 +409,7 @@ class FX extends BaseFX {
 		else
 			super.make(ctx);
 		fxanim.init(ctx, this, root);
-		
+
 		if(scriptCode != null && scriptCode != ""){
 			var parser = new FXScriptParser();
 			fxanim.script = parser.createFXScript(scriptCode, fxanim);

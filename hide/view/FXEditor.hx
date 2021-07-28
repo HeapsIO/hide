@@ -6,6 +6,7 @@ import hide.Element;
 import hrt.prefab.Prefab in PrefabElement;
 import hrt.prefab.Curve;
 import hrt.prefab.fx.Event;
+import hide.view.CameraController.CamController;
 
 typedef PropTrackDef = {
 	name: String,
@@ -31,6 +32,16 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 	public function new(view,  data) {
 		super(view, data);
 		parent = cast view;
+	}
+
+	override function makeCamController() {
+		var c = new CamController(scene.s3d, this);
+		c.friction = 0.9;
+		c.panSpeed = 0.6;
+		c.zoomAmount = 1.05;
+		c.smooth = 0.7;
+		c.minDistance = 1;
+		return c;
 	}
 
 	override function onSceneReady() {
@@ -111,8 +122,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 
 			refresh(fullRefresh ? Full : Partial);
 		}));
-		//parent.data.updateInstance(getContext(parent.data));
-		
+
 	}
 
 	override function setElementSelected( p : PrefabElement, ctx : hrt.prefab.Context, b : Bool ) {
