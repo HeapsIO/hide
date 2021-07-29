@@ -117,7 +117,9 @@ class DataFiles {
 					ide.fileWatcher.register(path, onFileChanged, true);
 				}
 				var reg = new EReg("^"+part.split(".").join("\\.").split("*").join(".*")+"$","");
-				for( f in sys.FileSystem.readDirectory(dir) ) {
+				var subs = sys.FileSystem.readDirectory(dir);
+				subs.sort(Reflect.compare);
+				for( f in subs ) {
 					if( !reg.match(f) ) {
 						if( sys.FileSystem.isDirectory(dir+"/"+f) ) {
 							curPath.push(f);
