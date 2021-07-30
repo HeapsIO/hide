@@ -1,54 +1,5 @@
 package hide.comp;
 
-@:access(hide.comp.Scene)
-class SceneLoader extends hxd.fmt.hsd.Serializer {
-
-	var ide : hide.Ide;
-	var hsdPath : String;
-	var projectPath : String;
-	var scene : Scene;
-
-	public function new(hsdPath, scene) {
-		ide = hide.Ide.inst;
-		super();
-		this.hsdPath = hsdPath;
-		this.scene = scene;
-	}
-
-	override function initHSDPaths(resPath:String, projectPath:String) {
-		this.resPath = resPath.split("\\").join("/");
-		this.projectPath = projectPath == null ? null : projectPath.split("\\").join("/");
-	}
-
-	override function loadShader(name:String) : hxsl.Shader {
-		return ide.shaderLoader.load(name);
-	}
-
-	override function loadHMD(path:String) {
-		var path = resolvePath(path);
-		if( path == null )
-			throw "Missing HMD file " + path;
-		return scene.loadHMD(path, false);
-	}
-
-	override function resolveTexture(path:String) {
-		var path = resolvePath(path);
-		if( path == null )
-			return h3d.mat.Texture.fromColor(0xFF00FF);
-		return scene.loadTexture(hsdPath, path);
-	}
-
-	function resolvePath( path : String ) {
-		var p = null;
-		if( projectPath != null )
-			p = scene.resolvePath(projectPath + resPath + "/" + hsdPath.split("/").pop(), path);
-		if( p == null )
-			p = scene.resolvePath(hsdPath, path);
-		return p;
-	}
-
-}
-
 class Scene extends Component implements h3d.IDrawable {
 
 	static var UID = 0;
@@ -138,7 +89,7 @@ class Scene extends Component implements h3d.IDrawable {
 			hxd.Key.initialize();
 			s2d = new h2d.Scene();
 			s3d = new h3d.scene.Scene();
-			
+
 			sevents = new hxd.SceneEvents(window);
 			sevents.addScene(s2d);
 			sevents.addScene(s3d);
@@ -286,9 +237,6 @@ class Scene extends Component implements h3d.IDrawable {
 
 	public function listAnims( path : String ) {
 
-		if( StringTools.endsWith(path.toLowerCase(), ".hsd") )
-			return [];
-
 		var config = hide.Config.loadForFile(ide, path);
 
 		var dirs : Array<String> = config.get("hmd.animPaths");
@@ -327,28 +275,8 @@ class Scene extends Component implements h3d.IDrawable {
 		return name;
 	}
 
-	function loadHSD( path : String ) {
-		var ctx = new SceneLoader(path,this);
-		var fullPath = ide.getPath(path);
-		var bytes = sys.io.File.getBytes(fullPath);
-		var root = new h3d.scene.Object();
-		var hsd = ctx.loadHSD(bytes);
-		if( hsd.content.length == 1 )
-			root = hsd.content[0];
-		else {
-			for( o in hsd.content )
-				root.addChild(o);
-		}
-		return { root : root, camera : hsd.camera };
-	}
-
 	public function loadModel( path : String, mainScene = false, reload = false ) {
 		checkCurrent();
-		if( StringTools.endsWith(path.toLowerCase(), ".hsd") ) {
-			var hsd = loadHSD(path);
-			if( mainScene ) defaultCamera = hsd.camera;
-			return hsd.root;
-		}
 		var lib = loadHMD(path, false, reload);
 		return lib.makeObject(loadTexture.bind(path));
 	}

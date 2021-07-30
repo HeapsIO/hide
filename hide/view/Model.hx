@@ -469,7 +469,7 @@ class Model extends FileView {
 		var menu = super.buildTabMenu();
 		var arr : Array<hide.comp.ContextMenu.ContextMenuItem> = [
 			{ label : null, isSeparator : true },
-			{ label : "Export", enabled : this.extension != "hsd", click : function() {
+			{ label : "Export", click : function() {
 				ide.chooseFileSave(this.getPath().substr(0,-4)+"_dump.txt", function(file) {
 					var lib = @:privateAccess scene.loadHMD(this.getPath(),false);
 					var hmd = lib.header;
@@ -477,7 +477,7 @@ class Model extends FileView {
 					sys.io.File.saveContent(ide.getPath(file), new hxd.fmt.hmd.Dump().dump(hmd));
 				});
 			} },
-			{ label : "Export Animation", enabled : this.extension != "hsd" && currentAnimation != null, click : function() {
+			{ label : "Export Animation", enabled : currentAnimation != null, click : function() {
 				ide.chooseFileSave(this.getPath().substr(0,-4)+"_"+currentAnimation.name+"_dump.txt", function(file) {
 					var lib = @:privateAccess scene.loadHMD(ide.getPath(currentAnimation.file),true);
 					var hmd = lib.header;
@@ -711,6 +711,6 @@ class Model extends FileView {
 			cameraMove();
 	}
 
-	static var _ = FileTree.registerExtension(Model,["hmd","hsd","fbx"],{ icon : "cube" });
+	static var _ = FileTree.registerExtension(Model,["hmd","fbx"],{ icon : "cube" });
 
 }
