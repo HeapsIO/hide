@@ -287,7 +287,7 @@ private class ParticleInstance  {
 				tmpSpeedAccumulation.transform3x3(emitter.invTransform);
 			add(speedAccumulation, tmpSpeedAccumulation);
 		}
-		
+
 		add(tmpSpeed, speedAccumulation);
 
 		// SPEED
@@ -1015,6 +1015,14 @@ class EmitterObject extends h3d.scene.Object {
 		for(i in 0...numTicks) {
 			tick(catchupTime / numTicks, i == (numTicks - 1));
 		}
+	}
+
+	override function getBoundsRec( b : h3d.col.Bounds ) {
+		if( posChanged ) {
+			posChanged = false;
+			calcAbsPos();
+		}
+		return b;
 	}
 }
 
