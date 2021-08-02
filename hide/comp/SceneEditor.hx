@@ -1528,7 +1528,10 @@ class SceneEditor {
 					showGizmo = true;
 					break;
 				}
-			setupGizmo();
+			if (elts.filter((elt) -> {return hrt.prefab.Library.isOfType(elt.parent.type, hrt.prefab.fx.Emitter);}).length == 0)
+				setupGizmo();
+			else
+				showGizmo = false;
 		}
 
 		if( curEdit != null && mode.match(Default|NoTree) ) {
