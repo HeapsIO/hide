@@ -272,7 +272,13 @@ class FXEditor extends FileView {
 		return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab.fx.FX().saveData()));
 	}
 
+	override function canSave() {
+		return data != null;
+	}
+
 	override function save() {
+		if( !canSave() )
+			return;
 		var content = ide.toJSON(data.saveData());
 		var newSign = haxe.crypto.Md5.encode(content);
 		if(newSign != currentSign)
