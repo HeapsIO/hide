@@ -273,6 +273,10 @@ class Editor extends Component {
 		var columns = cursor.table.columns;
 		var sheet = cursor.table.sheet;
 		var realSheet = cursor.table.getRealSheet();
+		var allLines = cursor.table.lines;
+
+		var inserted = false;
+		var toRefresh : Array<Cell> = [];
 
 		var isProps = (cursor.table.displayMode != Table);
 		var x1 = cursor.x;
@@ -316,6 +320,7 @@ class Editor extends Component {
 			}
 			if( isProps ) {
 				var line = cursor.getLine();
+				toRefresh.push(cursor.getCell());
 				var col = line.columns[x1];
 
 				if( !cursor.table.canEditColumn(col.name) )
@@ -343,13 +348,17 @@ class Editor extends Component {
 						var obj = sheet.lines[y];
 						formulas.removeFromValue(obj, col);
 						Reflect.setField(obj, col.name, value);
+						toRefresh.push(allLines[y].cells[x]);
 					}
 				}
 			}
 			formulas.evaluateAll(realSheet);
 			endChanges();
 			realSheet.sync();
-			refreshAll();
+			for( l in toRefresh ) {
+				l.refresh();
+			}
+			refreshRefs();
 			return;
 		}
 
@@ -395,6 +404,7 @@ class Editor extends Component {
 				return;
 			if( !cursor.table.canEditColumn(destCol.name) )
 				return;
+			toRefresh.push(cursor.getCell());
 			beginChanges();
 			setValue(obj1, obj2, clipSchema, destCol);
 		} else {
@@ -405,6 +415,7 @@ class Editor extends Component {
 				if( posY == sheet.lines.length ) {
 					if( !cursor.table.canInsert() ) break;
 					sheet.newLine();
+					inserted = true;
 				}
 				var obj2 = sheet.lines[posY];
 				for( cid in 0...clipboard.schema.length ) {
@@ -416,6 +427,8 @@ class Editor extends Component {
 						continue;
 
 					setValue(obj1, obj2, c1, c2);
+					if( !inserted )
+						toRefresh.push(allLines[posY].cells[cid + posX]);
 				}
 				posY++;
 			}
@@ -423,7 +436,14 @@ class Editor extends Component {
 		formulas.evaluateAll(realSheet);
 		endChanges();
 		realSheet.sync();
-		refreshAll();
+		if( inserted )
+			refreshAll();
+		else {
+			for( l in toRefresh ) {
+				l.refresh();
+			}
+			refreshRefs();
+		}
 	}
 
 	function onDelete() {
@@ -737,6 +757,22 @@ class Editor extends Component {
 	function isUniqueID( sheet : cdb.Sheet, obj : {}, id : String ) {
 		var uniq = base.getSheet(sheet.name).index.get(id);
 		return uniq == null || uniq.obj == obj;
+	}
+
+	public function refreshRefs() {
+		base.sync();
+
+		for( t in tables ) {
+			for( l in t.lines ) {
+				for( c in l.cells ) {
+					switch( c.column.type ){
+					case TRef(_):
+						c.refresh();
+					default:
+					}
+				}
+			}
+		}
 	}
 
 	public function refresh( ?state : UndoState ) {
