@@ -759,7 +759,6 @@ class EmitterObject extends h3d.scene.Object {
 				if( mesh != null ) break;
 			}
 		}
-		template.shared.contexts.remove(particleTemplate);
 
 		if( mesh != null && mesh.primitive != null ) {
 			var meshPrim = Std.downcast(mesh.primitive, h3d.prim.MeshPrimitive);
@@ -768,10 +767,8 @@ class EmitterObject extends h3d.scene.Object {
 			// Should we do this manually here or make a recursive makeInstance on the template?
 			var materials = particleTemplate.getAll(hrt.prefab.Material);
 			for(mat in materials) {
-				if(mat.enabled) {
+				if(mat.enabled)
 					mat.makeInstance(template);
-					template.shared.contexts.remove(mat);
-				}
 			}
 
 			// Setup shaders
@@ -780,7 +777,6 @@ class EmitterObject extends h3d.scene.Object {
 			for( shader in shaders ) {
 				if( !shader.enabled ) continue;
 				var shCtx = shader.makeInstance(template);
-				template.shared.contexts.remove(shader);
 				if( shCtx == null ) continue;
 				hrt.prefab.fx.BaseFX.getShaderAnims(template, shader, shaderAnims);
 			}
@@ -807,6 +803,7 @@ class EmitterObject extends h3d.scene.Object {
 				batch = new h3d.scene.MeshBatch(meshPrim, mesh.material, this);
 				batch.name = "batch";
 			}
+			template.local3d.remove();
 		}
 	}
 
