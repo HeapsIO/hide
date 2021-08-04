@@ -3,7 +3,7 @@ package hide.view;
 class FileView extends hide.ui.View<{ path : String }> {
 
 	public var extension(get,never) : String;
-	public var modified(default, set) : Bool;
+	public var modified(default, set) : Bool = false;
 	var skipNextChange : Bool;
 	var lastSaveTag : Int;
 
@@ -84,7 +84,13 @@ class FileView extends hide.ui.View<{ path : String }> {
 		keys.register("view.refreshApp", function() untyped chrome.runtime.reload());
 	}
 
+	public function canSave() {
+		return true;
+	}
+
 	public function save() {
+		if( !canSave() )
+			return;
 		skipNextChange = true;
 		modified = false;
 		lastSaveTag = undo.currentID;
@@ -168,8 +174,8 @@ class FileView extends hide.ui.View<{ path : String }> {
 
 	override function buildTabMenu() {
 		var arr : Array<hide.comp.ContextMenu.ContextMenuItem> = [
-			{ label : "Save", enabled : modified, click : function() { save(); modified = false; } },
-			{ label : "Save As...", click : saveAs },
+			{ label : "Save", enabled : canSave() && modified, click : function() { save(); modified = false; } },
+			{ label : "Save As...", enabled : canSave(), click : saveAs },
 			{ label : null, isSeparator : true },
 			{ label : "Reload", click : function() rebuild() },
 			{ label : null, isSeparator : true },

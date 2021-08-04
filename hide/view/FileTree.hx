@@ -38,6 +38,10 @@ class FileTree extends FileView {
 		keys.register("search", function() tree.openFilter());
 	}
 
+	override function canSave() {
+		return false;
+	}
+
 	static function getExtension( file : String ) {
 		var ext = new haxe.io.Path(file).ext;
 		if( ext == null ) return null;
