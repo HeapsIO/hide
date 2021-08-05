@@ -4,6 +4,7 @@ import hxd.Key in K;
 class Cell extends Component {
 
 	static var typeNames = [for( t in Type.getEnumConstructs(cdb.Data.ColumnType) ) t.substr(1).toLowerCase()];
+	static var imageDims : Map<String, {width : Int, height : Int}> = new Map();
 
 	var editor : Editor;
 	var currentValue : Dynamic;
@@ -356,21 +357,26 @@ class Cell extends Component {
 			'<div class="color" style="background-color:#${StringTools.hex(v,6)}"></div>';
 		case TFile:
 			var path = ide.getPath(v);
-			var url = "file://" + path;
+			var url = ide.getUnCachedUrl(path);
 			var ext = v.split(".").pop().toLowerCase();
 			if (v == "") return '<span class="error">#MISSING</span>';
 			var html = StringTools.htmlEscape(v);
 			html = '<span title=\'$html\' >' + html  + '</span>';
 			if (!editor.quickExists(path)) return '<span class="error">$html</span>';
 			else if( ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "gif" ) {
-				var img = '<img src="$url" onload="$(this).parent().find(\'.label\').text(this.width+\'x\'+this.height)"/>';
+				var dims = imageDims.get(url);
+				var dimsText = dims != null ? dims.width+"x"+dims.height : "";
+				var onload = dims != null ? "" : 'onload="hide.comp.cdb.Cell.onImageLoad(this, \'$url\');"';
+				var img = '<img src="$url" $onload/>';
 				var previewHandler = ' onmouseenter="$(this).find(\'.previewContent\').css(\'top\', (this.getBoundingClientRect().bottom - this.offsetHeight) + \'px\')"';
 				if (getCellConfigValue("inlineImageFiles", false)) {
 					html = '<span class="preview inlineImage" $previewHandler>
-						<img src="$url"><div class="previewContent"><div class="inlineImagePath">$html</div><div class="label"></div>$img</div></span>';
+						<img src="$url"><div class="previewContent"><div class="inlineImagePath">$html</div><div class="label">$dimsText</div>$img</div>
+					</span>';
 				} else {
 					html = '<span class="preview" $previewHandler>$html
-						<div class="previewContent"><div class="label"></div>$img</div></span>';
+						<div class="previewContent"><div class="label">$dimsText</div>$img</div>
+					</span>';
 				}
 			}
 			return html + ' <input type="submit" value="open" onclick="hide.Ide.inst.openFile(\'$path\')"/>';
@@ -388,6 +394,12 @@ class Cell extends Component {
 			if( str.length > 50 ) str = str.substr(0, 47) + "...";
 			str;
 		}
+	}
+
+	static function onImageLoad(img : js.html.ImageElement, url) {
+		var dims = {width : img.width, height : img.height};
+		imageDims.set(url, dims);
+		new Element(img).parent().find(".label").text(dims.width+'x'+dims.height);
 	}
 
 	static var KWDS = ["for","if","var","this","while","else","do","break","continue","switch","function","return","new","throw","try","catch","case","default"];
@@ -448,11 +460,19 @@ class Cell extends Component {
 		var max = width > height ? width : height;
 		var zoom = max <= 32 ? 2 : 64 / max;
 		var inl = isInline ? 'display:inline-block;' : '';
-		var url = "file://" + path;
+		var url = ide.getUnCachedUrl(path);
 
 		var px = Std.int(v.size*v.x*zoom);
 		var py = Std.int(v.size*v.y*zoom);
-		var html = '<div class="tile toload" path="$path" pos="$px:$py:$zoom" style="width : ${Std.int(width * zoom)}px; height : ${Std.int(height * zoom)}px; opacity:0; $inl"></div>';
+		var bg = 'background : url($url) -${px}px -${py}px;';
+		if( zoom > 1 )
+			bg += "image-rendering : pixelated;";
+		var html = '<div
+			class="tile toload"
+			path="$path"
+			zoom="$zoom"
+			style="width : ${Std.int(width * zoom)}px; height : ${Std.int(height * zoom)}px; opacity:0; $bg $inl"
+		></div>';
 		html += '<script>hide.comp.cdb.Cell.startTileLoading()</script>';
 		watchFile(path);
 		return html;
@@ -463,34 +483,43 @@ class Cell extends Component {
 		if( tiles.length == 0 ) return;
 		tiles.removeClass("toload");
 		var imap = new Map();
-		for( t in tiles )
+		for( t in tiles ) {
 			imap.set(t.getAttribute("path"), t);
+		}
 		for( path => elt in imap ) {
-			var img = js.Browser.document.createImageElement();
 			var url = Ide.inst.getUnCachedUrl(path);
+			function handleDims(dims: {width : Int, height : Int}) {
+				for( t in tiles ) {
+					if( t.getAttribute("path") == path ) {
+						var zoom = Std.parseFloat(t.getAttribute("zoom"));
+						var bgw = Std.int(dims.width * zoom);
+						var bgh = Std.int(dims.height * zoom);
+						var t1 = new Element(t);
+						t1.css("background-size", '${bgw}px ${bgh}px');
+						t1.css("opacity", "1");
+					}
+				}
+			}
+			var dims = imageDims.get(url);
+			if( dims != null ) {
+				handleDims(dims);
+				continue;
+			}
+
+			var img = js.Browser.document.createImageElement();
+
 			img.src = url;
 			img.setAttribute("style","display:none");
 			img.onload = function() {
-				var iwidth = img.width;
-				var iheight = img.height;
-				for( t in tiles )
-					if( t.getAttribute("path") == path ) {
-						var pos = t.getAttribute("pos").split(":");
-						var px = Std.parseInt(pos[0]);
-						var py = Std.parseInt(pos[1]);
-						var zoom = Std.parseFloat(pos[2]);
-						var bgw = Std.int(iwidth*zoom);
-						var bgh = Std.int(iheight*zoom);
-						var bg = 'url("$url") -${px}px -${py}px / ${bgw}px ${bgh}px';
-						if( zoom > 1 )
-							bg += ";image-rendering:pixelated";
-						t.setAttribute("style", t.getAttribute("style")+" background : "+bg+"; opacity : 1;");
-					}
+				var dims = {width : img.width, height : img.height};
+				handleDims(dims);
+				imageDims.set(url, dims);
 				img.remove();
 			};
 			elt.parentElement.append(img);
 		}
 	}
+
 
 	public function isTextInput() {
 		return switch( column.type ) {
