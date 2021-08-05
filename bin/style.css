@@ -1890,6 +1890,12 @@ div.sp-container input:hover {
   font-size: 8pt;
   color: #8d8d8d;
 }
+.context-menu-item .contextmenu-keys:before {
+  content: '\a0';
+}
+.context-menu-item.context-menu-disabled .contextmenu-keys {
+  color: #c9c9c9;
+}
 .context-menu-item .tag-disp-expand {
   display: flex;
 }
