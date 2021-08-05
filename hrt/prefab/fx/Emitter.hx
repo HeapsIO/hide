@@ -941,7 +941,7 @@ class EmitterObject extends h3d.scene.Object {
 		var prev : ParticleInstance = null;
 		while(p != null) {
 			var next = p.next;
-			if(p.life > lifeTime) {
+			if(p.life > p.lifeTime) {
 				if(prev != null)
 					prev.next = next;
 				else
