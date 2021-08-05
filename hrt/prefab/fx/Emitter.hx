@@ -1210,16 +1210,11 @@ class Emitter extends Object3D {
 			var getCurve = hrt.prefab.Curve.getCurve.bind(scope);
 			function makeCompVal(baseProp: Null<Float>, defVal: Float, randProp: Null<Float>, pname: String, suffix: String) : Value {
 				var xVal : Value = VZero;
-				var xCurve = getCurve(pname + suffix);
-				if(xCurve != null)
-					xVal = VCurveScale(xCurve, baseProp != null ? baseProp : 1.0);
-				else {
-					var rv = baseProp != null ? baseProp : defVal;
-					xVal = switch(rv) {
-						case 0.0: VZero;
-						case 1.0: VOne;
-						default: VConst(rv);
-					}
+				var rv = baseProp != null ? baseProp : defVal;
+				xVal = switch(rv) {
+					case 0.0: VZero;
+					case 1.0: VOne;
+					default: VConst(rv);
 				}
 
 				var randCurve = getCurve(pname + suffix + ".rand");
@@ -1229,11 +1224,22 @@ class Emitter extends Object3D {
 				else if(randProp != null)
 					randVal = VRandom(randIdx++, VConst(randProp));
 
-				if(randVal == VZero)
-					return xVal;
-				if(xVal == VZero)
-					return randVal;
-				return VAdd(xVal, randVal);
+				var xCurve = getCurve(pname + suffix);
+				if (xCurve != null) {
+					if(randVal == VZero)
+						return VMult(xVal, VCurve(xCurve));
+					if(xVal == VZero)
+						return VMult(randVal, VCurve(xCurve));
+					xVal = VAdd(xVal, randVal);
+					return VMult(xVal, VCurve(xCurve));
+				}
+				else {
+					if(randVal == VZero)
+						return xVal;
+					if(xVal == VZero)
+						return randVal;
+					return VAdd(xVal, randVal);
+				}
 			}
 
 			var baseProp: Dynamic = Reflect.field(props, name);
