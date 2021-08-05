@@ -842,6 +842,13 @@ class SceneEditor {
 		});
 		var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [
 			{ label : "New...", menu : newItems },
+			{ isSeparator : true, label : "" },
+			{
+				label : "Gather here",
+				click : gatherToMouse,
+				enabled : (curEdit.rootElements.length > 0),
+				keys : view.config.get("key.sceneeditor.gatherToMouse"),
+			},
 		];
 		new hide.comp.ContextMenu(menuItems);
 	}
@@ -1666,23 +1673,17 @@ class SceneEditor {
 	}
 
 	function gatherToMouse() {
-		var posQuant = view.config.get("sceneeditor.xyzPrecision");
-		inline function quantize(x: Float, step: Float) {
-			if(step > 0) {
-				x = Math.round(x / step) * step;
-				x = untyped parseFloat(x.toFixed(5)); // Snap to closest nicely displayed float :cold_sweat:
-			}
-			return x;
-		}
 		var prevParent = sceneData;
 		var localMat = getPickTransform(prevParent);
 		if( localMat == null ) return;
 
 		var objects3d = [for(o in curEdit.rootElements) {
 			var obj3d = o.to(hrt.prefab.Object3D);
-			if(obj3d != null)
+			if( obj3d != null && !obj3d.locked )
 				obj3d;
 		}];
+		if( objects3d.length == 0 ) return;
+
 		var sceneObjs = [for(o in objects3d) getContext(o).local3d];
 		var prevState = [for(o in objects3d) o.saveTransform()];
 
@@ -1692,10 +1693,9 @@ class SceneEditor {
 				localMat = getPickTransform(prevParent);
 			}
 			if( localMat == null ) continue;
-			// obj3d.setTransform(localMat);
-			obj3d.x = quantize(localMat.tx, posQuant);
-			obj3d.y = quantize(localMat.ty, posQuant);
-			obj3d.z = quantize(localMat.tz, posQuant);
+			obj3d.x = hxd.Math.round(localMat.tx * 10) / 10;
+			obj3d.y = hxd.Math.round(localMat.ty * 10) / 10;
+			obj3d.z = hxd.Math.floor(localMat.tz * 10) / 10;
 			obj3d.updateInstance(getContext(obj3d));
 		}
 		var newState = [for(o in objects3d) o.saveTransform()];
