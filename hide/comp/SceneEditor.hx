@@ -235,6 +235,7 @@ class SceneEditor {
 			}
 		});
 		view.keys.register("sceneeditor.editPivot", editPivot);
+		view.keys.register("sceneeditor.gatherToMouse", gatherToMouse);
 
 		// Load display state
 		{
@@ -1661,6 +1662,61 @@ class SceneEditor {
 				}
 				refresh(Partial);
 			}
+		}));
+	}
+
+	function gatherToMouse() {
+		var posQuant = view.config.get("sceneeditor.xyzPrecision");
+		inline function quantize(x: Float, step: Float) {
+			if(step > 0) {
+				x = Math.round(x / step) * step;
+				x = untyped parseFloat(x.toFixed(5)); // Snap to closest nicely displayed float :cold_sweat:
+			}
+			return x;
+		}
+		var prevParent = sceneData;
+		var localMat = getPickTransform(prevParent);
+		if( localMat == null ) return;
+
+		var objects3d = [for(o in curEdit.rootElements) {
+			var obj3d = o.to(hrt.prefab.Object3D);
+			if(obj3d != null)
+				obj3d;
+		}];
+		var sceneObjs = [for(o in objects3d) getContext(o).local3d];
+		var prevState = [for(o in objects3d) o.saveTransform()];
+
+		for( obj3d in objects3d ) {
+			if( obj3d.parent != prevParent ) {
+				prevParent = obj3d.parent;
+				localMat = getPickTransform(prevParent);
+			}
+			if( localMat == null ) continue;
+			// obj3d.setTransform(localMat);
+			obj3d.x = quantize(localMat.tx, posQuant);
+			obj3d.y = quantize(localMat.ty, posQuant);
+			obj3d.z = quantize(localMat.tz, posQuant);
+			obj3d.updateInstance(getContext(obj3d));
+		}
+		var newState = [for(o in objects3d) o.saveTransform()];
+		refreshProps();
+		undo.change(Custom(function(undo) {
+			if( undo ) {
+				for(i in 0...objects3d.length) {
+					objects3d[i].loadTransform(prevState[i]);
+					objects3d[i].applyTransform(sceneObjs[i]);
+				}
+				refreshProps();
+			}
+			else {
+				for(i in 0...objects3d.length) {
+					objects3d[i].loadTransform(newState[i]);
+					objects3d[i].applyTransform(sceneObjs[i]);
+				}
+				refreshProps();
+			}
+			for(o in objects3d)
+				o.updateInstance(getContext(o));
 		}));
 	}
 
