@@ -2160,6 +2160,14 @@ div.sp-container {
 		float: right;
 		font-size: 8pt;
 		color: #8d8d8d;
+		&:before {
+			content: '\a0'; // '&nbsp;'
+		}
+	}
+	&.context-menu-disabled {
+		.contextmenu-keys {
+			color: #c9c9c9;
+		}
 	}
 
 	.tag-disp-expand {

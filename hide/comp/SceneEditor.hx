@@ -235,6 +235,7 @@ class SceneEditor {
 			}
 		});
 		view.keys.register("sceneeditor.editPivot", editPivot);
+		view.keys.register("sceneeditor.gatherToMouse", gatherToMouse);
 
 		// Load display state
 		{
@@ -841,6 +842,13 @@ class SceneEditor {
 		});
 		var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [
 			{ label : "New...", menu : newItems },
+			{ isSeparator : true, label : "" },
+			{
+				label : "Gather here",
+				click : gatherToMouse,
+				enabled : (curEdit.rootElements.length > 0),
+				keys : view.config.get("key.sceneeditor.gatherToMouse"),
+			},
 		];
 		new hide.comp.ContextMenu(menuItems);
 	}
@@ -1661,6 +1669,54 @@ class SceneEditor {
 				}
 				refresh(Partial);
 			}
+		}));
+	}
+
+	function gatherToMouse() {
+		var prevParent = sceneData;
+		var localMat = getPickTransform(prevParent);
+		if( localMat == null ) return;
+
+		var objects3d = [for(o in curEdit.rootElements) {
+			var obj3d = o.to(hrt.prefab.Object3D);
+			if( obj3d != null && !obj3d.locked )
+				obj3d;
+		}];
+		if( objects3d.length == 0 ) return;
+
+		var sceneObjs = [for(o in objects3d) getContext(o).local3d];
+		var prevState = [for(o in objects3d) o.saveTransform()];
+
+		for( obj3d in objects3d ) {
+			if( obj3d.parent != prevParent ) {
+				prevParent = obj3d.parent;
+				localMat = getPickTransform(prevParent);
+			}
+			if( localMat == null ) continue;
+			obj3d.x = hxd.Math.round(localMat.tx * 10) / 10;
+			obj3d.y = hxd.Math.round(localMat.ty * 10) / 10;
+			obj3d.z = hxd.Math.floor(localMat.tz * 10) / 10;
+			obj3d.updateInstance(getContext(obj3d));
+		}
+		var newState = [for(o in objects3d) o.saveTransform()];
+		refreshProps();
+		undo.change(Custom(function(undo) {
+			if( undo ) {
+				for(i in 0...objects3d.length) {
+					objects3d[i].loadTransform(prevState[i]);
+					objects3d[i].applyTransform(sceneObjs[i]);
+				}
+				refreshProps();
+			}
+			else {
+				for(i in 0...objects3d.length) {
+					objects3d[i].loadTransform(newState[i]);
+					objects3d[i].applyTransform(sceneObjs[i]);
+				}
+				refreshProps();
+			}
+			for(o in objects3d)
+				o.updateInstance(getContext(o));
 		}));
 	}
 

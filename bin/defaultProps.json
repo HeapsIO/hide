@@ -77,6 +77,7 @@
 	"key.sceneeditor.localTransformsToggle": "D",
 	"key.sceneeditor.gridToggle": "G",
 	"key.sceneeditor.toggleLayout": "Tab",
+	"key.sceneeditor.gatherToMouse": "Ctrl-Shift-F",
 
 	// cdb config
 	"cdb.databaseFile" : "data.cdb",
