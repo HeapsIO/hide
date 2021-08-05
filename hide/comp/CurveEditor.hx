@@ -130,6 +130,7 @@ class CurveEditor extends Component {
 
 	function set_curve(curve: hrt.prefab.Curve) {
 		this.curve = curve;
+		maxLength = curve.maxTime;
 		lastValue = haxe.Json.parse(haxe.Json.stringify(curve.save()));
 		var view = getDisplayState("view");
 		if(view != null) {

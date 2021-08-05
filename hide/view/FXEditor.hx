@@ -958,6 +958,7 @@ class FXEditor extends FileView {
 				if(edit == from) continue;
 				var k = edit.curve.findKey(prevTime, keyTimeTolerance);
 				if(k != null) {
+					newTime = hxd.Math.clamp(newTime, 0.0, edit.curve.maxTime);
 					k.time = newTime;
 					edit.refreshGraph(false, k);
 				}
@@ -1127,6 +1128,7 @@ class FXEditor extends FileView {
 				height = 100;
 			if(height < minHeight) height = minHeight;
 			curveContainer.height(height);
+			curve.maxTime = data.duration;
 			var curveEdit = new hide.comp.CurveEditor(this.undo, curveContainer);
 			curveEdit.saveDisplayKey = dispKey;
 			curveEdit.lockViewX = true;
@@ -1154,9 +1156,9 @@ class FXEditor extends FileView {
 			}
 			curveEdit.xOffset = xOffset;
 			curveEdit.xScale = xScale;
-			curveEdit.curve = curve;
 			if(isInstanceCurve(curve))
-				curveEdit.maxLength = 1.0;
+				curve.maxTime = 1.0;
+			curveEdit.curve = curve;
 			curveEdit.onChange = function(anim) {
 				refreshDopesheet();
 			}
@@ -1760,7 +1762,7 @@ class FXEditor extends FileView {
 	}
 
 	static function isInstanceCurve(curve: Curve) {
-		return curve.getParent(hrt.prefab.fx.Emitter) != null && curve.name.indexOf("inst") == 0;
+		return curve.getParent(hrt.prefab.fx.Emitter) != null;
 	}
 
 	static var _ = FileTree.registerExtension(FXEditor, ["fx"], { icon : "sitemap", createNew : "FX" });

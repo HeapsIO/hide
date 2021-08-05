@@ -36,6 +36,7 @@ class Curve extends Prefab {
 
 	@:s public var loop : Bool = false;
 
+	public var maxTime : Float;
 	public var duration(get, never): Float;
 	function get_duration() {
 		if(keys.length == 0) return 0.0;
