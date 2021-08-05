@@ -520,7 +520,6 @@ class Cell extends Component {
 		}
 	}
 
-
 	public function isTextInput() {
 		return switch( column.type ) {
 		case TString if( column.kind == Script ):
