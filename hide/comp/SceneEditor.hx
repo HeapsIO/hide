@@ -2250,7 +2250,7 @@ class SceneEditor {
 		var recents : Array<String> = ide.currentConfig.get("sceneeditor.newrecents", []);
 		for( g in recents) {
 			var pmodel = hrt.prefab.Library.getRegistered().get(g);
-			if (checkAllowParent({cl : g, inf : pmodel.inf}, parent))
+			if (pmodel != null && checkAllowParent({cl : g, inf : pmodel.inf}, parent))
 				grecent.push(getNewTypeMenuItem(g, parent, onMake));
 		}
 		return grecent;
