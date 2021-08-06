@@ -44,14 +44,14 @@ class Toolbar extends Component {
 	}
 
 	public function addButton( icon : String, ?label : String, ?onClick : Void -> Void ) {
-		var e = new Element('<div class="button" title="${label==null ? "" : label}"><div class="icon fa fa-$icon"/></div>');
+		var e = new Element('<div class="button" title="${label==null ? "" : label}"><div class="icon ico ico-$icon"/></div>');
 		if( onClick != null ) e.click(function(_) onClick());
 		e.appendTo(element);
 		return e;
 	}
 
 	public function addToggle( icon : String, ?title : String, ?label : String, ?onToggle : Bool -> Void, ?defValue = false ) : ToolToggle {
-		var e = new Element('<div class="toggle" title="${title==null ? "" : title}"><div class="icon fa fa-$icon"/></div>');
+		var e = new Element('<div class="toggle" title="${title==null ? "" : title}"><div class="icon ico ico-$icon"/></div>');
 		if(label != null) {
 			new Element('<label>$label</label>').appendTo(e);
 		}
@@ -94,7 +94,7 @@ class Toolbar extends Component {
 	}
 
 	public function addSelect<T>( icon : String, ?label : String ) : ToolSelect<T> {
-		var e = new Element('<div class="select" title="${label==null ? "" : label}"><div class="icon fa fa-$icon"/><select/></div>');
+		var e = new Element('<div class="select" title="${label==null ? "" : label}"><div class="icon ico ico-$icon"/><select/></div>');
 		var content : Array<{ label : String, value : T }> = [];
 		var select = e.find("select");
 		var tool : ToolSelect<T> = {
@@ -113,7 +113,7 @@ class Toolbar extends Component {
 	}
 
 	public function addMenu<T>( icon : String, label : String ) : ToolMenu<T> {
-		var e = new Element('<div class="menu"><div class="icon fa fa-$icon"/>${label==null ? "" : label}</div>');
+		var e = new Element('<div class="menu"><div class="icon ico ico-$icon"/>${label==null ? "" : label}</div>');
 		var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
 		var tool : ToolMenu<T> = {
 			element : e,

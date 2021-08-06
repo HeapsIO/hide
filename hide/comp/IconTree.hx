@@ -364,7 +364,7 @@ class IconTree<T:{}> extends Component {
 				var val = elt.val();
 				haxe.Timer.delay(filter, val.length == 1 ? 500 : 100);
 			});
-			new Element("<i>").addClass("fa fa-times-circle").appendTo(searchBox).click(function(_) {
+			new Element("<i>").addClass("ico ico-times-circle").appendTo(searchBox).click(function(_) {
 				closeFilter();
 			});
 		}

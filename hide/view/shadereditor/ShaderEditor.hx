@@ -527,7 +527,7 @@ class ShaderEditor extends hide.view.Graph {
 
 		var header = new Element('<div class="header">
 									<div class="title">
-										<i class="fa fa-chevron-right" ></i>
+										<i class="ico ico-chevron-right" ></i>
 										<input class="input-title" type="input" value="${name}" />
 									</div>
 									<div class="type">
@@ -622,24 +622,24 @@ class ShaderEditor extends hide.view.Graph {
 		if (b != null) {
 			if (b) {
 				elt.find(".content").show();
-				var icon = elt.find(".fa");
-				icon.removeClass("fa-chevron-right");
-				icon.addClass("fa-chevron-down");
+				var icon = elt.find(".ico");
+				icon.removeClass("ico-chevron-right");
+				icon.addClass("ico-chevron-down");
 			} else {
 				elt.find(".content").hide();
-				var icon = elt.find(".fa");
-				icon.addClass("fa-chevron-right");
-				icon.removeClass("fa-chevron-down");
+				var icon = elt.find(".ico");
+				icon.addClass("ico-chevron-right");
+				icon.removeClass("ico-chevron-down");
 			}
 		} else {
 			elt.find(".content").toggle();
-			var icon = elt.find(".fa");
-			if (icon.hasClass("fa-chevron-right")) {
-				icon.removeClass("fa-chevron-right");
-				icon.addClass("fa-chevron-down");
+			var icon = elt.find(".ico");
+			if (icon.hasClass("ico-chevron-right")) {
+				icon.removeClass("ico-chevron-right");
+				icon.addClass("ico-chevron-down");
 			} else {
-				icon.addClass("fa-chevron-right");
-				icon.removeClass("fa-chevron-down");
+				icon.addClass("ico-chevron-right");
+				icon.removeClass("ico-chevron-down");
 			}
 		}
 	}
@@ -864,7 +864,7 @@ class ShaderEditor extends hide.view.Graph {
 		<div id="add-menu">
 			<div class="search-container">
 				<div class="icon" >
-					<i class="fa fa-search"></i>
+					<i class="ico ico-search"></i>
 				</div>
 				<div class="search-bar" >
 					<input type="text" id="search-input" autocomplete="off" >
@@ -1040,7 +1040,7 @@ class ShaderEditor extends hide.view.Graph {
 			var group = new Element('<div> ${key} </div>');
 			group.on("click", function(e) {
 				var eltsGroup = [];
-				var goBack = new Element("<div class='grey-item' > <i class='fa fa-chevron-left' /> Go back </div>");
+				var goBack = new Element("<div class='grey-item' > <i class='ico ico-chevron-left' /> Go back </div>");
 				goBack.on("click", function(e) {
 					contextMenuAddNode(Std.parseInt(contextMenu.css("left")), Std.parseInt(contextMenu.css("top")));
 				});

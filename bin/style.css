@@ -416,10 +416,6 @@ input[type=checkbox]:checked:after {
   font-size: 16px;
   vertical-align: middle;
 }
-.hide-toolbar .button > .icon,
-.hide-toolbar .toggle > .icon {
-  vertical-align: middle;
-}
 .hide-toolbar .button:hover,
 .hide-toolbar .toggle:hover,
 .scene-partition .show-cols-btn:hover {
