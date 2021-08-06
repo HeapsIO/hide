@@ -3132,7 +3132,7 @@
   height: 1em;
   width: 1em;
 }
-.context-menu-item > span > .context-icon {
+.context-menu-item .context-icon {
   position: absolute;
   top: 50%;
   left: 0;
@@ -3142,8 +3142,11 @@
   text-align: center;
   transform: translateY(-50%);
 }
-.context-menu-item > span > .context-icon > .ico {
+.context-menu-item .context-icon > .ico {
   margin-top: 0.2em;
+}
+.context-menu-item.context-menu-hover > span > .context-icon {
+  color: #fff;
 }
 .ico-hide {
   background: url(res/hide.ico);

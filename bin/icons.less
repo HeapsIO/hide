@@ -11,20 +11,26 @@
     width: 1em;
 }
 
-.context-menu-item > span > .context-icon {
-    position: absolute;
-    top: 50%;
-    left: 0;
-    width: 2em;
-    line-height: 1;
-    color: #2980b9;
-    text-align: center;
-    transform: translateY(-50%);
+.context-menu-item {
+    .context-icon {
+        position: absolute;
+        top: 50%;
+        left: 0;
+        width: 2em;
+        line-height: 1;
+        color: #2980b9;
+        text-align: center;
+        transform: translateY(-50%);
 
-    & > .ico {
-        margin-top: 0.2em;
+        & > .ico {
+            margin-top: 0.2em;
+        }
     }
-  }
+
+    &.context-menu-hover > span > .context-icon {
+        color: #fff;
+    }
+}
 
 .ico-hide {
     background: url(res/hide.ico);
