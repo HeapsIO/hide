@@ -1,3 +1,8 @@
+/**
+    Imports all fontawesome icons into the custom icon system for hide
+    Icons available as fa-iconname are now available as ico-iconname
+    This was generated manually using multi-edit.
+**/
 /*!
  *  Font Awesome 4.7.0 by @davegandy - http://fontawesome.io - @fontawesome
  *  License - http://fontawesome.io/license (Font: SIL OFL 1.1, CSS: MIT License)
@@ -3121,4 +3126,15 @@
   margin: 0;
   overflow: visible;
   clip: auto;
+}
+.ico-custom {
+  background-size: 100%;
+  height: 1em;
+  width: 1em;
+}
+.ico-hide {
+  background: url(res/hide.ico);
+  background-size: 100%;
+  height: 1em;
+  width: 1em;
 }
