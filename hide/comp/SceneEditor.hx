@@ -169,6 +169,8 @@ class SceneEditor {
 	var sceneData : PrefabElement;
 	var lastRenderProps : hrt.prefab.RenderProps;
 
+	var focusedSinceSelect = false;
+
 	public function new(view, data) {
 		ide = hide.Ide.inst;
 		this.view = view;
@@ -325,7 +327,8 @@ class SceneEditor {
 			}
 			if(!bnds.isEmpty()) {
 				var s = bnds.toSphere();
-				cameraController.set(s.r * 4.0, null, null, s.getCenter());
+				var r = focusedSinceSelect ? s.r * 4.0 : null;
+				cameraController.set(r, null, null, s.getCenter());
 			}
 			else {
 				centroid.scale3(1.0 / curEdit.rootObjects.length);
@@ -334,6 +337,7 @@ class SceneEditor {
 		}
 		for(obj in curEdit.rootElements)
 			tree.revealNode(obj);
+		focusedSinceSelect = true;
 	}
 
 	function getAvailableTags(p: PrefabElement) : Array<{id: String, color: String}>{
@@ -1539,8 +1543,9 @@ class SceneEditor {
 			setupGizmo();
 		}
 
+		var prev : Array<PrefabElement> = null;
 		if( curEdit != null && mode.match(Default|NoTree) ) {
-			var prev = curEdit.rootElements.copy();
+			prev = curEdit.rootElements.copy();
 			undo.change(Custom(function(u) {
 				if(u) impl(prev,NoHistory);
 				else impl(elts,NoHistory);
@@ -1548,6 +1553,16 @@ class SceneEditor {
 		}
 
 		impl(elts,mode);
+		if( prev == null || curEdit.rootElements.length != prev.length ) {
+			focusedSinceSelect = false;
+			return;
+		}
+		for( i in 0...curEdit.rootElements.length ) {
+			if( curEdit.rootElements[i] != prev[i] ) {
+				focusedSinceSelect = false;
+				return;
+			}
+		}
 	}
 
 	function hasBeenRemoved( e : hrt.prefab.Prefab ) {
