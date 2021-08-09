@@ -70,6 +70,12 @@ class Library extends Prefab {
 		return registeredExtensions.get(extension);
 	}
 
+	#if editor
+	override function getHideProps() : HideProps {
+		return { icon : "sitemap", name : "Prefab", allowParent: _ -> false};
+	}
+	#end
+
 	static var _ = Library.register("prefab", Library, "prefab");
 
 }
