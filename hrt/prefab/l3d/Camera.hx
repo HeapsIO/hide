@@ -216,7 +216,7 @@ class Camera extends Object3D {
 	}
 
 	override function getHideProps() : hide.prefab.HideProps {
-		return { icon : "cogs", name : "Camera" };
+		return { icon : "video-camera", name : "Camera" };
 	}
 	#end
 
