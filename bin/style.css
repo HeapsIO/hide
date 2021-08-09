@@ -390,7 +390,8 @@ input[type=checkbox]:checked:after {
 }
 .hide-toolbar .toolbar-label > .icon,
 .hide-toolbar .menu > .icon {
-  vertical-align: center;
+  vertical-align: middle;
+  margin-bottom: 2px;
 }
 .hide-toolbar .menu {
   user-select: none;
@@ -414,10 +415,6 @@ input[type=checkbox]:checked:after {
   cursor: pointer;
   font-size: 16px;
   vertical-align: middle;
-}
-.hide-toolbar .button > .icon,
-.hide-toolbar .toggle > .icon {
-  vertical-align: center;
 }
 .hide-toolbar .button:hover,
 .hide-toolbar .toggle:hover,

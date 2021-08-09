@@ -53,8 +53,8 @@ class SceneTree extends IconTree<String> {
 		var obj = Std.downcast(v, h3d.scene.Object);
 		if( obj == null || Std.is(obj,h3d.scene.Skin.Joint) ) return;
 
-		if (el.find(".fa-eye").length == 0) {
-			var visibilityToggle = new Element('<i class="fa fa-eye visibility-large-toggle"/>').appendTo(el.find(".jstree-anchor").first());
+		if (el.find(".ico-eye").length == 0) {
+			var visibilityToggle = new Element('<i class="ico ico-eye visibility-large-toggle"/>').appendTo(el.find(".jstree-anchor").first());
 			visibilityToggle.click(function (e) {
 				obj.visible = !obj.visible;
 				el.toggleClass("hidden", !obj.visible);
@@ -96,7 +96,7 @@ class SceneTree extends IconTree<String> {
 				{
 					value :path+i,
 					text : getObjectName(c),
-					icon : "fa fa-" + getIcon(c),
+					icon : "ico ico-" + getIcon(c),
 					children : c.isMesh() || c.numChildren > 0,
 					state : { opened : c.numChildren > 0 && c.numChildren < 10 }
 				}
@@ -109,7 +109,7 @@ class SceneTree extends IconTree<String> {
 				elements.push({
 					value :path+"mat:"+i,
 					text : m.name == null ? "Material@"+i : m.name,
-					icon : "fa fa-photo",
+					icon : "ico ico-photo",
 				});
 			}
 			var sk = Std.downcast(root,h3d.scene.Skin);
@@ -118,7 +118,7 @@ class SceneTree extends IconTree<String> {
 					elements.push({
 						value: path+"joint:"+j.name,
 						text : j.name,
-						icon : "fa fa-gg",
+						icon : "ico ico-gg",
 						children : j.subs.length > 0,
 					});
 			}
@@ -130,7 +130,7 @@ class SceneTree extends IconTree<String> {
 				elements.push({
 					value: path+"joint:"+j.name,
 					text : j.name,
-					icon : "fa fa-gg",
+					icon : "ico ico-gg",
 					children : j.subs.length > 0,
 				});
 		}
