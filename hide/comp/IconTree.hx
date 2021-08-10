@@ -78,11 +78,13 @@ class IconTree<T:{}> extends Component {
 
 	function makeContent(parent:IconTreeItem<T>) {
 		var content : Array<IconTreeItem<T>> = get(parent == null ? null : getValue(parent));
+		var i = 0;
 		for( c in content ) {
-			var key = (parent == null ? "" : parent.absKey + "/") + c.text;
+			var key = (parent == null ? "" : parent.absKey + "/") + c.text + ":" + i;
 			if( c.absKey == null ) c.absKey = key;
 			c.id = "titem__" + (UID++);
 			map.set(c.id, c);
+			var prevItem = revMap.get(c.value);
 			if( Std.is(c.value, String) )
 				revMapString.set(cast c.value, c);
 			else {
@@ -91,13 +93,21 @@ class IconTree<T:{}> extends Component {
 				c.value = null;
 			}
 			if( c.state == null ) {
-				var s = getDisplayState(key);
+				var s : Null<Bool>;
+				if( prevItem != null && prevItem.state.opened != null ) {
+					s = prevItem.state.opened;
+					saveDisplayState(key, s);
+				}
+				else {
+					s = getDisplayState(key);
+				}
 				if( s != null ) c.state = { opened : s } else c.state = {};
 			}
 			if( !async && c.children ) {
 				c.state.loaded = true;
 				c.children = cast makeContent(c);
 			}
+			i++;
 		}
 		return content;
 	}
@@ -163,11 +173,13 @@ class IconTree<T:{}> extends Component {
 		});
 		element.on("open_node.jstree", function(event, e) {
 			var i = map.get(e.node.id);
+			i.state.opened = true;
 			if( filter == null ) saveDisplayState(i.absKey, true);
 			onToggle(getValue(i), true);
 		});
 		element.on("close_node.jstree", function(event,e) {
 			var i = map.get(e.node.id);
+			i.state.opened = false;
 			if( filter == null ) saveDisplayState(i.absKey, false);
 			onToggle(getValue(i), false);
 		});
@@ -273,7 +285,6 @@ class IconTree<T:{}> extends Component {
 
 	public function refresh( ?onReady : Void -> Void ) {
 		map = new Map();
-		revMap = new haxe.ds.ObjectMap();
 		revMapString = new haxe.ds.StringMap();
 		values = new Map();
 		if( onReady != null ) waitRefresh.push(onReady);
