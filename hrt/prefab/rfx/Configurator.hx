@@ -185,9 +185,7 @@ class Configurator extends RendererFX {
 					errorMessage = Std.string(e);
 				}
 			if( errorMessage != null ) {
-				#if !editor
-				throw errorMessage;
-				#else
+				#if editor
 				if( errorTarget != null ) errorTarget.text(errorMessage);
 				#end
 			} else {
