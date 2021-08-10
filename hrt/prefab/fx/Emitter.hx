@@ -791,6 +791,7 @@ class EmitterObject extends h3d.scene.Object {
 				animatedTextureShader = new h3d.shader.AnimatedTexture(tex, frameDivisionX, frameDivisionY, frameCount, frameCount * animationSpeed / lifeTime);
 				animatedTextureShader.startTime = startTime;
 				animatedTextureShader.loop = animationLoop;
+				animatedTextureShader.setPriority(1);
 				mesh.material.mainPass.addShader(animatedTextureShader);
 			}
 
