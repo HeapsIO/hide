@@ -196,25 +196,25 @@ class Prefab extends FileView {
 						<div class="flex vertical">
 							<div class="hide-toolbar">
 								<div class="toolbar-label">
-									<div class="icon fa fa-sitemap"></div>
+									<div class="icon ico ico-sitemap"></div>
 									Scene
 								</div>
 								<div class="button collapse-btn" title="Collapse all">
-									<div class="icon fa fa-reply-all"></div>
+									<div class="icon ico ico-reply-all"></div>
 								</div>
 
 								<div class="button combine-btn layout-btn" title="Toggle columns layout">
-									<div class="icon fa fa-compress"></div>
+									<div class="icon ico ico-compress"></div>
 								</div>
 								<div class="button separate-btn layout-btn" title="Toggle columns layout">
-									<div class="icon fa fa-expand"></div>
+									<div class="icon ico ico-expand"></div>
 								</div>
 
 								<div
 									class="button hide-cols-btn close-btn"
 									title="Hide Tree & Props (${config.get("key.sceneeditor.toggleLayout")})"
 								>
-									<div class="icon fa fa-chevron-right"></div>
+									<div class="icon ico ico-chevron-right"></div>
 								</div>
 							</div>
 
@@ -225,7 +225,7 @@ class Prefab extends FileView {
 					<div class="props-column">
 						<div class="hide-toolbar">
 							<div class="toolbar-label">
-								<div class="icon fa fa-sitemap"></div>
+								<div class="icon ico ico-sitemap"></div>
 								Properties
 							</div>
 						</div>
@@ -236,7 +236,7 @@ class Prefab extends FileView {
 						class="button show-cols-btn close-btn"
 						title="Show Tree & Props (${config.get("key.sceneeditor.toggleLayout")})"
 					>
-						<div class="icon fa fa-chevron-left"></div>
+						<div class="icon ico ico-chevron-left"></div>
 					</div>
 				</div>
 			</div>

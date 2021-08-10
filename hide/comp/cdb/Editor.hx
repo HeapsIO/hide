@@ -795,7 +795,7 @@ class Editor extends Component {
 		}).keyup(function(e) {
 			searchFilter(e.getThis().val());
 		});
-		new Element("<i>").addClass("fa fa-times-circle").appendTo(searchBox).click(function(_) {
+		new Element("<i>").addClass("ico ico-times-circle").appendTo(searchBox).click(function(_) {
 			searchFilter(null);
 			searchBox.toggle();
 			var c = cursor.save();

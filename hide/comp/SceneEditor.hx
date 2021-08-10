@@ -451,7 +451,7 @@ class SceneEditor {
 			var r : hide.comp.IconTree.IconTreeItem<PrefabElement> = {
 				value : o,
 				text : o.name,
-				icon : "fa fa-"+icon,
+				icon : "ico ico-"+icon,
 				children : o.children.length > 0 || (ref != null && @:privateAccess ref.editMode),
 				state: state
 			};
@@ -1203,7 +1203,7 @@ class SceneEditor {
 
 			var visTog = el.find(".visibility-toggle").first();
 			if(visTog.length == 0) {
-				visTog = new Element('<i class="fa fa-eye visibility-toggle" title = "Hide (${view.config.get("key.sceneeditor.hide")})"/>').insertAfter(el.find("a.jstree-anchor").first());
+				visTog = new Element('<i class="ico ico-eye visibility-toggle" title = "Hide (${view.config.get("key.sceneeditor.hide")})"/>').insertAfter(el.find("a.jstree-anchor").first());
 				visTog.click(function(e) {
 					if(curEdit.elements.indexOf(obj3d) >= 0)
 						setVisible(curEdit.elements, isHidden(obj3d));
@@ -1220,7 +1220,7 @@ class SceneEditor {
 			}
 			var lockTog = el.find(".lock-toggle").first();
 			if(lockTog.length == 0) {
-				lockTog = new Element('<i class="fa fa-lock lock-toggle"/>').insertAfter(el.find("a.jstree-anchor").first());
+				lockTog = new Element('<i class="ico ico-lock lock-toggle"/>').insertAfter(el.find("a.jstree-anchor").first());
 				lockTog.click(function(e) {
 					if(curEdit.elements.indexOf(obj3d) >= 0)
 						setLock(curEdit.elements, !obj3d.locked);
@@ -1410,7 +1410,7 @@ class SceneEditor {
 			<div class="group" name="CDB">
 				<dl>
 				<dt>
-					<div class="btn-cdb-large fa fa-file-text"></div>
+					<div class="btn-cdb-large ico ico-file-text"></div>
 					Type
 				</dt>
 				<dd><select><option value="">- No props -</option></select></dd>
@@ -2352,7 +2352,8 @@ class SceneEditor {
 					});
 				else
 					addElements([make()]);
-			}
+			},
+			icon : pmodel.inf.icon,
 		};
 	}
 

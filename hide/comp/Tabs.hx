@@ -65,7 +65,7 @@ class Tabs extends Component {
 			var icon = t.attr("icon");
 			var name = t.attr("name");
 			var index = index++;
-			var tab = new Element("<div>").html( (icon != null ? '<div class="fa fa-$icon"></div> ' : '') + (name != null ? name : '') );
+			var tab = new Element("<div>").html( (icon != null ? '<div class="ico ico-$icon"></div> ' : '') + (name != null ? name : '') );
 			t.attr("index", index);
 			tab.attr("index", index);
 			tab.appendTo(header);

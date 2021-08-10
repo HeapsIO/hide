@@ -152,7 +152,7 @@ class Table extends Component {
 
 			if( c.documentation != null ) {
 				col.attr("title", c.documentation);
-				new Element('<i style="margin-left: 5px" class="fa fa-book"/>').appendTo(col);
+				new Element('<i style="margin-left: 5px" class="ico ico-book"/>').appendTo(col);
 			}
 			if( sheet.props.displayColumn == c.name )
 				col.addClass("display");
@@ -325,7 +325,7 @@ class Table extends Component {
 
 			if( c.documentation != null ) {
 				th.attr("title", c.documentation);
-				new Element('<i style="margin-left: 5px" class="fa fa-book"/>').appendTo(th);
+				new Element('<i style="margin-left: 5px" class="ico ico-book"/>').appendTo(th);
 			}
 
 			var line = new Line(this, [c], lines.length, l);

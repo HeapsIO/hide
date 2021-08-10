@@ -71,7 +71,10 @@ class ContextMenu {
 				type: "cm_separator",
 			};
 		}
-		var name = i.label;
+		var name = "";
+		if( i.icon != null && i.checked == null)
+			name += '<span class="context-icon"><span class="ico ico-${i.icon}"></span></span>';
+		name += i.label;
 		if( i.keys != null ) {
 			name += '<span class="contextmenu-keys">' + toKeyString(i.keys) + "</span>";
 		}
@@ -79,7 +82,6 @@ class ContextMenu {
 		var ret : Dynamic = {
 			name : name,
 			isHtmlName : true,
-			icon : i.icon, // is currently overridden by checkboxes or radio buttons
 			callback : function(itemKey, opt, rootMenu, originalEvent) {
 				i.click();
 				return autoclose;
