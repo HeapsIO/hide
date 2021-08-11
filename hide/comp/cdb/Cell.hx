@@ -45,7 +45,7 @@ class Cell extends Component {
 			element.click(function(e) {
 				if( e.shiftKey ) return;
 				e.stopPropagation();
-				@:privateAccess line.table.toggleList(this);
+				line.table.toggleList(this);
 			});
 		case TString if( column.kind == Script ):
 			element.click(function(_) edit());
@@ -147,11 +147,18 @@ class Cell extends Component {
 
 	static var R_HTML = ~/[<&]/;
 
-	public function refresh() {
+	public function refresh(withSubtable = false) {
 		currentValue = Reflect.field(line.obj, column.name);
 		var html = valueHtml(column, value, line.table.getRealSheet(), line.obj, []);
 		if( html == "&nbsp;" ) element.text(" ") else if( !R_HTML.match(html) ) element.text(html) else element.html(html);
 		updateClasses();
+		var subTable = line.subTable;
+		if( withSubtable && subTable != null && subTable.cell == this) {
+			if( column.type == TString && column.kind == Script )
+				subTable.refresh();
+			else
+				table.refreshList(this);
+		}
 	}
 
 	function watchFile( file : String ) {
@@ -808,9 +815,9 @@ class Cell extends Component {
 			if( immediate && !Editor.inRefreshAll ) return;
 
 			var str = value == null ? "" : editor.base.valToString(column.type, value);
-			@:privateAccess table.toggleList(this, immediate, function() return new ScriptTable(editor, this));
+			table.toggleList(this, immediate, function() return new ScriptTable(editor, this));
 		} else
-			@:privateAccess table.toggleList(this, immediate);
+			table.toggleList(this, immediate);
 	}
 
 	public function setErrorMessage( msg : String ) {

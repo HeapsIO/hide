@@ -108,6 +108,12 @@ class SubTable extends Table {
 		super.close();
 	}
 
+	public function immediateClose() {
+		if( cell.line.subTable == this ) cell.line.subTable = null;
+		cell.element.removeClass("parent-sub-table");
+		super.close();
+	}
+
 	override function dispose() {
 		super.dispose();
 		insertedTR.remove();

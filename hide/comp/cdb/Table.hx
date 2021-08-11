@@ -425,7 +425,7 @@ class Table extends Component {
 		refresh();
 	}
 
-	function toggleList( cell : Cell, ?immediate : Bool, ?make : Void -> SubTable ) {
+	public function toggleList( cell : Cell, ?immediate : Bool, ?make : Void -> SubTable ) {
 		var line = cell.line;
 		var cur = line.subTable;
 		if( cur != null ) {
@@ -435,6 +435,16 @@ class Table extends Component {
 		var sub = make == null ? new SubTable(editor, cell) : make();
 		sub.show(immediate);
 		editor.cursor.set(sub);
+	}
+
+	public function refreshList( cell : Cell, ?make : Void -> SubTable ) {
+		var line = cell.line;
+		var cur = line.subTable;
+		if( cur != null ) {
+			cur.immediateClose();
+			var sub = make == null ? new SubTable(editor, cell) : make();
+			sub.show(true);
+		}
 	}
 
 	function toString() {

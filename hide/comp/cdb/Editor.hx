@@ -355,8 +355,8 @@ class Editor extends Component {
 			formulas.evaluateAll(realSheet);
 			endChanges();
 			realSheet.sync();
-			for( l in toRefresh ) {
-				l.refresh();
+			for( c in toRefresh ) {
+				c.refresh(true);
 			}
 			refreshRefs();
 			return;
@@ -439,8 +439,8 @@ class Editor extends Component {
 		if( inserted )
 			refreshAll();
 		else {
-			for( l in toRefresh ) {
-				l.refresh();
+			for( c in toRefresh ) {
+				c.refresh(true);
 			}
 			refreshRefs();
 		}
