@@ -464,6 +464,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var lifeTime = 2.0;
 	public var lifeTimeRand = 0.0;
 	public var speedFactor = 1.0;
+	public var warmUpTime = 0.0;
 	// EMIT PARAMS
 	public var emitOrientation : Orientation = Forward;
 	public var simulationSpace : SimulationSpace = Local;
@@ -999,7 +1000,7 @@ class EmitterObject extends h3d.scene.Object {
 	}
 
 	public function setTime(time: Float) {
-		time *= speedFactor;
+		time = time * speedFactor + warmUpTime;
 		if(time < lastTime || lastTime < 0) {
 			reset();
 		}
@@ -1052,9 +1053,10 @@ class Emitter extends Object3D {
 		// RANDOM
 		{ name: "seedGroup", t: PInt(0, 100), def: 0, groupName : "Random", disp: "Seed"},
 		// LIFE
-		{ name: "lifeTime", t: PFloat(0, 10), def: 1.0, groupName : "Life" },
-		{ name: "lifeTimeRand", t: PFloat(0, 1), def: 0.0, groupName : "Life" },
-		{ name: "speedFactor", disp: "Speed Factor", t: PFloat(0, 1), def: 1.0, groupName : "Life" },
+		{ name: "lifeTime", t: PFloat(0, 10), def: 1.0, groupName : "Time" },
+		{ name: "lifeTimeRand", t: PFloat(0, 1), def: 0.0, groupName : "Time" },
+		{ name: "speedFactor", disp: "Speed Factor", t: PFloat(0, 1), def: 1.0, groupName : "Time" },
+		{ name: "warmUpTime", disp: "Warm Up", t: PFloat(0, 1), def: 0.0, groupName : "Time" },
 		// EMIT PARAMS
 		{ name: "emitType", t: PEnum(EmitType), def: EmitType.Infinity, disp: "Type", groupName : "Emit Params"  },
 		{ name: "emitDuration", t: PFloat(0, 10.0), disp: "Duration", def : 1.0, groupName : "Emit Params" },
@@ -1314,6 +1316,7 @@ class Emitter extends Object3D {
 		emitterObj.lifeTime 			= 	getParamVal("lifeTime");
 		emitterObj.lifeTimeRand 		= 	getParamVal("lifeTimeRand");
 		emitterObj.speedFactor 			= 	getParamVal("speedFactor");
+		emitterObj.warmUpTime 			= 	getParamVal("warmUpTime");
 		// EMIT PARAMS
 		emitterObj.emitType 			= 	getParamVal("emitType");
 		emitterObj.burstCount 			= 	getParamVal("burstCount");
