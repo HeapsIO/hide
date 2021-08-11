@@ -463,6 +463,7 @@ class EmitterObject extends h3d.scene.Object {
 	// LIFE
 	public var lifeTime = 2.0;
 	public var lifeTimeRand = 0.0;
+	public var speedFactor = 1.0;
 	// EMIT PARAMS
 	public var emitOrientation : Orientation = Forward;
 	public var simulationSpace : SimulationSpace = Local;
@@ -998,6 +999,7 @@ class EmitterObject extends h3d.scene.Object {
 	}
 
 	public function setTime(time: Float) {
+		time *= speedFactor;
 		if(time < lastTime || lastTime < 0) {
 			reset();
 		}
@@ -1019,7 +1021,7 @@ class EmitterObject extends h3d.scene.Object {
 		}
 		#end
 
-		var catchupTickRate = hxd.Timer.wantedFPS / catchupSpeed;
+		var catchupTickRate = hxd.Timer.wantedFPS * speedFactor / catchupSpeed;
 		var numTicks = hxd.Math.ceil(catchupTickRate * catchupTime);
 		for(i in 0...numTicks) {
 			tick(catchupTime / numTicks, i == (numTicks - 1));
@@ -1052,6 +1054,7 @@ class Emitter extends Object3D {
 		// LIFE
 		{ name: "lifeTime", t: PFloat(0, 10), def: 1.0, groupName : "Life" },
 		{ name: "lifeTimeRand", t: PFloat(0, 1), def: 0.0, groupName : "Life" },
+		{ name: "speedFactor", disp: "Speed Factor", t: PFloat(0, 1), def: 1.0, groupName : "Life" },
 		// EMIT PARAMS
 		{ name: "emitType", t: PEnum(EmitType), def: EmitType.Infinity, disp: "Type", groupName : "Emit Params"  },
 		{ name: "emitDuration", t: PFloat(0, 10.0), disp: "Duration", def : 1.0, groupName : "Emit Params" },
@@ -1310,6 +1313,7 @@ class Emitter extends Object3D {
 		// LIFE
 		emitterObj.lifeTime 			= 	getParamVal("lifeTime");
 		emitterObj.lifeTimeRand 		= 	getParamVal("lifeTimeRand");
+		emitterObj.speedFactor 			= 	getParamVal("speedFactor");
 		// EMIT PARAMS
 		emitterObj.emitType 			= 	getParamVal("emitType");
 		emitterObj.burstCount 			= 	getParamVal("burstCount");
