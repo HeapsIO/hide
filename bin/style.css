@@ -725,7 +725,7 @@ input[type=checkbox]:checked:after {
 }
 .hide-properties .group > .title {
   text-align: center;
-  background-color: #1e1e1e;
+  background-color: #151515;
   cursor: pointer;
   user-select: none;
   padding: 1px;
