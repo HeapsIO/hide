@@ -1697,6 +1697,7 @@ class FXEditor extends FileView {
 		if(ctx != null && ctx.local3d != null) {
 			anim = Std.downcast(ctx.local3d,hrt.prefab.fx.FX.FXAnimation);
 		}
+	
 		if(!pauseButton.isDown()) {
 			currentTime += scene.speed * dt;
 			if(timeLineEl != null)
@@ -1716,15 +1717,21 @@ class FXEditor extends FileView {
 
 		if(anim != null) {
 			anim.setTime(currentTime);
-		}
 
-		if(statusText != null) {
-			var lines : Array<String> = [
-				'Time: ${Math.round(currentTime*1000)} ms',
-				'Scene objects: ${scene.s3d.getObjectsCount()}',
-				'Drawcalls: ${h3d.Engine.getCurrent().drawCalls}',
-			];
-			statusText.text = lines.join("\n");
+			var emitters = anim.findAll(o -> Std.downcast(o, hrt.prefab.fx.Emitter.EmitterObject));
+			var totalParts = 0;
+			for(e in emitters)
+				totalParts += @:privateAccess e.numInstances;
+
+			if(statusText != null) {
+				var lines : Array<String> = [
+					'Time: ${Math.round(currentTime*1000)} ms',
+					'Scene objects: ${scene.s3d.getObjectsCount()}',
+					'Drawcalls: ${h3d.Engine.getCurrent().drawCalls}',
+					'Particles: $totalParts',
+				];
+				statusText.text = lines.join("\n");
+			}
 		}
 
 		var cam = scene.s3d.camera;
