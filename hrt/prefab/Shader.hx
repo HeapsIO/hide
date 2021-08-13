@@ -166,6 +166,13 @@ class Shader extends Prefab {
 		group.append(hide.comp.PropsEditor.makePropsList(props));
 		ectx.properties.add(group,this.props, function(pname) {
 			ectx.onChange(this, pname);
+
+			// Notify change to emitter in case param is used by curves
+			var emitter = getParent(hrt.prefab.fx.Emitter);
+			if(emitter != null) {
+				var ec = ectx.getContext(emitter);
+				emitter.updateInstance(ec);
+			}
 		});
 	}
 
