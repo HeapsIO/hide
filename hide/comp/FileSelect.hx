@@ -27,6 +27,11 @@ class FileSelect extends Component {
 			new ContextMenu([
 				{ label : "View", enabled : fpath != null, click : function() ide.openFile(fpath) },
 				{ label : "Clear", enabled : path != null, click : function() { path = null; onChange(); } },
+				{ label : "Copy Path", enabled : path != null, click : function() ide.setClipboard(path) },
+				{ label : "Paste Path", click : function() {
+					path = ide.getClipboard();
+					onChange();
+				}},
 				{ label : "Open in explorer", enabled : fpath != null, click : function() Sys.command("explorer.exe",["/select,"+fpath.split("/").join("\\")]) },
 			]);
 			return false;
