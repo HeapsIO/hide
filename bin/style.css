@@ -256,19 +256,58 @@ input[type=checkbox]:checked:after {
   background: #444444;
   opacity: 1;
 }
-.splitter.vertical .drag_handle {
+.splitter.vertical {
+  width: 100%;
+  height: 5px;
+}
+.splitter.vertical .drag-handle {
   width: 100%;
   height: 15px;
   position: absolute;
   top: -5px;
   cursor: ns-resize;
 }
-.splitter.horizontal .drag_handle {
+.splitter.horizontal {
+  width: 5px;
+  height: 100%;
+}
+.splitter.horizontal .drag-handle {
   width: 15px;
   height: 100%;
   position: absolute;
   left: -5px;
   cursor: ew-resize;
+}
+.layout-controls:not(.detached .layout-controls) {
+  display: none;
+}
+.detached.detachable-panel {
+  position: fixed;
+  bottom: 20px;
+  left: 20%;
+  right: 620px;
+  z-index: 800;
+}
+.detached.detachable-panel .splitter {
+  z-index: 810;
+  position: absolute;
+}
+.detached.detachable-panel .splitter.handle-right {
+  right: -5px;
+}
+.detached.detachable-panel .splitter.handle-left {
+  left: -5px;
+}
+.detached.detachable-panel .splitter.handle-top {
+  height: 15px;
+  top: -15px;
+}
+.detached.detachable-panel .splitter.handle-top .drag-handle {
+  cursor: move;
+  top: 0px;
+}
+.detached.detachable-panel .splitter.handle-bottom {
+  bottom: -5px;
 }
 .hide-scenetree {
   flex: 1;
@@ -766,12 +805,7 @@ input[type=checkbox]:checked:after {
   opacity: 0.5;
 }
 .hide-properties .cdb-large .cdb-obj-editor {
-  position: fixed;
-  bottom: 20px;
   max-height: 800px;
-  left: 20%;
-  right: 620px;
-  z-index: 800;
   overflow: auto;
   padding: 2px;
   background: #111;

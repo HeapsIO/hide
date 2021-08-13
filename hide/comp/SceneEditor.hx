@@ -1422,12 +1422,16 @@ class SceneEditor {
 		');
 
 		var cdbLarge = @:privateAccess view.getDisplayState("cdbLarge");
+		var detachable = new DetachablePanel();
+		detachable.saveDisplayKey = "detachedCdb";
 		group.find(".btn-cdb-large").click((_) -> {
 			cdbLarge = !cdbLarge;
 			@:privateAccess view.saveDisplayState("cdbLarge", cdbLarge);
 			group.toggleClass("cdb-large", cdbLarge);
+			detachable.setDetached(cdbLarge);
 		});
 		group.toggleClass("cdb-large", cdbLarge == true);
+		detachable.setDetached(cdbLarge == true);
 
 		var select = group.find("select");
 		for(t in types) {
@@ -1463,7 +1467,8 @@ class SceneEditor {
 			var ctx = context.shared.getContexts(e)[0];
 			if( ctx != null )
 				fileRef = ctx.shared.currentPath;
-			var editor = new hide.comp.cdb.ObjEditor(curType, view.config, e.props, fileRef, props);
+			detachable.element.appendTo(props);
+			var editor = new hide.comp.cdb.ObjEditor(curType, view.config, e.props, fileRef, detachable.element);
 			editor.undo = properties.undo;
 			editor.fileView = view;
 			editor.onChange = function(pname) {

@@ -281,20 +281,67 @@ input[type=checkbox] {
 		opacity : 1;
 	}
 
-	&.vertical .drag_handle {
+	&.vertical {
 		width : 100%;
-		height : 15px;
-		position : absolute;
-		top : -5px;
-		cursor : ns-resize;
+		height : 5px;
+		.drag-handle {
+			width : 100%;
+			height : 15px;
+			position : absolute;
+			top : -5px;
+			cursor : ns-resize;
+		}
 	}
 
-	&.horizontal .drag_handle {
-		width : 15px;
+	&.horizontal {
+		width : 5px;
 		height : 100%;
-		position : absolute;
-		left  : -5px;
-		cursor : ew-resize;
+		.drag-handle {
+			width : 15px;
+			height : 100%;
+			position : absolute;
+			left  : -5px;
+			cursor : ew-resize;
+		}
+	}
+}
+
+.detached {
+
+	.layout-controls:not(& .layout-controls) {
+		display : none;
+	}
+
+	&.detachable-panel {
+		position: fixed;
+		bottom : 20px;
+		left: 20%;
+		right: 620px;
+		z-index: @popup-layer;
+
+		.splitter {
+			z-index : @popup-layer + 10;
+			position : absolute;
+
+			&.handle-right {
+				right : -5px;
+			}
+			&.handle-left {
+				left : -5px;
+			}
+			&.handle-top {
+				height : 15px;
+				top : -15px;
+
+				.drag-handle {
+					cursor : move;
+					top : 0px;
+				}
+			}
+			&.handle-bottom {
+				bottom : -5px;
+			}
+		}
 	}
 }
 
@@ -861,12 +908,7 @@ input[type=checkbox] {
 
 	.cdb-large {
 		.cdb-obj-editor {
-			position: fixed;
-			bottom : 20px;
 			max-height: 800px;
-			left: 20%;
-			right: 620px;
-			z-index: @popup-layer;
 			overflow: auto;
 			padding: 2px;
 			background: #111;
@@ -876,7 +918,6 @@ input[type=checkbox] {
 			opacity: 1;
 		}
 	}
-
 }
 
 /* Curve editor */
