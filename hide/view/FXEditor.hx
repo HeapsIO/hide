@@ -193,7 +193,9 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 							PBR: {
 								mode: "BeforeTonemapping",
 								blend: "Alpha",
-								shadows: false
+								shadows: false,
+								culling: "Back",
+								colorMask: 0xff
 							}
 						}
 						if(onMake != null) onMake(p);
