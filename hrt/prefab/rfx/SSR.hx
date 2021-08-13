@@ -80,7 +80,7 @@ class SSRShader extends hxsl.Shader {
 				alpha = 1.0 - (curPosWS - transformedPosition).length() / maxRayDistance;
 			}
 
-			pixelColor.rgba = vec4(fragmentColor, alpha);
+			pixelColor.rgba *= vec4(fragmentColor, alpha);
 		}
 	}
 }
