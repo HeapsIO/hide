@@ -565,7 +565,6 @@ class Prefab extends FileView {
 		col.makeColor(hsl.x, hsl.y, hsl.z);
 
 		grid.lineStyle(1.0, col.toColor(), 1.0);
-		//width
 		for(i in 0...(hxd.Math.floor(gridSize / gridStep) + 1)) {
 			grid.moveTo(i * gridStep, 0, 0);
 			grid.lineTo(i * gridStep, gridSize, 0);
