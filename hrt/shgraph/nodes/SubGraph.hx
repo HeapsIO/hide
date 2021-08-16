@@ -43,9 +43,11 @@ class SubGraph extends ShaderNode {
 					case "ShaderParam": // params become inputs
 						var shaderParam = Std.downcast(node.instance, ShaderParam);
 						var paramName = subShaderGraph.getParameter(shaderParam.parameterId).name;
-
-						inputsInfo.set(prefixSubGraph+node.id, { name : paramName , type: ShaderType.getSType(shaderParam.variable.type), hasProperty: false, isRequired : false, id : node.id });
-						inputInfoKeys.push(prefixSubGraph+node.id);
+						var paramId = "param_" + shaderParam.parameterId;
+						if (!inputsInfo.exists(prefixSubGraph + paramId)) {
+							inputsInfo.set(prefixSubGraph+paramId, { name : paramName , type: ShaderType.getSType(shaderParam.variable.type), hasProperty: false, isRequired : false, id : node.id });
+							inputInfoKeys.push(prefixSubGraph+paramId);
+						}
 					case "ShaderInput":
 						var shaderInput = Std.downcast(node.instance, ShaderInput);
 
