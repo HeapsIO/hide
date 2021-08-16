@@ -276,9 +276,6 @@ class Graph extends FileView {
 			if (e.button != 0)
 				return;
 			lastClickDrag = null;
-			if (listOfBoxesSelected.length == 1 && box.selected && !e.ctrlKey) {
-				clearSelectionBoxes();
-			}
 		});
 		listOfBoxes.push(box);
 
