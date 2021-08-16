@@ -423,7 +423,9 @@
 	}
 
 	&.cdb-obj-editor {
-		margin-top : 10px;
+		&:not(.cdb-large &) {
+			margin-top : 10px;
+		}
 		>.cdb-sheet {
 			border : 2px solid #333;
 			>tr>th {

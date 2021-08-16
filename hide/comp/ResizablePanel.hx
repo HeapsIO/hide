@@ -11,17 +11,15 @@ class ResizablePanel extends hide.comp.Component {
 	public function new(layoutDirection : LayoutDirection, element : Element) {
 		super(null, element);
 		this.layoutDirection = layoutDirection;
-		var splitter = new Element('<div class="splitter"><div class="drag_handle"></div></div>');
+		var splitter = new Element('<div class="splitter"><div class="drag-handle"></div></div>');
 		switch (layoutDirection) {
 			case Horizontal:
 				splitter.addClass("horizontal");
-				splitter.width("5px");
 			case Vertical:
 				splitter.addClass("vertical");
-				splitter.height("5px");
 		}
 		splitter.insertBefore(element);
-		var handle = splitter.find(".drag_handle").first();
+		var handle = splitter.find(".drag-handle").first();
 		var drag = false;
 		var startSize = 0;
 		var startPos = 0;

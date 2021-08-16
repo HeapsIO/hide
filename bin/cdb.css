@@ -373,7 +373,7 @@
   min-width: 500px;
   min-height: 500px;
 }
-.cdb.cdb-obj-editor {
+.cdb.cdb-obj-editor:not(.cdb-large .cdb.cdb-obj-editor) {
   margin-top: 10px;
 }
 .cdb.cdb-obj-editor > .cdb-sheet {
