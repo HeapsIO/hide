@@ -149,7 +149,12 @@ class FileTree extends FileView {
 						onRename(current, "/"+dir+"/"+current.split("/").pop());
 					});
 				}},
-				{ label : "Delete", enabled : current != null, click : function() if( js.Browser.window.confirm("Delete " + current + "?") ) { onDeleteFile(current); tree.refresh(); } },
+				{ label : "Delete", enabled : current != null, click : function() {
+					if( js.Browser.window.confirm("Delete " + current + "?") ) {
+						onDeleteFile(current);
+						tree.refresh();
+					}
+				}},
 			]);
 		});
 		tree.onDblClick = onOpenFile;
@@ -339,9 +344,13 @@ class FileTree extends FileView {
 		return true;
 	}
 
-	function onExploreFile( path : String ) {
-		var fullPath = sys.FileSystem.absolutePath(getFilePath(path));
+	public static function exploreFile(path : String) {
+		var fullPath = sys.FileSystem.absolutePath(path);
 		Sys.command("explorer.exe /select," + fullPath);
+	}
+
+	function onExploreFile( path : String ) {
+		exploreFile(getFilePath(path));
 	}
 
 	function onCloneFile( path : String ) {
@@ -401,6 +410,19 @@ class FileTree extends FileView {
 		ide.openFile(fullPath);
 		tree.closeFilter();
 		return true;
+	}
+
+	public function revealNode( path : String ) {
+		function doreveal() {
+			tree.revealNode(path);
+			tree.setSelection([path]);
+		}
+		if( tree.async ) {
+			tree.async = false;
+			tree.refresh(doreveal);
+		}
+		else
+			doreveal();
 	}
 
 	function createNew( basePath : String, ext : ExtensionDesc ) {

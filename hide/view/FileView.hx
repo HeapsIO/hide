@@ -173,14 +173,32 @@ class FileView extends hide.ui.View<{ path : String }> {
 	}
 
 	override function buildTabMenu() {
-		var arr : Array<hide.comp.ContextMenu.ContextMenuItem> = [
-			{ label : "Save", enabled : canSave() && modified, click : function() { save(); modified = false; } },
-			{ label : "Save As...", enabled : canSave(), click : saveAs },
-			{ label : null, isSeparator : true },
-			{ label : "Reload", click : function() rebuild() },
-			{ label : null, isSeparator : true },
-		];
+		var hasPath = state.path != null && state.path != "";
+		var reloadItem : hide.comp.ContextMenu.ContextMenuItem = { label : "Reload", click : function() rebuild() };
+		var arr : Array<hide.comp.ContextMenu.ContextMenuItem>;
+		if( !hasPath && !canSave() ) {
+			arr = [
+				reloadItem,
+				{ label : null, isSeparator : true },
+			];
+		}
+		else {
+			arr = [
+				{ label : "Save", enabled : canSave() && modified, click : function() { save(); modified = false; } },
+				{ label : "Save As...", enabled : canSave(), click : saveAs },
+				{ label : null, isSeparator : true },
+				reloadItem,
+				{ label : "Explore", enabled : hasPath, click : function() { FileTree.exploreFile(getPath()); } },
+				{ label : "Copy Path", enabled : hasPath, click : function() { ide.setClipboard(state.path); } },
+				{ label : "Open in Resources", enabled : hasPath, click : function() {
+					var filetree = ide.getViews(FileTree)[0];
+					if( filetree != null ) {
+						filetree.revealNode(state.path);
+					}
+				}},
+				{ label : null, isSeparator : true },
+			];
+		}
 		return arr.concat(super.buildTabMenu());
 	}
-
 }
