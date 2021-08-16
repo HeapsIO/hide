@@ -285,7 +285,6 @@ class ShaderEditor extends hide.view.Graph {
 				centerView();
 			}
 		});
-
 	}
 
 	override function save() {
@@ -324,6 +323,7 @@ class ShaderEditor extends hide.view.Graph {
 				}
 			}
 		}
+		@:privateAccess sceneEditor.scene.window.checkResize();
 	}
 
 	function refreshShaderGraph(readyEvent : Bool = true) {
