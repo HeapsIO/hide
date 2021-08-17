@@ -217,7 +217,8 @@ class ShaderGraph {
 			}
 			allVariables.push(shaderParam.variable);
 			allParameters.push(shaderParam.variable);
-			allParamDefaultValue.push(getParameter(shaderParam.parameterId).defaultValue);
+			if (parametersAvailable.exists(shaderParam.parameterId))
+				allParamDefaultValue.push(getParameter(shaderParam.parameterId).defaultValue);
 		}
 		if (isSubGraph) {
 			var subGraph = Std.downcast(node, hrt.shgraph.nodes.SubGraph);
