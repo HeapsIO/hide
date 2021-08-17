@@ -845,12 +845,28 @@ class ShaderEditor extends hide.view.Graph {
 	function openAddMenu(?x : Int, ?y : Int) {
 		if (x == null) x = 0;
 		if (y == null) y = 0;
+
+		var boundsWidth = Std.parseInt(element.css("width"));
+		var boundsHeight = Std.parseInt(element.css("height"));
+
+		var posCursor = new IPoint(Std.int(ide.mouseX - parent.offset().left) + x, Std.int(ide.mouseY - parent.offset().top) + y);
+		if( posCursor.x < 0 )
+			posCursor.x = 0;
+		if( posCursor.y < 0)
+			posCursor.y = 0;
+
 		if (addMenu != null) {
+			var menuWidth = Std.parseInt(addMenu.css("width")) + 10;
+			var menuHeight = Std.parseInt(addMenu.css("height")) + 10;
+			if( posCursor.x + menuWidth > boundsWidth )
+				posCursor.x = boundsWidth - menuWidth;
+			if( posCursor.y + menuHeight > boundsHeight )
+				posCursor.y = boundsHeight - menuHeight;
+
 			var input = addMenu.find("#search-input");
 			input.val("");
 			addMenu.show();
 			input.focus();
-			var posCursor = new IPoint(Std.int(ide.mouseX - parent.offset().left) + x, Std.int(ide.mouseY - parent.offset().top) + y);
 
 			addMenu.css("left", posCursor.x);
 			addMenu.css("top", posCursor.y);
@@ -873,11 +889,6 @@ class ShaderEditor extends hide.view.Graph {
 			<div id="results">
 			</div>
 		</div>').appendTo(parent);
-
-		var posCursor = new IPoint(Std.int(ide.mouseX - parent.offset().left) + x, Std.int(ide.mouseY - parent.offset().top) + y);
-
-		addMenu.css("left", posCursor.x);
-		addMenu.css("top", posCursor.y);
 
 		addMenu.on("mousedown", function(e) {
 			e.stopPropagation();
@@ -911,6 +922,14 @@ class ShaderEditor extends hide.view.Graph {
 					</div>').appendTo(results);
 			}
 		}
+		var menuWidth = Std.parseInt(addMenu.css("width")) + 10;
+		var menuHeight = Std.parseInt(addMenu.css("height")) + 10;
+		if( posCursor.x + menuWidth > boundsWidth )
+			posCursor.x = boundsWidth - menuWidth;
+		if( posCursor.y + menuHeight > boundsHeight )
+			posCursor.y = boundsHeight - menuHeight;
+		addMenu.css("left", posCursor.x);
+		addMenu.css("top", posCursor.y);
 
 		var input = addMenu.find("#search-input");
 		input.focus();
