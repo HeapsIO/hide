@@ -145,6 +145,7 @@ class ShaderEditor extends hide.view.Graph {
 		keys = new hide.ui.Keys(element);
 		keys.register("undo", function() undo.undo());
 		keys.register("redo", function() undo.redo());
+		keys.register("sceneeditor.focus", centerView);
 
 		parent.on("contextmenu", function(e) {
 			var elements = [];
@@ -213,7 +214,8 @@ class ShaderEditor extends hide.view.Graph {
 
 		element.find("#centerView").on("click", function() {
 			centerView();
-		});
+		})
+			.prop("title", 'Center around full graph (${config.get("key.sceneeditor.focus")})');
 
 		parametersList = element.find("#parametersList");
 

@@ -100,8 +100,8 @@ class Graph extends FileView {
 			mouseMoveFunction(e.clientX, e.clientY);
 		});
 
-
-		parent.on("mouseup", function(e) {
+		var document = new Element(js.Browser.document);
+		document.on("mouseup", function(e) {
 			if(timerUpdateView != null)
 				stopUpdateViewPosition();
 			if (e.button == 0) {
@@ -654,8 +654,8 @@ class Graph extends FileView {
 		}
 	}
 
-	function centerView() {
-		if (listOfBoxes.length == 0) return;
+	function getGraphDims() {
+		if (listOfBoxes.length == 0) return null;
 		var xMin = listOfBoxes[0].getX();
 		var yMin = listOfBoxes[0].getY();
 		var xMax = xMin + listOfBoxes[0].getWidth();
@@ -669,10 +669,22 @@ class Graph extends FileView {
 		}
 		var center = new IPoint(Std.int(xMin + (xMax - xMin)/2), Std.int(yMin + (yMax - yMin)/2));
 		center.y += Std.int(editor.element.height()*CENTER_OFFSET_Y);
-		var scale = Math.min(1, Math.min((editor.element.width() - 50) / (xMax - xMin), (editor.element.height() - 50) / (yMax - yMin)));
+		return {
+			xMin : xMin,
+			yMin : yMin,
+			xMax : xMax,
+			yMax : yMax,
+			center : center,
+		};
+	}
 
-		transformMatrix[4] = editor.element.width()/2 - center.x;
-		transformMatrix[5] = editor.element.height()/2 - center.y;
+	function centerView() {
+		if (listOfBoxes.length == 0) return;
+		var dims = getGraphDims();
+		var scale = Math.min(1, Math.min((editor.element.width() - 50) / (dims.xMax - dims.xMin), (editor.element.height() - 50) / (dims.yMax - dims.yMin)));
+
+		transformMatrix[4] = editor.element.width()/2 - dims.center.x;
+		transformMatrix[5] = editor.element.height()/2 - dims.center.y;
 
 		transformMatrix[0] = scale;
 		transformMatrix[3] = scale;
@@ -684,6 +696,24 @@ class Graph extends FileView {
 		transformMatrix[5] = y - (y - transformMatrix[5]) * scale;
 
 		updateMatrix();
+	}
+
+	function clampView() {
+		if (listOfBoxes.length == 0) return;
+		var dims = getGraphDims();
+
+		var width = editor.element.width();
+		var height = editor.element.height();
+		var scale = transformMatrix[0];
+
+		if( transformMatrix[4] + dims.xMin * scale > width )
+			transformMatrix[4] = width - dims.xMin * scale;
+		if( transformMatrix[4] + dims.xMax * scale < 0 )
+			transformMatrix[4] = -1 * dims.xMax * scale;
+		if( transformMatrix[5] + dims.yMin * scale > height )
+			transformMatrix[5] = height - dims.yMin * scale;
+		if( transformMatrix[5] + dims.yMax * scale < 0 )
+			transformMatrix[5] = -1 * dims.yMax * scale;
 	}
 
 	function updateMatrix() {
@@ -704,6 +734,7 @@ class Graph extends FileView {
 		transformMatrix[4] = x - (x - transformMatrix[4]) * scale;
 		transformMatrix[5] = y - (y - transformMatrix[5]) * scale;
 
+		clampView();
 		updateMatrix();
 	}
 
@@ -711,6 +742,7 @@ class Graph extends FileView {
 		transformMatrix[4] += p.x;
 		transformMatrix[5] += p.y;
 
+		clampView();
 		updateMatrix();
 	}
 
