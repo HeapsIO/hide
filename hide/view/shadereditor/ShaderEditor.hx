@@ -488,7 +488,7 @@ class ShaderEditor extends hide.view.Graph {
 				var parentPicker = new Element('<div style="width: 35px; height: 25px; display: inline-block;"></div>').appendTo(defaultValue);
 				var picker = new hide.comp.ColorPicker(true, parentPicker);
 
-				
+
 				if (value == null)
 					value = [0, 0, 0, 1];
 				var start : h3d.Vector = h3d.Vector.fromArray(value);
@@ -816,7 +816,8 @@ class ShaderEditor extends hide.view.Graph {
 		if (endLinkNode.attr("hasLink") != null) {
 			for (edge in listOfEdges) {
 				if (edge.nodeTo.is(endLinkNode)) {
-					removeEdge(edge);
+					super.removeEdge(edge);
+					removeShaderGraphEdge(edge);
 					break;
 				}
 			}
