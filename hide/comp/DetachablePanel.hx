@@ -108,8 +108,10 @@ class DetachablePanel extends hide.comp.Component {
 			currentSide = None;
 		});
 		document.mouseup((_) -> {
-			currentSide = None;
-			saveLayout();
+			if( currentSide != None ) {
+				currentSide = None;
+				saveLayout();
+			}
 		});
 
 		layoutControls.appendTo(element);
@@ -128,8 +130,10 @@ class DetachablePanel extends hide.comp.Component {
 
 	public function setDetached(val) {
 		element.toggleClass("detached", val);
-		var existingState = getDisplayState("detachedOffsets");
-		if( existingState != null )
-			element.css(existingState);
+		if( val ) {
+			var existingState = getDisplayState("detachedOffsets");
+			if( existingState != null )
+				element.css(existingState);
+		}
 	}
 }
