@@ -649,26 +649,21 @@ class EmitterObject extends h3d.scene.Object {
 					if( emitOrientation == Normal )
 						tmpQuat.initDirection(tmpOffset);
 				case Cylinder:
+					var z = random.rand();
 					var dx = 0.0, dy = 0.0;
 					if(emitSurface) {
 						var a = random.srand(Math.PI);
-						dx = Math.cos(a);
-						dy = Math.sin(a);
+						dx = Math.cos(a)*(emitRad2*z + emitRad1*(1.0-z));
+						dy = Math.sin(a)*(emitRad2*z + emitRad1*(1.0-z));
 					}
 					else {
-						do {
-							dx = random.srand(1.0);
-							dy = random.srand(1.0);
-						}
-						while(dx * dx + dy * dy > 1.0);
+						var a = random.srand(Math.PI);
+						dx = Math.cos(a)*(emitRad2*z + emitRad1*(1.0-z))*random.rand();
+						dy = Math.sin(a)*(emitRad2*z + emitRad1*(1.0-z))*random.rand();
 					}
-					var z = random.rand();
 					tmpOffset.set(dx * 0.5, dy * 0.5, z - 0.5);
 					if( emitOrientation == Normal )
 						tmpQuat.initRotation(0, 0, hxd.Math.atan2(dy, dx));
-
-					tmpOffset.x *= hxd.Math.lerp(emitRad1, emitRad2, x);
-					tmpOffset.y *= hxd.Math.lerp(emitRad1, emitRad2, x);
 				case Sphere:
 					do {
 						tmpOffset.x = random.srand(1.0);
