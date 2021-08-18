@@ -8,7 +8,6 @@ import hrt.shgraph.ShaderException;
 import haxe.Timer;
 using hxsl.Ast.Type;
 
-import haxe.rtti.Meta;
 import hide.comp.SceneEditor;
 import js.jquery.JQuery;
 import h2d.col.Point;
@@ -30,9 +29,11 @@ class ShaderEditor extends hide.view.Graph {
 
 	// used to preview
 	var sceneEditor : SceneEditor;
+	var defaultLight : hrt.prefab.Light;
 
 	var root : hrt.prefab.Prefab;
 	var obj : h3d.scene.Object;
+	var prefabObj : hrt.prefab.Prefab;
 	var shaderGraph : ShaderGraph;
 
 	var lastSnapshot : haxe.Json;
@@ -61,6 +62,7 @@ class ShaderEditor extends hide.view.Graph {
 								<input id="saveShader" type="button" value="Save" />
 								<input id="changeModel" type="button" value="Change Model" />
 								<input id="centerView" type="button" value="Center View" />
+								<input id="togglelight" type="button" value="Toggle Default Lights" />
 							</div>
 						</div>)');
 		parent.on("drop", function(e) {
@@ -82,24 +84,25 @@ class ShaderEditor extends hide.view.Graph {
 
 		var def = new hrt.prefab.Library();
 		new hrt.prefab.RenderProps(def).name = "renderer";
-		var l = new hrt.prefab.Light(def);
-		l.name = "sunLight";
-		l.kind = Directional;
-		l.power = 1.5;
+		defaultLight = new hrt.prefab.Light(def);
+		defaultLight.name = "sunLight";
+		defaultLight.kind = Directional;
+		defaultLight.power = 1.5;
 		var q = new h3d.Quat();
 		q.initDirection(new h3d.Vector(-1,-1.5,-3));
 		var a = q.toEuler();
-		l.rotationX = Math.round(a.x * 180 / Math.PI);
-		l.rotationY = Math.round(a.y * 180 / Math.PI);
-		l.rotationZ = Math.round(a.z * 180 / Math.PI);
-		l.shadows.mode = Dynamic;
-		l.shadows.size = 1024;
+		defaultLight.rotationX = Math.round(a.x * 180 / Math.PI);
+		defaultLight.rotationY = Math.round(a.y * 180 / Math.PI);
+		defaultLight.rotationZ = Math.round(a.z * 180 / Math.PI);
+		defaultLight.shadows.mode = Dynamic;
+		defaultLight.shadows.size = 1024;
 		root = def;
 
 		sceneEditor = new hide.comp.SceneEditor(this, root);
 		sceneEditor.editorDisplay = false;
 		sceneEditor.onRefresh = onRefresh;
 		sceneEditor.onUpdate = function(dt : Float) {};
+		sceneEditor.objectAreSelectable = false;
 		sceneEditor.view.keys = new hide.ui.Keys(null); // Remove SceneEditor Shortcuts
 
 		editorMatrix = editor.group(editor.element);
@@ -202,12 +205,19 @@ class ShaderEditor extends hide.view.Graph {
 		});
 
 		element.find("#changeModel").on("click", function() {
-			ide.chooseFile(["fbx"], function(path) {
+			ide.chooseFile(["fbx", "l3d", "prefab"], function(path) {
 				sceneEditor.scene.setCurrent();
-				sceneEditor.scene.s3d.removeChild(obj);
-				obj = sceneEditor.scene.loadModel(path, true);
+				if( prefabObj != null ) {
+					sceneEditor.deleteElements([prefabObj], false, false);
+					prefabObj = null;
+				}
+				else {
+					sceneEditor.scene.s3d.removeChild(obj);
+				}
+				loadPreviewPrefab(path);
 				saveDisplayState("customModel", path);
-				sceneEditor.scene.s3d.addChild(obj);
+				if( prefabObj == null )
+					sceneEditor.scene.s3d.addChild(obj);
 				compileShader();
 			});
 		});
@@ -216,6 +226,8 @@ class ShaderEditor extends hide.view.Graph {
 			centerView();
 		})
 			.prop("title", 'Center around full graph (${config.get("key.sceneeditor.focus")})');
+
+		element.find("#togglelight").on("click", toggleDefaultLight);
 
 		parametersList = element.find("#parametersList");
 
@@ -297,10 +309,27 @@ class ShaderEditor extends hide.view.Graph {
 		info("Shader saved");
 	}
 
+	function loadPreviewPrefab(path : String) {
+		if( path == null )
+			return;
+		prefabObj = null;
+		var ext = haxe.io.Path.extension(path).toLowerCase();
+		var relative = ide.makeRelative(path);
+		if( ext == "fbx" )
+			obj = sceneEditor.scene.loadModel(path, true);
+		else if( hrt.prefab.Library.getPrefabType(relative) != null ) {
+			var ref = new hrt.prefab.Reference(root);
+			ref.source = relative;
+			sceneEditor.addElements([ref], false, true, false);
+			prefabObj = ref;
+			obj = sceneEditor.getContext(prefabObj).local3d;
+		}
+	}
+
 	function onRefresh() {
 		var saveCustomModel = getDisplayState("customModel");
 		if (saveCustomModel != null)
-			obj = sceneEditor.scene.loadModel(saveCustomModel, true);
+			loadPreviewPrefab(saveCustomModel);
 		else {
 			// obj = sceneEditor.scene.loadModel("res/PrimitiveShapes/Sphere.fbx", true);
 			var sp = new h3d.prim.Sphere(1, 128, 128);
@@ -308,7 +337,8 @@ class ShaderEditor extends hide.view.Graph {
 			sp.addUVs();
 			obj = new h3d.scene.Mesh(sp);
 		}
-		sceneEditor.scene.s3d.addChild(obj);
+		if( prefabObj == null )
+			sceneEditor.scene.s3d.addChild(obj);
 
 		element.find("#preview").first().append(sceneEditor.scene.element);
 
@@ -326,6 +356,10 @@ class ShaderEditor extends hide.view.Graph {
 			}
 		}
 		@:privateAccess sceneEditor.scene.window.checkResize();
+	}
+
+	function toggleDefaultLight() {
+		sceneEditor.setEnabled([defaultLight], !defaultLight.enabled);
 	}
 
 	function refreshShaderGraph(readyEvent : Bool = true) {
@@ -687,7 +721,7 @@ class ShaderEditor extends hide.view.Graph {
 			for (m in obj.getMaterials()) {
 				m.mainPass.addShader(newShader);
 			}
-			@:privateAccess sceneEditor.scene.render(sceneEditor.scene.engine);
+			sceneEditor.scene.render(sceneEditor.scene.engine);
 			currentShader = newShader;
 			currentShaderDef = shaderGraphDef;
 			info('Shader compiled in  ${Date.now().getTime() - timeStart}ms');

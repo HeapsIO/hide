@@ -147,6 +147,7 @@ class SceneEditor {
 	public var cameraController2D : hide.view.l3d.CameraController2D;
 	public var editorDisplay(default,set) : Bool;
 	public var camera2D(default,set) : Bool = false;
+	public var objectAreSelectable = true;
 
 	// Windows default is 0.5
 	public var dblClickDuration = 0.2;
@@ -818,6 +819,8 @@ class SceneEditor {
 	}
 
 	function selectNewObject() {
+		if( !objectAreSelectable )
+			return;
 		var parentEl = sceneData;
 		 // for now always create at scene root, not `curEdit.rootElements[0];`
 		var group = getParentGroup(parentEl);
