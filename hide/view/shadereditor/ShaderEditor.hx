@@ -1034,7 +1034,7 @@ class ShaderEditor extends hide.view.Graph {
 						elt.hide();
 						continue;
 					}
-					if (value.length == 0 || elt.children().first().html().toLowerCase().indexOf(value.toLowerCase()) == 1) {
+					if (value.length == 0 || elt.children().first().html().toLowerCase().indexOf(value.toLowerCase()) != -1) {
 						if (isFirst) {
 							this.selectedNode = elt;
 							isFirst = false;
