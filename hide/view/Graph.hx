@@ -746,7 +746,7 @@ class Graph extends FileView {
 		updateMatrix();
 	}
 
-	function IsVisible() : Bool {
+	function isVisible() : Bool {
 		return editor.element.is(":visible");
 	}
 

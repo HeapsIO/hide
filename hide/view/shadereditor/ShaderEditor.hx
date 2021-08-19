@@ -295,7 +295,7 @@ class ShaderEditor extends hide.view.Graph {
 
 		new Element("svg").ready(function(e) {
 			refreshShaderGraph();
-			if (IsVisible()) {
+			if (isVisible()) {
 				centerView();
 			}
 		});
@@ -322,32 +322,36 @@ class ShaderEditor extends hide.view.Graph {
 			ref.source = relative;
 			sceneEditor.addElements([ref], false, true, false);
 			prefabObj = ref;
-			obj = sceneEditor.getContext(prefabObj).local3d;
+			obj = sceneEditor.getObject(prefabObj);
 		}
 	}
 
 	function onRefresh() {
-		var saveCustomModel = getDisplayState("customModel");
-		if (saveCustomModel != null)
-			loadPreviewPrefab(saveCustomModel);
-		else {
-			// obj = sceneEditor.scene.loadModel("res/PrimitiveShapes/Sphere.fbx", true);
-			var sp = new h3d.prim.Sphere(1, 128, 128);
-			sp.addNormals();
-			sp.addUVs();
-			obj = new h3d.scene.Mesh(sp);
+		if( obj == null ) {
+			var saveCustomModel = getDisplayState("customModel");
+			if (saveCustomModel != null)
+				loadPreviewPrefab(saveCustomModel);
+			else {
+				// obj = sceneEditor.scene.loadModel("res/PrimitiveShapes/Sphere.fbx", true);
+				var sp = new h3d.prim.Sphere(1, 128, 128);
+				sp.addNormals();
+				sp.addUVs();
+				obj = new h3d.scene.Mesh(sp);
+			}
+			if( prefabObj == null )
+				sceneEditor.scene.s3d.addChild(obj);
 		}
-		if( prefabObj == null )
-			sceneEditor.scene.s3d.addChild(obj);
+		else if( prefabObj != null )
+			obj = sceneEditor.getObject(prefabObj);
 
 		element.find("#preview").first().append(sceneEditor.scene.element);
 
-		if (IsVisible()) {
+		if (isVisible()) {
 			launchCompileShader();
 		} else {
 			var timer = new Timer(VIEW_VISIBLE_CHECK_TIMER);
 			timer.run = function() {
-				if (IsVisible()) {
+				if (isVisible()) {
 					centerView();
 					generateEdges();
 					launchCompileShader();
@@ -355,7 +359,9 @@ class ShaderEditor extends hide.view.Graph {
 				}
 			}
 		}
-		@:privateAccess sceneEditor.scene.window.checkResize();
+		@:privateAccess
+		if( sceneEditor.scene.window != null )
+			sceneEditor.scene.window.checkResize();
 	}
 
 	function toggleDefaultLight() {
@@ -398,7 +404,7 @@ class ShaderEditor extends hide.view.Graph {
 
 		if (readyEvent) {
 			new Element(".nodes").ready(function(e) {
-				if (IsVisible()) {
+				if (isVisible()) {
 					generateEdges();
 				}
 			});
