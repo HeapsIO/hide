@@ -1,7 +1,6 @@
 package hide.comp;
 
 import hrt.prefab.Reference;
-import h3d.col.Sphere;
 import h3d.scene.Mesh;
 import h3d.col.FPoint;
 import h3d.col.Ray;
@@ -18,6 +17,7 @@ import hrt.prefab.Object3D;
 import h3d.scene.Object;
 
 import hide.comp.cdb.DataFiles;
+import hide.view.CameraController.CamController as CameraController;
 
 enum SelectMode {
 	/**
@@ -36,15 +36,6 @@ enum SelectMode {
 		Don't refresh tree and don't undo command
 	**/
 	Nothing;
-}
-
-class CameraController extends h3d.scene.CameraController {
-	override function sync(ctx:h3d.scene.RenderContext) {
-		var old = ctx.elapsedTime;
-		ctx.elapsedTime = hxd.Timer.dt;
-		super.sync(ctx);
-		ctx.elapsedTime = old;
-	}
 }
 
 @:access(hide.comp.SceneEditor)
@@ -296,7 +287,7 @@ class SceneEditor {
 	}
 
 	function makeCamController() : h3d.scene.CameraController {
-		var c = new CameraController(scene.s3d);
+		var c = new CameraController(scene.s3d, this);
 		c.friction = 0.9;
 		c.panSpeed = 0.6;
 		c.zoomAmount = 1.05;

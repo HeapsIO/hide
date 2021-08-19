@@ -34,16 +34,6 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		parent = cast view;
 	}
 
-	override function makeCamController() {
-		var c = new CamController(scene.s3d, this);
-		c.friction = 0.9;
-		c.panSpeed = 0.6;
-		c.zoomAmount = 1.05;
-		c.smooth = 0.7;
-		c.minDistance = 1;
-		return c;
-	}
-
 	override function onSceneReady() {
 		super.onSceneReady();
 		parent.onSceneReady();
