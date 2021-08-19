@@ -29,7 +29,7 @@ class Script extends FileView {
 						if( text != "" ) {
 							var n = text.split(" ").length;
 							count += n;
-							category.count += n;
+							if( category != null ) category.count += n;
 						}
 					case Document:
 						for( x in x )
