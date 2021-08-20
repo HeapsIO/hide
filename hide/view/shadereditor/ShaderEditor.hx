@@ -63,6 +63,7 @@ class ShaderEditor extends hide.view.Graph {
 								<input id="changeModel" type="button" value="Change Model" />
 								<input id="centerView" type="button" value="Center View" />
 								<input id="togglelight" type="button" value="Toggle Default Lights" />
+								<input id="displayCompiled" type="button" value="Display compiled Glsl" />
 							</div>
 						</div>)');
 		parent.on("drop", function(e) {
@@ -228,6 +229,8 @@ class ShaderEditor extends hide.view.Graph {
 			.prop("title", 'Center around full graph (${config.get("key.sceneeditor.focus")})');
 
 		element.find("#togglelight").on("click", toggleDefaultLight);
+
+		element.find("#displayCompiled").on("click", displayCompiled);
 
 		parametersList = element.find("#parametersList");
 
@@ -707,6 +710,18 @@ class ShaderEditor extends hide.view.Graph {
 			timerCompileShader.stop();
 			compileShader();
 		};
+	}
+
+	function displayCompiled() {
+		var text = "";
+		if( currentShaderDef == null || currentShader == null )
+			text += "No valid shader in memory";
+		if( currentShaderDef != null ) {
+			text += "\n\n";
+			text += hxsl.GlslOut.compile(currentShaderDef.shader.data);
+		}
+
+		info(text);
 	}
 
 	function compileShader() {

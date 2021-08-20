@@ -1529,12 +1529,14 @@ input[type=checkbox]:checked:after {
   border: 1px solid #444;
   left: -1px;
   bottom: -1px;
+  max-height: 60%;
+  overflow: auto;
 }
-.graph-view .heaps-scene #status-bar span {
+.graph-view .heaps-scene #status-bar pre {
   padding: 10px;
   vertical-align: sub;
 }
-.graph-view .heaps-scene #status-bar span.error {
+.graph-view .heaps-scene #status-bar pre.error {
   color: #c74848;
 }
 .graph-view .heaps-scene svg g {
