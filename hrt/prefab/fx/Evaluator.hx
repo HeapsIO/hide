@@ -63,8 +63,11 @@ class Evaluator {
 			case VOne: return time;
 			case VConst(v): return v * time;
 			case VCurveScale(c, scale): return c.getSum(time) * scale;
+			case VCurve(c): return c.getSum(time);
 			case VAdd(a, b):
 				return getSum(a, time) + getSum(b, time);
+			case VMult(a, b):
+				return getSum(a, time) * getSum(b, time);
 			default: 0.0;
 		}
 		return 0.0;
