@@ -69,6 +69,7 @@ class Tile extends h3d.scene.Mesh {
 		shader = new hrt.shader.Terrain();
 		material.mainPass.addShader(shader);
 		material.mainPass.culling = Back;
+		material.staticShadows = true;
 		material.mainPass.setPassName("terrain");
 		material.mainPass.stencil = new h3d.mat.Stencil();
 		material.mainPass.stencil.setFunc(Always, 0x01, 0xFF, 0xFF);
