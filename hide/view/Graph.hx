@@ -590,6 +590,9 @@ class Graph extends FileView {
 		contextMenu.on("mousedown", function(e) {
 			e.stopPropagation();
 		});
+		contextMenu.on("wheel", function(e) {
+			e.stopPropagation();
+		});
 
 		contextMenu.on("click", function(e) {
 			closeCustomContextMenu();
