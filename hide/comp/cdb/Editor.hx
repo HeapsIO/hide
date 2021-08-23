@@ -275,7 +275,7 @@ class Editor extends Component {
 		var realSheet = cursor.table.getRealSheet();
 		var allLines = cursor.table.lines;
 
-		var inserted = false;
+		var fullRefresh = false;
 		var toRefresh : Array<Cell> = [];
 
 		var isProps = (cursor.table.displayMode != Table);
@@ -415,7 +415,7 @@ class Editor extends Component {
 				if( posY == sheet.lines.length ) {
 					if( !cursor.table.canInsert() ) break;
 					sheet.newLine();
-					inserted = true;
+					fullRefresh = true;
 				}
 				var obj2 = sheet.lines[posY];
 				for( cid in 0...clipboard.schema.length ) {
@@ -427,7 +427,9 @@ class Editor extends Component {
 						continue;
 
 					setValue(obj1, obj2, c1, c2);
-					if( !inserted )
+					if( c2.type == TList || c2.type == TProperties )
+						fullRefresh = true;
+					if( !fullRefresh )
 						toRefresh.push(allLines[posY].cells[cid + posX]);
 				}
 				posY++;
@@ -436,7 +438,7 @@ class Editor extends Component {
 		formulas.evaluateAll(realSheet);
 		endChanges();
 		realSheet.sync();
-		if( inserted )
+		if( fullRefresh )
 			refreshAll();
 		else {
 			for( c in toRefresh ) {
