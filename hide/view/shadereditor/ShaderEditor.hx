@@ -63,7 +63,12 @@ class ShaderEditor extends hide.view.Graph {
 								<input id="changeModel" type="button" value="Change Model" />
 								<input id="centerView" type="button" value="Center View" />
 								<input id="togglelight" type="button" value="Toggle Default Lights" />
-								<input id="displayCompiled" type="button" value="Display compiled Glsl" />
+								<div>
+									Display Compiled
+									<input id="displayHxsl" type="button" value="Hxsl" />
+									<input id="displayGlsl" type="button" value="Glsl" />
+									<input id="displayHlsl" type="button" value="Hlsl" />
+								</div>
 							</div>
 						</div>)');
 		parent.on("drop", function(e) {
@@ -230,7 +235,9 @@ class ShaderEditor extends hide.view.Graph {
 
 		element.find("#togglelight").on("click", toggleDefaultLight);
 
-		element.find("#displayCompiled").on("click", displayCompiled);
+		element.find("#displayHxsl").on("click", () -> displayCompiled("hxsl"));
+		element.find("#displayGlsl").on("click", () -> displayCompiled("glsl"));
+		element.find("#displayHlsl").on("click", () -> displayCompiled("hlsl"));
 
 		parametersList = element.find("#parametersList");
 
@@ -712,15 +719,18 @@ class ShaderEditor extends hide.view.Graph {
 		};
 	}
 
-	function displayCompiled() {
-		var text = "";
+	function displayCompiled(type : String) {
+		var text = "\n";
 		if( currentShaderDef == null || currentShader == null )
 			text += "No valid shader in memory";
-		if( currentShaderDef != null ) {
-			text += "\n\n";
-			text += hxsl.GlslOut.compile(currentShaderDef.shader.data);
+		if( currentShaderDef != null) {
+			text += switch( type ) {
+				case "hxsl": hxsl.Printer.shaderToString(currentShaderDef.shader.data);
+				case "glsl": hxsl.GlslOut.compile(currentShaderDef.shader.data);
+				case "hlsl": new hxsl.HlslOut().run(currentShaderDef.shader.data);
+				default: "";
+			}
 		}
-
 		info(text);
 	}
 
