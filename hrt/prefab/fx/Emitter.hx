@@ -510,6 +510,7 @@ class EmitterObject extends h3d.scene.Object {
 	var randomSeed = 0;
 	var context : hrt.prefab.Context;
 	var emitCount = 0;
+	var emitTarget = 0.0;
 	var lastTime = -1.0;
 	var curTime = 0.0;
 	var evaluator : Evaluator;
@@ -534,6 +535,7 @@ class EmitterObject extends h3d.scene.Object {
 		curTime = 0.0;
 		lastTime = 0.0;
 		emitCount = 0;
+		emitTarget = 0;
 		totalBurstCount = 0;
 
 		var p = particles;
@@ -854,13 +856,13 @@ class EmitterObject extends h3d.scene.Object {
 		if( enable ) {
 			switch emitType {
 				case Infinity:
-					var emitTarget = evaluator.getSum(emitRate, curTime);
+					emitTarget += evaluator.getFloat(emitRate, curTime) * dt;
 					var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, emitTarget - emitCount));
 					doEmit(delta);
 					if( isSubEmitter && (parentEmitter == null || parentEmitter.parent == null) )
 						enable = false;
 				case Duration:
-					var emitTarget = evaluator.getSum(emitRate, hxd.Math.min(curTime, emitDuration));
+					emitTarget += evaluator.getFloat(emitRate, hxd.Math.min(curTime, emitDuration)) * dt;
 					var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, emitTarget - emitCount));
 					doEmit(delta);
 					if( isSubEmitter && curTime >= emitDuration )
