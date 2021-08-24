@@ -1158,7 +1158,7 @@ class FXEditor extends FileView {
 			}
 			curveEdit.xOffset = xOffset;
 			curveEdit.xScale = xScale;
-			if(isInstanceCurve(curve))
+			if(isInstanceCurve(curve) && curve.parent.to(hrt.prefab.fx.Emitter) == null)
 				curve.maxTime = 1.0;
 			curveEdit.curve = curve;
 			curveEdit.onChange = function(anim) {
