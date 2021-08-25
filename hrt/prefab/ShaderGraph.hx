@@ -36,7 +36,6 @@ class ShaderGraph extends DynamicShader {
 		btn.on("click", function() {
  			ctx.ide.openFile(source);
 		});
-
 		ctx.properties.add(btn,this.props, function(pname) {
 			ctx.onChange(this, pname);
 		});

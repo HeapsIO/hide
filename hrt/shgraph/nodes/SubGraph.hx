@@ -27,7 +27,7 @@ class SubGraph extends ShaderNode {
 			try {
 				subShaderGraph = new ShaderGraph(pathShaderGraph);
 			} catch (e : Dynamic) {
-				trace("The shader doesn't not exist.");
+				trace("The shader does not exist.");
 				return;
 			}
 			inputsInfo = new Map<String, ShaderNode.InputInfo>();
