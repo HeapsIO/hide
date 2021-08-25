@@ -25,6 +25,16 @@ class PostProcess extends RendererFX {
 		}
 	}
 
+	function getProps() {
+		if (props == null)
+			props = {};
+		return props;
+	}
+
+	override function load( obj : Dynamic ) {
+		loadSerializedFields(obj);
+	}
+
 	public function loadShaderDef() {
 		shaderDef = shaderGraph.compile();
 		if(shaderDef == null)
@@ -34,8 +44,8 @@ class PostProcess extends RendererFX {
 		for(v in shaderDef.shader.data.vars) {
 			if(v.kind != Param)
 				continue;
-			if(!Reflect.hasField(this, v.name)) {
-				Reflect.setField(this, v.name, getDefault(v.type));
+			if(!Reflect.hasField(getProps(), v.name)) {
+				Reflect.setField(getProps(), v.name, shaderDef.inits.filter((init) -> return init.variable == v)[0].value);
 			}
 		}
 		#end
@@ -48,7 +58,6 @@ class PostProcess extends RendererFX {
 	}
 
 	function setShaderParam(shader:hxsl.Shader, v:hxsl.Ast.TVar, value:Dynamic) {
-		//Reflect.setProperty(shader, v.name, value);
 		cast(shader,hxsl.DynamicShader).setParamValue(v, value);
 	}
 
@@ -56,7 +65,7 @@ class PostProcess extends RendererFX {
 		for(v in shaderDef.data.vars) {
 			if(v.kind != Param)
 				continue;
-			var val : Dynamic = Reflect.field(this, v.name);
+			var val : Dynamic = Reflect.field(getProps(), v.name);
 			switch(v.type) {
 			case TVec(_, VFloat):
 				if(val != null) {
@@ -177,6 +186,16 @@ class PostProcess extends RendererFX {
 			ectx.onChange(this, pname);
 			if(pname == "source") {
 				shaderGraph = null;
+				shaderPass.removeShader(shader);
+				shader = null;
+				if (shaderDef != null) {
+					for(v in shaderDef.shader.data.vars) {
+						if (Reflect.hasField(getProps(), v.name))
+							Reflect.deleteField(getProps(), v.name);
+					}
+					shaderDef = null;
+				}
+
 				updateProps();
 				ectx.properties.clear();
 				edit(ectx);
@@ -198,10 +217,10 @@ class PostProcess extends RendererFX {
 				continue;
 			var prop = makeShaderParam(v);
 			if( prop == null ) continue;
-			props.push({name: v.name, t: prop, def: Reflect.field(this, v.name)});
+			props.push({name: v.name, t: prop, def: Reflect.field(getProps(), v.name)});
 		}
 		group.append(hide.comp.PropsEditor.makePropsList(props));
-		ectx.properties.add(group, this, function(pname) {
+		ectx.properties.add(group, getProps(), function(pname) {
 			ectx.onChange(this, pname);
 			updateInstance(ectx.rootContext, pname);
 
@@ -212,27 +231,27 @@ class PostProcess extends RendererFX {
  			ectx.ide.openFile(source);
 		});
 
-		ectx.properties.add(btn,this, function(pname) {
+		ectx.properties.add(btn, this, function(pname) {
 			ectx.onChange(this, pname);
 		});
 	}
 	#end
 
-	public static function getDefault(type: hxsl.Ast.Type): Dynamic {
-		switch(type) {
-			case TBool:
-				return false;
-			case TInt:
-				return 0;
-			case TFloat:
-				return 0.0;
-			case TVec( size, VFloat ):
-				return [for(i in 0...size) 0];
-			default:
-				return null;
-		}
-		return null;
-	}
+	// public static function getDefault(type: hxsl.Ast.Type): Dynamic {
+	// 	switch(type) {
+	// 		case TBool:
+	// 			return false;
+	// 		case TInt:
+	// 			return 0;
+	// 		case TFloat:
+	// 			return 0.0;
+	// 		case TVec( size, VFloat ):
+	// 			return [for(i in 0...size) 0];
+	// 		default:
+	// 			return null;
+	// 	}
+	// 	return null;
+	// }
 
 	static var _ = Library.register("rfx.PostProcess", PostProcess);
 
