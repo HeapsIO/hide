@@ -1580,13 +1580,13 @@ class SceneEditor {
 		return e != root;
 	}
 
-	public function resetCamera() {
+	public function resetCamera(distanceFactor = 1.5) {
 		if( camera2D ) {
 			cameraController2D.initFromScene();
 		} else {
 			scene.s3d.camera.zNear = scene.s3d.camera.zFar = 0;
 			scene.s3d.camera.fovY = 25; // reset to default fov
-			scene.resetCamera(1.5);
+			scene.resetCamera(distanceFactor);
 			cameraController.lockZPlanes = scene.s3d.camera.zNear != 0;
 			cameraController.loadFromCamera();
 		}

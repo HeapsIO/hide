@@ -224,6 +224,7 @@ class ShaderEditor extends hide.view.Graph {
 				saveDisplayState("customModel", path);
 				if( prefabObj == null )
 					sceneEditor.scene.s3d.addChild(obj);
+				sceneEditor.resetCamera(1.05);
 				compileShader();
 			});
 		});
@@ -350,6 +351,7 @@ class ShaderEditor extends hide.view.Graph {
 			}
 			if( prefabObj == null )
 				sceneEditor.scene.s3d.addChild(obj);
+			sceneEditor.resetCamera(1.05);
 		}
 		else if( prefabObj != null )
 			obj = sceneEditor.getObject(prefabObj);
