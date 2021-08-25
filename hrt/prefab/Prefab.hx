@@ -37,6 +37,11 @@ class Prefab {
 	@:s public var enabled : Bool = true;
 
 	/**
+		Tells if the prefab will create an instance when used in an other prefab or in game. Also apply to this prefab children.
+	**/
+	@:s public var editorOnly : Bool = false;
+
+	/**
 		Prevent the prefab from being selected in Hide. Also apply to this prefab children.
 	**/
 	@:s public var locked : Bool = false;
@@ -260,6 +265,9 @@ class Prefab {
 			ctx = new Context();
 			ctx.init();
 		}
+		var fromRef = #if editor ctx.shared.parent != null #else true #end;
+		if (fromRef && editorOnly)
+			return ctx;
 		ctx = makeInstance(ctx);
 		for( c in children )
 			makeChildren(ctx, c);
