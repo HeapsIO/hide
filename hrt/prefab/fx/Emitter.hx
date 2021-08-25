@@ -613,7 +613,6 @@ class EmitterObject extends h3d.scene.Object {
 		if( instDef == null || particleTemplate == null )
 			return;
 
-		var shapeAngle = hxd.Math.degToRad(emitAngle) / 2.0;
 		var emitterQuat : h3d.Quat = null;
 		var emitterBaseMat : h3d.Matrix = null;
 
@@ -653,13 +652,13 @@ class EmitterObject extends h3d.scene.Object {
 				case Cylinder:
 					var z = random.rand();
 					var dx = 0.0, dy = 0.0;
+					var shapeAngle = hxd.Math.degToRad(emitAngle) / 2.0;
+					var a = random.srand(shapeAngle);
 					if(emitSurface) {
-						var a = random.srand(Math.PI);
 						dx = Math.cos(a)*(emitRad2*z + emitRad1*(1.0-z));
 						dy = Math.sin(a)*(emitRad2*z + emitRad1*(1.0-z));
 					}
 					else {
-						var a = random.srand(Math.PI);
 						dx = Math.cos(a)*(emitRad2*z + emitRad1*(1.0-z))*random.rand();
 						dy = Math.sin(a)*(emitRad2*z + emitRad1*(1.0-z))*random.rand();
 					}
@@ -681,6 +680,7 @@ class EmitterObject extends h3d.scene.Object {
 				case Cone:
 					tmpOffset.set(0, 0, 0);
 					var theta = random.rand() * Math.PI * 2;
+					var shapeAngle = hxd.Math.degToRad(emitAngle) / 2.0;
 					var phi = shapeAngle * random.rand();
 					tmpDir.x = Math.cos(phi) * scaleX;
 					tmpDir.y = Math.sin(phi) * Math.sin(theta) * scaleY;
@@ -1067,7 +1067,7 @@ class Emitter extends Object3D {
 		{ name: "enableSort", t: PBool, def: true, disp: "Enable Sort", groupName : "Emit Params" },
 		// EMIT SHAPE
 		{ name: "emitShape", t: PEnum(EmitShape), def: EmitShape.Sphere, disp: "Shape", groupName : "Emit Shape" },
-		{ name: "emitAngle", t: PFloat(0, 360.0), disp: "Angle", groupName : "Emit Shape" },
+		{ name: "emitAngle", t: PFloat(0, 360.0), def: 360.0, disp: "Angle", groupName : "Emit Shape" },
 		{ name: "emitRad1", t: PFloat(0, 1.0), def: 1.0, disp: "Radius 1", groupName : "Emit Shape" },
 		{ name: "emitRad2", t: PFloat(0, 1.0), def: 1.0, disp: "Radius 2", groupName : "Emit Shape" },
 		{ name: "emitSurface", t: PBool, def: false, disp: "Surface", groupName : "Emit Shape" },
@@ -1407,7 +1407,7 @@ class Emitter extends Object3D {
 		}
 
 		var emitShape : EmitShape = getParamVal("emitShape");
-		if(emitShape != Cone)
+		if(!(emitShape == Cone || emitShape == Cylinder))
 			removeParam("emitAngle");
 		if(emitShape != Cylinder) {
 			removeParam("emitRad1");
@@ -1597,19 +1597,22 @@ class Emitter extends Object3D {
 		for(i in 0...debugShape.numChildren)
 			debugShape.removeChild(debugShape.getChildAt(i));
 
-		inline function circle(npts, f) {
-			for(i in 0...(npts+1)) {
-				var c = hxd.Math.cos((i / npts) * hxd.Math.PI * 2.0);
-				var s = hxd.Math.sin((i / npts) * hxd.Math.PI * 2.0);
-				f(i, c, s);
-			}
-		}
-
 		var mesh : h3d.scene.Mesh = null;
 		switch(emitterObj.emitShape) {
 			case Cylinder: {
 				var rad1 = getParamVal("emitRad1") * 0.5;
 				var rad2 = getParamVal("emitRad2") * 0.5;
+				var angle = hxd.Math.degToRad(getParamVal("emitAngle"));
+
+				inline function circle(npts, f) {
+					for(i in 0...(npts+1)) {
+						var t = Math.PI + (i / npts) * angle + (Math.PI*2 - angle) * 0.5;
+						var c = hxd.Math.cos(t);
+						var s = hxd.Math.sin(t);
+						f(i, c, s);
+					}
+				}
+
 				var g = new h3d.scene.Graphics(debugShape);
 				g.material.mainPass.setPassName("overlay");
 				g.lineStyle(1, 0xffffff);
@@ -1637,6 +1640,15 @@ class Emitter extends Object3D {
 				mesh = new h3d.scene.Box(0xffffff, true, debugShape);
 			}
 			case Cone: {
+				inline function circle(npts, f) {
+					for(i in 0...(npts+1)) {
+						var t = (i / npts) * hxd.Math.PI * 2.0;
+						var c = hxd.Math.cos(t);
+						var s = hxd.Math.sin(t);
+						f(i, c, s);
+					}
+				}
+
 				var g = new h3d.scene.Graphics(debugShape);
 				g.material.mainPass.setPassName("overlay");
 				var angle = hxd.Math.degToRad(getParamVal("emitAngle")) / 2.0;
