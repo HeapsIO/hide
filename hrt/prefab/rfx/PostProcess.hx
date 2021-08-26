@@ -5,21 +5,18 @@ import hrt.prefab.Library;
 import hxd.Math;
 class PostProcess extends RendererFX {
 
-	var shaderPass = new h3d.pass.ScreenFx(new h3d.shader.ScreenShader());
+	var shaderPass = new h3d.pass.ScreenFx(new h3d.scene.pbr.Renderer.DepthCopy());
 	var shaderGraph : hrt.shgraph.ShaderGraph;
 	var shaderDef : hrt.prefab.ContextShared.ShaderDef;
 	var shader : hxsl.DynamicShader;
-
-	function sync( r : h3d.scene.Renderer ) {
-		var ctx = r.ctx;
-		shaderPass.pass.setBlendMode(Alpha);
-	}
+	var blendMode : h3d.mat.BlendMode = Alpha;
 
 	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
 		if( !checkEnabled() ) return;
 		if( step == AfterTonemapping ) {
 			r.mark("PostProcess");
-			sync(r);
+			//var ctx = r.ctx;
+			shaderPass.pass.setBlendMode(blendMode);
 			if (shader != null)
 				shaderPass.render();
 		}
@@ -41,11 +38,9 @@ class PostProcess extends RendererFX {
 			return;
 
 		#if editor
-		for(v in shaderDef.shader.data.vars) {
-			if(v.kind != Param)
-				continue;
-			if(!Reflect.hasField(getProps(), v.name)) {
-				Reflect.setField(getProps(), v.name, shaderDef.inits.filter((init) -> return init.variable == v)[0].value);
+		for( v in shaderDef.inits ) {
+			if(!Reflect.hasField(props, v.variable.name)) {
+				Reflect.setField(props, v.variable.name, v.value);
 			}
 		}
 		#end
@@ -189,9 +184,9 @@ class PostProcess extends RendererFX {
 				shaderPass.removeShader(shader);
 				shader = null;
 				if (shaderDef != null) {
-					for(v in shaderDef.shader.data.vars) {
-						if (Reflect.hasField(getProps(), v.name))
-							Reflect.deleteField(getProps(), v.name);
+					for(v in shaderDef.inits) {
+						if (Reflect.hasField(getProps(), v.variable.name))
+							Reflect.deleteField(getProps(), v.variable.name);
 					}
 					shaderDef = null;
 				}
@@ -226,6 +221,11 @@ class PostProcess extends RendererFX {
 
 		});
 
+		var blendModeElt = new hide.Element('<dl><dt>Blend mode</dt><dd><select field="blendMode"></select></dd></dl>');
+		ectx.properties.add(blendModeElt, this, function (pname) {
+			ectx.onChange(this, pname);
+			updateInstance(ectx.rootContext, pname);
+		});
 		var btn = new hide.Element("<input type='submit' style='width: 100%; margin-top: 10px;' value='Open Shader Graph' />");
 		btn.on("click", function() {
  			ectx.ide.openFile(source);
