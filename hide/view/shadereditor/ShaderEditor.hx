@@ -452,7 +452,6 @@ class ShaderEditor extends hide.view.Graph {
 				}
 				if( !found )
 					watch(subGraphNode.pathShaderGraph, rebuild, { keepOnRebuild: false });
-				trace("watching", subGraphNode.pathShaderGraph);
 			}
 		}
 
