@@ -60,15 +60,19 @@ class ShaderEditor extends hide.view.Graph {
 								<input id="createParameter" type="button" value="Add parameter" />
 								<input id="launchCompileShader" type="button" value="Compile shader" />
 								<input id="saveShader" type="button" value="Save" />
-								<input id="changeModel" type="button" value="Change Model" />
+								<div>
+									<input id="changeModel" type="button" value="Change Model" />
+									<input id="removeModel" type="button" value="Remove Model" />
+								</div>
 								<input id="centerView" type="button" value="Center View" />
-								<input id="togglelight" type="button" value="Toggle Default Lights" />
 								<div>
 									Display Compiled
 									<input id="displayHxsl" type="button" value="Hxsl" />
 									<input id="displayGlsl" type="button" value="Glsl" />
 									<input id="displayHlsl" type="button" value="Hlsl" />
 								</div>
+								<input id="togglelight" type="button" value="Toggle Default Lights" />
+								<input id="refreshGraph" type="button" value="Refresh Shader Graph" />
 							</div>
 						</div>)');
 		parent.on("drop", function(e) {
@@ -155,6 +159,7 @@ class ShaderEditor extends hide.view.Graph {
 		keys.register("undo", function() undo.undo());
 		keys.register("redo", function() undo.redo());
 		keys.register("sceneeditor.focus", centerView);
+		keys.register("view.refresh", rebuild);
 
 		parent.on("contextmenu", function(e) {
 			var elements = [];
@@ -229,12 +234,17 @@ class ShaderEditor extends hide.view.Graph {
 			});
 		});
 
+		element.find("#removeModel").on("click", resetPreviewDefault);
+
 		element.find("#centerView").on("click", function() {
 			centerView();
 		})
 			.prop("title", 'Center around full graph (${config.get("key.sceneeditor.focus")})');
 
 		element.find("#togglelight").on("click", toggleDefaultLight);
+
+		element.find("#refreshGraph").on("click", rebuild)
+			.prop("title", 'Refresh the Shader (${config.get("key.view.refresh")})');
 
 		element.find("#displayHxsl").on("click", () -> displayCompiled("hxsl"));
 		element.find("#displayGlsl").on("click", () -> displayCompiled("glsl"));
@@ -337,6 +347,26 @@ class ShaderEditor extends hide.view.Graph {
 		}
 	}
 
+	function resetPreviewDefault() {
+		sceneEditor.scene.setCurrent();
+		if( prefabObj != null ) {
+			sceneEditor.deleteElements([prefabObj], false, false);
+			prefabObj = null;
+		}
+		else {
+			sceneEditor.scene.s3d.removeChild(obj);
+		}
+		removeDisplayState("customModel");
+
+		var sp = new h3d.prim.Sphere(1, 128, 128);
+		sp.addNormals();
+		sp.addUVs();
+		obj = new h3d.scene.Mesh(sp);
+		sceneEditor.scene.s3d.addChild(obj);
+		sceneEditor.resetCamera(1.05);
+		compileShader();
+	}
+
 	function onRefresh() {
 		if( obj == null ) {
 			var saveCustomModel = getDisplayState("customModel");
@@ -381,7 +411,6 @@ class ShaderEditor extends hide.view.Graph {
 	}
 
 	function refreshShaderGraph(readyEvent : Bool = true) {
-
 		listOfBoxes = [];
 		listOfEdges = [];
 
@@ -411,6 +440,19 @@ class ShaderEditor extends hide.view.Graph {
 				addBox(new Point(node.x, node.y), ShaderParam, paramNode);
 			} else {
 				addBox(new Point(node.x, node.y), std.Type.getClass(node.instance), node.instance);
+			}
+			var subGraphNode = Std.downcast(node.instance, SubGraph);
+			if( subGraphNode != null ) {
+				var found = false;
+				for( el in watches ) {
+					if( el.path == subGraphNode.pathShaderGraph ) {
+						found = true;
+						break;
+					}
+				}
+				if( !found )
+					watch(subGraphNode.pathShaderGraph, rebuild, { keepOnRebuild: false });
+				trace("watching", subGraphNode.pathShaderGraph);
 			}
 		}
 

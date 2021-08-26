@@ -1379,6 +1379,8 @@ input[type=checkbox]:checked:after {
   display: block;
   margin-bottom: 10px;
   width: 100%;
+  text-align: center;
+  box-sizing: border-box;
 }
 .graph-view .tabs .tab .options-block > div {
   border: 1px solid #666;

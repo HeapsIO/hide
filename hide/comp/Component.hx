@@ -37,4 +37,10 @@ class Component {
 		js.Browser.window.localStorage.setItem(saveDisplayKey + "/" + key, haxe.Json.stringify(value));
 	}
 
+	function removeDisplayState( key : String ) {
+		if( saveDisplayKey == null )
+			return;
+		js.Browser.window.localStorage.removeItem(saveDisplayKey + "/" + key);
+	}
+
 }
