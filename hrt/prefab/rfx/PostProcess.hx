@@ -9,7 +9,7 @@ class PostProcess extends RendererFX {
 	var shaderGraph : hrt.shgraph.ShaderGraph;
 	var shaderDef : hrt.prefab.ContextShared.ShaderDef;
 	var shader : hxsl.DynamicShader;
-	var blendMode : h3d.mat.BlendMode = Alpha;
+	@:s var blendMode : h3d.mat.BlendMode = Alpha;
 
 	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
 		if( !checkEnabled() ) return;
@@ -20,12 +20,6 @@ class PostProcess extends RendererFX {
 			if (shader != null)
 				shaderPass.render();
 		}
-	}
-
-	function getProps() {
-		if (props == null)
-			props = {};
-		return props;
 	}
 
 	override function load( obj : Dynamic ) {
@@ -60,7 +54,7 @@ class PostProcess extends RendererFX {
 		for(v in shaderDef.data.vars) {
 			if(v.kind != Param)
 				continue;
-			var val : Dynamic = Reflect.field(getProps(), v.name);
+			var val : Dynamic = Reflect.field(props, v.name);
 			switch(v.type) {
 			case TVec(_, VFloat):
 				if(val != null) {
@@ -185,8 +179,8 @@ class PostProcess extends RendererFX {
 				shader = null;
 				if (shaderDef != null) {
 					for(v in shaderDef.inits) {
-						if (Reflect.hasField(getProps(), v.variable.name))
-							Reflect.deleteField(getProps(), v.variable.name);
+						if (Reflect.hasField(props, v.variable.name))
+							Reflect.deleteField(props, v.variable.name);
 					}
 					shaderDef = null;
 				}
@@ -212,10 +206,10 @@ class PostProcess extends RendererFX {
 				continue;
 			var prop = makeShaderParam(v);
 			if( prop == null ) continue;
-			props.push({name: v.name, t: prop, def: Reflect.field(getProps(), v.name)});
+			props.push({name: v.name, t: prop, def: Reflect.field(props, v.name)});
 		}
 		group.append(hide.comp.PropsEditor.makePropsList(props));
-		ectx.properties.add(group, getProps(), function(pname) {
+		ectx.properties.add(group, props, function(pname) {
 			ectx.onChange(this, pname);
 			updateInstance(ectx.rootContext, pname);
 
