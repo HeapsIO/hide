@@ -206,10 +206,10 @@ class PostProcess extends RendererFX {
 				continue;
 			var prop = makeShaderParam(v);
 			if( prop == null ) continue;
-			props.push({name: v.name, t: prop, def: Reflect.field(props, v.name)});
+			props.push({name: v.name, t: prop, def: Reflect.field(this.props, v.name)});
 		}
 		group.append(hide.comp.PropsEditor.makePropsList(props));
-		ectx.properties.add(group, props, function(pname) {
+		ectx.properties.add(group, this.props, function(pname) {
 			ectx.onChange(this, pname);
 			updateInstance(ectx.rootContext, pname);
 
