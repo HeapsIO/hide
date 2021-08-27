@@ -1640,6 +1640,17 @@ input[type=checkbox]:checked:after {
   float: left;
   margin-right: 10px;
 }
+.graph-view .heaps-scene svg .properties-group .custom-var {
+  display: table;
+  width: 100%;
+}
+.graph-view .heaps-scene svg .properties-group .custom-var div.custom-var-row {
+  display: table-row;
+}
+.graph-view .heaps-scene svg .properties-group .custom-var div.custom-var-row label,
+.graph-view .heaps-scene svg .properties-group .custom-var div.custom-var-row span {
+  display: table-cell;
+}
 .graph-view .heaps-scene svg .edge {
   stroke-width: 2;
   stroke: #c8c8c8;

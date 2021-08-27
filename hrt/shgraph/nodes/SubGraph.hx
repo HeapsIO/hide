@@ -65,8 +65,9 @@ class SubGraph extends ShaderNode {
 						inputInfoKeys.push(prefixSubGraph+node.id);
 					case "ShaderOutput":
 						var shaderOutput = Std.downcast(node.instance, ShaderOutput);
+						var prefix = shaderOutput.variable.kind == Local ? "" : "*";
 
-						outputsInfo.set(prefixSubGraph+node.id, { name : shaderOutput.variable.name , type: ShaderType.getSType(shaderOutput.variable.type), id : node.id });
+						outputsInfo.set(prefixSubGraph+node.id, { name : prefix + shaderOutput.variable.name , type: ShaderType.getSType(shaderOutput.variable.type), id : node.id });
 						outputInfoKeys.push(prefixSubGraph+node.id);
 
 						addOutput(prefixSubGraph+node.id, shaderOutput.variable.type);
