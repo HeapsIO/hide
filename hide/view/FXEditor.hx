@@ -34,16 +34,6 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		parent = cast view;
 	}
 
-	override function makeCamController() {
-		var c = new CamController(scene.s3d, this);
-		c.friction = 0.9;
-		c.panSpeed = 0.6;
-		c.zoomAmount = 1.05;
-		c.smooth = 0.7;
-		c.minDistance = 1;
-		return c;
-	}
-
 	override function onSceneReady() {
 		super.onSceneReady();
 		parent.onSceneReady();
@@ -515,7 +505,7 @@ class FXEditor extends FileView {
 
 				if(previewMax < previewMin + 0.1) {
 					previewMin = 0;
-					previewMax = data.duration == 0 ? 1 : data.duration;
+					previewMax = data.duration == 0 ? 5000 : data.duration;
 				}
 
 				element.off("mousemove");
@@ -1158,7 +1148,7 @@ class FXEditor extends FileView {
 			}
 			curveEdit.xOffset = xOffset;
 			curveEdit.xScale = xScale;
-			if(isInstanceCurve(curve) && curve.parent.to(hrt.prefab.fx.Emitter) == null)
+			if(isInstanceCurve(curve))
 				curve.maxTime = 1.0;
 			curveEdit.curve = curve;
 			curveEdit.onChange = function(anim) {
@@ -1699,7 +1689,7 @@ class FXEditor extends FileView {
 		if(ctx != null && ctx.local3d != null) {
 			anim = Std.downcast(ctx.local3d,hrt.prefab.fx.FX.FXAnimation);
 		}
-	
+
 		if(!pauseButton.isDown()) {
 			currentTime += scene.speed * dt;
 			if(timeLineEl != null)
