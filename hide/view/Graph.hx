@@ -138,24 +138,6 @@ class Graph extends FileView {
 			}
 		});
 
-		parent.on("keydown", function(e) {
-
-			if (e.keyCode == 46) {
-				if (currentEdge != null) {
-					removeEdge(currentEdge);
-				}
-				if (listOfBoxesSelected.length > 0) {
-					for (b in listOfBoxesSelected) {
-						removeBox(b);
-					}
-					clearSelectionBoxes();
-				}
-				return;
-			} else if (e.keyCode == 32) {
-
-			}
-		});
-
 		listOfBoxes = [];
 		listOfEdges = [];
 
@@ -341,7 +323,7 @@ class Graph extends FileView {
 		return box;
 	}
 
-	function removeBox(box : Box) {
+	function removeBox(box : Box, trackChanges = true) {
 		removeEdges(box);
 		box.dispose();
 		listOfBoxes.remove(box);

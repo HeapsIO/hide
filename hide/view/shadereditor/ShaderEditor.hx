@@ -161,6 +161,8 @@ class ShaderEditor extends hide.view.Graph {
 		keys.register("sceneeditor.focus", centerView);
 		keys.register("view.refresh", rebuild);
 
+		keys.register("delete", deleteSelection);
+
 		parent.on("contextmenu", function(e) {
 			var elements = [];
 
@@ -174,10 +176,7 @@ class ShaderEditor extends hide.view.Graph {
 			deleteNode.on("click", function(e) {
 				if (listOfBoxesSelected.length > 0) {
 					if (ide.confirm("Delete all theses nodes ?")) {
-						for (b in listOfBoxesSelected) {
-							removeBox(b);
-						}
-						clearSelectionBoxes();
+						deleteSelection();
 					}
 				}
 			});
@@ -1265,8 +1264,23 @@ class ShaderEditor extends hide.view.Graph {
 		return box;
 	}
 
-	override function removeBox(box : Box) {
-		beforeChange();
+	function deleteSelection() {
+		if (currentEdge != null) {
+			removeEdge(currentEdge);
+		}
+		if (listOfBoxesSelected.length > 0) {
+			beforeChange();
+			for (b in listOfBoxesSelected) {
+				removeBox(b, false);
+			}
+			afterChange();
+			clearSelectionBoxes();
+		}
+	}
+
+	override function removeBox(box : Box, trackChanges = true) {
+		if( trackChanges )
+			beforeChange();
 		var isSubShader = Std.is(box.getInstance(), SubGraph);
 		var length = listOfEdges.length;
 		for (i in 0...length) {
@@ -1278,7 +1292,8 @@ class ShaderEditor extends hide.view.Graph {
 			}
 		}
 		shaderGraph.removeNode(box.getId());
-		afterChange();
+		if( trackChanges )
+			afterChange();
 		box.dispose();
 		listOfBoxes.remove(box);
 		launchCompileShader();
