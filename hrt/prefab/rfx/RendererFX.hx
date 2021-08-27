@@ -24,11 +24,7 @@ class RendererFX extends Prefab implements h3d.impl.RendererFX {
 	}
 
 	inline function checkEnabled() {
-		#if editor
-		return enableInEditor;
-		#else
-		return true;
-		#end
+		return enabled #if editor && enableInEditor #end;
 	}
 
 	#if editor
