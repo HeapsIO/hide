@@ -640,14 +640,16 @@ class Graph extends FileView {
 		}
 	}
 
-	function getGraphDims() {
-		if (listOfBoxes.length == 0) return null;
-		var xMin = listOfBoxes[0].getX();
-		var yMin = listOfBoxes[0].getY();
-		var xMax = xMin + listOfBoxes[0].getWidth();
-		var yMax = yMin + listOfBoxes[0].getHeight();
-		for (i in 1...listOfBoxes.length) {
-			var b = listOfBoxes[i];
+	function getGraphDims(?boxes) {
+		if( boxes == null )
+			boxes = listOfBoxes;
+		if( boxes.length == 0 ) return null;
+		var xMin = boxes[0].getX();
+		var yMin = boxes[0].getY();
+		var xMax = xMin + boxes[0].getWidth();
+		var yMax = yMin + boxes[0].getHeight();
+		for (i in 1...boxes.length) {
+			var b = boxes[i];
 			xMin = Math.min(xMin, b.getX());
 			yMin = Math.min(yMin, b.getY());
 			xMax = Math.max(xMax, b.getX() + b.getWidth());

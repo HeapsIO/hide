@@ -18,6 +18,15 @@ import hrt.shgraph.ShaderNode;
 
 typedef NodeInfo = { name : String, description : String, key : String };
 
+typedef SavedClipboard = {
+	nodes : Array<{
+		pos : Point,
+		nodeType : Class<ShaderNode>,
+		props : Dynamic,
+	}>,
+	edges : Array<{ fromIdx : Int, fromName : String, toIdx : Int, toName : String }>,
+}
+
 class ShaderEditor extends hide.view.Graph {
 
 	var parametersList : JQuery;
@@ -43,6 +52,9 @@ class ShaderEditor extends hide.view.Graph {
 	var VIEW_VISIBLE_CHECK_TIMER : Int = 500;
 	var currentShader : DynamicShader;
 	var currentShaderDef : hrt.prefab.ContextShared.ShaderDef;
+
+	static var clipboard : SavedClipboard = null;
+	static var lastCopyEditor : ShaderEditor = null;
 
 	override function onDisplay() {
 		super.onDisplay();
@@ -158,10 +170,12 @@ class ShaderEditor extends hide.view.Graph {
 		keys = new hide.ui.Keys(element);
 		keys.register("undo", function() undo.undo());
 		keys.register("redo", function() undo.redo());
+		keys.register("delete", deleteSelection);
+		keys.register("duplicate", duplicateSelection);
+		keys.register("copy", onCopy);
+		keys.register("paste", onPaste);
 		keys.register("sceneeditor.focus", centerView);
 		keys.register("view.refresh", rebuild);
-
-		keys.register("delete", deleteSelection);
 
 		parent.on("contextmenu", function(e) {
 			var elements = [];
@@ -883,26 +897,29 @@ class ShaderEditor extends hide.view.Graph {
 		@:privateAccess ShaderGraph.setParamValue(sceneEditor.context.shared, shader, variable, value);
 	}
 
+	function initSpecifics(node : Null<ShaderNode>) {
+		if( node == null )
+			return;
+		var shaderPreview = Std.downcast(node, hrt.shgraph.nodes.Preview);
+		if (shaderPreview != null) {
+			shaderPreview.config = config;
+			shaderPreview.shaderGraph = shaderGraph;
+			return;
+		}
+		var subGraphNode = Std.downcast(node, hrt.shgraph.nodes.SubGraph);
+		if (subGraphNode != null) {
+			subGraphNode.loadGraphShader();
+			return;
+		}
+	}
+
 	function addNode(p : Point, nodeClass : Class<ShaderNode>) {
 		beforeChange();
 
 		var node = shaderGraph.addNode(p.x, p.y, nodeClass);
 		afterChange();
 
-		var shaderPreview = Std.downcast(node, hrt.shgraph.nodes.Preview);
-		if (shaderPreview != null) {
-			shaderPreview.config = config;
-			shaderPreview.shaderGraph = shaderGraph;
-			addBox(p, nodeClass, shaderPreview);
-			return node;
-		}
-
-		var subGraphNode = Std.downcast(node, hrt.shgraph.nodes.SubGraph);
-		if (subGraphNode != null) {
-			subGraphNode.loadGraphShader();
-			addBox(p, nodeClass, subGraphNode);
-			return node;
-		}
+		initSpecifics(node);
 
 		addBox(p, nodeClass, node);
 
@@ -1262,6 +1279,130 @@ class ShaderEditor extends hide.view.Graph {
 		}
 
 		return box;
+	}
+
+	function saveSelection(?boxes) : SavedClipboard {
+		if( boxes == null )
+			boxes = listOfBoxesSelected;
+		if( boxes.length == 0 )
+			return null;
+		var dims = getGraphDims(boxes);
+		var baseX = dims.xMin;
+		var baseY = dims.yMin;
+		var box = boxes[0];
+		var nodes = [
+			for( b in boxes )
+				{
+					pos : new Point(b.getX() - baseX, b.getY() - baseY),
+					nodeType : std.Type.getClass(b.getInstance()),
+					props : b.getInstance().saveProperties(),
+				}
+		];
+
+		var edges : Array<{ fromIdx : Int, fromName : String, toIdx : Int, toName : String }> = [];
+
+		for( edge in listOfEdges ) {
+			for( fromIdx in 0...boxes.length ) {
+				if( boxes[fromIdx] == edge.from ) {
+					for( toIdx in 0...boxes.length ) {
+						if( boxes[toIdx] == edge.to ) {
+							edges.push({
+								fromIdx : fromIdx,
+								fromName : edge.nodeFrom.attr("field"),
+								toIdx : toIdx,
+								toName : edge.nodeTo.attr("field"),
+							});
+						}
+					}
+				}
+			}
+		}
+
+		return {
+			nodes : nodes,
+			edges : edges,
+		};
+	}
+
+	function loadClipboard(offset : Point, val : SavedClipboard, selectNew = true) {
+		if( val == null )
+			return;
+		if( offset == null )
+			offset = new Point(0, 0);
+		var instancedBoxes : Array<Null<Box>> = [];
+		for( n in val.nodes ) {
+			if( n.nodeType == ShaderParam && lastCopyEditor != this ) {
+				instancedBoxes.push(null);
+				continue;
+			}
+			var node = shaderGraph.addNode(offset.x + n.pos.x, offset.y + n.pos.y, n.nodeType);
+			node.loadProperties(n.props);
+			initSpecifics(node);
+			var shaderParam = Std.downcast(node, ShaderParam);
+			if( shaderParam != null ) {
+				var paramShader = shaderGraph.getParameter(shaderParam.parameterId);
+				if( paramShader == null ) {
+					shaderGraph.removeNode(node.id);
+					instancedBoxes.push(null);
+					continue;
+				}
+				shaderParam.variable = paramShader.variable;
+				shaderParam.setName(paramShader.name);
+				setDisplayValue(shaderParam, paramShader.type, paramShader.defaultValue);
+				shaderParam.computeOutputs();
+			}
+			var box = addBox(offset.add(n.pos), n.nodeType, node);
+			instancedBoxes.push(box);
+		}
+		for( edge in val.edges ) {
+			if( instancedBoxes[edge.fromIdx] == null || instancedBoxes[edge.toIdx] == null )
+				continue;
+			var toCreate = {
+				idOutput: instancedBoxes[edge.fromIdx].getId(),
+				nameOutput: edge.fromName,
+				idInput: instancedBoxes[edge.toIdx].getId(),
+				nameInput: edge.toName,
+			}
+			if( !shaderGraph.addEdge(toCreate) ) {
+				error("A pasted edge creates a cycle");
+			}
+		}
+		var newBoxes = [ for( box in instancedBoxes ) if( box != null ) refreshBox(box) ];
+		if( selectNew ) {
+			clearSelectionBoxes();
+			for( box in newBoxes ) {
+				box.setSelected(true);
+			}
+			listOfBoxesSelected = newBoxes;
+		}
+	}
+
+	function duplicateSelection() {
+		if (listOfBoxesSelected.length <= 0)
+			return;
+		var vals = saveSelection(listOfBoxesSelected);
+		var dims = getGraphDims(listOfBoxesSelected);
+		var offset = new Point(dims.xMin + 30, dims.yMin + 30);
+		lastCopyEditor = this;
+		beforeChange();
+		loadClipboard(offset, vals);
+		afterChange();
+	}
+
+	function onCopy() {
+		clipboard = saveSelection(listOfBoxesSelected);
+		lastCopyEditor = this;
+		ide.setClipboard(haxe.Json.stringify(clipboard));
+	}
+
+	function onPaste() {
+		var jsonClipboard = haxe.Json.stringify(clipboard);
+		if( jsonClipboard != ide.getClipboard() || lastCopyEditor == null)
+			return;
+		var posOffset = new Point(lX(ide.mouseX - 40), lY(ide.mouseY - 20));
+		beforeChange();
+		loadClipboard(posOffset, clipboard);
+		afterChange();
 	}
 
 	function deleteSelection() {
