@@ -511,7 +511,6 @@ class EmitterObject extends h3d.scene.Object {
 	var context : hrt.prefab.Context;
 	var emitCount = 0;
 	var emitTarget = 0.0;
-	var lastTime = -1.0;
 	var curTime = 0.0;
 	var evaluator : Evaluator;
 	var vecPool = new Evaluator.VecPool();
@@ -533,7 +532,6 @@ class EmitterObject extends h3d.scene.Object {
 		enable = true;
 		random.init(randomSeed);
 		curTime = 0.0;
-		lastTime = 0.0;
 		emitCount = 0;
 		emitTarget = 0;
 		totalBurstCount = 0;
@@ -925,7 +923,6 @@ class EmitterObject extends h3d.scene.Object {
 				}
 			}
 		}
-		lastTime = curTime;
 		curTime += dt;
 	}
 
@@ -998,17 +995,19 @@ class EmitterObject extends h3d.scene.Object {
 
 	public function setTime(time: Float) {
 		time = time * speedFactor + warmUpTime;
-		if(time < lastTime || lastTime < 0) {
+		if(time < curTime) {
 			reset();
 		}
 
 		var catchupTime = time - curTime;
 
-		#if !editor
-		if(catchupTime > maxCatchupWindow) {
-			curTime = time - maxCatchupWindow;
+		#if !editor  // Limit catchup time to avoid spikes when showing long running FX
+		var longCatchup = catchupTime > maxCatchupWindow;
+		if(longCatchup) {
+			var firstWarmup = curTime <= 0.0 && warmUpTime > 0;
+			catchupTime = firstWarmup ? warmUpTime : maxCatchupWindow;
+			curTime = time - catchupTime;
 			emitCount = hxd.Math.ceil(evaluator.getSum(emitRate, curTime));
-			catchupTime = maxCatchupWindow;
 
 			// Force sort after long time invisible
 			var p = particles;
@@ -1169,9 +1168,6 @@ class Emitter extends Object3D {
 			var shader = Std.downcast(c, hrt.prefab.Shader);
 			if( shader != null )
 				makeChildren(ctx, shader);
-			var lit = Std.downcast(c, hrt.prefab.pbr.ParticleLit);
-			if( lit != null )
-				makeChildren(ctx, lit);
 		}
 	}
 
@@ -1359,6 +1355,7 @@ class Emitter extends Object3D {
 		#end
 
 		emitterObj.createMeshBatch();
+		emitterObj.reset();
 		refreshChildren(ctx);
 
 		#if editor

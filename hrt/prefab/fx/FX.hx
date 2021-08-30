@@ -202,7 +202,7 @@ class FXAnimation extends h3d.scene.Object {
 		if(emitters != null) {
 			for(em in emitters) {
 				if (prevTime > localTime) {
-					@:privateAccess em.curTime = em.lastTime = time;
+					@:privateAccess em.curTime = time;
 					#if editor
 					em.reset();
 					#end
