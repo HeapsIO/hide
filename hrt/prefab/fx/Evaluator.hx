@@ -67,7 +67,8 @@ class Evaluator {
 			case VAdd(a, b):
 				return getSum(a, time) + getSum(b, time);
 			case VMult(a, b):
-				return getSum(a, time) * getSum(b, time);
+				throw "Not implemented";
+				return 0.0;
 			default: 0.0;
 		}
 		return 0.0;
