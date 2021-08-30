@@ -86,12 +86,19 @@ class ShaderOutput extends ShaderNode {
 				return;
 			}
 		}
+		var type: Type;
+		try {
+			type = haxe.EnumTools.createByName(Type, paramVariable[1], paramVariable[2]);
+		} catch( e ) {
+			trace('Received invalid props for output node. id: $id, variable name: ${paramVariable[0]}');
+			return;
+		}
 		this.variable = {
 			parent: null,
 			id: 0,
 			kind: Local,
 			name: paramVariable[0],
-			type: haxe.EnumTools.createByName(Type, paramVariable[1], paramVariable[2]),
+			type: type,
 		};
 	}
 
