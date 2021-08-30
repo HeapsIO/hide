@@ -157,7 +157,7 @@ class Shader extends Prefab {
 		for(v in shaderDef.data.vars) {
 			if( v.kind != Param )
 				continue;
-			if( v.qualifiers != null && v.qualifiers.indexOf(Ignore) >= 0 )
+			if( v.qualifiers != null && v.qualifiers.contains(Ignore) )
 				continue;
 			var prop = makeShaderParam(v);
 			if( prop == null ) continue;

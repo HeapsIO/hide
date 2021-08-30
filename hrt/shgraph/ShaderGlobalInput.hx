@@ -29,9 +29,9 @@ class ShaderGlobalInput extends ShaderInput {
 		var element = new hide.Element('<div style="width: 120px; height: 30px"></div>');
 		element.append(new hide.Element('<select id="variable"></select>'));
 
-		if (this.variable == null) 
+		if (this.variable == null)
 			this.variable = ShaderGlobalInput.globalInputs[0];
-		
+
 		var input = element.children("select");
 		var indexOption = 0;
 		for (c in ShaderGlobalInput.globalInputs) {
