@@ -1211,38 +1211,64 @@ class Emitter extends Object3D {
 
 		function makeParam(scope: Prefab, name: String): Value {
 			var getCurve = hrt.prefab.Curve.getCurve.bind(scope);
-			function makeCompVal(baseProp: Null<Float>, defVal: Float, randProp: Null<Float>, pname: String, suffix: String) : Value {
-				var xVal : Value = VZero;
-				var rv = baseProp != null ? baseProp : defVal;
-				xVal = switch(rv) {
+
+			function vVal(f: Float) : Value {
+				return switch(f) {
 					case 0.0: VZero;
 					case 1.0: VOne;
-					default: VConst(rv);
+					default: VConst(f);
 				}
+			}
 
+			function vMult(a: Value, b: Value) : Value {
+				if(a == VZero || b == VZero) return VZero;
+				if(a == VOne) return b;
+				if(b == VOne) return a;
+				switch a {
+					case VConst(va):
+						switch b {
+							case VConst(vb): return VConst(va * vb);
+							case VCurve(cb): return VCurveScale(cb, va);
+							default:
+						}
+					case VCurve(ca):
+						switch b {
+							case VConst(vb): return VCurveScale(ca, vb);
+							default:
+						}
+					default:
+				}
+				return VMult(a, b);
+			}
+
+			function vAdd(a: Value, b: Value) : Value {
+				if(a == VZero) return b;
+				if(b == VZero) return a;
+				switch a {
+					case VConst(va):
+						switch b {
+							case VConst(vb): return VConst(va + vb);
+							default:
+						}
+					default:
+				}
+				return VAdd(a, b);
+			}
+
+			function makeCompVal(baseProp: Null<Float>, defVal: Float, randProp: Null<Float>, pname: String, suffix: String) : Value {
+				var xVal = vVal(baseProp != null ? baseProp : defVal);
 				var randCurve = getCurve(pname + suffix + ".rand");
 				var randVal : Value = VZero;
 				if(randCurve != null)
 					randVal = VRandom(randIdx++, VCurveScale(randCurve, randProp != null ? randProp : 1.0));
-				else if(randProp != null)
-					randVal = VRandom(randIdx++, VConst(randProp));
+				else if(randProp != null && randProp != 0.0)
+					randVal = VRandomScale(randIdx++, randProp);
 
 				var xCurve = getCurve(pname + suffix);
-				if (xCurve != null) {
-					if(randVal == VZero)
-						return VMult(xVal, VCurve(xCurve));
-					if(xVal == VZero)
-						return VMult(randVal, VCurve(xCurve));
-					xVal = VAdd(xVal, randVal);
-					return VMult(xVal, VCurve(xCurve));
-				}
-				else {
-					if(randVal == VZero)
-						return xVal;
-					if(xVal == VZero)
-						return randVal;
-					return VAdd(xVal, randVal);
-				}
+				if (xCurve != null)
+					return vMult(vAdd(xVal, randVal), VCurve(xCurve))
+				else
+					return vAdd(xVal, randVal);
 			}
 
 			var baseProp: Dynamic = Reflect.field(props, name);

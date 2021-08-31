@@ -49,6 +49,13 @@ class Evaluator {
 					++len;
 				}
 				return randValues[idx] * getFloat(scale, time);
+			case VRandomScale(idx, scale):
+				var len = randValues.length;
+				while(idx >= len) {
+					randValues.push(random.srand());
+					++len;
+				}
+				return randValues[idx] * scale;
 			case VMult(a, b):
 				return getFloat(a, time) * getFloat(b, time);
 			case VAdd(a, b):
