@@ -683,6 +683,9 @@ class ShaderEditor extends hide.view.Graph {
 		deleteBtn.appendTo(actionBtns);
 
 		var inputTitle = elt.find(".input-title");
+		inputTitle.on("click", function(e) {
+			e.stopPropagation();
+		});
 		inputTitle.on("keydown", function(e) {
 			e.stopPropagation();
 		});
