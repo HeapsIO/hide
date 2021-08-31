@@ -2,13 +2,13 @@ package hrt.shgraph.nodes;
 
 using hxsl.Ast;
 
-@name("uvToScreen")
+@name("UV To Screen")
 @description("")
-@width(80)
+@width(100)
 @group("Math")
 class UvToScreen extends ShaderFunction {
 
-	@input("uv") var uv = SType.Vec2;
+	@input("UV") var uv = SType.Vec2;
 
 	public function new() {
 		super(UvToScreen);
