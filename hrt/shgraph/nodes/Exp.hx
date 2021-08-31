@@ -8,8 +8,8 @@ using hxsl.Ast;
 @group("Math")
 class Exp extends ShaderFunction {
 
-	@input("x") var x = SType.Number;
-	@input("p", true) var p = SType.Number;
+	@input("X") var x = SType.Number;
+	@input("P", true) var p = SType.Number;
 
 	public function new() {
 		super(Exp);

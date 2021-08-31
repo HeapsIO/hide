@@ -50,24 +50,45 @@ class SubGraph extends ShaderNode {
 							ids = paramInfo.ids;
 						ids.push(node.id);
 						if (!inputsInfo.exists(prefixSubGraph + paramId)) {
-							inputInfoKeys.push(prefixSubGraph+paramId);
+							inputInfoKeys.insert(shaderParam.parameterIndex ,prefixSubGraph+paramId);
 						}
 						inputsInfo.set(prefixSubGraph+paramId, { name : paramName , type: ShaderType.getSType(shaderParam.variable.type), hasProperty: false, isRequired : false, ids : ids });
 					case "ShaderInput":
 						var shaderInput = Std.downcast(node.instance, ShaderInput);
-
-						inputsInfo.set(prefixSubGraph+node.id, { name : "*" + shaderInput.variable.name , type: ShaderType.getSType(shaderInput.variable.type), hasProperty: false, isRequired : false, ids : [node.id] });
-						inputInfoKeys.push(prefixSubGraph+node.id);
+						var inputId = "input_" + shaderInput.variable.id;
+						var inputInfo = inputsInfo.get(prefixSubGraph+inputId);
+						var ids = [];
+						if (inputInfo != null && inputInfo.ids != null)
+							ids = inputInfo.ids;
+						ids.push(node.id);
+						if (!inputsInfo.exists(prefixSubGraph + inputId)) {
+							inputInfoKeys.push(prefixSubGraph+inputId);
+						}
+						inputsInfo.set(prefixSubGraph+inputId, { name : "*" + shaderInput.variable.name , type: ShaderType.getSType(shaderInput.variable.type), hasProperty: false, isRequired : false, ids : ids });
 					case "ShaderGlobalInput":
 						var shaderInput = Std.downcast(node.instance, ShaderGlobalInput);
-
-						inputsInfo.set(prefixSubGraph+node.id, { name : "*" + shaderInput.variable.name , type: ShaderType.getSType(shaderInput.variable.type), hasProperty: false, isRequired : false, ids : [node.id] });
-						inputInfoKeys.push(prefixSubGraph+node.id);
+						var inputId = "globalInput_" + shaderInput.variable.id;
+						var inputInfo = inputsInfo.get(prefixSubGraph+inputId);
+						var ids = [];
+						if (inputInfo != null && inputInfo.ids != null)
+							ids = inputInfo.ids;
+						ids.push(node.id);
+						if (!inputsInfo.exists(prefixSubGraph + inputId)) {
+							inputInfoKeys.push(prefixSubGraph+inputId);
+						}
+						inputsInfo.set(prefixSubGraph+inputId, { name : "*" + shaderInput.variable.name , type: ShaderType.getSType(shaderInput.variable.type), hasProperty: false, isRequired : false, ids : ids });
 					case "ShaderCameraInput":
 						var shaderInput = Std.downcast(node.instance, ShaderCameraInput);
-
-						inputsInfo.set(prefixSubGraph+node.id, { name : "*" + shaderInput.variable.name , type: ShaderType.getSType(shaderInput.variable.type), hasProperty: false, isRequired : false, ids : [node.id] });
-						inputInfoKeys.push(prefixSubGraph+node.id);
+						var inputId = "cameraInput_" + shaderInput.variable.id;
+						var inputInfo = inputsInfo.get(prefixSubGraph+inputId);
+						var ids = [];
+						if (inputInfo != null && inputInfo.ids != null)
+							ids = inputInfo.ids;
+						ids.push(node.id);
+						if (!inputsInfo.exists(prefixSubGraph + inputId)) {
+							inputInfoKeys.push(prefixSubGraph+inputId);
+						}
+						inputsInfo.set(prefixSubGraph+inputId, { name : "*" + shaderInput.variable.name , type: ShaderType.getSType(shaderInput.variable.type), hasProperty: false, isRequired : false, ids : ids });
 					case "ShaderOutput":
 						var shaderOutput = Std.downcast(node.instance, ShaderOutput);
 						var prefix = shaderOutput.variable.kind == Local ? "" : "*";

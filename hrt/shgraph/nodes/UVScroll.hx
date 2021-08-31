@@ -7,9 +7,9 @@ using hxsl.Ast;
 @group("Specials")
 class UVScroll extends ShaderNode {
 
-	@input("uv") var uv = SType.Vec2;
-	@input("uSpeed", true) var uSpeed = SType.Number;
-	@input("vSpeed", true) var vSpeed = SType.Number;
+	@input("UV") var uv = SType.Vec2;
+	@input("USpeed", true) var uSpeed = SType.Number;
+	@input("VSpeed", true) var vSpeed = SType.Number;
 
 	@output("") var output = SType.Vec2;
 
@@ -27,7 +27,7 @@ class UVScroll extends ShaderNode {
 	}
 
 	override public function build(key : String) : TExpr {
-		
+
 		var globalTime : TVar = @:privateAccess ShaderGlobalInput.globalInputs.filter(i -> i.name.indexOf("time") != -1)[0];
 		var timeExpr : TExpr = { e: TVar(globalTime), p: null, t: globalTime.type };
 

@@ -8,8 +8,8 @@ using hxsl.Ast;
 @group("Math")
 class Mod extends ShaderFunction {
 
-	@input("x") var x = SType.Variant;
-	@input("mod", true) var mod = SType.Float;
+	@input("X") var x = SType.Variant;
+	@input("Mod", true) var mod = SType.Float;
 
 	public function new() {
 		super(Mod);

@@ -7,9 +7,9 @@ using hxsl.Ast;
 @group("Condition")
 class IfCondition extends ShaderNode {
 
-	@input("condition") var condition = SType.Bool;
-	@input("true") var trueVar = SType.Variant;
-	@input("false") var falseVar = SType.Variant;
+	@input("Condition") var condition = SType.Bool;
+	@input("True") var trueVar = SType.Variant;
+	@input("False") var falseVar = SType.Variant;
 
 	@output() var output = SType.Variant;
 

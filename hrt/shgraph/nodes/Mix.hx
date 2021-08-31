@@ -8,9 +8,9 @@ using hxsl.Ast;
 @group("Math")
 class Mix extends ShaderFunction {
 
-	@input("a") var x = SType.Number;
-	@input("b") var y = SType.Number;
-	@input("mix") var a = SType.Number;
+	@input("A") var x = SType.Number;
+	@input("B") var y = SType.Number;
+	@input("Mix") var a = SType.Number;
 
 	public function new() {
 		super(Mix);

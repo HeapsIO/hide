@@ -8,8 +8,8 @@ using hxsl.Ast;
 @group("Math")
 class Cross extends ShaderFunction {
 
-	@input("a") var a = SType.Number;
-	@input("b") var b = SType.Number;
+	@input("A") var a = SType.Number;
+	@input("B") var b = SType.Number;
 
 	public function new() {
 		super(Cross);

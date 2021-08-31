@@ -11,7 +11,7 @@ using hxsl.Ast;
 @noheader()
 class Preview extends ShaderNode {
 
-	@input("input") var input = SType.Vec4;
+	@input("Input") var input = SType.Vec4;
 
 	public var variable : TVar;
 

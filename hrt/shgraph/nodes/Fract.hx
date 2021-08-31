@@ -8,7 +8,7 @@ using hxsl.Ast;
 @group("Math")
 class Fract extends ShaderFunction {
 
-	@input("x") var x = SType.Number;
+	@input("X") var x = SType.Number;
 
 	public function new() {
 		super(Fract);

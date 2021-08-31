@@ -7,10 +7,10 @@ using hxsl.Ast;
 @group("Condition")
 class Cond extends ShaderNode {
 
-	@input("left") var leftVar = SType.Number;
-	@input("right") var rightVar = SType.Number;
+	@input("Left") var leftVar = SType.Number;
+	@input("Right") var rightVar = SType.Number;
 
-	@output("boolean") var output = SType.Bool;
+	@output("Boolean") var output = SType.Bool;
 
 	@prop() var condition : Binop;
 
@@ -60,7 +60,7 @@ class Cond extends ShaderNode {
 	var conditionStrings 	= ["==", "!=",    ">",  ">=",  "<",  "<=",  "AND", "OR"];
 
 	override public function loadProperties(props : Dynamic) {
-		this.condition = std.Type.createEnum(Binop, Reflect.field(props, "condition"));
+		this.condition = std.Type.createEnum(Binop, Reflect.field(props, "Condition"));
 	}
 
 	override public function saveProperties() : Dynamic {

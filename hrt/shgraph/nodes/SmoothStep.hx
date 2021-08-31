@@ -8,9 +8,9 @@ using hxsl.Ast;
 @group("Math")
 class SmoothStep extends ShaderFunction {
 
-	@input("a") var x = SType.Number;
-	@input("b") var y = SType.Number;
-	@input("mix") var a = SType.Number;
+	@input("A") var x = SType.Number;
+	@input("A") var y = SType.Number;
+	@input("Mix") var a = SType.Number;
 
 	public function new() {
 		super(Smoothstep);
