@@ -264,7 +264,7 @@ class ShaderEditor extends hide.view.Graph {
 		element.find("#displayHlsl").on("click", () -> displayCompiled("hlsl"));
 
 		parametersList = element.find("#parametersList");
-		parametersList.on("click contextmenu", function(e) {
+		parametersList.on("contextmenu", function(e) {
 			e.preventDefault();
 			e.stopPropagation();
 			function createElement(name : String, type : Type) : Element {
