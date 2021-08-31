@@ -264,6 +264,25 @@ class ShaderEditor extends hide.view.Graph {
 		element.find("#displayHlsl").on("click", () -> displayCompiled("hlsl"));
 
 		parametersList = element.find("#parametersList");
+		parametersList.on("click contextmenu", function(e) {
+			e.preventDefault();
+			e.stopPropagation();
+			function createElement(name : String, type : Type) : Element {
+				var elt = new Element('
+					<div>
+						<span> ${name} </span>
+					</div>');
+				elt.on("click", function() {
+					createParameter(type);
+				});
+				return elt;
+			}
+			customContextMenu([
+				createElement("Number", TFloat),
+				createElement("Color", TVec(4, VFloat)),
+				createElement("Texture", TSampler2D)
+				]);
+		});
 
 		editorMatrix.on("click", "input, select", function(ev) {
 			beforeChange();
@@ -564,6 +583,7 @@ class ShaderEditor extends hide.view.Graph {
 	function addParameter(id : Int, name : String, type : Type, ?value : Dynamic) {
 
 		var elt = new Element('<div id="param_${id}" class="parameter" draggable="true" ></div>').appendTo(parametersList);
+		elt.on("click", function(e) {e.stopPropagation();});
 		var content = new Element('<div class="content" ></div>');
 		content.hide();
 		var defaultValue = new Element("<div><span>Default: </span></div>").appendTo(content);
@@ -663,9 +683,6 @@ class ShaderEditor extends hide.view.Graph {
 		deleteBtn.appendTo(actionBtns);
 
 		var inputTitle = elt.find(".input-title");
-		inputTitle.on("click", function(e) {
-			e.stopPropagation();
-		});
 		inputTitle.on("keydown", function(e) {
 			e.stopPropagation();
 		});
