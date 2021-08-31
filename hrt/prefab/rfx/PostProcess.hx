@@ -3,22 +3,55 @@ package hrt.prefab.rfx;
 import hrt.prefab.rfx.RendererFX;
 import hrt.prefab.Library;
 import hxd.Math;
+
+private class GraphShader extends h3d.shader.ScreenShader {
+
+	static var SRC = {
+		@param var source : Sampler2D;
+
+		function fragment() {
+			pixelColor = source.get(calculatedUV);
+		}
+	}
+}
 class PostProcess extends RendererFX {
 
-	var shaderPass = new h3d.pass.ScreenFx(new h3d.scene.pbr.Renderer.DepthCopy());
+	var shaderPass = new h3d.pass.ScreenFx(new GraphShader());
 	var shaderGraph : hrt.shgraph.ShaderGraph;
 	var shaderDef : hrt.prefab.ContextShared.ShaderDef;
 	var shader : hxsl.DynamicShader;
-	@:s var blendMode : h3d.mat.BlendMode = Alpha;
 
 	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
 		if( !checkEnabled() ) return;
 		if( step == AfterTonemapping ) {
 			r.mark("PostProcess");
-			//var ctx = r.ctx;
-			shaderPass.pass.setBlendMode(blendMode);
-			if (shader != null)
+			if (shader != null) {
+				var ctx = r.ctx;
+				var target = r.allocTarget("ppTarget", false);
+				shaderPass.shader.source = ctx.getGlobal("ldrMap");
+
+				ctx.engine.pushTarget(target);
 				shaderPass.render();
+				ctx.engine.popTarget();
+
+				ctx.setGlobal("ldrMap", target);
+				r.setTarget(target);
+			}
+		}
+		if( step == BeforeTonemapping ) {
+			r.mark("PostProcess");
+			if (shader != null) {
+				var ctx = r.ctx;
+				var target = r.allocTarget("ppTarget", false);
+				shaderPass.shader.source = ctx.getGlobal("hdrMap");
+
+				ctx.engine.pushTarget(target);
+				shaderPass.render();
+				ctx.engine.popTarget();
+
+				ctx.setGlobal("hdrMap", target);
+				r.setTarget(target);
+			}
 		}
 	}
 
@@ -50,8 +83,8 @@ class PostProcess extends RendererFX {
 		cast(shader,hxsl.DynamicShader).setParamValue(v, value);
 	}
 
-	function syncShaderVars( shader : hxsl.Shader, shaderDef : hxsl.SharedShader ) {
-		for(v in shaderDef.data.vars) {
+	function syncShaderVars() {
+		for(v in shaderDef.shader.data.vars) {
 			if(v.kind != Param)
 				continue;
 			var val : Dynamic = Reflect.field(props, v.name);
@@ -85,7 +118,6 @@ class PostProcess extends RendererFX {
 	function makeShader() {
 		if( getShaderDefinition() == null )
 			return null;
-		var shader;
 		var dshader = new hxsl.DynamicShader(shaderDef.shader);
 		for( v in shaderDef.inits ) {
 			#if !hscript
@@ -95,7 +127,8 @@ class PostProcess extends RendererFX {
 			#end
 		}
 		shader = dshader;
-		syncShaderVars(shader, shaderDef.shader);
+		syncShaderVars();
+		shaderPass.addShader(shader);
 		return shader;
 	}
 
@@ -112,8 +145,7 @@ class PostProcess extends RendererFX {
 		if (shader == null)
 			shader = makeShader();
 		else
-			syncShaderVars(shader, shaderDef.shader);
-		shaderPass.addShader(shader);
+			syncShaderVars();
 	}
 
 	public function resolveRef(shared : hrt.prefab.ContextShared) {
@@ -195,14 +227,14 @@ class PostProcess extends RendererFX {
 		super.edit(ectx);
 		if (shaderGraph == null)
 			return;
-		var shaderDef = getShaderDefinition();
+		getShaderDefinition();
 
 		var group = new hide.Element('<div class="group" name="Shader"></div>');
 		var props = [];
-		for(v in shaderDef.data.vars) {
+		for(v in shaderDef.shader.data.vars) {
 			if( v.kind != Param )
 				continue;
-			if( v.qualifiers != null && v.qualifiers.indexOf(Ignore) >= 0 )
+			if( v.qualifiers != null && v.qualifiers.contains(Ignore) )
 				continue;
 			var prop = makeShaderParam(v);
 			if( prop == null ) continue;
@@ -215,11 +247,6 @@ class PostProcess extends RendererFX {
 
 		});
 
-		var blendModeElt = new hide.Element('<dl><dt>Blend mode</dt><dd><select field="blendMode"></select></dd></dl>');
-		ectx.properties.add(blendModeElt, this, function (pname) {
-			ectx.onChange(this, pname);
-			updateInstance(ectx.rootContext, pname);
-		});
 		var btn = new hide.Element("<input type='submit' style='width: 100%; margin-top: 10px;' value='Open Shader Graph' />");
 		btn.on("click", function() {
  			ectx.ide.openFile(source);
@@ -230,22 +257,6 @@ class PostProcess extends RendererFX {
 		});
 	}
 	#end
-
-	// public static function getDefault(type: hxsl.Ast.Type): Dynamic {
-	// 	switch(type) {
-	// 		case TBool:
-	// 			return false;
-	// 		case TInt:
-	// 			return 0;
-	// 		case TFloat:
-	// 			return 0.0;
-	// 		case TVec( size, VFloat ):
-	// 			return [for(i in 0...size) 0];
-	// 		default:
-	// 			return null;
-	// 	}
-	// 	return null;
-	// }
 
 	static var _ = Library.register("rfx.PostProcess", PostProcess);
 
