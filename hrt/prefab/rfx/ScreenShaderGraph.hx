@@ -14,7 +14,7 @@ private class GraphShader extends h3d.shader.ScreenShader {
 		}
 	}
 }
-class PostProcess extends RendererFX {
+class ScreenShaderGraph extends RendererFX {
 
 	var shaderPass = new h3d.pass.ScreenFx(new GraphShader());
 	var shaderGraph : hrt.shgraph.ShaderGraph;
@@ -24,7 +24,7 @@ class PostProcess extends RendererFX {
 	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
 		if( !checkEnabled() ) return;
 		if( step == AfterTonemapping ) {
-			r.mark("PostProcess");
+			r.mark("ScreenShaderGraph");
 			if (shader != null) {
 				var ctx = r.ctx;
 				var target = r.allocTarget("ppTarget", false);
@@ -39,7 +39,7 @@ class PostProcess extends RendererFX {
 			}
 		}
 		if( step == BeforeTonemapping ) {
-			r.mark("PostProcess");
+			r.mark("ScreenShaderGraph");
 			if (shader != null) {
 				var ctx = r.ctx;
 				var target = r.allocTarget("ppTarget", false);
@@ -66,6 +66,8 @@ class PostProcess extends RendererFX {
 
 		#if editor
 		for( v in shaderDef.inits ) {
+			if (props == null)
+				props = {};
 			if(!Reflect.hasField(props, v.variable.name)) {
 				Reflect.setField(props, v.variable.name, v.value);
 			}
@@ -258,6 +260,6 @@ class PostProcess extends RendererFX {
 	}
 	#end
 
-	static var _ = Library.register("rfx.PostProcess", PostProcess);
+	static var _ = Library.register("rfx.ScreenShaderGraph", ScreenShaderGraph);
 
 }
