@@ -243,7 +243,7 @@ class ShaderEditor extends hide.view.Graph {
 				if( prefabObj == null )
 					sceneEditor.scene.s3d.addChild(obj);
 				sceneEditor.resetCamera(1.05);
-				compileShader();
+				launchCompileShader();
 			});
 		});
 
@@ -396,27 +396,23 @@ class ShaderEditor extends hide.view.Graph {
 		obj = new h3d.scene.Mesh(sp);
 		sceneEditor.scene.s3d.addChild(obj);
 		sceneEditor.resetCamera(1.05);
-		compileShader();
+		launchCompileShader();
 	}
 
 	function onRefresh() {
-		if( obj == null ) {
-			var saveCustomModel = getDisplayState("customModel");
-			if (saveCustomModel != null)
-				loadPreviewPrefab(saveCustomModel);
-			else {
-				// obj = sceneEditor.scene.loadModel("res/PrimitiveShapes/Sphere.fbx", true);
-				var sp = new h3d.prim.Sphere(1, 128, 128);
-				sp.addNormals();
-				sp.addUVs();
-				obj = new h3d.scene.Mesh(sp);
-			}
-			if( prefabObj == null )
-				sceneEditor.scene.s3d.addChild(obj);
-			sceneEditor.resetCamera(1.05);
+		var saveCustomModel = getDisplayState("customModel");
+		if (saveCustomModel != null)
+			loadPreviewPrefab(saveCustomModel);
+		else {
+			// obj = sceneEditor.scene.loadModel("res/PrimitiveShapes/Sphere.fbx", true);
+			var sp = new h3d.prim.Sphere(1, 128, 128);
+			sp.addNormals();
+			sp.addUVs();
+			obj = new h3d.scene.Mesh(sp);
 		}
-		else if( prefabObj != null )
-			obj = sceneEditor.getObject(prefabObj);
+		if( prefabObj == null )
+			sceneEditor.scene.s3d.addChild(obj);
+		sceneEditor.resetCamera(1.05);
 
 		element.find("#preview").first().append(sceneEditor.scene.element);
 
