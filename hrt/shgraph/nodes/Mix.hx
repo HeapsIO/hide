@@ -3,7 +3,7 @@ package hrt.shgraph.nodes;
 using hxsl.Ast;
 
 @name("Mix")
-@description("Linear interpolation between a and b using mix")
+@description("Linear interpolation between A and B using Mix")
 @width(80)
 @group("Math")
 class Mix extends ShaderFunction {

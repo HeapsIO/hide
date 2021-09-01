@@ -3,8 +3,8 @@ package hrt.shgraph.nodes;
 using hxsl.Ast;
 
 @name("Smooth Step")
-@description("Linear interpolation between a and b using mix")
-@width(80)
+@description("Linear interpolation between A and B using Mix")
+@width(100)
 @group("Math")
 class SmoothStep extends ShaderFunction {
 
