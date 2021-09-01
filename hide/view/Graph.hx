@@ -48,6 +48,7 @@ class Graph extends FileView {
 	// used to build edge
 	static var NODE_TRIGGER_NEAR = 2000.0;
 	var isCreatingLink : EdgeState = None;
+	var edgeStyle = {stroke : ""};
 	var startLinkBox : Box;
 	var endLinkBox : Box;
 	var startLinkGrNode : JQuery;
@@ -213,6 +214,7 @@ class Graph extends FileView {
 				for (edge in listOfEdges) {
 					if (edge.from == b || edge.to == b) {
 						edge.elt.remove();
+						edgeStyle.stroke = edge.nodeFrom.css("fill");
 						edge.elt = createCurve(edge.nodeFrom, edge.nodeTo);
 
 						edge.elt.on("mousedown", function(e) {
@@ -276,7 +278,7 @@ class Graph extends FileView {
 					defaultValue = "0";
 				}
 			}
-			var grNode = box.addInput(editor, inputInfo.name, defaultValue);
+			var grNode = box.addInput(editor, inputInfo.name, defaultValue, inputInfo.type);
 			if (defaultValue != null) {
 				var fieldEditInput = grNode.find("input");
 				fieldEditInput.on("change", function(ev) {
@@ -301,19 +303,21 @@ class Graph extends FileView {
 				isCreatingLink = FromInput;
 				startLinkGrNode = grNode;
 				startLinkBox = box;
+				edgeStyle.stroke = node.css("fill");
 				setAvailableOutputNodes(box, grNode.find(".node").attr("field"));
 			});
 		}
 		for (outputKey in box.getInstance().getOutputInfoKeys()) {
 			var outputInfo = box.getInstance().getOutputInfo(outputKey);
-
-			var grNode = box.addOutput(editor, outputInfo.name);
+			var grNode = box.addOutput(editor, outputInfo.name, box.getInstance().getOutputType(outputKey));
 			grNode.find(".node").attr("field", outputKey);
 			grNode.on("mousedown", function(e) {
 				e.stopPropagation();
+				var node = grNode.find(".node");
 				isCreatingLink = FromOutput;
 				startLinkGrNode = grNode;
 				startLinkBox = box;
+				edgeStyle.stroke = node.css("fill");
 				setAvailableInputNodes(box, startLinkGrNode.find(".node").attr("field"));
 			});
 		}
@@ -354,6 +358,7 @@ class Graph extends FileView {
 						isCreatingLink = FromOutput;
 						startLinkGrNode = e.nodeFrom.parent();
 						startLinkBox = e.from;
+						edgeStyle.stroke = e.nodeFrom.css("fill");
 						setAvailableInputNodes(e.from, e.nodeFrom.attr("field"));
 						removeEdge(e);
 						createLink(x, y);
@@ -366,6 +371,7 @@ class Graph extends FileView {
 						isCreatingLink = FromInput;
 						startLinkGrNode = e.nodeTo.parent();
 						startLinkBox = e.to;
+						edgeStyle.stroke = e.nodeFrom.css("fill");
 						setAvailableOutputNodes(e.to, e.nodeTo.attr("field"));
 						removeEdge(e);
 						createLink(x, y);
@@ -545,7 +551,8 @@ class Graph extends FileView {
 							lX(offsetEnd.left) + Box.NODE_RADIUS,
 							lY(offsetEnd.top) + Box.NODE_RADIUS,
 							startX + valueCurveX * (Math.min(maxDistanceY, diffDistanceY)/maxDistanceY),
-							startY + signCurveY * valueCurveY * (Math.min(maxDistanceY, diffDistanceY)/maxDistanceY))
+							startY + signCurveY * valueCurveY * (Math.min(maxDistanceY, diffDistanceY)/maxDistanceY),
+							edgeStyle)
 							.addClass("edge");
 		editorMatrix.prepend(curve);
 		if (isDraft)

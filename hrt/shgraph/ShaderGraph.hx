@@ -101,8 +101,8 @@ class ShaderGraph {
 			var shaderParam = Std.downcast(n.instance, ShaderParam);
 			if (shaderParam != null) {
 				var paramShader = getParameter(shaderParam.parameterId);
-				shaderParam.computeOutputs();
 				shaderParam.variable = paramShader.variable;
+				shaderParam.computeOutputs();
 			}
 		}
 		if (nodes[nodes.length-1] != null)

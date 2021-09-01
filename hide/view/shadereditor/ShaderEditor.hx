@@ -514,6 +514,7 @@ class ShaderEditor extends hide.view.Graph {
 						if (input != null && input.node.id == box.getId()) {
 							var nodeFrom = box.getElement().find('[field=${outputKey}]');
 							var nodeTo = b.getElement().find('[field=${key}]');
+							edgeStyle.stroke = nodeFrom.css("fill");
 							createEdgeInEditorGraph({from: box, nodeFrom: nodeFrom, to : b, nodeTo: nodeTo, elt : createCurve(nodeFrom, nodeTo) });
 						}
 					}
@@ -535,6 +536,7 @@ class ShaderEditor extends hide.view.Graph {
 				}
 				var nodeFrom = fromBox.getElement().find('[field=${input.getKey()}]');
 				var nodeTo = box.getElement().find('[field=${key}]');
+				edgeStyle.stroke = nodeFrom.css("fill");
 				createEdgeInEditorGraph({from: fromBox, nodeFrom: nodeFrom, to : box, nodeTo: nodeTo, elt : createCurve(nodeFrom, nodeTo) });
 			}
 		}

@@ -3,8 +3,17 @@ package hide.view.shadereditor;
 import hide.comp.SVG;
 import js.jquery.JQuery;
 import hrt.shgraph.ShaderNode;
-
 class Box {
+
+	var boolColor = "#cc0505";
+	var numberColor = "#00ffea";
+	var floatColor = "#00ff73";
+	var intColor = "#00ffea";
+	var vec2Color = "#5eff00";
+	var vec3Color = "#eeff00";
+	var vec4Color = "#fc6703";
+	var samplerColor = "#600aff";
+	var defaultColor = "#c8c8c8";
 
 	var nodeInstance : ShaderNode;
 
@@ -77,10 +86,30 @@ class Box {
 		//editor.line(element, width/2, HEADER_HEIGHT, width/2, 0, {display: "none"}).addClass("nodes-separator");
 	}
 
-	public function addInput(editor : SVG, name : String, valueDefault : String = null) {
+	public function addInput(editor : SVG, name : String, valueDefault : String = null, type : hrt.shgraph.ShaderType.SType) {
 		var node = editor.group(element).addClass("input-node-group");
 		var nodeHeight = HEADER_HEIGHT + NODE_MARGIN * (inputs.length+1) + NODE_RADIUS * inputs.length;
-		var nodeCircle = editor.circle(node, 0, nodeHeight, NODE_RADIUS).addClass("node input-node");
+		var style = {fill : ""}
+		switch (type) {
+			case Bool:
+				style.fill = boolColor;
+			case Number:
+				style.fill = numberColor;
+			case Float:
+				style.fill = floatColor;
+			case Vec2:
+				style.fill = vec2Color;
+			case Vec3:
+				style.fill = vec3Color;
+			case Vec4:
+				style.fill = vec4Color;
+			case Sampler:
+				style.fill = samplerColor;
+			default:
+				style.fill = defaultColor;
+
+		}
+		var nodeCircle = editor.circle(node, 0, nodeHeight, NODE_RADIUS, style).addClass("node input-node");
 
 		if (name.length > 0)
 			editor.text(node, NODE_TITLE_PADDING, nodeHeight + 4, name).addClass("title-node");
@@ -96,10 +125,31 @@ class Box {
 		return node;
 	}
 
-	public function addOutput(editor : SVG, name : String) {
+	public function addOutput(editor : SVG, name : String, ?type : hxsl.Ast.Type) {
 		var node = editor.group(element).addClass("output-node-group");
 		var nodeHeight = HEADER_HEIGHT + NODE_MARGIN * (outputs.length+1) + NODE_RADIUS * outputs.length;
-		var nodeCircle = editor.circle(node, width, nodeHeight, NODE_RADIUS).addClass("node output-node");
+		var style = {fill : ""}
+		switch (type) {
+			case TBool:
+				style.fill = boolColor;
+			case TInt:
+				style.fill = intColor;
+			case TFloat:
+				style.fill = floatColor;
+			case TVec(size, t):
+				if (size == 2)
+					style.fill = vec2Color;
+				else if (size == 3)
+					style.fill = vec3Color;
+				else if (size == 4)
+					style.fill = vec4Color;
+			case TSampler2D:
+				style.fill = samplerColor;
+			default:
+				style.fill = defaultColor;
+
+		}
+		var nodeCircle = editor.circle(node, width, nodeHeight, NODE_RADIUS, style).addClass("node output-node");
 
 		if (name.length > 0)
 			editor.text(node, width - NODE_TITLE_PADDING - (name.length * 6.75), nodeHeight + 4, name).addClass("title-node");
