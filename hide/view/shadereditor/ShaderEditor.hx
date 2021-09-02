@@ -511,7 +511,7 @@ class ShaderEditor extends hide.view.Graph {
 				for (b in listOfBoxes) {
 					for (key in b.getInstance().getInputsKey()) {
 						var input = b.getInstance().getInput(key);
-						if (input != null && input.node.id == box.getId()) {
+						if (input != null && input.node.id == box.getId() && input.keyOutput == outputKey) {
 							var nodeFrom = box.getElement().find('[field=${outputKey}]');
 							var nodeTo = b.getElement().find('[field=${key}]');
 							edgeStyle.stroke = nodeFrom.css("fill");
