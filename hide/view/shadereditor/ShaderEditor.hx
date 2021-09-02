@@ -324,7 +324,10 @@ class ShaderEditor extends hide.view.Graph {
 				continue;
 			for( c in sys.FileSystem.readDirectory(basePath) ) {
 				var relPath = ide.makeRelative(basePath + "/" + c);
-				if( this.state.path != relPath && haxe.io.Path.extension(relPath).toLowerCase() == "hlshader" ) {
+				if(
+					this.state.path.toLowerCase() != relPath.toLowerCase()
+					&& haxe.io.Path.extension(relPath).toLowerCase() == "hlshader"
+				) {
 					var group = 'SubGraph from $lpath';
 					if (listOfClasses[group] == null)
 						listOfClasses[group] = new Array<NodeInfo>();
@@ -1206,8 +1209,14 @@ class ShaderEditor extends hide.view.Graph {
 			}
 			var key = ev.getThis().attr("node");
 			var posCursor = new Point(lX(ide.mouseX - 25), lY(ide.mouseY - 10));
-			addNode(posCursor, ShaderNode.registeredNodes[key]);
-			closeAddMenu();
+			if( key.toLowerCase().indexOf(".hlshader") != -1 ) {
+				addSubGraph(posCursor, key);
+				closeAddMenu();
+				refreshShaderGraph();
+			} else {
+				addNode(posCursor, ShaderNode.registeredNodes[key]);
+				closeAddMenu();
+			}
 		});
 	}
 
