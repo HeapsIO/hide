@@ -291,27 +291,6 @@ class ShaderEditor extends hide.view.Graph {
 		editorMatrix.on("change", "input, select", function(ev) {
 			try {
 				var idBox = ev.target.closest(".box").id;
-				for (b in listOfBoxes) {
-					if (b.getId() == idBox) {
-						var subGraph = Std.downcast(b.getInstance(), hrt.shgraph.nodes.SubGraph);
-						if (subGraph != null) {
-							if (ev.currentTarget.getAttribute('field') != "filesubgraph") {
-								break;
-							}
-							var length = listOfEdges.length;
-							for (i in 0...length) {
-								var edge = listOfEdges[length-i-1];
-								if (edge.from == b || edge.to == b) {
-									removeShaderGraphEdge(edge);
-								}
-							}
-							refreshBox(b);
-							afterChange();
-							return;
-						}
-						break;
-					}
-				}
 				shaderGraph.nodeUpdated(idBox);
 				afterChange();
 				launchCompileShader();
@@ -336,6 +315,30 @@ class ShaderEditor extends hide.view.Graph {
 				listOfClasses[group] = new Array<NodeInfo>();
 
 			listOfClasses[group].push({ name : (metas.name != null) ? metas.name[0] : key , description : (metas.description != null) ? metas.description[0] : "" , key : key });
+		}
+
+		var libPaths : Array<String> = config.get("shadergraph.libfolders", ["shaders"]);
+		for( lpath in libPaths ) {
+			var basePath = ide.getPath(lpath);
+			if( !sys.FileSystem.isDirectory(basePath) )
+				continue;
+			for( c in sys.FileSystem.readDirectory(basePath) ) {
+				var relPath = ide.makeRelative(basePath + "/" + c);
+				if( this.state.path != relPath && haxe.io.Path.extension(relPath).toLowerCase() == "hlshader" ) {
+					var group = 'SubGraph from $lpath';
+					if (listOfClasses[group] == null)
+						listOfClasses[group] = new Array<NodeInfo>();
+
+					var fileName = new haxe.io.Path(relPath).file;
+
+					listOfClasses[group].push({
+						name : fileName,
+						// TODO: Add a the description to the hlshader file
+						description : 'Include $fileName as a subgraph',
+						key : relPath,
+					});
+				}
+			}
 		}
 
 		for (key in listOfClasses.keys()) {
@@ -965,6 +968,13 @@ class ShaderEditor extends hide.view.Graph {
 		return node;
 	}
 
+	function addSubGraph(p : Point, path : String) {
+		var node : SubGraph = cast addNode(p, SubGraph);
+		@:privateAccess node.pathShaderGraph = path;
+		node.loadGraphShader();
+		return node;
+	}
+
 	function createEdgeInShaderGraph() : Bool {
 		var startLinkNode = startLinkGrNode.find(".node");
 		if (isCreatingLink == FromInput) {
@@ -1143,8 +1153,15 @@ class ShaderEditor extends hide.view.Graph {
 			if (ev.keyCode == 13) {
 				var key = this.selectedNode.attr("node");
 				var posCursor = new Point(lX(ide.mouseX - 25), lY(ide.mouseY - 10));
-				addNode(posCursor, ShaderNode.registeredNodes[key]);
-				closeAddMenu();
+
+				if( key.toLowerCase().indexOf(".hlshader") != -1 ) {
+					addSubGraph(posCursor, key);
+					closeAddMenu();
+					refreshShaderGraph();
+				} else {
+					addNode(posCursor, ShaderNode.registeredNodes[key]);
+					closeAddMenu();
+				}
 			} else {
 				if (this.selectedNode != null)
 					this.selectedNode.removeClass("selected");
@@ -1238,7 +1255,12 @@ class ShaderEditor extends hide.view.Graph {
 						</div>');
 					itemNode.on("click", function() {
 						var posCursor = new Point(lX(ide.mouseX - 25), lY(ide.mouseY - 10));
-						addNode(posCursor, ShaderNode.registeredNodes[node.key]);
+						if( node.key.toLowerCase().indexOf(".hlshader") != -1 ) {
+							addSubGraph(posCursor, node.key);
+							refreshShaderGraph();
+						} else {
+							addNode(posCursor, ShaderNode.registeredNodes[node.key]);
+						}
 					});
 					eltsGroup.push(itemNode);
 				}
@@ -1519,9 +1541,7 @@ class ShaderEditor extends hide.view.Graph {
 			if (i.indexOf("hlshader") != -1 && i != state.path) {
 				if (isDrop) {
 					var posCursor = new Point(lX(ide.mouseX - 25 + offset), lY(ide.mouseY - 10 + offset));
-					var node : SubGraph = cast addNode(posCursor, SubGraph);
-					@:privateAccess node.pathShaderGraph = i;
-					node.loadGraphShader();
+					addSubGraph(posCursor, i);
 					offset += 25;
 				}
 				valid = true;

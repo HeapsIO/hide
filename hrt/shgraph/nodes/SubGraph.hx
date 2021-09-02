@@ -4,7 +4,6 @@ using hxsl.Ast;
 
 @name("SubGraph")
 @description("Include a subgraph")
-@group("Other")
 @width(250)
 @alwaysshowinputs()
 class SubGraph extends ShaderNode {
@@ -255,23 +254,6 @@ class SubGraph extends ShaderNode {
 	#if editor
 	override public function getPropertiesHTML(width : Float) : Array<hide.Element> {
 		var elements = super.getPropertiesHTML(width);
-		var element = new hide.Element('<div style="width: ${width * 0.8}px; height: 25px"></div>');
-		var fileInput = new hide.Element('<input type="text" field="filesubgraph" />').appendTo(element);
-
-		fileInput.on("mousedown", function(e) {
-			e.stopPropagation();
-		});
-
-		var tfile = new hide.comp.FileSelect(["hlshader"], null, fileInput);
-		if (this.pathShaderGraph != null && this.pathShaderGraph.length > 0) tfile.path = this.pathShaderGraph;
-		tfile.onChange = function() {
-			this.pathShaderGraph = tfile.path;
-			loadGraphShader();
-			fileInput.trigger("change");
-		}
-		elements.push(element);
-		elements.push(new hide.Element('<div style="background: #202020; height: 1px; margin-bottom: 5px;"></div>'));
-
 		for (p in parameters) {
 			var element = new hide.Element('<div class="propertySubShader" style="width: 200px;"></div>');
 			element.on("mousedown", function(e) {
