@@ -10,6 +10,8 @@ class ShaderParam extends ShaderNode {
 	@output() var output = SType.Variant;
 
 	@prop() public var parameterId : Int;
+	@prop() public var perInstance : Bool;
+
 
 	public var variable : TVar;
 
@@ -26,17 +28,29 @@ class ShaderParam extends ShaderNode {
 
 	override public function loadProperties(props : Dynamic) {
 		parameterId = Reflect.field(props, "parameterId");
+		perInstance = Reflect.field(props, "perInstance");
 	}
 
 	override public function saveProperties() : Dynamic {
 		var parameters = {
-			parameterId: parameterId
+			parameterId: parameterId,
+			perInstance: perInstance
 		};
 
 		return parameters;
 	}
 
 	override public function build(key : String) : TExpr {
+		if (variable != null){
+			if (variable.qualifiers == null)
+				variable.qualifiers = [];
+			if (perInstance)
+				if (!variable.qualifiers.contains(PerInstance(1)))
+					variable.qualifiers.push(PerInstance(1));
+			else
+				if (variable.qualifiers.contains(PerInstance(1)))
+					variable.qualifiers.remove(PerInstance(1));
+		}
 		return null;
 	}
 

@@ -680,6 +680,27 @@ class ShaderEditor extends hide.view.Graph {
 		});
 		deleteBtn.appendTo(actionBtns);
 
+		var perInstanceCb = new Element('<div><span>PerInstance</span><input type="checkbox"/><div>');
+		var shaderParam : ShaderParam = null;
+		for (b in listOfBoxes) {
+			var tmpShaderParam = Std.downcast(b.getInstance(), ShaderParam);
+			if (tmpShaderParam != null && tmpShaderParam.parameterId == id) {
+				shaderParam = tmpShaderParam;
+				break;
+			}
+		}
+		if (shaderParam != null) {
+			perInstanceCb.prop("checked", shaderParam.perInstance);
+			perInstanceCb.on("change", function() {
+				beforeChange();
+				var checked : Bool = perInstanceCb.prop("checked");
+				shaderParam.perInstance = checked;
+				afterChange();
+				compileShader();
+			});
+			perInstanceCb.appendTo(content);
+		}
+
 		var inputTitle = elt.find(".input-title");
 		inputTitle.on("click", function(e) {
 			e.stopPropagation();
