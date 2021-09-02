@@ -974,6 +974,7 @@ class ShaderEditor extends hide.view.Graph {
 				currentLink.removeClass("draft");
 				currentLink = null;
 				launchCompileShader();
+				refreshBox(endLinkBox);
 				return true;
 			} else {
 				error("This edge creates a cycle.");
