@@ -337,7 +337,7 @@ class ShaderEditor extends hide.view.Graph {
 					listOfClasses[group].push({
 						name : fileName,
 						// TODO: Add a the description to the hlshader file
-						description : 'Include $fileName as a subgraph',
+						description : "",
 						key : relPath,
 					});
 				}

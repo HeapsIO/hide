@@ -145,7 +145,7 @@
 
 	"fx.tags": [ { "id": "tag", "color": "#802000" } ],
 
-	"shadergraph.libfolders": ["Shaders"],
+	"shadergraph.libfolders": ["shaders", "shaders/subshaders"],
 
 	// DomKit css files list
 	"domkit.css" : [],
