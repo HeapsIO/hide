@@ -320,7 +320,7 @@ class ShaderEditor extends hide.view.Graph {
 		var libPaths : Array<String> = config.get("shadergraph.libfolders", ["shaders"]);
 		for( lpath in libPaths ) {
 			var basePath = ide.getPath(lpath);
-			if( !sys.FileSystem.isDirectory(basePath) )
+			if( !sys.FileSystem.exists(basePath) || !sys.FileSystem.isDirectory(basePath) )
 				continue;
 			for( c in sys.FileSystem.readDirectory(basePath) ) {
 				var relPath = ide.makeRelative(basePath + "/" + c);

@@ -2298,6 +2298,8 @@ class SceneEditor {
 				newItems.push(getNewShaderMenu(parent, onMake));
 				continue;
 			}
+			if(ptype == "hlshader")
+				continue;
 			var m = getNewTypeMenuItem(ptype, parent, onMake);
 			if( !groupByType )
 				newItems.push(m);
@@ -2331,17 +2333,27 @@ class SceneEditor {
 		return newItems;
 	}
 
-	function getNewTypeMenuItem(ptype: String, parent: PrefabElement, onMake: PrefabElement->Void, ?label: String) : hide.comp.ContextMenu.ContextMenuItem {
+	function getNewTypeMenuItem(
+		ptype: String,
+		parent: PrefabElement,
+		onMake: PrefabElement->Void,
+		?label: String,
+		?objectName: String,
+		?path: String
+	) : hide.comp.ContextMenu.ContextMenuItem {
 		var pmodel = hrt.prefab.Library.getRegistered().get(ptype);
 		return {
 			label : label != null ? label : pmodel.inf.name,
 			click : function() {
-				function make(?path) {
+				function make(?sourcePath) {
 					var p = Type.createInstance(pmodel.cl, [parent]);
 					@:privateAccess p.type = ptype;
-					if(path != null)
-						p.source = path;
-					autoName(p);
+					if(sourcePath != null)
+						p.source = sourcePath;
+					if( objectName != null)
+						p.name = objectName;
+					else
+						autoName(p);
 					if(onMake != null)
 						onMake(p);
 					var recents : Array<String> = ide.currentConfig.get("sceneeditor.newrecents", []);
@@ -2353,17 +2365,18 @@ class SceneEditor {
 					return p;
 				}
 
-				if( pmodel.inf.fileSource != null )
-					ide.chooseFile(pmodel.inf.fileSource, function(path) {
+				if( pmodel.inf.fileSource != null ) {
+					if( path != null ) {
 						var p = make(path);
 						addElements([p]);
 						var recents : Array<String> = ide.currentConfig.get("sceneeditor.newrecents", []);
 						recents.remove(p.type);
-						recents.unshift(p.type);
-						var recentSize : Int = view.config.get("sceneeditor.recentsize");
-						if (recents.length > recentSize) recents.splice(recentSize, recents.length - recentSize);
-						ide.currentConfig.set("sceneeditor.newrecents", recents);
-					});
+					} else {
+						ide.chooseFile(pmodel.inf.fileSource, function(path) {
+							addElements([make(path)]);
+						});
+					}
+				}
 				else
 					addElements([make()]);
 			},
@@ -2371,38 +2384,74 @@ class SceneEditor {
 		};
 	}
 
-	function getNewShaderMenu(parentElt: PrefabElement, onMake: PrefabElement->Void) : hide.comp.ContextMenu.ContextMenuItem {
-		var custom = getNewTypeMenuItem("shader", parentElt, onMake, "Custom...");
-
-		function shaderItem(name, path) : hide.comp.ContextMenu.ContextMenuItem {
-			return {
-				label : name,
-				click : function() {
-					var s = new hrt.prefab.DynamicShader(parentElt);
-					s.source = path;
-					s.name = name;
-					addElements([s]);
-				}
-			}
+	function getNewShaderMenu(parentElt: PrefabElement, ?onMake: PrefabElement->Void) : hide.comp.ContextMenu.ContextMenuItem {
+		function isClassShader(path) {
+			if(StringTools.endsWith(path, ".hx")) path = path.substr(0, -3);
+			var cpath = path.split("/").join(".");
+			var cl = cast Type.resolveClass(cpath);
+			return cl != null;
 		}
 
-		var menu = [custom];
+		var shModel = hrt.prefab.Library.getRegistered().get("shader");
+		var graphModel = hrt.prefab.Library.getRegistered().get("hlshader");
+		var custom = {
+			label : "Custom...",
+			click : function() {
+				ide.chooseFile(shModel.inf.fileSource.concat(graphModel.inf.fileSource), function(path) {
+					var cl = isClassShader(path) ? shModel.cl : graphModel.cl;
+					var p = Type.createInstance(cl, [parentElt]);
+					p.source = path;
+					autoName(p);
+					if(onMake != null)
+						onMake(p);
+					addElements([p]);
+				});
+			},
+			icon : shModel.inf.icon,
+		};
 
-		var shaders : Array<String> = hide.Ide.inst.currentConfig.get("fx.shaders", []);
-		for(path in shaders) {
+		function classShaderItem(path) : hide.comp.ContextMenu.ContextMenuItem {
 			var name = path;
 			if(StringTools.endsWith(name, ".hx")) {
-				name = name.substr(0, -3);
-				name = name.split("/").pop();
+				name = new haxe.io.Path(path).file;
 			}
 			else {
 				name = name.split(".").pop();
 			}
-			menu.push(shaderItem(name, path));
+			return getNewTypeMenuItem("shader", parentElt, onMake, name, name, path);
 		}
 
+		function graphShaderItem(path) : hide.comp.ContextMenu.ContextMenuItem {
+			var name = new haxe.io.Path(path).file;
+			return getNewTypeMenuItem("hlshader", parentElt, onMake, name, name, path);
+		}
+
+		var menu : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
+
+		var shaders : Array<String> = hide.Ide.inst.currentConfig.get("fx.shaders", []);
+		for(path in shaders) {
+			var fullPath = ide.getPath(path);
+			if( isClassShader(path) ) {
+				menu.push(classShaderItem(path));
+			} else if( StringTools.endsWith(path, ".hlshader")) {
+				menu.push(graphShaderItem(path));
+			} else if( sys.FileSystem.exists(fullPath) && sys.FileSystem.isDirectory(fullPath) ) {
+				for( c in sys.FileSystem.readDirectory(fullPath) ) {
+					var relPath = ide.makeRelative(fullPath + "/" + c);
+					if( isClassShader(relPath) ) {
+						menu.push(classShaderItem(relPath));
+					} else if( StringTools.endsWith(relPath, ".hlshader")) {
+						menu.push(graphShaderItem(relPath));
+					}
+				}
+			}
+		}
+
+		menu.sort(function(l1,l2) return Reflect.compare(l1.label,l2.label));
+		menu.unshift(custom);
+
 		return {
-			label: "Shaders",
+			label: "Shader",
 			menu: menu
 		};
 	}
