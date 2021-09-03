@@ -727,6 +727,8 @@ class ShaderEditor extends hide.view.Graph {
 				}
 			}
 		});
+		inputTitle.on("focus", function() { inputTitle.select(); } );
+
 		elt.find(".header").on("click", function() {
 			toggleParameter(elt);
 		});
