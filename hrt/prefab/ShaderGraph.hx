@@ -26,7 +26,7 @@ class ShaderGraph extends DynamicShader {
 
 	#if editor
 	override function getHideProps() : HideProps {
-		return { icon : "scribd", name : "Shader Graph", fileSource : ["hlshader"], allowParent : function(p) return p.to(Object2D) != null || p.to(Object3D) != null };
+		return { icon : "scribd", name : "Shader Graph", fileSource : ["shgraph"], allowParent : function(p) return p.to(Object2D) != null || p.to(Object3D) != null };
 	}
 
 	override function edit( ctx : EditContext ) {
@@ -42,5 +42,5 @@ class ShaderGraph extends DynamicShader {
 	}
 	#end
 
-	static var _ = Library.register("hlshader", ShaderGraph);
+	static var _ = Library.register("shgraph", ShaderGraph);
 }

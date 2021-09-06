@@ -2391,7 +2391,7 @@ class SceneEditor {
 		}
 
 		var shModel = hrt.prefab.Library.getRegistered().get("shader");
-		var graphModel = hrt.prefab.Library.getRegistered().get("hlshader");
+		var graphModel = hrt.prefab.Library.getRegistered().get("shgraph");
 		var custom = {
 			label : "Custom...",
 			click : function() {
@@ -2421,7 +2421,7 @@ class SceneEditor {
 
 		function graphShaderItem(path) : hide.comp.ContextMenu.ContextMenuItem {
 			var name = new haxe.io.Path(path).file;
-			return getNewTypeMenuItem("hlshader", parentElt, onMake, name, name, path);
+			return getNewTypeMenuItem("shgraph", parentElt, onMake, name, name, path);
 		}
 
 		var menu : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
@@ -2432,7 +2432,7 @@ class SceneEditor {
 			var fullPath = ide.getPath(strippedSlash);
 			if( isClassShader(path) ) {
 				menu.push(classShaderItem(path));
-			} else if( StringTools.endsWith(path, ".hlshader")) {
+			} else if( StringTools.endsWith(path, ".shgraph")) {
 				menu.push(graphShaderItem(path));
 			} else if( sys.FileSystem.exists(fullPath) && sys.FileSystem.isDirectory(fullPath) ) {
 				var submenu : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
@@ -2440,7 +2440,7 @@ class SceneEditor {
 					var relPath = ide.makeRelative(fullPath + "/" + c);
 					if( isClassShader(relPath) ) {
 						submenu.push(classShaderItem(relPath));
-					} else if( StringTools.endsWith(relPath, ".hlshader")) {
+					} else if( StringTools.endsWith(relPath, ".shgraph")) {
 						submenu.push(graphShaderItem(relPath));
 					}
 				}

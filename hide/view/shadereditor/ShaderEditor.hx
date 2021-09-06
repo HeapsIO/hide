@@ -302,7 +302,7 @@ class ShaderEditor extends hide.view.Graph {
 				var relPath = ide.makeRelative(basePath + "/" + c);
 				if(
 					this.state.path.toLowerCase() != relPath.toLowerCase()
-					&& haxe.io.Path.extension(relPath).toLowerCase() == "hlshader"
+					&& haxe.io.Path.extension(relPath).toLowerCase() == "shgraph"
 				) {
 					var group = 'SubGraph from $lpath';
 					if (listOfClasses[group] == null)
@@ -312,7 +312,7 @@ class ShaderEditor extends hide.view.Graph {
 
 					listOfClasses[group].push({
 						name : fileName,
-						// TODO: Add a the description to the hlshader file
+						// TODO: Add a the description to the shgraph file
 						description : "",
 						key : relPath,
 					});
@@ -1135,7 +1135,7 @@ class ShaderEditor extends hide.view.Graph {
 				var key = this.selectedNode.attr("node");
 				var posCursor = new Point(lX(ide.mouseX - 25), lY(ide.mouseY - 10));
 
-				if( key.toLowerCase().indexOf(".hlshader") != -1 ) {
+				if( key.toLowerCase().indexOf(".shgraph") != -1 ) {
 					addSubGraph(posCursor, key);
 					closeAddMenu();
 					refreshShaderGraph();
@@ -1187,7 +1187,7 @@ class ShaderEditor extends hide.view.Graph {
 			}
 			var key = ev.getThis().attr("node");
 			var posCursor = new Point(lX(ide.mouseX - 25), lY(ide.mouseY - 10));
-			if( key.toLowerCase().indexOf(".hlshader") != -1 ) {
+			if( key.toLowerCase().indexOf(".shgraph") != -1 ) {
 				addSubGraph(posCursor, key);
 				closeAddMenu();
 				refreshShaderGraph();
@@ -1229,7 +1229,7 @@ class ShaderEditor extends hide.view.Graph {
 
 		function createNewNode(node : NodeInfo) {
 			var posCursor = new Point(lX(ide.mouseX - 25), lY(ide.mouseY - 10));
-			if( node.key.toLowerCase().indexOf(".hlshader") != -1 ) {
+			if( node.key.toLowerCase().indexOf(".shgraph") != -1 ) {
 				addSubGraph(posCursor, node.key);
 				refreshShaderGraph();
 			} else {
@@ -1518,7 +1518,7 @@ class ShaderEditor extends hide.view.Graph {
 		var valid = false;
 		var offset = 0;
 		for (i in items) {
-			if (i.indexOf("hlshader") != -1 && i != state.path) {
+			if (i.indexOf("shgraph") != -1 && i != state.path) {
 				if (isDrop) {
 					var posCursor = new Point(lX(ide.mouseX - 25 + offset), lY(ide.mouseY - 10 + offset));
 					addSubGraph(posCursor, i);
@@ -1533,6 +1533,6 @@ class ShaderEditor extends hide.view.Graph {
 		return valid;
 	}
 
-	static var _ = FileTree.registerExtension(ShaderEditor,["hlshader"],{ icon : "scribd", createNew: "Shader Graph" });
+	static var _ = FileTree.registerExtension(ShaderEditor,["shgraph"],{ icon : "scribd", createNew: "Shader Graph" });
 
 }

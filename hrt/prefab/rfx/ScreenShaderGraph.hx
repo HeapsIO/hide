@@ -193,7 +193,7 @@ class ScreenShaderGraph extends RendererFX {
 		var element = new hide.Element('
 			<div class="group" name="Reference">
 			<dl>
-				<dt>Reference</dt><dd><input type="fileselect" extensions="hlshader" field="source"/></dd>
+				<dt>Reference</dt><dd><input type="fileselect" extensions="shgraph" field="source"/></dd>
 			</dl>
 			</div>');
 
