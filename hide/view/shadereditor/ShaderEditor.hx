@@ -131,7 +131,6 @@ class ShaderEditor extends hide.view.Graph {
 
 		element.on("mousedown", function(e) {
 			closeAddMenu();
-			closeCustomContextMenu();
 		});
 
 		parent.on("mouseup", function(e) {
@@ -178,46 +177,39 @@ class ShaderEditor extends hide.view.Graph {
 		keys.register("view.refresh", rebuild);
 
 		parent.on("contextmenu", function(e) {
-			var elements = [];
-
-			var addNode = new Element("<div> Add node </div>");
-			addNode.on("click", function(e) {
-				contextMenuAddNode(Std.parseInt(contextMenu.css("left")), Std.parseInt(contextMenu.css("top")));
-			});
-			elements.push(addNode);
-
-			var deleteNode = new Element("<div> Delete nodes </div>");
-			deleteNode.on("click", function(e) {
-				if (listOfBoxesSelected.length > 0) {
-					if (ide.confirm("Delete all theses nodes ?")) {
-						deleteSelection();
-					}
-				}
-			});
-			elements.push(deleteNode);
-
-			customContextMenu(elements);
 			e.preventDefault();
+			new hide.comp.ContextMenu([
+				{ label : "Add node", menu : contextMenuAddNode() },
+				{ label : "", isSeparator : true },
+				{
+					label : "Delete nodes",
+					click : function() {
+						if (listOfBoxesSelected.length > 0) {
+							if (ide.confirm("Delete all theses nodes ?")) {
+								deleteSelection();
+							}
+						}
+					},
+				},
+			]);
 			return false;
 		});
 
-		element.find("#createParameter").on("click", function() {
-			function createElement(name : String, type : Type) : Element {
-				var elt = new Element('
-					<div>
-						<span> ${name} </span>
-					</div>');
-				elt.on("click", function() {
-					createParameter(type);
-				});
-				return elt;
-			}
+		var newParamCtxMenu : Array<hide.comp.ContextMenu.ContextMenuItem> = [
+			{ label : "Number", click : () -> createParameter(TFloat) },
+			{ label : "Color", click : () -> createParameter(TVec(4, VFloat)) },
+			{ label : "Texture", click : () -> createParameter(TSampler2D) },
+		];
 
-			customContextMenu([
-				createElement("Number", TFloat),
-				createElement("Color", TVec(4, VFloat)),
-				createElement("Texture", TSampler2D)
-				]);
+		parametersList = element.find("#parametersList");
+		parametersList.on("contextmenu", function(e) {
+			e.preventDefault();
+			e.stopPropagation();
+			new hide.comp.ContextMenu(newParamCtxMenu);
+		});
+
+		element.find("#createParameter").on("click", function() {
+			new hide.comp.ContextMenu(newParamCtxMenu);
 		});
 
 		element.find("#launchCompileShader").on("click", function() {
@@ -262,27 +254,6 @@ class ShaderEditor extends hide.view.Graph {
 		element.find("#displayHxsl").on("click", () -> displayCompiled("hxsl"));
 		element.find("#displayGlsl").on("click", () -> displayCompiled("glsl"));
 		element.find("#displayHlsl").on("click", () -> displayCompiled("hlsl"));
-
-		parametersList = element.find("#parametersList");
-		parametersList.on("contextmenu", function(e) {
-			e.preventDefault();
-			e.stopPropagation();
-			function createElement(name : String, type : Type) : Element {
-				var elt = new Element('
-					<div>
-						<span> ${name} </span>
-					</div>');
-				elt.on("click", function() {
-					createParameter(type);
-				});
-				return elt;
-			}
-			customContextMenu([
-				createElement("Number", TFloat),
-				createElement("Color", TVec(4, VFloat)),
-				createElement("Texture", TSampler2D)
-				]);
-		});
 
 		editorMatrix.on("click", "input, select", function(ev) {
 			beforeChange();
@@ -1231,13 +1202,14 @@ class ShaderEditor extends hide.view.Graph {
 
 
 	// CONTEXT MENU
-	function contextMenuAddNode(x : Int, y : Int) {
-		var elements = [];
-		var searchItem = new Element("<div class='grey-item' >Search</div>");
-		searchItem.on("click", function() {
-			openAddMenu(-40, -16);
-		});
-		elements.push(searchItem);
+	function contextMenuAddNode() : Array<hide.comp.ContextMenu.ContextMenuItem> {
+		var items : Array<hide.comp.ContextMenu.ContextMenuItem> = [
+			{
+				label : "Search",
+				click : function() { openAddMenu(-40, -16); },
+			},
+			{ label : "", isSeparator : true },
+		];
 
 		var keys = listOfClasses.keys();
 		var sortedKeys = [];
@@ -1250,36 +1222,28 @@ class ShaderEditor extends hide.view.Graph {
 			return 0;
 		});
 
-		for (key in sortedKeys) {
-			var group = new Element('<div> ${key} </div>');
-			group.on("click", function(e) {
-				var eltsGroup = [];
-				var goBack = new Element("<div class='grey-item' > <i class='ico ico-chevron-left' /> Go back </div>");
-				goBack.on("click", function(e) {
-					contextMenuAddNode(Std.parseInt(contextMenu.css("left")), Std.parseInt(contextMenu.css("top")));
-				});
-				eltsGroup.push(goBack);
-				for (node in listOfClasses[key]) {
-					var itemNode = new Element('
-						<div >
-							<span> ${node.name} </span>
-						</div>');
-					itemNode.on("click", function() {
-						var posCursor = new Point(lX(ide.mouseX - 25), lY(ide.mouseY - 10));
-						if( node.key.toLowerCase().indexOf(".hlshader") != -1 ) {
-							addSubGraph(posCursor, node.key);
-							refreshShaderGraph();
-						} else {
-							addNode(posCursor, ShaderNode.registeredNodes[node.key]);
-						}
-					});
-					eltsGroup.push(itemNode);
-				}
-				customContextMenu(eltsGroup, Std.parseInt(contextMenu.css("left")), Std.parseInt(contextMenu.css("top")));
-			});
-			elements.push(group);
+		function createNewNode(node : NodeInfo) {
+			var posCursor = new Point(lX(ide.mouseX - 25), lY(ide.mouseY - 10));
+			if( node.key.toLowerCase().indexOf(".hlshader") != -1 ) {
+				addSubGraph(posCursor, node.key);
+				refreshShaderGraph();
+			} else {
+				addNode(posCursor, ShaderNode.registeredNodes[node.key]);
+			}
 		}
-		customContextMenu(elements, x, y);
+
+		var newItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [ for (key in sortedKeys)
+			{
+				label : key,
+				menu : [ for (node in listOfClasses[key])
+					{
+						label : node.name,
+						click : () -> createNewNode(node),
+					}
+				]
+			}
+		];
+		return items.concat(newItems);
 	}
 
 	function beforeChange() {

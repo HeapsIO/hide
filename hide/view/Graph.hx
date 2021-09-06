@@ -23,8 +23,6 @@ class Graph extends FileView {
 	var editorMatrix : JQuery;
 	var statusBar : JQuery;
 
-	var contextMenu : JQuery;
-
 	var listOfBoxes : Array<Box> = [];
 	var listOfEdges : Array<Edge> = [];
 
@@ -559,48 +557,6 @@ class Graph extends FileView {
 			curve.addClass("draft");
 
 		return curve;
-	}
-
-	function customContextMenu( elts : Array<Element>, ?x : Int, ?y : Int ) {
-		closeCustomContextMenu();
-
-		if (elts.length == 0) return;
-
-		contextMenu = new Element('
-		<div id="context-menu">
-			<div id="options"></div>
-		</div>').appendTo(parent);
-
-		var options = contextMenu.find("#options");
-
-		if (x == null) x = Std.int(ide.mouseX - parent.offset().left);
-		if (y == null) y = Std.int(ide.mouseY - parent.offset().top);
-
-		contextMenu.on("mousedown", function(e) {
-			e.stopPropagation();
-		});
-		contextMenu.on("wheel", function(e) {
-			e.stopPropagation();
-		});
-
-		contextMenu.on("click", function(e) {
-			closeCustomContextMenu();
-			e.stopPropagation();
-		});
-
-		for (elt in elts) {
-			elt.appendTo(options);
-		}
-
-		contextMenu.css("left", Math.min(x, element.width() - contextMenu.width() - 5));
-		contextMenu.css("top", Math.min(y, element.height() - contextMenu.height() - 5));
-	}
-
-	function closeCustomContextMenu() {
-		if (contextMenu != null) {
-			contextMenu.remove();
-			contextMenu = null;
-		}
 	}
 
 	function clearSelectionBoxes() {
