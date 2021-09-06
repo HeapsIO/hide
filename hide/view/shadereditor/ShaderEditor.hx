@@ -205,7 +205,12 @@ class ShaderEditor extends hide.view.Graph {
 		parametersList.on("contextmenu", function(e) {
 			e.preventDefault();
 			e.stopPropagation();
-			new hide.comp.ContextMenu(newParamCtxMenu);
+			new hide.comp.ContextMenu([
+				{
+					label : "Add Parameter",
+					menu : newParamCtxMenu,
+				},
+			]);
 		});
 
 		element.find("#createParameter").on("click", function() {
