@@ -2298,8 +2298,6 @@ class SceneEditor {
 				newItems.push(getNewShaderMenu(parent, onMake));
 				continue;
 			}
-			if(ptype == "hlshader")
-				continue;
 			var m = getNewTypeMenuItem(ptype, parent, onMake);
 			if( !groupByType )
 				newItems.push(m);
@@ -2388,7 +2386,7 @@ class SceneEditor {
 		function isClassShader(path) {
 			if(StringTools.endsWith(path, ".hx")) path = path.substr(0, -3);
 			var cpath = path.split("/").join(".");
-			var cl = cast Type.resolveClass(cpath);
+			var cl = Type.resolveClass(cpath);
 			return cl != null;
 		}
 
@@ -2430,19 +2428,24 @@ class SceneEditor {
 
 		var shaders : Array<String> = hide.Ide.inst.currentConfig.get("fx.shaders", []);
 		for(path in shaders) {
-			var fullPath = ide.getPath(path);
+			var strippedSlash = StringTools.endsWith(path, "/") ? path.substr(0, -1) : path;
+			var fullPath = ide.getPath(strippedSlash);
 			if( isClassShader(path) ) {
 				menu.push(classShaderItem(path));
 			} else if( StringTools.endsWith(path, ".hlshader")) {
 				menu.push(graphShaderItem(path));
 			} else if( sys.FileSystem.exists(fullPath) && sys.FileSystem.isDirectory(fullPath) ) {
+				var submenu : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
 				for( c in sys.FileSystem.readDirectory(fullPath) ) {
 					var relPath = ide.makeRelative(fullPath + "/" + c);
 					if( isClassShader(relPath) ) {
-						menu.push(classShaderItem(relPath));
+						submenu.push(classShaderItem(relPath));
 					} else if( StringTools.endsWith(relPath, ".hlshader")) {
-						menu.push(graphShaderItem(relPath));
+						submenu.push(graphShaderItem(relPath));
 					}
+				}
+				if( submenu.length > 0 ) {
+					menu.push({ label : path, menu : submenu });
 				}
 			}
 		}
