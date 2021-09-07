@@ -49,7 +49,7 @@ class SubGraph extends ShaderNode {
 							ids = paramInfo.ids;
 						ids.push(node.id);
 						if (!inputsInfo.exists(prefixSubGraph + paramId)) {
-							inputInfoKeys.insert(shaderParam.parameterIndex ,prefixSubGraph+paramId);
+							inputInfoKeys.push(prefixSubGraph+paramId);
 						}
 						inputsInfo.set(prefixSubGraph+paramId, { name : paramName , type: ShaderType.getSType(shaderParam.variable.type), hasProperty: false, isRequired : false, ids : ids });
 					case "ShaderInput":

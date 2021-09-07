@@ -60,7 +60,6 @@ class ShaderParam extends ShaderNode {
 
 	private var parameterDisplay : String;
 	private var displayDiv : hide.Element;
-	public var parameterIndex : Int;
 	public function setName(s : String) {
 		parameterName = s;
 		if (eltName != null)
