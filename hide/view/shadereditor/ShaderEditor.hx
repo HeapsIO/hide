@@ -1489,6 +1489,7 @@ class ShaderEditor extends hide.view.Graph {
 		afterChange();
 		removeEdgeSubGraphUpdate(edge);
 		launchCompileShader();
+		refreshBox(edge.to);
 	}
 
 	override function updatePosition(box : Box) {
