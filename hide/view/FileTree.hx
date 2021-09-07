@@ -355,7 +355,7 @@ class FileTree extends FileView {
 
 	function onCloneFile( path : String ) {
 		var sourcePath = getFilePath(path);
-		var nameNewFile = ide.ask("New filename:");
+		var nameNewFile = ide.ask("New filename:", new haxe.io.Path(sourcePath).file);
 		if (nameNewFile == null || nameNewFile.length == 0) {
 			return false;
 		}

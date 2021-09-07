@@ -49,6 +49,13 @@ class Evaluator {
 					++len;
 				}
 				return randValues[idx] * getFloat(scale, time);
+			case VRandomScale(idx, scale):
+				var len = randValues.length;
+				while(idx >= len) {
+					randValues.push(random.srand());
+					++len;
+				}
+				return randValues[idx] * scale;
 			case VMult(a, b):
 				return getFloat(a, time) * getFloat(b, time);
 			case VAdd(a, b):
@@ -63,8 +70,12 @@ class Evaluator {
 			case VOne: return time;
 			case VConst(v): return v * time;
 			case VCurveScale(c, scale): return c.getSum(time) * scale;
+			case VCurve(c): return c.getSum(time);
 			case VAdd(a, b):
 				return getSum(a, time) + getSum(b, time);
+			case VMult(a, b):
+				throw "Not implemented";
+				return 0.0;
 			default: 0.0;
 		}
 		return 0.0;

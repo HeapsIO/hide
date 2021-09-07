@@ -133,19 +133,21 @@ class Decal extends Object3D {
 
 	override function setSelected( ctx : Context, b : Bool ) {
 		if( b ) {
-			var obj = ctx.shared.contexts.get(this).local3d;
-			var wire = new h3d.scene.Box(0xFFFFFFFF,obj);
-			wire.name = "_highlight";
-			wire.material.setDefaultProps("ui");
-			wire.ignoreCollide = true;
-			wire.material.shadows = false;
-			var wireCenter = new h3d.scene.Box(0xFFFF00, obj);
-			wireCenter.scaleZ = 0;
-			wireCenter.name = "_highlight";
-			wireCenter.material.setDefaultProps("ui");
-			wireCenter.ignoreCollide = true;
-			wireCenter.material.shadows = false;
-			wireCenter.material.mainPass.depthTest = Always;
+			var obj = ctx.shared.getSelfObject(this);
+			if(obj != null) {
+				var wire = new h3d.scene.Box(0xFFFFFFFF,obj);
+				wire.name = "_highlight";
+				wire.material.setDefaultProps("ui");
+				wire.ignoreCollide = true;
+				wire.material.shadows = false;
+				var wireCenter = new h3d.scene.Box(0xFFFF00, obj);
+				wireCenter.scaleZ = 0;
+				wireCenter.name = "_highlight";
+				wireCenter.material.setDefaultProps("ui");
+				wireCenter.ignoreCollide = true;
+				wireCenter.material.shadows = false;
+				wireCenter.material.mainPass.depthTest = Always;
+			}
 		} else {
 			clearSelection( ctx );
 		}
@@ -153,8 +155,8 @@ class Decal extends Object3D {
 	}
 
 	function clearSelection( ctx : Context ) {
-
-		var obj = ctx.shared.contexts.get(this).local3d;
+		var obj = ctx.shared.getSelfObject(this);
+		if(obj == null) return;
 		var objs = obj.findAll( o -> if(o.name == "_highlight") o else null );
 		for( o in objs )
 			o.remove();

@@ -1724,6 +1724,13 @@ body.hide-subview .lm_controls {
 .jstree .filtered {
   display: none;
 }
+.jstree .editorOnly {
+  color: #02aeda !important;
+}
+.jstree .editorOnly i,
+.jstree .editorOnly a {
+  color: #02aeda;
+}
 .jstree .hidden {
   color: #555 !important;
 }

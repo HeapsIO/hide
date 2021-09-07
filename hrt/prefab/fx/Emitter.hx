@@ -510,7 +510,7 @@ class EmitterObject extends h3d.scene.Object {
 	var randomSeed = 0;
 	var context : hrt.prefab.Context;
 	var emitCount = 0;
-	var lastTime = -1.0;
+	var emitTarget = 0.0;
 	var curTime = 0.0;
 	var evaluator : Evaluator;
 	var vecPool = new Evaluator.VecPool();
@@ -532,8 +532,8 @@ class EmitterObject extends h3d.scene.Object {
 		enable = true;
 		random.init(randomSeed);
 		curTime = 0.0;
-		lastTime = 0.0;
 		emitCount = 0;
+		emitTarget = 0;
 		totalBurstCount = 0;
 
 		var p = particles;
@@ -611,7 +611,6 @@ class EmitterObject extends h3d.scene.Object {
 		if( instDef == null || particleTemplate == null )
 			return;
 
-		var shapeAngle = hxd.Math.degToRad(emitAngle) / 2.0;
 		var emitterQuat : h3d.Quat = null;
 		var emitterBaseMat : h3d.Matrix = null;
 
@@ -649,26 +648,21 @@ class EmitterObject extends h3d.scene.Object {
 					if( emitOrientation == Normal )
 						tmpQuat.initDirection(tmpOffset);
 				case Cylinder:
+					var z = random.rand();
 					var dx = 0.0, dy = 0.0;
+					var shapeAngle = hxd.Math.degToRad(emitAngle) / 2.0;
+					var a = random.srand(shapeAngle);
 					if(emitSurface) {
-						var a = random.srand(Math.PI);
-						dx = Math.cos(a);
-						dy = Math.sin(a);
+						dx = Math.cos(a)*(emitRad2*z + emitRad1*(1.0-z));
+						dy = Math.sin(a)*(emitRad2*z + emitRad1*(1.0-z));
 					}
 					else {
-						do {
-							dx = random.srand(1.0);
-							dy = random.srand(1.0);
-						}
-						while(dx * dx + dy * dy > 1.0);
+						dx = Math.cos(a)*(emitRad2*z + emitRad1*(1.0-z))*random.rand();
+						dy = Math.sin(a)*(emitRad2*z + emitRad1*(1.0-z))*random.rand();
 					}
-					var z = random.rand();
 					tmpOffset.set(dx * 0.5, dy * 0.5, z - 0.5);
 					if( emitOrientation == Normal )
 						tmpQuat.initRotation(0, 0, hxd.Math.atan2(dy, dx));
-
-					tmpOffset.x *= hxd.Math.lerp(emitRad1, emitRad2, x);
-					tmpOffset.y *= hxd.Math.lerp(emitRad1, emitRad2, x);
 				case Sphere:
 					do {
 						tmpOffset.x = random.srand(1.0);
@@ -684,6 +678,7 @@ class EmitterObject extends h3d.scene.Object {
 				case Cone:
 					tmpOffset.set(0, 0, 0);
 					var theta = random.rand() * Math.PI * 2;
+					var shapeAngle = hxd.Math.degToRad(emitAngle) / 2.0;
 					var phi = shapeAngle * random.rand();
 					tmpDir.x = Math.cos(phi) * scaleX;
 					tmpDir.y = Math.sin(phi) * Math.sin(theta) * scaleY;
@@ -859,13 +854,13 @@ class EmitterObject extends h3d.scene.Object {
 		if( enable ) {
 			switch emitType {
 				case Infinity:
-					var emitTarget = evaluator.getSum(emitRate, curTime);
+					emitTarget += evaluator.getFloat(emitRate, curTime) * dt;
 					var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, emitTarget - emitCount));
 					doEmit(delta);
 					if( isSubEmitter && (parentEmitter == null || parentEmitter.parent == null) )
 						enable = false;
 				case Duration:
-					var emitTarget = evaluator.getSum(emitRate, hxd.Math.min(curTime, emitDuration));
+					emitTarget += evaluator.getFloat(emitRate, hxd.Math.min(curTime, emitDuration)) * dt;
 					var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, emitTarget - emitCount));
 					doEmit(delta);
 					if( isSubEmitter && curTime >= emitDuration )
@@ -928,7 +923,6 @@ class EmitterObject extends h3d.scene.Object {
 				}
 			}
 		}
-		lastTime = curTime;
 		curTime += dt;
 	}
 
@@ -1001,17 +995,19 @@ class EmitterObject extends h3d.scene.Object {
 
 	public function setTime(time: Float) {
 		time = time * speedFactor + warmUpTime;
-		if(time < lastTime || lastTime < 0) {
+		if(time < curTime) {
 			reset();
 		}
 
 		var catchupTime = time - curTime;
 
-		#if !editor
-		if(catchupTime > maxCatchupWindow) {
-			curTime = time - maxCatchupWindow;
+		#if !editor  // Limit catchup time to avoid spikes when showing long running FX
+		var longCatchup = catchupTime > maxCatchupWindow;
+		if(longCatchup) {
+			var firstWarmup = curTime <= 0.0 && warmUpTime > 0;
+			catchupTime = firstWarmup ? warmUpTime : maxCatchupWindow;
+			curTime = time - catchupTime;
 			emitCount = hxd.Math.ceil(evaluator.getSum(emitRate, curTime));
-			catchupTime = maxCatchupWindow;
 
 			// Force sort after long time invisible
 			var p = particles;
@@ -1070,7 +1066,7 @@ class Emitter extends Object3D {
 		{ name: "enableSort", t: PBool, def: true, disp: "Enable Sort", groupName : "Emit Params" },
 		// EMIT SHAPE
 		{ name: "emitShape", t: PEnum(EmitShape), def: EmitShape.Sphere, disp: "Shape", groupName : "Emit Shape" },
-		{ name: "emitAngle", t: PFloat(0, 360.0), disp: "Angle", groupName : "Emit Shape" },
+		{ name: "emitAngle", t: PFloat(0, 360.0), def: 360.0, disp: "Angle", groupName : "Emit Shape" },
 		{ name: "emitRad1", t: PFloat(0, 1.0), def: 1.0, disp: "Radius 1", groupName : "Emit Shape" },
 		{ name: "emitRad2", t: PFloat(0, 1.0), def: 1.0, disp: "Radius 2", groupName : "Emit Shape" },
 		{ name: "emitSurface", t: PBool, def: false, disp: "Surface", groupName : "Emit Shape" },
@@ -1172,9 +1168,6 @@ class Emitter extends Object3D {
 			var shader = Std.downcast(c, hrt.prefab.Shader);
 			if( shader != null )
 				makeChildren(ctx, shader);
-			var lit = Std.downcast(c, hrt.prefab.pbr.ParticleLit);
-			if( lit != null )
-				makeChildren(ctx, lit);
 		}
 	}
 
@@ -1218,38 +1211,64 @@ class Emitter extends Object3D {
 
 		function makeParam(scope: Prefab, name: String): Value {
 			var getCurve = hrt.prefab.Curve.getCurve.bind(scope);
-			function makeCompVal(baseProp: Null<Float>, defVal: Float, randProp: Null<Float>, pname: String, suffix: String) : Value {
-				var xVal : Value = VZero;
-				var rv = baseProp != null ? baseProp : defVal;
-				xVal = switch(rv) {
+
+			function vVal(f: Float) : Value {
+				return switch(f) {
 					case 0.0: VZero;
 					case 1.0: VOne;
-					default: VConst(rv);
+					default: VConst(f);
 				}
+			}
 
+			function vMult(a: Value, b: Value) : Value {
+				if(a == VZero || b == VZero) return VZero;
+				if(a == VOne) return b;
+				if(b == VOne) return a;
+				switch a {
+					case VConst(va):
+						switch b {
+							case VConst(vb): return VConst(va * vb);
+							case VCurve(cb): return VCurveScale(cb, va);
+							default:
+						}
+					case VCurve(ca):
+						switch b {
+							case VConst(vb): return VCurveScale(ca, vb);
+							default:
+						}
+					default:
+				}
+				return VMult(a, b);
+			}
+
+			function vAdd(a: Value, b: Value) : Value {
+				if(a == VZero) return b;
+				if(b == VZero) return a;
+				switch a {
+					case VConst(va):
+						switch b {
+							case VConst(vb): return VConst(va + vb);
+							default:
+						}
+					default:
+				}
+				return VAdd(a, b);
+			}
+
+			function makeCompVal(baseProp: Null<Float>, defVal: Float, randProp: Null<Float>, pname: String, suffix: String) : Value {
+				var xVal = vVal(baseProp != null ? baseProp : defVal);
 				var randCurve = getCurve(pname + suffix + ".rand");
 				var randVal : Value = VZero;
 				if(randCurve != null)
 					randVal = VRandom(randIdx++, VCurveScale(randCurve, randProp != null ? randProp : 1.0));
-				else if(randProp != null)
-					randVal = VRandom(randIdx++, VConst(randProp));
+				else if(randProp != null && randProp != 0.0)
+					randVal = VRandomScale(randIdx++, randProp);
 
 				var xCurve = getCurve(pname + suffix);
-				if (xCurve != null) {
-					if(randVal == VZero)
-						return VMult(xVal, VCurve(xCurve));
-					if(xVal == VZero)
-						return VMult(randVal, VCurve(xCurve));
-					xVal = VAdd(xVal, randVal);
-					return VMult(xVal, VCurve(xCurve));
-				}
-				else {
-					if(randVal == VZero)
-						return xVal;
-					if(xVal == VZero)
-						return randVal;
-					return VAdd(xVal, randVal);
-				}
+				if (xCurve != null)
+					return vMult(vAdd(xVal, randVal), VCurve(xCurve))
+				else
+					return vAdd(xVal, randVal);
 			}
 
 			var baseProp: Dynamic = Reflect.field(props, name);
@@ -1362,6 +1381,7 @@ class Emitter extends Object3D {
 		#end
 
 		emitterObj.createMeshBatch();
+		emitterObj.reset();
 		refreshChildren(ctx);
 
 		#if editor
@@ -1410,7 +1430,7 @@ class Emitter extends Object3D {
 		}
 
 		var emitShape : EmitShape = getParamVal("emitShape");
-		if(emitShape != Cone)
+		if(!(emitShape == Cone || emitShape == Cylinder))
 			removeParam("emitAngle");
 		if(emitShape != Cylinder) {
 			removeParam("emitRad1");
@@ -1600,19 +1620,22 @@ class Emitter extends Object3D {
 		for(i in 0...debugShape.numChildren)
 			debugShape.removeChild(debugShape.getChildAt(i));
 
-		inline function circle(npts, f) {
-			for(i in 0...(npts+1)) {
-				var c = hxd.Math.cos((i / npts) * hxd.Math.PI * 2.0);
-				var s = hxd.Math.sin((i / npts) * hxd.Math.PI * 2.0);
-				f(i, c, s);
-			}
-		}
-
 		var mesh : h3d.scene.Mesh = null;
 		switch(emitterObj.emitShape) {
 			case Cylinder: {
 				var rad1 = getParamVal("emitRad1") * 0.5;
 				var rad2 = getParamVal("emitRad2") * 0.5;
+				var angle = hxd.Math.degToRad(getParamVal("emitAngle"));
+
+				inline function circle(npts, f) {
+					for(i in 0...(npts+1)) {
+						var t = Math.PI + (i / npts) * angle + (Math.PI*2 - angle) * 0.5;
+						var c = hxd.Math.cos(t);
+						var s = hxd.Math.sin(t);
+						f(i, c, s);
+					}
+				}
+
 				var g = new h3d.scene.Graphics(debugShape);
 				g.material.mainPass.setPassName("overlay");
 				g.lineStyle(1, 0xffffff);
@@ -1640,6 +1663,15 @@ class Emitter extends Object3D {
 				mesh = new h3d.scene.Box(0xffffff, true, debugShape);
 			}
 			case Cone: {
+				inline function circle(npts, f) {
+					for(i in 0...(npts+1)) {
+						var t = (i / npts) * hxd.Math.PI * 2.0;
+						var c = hxd.Math.cos(t);
+						var s = hxd.Math.sin(t);
+						f(i, c, s);
+					}
+				}
+
 				var g = new h3d.scene.Graphics(debugShape);
 				g.material.mainPass.setPassName("overlay");
 				var angle = hxd.Math.degToRad(getParamVal("emitAngle")) / 2.0;

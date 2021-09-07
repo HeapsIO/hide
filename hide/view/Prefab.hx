@@ -342,7 +342,6 @@ class Prefab extends FileView {
 		toolsDefs.push({id: "snapToGroundToggle", title : "Snap to ground", icon : "anchor", type : Toggle((v) -> sceneEditor.snapToGround = v)});
 		toolsDefs.push({id: "localTransformsToggle", title : "Local transforms", icon : "compass", type : Toggle((v) -> sceneEditor.localTransform = v)});
 		toolsDefs.push({id: "gridToggle", title : "Toggle grid", icon : "th", type : Toggle((v) -> { showGrid = v; updateGrid(); }) });
-		toolsDefs.push({id: "bakeLights", title : "Bake lights", icon : "lightbulb-o", type : Button(() -> bakeLights()) });
 		var texContent : Element = null;
 		toolsDefs.push({id: "sceneInformationToggle", title : "Scene information", icon : "info-circle", type : Toggle((b) -> statusText.visible = b), rightClick: () -> {
 			if( texContent != null ) {
@@ -433,71 +432,6 @@ class Prefab extends FileView {
 		];
 		statusText.text = lines.join("\n");
 		haxe.Timer.delay(function() sceneEditor.event.wait(0.5, updateStats), 0);
-	}
-
-	function bakeLights() {
-		var curSel = sceneEditor.curEdit.elements;
-		sceneEditor.selectElements([]);
-		var passes = [];
-		for( m in scene.s3d.getMaterials() ) {
-			var s = m.getPass("shadow");
-			if( s != null && !s.isStatic ) passes.push(s);
-		}
-		for( p in passes )
-			p.isStatic = true;
-
-		function isDynamic(elt: hrt.prefab.Prefab) {
-			var p = elt;
-			while(p != null) {
-				if(p.name == "dynamic")
-					return true;
-				p = p.parent;
-			}
-			return false;
-		}
-
-		for(elt in data.flatten()) {
-			if(Std.is(elt, Instance) || isDynamic(elt)) {
-				var mats = sceneEditor.context.shared.getMaterials(elt);
-				for(mat in mats) {
-					var p = mat.getPass("shadow");
-					if(p != null)
-						p.isStatic = false;
-				}
-			}
-		}
-
-		scene.s3d.computeStatic();
-		for( p in passes )
-			p.isStatic = false;
-		var lights = data.getAll(hrt.prefab.Light);
-		for( l in lights ) {
-			if(!l.visible)
-				continue;
-			l.saveBaked(sceneEditor.context);
-		}
-		sceneEditor.selectElements(curSel);
-	}
-
-	function bakeVolumetricLightmaps(){
-		var volumetricLightmaps = data.getAll(hrt.prefab.vlm.VolumetricLightmap);
-		var total = 0;
-		for( v in volumetricLightmaps )
-			total += v.volumetricLightmap.getProbeCount();
-		if( total == 0 )
-			return;
-		if( !ide.confirm("Bake "+total+" probes?") )
-			return;
-		function bakeNext() {
-			var v = volumetricLightmaps.shift();
-			if( v == null ) {
-				ide.message("Done");
-				return;
-			}
-			v.startBake(sceneEditor.curEdit, bakeNext);
-			sceneEditor.selectElements([v]);
-		}
-		bakeNext();
 	}
 
 	function resetCamera( top : Bool ) {
@@ -662,7 +596,7 @@ class Prefab extends FileView {
 						case "Scene":
 							applySceneFilter(typeid, on);
 					}
-					
+
 				content.find(function(item) return item.label == typeid).checked = on;
 			}});
 		}

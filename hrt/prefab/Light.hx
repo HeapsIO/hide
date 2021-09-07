@@ -147,22 +147,7 @@ class Light extends Object3D {
 
 		cookieTex = initTexture(cookiePath);
 		updateInstance(ctx);
-
-		if( ctx.shared.parent == null )
-			loadBaked(ctx);
 		return ctx;
-	}
-
-	function loadBaked( ctx : Context ) {
-		var light = Std.downcast(ctx.local3d, h3d.scene.pbr.Light);
-		if( light == null ) return;
-		if( light.shadows.mode == Static || light.shadows.mode == Mixed ){
-			var res = ctx.shared.loadPrefabDat("shadowMap", "bake", name);
-			if( res != null ) light.shadows.loadStaticData(res.entry.getBytes());
-			#if !editor
-			if( res == null ) light.shadows.mode = None; // Prevent crash if shadows are not baked
-			#end
-		}
 	}
 
 	override function updateInstance( ctx : Context, ?propName : String ) {
@@ -361,22 +346,13 @@ class Light extends Object3D {
 			sel.name = "__selection";
 		}
 
-		// no "Mixed" in editor (prevent double shadowing)
-		if( light != null && light.shadows.mode == Mixed ) light.shadows.mode = Static;
-
-		// when selected, force Dynamic mode (realtime preview)
-		//if( isSelected && shadows.mode != None ) light.shadows.mode = Dynamic;
+		// no "Mixed" in editor
+		if( light != null && light.shadows.mode == Mixed ) light.shadows.mode = Dynamic;
 
 		#end
 	}
 
 	#if editor
-
-	public function saveBaked( ctx : Context ) {
-		var light = cast(ctx.shared.contexts.get(this).local3d,h3d.scene.pbr.Light);
-		var bytes = light.shadows.saveStaticData();
-		ctx.shared.savePrefabDat("shadowMap", "bake", name, bytes);
-	}
 
 	override function setSelected( ctx : Context, b : Bool ) {
 		var sel = ctx.local3d.getObjectByName("__selection");

@@ -380,7 +380,7 @@ class Spline extends Object3D {
 				t += 1./step;
 			}
 			if (nextP.getPoint().distance(samples[samples.length - 1].pos) >= 1./step)
-				samples.insert(samples.length, { pos : nextP.getPoint(), tangent : nextP.getTangent(), prev : curP, next : nextP, t : 1.0 });
+				samples.insert(samples.length, { pos : nextP.getPoint(), tangent : nextP.getTangent(), prev : curP, next : nextP });
 			curP = points[i];
 			nextP = points[(i + 1) % points.length];
 
@@ -397,6 +397,7 @@ class Spline extends Object3D {
 			samples[i].t = l/lengthSum;
 			l += samples[i].pos.distance(samples[i+1].pos);
 		}
+		samples[samples.length - 1].t = 1;
 		sd.length = lengthSum;
 	}
 

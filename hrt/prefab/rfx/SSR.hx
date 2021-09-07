@@ -14,7 +14,7 @@ class SSRShader extends hxsl.Shader {
 
 		@global var depthMap:Channel;
 
-		@param var hdrMap:Sampler2D;
+		@param var ldrMap:Sampler2D;
 
 		@param var maxRayDistance : Float;
 		@param var stepsFirstPass : Int;
@@ -76,7 +76,7 @@ class SSRShader extends hxsl.Shader {
 			var fragmentColor = vec3(0.0, 0.0, 0.0);
 			var alpha = 0.0;
 			if (hitFirstPass && hitSecondPass) {
-				fragmentColor = hdrMap.get(curPos).rgb;
+				fragmentColor = ldrMap.get(curPos).rgb;
 				alpha = 1.0 - (curPosWS - transformedPosition).length() / maxRayDistance;
 			}
 
@@ -104,10 +104,11 @@ class SSR extends RendererFX {
 		if( step == Lighting ) {
 			r.mark("SSR");
 
-			var hdrCopy = r.allocTarget("hdrMapCopy", false, 0.5);
-			h3d.pass.Copy.run(r.ctx.getGlobal("hdrMap"), hdrCopy);
+			var ldrCopy = r.allocTarget("ldrMapCopy", false, 0.5);
+			var ldr = r.ctx.getGlobal("ldrMap");
+			h3d.pass.Copy.run(ldr, ldrCopy);
 
-			ssrShader.hdrMap = hdrCopy;
+			ssrShader.ldrMap = ldrCopy;
 			ssrShader.maxRayDistance = maxRayDistance;
 			ssrShader.stepsFirstPass = stepsFirstPass;
 			ssrShader.stepsSecondPass = stepsSecondPass;

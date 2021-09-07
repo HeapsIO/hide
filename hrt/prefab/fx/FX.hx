@@ -202,7 +202,7 @@ class FXAnimation extends h3d.scene.Object {
 		if(emitters != null) {
 			for(em in emitters) {
 				if (prevTime > localTime) {
-					@:privateAccess em.curTime = em.lastTime = time;
+					@:privateAccess em.curTime = time;
 					#if editor
 					em.reset();
 					#end
@@ -400,11 +400,7 @@ class FX extends BaseFX {
 		var useFXRoot = #if editor fromRef #else true #end;
 		var root = getFXRoot(ctx, this);
 		if(useFXRoot && root != null){
-			for( c in root.children ) {
-				var co = Std.downcast(c , hrt.prefab.l3d.Constraint);
-				if( co == null )
-					makeChildren(ctx,c);
-			}
+			root.make(ctx);
 		}
 		else
 			super.make(ctx);

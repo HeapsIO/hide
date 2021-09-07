@@ -505,7 +505,7 @@ class FXEditor extends FileView {
 
 				if(previewMax < previewMin + 0.1) {
 					previewMin = 0;
-					previewMax = data.duration == 0 ? 1 : data.duration;
+					previewMax = data.duration == 0 ? 5000 : data.duration;
 				}
 
 				element.off("mousemove");
@@ -1148,7 +1148,7 @@ class FXEditor extends FileView {
 			}
 			curveEdit.xOffset = xOffset;
 			curveEdit.xScale = xScale;
-			if(isInstanceCurve(curve))
+			if(isInstanceCurve(curve) && curve.parent.to(hrt.prefab.fx.Emitter) == null || curve.name.indexOf("inst") >= 0)
 				curve.maxTime = 1.0;
 			curveEdit.curve = curve;
 			curveEdit.onChange = function(anim) {
@@ -1689,7 +1689,7 @@ class FXEditor extends FileView {
 		if(ctx != null && ctx.local3d != null) {
 			anim = Std.downcast(ctx.local3d,hrt.prefab.fx.FX.FXAnimation);
 		}
-	
+
 		if(!pauseButton.isDown()) {
 			currentTime += scene.speed * dt;
 			if(timeLineEl != null)

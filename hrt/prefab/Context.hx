@@ -83,7 +83,6 @@ package hrt.prefab;
 			if( v == null ) {
 				var parts2 = path.split(".");
 				for( i in 0...parts.length ) parts2.pop();
-				shared.onError("Object not found " + parts2.join("."));
 				return null;
 			}
 			root = v;
