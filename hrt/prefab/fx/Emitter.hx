@@ -339,7 +339,11 @@ private class ParticleInstance  {
 		// ROTATION
 		var rot = evaluator.getVector(def.rotation, t, tmpRot);
 		rot.scale3(Math.PI / 180.0);
+
+		//OFFSET
 		var offset = evaluator.getVector(def.localOffset, t, tmpOffset);
+
+		//SCALE
 		var scaleVec = evaluator.getVector(def.stretch, t, tmpScale);
 		scaleVec.scale3(evaluator.getFloat(def.scale, t));
 
@@ -1266,7 +1270,10 @@ class Emitter extends Object3D {
 
 				var xCurve = getCurve(pname + suffix);
 				if (xCurve != null)
-					return vMult(vAdd(xVal, randVal), VCurve(xCurve))
+					if (pname.indexOf("Rotation") >= 0 || pname.indexOf("Offset") >= 0)
+						return vAdd(vAdd(xVal, randVal), VCurve(xCurve));
+					else
+						return vMult(vAdd(xVal, randVal), VCurve(xCurve));
 				else
 					return vAdd(xVal, randVal);
 			}

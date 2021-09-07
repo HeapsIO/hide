@@ -1130,6 +1130,10 @@ class FXEditor extends FileView {
 				curveEdit.minValue = 0;
 				curveEdit.maxValue = 1;
 			}
+			if(curve.name.indexOf("Rotation") >= 0) {
+				curveEdit.minValue = 0;
+				curveEdit.maxValue = 360;
+			}
 			var shader = curve.parent.to(hrt.prefab.Shader);
 			if(shader != null) {
 				var sh = shader.getShaderDefinition(ctx);
