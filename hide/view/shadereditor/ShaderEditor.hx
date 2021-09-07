@@ -39,6 +39,7 @@ class ShaderEditor extends hide.view.Graph {
 	// used to preview
 	var sceneEditor : SceneEditor;
 	var defaultLight : hrt.prefab.Light;
+	var lightsAreOn = true;
 
 	var root : hrt.prefab.Prefab;
 	var obj : h3d.scene.Object;
@@ -104,6 +105,13 @@ class ShaderEditor extends hide.view.Graph {
 		preview.on("wheel", function(e) { e.stopPropagation(); });
 		parent.append(preview);
 
+		var savedLightState = getDisplayState("useDefaultLights");
+		if( savedLightState != null ) {
+			lightsAreOn = savedLightState;
+		} else {
+			lightsAreOn == true;
+		}
+
 		var def = new hrt.prefab.Library();
 		new hrt.prefab.RenderProps(def).name = "renderer";
 		defaultLight = new hrt.prefab.Light(def);
@@ -118,6 +126,7 @@ class ShaderEditor extends hide.view.Graph {
 		defaultLight.rotationZ = Math.round(a.z * 180 / Math.PI);
 		defaultLight.shadows.mode = Dynamic;
 		defaultLight.shadows.size = 1024;
+		defaultLight.enabled = lightsAreOn;
 		root = def;
 
 		sceneEditor = new hide.comp.SceneEditor(this, root);
@@ -417,7 +426,16 @@ class ShaderEditor extends hide.view.Graph {
 	}
 
 	function toggleDefaultLight() {
-		sceneEditor.setEnabled([defaultLight], !defaultLight.enabled);
+		if( lightsAreOn ) {
+			lightsAreOn = false;
+			defaultLight.enabled = lightsAreOn;
+			sceneEditor.deleteElements([defaultLight], true, false);
+		} else {
+			lightsAreOn = true;
+			defaultLight.enabled = lightsAreOn;
+			sceneEditor.addElements([defaultLight], true, false);
+		}
+		saveDisplayState("useDefaultLights", lightsAreOn);
 	}
 
 	function refreshShaderGraph(readyEvent : Bool = true) {
