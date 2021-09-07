@@ -571,7 +571,8 @@ class Model extends FileView {
 		timecursor = new h2d.Bitmap(h2d.Tile.fromColor(0x808080, 8, H), timeline);
 		timecursor.x = -100;
 		int.onPush = function(e) {
-			if( hxd.Key.isDown( hxd.Key.MOUSE_LEFT) ){
+			switch( e.button ) {
+			case 0:
 				var prevPause = obj.currentAnimation.pause;
 				obj.currentAnimation.pause = true;
 				obj.currentAnimation.setFrame( (e.relX / W) * obj.currentAnimation.frameCount );
@@ -579,14 +580,13 @@ class Model extends FileView {
 					switch(e.kind ) {
 					case ERelease:
 						obj.currentAnimation.pause = prevPause;
-						int.stopCapture();
+						scene.s2d.stopCapture();
 					case EMove:
 						obj.currentAnimation.setFrame( (e.relX / W) * obj.currentAnimation.frameCount );
 					default:
 					}
 				});
-			}
-			else if( hxd.Key.isDown( hxd.Key.MOUSE_RIGHT) ){
+			case 1:
 				var deleteEvent = function(s:String, f:Int){
 					obj.currentAnimation.events[f].remove(s);
 					if(obj.currentAnimation.events[f].length == 0)
@@ -634,6 +634,10 @@ class Model extends FileView {
 					tf.backgroundColor = 0xFF0000;
 					tf.onFocusLost = function(e){
 						events[i][j] = tf.text;
+						if( tf.text == "" ) {
+							events[i].splice(j,1);
+							if( events[i].length == 0 ) events[i] = null;
+						}
 						buildTimeline();
 						buildEventPanel();
 						modified = true;
@@ -656,7 +660,7 @@ class Model extends FileView {
 					var curFrame = i;
 					var curPos = (curFrame / obj.currentAnimation.frameCount) * W;
 					dragInter.onPush = function(e) {
-						if( hxd.Key.isDown( hxd.Key.MOUSE_LEFT) ){
+						if( e.button == 0 ){
 							var startFrame = curFrame;
 							dragInter.startCapture(function(e) {
 								switch( e.kind ) {
