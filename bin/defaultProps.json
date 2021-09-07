@@ -140,10 +140,13 @@
 		"h3d.shader.ColorAdd",
 		"h3d.shader.ColorMult",
 		"h3d.shader.UVDelta",
-		"h3d.shader.UVScroll"
+		"h3d.shader.UVScroll",
+		"shaders/"
 	],
 
 	"fx.tags": [ { "id": "tag", "color": "#802000" } ],
+
+	"shadergraph.libfolders": ["shaders", "shaders/subshaders"],
 
 	// DomKit css files list
 	"domkit.css" : [],

@@ -15,7 +15,7 @@ class Combine extends ShaderNode {
 	@input("B", false, false) var b = SType.Float;
 	@input("A", false, false) var a = SType.Float;
 
-	@output() var output = SType.Variant;
+	@output() var output = SType.Number;
 
 	var components = [X, Y, Z, W];
 	var componentsString = ["r", "g", "b", "a"];
@@ -41,13 +41,15 @@ class Combine extends ShaderNode {
 	}
 
 	override public function computeOutputs() {
-		numberOutputs = 1;
+		numberOutputs = 0;
 		if (a != null && !a.isEmpty()) {
 			numberOutputs = 4;
 		} else if (b != null && !b.isEmpty()) {
 			numberOutputs = 3;
 		} else if (g != null && !g.isEmpty()) {
 			numberOutputs = 2;
+		} else if (r != null && !r.isEmpty()) {
+			numberOutputs = 1;
 		}
 		if (numberOutputs == 1) {
 			addOutput("output", TFloat);

@@ -8,8 +8,8 @@ using hxsl.Ast;
 @group("Math")
 class Step extends ShaderFunction {
 
-	@input("edge") var edge = SType.Number;
-	@input("a") var x = SType.Number;
+	@input("Edge") var edge = SType.Number;
+	@input("A") var x = SType.Number;
 
 	public function new() {
 		super(Step);

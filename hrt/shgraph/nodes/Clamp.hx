@@ -8,9 +8,9 @@ using hxsl.Ast;
 @group("Math")
 class Clamp extends ShaderFunction {
 
-	@input("x") var x = SType.Number;
-	@input("min", true) var min = SType.Number;
-	@input("max", true) var max = SType.Number;
+	@input("X") var x = SType.Number;
+	@input("Min", true) var min = SType.Number;
+	@input("Max", true) var max = SType.Number;
 
 	public function new() {
 		super(Saturate);

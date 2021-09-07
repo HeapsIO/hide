@@ -23,8 +23,6 @@ class Graph extends FileView {
 	var editorMatrix : JQuery;
 	var statusBar : JQuery;
 
-	var contextMenu : JQuery;
-
 	var listOfBoxes : Array<Box> = [];
 	var listOfEdges : Array<Edge> = [];
 
@@ -48,6 +46,7 @@ class Graph extends FileView {
 	// used to build edge
 	static var NODE_TRIGGER_NEAR = 2000.0;
 	var isCreatingLink : EdgeState = None;
+	var edgeStyle = {stroke : ""};
 	var startLinkBox : Box;
 	var endLinkBox : Box;
 	var startLinkGrNode : JQuery;
@@ -69,7 +68,8 @@ class Graph extends FileView {
 			</div>');
 		parent = element.find(".heaps-scene");
 		editor = new SVG(parent);
-		statusBar = new Element('<div id="status-bar" ><span> </span></div>').appendTo(parent).find("span");
+		statusBar = new Element('<div id="status-bar" ><pre> </pre></div>').appendTo(parent).find("pre");
+		statusBar.on("wheel", (e) -> { e.stopPropagation(); });
 
 		editorMatrix = editor.group(editor.element);
 
@@ -100,8 +100,8 @@ class Graph extends FileView {
 			mouseMoveFunction(e.clientX, e.clientY);
 		});
 
-
-		parent.on("mouseup", function(e) {
+		var document = new Element(js.Browser.document);
+		document.on("mouseup", function(e) {
 			if(timerUpdateView != null)
 				stopUpdateViewPosition();
 			if (e.button == 0) {
@@ -134,24 +134,6 @@ class Graph extends FileView {
 				zoom(1.1, e.clientX, e.clientY);
 			} else {
 				zoom(0.9, e.clientX, e.clientY);
-			}
-		});
-
-		parent.on("keydown", function(e) {
-
-			if (e.keyCode == 46) {
-				if (currentEdge != null) {
-					removeEdge(currentEdge);
-				}
-				if (listOfBoxesSelected.length > 0) {
-					for (b in listOfBoxesSelected) {
-						removeBox(b);
-					}
-					clearSelectionBoxes();
-				}
-				return;
-			} else if (e.keyCode == 32) {
-
 			}
 		});
 
@@ -230,6 +212,7 @@ class Graph extends FileView {
 				for (edge in listOfEdges) {
 					if (edge.from == b || edge.to == b) {
 						edge.elt.remove();
+						edgeStyle.stroke = edge.nodeFrom.css("fill");
 						edge.elt = createCurve(edge.nodeFrom, edge.nodeTo);
 
 						edge.elt.on("mousedown", function(e) {
@@ -276,9 +259,6 @@ class Graph extends FileView {
 			if (e.button != 0)
 				return;
 			lastClickDrag = null;
-			if (listOfBoxesSelected.length == 1 && box.selected && !e.ctrlKey) {
-				clearSelectionBoxes();
-			}
 		});
 		listOfBoxes.push(box);
 
@@ -296,7 +276,7 @@ class Graph extends FileView {
 					defaultValue = "0";
 				}
 			}
-			var grNode = box.addInput(editor, inputInfo.name, defaultValue);
+			var grNode = box.addInput(editor, inputInfo.name, defaultValue, inputInfo.type);
 			if (defaultValue != null) {
 				var fieldEditInput = grNode.find("input");
 				fieldEditInput.on("change", function(ev) {
@@ -321,19 +301,21 @@ class Graph extends FileView {
 				isCreatingLink = FromInput;
 				startLinkGrNode = grNode;
 				startLinkBox = box;
+				edgeStyle.stroke = node.css("fill");
 				setAvailableOutputNodes(box, grNode.find(".node").attr("field"));
 			});
 		}
 		for (outputKey in box.getInstance().getOutputInfoKeys()) {
 			var outputInfo = box.getInstance().getOutputInfo(outputKey);
-
-			var grNode = box.addOutput(editor, outputInfo.name);
+			var grNode = box.addOutput(editor, outputInfo.name, box.getInstance().getOutputType(outputKey));
 			grNode.find(".node").attr("field", outputKey);
 			grNode.on("mousedown", function(e) {
 				e.stopPropagation();
+				var node = grNode.find(".node");
 				isCreatingLink = FromOutput;
 				startLinkGrNode = grNode;
 				startLinkBox = box;
+				edgeStyle.stroke = node.css("fill");
 				setAvailableInputNodes(box, startLinkGrNode.find(".node").attr("field"));
 			});
 		}
@@ -343,7 +325,7 @@ class Graph extends FileView {
 		return box;
 	}
 
-	function removeBox(box : Box) {
+	function removeBox(box : Box, trackChanges = true) {
 		removeEdges(box);
 		box.dispose();
 		listOfBoxes.remove(box);
@@ -374,6 +356,7 @@ class Graph extends FileView {
 						isCreatingLink = FromOutput;
 						startLinkGrNode = e.nodeFrom.parent();
 						startLinkBox = e.from;
+						edgeStyle.stroke = e.nodeFrom.css("fill");
 						setAvailableInputNodes(e.from, e.nodeFrom.attr("field"));
 						removeEdge(e);
 						createLink(x, y);
@@ -386,6 +369,7 @@ class Graph extends FileView {
 						isCreatingLink = FromInput;
 						startLinkGrNode = e.nodeTo.parent();
 						startLinkBox = e.to;
+						edgeStyle.stroke = e.nodeFrom.css("fill");
 						setAvailableOutputNodes(e.to, e.nodeTo.attr("field"));
 						removeEdge(e);
 						createLink(x, y);
@@ -565,52 +549,14 @@ class Graph extends FileView {
 							lX(offsetEnd.left) + Box.NODE_RADIUS,
 							lY(offsetEnd.top) + Box.NODE_RADIUS,
 							startX + valueCurveX * (Math.min(maxDistanceY, diffDistanceY)/maxDistanceY),
-							startY + signCurveY * valueCurveY * (Math.min(maxDistanceY, diffDistanceY)/maxDistanceY))
+							startY + signCurveY * valueCurveY * (Math.min(maxDistanceY, diffDistanceY)/maxDistanceY),
+							edgeStyle)
 							.addClass("edge");
 		editorMatrix.prepend(curve);
 		if (isDraft)
 			curve.addClass("draft");
 
 		return curve;
-	}
-
-	function customContextMenu( elts : Array<Element>, ?x : Int, ?y : Int ) {
-		closeCustomContextMenu();
-
-		if (elts.length == 0) return;
-
-		contextMenu = new Element('
-		<div id="context-menu">
-			<div id="options"></div>
-		</div>').appendTo(parent);
-
-		var options = contextMenu.find("#options");
-
-		if (x == null) x = Std.int(ide.mouseX - parent.offset().left);
-		if (y == null) y = Std.int(ide.mouseY - parent.offset().top);
-
-		contextMenu.on("mousedown", function(e) {
-			e.stopPropagation();
-		});
-
-		contextMenu.on("click", function(e) {
-			closeCustomContextMenu();
-			e.stopPropagation();
-		});
-
-		for (elt in elts) {
-			elt.appendTo(options);
-		}
-
-		contextMenu.css("left", Math.min(x, element.width() - contextMenu.width() - 5));
-		contextMenu.css("top", Math.min(y, element.height() - contextMenu.height() - 5));
-	}
-
-	function closeCustomContextMenu() {
-		if (contextMenu != null) {
-			contextMenu.remove();
-			contextMenu = null;
-		}
 	}
 
 	function clearSelectionBoxes() {
@@ -657,14 +603,16 @@ class Graph extends FileView {
 		}
 	}
 
-	function centerView() {
-		if (listOfBoxes.length == 0) return;
-		var xMin = listOfBoxes[0].getX();
-		var yMin = listOfBoxes[0].getY();
-		var xMax = xMin + listOfBoxes[0].getWidth();
-		var yMax = yMin + listOfBoxes[0].getHeight();
-		for (i in 1...listOfBoxes.length) {
-			var b = listOfBoxes[i];
+	function getGraphDims(?boxes) {
+		if( boxes == null )
+			boxes = listOfBoxes;
+		if( boxes.length == 0 ) return null;
+		var xMin = boxes[0].getX();
+		var yMin = boxes[0].getY();
+		var xMax = xMin + boxes[0].getWidth();
+		var yMax = yMin + boxes[0].getHeight();
+		for (i in 1...boxes.length) {
+			var b = boxes[i];
 			xMin = Math.min(xMin, b.getX());
 			yMin = Math.min(yMin, b.getY());
 			xMax = Math.max(xMax, b.getX() + b.getWidth());
@@ -672,10 +620,22 @@ class Graph extends FileView {
 		}
 		var center = new IPoint(Std.int(xMin + (xMax - xMin)/2), Std.int(yMin + (yMax - yMin)/2));
 		center.y += Std.int(editor.element.height()*CENTER_OFFSET_Y);
-		var scale = Math.min(1, Math.min((editor.element.width() - 50) / (xMax - xMin), (editor.element.height() - 50) / (yMax - yMin)));
+		return {
+			xMin : xMin,
+			yMin : yMin,
+			xMax : xMax,
+			yMax : yMax,
+			center : center,
+		};
+	}
 
-		transformMatrix[4] = editor.element.width()/2 - center.x;
-		transformMatrix[5] = editor.element.height()/2 - center.y;
+	function centerView() {
+		if (listOfBoxes.length == 0) return;
+		var dims = getGraphDims();
+		var scale = Math.min(1, Math.min((editor.element.width() - 50) / (dims.xMax - dims.xMin), (editor.element.height() - 50) / (dims.yMax - dims.yMin)));
+
+		transformMatrix[4] = editor.element.width()/2 - dims.center.x;
+		transformMatrix[5] = editor.element.height()/2 - dims.center.y;
 
 		transformMatrix[0] = scale;
 		transformMatrix[3] = scale;
@@ -687,6 +647,24 @@ class Graph extends FileView {
 		transformMatrix[5] = y - (y - transformMatrix[5]) * scale;
 
 		updateMatrix();
+	}
+
+	function clampView() {
+		if (listOfBoxes.length == 0) return;
+		var dims = getGraphDims();
+
+		var width = editor.element.width();
+		var height = editor.element.height();
+		var scale = transformMatrix[0];
+
+		if( transformMatrix[4] + dims.xMin * scale > width )
+			transformMatrix[4] = width - dims.xMin * scale;
+		if( transformMatrix[4] + dims.xMax * scale < 0 )
+			transformMatrix[4] = -1 * dims.xMax * scale;
+		if( transformMatrix[5] + dims.yMin * scale > height )
+			transformMatrix[5] = height - dims.yMin * scale;
+		if( transformMatrix[5] + dims.yMax * scale < 0 )
+			transformMatrix[5] = -1 * dims.yMax * scale;
 	}
 
 	function updateMatrix() {
@@ -707,6 +685,7 @@ class Graph extends FileView {
 		transformMatrix[4] = x - (x - transformMatrix[4]) * scale;
 		transformMatrix[5] = y - (y - transformMatrix[5]) * scale;
 
+		clampView();
 		updateMatrix();
 	}
 
@@ -714,10 +693,11 @@ class Graph extends FileView {
 		transformMatrix[4] += p.x;
 		transformMatrix[5] += p.y;
 
+		clampView();
 		updateMatrix();
 	}
 
-	function IsVisible() : Bool {
+	function isVisible() : Bool {
 		return editor.element.is(":visible");
 	}
 

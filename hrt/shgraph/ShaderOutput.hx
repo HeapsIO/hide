@@ -19,7 +19,6 @@ class ShaderOutput extends ShaderNode {
 	}
 
 	override public function build(key : String) : TExpr {
-
 		return {
 				p : null,
 				t : TVoid,
@@ -71,7 +70,9 @@ class ShaderOutput extends ShaderNode {
 	];
 
 	override public function loadProperties(props : Dynamic) {
-		var paramVariable : Array<String> = Reflect.field(props, "variable");
+		var paramVariable : Array<Dynamic> = Reflect.field(props, "variable");
+		if( paramVariable[0] == null)
+			return;
 
 		for (c in ShaderNode.availableVariables) {
 			if (c.name == paramVariable[0]) {
@@ -85,11 +86,30 @@ class ShaderOutput extends ShaderNode {
 				return;
 			}
 		}
+		var type: Type;
+		try {
+			type = haxe.EnumTools.createByName(Type, paramVariable[1], paramVariable[2]);
+		} catch( e ) {
+			trace('Received invalid props for output node. id: $id, variable name: ${paramVariable[0]}');
+			return;
+		}
+		this.variable = {
+			parent: null,
+			id: 0,
+			kind: Local,
+			name: paramVariable[0],
+			type: type,
+		};
 	}
 
 	override public function saveProperties() : Dynamic {
+		var content : Array<Dynamic> = (variable == null) ? [null] : [
+			variable.name,
+			variable.type.getName(),
+			variable.type.getParameters()
+		];
 		var parameters = {
-			variable: (variable == null) ? [null] : [variable.name, variable.type.getName()]
+			variable: content,
 		};
 
 		return parameters;
@@ -99,7 +119,7 @@ class ShaderOutput extends ShaderNode {
 	#if editor
 	override public function getPropertiesHTML(width : Float) : Array<hide.Element> {
 		var elements = super.getPropertiesHTML(width);
-		var element = new hide.Element('<div style="width: 110px; height: 30px"></div>');
+		var element = new hide.Element('<div style="width: 110px; height: 70px"></div>');
 		element.append(new hide.Element('<select id="variable"></select>'));
 
 		if (this.variable == null) {
@@ -107,10 +127,12 @@ class ShaderOutput extends ShaderNode {
 		}
 		var input = element.children("select");
 		var indexOption = 0;
+		var selectingDefault = false;
 		for (c in ShaderNode.availableVariables) {
 			input.append(new hide.Element('<option value="${indexOption}">${c.name}</option>'));
 			if (this.variable.name == c.name) {
 				input.val(indexOption);
+				selectingDefault = true;
 			}
 			indexOption++;
 		}
@@ -118,15 +140,43 @@ class ShaderOutput extends ShaderNode {
 			input.append(new hide.Element('<option value="${indexOption}">${c.name}</option>'));
 			if (this.variable.name == c.name) {
 				input.val(indexOption);
+				selectingDefault = true;
 			}
 			indexOption++;
 		}
+		var maxIndex = indexOption;
+		input.append(new hide.Element('<option value="${maxIndex}">Other...</option>'));
+		var initialName : String = null;
+		var initialType : Type = null;
+		if( !selectingDefault ) {
+			input.val(maxIndex);
+			initialName = this.variable.name;
+			initialType = this.variable.type;
+		}
+
+		var customVarChooser = new CustomVarChooser(element, initialName, initialType, function(val) {
+			this.variable = val;
+		});
+
+		if( !selectingDefault )
+			customVarChooser.show();
+		else
+			customVarChooser.hide();
+
 		input.on("change", function(e) {
 			var value = input.val();
 			if (value < ShaderNode.availableVariables.length) {
 				this.variable = ShaderNode.availableVariables[value];
-			} else {
+			} else if (value < maxIndex) {
 				this.variable = ShaderOutput.availableOutputs[value-ShaderNode.availableVariables.length];
+			}
+			if (value == maxIndex) {
+				customVarChooser.show();
+				if (customVarChooser.variable != null) {
+					this.variable = customVarChooser.variable;
+				}
+			} else {
+				customVarChooser.hide();
 			}
 		});
 

@@ -101,8 +101,8 @@ class ShaderGraph {
 			var shaderParam = Std.downcast(n.instance, ShaderParam);
 			if (shaderParam != null) {
 				var paramShader = getParameter(shaderParam.parameterId);
-				shaderParam.computeOutputs();
 				shaderParam.variable = paramShader.variable;
+				shaderParam.computeOutputs();
 			}
 		}
 		if (nodes[nodes.length-1] != null)
@@ -118,6 +118,15 @@ class ShaderGraph {
 		var output = this.nodes.get(edge.idOutput);
 		node.instance.setInput(edge.nameInput, new NodeVar(output.instance, edge.nameOutput));
 		output.outputs.push(node);
+
+		var subShaderIn = Std.downcast(node.instance, hrt.shgraph.nodes.SubGraph);
+		var subShaderOut = Std.downcast(output.instance, hrt.shgraph.nodes.SubGraph);
+		if( @:privateAccess ((subShaderIn != null) && !subShaderIn.inputInfoKeys.contains(edge.nameInput))
+			|| @:privateAccess ((subShaderOut != null) && !subShaderOut.outputInfoKeys.contains(edge.nameOutput))
+		) {
+			removeEdge(edge.idInput, edge.nameInput, false);
+		}
+
 		#if editor
 		if (hasCycle()){
 			removeEdge(edge.idInput, edge.nameInput, false);
@@ -217,7 +226,8 @@ class ShaderGraph {
 			}
 			allVariables.push(shaderParam.variable);
 			allParameters.push(shaderParam.variable);
-			allParamDefaultValue.push(getParameter(shaderParam.parameterId).defaultValue);
+			if (parametersAvailable.exists(shaderParam.parameterId))
+				allParamDefaultValue.push(getParameter(shaderParam.parameterId).defaultValue);
 		}
 		if (isSubGraph) {
 			var subGraph = Std.downcast(node, hrt.shgraph.nodes.SubGraph);
@@ -281,9 +291,6 @@ class ShaderGraph {
 		var contentFragment = [];
 
 		for (n in nodes) {
-			if (subShaderId != null && Std.is(n.instance, hrt.shgraph.nodes.SubGraph)) {
-				throw ShaderException.t("A subgraph can't have a subgraph", -1);
-			}
 			if (!variableNamesAlreadyUpdated && subShaderId != null && !Std.is(n.instance, ShaderInput)) {
 				for (outputKey in n.instance.getOutputInfoKeys()) {
 					var output = n.instance.getOutput(outputKey);

@@ -1558,6 +1558,13 @@ input[type=checkbox] {
 					display: block;
 					margin-bottom: 10px;
 					width: 100%;
+					text-align: center;
+					box-sizing: border-box;
+				}
+
+				& > div {
+					border: 1px solid #666;
+					padding: 2px;
 				}
 			}
 		}
@@ -1739,8 +1746,10 @@ input[type=checkbox] {
 
 			left: -1px;
 			bottom: -1px;
+			max-height: 60%;
+			overflow: auto;
 
-			span {
+			pre {
 				padding: 10px;
 				vertical-align: sub;
 
@@ -1863,6 +1872,17 @@ input[type=checkbox] {
 					span {
 						float: left;
 						margin-right: 10px;
+					}
+				}
+
+				.custom-var {
+					display: table;
+					width: 100%;
+					div.custom-var-row {
+						display: table-row;
+						label, span {
+							display: table-cell;
+						}
 					}
 				}
 			}

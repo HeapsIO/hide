@@ -7,14 +7,14 @@ using hxsl.Ast;
 @group("Property")
 class Sampler extends ShaderNode {
 
-	@input("texture") var texture = SType.Sampler;
-	@input("uv") var uv = SType.Vec2;
+	@input("Texture") var texture = SType.Sampler;
+	@input("UV") var uv = SType.Vec2;
 
-	@output("rgba") var rgba = SType.Vec4;
-	@output("r") var r = SType.Float;
-	@output("g") var g = SType.Float;
-	@output("b") var b = SType.Float;
-	@output("a") var a = SType.Float;
+	@output("RGBA") var rgba = SType.Vec4;
+	@output("R") var r = SType.Float;
+	@output("G") var g = SType.Float;
+	@output("B") var b = SType.Float;
+	@output("A") var a = SType.Float;
 
 	var components = [X, Y, Z, W];
 	var componentsString = ["r", "g", "b", "a"];

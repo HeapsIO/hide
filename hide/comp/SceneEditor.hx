@@ -1,7 +1,6 @@
 package hide.comp;
 
 import hrt.prefab.Reference;
-import h3d.col.Sphere;
 import h3d.scene.Mesh;
 import h3d.col.FPoint;
 import h3d.col.Ray;
@@ -18,6 +17,7 @@ import hrt.prefab.Object3D;
 import h3d.scene.Object;
 
 import hide.comp.cdb.DataFiles;
+import hide.view.CameraController.CamController as CameraController;
 
 enum SelectMode {
 	/**
@@ -36,15 +36,6 @@ enum SelectMode {
 		Don't refresh tree and don't undo command
 	**/
 	Nothing;
-}
-
-class CameraController extends h3d.scene.CameraController {
-	override function sync(ctx:h3d.scene.RenderContext) {
-		var old = ctx.elapsedTime;
-		ctx.elapsedTime = hxd.Timer.dt;
-		super.sync(ctx);
-		ctx.elapsedTime = old;
-	}
 }
 
 @:access(hide.comp.SceneEditor)
@@ -147,6 +138,7 @@ class SceneEditor {
 	public var cameraController2D : hide.view.l3d.CameraController2D;
 	public var editorDisplay(default,set) : Bool;
 	public var camera2D(default,set) : Bool = false;
+	public var objectAreSelectable = true;
 
 	// Windows default is 0.5
 	public var dblClickDuration = 0.2;
@@ -295,7 +287,7 @@ class SceneEditor {
 	}
 
 	function makeCamController() : h3d.scene.CameraController {
-		var c = new CameraController(scene.s3d);
+		var c = new CameraController(scene.s3d, this);
 		c.friction = 0.9;
 		c.panSpeed = 0.6;
 		c.zoomAmount = 1.05;
@@ -819,6 +811,8 @@ class SceneEditor {
 	}
 
 	function selectNewObject() {
+		if( !objectAreSelectable )
+			return;
 		var parentEl = sceneData;
 		 // for now always create at scene root, not `curEdit.rootElements[0];`
 		var group = getParentGroup(parentEl);
@@ -1588,13 +1582,13 @@ class SceneEditor {
 		return e != root;
 	}
 
-	public function resetCamera() {
+	public function resetCamera(distanceFactor = 1.5) {
 		if( camera2D ) {
 			cameraController2D.initFromScene();
 		} else {
 			scene.s3d.camera.zNear = scene.s3d.camera.zFar = 0;
 			scene.s3d.camera.fovY = 25; // reset to default fov
-			scene.resetCamera(1.5);
+			scene.resetCamera(distanceFactor);
 			cameraController.lockZPlanes = scene.s3d.camera.zNear != 0;
 			cameraController.loadFromCamera();
 		}
@@ -2357,17 +2351,27 @@ class SceneEditor {
 		return newItems;
 	}
 
-	function getNewTypeMenuItem(ptype: String, parent: PrefabElement, onMake: PrefabElement->Void, ?label: String) : hide.comp.ContextMenu.ContextMenuItem {
+	function getNewTypeMenuItem(
+		ptype: String,
+		parent: PrefabElement,
+		onMake: PrefabElement->Void,
+		?label: String,
+		?objectName: String,
+		?path: String
+	) : hide.comp.ContextMenu.ContextMenuItem {
 		var pmodel = hrt.prefab.Library.getRegistered().get(ptype);
 		return {
 			label : label != null ? label : pmodel.inf.name,
 			click : function() {
-				function make(?path) {
+				function make(?sourcePath) {
 					var p = Type.createInstance(pmodel.cl, [parent]);
 					@:privateAccess p.type = ptype;
-					if(path != null)
-						p.source = path;
-					autoName(p);
+					if(sourcePath != null)
+						p.source = sourcePath;
+					if( objectName != null)
+						p.name = objectName;
+					else
+						autoName(p);
 					if(onMake != null)
 						onMake(p);
 					var recents : Array<String> = ide.currentConfig.get("sceneeditor.newrecents", []);
@@ -2379,17 +2383,18 @@ class SceneEditor {
 					return p;
 				}
 
-				if( pmodel.inf.fileSource != null )
-					ide.chooseFile(pmodel.inf.fileSource, function(path) {
+				if( pmodel.inf.fileSource != null ) {
+					if( path != null ) {
 						var p = make(path);
 						addElements([p]);
 						var recents : Array<String> = ide.currentConfig.get("sceneeditor.newrecents", []);
 						recents.remove(p.type);
-						recents.unshift(p.type);
-						var recentSize : Int = view.config.get("sceneeditor.recentsize");
-						if (recents.length > recentSize) recents.splice(recentSize, recents.length - recentSize);
-						ide.currentConfig.set("sceneeditor.newrecents", recents);
-					});
+					} else {
+						ide.chooseFile(pmodel.inf.fileSource, function(path) {
+							addElements([make(path)]);
+						});
+					}
+				}
 				else
 					addElements([make()]);
 			},
@@ -2397,38 +2402,79 @@ class SceneEditor {
 		};
 	}
 
-	function getNewShaderMenu(parentElt: PrefabElement, onMake: PrefabElement->Void) : hide.comp.ContextMenu.ContextMenuItem {
-		var custom = getNewTypeMenuItem("shader", parentElt, onMake, "Custom...");
-
-		function shaderItem(name, path) : hide.comp.ContextMenu.ContextMenuItem {
-			return {
-				label : name,
-				click : function() {
-					var s = new hrt.prefab.DynamicShader(parentElt);
-					s.source = path;
-					s.name = name;
-					addElements([s]);
-				}
-			}
+	function getNewShaderMenu(parentElt: PrefabElement, ?onMake: PrefabElement->Void) : hide.comp.ContextMenu.ContextMenuItem {
+		function isClassShader(path) {
+			if(StringTools.endsWith(path, ".hx")) path = path.substr(0, -3);
+			var cpath = path.split("/").join(".");
+			var cl = Type.resolveClass(cpath);
+			return cl != null;
 		}
 
-		var menu = [custom];
+		var shModel = hrt.prefab.Library.getRegistered().get("shader");
+		var graphModel = hrt.prefab.Library.getRegistered().get("shgraph");
+		var custom = {
+			label : "Custom...",
+			click : function() {
+				ide.chooseFile(shModel.inf.fileSource.concat(graphModel.inf.fileSource), function(path) {
+					var cl = isClassShader(path) ? shModel.cl : graphModel.cl;
+					var p = Type.createInstance(cl, [parentElt]);
+					p.source = path;
+					autoName(p);
+					if(onMake != null)
+						onMake(p);
+					addElements([p]);
+				});
+			},
+			icon : shModel.inf.icon,
+		};
 
-		var shaders : Array<String> = hide.Ide.inst.currentConfig.get("fx.shaders", []);
-		for(path in shaders) {
+		function classShaderItem(path) : hide.comp.ContextMenu.ContextMenuItem {
 			var name = path;
 			if(StringTools.endsWith(name, ".hx")) {
-				name = name.substr(0, -3);
-				name = name.split("/").pop();
+				name = new haxe.io.Path(path).file;
 			}
 			else {
 				name = name.split(".").pop();
 			}
-			menu.push(shaderItem(name, path));
+			return getNewTypeMenuItem("shader", parentElt, onMake, name, name, path);
 		}
 
+		function graphShaderItem(path) : hide.comp.ContextMenu.ContextMenuItem {
+			var name = new haxe.io.Path(path).file;
+			return getNewTypeMenuItem("shgraph", parentElt, onMake, name, name, path);
+		}
+
+		var menu : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
+
+		var shaders : Array<String> = hide.Ide.inst.currentConfig.get("fx.shaders", []);
+		for(path in shaders) {
+			var strippedSlash = StringTools.endsWith(path, "/") ? path.substr(0, -1) : path;
+			var fullPath = ide.getPath(strippedSlash);
+			if( isClassShader(path) ) {
+				menu.push(classShaderItem(path));
+			} else if( StringTools.endsWith(path, ".shgraph")) {
+				menu.push(graphShaderItem(path));
+			} else if( sys.FileSystem.exists(fullPath) && sys.FileSystem.isDirectory(fullPath) ) {
+				var submenu : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
+				for( c in sys.FileSystem.readDirectory(fullPath) ) {
+					var relPath = ide.makeRelative(fullPath + "/" + c);
+					if( isClassShader(relPath) ) {
+						submenu.push(classShaderItem(relPath));
+					} else if( StringTools.endsWith(relPath, ".shgraph")) {
+						submenu.push(graphShaderItem(relPath));
+					}
+				}
+				if( submenu.length > 0 ) {
+					menu.push({ label : path, menu : submenu });
+				}
+			}
+		}
+
+		menu.sort(function(l1,l2) return Reflect.compare(l1.label,l2.label));
+		menu.unshift(custom);
+
 		return {
-			label: "Shaders",
+			label: "Shader",
 			menu: menu
 		};
 	}

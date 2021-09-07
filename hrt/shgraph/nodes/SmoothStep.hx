@@ -2,15 +2,15 @@ package hrt.shgraph.nodes;
 
 using hxsl.Ast;
 
-@name("SmoothStep")
-@description("Linear interpolation between a and b using mix")
-@width(80)
+@name("Smooth Step")
+@description("Linear interpolation between A and B using Mix")
+@width(100)
 @group("Math")
 class SmoothStep extends ShaderFunction {
 
-	@input("a") var x = SType.Number;
-	@input("b") var y = SType.Number;
-	@input("mix") var a = SType.Number;
+	@input("A") var x = SType.Number;
+	@input("B") var y = SType.Number;
+	@input("Mix") var a = SType.Number;
 
 	public function new() {
 		super(Smoothstep);
