@@ -346,7 +346,7 @@ class SplineEditor {
 					var newMat = localMat.clone();
 					newMat.multiply(newMat, transf);
 					newMat.multiply(newMat, pivot);
-					if(sceneEditor.snapToGround && mode == MoveXY) {
+					if(sceneEditor.snapToGround && (mode == MoveXY || mode == MoveX || mode == MoveY || mode == MoveZ || mode == MoveYZ || mode == MoveZX)) {
 						newMat.tz = sceneEditor.getZ(newMat.tx, newMat.ty);
 					}
 
@@ -559,7 +559,6 @@ class SplineEditor {
 					sp.computeName(editContext.getContext(sp));
 				}
 				@:privateAccess editContext.scene.editor.refresh(Partial);
-				
 			}));
 			ctx.onChange(prefab, null);
 			removeGizmos();
@@ -573,6 +572,7 @@ class SplineEditor {
 			prefab.onEdit(editMode);
 			editModeButton.val(editMode ? "Edit Mode : Enabled" : "Edit Mode : Disabled");
 			editModeButton.toggleClass("editModeEnabled", editMode);
+			prefab.updateInstance(ctx.getContext(prefab));
 			setSelected(getContext(), true);
 			@:privateAccess editContext.scene.editor.showGizmo = !editMode;
 			ctx.onChange(prefab, null);
