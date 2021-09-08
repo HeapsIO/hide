@@ -770,6 +770,9 @@ class Editor extends Component {
 					switch( c.column.type ){
 					case TRef(_):
 						c.refresh();
+					case TString:
+						if( c.column.kind == Script )
+							c.refresh();
 					default:
 					}
 				}
