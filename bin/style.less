@@ -1469,14 +1469,25 @@ input[type=checkbox] {
 .graph-view {
 	outline: none !important;
 	.tabs {
+		width: 280px;
+		padding-top: 10px;
+		border-left: 1px solid #444444;
 		z-index: @default-layer + 5;
     	background: #222222;
 		height: 100%;
 		user-select: none;
+
+		span { // title
+			margin-left: 5px;
+			font-size: 15px;
+			font-weight: bold;
+		}
+
 		.tab {
 			height: 100%;
+			@options-height: max(250px, 25%);
 			.hide-block {
-				height: 70%;
+				height: calc(100% - 5% - @options-height);
 
 				#parametersList {
 					height: 100%;
@@ -1553,7 +1564,7 @@ input[type=checkbox] {
 				}
 			}
 			.options-block {
-				height: 25%;
+				height: @options-height;
 				& > * {
 					display: block;
 					margin-bottom: 10px;
@@ -1902,17 +1913,6 @@ input[type=checkbox] {
 				stroke: rgba(0, 0, 255, 0.7);
 				fill: rgba(70, 70, 116, 0.08);
 			}
-		}
-	}
-	.tabs {
-		width: 280px;
-		padding-top: 10px;
-		border-left: 1px solid #444444;
-
-		span { // title
-			margin-left: 5px;
-			font-size: 15px;
-			font-weight: bold;
 		}
 	}
 	.paramVisible {

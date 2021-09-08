@@ -1300,16 +1300,24 @@ input[type=checkbox]:checked:after {
   outline: none !important;
 }
 .graph-view .tabs {
+  width: 280px;
+  padding-top: 10px;
+  border-left: 1px solid #444444;
   z-index: 205;
   background: #222222;
   height: 100%;
   user-select: none;
 }
+.graph-view .tabs span {
+  margin-left: 5px;
+  font-size: 15px;
+  font-weight: bold;
+}
 .graph-view .tabs .tab {
   height: 100%;
 }
 .graph-view .tabs .tab .hide-block {
-  height: 70%;
+  height: calc(100% - 5% - max(250px, 25%));
 }
 .graph-view .tabs .tab .hide-block #parametersList {
   height: 100%;
@@ -1373,7 +1381,7 @@ input[type=checkbox]:checked:after {
   font-size: 12px;
 }
 .graph-view .tabs .tab .options-block {
-  height: 25%;
+  height: max(250px, 25%);
 }
 .graph-view .tabs .tab .options-block > * {
   display: block;
@@ -1664,16 +1672,6 @@ input[type=checkbox]:checked:after {
 .graph-view .heaps-scene svg .rect-selection {
   stroke: rgba(0, 0, 255, 0.7);
   fill: rgba(70, 70, 116, 0.08);
-}
-.graph-view .tabs {
-  width: 280px;
-  padding-top: 10px;
-  border-left: 1px solid #444444;
-}
-.graph-view .tabs span {
-  margin-left: 5px;
-  font-size: 15px;
-  font-weight: bold;
 }
 .graph-view .paramVisible {
   color: black!important;
