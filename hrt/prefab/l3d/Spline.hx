@@ -95,9 +95,6 @@ class SplinePoint extends Object3D {
 			var ratio = 18 / engine.height;
 			pointViewer.setScale(ratio * distToCam * Math.tan(cam.fovY * 0.5 * Math.PI / 180.0));
 			@:privateAccess obj.calcAbsPos();
-
-			var t = Std.downcast(indexText.getChildAt(0), h2d.Text);
-			t.text = "" + spline.points.indexOf(this);
 		}
 		obj.onRemoveDynamic = function() {
 			indexText.remove();
@@ -143,8 +140,13 @@ class SplinePoint extends Object3D {
 	#if editor
 
 	public function computeName(ctx) {
-		name = "SplinePoint" + spline.points.indexOf(this);
+		var index = spline.points.indexOf(this);
+		name = "SplinePoint" + index;
 		ctx.local3d.name = name;
+		if (indexText != null) {
+			var t = Std.downcast(indexText.getChildAt(0), h2d.Text);
+			t.text = "" + index;
+		}
 	}
 
 	override function edit(ctx : EditContext) {
