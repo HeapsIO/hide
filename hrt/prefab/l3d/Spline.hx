@@ -55,6 +55,7 @@ class SplinePoint extends Object3D {
 	}
 
 	override function makeInstance(ctx:Context):Context {
+		#if editor
 		ctx = ctx.clone(this);
 		ctx.local3d = createObject(ctx);
 		pointViewer = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), null, ctx.local3d.getScene());
@@ -103,6 +104,7 @@ class SplinePoint extends Object3D {
 			pointViewer.remove();
 		}
 		updateInstance(ctx);
+		#end
 		return ctx;
 	}
 
@@ -121,10 +123,10 @@ class SplinePoint extends Object3D {
 				spline.editor.setSelected(spline.editor.editContext.getContext(spline), true);
 				spline.editor.update(spline.editor.editContext.getContext(spline));
 			}
+			for (sp in spline.points) {
+				sp.computeName(ctx);
+			}
 		#end
-		for (sp in spline.points) {
-			sp.computeName(ctx);
-		}
 	}
 
 	override function removeInstance( ctx : Context) : Bool {
@@ -137,12 +139,14 @@ class SplinePoint extends Object3D {
 		return super.removeInstance(ctx);
 	}
 
+
+	#if editor
+
 	public function computeName(ctx) {
 		name = "SplinePoint" + spline.points.indexOf(this);
 		ctx.local3d.name = name;
 	}
 
-	#if editor
 	override function edit(ctx : EditContext) {
 		super.edit(ctx);
 		if( spline.editor == null ) {
