@@ -77,7 +77,7 @@ class ShaderEditor extends hide.view.Graph {
 									<input id="changeModel" type="button" value="Change Model" />
 									<input id="removeModel" type="button" value="Remove Model" />
 								</div>
-								<input id="centerView" type="button" value="Center View" />
+								<input id="centerView" type="button" value="Center Graph" />
 								<div>
 									Display Compiled
 									<input id="displayHxsl" type="button" value="Hxsl" />
@@ -258,7 +258,7 @@ class ShaderEditor extends hide.view.Graph {
 		element.find("#centerView").on("click", function() {
 			centerView();
 		})
-			.prop("title", 'Center around full graph (${config.get("key.sceneeditor.focus")})');
+			.prop("title", 'Center on full graph (${config.get("key.sceneeditor.focus")})');
 
 		element.find("#togglelight").on("click", toggleDefaultLight);
 

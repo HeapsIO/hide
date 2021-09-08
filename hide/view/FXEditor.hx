@@ -147,7 +147,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 
 		var menu = [];
 		if (parent.is2D) {
-			for(name in ["Group 2D", "Bitmap", "Anim2D", "Atlas", "Particle2D", "Text", "Shaders", "Shader Graph", "Placeholder"]) {
+			for(name in ["Group 2D", "Bitmap", "Anim2D", "Atlas", "Particle2D", "Text", "Shader", "Shader Graph", "Placeholder"]) {
 				var item = allTypes.find(i -> i.label == name);
 				if(item == null) continue;
 				allTypes.remove(item);
@@ -160,7 +160,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 				});
 			}
 		} else {
-			for(name in ["Group", "Polygon", "Model", "Shaders", "Emitter"]) {
+			for(name in ["Group", "Polygon", "Model", "Shader", "Emitter"]) {
 				var item = allTypes.find(i -> i.label == name);
 				if(item == null) continue;
 				allTypes.remove(item);
