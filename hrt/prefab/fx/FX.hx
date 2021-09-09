@@ -16,6 +16,8 @@ class FXAnimation extends h3d.scene.Object {
 	var totalTime : Float = 0.0;
 	public var duration : Float;
 	public var additionLoopDuration : Float = 0.0;
+
+	public var enableCulling = true;
 	public var cullingRadius : Float;
 	public var cullingDistance = defaultCullingDistance;
 
@@ -34,6 +36,7 @@ class FXAnimation extends h3d.scene.Object {
 
 	var startLoop : Float = -1.0;
 	var endLoop : Float;
+	var syncedOnce = false;
 
 	public function new(?parent) {
 		super(parent);
@@ -90,21 +93,23 @@ class FXAnimation extends h3d.scene.Object {
 		var changed = posChanged;
 		if( changed ) calcAbsPos();
 
-		culled = true;
-
-		var pos = getAbsPos().getPosition();
-		tmpSphere.load(pos.x, pos.y, pos.z, cullingRadius);
-		if(!ctx.camera.frustum.hasSphere(tmpSphere))
-			return;
-
-		if(cullingDistance > 0) {
-			var distSq = ctx.camera.pos.distanceSq(pos);
-			if(distSq > cullingDistance * cullingDistance)
+		if(enableCulling && !syncedOnce) {
+			culled = true;
+			var pos = getAbsPos().getPosition();
+			tmpSphere.load(pos.x, pos.y, pos.z, cullingRadius);
+			if(!ctx.camera.frustum.hasSphere(tmpSphere))
 				return;
+
+			if(cullingDistance > 0) {
+				var distSq = ctx.camera.pos.distanceSq(pos);
+				if(distSq > cullingDistance * cullingDistance)
+					return;
+			}
+			culled = false;
 		}
 
-		culled = false;
 		super.syncRec(ctx);
+		syncedOnce = true;
 	}
 
 	override function sync( ctx : h3d.scene.RenderContext ) {
