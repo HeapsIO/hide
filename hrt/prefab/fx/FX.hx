@@ -8,6 +8,7 @@ import hrt.prefab.fx.BaseFX.ShaderAnimation;
 
 @:allow(hrt.prefab.fx.FX)
 class FXAnimation extends h3d.scene.Object {
+	public static var defaultCullingDistance = 0.0;
 
 	public var onEnd : Void -> Void;
 	public var playSpeed : Float = 0;
@@ -16,6 +17,7 @@ class FXAnimation extends h3d.scene.Object {
 	public var duration : Float;
 	public var additionLoopDuration : Float = 0.0;
 	public var cullingRadius : Float;
+	public var cullingDistance = defaultCullingDistance;
 
 	public var objAnims: Array<ObjectAnimation>;
 	public var events: Array<hrt.prefab.fx.Event.EventInstance>;
@@ -81,6 +83,28 @@ class FXAnimation extends h3d.scene.Object {
 		if(emitters != null)
 			for(em in emitters)
 				em.setRandSeed(randSeed);
+	}
+
+	static var tmpSphere = new h3d.col.Sphere();
+	override function syncRec(ctx:h3d.scene.RenderContext) {
+		var changed = posChanged;
+		if( changed ) calcAbsPos();
+
+		culled = true;
+
+		var pos = getAbsPos().getPosition();
+		tmpSphere.load(pos.x, pos.y, pos.z, cullingRadius);
+		if(!ctx.camera.frustum.hasSphere(tmpSphere))
+			return;
+
+		if(cullingDistance > 0) {
+			var distSq = ctx.camera.pos.distanceSq(pos);
+			if(distSq > cullingDistance * cullingDistance)
+				return;
+		}
+
+		culled = false;
+		super.syncRec(ctx);
 	}
 
 	override function sync( ctx : h3d.scene.RenderContext ) {
