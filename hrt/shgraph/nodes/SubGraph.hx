@@ -31,6 +31,7 @@ class SubGraph extends ShaderNode {
 			}
 			inputsInfo = new Map<String, ShaderNode.InputInfo>();
 			inputInfoKeys = [];
+			var paramInfoKeys = [];
 			outputsInfo = new Map<String, ShaderNode.OutputInfo>();
 			outputInfoKeys = [];
 			parameters = [];
@@ -49,9 +50,9 @@ class SubGraph extends ShaderNode {
 							ids = paramInfo.ids;
 						ids.push(node.id);
 						if (!inputsInfo.exists(prefixSubGraph + paramId)) {
-							inputInfoKeys.push(prefixSubGraph+paramId);
+							paramInfoKeys.push(prefixSubGraph+paramId);
 						}
-						inputsInfo.set(prefixSubGraph+paramId, { name : paramName , type: ShaderType.getSType(shaderParam.variable.type), hasProperty: false, isRequired : false, ids : ids });
+						inputsInfo.set(prefixSubGraph+paramId, { name : paramName , type: ShaderType.getSType(shaderParam.variable.type), hasProperty: false, isRequired : false, ids : ids, index :  subShaderGraph.getParameter(shaderParam.parameterId).index});
 					case "ShaderInput":
 						var shaderInput = Std.downcast(node.instance, ShaderInput);
 						var inputId = "input_" + shaderInput.variable.name;
@@ -101,16 +102,17 @@ class SubGraph extends ShaderNode {
 						if (shaderConst != null) { // input static become properties
 							if (shaderConst.name.length == 0) continue;
 							if (Std.is(shaderConst, BoolConst)) {
-								parameters.push({ name : shaderConst.name, type : TBool, defaultValue : null, id : shaderConst.id });
+								parameters.push({ name : shaderConst.name, type : TBool, defaultValue : null, id : shaderConst.id, index : parameters.length });
 							} else if (Std.is(shaderConst, FloatConst)) {
-								parameters.push({ name : shaderConst.name, type : TFloat, defaultValue : null, id : shaderConst.id });
+								parameters.push({ name : shaderConst.name, type : TFloat, defaultValue : null, id : shaderConst.id, index : parameters.length });
 							} else if (Std.is(shaderConst, Color)) {
-								parameters.push({ name : shaderConst.name, type : TVec(4, VFloat), defaultValue : null, id : shaderConst.id });
+								parameters.push({ name : shaderConst.name, type : TVec(4, VFloat), defaultValue : null, id : shaderConst.id, index : parameters.length });
 							}
 						}
 				}
 			}
-
+			paramInfoKeys.sort((x,y) -> Reflect.compare(inputsInfo[x].index, inputsInfo[y].index));
+			inputInfoKeys = paramInfoKeys.concat(inputInfoKeys);
 		}
 	}
 

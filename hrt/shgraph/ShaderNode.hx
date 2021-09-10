@@ -2,7 +2,7 @@ package hrt.shgraph;
 
 using hxsl.Ast;
 
-typedef InputInfo = { name : String, type : ShaderType.SType, hasProperty : Bool, isRequired : Bool, ?ids : Array<Int> };
+typedef InputInfo = { name : String, type : ShaderType.SType, hasProperty : Bool, isRequired : Bool, ?ids : Array<Int>, ?index : Int };
 typedef OutputInfo = { name : String, type : ShaderType.SType, ?id : Int };
 
 @:autoBuild(hrt.shgraph.ParseFieldsMacro.build())

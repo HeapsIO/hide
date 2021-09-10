@@ -26,7 +26,8 @@ typedef Parameter = {
 	type : Type,
 	defaultValue : Dynamic,
 	?id : Int,
-	?variable : TVar
+	?variable : TVar,
+	index : Int
 };
 
 class ShaderGraph {
@@ -39,6 +40,7 @@ class ShaderGraph {
 	var filepath : String;
 	var nodes : Map<Int, Node> = [];
 	public var parametersAvailable : Map<Int, Parameter> = [];
+	public var parametersKeys : Array<Int> = [];
 
 	// subgraph variable
 	var variableNamesAlreadyUpdated = false;
@@ -71,6 +73,9 @@ class ShaderGraph {
 		parametersAvailable = [];
 		generate(Reflect.getProperty(json, "nodes"), Reflect.getProperty(json, "edges"), Reflect.getProperty(json, "parameters"));
 	}
+	public function checkParameterOrder() {
+		parametersKeys.sort((x,y) -> Reflect.compare(parametersAvailable.get(x).index, parametersAvailable.get(y).index));
+	}
 
 	public function generate(nodes : Array<Node>, edges : Array<Edge>, parameters : Array<Parameter>) {
 
@@ -86,8 +91,10 @@ class ShaderGraph {
 			}
 			p.variable = generateParameter(p.name, p.type);
 			this.parametersAvailable.set(p.id, p);
+			parametersKeys.push(p.id);
 			current_param_id = p.id + 1;
 		}
+		checkParameterOrder();
 
 		for (n in nodes) {
 			n.outputs = [];
@@ -525,7 +532,8 @@ class ShaderGraph {
 
 	public function addParameter(type : Type) {
 		var name = "Param_" + current_param_id;
-		parametersAvailable.set(current_param_id, {id: current_param_id, name : name, type : type, defaultValue : null, variable : generateParameter(name, type)});
+		parametersAvailable.set(current_param_id, {id: current_param_id, name : name, type : type, defaultValue : null, variable : generateParameter(name, type), index : parametersKeys.length});
+		parametersKeys.push(current_param_id);
 		current_param_id++;
 		return current_param_id-1;
 	}
@@ -560,6 +568,16 @@ class ShaderGraph {
 
 	public function removeParameter(id : Int) {
 		parametersAvailable.remove(id);
+		parametersKeys.remove(id);
+		checkParameterIndex();
+	}
+
+	public function checkParameterIndex() {
+		for (k in parametersKeys) {
+			var oldParam = parametersAvailable.get(k);
+			oldParam.index = parametersKeys.indexOf(k);
+			parametersAvailable.set(k, oldParam);
+		}
 	}
 
 	public function removeNode(idNode : Int) {
@@ -580,7 +598,7 @@ class ShaderGraph {
 			],
 			edges: edgesJson,
 			parameters: [
-				for (p in parametersAvailable) { id : p.id, name : p.name, type : [p.type.getName(), p.type.getParameters().toString()], defaultValue : p.defaultValue }
+				for (p in parametersAvailable) { id : p.id, name : p.name, type : [p.type.getName(), p.type.getParameters().toString()], defaultValue : p.defaultValue, index : p.index }
 			]
 		}, "\t");
 

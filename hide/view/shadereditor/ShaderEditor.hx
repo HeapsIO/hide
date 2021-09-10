@@ -494,9 +494,9 @@ class ShaderEditor extends hide.view.Graph {
 		}
 
 
-		for (p in shaderGraph.parametersAvailable) {
-			var pElt = addParameter(p.id, p.name, p.type, p.defaultValue);
-			if (saveToggleParams.get(p.id)) {
+		for (k in shaderGraph.parametersKeys) {
+			var pElt = addParameter(shaderGraph.parametersAvailable.get(k), shaderGraph.parametersAvailable.get(k).defaultValue);
+			if (saveToggleParams.get(shaderGraph.parametersAvailable.get(k).id)) {
 				toggleParameter(pElt, true);
 			}
 		}
@@ -578,16 +578,48 @@ class ShaderEditor extends hide.view.Graph {
 		return newBox;
 	}
 
-	function addParameter(id : Int, name : String, type : Type, ?value : Dynamic) {
+	function moveParameter(parameter : Parameter, up : Bool) {
+		var parameterElt = parametersList.find("#param_" + parameter.id);
+		var parameterPrev = shaderGraph.parametersAvailable.get(shaderGraph.parametersKeys[shaderGraph.parametersKeys.indexOf(parameter.id) + (up? -1 : 1)]);
+		var parameterPrevElt = parametersList.find("#param_" + parameterPrev.id);
+		if (up)
+			parameterElt.insertBefore(parameterPrevElt);
+		else
+			parameterElt.insertAfter(parameterPrevElt);
+		shaderGraph.parametersKeys.remove(parameter.id);
+		shaderGraph.parametersKeys.insert(shaderGraph.parametersKeys.indexOf(parameterPrev.id) + (up? 0 : 1), parameter.id);
+		shaderGraph.checkParameterIndex();
+	}
 
-		var elt = new Element('<div id="param_${id}" class="parameter" draggable="true" ></div>').appendTo(parametersList);
+	function addParameter(parameter : Parameter, ?value : Dynamic) {
+
+		var elt = new Element('<div id="param_${parameter.id}" class="parameter" draggable="true" ></div>').appendTo(parametersList);
 		elt.on("click", function(e) {e.stopPropagation();});
+		elt.on("contextmenu", function(e) {
+			var elements = [];
+			e.stopPropagation();
+			var newCtxMenu : Array<hide.comp.ContextMenu.ContextMenuItem> = [
+				{ label : "Move up", click : () -> {
+					beforeChange();
+					moveParameter(parameter, true);
+					afterChange();
+				}, enabled: shaderGraph.parametersKeys.indexOf(parameter.id) > 0},
+				{ label : "Move down", click : () -> {
+					beforeChange();
+					moveParameter(parameter, false);
+					afterChange();
+				}, enabled: shaderGraph.parametersKeys.indexOf(parameter.id) < shaderGraph.parametersKeys.length-1}
+			];
+			new hide.comp.ContextMenu(newCtxMenu);
+			e.preventDefault();
+
+		});
 		var content = new Element('<div class="content" ></div>');
 		content.hide();
 		var defaultValue = new Element("<div><span>Default: </span></div>").appendTo(content);
 
 		var typeName = "";
-		switch(type) {
+		switch(parameter.type) {
 			case TFloat:
 				var parentRange = new Element('<input type="range" min="-1" max="1" />').appendTo(defaultValue);
 				var range = new hide.comp.Range(null, parentRange);
@@ -602,12 +634,12 @@ class ShaderEditor extends hide.view.Graph {
 				});
 				if (value == null) value = 0;
 				range.value = value;
-				shaderGraph.setParameterDefaultValue(id, value);
+				shaderGraph.setParameterDefaultValue(parameter.id, value);
 				range.onChange = function(moving) {
-					if (!shaderGraph.setParameterDefaultValue(id, range.value))
+					if (!shaderGraph.setParameterDefaultValue(parameter.id, range.value))
 						return;
-					setBoxesParam(id);
-					updateParam(id);
+					setBoxesParam(parameter.id);
+					updateParam(parameter.id);
 				};
 				typeName = "Number";
 			case TVec(4, VFloat):
@@ -618,14 +650,14 @@ class ShaderEditor extends hide.view.Graph {
 				if (value == null)
 					value = [0, 0, 0, 1];
 				var start : h3d.Vector = h3d.Vector.fromArray(value);
-				shaderGraph.setParameterDefaultValue(id, value);
+				shaderGraph.setParameterDefaultValue(parameter.id, value);
 				picker.value = start.toColor();
 				picker.onChange = function(move) {
 					var vecColor = h3d.Vector.fromColor(picker.value);
-					if (!shaderGraph.setParameterDefaultValue(id, [vecColor.x, vecColor.y, vecColor.z, vecColor.w]))
+					if (!shaderGraph.setParameterDefaultValue(parameter.id, [vecColor.x, vecColor.y, vecColor.z, vecColor.w]))
 						return;
-					setBoxesParam(id);
-					updateParam(id);
+					setBoxesParam(parameter.id);
+					updateParam(parameter.id);
 				};
 				picker.element.on("dragstart.spectrum", function() {
 					beforeChange();
@@ -641,11 +673,11 @@ class ShaderEditor extends hide.view.Graph {
 				if (value != null && value.length > 0) tselect.path = value;
 				tselect.onChange = function() {
 					beforeChange();
-					if (!shaderGraph.setParameterDefaultValue(id, tselect.path))
+					if (!shaderGraph.setParameterDefaultValue(parameter.id, tselect.path))
 						return;
 					afterChange();
-					setBoxesParam(id);
-					updateParam(id);
+					setBoxesParam(parameter.id);
+					updateParam(parameter.id);
 				}
 				typeName = "Texture";
 			default:
@@ -654,7 +686,7 @@ class ShaderEditor extends hide.view.Graph {
 		var header = new Element('<div class="header">
 									<div class="title">
 										<i class="ico ico-chevron-right" ></i>
-										<input class="input-title" type="input" value="${name}" />
+										<input class="input-title" type="input" value="${parameter.name}" />
 									</div>
 									<div class="type">
 										<span>${typeName}</span>
@@ -668,13 +700,13 @@ class ShaderEditor extends hide.view.Graph {
 		deleteBtn.on("click", function() {
 			for (b in listOfBoxes) {
 				var shaderParam = Std.downcast(b.getInstance(), ShaderParam);
-				if (shaderParam != null && shaderParam.parameterId == id) {
+				if (shaderParam != null && shaderParam.parameterId == parameter.id) {
 					error("This parameter is used in the graph.");
 					return;
 				}
 			}
 			beforeChange();
-			shaderGraph.removeParameter(id);
+			shaderGraph.removeParameter(parameter.id);
 			afterChange();
 			elt.remove();
 		});
@@ -684,7 +716,7 @@ class ShaderEditor extends hide.view.Graph {
 		var shaderParam : ShaderParam = null;
 		for (b in listOfBoxes) {
 			var tmpShaderParam = Std.downcast(b.getInstance(), ShaderParam);
-			if (tmpShaderParam != null && tmpShaderParam.parameterId == id) {
+			if (tmpShaderParam != null && tmpShaderParam.parameterId == parameter.id) {
 				shaderParam = tmpShaderParam;
 				break;
 			}
@@ -710,10 +742,10 @@ class ShaderEditor extends hide.view.Graph {
 		});
 		inputTitle.on("change", function(e) {
 			var newName = inputTitle.val();
-			if (shaderGraph.setParameterTitle(id, newName)) {
+			if (shaderGraph.setParameterTitle(parameter.id, newName)) {
 				for (b in listOfBoxes) {
 					var shaderParam = Std.downcast(b.getInstance(), ShaderParam);
-					if (shaderParam != null && shaderParam.parameterId == id) {
+					if (shaderParam != null && shaderParam.parameterId == parameter.id) {
 						beforeChange();
 						shaderParam.setName(newName);
 						afterChange();
@@ -728,7 +760,7 @@ class ShaderEditor extends hide.view.Graph {
 		});
 
 		elt.on("dragstart", function(e) {
-			draggedParamId = id;
+			draggedParamId = parameter.id;
 		});
 
 		return elt;
@@ -799,7 +831,7 @@ class ShaderEditor extends hide.view.Graph {
 		afterChange();
 		var paramShader = shaderGraph.getParameter(paramShaderID);
 
-		var elt = addParameter(paramShaderID, paramShader.name, type, null);
+		var elt = addParameter(paramShader, null);
 		updateParam(paramShaderID);
 
 		elt.find(".input-title").focus();
