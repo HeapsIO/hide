@@ -207,17 +207,18 @@ class ShaderGraph {
 			return [];
 		var res = [];
 		var keys = node.getInputInfoKeys();
+		var alreadyBuiltNodes = [];
 		for (key in keys) {
 			var input = node.getInput(key);
-			if (input != null) {
+			if (input != null && !alreadyBuiltNodes.contains(input.node.id)) {
 				res = res.concat(buildNodeVar(input));
+				alreadyBuiltNodes.push(input.node.id);
 			} else if (node.getInputInfo(key).hasProperty) {
 			} else if (!node.getInputInfo(key).isRequired) {
 			} else {
 				throw ShaderException.t("This box has inputs not connected", node.id);
 			}
 		}
-		var build = nodeVar.getExpr();
 
 		var shaderInput = Std.downcast(node, ShaderInput);
 		if (shaderInput != null) {
@@ -236,8 +237,21 @@ class ShaderGraph {
 			if (parametersAvailable.exists(shaderParam.parameterId))
 				allParamDefaultValue.push(getParameter(shaderParam.parameterId).defaultValue);
 		}
-		if (isSubGraph) {
+		var build = [];
+		if (!isSubGraph)
+			build = nodeVar.getExpr();
+
+		else {
 			var subGraph = Std.downcast(node, hrt.shgraph.nodes.SubGraph);
+			var nodeBuild = node.build("");
+			for (k in subGraph.getOutputInfoKeys()) {
+				var tvar = subGraph.getOutput(k);
+				if (tvar != null && tvar.kind == Local && ShaderInput.availableInputs.indexOf(tvar) < 0)
+					build.push({ e : TVarDecl(tvar), t : tvar.type, p : null });
+			}
+			if (nodeBuild != null)
+				build.push(nodeBuild);
+
 			var params = subGraph.subShaderGraph.parametersAvailable;
 			for (subVar in subGraph.varsSubGraph) {
 				if (subVar.kind == Param) {
