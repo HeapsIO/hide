@@ -277,7 +277,7 @@ class Prefab {
 	function makeChildren( ctx : Context, p : Prefab ) {
 		if( ctx.shared.customMake == null )
 			p.make(ctx);
-		else
+		else if( p.enabled )
 			ctx.shared.customMake(ctx, p);
 	}
 
