@@ -2159,7 +2159,7 @@ class SceneEditor {
 			var prevIndex = prev.children.indexOf(elt);
 
 			var obj3d = elt.to(Object3D);
-			var preserveTransform = Std.is(toElt, hrt.prefab.fx.Emitter) || Std.is(prev, hrt.prefab.fx.Emitter);
+			var preserveTransform = #if prefab_refacto false #else Std.is(toElt, hrt.prefab.fx.Emitter) || Std.is(prev, hrt.prefab.fx.Emitter) #end;
 			var toObj = getObject(toElt);
 			var obj = getObject(elt);
 			var prevState = null, newState = null;

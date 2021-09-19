@@ -44,11 +44,13 @@ class Shader extends Prefab {
 			case TSampler2D:
 				if( val != null )
 					val = hxd.res.Loader.currentInstance.load(val).toTexture();
+				#if !prefab_refacto
 				else {
 					var childNoise = getOpt(hrt.prefab.l2d.NoiseGenerator, v.name);
 					if(childNoise != null)
 						val = childNoise.toTexture();
 				}
+				#end
 			default:
 			}
 			if(val == null)
@@ -167,12 +169,14 @@ class Shader extends Prefab {
 		ectx.properties.add(group,this.props, function(pname) {
 			ectx.onChange(this, pname);
 
+			#if !prefab_refacto
 			// Notify change to emitter in case param is used by curves
 			var emitter = getParent(hrt.prefab.fx.Emitter);
 			if(emitter != null) {
 				var ec = ectx.getContext(emitter);
 				emitter.updateInstance(ec);
 			}
+			#end
 		});
 	}
 

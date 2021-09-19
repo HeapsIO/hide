@@ -536,10 +536,12 @@ class Prefab extends FileView {
 		{
 		case "shadows":
 			r.shadows = enable;
+		#if !prefab_refacto
 		case "ssr":
 			var effect = r.getEffect(hrt.prefab.rfx.SSR);
 			if (effect != null)
 				effect.enabled = enable;
+		#end
 		default:
 		}
 	}
@@ -631,6 +633,7 @@ class Prefab extends FileView {
 			}
 		}
 		var color = getDisplayColor(p);
+		#if !prefab_refacto
 		if(color != null){
 			color = (color & 0xffffff) | 0xa0000000;
 			var box = p.to(hrt.prefab.l3d.Box);
@@ -644,6 +647,7 @@ class Prefab extends FileView {
 				poly.setColor(ctx, color);
 			}
 		}
+		#end
 	}
 
 	function getDisplayColor(p: PrefabElement) : Null<Int> {

@@ -68,9 +68,11 @@ class RenderProps extends Prefab {
 		for(fx in renderer.effects)
 			fx.dispose();
 		renderer.effects = [for( v in getAll(hrt.prefab.rfx.RendererFX,true) ) v];
+		#if !prefab_refacto
 		var env = getOpt(hrt.prefab.l3d.Environment);
 		if( env != null )
 			env.applyToRenderer(renderer);
+		#end
 		renderer.refreshProps();
 		return true;
 	}
@@ -101,7 +103,7 @@ class RenderProps extends Prefab {
 		return { icon : "sun-o", name : "RenderProps", allowChildren : function(t) {
 			return Library.isOfType(t,hrt.prefab.rfx.RendererFX)
 				|| Library.isOfType(t,Light)
-				|| Library.isOfType(t,hrt.prefab.l3d.Environment);
+				#if !prefab_refacto || Library.isOfType(t,hrt.prefab.l3d.Environment) #end;
 		}};
 	}
 
