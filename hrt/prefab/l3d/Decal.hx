@@ -15,6 +15,7 @@ class Decal extends Object3D {
 	@:s var albedoStrength : Float = 1.0;
 	@:s var normalStrength: Float = 1.0;
 	@:s var pbrStrength: Float = 1.0;
+	@:s var emissiveStrength: Float = 1.0;
 	@:s var fadePower : Float = 1.0;
 	@:s var fadeStart : Float = 0;
 	@:s var fadeEnd : Float = 1.0;
@@ -46,7 +47,6 @@ class Decal extends Object3D {
 					shader = new h3d.shader.pbr.VolumeDecal.DecalPBR();
 					mesh.material.mainPass.addShader(shader);
 				}
-				mesh.material.mainPass.setPassName(renderMode == Default ? "decal" : "terrainDecal");
 			case BeforeTonemapping:
 				var shader = mesh.material.mainPass.getShader(h3d.shader.pbr.VolumeDecal.DecalOverlay);
 				if( shader == null ) {
@@ -87,6 +87,7 @@ class Decal extends Object3D {
 					shader.albedoStrength = albedoStrength;
 					shader.normalStrength = normalStrength;
 					shader.pbrStrength = pbrStrength;
+					shader.emissiveStrength = emissiveStrength;
 					shader.USE_ALBEDO = albedoStrength != 0&& shader.albedoTexture != null;
 					shader.USE_NORMAL = normalStrength != 0 && shader.normalTexture != null;
 					shader.CENTERED = centered;
@@ -97,13 +98,24 @@ class Decal extends Object3D {
 				var pbrTexture = pbrMap != null ? ctx.loadTexture(pbrMap) : null;
 				if( pbrTexture != null ) {
 					var propsTexture = mesh.material.mainPass.getShader(h3d.shader.pbr.PropsTexture);
-					if( propsTexture == null ) 
+					if( propsTexture == null )
 						propsTexture = mesh.material.mainPass.addShader(new h3d.shader.pbr.PropsTexture());
 					propsTexture.texture = pbrTexture;
 					propsTexture.texture.wrap = Repeat;
+					propsTexture.emissiveValue = emissive;
 				}
 				else {
 					mesh.material.mainPass.removeShader(mesh.material.mainPass.getShader( h3d.shader.pbr.PropsTexture));
+				}
+				if (renderMode == Default) {
+					if (emissiveStrength != 0) {
+						mesh.material.mainPass.setPassName("emissiveDecal");
+					}
+					else
+						mesh.material.mainPass.setPassName("decal");
+				}
+				else {
+					mesh.material.mainPass.setPassName("terrainDecal");
 				}
 			case BeforeTonemapping, AfterTonemapping:
 				var shader = mesh.material.mainPass.getShader(h3d.shader.pbr.VolumeDecal.DecalOverlay);
@@ -172,7 +184,11 @@ class Decal extends Object3D {
 					<br/><input type="range" min="0" max="1" field="normalStrength"/></dd>
 
 					<dt>PBR</dt><dd><input type="texturepath" field="pbrMap"/>
-					<br/><input type="range" min="0" max="1" field="pbrStrength"/></dd>';
+					<br/><input type="range" min="0" max="1" field="pbrStrength"/></dd>
+
+					<dt>Emissive</dt><dd> <input type="range" min="0" max="10" field="emissive"/>
+					<br/><input type="range" min="0" max="1" field="emissiveStrength"/></dd>';
+
 
 		var overlayParams = '<dt>Color</dt><dd><input type="texturepath" field="albedoMap"/></dd>
 						<dt>Emissive</dt><dd> <input type="range" min="0" max="10" field="emissive"/></dd>
