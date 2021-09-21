@@ -377,14 +377,7 @@ class Prefab extends FileView {
 			id: "wireframeToggle",
 			title: "Wireframe",
 			icon: "connectdevelop",
-			type: Toggle((b) -> {
-				var engine = h3d.Engine.getCurrent();
-				if( engine.driver.hasFeature(Wireframe) ) {
-					for( m in scene.s3d.getMaterials() ) {
-						m.mainPass.wireframe = b;
-					}
-				}
-			}),
+			type: Toggle((b) -> { sceneEditor.setWireframe(b); }),
 		});
 		toolsDefs.push({id: "backgroundColor", title : "Background Color", type : Color(function(v) {
 			scene.engine.backgroundColor = v;

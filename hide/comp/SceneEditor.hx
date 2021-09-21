@@ -1164,6 +1164,15 @@ class SceneEditor {
 		});
 	}
 
+	public function setWireframe(val = true) {
+		var engine = h3d.Engine.getCurrent();
+		if( engine.driver.hasFeature(Wireframe) ) {
+			for( m in scene.s3d.getMaterials() ) {
+				m.mainPass.wireframe = val;
+			}
+		}
+	}
+
 	public function onPrefabChange(p: PrefabElement, ?pname: String) {
 		var model = p.to(hrt.prefab.Model);
 		if(model != null && pname == "source") {
