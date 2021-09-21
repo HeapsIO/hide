@@ -15,7 +15,7 @@ class Decal extends Object3D {
 	@:s var albedoStrength : Float = 1.0;
 	@:s var normalStrength: Float = 1.0;
 	@:s var pbrStrength: Float = 1.0;
-	@:s var emissiveStrength: Float = 1.0;
+	@:s var emissiveStrength: Float = 0.0;
 	@:s var fadePower : Float = 1.0;
 	@:s var fadeStart : Float = 0;
 	@:s var fadeEnd : Float = 1.0;
