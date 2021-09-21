@@ -400,6 +400,14 @@ class Model extends FileView {
 			axes.visible = v;
 			selectedAxes.visible = v;
 		});
+		tools.addToggle("connectdevelop", "Wireframe",(b) -> {
+			var engine = h3d.Engine.getCurrent();
+			if( engine.driver.hasFeature(Wireframe) ) {
+				for( m in scene.s3d.getMaterials() ) {
+					m.mainPass.wireframe = b;
+				}
+			}
+		});
 
 		tools.addColor("Background color", function(v) {
 			scene.engine.backgroundColor = v;

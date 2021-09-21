@@ -618,6 +618,14 @@ class FXEditor extends FileView {
 			autoSync = b;
 		});
 		tools.addToggle("compass", "Local transforms", (v) -> sceneEditor.localTransform = v, sceneEditor.localTransform);
+		tools.addToggle("connectdevelop", "Wireframe",(b) -> {
+			var engine = h3d.Engine.getCurrent();
+			if( engine.driver.hasFeature(Wireframe) ) {
+				for( m in scene.s3d.getMaterials() ) {
+					m.mainPass.wireframe = b;
+				}
+			}
+		});
 		pauseButton = tools.addToggle("pause", "Pause animation", function(v) {}, false);
 		tools.addRange("Speed", function(v) {
 			scene.speed = v;
