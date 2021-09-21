@@ -13,7 +13,7 @@ class Clamp extends ShaderFunction {
 	@input("Max", true) var max = SType.Number;
 
 	public function new() {
-		super(Saturate);
+		super(Clamp);
 	}
 
 	override public function computeOutputs() {

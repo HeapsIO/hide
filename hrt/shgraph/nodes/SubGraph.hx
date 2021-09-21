@@ -4,7 +4,7 @@ using hxsl.Ast;
 
 @name("SubGraph")
 @description("Include a subgraph")
-@width(250)
+@width(200)
 @alwaysshowinputs()
 class SubGraph extends ShaderNode {
 
