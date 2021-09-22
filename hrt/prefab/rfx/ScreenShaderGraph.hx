@@ -14,6 +14,12 @@ private class GraphShader extends h3d.shader.ScreenShader {
 		}
 	}
 }
+
+enum abstract ScreenShaderGraphMode(String) {
+	var BeforeTonemapping;
+	var AfterTonemapping;
+}
+
 class ScreenShaderGraph extends RendererFX {
 
 	var shaderPass = new h3d.pass.ScreenFx(new GraphShader());
@@ -21,9 +27,16 @@ class ScreenShaderGraph extends RendererFX {
 	var shaderDef : hrt.prefab.ContextShared.ShaderDef;
 	var shader : hxsl.DynamicShader;
 
+	@:s public var renderMode : ScreenShaderGraphMode;
+
+	function new(?parent) {
+		super(parent);
+		renderMode = AfterTonemapping;
+	}
+
 	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
 		if( !checkEnabled() ) return;
-		if( step == AfterTonemapping ) {
+		if( step == AfterTonemapping && renderMode == AfterTonemapping) {
 			r.mark("ScreenShaderGraph");
 			if (shader != null) {
 				var ctx = r.ctx;
@@ -38,24 +51,24 @@ class ScreenShaderGraph extends RendererFX {
 				r.setTarget(target);
 			}
 		}
-		if( step == BeforeTonemapping ) {
+		if( step == BeforeTonemapping && renderMode == BeforeTonemapping) {
 			r.mark("ScreenShaderGraph");
 			if (shader != null) {
 				var ctx = r.ctx;
-				var target = r.allocTarget("ppTarget", false);
+				var target = r.allocTarget("ppTarget", false, 1.0, RGBA16F);
 				shaderPass.shader.source = ctx.getGlobal("hdrMap");
 
 				ctx.engine.pushTarget(target);
 				shaderPass.render();
 				ctx.engine.popTarget();
 
-				ctx.setGlobal("hdrMap", target);
-				r.setTarget(target);
+				r.copy(target, ctx.getGlobal("hdrMap"));
 			}
 		}
 	}
 
 	override function load( obj : Dynamic ) {
+		super.load(obj);
 		loadSerializedFields(obj);
 	}
 
@@ -121,13 +134,8 @@ class ScreenShaderGraph extends RendererFX {
 		if( getShaderDefinition() == null )
 			return null;
 		var dshader = new hxsl.DynamicShader(shaderDef.shader);
-		for( v in shaderDef.inits ) {
-			#if !hscript
-			throw "hscript required";
-			#else
+		for( v in shaderDef.inits )
 			dshader.hscriptSet(v.variable.name, v.value);
-			#end
-		}
 		shader = dshader;
 		syncShaderVars();
 		shaderPass.addShader(shader);
@@ -141,6 +149,7 @@ class ScreenShaderGraph extends RendererFX {
 	}
 
 	override function updateInstance( ctx: Context, ?propName : String ) {
+		super.updateInstance(ctx, propName);
 		var p = resolveRef(ctx.shared);
 		if(p == null)
 			return;
@@ -156,11 +165,7 @@ class ScreenShaderGraph extends RendererFX {
 		if(source == null)
 			return null;
 
-		#if editor
 		shaderGraph = new hrt.shgraph.ShaderGraph(source);
-		#else
-		return null;
-		#end
 		return shaderGraph;
 	}
 
@@ -191,8 +196,13 @@ class ScreenShaderGraph extends RendererFX {
 	#if editor
 	override function edit( ectx : hide.prefab.EditContext ) {
 		var element = new hide.Element('
-			<div class="group" name="Reference">
+			<div class="group" name="Properties">
 			<dl>
+				<dt>Render Mode</dt>
+				<dd><select field="renderMode">
+					<option value="BeforeTonemapping">Before Tonemapping</option>
+					<option value="AfterTonemapping">After Tonemapping</option>
+				</select></dd>
 				<dt>Reference</dt><dd><input type="fileselect" extensions="shgraph" field="source"/></dd>
 			</dl>
 			</div>');
@@ -258,8 +268,9 @@ class ScreenShaderGraph extends RendererFX {
 			ectx.onChange(this, pname);
 		});
 	}
+
 	#end
 
-	static var _ = Library.register("rfx.ScreenShaderGraph", ScreenShaderGraph);
+	static var _ = Library.register("rfx.screenShaderGraph", ScreenShaderGraph);
 
 }
