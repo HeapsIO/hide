@@ -863,6 +863,7 @@ class ShaderEditor extends hide.view.Graph {
 			}
 		}
 		info(text);
+		trace('Compiled shader:$text');
 	}
 
 	function compileShader() {

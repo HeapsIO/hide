@@ -200,18 +200,24 @@ class ShaderGraph {
 		return parametersAvailable.get(id);
 	}
 
+	static var alreadyBuiltSubGraphs : Array<Int> = [];
 	function buildNodeVar(nodeVar : NodeVar) : Array<TExpr>{
 		var node = nodeVar.node;
 		var isSubGraph = Std.is(node, hrt.shgraph.nodes.SubGraph);
 		if (node == null)
 			return [];
+		if (alreadyBuiltSubGraphs == null)
+			alreadyBuiltSubGraphs = [];
+		if (isSubGraph)
+			alreadyBuiltSubGraphs.push(node.id);
 		var res = [];
 		var keys = node.getInputInfoKeys();
 		var alreadyBuiltNodes = [];
 		for (key in keys) {
 			var input = node.getInput(key);
 			if (input != null && !alreadyBuiltNodes.contains(input.node.id)) {
-				res = res.concat(buildNodeVar(input));
+				if (!Std.is(input.node, hrt.shgraph.nodes.SubGraph) || !alreadyBuiltSubGraphs.contains(input.node.id))
+					res = res.concat(buildNodeVar(input));
 				alreadyBuiltNodes.push(input.node.id);
 			} else if (node.getInputInfo(key).hasProperty) {
 			} else if (!node.getInputInfo(key).isRequired) {
@@ -240,7 +246,6 @@ class ShaderGraph {
 		var build = [];
 		if (!isSubGraph)
 			build = nodeVar.getExpr();
-
 		else {
 			var subGraph = Std.downcast(node, hrt.shgraph.nodes.SubGraph);
 			var nodeBuild = node.build("");
@@ -311,6 +316,8 @@ class ShaderGraph {
 		var contentVertex = [];
 		var contentFragment = [];
 
+		if( subShaderId == null )
+			alreadyBuiltSubGraphs = [];
 		for (n in nodes) {
 			if (!variableNamesAlreadyUpdated && subShaderId != null && !Std.is(n.instance, ShaderInput)) {
 				for (outputKey in n.instance.getOutputInfoKeys()) {
