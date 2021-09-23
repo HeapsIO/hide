@@ -67,6 +67,13 @@ class Cursor {
 		return table.lines[y];
 	}
 
+	public function getSelectedLines() {
+		if( table == null || x != -1 )
+			return [];
+		var selected = getSelection();
+		return [for( iy in selected.y1...(selected.y2 + 1) ) table.lines[iy]];
+	}
+
 	public function getCell() {
 		var line = getLine();
 		if( line == null ) return null;
@@ -97,8 +104,14 @@ class Cursor {
 		if( table == null )
 			table = editor.tables[0];
 		if( x == -1 && ctrl ) {
-			if( dy != 0 )
-				editor.moveLine(getLine(), dy);
+			if( dy != 0 ) {
+				if( table == null )
+					return;
+				if( select == null )
+					editor.moveLine(getLine(), dy);
+				else
+					editor.moveLines(getSelectedLines(), dy);
+			}
 			update();
 			return;
 		}

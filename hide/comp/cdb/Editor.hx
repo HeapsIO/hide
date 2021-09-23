@@ -1076,6 +1076,17 @@ class Editor extends Component {
 		endChanges();
 	}
 
+	function moveLines(lines : Array<Line>, delta : Int) {
+		if( lines.length == 0 || !lines[0].table.canInsert() || delta == 0 )
+			return;
+		beginChanges();
+		lines.sort((a, b) -> { return (a.index - b.index) * delta * -1; });
+		for( l in lines ) {
+			moveLine(l, delta);
+		}
+		endChanges();
+	}
+
 	function separatorCount( sheet : cdb.Sheet, fromLine : Int, toSep : Int ) {
 		var count = 0;
 		if( fromLine >= sheet.separators[toSep] ) {
@@ -1098,26 +1109,50 @@ class Editor extends Component {
 		if( !line.table.canInsert() )
 			return;
 		var sheet = line.table.sheet;
+		var selection = cursor.getSelectedLines();
+		var isSelectedLine = false;
+		for( l in selection ) {
+			if( l == line ) {
+				isSelectedLine = true;
+				break;
+			}
+		}
+		var firstLine = isSelectedLine ? selection[0] : line;
+		var lastLine = isSelectedLine ? selection[selection.length - 1] : line;
+
 		var sepIndex = sheet.separators.indexOf(line.index);
-		var moveSubmenu : Array<hide.comp.ContextMenu.ContextMenuItem> = new Array<hide.comp.ContextMenu.ContextMenuItem>();
+		var moveSubmenu : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
 		if( sheet.props.separatorTitles != null ) {
 			for( i in 0...sheet.separators.length ) {
 				if( sheet.props.separatorTitles[i] == null )
 					continue;
 				var lastOfGroup = (i == sheet.separators.length - 1) ? line.table.lines.length : sheet.separators[i + 1];
-				if( lastOfGroup > line.index ) lastOfGroup--;
-				var delta = lastOfGroup - line.index + separatorCount(sheet, line.index, i);
+				var usedLine = firstLine;
+				if( lastOfGroup > line.index ) {
+					lastOfGroup--;
+					usedLine = lastLine;
+				}
+				var delta = lastOfGroup - usedLine.index + separatorCount(sheet, usedLine.index, i);
 				moveSubmenu.push({
 					label : sheet.props.separatorTitles[i],
 					enabled : true,
-					click : moveLine.bind(line, delta)
+					click : isSelectedLine ? moveLines.bind(selection, delta) : moveLine.bind(usedLine, delta),
 				});
 			}
 		}
 		new hide.comp.ContextMenu([
-			{ label : "Move Up", enabled:  (line.index > 0 || sepIndex >= 0), click : moveLine.bind(line,-1) },
-			{ label : "Move Down", enabled:  (line.index < sheet.lines.length - 1), click : moveLine.bind(line,1) },
+			{
+				label : "Move Up",
+				enabled:  (firstLine.index > 0 || sepIndex >= 0),
+				click : isSelectedLine ? moveLines.bind(selection, -1) : moveLine.bind(line, -1),
+			},
+			{
+				label : "Move Down",
+				enabled:  (lastLine.index < sheet.lines.length - 1),
+				click : isSelectedLine ? moveLines.bind(selection, 1) : moveLine.bind(line, 1),
+			},
 			{ label : "Move to Group", enabled : sheet.props.separatorTitles != null, menu : moveSubmenu },
+			{ label : "", isSeparator : true },
 			{ label : "Insert", click : function() {
 				insertLine(line.table,line.index);
 				cursor.move(0,1,false,false);
