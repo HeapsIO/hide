@@ -95,7 +95,6 @@ class ShaderGraph {
 			parametersKeys.push(p.id);
 			current_param_id = p.id + 1;
 		}
-		trace(Lambda.count(parametersAvailable), parametersKeys.length, parameters.length, allParameters.length);
 		checkParameterOrder();
 
 		for (n in nodes) {
