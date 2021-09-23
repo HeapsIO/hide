@@ -3,6 +3,7 @@ package hrt.prefab;
 class Shader extends Prefab {
 
 	@:s var targetMaterial : String;
+	@:s var recursiveApply = true;
 
 	function new(?parent) {
 		super(parent);
@@ -78,7 +79,12 @@ class Shader extends Prefab {
 				callb(null, m);
 		} else {
 			var objs;
-			if( parent.type == "object" ) {
+			if( recursiveApply ) {
+				objs = [];
+				for( c in parent.flatten() )
+					for( o in shared.getObjects(c, h3d.scene.Object) )
+						objs.push(o);
+			} else if( parent.type == "object" ) {
 				// apply to all immediate children
 				objs = [];
 				for( c in parent.children )
@@ -133,12 +139,17 @@ class Shader extends Prefab {
 		if( shaderDef == null || ctx == null )
 			return;
 
+		var propGroup = new hide.Element('<div class="group" name="Properties">
+			<dl>
+				<dt>Apply recursively</dt><dd><input type="checkbox" field="recursiveApply"/></dd>
+			</dl>
+		</div>');
 		var materials = [];
 		iterMaterials(ctx, function(_,m) if( m.name != null && materials.indexOf(m.name) < 0 ) materials.push(m.name));
 		if( targetMaterial != null && materials.indexOf(targetMaterial) < 0 )
 			materials.push(targetMaterial);
 		if( materials.length >= 2 || targetMaterial != null ) {
-			ectx.properties.add(new hide.Element('
+			propGroup.append(new hide.Element('
 			<dl>
 				<dt>Material</dt>
 				<dd>
@@ -147,12 +158,18 @@ class Shader extends Prefab {
 						${[for( m in materials ) '<option value="$m"${targetMaterial == m ? " selected":""}>$m</option>'].join("")}
 					</select>
 				</dd>
-			</dl>'), this, function(_) {
-				if( targetMaterial == "" ) targetMaterial = null;
-			});
+			</dl>'));
 		}
+		ectx.properties.add(propGroup, this, function(pname) {
+			if( targetMaterial == "" ) targetMaterial = null;
+			ectx.onChange(this, pname);
+		});
 
-		var group = new hide.Element('<div class="group" name="Shader"></div>');
+		var group = new hide.Element('<div class="group" name="Shader">
+			<dl>
+				<dt>Apply recursively</dt><dd><input type="checkbox" field="recursiveApply"/></dd>
+			</dl>
+		</div>');
 		var props = [];
 		for(v in shaderDef.data.vars) {
 			if( v.kind != Param )
