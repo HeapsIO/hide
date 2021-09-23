@@ -165,11 +165,7 @@ class Shader extends Prefab {
 			ectx.onChange(this, pname);
 		});
 
-		var group = new hide.Element('<div class="group" name="Shader">
-			<dl>
-				<dt>Apply recursively</dt><dd><input type="checkbox" field="recursiveApply"/></dd>
-			</dl>
-		</div>');
+		var group = new hide.Element('<div class="group" name="Shader"></div>');
 		var props = [];
 		for(v in shaderDef.data.vars) {
 			if( v.kind != Param )
