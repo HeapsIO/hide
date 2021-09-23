@@ -213,13 +213,11 @@ class ShaderGraph {
 			alreadyBuiltSubGraphs.push(node.id);
 		var res = [];
 		var keys = node.getInputInfoKeys();
-		var alreadyBuiltNodes = [];
 		for (key in keys) {
 			var input = node.getInput(key);
-			if (input != null && !alreadyBuiltNodes.contains(input.node.id)) {
+			if (input != null) {
 				if (!Std.is(input.node, hrt.shgraph.nodes.SubGraph) || !alreadyBuiltSubGraphs.contains(input.node.id))
 					res = res.concat(buildNodeVar(input));
-				alreadyBuiltNodes.push(input.node.id);
 			} else if (node.getInputInfo(key).hasProperty) {
 			} else if (!node.getInputInfo(key).isRequired) {
 			} else {
