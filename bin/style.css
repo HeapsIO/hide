@@ -1673,6 +1673,11 @@ input[type=checkbox]:checked:after {
   stroke: rgba(0, 0, 255, 0.7);
   fill: rgba(70, 70, 116, 0.08);
 }
+.graph-view .heaps-scene svg .node-id-indicator {
+  fill: #ffffff;
+  stroke: none;
+  font-size: 8px;
+}
 .graph-view .paramVisible {
   color: black!important;
   font-weight: bold;

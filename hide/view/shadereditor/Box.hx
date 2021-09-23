@@ -61,6 +61,8 @@ class Box {
 			hasHeader = false;
 		}
 
+		editor.text(element, 2, -6, 'Node ${node.id}').addClass("node-id-indicator");
+
 		// outline of box
 		editor.rect(element, -1, -1, width+2, getHeight()+2).addClass("outline");
 
