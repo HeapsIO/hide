@@ -1001,6 +1001,8 @@ class EmitterObject extends h3d.scene.Object {
 		time = time * speedFactor + warmUpTime;
 		if(time < curTime) {
 			reset();
+			if(time < 0)
+				tick(0, true);  // Make sure mesh batch is reset when scrubbing back before start time
 		}
 
 		var catchupTime = time - curTime;
