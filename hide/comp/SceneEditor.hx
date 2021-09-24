@@ -1344,7 +1344,7 @@ class SceneEditor {
 		}
 		var ctx = elt.make(parentCtx);
 		for( p in elt.flatten() )
-			makeInteractive(p);
+			makeInteractive(p, ctx.shared);
 		scene.init(ctx.local3d);
 	}
 
