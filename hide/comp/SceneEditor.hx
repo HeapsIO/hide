@@ -635,7 +635,8 @@ class SceneEditor {
 		scene.engine.backgroundColor = bgcol;
 		refreshInteractives();
 
-		var all = sceneData.flatten(hrt.prefab.Prefab);
+		var contexts = context.shared.contexts;
+		var all = contexts.keys();
 		for(elt in all)
 			applySceneStyle(elt);
 

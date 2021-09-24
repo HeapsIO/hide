@@ -123,6 +123,15 @@ class Reference extends Object3D {
 		return Std.downcast(p, c);
 	}
 
+	override function flatten<T:Prefab>(?cl:Class<T>, ?arr:Array<T>):Array<T> {
+		arr = super.flatten(cl, arr);
+		if (editMode && ref != null) {
+			for (c in ref.children) {
+				c.flatten(cl, arr);
+			}
+		}
+		return arr;
+	}
 
 	#if editor
 
