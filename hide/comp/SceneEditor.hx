@@ -101,9 +101,11 @@ class SceneEditorContext extends hide.prefab.EditContext {
 		editor.selectElements(elements, NoHistory);
 	}
 
-	override function rebuildPrefab( p : hrt.prefab.Prefab ) {
-		// refresh all for now
-		editor.refresh();
+	override function rebuildPrefab( p : hrt.prefab.Prefab, ?sceneOnly : Bool) {
+		if(sceneOnly)
+			editor.refreshScene();
+		else
+			editor.refresh();
 	}
 
 	public function cleanup() {

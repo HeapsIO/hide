@@ -100,7 +100,7 @@ class EditContext {
 	/**
 		Force rebuilding makeInstance for the given hierarchy
 	**/
-	public function rebuildPrefab( p : Prefab ) {
+	public function rebuildPrefab( p : Prefab, ?sceneOnly=false) {
 	}
 
 	public function getNamedObjects( ?exclude : h3d.scene.Object ) {
