@@ -453,8 +453,10 @@ class EmitterObject extends h3d.scene.Object {
 
 	public var startTime = 0.0;
 	public var catchupSpeed = 4; // Use larger ticks when catching-up to save calculations
-	public var maxCatchupWindow = 0.5; // How many seconds max to simulate when catching up
 	public var totalBurstCount : Int = 0; // Keep track of burst count
+	#if !editor
+	public var maxCatchupWindow = 0.5; // How many seconds max to simulate when catching up
+	#end
 
 	// RANDOM
 	public var seedGroup = 0;
@@ -903,31 +905,36 @@ class EmitterObject extends h3d.scene.Object {
 
 		updateParticles(dt);
 
-		if( full && batch != null ) {
-			batch.begin(hxd.Math.nextPOT(maxCount));
-			if( particleVisibility ) {
-				particles = haxe.ds.ListSort.sortSingleLinked(particles, sortZ);
-				var p = particles;
-				var i = 0;
-				while(p != null) {
-					batch.worldPosition = p.absPos;
-					for( anim in shaderAnims ) {
-						var t = hxd.Math.clamp(p.life / p.lifeTime, 0.0, 1.0);
-						anim.setTime(t);
-					}
-					if( animatedTextureShader != null ){
-						animatedTextureShader.startTime = p.startTime;
-						animatedTextureShader.startFrame = p.startFrame;
-					}
-					if(colorMultShader != null)
-						colorMultShader.color = p.colorMult;
-					batch.emitInstance();
-					p = p.next;
-					++i;
+		if( full )
+			updateMeshBatch();
+		
+		curTime += dt;
+	}
+
+	function updateMeshBatch() {
+		if(batch == null) return;
+		batch.begin(hxd.Math.nextPOT(maxCount));
+		if( particleVisibility ) {
+			particles = haxe.ds.ListSort.sortSingleLinked(particles, sortZ);
+			var p = particles;
+			var i = 0;
+			while(p != null) {
+				batch.worldPosition = p.absPos;
+				for( anim in shaderAnims ) {
+					var t = hxd.Math.clamp(p.life / p.lifeTime, 0.0, 1.0);
+					anim.setTime(t);
 				}
+				if( animatedTextureShader != null ){
+					animatedTextureShader.startTime = p.startTime;
+					animatedTextureShader.startFrame = p.startFrame;
+				}
+				if(colorMultShader != null)
+					colorMultShader.color = p.colorMult;
+				batch.emitInstance();
+				p = p.next;
+				++i;
 			}
 		}
-		curTime += dt;
 	}
 
 	function updateParticles(dt: Float) {
@@ -1001,8 +1008,9 @@ class EmitterObject extends h3d.scene.Object {
 		time = time * speedFactor + warmUpTime;
 		if(time < curTime) {
 			reset();
+			curTime = time;
 			if(time < 0)
-				tick(0, true);  // Make sure mesh batch is reset when scrubbing back before start time
+				updateMeshBatch();  // Make sure mesh batch is reset when scrubbing back before start time
 		}
 
 		var catchupTime = time - curTime;
