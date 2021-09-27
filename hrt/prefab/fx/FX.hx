@@ -127,7 +127,7 @@ class FXAnimation extends h3d.scene.Object {
 
 		if(playSpeed > 0) {
 			var curTime = localTime;
-			if( ctx.visibleFlag || alwaysSync ) setTime(curTime);
+			setTime(curTime, ctx.visibleFlag || alwaysSync);
 			localTime += ctx.elapsedTime * playSpeed;
 			totalTime += ctx.elapsedTime;
 			if( duration > 0 && curTime < duration && localTime >= duration) {
@@ -141,101 +141,103 @@ class FXAnimation extends h3d.scene.Object {
 	static var tempMat = new h3d.Matrix();
 	static var tempTransform = new h3d.Matrix();
 	static var tempVec = new h3d.Vector();
-	public function setTime( time : Float ) {
+	public function setTime( time : Float, visible=true ) {
 		this.localTime = time;
-		vecPool.begin();
-		if(objAnims != null) {
-			for(anim in objAnims) {
-				if(anim.scale != null || anim.rotation != null || anim.position != null) {
-					var m = tempMat;
-					if(anim.scale != null) {
-						var scale = evaluator.getVector(anim.scale, time, tempVec);
-						m.initScale(scale.x, scale.y, scale.z);
+		if(visible) {
+			vecPool.begin();
+			if(objAnims != null) {
+				for(anim in objAnims) {
+					if(anim.scale != null || anim.rotation != null || anim.position != null) {
+						var m = tempMat;
+						if(anim.scale != null) {
+							var scale = evaluator.getVector(anim.scale, time, tempVec);
+							m.initScale(scale.x, scale.y, scale.z);
+						}
+						else
+							m.identity();
+
+						if(anim.rotation != null) {
+							var rotation = evaluator.getVector(anim.rotation, time, tempVec);
+							rotation.scale3(Math.PI / 180.0);
+							m.rotate(rotation.x, rotation.y, rotation.z);
+						}
+
+						var baseMat = anim.elt.getTransform(tempTransform);
+						var offset = baseMat.getPosition(tempVec);
+						baseMat.tx = baseMat.ty = baseMat.tz = 0.0;  // Ignore
+						m.multiply(baseMat, m);
+						m.translate(offset.x, offset.y, offset.z);
+
+						if(anim.position != null) {
+							var pos = evaluator.getVector(anim.position, time, tempVec);
+							m.translate(pos.x, pos.y, pos.z);
+						}
+
+						anim.obj.setTransform(m);
 					}
-					else
-						m.identity();
 
-					if(anim.rotation != null) {
-						var rotation = evaluator.getVector(anim.rotation, time, tempVec);
-						rotation.scale3(Math.PI / 180.0);
-						m.rotate(rotation.x, rotation.y, rotation.z);
+					if(anim.visibility != null)
+						anim.obj.visible = anim.elt.visible && evaluator.getFloat(anim.visibility, time) > 0.5;
+
+					if(anim.color != null) {
+						switch(anim.color) {
+							case VCurve(a):
+								for(mat in anim.obj.getMaterials())
+									mat.color.a = evaluator.getFloat(anim.color, time);
+							default:
+								for(mat in anim.obj.getMaterials())
+									mat.color.load(evaluator.getVector(anim.color, time, tempVec));
+						}
 					}
+					Event.updateEvents(anim.events, time, prevTime);
 
-					var baseMat = anim.elt.getTransform(tempTransform);
-					var offset = baseMat.getPosition(tempVec);
-					baseMat.tx = baseMat.ty = baseMat.tz = 0.0;  // Ignore
-					m.multiply(baseMat, m);
-					m.translate(offset.x, offset.y, offset.z);
-
-					if(anim.position != null) {
-						var pos = evaluator.getVector(anim.position, time, tempVec);
-						m.translate(pos.x, pos.y, pos.z);
-					}
-
-					anim.obj.setTransform(m);
-				}
-
-				if(anim.visibility != null)
-					anim.obj.visible = anim.elt.visible && evaluator.getFloat(anim.visibility, time) > 0.5;
-
-				if(anim.color != null) {
-					switch(anim.color) {
-						case VCurve(a):
-							for(mat in anim.obj.getMaterials())
-								mat.color.a = evaluator.getFloat(anim.color, time);
-						default:
-							for(mat in anim.obj.getMaterials())
-								mat.color.load(evaluator.getVector(anim.color, time, tempVec));
-					}
-				}
-				Event.updateEvents(anim.events, time, prevTime);
-
-				if( anim.additionalProperies != null ) {
-					switch(anim.additionalProperies) {
-						case None :
-						case PointLight( color, power, size, range ) :
-							var l = Std.downcast(anim.obj, h3d.scene.pbr.PointLight);
-							if( l != null ) {
-								if( color != null ) l.color = evaluator.getVector(color, time, tempVec);
-								if( power != null ) l.power = evaluator.getFloat(power, time);
-								if( size != null ) l.size = evaluator.getFloat(size, time);
-								if( range != null ) l.range = evaluator.getFloat(range, time);
-							}
-						case DirLight(color, power):
-							var l = Std.downcast(anim.obj, h3d.scene.pbr.DirLight);
-							if( l != null ) {
-								if( color != null ) l.color = evaluator.getVector(color, time, tempVec);
-								if( power != null ) l.power = evaluator.getFloat(power, time);
-							}
-						case SpotLight(color, power, range, angle, fallOff):
-							var l = Std.downcast(anim.obj, h3d.scene.pbr.SpotLight);
-							if( l != null ) {
-								if( color != null ) l.color = evaluator.getVector(color, time, tempVec);
-								if( power != null ) l.power = evaluator.getFloat(power, time);
-								if( range != null ) l.range = evaluator.getFloat(range, time);
-								if( angle != null ) l.angle = evaluator.getFloat(angle, time);
-								if( fallOff != null ) l.fallOff = evaluator.getFloat(fallOff, time);
-							}
+					if( anim.additionalProperies != null ) {
+						switch(anim.additionalProperies) {
+							case None :
+							case PointLight( color, power, size, range ) :
+								var l = Std.downcast(anim.obj, h3d.scene.pbr.PointLight);
+								if( l != null ) {
+									if( color != null ) l.color = evaluator.getVector(color, time, tempVec);
+									if( power != null ) l.power = evaluator.getFloat(power, time);
+									if( size != null ) l.size = evaluator.getFloat(size, time);
+									if( range != null ) l.range = evaluator.getFloat(range, time);
+								}
+							case DirLight(color, power):
+								var l = Std.downcast(anim.obj, h3d.scene.pbr.DirLight);
+								if( l != null ) {
+									if( color != null ) l.color = evaluator.getVector(color, time, tempVec);
+									if( power != null ) l.power = evaluator.getFloat(power, time);
+								}
+							case SpotLight(color, power, range, angle, fallOff):
+								var l = Std.downcast(anim.obj, h3d.scene.pbr.SpotLight);
+								if( l != null ) {
+									if( color != null ) l.color = evaluator.getVector(color, time, tempVec);
+									if( power != null ) l.power = evaluator.getFloat(power, time);
+									if( range != null ) l.range = evaluator.getFloat(range, time);
+									if( angle != null ) l.angle = evaluator.getFloat(angle, time);
+									if( fallOff != null ) l.fallOff = evaluator.getFloat(fallOff, time);
+								}
+						}
 					}
 				}
 			}
-		}
 
-		if(shaderAnims != null)
-			for(anim in shaderAnims)
-				anim.setTime(time);
+			if(shaderAnims != null)
+				for(anim in shaderAnims)
+					anim.setTime(time);
 
-		if(emitters != null) {
-			for(em in emitters) {
-				if(em.visible)
-					em.setTime(time);
+			if(emitters != null) {
+				for(em in emitters) {
+					if(em.visible)
+						em.setTime(time);
+				}
 			}
+
+			if(script != null)
+				script.update();
 		}
 
 		Event.updateEvents(events, time, prevTime);
-
-		if(script != null)
-			script.update();
 
 		this.prevTime = localTime;
 	}
