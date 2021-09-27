@@ -96,7 +96,9 @@ class FXAnimation extends h3d.scene.Object {
 		if(enableCulling && !syncedOnce) {
 			culled = true;
 			var pos = getAbsPos().getPosition();
-			tmpSphere.load(pos.x, pos.y, pos.z, cullingRadius);
+			var scale = getAbsPos().getScale();
+			var uniScale = hxd.Math.max(hxd.Math.max(scale.x, scale.y), scale.z);
+			tmpSphere.load(pos.x, pos.y, pos.z, cullingRadius * uniScale);
 			if(!ctx.camera.frustum.hasSphere(tmpSphere))
 				return;
 
