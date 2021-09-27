@@ -449,7 +449,6 @@ class EmitterObject extends h3d.scene.Object {
 	public var isSubEmitter : Bool = false;
 	public var parentEmitter : EmitterObject = null;
 	public var enable : Bool;
-	public var particleVisibility(default, null) : Bool;
 
 	public var startTime = 0.0;
 	public var catchupSpeed = 4; // Use larger ticks when catching-up to save calculations
@@ -534,7 +533,6 @@ class EmitterObject extends h3d.scene.Object {
 	}
 
 	public function reset() {
-		particleVisibility = true;
 		enable = true;
 		random.init(randomSeed);
 		curTime = 0.0;
@@ -562,10 +560,6 @@ class EmitterObject extends h3d.scene.Object {
 	override function onRemove() {
 		super.onRemove();
 		reset();
-	}
-
-	public function setParticleVibility( b : Bool ){
-		particleVisibility = b;
 	}
 
 	function allocInstance() {
@@ -634,7 +628,7 @@ class EmitterObject extends h3d.scene.Object {
 				part.baseMat = emitterBaseMat.clone();
 
 			part.startTime = startTime + curTime;
-			part.lifeTime = hxd.Math.max(0.01, lifeTime + hxd.Math.srand(lifeTimeRand));
+			part.lifeTime = hxd.Math.max(0.01, lifeTime + random.srand(lifeTimeRand));
 
 			if(useRandomColor) {
 				var col = new h3d.Vector();
@@ -914,26 +908,24 @@ class EmitterObject extends h3d.scene.Object {
 	function updateMeshBatch() {
 		if(batch == null) return;
 		batch.begin(hxd.Math.nextPOT(maxCount));
-		if( particleVisibility ) {
-			particles = haxe.ds.ListSort.sortSingleLinked(particles, sortZ);
-			var p = particles;
-			var i = 0;
-			while(p != null) {
-				batch.worldPosition = p.absPos;
-				for( anim in shaderAnims ) {
-					var t = hxd.Math.clamp(p.life / p.lifeTime, 0.0, 1.0);
-					anim.setTime(t);
-				}
-				if( animatedTextureShader != null ){
-					animatedTextureShader.startTime = p.startTime;
-					animatedTextureShader.startFrame = p.startFrame;
-				}
-				if(colorMultShader != null)
-					colorMultShader.color = p.colorMult;
-				batch.emitInstance();
-				p = p.next;
-				++i;
+		particles = haxe.ds.ListSort.sortSingleLinked(particles, sortZ);
+		var p = particles;
+		var i = 0;
+		while(p != null) {
+			batch.worldPosition = p.absPos;
+			for( anim in shaderAnims ) {
+				var t = hxd.Math.clamp(p.life / p.lifeTime, 0.0, 1.0);
+				anim.setTime(t);
 			}
+			if( animatedTextureShader != null ){
+				animatedTextureShader.startTime = p.startTime;
+				animatedTextureShader.startFrame = p.startFrame;
+			}
+			if(colorMultShader != null)
+				colorMultShader.color = p.colorMult;
+			batch.emitInstance();
+			p = p.next;
+			++i;
 		}
 	}
 
@@ -1006,11 +998,12 @@ class EmitterObject extends h3d.scene.Object {
 
 	public function setTime(time: Float) {
 		time = time * speedFactor + warmUpTime;
+		if(hxd.Math.abs(time - curTime) < 1e-6)  // Time imprecisions can occur during accumulation
+			return;
+
 		if(time < curTime) {
 			reset();
-			curTime = time;
-			if(time < 0)
-				updateMeshBatch();  // Make sure mesh batch is reset when scrubbing back before start time
+			updateMeshBatch();  // Make sure mesh batch is reset even when no tick is called()
 		}
 
 		var catchupTime = time - curTime;
@@ -1034,9 +1027,8 @@ class EmitterObject extends h3d.scene.Object {
 
 		var catchupTickRate = hxd.Timer.wantedFPS * speedFactor / catchupSpeed;
 		var numTicks = hxd.Math.ceil(catchupTickRate * catchupTime);
-		for(i in 0...numTicks) {
+		for(i in 0...numTicks)
 			tick(catchupTime / numTicks, i == (numTicks - 1));
-		}
 	}
 
 	override function getBoundsRec( b : h3d.col.Bounds ) {

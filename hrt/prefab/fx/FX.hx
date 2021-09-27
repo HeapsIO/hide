@@ -113,9 +113,6 @@ class FXAnimation extends h3d.scene.Object {
 	}
 
 	override function sync( ctx : h3d.scene.RenderContext ) {
-		if(emitters != null)
-			for(emitter in emitters)
-				emitter.setParticleVibility(ctx.visibleFlag);
 
 		if (additionLoopDuration > 0 && startLoop >= 0) {
 			if (totalTime > startLoop) {
@@ -230,12 +227,6 @@ class FXAnimation extends h3d.scene.Object {
 
 		if(emitters != null) {
 			for(em in emitters) {
-				if (prevTime > localTime) {
-					@:privateAccess em.curTime = time;
-					#if editor
-					em.reset();
-					#end
-				}
 				if(em.visible)
 					em.setTime(time);
 			}
