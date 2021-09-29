@@ -16,9 +16,13 @@ class SSRShader extends hxsl.Shader {
 
 		@param var ldrMap:Sampler2D;
 
+		@param var intensity : Float;
+		@param var colorMul : Float;
 		@param var maxRayDistance : Float;
+		@param var startFadeDistance : Float;
 		@param var stepsFirstPass : Int;
 		@param var stepsSecondPass : Int;
+		@param var thickness : Float;
 
 		var projectedPosition:Vec4;
 		var pixelColor:Vec4;
@@ -31,44 +35,47 @@ class SSRShader extends hxsl.Shader {
 
 		function fragment() {
 
-			var startRay = screenToUv(projectedPosition.xy / projectedPosition.w);
+			var startRay = projectedPosition.xy / projectedPosition.w;
 
 			var camDir = (transformedPosition - camera.position).normalize();
 			var reflectedRay = camDir - 2.0 * dot(camDir, transformedNormal) * transformedNormal;
-			var endRayWS = transformedPosition + reflectedRay * maxRayDistance;
-			var endRayProjected = vec4(endRayWS, 1.0) * camera.viewProj;
-			var endRay = screenToUv(endRayProjected.xy / endRayProjected.w);
 
-			var delta = endRay - startRay;
-			var curPos = startRay + delta / stepsFirstPass;
 			var curPosWS = transformedPosition + reflectedRay * maxRayDistance / stepsFirstPass;
 			var hitFirstPass = false;
+			var curDepth = 0.0;
 			@unroll for (i in 0 ... stepsFirstPass) {
-
 				var projPos = vec4(curPosWS, 1.0) * camera.viewProj;
+				var curPos = projPos.xy / projPos.w;
 				var distToCam = projPos.z / projPos.w;
-				if (distToCam > depthMap.get(curPos) && curPos.x <= 1.0 && curPos.x >= 0.0 && curPos.y <= 1.0 && curPos.y >= 0.0) {
-					hitFirstPass = true;
+				curDepth = depthMap.get(screenToUv(curPos));
+				if (distToCam > curDepth && curPos.x <= 1.0 && curPos.x >= -1.0 && curPos.y <= 1.0 && curPos.y >= -1.0) {
+					var ruv = vec4( curPos, curDepth, 1 );
+					var ppos = ruv * camera.inverseViewProj;
+					var wpos = ppos.xyz / ppos.w;
+					if ((wpos - curPosWS).length() < thickness)
+						hitFirstPass = true;
 				}
 				if (hitFirstPass == false) {
-					curPos += delta / stepsFirstPass;
 					curPosWS += reflectedRay * maxRayDistance / stepsFirstPass;
 				}
 			}
 
-			delta = delta / stepsFirstPass;
-			endRay = curPos - delta;
-			curPos -= delta / stepsSecondPass;
 			curPosWS -= reflectedRay * maxRayDistance / stepsFirstPass / stepsSecondPass;
 			var hitSecondPass = false;
+			var curPos = vec2(0.0, 0.0);
 			@unroll for (i in 0 ... stepsSecondPass) {
 				var projPos = vec4(curPosWS, 1.0) * camera.viewProj;
+				curPos = projPos.xy / projPos.w;
 				var distToCam = projPos.z / projPos.w;
-				if (distToCam < depthMap.get(curPos) && curPos.x <= 1.0 && curPos.x >= 0.0 && curPos.y <= 1.0 && curPos.y >= 0.0) {
-					hitSecondPass = true;
+				curDepth = depthMap.get(screenToUv(curPos));
+				if (distToCam < curDepth && curPos.x <= 1.0 && curPos.x >= -1.0 && curPos.y <= 1.0 && curPos.y >= -1.0) {
+					var ruv = vec4( curPos, curDepth, 1 );
+					var ppos = ruv * camera.inverseViewProj;
+					var wpos = ppos.xyz / ppos.w;
+					if ((wpos - curPosWS).length() < thickness)
+						hitSecondPass = true;
 				}
 				if (hitSecondPass == false) {
-					curPos -= delta / stepsSecondPass;
 					curPosWS -= reflectedRay * maxRayDistance / stepsFirstPass / stepsSecondPass;
 				}
 			}
@@ -76,11 +83,13 @@ class SSRShader extends hxsl.Shader {
 			var fragmentColor = vec3(0.0, 0.0, 0.0);
 			var alpha = 0.0;
 			if (hitFirstPass && hitSecondPass) {
-				fragmentColor = ldrMap.get(curPos).rgb;
-				alpha = 1.0 - (curPosWS - transformedPosition).length() / maxRayDistance;
+
+				fragmentColor = ldrMap.get(screenToUv(curPos)).rgb;
+				alpha = 1.0 - saturate(((curPosWS - transformedPosition).length() - startFadeDistance) / (maxRayDistance - startFadeDistance));
+				alpha *= intensity;
 			}
 
-			pixelColor.rgba *= vec4(fragmentColor, alpha);
+			pixelColor.rgba *= vec4(fragmentColor * colorMul, alpha);
 		}
 	}
 }
@@ -89,10 +98,14 @@ class SSR extends RendererFX {
 
 	public var ssrShader : SSRShader;
 
-	@:s public var maxRayDistance : Float = 1.;
+	@:s public var intensity : Float = 1.;
+	@:s public var colorMul : Float = 1.;
+	@:s public var maxRayDistance : Float = 10.;
+	@:s public var startFadeDistance : Float = 5.;
 	@:s public var steps : Int = 10;
 	@:s public var stepsFirstPass : Int = 10;
 	@:s public var stepsSecondPass : Int = 10;
+	@:s public var thickness : Float = 1.0;
 
 	function new(?parent) {
 		super(parent);
@@ -101,17 +114,18 @@ class SSR extends RendererFX {
 	}
 
 	override function end( r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {
-		if( step == Lighting ) {
+		if( step == Forward ) {
 			r.mark("SSR");
 
-			var ldrCopy = r.allocTarget("ldrMapCopy", false, 0.5);
-			var ldr = r.ctx.getGlobal("ldrMap");
-			h3d.pass.Copy.run(ldr, ldrCopy);
+			ssrShader.ldrMap = r.ctx.getGlobal("ldrMap");
 
-			ssrShader.ldrMap = ldrCopy;
+			ssrShader.colorMul = colorMul;
+			ssrShader.intensity = intensity;
 			ssrShader.maxRayDistance = maxRayDistance;
+			ssrShader.startFadeDistance = startFadeDistance;
 			ssrShader.stepsFirstPass = stepsFirstPass;
 			ssrShader.stepsSecondPass = stepsSecondPass;
+			ssrShader.thickness = thickness;
 
 			var ssrPasses : h3d.pass.PassList = r.get("ssr");
 			@:privateAccess var it = ssrPasses.current;
@@ -130,9 +144,13 @@ class SSR extends RendererFX {
 		ctx.properties.add(new hide.Element('
 		<div class="group" name="SSR">
 			<dl>
+				<dt>Intensity</dt><dd><input type="range" min="0" max="1" field="intensity"/></dd>
+				<dt>Color Mul</dt><dd><input type="range" min="0" max="1" field="colorMul"/></dd>
 				<dt>Max ray distance</dt><dd><input type="range" min="0" max="10" field="maxRayDistance"/></dd>
-				<dt>Steps first pass</dt><dd><input type="range" min="0" max="10" step="1" field="stepsFirstPass"/></dd>
-				<dt>Steps second pass</dt><dd><input type="range" min="0" max="10" step="1" field="stepsSecondPass"/></dd>
+				<dt>Start Fade Distance</dt><dd><input type="range" min="0" max="10" field="startFadeDistance"/></dd>
+				<dt>Steps first pass</dt><dd><input type="range" min="1" max="30" step="1" field="stepsFirstPass"/></dd>
+				<dt>Steps second pass</dt><dd><input type="range" min="1" max="20" step="1" field="stepsSecondPass"/></dd>
+				<dt>Thickness</dt><dd><input type="range" min="0" max="1" field="thickness"/></dd>
 			</dl>
 		</div>
 		'),this);
