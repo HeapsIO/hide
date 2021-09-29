@@ -40,7 +40,7 @@ class FXAnimation extends h3d.scene.Object {
 
 	public function new(?parent) {
 		super(parent);
-		randSeed = Std.random(0xFFFFFF);
+		randSeed = #if editor 0 #else Std.random(0xFFFFFF) #end;
 		random = new hxd.Rand(randSeed);
 		evaluator = new Evaluator(random);
 		evaluator.vecPool = vecPool;
