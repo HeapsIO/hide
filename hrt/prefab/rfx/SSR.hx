@@ -89,7 +89,7 @@ class SSRShader extends hxsl.Shader {
 				alpha *= intensity;
 			}
 
-			pixelColor.rgba *= vec4(fragmentColor * colorMul, alpha);
+			pixelColor.rgba = saturate(vec4(fragmentColor * colorMul, pixelColor.a * alpha));
 		}
 	}
 }
