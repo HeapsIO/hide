@@ -74,7 +74,7 @@ class TemporalFilteringShader extends h3d.shader.ScreenShader {
 			var d = PACKED_DEPTH ? unpack(depthTexture.get(uv)) : depthChannel.get(uv).r;
 			var tmp = vec4(uvToScreen(uv), d, 1) * cameraInverseViewProj;
 			tmp.xyz /= tmp.w;
-			isSky = d <= 0;
+			isSky = d == 1.0;
 			return tmp.xyz;
 		}
 

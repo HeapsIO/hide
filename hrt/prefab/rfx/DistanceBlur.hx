@@ -17,6 +17,7 @@ class DistanceBlurShader extends hrt.shader.PbrShader {
 		@param var blurredTexture : Sampler2D;
 
 		@const var DEBUG : Bool = false;
+		@const var affectSky : Bool = false;
 
 		var currentPosition : Vec3;
 		var blurAmount : Float;
@@ -25,13 +26,15 @@ class DistanceBlurShader extends hrt.shader.PbrShader {
 			currentPosition = getPosition();
 			var distance = (currentPosition - camera.position).length();
 			blurAmount = 0;
-			if( distance < nearEndDistance ) {
-				var nearIntensityFactor = clamp((distance - nearStartDistance) / (nearEndDistance - nearStartDistance), 0, 1);
-				blurAmount = mix(nearStartIntensity, nearEndIntensity, nearIntensityFactor);
-			}
-			else if( distance > farStartDistance ) {
-				var farIntensityFactor = clamp((distance - farStartDistance) / (farEndDistance - farStartDistance), 0, 1);
-				blurAmount = mix(farStartIntensity, farEndIntensity, farIntensityFactor);
+			if(affectSky || depthMap.get(calculatedUV) < 1) {
+				if( distance < nearEndDistance ) {
+					var nearIntensityFactor = clamp((distance - nearStartDistance) / (nearEndDistance - nearStartDistance), 0, 1);
+					blurAmount = mix(nearStartIntensity, nearEndIntensity, nearIntensityFactor);
+				}
+				else if( distance > farStartDistance ) {
+					var farIntensityFactor = clamp((distance - farStartDistance) / (farEndDistance - farStartDistance), 0, 1);
+					blurAmount = mix(farStartIntensity, farEndIntensity, farIntensityFactor);
+				}
 			}
 		}}
 
