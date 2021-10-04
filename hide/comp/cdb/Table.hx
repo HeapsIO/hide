@@ -154,6 +154,17 @@ class Table extends Component {
 				col.attr("title", c.documentation);
 				new Element('<i style="margin-left: 5px" class="ico ico-book"/>').appendTo(col);
 			}
+			if( c.type == TString ) {
+				var ico = switch(c.kind) {
+					case Localizable:
+						"ico-globe";
+					case Script:
+						"ico-code";
+					default:
+						"ico-text-width";
+				}
+				new Element('<i style="margin-right: 5px" class="ico $ico"/>').prependTo(col);
+			}
 			if( sheet.props.displayColumn == c.name )
 				col.addClass("display");
 			col.mousedown(function(e) {

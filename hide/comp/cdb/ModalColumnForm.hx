@@ -239,8 +239,14 @@ class ModalColumnForm extends Modal {
 	}
 
 	public function setCallback(callback : (Void -> Void)) {
-		form.find("#createBtn").click(function(e) callback());
-		form.find("#editBtn").click(function(e) callback());
+		form.find("#createBtn").click(function(e) {
+			e.preventDefault();
+			callback();
+		});
+		form.find("#editBtn").click(function(e) {
+			e.preventDefault();
+			callback();
+		});
 	}
 
 	public function closeModal() {
