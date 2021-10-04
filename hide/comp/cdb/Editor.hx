@@ -1155,7 +1155,8 @@ class Editor extends Component {
 			{ label : "", isSeparator : true },
 			{ label : "Insert", click : function() {
 				insertLine(line.table,line.index);
-				cursor.move(0,1,false,false);
+				cursor.set(line.table, -1, line.index + 1);
+				focus();
 			}, keys : config.get("key.cdb.insertLine") },
 			{ label : "Delete", click : function() {
 				beginChanges();
