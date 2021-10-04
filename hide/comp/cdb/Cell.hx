@@ -291,7 +291,6 @@ class Cell extends Component {
 			var a : Array<Dynamic> = v;
 			var ps = sheet.getSub(c);
 			var out : Array<String> = [];
-			var size = 0;
 			scope.push({ s : sheet, obj : obj });
 			for( v in a ) {
 				var vals = [];
@@ -303,18 +302,6 @@ class Cell extends Component {
 				}
 				inline function char(s) return '<span class="minor">$s</span>';
 				var v = vals.length == 1 ? vals[0] : (char('[') + vals.join(char(',')) + char(']'));
-				if( size > 200 ) {
-					out.push("...");
-					break;
-				}
-				var vstr = v;
-				if( v.indexOf("<") >= 0 ) {
-					vstr = ~/<img src="[^"]+" style="display:none"[^>]+>/g.replace(vstr, "");
-					vstr = ~/<img src="[^"]+"\/>/g.replace(vstr, "[I]");
-					vstr = ~/<div id="[^>]+><\/div>/g.replace(vstr, "[D]");
-				}
-				vstr = StringTools.trim(vstr);
-				size += vstr.length;
 				out.push(v);
 			}
 			scope.pop();
