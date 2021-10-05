@@ -175,6 +175,16 @@ class ShaderEditor extends hide.view.Graph {
 			}
 		});
 
+		function reloadFullView() {
+			var shouldRebuild = true;
+			if( modified )
+				shouldRebuild = ide.confirm("Reload without saving?");
+			if( shouldRebuild ) {
+				rebuild();
+				modified = false;
+			}
+		}
+
 		keys = new hide.ui.Keys(element);
 		keys.register("undo", function() undo.undo());
 		keys.register("redo", function() undo.redo());
@@ -183,7 +193,7 @@ class ShaderEditor extends hide.view.Graph {
 		keys.register("copy", onCopy);
 		keys.register("paste", onPaste);
 		keys.register("sceneeditor.focus", centerView);
-		keys.register("view.refresh", rebuild);
+		keys.register("view.refresh", reloadFullView);
 
 		parent.on("contextmenu", function(e) {
 			e.preventDefault();
@@ -262,7 +272,7 @@ class ShaderEditor extends hide.view.Graph {
 
 		element.find("#togglelight").on("click", toggleDefaultLight);
 
-		element.find("#refreshGraph").on("click", rebuild)
+		element.find("#refreshGraph").on("click", reloadFullView)
 			.prop("title", 'Refresh the Shader (${config.get("key.view.refresh")})');
 
 		element.find("#displayHxsl").on("click", () -> displayCompiled("hxsl"));
