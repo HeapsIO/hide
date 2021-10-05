@@ -79,6 +79,7 @@ class ContextMenu {
 			name += '<span class="contextmenu-keys">' + toKeyString(i.keys) + "</span>";
 		}
 		var autoclose = (i.stayOpen == null) ? true : !i.stayOpen;
+		var emptySubMenu = i.menu != null && i.menu.length <= 0;
 		var ret : Dynamic = {
 			name : name,
 			isHtmlName : true,
@@ -86,8 +87,8 @@ class ContextMenu {
 				i.click();
 				return autoclose;
 			},
-			disabled : i.enabled == null ? false : !i.enabled,
-			items : i.menu == null ? null : makeMenu(i.menu),
+			disabled : (i.enabled == null ? false : !i.enabled) || emptySubMenu,
+			items : (i.menu == null || emptySubMenu) ? null : makeMenu(i.menu),
 		};
 		if( i.checked != null ) {
 			ret.type = 'checkbox';
