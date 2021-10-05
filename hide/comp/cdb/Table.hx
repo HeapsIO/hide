@@ -338,6 +338,17 @@ class Table extends Component {
 				th.attr("title", c.documentation);
 				new Element('<i style="margin-left: 5px" class="ico ico-book"/>').appendTo(th);
 			}
+			if( c.type == TString ) {
+				var ico = switch(c.kind) {
+					case Localizable:
+						"ico-globe";
+					case Script:
+						"ico-code";
+					default:
+						"ico-text-width";
+				}
+				new Element('<i style="margin-right: 5px" class="ico $ico"/>').prependTo(th);
+			}
 
 			var line = new Line(this, [c], lines.length, l);
 			var cell = new Cell(td, line, c);
