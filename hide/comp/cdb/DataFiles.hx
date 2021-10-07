@@ -12,9 +12,13 @@ class DataFiles {
 	static var changed : Bool;
 	static var skip : Int = 0;
 	static var watching : Map<String, Bool> = new Map();
-	static var base(get,never) : cdb.Database;
 
+	#if editor
+	static var base(get,never) : cdb.Database;
 	static function get_base() return Ide.inst.database;
+	#else
+	public static var base : cdb.Database;
+	#end
 
 	public static function load() {
 		for( sheet in base.sheets )
@@ -22,6 +26,7 @@ class DataFiles {
 				loadSheet(sheet);
 	}
 
+	#if editor
 	static function onFileChanged() {
 		if( skip > 0 ) {
 			skip--;
@@ -36,6 +41,31 @@ class DataFiles {
 		},0);
 	}
 
+	static function loadPrefab(file) {
+		var p = Ide.inst.loadPrefab(file);
+		if( !watching.exists(file) ) {
+			watching.set(file, true);
+			ide.fileWatcher.register(file, onFileChanged);
+		}
+		return p;
+	}
+	#else
+	static function loadPrefab(file:String) {
+		var l = hrt.prefab.Library.create(file.split(".").pop().toLowerCase());
+		var path = getPath(file);
+		l.loadData(haxe.Json.parse(sys.io.File.getContent(path)));
+		return l;
+	}
+	#end
+
+	static dynamic function getPath(file:String) {
+		#if editor
+		return Ide.inst.getPath(file);
+		#else
+		return "res/"+file;
+		#end
+	}
+
 	static function reload() {
 		for( s in base.sheets )
 			if( s.props.dataFiles != null ) @:privateAccess {
@@ -46,7 +76,6 @@ class DataFiles {
 	}
 
 	static function loadSheet( sheet : cdb.Sheet ) {
-		var ide = Ide.inst;
 		var lines : Array<Dynamic> = [];
 		var linesData : Array<DataProps> = [];
 		var separators = [];
@@ -88,19 +117,15 @@ class DataFiles {
 				}
 				for( c in p ) loadRec(c,p);
 			}
-			var p = ide.loadPrefab(file);
+			var p = loadPrefab(file);
 			loadRec(p,null);
-			if( !watching.exists(file) ) {
-				watching.set(file, true);
-				ide.fileWatcher.register(file, onFileChanged);
-			}
 		}
 
 		function gatherRec( basePath : Array<String>, curPath : Array<String>, i : Int ) {
 			var part = basePath[i++];
 			if( part == null ) {
 				var file = curPath.join("/");
-				if( sys.FileSystem.exists(ide.getPath(file)) ) loadFile(file);
+				if( sys.FileSystem.exists(getPath(file)) ) loadFile(file);
 				return;
 			}
 			if( part.indexOf("*") < 0 ) {
@@ -109,13 +134,15 @@ class DataFiles {
 				curPath.pop();
 			} else {
 				var path = curPath.join("/");
-				var dir = ide.getPath(path);
+				var dir = getPath(path);
 				if( !sys.FileSystem.isDirectory(dir) )
 					return;
+				#if editor
 				if( !watching.exists(path) ) {
 					watching.set(path, true);
-					ide.fileWatcher.register(path, onFileChanged, true);
+					Ide.inst.fileWatcher.register(path, onFileChanged, true);
 				}
+				#end
 				var reg = new EReg("^"+part.split(".").join("\\.").split("*").join(".*")+"$","");
 				var subs = sys.FileSystem.readDirectory(dir);
 				subs.sort(Reflect.compare);
@@ -138,6 +165,8 @@ class DataFiles {
 		for( dir in sheet.props.dataFiles.split(";") )
 			gatherRec(dir.split("/"),[],0);
 	}
+
+	#if editor
 
 	public static function save( ?onSaveBase, ?force, ?prevSheetNames : Map<String,String> ) {
 		var ide = Ide.inst;
@@ -214,10 +243,6 @@ class DataFiles {
 
 	// ---- TYPES Instances API -----
 
-	public static function getTypeName( sheet : cdb.Sheet ) {
-		return sheet.name.split("@").pop();
-	}
-
 	public static function getAvailableTypes() {
 		var sheets = [];
 		var ide = Ide.inst;
@@ -236,5 +261,10 @@ class DataFiles {
 		return null;
 	}
 
+	#end
+
+	public static function getTypeName( sheet : cdb.Sheet ) {
+		return sheet.name.split("@").pop();
+	}
 
 }
