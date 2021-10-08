@@ -45,7 +45,7 @@ class DataFiles {
 		var p = Ide.inst.loadPrefab(file);
 		if( !watching.exists(file) ) {
 			watching.set(file, true);
-			ide.fileWatcher.register(file, onFileChanged);
+			Ide.inst.fileWatcher.register(file, onFileChanged);
 		}
 		return p;
 	}
