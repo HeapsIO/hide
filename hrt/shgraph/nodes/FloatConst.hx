@@ -40,6 +40,9 @@ class FloatConst extends ShaderConst {
 		input.on("keydown", function(e) {
 			e.stopPropagation();
 		});
+		input.on("mousedown", function(e) {
+			e.stopPropagation();
+		});
 		input.on("change", function(e) {
 			var tmpValue = Std.parseFloat(input.val());
 			if (Math.isNaN(tmpValue) ) {

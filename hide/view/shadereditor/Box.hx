@@ -28,6 +28,7 @@ class Box {
 	@const var NODE_MARGIN = 17;
 	public static var NODE_RADIUS = 5;
 	@const var NODE_TITLE_PADDING = 10;
+	@const var NODE_INPUT_PADDING = 3;
 	public var selected : Bool = false;
 
 	public var inputs : Array<JQuery> = [];
@@ -113,12 +114,24 @@ class Box {
 		}
 		var nodeCircle = editor.circle(node, 0, nodeHeight, NODE_RADIUS, style).addClass("node input-node");
 
-		if (name.length > 0)
-			editor.text(node, NODE_TITLE_PADDING, nodeHeight + 4, name).addClass("title-node");
+		var nameWidth = 0.0;
+		if (name.length > 0) {
+			var inputName = editor.text(node, NODE_TITLE_PADDING, nodeHeight + 4, name).addClass("title-node");
+			var domName : js.html.svg.GraphicsElement = cast inputName.get()[0];
+			nameWidth = domName.getBBox().width;
+		}
 		if (valueDefault != null) {
 			var widthInput = width / 2 * 0.7;
-			var fObject = editor.foreignObject(node, NODE_TITLE_PADDING, nodeHeight - 9, widthInput, 20).addClass("input-field");
-			new Element('<input type="text" style="width: ${widthInput - 7}px" value="${valueDefault}" />').appendTo(fObject);
+			var fObject = editor.foreignObject(
+				node,
+				nameWidth + NODE_TITLE_PADDING + NODE_INPUT_PADDING,
+				nodeHeight - 9,
+				widthInput,
+				20
+			).addClass("input-field");
+			new Element('<input type="text" style="width: ${widthInput - 7}px" value="${valueDefault}" />')
+				.mousedown((e) -> e.stopPropagation())
+				.appendTo(fObject);
 		}
 
 		inputs.push(nodeCircle);
