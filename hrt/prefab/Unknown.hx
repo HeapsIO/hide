@@ -10,11 +10,15 @@ class Unknown extends Prefab {
 
 	override function load(v:Dynamic) {
 		this.data = Reflect.copy(v);
+		this.props = v.props;
 		Reflect.deleteField(this.data, "children");
+		Reflect.deleteField(this.data, "props");
 	}
 
 	override function save() {
-		return Reflect.copy(data);
+		var data : Dynamic = Reflect.copy(data);
+		if( this.props != null ) data.props = props;
+		return data;
 	}
 
 	override function getDefaultName():String {
