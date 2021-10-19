@@ -267,6 +267,7 @@ class MeshSpray extends Object3D {
 	var timerCicle : haxe.Timer;
 
 	var lastSpray : Float = 0;
+	var lastMeshPos : h3d.col.Point;
 	var invParent : h3d.Matrix;
 
 	var MESH_SPRAY_CONFIG_FILE = "meshSprayProps.json";
@@ -669,6 +670,7 @@ class MeshSpray extends Object3D {
 						previewMeshesAround(ectx, ctx, worldPos);
 					}
 					lastSpray = Date.now().getTime();
+					lastMeshPos = null;
 				}
 			}
 		}
@@ -680,6 +682,7 @@ class MeshSpray extends Object3D {
 			if( K.isDown( K.SHIFT) )
 				removeMeshesAround(ctx, worldPos);
 			else {
+				lastMeshPos = worldPos.clone();
 				addMeshes(ctx);
 			}
 		};
@@ -729,8 +732,9 @@ class MeshSpray extends Object3D {
 						if( shiftPressed ) {
 							removeMeshesAround(ctx, worldPos);
 						} else {
-							if (currentConfig.density == 1) sprayEnable = false;
-							else addMeshes(ctx);
+							// if (currentConfig.density == 1) sprayEnable = false;
+							// else 
+								addMeshes(ctx);
 						}
 					}
 				}
