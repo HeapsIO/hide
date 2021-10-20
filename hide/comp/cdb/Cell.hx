@@ -855,7 +855,7 @@ class Cell extends Component {
 			if( prevTarget != null || (prevObj != null && (prevObj.obj != obj || table.sheet.index.get(prevValue) != null)) )
 				table.refresh();
 			*/
-		case TString if( column.kind == Script ):
+		case TString if( column.kind == Script || column.kind == Localizable ):
 			setValue(StringTools.trim(newValue));
 		case TTilePos:
 			// if we change a file that has moved, change it for all instances having the same file
