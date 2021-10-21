@@ -901,7 +901,7 @@ class EmitterObject extends h3d.scene.Object {
 
 		if( full )
 			updateMeshBatch();
-		
+
 		curTime += dt;
 	}
 
@@ -961,8 +961,10 @@ class EmitterObject extends h3d.scene.Object {
 			}
 			else {
 				p.update(dt);
-				if(p.distToCam < 0 || enableSort)
-					p.distToCam = camPos.distanceSq(p.absPos.getPosition());
+				if(p.distToCam < 0 || enableSort) {
+					p.absPos.getPosition(tmpPos);
+					p.distToCam = camPos.distanceSq(tmpPos);
+				}
 				prev = p;
 			}
 			p = next;
