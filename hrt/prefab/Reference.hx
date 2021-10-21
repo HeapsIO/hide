@@ -95,6 +95,12 @@ class Reference extends Object3D {
 		ctx.shared = prevShared;
 
 		#if editor
+
+		if( editMode ) {
+			var view = cast(ctx.shared, hide.prefab.ContextShared).view;
+			if( view != null ) view.watch(source, function() @:privateAccess { view.currentSign = null; view.onFileChanged(false); });
+		}
+
 		if (ctx.local2d == null) {
 			var path = hide.Ide.inst.appPath + "/res/icons/fileRef.png";
 			var data = sys.io.File.getBytes(path);

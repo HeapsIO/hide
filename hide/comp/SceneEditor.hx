@@ -190,7 +190,7 @@ class SceneEditor {
 		};
 
 		context = new hrt.prefab.Context();
-		context.shared = new hide.prefab.ContextShared(scene);
+		context.shared = new hide.prefab.ContextShared(scene,view);
 		context.shared.currentPath = view.state.path;
 		context.init();
 		editorDisplay = true;
@@ -620,7 +620,7 @@ class SceneEditor {
 		for( c in sh.contexts )
 			if( c != null && c.cleanup != null )
 				c.cleanup();
-		context.shared = sh = new hide.prefab.ContextShared(scene);
+		context.shared = sh = new hide.prefab.ContextShared(scene,view);
 		sh.editorDisplay = editorDisplay;
 		sh.currentPath = view.state.path;
 		scene.s3d.addChild(sh.root3d);

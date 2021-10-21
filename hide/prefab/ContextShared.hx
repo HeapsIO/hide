@@ -3,10 +3,12 @@ package hide.prefab;
 class ContextShared extends hrt.prefab.ContextShared {
 	#if editor
 	public var scene : hide.comp.Scene;
+	public var view : hide.view.FileView;
 
-	public function new(scene) {
+	public function new(scene, view) {
 		super();
 		this.scene = scene;
+		this.view = view;
 	}
 
 	function getScene() {
@@ -14,7 +16,7 @@ class ContextShared extends hrt.prefab.ContextShared {
 	}
 
 	override function allocForRef() {
-		return new ContextShared(scene);
+		return new ContextShared(scene, view);
 	}
 
 	override function onError( e : Dynamic ) {

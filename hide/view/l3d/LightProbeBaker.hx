@@ -62,7 +62,7 @@ class LightProbeBaker {
 		if(offScreenScene != null) offScreenScene.dispose();
 		offScreenScene = new h3d.scene.Scene();
 
-		var newShared = new hide.prefab.ContextShared(scene);
+		var newShared = new hide.prefab.ContextShared(scene, null);
 		newShared.currentPath = shared.currentPath;
 		@:privateAccess newShared.shaderCache =  @:privateAccess hide.Ide.inst.shaderLoader.shaderCache;
 		context.shared = newShared;
