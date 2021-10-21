@@ -86,6 +86,9 @@ class Reference extends Object3D {
 			return ctx;
 
 		ctx = super.makeInstance(ctx);
+		var objFollow = new h2d.ObjectFollower(ctx.local3d, ctx.local2d);
+		objFollow.followVisibility = true;
+		ctx.local2d = objFollow;
 		var prevShared = ctx.shared;
 		ctx.shared = ctx.shared.cloneRef(this, source);
 		makeChildren(ctx, p);
