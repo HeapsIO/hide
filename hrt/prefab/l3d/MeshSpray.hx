@@ -324,17 +324,14 @@ class MeshSpray extends Object3D {
 		var orient = config.orientTerrain;
 		var tilt = config.tiltAmount;
 
-		var r = config.radius * 0.2;
 		inline function getPoint(dx,dy) {
-			var dz = ectx.positionToGroundZ(pos.tx + r * dx, pos.ty + r * dy) - tz;
-			return new h3d.col.Point(r * dx, r * dy, dz * orient);
+			var dz = ectx.positionToGroundZ(pos.tx + 0.1 * dx, pos.ty + 0.1 * dy) - tz;
+			return new h3d.col.Point(dx*0.1, dy*0.1, dz * orient);
 		}
 
-		var px0 = getPoint(-1,0);
-		var py0 = getPoint(0, -1);
-		var px1 = getPoint(1, 0);
-		var py1 = getPoint(0, 1);
-		var n = px1.cross(py1).add(py1.cross(px0)).add(px0.cross(py0)).add(py0.cross(px1)).normalized();
+		var px = getPoint(1,0);
+		var py = getPoint(0,1);
+		var n = px.cross(py).normalized();
 		var q = new h3d.Quat();
 		q.initNormal(n);
 		var m = q.toMatrix();
@@ -733,7 +730,7 @@ class MeshSpray extends Object3D {
 							removeMeshesAround(ctx, worldPos);
 						} else {
 							// if (currentConfig.density == 1) sprayEnable = false;
-							// else 
+							// else
 								addMeshes(ctx);
 						}
 					}
