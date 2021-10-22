@@ -101,6 +101,14 @@ class Configurator extends RendererFX {
 		return bpow / (bpow + Math.pow(1 - v, easing + 1));
 	}
 
+	function mix( x : Float, y : Float, t : Float ) : Float {
+		return x * (1 - t) + y * t;
+	}
+
+	function mixColor ( x : Int, y : Int, t : Float ) : Int {
+		return h3d.Vector.fromColor(x).multiply(1-t).add(h3d.Vector.fromColor(y).multiply(t)).toColor();
+	}
+
 	function getParts( r : Renderer, id : String) {
 		var p = particlesCache.get(id);
 		if (p != null)
@@ -175,6 +183,8 @@ class Configurator extends RendererFX {
 				interp.variables.set("getOpt", getPrefab.bind(true));
 				interp.variables.set("smooth", smoothValue);
 				interp.variables.set("allowChanges", allowChanges);
+				interp.variables.set("mix", mix);
+				interp.variables.set("mixColor", mixColor);
 			}
 			for( k => v in values )
 				interp.variables.set(k, v);
