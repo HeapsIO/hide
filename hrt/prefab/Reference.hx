@@ -4,7 +4,9 @@ class Reference extends Object3D {
 
 	@:s var editMode : Bool = false;
 	public var ref: Prefab = null;
-	var wasSaved = false;
+	#if editor
+	var editor : hide.comp.SceneEditor;
+	#end
 
 	public function new(?parent) {
 		super(parent);
@@ -24,7 +26,7 @@ class Reference extends Object3D {
 		var obj : Dynamic = super.save();
 		#if editor
 		if( editMode && ref != null ) {
-			wasSaved = true;
+			if( editor != null ) editor.watchIgnoreChanges(source);
 			hide.Ide.inst.savePrefab(source, ref);
 		}
 		#end
@@ -100,18 +102,8 @@ class Reference extends Object3D {
 		#if editor
 
 		if( editMode ) {
-			var view = cast(ctx.shared, hide.prefab.ContextShared).view;
-			if( view != null )
-				view.watch(source, function() {
-					if( wasSaved ) {
-						wasSaved = false;
-						return;
-					}
-					@:privateAccess {
-						view.currentSign = null;
-						view.onFileChanged(false);
-					}
-				});
+			editor = cast(ctx.shared, hide.prefab.ContextShared).editor;
+			if( editor != null ) editor.watch(source);
 		}
 
 		if (ctx.local2d == null) {

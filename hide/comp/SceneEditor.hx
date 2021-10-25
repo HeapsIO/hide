@@ -190,7 +190,7 @@ class SceneEditor {
 		};
 
 		context = new hrt.prefab.Context();
-		context.shared = new hide.prefab.ContextShared(scene,view);
+		context.shared = new hide.prefab.ContextShared(scene,this);
 		context.shared.currentPath = view.state.path;
 		context.init();
 		editorDisplay = true;
@@ -250,6 +250,7 @@ class SceneEditor {
 	public function dispose() {
 		scene.dispose();
 		tree.dispose();
+		clearWatches();
 	}
 
 	function set_camera2D(b) {
@@ -612,7 +613,42 @@ class SceneEditor {
 		selectElements(curEdit.elements, Nothing);
 	}
 
+	var refWatches : Map<String,{ callb : Void -> Void, ignoreCount : Int }> = [];
+
+	public function watchIgnoreChanges( source : String ) {
+		var w = refWatches.get(source);
+		if( w == null ) return;
+		w.ignoreCount++;
+	}
+
+	public function watch( source : String ) {
+		var w = refWatches.get(source);
+		if( w != null ) return;
+		w = { callb : function() {
+			if( w.ignoreCount > 0 ) {
+				w.ignoreCount--;
+				return;
+			}
+			if( view.modified && !ide.confirm('${source} has been modified, reload and ignore local changes?') )
+				return;
+			view.undo.clear();
+			view.rebuild();
+		}, ignoreCount : 0 };
+		refWatches.set(source, w);
+		ide.fileWatcher.register(source, w.callb, false, scene.element);
+	}
+
+	function clearWatches() {
+		var prev = refWatches;
+		refWatches = [];
+		for( source => w in prev )
+			ide.fileWatcher.unregister(source, w.callb);
+	}
+
 	public function refreshScene() {
+
+		clearWatches();
+
 		var sh = context.shared;
 		sh.root3d.remove();
 		sh.root2d.remove();
@@ -620,7 +656,7 @@ class SceneEditor {
 		for( c in sh.contexts )
 			if( c != null && c.cleanup != null )
 				c.cleanup();
-		context.shared = sh = new hide.prefab.ContextShared(scene,view);
+		context.shared = sh = new hide.prefab.ContextShared(scene,this);
 		sh.editorDisplay = editorDisplay;
 		sh.currentPath = view.state.path;
 		scene.s3d.addChild(sh.root3d);
