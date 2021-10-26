@@ -27,6 +27,7 @@ class GenFogShader extends hrt.shader.PbrShader {
 
 		@param var lightDirection : Vec3;
 		@param var lightColor : Vec3;
+		@param var dotThreshold : Float;
 
 		function fragment() {
 			var origin = getPosition();
@@ -49,7 +50,7 @@ class GenFogShader extends hrt.shader.PbrShader {
 			}
 
 			var fogColor = mix(startColor, endColor, clamp(amount,0,1));
-			fogColor.rgb += (camera.position - origin).normalize().dot(lightDirection).max(0) * lightColor;
+			fogColor.rgb += saturate(((camera.position - origin).normalize().dot(lightDirection) - dotThreshold) / (1.0 - dotThreshold)) * lightColor;
 			pixelColor = fogColor;
 		}
 
@@ -103,6 +104,7 @@ class GenFog extends RendererFX {
 
 	@:s public var lightColor = 0xFFFFFF;
 	@:s public var lightColorAmount : Float;
+	@:s public var lightAngle : Float = 90.0;
 
 	public function new(?parent) {
 		super(parent);
@@ -154,7 +156,7 @@ class GenFog extends RendererFX {
 				fogPass.shader.lightDirection.load(@:privateAccess ls.getShadowDirection());
 			fogPass.shader.lightColor.setColor(lightColor);
 			fogPass.shader.lightColor.scale3(lightColorAmount);
-
+			fogPass.shader.dotThreshold = hxd.Math.cos(lightAngle * Math.PI/180);
 
 			fogPass.setGlobals(ctx);
 			fogPass.render();
@@ -191,6 +193,7 @@ class GenFog extends RendererFX {
 				<div class="group" name="Light">
 					<dt>Light Color</dt><dd><input type="color" field="lightColor"/></dd>
 					<dt>Amount</dt><dd><input type="range" min="0" max="1" field="lightColorAmount"/></dd>
+					<dt>Angle</dt><dd><input type="range" min="0" max="180" field="lightAngle"/></dd>
 				</div>
 				<div class="group" name="Rendering">
 					<dt>Render Mode</dt>
