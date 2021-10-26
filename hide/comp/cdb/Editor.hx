@@ -722,7 +722,29 @@ class Editor extends Component {
 
 	function showReferences() {
 		if( cursor.table == null ) return;
-		// todo : port from old cdb
+		var results = cursor.table.sheet.getReferences(cursor.y);
+		if( results == null )
+			return;
+		if( results.length == 0 ) {
+			ide.message("No reference found");
+			return;
+		}
+		var message = [];
+		for( rs in results ) {
+			var path = [];
+			for( i in 0...rs.s.length ) {
+				var s = rs.s[i];
+				var oid = Reflect.field(rs.o.path[i], s.id);
+				var idx = rs.o.indexes[i];
+				if( oid == null || oid == "" )
+					path.push(s.s.name.split("@").pop() + (idx < 0 ? "" : "[" + idx +"]"));
+				else
+					path.push(oid);
+			}
+			path.push(rs.s[rs.s.length-1].c);
+			message.push(rs.s[0].s.name+"  "+path.join("."));
+		}
+		ide.message(message.join("\n"));
 	}
 
 	function gotoReference( c : Cell ) {

@@ -57,7 +57,7 @@
 
 	// cdb keys
 
-	"key.cdb.showReferences" : "Shift+F12",
+	"key.cdb.showReferences" : "Ctrl-F12",
 	"key.cdb.gotoReference" : "F12",
 	"key.cdb.closeList" : "Escape",
 	"key.cdb.editCell" : "Enter",
