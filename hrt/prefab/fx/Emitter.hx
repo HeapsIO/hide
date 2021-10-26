@@ -15,6 +15,12 @@ enum AlignMode {
 	Axis;
 }
 
+enum AlignLockAxis {
+	X;
+	Y;
+	Z;
+}
+
 enum EmitShape {
 	Cone;
 	Sphere;
@@ -357,45 +363,9 @@ private class ParticleInstance  {
 
 		// ALIGNMENT
 		switch( emitter.alignMode ) {
-			case Screen:
+			case Screen|Axis:
 				transform.qRot.load(emitter.screenQuat);
 				transform.calcAbsPos();
-				localTransform.calcAbsPos();
-				absPos.multiply(localTransform.absPos, transform.absPos);
-
-			case Axis:
-				transform.calcAbsPos();
-
-				var absChildMat = tmpMat;
-				absChildMat.multiply3x4(transform.absPos, localMat);
-				tmpCamAlign.load(emitter.alignAxis);
-				tmpCamAlign.transform3x3(absChildMat);
-				tmpCamAlign.normalizeFast();
-
-				tmpCamRotAxis.load(emitter.alignLockAxis);
-				tmpCamRotAxis.transform3x3(transform.absPos);
-				tmpCamRotAxis.normalizeFast();
-
-				tmpCamVec.load(emitter.getScene().camera.pos);
-				sub(tmpCamVec, transform.absPos.getPosition(tmpPos));
-				tmpCamVec.normalizeFast();
-
-				tmpCamVec2.load(tmpCamVec);
-				tmpCamVec2.scale3(tmpCamVec.dot(tmpCamRotAxis));
-				sub(tmpCamVec, tmpCamVec2);
-				tmpCamVec.normalizeFast();
-
-				var angle = hxd.Math.acos(tmpCamAlign.dot(tmpCamVec));
-				cross(tmpCamAlign, tmpCamVec2);
-				if(tmpCamRotAxis.dot(tmpCamAlign) < 0)
-					angle = -angle;
-
-				tmpQuat.identity();
-				tmpQuat.initRotateAxis(emitter.alignLockAxis.x, emitter.alignLockAxis.y, emitter.alignLockAxis.z, angle);
-				var cq = localTransform.qRot;
-				cq.multiply(cq, tmpQuat);
-				localTransform.setRotation(cq);
-
 				localTransform.calcAbsPos();
 				absPos.multiply(localTransform.absPos, transform.absPos);
 
@@ -496,8 +466,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var animationLoop : Bool = true;
 	// ALIGNMENT
 	public var alignMode : AlignMode;
-	public var alignAxis : h3d.Vector;
-	public var alignLockAxis : h3d.Vector;
+	public var alignLockAxis : AlignLockAxis;
 	// COLLISION
 	public var elasticity : Float = 1.0;
 	public var killOnCollision : Float = 0.0;
@@ -599,6 +568,7 @@ class EmitterObject extends h3d.scene.Object {
 	static var tmpEmitterQuat = new h3d.Quat();
 	static var tmpOffset = new h3d.Vector();
 	static var tmpVec = new h3d.Vector();
+	static var tmpVec2 = new h3d.Vector();
 	static var tmpDir = new h3d.Vector();
 	static var tmpScale = new h3d.Vector();
 	static var tmpMat = new h3d.Matrix();
@@ -811,6 +781,33 @@ class EmitterObject extends h3d.scene.Object {
 		return p1.distToCam < p2.distToCam ? 1 : -1;
 	}
 
+	// No-alloc version of h3d.Matrix.getEulerAngles()
+	static function getEulerAngles(m: h3d.Matrix) {
+		var s = m.getScale(tmpVec);
+		m.prependScale(1.0 / s.x, 1.0 / s.y, 1.0 / s.z);
+		var cy = hxd.Math.sqrt(m._11 * m._11 + m._12 * m._12);
+		if(cy > 0.01) {
+			tmpVec.set(
+				hxd.Math.atan2(m._23, m._33),
+				hxd.Math.atan2(-m._13, cy),
+				hxd.Math.atan2(m._12, m._11));
+
+			tmpVec2.set(
+				hxd.Math.atan2(-m._23, -m._33),
+				hxd.Math.atan2(-m._13, -cy),
+				hxd.Math.atan2(-m._12, -m._11));
+
+			return tmpVec.lengthSq() < tmpVec2.lengthSq() ? tmpVec : tmpVec2;
+		}
+		else {
+			tmpVec.set(
+				hxd.Math.atan2(-m._32, m._22),
+				hxd.Math.atan2(-m._13, cy),
+				0.0);
+			return tmpVec;
+		}
+	}
+
 	function tick( dt : Float, full=true) {
 
 		// Auto remove of sub emitters
@@ -830,7 +827,7 @@ class EmitterObject extends h3d.scene.Object {
 		if( parent != null ) {
 			invTransform.load(parent.getInvPos());
 
-			if(alignMode == Screen) {
+			if(alignMode == Screen || alignMode == Axis) {
 				var cam = getScene().camera;
 				tmpMat.load(cam.mcam);
 				tmpMat.invert();
@@ -842,8 +839,20 @@ class EmitterObject extends h3d.scene.Object {
 					tmpMat2.invert();
 					tmpMat.multiply(tmpMat, tmpMat2);
 				}
-				screenQuat.initRotateMatrix(tmpMat);
-				tmpQuat.initRotateAxis(1,0,0,Math.PI);  // Flip Y axis so Y is pointing down
+				
+				if(alignMode == Axis) {
+					var a = getEulerAngles(tmpMat);
+					switch alignLockAxis {
+						case X: screenQuat.initRotation(a.x, 0, 0);
+						case Y: screenQuat.initRotation(0, a.y, 0);
+						case Z: screenQuat.initRotation(0, 0, a.z);
+					}
+				}
+				else
+					screenQuat.initRotateMatrix(tmpMat);
+
+				if(alignMode == Screen)
+					tmpQuat.initRotateAxis(1,0,0,Math.PI);  // Flip Y axis so Y is pointing down
 				screenQuat.multiply(screenQuat, tmpQuat);
 			}
 
@@ -1080,8 +1089,7 @@ class Emitter extends Object3D {
 		{ name: "emitSurface", t: PBool, def: false, disp: "Surface", groupName : "Emit Shape" },
 		// ALIGNMENT
 		{ name: "alignMode", t: PEnum(AlignMode), def: AlignMode.None, disp: "Mode", groupName : "Alignment" },
-		{ name: "alignAxis", t: PVec(3, -1.0, 1.0), def: [0.,0.,0.], disp: "Axis", groupName : "Alignment" },
-		{ name: "alignLockAxis", t: PVec(3, -1.0, 1.0), def: [0.,0.,0.], disp: "Lock Axis", groupName : "Alignment" },
+		{ name: "alignLockAxis", t: PEnum(AlignLockAxis), def: AlignLockAxis.Z, disp: "Lock Axis", groupName : "Alignment" },
 		// COLOR
 		{ name: "useRandomColor", t: PBool, def: false, disp: "Random Color", groupName : "Color" },
 		{ name: "randomColor1", t: PVec(4), disp: "Color 1", def : [0,0,0,1], groupName : "Color" },
@@ -1366,7 +1374,6 @@ class Emitter extends Object3D {
 		emitterObj.emitSurface 			= 	getParamVal("emitSurface");
 		// ALIGNMENT
 		emitterObj.alignMode 			= 	getParamVal("alignMode");
-		emitterObj.alignAxis 			= 	getParamVal("alignAxis");
 		emitterObj.alignLockAxis 		= 	getParamVal("alignLockAxis");
 		// ANIMATION
 		emitterObj.spriteSheet 			= 	getParamVal("spriteSheet");
@@ -1451,7 +1458,6 @@ class Emitter extends Object3D {
 		var alignMode : AlignMode = getParamVal("alignMode");
 		switch(alignMode) {
 			case None | Screen:
-				removeParam("alignAxis");
 				removeParam("alignLockAxis");
 			default:
 		}
