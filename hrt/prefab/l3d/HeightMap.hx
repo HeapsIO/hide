@@ -290,6 +290,8 @@ class HeightMapMesh extends h3d.scene.Object {
 
 	override function sync(ctx:h3d.scene.RenderContext) {
 		super.sync(ctx);
+		if( ctx.debugCulling )
+			return;
 
 		if( hmap.sizeX == 0 && hmap.sizeY == 0 && !hmap.autoSize ) {
 			checkTile(ctx,0,0);
