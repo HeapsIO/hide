@@ -116,9 +116,7 @@ class Configurator extends RendererFX {
 		var obj = r.ctx.scene.getObjectByName(id);
 		if ( obj == null)
 			throw "Missing object #"+id;
-		#if !editor
 		particlesCache.set(id, { v : obj });
-		#end
 		return obj;
 	}
 
@@ -131,9 +129,7 @@ class Configurator extends RendererFX {
 			if( opt ) return null;
 			throw "Missing prefab #"+id;
 		}
-		#if !editor
 		prefabCache.set(id, { r : p });
-		#end
 		return p;
 	}
 
@@ -170,6 +166,7 @@ class Configurator extends RendererFX {
 		#if !hscript
 		throw "Requires -lib hscript";
 		#else
+		if( !checkEnabled() ) return;
 		if( step == MainDraw ) {
 			var errorMessage = null;
 			if( parsedExpr == null ) {
@@ -209,8 +206,16 @@ class Configurator extends RendererFX {
 
 	#if hscript
 	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
+		if( !checkEnabled() )
+			return;
 		if( step == Overlay )
 		 	interp.restoreVars();
+		#if editor
+		if( r.ctx.frame % 60 == 0 ) {
+			particlesCache = new Map();
+			prefabCache = new Map();
+		}
+		#end
 	}
 	#end
 
@@ -275,6 +280,7 @@ class Configurator extends RendererFX {
 			parsedExpr = null;
 			interp = null;
 		};
+		super.edit(ectx);
 	}
 	#end
 
