@@ -424,21 +424,21 @@ class Prefab extends FileView {
 	}
 
 	function updateStats() {
-		if( !statusText.visible )
-			return;
-		var memStats = scene.engine.mem.stats();
-		@:privateAccess
-		var lines : Array<String> = [
-			'Scene objects: ${scene.s3d.getObjectsCount()}',
-			'Interactives: ' + sceneEditor.interactives.count(),
-			'Contexts: ' + sceneEditor.context.shared.contexts.count(),
-			'Triangles: ${scene.engine.drawTriangles}',
-			'Buffers: ${memStats.bufferCount}',
-			'Textures: ${memStats.textureCount}',
-			'FPS: ${Math.round(scene.engine.realFps)}',
-			'Draw Calls: ${scene.engine.drawCalls}',
-		];
-		statusText.text = lines.join("\n");
+		if( statusText.visible ) {
+			var memStats = scene.engine.mem.stats();
+			@:privateAccess
+			var lines : Array<String> = [
+				'Scene objects: ${scene.s3d.getObjectsCount()}',
+				'Interactives: ' + sceneEditor.interactives.count(),
+				'Contexts: ' + sceneEditor.context.shared.contexts.count(),
+				'Triangles: ${scene.engine.drawTriangles}',
+				'Buffers: ${memStats.bufferCount}',
+				'Textures: ${memStats.textureCount}',
+				'FPS: ${Math.round(scene.engine.realFps)}',
+				'Draw Calls: ${scene.engine.drawCalls}',
+			];
+			statusText.text = lines.join("\n");
+		}
 		haxe.Timer.delay(function() sceneEditor.event.wait(0.5, updateStats), 0);
 	}
 
