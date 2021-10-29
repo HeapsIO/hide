@@ -2534,24 +2534,32 @@ class SceneEditor {
 		return 0.;
 	}
 
+	var groundPrefabsCache : Array<PrefabElement> = null;
+	var groundPrefabsCacheTime : Float = -1e9;
+
 	function getGroundPrefabs() : Array<PrefabElement> {
-		function getAll(data:PrefabElement) {
-			var all = data.findAll((p) -> p);
-			for( a in all.copy() ) {
-				var r = Std.downcast(a, hrt.prefab.Reference);
-				if( r != null ) {
-					var sub = @:privateAccess r.ref;
-					if( sub != null ) all = all.concat(getAll(sub));
+		var now = haxe.Timer.stamp();
+		if( now - groundPrefabsCacheTime > 5 ) {
+			function getAll(data:PrefabElement) {
+				var all = data.findAll((p) -> p);
+				for( a in all.copy() ) {
+					var r = Std.downcast(a, hrt.prefab.Reference);
+					if( r != null ) {
+						var sub = @:privateAccess r.ref;
+						if( sub != null ) all = all.concat(getAll(sub));
+					}
 				}
+				return all;
 			}
-			return all;
+			var all = getAll(sceneData);
+			var grounds = [for( p in all ) if( p.getHideProps().isGround ) p];
+			var results = [];
+			for( g in grounds )
+				results = results.concat(getAll(g));
+			groundPrefabsCache = results;
+			groundPrefabsCacheTime = now;
 		}
-		var all = getAll(sceneData);
-		var grounds = [for( p in all ) if( p.getHideProps().isGround ) p];
-		var results = [];
-		for( g in grounds )
-			results = results.concat(getAll(g));
-		return results;
+		return groundPrefabsCache.copy();
 	}
 
 	public function projectToGround(ray: h3d.col.Ray, ?paintOn : hrt.prefab.Prefab ) {
