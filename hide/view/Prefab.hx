@@ -424,6 +424,8 @@ class Prefab extends FileView {
 	}
 
 	function updateStats() {
+		if( !statusText.visible )
+			return;
 		var memStats = scene.engine.mem.stats();
 		@:privateAccess
 		var lines : Array<String> = [
