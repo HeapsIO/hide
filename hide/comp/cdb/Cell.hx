@@ -407,14 +407,20 @@ class Cell extends Component {
 		code = code.split("\n").join("<br/>");
 		code = code.split("\t").join("&nbsp;&nbsp;&nbsp;&nbsp;");
 		// typecheck
-		var error = new ScriptEditor.ScriptChecker(editor.config, "cdb."+getDocumentName()+(c == this.column ? "" : "."+ c.name),
+		var chk = new ScriptEditor.ScriptChecker(editor.config, "cdb."+getDocumentName()+(c == this.column ? "" : "."+ c.name),
 			[
 				"cdb."+table.sheet.name => line.obj,
 				"cdb.objID" => objID,
 				"cdb.groupID" => line.getGroupID(),
 			]
-		).check(ecode);
-		if( error != null )
+		);
+		var cache = chk.getCache(ecode);
+		var error : Null<Bool> = cache.get(cache.signature);
+		if( error == null ) {
+			error = chk.check(ecode) != null;
+			cache.set(cache.signature, error);
+		}
+		if( error )
 			return '<span class="error">'+code+'</span>';
 		// strings
 		code = ~/("[^"]*")/g.replace(code,'<span class="str">$1</span>');
@@ -470,12 +476,16 @@ class Cell extends Component {
 			zoom="$zoom"
 			style="width : ${Std.int(width * zoom)}px; height : ${Std.int(height * zoom)}px; opacity:0; $bg $inl"
 		></div>';
+		HAS_TILE_LOADING = true;
 		html += '<script>hide.comp.cdb.Cell.startTileLoading()</script>';
 		watchFile(path);
 		return html;
 	}
 
+	static var HAS_TILE_LOADING = false;
 	static function startTileLoading() {
+		if( !HAS_TILE_LOADING ) return;
+		HAS_TILE_LOADING = false;
 		var tiles = new Element(".tile.toload");
 		if( tiles.length == 0 ) return;
 		tiles.removeClass("toload");

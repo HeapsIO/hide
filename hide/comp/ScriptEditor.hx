@@ -10,10 +10,46 @@ typedef GlobalsDef = haxe.DynamicAccess<{
 	var cdbEnums : Array<String>;
 }>;
 
+class ScriptCache {
+
+	var content : Map<String,Bool> = [];
+	var configSign : String;
+	public var signature : String;
+
+	public function new(configSign:String) {
+		this.configSign = configSign;
+		var key = js.Browser.window.localStorage.getItem("script_cache_key");
+		if( key == configSign ) {
+			var values = js.Browser.window.localStorage.getItem("script_cache_val").split(";");
+			for( v in values )
+				content.set(v,true);
+		}
+	}
+
+	public function get( hash : String ) {
+		return content.get(hash);
+	}
+
+	public function set( hash : String, b : Bool ) {
+		if( content.get(hash) == b ) return;
+		content.set(hash, b);
+		var all = [];
+		for( key => b in content ) {
+			if( b )
+				all.push(key);
+		}
+		js.Browser.window.localStorage.setItem("script_cache_key", configSign);
+		js.Browser.window.localStorage.setItem("script_cache_val", all.join(";"));
+	}
+
+}
+
 class ScriptChecker {
 
 	static var TYPES_SAVE = new Map();
 	static var ERROR_SAVE = new Map();
+	static var CONFIG_HASH = null;
+	static var CHECK_CACHE : ScriptCache;
 	static var TYPE_CHECK_HOOKS : Array<ScriptChecker->Void> = [];
 	var ide : hide.Ide;
 	var apiFiles : Array<String>;
@@ -23,6 +59,7 @@ class ScriptChecker {
 	public var constants : Map<String,Dynamic>;
 	public var evalTo : String;
 	public var checker(default,null) : hscript.Checker;
+	var initDone = false;
 
 	public function new( config : hide.Config, documentName : String, ?constants : Map<String,Dynamic> ) {
 		this.config = config;
@@ -33,22 +70,40 @@ class ScriptChecker {
 		reload();
 	}
 
+	function hashString( str : String ) {
+		return haxe.crypto.Md5.encode(str);
+	}
+
 	public function reload() {
 		checker = new hscript.Checker();
 		checker.allowAsync = true;
+		initDone = false;
 
+		var hashes = [];
 		if( apiFiles != null && apiFiles.length >= 0 ) {
 			var types = TYPES_SAVE.get(apiFiles.join(";"));
 			if( types == null ) {
 				types = new hscript.Checker.CheckerTypes();
 				for( f in apiFiles ) {
-					var content = try sys.io.File.getContent(ide.getPath(f)) catch( e : Dynamic ) { error(""+e); continue; };
+					var path = ide.getPath(f);
+					var content = try sys.io.File.getContent(path) catch( e : Dynamic ) { error(""+e); continue; };
+					hashes.push(path+":"+sys.FileSystem.stat(path).mtime.getTime());
 					types.addXmlApi(Xml.parse(content).firstElement());
+					ide.fileWatcher.register(f, reloadApi);
 				}
 				TYPES_SAVE.set(apiFiles.join(";"), types);
 			}
 			checker.types = types;
 		}
+		if( CONFIG_HASH == null ) {
+			hashes.push(haxe.Json.stringify(config.get("script.api")));
+			CONFIG_HASH = hashString(hashes.join(","));
+		}
+	}
+
+	function init() {
+		if( initDone ) return;
+		initDone = true;
 
 		var parts = documentName.split(".");
 		var apis = [];
@@ -258,12 +313,20 @@ class ScriptChecker {
 		parser.resumeErrors = true;
 		var expr = parser.parseString(script,""); // should not error
 		try {
+			init();
 			var et = checker.check(expr,null,true);
 			return null;
 		} catch( e : hscript.Checker.Completion ) {
 			// ignore
 			return e.t;
 		}
+	}
+
+	public function getCache( code : String ) {
+		if( CHECK_CACHE == null )
+			CHECK_CACHE = new ScriptCache(CONFIG_HASH);
+		CHECK_CACHE.signature = hashString(code+":"+documentName+":"+haxe.Json.stringify(constants));
+		return CHECK_CACHE;
 	}
 
 	public function check( script : String, checkTypes = true ) {
@@ -285,6 +348,7 @@ class ScriptChecker {
 			}
 
 			if( checkTypes ) {
+				init();
 				var et = checker.check(expr);
 				if( evalTo != null ) {
 					var t = checker.types.resolve(evalTo);
@@ -299,6 +363,12 @@ class ScriptChecker {
 		} catch( e : hscript.Expr.Error ) {
 			return e;
 		}
+	}
+
+	public static function reloadApi() {
+		TYPES_SAVE = new Map();
+		CONFIG_HASH = null;
+		CHECK_CACHE = null;
 	}
 
 }
@@ -331,7 +401,7 @@ class ScriptEditor extends CodeEditor {
 			if( files != null ) {
 				for( f in files )
 					ide.fileWatcher.register(f, function() {
-						@:privateAccess ScriptChecker.TYPES_SAVE = [];
+						ScriptChecker.reloadApi();
 						haxe.Timer.delay(function() { try checker.reload() catch( e : Dynamic ) {}; doCheckScript(); }, 100);
 					}, root);
 			}
