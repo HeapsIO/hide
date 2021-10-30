@@ -72,14 +72,15 @@ class ContextShared {
 		return ret;
 	}
 
-	public function find<T:hrt.prefab.Prefab>( cl : Class<T>, ?name, ?references ) : T {
-		for( p in contexts.keys() ) {
-			var v = Std.downcast(p,cl);
-			if( v != null && (name == null || v.name == name) ) return v;
-		}
+	public function find<T:hrt.prefab.Prefab>( cur : Prefab, cl : Class<T>, ?name, ?references ) : T {
+		var root = cur;
+		while( root.parent != null ) root = root.parent;
+		var p = root.getOpt(cl, name, true);
+		if( p != null )
+			return p;
 		if( references ) {
-			for( ref in refsContexts ) {
-				var v = ref.find(cl, name, true);
+			for( p => ref in refsContexts ) {
+				var v = ref.find(p, cl, name, true);
 				if( v != null ) return v;
 			}
 		}
