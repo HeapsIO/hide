@@ -150,7 +150,10 @@ class Cell extends Component {
 	public function refresh(withSubtable = false) {
 		currentValue = Reflect.field(line.obj, column.name);
 		var html = valueHtml(column, value, line.table.getRealSheet(), line.obj, []);
-		if( html == "&nbsp;" ) element.text(" ") else if( !R_HTML.match(html) ) element.text(html) else element.html(html);
+		if( !R_HTML.match(html) )
+			element[0].textContent = html;
+		else
+			element[0].innerHTML = html;
 		updateClasses();
 		var subTable = line.subTable;
 		if( withSubtable && subTable != null && subTable.cell == this) {
@@ -251,7 +254,7 @@ class Cell extends Component {
 	function valueHtml( c : cdb.Data.Column, v : Dynamic, sheet : cdb.Sheet, obj : Dynamic, scope : Array<{ s : cdb.Sheet, obj : Dynamic }> ) : String {
 		if( v == null ) {
 			if( c.opt )
-				return "&nbsp;";
+				return " ";
 			return '<span class="error">#NULL</span>';
 		}
 		return switch( c.type ) {
@@ -270,9 +273,9 @@ class Cell extends Component {
 				editor.isUniqueID(sheet,obj,id) ? v : '<span class="error">#DUP($v)</span>';
 			}
 		case TString if( c.kind == Script ):  // wrap content in div because td cannot have max-height
-			v == "" ? "&nbsp;" : '<div class="script">${colorizeScript(c,v, sheet.idCol == null ? null : Reflect.field(obj, sheet.idCol.name))}</div>';
+			v == "" ? " " : '<div class="script">${colorizeScript(c,v, sheet.idCol == null ? null : Reflect.field(obj, sheet.idCol.name))}</div>';
 		case TString, TLayer(_):
-			v == "" ? "&nbsp;" : StringTools.htmlEscape(v).split("\n").join("<br/>");
+			v == "" ? " " : StringTools.htmlEscape(v).split("\n").join("<br/>");
 		case TRef(sname):
 			if( v == "" )
 				'<span class="error">#MISSING</span>';
@@ -297,7 +300,7 @@ class Cell extends Component {
 				for( c in ps.columns ) {
 					if( !canViewSubColumn(ps, c.name) ) continue;
 					var h = valueHtml(c, Reflect.field(v, c.name), ps, v, scope);
-					if( h != "" && h != "&nbsp;" )
+					if( h != "" && h != " " )
 						vals.push(h);
 				}
 				inline function char(s) return '<span class="minor">$s</span>';
