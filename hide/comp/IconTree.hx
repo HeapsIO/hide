@@ -254,6 +254,8 @@ class IconTree<T:{}> extends Component {
 	}
 
 	public function getElement(e : T) : Element {
+		if( e == null )
+			return null;
 		var v = getRev(e);
 		if(v == null)
 			return null;
