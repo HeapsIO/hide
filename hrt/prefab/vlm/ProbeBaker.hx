@@ -34,6 +34,8 @@ class ProbeBaker {
 	var pixels : hxd.Pixels = null;
 	var prim : h3d.prim.Plane2D;
 
+	var emissive : Float = 1.0;
+
 	public function new(){
 		customCamera = new h3d.Camera();
 		customCamera.screenRatio = 1.0;
@@ -66,6 +68,10 @@ class ProbeBaker {
 		pbrRenderer.renderMode = LightProbe;
 		scene.camera = customCamera;
 
+		var renderProps : h3d.scene.pbr.Renderer.RenderProps = pbrRenderer.props;
+		var prevEmissive = renderProps.emissive;
+		renderProps.emissive = emissive * prevEmissive;
+
 		// Bake a Probe
 		var engine = h3d.Engine.getCurrent();
 		for( f in 0 ... 6 ) {
@@ -81,6 +87,7 @@ class ProbeBaker {
 
 		scene.camera = prevCam;
 		pbrRenderer.renderMode = prevRenderMode;
+		@:privateAccess renderProps.emissive = prevEmissive;
 	}
 
 	function setupEnvMap( resolution : Int ) {

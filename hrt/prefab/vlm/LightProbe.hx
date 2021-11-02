@@ -187,6 +187,8 @@ class LightProbe extends Object3D {
 	// Capture Mode
 	@:s public var bounce : Int = 1;
 
+	@:s public var emissive : Float = 1.0;
+
 	// Shared
 	@:s public var power : Float = 1.0;
 	@:s public var sampleBits : Int = 12;
@@ -522,6 +524,7 @@ class LightProbe extends Object3D {
 		'<div class="group" name="Environment" >
 			<dt>Power</dt><dd><input type="range" min="0" max="10" field="power"/></dd>
 			<dt>Bounce</dt><dd><input type="range" min="1" max="3" step="1" field="bounce"/></dd>
+			<dt>Emissive</dt><dd><input type="range" min="0" max="1" field="emissive"/></dd>
 			<br>
 			<div align="center">
 				<input type="button" value="Bake" class="bake" />
@@ -701,6 +704,7 @@ class LightProbe extends Object3D {
 				}
 
 				var probeBaker = new ProbeBaker();
+				@:privateAccess probeBaker.emissive = emissive;
 				if( bounce > 1 ) {
 					var tmpTexture = new h3d.mat.Texture(captureSize, captureSize, [Cube, Target], RGBA32F);
 					var curCapture : h3d.mat.Texture = tmpTexture;
