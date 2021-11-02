@@ -476,16 +476,12 @@ class Cell extends Component {
 			zoom="$zoom"
 			style="width : ${Std.int(width * zoom)}px; height : ${Std.int(height * zoom)}px; opacity:0; $bg $inl"
 		></div>';
-		HAS_TILE_LOADING = true;
 		html += '<script>hide.comp.cdb.Cell.startTileLoading()</script>';
 		watchFile(path);
 		return html;
 	}
 
-	static var HAS_TILE_LOADING = false;
 	static function startTileLoading() {
-		if( !HAS_TILE_LOADING ) return;
-		HAS_TILE_LOADING = false;
 		var tiles = new Element(".tile.toload");
 		if( tiles.length == 0 ) return;
 		tiles.removeClass("toload");
