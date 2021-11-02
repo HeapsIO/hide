@@ -208,13 +208,13 @@ class IconTree<T:{}> extends Component {
 			for(id in nodes) {
 				var item = getVal(id);
 				var el = getElement(item);
-				if( item != null ) applyStyle(item, el);
+				if( item != null && el != null ) applyStyle(item, el);
 			}
 		});
 		element.on("rename_node.jstree", function(e, data) {
 			var item = getVal(data.node.id);
 			var el = getElement(item);
-			if( item != null ) applyStyle(item, el);
+			if( item != null && && el != null ) applyStyle(item, el);
 		});
 		element.on("after_open.jstree", function(event, data) {
 			var lis = new Element(event.target).find("li");
