@@ -152,6 +152,8 @@ class Cell extends Component {
 		var html = valueHtml(column, value, line.table.getRealSheet(), line.obj, []);
 		if( !R_HTML.match(html) )
 			element[0].textContent = html;
+		else if( html.indexOf('<script') >= 0 )
+			element.html(html);
 		else
 			element[0].innerHTML = html;
 		updateClasses();
