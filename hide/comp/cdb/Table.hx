@@ -18,6 +18,8 @@ class Table extends Component {
 	public var columns : Array<cdb.Data.Column>;
 	public var view : cdb.DiffFile.SheetView;
 
+	public var nestedIndex : Int = 0;
+
 	public function new(editor, sheet, root, mode) {
 		super(null,root);
 		this.displayMode = mode;

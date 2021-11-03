@@ -17,8 +17,8 @@ class SubTable extends Table {
 		line.subTable = this;
 
 		var mode : Table.DisplayMode = switch( cell.column.type ) {
-		case TProperties: Properties;
-		default: Table;
+			case TProperties: Properties;
+			default: Table;
 		};
 
 		insertedTR = new Element("<tr>").addClass(cell.column.type == TProperties ? "props" : "list");
@@ -34,7 +34,9 @@ class SubTable extends Table {
 			if( remain > 0 )
 				new Element("<td>").attr("colspan", "" + remain).appendTo(insertedTR);
 		} else {
-			new Element("<td>").appendTo(insertedTR);
+			new Element("<td>")
+				.appendTo(insertedTR)
+				.toggleClass("sublist-pad-" + parent.nestedIndex);
 			group = new Element("<td>").attr("colspan",""+cell.table.columns.length).appendTo(insertedTR);
 		}
 		slider = new Element("<div>").appendTo(group);
@@ -48,6 +50,8 @@ class SubTable extends Table {
 		cell.element.addClass("parent-sub-table");
 
 		super(editor, sheet, root, mode);
+
+		this.nestedIndex = parent.nestedIndex + 1;
 	}
 
 	override function getRealSheet() {
