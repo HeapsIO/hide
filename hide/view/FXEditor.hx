@@ -1121,7 +1121,7 @@ class FXEditor extends FileView {
 				height = 100;
 			if(height < minHeight) height = minHeight;
 			curveContainer.height(height);
-			curve.maxTime = data.duration;
+			curve.maxTime = data.duration == 0 ? 5000 : data.duration;
 			var curveEdit = new hide.comp.CurveEditor(this.undo, curveContainer);
 			curveEdit.saveDisplayKey = dispKey;
 			curveEdit.lockViewX = true;
