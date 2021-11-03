@@ -1228,6 +1228,8 @@ class SceneEditor {
 	}
 
 	public function applyTreeStyle(p: PrefabElement, el: Element, ?pname: String) {
+		if( el == null )
+			return;
 		var obj3d  = p.to(Object3D);
 		el.toggleClass("disabled", !p.enabled);
 		var aEl = el.find("a").first();
