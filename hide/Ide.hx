@@ -1083,6 +1083,26 @@ class Ide {
 				if( f != null ) sys.io.File.saveContent(getPath(f), xml);
 			});
 		});
+		db.find(".dbImport").click(function(_) {
+			chooseFile(["xml"], function(file) {
+				hide.comp.cdb.DataFiles.load();
+				var lang = new cdb.Lang(@:privateAccess database.data);
+				var xml = sys.io.File.getContent(getPath(file));
+				lang.apply(xml);
+				saveDatabase(true);
+
+				for( file in @:privateAccess hide.comp.cdb.DataFiles.watching.keys() ) {
+					if( sys.FileSystem.isDirectory(getPath(file)) )
+						continue;
+					var p = loadPrefab(file);
+					lang.applyPrefab(p);
+					savePrefab(file, p);
+				}
+
+				hide.comp.cdb.Editor.refreshAll();
+				message("Import completed");
+			});
+		});
 		function setDiff(f) {
 			databaseDiff = f;
 			config.user.set("cdb.databaseDiff", f);
