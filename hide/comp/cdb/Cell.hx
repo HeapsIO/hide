@@ -565,6 +565,10 @@ class Cell extends Component {
 				i.css({ height : Math.max(25,Math.ceil(textHeight - 1)) + "px" });
 			}
 			i.val(str);
+			function closeEdit() {
+				i.off();
+				this.closeEdit();
+			}
 			i.keydown(function(e) {
 				switch( e.keyCode ) {
 				case K.ESCAPE:
