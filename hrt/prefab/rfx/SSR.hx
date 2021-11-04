@@ -24,10 +24,16 @@ class SSRShader extends hxsl.Shader {
 		@param var stepsSecondPass : Int;
 		@param var thickness : Float;
 
+		var startRay : Vec2;
+
 		var projectedPosition:Vec4;
 		var pixelColor:Vec4;
 		var transformedNormal : Vec3;
 		var transformedPosition : Vec3;
+
+		function rand(co : Vec2) : Float {
+			return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+		}
 
 		function reflectedRay(ray : Vec3, normal : Vec3) : Vec3 {
 			return ray - 2.0 * dot(ray, normal) * normal;
@@ -35,10 +41,10 @@ class SSRShader extends hxsl.Shader {
 
 		function fragment() {
 
-			var startRay = projectedPosition.xy / projectedPosition.w;
+			startRay = projectedPosition.xy / projectedPosition.w;
 
 			var camDir = (transformedPosition - camera.position).normalize();
-			var reflectedRay = camDir - 2.0 * dot(camDir, transformedNormal) * transformedNormal;
+			var reflectedRay = reflectedRay(camDir, transformedNormal);
 
 			var curPosWS = transformedPosition + reflectedRay * maxRayDistance / stepsFirstPass;
 			var hitFirstPass = false;
@@ -60,6 +66,9 @@ class SSRShader extends hxsl.Shader {
 				}
 			}
 
+			if (hitFirstPass == false)
+				discard;
+
 			curPosWS -= reflectedRay * maxRayDistance / stepsFirstPass / stepsSecondPass;
 			var hitSecondPass = false;
 			var curPos = vec2(0.0, 0.0);
@@ -80,10 +89,9 @@ class SSRShader extends hxsl.Shader {
 				}
 			}
 
-			var fragmentColor = vec3(0.0, 0.0, 0.0);
+			var fragmentColor = vec3(0.0);
 			var alpha = 0.0;
 			if (hitFirstPass && hitSecondPass) {
-
 				fragmentColor = ldrMap.get(screenToUv(curPos)).rgb;
 				alpha = 1.0 - saturate(((curPosWS - transformedPosition).length() - startFadeDistance) / (maxRayDistance - startFadeDistance));
 				alpha *= intensity;
@@ -94,9 +102,32 @@ class SSRShader extends hxsl.Shader {
 	}
 }
 
+class ApplySSRShader extends h3d.shader.ScreenShader {
+	static var SRC = {
+
+		@param var ssrTexture : Sampler2D;
+
+		@param var colorMul : Float;
+
+		function fragment() {
+			var ssr = ssrTexture.get(calculatedUV).rgba;
+			var reflectedUV = ssr.rg;
+			var alpha = ssr.a;
+
+			pixelColor = ssrTexture.get(calculatedUV).rgba;
+		}
+
+	}
+}
+
 class SSR extends RendererFX {
 
 	public var ssrShader : SSRShader;
+	public var applySSRPass : h3d.pass.ScreenFx<ApplySSRShader>;
+	var applySSRShader : ApplySSRShader;
+
+	var blurPass = new h3d.pass.Blur();
+	var ssr : h3d.mat.Texture;
 
 	@:s public var intensity : Float = 1.;
 	@:s public var colorMul : Float = 1.;
@@ -106,18 +137,25 @@ class SSR extends RendererFX {
 	@:s public var stepsFirstPass : Int = 10;
 	@:s public var stepsSecondPass : Int = 10;
 	@:s public var thickness : Float = 1.0;
+	@:s public var blurRadius : Float = 1.0;
+	@:s public var randomPower : Float = 0.0;
 
 	function new(?parent) {
 		super(parent);
 
 		ssrShader = new SSRShader();
+		applySSRShader = new ApplySSRShader();
+		applySSRPass = new h3d.pass.ScreenFx(applySSRShader);
+		applySSRPass.pass.setBlendMode(Alpha);
+		applySSRPass.pass.depthTest = Always;
 	}
 
 	override function end( r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {
-		if( step == Forward ) {
+		if( step == Decals) {
 			r.mark("SSR");
 
-			ssrShader.ldrMap = r.ctx.getGlobal("ldrMap");
+			var ldrMap = r.ctx.getGlobal("ldrMap");
+			ssrShader.ldrMap = ldrMap;
 
 			ssrShader.colorMul = colorMul;
 			ssrShader.intensity = intensity;
@@ -135,7 +173,21 @@ class SSR extends RendererFX {
 				it = it.next;
 			}
 
+			ssr = r.allocTarget("ssr", true, 1.0, RGBA);
+			ssr.clear(0, 0);
+			r.ctx.engine.pushTarget(ssr);
 			r.draw("ssr");
+			r.ctx.engine.popTarget();
+
+			blurPass.radius = blurRadius;
+			blurPass.apply(r.ctx, ssr);
+		}
+
+		if( step == Forward ) {
+			r.mark("SSRApply");
+			applySSRShader.colorMul = colorMul;
+			applySSRShader.ssrTexture = ssr;
+			applySSRPass.render();
 		}
 	}
 
@@ -151,6 +203,7 @@ class SSR extends RendererFX {
 				<dt>Steps first pass</dt><dd><input type="range" min="1" max="30" step="1" field="stepsFirstPass"/></dd>
 				<dt>Steps second pass</dt><dd><input type="range" min="1" max="20" step="1" field="stepsSecondPass"/></dd>
 				<dt>Thickness</dt><dd><input type="range" min="0" max="1" field="thickness"/></dd>
+				<dt>Blur radius</dt><dd><input type="range" min="0" max="5" field="blurRadius"/></dd>
 			</dl>
 		</div>
 		'),this);
