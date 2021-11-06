@@ -6,18 +6,26 @@ private class ChannelSelectShader extends hxsl.Shader {
 
 		@param var texture : Sampler2D;
 		@param var textureCube : SamplerCube;
+		@param var textureArray : Sampler2DArray;
+		@param var layer : Float;
 		@param var mipLod : Float;
 		@param var exposure : Float;
 
 		@const var channels : Int;
 		@const var isCube : Bool;
+		@const var isArray : Bool;
 
 		var pixelColor : Vec4;
 		var calculatedUV : Vec2;
 		var transformedNormal : Vec3;
 
 		function fragment() {
-			pixelColor = isCube ? textureCube.getLod(transformedNormal, mipLod) : texture.getLod(calculatedUV, mipLod);
+			if( isCube )
+				pixelColor = textureCube.getLod(transformedNormal, mipLod);
+			else if( isArray )
+				pixelColor = textureArray.getLod(vec3(calculatedUV, layer), mipLod);
+			else
+				pixelColor = texture.getLod(calculatedUV, mipLod);
 			pixelColor.rgb *= pow(2, exposure);
 			switch( channels ) {
 			case 0, 15:
@@ -70,7 +78,12 @@ class Image extends FileView {
 				if( !t.flags.has(Cube) ) {
 					bmp = new h2d.Bitmap(h2d.Tile.fromTexture(t), scene.s2d);
 					bmp.addShader(channelSelect);
-					channelSelect.texture = t;
+					if( t.layerCount > 1 ) {
+						channelSelect.isArray = true;
+						channelSelect.textureArray = cast(t, h3d.mat.TextureArray);
+						tools.addRange("Layer", function(f) channelSelect.layer = f, 0, 0, t.layerCount-1, 1);
+					} else
+						channelSelect.texture = t;
 					new hide.view.l3d.CameraController2D(scene.s2d);
 				} else {
 					var r = new h3d.scene.fwd.Renderer();
