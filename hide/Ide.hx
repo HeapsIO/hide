@@ -573,8 +573,8 @@ class Ide {
 			js.Browser.alert(e);
 			return;
 		}
-		var title = config.current.get("hide.windowTitle");
-		window.title = title != null ? title : ((isCDB ? "CastleDB" : "HIDE") + " - " + dir);
+
+		setProgress();
 		shaderLoader = new hide.tools.ShaderLoader();
 		hxsl.Cache.clear();
 
@@ -958,6 +958,15 @@ class Ide {
 		browseRec("");
 	}
 
+	public function setProgress( ?text : String ) {
+		if( text != null ) {
+			window.title = text;
+			return;
+		}
+		var title = config.current.get("hide.windowTitle");
+		window.title = title != null ? title : ((isCDB ? "CastleDB" : "HIDE") + " - " + projectDir);
+	}
+
 	public function initMenu() {
 
 		if( subView != null ) return;
@@ -1004,16 +1013,15 @@ class Ide {
 			var lastTime = haxe.Timer.stamp();
 			var all = [""];
 			var done = 0;
-			var prevTitle = window.title;
 			function loop() {
 				while( true ) {
 					if( all.length == 0 ) {
-						window.title = prevTitle;
+						setProgress();
 						return;
 					}
 					if( haxe.Timer.stamp() - lastTime > 0.1 ) {
 						lastTime = haxe.Timer.stamp();
-						window.title = '(${Std.int(done*1000/(done+all.length))/10}%) '+all[0];
+						setProgress('(${Std.int(done*1000/(done+all.length))/10}%) '+all[0]);
 						haxe.Timer.delay(loop,0);
 						return;
 					}
