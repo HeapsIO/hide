@@ -131,15 +131,19 @@ class ContextShared {
 		return try hxd.res.Loader.currentInstance.dir(path) catch( e : hxd.res.NotFound ) null;
 	}
 
-	public function loadPrefabDat(file : String, ext : String, p : String) : hxd.res.Any {
-		var datPath = new haxe.io.Path(currentPath);
-		datPath.ext = "dat";
-		var path = new haxe.io.Path(datPath.toString() + "/" + p + "/" + file);
-		path.ext = ext;
-		return try hxd.res.Loader.currentInstance.load(path.toString()) catch( e : hxd.res.NotFound ) null;
+	public function loadPrefabDat(file : String, ext : String, prefab : String) : hxd.res.Any {
+		return try hxd.res.Loader.currentInstance.load(getPrefabDatPath(file,ext,prefab)) catch( e : hxd.res.NotFound ) null;
 	}
 
-	public function savePrefabDat(file : String, ext : String, p : String, bytes : haxe.io.Bytes ) {
+	public function getPrefabDatPath(file : String, ext : String, prefab : String ) {
+		var datPath = new haxe.io.Path(currentPath);
+		datPath.ext = "dat";
+		var path = new haxe.io.Path(datPath.toString() + "/" + prefab + "/" + file);
+		path.ext = ext;
+		return path.toString();
+	}
+
+	public function savePrefabDat(file : String, ext : String, prefab : String, bytes : haxe.io.Bytes ) {
 		throw "Not implemented";
 	}
 
