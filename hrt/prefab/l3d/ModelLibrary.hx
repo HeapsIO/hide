@@ -127,6 +127,11 @@ class ModelLibrary extends Prefab {
 		var materialSources = new Map();
 		var hasNormal = false, hasSpec = false;
 
+		var whiteDefault = new h3d.mat.Texture(16,16);
+		whiteDefault.setName("white");
+		whiteDefault.clear(-1);
+		var whiteDefaultBytes = whiteDefault.capturePixels().toPNG();
+
 		function update( text : String ) {
 			ide.setProgress(text);
 		}
@@ -137,11 +142,8 @@ class ModelLibrary extends Prefab {
 
 		function loadTexture( sourcePath, texPath, normalMap, specMap ) {
 
-			if( texPath == null )
-				throw "Missing texture";
-
-			var tex = scene.loadTexture(sourcePath, texPath);
-			if( tex == null ) throw "Missing texture "+sourcePath+"("+texPath+")";
+			var tex = texPath == null ? null : scene.loadTexture(sourcePath, texPath);
+			if( tex == null ) tex = whiteDefault;
 
 			var ntex = normalMap == null ? null : scene.loadTexture(sourcePath, normalMap);
 			var stex = specMap == null ? null : scene.loadTexture(sourcePath, specMap);
@@ -152,7 +154,7 @@ class ModelLibrary extends Prefab {
 				return t;
 			update("Packing "+key);
 			var texPath = tex.name;
-			var realTex = hxd.res.Any.fromBytes(tex.name, sys.io.File.getBytes(ide.getPath(tex.name))).toImage();
+			var realTex = hxd.res.Any.fromBytes(tex.name, tex == whiteDefault ? whiteDefaultBytes : sys.io.File.getBytes(ide.getPath(tex.name))).toImage();
 			var pos = null, posTex = null;
 			for( i in 0...textures.length ) {
 				var b = textures[textures.length - 1 - i];
@@ -176,7 +178,7 @@ class ModelLibrary extends Prefab {
 			function packSub(textures:Array<h3d.mat.BigTexture>, tex : h3d.mat.Texture, isSpec ) {
 				var t = textures[posTex.id];
 				if( t == null ) {
-					t = new h3d.mat.BigTexture(textures.length, btSize, 0);
+					t = new h3d.mat.BigTexture(textures.length, btSize, isSpec ? 0xFFFFFF : 0xFF8080FF);
 					textures[posTex.id] = t;
 				}
 				var inf = realTex.getInfo();
@@ -241,6 +243,8 @@ class ModelLibrary extends Prefab {
 		for( m in getAll(hrt.prefab.Model, true) ) {
 			if( models.exists(m.source) )
 				continue;
+			if( m.getParent(hrt.prefab.fx.FX) != null )
+				continue;
 			var sourcePath = m.source;
 			models.set(m.source, true);
 			var lib = null;
@@ -252,8 +256,6 @@ class ModelLibrary extends Prefab {
 				}
 			}
 			if( lib == null ) continue;
-
-			var libData = lib.getData();
 
 			function addMaterial( m : Material ) {
 				var m2 = new Material();
@@ -310,6 +312,7 @@ class ModelLibrary extends Prefab {
 
 			var offsetGeom = hmd.geometries.length;
 			var offsetModels = hmd.models.length;
+			var libData = lib.getData();
 
 			for( g in lib.header.geometries ) {
 
@@ -318,20 +321,16 @@ class ModelLibrary extends Prefab {
 					geomAll.vertexFormat = g.vertexFormat;
 				}
 
-				if( g.vertexStride != geomAll.vertexStride ) throw "ABORT : Mixed vertex stride";
-
 				var g2 = new Geometry();
 				g2.props = g.props;
 				g2.vertexCount = 0;
 				g2.vertexStride = g.vertexStride;
 				g2.vertexFormat = g.vertexFormat;
 				g2.indexCounts = [];
-				g2.vertexPosition = g.vertexPosition;
-				g2.indexPosition = g.indexPosition;
 				g2.bounds = g.bounds;
 				hmd.geometries.push(g2);
 
-				dataToStore.push({ g : g2, data : libData, vertexCount : g.vertexCount, indexCount : g.indexCount, offset : currentVertex });
+				dataToStore.push({ g : g2, origin : g, lib : lib, data : libData, offset : currentVertex });
 				currentVertex += g.vertexCount;
 
 				var arr = [];
@@ -389,21 +388,29 @@ class ModelLibrary extends Prefab {
 
 		geomAll.vertexCount = currentVertex;
 		geomAll.vertexPosition = dataOut.length;
+		if( geomAll.vertexStride < 0 ) {
+			ide.error("No model found in data");
+			return;
+		}
 		for( inf in dataToStore ) {
 			var g = inf.g;
-			var dataPos = g.vertexPosition;
 			g.vertexPosition = dataOut.length;
-			dataOut.addBytes(inf.data, dataPos, g.vertexStride * inf.vertexCount * 4);
+			if( g.vertexStride != geomAll.vertexStride ) {
+				var buf = inf.lib.getBuffers(inf.origin, geomAll.vertexFormat, [for( v in geomAll.vertexFormat ) new h3d.Vector(0,0,0,0)]);
+				for( i in 0...geomAll.vertexStride * inf.origin.vertexCount )
+					dataOut.addFloat(buf.vertexes[i]);
+			} else
+				dataOut.addBytes(inf.data, inf.origin.vertexPosition, g.vertexStride * inf.origin.vertexCount * 4);
 		}
 
 		geomAll.indexPosition = dataOut.length;
 		for( inf in dataToStore ) {
 			var g = inf.g;
-			var dataPos = g.indexPosition;
 			g.indexPosition = dataOut.length;
-			var read16 = inf.vertexCount <= 0x10000;
+			var dataPos = inf.origin.indexPosition;
+			var read16 = inf.origin.vertexCount <= 0x10000;
 			var write16 = geomAll.vertexCount <= 0x10000;
-			for( i in 0...inf.indexCount ) {
+			for( i in 0...inf.origin.indexCount ) {
 				var idx = read16 ? inf.data.getUInt16(dataPos + (i<<1)) : inf.data.getInt32(dataPos + (i<<2));
 				if( write16 ) {
 					var v = idx + inf.offset;
