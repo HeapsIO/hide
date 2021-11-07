@@ -348,6 +348,8 @@ class Model extends FileView {
 
 		if (obj != null)
 			obj.remove();
+
+		scene.setCurrent();
 		obj = scene.loadModel(state.path, true, true);
 		new h3d.scene.Object(scene.s3d).addChild(obj);
 
