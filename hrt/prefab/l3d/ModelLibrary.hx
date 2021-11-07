@@ -217,10 +217,15 @@ class ModelLibrary extends Prefab {
 		var dataToStore = [];
 
 		var geomAll = new Geometry();
+		var hasTangents = false;
 		geomAll.bounds = new h3d.col.Bounds();
 		geomAll.bounds.addPos(0,0,0);
-		geomAll.vertexStride = -1;
 		geomAll.indexCounts = [];
+		geomAll.vertexFormat = [
+			new GeometryFormat("position", DVec3),
+			new GeometryFormat("normal", DVec3),
+		];
+
 		hmd.geometries.push(geomAll);
 		indexStarts.push(null);
 
@@ -316,9 +321,13 @@ class ModelLibrary extends Prefab {
 
 			for( g in lib.header.geometries ) {
 
-				if( geomAll.vertexStride < 0 ) {
-					geomAll.vertexStride = g.vertexStride;
-					geomAll.vertexFormat = g.vertexFormat;
+				if( !hasTangents ) {
+					for( f in g.vertexFormat )
+						if( f.name == "tangent" ) {
+							hasTangents = true;
+							geomAll.vertexFormat.push(f);
+							break;
+						}
 				}
 
 				var g2 = new Geometry();
@@ -385,7 +394,9 @@ class ModelLibrary extends Prefab {
 		}
 
 		modelRoot.materials = [for( i in 0...hmd.materials.length ) i];
-
+		geomAll.vertexFormat.push(new GeometryFormat("uv",DVec2));
+		geomAll.vertexStride = 0;
+		for( f in geomAll.vertexFormat ) geomAll.vertexStride += f.format.getSize();
 		geomAll.vertexCount = currentVertex;
 		geomAll.vertexPosition = dataOut.length;
 		if( geomAll.vertexStride < 0 ) {
@@ -395,12 +406,9 @@ class ModelLibrary extends Prefab {
 		for( inf in dataToStore ) {
 			var g = inf.g;
 			g.vertexPosition = dataOut.length;
-			if( g.vertexStride != geomAll.vertexStride ) {
-				var buf = inf.lib.getBuffers(inf.origin, geomAll.vertexFormat, [for( v in geomAll.vertexFormat ) new h3d.Vector(0,0,0,0)]);
-				for( i in 0...geomAll.vertexStride * inf.origin.vertexCount )
-					dataOut.addFloat(buf.vertexes[i]);
-			} else
-				dataOut.addBytes(inf.data, inf.origin.vertexPosition, g.vertexStride * inf.origin.vertexCount * 4);
+			var buf = inf.lib.getBuffers(inf.origin, geomAll.vertexFormat, [for( v in geomAll.vertexFormat ) new h3d.Vector(0,0,0,0)]);
+			for( i in 0...geomAll.vertexStride * inf.origin.vertexCount )
+				dataOut.addFloat(buf.vertexes[i]);
 		}
 
 		geomAll.indexPosition = dataOut.length;
@@ -523,13 +531,12 @@ class ModelLibrary extends Prefab {
 	}
 
 	function optimizeRec( batch : h3d.scene.MeshBatch, obj : h3d.scene.Object, out : Array<{ mat : MaterialData, mesh : h3d.scene.Mesh }> ) {
-		if( obj == batch )
-			return;
 		var mesh = Std.downcast(obj, h3d.scene.Mesh);
 		if( mesh != null ) {
 			var prim = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
 			if( prim != null ) {
 				var mat = mesh.getMaterials(false);
+				mesh.culled = true;
 				for( i in 0...mat.length ) {
 					var name = mat[i].name;
 					if( renamedMaterials != null ) {
@@ -539,10 +546,16 @@ class ModelLibrary extends Prefab {
 							if( name2 != null ) name = name2;
 						}
 					}
+					trace(mesh.name, mat[i].name, name);
 					var bk = bakedMaterials.get(name);
+					if( bk == null ) {
+						mesh.culled = false;
+						while( out.length > 0 && out[out.length-1].mesh == mesh )
+							out.pop();
+						break;
+					}
 					out.push({ mat : bk, mesh : mesh });
 				}
-				mesh.culled = true;
 			}
 		}
 		for( o in obj )
