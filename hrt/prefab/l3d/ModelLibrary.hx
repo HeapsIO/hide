@@ -496,12 +496,26 @@ class ModelLibrary extends Prefab {
 		}
 		batch.primitiveSubPart = new h3d.scene.MeshBatch.MeshBatchPart();
 		batch.begin();
-		optimizeRec(batch, obj);
+		var meshes = [];
+		optimizeRec(batch, obj, meshes);
+		meshes.sort(function(m1,m2) return m1.mat.indexStart - m2.mat.indexStart);
+
+		for( m in meshes ) {
+			var bk = m.mat;
+			shader.uvTransform.set(bk.uvX, bk.uvY, bk.uvSX, bk.uvSY);
+			shader.material = bk.texId;
+			batch.primitiveSubPart.indexCount = bk.indexCount;
+			batch.primitiveSubPart.indexStart = bk.indexStart;
+			batch.primitiveSubPart.bounds = geomBounds[bk.geomId];
+			batch.worldPosition = m.mesh.getAbsPos();
+			batch.emitInstance();
+		}
+
 		batch.worldPosition = null;
 		batch.primitiveSubPart = null;
 	}
 
-	function optimizeRec( batch : h3d.scene.MeshBatch, obj : h3d.scene.Object ) {
+	function optimizeRec( batch : h3d.scene.MeshBatch, obj : h3d.scene.Object, out : Array<{ mat : MaterialData, mesh : h3d.scene.Mesh }> ) {
 		if( obj == batch )
 			return;
 		var mesh = Std.downcast(obj, h3d.scene.Mesh);
@@ -519,21 +533,13 @@ class ModelLibrary extends Prefab {
 						}
 					}
 					var bk = bakedMaterials.get(name);
-					if( bk == null )
-						continue;
-					shader.uvTransform.set(bk.uvX, bk.uvY, bk.uvSX, bk.uvSY);
-					shader.material = bk.texId;
-					batch.primitiveSubPart.indexCount = bk.indexCount;
-					batch.primitiveSubPart.indexStart = bk.indexStart;
-					batch.primitiveSubPart.bounds = geomBounds[bk.geomId];
-					batch.worldPosition = obj.getAbsPos();
-					batch.emitInstance();
+					out.push({ mat : bk, mesh : mesh });
 				}
 				mesh.culled = true;
 			}
 		}
 		for( o in obj )
-			optimizeRec(batch, o);
+			optimizeRec(batch, o, out);
 	}
 
 	#end
