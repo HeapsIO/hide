@@ -125,6 +125,7 @@ typedef SetGroup = {
 
 typedef MeshSprayConfig = {
 	var density : Int;
+	var step : Float;
 	var densityOffset : Int;
 	var radius : Float;
 	var deleteRadius : Float;
@@ -286,6 +287,7 @@ class MeshSpray extends Object3D {
 	function getDefaultConfig() : MeshSprayConfig {
 		return {
 			density: 1,
+			step : 0.,
 			densityOffset: 0,
 			radius: 0.1,
 			deleteRadius: 5,
@@ -556,9 +558,8 @@ class MeshSpray extends Object3D {
 			else {
 				interactive.cancelEvents = true;
 			}
-			
+
 		}).prop("checked", currentConfig.enableBrush);
-		
 
 		options.find("#select").click(function(_) {
 			var options = selectElement.children().elements();
@@ -612,6 +613,7 @@ class MeshSpray extends Object3D {
 		var optionsGroup = new hide.Element('<div class="group" id="groupConfig" name="Options"><dl></dl></div>');
 		optionsGroup.append(hide.comp.PropsEditor.makePropsList([
 				{ name: "density", t: PInt(1, 25), def: currentConfig.density },
+				{ name: "step", t: PFloat(0, 50), def: currentConfig.step },
 				{ name: "densityOffset", t: PInt(0, 10), def: currentConfig.densityOffset },
 				{ name: "radius", t: PFloat(0, 50), def: currentConfig.radius },
 				{ name: "deleteRadius", t: PFloat(0, 50), def: currentConfig.deleteRadius },
@@ -729,9 +731,16 @@ class MeshSpray extends Object3D {
 						if( shiftPressed ) {
 							removeMeshesAround(ctx, worldPos);
 						} else {
-							// if (currentConfig.density == 1) sprayEnable = false;
-							// else
+							if (currentConfig.density == 1) {
+								if(lastMeshPos.distance(worldPos) > currentConfig.step) {
+									lastMeshPos = worldPos.clone();
+									addMeshes(ctx);
+								}
+							}
+							else {
+								lastMeshPos = worldPos.clone();
 								addMeshes(ctx);
+							}
 						}
 					}
 				}
@@ -808,6 +817,7 @@ class MeshSpray extends Object3D {
 	var localMat = new h3d.Matrix();
 	var lastPos : h3d.col.Point;
 	var lastMeshId = -1;
+	var lastSprayedObj : h3d.scene.Object;
 	function previewMeshesAround(ectx : hide.prefab.EditContext, ctx : Context, point : h3d.col.Point) {
 		if (currentMeshes.length == 0) {
 			return;
