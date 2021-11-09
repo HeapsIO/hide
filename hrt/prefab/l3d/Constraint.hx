@@ -36,8 +36,8 @@ class Constraint extends Prefab {
 		var curObj = ctx.rootContext.locateObject(object);
 		var props = ctx.properties.add(new hide.Element('
 			<dl>
-				<dt>Source</dt><dd><select field="object"><option value="">-- Choose --</option></select>
-				<dt>Target</dt><dd><select field="target"><option value="">-- Choose --</option></select>
+				<dt title="Object to constraint">Object</dt><dd><select field="object"><option value="">-- Choose --</option></select>
+				<dt title="Destination object or joint to constraint to">Target</dt><dd><select field="target"><option value="">-- Choose --</option></select>
 				<dt>Position Only</dt><dd><input type="checkbox" field="positionOnly"/></dd>
 			</dl>
 		'),this, function(_) {

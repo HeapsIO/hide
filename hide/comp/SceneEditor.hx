@@ -958,7 +958,15 @@ class SceneEditor {
 					if(snapToGround && mode == MoveXY) {
 						newMat.tz = getZ(newMat.tx, newMat.ty);
 					}
-					var invParent = sceneObjs[i].parent.getAbsPos().clone();
+					var obj3d = sceneObjs[i];
+					var parentMat = obj3d.parent.getAbsPos().clone();
+					if(obj3d.follow != null) {
+						if(obj3d.followPositionOnly)
+							parentMat.setPosition(obj3d.follow.getAbsPos().getPosition());
+						else 
+							parentMat = obj3d.follow.getAbsPos().clone();
+					}
+					var invParent = parentMat;
 					invParent.invert();
 					newMat.multiply(newMat, invParent);
 					if(scale != null) {
