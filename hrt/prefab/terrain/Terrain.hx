@@ -256,6 +256,8 @@ class Terrain extends Object3D {
 				engine.popTarget();
 			}
 			#end
+			unpackWeight.shader.indexMap = null;
+			unpackWeight.shader.packedWeightTexture = null;
 		}
 
 		// HEIGHT
