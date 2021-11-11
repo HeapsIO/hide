@@ -139,7 +139,7 @@ class Configurator extends RendererFX {
 	}
 	#end
 
-	function resetCache() {
+	public function resetCache() {
 		prefabCache = [];
 		particlesCache = [];
 	}
