@@ -39,7 +39,6 @@ class Terrain extends Object3D {
 	@:c var surfaceSize = 0;
 	// Utility
 	@:c var tmpSurfacesProps : Array<SurfaceProps> = [];
-	var unpackWeight = new h3d.pass.ScreenFx(new UnpackWeight());
 	var modified = false;
 
 	#if editor
@@ -223,6 +222,7 @@ class Terrain extends Object3D {
 		}
 
 		// WEIGHT
+		var unpackWeight = new h3d.pass.ScreenFx(new UnpackWeight());
 		for( wd in weightData ) {
 			var t = terrain.getTile(wd.x, wd.y);
 			var pixels : hxd.Pixels = new hxd.Pixels(terrain.weightMapResolution.x, terrain.weightMapResolution.y, wd.res.entry.getBytes(), RGBA);
@@ -256,8 +256,6 @@ class Terrain extends Object3D {
 				engine.popTarget();
 			}
 			#end
-			unpackWeight.shader.indexMap = null;
-			unpackWeight.shader.packedWeightTexture = null;
 		}
 
 		// HEIGHT
