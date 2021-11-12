@@ -665,6 +665,11 @@ input[type=checkbox]:checked:after {
   overflow: auto;
   padding-bottom: 80px;
 }
+.hide-properties > h1.prefab-name {
+  text-align: left;
+  font-size: 10px;
+  margin-bottom: 10px;
+}
 .hide-properties .section {
   margin-bottom: 10px;
 }

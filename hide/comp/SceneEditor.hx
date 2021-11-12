@@ -1454,6 +1454,7 @@ class SceneEditor {
 	}
 
 	function fillProps( edit, e : PrefabElement ) {
+		properties.element.append(new Element('<h1 class="prefab-name">${e.getHideProps().name}</h1>'));
 		e.edit(edit);
 
 		var typeName = e.getCdbType();
