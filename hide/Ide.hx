@@ -908,7 +908,7 @@ class Ide {
 				return null;
 			l.loadData(parseJSON(sys.io.File.getContent(path)));
 		} catch( e : Dynamic ) {
-			error("Invalid prefab ("+e+")");
+			error("Invalid prefab "+file+" ("+e+")");
 			throw e;
 		}
 		if( cl == null )
