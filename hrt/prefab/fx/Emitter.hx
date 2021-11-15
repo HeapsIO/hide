@@ -851,9 +851,10 @@ class EmitterObject extends h3d.scene.Object {
 				else
 					screenQuat.initRotateMatrix(tmpMat);
 
-				if(alignMode == Screen)
+				if(alignMode == Screen) {
 					tmpQuat.initRotateAxis(1,0,0,Math.PI);  // Flip Y axis so Y is pointing down
-				screenQuat.multiply(screenQuat, tmpQuat);
+					screenQuat.multiply(screenQuat, tmpQuat);
+				}
 			}
 
 			parent.getAbsPos().getScale(worldScale);
