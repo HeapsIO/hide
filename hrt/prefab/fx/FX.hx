@@ -15,8 +15,8 @@ class FXAnimation extends h3d.scene.Object {
 	public var localTime : Float = 0.0;
 	var totalTime : Float = 0.0;
 	public var duration : Float;
-	public var additionLoopDuration : Float = 0.0;
 
+	/** Enable automatic culling based on `cullingRadius` and `cullingDistance`. Will override `culled` on every sync. **/
 	public var enableCulling = true;
 	public var cullingRadius : Float;
 	public var cullingDistance = defaultCullingDistance;
@@ -36,7 +36,6 @@ class FXAnimation extends h3d.scene.Object {
 
 	var startLoop : Float = -1.0;
 	var endLoop : Float;
-	var syncedOnce = false;
 
 	public function new(?parent) {
 		super(parent);
@@ -93,43 +92,32 @@ class FXAnimation extends h3d.scene.Object {
 		var changed = posChanged;
 		if( changed ) calcAbsPos();
 
-		if(enableCulling && !syncedOnce) {
-			culled = true;
+		if( enableCulling ) {
+			culled = false;
 			var scale = getAbsPos().getScale(tempVec);
 			var uniScale = hxd.Math.max(hxd.Math.max(scale.x, scale.y), scale.z);
 			var pos = getAbsPos().getPosition(tempVec);
 			tmpSphere.load(pos.x, pos.y, pos.z, cullingRadius * uniScale);
 			if(!ctx.camera.frustum.hasSphere(tmpSphere))
-				return;
+				culled = true;
 
-			if(cullingDistance > 0) {
+			if(!culled && cullingDistance > 0) {
 				var distSq = ctx.camera.pos.distanceSq(pos);
 				if(distSq > cullingDistance * cullingDistance)
-					return;
-			}
-			culled = false;
-		}
-
-		super.syncRec(ctx);
-		syncedOnce = true;
-	}
-
-	override function sync( ctx : h3d.scene.RenderContext ) {
-
-		if (additionLoopDuration > 0 && startLoop >= 0) {
-			if (totalTime > startLoop) {
-				var timeLeft = endLoop + additionLoopDuration - totalTime;
-				if (timeLeft > 0) {
-					this.localTime = startLoop + ((totalTime - startLoop) % (endLoop - startLoop));
-				} else {
-					this.localTime = endLoop - timeLeft;
-				}
+					culled = true;
 			}
 		}
 
+		var old = ctx.visibleFlag;
+		if( !visible || (culled && inheritCulled) )
+			ctx.visibleFlag = false;
+
+		var syncChildren = ctx.visibleFlag || alwaysSync;
 		if(playSpeed > 0) {
+			// This is done in syncRec() to make sure time and events are updated regarless of culling state,
+			// so we restore FX in correct state when unculled
 			var curTime = localTime;
-			setTime(curTime, ctx.visibleFlag || alwaysSync);
+			setTime(curTime, syncChildren);
 			localTime += ctx.elapsedTime * playSpeed;
 			totalTime += ctx.elapsedTime;
 			if( duration > 0 && curTime < duration && localTime >= duration) {
@@ -138,14 +126,19 @@ class FXAnimation extends h3d.scene.Object {
 					onEnd();
 			}
 		}
+
+		if(syncChildren)
+			super.syncRec(ctx);
+
+		ctx.visibleFlag = old;
 	}
 
 	static var tempMat = new h3d.Matrix();
 	static var tempTransform = new h3d.Matrix();
 	static var tempVec = new h3d.Vector();
-	public function setTime( time : Float, visible=true ) {
+	public function setTime( time : Float, syncChildren=true ) {
 		this.localTime = time;
-		if(visible) {
+		if(syncChildren) {
 			vecPool.begin();
 			if(objAnims != null) {
 				for(anim in objAnims) {
