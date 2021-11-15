@@ -238,7 +238,7 @@ class FXAnimation extends h3d.scene.Object {
 	}
 
 	function initEvents(elt: PrefabElement, ctx: Context) {
-		var childEvents = [for(c in elt.children) if(c.to(Event) != null) c.to(Event)];
+		var childEvents = [for(c in elt.children) if(c.enabled && c.to(Event) != null) c.to(Event)];
 		var ret = null;
 		for(evt in childEvents) {
 			var eventObj = evt.prepare(ctx);
@@ -250,6 +250,7 @@ class FXAnimation extends h3d.scene.Object {
 	}
 
 	function initObjAnimations(ctx:Context, elt: PrefabElement) {
+		if(!elt.enabled) return;
 		if(Std.downcast(elt, hrt.prefab.fx.Emitter) == null) {
 			// Don't extract animations for children of Emitters
 			for(c in elt.children) {
@@ -331,6 +332,7 @@ class FXAnimation extends h3d.scene.Object {
 	}
 
 	function initEmitters(ctx: Context, elt: PrefabElement) {
+		if(!elt.enabled) return;
 		var em = Std.downcast(elt, hrt.prefab.fx.Emitter);
 		if(em != null)  {
 			for(emCtx in ctx.shared.getContexts(elt)) {
@@ -349,6 +351,7 @@ class FXAnimation extends h3d.scene.Object {
 	}
 
 	function initConstraints( ctx : Context, elt : PrefabElement ){
+		if(!elt.enabled) return;
 		var co = Std.downcast(elt, hrt.prefab.l3d.Constraint);
 		if(co != null) {
 			if(constraints == null) constraints = [];
