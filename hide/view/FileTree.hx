@@ -102,7 +102,7 @@ class FileTree extends FileView {
 			return content;
 		};
 
-		tree.onRename = onRename;
+		tree.onRename = doRename;
 
 		element.contextmenu(function(e) {
 			var current = tree.getCurrentOver();
@@ -146,7 +146,7 @@ class FileTree extends FileView {
 					} },
 				{ label : "Move", enabled : current != null, click : function() {
 					ide.chooseDirectory(function(dir) {
-						onRename(current, "/"+dir+"/"+current.split("/").pop());
+						doRename(current, "/"+dir+"/"+current.split("/").pop());
 					});
 				}},
 				{ label : "Delete", enabled : current != null, click : function() {
@@ -171,11 +171,19 @@ class FileTree extends FileView {
 			return false;
 		}
 
-		onRename(path, newFilename);
+		doRename(path, newFilename);
 		return true;
 	}
 
-	function onRename(path:String, name:String) {
+	function doRename(path:String, name:String) {
+		var isDir = sys.FileSystem.isDirectory(ide.getPath(path));
+		if( isDir ) ide.fileWatcher.pause();
+		var ret = onRenameRec(path, name);
+		if( isDir ) ide.fileWatcher.resume();
+		return ret;
+	}
+
+	function onRenameRec(path:String, name:String) {
 
 		var parts = path.split("/");
 		parts.pop();
@@ -202,15 +210,15 @@ class FileTree extends FileView {
 			if( path.toLowerCase() == newPath.toLowerCase() ) {
 				// case change
 				var rand = "__tmp"+Std.random(10000);
-				onRename(path, "/"+addPath(path,rand));
-				onRename(addPath(path,rand), name);
+				onRenameRec(path, "/"+addPath(path,rand));
+				onRenameRec(addPath(path,rand), name);
 			} else {
 				if( !ide.confirm(newPath+" already exists, invert files?") )
 					return false;
 				var rand = "__tmp"+Std.random(10000);
-				onRename(path, "/"+addPath(path,rand));
-				onRename(newPath, "/"+path);
-				onRename(addPath(path,rand), name);
+				onRenameRec(path, "/"+addPath(path,rand));
+				onRenameRec(newPath, "/"+path);
+				onRenameRec(addPath(path,rand), name);
 			}
 			return false;
 		}
@@ -337,7 +345,7 @@ class FileTree extends FileView {
 			if( sys.FileSystem.isDirectory(ide.getPath(dataPath)) ) {
 				var destPath = new haxe.io.Path(name);
 				destPath.ext = "dat";
-				onRename(dataPath, destPath.toString());
+				onRenameRec(dataPath, destPath.toString());
 			}
 		}
 
