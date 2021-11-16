@@ -6,7 +6,7 @@ class BloomTonemap extends hxsl.Shader {
 		var calculatedUV : Vec2;
 		var hdrColor : Vec4;
 		function fragment() {
-			hdrColor += bloomTexture.get(calculatedUV);
+			hdrColor.rgb += bloomTexture.get(calculatedUV).rgb;
 		}
 	}
 }
