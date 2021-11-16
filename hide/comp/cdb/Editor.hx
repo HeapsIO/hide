@@ -1162,7 +1162,24 @@ class Editor extends Component {
 				});
 			}
 		}
-		new hide.comp.ContextMenu([
+
+		var hasLocText = false;
+		function checkRec(s:cdb.Sheet) {
+			for( c in s.columns ) {
+				switch( c.type ) {
+				case TList, TProperties:
+					var sub = s.getSub(c);
+					checkRec(sub);
+				case TString if( c.kind == Localizable ):
+					hasLocText = true;
+				default:
+				}
+			}
+		}
+		if( sheet.parent == null )
+			checkRec(sheet);
+
+		var menu : Array<hide.comp.ContextMenu.ContextMenuItem> = [
 			{
 				label : "Move Up",
 				enabled:  (firstLine.index > 0 || sepIndex >= 0),
@@ -1205,7 +1222,24 @@ class Editor extends Component {
 				endChanges();
 				refresh();
 			} }
-		]);
+		];
+		if( hasLocText ) {
+			menu.push({ label : "", isSeparator : true });
+			menu.push({
+				label : "Export Localized Texts",
+				checked : !Reflect.hasField(line.obj,cdb.Lang.IGNORE_EXPORT_FIELD),
+				click : function() {
+					beginChanges();
+					if( Reflect.hasField(line.obj,cdb.Lang.IGNORE_EXPORT_FIELD) )
+						Reflect.deleteField(line.obj,cdb.Lang.IGNORE_EXPORT_FIELD);
+					else
+						Reflect.setField(line.obj,cdb.Lang.IGNORE_EXPORT_FIELD, true);
+					endChanges();
+					line.syncClasses();
+				},
+			});
+		}
+		new hide.comp.ContextMenu(menu);
 	}
 
 	function rename( sheet : cdb.Sheet, name : String ) {

@@ -29,6 +29,12 @@ class Line extends Component {
 			if( c.type == TId && view != null && view.forbid != null && view.forbid.indexOf(cell.value) >= 0 )
 				element.addClass("hidden");
 		}
+		syncClasses();
+	}
+
+	public function syncClasses() {
+		var obj = obj;
+		element.toggleClass("locIgnored", Reflect.hasField(obj,cdb.Lang.IGNORE_EXPORT_FIELD));
 	}
 
 	public function getGroupID() {

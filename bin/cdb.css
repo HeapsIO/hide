@@ -76,6 +76,9 @@
 .cdb .cdb-sheet tr.separator td .toggle:hover {
   color: #ccc;
 }
+.cdb .cdb-sheet tr.locIgnored {
+  background-color: #221C1C;
+}
 .cdb .cdb-sheet td {
   padding: 2px 4px;
   overflow: hidden;

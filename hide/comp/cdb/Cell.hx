@@ -48,6 +48,7 @@ class Cell extends Component {
 				line.table.toggleList(this);
 			});
 		case TString if( column.kind == Script ):
+			root.addClass("t_script");
 			element.click(function(_) edit());
 		default:
 			if( canEdit() )
@@ -55,6 +56,10 @@ class Cell extends Component {
 			else
 				root.addClass("t_readonly");
 		}
+
+		if( column.type == TString && column.kind == Localizable )
+			root.addClass("t_loc");
+
 		root.click(function(e) {
 			editor.cursor.clickCell(this, e.shiftKey);
 			e.stopPropagation();
