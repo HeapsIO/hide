@@ -19,6 +19,7 @@ enum AlignLockAxis {
 	X;
 	Y;
 	Z;
+	ScreenZ;  // Screen-facing flat polygons rotating around Z
 }
 
 enum EmitShape {
@@ -825,11 +826,9 @@ class EmitterObject extends h3d.scene.Object {
 			return;
 
 		if( parent != null ) {
-			invTransform.load(parent.getInvPos());
 
-			if(alignMode == Screen || alignMode == Axis) {
-				var cam = getScene().camera;
-				tmpMat.load(cam.mcam);
+			if(alignMode == Screen) {
+				tmpMat.load(getScene().camera.mcam);
 				tmpMat.invert();
 
 				if(simulationSpace == Local) {  // Compensate parent rotation
@@ -840,19 +839,43 @@ class EmitterObject extends h3d.scene.Object {
 					tmpMat.multiply(tmpMat, tmpMat2);
 				}
 				
-				if(alignMode == Axis) {
-					var a = getEulerAngles(tmpMat);
-					switch alignLockAxis {
-						case X: screenQuat.initRotation(a.x, 0, 0);
-						case Y: screenQuat.initRotation(0, a.y, 0);
-						case Z: screenQuat.initRotation(0, 0, a.z);
-					}
+				screenQuat.initRotateMatrix(tmpMat);
+				tmpQuat.initRotateAxis(1,0,0,Math.PI);  // Flip Y axis so Y is pointing down
+				screenQuat.multiply(screenQuat, tmpQuat);
+			}
+			else if(alignMode == Axis) {
+				var lockAxis = new h3d.Vector();
+				var frontAxis = new h3d.Vector(1, 0, 0);
+				switch alignLockAxis {
+					case X: lockAxis.set(1, 0, 0);
+					case Y: lockAxis.set(0, 1, 0);
+					case Z: lockAxis.set(0, 0, 1);
+					case ScreenZ:
+						lockAxis.set(0, 0, 1);
+						frontAxis.set(0, 1, 0);
 				}
-				else
-					screenQuat.initRotateMatrix(tmpMat);
 
-				if(alignMode == Screen) {
-					tmpQuat.initRotateAxis(1,0,0,Math.PI);  // Flip Y axis so Y is pointing down
+				var lookAtPos = tmpVec;
+				lookAtPos.load(getScene().camera.pos);
+				invTransform.load(parent.getInvPos());
+				lookAtPos.transform(invTransform);
+				var deltaVec = new h3d.Vector(lookAtPos.x - x, lookAtPos.y - y, lookAtPos.z - z);
+	
+				var invParentQ = tmpQuat;
+				invParentQ.initRotateMatrix(invTransform);
+	
+				var targetOnPlane = h3d.col.Plane.fromNormalPoint(lockAxis.toPoint(), new h3d.col.Point()).project(deltaVec.toPoint()).toVector();
+				targetOnPlane.normalize();
+				var angle = hxd.Math.acos(frontAxis.dot(targetOnPlane));
+	
+				var cross = frontAxis.cross(deltaVec);
+				if(lockAxis.dot(cross) < 0)
+					angle = -angle;
+	
+				screenQuat.initRotateAxis(lockAxis.x, lockAxis.y, lockAxis.z, angle);
+				screenQuat.normalize();
+				if(alignLockAxis == ScreenZ) {
+					tmpQuat.initRotateAxis(1,0,0,-Math.PI/2); 
 					screenQuat.multiply(screenQuat, tmpQuat);
 				}
 			}
@@ -1090,7 +1113,7 @@ class Emitter extends Object3D {
 		{ name: "emitSurface", t: PBool, def: false, disp: "Surface", groupName : "Emit Shape" },
 		// ALIGNMENT
 		{ name: "alignMode", t: PEnum(AlignMode), def: AlignMode.None, disp: "Mode", groupName : "Alignment" },
-		{ name: "alignLockAxis", t: PEnum(AlignLockAxis), def: AlignLockAxis.Z, disp: "Lock Axis", groupName : "Alignment" },
+		{ name: "alignLockAxis", t: PEnum(AlignLockAxis), def: AlignLockAxis.ScreenZ, disp: "Lock Axis", groupName : "Alignment" },
 		// COLOR
 		{ name: "useRandomColor", t: PBool, def: false, disp: "Random Color", groupName : "Color" },
 		{ name: "randomColor1", t: PVec(4), disp: "Color 1", def : [0,0,0,1], groupName : "Color" },
