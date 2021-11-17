@@ -547,13 +547,14 @@ class Model extends FileView {
 	}
 
 	function buildTimeline() {
-		scene.setCurrent();
 		if( timeline != null ) {
 			timeline.remove();
 			timeline = null;
 		}
 		if( obj.currentAnimation == null )
 			return;
+
+		scene.setCurrent();
 
 		var H = 15;
 		var W = scene.s2d.width;
