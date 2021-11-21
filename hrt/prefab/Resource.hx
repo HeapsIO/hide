@@ -25,7 +25,8 @@ class Resource extends hxd.res.Resource {
 	public function load() : Prefab {
 		if( lib != null && cacheVersion == CACHE_VERSION )
 			return lib;
-		var data = haxe.Json.parse(entry.getText());
+		var isBSON = entry.fetchBytes(0,1).get(0) == 'H'.code;
+		var data = isBSON ? new hxd.fmt.hbson.Reader(entry.getBytes(),false).read() : haxe.Json.parse(entry.getText());
 		lib = Library.create(entry.extension);
 		lib.loadData(data);
 		cacheVersion = CACHE_VERSION;
