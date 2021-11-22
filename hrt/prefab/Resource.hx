@@ -14,7 +14,7 @@ class Resource extends hxd.res.Resource {
 		}
 		super.watch(function() {
 			if( lib != null ) {
-				var data = try haxe.Json.parse(entry.getText()) catch( e : Dynamic ) return; // parsing error (conflict ?)
+				var data = try loadData() catch( e : Dynamic ) return; // parsing error (conflict ?)
 				lib.reload(data);
 				onPrefabLoaded(lib);
 			}
@@ -22,11 +22,15 @@ class Resource extends hxd.res.Resource {
 		});
 	}
 
+	function loadData() {
+		var isBSON = entry.fetchBytes(0,1).get(0) == 'H'.code;
+		return isBSON ? new hxd.fmt.hbson.Reader(entry.getBytes(),false).read() : haxe.Json.parse(entry.getText());
+	}
+
 	public function load() : Prefab {
 		if( lib != null && cacheVersion == CACHE_VERSION )
 			return lib;
-		var isBSON = entry.fetchBytes(0,1).get(0) == 'H'.code;
-		var data = isBSON ? new hxd.fmt.hbson.Reader(entry.getBytes(),false).read() : haxe.Json.parse(entry.getText());
+		var data = loadData();
 		lib = Library.create(entry.extension);
 		lib.loadData(data);
 		cacheVersion = CACHE_VERSION;
