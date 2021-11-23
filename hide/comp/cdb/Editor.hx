@@ -722,27 +722,76 @@ class Editor extends Component {
 
 	function showReferences() {
 		if( cursor.table == null ) return;
-		var results = cursor.table.sheet.getReferences(cursor.y);
-		if( results == null )
-			return;
-		if( results.length == 0 ) {
+
+		var id = null;
+		var sheet = cursor.table.sheet;
+		for( c in sheet.columns ) {
+			switch( c.type ) {
+			case TId:
+				id = Reflect.field(sheet.lines[cursor.y], c.name);
+				break;
+			default:
+			}
+		}
+		if( id == null ) return;
+
+		var results = sheet.getReferencesFromId(id);
+		var message = [];
+		if( results != null ) {
+			for( rs in results ) {
+				var path = [];
+				for( i in 0...rs.s.length ) {
+					var s = rs.s[i];
+					var oid = Reflect.field(rs.o.path[i], s.id);
+					var idx = rs.o.indexes[i];
+					if( oid == null || oid == "" )
+						path.push(s.s.name.split("@").pop() + (idx < 0 ? "" : "[" + idx +"]"));
+					else
+						path.push(oid);
+				}
+				path.push(rs.s[rs.s.length-1].c);
+				message.push(rs.s[0].s.name+"  "+path.join("."));
+			}
+		}
+		var paths : Array<String> = this.config.get("haxe.classPath");
+		if( paths != null ) {
+			var spaces = "[ \\n\\t]";
+			var prevChars = ",\\(:=\\?\\[";
+			var postChars = ",\\):\\?\\]&|";
+			var regexp = new EReg('((case$spaces+)|[$prevChars])$spaces*$id$spaces*[$postChars]',"");
+			var regall = new EReg("\\b"+id+"\\b", "");
+			function lookupRec(p) {
+				for( f in sys.FileSystem.readDirectory(p) ) {
+					var fpath = p+"/"+f;
+					if( sys.FileSystem.isDirectory(fpath) ) {
+						lookupRec(fpath);
+						continue;
+					}
+					if( StringTools.endsWith(f, ".hx") ) {
+						var content = sys.io.File.getContent(fpath).split("\n");
+						for( line => str in content ) {
+							if( regall.match(str) ) {
+								if( !regexp.match(str) ) {
+									var str2 = str.split(id+".").join("").split("."+id).join("").split(id+"(").join("").split(id+"<").join("");
+									if( regall.match(str2) ) trace("Skip "+str);
+									continue;
+								}
+								var rel = ide.makeRelative(fpath);
+								message.push(rel+":"+(line+1));
+							}
+						}
+					}
+				}
+			}
+			for( p in paths ) {
+				var path = ide.getPath(p);
+				if( sys.FileSystem.exists(path) && sys.FileSystem.isDirectory(path) )
+					lookupRec(path);
+			}
+		}
+		if( message.length == 0 ) {
 			ide.message("No reference found");
 			return;
-		}
-		var message = [];
-		for( rs in results ) {
-			var path = [];
-			for( i in 0...rs.s.length ) {
-				var s = rs.s[i];
-				var oid = Reflect.field(rs.o.path[i], s.id);
-				var idx = rs.o.indexes[i];
-				if( oid == null || oid == "" )
-					path.push(s.s.name.split("@").pop() + (idx < 0 ? "" : "[" + idx +"]"));
-				else
-					path.push(oid);
-			}
-			path.push(rs.s[rs.s.length-1].c);
-			message.push(rs.s[0].s.name+"  "+path.join("."));
 		}
 		ide.message(message.join("\n"));
 	}
