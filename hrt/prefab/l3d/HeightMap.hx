@@ -209,7 +209,8 @@ class HeightMapTile {
 		var shadows = new h3d.scene.Mesh(mesh.shadowGrid, root);
 		shadows.material.shadows = false;
 		shadows.material.mainPass.setPassName("shadow");
-		@:bypassAccessor shadows.material.castShadows = true; // trigger DirShadowMap
+		var smat = shadows.material;
+		@:bypassAccessor smat.castShadows = true; // trigger DirShadowMap
 
 		inline function getTextures(k) return hmap.getTextures(k,tx,ty);
 		var htex = getTextures(Height)[0];
