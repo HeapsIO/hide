@@ -627,13 +627,13 @@ class Model extends FileView {
 
 		var events = @:privateAccess obj.currentAnimation.events;
 		if( events != null ) {
+			var upperLines = 0;
 			for( i in 0...events.length ) {
 				var el = events[i];
 				if( el == null || el.length == 0 ) continue;
 				var px = Std.int((i / obj.currentAnimation.frameCount) * W);
-				timeline.beginFill(0xC0C0C0);
-				timeline.drawRect(px, 0, 1, H);
 				var py = -20;
+				var lowest = 0;
 				for(j in 0 ... el.length ) {
 					var event = events[i][j];
 					var tf = new h2d.TextInput(hxd.res.DefaultFont.get(), timeline);
@@ -650,6 +650,14 @@ class Model extends FileView {
 					}
 					tf.text = event;
 					tf.x = px - Std.int(tf.textWidth * 0.5);
+					if( tf.textWidth > 100 && j == 0 ) {
+						upperLines++;
+						py -= upperLines * 40;
+					}
+					if( j > 0 )
+						upperLines++;
+					if( lowest == 0 )
+						lowest = py;
 					tf.y = py;
 					tf.alpha = 0.5;
 					py -= 15;
@@ -694,6 +702,8 @@ class Model extends FileView {
 						}
 					};
 				}
+				timeline.beginFill(0xC0C0C0,0.8);
+				timeline.drawRect(px, lowest + 20, 1, H - (lowest + 20));
 			}
 		}
 	}
