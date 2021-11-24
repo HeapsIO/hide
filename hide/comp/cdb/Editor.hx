@@ -757,7 +757,7 @@ class Editor extends Component {
 		if( paths != null ) {
 			var spaces = "[ \\n\\t]";
 			var prevChars = ",\\(:=\\?\\[";
-			var postChars = ",\\):\\?\\]&|";
+			var postChars = ",\\):;\\?\\]&|";
 			var regexp = new EReg('((case$spaces+)|[$prevChars])$spaces*$id$spaces*[$postChars]',"");
 			var regall = new EReg("\\b"+id+"\\b", "");
 			function lookupRec(p) {
