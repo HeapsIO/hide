@@ -544,10 +544,6 @@ class Prefab extends FileView {
 		{
 		case "shadows":
 			r.shadows = enable;
-		case "ssr":
-			var effect = r.getEffect(hrt.prefab.rfx.SSR);
-			if (effect != null)
-				effect.enabled = enable;
 		default:
 		}
 	}
@@ -582,7 +578,7 @@ class Prefab extends FileView {
 	}
 
 	function refreshGraphicsFilters() {
-		var filters : Array<String> = ["shadows", "ssr"];
+		var filters : Array<String> = ["shadows"];
 		filters = filters.copy();
 		graphicsFilters = new Map();
 		for(f in filters) {
