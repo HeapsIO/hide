@@ -421,6 +421,22 @@ class Spline extends Object3D {
 		return curPt;
 	}
 
+	public function getSplinePointDataAt( t : Float) : SplinePointData {
+		if( data == null )
+			computeSplineData();
+
+		var minDist = -1.0;
+		var result : SplinePointData = null;
+		for( s in data.samples ) {
+			var dist = Math.abs(s.t - t);
+			if( dist < minDist || minDist == -1 ) {
+				minDist = dist;
+				result = s;
+			}
+		}
+		return result;
+	}
+
 	// Return the closest point on the spline from p
 	function getClosestPoint( p : h3d.col.Point ) : SplinePointData {
 
