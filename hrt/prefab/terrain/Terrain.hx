@@ -89,12 +89,12 @@ class Terrain extends Object3D {
 		}
 		else {
 			// When cloning
-			obj.surfaces = tmpSurfacesProps;
 			obj.surfaceCount = tmpSurfacesProps.length;
+			if( surfaceSize != null ) obj.surfaceSize = surfaceSize;
+			obj.surfaces = tmpSurfacesProps;
 		}
 
 		#if editor
-		if( terrain != null ) obj.showChecker = terrain.showChecker;
 		if( modified ) {
 			modified = false;
 			saveTextures(myContext);
