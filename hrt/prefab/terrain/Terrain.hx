@@ -90,7 +90,7 @@ class Terrain extends Object3D {
 		else {
 			// When cloning
 			obj.surfaceCount = tmpSurfacesProps.length;
-			if( surfaceSize != null ) obj.surfaceSize = surfaceSize;
+			if( surfaceSize != 0 ) obj.surfaceSize = surfaceSize;
 			obj.surfaces = tmpSurfacesProps;
 		}
 
