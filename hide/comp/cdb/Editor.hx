@@ -768,8 +768,9 @@ class Editor extends Component {
 						continue;
 					}
 					if( StringTools.endsWith(f, ".hx") ) {
-						var content = sys.io.File.getContent(fpath).split("\n");
-						for( line => str in content ) {
+						var content = sys.io.File.getContent(fpath);
+						if( content.indexOf(id) < 0 ) continue;
+						for( line => str in content.split("\n") ) {
 							if( regall.match(str) ) {
 								if( !regexp.match(str) ) {
 									var str2 = str.split(id+".").join("").split("."+id).join("").split(id+"(").join("").split(id+"<").join("");
@@ -787,6 +788,33 @@ class Editor extends Component {
 				var path = ide.getPath(p);
 				if( sys.FileSystem.exists(path) && sys.FileSystem.isDirectory(path) )
 					lookupRec(path);
+			}
+		}
+		var paths : Array<String> = this.config.get("cdb.prefabsSearchPaths");
+		if( paths != null ) {
+			var scriptStr = new EReg("\\b"+sheet.name.charAt(0).toUpperCase() + sheet.name.substr(1) + "\\." + id + "\\b","");
+			function lookupPrefabRec(path) {
+				for( f in sys.FileSystem.readDirectory(path) ) {
+					var fpath = path+"/"+f;
+					if( sys.FileSystem.isDirectory(fpath) ) {
+						lookupPrefabRec(fpath);
+						continue;
+					}
+					var ext = f.split(".").pop();
+					if( @:privateAccess hrt.prefab.Library.registeredExtensions.exists(ext) ) {
+						var content = sys.io.File.getContent(fpath);
+						if( !scriptStr.match(content) ) continue;
+						for( line => str in content.split("\n") ) {
+							if( scriptStr.match(str) )
+								message.push(ide.makeRelative(fpath)+":"+(line+1));
+						}
+					}
+				}
+			}
+			for( p in paths ) {
+				var path = ide.getPath(p);
+				if( sys.FileSystem.exists(path) && sys.FileSystem.isDirectory(path) )
+					lookupPrefabRec(path);
 			}
 		}
 		if( message.length == 0 ) {
