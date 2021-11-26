@@ -366,15 +366,12 @@ private class ParticleInstance  {
 		switch( emitter.alignMode ) {
 			case Screen|Axis:
 				transform.qRot.load(emitter.screenQuat);
-				transform.calcAbsPos();
-				localTransform.calcAbsPos();
-				absPos.multiply(localTransform.absPos, transform.absPos);
-
-			case None:
-				transform.calcAbsPos();
-				localTransform.calcAbsPos();
-				absPos.multiply(localTransform.absPos, transform.absPos);
+			default:
 		}
+
+		transform.calcAbsPos();
+		localTransform.calcAbsPos();
+		absPos.multiply(localTransform.absPos, transform.absPos);
 
 		// COLLISION
 		if( emitter.useCollision ) {
@@ -825,63 +822,9 @@ class EmitterObject extends h3d.scene.Object {
 		if( emitRate == null || emitRate == VZero )
 			return;
 
-		if( parent != null ) {
-
-			if(alignMode == Screen) {
-				tmpMat.load(getScene().camera.mcam);
-				tmpMat.invert();
-
-				if(simulationSpace == Local) {  // Compensate parent rotation
-					tmpMat2.load(parent.getAbsPos());
-					var s = tmpMat2.getScale();
-					tmpMat2.prependScale(1.0 / s.x, 1.0 / s.y, 1.0 / s.z);
-					tmpMat2.invert();
-					tmpMat.multiply(tmpMat, tmpMat2);
-				}
-				
-				screenQuat.initRotateMatrix(tmpMat);
-				tmpQuat.initRotateAxis(1,0,0,Math.PI);  // Flip Y axis so Y is pointing down
-				screenQuat.multiply(screenQuat, tmpQuat);
-			}
-			else if(alignMode == Axis) {
-				var lockAxis = new h3d.Vector();
-				var frontAxis = new h3d.Vector(1, 0, 0);
-				switch alignLockAxis {
-					case X: lockAxis.set(1, 0, 0);
-					case Y: lockAxis.set(0, 1, 0);
-					case Z: lockAxis.set(0, 0, 1);
-					case ScreenZ:
-						lockAxis.set(0, 0, 1);
-						frontAxis.set(0, 1, 0);
-				}
-
-				var lookAtPos = tmpVec;
-				lookAtPos.load(getScene().camera.pos);
-				invTransform.load(parent.getInvPos());
-				lookAtPos.transform(invTransform);
-				var deltaVec = new h3d.Vector(lookAtPos.x - x, lookAtPos.y - y, lookAtPos.z - z);
-	
-				var invParentQ = tmpQuat;
-				invParentQ.initRotateMatrix(invTransform);
-	
-				var targetOnPlane = h3d.col.Plane.fromNormalPoint(lockAxis.toPoint(), new h3d.col.Point()).project(deltaVec.toPoint()).toVector();
-				targetOnPlane.normalize();
-				var angle = hxd.Math.acos(frontAxis.dot(targetOnPlane));
-	
-				var cross = frontAxis.cross(deltaVec);
-				if(lockAxis.dot(cross) < 0)
-					angle = -angle;
-	
-				screenQuat.initRotateAxis(lockAxis.x, lockAxis.y, lockAxis.z, angle);
-				screenQuat.normalize();
-				if(alignLockAxis == ScreenZ) {
-					tmpQuat.initRotateAxis(1,0,0,-Math.PI/2); 
-					screenQuat.multiply(screenQuat, tmpQuat);
-				}
-			}
-
+		if( parent != null )
 			parent.getAbsPos().getScale(worldScale);
-		}
+
 		vecPool.begin();
 
 		if( enable ) {
@@ -930,12 +873,70 @@ class EmitterObject extends h3d.scene.Object {
 			}
 		}
 
+		if( full )
+			updateAlignment();
+
 		updateParticles(dt);
 
 		if( full )
 			updateMeshBatch();
 
 		curTime += dt;
+	}
+
+	function updateAlignment() {
+		if(alignMode == Screen) {
+			tmpMat.load(getScene().camera.mcam);
+			tmpMat.invert();
+
+			if(simulationSpace == Local) {  // Compensate parent rotation
+				tmpMat2.load(parent.getAbsPos());
+				var s = tmpMat2.getScale();
+				tmpMat2.prependScale(1.0 / s.x, 1.0 / s.y, 1.0 / s.z);
+				tmpMat2.invert();
+				tmpMat.multiply(tmpMat, tmpMat2);
+			}
+
+			screenQuat.initRotateMatrix(tmpMat);
+			tmpQuat.initRotateAxis(1,0,0,Math.PI);  // Flip Y axis so Y is pointing down
+			screenQuat.multiply(screenQuat, tmpQuat);
+		}
+		else if(alignMode == Axis) {
+			var lockAxis = new h3d.Vector();
+			var frontAxis = new h3d.Vector(1, 0, 0);
+			switch alignLockAxis {
+				case X: lockAxis.set(1, 0, 0);
+				case Y: lockAxis.set(0, 1, 0);
+				case Z: lockAxis.set(0, 0, 1);
+				case ScreenZ:
+					lockAxis.set(0, 0, 1);
+					frontAxis.set(0, 1, 0);
+			}
+
+			var lookAtPos = tmpVec;
+			lookAtPos.load(getScene().camera.pos);
+			invTransform.load(parent.getInvPos());
+			lookAtPos.transform(invTransform);
+			var deltaVec = new h3d.Vector(lookAtPos.x - x, lookAtPos.y - y, lookAtPos.z - z);
+
+			var invParentQ = tmpQuat;
+			invParentQ.initRotateMatrix(invTransform);
+
+			var targetOnPlane = h3d.col.Plane.fromNormalPoint(lockAxis.toPoint(), new h3d.col.Point()).project(deltaVec.toPoint()).toVector();
+			targetOnPlane.normalize();
+			var angle = hxd.Math.acos(frontAxis.dot(targetOnPlane));
+
+			var cross = frontAxis.cross(deltaVec);
+			if(lockAxis.dot(cross) < 0)
+				angle = -angle;
+
+			screenQuat.initRotateAxis(lockAxis.x, lockAxis.y, lockAxis.z, angle);
+			screenQuat.normalize();
+			if(alignLockAxis == ScreenZ) {
+				tmpQuat.initRotateAxis(1,0,0,-Math.PI/2);
+				screenQuat.multiply(screenQuat, tmpQuat);
+			}
+		}
 	}
 
 	function updateMeshBatch() {
