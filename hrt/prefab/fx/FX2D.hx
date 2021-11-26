@@ -142,6 +142,23 @@ class FX2DAnimation extends h2d.Object {
 
 		this.prevTime = localTime;
 	}
+
+	override function sync( ctx : h2d.RenderContext ) {
+		var changed = posChanged;
+		if( changed ) calcAbsPos();
+
+		if( visible && playSpeed > 0 ) {
+			var curTime = localTime;
+			setTime(curTime);
+			localTime += ctx.elapsedTime * playSpeed;
+			if( duration > 0 && curTime < duration && localTime >= duration) {
+				localTime = duration;
+				if( onEnd != null )
+					onEnd();
+			}
+			super.sync(ctx);
+		}
+	}
 }
 
 class FX2D extends BaseFX {
