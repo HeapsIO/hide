@@ -822,8 +822,10 @@ class EmitterObject extends h3d.scene.Object {
 		if( emitRate == null || emitRate == VZero )
 			return;
 
-		if( parent != null )
+		if( parent != null ) {
 			parent.getAbsPos().getScale(worldScale);
+			invTransform.load(parent.getInvPos());
+		}
 
 		vecPool.begin();
 
@@ -915,12 +917,12 @@ class EmitterObject extends h3d.scene.Object {
 
 			var lookAtPos = tmpVec;
 			lookAtPos.load(getScene().camera.pos);
-			invTransform.load(parent.getInvPos());
+			var invParent = parent.getInvPos();
 			lookAtPos.transform(invTransform);
 			var deltaVec = new h3d.Vector(lookAtPos.x - x, lookAtPos.y - y, lookAtPos.z - z);
 
 			var invParentQ = tmpQuat;
-			invParentQ.initRotateMatrix(invTransform);
+			invParentQ.initRotateMatrix(invParent);
 
 			var targetOnPlane = h3d.col.Plane.fromNormalPoint(lockAxis.toPoint(), new h3d.col.Point()).project(deltaVec.toPoint()).toVector();
 			targetOnPlane.normalize();
