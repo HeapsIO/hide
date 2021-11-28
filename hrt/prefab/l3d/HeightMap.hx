@@ -463,14 +463,16 @@ class HeightMap extends Object3D {
 		return albedoProps;
 	}
 
-	public function getZ( x : Float, y : Float ) : Null<Float> {
+	public static var INVALID_Z = 1e128;
+
+	public function getZ( x : Float, y : Float ) : Float {
 		var rx = x / size;
 		var ry = y / size;
 		var tx = Math.floor(rx);
 		var ty = Math.floor(ry);
 		var curMap = getTile(tx, ty).getHeight();
 		if( curMap == null )
-			return null;
+			return INVALID_Z;
 		var w = curMap.width;
 		var ix = Std.int( (rx - tx) * w );
 		var iy = Std.int( (ry - ty) * w );
@@ -484,7 +486,7 @@ class HeightMap extends Object3D {
 			return -1; // only from top
 		if( ray.lx == 0 && ray.ly == 0 ) {
 			var z = getZ(ray.px, ray.py);
-			if( z == null || z > ray.pz ) return -1;
+			if( z == INVALID_Z || z > ray.pz ) return -1;
 			return ray.pz - z;
 		}
 		var dist = 0.;
