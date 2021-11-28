@@ -14,6 +14,11 @@ class ConfiguratorInterp extends hscript.Interp {
 		super();
 	}
 
+	override function get( o : Dynamic, f : String ) : Dynamic {
+		if( o == null ) error(EInvalidAccess(f));
+		return getProperty(o,f);
+	}
+
 	override function set( o : Dynamic, f : String, v : Dynamic ) : Dynamic {
 		var prev = prevVars.get(f);
 		if( prev == null ) {
@@ -50,20 +55,58 @@ class ConfiguratorInterp extends hscript.Interp {
 		}
 		if( !found.set ) {
 			found.set = true;
-			found.value = Reflect.getProperty(o, f);
+			found.value = getProperty(o, f);
 		}
-		Reflect.setProperty(o, f, v);
+		setProperty(o, f, v);
 		return v;
 	}
 
 	public function restoreVars() {
 		for( v in allVars ) {
 			if( v.set ) {
-				Reflect.setProperty(v.obj, v.field, v.value);
+				setProperty(v.obj, v.field, v.value);
 				v.set = false;
 			}
 		}
 	}
+
+	#if hl
+	static var hashes : Map<String,{p:Int,get:Int,set:Int}> = new Map();
+
+	static inline function getHashes(p:String) {
+		var h = hashes.get(p);
+		if( h == null ) {
+			inline function hash(str:String) return @:privateAccess str.bytes.hash();
+			h = {
+				p : hash(p),
+				get : hash("get_"+p),
+				set : hash("set_"+p),
+			};
+			hashes.set(p, h);
+		}
+		return h;
+	}
+
+	static inline function getProperty(o:Dynamic,p:String) : Dynamic {
+		var h = getHashes(p);
+		var pget : Dynamic = hl.Api.getField(o, h.get);
+		if( pget != null ) return pget();
+		return hl.Api.getField(o, h.p);
+	}
+
+	static inline function setProperty(o:Dynamic,p:String,v:Dynamic) {
+		var h = getHashes(p);
+		var pset : Dynamic = hl.Api.getField(o, h.set);
+		if( pset != null ) {
+			pset(v);
+			return;
+		}
+		hl.Api.setField(o, h.p, v);
+	}
+	#else
+	static inline function getProperty(o:Dynamic,p:String) : Dynamic { return Reflect.getProperty(o,p); }
+	static inline function setProperty(o:Dynamic,p:String,v:Dynamic) { Reflect.setProperty(o,p,v); }
+	#end
 
 }
 #end
