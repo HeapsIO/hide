@@ -67,9 +67,9 @@ class Threshold extends h3d.shader.ScreenShader {
 
 			if( USE_TEMPORAL_FILTER ) {
 				var pixelPos = vec4(uvToScreen(calculatedUV), 1, 1) * cameraInverseViewProj;
-				pixelPos.xyz /= pixelPos.w;
+				pixelPos.xyz /= max(pixelPos.w, 1e-16);
 				var prevPos = vec4(pixelPos.xyz, 1.0) * prevCamMat;
-				prevPos.xyz /= prevPos.w;
+				prevPos.xyz /= max(prevPos.w, 1e-16);
 				var prevUV = screenToUv(prevPos.xy);
 				var blendStrengh = strength * ceil(1 - max(abs(prevPos.x), abs(prevPos.y)));
 				var prevVal = prev.get(prevUV).rgb;
