@@ -62,11 +62,13 @@ class Environment extends Object3D {
 	override function updateInstance( ctx : Context, ?propName : String ) {
 		super.updateInstance(ctx, propName);
 
-		var sourceMap = sourceMapPath != null ? ctx.loadTexture(sourceMapPath) : null;
-		if( sourceMap == null )
+		if( sourceMapPath == null )
 			return;
 
 		#if editor
+		var sourceMap = ctx.loadTexture(sourceMapPath);
+		if( sourceMap == null )
+			return;
 		if( sourceMap.flags.has(Loading) ) {
 			haxe.Timer.delay(function() {
 				ctx.setCurrent();
@@ -78,18 +80,18 @@ class Environment extends Object3D {
 		#end
 
 		var needLoad = false;
-		if( env == null )
+		if( env == null ) {
 			env = new h3d.scene.pbr.Environment(null);
+			needLoad = true;
+		}
 
 		if( configName != null ) {
 			configName = StringTools.trim(configName);
 			if( configName == "" ) configName = null;
 		}
 
-		if( env.source != sourceMap ) {
-			env.source = sourceMap;
+		if( env.source != null && env.source.name != sourceMapPath )
 			needLoad = true;
-		}
 
 		env.specSize = specSize;
 		env.diffSize = diffSize;
@@ -104,6 +106,7 @@ class Environment extends Object3D {
 			env.dispose();
 			env.specular = null;
 			env.diffuse = null;
+			env.source = ctx.loadTexture(sourceMapPath);
 			env.compute();
 			saveToBinary();
 		}
