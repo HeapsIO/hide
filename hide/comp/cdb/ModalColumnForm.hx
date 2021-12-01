@@ -214,7 +214,7 @@ class ModalColumnForm extends Modal {
 			case TCustom(name):
 				form.find("[name=ctype]").val(name);
 			case TInt, TFloat:
-				var p = editor.getColumnProps(column);
+				var p = Editor.getColumnProps(column);
 				form.find("[name=formula]").val( p.formula == null ? "" : p.formula );
 				form.find("[name=export]").prop( "checked", !p.ignoreExport );
 			default:
@@ -234,7 +234,7 @@ class ModalColumnForm extends Modal {
 		contentModal.click( function(e) e.stopPropagation());
 
 		form.find("#cancelBtn").click(function(e) closeModal());
-		if( column != null && editor.getColumnProps(column).formula != null )
+		if( column != null && Editor.getColumnProps(column).formula != null )
 			toggleHide();
 	}
 
@@ -335,7 +335,7 @@ class ModalColumnForm extends Modal {
 		}
 		if( form.find("[name=hidden]").is(":checked") ) c.kind = Hidden;
 
-		var props = editor.getColumnProps(c);
+		var props = Editor.getColumnProps(c);
 		switch( t ) {
 		case TFloat, TInt:
 			props.formula = form.find("[name=formula]").val();

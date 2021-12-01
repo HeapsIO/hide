@@ -952,7 +952,7 @@ class Editor extends Component {
 		return null;
 	}
 
-	public function getColumnProps( c : cdb.Data.Column ) {
+	static public function getColumnProps( c : cdb.Data.Column ) {
 		var pr : EditorColumnProps = c.editor;
 		if( pr == null ) pr = {};
 		return pr;
@@ -1498,9 +1498,19 @@ class Editor extends Component {
 		for( s in db.sheets ) {
 			var props = getSheetProps(s);
 			if(props.categories != null) {
-				for(n in props.categories)
+				for(n in props.categories) {
 					if(names.indexOf(n) < 0)
 						names.push(n);
+				}
+			}
+			for(c in s.columns) {
+				var cProps = getColumnProps(c);
+				if(cProps.categories != null) {
+					for(n in cProps.categories) {
+						if(names.indexOf(n) < 0)
+							names.push(n);
+					}
+				}
 			}
 		}
 		names.sort((a, b) -> Reflect.compare(a, b));

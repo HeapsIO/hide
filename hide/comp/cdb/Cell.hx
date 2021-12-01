@@ -24,7 +24,7 @@ class Cell extends Component {
 		root.addClass("t_" + typeNames[column.type.getIndex()]);
 		root.addClass("n_" + column.name);
 		if(line.table.parent == null) {
-			var editProps = editor.getColumnProps(column);
+			var editProps = Editor.getColumnProps(column);
 			root.toggleClass("cat", editProps.categories != null);
 			if(editProps.categories != null)
 				for(c in editProps.categories)

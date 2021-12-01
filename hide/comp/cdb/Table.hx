@@ -140,7 +140,7 @@ class Table extends Component {
 		var colCount = columns.length;
 
 		for( c in columns ) {
-			var editProps = editor.getColumnProps(c);
+			var editProps = Editor.getColumnProps(c);
 			var col = J("<th>");
 			col.text(c.name);
 			col.addClass( "t_"+c.type.getName().substr(1).toLowerCase() );

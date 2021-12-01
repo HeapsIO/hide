@@ -36,7 +36,7 @@ class Formulas {
 			var columns = [];
 			for( c in s.columns )
 				if( c.type == TInt || c.type == TFloat ) {
-					var def = editor.getColumnProps(c).formula;
+					var def = Editor.getColumnProps(c).formula;
 					columns.push({ name : c.name, def : def, opt : c.opt });
 				}
 			for( o in s.getLines() ) {
@@ -172,7 +172,7 @@ class Formulas {
 
 	public function setForValue( obj : Dynamic, sheet : cdb.Sheet, c : cdb.Data.Column, fname : String ) {
 		var field = c.name+"__f";
-		var fdef = editor.getColumnProps(c).formula;
+		var fdef = Editor.getColumnProps(c).formula;
 		if( fname != null && fdef == fname )
 			fname = null;
 		if( fname == null ) {
