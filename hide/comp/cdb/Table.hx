@@ -262,6 +262,9 @@ class Table extends Component {
 				{ label : "Collapse All", click : function() {
 					element.find("tr.separator").not(".sep-hidden").find("a.toggle").click();
 				}},
+				{ label : "Collapse Others", click : function() {
+					element.find("tr.separator").not(".sep-hidden").not(sep).find("a.toggle").click();
+				}},
 			];
 			if( sheet.props.dataFiles != null && title != null )
 				opts.unshift({
