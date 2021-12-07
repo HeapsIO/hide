@@ -14,6 +14,7 @@ class Cell extends Component {
 	public var columnIndex(get, never) : Int;
 	public var value(get, never) : Dynamic;
 	public var table(get, never) : Table;
+	var blurOff = false;
 
 	public function new( root : Element, line : Line, column : cdb.Data.Column ) {
 		super(null,root);
@@ -169,6 +170,7 @@ class Cell extends Component {
 			else
 				table.refreshList(this);
 		}
+		blurOff = false;
 	}
 
 	function watchFile( file : String ) {
@@ -577,6 +579,7 @@ class Cell extends Component {
 			i.keydown(function(e) {
 				switch( e.keyCode ) {
 				case K.ESCAPE:
+					blurOff = true;
 					refresh();
 					table.editor.element.focus();
 				case K.ENTER if( !e.shiftKey || !column.type.match(TString|TDynamic|TCustom(_)) ):
@@ -612,7 +615,10 @@ class Cell extends Component {
 				setErrorMessage(StringTools.htmlUnescape(""+e));
 			});
 			i.keyup(null);
-			i.blur(function(_) closeEdit());
+			i.blur(function(_) {
+				if (!blurOff)
+					closeEdit();
+			});
 			i.focus();
 			i.select();
 			if( longText ) i.scrollTop(0);
