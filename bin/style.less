@@ -364,6 +364,7 @@ input[type=checkbox] {
 	}
 }
 
+@tileselect-cursor-border: 1px;
 .hide-tileselect {
 	display: inline-block;
 	background-color : #111;
@@ -381,6 +382,8 @@ input[type=checkbox] {
 			.tile {
 				background-color: #202;
 				position: relative;
+				margin-right: @tileselect-cursor-border;
+				margin-bottom: @tileselect-cursor-border;
 				.valueDisp {
 					position: absolute;
 					background-color: rgba(0,80,128,0.3);
@@ -389,7 +392,7 @@ input[type=checkbox] {
 				}
 				.cursor {
 					position: absolute;
-					border : 1px solid #fff;
+					border : @tileselect-cursor-border solid #fff;
 					pointer-events:none;
 				}
 			}

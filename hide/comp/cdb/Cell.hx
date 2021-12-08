@@ -759,10 +759,30 @@ class Cell extends Component {
 			var modal = new hide.comp.Modal(element);
 			modal.modalClick = function(_) closeEdit();
 
+			function getDims(t : cdb.Types.TilePos) {
+				if (t == null)
+					return {width: 16, height: 16};
+				if (t.size == 1) {
+					return {
+						width: (t.width != null && t.width > 0) ? t.width : t.size,
+						height: (t.height != null && t.height > 0) ? t.height : t.size,
+					};
+				}
+				return {width: t.size, height: t.size};
+			}
+
 			var t : cdb.Types.TilePos = currentValue;
 			var file = t == null ? null : t.file;
-			var size = t == null ? 16 : t.size;
-			var pos = t == null ? { x : 0, y : 0, width : 1, height : 1 } : { x : t.x, y : t.y, width : t.width == null ? 1 : t.width, height : t.height == null ? 1 : t.height };
+			var dims = getDims(t);
+			var pos = { x : 0, y : 0, width : 1, height : 1 };
+			if (t != null) {
+				pos = {
+					x : Math.floor(t.x / ((t.size != 1) ? 1 : t.width)),
+					y : Math.floor(t.y / ((t.size != 1) ? 1 : t.height)),
+					width : (t.width == null || t.size == 1) ? 1 : t.width,
+					height : (t.height == null || t.size == 1) ? 1 : t.height,
+				};
+			}
 			if( file == null ) {
 				var y = line.index - 1;
 				while( y >= 0 ) {
@@ -770,16 +790,25 @@ class Cell extends Component {
 					var v2 = Reflect.field(o.obj, column.name);
 					if( v2 != null ) {
 						file = v2.file;
-						size = v2.size;
+						dims = getDims(v2);
 						break;
 					}
 				}
 			}
 
 			function setVal() {
+				var size = dims.width;
 				var v : Dynamic = { file : file, size : size, x : pos.x, y : pos.y };
 				if( pos.width != 1 ) v.width = pos.width;
 				if( pos.height != 1 ) v.height = pos.height;
+
+				if( dims.height != dims.width ) {
+					v.size = 1;
+					v.x = pos.x * dims.width;
+					v.y = pos.y * dims.height;
+					v.width = pos.width * dims.width;
+					v.height = pos.height * dims.height;
+				}
 				setRawValue(v);
 			}
 
@@ -797,7 +826,7 @@ class Cell extends Component {
 				return;
 			}
 
-			var ts = new hide.comp.TileSelector(file,size,modal.content);
+			var ts = new hide.comp.TileSelector(file,dims,modal.content);
 			ts.allowRectSelect = true;
 			ts.allowSizeSelect = true;
 			ts.allowFileChange = true;
@@ -805,7 +834,7 @@ class Cell extends Component {
 			ts.onChange = function(cancel) {
 				if( !cancel ) {
 					file = ts.file;
-					size = ts.size;
+					dims = ts.size;
 					pos = ts.value;
 					setVal();
 				}

@@ -345,6 +345,8 @@ input[type=checkbox]:checked:after {
 .hide-tileselect .flex-scroll .scroll .tile {
   background-color: #202;
   position: relative;
+  margin-right: 1px;
+  margin-bottom: 1px;
 }
 .hide-tileselect .flex-scroll .scroll .tile .valueDisp {
   position: absolute;
