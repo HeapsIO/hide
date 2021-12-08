@@ -114,7 +114,7 @@ class TileSelector extends Component {
 			tex.onChange = function() this.file = tex.path;
 		}
 		if( allowSizeSelect ) {
-			var widthEdit = new Element('<span>Width:<input type="number" value="${size.width}">px</span>').appendTo(tool.element);
+			var widthEdit = new Element('<span class="dim-edit">Width:<input type="number" value="${size.width}">px</span>').appendTo(tool.element);
 			widthEdit.find("input").on("blur",function(e:js.jquery.Event) {
 				var nsize = Std.parseInt(e.getThis().val());
 				if( this.size.width != nsize && nsize != null && nsize > 0 )
@@ -122,7 +122,7 @@ class TileSelector extends Component {
 			}).on("keydown", function(e:js.jquery.Event) {
 				if( e.keyCode == 13 ) widthEdit.find("input").blur();
 			});
-			var heightEdit = new Element('<span>Height:<input type="number" value="${size.height}">px</span>').appendTo(tool.element);
+			var heightEdit = new Element('<span class="dim-edit">Height:<input type="number" value="${size.height}">px</span>').appendTo(tool.element);
 			heightEdit.find("input").on("blur",function(e:js.jquery.Event) {
 				var nsize = Std.parseInt(e.getThis().val());
 				if( this.size.height != nsize && nsize != null && nsize > 0 )

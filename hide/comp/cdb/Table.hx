@@ -229,6 +229,8 @@ class Table extends Component {
 		var content = sep.find("span");
 		var toggle = sep.find("a");
 		var title = if( sheet.props.separatorTitles != null ) sheet.props.separatorTitles[sindex] else null;
+		if( title != null )
+			sep.addClass('separator-$title');
 
 		function getLines() {
 			var snext = 0, sref = -1;

@@ -332,6 +332,10 @@ input[type=checkbox]:checked:after {
   text-align: left;
   overflow: hidden;
 }
+.hide-tileselect .dim-edit {
+  margin-left: 2px;
+  margin-right: 2px;
+}
 .hide-tileselect .flex-scroll {
   height: 600px;
   width: 800px;
