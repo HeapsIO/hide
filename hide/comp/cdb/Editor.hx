@@ -95,14 +95,16 @@ class Editor extends Component {
 		});
 		element.contextmenu(function(e) e.preventDefault());
 
-		if( cdbTable == null )
+		if( cdbTable == null ) {
 			element.mousedown(onMouseDown);
-		else {
+			keys = new hide.ui.Keys(element);
+		} else {
 			cdbTable.element.off("mousedown", onMouseDown);
 			cdbTable.element.mousedown(onMouseDown);
+			keys = cdbTable.keys;
 		}
 
-		keys = new hide.ui.Keys(element);
+		keys.clear();
 		keys.addListener(onKey);
 		keys.register("search", function() {
 			searchBox.show();
@@ -188,8 +190,8 @@ class Editor extends Component {
 		case K.ESCAPE:
 			if( currentFilter != null ) {
 				searchFilter(null);
-				searchBox.hide();
 			}
+			searchBox.hide();
 		}
 		return false;
 	}
