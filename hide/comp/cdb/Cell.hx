@@ -155,6 +155,9 @@ class Cell extends Component {
 
 	public function refresh(withSubtable = false) {
 		currentValue = Reflect.field(line.obj, column.name);
+
+		blurOff = true;
+
 		var html = valueHtml(column, value, line.table.getRealSheet(), line.obj, []);
 		if( !R_HTML.match(html) )
 			element[0].textContent = html;
@@ -162,6 +165,8 @@ class Cell extends Component {
 			element.html(html);
 		else
 			element[0].innerHTML = html;
+		blurOff = false;
+
 		updateClasses();
 		var subTable = line.subTable;
 		if( withSubtable && subTable != null && subTable.cell == this) {
@@ -170,7 +175,6 @@ class Cell extends Component {
 			else
 				table.refreshList(this);
 		}
-		blurOff = false;
 	}
 
 	function watchFile( file : String ) {
@@ -579,7 +583,6 @@ class Cell extends Component {
 			i.keydown(function(e) {
 				switch( e.keyCode ) {
 				case K.ESCAPE:
-					blurOff = true;
 					refresh();
 					table.editor.element.focus();
 				case K.ENTER if( !e.shiftKey || !column.type.match(TString|TDynamic|TCustom(_)) ):
