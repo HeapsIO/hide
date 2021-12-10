@@ -123,6 +123,11 @@ class LightProbeObject extends h3d.scene.Mesh {
 		}
 	}
 
+	override function onRemove() {
+		super.onRemove();
+		env.dispose();
+	}
+
 	override function emit( ctx : h3d.scene.RenderContext ) {
 
 		if( env == null || env.diffuse == null || env.specular == null )
