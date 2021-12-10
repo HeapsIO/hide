@@ -21,6 +21,11 @@ class Keys {
 		}
 	}
 
+	public function clear() {
+		listeners = [];
+		keys = [];
+	}
+
 	public function addListener( l ) {
 		listeners.push(l);
 	}

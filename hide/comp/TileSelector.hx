@@ -3,27 +3,30 @@ package hide.comp;
 class TileSelector extends Component {
 
 	public var file(default,set) : String;
-	public var size(default,set) : Int;
+	public var size(default,set) : {width: Int, height: Int};
 	public var value(default,set) : Null<{ x : Int, y : Int, width : Int, height : Int }>;
+
 	public var allowRectSelect(default,set) : Bool;
 	public var allowSizeSelect(default,set) : Bool;
 	public var allowFileChange(default,set) : Bool;
 
-    var valueDisp : Element;
-    var cursor : Element;
-    var image : Element;
-	var movePos = { x : 0, y : 0, moving : false, moved : false };
-    var cursorPos : { x : Int, y : Int, x2 : Int, y2 : Int, select : Bool };
-    var width : Int;
-    var height : Int;
+	var cursorPos : { x : Int, y : Int, x2 : Int, y2 : Int, dragSelect : Bool };
+	var movePos = { x : 0, y : 0, dragScrolling : false };
+	var valueDisp : Element;
+	var cursor : Element;
+	var image : Element;
+	var imageWidth : Int;
+	var imageHeight : Int;
 	var zoom : Float;
 	var imageElt : js.html.ImageElement;
+	var modal : Element;
 
 	public function new(file,size,?parent,?el) {
 		super(parent,el);
 		element.addClass("hide-tileselect");
 		this.file = file;
 		this.size = size;
+		this.modal = parent.parent();
 	}
 
 	function set_file(file) {
@@ -34,8 +37,8 @@ class TileSelector extends Component {
 
 	function set_value(v) {
 		value = v;
-        if( cursorPos != null ) updateCursor();
-        return v;
+		if( cursorPos != null ) updateCursor();
+		return v;
 	}
 
 	function set_size(size) {
@@ -62,24 +65,34 @@ class TileSelector extends Component {
 		return b;
 	}
 
-    function updateCursor() {
-        var k = size * zoom;
-        var width = hxd.Math.abs(cursorPos.x2 - cursorPos.x) + 1;
-        var height = hxd.Math.abs(cursorPos.y2 - cursorPos.y) + 1;
-        cursor.css({left: hxd.Math.min(cursorPos.x,cursorPos.x2)*k,top:hxd.Math.min(cursorPos.y,cursorPos.y2)*k,width:width*k,height:height*k});
-        cursor.toggle(cursorPos.x >= 0);
-        if( value != null ) {
-            valueDisp.show();
-            valueDisp.css({left:value.x*k,top:value.y*k,width:value.width*k,height:value.height*k});
-        } else
-            valueDisp.hide();
-    }
+	function updateCursor() {
+		var k = { w: size.width * zoom, h: size.height * zoom };
+		var width = hxd.Math.abs(cursorPos.x2 - cursorPos.x) + 1;
+		var height = hxd.Math.abs(cursorPos.y2 - cursorPos.y) + 1;
+		cursor.css({
+			left: hxd.Math.min(cursorPos.x,cursorPos.x2)*k.w,
+			top:hxd.Math.min(cursorPos.y,cursorPos.y2)*k.h,
+			width:width*k.w - 1,
+			height:height*k.h - 1,
+		});
+		cursor.toggle(cursorPos.x >= 0);
+		if( value != null ) {
+			valueDisp.show();
+			valueDisp.css({
+				left:value.x*k.w,
+				top:value.y*k.h,
+				width:value.width*k.w - 1,
+				height:value.height*k.h - 1,
+			});
+		} else
+			valueDisp.hide();
+	}
 
-    function rescale() {
-        image.height(height*zoom).width(width*zoom);
-        image.css("background-size",(width*zoom)+"px "+(height*zoom)+"px");
-        updateCursor();
-    }
+	function rescale() {
+		image.height(imageHeight*zoom).width(imageWidth*zoom);
+		image.css("background-size",(imageWidth*zoom)+"px "+(imageHeight*zoom)+"px");
+		updateCursor();
+	}
 
 	function rebuild() {
 
@@ -101,14 +114,24 @@ class TileSelector extends Component {
 			tex.onChange = function() this.file = tex.path;
 		}
 		if( allowSizeSelect ) {
-			var size = new Element('<span><input type="number" value="$size">px</span>').appendTo(tool.element);
-			size.find("input").on("blur",function(e:js.jquery.Event) {
-                var nsize = Std.parseInt(e.getThis().val());
-                if( this.size != nsize && nsize != null && nsize > 0 )
-				    this.size = nsize;
+			var widthEdit = new Element('<span class="dim-edit">Width:<input type="number" value="${size.width}">px</span>').appendTo(tool.element);
+			widthEdit.find("input").on("blur",function(e:js.jquery.Event) {
+				var nsize = Std.parseInt(e.getThis().val());
+				if( this.size.width != nsize && nsize != null && nsize > 0 )
+					this.size.width = nsize;
 			}).on("keydown", function(e:js.jquery.Event) {
-				if( e.keyCode == 13 ) size.find("input").blur();
+				if( e.keyCode == 13 ) widthEdit.find("input").blur();
 			});
+			var heightEdit = new Element('<span class="dim-edit">Height:<input type="number" value="${size.height}">px</span>').appendTo(tool.element);
+			heightEdit.find("input").on("blur",function(e:js.jquery.Event) {
+				var nsize = Std.parseInt(e.getThis().val());
+				if( this.size.height != nsize && nsize != null && nsize > 0 )
+					this.size.height = nsize;
+			}).on("keydown", function(e:js.jquery.Event) {
+				if( e.keyCode == 13 ) heightEdit.find("input").blur();
+			});
+			widthEdit.find("input").on("blur", updateCursor);
+			heightEdit.find("input").on("blur", updateCursor);
 		}
 		if( tool.element.children().length == 0 )
 			tool.remove();
@@ -117,18 +140,19 @@ class TileSelector extends Component {
 		var scroll = new Element("<div class='flex-scroll'><div class='scroll'>").appendTo(element).find(".scroll");
 		image = new Element('<div class="tile" style="background-image:url(\'$url\')"></div>').appendTo(scroll);
 
-        valueDisp = new Element('<div class="valueDisp">').appendTo(image);
+		valueDisp = new Element('<div class="valueDisp">').appendTo(image);
 		cursor = new Element('<div class="cursor">').appendTo(image);
-        cursorPos = { x : -1, y : -1, x2 : -1, y2 : -1, select : false };
+		cursorPos = { x : -1, y : -1, x2 : -1, y2 : -1, dragSelect : false };
 		var i = js.Browser.document.createImageElement();
 		this.imageElt = i;
 
 		i.onload = function(_) {
 			if( imageElt != i ) return;
-            width = i.width;
-            height = i.height;
-			zoom = Math.floor(hxd.Math.min(800 / width, 580 / height));
+			imageWidth = i.width;
+			imageHeight = i.height;
+			zoom = Math.floor(hxd.Math.min(800 / imageWidth, 580 / imageHeight));
 			if( zoom <= 0 ) zoom = 1;
+
 			scroll.on("mousewheel", function(e:js.jquery.Event) {
 				if( untyped e.originalEvent.wheelDelta > 0 )
 					zoom++;
@@ -137,30 +161,36 @@ class TileSelector extends Component {
 				rescale();
 				e.preventDefault();
 			});
+
 			scroll.parent().on("mousedown", function(e) {
-				if( e.button == 0 ) {
-					movePos.moving = true;
-					movePos.x = e.offsetX;
-					movePos.y = e.offsetY;
+				if( e.button == 2 ) {
+					movePos.dragScrolling = true;
+					movePos.x = e.pageX;
+					movePos.y = e.pageY;
 				}
 			});
-			scroll.parent().on("mousemove", function(e) {
-				if( movePos.moving ) {
-					var dx = e.offsetX - movePos.x;
-					var dy = e.offsetY - movePos.y;
+
+			modal.on("mousemove", function(e) {
+				if( movePos.dragScrolling ) {
+					var dx = e.pageX - movePos.x;
+					var dy = e.pageY - movePos.y;
+
 					scroll[0].scrollBy(-dx,-dy);
-					movePos.moved = true;
+					movePos.x = e.pageX;
+					movePos.y = e.pageY;
 				}
 			});
+
 			image.on("mousemove", function(e:js.jquery.Event) {
-				if( movePos.moving )
+				if( movePos.dragScrolling )
 					return;
-				var k = zoom * size;
-				var x = Math.floor(e.offsetX / k);
-				var y = Math.floor(e.offsetY / k);
-				if( (x+1) * size > i.width ) x--;
-				if( (y+1) * size > i.height ) y--;
-				if( cursorPos.select ) {
+				var k = { w: size.width * zoom, h: size.height * zoom };
+				var x = Math.floor(e.offsetX / k.w);
+				var y = Math.floor(e.offsetY / k.h);
+				if( (x+1) * size.width > i.width ) x--;
+				if( (y+1) * size.height > i.height ) y--;
+
+				if( cursorPos.dragSelect ) {
 					cursorPos.x2 = x;
 					cursorPos.y2 = y;
 				} else {
@@ -169,36 +199,50 @@ class TileSelector extends Component {
 				}
 				updateCursor();
 			});
-            image.on("mousedown", function(e:js.jquery.Event) {
-				if( e.button == 2 && allowRectSelect )
-					cursorPos.select = true;
-            });
-            image.on("mouseup", function(e:js.jquery.Event) {
-				e.preventDefault();
-				var moved = movePos.moved;
-				movePos.moved = false;
-				movePos.moving = false;
-                cursorPos.select = false;
-				if( e.button == 0 && moved )
+			image.on("mousedown", function(e:js.jquery.Event) {
+				if( movePos.dragScrolling )
 					return;
-                if( cursorPos.x2 >= cursorPos.x ) {
-                    value.x = cursorPos.x;
-                    value.width = cursorPos.x2 - cursorPos.x + 1;
-                } else {
-                    value.x = cursorPos.x2;
-                    value.width = cursorPos.x - cursorPos.x2 + 1;
-                }
-                if( cursorPos.y2 >= cursorPos.y ) {
-                    value.y = cursorPos.y;
-                    value.height = cursorPos.y2 - cursorPos.y + 1;
-                } else {
-                    value.y = cursorPos.y2;
-                    value.height = cursorPos.y - cursorPos.y2 + 1;
-                }
-                onChange(false);
-            });
-			image.on("contextmenu", function(e) {
+				var k = { w: size.width * zoom, h: size.height * zoom };
+				var x = Math.floor(e.offsetX / k.w);
+				var y = Math.floor(e.offsetY / k.h);
+				if( (x+1) * size.width > i.width ) x--;
+				if( (y+1) * size.height > i.height ) y--;
+				cursorPos.x = cursorPos.x2 = x;
+				cursorPos.y = cursorPos.y2 = y;
+
+				if( e.button == 0 && allowRectSelect )
+					cursorPos.dragSelect = true;
+			});
+			modal.on("mouseup", function(e) {
+				movePos.dragScrolling = false;
+				cursorPos.dragSelect = false;
+			});
+			image.on("mouseup", function(e:js.jquery.Event) {
 				e.preventDefault();
+				movePos.dragScrolling = false;
+				cursorPos.dragSelect = false;
+				if( e.button != 0 )
+					return;
+				if( cursorPos.x2 >= cursorPos.x ) {
+					value.x = cursorPos.x;
+					value.width = cursorPos.x2 - cursorPos.x + 1;
+				} else {
+					value.x = cursorPos.x2;
+					value.width = cursorPos.x - cursorPos.x2 + 1;
+				}
+				if( cursorPos.y2 >= cursorPos.y ) {
+					value.y = cursorPos.y;
+					value.height = cursorPos.y2 - cursorPos.y + 1;
+				} else {
+					value.y = cursorPos.y2;
+					value.height = cursorPos.y - cursorPos.y2 + 1;
+				}
+				onChange(false);
+				e.stopPropagation();
+			});
+			modal.on("contextmenu", function(e) {
+				e.preventDefault();
+				e.stopPropagation();
 			});
 			rescale();
 		};
