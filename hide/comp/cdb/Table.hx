@@ -186,12 +186,14 @@ class Table extends Component {
 
 		var tbody = J("<tbody>");
 
+		var lastSepTitle : String = null;
 		var snext = 0, hidden = false;
 		for( i in 0...lines.length+1 ) {
 			while( sheet.separators[snext] == i ) {
 				var sep = makeSeparator(snext, colCount);
 				sep.element.appendTo(tbody);
 				if( sep.hidden != null ) hidden = sep.hidden;
+				lastSepTitle = if( sheet.props.separatorTitles != null ) sheet.props.separatorTitles[snext] else null;
 				snext++;
 			}
 			if( i == lines.length ) break;
@@ -200,6 +202,8 @@ class Table extends Component {
 				line.hide();
 			else
 				line.create();
+			if( lastSepTitle != null )
+				line.element.addClass("group-" + lastSepTitle.toLowerCase());
 			tbody.append(line.element);
 		}
 		element.append(tbody);
