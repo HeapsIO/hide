@@ -142,9 +142,6 @@ class SceneEditor {
 	public var camera2D(default,set) : Bool = false;
 	public var objectAreSelectable = true;
 
-	// Windows default is 0.5
-	public var dblClickDuration = 0.2;
-
 	var updates : Array<Float -> Void> = [];
 
 	var showGizmo = true;
@@ -760,7 +757,6 @@ class SceneEditor {
 		var lastPush : Array<Float> = null;
 		var i3d = Std.downcast(int, h3d.scene.Interactive);
 		var i2d = Std.downcast(int, h2d.Interactive);
-		var prevClickTime : Float = -1e20;
 
 		int.onClick = function(e) {
 			if(e.button == K.MOUSE_RIGHT) {
@@ -820,14 +816,6 @@ class SceneEditor {
 			if( e.button == K.MOUSE_LEFT ) {
 				scene.sevents.stopCapture();
 				e.propagate = false;
-
-				var curTime = haxe.Timer.stamp();
-				if( curTime - prevClickTime < dblClickDuration && !(elt.getHideProps().isGround)) {
-					focusSelection();
-					prevClickTime = -1e20;
-				}
-				else
-					prevClickTime = curTime;
 			}
 		}
 		int.onMove = function(e) {
