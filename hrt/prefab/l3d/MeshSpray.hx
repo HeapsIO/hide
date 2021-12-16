@@ -278,10 +278,11 @@ class MeshSprayObject extends h3d.scene.Object {
 		if( mp.binaryMeshes != null ) {
 			var tmp = new h3d.Matrix();
 			var absPos = getAbsPos();
+			var degToRad = Math.PI / 180;
 			for( c in mp.binaryMeshes ) {
 				var mesh = loadMesh(c.path);
 				var batch = getBatch(mesh);
-				tmp.initRotation(c.rotX, c.rotY, c.rotZ);
+				tmp.initRotation(c.rotX * degToRad, c.rotY * degToRad, c.rotZ * degToRad);
 				tmp.prependScale(c.scale, c.scale, c.scale);
 				tmp.tx = c.x;
 				tmp.ty = c.y;
