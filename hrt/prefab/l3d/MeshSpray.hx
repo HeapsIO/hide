@@ -144,11 +144,9 @@ typedef MeshSprayConfig = {
 @:access(hrt.prefab.l3d.MeshSpray)
 class MeshSprayObject extends h3d.scene.Object {
 
-	var childCount : Int = -1;
 	var batches : Array<h3d.scene.MeshBatch> = [];
 	var blookup : Map<h3d.prim.Primitive, h3d.scene.MeshBatch> = new Map();
 	var mp : MeshSpray;
-	var currentChk : Float = 0;
 
 	public function new(mp,?parent) {
 		this.mp = mp;
@@ -170,32 +168,11 @@ class MeshSprayObject extends h3d.scene.Object {
 			var p = b.material.getPass("highlight");
 			if( p != null ) b.material.removePass(p);
 		}
-
-		var count = children.length;
-		count -= batches.length;
-		count -= mp.previewModels.length;
-		if( mp.gBrushes != null ) count -= mp.gBrushes.length;
-		var redraw = false;
-		if( childCount != count ) {
-			childCount = count;
-			redraw = true;
-		}
-
-		var chk = 0.;
-		for( c in children ) {
-			if( c.alwaysSync ) continue;
-			chk += c.x - c.y + c.z * 1.5456 + c.scaleX + c.scaleY + c.scaleZ + c.qRot.x + c.qRot.y + c.qRot.z;
-		}
-		if( chk != currentChk ) {
-			currentChk = chk;
-			redraw = true;
-		}
-
-		if( redraw ) this.redraw();
 		super.emitRec(ctx);
 	}
 
 	public function redraw(updateShaders=false) {
+		getBounds(); // force absBos calculus on children
 		for( b in batches ) {
 			if( updateShaders ) b.shadersChanged = true;
 			b.begin();
@@ -713,6 +690,11 @@ class MeshSpray extends Object3D {
 
 			var shiftPressed = K.isDown( K.SHIFT);
 
+			if( worldPos == null ) {
+				clearBrushes();
+				return;
+			}
+
 			drawCircle(ctx, worldPos.x, worldPos.y, worldPos.z, (shiftPressed) ? currentConfig.deleteRadius : currentConfig.radius, 5, (shiftPressed) ? 9830400 : 38400);
 
 			if (lastSpray < Date.now().getTime() - 100) {
@@ -773,13 +755,8 @@ class MeshSpray extends Object3D {
 		return super.removeInstance(ctx);
 	}
 	override function setSelected( ctx : Context, b : Bool ) {
-		if( !b ) {
+		if( !b )
 			removeInteractiveBrush();
-			if( gBrushes != null ) {
-				for (g in gBrushes) g.remove();
-				gBrushes = null;
-			}
-		}
 		return false;
 	}
 
@@ -792,6 +769,10 @@ class MeshSpray extends Object3D {
 		if (wasEdited)
 			sceneEditor.refresh(Partial, () -> { });
 		wasEdited = false;
+		clearBrushes();
+	}
+
+	function clearBrushes() {
 		if( gBrushes != null ) {
 			for (g in gBrushes) g.remove();
 			gBrushes = null;
@@ -937,6 +918,8 @@ class MeshSpray extends Object3D {
 			wasEdited = true;
 			sprayedModels = sprayedModels.concat(previewModels);
 			previewModels = [];
+			clearBrushes();
+			cast(ctx.local3d,MeshSprayObject).redraw();
 		}
 	}
 
@@ -959,15 +942,15 @@ class MeshSpray extends Object3D {
 		if (childToRemove.length > 0) {
 			wasEdited = true;
 			sceneEditor.deleteElements(childToRemove, () -> { }, false);
+			clearBrushes();
+			cast(ctx.local3d,MeshSprayObject).redraw();
 		}
 	}
 
 	public function drawCircle(ctx : Context, originX : Float, originY : Float, originZ : Float, radius: Float, thickness: Float, color) {
 		var newColor = h3d.Vector.fromColor(color);
 		if (gBrushes == null || gBrushes.length == 0 || gBrushes[0].scaleX != radius || gBrushes[0].material.color != newColor) {
-			if (gBrushes != null) {
-				for (g in gBrushes) g.remove();
-			}
+			clearBrushes();
 			gBrushes = [];
 			var gBrush = new h3d.scene.Mesh(makePrimCircle(32, 0.95), ctx.local3d);
 			gBrush.scaleX = gBrush.scaleY = radius;
@@ -1063,7 +1046,6 @@ class MeshSpray extends Object3D {
 		primitive.tangents = [for(p in points) new h3d.col.Point(0., 1., 0.)];
 		primitive.uvs = [for(uv in uvs) new h3d.prim.UV(uv.x, uv.y)];
 		primitive.colors = [for(p in points) new h3d.col.Point(1,1,1)];
-		primitive.incref();
 		return primitive;
 	}
 
