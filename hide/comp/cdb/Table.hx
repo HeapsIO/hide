@@ -203,7 +203,7 @@ class Table extends Component {
 			else
 				line.create();
 			if( lastSepTitle != null )
-				line.element.addClass("group-" + lastSepTitle.toLowerCase());
+				line.element.addClass("group-" + StringTools.replace(lastSepTitle.toLowerCase(), " ", "-"));
 			tbody.append(line.element);
 		}
 		element.append(tbody);
@@ -234,7 +234,7 @@ class Table extends Component {
 		var toggle = sep.find("a");
 		var title = if( sheet.props.separatorTitles != null ) sheet.props.separatorTitles[sindex] else null;
 		if( title != null )
-			sep.addClass('separator-$title'.toLowerCase());
+			sep.addClass(StringTools.replace('separator-$title'.toLowerCase(), " ", "-"));
 
 		function getLines() {
 			var snext = 0, sref = -1;

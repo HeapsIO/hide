@@ -390,8 +390,8 @@ class Editor extends Component {
 				Reflect.setField(destObj, destCol.name, v);
 		}
 
-		var posX = cursor.x < 0 ? 0 : cursor.x;
-		var posY = cursor.y < 0 ? 0 : cursor.y;
+		var posX = x1 < 0 ? 0 : x1;
+		var posY = y1 < 0 ? 0 : y1;
 		var data = clipboard.data;
 		if( data.length == 0 )
 			return;
