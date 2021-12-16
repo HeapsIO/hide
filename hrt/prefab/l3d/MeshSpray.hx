@@ -19,10 +19,13 @@ class MeshSprayObject extends h3d.scene.Object {
 class MeshSpray extends Object3D {
 
 	@:s var split : Int;
+	@:s var binaryStorage : Bool = false;
+	@:s var meshes : Array<{ path : String }>;
 
-	inline function getSplitID( c : Prefab ) {
-		var c = c.to(Object3D);
-		return (Math.floor(c.x/split) * 39119 + Math.floor(c.y/split)) % 0x7FFFFFFF;
+	var binaryMeshes : Array<{ path : String, x : Float, y : Float, z : Float, rotX : Float, rotY : Float, rotZ : Float, scale : Float }>;
+
+	inline function getSplitID( x : Float, y : Float ) {
+		return (Math.floor(x/split) * 39119 + Math.floor(y/split)) % 0x7FFFFFFF;
 	}
 
 	override function createObject( ctx : Context ) {
@@ -33,36 +36,71 @@ class MeshSpray extends Object3D {
 			curMap = new Map();
 			mspray.batchesMap.set(0, curMap);
 		}
+		inline function switchMap(x,y) {
+			var sid = getSplitID(x, y);
+			if( sid != curID ) {
+				curID = sid;
+				curMap = mspray.batchesMap.get(sid);
+				if( curMap == null ) {
+					curMap = new Map();
+					mspray.batchesMap.set(sid, curMap);
+				}
+			}
+		}
+		inline function loadBatch( source : String ) {
+			var batch = curMap.get(source);
+			if( batch != null ) return;
+			var obj = ctx.loadModel(source).toMesh();
+			var batch = new h3d.scene.MeshBatch(cast(obj.primitive,h3d.prim.MeshPrimitive), obj.material, mspray);
+			batch.cullingCollider = @:privateAccess batch.instanced.bounds;
+			var multi = Std.downcast(obj, h3d.scene.MultiMaterial);
+			if( multi != null ) batch.materials = multi.materials;
+			curMap.set(source, { batch : batch, pivot : obj.defaultTransform.isIdentity() ? null : obj.defaultTransform });
+			mspray.batches.push(batch);
+		}
 		for( c in children ) {
 			if( !c.enabled || c.type != "model" ) continue;
 			if( split > 0 ) {
-				var sid = getSplitID(c);
-				if( sid != curID ) {
-					curID = sid;
-					curMap = mspray.batchesMap.get(sid);
-					if( curMap == null ) {
-						curMap = new Map();
-						mspray.batchesMap.set(sid, curMap);
-					}
-				}
+				var obj = c.to(Object3D);
+				switchMap(obj.x, obj.y);
 			}
-			var batch = curMap.get(c.source);
-			if( batch == null ) {
-				var obj = ctx.loadModel(c.source).toMesh();
-				var batch = new h3d.scene.MeshBatch(cast(obj.primitive,h3d.prim.MeshPrimitive), obj.material, mspray);
-				batch.cullingCollider = @:privateAccess batch.instanced.bounds;
-				var multi = Std.downcast(obj, h3d.scene.MultiMaterial);
-				if( multi != null ) batch.materials = multi.materials;
-				curMap.set(c.source, { batch : batch, pivot : obj.defaultTransform.isIdentity() ? null : obj.defaultTransform });
-				mspray.batches.push(batch);
+			loadBatch(c.source);
+		}
+		if( binaryMeshes != null ) {
+			for( c in binaryMeshes ) {
+				if( split > 0 ) switchMap(c.x, c.y);
+				loadBatch(c.path);
 			}
 		}
 		return mspray;
 	}
 
+	function loadBinary( ctx : Context ) {
+		binaryMeshes = [];
+		var bytes = new haxe.io.BytesInput(ctx.shared.loadPrefabDat("content","dat",name).entry.getBytes());
+		try {
+			while( true ) {
+				binaryMeshes.push({
+					path : meshes[bytes.readByte() - 1].path,
+					x : bytes.readFloat(),
+					y : bytes.readFloat(),
+					z : bytes.readFloat(),
+					scale : bytes.readFloat(),
+					rotX : bytes.readFloat(),
+					rotY : bytes.readFloat(),
+					rotZ : bytes.readFloat(),
+				});
+				if( bytes.readByte() != "\n".code ) throw "assert";
+			}
+		} catch( e : haxe.io.Eof ) {
+		}
+	}
+
 	override function make( ctx : Context ) {
 		if( !enabled )
 			return ctx;
+		if( binaryStorage )
+			loadBinary(ctx);
 		ctx = super.make(ctx);
 		var mspray = Std.downcast(ctx.local3d, MeshSprayObject);
 		var pos = mspray.getAbsPos();
@@ -76,7 +114,8 @@ class MeshSpray extends Object3D {
 			if( !c.enabled || c.type != "model" )
 				continue;
 			if( split > 0 ) {
-				var sid = getSplitID(c);
+				var obj = c.to(Object3D);
+				var sid = getSplitID(obj.x, obj.y);
 				if( sid != curID ) {
 					curMap = mspray.batchesMap.get(sid);
 					curID = sid;
@@ -87,8 +126,30 @@ class MeshSpray extends Object3D {
 			if( inf.pivot != null ) tmp.multiply3x4(inf.pivot, tmp);
 			inf.batch.emitInstance();
 		}
+		if( binaryMeshes != null ) {
+			var degToRad = Math.PI / 180;
+			for( c in binaryMeshes ) {
+				if( split > 0 ) {
+					var sid = getSplitID(c.x, c.y);
+					if( sid != curID ) {
+						curMap = mspray.batchesMap.get(sid);
+						curID = sid;
+					}
+				}
+				var inf = curMap.get(c.path);
+				tmp.initRotation(c.rotX * degToRad, c.rotY * degToRad, c.rotZ * degToRad);
+				tmp.prependScale(c.scale, c.scale, c.scale);
+				tmp.tx = c.x;
+				tmp.ty = c.y;
+				tmp.tz = c.z;
+				tmp.multiply3x4(tmp, pos);
+				if( inf.pivot != null ) tmp.multiply3x4(inf.pivot, tmp);
+				inf.batch.emitInstance();
+			}
+		}
 		for( b in mspray.batches )
 			b.worldPosition = null;
+		binaryMeshes = null;
 		return ctx;
 	}
 
@@ -146,6 +207,7 @@ class MeshSprayObject extends h3d.scene.Object {
 
 	var batches : Array<h3d.scene.MeshBatch> = [];
 	var blookup : Map<h3d.prim.Primitive, h3d.scene.MeshBatch> = new Map();
+	var mlookup : Map<String, h3d.scene.Mesh> = [];
 	var mp : MeshSpray;
 
 	public function new(mp,?parent) {
@@ -171,6 +233,31 @@ class MeshSprayObject extends h3d.scene.Object {
 		super.emitRec(ctx);
 	}
 
+	function getBatch( m : h3d.scene.Mesh ) {
+		var batch = blookup.get(m.primitive);
+		if( batch == null ) {
+			batch = new h3d.scene.MeshBatch(cast(m.primitive,h3d.prim.MeshPrimitive), m.material, this);
+			var multi = Std.downcast(m, h3d.scene.MultiMaterial);
+			if( multi != null ) batch.materials = multi.materials;
+			batch.alwaysSync = true;
+			batch.begin();
+			batches.push(batch);
+			blookup.set(m.primitive, batch);
+		}
+		return batch;
+	}
+
+	function loadMesh( path : String ) {
+		var mesh = mlookup.get(path);
+		if( mesh == null ) {
+			var obj = mp.shared.loadModel(path);
+			if( !obj.isMesh() ) throw path+" is not a mesh";
+			mesh = obj.toMesh();
+			mlookup.set(path, mesh);
+		}
+		return mesh;
+	}
+
 	public function redraw(updateShaders=false) {
 		getBounds(); // force absBos calculus on children
 		for( b in batches ) {
@@ -181,23 +268,29 @@ class MeshSprayObject extends h3d.scene.Object {
 			c.culled = false;
 			if( c.alwaysSync ) continue;
 			var m = Std.downcast(c, h3d.scene.Mesh);
-			if( m == null ) continue;
-			var prim = Std.downcast(m.primitive, h3d.prim.MeshPrimitive);
-			if( prim == null ) continue;
+			if( m == null || !Std.is(m.primitive, h3d.prim.MeshPrimitive) ) continue;
 
-			var batch = blookup.get(m.primitive);
-			if( batch == null ) {
-				batch = new h3d.scene.MeshBatch(prim, m.material, this);
-				var multi = Std.downcast(m, h3d.scene.MultiMaterial);
-				if( multi != null ) batch.materials = multi.materials;
-				batch.alwaysSync = true;
-				batch.begin();
-				batches.push(batch);
-				blookup.set(m.primitive, batch);
-			}
+			var batch = getBatch(m);
 			batch.worldPosition = c.absPos;
 			batch.emitInstance();
 			c.culled = true;
+		}
+		if( mp.binaryMeshes != null ) {
+			var tmp = new h3d.Matrix();
+			var absPos = getAbsPos();
+			for( c in mp.binaryMeshes ) {
+				var mesh = loadMesh(c.path);
+				var batch = getBatch(mesh);
+				tmp.initRotation(c.rotX, c.rotY, c.rotZ);
+				tmp.prependScale(c.scale, c.scale, c.scale);
+				tmp.tx = c.x;
+				tmp.ty = c.y;
+				tmp.tz = c.z;
+				tmp.multiply3x4(tmp, absPos);
+				tmp.multiply3x4(mesh.defaultTransform, tmp);
+				batch.worldPosition = tmp;
+				batch.emitInstance();
+			}
 		}
 		for( b in batches )
 			b.worldPosition = null;
@@ -212,6 +305,7 @@ class MeshSpray extends Object3D {
 	@:s var currentPresetName : String = null;
 	@:s var currentSetName : String = null;
 	@:s var split : Int = 0;
+	@:s var binaryStorage = false;
 
 	var sceneEditor : hide.comp.SceneEditor;
 
@@ -248,6 +342,10 @@ class MeshSpray extends Object3D {
 	var lastMeshPos : h3d.col.Point;
 	var invParent : h3d.Matrix;
 
+	var binaryMeshes : Array<{ path : String, x : Float, y : Float, z : Float, rotX : Float, rotY : Float, rotZ : Float, scale : Float }>;
+	var binaryChanged : Bool = false;
+	var shared : ContextShared;
+
 	var MESH_SPRAY_CONFIG_FILE = "meshSprayProps.json";
 	var MESH_SPRAY_CONFIG_PATH(get, null) : String;
 	function get_MESH_SPRAY_CONFIG_PATH() {
@@ -255,10 +353,63 @@ class MeshSpray extends Object3D {
 	}
 
 	override function save() {
-		// prevent saving preview
-		if( previewModels.length > 0 )
-			sceneEditor.deleteElements(previewModels, () -> { }, false);
+		clearPreview();
+		if( binaryStorage ) saveToBinary();
 		return super.save();
+	}
+
+	function saveToBinary() {
+		if( binaryMeshes == null )
+			binaryMeshes = [];
+		var meshes = new Map();
+		for( i => m in this.meshes )
+			meshes.set(m.path, i+1);
+		for( c in children.copy() ) {
+			if( c.type != "model" || c.children.length != 0 || !meshes.exists(c.source) ) continue;
+			var c = c.to(Model);
+			binaryMeshes.push({ path : c.source, x : c.x, y : c.y, z : c.z, scale : c.scaleX, rotX : c.rotationX, rotY : c.rotationY, rotZ : c.rotationZ });
+			children.remove(c);
+			binaryChanged = true;
+		}
+		if( !binaryChanged )
+			return;
+		function align(x:Float,y:Float) {
+			return y + x * 0.001;
+		}
+		function key(m:{x:Float,y:Float}) {
+			if( split > 0 ) {
+				var ix = Math.floor(m.x/split);
+				var iy = Math.floor(m.y/split);
+				return ix + iy * 65535 + align(m.x/split-ix,m.y/split-iy);
+			}
+			return align(m.x,m.y);
+		}
+		binaryMeshes.sort(function(m1,m2) return Reflect.compare(key(m1),key(m2)));
+		var bytes = new haxe.io.BytesBuffer();
+		for( c in binaryMeshes ) {
+			var mid = meshes.get(c.path);
+			if( mid == null ) continue;
+			if( mid > 255 ) throw "assert";
+			bytes.addByte(mid);
+			bytes.addFloat(c.x);
+			bytes.addFloat(c.y);
+			bytes.addFloat(c.z);
+			bytes.addFloat(c.scale);
+			bytes.addFloat(c.rotX);
+			bytes.addFloat(c.rotY);
+			bytes.addFloat(c.rotZ);
+			bytes.addByte("\n".code);
+		}
+		shared.savePrefabDat("content","dat",name, bytes.getBytes());
+		binaryChanged = false;
+	}
+
+	function clearPreview() {
+		// prevent saving preview
+		if( previewModels.length > 0 ) {
+			sceneEditor.deleteElements(previewModels, () -> { }, false, false);
+			previewModels = [];
+		}
 	}
 
 	function getDefaultConfig() : MeshSprayConfig {
@@ -618,6 +769,7 @@ class MeshSpray extends Object3D {
 		<div class="group" name="Extra">
 		<dl>
 			<dt>Split</dt><dd><input type="range" min="0" max="2048" field="split"/></dd>
+			<dt>Binary Storage</dt><dd><input type="checkbox" field="binaryStorage" ${binaryStorage?"disabled":""}/></dd>
 		</dl>
 		</div>'), this);
 	}
@@ -638,10 +790,7 @@ class MeshSpray extends Object3D {
 				lastMeshId = -1;
 				if (lastSpray < Date.now().getTime() - 100) {
 					if( !K.isDown( K.SHIFT) ) {
-						if (previewModels.length > 0) {
-							sceneEditor.deleteElements(previewModels, () -> { }, false);
-							previewModels = [];
-						}
+						clearPreview();
 						var worldPos = ectx.screenToGround(s2d.mouseX, s2d.mouseY);
 						previewMeshesAround(ectx, ctx, worldPos);
 					}
@@ -675,14 +824,11 @@ class MeshSpray extends Object3D {
 					else {
 						sceneEditor.addElements(addedModels, false, true, false);
 					}
+					cast(ctx.local3d,MeshSprayObject).redraw();
 				}));
 				sprayedModels = [];
 			}
-
-			if (previewModels.length > 0) {
-				sceneEditor.deleteElements(previewModels, () -> { }, false);
-				previewModels = [];
-			}
+			clearPreview();
 		};
 
 		interactive.onMove = function(e) {
@@ -698,10 +844,7 @@ class MeshSpray extends Object3D {
 			drawCircle(ctx, worldPos.x, worldPos.y, worldPos.z, (shiftPressed) ? currentConfig.deleteRadius : currentConfig.radius, 5, (shiftPressed) ? 9830400 : 38400);
 
 			if (lastSpray < Date.now().getTime() - 100) {
-				if (previewModels.length > 0) {
-					sceneEditor.deleteElements(previewModels, () -> { }, false, false);
-					previewModels = [];
-				}
+				clearPreview();
 				if( !shiftPressed ) {
 					previewMeshesAround(ectx, ctx, worldPos);
 				}
@@ -762,10 +905,7 @@ class MeshSpray extends Object3D {
 
 	function removeInteractiveBrush() {
 		if( interactive != null ) interactive.remove();
-		if (previewModels != null && previewModels.length > 0) {
-			sceneEditor.deleteElements(previewModels, () -> { }, false, false);
-			previewModels = [];
-		}
+		clearPreview();
 		if (wasEdited)
 			sceneEditor.refresh(Partial, () -> { });
 		wasEdited = false;
@@ -828,10 +968,7 @@ class MeshSpray extends Object3D {
 		}
 		var nbMeshesToPlace = computedDensity - nbMeshesInZone;
 		if (computedDensity == 1)
-		if (previewModels.length > 0) {
-			sceneEditor.deleteElements(previewModels, () -> { }, false);
-			previewModels = [];
-		}
+			clearPreview();
 		lastPos = point;
 		if (nbMeshesToPlace > 0) {
 			while (nbMeshesToPlace-- > 0) {
@@ -939,9 +1076,33 @@ class MeshSpray extends Object3D {
 				}
 			}
 		}
+		var needRedraw = false;
 		if (childToRemove.length > 0) {
 			wasEdited = true;
 			sceneEditor.deleteElements(childToRemove, () -> { }, false);
+			needRedraw = true;
+		}
+
+		if( binaryMeshes != null ) {
+			var toDelete = [];
+			for( c in binaryMeshes ) {
+				if( distance(point2d.x, point2d.y, c.x, c.y) < fakeRadius )
+					toDelete.push(c);
+			}
+			if( toDelete.length > 0 ) {
+				for( c in toDelete )
+					binaryMeshes.remove(c);
+				undo.change(Custom(function(undo) {
+					for( c in toDelete ) {
+						if( undo ) binaryMeshes.push(c) else binaryMeshes.remove(c);
+					}
+					cast(ctx.local3d,MeshSprayObject).redraw();
+				}));
+				needRedraw = true;
+			}
+		}
+
+		if( needRedraw ) {
 			clearBrushes();
 			cast(ctx.local3d,MeshSprayObject).redraw();
 		}
@@ -985,6 +1146,27 @@ class MeshSpray extends Object3D {
 	override function make(ctx:Context):Context {
 		if( !enabled )
 			return ctx;
+		if( binaryStorage ) {
+			binaryMeshes = [];
+			var bytes = new haxe.io.BytesInput(ctx.shared.loadPrefabDat("content","dat",name).entry.getBytes());
+			try {
+				while( true ) {
+					binaryMeshes.push({
+						path : meshes[bytes.readByte() - 1].path,
+						x : bytes.readFloat(),
+						y : bytes.readFloat(),
+						z : bytes.readFloat(),
+						scale : bytes.readFloat(),
+						rotX : bytes.readFloat(),
+						rotY : bytes.readFloat(),
+						rotZ : bytes.readFloat(),
+					});
+					if( bytes.readByte() != "\n".code ) throw "assert";
+				}
+			} catch( e : haxe.io.Eof ) {
+			}
+		}
+		shared = ctx.shared;
 		ctx = makeInstance(ctx);
 		// add all children then build meshspray
 		for( c in children )
