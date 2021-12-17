@@ -270,6 +270,30 @@ class Editor extends Component {
 		ide.setClipboard(clipboard.text);
 	}
 
+	function stringToCol(str : String) : Null<Int> {
+		var hexChars = "0123456789ABCDEF";
+		if( str.charAt(0) == "#" )
+			str = str.substr(1, str.length);
+		for( i in new haxe.iterators.StringIterator(str) ) {
+			if( hexChars.indexOf(String.fromCharCode(i)) == -1 )
+				return null;
+		}
+		var color = Std.parseInt("0x"+str);
+		if( str.length == 6 )
+			return color | 0xFF000000;
+		else if( str.length == 3 ) {
+			var r = color >> 8;
+			var g = (color & 0xF0) >> 4;
+			var b = color & 0xF;
+			r |= r << 4;
+			g |= g << 4;
+			b |= b << 4;
+			color = (r << 16) | (g << 8) | b;
+			return color | 0xFF000000;
+		}
+		return null;
+	}
+
 	function onPaste() {
 		var text = ide.getClipboard();
 		var columns = cursor.table.columns;
@@ -316,6 +340,8 @@ class Editor extends Component {
 					if( Math.isNaN(value) )
 						return null;
 					return value;
+				case TColor:
+					return stringToCol(text);
 				default:
 				}
 				return null;
