@@ -100,12 +100,21 @@ class Ide {
 			}
 		}
 
+		nw.Screen.Init();
+		var xMax = 1;
+		var yMax = 1;
+		for( s in nw.Screen.screens ) {
+			if( s.work_area.x + s.work_area.width > xMax )
+				xMax = s.work_area.x + s.work_area.width;
+			if( s.work_area.y + s.work_area.height > yMax )
+				yMax = s.work_area.y + s.work_area.height;
+		}
 		if( subView == null ) {
 			var wp = ideConfig.windowPos;
 			if( wp != null ) {
 				if( wp.w > 400 && wp.h > 300 )
 					window.resizeBy(wp.w - Std.int(window.window.outerWidth), wp.h - Std.int(window.window.outerHeight));
-				if( wp.x >= 0 && wp.y >= 0 )
+				if( wp.x >= 0 && wp.y >= 0 && wp.x < xMax && wp.y < yMax)
 					window.moveTo(wp.x, wp.y);
 				if( wp.max ) {
 					window.maximize();
