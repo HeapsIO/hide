@@ -23,6 +23,7 @@ class MeshSpray extends Object3D {
 	@:s var meshes : Array<{ path : String }>;
 
 	var binaryMeshes : Array<{ path : String, x : Float, y : Float, z : Float, rotX : Float, rotY : Float, rotZ : Float, scale : Float }>;
+	var clearBinaryMeshes : Bool = true;
 
 	inline function getSplitID( x : Float, y : Float ) {
 		return (Math.floor(x/split) * 39119 + Math.floor(y/split)) % 0x7FFFFFFF;
@@ -149,7 +150,8 @@ class MeshSpray extends Object3D {
 		}
 		for( b in mspray.batches )
 			b.worldPosition = null;
-		binaryMeshes = null;
+		if ( clearBinaryMeshes )
+			binaryMeshes = null;
 		return ctx;
 	}
 
