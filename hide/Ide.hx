@@ -15,7 +15,7 @@ class Ide {
 	public var isWindows(get, never) : Bool;
 	public var isFocused(get, never) : Bool;
 
-	public var database : cdb.Database;
+	public var database : cdb.Database = new cdb.Database();
 	public var shaderLoader : hide.tools.ShaderLoader;
 	public var fileWatcher : hide.tools.FileWatcher;
 	public var isCDB = false;
@@ -768,16 +768,18 @@ class Ide {
 		var exists = fileExists(databaseFile);
 		if( checkExists && !exists )
 			return; // cancel load
-		database = new cdb.Database();
-		if( !exists ) return;
-		if( isDebugger ) {
-			database.load(getFile(databaseFile).toString());
-		} else try {
-			database.load(getFile(databaseFile).toString());
+		var loadedDatabase = new cdb.Database();
+		if( !exists ) {
+			database = loadedDatabase;
+			return;
+		}
+		try {
+			loadedDatabase.load(getFile(databaseFile).toString());
 		} catch( e : Dynamic ) {
 			error(e);
 			return;
 		}
+		database = loadedDatabase;
 		if( databaseDiff != null ) {
 			originDataBase = new cdb.Database();
 			originDataBase.load(getFile(databaseFile).toString());
