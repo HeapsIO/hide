@@ -172,7 +172,7 @@ class Prefab extends FileView {
 		data = new hrt.prefab.Library();
 		var content = sys.io.File.getContent(getPath());
 		data.loadData(haxe.Json.parse(content));
-		currentSign = haxe.crypto.Md5.encode(content);
+		currentSign = ide.makeSignature(content);
 
 		element.html('
 			<div class="flex vertical">
@@ -467,7 +467,7 @@ class Prefab extends FileView {
 		if( !canSave() )
 			return;
 		var content = ide.toJSON(data.saveData());
-		var newSign = haxe.crypto.Md5.encode(content);
+		var newSign = ide.makeSignature(content);
 		if(newSign != currentSign)
 			haxe.Timer.delay(saveBackup.bind(content), 0);
 		currentSign = newSign;

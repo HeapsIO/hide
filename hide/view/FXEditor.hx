@@ -282,7 +282,7 @@ class FXEditor extends FileView {
 		if( !canSave() )
 			return;
 		var content = ide.toJSON(data.saveData());
-		var newSign = haxe.crypto.Md5.encode(content);
+		var newSign = ide.makeSignature(content);
 		if(newSign != currentSign)
 			haxe.Timer.delay(saveBackup.bind(content), 0);
 		currentSign = newSign;
@@ -303,7 +303,7 @@ class FXEditor extends FileView {
 			data = new hrt.prefab.fx.FX2D();
 		}
 		data.loadData(json);
-		currentSign = haxe.crypto.Md5.encode(content);
+		currentSign = ide.makeSignature(content);
 
 		element.html('
 			<div class="flex vertical">

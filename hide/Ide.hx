@@ -492,6 +492,11 @@ class Ide {
 		return false;
 	}
 
+	public function makeSignature( content : String ) {
+		var sign = js.node.Crypto.createHash(js.node.Crypto.CryptoAlgorithm.MD5);
+		return sign.update(content).digest("base64");
+	}
+
 	public function cleanObject( v : Dynamic ) {
 		for( f in Reflect.fields(v) )
 			if( Reflect.field(v, f) == null )

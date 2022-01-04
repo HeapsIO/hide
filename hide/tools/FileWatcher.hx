@@ -56,8 +56,14 @@ class FileWatcher {
 		f.ignoreCheck = getSignature(f.path);
 	}
 
-	function getSignature( path : String ) {
-		return try haxe.crypto.Md5.make(sys.io.File.getBytes(ide.getPath(path))).toHex() catch( e : Dynamic ) null;
+	function getSignature( path : String ) : String {
+		var sign = js.node.Crypto.createHash(js.node.Crypto.CryptoAlgorithm.MD5);
+		try {
+			sign.update(js.node.Fs.readFileSync(ide.getPath(path)));
+			return sign.digest("base64");
+		} catch( e : Dynamic ) {
+			return null;
+		}
 	}
 
 	public function dispose() {

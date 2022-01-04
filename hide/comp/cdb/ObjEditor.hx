@@ -21,7 +21,7 @@ class ObjEditor extends Editor {
 				s.lines = null;
 				s.linesData = null;
 			}
-			return haxe.crypto.Md5.encode(haxe.Serializer.run(sheets)).substr(0,16);
+			return ide.makeSignature(haxe.Serializer.run(sheets)).substr(0,16);
 		}
 
 		var api = {

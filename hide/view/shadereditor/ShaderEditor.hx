@@ -357,7 +357,7 @@ class ShaderEditor extends hide.view.Graph {
 
 	override function save() {
 		var content = shaderGraph.save();
-		currentSign = haxe.crypto.Md5.encode(content);
+		currentSign = ide.makeSignature(content);
 		sys.io.File.saveContent(getPath(), content);
 		super.save();
 		info("Shader saved");

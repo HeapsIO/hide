@@ -35,7 +35,7 @@ class FileView extends hide.ui.View<{ path : String }> {
 
 	function makeSign() {
 		var content = sys.io.File.getContent(getPath());
-		return haxe.crypto.Md5.encode(content);
+		return ide.makeSignature(content);
 	}
 
 	function onFileChanged( wasDeleted : Bool, rebuildView = true ) {
