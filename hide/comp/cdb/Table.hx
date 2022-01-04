@@ -278,7 +278,7 @@ class Table extends Component {
 				opts.unshift({
 					label : "Open",
 					click : function() {
-						ide.openFile(title);
+						ide.openFile(title.split(" > ").join("/"));
 					},
 				});
 			new hide.comp.ContextMenu(opts);

@@ -107,7 +107,7 @@ class DataFiles {
 					}
 					if( needSep ) {
 						separators.push(lines.length);
-						separatorTitles.push(file);
+						separatorTitles.push(file.split("/").join(" > "));
 						needSep = false;
 					}
 					if( sheet.idCol != null && Reflect.field(p.props,sheet.idCol.name) == "" )
