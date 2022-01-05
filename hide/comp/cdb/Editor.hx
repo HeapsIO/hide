@@ -1319,13 +1319,16 @@ class Editor extends Component {
 					sheet.separators.splice(sepIndex, 1);
 				} else {
 					sepIndex = sheet.separators.length;
-					var level = js.Lib.undefined;
-					for( i in 0...sheet.separators.length )
+					var level = 1;
+					for( i in 0...sheet.separators.length ) {
 						if( sheet.separators[i].index > line.index ) {
 							sepIndex = i;
-							level = sheet.separators[i].level + 1;
 							break;
 						}
+						var lv = sheet.separators[i].level;
+						if( lv == null ) lv = 0;
+						level = lv + 1;
+					}
 					sheet.separators.insert(sepIndex, { index : line.index, level : level });
 				}
 				endChanges();
