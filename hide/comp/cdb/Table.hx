@@ -186,15 +186,16 @@ class Table extends Component {
 
 		var tbody = J("<tbody>");
 
-		var lastSepTitle : String = null;
-		var snext = 0, hidden = false;
+		var groupClass : String = null;
+		var sepIndex = -1, sepNext = sheet.separators[++sepIndex], hidden = false;
 		for( i in 0...lines.length+1 ) {
-			while( sheet.separators[snext] == i ) {
-				var sep = makeSeparator(snext, colCount);
+			while( sepNext != null && sepNext.index == i ) {
+				var sep = makeSeparator(sepIndex, colCount);
 				sep.element.appendTo(tbody);
 				if( sep.hidden != null ) hidden = sep.hidden;
-				lastSepTitle = if( sheet.props.separatorTitles != null ) sheet.props.separatorTitles[snext] else null;
-				snext++;
+				if( sepNext.title != null )
+					groupClass = "group-"+StringTools.replace(sepNext.title.toLowerCase(), " ", "-");
+				sepNext = sheet.separators[++sepIndex];
 			}
 			if( i == lines.length ) break;
 			var line = lines[i];
@@ -202,8 +203,8 @@ class Table extends Component {
 				line.hide();
 			else
 				line.create();
-			if( lastSepTitle != null )
-				line.element.addClass("group-" + StringTools.replace(lastSepTitle.toLowerCase(), " ", "-"));
+			if( groupClass != null )
+				line.element.addClass(groupClass);
 			tbody.append(line.element);
 		}
 		element.append(tbody);
@@ -232,7 +233,8 @@ class Table extends Component {
 		var sep = J("<tr>").addClass("separator").append('<td colspan="${colCount+1}"><a href="#" class="toggle"></a><span></span></td>');
 		var content = sep.find("span");
 		var toggle = sep.find("a");
-		var title = if( sheet.props.separatorTitles != null ) sheet.props.separatorTitles[sindex] else null;
+		var sepInfo = sheet.separators[sindex];
+		var title = sepInfo.title;
 		if( title != null )
 			sep.addClass(StringTools.replace('separator-$title'.toLowerCase(), " ", "-"));
 
@@ -240,9 +242,10 @@ class Table extends Component {
 			var snext = 0, sref = -1;
 			var out = [];
 			for( i in 0...lines.length ) {
-				while( sheet.separators[snext] == i ) {
-					var title = if( sheet.props.separatorTitles != null ) sheet.props.separatorTitles[snext] else null;
-					if( title != null ) sref = snext;
+				while( true ) {
+					var sep = sheet.separators[snext];
+					if( sep == null || sep.index != i ) break;
+					if( sep.title != null ) sref = snext;
 					snext++;
 				}
 				if( sref == sindex )
@@ -291,18 +294,8 @@ class Table extends Component {
 				title = JTHIS.val();
 				JTHIS.remove();
 				if( title == "" ) title = null;
-
-				var old = sheet.props.separatorTitles;
-				var titles = sheet.props.separatorTitles;
-				if( titles == null ) titles = [] else titles = titles.copy();
-				while( titles.length < sindex )
-					titles.push(null);
-				titles[sindex] = title;
-				while( titles[titles.length - 1] == null && titles.length > 0 )
-					titles.pop();
-				if( titles.length == 0 ) titles = null;
 				editor.beginChanges();
-				sheet.props.separatorTitles = titles;
+				sheet.separators[sindex].title = title == null ? js.Lib.undefined : title;
 				editor.endChanges();
 				sync();
 			}).keypress(function(e) {
@@ -444,10 +437,16 @@ class Table extends Component {
 			for(i in 0...group.length)
 				sheet.lines[startIndex + i] = group[i];
 		}
-
+		var sepIndex = 0;
 		for(i in 0...lines.length) {
-			var sep = sheet.separators.indexOf(i) >= 0;
-			if(sep) {
+			var isSeparator = false;
+			while( sepIndex < sheet.separators.length ) {
+				var sep = sheet.separators[sepIndex];
+				if( sep.index > i ) break;
+				if( sep.index == i ) isSeparator = true;
+				sepIndex++;
+			}
+			if( isSeparator ) {
 				sort();
 				group = [];
 				startIndex = i;

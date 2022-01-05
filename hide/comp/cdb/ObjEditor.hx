@@ -90,8 +90,7 @@ class ObjEditor extends Editor {
 		var sheetData = Reflect.copy(@:privateAccess sheet.sheet);
 		sheetData.linesData = null;
 		sheetData.lines = [for( i in 0...sheetData.columns.length ) obj];
-		sheetData.separators = [0];
-		sheetData.props = { separatorTitles: [fileReference] };
+		sheetData.separators = [{ index : 0, title : fileReference }];
 		var s = new cdb.Sheet(sheet.base, sheetData);
 		s.realSheet = sheet;
 		return s;

@@ -44,14 +44,10 @@ class Line extends Component {
 			line = Std.downcast(t, SubTable).cell.line;
 			t = t.parent;
 		}
-		var seps = t.sheet.separators;
-		var i = seps.length - 1;
-		while( i >= 0 ) {
-			if( seps[i] < line.index ) {
-				var t = t.sheet.props.separatorTitles[i];
-				if( t != null ) return t;
-			}
-			i--;
+		for( i in 0...t.sheet.separators.length ) {
+			var sep = t.sheet.separators[t.sheet.separators.length - 1 - i];
+			if( sep.index < line.index && sep.title != null )
+				return sep.title.split(" > ").join("/");
 		}
 		return null;
 	}

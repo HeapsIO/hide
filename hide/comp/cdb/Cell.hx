@@ -452,7 +452,7 @@ class Cell extends Component {
 	public function getGroup() : String {
 		var gid : Null<Int> = Reflect.field(line.obj, "group");
 		if( gid == null ) return null;
-		return table.sheet.props.separatorTitles[gid-1];
+		return table.sheet.separators[gid-1].title;
 	}
 
 	public function getDocumentName() {

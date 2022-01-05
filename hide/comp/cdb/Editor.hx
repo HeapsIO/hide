@@ -1214,24 +1214,6 @@ class Editor extends Component {
 		endChanges();
 	}
 
-	function separatorCount( sheet : cdb.Sheet, fromLine : Int, toSep : Int ) {
-		var count = 0;
-		if( fromLine >= sheet.separators[toSep] ) {
-			for( i in (toSep + 1)...sheet.separators.length ) {
-				if( sheet.separators[i] > fromLine )
-					break;
-				count--;
-			}
-		} else {
-			for( i in 0...(toSep + 1) ) {
-				if( sheet.separators[i] <= fromLine )
-					continue;
-				count++;
-			}
-		}
-		return count;
-	}
-
 	public function popupLine( line : Line ) {
 		if( !line.table.canInsert() )
 			return;
@@ -1247,25 +1229,48 @@ class Editor extends Component {
 		var firstLine = isSelectedLine ? selection[0] : line;
 		var lastLine = isSelectedLine ? selection[selection.length - 1] : line;
 
-		var sepIndex = sheet.separators.indexOf(line.index);
-		var moveSubmenu : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
-		if( sheet.props.separatorTitles != null ) {
-			for( i in 0...sheet.separators.length ) {
-				if( sheet.props.separatorTitles[i] == null )
-					continue;
-				var lastOfGroup = (i == sheet.separators.length - 1) ? line.table.lines.length : sheet.separators[i + 1];
-				var usedLine = firstLine;
-				if( lastOfGroup > line.index ) {
-					lastOfGroup--;
-					usedLine = lastLine;
-				}
-				var delta = lastOfGroup - usedLine.index + separatorCount(sheet, usedLine.index, i);
-				moveSubmenu.push({
-					label : sheet.props.separatorTitles[i],
-					enabled : true,
-					click : isSelectedLine ? moveLines.bind(selection, delta) : moveLine.bind(usedLine, delta),
-				});
+		var sepIndex = -1;
+		for( i in 0...sheet.separators.length )
+			if( sheet.separators[i].index == line.index ) {
+				sepIndex = i;
+				break;
 			}
+
+		var moveSubmenu : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
+		for( sepIndex => sep in sheet.separators ) {
+			if( sep.title == null )
+				continue;
+
+			function separatorCount( fromLine : Int ) {
+				var count = 0;
+				if( fromLine >= sep.index ) {
+					for( i in (sepIndex + 1)...sheet.separators.length ) {
+						if( sheet.separators[i].index > fromLine )
+							break;
+						count--;
+					}
+				} else {
+					for( i in 0...(sepIndex + 1) ) {
+						if( sheet.separators[i].index <= fromLine )
+							continue;
+						count++;
+					}
+				}
+				return count;
+			}
+
+			var lastOfGroup = sepIndex == sheet.separators.length - 1 ? line.table.lines.length : sheet.separators[sepIndex + 1].index;
+			var usedLine = firstLine;
+			if( lastOfGroup > line.index ) {
+				lastOfGroup--;
+				usedLine = lastLine;
+			}
+			var delta = lastOfGroup - usedLine.index + separatorCount(usedLine.index);
+			moveSubmenu.push({
+				label : sep.title,
+				enabled : true,
+				click : isSelectedLine ? moveLines.bind(selection, delta) : moveLine.bind(usedLine, delta),
+			});
 		}
 
 		var hasLocText = false;
@@ -1295,7 +1300,7 @@ class Editor extends Component {
 				enabled:  (lastLine.index < sheet.lines.length - 1),
 				click : isSelectedLine ? moveLines.bind(selection, 1) : moveLine.bind(line, 1),
 			},
-			{ label : "Move to Group", enabled : sheet.props.separatorTitles != null, menu : moveSubmenu },
+			{ label : "Move to Group", enabled : moveSubmenu.length > 0, menu : moveSubmenu },
 			{ label : "", isSeparator : true },
 			{ label : "Insert", click : function() {
 				insertLine(line.table,line.index);
@@ -1312,17 +1317,14 @@ class Editor extends Component {
 				beginChanges();
 				if( sepIndex >= 0 ) {
 					sheet.separators.splice(sepIndex, 1);
-					if( sheet.props.separatorTitles != null ) sheet.props.separatorTitles.splice(sepIndex, 1);
 				} else {
 					sepIndex = sheet.separators.length;
 					for( i in 0...sheet.separators.length )
-						if( sheet.separators[i] > line.index ) {
+						if( sheet.separators[i].index > line.index ) {
 							sepIndex = i;
 							break;
 						}
-					sheet.separators.insert(sepIndex, line.index);
-					if( sheet.props.separatorTitles != null && sheet.props.separatorTitles.length > sepIndex )
-						sheet.props.separatorTitles.insert(sepIndex, null);
+					sheet.separators.insert(sepIndex, { index : line.index });
 				}
 				endChanges();
 				refresh();

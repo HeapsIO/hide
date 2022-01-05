@@ -79,13 +79,11 @@ class DataFiles {
 		var lines : Array<Dynamic> = [];
 		var linesData : Array<DataProps> = [];
 		var separators = [];
-		var separatorTitles = [];
 		var sheetName = getTypeName(sheet);
 		@:privateAccess {
 			sheet.sheet.lines = lines;
 			sheet.sheet.linesData = linesData;
 			sheet.sheet.separators = separators;
-			sheet.props.separatorTitles = separatorTitles;
 		}
 		function loadFile( file : String ) {
 			var needSep = true;
@@ -106,8 +104,7 @@ class DataFiles {
 						}
 					}
 					if( needSep ) {
-						separators.push(lines.length);
-						separatorTitles.push(file.split("/").join(" > "));
+						separators.push({ index : lines.length, title : file.split("/").join(" > ") });
 						needSep = false;
 					}
 					if( sheet.idCol != null && Reflect.field(p.props,sheet.idCol.name) == "" )
@@ -217,17 +214,14 @@ class DataFiles {
 					}
 				}
 				var old = Reflect.copy(sheet);
-				var oldTitles = sheet.props.separatorTitles;
 				temp.push(function() {
 					sheet.lines = old.lines;
 					sheet.linesData = old.linesData;
 					sheet.separators = old.separators;
-					sheet.props.separatorTitles = oldTitles;
 				});
 				Reflect.deleteField(sheet,"lines");
 				Reflect.deleteField(sheet,"linesData");
 				sheet.separators = [];
-				Reflect.deleteField(sheet.props,"separatorTitles");
 			}
 		}
 		for( file => pf in prefabs ) {
