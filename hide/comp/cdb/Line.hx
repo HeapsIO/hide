@@ -46,7 +46,7 @@ class Line extends Component {
 		}
 		for( i in 0...t.sheet.separators.length ) {
 			var sep = t.sheet.separators[t.sheet.separators.length - 1 - i];
-			if( sep.index < line.index ) {
+			if( sep.index <= line.index ) {
 				if( sep.path != null )
 					return sep.path;
 				if( sep.title != null )
