@@ -449,17 +449,22 @@ class Cell extends Component {
 		return code;
 	}
 
-	public function getGroup() : String {
-		var gid : Null<Int> = Reflect.field(line.obj, "group");
-		if( gid == null ) return null;
-		return table.sheet.separators[gid-1].title;
-	}
-
 	public function getDocumentName() {
 		var name = table.sheet.name.split("@").join(".");
 		if( table.sheet.props.hasGroup ) {
-			var g = getGroup();
-			if( g != null ) name += "[group="+g+"]";
+			var gid : Null<Int> = Reflect.field(line.obj, "group");
+			if( gid != null ) {
+				var index = 0;
+				for( s in table.sheet.separators ) {
+					if( s.title != null ) {
+						if( index == gid ) {
+							name += "[group="+s.title+"]";
+							break;
+						}
+						index++;
+					}
+				}
+			}
 		}
 		name += "."+column.name;
 		return name;
