@@ -7,6 +7,8 @@ enum DisplayMode {
 	AllProperties;
 }
 
+private typedef SepTree = { sep : cdb.Data.Separator, index : Int, subs : Array<SepTree>, parent : SepTree };
+
 class Table extends Component {
 
 	public var editor : Editor;
@@ -229,6 +231,30 @@ class Table extends Component {
 		}
 	}
 
+	function makeSeparatorTree( ?root ) {
+		var curLevel = 0;
+		var cur : SepTree = { sep : null, index : -1, subs : [], parent : null };
+		var stack = [];
+		var select = cur;
+		for( index => s in sheet.separators ) {
+			var lv = s.level;
+			if( lv == null ) lv = 0;
+			if( lv < curLevel ) {
+				for( i in lv...curLevel )
+					cur = stack.pop();
+			}
+			var next = { sep : s, index : index, subs : [], parent : cur };
+			if( s == root ) select = next;
+			if( lv > curLevel ) {
+				stack.push(cur);
+				cur = cur.subs[cur.subs.length - 1];
+			}
+			cur.subs.push(next);
+			curLevel = lv;
+		}
+		return select;
+	}
+
 	function makeSeparator( sindex : Int, colCount : Int ) : { element : Element, hidden : Null<Bool> } {
 		var sep = J("<tr>").addClass("separator").append('<td colspan="${colCount+1}"><a href="#" class="toggle"></a><span></span></td>');
 		var content = sep.find("span");
@@ -238,33 +264,106 @@ class Table extends Component {
 		if( title != null )
 			sep.addClass(StringTools.replace('separator-$title'.toLowerCase(), " ", "-"));
 
+		var curLevel = sepInfo.level;
+		if( curLevel == null ) curLevel = 0;
+
 		function getLines() {
-			var snext = 0, sref = -1;
+			var snext = 0, sref = -1, scur = -1;
 			var out = [];
 			for( i in 0...lines.length ) {
 				while( true ) {
 					var sep = sheet.separators[snext];
 					if( sep == null || sep.index != i ) break;
-					if( sep.title != null ) sref = snext;
+					if( sep.title != null ) {
+						scur = snext;
+						if( sep.level == null || sep.level <= curLevel )
+							sref = snext;
+					}
 					snext++;
 				}
 				if( sref == sindex )
-					out.push(lines[i]);
+					out.push({ line : lines[i], sep : scur });
 			}
 			return out;
 		}
 
+		function isSepHidden(index) {
+			return getDisplayState("sep/"+sheet.separators[index].title) == false;
+		}
+
 		var hidden : Bool;
+		var syncLevel : Int = -1;
 		function sync() {
-			hidden = title == null ? null : getDisplayState("sep/"+title) == false;
+			hidden = title == null ? null : isSepHidden(sindex);
 			toggle.css({ display : title == null ? "none" : "" });
 			toggle.text(hidden ? "🡆" : "🡇");
 			content.text(title == null ? "" : title+(hidden ? " ("+getLines().length+")" : ""));
 			sep.toggleClass("sep-hidden", hidden == true);
+			if( syncLevel != sepInfo.level ) {
+				sep.removeClass("seplevel-"+(syncLevel == null ? 0 : syncLevel));
+				syncLevel = sepInfo.level;
+				sep.addClass('seplevel-'+(syncLevel == null ? 0 : syncLevel));
+			}
 		}
 
 		sep.contextmenu(function(e) {
+
+			var parents = [];
+			var minLevel = -1;
+			for( i in 0...sindex ) {
+				var sep = sheet.separators[sindex - 1 - i];
+				var level = sep.level == null ? 0 : sep.level;
+				if( minLevel < 0 || level < minLevel ) {
+					parents.unshift(sep);
+					minLevel = level;
+				}
+			}
+			parents.unshift(null);
+
+			var hasChildren = makeSeparatorTree(sepInfo).subs.length > 0;
+
+			function expand(show) {
+				var subs = element.find("tr.separator");
+				function showRec(t:SepTree) {
+					if( isSepHidden(t.index) == show )
+						new Element(subs[t.index]).find("a.toggle").click();
+					for( s in t.subs )
+						showRec(s);
+				}
+				showRec(makeSeparatorTree(sepInfo));
+			}
+
 			var opts : Array<hide.comp.ContextMenu.ContextMenuItem> = [
+
+				{ label : "Expand", click : function() expand(true) },
+				{ label : "Collapse", click : function() expand(false) },
+				{
+					label : "Parent",
+					enabled : parents.length > 0,
+					menu : [for( s in parents ) {
+						var level = s == null ? 0 : s.level == null ? 1 : s.level + 1;
+						{
+							label : s == null ? "(None)" : [for( i in 0...level ) ""].join("  ")+s.title,
+							checked : s == null ? sepInfo.level == null : sepInfo.level == level,
+							click : function() {
+								editor.beginChanges();
+								var delta = level - (sepInfo.level == null ? 0 : sepInfo.level);
+								function deltaRec( t : SepTree ) {
+									var level = t.sep.level;
+									if( level == null ) level = 0;
+									level += delta;
+									t.sep.level = level == 0 ? js.Lib.undefined : level;
+									for( s in t.subs )
+										deltaRec(s);
+								}
+								deltaRec(makeSeparatorTree(sepInfo));
+								editor.endChanges();
+								refresh();
+							},
+						}
+					}]
+				},
+				{ label : "", isSeparator : true },
 				{ label : "Expand All", click : function() {
 					element.find("tr.separator.sep-hidden a.toggle").click();
 				}},
@@ -295,7 +394,18 @@ class Table extends Component {
 				JTHIS.remove();
 				if( title == "" ) title = null;
 				editor.beginChanges();
-				sheet.separators[sindex].title = title == null ? js.Lib.undefined : title;
+				var sep = sheet.separators[sindex];
+				var prevTitle = sep.title;
+				sep.title = title == null ? js.Lib.undefined : title;
+				if( prevTitle != null ) {
+					if( title == null ) {
+						if( sep.level == null ) sep.level = 0;
+						sep.level++;
+					}
+				} else if( title != null && sep.level > 0 ) {
+					sep.level--;
+					if( sep.level == 0 ) sep.level = js.Lib.undefined;
+				}
 				editor.endChanges();
 				sync();
 			}).keypress(function(e) {
@@ -307,14 +417,44 @@ class Table extends Component {
 		});
 
 		sync();
+		var level = curLevel - 1;
+		while( level >= 0 ) {
+			for( i in 0...sindex ) {
+				var s = sheet.separators[sindex - 1 - i];
+				if( s.title != null && (s.level == null || s.level == level) ) {
+					if( isSepHidden(sindex - 1 - i) ) {
+						sep[0].style.display = "none";
+						hidden = true;
+					}
+					break;
+				}
+			}
+			level--;
+		}
 		toggle.dblclick(function(e) e.stopPropagation());
 		toggle.click(function(e) {
 			hidden = !hidden;
 			saveDisplayState("sep/"+title, !hidden);
 			sync();
 			for( l in getLines() ) {
-				if( hidden ) l.hide() else l.create();
+				if( hidden ) {
+					l.line.hide();
+				} else {
+					if( l.sep == sindex || !isSepHidden(l.sep) ) l.line.create();
+				}
 			}
+
+			var subs = element.find("tr.separator");
+			function toggleRec( t : SepTree ) {
+				var sid = sheet.separators.indexOf(t.sep);
+				subs[sid].style.display = hidden ? "none" : "";
+				if( !hidden && isSepHidden(sid) ) return;
+				for( s in t.subs )
+					toggleRec(s);
+			}
+			for( s in makeSeparatorTree(sepInfo).subs )
+				toggleRec(s);
+
 			editor.updateFilter();
 		});
 		return { hidden : hidden, element : sep };

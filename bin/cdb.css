@@ -66,15 +66,27 @@
   padding-top: 6px;
   color: #bbb;
   font-weight: bold;
-  padding-left: 20px;
   background-color: #444;
 }
 .cdb .cdb-sheet tr.separator td .toggle {
   padding: 0px 4px;
+  padding-left: 10px;
   color: #aaa;
 }
 .cdb .cdb-sheet tr.separator td .toggle:hover {
   color: #ccc;
+}
+.cdb .cdb-sheet tr.separator.seplevel-1 td {
+  background-color: #3d3d3d;
+}
+.cdb .cdb-sheet tr.separator.seplevel-1 td .toggle {
+  padding-left: 30px;
+}
+.cdb .cdb-sheet tr.separator.seplevel-2 td {
+  background-color: #383838;
+}
+.cdb .cdb-sheet tr.separator.seplevel-2 td .toggle {
+  padding-left: 50px;
 }
 .cdb .cdb-sheet tr.locIgnored {
   background-color: #221C1C;
