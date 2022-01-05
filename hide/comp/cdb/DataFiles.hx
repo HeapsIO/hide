@@ -7,6 +7,15 @@ typedef DataProps = {
 	var origin : String;
 }
 
+private typedef DataDef = {
+	var name : String;
+	var path : String;
+	var subs : Array<DataDef>;
+	var msubs : Map<String, DataDef>;
+	var lines : Array<Dynamic>;
+	var linesData: Array<DataProps>;
+}
+
 class DataFiles {
 
 	static var changed : Bool;
@@ -76,17 +85,17 @@ class DataFiles {
 	}
 
 	static function loadSheet( sheet : cdb.Sheet ) {
-		var lines : Array<Dynamic> = [];
-		var linesData : Array<DataProps> = [];
-		var separators = [];
 		var sheetName = getTypeName(sheet);
-		@:privateAccess {
-			sheet.sheet.lines = lines;
-			sheet.sheet.linesData = linesData;
-			sheet.sheet.separators = separators;
-		}
+		var root : DataDef = {
+			name : null,
+			path : null,
+			lines : null,
+			linesData : null,
+			subs : [],
+			msubs : new Map(),
+		};
 		function loadFile( file : String ) {
-			var needSep = true;
+			var content = null;
 			var levelID = file.split("/").pop().split(".").shift();
 			levelID = levelID.charAt(0).toUpperCase()+levelID.substr(1);
 			function loadRec( p : hrt.prefab.Prefab, parent : hrt.prefab.Prefab ) {
@@ -103,14 +112,24 @@ class DataFiles {
 							if( c.name == p.name ) dprops.index++;
 						}
 					}
-					if( needSep ) {
-						separators.push({ index : lines.length, title : file.split("/").join(" > ") });
-						needSep = false;
-					}
 					if( sheet.idCol != null && Reflect.field(p.props,sheet.idCol.name) == "" )
 						Reflect.setField(p.props,sheet.idCol.name,levelID+"_"+p.name+(dprops.index == 0 ? "" : ""+dprops.index));
-					linesData.push(dprops);
-					lines.push(p.props);
+					if( content == null ) {
+						content = root;
+						var path = [];
+						for( p in file.split("/") ) {
+							var n = content.msubs.get(p);
+							path.push(p);
+							if( n == null ) {
+								n = { name : p.split(".").shift(), path : path.join("/"), lines : [], linesData: [], subs : [], msubs : new Map() };
+								content.subs.push(n);
+								content.msubs.set(p, n);
+							}
+							content = n;
+						}
+					}
+					content.linesData.push(dprops);
+					content.lines.push(p.props);
 				}
 				for( c in p ) loadRec(c,p);
 			}
@@ -161,6 +180,34 @@ class DataFiles {
 
 		for( dir in sheet.props.dataFiles.split(";") )
 			gatherRec(dir.split("/"),[],0);
+
+
+		var lines : Array<Dynamic> = [];
+		var linesData : Array<DataProps> = [];
+		var separators = [];
+		@:privateAccess {
+			sheet.sheet.lines = lines;
+			sheet.sheet.linesData = linesData;
+			sheet.sheet.separators = separators;
+		}
+		function browseRec( d : DataDef, level : Int ) {
+			if( d.subs.length == 1 ) {
+				// shortcut
+				d.subs[0].name = d.name+" > "+d.subs[0].name;
+				browseRec(d.subs[0], level);
+				return;
+			}
+			separators.push({ title : d.name, level : level, index : lines.length, path : d.path });
+			for( i in 0...d.lines.length ) {
+				lines.push(d.lines[i]);
+				linesData.push(d.linesData[i]);
+			}
+			d.subs.sort(function(d1,d2) return Reflect.compare(d1.name.toLowerCase(), d2.name.toLowerCase()));
+			for( s in d.subs )
+				browseRec(s, level + 1);
+		}
+		for( r in root.subs )
+			browseRec(r, 0);
 	}
 
 	#if editor

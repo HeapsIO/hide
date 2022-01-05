@@ -80,13 +80,37 @@
   background-color: #3d3d3d;
 }
 .cdb .cdb-sheet tr.separator.seplevel-1 td .toggle {
-  padding-left: 30px;
+  padding-left: 25px;
 }
 .cdb .cdb-sheet tr.separator.seplevel-2 td {
   background-color: #383838;
 }
 .cdb .cdb-sheet tr.separator.seplevel-2 td .toggle {
+  padding-left: 40px;
+}
+.cdb .cdb-sheet tr.separator.seplevel-3 td {
+  background-color: #343434;
+}
+.cdb .cdb-sheet tr.separator.seplevel-3 td .toggle {
   padding-left: 50px;
+}
+.cdb .cdb-sheet tr.separator.seplevel-4 td {
+  background-color: #303030;
+}
+.cdb .cdb-sheet tr.separator.seplevel-4 td .toggle {
+  padding-left: 60px;
+}
+.cdb .cdb-sheet tr.separator.seplevel-5 td {
+  background-color: #303030;
+}
+.cdb .cdb-sheet tr.separator.seplevel-5 td .toggle {
+  padding-left: 70px;
+}
+.cdb .cdb-sheet tr.separator.seplevel-6 td {
+  background-color: #303030;
+}
+.cdb .cdb-sheet tr.separator.seplevel-6 td .toggle {
+  padding-left: 80px;
 }
 .cdb .cdb-sheet tr.locIgnored {
   background-color: #221C1C;

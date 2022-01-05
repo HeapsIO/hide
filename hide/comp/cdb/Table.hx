@@ -267,7 +267,7 @@ class Table extends Component {
 		var curLevel = sepInfo.level;
 		if( curLevel == null ) curLevel = 0;
 
-		function getLines() {
+		function getLines( ?filter ) {
 			var snext = 0, sref = -1, scur = -1;
 			var out = [];
 			for( i in 0...lines.length ) {
@@ -281,8 +281,8 @@ class Table extends Component {
 					}
 					snext++;
 				}
-				if( sref == sindex )
-					out.push({ line : lines[i], sep : scur });
+				if( sref == sindex && (filter == null || scur == filter) )
+					out.push(lines[i]);
 			}
 			return out;
 		}
@@ -325,10 +325,16 @@ class Table extends Component {
 			function expand(show) {
 				var subs = element.find("tr.separator");
 				function showRec(t:SepTree) {
+					if( !show ) {
+						for( s in t.subs )
+							showRec(s);
+					}
 					if( isSepHidden(t.index) == show )
 						new Element(subs[t.index]).find("a.toggle").click();
-					for( s in t.subs )
-						showRec(s);
+					if( show ) {
+						for( s in t.subs )
+							showRec(s);
+					}
 				}
 				showRec(makeSeparatorTree(sepInfo));
 			}
@@ -376,11 +382,11 @@ class Table extends Component {
 						sep.find("a.toggle").click();
 				}},
 			];
-			if( sheet.props.dataFiles != null && title != null )
+			if( sepInfo.path != null )
 				opts.unshift({
 					label : "Open",
 					click : function() {
-						ide.openFile(title.split(" > ").join("/"));
+						ide.openFile(sepInfo.path);
 					},
 				});
 			new hide.comp.ContextMenu(opts);
@@ -436,11 +442,12 @@ class Table extends Component {
 			hidden = !hidden;
 			saveDisplayState("sep/"+title, !hidden);
 			sync();
-			for( l in getLines() ) {
+
+			for( l in getLines( hidden ? null : sindex ) ) {
 				if( hidden ) {
-					l.line.hide();
+					l.hide();
 				} else {
-					if( l.sep == sindex || !isSepHidden(l.sep) ) l.line.create();
+					l.create();
 				}
 			}
 
@@ -448,7 +455,11 @@ class Table extends Component {
 			function toggleRec( t : SepTree ) {
 				var sid = sheet.separators.indexOf(t.sep);
 				subs[sid].style.display = hidden ? "none" : "";
-				if( !hidden && isSepHidden(sid) ) return;
+				if( !hidden ) {
+					if( isSepHidden(sid) ) return;
+					for( l in getLines(sid) )
+						l.create();
+				}
 				for( s in t.subs )
 					toggleRec(s);
 			}
