@@ -116,12 +116,12 @@ class CdbTable extends hide.ui.View<{}> {
 			tabs.currentTab = tabContents[idx].parent();
 		}
 
-		applyCategories(ide.projectConfig.dbCategories);
+		applyCategories(ide.projectConfig.dbCategories, false);
 
 		watch(@:privateAccess ide.databaseFile, () -> syncTabs());
 	}
 
-	public function applyCategories(cats: Array<String>) {
+	public function applyCategories(cats: Array<String>, doRefresh=true) {
 		var sheets = getSheets();
 		var header = @:privateAccess tabs.header;
 		for(i in 0...sheets.length) {
@@ -135,7 +135,7 @@ class CdbTable extends hide.ui.View<{}> {
 				for(c in props.categories)
 					tab.addClass("cat-" + c);
 		}
-		editor.refresh();
+		if( doRefresh ) editor.refresh();
 	}
 
 	override public function onDragDrop( items : Array<String>, isDrop : Bool ) {
