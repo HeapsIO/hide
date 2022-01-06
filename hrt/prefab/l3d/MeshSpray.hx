@@ -854,6 +854,7 @@ class MeshSpray extends Object3D {
 
 				if( K.isDown( K.MOUSE_LEFT) ) {
 					e.propagate = false;
+					binaryChanged = true;
 
 					if (sprayEnable) {
 						if( shiftPressed ) {
