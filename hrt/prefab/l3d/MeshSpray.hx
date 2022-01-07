@@ -1124,13 +1124,19 @@ class MeshSpray extends Object3D {
 			var gBrush = new h3d.scene.Mesh(makePrimCircle(32, 0.95), ctx.local3d);
 			gBrush.scaleX = gBrush.scaleY = radius;
 			gBrush.ignoreParentTransform = true;
-			gBrush.material.mainPass.setPassName("overlay");
+			var pass = gBrush.material.mainPass;
+			pass.setPassName("outline");
+			pass.depthTest = Always;
+			pass.depthWrite = false;
 			gBrush.material.shadows = false;
 			gBrush.material.color = newColor;
 			gBrushes.push(gBrush);
 			gBrush = new h3d.scene.Mesh(new h3d.prim.Sphere(Math.min(radius*0.05, 0.35)), ctx.local3d);
 			gBrush.ignoreParentTransform = true;
-			gBrush.material.mainPass.setPassName("overlay");
+			var pass = gBrush.material.mainPass;
+			pass.setPassName("outline");
+			pass.depthTest = Always;
+			pass.depthWrite = false;
 			gBrush.material.shadows = false;
 			gBrush.material.color = newColor;
 			gBrushes.push(gBrush);
@@ -1196,7 +1202,7 @@ class MeshSpray extends Object3D {
 	}
 
 
-	function makePrimCircle(segments: Int, inner : Float = 0, rings : Int = 0) {
+	static public function makePrimCircle(segments: Int, inner : Float = 0, rings : Int = 0) {
 		var points = [];
 		var uvs = [];
 		var indices = [];
