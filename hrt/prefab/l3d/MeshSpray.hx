@@ -708,13 +708,17 @@ class MeshSpray extends Object3D {
 		});
 
 		options.find("#toground").click(function(_) {
+			var mso = null;
 			for( c in children ) {
 				var obj = c.to(Object3D);
 				if( obj == null ) continue;
 				setGroundPos(ectx, obj);
 				var ctx = ectx.getContext(obj);
 				if( ctx != null ) obj.applyTransform(ctx.local3d);
+				if ( ctx.local3d.parent != null && Std.is(ctx.local3d.parent, MeshSprayObject))
+					mso = cast(ctx.local3d.parent,MeshSprayObject);
 			}
+			mso.redraw();
 		});
 
 		options.find("#remove").click(function(_) {
