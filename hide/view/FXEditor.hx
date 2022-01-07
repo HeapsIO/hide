@@ -316,7 +316,7 @@ class FXEditor extends FileView {
 						<div class="fx-animpanel">
 							<div class="top-bar">
 								<div class="timeline">
-									<div class="timeline-scroll"/>
+									<div class="timeline-scroll"/></div>
 								</div>
 							</div>
 							<div class="anim-scroll"></div>
