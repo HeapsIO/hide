@@ -568,11 +568,28 @@ class Cell extends Component {
 			var textSpan = element.wrapInner("<span>").find("span");
 			var textHeight = textSpan.height();
 			var textWidth = textSpan.width();
-			var longText = textHeight > 25 || str.indexOf("\n") >= 0;
+			var longText = textHeight > 25 || str.indexOf("\n") >= 0 || str.length > 22;
 			element.empty();
 			element.addClass("edit");
 			var i = new Element(longText ? "<textarea>" : "<input>").appendTo(element);
-			i.keypress(function(e) e.stopPropagation());
+			i.keypress(function(e) {
+				if (!longText) {
+					longText = i.val().length > 22;
+					if (longText) {
+						var old = currentValue;
+						// hack to tranform the input into textarea
+						var newVal = i.val();
+						Reflect.setField(line.obj, column.name, newVal+"x");
+						refresh();
+						Reflect.setField(line.obj, column.name,old);
+						currentValue = newVal;
+						edit();
+						(cast element.find("textarea")[0] : js.html.TextAreaElement).setSelectionRange(newVal.length,newVal.length);
+						e.preventDefault();
+					}
+				}
+				e.stopPropagation();
+			});
 			i.dblclick(function(e) e.stopPropagation());
 			//if( str != "" && (table.displayMode == Properties || table.displayMode == AllProperties) )
 			//	i.css({ width : Math.ceil(textWidth - 3) + "px" }); -- bug if small text ?
