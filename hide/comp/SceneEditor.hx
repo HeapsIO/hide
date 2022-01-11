@@ -951,7 +951,7 @@ class SceneEditor {
 					if(obj3d.follow != null) {
 						if(obj3d.followPositionOnly)
 							parentMat.setPosition(obj3d.follow.getAbsPos().getPosition());
-						else 
+						else
 							parentMat = obj3d.follow.getAbsPos().clone();
 					}
 					var invParent = parentMat;
@@ -1861,7 +1861,8 @@ class SceneEditor {
 	function onCopy() {
 		if(curEdit == null) return;
 		if(curEdit.rootElements.length == 1) {
-			view.setClipboard(curEdit.rootElements[0].saveData(), "prefab");
+			var prefab = curEdit.rootElements[0];
+			view.setClipboard(prefab.saveData(), "prefab", { source : view.state.path, name : prefab.name });
 		}
 		else {
 			var lib = new hrt.prefab.Library();
@@ -1872,15 +1873,44 @@ class SceneEditor {
 		}
 	}
 
+	function getDataPath( prefabName : String, ?sourceFile : String ) {
+		if( sourceFile == null ) sourceFile = view.state.path;
+		var datPath = new haxe.io.Path(sourceFile);
+		datPath.ext = "dat";
+		return ide.getPath(datPath.toString()+"/"+prefabName);
+	}
+
 	function onPaste() {
 		var parent : PrefabElement = sceneData;
 		if(curEdit != null && curEdit.elements.length > 0) {
 			parent = curEdit.elements[0];
 		}
-		var obj = haxe.Json.parse(haxe.Json.stringify(view.getClipboard("prefab")));
+		var opts : { ref : {source:String,name:String} } = { ref : null };
+		var obj = view.getClipboard("prefab",opts);
 		if(obj != null) {
 			var p = hrt.prefab.Prefab.loadPrefab(obj, parent);
 			autoName(p);
+
+			if( opts.ref != null && opts.ref.source != null && opts.ref.name != null ) {
+				// copy data
+				var srcDir = getDataPath(opts.ref.name, opts.ref.source);
+				if( sys.FileSystem.exists(srcDir) && sys.FileSystem.isDirectory(srcDir) ) {
+					var dstDir = getDataPath(p.name);
+					function copyRec( src : String, dst : String ) {
+						if( !sys.FileSystem.exists(dst) ) sys.FileSystem.createDirectory(dst);
+						for( f in sys.FileSystem.readDirectory(src) ) {
+							var file = src+"/"+f;
+							if( sys.FileSystem.isDirectory(file) ) {
+								copyRec(file,dst+"/"+f);
+								continue;
+							}
+							sys.io.File.copy(file,dst+"/"+f);
+						}
+					}
+					copyRec(srcDir, dstDir);
+				}
+			}
+
 			addElements([p]);
 		}
 		else {
@@ -2258,10 +2288,13 @@ class SceneEditor {
 		}
 	}
 
-	function autoName(p : PrefabElement) {
+	function autoName(p : PrefabElement ) {
 
 		var uniqueName = false;
 		if( p.type == "volumetricLightmap" || p.type == "light" )
+			uniqueName = true;
+
+		if( !uniqueName && sys.FileSystem.exists(getDataPath(p.name)) )
 			uniqueName = true;
 
 		var prefix = null;
