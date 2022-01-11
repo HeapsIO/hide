@@ -13,11 +13,10 @@ class FXAnimation extends h3d.scene.Object {
 	public var onEnd : Void -> Void;
 	public var playSpeed : Float = 0;
 	public var localTime : Float = 0.0;
-	var totalTime : Float = 0.0;
 	public var duration : Float;
 
 	/** Enable automatic culling based on `cullingRadius` and `cullingDistance`. Will override `culled` on every sync. **/
-	public var enableCulling = true;
+	public var autoCull(default, set) = true;
 	public var cullingRadius : Float;
 	public var cullingDistance = defaultCullingDistance;
 
@@ -33,9 +32,7 @@ class FXAnimation extends h3d.scene.Object {
 	var random : hxd.Rand;
 	var prevTime = -1.0;
 	var randSeed : Int;
-
-	var startLoop : Float = -1.0;
-	var endLoop : Float;
+	var firstSync = true;
 
 	public function new(?parent) {
 		super(parent);
@@ -54,15 +51,6 @@ class FXAnimation extends h3d.scene.Object {
 		initEmitters(ctx, root);
 		BaseFX.getShaderAnims(ctx, root, shaderAnims);
 		events = initEvents(root, ctx);
-		if (events != null) {
-			for (e in events) {
-				if (e.evt.name == "startLoop") {
-					startLoop = e.evt.time;
-				} else if (e.evt.name == "endLoop") {
-					endLoop = e.evt.time;
-				}
-			}
-		}
 		var root = def.getFXRoot(ctx, def);
 		initConstraints(ctx, root != null ? root : def);
 		for(s in shaderAnims)
@@ -87,39 +75,47 @@ class FXAnimation extends h3d.scene.Object {
 				em.setRandSeed(randSeed);
 	}
 
+	function set_autoCull(b : Bool) {
+		if(autoCull && !b)
+			culled = false; // Make sure we un-cull FX when auto-cull is disabled
+		return autoCull = b;
+	}
+
+	public function updateCulling(camera : h3d.Camera) {
+		culled = false;
+		var scale = getAbsPos().getScale(tempVec);
+		var uniScale = hxd.Math.abs(hxd.Math.max(hxd.Math.max(scale.x, scale.y), scale.z));
+		var pos = getAbsPos().getPosition(tempVec);
+		tmpSphere.load(pos.x, pos.y, pos.z, cullingRadius * uniScale);
+		if(!camera.frustum.hasSphere(tmpSphere))
+			culled = true;
+
+		if(!culled && cullingDistance > 0) {
+			var distSq = camera.pos.distanceSq(pos);
+			if(distSq > cullingDistance * cullingDistance)
+				culled = true;
+		}
+	}
+
 	static var tmpSphere = new h3d.col.Sphere();
 	override function syncRec(ctx:h3d.scene.RenderContext) {
 		var changed = posChanged;
 		if( changed ) calcAbsPos();
 
-		if( enableCulling ) {
-			culled = false;
-			var scale = getAbsPos().getScale(tempVec);
-			var uniScale = hxd.Math.abs(hxd.Math.max(hxd.Math.max(scale.x, scale.y), scale.z));
-			var pos = getAbsPos().getPosition(tempVec);
-			tmpSphere.load(pos.x, pos.y, pos.z, cullingRadius * uniScale);
-			if(!ctx.camera.frustum.hasSphere(tmpSphere))
-				culled = true;
-
-			if(!culled && cullingDistance > 0) {
-				var distSq = ctx.camera.pos.distanceSq(pos);
-				if(distSq > cullingDistance * cullingDistance)
-					culled = true;
-			}
-		}
+		if( autoCull )
+			updateCulling(ctx.camera);
 
 		var old = ctx.visibleFlag;
 		if( !visible || (culled && inheritCulled) )
 			ctx.visibleFlag = false;
 
-		var syncChildren = ctx.visibleFlag || alwaysSync;
-		if(playSpeed > 0) {
+		var fullSync = ctx.visibleFlag || alwaysSync || firstSync;
+		if(playSpeed > 0 || firstSync) {
 			// This is done in syncRec() to make sure time and events are updated regarless of culling state,
 			// so we restore FX in correct state when unculled
 			var curTime = localTime;
-			setTime(curTime, syncChildren);
+			setTime(curTime, fullSync);
 			localTime += ctx.elapsedTime * playSpeed;
-			totalTime += ctx.elapsedTime;
 			if( duration > 0 && curTime < duration && localTime >= duration) {
 				localTime = duration;
 				if( onEnd != null )
@@ -127,18 +123,19 @@ class FXAnimation extends h3d.scene.Object {
 			}
 		}
 
-		if(syncChildren)
+		if(fullSync)
 			super.syncRec(ctx);
-
+		
+		firstSync = false;
 		ctx.visibleFlag = old;
 	}
 
 	static var tempMat = new h3d.Matrix();
 	static var tempTransform = new h3d.Matrix();
 	static var tempVec = new h3d.Vector();
-	public function setTime( time : Float, syncChildren=true ) {
+	public function setTime( time : Float, fullSync=true ) {
 		this.localTime = time;
-		if(syncChildren) {
+		if(fullSync) {
 			vecPool.begin();
 			if(objAnims != null) {
 				for(anim in objAnims) {
