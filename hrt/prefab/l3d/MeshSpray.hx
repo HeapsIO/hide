@@ -828,6 +828,7 @@ class MeshSpray extends Object3D {
 				undo.change(Custom(function(undo) {
 					if(undo) {
 						sceneEditor.deleteElements(addedModels, () -> removeInteractiveBrush(), true, false);
+						clearPreview();
 					}
 					else {
 						sceneEditor.addElements(addedModels, false, true, false);
