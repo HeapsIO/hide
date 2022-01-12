@@ -739,9 +739,10 @@ class MeshSpray extends Object3D {
 			if ( this.binaryMeshes != null ) {
 				var pos = new h3d.col.Point(0,0,0);
 				for ( bm in this.binaryMeshes ) {
-					pos.x = bm.x;
-					pos.y = bm.y;
-					pos.z = bm.z;
+					var pivot = mso.getAbsPos();
+					pos.x = bm.x + pivot.tx;
+					pos.y = bm.y + pivot.ty;
+					pos.z = bm.z + pivot.tz;
 					var ground = setGroundPos(ectx, null, pos);
 					bm.z += ground.mz;
 					bm.rotX = ground.rotX;
