@@ -83,8 +83,6 @@ class LayerView2DRFXShader extends h3d.shader.ScreenShader {
 	}
 }
 
-
-
 class Layer2DRFX extends hrt.prefab.rfx.RendererFX {
 
 	public var pass = new h3d.pass.ScreenFx(new LayerView2DRFXShader());
@@ -142,6 +140,7 @@ class Layers2D extends hrt.prefab.Object3D {
 	var layerTextures : Map<String, hxd.Pixels> = [];
 
 	#if editor
+	var storedCtx : hrt.prefab.Context;
 
 	var currentPixels : hxd.Pixels = null;
 	var currentTexture : h3d.mat.Texture = null;
@@ -150,6 +149,7 @@ class Layers2D extends hrt.prefab.Object3D {
 
 	var brushRadius : Float = 20;
 	var eraseRadius : Float = 10;
+	var paintOverride : Bool = true;
 	var layerAlpha : Float = 0.6;
 
 	var collideEnable : Bool = true;
@@ -179,7 +179,7 @@ class Layers2D extends hrt.prefab.Object3D {
 		for ( l in layers ) {
 			var pixels = layerTextures.get(l.name);
 			if ( pixels != null ) {
-				var contextShared = editorCtx.getContext(this).shared;
+				var contextShared = storedCtx.shared;
 				var path = new haxe.io.Path(contextShared.currentPath);
 				path.ext = "dat";
 				var fileName = "layer_" + l.name;
@@ -193,6 +193,9 @@ class Layers2D extends hrt.prefab.Object3D {
 
 	override function makeInstance( ctx : hrt.prefab.Context ) : hrt.prefab.Context {
 		ctx = super.makeInstance(ctx);
+		#if editor
+		storedCtx = ctx;
+		#end
 
 		for ( l in layers ) {
 			var path = new haxe.io.Path(ctx.shared.currentPath);
@@ -452,7 +455,8 @@ class Layers2D extends hrt.prefab.Object3D {
 
 						var tx = Math.floor(ix / layerScale);
 						var ty = Math.floor(iy / layerScale);
-						if ( currentPixels.getPixel(tx, ty) & currentLayerValue != currentLayerValue ) {
+						var currentColor = currentPixels.getPixel(tx, ty);
+						if ( (paintOverride || currentColor == 0) && currentColor != currentLayerValue ) {
 							currentPixels.setPixel(tx, ty, currentLayerValue);
 							modified = true;
 						}
@@ -616,6 +620,9 @@ class Layers2D extends hrt.prefab.Object3D {
 							</dd>
 							<dt>World Size</dt><dd><input type="range" min="1" max="4096" field="worldSize"/></dd>
 						</dl>
+						<dl>
+							<dt>Paint override</dt><dd><input type="checkbox" field="paintOverride" /></dd>
+						<dl>
 						<p>
 							<b><i>
 							Hold down SHIFT to erase<br />
