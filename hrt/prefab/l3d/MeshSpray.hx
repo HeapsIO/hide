@@ -1125,7 +1125,7 @@ class MeshSpray extends Object3D {
 			gBrush.scaleX = gBrush.scaleY = radius;
 			gBrush.ignoreParentTransform = true;
 			var pass = gBrush.material.mainPass;
-			pass.setPassName("outline");
+			pass.setPassName("overlay");
 			pass.depthTest = Always;
 			pass.depthWrite = false;
 			gBrush.material.shadows = false;
@@ -1134,7 +1134,7 @@ class MeshSpray extends Object3D {
 			gBrush = new h3d.scene.Mesh(new h3d.prim.Sphere(Math.min(radius*0.05, 0.35)), ctx.local3d);
 			gBrush.ignoreParentTransform = true;
 			var pass = gBrush.material.mainPass;
-			pass.setPassName("outline");
+			pass.setPassName("overlay");
 			pass.depthTest = Always;
 			pass.depthWrite = false;
 			gBrush.material.shadows = false;
