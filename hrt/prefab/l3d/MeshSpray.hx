@@ -478,6 +478,7 @@ class MeshSpray extends Object3D {
 	var wasEdited = false;
 	var previewModels : Array<hrt.prefab.Prefab> = [];
 	var sprayedModels : Array<hrt.prefab.Prefab> = [];
+	var selectElement : hide.Element;
 	override function edit( ectx : EditContext ) {
 
 		invParent = getAbsPos().clone();
@@ -518,7 +519,7 @@ class MeshSpray extends Object3D {
 
 		var setsList = new hide.Element('<div align="center" ></div>').appendTo(preset);
 
-		var selectElement = new hide.Element('<select multiple size="6" style="width: 300px" ></select>').appendTo(props);
+		selectElement = new hide.Element('<select multiple size="6" style="width: 300px" ></select>').appendTo(props);
 
 		function onChangeSet() {
 			selectElement.empty();
@@ -1003,10 +1004,31 @@ class MeshSpray extends Object3D {
 				} while (nbTry-- > 0);
 
 				var meshId = 0;
-				if(currentMeshes.length > 1) {
-					do
-						meshId = Std.random(currentMeshes.length)
-					while(CONFIG.dontRepeatMesh && meshId == lastMeshId);
+				var meshUsed = null;
+				var options = selectElement.children().elements();
+				var selectedMeshes = [];
+				for (opt in options) {
+					if (opt.prop("selected")) {
+						var findMesh = currentMeshes.filter((m) -> m.path == opt.val());
+						if (findMesh.length > 0)
+							selectedMeshes.push(findMesh[0]);
+					}
+				}
+				if (selectedMeshes.length > 0) {
+					if(selectedMeshes.length > 1) {
+						do
+							meshId = Std.random(selectedMeshes.length)
+						while(CONFIG.dontRepeatMesh && meshId == lastMeshId);
+					}
+					meshUsed = selectedMeshes[meshId];
+				}
+				else {
+					if(currentMeshes.length > 1) {
+						do
+							meshId = Std.random(currentMeshes.length)
+						while(CONFIG.dontRepeatMesh && meshId == lastMeshId);
+					}
+					meshUsed = currentMeshes[meshId];
 				}
 				lastIndexMesh = meshId;
 				if (computedDensity == 1)
@@ -1014,7 +1036,6 @@ class MeshSpray extends Object3D {
 				else
 					lastMeshId = -1;
 
-				var meshUsed = currentMeshes[meshId];
 
 				var newPrefab : hrt.prefab.Object3D = null;
 
