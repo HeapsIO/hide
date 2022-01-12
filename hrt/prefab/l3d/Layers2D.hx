@@ -37,6 +37,9 @@ class LayerView2DRFXShader extends h3d.shader.ScreenShader {
 		@param var depthChannel : Channel;
 		@param var depthTexture : Sampler2D;
 
+		@const var highlightNoPixels : Bool;
+		@param var highlightColor : Vec4;
+
 		var isSky : Bool;
 
 		function getPixelPosition( uv : Vec2 ) : Vec3 {
@@ -71,6 +74,8 @@ class LayerView2DRFXShader extends h3d.shader.ScreenShader {
 				var index = (floatToInt(layer.a) << 24) + (floatToInt(layer.r) << 16) + (floatToInt(layer.g) << 8) + (floatToInt(layer.b));
 				if ( index > 0 )
 					pixelColor.rgba = colors.get(vec2((index + 0.5) / nbColorsIndexes, 0.5));
+				else if ( !collide && highlightNoPixels )
+					pixelColor.rgba = highlightColor;
 			}
 
 			if ( collide )
@@ -139,6 +144,8 @@ class Layers2D extends hrt.prefab.Object3D {
 	@:s var worldSize : Int = 4096;
 	var layerTextures : Map<String, hxd.Pixels> = [];
 
+	@:s var highlightColor : Int = 0xff00ff;
+
 	#if editor
 	var storedCtx : hrt.prefab.Context;
 
@@ -160,7 +167,7 @@ class Layers2D extends hrt.prefab.Object3D {
 	var collidePixels : hxd.Pixels;
 	var colorMap : h3d.mat.Texture;
 
-	var sprayEnable : Bool = false;
+	var highlightNotPaintedPixels : Bool = false;
 
 	var rfx : Layer2DRFX;
 
@@ -294,6 +301,9 @@ class Layers2D extends hrt.prefab.Object3D {
 				sh.colors = colorMap;
 				sh.nbColorsIndexes = colorMap.width;
 			}
+
+			sh.highlightNoPixels = highlightNotPaintedPixels;
+			sh.highlightColor = h3d.Vector.fromColor(highlightColor);
 		}
 	}
 
@@ -619,6 +629,11 @@ class Layers2D extends hrt.prefab.Object3D {
 								<input type="color" field="collideMask"/>
 							</dd>
 							<dt>World Size</dt><dd><input type="range" min="1" max="4096" field="worldSize"/></dd>
+							<dt>Highlight Unpainted</dt>
+							<dd>
+								<input type="checkbox" field="highlightNotPaintedPixels"/>
+								<input type="color" field="highlightColor"/>
+							</dd>
 						</dl>
 						<dl>
 							<dt>Paint override</dt><dd><input type="checkbox" field="paintOverride" /></dd>
