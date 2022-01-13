@@ -73,8 +73,8 @@ class View<T> extends hide.comp.Component {
 		return Type.getClassName(Type.getClass(this));
 	}
 
-	public function setClipboard( v : Dynamic, ?type : String ) {
-		nw.Clipboard.get().set(ide.toJSON({ type : type == null ? viewClass : type, value : v }));
+	public function setClipboard( v : Dynamic, ?type : String, ?opts : {} ) {
+		nw.Clipboard.get().set(ide.toJSON({ type : type == null ? viewClass : type, value : v, opts : opts }));
 	}
 
 	public function hasClipboard( ?type : String ) {
@@ -83,9 +83,10 @@ class View<T> extends hide.comp.Component {
 		return v != null && v.type == type;
 	}
 
-	public function getClipboard( ?type : String ) : Dynamic {
+	public function getClipboard( ?type : String, ?opts : { ref : Dynamic } ) : Dynamic {
 		if( type == null ) type = viewClass;
 		var v : Dynamic = try haxe.Json.parse(nw.Clipboard.get().get()) catch( e : Dynamic ) null;
+		if( v != null && opts != null ) opts.ref = v.opts;
 		return v == null || v.type != type ? null : v.value;
 	}
 

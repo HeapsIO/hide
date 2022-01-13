@@ -448,17 +448,29 @@ class MeshSpray extends Object3D {
 		sys.io.File.saveContent(MESH_SPRAY_CONFIG_PATH, hide.Ide.inst.toJSON(allSetGroups));
 	}
 
-	function setGroundPos( ectx : EditContext, obj : Object3D ) {
-		var pos = obj.getAbsPos();
+	function setGroundPos( ectx : EditContext, obj : Object3D = null, absPos : h3d.col.Point = null ) : { mz : Float, rotX : Float, rotY : Float, rotZ : Float } {
+		if (absPos == null && obj == null)
+			throw "setGroundPos should use either object or absPos";
+		var tx : Float; var ty : Float; var tz : Float;
+		if ( absPos != null ) {
+			tx = absPos.x;
+			ty = absPos.y;
+			tz = absPos.z;
+		} else { // obj != null
+			tx = obj.getAbsPos().tx;
+			ty = obj.getAbsPos().ty;
+			tz = obj.getAbsPos().tz;
+		}
 		var config = currentConfig;
-		var tz = ectx.positionToGroundZ(pos.tx, pos.ty);
-		var mz = config.zOffset + tz - pos.tz;
-		obj.z += mz;
+		var groundZ = ectx.positionToGroundZ(tx, ty);
+		var mz = config.zOffset + groundZ - tz;
+		if ( obj != null )
+			obj.z += mz;
 		var orient = config.orientTerrain;
 		var tilt = config.tiltAmount;
 
 		inline function getPoint(dx,dy) {
-			var dz = ectx.positionToGroundZ(pos.tx + 0.1 * dx, pos.ty + 0.1 * dy) - tz;
+			var dz = ectx.positionToGroundZ(tx + 0.1 * dx, ty + 0.1 * dy) - groundZ;
 			return new h3d.col.Point(dx*0.1, dy*0.1, dz * orient);
 		}
 
@@ -470,14 +482,21 @@ class MeshSpray extends Object3D {
 		var m = q.toMatrix();
 		m.prependRotation(Math.random()*tilt*Math.PI/8,0,  (config.rotation + (Std.random(2) == 0 ? -1 : 1) * Math.round(Math.random() * config.rotationOffset)) * Math.PI / 180);
 		var a = m.getEulerAngles();
-		obj.rotationX = hxd.Math.fmt(a.x * 180 / Math.PI);
-		obj.rotationY = hxd.Math.fmt(a.y * 180 / Math.PI);
-		obj.rotationZ = hxd.Math.fmt(a.z * 180 / Math.PI);
+		var rotX = hxd.Math.fmt(a.x * 180 / Math.PI);
+		var rotY = hxd.Math.fmt(a.y * 180 / Math.PI);
+		var rotZ = hxd.Math.fmt(a.z * 180 / Math.PI);
+		if ( obj != null ) {
+			obj.rotationX = rotX;
+			obj.rotationY = rotY;
+			obj.rotationZ = rotZ;	
+		}
+		return { mz : mz, rotX : rotX, rotY : rotY, rotZ : rotZ };
 	}
 
 	var wasEdited = false;
 	var previewModels : Array<hrt.prefab.Prefab> = [];
 	var sprayedModels : Array<hrt.prefab.Prefab> = [];
+	var selectElement : hide.Element;
 	override function edit( ectx : EditContext ) {
 
 		invParent = getAbsPos().clone();
@@ -518,7 +537,7 @@ class MeshSpray extends Object3D {
 
 		var setsList = new hide.Element('<div align="center" ></div>').appendTo(preset);
 
-		var selectElement = new hide.Element('<select multiple size="6" style="width: 300px" ></select>').appendTo(props);
+		selectElement = new hide.Element('<select multiple size="6" style="width: 300px" ></select>').appendTo(props);
 
 		function onChangeSet() {
 			selectElement.empty();
@@ -708,16 +727,30 @@ class MeshSpray extends Object3D {
 		});
 
 		options.find("#toground").click(function(_) {
-			var mso = null;
-			for( c in children ) {
+			var ctx = ectx.getContext(this);
+			var mso = cast(ctx.local3d,MeshSprayObject);
+			for( c in this.children ) {
 				var obj = c.to(Object3D);
 				if( obj == null ) continue;
 				setGroundPos(ectx, obj);
 				var ctx = ectx.getContext(obj);
 				if( ctx != null ) obj.applyTransform(ctx.local3d);
-				if ( ctx.local3d.parent != null && Std.is(ctx.local3d.parent, MeshSprayObject))
-					mso = cast(ctx.local3d.parent,MeshSprayObject);
 			}
+			if ( this.binaryMeshes != null ) {
+				var pos = new h3d.col.Point(0,0,0);
+				for ( bm in this.binaryMeshes ) {
+					var pivot = mso.getAbsPos();
+					pos.x = bm.x + pivot.tx;
+					pos.y = bm.y + pivot.ty;
+					pos.z = bm.z + pivot.tz;
+					var ground = setGroundPos(ectx, null, pos);
+					bm.z += ground.mz;
+					bm.rotX = ground.rotX;
+					bm.rotY = ground.rotY;
+					bm.rotZ = ground.rotZ;
+				}
+			}
+			
 			mso.redraw();
 		});
 
@@ -827,6 +860,7 @@ class MeshSpray extends Object3D {
 				undo.change(Custom(function(undo) {
 					if(undo) {
 						sceneEditor.deleteElements(addedModels, () -> removeInteractiveBrush(), true, false);
+						clearPreview();
 					}
 					else {
 						sceneEditor.addElements(addedModels, false, true, false);
@@ -1003,10 +1037,31 @@ class MeshSpray extends Object3D {
 				} while (nbTry-- > 0);
 
 				var meshId = 0;
-				if(currentMeshes.length > 1) {
-					do
-						meshId = Std.random(currentMeshes.length)
-					while(CONFIG.dontRepeatMesh && meshId == lastMeshId);
+				var meshUsed = null;
+				var options = selectElement.children().elements();
+				var selectedMeshes = [];
+				for (opt in options) {
+					if (opt.prop("selected")) {
+						var findMesh = currentMeshes.filter((m) -> m.path == opt.val());
+						if (findMesh.length > 0)
+							selectedMeshes.push(findMesh[0]);
+					}
+				}
+				if (selectedMeshes.length > 0) {
+					if(selectedMeshes.length > 1) {
+						do
+							meshId = Std.random(selectedMeshes.length)
+						while(CONFIG.dontRepeatMesh && meshId == lastMeshId);
+					}
+					meshUsed = selectedMeshes[meshId];
+				}
+				else {
+					if(currentMeshes.length > 1) {
+						do
+							meshId = Std.random(currentMeshes.length)
+						while(CONFIG.dontRepeatMesh && meshId == lastMeshId);
+					}
+					meshUsed = currentMeshes[meshId];
 				}
 				lastIndexMesh = meshId;
 				if (computedDensity == 1)
@@ -1014,7 +1069,6 @@ class MeshSpray extends Object3D {
 				else
 					lastMeshId = -1;
 
-				var meshUsed = currentMeshes[meshId];
 
 				var newPrefab : hrt.prefab.Object3D = null;
 
@@ -1125,7 +1179,7 @@ class MeshSpray extends Object3D {
 			gBrush.scaleX = gBrush.scaleY = radius;
 			gBrush.ignoreParentTransform = true;
 			var pass = gBrush.material.mainPass;
-			pass.setPassName("outline");
+			pass.setPassName("overlay");
 			pass.depthTest = Always;
 			pass.depthWrite = false;
 			gBrush.material.shadows = false;
@@ -1134,7 +1188,7 @@ class MeshSpray extends Object3D {
 			gBrush = new h3d.scene.Mesh(new h3d.prim.Sphere(Math.min(radius*0.05, 0.35)), ctx.local3d);
 			gBrush.ignoreParentTransform = true;
 			var pass = gBrush.material.mainPass;
-			pass.setPassName("outline");
+			pass.setPassName("overlay");
 			pass.depthTest = Always;
 			pass.depthWrite = false;
 			gBrush.material.shadows = false;
