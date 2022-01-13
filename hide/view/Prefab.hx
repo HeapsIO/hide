@@ -7,7 +7,6 @@ import hxd.Key as K;
 
 import hrt.prefab.Prefab as PrefabElement;
 import hrt.prefab.Object3D;
-import hrt.prefab.l3d.Instance;
 import hide.comp.cdb.DataFiles;
 
 
@@ -60,18 +59,19 @@ private class PrefabSceneEditor extends hide.comp.SceneEditor {
 			haxe.Timer.delay(addElements.bind([p]), 0);
 		}
 
+		#if !prefab_refacto
 		function addNewInstances() {
 			var items = new Array<hide.comp.ContextMenu.ContextMenuItem>();
 			for(type in DataFiles.getAvailableTypes() ) {
 				var typeId = DataFiles.getTypeName(type);
 				var label = typeId.charAt(0).toUpperCase() + typeId.substr(1);
 
-				var refCols = Instance.findRefColumns(type);
+				var refCols = hrt.prefab.l3d.Instance.findRefColumns(type);
 				var refSheet = refCols == null ? null : type.base.getSheet(refCols.sheet);
-				var idCol = refCols == null ? null : Instance.findIDColumn(refSheet);
+				var idCol = refCols == null ? null : hrt.prefab.l3d.Instance.findIDColumn(refSheet);
 
 				function make(name) {
-					var p = new Instance(current == null ? sceneData : current);
+					var p = new hrt.prefab.l3d.Instance(current == null ? sceneData : current);
 					p.name = name;
 					p.props = makeCdbProps(p, type);
 					setup(p);
@@ -122,6 +122,8 @@ private class PrefabSceneEditor extends hide.comp.SceneEditor {
 			});
 		};
 		addNewInstances();
+		#end
+
 		newItems.unshift({
 			label : "Recents",
 			menu : recents,
