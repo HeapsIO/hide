@@ -113,7 +113,7 @@ class Editor extends Component {
 		keys.register("copy", onCopy);
 		keys.register("paste", onPaste);
 		keys.register("delete", onDelete);
-		keys.register("cdb.showReferences", showReferences);
+		keys.register("cdb.showReferences", () -> showReferences());
 		keys.register("undo", function() undo.undo());
 		keys.register("redo", function() undo.redo());
 		keys.register("cdb.moveBack", () -> cursorJump(true));
@@ -748,17 +748,18 @@ class Editor extends Component {
 		inRefreshAll = false;
 	}
 
-	function showReferences() {
+	public function showReferences(?id: String) {
 		if( cursor.table == null ) return;
 
-		var id = null;
 		var sheet = cursor.table.sheet;
-		for( c in sheet.columns ) {
-			switch( c.type ) {
-			case TId:
-				id = Reflect.field(sheet.lines[cursor.y], c.name);
-				break;
-			default:
+		if( id == null) {
+			for( c in sheet.columns ) {
+				switch( c.type ) {
+				case TId:
+					id = Reflect.field(sheet.lines[cursor.y], c.name);
+					break;
+				default:
+				}
 			}
 		}
 		if( id == null ) return;

@@ -96,6 +96,15 @@ class Cell extends Component {
 	function showMenu() {
 		var menu : Array<hide.comp.ContextMenu.ContextMenuItem> = null;
 		switch( column.type ) {
+		case TId:
+			if( value != null && value != "" )
+				menu = [
+					{
+						label : "Show references",
+						click : () -> editor.showReferences(this.value),
+						keys : this.editor.config.get("key.cdb.showReferences"),
+					},
+				];
 		case TRef(_):
 			if( value != null && value != "" )
 				menu = [

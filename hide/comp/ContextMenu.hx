@@ -30,6 +30,7 @@ class ContextMenu {
 				opt.$menu.css({ left: ide.mouseX, top: ide.mouseY });
 			},
 			zIndex: CONTEXTMENU_LAYER + 2,
+			useModal: false,
 		}
 		// wait until mousedown to get correct mouse pos
 		haxe.Timer.delay(function() {

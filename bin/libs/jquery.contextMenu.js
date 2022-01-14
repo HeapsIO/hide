@@ -124,6 +124,9 @@
             // This overrides the reposition option.
             hideOnSecondTrigger: false,
 
+            // use a modal layer for closing the menu rather than a captured event on document
+            useModal: true,
+
             //ability to select submenu
             selectableSubMenu: false,
 
@@ -1515,9 +1518,7 @@
                 return hasVisibleItems;
             },
             layer: function (opt, zIndex) {
-                // TODO: add this to the contextmenu options
-                var useLayer = false;
-                if (!useLayer) {
+                if (!opt.useModal) {
                     var listener = function (ev) {
                         handle.layerClick(ev, opt, () => {
                             document.removeEventListener('mousedown', listener, true);
