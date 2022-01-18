@@ -415,7 +415,7 @@ class SplineEditor {
 
 		if( editMode ) {
 			createGizmos(ctx);
-			var s2d = @:privateAccess ctx.local2d.getScene();
+			var s2d = ctx.shared.root2d.getScene();
 			interactive = new h2d.Interactive(10000, 10000, s2d);
 			interactive.propagateEvents = true;
 			interactive.onPush =

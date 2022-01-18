@@ -78,7 +78,7 @@ class SplinePoint extends Object3D {
 		controlPointsViewer.moveTo(1, 0, 0);
 		controlPointsViewer.lineTo(-1, 0, 0);
 
-		indexText = new h2d.ObjectFollower(pointViewer,  @:privateAccess ctx.local2d.getScene());
+		indexText = new h2d.ObjectFollower(pointViewer, ctx.shared.root2d.getScene());
 		var t = new h2d.Text(hxd.res.DefaultFont.get(), indexText);
 		t.textColor = 0xff00ff;
 		t.textAlign = Center;

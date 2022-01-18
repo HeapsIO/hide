@@ -66,7 +66,7 @@ class MovablePoint {
 	}
 
 	function createText(ctx : Context){
-		var o = new h2d.ObjectFollower(mesh,  @:privateAccess ctx.local2d.getScene());
+		var o = new h2d.ObjectFollower(mesh, ctx.shared.root2d.getScene());
 		var t = new h2d.Text(hxd.res.DefaultFont.get(), o);
 		t.textColor = 0xFFFFFF;
 		t.textAlign = Center;
@@ -81,7 +81,7 @@ class MovablePoint {
 	}
 
 	function worldToScreen(wx: Float, wy: Float, wz: Float, ctx : Context) {
-		var s2d = @:privateAccess ctx.local2d.getScene();
+		var s2d = ctx.shared.root2d.getScene();
 		var camera = @:privateAccess ctx.local3d.getScene().camera;
 		camera.update();
 		var pt = camera.project(wx, wy, wz, s2d.width, s2d.height);
@@ -350,7 +350,7 @@ class PolygonEditor {
 		reset();
 		if(!editMode) return;
 		if(b){
-			var s2d = @:privateAccess ctx.local2d.getScene();
+			var s2d = ctx.shared.root2d.getScene();
 			interactive = new h2d.Interactive(10000, 10000, s2d);
 			interactive.propagateEvents = true;
 			interactive.cancelEvents = false;

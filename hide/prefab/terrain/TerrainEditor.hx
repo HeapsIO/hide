@@ -780,7 +780,7 @@ class TerrainEditor {
 
 	public function setSelected( ctx : Context, b : Bool ) {
 		if( b ) {
-			var s2d = @:privateAccess ctx.local2d.getScene();
+			var s2d = ctx.shared.root2d.getScene();
 			if( interactive == null )
 				interactive.remove();
 			interactive = new h2d.Interactive(10000, 10000, s2d);
