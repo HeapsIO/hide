@@ -13,6 +13,7 @@ typedef ViewOptions = { ?position : DisplayPosition, ?width : Int }
 class View<T> extends hide.comp.Component {
 
 	var container : golden.Container;
+	var containerView : golden.ContentItem;
 	var watches : Array<{ keep : Bool, path : String, callb : Void -> Void }> = [];
 	public var fullScreen(get,set) : Bool;
 	public var keys(get,null) : Keys;
@@ -159,7 +160,9 @@ class View<T> extends hide.comp.Component {
 			});
 		});
 
-		untyped cont.parent.__view = this;
+		if( containerView != null ) containerView.__view = null;
+		containerView = container.parent;
+		containerView.__view = this;
 		element = cont.getElement();
 	}
 
@@ -244,6 +247,7 @@ class View<T> extends hide.comp.Component {
 				s.dispose();
 		}
 		element = null;
+		containerView.__view = null;
 	}
 
 	function buildTabMenu() : Array<hide.comp.ContextMenu.ContextMenuItem> {

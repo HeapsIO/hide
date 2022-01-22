@@ -10,6 +10,8 @@ extern class ContentItem {
 	var config : Config.ItemConfig;
 	var header : Header;
 
+	var __view : Dynamic;
+
 	public function addChild( config : Config.ItemConfig, ?index : Int ) : Void;
 	public function on( type : String, callb : Event<ContentItem> -> Void ) : Void;
 	public function off( type : String ) : Void;

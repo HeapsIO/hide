@@ -45,10 +45,16 @@ class Scene extends Component implements h3d.IDrawable {
 		for( c in cleanup )
 			c();
 		cleanup = [];
+		ide.unregisterUpdate(sync);
+		@:privateAccess s2d.window.removeResizeEvent(s2d.checkResize);
 		engine.dispose();
 		@:privateAccess engine.driver = null;
 		untyped canvas.__scene = null;
 		canvas = null;
+		if( h3d.Engine.getCurrent() == engine ) @:privateAccess h3d.Engine.CURRENT = null;
+		untyped js.Browser.window.$_ = null; // jquery can sometimes leak s2d
+		@:privateAccess haxe.NativeStackTrace.lastError = null; // possible leak there
+		window.dispose();
 	}
 
 	public function addListener(f) {
@@ -138,8 +144,7 @@ class Scene extends Component implements h3d.IDrawable {
 
 	function sync() {
 		if( new Element(canvas).parents("html").length == 0 ) {
-			window.dispose();
-			ide.unregisterUpdate(sync);
+			dispose();
 			return;
 		}
 		if( !visible || pendingCount > 0)
