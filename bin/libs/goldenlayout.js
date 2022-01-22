@@ -2330,7 +2330,7 @@ lm.controls.Header = function( layoutManager, parent ) {
 	this.activeContentItem = null;
 	this.closeButton = null;
 	this.tabDropdownButton = null;
-	$( document ).mouseup( lm.utils.fnBind( this._hideAdditionalTabsDropdown, this ) );
+	//$( document ).mouseup( lm.utils.fnBind( this._hideAdditionalTabsDropdown, this ) );
 
 	this._lastVisibleTabIndex = -1;
 	this._tabControlOffset = 10;
