@@ -578,6 +578,9 @@ class FXEditor extends FileView {
 
 		tools.saveDisplayKey = "FXScene/tools";
 		tools.addButton("video-camera", "Perspective camera", () -> sceneEditor.resetCamera());
+		tools.addButton("arrows", "Gizmo translation Mode", @:privateAccess sceneEditor.gizmo.translationMode);
+		tools.addButton("undo", "Gizmo rotation Mode", @:privateAccess sceneEditor.gizmo.rotationMode);
+		tools.addButton("compress", "Gizmo scaling Mode", @:privateAccess sceneEditor.gizmo.scalingMode);
 
 		function renderProps() {
 			properties.clear();
