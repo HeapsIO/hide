@@ -148,7 +148,7 @@ class Prefab extends FileView {
 
 	var grid : h3d.scene.Graphics;
 
-	var gridStep : Int;
+	var gridStep : Float = 0.;
 	var gridSize : Int;
 	var showGrid = false;
 
@@ -340,8 +340,48 @@ class Prefab extends FileView {
 		toolsDefs.push({id: "perspectiveCamera", title : "Perspective camera", icon : "video-camera", type : Button(() -> resetCamera(false)) });
 		toolsDefs.push({id: "topCamera", title : "Top camera", icon : "video-camera", iconStyle: { transform: "rotateZ(90deg)" }, type : Button(() -> resetCamera(true))});
 		toolsDefs.push({id: "snapToGroundToggle", title : "Snap to ground", icon : "anchor", type : Toggle((v) -> sceneEditor.snapToGround = v)});
-		toolsDefs.push({id: "translationMode", title : "Gizmo translation Mode", icon : "arrows", type : Button(@:privateAccess sceneEditor.gizmo.translationMode)});
-		toolsDefs.push({id: "rotationMode", title : "Gizmo rotation Mode", icon : "undo", type : Button(@:privateAccess sceneEditor.gizmo.rotationMode)});
+		toolsDefs.push({id: "translationMode", title : "Gizmo translation Mode", icon : "arrows", type : Button(@:privateAccess sceneEditor.gizmo.translationMode), rightClick: () -> {
+			var items = [{
+				label : "Snap to Grid",
+				click : function() {
+					@:privateAccess sceneEditor.gizmo.snapToGrid = !sceneEditor.gizmo.snapToGrid;
+				},
+				checked: @:privateAccess sceneEditor.gizmo.snapToGrid
+			}];
+			var steps : Array<Float> = sceneEditor.view.config.get("sceneeditor.gridSnapSteps");
+			for (step in steps) {
+				items.push({
+					label : ""+step,
+					click : function() {
+						gridStep = step;
+						@:privateAccess sceneEditor.gizmo.moveStep = gridStep;
+						updateGrid();
+					},
+					checked: gridStep == step
+				});
+			}
+			new hide.comp.ContextMenu(items);
+		}});
+		toolsDefs.push({id: "rotationMode", title : "Gizmo rotation Mode", icon : "undo", type : Button(@:privateAccess sceneEditor.gizmo.rotationMode),  rightClick: () -> {
+			var steps : Array<Float> = sceneEditor.view.config.get("sceneeditor.rotateStepCoarses");
+			var items = [{
+				label : "Snap enabled",
+				click : function() {
+					@:privateAccess sceneEditor.gizmo.rotateSnap = !sceneEditor.gizmo.rotateSnap;
+				},
+				checked: @:privateAccess sceneEditor.gizmo.rotateSnap
+			}];
+			for (step in steps) {
+				items.push({
+					label : ""+step+"°",
+					click : function() {
+						@:privateAccess sceneEditor.gizmo.rotateStepCoarse = step;
+					},
+					checked: @:privateAccess sceneEditor.gizmo.rotateStepCoarse == step
+				});
+			}
+			new hide.comp.ContextMenu(items);
+		}});
 		toolsDefs.push({id: "scalingMode", title : "Gizmo scaling Mode", icon : "compress", type : Button(@:privateAccess sceneEditor.gizmo.scalingMode)});
 		toolsDefs.push({id: "localTransformsToggle", title : "Local transforms", icon : "compass", type : Toggle((v) -> sceneEditor.localTransform = v)});
 		toolsDefs.push({id: "gridToggle", title : "Toggle grid", icon : "th", type : Toggle((v) -> { showGrid = v; updateGrid(); }) });
@@ -396,7 +436,7 @@ class Prefab extends FileView {
 			var el : Element = null;
 			switch(tool.type) {
 				case Button(f):
-					el = tools.addButton(tool.icon, tool.title + shortcut, f);
+					el = tools.addButton(tool.icon, tool.title + shortcut, f, tool.rightClick);
 				case Toggle(f):
 					var toggle = tools.addToggle(tool.icon, tool.title + shortcut, f);
 					el = toggle.element;
@@ -490,7 +530,8 @@ class Prefab extends FileView {
 		grid = new h3d.scene.Graphics(scene.s3d);
 		grid.scale(1);
 		grid.material.mainPass.setPassName("debuggeom");
-		gridStep = ide.currentConfig.get("sceneeditor.gridStep");
+		if (gridStep == 0.)
+			gridStep = ide.currentConfig.get("sceneeditor.gridStep");
 		gridSize = ide.currentConfig.get("sceneeditor.gridSize");
 
 		var col = h3d.Vector.fromColor(scene.engine.backgroundColor);

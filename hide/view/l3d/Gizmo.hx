@@ -36,8 +36,10 @@ class Gizmo extends h3d.scene.Object {
 	public var moving(default, null): Bool;
 
 	public var moveStep = 0.5;
+	public var snapToGrid = false;
 	public var rotateStepFine = 15.0;
 	public var rotateStepCoarse = 45.0;
+	public var rotateSnap = false;
 
 	var debug: h3d.scene.Graphics;
 	var axisScale = false;
@@ -183,13 +185,13 @@ class Gizmo extends h3d.scene.Object {
 			var quat = new h3d.Quat();
 			var speedFactor = (K.isDown(K.SHIFT) && !K.isDown(K.CTRL)) ? 0.1 : 1.0;
 			delta.scale(speedFactor);
-
 			inline function scaleFunc(x: Float) {
 				return x > 0 ? (x + 1) : 1 / (1 - x);
 			}
 
 			function moveSnap(m: Float) {
-				if(moveStep <= 0 || !K.isDown(K.CTRL) || axisScale)
+				if (K.isPressed(K.CTRL)) snapToGrid = !snapToGrid;
+				if(moveStep <= 0 || !snapToGrid || axisScale)
 					return m;
 
 				var step = K.isDown(K.SHIFT) ? moveStep / 2.0 : moveStep;
@@ -212,13 +214,14 @@ class Gizmo extends h3d.scene.Object {
 			}
 
 			if(mode == RotateX || mode == RotateY || mode == RotateZ) {
+				if (K.isPressed(K.CTRL)) rotateSnap = !rotateSnap;
 				var v1 = startDragPt.sub(startPos);
 				v1.normalize();
 				var v2 = curPt.sub(startPos);
 				v2.normalize();
 
 				var angle = Math.atan2(v1.cross(v2).dot(norm), v1.dot(v2)) * speedFactor;
-				if(K.isDown(K.CTRL)) {
+				if(rotateSnap) {
 					var step = hxd.Math.degToRad(K.isDown(K.SHIFT) ? rotateStepFine : rotateStepCoarse);
 					angle =  hxd.Math.round(angle / step) * step;
 				}

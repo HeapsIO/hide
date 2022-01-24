@@ -388,7 +388,7 @@ class SceneEditor {
 		scene.s3d.addChild(context.shared.root3d);
 
 		gizmo = new hide.view.l3d.Gizmo(scene);
-		gizmo.moveStep = view.config.get("sceneeditor.gridSnapStep");
+		gizmo.moveStep = view.config.get("sceneeditor.gridStep");
 		view.keys.register("sceneeditor.translationMode", gizmo.translationMode);
 		view.keys.register("sceneeditor.rotationMode", gizmo.rotationMode);
 		view.keys.register("sceneeditor.scalingMode", gizmo.scalingMode);

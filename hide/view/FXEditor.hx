@@ -578,8 +578,46 @@ class FXEditor extends FileView {
 
 		tools.saveDisplayKey = "FXScene/tools";
 		tools.addButton("video-camera", "Perspective camera", () -> sceneEditor.resetCamera());
-		tools.addButton("arrows", "Gizmo translation Mode", @:privateAccess sceneEditor.gizmo.translationMode);
-		tools.addButton("undo", "Gizmo rotation Mode", @:privateAccess sceneEditor.gizmo.rotationMode);
+		tools.addButton("arrows", "Gizmo translation Mode", @:privateAccess sceneEditor.gizmo.translationMode, () -> {
+			var items = [{
+				label : "Snap to Grid",
+				click : function() {
+					@:privateAccess sceneEditor.gizmo.snapToGrid = !sceneEditor.gizmo.snapToGrid;
+				},
+				checked: @:privateAccess sceneEditor.gizmo.snapToGrid
+			}];
+			var steps : Array<Float> = sceneEditor.view.config.get("sceneeditor.gridSnapSteps");
+			for (step in steps) {
+				items.push({
+					label : ""+step,
+					click : function() {
+						@:privateAccess sceneEditor.gizmo.moveStep = step;
+					},
+					checked: @:privateAccess sceneEditor.gizmo.moveStep == step
+				});
+			}
+			new hide.comp.ContextMenu(items);
+		});
+		tools.addButton("undo", "Gizmo rotation Mode", @:privateAccess sceneEditor.gizmo.rotationMode, () -> {
+			var steps : Array<Float> = sceneEditor.view.config.get("sceneeditor.rotateStepCoarses");
+			var items = [{
+				label : "Snap enabled",
+				click : function() {
+					@:privateAccess sceneEditor.gizmo.rotateSnap = !sceneEditor.gizmo.rotateSnap;
+				},
+				checked: @:privateAccess sceneEditor.gizmo.rotateSnap
+			}];
+			for (step in steps) {
+				items.push({
+					label : ""+step+"°",
+					click : function() {
+						@:privateAccess sceneEditor.gizmo.rotateStepCoarse = step;
+					},
+					checked: @:privateAccess sceneEditor.gizmo.rotateStepCoarse == step
+				});
+			}
+			new hide.comp.ContextMenu(items);
+		});
 		tools.addButton("compress", "Gizmo scaling Mode", @:privateAccess sceneEditor.gizmo.scalingMode);
 
 		function renderProps() {

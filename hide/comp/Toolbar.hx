@@ -43,10 +43,12 @@ class Toolbar extends Component {
 		element.addClass("hide-toolbar");
 	}
 
-	public function addButton( icon : String, ?label : String, ?onClick : Void -> Void ) {
+	public function addButton( icon : String, ?label : String, ?onClick : Void -> Void, ?rightClick : Void -> Void ) {
 		var e = new Element('<div class="button" title="${label==null ? "" : label}"><div class="icon ico ico-$icon"/></div>');
 		if( onClick != null ) e.click(function(_) onClick());
 		e.appendTo(element);
+		if ( rightClick != null )
+			e.contextmenu(function(e) { rightClick(); e.preventDefault(); });
 		return e;
 	}
 
