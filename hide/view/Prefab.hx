@@ -340,6 +340,9 @@ class Prefab extends FileView {
 		toolsDefs.push({id: "perspectiveCamera", title : "Perspective camera", icon : "video-camera", type : Button(() -> resetCamera(false)) });
 		toolsDefs.push({id: "topCamera", title : "Top camera", icon : "video-camera", iconStyle: { transform: "rotateZ(90deg)" }, type : Button(() -> resetCamera(true))});
 		toolsDefs.push({id: "snapToGroundToggle", title : "Snap to ground", icon : "anchor", type : Toggle((v) -> sceneEditor.snapToGround = v)});
+		toolsDefs.push({id: "translationMode", title : "Gizmo translation Mode", icon : "arrows", type : Button(@:privateAccess sceneEditor.gizmo.translationMode)});
+		toolsDefs.push({id: "rotationMode", title : "Gizmo rotation Mode", icon : "undo", type : Button(@:privateAccess sceneEditor.gizmo.rotationMode)});
+		toolsDefs.push({id: "scalingMode", title : "Gizmo scaling Mode", icon : "compress", type : Button(@:privateAccess sceneEditor.gizmo.scalingMode)});
 		toolsDefs.push({id: "localTransformsToggle", title : "Local transforms", icon : "compass", type : Toggle((v) -> sceneEditor.localTransform = v)});
 		toolsDefs.push({id: "gridToggle", title : "Toggle grid", icon : "th", type : Toggle((v) -> { showGrid = v; updateGrid(); }) });
 		var texContent : Element = null;

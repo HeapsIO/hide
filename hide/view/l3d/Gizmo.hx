@@ -110,6 +110,37 @@ class Gizmo extends h3d.scene.Object {
 		setup("yRotate", 0x00ff00, RotateY);
 		setup("zRotate", 0x0000ff, RotateZ);
 		setup("scale", 0xffffff, Scale);
+		translationMode();
+	}
+
+	public function translationMode() {
+		axisScale = false;
+		for(n in ["xAxis", "yAxis", "zAxis", "xy", "xz", "yz"]) {
+			gizmo.getObjectByName(n).visible = true;
+		}
+		for(n in ["xRotate", "yRotate", "zRotate", "scale"]) {
+			gizmo.getObjectByName(n).visible = false;
+		}
+	}
+
+	public function rotationMode() {
+		axisScale = false;
+		for(n in ["xRotate", "yRotate", "zRotate", ]) {
+			gizmo.getObjectByName(n).visible = true;
+		}
+		for(n in ["xAxis", "yAxis", "zAxis", "xy", "xz", "yz", "scale"]) {
+			gizmo.getObjectByName(n).visible = false;
+		}
+	}
+
+	public function scalingMode() {
+		axisScale = true;
+		for(n in ["xAxis", "yAxis", "zAxis", "scale"]) {
+			gizmo.getObjectByName(n).visible = true;
+		}
+		for(n in ["xRotate", "yRotate", "zRotate", "xy", "xz", "yz"]) {
+			gizmo.getObjectByName(n).visible = false;
+		}
 	}
 
 	public function startMove(mode: TransformMode, ?duplicating=false) {
@@ -264,10 +295,10 @@ class Gizmo extends h3d.scene.Object {
 			gizmo.getObjectByName("zRotate").setRotation(0, 0, dir.x < 0 ? dir.y < 0 ? Math.PI : Math.PI / 2.0 : dir.y < 0 ? -Math.PI / 2.0 : 0);
 		}
 
-		axisScale = K.isDown(K.ALT);
-		for(n in ["xRotate", "yRotate", "zRotate", "xy", "xz", "yz", "scale"]) {
-			gizmo.getObjectByName(n).visible = !axisScale;
-		}
+		//axisScale = K.isDown(K.ALT);
+		// for(n in ["xRotate", "yRotate", "zRotate", "xy", "xz", "yz", "scale"]) {
+		// 	gizmo.getObjectByName(n).visible = !axisScale;
+		// }
 
 		if(updateFunc != null) {
 			updateFunc(dt);
