@@ -23,12 +23,7 @@ class SubGraph extends ShaderNode {
 
 	public function loadGraphShader() {
 		if (this.pathShaderGraph != null) {
-			try {
-				subShaderGraph = new ShaderGraph(pathShaderGraph);
-			} catch (e : Dynamic) {
-				trace("The shader does not exist.");
-				return;
-			}
+			subShaderGraph = new ShaderGraph(pathShaderGraph);
 			inputsInfo = new Map<String, ShaderNode.InputInfo>();
 			inputInfoKeys = [];
 			var paramInfoKeys = [];

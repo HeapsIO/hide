@@ -70,48 +70,54 @@ class ShaderOutput extends ShaderNode {
 	];
 
 	override public function loadProperties(props : Dynamic) {
-		var paramVariable : Array<Dynamic> = Reflect.field(props, "variable");
-		if( paramVariable[0] == null)
-			return;
-
-		for (c in ShaderNode.availableVariables) {
-			if (c.name == paramVariable[0]) {
-				this.variable = c;
-				return;
-			}
-		}
-		for (c in ShaderOutput.availableOutputs) {
-			if (c.name == paramVariable[0]) {
-				this.variable = c;
-				return;
-			}
-		}
 		var type: Type;
-		try {
+		if(props.type != null) {
+			var args = [];
+			if(props.type == "TVec") {
+				args.push(props.vecSize);
+				args.push(VecType.createByName(props.vecType));
+			}
+			type = hxsl.Ast.Type.createByName(props.type, args);
+		}
+		else @:deprecated {
+			var paramVariable : Array<Dynamic> = Reflect.field(props, "variable");
+			if( paramVariable[0] == null)
+				return;
+
+			for (c in ShaderNode.availableVariables) {
+				if (c.name == paramVariable[0]) {
+					this.variable = c;
+					return;
+				}
+			}
+			for (c in ShaderOutput.availableOutputs) {
+				if (c.name == paramVariable[0]) {
+					this.variable = c;
+					return;
+				}
+			}
 			type = haxe.EnumTools.createByName(Type, paramVariable[1], paramVariable[2]);
-		} catch( e ) {
-			trace('Received invalid props for output node. id: $id, variable name: ${paramVariable[0]}');
-			return;
 		}
 		this.variable = {
 			parent: null,
 			id: 0,
 			kind: Local,
-			name: paramVariable[0],
+			name: props.name,
 			type: type,
 		};
 	}
 
 	override public function saveProperties() : Dynamic {
-		var content : Array<Dynamic> = (variable == null) ? [null] : [
-			variable.name,
-			variable.type.getName(),
-			variable.type.getParameters()
-		];
-		var parameters = {
-			variable: content,
+		var parameters : Dynamic = {
+			name: variable.name,
+			type: variable.type.getName(),
 		};
-
+		switch variable.type {
+			case TVec(size, t):
+				parameters.vecSize = size;
+				parameters.vecType = t.getName();
+			default:
+		}
 		return parameters;
 	}
 
