@@ -34,11 +34,7 @@ class DynamicShader extends Shader {
 		else {
 			var dshader = new hxsl.DynamicShader(shaderDef.shader);
 			for( v in shaderDef.inits ) {
-				#if !hscript
-				throw "hscript required";
-				#else
 				dshader.hscriptSet(v.variable.name, v.value);
-				#end
 			}
 			shader = dshader;
 		}
