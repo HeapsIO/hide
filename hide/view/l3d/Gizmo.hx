@@ -186,7 +186,7 @@ class Gizmo extends h3d.scene.Object {
 			var speedFactor = (K.isDown(K.SHIFT) && !K.isDown(K.CTRL)) ? 0.1 : 1.0;
 			delta.scale(speedFactor);
 			inline function scaleFunc(x: Float) {
-				return x > 0 ? (x + 1) : 1 / (1 - x);
+				return x > 0 ? x + 0.5 : 1 / (1 - x);
 			}
 
 			function moveSnap(m: Float) {
