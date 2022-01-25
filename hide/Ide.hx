@@ -262,7 +262,7 @@ class Ide {
 	}
 
 	function get_isWindows() {
-		return true;
+		return Sys.systemName() == "Windows";
 	}
 
 	function get_isFocused() {

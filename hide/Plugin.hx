@@ -8,7 +8,15 @@ class Plugin {
 
 	#if macro
 
-	static var haxelibRoot = sys.io.File.getContent(Sys.getEnv("USERPROFILE")+"/.haxelib");
+	static var haxelibRoot(get,never) : String;
+	static function get_haxelibRoot() {
+		return switch(Sys.systemName()) {
+			case "Windows": sys.io.File.getContent(Sys.getEnv("USERPROFILE")+"/.haxelib");
+			case "Linux", "BSD", "Mac":	sys.io.File.getContent(Sys.getEnv("HOME")+"/.haxelib");
+			default: throw "Unknown platform";
+		}
+	}
+
 	static var EXCLUDES = [
 		"hide",
 		"hrt",
