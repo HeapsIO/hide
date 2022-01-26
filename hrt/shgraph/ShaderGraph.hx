@@ -82,7 +82,7 @@ class ShaderGraph {
 
 		for (p in parameters) {
 			var typeString : Array<Dynamic> = Reflect.field(p, "type");
-			if (Std.is(typeString, Array)) {
+			if (Std.isOfType(typeString, Array)) {
 				if (typeString[1] == null || typeString[1].length == 0)
 					p.type = std.Type.createEnum(Type, typeString[0]);
 				else {
@@ -204,7 +204,7 @@ class ShaderGraph {
 	static var alreadyBuiltSubGraphs : Array<Int> = [];
 	function buildNodeVar(nodeVar : NodeVar) : Array<TExpr>{
 		var node = nodeVar.node;
-		var isSubGraph = Std.is(node, hrt.shgraph.nodes.SubGraph);
+		var isSubGraph = Std.isOfType(node, hrt.shgraph.nodes.SubGraph);
 		if (node == null)
 			return [];
 		if (alreadyBuiltSubGraphs == null)
@@ -216,7 +216,7 @@ class ShaderGraph {
 		for (key in keys) {
 			var input = node.getInput(key);
 			if (input != null) {
-				if (!Std.is(input.node, hrt.shgraph.nodes.SubGraph) || !alreadyBuiltSubGraphs.contains(input.node.id))
+				if (!Std.isOfType(input.node, hrt.shgraph.nodes.SubGraph) || !alreadyBuiltSubGraphs.contains(input.node.id))
 					res = res.concat(buildNodeVar(input));
 			} else if (node.getInputInfo(key).hasProperty) {
 			} else if (!node.getInputInfo(key).isRequired) {
@@ -318,7 +318,7 @@ class ShaderGraph {
 		if( subShaderId == null )
 			alreadyBuiltSubGraphs = [];
 		for (n in nodes) {
-			if (!variableNamesAlreadyUpdated && subShaderId != null && !Std.is(n.instance, ShaderInput)) {
+			if (!variableNamesAlreadyUpdated && subShaderId != null && !Std.isOfType(n.instance, ShaderInput)) {
 				for (outputKey in n.instance.getOutputInfoKeys()) {
 					var output = n.instance.getOutput(outputKey);
 					if (output != null)

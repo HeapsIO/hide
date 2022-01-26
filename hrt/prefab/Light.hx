@@ -129,7 +129,7 @@ class Light extends Object3D {
 	override function makeInstance( ctx : Context ) : Context {
 		ctx = ctx.clone(this);
 
-		var isPbr = Std.is(h3d.mat.MaterialSetup.current, h3d.mat.PbrMaterialSetup);
+		var isPbr = Std.isOfType(h3d.mat.MaterialSetup.current, h3d.mat.PbrMaterialSetup);
 		if( !isPbr ) {
 			switch( kind ) {
 			case Point: ctx.local3d = new h3d.scene.fwd.PointLight(ctx.local3d);

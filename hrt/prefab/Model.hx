@@ -33,7 +33,7 @@ class Model extends Object3D {
 			}
 			#if editor
 			for(m in obj.getMeshes())
-				if( !Std.is(m,h3d.scene.Skin) )
+				if( !Std.isOfType(m,h3d.scene.Skin) )
 					m.cullingCollider = new h3d.col.ObjectCollider(m, m.primitive.getBounds().toSphere());
 			#end
 			if( retargetAnim ) applyRetarget(obj);

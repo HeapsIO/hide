@@ -93,7 +93,7 @@ class Material extends Prefab {
 	#if editor
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
-		var isPbr = Std.is(ctx.scene.s3d.renderer, h3d.scene.pbr.Renderer);
+		var isPbr = Std.isOfType(ctx.scene.s3d.renderer, h3d.scene.pbr.Renderer);
 		var mat = h3d.mat.Material.create();
 		mat.props = renderProps();
 		var group = ctx.properties.add(new hide.Element('<div class="group" name="Material"></div>'));
@@ -305,10 +305,10 @@ class Material extends Prefab {
 	#end
 
 	public static function hasOverride(p: Prefab) {
-		if(Lambda.exists(p.children, c -> Std.is(c, Material) && c.enabled))
+		if(Lambda.exists(p.children, c -> Std.isOfType(c, Material) && c.enabled))
 			return true;
 		if(Type.getClass(p.parent) == Object3D)
-			return Lambda.exists(p.parent.children, c -> Std.is(c, Material) && c.enabled);
+			return Lambda.exists(p.parent.children, c -> Std.isOfType(c, Material) && c.enabled);
 		return false;
 	}
 

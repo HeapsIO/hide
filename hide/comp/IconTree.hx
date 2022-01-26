@@ -85,7 +85,7 @@ class IconTree<T:{}> extends Component {
 			c.id = "titem__" + (UID++);
 			map.set(c.id, c);
 			var prevItem = revMap.get(c.value);
-			if( Std.is(c.value, String) )
+			if( Std.isOfType(c.value, String) )
 				revMapString.set(cast c.value, c);
 			else {
 				revMap.set(c.value, c);
@@ -248,7 +248,7 @@ class IconTree<T:{}> extends Component {
 	}
 
 	function getRev( o : T ) {
-		if( Std.is(o, String) )
+		if( Std.isOfType(o, String) )
 			return revMapString.get(cast o);
 		return revMap.get(o);
 	}

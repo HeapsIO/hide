@@ -30,7 +30,7 @@ class Anisotropy extends Prefab {
 	}
 
 	function getMaterials( ctx : Context ) {
-		if( Std.is(parent, Material) ) {
+		if( Std.isOfType(parent, Material) ) {
 			var material : Material = cast parent;
 			return material.getMaterials(ctx);
 		}

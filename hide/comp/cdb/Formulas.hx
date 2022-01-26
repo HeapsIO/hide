@@ -51,7 +51,7 @@ class Formulas {
 					if( v == null && c.opt )
 						Reflect.deleteField(o, c.name);
 					else {
-						if( v == null || !Std.is(v, Float) ) v = Math.NaN;
+						if( v == null || !Std.isOfType(v, Float) ) v = Math.NaN;
 						Reflect.setField(o, c.name, v);
 					}
 				}
