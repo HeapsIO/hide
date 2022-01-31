@@ -1539,6 +1539,39 @@ class SceneEditor {
 		return p.setSelected(ctx, b);
 	}
 
+	public function changeAllModels(source : hrt.prefab.Object3D, path : String) {
+		var all = sceneData.flatten(hrt.prefab.Prefab);
+		var oldPath = source.source;
+		var changedModels = [];
+		for (child in all) {
+			var model = child.to(hrt.prefab.Object3D);
+			if (model != null && model.source == oldPath) {
+				model.source = path;
+				model.name = "";
+				autoName(model);
+				changedModels.push(model);
+			}
+		}
+		undo.change(Custom(function(u) {
+			if(u) {
+				for (model in changedModels) {
+					model.source = oldPath;
+					model.name = "";
+					autoName(model);
+				}
+			}
+			else {
+				for (model in changedModels) {
+					model.source = path;
+					model.name = "";
+					autoName(model);
+				}
+			}
+			refresh();
+		}));
+		refresh();
+	}
+
 	public function selectElements( elts : Array<PrefabElement>, ?mode : SelectMode = Default ) {
 		function impl(elts,mode:SelectMode) {
 			scene.setCurrent();

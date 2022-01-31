@@ -133,6 +133,7 @@ class Model extends Object3D {
 			<div class="group" name="Animation">
 				<dl>
 					<dt>Model</dt><dd><input type="model" field="source"/></dd>
+					<dt/><dd><input type="button" value="Change All" id="changeAll"/></dd>
 					<dt>Animation</dt><dd><select><option value="">-- Choose --</option></select>
 					<dt title="Don\'t save animation changes">Lock</dt><dd><input type="checkbox" field="lockAnimation"></dd>
 					<dt>Retarget</dt><dd><input type="checkbox" field="retargetAnim"></dd>
@@ -143,6 +144,11 @@ class Model extends Object3D {
 			if( pname == "retargetIgnore" && ctx.properties.isTempChange ) return;
 			ctx.onChange(this, pname);
 		});
+
+		var changeAllbtn = props.find("#changeAll");
+		changeAllbtn.on("click",function() hide.Ide.inst.chooseFile(["fbx", "l3d"] , function (path) {
+			ctx.scene.editor.changeAllModels(this, path);
+		}));
 
 		var select = props.find("select");
 		var anims = try ctx.scene.listAnims(source) catch(e: Dynamic) [];
