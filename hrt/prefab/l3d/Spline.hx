@@ -62,7 +62,6 @@ class SplinePoint extends Object3D {
 		pointViewer.ignoreParentTransform = true;
 		pointViewer.follow = ctx.local3d;
 		pointViewer.followPositionOnly = true;
-		pointViewer.setScale(0.2);
 		pointViewer.name = "pointViewer";
 		pointViewer.material.setDefaultProps("ui");
 		pointViewer.material.color.set(0,0,1,1);

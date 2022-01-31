@@ -36,7 +36,7 @@ class NewSplinePointViewer extends h3d.scene.Object {
 
 	override function sync( ctx : h3d.scene.RenderContext ) {
 		var cam = ctx.camera;
-		var gpos = getAbsPos().getPosition();
+		var gpos = pointViewer.getAbsPos().getPosition();
 		var distToCam = cam.pos.sub(gpos).length();
 		var engine = h3d.Engine.getCurrent();
 		var ratio = 18 / engine.height;
