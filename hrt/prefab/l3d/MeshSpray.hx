@@ -1,5 +1,6 @@
 package hrt.prefab.l3d;
 
+import js.node.Path;
 #if !editor
 
 class MeshSprayObject extends h3d.scene.Object {
@@ -555,6 +556,34 @@ class MeshSpray extends Object3D {
 						elt.val(newPath);
 						elt.html(extractMeshName(newPath));
 						sceneEditor.refresh();
+						undo.change(Custom(function(undo) {
+							if(undo) {
+								removeMeshPath(newPath);
+								addMeshPath(path);
+								for (child in children) {
+									var model = child.to(hrt.prefab.Object3D);
+									if (model != null && model.source == elt.val()) {
+										model.source = path;
+									}
+								}
+								elt.val(path);
+								elt.html(extractMeshName(path));
+								sceneEditor.refresh();
+							}
+							else {
+								removeMeshPath(elt.val());
+								addMeshPath(newPath);
+								for (child in children) {
+									var model = child.to(hrt.prefab.Object3D);
+									if (model != null && model.source == elt.val()) {
+										model.source = newPath;
+									}
+								}
+								elt.val(newPath);
+								elt.html(extractMeshName(newPath));
+								sceneEditor.refresh();
+							}
+						}));
 					}) },
 				]);
 				return false;
