@@ -538,6 +538,29 @@ class MeshSpray extends Object3D {
 		var setsList = new hide.Element('<div align="center" ></div>').appendTo(preset);
 
 		selectElement = new hide.Element('<select multiple size="6" style="width: 300px" ></select>').appendTo(props);
+		function createMeshElement(path: String) {
+			var elt = new hide.Element('<option value="$path">${extractMeshName(path)}</option>');
+			elt.contextmenu(function(e) {
+				e.preventDefault();
+				new hide.comp.ContextMenu([
+					{ label : "Swap Model", click : function() hide.Ide.inst.chooseFile(["fbx", "l3d"] , function (newPath) {
+						removeMeshPath(elt.val());
+						addMeshPath(newPath);
+						for (child in children) {
+							var model = child.to(hrt.prefab.Object3D);
+							if (model != null && model.source == elt.val()) {
+								model.source = newPath;
+							}
+						}
+						elt.val(newPath);
+						elt.html(extractMeshName(newPath));
+						sceneEditor.refresh();
+					}) },
+				]);
+				return false;
+			});
+			selectElement.append(elt);
+		}
 
 		function onChangeSet() {
 			selectElement.empty();
@@ -550,7 +573,7 @@ class MeshSpray extends Object3D {
 				} else {
 					path = m.path;
 				}
-				selectElement.append(new hide.Element('<option value="${path}">${extractMeshName(path)}</option>'));
+				createMeshElement(path);
 			}
 			updateConfig();
 		}
@@ -721,7 +744,7 @@ class MeshSpray extends Object3D {
 			hide.Ide.inst.chooseFiles(["fbx", "l3d"], function(paths) {
 				for( path in paths ) {
 					addMeshPath(path);
-					selectElement.append(new hide.Element('<option value="$path">${extractMeshName(path)}</option>'));
+					createMeshElement(path);
 				}
 			});
 		});
