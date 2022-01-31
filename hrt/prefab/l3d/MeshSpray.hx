@@ -1,6 +1,5 @@
 package hrt.prefab.l3d;
 
-import js.node.Path;
 #if !editor
 
 class MeshSprayObject extends h3d.scene.Object {

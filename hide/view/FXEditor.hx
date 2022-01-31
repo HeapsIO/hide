@@ -1012,7 +1012,7 @@ class FXEditor extends FileView {
 			}
 		}
 
-		var refreshDopesheet : Void -> Void;
+		var refreshDopesheet : Void -> Void = null;
 
 		function backupCurves() {
 			return [for(c in curves) haxe.Json.parse(haxe.Json.stringify(c.save()))];
