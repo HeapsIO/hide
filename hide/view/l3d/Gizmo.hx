@@ -24,6 +24,7 @@ enum TransformMode {
 class Gizmo extends h3d.scene.Object {
 
 	var gizmo: h3d.scene.Object;
+	var deltaTextObject : h2d.ObjectFollower;
 	var scene : hide.comp.Scene;
 	var updateFunc: Float -> Void;
 	var mouseX(get,never) : Float;
@@ -178,7 +179,30 @@ class Gizmo extends h3d.scene.Object {
 			dragPlane = h3d.col.Plane.fromNormalPoint(norm, startPos);
 		}
 		var startDragPt = getDragPoint(dragPlane);
+		deltaTextObject = new h2d.ObjectFollower(gizmo, scene.s2d);
+
+		var tx = new h2d.Text(hxd.res.DefaultFont.get(), deltaTextObject);
+		tx.textColor = 0xff0000;
+		tx.textAlign = Center;
+		tx.dropShadow = { dx : 0.5, dy : 0.5, color : 0x202020, alpha : 1.0 };
+		tx.setScale(2);
+		tx.setPosition(tx.x + 50, tx.y + 50);
+		var ty = new h2d.Text(hxd.res.DefaultFont.get(), deltaTextObject);
+		ty.textColor = 0x00ff00;
+		ty.textAlign = Center;
+		ty.dropShadow = { dx : 0.5, dy : 0.5, color : 0x202020, alpha : 1.0 };
+		ty.setScale(2);
+		ty.setPosition(ty.x + 50, ty.y + 75);
+		var tz = new h2d.Text(hxd.res.DefaultFont.get(), deltaTextObject);
+		tz.textColor = 0x0000ff;
+		tz.textAlign = Center;
+		tz.dropShadow = { dx : 0.5, dy : 0.5, color : 0x202020, alpha : 1.0 };
+		tz.setScale(2);
+		tz.setPosition(tz.x + 50, tz.y + 100);
 		updateFunc = function(dt) {
+			tx.visible = false;
+			ty.visible = false;
+			tz.visible = false;
 			var curPt = getDragPoint(dragPlane);
 			var delta = curPt.sub(startDragPt);
 			var vec = new h3d.Vector(0,0,0);
@@ -186,7 +210,7 @@ class Gizmo extends h3d.scene.Object {
 			var speedFactor = (K.isDown(K.SHIFT) && !K.isDown(K.CTRL)) ? 0.1 : 1.0;
 			delta.scale(speedFactor);
 			inline function scaleFunc(x: Float) {
-				return x > 0 ? x + 0.5 : 1 / (1 - x);
+				return x > 0 ? x + 1 : 1 / (1 - x);
 			}
 
 			function moveSnap(m: Float) {
@@ -203,6 +227,18 @@ class Gizmo extends h3d.scene.Object {
 
 			if(!axisScale) {
 				vec.transform3x3(startMat);
+				if (vec.x != 0) {
+					tx.visible = true;
+					tx.text = ""+ Math.round(vec.x*100)/100.;
+				}
+				if (vec.y != 0) {
+					ty.visible = true;
+					ty.text = ""+ Math.round(vec.y*100)/100.;
+				}
+				if (vec.z != 0) {
+					tz.visible = true;
+					tz.text = ""+ Math.round(vec.z*100)/100.;
+				}
 				x = (startPos.x + vec.x);
 				y = (startPos.y + vec.y);
 				z = (startPos.z + vec.z);
@@ -225,6 +261,18 @@ class Gizmo extends h3d.scene.Object {
 					var step = hxd.Math.degToRad(K.isDown(K.SHIFT) ? rotateStepFine : rotateStepCoarse);
 					angle =  hxd.Math.round(angle / step) * step;
 				}
+				if (norm.x != 0) {
+					tx.visible = true;
+					tx.text = ""+ Math.round(Math.radToDeg(angle)*100)/100. + "°";
+				}
+				if (norm.y != 0) {
+					ty.visible = true;
+					ty.text = ""+ Math.round(Math.radToDeg(angle)*100)/100. + "°";
+				}
+				if (norm.z != 0) {
+					tz.visible = true;
+					tz.text = ""+ Math.round(Math.radToDeg(angle)*100)/100. + "°";
+				}
 				quat.initRotateAxis(norm.x, norm.y, norm.z, angle);
 				var localQuat = new h3d.Quat();
 				localQuat.multiply(quat, startQuat);
@@ -232,15 +280,40 @@ class Gizmo extends h3d.scene.Object {
 			}
 
 			if(onMove != null) {
-				if(axisScale) {
+				if(axisScale && mode != Scale) {
 					vec.x = scaleFunc(vec.x);
 					vec.y = scaleFunc(vec.y);
 					vec.z = scaleFunc(vec.z);
+					if (vec.x != 1) {
+						tx.visible = true;
+						tx.text = ""+ Math.round(vec.x*100)/100.;
+					}
+					if (vec.y != 1) {
+						ty.visible = true;
+						ty.text = ""+ Math.round(vec.y*100)/100.;
+					}
+					if (vec.z != 1) {
+						tz.visible = true;
+						tz.text = ""+ Math.round(vec.z*100)/100.;
+					}
 					onMove(null, null, vec);
 				}
 				else {
-					if(mode == Scale)
+					if(mode == Scale) {
+						if (vec.x != 1) {
+							tx.visible = true;
+							tx.text = ""+ Math.round(vec.x*100)/100.;
+						}
+						if (vec.y != 1) {
+							ty.visible = true;
+							ty.text = ""+ Math.round(vec.y*100)/100.;
+						}
+						if (vec.z != 1) {
+							tz.visible = true;
+							tz.text = ""+ Math.round(vec.z*100)/100.;
+						}
 						onMove(null, null, vec);
+					}
 					else
 						onMove(vec, quat, null);
 				}
@@ -255,9 +328,10 @@ class Gizmo extends h3d.scene.Object {
 	function get_mouseX() return @:privateAccess scene.window.mouseX;
 	function get_mouseY() return @:privateAccess scene.window.mouseY;
 	function get_mouseLock() return @:privateAccess scene.window.mouseLock;
-	function set_mouseLock(v : Bool) return @:privateAccess scene.window.mouseLock = v; 
+	function set_mouseLock(v : Bool) return @:privateAccess scene.window.mouseLock = v;
 
 	function finishMove() {
+		deltaTextObject.remove();
 		mouseLock = false;
 		updateFunc = null;
 		if(onFinishMove != null)
