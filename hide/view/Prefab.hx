@@ -288,6 +288,8 @@ class Prefab extends FileView {
 	}
 
 	override function onActivate() {
+		if( element == null )
+			return;
 		if( sceneEditor != null )
 			refreshColLayout();
 	}
