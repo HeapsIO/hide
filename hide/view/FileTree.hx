@@ -124,6 +124,7 @@ class FileTree extends FileView {
 				});
 			new hide.comp.ContextMenu([
 				{ label : "New..", menu:newMenu },
+				{ label : "Collapse", click : tree.collapseAll },
 				{ label : "", isSeparator: true },
 				{ label : "Copy Path", enabled : current != null, click : function() { ide.setClipboard(current); } },
 				{ label : "Open in Explorer", enabled : current != null, click : function() { onExploreFile(current); } },
