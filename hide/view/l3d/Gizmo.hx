@@ -21,6 +21,38 @@ enum TransformMode {
 	Scale;
 }
 
+class ChangingStepViewer extends h3d.scene.Object {
+	var textObject : h2d.ObjectFollower;
+	var lifeTime : Float = 1.3;
+	var life : Float = 0.;
+	var text : h2d.Text;
+
+	public function new( parentGizmo : Gizmo, stepText : String ) {
+		super(parentGizmo);
+		name = "ChangingStepViewer";
+		textObject = new h2d.ObjectFollower(parentGizmo, @:privateAccess parentGizmo.scene.s2d);
+
+		text = new h2d.Text(hxd.res.DefaultFont.get(), textObject);
+		text.textAlign = Center;
+		text.dropShadow = { dx : 0.5, dy : 0.5, color : 0x202020, alpha : 1.0 };
+		text.setScale(2);
+		text.setPosition(text.x + 100, text.y);
+		text.text = stepText;
+	}
+
+	override function sync( ctx : h3d.scene.RenderContext ) {
+		var dt = hxd.Timer.tmod * 1. / 60;
+		life += dt;
+		textObject.alpha = 1-life/lifeTime;
+		text.y -= 20*dt*life/lifeTime;
+		if (life >= lifeTime) {
+			textObject.remove();
+			remove();
+		}
+		super.sync(ctx);
+	}
+}
+
 class Gizmo extends h3d.scene.Object {
 
 	var gizmo: h3d.scene.Object;
@@ -170,6 +202,10 @@ class Gizmo extends h3d.scene.Object {
 			default:
 		}
 
+		var moveSteps : Array<Float> = scene.editor.view.config.get("sceneeditor.gridSnapSteps");
+		var rotateSteps : Array<Float> = scene.editor.view.config.get("sceneeditor.rotateStepCoarses");
+		var rotateStepFineIndex = rotateSteps.indexOf(rotateStepFine);
+
 		if (mode == MoveX || mode == MoveY || mode == MoveZ || mode == Scale) {
 			var point = scene.s3d.camera.rayFromScreen(mouseX, mouseY).getDir();
 			dragPlane = h3d.col.Plane.fromNormalPoint(point, startPos);
@@ -214,12 +250,18 @@ class Gizmo extends h3d.scene.Object {
 			}
 
 			function moveSnap(m: Float) {
-				if (K.isPressed(K.CTRL)) snapToGrid = !snapToGrid;
 				if(moveStep <= 0 || !snapToGrid || axisScale)
 					return m;
 
 				var step = K.isDown(K.SHIFT) ? moveStep / 2.0 : moveStep;
 				return hxd.Math.round(m / step) * step;
+			}
+			if (mode == MoveX || mode == MoveY || mode == MoveZ || mode == MoveXY || mode == MoveYZ || mode == MoveZX) {
+				if (K.isPressed(K.CTRL)) snapToGrid = !snapToGrid;
+				if ( snapToGrid && K.isPressed(K.SHIFT) ) {
+					scene.editor.updateGrid(moveSteps[(moveSteps.indexOf(moveStep) + 1 ) % moveSteps.length]);
+					var changingStepViewer = new ChangingStepViewer(this, "" + moveStep);
+				}
 			}
 			if(mode == MoveX || mode == MoveXY || mode == MoveZX) vec.x = moveSnap(delta.dot(startMat.front().toPoint()));
 			if(mode == MoveY || mode == MoveYZ || mode == MoveXY) vec.y = moveSnap(delta.dot(startMat.right().toPoint()));
@@ -258,7 +300,12 @@ class Gizmo extends h3d.scene.Object {
 
 				var angle = Math.atan2(v1.cross(v2).dot(norm), v1.dot(v2)) * speedFactor;
 				if(rotateSnap) {
-					var step = hxd.Math.degToRad(K.isDown(K.SHIFT) ? rotateStepFine : rotateStepCoarse);
+					if (K.isPressed(K.SHIFT)) {
+						rotateStepCoarse = rotateSteps[rotateStepFineIndex];
+						rotateStepFineIndex = (rotateStepFineIndex + 1) % rotateSteps.length;
+						var changingStepViewer = new ChangingStepViewer(this, "" + rotateStepCoarse + "°");
+					}
+					var step = hxd.Math.degToRad(rotateStepCoarse);
 					angle =  hxd.Math.round(angle / step) * step;
 				}
 				if (norm.x != 0) {

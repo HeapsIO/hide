@@ -901,6 +901,9 @@ class SceneEditor {
 		}
 	}
 
+	public dynamic function updateGrid(step : Float) {
+	}
+
 	function setupGizmo() {
 		if(curEdit == null) return;
 

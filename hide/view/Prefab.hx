@@ -338,6 +338,12 @@ class Prefab extends FileView {
 		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		statusText.setPosition(5, 5);
 		statusText.visible = false;
+		gridStep = @:privateAccess sceneEditor.gizmo.moveStep;
+		sceneEditor.updateGrid = function(step) {
+			gridStep = step;
+			@:privateAccess sceneEditor.gizmo.moveStep = gridStep;
+			updateGrid();
+		};
 		var toolsDefs = new Array<hide.comp.Toolbar.ToolDef>();
 		toolsDefs.push({id: "perspectiveCamera", title : "Perspective camera", icon : "video-camera", type : Button(() -> resetCamera(false)) });
 		toolsDefs.push({id: "topCamera", title : "Top camera", icon : "video-camera", iconStyle: { transform: "rotateZ(90deg)" }, type : Button(() -> resetCamera(true))});
@@ -355,9 +361,7 @@ class Prefab extends FileView {
 				items.push({
 					label : ""+step,
 					click : function() {
-						gridStep = step;
-						@:privateAccess sceneEditor.gizmo.moveStep = gridStep;
-						updateGrid();
+						sceneEditor.updateGrid(step);
 					},
 					checked: gridStep == step
 				});
