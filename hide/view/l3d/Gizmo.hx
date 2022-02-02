@@ -328,15 +328,15 @@ class Gizmo extends h3d.scene.Object {
 					var step = hxd.Math.degToRad(rotateStepCoarse);
 					angle =  hxd.Math.round(angle / step) * step;
 				}
-				if (norm.x != 0) {
+				if (mode == RotateX && angle != 0) {
 					tx.visible = true;
 					tx.text = ""+ Math.round(Math.radToDeg(angle)*100)/100. + "°";
 				}
-				if (norm.y != 0) {
+				if (mode == RotateY && angle != 0) {
 					ty.visible = true;
 					ty.text = ""+ Math.round(Math.radToDeg(angle)*100)/100. + "°";
 				}
-				if (norm.z != 0) {
+				if (mode == RotateZ && angle != 0) {
 					tz.visible = true;
 					tz.text = ""+ Math.round(Math.radToDeg(angle)*100)/100. + "°";
 				}
