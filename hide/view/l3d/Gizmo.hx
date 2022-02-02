@@ -9,6 +9,12 @@ typedef AxesOptions = {
 	?z: Bool
 }
 
+enum EditMode {
+	Translation;
+	Rotation;
+	Scaling;
+}
+
 enum TransformMode {
 	MoveX;
 	MoveY;
@@ -69,6 +75,7 @@ class Gizmo extends h3d.scene.Object {
 	public var onFinishMove: Void -> Void;
 	public var moving(default, null): Bool;
 
+	public var editMode : EditMode = Translation;
 	public var moveStep = 0.5;
 	public var snapToGrid = false;
 	public var rotateStepFine = 15.0;
@@ -150,6 +157,7 @@ class Gizmo extends h3d.scene.Object {
 	}
 
 	public function translationMode() {
+		editMode = Translation;
 		axisScale = false;
 		for(n in ["xAxis", "yAxis", "zAxis", "xy", "xz", "yz"]) {
 			gizmo.getObjectByName(n).visible = true;
@@ -160,6 +168,7 @@ class Gizmo extends h3d.scene.Object {
 	}
 
 	public function rotationMode() {
+		editMode = Rotation;
 		axisScale = false;
 		for(n in ["xRotate", "yRotate", "zRotate", ]) {
 			gizmo.getObjectByName(n).visible = true;
@@ -170,12 +179,23 @@ class Gizmo extends h3d.scene.Object {
 	}
 
 	public function scalingMode() {
+		editMode = Scaling;
 		axisScale = true;
 		for(n in ["xAxis", "yAxis", "zAxis", "scale"]) {
 			gizmo.getObjectByName(n).visible = true;
 		}
 		for(n in ["xRotate", "yRotate", "zRotate", "xy", "xz", "yz"]) {
 			gizmo.getObjectByName(n).visible = false;
+		}
+	}
+
+	public function toggleSnap() {
+		switch (editMode) {
+			case Translation:
+				snapToGrid = !snapToGrid;
+			case Rotation:
+				rotateSnap = !rotateSnap;
+			case Scaling:
 		}
 	}
 
@@ -259,7 +279,6 @@ class Gizmo extends h3d.scene.Object {
 				return hxd.Math.round(m / step) * step;
 			}
 			if (mode == MoveX || mode == MoveY || mode == MoveZ || mode == MoveXY || mode == MoveYZ || mode == MoveZX) {
-				if (K.isPressed(K.CTRL)) snapToGrid = !snapToGrid;
 				if ( snapToGrid && K.isPressed(K.SHIFT) ) {
 					scene.editor.updateGrid(moveSteps[(moveSteps.indexOf(moveStep) + 1 ) % moveSteps.length]);
 					var changingStepViewer = new ChangingStepViewer(this, "" + moveStep);
@@ -294,7 +313,6 @@ class Gizmo extends h3d.scene.Object {
 			}
 
 			if(mode == RotateX || mode == RotateY || mode == RotateZ) {
-				if (K.isPressed(K.CTRL)) rotateSnap = !rotateSnap;
 				var v1 = startDragPt.sub(startPos);
 				v1.normalize();
 				var v2 = curPt.sub(startPos);
