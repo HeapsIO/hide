@@ -43,8 +43,11 @@ class Shader extends Prefab {
 				} else
 					val = new h3d.Vector();
 			case TSampler2D:
-				if( val != null )
-					val = hxd.res.Loader.currentInstance.load(val).toTexture();
+				if( val != null ) {
+					var t = hxd.res.Loader.currentInstance.load(val).toTexture();
+					t.wrap = Repeat;
+					val = t;
+				}
 				else {
 					var childNoise = getOpt(hrt.prefab.l2d.NoiseGenerator, v.name);
 					if(childNoise != null)
