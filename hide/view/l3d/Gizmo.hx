@@ -1,4 +1,5 @@
 package hide.view.l3d;
+import h3d.scene.Object;
 import hxd.Math;
 import hxd.Key as K;
 
@@ -215,31 +216,32 @@ class Gizmo extends h3d.scene.Object {
 			dragPlane = h3d.col.Plane.fromNormalPoint(norm, startPos);
 		}
 		var startDragPt = getDragPoint(dragPlane);
-		deltaTextObject = new h2d.ObjectFollower(gizmo, scene.s2d);
+		var cursor = new h3d.scene.Object();
+		deltaTextObject = new h2d.ObjectFollower(cursor, scene.s2d);
 
 		var tx = new h2d.Text(hxd.res.DefaultFont.get(), deltaTextObject);
 		tx.textColor = 0xff0000;
 		tx.textAlign = Center;
 		tx.dropShadow = { dx : 0.5, dy : 0.5, color : 0x202020, alpha : 1.0 };
-		tx.setScale(2);
-		tx.setPosition(tx.x + 50, tx.y + 50);
+		tx.setScale(1.2);
 		var ty = new h2d.Text(hxd.res.DefaultFont.get(), deltaTextObject);
 		ty.textColor = 0x00ff00;
 		ty.textAlign = Center;
 		ty.dropShadow = { dx : 0.5, dy : 0.5, color : 0x202020, alpha : 1.0 };
-		ty.setScale(2);
-		ty.setPosition(ty.x + 50, ty.y + 75);
+		ty.setScale(1.2);
 		var tz = new h2d.Text(hxd.res.DefaultFont.get(), deltaTextObject);
 		tz.textColor = 0x0000ff;
 		tz.textAlign = Center;
 		tz.dropShadow = { dx : 0.5, dy : 0.5, color : 0x202020, alpha : 1.0 };
-		tz.setScale(2);
-		tz.setPosition(tz.x + 50, tz.y + 100);
+		tz.setScale(1.2);
 		updateFunc = function(dt) {
 			tx.visible = false;
 			ty.visible = false;
 			tz.visible = false;
 			var curPt = getDragPoint(dragPlane);
+			tx.setPosition(mouseX + 32, mouseY - 15);
+			ty.setPosition(mouseX + 32, mouseY);
+			tz.setPosition(mouseX + 32, mouseY + 15);
 			var delta = curPt.sub(startDragPt);
 			var vec = new h3d.Vector(0,0,0);
 			var quat = new h3d.Quat();
@@ -271,15 +273,15 @@ class Gizmo extends h3d.scene.Object {
 				vec.transform3x3(startMat);
 				if (vec.x != 0) {
 					tx.visible = true;
-					tx.text = ""+ Math.round(vec.x*100)/100.;
+					tx.text = "X : "+ Math.round(vec.x*100)/100.;
 				}
 				if (vec.y != 0) {
 					ty.visible = true;
-					ty.text = ""+ Math.round(vec.y*100)/100.;
+					ty.text = "Y : "+ Math.round(vec.y*100)/100.;
 				}
 				if (vec.z != 0) {
 					tz.visible = true;
-					tz.text = ""+ Math.round(vec.z*100)/100.;
+					tz.text = "Z : "+ Math.round(vec.z*100)/100.;
 				}
 				x = (startPos.x + vec.x);
 				y = (startPos.y + vec.y);
