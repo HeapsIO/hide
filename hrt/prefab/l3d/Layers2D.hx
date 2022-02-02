@@ -146,6 +146,8 @@ class Layers2D extends hrt.prefab.Object3D {
 
 	@:s var highlightColor : Int = 0xff00ff;
 
+	@:s public var keepVisible : Bool = false;
+
 	#if editor
 	var storedCtx : hrt.prefab.Context;
 
@@ -222,17 +224,27 @@ class Layers2D extends hrt.prefab.Object3D {
 			null;
 	}
 
-	public function getLayerValue(key : String, x : Float, y : Float) {
-		var tex = layerTextures.get(key);
-		if ( tex == null ) return null;
+	public function getLayer( key : String ) {
+		return layerTextures.get(key);
+	}
+
+	public function getLayerColor( layer : hxd.Pixels, x : Float, y : Float ) {
+		if ( layer == null )
+			return null;
 		var ix = Std.int(x / layerScale);
 		var iy = Std.int(y / layerScale);
-		if ( ix < 0 || ix > tex.width || iy < 0 || iy > tex.height )
+		if ( ix < 0 || ix > layer.width || iy < 0 || iy > layer.height )
 			return null;
+
+		return layer.getPixel(ix, iy);
+	}
+
+	public function getLayerValue(key : String, x : Float, y : Float) {
+		var color = getLayerColor(getLayer(key), x, y);
+		if ( color == null ) return null;
 
 		for ( layer in layers ) {
 			if ( layer.name == key ) {
-				var color = tex.getPixel(ix, iy);
 				for ( lv in layer.values ) {
 					if ( lv.index == color ) {
 						return lv.name;
@@ -581,7 +593,7 @@ class Layers2D extends hrt.prefab.Object3D {
 		if( !b ) {
 			removeInteractiveBrush();
 		}
-		setupRfx(editorCtx, b);
+		setupRfx(editorCtx, keepVisible || b);
 		updateVisuals(ctx);
 		return false;
 	}
@@ -637,7 +649,10 @@ class Layers2D extends hrt.prefab.Object3D {
 						</dl>
 						<dl>
 							<dt>Paint override</dt><dd><input type="checkbox" field="paintOverride" /></dd>
+						</dl>
 						<dl>
+							<dt>Keep Visible</dt><dd><input type="checkbox" field="keepVisible"/></dd>
+						</dl>
 						<p>
 							<b><i>
 							Hold down SHIFT to erase<br />
