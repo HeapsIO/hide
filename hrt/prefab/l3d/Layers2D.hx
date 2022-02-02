@@ -230,18 +230,18 @@ class Layers2D extends hrt.prefab.Object3D {
 
 	public function getLayerColor( layer : hxd.Pixels, x : Float, y : Float ) {
 		if ( layer == null )
-			return null;
+			return -1;
 		var ix = Std.int(x / layerScale);
 		var iy = Std.int(y / layerScale);
 		if ( ix < 0 || ix > layer.width || iy < 0 || iy > layer.height )
-			return null;
+			return -1;
 
 		return layer.getPixel(ix, iy);
 	}
 
 	public function getLayerValue(key : String, x : Float, y : Float) {
 		var color = getLayerColor(getLayer(key), x, y);
-		if ( color == null ) return null;
+		if ( color == -1 ) return null;
 
 		for ( layer in layers ) {
 			if ( layer.name == key ) {
