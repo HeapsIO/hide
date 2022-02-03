@@ -81,7 +81,7 @@
 	"key.sceneeditor.translationMode": "W",
 	"key.sceneeditor.rotationMode": "E",
 	"key.sceneeditor.scalingMode": "R",
-	"key.sceneeditor.toggleSnap": "Ctrl",
+	"key.sceneeditor.toggleSnap": "Alt",
 
 	// cdb config
 	"cdb.databaseFile" : "data.cdb",
