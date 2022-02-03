@@ -14,6 +14,11 @@ enum abstract ProbeFadeMode(String) {
 	var Pow2;
 }
 
+enum abstract Shape(String) {
+	var Cube;
+	var Cylinder;
+}
+
 class DebugView extends hxsl.Shader {
 
 	static var SRC = {
@@ -50,7 +55,7 @@ class BoundsFade extends hxsl.Shader {
 		function fragment() {
 			var fadeAmount = 1.0;
 			var normalizedPos = abs(pixelRelativePosition) * 2.0;
-			if ( CYLINDRICAL) {
+			if ( CYLINDRICAL ) {
 				var dist = pow(pow(normalizedPos.x * scale.x, 2.0) + pow(normalizedPos.y * scale.y, 2.0), 0.5);
 				fadeAmount = saturate((min(scale.x, scale.y) - dist) / fadeDist);
 			} else {
@@ -96,7 +101,7 @@ class LightProbeObject extends h3d.scene.Mesh {
 	public var fadeDist : Float;
 	public var fadeMode : ProbeFadeMode;
 	public var priority : Int;
-	public var cylindrical: Bool;
+	public var shape: Shape;
 
 	public function new(?parent) {
 		var probeMaterial = h3d.mat.MaterialSetup.current.createMaterial();
@@ -166,7 +171,7 @@ class LightProbeObject extends h3d.scene.Mesh {
 		getAbsPos().getScale(boundFadeShader.scale);
 		getAbsPos()._44 = priority;
 		boundFadeShader.fadeDist = fadeDist;
-		boundFadeShader.CYLINDRICAL = cylindrical;
+		boundFadeShader.CYLINDRICAL = shape == Cylinder;
 		switch fadeMode {
 			case Linear:
 				boundFadeShader.POWER2 = false;
@@ -192,7 +197,7 @@ class LightProbe extends Object3D {
 	// Fade
 	@:s public var fadeDist : Float = 0.0;
 	@:s public var fadeMode : ProbeFadeMode = Linear;
-	@:s public var cylindrical : Bool = false;
+	@:s public var shape : Shape = Cube;
 
 	// Texture Mode
 	@:s public var texturePath : String = null;
@@ -282,8 +287,8 @@ class LightProbe extends Object3D {
 		var lpo : LightProbeObject = cast ctx.local3d;
 		lpo.fadeDist = fadeDist;
 		lpo.fadeMode = fadeMode;
-		lpo.cylindrical = cylindrical;
-		if (cylindrical) {
+		lpo.shape = shape;
+		if (shape == Cylinder) {
 			var minScale = hxd.Math.min(getAbsPos().getScale().x, getAbsPos().getScale().y);
 			getAbsPos()._11 = minScale;
 			getAbsPos()._22 = minScale;
@@ -619,7 +624,17 @@ class LightProbe extends Object3D {
 							</select>
 						</dd>
 					<dt>Distance</dt><dd><input type="range" min="0" max="10" field="fadeDist"/></dd>
-					<dt>Cylindrical</dt><dd><input type="checkbox" field="cylindrical"/></dd>
+				</dl>
+			</div>
+			<div class="group" name="Shape">
+				<dl>
+					<dt>Shape</dt>
+						<dd>
+							<select field="shape">
+								<option value="Cube">Cube</option>
+								<option value="Cylinder">Cylinder</option>
+							</select>
+						</dd>
 				</dl>
 			</div>
 			<div class="group" name="Debug">
