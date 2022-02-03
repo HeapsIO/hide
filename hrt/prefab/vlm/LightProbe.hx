@@ -39,6 +39,7 @@ class BoundsFade extends hxsl.Shader {
 
 		@const var SMOOTHSTEP : Bool;
 		@const var POWER2 : Bool;
+		@const var CYLINDRICAL : Bool;
 
 		@param var scale : Vec3;
 		@param var fadeDist : Float;
@@ -47,9 +48,15 @@ class BoundsFade extends hxsl.Shader {
 		var pixelColor : Vec4;
 
 		function fragment() {
+			var fadeAmount = 1.0;
 			var normalizedPos = abs(pixelRelativePosition) * 2.0;
-			var maxDist = min(min(scale.x - normalizedPos.x * scale.x, scale.y - normalizedPos.y * scale.y), scale.z - normalizedPos.z * scale.z);
-			var fadeAmount = saturate(maxDist / fadeDist);
+			if ( CYLINDRICAL) {
+				var dist = pow(pow(normalizedPos.x * scale.x, 2.0) + pow(normalizedPos.y * scale.y, 2.0), 0.5);
+				fadeAmount = saturate((min(scale.x, scale.y) - dist) / fadeDist);
+			} else {
+				var maxDist = min(min(scale.x - normalizedPos.x * scale.x, scale.y - normalizedPos.y * scale.y), scale.z - normalizedPos.z * scale.z);
+				fadeAmount = saturate(maxDist / fadeDist);	
+			}
 			if( SMOOTHSTEP )
 				fadeAmount = smoothstep(0.0, 1.0, fadeAmount);
 			else if( POWER2 )
@@ -89,6 +96,7 @@ class LightProbeObject extends h3d.scene.Mesh {
 	public var fadeDist : Float;
 	public var fadeMode : ProbeFadeMode;
 	public var priority : Int;
+	public var cylindrical: Bool;
 
 	public function new(?parent) {
 		var probeMaterial = h3d.mat.MaterialSetup.current.createMaterial();
@@ -158,6 +166,7 @@ class LightProbeObject extends h3d.scene.Mesh {
 		getAbsPos().getScale(boundFadeShader.scale);
 		getAbsPos()._44 = priority;
 		boundFadeShader.fadeDist = fadeDist;
+		boundFadeShader.CYLINDRICAL = cylindrical;
 		switch fadeMode {
 			case Linear:
 				boundFadeShader.POWER2 = false;
@@ -183,6 +192,7 @@ class LightProbe extends Object3D {
 	// Fade
 	@:s public var fadeDist : Float = 0.0;
 	@:s public var fadeMode : ProbeFadeMode = Linear;
+	@:s public var cylindrical : Bool = false;
 
 	// Texture Mode
 	@:s public var texturePath : String = null;
@@ -272,6 +282,12 @@ class LightProbe extends Object3D {
 		var lpo : LightProbeObject = cast ctx.local3d;
 		lpo.fadeDist = fadeDist;
 		lpo.fadeMode = fadeMode;
+		lpo.cylindrical = cylindrical;
+		if (cylindrical) {
+			var minScale = hxd.Math.min(getAbsPos().getScale().x, getAbsPos().getScale().y);
+			getAbsPos()._11 = minScale;
+			getAbsPos()._22 = minScale;
+		}
 		lpo.priority = priority;
 
 		// Full Reset
@@ -603,6 +619,7 @@ class LightProbe extends Object3D {
 							</select>
 						</dd>
 					<dt>Distance</dt><dd><input type="range" min="0" max="10" field="fadeDist"/></dd>
+					<dt>Cylindrical</dt><dd><input type="checkbox" field="cylindrical"/></dd>
 				</dl>
 			</div>
 			<div class="group" name="Debug">
