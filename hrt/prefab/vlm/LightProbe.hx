@@ -100,7 +100,6 @@ class LightProbeObject extends h3d.scene.Mesh {
 	public var boundFadeShader : BoundsFade;
 	public var fadeDist : Float;
 	public var fadeMode : ProbeFadeMode;
-	public var priority : Int;
 	public var shape: Shape;
 
 	public function new(?parent) {
@@ -169,7 +168,6 @@ class LightProbeObject extends h3d.scene.Mesh {
 		}
 
 		getAbsPos().getScale(boundFadeShader.scale);
-		getAbsPos()._44 = priority;
 		boundFadeShader.fadeDist = fadeDist;
 		boundFadeShader.CYLINDRICAL = shape == Cylinder;
 		switch fadeMode {
@@ -192,7 +190,6 @@ class LightProbe extends Object3D {
 
 	// Probe
 	@:s public var mode : ProbeMode = Texture;
-	@:s public var priority : Int = 0;
 
 	// Fade
 	@:s public var fadeDist : Float = 0.0;
@@ -293,7 +290,6 @@ class LightProbe extends Object3D {
 			getAbsPos()._11 = minScale;
 			getAbsPos()._22 = minScale;
 		}
-		lpo.priority = priority;
 
 		// Full Reset
 		if( propName == "mode" ) {
@@ -609,7 +605,6 @@ class LightProbe extends Object3D {
 							<option value="Capture">Capture</option>
 						</select>
 					</dd>
-					<dt>Priority</dt><dd><input type="range" min="0" max="10" step="1" field="priority"/></dd>
 				</dl>
 			</div>
 			' + (mode == Texture ? textureModeParams : captureModeParams) + '
