@@ -319,7 +319,11 @@ class Gizmo extends h3d.scene.Object {
 				v2.normalize();
 
 				var angle = Math.atan2(v1.cross(v2).dot(norm), v1.dot(v2)) * speedFactor;
-				if(rotateSnap) {
+				if(rotateSnap || K.isDown(K.CTRL)) {
+					if (K.isPressed(K.CTRL)) {
+						rotateStepCoarse = rotateSteps[rotateSteps.indexOf(rotateStepFine)];
+						var changingStepViewer = new ChangingStepViewer(this, "" + rotateStepCoarse + "°");
+					}
 					if (K.isPressed(K.SHIFT)) {
 						rotateStepCoarse = rotateSteps[rotateStepFineIndex];
 						rotateStepFineIndex = (rotateStepFineIndex + 1) % rotateSteps.length;
