@@ -588,13 +588,13 @@ class Cell extends Component {
 						var old = currentValue;
 						// hack to tranform the input into textarea
 						var newVal = i.val();
+						var curPos = (cast element.find("input")[0] : js.html.InputElement).selectionStart;
 						Reflect.setField(line.obj, column.name, newVal+"x");
 						refresh();
 						Reflect.setField(line.obj, column.name,old);
 						currentValue = newVal;
 						edit();
-						(cast element.find("textarea")[0] : js.html.TextAreaElement).setSelectionRange(newVal.length,newVal.length);
-						e.preventDefault();
+						(cast element.find("textArea")[0] : js.html.TextAreaElement).setSelectionRange(curPos, curPos);
 					}
 				}
 				e.stopPropagation();
