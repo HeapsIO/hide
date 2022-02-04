@@ -2160,6 +2160,7 @@ class SceneEditor {
 			}
 			isDuplicating = false;
 		});
+		gizmo.translationMode();
 
 		undo.change(Custom(function(undo) {
 			selectElements([], NoHistory);
