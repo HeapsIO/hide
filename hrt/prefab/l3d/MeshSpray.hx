@@ -20,6 +20,7 @@ class MeshSpray extends Object3D {
 
 	@:s var split : Int;
 	@:s var binaryStorage : Bool = false;
+	@:s var editionOnly : Bool = false;
 	@:s var meshes : Array<{ path : String }>;
 
 	var binaryMeshes : Array<{ path : String, x : Float, y : Float, z : Float, rotX : Float, rotY : Float, rotZ : Float, scale : Float }>;
@@ -31,6 +32,8 @@ class MeshSpray extends Object3D {
 
 	override function createObject( ctx : Context ) {
 		var mspray = new MeshSprayObject(ctx.local3d);
+		if ( editionOnly )
+			return mspray;
 		// preallocate batches so their materials can be resolved
 		var curID = 0, curMap = mspray.batchesMap.get(0);
 		if( curMap == null ) {
@@ -100,6 +103,8 @@ class MeshSpray extends Object3D {
 	override function make( ctx : Context ) {
 		if( !enabled )
 			return ctx;
+		if ( editionOnly )
+			return super.make(ctx);
 		if( binaryStorage )
 			loadBinary(ctx);
 		ctx = super.make(ctx);
@@ -156,7 +161,7 @@ class MeshSpray extends Object3D {
 	}
 
 	override function makeChildren( ctx : Context, p : hrt.prefab.Prefab ) {
-		if( p.type == "model" )
+		if( p.type == "model" && !editionOnly )
 			return;
 		super.makeChildren(ctx, p);
 	}
@@ -309,6 +314,7 @@ class MeshSpray extends Object3D {
 	@:s var currentSetName : String = null;
 	@:s var split : Int = 0;
 	@:s var binaryStorage = false;
+	@:s var editionOnly = false;
 
 	var sceneEditor : hide.comp.SceneEditor;
 
@@ -867,6 +873,7 @@ class MeshSpray extends Object3D {
 		<dl>
 			<dt>Split</dt><dd><input type="range" min="0" max="2048" field="split"/></dd>
 			<dt>Binary Storage</dt><dd><input type="checkbox" field="binaryStorage" ${binaryStorage?"disabled":""}/></dd>
+			<dt>Edition only (no opti)</dt><dd><input type="checkbox" field="editionOnly" ${binaryStorage?"disabled":""}/></dd>
 		</dl>
 		</div>'), this);
 	}
@@ -1271,6 +1278,8 @@ class MeshSpray extends Object3D {
 	override function make(ctx:Context):Context {
 		if( !enabled )
 			return ctx;
+		if ( editionOnly )
+			return super.make(ctx);
 		if( binaryStorage ) {
 			binaryMeshes = [];
 			var bytes = new haxe.io.BytesInput(ctx.shared.loadPrefabDat("content","dat",name).entry.getBytes());
