@@ -1865,6 +1865,13 @@ div.sp-container {
 }
 div.sp-container .sp-picker-container {
   border: none;
+  width: 300px;
+}
+div.sp-container .sp-color {
+  right: 8%;
+}
+div.sp-container .sp-hue {
+  left: 95%;
 }
 div.sp-container input {
   color: #aaa;
