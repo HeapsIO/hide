@@ -21,6 +21,7 @@ class CamController extends h3d.scene.CameraController {
 			zoom(e.wheelDelta);
 		case EPush:
 			pushing = e.button;
+			if (pushing == 0 && K.isDown(K.ALT)) pushing = 2;
 			pushTime = haxe.Timer.stamp();
 			pushStartX = pushX = e.relX;
 			pushStartY = pushY = e.relY;
@@ -40,7 +41,7 @@ class CamController extends h3d.scene.CameraController {
 			moveCount = 0;
 			@:privateAccess scene.window.mouseLock = true;
 		case ERelease, EReleaseOutside:
-			if( pushing == e.button ) {
+			if( pushing == e.button || pushing == 2) {
 				pushing = -1;
 				startPush = null;
 				if( e.kind == ERelease && haxe.Timer.stamp() - pushTime < 0.2 && hxd.Math.distance(e.relX - pushStartX,e.relY - pushStartY) < 5 )
