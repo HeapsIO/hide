@@ -50,7 +50,7 @@ class ScriptTable extends SubTable {
 
 		div.on("keypress keydown keyup", (e) -> {
 			// let pass Ctrl+S if ObjEditor (allow save script)
-			if( e.keyCode != "S".code || !Std.is(editor, ObjEditor) ) e.stopPropagation();
+			if( e.keyCode != "S".code || !Std.isOfType(editor, ObjEditor) ) e.stopPropagation();
 		});
 		var checker = new ScriptEditor.ScriptChecker(editor.config,"cdb."+cell.getDocumentName(),[
 			"cdb."+cell.table.sheet.name => cell.line.obj,

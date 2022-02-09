@@ -275,7 +275,7 @@ class MeshSprayObject extends h3d.scene.Object {
 			c.culled = false;
 			if( c.alwaysSync ) continue;
 			var m = Std.downcast(c, h3d.scene.Mesh);
-			if( m == null || !Std.is(m.primitive, h3d.prim.MeshPrimitive) ) continue;
+			if( m == null || !Std.isOfType(m.primitive, h3d.prim.MeshPrimitive) ) continue;
 
 			var batch = getBatch(m);
 			batch.worldPosition = c.absPos;
@@ -441,7 +441,7 @@ class MeshSpray extends Object3D {
 	}
 
 	override function getHideProps() : HideProps {
-		return { icon : "paint-brush", name : "MeshSpray", hideChildren : p -> return Std.is(p, Model) };
+		return { icon : "paint-brush", name : "MeshSpray", hideChildren : p -> return Std.isOfType(p, Model) };
 	}
 
 	function extractMeshName( path : String ) : String {
@@ -600,7 +600,7 @@ class MeshSpray extends Object3D {
 			selectElement.empty();
 			for (m in currentMeshes.copy()) {
 				var path : String = null;
-				if (Std.is(m, String)) { // retro-compatibility
+				if (Std.isOfType(m, String)) { // retro-compatibility
 					path = cast m;
 					currentMeshes.remove(m);
 					addMeshPath(path);
@@ -830,7 +830,7 @@ class MeshSpray extends Object3D {
 			if (hide.Ide.inst.confirm("Are you sure to remove all meshes for this MeshSpray ?")) {
 				var meshes = [];
 				for( c in children ) {
-					if( Std.is(c, Model) ) {
+					if( Std.isOfType(c, Model) ) {
 						meshes.push(c);
 					}
 				}

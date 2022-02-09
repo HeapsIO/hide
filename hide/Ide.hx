@@ -515,7 +515,7 @@ class Ide {
 	public function resolveCDBValue( path : String, key : Dynamic, obj : Dynamic ) : Dynamic {
 
 		// allow Array as key (first choice)
-		if( Std.is(key,Array) ) {
+		if( Std.isOfType(key,Array) ) {
 			for( v in (key:Array<Dynamic>) ) {
 				var value = resolveCDBValue(path, v, obj);
 				if( value != null ) return value;

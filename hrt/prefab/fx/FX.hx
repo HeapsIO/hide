@@ -296,13 +296,13 @@ class FXAnimation extends h3d.scene.Object {
 		}
 
 		var ap : AdditionalProperies = null;
-		if( Std.is(objCtx.local3d, h3d.scene.pbr.PointLight)) {
+		if( Std.isOfType(objCtx.local3d, h3d.scene.pbr.PointLight)) {
 			ap = PointLight(makeColor("color"), makeVal("power", null), makeVal("size", null), makeVal("range", null) );
 		}
-		else if( Std.is(objCtx.local3d, h3d.scene.pbr.SpotLight)) {
+		else if( Std.isOfType(objCtx.local3d, h3d.scene.pbr.SpotLight)) {
 			ap = SpotLight(makeColor("color"), makeVal("power", null), makeVal("range", null), makeVal("angle", null), makeVal("fallOff", null) );
 		}
-		else if( Std.is(objCtx.local3d, h3d.scene.pbr.DirLight)) {
+		else if( Std.isOfType(objCtx.local3d, h3d.scene.pbr.DirLight)) {
 			ap = DirLight(makeColor("color"), makeVal("power", null));
 		}
 

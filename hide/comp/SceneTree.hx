@@ -35,9 +35,9 @@ class SceneTree extends IconTree<String> {
 
 	override function onClick(id:String, evt: Dynamic) {
 		var v : Dynamic = resolvePath(id);
-		if( Std.is(v, h3d.scene.Object) )
+		if( Std.isOfType(v, h3d.scene.Object) )
 			onSelectObject(v);
-		else if( Std.is(v, h3d.mat.Material) )
+		else if( Std.isOfType(v, h3d.mat.Material) )
 			onSelectMaterial(v);
 	}
 
@@ -51,7 +51,7 @@ class SceneTree extends IconTree<String> {
 		var v : Dynamic = resolvePath(id);
 
 		var obj = Std.downcast(v, h3d.scene.Object);
-		if( obj == null || Std.is(obj,h3d.scene.Skin.Joint) ) return;
+		if( obj == null || Std.isOfType(obj,h3d.scene.Skin.Joint) ) return;
 
 		if (el.find(".ico-eye").length == 0) {
 			var visibilityToggle = new Element('<i class="ico ico-eye visibility-large-toggle"/>').appendTo(el.find(".jstree-anchor").first());
@@ -65,13 +65,13 @@ class SceneTree extends IconTree<String> {
 
 	function getIcon( c : h3d.scene.Object ) {
 		if( c.isMesh() ) {
-			if( Std.is(c, h3d.scene.Skin) )
+			if( Std.isOfType(c, h3d.scene.Skin) )
 				return "male";
-			if( Std.is(c, h3d.parts.GpuParticles) || Std.is(c, h3d.parts.Particles) )
+			if( Std.isOfType(c, h3d.parts.GpuParticles) || Std.isOfType(c, h3d.parts.Particles) )
 				return "snowflake-o";
 			return "cube";
 		}
-		if( Std.is(c, h3d.scene.Light) )
+		if( Std.isOfType(c, h3d.scene.Light) )
 			return "sun-o";
 		return "circle-o";
 	}

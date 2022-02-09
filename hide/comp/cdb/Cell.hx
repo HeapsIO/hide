@@ -904,7 +904,7 @@ class Cell extends Component {
 
 	function setRawValue( str : Dynamic ) {
 		var newValue : Dynamic;
-		if( Std.is(str,String) ) {
+		if( Std.isOfType(str,String) ) {
 			newValue = try editor.base.parseValue(column.type, str, false) catch( e : Dynamic ) return;
 		} else
 			newValue = str;

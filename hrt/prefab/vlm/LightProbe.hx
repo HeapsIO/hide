@@ -226,7 +226,7 @@ class LightProbe extends Object3D {
 		while( root.parent != null ) {
 			root = root.parent;
 		}
-		var probeList : Array<LightProbe> = cast root.findAll( p -> Std.is(p, LightProbe) ? p : null );
+		var probeList : Array<LightProbe> = cast root.findAll( p -> Std.isOfType(p, LightProbe) ? p : null );
 		var curIndex = 0;
 		var needCheck = true;
 		while( needCheck ) {

@@ -49,7 +49,7 @@ class FileTree extends FileView {
 		if( ext == "json" ) {
 			try {
 				var obj : Dynamic = haxe.Json.parse(sys.io.File.getContent(file));
-				if( obj.type != null && Std.is(obj.type, String) ) {
+				if( obj.type != null && Std.isOfType(obj.type, String) ) {
 					var e = EXTENSIONS.get("json." + obj.type);
 					if( e != null ) return e;
 				}

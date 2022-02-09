@@ -235,7 +235,7 @@ class FX2D extends BaseFX {
 			anyFound = true;
 		}
 
-		if (Std.is(elt, hrt.prefab.l2d.Anim2D) || Std.is(elt, hrt.prefab.l2d.Atlas))
+		if (Std.isOfType(elt, hrt.prefab.l2d.Anim2D) || Std.isOfType(elt, hrt.prefab.l2d.Atlas))
 			anyFound = true;
 
 		if(anyFound)

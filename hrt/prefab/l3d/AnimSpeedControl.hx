@@ -20,7 +20,7 @@ class AnimSpeedControl extends hrt.prefab.Prefab {
 		return {
 			name : "AnimSpeedCtrl",
 			icon : "cog",
-			allowParent : (p) -> Std.is(p,Object3D),
+			allowParent : (p) -> Std.isOfType(p,Object3D),
 		};
 	}
 	override function edit(ctx:EditContext) {

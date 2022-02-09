@@ -106,7 +106,7 @@ class ScreenShaderGraph extends RendererFX {
 			switch(v.type) {
 			case TVec(_, VFloat):
 				if(val != null) {
-					if( Std.is(val,Int) ) {
+					if( Std.isOfType(val,Int) ) {
 						var v = new h3d.Vector();
 						v.setColor(val);
 						val = v;

@@ -190,7 +190,7 @@ class Object3D extends Prefab {
 				var icon = Reflect.field(huds, sheet);
 				if( icon != null ) {
 					var t : Dynamic = ide.resolveCDBValue(sheet,icon, props);
-					if( t != null && (t.file != null || Std.is(t,String)) ) {
+					if( t != null && (t.file != null || Std.isOfType(t,String)) ) {
 						var obj = Std.downcast(ctx.local2d, h2d.ObjectFollower);
 						if( obj == null || obj.follow != ctx.local3d ) {
 							ctx.local2d = obj = new h2d.ObjectFollower(ctx.local3d, ctx.local2d);

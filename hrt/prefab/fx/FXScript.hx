@@ -127,7 +127,7 @@ class FXScript {
 			default: {
 				if(Reflect.hasField(curObj, field)) {
 					var cur = Reflect.field(curObj, field);
-					if(Std.is(cur, Value))
+					if(Std.isOfType(cur, Value))
 						(v) -> Reflect.setProperty(curObj, field, Value.VConst(v));
 					else
 						(v) -> Reflect.setProperty(curObj, field, v);

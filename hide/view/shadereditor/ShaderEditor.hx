@@ -290,7 +290,7 @@ class ShaderEditor extends hide.view.Graph {
 				afterChange();
 				launchCompileShader();
 			} catch (e : Dynamic) {
-				if (Std.is(e, ShaderException)) {
+				if (Std.isOfType(e, ShaderException)) {
 					error(e.msg, e.idBox);
 				}
 			}
@@ -900,7 +900,7 @@ class ShaderEditor extends hide.view.Graph {
 			info('Shader compiled in  ${Date.now().getTime() - timeStart}ms');
 
 		} catch (e : Dynamic) {
-			if (Std.is(e, String)) {
+			if (Std.isOfType(e, String)) {
 				var str : String = e;
 				trace(str);
 				if (str.split(":")[0] == "An error occurred compiling the shaders") {
@@ -940,7 +940,7 @@ class ShaderEditor extends hide.view.Graph {
 					}
 					return;
 				}
-			} else if (Std.is(e, ShaderException)) {
+			} else if (Std.isOfType(e, ShaderException)) {
 				error(e.msg, e.idBox);
 				return;
 			}
@@ -1056,7 +1056,7 @@ class ShaderEditor extends hide.view.Graph {
 				return false;
 			}
 		} catch (e : Dynamic) {
-			if (Std.is(e, ShaderException)) {
+			if (Std.isOfType(e, ShaderException)) {
 				error(e.msg, e.idBox);
 			}
 			return false;
@@ -1527,7 +1527,7 @@ class ShaderEditor extends hide.view.Graph {
 	override function removeBox(box : Box, trackChanges = true) {
 		if( trackChanges )
 			beforeChange();
-		var isSubShader = Std.is(box.getInstance(), SubGraph);
+		var isSubShader = Std.isOfType(box.getInstance(), SubGraph);
 		var length = listOfEdges.length;
 		for (i in 0...length) {
 			var edge = listOfEdges[length-i-1];

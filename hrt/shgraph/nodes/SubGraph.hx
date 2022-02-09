@@ -96,11 +96,11 @@ class SubGraph extends ShaderNode {
 						var shaderConst = Std.downcast(node.instance, ShaderConst);
 						if (shaderConst != null) { // input static become properties
 							if (shaderConst.name.length == 0) continue;
-							if (Std.is(shaderConst, BoolConst)) {
+							if (Std.isOfType(shaderConst, BoolConst)) {
 								parameters.push({ name : shaderConst.name, type : TBool, defaultValue : null, id : shaderConst.id, index : parameters.length });
-							} else if (Std.is(shaderConst, FloatConst)) {
+							} else if (Std.isOfType(shaderConst, FloatConst)) {
 								parameters.push({ name : shaderConst.name, type : TFloat, defaultValue : null, id : shaderConst.id, index : parameters.length });
-							} else if (Std.is(shaderConst, Color)) {
+							} else if (Std.isOfType(shaderConst, Color)) {
 								parameters.push({ name : shaderConst.name, type : TVec(4, VFloat), defaultValue : null, id : shaderConst.id, index : parameters.length });
 							}
 						}

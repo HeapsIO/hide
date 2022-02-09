@@ -34,7 +34,7 @@ class Shader extends Prefab {
 			switch(v.type) {
 			case TVec(_, VFloat):
 				if(val != null) {
-					if( Std.is(val,Int) ) {
+					if( Std.isOfType(val,Int) ) {
 						var v = new h3d.Vector();
 						v.setColor(val);
 						val = v;
@@ -76,7 +76,7 @@ class Shader extends Prefab {
 			parent = shared.parent.prefab.parent; // reference parent
 			shared = shared.parent.shared;
 		}
-		if( Std.is(parent, Material) ) {
+		if( Std.isOfType(parent, Material) ) {
 			var material : Material = cast parent;
 			for( m in material.getMaterials(ctx) )
 				callb(null, m);

@@ -132,7 +132,7 @@ class BaseFX extends hrt.prefab.Library {
 
 				default:
 					var base = 1.0;
-					if(Std.is(prop, Float) || Std.is(prop, Int))
+					if(Std.isOfType(prop, Float) || Std.isOfType(prop, Int))
 						base = cast prop;
 					var curve = Curve.getCurve(shaderElt, v.name);
 					var val = Value.VConst(base);
@@ -161,7 +161,7 @@ class BaseFX extends hrt.prefab.Library {
 
 		for(shCtx in ctx.shared.getContexts(elt)) {
 			if(shCtx.custom == null) continue;
-			var anim = Std.is(shCtx.custom,hxsl.DynamicShader) ? new ShaderDynAnimation(new hxd.Rand(0)) : new ShaderAnimation(new hxd.Rand(0));
+			var anim = Std.isOfType(shCtx.custom,hxsl.DynamicShader) ? new ShaderDynAnimation(new hxd.Rand(0)) : new ShaderAnimation(new hxd.Rand(0));
 			anim.shader = shCtx.custom;
 			anim.params = makeShaderParams(ctx, shader);
 			anims.push(anim);
