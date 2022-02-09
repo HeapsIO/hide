@@ -530,6 +530,7 @@ class Table extends Component {
 		var sel = new Element("<select class='insertField'>").appendTo(end);
 		new Element("<option>").attr("value", "").text("--- Choose ---").appendTo(sel);
 		var canInsert = false;
+		available.sort((c1, c2) -> (c1.name > c2.name ? 1 : -1));
 		for( c in available )
 			if( canEditColumn(c.name) ) {
 				var opt = J("<option>").attr("value",c.name).text(c.name).appendTo(sel);
