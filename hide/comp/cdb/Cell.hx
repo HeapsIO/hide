@@ -51,7 +51,7 @@ class Cell extends Component {
 			});
 		case TString if( column.kind == Script ):
 			root.addClass("t_script");
-			element.click(function(_) if(!inEdit) edit());
+			element.click(function(_) edit());
 		default:
 			if( canEdit() )
 				element.dblclick(function(_) if (!inEdit) edit());
