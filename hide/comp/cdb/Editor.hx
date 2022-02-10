@@ -90,7 +90,7 @@ class Editor extends Component {
 			if( e.target.nodeName == "INPUT" )
 				return;
 			var cell = cursor.getCell();
-			if( cell != null && cell.isTextInput() && !e.ctrlKey )
+			if( cell != null && cell.isTextInput() && !e.ctrlKey && !cell.inEdit)
 				cell.edit();
 		});
 		element.contextmenu(function(e) e.preventDefault());

@@ -15,6 +15,7 @@ class Cell extends Component {
 	public var value(get, never) : Dynamic;
 	public var table(get, never) : Table;
 	var blurOff = false;
+	public var inEdit = false;
 
 	public function new( root : Element, line : Line, column : cdb.Data.Column ) {
 		super(null,root);
@@ -50,10 +51,10 @@ class Cell extends Component {
 			});
 		case TString if( column.kind == Script ):
 			root.addClass("t_script");
-			element.click(function(_) edit());
+			element.click(function(_) if(!inEdit) edit());
 		default:
 			if( canEdit() )
-				element.dblclick(function(_) edit());
+				element.dblclick(function(_) if (!inEdit) edit());
 			else
 				root.addClass("t_readonly");
 		}
@@ -569,6 +570,7 @@ class Cell extends Component {
 	public function edit() {
 		if( !canEdit() )
 			return;
+		inEdit = true;
 		switch( column.type ) {
 		case TString if( column.kind == Script ):
 			open();
@@ -978,6 +980,7 @@ class Cell extends Component {
 	}
 
 	public function closeEdit() {
+		inEdit = false;
 		var str = element.find("input,textarea").val();
 		if( str != null ) setRawValue(str);
 		refresh();
