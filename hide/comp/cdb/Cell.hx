@@ -660,6 +660,7 @@ class Cell extends Component {
 			if( longText ) i.scrollTop(0);
 		case TBool:
 			setValue( currentValue == false && column.opt && table.displayMode != Properties ? null : currentValue == null ? true : currentValue ? false : true );
+			closeEdit();
 			refresh();
 		case TProperties, TList:
 			open();
@@ -763,6 +764,7 @@ class Cell extends Component {
 		case TFile:
 			ide.chooseFile(["*"], function(file) {
 				setValue(file);
+				closeEdit();
 				refresh();
 			}, false, currentValue);
 		case TFlags(values):
@@ -789,6 +791,7 @@ class Cell extends Component {
 			element.append(div);
 			modal.click(function(e) {
 				setValue(val);
+				closeEdit();
 				refresh();
 			});
 		case TTilePos:
@@ -969,6 +972,7 @@ class Cell extends Component {
 			editor.endChanges();
 			if( change )
 				editor.refresh();
+			closeEdit();
 		default:
 			setValue(newValue);
 		}
