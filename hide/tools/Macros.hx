@@ -32,7 +32,7 @@ class Macros {
 		inline function isOpt( field : haxe.macro.Field ) : Bool {
 			return Lambda.find(field.meta, m -> m.name == ":opt") != null;
 		}
-		
+
 		var fields = haxe.macro.Context.getBuildFields();
 
 		// Add the call of _save and _load
@@ -157,5 +157,10 @@ class Macros {
 		return fields;
 	}
 	#end
+
+	public static macro function getBuildDate() {
+		var buildTime = std.Date.now().toString();
+		return macro $v{buildTime};
+	}
 
 }

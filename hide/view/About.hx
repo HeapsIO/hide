@@ -7,10 +7,11 @@ class About extends hide.ui.View<{}> {
 	}
 
 	override function onDisplay() {
+		var buildDate = hide.tools.Macros.getBuildDate();
 		element.html('
 		<p>
-			Heaps IDE v0.1<br/>
-			(c)2017 Nicolas Cannasse
+			Heaps IDE<br/>
+			Build date: $buildDate
 		</p>
 		');
 	}

@@ -90,6 +90,9 @@
 		// When file column contains an image - controls whenever it should provide inline preview of the image instead of file path.
 		"inlineImageFiles": false
 	},
+	// lines of these sheets will receive has-ref or no-ref html classes
+	"cdb.indicateRefs": [],
+
 	// It's possible to separately control CDB configurations per sheet and column with following keys:
 	// "cdb.mySheetName": { /* Applies to all File columns in sheet with mySheetName */ }
 	// "cdb.mySheetName.myColumnName": { /* Applies only to File column with name myColumnName, located in mySheetName */ }

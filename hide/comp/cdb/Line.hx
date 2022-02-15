@@ -22,12 +22,25 @@ class Line extends Component {
 	public function create() {
 		var view = table.view;
 		element.removeClass("hidden");
+		var id: String = null;
 		for( c in columns ) {
 			var v = new Element("<td>").addClass("c");
 			v.appendTo(this.element);
 			var cell = new Cell(v, this, c);
-			if( c.type == TId && view != null && view.forbid != null && view.forbid.indexOf(cell.value) >= 0 )
-				element.addClass("hidden");
+			if( c.type == TId ) {
+				id = cell.value;
+				if( view != null && view.forbid != null && view.forbid.indexOf(cell.value) >= 0 )
+					element.addClass("hidden");
+			}
+		}
+
+		var sheetsToCount: Array<String> = ide.currentConfig.get("cdb.indicateRefs");
+		var countRefs = sheetsToCount.contains(table.sheet.name);
+		if( countRefs && id != null ) {
+			var refCount = table.editor.getReferences(id, false, table.sheet).length;
+			element.toggleClass("has-ref", refCount > 0);
+			element.toggleClass("no-ref", refCount == 0);
+			element.addClass("ref-count-" + refCount);
 		}
 		syncClasses();
 	}

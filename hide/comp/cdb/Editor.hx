@@ -748,10 +748,9 @@ class Editor extends Component {
 		inRefreshAll = false;
 	}
 
-	public function showReferences(?id: String) {
-		if( cursor.table == null ) return;
-
-		var sheet = cursor.table.sheet;
+	public function getReferences(?id: String, withCodePaths = true, ?sheet) {
+		if (sheet == null)
+			sheet = cursor.table.sheet;
 		if( id == null) {
 			for( c in sheet.columns ) {
 				switch( c.type ) {
@@ -762,7 +761,8 @@ class Editor extends Component {
 				}
 			}
 		}
-		if( id == null ) return;
+
+		if( id == null ) return [];
 
 		var results = sheet.getReferencesFromId(id);
 		var message = [];
@@ -782,70 +782,79 @@ class Editor extends Component {
 				message.push(rs.s[0].s.name+"  "+path.join("."));
 			}
 		}
-		var paths : Array<String> = this.config.get("haxe.classPath");
-		if( paths != null ) {
-			var spaces = "[ \\n\\t]";
-			var prevChars = ",\\(:=\\?\\[";
-			var postChars = ",\\):;\\?\\]&|";
-			var regexp = new EReg('((case$spaces+)|[$prevChars])$spaces*$id$spaces*[$postChars]',"");
-			var regall = new EReg("\\b"+id+"\\b", "");
-			function lookupRec(p) {
-				for( f in sys.FileSystem.readDirectory(p) ) {
-					var fpath = p+"/"+f;
-					if( sys.FileSystem.isDirectory(fpath) ) {
-						lookupRec(fpath);
-						continue;
-					}
-					if( StringTools.endsWith(f, ".hx") ) {
-						var content = sys.io.File.getContent(fpath);
-						if( content.indexOf(id) < 0 ) continue;
-						for( line => str in content.split("\n") ) {
-							if( regall.match(str) ) {
-								if( !regexp.match(str) ) {
-									var str2 = str.split(id+".").join("").split("."+id).join("").split(id+"(").join("").split(id+"<").join("");
-									if( regall.match(str2) ) trace("Skip "+str);
-									continue;
+		if (withCodePaths) {
+			var paths : Array<String> = this.config.get("haxe.classPath");
+			if( paths != null ) {
+				var spaces = "[ \\n\\t]";
+				var prevChars = ",\\(:=\\?\\[";
+				var postChars = ",\\):;\\?\\]&|";
+				var regexp = new EReg('((case$spaces+)|[$prevChars])$spaces*$id$spaces*[$postChars]',"");
+				var regall = new EReg("\\b"+id+"\\b", "");
+				function lookupRec(p) {
+					for( f in sys.FileSystem.readDirectory(p) ) {
+						var fpath = p+"/"+f;
+						if( sys.FileSystem.isDirectory(fpath) ) {
+							lookupRec(fpath);
+							continue;
+						}
+						if( StringTools.endsWith(f, ".hx") ) {
+							var content = sys.io.File.getContent(fpath);
+							if( content.indexOf(id) < 0 ) continue;
+							for( line => str in content.split("\n") ) {
+								if( regall.match(str) ) {
+									if( !regexp.match(str) ) {
+										var str2 = str.split(id+".").join("").split("."+id).join("").split(id+"(").join("").split(id+"<").join("");
+										if( regall.match(str2) ) trace("Skip "+str);
+										continue;
+									}
+									var rel = ide.makeRelative(fpath);
+									message.push(rel+":"+(line+1));
 								}
-								var rel = ide.makeRelative(fpath);
-								message.push(rel+":"+(line+1));
 							}
 						}
 					}
 				}
+				for( p in paths ) {
+					var path = ide.getPath(p);
+					if( sys.FileSystem.exists(path) && sys.FileSystem.isDirectory(path) )
+						lookupRec(path);
+				}
 			}
-			for( p in paths ) {
-				var path = ide.getPath(p);
-				if( sys.FileSystem.exists(path) && sys.FileSystem.isDirectory(path) )
-					lookupRec(path);
-			}
-		}
-		var paths : Array<String> = this.config.get("cdb.prefabsSearchPaths");
-		if( paths != null ) {
-			var scriptStr = new EReg("\\b"+sheet.name.charAt(0).toUpperCase() + sheet.name.substr(1) + "\\." + id + "\\b","");
-			function lookupPrefabRec(path) {
-				for( f in sys.FileSystem.readDirectory(path) ) {
-					var fpath = path+"/"+f;
-					if( sys.FileSystem.isDirectory(fpath) ) {
-						lookupPrefabRec(fpath);
-						continue;
-					}
-					var ext = f.split(".").pop();
-					if( @:privateAccess hrt.prefab.Library.registeredExtensions.exists(ext) ) {
-						var content = sys.io.File.getContent(fpath);
-						if( !scriptStr.match(content) ) continue;
-						for( line => str in content.split("\n") ) {
-							if( scriptStr.match(str) )
-								message.push(ide.makeRelative(fpath)+":"+(line+1));
+			var paths : Array<String> = this.config.get("cdb.prefabsSearchPaths");
+			if( paths != null ) {
+				var scriptStr = new EReg("\\b"+sheet.name.charAt(0).toUpperCase() + sheet.name.substr(1) + "\\." + id + "\\b","");
+				function lookupPrefabRec(path) {
+					for( f in sys.FileSystem.readDirectory(path) ) {
+						var fpath = path+"/"+f;
+						if( sys.FileSystem.isDirectory(fpath) ) {
+							lookupPrefabRec(fpath);
+							continue;
+						}
+						var ext = f.split(".").pop();
+						if( @:privateAccess hrt.prefab.Library.registeredExtensions.exists(ext) ) {
+							var content = sys.io.File.getContent(fpath);
+							if( !scriptStr.match(content) ) continue;
+							for( line => str in content.split("\n") ) {
+								if( scriptStr.match(str) )
+									message.push(ide.makeRelative(fpath)+":"+(line+1));
+							}
 						}
 					}
 				}
-			}
-			for( p in paths ) {
-				var path = ide.getPath(p);
-				if( sys.FileSystem.exists(path) && sys.FileSystem.isDirectory(path) )
-					lookupPrefabRec(path);
+				for( p in paths ) {
+					var path = ide.getPath(p);
+					if( sys.FileSystem.exists(path) && sys.FileSystem.isDirectory(path) )
+						lookupPrefabRec(path);
+				}
 			}
 		}
+		return message;
+	}
+
+	public function showReferences(?id: String) {
+		if( cursor.table == null ) return;
+
+		var message = getReferences(id);
 		if( message.length == 0 ) {
 			ide.message("No reference found");
 			return;
