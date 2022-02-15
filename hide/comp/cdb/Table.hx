@@ -88,6 +88,16 @@ class Table extends Component {
 		}
 	}
 
+	function setupTableElement() {
+		cloneTableHead();
+		@:privateAccess {
+			var elt = editor.element.parent();
+			var scrollbarWidth = elt.parent().width() - elt.width();
+			trace(@:privateAccess editor.cdbTable.contentWidth, scrollbarWidth);
+			element.width(@:privateAccess editor.cdbTable.contentWidth - scrollbarWidth); // prevent to reflow all cdb-view
+		}
+	}
+
 	function cloneTableHead() {
 		var target = element.find('thead').first().find('.head');
 		if (target.length == 0)
@@ -226,8 +236,8 @@ class Table extends Component {
 		}
 
 		if( sheet.parent == null ) {
-			cols.ready(cloneTableHead);
-			cols.on("resize", cloneTableHead);
+			cols.ready(setupTableElement);
+			cols.on("resize", setupTableElement);
 		}
 	}
 
