@@ -122,7 +122,7 @@ class Editor extends Component {
 		for( k in ["cdb.editCell","rename"] )
 			keys.register(k, function() {
 				var c = cursor.getCell();
-				if( c != null ) c.edit();
+				if( c != null && !c.inEdit) c.edit();
 			});
 		keys.register("cdb.closeList", function() {
 			var c = cursor.getCell();

@@ -616,8 +616,7 @@ class Cell extends Component {
 			i.keydown(function(e) {
 				switch( e.keyCode ) {
 				case K.ESCAPE:
-					inEdit = false;
-					refresh();
+					closeEdit();
 					table.editor.element.focus();
 				case K.ENTER if( !e.shiftKey || !column.type.match(TString|TDynamic|TCustom(_)) ):
 					closeEdit();
@@ -662,7 +661,6 @@ class Cell extends Component {
 		case TBool:
 			setValue( currentValue == false && column.opt && table.displayMode != Properties ? null : currentValue == null ? true : currentValue ? false : true );
 			closeEdit();
-			refresh();
 		case TProperties, TList:
 			open();
 		case TRef(name):
@@ -741,7 +739,7 @@ class Cell extends Component {
 					s.blur();
 					editor.cursor.move(e.shiftKey? -1:1, 0, false, false);
 					var c = editor.cursor.getCell();
-					if( c != this ) c.edit();
+					if( c != this && !c.inEdit ) c.edit();
 					e.preventDefault();
 				default:
 				}
@@ -766,7 +764,6 @@ class Cell extends Component {
 			ide.chooseFile(["*"], function(file) {
 				setValue(file);
 				closeEdit();
-				refresh();
 			}, false, currentValue);
 		case TFlags(values):
 			var div = new Element("<div>").addClass("flagValues");
@@ -793,7 +790,6 @@ class Cell extends Component {
 			modal.click(function(e) {
 				setValue(val);
 				closeEdit();
-				refresh();
 			});
 		case TTilePos:
 			var modal = new hide.comp.Modal(element);
