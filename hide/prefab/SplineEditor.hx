@@ -296,8 +296,17 @@ class SplineEditor {
 	function createGizmos( ctx : hrt.prefab.Context  ) {
 		removeGizmos(); // Security, avoid duplication
 		var sceneEditor = @:privateAccess editContext.scene.editor;
+		var sceneGizmo = @:privateAccess sceneEditor.gizmo;
 		for( sp in prefab.points ) {
 			var gizmo = new hide.view.l3d.Gizmo(editContext.scene);
+			switch(sceneGizmo.editMode) {
+				case Translation:
+					gizmo.translationMode();
+				case Rotation:
+					gizmo.rotationMode();
+				case Scaling:
+					gizmo.scalingMode();
+			}
 			gizmo.getRotationQuat().identity();
 			gizmo.visible = true;
 			var tmpMat = new h3d.Matrix();
@@ -403,6 +412,18 @@ class SplineEditor {
 				}
 			}
 		}
+		sceneGizmo.onChangeMode = function(mode) {
+			for (gizmo in gizmos) {
+				switch(mode) {
+					case Translation:
+						gizmo.translationMode();
+					case Rotation:
+						gizmo.rotationMode();
+					case Scaling:
+						gizmo.scalingMode();
+				}
+			}
+		};
 	}
 
 	public function setSelected( ctx : hrt.prefab.Context , b : Bool ) {

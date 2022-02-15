@@ -156,6 +156,8 @@ class Gizmo extends h3d.scene.Object {
 		translationMode();
 	}
 
+	public dynamic function onChangeMode(mode : EditMode) {}
+
 	public function translationMode() {
 		editMode = Translation;
 		axisScale = false;
@@ -165,6 +167,7 @@ class Gizmo extends h3d.scene.Object {
 		for(n in ["xRotate", "yRotate", "zRotate", "scale"]) {
 			gizmo.getObjectByName(n).visible = false;
 		}
+		onChangeMode(editMode);
 	}
 
 	public function rotationMode() {
@@ -176,6 +179,7 @@ class Gizmo extends h3d.scene.Object {
 		for(n in ["xAxis", "yAxis", "zAxis", "xy", "xz", "yz", "scale"]) {
 			gizmo.getObjectByName(n).visible = false;
 		}
+		onChangeMode(editMode);
 	}
 
 	public function scalingMode() {
@@ -187,6 +191,7 @@ class Gizmo extends h3d.scene.Object {
 		for(n in ["xRotate", "yRotate", "zRotate", "xy", "xz", "yz"]) {
 			gizmo.getObjectByName(n).visible = false;
 		}
+		onChangeMode(editMode);
 	}
 
 	public function toggleSnap() {
