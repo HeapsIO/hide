@@ -879,6 +879,7 @@ class MeshSpray extends Object3D {
 	}
 
 	function createInteractiveBrush(ectx : EditContext) {
+		if (!enabled) return;
 		var ctx = ectx.getContext(this);
 		var s2d = ctx.shared.root2d.getScene();
 		interactive = new h2d.Interactive(10000, 10000, s2d);
