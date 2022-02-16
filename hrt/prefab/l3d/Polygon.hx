@@ -279,6 +279,7 @@ class Polygon extends Object3D {
 	}
 
 	override function setSelected( ctx : Context, b : Bool ) {
+		if (!enabled) return true;
 		super.setSelected(ctx, b);
 		if( editor != null && shape == Custom)
 			editor.setSelected(ctx, b);

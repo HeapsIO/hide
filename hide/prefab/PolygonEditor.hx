@@ -347,6 +347,7 @@ class PolygonEditor {
 	}
 
 	public function setSelected( ctx : Context, b : Bool ) {
+		if (!polygonPrefab.enabled) return;
 		reset();
 		if(!editMode) return;
 		if(b){
