@@ -346,6 +346,7 @@ class Polygon extends Object3D {
 		var updateProps = null;
 
 		ctx.properties.add(group, viewModel, function(pname) {
+			if (!enabled) return;
 			var pIsKind = pname == "kind";
 			if( pIsKind ) {
 				editor.reset();

@@ -585,6 +585,7 @@ class PolygonEditor {
 
 		var editModeButton = props.find(".editModeButton");
 		editModeButton.click(function(_) {
+			if (!polygonPrefab.enabled) return;
 			editMode = !editMode;
 			editModeButton.val(editMode ? "Edit Mode : Enabled" : "Edit Mode : Disabled");
 			editModeButton.toggleClass("editModeEnabled", editMode);
@@ -594,6 +595,7 @@ class PolygonEditor {
 		});
 
 		props.find(".reset").click(function(_) {
+			if (!polygonPrefab.enabled) return;
 			var prevList = copyArray(polygonPrefab.points.points);
 			polygonPrefab.points.points.splice(0, polygonPrefab.points.points.length);
 			var nextList = copyArray(polygonPrefab.points.points);
@@ -614,13 +616,14 @@ class PolygonEditor {
 		function createVector(p : h2d.col.Point){
 			var v = new Element('<div class="poly-vector2" >');
 			var deleteButton = new Element('<input type="button" value="-" class="deletePoint" />');
-			var fieldX = new Element('<input class="inputX" type="text" name="xfield" minlength="1" maxlength="4">');
-			var fieldY = new Element('<input type="text" name="yfield" minlength="1" maxlength="4">');
+			var fieldX = new Element('<input type="text" name="xfield">');
+			var fieldY = new Element('<input type="text" name="yfield">');
 
 			fieldX.val(p.x);
 			fieldY.val(p.y);
 
 			fieldX.on("input", function(_) {
+				if (!polygonPrefab.enabled) return;
 				var prevValue = p.x;
 				p.x = Std.parseFloat(fieldX.val());
 				var nextValue = p.x;
@@ -632,6 +635,7 @@ class PolygonEditor {
 			});
 
 			fieldY.on("input", function(_) {
+				if (!polygonPrefab.enabled) return;
 				var prevValue = p.y;
 				p.y = Std.parseFloat(fieldY.val());
 				var nextValue = p.y;
@@ -643,6 +647,7 @@ class PolygonEditor {
 			});
 
 			deleteButton.on("click", function(_) {
+				if (!polygonPrefab.enabled) return;
 				var prevList = copyArray(polygonPrefab.points.points);
 				polygonPrefab.points.points.remove(p);
 				var nextList = copyArray(polygonPrefab.points.points);
