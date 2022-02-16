@@ -575,7 +575,7 @@ class Cell extends Component {
 		case TString if( column.kind == Script ):
 			open();
 		case TInt, TFloat, TString, TId, TCustom(_), TDynamic:
-			var str = value == null ? "" : editor.base.valToString(column.type, value);
+			var str = value == null ? "" : Std.isOfType(value, String) ? value : editor.base.valToString(column.type, value);
 			var textSpan = element.wrapInner("<span>").find("span");
 			var textHeight = textSpan.height();
 			var textWidth = textSpan.width();
