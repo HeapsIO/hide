@@ -127,23 +127,33 @@ class ModelLibrary extends Prefab {
 		var materialSources = new Map();
 		var hasNormal = false, hasSpec = false;
 
-		var whiteDefault = new h3d.mat.Texture(16,16);
-		whiteDefault.setName("white");
-		whiteDefault.clear(-1);
-		var whiteDefaultBytes = whiteDefault.capturePixels().toPNG();
+		function allocDefault(name,color,alpha=1) {
+			var tex = new h3d.mat.Texture(16,16);
+			tex.setName(name);
+			tex.clear(color,alpha);
+			var bytes = tex.capturePixels().toDDS();
+			return { tex : tex, bytes : bytes };
+		}
+
+		var whiteDefault = allocDefault("white",0xFFFFFF);
+		var normalDefault = allocDefault("normal",0x8080FF);
+		var specDefault = allocDefault("spec",0x0000FF);
+
+		var matName = "???";
+		var errors = [];
 
 		function update( text : String ) {
 			ide.setProgress(text);
 		}
 
 		function error( text : String ) {
-			ide.error(text);
+			errors.push(text);
 		}
 
 		function loadTexture( sourcePath, texPath, normalMap, specMap ) {
 
 			var tex = texPath == null ? null : scene.loadTexture(sourcePath, texPath);
-			if( tex == null ) tex = whiteDefault;
+			if( tex == null ) tex = whiteDefault.tex;
 
 			var ntex = normalMap == null ? null : scene.loadTexture(sourcePath, normalMap);
 			var stex = specMap == null ? null : scene.loadTexture(sourcePath, specMap);
@@ -154,7 +164,7 @@ class ModelLibrary extends Prefab {
 				return t;
 			update("Packing "+key);
 			var texPath = tex.name;
-			var realTex = hxd.res.Any.fromBytes(tex.name, tex == whiteDefault ? whiteDefaultBytes : sys.io.File.getBytes(ide.getPath(tex.name))).toImage();
+			var realTex = hxd.res.Any.fromBytes(tex.name, tex == whiteDefault.tex ? whiteDefault.bytes : sys.io.File.getBytes(ide.getPath(tex.name))).toImage();
 			var pos = null, posTex = null;
 			for( i in 0...textures.length ) {
 				var b = textures[textures.length - 1 - i];
@@ -187,21 +197,30 @@ class ModelLibrary extends Prefab {
 					if( path != null )
 						error('Missing texture $sourcePath($path)');
 					else
-						error('$sourcePath material is missing ${isSpec?"specular":"normal"} texture set');
-					t.addEmpty(inf.width, inf.height);
-					return;
+						error('$sourcePath material ${matName} is missing ${isSpec?"specular":"normal"} texture set');
+
+					if( isSpec )
+						tex = specDefault.tex;
+					else
+						tex = normalDefault.tex;
 				}
-				var realTex = hxd.res.Any.fromBytes(tex.name, sys.io.File.getBytes(ide.getPath(tex.name))).toImage();
+				var texBytes = if( tex == normalDefault.tex ) normalDefault.bytes else if( tex == specDefault.tex ) specDefault.bytes else sys.io.File.getBytes(ide.getPath(tex.name));
+				var realTex = hxd.res.Any.fromBytes(tex.name, texBytes).toImage();
 				var inf2 = realTex.getInfo();
 				if( inf2.width != inf.width || inf2.height != inf.height ) {
-					error([
-						(isSpec?"Specular texture ":"Normal map ")+" has size not matching the albedo",
-						"Texture: "+tex.name+'(${inf2.width}x${inf2.height})',
-						"Albedo: "+texPath+'(${inf.width}x${inf.height})',
-						"Model: "+sourcePath
-					].join("\n"));
-					t.addEmpty(inf.width, inf.height);
-					return;
+					if( tex != normalDefault.tex && tex != specDefault.tex )
+						error([
+							(isSpec?"Specular texture ":"Normal map ")+" has size not matching the albedo",
+							"  Texture: "+tex.name+'(${inf2.width}x${inf2.height})',
+							"  Albedo: "+texPath+'(${inf.width}x${inf.height})',
+							"  Model: "+sourcePath+"@"+matName,
+						].join("\n"));
+					// resize
+					var tmpTex = new h3d.mat.Texture(inf.width,inf.height);
+					h3d.pass.Copy.run(tex, tmpTex);
+					var texBytes = tmpTex.capturePixels().toDDS();
+					tmpTex.dispose();
+					realTex = hxd.res.Any.fromBytes(tex.name+"_"+inf.width+"x"+inf.height, texBytes).toImage();
 				}
 				t.add(realTex);
 			}
@@ -267,6 +286,7 @@ class ModelLibrary extends Prefab {
 				m2.name = m.name;
 				m2.props = m.props;
 				m2.blendMode = m.blendMode;
+				matName = m.name;
 
 				if( textures.length == 0 ) {
 					hasNormal = m.normalMap != null;
@@ -456,6 +476,8 @@ class ModelLibrary extends Prefab {
 		make(specMaps,"specular");
 
 		ide.setProgress();
+		if( errors.length > 0 )
+			ide.error(errors.join("\n"));
 	}
 
 	#else
@@ -507,6 +529,7 @@ class ModelLibrary extends Prefab {
 		}
 		if( batch == null ) {
 			batch = new h3d.scene.MeshBatch(hmdPrim, h3d.mat.Material.create(), obj);
+			batch.name = "modelLibrary";
 			batch.material.mainPass.addShader(shader);
 		}
 		batch.primitiveSubPart = new h3d.scene.MeshBatch.MeshBatchPart();
@@ -531,6 +554,8 @@ class ModelLibrary extends Prefab {
 	}
 
 	function optimizeRec( batch : h3d.scene.MeshBatch, obj : h3d.scene.Object, out : Array<{ mat : MaterialData, mesh : h3d.scene.Mesh }> ) {
+		if( !obj.visible )
+			return;
 		var mesh = Std.downcast(obj, h3d.scene.Mesh);
 		if( mesh != null ) {
 			var prim = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
@@ -546,7 +571,6 @@ class ModelLibrary extends Prefab {
 							if( name2 != null ) name = name2;
 						}
 					}
-					trace(mesh.name, mat[i].name, name);
 					var bk = bakedMaterials.get(name);
 					if( bk == null ) {
 						mesh.culled = false;
