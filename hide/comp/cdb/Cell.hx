@@ -706,7 +706,6 @@ class Cell extends Component {
 				sel2.close();
 				closeEdit();
 			});
-			new Element("input.select2-search__field").keydown(function(e) e.stopPropagation());
 			s.on("select2:close", function(_) closeEdit());
 		case TEnum(values):
 			element.empty();
