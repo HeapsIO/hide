@@ -103,11 +103,11 @@ class AnisotropicForward extends h3d.shader.pbr.DefaultForward {
 		/**
 		 * \brief Returns Anisotropy Roughness mapping
 		 * (Taking into account perceptual roughness mapping)
-		 * 
+		 *
 		 * From Kulla & Conty in 2017
 		 * "Revisiting Physically Based Shading at Imageworks"
-		 */  
-		function getAnisotropicRoughness( roughness : Float, anisotropy : Float ) : Vec2 
+		 */
+		function getAnisotropicRoughness( roughness : Float, anisotropy : Float ) : Vec2
 		{
 			var at = max(roughness*roughness*(1.0 + anisotropy), 0.001);
 			var ab = max(roughness*roughness*(1.0 - anisotropy), 0.001);
@@ -119,16 +119,16 @@ class AnisotropicForward extends h3d.shader.pbr.DefaultForward {
 		//-- BRDF - Fresnel -----------------------------------------------------------
 
 		/** \brief Schlick's Fresnel approximation */
-		function fresnelSchlick( VdH : Float, F0 : Vec3 ) : Vec3 
+		function fresnelSchlick( VdH : Float, F0 : Vec3 ) : Vec3
 		{
 			return F0 + (1. - F0) * pow(1. - VdH, 5.);
 		}
 
-		/** 
-		 * \brief Roughness dependent Fresnel term (Used for indirect lighting) 
+		/**
+		 * \brief Roughness dependent Fresnel term (Used for indirect lighting)
 		 * Prevents high specular color at edge for rough surfaces
 		 */
-		function fresnelSchlickWithRoughness( NdV : Float, F0 : Vec3, alpha : Float ) : Vec3 
+		function fresnelSchlickWithRoughness( NdV : Float, F0 : Vec3, alpha : Float ) : Vec3
 		{
 			var Fr = max( vec3(1.0-alpha), F0 ) - F0;
 			return F0 + Fr * pow(1. - NdV, 5.);
@@ -155,7 +155,7 @@ class AnisotropicForward extends h3d.shader.pbr.DefaultForward {
 		/** \brief GGX Anisotropic Visibility term : corresponds to G / ( 4 * NoV * NoL ) */
 		function GGX_Aniso_Visibility(	alpha_t : Float, alpha_b : Float,
 										ToV 	: Float, BoV 	 : Float, NoV : Float,
-										ToL 	: Float, BoL 	 : Float, NoL : Float) : Float 
+										ToL 	: Float, BoL 	 : Float, NoL : Float) : Float
 		{
 			var lambdaV = NoL * length(vec3(alpha_t * ToV, alpha_b * BoV, NoV));
 			var lambdaL = NoV * length(vec3(alpha_t * ToL, alpha_b * BoL, NoL));
@@ -169,9 +169,9 @@ class AnisotropicForward extends h3d.shader.pbr.DefaultForward {
 		function directLighting( lightColor : Vec3, lightDirection : Vec3) : Vec3
 		{
 			var result = vec3(0,0,0);
-			/* Checks if is lit */	
+			/* Checks if is lit */
 			var NdL = clamp(transformedNormal.dot(lightDirection), 0.0, 1.0);
-			if( lightColor.dot(lightColor) > 0.0001 && NdL > 0.0 ) 
+			if( lightColor.dot(lightColor) > 0.0001 && NdL > 0.0 )
 			{
 				/* Half Vector */
 				var H = normalize(view+lightDirection);
@@ -195,7 +195,7 @@ class AnisotropicForward extends h3d.shader.pbr.DefaultForward {
 				/* Specular Term */
 				var D = GGX_Aniso_NDF(
 					alpha_t, alpha_b,
-					TdH, BdH, NdH 
+					TdH, BdH, NdH
 				);
 				var Vis = GGX_Aniso_Visibility(
 					alpha_t, alpha_b,
@@ -212,7 +212,7 @@ class AnisotropicForward extends h3d.shader.pbr.DefaultForward {
 			return(result);
 		}
 
-		function indirectLighting() : Vec3 
+		function indirectLighting() : Vec3
 		{
 			/* Perceptual Roughness mapping (alpha = roughness^2) */
 			var alpha = roughness*roughness;
@@ -233,10 +233,10 @@ class AnisotropicForward extends h3d.shader.pbr.DefaultForward {
 			var specular = envSpec * (F * envBRDF.x + envBRDF.y);
 			var indirect = (diffuse_factor*diffuse + specular) * irrPower;
 			/* Final */
-			return indirect * occlusion;
+			return max(vec3(0), indirect * occlusion);
 		}
 
-		function init() 
+		function init()
 		{
 			view = (cameraPosition - transformedPosition).normalize();
 			NdV = transformedNormal.dot(view).max(0.);
