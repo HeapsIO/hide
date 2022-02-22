@@ -161,6 +161,11 @@ class MeshSpray extends Object3D {
 	}
 
 	override function makeChildren( ctx : Context, p : hrt.prefab.Prefab ) {
+		if ( editionOnly ) {
+			children.sort(function(c1, c2) {
+				return Std.isOfType(c1, Object3D) ? -1 : 1;
+			});
+		}
 		if( p.type == "model" && !editionOnly )
 			return;
 		super.makeChildren(ctx, p);
