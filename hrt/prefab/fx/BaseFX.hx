@@ -19,20 +19,27 @@ typedef ShaderParams = Array<ShaderParam>;
 class ShaderAnimation extends Evaluator {
 	public var params : ShaderParams;
 	public var shader : hxsl.Shader;
+	var vector = new h3d.Vector();
 
 	public function setTime(time: Float) {
-		for(param in params) {
+		for(i in 0...params.length) {
+			var param = params[i];
 			var v = param.def;
 			var val : Dynamic;
 			switch(v.type) {
-			case TFloat: val = getFloat(param.value, time);
+			case TFloat:
+				var v = getFloat(param.value, time);
+				shader.setParamIndexFloatValue(i, v);
+				continue;
 			case TInt: val = hxd.Math.round(getFloat(param.value, time));
 			case TBool: val = getFloat(param.value, time) >= 0.5;
-			case TVec(_, VFloat): val = getVector(param.value, time);
+			case TVec(_, VFloat):
+				getVector(param.value, time, vector);
+				val = vector;
 			default:
 				continue;
 			}
-			Reflect.setProperty(shader, v.name, val);
+			shader.setParamIndexValue(i, val);
 		}
 	}
 }
