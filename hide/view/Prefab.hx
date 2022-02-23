@@ -470,6 +470,7 @@ class Prefab extends FileView {
 		updateStats();
 		updateGrid();
 		initGraphicsFilters();
+		initSceneFilters();
 	}
 
 	function updateStats() {
@@ -584,7 +585,7 @@ class Prefab extends FileView {
 		return sceneEditor.onDragDrop(items, isDrop);
 	}
 
-	function applyGraphicsFilters(typeid: String, enable: Bool)
+	function applyGraphicsFilter(typeid: String, enable: Bool)
 	{
 		saveDisplayState("graphicsFilters/" + typeid, enable);
 
@@ -623,7 +624,14 @@ class Prefab extends FileView {
 	function initGraphicsFilters() {
 		for (typeid in graphicsFilters.keys())
 		{
-			applyGraphicsFilters(typeid, graphicsFilters.get(typeid));
+			applyGraphicsFilter(typeid, graphicsFilters.get(typeid));
+		}
+	}
+
+	function initSceneFilters() {
+		for (typeid in sceneFilters.keys())
+		{
+			applySceneFilter(typeid, sceneFilters.get(typeid));
 		}
 	}
 
@@ -646,7 +654,7 @@ class Prefab extends FileView {
 				if(initDone)
 					switch (type){
 						case "Graphics":
-							applyGraphicsFilters(typeid, on);
+							applyGraphicsFilter(typeid, on);
 						case "Scene":
 							applySceneFilter(typeid, on);
 					}
