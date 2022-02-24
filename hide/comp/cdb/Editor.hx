@@ -752,13 +752,22 @@ class Editor extends Component {
 		if (sheet == null)
 			sheet = cursor.table.sheet;
 		if( id == null) {
-			for( c in sheet.columns ) {
-				switch( c.type ) {
+			var c = cursor.getCell();
+			switch (c.column.type) {
+				case TRef(sname):
+					id = c.value;
+					sheet = base.getSheet(sname);
 				case TId:
-					id = Reflect.field(sheet.lines[cursor.y], c.name);
-					break;
+					id = c.value;
 				default:
-				}
+					for( c in sheet.columns ) {
+						switch( c.type ) {
+						case TId:
+							id = Reflect.field(sheet.lines[cursor.y], c.name);
+							break;
+						default:
+						}
+					}
 			}
 		}
 
@@ -851,10 +860,9 @@ class Editor extends Component {
 		return message;
 	}
 
-	public function showReferences(?id: String) {
+	public function showReferences(?id: String, ?sheet: cdb.Sheet) {
 		if( cursor.table == null ) return;
-
-		var message = getReferences(id);
+		var message = getReferences(id, sheet);
 		if( message.length == 0 ) {
 			ide.message("No reference found");
 			return;

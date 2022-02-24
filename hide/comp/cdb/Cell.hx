@@ -106,13 +106,18 @@ class Cell extends Component {
 						keys : this.editor.config.get("key.cdb.showReferences"),
 					},
 				];
-		case TRef(_):
+		case TRef(sname):
 			if( value != null && value != "" )
 				menu = [
 					{
 						label : "Goto",
 						click : () -> @:privateAccess editor.gotoReference(this),
 						keys : this.editor.config.get("key.cdb.gotoReference"),
+					},
+					{
+						label : "Show references",
+						click : () -> editor.showReferences(this.value, editor.base.getSheet(sname)),
+						keys : this.editor.config.get("key.cdb.showReferences"),
 					},
 				];
 		case TInt, TFloat:
