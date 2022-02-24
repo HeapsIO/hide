@@ -3,6 +3,7 @@ import hrt.prefab.Curve;
 import hrt.prefab.Prefab as PrefabElement;
 
 typedef ShaderParam = {
+	idx: Int,
 	def: hxsl.Ast.TVar,
 	value: Value
 };
@@ -22,14 +23,13 @@ class ShaderAnimation extends Evaluator {
 	var vector = new h3d.Vector();
 
 	public function setTime(time: Float) {
-		for(i in 0...params.length) {
-			var param = params[i];
+		for(param in params) {
 			var v = param.def;
 			var val : Dynamic;
 			switch(v.type) {
 			case TFloat:
 				var v = getFloat(param.value, time);
-				shader.setParamIndexFloatValue(i, v);
+				shader.setParamIndexFloatValue(param.idx, v);
 				continue;
 			case TInt: val = hxd.Math.round(getFloat(param.value, time));
 			case TBool: val = getFloat(param.value, time) >= 0.5;
@@ -39,7 +39,7 @@ class ShaderAnimation extends Evaluator {
 			default:
 				continue;
 			}
-			shader.setParamIndexValue(i, val);
+			shader.setParamIndexValue(param.idx, val);
 		}
 	}
 }
@@ -116,9 +116,12 @@ class BaseFX extends hrt.prefab.Library {
 
 		var ret : ShaderParams = [];
 
+		var paramCount = 0;
 		for(v in shaderDef.data.vars) {
 			if(v.kind != Param)
 				continue;
+
+			paramCount++;
 
 			var prop = Reflect.field(shaderElt.props, v.name);
 			if(prop == null)
@@ -133,8 +136,9 @@ class BaseFX extends hrt.prefab.Library {
 					var isColor = v.name.toLowerCase().indexOf("color") >= 0;
 					var val = isColor ? Curve.getColorValue(curves) : Curve.getVectorValue(curves);
 					ret.push({
+						idx: paramCount - 1,
 						def: v,
-						value: val
+						value: val,
 					});
 
 				default:
@@ -146,6 +150,7 @@ class BaseFX extends hrt.prefab.Library {
 					if(curve != null)
 						val = Value.VCurveScale(curve, base);
 					ret.push({
+						idx: paramCount - 1,
 						def: v,
 						value: val
 					});
