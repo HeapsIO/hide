@@ -601,7 +601,11 @@ class Prefab extends FileView {
 
 	function applySceneFilter(typeid: String, visible: Bool) {
 		saveDisplayState("sceneFilters/" + typeid, visible);
-		var all = data.getAll(hrt.prefab.Prefab, true);
+		var all = [];
+		if (typeid != 'light')
+			all = data.getAll(hrt.prefab.Prefab, true);
+		else
+			all = data.flatten(hrt.prefab.Prefab);
 		for(p in all) {
 			if(p.type == typeid || p.getCdbType() == typeid) {
 				sceneEditor.applySceneStyle(p);
