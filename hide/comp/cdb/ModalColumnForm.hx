@@ -163,13 +163,16 @@ class ModalColumnForm extends Modal {
 
 		var sheets = form.find("[name=sheet]");
 		sheets.empty();
-		var available = base.sheets.copy();
-		available.sort((s1, s2) -> (s1.name > s2.name ? 1 : -1));
-		for( i in 0...available.length ) {
-			var s = available[i];
+		var options = [];
+		for( i in 0...base.sheets.length ) {
+			var s = base.sheets[i];
 			if( s.idCol == null ) continue;
 			if( s.idCol.scope != null && !StringTools.startsWith(sheet.name,s.name.split("@").slice(0,-s.idCol.scope).join("@")) ) continue;
-			new Element("<option>").attr("value", "" + i).text(s.name).appendTo(sheets);
+			options.push(new Element("<option>").attr("value", "" + i).text(s.name)); // .appendTo(sheets);
+		}
+		options.sort((e1, e2) -> e1.text() > e2.text() ? 1 : -1);
+		for (e in options) {
+			e.appendTo(sheets);
 		}
 
 		var types = form.find("[name=type]");
