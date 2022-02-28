@@ -158,9 +158,4 @@ class Macros {
 	}
 	#end
 
-	public static macro function getBuildDate() {
-		var buildTime = std.Date.now().toString();
-		return macro $v{buildTime};
-	}
-
 }

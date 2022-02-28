@@ -7,7 +7,7 @@ class About extends hide.ui.View<{}> {
 	}
 
 	override function onDisplay() {
-		var buildDate = hide.tools.Macros.getBuildDate();
+		var buildDate = "";
 		element.html('
 		<p>
 			Heaps IDE<br/>
