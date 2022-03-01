@@ -878,6 +878,7 @@ class Cell extends Component {
 					pos = ts.value;
 					setVal();
 				}
+				closeEdit();
 				refresh();
 				focus();
 			};
