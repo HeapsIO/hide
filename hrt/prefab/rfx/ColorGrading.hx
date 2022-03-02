@@ -46,6 +46,7 @@ class ColorGrading extends RendererFX {
 	}
 
 	override function end( r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step ) {
+		if( !checkEnabled() ) return;
 		if( step == BeforeTonemapping ) {
 			r.mark("ColorGrading");
 			tonemap.intensity = intensity;
