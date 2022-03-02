@@ -1745,6 +1745,13 @@ body.hide-subview .lm_controls {
 .jstree .editorOnly a {
   color: #02aeda;
 }
+.jstree .inGameOnly {
+  color: #daa802 !important;
+}
+.jstree .inGameOnly i,
+.jstree .inGameOnly a {
+  color: #daa802;
+}
 .jstree .hidden {
   color: #555 !important;
 }

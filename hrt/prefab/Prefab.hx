@@ -42,6 +42,11 @@ class Prefab {
 	@:s public var editorOnly : Bool = false;
 
 	/**
+		Tells if the prefab will create an instance when used in editor. Also apply to this prefab children.
+	**/
+	@:s public var inGameOnly : Bool = false;
+
+	/**
 		Prevent the prefab from being selected in Hide. Also apply to this prefab children.
 	**/
 	@:s public var locked : Bool = false;
@@ -266,7 +271,7 @@ class Prefab {
 			ctx.init();
 		}
 		var fromRef = #if editor ctx.shared.parent != null #else true #end;
-		if (fromRef && editorOnly)
+		if (fromRef && editorOnly #if editor || inGameOnly #end)
 			return ctx;
 		ctx = makeInstance(ctx);
 		for( c in children )

@@ -500,6 +500,7 @@ class SceneEditor {
 			if( current != null ) {
 				menuItems.push({ label : "Enable", checked : current.enabled, stayOpen : true, click : function() setEnabled(curEdit.elements, !current.enabled) });
 				menuItems.push({ label : "Editor only", checked : current.editorOnly, stayOpen : true, click : function() setEditorOnly(curEdit.elements, !current.editorOnly) });
+				menuItems.push({ label : "In game only", checked : current.inGameOnly, stayOpen : true, click : function() setInGameOnly(curEdit.elements, !current.inGameOnly) });
 			}
 
 			if( isObj ) {
@@ -1253,6 +1254,7 @@ class SceneEditor {
 			el.toggleClass("hidden", isHidden(obj3d));
 			el.toggleClass("locked", p.locked);
 			el.toggleClass("editorOnly", p.editorOnly);
+			el.toggleClass("inGameOnly", p.inGameOnly);
 
 			var visTog = el.find(".visibility-toggle").first();
 			if(visTog.length == 0) {
@@ -2025,6 +2027,24 @@ class SceneEditor {
 		function apply(on) {
 			for(i in 0...elements.length) {
 				elements[i].editorOnly = on ? enable : old[i];
+				onPrefabChange(elements[i]);
+			}
+			refreshScene();
+		}
+		apply(true);
+		undo.change(Custom(function(undo) {
+			if(undo)
+				apply(false);
+			else
+				apply(true);
+		}));
+	}
+
+	public function setInGameOnly(elements : Array<PrefabElement>, enable: Bool) {
+		var old = [for(e in elements) e.inGameOnly];
+		function apply(on) {
+			for(i in 0...elements.length) {
+				elements[i].inGameOnly = on ? enable : old[i];
 				onPrefabChange(elements[i]);
 			}
 			refreshScene();
