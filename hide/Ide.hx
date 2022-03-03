@@ -1132,6 +1132,16 @@ class Ide {
 				message("Import completed");
 			});
 		});
+
+		var proofing = projectConfig.dbProofread == true;
+		db.find(".dbProofread").prop("checked", proofing).click(function(_) {
+			projectConfig.dbProofread = !proofing;
+			config.global.save();
+			for( v in getViews(hide.view.CdbTable) )
+				v.applyProofing();
+			initMenu();
+		});
+
 		function setDiff(f) {
 			databaseDiff = f;
 			config.user.set("cdb.databaseDiff", f);

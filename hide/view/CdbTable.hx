@@ -117,8 +117,33 @@ class CdbTable extends hide.ui.View<{}> {
 		}
 
 		applyCategories(ide.projectConfig.dbCategories, false);
+		applyProofing(false);
 
 		watch(@:privateAccess ide.databaseFile, () -> syncTabs());
+	}
+
+	public function applyProofing(doRefresh = true) {
+		if (doRefresh)
+			@:privateAccess tabs.syncTabs();
+		var sheets = getSheets();
+		var header = @:privateAccess tabs.header;
+		element.toggleClass("loc-proofread", ide.projectConfig.dbProofread);
+		if( ide.projectConfig.dbProofread ) {
+			for(i in 0...sheets.length) {
+				var tab = header.find('[index=$i]');
+				var ignoreCount = 0;
+				for( l in sheets[i].lines ) {
+					if( Reflect.hasField(l, cdb.Lang.IGNORE_EXPORT_FIELD) )
+						ignoreCount++;
+				}
+				tab.addClass("ignore-loc-" + ignoreCount);
+				if( ignoreCount > 0 ) {
+					tab.addClass("has-loc-ignored");
+					tab.append(' ($ignoreCount)');
+				}
+			}
+		}
+		applyCategories(ide.projectConfig.dbCategories, doRefresh);
 	}
 
 	public function applyCategories(cats: Array<String>, doRefresh=true) {

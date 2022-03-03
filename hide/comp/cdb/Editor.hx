@@ -752,13 +752,13 @@ class Editor extends Component {
 		if (sheet == null)
 			sheet = cursor.table.sheet;
 		if( id == null) {
-			var c = cursor.getCell();
-			switch (c.column.type) {
+			var cell = cursor.getCell();
+			switch (cell == null ? null : cell.column.type) {
 				case TRef(sname):
-					id = c.value;
+					id = cell.value;
 					sheet = base.getSheet(sname);
 				case TId:
-					id = c.value;
+					id = cell.value;
 				default:
 					for( c in sheet.columns ) {
 						switch( c.type ) {

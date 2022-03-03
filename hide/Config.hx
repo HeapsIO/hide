@@ -20,6 +20,7 @@ typedef HideProjectConfig = {
 	var layouts : Array<{ name : String, state : LayoutState }>;
 	var renderer : String;
 	var dbCategories : Array<String>;
+	var dbProofread : Null<Bool>;
 };
 
 typedef ConfigDef = {
@@ -143,7 +144,7 @@ class Config {
 		projectUserCustom.load(nw.App.dataPath + "/" + projectPath.split("\\").join("/").split("/").join("_").split(":").join("_") + ".json");
 		var p = projectUserCustom;
 		if( p.source.hide == null )
-			p.source.hide = ({ layouts : [], renderer : null, dbCategories: null } : HideProjectConfig);
+			p.source.hide = ({ layouts : [], renderer : null, dbCategories: null, dbProofread: null } : HideProjectConfig);
 
 		var current = new Config(projectUserCustom);
 
