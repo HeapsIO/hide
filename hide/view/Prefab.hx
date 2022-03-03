@@ -471,6 +471,10 @@ class Prefab extends FileView {
 		updateGrid();
 		initGraphicsFilters();
 		initSceneFilters();
+		sceneEditor.onRefresh = () -> {
+			initGraphicsFilters();
+			initSceneFilters();
+		}
 	}
 
 	function updateStats() {
