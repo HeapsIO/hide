@@ -621,7 +621,9 @@ class Cell extends Component {
 			i.keydown(function(e) {
 				switch( e.keyCode ) {
 				case K.ESCAPE:
-					closeEdit();
+					inEdit = false;
+					refresh();
+					focus();
 					table.editor.element.focus();
 				case K.ENTER if( !e.shiftKey || !column.type.match(TString|TDynamic|TCustom(_)) ):
 					closeEdit();
