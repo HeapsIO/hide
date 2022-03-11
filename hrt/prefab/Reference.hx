@@ -96,7 +96,7 @@ class Reference extends Object3D {
 		ctx.local2d = objFollow;
 		var prevShared = ctx.shared;
 		ctx.shared = ctx.shared.cloneRef(this, source);
-		makeChildren(ctx, p);
+		makeChild(ctx, p);
 		ctx.shared = prevShared;
 
 		#if editor

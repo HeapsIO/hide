@@ -160,7 +160,7 @@ class MeshSpray extends Object3D {
 		return ctx;
 	}
 
-	override function makeChildren( ctx : Context, p : hrt.prefab.Prefab ) {
+	override function makeChild( ctx : Context, p : hrt.prefab.Prefab ) {
 		if ( editionOnly ) {
 			children.sort(function(c1, c2) {
 				return Std.isOfType(c1, Object3D) ? -1 : 1;
@@ -168,7 +168,7 @@ class MeshSpray extends Object3D {
 		}
 		if( p.type == "model" && !editionOnly )
 			return;
-		super.makeChildren(ctx, p);
+		super.makeChild(ctx, p);
 	}
 
 	static var _ = Library.register("meshSpray", MeshSpray);
@@ -1311,12 +1311,12 @@ class MeshSpray extends Object3D {
 		// add all children then build meshspray
 		for( c in children )
 			if( c.type == "model" )
-				makeChildren(ctx, c);
+				makeChild(ctx, c);
 		cast(ctx.local3d, MeshSprayObject).redraw();
 		// then add other children (shaders etc.)
 		for( c in children )
 			if( c.type != "model" )
-				makeChildren(ctx, c);
+				makeChild(ctx, c);
 		// rebuild to apply per instance shaders
 		cast(ctx.local3d, MeshSprayObject).redraw(true);
 		return ctx;

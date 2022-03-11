@@ -275,11 +275,11 @@ class Prefab {
 			return ctx;
 		ctx = makeInstance(ctx);
 		for( c in children )
-			makeChildren(ctx, c);
+			makeChild(ctx, c);
 		return ctx;
 	}
 
-	function makeChildren( ctx : Context, p : Prefab ) {
+	function makeChild( ctx : Context, p : Prefab ) {
 		if( ctx.shared.customMake == null )
 			p.make(ctx);
 		else if( p.enabled )

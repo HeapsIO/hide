@@ -1210,7 +1210,7 @@ class Emitter extends Object3D {
 		for( c in children ) {
 			var shader = Std.downcast(c, hrt.prefab.Shader);
 			if( shader != null )
-				makeChildren(ctx, shader);
+				makeChild(ctx, shader);
 		}
 	}
 
