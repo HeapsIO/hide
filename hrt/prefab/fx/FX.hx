@@ -13,6 +13,7 @@ class FXAnimation extends h3d.scene.Object {
 	public var onEnd : Void -> Void;
 	public var playSpeed : Float = 0;
 	public var localTime : Float = 0.0;
+	public var startDelay : Float = 0.0;
 	public var duration : Float;
 
 	/** Enable automatic culling based on `cullingRadius` and `cullingDistance`. Will override `culled` on every sync. **/
@@ -25,10 +26,10 @@ class FXAnimation extends h3d.scene.Object {
 	public var emitters : Array<hrt.prefab.fx.Emitter.EmitterObject>;
 	public var shaderAnims : Array<ShaderAnimation> = [];
 	public var constraints : Array<hrt.prefab.l3d.Constraint>;
-	public var script : hrt.prefab.fx.FXScript;
 
 	public var vecPool = new Evaluator.VecPool();
 	var evaluator : Evaluator;
+	var parentFX : FXAnimation;
 	var random : hxd.Rand;
 	var prevTime = -1.0;
 	var randSeed : Int;
@@ -110,22 +111,31 @@ class FXAnimation extends h3d.scene.Object {
 			ctx.visibleFlag = false;
 
 		var fullSync = ctx.visibleFlag || alwaysSync || firstSync;
+		var finishedPlaying = false;
 		if(playSpeed > 0 || firstSync) {
 			// This is done in syncRec() to make sure time and events are updated regarless of culling state,
 			// so we restore FX in correct state when unculled
-			var curTime = localTime;
-			setTime(curTime, fullSync);
-			localTime += ctx.elapsedTime * playSpeed;
-			if( duration > 0 && curTime < duration && localTime >= duration) {
-				localTime = duration;
-				if( onEnd != null )
-					onEnd();
+			if(parentFX != null) {
+				var t = hxd.Math.max(0, parentFX.localTime - startDelay);
+				setTime(t, fullSync);
+			}
+			else {
+				var curTime = localTime;
+				setTime(curTime, fullSync);
+				localTime += ctx.elapsedTime * playSpeed;
+				if( duration > 0 && curTime < duration && localTime >= duration) {
+					localTime = duration;
+					finishedPlaying = true;
+				}
 			}
 		}
 
 		if(fullSync)
 			super.syncRec(ctx);
-		
+
+		if( finishedPlaying && onEnd != null )
+			onEnd();  // Delay until after syncRec, to avoid calling syncRec on children
+
 		firstSync = false;
 		ctx.visibleFlag = old;
 	}
@@ -224,9 +234,6 @@ class FXAnimation extends h3d.scene.Object {
 						em.setTime(time);
 				}
 			}
-
-			if(script != null)
-				script.update();
 		}
 
 		Event.updateEvents(events, time, prevTime);
@@ -405,6 +412,17 @@ class FX extends BaseFX {
 		var fxanim = createInstance(ctx.local3d);
 		fxanim.duration = duration;
 		fxanim.cullingRadius = cullingRadius;
+
+		var p = fxanim.parent;
+		while(p != null) {
+			var fx = Std.downcast(p, FXAnimation);
+			if(fx != null) {
+				fxanim.parentFX = fx;
+				break;
+			}
+			p = p.parent;
+		}
+
 		ctx.local3d = fxanim;
 		var fromRef = ctx.shared.parent != null;
 		#if editor
@@ -422,12 +440,6 @@ class FX extends BaseFX {
 		else
 			super.make(ctx);
 		fxanim.init(ctx, this, root);
-
-		if(scriptCode != null && scriptCode != ""){
-			var parser = new FXScriptParser();
-			fxanim.script = parser.createFXScript(scriptCode, fxanim);
-			fxanim.script.init();
-		}
 
 		return ctx;
 	}

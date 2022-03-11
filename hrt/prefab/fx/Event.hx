@@ -6,12 +6,25 @@ typedef EventInstance = {
 	?setTime: Float->Void
 };
 
-class Event extends hrt.prefab.Prefab {
-	@:s public var time: Float = 0.0;
+interface IEvent {
+	#if editor
+	function getEventPrefab() : hrt.prefab.Prefab;
+	function getHideProps() : hide.prefab.HideProps;
+	function getDisplayInfo(ctx: EditContext) : { label: String, length: Float };
+	#end
+	var time(default, set) : Float;
+}
+
+class Event extends hrt.prefab.Prefab implements IEvent {
+	@:s public var time(default, set): Float = 0.0;
 
 	public function new(?parent) {
 		super(parent);
 		this.type = "event";
+	}
+
+	function set_time(v) {
+		return time = v;
 	}
 
 	public function prepare(ctx: Context) : EventInstance {
@@ -33,6 +46,8 @@ class Event extends hrt.prefab.Prefab {
 	}
 
 	#if editor
+
+	public function getEventPrefab() { return this; }
 
 	override function edit( ctx ) {
 		super.edit(ctx);

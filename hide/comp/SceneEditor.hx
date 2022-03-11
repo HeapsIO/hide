@@ -1723,6 +1723,23 @@ class SceneEditor {
 		return true;
 	}
 
+	function createDroppedElement(path: String, parent: PrefabElement) : Object3D {
+		var obj3d : Object3D;
+		var relative = ide.makeRelative(path);
+
+		if(hrt.prefab.Library.getPrefabType(path) != null) {
+			var ref = new hrt.prefab.Reference(parent);
+			ref.source = relative;
+			obj3d = ref;
+			obj3d.name = new haxe.io.Path(relative).file;
+		}
+		else {
+			obj3d = new hrt.prefab.Model(parent);
+			obj3d.source = relative;
+		}
+		return obj3d;
+	}
+
 	function dropElements(paths: Array<String>, parent: PrefabElement) {
 		scene.setCurrent();
 		var localMat = getPickTransform(parent);
@@ -1734,19 +1751,7 @@ class SceneEditor {
 
 		var elts: Array<PrefabElement> = [];
 		for(path in paths) {
-			var obj3d : Object3D;
-			var relative = ide.makeRelative(path);
-
-			if(hrt.prefab.Library.getPrefabType(path) != null) {
-				var ref = new hrt.prefab.Reference(parent);
-				ref.source = relative;
-				obj3d = ref;
-				obj3d.name = new haxe.io.Path(relative).file;
-			}
-			else {
-				obj3d = new hrt.prefab.Model(parent);
-				obj3d.source = relative;
-			}
+			var obj3d = createDroppedElement(path, parent);
 			obj3d.setTransform(localMat);
 			autoName(obj3d);
 			elts.push(obj3d);

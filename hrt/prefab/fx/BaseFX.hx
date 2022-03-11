@@ -86,6 +86,7 @@ typedef ObjectAnimation = {
 class BaseFX extends hrt.prefab.Library {
 
 	@:s public var duration : Float;
+	@:s public var startDelay : Float;
 	@:c public var scriptCode : String;
 	@:c public var cullingRadius : Float;
 	@:c public var markers : Array<{t: Float}> = [];

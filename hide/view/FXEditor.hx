@@ -112,7 +112,18 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 
 			refresh(fullRefresh ? Full : Partial);
 		}));
+	}
 
+	override function createDroppedElement(path:String, parent:PrefabElement):hrt.prefab.Object3D {
+		var type = hrt.prefab.Library.getPrefabType(path);
+		if(type == "fx") {
+			var relative = ide.makeRelative(path);
+			var ref = new hrt.prefab.fx.SubFX(parent);
+			ref.source = relative;
+			ref.name = new haxe.io.Path(relative).file;
+			return ref;
+		}
+		return super.createDroppedElement(path, parent);
 	}
 
 	override function setElementSelected( p : PrefabElement, ctx : hrt.prefab.Context, b : Bool ) {
@@ -679,7 +690,7 @@ class FXEditor extends FileView {
 			cullingPreview.radius = data.cullingRadius;
 		}
 
-		if(p.to(Event) != null) {
+		if(pname == "time") {
 			afterPan(false);
 			data.refreshObjectAnims(sceneEditor.getContext(data));
 		}
@@ -1221,7 +1232,7 @@ class FXEditor extends FileView {
 		updateExpanded();
 	}
 
-	function addEventsTrack(events: Array<Event>, tracksEl: Element) {
+	function addEventsTrack(events: Array<IEvent>, tracksEl: Element) {
 		var trackEl = new Element('<div class="track">
 			<div class="track-header">
 				<div class="track-prop">
@@ -1231,7 +1242,7 @@ class FXEditor extends FileView {
 			</div>
 		</div>');
 		var eventsEl = trackEl.find(".events");
-		var items : Array<{el: Element, event: Event }> = [];
+		var items : Array<{el: Element, event: IEvent }> = [];
 		function refreshItems() {
 			var yoff = 1;
 			for(item in items) {
@@ -1254,10 +1265,13 @@ class FXEditor extends FileView {
 			var evtEl = new Element('<div class="event">
 				<i class="icon ico ico-play-circle"></i><label></label>
 			</div>').appendTo(eventsEl);
+			evtEl.addClass(event.getEventPrefab().type);
 			items.push({el: evtEl, event: event });
 
+			var element = event.getEventPrefab();
+
 			evtEl.click(function(e) {
-				sceneEditor.showProps(event);
+				sceneEditor.showProps(element);
 			});
 
 			evtEl.contextmenu(function(e) {
@@ -1267,7 +1281,7 @@ class FXEditor extends FileView {
 					{
 						label: "Delete", click: function() {
 							events.remove(event);
-							sceneEditor.deleteElements([event], refreshTrack);
+							sceneEditor.deleteElements([element], refreshTrack);
 						}
 					}
 				]);
@@ -1311,7 +1325,7 @@ class FXEditor extends FileView {
 		var sections : Array<{
 			elt: PrefabElement,
 			curves: Array<Curve>,
-			events: Array<Event>
+			events: Array<IEvent>
 		}> = [];
 
 		function getSection(elt: PrefabElement) {
@@ -1340,6 +1354,8 @@ class FXEditor extends FileView {
 				getSection(curve).curves.push(curve);
 			for(evt in sel.flatten(Event))
 				getSection(evt).events.push(evt);
+			for(fx in sel.flatten(hrt.prefab.fx.SubFX))
+				getSection(fx).events.push(fx);
 		}
 
 		for(sec in sections) {
@@ -1730,11 +1746,11 @@ class FXEditor extends FileView {
 	}
 
 	function onUpdate3D(dt:Float) {
-		var anim : hrt.prefab.fx.FX.FXAnimation = null;
 		var ctx = sceneEditor.getContext(data);
-		if(ctx != null && ctx.local3d != null) {
-			anim = Std.downcast(ctx.local3d,hrt.prefab.fx.FX.FXAnimation);
-		}
+		if(ctx == null || ctx.local3d == null)
+			return;
+			
+		var allFx = ctx.local3d.findAll(o -> Std.downcast(o, hrt.prefab.fx.FX.FXAnimation));
 
 		if(!pauseButton.isDown()) {
 			currentTime += scene.speed * dt;
@@ -1745,31 +1761,27 @@ class FXEditor extends FileView {
 
 				//if(data.scriptCode != null && data.scriptCode.length > 0)
 					//sceneEditor.refreshScene(); // This allow to reset the scene when values are modified causes edition issues, solves
-
-				if( anim.script != null )
-					anim.script.init();
-
-				anim.setRandSeed(Std.random(0xFFFFFF));
+				for(f in allFx)
+					f.setRandSeed(Std.random(0xFFFFFF));
 			}
 		}
 
-		if(anim != null) {
-			anim.setTime(currentTime);
+		for(fx in allFx)
+			fx.setTime(currentTime - fx.startDelay);
+	
+		var emitters = ctx.local3d.findAll(o -> Std.downcast(o, hrt.prefab.fx.Emitter.EmitterObject));
+		var totalParts = 0;
+		for(e in emitters)
+			totalParts += @:privateAccess e.numInstances;
 
-			var emitters = anim.findAll(o -> Std.downcast(o, hrt.prefab.fx.Emitter.EmitterObject));
-			var totalParts = 0;
-			for(e in emitters)
-				totalParts += @:privateAccess e.numInstances;
-
-			if(statusText != null) {
-				var lines : Array<String> = [
-					'Time: ${Math.round(currentTime*1000)} ms',
-					'Scene objects: ${scene.s3d.getObjectsCount()}',
-					'Drawcalls: ${h3d.Engine.getCurrent().drawCalls}',
-					'Particles: $totalParts',
-				];
-				statusText.text = lines.join("\n");
-			}
+		if(statusText != null) {
+			var lines : Array<String> = [
+				'Time: ${Math.round(currentTime*1000)} ms',
+				'Scene objects: ${scene.s3d.getObjectsCount()}',
+				'Drawcalls: ${h3d.Engine.getCurrent().drawCalls}',
+				'Particles: $totalParts',
+			];
+			statusText.text = lines.join("\n");
 		}
 
 		var cam = scene.s3d.camera;
@@ -1785,15 +1797,6 @@ class FXEditor extends FileView {
 			save();
 			lastSyncChange = properties.lastChange;
 			currentVersion = undo.currentID;
-		}
-
-		if( data.scriptCode != scriptEditor.code || !fxScriptParser.firstParse ){
-			modified = fxScriptParser.firstParse;
-			data.scriptCode = scriptEditor.code;
-			anim.script = fxScriptParser.createFXScript(scriptEditor.code, anim);
-			anim.script.init();
-			fxScriptParser.generateUI(anim.script, this);
-			fxScriptParser.firstParse = true;
 		}
 	}
 

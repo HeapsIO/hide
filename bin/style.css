@@ -1141,6 +1141,9 @@ input[type=checkbox]:checked:after {
   margin-left: 3px;
   display: inline;
 }
+.fx-animpanel .track .events .event.subFX {
+  background: #1b3673;
+}
 .fx-animpanel .track .events .event:hover {
   color: white;
 }
