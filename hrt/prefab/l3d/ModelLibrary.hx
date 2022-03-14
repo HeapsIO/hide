@@ -1,4 +1,5 @@
 package hrt.prefab.l3d;
+import h3d.mat.PbrMaterial;
 import hxd.fmt.hmd.Data;
 
 typedef MaterialData = {
@@ -10,6 +11,7 @@ typedef MaterialData = {
 	var uvY : Float;
 	var uvSX : Float;
 	var uvSY : Float;
+	var configIndex : Int;
 }
 
 class ModelLibShader extends hxsl.Shader {
@@ -76,8 +78,16 @@ class ModelLibShader extends hxsl.Shader {
 class ModelLibrary extends Prefab {
 
 	@:s var bakedMaterials : haxe.DynamicAccess<MaterialData>;
+	@:s var materialConfigs : Array<h3d.mat.PbrMaterial.PbrProps>;
 	@:s var texturesCount : Int;
-	@:s var renamedMaterials : haxe.DynamicAccess<haxe.DynamicAccess<String>>;
+
+	#if !release
+	var optimizedMeshes : Array<h3d.scene.Mesh> = [];
+	var batches : Array<h3d.scene.MeshBatch> = [];
+	#end
+
+	@:s var ignoredMaterials : Array<{name:String}> = [];
+	@:s var ignoredPrefabs : Array<{name:String}> = [];
 
 	#if editor
 
@@ -86,14 +96,64 @@ class ModelLibrary extends Prefab {
 	}
 
 	override function edit(ectx:hide.prefab.EditContext) {
-		var bt = new Element('<div align="center"><input type="button" value="Build"/></div>');
 		var ctx = ectx.getContext(this);
+
+		var bt = new Element('<div align="center"><input type="button" value="Build"/></div>');
 		bt.find("input").click(function(e) {
 			ectx.makeChanges(this, function() {
 				rebuildData(ctx.shared, ectx.scene);
 			});
 		});
 		ectx.properties.add(bt);
+
+		var listMaterials = new Element('
+		<div class="group" name="Ignored materials"><ul id="ignoreMatList"></ul></div>');
+		ectx.properties.add(listMaterials);
+		for( i in 0...ignoredMaterials.length ) {
+			var e = new hide.Element('<li style="position:relative">
+				<input type="text" field="name"/>
+				<a href="#">[-]</a>
+			</li>');
+			e.find("a").click(function(_) {
+				ignoredMaterials.splice(i, 1);
+				ectx.rebuildProperties();
+			});
+			e.appendTo(listMaterials);
+			ectx.properties.build(e, ignoredMaterials[i], (pname) -> {
+				updateInstance(ctx, pname);
+			});
+		}
+		var add = new hide.Element('<li><p><a href="#">[+]</a></p></li>');
+		add.appendTo(listMaterials);
+		add.find("a").click(function(_) {
+			ignoredMaterials.push({name:""});
+			ectx.rebuildProperties();
+		});
+
+		var listPrefabs = new Element('
+		<div class="group" name="Ignored prefabs"><ul id="ignorePrefabList"></ul></div>');
+		ectx.properties.add(listPrefabs);
+		for( i in 0...ignoredPrefabs.length ) {
+			var e = new hide.Element('<li style="position:relative">
+				<input type="text" field="name"/>
+				<a href="#">[-]</a>
+			</li>');
+			e.find("[field=name]");
+			e.find("a").click(function(_) {
+				ignoredPrefabs.splice(i, 1);
+				ectx.rebuildProperties();
+			});
+			e.appendTo(listPrefabs);
+			ectx.properties.build(e, ignoredPrefabs[i], (pname) -> {
+				updateInstance(ctx, pname);
+			});
+		}
+		var add = new hide.Element('<li><p><a href="#">[+]</a></p></li>');
+		add.appendTo(listPrefabs);
+		add.find("a").click(function(_) {
+			ignoredPrefabs.push({name:null});
+			ectx.rebuildProperties();
+		});
 	}
 
 	override function getHideProps() : HideProps {
@@ -103,7 +163,7 @@ class ModelLibrary extends Prefab {
 	function rebuildData( shared : ContextShared, scene : hide.comp.Scene ) {
 
 		bakedMaterials = {};
-		renamedMaterials = null;
+		materialConfigs = [];
 
 		var btSize = 4096;
 		var ide = hide.Ide.inst;
@@ -124,7 +184,6 @@ class ModelLibrary extends Prefab {
 		var normalMaps : Array<h3d.mat.BigTexture> = [];
 		var specMaps : Array<h3d.mat.BigTexture> = [];
 		var tmap = new Map();
-		var materialSources = new Map();
 		var hasNormal = false, hasSpec = false;
 
 		function allocDefault(name,color,alpha=1) {
@@ -269,6 +328,30 @@ class ModelLibrary extends Prefab {
 				continue;
 			if( m.getParent(hrt.prefab.fx.FX) != null )
 				continue;
+			var ignoreModel = false;
+			if ( m.animation != null )
+				continue;
+			for ( shader in ignoredPrefabs) {
+				var cl : Class<hrt.prefab.Prefab> = cast Type.resolveClass(shader.name);
+				if( cl != null ) {
+					for ( c in m.children ) {
+						if ( Std.isOfType(c, cl) ) {
+							ignoreModel = true;
+							break;
+						}
+					}
+					if ( m.parent != null ) {
+						for ( c in m.parent.children ) {
+							if ( Std.isOfType(c, cl) ) {
+								ignoreModel = true;
+								break;
+							}
+						}
+					}
+				}
+			}
+			if ( ignoreModel )
+				continue;
 			var sourcePath = m.source;
 			models.set(m.source, true);
 			var lib = null;
@@ -281,12 +364,16 @@ class ModelLibrary extends Prefab {
 			}
 			if( lib == null ) continue;
 
-			function addMaterial( m : Material ) {
+			function addMaterial( mid : Int ) {
+				var m = lib.header.materials[mid];
+
 				var m2 = new Material();
 				m2.name = m.name;
 				m2.props = m.props;
 				m2.blendMode = m.blendMode;
 				matName = m.name;
+
+				var heapsMat = @:privateAccess lib.makeMaterial(lib.header.models[mid], mid, function(path:String) { return scene.loadTexture(sourcePath, path);});
 
 				if( textures.length == 0 ) {
 					hasNormal = m.normalMap != null;
@@ -294,25 +381,20 @@ class ModelLibrary extends Prefab {
 				}
 
 				var pos = loadTexture(sourcePath, m.diffuseTexture, hasNormal ? m.normalMap : null, hasSpec ? m.specularTexture : null);
-				var bk = bakedMaterials.get(m.name);
-				var renIndex = 2;
-				while( bk != null ) {
-					m2.name = m.name+"_"+(renIndex++);
-					bk = bakedMaterials.get(m2.name);
-				}
-
-				if( m.name != m2.name ) {
-					//trace("Material "+sourcePath+"("+m.name+") conflicts with "+materialSources.get(m.name)+", renaming to "+m2.name);
-					if( renamedMaterials == null )
-						renamedMaterials = {};
-					var ml = renamedMaterials.get(m.name);
-					if( ml == null ) {
-						ml = {};
-						renamedMaterials.set(m.name, ml);
+				var bk = bakedMaterials.get(lib.resource.entry.path + "_" + m.name);
+				if ( bk != null )
+					return bk;
+				var matConfigIndex = -1;
+				for ( i in 0...materialConfigs.length ) {
+					if ( haxe.Json.stringify((heapsMat.props:PbrProps)) == haxe.Json.stringify(materialConfigs[i]) ) {
+						matConfigIndex = i;
+						break;
 					}
-					ml.set(sourcePath, m2.name);
 				}
-				materialSources.set(m2.name, sourcePath);
+				if ( matConfigIndex < 0 ) {
+					materialConfigs.push((heapsMat.props:PbrProps));
+					matConfigIndex = materialConfigs.length - 1;
+				}
 				bk = {
 					indexStart : 0,
 					indexCount : 0,
@@ -322,8 +404,9 @@ class ModelLibrary extends Prefab {
 					uvY : pos.pos.dv,
 					uvSX : pos.pos.su,
 					uvSY : pos.pos.sv,
+					configIndex : matConfigIndex,
 				};
-				bakedMaterials.set(m2.name, bk);
+				bakedMaterials.set(lib.resource.entry.path + "_" + m.name, bk);
 
 				if( !hasNormal && m.normalMap != null )
 					error(sourcePath+"("+m.name+") has normal map texture");
@@ -372,6 +455,7 @@ class ModelLibrary extends Prefab {
 			}
 
 			for( m in lib.header.models ) {
+				var ignoreModel = false;
 				var m2 = new Model();
 				m2.name = m.name;
 				m2.props = m.props;
@@ -382,35 +466,27 @@ class ModelLibrary extends Prefab {
 				if( m.materials != null ) {
 					m2.materials = [];
 					for( index => mid in m.materials ) {
-						var mat = addMaterial(lib.header.materials[mid]);
-						mat.geomId = m2.geometry;
-						mat.indexCount = lib.header.geometries[m.geometry].indexCounts[index];
-						mat.indexStart = indexStarts[m2.geometry][index];
-						m2.materials.push(hmd.materials.length - 1);
+						for ( ignoredMat in ignoredMaterials ) {
+							if ( ignoredMat.name == lib.header.materials[mid].name ) {
+								ignoreModel = true;
+								break;
+							}
+						}
+						if ( ignoreModel )
+							break;
+						var mat = addMaterial(mid);
+						if ( mat != null ) {
+							mat.geomId = m2.geometry;
+							mat.indexCount = lib.header.geometries[m.geometry].indexCounts[index];
+							mat.indexStart = indexStarts[m2.geometry][index];
+							m2.materials.push(hmd.materials.length - 1);
+						}
 					}
 				}
 				if( m.skin != null )
 					error("Not supported: "+sourcePath+"("+m.name+") has skin");
 				hmd.models.push(m2);
 			}
-			/*
-			if( lib.header.animations.length > 0 ) {
-				var noAnim = new haxe.EnumFlags<AnimationFlag>();
-				noAnim.set(SingleFrame);
-				noAnim.set(HasPosition);
-				for( a in lib.header.animations ) {
-					if( a.objects.length == 1 && a.objects[0].flags == noAnim ) {
-						var x = libData.getFloat(a.dataPosition);
-						var y = libData.getFloat(a.dataPosition + 4);
-						var z = libData.getFloat(a.dataPosition + 8);
-						if( x == 0 && y == 0 && z == 0 )
-							continue;
-					}
-					hide.Ide.inst.error(sourceName+" has animation data that will be ignore");
-					break;
-				}
-			}
-			*/
 		}
 
 		modelRoot.materials = [for( i in 0...hmd.materials.length ) i];
@@ -512,36 +588,41 @@ class ModelLibrary extends Prefab {
 		return ctx;
 	}
 
+	var killAlpha = new h3d.shader.KillAlpha();
 	public function optimize( obj : h3d.scene.Object ) {
+		killAlpha.threshold = 0.5;
 		if( bakedMaterials == null )
 			throw "Model library was not built or saved";
 		if( shared == null )
 			throw "Please call make() on modelLibrary first";
-		var batch = null;
-		for( c in obj ) {
-			if( c.name == "modelLibrary" ) {
-				var ms = Std.downcast(c, h3d.scene.MeshBatch);
-				if( ms != null ) {
-					batch = ms;
-					break;
-				}
+		var meshBatches = [for (i in 0...materialConfigs.length) null];
+
+		var meshes = [];
+		optimizeRec(obj, meshes);
+		meshes.sort(function(m1,m2) return m1.mat.indexStart - m2.mat.indexStart);
+		for ( m in meshes ) {
+			var bk = m.mat;
+			if ( meshBatches[bk.configIndex] == null) {
+				var batch = new h3d.scene.MeshBatch(hmdPrim, h3d.mat.Material.create(), obj);
+				batch.name = "modelLibrary";
+				batch.material.mainPass.addShader(shader);
+				batch.primitiveSubPart = new h3d.scene.MeshBatch.MeshBatchPart();
+				batch.begin();
+				#if !release
+				batches.push(batch);
+				#end
+				batch.material.props = materialConfigs[bk.configIndex];
+				batch.material.refreshProps();
+				if ( (batch.material.props:PbrProps).alphaKill && batch.material.textureShader == null )
+					batch.material.mainPass.addShader(killAlpha);
+				meshBatches[bk.configIndex] = batch;
 			}
 		}
-		if( batch == null ) {
-			batch = new h3d.scene.MeshBatch(hmdPrim, h3d.mat.Material.create(), obj);
-			batch.name = "modelLibrary";
-			batch.material.mainPass.addShader(shader);
-		}
-		batch.primitiveSubPart = new h3d.scene.MeshBatch.MeshBatchPart();
-		batch.begin();
-		var meshes = [];
-		optimizeRec(batch, obj, meshes);
-		meshes.sort(function(m1,m2) return m1.mat.indexStart - m2.mat.indexStart);
-
 		for( m in meshes ) {
 			var bk = m.mat;
 			shader.uvTransform.set(bk.uvX, bk.uvY, bk.uvSX, bk.uvSY);
 			shader.material = bk.texId;
+			var batch = meshBatches[bk.configIndex];
 			batch.primitiveSubPart.indexCount = bk.indexCount;
 			batch.primitiveSubPart.indexStart = bk.indexStart;
 			batch.primitiveSubPart.bounds = geomBounds[bk.geomId];
@@ -549,29 +630,34 @@ class ModelLibrary extends Prefab {
 			batch.emitInstance();
 		}
 
-		batch.worldPosition = null;
-		batch.primitiveSubPart = null;
+		for (batch in meshBatches ) {
+			if ( batch != null ) {
+				batch.worldPosition = null;
+				batch.primitiveSubPart = null;
+			}
+		}
 	}
 
-	function optimizeRec( batch : h3d.scene.MeshBatch, obj : h3d.scene.Object, out : Array<{ mat : MaterialData, mesh : h3d.scene.Mesh }> ) {
+	function optimizeRec( obj : h3d.scene.Object, out : Array<{ mat : MaterialData, mesh : h3d.scene.Mesh }> ) {
 		if( !obj.visible )
 			return;
 		var mesh = Std.downcast(obj, h3d.scene.Mesh);
 		if( mesh != null ) {
+			for ( shader in ignoredPrefabs) {
+				var cl : Class<hxsl.Shader> = cast Type.resolveClass(shader.name);
+				if( cl != null ) {
+					for ( p in mesh.material.getPasses() ) {
+						if ( p.getShader(cl) != null )
+							return;
+					}
+				}
+			}
 			var prim = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
 			if( prim != null ) {
 				var mat = mesh.getMaterials(false);
 				mesh.culled = true;
 				for( i in 0...mat.length ) {
-					var name = mat[i].name;
-					if( renamedMaterials != null ) {
-						var ml = renamedMaterials.get(name);
-						if( ml != null ) {
-							var name2 = ml.get(@:privateAccess prim.lib.resource.entry.path);
-							if( name2 != null ) name = name2;
-						}
-					}
-					var bk = bakedMaterials.get(name);
+					var bk = bakedMaterials.get(@:privateAccess prim.lib.resource.entry.path + "_" + mat[i].name);
 					if( bk == null ) {
 						mesh.culled = false;
 						while( out.length > 0 && out[out.length-1].mesh == mesh )
@@ -580,10 +666,33 @@ class ModelLibrary extends Prefab {
 					}
 					out.push({ mat : bk, mesh : mesh });
 				}
+				#if !release
+				if ( mesh.culled )
+					optimizedMeshes.push(mesh);
+				#end
 			}
 		}
 		for( o in obj )
-			optimizeRec(batch, o, out);
+			optimizeRec(o, out);
+	}
+
+	function toggle() {
+		#if !release
+		enabled = !enabled;
+		for (m in optimizedMeshes)
+			m.culled = enabled;
+		for (b in batches)
+			b.culled = !enabled;
+		#end
+	}
+
+	function hideAll() {
+		#if !release
+		for (m in optimizedMeshes)
+			m.culled = true;
+		for (b in batches)
+			b.culled = true;
+		#end
 	}
 
 	#end
