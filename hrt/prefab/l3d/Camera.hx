@@ -179,10 +179,18 @@ class Camera extends Object3D {
 			if (preview) {
 				updateInstance(ctx.getContext(this));
 				applyTo(cam);
+				for ( effect in getAll(hrt.prefab.rfx.RendererFX) ) {
+					var prevEffect = @:privateAccess ctx.scene.s3d.renderer.getEffect(hrt.prefab.rfx.RendererFX); 
+					if ( prevEffect != null )
+						ctx.scene.s3d.renderer.effects.remove(prevEffect);
+					ctx.scene.s3d.renderer.effects.push( effect );
+				}
 				ctx.scene.editor.cameraController.lockZPlanes = true;
 				ctx.scene.editor.cameraController.loadFromCamera();
 			}
 			else {
+				for ( effect in getAll(hrt.prefab.rfx.RendererFX) )
+					ctx.scene.s3d.renderer.effects.remove( effect );
 				ctx.makeChanges(this, function() {
 					var q = new h3d.Quat();
 					q.initDirection(cam.target.sub(cam.pos));
