@@ -28,6 +28,7 @@ class Camera extends Object3D {
 	@:s var zFar : Float = 200;
 	@:s var zNear : Float = 0.02;
 	@:s var showFrustum = false;
+	// var effects : Array<hrt.prefab.rfx.RendererFX> = [];
 	var preview = false;
 
 	public function new(?parent) {
@@ -106,6 +107,7 @@ class Camera extends Object3D {
 	}
 
 	override function updateInstance( ctx : hrt.prefab.Context, ?p ) {
+		applyRFX(ctx);
 		super.updateInstance(ctx, p);
 		drawFrustum(ctx);
 		var cso = Std.downcast(ctx.local3d, CameraSyncObject);
@@ -132,6 +134,31 @@ class Camera extends Object3D {
 		c.fovY = fovY;
 		c.zFar = zFar;
 		c.zNear = zNear;
+	}
+
+	function applyRFX(ctx : hrt.prefab.Context) {
+		var renderer = ctx.local3d.getScene().renderer;
+		//var env = getOpt(hrt.prefab.l3d.Environment);
+		if (renderer == null /*|| env == null*/) return;
+		if (preview) {
+			// effects = [for( v in getAll(hrt.prefab.rfx.RendererFX,true) ) v];
+			// for (fx in effects)
+			// 	renderer.effects.push(fx);
+
+			for ( effect in getAll(hrt.prefab.rfx.RendererFX) ) {
+				var prevEffect = renderer.getEffect(hrt.prefab.rfx.RendererFX);
+				if ( prevEffect != null )
+					renderer.effects.remove(prevEffect);
+				renderer.effects.push( effect );
+			}
+		}
+		else {
+			// for (fx in effects)
+			// 	renderer.effects.remove(fx);
+			for ( effect in getAll(hrt.prefab.rfx.RendererFX) )
+				renderer.effects.remove( effect );
+		}
+		//env.applyToRenderer(renderer);
 	}
 
 	#if editor
@@ -179,18 +206,10 @@ class Camera extends Object3D {
 			if (preview) {
 				updateInstance(ctx.getContext(this));
 				applyTo(cam);
-				for ( effect in getAll(hrt.prefab.rfx.RendererFX) ) {
-					var prevEffect = @:privateAccess ctx.scene.s3d.renderer.getEffect(hrt.prefab.rfx.RendererFX); 
-					if ( prevEffect != null )
-						ctx.scene.s3d.renderer.effects.remove(prevEffect);
-					ctx.scene.s3d.renderer.effects.push( effect );
-				}
 				ctx.scene.editor.cameraController.lockZPlanes = true;
 				ctx.scene.editor.cameraController.loadFromCamera();
 			}
 			else {
-				for ( effect in getAll(hrt.prefab.rfx.RendererFX) )
-					ctx.scene.s3d.renderer.effects.remove( effect );
 				ctx.makeChanges(this, function() {
 					var q = new h3d.Quat();
 					q.initDirection(cam.target.sub(cam.pos));
