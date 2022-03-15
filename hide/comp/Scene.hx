@@ -142,6 +142,10 @@ class Scene extends Component implements h3d.IDrawable {
 			throw "Invalid current engine : use setCurrent() first";
 	}
 
+	public function hasFocus() {
+		return js.Browser.document.activeElement == canvas;
+	}
+
 	function sync() {
 		if( new Element(canvas).parents("html").length == 0 ) {
 			dispose();

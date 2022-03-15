@@ -1742,12 +1742,15 @@ class SceneEditor {
 
 	function dropElements(paths: Array<String>, parent: PrefabElement) {
 		scene.setCurrent();
-		var localMat = getPickTransform(parent);
-		if(localMat == null) return;
+		var localMat = h3d.Matrix.I();
+		if(scene.hasFocus()) {
+			localMat = getPickTransform(parent);
+			if(localMat == null) return;
 
-		localMat.tx = hxd.Math.round(localMat.tx * 10) / 10;
-		localMat.ty = hxd.Math.round(localMat.ty * 10) / 10;
-		localMat.tz = hxd.Math.floor(localMat.tz * 10) / 10;
+			localMat.tx = hxd.Math.round(localMat.tx * 10) / 10;
+			localMat.ty = hxd.Math.round(localMat.ty * 10) / 10;
+			localMat.tz = hxd.Math.floor(localMat.tz * 10) / 10;
+		}
 
 		var elts: Array<PrefabElement> = [];
 		for(path in paths) {
