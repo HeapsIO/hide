@@ -264,6 +264,18 @@ private class ParticleInstance  {
 		v1.w = 1.0;
 	}
 
+	public function updateAbsPos() {
+		switch( emitter.alignMode ) {
+			case Screen|Axis:
+				transform.qRot.load(emitter.screenQuat);
+			default:
+		}
+
+		transform.calcAbsPos();
+		localTransform.calcAbsPos();
+		absPos.multiply(localTransform.absPos, transform.absPos);
+	}
+
 	public function update( dt : Float ) {
 		var t = hxd.Math.clamp(life / lifeTime, 0.0, 1.0);
 		tmpSpeed.set(0,0,0);
@@ -362,16 +374,7 @@ private class ParticleInstance  {
 			localMat.multiply(baseMat, localMat);
 		localTransform.setTransform(localMat);
 
-		// ALIGNMENT
-		switch( emitter.alignMode ) {
-			case Screen|Axis:
-				transform.qRot.load(emitter.screenQuat);
-			default:
-		}
-
-		transform.calcAbsPos();
-		localTransform.calcAbsPos();
-		absPos.multiply(localTransform.absPos, transform.absPos);
+		updateAbsPos();
 
 		// COLLISION
 		if( emitter.useCollision ) {
@@ -1036,8 +1039,16 @@ class EmitterObject extends h3d.scene.Object {
 
 	public function setTime(time: Float) {
 		time = time * speedFactor + warmUpTime;
-		if(hxd.Math.abs(time - curTime) < 1e-6)  // Time imprecisions can occur during accumulation
+		if(hxd.Math.abs(time - curTime) < 1e-6) {  // Time imprecisions can occur during accumulation
+			updateAlignment();
+			var p = particles;
+			while(p != null) {
+				p.updateAbsPos();
+				p = p.next;
+			}
+			updateMeshBatch();
 			return;
+		}
 
 		if(time < curTime) {
 			reset();
