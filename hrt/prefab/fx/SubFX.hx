@@ -60,8 +60,7 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 
 	override function getHideProps() : HideProps {
 		return {
-			icon : "play-circle", name : "SubFX",
-			allowChildren: function(s) return false
+			icon : "play-circle", name : "SubFX"
 		};
 	}
 	#end
