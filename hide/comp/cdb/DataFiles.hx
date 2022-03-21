@@ -273,7 +273,13 @@ class DataFiles {
 		}
 		for( file => pf in prefabs ) {
 			skip++;
-			sys.io.File.saveContent(ide.getPath(file), ide.toJSON(pf.saveData()));
+			var path = ide.getPath(file);
+			var out = ide.toJSON(pf.saveData());
+			if( force ) {
+				var txt = try sys.io.File.getContent(path) catch( e : Dynamic ) null;
+				if( txt == out ) continue;
+			}
+			sys.io.File.saveContent(path, out);
 		}
 		if( onSaveBase != null )
 			onSaveBase();
