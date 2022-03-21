@@ -90,7 +90,7 @@ class Editor extends Component {
 			if( e.target.nodeName == "INPUT" )
 				return;
 			var cell = cursor.getCell();
-			if( cell != null && cell.isTextInput() && !e.ctrlKey && !cell.inEdit)
+			if( cell != null && cell.isTextInput() && !e.ctrlKey && !cell.blockEdit())
 				cell.edit();
 		});
 		element.contextmenu(function(e) e.preventDefault());
@@ -122,7 +122,7 @@ class Editor extends Component {
 		for( k in ["cdb.editCell","rename"] )
 			keys.register(k, function() {
 				var c = cursor.getCell();
-				if( c != null && !c.inEdit) c.edit();
+				if( c != null && !c.blockEdit()) c.edit();
 			});
 		keys.register("cdb.closeList", function() {
 			var c = cursor.getCell();

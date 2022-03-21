@@ -54,7 +54,7 @@ class Cell extends Component {
 			element.click(function(_) edit());
 		default:
 			if( canEdit() )
-				element.dblclick(function(_) if (!inEdit) edit());
+				element.dblclick(function(_) if (!blockEdit()) edit());
 			else
 				root.addClass("t_readonly");
 		}
@@ -745,7 +745,7 @@ class Cell extends Component {
 					s.blur();
 					editor.cursor.move(e.shiftKey? -1:1, 0, false, false);
 					var c = editor.cursor.getCell();
-					if( c != this && !c.inEdit ) c.edit();
+					if( c != this && !c.blockEdit() ) c.edit();
 					e.preventDefault();
 				default:
 				}
@@ -980,6 +980,10 @@ class Cell extends Component {
 		default:
 			setValue(newValue);
 		}
+	}
+
+	public function blockEdit() {
+		return inEdit && (column.type.match(TRef(_)) || column.type.match(TEnum(_)));
 	}
 
 	public function setValue( value : Dynamic ) {
