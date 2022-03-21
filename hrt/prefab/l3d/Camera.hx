@@ -28,7 +28,6 @@ class Camera extends Object3D {
 	@:s var zFar : Float = 200;
 	@:s var zNear : Float = 0.02;
 	@:s var showFrustum = false;
-	// var effects : Array<hrt.prefab.rfx.RendererFX> = [];
 	var preview = false;
 
 	public function new(?parent) {
@@ -137,13 +136,10 @@ class Camera extends Object3D {
 	}
 
 	function applyRFX(ctx : hrt.prefab.Context) {
+		if (ctx.local3d.getScene() == null) return;
 		var renderer = ctx.local3d.getScene().renderer;
-		//var env = getOpt(hrt.prefab.l3d.Environment);
-		if (renderer == null /*|| env == null*/) return;
+		if (renderer == null) return;
 		if (preview) {
-			// effects = [for( v in getAll(hrt.prefab.rfx.RendererFX,true) ) v];
-			// for (fx in effects)
-			// 	renderer.effects.push(fx);
 
 			for ( effect in getAll(hrt.prefab.rfx.RendererFX) ) {
 				var prevEffect = renderer.getEffect(hrt.prefab.rfx.RendererFX);
@@ -153,12 +149,9 @@ class Camera extends Object3D {
 			}
 		}
 		else {
-			// for (fx in effects)
-			// 	renderer.effects.remove(fx);
 			for ( effect in getAll(hrt.prefab.rfx.RendererFX) )
 				renderer.effects.remove( effect );
 		}
-		//env.applyToRenderer(renderer);
 	}
 
 	#if editor
