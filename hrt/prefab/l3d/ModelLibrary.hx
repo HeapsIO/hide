@@ -91,6 +91,8 @@ class ModelLibrary extends Prefab {
 
 	#if editor
 
+	@:s var mipLevels : Int = 1;
+
 	override function makeInstance(ctx) {
 		return ctx.clone(this);
 	}
@@ -105,6 +107,15 @@ class ModelLibrary extends Prefab {
 			});
 		});
 		ectx.properties.add(bt);
+
+		ectx.properties.add(new hide.Element('
+		<div class="group" name="Params">
+			<dl>
+				<dt>Miplevels</dt><dd><input type="range" step="1" field="mipLevels"/></dd>
+			</dl>
+		</div>'), this, function(pname) {
+			ectx.onChange(this, pname);
+		});
 
 		var listMaterials = new Element('
 		<div class="group" name="Ignored materials"><ul id="ignoreMatList"></ul></div>');
@@ -211,83 +222,111 @@ class ModelLibrary extends Prefab {
 
 		function loadTexture( sourcePath, texPath, normalMap, specMap ) {
 
-			var tex = texPath == null ? null : scene.loadTexture(sourcePath, texPath);
-			if( tex == null ) tex = whiteDefault.tex;
+			var t = null;
+			for ( mipLevel in 0...mipLevels ) {
+				var tmp = texPath == null ? null : scene.loadTexture(sourcePath, texPath);
+				if( tmp == null ) tmp = whiteDefault.tex;
 
-			var ntex = normalMap == null ? null : scene.loadTexture(sourcePath, normalMap);
-			var stex = specMap == null ? null : scene.loadTexture(sourcePath, specMap);
-			var key = tex.name+"/"+(ntex==null?"nonorm":ntex.name)+(stex==null?"nospec":stex.name);
+				var ntex = normalMap == null ? null : scene.loadTexture(sourcePath, normalMap);
+				var stex = specMap == null ? null : scene.loadTexture(sourcePath, specMap);
+				var key = tmp.name+"/"+(ntex==null?"nonorm":ntex.name)+(stex==null?"nospec":stex.name)+"/"+mipLevel;
 
-			var t = tmap.get(key);
-			if( t != null )
-				return t;
-			update("Packing "+key);
-			var texPath = tex.name;
-			var realTex = hxd.res.Any.fromBytes(tex.name, tex == whiteDefault.tex ? whiteDefault.bytes : sys.io.File.getBytes(ide.getPath(tex.name))).toImage();
-			var pos = null, posTex = null;
-			for( i in 0...textures.length ) {
-				var b = textures[textures.length - 1 - i];
-				pos = b.add(realTex);
-				if( pos != null ) {
+				if ( mipLevel == 0 ) {
+					t = tmap.get(key);
+					if( t != null )
+						return t;
+				}
+				update("Packing "+key);
+
+				var texPath = tmp.name;
+				var realTex = hxd.res.Any.fromBytes(tmp.name, tmp == whiteDefault.tex ? whiteDefault.bytes : sys.io.File.getBytes(ide.getPath(tmp.name))).toImage();
+				var mipLevelImage = realTex;
+				if ( mipLevel != 0 ) {
+					var texture = realTex.toTexture();
+					var resizedTex = new h3d.mat.Texture(texture.width >> mipLevel, texture.height >> mipLevel, [Target], texture.format);
+					h3d.pass.Copy.run(texture, resizedTex, null, null, mipLevel);
+					var texBytes = resizedTex.capturePixels().toDDS();
+					resizedTex.dispose();
+					mipLevelImage = hxd.res.Any.fromBytes(tmp.name+"_"+mipLevel, texBytes).toImage();
+				}
+
+				var pos = null, posTex = null;
+				for( i in 0...textures.length ) {
+					if ( (i % mipLevels) != mipLevel )
+						continue;
+					var b = textures[i];
+					pos = b.add(mipLevelImage);
+					if( pos != null ) {
+						posTex = b;
+						break;
+					}
+				}
+				if( pos == null ) {
+					var b = new h3d.mat.BigTexture(textures.length, btSize >> mipLevel, 0);
+					textures.push(b);
+					pos = b.add(mipLevelImage);
 					posTex = b;
-					break;
 				}
+				if ( mipLevel == 0 ) {
+					t = {
+						pos : pos,
+						tex : posTex,
+					};
+				}
+
+				function packSub(textures:Array<h3d.mat.BigTexture>, tex : h3d.mat.Texture, isSpec ) {
+					var t = textures[posTex.id];
+					if( t == null ) {
+						t = new h3d.mat.BigTexture(textures.length, btSize >> mipLevel, isSpec ? 0xFFFFFF : 0xFF8080FF);
+						textures[posTex.id] = t;
+					}
+					var inf = realTex.getInfo();
+					if( tex == null ) {
+						var path = isSpec ? specMap : normalMap;
+						if( path != null )
+							error('Missing texture $sourcePath($path)');
+						else
+							error('$sourcePath material ${matName} is missing ${isSpec?"specular":"normal"} texture set');
+
+						if( isSpec )
+							tex = specDefault.tex;
+						else
+							tex = normalDefault.tex;
+					}
+					var texBytes = if( tex == normalDefault.tex ) normalDefault.bytes else if( tex == specDefault.tex ) specDefault.bytes else sys.io.File.getBytes(ide.getPath(tex.name));
+					var realTex = hxd.res.Any.fromBytes(tex.name, texBytes).toImage();
+					var inf2 = realTex.getInfo();
+					if( inf2.width != inf.width || inf2.height != inf.height ) {
+						if( tex != normalDefault.tex && tex != specDefault.tex )
+							error([
+								(isSpec?"Specular texture ":"Normal map ")+" has size not matching the albedo",
+								"  Texture: "+tex.name+'(${inf2.width}x${inf2.height})',
+								"  Albedo: "+texPath+'(${inf.width}x${inf.height})',
+								"  Model: "+sourcePath+"@"+matName,
+							].join("\n"));
+						// resize
+						var tmpTex = new h3d.mat.Texture(inf.width,inf.height);
+						h3d.pass.Copy.run(tex, tmpTex);
+						var texBytes = tmpTex.capturePixels().toDDS();
+						tmpTex.dispose();
+						realTex = hxd.res.Any.fromBytes(tex.name+"_"+inf.width+"x"+inf.height, texBytes).toImage();
+					}
+					var miplevelImage = realTex;
+					if ( mipLevel != 0 ) {
+						var texture = realTex.toTexture();
+						var resizedTex = new h3d.mat.Texture(texture.width >> mipLevel, texture.height >> mipLevel, [Target], texture.format);
+						h3d.pass.Copy.run(texture, resizedTex, null, null, mipLevel);
+						var texBytes = resizedTex.capturePixels().toDDS();
+						miplevelImage = hxd.res.Any.fromBytes(tex.name+"_"+mipLevel, texBytes).toImage();
+					}
+					t.add(miplevelImage);
+				}
+
+				packSub(normalMaps, ntex, false);
+				packSub(specMaps, stex, true);
+
+				tmap.set(key, t);
 			}
-			if( pos == null ) {
-				var b = new h3d.mat.BigTexture(textures.length, btSize, 0);
-				textures.push(b);
-				pos = b.add(realTex);
-				posTex = b;
-			}
-			t = {
-				pos : pos,
-				tex : posTex,
-			};
-
-			function packSub(textures:Array<h3d.mat.BigTexture>, tex : h3d.mat.Texture, isSpec ) {
-				var t = textures[posTex.id];
-				if( t == null ) {
-					t = new h3d.mat.BigTexture(textures.length, btSize, isSpec ? 0xFFFFFF : 0xFF8080FF);
-					textures[posTex.id] = t;
-				}
-				var inf = realTex.getInfo();
-				if( tex == null ) {
-					var path = isSpec ? specMap : normalMap;
-					if( path != null )
-						error('Missing texture $sourcePath($path)');
-					else
-						error('$sourcePath material ${matName} is missing ${isSpec?"specular":"normal"} texture set');
-
-					if( isSpec )
-						tex = specDefault.tex;
-					else
-						tex = normalDefault.tex;
-				}
-				var texBytes = if( tex == normalDefault.tex ) normalDefault.bytes else if( tex == specDefault.tex ) specDefault.bytes else sys.io.File.getBytes(ide.getPath(tex.name));
-				var realTex = hxd.res.Any.fromBytes(tex.name, texBytes).toImage();
-				var inf2 = realTex.getInfo();
-				if( inf2.width != inf.width || inf2.height != inf.height ) {
-					if( tex != normalDefault.tex && tex != specDefault.tex )
-						error([
-							(isSpec?"Specular texture ":"Normal map ")+" has size not matching the albedo",
-							"  Texture: "+tex.name+'(${inf2.width}x${inf2.height})',
-							"  Albedo: "+texPath+'(${inf.width}x${inf.height})',
-							"  Model: "+sourcePath+"@"+matName,
-						].join("\n"));
-					// resize
-					var tmpTex = new h3d.mat.Texture(inf.width,inf.height);
-					h3d.pass.Copy.run(tex, tmpTex);
-					var texBytes = tmpTex.capturePixels().toDDS();
-					tmpTex.dispose();
-					realTex = hxd.res.Any.fromBytes(tex.name+"_"+inf.width+"x"+inf.height, texBytes).toImage();
-				}
-				t.add(realTex);
-			}
-
-			packSub(normalMaps, ntex, false);
-			packSub(specMaps, stex, true);
-
-			tmap.set(key, t);
 			return t;
 		}
 
@@ -387,36 +426,36 @@ class ModelLibrary extends Prefab {
 				var matConfigIndex = -1;
 				for ( i in 0...materialConfigs.length ) {
 					if ( haxe.Json.stringify((heapsMat.props:PbrProps)) == haxe.Json.stringify(materialConfigs[i]) ) {
-						matConfigIndex = i;
-						break;
+							matConfigIndex = i;
+							break;
+						}
 					}
+					if ( matConfigIndex < 0 ) {
+						materialConfigs.push((heapsMat.props:PbrProps));
+						matConfigIndex = materialConfigs.length - 1;
+					}
+					bk = {
+						indexStart : 0,
+						indexCount : 0,
+						geomId : 0,
+						texId : pos.tex.id,
+						uvX : pos.pos.du,
+						uvY : pos.pos.dv,
+						uvSX : pos.pos.su,
+						uvSY : pos.pos.sv,
+						configIndex : matConfigIndex,
+					};
+					bakedMaterials.set(lib.resource.entry.path + "_" + m.name, bk);
+
+					if( !hasNormal && m.normalMap != null )
+						error(sourcePath+"("+m.name+") has normal map texture");
+
+					if( !hasSpec && m.specularTexture != null )
+						error(sourcePath+"("+m.name+") has specular texture");
+
+					hmd.materials.push(m2);
+					return bk;
 				}
-				if ( matConfigIndex < 0 ) {
-					materialConfigs.push((heapsMat.props:PbrProps));
-					matConfigIndex = materialConfigs.length - 1;
-				}
-				bk = {
-					indexStart : 0,
-					indexCount : 0,
-					geomId : 0,
-					texId : pos.tex.id,
-					uvX : pos.pos.du,
-					uvY : pos.pos.dv,
-					uvSX : pos.pos.su,
-					uvSY : pos.pos.sv,
-					configIndex : matConfigIndex,
-				};
-				bakedMaterials.set(lib.resource.entry.path + "_" + m.name, bk);
-
-				if( !hasNormal && m.normalMap != null )
-					error(sourcePath+"("+m.name+") has normal map texture");
-
-				if( !hasSpec && m.specularTexture != null )
-					error(sourcePath+"("+m.name+") has specular texture");
-
-				hmd.materials.push(m2);
-				return bk;
-			}
 
 			var offsetGeom = hmd.geometries.length;
 			var offsetModels = hmd.models.length;
@@ -586,6 +625,13 @@ class ModelLibrary extends Prefab {
 		shader.hasNormal = tnormal != null;
 		shader.hasPbr = tspec != null;
 		return ctx;
+	}
+
+	public function dispose() {
+		#if !release
+		optimizedMeshes = [];
+		batches = [];
+		#end
 	}
 
 	var killAlpha = new h3d.shader.KillAlpha();
