@@ -106,6 +106,7 @@ class Camera extends Object3D {
 	}
 
 	override function updateInstance( ctx : hrt.prefab.Context, ?p ) {
+		applyRFX(ctx);
 		super.updateInstance(ctx, p);
 		drawFrustum(ctx);
 		var cso = Std.downcast(ctx.local3d, CameraSyncObject);
@@ -155,13 +156,11 @@ class Camera extends Object3D {
 
 	#if editor
 
-	dynamic function setEditModeButton() {
-
-	}
-
 	override function setSelected( ctx : Context, b : Bool ) {
-		updateInstance(ctx);
-		setEditModeButton();
+		if( !b ) {
+			preview = false;
+			updateInstance(ctx);
+		}
 		return false;
 	}
 
@@ -192,46 +191,29 @@ class Camera extends Object3D {
 		});
 
 		var editModeButton = props.find(".editModeButton");
-		setEditModeButton = function () {
-			editModeButton.val(preview ? "Preview Mode : Enabled" : "Preview Mode : Disabled");
-			editModeButton.toggleClass("editModeEnabled", preview);
-		};
 		editModeButton.click(function(_) {
 			preview = !preview;
-			setEditModeButton();
+			editModeButton.val(preview ? "Preview Mode : Enabled" : "Preview Mode : Disabled");
+			editModeButton.toggleClass("editModeEnabled", preview);
 			var cam = ctx.scene.s3d.camera;
 			if (preview) {
 				updateInstance(ctx.getContext(this));
 				applyTo(cam);
-				for ( effect in getAll(hrt.prefab.rfx.RendererFX) ) {
-					var prevEffect = @:privateAccess ctx.scene.s3d.renderer.getEffect(hrt.prefab.rfx.RendererFX);
-					if ( prevEffect != null )
-						ctx.scene.s3d.renderer.effects.remove(prevEffect);
-					ctx.scene.s3d.renderer.effects.push( effect );
-				}
 				ctx.scene.editor.cameraController.lockZPlanes = true;
 				ctx.scene.editor.cameraController.loadFromCamera();
 			}
 			else {
-				for ( effect in getAll(hrt.prefab.rfx.RendererFX) )
-					ctx.scene.s3d.renderer.effects.remove( effect );
 				ctx.makeChanges(this, function() {
-					var transform = new h3d.Matrix();
-					transform.identity();
 					var q = new h3d.Quat();
 					q.initDirection(cam.target.sub(cam.pos));
 					var angles = q.toEuler();
-					transform.rotate(angles.x, angles.y, angles.z);
-					transform.translate(cam.pos.x, cam.pos.y, cam.pos.z);
-
-					var parent = getParent(hrt.prefab.Object3D);
-					if ( parent != null ) {
-						var invPos = new h3d.Matrix();
-						invPos._44 = 0;
-						invPos.inverse3x4(parent.getAbsPos());
-						transform.multiply(transform, invPos);
-					}
-					setTransform(transform);
+					this.rotationX = hxd.Math.fmt(angles.x * 180 / Math.PI);
+					this.rotationY = hxd.Math.fmt(angles.y * 180 / Math.PI);
+					this.rotationZ = hxd.Math.fmt(angles.z * 180 / Math.PI);
+					this.scaleX = this.scaleY = this.scaleZ = 1;
+					this.x = hxd.Math.fmt(cam.pos.x);
+					this.y = hxd.Math.fmt(cam.pos.y);
+					this.z = hxd.Math.fmt(cam.pos.z);
 					this.zFar = cam.zFar;
 					this.zNear = cam.zNear;
 					this.fovY = cam.fovY;
@@ -242,22 +224,16 @@ class Camera extends Object3D {
 		props.find(".copy").click(function(e) {
 			var cam = ctx.scene.s3d.camera;
 			ctx.makeChanges(this, function() {
-				var transform = new h3d.Matrix();
-				transform.identity();
 				var q = new h3d.Quat();
 				q.initDirection(cam.target.sub(cam.pos));
 				var angles = q.toEuler();
-				transform.rotate(angles.x, angles.y, angles.z);
-				transform.translate(cam.pos.x, cam.pos.y, cam.pos.z);
-
-				var parent = getParent(hrt.prefab.Object3D);
-				if ( parent != null ) {
-					var invPos = new h3d.Matrix();
-					invPos._44 = 0;
-					invPos.inverse3x4(parent.getAbsPos());
-					transform.multiply(transform, invPos);
-				}
-				setTransform(transform);
+				this.rotationX = hxd.Math.fmt(angles.x * 180 / Math.PI);
+				this.rotationY = hxd.Math.fmt(angles.y * 180 / Math.PI);
+				this.rotationZ = hxd.Math.fmt(angles.z * 180 / Math.PI);
+				this.scaleX = this.scaleY = this.scaleZ = 1;
+				this.x = hxd.Math.fmt(cam.pos.x);
+				this.y = hxd.Math.fmt(cam.pos.y);
+				this.z = hxd.Math.fmt(cam.pos.z);
 				this.zFar = cam.zFar;
 				this.zNear = cam.zNear;
 				this.fovY = cam.fovY;
