@@ -317,6 +317,7 @@ class ModelLibrary extends Prefab {
 						var resizedTex = new h3d.mat.Texture(texture.width >> mipLevel, texture.height >> mipLevel, [Target], texture.format);
 						h3d.pass.Copy.run(texture, resizedTex, null, null, mipLevel);
 						var texBytes = resizedTex.capturePixels().toDDS();
+						resizedTex.dispose();
 						miplevelImage = hxd.res.Any.fromBytes(tex.name+"_"+mipLevel, texBytes).toImage();
 					}
 					t.add(miplevelImage);
