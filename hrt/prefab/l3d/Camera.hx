@@ -29,6 +29,7 @@ class Camera extends Object3D {
 	@:s var zNear : Float = 0.02;
 	@:s var showFrustum = false;
 	var preview = false;
+	var obj : h3d.scene.Object = null;
 
 	public function new(?parent) {
 		super(parent);
@@ -50,6 +51,7 @@ class Camera extends Object3D {
 			g = new h3d.scene.Graphics(ctx.local3d);
 			g.name = "frustumDebug";
 			g.material.mainPass.setPassName("overlay");
+			g.ignoreBounds = true;
 		}
 
 		var c = new h3d.Camera();
@@ -100,6 +102,7 @@ class Camera extends Object3D {
 	override function makeInstance( ctx : hrt.prefab.Context ) {
 		ctx = ctx.clone(this);
 		ctx.local3d = new CameraSyncObject(ctx.local3d);
+		obj = ctx.local3d;
 		ctx.local3d.name = name;
 		updateInstance(ctx);
 		return ctx;
@@ -108,7 +111,9 @@ class Camera extends Object3D {
 	override function updateInstance( ctx : hrt.prefab.Context, ?p ) {
 		applyRFX(ctx);
 		super.updateInstance(ctx, p);
+		#if editor
 		drawFrustum(ctx);
+		#end
 		var cso = Std.downcast(ctx.local3d, CameraSyncObject);
 		if( cso != null ) {
 			cso.fovY = fovY;
@@ -119,10 +124,14 @@ class Camera extends Object3D {
 	}
 
 	public function applyTo(c: h3d.Camera) {
-		var front = getTransform().front();
-		var ray = h3d.col.Ray.fromValues(x, y, z, front.x, front.y, front.z);
-		c.pos.set(x, y, z);
-		c.target = c.pos.add(front);
+		var transform = null;
+		if ( obj != null )
+			transform = obj.getAbsPos();
+		else
+			transform = getAbsPos();
+		c.setTransform(transform);
+		var front = transform.front();
+		var ray = h3d.col.Ray.fromValues(transform.getPosition().x, transform.getPosition().y, transform.getPosition().z, front.x, front.y, front.z);
 
 		// this does not change camera rotation but allows for better navigation in editor
 		var plane = h3d.col.Plane.Z();
@@ -156,11 +165,25 @@ class Camera extends Object3D {
 
 	#if editor
 
-	override function setSelected( ctx : Context, b : Bool ) {
-		if( !b ) {
-			preview = false;
-			updateInstance(ctx);
+	dynamic function setEditModeButton() {
+
+	}
+
+	function upgrade() {
+		var parent = obj.parent;
+		var transform = getTransform();
+		if ( parent != null ) {
+			var invPos = new h3d.Matrix();
+			invPos._44 = 0;
+			invPos.inverse3x4(parent.getAbsPos());
+			transform.multiply(transform, invPos);
+			setTransform(transform);
 		}
+	}
+
+	override function setSelected( ctx : Context, b : Bool ) {
+		updateInstance(ctx);
+		setEditModeButton();
 		return false;
 	}
 
@@ -186,34 +209,58 @@ class Camera extends Object3D {
 					</div>
 				</dl>
 			</div>
+			<div class="group" name="Deprecation">
+				<dl>
+					<div align="center">
+						<input type="button" value="Upgrade" class="upgrade" />
+					</div>
+				</dl>
+			</div>
 		'),this, function(pname) {
 			ctx.onChange(this, pname);
 		});
 
 		var editModeButton = props.find(".editModeButton");
-		editModeButton.click(function(_) {
-			preview = !preview;
+		setEditModeButton = function () {
 			editModeButton.val(preview ? "Preview Mode : Enabled" : "Preview Mode : Disabled");
 			editModeButton.toggleClass("editModeEnabled", preview);
+		};
+		editModeButton.click(function(_) {
+			preview = !preview;
+			setEditModeButton();
 			var cam = ctx.scene.s3d.camera;
 			if (preview) {
 				updateInstance(ctx.getContext(this));
 				applyTo(cam);
+				for ( effect in getAll(hrt.prefab.rfx.RendererFX) ) {
+					var prevEffect = @:privateAccess ctx.scene.s3d.renderer.getEffect(hrt.prefab.rfx.RendererFX);
+					if ( prevEffect != null )
+						ctx.scene.s3d.renderer.effects.remove(prevEffect);
+					ctx.scene.s3d.renderer.effects.push( effect );
+				}
 				ctx.scene.editor.cameraController.lockZPlanes = true;
 				ctx.scene.editor.cameraController.loadFromCamera();
 			}
 			else {
+				for ( effect in getAll(hrt.prefab.rfx.RendererFX) )
+					ctx.scene.s3d.renderer.effects.remove( effect );
 				ctx.makeChanges(this, function() {
+					var transform = new h3d.Matrix();
+					transform.identity();
 					var q = new h3d.Quat();
 					q.initDirection(cam.target.sub(cam.pos));
 					var angles = q.toEuler();
-					this.rotationX = hxd.Math.fmt(angles.x * 180 / Math.PI);
-					this.rotationY = hxd.Math.fmt(angles.y * 180 / Math.PI);
-					this.rotationZ = hxd.Math.fmt(angles.z * 180 / Math.PI);
-					this.scaleX = this.scaleY = this.scaleZ = 1;
-					this.x = hxd.Math.fmt(cam.pos.x);
-					this.y = hxd.Math.fmt(cam.pos.y);
-					this.z = hxd.Math.fmt(cam.pos.z);
+					transform.rotate(angles.x, angles.y, angles.z);
+					transform.translate(cam.pos.x, cam.pos.y, cam.pos.z);
+
+					var parent = getParent(hrt.prefab.Object3D);
+					if ( parent != null ) {
+						var invPos = new h3d.Matrix();
+						invPos._44 = 0;
+						invPos.inverse3x4(parent.getAbsPos());
+						transform.multiply(transform, invPos);
+					}
+					setTransform(transform);
 					this.zFar = cam.zFar;
 					this.zNear = cam.zNear;
 					this.fovY = cam.fovY;
@@ -221,19 +268,32 @@ class Camera extends Object3D {
 			}
 		});
 
+		var deprecationButton = props.find(".upgrade");
+		deprecationButton.click(function(_) {
+			ctx.makeChanges(this, function() {
+				upgrade();
+			});
+		});
+
 		props.find(".copy").click(function(e) {
 			var cam = ctx.scene.s3d.camera;
 			ctx.makeChanges(this, function() {
+				var transform = new h3d.Matrix();
+				transform.identity();
 				var q = new h3d.Quat();
 				q.initDirection(cam.target.sub(cam.pos));
 				var angles = q.toEuler();
-				this.rotationX = hxd.Math.fmt(angles.x * 180 / Math.PI);
-				this.rotationY = hxd.Math.fmt(angles.y * 180 / Math.PI);
-				this.rotationZ = hxd.Math.fmt(angles.z * 180 / Math.PI);
-				this.scaleX = this.scaleY = this.scaleZ = 1;
-				this.x = hxd.Math.fmt(cam.pos.x);
-				this.y = hxd.Math.fmt(cam.pos.y);
-				this.z = hxd.Math.fmt(cam.pos.z);
+				transform.rotate(angles.x, angles.y, angles.z);
+				transform.translate(cam.pos.x, cam.pos.y, cam.pos.z);
+
+				var parent = getParent(hrt.prefab.Object3D);
+				if ( parent != null ) {
+					var invPos = new h3d.Matrix();
+					invPos._44 = 0;
+					invPos.inverse3x4(parent.getAbsPos());
+					transform.multiply(transform, invPos);
+				}
+				setTransform(transform);
 				this.zFar = cam.zFar;
 				this.zNear = cam.zNear;
 				this.fovY = cam.fovY;
