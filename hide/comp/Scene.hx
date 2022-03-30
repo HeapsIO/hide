@@ -176,7 +176,7 @@ class Scene extends Component implements h3d.IDrawable {
 	var pendingCount : Int = 0;
 
 	function loadTextureData( img : hxd.res.Image, onReady : h3d.mat.Texture -> Void, ?target : h3d.mat.Texture ) {
-		if( !img.getFormat().useAsyncDecode ) {
+		if( !img.getFormat().useLoadBitmap ) {
 			// immediate read
 			if( target == null )
 				target = img.toTexture();
@@ -345,7 +345,7 @@ class Scene extends Component implements h3d.IDrawable {
 		return loadTexture("", t, onReady);
 	}
 
-	public function loadTexture( modelPath : String, texturePath : String, ?onReady : h3d.mat.Texture -> Void ) {
+	public function loadTexture( modelPath : String, texturePath : String, ?onReady : h3d.mat.Texture -> Void, async=false ) {
 		checkCurrent();
 		var path = resolvePath(modelPath, texturePath);
 		if( path == null ) {
@@ -364,7 +364,9 @@ class Scene extends Component implements h3d.IDrawable {
 		};
 		if( onReady == null ) onReady = function(_) {};
 		try {
-			t = loadTextureData(res.toImage(), onReady, t);
+			var img = res.toImage();
+			img.enableAsyncLoading = async;
+			t = loadTextureData(img, onReady, t);
 			t.setName( ide.makeRelative(path));
 			texCache.set(path, t);
 		} catch( error : Dynamic ) {

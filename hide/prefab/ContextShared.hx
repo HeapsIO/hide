@@ -39,8 +39,8 @@ class ContextShared extends hrt.prefab.ContextShared {
 		return getScene().loadAnimation(path);
 	}
 
-	override function loadTexture( path : String ) {
-		return getScene().loadTexture("",path);
+	override function loadTexture( path : String, async : Bool = false ) {
+		return getScene().loadTexture("",path, async);
 	}
 
 	override function loadBakedFile():Null<haxe.io.Bytes> {

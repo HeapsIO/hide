@@ -639,7 +639,7 @@ class HeightMap extends Object3D {
 	}
 
 	function loadTexture( path : String ) {
-		return storedCtx.loadTexture(path);
+		return storedCtx.shared.loadTexture(path, false);
 	}
 
 	override function makeInstance(ctx:Context):Context {

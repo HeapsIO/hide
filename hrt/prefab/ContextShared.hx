@@ -178,8 +178,8 @@ class ContextShared {
 		return @:privateAccess cache.loadAnimation(hxd.res.Loader.currentInstance.load(path).toModel());
 	}
 
-	public function loadTexture( path : String ) {
-		return cache.loadTexture(null, path);
+	public function loadTexture( path : String, async : Bool = false ) {
+		return cache.loadTexture(null, path, async);
 	}
 
 	public function loadBytes( file : String) : haxe.io.Bytes {

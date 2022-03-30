@@ -600,6 +600,7 @@ class Ide {
 		var localDir = sys.FileSystem.exists(resourceDir) ? resourceDir : projectDir;
 		var fsconf = config.current.get("fs.config", "default");
 		hxd.res.Loader.currentInstance = new CustomLoader(new hxd.fs.LocalFileSystem(localDir,fsconf));
+		hxd.res.Image.ASYNC_LOADER = new hxd.impl.AsyncLoader.NodeLoader();
 		renderers = [
 			new hide.Renderer.MaterialSetup("Default"),
 			new hide.Renderer.PbrSetup("PBR"),
