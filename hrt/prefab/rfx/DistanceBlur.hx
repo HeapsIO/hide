@@ -110,14 +110,14 @@ class DistanceBlur extends RendererFX {
 	override function edit( ctx : hide.prefab.EditContext ) {
 		ctx.properties.add(new hide.Element('
 				<div class="group" name="Near Blur">
-					<dt>Start Distance</dt><dd><input type="range" min="0" max="1000" field="nearStartDistance"/></dd>
-					<dt>End Distance</dt><dd><input type="range" min="0" max="1000" field="nearEndDistance"/></dd>
+					<dt>Start Distance</dt><dd><input type="range" min="0" max="20" field="nearStartDistance"/></dd>
+					<dt>End Distance</dt><dd><input type="range" min="0" max="20" field="nearEndDistance"/></dd>
 					<dt>Start Opacity</dt><dd><input type="range" min="0" max="1" field="nearStartIntensity"/></dd>
 					<dt>End Opacity</dt><dd><input type="range" min="0" max="1" field="nearEndIntensity"/></dd>
 				</div>
 				<div class="group" name="Far Blur">
-					<dt>Start Distance</dt><dd><input type="range" min="0" max="1000" field="farStartDistance"/></dd>
-					<dt>End Distance</dt><dd><input type="range" min="0" max="1000" field="farEndDistance"/></dd>
+					<dt>Start Distance</dt><dd><input type="range" min="0" max="50" field="farStartDistance"/></dd>
+					<dt>End Distance</dt><dd><input type="range" min="0" max="50" field="farEndDistance"/></dd>
 					<dt>Start Opacity</dt><dd><input type="range" min="0" max="1" field="farStartIntensity"/></dd>
 					<dt>End Opacity</dt><dd><input type="range" min="0" max="1" field="farEndIntensity"/></dd>
 				</div>
