@@ -1769,6 +1769,9 @@ body.hide-subview .lm_controls {
 .jstree .disabled i {
   color: #533;
 }
+.jstree .inRef {
+  background: #444444 !important;
+}
 .jstree a.locked {
   color: #666 !important;
   font-style: italic;

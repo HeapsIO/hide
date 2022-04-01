@@ -1237,6 +1237,10 @@ class SceneEditor {
 		var obj3d  = p.to(Object3D);
 		el.toggleClass("disabled", !p.enabled);
 		var aEl = el.find("a").first();
+		var root = p.parent;
+		while( root.parent != null)
+			root = root.parent;
+		el.toggleClass("inRef", root != sceneData);
 
 		var tag = getTag(p);
 
