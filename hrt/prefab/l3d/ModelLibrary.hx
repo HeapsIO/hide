@@ -187,9 +187,6 @@ class ModelLibrary extends Prefab {
 		hmd.animations = [];
 		var models = new Map();
 		var dataOut = new haxe.io.BytesBuffer();
-		var dataPath = new haxe.io.Path(shared.currentPath);
-		dataPath.ext = "dat";
-		var dataPath = dataPath.toString()+"/"+name+"/";
 
 		var textures : Array<h3d.mat.BigTexture> = [];
 		var normalMaps : Array<h3d.mat.BigTexture> = [];
@@ -223,32 +220,26 @@ class ModelLibrary extends Prefab {
 		function loadTexture( sourcePath, texPath, normalMap, specMap ) {
 
 			var t = null;
+			if ( texPath == null )
+				return null;
+			var tmp = scene.loadTexture(sourcePath, texPath);
+
+			var ntex = normalMap == null ? null : scene.loadTexture(sourcePath, normalMap);
+			var stex = specMap == null ? null : scene.loadTexture(sourcePath, specMap);
+			var key = texPath+"/"+(ntex==null?"nonorm":ntex.name)+(stex==null?"nospec":stex.name);
+			t = tmap.get(key);
+			if( t != null )
+				return t;
+			update("Packing "+key);
+			var realTex = hxd.res.Any.fromBytes(tmp.name, tmp == whiteDefault.tex ? whiteDefault.bytes : sys.io.File.getBytes(ide.getPath(tmp.name))).toImage();
 			for ( mipLevel in 0...mipLevels ) {
-				var tmp = texPath == null ? null : scene.loadTexture(sourcePath, texPath);
-				if( tmp == null ) tmp = whiteDefault.tex;
-
-				var ntex = normalMap == null ? null : scene.loadTexture(sourcePath, normalMap);
-				var stex = specMap == null ? null : scene.loadTexture(sourcePath, specMap);
-				var key = tmp.name+"/"+(ntex==null?"nonorm":ntex.name)+(stex==null?"nospec":stex.name)+"/"+mipLevel;
-
-				if ( mipLevel == 0 ) {
-					t = tmap.get(key);
-					if( t != null )
-						return t;
-				}
-				update("Packing "+key);
-
-				var texPath = tmp.name;
-				var realTex = hxd.res.Any.fromBytes(tmp.name, tmp == whiteDefault.tex ? whiteDefault.bytes : sys.io.File.getBytes(ide.getPath(tmp.name))).toImage();
-				var mipLevelImage = realTex;
-				if ( mipLevel != 0 ) {
-					var texture = realTex.toTexture();
-					var resizedTex = new h3d.mat.Texture(texture.width >> mipLevel, texture.height >> mipLevel, [Target], texture.format);
-					h3d.pass.Copy.run(texture, resizedTex, null, null, mipLevel);
-					var texBytes = resizedTex.capturePixels().toDDS();
-					resizedTex.dispose();
-					mipLevelImage = hxd.res.Any.fromBytes(tmp.name+"_"+mipLevel, texBytes).toImage();
-				}
+				var texture = realTex.toTexture();
+				var size = hxd.Math.imax(texture.width >> mipLevel, 1 << (mipLevels - mipLevel - 1));
+				var resizedTex = new h3d.mat.Texture(size, size, [Target], texture.format);
+				h3d.pass.Copy.run(texture, resizedTex);
+				var texBytes = resizedTex.capturePixels().toDDS();
+				resizedTex.dispose();
+				var mipLevelImage = hxd.res.Any.fromBytes(tmp.name+"_"+mipLevel, texBytes).toImage();
 
 				var pos = null, posTex = null;
 				for( i in 0...textures.length ) {
@@ -267,7 +258,7 @@ class ModelLibrary extends Prefab {
 					pos = b.add(mipLevelImage);
 					posTex = b;
 				}
-				if ( mipLevel == 0 ) {
+				if ( mipLevel == 0) {
 					t = {
 						pos : pos,
 						tex : posTex,
@@ -304,30 +295,22 @@ class ModelLibrary extends Prefab {
 								"  Albedo: "+texPath+'(${inf.width}x${inf.height})',
 								"  Model: "+sourcePath+"@"+matName,
 							].join("\n"));
-						// resize
-						var tmpTex = new h3d.mat.Texture(inf.width,inf.height);
-						h3d.pass.Copy.run(tex, tmpTex);
-						var texBytes = tmpTex.capturePixels().toDDS();
-						tmpTex.dispose();
-						realTex = hxd.res.Any.fromBytes(tex.name+"_"+inf.width+"x"+inf.height, texBytes).toImage();
 					}
-					var miplevelImage = realTex;
-					if ( mipLevel != 0 ) {
-						var texture = realTex.toTexture();
-						var resizedTex = new h3d.mat.Texture(texture.width >> mipLevel, texture.height >> mipLevel, [Target], texture.format);
-						h3d.pass.Copy.run(texture, resizedTex, null, null, mipLevel);
-						var texBytes = resizedTex.capturePixels().toDDS();
-						resizedTex.dispose();
-						miplevelImage = hxd.res.Any.fromBytes(tex.name+"_"+mipLevel, texBytes).toImage();
-					}
-					t.add(miplevelImage);
+					var texture = realTex.toTexture();
+					var size = hxd.Math.imax(inf.width >> mipLevel, 1 << (mipLevels - mipLevel - 1));
+					var resizedTex = new h3d.mat.Texture(size, size, [Target], texture.format);
+					h3d.pass.Copy.run(texture, resizedTex);
+					var texBytes = resizedTex.capturePixels().toDDS();
+					resizedTex.dispose();
+					var submiplevelImage = hxd.res.Any.fromBytes(tmp.name+"_"+mipLevel, texBytes).toImage();
+					t.add(submiplevelImage);
 				}
 
 				packSub(normalMaps, ntex, false);
 				packSub(specMaps, stex, true);
 
-				tmap.set(key, t);
 			}
+			tmap.set(key, t);
 			return t;
 		}
 
@@ -404,7 +387,7 @@ class ModelLibrary extends Prefab {
 			}
 			if( lib == null ) continue;
 
-			function addMaterial( mid : Int ) {
+			function addMaterial( mid : Int, modelName : String ) {
 				var m = lib.header.materials[mid];
 
 				var m2 = new Material();
@@ -421,7 +404,13 @@ class ModelLibrary extends Prefab {
 				}
 
 				var pos = loadTexture(sourcePath, m.diffuseTexture, hasNormal ? m.normalMap : null, hasSpec ? m.specularTexture : null);
-				var bk = bakedMaterials.get(lib.resource.entry.path + "_" + m.name);
+				if ( pos == null )
+					return null;
+				var matName = m.name;
+				for ( i in 0... 9)
+					matName = matName.split('${i}').join("");
+				var key = lib.resource.entry.path + (modelName != "root" ? "_" + modelName : "") + "_" + matName;
+				var bk = bakedMaterials.get(key);
 				if ( bk != null )
 					return bk;
 				var matConfigIndex = -1;
@@ -439,14 +428,14 @@ class ModelLibrary extends Prefab {
 						indexStart : 0,
 						indexCount : 0,
 						geomId : 0,
-						texId : pos.tex.id,
+						texId : hxd.Math.floor(pos.tex.id / mipLevels),
 						uvX : pos.pos.du,
 						uvY : pos.pos.dv,
 						uvSX : pos.pos.su,
 						uvSY : pos.pos.sv,
 						configIndex : matConfigIndex,
 					};
-					bakedMaterials.set(lib.resource.entry.path + "_" + m.name, bk);
+					bakedMaterials.set(key, bk);
 
 					if( !hasNormal && m.normalMap != null )
 						error(sourcePath+"("+m.name+") has normal map texture");
@@ -494,6 +483,7 @@ class ModelLibrary extends Prefab {
 				indexStarts.push(arr);
 			}
 
+			var root = true;
 			for( m in lib.header.models ) {
 				var ignoreModel = false;
 				var m2 = new Model();
@@ -514,7 +504,7 @@ class ModelLibrary extends Prefab {
 						}
 						if ( ignoreModel )
 							break;
-						var mat = addMaterial(mid);
+						var mat = addMaterial(mid, root ? "root" : m.name);
 						if ( mat != null ) {
 							mat.geomId = m2.geometry;
 							mat.indexCount = lib.header.geometries[m.geometry].indexCounts[index];
@@ -526,6 +516,7 @@ class ModelLibrary extends Prefab {
 				if( m.skin != null )
 					error("Not supported: "+sourcePath+"("+m.name+") has skin");
 				hmd.models.push(m2);
+				root = false;
 			}
 		}
 
@@ -573,7 +564,6 @@ class ModelLibrary extends Prefab {
 		shared.savePrefabDat("model","hmd",name,bytes);
 
 		texturesCount = textures.length;
-
 		function make(textures:Array<h3d.mat.BigTexture>, name : String ) {
 			var all = [];
 			for( i in 0...textures.length ) {
@@ -602,6 +592,7 @@ class ModelLibrary extends Prefab {
 	var hmdPrim : h3d.prim.HMDModel;
 	var shader : ModelLibShader;
 	var geomBounds : Array<h3d.col.Bounds>;
+	public var debug = false;
 
 	override function make(ctx:hrt.prefab.Context) {
 		// don't load/build children
@@ -642,7 +633,16 @@ class ModelLibrary extends Prefab {
 			throw "Model library was not built or saved";
 		if( shared == null )
 			throw "Please call make() on modelLibrary first";
+
 		var meshBatches = [for (i in 0...materialConfigs.length) null];
+		for( c in obj ) {
+			var ms = Std.downcast(c, h3d.scene.MeshBatch);
+			if( ms != null && ms.name.indexOf("modelLibrary") == 0 ) {
+				var index = ms.name.split("_")[1];
+				if ( meshBatches[Std.parseInt(index)] == null )
+					meshBatches[Std.parseInt(index)] = ms;
+			}
+		}
 
 		var meshes = [];
 		optimizeRec(obj, meshes);
@@ -651,12 +651,10 @@ class ModelLibrary extends Prefab {
 			var bk = m.mat;
 			if ( meshBatches[bk.configIndex] == null) {
 				var batch = new h3d.scene.MeshBatch(hmdPrim, h3d.mat.Material.create(), obj);
-				batch.name = "modelLibrary";
+				batch.name = "modelLibrary"+"_"+bk.configIndex;
 				batch.material.mainPass.addShader(shader);
-				batch.primitiveSubPart = new h3d.scene.MeshBatch.MeshBatchPart();
-				batch.begin();
 				#if !release
-				batches.push(batch);
+				if ( debug ) batches.push(batch);
 				#end
 				batch.material.props = materialConfigs[bk.configIndex];
 				batch.material.refreshProps();
@@ -670,6 +668,10 @@ class ModelLibrary extends Prefab {
 			shader.uvTransform.set(bk.uvX, bk.uvY, bk.uvSX, bk.uvSY);
 			shader.material = bk.texId;
 			var batch = meshBatches[bk.configIndex];
+			if ( batch.primitiveSubPart == null ) {
+				batch.primitiveSubPart = new h3d.scene.MeshBatch.MeshBatchPart();
+				batch.begin();
+			}
 			batch.primitiveSubPart.indexCount = bk.indexCount;
 			batch.primitiveSubPart.indexStart = bk.indexStart;
 			batch.primitiveSubPart.bounds = geomBounds[bk.geomId];
@@ -679,10 +681,11 @@ class ModelLibrary extends Prefab {
 
 		for (batch in meshBatches ) {
 			if ( batch != null ) {
-				batch.worldPosition = null;
 				batch.primitiveSubPart = null;
 			}
 		}
+		if (!debug)
+			clearOptimized(obj);
 	}
 
 	function optimizeRec( obj : h3d.scene.Object, out : Array<{ mat : MaterialData, mesh : h3d.scene.Mesh }> ) {
@@ -702,9 +705,15 @@ class ModelLibrary extends Prefab {
 			var prim = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
 			if( prim != null ) {
 				var mat = mesh.getMaterials(false);
+
 				mesh.culled = true;
 				for( i in 0...mat.length ) {
-					var bk = bakedMaterials.get(@:privateAccess prim.lib.resource.entry.path + "_" + mat[i].name);
+					var matName = mat[i].name;
+					for ( i in 0... 9)
+						matName = matName.split('${i}').join("");
+					var bk = bakedMaterials.get(@:privateAccess prim.lib.resource.entry.path + "_" + mesh.name + "_" + matName);
+					if ( bk == null )
+						bk = bakedMaterials.get(@:privateAccess prim.lib.resource.entry.path + "_" + matName);
 					if( bk == null ) {
 						mesh.culled = false;
 						while( out.length > 0 && out[out.length-1].mesh == mesh )
@@ -714,13 +723,20 @@ class ModelLibrary extends Prefab {
 					out.push({ mat : bk, mesh : mesh });
 				}
 				#if !release
-				if ( mesh.culled )
+				if ( mesh.culled && debug )
 					optimizedMeshes.push(mesh);
 				#end
 			}
 		}
 		for( o in obj )
 			optimizeRec(o, out);
+	}
+
+	function clearOptimized(obj: h3d.scene.Object) {
+		for ( c in @:privateAccess obj.children )
+			clearOptimized(c);
+		if ( @:privateAccess obj.children.length == 0 && obj.culled )
+			obj.remove();
 	}
 
 	function toggle() {
