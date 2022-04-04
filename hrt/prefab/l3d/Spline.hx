@@ -45,6 +45,7 @@ class SplinePoint extends Object3D {
 	var indexText : h2d.ObjectFollower;
 	var spline(get, default) : Spline;
 	var obj : SplinePointObject;
+	public var offset : h3d.Matrix;
 	function get_spline() {
 		return parent.to(Spline);
 	}
@@ -160,6 +161,12 @@ class SplinePoint extends Object3D {
 	}
 	#end
 
+	override public function getAbsPos() {
+		var result = obj != null ? obj.getAbsPos() : super.getAbsPos();
+		if (offset != null) result.multiply(result, offset);
+		return result;
+	}
+
 	inline public function getPoint() : h3d.col.Point {
 		return getAbsPos().getPosition().toPoint();
 	}
@@ -257,15 +264,19 @@ class Spline extends Object3D {
 	// Generate the splineData from a matrix, can't move the spline after that
 	public function makeFromMatrix( m : h3d.Matrix ) {
 		var tmp = new h3d.Matrix();
-		points = [];
-		for( pd in pointsData ) {
-			var sp = new SplinePoint(this);
-			tmp.load(pd);
-			tmp.multiply(tmp, m);
-			sp.setTransform(tmp);
-			sp.getAbsPos();
+		for( p in points ) {
+			tmp.load(m);
+			tmp.multiply(tmp, getAbsPos().getInverse());
+			p.offset = tmp;
 		}
 		computeSplineData();
+	}
+
+	override public function make( ctx : Context ) : Context {
+		super.make(ctx);
+		var curCtx = ctx.shared.getContexts(this)[0];
+		updateInstance(curCtx);
+		return curCtx;
 	}
 
 
@@ -278,7 +289,6 @@ class Spline extends Object3D {
 		for( pd in pointsData ) {
 			var sp = new SplinePoint(this);
 			sp.setTransform(pd);
-			sp.getAbsPos();
 		}
 
 		if( points.length == 0 )
@@ -503,6 +513,7 @@ class Spline extends Object3D {
 	}
 
 	function generateSplineGraph( ctx : hrt.prefab.Context ) {
+		if (ctx == null) return;
 
 		if( !showSpline ) {
 			if( lineGraphics != null ) {
