@@ -92,6 +92,9 @@ class ModelLibrary extends Prefab {
 	#if editor
 
 	@:s var mipLevels : Int = 1;
+	@:s var compress : Bool = true;
+
+	var errors = [];
 
 	override function makeInstance(ctx) {
 		return ctx.clone(this);
@@ -103,7 +106,15 @@ class ModelLibrary extends Prefab {
 		var bt = new Element('<div align="center"><input type="button" value="Build"/></div>');
 		bt.find("input").click(function(e) {
 			ectx.makeChanges(this, function() {
+				errors = [];
 				rebuildData(ctx.shared, ectx.scene);
+				if ( compress )
+					compression(ctx.shared, ectx.scene);
+
+				var ide = hide.Ide.inst;
+				ide.setProgress();
+				if( errors.length > 0 )
+					ide.error(errors.join("\n"));
 			});
 		});
 		ectx.properties.add(bt);
@@ -112,6 +123,7 @@ class ModelLibrary extends Prefab {
 		<div class="group" name="Params">
 			<dl>
 				<dt>Miplevels</dt><dd><input type="range" step="1" field="mipLevels"/></dd>
+				<dt>Compress</dt><dd><input type="checkbox" field="compress"/></dd>
 			</dl>
 		</div>'), this, function(pname) {
 			ectx.onChange(this, pname);
@@ -171,6 +183,10 @@ class ModelLibrary extends Prefab {
 		return { icon : "square", name : "Model Library" };
 	}
 
+	function update( text : String ) {
+		hide.Ide.inst.setProgress(text);
+	}
+
 	function rebuildData( shared : ContextShared, scene : hide.comp.Scene ) {
 
 		bakedMaterials = {};
@@ -207,11 +223,6 @@ class ModelLibrary extends Prefab {
 		var specDefault = allocDefault("spec",0x0000FF);
 
 		var matName = "???";
-		var errors = [];
-
-		function update( text : String ) {
-			ide.setProgress(text);
-		}
 
 		function error( text : String ) {
 			errors.push(text);
@@ -497,7 +508,7 @@ class ModelLibrary extends Prefab {
 					m2.materials = [];
 					for( index => mid in m.materials ) {
 						for ( ignoredMat in ignoredMaterials ) {
-							if ( ignoredMat.name == lib.header.materials[mid].name ) {
+							if ( lib.header.materials[mid].name.indexOf(ignoredMat.name) == 0 ) {
 								ignoreModel = true;
 								break;
 							}
@@ -580,10 +591,37 @@ class ModelLibrary extends Prefab {
 		make(textures,"texture");
 		make(normalMaps,"normal");
 		make(specMaps,"specular");
+	}
 
-		ide.setProgress();
-		if( errors.length > 0 )
-			ide.error(errors.join("\n"));
+	function compression( shared : ContextShared, scene : hide.comp.Scene ) {
+		var convert = new hxd.fs.Convert.CompressIMG("png,tga,jpg,jpeg,dds,envd,envs","dds");
+		convert.params = {format: "BC3"};
+		var path = new haxe.io.Path(hxd.impl.Api.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem).baseDir+shared.currentPath);
+		path.ext = "dat";
+		var datDir = path.toString() + "/modelLib/";
+		convert.dstPath = datDir;
+		if ( !hxd.res.Loader.currentInstance.exists(convert.dstPath) )
+			sys.FileSystem.createDirectory(convert.dstPath);
+		function convertFile(name:String) {
+			update("Compress "+name);
+			var filename =  name + ".dds";
+			convert.srcPath = datDir + filename;
+			convert.originalFilename = filename;
+			convert.srcBytes = hxd.File.getBytes(convert.srcPath);
+			convert.convert();
+			var success = false;
+			for ( fmt in ["BC1", "BC3"] ) {
+				try {
+					sys.FileSystem.rename(datDir + name + "_" + fmt + ".dds", convert.srcPath);
+					success = true;
+				} catch (e :Dynamic) {}
+			}
+			if ( !success )
+				throw "Failed to replace compressed texture in " + datDir + " to " + convert.srcPath;
+		}
+		convertFile("texture");
+		convertFile("normal");
+		convertFile("specular");
 	}
 
 	#else
