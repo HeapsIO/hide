@@ -208,14 +208,32 @@ class SplinePoint extends Object3D {
 }
 
 class Spline extends Object3D {
-	public var points(get, null) : Array<SplinePoint>;
+
+	public var points(get, null) : Array<SplinePoint> = [];
 	function get_points() {
-		var pts : Array<SplinePoint> = [];
-		for (c in children) {
-			var sp = c.to(SplinePoint);
-			if (sp != null) pts.push(sp);
+		var recompute = false;
+		//in editor spline can change
+		#if editor
+		for (i in 0...children.length) {
+			if (children[i].to(SplinePoint) != @:bypassAccessor points[i]) {
+				recompute = true;
+				break;
+			}
 		}
-		return pts;
+		#end
+		// spline never change at runtime, only compute at the beginning
+		#if !editor
+		if (@:bypassAccessor points.length == 0)
+			recompute = true;
+		#end
+		if (recompute) {
+			@:bypassAccessor points = [];
+			for (c in children) {
+				var sp = c.to(SplinePoint);
+				if (sp != null) @:bypassAccessor points.push(sp);
+			}
+		}
+		return @:bypassAccessor points;
 	}
 
 	@:c public var shape : CurveShape = Linear;
@@ -264,9 +282,9 @@ class Spline extends Object3D {
 	// Generate the splineData from a matrix, can't move the spline after that
 	public function makeFromMatrix( m : h3d.Matrix ) {
 		var tmp = new h3d.Matrix();
+		tmp.load(m);
+		tmp.multiply(tmp, getAbsPos().getInverse());
 		for( p in points ) {
-			tmp.load(m);
-			tmp.multiply(tmp, getAbsPos().getInverse());
 			p.offset = tmp;
 		}
 		computeSplineData();
@@ -455,7 +473,7 @@ class Spline extends Object3D {
 		var minDist = -1.0;
 		var result : SplinePointData = null;
 		for( s in data.samples ) {
-			var dist = s.pos.distance(p);
+			var dist = s.pos.distanceSq(p);
 			if( dist < minDist || minDist == -1 ) {
 				minDist = dist;
 				result = s;
