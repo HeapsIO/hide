@@ -103,6 +103,15 @@ class ModelLibrary extends Prefab {
 	override function edit(ectx:hide.prefab.EditContext) {
 		var ctx = ectx.getContext(this);
 
+		ectx.properties.add(new hide.Element('
+		<div class="group" name="Params">
+			<dl>
+				<dt>Miplevels</dt><dd><input type="range" step="1" field="mipLevels"/></dd>
+			</dl>
+		</div>'), this, function(pname) {
+			ectx.onChange(this, pname);
+		});
+
 		var bt = new Element('<div align="center"><input type="button" value="Build"/></div>');
 		bt.find("input").click(function(e) {
 			ectx.makeChanges(this, function() {
@@ -120,14 +129,27 @@ class ModelLibrary extends Prefab {
 		ectx.properties.add(bt);
 
 		ectx.properties.add(new hide.Element('
-		<div class="group" name="Params">
+		<div class="group" name="Compression">
 			<dl>
-				<dt>Miplevels</dt><dd><input type="range" step="1" field="mipLevels"/></dd>
-				<dt>Compress</dt><dd><input type="checkbox" field="compress"/></dd>
+				<dt>Compress During Build</dt><dd><input type="checkbox" field="compress"/></dd>
 			</dl>
 		</div>'), this, function(pname) {
 			ectx.onChange(this, pname);
 		});
+
+		var bt = new Element('<div align="center"><input type="button" value="CompressOnly"/></div>');
+		bt.find("input").click(function(e) {
+			ectx.makeChanges(this, function() {
+				errors = [];
+				compression(ctx.shared, ectx.scene);
+
+				var ide = hide.Ide.inst;
+				ide.setProgress();
+				if( errors.length > 0 )
+					ide.error(errors.join("\n"));
+			});
+		});
+		ectx.properties.add(bt);
 
 		var listMaterials = new Element('
 		<div class="group" name="Ignored materials"><ul id="ignoreMatList"></ul></div>');
