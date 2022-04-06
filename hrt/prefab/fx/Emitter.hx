@@ -679,8 +679,8 @@ class EmitterObject extends h3d.scene.Object {
 					part.transform.setPosition(tmpPt.x, tmpPt.y, tmpPt.z);
 					emitterQuat = tmpEmitterQuat;
 					tmpMat.load(getAbsPos());
-					tmpScale = tmpMat.getScale();
-					tmpMat.prependScale(1.0/tmpScale.x, 1.0/tmpScale.y, 1.0/tmpScale.z);
+					var s = tmpMat.getScale();
+					tmpMat.prependScale(1.0/s.x, 1.0/s.y, 1.0/s.z);
 					emitterQuat.initRotateMatrix(tmpMat);
 					emitterQuat.normalize();
 					tmpQuat.multiply(tmpQuat, emitterQuat);
@@ -822,7 +822,7 @@ class EmitterObject extends h3d.scene.Object {
 			return;
 
 		if( parent != null ) {
-			worldScale = parent.getAbsPos().getScale();
+			worldScale.load(parent.getAbsPos().getScale());
 			invTransform.load(parent.getInvPos());
 		}
 

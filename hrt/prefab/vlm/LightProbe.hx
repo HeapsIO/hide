@@ -167,7 +167,7 @@ class LightProbeObject extends h3d.scene.Mesh {
 			indirectShader.emissivePower = props.emissive;
 		}
 
-		boundFadeShader.scale = getAbsPos().getScale();
+		boundFadeShader.scale.load(getAbsPos().getScale());
 		boundFadeShader.fadeDist = fadeDist;
 		boundFadeShader.CYLINDRICAL = shape == Cylinder;
 		switch fadeMode {
