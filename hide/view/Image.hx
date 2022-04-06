@@ -104,7 +104,7 @@ class Image extends FileView {
 				}
 				if( t.flags.has(MipMapped) ) {
 					t.mipMap = Linear;
-					tools.addRange("MipMap", function(f) channelSelect.mipLod = f, 0, 0, t.mipLevels);
+					tools.addRange("MipMap", function(f) channelSelect.mipLod = f, 0, 0, t.mipLevels - 1);
 				}
 				if( hxd.Pixels.isFloatFormat(t.format) ) {
 					tools.addRange("Exposure", function(f) channelSelect.exposure = f, 0, -10, 10);
