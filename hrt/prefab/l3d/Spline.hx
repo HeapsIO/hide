@@ -283,7 +283,7 @@ class Spline extends Object3D {
 	public function makeFromMatrix( m : h3d.Matrix ) {
 		var tmp = new h3d.Matrix();
 		tmp.load(m);
-		tmp.multiply(tmp, getAbsPos().getInverse());
+		tmp.multiply(getAbsPos().getInverse(), tmp);
 		for( p in points ) {
 			p.offset = tmp;
 		}
