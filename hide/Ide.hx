@@ -203,7 +203,7 @@ class Ide {
 			for( ft in getViews(hide.view.FileTree) ) {
 				var paths = [];
 				@:privateAccess {
-					if (data.data.origin == null) continue;
+					if (ft.tree == null || data.data.origin == null) continue;
 					if(ft.tree.element[0] != data.data.origin.element[0]) continue;
 					for(id in nodeIds) {
 						var item = ft.tree.map.get(id);
