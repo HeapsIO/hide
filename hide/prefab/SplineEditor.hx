@@ -304,8 +304,7 @@ class SplineEditor {
 			gizmo.visible = true;
 			var tmpMat = new h3d.Matrix();
 			tmpMat.load(sp.getAbsPos());
-			var tmpScale = new h3d.Vector();
-			tmpMat.getScale(tmpScale);
+			var tmpScale = tmpMat.getScale();
 			tmpMat.prependScale(1.0/tmpScale.x, 1.0/tmpScale.y, 1.0/tmpScale.z);
 			gizmo.setTransform(tmpMat);
 			@:privateAccess sceneEditor.updates.push( gizmo.update );

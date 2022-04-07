@@ -31,7 +31,7 @@ class SphereHandle extends h3d.scene.Mesh {
 		var engine = h3d.Engine.getCurrent();
 		var ratio = 18 / engine.height;
 		// Ignore parent scale
-		parent.getAbsPos().getScale(tmp);
+		tmp = parent.getAbsPos().getScale();
 		var scale = ratio * distToCam * Math.tan(cam.fovY * 0.5 * Math.PI / 180.0);
 		scaleX = scale / tmp.x;
 		scaleY = scale / tmp.y;

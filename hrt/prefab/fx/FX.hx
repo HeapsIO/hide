@@ -84,9 +84,9 @@ class FXAnimation extends h3d.scene.Object {
 
 	public function updateCulling(camera : h3d.Camera) {
 		culled = false;
-		var scale = getAbsPos().getScale(tempVec);
+		var scale = getAbsPos().getScale();
 		var uniScale = hxd.Math.abs(hxd.Math.max(hxd.Math.max(scale.x, scale.y), scale.z));
-		var pos = getAbsPos().getPosition(tempVec);
+		var pos = getAbsPos().getPosition();
 		tmpSphere.load(pos.x, pos.y, pos.z, cullingRadius * uniScale);
 		if(!camera.frustum.hasSphere(tmpSphere))
 			culled = true;
@@ -165,7 +165,7 @@ class FXAnimation extends h3d.scene.Object {
 						}
 
 						var baseMat = anim.elt.getTransform(tempTransform);
-						var offset = baseMat.getPosition(tempVec);
+						var offset = baseMat.getPosition();
 						baseMat.tx = baseMat.ty = baseMat.tz = 0.0;  // Ignore
 						m.multiply(baseMat, m);
 						m.translate(offset.x, offset.y, offset.z);

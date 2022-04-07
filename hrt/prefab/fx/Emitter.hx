@@ -158,9 +158,8 @@ private class ParticleTransform {
 	}
 
 	static var tmpMat = new h3d.Matrix();
-	static var tmpVec = new h3d.Vector();
 	public function setTransform( mat : h3d.Matrix ) {
-		var s = mat.getScale(tmpVec);
+		var s = mat.getScale();
 		this.x = mat.tx;
 		this.y = mat.ty;
 		this.z = mat.tz;
@@ -236,8 +235,6 @@ private class ParticleInstance  {
 	static var tmpGroundNormal = new h3d.Vector(0,0,1);
 	static var tmpSpeed = new h3d.Vector();
 	static var tmpMat = new h3d.Matrix();
-	static var tmpPos = new h3d.Vector();
-	static var tmpPos2 = new h3d.Vector();
 	static var tmpCamRotAxis = new h3d.Vector();
 	static var tmpCamAlign = new h3d.Vector();
 	static var tmpCamVec = new h3d.Vector();
@@ -378,7 +375,7 @@ private class ParticleInstance  {
 
 		// COLLISION
 		if( emitter.useCollision ) {
-			var worldPos = absPos.getPosition(tmpPos);
+			var worldPos = absPos.getPosition();
 			if( worldPos.z < 0 ) {
 				if( emitter.killOnCollision == 1 || hxd.Math.random() < emitter.killOnCollision ) {
 					life = lifeTime + 1; // No survivor
@@ -544,7 +541,6 @@ class EmitterObject extends h3d.scene.Object {
 		return p;
 	}
 
-	var tmpPos = new h3d.Vector();
 	var tmpCtx : hrt.prefab.Context;
 	function disposeInstance(p: ParticleInstance) {
 
@@ -683,7 +679,7 @@ class EmitterObject extends h3d.scene.Object {
 					part.transform.setPosition(tmpPt.x, tmpPt.y, tmpPt.z);
 					emitterQuat = tmpEmitterQuat;
 					tmpMat.load(getAbsPos());
-					tmpMat.getScale(tmpScale);
+					tmpScale = tmpMat.getScale();
 					tmpMat.prependScale(1.0/tmpScale.x, 1.0/tmpScale.y, 1.0/tmpScale.z);
 					emitterQuat.initRotateMatrix(tmpMat);
 					emitterQuat.normalize();
@@ -784,7 +780,7 @@ class EmitterObject extends h3d.scene.Object {
 
 	// No-alloc version of h3d.Matrix.getEulerAngles()
 	static function getEulerAngles(m: h3d.Matrix) {
-		var s = m.getScale(tmpVec);
+		var s = m.getScale();
 		m.prependScale(1.0 / s.x, 1.0 / s.y, 1.0 / s.z);
 		var cy = hxd.Math.sqrt(m._11 * m._11 + m._12 * m._12);
 		if(cy > 0.01) {
@@ -826,7 +822,7 @@ class EmitterObject extends h3d.scene.Object {
 			return;
 
 		if( parent != null ) {
-			parent.getAbsPos().getScale(worldScale);
+			worldScale = parent.getAbsPos().getScale();
 			invTransform.load(parent.getInvPos());
 		}
 
@@ -991,7 +987,7 @@ class EmitterObject extends h3d.scene.Object {
 					}
 					tmpCtx.local3d = this.getScene();
 					var emitter : EmitterObject = cast subEmitterTemplate.makeInstance(tmpCtx).local3d;
-					var pos = p.absPos.getPosition(tmpPos);
+					var pos = p.absPos.getPosition();
 					emitter.setPosition(pos.x, pos.y, pos.z);
 					emitter.isSubEmitter = true;
 					emitter.parentEmitter = this;
@@ -1001,8 +997,7 @@ class EmitterObject extends h3d.scene.Object {
 			else {
 				p.update(dt);
 				if(p.distToCam < 0 || enableSort) {
-					p.absPos.getPosition(tmpPos);
-					p.distToCam = camPos.distanceSq(tmpPos);
+					p.distToCam = camPos.distanceSq(p.absPos.getPosition());
 				}
 				prev = p;
 			}
