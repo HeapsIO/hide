@@ -330,6 +330,10 @@ class Object3D extends Prefab {
 		});
 	}
 
+	public function getDisplayFilters() : Array<String> {
+		return [];
+	}
+
 	override function getHideProps() : HideProps {
 		// Check children
 		var cname = Type.getClassName(Type.getClass(this)).split(".").pop();

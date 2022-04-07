@@ -334,6 +334,8 @@ class Prefab extends FileView {
 	}
 
 	public function onSceneReady() {
+		refreshSceneFilters();
+		refreshGraphicsFilters();
 		tools.saveDisplayKey = "Prefab/toolbar";
 		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		statusText.setPosition(5, 5);
@@ -594,6 +596,14 @@ class Prefab extends FileView {
 		saveDisplayState("graphicsFilters/" + typeid, enable);
 
 		var r : h3d.scene.Renderer = scene.s3d.renderer;
+		var all = data.getAll(hrt.prefab.Object3D, true);
+		for (obj in all) {
+			if (obj.getDisplayFilters().contains(typeid)) {
+				var ctx = scene.editor.getContext(obj);
+				if (ctx != null)
+					obj.updateInstance(ctx);
+			}
+		}
 
 		switch (typeid)
 		{
@@ -645,6 +655,14 @@ class Prefab extends FileView {
 
 	function refreshGraphicsFilters() {
 		var filters : Array<String> = ["shadows"];
+		var all = data.getAll(hrt.prefab.Object3D, true);
+		for (obj in all) {
+			var objFilters = obj.getDisplayFilters();
+			for (f in filters) {
+				objFilters.remove(f);
+			}
+			filters = filters.concat(objFilters);
+		}
 		filters = filters.copy();
 		graphicsFilters = new Map();
 		for(f in filters) {

@@ -396,6 +396,9 @@ enum abstract SplatMode(String) {
 @:allow(hrt.prefab.l3d)
 class HeightMap extends Object3D {
 
+	#if editor
+	var view : hide.comp.Component;
+	#end
 	var tilesCache : Map<Int,HeightMapTile> = new Map();
 	var emptyTile : HeightMapTile;
 	@:c var textures : Array<{ path : String, kind : HeightMapTextureKind, enable : Bool, ?props : { color : Int, scale : Float } }> = [];
@@ -407,8 +410,38 @@ class HeightMap extends Object3D {
 	@:s var heightPrecision = 1.;
 	@:s var minZ = -10;
 	@:s var maxZ = 30;
-	@:s public var quality = 4;
-	@:s public var shadowQuality = 4;
+	@:s public var quality(get, default) = 4;
+	function get_quality() {
+
+		#if editor
+		if (view != null) {
+			if (@:privateAccess view.getDisplayState("graphicsFilters/highQuality") != false) {
+				return quality;
+			}
+			else {
+				return 1;
+			}
+		}
+		#end
+		return quality;
+
+	}
+	@:s public var shadowQuality(get, default) = 4;
+	function get_shadowQuality() {
+
+		#if editor
+		if (view != null) {
+			if (@:privateAccess view.getDisplayState("graphicsFilters/highQuality") != false) {
+				return shadowQuality;
+			}
+			else {
+				return 0;
+			}
+		}
+		#end
+		return shadowQuality;
+
+	}
 	@:s var sizeX = 0;
 	@:s var sizeY = 0;
 	@:s var autoSize = false;
@@ -433,6 +466,8 @@ class HeightMap extends Object3D {
 			if( t.props != null ) v.props = t.props;
 			v;
 		}];
+		o.quality = @:bypassAccessor quality;
+		o.shadowQuality = @:bypassAccessor shadowQuality;
 		return o;
 	}
 
@@ -578,11 +613,17 @@ class HeightMap extends Object3D {
 
 	function getTextures( k : HeightMapTextureKind, tx : Int, ty : Int ) {
 		var tl = [];
-		for( t in textures )
-			if( t.kind == k && t.path != null && t.enable ) {
+		for( t in textures ) {
+			var b = t.kind == k && t.path != null && t.enable;
+			#if editor
+			if (view != null)
+				b = b && @:privateAccess view.getDisplayState("graphicsFilters/"+Std.string(k)) != false;
+			#end
+			if( b ) {
 				var path = resolveTexturePath(t.path,tx,ty);
 				tl.push(loadTexture(path));
 			}
+		}
 		return tl;
 	}
 
@@ -659,6 +700,11 @@ class HeightMap extends Object3D {
 			updateAlbedoProps();
 			return;
 		}
+		if (view == null) {
+			var shared = Std.downcast(ctx.shared, hide.prefab.ContextShared);
+			if (shared != null && shared.editor != null)
+				view = shared.editor.view;
+		}
 		#end
 
 		albedoProps = null;
@@ -677,6 +723,10 @@ class HeightMap extends Object3D {
 	}
 
 	#if editor
+
+	override function setSelected(ctx:Context, b:Bool):Bool {
+		return true;
+	}
 
 	override function getHideProps() : HideProps {
 		return { icon : "industry", name : "HeightMap", isGround : true };
@@ -816,6 +866,17 @@ class HeightMap extends Object3D {
 			textures.push({ path : null, kind : Albedo, enable: true });
 			ectx.rebuildProperties();
 		});
+	}
+
+	override public function getDisplayFilters() : Array<String> {
+		var filters = ["highQuality"];
+		if (view != null) {
+			for (tex in textures) {
+				if (!filters.contains(Std.string(tex.kind)))
+					filters.push(Std.string(tex.kind));
+			}
+		}
+		return filters;
 	}
 	#end
 
