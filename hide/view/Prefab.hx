@@ -158,6 +158,7 @@ class Prefab extends FileView {
 	var lastSyncChange : Float = 0.;
 	var sceneFilters : Map<String, Bool>;
 	var graphicsFilters : Map<String, Bool>;
+	var viewModes : Map<String, Bool>;
 	var statusText : h2d.Text;
 	var posToolTip : h2d.Text;
 
@@ -268,6 +269,7 @@ class Prefab extends FileView {
 
 		refreshSceneFilters();
 		refreshGraphicsFilters();
+		refreshViewModes();
 	}
 
 	function refreshColLayout() {
@@ -336,6 +338,7 @@ class Prefab extends FileView {
 	public function onSceneReady() {
 		refreshSceneFilters();
 		refreshGraphicsFilters();
+		refreshViewModes();
 		tools.saveDisplayKey = "Prefab/toolbar";
 		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		statusText.setPosition(5, 5);
@@ -434,6 +437,7 @@ class Prefab extends FileView {
 			scene.engine.backgroundColor = v;
 			updateGrid();
 		})});
+		toolsDefs.push({id: "viewModes", title : "View Modes", type : Menu(filtersToMenuItem(viewModes, "View"))});
 		toolsDefs.push({id: "graphicsFilters", title : "Graphics filters", type : Menu(filtersToMenuItem(graphicsFilters, "Graphics"))});
 		toolsDefs.push({id: "sceneFilters", title : "Scene filters", type : Menu(filtersToMenuItem(sceneFilters, "Scene"))});
 		toolsDefs.push({id: "sceneSpeed", title : "Speed", type : Range((v) -> scene.speed = v)});
@@ -670,13 +674,58 @@ class Prefab extends FileView {
 		}
 	}
 
+	function refreshViewModes() {
+		var filters : Array<String> = ["LIT", "Full", "Albedo", "Normal", "Roughness", "Metalness", "Emissive", "Shadows"];
+		viewModes = new Map();
+		for(f in filters) {
+			viewModes.set(f, false);
+		}
+	}
+
 	function filtersToMenuItem(filters : Map<String, Bool>, type : String) : Array<hide.comp.ContextMenu.ContextMenuItem> {
 		var content : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
 		var initDone = false;
 		for(typeid in filters.keys()) {
-			content.push({label : typeid, checked : filters[typeid], click : function() {
-				var on = !filters[typeid];
-				filters.set(typeid, on);
+			if ( type == "View" ) {
+				content.push({label : typeid, click : function() {
+					var r = Std.downcast(scene.s3d.renderer, h3d.scene.pbr.Renderer);
+					if ( r == null )
+						return;
+					var slides = @:privateAccess r.slides;
+					if ( slides == null )
+						return;
+					switch(typeid) {
+						case "LIT":
+							r.displayMode = Pbr;
+						case "Full":
+							r.displayMode = Debug;
+							slides.shader.mode = Full;
+						case "Albedo":
+							r.displayMode = Debug;
+							slides.shader.mode = Albedo;
+						case "Normal":
+							r.displayMode = Debug;
+							slides.shader.mode = Normal;
+						case "Roughness":
+							r.displayMode = Debug;
+							slides.shader.mode = Roughness;
+						case "Metalness":
+							r.displayMode = Debug;
+							slides.shader.mode = Metalness;
+						case "Emissive":
+							r.displayMode = Debug;
+							slides.shader.mode = Emmissive;
+						case "Shadows":
+							r.displayMode = Debug;
+							slides.shader.mode = Shadow;
+						default:
+					}
+				}
+				});
+			} else {
+				content.push({label : typeid, checked : filters[typeid], click : function() {
+					var on = !filters[typeid];
+					filters.set(typeid, on);
 				if(initDone)
 					switch (type){
 						case "Graphics":
@@ -686,7 +735,8 @@ class Prefab extends FileView {
 					}
 
 				content.find(function(item) return item.label == typeid).checked = on;
-			}});
+				}});
+			}
 		}
 		initDone = true;
 		return content;

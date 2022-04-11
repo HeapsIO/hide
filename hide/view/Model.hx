@@ -28,6 +28,7 @@ class Model extends FileView {
 	var root : hrt.prefab.Prefab;
 	var selectedAxes : h3d.scene.Object;
 
+	var viewModes : Array<String>;
 
 	override function save() {
 		if(!modified) return;
@@ -409,6 +410,50 @@ class Model extends FileView {
 		tools.addColor("Background color", function(v) {
 			scene.engine.backgroundColor = v;
 		}, scene.engine.backgroundColor);
+
+		var viewModesMenu = tools.addMenu(null, "View Modes");
+		var items : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
+		viewModes = ["LIT", "Full", "Albedo", "Normal", "Roughness", "Metalness", "Emissive", "Shadows"];
+		for(typeid in viewModes) {
+			items.push({label : typeid, click : function() {
+				var r = Std.downcast(scene.s3d.renderer, h3d.scene.pbr.Renderer);
+				if ( r == null )
+					return;
+				var slides = @:privateAccess r.slides;
+				if ( slides == null )
+					return;
+				switch(typeid) {
+					case "LIT":
+						r.displayMode = Pbr;
+					case "Full":
+						r.displayMode = Debug;
+						slides.shader.mode = Full;
+					case "Albedo":
+						r.displayMode = Debug;
+						slides.shader.mode = Albedo;
+					case "Normal":
+						r.displayMode = Debug;
+						slides.shader.mode = Normal;
+					case "Roughness":
+						r.displayMode = Debug;
+						slides.shader.mode = Roughness;
+					case "Metalness":
+						r.displayMode = Debug;
+						slides.shader.mode = Metalness;
+					case "Emissive":
+						r.displayMode = Debug;
+						slides.shader.mode = Emmissive;
+					case "Shadows":
+						r.displayMode = Debug;
+						slides.shader.mode = Shadow;
+					default:
+				}
+			}
+			});
+		}
+		viewModesMenu.setContent(items);//, {id: "viewModes", title : "View Modes", type : Menu(filtersToMenuItem(viewModes, "View"))});
+		var el = viewModesMenu.element;
+		el.addClass("View Modes");
 
 		aloop = tools.addToggle("refresh", "Loop animation", function(v) {
 			if( obj.currentAnimation != null ) {
