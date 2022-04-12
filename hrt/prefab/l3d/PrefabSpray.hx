@@ -174,7 +174,7 @@ class PrefabSpray extends Object3D {
 	}
 
 	override function getHideProps() : HideProps {
-		return { icon : "paint-brush", name : "PrefabSpray", hideChildren : p -> return Std.isOfType(p, Model) };
+		return { icon : "paint-brush", name : "PrefabSpray", hideChildren : p -> return Std.isOfType(p, Object3D) };
 	}
 
 	function extractPrefabName( path : String ) : String {
@@ -278,13 +278,13 @@ class PrefabSpray extends Object3D {
 			elt.contextmenu(function(e) {
 				e.preventDefault();
 				new hide.comp.ContextMenu([
-					{ label : "Swap Model", click : function() hide.Ide.inst.chooseFile(["prefab", "l3d"] , function (newPath) {
+					{ label : "Swap Prefab", click : function() hide.Ide.inst.chooseFile(["prefab", "l3d"] , function (newPath) {
 						removePrefabPath(elt.val());
 						addPrefabPath(newPath);
 						for (child in children) {
-							var model = child.to(hrt.prefab.Object3D);
-							if (model != null && model.source == elt.val()) {
-								model.source = newPath;
+							var prefab = child.to(hrt.prefab.Object3D);
+							if (prefab != null && prefab.source == elt.val()) {
+								prefab.source = newPath;
 							}
 						}
 						elt.val(newPath);
@@ -295,9 +295,9 @@ class PrefabSpray extends Object3D {
 								removePrefabPath(newPath);
 								addPrefabPath(path);
 								for (child in children) {
-									var model = child.to(hrt.prefab.Object3D);
-									if (model != null && model.source == elt.val()) {
-										model.source = path;
+									var prefab = child.to(hrt.prefab.Object3D);
+									if (prefab != null && prefab.source == elt.val()) {
+										prefab.source = path;
 									}
 								}
 								elt.val(path);
@@ -308,9 +308,9 @@ class PrefabSpray extends Object3D {
 								removePrefabPath(elt.val());
 								addPrefabPath(newPath);
 								for (child in children) {
-									var model = child.to(hrt.prefab.Object3D);
-									if (model != null && model.source == elt.val()) {
-										model.source = newPath;
+									var prefab = child.to(hrt.prefab.Object3D);
+									if (prefab != null && prefab.source == elt.val()) {
+										prefab.source = newPath;
 									}
 								}
 								elt.val(newPath);
@@ -629,15 +629,15 @@ class PrefabSpray extends Object3D {
 		interactive.onRelease = function(e) {
 			e.propagate = false;
 			sprayEnable = false;
-			var addedModels = sprayedPrefabs.copy();
+			var addedPrefabs = sprayedPrefabs.copy();
 			if (sprayedPrefabs.length > 0) {
 				undo.change(Custom(function(undo) {
 					if(undo) {
-						sceneEditor.deleteElements(addedModels, () -> removeInteractiveBrush(), true, false);
+						sceneEditor.deleteElements(addedPrefabs, () -> removeInteractiveBrush(), true, false);
 						clearPreview();
 					}
 					else {
-						sceneEditor.addElements(addedModels, false, true, false);
+						sceneEditor.addElements(addedPrefabs, false, true, false);
 					}
 					cast(ctx.local3d,PrefabSprayObject).redraw();
 				}));
@@ -769,12 +769,12 @@ class PrefabSpray extends Object3D {
 		inline function distance(x1 : Float, y1 : Float, x2 : Float, y2 : Float) return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
 		var fakeRadius = CONFIG.radius * CONFIG.radius + minDistanceBetweenPrefabsSq;
 		for (child in children) {
-			var model = child.to(hrt.prefab.Object3D);
-			if( model == null ) continue;
-			if (distance(point2d.x, point2d.y, model.x, model.y) < fakeRadius) {
-				if (previewPrefabs.indexOf(model) != -1) continue;
+			var prefab = child.to(hrt.prefab.Object3D);
+			if( prefab == null ) continue;
+			if (distance(point2d.x, point2d.y, prefab.x, prefab.y) < fakeRadius) {
+				if (previewPrefabs.indexOf(prefab) != -1) continue;
 				nbPrefabsInZone++;
-				currentPivots.push(new h2d.col.Point(model.x, model.y));
+				currentPivots.push(new h2d.col.Point(prefab.x, prefab.y));
 			}
 		}
 		var nbPrefabsToPlace = computedDensity - nbPrefabsInZone;
@@ -894,9 +894,9 @@ class PrefabSpray extends Object3D {
 		inline function distance(x1 : Float, y1 : Float, x2 : Float, y2 : Float) return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
 		var fakeRadius = currentConfig.deleteRadius * currentConfig.deleteRadius;
 		for (child in children) {
-			var model = child.to(hrt.prefab.Object3D);
-			if (model != null) {
-				if (distance(point2d.x, point2d.y, model.x, model.y) < fakeRadius) {
+			var prefab = child.to(hrt.prefab.Object3D);
+			if (prefab != null) {
+				if (distance(point2d.x, point2d.y, prefab.x, prefab.y) < fakeRadius) {
 					childToRemove.push(child);
 				}
 			}
