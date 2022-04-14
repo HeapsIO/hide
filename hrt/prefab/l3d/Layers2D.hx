@@ -561,7 +561,7 @@ class Layers2D extends hrt.prefab.Object3D {
 		if (gBrushes == null || gBrushes.length == 0 || gBrushes[0].scaleX != radius || gBrushes[0].material.color != newColor) {
 			clearBrushes();
 			gBrushes = [];
-			var gBrush = new h3d.scene.Mesh(hrt.prefab.l3d.MeshSpray.makePrimCircle(64, 0.95), ctx.local3d);
+			var gBrush = new h3d.scene.Mesh(hrt.prefab.l3d.Spray.makePrimCircle(64, 0.95), ctx.local3d);
 			gBrush.scaleX = gBrush.scaleY = radius;
 			gBrush.ignoreParentTransform = true;
 			var pass = gBrush.material.mainPass;

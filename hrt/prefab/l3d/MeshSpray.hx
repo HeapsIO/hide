@@ -1,8 +1,9 @@
 package hrt.prefab.l3d;
 
+import hrt.prefab.l3d.Spray;
 #if !editor
 
-class MeshSprayObject extends h3d.scene.Object {
+class MeshSprayObject extends Spray.SprayObject {
 	public var batches : Array<h3d.scene.MeshBatch> = [];
 	public var batchesMap : Map<Int,Map<String,{ batch : h3d.scene.MeshBatch, pivot : h3d.Matrix }>> = [];
 	override function getMaterials( ?arr : Array<h3d.mat.Material>, recursive=true ) {
@@ -180,52 +181,13 @@ class MeshSpray extends Object3D {
 import h3d.Vector;
 import hxd.Key as K;
 
-typedef Mesh = {
-	var path: String;
-	var isRef: Bool;
-}
 
-typedef Set = {
-	var name: String;
-	var meshes: Array<Mesh>;
-	var config: MeshSprayConfig;
-}
-
-typedef SetGroup = {
-	var name: String;
-	var sets: Array<Set>;
-}
-
-typedef MeshSprayConfig = {
-	var density : Int;
-	var step : Float;
-	var densityOffset : Int;
-	var radius : Float;
-	var deleteRadius : Float;
-	var scale : Float;
-	var scaleOffset : Float;
-	var rotation : Float;
-	var rotationOffset : Float;
-	var zOffset: Float;
-	var dontRepeatMesh : Bool;
-	var enableBrush : Bool;
-	var orientTerrain : Float;
-	var tiltAmount : Float;
-}
-
-
-@:access(hrt.prefab.l3d.MeshSpray)
-class MeshSprayObject extends h3d.scene.Object {
+@:access(hrt.prefab.l3d.Spray)
+class MeshSprayObject extends Spray.SprayObject {
 
 	var batches : Array<h3d.scene.MeshBatch> = [];
 	var blookup : Map<h3d.prim.Primitive, h3d.scene.MeshBatch> = new Map();
 	var mlookup : Map<String, h3d.scene.Mesh> = [];
-	var mp : MeshSpray;
-
-	public function new(mp,?parent) {
-		this.mp = mp;
-		super(parent);
-	}
 
 	override function getMaterials( ?arr : Array<h3d.mat.Material>, recursive=true ) {
 		if( !recursive ) {
@@ -262,7 +224,7 @@ class MeshSprayObject extends h3d.scene.Object {
 	function loadMesh( path : String ) {
 		var mesh = mlookup.get(path);
 		if( mesh == null ) {
-			var obj = mp.shared.loadModel(path);
+			var obj = spray.shared.loadModel(path);
 			if( !obj.isMesh() ) throw path+" is not a mesh";
 			mesh = obj.toMesh();
 			mlookup.set(path, mesh);
@@ -270,7 +232,7 @@ class MeshSprayObject extends h3d.scene.Object {
 		return mesh;
 	}
 
-	public function redraw(updateShaders=false) {
+	override public function redraw(updateShaders=false) {
 		getBounds(); // force absBos calculus on children
 		for( b in batches ) {
 			if( updateShaders ) b.shadersChanged = true;
@@ -287,11 +249,11 @@ class MeshSprayObject extends h3d.scene.Object {
 			batch.emitInstance();
 			c.culled = true;
 		}
-		if( mp.binaryMeshes != null ) {
+		if( Std.downcast(spray, MeshSpray).binaryMeshes != null ) {
 			var tmp = new h3d.Matrix();
 			var absPos = getAbsPos();
 			var degToRad = Math.PI / 180;
-			for( c in mp.binaryMeshes ) {
+			for( c in Std.downcast(spray, MeshSpray).binaryMeshes ) {
 				var mesh = loadMesh(c.path);
 				var batch = getBatch(mesh);
 				tmp.initRotation(c.rotX * degToRad, c.rotY * degToRad, c.rotZ * degToRad);
@@ -311,54 +273,14 @@ class MeshSprayObject extends h3d.scene.Object {
 
 }
 
-class MeshSpray extends Object3D {
+class MeshSpray extends Spray {
 
-	@:s var meshes : Array<Mesh> = []; // specific set for this mesh spray
-	@:s var defaultConfig: MeshSprayConfig;
-	@:s var currentPresetName : String = null;
-	@:s var currentSetName : String = null;
 	@:s var split : Int = 0;
 	@:s var binaryStorage = false;
 	@:s var editionOnly = false;
 
-	var sceneEditor : hide.comp.SceneEditor;
-
-	var undo(get, null):hide.ui.UndoHistory;
-	function get_undo() { return sceneEditor.view.undo; }
-
-	var lastIndexMesh = -1;
-	var allSetGroups : Array<SetGroup>;
-	var setGroup : SetGroup;
-	var currentSet : Set;
-
-	var currentMeshes(get, null) : Array<Mesh>;
-	function get_currentMeshes() {
-		if (currentSet != null)
-			return currentSet.meshes;
-		else
-			return meshes;
-	}
-
-	var currentConfig(get, null) : MeshSprayConfig;
-	function get_currentConfig() {
-		var config = (currentSet != null) ? currentSet.config : defaultConfig;
-		if (config == null) config = getDefaultConfig();
-		return config;
-	}
-
-	var sprayEnable : Bool = false;
-	var interactive : h2d.Interactive;
-	var gBrushes : Array<h3d.scene.Mesh>;
-
-	var timerCicle : haxe.Timer;
-
-	var lastSpray : Float = 0;
-	var lastMeshPos : h3d.col.Point;
-	var invParent : h3d.Matrix;
-
 	var binaryMeshes : Array<{ path : String, x : Float, y : Float, z : Float, rotX : Float, rotY : Float, rotZ : Float, scale : Float }>;
 	var binaryChanged : Bool = false;
-	var shared : ContextShared;
 
 	var MESH_SPRAY_CONFIG_FILE = "meshSprayProps.json";
 	var MESH_SPRAY_CONFIG_PATH(get, null) : String;
@@ -372,11 +294,23 @@ class MeshSpray extends Object3D {
 		return super.save();
 	}
 
+	override function load(obj : Dynamic) {
+		super.load(obj);
+		//backward compatibility
+		if(Reflect.hasField(obj, "meshes")) {
+			var oldSources : Array<hrt.prefab.l3d.Spray.Source> = Reflect.field(obj, "meshes");
+			for (source in oldSources) {
+				sources.push(source);
+			}
+		}
+	}
+
+
 	function saveToBinary() {
 		if( binaryMeshes == null )
 			binaryMeshes = [];
 		var meshes = new Map();
-		for( i => m in this.meshes )
+		for( i => m in this.sources )
 			meshes.set(m.path, i+1);
 		for( c in children.copy() ) {
 			if( c.type != "model" || c.children.length != 0 || !meshes.exists(c.source) ) continue;
@@ -418,96 +352,14 @@ class MeshSpray extends Object3D {
 		binaryChanged = false;
 	}
 
-	function clearPreview() {
-		// prevent saving preview
-		if( previewModels.length > 0 ) {
-			sceneEditor.deleteElements(previewModels, () -> { }, false, false);
-			previewModels = [];
-		}
-	}
-
-	function getDefaultConfig() : MeshSprayConfig {
-		return {
-			density: 1,
-			step : 0.,
-			densityOffset: 0,
-			radius: 0.1,
-			deleteRadius: 5,
-			scale: 1,
-			scaleOffset: 0.1,
-			rotation: 184,
-			rotationOffset: 0,
-			zOffset: 0,
-			dontRepeatMesh: true,
-			enableBrush: true,
-			orientTerrain : 0,
-			tiltAmount : 0,
-		};
-	}
-
 	override function getHideProps() : HideProps {
 		return { icon : "paint-brush", name : "MeshSpray", hideChildren : p -> return Std.isOfType(p, Model) };
-	}
-
-	function extractMeshName( path : String ) : String {
-		if( path == null ) return "None";
-		var childParts = path.split("/");
-		return childParts[childParts.length - 1].split(".")[0];
 	}
 
 	function saveConfigMeshBatch() {
 		sys.io.File.saveContent(MESH_SPRAY_CONFIG_PATH, hide.Ide.inst.toJSON(allSetGroups));
 	}
 
-	function setGroundPos( ectx : EditContext, obj : Object3D = null, absPos : h3d.col.Point = null ) : { mz : Float, rotX : Float, rotY : Float, rotZ : Float } {
-		if (absPos == null && obj == null)
-			throw "setGroundPos should use either object or absPos";
-		var tx : Float; var ty : Float; var tz : Float;
-		if ( absPos != null ) {
-			tx = absPos.x;
-			ty = absPos.y;
-			tz = absPos.z;
-		} else { // obj != null
-			tx = obj.getAbsPos().tx;
-			ty = obj.getAbsPos().ty;
-			tz = obj.getAbsPos().tz;
-		}
-		var config = currentConfig;
-		var groundZ = ectx.positionToGroundZ(tx, ty);
-		var mz = config.zOffset + groundZ - tz;
-		if ( obj != null )
-			obj.z += mz;
-		var orient = config.orientTerrain;
-		var tilt = config.tiltAmount;
-
-		inline function getPoint(dx,dy) {
-			var dz = ectx.positionToGroundZ(tx + 0.1 * dx, ty + 0.1 * dy) - groundZ;
-			return new h3d.col.Point(dx*0.1, dy*0.1, dz * orient);
-		}
-
-		var px = getPoint(1,0);
-		var py = getPoint(0,1);
-		var n = px.cross(py).normalized();
-		var q = new h3d.Quat();
-		q.initNormal(n);
-		var m = q.toMatrix();
-		m.prependRotation(Math.random()*tilt*Math.PI/8,0,  (config.rotation + (Std.random(2) == 0 ? -1 : 1) * Math.round(Math.random() * config.rotationOffset)) * Math.PI / 180);
-		var a = m.getEulerAngles();
-		var rotX = hxd.Math.fmt(a.x * 180 / Math.PI);
-		var rotY = hxd.Math.fmt(a.y * 180 / Math.PI);
-		var rotZ = hxd.Math.fmt(a.z * 180 / Math.PI);
-		if ( obj != null ) {
-			obj.rotationX = rotX;
-			obj.rotationY = rotY;
-			obj.rotationZ = rotZ;
-		}
-		return { mz : mz, rotX : rotX, rotY : rotY, rotZ : rotZ };
-	}
-
-	var wasEdited = false;
-	var previewModels : Array<hrt.prefab.Prefab> = [];
-	var sprayedModels : Array<hrt.prefab.Prefab> = [];
-	var selectElement : hide.Element;
 	override function edit( ectx : EditContext ) {
 
 		invParent = getAbsPos().clone();
@@ -550,13 +402,13 @@ class MeshSpray extends Object3D {
 
 		selectElement = new hide.Element('<select multiple size="6" style="width: 300px" ></select>').appendTo(props);
 		function createMeshElement(path: String) {
-			var elt = new hide.Element('<option value="$path">${extractMeshName(path)}</option>');
+			var elt = new hide.Element('<option value="$path">${extractItemName(path)}</option>');
 			elt.contextmenu(function(e) {
 				e.preventDefault();
 				new hide.comp.ContextMenu([
 					{ label : "Swap Model", click : function() hide.Ide.inst.chooseFile(["fbx", "l3d"] , function (newPath) {
-						removeMeshPath(elt.val());
-						addMeshPath(newPath);
+						removeSourcePath(elt.val());
+						addSourcePath(newPath);
 						for (child in children) {
 							var model = child.to(hrt.prefab.Object3D);
 							if (model != null && model.source == elt.val()) {
@@ -564,12 +416,12 @@ class MeshSpray extends Object3D {
 							}
 						}
 						elt.val(newPath);
-						elt.html(extractMeshName(newPath));
+						elt.html(extractItemName(newPath));
 						sceneEditor.refresh();
 						undo.change(Custom(function(undo) {
 							if(undo) {
-								removeMeshPath(newPath);
-								addMeshPath(path);
+								removeSourcePath(newPath);
+								addSourcePath(path);
 								for (child in children) {
 									var model = child.to(hrt.prefab.Object3D);
 									if (model != null && model.source == elt.val()) {
@@ -577,12 +429,12 @@ class MeshSpray extends Object3D {
 									}
 								}
 								elt.val(path);
-								elt.html(extractMeshName(path));
+								elt.html(extractItemName(path));
 								sceneEditor.refresh();
 							}
 							else {
-								removeMeshPath(elt.val());
-								addMeshPath(newPath);
+								removeSourcePath(elt.val());
+								addSourcePath(newPath);
 								for (child in children) {
 									var model = child.to(hrt.prefab.Object3D);
 									if (model != null && model.source == elt.val()) {
@@ -590,7 +442,7 @@ class MeshSpray extends Object3D {
 									}
 								}
 								elt.val(newPath);
-								elt.html(extractMeshName(newPath));
+								elt.html(extractItemName(newPath));
 								sceneEditor.refresh();
 							}
 						}));
@@ -603,12 +455,12 @@ class MeshSpray extends Object3D {
 
 		function onChangeSet() {
 			selectElement.empty();
-			for (m in currentMeshes.copy()) {
+			for (m in currentSources.copy()) {
 				var path : String = null;
 				if (Std.isOfType(m, String)) { // retro-compatibility
 					path = cast m;
-					currentMeshes.remove(m);
-					addMeshPath(path);
+					currentSources.remove(m);
+					addSourcePath(path);
 				} else {
 					path = m.path;
 				}
@@ -618,7 +470,7 @@ class MeshSpray extends Object3D {
 		}
 
 		var selectedSetElt : hide.Element = null;
-		function setSet(set: Set, setElt : hide.Element) {
+		function setSet(set: Spray.Set, setElt : hide.Element) {
 			currentSetName = (set != null) ? set.name : null;
 			currentSet = set;
 			if (selectedSetElt != null)
@@ -667,7 +519,7 @@ class MeshSpray extends Object3D {
 					if (name == null || name.length == 0) return;
 					setGroup.sets.push({
 						name: name,
-						meshes: [],
+						sources: [],
 						config: getDefaultConfig()
 					});
 					currentSetName = name;
@@ -687,7 +539,7 @@ class MeshSpray extends Object3D {
 					name: name,
 					sets: [{
 						name: "SetName",
-						meshes: [],
+						sources: [],
 						config: getDefaultConfig()
 					}]
 				});
@@ -757,8 +609,8 @@ class MeshSpray extends Object3D {
 
 		var repeat = options.find("#repeatMesh");
 		repeat.on("change", function() {
-			currentConfig.dontRepeatMesh = repeat.is(":checked");
-		}).prop("checked", currentConfig.dontRepeatMesh);
+			currentConfig.dontRepeatItem = repeat.is(":checked");
+		}).prop("checked", currentConfig.dontRepeatItem);
 
 		var enableBrush = options.find("#enableBrush");
 		enableBrush.on("change", function() {
@@ -782,7 +634,7 @@ class MeshSpray extends Object3D {
 		options.find("#add").click(function(_) {
 			hide.Ide.inst.chooseFiles(["fbx", "l3d"], function(paths) {
 				for( path in paths ) {
-					addMeshPath(path);
+					addSourcePath(path);
 					createMeshElement(path);
 				}
 			});
@@ -826,7 +678,7 @@ class MeshSpray extends Object3D {
 			var options = selectElement.children().elements();
 			for (opt in options) {
 				if (opt.prop("selected")) {
-					removeMeshPath(opt.val());
+					removeSourcePath(opt.val());
 					opt.remove();
 				}
 			}
@@ -840,6 +692,7 @@ class MeshSpray extends Object3D {
 					}
 				}
 				sceneEditor.deleteElements(meshes);
+				cast(ectx.getContext(this).local3d, MeshSprayObject).redraw();
 			}
 		});
 
@@ -883,64 +736,10 @@ class MeshSpray extends Object3D {
 		</div>'), this);
 	}
 
-	function createInteractiveBrush(ectx : EditContext) {
-		if (!enabled) return;
+	override function createInteractiveBrush(ectx : EditContext) {
+		super.createInteractiveBrush(ectx);
 		var ctx = ectx.getContext(this);
 		var s2d = ctx.shared.root2d.getScene();
-		interactive = new h2d.Interactive(10000, 10000, s2d);
-		interactive.propagateEvents = true;
-		interactive.cancelEvents = false;
-
-		interactive.onWheel = function(e) {
-
-		};
-
-		interactive.onKeyUp = function(e) {
-			if (e.keyCode == hxd.Key.R) {
-				lastMeshId = -1;
-				if (lastSpray < Date.now().getTime() - 100) {
-					if( !K.isDown( K.SHIFT) ) {
-						clearPreview();
-						var worldPos = ectx.screenToGround(s2d.mouseX, s2d.mouseY);
-						previewMeshesAround(ectx, ctx, worldPos);
-					}
-					lastSpray = Date.now().getTime();
-					lastMeshPos = null;
-				}
-			}
-		}
-
-		interactive.onPush = function(e) {
-			e.propagate = false;
-			sprayEnable = true;
-			var worldPos = ectx.screenToGround(s2d.mouseX, s2d.mouseY);
-			if( K.isDown( K.SHIFT) )
-				removeMeshesAround(ctx, worldPos);
-			else {
-				lastMeshPos = worldPos.clone();
-				addMeshes(ctx);
-			}
-		};
-
-		interactive.onRelease = function(e) {
-			e.propagate = false;
-			sprayEnable = false;
-			var addedModels = sprayedModels.copy();
-			if (sprayedModels.length > 0) {
-				undo.change(Custom(function(undo) {
-					if(undo) {
-						sceneEditor.deleteElements(addedModels, () -> removeInteractiveBrush(), true, false);
-						clearPreview();
-					}
-					else {
-						sceneEditor.addElements(addedModels, false, true, false);
-					}
-					cast(ctx.local3d,MeshSprayObject).redraw();
-				}));
-				sprayedModels = [];
-			}
-			clearPreview();
-		};
 
 		interactive.onMove = function(e) {
 			var worldPos = ectx.screenToGround(s2d.mouseX, s2d.mouseY);
@@ -957,7 +756,7 @@ class MeshSpray extends Object3D {
 			if (lastSpray < Date.now().getTime() - 100) {
 				clearPreview();
 				if( !shiftPressed ) {
-					previewMeshesAround(ectx, ctx, worldPos);
+					previewItemsAround(ectx, ctx, worldPos);
 				}
 
 				if( K.isDown( K.MOUSE_LEFT) ) {
@@ -966,17 +765,17 @@ class MeshSpray extends Object3D {
 
 					if (sprayEnable) {
 						if( shiftPressed ) {
-							removeMeshesAround(ctx, worldPos);
+							removeItemsAround(ctx, worldPos);
 						} else {
 							if (currentConfig.density == 1) {
-								if(lastMeshPos.distance(worldPos) > currentConfig.step) {
-									lastMeshPos = worldPos.clone();
-									addMeshes(ctx);
+								if(lastItemPos.distance(worldPos) > currentConfig.step) {
+									lastItemPos = worldPos.clone();
+									addItems(ctx);
 								}
 							}
 							else {
-								lastMeshPos = worldPos.clone();
-								addMeshes(ctx);
+								lastItemPos = worldPos.clone();
+								addItems(ctx);
 							}
 						}
 					}
@@ -1002,197 +801,27 @@ class MeshSpray extends Object3D {
 			input.change();
 		}
 
-		sceneEditor.properties.element.find("#repeatMesh").prop("checked", CONFIG.dontRepeatMesh);
+		sceneEditor.properties.element.find("#repeatMesh").prop("checked", CONFIG.dontRepeatItem);
 	}
 
-	override function removeInstance(ctx : Context):Bool {
-		removeInteractiveBrush();
-		return super.removeInstance(ctx);
-	}
-	override function setSelected( ctx : Context, b : Bool ) {
-		if( !b )
-			removeInteractiveBrush();
-		return false;
-	}
 
-	function removeInteractiveBrush() {
-		if( interactive != null ) interactive.remove();
-		clearPreview();
-		if (wasEdited)
-			sceneEditor.refresh(Partial, () -> { });
-		wasEdited = false;
-		clearBrushes();
-	}
-
-	function clearBrushes() {
-		if( gBrushes != null ) {
-			for (g in gBrushes) g.remove();
-			gBrushes = null;
-		}
-	}
-
-	function addMeshPath(path : String) {
+	override function addSourcePath(path : String) {
 		var mesh = { path: path, isRef: path.toLowerCase().indexOf(".fbx") == -1 };
-		if (currentMeshes.filter(m -> m.path == path).length == 0)
-			currentMeshes.push(mesh);
+		if (currentSources.filter(m -> m.path == path).length == 0)
+			currentSources.push(mesh);
 		if (currentSet != null)
 			saveConfigMeshBatch();
 	}
 
-	function removeMeshPath(path : String) {
-		var mesh = currentMeshes.filter(m -> m.path == path);
+	override function removeSourcePath(path : String) {
+		var mesh = currentSources.filter(m -> m.path == path);
 		if (mesh.length > 0)
-			currentMeshes.remove(mesh[0]);
+			currentSources.remove(mesh[0]);
 		if (currentSet != null)
 			saveConfigMeshBatch();
 	}
 
-	var localMat = new h3d.Matrix();
-	var lastPos : h3d.col.Point;
-	var lastMeshId = -1;
-	var lastSprayedObj : h3d.scene.Object;
-	function previewMeshesAround(ectx : hide.prefab.EditContext, ctx : Context, point : h3d.col.Point) {
-		if (currentMeshes.length == 0) {
-			return;
-		}
-		var nbMeshesInZone = 0;
-		var vecRelat = point.toVector();
-		vecRelat.transform3x4(invParent);
-		var point2d = new h2d.col.Point(vecRelat.x, vecRelat.y);
-
-		final CONFIG = currentConfig;
-
-		var computedDensity = CONFIG.density + Std.random(CONFIG.densityOffset+1);
-
-		var minDistanceBetweenMeshesSq = (CONFIG.radius * CONFIG.radius / computedDensity);
-
-		var currentPivots : Array<h2d.col.Point> = [];
-		inline function distance(x1 : Float, y1 : Float, x2 : Float, y2 : Float) return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
-		var fakeRadius = CONFIG.radius * CONFIG.radius + minDistanceBetweenMeshesSq;
-		for (child in children) {
-			var model = child.to(hrt.prefab.Object3D);
-			if( model == null ) continue;
-			if (distance(point2d.x, point2d.y, model.x, model.y) < fakeRadius) {
-				if (previewModels.indexOf(model) != -1) continue;
-				nbMeshesInZone++;
-				currentPivots.push(new h2d.col.Point(model.x, model.y));
-			}
-		}
-		var nbMeshesToPlace = computedDensity - nbMeshesInZone;
-		if (computedDensity == 1)
-			clearPreview();
-		lastPos = point;
-		if (nbMeshesToPlace > 0) {
-			while (nbMeshesToPlace-- > 0) {
-				var nbTry = 5;
-				var position : h3d.col.Point;
-				do {
-					var randomRadius = CONFIG.radius*Math.sqrt(Math.random());
-					var angle = Math.random() * 2*Math.PI;
-
-					position = new h3d.col.Point(point.x + randomRadius*Math.cos(angle), point.y + randomRadius*Math.sin(angle), 0);
-					var vecRelat = position.toVector();
-					vecRelat.transform3x4(invParent);
-
-					var isNextTo = false;
-					for (cPivot in currentPivots) {
-						if (distance(vecRelat.x, vecRelat.y, cPivot.x, cPivot.y) <= minDistanceBetweenMeshesSq) {
-							isNextTo = true;
-							break;
-						}
-					}
-					if (!isNextTo) {
-						break;
-					}
-				} while (nbTry-- > 0);
-
-				var meshId = 0;
-				var meshUsed = null;
-				var options = selectElement.children().elements();
-				var selectedMeshes = [];
-				for (opt in options) {
-					if (opt.prop("selected")) {
-						var findMesh = currentMeshes.filter((m) -> m.path == opt.val());
-						if (findMesh.length > 0)
-							selectedMeshes.push(findMesh[0]);
-					}
-				}
-				if (selectedMeshes.length > 0) {
-					if(selectedMeshes.length > 1) {
-						do
-							meshId = Std.random(selectedMeshes.length)
-						while(CONFIG.dontRepeatMesh && meshId == lastMeshId);
-					}
-					meshUsed = selectedMeshes[meshId];
-				}
-				else {
-					if(currentMeshes.length > 1) {
-						do
-							meshId = Std.random(currentMeshes.length)
-						while(CONFIG.dontRepeatMesh && meshId == lastMeshId);
-					}
-					meshUsed = currentMeshes[meshId];
-				}
-				lastIndexMesh = meshId;
-				if (computedDensity == 1)
-					lastMeshId = meshId;
-				else
-					lastMeshId = -1;
-
-
-				var newPrefab : hrt.prefab.Object3D = null;
-
-				if (meshUsed.isRef) {
-					var refPrefab = new hrt.prefab.Reference(this);
-					refPrefab.source = meshUsed.path;
-					newPrefab = refPrefab;
-				} else {
-					var model = new hrt.prefab.Model(this);
-					model.source = meshUsed.path;
-					newPrefab = model;
-				}
-
-				newPrefab.name = extractMeshName(meshUsed.path);
-
-				localMat.identity();
-
-				var randScaleOffset = Math.random() * CONFIG.scaleOffset;
-				if (Std.random(2) == 0) {
-					randScaleOffset *= -1;
-				}
-				var currentScale = hxd.Math.fmt(CONFIG.scale + randScaleOffset);
-
-				localMat.scale(currentScale, currentScale, currentScale);
-
-				position.z = ectx.positionToGroundZ(position.x, position.y) + CONFIG.zOffset;
-				localMat.setPosition(new Vector(hxd.Math.fmt(position.x), hxd.Math.fmt(position.y), position.z));
-				localMat.multiply(localMat, invParent);
-
-				newPrefab.setTransform(localMat);
-				setGroundPos(ectx, newPrefab);
-
-				previewModels.push(newPrefab);
-				currentPivots.push(new h2d.col.Point(newPrefab.x, newPrefab.y));
-			}
-
-			if (previewModels.length > 0) {
-				sceneEditor.addElements(previewModels, false, false, false);
-			}
-		}
-	}
-
-	function addMeshes(ctx : Context) {
-		lastMeshId = -1;
-		if (previewModels.length > 0) {
-			wasEdited = true;
-			sprayedModels = sprayedModels.concat(previewModels);
-			previewModels = [];
-			clearBrushes();
-			cast(ctx.local3d,MeshSprayObject).redraw();
-		}
-	}
-
-	function removeMeshesAround(ctx : Context, point : h3d.col.Point) {
+	override function removeItemsAround(ctx : Context, point : h3d.col.Point) {
 		var vecRelat = point.toVector();
 		vecRelat.transform3x4(invParent);
 		var point2d = new h2d.col.Point(vecRelat.x, vecRelat.y);
@@ -1240,39 +869,6 @@ class MeshSpray extends Object3D {
 		}
 	}
 
-	public function drawCircle(ctx : Context, originX : Float, originY : Float, originZ : Float, radius: Float, thickness: Float, color) {
-		var newColor = h3d.Vector.fromColor(color);
-		if (gBrushes == null || gBrushes.length == 0 || gBrushes[0].scaleX != radius || gBrushes[0].material.color != newColor) {
-			clearBrushes();
-			gBrushes = [];
-			var gBrush = new h3d.scene.Mesh(makePrimCircle(32, 0.95), ctx.local3d);
-			gBrush.scaleX = gBrush.scaleY = radius;
-			gBrush.ignoreParentTransform = true;
-			var pass = gBrush.material.mainPass;
-			pass.setPassName("overlay");
-			pass.depthTest = Always;
-			pass.depthWrite = false;
-			gBrush.material.shadows = false;
-			gBrush.material.color = newColor;
-			gBrushes.push(gBrush);
-			gBrush = new h3d.scene.Mesh(new h3d.prim.Sphere(Math.min(radius*0.05, 0.35)), ctx.local3d);
-			gBrush.ignoreParentTransform = true;
-			var pass = gBrush.material.mainPass;
-			pass.setPassName("overlay");
-			pass.depthTest = Always;
-			pass.depthWrite = false;
-			gBrush.material.shadows = false;
-			gBrush.material.color = newColor;
-			gBrushes.push(gBrush);
-		}
-		for (g in gBrushes) g.visible = true;
-		for (g in gBrushes) {
-			g.x = originX;
-			g.y = originY;
-			g.z = originZ + 0.025;
-		}
-	}
-
 	override function makeInstance(ctx:Context):Context {
 		ctx = ctx.clone(this);
 		ctx.local3d = new MeshSprayObject(this, ctx.local3d);
@@ -1292,7 +888,7 @@ class MeshSpray extends Object3D {
 			try {
 				while( true ) {
 					binaryMeshes.push({
-						path : meshes[bytes.readByte() - 1].path,
+						path : sources[bytes.readByte() - 1].path,
 						x : bytes.readFloat(),
 						y : bytes.readFloat(),
 						z : bytes.readFloat(),

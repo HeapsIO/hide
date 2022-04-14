@@ -171,7 +171,7 @@ class Object3D extends Prefab {
 						var color = Std.parseInt(Reflect.field(ranges,key));
 						var value : Dynamic = ide.resolveCDBValue(sheet,key, props);
 						if( value != null ) {
-							var mesh = new h3d.scene.Mesh(hrt.prefab.l3d.MeshSpray.makePrimCircle(128, 0.99), ctx.local3d);
+							var mesh = new h3d.scene.Mesh(hrt.prefab.l3d.Spray.makePrimCircle(128, 0.99), ctx.local3d);
 							mesh.name = "$UI.RANGE";
 							mesh.ignoreCollide = true;
 							mesh.ignoreBounds = true;
