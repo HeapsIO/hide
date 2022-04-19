@@ -413,7 +413,7 @@ class Model extends FileView {
 
 		var viewModesMenu = tools.addMenu(null, "View Modes");
 		var items : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
-		viewModes = ["LIT", "Full", "Albedo", "Normal", "Roughness", "Metalness", "Emissive", "Shadows"];
+		viewModes = ["LIT", "Full", "Albedo", "Normal", "Roughness", "Metalness", "Emissive", "AO", "Shadows"];
 		for(typeid in viewModes) {
 			items.push({label : typeid, click : function() {
 				var r = Std.downcast(scene.s3d.renderer, h3d.scene.pbr.Renderer);
@@ -443,6 +443,9 @@ class Model extends FileView {
 					case "Emissive":
 						r.displayMode = Debug;
 						slides.shader.mode = Emmissive;
+					case "AO":
+						r.displayMode = Debug;
+						slides.shader.mode = AO;
 					case "Shadows":
 						r.displayMode = Debug;
 						slides.shader.mode = Shadow;
