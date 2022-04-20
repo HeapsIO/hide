@@ -35,7 +35,7 @@ class Table extends Component {
 
 		@:privateAccess editor.tables.push(this);
 		root.addClass("cdb-sheet");
-		root.addClass("s_" + sheet.name);
+		root.addClass("s_" + sheet.name.split("@").join("_"));
 		if( editor.view != null ) {
 			var cname = parent == null ? null : sheet.parent.sheet.columns[sheet.parent.column].name;
 			if( parent == null )
