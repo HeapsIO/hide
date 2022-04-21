@@ -48,37 +48,54 @@ class Material extends Prefab {
 		return mat == null ? mats : [mat];
 	}
 
+	function update(mat : h3d.mat.Material, props, loadTexture : String -> h3d.mat.Texture) {
+		mat.props = props;
+		if(color != null)
+			mat.color.setColor(h3d.Vector.fromArray(color).toColor());
+		if(mainPassName != null)
+			mat.mainPass.setPassName(mainPassName);
+
+		inline function getTex(pname: String) {
+			var p : String = Reflect.field(this, pname);
+			var tex : h3d.mat.Texture = null;
+			if(p != null) {
+				tex = loadTexture(p);
+				if(tex != null)
+					tex.wrap = wrapRepeat ? Repeat : Clamp;
+			}
+			return tex;
+		}
+
+		if( getTex("diffuseMap") != null ) mat.texture = getTex("diffuseMap");
+		if( getTex("normalMap") != null ) mat.normalMap = getTex("normalMap");
+		if( getTex("specularMap") != null ) mat.specularTexture = getTex("specularMap");
+	}
+	
 	override function updateInstance( ctx : Context, ?propName ) {
 		if( ctx.local3d == null )
 			return;
 
-		function update(mat : h3d.mat.Material, props) {
-			mat.props = props;
-			if(color != null)
-				mat.color.setColor(h3d.Vector.fromArray(color).toColor());
-			if(mainPassName != null)
-				mat.mainPass.setPassName(mainPassName);
-
-			inline function getTex(pname: String) {
-				var p : String = Reflect.field(this, pname);
-				var tex : h3d.mat.Texture = null;
-				if(p != null) {
-					tex = ctx.loadTexture(p);
-					if(tex != null)
-						tex.wrap = wrapRepeat ? Repeat : Clamp;
-				}
-				return tex;
-			}
-
-			if( getTex("diffuseMap") != null ) mat.texture = getTex("diffuseMap");
-			if( getTex("normalMap") != null ) mat.normalMap = getTex("normalMap");
-			if( getTex("specularMap") != null ) mat.specularTexture = getTex("specularMap");
-		}
-
 		var mats = getMaterials(ctx);
 		var props = renderProps();
+		#if editor
+		if ( mats == null || mats.length == 0 ) {
+			try {
+				var path = hide.Ide.inst.currentConfig.get("material.preview", []);
+				var preview = ctx.loadModel(path);
+				var mesh = Std.downcast(preview, h3d.scene.Mesh);
+				var hmd = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
+				ctx.local3d.parent.addChild(preview);
+				
+				ctx.local3d = preview;
+				ctx.local3d.x = ctx.local3d.getScene().getMaterials().length * 5.0;
+				mats = getMaterials(ctx);
+			} catch ( e:Dynamic) {
+
+			}
+		}
+		#end
 		for( m in mats )
-			update(m, props);
+			update(m, props, ctx.loadTexture);
 	}
 
 	override function makeInstance(ctx:Context):Context {
@@ -294,7 +311,6 @@ class Material extends Prefab {
 		return {
 			icon : "cog",
 			name : "Material",
-			allowParent : function(p) return p.to(Object3D) != null,
 			onResourceRenamed : function(f) {
 				diffuseMap = f(diffuseMap);
 				normalMap = f(normalMap);

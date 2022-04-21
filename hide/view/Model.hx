@@ -29,7 +29,7 @@ class Model extends FileView {
 	var selectedAxes : h3d.scene.Object;
 
 	var viewModes : Array<String>;
-
+	
 	override function save() {
 		if(!modified) return;
 		// Save current Anim data
@@ -175,31 +175,121 @@ class Model extends FileView {
 
 	inline function get_scene() return sceneEditor.scene;
 
+	var def = false;
 	function selectMaterial( m : h3d.mat.Material ) {
 		var properties = sceneEditor.properties;
 		properties.clear();
 
-		properties.add(new Element('
-			<div class="group" name="Textures">
-				<dl>
-					<dt>Base</dt><dd><input type="texture" field="texture"/></dd>
-					<dt>Spec</dt><dd><input type="texture" field="specularTexture"/></dd>
-					<dt>Normal</dt><dd><input type="texture" field="normalMap"/></dd>
-				</dl>
-			</div>
-			<br/>
-		'),m);
-
-
-		var e = properties.add(new Element('
-			<div class="group" name="Material ${m.name}">
-			</div>
+		var tex = new Element('
+		<div class="group" name="Textures">
 			<dl>
-				<dt></dt><dd><input type="button" value="Reset Defaults" class="reset"/></dd>
-				<dt></dt><dd><input type="button" value="Save" class="save"/></dd>
+				<dt>Base</dt><dd><input type="texture" field="texture"/></dd>
+				<dt>Spec</dt><dd><input type="texture" field="specularTexture"/></dd>
+				<dt>Normal</dt><dd><input type="texture" field="normalMap"/></dd>
 			</dl>
+		</div>
+		<br/>
+		');
+
+		var matEl = new Element('
+		<div class="group" name="Material ${m.name}">
+		</div>
+		<dl>
+			<dt></dt><dd><input type="button" value="Reset Defaults" class="reset"/></dd>
+			<dt></dt><dd><input type="button" value="Save" class="save"/></dd>
+		</dl>
+		<br/>
+		');
+
+		var materials : Array<{path:String, mat:hrt.prefab.Material}> = [];
+		var parts = getPath().split("/");
+		var dirs = [];
+		for ( p in parts ) {
+			if ( dirs.length != 0 ) {
+				dirs.push(dirs[dirs.length-1] + "/" + p);
+			} else {
+				dirs.push(p);
+			}
+		}
+		var baseDir = hxd.impl.Api.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem).baseDir;
+		for ( d in dirs ) {
+			try {
+				var path = d + "/materialLibrary.prefab";
+				path = path.split(baseDir)[1];
+				var prefab = hxd.res.Loader.currentInstance.load(path).toPrefab().load();
+				var mats = prefab.getAll(hrt.prefab.Material);
+				for ( m in mats ) {
+					materials.push( { path : path, mat : m } );
+				}
+			} catch(e: Dynamic) {
+			}
+		}
+		materials.sort((m1, m2) -> { return (m1.mat.name > m2.mat.name ? 1 : -1); });
+
+		var selected = null;
+		var props : Dynamic =  h3d.mat.MaterialSetup.current.loadMaterialProps(m);
+		if ( props != null && props.__ref != null && !def ) {
+			selected = props.__ref + "/" + props.name;
+			tex.hide();
+			matEl.hide();
+		}
+		if ( def )
+			def = false;
+		var matLibrary = new Element('
+			<div class="group" name="Material Library">
+				<dt>Reference</dt>
+				<dd>
+					<select class="matLib">
+						<option value="">None</option>
+						${[for( i in 0...materials.length ) '<option value="${materials[i].path + "/" + materials[i].mat.name}" ${(selected == materials[i].path + "/" + materials[i].mat.name) ? 'selected' : ''}>${materials[i].mat.name}</option>'].join("")}
+					</select>
+				</dd>
+				<dt></dt><dd><input type="button" value="Save" class="save"/></dd>
+			</div>
 			<br/>
-		'));
+		');
+		
+		function findMat(key:String) {
+			var p = key.split("/");
+			var name = p.pop();
+			var path = p.join("/");
+			for ( m in materials ) {
+				if ( m.path == path && m.mat.name == name )
+					return m;
+			}
+			return null;
+		}
+		matLibrary.find(".matLib").change(function(_) {
+			var mat = findMat(matLibrary.find(".matLib").val());
+			if ( mat != null ) {
+				@:privateAccess mat.mat.update(m, mat.mat.renderProps(), function(path:String) {
+					return hxd.res.Loader.currentInstance.load(path).toTexture();
+				});
+				tex.hide();
+				matEl.hide();
+			} else {
+				tex.show();
+				matEl.show();
+				def = true;
+				selectMaterial(m);
+			}
+		});
+		matLibrary.find(".save").click(function(_) {
+			var mat = findMat(matLibrary.find(".matLib").val());
+			if ( mat != null ) {
+				Reflect.setField((m.props:Dynamic), "__ref", mat.path);
+				Reflect.setField((m.props:Dynamic), "name", mat.mat.name);
+			} else {
+				Reflect.deleteField((m.props:Dynamic), "__ref");
+				Reflect.deleteField((m.props:Dynamic), "name");
+			}
+			h3d.mat.MaterialSetup.current.saveMaterialProps(m);
+		});
+		properties.add(matLibrary, m);
+
+		properties.add(tex, m);
+
+		var e = properties.add(matEl);
 
 		properties.addMaterial(m, e.find(".group > .content"));
 		e.find(".reset").click(function(_) {
