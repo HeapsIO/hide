@@ -17,18 +17,28 @@ class MeshSprayObject extends Spray.SprayObject {
 	}
 }
 
-class MeshSpray extends Object3D {
+class MeshSpray extends Spray {
 
 	@:s var split : Int;
 	@:s var binaryStorage : Bool = false;
 	@:s var editionOnly : Bool = false;
-	@:s var meshes : Array<{ path : String }>;
 
 	var binaryMeshes : Array<{ path : String, x : Float, y : Float, z : Float, rotX : Float, rotY : Float, rotZ : Float, scale : Float }>;
 	var clearBinaryMeshes : Bool = true;
 
 	inline function getSplitID( x : Float, y : Float ) {
 		return (Math.floor(x/split) * 39119 + Math.floor(y/split)) % 0x7FFFFFFF;
+	}
+
+	override function load(obj : Dynamic) {
+		super.load(obj);
+		//backward compatibility
+		if(Reflect.hasField(obj, "meshes")) {
+			var oldSources : Array<Spray.Source> = Reflect.field(obj, "meshes");
+			for (source in oldSources) {
+				sources.push(source);
+			}
+		}
 	}
 
 	override function createObject( ctx : Context ) {
@@ -86,7 +96,7 @@ class MeshSpray extends Object3D {
 		try {
 			while( true ) {
 				binaryMeshes.push({
-					path : meshes[bytes.readByte() - 1].path,
+					path : sources[bytes.readByte() - 1].path,
 					x : bytes.readFloat(),
 					y : bytes.readFloat(),
 					z : bytes.readFloat(),
@@ -298,7 +308,7 @@ class MeshSpray extends Spray {
 		super.load(obj);
 		//backward compatibility
 		if(Reflect.hasField(obj, "meshes")) {
-			var oldSources : Array<hrt.prefab.l3d.Spray.Source> = Reflect.field(obj, "meshes");
+			var oldSources : Array<Spray.Source> = Reflect.field(obj, "meshes");
 			for (source in oldSources) {
 				sources.push(source);
 			}

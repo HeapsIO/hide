@@ -1,5 +1,10 @@
 package hrt.prefab.l3d;
 
+typedef Source = {
+	var path: String;
+	var isRef: Bool;
+}
+
 #if !editor
 
 class SprayObject extends h3d.scene.Object {
@@ -7,7 +12,7 @@ class SprayObject extends h3d.scene.Object {
 
 class Spray extends Object3D {
 
-	@:s var sources : Array<{ path : String }>;
+	@:s var sources : Array<{ path : String }> = [];
 
 	override function createObject( ctx : Context ) {
 		var spray = new SprayObject(ctx.local3d);
@@ -32,11 +37,6 @@ class Spray extends Object3D {
 
 import h3d.Vector;
 import hxd.Key as K;
-
-typedef Source = {
-	var path: String;
-	var isRef: Bool;
-}
 
 typedef Set = {
 	var name: String;
