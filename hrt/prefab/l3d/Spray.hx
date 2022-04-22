@@ -1,5 +1,8 @@
 package hrt.prefab.l3d;
 
+import h3d.Vector;
+import hxd.Key as K;
+
 typedef Source = {
 	var path: String;
 	var isRef: Bool;
@@ -34,9 +37,6 @@ class Spray extends Object3D {
 }
 
 #else
-
-import h3d.Vector;
-import hxd.Key as K;
 
 typedef Set = {
 	var name: String;
