@@ -744,8 +744,8 @@ class ModelLibrary extends Prefab {
 				batch.primitiveSubPart = null;
 			}
 		}
-		if (!debug)
-			clearOptimized(obj);
+		// if (!debug)
+		// 	clearOptimized(obj);
 	}
 
 	function optimizeRec( obj : h3d.scene.Object, out : Array<{ mat : MaterialData, mesh : h3d.scene.Mesh }> ) {
@@ -793,8 +793,12 @@ class ModelLibrary extends Prefab {
 	}
 
 	function clearOptimized(obj: h3d.scene.Object) {
-		for ( c in @:privateAccess obj.children )
+		for ( c in @:privateAccess obj.children ) {
+			if ( !c.culled ) {
+				optimize(c);
+			}
 			clearOptimized(c);
+		}
 		if ( @:privateAccess obj.children.length == 0 && obj.culled )
 			obj.remove();
 	}
