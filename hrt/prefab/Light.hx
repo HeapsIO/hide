@@ -39,7 +39,7 @@ class Light extends Object3D {
 	@:s public var kind : LightKind = Point;
 	@:s public var color : Int = 0xffffff;
 	@:s public var power : Float = 1.0;
-	@:s public var occlusionFactor = 0.0;
+	@:s public var occlusionFactor = 1.0;
 	@:s public var isMainLight : Bool = false;
 	@:c public var shadows : LightShadows = getShadowsDefault();
 
