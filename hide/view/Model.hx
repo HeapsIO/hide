@@ -850,7 +850,7 @@ class Model extends FileView {
 		var cam = scene.s3d.camera;
 		saveDisplayState("Camera", { x : cam.pos.x, y : cam.pos.y, z : cam.pos.z, tx : cam.target.x, ty : cam.target.y, tz : cam.target.z });
 		if( light != null ) {
-			if( sceneEditor.isSelected(plight) )
+			if( !sceneEditor.isSelected(plight) )
 				lightDirection = light.getLocalDirection();
 			else {
 				var angle = Math.atan2(cam.target.y - cam.pos.y, cam.target.x - cam.pos.x);
