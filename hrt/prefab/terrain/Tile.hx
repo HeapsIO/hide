@@ -175,7 +175,7 @@ class Tile extends h3d.scene.Mesh {
 	function refreshNormalMap() {
 		if( normalMap == null || normalMap.width != terrain.heightMapResolution.x || normalMap.height != terrain.heightMapResolution.y ) {
 			var oldNormalMap = normalMap;
-			normalMap = new h3d.mat.Texture(terrain.heightMapResolution.x, terrain.heightMapResolution.y, [Target], RGBA);
+			normalMap = new h3d.mat.Texture(terrain.heightMapResolution.x, terrain.heightMapResolution.y, RGBA);
 			normalMap.setName("terrainNormalMap");
 			normalMap.wrap = Clamp;
 			normalMap.filter = Linear;
@@ -199,7 +199,7 @@ class Tile extends h3d.scene.Mesh {
 	function refreshHeightMap() {
 		if( heightMap == null || heightMap.width != terrain.heightMapResolution.x || heightMap.height != terrain.heightMapResolution.y ) {
 			var oldHeightMap = heightMap;
-			heightMap = new h3d.mat.Texture(terrain.heightMapResolution.x, terrain.heightMapResolution.y, [Target], R32F);
+			heightMap = new h3d.mat.Texture(terrain.heightMapResolution.x, terrain.heightMapResolution.y, R32F);
 			heightMap.setName("terrainHeightMap");
 			heightMap.wrap = Clamp;
 			heightMap.filter = Linear;

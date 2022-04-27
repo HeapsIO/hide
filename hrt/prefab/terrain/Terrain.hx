@@ -159,7 +159,7 @@ class Terrain extends Object3D {
 		@:privateAccess hxd.res.Image.ENABLE_AUTO_WATCH = false;
 
 		// Avoid texture alloc for unpacking
-		var tmpPackedWeightTexture = new h3d.mat.Texture(terrain.weightMapResolution.x, terrain.weightMapResolution.y, [Target]);
+		var tmpPackedWeightTexture = new h3d.mat.Texture(terrain.weightMapResolution.x, terrain.weightMapResolution.y);
 		var bakeHeightAndNormalInGeometry = false;
 
 		var heightData = [];
@@ -464,6 +464,7 @@ class Terrain extends Object3D {
 			packWeight.shader.weightTextures = tile.surfaceWeightArray;
 			packWeight.shader.weightCount = tile.surfaceWeights.length;
 			packWeight.render();
+			h3d.Engine.getCurrent().popTarget();
 
 			var pixels = packedWeightsTex.capturePixels();
 			var fileName = tile.tileX + "_" + tile.tileY + "_" + "w";
