@@ -82,10 +82,7 @@ class Material extends Prefab {
 			try {
 				var path = hide.Ide.inst.currentConfig.get("material.preview", []);
 				var preview = ctx.loadModel(path);
-				var mesh = Std.downcast(preview, h3d.scene.Mesh);
-				var hmd = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
 				ctx.local3d.parent.addChild(preview);
-				
 				ctx.local3d = preview;
 				ctx.local3d.x = ctx.local3d.getScene().getMaterials().length * 5.0;
 				mats = getMaterials(ctx);
