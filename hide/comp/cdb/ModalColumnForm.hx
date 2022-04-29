@@ -196,6 +196,12 @@ class ModalColumnForm extends Modal {
 		}
 		form.find(".hide").addClass("can-hide");
 		form.find(".doctog").click(function(_) toggleHide());
+		form.find(".doctog").keydown(function(e) {
+			if( e.keyCode == hxd.Key.ENTER ) {
+				e.stopPropagation();
+				form.find(".doctog").click();
+			}
+		});
 
 		if (editForm) {
 			form.addClass("edit");
@@ -234,7 +240,17 @@ class ModalColumnForm extends Modal {
 
 		form.find("[name=name]").focus();
 
-		contentModal.keydown(function(e) { if( e.keyCode == 27 ) closeModal(); e.stopPropagation(); });
+		contentModal.keydown(function(e) {
+			if( e.keyCode == 27 )
+				closeModal();
+			if( e.keyCode == hxd.Key.ENTER ) {
+				if (editForm)
+					form.find("#editBtn").click();
+				else
+					form.find("#createBtn").click();
+			}
+			e.stopPropagation();
+		});
 		contentModal.keypress(function(e) e.stopPropagation());
 		contentModal.click( function(e) e.stopPropagation());
 
