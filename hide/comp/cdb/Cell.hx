@@ -572,11 +572,12 @@ class Cell extends Component {
 		editor.cursor.set(table, this.columnIndex, this.line.index);
 	}
 
+	// kept available until we're confident in the new system
+	var useSelect2 = false;
 	public function edit() {
 		if( !canEdit() )
 			return;
-		// kept available until we're confident in the new system
-		var useSelect2 = this.editor.config.get("cdb.useSelect2");
+		useSelect2 = this.editor.config.get("cdb.useSelect2");
 		inEdit = true;
 		switch( column.type ) {
 		case TString if( column.kind == Script ):
@@ -1077,7 +1078,7 @@ class Cell extends Component {
 	}
 
 	public function blockEdit() {
-		return inEdit && (column.type.match(TRef(_)) || column.type.match(TEnum(_)));
+		return useSelect2 && inEdit && (column.type.match(TRef(_)) || column.type.match(TEnum(_)));
 	}
 
 	public function setValue( value : Dynamic ) {
