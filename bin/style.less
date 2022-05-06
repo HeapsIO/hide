@@ -43,7 +43,7 @@ select {
 	}
 }
 
-select, input, textarea, body .select2-dropdown {
+select, input, textarea, .hide-dropdown >.dropdown-cont, body .select2-dropdown {
 	background-color: rgb(34,34,34);
 	border : 1px solid #444;
 	&:focus {
@@ -81,6 +81,50 @@ body .select2-container--default {
 	align-items: center;
 	div.tile {
 		margin-right : 5px;
+	}
+}
+
+.hide-dropdown {
+	position: relative;
+	width: 100%;
+	>.dropdown-cont {
+		z-index: @contextmenu-layer;
+		position: absolute;
+		width: 100%;
+
+		.filter-input {
+			z-index: @contextmenu-layer;
+			margin: 4px;
+			width: calc(100% - 16px);
+		}
+		.options {
+			z-index: @contextmenu-layer;
+			max-height: 200px;
+			overflow-y: auto;
+			width: 100%;
+			.option {
+				z-index: @contextmenu-layer;
+				display : flex;
+				align-items: center;
+				cursor: pointer;
+				padding: 6px;
+				user-select: none;
+
+				div.tile {
+					margin-right : 5px;
+				}
+
+				&.current-value {
+					background-color: #444;
+				}
+				&.highlighted {
+					background-color: #5897fb;
+				}
+				&.hidden {
+					display: none;
+				}
+			}
+		}
 	}
 }
 

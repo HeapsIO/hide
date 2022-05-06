@@ -324,6 +324,10 @@
   position: relative;
   overflow: visible;
 }
+.cdb .cdb-sheet td.t_ref,
+.cdb .cdb-sheet td.t_enum {
+  overflow: visible;
+}
 .cdb .cdb-sheet .flagValues {
   position: absolute;
   background-color: #333;

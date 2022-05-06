@@ -44,6 +44,7 @@ select:focus:hover {
 select,
 input,
 textarea,
+.hide-dropdown > .dropdown-cont,
 body .select2-dropdown {
   background-color: #222222;
   border: 1px solid #444;
@@ -51,12 +52,14 @@ body .select2-dropdown {
 select:focus,
 input:focus,
 textarea:focus,
+.hide-dropdown > .dropdown-cont:focus,
 body .select2-dropdown:focus {
   background-color: #141414;
 }
 select:hover,
 input:hover,
 textarea:hover,
+.hide-dropdown > .dropdown-cont:hover,
 body .select2-dropdown:hover {
   border-color: #888;
 }
@@ -85,6 +88,46 @@ body .select2-container--default .select2-results__option--highlighted[aria-sele
 }
 .select2-results__option > div div.tile {
   margin-right: 5px;
+}
+.hide-dropdown {
+  position: relative;
+  width: 100%;
+}
+.hide-dropdown > .dropdown-cont {
+  z-index: 900;
+  position: absolute;
+  width: 100%;
+}
+.hide-dropdown > .dropdown-cont .filter-input {
+  z-index: 900;
+  margin: 4px;
+  width: calc(100% - 16px);
+}
+.hide-dropdown > .dropdown-cont .options {
+  z-index: 900;
+  max-height: 200px;
+  overflow-y: auto;
+  width: 100%;
+}
+.hide-dropdown > .dropdown-cont .options .option {
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 6px;
+  user-select: none;
+}
+.hide-dropdown > .dropdown-cont .options .option div.tile {
+  margin-right: 5px;
+}
+.hide-dropdown > .dropdown-cont .options .option.current-value {
+  background-color: #444;
+}
+.hide-dropdown > .dropdown-cont .options .option.highlighted {
+  background-color: #5897fb;
+}
+.hide-dropdown > .dropdown-cont .options .option.hidden {
+  display: none;
 }
 input.file {
   cursor: pointer;

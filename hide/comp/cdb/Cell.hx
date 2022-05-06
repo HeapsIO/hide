@@ -575,6 +575,8 @@ class Cell extends Component {
 	public function edit() {
 		if( !canEdit() )
 			return;
+		// kept available until we're confident in the new system
+		var useSelect2 = this.editor.config.get("cdb.useSelect2");
 		inEdit = true;
 		switch( column.type ) {
 		case TString if( column.kind == Script ):
@@ -676,82 +678,174 @@ class Cell extends Component {
 			element.empty();
 			element.addClass("edit");
 
-			var s = new Element("<select>");
-			var isLocal = sdat.idCol.scope != null;
-			var elts;
-			if( isLocal ) {
-				var scope = refScope(sdat,table.getRealSheet(),line.obj,[]);
-				var prefix = makeId(scope, sdat.idCol.scope, null)+":";
-				elts = [for( d in sdat.all ) if( StringTools.startsWith(d.id,prefix) ) { id : d.id.split(":").pop(), ico : d.ico, text : d.disp }];
-			} else
-				elts = [for( d in sdat.all ) { id : d.id, ico : d.ico, text : d.disp }];
-			if( column.opt || currentValue == null || currentValue == "" )
-				elts.unshift( { id : "~", ico : null, text : "--- None ---" } );
-			element.append(s);
-
-			var props : Dynamic = { data : elts };
-			if( sdat.props.displayIcon != null ) {
-				function buildElement(i) {
-					var text = StringTools.htmlEscape(i.text);
-					return new Element("<div>"+(i.ico == null ? "<div style='display:inline-block;width:16px'/>" : tileHtml(i.ico,true)) + " " + text+"</div>");
+			if (!useSelect2) {
+				var isLocal = sdat.idCol.scope != null;
+				var elts: Array<hide.comp.Dropdown.Choice>;
+				if( isLocal ) {
+					var scope = refScope(sdat,table.getRealSheet(),line.obj,[]);
+					var prefix = makeId(scope, sdat.idCol.scope, null)+":";
+					elts = [ for( d in sdat.all ) if( StringTools.startsWith(d.id,prefix) ) {
+						id : d.id.split(":").pop(),
+						ico : d.ico,
+						text : d.disp,
+					}];
+				} else {
+					elts = [ for( d in sdat.all ) {
+						id : d.id,
+						ico : d.ico,
+						text : d.disp,
+					}];
 				}
-				props.templateResult = props.templateSelection = buildElement;
+				if( column.opt || currentValue == null || currentValue == "" ) {
+					elts.unshift({
+						id : null,
+						ico : null,
+						text : "--- None ---",
+					});
+				}
+				function makeIcon(c: hide.comp.Dropdown.Choice) {
+					if (sdat.props.displayIcon == null)
+						return null;
+					if (c.ico == null)
+						return new Element("<div style='display:inline-block;width:16px'/>");
+					return new Element(tileHtml(c.ico, true));
+				}
+				var d = new Dropdown(element, elts, currentValue, makeIcon);
+				d.onSelect = function(v) {
+					setValue(v);
+				}
+				d.onClose = function() {
+					closeEdit();
+				}
+				d.filterInput.keydown(function(e) {
+					switch( e.keyCode ) {
+					case K.LEFT, K.RIGHT:
+						d.filterInput.blur();
+						return;
+					case K.TAB:
+						d.filterInput.blur();
+						editor.cursor.move(e.shiftKey? -1:1, 0, false, false);
+						var c = editor.cursor.getCell();
+						if( c != this && !c.blockEdit() ) c.edit();
+						e.preventDefault();
+					default:
+					}
+					e.stopPropagation();
+				});
+
+			} else {
+				var s = new Element("<select>");
+				var isLocal = sdat.idCol.scope != null;
+				var elts;
+				if( isLocal ) {
+					var scope = refScope(sdat,table.getRealSheet(),line.obj,[]);
+					var prefix = makeId(scope, sdat.idCol.scope, null)+":";
+					elts = [for( d in sdat.all ) if( StringTools.startsWith(d.id,prefix) ) { id : d.id.split(":").pop(), ico : d.ico, text : d.disp }];
+				} else
+					elts = [for( d in sdat.all ) { id : d.id, ico : d.ico, text : d.disp }];
+				if( column.opt || currentValue == null || currentValue == "" )
+					elts.unshift( { id : "~", ico : null, text : "--- None ---" } );
+				element.append(s);
+
+				var props : Dynamic = { data : elts };
+				if( sdat.props.displayIcon != null ) {
+					function buildElement(i) {
+						var text = StringTools.htmlEscape(i.text);
+						return new Element("<div>"+(i.ico == null ? "<div style='display:inline-block;width:16px'/>" : tileHtml(i.ico,true)) + " " + text+"</div>");
+					}
+					props.templateResult = props.templateSelection = buildElement;
+				}
+				(untyped s.select2)(props);
+				(untyped s.select2)("val", currentValue == null ? "" : currentValue);
+				(untyped s.select2)("open");
+
+				var sel2 = s.data("select2");
+				sel2.$dropdown.find("input").on("keydown", function(e) {
+					e.stopPropagation();
+				});
+
+				s.change(function(e) {
+					var val = s.val();
+					if( val == "~" ) val = null;
+					setValue(val);
+					sel2.close();
+					closeEdit();
+				});
+				s.on("select2:close", function(_) closeEdit());
 			}
-			(untyped s.select2)(props);
-			(untyped s.select2)("val", currentValue == null ? "" : currentValue);
-			(untyped s.select2)("open");
-
-			var sel2 = s.data("select2");
-			sel2.$dropdown.find("input").on("keydown", function(e) {
-				e.stopPropagation();
-			});
-
-			s.change(function(e) {
-				var val = s.val();
-				if( val == "~" ) val = null;
-				setValue(val);
-				sel2.close();
-				closeEdit();
-			});
-			s.on("select2:close", function(_) closeEdit());
 		case TEnum(values):
 			element.empty();
 			element.addClass("edit");
-			var s = new Element("<select>");
-			var elts = [for( i in 0...values.length ){ id : ""+i, ico : null, text : values[i] }];
-			if( column.opt )
-				elts.unshift( { id : "-1", ico : null, text : "--- None ---" } );
-			element.append(s);
 
-			var props : Dynamic = { data : elts };
-			(untyped s.select2)(props);
-			(untyped s.select2)("val", currentValue == null ? "" : currentValue);
-			(untyped s.select2)("open");
-			var sel2 = s.data("select2");
-
-			s.change(function(e) {
-				var val = Std.parseInt(s.val());
-				if( val < 0 ) val = null;
-				setValue(val);
-				sel2.close();
-				closeEdit();
-			});
-			new Element("input.select2-search__field").keydown(function(e) {
-				switch( e.keyCode ) {
-				case K.LEFT, K.RIGHT:
-					s.blur();
-					return;
-				case K.TAB:
-					s.blur();
-					editor.cursor.move(e.shiftKey? -1:1, 0, false, false);
-					var c = editor.cursor.getCell();
-					if( c != this && !c.blockEdit() ) c.edit();
-					e.preventDefault();
-				default:
+			if (!useSelect2) {
+				var elts : Array<hide.comp.Dropdown.Choice> = [for( i in 0...values.length ){
+					id : "" + i,
+					text : values[i],
+				}];
+				if( column.opt )
+					elts.unshift( { id : "-1", text : "--- None ---" } );
+				var d = new Dropdown(element, elts, "" + currentValue);
+				d.onSelect = function(v) {
+					var val = Std.parseInt(v);
+					if( val < 0 ) val = null;
+					setValue(val);
 				}
-				e.stopPropagation();
-			});
-			s.on("select2:close", function(_) closeEdit());
+				d.onClose = function() {
+					closeEdit();
+				}
+				d.filterInput.keydown(function(e) {
+					switch( e.keyCode ) {
+					case K.LEFT, K.RIGHT:
+						d.filterInput.blur();
+						return;
+					case K.TAB:
+						d.filterInput.blur();
+						editor.cursor.move(e.shiftKey? -1:1, 0, false, false);
+						var c = editor.cursor.getCell();
+						if( c != this && !c.blockEdit() ) c.edit();
+						e.preventDefault();
+					default:
+					}
+					e.stopPropagation();
+				});
+
+			} else {
+				var s = new Element("<select>");
+				var elts = [for( i in 0...values.length ){ id : ""+i, ico : null, text : values[i] }];
+				if( column.opt )
+					elts.unshift( { id : "-1", ico : null, text : "--- None ---" } );
+				element.append(s);
+
+				var props : Dynamic = { data : elts };
+				(untyped s.select2)(props);
+				(untyped s.select2)("val", currentValue == null ? "" : currentValue);
+				(untyped s.select2)("open");
+				var sel2 = s.data("select2");
+
+				s.change(function(e) {
+					var val = Std.parseInt(s.val());
+					if( val < 0 ) val = null;
+					setValue(val);
+					sel2.close();
+					closeEdit();
+				});
+				new Element("input.select2-search__field").keydown(function(e) {
+					switch( e.keyCode ) {
+					case K.LEFT, K.RIGHT:
+						s.blur();
+						return;
+					case K.TAB:
+						s.blur();
+						editor.cursor.move(e.shiftKey? -1:1, 0, false, false);
+						var c = editor.cursor.getCell();
+						if( c != this && !c.blockEdit() ) c.edit();
+						e.preventDefault();
+					default:
+					}
+					e.stopPropagation();
+				});
+				s.on("select2:close", function(_) closeEdit());
+			}
 		case TColor:
 			var modal = new Element("<div>").addClass("hide-modal").appendTo(element);
 			var color = new ColorPicker(element);
