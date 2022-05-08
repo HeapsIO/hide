@@ -37,7 +37,7 @@ class Event extends hrt.prefab.Prefab implements IEvent {
 		if(evts == null) return;
 
 		for(evt in evts) {
-			if(evt.play != null && time > prevTime && evt.evt.time > prevTime && evt.evt.time < time)
+			if(evt.play != null && time > prevTime && evt.evt.time > prevTime && evt.evt.time <= time)
 				evt.play();
 
 			if(evt.setTime != null)
