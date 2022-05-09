@@ -577,7 +577,7 @@ class Cell extends Component {
 	public function edit() {
 		if( !canEdit() )
 			return;
-		useSelect2 = this.editor.config.get("cdb.useSelect2");
+		useSelect2 = this.editor.config.get("cdb.useSelect2") || (Std.isOfType(editor, ObjEditor) && editor.element.parent().hasClass("detached"));
 		inEdit = true;
 		switch( column.type ) {
 		case TString if( column.kind == Script ):
