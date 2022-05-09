@@ -244,10 +244,12 @@ class ModalColumnForm extends Modal {
 			if( e.keyCode == 27 )
 				closeModal();
 			if( e.keyCode == hxd.Key.ENTER ) {
-				if (editForm)
-					form.find("#editBtn").click();
-				else
-					form.find("#createBtn").click();
+				if( e.target != form.find("[name=doc]")[0] ) {
+					if (editForm)
+						form.find("#editBtn").click();
+					else
+						form.find("#createBtn").click();
+				}
 			}
 			e.stopPropagation();
 		});
