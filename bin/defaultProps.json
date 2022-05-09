@@ -94,7 +94,7 @@
 	"cdb.indicateRefs": [],
 
 	// will be removed once confidence in the new dropdown has grown
-	"cdb.useSelect2": true,
+	"cdb.useSelect2": false,
 
 	// It's possible to separately control CDB configurations per sheet and column with following keys:
 	// "cdb.mySheetName": { /* Applies to all File columns in sheet with mySheetName */ }

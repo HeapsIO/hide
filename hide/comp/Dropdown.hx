@@ -30,7 +30,7 @@ class Dropdown extends Component {
 		optionsCont = root.find(".options").first();
 		for( i in 0...options.length ) {
 			var o = options[i];
-			var el = new Element('<div class="option">
+			var el = new Element('<div tabindex="-1" class="dropdown-option">
 				<p class="option-text">${StringTools.htmlEscape(o.text)}</p>
 			</div>');
 			if( buildIcon != null )
@@ -71,7 +71,9 @@ class Dropdown extends Component {
 		}
 		filterInput.focus();
 
-		filterInput.blur(function(_) {
+		filterInput.blur(function(e) {
+			if( e.relatedTarget != null && new Element(e.relatedTarget).hasClass("dropdown-option") )
+				return;
 			if( !removed && element[0].isConnected)
 				remove();
 		});
