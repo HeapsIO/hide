@@ -55,7 +55,7 @@ class ModelLibShader extends hxsl.Shader {
 
 		function __init__fragment() {
 			calculatedUV = input2.uv.fract() * uvTransform.zw + uvTransform.xy;
-			pixelColor *= singleTexture ? texture.get(calculatedUV) : textures.get(vec3(calculatedUV, material));
+			pixelColor = singleTexture ? texture.get(calculatedUV) : textures.get(vec3(calculatedUV, material));
 			if( hasNormal ) {
 				var n = transformedNormal;
 				var nf = unpackNormal(singleTexture ? normalMap.get(calculatedUV) : normalMaps.get(vec3(calculatedUV, material)));
