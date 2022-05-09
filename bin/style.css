@@ -126,8 +126,16 @@ body .select2-container--default .select2-results__option--highlighted[aria-sele
 .hide-dropdown > .dropdown-cont .options .dropdown-option.highlighted {
   background-color: #5897fb;
 }
+.hide-dropdown > .dropdown-cont .options .dropdown-option.highlighted > p {
+  color: #fff;
+}
 .hide-dropdown > .dropdown-cont .options .dropdown-option.hidden {
   display: none;
+}
+.global-seek .hide-dropdown {
+  width: auto;
+  margin-left: calc(50% - 400px);
+  margin-right: calc(50% - 400px);
 }
 input.file {
   cursor: pointer;

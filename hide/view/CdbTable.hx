@@ -24,13 +24,14 @@ class CdbTable extends hide.ui.View<{}> {
 		view = cast this.config.get("cdb.view");
 	}
 
-	public function goto( s : cdb.Sheet, line : Int, column : Int ) {
+	public function goto( s : cdb.Sheet, ?line : Int, ?column : Int ) {
 		var sheets = [for( s in getSheets() ) s.name];
 		var index = sheets.indexOf(s.name);
 		if( index < 0 ) return;
 		tabs.currentTab = tabContents[index].parent();
 		editor.setFilter(null);
-		editor.cursor.setDefault(line, column);
+		if( line != null && column != null )
+			editor.cursor.setDefault(line, column);
 		editor.focus();
 		haxe.Timer.delay(() -> editor.cursor.update(), 1); // scroll
 	}
@@ -42,7 +43,7 @@ class CdbTable extends hide.ui.View<{}> {
 		}
 	}
 
-	function getSheets() {
+	public function getSheets() {
 		return [for( s in ide.database.sheets ) if( !s.props.hide && (view == null || view.exists(s.name)) ) s];
 	}
 

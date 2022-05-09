@@ -1,10 +1,5 @@
 package hide.comp;
 
-/**
-	TODO:
-	block scroll outside?
-**/
-
 typedef Choice = {
 	var id: String;
 	var text: String;
@@ -74,7 +69,7 @@ class Dropdown extends Component {
 		filterInput.blur(function(e) {
 			if( e.relatedTarget != null && new Element(e.relatedTarget).hasClass("dropdown-option") )
 				return;
-			if( !removed && element[0].isConnected)
+			if( !removed && element[0].isConnected )
 				remove();
 		});
 

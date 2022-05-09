@@ -65,6 +65,8 @@
 	"key.cdb.moveBack" : "Alt-Left",
 	"key.cdb.moveAhead" : "Alt-Right",
 
+	"key.cdb.globalSeek" : "Ctrl-P",
+
 	// Scene editor config
 	"key.sceneeditor.focus": "F",
 	"key.sceneeditor.lasso": "L",
