@@ -433,6 +433,12 @@ class Prefab extends FileView {
 			icon: "connectdevelop",
 			type: Toggle((b) -> { sceneEditor.setWireframe(b); }),
 		});
+		toolsDefs.push({
+			id: "jointsToggle",
+			title: "Joints",
+			icon: "connectdevelop",
+			type: Toggle((b) -> { sceneEditor.setJoints(b, null); }),
+		});
 		toolsDefs.push({id: "backgroundColor", title : "Background Color", type : Color(function(v) {
 			scene.engine.backgroundColor = v;
 			updateGrid();

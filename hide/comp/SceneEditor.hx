@@ -1229,28 +1229,34 @@ class SceneEditor {
 			for ( m in scene.s3d.getMeshes() ) {
 				var sk = Std.downcast(m,h3d.scene.Skin);
 				if( sk != null ) {
-					var topParent : h3d.scene.Object = sk;
-					while( topParent.parent != null )
-						topParent = topParent.parent;
-					jointsGraphics.follow = topParent;
-					var skinData = sk.getSkinData();
-					for( j in skinData.allJoints ) {
-						var m = sk.currentAbsPose[j.index];
-						var mp = j.parent == null ? sk.absPos : sk.currentAbsPose[j.parent.index];
-						if ( j.name == selectedJoint )
-							jointsGraphics.lineStyle(1, 0x00FF00FF);
-						else if ( j.parent == null )
-							jointsGraphics.lineStyle(1, 0xFF0000FF);
-						else
-							jointsGraphics.lineStyle(1, 0xFFFFFF00);
-						jointsGraphics.moveTo(mp._41, mp._42, mp._43);
-						jointsGraphics.lineTo(m._41, m._42, m._43);
+					if ( selectedJoint != null ) {
+						var topParent : h3d.scene.Object = sk;
+						while( topParent.parent != null )
+							topParent = topParent.parent;
+						jointsGraphics.follow = topParent;
+						var skinData = sk.getSkinData();
+						for( j in skinData.allJoints ) {
+							var m = sk.currentAbsPose[j.index];
+							var mp = j.parent == null ? sk.absPos : sk.currentAbsPose[j.parent.index];
+							if ( j.name == selectedJoint ) {
+								jointsGraphics.lineStyle(1, 0x00FF00FF);
+								jointsGraphics.moveTo(mp._41, mp._42, mp._43);
+								jointsGraphics.lineTo(m._41, m._42, m._43);
+							}
+						}
 					}
+					sk.showJoints = true;
 				}
 			}
 		} else if( jointsGraphics != null ) {
 			jointsGraphics.remove();
 			jointsGraphics = null;
+			for ( m in scene.s3d.getMeshes() ) {
+				var sk = Std.downcast(m,h3d.scene.Skin);
+				if( sk != null ) {
+					sk.showJoints = false;
+				}
+			}
 		}
 	}
 

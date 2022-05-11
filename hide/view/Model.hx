@@ -586,6 +586,9 @@ class Model extends FileView {
 
 		sceneEditor.onResize = buildTimeline;
 		setAnimation(null);
+
+		if ( displayJoints.isDown() )
+			sceneEditor.setJoints(true, null);
 	}
 
 	function setRetargetAnim(b:Bool) {
