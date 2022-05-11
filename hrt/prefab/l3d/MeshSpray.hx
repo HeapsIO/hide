@@ -194,8 +194,8 @@ import hxd.Key as K;
 
 @:access(hrt.prefab.l3d.Spray)
 class MeshSprayObject extends Spray.SprayObject {
-	public var batches : Array<h3d.scene.MeshBatch> = [];
-	public var batchesMap : Map<Int,Map<String,{ batch : h3d.scene.MeshBatch, pivot : h3d.Matrix }>> = [];
+
+	var batches : Array<h3d.scene.MeshBatch> = [];
 	var blookup : Map<h3d.prim.Primitive, h3d.scene.MeshBatch> = new Map();
 	var mlookup : Map<String, h3d.scene.Mesh> = [];
 
@@ -243,10 +243,6 @@ class MeshSprayObject extends Spray.SprayObject {
 	}
 
 	override public function redraw(updateShaders=false) {
-		var ms = Std.downcast(spray, MeshSpray);
-		if ( !ms.isSelected )
-			return super.redraw(updateShaders);
-
 		getBounds(); // force absBos calculus on children
 		for( b in batches ) {
 			if( updateShaders ) b.shadersChanged = true;
@@ -295,9 +291,6 @@ class MeshSpray extends Spray {
 
 	var binaryMeshes : Array<{ path : String, x : Float, y : Float, z : Float, rotX : Float, rotY : Float, rotZ : Float, scale : Float }>;
 	var binaryChanged : Bool = false;
-
-	var isSelected = false;
-	var editContext : hide.prefab.EditContext;
 
 	var MESH_SPRAY_CONFIG_FILE = "meshSprayProps.json";
 	var MESH_SPRAY_CONFIG_PATH(get, null) : String;
@@ -376,7 +369,7 @@ class MeshSpray extends Spray {
 	function saveConfigMeshBatch() {
 		sys.io.File.saveContent(MESH_SPRAY_CONFIG_PATH, hide.Ide.inst.toJSON(allSetGroups));
 	}
-	
+
 	override function edit( ectx : EditContext ) {
 
 		invParent = getAbsPos().clone();
@@ -389,7 +382,6 @@ class MeshSpray extends Spray {
 			else
 				[];
 		}
-		editContext = ectx;
 		sceneEditor = ectx.scene.editor;
 
 		var props = new hide.Element('<div class="group" name="Meshes"></div>');
@@ -889,64 +881,10 @@ class MeshSpray extends Spray {
 
 	override function makeInstance(ctx:Context):Context {
 		ctx = ctx.clone(this);
-		ctx.local3d = !isSelected ? createObject(ctx) : new MeshSprayObject(this, ctx.local3d);
+		ctx.local3d = new MeshSprayObject(this, ctx.local3d);
 		ctx.local3d.name = name;
 		updateInstance(ctx);
 		return ctx;
-	}
-	
-	inline function getSplitID( x : Float, y : Float ) {
-		return (Math.floor(x/split) * 39119 + Math.floor(y/split)) % 0x7FFFFFFF;
-	}
-
-	override function createObject( ctx : Context ) {
-		var mspray = new MeshSprayObject(this, ctx.local3d);
-		if ( editionOnly )
-			return mspray;
-		// preallocate batches so their materials can be resolved
-		var curID = 0, curMap = mspray.batchesMap.get(0);
-		if( curMap == null ) {
-			curMap = new Map();
-			mspray.batchesMap.set(0, curMap);
-		}
-		inline function switchMap(x,y) {
-			var sid = getSplitID(x, y);
-			if( sid != curID ) {
-				curID = sid;
-				curMap = mspray.batchesMap.get(sid);
-				if( curMap == null ) {
-					curMap = new Map();
-					mspray.batchesMap.set(sid, curMap);
-				}
-			}
-		}
-		inline function loadBatch( source : String ) {
-			var batch = curMap.get(source);
-			if( batch != null ) return;
-			var obj = ctx.loadModel(source).toMesh();
-			var batch = new h3d.scene.MeshBatch(cast(obj.primitive,h3d.prim.MeshPrimitive), obj.material, mspray);
-			batch.cullingCollider = @:privateAccess batch.instanced.bounds;
-			var multi = Std.downcast(obj, h3d.scene.MultiMaterial);
-			if( multi != null ) batch.materials = multi.materials;
-			curMap.set(source, { batch : batch, pivot : obj.defaultTransform.isIdentity() ? null : obj.defaultTransform });
-			mspray.batches.push(batch);
-		}
-		for( c in children ) {
-			if( !c.enabled || c.type != "model" ) continue;
-			if( split > 0 ) {
-				var obj = c.to(Object3D);
-				switchMap(obj.x, obj.y);
-			}
-			loadBatch(c.source);
-		}
-
-		if( binaryMeshes != null ) {
-			for( c in binaryMeshes ) {
-				if( split > 0 ) switchMap(c.x, c.y);
-				loadBatch(c.path);
-			}
-		}
-		return mspray;
 	}
 
 	override function make(ctx:Context):Context {
@@ -987,61 +925,7 @@ class MeshSpray extends Spray {
 				makeChild(ctx, c);
 		// rebuild to apply per instance shaders
 		cast(ctx.local3d, MeshSprayObject).redraw(true);
-
-		if ( isSelected )
-			return ctx;
-		redraw(ctx);
 		return ctx;
-	}
-
-	function redraw(ctx:Context) {
-		var mspray = Std.downcast(ctx.local3d, MeshSprayObject);
-		var pos = mspray.getAbsPos();
-		var tmp = new h3d.Matrix();
-		for( b in mspray.batches ) {
-			b.begin();
-			b.worldPosition = tmp;
-		}
-		var curID = 0, curMap = mspray.batchesMap.get(0);
-		for( c in children ) {
-			if( !c.enabled || c.type != "model" )
-				continue;
-			if( split > 0 ) {
-				var obj = c.to(Object3D);
-				var sid = getSplitID(obj.x, obj.y);
-				if( sid != curID ) {
-					curMap = mspray.batchesMap.get(sid);
-					curID = sid;
-				}
-			}
-			var inf = curMap.get(c.source);
-			tmp.multiply3x4(c.to(Object3D).getTransform(), pos);
-			if( inf.pivot != null ) tmp.multiply3x4(inf.pivot, tmp);
-			inf.batch.emitInstance();
-		}
-		if( binaryMeshes != null ) {
-			var degToRad = Math.PI / 180;
-			for( c in binaryMeshes ) {
-				if( split > 0 ) {
-					var sid = getSplitID(c.x, c.y);
-					if( sid != curID ) {
-						curMap = mspray.batchesMap.get(sid);
-						curID = sid;
-					}
-				}
-				var inf = curMap.get(c.path);
-				tmp.initRotation(c.rotX * degToRad, c.rotY * degToRad, c.rotZ * degToRad);
-				tmp.prependScale(c.scale, c.scale, c.scale);
-				tmp.tx = c.x;
-				tmp.ty = c.y;
-				tmp.tz = c.z;
-				tmp.multiply3x4(tmp, pos);
-				if( inf.pivot != null ) tmp.multiply3x4(inf.pivot, tmp);
-				inf.batch.emitInstance();
-			}
-		}
-		for( b in mspray.batches )
-			b.worldPosition = null;
 	}
 
 	override function applyTransform(o : h3d.scene.Object) {
@@ -1105,23 +989,6 @@ class MeshSpray extends Spray {
 		}
 		return arr;
 	}
-
-	override function setSelected(ctx:Context, b:Bool):Bool {
-		isSelected = b;
-		var ms = Std.downcast(ctx.local3d, MeshSprayObject);
-		if ( ms != null ) {
-			for( b in ms.batches ) {
-				b.remove();
-			}
-			if ( isSelected )
-				ms.redraw();
-			else {
-				ctx.local3d = createObject(ctx);
-				redraw(ctx);
-			}
-		}
-		return super.setSelected(ctx, b);
-	 }
 
 	static var _ = Library.register("meshSpray", MeshSpray);
 
