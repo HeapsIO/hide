@@ -1216,6 +1216,44 @@ class SceneEditor {
 		}
 	}
 
+	var jointsGraphics : h3d.scene.Graphics = null;
+	@:access(h3d.scene.Skin)
+	public function setJoints(showJoints = true, selectedJoint : String) {
+		if( showJoints ) {
+			if( jointsGraphics == null ) {
+				jointsGraphics = new h3d.scene.Graphics(scene.s3d);
+				jointsGraphics.material.mainPass.depth(false, Always);
+				jointsGraphics.material.mainPass.setPassName("overlay");
+			}
+			jointsGraphics.clear();
+			for ( m in scene.s3d.getMeshes() ) {
+				var sk = Std.downcast(m,h3d.scene.Skin);
+				if( sk != null ) {
+					var topParent : h3d.scene.Object = sk;
+					while( topParent.parent != null )
+						topParent = topParent.parent;
+					jointsGraphics.follow = topParent;
+					var skinData = sk.getSkinData();
+					for( j in skinData.allJoints ) {
+						var m = sk.currentAbsPose[j.index];
+						var mp = j.parent == null ? sk.absPos : sk.currentAbsPose[j.parent.index];
+						if ( j.name == selectedJoint )
+							jointsGraphics.lineStyle(1, 0x00FF00FF);
+						else if ( j.parent == null )
+							jointsGraphics.lineStyle(1, 0xFF0000FF);
+						else
+							jointsGraphics.lineStyle(1, 0xFFFFFF00);
+						jointsGraphics.moveTo(mp._41, mp._42, mp._43);
+						jointsGraphics.lineTo(m._41, m._42, m._43);
+					}
+				}
+			}
+		} else if( jointsGraphics != null ) {
+			jointsGraphics.remove();
+			jointsGraphics = null;
+		}
+	}
+
 	public function onPrefabChange(p: PrefabElement, ?pname: String) {
 		var model = p.to(hrt.prefab.Model);
 		if(model != null && pname == "source") {

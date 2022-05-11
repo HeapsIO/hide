@@ -303,7 +303,17 @@ class Model extends FileView {
 		});
 	}
 
+	var selectedJoint : String = null;
+	var displayJoints = null;
 	function selectObject( obj : h3d.scene.Object ) {
+		if ( Std.isOfType(obj, h3d.scene.Skin.Joint) ) {
+			selectedJoint = obj.name;
+			if ( displayJoints.isDown() )
+				sceneEditor.setJoints(true, selectedJoint);
+		}
+		else
+			selectedJoint = null;
+
 		selectedAxes.follow = obj;
 
 		var properties = sceneEditor.properties;
@@ -495,6 +505,9 @@ class Model extends FileView {
 		});
 		tools.addToggle("connectdevelop", "Wireframe",(b) -> {
 			sceneEditor.setWireframe(b);
+		});
+		displayJoints = tools.addToggle("connectdevelop", "Joints",(b) -> {
+			sceneEditor.setJoints(b, selectedJoint);
 		});
 
 		tools.addColor("Background color", function(v) {
