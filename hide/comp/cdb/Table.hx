@@ -132,6 +132,7 @@ class Table extends Component {
 			var head = J("<td>").addClass("start").text("" + index);
 			head.appendTo(l);
 			var line = new Line(this, columns, index, l);
+			var dragging = false;
 			head.mousedown(function(e) {
 				if( e.which == 3 ) {
 					editor.popupLine(line);
@@ -146,6 +147,26 @@ class Table extends Component {
 				}
 				editor.cursor.clickLine(line, e.shiftKey);
 			});
+			var lineEl = l.get()[0];
+			lineEl.draggable = true;
+			lineEl.ondragend = function(e:js.html.DragEvent) {
+				var pickedEl = js.Browser.document.elementFromPoint(e.clientX, e.clientY);
+				var pickedLine = null;
+				var parentEl = pickedEl;
+				while (parentEl != null) {
+					if (lines.filter((otherLine) -> otherLine.element.get()[0] == parentEl).length > 0) {
+						pickedLine = lines.filter((otherLine) -> otherLine.element.get()[0] == parentEl)[0];
+						break;
+					}
+					parentEl = pickedEl.parentElement;
+				}
+				if (pickedLine != null) {
+					editor.moveLine(line, pickedLine.index - line.index);
+					return true;
+				}
+
+				return false;
+			}
 			line;
 		}];
 

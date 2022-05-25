@@ -1223,7 +1223,7 @@ class Editor extends Component {
 		// TODO : create single edit-all script view allowing global search & replace
 	}
 
-	function moveLine( line : Line, delta : Int ) {
+	public function moveLine( line : Line, delta : Int ) {
 		if( !line.table.canInsert() )
 			return;
 		beginChanges();
