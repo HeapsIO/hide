@@ -670,7 +670,7 @@ input[type=checkbox]:checked:after {
 }
 .searchBox {
   display: none;
-  width: 200px;
+  width: 230px;
   position: fixed;
   z-index: 800;
   top: 20px;

@@ -454,9 +454,8 @@ class Table extends Component {
 			sync();
 
 			for( l in getLines( hidden ? null : sindex ) ) {
-				if( hidden ) {
-					l.hide();
-				} else {
+				l.hide();
+				if( !hidden ) {
 					l.create();
 				}
 			}

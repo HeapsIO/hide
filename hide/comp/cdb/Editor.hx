@@ -42,6 +42,7 @@ class Editor extends Component {
 	var existsCache : Map<String,{ t : Float, r : Bool }> = new Map();
 	var tables : Array<Table> = [];
 	var searchBox : Element;
+	var searchHidden : Bool = true;
 	var displayMode : Table.DisplayMode;
 	var clipboard : {
 		text : String,
@@ -194,6 +195,7 @@ class Editor extends Component {
 				searchFilter(null);
 			}
 			searchBox.hide();
+			refresh();
 		}
 		return false;
 	}
@@ -223,6 +225,14 @@ class Editor extends Component {
 		var lines = all.not(".separator");
 		all.removeClass("filtered");
 		if( filter != null ) {
+			if (searchHidden) {
+				var currentTable = tables.filter((t) -> t.sheet == currentSheet)[0];
+				for (l in currentTable.lines) {
+					if (l.element.hasClass("hidden"))
+						l.create();
+				}
+			}
+
 			for( t in lines ) {
 				if( t.textContent.toLowerCase().indexOf(filter) < 0 )
 					t.classList.add("filtered");
@@ -231,7 +241,9 @@ class Editor extends Component {
 				lines = lines.filter(".list").not(".filtered").prev();
 				lines.removeClass("filtered");
 			}
-			all = all.not(".filtered").not(".hidden");
+			all = all.not(".filtered");
+			if (!searchHidden)
+				all = all.not(".hidden");
 			for( s in seps.elements() ) {
 				var idx = all.index(s);
 				if( idx == all.length - 1 || new Element(all.get(idx+1)).hasClass("separator") ) {
@@ -947,12 +959,28 @@ class Editor extends Component {
 		}).keyup(function(e) {
 			searchFilter(e.getThis().val());
 		});
+		var hideButton = new Element("<i>").addClass("fa fa-eye").appendTo(searchBox);
+		hideButton.click(function(_) {
+			searchHidden = !searchHidden;
+			hideButton.toggleClass("fa-eye", searchHidden);
+			hideButton.toggleClass("fa-eye-slash", !searchHidden);
+			if (!searchHidden) {
+				var hiddenSeps = element.find("table.cdb-sheet > tbody > tr").not(".head").filter(".separator").filter(".sep-hidden").find("a.toggle");
+				hiddenSeps.click();
+				hiddenSeps.click();
+			}
+			searchFilter(currentFilter);
+		});
+
 		new Element("<i>").addClass("ico ico-times-circle").appendTo(searchBox).click(function(_) {
 			searchFilter(null);
 			searchBox.toggle();
 			var c = cursor.save();
 			focus();
 			cursor.load(c);
+			var hiddenSeps = element.find("table.cdb-sheet > tbody > tr").not(".head").filter(".separator").filter(".sep-hidden").find("a.toggle");
+			hiddenSeps.click();
+			hiddenSeps.click();
 		});
 
 		formulas = new Formulas(this);
