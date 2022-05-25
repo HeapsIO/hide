@@ -1232,13 +1232,19 @@ class Editor extends Component {
 		var distance = (delta >= 0 ? delta : -1 * delta);
 		var index : Null<Int> = null;
 		var currIndex : Null<Int> = line.index;
-		for( _ in 0...distance ) {
+		if (distance == 1) {
 			currIndex = line.table.sheet.moveLine( currIndex, delta );
-			if( currIndex == null )
-				break;
-			else
+			if( currIndex != null )
 				index = currIndex;
 		}
+		else
+			while (index != prevIndex + delta) {
+				currIndex = line.table.sheet.moveLine( currIndex, delta );
+				if( currIndex == null )
+					break;
+				else
+					index = currIndex;
+			}
 
 		if( index != null ) {
 			if (index != prevIndex) {

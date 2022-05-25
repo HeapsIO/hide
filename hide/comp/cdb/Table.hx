@@ -132,7 +132,6 @@ class Table extends Component {
 			var head = J("<td>").addClass("start").text("" + index);
 			head.appendTo(l);
 			var line = new Line(this, columns, index, l);
-			var dragging = false;
 			head.mousedown(function(e) {
 				if( e.which == 3 ) {
 					editor.popupLine(line);
@@ -158,7 +157,7 @@ class Table extends Component {
 						pickedLine = lines.filter((otherLine) -> otherLine.element.get()[0] == parentEl)[0];
 						break;
 					}
-					parentEl = pickedEl.parentElement;
+					parentEl = parentEl.parentElement;
 				}
 				if (pickedLine != null) {
 					editor.moveLine(line, pickedLine.index - line.index);
