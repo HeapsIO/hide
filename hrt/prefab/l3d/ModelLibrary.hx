@@ -21,6 +21,7 @@ class ModelLibShader extends hxsl.Shader {
 
 		@param @perInstance var uvTransform : Vec4;
 		@param @perInstance var material : Float;
+		@param @perInstance var delta : Float;
 
 		@const var singleTexture : Bool;
 		@const var hasNormal : Bool;
@@ -60,7 +61,8 @@ class ModelLibShader extends hxsl.Shader {
 		}
 
 		function __init__fragment() {
-			calculatedUV = input2.uv.fract() * uvTransform.zw + uvTransform.xy;
+			calculatedUV = clamp(input2.uv.fract(), delta, 1.0 - delta);
+			calculatedUV = calculatedUV * uvTransform.zw + uvTransform.xy;
 			pixelColor = singleTexture ? texture.getLod(calculatedUV, mipLevel) : textures.getLod(vec3(calculatedUV, material), mipLevel);
 			if( hasNormal ) {
 				var n = transformedNormal;
@@ -87,10 +89,8 @@ class ModelLibrary extends Prefab {
 	@:s var materialConfigs : Array<h3d.mat.PbrMaterial.PbrProps>;
 	@:s var texturesCount : Int;
 
-	#if !release
 	var optimizedMeshes : Array<h3d.scene.Mesh> = [];
 	var batches : Array<h3d.scene.MeshBatch> = [];
-	#end
 
 	@:s var ignoredMaterials : Array<{name:String}> = [];
 	@:s var ignoredPrefabs : Array<{name:String}> = [];
@@ -700,10 +700,8 @@ class ModelLibrary extends Prefab {
 	}
 
 	public function dispose() {
-		#if !release
 		optimizedMeshes = [];
 		batches = [];
-		#end
 	}
 
 	var killAlpha = new h3d.shader.KillAlpha();
@@ -733,9 +731,7 @@ class ModelLibrary extends Prefab {
 				var batch = new h3d.scene.MeshBatch(hmdPrim, h3d.mat.Material.create(), obj);
 				batch.name = "modelLibrary"+"_"+bk.configIndex;
 				batch.material.mainPass.addShader(shader);
-				#if !release
 				if ( debug ) batches.push(batch);
-				#end
 				batch.material.props = materialConfigs[bk.configIndex];
 				batch.material.refreshProps();
 				if ( (batch.material.props:PbrProps).alphaKill && batch.material.textureShader == null )
@@ -745,6 +741,7 @@ class ModelLibrary extends Prefab {
 		}
 		for( m in meshes ) {
 			var bk = m.mat;
+			shader.delta = 1.0 / 4096 / bk.uvSX;
 			shader.uvTransform.set(bk.uvX, bk.uvY, bk.uvSX, bk.uvSY);
 			shader.material = bk.texId;
 			var batch = meshBatches[bk.configIndex];
@@ -802,10 +799,8 @@ class ModelLibrary extends Prefab {
 					}
 					out.push({ mat : bk, mesh : mesh });
 				}
-				#if !release
 				if ( mesh.culled && debug )
 					optimizedMeshes.push(mesh);
-				#end
 			}
 		}
 		for( o in obj )
@@ -824,22 +819,18 @@ class ModelLibrary extends Prefab {
 	}
 
 	function toggle() {
-		#if !release
 		enabled = !enabled;
 		for (m in optimizedMeshes)
 			m.culled = enabled;
 		for (b in batches)
 			b.culled = !enabled;
-		#end
 	}
 
 	function hideAll() {
-		#if !release
 		for (m in optimizedMeshes)
 			m.culled = true;
 		for (b in batches)
 			b.culled = true;
-		#end
 	}
 
 	#end
