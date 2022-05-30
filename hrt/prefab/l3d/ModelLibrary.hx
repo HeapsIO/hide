@@ -63,7 +63,7 @@ class ModelLibShader extends hxsl.Shader {
 			calculatedUV = input2.uv.fract() * uvTransform.zw + uvTransform.xy;
 			pixelColor = singleTexture ? texture.getLod(calculatedUV, mipLevel) : textures.getLod(vec3(calculatedUV, material), mipLevel);
 			if( hasNormal ) {
-				var n = transformedNomrmal;
+				var n = transformedNormal;
 				var nf = unpackNormal(singleTexture ? normalMap.getLod(calculatedUV, mipLevel) : normalMaps.getLod(vec3(calculatedUV, material), mipLevel));
 				var tanX = transformedTangent.xyz.normalize();
 				var tanY = n.cross(tanX) * -transformedTangent.w;
