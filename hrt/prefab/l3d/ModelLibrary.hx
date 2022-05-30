@@ -34,12 +34,15 @@ class ModelLibShader extends hxsl.Shader {
 		@param var normalMaps : Sampler2DArray;
 		@param var speculars : Sampler2DArray;
 
+		@param var mipStart : Float;
+		@param var mipEnd : Float;
+		@param var mipPower : Float;
+		@param var mipNumber : Float;
 
         @input var input2 : {
 			var tangent : Vec3;
 			var uv : Vec2;
         };
-
 
 		var calculatedUV : Vec2;
 		var transformedTangent : Vec4;
@@ -48,23 +51,26 @@ class ModelLibShader extends hxsl.Shader {
 		var roughness : Float;
 		var occlusion : Float;
 
+		var mipLevel : Float;
+
 		function __init__vertex() {
 			if( hasNormal )
 				transformedTangent = vec4(input2.tangent * global.modelView.mat3(),input2.tangent.dot(input2.tangent) > 0.5 ? 1. : -1.);
+			mipLevel = pow(saturate((projectedPosition.z - mipStart) / (mipEnd - mipStart)), mipPower) * mipNumber;
 		}
 
 		function __init__fragment() {
 			calculatedUV = input2.uv.fract() * uvTransform.zw + uvTransform.xy;
-			pixelColor = singleTexture ? texture.get(calculatedUV) : textures.get(vec3(calculatedUV, material));
+			pixelColor = singleTexture ? texture.getLod(calculatedUV, mipLevel) : textures.getLod(vec3(calculatedUV, material), mipLevel);
 			if( hasNormal ) {
-				var n = transformedNormal;
-				var nf = unpackNormal(singleTexture ? normalMap.get(calculatedUV) : normalMaps.get(vec3(calculatedUV, material)));
+				var n = transformedNomrmal;
+				var nf = unpackNormal(singleTexture ? normalMap.getLod(calculatedUV, mipLevel) : normalMaps.getLod(vec3(calculatedUV, material), mipLevel));
 				var tanX = transformedTangent.xyz.normalize();
 				var tanY = n.cross(tanX) * -transformedTangent.w;
 				transformedNormal = (nf.x * tanX + nf.y * tanY + nf.z * n).normalize();
 			}
 			if( hasPbr ) {
-				var v = singleTexture ? specular.get(calculatedUV) : speculars.get(vec3(calculatedUV, material));
+				var v = singleTexture ? specular.getLod(calculatedUV, mipLevel) : speculars.getLod(vec3(calculatedUV, material), mipLevel);
 				metalness = v.r;
 				roughness = 1 - v.g * v.g;
 				occlusion = v.b;
@@ -89,9 +95,13 @@ class ModelLibrary extends Prefab {
 	@:s var ignoredMaterials : Array<{name:String}> = [];
 	@:s var ignoredPrefabs : Array<{name:String}> = [];
 
+	@:s var mipEnd : Float;
+	@:s var mipStart : Float;
+	@:s var mipPower : Float;
+	@:s var mipLevels : Int = 1;
+
 	#if editor
 
-	@:s var mipLevels : Int = 1;
 	@:s var compress : Bool = true;
 
 	var errors = [];
@@ -107,6 +117,9 @@ class ModelLibrary extends Prefab {
 		<div class="group" name="Params">
 			<dl>
 				<dt>Miplevels</dt><dd><input type="range" step="1" field="mipLevels"/></dd>
+				<dt>Distance start</dt><dd><input type="range" field="mipStart"/></dd>
+				<dt>Distance end</dt><dd><input type="range" field="mipEnd"/></dd>
+				<dt>Power</dt><dd><input type="range" field="mipPower"/></dd>
 			</dl>
 		</div>'), this, function(pname) {
 			ectx.onChange(this, pname);
@@ -661,9 +674,16 @@ class ModelLibrary extends Prefab {
 		geomBounds = [for( g in @:privateAccess hmdPrim.lib.header.geometries ) g.bounds];
 		@:privateAccess hmdPrim.curMaterial = -1;
 		shader = new ModelLibShader();
+		shader.mipStart = mipStart;
+		shader.mipEnd = mipEnd;
+		shader.mipPower = mipPower;
+		shader.mipNumber = mipLevels;
 		var tex = shared.loadTexture(shared.getPrefabDatPath("texture","dds",this.name));
 		var tnormal = try shared.loadTexture(shared.getPrefabDatPath("normal","dds",this.name)) catch( e : hxd.res.NotFound ) null;
 		var tspec = try shared.loadTexture(shared.getPrefabDatPath("specular","dds",this.name)) catch( e : hxd.res.NotFound ) null;
+		tex.wrap = Repeat;
+		tnormal.wrap = Repeat;
+		tspec.wrap = Repeat;
 		if( texturesCount == 1 ) {
 			shader.singleTexture = true;
 			shader.texture = tex;
