@@ -128,8 +128,8 @@ class CdbTable extends hide.ui.View<{}> {
 			@:privateAccess tabs.syncTabs();
 		var sheets = getSheets();
 		var header = @:privateAccess tabs.header;
-		element.toggleClass("loc-proofread", ide.projectConfig.dbProofread);
-		if( ide.projectConfig.dbProofread ) {
+		element.toggleClass("loc-proofread", ide.projectConfig.dbProofread == true);
+		if( ide.projectConfig.dbProofread == true ) {
 			for(i in 0...sheets.length) {
 				var tab = header.find('[index=$i]');
 				var ignoreCount = 0;
