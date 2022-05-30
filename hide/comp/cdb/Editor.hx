@@ -1223,16 +1223,15 @@ class Editor extends Component {
 		// TODO : create single edit-all script view allowing global search & replace
 	}
 
-	public function moveLine( line : Line, delta : Int ) {
+	public function moveLine( line : Line, delta : Int, exact = false ) {
 		if( !line.table.canInsert() )
 			return;
 		beginChanges();
 		var prevIndex = line.index;
 
-		var distance = (delta >= 0 ? delta : -1 * delta);
 		var index : Null<Int> = null;
 		var currIndex : Null<Int> = line.index;
-		if (distance == 1) {
+		if (!exact) {
 			currIndex = line.table.sheet.moveLine( currIndex, delta );
 			if( currIndex != null )
 				index = currIndex;

@@ -124,6 +124,27 @@ class Table extends Component {
 		J('.cdb').prepend(clone);
 	}
 
+	function updateDrag() {
+		if (ide.mouseY > js.Browser.document.body.scrollHeight*0.8) {
+			var scroll = element.get()[0];
+			while (scroll != null) {
+				if (scroll.classList.contains("hide-scroll"))
+					break;
+				scroll = scroll.parentElement;
+			}
+			scroll.scrollTop += 15 + Std.int((ide.mouseY - js.Browser.document.body.scrollHeight*0.8)/(js.Browser.document.body.scrollHeight - js.Browser.document.body.scrollHeight*0.8)*30);
+		}
+		if (ide.mouseY < js.Browser.document.body.scrollHeight*0.2) {
+			var scroll = element.get()[0];
+			while (scroll != null) {
+				if (scroll.classList.contains("hide-scroll"))
+					break;
+				scroll = scroll.parentElement;
+			}
+			scroll.scrollTop -= 15 + Std.int((js.Browser.document.body.scrollHeight*0.2 - ide.mouseY)/(js.Browser.document.body.scrollHeight*0.2)*30);
+		}
+	}
+
 	function refreshTable() {
 		var cols = J("<thead>").addClass("head");
 		J("<th>").addClass("start").appendTo(cols);
@@ -148,7 +169,11 @@ class Table extends Component {
 			});
 			var lineEl = l.get()[0];
 			lineEl.draggable = true;
+			lineEl.ondragstart = function(e:js.html.DragEvent) {
+				ide.registerUpdate(updateDrag);
+			}
 			lineEl.ondragend = function(e:js.html.DragEvent) {
+				ide.unregisterUpdate(updateDrag);
 				var pickedEl = js.Browser.document.elementFromPoint(e.clientX, e.clientY);
 				var pickedLine = null;
 				var parentEl = pickedEl;
@@ -160,7 +185,7 @@ class Table extends Component {
 					parentEl = parentEl.parentElement;
 				}
 				if (pickedLine != null) {
-					editor.moveLine(line, pickedLine.index - line.index);
+					editor.moveLine(line, pickedLine.index - line.index, true);
 					return true;
 				}
 
