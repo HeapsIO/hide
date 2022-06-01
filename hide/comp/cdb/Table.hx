@@ -171,9 +171,17 @@ class Table extends Component {
 			lineEl.draggable = true;
 			lineEl.ondragstart = function(e:js.html.DragEvent) {
 				ide.registerUpdate(updateDrag);
+				e.dataTransfer.effectAllowed = "move";
+			}
+			lineEl.ondrag = function(e:js.html.DragEvent) {
+				if (hxd.Key.isDown(hxd.Key.ESCAPE)) {
+					e.dataTransfer.dropEffect = "none";
+					e.preventDefault();
+				}
 			}
 			lineEl.ondragend = function(e:js.html.DragEvent) {
 				ide.unregisterUpdate(updateDrag);
+				if (e.dataTransfer.dropEffect == "none") return false;
 				var pickedEl = js.Browser.document.elementFromPoint(e.clientX, e.clientY);
 				var pickedLine = null;
 				var parentEl = pickedEl;
