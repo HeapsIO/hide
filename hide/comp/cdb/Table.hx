@@ -125,23 +125,14 @@ class Table extends Component {
 	}
 
 	function updateDrag() {
-		if (ide.mouseY > js.Browser.document.body.scrollHeight*0.8) {
-			var scroll = element.get()[0];
-			while (scroll != null) {
-				if (scroll.classList.contains("hide-scroll"))
-					break;
-				scroll = scroll.parentElement;
-			}
-			scroll.scrollTop += 15 + Std.int((ide.mouseY - js.Browser.document.body.scrollHeight*0.8)/(js.Browser.document.body.scrollHeight - js.Browser.document.body.scrollHeight*0.8)*30);
+		var scrollHeight = js.Browser.document.body.scrollHeight;
+		if (ide.mouseY > scrollHeight*0.8) {
+			var scroll = element.get()[0].parentElement.parentElement;
+			scroll.scrollTop += 15 + Std.int((ide.mouseY - scrollHeight*0.8)/(scrollHeight - scrollHeight*0.8)*30);
 		}
-		if (ide.mouseY < js.Browser.document.body.scrollHeight*0.2) {
-			var scroll = element.get()[0];
-			while (scroll != null) {
-				if (scroll.classList.contains("hide-scroll"))
-					break;
-				scroll = scroll.parentElement;
-			}
-			scroll.scrollTop -= 15 + Std.int((js.Browser.document.body.scrollHeight*0.2 - ide.mouseY)/(js.Browser.document.body.scrollHeight*0.2)*30);
+		if (ide.mouseY < scrollHeight*0.2) {
+			var scroll = element.get()[0].parentElement.parentElement;
+			scroll.scrollTop -= 15 + Std.int((scrollHeight*0.2 - ide.mouseY)/(scrollHeight*0.2)*30);
 		}
 	}
 
@@ -170,6 +161,10 @@ class Table extends Component {
 			var lineEl = l.get()[0];
 			lineEl.draggable = true;
 			lineEl.ondragstart = function(e:js.html.DragEvent) {
+				if (editor.cursor.getCell() != null && editor.cursor.getCell().inEdit) {
+					e.preventDefault();
+					return;
+				}
 				ide.registerUpdate(updateDrag);
 				e.dataTransfer.effectAllowed = "move";
 			}
