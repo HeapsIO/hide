@@ -960,6 +960,8 @@ class Editor extends Component {
 			searchFilter(e.getThis().val());
 		});
 		var hideButton = new Element("<i>").addClass("fa fa-eye").appendTo(searchBox);
+		hideButton.attr("title", "Search through hidden categories");
+
 		hideButton.click(function(_) {
 			searchHidden = !searchHidden;
 			hideButton.toggleClass("fa-eye", searchHidden);
