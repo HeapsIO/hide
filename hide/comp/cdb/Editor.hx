@@ -218,7 +218,10 @@ class Editor extends Component {
 
 	function searchFilter( filter : String ) {
 		if( filter == "" ) filter = null;
-		if( filter != null ) filter = filter.toLowerCase();
+		if( filter != null ) {
+			var formatFilter = untyped filter.toLowerCase().normalize('NFD');
+			filter = ~/[\u0300-\u036f]/g.map(formatFilter, (r) -> "");
+		}
 
 		var all = element.find("table.cdb-sheet > tbody > tr").not(".head");
 		var seps = all.filter(".separator");
@@ -234,7 +237,9 @@ class Editor extends Component {
 			}
 
 			for( t in lines ) {
-				if( t.textContent.toLowerCase().indexOf(filter) < 0 )
+				var content = untyped t.textContent.toLowerCase().normalize('NFD');
+				content = ~/[\u0300-\u036f]/g.map(content, (r) -> "");
+				if( content.indexOf(filter) < 0 )
 					t.classList.add("filtered");
 			}
 			while( lines.length > 0 ) {
