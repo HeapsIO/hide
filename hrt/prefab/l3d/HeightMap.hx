@@ -639,38 +639,51 @@ class HeightMap extends Object3D {
 		var arr = texArrayCache.get(k);
 		if( arr != null && !arr.texture.isDisposed() )
 			return arr;
-		var tl = switch( k ) {
-		case Albedo: getTextures(k, 0, 0);
+		var pl = switch ( k ) {
+		case Albedo:
+			var pl = [];
+			for ( t in textures ) {
+				if ( t.kind != Albedo || t.path == null || !t.enable ) continue;
+				var image = hxd.res.Loader.currentInstance.load(t.path).toImage();
+				pl.push(image.getPixels());
+			}
+			pl;
 		case Normal:
-			var tl = [];
-			for( t in textures )
-				if( t.kind == Albedo && t.path != null && t.enable ) {
-					var path = new haxe.io.Path(t.path);
-					path.file = path.file.split("_Albedo").join("");
-					path.file += "_Normal";
-					tl.push(loadTexture(path.toString()));
-				}
-			tl;
+			var pl = [];
+			for ( t in textures ) {
+				if ( t.kind != Albedo || t.path == null || !t.enable ) continue;
+				var path = new haxe.io.Path(t.path);
+				path.file = path.file.split("_Albedo").join("");
+				path.file += "_Normal";
+				var image = hxd.res.Loader.currentInstance.load(path.toString()).toImage();
+				pl.push(image.getPixels());
+			}
+			pl;
 		default: throw "assert";
 		}
-		if( tl.length == 0 ) tl = [h3d.mat.Texture.fromColor(k == Normal ? 0x8080FF : 0xFF00FF)];
+		var defaultTexture = null;
+		if( pl.length == 0 ) defaultTexture = h3d.mat.Texture.fromColor(k == Normal ? 0x8080FF : 0xFF00FF);
 		var indexes = [];
 		var layers = [];
-		for( t in tl ) {
-			var idx = layers.indexOf(t);
+		for( p in pl ) {
+			var idx = layers.indexOf(p);
 			if( idx < 0 ) {
 				idx = layers.length;
-				layers.push(t);
+				layers.push(p);
 			}
 			indexes.push(idx);
 		}
-		var tex = new h3d.mat.TextureArray(layers[0].width, layers[0].height, layers.length, [Target], switch( layers[0].format ) {
-		case S3TC(_): RGBA;
-		case fmt: fmt;
-		});
+		var tex;
+		if ( defaultTexture != null )
+			tex = new h3d.mat.TextureArray(defaultTexture.width, defaultTexture.height, 1, defaultTexture.format);
+		else
+			tex = new h3d.mat.TextureArray(layers[0].width, layers[0].height, layers.length, layers[0].format);
 		tex.realloc = function() {
-			for( i => t in layers )
-				h3d.pass.Copy.run(t, tex, null, null, i);
+			if ( defaultTexture != null )
+				h3d.pass.Copy.run(defaultTexture, tex, null, null, 0);
+			else
+				for( i => t in layers )
+					tex.uploadPixels(layers[i], 0, i );
 		};
 		tex.realloc();
 		tex.wrap = Repeat;
