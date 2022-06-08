@@ -639,6 +639,41 @@ class HeightMap extends Object3D {
 		var arr = texArrayCache.get(k);
 		if( arr != null && !arr.texture.isDisposed() )
 			return arr;
+		#if editor
+		var tl = switch( k ) {
+		case Albedo: getTextures(k, 0, 0);
+		case Normal:
+			var tl = [];
+			for( t in textures )
+				if( t.kind == Albedo && t.path != null && t.enable ) {
+					var path = new haxe.io.Path(t.path);
+					path.file = path.file.split("_Albedo").join("");
+					path.file += "_Normal";
+					tl.push(loadTexture(path.toString()));
+				}
+			tl;
+		default: throw "assert";
+		}
+		if( tl.length == 0 ) tl = [h3d.mat.Texture.fromColor(k == Normal ? 0x8080FF : 0xFF00FF)];
+		var indexes = [];
+		var layers = [];
+		for( t in tl ) {
+			var idx = layers.indexOf(t);
+			if( idx < 0 ) {
+				idx = layers.length;
+				layers.push(t);
+			}
+			indexes.push(idx);
+		}
+		var tex = new h3d.mat.TextureArray(layers[0].width, layers[0].height, layers.length, [Target], switch( layers[0].format ) {
+		case S3TC(_): RGBA;
+		case fmt: fmt;
+		});
+		tex.realloc = function() {
+			for( i => t in layers )
+				h3d.pass.Copy.run(t, tex, null, null, i);
+		};
+		#else
 		var pl = switch ( k ) {
 		case Albedo:
 			var pl = [];
@@ -685,6 +720,7 @@ class HeightMap extends Object3D {
 				for( i => t in layers )
 					tex.uploadPixels(layers[i], 0, i );
 		};
+		#end
 		tex.realloc();
 		tex.wrap = Repeat;
 		arr = { texture : tex, indexes : indexes };
