@@ -1,4 +1,5 @@
 package hide.view;
+import hxd.Key as K;
 
 class Model extends FileView {
 
@@ -735,14 +736,20 @@ class Model extends FileView {
 			case 0:
 				var prevPause = obj.currentAnimation.pause;
 				obj.currentAnimation.pause = true;
-				obj.currentAnimation.setFrame( (e.relX / W) * obj.currentAnimation.frameCount );
+				var f = (e.relX / W) * obj.currentAnimation.frameCount;
+				if (K.isDown(K.SHIFT))
+					f = Math.round(f);
+				obj.currentAnimation.setFrame(f);
 				int.startCapture(function(e) {
 					switch(e.kind ) {
 					case ERelease:
 						obj.currentAnimation.pause = prevPause;
 						scene.s2d.stopCapture();
 					case EMove:
-						obj.currentAnimation.setFrame( (e.relX / W) * obj.currentAnimation.frameCount );
+						var f = (e.relX / W) * obj.currentAnimation.frameCount;
+						if (K.isDown(K.SHIFT))
+							f = Math.round(f);
+						obj.currentAnimation.setFrame(f);
 					default:
 					}
 				});
