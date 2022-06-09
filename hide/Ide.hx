@@ -1105,6 +1105,34 @@ class Ide {
 			database.compress = !database.compress;
 			saveDatabase();
 		});
+		db.find(".dbRef").click(function(_) {
+			hide.comp.cdb.DataFiles.load();
+			var csv = "";
+			for( table in getViews(hide.view.CdbTable) ) {
+				var editor = @:privateAccess table.editor;
+				var sheet = table.getSheets().filter((s) -> s.name == editor.getCurrentSheet())[0];
+				if (sheet != null) {
+					for (i in 0...sheet.lines.length) {
+						var id = null;
+						for( c in sheet.columns ) {
+							switch( c.type ) {
+							case TId:
+								id = Reflect.field(sheet.lines[i], c.name);
+								break;
+							default:
+							}
+						}
+						var messages = editor.getReferences(id, true, sheet);
+						csv += id + ',' + messages.length + ',' + messages.join(",") +"\n";
+					}
+				}
+			}
+			if (csv != "") {
+				chooseFileSave("ref.csv", function(f) {
+					if( f != null ) sys.io.File.saveContent(getPath(f), csv);
+				});
+			}
+		});
 		db.find(".dbExport").click(function(_) {
 			hide.comp.cdb.DataFiles.load();
 			var lang = new cdb.Lang(@:privateAccess database.data);
