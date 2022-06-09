@@ -1239,9 +1239,14 @@ class Editor extends Component {
 		var index : Null<Int> = null;
 		var currIndex : Null<Int> = line.index;
 		if (!exact) {
-			currIndex = line.table.sheet.moveLine( currIndex, delta );
-			if( currIndex != null )
-				index = currIndex;
+			var distance = (delta >= 0 ? delta : -1 * delta);
+			for( _ in 0...distance ) {
+				currIndex = line.table.sheet.moveLine( currIndex, delta );
+				if( currIndex == null )
+					break;
+				else
+					index = currIndex;
+			}
 		}
 		else
 			while (index != prevIndex + delta) {
