@@ -1,4 +1,5 @@
 package hrt.prefab.l3d;
+import hrt.prefab.rfx.RendererFX;
 import h3d.scene.Object;
 import hrt.prefab.Context;
 import hrt.prefab.Library;
@@ -229,21 +230,29 @@ class Camera extends Object3D {
 			preview = !preview;
 			setEditModeButton();
 			var cam = ctx.scene.s3d.camera;
+			var renderer = @:privateAccess ctx.scene.s3d.renderer; 
 			if (preview) {
 				updateInstance(ctx.getContext(this));
 				applyTo(cam);
 				for ( effect in getAll(hrt.prefab.rfx.RendererFX) ) {
-					var prevEffect = @:privateAccess ctx.scene.s3d.renderer.getEffect(hrt.prefab.rfx.RendererFX);
+					var prevEffect = @:privateAccess renderer.getEffect(hrt.prefab.rfx.RendererFX);
 					if ( prevEffect != null )
-						ctx.scene.s3d.renderer.effects.remove(prevEffect);
-					ctx.scene.s3d.renderer.effects.push( effect );
+						renderer.effects.remove(prevEffect);
+					renderer.effects.push( effect );
 				}
 				ctx.scene.editor.cameraController.lockZPlanes = true;
 				ctx.scene.editor.cameraController.loadFromCamera();
+				renderer.effects.push(new hrt.prefab.rfx.Border(0.02, 0x0000ff, 0.5));
 			}
 			else {
 				for ( effect in getAll(hrt.prefab.rfx.RendererFX) )
-					ctx.scene.s3d.renderer.effects.remove( effect );
+					renderer.effects.remove( effect );
+				for ( effect in renderer.effects ) {
+					if ( Std.isOfType(effect, hrt.prefab.rfx.Border) ) {
+						renderer.effects.remove(effect);
+						break;
+					}
+				}
 				ctx.makeChanges(this, function() {
 					var transform = new h3d.Matrix();
 					transform.identity();
