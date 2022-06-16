@@ -34,6 +34,9 @@ class HeightMapShader extends hxsl.Shader {
 		@param var albedoIndexes : Array<Vec4,AlbedoCount>;
 		@param var splats : Array<Sampler2D,SplatCount>;
 
+		@const var USE_BAKED_ALBEDO : Bool;
+		@param var bakedAlbedo : Sampler2D;
+
 		@input var input2 : { uv : Vec2 };
 
 		@const var hasAlbedoProps : Bool;
@@ -101,7 +104,9 @@ class HeightMapShader extends hxsl.Shader {
 				n.xy *= normalScale;
 				setNormal(n);
 			}
-			if( SplatCount > 0 ) {
+			if ( USE_BAKED_ALBEDO ) {
+				pixelColor = bakedAlbedo.getLod(calculatedUV, 0);
+			} else if( SplatCount > 0 ) {
 				var color = vec4(0.);
 				@unroll for( i in 0...SplatCount ) {
 					var s = splats[i].getLod(calculatedUV,0);
@@ -149,12 +154,90 @@ class HeightMapShader extends hxsl.Shader {
 	};
 }
 
+private class HeightMapTileBakeShader extends h3d.shader.ScreenShader {
+
+	static var SRC = {
+		@const var SplatCount : Int;
+		@const var AlbedoCount : Int;
+		@const(8) var SplatMode : Int;
+		@const var albedoIsArray : Bool;
+		@param var albedoTiling : Float;
+		@param var albedos : Array<Sampler2D,AlbedoCount>;
+		@param var albedoArray : Sampler2DArray;
+		@param var albedoIndexes : Array<Vec4,AlbedoCount>;
+		@param var splats : Array<Sampler2D,SplatCount>;
+		@const var hasAlbedoProps : Bool;
+		@param var albedoProps : Array<Vec4,AlbedoCount>;
+		@param var albedoGamma : Float;
+
+		@input var input2 : { uv : Vec2 };
+
+		// Output
+		var albedoOutput : Vec4;
+
+		function vertex() {
+			calculatedUV = input.uv;
+			output.position = vec4(uvToScreen(calculatedUV), 0, 1);
+			output.position.y *= flipY;
+		}
+
+		function getAlbedo( index : Int, uv : Vec2 ) : Vec4 {
+			var color = albedoIsArray ? albedoArray.get(vec3(uv,albedoIndexes[index].r)) : albedos[index].get(uv);
+			if( albedoGamma != 1 )
+				color = color.pow(albedoGamma.xxxx);
+			return color;
+		}
+
+		function splat( index : Int, amount : Float ) : Vec4 {
+			if( (!albedoIsArray || index >= AlbedoCount) || amount <= 0 )
+				return vec4(0.);
+			else if( hasAlbedoProps ) {
+				var p = albedoProps[index];
+				return getAlbedo(index, calculatedUV * p.w) * vec4(p.rgb,1) * amount;
+			} else
+				return getAlbedo(index, calculatedUV * albedoTiling) * amount;
+		}
+
+		function __init__fragment() {
+			if( SplatCount > 0 ) {
+				var color = vec4(0.);
+				@unroll for( i in 0...SplatCount ) {
+					var s = splats[i].getLod(calculatedUV,0);
+					switch( SplatMode ) {
+					case 0:
+						color += splat(i*4, s.r);
+						color += splat(i*4+1, s.g);
+						color += splat(i*4+2, s.b);
+						color += splat(i*4+3, s.a);
+					case 1:
+						color += splat(i*3, s.r);
+						color += splat(i*3+1, s.g);
+						color += splat(i*3+2, s.b);
+					case 2:
+						var i1 = int(s.r*256);
+						var i2 = int(s.g*256);
+						color += splat(i1,s.b);
+						color += splat(i2,s.a);
+					}
+				}
+				color.a = 1;
+				pixelColor = color;
+			} else {
+				pixelColor = getAlbedo(0, calculatedUV);
+			}
+			albedoOutput = pixelColor;
+		}
+
+	};
+}
+
 class HeightMapTile {
 
 	public var tx(default,null) : Int;
 	public var ty(default,null) : Int;
 	public var bounds(default, null) : h3d.col.Bounds;
 	public var root(default,null) : h3d.scene.Mesh;
+	public var albedoTex : h3d.mat.Texture;
 
 	var hmap : HeightMap;
 	var height : hxd.Pixels;
@@ -265,6 +348,38 @@ class HeightMapTile {
 
 		shader.albedoProps = hmap.getAlbedoProps();
 		shader.hasAlbedoProps = shader.albedoProps.length > 0;
+
+		if ( hmap.bakedAlbedo ) {
+			albedoTex = new h3d.mat.Texture(hmap.bakedAlbedoSize, hmap.bakedAlbedoSize, [Target]);
+			albedoTex.preventAutoDispose();
+
+			var ss = new h3d.pass.ScreenFx(new HeightMapTileBakeShader(), [Value("albedoOutput")]);
+			ss.shader.SplatCount = shader.SplatCount;
+			ss.shader.albedoIsArray = shader.albedoIsArray;
+			ss.shader.SplatMode = shader.SplatMode;
+			ss.shader.albedoTiling = shader.albedoTiling;
+			ss.shader.albedoGamma = shader.albedoGamma;
+			ss.shader.splats = shader.splats;
+			ss.shader.AlbedoCount = shader.AlbedoCount;
+			if( shader.albedoIsArray ) {
+				ss.shader.albedoArray = shader.albedoArray;
+				ss.shader.albedoIndexes = shader.albedoIndexes;
+			} else {
+				ss.shader.albedos = shader.albedos;
+			}
+			ss.shader.albedoProps = shader.albedoProps;
+			ss.shader.hasAlbedoProps = shader.hasAlbedoProps;
+
+			var engine = h3d.Engine.getCurrent();
+			engine.pushTarget(albedoTex);
+			ss.render();
+			engine.popTarget();
+
+			shader.USE_BAKED_ALBEDO = true;
+			shader.bakedAlbedo = albedoTex;
+		} else {
+			shader.USE_BAKED_ALBEDO = false;
+		}
 	}
 
 	inline function resolveTexturePath( path : String ) {
@@ -411,6 +526,8 @@ class HeightMap extends Object3D {
 	@:s var minZ = -10;
 	@:s var maxZ = 30;
 	@:s public var quality(get, default) = 4;
+	@:s public var bakedAlbedo = false;
+	@:s var bakedAlbedoSize = 2048;
 	function get_quality() {
 
 		#if editor
@@ -831,6 +948,8 @@ class HeightMap extends Object3D {
 				<dt>Gamma</dt><dd><input type="range" min="0" max="4" field="albedoGamma"/></dd>
 				<dt>Gamma Color</dt><dd><input type="range" min="0" max="4" field="albedoColorGamma"/></dd>
 				<dt>Fixed Size</dt><dd><input type="number" style="width:50px" field="sizeX"/><input type="number" style="width:50px" field="sizeY"/> <label><input type="checkBox" field="autoSize"> Auto</label></dd>
+				<dt>Bake Albedo</dt><dd><input type="checkbox" field="bakedAlbedo"/></dd>
+				<dt>Baked Albedo Size</dt><dd><input type="range" step="2" field="bakedAlbedoSize"/></dd>
 			</dl>
 			</div>
 			<div class="group" name="Textures">
