@@ -9,6 +9,7 @@ class Unknown extends Prefab {
 	}
 
 	override function load(v:Dynamic) {
+		this.type = v.type;
 		this.data = Reflect.copy(v);
 		this.props = v.props;
 		Reflect.deleteField(this.data, "children");
