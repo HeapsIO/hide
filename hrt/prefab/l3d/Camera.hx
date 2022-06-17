@@ -31,6 +31,9 @@ class Camera extends Object3D {
 	@:s var showFrustum = false;
 	var preview = false;
 	var obj : h3d.scene.Object = null;
+	#if editor
+	var editContext : hide.prefab.EditContext;
+	#end
 
 	public function new(?parent) {
 		super(parent);
@@ -122,6 +125,13 @@ class Camera extends Object3D {
 			cso.zNear = zNear;
 			cso.enable = preview;
 		}
+		#if editor
+		if ( preview ) {
+			applyTo(editContext.scene.s3d.camera);
+			editContext.scene.editor.cameraController.lockZPlanes = true;
+			editContext.scene.editor.cameraController.loadFromCamera();
+		}
+		#end
 	}
 
 	public function applyTo(c: h3d.Camera) {
@@ -190,6 +200,7 @@ class Camera extends Object3D {
 
 	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);
+		editContext = ctx;
 
 		var props : hide.Element = ctx.properties.add(new hide.Element('
 			<div class="group" name="Camera">
@@ -230,7 +241,7 @@ class Camera extends Object3D {
 			preview = !preview;
 			setEditModeButton();
 			var cam = ctx.scene.s3d.camera;
-			var renderer = @:privateAccess ctx.scene.s3d.renderer; 
+			var renderer = @:privateAccess ctx.scene.s3d.renderer;
 			if (preview) {
 				updateInstance(ctx.getContext(this));
 				applyTo(cam);
