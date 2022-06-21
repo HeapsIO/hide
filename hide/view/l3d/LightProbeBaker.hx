@@ -120,27 +120,11 @@ class LightProbeBaker {
 		@:privateAccess offScreenScene.syncRec(ctx);
 		@:privateAccess offScreenScene.emitRec(ctx);
 
-		// sort by pass id
-		@:privateAccess ctx.passes = haxe.ds.ListSort.sortSingleLinked(@:privateAccess ctx.passes, function(p1, p2) {
-			return @:privateAccess p1.pass.passId - @:privateAccess p2.pass.passId;
-		});
-
-		// group by pass implementation
-		var curPass = @:privateAccess ctx.passes;
-		passes = [];
-		while( curPass != null ) {
-			var passId = @:privateAccess curPass.pass.passId;
-			var p = curPass, prev = null;
-			while( p != null && @:privateAccess p.pass.passId == passId ) {
-				prev = p;
-				p = p.next;
-			}
-			prev.next = null;
+		for ( curPass in @:privateAccess ctx.passes ) {
 			var po = new h3d.scene.Renderer.PassObjects();
 			po.name = curPass.pass.name;
 			po.passes = new h3d.pass.PassList(curPass);
 			passes.push(po);
-			curPass = p;
 		}
 	}
 
