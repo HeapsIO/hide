@@ -121,6 +121,8 @@ class LightProbeBaker {
 		@:privateAccess offScreenScene.emitRec(ctx);
 
 		for ( curPass in @:privateAccess ctx.passes ) {
+			if ( curPass == null )
+				continue;
 			var po = new h3d.scene.Renderer.PassObjects();
 			po.name = curPass.pass.name;
 			po.passes = new h3d.pass.PassList(curPass);
