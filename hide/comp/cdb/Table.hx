@@ -439,6 +439,13 @@ class Table extends Component {
 					if (sep.hasClass("sep-hidden"))
 						sep.find("a.toggle").click();
 				}},
+				{ label : "", isSeparator : true },
+				{ label : "Remove", enabled : !sheet.props.hide, click : function() {
+					editor.beginChanges();
+					sheet.separators.splice(sindex, 1);
+					editor.endChanges();
+					editor.refresh();
+				}}
 			];
 			if( sepInfo.path != null )
 				opts.unshift({
