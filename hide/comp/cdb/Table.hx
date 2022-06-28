@@ -158,9 +158,9 @@ class Table extends Component {
 				}
 				editor.cursor.clickLine(line, e.shiftKey);
 			});
-			var lineEl = l.get()[0];
-			lineEl.draggable = true;
-			lineEl.ondragstart = function(e:js.html.DragEvent) {
+			var headEl = head.get()[0];
+			headEl.draggable = true;
+			headEl.ondragstart = function(e:js.html.DragEvent) {
 				if (editor.cursor.getCell() != null && editor.cursor.getCell().inEdit) {
 					e.preventDefault();
 					return;
@@ -168,13 +168,13 @@ class Table extends Component {
 				ide.registerUpdate(updateDrag);
 				e.dataTransfer.effectAllowed = "move";
 			}
-			lineEl.ondrag = function(e:js.html.DragEvent) {
+			headEl.ondrag = function(e:js.html.DragEvent) {
 				if (hxd.Key.isDown(hxd.Key.ESCAPE)) {
 					e.dataTransfer.dropEffect = "none";
 					e.preventDefault();
 				}
 			}
-			lineEl.ondragend = function(e:js.html.DragEvent) {
+			headEl.ondragend = function(e:js.html.DragEvent) {
 				ide.unregisterUpdate(updateDrag);
 				if (e.dataTransfer.dropEffect == "none") return false;
 				var pickedEl = js.Browser.document.elementFromPoint(e.clientX, e.clientY);
