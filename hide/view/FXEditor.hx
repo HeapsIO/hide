@@ -307,8 +307,12 @@ class FXEditor extends FileView {
 		xOffset = -timelineLeftMargin / xScale;
 		var content = sys.io.File.getContent(getPath());
 		var json = haxe.Json.parse(content);
-		if (json.type == "fx")
-			data = new hrt.prefab.fx.FX();
+		if (json.type == "fx") {
+			var inf = hrt.prefab.Library.getRegistered().get("fx");
+			data = Std.downcast(Type.createInstance(inf.cl, null), hrt.prefab.fx.FX);
+			if ( data == null )
+				throw "fx prefab override failed";
+		}
 		else {
 			is2D = true;
 			data = new hrt.prefab.fx.FX2D();
