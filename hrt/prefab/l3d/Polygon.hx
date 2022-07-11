@@ -7,6 +7,7 @@ enum Shape {
 	Quad(subdivision : Int);
 	Disc(segments: Int, angle: Float, inner: Float, rings:Int);
 	Custom;
+	Sphere( segsW : Int, segsH : Int );
 }
 
 typedef PrimCache = Map<Shape, h3d.prim.Polygon>;
@@ -32,9 +33,7 @@ class Polygon extends Object3D {
 		var obj : Dynamic = super.save();
 		obj.kind = shape.getIndex();
 		switch(shape){
-		case Quad(subdivision):
-			obj.args = shape.getParameters();
-		case Disc(segments, angle, inner, rings):
+		case Quad(_), Disc(_), Sphere(_):
 			obj.args = shape.getParameters();
 		case Custom:
 			obj.points = [for( p in points ) { x : p.x, y : p.y }];
@@ -45,7 +44,7 @@ class Polygon extends Object3D {
 	override function load( obj : Dynamic ) {
 		super.load(obj);
 		switch(obj.kind){
-			case 0, 1: shape = Type.createEnumIndex(Shape, obj.kind, obj.args == null ? [0] : obj.args);
+			case 0, 1, 3: shape = Type.createEnumIndex(Shape, obj.kind, obj.args == null ? [0] : obj.args);
 			case 2:
 				shape = Custom;
 				var list : Array<Dynamic> = obj.points;
@@ -125,10 +124,12 @@ class Polygon extends Object3D {
 			}];
 		case Custom:
 			[for( p in points ) p.clone()];
+		case Sphere(_):
+			null;
 		};
 	}
 
-	public static function createPrimitive( shape : Shape ) {
+	public static function createPrimitive( shape : Shape ) : h3d.prim.Polygon {
 		var uvs : Array<Point> = null;
 		var points : Array<Point> = null;
 		var indices : Array<Int> = null;
@@ -204,6 +205,12 @@ class Polygon extends Object3D {
 						indices.push(nxt + 1);
 					}
 				}
+			case Sphere(sw, sh):
+				var sp = new h3d.prim.Sphere(1, sw, sh);
+				sp.addUVs();
+				sp.addNormals();
+				sp.addTangents();
+				return sp;
 			default:
 		}
 
@@ -301,6 +308,7 @@ class Polygon extends Object3D {
 			kind: shape.getName(),
 			subdivision: 0,
 			segments: 24,
+			segmentsH : 24,
 			rings: 4,
 			innerRadius: 0.0,
 			angle: 360.0
@@ -314,7 +322,9 @@ class Polygon extends Object3D {
 				viewModel.angle = angle;
 				viewModel.innerRadius = inner;
 			case Custom:
-			default:
+			case Sphere(segw, segh):
+				viewModel.segments = segw;
+				viewModel.segmentsH = segh;
 		}
 
 		var group = new hide.Element('
@@ -324,6 +334,7 @@ class Polygon extends Object3D {
 					<select field="kind">
 						<option value="Quad">Quad</option>
 						<option value="Disc">Disc</option>
+						<option value="Sphere">Sphere</option>
 						<option value="Custom">Custom</option>
 					</select>
 				</dd>
@@ -340,8 +351,13 @@ class Polygon extends Object3D {
 			<dt>Inner radius</dt><dd><input field="innerRadius" type="range" min="0" max="1" /></dd>
 			<dt>Angle</dt><dd><input field="angle" type="range" min="0" max="360" /></dd>');
 
+		var sphereProps = new hide.Element('
+			<dt>Segments</dt><dd><input field="segments" type="range" min="0" max="100" step="1" /></dd>
+			<dt>SegmentsH</dt><dd><input field="segmentsH" type="range" min="0" max="100" step="1" /></dd>');
+
 		group.append(quadProps);
 		group.append(discProps);
+		group.append(sphereProps);
 
 		var updateProps = null;
 
@@ -370,16 +386,10 @@ class Polygon extends Object3D {
 			switch( viewModel.kind ) {
 				case "Quad":
 					shape = Quad(viewModel.subdivision);
-					if(pIsKind && prevKind == Custom) {
-						scaleX = prevScale[0];
-						scaleY = prevScale[1];
-					}
 				case "Disc":
 					shape = Disc(viewModel.segments, viewModel.angle, viewModel.innerRadius, viewModel.rings);
-					if(pIsKind && prevKind == Custom) {
-						scaleX = prevScale[0];
-						scaleY = prevScale[1];
-					}
+				case "Sphere":
+					shape = Sphere(viewModel.segments, viewModel.segmentsH);
 				case "Custom":
 					shape = Custom;
 					if(pIsKind) {
@@ -413,6 +423,11 @@ class Polygon extends Object3D {
 				default: shape = Quad(0);
 			}
 
+			if(pIsKind && prevKind == Custom && shape != Custom) {
+				scaleX = prevScale[0];
+				scaleY = prevScale[1];
+			}
+
 			updateProps();
 			ctx.onChange(this, pname);
 		});
@@ -427,6 +442,7 @@ class Polygon extends Object3D {
 			switch(viewModel.kind){
 				case "Quad": quadProps.show();
 				case "Disc": discProps.show();
+				case "Sphere": sphereProps.show();
 				case "Custom":
 					editorProps.show();
 					setSelected(ctx.getContext(this), true);
