@@ -740,13 +740,13 @@ class Editor extends Component {
 					if( t.sheet.getPath() == cursor.table.sheet.getPath() )
 						cursor.table = t;
 				}
-				cursor.update();
 			}
 		} else
 			refresh(state);
 
 		if( cdbTable != null )
 			@:privateAccess cdbTable.syncTabs();
+		haxe.Timer.delay(() -> cursor.update(), 1); // scroll
 	}
 
 	public static var inRefreshAll(default,null) : Bool;
