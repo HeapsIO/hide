@@ -30,8 +30,12 @@ class CdbTable extends hide.ui.View<{}> {
 		if( index < 0 ) return;
 		tabs.currentTab = tabContents[index].parent();
 		editor.setFilter(null);
-		if( line != null && column != null )
-			editor.cursor.setDefault(line, column);
+		if( line != null ) {
+			if( column != null )
+				editor.cursor.setDefault(line, column);
+			if( editor.cursor.table != null )
+				editor.cursor.table.expandLine(line);
+		}
 		editor.focus();
 		haxe.Timer.delay(() -> editor.cursor.update(), 1); // scroll
 	}

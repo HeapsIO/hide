@@ -313,8 +313,30 @@ class Table extends Component {
 		return select;
 	}
 
+	function isSepHidden(index) {
+		return getDisplayState("sep/"+sheet.separators[index].title) == false;
+	}
+
+	public function expandLine(line: Int) {
+		var sepIndex = -1;
+		for( i in 0...sheet.separators.length ) {
+			if( sheet.separators[i].index > line )
+				break;
+			sepIndex = i;
+		}
+		if( sepIndex < 0 )
+			return;
+		var subs = element.find("tr.separator");
+		var t = makeSeparatorTree(sheet.separators[sepIndex]);
+		while( t.parent != null ) {
+			if( isSepHidden(t.index) )
+				new Element(subs[t.index]).find("a.toggle").click();
+			t = t.parent;
+		}
+	}
+
 	function makeSeparator( sindex : Int, colCount : Int ) : { element : Element, hidden : Null<Bool> } {
-		var sep = J("<tr>").addClass("separator").append('<td colspan="${colCount+1}"><a href="#" class="toggle"></a><span></span></td>');
+		var sep = J("<tr>").addClass("separator").attr("sindex", sindex).append('<td colspan="${colCount+1}"><a href="#" class="toggle"></a><span></span></td>');
 		var content = sep.find("span");
 		var toggle = sep.find("a");
 		var sepInfo = sheet.separators[sindex];
@@ -343,10 +365,6 @@ class Table extends Component {
 					out.push(lines[i]);
 			}
 			return out;
-		}
-
-		function isSepHidden(index) {
-			return getDisplayState("sep/"+sheet.separators[index].title) == false;
 		}
 
 		var hidden : Bool;
