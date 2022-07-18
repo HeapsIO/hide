@@ -84,7 +84,7 @@ class Sao extends RendererFX {
 				<dt>Bias</dt><dd><input type="range" min="0" max="0.5" field="bias"/></dd>
 				<dt>Texture Size</dt><dd><input type="range" min="0" max="1" field="size"/></dd>
 				<dt>Samples</dt><dd><input type="range" min="3" max="255" field="samples" step="1"/></dd>
-				<dt>Micro Intensity</dt><dd><input type="range" min="0" max="1" field="microIntensity"/></dd>
+				<dt>Materials occlusion</dt><dd><input type="range" min="0" max="1" field="microIntensity"/></dd>
 			</dl>
 		</div>
 		<div class="group" name="Noise">
