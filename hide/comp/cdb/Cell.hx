@@ -500,7 +500,7 @@ class Cell extends Component {
 
 		var px = Std.int(v.size*v.x*zoom);
 		var py = Std.int(v.size*v.y*zoom);
-		var bg = 'background : url($url) -${px}px -${py}px;';
+		var bg = 'background : url(\'$url\') -${px}px -${py}px;';
 		if( zoom > 1 )
 			bg += "image-rendering : pixelated;";
 		var html = '<div
