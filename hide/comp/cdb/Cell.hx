@@ -682,6 +682,20 @@ class Cell extends Component {
 			if (!useSelect2) {
 				var isLocal = sdat.idCol.scope != null;
 				var elts: Array<hide.comp.Dropdown.Choice>;
+				function makeClasses(o: cdb.Sheet.SheetIndex) {
+					var ret = [];
+					for( c in sdat.columns ) {
+						switch( c.type ) {
+							case TId | TBool:
+								ret.push("c_" + c.name + "_" + Reflect.field(o.obj, c.name));
+							case TEnum( values ):
+								ret.push("c_" + c.name + "_" + values[Reflect.field(o.obj, c.name)]);
+							case TFlags( values ):
+							default:
+						}
+					}
+					return ret;
+				}
 				if( isLocal ) {
 					var scope = refScope(sdat,table.getRealSheet(),line.obj,[]);
 					var prefix = makeId(scope, sdat.idCol.scope, null)+":";
@@ -689,12 +703,14 @@ class Cell extends Component {
 						id : d.id.split(":").pop(),
 						ico : d.ico,
 						text : d.disp,
+						classes : makeClasses(d),
 					}];
 				} else {
 					elts = [ for( d in sdat.all ) {
 						id : d.id,
 						ico : d.ico,
 						text : d.disp,
+						classes : makeClasses(d),
 					}];
 				}
 				if( column.opt || currentValue == null || currentValue == "" ) {

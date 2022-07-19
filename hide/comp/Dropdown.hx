@@ -4,6 +4,7 @@ typedef Choice = {
 	var id: String;
 	var text: String;
 	@:optional var ico: Dynamic;
+	@:optional var classes: Array<String>;
 }
 
 class Dropdown extends Component {
@@ -32,6 +33,10 @@ class Dropdown extends Component {
 				el.prepend(buildIcon(o));
 			if( o.id == currentValue )
 				el.addClass("current-value");
+			if( o.classes != null ) {
+				for( c in o.classes )
+					el.addClass(c);
+			}
 			el.data("id", o.id);
 			el.data("text", o.text);
 			el.click((_) -> applyValue(o.id));
