@@ -213,6 +213,38 @@ class Cell extends Component {
 			element.toggleClass("formula", editor.formulas.has(this) );
 		default:
 		}
+		if( ide.projectConfig.dbProofread == true ) {
+			var classes = element.attr("class").split(" ");
+			switch( column.type ) {
+			case TRef(name):
+				var sdat = editor.base.getSheet(name);
+				if( sdat != null ) {
+					for( c in sdat.columns ) {
+						switch( c.type ) {
+							case TId | TBool:
+								for (c2 in classes) {
+									if (StringTools.startsWith(c2, "r_" + c.name + "_"))
+										element.removeClass(c2);
+								}
+							default:
+						}
+					}
+					for( l in sdat.all ) {
+						if( l.id == currentValue ) {
+							for( c in sdat.columns ) {
+								switch( c.type ) {
+									case TId | TBool:
+										element.addClass("r_" + c.name + "_" + Reflect.field(l.obj, c.name));
+									default:
+								}
+							}
+							break;
+						}
+					}
+				}
+			default:
+			}
+		}
 	}
 
 	function getSheetView( sheet : cdb.Sheet ) {
@@ -687,9 +719,9 @@ class Cell extends Component {
 					for( c in sdat.columns ) {
 						switch( c.type ) {
 							case TId | TBool:
-								ret.push("c_" + c.name + "_" + Reflect.field(o.obj, c.name));
+								ret.push("r_" + c.name + "_" + Reflect.field(o.obj, c.name));
 							case TEnum( values ):
-								ret.push("c_" + c.name + "_" + values[Reflect.field(o.obj, c.name)]);
+								ret.push("r_" + c.name + "_" + values[Reflect.field(o.obj, c.name)]);
 							case TFlags( values ):
 							default:
 						}
