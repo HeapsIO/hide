@@ -51,6 +51,9 @@ class SubTable extends Table {
 		root.appendTo(slider);
 		root.addClass("cdb-sub-sheet");
 
+		insertedTR.data("parent-cell", cell);
+		insertedTR.data("parent-tr", cell.line.element);
+
 		insertedTR.insertAfter(cell.line.element);
 		cell.element.text("...");
 		cell.element.addClass("parent-sub-table");

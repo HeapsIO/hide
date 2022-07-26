@@ -92,6 +92,7 @@
 		// When file column contains an image - controls whenever it should provide inline preview of the image instead of file path.
 		"inlineImageFiles": false
 	},
+	"cdb.filterIgnoreSublist": true,
 	// lines of these sheets will receive has-ref or no-ref html classes
 	"cdb.indicateRefs": [],
 

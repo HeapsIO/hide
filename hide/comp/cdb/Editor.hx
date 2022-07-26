@@ -232,6 +232,8 @@ class Editor extends Component {
 		}
 
 		var all = element.find("table.cdb-sheet > tbody > tr").not(".head");
+		if( config.get("cdb.filterIgnoreSublist") )
+			all = element.find("> table.cdb-sheet > tbody > tr").not(".head");
 		var seps = all.filter(".separator");
 		var lines = all.not(".separator");
 		all.removeClass("filtered");
@@ -250,9 +252,14 @@ class Editor extends Component {
 				if( !filters.any(f -> content.indexOf(f) >= 0) )
 					t.classList.add("filtered");
 			}
-			while( lines.length > 0 ) {
-				lines = lines.filter(".list").not(".filtered").prev();
-				lines.removeClass("filtered");
+			for( t in lines ) {
+				var l = new Element(t);
+				var parent: Element = l.data("parent-tr");
+				if( parent != null ) {
+					var f = parent.hasClass("filtered") && l.hasClass("filtered");
+					l.toggleClass("filtered", f);
+					parent.toggleClass("filtered", f);
+				}
 			}
 			all = all.not(".filtered");
 			if (!searchHidden)
