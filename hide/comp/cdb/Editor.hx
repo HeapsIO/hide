@@ -1,5 +1,6 @@
 package hide.comp.cdb;
 import hxd.Key in K;
+using hide.tools.Extensions;
 
 
 enum Direction {
@@ -50,7 +51,7 @@ class Editor extends Component {
 		schema : Array<cdb.Data.Column>,
 	};
 	var changesDepth : Int = 0;
-	var currentFilter : String;
+	var currentFilters : Array<String> = [];
 	var api : EditorApi;
 	var undoState : Array<UndoState> = [];
 	var currentValue : Any;
@@ -191,8 +192,8 @@ class Editor extends Component {
 		case K.SPACE:
 			e.preventDefault(); // prevent scroll
 		case K.ESCAPE:
-			if( currentFilter != null ) {
-				searchFilter(null);
+			if( currentFilters.length > 0 ) {
+				searchFilter([]);
 			}
 			searchBox.hide();
 			refresh();
@@ -201,7 +202,7 @@ class Editor extends Component {
 	}
 
 	public function updateFilter() {
-		searchFilter(currentFilter);
+		searchFilter(currentFilters);
 	}
 
 	public function setFilter( f : String ) {
@@ -213,21 +214,28 @@ class Editor extends Component {
 				searchBox.find("input").val(f);
 			}
 		}
-		searchFilter(f);
+		if ( f == null )
+			searchFilter([]);
+		else
+			searchFilter([f]);
 	}
 
-	function searchFilter( filter : String ) {
-		if( filter == "" ) filter = null;
-		if( filter != null ) {
-			var formatFilter = untyped filter.toLowerCase().normalize('NFD');
-			filter = ~/[\u0300-\u036f]/g.map(formatFilter, (r) -> "");
+	function searchFilter( filters : Array<String> ) {
+		while( filters.indexOf("") >= 0 )
+			filters.remove("");
+		while( filters.indexOf(null) >= 0 )
+			filters.remove(null);
+
+		for( i in 0...filters.length ) {
+			var formatFilter = untyped filters[i].toLowerCase().normalize('NFD');
+			filters[i] = ~/[\u0300-\u036f]/g.map(formatFilter, (r) -> "");
 		}
 
 		var all = element.find("table.cdb-sheet > tbody > tr").not(".head");
 		var seps = all.filter(".separator");
 		var lines = all.not(".separator");
 		all.removeClass("filtered");
-		if( filter != null ) {
+		if( filters.length > 0 ) {
 			if (searchHidden) {
 				var currentTable = tables.filter((t) -> t.sheet == currentSheet)[0];
 				for (l in currentTable.lines) {
@@ -239,7 +247,7 @@ class Editor extends Component {
 			for( t in lines ) {
 				var content = untyped t.textContent.toLowerCase().normalize('NFD');
 				content = ~/[\u0300-\u036f]/g.map(content, (r) -> "");
-				if( content.indexOf(filter) < 0 )
+				if( !filters.any(f -> content.indexOf(f) >= 0) )
 					t.classList.add("filtered");
 			}
 			while( lines.length > 0 ) {
@@ -256,7 +264,7 @@ class Editor extends Component {
 				}
 			}
 		}
-		currentFilter = filter;
+		currentFilters = filters;
 		cursor.update();
 	}
 
@@ -955,15 +963,38 @@ class Editor extends Component {
 		element.empty();
 		element.addClass('cdb');
 
-		searchBox = new Element("<div>").addClass("searchBox").appendTo(element);
-		var txt = new Element("<input type='text'>").appendTo(searchBox).keydown(function(e) {
-			if( e.keyCode == 27 ) {
-				searchBox.find("i").click();
-				return;
+		var filters: Array<String> = [];
+
+		searchBox = new Element('<div><div class="input-col"><div class="input-cont"/></div></div>').addClass("searchBox").appendTo(element);
+		var inputCont = searchBox.find(".input-cont");
+		var inputCol = searchBox.find(".input-col");
+
+		function addSearchInput() {
+			var index = filters.length;
+			filters.push("");
+			new Element("<input type='text'>").appendTo(inputCont).keydown(function(e) {
+				if( e.keyCode == 27 ) {
+					searchBox.find("i.close-search").click();
+					return;
+				} else if( e.keyCode == 9 && index == filters.length - 1) {
+					addSearchInput();
+					return;
+				}
+			}).keyup(function(e) {
+				filters[index] = e.getThis().val();
+				searchFilter(filters.copy());
+			});
+			inputCol.find(".remove-btn").toggleClass("hidden", filters.length <= 1);
+		}
+		function removeSearchInput() {
+			if( filters.length > 1 ) {
+				var a = inputCont.find("input").last().remove();
+				filters.pop();
+				searchFilter(filters.copy());
+				inputCol.find(".remove-btn").toggleClass("hidden", filters.length <= 1);
 			}
-		}).keyup(function(e) {
-			searchFilter(e.getThis().val());
-		});
+		}
+
 		var hideButton = new Element("<i>").addClass("fa fa-eye").appendTo(searchBox);
 		hideButton.attr("title", "Search through hidden categories");
 
@@ -976,11 +1007,11 @@ class Editor extends Component {
 				hiddenSeps.click();
 				hiddenSeps.click();
 			}
-			searchFilter(currentFilter);
+			updateFilter();
 		});
 
-		new Element("<i>").addClass("ico ico-times-circle").appendTo(searchBox).click(function(_) {
-			searchFilter(null);
+		new Element("<i>").addClass("close-search ico ico-times-circle").appendTo(searchBox).click(function(_) {
+			searchFilter([]);
 			searchBox.toggle();
 			var c = cursor.save();
 			focus();
@@ -989,6 +1020,14 @@ class Editor extends Component {
 			hiddenSeps.click();
 			hiddenSeps.click();
 		});
+
+		new Element("<i>").addClass("add-btn ico ico-plus").appendTo(inputCol).click(function(_) {
+			addSearchInput();
+		});
+		new Element("<i>").addClass("remove-btn ico ico-minus").appendTo(inputCol).click(function(_) {
+			removeSearchInput();
+		});
+		addSearchInput();
 
 		formulas = new Formulas(this);
 		formulas.evaluateAll(currentSheet.realSheet);
@@ -1007,10 +1046,18 @@ class Editor extends Component {
 			cursor.update();
 		}
 
-		if( currentFilter != null ) {
+		if( currentFilters.length > 0 ) {
 			updateFilter();
 			searchBox.show();
-			txt.val(currentFilter);
+			for( i in filters.length...currentFilters.length )
+				addSearchInput();
+			if( filters.length <= currentFilters.length ) {
+				var inputs = inputCont.find("input");
+				for( i in 0...inputs.length ) {
+					var input: js.html.InputElement = cast inputs[i];
+					input.value = currentFilters[i];
+				}
+			}
 		}
 	}
 

@@ -760,9 +760,18 @@ input[type=checkbox] {
 	border-right : none;
 	border-bottom-left-radius : 5px;
 	padding : 5px;
-	input {
-		width : 170px;
-		background-color : black;
+	padding-bottom: 2px;
+	.input-col {
+		float: left;
+		text-align: center;
+		input {
+			display: block;
+			width : 170px;
+			background-color : black;
+		}
+		i {
+			margin-top: 2px;
+		}
 	}
 	i {
 		cursor : pointer;
@@ -773,6 +782,9 @@ input[type=checkbox] {
 	}
 	i:hover {
 		color : #EEE;
+	}
+	i.hidden {
+		display: none;
 	}
 	color : #444;
 }

@@ -681,11 +681,20 @@ input[type=checkbox]:checked:after {
   border-right: none;
   border-bottom-left-radius: 5px;
   padding: 5px;
+  padding-bottom: 2px;
   color: #444;
 }
-.searchBox input {
+.searchBox .input-col {
+  float: left;
+  text-align: center;
+}
+.searchBox .input-col input {
+  display: block;
   width: 170px;
   background-color: black;
+}
+.searchBox .input-col i {
+  margin-top: 2px;
 }
 .searchBox i {
   cursor: pointer;
@@ -696,6 +705,9 @@ input[type=checkbox]:checked:after {
 }
 .searchBox i:hover {
   color: #EEE;
+}
+.searchBox i.hidden {
+  display: none;
 }
 .tree > .searchBox {
   position: sticky;
