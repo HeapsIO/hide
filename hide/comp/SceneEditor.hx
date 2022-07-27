@@ -1514,7 +1514,7 @@ class SceneEditor {
 			<div class="group" name="CDB">
 				<dl>
 				<dt>
-					<div class="btn-cdb-large ico ico-file-text"></div>
+					<div class="btn-cdb-large ico ico-file-text" title="Detach panel"></div>
 					Type
 				</dt>
 				<dd><select><option value="">- No props -</option></select></dd>

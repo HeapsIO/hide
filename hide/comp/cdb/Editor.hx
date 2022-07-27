@@ -1174,6 +1174,8 @@ class Editor extends Component {
 	public function popupColumn( table : Table, col : cdb.Data.Column, ?cell : Cell ) {
 		if( view != null )
 			return;
+		if( table.displayMode == AllProperties )
+			return;
 		var sheet = table.getRealSheet();
 		var indexColumn = sheet.columns.indexOf(col);
 		var menu : Array<hide.comp.ContextMenu.ContextMenuItem> = [
@@ -1217,7 +1219,7 @@ class Editor extends Component {
 				}
 				endChanges();
 				refresh();
-			}}
+			}},
 		];
 
 		if( table.parent == null ) {
