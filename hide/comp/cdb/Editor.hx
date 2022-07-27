@@ -1174,13 +1174,15 @@ class Editor extends Component {
 	public function popupColumn( table : Table, col : cdb.Data.Column, ?cell : Cell ) {
 		if( view != null )
 			return;
-		if( table.displayMode == AllProperties )
-			return;
 		var sheet = table.getRealSheet();
 		var indexColumn = sheet.columns.indexOf(col);
 		var menu : Array<hide.comp.ContextMenu.ContextMenuItem> = [
 			{ label : "Edit", click : function () editColumn(sheet, col) },
-			{ label : "Add Column", click : function () newColumn(sheet, indexColumn) },
+			{
+				label : "Add Column",
+				click : function () newColumn(sheet, indexColumn),
+				enabled : table.displayMode != AllProperties,
+			},
 			{ label : "", isSeparator: true },
 			{ label : "Move Left", enabled:  (indexColumn > 0 &&
 				nextVisibleColumnIndex(table, indexColumn, Left) > -1), click : function () {
@@ -1209,17 +1211,21 @@ class Editor extends Component {
 				refresh();
 			}},
 			{ label: "", isSeparator: true },
-			{ label : "Delete", click : function () {
-				if( table.displayMode == Properties ) {
-					beginChanges();
-					changeObject(cell.line, col, base.getDefault(col,sheet));
-				} else {
-					beginChanges(true);
-					sheet.deleteColumn(col.name);
-				}
-				endChanges();
-				refresh();
-			}},
+			{
+				label : "Delete",
+				click : function () {
+					if( table.displayMode == Properties ) {
+						beginChanges();
+						changeObject(cell.line, col, base.getDefault(col,sheet));
+					} else {
+						beginChanges(true);
+						sheet.deleteColumn(col.name);
+					}
+					endChanges();
+					refresh();
+				},
+				enabled : table.displayMode != AllProperties,
+			},
 		];
 
 		if( table.parent == null ) {
@@ -1253,7 +1259,7 @@ class Editor extends Component {
 
 			switch(col.type) {
 			case TId | TString:
-				menu.push({ label : "Sort", click: () -> table.sortBy(col) });
+				menu.push({ label : "Sort", click: () -> table.sortBy(col), enabled : table.displayMode != AllProperties });
 			default:
 			}
 		}
