@@ -666,36 +666,41 @@ class ModelLibrary extends Prefab {
 	var shader : ModelLibShader;
 	var geomBounds : Array<h3d.col.Bounds>;
 	public var debug = false;
+	public var clear = false;
 
 	override function make(ctx:hrt.prefab.Context) {
 		// don't load/build children
 		shared = ctx.shared;
-		hmdPrim = Std.downcast(shared.loadModel(shared.getPrefabDatPath("model","hmd",this.name)).toMesh().primitive, h3d.prim.HMDModel);
-		geomBounds = [for( g in @:privateAccess hmdPrim.lib.header.geometries ) g.bounds];
+		if ( hmdPrim == null )
+			hmdPrim = Std.downcast(shared.loadModel(shared.getPrefabDatPath("model","hmd",this.name)).toMesh().primitive, h3d.prim.HMDModel);
+		if ( geomBounds == null )
+			geomBounds = [for( g in @:privateAccess hmdPrim.lib.header.geometries ) g.bounds];
 		@:privateAccess hmdPrim.curMaterial = -1;
-		shader = new ModelLibShader();
-		shader.mipStart = mipStart;
-		shader.mipEnd = mipEnd;
-		shader.mipPower = mipPower;
-		shader.mipNumber = mipLevels;
-		var tex = shared.loadTexture(shared.getPrefabDatPath("texture","dds",this.name));
-		var tnormal = try shared.loadTexture(shared.getPrefabDatPath("normal","dds",this.name)) catch( e : hxd.res.NotFound ) null;
-		var tspec = try shared.loadTexture(shared.getPrefabDatPath("specular","dds",this.name)) catch( e : hxd.res.NotFound ) null;
-		tex.wrap = Repeat;
-		tnormal.wrap = Repeat;
-		tspec.wrap = Repeat;
-		if( texturesCount == 1 ) {
-			shader.singleTexture = true;
-			shader.texture = tex;
-			shader.normalMap = tnormal;
-			shader.specular = tspec;
-		} else {
-			shader.textures = cast(tex,h3d.mat.TextureArray);
-			shader.normalMaps = cast(tnormal,h3d.mat.TextureArray);
-			shader.speculars = cast(tspec,h3d.mat.TextureArray);
+		if ( shader == null ) {
+			shader = new ModelLibShader();
+			shader.mipStart = mipStart;
+			shader.mipEnd = mipEnd;
+			shader.mipPower = mipPower;
+			shader.mipNumber = mipLevels;
+			var tex = shared.loadTexture(shared.getPrefabDatPath("texture","dds",this.name));
+			var tnormal = try shared.loadTexture(shared.getPrefabDatPath("normal","dds",this.name)) catch( e : hxd.res.NotFound ) null;
+			var tspec = try shared.loadTexture(shared.getPrefabDatPath("specular","dds",this.name)) catch( e : hxd.res.NotFound ) null;
+			tex.wrap = Repeat;
+			tnormal.wrap = Repeat;
+			tspec.wrap = Repeat;
+			if( texturesCount == 1 ) {
+				shader.singleTexture = true;
+				shader.texture = tex;
+				shader.normalMap = tnormal;
+				shader.specular = tspec;
+			} else {
+				shader.textures = cast(tex,h3d.mat.TextureArray);
+				shader.normalMaps = cast(tnormal,h3d.mat.TextureArray);
+				shader.speculars = cast(tspec,h3d.mat.TextureArray);
+			}
+			shader.hasNormal = tnormal != null;
+			shader.hasPbr = tspec != null;
 		}
-		shader.hasNormal = tnormal != null;
-		shader.hasPbr = tspec != null;
 		return ctx;
 	}
 
@@ -723,12 +728,15 @@ class ModelLibrary extends Prefab {
 		}
 
 		var meshes = [];
+		var bounds = obj.getBounds();
 		optimizeRec(obj, meshes);
 		meshes.sort(function(m1,m2) return m1.mat.indexStart - m2.mat.indexStart);
 		for ( m in meshes ) {
 			var bk = m.mat;
 			if ( meshBatches[bk.configIndex] == null) {
 				var batch = new h3d.scene.MeshBatch(hmdPrim, h3d.mat.Material.create(), obj);
+				batch.fixedPosition = true;
+				batch.cullingCollider = bounds;
 				batch.name = "modelLibrary"+"_"+bk.configIndex;
 				batch.material.mainPass.addShader(shader);
 				if ( debug ) batches.push(batch);
@@ -761,8 +769,8 @@ class ModelLibrary extends Prefab {
 				batch.primitiveSubPart = null;
 			}
 		}
-		// if (!debug)
-		// 	clearOptimized(obj);
+		if ( !debug && clear )
+			clearOptimized(obj);
 	}
 
 	function optimizeRec( obj : h3d.scene.Object, out : Array<{ mat : MaterialData, mesh : h3d.scene.Mesh }> ) {
@@ -808,13 +816,10 @@ class ModelLibrary extends Prefab {
 	}
 
 	function clearOptimized(obj: h3d.scene.Object) {
-		for ( c in @:privateAccess obj.children ) {
-			if ( !c.culled ) {
-				optimize(c);
-			}
+		for ( c in @:privateAccess obj.children.copy() ) {
 			clearOptimized(c);
 		}
-		if ( @:privateAccess obj.children.length == 0 && obj.culled )
+		if ( @:privateAccess obj.children.length == 0 && (!Std.isOfType(obj, h3d.scene.Mesh) || obj.culled) )
 			obj.remove();
 	}
 
