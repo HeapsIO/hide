@@ -137,14 +137,14 @@ class TerrainMesh extends h3d.scene.Object {
 
 		primitive = new h3d.prim.BigPrimitive(3, true);
 
-		inline function addVertice(x : Float, y : Float, i : Int) {
+		inline function addVertice(x : Float, y : Float) {
 			primitive.addPoint(x, y, 0);
 		}
 
 		primitive.begin(0,0);
 		for( y in 0 ... cellCount.y + 1 ) {
 			for( x in 0 ... cellCount.x + 1 ) {
-				addVertice(x * cellSize.x, y * cellSize.y, x + y * (cellCount.x + 1));
+				addVertice(x * cellSize.x, y * cellSize.y);
 			}
 		}
 
