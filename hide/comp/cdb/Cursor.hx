@@ -100,7 +100,7 @@ class Cursor {
 		return true;
 	}
 
-	public function move( dx : Int, dy : Int, shift : Bool, ctrl : Bool ) {
+	public function move( dx : Int, dy : Int, shift : Bool, ctrl : Bool, ?overflow = false ) {
 		if( table == null )
 			table = editor.tables[0];
 		if( x == -1 && ctrl ) {
@@ -145,10 +145,18 @@ class Cursor {
 			select = null;
 		else if( select == null )
 			select = { x : x, y : y };
+		var minX = table.displayMode == Table ? -1 : 0;
+		var maxX = table.columns.length;
+		var maxY = table.lines.length;
 		if( dx < 0 ) {
 			x += dx;
-			var minX = table.displayMode == Table ? -1 : 0;
-			if( x < minX ) x = minX;
+			if( x < minX ) {
+				if (overflow && y > 0) {
+					x = maxX - 1;
+					dy--;
+				} else
+					x = minX;
+			}
 		}
 		if( dy < 0 ) {
 			y += dy;
@@ -156,13 +164,17 @@ class Cursor {
 		}
 		if( dx > 0 ) {
 			x += dx;
-			var max = table.columns.length;
-			if( x >= max ) x = max - 1;
+			if( x >= maxX ) {
+				if (overflow && y < maxY - 1) {
+					x = minX;
+					dy++;
+				} else
+					x = maxX - 1;
+			}
 		}
 		if( dy > 0 ) {
 			y += dy;
-			var max = table.lines.length;
-			if( y >= max ) y = max - 1;
+			if( y >= maxY ) y = maxY - 1;
 		}
 		update();
 	}

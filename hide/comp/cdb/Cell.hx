@@ -680,7 +680,7 @@ class Cell extends Component {
 				case K.TAB:
 					closeEdit();
 					e.preventDefault();
-					editor.cursor.move(e.shiftKey ? -1 : 1, 0, false, false);
+					editor.cursor.move(e.shiftKey ? -1 : 1, 0, false, false, true);
 					var c = editor.cursor.getCell();
 					if( c != this ) c.edit();
 				}
@@ -773,7 +773,7 @@ class Cell extends Component {
 						return;
 					case K.TAB:
 						d.filterInput.blur();
-						editor.cursor.move(e.shiftKey? -1:1, 0, false, false);
+						editor.cursor.move(e.shiftKey? -1:1, 0, false, false, true);
 						var c = editor.cursor.getCell();
 						if( c != this && !c.blockEdit() ) c.edit();
 						e.preventDefault();
@@ -849,7 +849,7 @@ class Cell extends Component {
 						return;
 					case K.TAB:
 						d.filterInput.blur();
-						editor.cursor.move(e.shiftKey? -1:1, 0, false, false);
+						editor.cursor.move(e.shiftKey? -1:1, 0, false, false, true);
 						var c = editor.cursor.getCell();
 						if( c != this && !c.blockEdit() ) c.edit();
 						e.preventDefault();
@@ -885,7 +885,7 @@ class Cell extends Component {
 						return;
 					case K.TAB:
 						s.blur();
-						editor.cursor.move(e.shiftKey? -1:1, 0, false, false);
+						editor.cursor.move(e.shiftKey? -1:1, 0, false, false, true);
 						var c = editor.cursor.getCell();
 						if( c != this && !c.blockEdit() ) c.edit();
 						e.preventDefault();

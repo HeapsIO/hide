@@ -181,7 +181,7 @@ class Editor extends Component {
 			cursor.move( 0, 1, e.shiftKey, e.ctrlKey);
 			return true;
 		case K.TAB:
-			cursor.move( e.shiftKey ? -1 : 1, 0, false, false);
+			cursor.move( e.shiftKey ? -1 : 1, 0, false, false, true);
 			return true;
 		case K.PGUP:
 			cursor.move(0, -10, e.shiftKey, e.ctrlKey);
