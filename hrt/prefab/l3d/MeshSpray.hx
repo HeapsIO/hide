@@ -21,7 +21,6 @@ class MeshSpray extends Spray {
 
 	@:s var split : Int;
 	@:s var binaryStorage : Bool = false;
-	@:s var editionOnly : Bool = false;
 
 	var binaryMeshes : Array<{ path : String, x : Float, y : Float, z : Float, rotX : Float, rotY : Float, rotZ : Float, scale : Float }>;
 	var clearBinaryMeshes : Bool = true;
@@ -43,8 +42,6 @@ class MeshSpray extends Spray {
 
 	override function createObject( ctx : Context ) {
 		var mspray = new MeshSprayObject(ctx.local3d);
-		if ( editionOnly )
-			return mspray;
 		// preallocate batches so their materials can be resolved
 		var curID = 0, curMap = mspray.batchesMap.get(0);
 		if( curMap == null ) {
@@ -114,8 +111,6 @@ class MeshSpray extends Spray {
 	override function make( ctx : Context ) {
 		if( !enabled )
 			return ctx;
-		if ( editionOnly )
-			return super.make(ctx);
 		if( binaryStorage )
 			loadBinary(ctx);
 		ctx = super.make(ctx);
@@ -172,12 +167,7 @@ class MeshSpray extends Spray {
 	}
 
 	override function makeChild( ctx : Context, p : hrt.prefab.Prefab ) {
-		if ( editionOnly ) {
-			children.sort(function(c1, c2) {
-				return Std.isOfType(c1, Object3D) ? -1 : 1;
-			});
-		}
-		if( p.type == "model" && !editionOnly )
+		if( p.type == "model" )
 			return;
 		super.makeChild(ctx, p);
 	}
@@ -198,6 +188,7 @@ class MeshSprayObject extends Spray.SprayObject {
 	var batches : Array<h3d.scene.MeshBatch> = [];
 	var blookup : Map<h3d.prim.Primitive, h3d.scene.MeshBatch> = new Map();
 	var mlookup : Map<String, h3d.scene.Mesh> = [];
+	public var editChildren : Bool;
 
 	override function getMaterials( ?arr : Array<h3d.mat.Material>, recursive=true ) {
 		if( !recursive ) {
@@ -243,6 +234,8 @@ class MeshSprayObject extends Spray.SprayObject {
 	}
 
 	override public function redraw(updateShaders=false) {
+		if ( editChildren )
+			return;
 		getBounds(); // force absBos calculus on children
 		for( b in batches ) {
 			if( updateShaders ) b.shadersChanged = true;
@@ -287,7 +280,7 @@ class MeshSpray extends Spray {
 
 	@:s var split : Int = 0;
 	@:s var binaryStorage = false;
-	@:s var editionOnly = false;
+	@:s var editChildren = false;
 
 	var binaryMeshes : Array<{ path : String, x : Float, y : Float, z : Float, rotX : Float, rotY : Float, rotZ : Float, scale : Float }>;
 	var binaryChanged : Bool = false;
@@ -363,7 +356,7 @@ class MeshSpray extends Spray {
 	}
 
 	override function getHideProps() : HideProps {
-		return { icon : "paint-brush", name : "MeshSpray", hideChildren : p -> return Std.isOfType(p, Model) };
+		return { icon : "paint-brush", name : "MeshSpray", hideChildren : p -> return (!editChildren && Std.isOfType(p, Model)) };
 	}
 
 	function saveConfigMeshBatch() {
@@ -625,7 +618,8 @@ class MeshSpray extends Spray {
 		var enableBrush = options.find("#enableBrush");
 		enableBrush.on("change", function() {
 			currentConfig.enableBrush = enableBrush.is(":checked");
-			sceneEditor.setLock([this], currentConfig.enableBrush, false);
+			if ( !editChildren )
+				sceneEditor.setLock([this], currentConfig.enableBrush, false);
 			removeInteractiveBrush();
 			if (currentConfig.enableBrush)
 				createInteractiveBrush(ectx);
@@ -730,7 +724,8 @@ class MeshSpray extends Spray {
 			saveConfigMeshBatch();
 		});
 
-		sceneEditor.setLock([this], currentConfig.enableBrush, false);
+		if ( !editChildren )
+			sceneEditor.setLock([this], currentConfig.enableBrush, false);
 		removeInteractiveBrush();
 		if (currentConfig.enableBrush)
 			createInteractiveBrush(ectx);
@@ -741,7 +736,7 @@ class MeshSpray extends Spray {
 		<dl>
 			<dt>Split</dt><dd><input type="range" min="0" max="2048" field="split"/></dd>
 			<dt>Binary Storage</dt><dd><input type="checkbox" field="binaryStorage" ${binaryStorage?"disabled":""}/></dd>
-			<dt>Edition only (no opti)</dt><dd><input type="checkbox" field="editionOnly" ${binaryStorage?"disabled":""}/></dd>
+			<dt>See child</dt><dd><input type="checkbox" field="editChildren"}/></dd>
 		</dl>
 		</div>'), this);
 	}
@@ -887,11 +882,16 @@ class MeshSpray extends Spray {
 		return ctx;
 	}
 
+	override function updateInstance(ctx:Context, ?propName) {
+		cast(ctx.local3d, MeshSprayObject).editChildren = editChildren;
+		if ( editChildren )
+			locked = false;
+		super.updateInstance(ctx, propName);
+	} 
+
 	override function make(ctx:Context):Context {
 		if( !enabled )
 			return ctx;
-		if ( editionOnly )
-			return super.make(ctx);
 		if( binaryStorage ) {
 			binaryMeshes = [];
 			var bytes = new haxe.io.BytesInput(ctx.shared.loadPrefabDat("content","dat",name).entry.getBytes());
@@ -978,6 +978,8 @@ class MeshSpray extends Spray {
 	}
 
 	override function flatten<T:Prefab>( ?cl : Class<T>, ?arr: Array<T> ) : Array<T> {
+		if ( editChildren )
+			return super.flatten();
 		if(arr == null)
 			arr = [];
 		if( cl == null )
