@@ -736,7 +736,7 @@ class MeshSpray extends Spray {
 		<dl>
 			<dt>Split</dt><dd><input type="range" min="0" max="2048" field="split"/></dd>
 			<dt>Binary Storage</dt><dd><input type="checkbox" field="binaryStorage" ${binaryStorage?"disabled":""}/></dd>
-			<dt>See child</dt><dd><input type="checkbox" field="editChildren"}/></dd>
+			<dt>Edit children</dt><dd><input type="checkbox" field="editChildren"}/></dd>
 		</dl>
 		</div>'), this);
 	}
