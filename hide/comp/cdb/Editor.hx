@@ -305,6 +305,7 @@ class Editor extends Component {
 	}
 
 	function stringToCol(str : String) : Null<Int> {
+		str = str.toUpperCase();
 		var hexChars = "0123456789ABCDEF";
 		if( str.charAt(0) == "#" )
 			str = str.substr(1, str.length);
@@ -314,7 +315,7 @@ class Editor extends Component {
 		}
 		var color = Std.parseInt("0x"+str);
 		if( str.length == 6 )
-			return color | 0xFF000000;
+			return color;
 		else if( str.length == 3 ) {
 			var r = color >> 8;
 			var g = (color & 0xF0) >> 4;
@@ -323,7 +324,7 @@ class Editor extends Component {
 			g |= g << 4;
 			b |= b << 4;
 			color = (r << 16) | (g << 8) | b;
-			return color | 0xFF000000;
+			return color;
 		}
 		return null;
 	}
