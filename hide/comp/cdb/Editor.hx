@@ -280,26 +280,49 @@ class Editor extends Component {
 		if( sel == null )
 			return;
 		var data = [];
-		for( y in sel.y1...sel.y2+1 ) {
-			var obj = cursor.table.lines[y].obj;
+		var isProps = (cursor.table.displayMode != Table);
+		var schema;
+		function saveValue(out, obj, c) {
+			var form = @:privateAccess formulas.getFormulaNameFromValue(obj, c);
+			if( form != null ) {
+				Reflect.setField(out, c.name+"__f", form);
+				return;
+			}
+
+			var v = Reflect.field(obj, c.name);
+			if( v != null )
+				Reflect.setField(out, c.name, v);
+		}
+		if( isProps ) {
+			schema = [];
 			var out = {};
-			for( x in sel.x1...sel.x2+1 ) {
-				var c = cursor.table.columns[x];
-				var form = @:privateAccess formulas.getFormulaNameFromValue(obj, c);
-				if( form != null ) {
-					Reflect.setField(out, c.name+"__f", form);
-					continue;
-				}
-				var v = Reflect.field(obj, c.name);
-				if( v != null )
-					Reflect.setField(out, c.name, v);
+			for( y in sel.y1...sel.y2+1 ) {
+				var line = cursor.table.lines[y];
+				var obj = line.obj;
+				var c = line.columns[0];
+
+				saveValue(out, obj, c);
+				schema.push(c);
 			}
 			data.push(out);
+
+		} else {
+			for( y in sel.y1...sel.y2+1 ) {
+				var obj = cursor.table.lines[y].obj;
+				var out = {};
+				for( x in sel.x1...sel.x2+1 ) {
+					var c = cursor.table.columns[x];
+					saveValue(out, obj, c);
+
+				}
+				data.push(out);
+			}
+			schema = [for( x in sel.x1...sel.x2+1 ) cursor.table.columns[x]];
 		}
 		clipboard = {
 			data : data,
 			text : Std.string([for( o in data ) cursor.table.sheet.objToString(o,true)]),
-			schema : [for( x in sel.x1...sel.x2+1 ) cursor.table.columns[x]],
+			schema : schema,
 		};
 		ide.setClipboard(clipboard.text);
 	}
@@ -459,17 +482,30 @@ class Editor extends Component {
 
 		if( isProps ) {
 			var obj1 = data[0];
-			var line = cursor.getLine();
-			var destCol = line.columns[posX];
-			var obj2 = line.obj;
-			var clipSchema = clipboard.schema[0];
-			if( clipSchema == null || destCol == null)
-				return;
-			if( !cursor.table.canEditColumn(destCol.name) )
-				return;
-			toRefresh.push(cursor.getCell());
-			beginChanges();
-			setValue(obj1, obj2, clipSchema, destCol);
+			var obj2 = cursor.getLine().obj;
+			if( clipboard.schema.length == 1 ) {
+				var line = cursor.getLine();
+				var destCol = line.columns[posX];
+				var clipSchema = clipboard.schema[0];
+				if( clipSchema == null || destCol == null)
+					return;
+				if( !cursor.table.canEditColumn(destCol.name) )
+					return;
+				toRefresh.push(cursor.getCell());
+				beginChanges();
+				setValue(obj1, obj2, clipSchema, destCol);
+			} else {
+				beginChanges();
+				for( c1 in clipboard.schema ) {
+					var c2 = cursor.table.sheet.columns.find(c -> c.name == c1.name);
+					if( c2 == null || !cursor.table.canEditColumn(c2.name))
+						continue;
+					if( !cursor.table.canInsert() && c2.opt && !Reflect.hasField(obj2, c2.name) )
+						continue;
+					setValue(obj1, obj2, c1, c2);
+					fullRefresh = true;
+				}
+			}
 		} else {
 			beginChanges();
 			if( data.length == 1 && y1 != y2 )
