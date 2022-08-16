@@ -2701,7 +2701,7 @@ class SceneEditor {
 				return all;
 			}
 			var all = getAll(sceneData);
-			var grounds = [for( p in all ) if( p.getHideProps().isGround ) p];
+			var grounds = [for( p in all ) if( p.getHideProps().isGround || (p.name != null && p.name.toLowerCase() == "ground" ) p];
 			var results = [];
 			for( g in grounds )
 				results = results.concat(getAll(g));
