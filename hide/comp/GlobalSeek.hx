@@ -9,7 +9,6 @@ class GlobalSeek extends Modal {
         this.cdbTable = cdbTable;
         element.addClass("global-seek");
 		var sheets = cdbTable.getSheets();
-        trace(sheets.length);
         var choices : Array<hide.comp.Dropdown.Choice> = [
             for( s in sheets ) {
                 id : s.name,

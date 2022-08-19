@@ -640,6 +640,8 @@ class Editor extends Component {
 					var t = openRec(s.parent.sheet);
 					if( t != null && s.parent.line < t.lines.length ) {
 						var cell = t.lines[s.parent.line].cells[t.displayMode == Properties || t.displayMode == AllProperties ? 0 : s.parent.column];
+						if (cell == null)
+							return null;
 						if( cell.line.subTable == null && (cell.column.type == TList || cell.column.type == TProperties) )
 							cell.open(true);
 						return cell.line.subTable;
