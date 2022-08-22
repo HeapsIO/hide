@@ -193,7 +193,6 @@ class Camera extends Object3D {
 	}
 
 	override function setSelected( ctx : Context, b : Bool ) {
-		updateInstance(ctx);
 		setEditModeButton();
 		return false;
 	}
