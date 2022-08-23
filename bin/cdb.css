@@ -331,7 +331,7 @@
 .cdb .cdb-sheet .flagValues {
   position: absolute;
   background-color: #333;
-  width: 150px;
+  width: 200px;
   padding: 5px;
   border: 1px solid #666;
   z-index: 800;
