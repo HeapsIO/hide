@@ -1,5 +1,6 @@
 package hide.comp.cdb;
 import hxd.Key in K;
+using hide.tools.Extensions;
 
 class Cell extends Component {
 
@@ -611,6 +612,21 @@ class Cell extends Component {
 			return;
 		useSelect2 = this.editor.config.get("cdb.useSelect2") || (Std.isOfType(editor, ObjEditor) && editor.element.parent().hasClass("detached"));
 		inEdit = true;
+
+		var colDoc = column.documentation == null ? [] : column.documentation.split("\n");
+		function getEnumValueDoc(v: String) {
+			var d = colDoc.find(l -> l.indexOf(v) >= 0);
+			if( d != null ) {
+				if( d.indexOf(':') >= 0 )
+					return StringTools.ltrim(d.substr(d.indexOf(':') + 1));
+				else if( d.indexOf('->') >= 0 )
+					return StringTools.ltrim(d.substr(d.indexOf('->') + 2));
+				else if( d.indexOf('=>') >= 0 )
+					return StringTools.ltrim(d.substr(d.indexOf('=>') + 2));
+			}
+			return null;
+		}
+
 		switch( column.type ) {
 		case TString if( column.kind == Script ):
 			open();
@@ -830,6 +846,7 @@ class Cell extends Component {
 				var elts : Array<hide.comp.Dropdown.Choice> = [for( i in 0...values.length ){
 					id : "" + i,
 					text : values[i],
+					doc : getEnumValueDoc(values[i]),
 				}];
 				if( column.opt )
 					elts.unshift( { id : "-1", text : "--- None ---" } );
@@ -858,7 +875,8 @@ class Cell extends Component {
 					e.stopPropagation();
 				});
 
-			} else {
+			} else { // TODO fix comp.Dropdown for detached cdb panel (in the prefab editor)
+					// so this can finally be removed
 				var s = new Element("<select>");
 				var elts = [for( i in 0...values.length ){ id : ""+i, ico : null, text : values[i] }];
 				if( column.opt )
@@ -931,7 +949,13 @@ class Cell extends Component {
 					if( e.getThis().prop("checked") ) val |= 1 << i;
 					e.stopPropagation();
 				});
-				new Element("<label>").text(values[i]).appendTo(div).prepend(f);
+				var line = new Element("<label>");
+				line.text(values[i]).appendTo(div).prepend(f);
+				var doc = getEnumValueDoc(values[i]);
+				if( doc != null ) {
+					line.attr("title", doc);
+					new Element('<i style="margin-left: 5px" class="ico ico-book"/>').appendTo(line);
+				}
 			}
 			element.empty();
 			var modal = new Element("<div>").addClass("hide-modal").appendTo(element);

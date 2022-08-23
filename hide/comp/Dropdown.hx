@@ -5,6 +5,7 @@ typedef Choice = {
 	var text: String;
 	@:optional var ico: Dynamic;
 	@:optional var classes: Array<String>;
+	@:optional var doc: String;
 }
 
 class Dropdown extends Component {
@@ -36,6 +37,10 @@ class Dropdown extends Component {
 			if( o.classes != null ) {
 				for( c in o.classes )
 					el.addClass(c);
+			}
+			if( o.doc != null && o.doc != "" ) {
+				el.attr("title", o.doc);
+				new Element('<i style="margin-left: 5px" class="ico ico-book"/>').appendTo(el.find(".option-text"));
 			}
 			el.data("id", o.id);
 			el.data("text", o.text);
