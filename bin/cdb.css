@@ -144,7 +144,7 @@
 }
 .cdb .cdb-sheet td.edit > div.error {
   margin-top: 5px;
-  position: absolute;
+  position: relative;
   z-index: 300;
   color: red;
   background-color: #633;

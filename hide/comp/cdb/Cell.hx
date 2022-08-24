@@ -1074,7 +1074,7 @@ class Cell extends Component {
 
 	public function setErrorMessage( msg : String ) {
 		element.find("div.error").remove();
-		if( msg == null )  return;
+		if( msg == null ) return;
 		new Element("<div>").addClass("error").html(msg).appendTo(element);
 	}
 
