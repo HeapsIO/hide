@@ -159,7 +159,7 @@ class Reference extends Object3D {
 		var element = new hide.Element('
 			<div class="group" name="Reference">
 			<dl>
-				<dt>Reference</dt><dd><input type="fileselect" extensions="prefab l3d" field="source"/></dd>
+				<dt>Reference</dt><dd><input type="fileselect" extensions="prefab l3d fx" field="source"/></dd>
 				<dt>Edit</dt><dd><input type="checkbox" field="editMode"/></dd>
 			</dl>
 			</div>');
