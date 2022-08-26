@@ -121,6 +121,7 @@ class Editor extends Component {
 		keys.register("cdb.moveBack", () -> cursorJump(true));
 		keys.register("cdb.moveAhead", () -> cursorJump(false));
 		keys.register("cdb.insertLine", function() { insertLine(cursor.table,cursor.y); cursor.move(0,1,false,false); });
+		keys.register("duplicate", function() { duplicateLine(cursor.table,cursor.y); cursor.move(0,1,false,false); });
 		for( k in ["cdb.editCell","rename"] )
 			keys.register(k, function() {
 				var c = cursor.getCell();
@@ -1210,6 +1211,23 @@ class Editor extends Component {
 		table.refresh();
 	}
 
+	public function duplicateLine( table : Table, index = 0 ) {
+		if( !table.canInsert() || table.displayMode != Table )
+			return;
+		var srcObj = table.sheet.getLines()[index];
+		beginChanges();
+		var obj = table.sheet.newLine(index);
+		for( c in table.columns ) {
+			var val = Reflect.field(srcObj, c.name);
+			if( val != null ) {
+				if( c.type != TId )
+					Reflect.setField(obj, c.name, val);
+			}
+		}
+		endChanges();
+		table.refresh();
+	}
+
 	public function popupColumn( table : Table, col : cdb.Data.Column, ?cell : Cell ) {
 		if( view != null )
 			return;
@@ -1473,6 +1491,11 @@ class Editor extends Component {
 				cursor.set(line.table, -1, line.index + 1);
 				focus();
 			}, keys : config.get("key.cdb.insertLine") },
+			{ label : "Duplicate", click : function() {
+				duplicateLine(line.table,line.index);
+				cursor.set(line.table, -1, line.index + 1);
+				focus();
+			}, keys : config.get("key.duplicate") },
 			{ label : "Delete", click : function() {
 				beginChanges();
 				sheet.deleteLine(line.index);
