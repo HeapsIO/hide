@@ -50,6 +50,7 @@
 		border-collapse : collapse;
 		border-spacing : 0;
 		background-color: #222;
+		position: relative; // so that error message follow along with scrolling
 
 		th.start {
 			width : 30px;
@@ -156,7 +157,7 @@
 			}
 			&> div.error {
 				margin-top : 5px;
-				position : relative;
+				position : absolute;
 				z-index : @cdb-error-layer;
 				color : red;
 				background-color : #633;

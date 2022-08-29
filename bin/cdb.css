@@ -40,6 +40,7 @@
   border-collapse: collapse;
   border-spacing: 0;
   background-color: #222;
+  position: relative;
 }
 .cdb .cdb-sheet th.start {
   width: 30px;
@@ -144,7 +145,7 @@
 }
 .cdb .cdb-sheet td.edit > div.error {
   margin-top: 5px;
-  position: relative;
+  position: absolute;
   z-index: 300;
   color: red;
   background-color: #633;
