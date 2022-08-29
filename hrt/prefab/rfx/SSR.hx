@@ -120,6 +120,9 @@ class ApplySSRShader extends h3d.shader.ScreenShader {
 	}
 }
 
+
+@:access(h3d.pass.PassList)
+@:access(h3d.pass.PassObject)
 class SSR extends RendererFX {
 
 	public var ssrShader : SSRShader;
@@ -150,6 +153,22 @@ class SSR extends RendererFX {
 		applySSRPass.pass.depthTest = Always;
 	}
 
+	inline function cullPasses( passes : h3d.pass.PassList, f : h3d.col.Collider -> Bool ) {
+		var prevCollider = null;
+		var prevResult = true;
+		passes.filter(function(p) {
+			var col = p.obj.cullingCollider;
+			if( col == null )
+				return true;
+			if( col != prevCollider ) {
+				prevCollider = col;
+				prevResult = f(col);
+			}
+			return prevResult;
+		});
+	}
+
+	var passes : h3d.pass.PassList;
 	override function end( r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {
 		if( step == Decals) {
 			r.mark("SSR");
@@ -165,18 +184,23 @@ class SSR extends RendererFX {
 			ssrShader.stepsSecondPass = stepsSecondPass;
 			ssrShader.thickness = thickness;
 
-			var ssrPasses : h3d.pass.PassList = r.get("ssr");
-			@:privateAccess var it = ssrPasses.current;
-			@:privateAcces while (it != null) {
-				if (@:privateAccess it.pass.getShaderByName("hrt.prefab.rfx.SSRShader") == null)
-					@:privateAccess it.pass.addShader(ssrShader);
+			passes = r.get("ssr");
+			cullPasses(passes, function(col) {
+				return col.inFrustum(r.ctx.camera.frustum);
+			});
+			var it = passes.current;
+			while ( it != null ) {
+				if ( it.pass.getShaderByName("hrt.prefab.rfx.SSRShader") == null )
+					it.pass.addShader(ssrShader);
 				it = it.next;
 			}
 
+			if ( passes.current == null )
+				return;
 			ssr = r.allocTarget("ssr", true, 1.0, RGBA);
 			ssr.clear(0, 0);
 			r.ctx.engine.pushTarget(ssr);
-			r.draw("ssr");
+			r.defaultPass.draw(passes);
 			r.ctx.engine.popTarget();
 
 			blurPass.radius = blurRadius;
@@ -184,6 +208,8 @@ class SSR extends RendererFX {
 		}
 
 		if( step == Forward ) {
+			if ( passes.current == null )
+				return;
 			r.mark("SSRApply");
 			applySSRShader.colorMul = colorMul;
 			applySSRShader.ssrTexture = ssr;
