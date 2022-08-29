@@ -17,7 +17,7 @@ class Dropdown extends Component {
 	public function new( parent, options : Array<Choice>, currentValue: String, ?buildIcon : (Choice) -> Element ) {
 		var root = new Element('<div class="hide-dropdown">
 			<div class="dropdown-cont">
-				<input id="filter" class="filter-input" type="text"/>
+				<input id="filter" autocomplete="off" class="filter-input" type="text"/>
 				<div class="options"></div>
 			</div>
 		</div>');
