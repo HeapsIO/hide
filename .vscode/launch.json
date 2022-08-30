@@ -11,8 +11,9 @@
             "nwjsVersion": "any",
             "webRoot": "${workspaceFolder}/bin",
             "env": {"HIDE_DEBUG":"1"},
-            "preLaunchTask": "Build"
-        },
+            "preLaunchTask": "Build",
+			"reloadAfterAttached": false
+		},
         {
             "type": "nwjs",
             "request": "launch",
