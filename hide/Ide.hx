@@ -167,9 +167,18 @@ class Ide {
 			});
 		});
 
-		// handle cancel on type=file
 		var body = window.window.document.body;
-		body.onfocus = function(_) haxe.Timer.delay(function() new Element(body).find("input[type=file]").change().remove(), 200);
+		body.onfocus = function(_) {
+			// handle cancel on type=file
+			haxe.Timer.delay(function() new Element(body).find("input[type=file]").change().remove(), 200);
+
+			if(fileExists(databaseFile) && getFile(databaseFile).toString() != database.save()) {
+				if(js.Browser.window.confirm(databaseFile + " has changed outside of Hide. Do you want to reload?")) {
+					loadDatabase(true);
+					hide.comp.cdb.Editor.refreshAll(true);
+				};
+			}
+		}
 		function dragFunc(drop : Bool, e:js.html.DragEvent) {
 			syncMousePosition(e);
 			var view = getViewAt(mouseX, mouseY);
