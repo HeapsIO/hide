@@ -175,7 +175,7 @@ class TileSelector extends Component {
 					var dx = e.pageX - movePos.x;
 					var dy = e.pageY - movePos.y;
 
-					scroll[0].scrollBy(-dx,-dy);
+					element.find(".scroll")[0].scrollBy(-dx,-dy);
 					movePos.x = e.pageX;
 					movePos.y = e.pageY;
 				}
