@@ -168,7 +168,7 @@ class Ide {
 		});
 
 		var body = window.window.document.body;
-		body.onfocus = function(_) {
+		window.on("focus", function() {
 			// handle cancel on type=file
 			haxe.Timer.delay(function() new Element(body).find("input[type=file]").change().remove(), 200);
 
@@ -178,7 +178,7 @@ class Ide {
 					hide.comp.cdb.Editor.refreshAll(true);
 				};
 			}
-		}
+		});
 		function dragFunc(drop : Bool, e:js.html.DragEvent) {
 			syncMousePosition(e);
 			var view = getViewAt(mouseX, mouseY);
