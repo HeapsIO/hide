@@ -615,7 +615,7 @@ class Cell extends Component {
 
 		var colDoc = column.documentation == null ? [] : column.documentation.split("\n");
 		function getEnumValueDoc(v: String) {
-			var d = colDoc.find(l -> l.indexOf(v) >= 0);
+			var d = colDoc.find(l -> new EReg('\\b$v\\b', '').match(l));
 			if( d != null ) {
 				if( d.indexOf(':') >= 0 )
 					return StringTools.ltrim(d.substr(d.indexOf(':') + 1));
