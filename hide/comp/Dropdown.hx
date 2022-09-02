@@ -1,4 +1,5 @@
 package hide.comp;
+using hide.tools.Extensions;
 
 typedef Choice = {
 	var id: String;
@@ -58,6 +59,17 @@ class Dropdown extends Component {
 				for( o in optionsCont.children().elements() ) {
 					o.toggleClass("hidden", !matches(o.data("text"), v) && !matches(o.data("id"), v));
 				}
+				var sortedChildren = optionsCont.children().elements().toArray();
+				sortedChildren.sort(function(a, b) {
+					var ma = getMatchingScore(a.data("text"), v);
+					var mb = getMatchingScore(b.data("text"), v);
+					if (ma != mb)
+						return ma - mb;
+					var aId = a.data("id");
+					var bId = b.data("id");
+					return options.findIndex(o -> o.id == aId) - options.findIndex(o -> o.id == bId);
+				});
+				optionsCont.append(sortedChildren);
 			}
 			resetHighlight();
 		});
@@ -118,18 +130,24 @@ class Dropdown extends Component {
 		untyped optionsCont.children().get(highlightIndex).scrollIntoViewIfNeeded();
 	}
 
-	function matches( text : String, filter : String ) {
+	function getMatchingScore( text : String, filter : String ) {
 		if (text == null || filter == null)
-			return false;
+			return -1;
 		text = text.toLowerCase();
 		filter = filter.toLowerCase();
-		if( text.indexOf(filter) >= 0 )
-			return true;
+		var i = text.indexOf(filter);
+		if( i >= 0 )
+			return i;
 		text.split("_").join("").split(" ").join("");
 		filter.split(" ").join("");
-		if( text.indexOf(filter) >= 0 )
-			return true;
-		return false;
+		i = text.indexOf(filter);
+		if( i >= 0 )
+			return i;
+		return -1;
+	}
+
+	function matches( text : String, filter : String ) {
+		return getMatchingScore(text, filter) >= 0;
 	}
 
 	function onKey( e : js.jquery.Event ) {

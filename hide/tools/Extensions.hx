@@ -11,6 +11,7 @@ class ArrayExtensions {
 		for(i in 0...len) {
 			var idx = (i + offset) % len;
 			var item = a[idx];
+			
 			func(idx, item);
 		}
 	}
@@ -129,6 +130,18 @@ class ArrayExtensions {
 			}
 		}
 		return ret;
+	}
+
+	inline static public function findIndex<T>( it : Array<T>, f : T -> Bool ) : Int {
+		var i = 0;
+		while (i < it.length ) {
+			if(f(it[i]))
+				break;
+			i++;
+		}
+		if (i >= it.length)
+			i = -1;
+		return i;
 	}
 
 	// Don't make this Iterable<T> (causes a cast on arrays)
@@ -288,5 +301,212 @@ class ArrayExtensions {
 				ret.push(b);
 		}
 		return ret;
+	}
+}
+
+
+@:genericClassPerMethod
+class Extensions {
+	inline public static function toVector(pt : h2d.col.Point, z:Float) {
+		return new h3d.Vector(pt.x, pt.y, z);
+	}
+
+	inline public static function to2D(vec : h3d.Vector) {
+		return new h2d.col.Point(vec.x, vec.y);
+	}
+
+	inline public static function toDirection(pt : h2d.col.Point) {
+		return Math.atan2(pt.y, pt.x);
+	}
+
+	inline public static function mapIter<K,V>(map: Map<K,V>, func: K->V->Void) {
+		for(k in map.keys()) {
+			var v = map[k];
+			func(k, v);
+		}
+	}
+
+	inline public static function values<K, V>(map: Map<K, V>) : Array<V> {
+		return [for (k => v in map) v];
+	}
+
+	inline public static function listLength<T:{next:T}>(list:T) : Int {
+		var e = list;
+		var cnt = 0;
+		while( e != null ) {
+			++cnt;
+			e = e.next;
+		}
+		return cnt;
+	}
+
+	inline public static function toArray<T>(it: Iterator<T>) {
+		return [for(a in it) a];
+	}
+
+	public static function sum( a : Array<Float> ) : Float {
+		var s = 0.0;
+		for(v in a)
+			s += v;
+		return s;
+	}
+
+	public static function max( a : Array<Float> ) : Float {
+		if(a.length == 0)
+			return 0.0;
+		var ret = a[0];
+		for(v in a) {
+			if(v > ret)
+				ret = v;
+		}
+		return ret;
+	}
+
+	inline static public function findMin<T>(a: Array<T>, f: T->Float, ?filter: T->Bool) {
+		var minVal = Math.POSITIVE_INFINITY;
+		var minItem = null;
+		for(item in a) {
+			if(filter != null && !filter(item))
+				continue;
+			var v = f(item);
+			if(v < minVal) {
+				minVal = v;
+				minItem = item;
+			}
+		}
+		return { item: minItem, val: minVal };
+	}
+
+	inline static public function findMinItem<T>(a: Array<T>, f: T->Float, ?filter: T->Bool) : T {
+		return findMin(a, f, filter).item;
+	}
+
+	inline static public function findMinValue<T>(a: Array<T>, f: T->Float, ?filter: T->Bool) : Float {
+		return findMin(a, f, filter).val;
+	}
+
+	inline static public function findMaxItem<T>(a: Array<T>, f: T->Float, ?filter: T->Bool) : T{
+		return findMin(a, i -> -f(i), filter).item;
+	}
+
+	inline static public function findMaxValue<T>(a: Array<T>, f: T->Float, ?filter: T->Bool) : Float {
+		return -findMin(a, i -> -f(i), filter).val;
+	}
+
+	@:generic
+	public static function arrayEqual<A>( a : Iterable<A>, b : Iterable<A> ) : Bool {
+		if(a == null && b == null) return true;
+		if(a == null || b == null) return false;
+
+		for(av in a) {
+			if(!b.iterator().hasNext())
+				return false;
+			if(av != b.iterator().next())
+				return false;
+		}
+		if(b.iterator().hasNext())
+			return false;
+
+		return true;
+	}
+
+	@:generic
+	public static function arrayCompare<A>( a : Array<A>, b : Array<A>, eq : (A, A) -> Bool) : Bool {
+		if(a == null && b == null) return true;
+		if(a == null || b == null) return false;
+		if(a.length != b.length) return false;
+		for(i in 0...a.length) {
+			if(!eq(a[i], b[i]))
+				return false;
+		}
+		return true;
+	}
+
+	@:generic
+	public static function setEqual<A>( a : Array<A>, b : Array<A> ) : Bool {
+		if(a.length != b.length)
+			return false;
+		for(v in a)
+			if(b.indexOf(v) < 0) return false;
+		for(v in b)
+			if(a.indexOf(v) < 0) return false;
+		return true;
+	}
+
+	inline public static function scaled(pt: h2d.col.Point, scale: Float) {
+		return new h2d.col.Point(pt.x * scale, pt.y * scale);
+	}
+
+	inline public static function limitSize(pt: h2d.col.Point, maxLength: Float) {
+		var l = pt.length();
+		if(l > maxLength && l > hxd.Math.EPSILON) {
+			return scaled(normalized(pt), maxLength);
+		}
+		return pt;
+	}
+
+	inline public static function normalized(pt: h2d.col.Point) {
+		var l = pt.length();
+		if(l > hxd.Math.EPSILON)
+			return new h2d.col.Point(pt.x / l, pt.y / l);
+		else
+			return new h2d.col.Point(0, 0);
+	}
+
+	inline public static function getAngle(pt: h2d.col.Point) {
+		return hxd.Math.atan2(pt.y, pt.x);
+	}
+
+	inline public static function rounded(pt: h2d.col.Point) {
+		return new h2d.col.Point(Math.round(pt.x), Math.round(pt.y));
+	}
+
+	inline public static function setInvalid(pt: h2d.col.Point) {
+		pt.x = pt.y = Math.NaN;
+	}
+
+	inline public static function isValid(pt: h2d.col.Point) {
+		return !Math.isNaN(pt.x) && !Math.isNaN(pt.y);
+	}
+
+	inline public static function rotToDir(rot: Float) {
+		return new h2d.col.Point(Math.cos(rot), Math.sin(rot));
+	}
+
+	inline public static function iterPolyEdges(poly: h2d.col.Polygon, func: h2d.col.Point->h2d.col.Point->Void) {
+		var prevPt = ArrayExtensions.last(poly.points);
+		for(p in poly.points) {
+			func(p, prevPt);
+			prevPt = p;
+		}
+	}
+
+	inline public static function polyHasEdge(poly: h2d.col.Polygon, p1: h2d.col.Point, p2: h2d.col.Point) {
+		var has = false;
+		iterPolyEdges(poly, function(op1, op2) {
+			if(p1 == op1 && p2 == op2 || p1 == op2 && p2 == op1)
+				has = true;
+		});
+		return has;
+	}
+
+	public static function toMatrix2d(mat: h3d.Matrix) {
+		var mat2d = new h2d.col.Matrix();
+		mat2d.x = mat.tx;	mat2d.y = mat.ty;
+		mat2d.a = mat._11;	mat2d.b = mat._12;
+		mat2d.c = mat._21;	mat2d.d = mat._22;
+		return mat2d;
+	}
+
+	public static function getDefaultAbsPos(obj: h3d.scene.Object) {
+		if(obj.defaultTransform != null) {
+			var mat = obj.getAbsPos().clone();
+			var tmp = obj.defaultTransform.clone();
+			tmp.invert();
+			mat.multiply(tmp, mat);
+			return mat;
+		}
+		else
+			return obj.getAbsPos();
 	}
 }
