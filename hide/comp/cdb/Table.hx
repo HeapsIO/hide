@@ -497,6 +497,11 @@ class Table extends Component {
 				}
 				editor.endChanges();
 				sync();
+				var l = getLines();
+				if( l.length > 0 ) {
+					if( l[0].cells.length > 0 )
+						l[0].cells[0].focus();
+				}
 			}).keypress(function(e) {
 				e.stopPropagation();
 			}).keydown(function(e) {
