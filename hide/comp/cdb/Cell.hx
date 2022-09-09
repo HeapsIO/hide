@@ -915,9 +915,8 @@ class Cell extends Component {
 			}
 		case TColor:
 			var modal = new Element("<div>").addClass("hide-modal").appendTo(element);
-			var color = new ColorPicker(element);
+			var color = new ColorPicker(false, element, element.find(".color"));
 			color.value = currentValue;
-			color.open();
 			color.onChange = function(drag) {
 				element.find(".color").css({backgroundColor : '#'+StringTools.hex(color.value,6) });
 			};

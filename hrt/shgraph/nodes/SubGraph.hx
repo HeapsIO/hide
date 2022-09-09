@@ -288,7 +288,7 @@ class SubGraph extends ShaderNode {
 					element.css("height", 40);
 				case TVec(4, VFloat):
 					new hide.Element('<span>${p.name}</span>').appendTo(element);
-					var inputColor = new hide.comp.ColorPicker(true, element);
+					var inputColor = new hide.comp.ColorPicker.ColorBox(null, element, true, true);
 
 					if (p.defaultValue != null) {
 						var start = h3d.Vector.fromArray([p.defaultValue.x, p.defaultValue.y, p.defaultValue.z, p.defaultValue.w]);

@@ -466,7 +466,7 @@ input[type=checkbox]:checked:after {
   padding-top: 2px;
   padding-bottom: 2px;
   background-color: #222222;
-  display: inline-block;
+  display: inline-flex;
 }
 .hide-toolbar .layout-btn {
   position: absolute;
@@ -2067,4 +2067,43 @@ div.sp-container input:hover {
   box-shadow: none;
   border: 1px solid black;
   border-radius: 2px;
+}
+.checkerboard-bg {
+  background: conic-gradient(#EEE 90deg, #DDD 90deg 180deg, #EEE 180deg 270deg, #DDD 270deg);
+  background-size: 16px 16px;
+  background-repeat: repeat;
+}
+div.color-box {
+  display: inline-flex;
+}
+div.color-picker {
+  position: absolute;
+  overflow: visible;
+  z-index: 900;
+  background-color: #282829;
+  border: 1px solid #333333;
+}
+div.color-picker .slider-container {
+  display: flex;
+}
+div.color-picker .slider {
+  position: relative;
+  display: inline-block;
+}
+div.color-picker .info-bar {
+  display: flex;
+}
+div.color-picker .toolbar {
+  vertical-align: top;
+}
+div.color-picker canvas {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+div.color-picker svg {
+  position: absolute;
+  width: 100%;
+  height: 100;
+  pointer-events: none;
 }

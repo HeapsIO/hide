@@ -1087,7 +1087,6 @@ class FXEditor extends FileView {
 				var cp = new hide.comp.ColorPicker(false, picker);
 				var prevCol = getKeyColor(key);
 				cp.value = prevCol.toColor();
-				cp.open();
 				cp.onClose = function() {
 					picker.remove();
 				};

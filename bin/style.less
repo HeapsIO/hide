@@ -533,7 +533,7 @@ input[type=checkbox] {
 	padding-top: 2px;
 	padding-bottom: 2px;
 	background-color : rgb(34,34,34);
-	display: inline-block;
+	display: inline-flex;
 
 	.layout-btn {
 		position: absolute;
@@ -2367,5 +2367,55 @@ div.sp-container {
 				border-radius: 2px;
 			}
 		}
+	}
+}
+
+.checkerboard-bg {
+	background: conic-gradient(#EEE 90deg,#DDD 90deg 180deg,#EEE 180deg 270deg, #DDD 270deg);
+	background-size: 16px 16px;
+	background-repeat: repeat;
+}
+
+div.color-box {
+	display: inline-flex;
+}
+
+div.color-picker {
+	position: absolute;
+	overflow: visible;
+	z-index: 900;
+
+	background-color : rgb(40, 40, 41);
+	border : 1px solid rgb(51, 51, 51);
+
+
+	.slider-container {
+		display: flex;
+	}
+
+	.slider {
+		position: relative;
+		display: inline-block;
+	}
+
+	.info-bar {
+		display: flex;
+	}
+
+	.toolbar {
+		vertical-align: top;
+	}
+
+	canvas {
+		position: absolute;
+		width: 100%;
+		height: 100%;
+	}
+
+	svg {
+		position: absolute;
+		width: 100%;
+		height: 100;
+		pointer-events: none;
 	}
 }

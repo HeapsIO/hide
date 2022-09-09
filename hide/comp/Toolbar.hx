@@ -83,7 +83,11 @@ class Toolbar extends Component {
 	}
 
 	public function addColor( label : String, onChange : Int -> Void, ?alpha : Bool, ?defValue = 0 ) {
-		var color = new hide.comp.ColorPicker(alpha, element);
+		var button = new Element("<div class='button hide-button'>");
+		element.append(button);
+		var color = new hide.comp.ColorPicker.ColorBox(button, null, true);
+		color.element.height("100%");
+		color.element.width("100%");
 		color.onChange = function(move) {
 			if( !move ) this.saveDisplayState("color:" + label, color.value);
 			onChange(color.value);

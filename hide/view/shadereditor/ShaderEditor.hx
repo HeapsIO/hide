@@ -654,7 +654,7 @@ class ShaderEditor extends hide.view.Graph {
 				typeName = "Number";
 			case TVec(4, VFloat):
 				var parentPicker = new Element('<div style="width: 35px; height: 25px; display: inline-block;"></div>').appendTo(defaultValue);
-				var picker = new hide.comp.ColorPicker(true, parentPicker);
+				var picker = new hide.comp.ColorPicker.ColorBox(null, parentPicker, true, true);
 
 
 				if (value == null)
@@ -669,12 +669,12 @@ class ShaderEditor extends hide.view.Graph {
 					setBoxesParam(parameter.id);
 					updateParam(parameter.id);
 				};
-				picker.element.on("dragstart.spectrum", function() {
+				/*picker.element.on("dragstart.spectrum", function() {
 					beforeChange();
 				});
 				picker.element.on("dragstop.spectrum", function() {
 					afterChange();
-				});
+				});*/
 				typeName = "Color";
 			case TSampler2D:
 				var parentSampler = new Element('<input type="texturepath" field="sampler2d" />').appendTo(defaultValue);
