@@ -1220,8 +1220,10 @@ class Editor extends Component {
 		for( c in table.columns ) {
 			var val = Reflect.field(srcObj, c.name);
 			if( val != null ) {
-				if( c.type != TId )
-					Reflect.setField(obj, c.name, val);
+				if( c.type != TId ) {
+					// Deep copy
+					Reflect.setField(obj, c.name, haxe.Json.parse(haxe.Json.stringify(val)));
+				}
 			}
 		}
 		endChanges();
