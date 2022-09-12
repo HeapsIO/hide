@@ -100,10 +100,10 @@ class ColorBox extends Component {
 			(v >> 0) & 0xFF,
 			255);
 		else new Color(
-			(v >> 24) & 0xFF,
 			(v >> 16) & 0xFF,
 			(v >> 8) & 0xFF,
-			(v >> 0) & 0xFF
+			(v >> 0) & 0xFF,
+			(v >> 24) & 0xFF
 		);
 
 		preview.css({"background-color": 'rgb(${color.r}, ${color.g}, ${color.b})'});
@@ -139,8 +139,8 @@ class ColorPicker extends Component {
 	var width = 256;
 	var height = 256;
 
-	public var valueToRGBA : (value : Vector,  outColor : Color) -> Void;
-	public var RGBAToValue : (color : Color) -> Vector;
+	public var valueToARGB : (value : Vector,  outColor : Color) -> Void;
+	public var ARGBToValue : (color : Color) -> Vector;
 
 	function iRGBtofRGB(color : Color) : Vector {
 		return new Vector(color.r/255.0, color.g/255.0, color.b/255.0, color.a/255.0);
@@ -215,7 +215,7 @@ class ColorPicker extends Component {
 		var colorInt = get_value();
 		colorCode.val(StringTools.hex(colorInt, if(canEditAlpha) 8 else 6));
 		var color : Color = new Color();
-		valueToRGBA(currentValue, color);
+		valueToARGB(currentValue, color);
 		preview.value = colorInt;
 	}
 
@@ -257,10 +257,10 @@ class ColorPicker extends Component {
 		pickerPopup = new Element("<div>").addClass("color-picker");
 
 
-		//valueToRGBA = fRGBtoiRGB;
-		//RGBAToValue = iRGBtofRGB;
-		valueToRGBA = HSVtoiRGB;
-		RGBAToValue = iRGBtoHSV;
+		//valueToARGB = fRGBtoiRGB;
+		//ARGBToValue = iRGBtofRGB;
+		valueToARGB = HSVtoiRGB;
+		ARGBToValue = iRGBtoHSV;
 
 		initSliders();
 		initInfobar();
@@ -468,10 +468,10 @@ class ColorPicker extends Component {
 		}
 
 		if (!containsAlpha && canEditAlpha) {
-			color = (color << 8) + 0xFF;
+			color = (color) + (0xFF << 24);
 		}
 		else if (containsAlpha && !canEditAlpha) {
-			color = (color >> 8);
+			color = (color & 0xFFFFFF) ;
 		}
 
 		return color;
@@ -479,9 +479,9 @@ class ColorPicker extends Component {
 
 	function get_value() {
 		var color = new Color();
-		valueToRGBA(currentValue, color);
+		valueToARGB(currentValue, color);
 		return if (!canEditAlpha) (color.r << 16) + (color.g << 8) + color.b 
-		else (color.r << 24) + (color.g << 16) + (color.b << 8) + color.a;	
+		else (color.r << 16) + (color.g << 8) + (color.b << 0) + (color.a << 24);	
 	};
 
 	function set_value(v) {
@@ -491,13 +491,13 @@ class ColorPicker extends Component {
 			(v >> 0) & 0xFF,
 			255);
 		else new Color(
-			(v >> 24) & 0xFF,
 			(v >> 16) & 0xFF,
 			(v >> 8) & 0xFF,
-			(v >> 0) & 0xFF
+			(v >> 0) & 0xFF,
+			(v >> 24) & 0xFF
 		);
 
-		currentValue = RGBAToValue(color);
+		currentValue = ARGBToValue(color);
 		repaint();
 		return get_value();
 	}
@@ -587,7 +587,7 @@ class ColorSlider extends Component {
 
 		var image_data = c2d.getImageData(0,0,canvas.width,canvas.height);
 		var value : Vector = new Vector();
-		var conversionFunc = picker.valueToRGBA;
+		var conversionFunc = picker.valueToARGB;
 		var color : Color = new Color();
 
 		for (y in 0...canvas.height) {
@@ -601,6 +601,7 @@ class ColorSlider extends Component {
 				image_data.data[index+3] = Std.int(color.a);
 			}
 		}
+
 		c2d.putImageData(image_data,0,0);
 
 		var cursorPos = getCursorPos();
