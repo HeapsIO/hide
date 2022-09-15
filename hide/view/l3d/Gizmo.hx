@@ -403,8 +403,11 @@ class Gizmo extends h3d.scene.Object {
 
 	function get_mouseX() return @:privateAccess scene.window.mouseX;
 	function get_mouseY() return @:privateAccess scene.window.mouseY;
-	function get_mouseLock() return @:privateAccess scene.window.mouseLock;
-	function set_mouseLock(v : Bool) return @:privateAccess scene.window.mouseLock = v;
+	function get_mouseLock() return @:privateAccess scene.window.mouseMode != Absolute;
+	function set_mouseLock(v : Bool) {
+		@:privateAccess scene.window.mouseMode = v ? AbsoluteUnbound(true) : Absolute;
+		return v;
+	}
 
 	function finishMove() {
 		deltaTextObject.remove();

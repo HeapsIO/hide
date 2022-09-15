@@ -39,14 +39,14 @@ class CamController extends h3d.scene.CameraController {
 				}
 			}
 			moveCount = 0;
-			@:privateAccess scene.window.mouseLock = true;
+			@:privateAccess scene.window.mouseMode = AbsoluteUnbound(true);
 		case ERelease, EReleaseOutside:
 			if( pushing == e.button || pushing == 2) {
 				pushing = -1;
 				startPush = null;
 				if( e.kind == ERelease && haxe.Timer.stamp() - pushTime < 0.2 && hxd.Math.distance(e.relX - pushStartX,e.relY - pushStartY) < 5 )
 					onClick(e);
-				@:privateAccess scene.window.mouseLock = false;
+				@:privateAccess scene.window.mouseMode = Absolute;
 			}
 		case EMove:
 			// Windows bug that jumps movementX/Y on all browsers
@@ -85,7 +85,7 @@ class CamController extends h3d.scene.CameraController {
 			default:
 			}
 		case EFocus:
-			@:privateAccess scene.window.mouseLock = false;
+			@:privateAccess scene.window.mouseMode = Absolute;
 		default:
 		}
 	}
