@@ -738,8 +738,8 @@ class LightProbe extends Object3D {
 				var probeBaker = new ProbeBaker();
 				@:privateAccess probeBaker.emissive = emissive;
 				if( bounce > 1 ) {
-					var tmpTexture = new h3d.mat.Texture(captureSize, captureSize, [Cube, Target], RGBA32F);
-					var curCapture : h3d.mat.Texture = tmpTexture;
+					var tmPTexturePath = new h3d.mat.Texture(captureSize, captureSize, [Cube, Target], RGBA32F);
+					var curCapture : h3d.mat.Texture = tmPTexturePath;
 					for( b in 0 ... bounce ) {
 						probeBaker.captureEnvironment(lpo.getAbsPos().getPosition(), captureSize, ctx.scene.s3d, curCapture);
 						var tmp = lpo.env.env;

@@ -31,14 +31,19 @@ class Color {
 // Displays a color with its alpha component. Can open a color picker on click
 class ColorBox extends Component {
 
-	var picker : ColorPicker;
+	public var picker : ColorPicker;
 
 	var preview : Element;
 	var previewWithAlpha : Element;
-	var canEditAlpha = false;
+	var canEditAlpha : Bool = false;
+	public var isPickerEnabled : Bool = false;
 
 	public var value(get, set) : Int;
 	var innerValue : Int;
+
+	public function isPickerOpen() : Bool {
+		return picker != null;
+	}
 
 	function set_value(value:Int) {
 		innerValue = value;
@@ -55,34 +60,37 @@ class ColorBox extends Component {
 
 	}
 
-	public function new(?parent : Element, ?root : Element, isPickerEnabled:Bool, canEditAlpha:Bool = false) {
+	public dynamic function onPickerOpen() {
+
+	}
+
+	public function new(?parent : Element, ?root : Element, inIsPickerEnabled:Bool, canEditAlpha:Bool = false) {
 		var e = new Element("<div>").addClass("color-box").width("32px").height("24px").addClass("checkerboard-bg");
 		if (root != null) root.replaceWith(e) else root = e;
 		super(parent, e);
 		this.canEditAlpha = canEditAlpha;
+		this.isPickerEnabled = inIsPickerEnabled;
 		
-		if (isPickerEnabled) {
-			element.click(function(e) {
-				if (picker == null) {
-					picker = new ColorPicker(canEditAlpha, null, this.element);
-					picker.value = innerValue;
-					picker.onChange = function(isDragging) {
-						innerValue = picker.value;
-						repaint();
-						onChange(isDragging);
-					};
-					picker.onClose = function() {
-						innerValue = picker.value;
-						onChange(false);
-						picker.onClose = function(){};
-						picker.onChange = function(e){};
-						picker = null;
-					}
-				} else {
-					picker.close();
+		element.click(function(e) {
+			if (picker == null && isPickerEnabled) {
+				picker = new ColorPicker(canEditAlpha, null, this.element);
+				picker.value = innerValue;
+				picker.onChange = function(isDragging) {
+					innerValue = picker.value;
+					repaint();
+					onChange(isDragging);
+				};
+				picker.onClose = function() {
+					picker.onClose = function(){};
+					picker.onChange = function(e){};
+					picker = null;
 				}
-			});
-		}
+
+				onPickerOpen();
+			} else if (picker != null) {
+				picker.close();
+			}
+		});
 
 		preview = new Element("<div>").width("50%").height("100%").css({display:"inline-block"});
 		element.append(preview);
@@ -111,13 +119,11 @@ class ColorBox extends Component {
 	}
 }
 
-class ColorPicker extends Component {
+class ColorPicker extends Popup {
 
 	public var value(get, set) : Int;
 	var innerValue : Int;
 	var mask : Int;
-
-	var pickerPopup : Element;
 
 	var gradient : ColorSlider;
 	var hue : ColorSlider;
@@ -133,8 +139,6 @@ class ColorPicker extends Component {
 
 	var initialValue : Vector;
 	public var currentValue : Vector;
-
-	var onMouseClickOutside : Dynamic;
 
 	var width = 256;
 	var height = 256;
@@ -252,9 +256,10 @@ class ColorPicker extends Component {
 		super(parent,root);
 		this.canEditAlpha = canEditAlpha;
 
-		currentValue = new Vector();
 
-		pickerPopup = new Element("<div>").addClass("color-picker");
+		popup.addClass("color-picker");
+
+		currentValue = new Vector();
 
 
 		//valueToARGB = fRGBtoiRGB;
@@ -265,51 +270,13 @@ class ColorPicker extends Component {
 		initSliders();
 		initInfobar();
 
-		var body = root.closest(".lm_content");
-		if (body.length == 0) body = new Element("body");
-		body.append(pickerPopup);
-
-		onMouseClickOutside = function(e) {
-			var elem = new Element(e.target);
-			if (elem.closest(pickerPopup).length == 0 && elem.closest(element).length == 0) {
-				close();
-			}
-		}
-
-		Browser.document.addEventListener("click", onMouseClickOutside);
-
-		var timer = new haxe.Timer(500);
-		timer.run = function() {
-			if( root.closest("body").length == 0 ) {
-				timer.stop();
-				close();
-			}
-		};
-
 		reflow();
 		repaint();
 	}
 
-	function reflow() {
-		var offset = element.offset();
-		var popupHeight = pickerPopup.get(0).offsetHeight;
-		var popupWidth = pickerPopup.get(0).offsetWidth;
-
-		var clientHeight = Browser.document.documentElement.clientHeight;
-		var clientWidth = Browser.document.documentElement.clientWidth;
-
-		offset.top += element.get(0).offsetHeight;
-		offset.top = Math.min(offset.top,  clientHeight - popupHeight - 32);
-		
-		offset.left += element.get(0).offsetWidth;
-		offset.left = Math.min(offset.left,  clientWidth - popupWidth - 32);
-
-		pickerPopup.offset(offset);
-	}
-
 	function initInfobar() {
 		var infoBar = new Element("<div>").addClass("info-bar");
-		pickerPopup.append(infoBar);
+		popup.append(infoBar);
 
 		preview = new ColorBox(infoBar, null, false, canEditAlpha);
 		preview.element.width(64);
@@ -369,7 +336,7 @@ class ColorPicker extends Component {
 
 	function initSliders() {
 		var sliders = new Element("<div>").addClass("checkerboard-bg").addClass("slider-container");
-		pickerPopup.append(sliders);
+		popup.append(sliders);
 
 		gradient = new ColorSlider(this,
 			function(x : Int, y : Int, outVector : Vector) {
@@ -427,17 +394,6 @@ class ColorPicker extends Component {
 				},1,256, sliders, null);
 			sliders.append(alpha.element);
 		}
-	}
-
-	public function close() {
-		var body = new Element("body");
-
-		pickerPopup.remove();
-		Browser.document.removeEventListener("click", onMouseClickOutside);
-		onClose();
-	}
-
-	public dynamic function onClose() {
 	}
 
 	public dynamic function onChange(isDragging) {
@@ -562,8 +518,8 @@ class ColorSlider extends Component {
 
 
 		canvas.onpointerdown = function(event : js.html.PointerEvent) {
-			pickColorAtPixel(event.offsetX, event.offsetY);
 			isDragging = true;
+			pickColorAtPixel(event.offsetX, event.offsetY);
 			canvas.setPointerCapture(event.pointerId);
 		}
 

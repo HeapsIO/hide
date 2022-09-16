@@ -9,7 +9,7 @@ class TextureSelect extends FileSelect {
 	public function new(?parent,?root) {
 		preview = new Element("<div class='texture-preview'>");
 		super(hide.Ide.IMG_EXTS, parent, root);
-		preview.insertAfter(root);
+		preview.insertAfter(element);
 	}
 
 	override function remove() {

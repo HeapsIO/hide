@@ -68,8 +68,10 @@ class PropsEditor extends Component {
 			if( max != null ) e.attr("max", "" + max);
 		case PBool:
 			new Element('<input type="checkbox" field="${p.name}">').appendTo(parent);
-		case PTexture:
+		case PTexturePath:
 			new Element('<input type="texturepath" field="${p.name}">').appendTo(parent);
+		case PTexture:
+			new Element('<input type="texturechoice" field="${p.name}">').appendTo(parent);
 		case PUnsupported(text):
 			new Element('<font color="red">' + StringTools.htmlEscape(text) + '</font>').appendTo(parent);
 		case PVec(n, min, max):
@@ -262,9 +264,12 @@ class PropsField extends Component {
 	var props : PropsEditor;
 	var context : Dynamic;
 	var current : Dynamic;
+	var currentSave : Dynamic;
+
 	var enumValue : Enum<Dynamic>;
 	var tempChange : Bool;
 	var beforeTempChange : { value : Dynamic };
+	var tchoice : hide.comp.TextureChoice;
 	var tselect : hide.comp.TextureSelect;
 	var fselect : hide.comp.FileSelect;
 	var viewRoot : Element;
@@ -323,6 +328,43 @@ class PropsField extends Component {
 				current = tselect.path;
 				setFieldValue(current);
 				onChange(false);
+			}
+			return;
+		case "texturechoice":
+			var a = getAccess();
+			tchoice = new TextureChoice(null, f);
+			tchoice.value = current;
+			currentSave = haxe.Json.parse(haxe.Json.stringify(current));
+
+			tchoice.onChange = function(shouldUndo : Bool) {
+
+				if (shouldUndo) {
+					var setVal = function(val, undo) {
+						var f = resolveField();
+						f.current = val;
+						f.currentSave = haxe.Json.parse(haxe.Json.stringify(val));
+						f.tchoice.value = val;
+						setFieldValue(val);
+						f.onChange(undo);
+					}
+
+					var oldVal = haxe.Json.parse(haxe.Json.stringify(currentSave));
+					var newVal = haxe.Json.parse(haxe.Json.stringify(tchoice.value));
+
+					props.undo.change(Custom(function(undo) {
+						if (undo) {
+							setVal(oldVal, true);
+						} else {
+							setVal(newVal, false);
+						}
+					}));
+
+					setVal(tchoice.value, false);
+				} else {
+					current = tchoice.value;
+					setFieldValue(current);
+					onChange(false);
+				}
 			}
 			return;
 		case "model":

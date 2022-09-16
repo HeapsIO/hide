@@ -5,6 +5,7 @@ enum PropType {
 	PFloat( ?min : Float, ?max : Float );
 	PVec( n : Int, ?min : Float, ?max : Float );
 	PBool;
+	PTexturePath;
 	PTexture;
 	PChoice( choices : Array<String> );
 	PFile( exts : Array<String> );

@@ -2076,10 +2076,16 @@ div.sp-container input:hover {
 div.color-box {
   display: inline-flex;
 }
-div.color-picker {
+div.popup {
   position: absolute;
   overflow: visible;
   z-index: 900;
+  box-shadow: 3px 3px 3px rgba(0, 0, 0, 0.777);
+}
+div.popup:focus {
+  outline: none;
+}
+div.color-picker {
   background-color: #282829;
   border: 1px solid #333333;
 }
@@ -2106,4 +2112,91 @@ div.color-picker svg {
   width: 100%;
   height: 100;
   pointer-events: none;
+}
+div.texture-choice {
+  display: inline-flex;
+  height: 26px;
+  align-items: center;
+  width: 100%;
+}
+div.gradient-box {
+  display: block;
+  align-self: center;
+  height: 18px;
+  min-width: 150px;
+  font-family: Verdana, serif;
+  font-size: 9pt;
+  border: 1px solid #444;
+}
+.gradient-editor {
+  background-color: #282829;
+  border: 1px solid #333333;
+}
+.gradient-editor .color-box {
+  border: 3px solid #333333;
+}
+.gradient-editor .stop-editor.disabled {
+  opacity: 50%;
+}
+.gradient-editor .editor {
+  padding: 6px;
+}
+.gradient-editor .editor > div {
+  margin-bottom: 4px;
+}
+.gradient-editor p {
+  margin: 0;
+}
+.gradient-editor label {
+  margin-right: 5px;
+}
+.gradient-editor input {
+  width: 75px;
+}
+.gradient-editor summary:focus {
+  outline: none;
+}
+.gradient-container {
+  height: 100%;
+  position: relative;
+}
+.gradient-container svg {
+  position: absolute;
+  width: 100%;
+  height: 100;
+}
+.gradient-container svg.lines {
+  mix-blend-mode: difference;
+}
+.gradient-container svg.lines line {
+  stroke: white;
+  stroke-width: 1px;
+}
+.gradient-container svg .gradient-stop {
+  filter: url(#shadow);
+}
+.gradient-container svg .gradient-stop .outline {
+  stroke-width: 0.015;
+  stroke: white;
+}
+.gradient-container svg .gradient-stop:hover .outline {
+  stroke-width: 0.025;
+}
+.gradient-container svg .gradient-stop.selected .outline {
+  stroke-width: 0.035;
+}
+.gradient-container svg .gradient-stop.selected:hover .outline {
+  stroke-width: 0.045;
+}
+.gradient-container svg .gradient-stop .fill {
+  stroke: black;
+  stroke-width: 0.005;
+}
+.gradient-container svg .gradient-stop .checkboard {
+  fill: url(#checkboard-bg);
+}
+.gradient-preview {
+  width: 100%;
+  height: 100%;
+  position: absolute;
 }

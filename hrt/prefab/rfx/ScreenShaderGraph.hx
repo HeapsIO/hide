@@ -185,7 +185,7 @@ class ScreenShaderGraph extends RendererFX {
 		case TBool:
 			PBool;
 		case TSampler2D:
-			PTexture;
+			PTexturePath;
 		case TVec(n, VFloat):
 			PVec(n);
 		default:

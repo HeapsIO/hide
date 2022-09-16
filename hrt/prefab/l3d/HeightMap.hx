@@ -1,6 +1,6 @@
 package hrt.prefab.l3d;
 
-enum abstract HeightMapTextureKind(String) {
+enum abstract HeightMaPTexturePathKind(String) {
 	var Albedo = "albedo";
 	var Height = "height";
 	var Normal = "normal";
@@ -516,7 +516,7 @@ class HeightMap extends Object3D {
 	#end
 	var tilesCache : Map<Int,HeightMapTile> = new Map();
 	var emptyTile : HeightMapTile;
-	@:c var textures : Array<{ path : String, kind : HeightMapTextureKind, enable : Bool, ?props : { color : Int, scale : Float } }> = [];
+	@:c var textures : Array<{ path : String, kind : HeightMaPTexturePathKind, enable : Bool, ?props : { color : Int, scale : Float } }> = [];
 	@:s var size = 128.;
 	@:s var heightScale = 0.2;
 	@:s var heightFlipX = false;
@@ -573,7 +573,7 @@ class HeightMap extends Object3D {
 	// todo : instead of storing the context, we should find a way to have a texture loader
 	var storedCtx : hrt.prefab.Context;
 	var albedoProps : Array<h3d.Vector>;
-	var texArrayCache : Map<HeightMapTextureKind, { texture : h3d.mat.TextureArray, indexes : Array<Int> }>;
+	var texArrayCache : Map<HeightMaPTexturePathKind, { texture : h3d.mat.TextureArray, indexes : Array<Int> }>;
 
 	override function save():{} {
 		var o : Dynamic = super.save();
@@ -728,7 +728,7 @@ class HeightMap extends Object3D {
 		return path;
 	}
 
-	function getTextures( k : HeightMapTextureKind, tx : Int, ty : Int ) {
+	function getTextures( k : HeightMaPTexturePathKind, tx : Int, ty : Int ) {
 		var tl = [];
 		for( t in textures ) {
 			var b = t.kind == k && t.path != null && t.enable;
@@ -751,7 +751,7 @@ class HeightMap extends Object3D {
 		texArrayCache = null;
 	}
 
-	function getTextureArray( k : HeightMapTextureKind ) {
+	function getTextureArray( k : HeightMaPTexturePathKind ) {
 		if( texArrayCache == null ) texArrayCache = new Map();
 		var arr = texArrayCache.get(k);
 		if( arr != null && !arr.texture.isDisposed() )

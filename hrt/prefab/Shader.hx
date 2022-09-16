@@ -1,5 +1,8 @@
 package hrt.prefab;
 
+import hrt.impl.Gradient;
+import hrt.impl.TextureType;
+
 class Shader extends Prefab {
 
 	@:s var targetMaterial : String;
@@ -44,9 +47,26 @@ class Shader extends Prefab {
 					val = new h3d.Vector();
 			case TSampler2D:
 				if( val != null ) {
-					var t = hxd.res.Loader.currentInstance.load(val).toTexture();
-					t.wrap = Repeat;
-					val = t;
+					if (Std.isOfType(val, String)) {
+						var t = hxd.res.Loader.currentInstance.load(val).toTexture();
+						t.wrap = Repeat;
+						val = t;
+					}
+					else if (Type.typeof(val) == TObject) {
+						if (val.type != null && Std.isOfType(val.type, String)) {
+
+							switch((val.type:String):TextureType) {
+								case TextureType.gradient:
+								{
+									if (val.data.stops != null && val.data.resolution != null) {
+										var t = Gradient.textureFromData(val.data);
+										val = t; 
+									}
+								}
+								default:
+							}
+						}
+					}
 				}
 				else {
 					var childNoise = getOpt(hrt.prefab.l2d.NoiseGenerator, v.name);

@@ -395,7 +395,7 @@ class Light extends Object3D {
 				{ name: "range", t: PFloat(1, 20), def: 10 },
 				{ name: "angle", t: PFloat(1, 90), def: 90 },
 				{ name: "fallOff", t: PFloat(1, 90), def: 80 },
-				{ name: "cookiePath", t: PTexture },
+				{ name: "cookiePath", t: PTexturePath },
 			]));
 		case Point:
 			group.append(hide.comp.PropsEditor.makePropsList([
