@@ -20,7 +20,7 @@ class Utils {
                 switch((val.type:String):TextureType) {
                     case TextureType.gradient:
                     {
-                        if (val.data.stops != null && val.data.resolution != null) {
+                        if (Reflect.hasField(val.data, "stops") && Reflect.hasField(val.data, "resolution")) {
                             var t = Gradient.textureFromData(val.data);
                             return t;
                         }
