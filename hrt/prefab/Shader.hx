@@ -47,26 +47,7 @@ class Shader extends Prefab {
 					val = new h3d.Vector();
 			case TSampler2D:
 				if( val != null ) {
-					if (Std.isOfType(val, String)) {
-						var t = hxd.res.Loader.currentInstance.load(val).toTexture();
-						t.wrap = Repeat;
-						val = t;
-					}
-					else if (Type.typeof(val) == TObject) {
-						if (val.type != null && Std.isOfType(val.type, String)) {
-
-							switch((val.type:String):TextureType) {
-								case TextureType.gradient:
-								{
-									if (val.data.stops != null && val.data.resolution != null) {
-										var t = Gradient.textureFromData(val.data);
-										val = t; 
-									}
-								}
-								default:
-							}
-						}
-					}
+					val = Utils.getTextureFromValue(val);
 				}
 				else {
 					var childNoise = getOpt(hrt.prefab.l2d.NoiseGenerator, v.name);
