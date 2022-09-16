@@ -324,6 +324,9 @@ class GradientEditor extends Popup {
     }
 
     function removeStop(element : Element) {
+        if (stopMarquers.length <= 1)
+            return;
+        
         var idx = stopMarquers.indexOf(element);
         innerValue.stops.splice(idx, 1);
 
