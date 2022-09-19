@@ -3,7 +3,6 @@ package hide.comp;
 import hrt.impl.TextureType;
 import hide.comp.GradientEditor.GradientBox;
 import hrt.impl.Gradient;
-import hide.comp.DetachablePanel.Side;
 
 // Allow the user to choose between picking a texture on disk,
 // creating a gradient, and future other choices of texture generation

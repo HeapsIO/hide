@@ -1,17 +1,10 @@
 package hide.comp;
 
-import nw.Window;
-import h2d.filter.InnerGlow;
-import js.html.Document;
 import js.html.InputElement;
 import js.jquery.Event;
 import nw.Clipboard;
-import js.node.ChildProcess;
 import js.html.PointerEvent;
-import format.abc.Data.ABCData;
-import h3d.shader.ColorAdd;
 import h3d.Vector;
-import vdom.JQuery;
 import js.Browser;
 
 class Color {

@@ -1,9 +1,6 @@
 package hrt.impl;
 
-import haxe.Json;
-import haxe.Int64;
 import haxe.Int32;
-import h3d.Engine;
 import h3d.mat.Texture;
 import h3d.Vector;
 
