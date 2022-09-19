@@ -31,4 +31,11 @@ class Utils {
         }
         return null;
     }
+
+    public static function copyTextureData(val : Any) : Any {
+        if (Type.typeof(val) == TObject)
+            return haxe.Json.parse(haxe.Json.stringify(val));
+
+        return val;
+    }
 }

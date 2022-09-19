@@ -1,4 +1,5 @@
 package hide.comp;
+import hrt.impl.TextureType.Utils;
 import hrt.prefab.Props;
 
 class PropsEditor extends Component {
@@ -331,10 +332,9 @@ class PropsField extends Component {
 			}
 			return;
 		case "texturechoice":
-			var a = getAccess();
 			tchoice = new TextureChoice(null, f);
 			tchoice.value = current;
-			currentSave = haxe.Json.parse(haxe.Json.stringify(current));
+			currentSave = Utils.copyTextureData(current);
 
 			tchoice.onChange = function(shouldUndo : Bool) {
 
@@ -342,14 +342,14 @@ class PropsField extends Component {
 					var setVal = function(val, undo) {
 						var f = resolveField();
 						f.current = val;
-						f.currentSave = haxe.Json.parse(haxe.Json.stringify(val));
+						f.currentSave = Utils.copyTextureData(val);
 						f.tchoice.value = val;
 						setFieldValue(val);
 						f.onChange(undo);
 					}
 
-					var oldVal = haxe.Json.parse(haxe.Json.stringify(currentSave));
-					var newVal = haxe.Json.parse(haxe.Json.stringify(tchoice.value));
+					var oldVal = Utils.copyTextureData(currentSave);
+					var newVal = Utils.copyTextureData(tchoice.value);
 
 					props.undo.change(Custom(function(undo) {
 						if (undo) {
