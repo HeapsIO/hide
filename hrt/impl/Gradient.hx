@@ -23,6 +23,11 @@ class Gradient {
     public function new () {
     }
 
+    public static function getDefaultGradientData() : GradientData {
+        var data : GradientData = {stops: [{position: 0.0, color:0xFF000000}, {position: 1.0, color:0xFFFFFFFF}], resolution: 64};
+        return data;
+    }
+
     public static function evalData(data : GradientData, position : Float, ?outVector : Vector) : Vector {
         if (outVector == null) outVector = new Vector(); 
         var i : Int = 0;

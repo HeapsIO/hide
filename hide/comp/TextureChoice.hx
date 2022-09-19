@@ -106,10 +106,7 @@ class TextureChoice extends Component {
             case TextureType.path:
                 set_value(null);
             case TextureType.gradient: {
-                var data : GradientData = {stops:new Array<ColorStop>(), resolution: 64};
-                data.stops.push({position: 0.0, color:0xFF000000});
-                data.stops.push({position: 1.0, color:0xFFFFFFFF});
-                set_value({type:TextureType.gradient, data:data});
+                set_value({type:TextureType.gradient, data:Gradient.getDefaultGradientData()});
             }
             default :
                 throw "unhandeld TextureType change";
