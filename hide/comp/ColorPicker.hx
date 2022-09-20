@@ -136,6 +136,8 @@ class ColorPicker extends Popup {
 	var width = 256;
 	var height = 256;
 
+	var set_valueGuard : Int = 0;
+
 	public var valueToARGB : (value : Vector,  outColor : Color) -> Void;
 	public var ARGBToValue : (color : Color) -> Vector;
 
@@ -218,7 +220,9 @@ class ColorPicker extends Popup {
 
 	public function change(isDragging:Bool) {
 		repaint();
+		set_valueGuard += 1;
 		onChange(isDragging);
+		set_valueGuard -= 1;
 	}
 
 	public function test() {
@@ -285,7 +289,7 @@ class ColorPicker extends Popup {
 				var color = getColorFromString(cast(e.target,InputElement).value);
 				if (color != null) {
 					set_value(color);
-					onChange(false);
+					change(false);
 				}
 				else {
 					repaint(); // we refresh to reset the text of the input to the current color if the input is invalid
@@ -434,20 +438,23 @@ class ColorPicker extends Popup {
 	};
 
 	function set_value(v) {
-		var color : Color = if (!canEditAlpha) new Color(
-			(v >> 16) & 0xFF,
-			(v >> 8) & 0xFF,
-			(v >> 0) & 0xFF,
-			255);
-		else new Color(
-			(v >> 16) & 0xFF,
-			(v >> 8) & 0xFF,
-			(v >> 0) & 0xFF,
-			(v >> 24) & 0xFF
-		);
+		if (set_valueGuard == 0) {
+			var color : Color = if (!canEditAlpha) new Color(
+				(v >> 16) & 0xFF,
+				(v >> 8) & 0xFF,
+				(v >> 0) & 0xFF,
+				255);
+			else new Color(
+				(v >> 16) & 0xFF,
+				(v >> 8) & 0xFF,
+				(v >> 0) & 0xFF,
+				(v >> 24) & 0xFF
+			);
 
-		currentValue = ARGBToValue(color);
-		repaint();
+			currentValue = ARGBToValue(color);
+			repaint();
+		}
+
 		return get_value();
 	}
 }
