@@ -16,11 +16,18 @@ class Macros {
 
 	#if macro
 	static function includeShaderSources() {
-		var path = Context.resolvePath("h3d/shader/BaseMesh.hx");
-		var dir = new haxe.io.Path(path).dir;
-		for( f in sys.FileSystem.readDirectory(dir) )
-			if( StringTools.endsWith(f,".hx") )
-				Context.addResource("shader/" + f.substr(0, -3), sys.io.File.getBytes(dir + "/" + f));
+		var paths = [
+			"h3d/shader/BaseMesh.hx",
+			"hrt/shader/BaseEmitter.hx",
+		];
+
+		for (pathStr in paths) {
+			var path = Context.resolvePath(pathStr);
+			var dir = new haxe.io.Path(path).dir;
+			for( f in sys.FileSystem.readDirectory(dir) )
+				if( StringTools.endsWith(f,".hx") )
+					Context.addResource("shader/" + f.substr(0, -3), sys.io.File.getBytes(dir + "/" + f));
+		}
 	}
 
 	public static function buildSaveLoad() {

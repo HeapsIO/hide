@@ -73,7 +73,7 @@ class ShaderLoader {
 			if( sys.FileSystem.exists(file) )
 				return { file : file, expr : loadShaderString(file, sys.io.File.getContent(file), null) };
 		}
-		if( StringTools.startsWith(name,"h3d.shader.") ) {
+		if( StringTools.startsWith(name,"h3d.shader.") || StringTools.startsWith(name,"hrt.shader.")) {
 			var r = haxe.Resource.getString("shader/" + name.substr(11));
 			if( r != null ) return { file : null, expr : loadShaderString(path, r, null) };
 		}
