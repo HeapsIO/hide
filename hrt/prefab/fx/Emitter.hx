@@ -1,4 +1,5 @@
 package hrt.prefab.fx;
+import hrt.shader.BaseEmitter;
 import hrt.impl.Gradient;
 import hrt.prefab.l3d.Polygon;
 import hrt.prefab.Curve;
@@ -193,6 +194,7 @@ private class ParticleInstance  {
 	public var speedAccumulation = new h3d.Vector();
 	public var colorMult : h3d.Vector;
 	public var distToCam = 0.0;
+	public var random : Float;
 
 	public var orientation = new h3d.Quat();
 
@@ -209,6 +211,7 @@ private class ParticleInstance  {
 		startFrame = 0;
 		speedAccumulation.set(0,0,0);
 		orientation.identity();
+		random = hxd.Math.random();
 
 		switch(emitter.simulationSpace){
 			// Particles in Local are spawned next to emitter in the scene tree,
@@ -490,6 +493,7 @@ class EmitterObject extends h3d.scene.Object {
 	var evaluator : Evaluator;
 	var vecPool = new Evaluator.VecPool();
 	var numInstances = 0;
+	var baseEmitterShader : hrt.shader.BaseEmitter = null;
 	var animatedTextureShader : h3d.shader.AnimatedTexture = null;
 	var colorMultShader : h3d.shader.ColorMult = null;
 
@@ -769,6 +773,9 @@ class EmitterObject extends h3d.scene.Object {
 				mesh.material.mainPass.addShader(animatedTextureShader);
 			}
 
+			baseEmitterShader = new hrt.shader.BaseEmitter();
+			mesh.material.mainPass.addShader(baseEmitterShader);
+
 			if(useRandomColor) {
 				colorMultShader = new h3d.shader.ColorMult();
 				mesh.material.mainPass.addShader(colorMultShader);
@@ -778,6 +785,14 @@ class EmitterObject extends h3d.scene.Object {
 				batch = new h3d.scene.MeshBatch(meshPrim, mesh.material, this);
 				batch.name = "batch";
 			}
+
+			/*trace("Shaders for " + this.name);
+			@:privateAccess var shaderEntry = mesh.material.mainPass.shaders;
+			while(shaderEntry != null) {
+				trace(shaderEntry.s);
+				shaderEntry = shaderEntry.next;
+			}*/
+
 			template.local3d.remove();
 		}
 	}
@@ -964,6 +979,11 @@ class EmitterObject extends h3d.scene.Object {
 				animatedTextureShader.startTime = p.startTime;
 				animatedTextureShader.startFrame = p.startFrame;
 			}
+
+			baseEmitterShader.life = p.life;
+			baseEmitterShader.lifeTime = p.lifeTime;
+			baseEmitterShader.random = p.random;
+
 			if(colorMultShader != null)
 				colorMultShader.color = p.colorMult;
 			batch.emitInstance();

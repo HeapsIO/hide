@@ -7,11 +7,10 @@ class BaseEmitter extends hxsl.Shader {
 		@perInstance @param var lifeTime : Float;
 		@perInstance @param var life : Float;
         @perInstance @param var random : Float; 
-
+        
+        // Each particle as a random value asigned on spawn
         var particleRandom : Float;
         var particleLifeTime : Float;
-
-        // Each particle as a random value asigned on spawn
         var particleLife : Float;
 
         function __init__() {
