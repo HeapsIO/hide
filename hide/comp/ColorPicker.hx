@@ -1,5 +1,6 @@
 package hide.comp;
 
+import h2d.Slider;
 import js.html.InputElement;
 import js.jquery.Event;
 import nw.Clipboard;
@@ -32,21 +33,21 @@ class ColorBox extends Component {
 	public var isPickerEnabled : Bool = false;
 
 	public var value(get, set) : Int;
-	var innerValue : Int;
+	var workValue : Int;
 
 	public function isPickerOpen() : Bool {
 		return picker != null;
 	}
 
 	function set_value(value:Int) {
-		innerValue = value;
-		if (picker != null) picker.value = innerValue;
+		workValue = value;
+		if (picker != null) picker.value = workValue;
 		repaint();
 		return get_value();
 	}
 
 	function get_value() {
-		return innerValue;
+		return workValue;
 	}
 
 	public dynamic function onChange(isDragging : Bool) {
@@ -67,9 +68,9 @@ class ColorBox extends Component {
 		element.click(function(e) {
 			if (picker == null && isPickerEnabled) {
 				picker = new ColorPicker(canEditAlpha, null, this.element);
-				picker.value = innerValue;
+				picker.value = workValue;
 				picker.onChange = function(isDragging) {
-					innerValue = picker.value;
+					workValue = picker.value;
 					repaint();
 					onChange(isDragging);
 				};
@@ -112,15 +113,18 @@ class ColorBox extends Component {
 	}
 }
 
+typedef ColorMode = {name: String, valueToARGB : (value : Vector,  outColor : Color) -> Void, ARGBToValue : (color : Color) -> Vector};
+typedef ColorSliderComponent = {label:Element};
+
+
 class ColorPicker extends Popup {
 
 	public var value(get, set) : Int;
-	var innerValue : Int;
+	var workValue : Int;
 	var mask : Int;
 
-	var gradient : ColorSlider;
-	var hue : ColorSlider;
-	var alpha : ColorSlider;
+	var primarySliders : SliderGroup;
+	var secondarySliders : SliderGroup;
 
 	var colorCode : Element;
 	var preview : ColorBox;
@@ -130,29 +134,26 @@ class ColorPicker extends Popup {
 
 	var canEditAlpha : Bool;
 
-	var initialValue : Vector;
-	public var currentValue : Vector;
-
 	var width = 256;
 	var height = 256;
 
-	var set_valueGuard : Int = 0;
+	var valueChangeGuard : Int = 0;
 
 	public var valueToARGB : (value : Vector,  outColor : Color) -> Void;
 	public var ARGBToValue : (color : Color) -> Vector;
 
-	function iRGBtofRGB(color : Color) : Vector {
+	static function iRGBtofRGB(color : Color) : Vector {
 		return new Vector(color.r/255.0, color.g/255.0, color.b/255.0, color.a/255.0);
 	}
 
-	function fRGBtoiRGB(color : Vector, outColor : Color) {
+	static function fRGBtoiRGB(color : Vector, outColor : Color) {
 		outColor.r = Std.int(color.r*255.0);
 		outColor.g = Std.int(color.g*255.0); 
 		outColor.b = Std.int(color.b*255.0);
 		outColor.a = Std.int(color.a*255.0);
 	}
 
-	function iRGBtoHSV(color: Color) : Vector {
+	static function iRGBtoHSV(color: Color) : Vector {
 		var r = color.r / 255.0;
 		var g = color.g / 255.0;
 		var b = color.b / 255.0;
@@ -179,7 +180,7 @@ class ColorPicker extends Popup {
 		return new Vector(H, S, V, A);
 	}
 
-	function HSVtoiRGB(hsv:Vector, outColor : Color) {
+	static function HSVtoiRGB(hsv:Vector, outColor : Color) {
 		var h = hsv.x * 360.0;
 		var s = hsv.y;
 		var v = hsv.z;
@@ -205,24 +206,75 @@ class ColorPicker extends Popup {
 		outColor.a = Std.int(hsv.w * 255);
 	}
 
-	public function repaint() {
-		gradient.repaint();
-		hue.repaint();
-		if (alpha!=null) alpha.repaint();
-		
+	static function iRGBtoHSL(color : Color) : Vector {
+		var r = color.r / 255.0;
+		var g = color.g / 255.0;
+		var b = color.b / 255.0;
+		var a = color.a / 255.0;
 
-		var colorInt = get_value();
-		colorCode.val(StringTools.hex(colorInt, if(canEditAlpha) 8 else 6));
-		var color : Color = new Color();
-		valueToARGB(currentValue, color);
-		preview.value = colorInt;
+		var Cmax = Math.max(r, Math.max(g, b));
+		var Cmin = Math.min(r, Math.min(g, b));
+		var D = Cmax - Cmin;
+
+		var H = if(D == 0) 0.0
+				else if(Cmax == r) hxd.Math.ufmod((g - b)/D, 6) * 60.0
+				else if (Cmax == g) ((b - r)/D + 2) * 60.0
+				else ((r - g)/D + 4) * 60.0;
+		
+		H = H / 360.0;
+		H = Math.min(Math.max(H, 0.0), 1.0);
+
+		var L = (Cmax + Cmin) / 2;
+		var S = if (D == 0) 0 else D / (1 - Math.abs(2 * L - 1));
+
+		return new Vector(H, S, L, a);
+	}
+
+	static function HSLtoiRGB(hsl : Vector, outColor : Color) {
+		var h = hsl.x * 360.0;
+		var s = hsl.y;
+		var l = hsl.z;
+
+		var C = (1 - Math.abs(2*l-1)) * s;
+		var X = C * (1 - Math.abs(hxd.Math.ufmod((h / 60.0),2) - 1));
+		var m = l - C/2.0;
+
+		var r = 0.0;
+		var g = 0.0;
+		var b = 0.0;
+
+		if (h < 60) {r = C; g = X;} 
+		else if (h < 120) {r = X; g = C;} 
+		else if (h < 180) {g = C; b = X;} 
+		else if (h < 240) {g = X; b = C;} 
+		else if (h < 300) {r = X; b = C;} 
+		else {r = C; b = X;};
+
+		outColor.r = Std.int(Math.round((r+m)*255));
+		outColor.g = Std.int(Math.round((g+m)*255));
+		outColor.b = Std.int(Math.round((b+m)*255));
+		outColor.a = Std.int(hsl.w * 255);
+	}
+
+	var colorModes : Array<ColorMode> = [
+		{name:"RGB", valueToARGB: fRGBtoiRGB, ARGBToValue: iRGBtofRGB},
+		{name:"HSV", valueToARGB: HSVtoiRGB, ARGBToValue: iRGBtoHSV},
+		{name:"HSL", valueToARGB: HSLtoiRGB, ARGBToValue: iRGBtoHSL},
+	];
+
+	public function repaint() {
+
+		primarySliders.value = workValue;
+		secondarySliders.value = workValue;
+		colorCode.val(StringTools.hex(workValue, if(canEditAlpha) 8 else 6));
+		preview.value = workValue;
 	}
 
 	public function change(isDragging:Bool) {
 		repaint();
-		set_valueGuard += 1;
+		valueChangeGuard += 1;
 		onChange(isDragging);
-		set_valueGuard -= 1;
+		valueChangeGuard -= 1;
 	}
 
 	public function test() {
@@ -256,15 +308,13 @@ class ColorPicker extends Popup {
 
 		popup.addClass("color-picker");
 
-		currentValue = new Vector();
-
-
-		//valueToARGB = fRGBtoiRGB;
-		//ARGBToValue = iRGBtofRGB;
 		valueToARGB = HSVtoiRGB;
 		ARGBToValue = iRGBtoHSV;
 
 		initSliders();
+
+		new Element("<hr>").appendTo(popup);
+
 		initInfobar();
 
 		reflow();
@@ -332,64 +382,188 @@ class ColorPicker extends Popup {
 	}
 
 	function initSliders() {
-		var sliders = new Element("<div>").addClass("checkerboard-bg").addClass("slider-container");
-		popup.append(sliders);
-
-		gradient = new ColorSlider(this,
-			function(x : Int, y : Int, outVector : Vector) {
-				outVector.x = currentValue.x;
-				outVector.y = x / 255.0;
-				outVector.z = y / 255.0;
-				outVector.w = 1.0;
-			},
-			function(x : Int, y : Int, outVector : Vector) {
-				outVector.x = currentValue.x;
-				outVector.y = x / 255.0;
-				outVector.z = y / 255.0;
-				outVector.w = currentValue.w;
-			}, 
-			function() : {x:Int, y:Int} {
-				return {x: Std.int(currentValue.y * 255.0), y: Std.int(currentValue.z * 255.0)};
-			},
-			256,256, sliders, null);
-		sliders.append(gradient.element);
-
-		hue = new ColorSlider(this,
-			function(x : Int, y : Int, outVector : Vector) {
-				outVector.x = y/255.0;
-				outVector.y = 1.0;
-				outVector.z = 1.0;
-				outVector.w = 1.0;
-			},
-			function(x : Int, y : Int, outVector : Vector) {
-				outVector.r = y/255.0;
-				outVector.g = currentValue.y;
-				outVector.b = currentValue.z;
-				outVector.w = currentValue.w;
-			},
-			function() : {x:Int, y:Int} {
-				return {x: 1, y: Std.int(currentValue.x * 255.0)};
-			},1,256, sliders, null);
-		sliders.append(hue.element);
-
-		if (canEditAlpha) {
-			alpha = new ColorSlider(this,
+		{
+			primarySliders = new SliderGroup(popup, canEditAlpha, colorModes[1]);
+			
+			primarySliders.onChange = function(isDragging : Bool) {
+				workValue = primarySliders.value;
+				change(isDragging);
+			}
+	
+			primarySliders.addSlider(new ColorSlider(
+				primarySliders.element,
+				256,
+				256,
 				function(x : Int, y : Int, outVector : Vector) {
-					outVector.x = currentValue.x;
-					outVector.y = currentValue.y;
-					outVector.z = currentValue.z;
-					outVector.w = y/255.0;
+					outVector.x = primarySliders.workValue.x;
+					outVector.y = x / 255.0;
+					outVector.z = y / 255.0;
+					outVector.w = 1.0;
 				},
 				function(x : Int, y : Int, outVector : Vector) {
-					outVector.r = currentValue.x;
-					outVector.g = currentValue.y;
-					outVector.b = currentValue.z;
-					outVector.w = y/255.0;
+					outVector.x = primarySliders.workValue.x;
+					outVector.y = x / 255.0;
+					outVector.z = y / 255.0;
+					outVector.w = primarySliders.workValue.w;
+				}, 
+				function() : {x:Int, y:Int} {
+					return {x: Std.int(primarySliders.workValue.y * 255.0), y: Std.int(primarySliders.workValue.z * 255.0)};
+				}));
+			
+	
+			primarySliders.addSlider(new ColorSlider(
+				primarySliders.element,
+				1,
+				256,
+				function(x : Int, y : Int, outVector : Vector) {
+					outVector.x = y/255.0;
+					outVector.y = 1.0;
+					outVector.z = 1.0;
+					outVector.w = 1.0;
+				},
+				function(x : Int, y : Int, outVector : Vector) {
+					outVector.r = y/255.0;
+					outVector.g = primarySliders.workValue.y;
+					outVector.b = primarySliders.workValue.z;
+					outVector.w = primarySliders.workValue.w;
 				},
 				function() : {x:Int, y:Int} {
-					return {x: 1, y: Std.int(currentValue.w * 255.0)};
-				},1,256, sliders, null);
-			sliders.append(alpha.element);
+					return {x: 1, y: Std.int(primarySliders.workValue.x * 255.0)};
+				}));
+	
+			if (canEditAlpha) {
+				primarySliders.addSlider(new ColorSlider(
+					primarySliders.element,
+					1,
+					256,
+					function(x : Int, y : Int, outVector : Vector) {
+						outVector.x = primarySliders.workValue.x;
+						outVector.y = primarySliders.workValue.y;
+						outVector.z = primarySliders.workValue.z;
+						outVector.w = y/255.0;
+					},
+					function(x : Int, y : Int, outVector : Vector) {
+						outVector.r = primarySliders.workValue.x;
+						outVector.g = primarySliders.workValue.y;
+						outVector.b = primarySliders.workValue.z;
+						outVector.w = y/255.0;
+					},
+					function() : {x:Int, y:Int} {
+						return {x: 1, y: Std.int(primarySliders.workValue.w * 255.0)};
+					}));
+			}
+		}
+		
+		new Element("<hr>").appendTo(popup);
+
+		{
+			secondarySliders = new SliderGroup(popup, canEditAlpha, colorModes[0]);
+
+			secondarySliders.onChange = function(isDragging : Bool) {
+				workValue = secondarySliders.value;
+				change(isDragging);
+			}
+
+			var vbox = new Element("<div>").addClass("vbox").appendTo(secondarySliders.element);
+			function addRow(mask : Vector, group : SliderGroup, isAlpha : Bool) : ColorSliderComponent {
+				var div = new Element("<div>").addClass("slider-value").appendTo(vbox);
+
+				var slider = new ColorSlider(
+					div,
+					256,
+					1,
+					if (!isAlpha) function(x : Int, y : Int, outVector : Vector) {
+						var v = x / 255.0;
+						outVector.x = mask.x * v + ((1.0 - mask.x) * group.workValue.x);
+						outVector.y = mask.y * v + ((1.0 - mask.y) * group.workValue.y);
+						outVector.z = mask.z * v + ((1.0 - mask.z) * group.workValue.z);
+						outVector.w = 1.0;
+					} else function(x : Int, y : Int, outVector : Vector) {
+						var v = x / 255.0;
+						outVector.x = mask.x * v + ((1.0 - mask.x) * group.workValue.x);
+						outVector.y = mask.y * v + ((1.0 - mask.y) * group.workValue.y);
+						outVector.z = mask.z * v + ((1.0 - mask.z) * group.workValue.z);
+						outVector.w = mask.w * v + ((1.0 - mask.w) * group.workValue.w);
+					},
+					function(x : Int, y : Int, outVector : Vector) {
+						var v = x / 255.0;
+						outVector.x = mask.x * v + ((1.0 - mask.x) * group.workValue.x);
+						outVector.y = mask.y * v + ((1.0 - mask.y) * group.workValue.y);
+						outVector.z = mask.z * v + ((1.0 - mask.z) * group.workValue.z);
+						outVector.w = mask.w * v + ((1.0 - mask.w) * group.workValue.w);
+					}, 
+					function() : {x:Int, y:Int} {
+						var v = mask.x * group.workValue.x * 255 +
+								mask.y * group.workValue.y * 255 +
+								mask.z * group.workValue.z * 255 +
+								mask.w * group.workValue.w * 255;
+						return {x: Std.int(v), y: 1};
+					}
+				);
+
+				group.addSlider(slider);
+
+				var input = new Element("<input type='text' maxlength='4'>").appendTo(div).width(28);
+				input.change(
+					function(e : Event) {
+						var val = Std.parseInt(input.val());
+						if (val != null) {
+							slider.pickColorAtPixel(val, 0);
+						}
+					}	
+				);
+
+				slider.onRepaint = function() {
+					var v = slider.getCursorPos().x;
+					input.val(Std.string(v));
+				}
+
+
+				var name = new Element("<label>").appendTo(div);
+
+				return {label:name};
+			}
+
+			var components = new Array<ColorSliderComponent>();
+			components.push(addRow(new Vector(1.0,0.0,0.0,0.0), secondarySliders, false));
+			components.push(addRow(new Vector(0.0,1.0,0.0,0.0), secondarySliders, false));
+			components.push(addRow(new Vector(0.0,0.0,1.0,0.0), secondarySliders, false));
+			if (canEditAlpha) {
+				components.push(addRow(new Vector(0.0,0.0,0.0,1.0), secondarySliders, true));
+			}
+
+
+			function changeColorMode(colorMode : ColorMode) {
+				secondarySliders.setColorMode(colorMode, value);
+
+				for (i => comp in components) {
+					if (i < 3) {
+						comp.label.text(colorMode.name.charAt(i));
+					}
+					else {
+						comp.label.text("A");
+					}
+				}
+			}
+
+			var initialMode : Int = ide.currentConfig.get("colorPicker.secondaryColorMode", 0);
+			var modeSelect = new Element("<select id=secondary-color-mode>").css("align-self", "end").appendTo(vbox);
+			for (i => mode in colorModes) {
+				var option = new Element("<option>").val(i).text(mode.name).appendTo(modeSelect);
+				if (i == initialMode)
+					option.attr("selected", "true");
+			}
+
+			modeSelect.change(
+				function(e : Event) {
+					var val = Std.parseInt(modeSelect.val());
+					var modeIndex : Int = Std.int(hxd.Math.clamp(val, 0, colorModes.length));
+					ide.currentConfig.set("colorPicker.secondaryColorMode", modeIndex);
+					changeColorMode(colorModes[modeIndex]);
+				}
+			);
+
+			changeColorMode(colorModes[initialMode]);
 		}
 	}
 
@@ -431,27 +605,17 @@ class ColorPicker extends Popup {
 	}
 
 	function get_value() {
-		var color = new Color();
-		valueToARGB(currentValue, color);
-		return if (!canEditAlpha) (color.r << 16) + (color.g << 8) + color.b 
-		else (color.r << 16) + (color.g << 8) + (color.b << 0) + (color.a << 24);	
+		return workValue;
+		//var color = new Color();
+		//valueToARGB(currentValue, color);
+		//return if (!canEditAlpha) (color.r << 16) + (color.g << 8) + color.b 
+		//else (color.r << 16) + (color.g << 8) + (color.b << 0) + (color.a << 24);	
 	};
 
 	function set_value(v) {
-		if (set_valueGuard == 0) {
-			var color : Color = if (!canEditAlpha) new Color(
-				(v >> 16) & 0xFF,
-				(v >> 8) & 0xFF,
-				(v >> 0) & 0xFF,
-				255);
-			else new Color(
-				(v >> 16) & 0xFF,
-				(v >> 8) & 0xFF,
-				(v >> 0) & 0xFF,
-				(v >> 24) & 0xFF
-			);
+		if (valueChangeGuard == 0) {
+			workValue = v;
 
-			currentValue = ARGBToValue(color);
 			repaint();
 		}
 
@@ -460,7 +624,19 @@ class ColorPicker extends Popup {
 }
 
 class ColorSlider extends Component {
-	public var picker : ColorPicker;
+	public var value(get,set) : Vector;
+
+	function set_value(v : Vector) {
+		workValue = v;
+		repaint();
+		return v;
+	}
+
+	function get_value() : Vector {
+		return workValue;
+	}
+
+	var workValue : Vector;
 
 	var width : Int;
 	var height : Int;
@@ -472,24 +648,33 @@ class ColorSlider extends Component {
 	var selectionColor : Element;
 
 	var isDragging : Bool = false;
+
+	var valueChangeLock : Int = 0;
+
+	public var colorMode : ColorMode;
 	
 	var getColorAtPixelDisplay : (x : Int, y : Int, outVector : Vector) -> Void;
 	var getColorAtPixel : (x : Int, y : Int, outVector : Vector) -> Void;
-	var getCursorPos : () -> {x : Int, y : Int};
+	public var getCursorPos : () -> {x : Int, y : Int};
 
 	var canvasDownsample = 8;
 
+	public dynamic function onChange(isDragging : Bool) {
+
+	}
+
+	public dynamic function onRepaint() {
+		
+	}
+
 	public function new(
-		picker : ColorPicker, 
-		getColorAtPixelDisplay : (x : Int, y : Int, outVector : Vector) -> Void,
-		?getColorAtPixel : (x : Int, y : Int, outVector : Vector) -> Void,
-		getCursorPos : () -> {x : Int, y : Int},
+		?parent : Element, 
 		width : Int, 
 		inHeight : Int,
-		?parent : Element, 
-		?root : Element
+		getColorAtPixelDisplay : (x : Int, y : Int, outVector : Vector) -> Void,
+		?getColorAtPixel : (x : Int, y : Int, outVector : Vector) -> Void,
+		getCursorPos : () -> {x : Int, y : Int}
 		) {
-		this.picker = picker;
 		this.getColorAtPixelDisplay = getColorAtPixelDisplay;
 		this.getColorAtPixel = if (getColorAtPixel != null) getColorAtPixel else getColorAtPixelDisplay; 
 		this.getCursorPos = getCursorPos;
@@ -499,15 +684,15 @@ class ColorSlider extends Component {
 		var displayWidth = if(width > 1) width else 16;
 		var displayHeight = if(height > 1) height else 16;
 
-		if (root == null) root = new Element("<div>").addClass("slider").width(displayWidth).height(displayHeight);
-		super(parent, root);
+		var e = new Element("<div>").addClass("slider").addClass("checkerboard-bg").width(displayWidth).height(displayHeight);
+		super(parent, e);
 
 		canvas = Browser.document.createCanvasElement();
 
 		canvas.width = Std.int(Math.max(1, width / canvasDownsample));
 		canvas.height = Std.int(Math.max(1, height / canvasDownsample));
 
-		root.append(new Element(canvas));
+		element.append(new Element(canvas));
 
 		var svg = new SVG(element);
 		svg.element.attr({viewBox: '0 0 $width $height'});
@@ -535,7 +720,7 @@ class ColorSlider extends Component {
 			}
 		}
 
-		root.append(svg.element);
+		element.append(svg.element);
 	}
 
 	public function repaint() : Void {
@@ -543,14 +728,13 @@ class ColorSlider extends Component {
 
 		var image_data = c2d.getImageData(0,0,canvas.width,canvas.height);
 		var value : Vector = new Vector();
-		var conversionFunc = picker.valueToARGB;
 		var color : Color = new Color();
 
 		for (y in 0...canvas.height) {
 			for (x in 0...canvas.width) {
 				var index = (y*canvas.width + x) * 4;
 				getColorAtPixelDisplay(x*canvasDownsample,y*canvasDownsample, value);
-				conversionFunc(value, color);
+				colorMode.valueToARGB(value, color);
 				image_data.data[index] = Std.int(color.r);
 				image_data.data[index+1] = Std.int(color.g);
 				image_data.data[index+2] = Std.int(color.b);
@@ -564,15 +748,109 @@ class ColorSlider extends Component {
 		selectionCursor.attr("transform", 'translate(${cursorPos.x}, ${cursorPos.y})');
 
 		getColorAtPixelDisplay(cursorPos.x,cursorPos.y, value);
-		conversionFunc(value, color);
+		colorMode.valueToARGB(workValue, color);
 		selectionColor.css({"fill": 'rgba(${color.r}, ${color.g}, ${color.b}, ${color.a/255.0})'});
+
+		onRepaint();
 	}
 
 	public function pickColorAtPixel(x: Int, y : Int) {
 		x = Std.int(Math.min(Math.max(0, x), width-1));
 		y = Std.int(Math.min(Math.max(0, y), height-1));
-		getColorAtPixel(x, y, picker.currentValue);
-		picker.change(isDragging);
+		getColorAtPixel(x, y, workValue);
+		change(isDragging);
+	}
+
+	public function change(isDragging : Bool) {
+		valueChangeLock += 1;
+		onChange(isDragging);
+		valueChangeLock -= 1;
+	}
+
+}
+
+class SliderGroup extends Component {
+
+	public var sliders : Array<ColorSlider> = new Array<ColorSlider>();
+
+	public var canEditAlpha : Bool = true;
+	public var value(get,set) : Int;
+	public var workValue : Vector = new Vector();
+	var valueChangeLock : Int = 0; 
+
+	var colorMode : ColorMode;
+
+	public function setColorMode(colorMode : ColorMode, value : Int) {
+		this.colorMode = colorMode;
+		for (slider in sliders) {
+			slider.colorMode = colorMode;
+		}
+		this.value = value;
+	}
+
+	public function new(parent : Element, canEditAlpha : Bool, colorMode : ColorMode) {
+		var root = new Element("<div>").addClass("slider-container");
+		super(parent, root);
+
+		this.colorMode = colorMode;
+
+		this.canEditAlpha = canEditAlpha;
+	}
+
+	public dynamic function onChange(isDragging : Bool) {
+
+	}
+
+	function set_value(v : Int) : Int {
+		if (valueChangeLock == 0) {
+			var color : Color = if (!canEditAlpha) new Color(
+				(v >> 16) & 0xFF,
+				(v >> 8) & 0xFF,
+				(v >> 0) & 0xFF,
+				255);
+			else new Color(
+				(v >> 16) & 0xFF,
+				(v >> 8) & 0xFF,
+				(v >> 0) & 0xFF,
+				(v >> 24) & 0xFF
+			);
+
+			workValue = colorMode.ARGBToValue(color);
+		}
+
+		repaint();
+		return get_value();
+	}
+
+	function get_value() {
+		var color = new Color();
+		colorMode.valueToARGB(workValue, color);
+		return if (!canEditAlpha) (color.r << 16) + (color.g << 8) + color.b 
+		else (color.r << 16) + (color.g << 8) + (color.b << 0) + (color.a << 24);	
+	};
+
+	public function addSlider(slider : ColorSlider) : ColorSlider {
+		sliders.push(slider);
+		slider.onChange = function(isDragging : Bool) {
+			this.workValue = slider.value;
+			change(isDragging);
+		}
+		slider.colorMode = colorMode;
+		repaint();
+		return slider;
+	}
+
+	public function repaint() {
+		for (slider in sliders) {
+			slider.value = workValue;
+		}
+	}
+
+	public function change(isDragging : Bool) {
+		repaint();
+		valueChangeLock += 1;
+		onChange(isDragging);
+		valueChangeLock -= 1;
 	}
 
 }

@@ -2089,6 +2089,23 @@ div.color-picker {
   background-color: #282829;
   border: 1px solid #333333;
 }
+div.color-picker .vbox {
+  display: flex;
+  flex-direction: column;
+}
+div.color-picker .slider-value {
+  display: flex;
+}
+div.color-picker .slider-value input {
+  font-size: 10px;
+}
+div.color-picker .slider-value label {
+  align-self: center;
+}
+div.color-picker hr {
+  border: 1px solid #444444;
+  width: 100%;
+}
 div.color-picker .slider-container {
   display: flex;
 }
