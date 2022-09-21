@@ -1,4 +1,5 @@
 package hide.comp.cdb;
+
 import hxd.Key in K;
 using hide.tools.Extensions;
 
@@ -1217,17 +1218,59 @@ class Editor extends Component {
 		var srcObj = table.sheet.getLines()[index];
 		beginChanges();
 		var obj = table.sheet.newLine(index);
-		for( c in table.columns ) {
+		for(colId => c in table.columns ) {
 			var val = Reflect.field(srcObj, c.name);
 			if( val != null ) {
 				if( c.type != TId ) {
 					// Deep copy
 					Reflect.setField(obj, c.name, haxe.Json.parse(haxe.Json.stringify(val)));
+				} else {
+					// Increment the number at the end of the id if there is one
+
+					var str = (val:String);
+					var currentValue : Null<Int> = null;
+					var strIdx : Int = 0;
+					
+					// Find the number at the end of the string
+					while (strIdx < str.length) {
+						var substr = str.substr(str.length-1-strIdx);
+						var newValue = Std.parseInt(substr);
+						if (newValue != null)
+							currentValue = newValue;
+						else {
+							break;
+						}
+						strIdx += 1;
+					}
+					
+					if (currentValue != null) {
+						var cell : Cell = table.lines[index].cells[colId];
+						@:privateAccess var scopes = cell.getScope();
+
+						var newId : String;
+						var idWithScope : String;
+						do {
+							currentValue+=1;
+							
+							var valStr = Std.string(currentValue);
+
+							// Pad with zeroes
+							for (i in 0...strIdx - valStr.length) {
+								valStr = "0" + valStr;
+							}
+							newId = str.substr(0, -strIdx) + valStr;
+
+							@:privateAccess idWithScope = if (c.scope != null) cell.makeId(scopes, c.scope, newId) else newId;
+						}
+						while (!isUniqueID(table.sheet,{},idWithScope));
+						Reflect.setField(obj, c.name, newId);
+					}
 				}
 			}
 		}
 		endChanges();
 		table.refresh();
+		table.getRealSheet().sync();
 	}
 
 	public function popupColumn( table : Table, col : cdb.Data.Column, ?cell : Cell ) {
