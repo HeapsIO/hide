@@ -420,6 +420,8 @@ class Editor extends Component {
 				beginChanges();
 				var obj = line.obj;
 				formulas.removeFromValue(obj, col);
+				if (col.type == TId)
+					value = getNewUniqueId(value, cursor.getCell());
 				Reflect.setField(obj, col.name, value);
 			} else {
 				beginChanges();
@@ -435,6 +437,8 @@ class Editor extends Component {
 						if( value == null ) continue;
 						var obj = sheet.lines[y];
 						formulas.removeFromValue(obj, col);
+						if (col.type == TId)
+							value = getNewUniqueId(value, cursor.getLine().cells[cursor.table.sheet.columns.indexOf(col)]);
 						Reflect.setField(obj, col.name, value);
 						toRefresh.push(allLines[y].cells[x]);
 					}
@@ -450,7 +454,7 @@ class Editor extends Component {
 			return;
 		}
 
-		function setValue(cliObj, destObj, clipSchema : cdb.Data.Column, destCol : cdb.Data.Column) {
+		function setValue(cell : Cell, cliObj, destObj, clipSchema : cdb.Data.Column, destCol : cdb.Data.Column) {
 			var form = Reflect.field(cliObj, clipSchema.name+"__f");
 
 			if( form != null && destCol.type.equals(clipSchema.type) ) {
@@ -470,6 +474,10 @@ class Editor extends Component {
 			}
 			if( v == null && !destCol.opt )
 				v = base.getDefault(destCol, sheet);
+
+			if (destCol.type == TId) {
+				v = getNewUniqueId(v, cell);
+			}
 			if( v == null )
 				Reflect.deleteField(destObj, destCol.name);
 			else
@@ -495,7 +503,7 @@ class Editor extends Component {
 					return;
 				toRefresh.push(cursor.getCell());
 				beginChanges();
-				setValue(obj1, obj2, clipSchema, destCol);
+				setValue(cursor.getCell(), obj1, obj2, clipSchema, destCol);
 			} else {
 				beginChanges();
 				for( c1 in clipboard.schema ) {
@@ -504,7 +512,7 @@ class Editor extends Component {
 						continue;
 					if( !cursor.table.canInsert() && c2.opt && !Reflect.hasField(obj2, c2.name) )
 						continue;
-					setValue(obj1, obj2, c1, c2);
+					setValue(cursor.getLine().cells[cursor.table.sheet.columns.indexOf(c2)], obj1, obj2, c1, c2);
 					fullRefresh = true;
 				}
 			}
@@ -527,7 +535,8 @@ class Editor extends Component {
 					if( !cursor.table.canEditColumn(c2.name) )
 						continue;
 
-					setValue(obj1, obj2, c1, c2);
+					setValue(allLines[posY].cells[cid + posX], obj1, obj2, c1, c2);
+
 					if( c2.type == TList || c2.type == TProperties )
 						fullRefresh = true;
 					if( !fullRefresh )
@@ -1212,6 +1221,43 @@ class Editor extends Component {
 		table.refresh();
 	}
 
+	public function getNewUniqueId(originalId : String, cell : Cell) {
+		var str = originalId;
+		var currentValue : Null<Int> = null;
+		var strIdx : Int = 0;
+		
+		// Find the number at the end of the string
+		while (strIdx < str.length) {
+			var substr = str.substr(str.length-1-strIdx);
+			var newValue = Std.parseInt(substr);
+			if (newValue != null)
+				currentValue = newValue;
+			else {
+				break;
+			}
+			strIdx += 1;
+		}
+		
+		if (currentValue != null) {
+			var newId : String;
+			var idWithScope : String;
+			do {
+				currentValue+=1;							
+				var valStr = Std.string(currentValue);
+
+				// Pad with zeroes
+				for (i in 0...strIdx - valStr.length) {
+					valStr = "0" + valStr;
+				}
+				newId = str.substr(0, -strIdx) + valStr;
+			}
+			while (!cell.isUniqueID(newId,true));
+
+			return newId;
+		}
+		return "";
+	}
+
 	public function duplicateLine( table : Table, index = 0 ) {
 		if( !table.canInsert() || table.displayMode != Table )
 			return;
@@ -1227,38 +1273,9 @@ class Editor extends Component {
 				} else {
 					// Increment the number at the end of the id if there is one
 
-					var str = (val:String);
-					var currentValue : Null<Int> = null;
-					var strIdx : Int = 0;
-					
-					// Find the number at the end of the string
-					while (strIdx < str.length) {
-						var substr = str.substr(str.length-1-strIdx);
-						var newValue = Std.parseInt(substr);
-						if (newValue != null)
-							currentValue = newValue;
-						else {
-							break;
-						}
-						strIdx += 1;
-					}
-					
-					if (currentValue != null) {
-						var cell : Cell = table.lines[index].cells[colId];
-
-						var newId : String;
-						var idWithScope : String;
-						do {
-							currentValue+=1;							
-							var valStr = Std.string(currentValue);
-
-							// Pad with zeroes
-							for (i in 0...strIdx - valStr.length) {
-								valStr = "0" + valStr;
-							}
-							newId = str.substr(0, -strIdx) + valStr;
-						}
-						while (!cell.isUniqueID(newId,true));
+					var cell : Cell = table.lines[index].cells[colId];
+					var newId = getNewUniqueId(val, cell);
+					if (newId != null) {
 						Reflect.setField(obj, c.name, newId);
 					}
 				}
