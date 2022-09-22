@@ -774,6 +774,17 @@ class Ide {
 		}
 	}
 
+	public function getFileText( path : String ) {
+		var fullPath = getPath(path);
+		try {
+			return sys.io.File.getContent(fullPath);
+		} catch( e : Dynamic ) {
+			if( pakFile != null )
+				return pakFile.get(path).getText();
+			throw e;
+		}
+	}
+
 	var lastDBContent = null;
 	function loadDatabase( ?checkExists ) {
 		var exists = fileExists(databaseFile);
@@ -785,7 +796,7 @@ class Ide {
 			return;
 		}
 		try {
-			lastDBContent = getFile(databaseFile).toString();
+			lastDBContent = getFileText(databaseFile);
 			loadedDatabase.load(lastDBContent);
 		} catch( e : Dynamic ) {
 			error(e);
@@ -794,11 +805,11 @@ class Ide {
 		database = loadedDatabase;
 		if( databaseDiff != null ) {
 			originDataBase = new cdb.Database();
-			lastDBContent = getFile(databaseFile).toString();
+			lastDBContent = getFileText(databaseFile);
 			originDataBase.load(lastDBContent);
 			if( fileExists(databaseDiff) ) {
 				var d = new cdb.DiffFile();
-				d.apply(database,parseJSON(getFile(databaseDiff).toString()),config.project.get("cdb.view"));
+				d.apply(database,parseJSON(getFileText(databaseDiff)),config.project.get("cdb.view"));
 			}
 		}
 	}
