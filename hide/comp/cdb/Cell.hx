@@ -331,7 +331,7 @@ class Cell extends Component {
 				'<span class="error">#MISSING</span>';
 			else {
 				var id = c.scope != null ? makeId(scope,c.scope,v) : v;
-				editor.isUniqueID(sheet,obj,id) ? v : '<span class="error">#DUP($v)</span>';
+				!sheet.duplicateIds.exists(id) ? v : '<span class="error">#DUP($v)</span>';
 			}
 		case TString if( c.kind == Script ):  // wrap content in div because td cannot have max-height
 			v == "" ? " " : '<div class="script">${colorizeScript(c,v, sheet.idCol == null ? null : Reflect.field(obj, sheet.idCol.name))}</div>';
