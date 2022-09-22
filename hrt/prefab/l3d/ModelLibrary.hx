@@ -710,7 +710,7 @@ class ModelLibrary extends Prefab {
 	}
 
 	var killAlpha = new h3d.shader.KillAlpha();
-	public function optimize( obj : h3d.scene.Object ) {
+	public function optimize( obj : h3d.scene.Object, isStatic = true ) {
 		killAlpha.threshold = 0.5;
 		if( bakedMaterials == null )
 			throw "Model library was not built or saved";
@@ -735,7 +735,10 @@ class ModelLibrary extends Prefab {
 			var bk = m.mat;
 			if ( meshBatches[bk.configIndex] == null) {
 				var batch = new h3d.scene.MeshBatch(hmdPrim, h3d.mat.Material.create(), obj);
-				batch.fixedPosition = true;
+				if ( isStatic ) {
+					batch.material.staticShadows = true;
+					batch.fixedPosition = true;
+				}
 				batch.cullingCollider = bounds;
 				batch.name = "modelLibrary"+"_"+bk.configIndex;
 				batch.material.mainPass.addShader(shader);
