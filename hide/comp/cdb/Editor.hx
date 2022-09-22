@@ -1245,13 +1245,11 @@ class Editor extends Component {
 					
 					if (currentValue != null) {
 						var cell : Cell = table.lines[index].cells[colId];
-						@:privateAccess var scopes = cell.getScope();
 
 						var newId : String;
 						var idWithScope : String;
 						do {
-							currentValue+=1;
-							
+							currentValue+=1;							
 							var valStr = Std.string(currentValue);
 
 							// Pad with zeroes
@@ -1259,10 +1257,8 @@ class Editor extends Component {
 								valStr = "0" + valStr;
 							}
 							newId = str.substr(0, -strIdx) + valStr;
-
-							@:privateAccess idWithScope = if (c.scope != null) cell.makeId(scopes, c.scope, newId) else newId;
 						}
-						while (!isUniqueID(table.sheet,{},idWithScope));
+						while (!cell.isUniqueID(newId,true));
 						Reflect.setField(obj, c.name, newId);
 					}
 				}
