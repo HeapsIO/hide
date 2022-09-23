@@ -421,7 +421,7 @@ class Editor extends Component {
 				var obj = line.obj;
 				formulas.removeFromValue(obj, col);
 				if (col.type == TId)
-					value = getNewUniqueId(value, cursor.getCell());
+					value = getNewUniqueId(value, cursor.table, col);
 				Reflect.setField(obj, col.name, value);
 			} else {
 				beginChanges();
@@ -438,7 +438,7 @@ class Editor extends Component {
 						var obj = sheet.lines[y];
 						formulas.removeFromValue(obj, col);
 						if (col.type == TId)
-							value = getNewUniqueId(value, cursor.getLine().cells[cursor.table.sheet.columns.indexOf(col)]);
+							value = getNewUniqueId(value, cursor.table, col);
 						Reflect.setField(obj, col.name, value);
 						toRefresh.push(allLines[y].cells[x]);
 					}
@@ -476,7 +476,7 @@ class Editor extends Component {
 				v = base.getDefault(destCol, sheet);
 
 			if (destCol.type == TId) {
-				v = getNewUniqueId(v, cell);
+				v = getNewUniqueId(v, cursor.table, destCol);
 			}
 			if( v == null )
 				Reflect.deleteField(destObj, destCol.name);
@@ -1221,7 +1221,7 @@ class Editor extends Component {
 		table.refresh();
 	}
 
-	public function getNewUniqueId(originalId : String, cell : Cell) {
+	public function getNewUniqueId(originalId : String, table : Table, column : cdb.Data.Column) {
 		var str = originalId;
 		var currentValue : Null<Int> = null;
 		var strIdx : Int = 0;
@@ -1238,6 +1238,8 @@ class Editor extends Component {
 			strIdx += 1;
 		}
 		
+		var scope = table.getScope();
+
 		if (currentValue != null) {
 			var newId : String;
 			var idWithScope : String;
@@ -1250,8 +1252,9 @@ class Editor extends Component {
 					valStr = "0" + valStr;
 				}
 				newId = str.substr(0, -strIdx) + valStr;
+				idWithScope = if(column.scope != null)  Table.makeId(scope, column.scope, newId) else newId;
 			}
-			while (!cell.isUniqueID(newId,true));
+			while (!isUniqueID(table.getRealSheet(), {}, newId));
 
 			return newId;
 		}
@@ -1274,7 +1277,7 @@ class Editor extends Component {
 					// Increment the number at the end of the id if there is one
 
 					var cell : Cell = table.lines[index].cells[colId];
-					var newId = getNewUniqueId(val, cell);
+					var newId = getNewUniqueId(val, cursor.table, c);
 					if (newId != null) {
 						Reflect.setField(obj, c.name, newId);
 					}

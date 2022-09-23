@@ -558,6 +558,37 @@ class Table extends Component {
 		return { hidden : hidden, element : sep };
 	}
 
+	public function getScope() : Array<{ s : cdb.Sheet, obj : Dynamic }> {
+		var scope = [];
+		var table = this;
+		while( true ) {
+			var p = Std.downcast(table, SubTable);
+			if( p == null ) break;
+			var line = p.cell.line;
+			scope.unshift({ s : line.table.getRealSheet(), obj : line.obj });
+		}
+		return scope;
+	}
+
+	public static function makeId(scopes : Array<{ s : cdb.Sheet, obj : Dynamic }>, scope : Int, id : String) : String {
+		var ids = [];
+		if( id != null ) ids.push(id);
+		var pos = scopes.length;
+		while( true ) {
+			pos -= scope;
+			if( pos < 0 ) {
+				break;
+			}
+			var s = scopes[pos];
+			var pid = Reflect.field(s.obj, s.s.idCol.name);
+			if( pid == null ) return "";
+			ids.unshift(pid);
+			scope = s.s.idCol.scope;
+			if( scope == null ) break;
+		}
+		return ids.join(":");
+	}
+
 	function refreshProperties() {
 		lines = [];
 
