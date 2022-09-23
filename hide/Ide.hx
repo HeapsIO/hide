@@ -170,7 +170,9 @@ class Ide {
 		var body = window.window.document.body;
 		window.on("focus", function() {
 			// handle cancel on type=file
-			haxe.Timer.delay(function() new Element(body).find("input[type=file]").change().remove(), 200);
+			// This was causing premature deletion when getting the value, increased to 2000 ms instead of 200
+			// Input elements are hidden anyway, this is just there to clean them up I'm assuming
+			haxe.Timer.delay(function() new Element(body).find("input[type=file]").change().remove(), 2000); 
 
 			if(fileExists(databaseFile) && getFile(databaseFile).toString() != lastDBContent) {
 				if(js.Browser.window.confirm(databaseFile + " has changed outside of Hide. Do you want to reload?")) {
