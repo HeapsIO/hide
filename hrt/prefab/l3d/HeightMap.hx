@@ -791,11 +791,22 @@ class HeightMap extends Object3D {
 				h3d.pass.Copy.run(t, tex, null, null, i);
 		};
 		#else
+		var indexes = [];
+		var texturePath = [];
 		var pl = switch ( k ) {
 		case Albedo:
 			var pl = [];
 			for ( t in textures ) {
 				if ( t.kind != Albedo || t.path == null || !t.enable ) continue;
+				var index = texturePath.indexOf(t.path);
+				if ( index < 0 ) {
+					texturePath.push(t.path);
+					indexes.push(indexes.length);
+				}
+				else {
+					indexes.push(index);
+					continue;
+				}
 				var image = hxd.res.Loader.currentInstance.load(t.path).toImage();
 				pl.push(image.getPixels());
 			}
@@ -804,6 +815,10 @@ class HeightMap extends Object3D {
 			var pl = [];
 			for ( t in textures ) {
 				if ( t.kind != Albedo || t.path == null || !t.enable ) continue;
+				if ( !texturePath.contains(t.path) )
+					texturePath.push(t.path);
+				else
+					continue;
 				var path = new haxe.io.Path(t.path);
 				path.file = path.file.split("_Albedo").join("");
 				path.file += "_Normal";
@@ -815,7 +830,6 @@ class HeightMap extends Object3D {
 		}
 		var defaultTexture = null;
 		if( pl.length == 0 ) defaultTexture = h3d.mat.Texture.fromColor(k == Normal ? 0x8080FF : 0xFF00FF);
-		var indexes = [];
 		var layers = [];
 		for( p in pl ) {
 			var idx = layers.indexOf(p);
@@ -823,7 +837,6 @@ class HeightMap extends Object3D {
 				idx = layers.length;
 				layers.push(p);
 			}
-			indexes.push(idx);
 		}
 		var tex;
 		if ( defaultTexture != null )
