@@ -132,7 +132,7 @@ class Editor extends Component {
 			var c = cursor.getCell();
 			var sub = Std.downcast(c == null ? cursor.table : c.table, SubTable);
 			if( sub != null ) {
-				sub.cell.element.click();
+				sub.cell.elementHtml.click();
 				return;
 			}
 			if( cursor.select != null ) {
@@ -164,6 +164,16 @@ class Editor extends Component {
 			return false;
 		}
 		return true;
+	}
+
+	var isTileLoadingQueued = false;
+	function queueTileLoading() {
+		if (!isTileLoadingQueued) {
+			haxe.Timer.delay(function() {
+				Cell.startTileLoading();
+				isTileLoadingQueued = false;
+			}, 0);
+		}
 	}
 
 	function onKey( e : js.jquery.Event ) {

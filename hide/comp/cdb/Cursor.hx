@@ -218,14 +218,16 @@ class Cursor {
 			}
 		} else {
 			var c = line.cells[x];
-			if( c != null )
-				c.element.addClass("cursorView").closest("tr").addClass("cursorLine");
+			if( c != null ){
+				c.elementHtml.classList.add("cursorView");
+				c.elementHtml.parentElement.classList.add("cursorLine");
+			}
 			if( select != null ) {
 				var s = getSelection();
 				for( y in s.y1...s.y2 + 1 ) {
 					var l = table.lines[y];
 					for( x in s.x1...s.x2+1)
-						l.cells[x].element.addClass("selected");
+						l.cells[x].elementHtml.classList.add("selected");
 				}
 			}
 		}

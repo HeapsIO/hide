@@ -451,6 +451,7 @@ class Table extends Component {
 						function() {
 					element.find("tr.separator.sep-hidden a.toggle").click();
 					});
+			
 				}},
 				{ label : "Collapse All", click : function() {
 					element.find("tr.separator").not(".sep-hidden").find("a.toggle").click();
@@ -632,7 +633,7 @@ class Table extends Component {
 			}
 
 			var line = new Line(this, [c], lines.length, l);
-			var cell = new Cell(td, line, c);
+			var cell = new Cell(td[0], line, c);
 			lines.push(line);
 
 			th.mousedown(function(e) {

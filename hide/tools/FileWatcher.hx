@@ -89,6 +89,18 @@ class FileWatcher {
 		return f;
 	}
 
+	public function registerRaw( path : String, updateFun, ?checkDelete : Bool, ?element : js.html.Element) : FileWatchEvent {
+		path = ide.getPath(path);
+		var w = getWatches(path);
+		var f : FileWatchEvent = { path : path, fun : updateFun, checkDel : checkDelete, element: element};
+		w.events.push(f);
+		if( element != null && timer == null ) {
+			timer = new haxe.Timer(1000);
+			timer.run = cleanEvents;
+		}
+		return f;
+	}
+
 	public function unregister( path : String, updateFun : Void -> Void ) {
 		path = ide.getPath(path);
 		var w = getWatches(path);

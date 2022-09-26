@@ -47,6 +47,14 @@
   border-left-color: #333;
   cursor: default;
 }
+.cdb .cdb-sheet tr {
+  line-height: 16px;
+}
+.cdb .cdb-sheet td {
+  line-height: 16px;
+  height: 16px !important;
+  overflow: hidden;
+}
 .cdb .cdb-sheet td.start {
   text-align: center;
   cursor: pointer;
