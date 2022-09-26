@@ -89,7 +89,7 @@ class HeightMapShader extends hxsl.Shader {
 				return getAlbedo(index, calculatedUV * albedoTiling) * amount;
 		}
 
-		function __init__fragment() {
+		function fragment() {
 			if( hasNormal ) {
 				var n = unpackNormal(normalMap.get(calculatedUV));
 				n = n.normalize();
