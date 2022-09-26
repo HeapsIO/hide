@@ -454,7 +454,7 @@ class Editor extends Component {
 			return;
 		}
 
-		function setValue(cell : Cell, cliObj, destObj, clipSchema : cdb.Data.Column, destCol : cdb.Data.Column) {
+		function setValue(cliObj, destObj, clipSchema : cdb.Data.Column, destCol : cdb.Data.Column) {
 			var form = Reflect.field(cliObj, clipSchema.name+"__f");
 
 			if( form != null && destCol.type.equals(clipSchema.type) ) {
@@ -503,7 +503,7 @@ class Editor extends Component {
 					return;
 				toRefresh.push(cursor.getCell());
 				beginChanges();
-				setValue(cursor.getCell(), obj1, obj2, clipSchema, destCol);
+				setValue(obj1, obj2, clipSchema, destCol);
 			} else {
 				beginChanges();
 				for( c1 in clipboard.schema ) {
@@ -512,7 +512,7 @@ class Editor extends Component {
 						continue;
 					if( !cursor.table.canInsert() && c2.opt && !Reflect.hasField(obj2, c2.name) )
 						continue;
-					setValue(cursor.getLine().cells[cursor.table.sheet.columns.indexOf(c2)], obj1, obj2, c1, c2);
+					setValue(obj1, obj2, c1, c2);
 					fullRefresh = true;
 				}
 			}
@@ -535,7 +535,7 @@ class Editor extends Component {
 					if( !cursor.table.canEditColumn(c2.name) )
 						continue;
 
-					setValue(allLines[posY].cells[cid + posX], obj1, obj2, c1, c2);
+					setValue(obj1, obj2, c1, c2);
 
 					if( c2.type == TList || c2.type == TProperties )
 						fullRefresh = true;
