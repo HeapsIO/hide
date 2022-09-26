@@ -1276,7 +1276,6 @@ class Editor extends Component {
 				} else {
 					// Increment the number at the end of the id if there is one
 
-					var cell : Cell = table.lines[index].cells[colId];
 					var newId = getNewUniqueId(val, cursor.table, c);
 					if (newId != null) {
 						Reflect.setField(obj, c.name, newId);
