@@ -166,16 +166,6 @@ class Editor extends Component {
 		return true;
 	}
 
-	var isTileLoadingQueued = false;
-	function queueTileLoading() {
-		if (!isTileLoadingQueued) {
-			haxe.Timer.delay(function() {
-				Cell.startTileLoading();
-				isTileLoadingQueued = false;
-			}, 0);
-		}
-	}
-
 	function onKey( e : js.jquery.Event ) {
 		if( e.altKey )
 			return false;

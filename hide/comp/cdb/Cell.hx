@@ -536,12 +536,22 @@ class Cell {
 			zoom="$zoom"
 			style="width : ${Std.int(width * zoom)}px; height : ${Std.int(height * zoom)}px; opacity:0; $bg $inl"
 		></div>';
-		editor.queueTileLoading();
+		queueTileLoading();
 		watchFile(path);
 		return {str: html, containsHtml: true};
 	}
 
-	public static function startTileLoading() {
+	static var isTileLoadingQueued = false;
+	static function queueTileLoading() {
+		if (!isTileLoadingQueued) {
+			haxe.Timer.delay(function() {
+				startTileLoading();
+				isTileLoadingQueued = false;
+			}, 0);
+		}
+	}
+
+	static function startTileLoading() {
 		var tiles = new Element(".tile.toload");
 		if( tiles.length == 0 ) return;
 		tiles.removeClass("toload");
