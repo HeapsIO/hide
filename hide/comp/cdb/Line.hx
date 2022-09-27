@@ -1,8 +1,5 @@
 package hide.comp.cdb;
 
-import js.Browser;
-import js.html.Window;
-
 class Line extends Component {
 
 	public var index : Int;
@@ -27,7 +24,7 @@ class Line extends Component {
 		element[0].classList.remove("hidden");
 		var id: String = null;
 		for( c in columns ) {
-			var e = Browser.document.createTableCellElement();
+			var e = js.Browser.document.createTableCellElement();
 			e.classList.add("c");
 			this.element[0].appendChild(e);
 			var cell = new Cell(e, this, c);

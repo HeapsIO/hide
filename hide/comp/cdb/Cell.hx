@@ -1,10 +1,5 @@
 package hide.comp.cdb;
-import js.html.SpanElement;
-import js.html.InputElement;
-import hide.comp.GradientEditor.GradientView;
-import js.Browser;
-import hide.comp.ColorPicker.ColorBox;
-import js.html.DivElement;
+
 import hxd.Key in K;
 using hide.tools.Extensions;
 
@@ -632,7 +627,7 @@ class Cell {
 		case TInt, TFloat, TString, TId, TCustom(_), TDynamic:
 			var str = value == null ? "" : Std.isOfType(value, String) ? value : editor.base.valToString(column.type, value);
 
-			var span = Browser.document.createSpanElement();
+			var span = js.Browser.document.createSpanElement();
 			span.innerHTML = elementHtml.innerHTML;
 			elementHtml.innerHTML = null;
 			elementHtml.appendChild(span);
