@@ -15,8 +15,6 @@ class Cell {
 
 	var ide : hide.Ide;
 
-
-	public var element_ : Element = null;
 	public var elementHtml : js.html.Element;
 	var editor : Editor;
 	var currentValue : Dynamic;
@@ -30,10 +28,9 @@ class Cell {
 	public var inEdit = false;
 
 	public function new( root : js.html.Element, line : Line, column : cdb.Data.Column ) {
-		//super(null,root);
 		this.elementHtml = root;
 		ide = hide.Ide.inst;
-		
+
 		this.line = line;
 		this.editor = line.table.editor;
 		this.column = column;
@@ -41,7 +38,7 @@ class Cell {
 
 		root.classList.add("t_" + typeNames[column.type.getIndex()]);
 		root.classList.add("n_" + column.name);
-		
+
 		if(line.table.parent == null) {
 			var editProps = Editor.getColumnProps(column);
 			root.classList.toggle("cat", editProps.categories != null);
@@ -54,8 +51,6 @@ class Cell {
 				return;
 		}
 
-		// Used to get the Cell component back from its DOM/Jquery element
-		//root.prop("cellComp", this);
 		if( column.kind == Script ) root.classList.add("t_script");
 		refresh();
 
@@ -298,7 +293,7 @@ class Cell {
 		inline function html(s: String) {
 			return {str: s, containsHtml:true};
 		}
-		
+
 		if( v == null ) {
 			if( c.opt )
 				return val(" ");
@@ -929,7 +924,17 @@ class Cell {
 				s.on("select2:close", function(_) closeEdit());
 			}
 		case TColor:
-			var cb = new ColorBox(new Element(elementHtml), null, true, false);
+			var elem = new Element(elementHtml);
+			var cb = new ColorPicker(false, elem, elem.find(".color"));
+			cb.value = currentValue;
+			cb.onChange = function(drag) {
+				elem.find(".color").css({backgroundColor : '#'+StringTools.hex(cb.value,6) });
+			};
+			cb.onClose = function() {
+				setValue(cb.value);
+				cb.remove();
+				closeEdit();
+			};
 		case TFile:
 			ide.chooseFile(["*"], function(file) {
 				setValue(file);
@@ -1113,7 +1118,7 @@ class Cell {
 			var prevObj = value != null ? realSheet.index.get(isLocal ? parentID+":"+value : value) : null;
 			// have we already an obj mapped to the same id ?
 			var prevTarget = realSheet.index.get(isLocal ? parentID+":"+newValue : newValue);
-			
+
 			if (isUniqueID(newValue, true))
 			{
 				editor.beginChanges();
@@ -1132,12 +1137,12 @@ class Cell {
 				editor.endChanges();
 				editor.refreshRefs();
 				focus();
-	
+
 				// Refresh display of all ids in the column manually
 				var colId = table.sheet.columns.indexOf(column);
 				for (l in table.lines) {
 					if (l.cells[colId] != null)
-						l.cells[colId].refresh(false);	
+						l.cells[colId].refresh(false);
 				}
 			}
 			/*
