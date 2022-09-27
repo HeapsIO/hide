@@ -214,7 +214,6 @@ class Editor extends Component {
 	}
 
 	public function updateFilter() {
-		return;
 		searchFilter(currentFilters);
 	}
 
