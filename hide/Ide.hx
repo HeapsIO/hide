@@ -174,7 +174,7 @@ class Ide {
 			// Input elements are hidden anyway, this is just there to clean them up I'm assuming
 			haxe.Timer.delay(function() new Element(body).find("input[type=file]").change().remove(), 2000); 
 
-			if(fileExists(databaseFile) && getFile(databaseFile).toString() != lastDBContent) {
+			if(fileExists(databaseFile) && getFileText(databaseFile) != lastDBContent) {
 				if(js.Browser.window.confirm(databaseFile + " has changed outside of Hide. Do you want to reload?")) {
 					loadDatabase(true);
 					hide.comp.cdb.Editor.refreshAll(true);

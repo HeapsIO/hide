@@ -268,43 +268,9 @@ class Cell extends Component {
 		return view == null || view.show == null || view.show.indexOf(column) >= 0;
 	}
 
-	var _cachedScope : Array<{ s : cdb.Sheet, obj : Dynamic }>;
-	function getScope() {
-		if( _cachedScope != null ) return _cachedScope;
-		var scope = [];
-		var line = line;
-		while( true ) {
-			var p = Std.downcast(line.table, SubTable);
-			if( p == null ) break;
-			line = p.cell.line;
-			scope.unshift({ s : line.table.getRealSheet(), obj : line.obj });
-		}
-		return _cachedScope = scope;
-	}
-
-	function makeId( scopes : Array<{ s : cdb.Sheet, obj : Dynamic }>, scope : Int, id : String ) {
-		var ids = [];
-		if( id != null ) ids.push(id);
-		var pos = scopes.length;
-		while( true ) {
-			pos -= scope;
-			if( pos < 0 ) {
-				scopes = getScope();
-				pos += scopes.length;
-			}
-			var s = scopes[pos];
-			var pid = Reflect.field(s.obj, s.s.idCol.name);
-			if( pid == null ) return "";
-			ids.unshift(pid);
-			scope = s.s.idCol.scope;
-			if( scope == null ) break;
-		}
-		return ids.join(":");
-	}
-
 	function refScope( targetSheet : cdb.Sheet, currentSheet : cdb.Sheet, obj : Dynamic, localScope : Array<{ s : cdb.Sheet, obj : Dynamic }> ) {
 		var targetDepth = targetSheet.name.split("@").length;
-		var scope = getScope().concat(localScope);
+		var scope = table.getScope().concat(localScope);
 		if( scope.length < targetDepth )
 			scope.push({ s : currentSheet, obj : obj });
 		while( scope.length >= targetDepth )
@@ -330,7 +296,7 @@ class Cell extends Component {
 			if( v == "" )
 				'<span class="error">#MISSING</span>';
 			else {
-				var id = c.scope != null ? makeId(scope,c.scope,v) : v;
+				var id = c.scope != null ? table.makeId(scope,c.scope,v) : v;
 				!sheet.duplicateIds.exists(id) ? v : '<span class="error">#DUP($v)</span>';
 			}
 		case TString if( c.kind == Script ):  // wrap content in div because td cannot have max-height
@@ -342,7 +308,7 @@ class Cell extends Component {
 				'<span class="error">#MISSING</span>';
 			else {
 				var s = editor.base.getSheet(sname);
-				var i = s.index.get(s.idCol.scope != null ? makeId(refScope(s,sheet,obj,scope),s.idCol.scope,v) : v);
+				var i = s.index.get(s.idCol.scope != null ? table.makeId(refScope(s,sheet,obj,scope),s.idCol.scope,v) : v);
 				i == null ? '<span class="error">#REF($v)</span>' : (i.ico == null ? "" : tileHtml(i.ico,true)+" ") + StringTools.htmlEscape(i.disp);
 			}
 		case TBool:
@@ -706,7 +672,7 @@ class Cell extends Component {
 				var v = editor.base.parseValue(column.type, i.val());
 
 				if (column.type == TId && !isUniqueID((v:String), true)) {
-						throw v + " is not an unique id";
+					throw v + " is not a unique id";
 				}
 
 				setErrorMessage(null);
@@ -751,7 +717,7 @@ class Cell extends Component {
 				}
 				if( isLocal ) {
 					var scope = refScope(sdat,table.getRealSheet(),line.obj,[]);
-					var prefix = makeId(scope, sdat.idCol.scope, null)+":";
+					var prefix = table.makeId(scope, sdat.idCol.scope, null)+":";
 					elts = [ for( d in sdat.all ) if( StringTools.startsWith(d.id,prefix) ) {
 						id : d.id.split(":").pop(),
 						ico : d.ico,
@@ -809,7 +775,7 @@ class Cell extends Component {
 				var elts;
 				if( isLocal ) {
 					var scope = refScope(sdat,table.getRealSheet(),line.obj,[]);
-					var prefix = makeId(scope, sdat.idCol.scope, null)+":";
+					var prefix = table.makeId(scope, sdat.idCol.scope, null)+":";
 					elts = [for( d in sdat.all ) if( StringTools.startsWith(d.id,prefix) ) { id : d.id.split(":").pop(), ico : d.ico, text : d.disp }];
 				} else
 					elts = [for( d in sdat.all ) { id : d.id, ico : d.ico, text : d.disp }];
@@ -1083,8 +1049,8 @@ class Cell extends Component {
 	}
 
 	public function isUniqueID(id : String, ignoreSelf:Bool = false) {
-		var scope = getScope();
-		var idWithScope : String = if (column.scope != null) makeId(scope, column.scope, id) else id;
+		var scope = table.getScope();
+		var idWithScope : String = if (column.scope != null) table.makeId(scope, column.scope, id) else id;
 		return editor.isUniqueID(table.getRealSheet(), if(ignoreSelf) line.obj else {}, idWithScope);
 	}
 
@@ -1104,7 +1070,7 @@ class Cell extends Component {
 			var prevValue = value;
 			var realSheet = table.getRealSheet();
 			var isLocal = realSheet.idCol.scope != null;
-			var parentID = isLocal ? makeId([],realSheet.idCol.scope,null) : null;
+			var parentID = isLocal ? table.makeId([],realSheet.idCol.scope,null) : null;
 			// most likely our obj, unless there was a #DUP
 			var prevObj = value != null ? realSheet.index.get(isLocal ? parentID+":"+value : value) : null;
 			// have we already an obj mapped to the same id ?
@@ -1118,7 +1084,7 @@ class Cell extends Component {
 					var m = new Map();
 					m.set(value, newValue);
 					if( isLocal ) {
-						var scope = getScope();
+						var scope = table.getScope();
 						var parent = scope[scope.length - realSheet.idCol.scope];
 						editor.base.updateLocalRefs(realSheet, m, parent.obj, parent.s);
 					} else
@@ -1132,7 +1098,8 @@ class Cell extends Component {
 				// Refresh display of all ids in the column manually
 				var colId = table.sheet.columns.indexOf(column);
 				for (l in table.lines) {
-					l.cells[colId].refresh(false);	
+					if (l.cells[colId] != null)
+						l.cells[colId].refresh(false);	
 				}
 			}
 			/*
