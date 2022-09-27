@@ -41,10 +41,10 @@ class Line extends Component {
 		var sheetsToCount: Array<String> = ide.currentConfig.get("cdb.indicateRefs");
 		var countRefs = sheetsToCount.contains(table.sheet.name);
 		if( countRefs && id != null ) {
-			/*var refCount = table.editor.getReferences(id, false, table.sheet).length;
+			var refCount = table.editor.getReferences(id, false, table.sheet).length;
 			element[0].classList.toggle("has-ref", refCount > 0);
 			element[0].classList.toggle("no-ref", refCount == 0);
-			element[0].classList.add("ref-count-" + refCount);*/
+			element[0].classList.add("ref-count-" + refCount);
 		}
 		syncClasses();
 	}
