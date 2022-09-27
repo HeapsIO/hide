@@ -1,0 +1,7 @@
+{
+    "haxe.codeGeneration": {
+        "imports": {
+            "enableAutoImports": false
+        }
+    }
+}

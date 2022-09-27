@@ -672,7 +672,7 @@ class Cell extends Component {
 				var v = editor.base.parseValue(column.type, i.val());
 
 				if (column.type == TId && !isUniqueID((v:String), true)) {
-						throw v + " is not an unique id";
+					throw v + " is not a unique id";
 				}
 
 				setErrorMessage(null);
