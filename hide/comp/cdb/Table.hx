@@ -447,11 +447,7 @@ class Table extends Component {
 				},
 				{ label : "", isSeparator : true },
 				{ label : "Expand All", click : function() {
-					haxe.Timer.measure(
-						function() {
 					element.find("tr.separator.sep-hidden a.toggle").click();
-					});
-			
 				}},
 				{ label : "Collapse All", click : function() {
 					element.find("tr.separator").not(".sep-hidden").find("a.toggle").click();
