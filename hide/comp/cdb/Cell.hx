@@ -629,6 +629,8 @@ class Cell {
 
 			var span = Browser.document.createSpanElement();
 			span.innerHTML = elementHtml.innerHTML;
+			elementHtml.innerHTML = null;
+			elementHtml.appendChild(span);
 
 			var textWidth = span.offsetWidth;
 			var textHeight = span.offsetHeight;
