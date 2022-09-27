@@ -21,6 +21,7 @@ class Cell {
 	public var table(get, never) : Table;
 	var blurOff = false;
 	public var inEdit = false;
+	var dropdownOpen = false;
 
 	public function new( root : js.html.Element, line : Line, column : cdb.Data.Column ) {
 		this.elementHtml = root;
@@ -174,10 +175,10 @@ class Cell {
 	}
 
 	public function refresh(withSubtable = false) {
+		if (dropdownOpen) return;
 		currentValue = Reflect.field(line.obj, column.name);
 
 		blurOff = true;
-
 		var html = valueHtml(column, value, line.table.getRealSheet(), line.obj, []);
 		if( !html.containsHtml )
 			elementHtml.textContent = html.str;
@@ -781,10 +782,12 @@ class Cell {
 					return new Element(tileHtml(c.ico, true).str);
 				}
 				var d = new Dropdown(new Element(elementHtml), elts, currentValue, makeIcon);
+				dropdownOpen = true;
 				d.onSelect = function(v) {
 					setValue(v);
 				}
 				d.onClose = function() {
+					dropdownOpen = false;
 					closeEdit();
 				}
 				d.filterInput.keydown(function(e) {
