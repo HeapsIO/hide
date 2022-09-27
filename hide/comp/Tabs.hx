@@ -39,17 +39,13 @@ class Tabs extends Component {
 	}
 
 	function set_currentTab( e : Element ) {
-		return haxe.Timer.measure(function()
-		{
-				var index = Std.parseInt(e.attr("index"));
-				trace(index);
-				getTabs().hide();
-				header.children().removeClass("active").filter("[index=" + index + "]").addClass("active");
-				currentTab = e;
-				onTabChange(index);
-				e.show();
-				return e;
-		});
+		var index = Std.parseInt(e.attr("index"));
+		getTabs().hide();
+		header.children().removeClass("active").filter("[index=" + index + "]").addClass("active");
+		currentTab = e;
+		onTabChange(index);
+		e.show();
+		return e;
 	}
 
 	public function getTabs() : Element {
