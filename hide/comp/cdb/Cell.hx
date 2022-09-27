@@ -21,7 +21,7 @@ class Cell {
 	public var table(get, never) : Table;
 	var blurOff = false;
 	public var inEdit = false;
-	var dropdownOpen = false;
+	var dropdown : js.html.Element = null;
 
 	public function new( root : js.html.Element, line : Line, column : cdb.Data.Column ) {
 		this.elementHtml = root;
@@ -175,7 +175,12 @@ class Cell {
 	}
 
 	public function refresh(withSubtable = false) {
-		if (dropdownOpen) return;
+		if (dropdown != null) {
+			if (js.Browser.document.body.contains(dropdown)) {
+				return;
+			}
+			dropdown = null;
+		}
 		currentValue = Reflect.field(line.obj, column.name);
 
 		blurOff = true;
@@ -782,12 +787,12 @@ class Cell {
 					return new Element(tileHtml(c.ico, true).str);
 				}
 				var d = new Dropdown(new Element(elementHtml), elts, currentValue, makeIcon);
-				dropdownOpen = true;
+				dropdown = d.element[0];
 				d.onSelect = function(v) {
 					setValue(v);
 				}
 				d.onClose = function() {
-					dropdownOpen = false;
+					dropdown = null;
 					closeEdit();
 				}
 				d.filterInput.keydown(function(e) {
