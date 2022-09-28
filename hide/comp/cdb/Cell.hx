@@ -288,11 +288,11 @@ class Cell {
 
 	function valueHtml( c : cdb.Data.Column, v : Dynamic, sheet : cdb.Sheet, obj : Dynamic, scope : Array<{ s : cdb.Sheet, obj : Dynamic }> ) : {str: String, containsHtml: Bool} {
 		inline function val(s:String) {
-			return {str: s, containsHtml:false};
+			return {str: Std.string(s), containsHtml:false};
 		}
 
 		inline function html(s: String) {
-			return {str: s, containsHtml:true};
+			return {str: Std.string(s), containsHtml:true};
 		}
 
 		if( v == null ) {
