@@ -542,6 +542,7 @@ class Cell {
 	static var isTileLoadingQueued = false;
 	static function queueTileLoading() {
 		if (!isTileLoadingQueued) {
+			isTileLoadingQueued = true;
 			haxe.Timer.delay(function() {
 				startTileLoading();
 				isTileLoadingQueued = false;
