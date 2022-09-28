@@ -316,7 +316,7 @@ class Cell {
 				!sheet.duplicateIds.exists(id) ? val(v) : html('<span class="error">#DUP($v)</span>');
 			}
 		case TString if( c.kind == Script ):  // wrap content in div because td cannot have max-height
-			html('<pre>$v</pre>');//v == "" ? val(" ") : html('<div class="script">${colorizeScript(c,v, sheet.idCol == null ? null : Reflect.field(obj, sheet.idCol.name))}</div>');
+			v == "" ? val(" ") : html('<div class="script">${colorizeScript(c,v, sheet.idCol == null ? null : Reflect.field(obj, sheet.idCol.name))}</div>');
 		case TString, TLayer(_):
 			v == "" ? val(" ") : html(StringTools.htmlEscape(v).split("\n").join("<br/>"));
 		case TRef(sname):
