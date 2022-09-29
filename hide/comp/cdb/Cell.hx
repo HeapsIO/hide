@@ -291,7 +291,7 @@ class Cell {
 			return {str: Std.string(s), containsHtml:false};
 		}
 
-		inline function html(s: String) {
+		function html(s: String) {
 			return {str: Std.string(s), containsHtml:true};
 		}
 
@@ -354,7 +354,7 @@ class Cell {
 				if (vals.length == 0)
 					continue;
 				else if (vals.length == 1) {
-					out.push(v);
+					out.push(vals[0]);
 				}
 				else {
 					out.push((char('[') + vals.join(char(',')) + char(']')));
