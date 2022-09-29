@@ -24,6 +24,10 @@ class Table extends Component {
 
 	static var usingVirtualTables = true;
 
+	static var middleElementIndex = 4;
+
+	var offsetter : Element = null;
+
 	public function new(editor, sheet, root : Element, mode) {
 		if (usingVirtualTables) {
 			var container = new Element("<div class'tablewrapper'>").appendTo(root.parent());
@@ -32,13 +36,16 @@ class Table extends Component {
 			container.css("overflow", "hidden");
 			container.css("position", "relative");
 
-			var offseter = new Element("<div class'offsetter'>").appendTo(container);
-			offseter.append(root);
+			offsetter = new Element("<div class'offsetter'>").appendTo(container);
+			offsetter.append(root);
+			offsetter.css("position", "relative");
 
 			root.closest(".hide-scroll").removeClass();
-			
 			root[0].addEventListener("wheel",  function (e : js.html.WheelEvent) {
-				virtualCurrentLine += (e.deltaY > 0 ? 1 : (e.deltaY < 0 ? -1 : 0));
+				var h = getFirstElementHeight();
+				h /= 32.0;
+				virtualCurrentLine += (e.deltaY > 0 ? 1.0 : (e.deltaY < 0 ? -1.0 : 0.0)) * h;
+				virtualCurrentLine = hxd.Math.clamp(virtualCurrentLine, 0.0, 100000);
 				trace(virtualCurrentLine);
 				haxe.Timer.measure(refresh);
 			});
@@ -70,6 +77,17 @@ class Table extends Component {
 			}
 		}
 		refresh();
+	}
+
+	public function getFirstElementHeight() : Float {
+		if (lines.length == 0)
+			return 0.0;
+		var h : Float = 0.0;
+		var line = lines[0];
+		if (line.subTable != null) {
+			h += line.subTable.element[0].offsetHeight;
+		}
+		return h + line.element[0].offsetHeight;
 	}
 
 	public function getRealSheet() {
@@ -142,6 +160,7 @@ class Table extends Component {
 		}
 
 		J('.cdb').prepend(clone);
+		
 	}
 
 	function updateDrag() {
@@ -156,7 +175,9 @@ class Table extends Component {
 		}
 	}
 
-	var virtualCurrentLine = 0;
+	var virtualCurrentLine = 0.0;
+
+	var openSubtables : Map<String, Int> = new Map();
 
 	function refreshTable2() {
 		var cols = J("<thead>").addClass("head");
@@ -166,8 +187,11 @@ class Table extends Component {
 		tbody.appendTo(element);
 
 		var h : Float = 0;
-		lines = [for( index in virtualCurrentLine...sheet.lines.length ) {
+		var curLine = Std.int(virtualCurrentLine);
+		lines = [for( index in curLine...sheet.lines.length ) {
 			if (h > 1000) break;
+			var subtablePath = '$index';
+
 			var l = J("<tr>");
 			var head = J("<td>").addClass("start").text("" + index);
 			head.appendTo(l);
@@ -222,13 +246,26 @@ class Table extends Component {
 
 				return false;
 			}
+
+
 			line.create();
 			tbody[0].appendChild(line.element[0]);
+
+			var open = openSubtables.get(subtablePath);
+			if (open != null) {
+				line.subTable = new SubTable(editor, line.cells[open]);
+				line.subTable.show(true);
+			}
+
 			var elemH = 50;
 			h += elemH;
 			line;
 		}];
 
+		var h = getFirstElementHeight();
+		var percentScroll = virtualCurrentLine - Std.int(virtualCurrentLine);
+		offsetter[0].style.top = '-${h * percentScroll}px';
+		trace(h, virtualCurrentLine);
 		return;
 
 		var colCount = columns.length;
@@ -922,12 +959,18 @@ class Table extends Component {
 	public function toggleList( cell : Cell, ?immediate : Bool, ?make : Void -> SubTable ) {
 		var line = cell.line;
 		var cur = line.subTable;
+		var col = line.cells.indexOf(cell);
+		var id = lines.indexOf(line);
 		if( cur != null ) {
 			cur.close();
-			if( cur.cell == cell ) return; // toggle
+			if( cur.cell == cell ) {
+				openSubtables.remove('$id');
+				return;
+			}  // toggle
 		}
 		var sub = make == null ? new SubTable(editor, cell) : make();
 		sub.show(immediate);
+		openSubtables.set('$id', col);
 		editor.cursor.set(sub);
 	}
 
