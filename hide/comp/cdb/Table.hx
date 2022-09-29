@@ -22,7 +22,27 @@ class Table extends Component {
 
 	public var nestedIndex : Int = 0;
 
-	public function new(editor, sheet, root, mode) {
+	static var usingVirtualTables = true;
+
+	public function new(editor, sheet, root : Element, mode) {
+		if (usingVirtualTables) {
+			var container = new Element("<div class'tablewrapper'>").appendTo(root.parent());
+			root.detach();
+			container.css("height", "100%");
+			container.css("overflow", "hidden");
+			container.css("position", "relative");
+
+			var offseter = new Element("<div class'offsetter'>").appendTo(container);
+			offseter.append(root);
+
+			root.closest(".hide-scroll").removeClass();
+			
+			root[0].addEventListener("wheel",  function (e : js.html.WheelEvent) {
+				virtualCurrentLine += (e.deltaY > 0 ? 1 : (e.deltaY < 0 ? -1 : 0));
+				trace(virtualCurrentLine);
+				haxe.Timer.measure(refresh);
+			});
+		}
 		super(null,root);
 		this.displayMode = mode;
 		this.editor = editor;
@@ -82,7 +102,7 @@ class Table extends Component {
 		columns = view == null || view.show == null ? sheet.columns : [for( c in sheet.columns ) if( view.show.indexOf(c.name) >= 0 ) c];
 		switch( displayMode ) {
 		case Table:
-			refreshTable();
+			refreshTable2();
 		case Properties, AllProperties:
 			refreshProperties();
 		}
@@ -133,6 +153,173 @@ class Table extends Component {
 		if (ide.mouseY < scrollHeight*0.2) {
 			var scroll = element.get()[0].parentElement.parentElement;
 			scroll.scrollTop -= 15 + Std.int((scrollHeight*0.2 - ide.mouseY)/(scrollHeight*0.2)*30);
+		}
+	}
+
+	var virtualCurrentLine = 0;
+
+	function refreshTable2() {
+		var cols = J("<thead>").addClass("head");
+		J("<th>").addClass("start").appendTo(cols);
+
+		var tbody = J("<tbody>");
+		tbody.appendTo(element);
+
+		var h : Float = 0;
+		lines = [for( index in virtualCurrentLine...sheet.lines.length ) {
+			if (h > 1000) break;
+			var l = J("<tr>");
+			var head = J("<td>").addClass("start").text("" + index);
+			head.appendTo(l);
+			var line = new Line(this, columns, index, l);
+			head.mousedown(function(e) {
+				if( e.which == 3 ) {
+					editor.popupLine(line);
+					e.preventDefault();
+					return;
+				}
+			});
+			l.click(function(e) {
+				if( e.which == 3 ) {
+					e.preventDefault();
+					return;
+				}
+				editor.cursor.clickLine(line, e.shiftKey);
+			});
+			var headEl = head.get()[0];
+			headEl.draggable = true;
+			headEl.ondragstart = function(e:js.html.DragEvent) {
+				if (editor.cursor.getCell() != null && editor.cursor.getCell().inEdit) {
+					e.preventDefault();
+					return;
+				}
+				ide.registerUpdate(updateDrag);
+				e.dataTransfer.effectAllowed = "move";
+			}
+			headEl.ondrag = function(e:js.html.DragEvent) {
+				if (hxd.Key.isDown(hxd.Key.ESCAPE)) {
+					e.dataTransfer.dropEffect = "none";
+					e.preventDefault();
+				}
+			}
+			headEl.ondragend = function(e:js.html.DragEvent) {
+				ide.unregisterUpdate(updateDrag);
+				if (e.dataTransfer.dropEffect == "none") return false;
+				var pickedEl = js.Browser.document.elementFromPoint(e.clientX, e.clientY);
+				var pickedLine = null;
+				var parentEl = pickedEl;
+				while (parentEl != null) {
+					if (lines.filter((otherLine) -> otherLine.element.get()[0] == parentEl).length > 0) {
+						pickedLine = lines.filter((otherLine) -> otherLine.element.get()[0] == parentEl)[0];
+						break;
+					}
+					parentEl = parentEl.parentElement;
+				}
+				if (pickedLine != null) {
+					editor.moveLine(line, pickedLine.index - line.index, true);
+					return true;
+				}
+
+				return false;
+			}
+			line.create();
+			tbody[0].appendChild(line.element[0]);
+			var elemH = 50;
+			h += elemH;
+			line;
+		}];
+
+		return;
+
+		var colCount = columns.length;
+
+		for( c in columns ) {
+			var editProps = Editor.getColumnProps(c);
+			var col = J("<th>");
+			col.text(c.name);
+			col.addClass( "t_"+c.type.getName().substr(1).toLowerCase() );
+			col.addClass( "n_" + c.name );
+			col.attr("title", c.name);
+			col.toggleClass("hidden", !editor.isColumnVisible(c));
+			col.toggleClass("cat", editProps.categories != null);
+			if(editProps.categories != null)
+				for(c in editProps.categories)
+					col.addClass("cat-" + c);
+
+			if( c.documentation != null ) {
+				col.attr("title", c.documentation);
+				new Element('<i style="margin-left: 5px" class="ico ico-book"/>').appendTo(col);
+			}
+			if( c.type == TString ) {
+				var ico = switch(c.kind) {
+					case Localizable:
+						"ico-globe";
+					case Script:
+						"ico-code";
+					default:
+						"ico-text-width";
+				}
+				new Element('<i style="margin-right: 5px" class="ico $ico"/>').prependTo(col);
+			}
+			if( sheet.props.displayColumn == c.name )
+				col.addClass("display");
+			col.mousedown(function(e) {
+				if( e.which == 3 ) {
+					editor.popupColumn(this, c);
+					e.preventDefault();
+					return;
+				}
+			});
+			col.dblclick(function(_) {
+				if( editor.view == null ) editor.editColumn(getRealSheet(), c);
+			});
+			cols.append(col);
+		}
+
+		element.append(cols);
+
+		/*var tbody = J("<tbody>");
+
+		var groupClass : String = null;
+		var sepIndex = -1, sepNext = sheet.separators[++sepIndex], hidden = false;
+		for( i in 0...lines.length+1 ) {
+			while( sepNext != null && sepNext.index == i ) {
+				var sep = makeSeparator(sepIndex, colCount);
+				sep.element.appendTo(tbody);
+				if( sep.hidden != null ) hidden = sep.hidden;
+				if( sepNext.title != null )
+					groupClass = "group-"+StringTools.replace(sepNext.title.toLowerCase(), " ", "-");
+				sepNext = sheet.separators[++sepIndex];
+			}
+			if( i == lines.length ) break;
+			var line = lines[i];
+			if( hidden )
+				line.hide();
+			else
+				line.create();
+			if( groupClass != null )
+				line.element.addClass(groupClass);
+			tbody.append(line.element);
+		}
+		element.append(tbody);*/
+
+		if( colCount == 0 ) {
+			var l = J('<tr><td><input type="button" value="Add a column"/></td></tr>').find("input").click(function(_) {
+				editor.newColumn(sheet);
+			});
+			element.append(l);
+		} else if( sheet.lines.length == 0 && canInsert() ) {
+			var l = J('<tr><td colspan="${columns.length + 1}"><input type="button" value="Insert Line"/></td></tr>');
+			l.find("input").click(function(_) {
+				editor.insertLine(this);
+				editor.cursor.set(this);
+			});
+			element.append(l);
+		}
+
+		if( sheet.parent == null ) {
+			cols.ready(setupTableElement);
+			cols.on("resize", setupTableElement);
 		}
 	}
 

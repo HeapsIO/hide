@@ -43,8 +43,8 @@ class Tabs extends Component {
 		getTabs().hide();
 		header.children().removeClass("active").filter("[index=" + index + "]").addClass("active");
 		currentTab = e;
-		onTabChange(index);
 		e.show();
+		onTabChange(index);
 		return e;
 	}
 

@@ -1090,9 +1090,9 @@ class Editor extends Component {
 		formulas.evaluateAll(currentSheet.realSheet);
 
 		var content = new Element("<table>");
+		content.appendTo(element);
 		tables = [];
 		new Table(this, currentSheet, content, displayMode);
-		content.appendTo(element);
 
 		setState(state, hasFocus);
 
