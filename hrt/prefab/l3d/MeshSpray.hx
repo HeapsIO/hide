@@ -214,7 +214,7 @@ class MeshSprayObject extends Spray.SprayObject {
 			batch = new h3d.scene.MeshBatch(cast(m.primitive,h3d.prim.MeshPrimitive), m.material, this);
 			var multi = Std.downcast(m, h3d.scene.MultiMaterial);
 			if( multi != null ) batch.materials = multi.materials;
-			batch.alwaysSync = true;
+			batch.alwaysSyncAnimation = true;
 			batch.begin();
 			batches.push(batch);
 			blookup.set(m.primitive, batch);
@@ -243,7 +243,7 @@ class MeshSprayObject extends Spray.SprayObject {
 		}
 		for( c in children ) {
 			c.culled = false;
-			if( c.alwaysSync ) continue;
+			if( c.alwaysSyncAnimation ) continue;
 			var m = Std.downcast(c, h3d.scene.Mesh);
 			if( m == null || !Std.isOfType(m.primitive, h3d.prim.MeshPrimitive) ) continue;
 

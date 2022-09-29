@@ -110,7 +110,7 @@ class FXAnimation extends h3d.scene.Object {
 		if( !visible || (culled && inheritCulled) )
 			ctx.visibleFlag = false;
 
-		var fullSync = ctx.visibleFlag || alwaysSync || firstSync;
+		var fullSync = ctx.visibleFlag || alwaysSyncAnimation || firstSync;
 		var finishedPlaying = false;
 		if(playSpeed > 0 || firstSync) {
 			// This is done in syncRec() to make sure time and events are updated regarless of culling state,

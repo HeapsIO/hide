@@ -82,7 +82,7 @@ class SprayObject extends h3d.scene.Object {
 		getBounds(); // force absBos calculus on children
 		for( c in children ) {
 			c.culled = false;
-			if( c.alwaysSync ) continue;
+			if( c.alwaysSyncAnimation ) continue;
 		}
 	}
 
