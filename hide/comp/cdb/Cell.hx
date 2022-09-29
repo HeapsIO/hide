@@ -353,8 +353,13 @@ class Cell {
 				inline function char(s) return '<span class="minor">$s</span>';
 				if (vals.length == 0)
 					continue;
-				var v = vals.length == 1 ? vals[0] : (char('[') + vals.join(char(',')) + char(']'));
-				out.push(v);
+				else if (vals.length == 1) {
+					out.push(v);
+				}
+				else {
+					out.push((char('[') + vals.join(char(',')) + char(']')));
+					isHtml = true;
+				}
 			}
 			scope.pop();
 			if( out.length == 0 )
