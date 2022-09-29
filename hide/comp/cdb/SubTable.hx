@@ -55,8 +55,8 @@ class SubTable extends Table {
 		insertedTR.data("parent-tr", cell.line.element);
 
 		insertedTR.insertAfter(cell.line.element);
-		cell.element.text("...");
-		cell.element.addClass("parent-sub-table");
+		cell.elementHtml.textContent = "...";
+		cell.elementHtml.classList.add("parent-sub-table");
 
 		super(editor, sheet, root, mode);
 
@@ -117,13 +117,13 @@ class SubTable extends Table {
 			slider.slideUp(100, function() { slider = null; close(); });
 			return;
 		}
-		cell.element.removeClass("parent-sub-table");
+		cell.elementHtml.classList.remove("parent-sub-table");
 		super.close();
 	}
 
 	public function immediateClose() {
 		if( cell.line.subTable == this ) cell.line.subTable = null;
-		cell.element.removeClass("parent-sub-table");
+		cell.elementHtml.classList.remove("parent-sub-table");
 		super.close();
 	}
 

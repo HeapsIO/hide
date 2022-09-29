@@ -21,16 +21,17 @@ class Line extends Component {
 
 	public function create() {
 		var view = table.view;
-		element.removeClass("hidden");
+		element[0].classList.remove("hidden");
 		var id: String = null;
 		for( c in columns ) {
-			var v = new Element("<td>").addClass("c");
-			v.appendTo(this.element);
-			var cell = new Cell(v, this, c);
+			var e = js.Browser.document.createTableCellElement();
+			e.classList.add("c");
+			this.element[0].appendChild(e);
+			var cell = new Cell(e, this, c);
 			if( c.type == TId ) {
 				id = cell.value;
 				if( view != null && view.forbid != null && view.forbid.indexOf(cell.value) >= 0 )
-					element.addClass("hidden");
+					element[0].classList.add("hidden");
 			}
 		}
 
@@ -38,16 +39,16 @@ class Line extends Component {
 		var countRefs = sheetsToCount.contains(table.sheet.name);
 		if( countRefs && id != null ) {
 			var refCount = table.editor.getReferences(id, false, table.sheet).length;
-			element.toggleClass("has-ref", refCount > 0);
-			element.toggleClass("no-ref", refCount == 0);
-			element.addClass("ref-count-" + refCount);
+			element[0].classList.toggle("has-ref", refCount > 0);
+			element[0].classList.toggle("no-ref", refCount == 0);
+			element[0].classList.add("ref-count-" + refCount);
 		}
 		syncClasses();
 	}
 
 	public function syncClasses() {
 		var obj = obj;
-		element.toggleClass("locIgnored", Reflect.hasField(obj,cdb.Lang.IGNORE_EXPORT_FIELD));
+		element[0].classList.toggle("locIgnored", Reflect.hasField(obj,cdb.Lang.IGNORE_EXPORT_FIELD));
 	}
 
 	public function getGroupID() {

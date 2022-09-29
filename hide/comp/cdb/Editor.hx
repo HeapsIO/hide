@@ -132,7 +132,7 @@ class Editor extends Component {
 			var c = cursor.getCell();
 			var sub = Std.downcast(c == null ? cursor.table : c.table, SubTable);
 			if( sub != null ) {
-				sub.cell.element.click();
+				sub.cell.elementHtml.click();
 				return;
 			}
 			if( cursor.select != null ) {

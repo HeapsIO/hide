@@ -1,12 +1,16 @@
 package hide.comp.cdb;
+
 import hxd.Key in K;
 using hide.tools.Extensions;
 
-class Cell extends Component {
+class Cell {
 
 	static var typeNames = [for( t in Type.getEnumConstructs(cdb.Data.ColumnType) ) t.substr(1).toLowerCase()];
 	static var imageDims : Map<String, {width : Int, height : Int}> = new Map();
 
+	var ide : hide.Ide;
+
+	public var elementHtml : js.html.Element;
 	var editor : Editor;
 	var currentValue : Dynamic;
 	var watches : Array<String> = new Array<String>();
@@ -17,62 +21,65 @@ class Cell extends Component {
 	public var table(get, never) : Table;
 	var blurOff = false;
 	public var inEdit = false;
+	var dropdown : js.html.Element = null;
 
-	public function new( root : Element, line : Line, column : cdb.Data.Column ) {
-		super(null,root);
+	public function new( root : js.html.Element, line : Line, column : cdb.Data.Column ) {
+		this.elementHtml = root;
+		ide = hide.Ide.inst;
+
 		this.line = line;
 		this.editor = line.table.editor;
 		this.column = column;
 		@:privateAccess line.cells.push(this);
-		root.addClass("t_" + typeNames[column.type.getIndex()]);
-		root.addClass("n_" + column.name);
+
+		root.classList.add("t_" + typeNames[column.type.getIndex()]);
+		root.classList.add("n_" + column.name);
+
 		if(line.table.parent == null) {
 			var editProps = Editor.getColumnProps(column);
-			root.toggleClass("cat", editProps.categories != null);
+			root.classList.toggle("cat", editProps.categories != null);
 			if(editProps.categories != null)
 				for(c in editProps.categories)
-					root.addClass("cat-" + c);
+					root.classList.add("cat-" + c);
 			var visible = editor.isColumnVisible(column);
-			root.toggleClass("hidden", !visible);
+			root.classList.toggle("hidden", !visible);
 			if(!visible)
 				return;
 		}
 
-		// Used to get the Cell component back from its DOM/Jquery element
-		root.prop("cellComp", this);
-		if( column.kind == Script ) root.addClass("t_script");
+		if( column.kind == Script ) root.classList.add("t_script");
 		refresh();
 
 		switch( column.type ) {
 		case TList, TProperties:
-			element.click(function(e) {
+			elementHtml.addEventListener("click", function(e) {
 				if( e.shiftKey ) return;
 				e.stopPropagation();
 				line.table.toggleList(this);
 			});
 		case TString if( column.kind == Script ):
-			root.addClass("t_script");
-			element.click(function(_) edit());
+			root.classList.add("t_script");
+			elementHtml.addEventListener("click", function(_) edit());
 		default:
 			if( canEdit() )
-				element.dblclick(function(_) if (!blockEdit()) edit());
+				elementHtml.addEventListener("dblclick", function(_) if (!blockEdit()) edit());
 			else
-				root.addClass("t_readonly");
+				root.classList.add("t_readonly");
 		}
 
 		if( column.type == TString && column.kind == Localizable )
-			root.addClass("t_loc");
+			root.classList.add("t_loc");
 
-		root.click(function(e) {
+		elementHtml.addEventListener("click", function(e) {
 			editor.cursor.clickCell(this, e.shiftKey);
 			e.stopPropagation();
 		});
 
-		root.contextmenu(function(e) {
+		root.oncontextmenu = function(e) {
 			showMenu();
 			e.stopPropagation();
 			e.preventDefault();
-		});
+		};
 	}
 
 	public function dragDropFile( relativePath : String, isDrop : Bool = false ) : Bool {
@@ -167,20 +174,21 @@ class Cell extends Component {
 		return def;
 	}
 
-	static var R_HTML = ~/[<&]/;
-
 	public function refresh(withSubtable = false) {
+		if (dropdown != null) {
+			if (js.Browser.document.body.contains(dropdown)) {
+				return;
+			}
+			dropdown = null;
+		}
 		currentValue = Reflect.field(line.obj, column.name);
 
 		blurOff = true;
-
 		var html = valueHtml(column, value, line.table.getRealSheet(), line.obj, []);
-		if( !R_HTML.match(html) )
-			element[0].textContent = html;
-		else if( html.indexOf('<script') >= 0 )
-			element.html(html);
+		if( !html.containsHtml )
+			elementHtml.textContent = html.str;
 		else
-			element[0].innerHTML = html;
+			elementHtml.innerHTML = html.str;
 		blurOff = false;
 
 		updateClasses();
@@ -198,24 +206,24 @@ class Cell extends Component {
 		if( watches.indexOf(file) != -1 ) return;
 
 		watches.push(file);
-		ide.fileWatcher.register(file, function() { refresh(); }, true, element);
+		ide.fileWatcher.registerRaw(file, function() { refresh(); }, true, elementHtml);
 	}
 
 	function updateClasses() {
-		element.removeClass("edit");
-		element.removeClass("edit_long");
+		elementHtml.classList.remove("edit");
+		elementHtml.classList.remove("edit_long");
 		switch( column.type ) {
 		case TBool:
-			element.toggleClass("true", value == true);
-			element.toggleClass("false", value == false);
+			elementHtml.classList.toggle("true", value == true);
+			elementHtml.classList.toggle("false", value == false);
 		case TInt, TFloat:
-			element.toggleClass("zero", value == 0 );
-			element.toggleClass("nan", Math.isNaN(value));
-			element.toggleClass("formula", editor.formulas.has(this) );
+			elementHtml.classList.toggle("zero", value == 0 );
+			elementHtml.classList.toggle("nan", Math.isNaN(value));
+			elementHtml.classList.toggle("formula", editor.formulas.has(this) );
 		default:
 		}
 		if( ide.projectConfig.dbProofread == true ) {
-			var classes = element.attr("class").split(" ");
+			var classes = elementHtml.className.split(" ");
 			switch( column.type ) {
 			case TRef(name):
 				var sdat = editor.base.getSheet(name);
@@ -225,7 +233,7 @@ class Cell extends Component {
 							case TId | TBool:
 								for (c2 in classes) {
 									if (StringTools.startsWith(c2, "r_" + c.name + "_"))
-										element.removeClass(c2);
+										elementHtml.classList.remove(c2);
 								}
 							default:
 						}
@@ -235,7 +243,7 @@ class Cell extends Component {
 							for( c in sdat.columns ) {
 								switch( c.type ) {
 									case TId | TBool:
-										element.addClass("r_" + c.name + "_" + Reflect.field(l.obj, c.name));
+										elementHtml.classList.add("r_" + c.name + "_" + Reflect.field(l.obj, c.name));
 									default:
 								}
 							}
@@ -278,66 +286,80 @@ class Cell extends Component {
 		return scope;
 	}
 
-	function valueHtml( c : cdb.Data.Column, v : Dynamic, sheet : cdb.Sheet, obj : Dynamic, scope : Array<{ s : cdb.Sheet, obj : Dynamic }> ) : String {
+	function valueHtml( c : cdb.Data.Column, v : Dynamic, sheet : cdb.Sheet, obj : Dynamic, scope : Array<{ s : cdb.Sheet, obj : Dynamic }> ) : {str: String, containsHtml: Bool} {
+		inline function val(s:String) {
+			return {str: Std.string(s), containsHtml:false};
+		}
+
+		inline function html(s: String) {
+			return {str: Std.string(s), containsHtml:true};
+		}
+
 		if( v == null ) {
 			if( c.opt )
-				return " ";
-			return '<span class="error">#NULL</span>';
+				return val(" ");
+			return html('<span class="error">#NULL</span>');
 		}
 		return switch( c.type ) {
 		case TInt, TFloat:
 			switch( c.display ) {
 			case Percent:
-				(Math.round(v * 10000)/100) + "%";
+				val((Math.round(v * 10000)/100) + "%");
 			default:
-				v + "";
+				val(v);
 			}
 		case TId:
 			if( v == "" )
-				'<span class="error">#MISSING</span>';
+				html('<span class="error">#MISSING</span>');
 			else {
 				var id = c.scope != null ? table.makeId(scope,c.scope,v) : v;
-				!sheet.duplicateIds.exists(id) ? v : '<span class="error">#DUP($v)</span>';
+				!sheet.duplicateIds.exists(id) ? val(v) : html('<span class="error">#DUP($v)</span>');
 			}
 		case TString if( c.kind == Script ):  // wrap content in div because td cannot have max-height
-			v == "" ? " " : '<div class="script">${colorizeScript(c,v, sheet.idCol == null ? null : Reflect.field(obj, sheet.idCol.name))}</div>';
+			v == "" ? val(" ") : html('<div class="script">${colorizeScript(c,v, sheet.idCol == null ? null : Reflect.field(obj, sheet.idCol.name))}</div>');
 		case TString, TLayer(_):
-			v == "" ? " " : StringTools.htmlEscape(v).split("\n").join("<br/>");
+			v == "" ? val(" ") : html(StringTools.htmlEscape(v).split("\n").join("<br/>"));
 		case TRef(sname):
 			if( v == "" )
-				'<span class="error">#MISSING</span>';
+				html('<span class="error">#MISSING</span>');
 			else {
 				var s = editor.base.getSheet(sname);
 				var i = s.index.get(s.idCol.scope != null ? table.makeId(refScope(s,sheet,obj,scope),s.idCol.scope,v) : v);
-				i == null ? '<span class="error">#REF($v)</span>' : (i.ico == null ? "" : tileHtml(i.ico,true)+" ") + StringTools.htmlEscape(i.disp);
+				html(i == null ? '<span class="error">#REF($v)</span>' : (i.ico == null ? "" : tileHtml(i.ico,true).str+" ") + StringTools.htmlEscape(i.disp));
 			}
 		case TBool:
-			v?"Y":"N";
+			val(v?"Y":"N");
 		case TEnum(values):
-			values[v];
+			val(values[v]);
 		case TImage:
-			'<span class="error">#DEPRECATED</span>';
+			html('<span class="error">#DEPRECATED</span>');
 		case TList:
 			var a : Array<Dynamic> = v;
 			var ps = sheet.getSub(c);
 			var out : Array<String> = [];
 			scope.push({ s : sheet, obj : obj });
+			var isHtml = false;
 			for( v in a ) {
 				var vals = [];
 				for( c in ps.columns ) {
 					if( !canViewSubColumn(ps, c.name) ) continue;
 					var h = valueHtml(c, Reflect.field(v, c.name), ps, v, scope);
-					if( h != "" && h != " " )
-						vals.push(h);
+					if( h.str != "" && h.str != " " )
+					{
+						isHtml = isHtml || h.containsHtml;
+						vals.push(h.str);
+					}
 				}
 				inline function char(s) return '<span class="minor">$s</span>';
+				if (vals.length == 0)
+					continue;
 				var v = vals.length == 1 ? vals[0] : (char('[') + vals.join(char(',')) + char(']'));
 				out.push(v);
 			}
 			scope.pop();
 			if( out.length == 0 )
-				return "";
-			return out.join(", ");
+				return val("");
+			return {str: out.join(", "), containsHtml: isHtml};
 		case TProperties:
 			var ps = sheet.getSub(c);
 			var out = [];
@@ -346,12 +368,13 @@ class Cell extends Component {
 				var pval = Reflect.field(v, c.name);
 				if( pval == null && c.opt ) continue;
 				if( !canViewSubColumn(ps, c.name) ) continue;
-				out.push(c.name+" : "+valueHtml(c, pval, ps, v, scope));
+				out.push(c.name+" : "+valueHtml(c, pval, ps, v, scope).str);
 			}
 			scope.pop();
-			return out.join("<br/>");
+			html(out.join("<br/>"));
 		case TCustom(name):
 			var t = editor.base.getCustomType(name);
+			var isHtml = false;
 			var a : Array<Dynamic> = v;
 			var cas = t.cases[a[0]];
 			var str = cas.name;
@@ -359,12 +382,15 @@ class Cell extends Component {
 				str += "(";
 				var out = [];
 				var pos = 1;
-				for( i in 1...a.length )
-					out.push(valueHtml(cas.args[i-1], a[i], sheet, this, scope));
+				for( i in 1...a.length ) {
+					var r = valueHtml(cas.args[i-1], a[i], sheet, this, scope);
+					isHtml = isHtml || r.containsHtml;
+					out.push(r.str);
+				}
 				str += out.join(",");
 				str += ")";
 			}
-			str;
+			{str: str, containsHtml: isHtml};
 		case TFlags(values):
 			var v : Int = v;
 			var view = getSheetView(sheet);
@@ -376,17 +402,17 @@ class Cell extends Component {
 			for( i in 0...values.length )
 				if( v & (1 << i) != 0 )
 					flags.push(StringTools.htmlEscape(values[i]));
-			flags.length == 0 ? String.fromCharCode(0x2205) : flags.join("|"+String.fromCharCode(0x200B));
+			val(flags.length == 0 ? String.fromCharCode(0x2205) : flags.join("|"+String.fromCharCode(0x200B)));
 		case TColor:
-			'<div class="color" style="background-color:#${StringTools.hex(v,6)}"></div>';
+			html('<div class="color" style="background-color:#${StringTools.hex(v,6)}"></div>');
 		case TFile:
 			var path = ide.getPath(v);
 			var url = ide.getUnCachedUrl(path);
 			var ext = v.split(".").pop().toLowerCase();
-			if (v == "") return '<span class="error">#MISSING</span>';
-			var html = StringTools.htmlEscape(v);
-			html = '<span title=\'$html\' >' + html  + '</span>';
-			if (!editor.quickExists(path)) return '<span class="error">$html</span>';
+			if (v == "") return html('<span class="error">#MISSING</span>');
+			var innerHtml = StringTools.htmlEscape(v);
+			innerHtml = '<span title=\'$innerHtml\' >' + innerHtml  + '</span>';
+			if (!editor.quickExists(path)) return html('<span class="error">$innerHtml</span>');
 			else if( ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "gif" ) {
 				var dims = imageDims.get(url);
 				var dimsText = dims != null ? dims.width+"x"+dims.height : "";
@@ -394,29 +420,29 @@ class Cell extends Component {
 				var img = '<img src="$url" $onload/>';
 				var previewHandler = ' onmouseenter="$(this).find(\'.previewContent\').css(\'top\', (this.getBoundingClientRect().bottom - this.offsetHeight) + \'px\')"';
 				if (getCellConfigValue("inlineImageFiles", false)) {
-					html = '<span class="preview inlineImage" $previewHandler>
-						<img src="$url"><div class="previewContent"><div class="inlineImagePath">$html</div><div class="label">$dimsText</div>$img</div>
+					innerHtml = '<span class="preview inlineImage" $previewHandler>
+						<img src="$url"><div class="previewContent"><div class="inlineImagePath">$innerHtml</div><div class="label">$dimsText</div>$img</div>
 					</span>';
 				} else {
-					html = '<span class="preview" $previewHandler>$html
+					innerHtml = '<span class="preview" $previewHandler>$innerHtml
 						<div class="previewContent"><div class="label">$dimsText</div>$img</div>
 					</span>';
 				}
 			}
-			return html + ' <input type="submit" value="open" onclick="hide.Ide.inst.openFile(\'$path\')"/>';
+			return html(innerHtml + ' <input type="submit" value="open" onclick="hide.Ide.inst.openFile(\'$path\')"/>');
 		case TTilePos:
 			return tileHtml(v);
 		case TTileLayer:
 			var v : cdb.Types.TileLayer = v;
 			var path = ide.getPath(v.file);
 			if( !editor.quickExists(path) )
-				'<span class="error">' + v.file + '</span>';
+				html('<span class="error">' + v.file + '</span>');
 			else
-				'#DATA';
+				val('#DATA');
 		case TDynamic:
 			var str = Std.string(v).split("\n").join(" ").split("\t").join("");
 			if( str.length > 50 ) str = str.substr(0, 47) + "...";
-			str;
+			val(str);
 		}
 	}
 
@@ -484,11 +510,11 @@ class Cell extends Component {
 		return name;
 	}
 
-	function tileHtml( v : cdb.Types.TilePos, ?isInline ) {
+	function tileHtml( v : cdb.Types.TilePos, ?isInline ) : {str: String, containsHtml: Bool} {
 		var path = ide.getPath(v.file);
 		if( !editor.quickExists(path) ) {
-			if( isInline ) return "";
-			return '<span class="error">' + v.file + '</span>';
+			if( isInline ) return {str: "", containsHtml: false};
+			return {str: '<span class="error">' + v.file + '</span>', containsHtml: true};
 		}
 		var width = v.size * (v.width == null?1:v.width);
 		var height = v.size * (v.height == null?1:v.height);
@@ -508,9 +534,20 @@ class Cell extends Component {
 			zoom="$zoom"
 			style="width : ${Std.int(width * zoom)}px; height : ${Std.int(height * zoom)}px; opacity:0; $bg $inl"
 		></div>';
-		html += '<script>hide.comp.cdb.Cell.startTileLoading()</script>';
+		queueTileLoading();
 		watchFile(path);
-		return html;
+		return {str: html, containsHtml: true};
+	}
+
+	static var isTileLoadingQueued = false;
+	static function queueTileLoading() {
+		if (!isTileLoadingQueued) {
+			isTileLoadingQueued = true;
+			haxe.Timer.delay(function() {
+				startTileLoading();
+				isTileLoadingQueued = false;
+			}, 0);
+		}
 	}
 
 	static function startTileLoading() {
@@ -598,13 +635,19 @@ class Cell extends Component {
 			open();
 		case TInt, TFloat, TString, TId, TCustom(_), TDynamic:
 			var str = value == null ? "" : Std.isOfType(value, String) ? value : editor.base.valToString(column.type, value);
-			var textSpan = element.wrapInner("<span>").find("span");
-			var textHeight = textSpan.height();
-			var textWidth = textSpan.width();
+
+			var span = js.Browser.document.createSpanElement();
+			span.innerHTML = elementHtml.innerHTML;
+			elementHtml.innerHTML = null;
+			elementHtml.appendChild(span);
+
+			var textWidth = span.offsetWidth;
+			var textHeight = span.offsetHeight;
 			var longText = textHeight > 25 || str.indexOf("\n") >= 0 || str.length > 22;
-			element.empty();
-			element.addClass("edit");
-			var i = new Element(longText ? "<textarea>" : "<input>").appendTo(element);
+			elementHtml.innerHTML = null;
+			elementHtml.classList.add("edit");
+			var i = new Element(longText ? "<textarea>" : "<input>");
+			elementHtml.appendChild(i[0]);
 			i.keypress(function(e) {
 				if (!longText) {
 					longText = i.val().length > 22;
@@ -612,13 +655,13 @@ class Cell extends Component {
 						var old = currentValue;
 						// hack to tranform the input into textarea
 						var newVal = i.val();
-						var curPos = (cast element.find("input")[0] : js.html.InputElement).selectionStart;
+						var curPos = (cast elementHtml.querySelector("input") : js.html.InputElement).selectionStart;
 						Reflect.setField(line.obj, column.name, newVal+"x");
 						refresh();
 						Reflect.setField(line.obj, column.name,old);
 						currentValue = newVal;
 						edit();
-						(cast element.find("textArea")[0] : js.html.TextAreaElement).setSelectionRange(curPos, curPos);
+						(cast elementHtml.querySelector("textArea") : js.html.TextAreaElement).setSelectionRange(curPos, curPos);
 					}
 				}
 				e.stopPropagation();
@@ -627,7 +670,7 @@ class Cell extends Component {
 			//if( str != "" && (table.displayMode == Properties || table.displayMode == AllProperties) )
 			//	i.css({ width : Math.ceil(textWidth - 3) + "px" }); -- bug if small text ?
 			if( longText ) {
-				element.addClass("edit_long");
+				elementHtml.classList.add("edit_long");
 				i.css({ height : Math.max(25,Math.ceil(textHeight - 1)) + "px" });
 			}
 			i.val(str);
@@ -654,7 +697,7 @@ class Cell extends Component {
 					Reflect.setField(line.obj, column.name,old);
 					currentValue = newVal;
 					edit();
-					(cast element.find("textarea")[0] : js.html.TextAreaElement).setSelectionRange(newVal.length,newVal.length);
+					(cast elementHtml.querySelector("textarea") : js.html.TextAreaElement).setSelectionRange(newVal.length,newVal.length);
 					e.preventDefault();
 				case K.UP, K.DOWN if( !longText ):
 					closeEdit();
@@ -695,8 +738,8 @@ class Cell extends Component {
 		case TRef(name):
 			var sdat = editor.base.getSheet(name);
 			if( sdat == null ) return;
-			element.empty();
-			element.addClass("edit");
+			elementHtml.innerHTML = null;
+			elementHtml.classList.add("edit");
 
 			if (!useSelect2) {
 				var isLocal = sdat.idCol.scope != null;
@@ -744,13 +787,15 @@ class Cell extends Component {
 						return null;
 					if (c.ico == null)
 						return new Element("<div style='display:inline-block;width:16px'/>");
-					return new Element(tileHtml(c.ico, true));
+					return new Element(tileHtml(c.ico, true).str);
 				}
-				var d = new Dropdown(element, elts, currentValue, makeIcon);
+				var d = new Dropdown(new Element(elementHtml), elts, currentValue, makeIcon);
+				dropdown = d.element[0];
 				d.onSelect = function(v) {
 					setValue(v);
 				}
 				d.onClose = function() {
+					dropdown = null;
 					closeEdit();
 				}
 				d.filterInput.keydown(function(e) {
@@ -781,13 +826,13 @@ class Cell extends Component {
 					elts = [for( d in sdat.all ) { id : d.id, ico : d.ico, text : d.disp }];
 				if( column.opt || currentValue == null || currentValue == "" )
 					elts.unshift( { id : "~", ico : null, text : "--- None ---" } );
-				element.append(s);
+				elementHtml.appendChild(s[0]);
 
 				var props : Dynamic = { data : elts };
 				if( sdat.props.displayIcon != null ) {
 					function buildElement(i) {
 						var text = StringTools.htmlEscape(i.text);
-						return new Element("<div>"+(i.ico == null ? "<div style='display:inline-block;width:16px'/>" : tileHtml(i.ico,true)) + " " + text+"</div>");
+						return new Element("<div>"+(i.ico == null ? "<div style='display:inline-block;width:16px'/>" : tileHtml(i.ico,true).str) + " " + text+"</div>");
 					}
 					props.templateResult = props.templateSelection = buildElement;
 				}
@@ -810,8 +855,8 @@ class Cell extends Component {
 				s.on("select2:close", function(_) closeEdit());
 			}
 		case TEnum(values):
-			element.empty();
-			element.addClass("edit");
+			elementHtml.innerHTML = null;
+			elementHtml.classList.add("edit");
 
 			if (!useSelect2) {
 				var elts : Array<hide.comp.Dropdown.Choice> = [for( i in 0...values.length ){
@@ -821,7 +866,7 @@ class Cell extends Component {
 				}];
 				if( column.opt )
 					elts.unshift( { id : "-1", text : "--- None ---" } );
-				var d = new Dropdown(element, elts, "" + currentValue);
+				var d = new Dropdown(new Element(elementHtml), elts, "" + currentValue);
 				d.onSelect = function(v) {
 					var val = Std.parseInt(v);
 					if( val < 0 ) val = null;
@@ -852,7 +897,7 @@ class Cell extends Component {
 				var elts = [for( i in 0...values.length ){ id : ""+i, ico : null, text : values[i] }];
 				if( column.opt )
 					elts.unshift( { id : "-1", ico : null, text : "--- None ---" } );
-				element.append(s);
+				elementHtml.appendChild(s[0]);
 
 				var props : Dynamic = { data : elts };
 				(untyped s.select2)(props);
@@ -885,18 +930,17 @@ class Cell extends Component {
 				s.on("select2:close", function(_) closeEdit());
 			}
 		case TColor:
-			var modal = new Element("<div>").addClass("hide-modal").appendTo(element);
-			var color = new ColorPicker(false, element, element.find(".color"));
-			color.value = currentValue;
-			color.onChange = function(drag) {
-				element.find(".color").css({backgroundColor : '#'+StringTools.hex(color.value,6) });
+			var elem = new Element(elementHtml);
+			var cb = new ColorPicker(false, elem, elem.find(".color"));
+			cb.value = currentValue;
+			cb.onChange = function(drag) {
+				elem.find(".color").css({backgroundColor : '#'+StringTools.hex(cb.value,6) });
 			};
-			color.onClose = function() {
-				setValue(color.value);
-				color.remove();
+			cb.onClose = function() {
+				setValue(cb.value);
+				cb.remove();
 				closeEdit();
 			};
-			modal.click(function(_) color.close());
 		case TFile:
 			ide.chooseFile(["*"], function(file) {
 				setValue(file);
@@ -927,15 +971,16 @@ class Cell extends Component {
 					new Element('<i style="margin-left: 5px" class="ico ico-book"/>').appendTo(line);
 				}
 			}
-			element.empty();
-			var modal = new Element("<div>").addClass("hide-modal").appendTo(element);
-			element.append(div);
+			elementHtml.innerHTML = null;
+			var modal = new Element("<div>").addClass("hide-modal");
+			elementHtml.appendChild(modal[0]);
+			elementHtml.appendChild(div[0]);
 			modal.click(function(e) {
 				setValue(val);
 				closeEdit();
 			});
 		case TTilePos:
-			var modal = new hide.comp.Modal(element);
+			var modal = new hide.comp.Modal(new Element(elementHtml));
 			modal.modalClick = function(_) closeEdit();
 
 			function getDims(t : cdb.Types.TilePos) {
@@ -1021,7 +1066,6 @@ class Cell extends Component {
 				refresh();
 				focus();
 			};
-
 		case TLayer(_), TTileLayer:
 			// no edit
 		case TImage:
@@ -1043,9 +1087,14 @@ class Cell extends Component {
 	}
 
 	public function setErrorMessage( msg : String ) {
-		element.find("div.error").remove();
+		var prevError = elementHtml.querySelector("div.error");
+		if (prevError != null)
+			prevError.remove();
 		if( msg == null ) return;
-		new Element("<div>").addClass("error").html(msg).appendTo(element);
+		var div = js.Browser.document.createDivElement();
+		div.classList.add("error");
+		div.innerText = msg;
+		elementHtml.appendChild(div);
 	}
 
 	public function isUniqueID(id : String, ignoreSelf:Bool = false) {
@@ -1075,7 +1124,7 @@ class Cell extends Component {
 			var prevObj = value != null ? realSheet.index.get(isLocal ? parentID+":"+value : value) : null;
 			// have we already an obj mapped to the same id ?
 			var prevTarget = realSheet.index.get(isLocal ? parentID+":"+newValue : newValue);
-			
+
 			if (isUniqueID(newValue, true))
 			{
 				editor.beginChanges();
@@ -1094,12 +1143,12 @@ class Cell extends Component {
 				editor.endChanges();
 				editor.refreshRefs();
 				focus();
-	
+
 				// Refresh display of all ids in the column manually
 				var colId = table.sheet.columns.indexOf(column);
 				for (l in table.lines) {
 					if (l.cells[colId] != null)
-						l.cells[colId].refresh(false);	
+						l.cells[colId].refresh(false);
 				}
 			}
 			/*
@@ -1147,8 +1196,8 @@ class Cell extends Component {
 
 	public function closeEdit() {
 		inEdit = false;
-		var str = element.find("input,textarea").val();
-		if( str != null ) setRawValue(str);
+		var input : js.html.InputElement = cast elementHtml.querySelector("input, textarea");
+		if(input != null &&  input.value != null ) setRawValue(input.value);
 		refresh();
 		focus();
 	}
