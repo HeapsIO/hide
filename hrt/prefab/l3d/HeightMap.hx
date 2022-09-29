@@ -450,7 +450,7 @@ class HeightMapMesh extends h3d.scene.Object {
 
 	function checkTile( ctx : h3d.scene.RenderContext, x : Int, y : Int ) {
 		var t = hmap.getTile(x,y);
-		if( t.isEmpty() || !ctx.camera.frustum.hasBounds(t.bounds) ) {
+		if( !ctx.camera.frustum.hasBounds(t.bounds) || t.isEmpty() ) {
 			if( t.root != null ) t.root.visible = false;
 			return x >= 0 && y >= 0 && x < hmap.sizeX && y < hmap.sizeY;
 		}
