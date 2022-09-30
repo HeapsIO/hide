@@ -421,7 +421,7 @@ class Editor extends Component {
 				var obj = line.obj;
 				formulas.removeFromValue(obj, col);
 				if (col.type == TId)
-					value = getNewUniqueId(value, cursor.table, col);
+					value = ensureUniqueId(value, cursor.table, col);
 				Reflect.setField(obj, col.name, value);
 			} else {
 				beginChanges();
@@ -438,7 +438,7 @@ class Editor extends Component {
 						var obj = sheet.lines[y];
 						formulas.removeFromValue(obj, col);
 						if (col.type == TId)
-							value = getNewUniqueId(value, cursor.table, col);
+							value = ensureUniqueId(value, cursor.table, col);
 						Reflect.setField(obj, col.name, value);
 						toRefresh.push(allLines[y].cells[x]);
 					}
@@ -476,7 +476,7 @@ class Editor extends Component {
 				v = base.getDefault(destCol, sheet);
 
 			if (destCol.type == TId) {
-				v = getNewUniqueId(v, cursor.table, destCol);
+				v = ensureUniqueId(v, cursor.table, destCol);
 			}
 			if( v == null )
 				Reflect.deleteField(destObj, destCol.name);
@@ -986,7 +986,9 @@ class Editor extends Component {
 	}
 
 	function isUniqueID( sheet : cdb.Sheet, obj : {}, id : String ) {
-		var uniq = base.getSheet(sheet.name).index.get(id);
+		var idx = base.getSheet(sheet.name).index;
+
+		var uniq = idx.get(id);
 		return uniq == null || uniq.obj == obj;
 	}
 
@@ -1219,6 +1221,16 @@ class Editor extends Component {
 		table.sheet.newLine(index);
 		endChanges();
 		table.refresh();
+	}
+
+	public function ensureUniqueId(originalId : String, table : Table, column : cdb.Data.Column) {
+		var scope = table.getScope();
+		var idWithScope : String = if(column.scope != null)  table.makeId(scope, column.scope, originalId) else originalId;
+
+		if (isUniqueID(table.getRealSheet(), {}, idWithScope)) {
+			return originalId;
+		}
+		return getNewUniqueId(originalId, table, column);
 	}
 
 	public function getNewUniqueId(originalId : String, table : Table, column : cdb.Data.Column) {
