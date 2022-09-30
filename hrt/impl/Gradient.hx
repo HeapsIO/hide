@@ -9,19 +9,21 @@ typedef ColorStop = {position : Float, color : Int};
 typedef GradientData = {
     var stops : Array<ColorStop>;
     var resolution : Int;
+    var isVertical : Bool;
 };
 
 class Gradient {
     public var data : GradientData = {
         stops: new Array<ColorStop>(),
-        resolution: 32
+        resolution: 32,
+        isVertical: false,
     };
 
     public function new () {
     }
 
     public static function getDefaultGradientData() : GradientData {
-        var data : GradientData = {stops: [{position: 0.0, color:0xFF000000}, {position: 1.0, color:0xFFFFFFFF}], resolution: 64};
+        var data : GradientData = {stops: [{position: 0.0, color:0xFF000000}, {position: 1.0, color:0xFFFFFFFF}], resolution: 64, isVertical : false};
         return data;
     }
 
@@ -74,6 +76,8 @@ class Gradient {
 
     public static function getDataHash(data : GradientData) : Int32 {
         var hash = hashCombine(0, data.resolution);
+        hash = hashCombine(hash, data.isVertical ? 0 : 1);
+
         for (stop in data.stops) {
             hash = hashCombine(hash, stop.color);
             hash = hashCombine(hash, Std.int(stop.position * 214748357));
@@ -102,12 +106,14 @@ class Gradient {
             // and use this copy in the genPixels function. But at this moment we consider that it's a bug
             if(newHash != oldHash) throw "gradient data has changed between first generation and realloc";
             #end
-            var pixels = hxd.Pixels.alloc(data.resolution,1, ARGB);
+            var xScale = data.isVertical ? 1 : 0;
+            var yScale = 1 - xScale;
+            var pixels = hxd.Pixels.alloc(data.resolution * xScale + 1 * yScale,1 * xScale + data.resolution * yScale, ARGB);
 
             var vec = new Vector();
             for (x in 0...data.resolution) {
                 evalData(data, x / data.resolution, vec);
-                pixels.setPixelF(x,0, vec);
+                pixels.setPixelF(x * xScale,x*yScale, vec);
             }
             return pixels;
         }

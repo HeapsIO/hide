@@ -87,6 +87,7 @@ class GradientEditor extends Popup {
     var stopLabel : Element;
 
     var resolutionInput : Element;
+    var isVerticalCheckbox : Element;
 
     var keys : hide.ui.Keys;
 
@@ -198,12 +199,15 @@ class GradientEditor extends Popup {
         }
 
         var detailsSection = new Element("<details>").appendTo(editor);
-        new Element("<summary>").text("Settings").appendTo(detailsSection);
+        new Element("<summary>").text("Generated texture settings").appendTo(detailsSection);
 
-        new Element("<label for='resolution'>").text("Texture Width").appendTo(detailsSection);
+        var detailsDiv = new Element("<div>").css("padding", "4px").appendTo(detailsSection);
 
-        resolutionInput = new Element("<select id='resolution' name='resolution'>").appendTo(detailsSection);
+        resolutionInput = new Element("<select id='resolution' name='resolution'>");
 
+        new Element("<div>").appendTo(detailsDiv)
+            .append( new Element("<label for='resolution'>").text("Resolution"))
+            .append(resolutionInput);
         for (i in 1...12) {
             var val = Math.pow(2, i);
             new Element('<option value="$val">').text('$val px').appendTo(resolutionInput);
@@ -214,6 +218,24 @@ class GradientEditor extends Popup {
             innerValue.resolution = val;
             onChange(false);
         });
+
+
+        isVerticalCheckbox = new Element("<select id='isVertical'>");
+        
+        new Element('<option value="0">').text('Horizontal').appendTo(isVerticalCheckbox);
+        new Element('<option value="1">').text('Vertical').appendTo(isVerticalCheckbox);
+
+        isVerticalCheckbox.on("change", function(e : js.jquery.Event) {
+            var val : Bool = isVerticalCheckbox.val() == 1 ? true : false;
+            innerValue.isVertical = val;
+            trace(val);
+            onChange(false);
+        });
+
+        new Element("<div>").appendTo(detailsDiv)
+            .append(new Element("<label for='isVertical'>").text("Orientation").attr("title", "Change the orientation of the generated texture. This don't have any effect on gradients that are used only on the cpu"))
+            .append(isVerticalCheckbox);
+
 
 
         reflow();
@@ -321,6 +343,7 @@ class GradientEditor extends Popup {
         }
 
         resolutionInput.val('${innerValue.resolution}');
+        isVerticalCheckbox.val('${innerValue.isVertical ? 1 : 0}');
     }
 
     function removeStop(element : Element) {
