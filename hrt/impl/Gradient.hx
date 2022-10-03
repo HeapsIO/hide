@@ -106,7 +106,7 @@ class Gradient {
             // and use this copy in the genPixels function. But at this moment we consider that it's a bug
             if(newHash != oldHash) throw "gradient data has changed between first generation and realloc";
             #end
-            var xScale = data.isVertical ? 1 : 0;
+            var xScale = data.isVertical ? 0 : 1;
             var yScale = 1 - xScale;
             var pixels = hxd.Pixels.alloc(data.resolution * xScale + 1 * yScale,1 * xScale + data.resolution * yScale, ARGB);
 
