@@ -1759,9 +1759,9 @@ class SceneEditor {
 
 		var supported = @:privateAccess hrt.prefab.Library.registeredExtensions;
 		var paths = [];
-		for(path in items) {
+			for(path in items) {
 			var ext = haxe.io.Path.extension(path).toLowerCase();
-			if( supported.exists(ext) || ext == "fbx" || ext == "hmd" )
+			if( supported.exists(ext) || ext == "fbx" || ext == "hmd" || ext == "json")
 				paths.push(path);
 		}
 		if( paths.length == 0 )
@@ -1779,6 +1779,11 @@ class SceneEditor {
 			var ref = new hrt.prefab.Reference(parent);
 			ref.source = relative;
 			obj3d = ref;
+			obj3d.name = new haxe.io.Path(relative).file;
+		}
+		else if(haxe.io.Path.extension(path).toLowerCase() == "json") {
+			obj3d = new hrt.prefab.l3d.Particles3D(parent);
+			obj3d.source = relative;
 			obj3d.name = new haxe.io.Path(relative).file;
 		}
 		else {
