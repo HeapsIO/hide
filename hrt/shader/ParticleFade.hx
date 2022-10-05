@@ -16,7 +16,7 @@ class ParticleFade extends hxsl.Shader {
             var fadeIn = t / max(0.0001, fadeInLife);
             var fadeOut = (1.0-t) / max(0.0001, fadeOutLife);
 
-            pixelColor.a *= pow(min(min(fadeIn, fadeOut), 1.0), power);
+            pixelColor.a *= pow(saturate(min(fadeIn, fadeOut)), power);
         }
 	};
 }
