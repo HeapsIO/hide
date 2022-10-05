@@ -21,7 +21,8 @@ class FileSelect extends Component {
 				}, false, path);
 			}
 		});
-		root.contextmenu(function(e) {
+
+		function contextMenu(e) {
 			e.preventDefault();
 			var fpath = getFullPath();
 			new ContextMenu([
@@ -35,7 +36,10 @@ class FileSelect extends Component {
 				{ label : "Open in explorer", enabled : fpath != null, click : function() Sys.command("explorer.exe",["/select,"+fpath.split("/").join("\\")]) },
 			]);
 			return false;
-		});
+		}
+
+		root.parent().prev("dt").contextmenu(contextMenu);
+		root.contextmenu(contextMenu);
 
 		// allow drag files
 		root.on("dragover", function(e) {
