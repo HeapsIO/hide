@@ -56,7 +56,9 @@ class Range extends Component {
 			return false;
 		}
 
-		root.parent().prev("dt").contextmenu(contextMenu);
+		var dt = root.parent().prev("dt");
+
+		dt.contextmenu(contextMenu);
 
 		element.contextmenu(contextMenu);
 

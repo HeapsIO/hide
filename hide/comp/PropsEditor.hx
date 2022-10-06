@@ -239,10 +239,7 @@ class PropsEditor extends Component {
 			var def = f.element.attr("value");
 			if(def != null) {
 				var dd = f.element.parent().parent("dd");
-				var dt = dd.prev("dt");
-				var tooltip = 'Click to reset ($def)\nCtrl+Click to round';
-				var button = dt.wrapInner('<input type="button" tabindex="-1" value="${upperCase(dt.text())}" title="$tooltip"/>');
-				button.click(function(e) {
+				wrapDt(dd.prev("dt"), def, function(e) {
 					var range = @:privateAccess f.range;
 					if(range != null) {
 						if(e.ctrlKey) {
@@ -256,6 +253,12 @@ class PropsEditor extends Component {
 			}
 		}
 		return e;
+	}
+
+	public static function wrapDt(dt : Element, defValue : String, onClick : (e : js.jquery.Event) -> Void) {
+		var tooltip = 'Click to reset ($defValue)\nCtrl+Click to round';
+		var button = dt.wrapInner('<input type="button" tabindex="-1" value="${upperCase(dt.text())}" title="$tooltip"/>');
+		button.click(onClick);
 	}
 
 }
@@ -275,6 +278,7 @@ class PropsField extends Component {
 	var beforeTempChange : { value : Dynamic };
 	var tchoice : hide.comp.TextureChoice;
 	var gradient : GradientBox;
+	var multiRange : MultiRange;
 	var tselect : hide.comp.TextureSelect;
 	var fselect : hide.comp.FileSelect;
 	var viewRoot : Element;
@@ -446,6 +450,57 @@ class PropsField extends Component {
 				setVal(range.value);
 			};
 			return;
+		case "multi-range":
+			var subfieldStr = f.attr("data-subfields");
+			var subfields = subfieldStr.split(",");
+
+			var name = f.parent().prev("dt").text();
+			var parentDiv = f.parent().parent();
+			parentDiv.empty();
+
+			var multiRange = new hide.comp.MultiRange(parentDiv, f, subfields.length, [for (subfield in subfields) name + " " + subfield]);
+			var a = getAccess();
+			multiRange.value = [for (subfield in subfields) Reflect.getProperty(a.obj, a.name+subfield)];
+			current = multiRange.value;
+			currentSave = (cast current : Array<Float>).copy();
+			multiRange.onChange = function(isTemporary : Bool) {
+				var setVal = function(val : Array<Float>, undo, refreshComp) {
+					var f = resolveField();
+					var a = f.getAccess();
+					f.current = val;
+					f.currentSave = val.copy();
+					for (i => subfield in subfields)
+						Reflect.setProperty(a.obj, a.name+subfield, val[i]);
+					if (refreshComp)
+						multiRange.value = val;
+					f.onChange(undo);
+				};
+
+				if (!isTemporary) {
+					var arr : Array<Float> = cast currentSave;
+					var oldVal = arr.copy();
+					var newVal = multiRange.value.copy();
+
+					props.undo.change(Custom(function(undo) {
+						if (undo) {
+							trace("Undo", oldVal, newVal);
+							setVal(oldVal, true, true);
+						} else {
+							trace("Redo", newVal);
+							setVal(newVal, false, true);
+						}
+					}));
+					setVal(multiRange.value, false, false);
+				}
+				else {
+					var a = getAccess();
+					var val = multiRange.value;
+					current = val;
+					for (i => subfield in subfields)
+						Reflect.setProperty(a.obj, a.name+subfield, val[i]);
+					onChange(false);
+				}
+			};
 		case "color":
 			var arr = Std.downcast(current, Array);
 			var alpha = arr != null && arr.length == 4 || f.attr("alpha") == "true";

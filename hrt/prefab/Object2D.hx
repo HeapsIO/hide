@@ -100,8 +100,7 @@ class Object2D extends Prefab {
 				<dl>
 					<dt>X</dt><dd><input type="range" min="-100" max="100" value="0" field="x"/></dd>
 					<dt>Y</dt><dd><input type="range" min="-100" max="100" value="0" field="y"/></dd>
-					<dt>Scale X</dt><dd><input type="range" min="0" max="5" value="1" field="scaleX"/></dd>
-					<dt>Scale Y</dt><dd><input type="range" min="0" max="5" value="1" field="scaleY"/></dd>
+					<dt>Scale</dt><dd><input type="multi-range" min="0" max="5" value="0" field="scale" data-subfields="X,Y"/></dd>
 					<dt>Rotation</dt><dd><input type="range" min="-180" max="180" value="0" field="rotation" /></dd>
 				</dl>
 			</div>
