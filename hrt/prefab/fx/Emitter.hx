@@ -211,7 +211,7 @@ private class ParticleInstance  {
 		startFrame = 0;
 		speedAccumulation.set(0,0,0);
 		orientation.identity();
-		random = hxd.Math.random();
+		random = emitter.random.rand();
 
 		switch(emitter.simulationSpace){
 			// Particles in Local are spawned next to emitter in the scene tree,
