@@ -23,9 +23,10 @@ class MultiRange extends Component {
         return current;
     }
 
-    function repaint() {
+    function repaint(?ignoreIndex : Int) {
         for (i => range in ranges) {
-            range.value = current[i];
+            if (ignoreIndex == null || ignoreIndex != i)
+                range.value = current[i];
         }
         syncRanges();
         linkButton.toggleClass("toggled", isUniform);
@@ -57,7 +58,7 @@ class MultiRange extends Component {
         onChange(tempChange);
     }
 
-	public function new(?parent:Element,?root:Element, num : Int, labels : Array<String>) {
+	public function new(?parent:Element,?root:Element, num : Int , labels : Array<String>) {
         this.numValues = num;
         super(null, null);
 
@@ -101,13 +102,12 @@ class MultiRange extends Component {
                             current[j] = Math.fround(current[j] * scale * 100.0) / 100.0;
                         }
                     }
-
+                    repaint(i);
                 }
                 else {
                     current[i] = range.value;
                 }
 
-                repaint();
                 onChange(tempChange);
             };
             ranges.push(range);
