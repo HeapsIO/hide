@@ -67,6 +67,33 @@ class GradientBox extends Component {
                 gradientEditor = null;
             }
         });
+
+        function contextMenu(e : js.jquery.Event) {
+            e.preventDefault();
+            new ContextMenu([
+                {label: "Reset", click: function() {
+                    value = Gradient.getDefaultGradientData();
+                    onChange(false);
+                }},
+                {label:"sep", isSeparator: true},
+                {label: "Copy", click: function() {
+                    ide.setClipboard(haxe.Json.stringify(value));
+                }},
+                {
+                    label: "Paste", click: function() {
+                        try {
+                            var data = haxe.Json.parse(ide.getClipboard());
+                            value = data;
+                            onChange(false);
+                        } catch(_) {
+
+                        }
+                    }
+                }
+            ]);
+        }
+
+        element.contextmenu(contextMenu);
     }
 }
 
@@ -337,7 +364,7 @@ class GradientEditor extends Popup {
             colorbox.isPickerEnabled = true;
         } else {
             stopEditor.addClass("disabled");
-            stopLabel.text('Stop'); 
+            stopLabel.text('Stop');
             colorbox.value = 0x77777777;
             colorbox.isPickerEnabled = false;
         }
