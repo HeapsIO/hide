@@ -357,6 +357,7 @@ class Layers2D extends hrt.prefab.Object3D {
 	}
 
 	function createInteractiveBrush(ectx : hide.prefab.EditContext) {
+		if (!enabled) return;
 		editorCtx = ectx;
 		var ctx = ectx.getContext(this);
 		var s2d = ctx.shared.root2d.getScene();

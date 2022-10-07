@@ -743,7 +743,9 @@ class MeshSpray extends Spray {
 
 	override function createInteractiveBrush(ectx : EditContext) {
 		super.createInteractiveBrush(ectx);
+		if (!enabled) return;
 		var ctx = ectx.getContext(this);
+
 		var s2d = ctx.shared.root2d.getScene();
 
 		interactive.onMove = function(e) {
