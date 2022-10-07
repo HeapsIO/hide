@@ -8,6 +8,8 @@ class PropsEditor extends Component {
 	public var undo : hide.ui.UndoHistory;
 	public var lastChange : Float = 0.;
 	public var fields(default, null) : Array<PropsField>;
+	public var groups(default, null) : Map<String, Array<PropsField>>;
+
 	public var isTempChange = false;
 
 	public function new(?undo,?parent,?el) {
@@ -15,11 +17,13 @@ class PropsEditor extends Component {
 		element.addClass("hide-properties");
 		this.undo = undo == null ? new hide.ui.UndoHistory() : undo;
 		fields = [];
+		groups = new Map();
 	}
 
 	public function clear() {
 		element.empty();
 		fields = [];
+		groups = new Map();
 	}
 
 	public function onDragDrop( items : Array<String>, isDrop : Bool ) : Bool {
@@ -256,6 +260,8 @@ class PropsEditor extends Component {
 			}
 		}
 
+		var groupName = e.find(".group").attr("name");
+		groups.set(groupName, groupFields);
 
 		return e;
 	}

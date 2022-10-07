@@ -1556,7 +1556,7 @@ class SceneEditor {
 		return false;
 	}
 
-	function pasteFields(edit : SceneEditorContext, fields : Array<hide.comp.PropsEditor.PropsField>, e : PrefabElement) {
+	function pasteFields(edit : SceneEditorContext, fields : Array<hide.comp.PropsEditor.PropsField>) {
 		var pasteData = ide.getClipboard();
 		var currentData = serializeProps(fields);
 		var success = unserializeProps(fields, pasteData);
@@ -1564,16 +1564,16 @@ class SceneEditor {
 			undo.change(Custom(function(undo) {
 				if (undo) {
 					unserializeProps(fields, currentData);
-					edit.onChange(e, "props");
+					edit.onChange(edit.elements[0], "props");
 					edit.rebuildProperties();
 				} else {
 					unserializeProps(fields, pasteData);
-					edit.onChange(e, "props");
+					edit.onChange(edit.elements[0], "props");
 					edit.rebuildProperties();
 				}
 			}));
 
-			edit.onChange(e, "props");
+			edit.onChange(edit.elements[0], "props");
 			edit.rebuildProperties();
 		}
 	}
@@ -1594,7 +1594,7 @@ class SceneEditor {
 
 		var pasteButton = new Element('<div class="button" title="Paste values from the clipboard">').append(new Element('<div class="icon ico ico-paste">'));
 		pasteButton.click(function(event : js.jquery.Event) {
-			pasteFields(edit, properties.fields, e);
+			pasteFields(edit, properties.fields);
 		});
 		properties.element.append(pasteButton);
 
@@ -1680,11 +1680,30 @@ class SceneEditor {
 		}
 	}
 
+	public function addGroupCopyPaste(edit : SceneEditorContext) {
+		for (groupName => groupFields in properties.groups) {
+			trace(groupName);
+			var header = properties.element.find('.group[name="$groupName"]').find(".title");
+			header.contextmenu( function(e) {
+				e.preventDefault();
+				new ContextMenu([{label: "Copy", click: function() {
+					copyFields(groupFields);
+				}},
+				{label: "Paste", click: function() {
+					pasteFields(edit, groupFields);
+				}}
+				
+			]);
+			});
+		}
+	}
+
 	public function showProps(e: PrefabElement) {
 		scene.setCurrent();
 		var edit = makeEditContext([e]);
 		properties.clear();
 		fillProps(edit, e);
+		addGroupCopyPaste(edit);
 	}
 
 	function setElementSelected( p : PrefabElement, ctx : hrt.prefab.Context, b : Bool ) {
@@ -1734,7 +1753,10 @@ class SceneEditor {
 				customPivot = null;
 			}
 			properties.clear();
-			if( elts.length > 0 ) fillProps(edit, elts[0]);
+			if( elts.length > 0 ) {
+				fillProps(edit, elts[0]);
+				addGroupCopyPaste(edit);
+			}
 
 			switch( mode ) {
 			case Default, NoHistory:
