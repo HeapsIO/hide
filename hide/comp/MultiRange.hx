@@ -115,7 +115,7 @@ class MultiRange extends Component {
 
         var linkContainer = new Element("<div class='link-container'>").css("flex-shirnk", "1").css("left","-32px").css("position", "relative").appendTo(flex);
         linkContainer.append(new Element("<div class='link link-up'>"));
-        linkButton = new Element("<div class='toggle' title='Link/Unlink sliders. Right click to open the context menu'>").appendTo(linkContainer);
+        linkButton = new Element("<div class='hide-button' title='Link/Unlink sliders. Right click to open the context menu'>").appendTo(linkContainer);
         linkIcon = new Element("<div class='icon ico ico-link'>").appendTo(linkButton);
         linkContainer.append(new Element("<div class='link link-down'>"));
 

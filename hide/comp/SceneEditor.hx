@@ -1586,13 +1586,13 @@ class SceneEditor {
 	function fillProps( edit : SceneEditorContext, e : PrefabElement ) {
 		properties.element.append(new Element('<h1 class="prefab-name">${e.getHideProps().name}</h1>'));
 
-		var copyButton = new Element('<div class="button" title="Copy all properties">').append(new Element('<div class="icon ico ico-copy">'));
+		var copyButton = new Element('<div class="hide-button" title="Copy all properties">').append(new Element('<div class="icon ico ico-copy">'));
 		copyButton.click(function(event : js.jquery.Event) {
 			copyFields(properties.fields);
 		});
 		properties.element.append(copyButton);
 
-		var pasteButton = new Element('<div class="button" title="Paste values from the clipboard">').append(new Element('<div class="icon ico ico-paste">'));
+		var pasteButton = new Element('<div class="hide-button" title="Paste values from the clipboard">').append(new Element('<div class="icon ico ico-paste">'));
 		pasteButton.click(function(event : js.jquery.Event) {
 			pasteFields(edit, properties.fields);
 		});

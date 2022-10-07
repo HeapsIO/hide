@@ -363,7 +363,7 @@ class ColorPicker extends Popup {
 		inputRow.addClass("toolbar hide-toolbar");
 		inputRow.css({'margin-bottom': 'auto'});
 
-		copyButton = new Element("<div class='button' title='Copy'>");
+		copyButton = new Element("<div class='hide-button' title='Copy'>");
 		copyButton.append(new Element("<div class='icon ico ico-copy'>"));
 		copyButton.on("click", function(e) {
 			Clipboard.get().set(colorCode.val());
@@ -371,7 +371,7 @@ class ColorPicker extends Popup {
 		inputRow.append(copyButton);
 
 
-		pasteButton = new Element("<div class='button' title='Paste'>");
+		pasteButton = new Element("<div class='hide-button' title='Paste'>");
 		pasteButton.append(new Element("<div class='icon ico ico-paste'>"));
 		pasteButton.on("click", function(e) {
 			var value = Clipboard.get().get();

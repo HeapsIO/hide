@@ -89,8 +89,7 @@ class TextureChoice extends Component {
     }
 
     function addChangeBtn() {
-        var tb = new Element("<div class='hide-toolbar'>").appendTo(element);
-        var btn = new Element("<div class='button' title='Actions ...'>").appendTo(tb);
+        var btn = new Element("<div class='hide-button change-button' title='Actions ...'>").appendTo(element);
         new Element("<div class='icon ico ico-ellipsis-h'>").appendTo(btn);
         btn.click(function(e) {
             new hide.comp.ContextMenu([

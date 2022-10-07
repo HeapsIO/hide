@@ -579,9 +579,13 @@ input[type=checkbox] {
 			min-width : 100px;
 		}
 	}
+
+	.button, .toggle {
+		.button();
+	}
 }
 
-.button, .toggle {
+.button() {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -612,21 +616,25 @@ input[type=checkbox] {
 		color: #000;
 		font-style: italic;
 	}
+
+	&.toggled {
+		color : #ddd;
+		background : #777;
+		padding-top: 2px;
+		padding-bottom: 1px;
+		text-shadow: none;
+		border-top-width: 2px;
+		border-top-color: #444;
+		&:hover {
+			border-top-width: 1px;
+			padding-top: 3px;
+			border-top-color : white;
+		}
+	}
 }
 
-.toggle.toggled {
-	color : #ddd;
-	background : #777;
-	padding-top: 2px;
-	padding-bottom: 1px;
-	text-shadow: none;
-	border-top-width: 2px;
-	border-top-color: #444;
-	&:hover {
-		border-top-width: 1px;
-		padding-top: 3px;
-		border-top-color : white;
-	}
+.hide-button, .hide-toggle {
+	.button();
 }
 
 .link-container {
@@ -656,13 +664,21 @@ input[type=checkbox] {
 		border-bottom: solid 1px gray;
 	}
 
-	.toggle {
+	.hide-button {
 		min-width: 12px;
 		min-height: 12px;
 		width: 12px;
 		height: 12px;
 		font-size: 9px;
 	}
+}
+
+.hide-button.change-button {
+	font-size: 12px;
+	min-height: 13px;
+	min-width: 13px;
+	height: 13px;
+	width: 13px;
 }
 
 .button:active {

@@ -510,8 +510,9 @@ input[type=checkbox]:checked:after {
   margin-left: 5px;
   min-width: 100px;
 }
-.button,
-.toggle {
+.hide-toolbar .button,
+.hide-toolbar .toggle,
+.scene-partition .show-cols-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -528,25 +529,27 @@ input[type=checkbox]:checked:after {
   font-size: 16px;
   vertical-align: middle;
 }
-.button:hover,
-.toggle:hover {
+.hide-toolbar .button:hover,
+.hide-toolbar .toggle:hover,
+.scene-partition .show-cols-btn:hover {
   color: white;
   border-color: white;
   background-color: #666;
 }
-.button label,
-.toggle label {
+.hide-toolbar .button label,
+.hide-toolbar .toggle label {
   font-size: 12px;
   margin-left: 6px;
   margin-right: 6px;
   text-shadow: none;
 }
-.button label.locked,
-.toggle label.locked {
+.hide-toolbar .button label.locked,
+.hide-toolbar .toggle label.locked {
   color: #000;
   font-style: italic;
 }
-.toggle.toggled {
+.hide-toolbar .button.toggled,
+.hide-toolbar .toggle.toggled {
   color: #ddd;
   background: #777;
   padding-top: 2px;
@@ -555,7 +558,60 @@ input[type=checkbox]:checked:after {
   border-top-width: 2px;
   border-top-color: #444;
 }
-.toggle.toggled:hover {
+.hide-toolbar .button.toggled:hover,
+.hide-toolbar .toggle.toggled:hover {
+  border-top-width: 1px;
+  padding-top: 3px;
+  border-top-color: white;
+}
+.hide-button,
+.hide-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  border: 1px solid #5a5a5a;
+  min-width: 20px;
+  min-height: 20px;
+  padding: 2px;
+  text-align: center;
+  border-radius: 1px;
+  text-shadow: 1px 2px 2px black;
+  background: -webkit-linear-gradient(top, #5a5a5a, #323232);
+  cursor: pointer;
+  font-size: 16px;
+  vertical-align: middle;
+}
+.hide-button:hover,
+.hide-toggle:hover {
+  color: white;
+  border-color: white;
+  background-color: #666;
+}
+.hide-button label,
+.hide-toggle label {
+  font-size: 12px;
+  margin-left: 6px;
+  margin-right: 6px;
+  text-shadow: none;
+}
+.hide-button label.locked,
+.hide-toggle label.locked {
+  color: #000;
+  font-style: italic;
+}
+.hide-button.toggled,
+.hide-toggle.toggled {
+  color: #ddd;
+  background: #777;
+  padding-top: 2px;
+  padding-bottom: 1px;
+  text-shadow: none;
+  border-top-width: 2px;
+  border-top-color: #444;
+}
+.hide-button.toggled:hover,
+.hide-toggle.toggled:hover {
   border-top-width: 1px;
   padding-top: 3px;
   border-top-color: white;
@@ -584,12 +640,19 @@ input[type=checkbox]:checked:after {
   margin-bottom: 4px;
   border-bottom: solid 1px gray;
 }
-.link-container .toggle {
+.link-container .hide-button {
   min-width: 12px;
   min-height: 12px;
   width: 12px;
   height: 12px;
   font-size: 9px;
+}
+.hide-button.change-button {
+  font-size: 12px;
+  min-height: 13px;
+  min-width: 13px;
+  height: 13px;
+  width: 13px;
 }
 .button:active {
   padding-top: 3px;
