@@ -160,6 +160,8 @@ class PropsEditor extends Component {
 	public function build( e : Element, ?context : Dynamic, ?onChange : String -> Void ) {
 		e = e.wrap("<div></div>").parent(); // necessary to have find working on top level element
 
+
+
 		e.find("input[type=checkbox]").wrap("<div class='checkbox-wrapper'></div>");
 		e.find("input[type=range]").not("[step]").attr({step: "any", tabindex:"-1"});
 
@@ -224,6 +226,7 @@ class PropsEditor extends Component {
 			e.getThis().closest(".group").find(">.title").val(e.getThis().val());
 		});
 
+		var groupFields = [];
 		// init input reflection
 		for( f in e.find("[field]").elements() ) {
 			var f = new PropsField(this, f, context);
@@ -233,8 +236,8 @@ class PropsEditor extends Component {
 				if( onChange != null ) onChange(@:privateAccess f.fname);
 				isTempChange = false;
 			};
+			groupFields.push(f);
 			fields.push(f);
-
 			// Init reset buttons
 			var def = f.element.attr("value");
 			if(def != null) {
@@ -252,6 +255,8 @@ class PropsEditor extends Component {
 				});
 			}
 		}
+
+
 		return e;
 	}
 
@@ -283,6 +288,8 @@ class PropsField extends Component {
 	var fselect : hide.comp.FileSelect;
 	var viewRoot : Element;
 	var range : hide.comp.Range;
+
+	var subfields : Array<String>;
 
 	public function new(props, el, context) {
 		super(null,el);
@@ -452,7 +459,7 @@ class PropsField extends Component {
 			return;
 		case "multi-range":
 			var subfieldStr = f.attr("data-subfields");
-			var subfields = subfieldStr.split(",");
+			subfields = subfieldStr.split(",");
 
 			var name = f.parent().prev("dt").text();
 			var parentDiv = f.parent().parent();
@@ -598,6 +605,18 @@ class PropsField extends Component {
 		if( index != null )
 			return { obj : obj, index : index, name : null };
 		return { obj : obj, index : -1, name : field };
+	}
+
+	function getAccesses() : Array<{ obj : Dynamic, index : Int, name : String }> {
+		if (subfields == null)
+			return [getAccess()];
+		return [
+			for (subfield in subfields) {
+				var a = getAccess();
+				a.name = a.name + subfield;
+				a;
+			}
+		];
 	}
 
 

@@ -1498,8 +1498,106 @@ class SceneEditor {
 		return props;
 	}
 
-	function fillProps( edit, e : PrefabElement ) {
+	function serializeProps(fields : Array<hide.comp.PropsEditor.PropsField>) : String {
+		var out = new Array<String>();
+		for (field in fields) {
+			@:privateAccess var accesses = field.getAccesses();
+			for (a in accesses) {
+				var v = Reflect.getProperty(a.obj, a.name);
+				var json = haxe.Json.stringify(v);
+				out.push('${a.name}:$json');
+			}
+		}
+		return haxe.Json.stringify(out);
+	}
+
+	// Return true if unseialization was successfull
+	function unserializeProps(fields : Array<hide.comp.PropsEditor.PropsField>, s : String) : Bool {
+		var data : Null<Array<Dynamic>> = null;
+		try {
+			data = cast(haxe.Json.parse(s), Array<Dynamic>);
+		}
+		catch(_) {
+
+		}
+		if (data != null) {
+			var map = new Map<String, Dynamic>();
+			for (field in data) {
+				var field : String = cast field;
+				var delimPos = field.indexOf(":");
+				var fieldName = field.substr(0, delimPos);
+				var fieldData = field.substr(delimPos+1);
+
+				var subdata : Dynamic = null;
+				try {
+					subdata = haxe.Json.parse(fieldData);
+				}
+				catch (_) {
+
+				}
+
+				if (subdata != null) {
+					map.set(fieldName, subdata);
+				}
+			}
+
+			for (field in fields) {
+				@:privateAccess var accesses = field.getAccesses();
+				for (a in accesses) {
+					if (map.exists(a.name)) {
+						Reflect.setProperty(a.obj, a.name, map.get(a.name));
+						field.onChange(false);
+					}
+				}
+			}
+
+			return true;
+		}
+		return false;
+	}
+
+	function pasteFields(edit : SceneEditorContext, fields : Array<hide.comp.PropsEditor.PropsField>, e : PrefabElement) {
+		var pasteData = ide.getClipboard();
+		var currentData = serializeProps(fields);
+		var success = unserializeProps(fields, pasteData);
+		if (success) {
+			undo.change(Custom(function(undo) {
+				if (undo) {
+					unserializeProps(fields, currentData);
+					edit.onChange(e, "props");
+					edit.rebuildProperties();
+				} else {
+					unserializeProps(fields, pasteData);
+					edit.onChange(e, "props");
+					edit.rebuildProperties();
+				}
+			}));
+
+			edit.onChange(e, "props");
+			edit.rebuildProperties();
+		}
+	}
+
+
+	function copyFields(fields : Array<hide.comp.PropsEditor.PropsField>) {
+		ide.setClipboard(serializeProps(fields));
+	}
+
+	function fillProps( edit : SceneEditorContext, e : PrefabElement ) {
 		properties.element.append(new Element('<h1 class="prefab-name">${e.getHideProps().name}</h1>'));
+
+		var copyButton = new Element('<div class="button" title="Copy all properties">').append(new Element('<div class="icon ico ico-copy">'));
+		copyButton.click(function(event : js.jquery.Event) {
+			copyFields(properties.fields);
+		});
+		properties.element.append(copyButton);
+
+		var pasteButton = new Element('<div class="button" title="Paste values from the clipboard">').append(new Element('<div class="icon ico ico-paste">'));
+		pasteButton.click(function(event : js.jquery.Event) {
+			pasteFields(edit, properties.fields, e);
+		});
+		properties.element.append(pasteButton);
+
 		e.edit(edit);
 
 		var typeName = e.getCdbType();

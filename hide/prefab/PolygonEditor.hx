@@ -493,6 +493,8 @@ class PolygonEditor {
 	}
 
 	function drawTriangles( b : Bool ){
+		if (triangleGraphics == null)
+			return;
 		triangleGraphics.clear();
 		if(b && polygonPrefab.getPrimitive(getContext()) != null){
 			var i = 0;
