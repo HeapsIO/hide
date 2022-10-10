@@ -65,9 +65,9 @@ class SceneEditorContext extends hide.prefab.EditContext {
 				if(ctx != null) {
 					var pobj = elt.parent == editor.sceneData ? ctx.shared.root3d : getContextRec(elt.parent).local3d;
 					var pobj2d = elt.parent == editor.sceneData ? ctx.shared.root2d : getContextRec(elt.parent).local2d;
-					if( ctx.local3d != pobj )
+					if( ctx.local3d != pobj && ctx.local3d != null)
 						rootObjects.push(ctx.local3d);
-					if( ctx.local2d != pobj2d )
+					if( ctx.local2d != pobj2d && ctx.local2d != null)
 						rootObjects2D.push(ctx.local2d);
 				}
 			}
