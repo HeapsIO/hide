@@ -2169,6 +2169,7 @@ div.sp-container input:hover {
 }
 div.color-box {
   display: inline-flex;
+  cursor: pointer;
 }
 div.popup {
   position: absolute;
@@ -2238,6 +2239,7 @@ div.gradient-box {
   font-family: Verdana, serif;
   font-size: 9pt;
   border: 1px solid #444;
+  cursor: pointer;
 }
 .gradient-editor {
   background-color: #282829;
