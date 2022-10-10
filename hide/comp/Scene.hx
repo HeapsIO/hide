@@ -30,6 +30,15 @@ class Scene extends Component implements h3d.IDrawable {
 		this.config = config;
 		element.addClass("hide-scene-container");
 		canvas = cast new Element("<canvas class='hide-scene' style='width:100%;height:100%'/>").appendTo(element)[0];
+
+		// Prevent mouse loosing focus on drag&drops
+		canvas.onpointerdown = function(e : js.html.PointerEvent) {
+			canvas.setPointerCapture(e.pointerId);
+		}
+		canvas.onpointerup = function(e : js.html.PointerEvent) {
+			canvas.releasePointerCapture(e.pointerId);
+		}
+
 		canvas.addEventListener("mousemove",function(_) canvas.focus());
 		canvas.addEventListener("mouseleave",function(_) canvas.blur());
 		canvas.oncontextmenu = function(e){
