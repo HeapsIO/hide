@@ -396,6 +396,8 @@ class Prefab extends FileView {
 		toolsDefs.push({id: "scalingMode", title : "Gizmo scaling Mode", icon : "compress", type : Button(@:privateAccess sceneEditor.gizmo.scalingMode)});
 		toolsDefs.push({id: "localTransformsToggle", title : "Local transforms", icon : "compass", type : Toggle((v) -> sceneEditor.localTransform = v)});
 		toolsDefs.push({id: "gridToggle", title : "Toggle grid", icon : "th", type : Toggle((v) -> { showGrid = v; updateGrid(); }) });
+		toolsDefs.push({id: "axisToggle", title : "Toggle model axis", icon : "cube", type : Toggle((v) -> { sceneEditor.showBasis = v; sceneEditor.updateBasis(); }) });
+
 		var texContent : Element = null;
 		toolsDefs.push({id: "sceneInformationToggle", title : "Scene information", icon : "info-circle", type : Toggle((b) -> statusText.visible = b), rightClick: () -> {
 			if( texContent != null ) {
