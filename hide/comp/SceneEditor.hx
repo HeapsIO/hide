@@ -147,6 +147,8 @@ class SceneEditor {
 	var showGizmo = true;
 	var gizmo : hide.view.l3d.Gizmo;
 	var gizmo2d : hide.view.l3d.Gizmo2D;
+	var basis : h3d.scene.Object;
+	public var showBasis = false;
 	static var customPivot : CustomPivot;
 	var interactives : Map<PrefabElement, hxd.SceneEvents.Interactive>;
 	var ide : hide.Ide;
@@ -396,6 +398,46 @@ class SceneEditor {
 
 		gizmo2d = new hide.view.l3d.Gizmo2D();
 		scene.s2d.add(gizmo2d, 1); // over local3d
+
+		basis = new h3d.scene.Object(scene.s3d);
+
+		// Note : we create 2 different graphics because
+		// 1 graohic can only handle one line style, and
+		// we want the forward vector to be thicker so
+		// it's easier to recognise
+		{
+			var fwd = new h3d.scene.Graphics(basis);
+			fwd.is3D = false;
+			fwd.lineStyle(1.25, 0xFF0000);
+			fwd.lineTo(1.0,0.0,0.0);
+
+			var mat = fwd.getMaterials()[0];
+			mat.mainPass.depth(false, Always);
+			mat.mainPass.setPassName("ui");
+			mat.mainPass.blend(SrcAlpha, OneMinusSrcAlpha);
+		}
+
+		{
+			var otheraxis = new h3d.scene.Graphics(basis);
+
+			otheraxis.lineStyle(.75, 0x00FF00);
+
+			otheraxis.moveTo(0.0,0.0,0.0);
+			otheraxis.setColor(0x00FF00);
+			otheraxis.lineTo(0.0,2.0,0.0);
+
+			otheraxis.moveTo(0.0,0.0,0.0);
+			otheraxis.setColor(0x0000FF);
+			otheraxis.lineTo(0.0,0.0,2.0);
+
+			var mat = otheraxis.getMaterials()[0];
+			mat.mainPass.depth(false, Always);
+			mat.mainPass.setPassName("ui");
+			mat.mainPass.blend(SrcAlpha, OneMinusSrcAlpha);
+		}
+
+		basis.visible = true;
+
 
 		cameraController = makeCamController();
 		cameraController.onClick = function(e) {
@@ -1109,6 +1151,33 @@ class SceneEditor {
 					o.updateInstance(getContext(o));
 			};
 		};
+	}
+
+	public function updateBasis() {
+		if (basis == null) return;
+		if (curEdit != null && curEdit.rootObjects.length == 1) {
+			basis.visible = showBasis;
+			var pos = getPivot(curEdit.rootObjects);
+			basis.setPosition(pos.x, pos.y, pos.z);
+			var obj = curEdit.rootObjects[0];
+			var mat = worldMat(obj);
+			var s = mat.getScale();
+
+			if(s.x != 0 && s.y != 0 && s.z != 0) {
+				mat.prependScale(1.0 / s.x, 1.0 / s.y, 1.0 / s.z);
+				basis.getRotationQuat().initRotateMatrix(mat);
+			}
+
+			var cam = scene.s3d.camera;
+			var gpos = gizmo.getAbsPos().getPosition();
+			var distToCam = cam.pos.sub(gpos).length();
+			var engine = h3d.Engine.getCurrent();
+			var ratio = 150 / engine.height;
+			basis.setScale(ratio * distToCam * Math.tan(cam.fovY * 0.5 * Math.PI / 180.0));
+
+		} else {
+			basis.visible = false;
+		}
 	}
 
 	function moveGizmoToSelection() {
@@ -2575,6 +2644,7 @@ class SceneEditor {
 			}
 			gizmo.update(dt);
 		}
+		updateBasis();
 		event.update(dt);
 		for( f in updates )
 			f(dt);
@@ -2635,11 +2705,15 @@ class SceneEditor {
 		}
 		for( ptype in allRegs.keys() ) {
 			var pinf = allRegs.get(ptype);
+			if (ptype == "UiDisplay")
+				trace("break");
+
 			if (!checkAllowParent({cl : ptype, inf : pinf.inf}, parent)) continue;
 			if(ptype == "shader") {
 				newItems.push(getNewShaderMenu(parent, onMake));
 				continue;
 			}
+
 			var m = getNewTypeMenuItem(ptype, parent, onMake);
 			if( !groupByType )
 				newItems.push(m);
@@ -2686,6 +2760,8 @@ class SceneEditor {
 			label : label != null ? label : pmodel.inf.name,
 			click : function() {
 				function make(?sourcePath) {
+					if (ptype == "UiDisplay")
+						trace("Break");
 					var p = Type.createInstance(pmodel.cl, [parent]);
 					@:privateAccess p.type = ptype;
 					if(sourcePath != null)
