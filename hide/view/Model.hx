@@ -799,6 +799,9 @@ class Model extends FileView {
 					var event = events[i][j];
 					var tf = new h2d.TextInput(hxd.res.DefaultFont.get(), timeline);
 					tf.backgroundColor = 0xFF0000;
+					tf.onFocus = function(e) {
+						sceneEditor.view.keys.isDisabled = true;
+					}
 					tf.onFocusLost = function(e){
 						events[i][j] = tf.text;
 						if( tf.text == "" ) {
@@ -808,6 +811,7 @@ class Model extends FileView {
 						buildTimeline();
 						buildEventPanel();
 						modified = true;
+						sceneEditor.view.keys.isDisabled = false;
 					}
 					tf.text = event;
 					tf.x = px - Std.int(tf.textWidth * 0.5);
