@@ -1748,6 +1748,58 @@ class FXEditor extends FileView {
 
 	}
 
+	var avg_smooth = 0.0;
+
+	public static function floatToStringPrecision(n : Float, ?prec : Int = 2, ?showZeros : Bool = true) {
+		if(n == 0) { // quick return
+			if (showZeros)
+				return "0." + ([for(i in 0...prec) "0"].join(""));
+			return "0";
+		}
+		if (Math.isNaN(n))
+			return "NaN";
+		if (n >= Math.POSITIVE_INFINITY)
+			return "+inf";
+		else if (n <= Math.NEGATIVE_INFINITY)
+			return "-inf";
+
+		var p = Math.pow(10, prec);
+		var fullDec = "";
+
+		if (n > -1. && n < 1) {
+			var minusSign:Bool = (n<0.0);
+			n = Math.abs(n);
+			var val = Math.round(p * n);
+			var str = Std.string(val);
+			var buf:StringBuf = new StringBuf();
+			if (minusSign)
+				buf.addChar("-".code);
+			for (i in 0...(prec + 1 - str.length))
+				buf.addChar("0".code);
+			buf.addSub(str, 0);
+			fullDec = buf.toString();
+		} else {
+			var val = Math.round(p * n);
+			fullDec = Std.string(val);
+		}
+
+		var outStr = fullDec.substr(0, -prec) + '.' + fullDec.substr(fullDec.length - prec, prec);
+		if (!showZeros) {
+			var i = outStr.length - 1;
+			while (i > 0) {
+				if (outStr.charAt(i) == "0")
+					outStr = outStr.substr(0, -1);
+				else if (outStr.charAt(i) == ".") {
+					outStr = outStr.substr(0, -1);
+					break;
+				} else
+					break;
+				i--;
+			}
+		}
+		return outStr;
+	}
+
 	function onUpdate3D(dt:Float) {
 		var ctx = sceneEditor.getContext(data);
 		if(ctx == null || ctx.local3d == null)
@@ -1777,12 +1829,22 @@ class FXEditor extends FileView {
 		for(e in emitters)
 			totalParts += @:privateAccess e.numInstances;
 
+		var total_time = 0.0;
+		for (e in emitters) {
+			total_time += e.tickTime;
+		}
+
+		var smooth_factor = 1/30.0;
+		avg_smooth = avg_smooth * (1.0 - smooth_factor) + total_time * smooth_factor;
+
+
 		if(statusText != null) {
 			var lines : Array<String> = [
 				'Time: ${Math.round(currentTime*1000)} ms',
 				'Scene objects: ${scene.s3d.getObjectsCount()}',
 				'Drawcalls: ${h3d.Engine.getCurrent().drawCalls}',
 				'Particles: $totalParts',
+				'Particles CPU time: ${floatToStringPrecision(avg_smooth * 1000, 3, true)} ms'
 			];
 			statusText.text = lines.join("\n");
 		}
