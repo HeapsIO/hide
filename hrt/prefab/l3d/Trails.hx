@@ -19,7 +19,11 @@ typedef TrailPoint = {
 class TrailObj extends h3d.scene.Mesh {
     var trailHeads : Map<Int, TrailPoint> = new Map();
 
-    var dprim : h3d.prim.DynamicPrimitive;
+    var dprim : h3d.prim.RawPrimitive;
+    var vbuf : hxd.FloatBuffer;
+    var ibuf : hxd.IndexBuffer;
+    var num_tris : Int = 0;
+    var bounds : h3d.col.Bounds;
 
     var pool : TrailPoint = null;
 
@@ -55,6 +59,9 @@ class TrailObj extends h3d.scene.Mesh {
         if (pool != null)
             p.next = pool;
         pool = p;
+        p.x = 0;
+        p.y = 0;
+        p.z = 0;
     }
 
     public function addPoint(?id : Int, x : Float, y : Float, z : Float, ux : Float, uy : Float, uz : Float, w : Float) {
@@ -92,6 +99,10 @@ class TrailObj extends h3d.scene.Mesh {
             new_pt.nx = 0;
             new_pt.ny = 0;
             new_pt.nz = 0;
+
+            new_pt.ux = 0;
+            new_pt.uy = 0;
+            new_pt.uz = 0;
         }
 
 
@@ -111,7 +122,20 @@ class TrailObj extends h3d.scene.Mesh {
 	}
 
     public function new(?parent : h3d.scene.Object) {
-        dprim = new h3d.prim.DynamicPrimitive(8);
+        var bounds = new h3d.col.Bounds();
+        bounds.addPos(0,0,0);
+
+        vbuf = new hxd.FloatBuffer(10_000);
+        ibuf = new hxd.IndexBuffer(10_000);
+
+        dprim = new h3d.prim.RawPrimitive({
+            vbuf : vbuf,
+            ibuf : ibuf,
+            stride : 8,
+            quads : false,
+            bounds : bounds,
+        }, true);
+
         super(dprim,parent);
 
         debugPointViz = new h3d.scene.Graphics(parent);
@@ -157,16 +181,17 @@ class TrailObj extends h3d.scene.Mesh {
 
         debugPointViz.clear();
 
-        var buffer = dprim.getBuffer(10000); // yolo
-        var indices = dprim.getIndexes(10000); // yolo
+        var buffer = vbuf; // yolo
+        var indices = ibuf; // yolo
 
         var count = 0;
-        var num_tris = 0;
+        num_tris = 0;
         var num_verts = 0;
 
         // render
         for (k => trail in trailHeads) {
             var prev = null;
+            var fix_prev = true;
             var cur = trail;
             while (cur != null) {
                 cur.lifetime += hxd.Timer.elapsedTime*2.0;
@@ -180,9 +205,9 @@ class TrailObj extends h3d.scene.Mesh {
                     break;
                 }
                 if (prev != null) {
-                    pointA.set(prev.x, prev.y, prev.z);
+                    /*pointA.set(prev.x, prev.y, prev.z);
                     pointB.set(cur.x, cur.y, cur.z);
-                    debugPointViz.drawLine(pointA, pointB);
+                    debugPointViz.drawLine(pointA, pointB);*/
                 }
                     
                 var nx = 0.0;
@@ -190,18 +215,25 @@ class TrailObj extends h3d.scene.Mesh {
                 var nz = 0.0;
 
                 if (cur.next != null) {
-                    pointA.set(cur.x, cur.y, cur.z);
                     
                     nx = (cur.nx + cur.next.nx) / 2.0;
                     ny = (cur.ny + cur.next.ny) / 2.0;
                     nz = (cur.nz + cur.next.nz) / 2.0;
 
-                    pointB.set( cur.x+nx, 
-                                cur.y+ny, 
-                                cur.z+nz);
 
-                    debugPointViz.drawLine(pointA, pointB);
+                } else {
+                    nx = cur.nx;
+                    ny = cur.ny;
+                    nz = cur.nz;
                 }
+
+                /*pointA.set(cur.x, cur.y, cur.z);
+                pointB.set( cur.x+nx, 
+                    cur.y+ny, 
+                    cur.z+nz);
+
+                debugPointViz.drawLine(pointA, pointB);*/
+
 
                 buffer[count++] = cur.x+nx * cur.w;
                 buffer[count++] = cur.y+ny * cur.w;
@@ -223,6 +255,8 @@ class TrailObj extends h3d.scene.Mesh {
                 buffer[count++] = 1;
 
                 if (prev != null) {
+
+
                     indices[num_tris] = num_verts;
                     indices[num_tris+1] = num_verts+1;
                     indices[num_tris+2] = num_verts+2;
@@ -242,7 +276,8 @@ class TrailObj extends h3d.scene.Mesh {
             }
         }
 
-        dprim.flush();
+        dprim.buffer.uploadVector(vbuf, 0, num_verts+2, 0);
+        dprim.indexes.upload(ibuf, 0, num_tris);
     }
 
     override function draw(ctx:h3d.scene.RenderContext) {
@@ -250,7 +285,11 @@ class TrailObj extends h3d.scene.Mesh {
 			absPos.identity();
 			posChanged = true;
 			ctx.uploadParams();
-			super.draw(ctx);
+
+            var triToDraw : Int = Std.int(num_tris/3);
+            if (triToDraw < 0) triToDraw = 0;
+            ctx.engine.renderIndexed(dprim.buffer, dprim.indexes, 0, triToDraw);
+			//super.draw(ctx);
 		//}
 	}
 }
