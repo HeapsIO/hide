@@ -397,17 +397,17 @@ class ColorPicker extends Popup {
 				function(x : Int, y : Int, outVector : Vector) {
 					outVector.x = primarySliders.workValue.x;
 					outVector.y = x / 255.0;
-					outVector.z = y / 255.0;
+					outVector.z = 1.0-(y / 255.0);
 					outVector.w = 1.0;
 				},
 				function(x : Int, y : Int, outVector : Vector) {
 					outVector.x = primarySliders.workValue.x;
 					outVector.y = x / 255.0;
-					outVector.z = y / 255.0;
+					outVector.z = 1.0-(y / 255.0);
 					outVector.w = primarySliders.workValue.w;
 				}, 
 				function() : {x:Int, y:Int} {
-					return {x: Std.int(primarySliders.workValue.y * 255.0), y: Std.int(primarySliders.workValue.z * 255.0)};
+					return {x: Std.int(primarySliders.workValue.y * 255.0), y: Std.int((1.0-primarySliders.workValue.z) * 255.0)};
 				}));
 			
 	
