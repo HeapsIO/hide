@@ -404,6 +404,8 @@ class EmitterObject extends h3d.scene.Object {
 	public var particleTemplate : hrt.prefab.Object3D;
 	public var subEmitterTemplate : Emitter;
 	public var subEmitters : Array<EmitterObject>;
+	public var trails : hrt.prefab.l3d.Trails.TrailObj;
+	public var trailsTemplate : hrt.prefab.l3d.Trails;
 	// LIFE
 	public var lifeTime = 2.0;
 	public var lifeTimeRand = 0.0;
@@ -573,6 +575,10 @@ class EmitterObject extends h3d.scene.Object {
 				s.remove();
 			subEmitters = null;
 		}
+
+		if (trails != null) {
+			trails.reset();
+		}
 	}
 
 	inline function checkList() { /*
@@ -683,6 +689,16 @@ class EmitterObject extends h3d.scene.Object {
 
 		var emitterQuat : h3d.Quat = null;
 		if (count > 0) {
+
+			if (trailsTemplate != null && trails == null) {
+				if( tmpCtx == null ) {
+					tmpCtx = new hrt.prefab.Context();
+					tmpCtx.shared = context.shared;
+				}
+				tmpCtx.local3d = this;
+				trails = cast trailsTemplate.make(tmpCtx).local3d;
+			}
+
 			for( i in 0...count ) {
 				var part = allocInstance();
 				part.startTime = startTime + curTime;
@@ -789,6 +805,7 @@ class EmitterObject extends h3d.scene.Object {
 				var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
 				if(animationLoop)
 					part.startFrame = random.random(frameCount);
+
 			}
 		}
 
@@ -1055,6 +1072,10 @@ class EmitterObject extends h3d.scene.Object {
 				p.life += dt;  // After updateAbsPos(), which uses current life
 				prev = p;
 				++i;
+
+				if (trails != null) {
+					trails.addPoint(p.trailId, p.absPos._41, p.absPos._42, p.absPos._43, ECamera, 1.0);
+				}
 			}
 		}
 	}
@@ -1437,6 +1458,11 @@ class Emitter extends Object3D {
 		// SUB-EMITTER
 		var subEmitterTemplate : Emitter = cast children.find( p -> p.enabled && Std.downcast(p, Emitter) != null && p.to(Object3D).visible);
 		emitterObj.subEmitterTemplate = subEmitterTemplate;
+
+		// TRAILS
+		var trailsTemplate : hrt.prefab.l3d.Trails = cast children.find(p -> p.enabled && Std.isOfType(p, hrt.prefab.l3d.Trails) && p.to(Object3D).visible);
+		emitterObj.trailsTemplate = trailsTemplate;
+
 		// RANDOM
 		emitterObj.seedGroup 			= 	getParamVal("seedGroup");
 		// LIFE

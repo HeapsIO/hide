@@ -171,7 +171,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 				});
 			}
 		} else {
-			for(name in ["Group", "Polygon", "Model", "Shader", "Emitter"]) {
+			for(name in ["Group", "Polygon", "Model", "Shader", "Emitter", "Trails"]) {
 				var item = allTypes.find(i -> i.label == name);
 				if(item == null) continue;
 				allTypes.remove(item);
@@ -1749,6 +1749,8 @@ class FXEditor extends FileView {
 	}
 
 	var avg_smooth = 0.0;
+	var trails_update_time_smooth = 0.0;
+	var num_trail_tri_smooth = 0.0;
 
 	public static function floatToStringPrecision(n : Float, ?prec : Int = 2, ?showZeros : Bool = true) {
 		if(n == 0) { // quick return
@@ -1834,9 +1836,31 @@ class FXEditor extends FileView {
 			total_time += e.tickTime;
 		}
 
+		var trails = ctx.local3d.findAll(o -> Std.downcast(o, hrt.prefab.l3d.Trails.TrailObj));
+		var num_trails = 0;
+		var trails_update_time = 0.0;
+		var num_trail_tris = 0.0;
+
+		var poolSize = 0;
+		@:privateAccess
+		for (trail in trails) {
+			for (head in trail.trailHeads) {
+				num_trails ++;
+			}
+			trails_update_time += trail.lastUpdateDuration;
+			num_trail_tris += trail.num_tris/3.0;
+
+			var p = trail.pool;
+			while(p != null) {
+				poolSize ++;
+				p = p.next;
+			}
+		}
+
 		var smooth_factor = 1/30.0;
 		avg_smooth = avg_smooth * (1.0 - smooth_factor) + total_time * smooth_factor;
-
+		trails_update_time_smooth = trails_update_time_smooth * (1.0 - smooth_factor) + trails_update_time * smooth_factor;
+		num_trail_tri_smooth = num_trail_tri_smooth * (1.0-smooth_factor) + num_trail_tris * smooth_factor;
 
 		if(statusText != null) {
 			var lines : Array<String> = [
@@ -1844,8 +1868,17 @@ class FXEditor extends FileView {
 				'Scene objects: ${scene.s3d.getObjectsCount()}',
 				'Drawcalls: ${h3d.Engine.getCurrent().drawCalls}',
 				'Particles: $totalParts',
-				'Particles CPU time: ${floatToStringPrecision(avg_smooth * 1000, 3, true)} ms'
+				'Particles CPU time: ${floatToStringPrecision(avg_smooth * 1000, 3, true)} ms',
 			];
+
+			if (num_trails > 0) {
+				lines.push('Num Trails : $num_trails');
+				lines.push('Trails CPU time : ${floatToStringPrecision(trails_update_time_smooth * 1000, 3, true)} ms');
+				lines.push('Trails Triangles : ${floatToStringPrecision(num_trail_tri_smooth, 1, true)}');
+				lines.push('Trail pool : $poolSize');
+
+
+			}
 			statusText.text = lines.join("\n");
 		}
 
