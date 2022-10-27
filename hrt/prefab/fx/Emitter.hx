@@ -79,9 +79,7 @@ typedef EmitterTrail = {
 typedef ShaderAnims = Array<ShaderAnimation>;
 
 private class ParticleTransform {
-
-	public var parent : h3d.scene.Object;
-	public var absPos = new h3d.Matrix();
+	//  var absPos = new h3d.Matrix();
 	public var qRot = new h3d.Quat();
 	public var x = 0.0;
 	public var y = 0.0;
@@ -90,9 +88,7 @@ private class ParticleTransform {
 	public var scaleY = 1.0;
 	public var scaleZ = 1.0;
 
-	public function new() {
-
-	}
+	public function new() {	}
 
 	public function reset() {
 		x = 0.0;
@@ -101,10 +97,6 @@ private class ParticleTransform {
 		scaleX = 1.0;
 		scaleY = 1.0;
 		scaleZ = 1.0;
-	}
-
-	public function setRotation( quat ) {
-		qRot.load(quat);
 	}
 
 	public inline function getPosition() {
@@ -132,20 +124,20 @@ private class ParticleTransform {
 		this.scaleZ = z;
 	}
 
-	public inline function getWorldPosition() {
-		var ppos = parent.getAbsPos();
-		return new h3d.Vector(x + ppos.tx, y + ppos.ty, z + ppos.tz);
-	}
+	// public inline function getWorldPosition() {
+	// 	var ppos = parent.getAbsPos();
+	// 	return new h3d.Vector(x + ppos.tx, y + ppos.ty, z + ppos.tz);
+	// }
 
-	public inline function setWorldPosition(v: h3d.Vector) {
-		var ppos = parent.getAbsPos();
-		x = v.x - ppos.tx;
-		y = v.y - ppos.ty;
-		z = v.z - ppos.tz;
-	}
+	// public inline function setWorldPosition(v: h3d.Vector) {
+	// 	var ppos = parent.getAbsPos();
+	// 	x = v.x - ppos.tx;
+	// 	y = v.y - ppos.ty;
+	// 	z = v.z - ppos.tz;
+	// }
 
 
-	public function calcAbsPos() {
+	public function calcAbsPos(absPos: h3d.Matrix) {
 		qRot.toMatrix(absPos);
 		absPos._11 *= scaleX;
 		absPos._12 *= scaleX;
@@ -159,8 +151,8 @@ private class ParticleTransform {
 		absPos._41 = x;
 		absPos._42 = y;
 		absPos._43 = z;
-		if( parent != null )
-			absPos.multiply3x4inline(absPos, parent.getAbsPos());
+		// if( parent != null )
+		// 	absPos.multiply3x4inline(absPos, parent.getAbsPos());
 	}
 
 	static var tmpMat = new h3d.Matrix();
@@ -198,6 +190,7 @@ private class ParticleInstance  {
 	public var colorMult : h3d.Vector;
 	public var distToCam = 0.0;
 	public var random : Float;
+	public var transformParent : h3d.scene.Object; // Shared, should precalc parentTransform from EmitterObj once instead of .getAbsPos()
 
 	public var def : InstanceDef;
 
@@ -213,10 +206,11 @@ private class ParticleInstance  {
 		random = emitter.random.rand();
 
 		switch(emitter.simulationSpace){
+			// TODO TOMR: move to EmitterObj
 			// Particles in Local are spawned next to emitter in the scene tree,
 			// so emitter shape can be transformed (especially scaled) without affecting children
-			case Local : transform.parent = emitter.parent;
-			case World : transform.parent = emitter.getScene();
+			case Local : transformParent = emitter.parent;
+			case World : transformParent = emitter.getScene();
 		}
 		this.def = def;
 		this.emitter = emitter;
@@ -229,7 +223,6 @@ private class ParticleInstance  {
 	}
 
 	public function dispose() {
-		transform.parent = null;
 		emitter = null;
 	}
 
@@ -275,8 +268,9 @@ private class ParticleInstance  {
 			default:
 		}
 
-		transform.calcAbsPos();
-		absPos.multiply(localMat, transform.absPos);
+		transform.calcAbsPos(absPos);
+		absPos.multiply3x4inline(absPos, transformParent.getAbsPos());
+		absPos.multiply(localMat, absPos);
 	}
 
 	public function update( dt : Float ) {
@@ -359,12 +353,17 @@ private class ParticleInstance  {
 			evaluator.getVector(def.orbitSpeed, t, tmpLocalSpeed);
 			tmpMat.initRotation(tmpLocalSpeed.x * dt, tmpLocalSpeed.y * dt, tmpLocalSpeed.z * dt);
 			// Rotate in emitter space and convert back to world space
-			var pos = transform.getWorldPosition();
+			var parentAbsPos = transformParent.getAbsPos();
+			var pos = transform.getPosition().add(parentAbsPos.getPosition());
 			var prevPos = transform.getPosition();
 			pos.transform3x4(emitter.getInvPos());
 			pos.transform3x3(tmpMat);
 			pos.transform3x4(emitter.getAbsPos());
-			transform.setWorldPosition(pos);
+			transform.setPosition(
+				pos.x - parentAbsPos.tx,
+				pos.y - parentAbsPos.ty,
+				pos.z - parentAbsPos.tz
+			);
 
 			// Take transform into account into local speed
 			var delta = transform.getPosition().sub(prevPos);
@@ -698,7 +697,7 @@ class EmitterObject extends h3d.scene.Object {
 						tmpOffset.transform(tmpMat);
 						part.transform.setPosition(tmpOffset.x, tmpOffset.y, tmpOffset.z);
 						tmpQuat.multiply(emitterQuat, tmpQuat);
-						part.transform.setRotation(tmpQuat);
+						part.transform.qRot.load(tmpQuat);
 						part.emitOrientation.load(tmpQuat.toMatrix());
 					case World:
 						tmpPt.set(tmpOffset.x, tmpOffset.y, tmpOffset.z);
@@ -711,7 +710,7 @@ class EmitterObject extends h3d.scene.Object {
 						emitterQuat.initRotateMatrix(tmpMat);
 						emitterQuat.normalize();
 						tmpQuat.multiply(tmpQuat, emitterQuat);
-						part.transform.setRotation(tmpQuat);
+						part.transform.qRot.load(tmpQuat);
 						part.emitOrientation.load(tmpQuat.toMatrix());
 						part.transform.setScale(worldScale.x, worldScale.y, worldScale.z);
 				}
