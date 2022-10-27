@@ -70,12 +70,6 @@ class InstanceDef {
 	public function new() { }
 }
 
-typedef EmitterTrail = {
-	particle : ParticleInstance,
-	trail : h3d.scene.Trail,
-	timeBeforeDeath : Float
-}
-
 typedef ShaderAnims = Array<ShaderAnimation>;
 
 @:allow(hrt.prefab.fx.EmitterObject)
@@ -397,9 +391,7 @@ class EmitterObject extends h3d.scene.Object {
 	// OBJECTS
 	public var particleTemplate : hrt.prefab.Object3D;
 	public var subEmitterTemplate : Emitter;
-	public var trailTemplate : hrt.prefab.l3d.Trail;
 	public var subEmitters : Array<EmitterObject> = [];
-	public var trails : Array<EmitterTrail> = [];
 	// LIFE
 	public var lifeTime = 2.0;
 	public var lifeTimeRand = 0.0;
@@ -490,10 +482,6 @@ class EmitterObject extends h3d.scene.Object {
 			s.remove();
 		}
 		subEmitters = [];
-		for( t in trails ) {
-			t.trail.remove();
-		}
-		trails = [];
 	}
 
 	override function onRemove() {
@@ -515,15 +503,6 @@ class EmitterObject extends h3d.scene.Object {
 
 	var tmpCtx : hrt.prefab.Context;
 	function disposeInstance(p: ParticleInstance) {
-
-		// TRAIL
-		for( t in trails ) {
-			if( t.particle == p ) {
-				t.particle = null;
-				break;
-			}
-		}
-
 		p.next = pool;
 		p.dispose();
 		pool = p;
@@ -1368,9 +1347,6 @@ class Emitter extends Object3D {
 		// SUB-EMITTER
 		var subEmitterTemplate : Emitter = cast children.find( p -> p.enabled && Std.downcast(p, Emitter) != null && p.to(Object3D).visible);
 		emitterObj.subEmitterTemplate = subEmitterTemplate;
-		// TRAIL
-		var trailTemplate : hrt.prefab.l3d.Trail = cast children.find( p -> p.enabled && Std.isOfType(p, hrt.prefab.l3d.Trail) && p.to(Object3D).visible);
-		emitterObj.trailTemplate = trailTemplate;
 		// RANDOM
 		emitterObj.seedGroup 			= 	getParamVal("seedGroup");
 		// LIFE
