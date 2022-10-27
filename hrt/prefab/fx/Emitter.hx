@@ -52,20 +52,22 @@ typedef ParamDef = {
 	?groupName: String
 }
 
-typedef InstanceDef = {
-	localSpeed: Value,
-	worldSpeed: Value,
-	startSpeed: Value,
-	startWorldSpeed: Value,
-	orbitSpeed: Value,
-	acceleration: Value,
-	worldAcceleration: Value,
-	localOffset: Value,
-	scale: Value,
-	stretch: Value,
-	rotation: Value,
-	dampen: Value,
-	maxVelocity : Value,
+@:publicFields
+class InstanceDef {
+	var localSpeed: Value;
+	var worldSpeed: Value;
+	var startSpeed: Value;
+	var startWorldSpeed: Value;
+	var orbitSpeed: Value;
+	var acceleration: Value;
+	var worldAcceleration: Value;
+	var localOffset: Value;
+	var scale: Value;
+	var stretch: Value;
+	var rotation: Value;
+	var dampen: Value;
+	var maxVelocity : Value;
+	public function new() { }
 }
 
 typedef EmitterTrail = {
@@ -184,9 +186,9 @@ private class ParticleInstance  {
 	var evaluator : Evaluator;
 
 	var transform = new ParticleTransform();
-	var localTransform = new ParticleTransform();
 	public var absPos = new h3d.Matrix();
 	public var localMat = new h3d.Matrix();
+	public var emitOrientation = new h3d.Matrix();
 
 	public var startTime = 0.0;
 	public var life = 0.0;
@@ -197,8 +199,6 @@ private class ParticleInstance  {
 	public var distToCam = 0.0;
 	public var random : Float;
 
-	public var orientMat = new h3d.Matrix();
-
 	public var def : InstanceDef;
 
 	public function new() {
@@ -206,12 +206,10 @@ private class ParticleInstance  {
 
 	public function init(emitter: EmitterObject, def: InstanceDef) {
 		transform.reset();
-		localTransform.reset();
 		life = 0;
 		lifeTime = 0;
 		startFrame = 0;
 		speedAccumulation.set(0,0,0);
-		//orientation.identity();
 		random = emitter.random.rand();
 
 		switch(emitter.simulationSpace){
@@ -231,7 +229,7 @@ private class ParticleInstance  {
 	}
 
 	public function dispose() {
-		transform.parent = localTransform.parent = null;
+		transform.parent = null;
 		emitter = null;
 	}
 
@@ -278,8 +276,7 @@ private class ParticleInstance  {
 		}
 
 		transform.calcAbsPos();
-		localTransform.calcAbsPos();
-		absPos.multiply(localTransform.absPos, transform.absPos);
+		absPos.multiply(localMat, transform.absPos);
 	}
 
 	public function update( dt : Float ) {
@@ -289,7 +286,7 @@ private class ParticleInstance  {
 		if( life == 0 ) {
 			// START LOCAL SPEED
 			evaluator.getVector(def.startSpeed, 0.0, tmpSpeedAccumulation);
-			tmpSpeedAccumulation.transform3x3(orientMat);
+			tmpSpeedAccumulation.transform3x3(emitOrientation);
 			add(speedAccumulation, tmpSpeedAccumulation);
 			// START WORLD SPEED
 			evaluator.getVector(def.startWorldSpeed, 0.0, tmpSpeedAccumulation);
@@ -301,7 +298,7 @@ private class ParticleInstance  {
 		if(def.acceleration != VZero) {
 			evaluator.getVector(def.acceleration, t, tmpSpeedAccumulation);
 			tmpSpeedAccumulation.scale3(dt);
-			tmpSpeedAccumulation.transform3x3(orientMat);
+			tmpSpeedAccumulation.transform3x3(emitOrientation);
 			add(speedAccumulation, tmpSpeedAccumulation);
 		}
 
@@ -319,7 +316,7 @@ private class ParticleInstance  {
 		// SPEED
 		if(def.localSpeed != VZero) {
 			evaluator.getVector(def.localSpeed, t, tmpLocalSpeed);
-			tmpLocalSpeed.transform3x3(orientMat);
+			tmpLocalSpeed.transform3x3(emitOrientation);
 			add(tmpSpeed, tmpLocalSpeed);
 		}
 
@@ -396,11 +393,12 @@ private class ParticleInstance  {
 		localMat.translate(offset.x, offset.y, offset.z);
 		if(emitter.baseEmitMat != null)
 			localMat.multiply(emitter.baseEmitMat, localMat);
-		localTransform.setTransform(localMat);
+		// localTransform.setTransform(localMat);
 
 		updateAbsPos();
 
 		// COLLISION
+		/*
 		if( emitter.useCollision ) {
 			var worldPos = absPos.getPosition();
 			if( worldPos.z < 0 ) {
@@ -418,7 +416,7 @@ private class ParticleInstance  {
 					absPos.multiply(localTransform.absPos, transform.absPos);
 				}
 			}
-		}
+		}*/
 
 		life += dt;
 	}
@@ -701,7 +699,7 @@ class EmitterObject extends h3d.scene.Object {
 						part.transform.setPosition(tmpOffset.x, tmpOffset.y, tmpOffset.z);
 						tmpQuat.multiply(emitterQuat, tmpQuat);
 						part.transform.setRotation(tmpQuat);
-						part.orientMat.load(tmpQuat.toMatrix());
+						part.emitOrientation.load(tmpQuat.toMatrix());
 					case World:
 						tmpPt.set(tmpOffset.x, tmpOffset.y, tmpOffset.z);
 						localToGlobal(tmpPt);
@@ -714,7 +712,7 @@ class EmitterObject extends h3d.scene.Object {
 						emitterQuat.normalize();
 						tmpQuat.multiply(tmpQuat, emitterQuat);
 						part.transform.setRotation(tmpQuat);
-						part.orientMat.load(tmpQuat.toMatrix());
+						part.emitOrientation.load(tmpQuat.toMatrix());
 						part.transform.setScale(worldScale.x, worldScale.y, worldScale.z);
 				}
 				var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
@@ -1441,22 +1439,21 @@ class Emitter extends Object3D {
 		}
 
 		if(template != null) {
-			emitterObj.instDef = {
-				localSpeed: makeParam(this, "instSpeed"),
-				worldSpeed: makeParam(this, "instWorldSpeed"),
-				startSpeed: makeParam(this, "instStartSpeed"),
-				startWorldSpeed: makeParam(this, "instStartWorldSpeed"),
-				orbitSpeed: makeParam(this, "instOrbitSpeed"),
-				acceleration: makeParam(this, "instAcceleration"),
-				worldAcceleration: makeParam(this, "instWorldAcceleration"),
-				localOffset: makeParam(this, "instOffset"),
-				scale: makeParam(this, "instScale"),
-				dampen: makeParam(this, "instDampen"),
-				maxVelocity: makeParam(this, "instMaxVelocity"),
-				stretch: makeParam(this, "instStretch"),
-				rotation: makeParam(this, "instRotation")
-			};
-
+			var d = new InstanceDef();
+			d.localSpeed = makeParam(this, "instSpeed");
+			d.worldSpeed = makeParam(this, "instWorldSpeed");
+			d.startSpeed = makeParam(this, "instStartSpeed");
+			d.startWorldSpeed = makeParam(this, "instStartWorldSpeed");
+			d.orbitSpeed = makeParam(this, "instOrbitSpeed");
+			d.acceleration = makeParam(this, "instAcceleration");
+			d.worldAcceleration = makeParam(this, "instWorldAcceleration");
+			d.localOffset = makeParam(this, "instOffset");
+			d.scale = makeParam(this, "instScale");
+			d.dampen = makeParam(this, "instDampen");
+			d.maxVelocity = makeParam(this, "instMaxVelocity");
+			d.stretch = makeParam(this, "instStretch");
+			d.rotation = makeParam(this, "instRotation");
+			emitterObj.instDef = d;
 			emitterObj.particleTemplate = template;
 		}
 
