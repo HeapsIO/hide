@@ -187,7 +187,6 @@ private class ParticleInstance  {
 	var localTransform = new ParticleTransform();
 	public var absPos = new h3d.Matrix();
 	public var localMat = new h3d.Matrix();
-	public var baseMat : h3d.Matrix;
 
 	public var startTime = 0.0;
 	public var life = 0.0;
@@ -395,8 +394,8 @@ private class ParticleInstance  {
 		localMat.initScale(scaleVec.x, scaleVec.y, scaleVec.z);
 		localMat.rotate(rot.x, rot.y, rot.z);
 		localMat.translate(offset.x, offset.y, offset.z);
-		if( baseMat != null )
-			localMat.multiply(baseMat, localMat);
+		if(emitter.baseEmitMat != null)
+			localMat.multiply(emitter.baseEmitMat, localMat);
 		localTransform.setTransform(localMat);
 
 		updateAbsPos();
@@ -521,6 +520,8 @@ class EmitterObject extends h3d.scene.Object {
 	var animatedTextureShader : h3d.shader.AnimatedTexture = null;
 	var colorMultShader : h3d.shader.ColorMult = null;
 
+	var baseEmitMat : h3d.Matrix;
+
 	public function new(?parent) {
 		super(parent);
 		randomSeed = Std.random(0xFFFFFF);
@@ -611,17 +612,11 @@ class EmitterObject extends h3d.scene.Object {
 
 		var emitterQuat : h3d.Quat = null;
 		if (count > 0) {
-			var emitterBaseMat : h3d.Matrix = particleTemplate.getTransform();
-
 			for( i in 0...count ) {
 				var part = allocInstance();
 				part.init(this, instDef);
 				part.next = particles;
 				particles = part;
-
-				if (part.baseMat == null)
-					part.baseMat = new h3d.Matrix();
-				part.baseMat.load(emitterBaseMat);
 
 				part.startTime = startTime + curTime;
 				part.lifeTime = hxd.Math.max(0.01, lifeTime + random.srand(lifeTimeRand));
@@ -744,13 +739,17 @@ class EmitterObject extends h3d.scene.Object {
 		emitCount += count;
 	}
 
-	function createMeshBatch() {
+	function init() {
 
 		if( batch != null )
 			batch.remove();
 
 		if( particleTemplate == null )
 			return;
+
+		baseEmitMat = particleTemplate.getTransform();
+		if(baseEmitMat.isIdentityEpsilon(0.01))
+			baseEmitMat = null;
 
 		var template = particleTemplate.makeInstance(context);
 		var mesh = Std.downcast(template.local3d, h3d.scene.Mesh);
@@ -1520,7 +1519,7 @@ class Emitter extends Object3D {
 			emitterObj.startTime = @:privateAccess scene.renderer.ctx.time;
 		#end
 
-		emitterObj.createMeshBatch();
+		emitterObj.init();
 		emitterObj.reset();
 		refreshChildren(ctx);
 
