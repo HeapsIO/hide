@@ -8,6 +8,7 @@ enum Value {
 	VCurveScale(c: Curve, scale: Float);
 	VRandom(idx: Int, scale: Value);
 	VRandomScale(idx: Int, scale: Float);
+	VAddRandCurve(cst: Float, ridx: Int, rscale: Float, c: Curve);
 	VAdd(a: Value, b: Value);
 	VMult(a: Value, b: Value);
 	VVector(x: Value, y: Value, z: Value, ?w: Value);

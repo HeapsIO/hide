@@ -198,7 +198,7 @@ private class ParticleInstance  {
 	public var distToCam = 0.0;
 	public var random : Float;
 
-	public var orientation = new h3d.Quat();
+	public var orientMat = new h3d.Matrix();
 
 	public var def : InstanceDef;
 
@@ -212,7 +212,7 @@ private class ParticleInstance  {
 		lifeTime = 0;
 		startFrame = 0;
 		speedAccumulation.set(0,0,0);
-		orientation.identity();
+		//orientation.identity();
 		random = emitter.random.rand();
 
 		switch(emitter.simulationSpace){
@@ -227,8 +227,8 @@ private class ParticleInstance  {
 			this.evaluator = new Evaluator(emitter.random);
 		else
 			@:privateAccess this.evaluator.random = emitter.random;
-		
-		evaluator.vecPool = this.emitter.vecPool;
+
+		//evaluator.vecPool = this.emitter.vecPool;
 	}
 
 	public function dispose() {
@@ -290,7 +290,7 @@ private class ParticleInstance  {
 		if( life == 0 ) {
 			// START LOCAL SPEED
 			evaluator.getVector(def.startSpeed, 0.0, tmpSpeedAccumulation);
-			tmpSpeedAccumulation.transform3x3(orientation.toMatrix(tmpMat));
+			tmpSpeedAccumulation.transform3x3(orientMat);
 			add(speedAccumulation, tmpSpeedAccumulation);
 			// START WORLD SPEED
 			evaluator.getVector(def.startWorldSpeed, 0.0, tmpSpeedAccumulation);
@@ -302,7 +302,7 @@ private class ParticleInstance  {
 		if(def.acceleration != VZero) {
 			evaluator.getVector(def.acceleration, t, tmpSpeedAccumulation);
 			tmpSpeedAccumulation.scale3(dt);
-			tmpSpeedAccumulation.transform3x3(orientation.toMatrix(tmpMat));
+			tmpSpeedAccumulation.transform3x3(orientMat);
 			add(speedAccumulation, tmpSpeedAccumulation);
 		}
 
@@ -320,7 +320,7 @@ private class ParticleInstance  {
 		// SPEED
 		if(def.localSpeed != VZero) {
 			evaluator.getVector(def.localSpeed, t, tmpLocalSpeed);
-			tmpLocalSpeed.transform3x3(orientation.toMatrix(tmpMat));
+			tmpLocalSpeed.transform3x3(orientMat);
 			add(tmpSpeed, tmpLocalSpeed);
 		}
 
@@ -515,7 +515,7 @@ class EmitterObject extends h3d.scene.Object {
 	var emitTarget = 0.0;
 	var curTime = 0.0;
 	var evaluator : Evaluator;
-	var vecPool = new Evaluator.VecPool();
+	//var vecPool = new Evaluator.VecPool();
 	var numInstances = 0;
 	var baseEmitterShader : hrt.shader.BaseEmitter = null;
 	var animatedTextureShader : h3d.shader.AnimatedTexture = null;
@@ -526,7 +526,7 @@ class EmitterObject extends h3d.scene.Object {
 		randomSeed = Std.random(0xFFFFFF);
 		random = new hxd.Rand(randomSeed);
 		evaluator = new Evaluator(random);
-		evaluator.vecPool = vecPool;
+		//evaluator.vecPool = vecPool;
 		reset();
 	}
 
@@ -612,20 +612,20 @@ class EmitterObject extends h3d.scene.Object {
 		var emitterQuat : h3d.Quat = null;
 		if (count > 0) {
 			var emitterBaseMat : h3d.Matrix = particleTemplate.getTransform();
-			
+
 			for( i in 0...count ) {
 				var part = allocInstance();
 				part.init(this, instDef);
 				part.next = particles;
 				particles = part;
-				
+
 				if (part.baseMat == null)
 					part.baseMat = new h3d.Matrix();
 				part.baseMat.load(emitterBaseMat);
-	
+
 				part.startTime = startTime + curTime;
 				part.lifeTime = hxd.Math.max(0.01, lifeTime + random.srand(lifeTimeRand));
-	
+
 				if(useRandomColor) {
 					if (useRandomGradient) {
 						part.colorMult = Gradient.evalData(randomGradient, random.rand());
@@ -636,9 +636,9 @@ class EmitterObject extends h3d.scene.Object {
 						part.colorMult = col;
 					}
 				}
-	
+
 				tmpQuat.identity();
-	
+
 				switch( emitShape ) {
 					case Box:
 						tmpOffset.set(random.srand(0.5), random.srand(0.5), random.srand(0.5));
@@ -687,10 +687,10 @@ class EmitterObject extends h3d.scene.Object {
 						tmpDir.normalizeFast();
 						tmpQuat.initDirection(tmpDir);
 				}
-	
+
 				if( emitOrientation == Random )
 					tmpQuat.initRotation(hxd.Math.srand(Math.PI), hxd.Math.srand(Math.PI), hxd.Math.srand(Math.PI));
-	
+
 				switch( simulationSpace ) {
 					case Local:
 						if(emitterQuat == null) {
@@ -701,12 +701,12 @@ class EmitterObject extends h3d.scene.Object {
 							tmpMat2.invert();
 							tmpMat.multiply(tmpMat, tmpMat2);
 						}
-	
+
 						tmpOffset.transform(tmpMat);
 						part.transform.setPosition(tmpOffset.x, tmpOffset.y, tmpOffset.z);
 						tmpQuat.multiply(emitterQuat, tmpQuat);
 						part.transform.setRotation(tmpQuat);
-						part.orientation.load(tmpQuat);
+						part.orientMat.load(tmpQuat.toMatrix());
 					case World:
 						tmpPt.set(tmpOffset.x, tmpOffset.y, tmpOffset.z);
 						localToGlobal(tmpPt);
@@ -719,14 +719,13 @@ class EmitterObject extends h3d.scene.Object {
 						emitterQuat.normalize();
 						tmpQuat.multiply(tmpQuat, emitterQuat);
 						part.transform.setRotation(tmpQuat);
-						part.orientation.load(tmpQuat);
+						part.orientMat.load(tmpQuat.toMatrix());
 						part.transform.setScale(worldScale.x, worldScale.y, worldScale.z);
 				}
-	
 				var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
 				if(animationLoop)
 					part.startFrame = random.random(frameCount);
-	
+
 				if( trailTemplate != null ) {
 					if( tmpCtx == null ) {
 						tmpCtx = new hrt.prefab.Context();
@@ -782,9 +781,9 @@ class EmitterObject extends h3d.scene.Object {
 				if( shCtx == null ) continue;
 				hrt.prefab.fx.BaseFX.getShaderAnims(template, shader, shaderAnims);
 			}
-			for(s in shaderAnims) {
-				s.vecPool = vecPool;
-			}
+			// for(s in shaderAnims) {
+			// 	s.vecPool = vecPool;
+			// }
 
 			// Animated textures animations
 			var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
@@ -873,7 +872,7 @@ class EmitterObject extends h3d.scene.Object {
 			invTransform.load(parent.getInvPos());
 		}
 
-		vecPool.begin();
+		//vecPool.begin();
 
 		if( enable ) {
 			switch emitType {
@@ -1354,8 +1353,24 @@ class Emitter extends Object3D {
 							case VConst(vb): return VCurveScale(ca, vb);
 							default:
 						}
+					case VRandomScale(ri,rscale):
+						switch b {
+							case VCurve(vb): return VAddRandCurve(0, ri, rscale, vb);
+							default:
+						}
+					case VAdd(va,VRandomScale(ri,rscale)):
+						var av = switch (va) {
+							case VConst(v): v;
+							case VOne: 1.0;
+							default: throw "Unsupported";
+						}
+						switch b {
+							case VCurve(vb): return VAddRandCurve(av, ri, rscale, vb);
+							default:
+						}
 					default:
 				}
+				throw "Need optimization" + Std.string(a)+ " * " + Std.string(b);
 				return VMult(a, b);
 			}
 
@@ -1545,7 +1560,7 @@ class Emitter extends Object3D {
 				"alignMode",
 				"useCollision",
 				"emitType",
-				"useRandomColor", 
+				"useRandomColor",
 				"useRandomGradient"].indexOf(pname) >= 0)
 				refresh();
 		}
@@ -1585,7 +1600,7 @@ class Emitter extends Object3D {
 		else {
 			if (getParamVal("useRandomGradient")){
 				removeParam("randomColor1");
-				removeParam("randomColor2");	
+				removeParam("randomColor2");
 			} else {
 				removeParam("randomGradient");
 			}
@@ -1648,7 +1663,7 @@ class Emitter extends Object3D {
 				for (p in params) {
 					var dt = new Element('<dt>${p.disp != null ? p.disp : p.name}</dt>').appendTo(dl);
 					var dd = new Element('<dd>').appendTo(dl);
-	
+
 					function addUndo(pname: String) {
 						ctx.properties.undo.change(Field(this.props, pname, Reflect.field(this.props, pname)), function() {
 							if(Reflect.field(this.props, pname) == null)
@@ -1656,7 +1671,7 @@ class Emitter extends Object3D {
 							refresh();
 						});
 					}
-	
+
 					if(Reflect.hasField(this.props, p.name)) {
 						hide.comp.PropsEditor.makePropEl(p, dd);
 						dt.contextmenu(function(e) {

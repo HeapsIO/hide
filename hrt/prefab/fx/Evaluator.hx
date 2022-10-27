@@ -1,38 +1,46 @@
 package hrt.prefab.fx;
 
-class VecPool {
-	var vecPool : Array<h3d.Vector> = null;
-	var vecPoolSize = 0;
+// class VecPool {
+// 	var vecPool : Array<h3d.Vector> = null;
+// 	var vecPoolSize = 0;
 
-	public function new() { }
+// 	public function new() { }
 
-	public function begin() {
-		if(vecPool == null)
-			vecPool = [];
-		vecPoolSize = 0;
-	}
+// 	public function begin() {
+// 		if(vecPool == null)
+// 			vecPool = [];
+// 		vecPoolSize = 0;
+// 	}
 
-	public function get() {
-		var vec = null;
-		if(vecPoolSize < vecPool.length)
-			vec = vecPool[vecPoolSize++];
-		else {
-			vec = new h3d.Vector();
-			vecPool.push(vec);
-		}
-		return vec;
-	}
-}
+// 	public function get() {
+// 		var vec = null;
+// 		if(vecPoolSize < vecPool.length)
+// 			vec = vecPool[vecPoolSize++];
+// 		else {
+// 			vec = new h3d.Vector();
+// 			vecPool.push(vec);
+// 		}
+// 		return vec;
+// 	}
+// }
 
 class Evaluator {
 	var randValues : Array<Float> = [];
 	var random: hxd.Rand;
-	public var vecPool : VecPool;
+	// public var vecPool : VecPool;
 
 	public function new(random: hxd.Rand) {
 		this.random = random;
 	}
 
+	inline function getRandom(idx) {
+		var len = randValues.length;
+		while(idx >= len) {
+			randValues.push(random.srand());
+			++len;
+		}
+		return randValues[idx];
+	}
 	public function getFloat(val: Value, time: Float) : Float {
 		if(val == null)
 			return 0.0;
@@ -43,19 +51,11 @@ class Evaluator {
 			case VCurve(c): return c.getVal(time);
 			case VCurveScale(c, scale): return c.getVal(time) * scale;
 			case VRandom(idx, scale):
-				var len = randValues.length;
-				while(idx >= len) {
-					randValues.push(random.srand());
-					++len;
-				}
-				return randValues[idx] * getFloat(scale, time);
+				return getRandom(idx) * getFloat(scale, time);
 			case VRandomScale(idx, scale):
-				var len = randValues.length;
-				while(idx >= len) {
-					randValues.push(random.srand());
-					++len;
-				}
-				return randValues[idx] * scale;
+				return getRandom(idx) * scale;
+			case VAddRandCurve(cst, ridx, rscale, c):
+				return (cst + getRandom(ridx) * rscale) * c.getVal(time);
 			case VMult(a, b):
 				return getFloat(a, time) * getFloat(b, time);
 			case VAdd(a, b):
@@ -81,14 +81,13 @@ class Evaluator {
 		return 0.0;
 	}
 
-	public function getVector(v: Value, time: Float, ?vec: h3d.Vector) : h3d.Vector {
-		if(vec == null)
-			vec = vecPool != null ? vecPool.get() : new h3d.Vector();
+	public function getVector(v: Value, time: Float, vec: h3d.Vector) {
 		switch(v) {
 			case VMult(a, b):
-				var av = getVector(a, time);
-				var bv = getVector(b, time);
-				vec.set(av.x * bv.x, av.y * bv.y, av.z * bv.z, av.w * bv.w);
+				throw "need optimization";
+				// var av = getVector(a, time);
+				// var bv = getVector(b, time);
+				// vec.set(av.x * bv.x, av.y * bv.y, av.z * bv.z, av.w * bv.w);
 			case VVector(x, y, z, null):
 				vec.set(getFloat(x, time), getFloat(y, time), getFloat(z, time), 1.0);
 			case VVector(x, y, z, w):
