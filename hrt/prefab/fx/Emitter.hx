@@ -89,23 +89,20 @@ private class ParticleInstance  {
 
 	public var absPos = new h3d.Matrix();  // Needed for sortZ
 	public var emitOrientation = new h3d.Matrix();
+	public var speedAccumulation = new h3d.Vector();
+	public var colorMult : h3d.Vector;  // TODO: Could be recalc using this.random
 
-	public var startTime = 0.0;
 	public var life = 0.0;
 	public var lifeTime = 0.0;
-	public var startFrame : Int;
-	public var speedAccumulation = new h3d.Vector();
-	public var colorMult : h3d.Vector;
-	public var distToCam = 0.0;
 	public var random : Float;
-	public var transformParent : h3d.scene.Object; // Shared, should precalc parentTransform from EmitterObj once instead of .getAbsPos()
-
-	public var def : InstanceDef;
+	public var distToCam = 0.0;
+	public var startTime = 0.0;
+	public var startFrame : Int;
 
 	public function new() {
 	}
 
-	public function init(emitter: EmitterObject, def: InstanceDef) {
+	public function init(emitter: EmitterObject) {
 		x = 0.0;
 		y = 0.0;
 		z = 0.0;
@@ -118,21 +115,11 @@ private class ParticleInstance  {
 		speedAccumulation.set(0,0,0);
 		random = emitter.random.rand();
 
-		switch(emitter.simulationSpace){
-			// TODO TOMR: move to EmitterObj
-			// Particles in Local are spawned next to emitter in the scene tree,
-			// so emitter shape can be transformed (especially scaled) without affecting children
-			case Local : transformParent = emitter.parent;
-			case World : transformParent = emitter.getScene();
-		}
-		this.def = def;
 		this.emitter = emitter;
 		if (this.evaluator == null)
 			this.evaluator = new Evaluator(emitter.random);
 		else
 			@:privateAccess this.evaluator.random = emitter.random;
-
-		//evaluator.vecPool = this.emitter.vecPool;
 	}
 
 	public function dispose() {
@@ -209,13 +196,14 @@ private class ParticleInstance  {
 		absPos._41 = x;
 		absPos._42 = y;
 		absPos._43 = z;
-		absPos.multiply3x4inline(absPos, transformParent.getAbsPos());
+		absPos.multiply3x4inline(absPos, emitter.parentTransform);
 
 		var localMat = tmpMat;
 
 		var t = hxd.Math.clamp(life / lifeTime, 0.0, 1.0);
 
 		//SCALE
+		var def = emitter.instDef;
 		var scaleVec = evaluator.getVector(def.stretch, t, tmpScale);
 		scaleVec.scale3(evaluator.getFloat(def.scale, t));
 		localMat.initScale(scaleVec.x, scaleVec.y, scaleVec.z);
@@ -242,6 +230,8 @@ private class ParticleInstance  {
 	public function update( dt : Float ) {
 		var t = hxd.Math.clamp(life / lifeTime, 0.0, 1.0);
 		tmpSpeed.set(0,0,0);
+
+		var def = emitter.instDef;
 
 		if( life == 0 ) {
 			// START LOCAL SPEED
@@ -319,7 +309,7 @@ private class ParticleInstance  {
 			evaluator.getVector(def.orbitSpeed, t, tmpLocalSpeed);
 			tmpMat.initRotation(tmpLocalSpeed.x * dt, tmpLocalSpeed.y * dt, tmpLocalSpeed.z * dt);
 			// Rotate in emitter space and convert back to world space
-			var parentAbsPos = transformParent.getAbsPos();
+			var parentAbsPos = emitter.parentTransform;
 			var prevPos = getPosition();
 			var pos = prevPos.add(parentAbsPos.getPosition());
 			pos.transform3x4(emitter.getInvPos());
@@ -431,6 +421,7 @@ class EmitterObject extends h3d.scene.Object {
 	var animatedTextureShader : h3d.shader.AnimatedTexture = null;
 	var colorMultShader : h3d.shader.ColorMult = null;
 
+	var parentTransform = new h3d.Matrix();  // TODO TOMR: This could probably be null in simulation space World
 	var baseEmitMat : h3d.Matrix;
 
 	public function new(?parent) {
@@ -512,7 +503,7 @@ class EmitterObject extends h3d.scene.Object {
 		if (count > 0) {
 			for( i in 0...count ) {
 				var part = allocInstance();
-				part.init(this, instDef);
+				part.init(this);
 				part.next = particles;
 				particles = part;
 
@@ -902,6 +893,16 @@ class EmitterObject extends h3d.scene.Object {
 	}
 
 	function updateParticles(full: Bool, dt: Float) {
+
+		switch(simulationSpace){
+			// Particles in Local are spawned next to emitter in the scene tree,
+			// so emitter shape can be transformed (especially scaled) without affecting children
+			case Local : parentTransform.load(parent.getAbsPos());
+			case World : parentTransform.load(getScene().getAbsPos());
+
+			// TODO TOMR: set to null if identity ?
+		}
+
 		var p = particles;
 		var prev : ParticleInstance = null;
 		var camPos = getScene().camera.pos;
