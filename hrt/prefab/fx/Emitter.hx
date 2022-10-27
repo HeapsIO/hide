@@ -87,8 +87,7 @@ private class ParticleInstance  {
 	public var scaleY = 1.0;
 	public var scaleZ = 1.0;
 
-	public var absPos = new h3d.Matrix();
-	public var localMat = new h3d.Matrix();
+	public var absPos = new h3d.Matrix();  // Needed for sortZ
 	public var emitOrientation = new h3d.Matrix();
 
 	public var startTime = 0.0;
@@ -193,6 +192,8 @@ private class ParticleInstance  {
 			case Screen|Axis:
 				qRot.load(emitter.screenQuat);
 			default:
+				if(emitter.emitOrientation == Speed && tmpSpeed.lengthSq() > 0.01)
+					qRot.initDirection(tmpSpeed);
 		}
 
 		qRot.toMatrix(absPos);
@@ -209,6 +210,32 @@ private class ParticleInstance  {
 		absPos._42 = y;
 		absPos._43 = z;
 		absPos.multiply3x4inline(absPos, transformParent.getAbsPos());
+
+		var localMat = tmpMat;
+
+		var t = hxd.Math.clamp(life / lifeTime, 0.0, 1.0);
+
+		//SCALE
+		var scaleVec = evaluator.getVector(def.stretch, t, tmpScale);
+		scaleVec.scale3(evaluator.getFloat(def.scale, t));
+		localMat.initScale(scaleVec.x, scaleVec.y, scaleVec.z);
+
+		// ROTATION
+		if(def.rotation != VZero) {
+			var rot = evaluator.getVector(def.rotation, t, tmpRot);
+			rot.scale3(Math.PI / 180.0);
+			localMat.rotate(rot.x, rot.y, rot.z);
+		}
+
+		//OFFSET
+		if(def.localOffset != VZero) {
+			var offset = evaluator.getVector(def.localOffset, t, tmpOffset);
+			localMat.translate(offset.x, offset.y, offset.z);  // TODO TOMR: just translate tx, ty, tz ?
+		}
+
+		if(emitter.baseEmitMat != null)
+			localMat.multiply(emitter.baseEmitMat, localMat);
+
 		absPos.multiply(localMat, absPos);
 	}
 
@@ -307,54 +334,6 @@ private class ParticleInstance  {
 			delta.scale(1 / dt);
 			add(tmpSpeed, delta);
 		}
-
-		// SPEED ORIENTATION
-		if(emitter.emitOrientation == Speed && tmpSpeed.lengthSq() > 0.01)
-			qRot.initDirection(tmpSpeed);
-
-		// ROTATION
-		var rot = evaluator.getVector(def.rotation, t, tmpRot);
-		rot.scale3(Math.PI / 180.0);
-
-		//OFFSET
-		var offset = evaluator.getVector(def.localOffset, t, tmpOffset);
-
-		//SCALE
-		var scaleVec = evaluator.getVector(def.stretch, t, tmpScale);
-		scaleVec.scale3(evaluator.getFloat(def.scale, t));
-
-		// TRANSFORM
-		localMat.initScale(scaleVec.x, scaleVec.y, scaleVec.z);
-		localMat.rotate(rot.x, rot.y, rot.z);
-		localMat.translate(offset.x, offset.y, offset.z);
-		if(emitter.baseEmitMat != null)
-			localMat.multiply(emitter.baseEmitMat, localMat);
-		// localTransform.setTransform(localMat);
-
-		updateAbsPos();
-
-		// COLLISION
-		/*
-		if( emitter.useCollision ) {
-			var worldPos = absPos.getPosition();
-			if( worldPos.z < 0 ) {
-				if( emitter.killOnCollision == 1 || hxd.Math.random() < emitter.killOnCollision ) {
-					life = lifeTime + 1; // No survivor
-				}
-				else {
-					var speedAmount = speedAccumulation.length();
-					speedAccumulation.normalize();
-					var newDir = speedAccumulation.reflect(tmpGroundNormal);
-					newDir.scale3(emitter.elasticity);
-					newDir.scale3(speedAmount);
-					speedAccumulation.set(newDir.x, newDir.y, newDir.z);
-					transform.z = 0;
-					absPos.multiply(localTransform.absPos, transform.absPos);
-				}
-			}
-		}*/
-
-		life += dt;
 	}
 }
 
@@ -829,7 +808,7 @@ class EmitterObject extends h3d.scene.Object {
 		if( full )
 			updateAlignment();
 
-		updateParticles(dt);
+		updateParticles(full, dt);
 
 		if( full )
 			updateMeshBatch();
@@ -922,7 +901,7 @@ class EmitterObject extends h3d.scene.Object {
 		}
 	}
 
-	function updateParticles(dt: Float) {
+	function updateParticles(full: Bool, dt: Float) {
 		var p = particles;
 		var prev : ParticleInstance = null;
 		var camPos = getScene().camera.pos;
@@ -954,9 +933,12 @@ class EmitterObject extends h3d.scene.Object {
 			}
 			else {
 				p.update(dt);
-				if(p.distToCam < 0 || enableSort) {
-					p.distToCam = camPos.distanceSq(p.absPos.getPosition());
+				if(full) {
+					p.updateAbsPos();
+					if(p.distToCam < 0 || enableSort)
+						p.distToCam = camPos.distanceSq(p.absPos.getPosition());
 				}
+				p.life += dt;  // After updateAbsPos(), which uses current life
 				prev = p;
 			}
 			p = next;
