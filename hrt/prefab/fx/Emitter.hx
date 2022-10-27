@@ -78,8 +78,13 @@ typedef EmitterTrail = {
 
 typedef ShaderAnims = Array<ShaderAnimation>;
 
-private class ParticleTransform {
-	//  var absPos = new h3d.Matrix();
+@:allow(hrt.prefab.fx.EmitterObject)
+private class ParticleInstance  {
+	public var next : ParticleInstance;
+
+	var emitter : EmitterObject;
+	var evaluator : Evaluator;
+
 	public var qRot = new h3d.Quat();
 	public var x = 0.0;
 	public var y = 0.0;
@@ -88,96 +93,6 @@ private class ParticleTransform {
 	public var scaleY = 1.0;
 	public var scaleZ = 1.0;
 
-	public function new() {	}
-
-	public function reset() {
-		x = 0.0;
-		y = 0.0;
-		z = 0.0;
-		scaleX = 1.0;
-		scaleY = 1.0;
-		scaleZ = 1.0;
-	}
-
-	public inline function getPosition() {
-		return new h3d.Vector(x, y, z);
-	}
-
-	public inline function setPosition( x, y, z ) {
-		this.x = x;
-		this.y = y;
-		this.z = z;
-	}
-
-	public inline function transform3x3( m : h3d.Matrix ) {
-		var px = x * m._11 + y * m._21 + z * m._31;
-		var py = x * m._12 + y * m._22 + z * m._32;
-		var pz = x * m._13 + y * m._23 + z * m._33;
-		x = px;
-		y = py;
-		z = pz;
-	}
-
-	public inline function setScale( x, y, z ) {
-		this.scaleX = x;
-		this.scaleY = y;
-		this.scaleZ = z;
-	}
-
-	// public inline function getWorldPosition() {
-	// 	var ppos = parent.getAbsPos();
-	// 	return new h3d.Vector(x + ppos.tx, y + ppos.ty, z + ppos.tz);
-	// }
-
-	// public inline function setWorldPosition(v: h3d.Vector) {
-	// 	var ppos = parent.getAbsPos();
-	// 	x = v.x - ppos.tx;
-	// 	y = v.y - ppos.ty;
-	// 	z = v.z - ppos.tz;
-	// }
-
-
-	public function calcAbsPos(absPos: h3d.Matrix) {
-		qRot.toMatrix(absPos);
-		absPos._11 *= scaleX;
-		absPos._12 *= scaleX;
-		absPos._13 *= scaleX;
-		absPos._21 *= scaleY;
-		absPos._22 *= scaleY;
-		absPos._23 *= scaleY;
-		absPos._31 *= scaleZ;
-		absPos._32 *= scaleZ;
-		absPos._33 *= scaleZ;
-		absPos._41 = x;
-		absPos._42 = y;
-		absPos._43 = z;
-		// if( parent != null )
-		// 	absPos.multiply3x4inline(absPos, parent.getAbsPos());
-	}
-
-	static var tmpMat = new h3d.Matrix();
-	public function setTransform( mat : h3d.Matrix ) {
-		var s = mat.getScale();
-		this.x = mat.tx;
-		this.y = mat.ty;
-		this.z = mat.tz;
-		this.scaleX = s.x;
-		this.scaleY = s.y;
-		this.scaleZ = s.z;
-		tmpMat.load(mat);
-		tmpMat.prependScale(1.0 / s.x, 1.0 / s.y, 1.0 / s.z);
-		qRot.initRotateMatrix(tmpMat);
-	}
-}
-
-@:allow(hrt.prefab.fx.EmitterObject)
-private class ParticleInstance  {
-	public var next : ParticleInstance;
-
-	var emitter : EmitterObject;
-	var evaluator : Evaluator;
-
-	var transform = new ParticleTransform();
 	public var absPos = new h3d.Matrix();
 	public var localMat = new h3d.Matrix();
 	public var emitOrientation = new h3d.Matrix();
@@ -198,7 +113,12 @@ private class ParticleInstance  {
 	}
 
 	public function init(emitter: EmitterObject, def: InstanceDef) {
-		transform.reset();
+		x = 0.0;
+		y = 0.0;
+		z = 0.0;
+		scaleX = 1.0;
+		scaleY = 1.0;
+		scaleZ = 1.0;
 		life = 0;
 		lifeTime = 0;
 		startFrame = 0;
@@ -261,14 +181,39 @@ private class ParticleInstance  {
 		v1.w = 1.0;
 	}
 
+	public inline function getPosition() { return new h3d.Vector(x,y,z); }
+	public inline function setPosition(x, y, z) {
+		this.x = x;
+		this.y = y;
+		this.z = z;
+	}
+
+	public inline function setScale( x, y, z ) {
+		scaleX = x;
+		scaleY = y;
+		scaleZ = z;
+	}
+
 	public function updateAbsPos() {
 		switch( emitter.alignMode ) {
 			case Screen|Axis:
-				transform.qRot.load(emitter.screenQuat);
+				qRot.load(emitter.screenQuat);
 			default:
 		}
 
-		transform.calcAbsPos(absPos);
+		qRot.toMatrix(absPos);
+		absPos._11 *= scaleX;
+		absPos._12 *= scaleX;
+		absPos._13 *= scaleX;
+		absPos._21 *= scaleY;
+		absPos._22 *= scaleY;
+		absPos._23 *= scaleY;
+		absPos._31 *= scaleZ;
+		absPos._32 *= scaleZ;
+		absPos._33 *= scaleZ;
+		absPos._41 = x;
+		absPos._42 = y;
+		absPos._43 = z;
 		absPos.multiply3x4inline(absPos, transformParent.getAbsPos());
 		absPos.multiply(localMat, absPos);
 	}
@@ -345,35 +290,33 @@ private class ParticleInstance  {
 			tmpSpeed.z *= emitter.worldScale.z;
 		}
 
-		transform.x += tmpSpeed.x * dt;
-		transform.y += tmpSpeed.y * dt;
-		transform.z += tmpSpeed.z * dt;
+		x += tmpSpeed.x * dt;
+		y += tmpSpeed.y * dt;
+		z += tmpSpeed.z * dt;
 
 		if(def.orbitSpeed != VZero) {
 			evaluator.getVector(def.orbitSpeed, t, tmpLocalSpeed);
 			tmpMat.initRotation(tmpLocalSpeed.x * dt, tmpLocalSpeed.y * dt, tmpLocalSpeed.z * dt);
 			// Rotate in emitter space and convert back to world space
 			var parentAbsPos = transformParent.getAbsPos();
-			var pos = transform.getPosition().add(parentAbsPos.getPosition());
-			var prevPos = transform.getPosition();
+			var prevPos = getPosition();
+			var pos = prevPos.add(parentAbsPos.getPosition());
 			pos.transform3x4(emitter.getInvPos());
 			pos.transform3x3(tmpMat);
 			pos.transform3x4(emitter.getAbsPos());
-			transform.setPosition(
-				pos.x - parentAbsPos.tx,
-				pos.y - parentAbsPos.ty,
-				pos.z - parentAbsPos.tz
-			);
+			x = pos.x - parentAbsPos.tx;
+			y = pos.y - parentAbsPos.ty;
+			z = pos.z - parentAbsPos.tz;
 
 			// Take transform into account into local speed
-			var delta = transform.getPosition().sub(prevPos);
+			var delta = getPosition().sub(prevPos);
 			delta.scale(1 / dt);
 			add(tmpSpeed, delta);
 		}
 
 		// SPEED ORIENTATION
 		if(emitter.emitOrientation == Speed && tmpSpeed.lengthSq() > 0.01)
-			transform.qRot.initDirection(tmpSpeed);
+			qRot.initDirection(tmpSpeed);
 
 		// ROTATION
 		var rot = evaluator.getVector(def.rotation, t, tmpRot);
@@ -695,14 +638,14 @@ class EmitterObject extends h3d.scene.Object {
 						}
 
 						tmpOffset.transform(tmpMat);
-						part.transform.setPosition(tmpOffset.x, tmpOffset.y, tmpOffset.z);
+						part.setPosition(tmpOffset.x, tmpOffset.y, tmpOffset.z);
 						tmpQuat.multiply(emitterQuat, tmpQuat);
-						part.transform.qRot.load(tmpQuat);
+						part.qRot.load(tmpQuat);
 						part.emitOrientation.load(tmpQuat.toMatrix());
 					case World:
 						tmpPt.set(tmpOffset.x, tmpOffset.y, tmpOffset.z);
 						localToGlobal(tmpPt);
-						part.transform.setPosition(tmpPt.x, tmpPt.y, tmpPt.z);
+						part.setPosition(tmpPt.x, tmpPt.y, tmpPt.z);
 						emitterQuat = tmpEmitterQuat;
 						tmpMat.load(getAbsPos());
 						var s = tmpMat.getScale();
@@ -710,25 +653,13 @@ class EmitterObject extends h3d.scene.Object {
 						emitterQuat.initRotateMatrix(tmpMat);
 						emitterQuat.normalize();
 						tmpQuat.multiply(tmpQuat, emitterQuat);
-						part.transform.qRot.load(tmpQuat);
+						part.qRot.load(tmpQuat);
 						part.emitOrientation.load(tmpQuat.toMatrix());
-						part.transform.setScale(worldScale.x, worldScale.y, worldScale.z);
+						part.setScale(worldScale.x, worldScale.y, worldScale.z);
 				}
 				var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
 				if(animationLoop)
 					part.startFrame = random.random(frameCount);
-
-				if( trailTemplate != null ) {
-					if( tmpCtx == null ) {
-						tmpCtx = new hrt.prefab.Context();
-						tmpCtx.local3d = this.getScene();
-						tmpCtx.shared = context.shared;
-					}
-					tmpCtx.local3d = this.getScene();
-					var trail : h3d.scene.Trail = cast trailTemplate.make(tmpCtx).local3d;
-					trail.setTransform(part.absPos);
-					trails.push({particle: part, trail: trail, timeBeforeDeath: 0.0});
-				}
 			}
 		}
 
@@ -1050,28 +981,6 @@ class EmitterObject extends h3d.scene.Object {
 				prev = p;
 			}
 			p = next;
-		}
-
-		// TRAIL
-		var i = 0;
-		while( i < trails.length ) {
-			var emitterTrail = trails[i];
-			var trail = emitterTrail.trail;
-			var particle = emitterTrail.particle;
-			if( particle != null ) {
-				trail.setTransform(particle.absPos);
-				i++;
-			}
-			else {
-				emitterTrail.timeBeforeDeath += dt;
-				if( emitterTrail.timeBeforeDeath > trail.duration ) {
-					trail.remove();
-					trails[i] = trails[trails.length - 1];
-					trails.pop();
-				}
-				else
-					i++;
-			}
 		}
 	}
 
