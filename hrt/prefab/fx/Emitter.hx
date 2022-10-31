@@ -76,8 +76,6 @@ typedef Single = Float;
 @:allow(hrt.prefab.fx.EmitterObject) 
 @:struct
 private class ParticleInstance  {
-	var emitter : EmitterObject;
-
 	public var x : Single;
 	public var y : Single;
 	public var z : Single;
@@ -98,12 +96,35 @@ private class ParticleInstance  {
 	public var random : Single;
 	public var distToCam : Single;
 	public var startTime : Single;
-	public var allocated : Bool;
+	//public var allocated : Bool;
 
-	public function new() {
+	public function new() { }
+
+	public function load(p: ParticleInstance) {
+		x = p.x;
+		y = p.y;
+		z = p.z;
+		scaleX = p.scaleX;
+		scaleY = p.scaleY;
+		scaleZ = p.scaleZ;
+
+		speedAccumulation.loadVector(p.speedAccumulation.toVector());
+		qRot.loadVector(p.qRot.toVector());
+		absPos.load(p.absPos.toMatrix());
+		emitOrientation.load(p.emitOrientation.toMatrix());
+
+		colorMult = p.colorMult;
+		idx = p.idx;
+		startFrame = p.startFrame;
+		life = p.life;
+		lifeTime = p.lifeTime;
+		random = p.random;
+		distToCam = p.distToCam;
+		startTime = p.startTime;
+		//allocated = p.allocated;
 	}
 
-	public function init(emitter: EmitterObject) {
+	public function init(idx: Int, emitter: EmitterObject) {
 		x = 0.0;
 		y = 0.0;
 		z = 0.0;
@@ -112,19 +133,13 @@ private class ParticleInstance  {
 		scaleZ = 1.0;
 
 		colorMult = -1;
+		this.idx = idx;
 		speedAccumulation.loadVector(new h3d.Vector());
 		life = 0;
 		lifeTime = 0;
 		startFrame = 0;
 		random = emitter.random.rand();
-		allocated = true;
-		this.emitter = emitter;
-	}
-
-	public function dispose() {
-		emitter = null;
-		if(!allocated) throw "assert";
-		allocated = false;
+		//allocated = true;
 	}
 
 	static var tmpRot = new h3d.Vector();
@@ -176,7 +191,7 @@ private class ParticleInstance  {
 		scaleZ = z;
 	}
 
-	public function updateAbsPos() {
+	public function updateAbsPos(emitter: EmitterObject) {
 		var qRot = qRot.toQuat();
 
 		switch( emitter.alignMode ) {
@@ -210,7 +225,7 @@ private class ParticleInstance  {
 		//SCALE
 		var def = emitter.instDef;
 		var scaleVec = evaluator.getVector(idx, def.stretch, t, tmpScale);
-		scaleVec.scale3(evaluator.getFloat(idx, def.scale, t));  // TODO TOMR OPTIM ?
+		scaleVec.scale3(evaluator.getFloat(idx, def.scale, t));
 		localMat.initScale(scaleVec.x, scaleVec.y, scaleVec.z);
 
 		// ROTATION
@@ -223,7 +238,9 @@ private class ParticleInstance  {
 		//OFFSET
 		if(def.localOffset != VZero) {
 			var offset = evaluator.getVector(idx, def.localOffset, t, tmpOffset);
-			localMat.translate(offset.x, offset.y, offset.z);  // TODO TOMR: just translate tx, ty, tz ?
+			localMat.tx += offset.x;
+			localMat.ty += offset.y;
+			localMat.tz += offset.z;
 		}
 
 		if(emitter.baseEmitMat != null)
@@ -233,7 +250,7 @@ private class ParticleInstance  {
 		this.absPos.load(absPos);
 	}
 
-	public function update( dt : Float ) {
+	public function update(emitter : EmitterObject, dt : Float) {
 		var t = hxd.Math.clamp(life / lifeTime, 0.0, 1.0);
 		tmpSpeed.set(0,0,0);
 
@@ -425,15 +442,14 @@ class EmitterObject extends h3d.scene.Object {
 	var emitTarget = 0.0;
 	var curTime = 0.0;
 	var evaluator : Evaluator;
-	//var vecPool = new Evaluator.VecPool();
 	var numInstances = 0;
+	var instanceCounter = 0;
 	var baseEmitterShader : hrt.shader.BaseEmitter = null;
 	var animatedTextureShader : h3d.shader.AnimatedTexture = null;
 	var colorMultShader : h3d.shader.ColorMult = null;
 
-	var parentTransform = new h3d.Matrix();  // TODO TOMR: This could probably be null in simulation space World
+	var parentTransform = new h3d.Matrix();
 	var baseEmitMat : h3d.Matrix;
-	var freeList = new Array<Int>();
 	var randomValues : Array<Float>;
 	var randSlots : Int;
 
@@ -454,21 +470,9 @@ class EmitterObject extends h3d.scene.Object {
 		randomValues = [for(i in 0...(maxCount * randSlots)) random.srand()];
 		evaluator = new Evaluator(randomValues, randSlots);
 
-		if(particles != null) {
-			for(p in particles) 
-				if(p.allocated)
-					disposeInstance(p);
-		}
-
 		particles = hl.CArray.alloc(ParticleInstance, maxCount);
-		for(i in 0...particles.length) {
-			particles[i].idx = i;
-		};
-		freeList = [for(i in 0...maxCount) i];
-
-		for( s in subEmitters ) {
+		for( s in subEmitters )
 			s.remove();
-		}
 		subEmitters = [];
 	}
 
@@ -478,26 +482,22 @@ class EmitterObject extends h3d.scene.Object {
 	}
 
 	function allocInstance() {
-		++numInstances;
-		if(freeList.length == 0)
-			throw "assert";
-		var idx = freeList.pop();
-		var p = particles[idx];
-		if(p.allocated) throw "assert";
-		p.init(this);
+		if(numInstances >= maxCount) throw "assert";
+		var p = particles[numInstances++];
+		p.init(instanceCounter, this);
+		instanceCounter = (instanceCounter + 1) % maxCount;
 		return p;
 	}
 
-	var tmpCtx : hrt.prefab.Context;
-	// TODO TOMR: maybe pass index here and remove idx
-	function disposeInstance(p: ParticleInstance) {
-		freeList.push(p.idx);
-		p.dispose();
+	function disposeInstance(idx: Int) {
 		--numInstances;
 		if(numInstances < 0)
 			throw "assert";
+		particles[idx].load(particles[numInstances]);
 	}
 
+	var tmpCtx : hrt.prefab.Context;
+	static var tmpPart = new ParticleInstance();
 	static var tmpQuat = new h3d.Quat();
 	static var tmpEmitterQuat = new h3d.Quat();
 	static var tmpOffset = new h3d.Vector();
@@ -672,9 +672,6 @@ class EmitterObject extends h3d.scene.Object {
 				if( shCtx == null ) continue;
 				hrt.prefab.fx.BaseFX.getShaderAnims(template, shader, shaderAnims);
 			}
-			// for(s in shaderAnims) {
-			// 	s.vecPool = vecPool;
-			// }
 
 			// Animated textures animations
 			var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
@@ -701,19 +698,8 @@ class EmitterObject extends h3d.scene.Object {
 				batch.calcBounds = false;
 			}
 
-			/*trace("Shaders for " + this.name);
-			@:privateAccess var shaderEntry = mesh.material.mainPass.shaders;
-			while(shaderEntry != null) {
-				trace(shaderEntry.s);
-				shaderEntry = shaderEntry.next;
-			}*/
-
 			template.local3d.remove();
 		}
-	}
-
-	static function sortZ( p1 : ParticleInstance, p2 : ParticleInstance ) : Int {
-		return p1.distToCam < p2.distToCam ? 1 : -1;
 	}
 
 	// No-alloc version of h3d.Matrix.getEulerAngles()
@@ -878,16 +864,31 @@ class EmitterObject extends h3d.scene.Object {
 		}
 	}
 
+	function depthSort() {
+		var swapped = false;
+		var tmp = new ParticleInstance();
+		do {
+			swapped = false;
+			for (i in 0...particles.length-1) {
+				if (particles[i].distToCam < particles[i + 1].distToCam) {
+					tmp.load(particles[i]);
+					particles[i].load(particles[i + 1]);
+					particles[i + 1].load(tmp);
+					swapped = true;
+				}
+			}
+		} while (swapped);
+	}
+
 	function updateMeshBatch() {
 		if(batch == null) return;
 		batch.begin(hxd.Math.nextPOT(maxCount));
 
-		// TODO TOMR
-		/*if (enableSort)
-			particles = haxe.ds.ListSort.sortSingleLinked(particles, sortZ);
-		*/
-		for(p in particles) {
-			if(!p.allocated) continue;
+		if (enableSort)
+			depthSort();
+
+		for(i in 0...numInstances) {
+			var p = particles[i];
 			inline tmpMat.load(p.absPos.toMatrix());
 			batch.worldPosition = tmpMat;
 			for( anim in shaderAnims ) {
@@ -906,8 +907,6 @@ class EmitterObject extends h3d.scene.Object {
 			if(colorMultShader != null)
 				colorMultShader.color.setColor(p.colorMult);
 			batch.emitInstance();
-			// p = p.next;
-			// ++i;
 		}
 	}
 
@@ -918,25 +917,15 @@ class EmitterObject extends h3d.scene.Object {
 			// so emitter shape can be transformed (especially scaled) without affecting children
 			case Local : parentTransform.load(parent.getAbsPos());
 			case World : parentTransform.load(getScene().getAbsPos());
-
-			// TODO TOMR: set to null if identity ?
+			// TODO optim: set to null if identity to skip multiply in particle updates
 		}
 
-		// var p = particles;
 		var prev : ParticleInstance = null;
 		var camPos = getScene().camera.pos;
-		for(p in particles) {
-			if(!p.allocated) continue;
-
-		// while(p != null) {
-		// 	var next = p.next;
+		for(i in 0...numInstances) {
+			var p = particles[i];
 			if(p.life > p.lifeTime) {
-				// if(prev != null)
-				// 	prev.next = next;
-				// else
-				// 	particles = next;
-
-				disposeInstance(p);
+				disposeInstance(i);
 
 				// SUB EMITTER
 				if( subEmitterTemplate != null ) {
@@ -955,16 +944,15 @@ class EmitterObject extends h3d.scene.Object {
 				}
 			}
 			else {
-				p.update(dt);
+				p.update(this, dt);
 				if(full) {
-					p.updateAbsPos();
+					p.updateAbsPos(this);
 					if(p.distToCam < 0 || enableSort)
 						p.distToCam = camPos.distanceSq(p.absPos.getPosition());
 				}
 				p.life += dt;  // After updateAbsPos(), which uses current life
 				prev = p;
 			}
-			// p = next;
 		}
 	}
 
@@ -981,9 +969,9 @@ class EmitterObject extends h3d.scene.Object {
 		time = time * speedFactor + warmUpTime;
 		if(hxd.Math.abs(time - curTime) < 1e-6) {  // Time imprecisions can occur during accumulation
 			updateAlignment();
-			for(p in particles) {
-				if(!p.allocated) continue;
-				p.updateAbsPos();
+			for(i in 0...numInstances) {
+				//if(!p.allocated) throw "!";
+				particles[i].updateAbsPos(this);
 			}
 			// var p = particles;
 			// while(p != null) {
@@ -1009,9 +997,8 @@ class EmitterObject extends h3d.scene.Object {
 			emitCount = hxd.Math.ceil(evaluator.getSum(emitRate, curTime));
 
 			// Force sort after long time invisible
-			for(p in particles) {
-				p.distToCam = -1;
-			}
+			for(i in 0...numInstances)
+				particles[i].distToCam = -1;
 		}
 		#end
 
