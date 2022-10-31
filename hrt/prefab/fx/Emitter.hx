@@ -117,8 +117,7 @@ class SVector4 {
 }
 
 
-@:publicFields
-@:struct
+@:publicFields @:struct
 class SMatrix3 {
 	var _11 : Float;
 	var _12 : Float;
@@ -132,34 +131,21 @@ class SMatrix3 {
 
 	inline function toMatrix() {
 		var m = new h3d.Matrix();
-		m._11 = _11;
-		m._12 = _12;
-		m._13 = _13;
-		m._21 = _21;
-		m._22 = _22;
-		m._23 = _23;
-		m._31 = _31;
-		m._32 = _32;
-		m._33 = _33;
+		m._11 = _11; m._12 = _12; m._13 = _13;
+		m._21 = _21; m._22 = _22; m._23 = _23;
+		m._31 = _31; m._32 = _32; m._33 = _33;
 		return m;
 	}
 
 	inline function load(m : h3d.Matrix) {
-		_11 = m._11;
-		_12 = m._12;
-		_13 = m._13;
-		_21 = m._21;
-		_22 = m._22;
-		_23 = m._23;
-		_31 = m._31;
-		_32 = m._32;
-		_33 = m._33;
+		_11 = m._11; _12 = m._12; _13 = m._13;
+		_21 = m._21; _22 = m._22; _23 = m._23;
+		_31 = m._31; _32 = m._32; _33 = m._33;
 	}
 }
 
 
-@:publicFields
-@:struct
+@:publicFields @:struct
 class SMatrix4 {
 	var _11 : Float;
 	var _12 : Float;
@@ -186,46 +172,22 @@ class SMatrix4 {
 
 	inline function toMatrix() {
 		var m = new h3d.Matrix();
-		m._11 = _11;
-		m._12 = _12;
-		m._13 = _13;
-		m._14 = _14;
-		m._21 = _21;
-		m._22 = _22;
-		m._23 = _23;
-		m._24 = _24;
-		m._31 = _31;
-		m._32 = _32;
-		m._33 = _33;
-		m._34 = _34;
-		m._41 = _41;
-		m._42 = _42;
-		m._43 = _43;
-		m._44 = _44;
+		m._11 = _11; m._12 = _12; m._13 = _13; m._14 = _14; 
+		m._21 = _21; m._22 = _22; m._23 = _23; m._24 = _24; 
+		m._31 = _31; m._32 = _32; m._33 = _33; m._34 = _34; 
+		m._41 = _41; m._42 = _42; m._43 = _43; m._44 = _44; 
 		return m;
 	}
 
 	inline function load(m : h3d.Matrix) {
-		_11 = m._11;
-		_12 = m._12;
-		_13 = m._13;
-		_14 = m._14;
-		_21 = m._21;
-		_22 = m._22;
-		_23 = m._23;
-		_24 = m._24;
-		_31 = m._31;
-		_32 = m._32;
-		_33 = m._33;
-		_34 = m._34;
-		_41 = m._41;
-		_42 = m._42;
-		_43 = m._43;
-		_44 = m._44;
+		_11 = m._11; _12 = m._12; _13 = m._13; _14 = m._14;
+		_21 = m._21; _22 = m._22; _23 = m._23; _24 = m._24;
+		_31 = m._31; _32 = m._32; _33 = m._33; _34 = m._34;
+		_41 = m._41; _42 = m._42; _43 = m._43; _44 = m._44;
 	}
 }
 
-@:allow(hrt.prefab.fx.EmitterObject)
+@:allow(hrt.prefab.fx.EmitterObject) 
 @:struct
 private class ParticleInstance  {
 	var emitter : EmitterObject;
@@ -238,10 +200,10 @@ private class ParticleInstance  {
 	public var scaleY : Float;
 	public var scaleZ : Float;
 
-	@:packed public var speedAccumulation : SVector3;
-	@:packed public var qRot : SVector4;
-	@:packed public var absPos : SMatrix4;  // Needed for sortZ
-	@:packed public var emitOrientation : SMatrix3;
+	@:packed public var speedAccumulation(default, never) : SVector3;
+	@:packed public var qRot(default, never) : SVector4;
+	@:packed public var absPos(default, never) : SMatrix4;  // Needed for sortZ
+	@:packed public var emitOrientation(default, never) : SMatrix3;
 	public var colorMult : h3d.Vector;  // TODO: Could be recalc using this.random
 
 	public var life : Float;
@@ -848,7 +810,8 @@ class EmitterObject extends h3d.scene.Object {
 
 			if( meshPrim != null ) {
 				batch = new h3d.scene.MeshBatch(meshPrim, mesh.material, this);
-				batch.name = "batch";
+				batch.name = "emitter";
+				batch.calcBounds = false;
 			}
 
 			/*trace("Shaders for " + this.name);
