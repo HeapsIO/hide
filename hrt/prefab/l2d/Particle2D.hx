@@ -27,7 +27,7 @@ class Particles extends h2d.Particles {
 		super(parent);
 		randomSeed = Std.random(0xFFFFFF);
 		random = new hxd.Rand(randomSeed);
-		evaluator = new Evaluator(random);
+		evaluator = new Evaluator();
 	}
 
 	function tick( dt : Float, full=true) {

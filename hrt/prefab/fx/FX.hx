@@ -27,7 +27,6 @@ class FXAnimation extends h3d.scene.Object {
 	public var shaderAnims : Array<ShaderAnimation> = [];
 	public var constraints : Array<hrt.prefab.l3d.Constraint>;
 
-	//public var vecPool = new Evaluator.VecPool();
 	var evaluator : Evaluator;
 	var parentFX : FXAnimation;
 	var random : hxd.Rand;
@@ -39,8 +38,7 @@ class FXAnimation extends h3d.scene.Object {
 		super(parent);
 		randSeed = #if editor 0 #else Std.random(0xFFFFFF) #end;
 		random = new hxd.Rand(randSeed);
-		evaluator = new Evaluator(random);
-		//evaluator.vecPool = vecPool;
+		evaluator = new Evaluator();
 		name = "FXAnimation";
 		inheritCulled = true;
 	}

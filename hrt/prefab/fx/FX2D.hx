@@ -28,7 +28,7 @@ class FX2DAnimation extends h2d.Object {
 	public function new(?parent) {
 		super(parent);
 		random = new hxd.Rand(Std.random(0xFFFFFF));
-		evaluator = new Evaluator(random);
+		evaluator = new Evaluator();
 		name = "FX2DAnimation";
 		setTime(0);
 	}

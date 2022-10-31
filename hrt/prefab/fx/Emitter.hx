@@ -75,10 +75,8 @@ typedef ShaderAnims = Array<ShaderAnimation>;
 @:allow(hrt.prefab.fx.EmitterObject)
 private class ParticleInstance  {
 	var emitter : EmitterObject;
-	var evaluator : Evaluator;  // TODO TOMR: get rid
 
 	public var idx : Int;
-	public var qRot = new h3d.Quat();
 	public var x = 0.0;
 	public var y = 0.0;
 	public var z = 0.0;
@@ -86,6 +84,7 @@ private class ParticleInstance  {
 	public var scaleY = 1.0;
 	public var scaleZ = 1.0;
 
+	public var qRot = new h3d.Quat();
 	public var absPos = new h3d.Matrix();  // Needed for sortZ
 	public var emitOrientation = new h3d.Matrix();
 	public var speedAccumulation = new h3d.Vector();
@@ -115,12 +114,7 @@ private class ParticleInstance  {
 		speedAccumulation.set(0,0,0);
 		random = emitter.random.rand();
 		allocated = true;
-
 		this.emitter = emitter;
-		if (this.evaluator == null)
-			this.evaluator = new Evaluator(emitter.random);
-		else
-			@:privateAccess this.evaluator.random = emitter.random;
 	}
 
 	public function dispose() {
@@ -205,22 +199,24 @@ private class ParticleInstance  {
 
 		var t = hxd.Math.clamp(life / lifeTime, 0.0, 1.0);
 
+		var evaluator = emitter.evaluator;
+
 		//SCALE
 		var def = emitter.instDef;
-		var scaleVec = evaluator.getVector(def.stretch, t, tmpScale);
-		scaleVec.scale3(evaluator.getFloat(def.scale, t));
+		var scaleVec = evaluator.getVector(idx, def.stretch, t, tmpScale);
+		scaleVec.scale3(evaluator.getFloat(idx, def.scale, t));  // TODO TOMR OPTIM ?
 		localMat.initScale(scaleVec.x, scaleVec.y, scaleVec.z);
 
 		// ROTATION
 		if(def.rotation != VZero) {
-			var rot = evaluator.getVector(def.rotation, t, tmpRot);
+			var rot = evaluator.getVector(idx, def.rotation, t, tmpRot);
 			rot.scale3(Math.PI / 180.0);
 			localMat.rotate(rot.x, rot.y, rot.z);
 		}
 
 		//OFFSET
 		if(def.localOffset != VZero) {
-			var offset = evaluator.getVector(def.localOffset, t, tmpOffset);
+			var offset = evaluator.getVector(idx, def.localOffset, t, tmpOffset);
 			localMat.translate(offset.x, offset.y, offset.z);  // TODO TOMR: just translate tx, ty, tz ?
 		}
 
@@ -235,21 +231,22 @@ private class ParticleInstance  {
 		tmpSpeed.set(0,0,0);
 
 		var def = emitter.instDef;
+		var evaluator = emitter.evaluator;
 
 		if( life == 0 ) {
 			// START LOCAL SPEED
-			evaluator.getVector(def.startSpeed, 0.0, tmpSpeedAccumulation);
+			evaluator.getVector(idx, def.startSpeed, 0.0, tmpSpeedAccumulation);
 			tmpSpeedAccumulation.transform3x3(emitOrientation);
 			add(speedAccumulation, tmpSpeedAccumulation);
 			// START WORLD SPEED
-			evaluator.getVector(def.startWorldSpeed, 0.0, tmpSpeedAccumulation);
+			evaluator.getVector(idx, def.startWorldSpeed, 0.0, tmpSpeedAccumulation);
 			tmpSpeedAccumulation.transform3x3(emitter.invTransform);
 			add(speedAccumulation, tmpSpeedAccumulation);
 		}
 
 		// ACCELERATION
 		if(def.acceleration != VZero) {
-			evaluator.getVector(def.acceleration, t, tmpSpeedAccumulation);
+			evaluator.getVector(idx, def.acceleration, t, tmpSpeedAccumulation);
 			tmpSpeedAccumulation.scale3(dt);
 			tmpSpeedAccumulation.transform3x3(emitOrientation);
 			add(speedAccumulation, tmpSpeedAccumulation);
@@ -257,7 +254,7 @@ private class ParticleInstance  {
 
 		// WORLD ACCELERATION
 		if(def.worldAcceleration != VZero) {
-			evaluator.getVector(def.worldAcceleration, t, tmpSpeedAccumulation);
+			evaluator.getVector(idx, def.worldAcceleration, t, tmpSpeedAccumulation);
 			tmpSpeedAccumulation.scale3(dt);
 			if(emitter.simulationSpace == Local)
 				tmpSpeedAccumulation.transform3x3(emitter.invTransform);
@@ -268,21 +265,21 @@ private class ParticleInstance  {
 
 		// SPEED
 		if(def.localSpeed != VZero) {
-			evaluator.getVector(def.localSpeed, t, tmpLocalSpeed);
+			evaluator.getVector(idx, def.localSpeed, t, tmpLocalSpeed);
 			tmpLocalSpeed.transform3x3(emitOrientation);
 			add(tmpSpeed, tmpLocalSpeed);
 		}
 
 		// DAMPEN
 		if (def.dampen != VZero) {
-			var dampen = evaluator.getFloat(def.dampen, t);
+			var dampen = evaluator.getFloat(idx, def.dampen, t);
 			var scale = Math.exp(dampen* -dt);
 			speedAccumulation.scale3(scale);
 		}
 
 		// WORLD SPEED
 		if(def.worldSpeed != VZero) {
-			evaluator.getVector(def.worldSpeed, t, tmpWorldSpeed);
+			evaluator.getVector(idx, def.worldSpeed, t, tmpWorldSpeed);
 			if(emitter.simulationSpace == Local)
 				tmpWorldSpeed.transform3x3(emitter.invTransform);
 			add(tmpSpeed, tmpWorldSpeed);
@@ -290,7 +287,7 @@ private class ParticleInstance  {
 
 		// MAX VELOCITY
 		if (def.maxVelocity != VZero) {
-			var maxVel = evaluator.getFloat(def.maxVelocity, t);
+			var maxVel = evaluator.getFloat(idx, def.maxVelocity, t);
 			var curVelSq = tmpSpeed.lengthSq();
 			if (maxVel * maxVel < curVelSq) {
 				tmpSpeed.normalize();
@@ -309,7 +306,7 @@ private class ParticleInstance  {
 		z += tmpSpeed.z * dt;
 
 		if(def.orbitSpeed != VZero) {
-			evaluator.getVector(def.orbitSpeed, t, tmpLocalSpeed);
+			evaluator.getVector(idx, def.orbitSpeed, t, tmpLocalSpeed);
 			tmpMat.initRotation(tmpLocalSpeed.x * dt, tmpLocalSpeed.y * dt, tmpLocalSpeed.z * dt);
 			// Rotate in emitter space and convert back to world space
 			var parentAbsPos = emitter.parentTransform;
@@ -420,14 +417,13 @@ class EmitterObject extends h3d.scene.Object {
 	var parentTransform = new h3d.Matrix();  // TODO TOMR: This could probably be null in simulation space World
 	var baseEmitMat : h3d.Matrix;
 	var freeList = new Array<Int>();
+	var randomValues : Array<Float>;
+	var randSlots : Int;
 
 	public function new(?parent) {
 		super(parent);
 		randomSeed = Std.random(0xFFFFFF);
 		random = new hxd.Rand(randomSeed);
-		evaluator = new Evaluator(random);
-		//evaluator.vecPool = vecPool;
-		reset();
 	}
 
 	public function reset() {
@@ -437,6 +433,9 @@ class EmitterObject extends h3d.scene.Object {
 		emitCount = 0;
 		emitTarget = 0;
 		totalBurstCount = 0;
+
+		randomValues = [for(i in 0...(maxCount * randSlots)) random.srand()];
+		evaluator = new Evaluator(randomValues, randSlots);
 
 		if(particles != null) {
 			for(p in particles) 
@@ -613,7 +612,8 @@ class EmitterObject extends h3d.scene.Object {
 		emitCount += count;
 	}
 
-	function init() {
+	function init(randSlots: Int) {
+		this.randSlots = randSlots;
 
 		if( batch != null )
 			batch.remove();
@@ -1389,7 +1389,7 @@ class Emitter extends Object3D {
 			emitterObj.startTime = @:privateAccess scene.renderer.ctx.time;
 		#end
 
-		emitterObj.init();
+		emitterObj.init(randIdx);
 		emitterObj.reset();
 		refreshChildren(ctx);
 

@@ -175,7 +175,7 @@ class BaseFX extends hrt.prefab.Library {
 
 		for(shCtx in ctx.shared.getContexts(elt)) {
 			if(shCtx.custom == null) continue;
-			var anim = Std.isOfType(shCtx.custom,hxsl.DynamicShader) ? new ShaderDynAnimation(new hxd.Rand(0)) : new ShaderAnimation(new hxd.Rand(0));
+			var anim = Std.isOfType(shCtx.custom,hxsl.DynamicShader) ? new ShaderDynAnimation() : new ShaderAnimation();
 			anim.shader = shCtx.custom;
 			anim.params = makeShaderParams(ctx, shader);
 			anims.push(anim);
