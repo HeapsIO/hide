@@ -72,31 +72,145 @@ class InstanceDef {
 
 typedef ShaderAnims = Array<ShaderAnimation>;
 
+@:publicFields @:struct
+class SVector3 {
+	var x : Float;
+	var y : Float;
+	var z : Float;
+
+	inline function toVector() {
+		return new h3d.Vector(x, y, z);
+	}
+	inline function loadVector(v: h3d.Vector) {
+		this.x = v.x;
+		this.y = v.y;
+		this.z = v.z;
+	}
+}
+
+@:publicFields @:struct
+class SVector4 {
+	var x : Float;
+	var y : Float;
+	var z : Float;
+	var w : Float;
+
+	inline function toQuat() {
+		return new h3d.Quat(x, y, z, w);
+	}
+	inline function loadQuat(q: h3d.Quat) {
+		this.x = q.x;
+		this.y = q.y;
+		this.z = q.z;
+		this.w = q.w;
+	}
+
+	inline function toVector() {
+		return new h3d.Vector(x, y, z, w);
+	}
+	inline function loadVector(v: h3d.Vector) {
+		this.x = v.x;
+		this.y = v.y;
+		this.z = v.z;
+		this.w = v.w;
+	}
+}
+
+@:publicFields
+@:struct
+class SMatrix4 {
+	var _11 : Float;
+	var _12 : Float;
+	var _13 : Float;
+	var _14 : Float;
+	var _21 : Float;
+	var _22 : Float;
+	var _23 : Float;
+	var _24 : Float;
+	var _31 : Float;
+	var _32 : Float;
+	var _33 : Float;
+	var _34 : Float;
+	var _41 : Float;
+	var _42 : Float;
+	var _43 : Float;
+	var _44 : Float;
+
+	public inline function getPosition() {
+		var v = new h3d.Vector();
+		v.set(_41,_42,_43,_44);
+		return v;
+	}
+
+	inline function toMatrix() {
+		var m = new h3d.Matrix();
+		m._11 = _11;
+		m._12 = _12;
+		m._13 = _13;
+		m._14 = _14;
+		m._21 = _21;
+		m._22 = _22;
+		m._23 = _23;
+		m._24 = _24;
+		m._31 = _31;
+		m._32 = _32;
+		m._33 = _33;
+		m._34 = _34;
+		m._41 = _41;
+		m._42 = _42;
+		m._43 = _43;
+		m._44 = _44;
+		return m;
+	}
+
+	inline function load(m : h3d.Matrix) {
+		_11 = m._11;
+		_12 = m._12;
+		_13 = m._13;
+		_14 = m._14;
+		_21 = m._21;
+		_22 = m._22;
+		_23 = m._23;
+		_24 = m._24;
+		_31 = m._31;
+		_32 = m._32;
+		_33 = m._33;
+		_34 = m._34;
+		_41 = m._41;
+		_42 = m._42;
+		_43 = m._43;
+		_44 = m._44;
+	}
+}
+
 @:allow(hrt.prefab.fx.EmitterObject)
+@:struct
 private class ParticleInstance  {
 	var emitter : EmitterObject;
 
 	public var idx : Int;
-	public var x = 0.0;
-	public var y = 0.0;
-	public var z = 0.0;
-	public var scaleX = 1.0;
-	public var scaleY = 1.0;
-	public var scaleZ = 1.0;
+	public var x : Float;
+	public var y : Float;
+	public var z : Float;
+	public var scaleX : Float;
+	public var scaleY : Float;
+	public var scaleZ : Float;
 
-	public var qRot = new h3d.Quat();
-	public var absPos = new h3d.Matrix();  // Needed for sortZ
-	public var emitOrientation = new h3d.Matrix();
-	public var speedAccumulation = new h3d.Vector();
+	@:packed
+	public var qRot : SVector4;
+	@:packed
+	public var absPos : SMatrix4;  // Needed for sortZ
+	public var emitOrientation : h3d.Matrix;
+	public var speedAccumulation : h3d.Vector;
 	public var colorMult : h3d.Vector;  // TODO: Could be recalc using this.random
 
-	public var life = 0.0;
-	public var lifeTime = 0.0;
+	public var life : Float;
+	public var lifeTime : Float;
 	public var random : Float;
-	public var distToCam = 0.0;
-	public var startTime = 0.0;
+	public var distToCam : Float;
+	public var startTime : Float;
 	public var startFrame : Int;
-	public var allocated = false;
+	public var allocated : Bool;
 
 	public function new() {
 	}
@@ -108,6 +222,11 @@ private class ParticleInstance  {
 		scaleX = 1.0;
 		scaleY = 1.0;
 		scaleZ = 1.0;
+
+		// absPos = new h3d.Matrix();  // Needed for sortZ
+		emitOrientation = new h3d.Matrix();
+		speedAccumulation = new h3d.Vector();
+
 		life = 0;
 		lifeTime = 0;
 		startFrame = 0;
@@ -132,6 +251,7 @@ private class ParticleInstance  {
 	static var tmpGroundNormal = new h3d.Vector(0,0,1);
 	static var tmpSpeed = new h3d.Vector();
 	static var tmpMat = new h3d.Matrix();
+	static var tmpMat2 = new h3d.Matrix();
 	static var tmpCamRotAxis = new h3d.Vector();
 	static var tmpCamAlign = new h3d.Vector();
 	static var tmpCamVec = new h3d.Vector();
@@ -172,15 +292,18 @@ private class ParticleInstance  {
 	}
 
 	public function updateAbsPos() {
+		var qRot = qRot.toQuat();
+
 		switch( emitter.alignMode ) {
 			case Screen|Axis:
 				qRot.load(emitter.screenQuat);
 			default:
-				if(emitter.emitOrientation == Speed && tmpSpeed.lengthSq() > 0.01)
-					qRot.initDirection(tmpSpeed);
 		}
+		
+		var absPos = tmpMat;
+		var localMat = tmpMat2;
 
-		qRot.toMatrix(absPos);
+		inline qRot.toMatrix(absPos);
 		absPos._11 *= scaleX;
 		absPos._12 *= scaleX;
 		absPos._13 *= scaleX;
@@ -194,8 +317,6 @@ private class ParticleInstance  {
 		absPos._42 = y;
 		absPos._43 = z;
 		absPos.multiply3x4inline(absPos, emitter.parentTransform);
-
-		var localMat = tmpMat;
 
 		var t = hxd.Math.clamp(life / lifeTime, 0.0, 1.0);
 
@@ -224,6 +345,7 @@ private class ParticleInstance  {
 			localMat.multiply(emitter.baseEmitMat, localMat);
 
 		absPos.multiply(localMat, absPos);
+		this.absPos.load(absPos);
 	}
 
 	public function update( dt : Float ) {
@@ -324,6 +446,12 @@ private class ParticleInstance  {
 			delta.scale(1 / dt);
 			add(tmpSpeed, delta);
 		}
+
+		if(emitter.emitOrientation == Speed && tmpSpeed.lengthSq() > 0.01) {
+			var qRot = qRot.toQuat();
+			inline qRot.initDirection(tmpSpeed);
+			this.qRot.loadQuat(qRot);
+		}
 	}
 }
 
@@ -333,7 +461,7 @@ class EmitterObject extends h3d.scene.Object {
 
 	public var instDef : InstanceDef;
 
-	public var particles = new Array<ParticleInstance>();
+	public var particles : hl.CArray<ParticleInstance>;
 	public var batch : h3d.scene.MeshBatch;
 	public var shaderAnims : ShaderAnims;
 
@@ -443,11 +571,10 @@ class EmitterObject extends h3d.scene.Object {
 					disposeInstance(p);
 		}
 
-		particles = [for(i in 0...maxCount) {
-			var p = new ParticleInstance();
-			p.idx = i;
-			p;
-		}];
+		particles = hl.CArray.alloc(ParticleInstance, maxCount);
+		for(i in 0...particles.length) {
+			particles[i].idx = i;
+		};
 		freeList = [for(i in 0...maxCount) i];
 
 		for( s in subEmitters ) {
@@ -585,7 +712,7 @@ class EmitterObject extends h3d.scene.Object {
 						tmpOffset.transform(tmpMat);
 						part.setPosition(tmpOffset.x, tmpOffset.y, tmpOffset.z);
 						tmpQuat.multiply(emitterQuat, tmpQuat);
-						part.qRot.load(tmpQuat);
+						part.qRot.loadQuat(tmpQuat);
 						part.emitOrientation.load(tmpQuat.toMatrix());
 					case World:
 						tmpPt.set(tmpOffset.x, tmpOffset.y, tmpOffset.z);
@@ -598,7 +725,7 @@ class EmitterObject extends h3d.scene.Object {
 						emitterQuat.initRotateMatrix(tmpMat);
 						emitterQuat.normalize();
 						tmpQuat.multiply(tmpQuat, emitterQuat);
-						part.qRot.load(tmpQuat);
+						part.qRot.loadQuat(tmpQuat);
 						part.emitOrientation.load(tmpQuat.toMatrix());
 						part.setScale(worldScale.x, worldScale.y, worldScale.z);
 				}
@@ -869,10 +996,8 @@ class EmitterObject extends h3d.scene.Object {
 		*/
 		for(p in particles) {
 			if(!p.allocated) continue;
-		// var p = particles;
-		// var i = 0;
-		// while(p != null) {
-			batch.worldPosition = p.absPos;
+			inline tmpMat.load(p.absPos.toMatrix());
+			batch.worldPosition = tmpMat;
 			for( anim in shaderAnims ) {
 				var t = hxd.Math.clamp(p.life / p.lifeTime, 0.0, 1.0);
 				anim.setTime(t);
