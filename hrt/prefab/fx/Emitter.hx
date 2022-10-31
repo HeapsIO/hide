@@ -71,6 +71,7 @@ class InstanceDef {
 }
 
 typedef ShaderAnims = Array<ShaderAnimation>;
+typedef PartArray = #if hl hl.CArray<ParticleInstance> #else Array<ParticleInstance> #end;
 typedef Single = Float;
 
 @:allow(hrt.prefab.fx.EmitterObject) 
@@ -83,10 +84,17 @@ private class ParticleInstance  {
 	public var scaleY : Single;
 	public var scaleZ : Single;
 
+	#if hl
 	@:packed public var speedAccumulation(default, never) : SVector3;
 	@:packed public var qRot(default, never) : SVector4;
 	@:packed public var absPos(default, never) : SMatrix4;  // Needed for sortZ
 	@:packed public var emitOrientation(default, never) : SMatrix3;
+	#else 
+	public var speedAccumulation(default, never) = new SVector3();
+	public var qRot(default, never) = new SVector4();
+	public var absPos(default, never) = new SMatrix4();
+	public var emitOrientation(default, never) = new SMatrix3();
+	#end
 
 	public var colorMult : Int;
 	public var idx : hxd.impl.UInt16;
@@ -96,7 +104,6 @@ private class ParticleInstance  {
 	public var random : Single;
 	public var distToCam : Single;
 	public var startTime : Single;
-	//public var allocated : Bool;
 
 	public function new() { }
 
@@ -108,11 +115,11 @@ private class ParticleInstance  {
 		scaleY = p.scaleY;
 		scaleZ = p.scaleZ;
 
-		speedAccumulation.loadVector(p.speedAccumulation.toVector());
-		qRot.loadVector(p.qRot.toVector());
+		speedAccumulation.load(p.speedAccumulation.toVector());
+		qRot.load(p.qRot.toVector());
 		absPos.load(p.absPos.toMatrix());
 		emitOrientation.load(p.emitOrientation.toMatrix());
-
+		
 		colorMult = p.colorMult;
 		idx = p.idx;
 		startFrame = p.startFrame;
@@ -121,7 +128,6 @@ private class ParticleInstance  {
 		random = p.random;
 		distToCam = p.distToCam;
 		startTime = p.startTime;
-		//allocated = p.allocated;
 	}
 
 	public function init(idx: Int, emitter: EmitterObject) {
@@ -134,12 +140,11 @@ private class ParticleInstance  {
 
 		colorMult = -1;
 		this.idx = idx;
-		speedAccumulation.loadVector(new h3d.Vector());
+		speedAccumulation.load(new h3d.Vector());
 		life = 0;
 		lifeTime = 0;
 		startFrame = 0;
 		random = emitter.random.rand();
-		//allocated = true;
 	}
 
 	static var tmpRot = new h3d.Vector();
@@ -303,7 +308,6 @@ private class ParticleInstance  {
 			speedAccumulation.scale3(scale);
 		}
 
-		this.speedAccumulation.loadVector(speedAccumulation);
 
 		// WORLD SPEED
 		if(def.worldSpeed != VZero) {
@@ -353,10 +357,13 @@ private class ParticleInstance  {
 			add(tmpSpeed, delta);
 		}
 
+		this.speedAccumulation.load(speedAccumulation);
+
+
 		if(emitter.emitOrientation == Speed && tmpSpeed.lengthSq() > 0.01) {
 			var qRot = qRot.toQuat();
 			inline qRot.initDirection(tmpSpeed);
-			this.qRot.loadQuat(qRot);
+			this.qRot.load(qRot);
 		}
 	}
 }
@@ -367,7 +374,7 @@ class EmitterObject extends h3d.scene.Object {
 
 	public var instDef : InstanceDef;
 
-	public var particles : hl.CArray<ParticleInstance>;
+	public var particles : PartArray;
 	public var batch : h3d.scene.MeshBatch;
 	public var shaderAnims : ShaderAnims;
 
@@ -470,7 +477,7 @@ class EmitterObject extends h3d.scene.Object {
 		randomValues = [for(i in 0...(maxCount * randSlots)) random.srand()];
 		evaluator = new Evaluator(randomValues, randSlots);
 
-		particles = hl.CArray.alloc(ParticleInstance, maxCount);
+		particles = #if hl hl.CArray.alloc(ParticleInstance, maxCount) #else [for(i in 0...maxCount) new ParticleInstance()] #end;
 		for( s in subEmitters )
 			s.remove();
 		subEmitters = [];
@@ -601,7 +608,7 @@ class EmitterObject extends h3d.scene.Object {
 						tmpOffset.transform(tmpMat);
 						part.setPosition(tmpOffset.x, tmpOffset.y, tmpOffset.z);
 						tmpQuat.multiply(emitterQuat, tmpQuat);
-						part.qRot.loadQuat(tmpQuat);
+						part.qRot.load(tmpQuat);
 						tmpQuat.toMatrix(tmpMat2);
 						part.emitOrientation.load(tmpMat2);
 					case World:
@@ -615,7 +622,7 @@ class EmitterObject extends h3d.scene.Object {
 						emitterQuat.initRotateMatrix(tmpMat);
 						emitterQuat.normalize();
 						tmpQuat.multiply(tmpQuat, emitterQuat);
-						part.qRot.loadQuat(tmpQuat);
+						part.qRot.load(tmpQuat);
 						tmpQuat.toMatrix(tmpMat2);
 						part.emitOrientation.load(tmpMat2);
 						part.setScale(worldScale.x, worldScale.y, worldScale.z);
@@ -1751,18 +1758,17 @@ class Emitter extends Object3D {
 
 }
 
-#if hl
-
 @:publicFields @:struct
 class SVector3 {
 	var x : Single;
 	var y : Single;
 	var z : Single;
+	public function new() { }
 
 	inline function toVector() {
 		return new h3d.Vector(x, y, z);
 	}
-	inline function loadVector(v: h3d.Vector) {
+	inline function load(v: h3d.Vector) {
 		this.x = v.x;
 		this.y = v.y;
 		this.z = v.z;
@@ -1776,10 +1782,13 @@ class SVector4 {
 	var z : Single;
 	var w : Single;
 
+	public function new() { }
+
+
 	inline function toQuat() {
 		return new h3d.Quat(x, y, z, w);
 	}
-	inline function loadQuat(q: h3d.Quat) {
+	inline function load(q: { x: Float, y: Float, z: Float, w: Float }) {
 		this.x = q.x;
 		this.y = q.y;
 		this.z = q.z;
@@ -1789,26 +1798,16 @@ class SVector4 {
 	inline function toVector() {
 		return new h3d.Vector(x, y, z, w);
 	}
-	inline function loadVector(v: h3d.Vector) {
-		this.x = v.x;
-		this.y = v.y;
-		this.z = v.z;
-		this.w = v.w;
-	}
 }
 
 
 @:publicFields @:struct
 class SMatrix3 {
-	var _11 : Single;
-	var _12 : Single;
-	var _13 : Single;
-	var _21 : Single;
-	var _22 : Single;
-	var _23 : Single;
-	var _31 : Single;
-	var _32 : Single;
-	var _33 : Single;
+	var _11 : Single; var _12 : Single; var _13 : Single;
+	var _21 : Single; var _22 : Single; var _23 : Single;
+	var _31 : Single; var _32 : Single; var _33 : Single;
+
+	public function new() { }
 
 	inline function toMatrix() {
 		var m = new h3d.Matrix();
@@ -1833,6 +1832,8 @@ class SMatrix4 {
 	var _31 : Single; var _32 : Single; var _33 : Single; var _34 : Single;
 	var _41 : Single; var _42 : Single; var _43 : Single; var _44 : Single;
 
+	public function new() { }
+
 	public inline function getPosition() {
 		var v = new h3d.Vector();
 		v.set(_41,_42,_43,_44);
@@ -1855,5 +1856,3 @@ class SMatrix4 {
 		_41 = m._41; _42 = m._42; _43 = m._43; _44 = m._44;
 	}
 }
-
-#end
