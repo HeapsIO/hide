@@ -71,147 +71,33 @@ class InstanceDef {
 }
 
 typedef ShaderAnims = Array<ShaderAnimation>;
-
-@:publicFields @:struct
-class SVector3 {
-	var x : Float;
-	var y : Float;
-	var z : Float;
-
-	inline function toVector() {
-		return new h3d.Vector(x, y, z);
-	}
-	inline function loadVector(v: h3d.Vector) {
-		this.x = v.x;
-		this.y = v.y;
-		this.z = v.z;
-	}
-}
-
-@:publicFields @:struct
-class SVector4 {
-	var x : Float;
-	var y : Float;
-	var z : Float;
-	var w : Float;
-
-	inline function toQuat() {
-		return new h3d.Quat(x, y, z, w);
-	}
-	inline function loadQuat(q: h3d.Quat) {
-		this.x = q.x;
-		this.y = q.y;
-		this.z = q.z;
-		this.w = q.w;
-	}
-
-	inline function toVector() {
-		return new h3d.Vector(x, y, z, w);
-	}
-	inline function loadVector(v: h3d.Vector) {
-		this.x = v.x;
-		this.y = v.y;
-		this.z = v.z;
-		this.w = v.w;
-	}
-}
-
-
-@:publicFields @:struct
-class SMatrix3 {
-	var _11 : Float;
-	var _12 : Float;
-	var _13 : Float;
-	var _21 : Float;
-	var _22 : Float;
-	var _23 : Float;
-	var _31 : Float;
-	var _32 : Float;
-	var _33 : Float;
-
-	inline function toMatrix() {
-		var m = new h3d.Matrix();
-		m._11 = _11; m._12 = _12; m._13 = _13;
-		m._21 = _21; m._22 = _22; m._23 = _23;
-		m._31 = _31; m._32 = _32; m._33 = _33;
-		return m;
-	}
-
-	inline function load(m : h3d.Matrix) {
-		_11 = m._11; _12 = m._12; _13 = m._13;
-		_21 = m._21; _22 = m._22; _23 = m._23;
-		_31 = m._31; _32 = m._32; _33 = m._33;
-	}
-}
-
-
-@:publicFields @:struct
-class SMatrix4 {
-	var _11 : Float;
-	var _12 : Float;
-	var _13 : Float;
-	var _14 : Float;
-	var _21 : Float;
-	var _22 : Float;
-	var _23 : Float;
-	var _24 : Float;
-	var _31 : Float;
-	var _32 : Float;
-	var _33 : Float;
-	var _34 : Float;
-	var _41 : Float;
-	var _42 : Float;
-	var _43 : Float;
-	var _44 : Float;
-
-	public inline function getPosition() {
-		var v = new h3d.Vector();
-		v.set(_41,_42,_43,_44);
-		return v;
-	}
-
-	inline function toMatrix() {
-		var m = new h3d.Matrix();
-		m._11 = _11; m._12 = _12; m._13 = _13; m._14 = _14; 
-		m._21 = _21; m._22 = _22; m._23 = _23; m._24 = _24; 
-		m._31 = _31; m._32 = _32; m._33 = _33; m._34 = _34; 
-		m._41 = _41; m._42 = _42; m._43 = _43; m._44 = _44; 
-		return m;
-	}
-
-	inline function load(m : h3d.Matrix) {
-		_11 = m._11; _12 = m._12; _13 = m._13; _14 = m._14;
-		_21 = m._21; _22 = m._22; _23 = m._23; _24 = m._24;
-		_31 = m._31; _32 = m._32; _33 = m._33; _34 = m._34;
-		_41 = m._41; _42 = m._42; _43 = m._43; _44 = m._44;
-	}
-}
+typedef Single = Float;
 
 @:allow(hrt.prefab.fx.EmitterObject) 
 @:struct
 private class ParticleInstance  {
 	var emitter : EmitterObject;
 
-	public var idx : Int;
-	public var x : Float;
-	public var y : Float;
-	public var z : Float;
-	public var scaleX : Float;
-	public var scaleY : Float;
-	public var scaleZ : Float;
+	public var x : Single;
+	public var y : Single;
+	public var z : Single;
+	public var scaleX : Single;
+	public var scaleY : Single;
+	public var scaleZ : Single;
 
 	@:packed public var speedAccumulation(default, never) : SVector3;
 	@:packed public var qRot(default, never) : SVector4;
 	@:packed public var absPos(default, never) : SMatrix4;  // Needed for sortZ
 	@:packed public var emitOrientation(default, never) : SMatrix3;
-	public var colorMult : h3d.Vector;  // TODO: Could be recalc using this.random
 
-	public var life : Float;
-	public var lifeTime : Float;
-	public var random : Float;
-	public var distToCam : Float;
-	public var startTime : Float;
-	public var startFrame : Int;
+	public var colorMult : Int;
+	public var idx : hxd.impl.UInt16;
+	public var startFrame : hxd.impl.UInt16;
+	public var life : Single;
+	public var lifeTime : Single;
+	public var random : Single;
+	public var distToCam : Single;
+	public var startTime : Single;
 	public var allocated : Bool;
 
 	public function new() {
@@ -225,6 +111,7 @@ private class ParticleInstance  {
 		scaleY = 1.0;
 		scaleZ = 1.0;
 
+		colorMult = -1;
 		speedAccumulation.loadVector(new h3d.Vector());
 		life = 0;
 		lifeTime = 0;
@@ -637,12 +524,12 @@ class EmitterObject extends h3d.scene.Object {
 
 				if(useRandomColor) {
 					if (useRandomGradient) {
-						part.colorMult = Gradient.evalData(randomGradient, random.rand());
+						part.colorMult = Gradient.evalData(randomGradient, random.rand()).toColor();
 					}
 					else {
 						var col = new h3d.Vector();
 						col.lerp(randomColor1, randomColor2, random.rand());
-						part.colorMult = col;
+						part.colorMult = col.toColor();
 					}
 				}
 
@@ -1017,7 +904,7 @@ class EmitterObject extends h3d.scene.Object {
 			baseEmitterShader.random = p.random;
 
 			if(colorMultShader != null)
-				colorMultShader.color = p.colorMult;
+				colorMultShader.color.setColor(p.colorMult);
 			batch.emitInstance();
 			// p = p.next;
 			// ++i;
@@ -1876,3 +1763,110 @@ class Emitter extends Object3D {
 	static var _ = Library.register("emitter", Emitter);
 
 }
+
+#if hl
+
+@:publicFields @:struct
+class SVector3 {
+	var x : Single;
+	var y : Single;
+	var z : Single;
+
+	inline function toVector() {
+		return new h3d.Vector(x, y, z);
+	}
+	inline function loadVector(v: h3d.Vector) {
+		this.x = v.x;
+		this.y = v.y;
+		this.z = v.z;
+	}
+}
+
+@:publicFields @:struct
+class SVector4 {
+	var x : Single;
+	var y : Single;
+	var z : Single;
+	var w : Single;
+
+	inline function toQuat() {
+		return new h3d.Quat(x, y, z, w);
+	}
+	inline function loadQuat(q: h3d.Quat) {
+		this.x = q.x;
+		this.y = q.y;
+		this.z = q.z;
+		this.w = q.w;
+	}
+
+	inline function toVector() {
+		return new h3d.Vector(x, y, z, w);
+	}
+	inline function loadVector(v: h3d.Vector) {
+		this.x = v.x;
+		this.y = v.y;
+		this.z = v.z;
+		this.w = v.w;
+	}
+}
+
+
+@:publicFields @:struct
+class SMatrix3 {
+	var _11 : Single;
+	var _12 : Single;
+	var _13 : Single;
+	var _21 : Single;
+	var _22 : Single;
+	var _23 : Single;
+	var _31 : Single;
+	var _32 : Single;
+	var _33 : Single;
+
+	inline function toMatrix() {
+		var m = new h3d.Matrix();
+		m._11 = _11; m._12 = _12; m._13 = _13;
+		m._21 = _21; m._22 = _22; m._23 = _23;
+		m._31 = _31; m._32 = _32; m._33 = _33;
+		return m;
+	}
+
+	inline function load(m : h3d.Matrix) {
+		_11 = m._11; _12 = m._12; _13 = m._13;
+		_21 = m._21; _22 = m._22; _23 = m._23;
+		_31 = m._31; _32 = m._32; _33 = m._33;
+	}
+}
+
+
+@:publicFields @:struct
+class SMatrix4 {
+	var _11 : Single; var _12 : Single; var _13 : Single; var _14 : Single;
+	var _21 : Single; var _22 : Single; var _23 : Single; var _24 : Single;
+	var _31 : Single; var _32 : Single; var _33 : Single; var _34 : Single;
+	var _41 : Single; var _42 : Single; var _43 : Single; var _44 : Single;
+
+	public inline function getPosition() {
+		var v = new h3d.Vector();
+		v.set(_41,_42,_43,_44);
+		return v;
+	}
+
+	inline function toMatrix() {
+		var m = new h3d.Matrix();
+		m._11 = _11; m._12 = _12; m._13 = _13; m._14 = _14; 
+		m._21 = _21; m._22 = _22; m._23 = _23; m._24 = _24; 
+		m._31 = _31; m._32 = _32; m._33 = _33; m._34 = _34; 
+		m._41 = _41; m._42 = _42; m._43 = _43; m._44 = _44; 
+		return m;
+	}
+
+	inline function load(m : h3d.Matrix) {
+		_11 = m._11; _12 = m._12; _13 = m._13; _14 = m._14;
+		_21 = m._21; _22 = m._22; _23 = m._23; _24 = m._24;
+		_31 = m._31; _32 = m._32; _33 = m._33; _34 = m._34;
+		_41 = m._41; _42 = m._42; _43 = m._43; _44 = m._44;
+	}
+}
+
+#end
