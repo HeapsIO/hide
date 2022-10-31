@@ -116,6 +116,48 @@ class SVector4 {
 	}
 }
 
+
+@:publicFields
+@:struct
+class SMatrix3 {
+	var _11 : Float;
+	var _12 : Float;
+	var _13 : Float;
+	var _21 : Float;
+	var _22 : Float;
+	var _23 : Float;
+	var _31 : Float;
+	var _32 : Float;
+	var _33 : Float;
+
+	inline function toMatrix() {
+		var m = new h3d.Matrix();
+		m._11 = _11;
+		m._12 = _12;
+		m._13 = _13;
+		m._21 = _21;
+		m._22 = _22;
+		m._23 = _23;
+		m._31 = _31;
+		m._32 = _32;
+		m._33 = _33;
+		return m;
+	}
+
+	inline function load(m : h3d.Matrix) {
+		_11 = m._11;
+		_12 = m._12;
+		_13 = m._13;
+		_21 = m._21;
+		_22 = m._22;
+		_23 = m._23;
+		_31 = m._31;
+		_32 = m._32;
+		_33 = m._33;
+	}
+}
+
+
 @:publicFields
 @:struct
 class SMatrix4 {
@@ -196,12 +238,10 @@ private class ParticleInstance  {
 	public var scaleY : Float;
 	public var scaleZ : Float;
 
-	@:packed
-	public var qRot : SVector4;
-	@:packed
-	public var absPos : SMatrix4;  // Needed for sortZ
-	public var emitOrientation : h3d.Matrix;
-	public var speedAccumulation : h3d.Vector;
+	@:packed public var speedAccumulation : SVector3;
+	@:packed public var qRot : SVector4;
+	@:packed public var absPos : SMatrix4;  // Needed for sortZ
+	@:packed public var emitOrientation : SMatrix3;
 	public var colorMult : h3d.Vector;  // TODO: Could be recalc using this.random
 
 	public var life : Float;
@@ -223,14 +263,10 @@ private class ParticleInstance  {
 		scaleY = 1.0;
 		scaleZ = 1.0;
 
-		// absPos = new h3d.Matrix();  // Needed for sortZ
-		emitOrientation = new h3d.Matrix();
-		speedAccumulation = new h3d.Vector();
-
+		speedAccumulation.loadVector(new h3d.Vector());
 		life = 0;
 		lifeTime = 0;
 		startFrame = 0;
-		speedAccumulation.set(0,0,0);
 		random = emitter.random.rand();
 		allocated = true;
 		this.emitter = emitter;
@@ -354,6 +390,8 @@ private class ParticleInstance  {
 
 		var def = emitter.instDef;
 		var evaluator = emitter.evaluator;
+		var emitOrientation = emitOrientation.toMatrix();
+		var speedAccumulation = this.speedAccumulation.toVector();
 
 		if( life == 0 ) {
 			// START LOCAL SPEED
@@ -398,6 +436,8 @@ private class ParticleInstance  {
 			var scale = Math.exp(dampen* -dt);
 			speedAccumulation.scale3(scale);
 		}
+
+		this.speedAccumulation.loadVector(speedAccumulation);
 
 		// WORLD SPEED
 		if(def.worldSpeed != VZero) {
@@ -713,7 +753,8 @@ class EmitterObject extends h3d.scene.Object {
 						part.setPosition(tmpOffset.x, tmpOffset.y, tmpOffset.z);
 						tmpQuat.multiply(emitterQuat, tmpQuat);
 						part.qRot.loadQuat(tmpQuat);
-						part.emitOrientation.load(tmpQuat.toMatrix());
+						tmpQuat.toMatrix(tmpMat2);
+						part.emitOrientation.load(tmpMat2);
 					case World:
 						tmpPt.set(tmpOffset.x, tmpOffset.y, tmpOffset.z);
 						localToGlobal(tmpPt);
@@ -726,7 +767,8 @@ class EmitterObject extends h3d.scene.Object {
 						emitterQuat.normalize();
 						tmpQuat.multiply(tmpQuat, emitterQuat);
 						part.qRot.loadQuat(tmpQuat);
-						part.emitOrientation.load(tmpQuat.toMatrix());
+						tmpQuat.toMatrix(tmpMat2);
+						part.emitOrientation.load(tmpMat2);
 						part.setScale(worldScale.x, worldScale.y, worldScale.z);
 				}
 				var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
