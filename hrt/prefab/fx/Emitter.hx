@@ -72,11 +72,14 @@ class InstanceDef {
 
 typedef ShaderAnims = Array<ShaderAnimation>;
 typedef PartArray = #if hl hl.CArray<ParticleInstance> #else Array<ParticleInstance> #end;
-typedef Single = Float;
+typedef Single = #if hl hl.F32 #else Float #end;
 
 @:allow(hrt.prefab.fx.EmitterObject) 
 @:struct
 private class ParticleInstance  {
+	public var prev : ParticleInstance;
+	public var next : ParticleInstance;
+
 	public var x : Single;
 	public var y : Single;
 	public var z : Single;
@@ -105,6 +108,8 @@ private class ParticleInstance  {
 	public var distToCam : Single;
 	public var startTime : Single;
 
+	public inline static var REMOVED_IDX : hxd.impl.UInt16 = -1;
+
 	public function new() { }
 
 	public function load(p: ParticleInstance) {
@@ -128,6 +133,8 @@ private class ParticleInstance  {
 		random = p.random;
 		distToCam = p.distToCam;
 		startTime = p.startTime;
+		prev = p.prev;
+		next = p.next;
 	}
 
 	public function init(idx: Int, emitter: EmitterObject) {
@@ -139,6 +146,7 @@ private class ParticleInstance  {
 		scaleZ = 1.0;
 
 		colorMult = -1;
+		if(this.idx != REMOVED_IDX) throw this.idx;
 		this.idx = idx;
 		speedAccumulation.load(new h3d.Vector());
 		life = 0;
@@ -375,6 +383,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var instDef : InstanceDef;
 
 	public var particles : PartArray;
+	public var listHead : ParticleInstance;
 	public var batch : h3d.scene.MeshBatch;
 	public var shaderAnims : ShaderAnims;
 
@@ -478,6 +487,8 @@ class EmitterObject extends h3d.scene.Object {
 		evaluator = new Evaluator(randomValues, randSlots);
 
 		particles = #if hl hl.CArray.alloc(ParticleInstance, maxCount) #else [for(i in 0...maxCount) new ParticleInstance()] #end;
+		for(p in particles)
+			p.idx = ParticleInstance.REMOVED_IDX;
 		for( s in subEmitters )
 			s.remove();
 		subEmitters = [];
@@ -488,19 +499,92 @@ class EmitterObject extends h3d.scene.Object {
 		reset();
 	}
 
+	inline function checkList() { /*
+		var p = listHead;
+		var tail = null;
+		var count = 0;
+		while(p != null) {
+			++count;
+			if(p.idx == ParticleInstance.REMOVED_IDX)
+				throw "!";
+			var n = p.next;
+			if(n != null)
+				if(n.prev != p) throw "!";
+			if(p.next != null)
+				p = p.next;
+			else {
+				tail = p;
+				break;
+			}
+		}
+		if(count != numInstances) throw count + "!=" + numInstances;
+		p = tail;
+		count = 0;
+		while(p != null) {
+			++count;
+			p = p.prev;
+		}
+		if(count != numInstances) throw count + "!=" + numInstances;
+		#end */
+	}
+
 	function allocInstance() {
 		if(numInstances >= maxCount) throw "assert";
 		var p = particles[numInstances++];
 		p.init(instanceCounter, this);
+		p.prev = null;
+		p.next = listHead;
+		if(listHead != null)
+			listHead.prev = p;
+		listHead = p;
 		instanceCounter = (instanceCounter + 1) % maxCount;
+		checkList();
 		return p;
 	}
 
 	function disposeInstance(idx: Int) {
+		checkList();
+
 		--numInstances;
 		if(numInstances < 0)
 			throw "assert";
-		particles[idx].load(particles[numInstances]);
+
+		// stitch list after remove
+		var o = particles[idx];
+		if(o.idx == ParticleInstance.REMOVED_IDX) throw "!";
+		var prev = o.prev;
+		var next = o.next;
+		if(prev != null) {
+			if(prev.next == next) throw "!";
+			prev.next = next;
+		}
+		else { 
+			if(listHead != o) throw "!";
+			if(listHead == next) throw "!";
+			listHead = next;
+		}
+		if(next != null) {
+			if(next.prev == prev) throw "!";
+			next.prev = prev;
+		}
+
+		// remove swap
+		if(idx < numInstances) {
+			var swap = particles[numInstances];
+			o.load(swap);
+			swap.idx = ParticleInstance.REMOVED_IDX;
+			if(swap.prev != null)
+				swap.prev.next = o;
+			if(swap.next != null)
+				swap.next.prev = o;
+			if(listHead == swap)
+				listHead = o;
+		}
+		else 
+			o.idx = ParticleInstance.REMOVED_IDX;
+
+		checkList();
+		return idx;
 	}
 
 	var tmpCtx : hrt.prefab.Context;
@@ -871,31 +955,23 @@ class EmitterObject extends h3d.scene.Object {
 		}
 	}
 
+	static function sortZ( p1 : ParticleInstance, p2 : ParticleInstance ) : Int {
+		return p1.distToCam < p2.distToCam ? 1 : -1;
+	}
+
 	function depthSort() {
-		var swapped = false;
-		var tmp = new ParticleInstance();
-		do {
-			swapped = false;
-			for (i in 0...particles.length-1) {
-				if (particles[i].distToCam < particles[i + 1].distToCam) {
-					tmp.load(particles[i]);
-					particles[i].load(particles[i + 1]);
-					particles[i + 1].load(tmp);
-					swapped = true;
-				}
-			}
-		} while (swapped);
+		checkList();
+		listHead = haxe.ds.ListSort.sort(listHead, sortZ);
+		if(listHead != null)
+			listHead.prev = null;  // The `prev` of the head is set to the tail of the sorted list.
+		checkList();
 	}
 
 	function updateMeshBatch() {
 		if(batch == null) return;
 		batch.begin(hxd.Math.nextPOT(maxCount));
 
-		if (enableSort)
-			depthSort();
-
-		for(i in 0...numInstances) {
-			var p = particles[i];
+		inline function emit(p: ParticleInstance) {
 			inline tmpMat.load(p.absPos.toMatrix());
 			batch.worldPosition = tmpMat;
 			for( anim in shaderAnims ) {
@@ -915,6 +991,19 @@ class EmitterObject extends h3d.scene.Object {
 				colorMultShader.color.setColor(p.colorMult);
 			batch.emitInstance();
 		}
+
+		if(enableSort) {
+			depthSort();
+			var p = listHead;
+			while(p != null) {
+				emit(p);
+				p = p.next;
+			}
+		}
+		else {
+			for(i in 0...numInstances)
+				emit(particles[i]);
+		}
 	}
 
 	function updateParticles(full: Bool, dt: Float) {
@@ -929,10 +1018,11 @@ class EmitterObject extends h3d.scene.Object {
 
 		var prev : ParticleInstance = null;
 		var camPos = getScene().camera.pos;
-		for(i in 0...numInstances) {
+		var i = 0;
+		while(i < numInstances) {
 			var p = particles[i];
 			if(p.life > p.lifeTime) {
-				disposeInstance(i);
+				i = disposeInstance(i);
 
 				// SUB EMITTER
 				if( subEmitterTemplate != null ) {
@@ -959,6 +1049,7 @@ class EmitterObject extends h3d.scene.Object {
 				}
 				p.life += dt;  // After updateAbsPos(), which uses current life
 				prev = p;
+				++i;
 			}
 		}
 	}
