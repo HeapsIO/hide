@@ -11,7 +11,6 @@ class Evaluator {
 
 	inline function getRandom(pidx: Int, ridx: Int) {
 		var i = pidx * stride + ridx;
-		if(i > randValues.length) throw "assert";
 		return randValues[i];
 	}
 

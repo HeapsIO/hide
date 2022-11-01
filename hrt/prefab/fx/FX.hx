@@ -52,8 +52,6 @@ class FXAnimation extends h3d.scene.Object {
 		events = initEvents(root, ctx);
 		var root = def.getFXRoot(ctx, def);
 		initConstraints(ctx, root != null ? root : def);
-		// for(s in shaderAnims)
-		// 	s.vecPool = vecPool;
 	}
 
 	override function onRemove() {
@@ -144,7 +142,6 @@ class FXAnimation extends h3d.scene.Object {
 	public function setTime( time : Float, fullSync=true ) {
 		this.localTime = time;
 		if(fullSync) {
-			//vecPool.begin();
 			if(objAnims != null) {
 				for(anim in objAnims) {
 					if(anim.scale != null || anim.rotation != null || anim.position != null) {

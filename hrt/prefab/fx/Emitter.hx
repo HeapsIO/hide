@@ -843,8 +843,6 @@ class EmitterObject extends h3d.scene.Object {
 			invTransform.load(parent.getInvPos());
 		}
 
-		//vecPool.begin();
-
 		if( enable ) {
 			switch emitType {
 				case Infinity:
@@ -1015,7 +1013,7 @@ class EmitterObject extends h3d.scene.Object {
 			// so emitter shape can be transformed (especially scaled) without affecting children
 			case Local : parentTransform.load(parent.getAbsPos());
 			case World : parentTransform.load(getScene().getAbsPos());
-			// TODO optim: set to null if identity to skip multiply in particle updates
+			// Optim: set to null if identity to skip multiply in particle updates
 		}
 
 		var prev : ParticleInstance = null;
@@ -1069,14 +1067,8 @@ class EmitterObject extends h3d.scene.Object {
 		time = time * speedFactor + warmUpTime;
 		if(hxd.Math.abs(time - curTime) < 1e-6) {  // Time imprecisions can occur during accumulation
 			updateAlignment();
-			for(i in 0...numInstances) {
-				//if(!p.allocated) throw "!";
+			for(i in 0...numInstances)
 				particles[i].updateAbsPos(this);
-			}
-			// var p = particles;
-			// while(p != null) {
-			// 	p = p.next;
-			// }
 			updateMeshBatch();
 			return;
 		}
