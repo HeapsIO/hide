@@ -71,7 +71,7 @@ class DynamicShader extends Shader {
 		if(StringTools.endsWith(path, ".hx")) path = path.substr(0, -3);
 		var cpath = path.split("/").join(".");
 		var cl = cast Type.resolveClass(cpath);
-		if( cl == null && !opt ) throw "Missing shader class"+cpath;
+		if( cl == null && !opt ) throw "Missing shader class "+cpath;
 		return cl;
 	}
 

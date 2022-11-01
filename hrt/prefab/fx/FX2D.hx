@@ -28,7 +28,7 @@ class FX2DAnimation extends h2d.Object {
 	public function new(?parent) {
 		super(parent);
 		random = new hxd.Rand(Std.random(0xFFFFFF));
-		evaluator = new Evaluator(random);
+		evaluator = new Evaluator();
 		name = "FX2DAnimation";
 		setTime(0);
 	}
@@ -75,26 +75,27 @@ class FX2DAnimation extends h2d.Object {
 	}
 
 
+	static var tmpPt = new h3d.Vector();
 	public function setTime( time : Float ) {
 
 		this.localTime = time;
 
 		for(anim in objects) {
 			if(anim.scale != null) {
-				var scale = evaluator.getVector(anim.scale, time);
-				anim.obj2d.scaleX = scale.x;
-				anim.obj2d.scaleY = scale.y;
+				evaluator.getVector(anim.scale, time, tmpPt);
+				anim.obj2d.scaleX = tmpPt.x;
+				anim.obj2d.scaleY = tmpPt.y;
 			}
 
 			if(anim.rotation != null) {
-				var rotation = evaluator.getVector(anim.rotation, time);
-				anim.obj2d.rotation = rotation.x * (Math.PI / 180.0);
+				var rotation = evaluator.getFloat(anim.rotation, time);
+				anim.obj2d.rotation = rotation * (Math.PI / 180.0);
 			}
 
 			if(anim.position != null) {
-				var pos = evaluator.getVector(anim.position, time);
-				anim.obj2d.x = anim.elt2d.x + pos.x;
-				anim.obj2d.y = anim.elt2d.y + pos.y;
+				evaluator.getVector(anim.position, time, tmpPt);
+				anim.obj2d.x = anim.elt2d.x + tmpPt.x;
+				anim.obj2d.y = anim.elt2d.y + tmpPt.y;
 			}
 
 			if(anim.visibility != null)
@@ -107,7 +108,7 @@ class FX2DAnimation extends h2d.Object {
 					default:
 						var drawable = Std.downcast(anim.obj2d, h2d.Drawable);
 						if (drawable != null)
-							drawable.color = evaluator.getVector(anim.color, time);
+							evaluator.getVector(anim.color, time, drawable.color);
 				}
 			}
 

@@ -996,10 +996,10 @@ class FXEditor extends FileView {
 			updateExpanded();
 		});
 		var dopesheet = trackEl.find(".dopesheet");
-		var evaluator = new hrt.prefab.fx.Evaluator(new hxd.Rand(0));
+		var evaluator = new hrt.prefab.fx.Evaluator();
 
 		function getKeyColor(key) {
-			return evaluator.getVector(Curve.getColorValue(curves), key.time);
+			return evaluator.getVector(Curve.getColorValue(curves), key.time, new h3d.Vector());
 		}
 
 		function dragKey(from: hide.comp.CurveEditor, prevTime: Float, newTime: Float) {

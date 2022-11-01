@@ -27,7 +27,6 @@ class FXAnimation extends h3d.scene.Object {
 	public var shaderAnims : Array<ShaderAnimation> = [];
 	public var constraints : Array<hrt.prefab.l3d.Constraint>;
 
-	public var vecPool = new Evaluator.VecPool();
 	var evaluator : Evaluator;
 	var parentFX : FXAnimation;
 	var random : hxd.Rand;
@@ -39,8 +38,7 @@ class FXAnimation extends h3d.scene.Object {
 		super(parent);
 		randSeed = #if editor 0 #else Std.random(0xFFFFFF) #end;
 		random = new hxd.Rand(randSeed);
-		evaluator = new Evaluator(random);
-		evaluator.vecPool = vecPool;
+		evaluator = new Evaluator();
 		name = "FXAnimation";
 		inheritCulled = true;
 	}
@@ -54,8 +52,6 @@ class FXAnimation extends h3d.scene.Object {
 		events = initEvents(root, ctx);
 		var root = def.getFXRoot(ctx, def);
 		initConstraints(ctx, root != null ? root : def);
-		for(s in shaderAnims)
-			s.vecPool = vecPool;
 	}
 
 	override function onRemove() {
@@ -146,7 +142,6 @@ class FXAnimation extends h3d.scene.Object {
 	public function setTime( time : Float, fullSync=true ) {
 		this.localTime = time;
 		if(fullSync) {
-			vecPool.begin();
 			if(objAnims != null) {
 				for(anim in objAnims) {
 					if(anim.scale != null || anim.rotation != null || anim.position != null) {
