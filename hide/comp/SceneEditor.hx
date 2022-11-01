@@ -2850,17 +2850,13 @@ class SceneEditor {
 			} else if( StringTools.endsWith(path, ".shgraph")) {
 				menu.push(graphShaderItem(path));
 			} else if( sys.FileSystem.exists(fullPath) && sys.FileSystem.isDirectory(fullPath) ) {
-				var submenu : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
 				for( c in sys.FileSystem.readDirectory(fullPath) ) {
 					var relPath = ide.makeRelative(fullPath + "/" + c);
 					if( isClassShader(relPath) ) {
-						submenu.push(classShaderItem(relPath));
+						menu.push(classShaderItem(relPath));
 					} else if( StringTools.endsWith(relPath, ".shgraph")) {
-						submenu.push(graphShaderItem(relPath));
+						menu.push(graphShaderItem(relPath));
 					}
-				}
-				if( submenu.length > 0 ) {
-					menu.push({ label : path, menu : submenu });
 				}
 			}
 		}
