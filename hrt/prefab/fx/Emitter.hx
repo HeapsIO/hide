@@ -476,6 +476,7 @@ class EmitterObject extends h3d.scene.Object {
 	}
 
 	public function reset() {
+		numInstances = 0;
 		enable = true;
 		random.init(randomSeed);
 		curTime = 0.0;
@@ -485,6 +486,7 @@ class EmitterObject extends h3d.scene.Object {
 
 		randomValues = [for(i in 0...(maxCount * randSlots)) random.srand()];
 		evaluator = new Evaluator(randomValues, randSlots);
+		listHead = null;
 
 		particles = #if hl hl.CArray.alloc(ParticleInstance, maxCount) #else [for(i in 0...maxCount) new ParticleInstance()] #end;
 		for(p in particles)
