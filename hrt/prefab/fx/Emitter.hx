@@ -371,7 +371,7 @@ private class ParticleInstance  {
 		if(emitter.emitOrientation == Speed && tmpSpeed.lengthSq() > 0.01) {
 			var qRot = qRot.toQuat();
 			inline qRot.initDirection(tmpSpeed);
-			this.qRot.load(qRot);
+			this.qRot.loadQuat(qRot);
 		}
 	}
 }
@@ -694,7 +694,7 @@ class EmitterObject extends h3d.scene.Object {
 						tmpOffset.transform(tmpMat);
 						part.setPosition(tmpOffset.x, tmpOffset.y, tmpOffset.z);
 						tmpQuat.multiply(emitterQuat, tmpQuat);
-						part.qRot.load(tmpQuat);
+						part.qRot.loadQuat(tmpQuat);
 						tmpQuat.toMatrix(tmpMat2);
 						part.emitOrientation.load(tmpMat2);
 					case World:
@@ -708,7 +708,7 @@ class EmitterObject extends h3d.scene.Object {
 						emitterQuat.initRotateMatrix(tmpMat);
 						emitterQuat.normalize();
 						tmpQuat.multiply(tmpQuat, emitterQuat);
-						part.qRot.load(tmpQuat);
+						part.qRot.loadQuat(tmpQuat);
 						tmpQuat.toMatrix(tmpMat2);
 						part.emitOrientation.load(tmpMat2);
 						part.setScale(worldScale.x, worldScale.y, worldScale.z);
@@ -1873,7 +1873,15 @@ class SVector4 {
 	inline function toQuat() {
 		return new h3d.Quat(x, y, z, w);
 	}
-	inline function load(q: { x: Float, y: Float, z: Float, w: Float }) {
+	
+	inline function load(v: h3d.Vector) {
+		this.x = v.x;
+		this.y = v.y;
+		this.z = v.z;
+		this.w = v.w;
+	}
+
+	inline function loadQuat(q: h3d.Quat) {
 		this.x = q.x;
 		this.y = q.y;
 		this.z = q.z;
