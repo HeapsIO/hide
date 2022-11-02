@@ -351,6 +351,7 @@ private class ParticleInstance {
 			var parentAbsPos = emitter.parentTransform;
 			var prevPos = getPosition();
 			var pos = prevPos.add(parentAbsPos.getPosition());
+			pos.w = 1;
 			pos.transform3x4(emitter.getInvPos());
 			pos.transform3x3(tmpMat);
 			pos.transform3x4(emitter.getAbsPos());
