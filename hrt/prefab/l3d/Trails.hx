@@ -1,5 +1,36 @@
 package hrt.prefab.l3d;
 
+class BaseTrails extends hxsl.Shader {
+
+	static var SRC = {
+
+        @param var uvStretch : Float;
+        @const @param var uvMod : Bool = false;
+        @const @param var uvMirror : Bool = false;
+
+
+        @input var input2 : {
+			var uv : Vec2;
+        };
+
+		var calculatedUV : Vec2;
+
+        function vertex() {
+            calculatedUV = input2.uv * vec2(uvStretch, 1.0);
+            if (uvMirror) {
+                calculatedUV.x = calculatedUV.x % 2.0;
+                if (calculatedUV.x > 1.0) {
+                    calculatedUV.x = 2.0-calculatedUV.x;
+                }
+            }
+            if (uvMod) {
+                calculatedUV.x = calculatedUV.x % 1.0;
+            }
+        }
+	};
+
+}
+
 class TrailPoint {
     public var x : Float = 0;
     public var y : Float = 0;
@@ -47,6 +78,9 @@ typedef TrailParameters = {
     var endWidth : Float;
     var lifetime : Float;
     var minLen : Float;
+    var uvStretch : Float;
+    var uvMirror : Bool;
+    var uvMod : Bool;
 }
 
 class TrailObj extends h3d.scene.Mesh {
@@ -60,6 +94,8 @@ class TrailObj extends h3d.scene.Mesh {
     var num_tris : Int = 0;
     var bounds : h3d.col.Bounds;
 
+    var shader : BaseTrails;
+
 
     var pool : TrailPoint = null;
 
@@ -71,6 +107,9 @@ class TrailObj extends h3d.scene.Mesh {
         endWidth : 0.0,
         lifetime : 0.25,
         minLen : 0.1,
+        uvStretch: 1.0,
+        uvMod: false,
+        uvMirror: false,
     };
 
 	public var materialData = {};
@@ -112,6 +151,12 @@ class TrailObj extends h3d.scene.Mesh {
             }
         }
         trailHeads.clear();
+    }
+
+    public function updateShader() {
+        shader.uvMirror = params.uvMirror;
+        shader.uvMod = params.uvMod;
+
     }
 
     static var showDebugLines = false;
@@ -286,10 +331,17 @@ class TrailObj extends h3d.scene.Mesh {
 
         super(dprim,parent);
 
+        
+
         debugPointViz = new h3d.scene.Graphics(parent);
 
         material.props = getMaterialProps();
 		material.mainPass.dynamicParameters = true;
+
+        shader = new BaseTrails();
+        material.mainPass.addShader(shader);
+
+        shader.setPriority(-999);
     }
 
     static var pointA = new h3d.col.Point();
@@ -428,7 +480,7 @@ class TrailObj extends h3d.scene.Mesh {
 
                 if (count+16 >= max_buf_size) break;
 
-                var u = if (params.uvMode == ETileFixed) cur.len else 1.0 - (len);
+                var u = if (params.uvMode == ETileFixed) cur.len else len;
                 if (params.uvMode == EStretch) u = (totalLen - len) / totalLen;
                 buffer[count++] = cur.x+nx * cur.w;
                 buffer[count++] = cur.y+ny * cur.w;
@@ -488,6 +540,8 @@ class TrailObj extends h3d.scene.Mesh {
             indices[num_tris++] = max_buf_size - 1;
         }
 
+        shader.uvStretch = params.uvStretch;
+
         dprim.buffer.uploadVector(vbuf, 0, num_verts, 0);
         dprim.indexes.upload(ibuf, 0, num_tris);
 
@@ -525,6 +579,7 @@ class Trails extends Object3D {
 		tr.params = params;
 		applyTransform(tr);
 		tr.name = name;
+        tr.updateShader();
 		return tr;
 	}
 
@@ -553,11 +608,18 @@ class Trails extends Object3D {
 				<dt>Width Start</dt><dd><input type="range" field="startWidth" min="0" max="10"/></dd>
 				<dt>Width End</dt><dd><input type="range" field="endWidth" min="0" max="10"/></dd>
 				<dt title="Minimum distance between 2 points on a trail. More = better performance but a more blockier look">Min Distance</dt><dd><input type="range" field="minLen" min="0" max="1.0"/></dd>
-				<dt>UV Mode</dt><dd><select field="uvMode"/></dd>
+				<dt>UV Mode</dt><dd><select field="uvMode"></select></dd>
+				<dt>UV Scale</dt><dd><input type="range" field="uvStretch" min="0" max="5"/></dd>
+				<dt>UV Mirror</dt><dd><input type="checkbox" field="uvMirror"/></dd>
+				<dt>UV Mod</dt><dd><input type="checkbox" field="uvMod"/></dd>
+
 			</dl>
 		</div>
-		'),trail.params, function(_) {
+		'),trail.params, function(name:String) {
 			params = trail.params;
+            if ((name == "uvMirror") || (name == "uvMod")) {
+                trail.updateShader();
+            }
 		});
 		//ctx.properties.addMaterial( trail.material, props.find("[name=Material] > .content"), function(_) data = trail.save());
 	}

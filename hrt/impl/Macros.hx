@@ -52,17 +52,28 @@ class Macros {
 			}
 	}
 
-	static function getTypeExpression(t : Type, path : Array<String>, pos) : Expr {
+	static function getTypeExpression(t : Type, path : Array<String>) : Expr {
 		var trueType = Context.follow(t, false);
+		var pos = Context.currentPos();
 		switch(trueType) {
 			case TAnonymous(a):
 				return createAnonDecl(a, path, pos);
 			case TEnum(_,_):
 				trace("found enum");
 				var objFields : Array<ObjectField> = [];
-				objFields.push({field : "name", expr : macro haxe.EnumTools.EnumValueTools.getName($p{path})});
-				objFields.push({field : "parameters", expr : macro haxe.EnumTools.EnumValueTools.getParameters($p{path})});
-				return {expr: EObjectDecl(objFields), pos : pos};
+
+				return macro @:pos(pos) {
+					var name = haxe.EnumTools.EnumValueTools.getName($p{path});
+					var params = haxe.EnumTools.EnumValueTools.getParameters($p{path});
+					if (params.length == 0) {
+						(name:Dynamic);
+					} else {
+						({
+							"name" : name,
+							"params" : params
+						}:Dynamic);
+					}
+				};
 			default:
 				return macro $p{path};
 		}
@@ -72,7 +83,7 @@ class Macros {
 		var objFields : Array<ObjectField> = [];
 		for (f in anonType.get().fields) {
 			path.push(f.name);
-			var e = getTypeExpression(f.type, path, pos);
+			var e = getTypeExpression(f.type, path);
 			path.pop();
 			objFields.push({field : f.name, expr : e});
 		}
@@ -153,7 +164,7 @@ class Macros {
 				}
 				if (type == null) throw "assert";
 
-				var expr = getTypeExpression(type, ["this", name], pos);
+				var expr = getTypeExpression(type, ["this", name]);
 
 				if( serCond == null ) {
 					var defVal = e.expr.match(EConst(_) | EBinop(_) | EUnop(_)) ? e : macro @:pos(f.pos) null;
@@ -171,8 +182,9 @@ class Macros {
 							var parentPath = path.copy(); parentPath.pop();
 							var expr = macro @:pos(pos) {
 								var objNullCheck = ${getOrDefault(parentPath)};
+								var isString = Std.is($p{path}, String);
 								if (objNullCheck != null)
-									$p{path} = hrt.impl.Macros.enumOrNullByName($i{enumRef.get().name}, ${getOrDefault(name, parentPath.length)}, ${getOrDefault(params, parentPath.length)});
+									$p{path} = hrt.impl.Macros.enumOrNullByName($i{enumRef.get().name}, isString ? $p{path} : ${getOrDefault(name, parentPath.length)}, isString ? null : ${getOrDefault(params, parentPath.length)});
 							};
 							unser.push(expr);
 						}
