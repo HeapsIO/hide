@@ -86,7 +86,7 @@ private class ParticleInstance {
 	var scaleY : Single;
 	var scaleZ : Single;
 
-	#if hl
+	#if (hl_ver >= version("1.13.0"))
 	@:packed var speedAccumulation(default, never) : SVector3;
 	@:packed var qRot(default, never) : SVector4;
 	@:packed var absPos(default, never) : SMatrix4;  // Needed for sortZ
