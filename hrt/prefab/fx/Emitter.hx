@@ -71,48 +71,47 @@ class InstanceDef {
 }
 
 typedef ShaderAnims = Array<ShaderAnimation>;
-typedef PartArray = #if hl hl.CArray<ParticleInstance> #else Array<ParticleInstance> #end;
-typedef Single = #if hl hl.F32 #else Float #end;
+typedef PartArray = #if (hl_ver >= version("1.13.0")) hl.CArray<ParticleInstance> #else Array<ParticleInstance> #end;
+typedef Single = #if (hl_ver >= version("1.13.0")) hl.F32 #else Float #end;
 
-@:allow(hrt.prefab.fx.EmitterObject) 
-@:struct
-private class ParticleInstance  {
-	public var prev : ParticleInstance;
-	public var next : ParticleInstance;
+@:publicFields @:struct
+private class ParticleInstance {
+	var prev : ParticleInstance;
+	var next : ParticleInstance;
 
-	public var x : Single;
-	public var y : Single;
-	public var z : Single;
-	public var scaleX : Single;
-	public var scaleY : Single;
-	public var scaleZ : Single;
+	var x : Single;
+	var y : Single;
+	var z : Single;
+	var scaleX : Single;
+	var scaleY : Single;
+	var scaleZ : Single;
 
 	#if hl
-	@:packed public var speedAccumulation(default, never) : SVector3;
-	@:packed public var qRot(default, never) : SVector4;
-	@:packed public var absPos(default, never) : SMatrix4;  // Needed for sortZ
-	@:packed public var emitOrientation(default, never) : SMatrix3;
+	@:packed var speedAccumulation(default, never) : SVector3;
+	@:packed var qRot(default, never) : SVector4;
+	@:packed var absPos(default, never) : SMatrix4;  // Needed for sortZ
+	@:packed var emitOrientation(default, never) : SMatrix3;
 	#else 
-	public var speedAccumulation(default, never) = new SVector3();
-	public var qRot(default, never) = new SVector4();
-	public var absPos(default, never) = new SMatrix4();
-	public var emitOrientation(default, never) = new SMatrix3();
+	var speedAccumulation(default, never) = new SVector3();
+	var qRot(default, never) = new SVector4();
+	var absPos(default, never) = new SMatrix4();
+	var emitOrientation(default, never) = new SMatrix3();
 	#end
 
-	public var colorMult : Int;
-	public var idx : hxd.impl.UInt16;
-	public var startFrame : hxd.impl.UInt16;
-	public var life : Single;
-	public var lifeTime : Single;
-	public var random : Single;
-	public var distToCam : Single;
-	public var startTime : Single;
+	var colorMult : Int;
+	var idx : hxd.impl.UInt16;
+	var startFrame : hxd.impl.UInt16;
+	var life : Single;
+	var lifeTime : Single;
+	var random : Single;
+	var distToCam : Single;
+	var startTime : Single;
 
-	public inline static var REMOVED_IDX : hxd.impl.UInt16 = -1;
+	inline static var REMOVED_IDX : hxd.impl.UInt16 = -1;
 
-	public function new() { }
+	function new() { }
 
-	public function load(p: ParticleInstance) {
+	function load(p: ParticleInstance) {
 		x = p.x;
 		y = p.y;
 		z = p.z;
@@ -137,7 +136,7 @@ private class ParticleInstance  {
 		next = p.next;
 	}
 
-	public function init(idx: Int, emitter: EmitterObject) {
+	function init(idx: Int, emitter: EmitterObject) {
 		x = 0.0;
 		y = 0.0;
 		z = 0.0;
@@ -191,20 +190,20 @@ private class ParticleInstance  {
 		v1.w = 1.0;
 	}
 
-	public inline function getPosition() { return new h3d.Vector(x,y,z); }
-	public inline function setPosition(x, y, z) {
+	inline function getPosition() { return new h3d.Vector(x,y,z); }
+	inline function setPosition(x, y, z) {
 		this.x = x;
 		this.y = y;
 		this.z = z;
 	}
 
-	public inline function setScale( x, y, z ) {
+	inline function setScale( x, y, z ) {
 		scaleX = x;
 		scaleY = y;
 		scaleZ = z;
 	}
 
-	public function updateAbsPos(emitter: EmitterObject) {
+	function updateAbsPos(emitter: EmitterObject) {
 		var qRot = qRot.toQuat();
 
 		switch( emitter.alignMode ) {
@@ -263,7 +262,7 @@ private class ParticleInstance  {
 		this.absPos.load(absPos);
 	}
 
-	public function update(emitter : EmitterObject, dt : Float) {
+	function update(emitter : EmitterObject, dt : Float) {
 		var t = hxd.Math.clamp(life / lifeTime, 0.0, 1.0);
 		tmpSpeed.set(0,0,0);
 
@@ -488,7 +487,7 @@ class EmitterObject extends h3d.scene.Object {
 		evaluator = new Evaluator(randomValues, randSlots);
 		listHead = null;
 
-		particles = #if hl hl.CArray.alloc(ParticleInstance, maxCount) #else [for(i in 0...maxCount) new ParticleInstance()] #end;
+		particles = #if (hl_ver >= version("1.13.0")) hl.CArray.alloc(ParticleInstance, maxCount) #else [for(i in 0...maxCount) new ParticleInstance()] #end;
 		for(p in particles)
 			p.idx = ParticleInstance.REMOVED_IDX;
 		for( s in subEmitters )
@@ -590,7 +589,6 @@ class EmitterObject extends h3d.scene.Object {
 	}
 
 	var tmpCtx : hrt.prefab.Context;
-	static var tmpPart = new ParticleInstance();
 	static var tmpQuat = new h3d.Quat();
 	static var tmpEmitterQuat = new h3d.Quat();
 	static var tmpOffset = new h3d.Vector();
