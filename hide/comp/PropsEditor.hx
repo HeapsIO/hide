@@ -556,8 +556,26 @@ class PropsField extends Component {
 			if( f.is("select") ) {
 				enumValue = Type.getEnum(current);
 				if( enumValue != null && f.find("option").length == 0 ) {
-					for( c in enumValue.getConstructors() )
-						new Element('<option value="$c">$c</option>').appendTo(f);
+					var meta = haxe.rtti.Meta.getFields(enumValue);
+					for( c in enumValue.getConstructors() ) {
+						
+						var name = c;
+						var comment = "";
+						if (Reflect.hasField(meta, c)) {
+							var fieldMeta = Reflect.getProperty(meta, c);
+							if (Reflect.hasField(fieldMeta, "display")) {
+								var displayArr = Reflect.getProperty(fieldMeta, "display");
+								if (displayArr.length > 0) {
+									name = displayArr[0];
+								}
+								if (displayArr.length > 1) {
+									comment = displayArr[1];
+								}
+							}
+						}
+
+						new Element('<option value="$c" title="$comment">$name</option>').appendTo(f);
+					}
 				}
 			}
 

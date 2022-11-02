@@ -31,8 +31,11 @@ enum TrailOrientation {
 }
 
 enum UVMode {
+    @display("Stretch", "Stretch the UV between the head (u=0) and the tail (u=1) of the trails")
     EStretch;
+    @display("Tile Fixed", "Tile the texture through the trail, but the texture stay fixed in world space")
     ETileFixed;
+    @display("Tile Follow", "Tile the texture throught the tail, and the texture follow the head of the tail (u=0 at the head)")
     ETileFollow;
 }
 
@@ -69,24 +72,6 @@ class TrailObj extends h3d.scene.Mesh {
         lifetime : 0.25,
         minLen : 0.1,
     };
-
-    public function save() : Dynamic {
-        return {
-            uvMode : params.uvMode,
-            startWidth : params.startWidth,
-            endWidth : params.endWidth,
-            lifetime : params.lifetime,
-            minLen : params.minLen,
-        };
-    }
-
-    public function load(data : Dynamic) {
-        params.uvMode = data.uvMode;
-        params.startWidth = data.startWidth;
-        params.endWidth = data.endWidth;
-        params.lifetime = data.lifetime;
-        params.minLen = data.minLen;
-    }
 
 	public var materialData = {};
 
