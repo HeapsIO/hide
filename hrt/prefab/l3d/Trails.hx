@@ -38,6 +38,14 @@ enum UVMode {
 
 typedef TrailID = haxe.Int32;
 
+typedef TrailParameters = {
+    var uvMode : UVMode;
+    var startWidth : Float;
+    var endWidth : Float;
+    var lifetime : Float;
+    var minLen : Float;
+}
+
 class TrailObj extends h3d.scene.Mesh {
     var trailHeads : Map<TrailID, TrailHead> = new Map();
 
@@ -49,13 +57,36 @@ class TrailObj extends h3d.scene.Mesh {
     var num_tris : Int = 0;
     var bounds : h3d.col.Bounds;
 
-    var mode : UVMode = ETileFixed;
 
     var pool : TrailPoint = null;
 
     var debugPointViz : h3d.scene.Graphics = null;
 
-    var lifetime = 10.25;
+    public var params : TrailParameters = {
+        uvMode : ETileFixed,
+        startWidth  : 0.25,
+        endWidth : 0.0,
+        lifetime : 0.25,
+        minLen : 0.1,
+    };
+
+    public function save() : Dynamic {
+        return {
+            uvMode : params.uvMode,
+            startWidth : params.startWidth,
+            endWidth : params.endWidth,
+            lifetime : params.lifetime,
+            minLen : params.minLen,
+        };
+    }
+
+    public function load(data : Dynamic) {
+        params.uvMode = data.uvMode;
+        params.startWidth = data.startWidth;
+        params.endWidth = data.endWidth;
+        params.lifetime = data.lifetime;
+        params.minLen = data.minLen;
+    }
 
 	public var materialData = {};
 
@@ -110,9 +141,11 @@ class TrailObj extends h3d.scene.Mesh {
         switch (orient) {
             case ECamera: {
                 var cam = getScene().camera.pos;
-                var vcamx = cam.x - x;
-                var vcamy = cam.y - y;
-                var vcamz = cam.z - z;
+                var target = getScene().camera.target;
+
+                var vcamx = cam.x - target.x;
+                var vcamy = cam.y - target.y;
+                var vcamz = cam.z - target.z;
 
                 var len = 1.0/hxd.Math.distance(vcamx, vcamy, vcamz);
 
@@ -141,13 +174,21 @@ class TrailObj extends h3d.scene.Mesh {
             (z - prev.next.z) * (z - prev.next.z);
             len = Math.sqrt(len);
 
-            var minLen = 0.5;
-            if (len < minLen) {
+            //if (params.uvMode == EStretch)
+            //head.totalLength = prev != null ? prev.len + len : len;
+
+            if (len < params.minLen) {
                 new_pt = prev;
                 prev = prev.next;
                 added_point = false;
             } else {
-                head.totalLength = prev != null ? prev.len : 0.0;
+                if (params.uvMode == ETileFixed) {
+                    head.totalLength = prev != null ? prev.len + len : len;
+                } else {
+                    head.totalLength += prev.len;
+
+
+                }
             }
         }
 
@@ -170,18 +211,18 @@ class TrailObj extends h3d.scene.Mesh {
             len = Math.sqrt(lenSq);
             trace(len);
 
-            if (mode == ETileFixed) {
+            if (params.uvMode == ETileFixed) {
                 new_pt.len = head.totalLength + len;
             }
             else {
                 new_pt.len = len;
             }
 
+            var len = 1.0/len;
 
-
-            var nx = (prev.x - x) / len;
-            var ny = (prev.y - y) / len;
-            var nz = (prev.z - z) / len;
+            var nx = (prev.x - x) * len;
+            var ny = (prev.y - y) * len;
+            var nz = (prev.z - z) * len;
     
             new_pt.nx = ny * uz - nz * uy;
             new_pt.ny = nz * ux - nx * uz;
@@ -301,6 +342,7 @@ class TrailObj extends h3d.scene.Mesh {
 
         if (shouldAddPoint) {
             addPoint(0, x,y,z, ECamera, 1);
+            //addPoint(0, x,y,z, EUp(0,0,1), 1);
         }
 
 
@@ -324,12 +366,14 @@ class TrailObj extends h3d.scene.Mesh {
             var fix_prev = true;
             var cur = trail.firstPoint;
             var len = 0.0;
+
+            var totalLen = trail.totalLength + (cur != null ? cur.len : 0.0);
             while (cur != null) {
                 cur.lifetime += hxd.Timer.elapsedTime;
-                cur.w = 1.0-cur.lifetime / lifetime;
-                cur.w *= 1.0;
-                if (cur.lifetime > lifetime) {
-                    if (mode != ETileFixed)
+                var t = cur.lifetime / params.lifetime;
+                cur.w = hxd.Math.lerp(params.startWidth, params.endWidth, t);
+                if (cur.lifetime > params.lifetime) {
+                    if (params.uvMode != ETileFixed)
                         trail.totalLength -= cur.len;
                     if (prev != null) {
                         prev.next = null;
@@ -399,7 +443,8 @@ class TrailObj extends h3d.scene.Mesh {
 
                 if (count+16 >= max_buf_size) break;
 
-                var u = if (mode == ETileFixed) cur.len else 1.0 - (len);
+                var u = if (params.uvMode == ETileFixed) cur.len else 1.0 - (len);
+                if (params.uvMode == EStretch) u = (totalLen - len) / totalLen;
                 buffer[count++] = cur.x+nx * cur.w;
                 buffer[count++] = cur.y+ny * cur.w;
                 buffer[count++] = cur.z+nz * cur.w;
@@ -422,15 +467,15 @@ class TrailObj extends h3d.scene.Mesh {
                 if (prev != null) {
 
 
-                    indices[num_tris] = num_verts;
+                    indices[num_tris] = num_verts+2;
                     indices[num_tris+1] = num_verts+1;
-                    indices[num_tris+2] = num_verts+2;
+                    indices[num_tris+2] = num_verts;
 
                     num_tris += 3;
 
-                    indices[num_tris] = num_verts+1;
+                    indices[num_tris] = num_verts+2;
                     indices[num_tris+1] = num_verts+3;
-                    indices[num_tris+2] = num_verts+2;
+                    indices[num_tris+2] = num_verts+1;
 
                     num_tris += 3;
                     num_verts += 2;
@@ -481,13 +526,18 @@ class TrailObj extends h3d.scene.Mesh {
 
 
 class Trails extends Object3D {
-	function new(?parent) {
+	
+    @:s var params : TrailParameters;
+    
+    function new(?parent) {
 		super(parent);
 	}
 
 	public function create( ?parent : h3d.scene.Object ) {
 		var tr = new TrailObj(parent);
-		//tr.load(data);
+        if (params == null)
+            params = tr.params;
+		tr.params = params;
 		applyTransform(tr);
 		tr.name = name;
 		return tr;
@@ -499,6 +549,35 @@ class Trails extends Object3D {
 		ctx.local3d = tr;
 		return ctx;
 	}
+
+    #if editor
+
+	override function getHideProps():HideProps {
+		return { icon : "toggle-on", name : "Trails" };
+	}
+
+	override public function edit(ctx:EditContext) {
+		super.edit(ctx);
+
+		var trailContext = ctx.getContext(this);
+		var trail = trailContext == null ? create(null) : Std.downcast(trailContext.local3d, TrailObj);
+		var props = ctx.properties.add(new hide.Element('
+		<div class="group" name="Trail Properties">
+			<dl>
+				<dt>Lifetime</dt><dd><input type="range" field="lifetime" min="0" max="1"/></dd>
+				<dt>Width Start</dt><dd><input type="range" field="startWidth" min="0" max="10"/></dd>
+				<dt>Width End</dt><dd><input type="range" field="endWidth" min="0" max="10"/></dd>
+				<dt title="Minimum distance between 2 points on a trail. More = better performance but a more blockier look">Min Distance</dt><dd><input type="range" field="minLen" min="0" max="1.0"/></dd>
+				<dt>UV Mode</dt><dd><select field="uvMode"/></dd>
+			</dl>
+		</div>
+		'),trail.params, function(_) {
+			params = trail.params;
+		});
+		//ctx.properties.addMaterial( trail.material, props.find("[name=Material] > .content"), function(_) data = trail.save());
+	}
+
+	#end
 
 	static var _ = Library.register("trails", Trails);
 }
