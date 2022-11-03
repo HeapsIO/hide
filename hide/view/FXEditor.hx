@@ -1874,7 +1874,7 @@ class FXEditor extends FileView {
 			if (num_trails > 0) {
 				lines.push('Num Trails : $num_trails');
 				lines.push('Trails CPU time : ${floatToStringPrecision(trails_update_time_smooth * 1000, 3, true)} ms');
-				lines.push('Trails Triangles : ${floatToStringPrecision(num_trail_tri_smooth, 1, true)}');
+				lines.push('Trails Triangles : ${floatToStringPrecision(num_trail_tri_smooth, 2, true)}');
 				lines.push('Trail pool : $poolSize');
 
 

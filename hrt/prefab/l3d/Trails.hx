@@ -5,9 +5,7 @@ class BaseTrails extends hxsl.Shader {
 	static var SRC = {
 
         @param var uvStretch : Float;
-        @const @param var uvMod : Bool = false;
-        @const @param var uvMirror : Bool = false;
-
+        @const @param var uvRepeat : Int = 0;
 
         @input var input2 : {
 			var uv : Vec2;
@@ -15,16 +13,25 @@ class BaseTrails extends hxsl.Shader {
 
 		var calculatedUV : Vec2;
 
-        function vertex() {
-            calculatedUV = input2.uv * vec2(uvStretch, 1.0);
-            if (uvMirror) {
-                calculatedUV.x = calculatedUV.x % 2.0;
-                if (calculatedUV.x > 1.0) {
-                    calculatedUV.x = 2.0-calculatedUV.x;
-                }
-            }
-            if (uvMod) {
-                calculatedUV.x = calculatedUV.x % 1.0;
+        function __init__() {
+            calculatedUV = input2.uv;
+        }
+
+        function fragment() {
+            calculatedUV = calculatedUV * vec2(uvStretch, 1.0);
+
+            switch(uvRepeat) {
+                case 0: // Modulo
+                    calculatedUV.x = calculatedUV.x % 1.0;
+                case 1: // Mirror
+                    calculatedUV.x = calculatedUV.x % 2.0;
+                    if (calculatedUV.x > 1.0) {
+                        calculatedUV.x = 2.0-calculatedUV.x;
+                    }
+                case 3: // Clamp
+                    calculatedUV.x = saturate(calculatedUV.x);
+                case 4: {};// None
+                default: {};
             }
         }
 	};
@@ -70,6 +77,17 @@ enum UVMode {
     ETileFollow;
 }
 
+enum UVRepeat {
+    @display("Mod", "U value goes from 0 to 1, then back to 0 again. For textures that tile horizontally")
+    EMod;
+    @display("Mirror", "U value goes from 0 to 1 then from 1 to 0, repeating. For textures that don't tile horizontally")
+    EMirror;
+    @display("Clamp", "U value goes from 0 to 1, then stay at 1")
+    EClamp;
+    @display("None", "No repeat for the UV values")
+    ENone;
+}
+
 typedef TrailID = haxe.Int32;
 
 typedef TrailParameters = {
@@ -78,9 +96,9 @@ typedef TrailParameters = {
     var endWidth : Float;
     var lifetime : Float;
     var minLen : Float;
-    var uvStretch : Float;
-    var uvMirror : Bool;
-    var uvMod : Bool;
+    var uvStretch: Float;
+    var uvRepeat : UVRepeat;
+    var maxTriangles : Int;
 }
 
 class TrailObj extends h3d.scene.Mesh {
@@ -96,6 +114,23 @@ class TrailObj extends h3d.scene.Mesh {
 
     var shader : BaseTrails;
 
+    var maxNumTriangles(default, set) : Int = 2000;
+
+    function set_maxNumTriangles(new_value : Int) {
+        if (maxNumTriangles != new_value) {
+            maxNumTriangles = new_value;
+            initOrResizeInternalBuffers(maxNumTriangles);
+            dprim.alloc(null);
+        }
+
+        return maxNumTriangles;
+    }
+
+    function initOrResizeInternalBuffers(num : Int) {
+        vbuf = new hxd.FloatBuffer(num * 8 * 2);
+        ibuf = new hxd.IndexBuffer(num * 6);
+    }
+
 
     var pool : TrailPoint = null;
 
@@ -108,14 +143,19 @@ class TrailObj extends h3d.scene.Mesh {
         lifetime : 0.25,
         minLen : 0.1,
         uvStretch: 1.0,
-        uvMod: false,
-        uvMirror: false,
+        uvRepeat: EMod,
+        maxTriangles: 5000,
     };
 
 	public var materialData = {};
 
     public function getNextTrailID() : TrailID {
         return nextTrailID++;
+    }
+
+    public  function updateParams() {
+        updateShader();
+        set_maxNumTriangles(1500);
     }
 
     function alloc() : TrailPoint {
@@ -154,9 +194,7 @@ class TrailObj extends h3d.scene.Mesh {
     }
 
     public function updateShader() {
-        shader.uvMirror = params.uvMirror;
-        shader.uvMod = params.uvMod;
-
+        shader.uvRepeat = params.uvRepeat.getIndex();
     }
 
     static var showDebugLines = false;
@@ -239,7 +277,6 @@ class TrailObj extends h3d.scene.Mesh {
             (y - prev.y) * (y - prev.y) +
             (z - prev.z) * (z - prev.z);
             len = Math.sqrt(lenSq);
-            trace(len);
 
             if (params.uvMode == ETileFixed) {
                 new_pt.len = head.totalLength + len;
@@ -312,26 +349,29 @@ class TrailObj extends h3d.scene.Mesh {
 		return p;
 	}
 
-    var max_buf_size = 65534 * 8;
+    var max_buf_size = 2500 * 8;
 
-    public function new(?parent : h3d.scene.Object) {
-        var bounds = new h3d.col.Bounds();
-        bounds.addPos(0,0,0);
-
-        vbuf = new hxd.FloatBuffer(max_buf_size);
-        ibuf = new hxd.IndexBuffer(max_buf_size);
-
-        dprim = new h3d.prim.RawPrimitive({
+    function onDprimContextLost() {
+        return {
             vbuf : vbuf,
             ibuf : ibuf,
             stride : 8,
             quads : false,
             bounds : bounds,
-        }, true);
+        };
+    }
+
+    public function new(?params: TrailParameters, ?parent : h3d.scene.Object) {
+        bounds = new h3d.col.Bounds();
+        if (params != null) this.params = params;
+        bounds.addPos(0,0,0);
+
+        initOrResizeInternalBuffers(1500);
+
+        dprim = new h3d.prim.RawPrimitive(onDprimContextLost(), true);
+        dprim.onContextLost = onDprimContextLost;
 
         super(dprim,parent);
-
-        
 
         debugPointViz = new h3d.scene.Graphics(parent);
 
@@ -342,6 +382,8 @@ class TrailObj extends h3d.scene.Mesh {
         material.mainPass.addShader(shader);
 
         shader.setPriority(-999);
+
+        updateParams();
     }
 
     static var pointA = new h3d.col.Point();
@@ -355,6 +397,8 @@ class TrailObj extends h3d.scene.Mesh {
 
     override function sync(ctx) {
         var t = haxe.Timer.stamp();
+
+        //trace(t, ctx.elapsedTime);
 
         calcAbsPos();
 
@@ -396,6 +440,7 @@ class TrailObj extends h3d.scene.Mesh {
         var count = 0;
         num_tris = 0;
         var num_verts = 0;
+        var num_segments = 0;
 
         // render
         for (k => trail in trailHeads) {
@@ -406,7 +451,8 @@ class TrailObj extends h3d.scene.Mesh {
 
             var totalLen = trail.totalLength + (cur != null ? cur.len : 0.0);
             while (cur != null) {
-                cur.lifetime += hxd.Timer.elapsedTime;
+                num_segments += 1;
+                cur.lifetime += ctx.elapsedTime;
                 var t = cur.lifetime / params.lifetime;
                 cur.w = hxd.Math.lerp(params.startWidth, params.endWidth, t);
                 if (cur.lifetime > params.lifetime) {
@@ -530,15 +576,17 @@ class TrailObj extends h3d.scene.Mesh {
             }
         }
 
+        //trace(num_segments, num_tris);
+
         // debug sanitize
         while (count < max_buf_size) {
             buffer[count++] = 1000;
         }
 
-        var tmp_tris = num_tris;
+        /*var tmp_tris = num_tris;
         while (num_tris < max_buf_size) {
             indices[num_tris++] = max_buf_size - 1;
-        }
+        }*/
 
         shader.uvStretch = params.uvStretch;
 
@@ -573,7 +621,7 @@ class Trails extends Object3D {
 	}
 
 	public function create( ?parent : h3d.scene.Object ) {
-		var tr = new TrailObj(parent);
+		var tr = new TrailObj(params, parent);
         if (params == null)
             params = tr.params;
 		tr.params = params;
@@ -608,17 +656,27 @@ class Trails extends Object3D {
 				<dt>Width Start</dt><dd><input type="range" field="startWidth" min="0" max="10"/></dd>
 				<dt>Width End</dt><dd><input type="range" field="endWidth" min="0" max="10"/></dd>
 				<dt title="Minimum distance between 2 points on a trail. More = better performance but a more blockier look">Min Distance</dt><dd><input type="range" field="minLen" min="0" max="1.0"/></dd>
-				<dt>UV Mode</dt><dd><select field="uvMode"></select></dd>
-				<dt>UV Scale</dt><dd><input type="range" field="uvStretch" min="0" max="5"/></dd>
-				<dt>UV Mirror</dt><dd><input type="checkbox" field="uvMirror"/></dd>
-				<dt>UV Mod</dt><dd><input type="checkbox" field="uvMod"/></dd>
-
+				<dt title="Maximum allocated triangles for this trail system.">Max Triangles</dt><dd><input type="range" field="maxTriangles" min="0" max="65000"/></dd>
 			</dl>
 		</div>
+
+        <div class="group" name="UV">
+        <dl>
+            <dt>UV Mode</dt><dd><select field="uvMode"></select></dd>
+            <dt>UV Repeat</dt><dd><select field="uvRepeat"></select></dd>
+            <dt>UV Scale</dt><dd><input type="range" field="uvStretch" min="0" max="5"/></dd>
+        </dl>
+    </div>
 		'),trail.params, function(name:String) {
 			params = trail.params;
-            if ((name == "uvMirror") || (name == "uvMod")) {
+            if (name == "uvRepeat") {
                 trail.updateShader();
+            }
+            if (name == "uvMode") {
+                trail.reset();
+            }
+            if (name == "maxTriangles") {
+                trail.updateParams();
             }
 		});
 		//ctx.properties.addMaterial( trail.material, props.find("[name=Material] > .content"), function(_) data = trail.save());
