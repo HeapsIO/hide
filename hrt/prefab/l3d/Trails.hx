@@ -121,25 +121,44 @@ class TrailObj extends h3d.scene.Mesh {
 
     var shader : BaseTrails;
 
-    var maxNumTriangles(default, set) : Int = 2000;
 
-    function getTheoricalMaxPoints() : Int {
-        return Std.int(std.Math.ceil(num_trails * prefab.lifetime * 60.0 / pointFrameskip));
+    public function getTheoricalMaxPoints() : Int {
+        return Std.int(std.Math.ceil(prefab.lifetime * 60.0 / pointFrameskip + 1));
     }
 
-    function set_maxNumTriangles(new_value : Int) {
-        if (maxNumTriangles != new_value) {
-            maxNumTriangles = new_value;
-            initOrResizeInternalBuffers(maxNumTriangles);
+    function getTheoricalMaxVertexes() : Int {
+        var pointsPerTrail = getTheoricalMaxPoints();
+        var vertsPerTrail = std.Math.ceil(pointsPerTrail * 4);
+        return vertsPerTrail * num_trails;
+    }
+
+    function getTheoricalMaxIndices() : Int {
+        var pointsPerTrail = getTheoricalMaxPoints();
+        var indicesPerTrail = pointsPerTrail * 6;
+        return indicesPerTrail * num_trails;
+    }
+
+    var lastMaxVertexesSize = 0;
+    var lastMaxIndicesSize = 0;
+
+    function refreshBufferSize() {
+        if (lastMaxVertexesSize != getTheoricalMaxVertexes() || lastMaxIndicesSize != getTheoricalMaxIndices()) {
+            lastMaxVertexesSize = getTheoricalMaxVertexes();
+            lastMaxIndicesSize = getTheoricalMaxIndices();
+
+            initOrResizeInternalBuffers();
             dprim.alloc(null);
         }
-
-        return maxNumTriangles;
     }
 
-    function initOrResizeInternalBuffers(num : Int) {
-        vbuf = new hxd.FloatBuffer(num * 8 * 3);
-        ibuf = new hxd.IndexBuffer(num * 3);
+    function initOrResizeInternalBuffers() {
+        var alloc = hxd.impl.Allocator.get();
+        if (vbuf != null)
+            alloc.disposeFloats(vbuf);
+        vbuf = new hxd.FloatBuffer(getTheoricalMaxVertexes() * 8);
+        if (ibuf != null)
+            alloc.disposeIndexes(ibuf);
+        ibuf = new hxd.IndexBuffer(getTheoricalMaxIndices());
     }
 
 
@@ -260,7 +279,7 @@ class TrailObj extends h3d.scene.Mesh {
             //if (params.uvMode == EStretch)
             //head.totalLength = prev != null ? prev.len + len : len;
 
-            if (prev.next.lifetime < pointFrameskip/60.0) {
+            if (prev.lifetime < pointFrameskip/60.0) {
                 new_pt = prev;
                 prev = prev.next;
                 added_point = false;
@@ -269,16 +288,16 @@ class TrailObj extends h3d.scene.Mesh {
                     head.totalLength = prev != null ? prev.len + len : len;
                 } else {
                     head.totalLength += prev.len;
-
-
                 }
             }
         }
 
         if (new_pt == null)
+        {
             new_pt = alloc();
+            new_pt.lifetime = 0.0;
+        }
 
-        new_pt.lifetime = 0.0;
         new_pt.w = w;
 
         new_pt.x = x;
@@ -387,7 +406,7 @@ class TrailObj extends h3d.scene.Mesh {
         prefab = parentPrefab;
         bounds.addPos(0,0,0);
 
-        initOrResizeInternalBuffers(1500);
+        initOrResizeInternalBuffers();
 
         dprim = new h3d.prim.RawPrimitive(onDprimContextLost(), true);
         dprim.onContextLost = onDprimContextLost;
@@ -421,7 +440,7 @@ class TrailObj extends h3d.scene.Mesh {
 
         //trace(t, ctx.elapsedTime);
 
-        set_maxNumTriangles(getTheoricalMaxPoints()*10);
+        refreshBufferSize();
 
         calcAbsPos();
 
@@ -548,7 +567,7 @@ class TrailObj extends h3d.scene.Mesh {
                     debugPointViz.drawLine(pointA, pointB);
                 }
 
-                if (count+16 >= maxNumTriangles * 8 * 3) break;
+                /*if (count+16 >= maxNumTriangles * 8 * 3) break;*/
 
                 var u = if (prefab.uvMode == ETileFixed) cur.len else len;
                 if (prefab.uvMode == EStretch) u = (totalLen - len) / totalLen;
@@ -603,9 +622,9 @@ class TrailObj extends h3d.scene.Mesh {
         //trace(num_segments, num_verts);
 
         // debug sanitize
-        while (count < maxNumTriangles * 8 * 3) {
+        /*while (count < maxNumTriangles * 8 * 3) {
             buffer[count++] = 1000;
-        }
+        }*/
 
         /*var tmp_tris = num_verts;
         while (num_verts < max_buf_size) {
@@ -614,7 +633,7 @@ class TrailObj extends h3d.scene.Mesh {
 
         shader.uvStretch = prefab.uvStretch;
 
-        dprim.buffer.uploadVector(vbuf, 0, num_verts, 0);
+        dprim.buffer.uploadVector(vbuf, 0, Std.int(count / 8), 0);
         dprim.indexes.upload(ibuf, 0, num_verts);
 
 

@@ -1841,25 +1841,37 @@ class FXEditor extends FileView {
 		var trails_update_time = 0.0;
 		var num_trail_tris = 0.0;
 		var max_tris = 0;
+		var max_len = 0;
+		var theorical_max_len = 0;
 
 		var poolSize = 0;
 		@:privateAccess
 		for (trail in trails) {
 			for (head in trail.trailHeads) {
 				num_trails ++;
+				var p = head.firstPoint;
+				var len = 0;
+				while(p != null) {
+					len ++;
+					p = p.next;
+				}
+				if (len > max_len) {
+					max_len = len;
+				}
 			}
 			trails_update_time += trail.lastUpdateDuration;
-			num_trail_tris += trail.num_verts/3.0;
+			num_trail_tris += trail.num_verts;
 
 			var p = trail.pool;
 			while(p != null) {
 				poolSize ++;
 				p = p.next;
 			}
-			max_tris += trail.maxNumTriangles;
+			max_tris += Std.int(trail.vbuf.length/8.0);
+			theorical_max_len = trail.getTheoricalMaxPoints();
 		}
 
-		var smooth_factor = 1/30.0;
+		var smooth_factor = 1.0;
 		avg_smooth = avg_smooth * (1.0 - smooth_factor) + total_time * smooth_factor;
 		trails_update_time_smooth = trails_update_time_smooth * (1.0 - smooth_factor) + trails_update_time * smooth_factor;
 		num_trail_tri_smooth = num_trail_tri_smooth * (1.0-smooth_factor) + num_trail_tris * smooth_factor;
@@ -1876,8 +1888,10 @@ class FXEditor extends FileView {
 			if (num_trails > 0) {
 				lines.push('Num Trails : $num_trails');
 				lines.push('Trails CPU time : ${floatToStringPrecision(trails_update_time_smooth * 1000, 3, true)} ms');
-				lines.push('Trails Triangles : ${floatToStringPrecision(num_trail_tri_smooth, 2, true)}');
-				lines.push('Allocated Trails Triangles : $max_tris');
+				lines.push('Trails Vertexes : ${floatToStringPrecision(num_trail_tri_smooth, 2, true)}');
+				lines.push('Allocated Trails Vertexes : $max_tris');
+				lines.push('Max Trail Lenght : $max_len');
+				lines.push('Theorical Max Trail Lenght : $theorical_max_len');
 				lines.push('Trail pool : $poolSize');
 
 

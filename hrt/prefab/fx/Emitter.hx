@@ -632,13 +632,15 @@ class EmitterObject extends h3d.scene.Object {
 
 	function disposeInstance(idx: Int) {
 		checkList();
-
 		--numInstances;
 		if(numInstances < 0)
 			throw "assert";
 
 		// stitch list after remove
 		var o = particles[idx];
+		trace('Dispose id ${o.trailId}');
+
+
 		if(o.idx == ParticleInstance.REMOVED_IDX) throw "!";
 		var prev = o.prev;
 		var next = o.next;
@@ -998,6 +1000,8 @@ class EmitterObject extends h3d.scene.Object {
 		batch.begin(hxd.Math.nextPOT(maxCount));
 
 		inline function emit(p: ParticleInstance) {
+			if (p.life > p.lifeTime)
+				return;
 			inline tmpMat.load(p.absPos.toMatrix());
 			batch.worldPosition = tmpMat;
 			for( anim in shaderAnims ) {
@@ -1053,24 +1057,28 @@ class EmitterObject extends h3d.scene.Object {
 		while(i < numInstances) {
 			var p = particles[i];
 			if(p.life > p.lifeTime) {
-				i = disposeInstance(i);
-
-				// SUB EMITTER
-				if( subEmitterTemplate != null ) {
-					if( tmpCtx == null ) {
-						tmpCtx = new hrt.prefab.Context();
+				if (trails == null || @:privateAccess trails.trailHeads.exists(p.trailId) == false) {
+					i = disposeInstance(i);
+					// SUB EMITTER
+					if( subEmitterTemplate != null ) {
+						if( tmpCtx == null ) {
+							tmpCtx = new hrt.prefab.Context();
+							tmpCtx.local3d = this.getScene();
+							tmpCtx.shared = context.shared;
+						}
 						tmpCtx.local3d = this.getScene();
-						tmpCtx.shared = context.shared;
+						var emitter : EmitterObject = cast subEmitterTemplate.makeInstance(tmpCtx).local3d;
+						var pos = p.absPos.getPosition();
+						emitter.setPosition(pos.x, pos.y, pos.z);
+						emitter.isSubEmitter = true;
+						emitter.parentEmitter = this;
+						if(subEmitters == null)
+							subEmitters = [];
+						subEmitters.push(emitter);
+					} else {
+						prev = p;
+						++i;
 					}
-					tmpCtx.local3d = this.getScene();
-					var emitter : EmitterObject = cast subEmitterTemplate.makeInstance(tmpCtx).local3d;
-					var pos = p.absPos.getPosition();
-					emitter.setPosition(pos.x, pos.y, pos.z);
-					emitter.isSubEmitter = true;
-					emitter.parentEmitter = this;
-					if(subEmitters == null)
-						subEmitters = [];
-					subEmitters.push(emitter);
 				}
 			}
 			else {
