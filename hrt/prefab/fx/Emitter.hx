@@ -86,6 +86,8 @@ private class ParticleInstance {
 	var scaleY : Single;
 	var scaleZ : Single;
 
+	var trailId : hrt.prefab.l3d.Trails.TrailID;
+
 	#if (hl_ver >= version("1.13.0"))
 	@:packed var speedAccumulation(default, never) : SVector3;
 	@:packed var qRot(default, never) : SVector4;
@@ -134,6 +136,7 @@ private class ParticleInstance {
 		startTime = p.startTime;
 		prev = p.prev;
 		next = p.next;
+		trailId = p.trailId;
 	}
 
 	function init(idx: Int, emitter: EmitterObject) {
@@ -152,6 +155,9 @@ private class ParticleInstance {
 		lifeTime = 0;
 		startFrame = 0;
 		random = emitter.random.rand();
+
+		if (emitter.trails != null)
+			trailId = emitter.trails.getNextTrailID();
 	}
 
 	static var tmpRot = new h3d.Vector();
