@@ -1038,6 +1038,11 @@ class EmitterObject extends h3d.scene.Object {
 
 		var prev : ParticleInstance = null;
 		var camPos = getScene().camera.pos;
+
+		if (trails != null) {
+			trails.num_trails = maxCount;
+		}
+
 		var i = 0;
 		while(i < numInstances) {
 			var p = particles[i];

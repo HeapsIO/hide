@@ -1840,6 +1840,7 @@ class FXEditor extends FileView {
 		var num_trails = 0;
 		var trails_update_time = 0.0;
 		var num_trail_tris = 0.0;
+		var max_tris = 0;
 
 		var poolSize = 0;
 		@:privateAccess
@@ -1848,13 +1849,14 @@ class FXEditor extends FileView {
 				num_trails ++;
 			}
 			trails_update_time += trail.lastUpdateDuration;
-			num_trail_tris += trail.num_tris/3.0;
+			num_trail_tris += trail.num_verts/3.0;
 
 			var p = trail.pool;
 			while(p != null) {
 				poolSize ++;
 				p = p.next;
 			}
+			max_tris += trail.maxNumTriangles;
 		}
 
 		var smooth_factor = 1/30.0;
@@ -1875,6 +1877,7 @@ class FXEditor extends FileView {
 				lines.push('Num Trails : $num_trails');
 				lines.push('Trails CPU time : ${floatToStringPrecision(trails_update_time_smooth * 1000, 3, true)} ms');
 				lines.push('Trails Triangles : ${floatToStringPrecision(num_trail_tri_smooth, 2, true)}');
+				lines.push('Allocated Trails Triangles : $max_tris');
 				lines.push('Trail pool : $poolSize');
 
 
