@@ -19,6 +19,15 @@ class Line extends Component {
 
 	inline function get_obj() return table.sheet.lines[index];
 
+
+	public function getId(): String {
+		for( c in columns ) {
+			if( c.type == TId )
+				return Reflect.field(obj, c.name);
+		}
+		return null;
+	}
+
 	public function create() {
 		var view = table.view;
 		element[0].classList.remove("hidden");

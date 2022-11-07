@@ -563,6 +563,16 @@ class Editor extends Component {
 		if( sel == null )
 			return;
 		var hasChanges = false;
+		var sheet = cursor.table.sheet;
+		var id = getCursorId(sheet);
+		if( id != null ) {
+			var refs = getReferences(id, sheet);
+			if( refs.length > 0 ) {
+				var message = refs.join("\n");
+				if( !ide.confirm('$id is referenced elswhere. Are you sure you want to delete?\n$message') )
+					return;
+			}
+		}
 		beginChanges();
 		if( cursor.x < 0 ) {
 			// delete lines
@@ -573,7 +583,7 @@ class Editor extends Component {
 			}
 			while( y >= sel.y1 ) {
 				var line = cursor.table.lines[y];
-				line.table.sheet.deleteLine(line.index);
+				sheet.deleteLine(line.index);
 				hasChanges = true;
 				y--;
 			}
@@ -587,7 +597,7 @@ class Editor extends Component {
 					if( !line.cells[x].canEdit() )
 						continue;
 					var old = Reflect.field(line.obj, c.name);
-					var def = base.getDefault(c,false,cursor.table.sheet);
+					var def = base.getDefault(c,false,sheet);
 					if( old == def )
 						continue;
 					changeObject(line,c,def);
@@ -832,30 +842,32 @@ class Editor extends Component {
 		inRefreshAll = false;
 	}
 
-	public function getReferences(?id: String, withCodePaths = true, ?sheet) {
-		if (sheet == null)
+	public function getCursorId(?sheet): String {
+		var id: String = null;
+		if( sheet == null )
 			sheet = cursor.table.sheet;
-		if( id == null) {
-			var cell = cursor.getCell();
-			switch (cell == null ? null : cell.column.type) {
-				case TRef(sname):
-					id = cell.value;
-					sheet = base.getSheet(sname);
-				case TId:
-					id = cell.value;
-				default:
-					for( c in sheet.columns ) {
-						switch( c.type ) {
-						case TId:
-							id = Reflect.field(sheet.lines[cursor.y], c.name);
-							break;
-						default:
-						}
+		var cell = cursor.getCell();
+		switch (cell == null ? null : cell.column.type) {
+			case TRef(sname):
+				id = cell.value;
+				sheet = base.getSheet(sname);
+			case TId:
+				id = cell.value;
+			default:
+				for( c in sheet.columns ) {
+					switch( c.type ) {
+					case TId:
+						id = Reflect.field(sheet.lines[cursor.y], c.name);
+						break;
+					default:
 					}
-			}
+				}
 		}
-
-		if( id == null ) return [];
+		return id;
+	}
+	public function getReferences(id: String, withCodePaths = true, sheet: cdb.Sheet) {
+		if( id == null )
+			return [];
 
 		var results = sheet.getReferencesFromId(id);
 		var message = [];
@@ -946,7 +958,13 @@ class Editor extends Component {
 
 	public function showReferences(?id: String, ?sheet: cdb.Sheet) {
 		if( cursor.table == null ) return;
-		var message = getReferences(id, sheet);
+		if( sheet == null )
+			sheet = cursor.table.sheet;
+		if( id == null )
+			id = getCursorId(sheet);
+		var message = [];
+		if( id != null )
+			message = getReferences(id, sheet);
 		if( message.length == 0 ) {
 			ide.message("No reference found");
 			return;
@@ -1569,6 +1587,15 @@ class Editor extends Component {
 				focus();
 			}, keys : config.get("key.duplicate") },
 			{ label : "Delete", click : function() {
+				var id = line.getId();
+				if( id != null ) {
+					var refs = getReferences(id, sheet);
+					if( refs.length > 0 ) {
+						var message = refs.join("\n");
+						if( !ide.confirm('$id is referenced elswhere. Are you sure you want to delete?\n$message') )
+							return;
+					}
+				}
 				beginChanges();
 				sheet.deleteLine(line.index);
 				endChanges();
