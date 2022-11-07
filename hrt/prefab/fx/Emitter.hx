@@ -403,7 +403,7 @@ class EmitterObject extends h3d.scene.Object {
 	// OBJECTS
 	public var particleTemplate : hrt.prefab.Object3D;
 	public var subEmitterTemplate : Emitter;
-	public var subEmitters : Array<EmitterObject> = [];
+	public var subEmitters : Array<EmitterObject>;
 	// LIFE
 	public var lifeTime = 2.0;
 	public var lifeTimeRand = 0.0;
@@ -475,6 +475,83 @@ class EmitterObject extends h3d.scene.Object {
 		random = new hxd.Rand(randomSeed);
 	}
 
+	function init(randSlots: Int) {
+		this.randSlots = randSlots;
+
+		if( batch != null )
+			batch.remove();
+
+		if( particleTemplate == null )
+			return;
+
+		baseEmitMat = particleTemplate.getTransform();
+		if(baseEmitMat.isIdentityEpsilon(0.01))
+			baseEmitMat = null;
+
+		var template = particleTemplate.makeInstance(context);
+		var mesh = Std.downcast(template.local3d, h3d.scene.Mesh);
+		if( mesh == null ) {
+			for( i in 0...template.local3d.numChildren ) {
+				mesh = Std.downcast(template.local3d.getChildAt(i), h3d.scene.Mesh);
+				if( mesh != null ) break;
+			}
+		}
+
+		if( mesh != null && mesh.primitive != null ) {
+			var meshPrim = Std.downcast(mesh.primitive, h3d.prim.MeshPrimitive);
+
+			// Setup mats.
+			// Should we do this manually here or make a recursive makeInstance on the template?
+			var materials = particleTemplate.getAll(hrt.prefab.Material);
+			for(mat in materials) {
+				if(mat.enabled)
+					mat.makeInstance(template);
+			}
+
+			// Setup shaders
+			shaderAnims = [];
+			var shaders = particleTemplate.getAll(hrt.prefab.Shader);
+			for( shader in shaders ) {
+				if( !shader.enabled ) continue;
+				var shCtx = shader.makeInstance(template);
+				if( shCtx == null ) continue;
+				hrt.prefab.fx.BaseFX.getShaderAnims(template, shader, shaderAnims);
+			}
+
+			// Animated textures animations
+			var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
+			if( frameCount > 1 && spriteSheet != null ) {
+				var tex = hxd.res.Loader.currentInstance.load(spriteSheet).toTexture();
+				animatedTextureShader = new h3d.shader.AnimatedTexture(tex, frameDivisionX, frameDivisionY, frameCount, frameCount * animationSpeed / lifeTime);
+				animatedTextureShader.startTime = startTime;
+				animatedTextureShader.loop = animationLoop;
+				animatedTextureShader.setPriority(1);
+				mesh.material.mainPass.addShader(animatedTextureShader);
+			}
+
+			baseEmitterShader = new hrt.shader.BaseEmitter();
+			mesh.material.mainPass.addShader(baseEmitterShader);
+
+			if(useRandomColor) {
+				colorMultShader = new h3d.shader.ColorMult();
+				mesh.material.mainPass.addShader(colorMultShader);
+			}
+
+			if( meshPrim != null ) {
+				batch = new h3d.scene.MeshBatch(meshPrim, mesh.material, this);
+				batch.name = "emitter";
+				batch.calcBounds = false;
+			}
+
+			template.local3d.remove();
+		}
+
+		particles = #if (hl_ver >= version("1.13.0")) hl.CArray.alloc(ParticleInstance, maxCount) #else [for(i in 0...maxCount) new ParticleInstance()] #end;
+		randomValues = [for(i in 0...(maxCount * randSlots)) 0];
+		evaluator = new Evaluator(randomValues, randSlots);
+		reset();
+	}
+
 	public function reset() {
 		numInstances = 0;
 		enable = true;
@@ -483,22 +560,19 @@ class EmitterObject extends h3d.scene.Object {
 		emitCount = 0;
 		emitTarget = 0;
 		totalBurstCount = 0;
-
-		randomValues = [for(i in 0...(maxCount * randSlots)) random.srand()];
-		evaluator = new Evaluator(randomValues, randSlots);
 		listHead = null;
 
-		particles = #if (hl_ver >= version("1.13.0")) hl.CArray.alloc(ParticleInstance, maxCount) #else [for(i in 0...maxCount) new ParticleInstance()] #end;
+		for(i in 0...randomValues.length)
+			randomValues[i] = random.srand();
+
 		for(p in particles)
 			p.idx = ParticleInstance.REMOVED_IDX;
-		for( s in subEmitters )
-			s.remove();
-		subEmitters = [];
-	}
 
-	override function onRemove() {
-		super.onRemove();
-		reset();
+		if(subEmitters != null) {
+			for( s in subEmitters )
+				s.remove();
+			subEmitters = null;
+		}
 	}
 
 	inline function checkList() { /*
@@ -722,78 +796,6 @@ class EmitterObject extends h3d.scene.Object {
 		emitCount += count;
 	}
 
-	function init(randSlots: Int) {
-		this.randSlots = randSlots;
-
-		if( batch != null )
-			batch.remove();
-
-		if( particleTemplate == null )
-			return;
-
-		baseEmitMat = particleTemplate.getTransform();
-		if(baseEmitMat.isIdentityEpsilon(0.01))
-			baseEmitMat = null;
-
-		var template = particleTemplate.makeInstance(context);
-		var mesh = Std.downcast(template.local3d, h3d.scene.Mesh);
-		if( mesh == null ) {
-			for( i in 0...template.local3d.numChildren ) {
-				mesh = Std.downcast(template.local3d.getChildAt(i), h3d.scene.Mesh);
-				if( mesh != null ) break;
-			}
-		}
-
-		if( mesh != null && mesh.primitive != null ) {
-			var meshPrim = Std.downcast(mesh.primitive, h3d.prim.MeshPrimitive);
-
-			// Setup mats.
-			// Should we do this manually here or make a recursive makeInstance on the template?
-			var materials = particleTemplate.getAll(hrt.prefab.Material);
-			for(mat in materials) {
-				if(mat.enabled)
-					mat.makeInstance(template);
-			}
-
-			// Setup shaders
-			shaderAnims = [];
-			var shaders = particleTemplate.getAll(hrt.prefab.Shader);
-			for( shader in shaders ) {
-				if( !shader.enabled ) continue;
-				var shCtx = shader.makeInstance(template);
-				if( shCtx == null ) continue;
-				hrt.prefab.fx.BaseFX.getShaderAnims(template, shader, shaderAnims);
-			}
-
-			// Animated textures animations
-			var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
-			if( frameCount > 1 && spriteSheet != null ) {
-				var tex = hxd.res.Loader.currentInstance.load(spriteSheet).toTexture();
-				animatedTextureShader = new h3d.shader.AnimatedTexture(tex, frameDivisionX, frameDivisionY, frameCount, frameCount * animationSpeed / lifeTime);
-				animatedTextureShader.startTime = startTime;
-				animatedTextureShader.loop = animationLoop;
-				animatedTextureShader.setPriority(1);
-				mesh.material.mainPass.addShader(animatedTextureShader);
-			}
-
-			baseEmitterShader = new hrt.shader.BaseEmitter();
-			mesh.material.mainPass.addShader(baseEmitterShader);
-
-			if(useRandomColor) {
-				colorMultShader = new h3d.shader.ColorMult();
-				mesh.material.mainPass.addShader(colorMultShader);
-			}
-
-			if( meshPrim != null ) {
-				batch = new h3d.scene.MeshBatch(meshPrim, mesh.material, this);
-				batch.name = "emitter";
-				batch.calcBounds = false;
-			}
-
-			template.local3d.remove();
-		}
-	}
-
 	// No-alloc version of h3d.Matrix.getEulerAngles()
 	static function getEulerAngles(m: h3d.Matrix) {
 		var s = m.getScale();
@@ -830,8 +832,10 @@ class EmitterObject extends h3d.scene.Object {
 			return;
 		}
 
-		for( se in subEmitters ) {
-			se.tick(dt);
+		if(subEmitters != null) {
+			for( se in subEmitters ) {
+				se.tick(dt);
+			}
 		}
 
 		if( emitRate == null || emitRate == VZero )
@@ -1036,6 +1040,8 @@ class EmitterObject extends h3d.scene.Object {
 					emitter.setPosition(pos.x, pos.y, pos.z);
 					emitter.isSubEmitter = true;
 					emitter.parentEmitter = this;
+					if(subEmitters == null)
+						subEmitters = [];
 					subEmitters.push(emitter);
 				}
 			}
@@ -1485,7 +1491,6 @@ class Emitter extends Object3D {
 		#end
 
 		emitterObj.init(randIdx);
-		emitterObj.reset();
 		refreshChildren(ctx);
 
 		#if editor

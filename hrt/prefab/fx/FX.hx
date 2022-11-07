@@ -54,14 +54,10 @@ class FXAnimation extends h3d.scene.Object {
 		initConstraints(ctx, root != null ? root : def);
 	}
 
-	override function onRemove() {
-		super.onRemove();
-		if(objAnims != null)
-			for(obj in objAnims)
-				obj.obj.remove();
-		if(emitters != null)
-			for(emitter in emitters)
-				emitter.reset();
+	public function reset() {
+		firstSync = true;
+		prevTime = -1.0;
+		localTime = 0;
 	}
 
 	public function setRandSeed(seed: Int) {
