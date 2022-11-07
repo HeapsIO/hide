@@ -59,7 +59,6 @@ class Macros {
 			case TAnonymous(a):
 				return createAnonDecl(a, path, pos);
 			case TEnum(_,_):
-				trace("found enum");
 				var objFields : Array<ObjectField> = [];
 
 				return macro @:pos(pos) {

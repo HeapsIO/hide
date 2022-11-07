@@ -638,8 +638,6 @@ class EmitterObject extends h3d.scene.Object {
 
 		// stitch list after remove
 		var o = particles[idx];
-		trace('Dispose id ${o.trailId}');
-
 
 		if(o.idx == ParticleInstance.REMOVED_IDX) throw "!";
 		var prev = o.prev;

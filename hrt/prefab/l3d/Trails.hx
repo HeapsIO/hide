@@ -38,6 +38,7 @@ class BaseTrails extends hxsl.Shader {
 
 }
 
+@:struct
 class TrailPoint {
     public var x : Float = 0;
     public var y : Float = 0;
@@ -53,12 +54,14 @@ class TrailPoint {
     public var lifetime : Float = 0;
     public var next : TrailPoint = null;
 
+
     public function new(){};
 }
 
 class TrailHead {
     public var firstPoint : TrailPoint = null;
     public var totalLength : Float = 0; 
+    public var numPoints : Int = 0;
 
     public function new(){};
 }
@@ -102,8 +105,14 @@ typedef TrailParameters = {
     var maxTriangles : Int;
 }
 
+typedef TrailsArray = #if (hl_ver >= version("1.13.0")) hl.CArray<TrailPoint> #else Array<TrailPoint> #end;
+
 class TrailObj extends h3d.scene.Mesh {
+
     var trailHeads : Map<TrailID, TrailHead> = new Map();
+
+    var points : TrailsArray;
+    var firstFreePointID = 0;
 
     var nextTrailID = 0;
 
@@ -115,7 +124,15 @@ class TrailObj extends h3d.scene.Mesh {
     var bounds : h3d.col.Bounds;
     var prefab : Trails;
 
-    public var num_trails : Int = 1;
+    public var num_trails(default, set) : Int = 1;
+
+    public function set_num_trails(new_value : Int) : Int {
+        if (num_trails != new_value) {
+            num_trails = new_value;
+            reset();
+        }
+        return num_trails;
+    }
 
     // How many frame we wait before adding a new point
     var pointFrameskip : Int = 2;
@@ -123,18 +140,18 @@ class TrailObj extends h3d.scene.Mesh {
     var shader : BaseTrails;
 
 
-    public function getTheoricalMaxPoints() : Int {
+    public function getTheoricalMaxPointsPerTrail() : Int {
         return Std.int(std.Math.ceil(prefab.lifetime * 60.0 / pointFrameskip));
     }
 
     function getTheoricalMaxVertexes() : Int {
-        var pointsPerTrail = getTheoricalMaxPoints();
+        var pointsPerTrail = getTheoricalMaxPointsPerTrail();
         var vertsPerTrail = std.Math.ceil(pointsPerTrail * 2);
         return vertsPerTrail * num_trails;
     }
 
     function getTheoricalMaxIndices() : Int {
-        var pointsPerTrail = getTheoricalMaxPoints();
+        var pointsPerTrail = getTheoricalMaxPointsPerTrail();
         var indicesPerTrail = (pointsPerTrail-1) * 6;
         return indicesPerTrail * num_trails;
     }
@@ -160,8 +177,16 @@ class TrailObj extends h3d.scene.Mesh {
         if (ibuf != null)
             alloc.disposeIndexes(ibuf);
         ibuf = new hxd.IndexBuffer(getTheoricalMaxIndices());
+        
+        pool = null;
+        firstFreePointID = 0;
+
+        maxNumPoints = getTheoricalMaxPointsPerTrail() * num_trails;
+        if (maxNumPoints <= 0) maxNumPoints = 1;
+		points = #if (hl_ver >= version("1.13.0")) hl.CArray.alloc(TrailPoint, maxNumPoints) #else [for(i in 0...maxNumPoints) new TrailPoint()] #end;
     }
 
+    var maxNumPoints : Int = 0;
 
     var pool : TrailPoint = null;
 
@@ -186,7 +211,9 @@ class TrailObj extends h3d.scene.Mesh {
             r.len = 0.0;
             return r;
         }
-        return new TrailPoint();
+        if (firstFreePointID+1 >= maxNumPoints)
+            return null;
+        return points[firstFreePointID++];
     }
 
     function disposePoint(p : TrailPoint) {
@@ -280,7 +307,9 @@ class TrailObj extends h3d.scene.Mesh {
             //if (params.uvMode == EStretch)
             //head.totalLength = prev != null ? prev.len + len : len;
 
-            if (prev.lifetime < pointFrameskip/60.0-0.001) {
+            if (prev.lifetime < pointFrameskip/60.0-0.001 || 
+                head.numPoints >= getTheoricalMaxPointsPerTrail() // Don't allocate points if we have the max numPoints
+                ) {
                 new_pt = prev;
                 prev = prev.next;
                 added_point = false;
@@ -296,6 +325,9 @@ class TrailObj extends h3d.scene.Mesh {
         if (new_pt == null)
         {
             new_pt = alloc();
+            if (new_pt == null)
+                return;
+            head.numPoints ++;
             new_pt.lifetime = 0.0;
         }
 
@@ -507,7 +539,13 @@ class TrailObj extends h3d.scene.Mesh {
                     } else {
                         trailHeads.remove(k);
                     }
-                    disposePoint(cur);
+                    var dp = cur;
+                    while(dp != null) {
+                        var next = dp.next;
+                        disposePoint(dp);
+                        dp = next;
+                        trail.numPoints--;
+                    }
                     break;
                 }
                 if (cur.next != null) {

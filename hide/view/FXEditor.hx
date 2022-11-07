@@ -1871,7 +1871,7 @@ class FXEditor extends FileView {
 				p = p.next;
 			}
 			max_tris += Std.int(trail.vbuf.length/8.0);
-			theorical_max_len = trail.getTheoricalMaxPoints();
+			theorical_max_len = trail.getTheoricalMaxPointsPerTrail();
 			num_indices += trail.num_verts_indices;
 			num_allocated_indices += trail.lastMaxIndicesSize;
 		}
