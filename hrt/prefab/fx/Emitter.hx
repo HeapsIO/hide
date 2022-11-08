@@ -93,7 +93,7 @@ private class ParticleInstance {
 	@:packed var qRot(default, never) : SVector4;
 	@:packed var absPos(default, never) : SMatrix4;  // Needed for sortZ
 	@:packed var emitOrientation(default, never) : SMatrix3;
-	#else 
+	#else
 	var speedAccumulation(default, never) = new SVector3();
 	var qRot(default, never) = new SVector4();
 	var absPos(default, never) = new SMatrix4();
@@ -125,7 +125,7 @@ private class ParticleInstance {
 		qRot.load(p.qRot.toVector());
 		absPos.load(p.absPos.toMatrix());
 		emitOrientation.load(p.emitOrientation.toMatrix());
-		
+
 		colorMult = p.colorMult;
 		idx = p.idx;
 		startFrame = p.startFrame;
@@ -217,7 +217,7 @@ private class ParticleInstance {
 				qRot.load(emitter.screenQuat);
 			default:
 		}
-		
+
 		var absPos = tmpMat;
 		var localMat = tmpMat2;
 
@@ -646,7 +646,7 @@ class EmitterObject extends h3d.scene.Object {
 			if(prev.next == next) throw "!";
 			prev.next = next;
 		}
-		else { 
+		else {
 			if(listHead != o) throw "!";
 			if(listHead == next) throw "!";
 			listHead = next;
@@ -668,7 +668,7 @@ class EmitterObject extends h3d.scene.Object {
 			if(listHead == swap)
 				listHead = o;
 		}
-		else 
+		else
 			o.idx = ParticleInstance.REMOVED_IDX;
 
 		checkList();
@@ -701,8 +701,10 @@ class EmitterObject extends h3d.scene.Object {
 					tmpCtx = new hrt.prefab.Context();
 					tmpCtx.shared = context.shared;
 				}
+				tmpCtx.custom = {numTrails: maxCount};
 				tmpCtx.local3d = this;
 				trails = cast trailsTemplate.make(tmpCtx).local3d;
+				trails.autoTrackPosition = false;
 			}
 
 			for( i in 0...count ) {
@@ -1048,7 +1050,7 @@ class EmitterObject extends h3d.scene.Object {
 		var camPos = getScene().camera.pos;
 
 		if (trails != null) {
-			trails.num_trails = maxCount;
+			trails.numTrails = maxCount;
 		}
 
 		var i = 0;
@@ -1073,10 +1075,10 @@ class EmitterObject extends h3d.scene.Object {
 						if(subEmitters == null)
 							subEmitters = [];
 						subEmitters.push(emitter);
-					} else {
-						prev = p;
-						++i;
 					}
+				} else {
+					prev = p;
+					++i;
 				}
 			}
 			else {
@@ -1920,7 +1922,7 @@ class SVector4 {
 	inline function toQuat() {
 		return new h3d.Quat(x, y, z, w);
 	}
-	
+
 	inline function load(v: h3d.Vector) {
 		this.x = v.x;
 		this.y = v.y;
@@ -1982,10 +1984,10 @@ class SMatrix4 {
 
 	inline function toMatrix() {
 		var m = new h3d.Matrix();
-		m._11 = _11; m._12 = _12; m._13 = _13; m._14 = _14; 
-		m._21 = _21; m._22 = _22; m._23 = _23; m._24 = _24; 
-		m._31 = _31; m._32 = _32; m._33 = _33; m._34 = _34; 
-		m._41 = _41; m._42 = _42; m._43 = _43; m._44 = _44; 
+		m._11 = _11; m._12 = _12; m._13 = _13; m._14 = _14;
+		m._21 = _21; m._22 = _22; m._23 = _23; m._24 = _24;
+		m._31 = _31; m._32 = _32; m._33 = _33; m._34 = _34;
+		m._41 = _41; m._42 = _42; m._43 = _43; m._44 = _44;
 		return m;
 	}
 

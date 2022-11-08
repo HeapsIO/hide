@@ -1863,7 +1863,7 @@ class FXEditor extends FileView {
 				}
 			}
 			trails_update_time += trail.lastUpdateDuration;
-			num_trail_tris += trail.num_verts;
+			num_trail_tris += trail.numVerts;
 
 			var p = trail.pool;
 			while(p != null) {
@@ -1872,8 +1872,8 @@ class FXEditor extends FileView {
 			}
 			max_tris += Std.int(trail.vbuf.length/8.0);
 			theorical_max_len = trail.getTheoricalMaxPointsPerTrail();
-			num_indices += trail.num_verts_indices;
-			num_allocated_indices += trail.lastMaxIndicesSize;
+			num_indices += trail.numVertsIndices;
+			num_allocated_indices += trail.currentAllocatedIndexCount;
 		}
 
 		var smooth_factor = 0.10;
