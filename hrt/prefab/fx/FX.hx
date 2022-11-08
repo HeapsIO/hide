@@ -49,6 +49,7 @@ class FXAnimation extends h3d.scene.Object {
 		initObjAnimations(ctx, root);
 		initEmitters(ctx, root);
 		BaseFX.getShaderAnims(ctx, root, shaderAnims);
+		if(shaderAnims.length == 0) shaderAnims = null;
 		events = initEvents(root, ctx);
 		var root = def.getFXRoot(ctx, def);
 		initConstraints(ctx, root != null ? root : def);
@@ -58,6 +59,12 @@ class FXAnimation extends h3d.scene.Object {
 		firstSync = true;
 		prevTime = -1.0;
 		localTime = 0;
+		if(parentFX == null) {
+			for(c in findAll(o -> Std.downcast(o, FXAnimation))) {
+				if(c != this)
+					c.reset();
+			}
+		}
 	}
 
 	public function setRandSeed(seed: Int) {

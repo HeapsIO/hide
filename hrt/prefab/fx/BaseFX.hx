@@ -116,7 +116,7 @@ class BaseFX extends hrt.prefab.Library {
 		if(shaderDef == null)
 			return null;
 
-		var ret : ShaderParams = [];
+		var ret : ShaderParams = null;
 
 		var paramCount = 0;
 		for(v in shaderDef.data.vars) {
@@ -137,6 +137,7 @@ class BaseFX extends hrt.prefab.Library {
 				case TVec(_, VFloat) :
 					var isColor = v.name.toLowerCase().indexOf("color") >= 0;
 					var val = isColor ? Curve.getColorValue(curves) : Curve.getVectorValue(curves);
+					if(ret == null) ret = [];
 					ret.push({
 						idx: paramCount - 1,
 						def: v,
@@ -151,6 +152,7 @@ class BaseFX extends hrt.prefab.Library {
 					var val = Value.VConst(base);
 					if(curve != null)
 						val = Value.VCurveScale(curve, base);
+					if(ret == null) ret = [];
 					ret.push({
 						idx: paramCount - 1,
 						def: v,
@@ -175,9 +177,11 @@ class BaseFX extends hrt.prefab.Library {
 
 		for(shCtx in ctx.shared.getContexts(elt)) {
 			if(shCtx.custom == null) continue;
+			var params = makeShaderParams(ctx, shader);
+			if(params == null) continue;
 			var anim = Std.isOfType(shCtx.custom,hxsl.DynamicShader) ? new ShaderDynAnimation() : new ShaderAnimation();
 			anim.shader = shCtx.custom;
-			anim.params = makeShaderParams(ctx, shader);
+			anim.params = params;
 			anims.push(anim);
 		}
 	}
