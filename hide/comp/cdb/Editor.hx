@@ -564,7 +564,7 @@ class Editor extends Component {
 			return;
 		var hasChanges = false;
 		var sheet = cursor.table.sheet;
-		var id = getCursorId(sheet);
+		var id = getCursorId(sheet, true);
 		if( id != null ) {
 			var refs = getReferences(id, sheet);
 			if( refs.length > 0 ) {
@@ -842,7 +842,7 @@ class Editor extends Component {
 		inRefreshAll = false;
 	}
 
-	public function getCursorId(?sheet): String {
+	public function getCursorId(?sheet, ?childOnly = false): String {
 		var id: String = null;
 		if( sheet == null )
 			sheet = cursor.table.sheet;
@@ -850,16 +850,17 @@ class Editor extends Component {
 		switch (cell == null ? null : cell.column.type) {
 			case TRef(sname):
 				id = cell.value;
-				sheet = base.getSheet(sname);
 			case TId:
 				id = cell.value;
 			default:
-				for( c in sheet.columns ) {
-					switch( c.type ) {
-					case TId:
-						id = Reflect.field(sheet.lines[cursor.y], c.name);
-						break;
-					default:
+				if (!childOnly || cursor.x < 0) {
+					for( c in sheet.columns ) {
+						switch( c.type ) {
+						case TId:
+							id = Reflect.field(sheet.lines[cursor.y], c.name);
+							break;
+						default:
+						}
 					}
 				}
 		}
@@ -962,6 +963,14 @@ class Editor extends Component {
 			sheet = cursor.table.sheet;
 		if( id == null )
 			id = getCursorId(sheet);
+		var cell = cursor.getCell();
+		if (cell != null) {
+			switch (cell.column.type) {
+				case TRef(sname):
+					sheet = base.getSheet(sname);
+				default:
+			}
+		}
 		var message = [];
 		if( id != null )
 			message = getReferences(id, sheet);
