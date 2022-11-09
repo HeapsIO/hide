@@ -86,12 +86,15 @@ private class ParticleInstance {
 	var scaleY : Single;
 	var scaleZ : Single;
 
+	var trail : hrt.prefab.l3d.Trails.TrailHead;
+	var trailGeneration : Int = 0;
+
 	#if (hl_ver >= version("1.13.0"))
 	@:packed var speedAccumulation(default, never) : SVector3;
 	@:packed var qRot(default, never) : SVector4;
 	@:packed var absPos(default, never) : SMatrix4;  // Needed for sortZ
 	@:packed var emitOrientation(default, never) : SMatrix3;
-	#else 
+	#else
 	var speedAccumulation(default, never) = new SVector3();
 	var qRot(default, never) = new SVector4();
 	var absPos(default, never) = new SMatrix4();
@@ -123,7 +126,7 @@ private class ParticleInstance {
 		qRot.load(p.qRot.toVector());
 		absPos.load(p.absPos.toMatrix());
 		emitOrientation.load(p.emitOrientation.toMatrix());
-		
+
 		colorMult = p.colorMult;
 		idx = p.idx;
 		startFrame = p.startFrame;
@@ -134,6 +137,8 @@ private class ParticleInstance {
 		startTime = p.startTime;
 		prev = p.prev;
 		next = p.next;
+		trail = p.trail;
+		trailGeneration = p.trailGeneration;
 	}
 
 	function init(idx: Int, emitter: EmitterObject) {
@@ -152,6 +157,11 @@ private class ParticleInstance {
 		lifeTime = 0;
 		startFrame = 0;
 		random = emitter.random.rand();
+
+		if (emitter.trails != null) {
+			trail = emitter.trails.allocTrail();
+			trailGeneration = trail.generation;
+		}
 	}
 
 	static var tmpRot = new h3d.Vector();
@@ -211,7 +221,7 @@ private class ParticleInstance {
 				qRot.load(emitter.screenQuat);
 			default:
 		}
-		
+
 		var absPos = tmpMat;
 		var localMat = tmpMat2;
 
@@ -404,6 +414,8 @@ class EmitterObject extends h3d.scene.Object {
 	public var particleTemplate : hrt.prefab.Object3D;
 	public var subEmitterTemplate : Emitter;
 	public var subEmitters : Array<EmitterObject>;
+	public var trails : hrt.prefab.l3d.Trails.TrailObj;
+	public var trailsTemplate : hrt.prefab.l3d.Trails;
 	// LIFE
 	public var lifeTime = 2.0;
 	public var lifeTimeRand = 0.0;
@@ -573,6 +585,10 @@ class EmitterObject extends h3d.scene.Object {
 				s.remove();
 			subEmitters = null;
 		}
+
+		if (trails != null) {
+			trails.reset();
+		}
 	}
 
 	inline function checkList() { /*
@@ -620,13 +636,13 @@ class EmitterObject extends h3d.scene.Object {
 
 	function disposeInstance(idx: Int) {
 		checkList();
-
 		--numInstances;
 		if(numInstances < 0)
 			throw "assert";
 
 		// stitch list after remove
 		var o = particles[idx];
+
 		if(o.idx == ParticleInstance.REMOVED_IDX) throw "!";
 		var prev = o.prev;
 		var next = o.next;
@@ -634,7 +650,7 @@ class EmitterObject extends h3d.scene.Object {
 			if(prev.next == next) throw "!";
 			prev.next = next;
 		}
-		else { 
+		else {
 			if(listHead != o) throw "!";
 			if(listHead == next) throw "!";
 			listHead = next;
@@ -656,7 +672,7 @@ class EmitterObject extends h3d.scene.Object {
 			if(listHead == swap)
 				listHead = o;
 		}
-		else 
+		else
 			o.idx = ParticleInstance.REMOVED_IDX;
 
 		checkList();
@@ -683,6 +699,18 @@ class EmitterObject extends h3d.scene.Object {
 
 		var emitterQuat : h3d.Quat = null;
 		if (count > 0) {
+
+			if (trailsTemplate != null && trails == null) {
+				if( tmpCtx == null ) {
+					tmpCtx = new hrt.prefab.Context();
+					tmpCtx.shared = context.shared;
+				}
+				tmpCtx.custom = {numTrails: maxCount};
+				tmpCtx.local3d = this;
+				trails = cast trailsTemplate.make(tmpCtx).local3d;
+				trails.autoTrackPosition = false;
+			}
+
 			for( i in 0...count ) {
 				var part = allocInstance();
 				part.startTime = startTime + curTime;
@@ -789,6 +817,7 @@ class EmitterObject extends h3d.scene.Object {
 				var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
 				if(animationLoop)
 					part.startFrame = random.random(frameCount);
+
 			}
 		}
 
@@ -975,6 +1004,8 @@ class EmitterObject extends h3d.scene.Object {
 		batch.begin(hxd.Math.nextPOT(maxCount));
 
 		inline function emit(p: ParticleInstance) {
+			if (p.life > p.lifeTime)
+				return;
 			inline tmpMat.load(p.absPos.toMatrix());
 			batch.worldPosition = tmpMat;
 			for( anim in shaderAnims ) {
@@ -1021,28 +1052,37 @@ class EmitterObject extends h3d.scene.Object {
 
 		var prev : ParticleInstance = null;
 		var camPos = getScene().camera.pos;
+
+		if (trails != null) {
+			trails.numTrails = maxCount;
+		}
+
 		var i = 0;
 		while(i < numInstances) {
 			var p = particles[i];
 			if(p.life > p.lifeTime) {
-				i = disposeInstance(i);
-
-				// SUB EMITTER
-				if( subEmitterTemplate != null ) {
-					if( tmpCtx == null ) {
-						tmpCtx = new hrt.prefab.Context();
+				if (p.trail == null || p.trail.generation != p.trailGeneration) {
+					i = disposeInstance(i);
+					// SUB EMITTER
+					if( subEmitterTemplate != null ) {
+						if( tmpCtx == null ) {
+							tmpCtx = new hrt.prefab.Context();
+							tmpCtx.local3d = this.getScene();
+							tmpCtx.shared = context.shared;
+						}
 						tmpCtx.local3d = this.getScene();
-						tmpCtx.shared = context.shared;
+						var emitter : EmitterObject = cast subEmitterTemplate.makeInstance(tmpCtx).local3d;
+						var pos = p.absPos.getPosition();
+						emitter.setPosition(pos.x, pos.y, pos.z);
+						emitter.isSubEmitter = true;
+						emitter.parentEmitter = this;
+						if(subEmitters == null)
+							subEmitters = [];
+						subEmitters.push(emitter);
 					}
-					tmpCtx.local3d = this.getScene();
-					var emitter : EmitterObject = cast subEmitterTemplate.makeInstance(tmpCtx).local3d;
-					var pos = p.absPos.getPosition();
-					emitter.setPosition(pos.x, pos.y, pos.z);
-					emitter.isSubEmitter = true;
-					emitter.parentEmitter = this;
-					if(subEmitters == null)
-						subEmitters = [];
-					subEmitters.push(emitter);
+				} else {
+					prev = p;
+					++i;
 				}
 			}
 			else {
@@ -1055,6 +1095,10 @@ class EmitterObject extends h3d.scene.Object {
 				p.life += dt;  // After updateAbsPos(), which uses current life
 				prev = p;
 				++i;
+
+				if (trails != null) {
+					trails.addPoint(p.trail, p.absPos._41, p.absPos._42, p.absPos._43, ECamera, 1.0);
+				}
 			}
 		}
 	}
@@ -1437,6 +1481,11 @@ class Emitter extends Object3D {
 		// SUB-EMITTER
 		var subEmitterTemplate : Emitter = cast children.find( p -> p.enabled && Std.downcast(p, Emitter) != null && p.to(Object3D).visible);
 		emitterObj.subEmitterTemplate = subEmitterTemplate;
+
+		// TRAILS
+		var trailsTemplate : hrt.prefab.l3d.Trails = cast children.find(p -> p.enabled && Std.isOfType(p, hrt.prefab.l3d.Trails) && p.to(Object3D).visible);
+		emitterObj.trailsTemplate = trailsTemplate;
+
 		// RANDOM
 		emitterObj.seedGroup 			= 	getParamVal("seedGroup");
 		// LIFE
@@ -1877,7 +1926,7 @@ class SVector4 {
 	inline function toQuat() {
 		return new h3d.Quat(x, y, z, w);
 	}
-	
+
 	inline function load(v: h3d.Vector) {
 		this.x = v.x;
 		this.y = v.y;
@@ -1939,10 +1988,10 @@ class SMatrix4 {
 
 	inline function toMatrix() {
 		var m = new h3d.Matrix();
-		m._11 = _11; m._12 = _12; m._13 = _13; m._14 = _14; 
-		m._21 = _21; m._22 = _22; m._23 = _23; m._24 = _24; 
-		m._31 = _31; m._32 = _32; m._33 = _33; m._34 = _34; 
-		m._41 = _41; m._42 = _42; m._43 = _43; m._44 = _44; 
+		m._11 = _11; m._12 = _12; m._13 = _13; m._14 = _14;
+		m._21 = _21; m._22 = _22; m._23 = _23; m._24 = _24;
+		m._31 = _31; m._32 = _32; m._33 = _33; m._34 = _34;
+		m._41 = _41; m._42 = _42; m._43 = _43; m._44 = _44;
 		return m;
 	}
 

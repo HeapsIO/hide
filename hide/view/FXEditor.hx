@@ -171,7 +171,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 				});
 			}
 		} else {
-			for(name in ["Group", "Polygon", "Model", "Shader", "Emitter"]) {
+			for(name in ["Group", "Polygon", "Model", "Shader", "Emitter", "Trails"]) {
 				var item = allTypes.find(i -> i.label == name);
 				if(item == null) continue;
 				allTypes.remove(item);
@@ -1749,6 +1749,8 @@ class FXEditor extends FileView {
 	}
 
 	var avg_smooth = 0.0;
+	var trailTime_smooth = 0.0;
+	var num_trail_tri_smooth = 0.0;
 
 	public static function floatToStringPrecision(n : Float, ?prec : Int = 2, ?showZeros : Bool = true) {
 		if(n == 0) { // quick return
@@ -1829,14 +1831,55 @@ class FXEditor extends FileView {
 		for(e in emitters)
 			totalParts += @:privateAccess e.numInstances;
 
-		var total_time = 0.0;
+		var emitterTime = 0.0;
 		for (e in emitters) {
-			total_time += e.tickTime;
+			emitterTime += e.tickTime;
 		}
 
-		var smooth_factor = 1/30.0;
-		avg_smooth = avg_smooth * (1.0 - smooth_factor) + total_time * smooth_factor;
+		var trails = ctx.local3d.findAll(o -> Std.downcast(o, hrt.prefab.l3d.Trails.TrailObj));
+		var trailCount = 0;
+		var trailTime = 0.0;
+		var trailTris = 0.0;
+		var trailMaxTris = 0;
+		var trailMaxLen = 0;
+		var trailCalcMaxLen = 0;
+		var trailRealIndicies = 0;
+		var trailAllocIndicies = 0;
 
+
+		var poolSize = 0;
+		@:privateAccess
+		for (trail in trails) {
+			for (head in trail.trails) {
+				trailCount ++;
+				var p = head.firstPoint;
+				var len = 0;
+				while(p != null) {
+					len ++;
+					p = p.next;
+				}
+				if (len > trailMaxLen) {
+					trailMaxLen = len;
+				}
+			}
+			trailTime += trail.lastUpdateDuration;
+			trailTris += trail.numVerts;
+
+			var p = trail.pool;
+			while(p != null) {
+				poolSize ++;
+				p = p.next;
+			}
+			trailMaxTris += Std.int(trail.vbuf.length/8.0);
+			trailCalcMaxLen = trail.calcMaxTrailPoints();
+			trailRealIndicies += trail.numVertsIndices;
+			trailAllocIndicies += trail.currentAllocatedIndexCount;
+		}
+
+		var smooth_factor = 0.10;
+		avg_smooth = avg_smooth * (1.0 - smooth_factor) + emitterTime * smooth_factor;
+		trailTime_smooth = trailTime_smooth * (1.0 - smooth_factor) + trailTime * smooth_factor;
+		num_trail_tri_smooth = num_trail_tri_smooth * (1.0-smooth_factor) + trailTris * smooth_factor;
 
 		if(statusText != null) {
 			var lines : Array<String> = [
@@ -1844,8 +1887,23 @@ class FXEditor extends FileView {
 				'Scene objects: ${scene.s3d.getObjectsCount()}',
 				'Drawcalls: ${h3d.Engine.getCurrent().drawCalls}',
 				'Particles: $totalParts',
-				'Particles CPU time: ${floatToStringPrecision(avg_smooth * 1000, 3, true)} ms'
+				'Particles CPU time: ${floatToStringPrecision(avg_smooth * 1000, 3, true)} ms',
 			];
+
+			if (trailCount > 0) {
+
+				lines.push('Trails CPU time : ${floatToStringPrecision(trailTime_smooth * 1000, 3, true)} ms');
+
+				/*lines.push("---");
+				lines.push('Num Trails : $trailCount');
+				lines.push('Trails Vertexes : ${floatToStringPrecision(num_trail_tri_smooth, 2, true)}');
+				lines.push('Allocated Trails Vertexes : $trailMaxTris');
+				lines.push('Max Trail Lenght : $trailMaxLen');
+				lines.push('Theorical Max Trail Lenght : $trailCalcMaxLen');
+				lines.push('Trail pool : $poolSize');
+				lines.push('Num Indices : $trailRealIndicies');
+				lines.push('Num Allocated Indices : $trailAllocIndicies');*/
+			}
 			statusText.text = lines.join("\n");
 		}
 
