@@ -574,11 +574,15 @@ class EmitterObject extends h3d.scene.Object {
 		totalBurstCount = 0;
 		listHead = null;
 
-		for(i in 0...randomValues.length)
-			randomValues[i] = random.srand();
+		if(randomValues != null) {
+			for(i in 0...randomValues.length)
+				randomValues[i] = random.srand();
+		}
 
-		for(p in particles)
-			p.idx = ParticleInstance.REMOVED_IDX;
+		if(particles != null) {
+			for(p in particles)
+				p.idx = ParticleInstance.REMOVED_IDX;
+		}
 
 		if(subEmitters != null) {
 			for( s in subEmitters )
