@@ -1749,7 +1749,7 @@ class FXEditor extends FileView {
 	}
 
 	var avg_smooth = 0.0;
-	var trails_update_time_smooth = 0.0;
+	var trailTime_smooth = 0.0;
 	var num_trail_tri_smooth = 0.0;
 
 	public static function floatToStringPrecision(n : Float, ?prec : Int = 2, ?showZeros : Bool = true) {
@@ -1831,55 +1831,55 @@ class FXEditor extends FileView {
 		for(e in emitters)
 			totalParts += @:privateAccess e.numInstances;
 
-		var total_time = 0.0;
+		var emitterTime = 0.0;
 		for (e in emitters) {
-			total_time += e.tickTime;
+			emitterTime += e.tickTime;
 		}
 
 		var trails = ctx.local3d.findAll(o -> Std.downcast(o, hrt.prefab.l3d.Trails.TrailObj));
-		var num_trails = 0;
-		var trails_update_time = 0.0;
-		var num_trail_tris = 0.0;
-		var max_tris = 0;
-		var max_len = 0;
-		var theorical_max_len = 0;
-		var num_indices = 0;
-		var num_allocated_indices = 0;
+		var trailCount = 0;
+		var trailTime = 0.0;
+		var trailTris = 0.0;
+		var trailMaxTris = 0;
+		var trailMaxLen = 0;
+		var trailCalcMaxLen = 0;
+		var trailRealIndicies = 0;
+		var trailAllocIndicies = 0;
 
 
 		var poolSize = 0;
 		@:privateAccess
 		for (trail in trails) {
 			for (head in trail.trails) {
-				num_trails ++;
+				trailCount ++;
 				var p = head.firstPoint;
 				var len = 0;
 				while(p != null) {
 					len ++;
 					p = p.next;
 				}
-				if (len > max_len) {
-					max_len = len;
+				if (len > trailMaxLen) {
+					trailMaxLen = len;
 				}
 			}
-			trails_update_time += trail.lastUpdateDuration;
-			num_trail_tris += trail.numVerts;
+			trailTime += trail.lastUpdateDuration;
+			trailTris += trail.numVerts;
 
 			var p = trail.pool;
 			while(p != null) {
 				poolSize ++;
 				p = p.next;
 			}
-			max_tris += Std.int(trail.vbuf.length/8.0);
-			theorical_max_len = trail.calcMaxTrailPoints();
-			num_indices += trail.numVertsIndices;
-			num_allocated_indices += trail.currentAllocatedIndexCount;
+			trailMaxTris += Std.int(trail.vbuf.length/8.0);
+			trailCalcMaxLen = trail.calcMaxTrailPoints();
+			trailRealIndicies += trail.numVertsIndices;
+			trailAllocIndicies += trail.currentAllocatedIndexCount;
 		}
 
 		var smooth_factor = 0.10;
-		avg_smooth = avg_smooth * (1.0 - smooth_factor) + total_time * smooth_factor;
-		trails_update_time_smooth = trails_update_time_smooth * (1.0 - smooth_factor) + trails_update_time * smooth_factor;
-		num_trail_tri_smooth = num_trail_tri_smooth * (1.0-smooth_factor) + num_trail_tris * smooth_factor;
+		avg_smooth = avg_smooth * (1.0 - smooth_factor) + emitterTime * smooth_factor;
+		trailTime_smooth = trailTime_smooth * (1.0 - smooth_factor) + trailTime * smooth_factor;
+		num_trail_tri_smooth = num_trail_tri_smooth * (1.0-smooth_factor) + trailTris * smooth_factor;
 
 		if(statusText != null) {
 			var lines : Array<String> = [
@@ -1890,20 +1890,19 @@ class FXEditor extends FileView {
 				'Particles CPU time: ${floatToStringPrecision(avg_smooth * 1000, 3, true)} ms',
 			];
 
-			if (num_trails > 0) {
-				lines.push("---");
+			if (trailCount > 0) {
 
-				lines.push('Num Trails : $num_trails');
-				lines.push('Trails CPU time : ${floatToStringPrecision(trails_update_time_smooth * 1000, 3, true)} ms');
+				lines.push('Trails CPU time : ${floatToStringPrecision(trailTime_smooth * 1000, 3, true)} ms');
+
+				/*lines.push("---");
+				lines.push('Num Trails : $trailCount');
 				lines.push('Trails Vertexes : ${floatToStringPrecision(num_trail_tri_smooth, 2, true)}');
-				lines.push('Allocated Trails Vertexes : $max_tris');
-				lines.push('Max Trail Lenght : $max_len');
-				lines.push('Theorical Max Trail Lenght : $theorical_max_len');
+				lines.push('Allocated Trails Vertexes : $trailMaxTris');
+				lines.push('Max Trail Lenght : $trailMaxLen');
+				lines.push('Theorical Max Trail Lenght : $trailCalcMaxLen');
 				lines.push('Trail pool : $poolSize');
-				lines.push('Num Indices : $num_indices');
-				lines.push('Num Allocated Indices : $num_allocated_indices');
-
-
+				lines.push('Num Indices : $trailRealIndicies');
+				lines.push('Num Allocated Indices : $trailAllocIndicies');*/
 			}
 			statusText.text = lines.join("\n");
 		}
