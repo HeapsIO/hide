@@ -1,43 +1,5 @@
 package hrt.prefab.l3d;
 
-class BaseTrails extends hxsl.Shader {
-
-	static var SRC = {
-
-        @param var uvStretch : Float;
-        @const @param var uvRepeat : Int = 0;
-
-        @input var input2 : {
-			var uv : Vec2;
-        };
-
-		var calculatedUV : Vec2;
-
-        function __init__() {
-            calculatedUV = input2.uv;
-        }
-
-        function fragment() {
-            calculatedUV = calculatedUV * vec2(uvStretch, 1.0);
-
-            switch(uvRepeat) {
-                case 0: // Modulo
-                    calculatedUV.x = calculatedUV.x % 1.0;
-                case 1: // Mirror
-                    calculatedUV.x = calculatedUV.x % 2.0;
-                    if (calculatedUV.x > 1.0) {
-                        calculatedUV.x = 2.0-calculatedUV.x;
-                    }
-                case 3: // Clamp
-                    calculatedUV.x = saturate(calculatedUV.x);
-                case 4: {};// None
-                default: {};
-            }
-        }
-	};
-
-}
-
 @:struct
 class TrailPoint {
     public var x : Float = 0;
@@ -139,7 +101,7 @@ class TrailObj extends h3d.scene.Mesh {
     // How many frame we wait before adding a new point
     static final maxFramerate : Float = 30.0;
 
-    var shader : BaseTrails;
+    var shader : hrt.shader.BaseTrails;
 
 
     public function calcMaxTrailPoints() : Int {
@@ -470,7 +432,7 @@ class TrailObj extends h3d.scene.Mesh {
         material.props = getMaterialProps();
 		material.mainPass.dynamicParameters = true;
 
-        shader = new BaseTrails();
+        shader = new hrt.shader.BaseTrails();
         material.mainPass.addShader(shader);
 
         shader.setPriority(-999);
