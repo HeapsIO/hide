@@ -58,10 +58,13 @@ class TrailPoint {
     public function new(){};
 }
 
+@:struct
 class TrailHead {
     public var firstPoint : TrailPoint = null;
     public var totalLength : Float = 0;
     public var numPoints : Int = 0;
+    public var generation : Int = 0;
+    public var nextTrail : TrailHead = null;
 
     public function new(){};
 }
@@ -92,26 +95,17 @@ enum UVRepeat {
     ENone;
 }
 
-typedef TrailID = haxe.Int32;
 
-typedef TrailParameters = {
-    var uvMode : UVMode;
-    var startWidth : Float;
-    var endWidth : Float;
-    var lifetime : Float;
-    var minLen : Float;
-    var uvStretch: Float;
-    var uvRepeat : UVRepeat;
-    var maxTriangles : Int;
-}
+typedef PointsArray = #if (hl_ver >= version("1.13.0")) hl.CArray<TrailPoint> #else Array<TrailPoint> #end;
+typedef TrailsArray = #if (hl_ver >= version("1.13.0")) hl.CArray<TrailHead> #else Array<TrailHead> #end;
 
-typedef TrailsArray = #if (hl_ver >= version("1.13.0")) hl.CArray<TrailPoint> #else Array<TrailPoint> #end;
 
 class TrailObj extends h3d.scene.Mesh {
 
-    var trailHeads : Map<TrailID, TrailHead> = new Map();
+    var points : PointsArray;
+    var trails : TrailsArray;
 
-    var points : TrailsArray;
+    var trailsPool : TrailHead = null;
     var firstFreePointID = 0;
 
     var nextTrailID = 0;
@@ -137,55 +131,68 @@ class TrailObj extends h3d.scene.Mesh {
     public function set_numTrails(new_value : Int) : Int {
         if (numTrails != new_value) {
             numTrails = new_value;
-            initOrResizeInternalBuffers();
+            allocBuffers();
         }
         return numTrails;
     }
 
     // How many frame we wait before adding a new point
-    var pointFrameskip : Int = 2;
+    static final maxFramerate : Float = 30.0;
 
     var shader : BaseTrails;
 
 
-    public function getTheoricalMaxPointsPerTrail() : Int {
-        return Std.int(std.Math.ceil(prefab.lifetime * 60.0 / pointFrameskip));
+    public function calcMaxTrailPoints() : Int {
+        return Std.int(std.Math.ceil(prefab.lifetime * maxFramerate));
     }
 
-    function getTheoricalMaxVertexes() : Int {
-        var pointsPerTrail = getTheoricalMaxPointsPerTrail();
+    function calcMaxVertexes() : Int {
+        var pointsPerTrail = calcMaxTrailPoints();
         var vertsPerTrail = std.Math.ceil(pointsPerTrail * 2);
-        return vertsPerTrail * numTrails;
+        var num = vertsPerTrail * numTrails;
+        if (num > 65534) {
+            num = 65534;
+        }
+        return num;
     }
 
-    function getTheoricalMaxIndices() : Int {
-        var pointsPerTrail = getTheoricalMaxPointsPerTrail();
+    function calcMaxIndexes() : Int {
+        var pointsPerTrail = calcMaxTrailPoints();
         var indicesPerTrail = (pointsPerTrail-1) * 6;
         return indicesPerTrail * numTrails;
     }
 
-    function initOrResizeInternalBuffers() {
+    function allocBuffers() {
         var alloc = hxd.impl.Allocator.get();
         if (vbuf != null)
             alloc.disposeFloats(vbuf);
-        currentAllocatedVertexCount = getTheoricalMaxVertexes();
+        currentAllocatedVertexCount = calcMaxVertexes();
         vbuf = new hxd.FloatBuffer(currentAllocatedVertexCount * 8);
         if (ibuf != null)
             alloc.disposeIndexes(ibuf);
-        currentAllocatedIndexCount = getTheoricalMaxIndices();
+        currentAllocatedIndexCount = calcMaxIndexes();
         ibuf = new hxd.IndexBuffer(currentAllocatedIndexCount);
 
-        reset();
 
         pool = null;
         firstFreePointID = 0;
 
-        maxNumPoints = getTheoricalMaxPointsPerTrail() * numTrails;
+        maxNumPoints = calcMaxTrailPoints() * numTrails;
         if (maxNumPoints <= 0) maxNumPoints = 1;
 		points = #if (hl_ver >= version("1.13.0")) hl.CArray.alloc(TrailPoint, maxNumPoints) #else [for(i in 0...maxNumPoints) new TrailPoint()] #end;
 
+        trails = #if (hl_ver >= version("1.13.0")) hl.CArray.alloc(TrailHead, numTrails) #else [for(i in 0...numTrails) new TrailHead()] #end;
+
+        for (i in 0...numTrails-1) {
+            trails[i].nextTrail = trails[i+1];
+        }
+        trailsPool = trails[0];
+
         if (dprim != null)
             dprim.alloc(null);
+
+        reset();
+
     }
 
     var maxNumPoints : Int = 0;
@@ -198,15 +205,11 @@ class TrailObj extends h3d.scene.Mesh {
 
 	public var materialData = {};
 
-    public function getNextTrailID() : TrailID {
-        return nextTrailID++;
-    }
-
     public  function updateParams() {
         updateShader();
     }
 
-    function alloc() : TrailPoint {
+    function allocPoint() : TrailPoint {
         var r = null;
         if (pool != null)
         {
@@ -221,7 +224,22 @@ class TrailObj extends h3d.scene.Mesh {
         r.next = null;
         r.len = 0.0;
         return r;
+    }
 
+    public function allocTrail() : TrailHead {
+        if (trailsPool == null) throw "assert";
+        var r = trailsPool;
+        trailsPool = trailsPool.nextTrail;
+        return r;
+    }
+
+    function disposeTrail(t : TrailHead) {
+        t.firstPoint = null;
+        t.totalLength = 0;
+        t.numPoints = 0;
+        t.generation++;
+        t.nextTrail = trailsPool;
+        trailsPool = t;
     }
 
     function disposePoint(p : TrailPoint) {
@@ -237,15 +255,15 @@ class TrailObj extends h3d.scene.Mesh {
     }
 
     public function reset() {
-        for (k => v in trailHeads) {
-            var p = v.firstPoint;
+        for (t in trails) {
+            var p = t.firstPoint;
             while (p != null) {
                 var n = p.next;
                 disposePoint(p);
                 p = n;
             }
+            disposeTrail(t);
         }
-        trailHeads.clear();
     }
 
     public function updateShader() {
@@ -256,8 +274,7 @@ class TrailObj extends h3d.scene.Mesh {
 
     var statusText : h2d.Text;
 
-    public function addPoint(?id : Int, x : Float, y : Float, z : Float, orient : TrailOrientation, w : Float) {
-        id = id != null ? id : 0;
+    public function addPoint(t : TrailHead, x : Float, y : Float, z : Float, orient : TrailOrientation, w : Float) {
 
         var ux : Float = 0.0;
         var uy : Float = 0.0;
@@ -299,7 +316,7 @@ class TrailObj extends h3d.scene.Mesh {
             }
         }
 
-        var head = getHead(id);
+        var head = t;
 
         var prev = head.firstPoint;
         var new_pt : TrailPoint = null;
@@ -313,8 +330,8 @@ class TrailObj extends h3d.scene.Mesh {
             (z - prev.next.z) * (z - prev.next.z);
             len = Math.sqrt(len);
 
-            if (prev.lifetime < pointFrameskip/60.0-0.001 ||
-                head.numPoints >= getTheoricalMaxPointsPerTrail() // Don't allocate points if we have the max numPoints
+            if (prev.lifetime < 1.0/maxFramerate-0.001 ||
+                head.numPoints >= calcMaxTrailPoints() // Don't allocate points if we have the max numPoints
                 ) {
                 new_pt = prev;
                 prev = prev.next;
@@ -330,7 +347,7 @@ class TrailObj extends h3d.scene.Mesh {
 
         if (new_pt == null)
         {
-            new_pt = alloc();
+            new_pt = allocPoint();
             if (new_pt == null)
                 return;
             head.numPoints ++;
@@ -414,12 +431,6 @@ class TrailObj extends h3d.scene.Mesh {
         head.firstPoint = new_pt;
     }
 
-    public function getHead(id : TrailID) : TrailHead {
-        if (!trailHeads.exists(id))
-            trailHeads.set(id, new TrailHead());
-        return trailHeads[id];
-    }
-
     public function getMaterialProps() {
 		var name = h3d.mat.MaterialSetup.current.name;
 		var p = Reflect.field(materialData, name);
@@ -486,26 +497,26 @@ class TrailObj extends h3d.scene.Mesh {
 		super.sync(ctx);
 
         if (autoTrackPosition) {
-            var x = absPos._41;
-            var y = absPos._42;
-            var z = absPos._43;
-    
+            var x = absPos.tx;
+            var y = absPos.ty;
+            var z = absPos.tz;
+
             var spdSqr =
                 (x - prev_x) * (x - prev_x) +
                 (y - prev_y) * (y - prev_y) +
                 (z - prev_z) * (z - prev_z);
-    
+
             var shouldAddPoint : Bool = false;
-    
+
             var minSpd = 0.0;
             if (spdSqr > minSpd * minSpd) {
                 shouldAddPoint = true;
             }
-    
+
             if (shouldAddPoint) {
-                //addPoint(0, x,y,z, ECamera, 1);
+                addPoint(trails[0], x,y,z, ECamera, 1);
                 //addPoint(0, x,y,z, EUp(0,0,1), 1);
-                addPoint(0, x,y,z, EBasis(absPos), 1);
+                //addPoint(0, x,y,z, EBasis(absPos), 1);
             }
         }
 
@@ -523,13 +534,12 @@ class TrailObj extends h3d.scene.Mesh {
 
         var count = 0;
         numVertsIndices = 0;
-        var current_index = 0;
+        var currentIndex = 0;
         var num_segments = 0;
 
         // render
-        for (k => trail in trailHeads) {
+        for (trail in trails) {
             var prev = null;
-            var fix_prev = true;
             var cur = trail.firstPoint;
             var len = 0.0;
 
@@ -545,7 +555,7 @@ class TrailObj extends h3d.scene.Mesh {
                     if (prev != null) {
                         prev.next = null;
                     } else {
-                        trailHeads.remove(k);
+                        disposeTrail(trail);
                     }
                     var dp = cur;
                     while(dp != null) {
@@ -650,18 +660,18 @@ class TrailObj extends h3d.scene.Mesh {
 
                     if (numVertsIndices + 6 > currentAllocatedIndexCount) break;
 
-                    indices[numVertsIndices] = current_index+2;
-                    indices[numVertsIndices+1] = current_index+1;
-                    indices[numVertsIndices+2] = current_index;
+                    indices[numVertsIndices] = currentIndex+2;
+                    indices[numVertsIndices+1] = currentIndex+1;
+                    indices[numVertsIndices+2] = currentIndex;
 
                     numVertsIndices += 3;
 
-                    indices[numVertsIndices] = current_index+2;
-                    indices[numVertsIndices+1] = current_index+3;
-                    indices[numVertsIndices+2] = current_index+1;
+                    indices[numVertsIndices] = currentIndex+2;
+                    indices[numVertsIndices+1] = currentIndex+3;
+                    indices[numVertsIndices+2] = currentIndex+1;
 
                     numVertsIndices += 3;
-                    current_index += 2;
+                    currentIndex += 2;
                 }
 
                 len += cur.len;
@@ -672,7 +682,7 @@ class TrailObj extends h3d.scene.Mesh {
             }
 
             if (prev != null ){
-                current_index +=2;
+                currentIndex +=2;
             }
         }
 

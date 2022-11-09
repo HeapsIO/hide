@@ -86,7 +86,8 @@ private class ParticleInstance {
 	var scaleY : Single;
 	var scaleZ : Single;
 
-	var trailId : hrt.prefab.l3d.Trails.TrailID;
+	var trail : hrt.prefab.l3d.Trails.TrailHead;
+	var trailGeneration : Int = 0;
 
 	#if (hl_ver >= version("1.13.0"))
 	@:packed var speedAccumulation(default, never) : SVector3;
@@ -136,7 +137,8 @@ private class ParticleInstance {
 		startTime = p.startTime;
 		prev = p.prev;
 		next = p.next;
-		trailId = p.trailId;
+		trail = p.trail;
+		trailGeneration = p.trailGeneration;
 	}
 
 	function init(idx: Int, emitter: EmitterObject) {
@@ -156,8 +158,10 @@ private class ParticleInstance {
 		startFrame = 0;
 		random = emitter.random.rand();
 
-		if (emitter.trails != null)
-			trailId = emitter.trails.getNextTrailID();
+		if (emitter.trails != null) {
+			trail = emitter.trails.allocTrail();
+			trailGeneration = trail.generation;
+		}
 	}
 
 	static var tmpRot = new h3d.Vector();
@@ -1057,7 +1061,7 @@ class EmitterObject extends h3d.scene.Object {
 		while(i < numInstances) {
 			var p = particles[i];
 			if(p.life > p.lifeTime) {
-				if (trails == null || @:privateAccess trails.trailHeads.exists(p.trailId) == false) {
+				if (p.trail == null || p.trail.generation != p.trailGeneration) {
 					i = disposeInstance(i);
 					// SUB EMITTER
 					if( subEmitterTemplate != null ) {
@@ -1093,7 +1097,7 @@ class EmitterObject extends h3d.scene.Object {
 				++i;
 
 				if (trails != null) {
-					trails.addPoint(p.trailId, p.absPos._41, p.absPos._42, p.absPos._43, ECamera, 1.0);
+					trails.addPoint(p.trail, p.absPos._41, p.absPos._42, p.absPos._43, ECamera, 1.0);
 				}
 			}
 		}

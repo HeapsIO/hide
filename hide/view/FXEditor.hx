@@ -1850,7 +1850,7 @@ class FXEditor extends FileView {
 		var poolSize = 0;
 		@:privateAccess
 		for (trail in trails) {
-			for (head in trail.trailHeads) {
+			for (head in trail.trails) {
 				num_trails ++;
 				var p = head.firstPoint;
 				var len = 0;
@@ -1871,7 +1871,7 @@ class FXEditor extends FileView {
 				p = p.next;
 			}
 			max_tris += Std.int(trail.vbuf.length/8.0);
-			theorical_max_len = trail.getTheoricalMaxPointsPerTrail();
+			theorical_max_len = trail.calcMaxTrailPoints();
 			num_indices += trail.numVertsIndices;
 			num_allocated_indices += trail.currentAllocatedIndexCount;
 		}
