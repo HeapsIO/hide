@@ -150,11 +150,7 @@ class TrailObj extends h3d.scene.Mesh {
         }
         trailsPool = trails[0];
 
-        if (dprim != null)
-            dprim.alloc(null);
-
         reset();
-
     }
 
     var maxNumPoints : Int = 0;
@@ -213,8 +209,15 @@ class TrailObj extends h3d.scene.Mesh {
     }
 
     override function onRemove() {
+        super.onRemove();
         dprim.dispose();
     }
+
+    override function onAdd() {
+        super.onAdd();
+        dprim.alloc(null);
+    }
+
 
     public function reset() {
         for (t in trails) {
