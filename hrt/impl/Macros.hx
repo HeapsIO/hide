@@ -90,7 +90,7 @@ class Macros {
 
 		var name = "";
 		switch(val.expr)  {
-			case EField(_, n, _):
+			case EField(_, n):
 				name = n;
 			default:
 				throw "assert";
@@ -110,7 +110,7 @@ class Macros {
 
 		var name = "";
 		switch(val.expr)  {
-			case EField(_, n, _):
+			case EField(_, n):
 				name = n;
 			default:
 				throw "assert";
