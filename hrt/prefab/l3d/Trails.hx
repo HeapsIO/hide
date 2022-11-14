@@ -16,7 +16,6 @@ class TrailPoint {
     public var lifetime : Float = 0;
     public var next : TrailPoint = null;
 
-
     public function new(){};
 }
 
@@ -333,6 +332,7 @@ class TrailObj extends h3d.scene.Mesh {
             (z - prev.z) * (z - prev.z);
             len = Math.sqrt(lenSq);
 
+
             if (prefab.uvMode == ETileFixed) {
                 new_pt.len = head.totalLength + len;
             }
@@ -473,8 +473,7 @@ class TrailObj extends h3d.scene.Mesh {
 
             var shouldAddPoint : Bool = false;
 
-            var minSpd = 0.0;
-            if (spdSqr > minSpd * minSpd) {
+            if (spdSqr > prefab.minSpeed * prefab.minSpeed || true) {
                 shouldAddPoint = true;
             }
 
@@ -504,7 +503,7 @@ class TrailObj extends h3d.scene.Mesh {
 
         // render
         for (trail in trails) {
-            var prev = null;
+            var prev : TrailPoint = null;
             var cur = trail.firstPoint;
             var len = 0.0;
 
@@ -602,6 +601,7 @@ class TrailObj extends h3d.scene.Mesh {
 
                 var u = if (prefab.uvMode == ETileFixed) cur.len else len;
                 if (prefab.uvMode == EStretch) u = (totalLen - len) / totalLen;
+
                 buffer[count++] = cur.x+nx * cur.w;
                 buffer[count++] = cur.y+ny * cur.w;
                 buffer[count++] = cur.z+nz * cur.w;
@@ -621,33 +621,34 @@ class TrailObj extends h3d.scene.Mesh {
                 buffer[count++] = u;
                 buffer[count++] = 1;
 
-                if (prev != null) {
+                
+                if (prev != null ) {
+                    var spd = cur.len / hxd.Math.max((cur.lifetime - prev.lifetime), 1.0/maxFramerate);
+                    if (spd < prefab.maxSpeed && spd > prefab.minSpeed) {
+                        if (numVertsIndices + 6 > currentAllocatedIndexCount) break;
 
-                    if (numVertsIndices + 6 > currentAllocatedIndexCount) break;
+                        indices[numVertsIndices] = currentIndex;
+                        indices[numVertsIndices+1] = currentIndex-1;
+                        indices[numVertsIndices+2] = currentIndex-2;
+    
+                        numVertsIndices += 3;
+    
+                        indices[numVertsIndices] = currentIndex;
+                        indices[numVertsIndices+1] = currentIndex+1;
+                        indices[numVertsIndices+2] = currentIndex-1;
+    
+                        numVertsIndices += 3;
+                    }
 
-                    indices[numVertsIndices] = currentIndex+2;
-                    indices[numVertsIndices+1] = currentIndex+1;
-                    indices[numVertsIndices+2] = currentIndex;
-
-                    numVertsIndices += 3;
-
-                    indices[numVertsIndices] = currentIndex+2;
-                    indices[numVertsIndices+1] = currentIndex+3;
-                    indices[numVertsIndices+2] = currentIndex+1;
-
-                    numVertsIndices += 3;
-                    currentIndex += 2;
                 }
+
+                currentIndex += 2;
 
                 len += cur.len;
 
                 prev = cur;
                 cur = cur.next;
 
-            }
-
-            if (prev != null ){
-                currentIndex +=2;
             }
         }
 
@@ -680,6 +681,10 @@ class Trails extends Object3D {
     @:s public var startWidth : Float = 1.0;
     @:s public var endWidth : Float = 0.0;
     @:s public var lifetime : Float = 1.0;
+
+    @:s public var minSpeed : Float = 10.0;
+    @:s public var maxSpeed : Float = 1000.0;
+
 
     @:s public var uvMode : UVMode = EStretch;
     @:s public var uvStretch: Float = 1.0;
@@ -722,6 +727,8 @@ class Trails extends Object3D {
 				<dt>Lifetime</dt><dd><input type="range" field="lifetime" min="0" max="1"/></dd>
 				<dt>Width Start</dt><dd><input type="range" field="startWidth" min="0" max="10"/></dd>
 				<dt>Width End</dt><dd><input type="range" field="endWidth" min="0" max="10"/></dd>
+				<dt>Min Speed</dt><dd><input type="range" field="minSpeed" min="0" max="1000"/></dd>
+				<dt>Max Speed</dt><dd><input type="range" field="maxSpeed" min="0" max="1000"/></dd>
 			</dl>
 		</div>
 
