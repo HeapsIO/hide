@@ -20,18 +20,16 @@ class Macros {
 		return value;
 	}
 
-	#if macro
 
 	// Get the field in the specified field path or null if any element of the path is not null
 	static function getOrDefault(path: Array<String>, ?startIndex: Int, ?defaultValue: Expr) : Expr {
 		function recursive(path: Array<String>, index : Int, defaultValue: Expr) : Expr {
-			var pos = Context.currentPos();
 			if (index == path.length - 1) {
-				return macro @:pos(pos) $p{path};
+				return macro $p{path};
 			}
 			else {
 				var subpath = path.slice(0, index+1);
-				return macro @:pos(pos) $p{subpath} != null ? ${recursive(path, index+1, defaultValue)} : $defaultValue;
+				return macro $p{subpath} != null ? ${recursive(path, index+1, defaultValue)} : $defaultValue;
 			}
 		}
 
@@ -39,29 +37,26 @@ class Macros {
 	}
 
 	static function forEachFieldInType(t: Type, path: Array<String>, pos, func: (t: Type, path : Array<String>, pos: Position) -> Void) : Void {
-		var trueType = Context.follow(t, false);
-			switch(trueType) {
-				case TAnonymous(a):
-					for (f in a.get().fields) {
-						path.push(f.name);
-						forEachFieldInType(f.type, path, pos, func);
-						path.pop();
-					}
-				default:
-					func(t, path, pos);
-			}
+		switch(t) {
+			case TAnonymous(a):
+				for (f in a.get().fields) {
+					path.push(f.name);
+					forEachFieldInType(f.type, path, pos, func);
+					path.pop();
+				}
+			default:
+				func(t, path, pos);
+		}
 	}
 
-	static function getTypeExpression(t : Type, path : Array<String>) : Expr {
-		var trueType = Context.follow(t, false);
-		var pos = Context.currentPos();
-		switch(trueType) {
+	static function getTypeExpression(t : Type, path : Array<String>, pos:Position) : Expr {
+		switch(t) {
 			case TAnonymous(a):
 				return createAnonDecl(a, path, pos);
 			case TEnum(_,_):
 				var objFields : Array<ObjectField> = [];
 
-				return macro @:pos(pos) {
+				return macro {
 					var name = haxe.EnumTools.EnumValueTools.getName($p{path});
 					var params = haxe.EnumTools.EnumValueTools.getParameters($p{path});
 					if (params.length == 0) {
@@ -78,16 +73,74 @@ class Macros {
 		}
 	}
 
-	static function createAnonDecl(anonType: Ref<AnonType>, path: Array<String>, pos) {
+	static function createAnonDecl(anonType: Ref<AnonType>, path: Array<String>, pos:Position) {
 		var objFields : Array<ObjectField> = [];
 		for (f in anonType.get().fields) {
 			path.push(f.name);
-			var e = getTypeExpression(f.type, path);
+			var e = getTypeExpression(f.type, path, pos);
 			path.pop();
 			objFields.push({field : f.name, expr : e});
 		}
 		return {expr: EObjectDecl(objFields), pos : pos};
 	}
+
+	public static macro function serializeValue(val : Expr) {
+		var type = Context.typeof(val);
+		if (type == null) throw "assert";
+
+		var name = "";
+		switch(val.expr)  {
+			case EField(_, n, _):
+				name = n;
+			default:
+				throw "assert";
+		}
+
+		var expr = getTypeExpression(type, ["this", name], val.pos);
+
+		return expr;
+	}
+
+	public static macro function fixupEnumUnserialise(original : Expr, val : Expr) {
+		var exprs = new Array<Expr>();
+
+		var type = Context.typeof(original);
+
+		var pos = original.pos;
+
+		var name = "";
+		switch(val.expr)  {
+			case EField(_, n, _):
+				name = n;
+			default:
+				throw "assert";
+		}
+
+		forEachFieldInType(type, ["obj", name], pos, function(t: Type, path: Array<String>, pos: Position) : Void
+		{
+			switch(t) {
+				case TEnum(enumRef,_): {
+					var name = path.copy(); name.push("name");
+					var params = path.copy(); params.push("parameters");
+					var parentPath = path.copy(); parentPath.pop();
+					var expr = macro @:pos(pos) {
+						var objNullCheck = ${getOrDefault(parentPath)};
+						var isString = Std.is($p{path}, String);
+						if (objNullCheck != null)
+							$p{path} = hrt.impl.Macros.enumOrNullByName($i{enumRef.get().name}, isString ? $p{path} : ${getOrDefault(name, parentPath.length)}, isString ? null : ${getOrDefault(params, parentPath.length)});
+					};
+					exprs.push(expr);
+				}
+				default: {
+
+				}
+			}
+		});
+
+		return macro $b{exprs};
+	}
+
+	#if macro
 
 	public static function buildPrefab() {
 		var fields = Context.getBuildFields();
@@ -153,44 +206,15 @@ class Macros {
 						serCond = macro @:pos(f.pos) this.$name.length != 0;
 				}
 
-
-				var type = null;
-				if (t != null) {
-					type = haxe.macro.ComplexTypeTools.toType(t);
-				}
-				else if (e != null) {
-					type = Context.typeof(e);
-				}
-				if (type == null) throw "assert";
-
-				var expr = getTypeExpression(type, ["this", name]);
-
 				if( serCond == null ) {
 					var defVal = e.expr.match(EConst(_) | EBinop(_) | EUnop(_)) ? e : macro @:pos(f.pos) null;
 					serCond = macro @:pos(pos) this.$name != $defVal;
 				}
 
-				ser.push(macro @:pos(pos) if( $serCond ) obj.$name = $expr);
+				ser.push(macro @:pos(pos) if( $serCond ) obj.$name = hrt.impl.Macros.serializeValue(this.$name));
 
-				forEachFieldInType(type, ["obj", name], pos, function(t: Type, path: Array<String>, pos: Position) : Void
-				{
-					switch(t) {
-						case TEnum(enumRef,_): {
-							var name = path.copy(); name.push("name");
-							var params = path.copy(); params.push("parameters");
-							var parentPath = path.copy(); parentPath.pop();
-							var expr = macro @:pos(pos) {
-								var objNullCheck = ${getOrDefault(parentPath)};
-								var isString = Std.is($p{path}, String);
-								if (objNullCheck != null)
-									$p{path} = hrt.impl.Macros.enumOrNullByName($i{enumRef.get().name}, isString ? $p{path} : ${getOrDefault(name, parentPath.length)}, isString ? null : ${getOrDefault(params, parentPath.length)});
-							};
-							unser.push(expr);
-						}
-						default: {}
-					}
-				});
-
+				unser.push(macro @:pos(pos) hrt.impl.Macros.fixupEnumUnserialise(this.$name,obj.$name));
+				
 				unser.push(macro @:pos(pos) this.$name = obj.$name == null ? $e : obj.$name);
 				copy.push(macro @:pos(pos) this.$name = p.$name);
 			default:
