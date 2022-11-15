@@ -38,6 +38,8 @@ class Macros {
 
 	static function forEachFieldInType(t: Type, path: Array<String>, pos, func: (t: Type, path : Array<String>, pos: Position) -> Void) : Void {
 		switch(t) {
+			case TType(a, _):
+				forEachFieldInType(a.get().type, path, pos, func);
 			case TAnonymous(a):
 				for (f in a.get().fields) {
 					path.push(f.name);
@@ -51,6 +53,8 @@ class Macros {
 
 	static function getTypeExpression(t : Type, path : Array<String>, pos:Position) : Expr {
 		switch(t) {
+			case TType(a, _):
+				return getTypeExpression(a.get().type, path, pos);
 			case TAnonymous(a):
 				return createAnonDecl(a, path, pos);
 			case TEnum(_,_):
@@ -84,21 +88,35 @@ class Macros {
 		return {expr: EObjectDecl(objFields), pos : pos};
 	}
 
+	static function containsEnum(type: Type, pos: Position) {
+		var contains = false;
+		forEachFieldInType(type, [], pos, function(t:Type, _, _) {
+			switch(t) {
+				case TEnum(_,_):
+					contains = true;
+				default:
+			}
+		});
+		return contains;
+	}
+
 	public static macro function serializeValue(val : Expr) {
 		var type = Context.typeof(val);
 		if (type == null) throw "assert";
 
-		var name = "";
-		switch(val.expr)  {
-			case EField(_, n):
-				name = n;
-			default:
-				throw "assert";
+		if (containsEnum(type, val.pos)) {
+			var name = "";
+			switch(val.expr)  {
+				case EField(_, n):
+					name = n;
+				default:
+					throw "assert";
+			}
+			return getTypeExpression(type, ["this", name], val.pos);
 		}
-
-		var expr = getTypeExpression(type, ["this", name], val.pos);
-
-		return expr;
+		else {
+			return val;
+		}
 	}
 
 	public static macro function fixupEnumUnserialise(original : Expr, val : Expr) {
