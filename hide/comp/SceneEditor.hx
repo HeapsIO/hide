@@ -305,6 +305,11 @@ class SceneEditor {
 		} else {
 			view.element.find(".tabs").show();
 		}
+		var pview = Std.downcast(view, hide.view.Prefab);
+		if(pview != null) {
+			if(b) pview.hideColumns();
+			else pview.showColumns();
+		}
 	}
 
 	function makeCamController2D() {

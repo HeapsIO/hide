@@ -296,7 +296,7 @@ class Prefab extends FileView {
 			refreshColLayout();
 	}
 
-	function hideColumns(?_) {
+	public function hideColumns(?_) {
 		element.find(".tree-column").first().hide();
 		element.find(".props-column").first().hide();
 		element.find(".splitter").first().hide();
@@ -306,7 +306,7 @@ class Prefab extends FileView {
 		@:privateAccess if( scene.window != null) scene.window.checkResize();
 	}
 
-	function showColumns(?_) {
+	public function showColumns(?_) {
 		element.find(".tree-column").first().show();
 		element.find(".props-column").first().show();
 		element.find(".splitter").first().show();

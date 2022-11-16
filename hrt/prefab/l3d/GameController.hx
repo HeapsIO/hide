@@ -82,7 +82,7 @@ class GameController extends Object3D {
 			if( !active )
 				return;
 
-			if( !force && pad.xAxis == 0 && pad.yAxis == 0 )
+			if( !force && hxd.Math.abs(pad.xAxis) < 0.2 && hxd.Math.abs(pad.yAxis) < 0.2 )
 				return;
 
 			if( pad.isDown(pad.config.A) ) dt *= 10;
