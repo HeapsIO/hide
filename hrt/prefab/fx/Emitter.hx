@@ -858,6 +858,9 @@ class EmitterObject extends h3d.scene.Object {
 
 	function tick( dt : Float, full=true) {
 
+		if (particleTemplate == null)
+			return;
+
 		// Auto remove of sub emitters
 		if( !enable && particles == null && isSubEmitter ) {
 			parentEmitter.subEmitters.remove(this);
