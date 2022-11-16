@@ -46,6 +46,7 @@ class Ide {
 	var defaultLayout : { name : String, state : Config.LayoutState };
 	var currentFullScreen(default,set) : hide.ui.View<Dynamic>;
 	var maximized : Bool;
+	var fullscreen : Bool;
 	var updates : Array<Void->Void> = [];
 	var views : Array<hide.ui.View<Dynamic>> = [];
 
@@ -143,8 +144,16 @@ class Ide {
 			mouseX = e.x;
 			mouseY = e.y;
 		});
-		window.on('maximize', function() { maximized = true; onWindowChange(); });
-		window.on('restore', function() { maximized = false; onWindowChange(); });
+		window.on('maximize', function() {
+			if(fullscreen) return;
+			maximized = true;
+			onWindowChange();
+		});
+		window.on('restore', function() {
+			if(fullscreen) return;
+			maximized = false;
+			onWindowChange();
+		});
 		window.on('move', function() haxe.Timer.delay(onWindowChange,100));
 		window.on('resize', function() haxe.Timer.delay(onWindowChange,100));
 		window.on('close', function() {
@@ -425,6 +434,7 @@ class Ide {
 
 	public function setFullscreen(b : Bool) {
 		if (b) {
+			fullscreen = true;
 			window.maximize();
 			saveMenu = window.menu;
 			window.menu = null;
@@ -432,6 +442,13 @@ class Ide {
 		} else {
 			window.menu = saveMenu;
 			window.leaveFullscreen();
+
+			// NWJS bug: changing fullscreen triggers spurious "restore" events
+			haxe.Timer.delay(function() {
+				fullscreen = false;
+				if(maximized)
+					window.maximize();
+			}, 50);
 		}
 	}
 
