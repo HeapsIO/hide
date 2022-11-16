@@ -408,6 +408,8 @@ class EmitterObject extends h3d.scene.Object {
 	public var maxCatchupWindow = 0.5; // How many seconds max to simulate when catching up
 	#end
 
+	public var emitterPrefab : Emitter;
+
 	// RANDOM
 	public var seedGroup = 0;
 	// OBJECTS
@@ -487,47 +489,76 @@ class EmitterObject extends h3d.scene.Object {
 		random = new hxd.Rand(randomSeed);
 	}
 
-	function init(randSlots: Int) {
+	function makeShaderInstance(prefab: hrt.prefab.Shader, ctx:Context):Context {
+		ctx = ctx.clone(prefab);
+		var shader = prefab.makeShader(ctx);
+		if( shader == null )
+			return ctx;
+		ctx.custom = shader;
+		prefab.updateInstance(ctx);
+		return ctx;
+	}
+
+	function init(randSlots: Int, prefab: Emitter) {
+		this.emitterPrefab = prefab;
 		this.randSlots = randSlots;
 
 		if( batch != null )
 			batch.remove();
 
-		if( particleTemplate == null )
-			return;
+		var mesh = null;
+		baseEmitMat = null;
+		if (particleTemplate != null) {
+			baseEmitMat = particleTemplate.getTransform();
+			if(baseEmitMat.isIdentityEpsilon(0.01))
+				baseEmitMat = null;
 
-		baseEmitMat = particleTemplate.getTransform();
-		if(baseEmitMat.isIdentityEpsilon(0.01))
-			baseEmitMat = null;
-
-		var template = particleTemplate.makeInstance(context);
-		var mesh = Std.downcast(template.local3d, h3d.scene.Mesh);
-		if( mesh == null ) {
-			for( i in 0...template.local3d.numChildren ) {
-				mesh = Std.downcast(template.local3d.getChildAt(i), h3d.scene.Mesh);
-				if( mesh != null ) break;
+			var template = particleTemplate.makeInstance(context);
+			mesh = Std.downcast(template.local3d, h3d.scene.Mesh);
+			if( mesh == null ) {
+				for( i in 0...template.local3d.numChildren ) {
+					mesh = Std.downcast(template.local3d.getChildAt(i), h3d.scene.Mesh);
+					if( mesh != null ) break;
+				}
 			}
+
+			template.local3d.remove();
 		}
+
 
 		if( mesh != null && mesh.primitive != null ) {
 			var meshPrim = Std.downcast(mesh.primitive, h3d.prim.MeshPrimitive);
 
+
+
 			// Setup mats.
 			// Should we do this manually here or make a recursive makeInstance on the template?
-			var materials = particleTemplate.getAll(hrt.prefab.Material);
+			var materials = emitterPrefab.getAll(hrt.prefab.Material);
 			for(mat in materials) {
+				if (Std.downcast(mat.parent, hrt.prefab.l3d.Trails) != null)
+					continue;
 				if(mat.enabled)
-					mat.makeInstance(template);
+					mat.makeInstance(context);
+			}
+
+			if( meshPrim != null ) {
+				batch = new h3d.scene.MeshBatch(meshPrim, mesh.material, this);
+				batch.name = "emitter";
+				batch.calcBounds = false;
 			}
 
 			// Setup shaders
 			shaderAnims = [];
-			var shaders = particleTemplate.getAll(hrt.prefab.Shader);
+			var shaders = emitterPrefab.getAll(hrt.prefab.Shader);
 			for( shader in shaders ) {
+				if (Std.downcast(shader.parent, hrt.prefab.l3d.Trails) != null)
+					continue;
 				if( !shader.enabled ) continue;
-				var shCtx = shader.makeInstance(template);
+				var shCtx = makeShaderInstance(shader, context);
 				if( shCtx == null ) continue;
-				hrt.prefab.fx.BaseFX.getShaderAnims(template, shader, shaderAnims);
+				hrt.prefab.fx.BaseFX.getShaderAnims(shCtx, shader, shaderAnims);
+				var shader = Std.downcast(shCtx.custom, hxsl.Shader);
+				batch.material.mainPass.addShader(shader);
 			}
 
 			// Animated textures animations
@@ -549,13 +580,6 @@ class EmitterObject extends h3d.scene.Object {
 				mesh.material.mainPass.addShader(colorMultShader);
 			}
 
-			if( meshPrim != null ) {
-				batch = new h3d.scene.MeshBatch(meshPrim, mesh.material, this);
-				batch.name = "emitter";
-				batch.calcBounds = false;
-			}
-
-			template.local3d.remove();
 		}
 
 		particles = #if (hl_ver >= version("1.13.0")) hl.CArray.alloc(ParticleInstance, maxCount) #else [for(i in 0...maxCount) new ParticleInstance()] #end;
@@ -1304,14 +1328,7 @@ class Emitter extends Object3D {
 		return ctx;
 	}
 
-	function refreshChildren(ctx: Context) {
-		// Don't make all children, which are used to setup particles
-		for( c in children ) {
-			var shader = Std.downcast(c, hrt.prefab.Shader);
-			if( shader != null )
-				makeChild(ctx, shader);
-		}
-	}
+	
 
 	static inline function randProp(name: String) {
 		return name + "_rand";
@@ -1546,8 +1563,7 @@ class Emitter extends Object3D {
 			emitterObj.startTime = @:privateAccess scene.renderer.ctx.time;
 		#end
 
-		emitterObj.init(randIdx);
-		refreshChildren(ctx);
+		emitterObj.init(randIdx, this);
 
 		#if editor
 		if(propName == null || ["emitShape", "emitAngle", "emitRad1", "emitRad2"].indexOf(propName) >= 0)
