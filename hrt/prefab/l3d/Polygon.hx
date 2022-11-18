@@ -65,7 +65,7 @@ class Polygon extends Object3D {
 		#end
 	}
 
-	function getPrimCache() {
+	public static function getPrimCache() {
 		var engine = h3d.Engine.getCurrent();
 		var cache : PrimCache = @:privateAccess engine.resCache.get(Polygon);
 		if(cache == null) {

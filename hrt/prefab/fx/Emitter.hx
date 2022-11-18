@@ -408,6 +408,8 @@ class EmitterObject extends h3d.scene.Object {
 	public var maxCatchupWindow = 0.5; // How many seconds max to simulate when catching up
 	#end
 
+	public var emitterPrefab : Emitter;
+
 	// RANDOM
 	public var seedGroup = 0;
 	// OBJECTS
@@ -487,47 +489,83 @@ class EmitterObject extends h3d.scene.Object {
 		random = new hxd.Rand(randomSeed);
 	}
 
-	function init(randSlots: Int) {
+	function makeShaderInstance(prefab: hrt.prefab.Shader, ctx:Context):Context {
+		ctx = ctx.clone(prefab);
+		var shader = prefab.makeShader(ctx);
+		if( shader == null )
+			return ctx;
+		ctx.custom = shader;
+		prefab.updateInstance(ctx);
+		return ctx;
+	}
+
+	function init(randSlots: Int, prefab: Emitter) {
+		this.emitterPrefab = prefab;
 		this.randSlots = randSlots;
 
 		if( batch != null )
 			batch.remove();
 
-		if( particleTemplate == null )
-			return;
+		var mesh = null;
+		baseEmitMat = null;
+		if (particleTemplate != null) {
+			baseEmitMat = particleTemplate.getTransform();
+			if(baseEmitMat.isIdentityEpsilon(0.01))
+				baseEmitMat = null;
 
-		baseEmitMat = particleTemplate.getTransform();
-		if(baseEmitMat.isIdentityEpsilon(0.01))
-			baseEmitMat = null;
-
-		var template = particleTemplate.makeInstance(context);
-		var mesh = Std.downcast(template.local3d, h3d.scene.Mesh);
-		if( mesh == null ) {
-			for( i in 0...template.local3d.numChildren ) {
-				mesh = Std.downcast(template.local3d.getChildAt(i), h3d.scene.Mesh);
-				if( mesh != null ) break;
+			var template = particleTemplate.makeInstance(context);
+			mesh = Std.downcast(template.local3d, h3d.scene.Mesh);
+			if( mesh == null ) {
+				for( i in 0...template.local3d.numChildren ) {
+					mesh = Std.downcast(template.local3d.getChildAt(i), h3d.scene.Mesh);
+					if( mesh != null ) break;
+				}
 			}
+
+			template.local3d.remove();
+		}
+
+		if (mesh == null ) {
+			var shape : Shape = Quad(0);
+			var cache = Polygon.getPrimCache();
+			var primitive : h3d.prim.Polygon = cache.get(shape);
+			if(primitive == null)
+				primitive = Polygon.createPrimitive(shape);
+
+			mesh = new h3d.scene.Mesh(primitive, null);
 		}
 
 		if( mesh != null && mesh.primitive != null ) {
 			var meshPrim = Std.downcast(mesh.primitive, h3d.prim.MeshPrimitive);
 
+			if( meshPrim != null ) {
+				batch = new h3d.scene.MeshBatch(meshPrim, mesh.material, this);
+				batch.name = "emitter";
+				batch.calcBounds = false;
+			}
+
 			// Setup mats.
 			// Should we do this manually here or make a recursive makeInstance on the template?
-			var materials = particleTemplate.getAll(hrt.prefab.Material);
+			var materials = emitterPrefab.getAll(hrt.prefab.Material);
 			for(mat in materials) {
+				if (Std.downcast(mat.parent, hrt.prefab.l3d.Trails) != null)
+					continue;
 				if(mat.enabled)
-					mat.makeInstance(template);
+					mat.makeInstance(context);
 			}
 
 			// Setup shaders
 			shaderAnims = [];
-			var shaders = particleTemplate.getAll(hrt.prefab.Shader);
+			var shaders = emitterPrefab.getAll(hrt.prefab.Shader);
 			for( shader in shaders ) {
+				if (Std.downcast(shader.parent, hrt.prefab.l3d.Trails) != null)
+					continue;
 				if( !shader.enabled ) continue;
-				var shCtx = shader.makeInstance(template);
+				var shCtx = makeShaderInstance(shader, context);
 				if( shCtx == null ) continue;
-				hrt.prefab.fx.BaseFX.getShaderAnims(template, shader, shaderAnims);
+				hrt.prefab.fx.BaseFX.getShaderAnims(shCtx, shader, shaderAnims);
+				var shader = Std.downcast(shCtx.custom, hxsl.Shader);
+				batch.material.mainPass.addShader(shader);
 			}
 
 			// Animated textures animations
@@ -549,13 +587,6 @@ class EmitterObject extends h3d.scene.Object {
 				mesh.material.mainPass.addShader(colorMultShader);
 			}
 
-			if( meshPrim != null ) {
-				batch = new h3d.scene.MeshBatch(meshPrim, mesh.material, this);
-				batch.name = "emitter";
-				batch.calcBounds = false;
-			}
-
-			template.local3d.remove();
 		}
 
 		particles = #if (hl_ver >= version("1.13.0")) hl.CArray.alloc(ParticleInstance, maxCount) #else [for(i in 0...maxCount) new ParticleInstance()] #end;
@@ -698,7 +729,7 @@ class EmitterObject extends h3d.scene.Object {
 		if( count == 0 )
 			return;
 
-		if( instDef == null || particleTemplate == null )
+		if( instDef == null)
 			return;
 
 		var emitterQuat : h3d.Quat = null;
@@ -857,9 +888,6 @@ class EmitterObject extends h3d.scene.Object {
 	}
 
 	function tick( dt : Float, full=true) {
-
-		if (particleTemplate == null)
-			return;
 
 		// Auto remove of sub emitters
 		if( !enable && particles == null && isSubEmitter ) {
@@ -1304,14 +1332,7 @@ class Emitter extends Object3D {
 		return ctx;
 	}
 
-	function refreshChildren(ctx: Context) {
-		// Don't make all children, which are used to setup particles
-		for( c in children ) {
-			var shader = Std.downcast(c, hrt.prefab.Shader);
-			if( shader != null )
-				makeChild(ctx, shader);
-		}
-	}
+
 
 	static inline function randProp(name: String) {
 		return name + "_rand";
@@ -1349,7 +1370,7 @@ class Emitter extends Object3D {
 		var emitterObj = Std.downcast(ctx.local3d, EmitterObject);
 
 		var randIdx = 0;
-		var template : Object3D = cast children.find( c -> c.enabled && (c.name == null || c.name.indexOf("collision") == -1) && c.to(Object3D) != null && c.to(Object3D).visible );
+		var template : Object3D = cast children.find( c -> c.enabled && (c.name == null || c.name.indexOf("collision") == -1) && c.to(Object3D) != null && c.to(Object3D).visible && c.to(hrt.prefab.l3d.Trails) == null);
 
 		function makeParam(scope: Prefab, name: String): Value {
 			var getCurve = hrt.prefab.Curve.getCurve.bind(scope);
@@ -1466,24 +1487,22 @@ class Emitter extends Object3D {
 			return hrt.prefab.Curve.getColorValue(curves);
 		}
 
-		if(template != null) {
-			var d = new InstanceDef();
-			d.localSpeed = makeParam(this, "instSpeed");
-			d.worldSpeed = makeParam(this, "instWorldSpeed");
-			d.startSpeed = makeParam(this, "instStartSpeed");
-			d.startWorldSpeed = makeParam(this, "instStartWorldSpeed");
-			d.orbitSpeed = makeParam(this, "instOrbitSpeed");
-			d.acceleration = makeParam(this, "instAcceleration");
-			d.worldAcceleration = makeParam(this, "instWorldAcceleration");
-			d.localOffset = makeParam(this, "instOffset");
-			d.scale = makeParam(this, "instScale");
-			d.dampen = makeParam(this, "instDampen");
-			d.maxVelocity = makeParam(this, "instMaxVelocity");
-			d.stretch = makeParam(this, "instStretch");
-			d.rotation = makeParam(this, "instRotation");
-			emitterObj.instDef = d;
-			emitterObj.particleTemplate = template;
-		}
+		var d = new InstanceDef();
+		d.localSpeed = makeParam(this, "instSpeed");
+		d.worldSpeed = makeParam(this, "instWorldSpeed");
+		d.startSpeed = makeParam(this, "instStartSpeed");
+		d.startWorldSpeed = makeParam(this, "instStartWorldSpeed");
+		d.orbitSpeed = makeParam(this, "instOrbitSpeed");
+		d.acceleration = makeParam(this, "instAcceleration");
+		d.worldAcceleration = makeParam(this, "instWorldAcceleration");
+		d.localOffset = makeParam(this, "instOffset");
+		d.scale = makeParam(this, "instScale");
+		d.dampen = makeParam(this, "instDampen");
+		d.maxVelocity = makeParam(this, "instMaxVelocity");
+		d.stretch = makeParam(this, "instStretch");
+		d.rotation = makeParam(this, "instRotation");
+		emitterObj.instDef = d;
+		emitterObj.particleTemplate = template;
 
 		// SUB-EMITTER
 		var subEmitterTemplate : Emitter = cast children.find( p -> p.enabled && Std.downcast(p, Emitter) != null && p.to(Object3D).visible);
@@ -1546,8 +1565,7 @@ class Emitter extends Object3D {
 			emitterObj.startTime = @:privateAccess scene.renderer.ctx.time;
 		#end
 
-		emitterObj.init(randIdx);
-		refreshChildren(ctx);
+		emitterObj.init(randIdx, this);
 
 		#if editor
 		if(propName == null || ["emitShape", "emitAngle", "emitRad1", "emitRad2"].indexOf(propName) >= 0)
