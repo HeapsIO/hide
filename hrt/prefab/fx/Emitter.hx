@@ -525,6 +525,15 @@ class EmitterObject extends h3d.scene.Object {
 			template.local3d.remove();
 		}
 
+		if (mesh == null ) {
+			var shape : Shape = Quad(0);
+			var cache = Polygon.getPrimCache();
+			var primitive : h3d.prim.Polygon = cache.get(shape);
+			if(primitive == null)
+				primitive = Polygon.createPrimitive(shape);
+
+			mesh = new h3d.scene.Mesh(primitive, null);
+		}
 
 		if( mesh != null && mesh.primitive != null ) {
 			var meshPrim = Std.downcast(mesh.primitive, h3d.prim.MeshPrimitive);
@@ -722,7 +731,7 @@ class EmitterObject extends h3d.scene.Object {
 		if( count == 0 )
 			return;
 
-		if( instDef == null || particleTemplate == null )
+		if( instDef == null)
 			return;
 
 		var emitterQuat : h3d.Quat = null;
@@ -881,9 +890,6 @@ class EmitterObject extends h3d.scene.Object {
 	}
 
 	function tick( dt : Float, full=true) {
-
-		if (particleTemplate == null)
-			return;
 
 		// Auto remove of sub emitters
 		if( !enable && particles == null && isSubEmitter ) {
@@ -1328,7 +1334,7 @@ class Emitter extends Object3D {
 		return ctx;
 	}
 
-	
+
 
 	static inline function randProp(name: String) {
 		return name + "_rand";
@@ -1366,7 +1372,7 @@ class Emitter extends Object3D {
 		var emitterObj = Std.downcast(ctx.local3d, EmitterObject);
 
 		var randIdx = 0;
-		var template : Object3D = cast children.find( c -> c.enabled && (c.name == null || c.name.indexOf("collision") == -1) && c.to(Object3D) != null && c.to(Object3D).visible );
+		var template : Object3D = cast children.find( c -> c.enabled && (c.name == null || c.name.indexOf("collision") == -1) && c.to(Object3D) != null && c.to(Object3D).visible && c.to(hrt.prefab.l3d.Trails) == null);
 
 		function makeParam(scope: Prefab, name: String): Value {
 			var getCurve = hrt.prefab.Curve.getCurve.bind(scope);
@@ -1483,24 +1489,22 @@ class Emitter extends Object3D {
 			return hrt.prefab.Curve.getColorValue(curves);
 		}
 
-		if(template != null) {
-			var d = new InstanceDef();
-			d.localSpeed = makeParam(this, "instSpeed");
-			d.worldSpeed = makeParam(this, "instWorldSpeed");
-			d.startSpeed = makeParam(this, "instStartSpeed");
-			d.startWorldSpeed = makeParam(this, "instStartWorldSpeed");
-			d.orbitSpeed = makeParam(this, "instOrbitSpeed");
-			d.acceleration = makeParam(this, "instAcceleration");
-			d.worldAcceleration = makeParam(this, "instWorldAcceleration");
-			d.localOffset = makeParam(this, "instOffset");
-			d.scale = makeParam(this, "instScale");
-			d.dampen = makeParam(this, "instDampen");
-			d.maxVelocity = makeParam(this, "instMaxVelocity");
-			d.stretch = makeParam(this, "instStretch");
-			d.rotation = makeParam(this, "instRotation");
-			emitterObj.instDef = d;
-			emitterObj.particleTemplate = template;
-		}
+		var d = new InstanceDef();
+		d.localSpeed = makeParam(this, "instSpeed");
+		d.worldSpeed = makeParam(this, "instWorldSpeed");
+		d.startSpeed = makeParam(this, "instStartSpeed");
+		d.startWorldSpeed = makeParam(this, "instStartWorldSpeed");
+		d.orbitSpeed = makeParam(this, "instOrbitSpeed");
+		d.acceleration = makeParam(this, "instAcceleration");
+		d.worldAcceleration = makeParam(this, "instWorldAcceleration");
+		d.localOffset = makeParam(this, "instOffset");
+		d.scale = makeParam(this, "instScale");
+		d.dampen = makeParam(this, "instDampen");
+		d.maxVelocity = makeParam(this, "instMaxVelocity");
+		d.stretch = makeParam(this, "instStretch");
+		d.rotation = makeParam(this, "instRotation");
+		emitterObj.instDef = d;
+		emitterObj.particleTemplate = template;
 
 		// SUB-EMITTER
 		var subEmitterTemplate : Emitter = cast children.find( p -> p.enabled && Std.downcast(p, Emitter) != null && p.to(Object3D).visible);
