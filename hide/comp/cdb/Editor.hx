@@ -565,7 +565,7 @@ class Editor extends Component {
 		var hasChanges = false;
 		var sheet = cursor.table.sheet;
 		var id = getCursorId(sheet, true);
-		if( id != null ) {
+		if( id != null && id.length > 0) {
 			var refs = getReferences(id, sheet);
 			if( refs.length > 0 ) {
 				var message = refs.join("\n");
@@ -1597,7 +1597,7 @@ class Editor extends Component {
 			}, keys : config.get("key.duplicate") },
 			{ label : "Delete", click : function() {
 				var id = line.getId();
-				if( id != null ) {
+				if( id != null && id.length > 0) {
 					var refs = getReferences(id, sheet);
 					if( refs.length > 0 ) {
 						var message = refs.join("\n");
