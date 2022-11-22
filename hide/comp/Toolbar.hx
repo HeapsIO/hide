@@ -15,6 +15,7 @@ typedef ToolDef = {
 	?icon : String,
 	?iconStyle: Dynamic,
 	?rightClick : Void -> Void,
+	?defaultValue : Dynamic,
 }
 
 typedef ToolToggle = {

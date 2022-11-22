@@ -79,6 +79,11 @@ class TrailObj extends h3d.scene.Mesh {
     var bounds : h3d.col.Bounds;
     var prefab : Trails;
 
+    #if editor
+    var icon : hrt.impl.EditorTools.EditorIcon;
+    #end
+
+
     // Sets whenever we check the position of this object to automaticaly add points to the 0th trail.
     // If set to false, trail can be created by manually calling addPoint()
     public var autoTrackPosition : Bool = true;
@@ -93,6 +98,8 @@ class TrailObj extends h3d.scene.Mesh {
         if (numTrails != new_value) {
             numTrails = new_value;
             allocBuffers();
+            if (dprim != null)
+                dprim.alloc(null);
         }
         return numTrails;
     }
@@ -421,7 +428,14 @@ class TrailObj extends h3d.scene.Mesh {
         prefab = parentPrefab;
         bounds.addPos(0,0,0);
 
-        this.numTrails = numTrails != null ? numTrails : 1;
+        var nTrails = numTrails != null ? numTrails : 1;
+        if (nTrails == 1) {
+            if (parentPrefab.children.length > 1) {
+                nTrails = parentPrefab.children.length;
+            }
+        }
+
+        this.numTrails = nTrails;
 
         dprim = new h3d.prim.RawPrimitive(onDprimContextLost(), true);
         dprim.onContextLost = onDprimContextLost;
@@ -430,6 +444,7 @@ class TrailObj extends h3d.scene.Mesh {
 
         #if editor
         debugPointViz = new h3d.scene.Graphics(parent);
+        icon = hrt.impl.EditorTools.create3DIcon(this, "icons/icon-trails.png");
         #end
 
         material.props = getMaterialProps();
@@ -460,6 +475,38 @@ class TrailObj extends h3d.scene.Mesh {
 
 
 		super.sync(ctx);
+
+        var numObj = 0;
+        for (child in children) {
+            if (Std.downcast(child, TrailsSubTailObj) == null)
+                continue;
+            numObj ++;
+        }
+
+        if (numObj > 0) {
+            set_numTrails(numObj);
+        }
+
+        #if editor
+            if (numObj > 0) {
+                icon.color.a = 0.50;
+            }
+            else {
+                icon.color.a = 1.0;
+            }
+        #end
+
+        var childObjCount = 0;
+        for (child in children) {
+            if (Std.downcast(child, TrailsSubTailObj) == null)
+                continue;
+            autoTrackPosition = false;
+            var c = child;
+            var t = trails[childObjCount];
+            var pos = c.getAbsPos();
+            addPoint(t, pos.tx, pos.ty, pos.tz, ECamera, 1.0);
+            childObjCount ++;
+        }
 
         if (autoTrackPosition) {
             var x = absPos.tx;
@@ -675,6 +722,44 @@ class TrailObj extends h3d.scene.Mesh {
 	}
 }
 
+// Empty class just for casting purposes
+class TrailsSubTailObj extends h3d.scene.Object {
+
+    public function new(?parent) {
+        super(parent);
+        #if editor
+        var icon = hrt.impl.EditorTools.create3DIcon(this, "icons/icon-trails.png");
+        icon.scale(0.33);
+        #end
+    }
+}
+
+class TrailsSubTrail extends Object3D {
+
+    function new(?parent) {
+		super(parent);
+        name = "SubTrail";
+	}
+
+	override function makeInstance(ctx:Context):Context {
+		ctx = ctx.clone(this);
+		var obj = new TrailsSubTailObj(ctx.local3d);
+        applyTransform(obj);
+		obj.name = name;
+		ctx.local3d = obj;
+		return ctx;
+	}
+
+    #if editor
+	override function getHideProps():HideProps {
+		return { icon : "toggle-on", name : "Sub Trail" , allowChildren: (name) -> name == "Trails"};
+	}
+    #end
+
+	static var _ = Library.register("SubTrail", TrailsSubTrail);
+
+}
+
 
 class Trails extends Object3D {
 
@@ -690,9 +775,10 @@ class Trails extends Object3D {
     @:s public var uvStretch: Float = 1.0;
     @:s public var uvRepeat : UVRepeat = EMod;
 
-
     function new(?parent) {
 		super(parent);
+        name = "Trails";
+
 	}
 
 	public function create( ?parent : h3d.scene.Object, ?numTrails : Int ) {
@@ -736,7 +822,7 @@ class Trails extends Object3D {
         <dl>
             <dt>UV Mode</dt><dd><select field="uvMode"></select></dd>
             <dt>UV Repeat</dt><dd><select field="uvRepeat"></select></dd>
-            <dt>UV Scale</dt><dd><input type="range" field="uvStretch" min="0" max="5"/></dd>
+            <dt>UV Scale</dt><dd><input type="range" field="uvStretch" min="0" max="5" title="Hey look at me i\'m a comment"/></dd>
         </dl>
     </div>
 		'),this, function(name:String) {

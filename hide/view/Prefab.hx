@@ -397,6 +397,7 @@ class Prefab extends FileView {
 		toolsDefs.push({id: "localTransformsToggle", title : "Local transforms", icon : "compass", type : Toggle((v) -> sceneEditor.localTransform = v)});
 		toolsDefs.push({id: "gridToggle", title : "Toggle grid", icon : "th", type : Toggle((v) -> { showGrid = v; updateGrid(); }) });
 		toolsDefs.push({id: "axisToggle", title : "Toggle model axis", icon : "cube", type : Toggle((v) -> { sceneEditor.showBasis = v; sceneEditor.updateBasis(); }) });
+		toolsDefs.push({id: "iconVisibility", title : "Toggle 3d icons visibility", icon : "image", type : Toggle((v) -> { hide.Ide.inst.show3DIcons = v; }), defaultValue: true });
 
 		var texContent : Element = null;
 		toolsDefs.push({id: "sceneInformationToggle", title : "Scene information", icon : "info-circle", type : Toggle((b) -> statusText.visible = b), rightClick: () -> {
@@ -458,7 +459,7 @@ class Prefab extends FileView {
 				case Button(f):
 					el = tools.addButton(tool.icon, tool.title + shortcut, f, tool.rightClick);
 				case Toggle(f):
-					var toggle = tools.addToggle(tool.icon, tool.title + shortcut, f);
+					var toggle = tools.addToggle(tool.icon, tool.title + shortcut, null, f, tool.defaultValue);
 					el = toggle.element;
 					if( key != null )
 						keys.register("sceneeditor." + tool.id, () -> toggle.toggle(!toggle.isDown()));

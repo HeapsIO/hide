@@ -666,6 +666,11 @@ class FXEditor extends FileView {
 			cullingPreview.visible = (is2D) ? false : v;
 			updateGrid();
 		}, showGrid);
+
+
+		tools.addToggle("cube", "Toggle model axis", null, (v) -> { sceneEditor.showBasis = v; sceneEditor.updateBasis(); });
+
+		tools.addToggle("image", "Toggle 3d icons visibility", null, function(v) { hide.Ide.inst.show3DIcons = v; }, true);
 		tools.addColor("Background color", function(v) {
 			scene.engine.backgroundColor = v;
 			updateGrid();

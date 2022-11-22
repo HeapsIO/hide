@@ -55,6 +55,8 @@ class Ide {
 	var scripts : Map<String,Array<Void->Void>> = new Map();
 	var hasReloaded = false;
 
+	public var show3DIcons = true;
+
 	static var firstInit = true;
 
 	function new() {
@@ -537,6 +539,36 @@ class Ide {
 		if( haxe.io.Path.isAbsolute(relPath) )
 			return relPath;
 		return resourceDir+"/"+relPath;
+	}
+
+	static var textureCacheKey = "TextureCache";
+
+	public function getHideResPath(basePath:String) {
+		return getPath("${HIDE}/res/" + basePath);
+	}
+
+	// Get a texture from a file on disk. Cache the results
+    public function getTexture(fullPath:String) {
+		if (fullPath == null)
+			return null;
+
+		var engine = h3d.Engine.getCurrent();
+		var cache : Map<String, h3d.mat.Texture> = @:privateAccess engine.resCache.get(textureCacheKey);
+		if(cache == null) {
+			cache = new Map();
+			@:privateAccess engine.resCache.set(textureCacheKey, cache);
+		}
+
+		var tex = cache[fullPath];
+		if (tex != null)
+			return tex;
+
+        var data = sys.io.File.getBytes(fullPath);
+		var res = hxd.res.Any.fromBytes(fullPath, data);
+		tex = res.toImage().toTexture();
+
+		cache.set(fullPath, tex);
+		return tex;
 	}
 
 	public function resolveCDBValue( path : String, key : Dynamic, obj : Dynamic ) : Dynamic {
