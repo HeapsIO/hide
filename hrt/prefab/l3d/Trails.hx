@@ -43,6 +43,8 @@ enum UVMode {
     ETileFixed;
     @display("Tile Follow", "Tile the texture throught the tail, and the texture follow the head of the tail (u=0 at the head)")
     ETileFollow;
+    @display("Life", "The value of the U is equal to the life of the trail point")
+    ELifetime;
 }
 
 enum UVRepeat {
@@ -308,11 +310,7 @@ class TrailObj extends h3d.scene.Mesh {
                 prev = prev.next;
                 added_point = false;
             } else {
-                if (prefab.uvMode == ETileFixed) {
-                    head.totalLength = prev != null ? prev.len + len : len;
-                } else {
-                    head.totalLength += prev.len;
-                }
+                head.totalLength += prev.len;
             }
         }
 
@@ -340,13 +338,7 @@ class TrailObj extends h3d.scene.Mesh {
             len = Math.sqrt(lenSq);
 
 
-            if (prefab.uvMode == ETileFixed) {
-                new_pt.len = head.totalLength + len;
-            }
-            else {
-                new_pt.len = len;
-            }
-
+            new_pt.len = len;
             var len = 1.0/len;
 
             if (nx == 0 && ny == 0 && nz == 0) {
@@ -646,8 +638,16 @@ class TrailObj extends h3d.scene.Mesh {
                     break;
                 }
 
-                var u = if (prefab.uvMode == ETileFixed) cur.len else len;
-                if (prefab.uvMode == EStretch) u = (totalLen - len) / totalLen;
+                var u = switch (prefab.uvMode) {
+                    case ETileFixed:
+                        totalLen - len;
+                    case EStretch:
+                        (totalLen - len) / totalLen;
+                    case ETileFollow:
+                        len;
+                    case ELifetime:
+                        t;
+                }
 
                 buffer[count++] = cur.x+nx * cur.w;
                 buffer[count++] = cur.y+ny * cur.w;
