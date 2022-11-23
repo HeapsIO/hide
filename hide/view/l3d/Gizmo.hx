@@ -429,7 +429,12 @@ class Gizmo extends h3d.scene.Object {
 		return ray.intersect(plane);
 	}
 
-	public function update(dt) {
+	public function updateLocal(dt) {
+		update(dt, true);
+	}
+
+	static var tempMatrix = new h3d.Matrix();
+	public function update(dt, isLocal:Bool) {
 		var cam = this.getScene().camera;
 		var gpos = gizmo.getAbsPos().getPosition();
 		var distToCam = cam.pos.sub(gpos).length();
@@ -439,7 +444,12 @@ class Gizmo extends h3d.scene.Object {
 
 		if( !moving ) {
 			var dir = cam.pos.sub(gpos).toPoint();
-			dir = gizmo.globalToLocal(dir);
+			if (isLocal)
+			{
+				var rot = getRotationQuat().toMatrix(tempMatrix);
+				rot.invert();
+				dir.transform3x3(rot);
+			}
 			gizmo.getObjectByName("xAxis").setRotation(0, 0, dir.x < 0 ? Math.PI : 0);
 			gizmo.getObjectByName("yAxis").setRotation(0, 0, dir.y < 0 ? Math.PI : 0);
 			gizmo.getObjectByName("zAxis").setRotation(dir.z < 0 ? Math.PI : 0, 0, 0);

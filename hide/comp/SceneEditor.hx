@@ -2647,7 +2647,7 @@ class SceneEditor {
 			if(!gizmo.moving) {
 				moveGizmoToSelection();
 			}
-			gizmo.update(dt);
+			gizmo.update(dt, localTransform);
 		}
 		updateBasis();
 		event.update(dt);

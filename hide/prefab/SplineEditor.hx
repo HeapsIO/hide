@@ -281,7 +281,7 @@ class SplineEditor {
 	function removeGizmos() {
 		for( g in gizmos ) {
 			g.remove();
-			@:privateAccess editContext.scene.editor.updates.remove(g.update);
+			@:privateAccess editContext.scene.editor.updates.remove(g.updateLocal);
 		}
 		gizmos = [];
 	}
@@ -307,7 +307,7 @@ class SplineEditor {
 			var tmpScale = tmpMat.getScale();
 			tmpMat.prependScale(1.0/tmpScale.x, 1.0/tmpScale.y, 1.0/tmpScale.z);
 			gizmo.setTransform(tmpMat);
-			@:privateAccess sceneEditor.updates.push( gizmo.update );
+			@:privateAccess sceneEditor.updates.push( gizmo.updateLocal );
 			gizmos.insert(gizmos.length, gizmo);
 			gizmo.visible = false; // Not visible by default, only show the closest in the onMove of interactive
 
