@@ -35,6 +35,7 @@ class GameController extends Object3D {
 		var camSave = null;
 		var dummy : h3d.scene.Object = null;
 		var cam = ctx.scene.s3d.camera;
+		var camRot : h3d.Vector;
 
 		function selectRec( p : Prefab, b : Bool ) {
 			if( !p.setSelected(ctx.getContext(p), b) )
@@ -78,29 +79,57 @@ class GameController extends Object3D {
 					force = true;
 					selectRec(this, false);
 				}
+
+				var delta = cam.pos.sub(cam.target);
+				var q = new h3d.Quat();
+				q.initDirection(delta);
+				camRot = q.toEuler();
+				camRot.w = delta.length();
 			}
 			if( !active )
 				return;
-
-			if( !force && hxd.Math.abs(pad.xAxis) < 0.2 && hxd.Math.abs(pad.yAxis) < 0.2 )
-				return;
-
+			
+			inline function rotateVector(v : h3d.Vector, x, y, z) {
+				var m = new h3d.Matrix();
+				m.initRotation(x, y, z);
+				v.transform(m);
+			}
+			
 			if( pad.isDown(pad.config.A) ) dt *= 10;
 
+			// Rotate cam
+			if(hxd.Math.abs(pad.rxAxis) > 0.2 || hxd.Math.abs(pad.ryAxis) > 0.2) {
+				camRot.z += pad.rxAxis * dt * 2.0;
+				camRot.y -= pad.ryAxis * dt * 1.0;
+			}
 
-			var delta = cam.pos.sub(cam.target);
-			var ax = cam.getViewDirection(1,0,0);
-			ax.z = 0;
-			ax.normalize();
-			obj.x += (pad.xAxis * ax.x - pad.yAxis * ax.y) * dt * moveSpeed;
-			obj.y += (pad.xAxis * ax.y + pad.yAxis * ax.x) * dt * moveSpeed;
-			obj.setRotation(0, 0, Math.atan2(pad.yAxis, pad.xAxis));
+			// Zoom
+			var z = pad.values[pad.config.LT] - pad.values[pad.config.RT];
+			if(z != 0.0)
+				camRot.w *= Math.exp(1.0 * z * dt);
+
+			var camDelta = new h3d.Vector(camRot.w);
+			rotateVector(camDelta, 0, camRot.y, camRot.z);
 
 			var gz = ctx.scene.editor.getZ(obj.x, obj.y);
+
+			// Move
+			if( force || hxd.Math.abs(pad.xAxis) > 0.2 || hxd.Math.abs(pad.yAxis) > 0.2 ) {
+				var delta = new h3d.Vector(pad.yAxis,-pad.xAxis,0);
+				rotateVector(delta, 0, 0, camRot.z);
+				delta.scale(dt * moveSpeed);
+				obj.x += delta.x;
+				obj.y += delta.y;
+				obj.setRotation(0, 0, Math.atan2(delta.y, delta.x));
+	
+				if( followGround )
+					obj.z = gz;
+				cam.target.set(obj.x, obj.y, cameraFollowGround ? gz : 0);	
+			}
+
+			cam.pos = cam.target.add(camDelta);
 			if( followGround )
-				obj.z = gz;
-			cam.target.set(obj.x, obj.y, cameraFollowGround ? gz : 0);
-			cam.pos = cam.target.add(delta);
+				cam.pos.z = hxd.Math.max(cam.pos.z, gz);
 			cam.update();
 			ctx.scene.editor.cameraController.loadFromCamera();
 		}
