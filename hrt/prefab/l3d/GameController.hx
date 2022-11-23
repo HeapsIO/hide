@@ -59,6 +59,18 @@ class GameController extends Object3D {
 			selectRec(this, true);
 		}
 
+		function resetCam() {
+			obj.setTransform(getTransform());
+			var camView = @:privateAccess ctx.scene.editor.sceneData.get(Camera);
+			if( camView != null )
+				camView.applyTo(cam);
+			var delta = cam.pos.sub(cam.target);
+			var q = new h3d.Quat();
+			q.initDirection(delta);
+			camRot = q.toEuler();
+			camRot.w = delta.length();
+		}
+
 		function onUpdate( dt : Float ) {
 			var pad = ctx.ide.gamePad;
 			var force = false;
@@ -69,9 +81,7 @@ class GameController extends Object3D {
 				} else {
 					@:privateAccess ctx.scene.editor.showGizmo = false;
 					camSave = { pos : cam.pos.clone(), target : cam.target.clone(), fovY : cam.fovY, zFar : cam.zFar };
-					var camView = @:privateAccess ctx.scene.editor.sceneData.get(Camera);
-					if( camView != null )
-						camView.applyTo(cam);
+					resetCam();
 					if( obj.numChildren == 0 )
 						dummy = new h3d.scene.Box(obj);
 					if( startFullScreen )
@@ -80,11 +90,6 @@ class GameController extends Object3D {
 					selectRec(this, false);
 				}
 
-				var delta = cam.pos.sub(cam.target);
-				var q = new h3d.Quat();
-				q.initDirection(delta);
-				camRot = q.toEuler();
-				camRot.w = delta.length();
 			}
 			if( !active )
 				return;
@@ -96,6 +101,10 @@ class GameController extends Object3D {
 			}
 			
 			if( pad.isDown(pad.config.A) ) dt *= 10;
+			if( pad.isDown(pad.config.B) ) {
+				obj.setTransform(getTransform());
+				resetCam();
+			}
 
 			// Rotate cam
 			if(hxd.Math.abs(pad.rxAxis) > 0.2 || hxd.Math.abs(pad.ryAxis) > 0.2) {
