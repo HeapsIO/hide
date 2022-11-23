@@ -450,7 +450,7 @@ class Ide {
 				fullscreen = false;
 				if(maximized)
 					window.maximize();
-			}, 50);
+			}, 150);
 		}
 	}
 
