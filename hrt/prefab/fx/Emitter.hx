@@ -506,43 +506,44 @@ class EmitterObject extends h3d.scene.Object {
 		if( batch != null )
 			batch.remove();
 
-		var mesh = null;
 		baseEmitMat = null;
+		var meshPrimitive : h3d.prim.MeshPrimitive = null;
+		var meshMaterial : h3d.mat.Material = null;
 		if (particleTemplate != null) {
 			baseEmitMat = particleTemplate.getTransform();
 			if(baseEmitMat.isIdentityEpsilon(0.01))
 				baseEmitMat = null;
 
 			var template = particleTemplate.makeInstance(context);
-			mesh = Std.downcast(template.local3d, h3d.scene.Mesh);
+			var mesh = Std.downcast(template.local3d, h3d.scene.Mesh);
 			if( mesh == null ) {
 				for( i in 0...template.local3d.numChildren ) {
 					mesh = Std.downcast(template.local3d.getChildAt(i), h3d.scene.Mesh);
-					if( mesh != null ) break;
+					if( mesh != null ) {
+						meshPrimitive = Std.downcast(mesh.primitive, h3d.prim.MeshPrimitive);
+						meshMaterial = mesh.material;
+						mesh.remove();
+						break;
+					}
 				}
 			}
 
 			template.local3d.remove();
 		}
 
-		if (mesh == null ) {
+		if (meshPrimitive == null ) {
 			var shape : Shape = Quad(0);
 			var cache = Polygon.getPrimCache();
-			var primitive : h3d.prim.Polygon = cache.get(shape);
-			if(primitive == null)
-				primitive = Polygon.createPrimitive(shape);
-
-			mesh = new h3d.scene.Mesh(primitive, null);
+			meshPrimitive = cache.get(shape);
+			if(meshPrimitive == null)
+				meshPrimitive = Polygon.createPrimitive(shape);		
 		}
 
-		if( mesh != null && mesh.primitive != null ) {
-			var meshPrim = Std.downcast(mesh.primitive, h3d.prim.MeshPrimitive);
+		if(meshPrimitive != null ) {
 
-			if( meshPrim != null ) {
-				batch = new h3d.scene.MeshBatch(meshPrim, mesh.material, this);
-				batch.name = "emitter";
-				batch.calcBounds = false;
-			}
+			batch = new h3d.scene.MeshBatch(meshPrimitive, meshMaterial, this);
+			batch.name = "emitter";
+			batch.calcBounds = false;
 
 			// Setup mats.
 			// Should we do this manually here or make a recursive makeInstance on the template?
@@ -576,15 +577,15 @@ class EmitterObject extends h3d.scene.Object {
 				animatedTextureShader.startTime = startTime;
 				animatedTextureShader.loop = animationLoop;
 				animatedTextureShader.setPriority(1);
-				mesh.material.mainPass.addShader(animatedTextureShader);
+				batch.material.mainPass.addShader(animatedTextureShader);
 			}
 
 			baseEmitterShader = new hrt.shader.BaseEmitter();
-			mesh.material.mainPass.addShader(baseEmitterShader);
+			batch.material.mainPass.addShader(baseEmitterShader);
 
 			if(useRandomColor) {
 				colorMultShader = new h3d.shader.ColorMult();
-				mesh.material.mainPass.addShader(colorMultShader);
+				batch.material.mainPass.addShader(colorMultShader);
 			}
 
 		}
