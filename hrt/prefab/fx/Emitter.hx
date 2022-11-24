@@ -496,6 +496,7 @@ class EmitterObject extends h3d.scene.Object {
 			return ctx;
 		ctx.custom = shader;
 		prefab.updateInstance(ctx);
+		ctx.local3d = null;  // prevent ContextShared.getSelfObject from incorrectly reporting object
 		return ctx;
 	}
 
