@@ -228,10 +228,16 @@ class Editor extends Component {
 		while( filters.indexOf(null) >= 0 )
 			filters.remove(null);
 
-		for( i in 0...filters.length ) {
-			var formatFilter = untyped filters[i].toLowerCase().normalize('NFD');
-			filters[i] = ~/[\u0300-\u036f]/g.map(formatFilter, (r) -> "");
+		function matches(haysack: String, needle: String) {
+			return needle.split(" ").all(f -> haysack.indexOf(f) >= 0);
 		}
+
+		function removeAccents(str: String) {
+			var t = untyped str.toLowerCase().normalize('NFD');
+			return ~/[\u0300-\u036f]/g.map(t, (r) -> "");
+		}
+		for( i in 0...filters.length )
+			filters[i] = removeAccents(filters[i]);
 
 		var all = element.find("table.cdb-sheet > tbody > tr").not(".head");
 		if( config.get("cdb.filterIgnoreSublist") )
@@ -249,9 +255,8 @@ class Editor extends Component {
 			}
 
 			for( t in lines ) {
-				var content = untyped t.textContent.toLowerCase().normalize('NFD');
-				content = ~/[\u0300-\u036f]/g.map(content, (r) -> "");
-				if( !filters.any(f -> content.indexOf(f) >= 0) )
+				var content = removeAccents(t.textContent);
+				if( !filters.any(f -> matches(content, f)) )
 					t.classList.add("filtered");
 			}
 			for( t in lines ) {
