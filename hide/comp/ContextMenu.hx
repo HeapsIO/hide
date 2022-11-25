@@ -31,6 +31,7 @@ class ContextMenu {
 			},
 			zIndex: CONTEXTMENU_LAYER + 2,
 			useModal: false,
+			scrollable: true,
 		}
 		// wait until mousedown to get correct mouse pos
 		haxe.Timer.delay(function() {
