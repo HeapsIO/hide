@@ -521,15 +521,20 @@ class EmitterObject extends h3d.scene.Object {
 				for( i in 0...template.local3d.numChildren ) {
 					mesh = Std.downcast(template.local3d.getChildAt(i), h3d.scene.Mesh);
 					if( mesh != null ) {
-						meshPrimitive = Std.downcast(mesh.primitive, h3d.prim.MeshPrimitive);
-						meshMaterial = mesh.material;
-						mesh.remove();
 						break;
 					}
 				}
 			}
 
+			if (mesh != null) {
+				meshPrimitive = Std.downcast(mesh.primitive, h3d.prim.MeshPrimitive);
+				meshMaterial = mesh.material;
+				mesh.remove();
+			}
+
+			template.shared.contexts.remove(particleTemplate);
 			template.local3d.remove();
+			template.local3d = null;
 		}
 
 		if (meshPrimitive == null ) {
@@ -537,7 +542,7 @@ class EmitterObject extends h3d.scene.Object {
 			var cache = Polygon.getPrimCache();
 			meshPrimitive = cache.get(shape);
 			if(meshPrimitive == null)
-				meshPrimitive = Polygon.createPrimitive(shape);		
+				meshPrimitive = Polygon.createPrimitive(shape);
 		}
 
 		if(meshPrimitive != null ) {
@@ -552,8 +557,10 @@ class EmitterObject extends h3d.scene.Object {
 			for(mat in materials) {
 				if (Std.downcast(mat.parent, hrt.prefab.l3d.Trails) != null)
 					continue;
-				if(mat.enabled)
-					mat.makeInstance(context);
+				if(mat.enabled) {
+					var ctx = mat.makeInstance(context);
+					ctx.local3d = null;
+				}
 			}
 
 			// Setup shaders
@@ -565,6 +572,9 @@ class EmitterObject extends h3d.scene.Object {
 				if( !shader.enabled ) continue;
 				var shCtx = makeShaderInstance(shader, context);
 				if( shCtx == null ) continue;
+
+				//shCtx.local3d = null; // Prevent shader.iterMaterials from adding our objet to the list incorectly
+
 				hrt.prefab.fx.BaseFX.getShaderAnims(shCtx, shader, shaderAnims);
 				var shader = Std.downcast(shCtx.custom, hxsl.Shader);
 				batch.material.mainPass.addShader(shader);
