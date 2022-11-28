@@ -143,7 +143,7 @@ class Macros {
 					var parentPath = path.copy(); parentPath.pop();
 					var expr = macro @:pos(pos) {
 						var objNullCheck = ${getOrDefault(parentPath)};
-						var isString = Std.is($p{path}, String);
+						var isString = Std.isOfType($p{path}, String);
 						if (objNullCheck != null)
 							$p{path} = hrt.impl.Macros.enumOrNullByName($i{enumRef.get().name}, isString ? $p{path} : ${getOrDefault(name, parentPath.length)}, isString ? null : ${getOrDefault(params, parentPath.length)});
 					};
