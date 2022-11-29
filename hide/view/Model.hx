@@ -485,7 +485,16 @@ class Model extends FileView {
 			}];
 			content.unshift({ label : "-- no anim --", value : null });
 			sel.setContent(content);
-			sel.onSelect = setAnimation;
+			sel.onSelect = function(file:String) {
+				if (scene.editor.view.modified && !js.Browser.window.confirm("Current animation has been modified, change animation without saving?"))
+				{
+					var idx = anims.indexOf(currentAnimation.file)+1;
+					sel.element.find("select").val(""+idx);
+					return;
+				}
+
+				setAnimation(file);
+			};
 		}
 
 		tools.saveDisplayKey = "ModelTools";
@@ -650,6 +659,7 @@ class Model extends FileView {
 	}
 
 	function setAnimation( file : String ) {
+
 		scene.setCurrent();
 		if( timeline != null ) {
 			timeline.remove();
