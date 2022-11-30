@@ -51,7 +51,7 @@ class EditContext {
 	}
 
 	public function makeChanges( p : Prefab, f : Void -> Void ) @:privateAccess {
-		var current = p.save();
+		var current = haxe.Json.parse(haxe.Json.stringify(p.save()));
 		properties.undo.change(Custom(function(b) {
 			var old = p.save();
 			p.load(current);
