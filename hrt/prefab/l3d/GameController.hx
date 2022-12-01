@@ -35,8 +35,8 @@ class GameController extends Object3D {
 		var camSave = null;
 		var dummy : h3d.scene.Object = null;
 		var cam = ctx.scene.s3d.camera;
-		var camRot : h3d.Vector;
-		var startCamRot : h3d.Vector;
+		var camRot : h3d.Vector = null;
+		var startCamRot : h3d.Vector = null;
 
 		function selectRec( p : Prefab, b : Bool ) {
 			if( !p.setSelected(ctx.getContext(p), b) )
@@ -70,7 +70,7 @@ class GameController extends Object3D {
 				} else {
 					@:privateAccess ctx.scene.editor.showGizmo = false;
 					camSave = { pos : cam.pos.clone(), target : cam.target.clone(), fovY : cam.fovY, zFar : cam.zFar };
-					
+
 					obj.setTransform(getTransform());
 					var camView = @:privateAccess ctx.scene.editor.sceneData.get(Camera);
 					if( camView != null )
@@ -93,13 +93,13 @@ class GameController extends Object3D {
 			}
 			if( !active )
 				return;
-			
+
 			inline function rotateVector(v : h3d.Vector, x, y, z) {
 				var m = new h3d.Matrix();
 				m.initRotation(x, y, z);
 				v.transform(m);
 			}
-			
+
 			if( pad.isDown(pad.config.A) ) dt *= 10;
 			if( pad.isDown(pad.config.B) ) {
 				camRot = startCamRot.clone();
@@ -129,10 +129,10 @@ class GameController extends Object3D {
 				obj.x += delta.x;
 				obj.y += delta.y;
 				obj.setRotation(0, 0, Math.atan2(delta.y, delta.x));
-	
+
 				if( followGround )
 					obj.z = gz;
-				cam.target.set(obj.x, obj.y, cameraFollowGround ? gz : 0);	
+				cam.target.set(obj.x, obj.y, cameraFollowGround ? gz : 0);
 			}
 
 			cam.pos = cam.target.add(camDelta);
