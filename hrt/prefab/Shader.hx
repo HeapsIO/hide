@@ -135,6 +135,20 @@ class Shader extends Prefab {
 
 	#if editor
 
+	function getEditProps(shaderDef: hxsl.SharedShader) : Array<hrt.prefab.Props.PropDef> {
+		var props = [];
+		for(v in shaderDef.data.vars) {
+			if( v.kind != Param )
+				continue;
+			if( v.qualifiers != null && v.qualifiers.contains(Ignore) )
+				continue;
+			var prop = makeShaderParam(v);
+			if( prop == null ) continue;
+			props.push({name: v.name, t: prop});
+		}
+		return props;
+	}
+
 	override function edit( ectx : EditContext ) {
 		super.edit(ectx);
 
@@ -170,16 +184,7 @@ class Shader extends Prefab {
 		});
 
 		var group = new hide.Element('<div class="group" name="Shader"></div>');
-		var props = [];
-		for(v in shaderDef.data.vars) {
-			if( v.kind != Param )
-				continue;
-			if( v.qualifiers != null && v.qualifiers.contains(Ignore) )
-				continue;
-			var prop = makeShaderParam(v);
-			if( prop == null ) continue;
-			props.push({name: v.name, t: prop});
-		}
+		var props = getEditProps(shaderDef);
 		group.append(hide.comp.PropsEditor.makePropsList(props));
 		ectx.properties.add(group,this.props, function(pname) {
 			ectx.onChange(this, pname);
