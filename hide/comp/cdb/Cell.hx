@@ -988,10 +988,15 @@ class Cell {
 			var modal = new hide.comp.Modal(new Element(elementHtml));
 			modal.modalClick = function(_) closeEdit();
 
+			inline function usesSquareBase(t : cdb.Types.TilePos) {
+				return t.size != 1
+					|| t.x / t.width != Math.floor(t.x / t.width)
+					|| t.y / t.height != Math.floor(t.y / t.height);
+			}
 			function getDims(t : cdb.Types.TilePos) {
 				if (t == null)
 					return {width: 16, height: 16};
-				if (t.size == 1) {
+				if (!usesSquareBase(t)) {
 					return {
 						width: (t.width != null && t.width > 0) ? t.width : t.size,
 						height: (t.height != null && t.height > 0) ? t.height : t.size,
@@ -1006,10 +1011,10 @@ class Cell {
 			var pos = { x : 0, y : 0, width : 1, height : 1 };
 			if (t != null) {
 				pos = {
-					x : Math.floor(t.x / ((t.size != 1) ? 1 : t.width)),
-					y : Math.floor(t.y / ((t.size != 1) ? 1 : t.height)),
-					width : (t.width == null || t.size == 1) ? 1 : t.width,
-					height : (t.height == null || t.size == 1) ? 1 : t.height,
+					x : Math.floor(t.x / (usesSquareBase(t) ? 1 : t.width)),
+					y : Math.floor(t.y / (usesSquareBase(t) ? 1 : t.height)),
+					width : (t.width == null || !usesSquareBase(t)) ? 1 : t.width,
+					height : (t.height == null || !usesSquareBase(t)) ? 1 : t.height,
 				};
 			}
 			if( file == null ) {
