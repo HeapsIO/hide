@@ -121,7 +121,6 @@ class Gradient {
 
         var texture = Texture.fromPixels(genPixels(), RGBA);
         texture.realloc = function() {
-            trace("realloc");
             texture.uploadPixels(genPixels());
         }
         cache.set(hash, texture);
