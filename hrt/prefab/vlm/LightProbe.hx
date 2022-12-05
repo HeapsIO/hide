@@ -60,7 +60,7 @@ class BoundsFade extends hxsl.Shader {
 				fadeAmount = saturate((min(scale.x, scale.y) - dist) / fadeDist);
 			} else {
 				var maxDist = min(min(scale.x - normalizedPos.x * scale.x, scale.y - normalizedPos.y * scale.y), scale.z - normalizedPos.z * scale.z);
-				fadeAmount = saturate(maxDist / fadeDist);	
+				fadeAmount = saturate(maxDist / fadeDist);
 			}
 			if( SMOOTHSTEP )
 				fadeAmount = smoothstep(0.0, 1.0, fadeAmount);
@@ -130,8 +130,7 @@ class LightProbeObject extends h3d.scene.Mesh {
 		if( env.diffuse != null )
 			env.diffuse.clear(0);
 		if( env.specular != null ) {
-			env.specular.dispose();
-		 	env.specular.alloc();
+			env.specular.clear(0);
 		}
 	}
 
