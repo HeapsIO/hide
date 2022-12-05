@@ -108,7 +108,7 @@ class Layer2DRFX extends hrt.prefab.rfx.RendererFX {
 	override function end( r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step ) {
 		var ctx = r.ctx;
 		if( step == AfterTonemapping ) {
-			r.mark("TemporalFiltering");
+			r.mark("Layers2D");
 			var output : h3d.mat.Texture = ctx.engine.getCurrentTarget();
 			var depthMap : Dynamic = ctx.getGlobal("depthMap");
 
