@@ -153,21 +153,6 @@ class SSR extends RendererFX {
 		applySSRPass.pass.depthTest = Always;
 	}
 
-	inline function cullPasses( passes : h3d.pass.PassList, f : h3d.col.Collider -> Bool ) {
-		var prevCollider = null;
-		var prevResult = true;
-		passes.filter(function(p) {
-			var col = p.obj.cullingCollider;
-			if( col == null )
-				return true;
-			if( col != prevCollider ) {
-				prevCollider = col;
-				prevResult = f(col);
-			}
-			return prevResult;
-		});
-	}
-
 	var passes : h3d.pass.PassList;
 	override function end( r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {
 		if( step == Decals) {
@@ -185,9 +170,10 @@ class SSR extends RendererFX {
 			ssrShader.thickness = thickness;
 
 			passes = r.get("ssr");
-			cullPasses(passes, function(col) {
-				return col.inFrustum(r.ctx.camera.frustum);
-			});
+			var pbrRenderer = Std.downcast(r, h3d.scene.pbr.Renderer);
+			if ( pbrRenderer == null )
+				return;
+			@:privateAccess pbrRenderer.cullPasses(passes, function(col) return col.inFrustum(r.ctx.camera.frustum));
 			var it = passes.current;
 			while ( it != null ) {
 				if ( it.pass.getShaderByName("hrt.prefab.rfx.SSRShader") == null )
