@@ -3,6 +3,7 @@ package hrt.prefab.l3d;
 class GameController extends Object3D {
 
 	@:s public var moveSpeed : Float = 1.;
+	@:s public var zOffset : Float = 0.0;
 	@:s public var followGround : Bool = true;
 	@:s public var cameraFollowGround : Bool = true;
 	@:s public var startFullScreen : Bool = true;
@@ -22,6 +23,7 @@ class GameController extends Object3D {
 			<div class="group" name="Control">
 				<dl>
 					<dt>Move Speed</dt><dd><input type="range" min="0" max="10" field="moveSpeed"/></dd>
+					<dt>Z Offset</dt><dd><input type="range" min="0" max="10" field="zOffset"/></dd>
 					<dt>Follow Ground</dt><dd><input type="checkbox" field="followGround"/></dd>
 					<dt>Camera Follow Ground</dt><dd><input type="checkbox" field="cameraFollowGround"/></dd>
 					<dt>Start Full Screen</dt><dd><input type="checkbox" field="startFullScreen"/></dd>
@@ -132,7 +134,7 @@ class GameController extends Object3D {
 
 				if( followGround )
 					obj.z = gz;
-				cam.target.set(obj.x, obj.y, cameraFollowGround ? gz : 0);
+				cam.target.set(obj.x, obj.y, (cameraFollowGround ? gz : 0) + zOffset);
 			}
 
 			cam.pos = cam.target.add(camDelta);
