@@ -116,6 +116,8 @@ class GradientEditor extends Popup {
     var resolutionInput : Element;
     var isVerticalCheckbox : Element;
     var interpolation : Element;
+    var colorMode : Element;
+
 
     var keys : hide.ui.Keys;
 
@@ -282,6 +284,23 @@ class GradientEditor extends Popup {
         .append(new Element("<label for='interpolation'>").text("Interpolation").attr("title", "Change how the colors stops in the gradient are interpolated between them."))
         .append(interpolation);
 
+        colorMode = new Element("<select id='colorMode'>");
+        var idx = 0;
+        for (mode in hrt.impl.ColorSpace.colorModes) {
+            new Element('<option value="$idx">').text(mode.name).appendTo(colorMode);
+            idx ++;
+        }
+
+        colorMode.on("change", function(e : js.jquery.Event) {
+            var val : Int = Std.parseInt(colorMode.val());
+            innerValue.colorMode = val;
+            trace(val);
+            onChange(false);
+        });
+
+        new Element("<div>").appendTo(detailsDiv)
+        .append(new Element("<label for='colorMode'>").text("Color Space").attr("title", "Change the color space to use when interpolating the stops of the gradient."))
+        .append(colorMode);
 
         reflow();
         fixInputSelect();
@@ -390,6 +409,7 @@ class GradientEditor extends Popup {
         resolutionInput.val('${innerValue.resolution}');
         isVerticalCheckbox.val('${innerValue.isVertical ? 1 : 0}');
         interpolation.val(innerValue.interpolation);
+        colorMode.val('${innerValue.colorMode}');
     }
 
     function removeStop(element : Element) {

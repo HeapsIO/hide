@@ -13,19 +13,12 @@ abstract GradientInterpolation(String) from String to String {
     var Constant;
 }
 
-@:enum
-abstract ColorSpace(String) from String to String {
-    var RGB;
-    var Cubic;
-    var Constant;
-}
-
-
 typedef GradientData = {
     var stops : Array<ColorStop>;
     var resolution : Int;
     var isVertical : Bool;
     var interpolation: GradientInterpolation;
+    var colorMode: Int;
 };
 
 class Gradient {
@@ -34,13 +27,14 @@ class Gradient {
         resolution: 32,
         isVertical: false,
         interpolation: Linear,
+        colorMode: 0,
     };
 
     public function new () {
     }
 
     public static function getDefaultGradientData() : GradientData {
-        var data : GradientData = {stops: [{position: 0.0, color:0xFF000000}, {position: 1.0, color:0xFFFFFFFF}], resolution: 64, isVertical : false, interpolation: Linear};
+        var data : GradientData = {stops: [{position: 0.0, color:0xFF000000}, {position: 1.0, color:0xFFFFFFFF}], resolution: 64, isVertical : false, interpolation: Linear, colorMode: 0};
         return data;
     }
 
@@ -65,8 +59,11 @@ class Gradient {
 
         var blend = if (distance != 0.0) 1.0 - (offsetFromSecondStop / distance) else 0.0;
         blend = hxd.Math.clamp(blend, 0.0, 1.0);
-        var start = Vector.fromColor(c1);
-        var end = Vector.fromColor(c2);
+
+        var func = ColorSpace.colorModes[data.colorMode];
+
+        var start = func.ARGBToValue(ColorSpace.Color.fromInt(c1), null);
+        var end = func.ARGBToValue(ColorSpace.Color.fromInt(c2), null);
 
         switch (data.interpolation) {
             case Linear:
@@ -83,8 +80,8 @@ class Gradient {
                 if (i3 >= data.stops.length) {
                     i3 = data.stops.length-1;
                 }
-                var c0 = Vector.fromColor(data.stops[i0].color);
-                var c3 = Vector.fromColor(data.stops[i3].color);
+                var c0 = func.ARGBToValue(ColorSpace.Color.fromInt(data.stops[i0].color), null);
+                var c3 = func.ARGBToValue(ColorSpace.Color.fromInt(data.stops[i3].color), null);
 
                 inline function cubicInterpolate(p_from: Float, p_to: Float, p_pre: Float, p_post: Float, p_weight: Float) {
                     return 0.5 *
@@ -101,6 +98,9 @@ class Gradient {
             default:
                 throw "Unknown interpolation mode";
         }
+
+        var tmp = func.valueToARGB(outVector, null);
+        ColorSpace.iRGBtofRGB(tmp, outVector);
 
         return outVector;
     }
@@ -131,6 +131,7 @@ class Gradient {
         hash = hashCombine(hash, (data.interpolation:String).charCodeAt(0));
         hash = hashCombine(hash, (data.interpolation:String).charCodeAt(1));
 
+        hash = hashCombine(hash, data.colorMode);
 
         for (stop in data.stops) {
             hash = hashCombine(hash, stop.color);

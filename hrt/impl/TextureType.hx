@@ -40,6 +40,8 @@ class Utils {
         if (getTextureType(value) == gradient) {
             var gradientData = ((value:Dynamic).data:GradientData);
             gradientData.interpolation = gradientData.interpolation != null ? gradientData.interpolation : Linear;
+            gradientData.colorMode = gradientData.colorMode != null ? gradientData.colorMode : 0;
+
             return gradientData;
         }
         return null;
