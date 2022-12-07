@@ -429,8 +429,8 @@ class Light extends Object3D {
 		if ( cascade )
 			group.append(hide.comp.PropsEditor.makePropsList([
 				{ name: "cascadeNbr", t: PInt(1, 5), def: 1},
-				{ name: "cascadePow", t: PFloat(1, 10), def: 2},
-				{ name: "firstCascadeSize", t: PFloat(10, 100), def: 50},
+				{ name: "cascadePow", t: PFloat(0, 4), def: 2},
+				{ name: "firstCascadeSize", t: PFloat(0, 1), def: 0.2},
 			]));
 
 		var props = ctx.properties.add(group, this, function(pname) {
