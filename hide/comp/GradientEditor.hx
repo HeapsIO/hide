@@ -115,6 +115,7 @@ class GradientEditor extends Popup {
 
     var resolutionInput : Element;
     var isVerticalCheckbox : Element;
+    var interpolation : Element;
 
     var keys : hide.ui.Keys;
 
@@ -264,6 +265,23 @@ class GradientEditor extends Popup {
             .append(isVerticalCheckbox);
 
 
+        interpolation = new Element("<select id='interpolation'>");
+        new Element('<option value="Linear">').text('Linear').appendTo(interpolation);
+        new Element('<option value="Constant">').text('Constant').appendTo(interpolation);
+        new Element('<option value="Cubic">').text('Cubic').appendTo(interpolation);
+
+
+        interpolation.on("change", function(e : js.jquery.Event) {
+            var val : String = interpolation.val();
+            innerValue.interpolation = val;
+            trace(val);
+            onChange(false);
+        });
+
+        new Element("<div>").appendTo(detailsDiv)
+        .append(new Element("<label for='interpolation'>").text("Interpolation").attr("title", "Change how the colors stops in the gradient are interpolated between them."))
+        .append(interpolation);
+
 
         reflow();
         fixInputSelect();
@@ -371,6 +389,7 @@ class GradientEditor extends Popup {
 
         resolutionInput.val('${innerValue.resolution}');
         isVerticalCheckbox.val('${innerValue.isVertical ? 1 : 0}');
+        interpolation.val(innerValue.interpolation);
     }
 
     function removeStop(element : Element) {

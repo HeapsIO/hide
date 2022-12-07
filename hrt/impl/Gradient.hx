@@ -6,10 +6,26 @@ import h3d.Vector;
 
 typedef ColorStop = {position : Float, color : Int};
 
+@:enum
+abstract GradientInterpolation(String) from String to String {
+    var Linear;
+    var Cubic;
+    var Constant;
+}
+
+@:enum
+abstract ColorSpace(String) from String to String {
+    var RGB;
+    var Cubic;
+    var Constant;
+}
+
+
 typedef GradientData = {
     var stops : Array<ColorStop>;
     var resolution : Int;
     var isVertical : Bool;
+    var interpolation: GradientInterpolation;
 };
 
 class Gradient {
@@ -17,18 +33,19 @@ class Gradient {
         stops: new Array<ColorStop>(),
         resolution: 32,
         isVertical: false,
+        interpolation: Linear,
     };
 
     public function new () {
     }
 
     public static function getDefaultGradientData() : GradientData {
-        var data : GradientData = {stops: [{position: 0.0, color:0xFF000000}, {position: 1.0, color:0xFFFFFFFF}], resolution: 64, isVertical : false};
+        var data : GradientData = {stops: [{position: 0.0, color:0xFF000000}, {position: 1.0, color:0xFFFFFFFF}], resolution: 64, isVertical : false, interpolation: Linear};
         return data;
     }
 
     public static function evalData(data : GradientData, position : Float, ?outVector : Vector) : Vector {
-        if (outVector == null) outVector = new Vector(); 
+        if (outVector == null) outVector = new Vector();
         var i : Int = 0;
         while(i < data.stops.length && data.stops[i].position < position) {
             i += 1;
@@ -51,8 +68,40 @@ class Gradient {
         var start = Vector.fromColor(c1);
         var end = Vector.fromColor(c2);
 
-        outVector.lerp(start, end, blend);
-        
+        switch (data.interpolation) {
+            case Linear:
+                outVector.lerp(start, end, blend);
+            case Constant:
+                outVector.load(start);
+            case Cubic:
+                // Honteusement copié de https://github.com/godotengine/godot/blob/c241f1c52386b21cf2df936ee927740a06970db6/scene/resources/gradient.h#L159
+                var i0 = firstStopIdx-1;
+                var i3 = secondStopIdx+1;
+                if (i0 < 0) {
+                    i0 = firstStopIdx;
+                }
+                if (i3 >= data.stops.length) {
+                    i3 = data.stops.length-1;
+                }
+                var c0 = Vector.fromColor(data.stops[i0].color);
+                var c3 = Vector.fromColor(data.stops[i3].color);
+
+                inline function cubicInterpolate(p_from: Float, p_to: Float, p_pre: Float, p_post: Float, p_weight: Float) {
+                    return 0.5 *
+                            ((p_from * 2.0) +
+                                    (-p_pre + p_to) * p_weight +
+                                    (2.0 * p_pre - 5.0 * p_from + 4.0 * p_to - p_post) * (p_weight * p_weight) +
+                                    (-p_pre + 3.0 * p_from - 3.0 * p_to + p_post) * (p_weight * p_weight * p_weight));
+                }
+
+                outVector.r = cubicInterpolate(start.r, end.r, c0.r, c3.r, blend);
+                outVector.g = cubicInterpolate(start.g, end.g, c0.g, c3.g, blend);
+                outVector.b = cubicInterpolate(start.b, end.b, c0.b, c3.b, blend);
+                outVector.a = cubicInterpolate(start.a, end.a, c0.a, c3.a, blend);
+            default:
+                throw "Unknown interpolation mode";
+        }
+
         return outVector;
     }
 
@@ -77,6 +126,11 @@ class Gradient {
     public static function getDataHash(data : GradientData) : Int32 {
         var hash = hashCombine(0, data.resolution);
         hash = hashCombine(hash, data.isVertical ? 0 : 1);
+
+        // Vieux hack nul
+        hash = hashCombine(hash, (data.interpolation:String).charCodeAt(0));
+        hash = hashCombine(hash, (data.interpolation:String).charCodeAt(1));
+
 
         for (stop in data.stops) {
             hash = hashCombine(hash, stop.color);
@@ -131,5 +185,4 @@ class Gradient {
     public function toTexture() : h3d.mat.Texture {
         return textureFromData(data);
     }
-
 }

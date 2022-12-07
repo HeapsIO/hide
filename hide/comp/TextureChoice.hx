@@ -26,7 +26,7 @@ class TextureChoice extends Component {
     public function rebuildUi() {
         element.empty();
 
-        switch (getTextureType(innerValue)) {
+        switch (Utils.getTextureType(innerValue)) {
             case TextureType.path: {
                 // Small fix for the texture preview
                 var wrapper = new Element("<div>").css({position: "relative"}).appendTo(element);
@@ -49,7 +49,7 @@ class TextureChoice extends Component {
                     onChange(!isDragging);
                 }
                 onValueChange = function() {
-                    gradient.value = getGradientData(innerValue);
+                    gradient.value = Utils.getGradientData(innerValue);
                 }
             }
             default : {
@@ -61,40 +61,13 @@ class TextureChoice extends Component {
         addChangeBtn();
     }
 
-    // Returns null if value is not a GradientData
-    static function getGradientData(value : Any)  : Null<GradientData> {
-        if (getTextureType(value) == gradient) {
-            return ((value:Dynamic).data:GradientData);
-        }
-        return null;
-    }
-
-    static function getTextureType(value : Any) : Null<TextureType> {
-        if (value == null || Std.isOfType(value, String)) {
-            return TextureType.path;
-        }
-        else if (Type.typeof(value) == TObject) {
-            var v : Dynamic = (value:Dynamic);
-
-            if (v.type != null && Std.isOfType(v.type, String)) {
-                switch ((v.type:String):TextureType) {
-                    case TextureType.gradient: return TextureType.gradient;
-                    default:
-                        return null;
-                }
-            }
-        }
-
-        return null;
-    }
-
     function addChangeBtn() {
         var btn = new Element("<div class='hide-button change-button' title='Actions ...'>").appendTo(element);
         new Element("<div class='icon ico ico-ellipsis-h'>").appendTo(btn);
         btn.click(function(e) {
             new hide.comp.ContextMenu([
-                { label : "Change to Texturepath", click : function() changeTextureType(TextureType.path), enabled: getTextureType(innerValue) != TextureType.path},
-                { label : "Change to Gradient", click : function() changeTextureType(TextureType.gradient), enabled: getTextureType(innerValue) != TextureType.gradient},                
+                { label : "Change to Texturepath", click : function() changeTextureType(TextureType.path), enabled: Utils.getTextureType(innerValue) != TextureType.path},
+                { label : "Change to Gradient", click : function() changeTextureType(TextureType.gradient), enabled: Utils.getTextureType(innerValue) != TextureType.gradient},                
             ]);
         });
     }

@@ -1,5 +1,7 @@
 package hrt.impl;
 
+import hrt.impl.Gradient;
+
 @:enum
 abstract TextureType(String) from String to String {
     var gradient;
@@ -20,8 +22,9 @@ class Utils {
                 switch((val.type:String):TextureType) {
                     case TextureType.gradient:
                     {
-                        if (Reflect.hasField(val.data, "stops") && Reflect.hasField(val.data, "resolution")) {
-                            var t = Gradient.textureFromData(val.data);
+                        var gradData = Utils.getGradientData((val:Dynamic));
+                        if (gradData != null) {
+                            var t = Gradient.textureFromData(gradData);
                             return t;
                         }
                     }
@@ -29,6 +32,35 @@ class Utils {
                 }
             }
         }
+        return null;
+    }
+
+    // Returns null if value is not a GradientData
+    public static function getGradientData(value : Any)  : Null<Gradient.GradientData> {
+        if (getTextureType(value) == gradient) {
+            var gradientData = ((value:Dynamic).data:GradientData);
+            gradientData.interpolation = gradientData.interpolation != null ? gradientData.interpolation : Linear;
+            return gradientData;
+        }
+        return null;
+    }
+
+    public static function getTextureType(value : Any) : Null<TextureType> {
+        if (value == null || Std.isOfType(value, String)) {
+            return TextureType.path;
+        }
+        else if (Type.typeof(value) == TObject) {
+            var v : Dynamic = (value:Dynamic);
+
+            if (v.type != null && Std.isOfType(v.type, String)) {
+                switch ((v.type:String):TextureType) {
+                    case TextureType.gradient: return TextureType.gradient;
+                    default:
+                        return null;
+                }
+            }
+        }
+
         return null;
     }
 
