@@ -65,9 +65,20 @@ class Gradient {
         var start = func.ARGBToValue(ColorSpace.Color.fromInt(c1), null);
         var end = func.ARGBToValue(ColorSpace.Color.fromInt(c2), null);
 
+        inline function lerp_angle(a:Float,b:Float,t:Float) : Float {
+            var diff = (b - a) % 1.0;
+            var dist = ((2.0 * diff) % 1.0) - diff;
+            return outVector.x = (a + dist * t + 1.0) % 1.0;
+        }
+
         switch (data.interpolation) {
             case Linear:
                 outVector.lerp(start, end, blend);
+
+                // Patch hue values that need to be lerped around the cercle
+                if (func.name.charAt(0) == "H") {
+                    outVector.x = lerp_angle(start.x, end.x, blend);
+                }
             case Constant:
                 outVector.load(start);
             case Cubic:
