@@ -1,4 +1,5 @@
 package hide.comp.cdb;
+using hide.tools.Extensions;
 
 import cdb.Data;
 
@@ -292,6 +293,9 @@ class ModalColumnForm extends Modal {
 		case "bool": TBool;
 		case "enum":
 			var vals = StringTools.trim(v.values).split(",");
+			vals.removeIf(function(e) {
+				return StringTools.trim(e) == "";
+			});
 			if( vals.length == 0 ) {
 				error("Missing value list");
 				return null;
@@ -299,8 +303,15 @@ class ModalColumnForm extends Modal {
 			TEnum([for( f in vals ) StringTools.trim(f)]);
 		case "flags":
 			var vals = StringTools.trim(v.values).split(",");
+			vals.removeIf(function(e) {
+				return StringTools.trim(e) == "";
+			});
 			if( vals.length == 0 ) {
 				error("Missing value list");
+				return null;
+			}
+			if( vals.length > 30 ) {
+				error("Too many possible values");
 				return null;
 			}
 			TFlags([for( f in vals ) StringTools.trim(f)]);
