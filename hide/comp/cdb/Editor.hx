@@ -1220,7 +1220,7 @@ class Editor extends Component {
 	}
 
 	public function insertLine( table : Table, index = 0 ) {
-		if( !table.canInsert() )
+		if( table == null || !table.canInsert() )
 			return;
 		if( table.displayMode == Properties ) {
 			var ins = table.element.find("select.insertField");
