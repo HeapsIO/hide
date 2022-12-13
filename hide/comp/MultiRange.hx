@@ -78,7 +78,7 @@ class MultiRange extends Component {
             var dt = new Element("<dt>").text(labels[i]).appendTo(row);
 
             var dd = new Element("<dd>").appendTo(row);
-            var range = new Range(dd, new Element('<input type="range" min="$min" max="$max">'));
+            var range = new Range(dd, new Element('<input type="range" min="$min" max="$max" tabindex="-1">'));
 
             PropsEditor.wrapDt(dt, "1", function(e) {
                 if (e.ctrlKey) {
