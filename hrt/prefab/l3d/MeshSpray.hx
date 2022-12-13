@@ -6,15 +6,6 @@ import hrt.prefab.l3d.Spray;
 class MeshSprayObject extends Spray.SprayObject {
 	public var batches : Array<h3d.scene.MeshBatch> = [];
 	public var batchesMap : Map<Int,Map<String,{ batch : h3d.scene.MeshBatch, pivot : h3d.Matrix }>> = [];
-	override function getMaterials( ?arr : Array<h3d.mat.Material>, recursive=true ) {
-		if( !recursive ) {
-			// batches materials are considered local materials
-			if( arr == null ) arr = [];
-			for( b in batches )
-				arr = b.getMaterials(arr, false);
-		}
-		return super.getMaterials(arr,recursive);
-	}
 }
 
 class MeshSpray extends Spray {
@@ -189,16 +180,6 @@ class MeshSprayObject extends Spray.SprayObject {
 	var blookup : Map<h3d.prim.Primitive, h3d.scene.MeshBatch> = new Map();
 	var mlookup : Map<String, h3d.scene.Mesh> = [];
 	public var editChildren : Bool;
-
-	override function getMaterials( ?arr : Array<h3d.mat.Material>, recursive=true ) {
-		if( !recursive ) {
-			// batches materials are considered local materials
-			if( arr == null ) arr = [];
-			for( b in batches )
-				arr = b.getMaterials(arr, false);
-		}
-		return super.getMaterials(arr,recursive);
-	}
 
 	override function emitRec(ctx:h3d.scene.RenderContext) {
 		for( b in batches ) {
