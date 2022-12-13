@@ -1,0 +1,48 @@
+package hrt.prefab2;
+
+class Object2D extends Prefab {
+    @:s @:range(0,400)
+    public var x(default, set) : Float = 0.0;
+
+    @:s @:range(0,400)
+    public var y(default, set) : Float = 0.0;
+
+    /**Control the scale**/
+    @:s @:range(0.5,4.0)
+    public var scale(default, set) : Float = 1.0;
+
+    public var local2d : h2d.Object;
+
+    override public function getLocal2d() : h2d.Object {
+        return local2d;
+    }
+
+    function set_x(v : Float) {
+        x = v;
+        local2d.x = x;
+        return x;
+    }
+
+    function set_y(v : Float) {
+        y = v;
+        local2d.y = y;
+        return y;
+    }
+
+    function set_scale(v : Float) {
+        scale = v;
+        local2d.scaleX = local2d.scaleY = scale;
+        return scale;
+    }
+
+    override function onMake() {
+        local2d = new h2d.Object(parent.getFirstLocal2d());
+    }
+
+    override function onDestroy() {
+        if (local2d != null) local2d.remove();
+    }
+
+    public static var _ = Prefab.register("object2D", Object2D);
+
+}
