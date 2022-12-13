@@ -395,22 +395,13 @@ class Light extends Object3D {
 
 		switch( kind ) {
 		case Directional:
-			if ( !cascade ) {
-				group.append(hide.comp.PropsEditor.makePropsList([
-					{ name: "maxDist", t: PFloat(0, 1000), def: -1 },
-					{ name: "minDist", t: PFloat(0, 50), def: -1 },
-					{ name: "autoShrink", t: PBool, def: true },
-					{ name: "autoZPlanes", t: PBool, def: false },
-					{ name: "cascade", t: PBool, def: false },
-				]));
-			} else {
-				group.append(hide.comp.PropsEditor.makePropsList([
-					{ name: "maxDist", t: PFloat(0, 1000), def: -1 },
-					{ name: "minDist", t: PFloat(0, 50), def: -1 },
-					{ name: "autoZPlanes", t: PBool, def: false },
-					{ name: "cascade", t: PBool, def: false },
-				]));
-			}
+			group.append(hide.comp.PropsEditor.makePropsList([
+				{ name: "maxDist", t: PFloat(0, 1000), def: -1 },
+				{ name: "minDist", t: PFloat(0, 50), def: -1 },
+				{ name: "autoShrink", t: PBool, def: true },
+				{ name: "autoZPlanes", t: PBool, def: false },
+				{ name: "cascade", t: PBool, def: false },
+			]));
 		case Spot:
 			group.append(hide.comp.PropsEditor.makePropsList([
 				{ name: "range", t: PFloat(1, 20), def: 10 },
