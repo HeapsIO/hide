@@ -1756,18 +1756,14 @@ class SceneEditor {
 
 	public function addGroupCopyPaste(edit : SceneEditorContext) {
 		for (groupName => groupFields in properties.groups) {
-			trace(groupName);
 			var header = properties.element.find('.group[name="$groupName"]').find(".title");
 			header.contextmenu( function(e) {
 				e.preventDefault();
 				new ContextMenu([{label: "Copy", click: function() {
 					copyFields(groupFields);
-				}},
-				{label: "Paste", click: function() {
+				}},{label: "Paste", click: function() {
 					pasteFields(edit, groupFields);
-				}}
-				
-			]);
+				}}]);
 			});
 		}
 	}
