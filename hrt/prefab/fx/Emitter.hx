@@ -547,7 +547,8 @@ class EmitterObject extends h3d.scene.Object {
 
 		if(meshPrimitive != null ) {
 
-			batch = new h3d.scene.MeshBatch(meshPrimitive, meshMaterial, this);
+			batch = new h3d.scene.MeshBatch(meshPrimitive, meshMaterial, null);
+			addChildAt(batch, 0);
 			batch.name = "emitter";
 			batch.calcBounds = false;
 
