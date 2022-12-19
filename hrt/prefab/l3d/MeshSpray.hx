@@ -189,6 +189,11 @@ class MeshSprayObject extends Spray.SprayObject {
 		super.emitRec(ctx);
 	}
 
+	override function getMaterials( ?arr : Array<h3d.mat.Material>, recursive=true ) {
+		// Allows hrt.prefab.Shader if editChildren
+		return super.getMaterials(arr,editChildren ? true : recursive);
+	}
+
 	function getBatch( m : h3d.scene.Mesh ) {
 		var batch = blookup.get(m.primitive);
 		if( batch == null ) {
