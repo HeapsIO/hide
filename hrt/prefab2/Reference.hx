@@ -2,6 +2,8 @@ package hrt.prefab2;
 
 class Reference extends Prefab {
     @:s public var path : String = null;
+	@:s public var editMode : Bool = false;
+
 
     //@:s @:copy(copy_overrides)
     //public var overrides : haxe.ds.StringMap<Dynamic> = new haxe.ds.StringMap<Dynamic>();
@@ -28,11 +30,11 @@ class Reference extends Prefab {
 
     public var pref : Prefab = null;
 
-    override private function onMake() {
+    override private function onMakeInstance() {
         if (path != null) {
             pref = Prefab.loadFromPath(path).make(this);
         }
     }
 
-    public static var _ = prefab2.Prefab.register("Reference", Reference);
+    public static var _ = hrt.prefab2.Prefab.register("Reference", Reference);
 }

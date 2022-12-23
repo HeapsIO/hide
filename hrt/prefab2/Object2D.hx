@@ -1,15 +1,14 @@
 package hrt.prefab2;
+import hxd.Math;
 
 class Object2D extends Prefab {
-    @:s @:range(0,400)
-    public var x(default, set) : Float = 0.0;
+	@:s public var x : Float = 0.;
+	@:s public var y : Float = 0.;
+	@:s public var scaleX : Float = 1.;
+	@:s public var scaleY : Float = 1.;
+	@:s public var rotation : Float = 0.;
 
-    @:s @:range(0,400)
-    public var y(default, set) : Float = 0.0;
-
-    /**Control the scale**/
-    @:s @:range(0.5,4.0)
-    public var scale(default, set) : Float = 1.0;
+    @:s public var visible : Bool = true;
 
     public var local2d : h2d.Object;
 
@@ -29,13 +28,7 @@ class Object2D extends Prefab {
         return y;
     }
 
-    function set_scale(v : Float) {
-        scale = v;
-        local2d.scaleX = local2d.scaleY = scale;
-        return scale;
-    }
-
-    override function onMake() {
+    override function onMakeInstance() {
         local2d = new h2d.Object(parent.getFirstLocal2d());
     }
 
@@ -44,5 +37,33 @@ class Object2D extends Prefab {
     }
 
     public static var _ = Prefab.register("object2D", Object2D);
+
+    public function loadTransform(t) {
+		x = t.x;
+		y = t.y;
+		scaleX = t.scaleX;
+		scaleY = t.scaleY;
+		rotation = t.rotation;
+	}
+
+	public function saveTransform() {
+		return { x : x, y : y, scaleX : scaleX, scaleY : scaleY, rotation : rotation };
+	}
+
+	public function setTransform(t) {
+		x = t.x;
+		y = t.y;
+		scaleX = t.scaleX;
+		scaleY = t.scaleY;
+		rotation = t.rotation;
+	}
+
+    public function applyTransform( o : h2d.Object ) {
+		o.x = x;
+		o.y = y;
+		o.scaleX = scaleX;
+		o.scaleY = scaleY;
+		o.rotation = Math.degToRad(rotation);
+	}
 
 }

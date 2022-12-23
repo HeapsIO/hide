@@ -1,18 +1,24 @@
 package hrt.prefab2;
+import hxd.Math;
 
 class Object3D extends Prefab {
-    @:s @:range(0,400)
-    public var x(default, set) : Float = 0.0;
+    @:s @:range(0,400) public var x(default, set) : Float = 0.0;
+    @:s @:range(0,400) public var y(default, set) : Float = 0.0;
+    @:s @:range(0,400) public var z(default, set) : Float = 0.0;
 
-    @:s @:range(0,400)
-    public var y(default, set) : Float = 0.0;
+    @:s public var rotationX : Float = 0.0;
+    @:s public var rotationY : Float = 0.0;
+    @:s public var rotationZ : Float = 0.0;
 
-    @:s @:range(0,400)
-    public var z(default, set) : Float = 0.0;
+    @:s public var scaleX : Float = 0.0;
+    @:s public var scaleY : Float = 0.0;
+    @:s public var scaleZ : Float = 0.0;
 
-    /**Control the scale**/
-    @:s @:range(0.5,4.0)
-    public var scale(default, set) : Float = 1.0;
+    @:s public var visible : Bool = true;
+
+
+	static var cache : h3d.prim.ModelCache = new h3d.prim.ModelCache();
+
 
     public var local3d : h3d.scene.Object;
 
@@ -38,13 +44,7 @@ class Object3D extends Prefab {
         return z;
     }
 
-    function set_scale(v : Float) {
-        scale = v;
-        local3d.scaleX = local3d.scaleY = local3d.scaleZ = scale;
-        return scale;
-    }
-
-    override function onMake() {
+    override function onMakeInstance() {
         local3d = new h3d.scene.Object(parent.getFirstLocal3d());
     }
 
@@ -52,6 +52,62 @@ class Object3D extends Prefab {
         if (local3d != null) local3d.remove();
     }
 
+    public function setTransform(mat : h3d.Matrix) {
+		var rot = mat.getEulerAngles();
+		x = mat.tx;
+		y = mat.ty;
+		z = mat.tz;
+		var s = mat.getScale();
+		scaleX = s.x;
+		scaleY = s.y;
+		scaleZ = s.z;
+		rotationX = Math.radToDeg(rot.x);
+		rotationY = Math.radToDeg(rot.y);
+		rotationZ = Math.radToDeg(rot.z);
+	}
+
     public static var _ = Prefab.register("object3D", Object3D);
+
+	public function saveTransform() {
+		return { x : x, y : y, z : z, scaleX : scaleX, scaleY : scaleY, scaleZ : scaleZ, rotationX : rotationX, rotationY : rotationY, rotationZ : rotationZ };
+	}
+
+    public function applyTransform( o : h3d.scene.Object ) {
+		o.x = x;
+		o.y = y;
+		o.z = z;
+		o.scaleX = scaleX;
+		o.scaleY = scaleY;
+		o.scaleZ = scaleZ;
+		o.setRotation(Math.degToRad(rotationX), Math.degToRad(rotationY), Math.degToRad(rotationZ));
+	}
+
+    public function getTransform( ?m: h3d.Matrix ) {
+		if( m == null ) m = new h3d.Matrix();
+		m.initScale(scaleX, scaleY, scaleZ);
+		m.rotate(Math.degToRad(rotationX), Math.degToRad(rotationY), Math.degToRad(rotationZ));
+		m.translate(x, y, z);
+		return m;
+	}
+
+    public function localRayIntersection(ray : h3d.col.Ray ) : Float {
+		return -1;
+	}
+
+    public function loadTransform(t) {
+		x = t.x;
+		y = t.y;
+		z = t.z;
+		scaleX = t.scaleX;
+		scaleY = t.scaleY;
+		scaleZ = t.scaleZ;
+		rotationX = t.rotationX;
+		rotationY = t.rotationY;
+		rotationZ = t.rotationZ;
+	}
+
+	public function getDisplayFilters() : Array<String> {
+		return [];
+	}
 
 }

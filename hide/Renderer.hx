@@ -94,7 +94,14 @@ class PbrSetup extends h3d.mat.PbrMaterialSetup {
 	function getEnvMap() {
 		var ide = hide.Ide.inst;
 		var scene = hide.comp.Scene.getCurrent();
-		var path = ide.getPath(scene.config.get("scene.environment"));
+		var path : String = "";
+		if (scene != null) {
+			path = ide.getPath(scene.config.get("scene.environment"));
+		}
+		else {
+			var scene2 = hide.comp2.Scene.getCurrent();
+			path = ide.getPath(scene2.config.get("scene.environment"));
+		}
 		var data = sys.io.File.getBytes(path);
 		var pix = hxd.res.Any.fromBytes(path, data).toImage().getPixels();
 		var t = h3d.mat.Texture.fromPixels(pix, h3d.mat.Texture.nativeFormat); // sync
