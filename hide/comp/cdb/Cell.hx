@@ -342,6 +342,8 @@ class Cell {
 			for( v in a ) {
 				var vals = [];
 				for( c in ps.columns ) {
+					if(c.type == TString && c.kind == Script)
+						continue;
 					if( !canViewSubColumn(ps, c.name) ) continue;
 					var h = valueHtml(c, Reflect.field(v, c.name), ps, v, scope);
 					if( h.str != "" && h.str != " " )
