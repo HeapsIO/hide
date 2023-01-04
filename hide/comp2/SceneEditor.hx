@@ -746,8 +746,8 @@ class SceneEditor {
 
 		clearWatches();
 
-		scene.s3d.removeChildren();
-		scene.s2d.removeChildren();
+		if (root2d != null) root2d.remove();
+		if (root3d != null) root3d.remove();
 
 		root3d = new h3d.scene.Object();
 		root2d = new h2d.Object();
