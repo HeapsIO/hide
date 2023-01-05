@@ -684,7 +684,7 @@ class Prefab extends FileView {
 	}
 
 	function refreshViewModes() {
-		var filters : Array<String> = ["LIT", "Full", "Albedo", "Normal", "Roughness", "Metalness", "Emissive", "AO", "Shadows"];
+		var filters : Array<String> = ["LIT", "Full", "Albedo", "Normal", "Roughness", "Metalness", "Emissive", "AO", "Shadows", "Performance"];
 		viewModes = new Map();
 		for(f in filters) {
 			viewModes.set(f, false);
@@ -730,6 +730,8 @@ class Prefab extends FileView {
 						case "Shadows":
 							r.displayMode = Debug;
 							slides.shader.mode = Shadow;
+						case "Performance":
+							r.displayMode = Performance;
 						default:
 					}
 				}
