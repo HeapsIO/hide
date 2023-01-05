@@ -179,39 +179,42 @@ class Prefab {
     // for each prefab using macro
     @:noCompletion
     private final function _make_internal(?root: Prefab = null, ?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) : Prefab {
-        var newInstance = copyDefault(null);
+        var newInstance = copyDefault(root);
         newInstance.proto = this.proto;
 
         copy(this, newInstance, false, true);
-
-        newInstance.instanciate(root, o2d, o3d);
+        if (root == null)
+            newInstance.setRoot(o2d, o3d);
+        newInstance.instanciate();
 
         return newInstance;
     };
 
-    // Like make but in-place
-    public function instanciate(?root: Prefab = null, ?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) {
-        if (root == null && parent == null) {
-            if (o2d != null) {
-                var p2d = new Object2D();
-                p2d.local2d = o2d;
-                root = p2d;
-            }
-            else if (o3d != null) {
-                var p3d = new Object3D();
-                p3d.local3d = o3d;
-                root = p3d;
-            }
-            else {
-                root = new Prefab(null);
-            }
-            root.children.push(this);
+    public function setRoot(?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) {
+        if (parent != null) {
+            throw "prefab already has a parent, can't be root";
+        }
+
+        var root: Prefab = null;
+        if (o2d != null) {
+            var p2d = new Object2D();
+            p2d.local2d = o2d;
+            root = p2d;
+        }
+        else if (o3d != null) {
+            var p3d = new Object3D();
+            p3d.local3d = o3d;
+            root = p3d;
         }
 
         if (root != null) {
+            root.children.push(this);
             parent = root;
         }
+    }
 
+    // Like make but in-place
+    public function instanciate() {
         onMake();
 
         refresh();
