@@ -39,7 +39,18 @@ class SSRShader extends hxsl.Shader {
 			return ray - 2.0 * dot(ray, normal) * normal;
 		}
 
+		var curPos : Vec2;
+		function getDepths( worldPos : Vec3) : Vec2 {
+			var projPos = vec4(worldPos, 1.0) * camera.viewProj;
+			curPos = projPos.xy / projPos.w;
+			var distToCam = projPos.z / projPos.w;
+			return vec2(distToCam, depthMap.getLod(screenToUv(curPos), 0.0));
+		}
+
 		function fragment() {
+			var depths = getDepths(transformedPosition);
+			if ( depths.r > depths.g )
+				discard;
 
 			startRay = projectedPosition.xy / projectedPosition.w;
 
@@ -48,12 +59,11 @@ class SSRShader extends hxsl.Shader {
 
 			var curPosWS = transformedPosition + reflectedRay * maxRayDistance / stepsFirstPass;
 			var hitFirstPass = false;
-			var curDepth = 0.0;
-			@unroll for (i in 0 ... stepsFirstPass) {
-				var projPos = vec4(curPosWS, 1.0) * camera.viewProj;
-				var curPos = projPos.xy / projPos.w;
-				var distToCam = projPos.z / projPos.w;
-				curDepth = depthMap.get(screenToUv(curPos));
+
+			for (i in 0 ... stepsFirstPass) {
+				depths = getDepths(curPosWS);
+				var distToCam = depths.r;
+				var curDepth = depths.g;
 				if (distToCam > curDepth && curPos.x <= 1.0 && curPos.x >= -1.0 && curPos.y <= 1.0 && curPos.y >= -1.0) {
 					var ruv = vec4( curPos, curDepth, 1 );
 					var ppos = ruv * camera.inverseViewProj;
@@ -71,12 +81,10 @@ class SSRShader extends hxsl.Shader {
 
 			curPosWS -= reflectedRay * maxRayDistance / stepsFirstPass / stepsSecondPass;
 			var hitSecondPass = false;
-			var curPos = vec2(0.0, 0.0);
-			@unroll for (i in 0 ... stepsSecondPass) {
-				var projPos = vec4(curPosWS, 1.0) * camera.viewProj;
-				curPos = projPos.xy / projPos.w;
-				var distToCam = projPos.z / projPos.w;
-				curDepth = depthMap.get(screenToUv(curPos));
+			for (i in 0 ... stepsSecondPass) {
+				depths = getDepths(curPosWS);
+				var distToCam = depths.r;
+				var curDepth = depths.g;
 				if (distToCam < curDepth && curPos.x <= 1.0 && curPos.x >= -1.0 && curPos.y <= 1.0 && curPos.y >= -1.0) {
 					var ruv = vec4( curPos, curDepth, 1 );
 					var ppos = ruv * camera.inverseViewProj;
@@ -92,7 +100,7 @@ class SSRShader extends hxsl.Shader {
 			var fragmentColor = vec3(0.0);
 			var alpha = 0.0;
 			if (hitFirstPass && hitSecondPass) {
-				fragmentColor = ldrMap.get(screenToUv(curPos)).rgb;
+				fragmentColor = ldrMap.getLod(screenToUv(curPos), 0.0).rgb;
 				alpha = 1.0 - saturate(((curPosWS - transformedPosition).length() - startFadeDistance) / (maxRayDistance - startFadeDistance));
 				alpha *= intensity;
 			}
@@ -142,6 +150,7 @@ class SSR extends RendererFX {
 	@:s public var thickness : Float = 1.0;
 	@:s public var blurRadius : Float = 1.0;
 	@:s public var randomPower : Float = 0.0;
+	@:s public var textureSize : Float = 0.5;
 
 	function new(?parent) {
 		super(parent);
@@ -183,7 +192,7 @@ class SSR extends RendererFX {
 
 			if ( passes.current == null )
 				return;
-			ssr = r.allocTarget("ssr", true, 1.0, RGBA);
+			ssr = r.allocTarget("ssr", false, textureSize, RGBA);
 			ssr.clear(0, 0);
 			r.ctx.engine.pushTarget(ssr);
 			r.defaultPass.draw(passes);
@@ -216,6 +225,7 @@ class SSR extends RendererFX {
 				<dt>Steps second pass</dt><dd><input type="range" min="1" max="20" step="1" field="stepsSecondPass"/></dd>
 				<dt>Thickness</dt><dd><input type="range" min="0" max="1" field="thickness"/></dd>
 				<dt>Blur radius</dt><dd><input type="range" min="0" max="5" field="blurRadius"/></dd>
+				<dt>Texture size</dt><dd><input type="range" min="0" max="1" field="textureSize"/></dd>
 			</dl>
 		</div>
 		'),this);
