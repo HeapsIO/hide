@@ -758,7 +758,8 @@ class SceneEditor {
 		root2d.addChild(cameraController2D);
 		scene.setCurrent();
 		scene.onResize();
-		sceneData.instanciate(null, scene.s2d, scene.s3d);
+		// TODO(ces) : Handle 2d and 3d scenes ?
+		sceneData.instanciate(null, null/*scene.s2d*/, scene.s3d);
 		var bgcol = scene.engine.backgroundColor;
 		scene.init();
 		scene.engine.backgroundColor = bgcol;
@@ -2475,6 +2476,7 @@ class SceneEditor {
 		for (e in elts) {
 			e.destroy();
 		}
+		refresh();
 		/*var fullRefresh = false;
 		var undoes = [];
 		for(elt in elts) {

@@ -2,8 +2,8 @@ package hrt.prefab2;
 import hxd.Math;
 
 class Object2D extends Prefab {
-	@:s public var x : Float = 0.;
-	@:s public var y : Float = 0.;
+	@:s @:range(0,400) public var x(default, set) : Float = 0.;
+	@:s @:range(0,400) public var y(default, set) : Float = 0.;
 	@:s public var scaleX : Float = 1.;
 	@:s public var scaleY : Float = 1.;
 	@:s public var rotation : Float = 0.;

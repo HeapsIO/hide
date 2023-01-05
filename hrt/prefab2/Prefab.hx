@@ -148,6 +148,9 @@ class Prefab {
 
     public function new(?parent:Prefab = null) {
         this.parent = parent;
+        if (parent != null) {
+            parent.children.push(this);
+        }
     }
 
     /**Create a copy of this prefab and it's childrens, whitout initializing their fields**/
@@ -155,7 +158,7 @@ class Prefab {
         var thisClass = Type.getClass(this);
         var inst = Type.createInstance(thisClass, [parent]);
         for (child in children) {
-            inst.children.push(child.copyDefault(inst));
+            child.copyDefault(inst);
         }
         return inst;
     }
@@ -188,8 +191,7 @@ class Prefab {
 
     // Like make but in-place
     public function instanciate(?root: Prefab = null, ?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) {
-        var transientParent = false;
-        if (root == null) {
+        if (root == null && parent == null) {
             if (o2d != null) {
                 var p2d = new Object2D();
                 p2d.local2d = o2d;
@@ -206,7 +208,9 @@ class Prefab {
             root.children.push(this);
         }
 
-        parent = root;
+        if (root != null) {
+            parent = root;
+        }
 
         onMake();
 
@@ -357,7 +361,7 @@ class Prefab {
         var children = Std.downcast(Reflect.field(data, "children"), Array);
         if (children != null) {
             for (child in children) {
-                prefabInstance.children.push(loadFromDynamic(child, prefabInstance));
+                loadFromDynamic(child, prefabInstance);
             }
         }
 
@@ -529,7 +533,7 @@ class Prefab {
 		Returns the default name for this prefab
 	**/
 	public function getDefaultName() : String {
-		if(proto != null) {
+		if(proto != null && proto.source != null) {
 			var f = new haxe.io.Path(proto.source).file;
 			f = f.split(" ")[0].split("-")[0];
 			return f;
