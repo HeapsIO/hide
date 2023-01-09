@@ -690,7 +690,7 @@ class ModelLibrary extends Prefab {
 	var hmdPrim : h3d.prim.HMDModel;
 	var shader : ModelLibShader;
 	var geomBounds : Array<h3d.col.Bounds>;
-	public var debug = true;
+	public var debug = false;
 	public var clear = false;
 
 	override function make(ctx:hrt.prefab.Context) {
