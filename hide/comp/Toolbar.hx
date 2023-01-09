@@ -6,6 +6,7 @@ enum ToolType {
 	Range(onChange: Float->Void);
 	Color(onChange: Int -> Void);
 	Menu(items: Array<hide.comp.ContextMenu.ContextMenuItem>);
+	Popup(click: hide.Element -> hide.comp.Popup);
 }
 
 typedef ToolDef = {

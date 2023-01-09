@@ -142,6 +142,7 @@ class SceneEditor {
 	public var camera2D(default,set) : Bool = false;
 	public var objectAreSelectable = true;
 
+
 	var updates : Array<Float -> Void> = [];
 
 	var showGizmo = true;
@@ -461,6 +462,12 @@ class SceneEditor {
 		if( cam != null ) {
 			scene.s3d.camera.pos.set(cam.x, cam.y, cam.z);
 			scene.s3d.camera.target.set(cam.tx, cam.ty, cam.tz);
+			var cc = Std.downcast(cameraController, hide.view.CameraController.CamController);
+			cc.isFps = cam.isFps;
+			cc.isOrtho = cam.isOrtho;
+			cc.camSpeed =  cam.camSpeed != null ? cam.camSpeed : 3;
+			cc.wantedFOV = cam.fov != null ? cam.fov : 60.0;
+			scene.s3d.camera.fovY = cc.wantedFOV;
 		}
 		cameraController.loadFromCamera();
 
@@ -2637,7 +2644,14 @@ class SceneEditor {
 
 	function update(dt:Float) {
 		var cam = scene.s3d.camera;
-		@:privateAccess view.saveDisplayState("Camera", { x : cam.pos.x, y : cam.pos.y, z : cam.pos.z, tx : cam.target.x, ty : cam.target.y, tz : cam.target.z });
+		var cc = Std.downcast(cameraController, hide.view.CameraController.CamController);
+		var toSave = { x : cam.pos.x, y : cam.pos.y, z : cam.pos.z, tx : cam.target.x, ty : cam.target.y, tz : cam.target.z,
+			isFps : cc.isFps,
+			isOrtho : cc.isOrtho,
+			camSpeed : cc.camSpeed,
+			fov : cc.wantedFOV,
+		};
+		@:privateAccess view.saveDisplayState("Camera", toSave);
 		@:privateAccess view.saveDisplayState("Camera2D", { x : context.shared.root2d.x - scene.s2d.width*0.5, y : context.shared.root2d.y - scene.s2d.height*0.5, z : context.shared.root2d.scaleX });
 		if(gizmo != null) {
 			if(!gizmo.moving) {

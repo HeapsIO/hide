@@ -2437,6 +2437,9 @@ div.color-box {
 }
 
 div.popup {
+	background-color : rgb(40, 40, 41);
+	border : 1px solid rgb(51, 51, 51);
+
 	position: absolute;
 	overflow: visible;
 	z-index: 900;
@@ -2445,13 +2448,44 @@ div.popup {
 
 	&:focus {
 		outline: none;
-	} 
+	}
+
+	padding: 6px;
+}
+
+.settings-popup {
+	padding: 8px;
+
+	p {
+		margin-top: 0;
+		margin-bottom: 0;
+		text-align: center;
+	}
+
+	select {
+		width: auto;
+		width: fit-content;
+    	margin-left: 2px;
+	}
+
+	.form-grid {
+		display: grid;
+		grid-template-columns: auto 1fr;
+	}
+
+	label {
+		text-align: right;
+		padding-right: 8px;
+	}
+
+	.hide-grid {
+		visibility: hidden;
+		height: 0px;
+	}
 }
 
 div.color-picker {
-	background-color : rgb(40, 40, 41);
-	border : 1px solid rgb(51, 51, 51);
-
+	padding:0;
 
 	.vbox {
 		display: flex;

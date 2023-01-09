@@ -2172,17 +2172,44 @@ div.color-box {
   cursor: pointer;
 }
 div.popup {
+  background-color: #282829;
+  border: 1px solid #333333;
   position: absolute;
   overflow: visible;
   z-index: 900;
   box-shadow: 3px 3px 3px rgba(0, 0, 0, 0.777);
+  padding: 6px;
 }
 div.popup:focus {
   outline: none;
 }
+.settings-popup {
+  padding: 8px;
+}
+.settings-popup p {
+  margin-top: 0;
+  margin-bottom: 0;
+  text-align: center;
+}
+.settings-popup select {
+  width: auto;
+  width: fit-content;
+  margin-left: 2px;
+}
+.settings-popup .form-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+}
+.settings-popup label {
+  text-align: right;
+  padding-right: 8px;
+}
+.settings-popup .hide-grid {
+  visibility: hidden;
+  height: 0px;
+}
 div.color-picker {
-  background-color: #282829;
-  border: 1px solid #333333;
+  padding: 0;
 }
 div.color-picker .vbox {
   display: flex;

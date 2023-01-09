@@ -351,6 +351,8 @@ class Prefab extends FileView {
 		};
 		var toolsDefs = new Array<hide.comp.Toolbar.ToolDef>();
 		toolsDefs.push({id: "perspectiveCamera", title : "Perspective camera", icon : "video-camera", type : Button(() -> resetCamera(false)) });
+		toolsDefs.push({id: "camSettings", title : "Camera Settings", icon : "camera", type : Popup((e : hide.Element) -> new hide.comp.CameraControllerEditor(Std.downcast(sceneEditor.cameraController, CamController), null,e)) });
+		
 		toolsDefs.push({id: "topCamera", title : "Top camera", icon : "video-camera", iconStyle: { transform: "rotateZ(90deg)" }, type : Button(() -> resetCamera(true))});
 		toolsDefs.push({id: "snapToGroundToggle", title : "Snap to ground", icon : "anchor", type : Toggle((v) -> sceneEditor.snapToGround = v)});
 		toolsDefs.push({id: "translationMode", title : "Gizmo translation Mode", icon : "arrows", type : Button(@:privateAccess sceneEditor.gizmo.translationMode), rightClick: () -> {
@@ -473,6 +475,20 @@ class Prefab extends FileView {
 					var menu = tools.addMenu(tool.icon, tool.title);
 					menu.setContent(items);
 					el = menu.element;
+				case Popup(f):
+					el = tools.addButton(tool.icon, tool.title + shortcut, null, tool.rightClick);
+					var p: hide.comp.Popup = null;
+					el.click(function(e) {
+						if (p == null) {
+							p = f(el);
+							p.onClose = function() {
+								p = null;
+							}
+						}
+						else {
+							p.close();
+						}
+					});
 			}
 
 			el.addClass(tool.id);
