@@ -94,6 +94,7 @@ class ModelLibrary extends Prefab {
 
 	@:s var ignoredMaterials : Array<{name:String}> = [];
 	@:s var ignoredPrefabs : Array<{name:String}> = [];
+	@:s var ignoredObjectNames : Array<{name:String}> = [];
 
 	@:s var mipEnd : Float;
 	@:s var mipStart : Float;
@@ -210,6 +211,30 @@ class ModelLibrary extends Prefab {
 		add.appendTo(listPrefabs);
 		add.find("a").click(function(_) {
 			ignoredPrefabs.push({name:null});
+			ectx.rebuildProperties();
+		});
+
+		var listObjectNames = new Element('
+		<div class="group" name="Ignored object names"><ul id="ignoreObjectNames"></ul></div>');
+		ectx.properties.add(listObjectNames);
+		for( i in 0...ignoredObjectNames.length ) {
+			var e = new hide.Element('<li style="position:relative">
+				<input type="text" field="name"/>
+				<a href="#">[-]</a>
+			</li>');
+			e.find("a").click(function(_) {
+				ignoredObjectNames.splice(i, 1);
+				ectx.rebuildProperties();
+			});
+			e.appendTo(listObjectNames);
+			ectx.properties.build(e, ignoredObjectNames[i], (pname) -> {
+				updateInstance(ctx, pname);
+			});
+		}
+		var add = new hide.Element('<li><p><a href="#">[+]</a></p></li>');
+		add.appendTo(listObjectNames);
+		add.find("a").click(function(_) {
+			ignoredObjectNames.push({name:""});
 			ectx.rebuildProperties();
 		});
 	}
@@ -665,7 +690,7 @@ class ModelLibrary extends Prefab {
 	var hmdPrim : h3d.prim.HMDModel;
 	var shader : ModelLibShader;
 	var geomBounds : Array<h3d.col.Bounds>;
-	public var debug = false;
+	public var debug = true;
 	public var clear = false;
 
 	override function make(ctx:hrt.prefab.Context) {
@@ -779,6 +804,10 @@ class ModelLibrary extends Prefab {
 	function optimizeRec( obj : h3d.scene.Object, out : Array<{ mat : MaterialData, mesh : h3d.scene.Mesh }> ) {
 		if( !obj.visible )
 			return;
+		for ( n in ignoredObjectNames ) {
+			if ( n.name == obj.name )
+				return;
+		}
 		var mesh = Std.downcast(obj, h3d.scene.Mesh);
 		if( mesh != null ) {
 			for ( shader in ignoredPrefabs) {
