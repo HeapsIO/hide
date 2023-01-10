@@ -17,7 +17,7 @@ import hrt.prefab.Object3D;
 import h3d.scene.Object;
 
 import hide.comp.cdb.DataFiles;
-import hide.view.CameraController.CamController as CameraController;
+import hide.view.CameraController;
 
 enum SelectMode {
 	/**
@@ -136,7 +136,7 @@ class SceneEditor {
 	public var curEdit(default, null) : SceneEditorContext;
 	public var snapToGround = false;
 	public var localTransform = true;
-	public var cameraController : h3d.scene.CameraController;
+	public var cameraController : CameraControllerBase;
 	public var cameraController2D : hide.view.l3d.CameraController2D;
 	public var editorDisplay(default,set) : Bool;
 	public var camera2D(default,set) : Bool = false;
@@ -289,13 +289,14 @@ class SceneEditor {
 		return curEdit != null ? curEdit.elements : [];
 	}
 
-	function makeCamController() : h3d.scene.CameraController {
-		var c = new CameraController(scene.s3d, this);
-		c.friction = 0.9;
-		c.panSpeed = 0.6;
-		c.zoomAmount = 1.05;
-		c.smooth = 0.7;
-		c.minDistance = 1;
+	function makeCamController() : CameraControllerBase {
+		//var c = new CameraController(scene.s3d, this);
+		var c = new hide.view.CameraController.FlightController(scene.s3d, this);
+		// c.friction = 0.9;
+		// c.panSpeed = 0.6;
+		// c.zoomAmount = 1.05;
+		// c.smooth = 0.7;
+		// c.minDistance = 1;
 		return c;
 	}
 
@@ -388,6 +389,71 @@ class SceneEditor {
 		return ret;
 	}
 
+	public function switchCamController(camClass : Class<CameraControllerBase>) {
+		if (cameraController != null) {
+			saveCam3D();
+			cameraController.remove();
+		}
+
+		cameraController = Type.createInstance(camClass, [scene.s3d, this]);
+		loadCam3D();
+	}
+
+	function loadCam3D() {
+		cameraController.onClick = function(e) {
+			switch( e.button ) {
+			case K.MOUSE_RIGHT:
+				selectNewObject();
+			case K.MOUSE_LEFT:
+				selectElements([]);
+			}
+		};
+
+		if (!camera2D)
+			resetCamera();
+
+
+		var cam = @:privateAccess view.getDisplayState("Camera");
+		if( cam != null ) {
+			scene.s3d.camera.pos.set(cam.x, cam.y, cam.z);
+			scene.s3d.camera.target.set(cam.tx, cam.ty, cam.tz);
+			cameraController.loadSettings(cam);
+			/*var cc = Std.downcast(cameraController, hide.view.CameraController.CamController);
+			if (cc!=null) {
+				cc.isFps = cam.isFps;
+				cc.isOrtho = cam.isOrtho;
+				cc.camSpeed =  cam.camSpeed != null ? cam.camSpeed : 3;
+				cc.wantedFOV = cam.fov != null ? cam.fov : 60.0;
+				scene.s3d.camera.fovY = cc.wantedFOV;
+			}*/
+		}
+		cameraController.loadFromCamera();
+	}
+
+	function saveCam3D() {
+		var cam = scene.s3d.camera;
+		var toSave = @:privateAccess view.getDisplayState("Camera");
+
+		toSave.x = cam.pos.x;
+		toSave.y = cam.pos.y;
+		toSave.z = cam.pos.z;
+		toSave.tx = cam.target.x;
+		toSave.ty = cam.target.y;
+		toSave.tz = cam.target.z;
+
+		cameraController.saveSettings(toSave);
+
+		/*var cc = Std.downcast(cameraController, hide.view.CameraController.CamController);
+		if (cc!=null) {
+			var toSave = { x : cam.pos.x, y : cam.pos.y, z : cam.pos.z, tx : cam.target.x, ty : cam.target.y, tz : cam.target.z,
+				isFps : cc.isFps,
+				isOrtho : cc.isOrtho,
+				camSpeed : cc.camSpeed,
+				fov : cc.wantedFOV,
+			};*/
+		@:privateAccess view.saveDisplayState("Camera", toSave);
+	}
+
 	function onSceneReady() {
 
 		tree.saveDisplayKey = view.saveDisplayKey + '/tree';
@@ -444,32 +510,7 @@ class SceneEditor {
 
 		basis.visible = true;
 
-
-		cameraController = makeCamController();
-		cameraController.onClick = function(e) {
-			switch( e.button ) {
-			case K.MOUSE_RIGHT:
-				selectNewObject();
-			case K.MOUSE_LEFT:
-				selectElements([]);
-			}
-		};
-		if (!camera2D)
-			resetCamera();
-
-
-		var cam = @:privateAccess view.getDisplayState("Camera");
-		if( cam != null ) {
-			scene.s3d.camera.pos.set(cam.x, cam.y, cam.z);
-			scene.s3d.camera.target.set(cam.tx, cam.ty, cam.tz);
-			var cc = Std.downcast(cameraController, hide.view.CameraController.CamController);
-			cc.isFps = cam.isFps;
-			cc.isOrtho = cam.isOrtho;
-			cc.camSpeed =  cam.camSpeed != null ? cam.camSpeed : 3;
-			cc.wantedFOV = cam.fov != null ? cam.fov : 60.0;
-			scene.s3d.camera.fovY = cc.wantedFOV;
-		}
-		cameraController.loadFromCamera();
+		switchCamController(CamController);
 
 		scene.s2d.defaultSmooth = true;
 		context.shared.root2d.x = scene.s2d.width >> 1;
@@ -2643,15 +2684,8 @@ class SceneEditor {
 	}
 
 	function update(dt:Float) {
-		var cam = scene.s3d.camera;
-		var cc = Std.downcast(cameraController, hide.view.CameraController.CamController);
-		var toSave = { x : cam.pos.x, y : cam.pos.y, z : cam.pos.z, tx : cam.target.x, ty : cam.target.y, tz : cam.target.z,
-			isFps : cc.isFps,
-			isOrtho : cc.isOrtho,
-			camSpeed : cc.camSpeed,
-			fov : cc.wantedFOV,
-		};
-		@:privateAccess view.saveDisplayState("Camera", toSave);
+		saveCam3D();
+
 		@:privateAccess view.saveDisplayState("Camera2D", { x : context.shared.root2d.x - scene.s2d.width*0.5, y : context.shared.root2d.y - scene.s2d.height*0.5, z : context.shared.root2d.scaleX });
 		if(gizmo != null) {
 			if(!gizmo.moving) {
