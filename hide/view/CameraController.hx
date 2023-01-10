@@ -17,10 +17,137 @@ class CameraControllerBase extends h3d.scene.CameraController {
 	public function loadSettings(data : Dynamic) : Void {
 		wantedFOV = data.fov != null ? data.fov : 60.0;
 		sceneEditor.scene.s3d.camera.fovY = wantedFOV;
+		camSpeed = data.camSpeed != null ? data.camSpeed : 1.0;
 	}
 
 	public function saveSettings(data : Dynamic) : Void {
-		
+		data.camSpeed = camSpeed;
+	}
+}
+
+class FPSController extends CameraControllerBase {
+	var startPush : h2d.col.Point;
+
+	override function loadSettings(data : Dynamic) : Void {
+		super.loadSettings(data);
+		var cam = sceneEditor.scene.s3d.camera;
+		cam.up.set(0,0,1,0);
+	}
+
+	override function onEvent(e : hxd.Event) {
+		if(curPos == null) return;
+		switch( e.kind ) {
+		case EWheel:
+			if (pushing == 2 || pushing == 1) {
+				if (e.wheelDelta > 0) {
+					camSpeed /= 1.1;
+				}
+				else {
+					camSpeed *= 1.1;
+				}
+			}
+		case EPush:
+			pushing = e.button;
+			if (pushing == 0 && K.isDown(K.ALT)) pushing = 2;
+			pushTime = haxe.Timer.stamp();
+			pushStartX = pushX = e.relX;
+			pushStartY = pushY = e.relY;
+			startPush = new h2d.col.Point(pushX, pushY);
+			@:privateAccess scene.window.mouseMode = AbsoluteUnbound(true);
+		case ERelease, EReleaseOutside:
+			if( pushing == e.button || pushing == 2) {
+				pushing = -1;
+				startPush = null;
+				if( e.kind == ERelease && haxe.Timer.stamp() - pushTime < 0.2 && hxd.Math.distance(e.relX - pushStartX,e.relY - pushStartY) < 5 )
+					onClick(e);
+				@:privateAccess scene.window.mouseMode = Absolute;
+			}
+		case EMove:
+			switch( pushing ) {
+				case 1:
+					var m = 0.1 * panSpeed / 25;
+					lookAround(-(e.relX - pushX) * m, (e.relY - pushY) * m);
+					pushX = e.relX;
+					pushY = e.relY;
+				case 2:
+					if(startPush != null && startPush.distance(new h2d.col.Point(e.relX, e.relY)) > 3) {
+						var angle = hxd.Math.abs(Math.PI/2 - phi);
+
+						var se = sceneEditor;
+						var fromPt = se.screenToGround(startPush.x, startPush.y);
+						var toPt = se.screenToGround(startPush.x+e.relX-pushX, startPush.y+e.relY-pushY);
+						if(fromPt == null || toPt == null)
+							return;
+						var delta = toPt.sub(fromPt).toVector();
+						delta.w = 0;
+						targetOffset = targetOffset.sub(delta);
+					}
+					pushX = e.relX;
+					pushY = e.relY;
+				default:
+			}
+		case EFocus:
+			@:privateAccess scene.window.mouseMode = Absolute;
+		default:
+		}
+	}
+
+	function lookAround(dtheta : Float, dphi : Float) {
+		var cam = getScene().camera;
+
+		var tx = targetOffset.x + distance * Math.cos(theta) * Math.sin(phi) ;
+		var ty = targetOffset.y + distance * Math.sin(theta) * Math.sin(phi);
+		var tz = targetOffset.z + distance * Math.cos(phi);
+
+		targetPos.y = theta - dtheta;
+		var min = hxd.Math.PI*0.01;
+		targetPos.z = hxd.Math.clamp(phi - dphi, 0 + min, hxd.Math.PI - min);
+
+		curOffset.x = curOffset.w;
+		targetOffset.x = tx - distance * Math.cos(targetPos.y) * Math.sin(targetPos.z);
+		targetOffset.y = ty - distance * Math.sin(targetPos.y) * Math.sin(targetPos.z);
+		targetOffset.z = tz - distance * Math.cos(targetPos.z);
+		curOffset.load(targetOffset);
+		curPos.load(targetPos);
+	}
+
+	function moveKeys() {
+		var mov = new h3d.Vector();
+		if( K.isDown(K.UP) || K.isDown(K.Z) || K.isDown(K.W) )
+			mov.x += 1;
+		if( K.isDown(K.DOWN) || K.isDown(K.S) )
+			mov.x -= 1;
+		if( K.isDown(K.LEFT) || K.isDown(K.Q) || K.isDown(K.A) )
+			mov.y -= 1;
+		if( K.isDown(K.RIGHT) || K.isDown(K.D) )
+			mov.y += 1;
+
+		mov.set(-mov.y, 0, -mov.x);
+		if( mov.x == 0 && mov.z == 0 )
+			return;
+		mov.transform3x3(scene.camera.getInverseView());
+		var moveSpeed = Ide.inst.currentConfig.get("sceneeditor.camera.moveSpeed", 1.5) * camSpeed;
+
+		var delta = mov.multiply(moveSpeed);
+		delta.w = 0;
+		targetOffset = targetOffset.sub(delta);
+	}
+
+	override function sync(ctx : h3d.scene.RenderContext) {
+		if( pushing == 2 || pushing == 1) {
+			moveKeys();
+		}
+		var cam = getScene().camera;
+
+		cam.orthoBounds = null;
+		curOffset.w = wantedFOV;
+		targetOffset.w = wantedFOV;
+
+
+		var old = ctx.elapsedTime;
+		ctx.elapsedTime = hxd.Timer.dt;
+		super.sync(ctx);
+		ctx.elapsedTime = old;
 	}
 }
 
@@ -30,8 +157,6 @@ class CamController extends CameraControllerBase {
 	var moveCount = 0;
 
 	public var isOrtho = false;
-	public var isFps = false;
-	public var isFlight = false;
 	public var orthoZoom = 1.0;
 
 	override function loadSettings(data : Dynamic) : Void {
@@ -58,19 +183,8 @@ class CamController extends CameraControllerBase {
 				}
 			}
 			else {
-				if (pushing == 2 || pushing == 1) {
-					if (e.wheelDelta > 0) {
-						camSpeed /= 1.1;
-					}
-					else {
-						camSpeed *= 1.1;
-					}
-				}
-				else {
-					zoom(e.wheelDelta);
-				}
+				zoom(e.wheelDelta);
 			}
-
 		case EPush:
 			pushing = e.button;
 			if (pushing == 0 && K.isDown(K.ALT)) pushing = 2;
@@ -109,92 +223,38 @@ class CamController extends CameraControllerBase {
 			}
 			moveCount++;
 
-			if (isFps && !isOrtho) {
-				switch( pushing ) {
-					case 1:
-						var m = 0.1 * panSpeed / 25;
-						lookAround(-(e.relX - pushX) * m, (e.relY - pushY) * m);
-						pushX = e.relX;
-						pushY = e.relY;
-					case 2:
-						if(startPush != null && startPush.distance(new h2d.col.Point(e.relX, e.relY)) > 3) {
-							var angle = hxd.Math.abs(Math.PI/2 - phi);
-							if(K.isDown(K.SHIFT) || angle < groundSnapAngle) {
-								var m = 0.001 * curPos.x * panSpeed / 25;
-								pan(-(e.relX - pushX) * m, (e.relY - pushY) * m);
-							}
-							else {
-								var se = sceneEditor;
-								var fromPt = se.screenToGround(startPush.x, startPush.y);
-								var toPt = se.screenToGround(startPush.x+e.relX-pushX, startPush.y+e.relY-pushY);
-								if(fromPt == null || toPt == null)
-									return;
-								var delta = toPt.sub(fromPt).toVector();
-								delta.w = 0;
-								targetOffset = targetOffset.sub(delta);
-							}
+			switch( pushing ) {
+				case 1:
+					if(startPush != null && startPush.distance(new h2d.col.Point(e.relX, e.relY)) > 3) {
+						var angle = hxd.Math.abs(Math.PI/2 - phi);
+						if(K.isDown(K.SHIFT) || angle < groundSnapAngle) {
+							var m = 0.001 * curPos.x * panSpeed / 25;
+							pan(-(e.relX - pushX) * m, (e.relY - pushY) * m);
 						}
-						pushX = e.relX;
-						pushY = e.relY;
-					default:
-				}
-			}
-			else {
-				switch( pushing ) {
-					case 1:
-						if(startPush != null && startPush.distance(new h2d.col.Point(e.relX, e.relY)) > 3) {
-							var angle = hxd.Math.abs(Math.PI/2 - phi);
-							if(K.isDown(K.SHIFT) || angle < groundSnapAngle) {
-								var m = 0.001 * curPos.x * panSpeed / 25;
-								pan(-(e.relX - pushX) * m, (e.relY - pushY) * m);
-							}
-							else {
-								var se = sceneEditor;
-								var fromPt = se.screenToGround(startPush.x, startPush.y);
-								var toPt = se.screenToGround(startPush.x+e.relX-pushX, startPush.y+e.relY-pushY);
-								if(fromPt == null || toPt == null)
-									return;
-								var delta = toPt.sub(fromPt).toVector();
-								delta.w = 0;
-								targetOffset = targetOffset.sub(delta);
-							}
+						else {
+							var se = sceneEditor;
+							var fromPt = se.screenToGround(startPush.x, startPush.y);
+							var toPt = se.screenToGround(startPush.x+e.relX-pushX, startPush.y+e.relY-pushY);
+							if(fromPt == null || toPt == null)
+								return;
+							var delta = toPt.sub(fromPt).toVector();
+							delta.w = 0;
+							targetOffset = targetOffset.sub(delta);
 						}
-						pushX = e.relX;
-						pushY = e.relY;
-					case 2:
-						rot(e.relX - pushX, e.relY - pushY);
-						pushX = e.relX;
-						pushY = e.relY;
-					default:
-				}
+					}
+					pushX = e.relX;
+					pushY = e.relY;
+				case 2:
+					rot(e.relX - pushX, e.relY - pushY);
+					pushX = e.relX;
+					pushY = e.relY;
+				default:
 			}
 
 		case EFocus:
 			@:privateAccess scene.window.mouseMode = Absolute;
 		default:
 		}
-	}
-
-	function lookAround(dtheta : Float, dphi : Float) {
-		var cam = getScene().camera;
-
-		var tx = targetOffset.x + distance * Math.cos(theta) * Math.sin(phi) ;
-		var ty = targetOffset.y + distance * Math.sin(theta) * Math.sin(phi);
-		var tz = targetOffset.z + distance * Math.cos(phi);
-
-		targetPos.y = theta - dtheta;
-		targetPos.z = phi - dphi;
-		if (isOrtho) {
-			curOffset.x = 10000.0;
-		}
-		else {
-			curOffset.x = curOffset.w;
-		}
-		targetOffset.x = tx - distance * Math.cos(targetPos.y) * Math.sin(targetPos.z);
-		targetOffset.y = ty - distance * Math.sin(targetPos.y) * Math.sin(targetPos.z);
-		targetOffset.z = tz - distance * Math.cos(targetPos.z);
-		curOffset.load(targetOffset);
-		curPos.load(targetPos);
 	}
 
 	function moveKeys() {
@@ -208,30 +268,17 @@ class CamController extends CameraControllerBase {
 		if( K.isDown(K.RIGHT) || K.isDown(K.D) )
 			mov.y += 1;
 
-		if (isFps) {
-			mov.set(-mov.y, 0, -mov.x);
-			if( mov.x == 0 && mov.z == 0 )
-				return;
-			mov.transform3x3(scene.camera.getInverseView());
-			var moveSpeed = Ide.inst.currentConfig.get("sceneeditor.camera.moveSpeed", 1.5) * camSpeed;
+		if( mov.x == 0 && mov.y == 0 )
+			return;
+		var dir = new h3d.Vector(
+			mov.x * Math.cos(theta) + mov.y * Math.cos(Math.PI / 2 + theta),
+			mov.x * Math.sin(theta) + mov.y * Math.sin(Math.PI / 2 + theta)
+		);
+		var moveSpeed = Ide.inst.currentConfig.get("sceneeditor.camera.moveSpeed", 1.5);
 
-			var delta = mov.multiply(0.1 * moveSpeed);
-			delta.w = 0;
-			targetOffset = targetOffset.sub(delta);
-		}
-		else {
-			if( mov.x == 0 && mov.y == 0 )
-				return;
-			var dir = new h3d.Vector(
-				mov.x * Math.cos(theta) + mov.y * Math.cos(Math.PI / 2 + theta),
-				mov.x * Math.sin(theta) + mov.y * Math.sin(Math.PI / 2 + theta)
-			);
-			var moveSpeed = Ide.inst.currentConfig.get("sceneeditor.camera.moveSpeed", 1.5);
-	
-			var delta = dir.multiply(0.01 * moveSpeed * (distance + scene.camera.zNear));
-			delta.w = 0;
-			targetOffset = targetOffset.sub(delta);
-		}
+		var delta = dir.multiply(0.01 * moveSpeed * (distance + scene.camera.zNear));
+		delta.w = 0;
+		targetOffset = targetOffset.sub(delta);
 	}
 
 	override function sync(ctx : h3d.scene.RenderContext) {

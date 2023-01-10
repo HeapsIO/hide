@@ -6,8 +6,9 @@ class CameraControllerEditor extends Popup {
     var form_div : Element = null;
     var editor : SceneEditor = null;
 
-    var controllersClasses : Array<{name: String, cl : Class<CameraControllerBase>}> = [
+    static public var controllersClasses : Array<{name: String, cl : Class<CameraControllerBase>}> = [
         {name: "Legacy", cl: CamController},
+        {name: "FPS", cl: FPSController},
         {name: "Fly/6DOF", cl: FlightController},
     ];
 

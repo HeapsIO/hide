@@ -441,6 +441,13 @@ class SceneEditor {
 		toSave.ty = cam.target.y;
 		toSave.tz = cam.target.z;
 
+		for (i in 0...CameraControllerEditor.controllersClasses.length) {
+			if (CameraControllerEditor.controllersClasses[i].cl == Type.getClass(cameraController)) {
+				toSave.camTypeIndex = i;
+				break;
+			}
+		}
+
 		cameraController.saveSettings(toSave);
 
 		/*var cc = Std.downcast(cameraController, hide.view.CameraController.CamController);
@@ -510,7 +517,15 @@ class SceneEditor {
 
 		basis.visible = true;
 
-		switchCamController(CamController);
+		var wantedClass : Class<CameraControllerBase> = CamController;
+		var cam = @:privateAccess view.getDisplayState("Camera");
+		if (cam != null && cam.camTypeIndex != null) {
+			if (cam.camTypeIndex >=0 && cam.camTypeIndex < CameraControllerEditor.controllersClasses.length) {
+				wantedClass = CameraControllerEditor.controllersClasses[cam.camTypeIndex].cl;
+			}
+		}
+
+		switchCamController(wantedClass);
 
 		scene.s2d.defaultSmooth = true;
 		context.shared.root2d.x = scene.s2d.width >> 1;
