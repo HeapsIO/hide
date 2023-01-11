@@ -2868,6 +2868,16 @@ class SceneEditor {
 		};
 	}
 
+	static var globalShaders : Array<Class<hxsl.Shader>> = [
+		hrt.shader.DissolveBurn,
+		hrt.shader.Bloom,
+		hrt.shader.UVDebug,
+		hrt.shader.GradientMap,
+		hrt.shader.ParticleFade,
+		hrt.shader.ParticleColorLife,
+		hrt.shader.ParticleColorRandom,
+	];
+
 	function getNewShaderMenu(parentElt: PrefabElement, ?onMake: PrefabElement->Void) : hide.comp.ContextMenu.ContextMenuItem {
 		function isClassShader(path: String) {
 			return Type.resolveClass(path) != null || StringTools.endsWith(path, ".hx");
@@ -2910,6 +2920,13 @@ class SceneEditor {
 		var menu : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
 
 		var shaders : Array<String> = hide.Ide.inst.currentConfig.get("fx.shaders", []);
+		for (sh in globalShaders) {
+			var name = Type.getClassName(sh);
+			if (!shaders.contains(name)) {
+				shaders.push(name);
+			}
+		}
+
 		for(path in shaders) {
 			var strippedSlash = StringTools.endsWith(path, "/") ? path.substr(0, -1) : path;
 			var fullPath = ide.getPath(strippedSlash);
@@ -2928,6 +2945,7 @@ class SceneEditor {
 				}
 			}
 		}
+
 
 		menu.sort(function(l1,l2) return Reflect.compare(l1.label,l2.label));
 		menu.unshift(custom);
