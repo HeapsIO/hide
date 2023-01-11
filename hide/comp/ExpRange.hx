@@ -17,7 +17,7 @@ class ExpRange extends Range {
         super(parent, root);
         scale = 10;
 
-		setMinMax(0.001, 100_000.0);
+		setMinMax(0.001, 100000.0);
 
 		current = Std.parseFloat(f.attr("value"));
 		if(current != null && !Math.isNaN(current))
