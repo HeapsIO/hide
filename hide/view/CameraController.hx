@@ -7,21 +7,30 @@ class CameraControllerBase extends h3d.scene.CameraController {
 	var sceneEditor : hide.comp.SceneEditor;
 
 	public function new(parent, sceneEditor) {
-		super(null, parent);
 		this.sceneEditor = sceneEditor;
+		super(null, parent);
 	}
 
 	public var wantedFOV = 90.0;
 	public var camSpeed = 1.0;
 
+	public var zNear = 0.01;
+	public var zFar = 10000.0;
+
 	public function loadSettings(data : Dynamic) : Void {
-		wantedFOV = data.fov != null ? data.fov : 60.0;
+		wantedFOV = data.fov != null ? data.fov : wantedFOV;
 		sceneEditor.scene.s3d.camera.fovY = wantedFOV;
-		camSpeed = data.camSpeed != null ? data.camSpeed : 1.0;
+		camSpeed = data.camSpeed != null ? data.camSpeed : camSpeed;
+
+		zNear = data.zNear != null ? data.zNear : zNear;
+		zFar = data.zFar != null ? data.zFar : zFar;
 	}
 
 	public function saveSettings(data : Dynamic) : Void {
+		data.fov = wantedFOV;
 		data.camSpeed = camSpeed;
+		data.zNear = zNear;
+		data.zFar = zFar;
 	}
 }
 
@@ -143,10 +152,13 @@ class FPSController extends CameraControllerBase {
 		curOffset.w = wantedFOV;
 		targetOffset.w = wantedFOV;
 
-
 		var old = ctx.elapsedTime;
 		ctx.elapsedTime = hxd.Timer.dt;
+		lockZPlanes = true;
 		super.sync(ctx);
+		cam.fovY = wantedFOV;
+		cam.zNear = zNear;
+		cam.zFar = zFar;
 		ctx.elapsedTime = old;
 	}
 }
@@ -326,15 +338,29 @@ class FlightController extends CameraControllerBase {
 	var startPush : h2d.col.Point;
 
 	
-	var camPos : h3d.Vector = new h3d.Vector();
-	var camRot : h3d.Quat = new h3d.Quat();
+	var currentFlightPos : h3d.Vector = new h3d.Vector();
+	var currentFlightRot : h3d.Quat = new h3d.Quat();
+
+	var targetFlightPos : h3d.Vector = new h3d.Vector();
+	var targetFlightRot : h3d.Quat = new h3d.Quat();
+
 	var mat : h3d.Matrix = new h3d.Matrix();
 
 	public function new(parent, sceneEditor) {
 		super(parent, sceneEditor);
-		camRot.identity();
+		targetFlightRot.identity();
+		currentFlightRot.identity();
 	}
 	
+	override public function set(?distance:Float, ?theta:Float, ?phi:Float, ?target:h3d.col.Point, ?fovY:Float) {
+		if (distance == null && target != null) {
+			distance = target.toVector().sub(currentFlightPos).length();
+		}
+		super.set(distance, theta, phi, target, fovY);
+		curPos = targetPos;
+		super.syncCamera();
+		loadFromCamera(true);
+	}
 	
 	function moveKeys() {
 		var mov = new h3d.Vector();
@@ -361,17 +387,17 @@ class FlightController extends CameraControllerBase {
 		mov.scale(Ide.inst.currentConfig.get("sceneeditor.camera.moveSpeed", 1.5) * camSpeed);
 		tmpVec.load(mat.front());
 		tmpVec.scale(mov.x);
-		camPos = camPos.add(tmpVec);
+		targetFlightPos = targetFlightPos.add(tmpVec);
 
 		tmpVec.load(mat.right());
 		tmpVec.scale(mov.y);
-		camPos = camPos.add(tmpVec);
+		targetFlightPos = targetFlightPos.add(tmpVec);
 
 		tmpVec.load(mat.up());
 		tmpVec.scale(mov.z);
-		camPos = camPos.add(tmpVec);
+		targetFlightPos = targetFlightPos.add(tmpVec);
 
-		camPos.w = 1.0;
+		targetFlightPos.w = 1.0;
 
 		if (roll != 0) {
 			lookAround(0,0,roll * 0.05);
@@ -395,9 +421,16 @@ class FlightController extends CameraControllerBase {
 		mat._31 = up.x;
 		mat._32 = up.y;
 		mat._33 = up.z;
-		camRot.initRotateMatrix(mat);
-		camRot.normalize();
-		camPos.load(cam.pos);
+
+
+		targetFlightRot.initRotateMatrix(mat);
+		targetFlightRot.normalize();
+		targetFlightPos.load(cam.pos);
+
+		if (!animate) {
+			currentFlightPos.load(targetFlightPos);
+			currentFlightRot.load(targetFlightRot);
+		}
 		syncCamera();
 	}
 
@@ -486,7 +519,7 @@ class FlightController extends CameraControllerBase {
 		if (dtheta != 0) {
 			tmpVec.set(0.0,0.0,1.0);
 			tmpQuat.initRotateAxis(tmpVec.x, tmpVec.y, tmpVec.z, dtheta);
-			camRot.multiply(camRot, tmpQuat);
+			targetFlightRot.multiply(targetFlightRot, tmpQuat);
 		}
 
 
@@ -495,30 +528,34 @@ class FlightController extends CameraControllerBase {
 
 			//tmpVec.load(mat.right());
 			tmpQuat.initRotateAxis(tmpVec.x, tmpVec.y, tmpVec.z, dphi);
-			camRot.multiply(camRot, tmpQuat);
+			targetFlightRot.multiply(targetFlightRot, tmpQuat);
 		}
 
 		if (djesaispas != 0) {
 			tmpVec.set(1.0,0.0,0.0);
 			tmpQuat.initRotateAxis(tmpVec.x, tmpVec.y, tmpVec.z, djesaispas);
-			camRot.multiply(camRot, tmpQuat);
+			targetFlightRot.multiply(targetFlightRot, tmpQuat);
 		}
 
 
-		camRot.normalize();
+		targetFlightRot.normalize();
+		currentFlightRot.load(targetFlightRot);
 	}
 
-	
+
 	override function syncCamera() {
 		var cam = getScene().camera;
-		mat = camRot.toMatrix();
-		cam.target.load(camPos);
+		currentFlightPos.lerp(currentFlightPos, targetFlightPos, 0.1);
+		currentFlightRot.slerp(currentFlightRot, targetFlightRot, 0.1);
+
+		mat = currentFlightRot.toMatrix();
+		cam.target.load(currentFlightPos);
 		cam.target = cam.target.add(mat.front());
-		cam.pos.load(camPos);
+		cam.pos.load(currentFlightPos);
 		cam.up.load(mat.up());
 		cam.fovY = wantedFOV;
-		cam.zNear = 0.01;
-		cam.zFar = 10000.0;
+		cam.zNear = zNear;
+		cam.zFar = zFar;
 		cam.update();
 	}
 
@@ -526,7 +563,5 @@ class FlightController extends CameraControllerBase {
 		moveKeys();
 		//lookAround(0.01, 0.0);
 		syncCamera();
-		trace(camPos);
-		trace(camRot);
 	}
 }

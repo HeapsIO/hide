@@ -24,8 +24,14 @@ class CameraControllerEditor extends Popup {
     }
 
     function refresh() {
-        //form_div.find('[for="cam-speed"]').toggleClass("hide-grid", !controller.isFps);
-        //form_div.find('#cam-speed').parent().toggleClass("hide-grid", !controller.isFps);
+        var legacy = Type.getClass(editor.cameraController) == CamController;
+
+        form_div.find('[for="cam-speed"]').toggleClass("hide-grid", legacy);
+        form_div.find('#cam-speed').parent().toggleClass("hide-grid", legacy);
+        form_div.find('[for="zNear"]').toggleClass("hide-grid", legacy);
+        form_div.find('#zNear').parent().toggleClass("hide-grid", legacy);
+        form_div.find('[for="zFar"]').toggleClass("hide-grid", legacy);
+        form_div.find('#zFar').parent().toggleClass("hide-grid", legacy);
     }
 
     function create() {
@@ -72,11 +78,32 @@ class CameraControllerEditor extends Popup {
         {
             var dd = new Element("<label for='cam-speed'>").text("Fly Speed").appendTo(form_div);
             var range = new Range(form_div, new Element("<input id='cam-speed' type='range' min='1' max='8' step='1'>"));
-            var scale = 5.0;
-            range.value = Math.round(Math.log(editor.cameraController.camSpeed) / Math.log(scale)) + 3;
+            var scale = 4.0;
+            var pow_offset = 4;
+            range.value = Math.round(Math.log(editor.cameraController.camSpeed) / Math.log(scale)) + pow_offset;
             range.onChange = function(_) {
-                editor.cameraController.camSpeed = Math.pow(scale, range.value-3);
+                editor.cameraController.camSpeed = Math.pow(scale, range.value - pow_offset);
             };
+        }
+
+        {
+            var dd = new Element("<label for='zNear'>").text("zNear").appendTo(form_div);
+            var range = new ExpRange(form_div, new Element("<input id='zNear' type='range'>"));
+            range.value = editor.cameraController.zNear;
+            range.setMinMax(0.01,10_000);
+            range.onChange = function(_) {
+                editor.cameraController.zNear = range.value;
+            }
+        }
+
+        {
+            var dd = new Element("<label for='zFar'>").text("zFar").appendTo(form_div);
+            var range = new ExpRange(form_div, new Element("<input id='zFar' type='range'>"));
+            range.value = editor.cameraController.zFar;
+            range.setMinMax(0.01,10_000);
+            range.onChange = function(_) {
+                editor.cameraController.zFar = range.value;
+            }
         }
     }
 
