@@ -432,7 +432,11 @@ class SceneEditor {
 
 	function saveCam3D() {
 		var cam = scene.s3d.camera;
-		var toSave = @:privateAccess view.getDisplayState("Camera");
+		if (cam == null)
+			return;
+		var toSave : Dynamic = @:privateAccess view.getDisplayState("Camera");
+		if (toSave == null)
+			toSave = {};
 
 		toSave.x = cam.pos.x;
 		toSave.y = cam.pos.y;

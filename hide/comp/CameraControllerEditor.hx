@@ -90,7 +90,7 @@ class CameraControllerEditor extends Popup {
             var dd = new Element("<label for='zNear'>").text("zNear").appendTo(form_div);
             var range = new ExpRange(form_div, new Element("<input id='zNear' type='range'>"));
             range.value = editor.cameraController.zNear;
-            range.setMinMax(0.01,10_000);
+            range.setMinMax(0.01,10000);
             range.onChange = function(_) {
                 editor.cameraController.zNear = range.value;
             }
@@ -100,7 +100,7 @@ class CameraControllerEditor extends Popup {
             var dd = new Element("<label for='zFar'>").text("zFar").appendTo(form_div);
             var range = new ExpRange(form_div, new Element("<input id='zFar' type='range'>"));
             range.value = editor.cameraController.zFar;
-            range.setMinMax(0.01,10_000);
+            range.setMinMax(0.01,10000);
             range.onChange = function(_) {
                 editor.cameraController.zFar = range.value;
             }

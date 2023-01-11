@@ -14,8 +14,18 @@ class CameraControllerBase extends h3d.scene.CameraController {
 	public var wantedFOV = 90.0;
 	public var camSpeed = 1.0;
 
-	public var zNear = 0.01;
+	public var zNear = 0.1;
 	public var zFar = 10000.0;
+
+	override public function loadFromCamera( animate = false ) {
+		super.loadFromCamera(animate);
+		var scene = if( scene == null ) getScene() else scene;
+		var cam = scene.camera;
+
+		zNear = cam.zNear;
+		zFar = cam.zFar;
+		wantedFOV = cam.fovY;
+	}
 
 	public function loadSettings(data : Dynamic) : Void {
 		wantedFOV = data.fov != null ? data.fov : wantedFOV;
@@ -405,7 +415,6 @@ class FlightController extends CameraControllerBase {
 	}
 
 	override function loadFromCamera( animate = false ) {
-		//super.loadFromCamera(animate);
 		var cam = sceneEditor.scene.s3d.camera;
 		var fwd = cam.target.sub(cam.pos); fwd.normalize();
 		var up = new h3d.Vector(0,0,1);
@@ -426,6 +435,12 @@ class FlightController extends CameraControllerBase {
 		targetFlightRot.initRotateMatrix(mat);
 		targetFlightRot.normalize();
 		targetFlightPos.load(cam.pos);
+
+		if (cam.zNear != 0 || cam.zFar != 0) {
+			zNear = cam.zNear;
+			zFar = cam.zFar;
+		}
+		wantedFOV = cam.fovY;
 
 		if (!animate) {
 			currentFlightPos.load(targetFlightPos);
@@ -561,7 +576,7 @@ class FlightController extends CameraControllerBase {
 
 	override function sync(ctx : h3d.scene.RenderContext) {
 		moveKeys();
-		//lookAround(0.01, 0.0);
+		//lookAround(0.01, 0.0, 0.0);
 		syncCamera();
 	}
 }
