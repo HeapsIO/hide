@@ -411,6 +411,9 @@ class Layers2D extends hrt.prefab.Object3D {
 			var clean = hxd.Key.isDown( hxd.Key.SHIFT);
 			var worldPos = ectx.screenToGround(s2d.mouseX, s2d.mouseY);
 
+			var MAX_X = Math.floor(currentPixels.width * layerScale) - 1;
+			var MAX_Y = Math.floor(currentPixels.height * layerScale) - 1;
+
 			var collideScale = collidePixels.width / worldSize;
 
 			if ( worldPos != null ) {
@@ -420,10 +423,10 @@ class Layers2D extends hrt.prefab.Object3D {
 				var brRadius = ( clean ) ? eraseRadius : brushRadius;
 				var radiusSq = brRadius * brRadius;
 
-				var minX = Math.floor(startX - brRadius);
-				var maxX = Math.ceil(startX + brRadius);
-				var minY = Math.floor(startY - brRadius);
-				var maxY = Math.ceil(startY + brRadius);
+				var minX = hxd.Math.iclamp(Math.floor(startX - brRadius), 0, MAX_X);
+				var maxX = hxd.Math.iclamp(Math.ceil(startX + brRadius), 0, MAX_X);
+				var minY = hxd.Math.iclamp(Math.floor(startY - brRadius), 0, MAX_Y);
+				var maxY = hxd.Math.iclamp(Math.ceil(startY + brRadius), 0, MAX_Y);
 
 				if ( clean ) {
 					for ( iy in minY...maxY ) {
@@ -460,6 +463,11 @@ class Layers2D extends hrt.prefab.Object3D {
 					}
 
 					function process( ix : Int, iy : Int, d : Int ) {
+						if( ix < 0 || ix > MAX_X )
+							return;
+						if( iy < 0 || iy > MAX_Y )
+							return;
+
 						var dx = Math.abs(ix - startX);
 						var dy = Math.abs(iy - startY);
 
@@ -629,24 +637,24 @@ class Layers2D extends hrt.prefab.Object3D {
 		var props = new hide.Element('<div>
 					<div class="group" name="Layers">
 						<dl>
+							<dt>World Size</dt><dd><input type="text" value="$worldSize" style="width:110px" disabled /><button id="changeWorldSize" >Change</button></dd>
 							<dt>Layer Scale</dt><dd><input type="text" value="$layerScale" style="width:110px" disabled /><button id="changeLayerScale" >Change</button></dd>
 						</dl>
 						<dl>
-							<dt>Brush Radius</dt><dd><input type="range" min="1" max="100" field="brushRadius"/></dd>
-							<dt>Erase Radius</dt><dd><input type="range" min="1" max="100" field="eraseRadius"/></dd>
-							<dt>Layer Alpha</dt><dd><input type="range" min="0" max="1" field="layerAlpha"/></dd>
 							<dt>Collide</dt>
 							<dd>
 								<input type="checkbox" field="collideEnable"/>
 								<input type="texturepath" style="width:125px" field="collidePath"/>
 								<input type="color" field="collideMask"/>
 							</dd>
-							<dt>World Size</dt><dd><input type="range" min="1" max="4096" field="worldSize"/></dd>
 							<dt>Highlight Unpainted</dt>
 							<dd>
 								<input type="checkbox" field="highlightNotPaintedPixels"/>
 								<input type="color" field="highlightColor"/>
 							</dd>
+							<dt>Brush Radius</dt><dd><input type="range" min="1" max="100" field="brushRadius"/></dd>
+							<dt>Erase Radius</dt><dd><input type="range" min="1" max="100" field="eraseRadius"/></dd>
+							<dt>Layer Alpha</dt><dd><input type="range" min="0" max="1" field="layerAlpha"/></dd>
 						</dl>
 						<dl>
 							<dt>Paint override</dt><dd><input type="checkbox" field="paintOverride" /></dd>
@@ -664,16 +672,45 @@ class Layers2D extends hrt.prefab.Object3D {
 				</div>');
 
 		props.find("#changeLayerScale").click(function(_) {
-			var input = hide.Ide.inst.ask("Change layer scale will erase all layers data ! Are you sure ?");
-			if ( input == null || input.length == 0 )  return;
+			var input = hide.Ide.inst.ask("New layer scale: ");
+			if( input == null || input.length == 0 )  return;
 			var value = Std.parseInt(input);
-			if ( Std.string(value) != input ) return;
-			if ( value == layerScale) return;
+			if( Std.string(value) != input ) return;
+			if( value <= 0 ) return;
+			if( value == layerScale ) return;
+			var oldSize = Math.floor(worldSize / layerScale);
 			layerScale = value;
-			layerTextures = [];
-			currentLayer = null;
-			currentLayerValue = null;
-			setupRfx(ectx, false);
+			var newSize = Math.floor(worldSize / layerScale);
+			var difSize = oldSize / newSize;
+			for( key => layerTexture in layerTextures ) {
+				var newLayerTexture = hxd.Pixels.alloc(newSize, newSize, RGBA);
+				for( y in 0...newSize ) {
+					for( x in 0...newSize ) {
+						var ox = Math.floor(x * difSize); 
+						var oy = Math.floor(y * difSize);
+						var c = layerTexture.getPixel(ox, oy);
+						newLayerTexture.setPixel(x, y, c);
+					}
+				}
+				layerTextures.set(key, newLayerTexture);
+			}
+			ectx.rebuildProperties();
+		});
+		props.find("#changeWorldSize").click(function(_) {
+			var input = hide.Ide.inst.ask("New world size: ", "" + worldSize);
+			if( input == null || input.length == 0 )  return;
+			var value = Std.parseInt(input);
+			if( Std.string(value) != input ) return;
+			if( value == worldSize ) return;
+			var oldSize = Math.floor(worldSize / layerScale);
+			worldSize = value;
+			var newSize = Math.floor(worldSize / layerScale);
+			var copySize = hxd.Math.imin(oldSize, newSize);
+			for( key => layerTexture in layerTextures ) {
+				var newLayerTexture = hxd.Pixels.alloc(newSize, newSize, RGBA);
+				newLayerTexture.blit(0, 0, layerTexture, 0, 0, copySize, copySize);
+				layerTextures.set(key, newLayerTexture);
+			}
 			ectx.rebuildProperties();
 		});
 		var list = props.find("ul#layers");
