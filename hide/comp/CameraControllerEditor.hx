@@ -6,6 +6,7 @@ class CameraControllerEditor extends Popup {
     var form_div : Element = null;
     var editor : SceneEditor = null;
 
+
     static public var controllersClasses : Array<{name: String, cl : Class<CameraControllerBase>}> = [
         {name: "Legacy", cl: CamController},
         {name: "FPS", cl: FPSController},
@@ -70,6 +71,7 @@ class CameraControllerEditor extends Popup {
                 var newClass = controllersClasses[id];
                 if (Type.getClass(editor.cameraController) != newClass.cl) {
                     editor.switchCamController(newClass.cl);
+                    refresh();
                 }
                 refresh();
             });

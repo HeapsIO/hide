@@ -17,14 +17,16 @@ class CameraControllerBase extends h3d.scene.CameraController {
 	public var zNear = 0.1;
 	public var zFar = 10000.0;
 
-	override public function loadFromCamera( animate = false ) {
-		super.loadFromCamera(animate);
+	public function loadFOVFromCamera() {
 		var scene = if( scene == null ) getScene() else scene;
 		var cam = scene.camera;
-
 		zNear = cam.zNear;
 		zFar = cam.zFar;
 		wantedFOV = cam.fovY;
+	}
+
+	override public function loadFromCamera( animate = false) {
+		super.loadFromCamera(animate);
 	}
 
 	public function loadSettings(data : Dynamic) : Void {
@@ -362,7 +364,8 @@ class FlightController extends CameraControllerBase {
 		targetFlightRot.identity();
 		currentFlightRot.identity();
 	}
-	
+
+
 	override public function set(?distance:Float, ?theta:Float, ?phi:Float, ?target:h3d.col.Point, ?fovY:Float) {
 		if (distance == null && target != null) {
 			distance = target.toVector().sub(currentFlightPos).length();
@@ -372,7 +375,7 @@ class FlightController extends CameraControllerBase {
 		super.syncCamera();
 		loadFromCamera(true);
 	}
-	
+
 	function moveKeys() {
 		var mov = new h3d.Vector();
 		var roll = 0.0;
@@ -418,7 +421,7 @@ class FlightController extends CameraControllerBase {
 	override function loadFromCamera( animate = false ) {
 		var cam = sceneEditor.scene.s3d.camera;
 		var fwd = cam.target.sub(cam.pos); fwd.normalize();
-		var up = new h3d.Vector(0,0,1);
+		var up = cam.up.normalized();
 		var left = fwd.cross(up); left.normalize();
 		up = left.cross(fwd); up.normalize();
 		mat.identity();
@@ -436,12 +439,6 @@ class FlightController extends CameraControllerBase {
 		targetFlightRot.initRotateMatrix(mat);
 		targetFlightRot.normalize();
 		targetFlightPos.load(cam.pos);
-
-		if (cam.zNear != 0 || cam.zFar != 0) {
-			zNear = cam.zNear;
-			zFar = cam.zFar;
-		}
-		wantedFOV = cam.fovY;
 
 		if (!animate) {
 			currentFlightPos.load(targetFlightPos);

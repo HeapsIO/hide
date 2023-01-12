@@ -417,6 +417,13 @@ class SceneEditor {
 		if( cam != null ) {
 			scene.s3d.camera.pos.set(cam.x, cam.y, cam.z);
 			scene.s3d.camera.target.set(cam.tx, cam.ty, cam.tz);
+
+			if (cam.ux == null) {
+				scene.s3d.camera.up.set(0,0,1);
+			}
+			else {
+				scene.s3d.camera.up.set(cam.ux,cam.uy,cam.uz);
+			}
 			cameraController.loadSettings(cam);
 			/*var cc = Std.downcast(cameraController, hide.view.CameraController.CamController);
 			if (cc!=null) {
@@ -444,6 +451,9 @@ class SceneEditor {
 		toSave.tx = cam.target.x;
 		toSave.ty = cam.target.y;
 		toSave.tz = cam.target.z;
+		toSave.ux = cam.up.x;
+		toSave.uy = cam.up.y;
+		toSave.uz = cam.up.z;
 
 		for (i in 0...CameraControllerEditor.controllersClasses.length) {
 			if (CameraControllerEditor.controllersClasses[i].cl == Type.getClass(cameraController)) {
