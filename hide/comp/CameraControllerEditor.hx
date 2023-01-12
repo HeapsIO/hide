@@ -9,6 +9,7 @@ class CameraControllerEditor extends Popup {
 
     static public var controllersClasses : Array<{name: String, cl : Class<CameraControllerBase>}> = [
         {name: "Legacy", cl: CamController},
+        {name: "Orthographic", cl: OrthoController},
         {name: "FPS", cl: FPSController},
         {name: "Fly/6DOF", cl: FlightController},
     ];
@@ -25,14 +26,23 @@ class CameraControllerEditor extends Popup {
     }
 
     function refresh() {
-        var legacy = Type.getClass(editor.cameraController) == CamController;
+        var ortho =
+            Type.getClass(editor.cameraController) == OrthoController;
 
-        form_div.find('[for="cam-speed"]').toggleClass("hide-grid", legacy);
-        form_div.find('#cam-speed').parent().toggleClass("hide-grid", legacy);
-        form_div.find('[for="zNear"]').toggleClass("hide-grid", legacy);
-        form_div.find('#zNear').parent().toggleClass("hide-grid", legacy);
-        form_div.find('[for="zFar"]').toggleClass("hide-grid", legacy);
-        form_div.find('#zFar').parent().toggleClass("hide-grid", legacy);
+        var fly = 
+            Type.getClass(editor.cameraController) == FPSController ||
+            Type.getClass(editor.cameraController) == FlightController;
+
+
+        form_div.find('[for="cam-speed"]').toggleClass("hide-grid", !fly);
+        form_div.find('#cam-speed').parent().toggleClass("hide-grid", !fly);
+        form_div.find('[for="zNear"]').toggleClass("hide-grid", !fly);
+        form_div.find('#zNear').parent().toggleClass("hide-grid", !fly);
+        form_div.find('[for="zFar"]').toggleClass("hide-grid", !fly);
+        form_div.find('#zFar').parent().toggleClass("hide-grid", !fly);
+
+        form_div.find('[for="zBoundsScale"]').toggleClass("hide-grid", !ortho);
+        form_div.find('#zBoundsScale').parent().toggleClass("hide-grid", !ortho);
     }
 
     function create() {
@@ -106,6 +116,17 @@ class CameraControllerEditor extends Popup {
             range.onChange = function(_) {
                 editor.cameraController.zFar = range.value;
             }
+        }
+
+        {
+            var dd = new Element("<label for='zBoundsScale'>").text("zBounds").appendTo(form_div);
+            var range = new Range(form_div, new Element("<input id='zBoundsScale' type='range' min='0.01' max='10'>"));
+            var ortho = Std.downcast(editor.cameraController, OrthoController);
+            if (ortho != null) range.value = ortho.orthoZBounds;
+            range.onChange = function(_) {
+                var ortho = Std.downcast(editor.cameraController, OrthoController);
+                if (ortho != null) ortho.orthoZBounds = range.value;
+            };
         }
     }
 
