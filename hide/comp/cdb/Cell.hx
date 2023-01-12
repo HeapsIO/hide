@@ -492,7 +492,14 @@ class Cell {
 			return str.split('<span class="').join('<span class="_');
 		}
 		code = ~/(\/\*([^\*]+)\*\/)/g.map(code,function(r) return '<span class="comment">'+unspan(r.matched(1))+'</span>');
-		code = code.split("<br/>").map(function(line) return ~/(\/\/.*)/.map(line,(r) -> '<span class="comment">'+unspan(r.matched(1))+'</span>')).join("<br/>");
+		var conf = this.editor.config.get("cdb.script");
+		var maxLines = conf != null && conf.maxLines != null ? conf.maxLines : 99;
+		var lines = code.split("<br/>");
+		if(lines.length > maxLines) {
+			lines = lines.slice(0, maxLines);
+			lines.push("...");
+		}
+		code = lines.map(function(line) return ~/(\/\/.*)/.map(line,(r) -> '<span class="comment">'+unspan(r.matched(1))+'</span>')).join("<br/>");
 		return code;
 	}
 

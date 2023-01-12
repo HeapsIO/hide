@@ -244,8 +244,6 @@
   white-space: nowrap;
   font-family: Consolas, Courier;
   font-size: 80%;
-  max-height: 200px;
-  overflow: hidden;
 }
 .cdb .cdb-sheet td.t_script input,
 .cdb .cdb-sheet td.t_script textarea {
