@@ -189,6 +189,7 @@ class CamController extends CameraControllerBase {
 	}
 
 	override public function saveSettings(data : Dynamic) : Void {
+		super.saveSettings(data);
 		data.distance = distance;
 	}
 
