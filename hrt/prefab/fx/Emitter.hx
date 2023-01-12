@@ -40,6 +40,7 @@ enum Orientation {
 
 enum EmitType {
 	Infinity;
+	InfinityRandom;
 	Duration;
 	Burst;
 	BurstDuration;
@@ -64,6 +65,7 @@ class InstanceDef {
 	var localOffset: Value;
 	var scale: Value;
 	var stretch: Value;
+	var stretchVelocity: Value;
 	var rotation: Value;
 	var dampen: Value;
 	var maxVelocity : Value;
@@ -350,6 +352,25 @@ private class ParticleInstance {
 			tmpSpeed.z *= emitter.worldScale.z;
 		}
 
+		// STRETCH VELOCITY
+		if (def.stretchVelocity != VZero) {
+			var s = evaluator.getFloat(idx, def.stretchVelocity, t);
+			var up = tmpCamVec2;
+			up.set(absPos._11, absPos._12, absPos._13);
+			var sx = hxd.Math.abs(tmpSpeed.dot(up));
+			sx = hxd.Math.min(sx, 0.25);
+
+			absPos._11 *= s * sx;
+			absPos._12 *= s * sx;
+			absPos._13 *= s * sx;
+			absPos._21 *= s * 1.0/sx;
+			absPos._22 *= s * 1.0/sx;
+			absPos._23 *= s * 1.0/sx;
+			absPos._31 *= s * 1.0/sx;
+			absPos._32 *= s * 1.0/sx;
+			absPos._33 *= s * 1.0/sx;
+		}
+
 		x += tmpSpeed.x * dt;
 		y += tmpSpeed.y * dt;
 		z += tmpSpeed.z * dt;
@@ -432,6 +453,12 @@ class EmitterObject extends h3d.scene.Object {
 	public var burstDelay : Float = 1.0;
 	public var emitDuration : Float = 1.0;
 	public var emitRate : Value;
+	public var emitRateMin : Value;
+	public var emitRateMax : Value;
+	public var emitRateChangeDelay : Float = 1.0;
+	public var emitRateCurrent : Null<Float>;
+	public var emitRateChange : Float = 0.0;
+	public var emitRateLastChangeTime : Float = 0.0;
 	public var maxCount = 20;
 	public var enableSort = true;
 	// EMIT SHAPE
@@ -931,6 +958,29 @@ class EmitterObject extends h3d.scene.Object {
 					doEmit(delta);
 					if( isSubEmitter && (parentEmitter == null || parentEmitter.parent == null) )
 						enable = false;
+				case InfinityRandom:
+					var min = evaluator.getFloat(emitRateMin, curTime);
+					var max = evaluator.getFloat(emitRateMax, curTime);
+
+					if (emitRateCurrent == null) {
+						emitRateCurrent = random.rand() * (max-min) + min;
+						emitRateLastChangeTime = emitRateChangeDelay;
+					}
+
+					if (emitRateLastChangeTime >= emitRateChangeDelay) {
+						emitRateLastChangeTime = emitRateLastChangeTime % emitRateChangeDelay;
+						var target = random.rand() * (max-min) + min;
+						emitRateChange = (target-emitRateCurrent) / (emitRateChangeDelay - emitRateLastChangeTime);
+					}
+
+					emitRateCurrent += emitRateChange * dt;
+					emitRateLastChangeTime += dt;
+
+					emitTarget += emitRateCurrent * dt;
+					var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, emitTarget - emitCount));
+					doEmit(delta);
+					if( isSubEmitter && (parentEmitter == null || parentEmitter.parent == null) )
+						enable = false;
 				case Duration:
 					emitTarget += evaluator.getFloat(emitRate, hxd.Math.min(curTime, emitDuration)) * dt;
 					var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, emitTarget - emitCount));
@@ -1242,6 +1292,9 @@ class Emitter extends Object3D {
 		{ name: "emitType", t: PEnum(EmitType), def: EmitType.Infinity, disp: "Type", groupName : "Emit Params"  },
 		{ name: "emitDuration", t: PFloat(0, 10.0), disp: "Duration", def : 1.0, groupName : "Emit Params" },
 		{ name: "emitRate", t: PInt(0, 100), def: 5, disp: "Rate", animate: true, groupName : "Emit Params" },
+		{ name: "emitRateMin", t: PInt(0, 100), def: 5, disp: "Rate Min", animate: true, groupName : "Emit Params" },
+		{ name: "emitRateMax", t: PInt(0, 100), def: 5, disp: "Rate Max", animate: true, groupName : "Emit Params" },
+		{ name: "emitRateChangeDelay", t: PFloat(0.01, 5.0), def: 1.0, disp: "Rate Change Time", groupName : "Emit Params" },
 		{ name: "burstCount", t: PInt(1, 10), disp: "Count", def : 1, groupName : "Emit Params" },
 		{ name: "burstDelay", t: PFloat(0, 1.0), disp: "Delay", def : 1.0, groupName : "Emit Params" },
 		{ name: "burstParticleCount", t: PInt(1, 10), disp: "Particle Count", def : 1, groupName : "Emit Params" },
@@ -1284,6 +1337,7 @@ class Emitter extends Object3D {
 		{ name: "instDampen",      			t: PFloat(0, 10.0),    def: 0.,         disp: "Dampen", groupName: "Limit Velocity"},
 		{ name: "instScale",      			t: PFloat(0, 2.0),    def: 1.,         disp: "Scale", groupName: "Particle Transform"},
 		{ name: "instStretch",    			t: PVec(3, 0.0, 2.0), def: [1.,1.,1.], disp: "Stretch", groupName: "Particle Transform"},
+		{ name: "instStretchVelocity",    	t: PFloat(0.0, 2.0), def: 0.0, disp: "Stretch Vel.", groupName: "Particle Transform"},
 		{ name: "instRotation",   			t: PVec(3, 0, 360),   def: [0.,0.,0.], disp: "Rotation", groupName: "Particle Transform"},
 		{ name: "instOffset",     			t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Offset", groupName: "Particle Transform"},
 	];
@@ -1513,6 +1567,7 @@ class Emitter extends Object3D {
 		d.dampen = makeParam(this, "instDampen");
 		d.maxVelocity = makeParam(this, "instMaxVelocity");
 		d.stretch = makeParam(this, "instStretch");
+		d.stretchVelocity = makeParam(this, "instStretchVelocity");
 		d.rotation = makeParam(this, "instRotation");
 		emitterObj.instDef = d;
 		emitterObj.particleTemplate = template;
@@ -1543,6 +1598,9 @@ class Emitter extends Object3D {
 		emitterObj.maxCount 			= 	getParamVal("maxCount");
 		emitterObj.enableSort 			= 	getParamVal("enableSort");
 		emitterObj.emitRate 			= 	makeParam(this, "emitRate");
+		emitterObj.emitRateMin 			= 	makeParam(this, "emitRateMin");
+		emitterObj.emitRateMax 			= 	makeParam(this, "emitRateMax");
+		emitterObj.emitRateChangeDelay 	= 	getParamVal("emitRateChangeDelay");
 		emitterObj.emitShape 			= 	getParamVal("emitShape");
 		// EMIT SHAPE
 		emitterObj.emitAngle 			= 	getParamVal("emitAngle");
@@ -1669,16 +1727,34 @@ class Emitter extends Object3D {
 				removeParam("burstDelay");
 				removeParam("burstParticleCount");
 				removeParam("emitDuration");
+				removeParam("emitRateMin");
+				removeParam("emitRateMax");
+				removeParam("emitRateChangeDelay");
+			case InfinityRandom:
+				removeParam("emitRate");
+				removeParam("burstCount");
+				removeParam("burstDelay");
+				removeParam("burstParticleCount");
+				removeParam("emitDuration");
 			case BurstDuration:
 				removeParam("emitRate");
 				removeParam("burstCount");
+				removeParam("emitRateMin");
+				removeParam("emitRateMax");
+				removeParam("emitRateChangeDelay");
 			case Burst:
 				removeParam("emitDuration");
 				removeParam("emitRate");
+				removeParam("emitRateMin");
+				removeParam("emitRateMax");
+				removeParam("emitRateChangeDelay");
 			case Duration:
 				removeParam("burstCount");
 				removeParam("burstDelay");
 				removeParam("burstParticleCount");
+				removeParam("emitRateMin");
+				removeParam("emitRateMax");
+				removeParam("emitRateChangeDelay");
 		}
 
 		// Emitter

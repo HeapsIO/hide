@@ -1831,10 +1831,16 @@ class FXEditor extends FileView {
 		for(fx in allFx)
 			fx.setTime(currentTime - fx.startDelay);
 	
+		var emitRateCurrent = 0.0;
+
 		var emitters = ctx.local3d.findAll(o -> Std.downcast(o, hrt.prefab.fx.Emitter.EmitterObject));
 		var totalParts = 0;
-		for(e in emitters)
+		for(e in emitters) {
 			totalParts += @:privateAccess e.numInstances;
+			if (e.emitRateCurrent != null) {
+				emitRateCurrent = e.emitRateCurrent;
+			}
+		}
 
 		var emitterTime = 0.0;
 		for (e in emitters) {
@@ -1894,6 +1900,10 @@ class FXEditor extends FileView {
 				'Particles: $totalParts',
 				'Particles CPU time: ${floatToStringPrecision(avg_smooth * 1000, 3, true)} ms',
 			];
+
+			if (emitRateCurrent > 0.0) {
+				lines.push('Random emit rate : ${floatToStringPrecision(emitRateCurrent, 3, true)}');
+			}
 
 			if (trailCount > 0) {
 
