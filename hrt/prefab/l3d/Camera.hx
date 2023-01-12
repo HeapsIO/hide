@@ -323,8 +323,8 @@ class Camera extends Object3D {
 		props.find(".apply").click(function(e) {
 			applyTo(ctx.scene.s3d.camera);
 			ctx.scene.editor.cameraController.lockZPlanes = true;
-			ctx.scene.editor.cameraController.loadFromCamera(true);
 			ctx.scene.editor.cameraController.loadFOVFromCamera();
+			ctx.scene.editor.cameraController.loadFromCamera(true);
 		});
 
 		props.find(".reset").click(function(e) {
