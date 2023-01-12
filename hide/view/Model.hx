@@ -245,6 +245,7 @@ class Model extends FileView {
 						${[for( i in 0...materials.length ) '<option value="${materials[i].path + "/" + materials[i].mat.name}" ${(selected == materials[i].path + "/" + materials[i].mat.name) ? 'selected' : ''}>${materials[i].mat.name}</option>'].join("")}
 					</select>
 				</dd>
+				<dt></dt><dd><input type="button" value="Go to library" class="goTo"/></dd>
 				<dt></dt><dd><input type="button" value="Save" class="save"/></dd>
 			</div>
 			<br/>
@@ -273,6 +274,12 @@ class Model extends FileView {
 				matEl.show();
 				def = true;
 				selectMaterial(m);
+			}
+		});
+		matLibrary.find(".goTo").click(function(_) {
+			var mat = findMat(matLibrary.find(".matLib").val());
+			if ( mat != null ) {
+				ide.openFile(mat.path);
 			}
 		});
 		matLibrary.find(".save").click(function(_) {
