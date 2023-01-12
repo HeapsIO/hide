@@ -123,7 +123,7 @@ class Range extends Component {
 		onChange(false);
 	}
 
-	function set_value(v) {
+	function set_value(v:Float) : Float{
 		if( original == null ) original = v;
 		setInner(v,true);
 		current = v;

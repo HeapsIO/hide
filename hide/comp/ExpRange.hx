@@ -80,7 +80,7 @@ class ExpRange extends Range {
 		f.val(current);
     }
 
-    override function set_value(v) {
+    override function set_value(v:Float) : Float {
 		current = Math.log(v) / Math.log(scale);
 		setInner(current,true);
         refresh();
