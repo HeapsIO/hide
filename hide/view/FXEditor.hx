@@ -1185,6 +1185,21 @@ class FXEditor extends FileView {
 			var curveEdit = new hide.comp.CurveEditor(this.undo, curveContainer);
 			curveEdit.saveDisplayKey = dispKey;
 			curveEdit.lockViewX = true;
+
+			curveEdit.requestXZoom = function(xMin, xMax) {
+				var margin = 10.0;
+				var scroll = element.find(".timeline-scroll");
+				var width = scroll.parent().width();
+				xScale = (width - margin * 2.0) / (xMax);
+				xOffset = 0.0;
+
+				curveEdit.xOffset = xOffset;
+				curveEdit.xScale = xScale;
+
+				refreshDopesheet();
+				refreshTimeline(false);
+			}
+
 			if(curves.length > 1)
 				curveEdit.lockKeyX = true;
 			if(["visibility", "s", "l", "a"].indexOf(curve.name.split(".").pop()) >= 0) {

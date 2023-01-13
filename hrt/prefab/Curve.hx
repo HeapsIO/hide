@@ -133,10 +133,15 @@ class Curve extends Prefab {
 	}
 
 	public function getBounds() {
-		// TODO: Take bezier handles into account
 		var ret = new h2d.col.Bounds();
 		for(k in keys) {
 			ret.addPos(k.time, k.value);
+			if (k.nextHandle != null) {
+				ret.addPos(k.time + k.nextHandle.dt, k.value + k.nextHandle.dv);
+			}
+			if (k.prevHandle != null) {
+				ret.addPos(k.time + k.prevHandle.dt, k.value + k.prevHandle.dv);
+			}
 		}
 		return ret;
 	}
