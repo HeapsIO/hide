@@ -281,6 +281,8 @@ class FXEditor extends FileView {
 	var fxScriptParser : hrt.prefab.fx.FXScriptParser;
 	var cullingPreview : h3d.scene.Sphere;
 
+	var viewModes : Array<String>;
+
 	override function getDefaultContent() {
 		return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab.fx.FX().saveData()));
 	}
@@ -684,6 +686,55 @@ class FXEditor extends FileView {
 		tools.addRange("Speed", function(v) {
 			scene.speed = v;
 		}, scene.speed);
+
+		var viewModesMenu = tools.addMenu(null, "View Modes");
+		var items : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
+		viewModes = ["LIT", "Full", "Albedo", "Normal", "Roughness", "Metalness", "Emissive", "AO", "Shadows", "Performance"];
+		for(typeid in viewModes) {
+			items.push({label : typeid, click : function() {
+				var r = Std.downcast(scene.s3d.renderer, h3d.scene.pbr.Renderer);
+				if ( r == null )
+					return;
+				var slides = @:privateAccess r.slides;
+				if ( slides == null )
+					return;
+				switch(typeid) {
+				case "LIT":
+					r.displayMode = Pbr;
+				case "Full":
+					r.displayMode = Debug;
+					slides.shader.mode = Full;
+				case "Albedo":
+					r.displayMode = Debug;
+					slides.shader.mode = Albedo;
+				case "Normal":
+					r.displayMode = Debug;
+					slides.shader.mode = Normal;
+				case "Roughness":
+					r.displayMode = Debug;
+					slides.shader.mode = Roughness;
+				case "Metalness":
+					r.displayMode = Debug;
+					slides.shader.mode = Metalness;
+				case "Emissive":
+					r.displayMode = Debug;
+					slides.shader.mode = Emmissive;
+				case "AO":
+					r.displayMode = Debug;
+					slides.shader.mode = AO;
+				case "Shadows":
+						r.displayMode = Debug;
+						slides.shader.mode = Shadow;
+				case "Performance":
+					r.displayMode = Performance;
+				default:
+				}
+			}
+			});
+		}
+		viewModesMenu.setContent(items);//, {id: "viewModes", title : "View Modes", type : Menu(filtersToMenuItem(viewModes, "View"))});
+		var el = viewModesMenu.element;
+		el.addClass("View Modes");
 
 		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		statusText.setPosition(5, 5);
