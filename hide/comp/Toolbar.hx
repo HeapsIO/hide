@@ -7,6 +7,7 @@ enum ToolType {
 	Color(onChange: Int -> Void);
 	Menu(items: Array<hide.comp.ContextMenu.ContextMenuItem>);
 	Popup(click: hide.Element -> hide.comp.Popup);
+	Separator;
 }
 
 typedef ToolDef = {
@@ -40,44 +41,60 @@ typedef ToolMenu<T> = {
 
 class Toolbar extends Component {
 
+	var curGroup : Element = null;
+
 	public function new(?parent,?el) {
 		super(parent,el);
-		element.addClass("hide-toolbar");
+		element.addClass("hide-toolbar2");
+		newGroup();
+	}
+
+	public function clear() {
+		element.empty();
+		newGroup();
+	}
+
+	function newGroup() {
+		curGroup = new Element("<div>").addClass("tb-group").appendTo(element);
+	}
+
+	public function addSeparator() {
+		newGroup();
 	}
 
 	public function addButton( icon : String, ?label : String, ?onClick : Void -> Void, ?rightClick : Void -> Void ) {
-		var e = new Element('<div class="button" title="${label==null ? "" : label}"><div class="icon ico ico-$icon"/></div>');
+		var e = new Element('<div class="button2" title="${label==null ? "" : label}"><div class="icon ico ico-$icon"/></div>');
 		if( onClick != null ) e.click(function(_) onClick());
-		e.appendTo(element);
+		e.appendTo(curGroup);
 		if ( rightClick != null )
 			e.contextmenu(function(e) { rightClick(); e.preventDefault(); });
 		return e;
 	}
 
 	public function addToggle( icon : String, ?title : String, ?label : String, ?onToggle : Bool -> Void, ?defValue = false ) : ToolToggle {
-		var e = new Element('<div class="toggle" title="${title==null ? "" : title}"><div class="icon ico ico-$icon"/></div>');
+		var e = new Element('<div class="button2" title="${title==null ? "" : title}"><div class="icon ico ico-$icon"/></div>');
 		if(label != null) {
 			new Element('<label>$label</label>').appendTo(e);
 		}
 		function tog() {
-			e.toggleClass("toggled");
-			this.saveDisplayState("toggle:" + icon, e.hasClass("toggled"));
-			if( onToggle != null ) onToggle(e.hasClass("toggled"));
+			e.get(0).toggleAttribute("checked");
+			this.saveDisplayState("toggle:" + icon, e.get(0).hasAttribute("checked"));
+			if( onToggle != null ) onToggle(e.get(0).hasAttribute("checked"));
 		}
 		e.click(function(e) if( e.button == 0 ) tog());
-		e.appendTo(element);
+		e.appendTo(curGroup);
 		var def = getDisplayState("toggle:" + icon);
 		if( def == null ) def = defValue;
 		if( def )
 			tog(); // false -> true
 		else if( defValue ) {
-			e.toggleClass("toggled");
+			e.get(0).toggleAttribute("checked");
 			tog(); // true -> false
 		}
 		return {
 			element : e,
 			toggle : function(b) tog(),
-			isDown: function() return e.hasClass("toggled"),
+			isDown: function() return e.get(0).hasAttribute("checked"),
 			rightClick : function(f) {
 				e.contextmenu(function(e) { f(); e.preventDefault(); });
 			}
@@ -85,8 +102,8 @@ class Toolbar extends Component {
 	}
 
 	public function addColor( label : String, onChange : Int -> Void, ?alpha : Bool, ?defValue = 0 ) {
-		var button = new Element("<div class='button hide-button'>");
-		element.append(button);
+		var button = new Element("<div class='button2'>");
+		curGroup.append(button);
 		var color = new hide.comp.ColorPicker.ColorBox(button, null, true);
 		color.element.height("100%");
 		color.element.width("100%");
@@ -116,12 +133,12 @@ class Toolbar extends Component {
 			onSelect : function(_) {},
 		};
 		select.change(function(_) tool.onSelect(content[Std.parseInt(select.val())].value));
-		e.appendTo(element);
+		e.appendTo(curGroup);
 		return tool;
 	}
 
 	public function addMenu<T>( icon : String, label : String ) : ToolMenu<T> {
-		var e = new Element('<div class="menu"><div class="icon ico ico-$icon"/>${label==null ? "" : label}</div>');
+		var e = new Element('<div class="menu"><div class="icon ico ico-$icon"></div><span class="label">${label==null ? "" : label}</span></div>');
 		var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
 		var tool : ToolMenu<T> = {
 			element : e,
@@ -133,16 +150,68 @@ class Toolbar extends Component {
 		e.click(function(ev) if( ev.button == 0 ){
 			new hide.comp.ContextMenu(menuItems);
 		});
-		e.appendTo(element);
+		e.appendTo(curGroup);
 		return tool;
 	}
 
 	public function addRange( label : String, onChange : Float -> Void, ?defValue = 0., min = 0., max = 1., ?step:Float ) {
 		var elt = new Element('<input title="$label" type="range" min="$min" max="$max" value="$defValue">');
 		if( step != null ) elt.attr("step",""+step);
-		var r = new hide.comp.Range(element,elt);
+		var r = new hide.comp.Range(curGroup,elt);
 		r.onChange = function(_) onChange(r.value);
 		return r;
+	}
+
+	public function makeToolbar(toolsDefs : Array<hide.comp.Toolbar.ToolDef>, ?config : Config, ?keys : hide.ui.Keys) {
+		for (tool in toolsDefs) {
+			var key = null;
+			if (config != null) {
+				key = config.get("key.sceneeditor." + tool.id);
+			}
+			var shortcut = key != null ? " (" + key + ")" : "";
+			var el : Element = null;
+			switch(tool.type) {
+				case Separator:
+					addSeparator();
+				case Button(f):
+					el = addButton(tool.icon, tool.title + shortcut, f, tool.rightClick);
+				case Toggle(f):
+					var toggle = addToggle(tool.icon, tool.title + shortcut, null, f, tool.defaultValue);
+					el = toggle.element;
+					if( key != null && keys != null)
+						keys.register("sceneeditor." + tool.id, () -> toggle.toggle(!toggle.isDown()));
+					if (tool.rightClick != null)
+						toggle.rightClick(tool.rightClick);
+				case Color(f):
+					el = addColor(tool.title, f).element;
+				case Range(f):
+					el = addRange(tool.title, f, 1.).element;
+				case Menu(items):
+					var menu = addMenu(tool.icon, tool.title);
+					menu.setContent(items);
+					el = menu.element;
+				case Popup(f):
+					el = addButton(tool.icon, tool.title + shortcut, null, tool.rightClick);
+					var p: hide.comp.Popup = null;
+					el.click(function(e) {
+						if (p == null) {
+							p = f(el);
+							p.onClose = function() {
+								p = null;
+							}
+						}
+						else {
+							p.close();
+						}
+					});
+			}
+
+			if (el != null) {
+				el.get(0).setAttribute("id", tool.id);
+				if(tool.iconStyle != null)
+					el.find(".icon").css(tool.iconStyle);
+			}
+		}
 	}
 
 }

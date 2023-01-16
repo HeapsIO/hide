@@ -389,9 +389,10 @@ class SceneEditor {
 		return ret;
 	}
 
-	public function switchCamController(camClass : Class<CameraControllerBase>) {
+	public function switchCamController(camClass : Class<CameraControllerBase>, force: Bool = false) {
 		if (cameraController != null) {
-			saveCam3D();
+			if (!force)
+				saveCam3D();
 			cameraController.remove();
 		}
 
@@ -399,7 +400,19 @@ class SceneEditor {
 		loadCam3D();
 	}
 
-	function loadCam3D() {
+	public function loadSavedCameraController3D(force: Bool = false) {
+		var wantedClass : Class<CameraControllerBase> = CamController;
+		var cam = @:privateAccess view.getDisplayState("Camera");
+		if (cam != null && cam.camTypeIndex != null) {
+			if (cam.camTypeIndex >=0 && cam.camTypeIndex < CameraControllerEditor.controllersClasses.length) {
+				wantedClass = CameraControllerEditor.controllersClasses[cam.camTypeIndex].cl;
+			}
+		}
+
+		switchCamController(wantedClass, force);
+	}
+
+	public function loadCam3D() {
 		cameraController.onClick = function(e) {
 			switch( e.button ) {
 			case K.MOUSE_RIGHT:
@@ -425,19 +438,11 @@ class SceneEditor {
 				scene.s3d.camera.up.set(cam.ux,cam.uy,cam.uz);
 			}
 			cameraController.loadSettings(cam);
-			/*var cc = Std.downcast(cameraController, hide.view.CameraController.CamController);
-			if (cc!=null) {
-				cc.isFps = cam.isFps;
-				cc.isOrtho = cam.isOrtho;
-				cc.camSpeed =  cam.camSpeed != null ? cam.camSpeed : 3;
-				cc.wantedFOV = cam.fov != null ? cam.fov : 60.0;
-				scene.s3d.camera.fovY = cc.wantedFOV;
-			}*/
 		}
 		cameraController.loadFromCamera();
 	}
 
-	function saveCam3D() {
+	public function saveCam3D() {
 		var cam = scene.s3d.camera;
 		if (cam == null)
 			return;
@@ -531,15 +536,7 @@ class SceneEditor {
 
 		basis.visible = true;
 
-		var wantedClass : Class<CameraControllerBase> = CamController;
-		var cam = @:privateAccess view.getDisplayState("Camera");
-		if (cam != null && cam.camTypeIndex != null) {
-			if (cam.camTypeIndex >=0 && cam.camTypeIndex < CameraControllerEditor.controllersClasses.length) {
-				wantedClass = CameraControllerEditor.controllersClasses[cam.camTypeIndex].cl;
-			}
-		}
-
-		switchCamController(wantedClass);
+		loadSavedCameraController3D();
 
 		scene.s2d.defaultSmooth = true;
 		context.shared.root2d.x = scene.s2d.width >> 1;

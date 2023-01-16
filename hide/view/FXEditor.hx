@@ -593,8 +593,68 @@ class FXEditor extends FileView {
 		cullingPreview = new h3d.scene.Sphere(0xffffff, data.cullingRadius, true, scene.s3d);
 		cullingPreview.visible = (!is2D) ? showGrid : false;
 
+		var toolsDefs = new Array<hide.comp.Toolbar.ToolDef>();
+		toolsDefs.push({id: "perspectiveCamera", title : "Perspective camera", icon : "video-camera", type : Button(() -> sceneEditor.resetCamera()) });
+		toolsDefs.push({id: "camSettings", title : "Camera Settings", icon : "camera", type : Popup((e : hide.Element) -> new hide.comp.CameraControllerEditor(sceneEditor, null,e)) });
+
+		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
+
+		toolsDefs.push({id: "translationMode", title : "Gizmo translation Mode", icon : "arrows", type : Button(@:privateAccess sceneEditor.gizmo.translationMode), rightClick: () -> {
+			var items = [{
+				label : "Snap to Grid",
+				click : function() {
+					@:privateAccess sceneEditor.gizmo.snapToGrid = !sceneEditor.gizmo.snapToGrid;
+				},
+				checked: @:privateAccess sceneEditor.gizmo.snapToGrid
+			}];
+			var steps : Array<Float> = sceneEditor.view.config.get("sceneeditor.gridSnapSteps");
+			for (step in steps) {
+				items.push({
+					label : ""+step,
+					click : function() {
+						@:privateAccess sceneEditor.gizmo.moveStep = step;
+					},
+					checked: @:privateAccess sceneEditor.gizmo.moveStep == step
+				});
+			}
+			new hide.comp.ContextMenu(items);
+		}});
+		toolsDefs.push({id: "rotationMode", title : "Gizmo rotation Mode", icon : "refresh", type : Button(@:privateAccess sceneEditor.gizmo.rotationMode),  rightClick: () -> {
+			var steps : Array<Float> = sceneEditor.view.config.get("sceneeditor.rotateStepCoarses");
+			var items = [{
+				label : "Snap enabled",
+				click : function() {
+					@:privateAccess sceneEditor.gizmo.rotateSnap = !sceneEditor.gizmo.rotateSnap;
+				},
+				checked: @:privateAccess sceneEditor.gizmo.rotateSnap
+			}];
+			for (step in steps) {
+				items.push({
+					label : ""+step+"°",
+					click : function() {
+						@:privateAccess sceneEditor.gizmo.rotateStepCoarse = step;
+					},
+					checked: @:privateAccess sceneEditor.gizmo.rotateStepCoarse == step
+				});
+			}
+			new hide.comp.ContextMenu(items);
+		}});
+		toolsDefs.push({id: "scalingMode", title : "Gizmo scaling Mode", icon : "expand", type : Button(@:privateAccess sceneEditor.gizmo.scalingMode)});
+
+		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
+
+		toolsDefs.push({id: "localTransformsToggle", title : "Local transforms", icon : "compass", type : Toggle((v) -> sceneEditor.localTransform = v)});
+		
+		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
+
+		toolsDefs.push({id: "gridToggle", title : "Toggle grid", icon : "th", type : Toggle((v) -> { showGrid = v; updateGrid(); }) });
+		toolsDefs.push({id: "axisToggle", title : "Toggle model axis", icon : "cube", type : Toggle((v) -> { sceneEditor.showBasis = v; sceneEditor.updateBasis(); }) });
+		toolsDefs.push({id: "iconVisibility", title : "Toggle 3d icons visibility", icon : "image", type : Toggle((v) -> { hide.Ide.inst.show3DIcons = v; }), defaultValue: true });
+
+
 		tools.saveDisplayKey = "FXScene/tools";
-		tools.addButton("video-camera", "Perspective camera", () -> sceneEditor.resetCamera());
+		/*tools.addButton("video-camera", "Perspective camera", () -> sceneEditor.resetCamera());
+		tools.addSeparator();
 		tools.addButton("arrows", "Gizmo translation Mode", @:privateAccess sceneEditor.gizmo.translationMode, () -> {
 			var items = [{
 				label : "Snap to Grid",
@@ -615,7 +675,7 @@ class FXEditor extends FileView {
 			}
 			new hide.comp.ContextMenu(items);
 		});
-		tools.addButton("undo", "Gizmo rotation Mode", @:privateAccess sceneEditor.gizmo.rotationMode, () -> {
+		tools.addButton("refresh", "Gizmo rotation Mode", @:privateAccess sceneEditor.gizmo.rotationMode, () -> {
 			var steps : Array<Float> = sceneEditor.view.config.get("sceneeditor.rotateStepCoarses");
 			var items = [{
 				label : "Snap enabled",
@@ -635,7 +695,10 @@ class FXEditor extends FileView {
 			}
 			new hide.comp.ContextMenu(items);
 		});
-		tools.addButton("compress", "Gizmo scaling Mode", @:privateAccess sceneEditor.gizmo.scalingMode);
+		tools.addButton("expand", "Gizmo scaling Mode", @:privateAccess sceneEditor.gizmo.scalingMode);
+
+		tools.addSeparator();
+
 
 		function renderProps() {
 			properties.clear();
@@ -685,7 +748,42 @@ class FXEditor extends FileView {
 		pauseButton = tools.addToggle("pause", "Pause animation", function(v) {}, false);
 		tools.addRange("Speed", function(v) {
 			scene.speed = v;
-		}, scene.speed);
+		}, scene.speed);*/
+
+		tools.makeToolbar(toolsDefs, config, keys);
+
+		function renderProps() {
+			properties.clear();
+			var renderer = scene.s3d.renderer;
+			var group = new Element('<div class="group" name="Renderer"></div>');
+			renderer.editProps().appendTo(group);
+			properties.add(group, renderer.props, function(_) {
+				renderer.refreshProps();
+				if( !properties.isTempChange ) renderProps();
+			});
+			var lprops = {
+				power : Math.sqrt(light.color.r),
+				enable: true
+			};
+			var group = new Element('<div class="group" name="Light">
+				<dl>
+				<dt>Power</dt><dd><input type="range" min="0" max="4" field="power"/></dd>
+				</dl>
+			</div>');
+			properties.add(group, lprops, function(_) {
+				var p = lprops.power * lprops.power;
+				light.color.set(p, p, p);
+			});
+		}
+		tools.addButton("gears", "Renderer Properties", renderProps);
+		tools.addToggle("refresh", "Auto synchronize", function(b) {
+			autoSync = b;
+		});
+
+		tools.addToggle("connectdevelop", "Wireframe",(b) -> { sceneEditor.setWireframe(b); });
+
+
+		tools.addSeparator();
 
 		var viewModesMenu = tools.addMenu(null, "View Modes");
 		var items : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
@@ -735,6 +833,27 @@ class FXEditor extends FileView {
 		viewModesMenu.setContent(items);//, {id: "viewModes", title : "View Modes", type : Menu(filtersToMenuItem(viewModes, "View"))});
 		var el = viewModesMenu.element;
 		el.addClass("View Modes");
+
+		tools.addSeparator();
+
+
+		pauseButton = tools.addToggle("pause", "Pause animation", function(v) {}, false);
+		tools.addRange("Speed", function(v) {
+			scene.speed = v;
+		}, scene.speed);
+
+		var gizmo = @:privateAccess sceneEditor.gizmo;
+
+		var onSetGizmoMode = function(mode: hide.view.l3d.Gizmo.EditMode) {
+			tools.element.find("#translationMode").get(0).toggleAttribute("checked", mode == Translation);
+			tools.element.find("#rotationMode").get(0).toggleAttribute("checked", mode == Rotation);
+			tools.element.find("#scalingMode").get(0).toggleAttribute("checked", mode == Scaling);
+		};
+
+		gizmo.onChangeMode = onSetGizmoMode;
+		onSetGizmoMode(gizmo.editMode);
+
+
 
 		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		statusText.setPosition(5, 5);

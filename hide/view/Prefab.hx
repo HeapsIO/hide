@@ -177,9 +177,7 @@ class Prefab extends FileView {
 
 		element.html('
 			<div class="flex vertical">
-				<div style="flex: 0 0 30px;">
-					<span class="prefab-toolbar"></span>
-				</div>
+				<div id="prefab-toolbar"></div>
 
 				<div class="scene-partition" style="display: flex; flex-direction: row; flex: 1; overflow: hidden;">
 					<div class="heaps-scene"></div>
@@ -233,7 +231,7 @@ class Prefab extends FileView {
 			</div>
 		');
 
-		tools = new hide.comp.Toolbar(null,element.find(".prefab-toolbar"));
+		tools = new hide.comp.Toolbar(null,element.find("#prefab-toolbar"));
 		layerToolbar = new hide.comp.Toolbar(null,element.find(".layer-buttons"));
 		currentVersion = undo.currentID;
 
@@ -343,6 +341,10 @@ class Prefab extends FileView {
 		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		statusText.setPosition(5, 5);
 		statusText.visible = false;
+
+
+
+
 		gridStep = @:privateAccess sceneEditor.gizmo.moveStep;
 		sceneEditor.updateGrid = function(step) {
 			gridStep = step;
@@ -350,11 +352,18 @@ class Prefab extends FileView {
 			updateGrid();
 		};
 		var toolsDefs = new Array<hide.comp.Toolbar.ToolDef>();
+
 		toolsDefs.push({id: "perspectiveCamera", title : "Perspective camera", icon : "video-camera", type : Button(() -> resetCamera(false)) });
 		toolsDefs.push({id: "camSettings", title : "Camera Settings", icon : "camera", type : Popup((e : hide.Element) -> new hide.comp.CameraControllerEditor(sceneEditor, null,e)) });
 		
 		toolsDefs.push({id: "topCamera", title : "Top camera", icon : "video-camera", iconStyle: { transform: "rotateZ(90deg)" }, type : Button(() -> resetCamera(true))});
+		
+		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
+		
 		toolsDefs.push({id: "snapToGroundToggle", title : "Snap to ground", icon : "anchor", type : Toggle((v) -> sceneEditor.snapToGround = v)});
+		
+		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
+		
 		toolsDefs.push({id: "translationMode", title : "Gizmo translation Mode", icon : "arrows", type : Button(@:privateAccess sceneEditor.gizmo.translationMode), rightClick: () -> {
 			var items = [{
 				label : "Snap to Grid",
@@ -375,7 +384,7 @@ class Prefab extends FileView {
 			}
 			new hide.comp.ContextMenu(items);
 		}});
-		toolsDefs.push({id: "rotationMode", title : "Gizmo rotation Mode", icon : "undo", type : Button(@:privateAccess sceneEditor.gizmo.rotationMode),  rightClick: () -> {
+		toolsDefs.push({id: "rotationMode", title : "Gizmo rotation Mode", icon : "refresh", type : Button(@:privateAccess sceneEditor.gizmo.rotationMode),  rightClick: () -> {
 			var steps : Array<Float> = sceneEditor.view.config.get("sceneeditor.rotateStepCoarses");
 			var items = [{
 				label : "Snap enabled",
@@ -395,8 +404,14 @@ class Prefab extends FileView {
 			}
 			new hide.comp.ContextMenu(items);
 		}});
-		toolsDefs.push({id: "scalingMode", title : "Gizmo scaling Mode", icon : "compress", type : Button(@:privateAccess sceneEditor.gizmo.scalingMode)});
+		toolsDefs.push({id: "scalingMode", title : "Gizmo scaling Mode", icon : "expand", type : Button(@:privateAccess sceneEditor.gizmo.scalingMode)});
+		
+		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
+		
 		toolsDefs.push({id: "localTransformsToggle", title : "Local transforms", icon : "compass", type : Toggle((v) -> sceneEditor.localTransform = v)});
+		
+		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
+		
 		toolsDefs.push({id: "gridToggle", title : "Toggle grid", icon : "th", type : Toggle((v) -> { showGrid = v; updateGrid(); }) });
 		toolsDefs.push({id: "axisToggle", title : "Toggle model axis", icon : "cube", type : Toggle((v) -> { sceneEditor.showBasis = v; sceneEditor.updateBasis(); }) });
 		toolsDefs.push({id: "iconVisibility", title : "Toggle 3d icons visibility", icon : "image", type : Toggle((v) -> { hide.Ide.inst.show3DIcons = v; }), defaultValue: true });
@@ -441,62 +456,45 @@ class Prefab extends FileView {
 		toolsDefs.push({
 			id: "jointsToggle",
 			title: "Joints",
-			icon: "connectdevelop",
+			icon: "share-alt",
 			type: Toggle((b) -> { sceneEditor.setJoints(b, null); }),
 		});
 		toolsDefs.push({id: "backgroundColor", title : "Background Color", type : Color(function(v) {
 			scene.engine.backgroundColor = v;
 			updateGrid();
 		})});
+
+		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
+
 		toolsDefs.push({id: "viewModes", title : "View Modes", type : Menu(filtersToMenuItem(viewModes, "View"))});
+
+		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
+
 		toolsDefs.push({id: "graphicsFilters", title : "Graphics filters", type : Menu(filtersToMenuItem(graphicsFilters, "Graphics"))});
+
+		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
+
 		toolsDefs.push({id: "sceneFilters", title : "Scene filters", type : Menu(filtersToMenuItem(sceneFilters, "Scene"))});
+
+		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
+
 		toolsDefs.push({id: "sceneSpeed", title : "Speed", type : Range((v) -> scene.speed = v)});
 
-		for (tool in toolsDefs) {
-			var key = config.get("key.sceneeditor." + tool.id);
-			var shortcut = key != null ? " (" + key + ")" : "";
-			var el : Element = null;
-			switch(tool.type) {
-				case Button(f):
-					el = tools.addButton(tool.icon, tool.title + shortcut, f, tool.rightClick);
-				case Toggle(f):
-					var toggle = tools.addToggle(tool.icon, tool.title + shortcut, null, f, tool.defaultValue);
-					el = toggle.element;
-					if( key != null )
-						keys.register("sceneeditor." + tool.id, () -> toggle.toggle(!toggle.isDown()));
-					if (tool.rightClick != null)
-						toggle.rightClick(tool.rightClick);
-				case Color(f):
-					el = tools.addColor(tool.title, f).element;
-				case Range(f):
-					el = tools.addRange(tool.title, f, 1.).element;
-				case Menu(items):
-					var menu = tools.addMenu(tool.icon, tool.title);
-					menu.setContent(items);
-					el = menu.element;
-				case Popup(f):
-					el = tools.addButton(tool.icon, tool.title + shortcut, null, tool.rightClick);
-					var p: hide.comp.Popup = null;
-					el.click(function(e) {
-						if (p == null) {
-							p = f(el);
-							p.onClose = function() {
-								p = null;
-							}
-						}
-						else {
-							p.close();
-						}
-					});
-			}
+		tools.makeToolbar(toolsDefs, config, keys);
 
-			el.addClass(tool.id);
-			if(tool.iconStyle != null)
-				el.find(".icon").css(tool.iconStyle);
-		}
 		posToolTip = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		posToolTip.dropShadow = { dx : 1, dy : 1, color : 0, alpha : 0.5 };
+
+		var gizmo = @:privateAccess sceneEditor.gizmo;
+
+		var onSetGizmoMode = function(mode: hide.view.l3d.Gizmo.EditMode) {
+			tools.element.find("#translationMode").get(0).toggleAttribute("checked", mode == Translation);
+			tools.element.find("#rotationMode").get(0).toggleAttribute("checked", mode == Rotation);
+			tools.element.find("#scalingMode").get(0).toggleAttribute("checked", mode == Scaling);
+		};
+
+		gizmo.onChangeMode = onSetGizmoMode;
+		onSetGizmoMode(gizmo.editMode);
 
 		updateStats();
 		updateGrid();

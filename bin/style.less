@@ -1,5 +1,13 @@
 @import "common.less";
 
+@font-face {
+	font-family: 'FontAwesome';
+	src: url('libs/fontawesome-webfont.eot?v=4.7.0');
+	src: url('libs/fontawesome-webfont.eot?#iefix&v=4.7.0') format('embedded-opentype'), url('libs/fontawesome-webfont.woff2?v=4.7.0') format('woff2'), url('libs/fontawesome-webfont.woff?v=4.7.0') format('woff'), url('libs/fontawesome-webfont.ttf?v=4.7.0') format('truetype'), url('libs/fontawesome-webfont.svg?v=4.7.0#fontawesomeregular') format('svg');
+	font-weight: normal;
+	font-style: normal;
+}
+
 body {
 	margin : 0;
 	padding : 0;
@@ -545,6 +553,11 @@ input[type=checkbox] {
 		right: 0px;
 	}
 
+	.v-separator {
+		border-left: 1px solid #444;
+		margin: 2px;
+	}
+
 	.toolbar-label, .menu {
 		display: inline-block;
 		min-width : 20px;
@@ -582,7 +595,106 @@ input[type=checkbox] {
 
 	.button, .toggle {
 		.button();
+		margin-left: 1px;
+		margin-right: 1px;
 	}
+}
+
+.hide-toolbar2 {
+	display: flex;
+	align-items: center;
+	margin-top: 2px;
+	margin-bottom: 2px;
+}
+
+.tb-group {
+	display: inline-flex;
+	margin-left: 2px;
+	margin-right: 2px;
+
+	&.small > * {
+		height: 18px;
+		min-width: 18px;
+
+		.icon {
+			font-size: 10px;
+		}
+	}
+
+	&.big > * {
+		height: 30px;
+		min-width: 30px;
+
+		.icon {
+			font-size: 16px;
+		}
+	}
+
+	&> * {
+		display:inline-flex;
+		align-items: center;
+		justify-content: center;
+		border: 1px solid @color-border;
+		border-right-width: 0px;
+		height: 26px;
+		min-width: 26px;
+
+		background: @color-tool-bg;
+
+		box-shadow: 1px 1px 1px rgba(.0,.0,.0,.75);
+		font-size: 12px;
+
+		color: @color-text;
+
+		.icon {
+			font-size: 14px;
+		}
+
+		.label {
+			font-family : Verdana, serif;
+			display: inline-block;
+			margin-left: 6px;
+			margin-right: 6px;
+			user-select: none;
+		}
+
+		&:first-child {
+			border-top-left-radius: 4px;
+			border-bottom-left-radius: 4px;
+		}
+
+		&:last-child {
+			border-right-width: 1px;
+			border-top-right-radius: 4px;
+			border-bottom-right-radius: 4px;
+		}
+
+		&.button2:hover {
+			border-color: @color-border-hover;
+			background: @color-tool-bg-hover;
+		}
+
+		&.button2:active, &.button2[checked], &.menu:active {
+			background: @color-highlight-gray;
+		}
+
+		&.menu {
+			background: @color-menu-bg;
+
+			&:hover {
+				background: @color-menu-bg-highlight;
+			}
+		}
+
+		&.menu:after {
+			font-family: FontAwesome;
+			content: "\f107";
+			vertical-align: middle;
+			margin-right: 2px;
+
+		}
+	}
+
 }
 
 .button() {
@@ -684,12 +796,6 @@ input[type=checkbox] {
 .button:active {
 	padding-top: 3px;
 	padding-bottom: 1px;
-}
-
-.prefab-toolbar {
-	.button, .toggle {
-		margin-right : 5px;
-	}
 }
 
 .hide-list {

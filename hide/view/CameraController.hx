@@ -77,6 +77,8 @@ class OrthoController extends CameraControllerBase {
 				orthoZoom *= 1.1;
 			}
 		case EPush:
+			sceneEditor.view.keys.pushDisable();
+
 			pushing = e.button;
 			if (pushing == 0 && K.isDown(K.ALT)) pushing = 2;
 			pushTime = haxe.Timer.stamp();
@@ -98,6 +100,8 @@ class OrthoController extends CameraControllerBase {
 			moveCount = 0;
 			@:privateAccess scene.window.mouseMode = AbsoluteUnbound(true);
 		case ERelease, EReleaseOutside:
+			sceneEditor.view.keys.popDisable();
+
 			if( pushing == e.button || pushing == 2) {
 				pushing = -1;
 				startPush = null;
@@ -223,6 +227,7 @@ class FPSController extends CameraControllerBase {
 				}
 			}
 		case EPush:
+			sceneEditor.view.keys.pushDisable();
 			pushing = e.button;
 			if (pushing == 0 && K.isDown(K.ALT)) pushing = 2;
 			pushTime = haxe.Timer.stamp();
@@ -231,6 +236,7 @@ class FPSController extends CameraControllerBase {
 			startPush = new h2d.col.Point(pushX, pushY);
 			@:privateAccess scene.window.mouseMode = AbsoluteUnbound(true);
 		case ERelease, EReleaseOutside:
+			sceneEditor.view.keys.popDisable();
 			if( pushing == e.button || pushing == 2) {
 				pushing = -1;
 				startPush = null;
@@ -301,7 +307,7 @@ class FPSController extends CameraControllerBase {
 		mov.set(-mov.y, 0, -mov.x);
 		if( mov.x == 0 && mov.z == 0 )
 			return;
-		mov.transform3x3(scene.camera.getInverseView());
+		mov.transform3x3(getScene().camera.getInverseView());
 		var moveSpeed = Ide.inst.currentConfig.get("sceneeditor.camera.moveSpeed", 1.5) * camSpeed;
 
 		var delta = mov.multiply(moveSpeed);
@@ -353,6 +359,7 @@ class CamController extends CameraControllerBase {
 		case EWheel:
 			zoom(e.wheelDelta);
 		case EPush:
+			sceneEditor.view.keys.pushDisable();
 			pushing = e.button;
 			if (pushing == 0 && K.isDown(K.ALT)) pushing = 2;
 			pushTime = haxe.Timer.stamp();
@@ -374,6 +381,7 @@ class CamController extends CameraControllerBase {
 			moveCount = 0;
 			@:privateAccess scene.window.mouseMode = AbsoluteUnbound(true);
 		case ERelease, EReleaseOutside:
+			sceneEditor.view.keys.popDisable();
 			if( pushing == e.button || pushing == 2) {
 				pushing = -1;
 				startPush = null;
@@ -589,6 +597,7 @@ class FlightController extends CameraControllerBase {
 				}
 			}
 		case EPush:
+			sceneEditor.view.keys.pushDisable();
 			pushing = e.button;
 			if (pushing == 0 && K.isDown(K.ALT)) pushing = 2;
 			pushTime = haxe.Timer.stamp();
@@ -610,6 +619,8 @@ class FlightController extends CameraControllerBase {
 			/*moveCount = 0;*/
 			@:privateAccess scene.window.mouseMode = AbsoluteUnbound(true);
 		case ERelease, EReleaseOutside:
+			sceneEditor.view.keys.popDisable();
+
 			if( pushing == e.button || pushing == 2) {
 				pushing = -1;
 				startPush = null;
