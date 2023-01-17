@@ -837,7 +837,7 @@ class FXEditor extends FileView {
 		tools.addSeparator();
 
 
-		pauseButton = tools.addToggle("pause", "Pause animation", function(v) {}, false);
+		pauseButton = tools.addToggle("play", "Pause animation", function(v) {}, false, "pause");
 		tools.addRange("Speed", function(v) {
 			scene.speed = v;
 		}, scene.speed);

@@ -71,15 +71,23 @@ class Toolbar extends Component {
 		return e;
 	}
 
-	public function addToggle( icon : String, ?title : String, ?label : String, ?onToggle : Bool -> Void, ?defValue = false ) : ToolToggle {
+	public function addToggle( icon : String, ?title : String, ?label : String, ?onToggle : Bool -> Void, ?defValue = false, ?toggledIcon : String ) : ToolToggle {
 		var e = new Element('<div class="button2" title="${title==null ? "" : title}"><div class="icon ico ico-$icon"/></div>');
 		if(label != null) {
 			new Element('<label>$label</label>').appendTo(e);
 		}
 		function tog() {
+
 			e.get(0).toggleAttribute("checked");
-			this.saveDisplayState("toggle:" + icon, e.get(0).hasAttribute("checked"));
-			if( onToggle != null ) onToggle(e.get(0).hasAttribute("checked"));
+			var checked = e.get(0).hasAttribute("checked");
+
+			if (toggledIcon != null) {
+				e.find(".icon").toggleClass('ico-$icon', !checked);
+				e.find(".icon").toggleClass('ico-$toggledIcon', checked);
+			}
+
+			this.saveDisplayState("toggle:" + icon, checked);
+			if( onToggle != null ) onToggle(checked);
 		}
 		e.click(function(e) if( e.button == 0 ) tog());
 		e.appendTo(curGroup);
