@@ -583,11 +583,18 @@ class EmitterObject extends h3d.scene.Object {
 			// Should we do this manually here or make a recursive makeInstance on the template?
 			var materials = emitterPrefab.getAll(hrt.prefab.Material);
 			for(mat in materials) {
-				if (Std.downcast(mat.parent, hrt.prefab.l3d.Trails) != null)
-					continue;
-				if(mat.enabled) {
-					var ctx = mat.makeInstance(context);
-					ctx.local3d = null;
+
+				// Remove materials that are not directly parented to this emitter
+				var p = mat.parent;
+				while (p != null && Std.downcast(p, Emitter) == null) {
+					p = p.parent;
+				}
+
+				if (this.emitterPrefab == p) {
+					if(mat.enabled) {
+						var ctx = mat.makeInstance(context);
+						ctx.local3d = null;
+					}
 				}
 			}
 
@@ -595,17 +602,22 @@ class EmitterObject extends h3d.scene.Object {
 			shaderAnims = [];
 			var shaders = emitterPrefab.getAll(hrt.prefab.Shader);
 			for( shader in shaders ) {
-				if (Std.downcast(shader.parent, hrt.prefab.l3d.Trails) != null)
-					continue;
-				if( !shader.enabled ) continue;
-				var shCtx = makeShaderInstance(shader, context);
-				if( shCtx == null ) continue;
-
-				//shCtx.local3d = null; // Prevent shader.iterMaterials from adding our objet to the list incorectly
-
-				hrt.prefab.fx.BaseFX.getShaderAnims(shCtx, shader, shaderAnims);
-				var shader = Std.downcast(shCtx.custom, hxsl.Shader);
-				batch.material.mainPass.addShader(shader);
+				// Remove shaders that are not directly parented to this emitter
+				var p = shader.parent;
+				while (p != null && Std.downcast(p, Emitter) == null) {
+					p = p.parent;
+				}
+				if (this.emitterPrefab == p) {
+					if( !shader.enabled ) continue;
+					var shCtx = makeShaderInstance(shader, context);
+					if( shCtx == null ) continue;
+	
+					//shCtx.local3d = null; // Prevent shader.iterMaterials from adding our objet to the list incorectly
+	
+					hrt.prefab.fx.BaseFX.getShaderAnims(shCtx, shader, shaderAnims);
+					var shader = Std.downcast(shCtx.custom, hxsl.Shader);
+					batch.material.mainPass.addShader(shader);
+				}
 			}
 
 			// Animated textures animations
