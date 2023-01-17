@@ -11,7 +11,7 @@ class CameraControllerBase extends h3d.scene.CameraController {
 		super(null, parent);
 	}
 
-	public var wantedFOV = 90.0;
+	public var wantedFOV = 60.0;
 	public var camSpeed = 1.0;
 
 	public var zNear = 0.1;
