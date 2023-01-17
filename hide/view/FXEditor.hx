@@ -782,6 +782,13 @@ class FXEditor extends FileView {
 
 		tools.addToggle("connectdevelop", "Wireframe",(b) -> { sceneEditor.setWireframe(b); });
 
+		tools.addColor("Background color", function(v) {
+			scene.engine.backgroundColor = v;
+			updateGrid();
+		}, scene.engine.backgroundColor);
+		tools.addToggle("refresh", "Auto synchronize", function(b) {
+			autoSync = b;
+		});
 
 		tools.addSeparator();
 
