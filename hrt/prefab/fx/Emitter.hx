@@ -435,7 +435,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var seedGroup = 0;
 	// OBJECTS
 	public var particleTemplate : hrt.prefab.Object3D;
-	public var subEmitterTemplate : Emitter;
+	public var subEmitterTemplates : Array<Emitter>;
 	public var subEmitters : Array<EmitterObject>;
 	public var trails : hrt.prefab.l3d.Trails.TrailObj;
 	public var trailsTemplate : hrt.prefab.l3d.Trails;
@@ -1162,21 +1162,23 @@ class EmitterObject extends h3d.scene.Object {
 				if (p.trail == null || p.trail.generation != p.trailGeneration) {
 					i = disposeInstance(i);
 					// SUB EMITTER
-					if( subEmitterTemplate != null ) {
+					if( subEmitterTemplates != null ) {
 						if( tmpCtx == null ) {
 							tmpCtx = new hrt.prefab.Context();
 							tmpCtx.local3d = this.getScene();
 							tmpCtx.shared = context.shared;
 						}
 						tmpCtx.local3d = this.getScene();
-						var emitter : EmitterObject = cast subEmitterTemplate.makeInstance(tmpCtx).local3d;
-						var pos = p.absPos.getPosition();
-						emitter.setPosition(pos.x, pos.y, pos.z);
-						emitter.isSubEmitter = true;
-						emitter.parentEmitter = this;
-						if(subEmitters == null)
-							subEmitters = [];
-						subEmitters.push(emitter);
+						for (sub in subEmitterTemplates) {
+							var emitter : EmitterObject = cast sub.makeInstance(tmpCtx).local3d;
+							var pos = p.absPos.getPosition();
+							emitter.setPosition(pos.x, pos.y, pos.z);
+							emitter.isSubEmitter = true;
+							emitter.parentEmitter = this;
+							if(subEmitters == null)
+								subEmitters = [];
+							subEmitters.push(emitter);
+						}
 					}
 				} else {
 					prev = p;
@@ -1579,8 +1581,8 @@ class Emitter extends Object3D {
 		emitterObj.particleTemplate = template;
 
 		// SUB-EMITTER
-		var subEmitterTemplate : Emitter = cast children.find( p -> p.enabled && Std.downcast(p, Emitter) != null && p.to(Object3D).visible);
-		emitterObj.subEmitterTemplate = subEmitterTemplate;
+		var subEmitterTemplates : Array<Prefab> = children.filter( p -> p.enabled && Std.downcast(p, Emitter) != null && p.to(Object3D).visible);
+		emitterObj.subEmitterTemplates = subEmitterTemplates.length > 0 ? [for (s in subEmitterTemplates) cast s] : null;
 
 		// TRAILS
 		var trailsTemplate : hrt.prefab.l3d.Trails = cast children.find(p -> p.enabled && Std.isOfType(p, hrt.prefab.l3d.Trails) && p.to(Object3D).visible);
