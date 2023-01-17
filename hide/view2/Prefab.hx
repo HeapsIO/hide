@@ -472,6 +472,7 @@ class Prefab extends hide.view.FileView {
 					var menu = tools.addMenu(tool.icon, tool.title);
 					menu.setContent(items);
 					el = menu.element;
+				case _:
 			}
 
 			el.addClass(tool.id);

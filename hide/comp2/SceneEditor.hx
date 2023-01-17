@@ -759,7 +759,7 @@ class SceneEditor {
 		scene.setCurrent();
 		scene.onResize();
 		// TODO(ces) : Handle 2d and 3d scenes ?
-		sceneData.instanciate(null, null/*scene.s2d*/, scene.s3d);
+		sceneData.make(null, null/*scene.s2d*/, scene.s3d);
 		var bgcol = scene.engine.backgroundColor;
 		scene.init();
 		scene.engine.backgroundColor = bgcol;
