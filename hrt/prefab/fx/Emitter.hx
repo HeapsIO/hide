@@ -1437,7 +1437,13 @@ class Emitter extends Object3D {
 		var emitterObj = Std.downcast(ctx.local3d, EmitterObject);
 
 		var randIdx = 0;
-		var template : Object3D = cast children.find( c -> c.enabled && (c.name == null || c.name.indexOf("collision") == -1) && c.to(Object3D) != null && c.to(Object3D).visible && c.to(hrt.prefab.l3d.Trails) == null);
+		var template : Object3D = cast children.find( 
+			c -> c.enabled &&
+			(c.name == null || c.name.indexOf("collision") == -1) &&
+			c.to(Object3D) != null &&
+			c.to(Object3D).visible &&
+			c.to(Emitter) == null &&
+			c.to(hrt.prefab.l3d.Trails) == null);
 
 		function makeParam(scope: Prefab, name: String): Value {
 			var getCurve = hrt.prefab.Curve.getCurve.bind(scope);
