@@ -786,9 +786,6 @@ class FXEditor extends FileView {
 			scene.engine.backgroundColor = v;
 			updateGrid();
 		}, scene.engine.backgroundColor);
-		tools.addToggle("refresh", "Auto synchronize", function(b) {
-			autoSync = b;
-		});
 
 		tools.addSeparator();
 
