@@ -874,6 +874,8 @@ class EmitterObject extends h3d.scene.Object {
 						tmpQuat.initDirection(tmpDir);
 				}
 
+				onEmit(tmpOffset, tmpQuat);
+
 				if( emitOrientation == Random )
 					tmpQuat.initRotation(hxd.Math.srand(Math.PI), hxd.Math.srand(Math.PI), hxd.Math.srand(Math.PI));
 
@@ -920,6 +922,9 @@ class EmitterObject extends h3d.scene.Object {
 		context.local3d = this;
 		emitCount += count;
 	}
+
+	/** Called every time a particle is emitted. `offset` and `orient` can be modified (local space) **/
+	public dynamic function onEmit(offset: h3d.Vector, orient : h3d.Quat) { }
 
 	// No-alloc version of h3d.Matrix.getEulerAngles()
 	static function getEulerAngles(m: h3d.Matrix) {
