@@ -647,6 +647,15 @@ class EmitterObject extends h3d.scene.Object {
 		reset();
 	}
 
+	override function onRemove() {
+		if (subEmitters != null) {
+			for (sub in subEmitters) {
+				sub.remove();
+			}
+		}
+		super.onRemove();
+	}
+
 	public function reset() {
 		numInstances = 0;
 		enable = true;
