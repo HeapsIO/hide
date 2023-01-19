@@ -17,7 +17,7 @@ import hrt.prefab2.Object3D;
 import h3d.scene.Object;
 
 import hide.comp.cdb.DataFiles;
-import hide.view2.CameraController.CamController as CameraController;
+import hide.view.CameraController;
 
 enum SelectMode {
 	/**
@@ -135,11 +135,12 @@ class SceneEditor {
 	//public var context(default,null) : hrt.prefab.Context;
 	public var snapToGround = false;
 	public var localTransform = true;
-	public var cameraController : h3d.scene.CameraController;
+	public var cameraController : CameraControllerBase;
 	public var cameraController2D : hide.view.l3d.CameraController2D;
 	public var editorDisplay(default,set) : Bool;
 	public var camera2D(default,set) : Bool = false;
 	public var objectAreSelectable = true;
+
 
 	var updates : Array<Float -> Void> = [];
 
@@ -327,13 +328,14 @@ class SceneEditor {
 		return selectedPrefabs != null ? selectedPrefabs : [];
 	}
 
-	function makeCamController() : h3d.scene.CameraController {
-		var c = new CameraController(scene.s3d, this);
-		c.friction = 0.9;
-		c.panSpeed = 0.6;
-		c.zoomAmount = 1.05;
-		c.smooth = 0.7;
-		c.minDistance = 1;
+	function makeCamController() : CameraControllerBase {
+		//var c = new CameraController(scene.s3d, this);
+		var c = new hide.view.CameraController.FlightController(scene.s3d, this);
+		// c.friction = 0.9;
+		// c.panSpeed = 0.6;
+		// c.zoomAmount = 1.05;
+		// c.smooth = 0.7;
+		// c.minDistance = 1;
 		return c;
 	}
 
@@ -427,6 +429,97 @@ class SceneEditor {
 		return ret;
 	}
 
+	public function switchCamController(camClass : Class<CameraControllerBase>, force: Bool = false) {
+		if (cameraController != null) {
+			if (!force)
+				saveCam3D();
+			cameraController.remove();
+		}
+
+		cameraController = Type.createInstance(camClass, [scene.s3d, this]);
+		loadCam3D();
+	}
+
+	public function loadSavedCameraController3D(force: Bool = false) {
+		var wantedClass : Class<CameraControllerBase> = CamController;
+		var cam = @:privateAccess view.getDisplayState("Camera");
+		if (cam != null && cam.camTypeIndex != null) {
+			if (cam.camTypeIndex >=0 && cam.camTypeIndex < CameraControllerEditor.controllersClasses.length) {
+				wantedClass = CameraControllerEditor.controllersClasses[cam.camTypeIndex].cl;
+			}
+		}
+
+		switchCamController(wantedClass, force);
+	}
+
+	public function loadCam3D() {
+		cameraController.onClick = function(e) {
+			switch( e.button ) {
+			case K.MOUSE_RIGHT:
+				selectNewObject();
+			case K.MOUSE_LEFT:
+				selectElements([]);
+			}
+		};
+
+		if (!camera2D)
+			resetCamera();
+
+
+		var cam = @:privateAccess view.getDisplayState("Camera");
+		if( cam != null ) {
+			scene.s3d.camera.pos.set(cam.x, cam.y, cam.z);
+			scene.s3d.camera.target.set(cam.tx, cam.ty, cam.tz);
+
+			if (cam.ux == null) {
+				scene.s3d.camera.up.set(0,0,1);
+			}
+			else {
+				scene.s3d.camera.up.set(cam.ux,cam.uy,cam.uz);
+			}
+			cameraController.loadSettings(cam);
+		}
+		cameraController.loadFromCamera();
+	}
+
+	public function saveCam3D() {
+		var cam = scene.s3d.camera;
+		if (cam == null)
+			return;
+		var toSave : Dynamic = @:privateAccess view.getDisplayState("Camera");
+		if (toSave == null)
+			toSave = {};
+
+		toSave.x = cam.pos.x;
+		toSave.y = cam.pos.y;
+		toSave.z = cam.pos.z;
+		toSave.tx = cam.target.x;
+		toSave.ty = cam.target.y;
+		toSave.tz = cam.target.z;
+		toSave.ux = cam.up.x;
+		toSave.uy = cam.up.y;
+		toSave.uz = cam.up.z;
+
+		for (i in 0...CameraControllerEditor.controllersClasses.length) {
+			if (CameraControllerEditor.controllersClasses[i].cl == Type.getClass(cameraController)) {
+				toSave.camTypeIndex = i;
+				break;
+			}
+		}
+
+		cameraController.saveSettings(toSave);
+
+		/*var cc = Std.downcast(cameraController, hide.view.CameraController.CamController);
+		if (cc!=null) {
+			var toSave = { x : cam.pos.x, y : cam.pos.y, z : cam.pos.z, tx : cam.target.x, ty : cam.target.y, tz : cam.target.z,
+				isFps : cc.isFps,
+				isOrtho : cc.isOrtho,
+				camSpeed : cc.camSpeed,
+				fov : cc.wantedFOV,
+			};*/
+		@:privateAccess view.saveDisplayState("Camera", toSave);
+	}
+
 	function onSceneReady() {
 
 		tree.saveDisplayKey = view.saveDisplayKey + '/tree';
@@ -491,26 +584,7 @@ class SceneEditor {
 
 		basis.visible = true;
 
-
-		cameraController = makeCamController();
-		cameraController.onClick = function(e) {
-			switch( e.button ) {
-			case K.MOUSE_RIGHT:
-				selectNewObject();
-			case K.MOUSE_LEFT:
-				selectElements([]);
-			}
-		};
-		if (!camera2D)
-			resetCamera();
-
-
-		var cam = @:privateAccess view.getDisplayState("Camera");
-		if( cam != null ) {
-			scene.s3d.camera.pos.set(cam.x, cam.y, cam.z);
-			scene.s3d.camera.target.set(cam.tx, cam.ty, cam.tz);
-		}
-		cameraController.loadFromCamera();
+		loadSavedCameraController3D();
 
 		scene.s2d.defaultSmooth = true;
 		root2d.x = scene.s2d.width >> 1;
@@ -2639,9 +2713,9 @@ class SceneEditor {
 	}
 
 	function update(dt:Float) {
-		var cam = scene.s3d.camera;
-		@:privateAccess view.saveDisplayState("Camera", { x : cam.pos.x, y : cam.pos.y, z : cam.pos.z, tx : cam.target.x, ty : cam.target.y, tz : cam.target.z });
-		@:privateAccess view.saveDisplayState("Camera2D", { x : root2d.x - scene.s2d.width*0.5, y : root2d.y - scene.s2d.height*0.5, z : root2d.scaleX });
+		saveCam3D();
+
+		@:privateAccess view.saveDisplayState("Camera2D", { x : context.shared.root2d.x - scene.s2d.width*0.5, y : context.shared.root2d.y - scene.s2d.height*0.5, z : context.shared.root2d.scaleX });
 		if(gizmo != null) {
 			if(!gizmo.moving) {
 				moveGizmoToSelection();
@@ -2788,6 +2862,16 @@ class SceneEditor {
 		};
 	}
 
+	static var globalShaders : Array<Class<hxsl.Shader>> = [
+		hrt.shader.DissolveBurn,
+		hrt.shader.Bloom,
+		hrt.shader.UVDebug,
+		hrt.shader.GradientMap,
+		hrt.shader.ParticleFade,
+		hrt.shader.ParticleColorLife,
+		hrt.shader.ParticleColorRandom,
+	];
+
 	function getNewShaderMenu(parentElt: PrefabElement, ?onMake: PrefabElement->Void) : hide.comp.ContextMenu.ContextMenuItem {
 		function isClassShader(path: String) {
 			return Type.resolveClass(path) != null || StringTools.endsWith(path, ".hx");
@@ -2831,6 +2915,13 @@ class SceneEditor {
 		var menu : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
 
 		var shaders : Array<String> = hide.Ide.inst.currentConfig.get("fx.shaders", []);
+		for (sh in globalShaders) {
+			var name = Type.getClassName(sh);
+			if (!shaders.contains(name)) {
+				shaders.push(name);
+			}
+		}
+
 		for(path in shaders) {
 			var strippedSlash = StringTools.endsWith(path, "/") ? path.substr(0, -1) : path;
 			var fullPath = ide.getPath(strippedSlash);
@@ -2849,6 +2940,7 @@ class SceneEditor {
 				}
 			}
 		}
+
 
 		menu.sort(function(l1,l2) return Reflect.compare(l1.label,l2.label));
 		menu.unshift(custom);
