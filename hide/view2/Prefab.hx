@@ -354,14 +354,6 @@ class Prefab extends hide.view.FileView {
 		statusText.setPosition(5, 5);
 		statusText.visible = false;
 
-
-
-
-		gridStep = @:privateAccess sceneEditor.gizmo.moveStep;
-		sceneEditor.updateGrid = function(step) {
-			gridStep = step;
-		statusText.setPosition(5, 5);
-		statusText.visible = false;
 		gridStep = @:privateAccess sceneEditor.gizmo.moveStep;
 		sceneEditor.updateGrid = function(step) {
 			gridStep = step;
@@ -371,7 +363,7 @@ class Prefab extends hide.view.FileView {
 		var toolsDefs = new Array<hide.comp.Toolbar.ToolDef>();
 
 		toolsDefs.push({id: "perspectiveCamera", title : "Perspective camera", icon : "video-camera", type : Button(() -> resetCamera(false)) });
-		toolsDefs.push({id: "camSettings", title : "Camera Settings", icon : "camera", type : Popup((e : hide.Element) -> new hide.comp.CameraControllerEditor(sceneEditor, null,e)) });
+		toolsDefs.push({id: "camSettings", title : "Camera Settings", icon : "camera", type : Popup((e : hide.Element) -> new hide.comp2.CameraControllerEditor(sceneEditor, null,e)) });
 		
 		toolsDefs.push({id: "topCamera", title : "Top camera", icon : "video-camera", iconStyle: { transform: "rotateZ(90deg)" }, type : Button(() -> resetCamera(true))});
 		
@@ -402,11 +394,6 @@ class Prefab extends hide.view.FileView {
 			new hide.comp.ContextMenu(items);
 		}});
 		toolsDefs.push({id: "rotationMode", title : "Gizmo rotation Mode", icon : "refresh", type : Button(@:privateAccess sceneEditor.gizmo.rotationMode),  rightClick: () -> {
-			var steps : Array<Float> = sceneEditor.view.config.get("sceneeditor.rotateStepCoarses");
-			var items = [{
-				label : "Snap enabled",
-		}});
-		toolsDefs.push({id: "rotationMode", title : "Gizmo rotation Mode", icon : "undo", type : Button(@:privateAccess sceneEditor.gizmo.rotationMode),  rightClick: () -> {
 			var steps : Array<Float> = sceneEditor.view.config.get("sceneeditor.rotateStepCoarses");
 			var items = [{
 				label : "Snap enabled",
@@ -513,7 +500,7 @@ class Prefab extends hide.view.FileView {
 
 		var gizmo = @:privateAccess sceneEditor.gizmo;
 
-		var onSetGizmoMode = function(mode: hide.view.l3d.Gizmo.EditMode) {
+		var onSetGizmoMode = function(mode: hide.view2.l3d.Gizmo.EditMode) {
 			tools.element.find("#translationMode").get(0).toggleAttribute("checked", mode == Translation);
 			tools.element.find("#rotationMode").get(0).toggleAttribute("checked", mode == Rotation);
 			tools.element.find("#scalingMode").get(0).toggleAttribute("checked", mode == Scaling);

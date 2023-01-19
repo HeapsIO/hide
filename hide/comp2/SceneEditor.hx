@@ -17,7 +17,8 @@ import hrt.prefab2.Object3D;
 import h3d.scene.Object;
 
 import hide.comp.cdb.DataFiles;
-import hide.view.CameraController;
+import hide.view2.CameraController;
+import hide.comp2.CameraControllerEditor;
 
 enum SelectMode {
 	/**
@@ -330,7 +331,7 @@ class SceneEditor {
 
 	function makeCamController() : CameraControllerBase {
 		//var c = new CameraController(scene.s3d, this);
-		var c = new hide.view.CameraController.FlightController(scene.s3d, this);
+		var c = new hide.view2.CameraController.FlightController(scene.s3d, this);
 		// c.friction = 0.9;
 		// c.panSpeed = 0.6;
 		// c.zoomAmount = 1.05;
@@ -2715,7 +2716,8 @@ class SceneEditor {
 	function update(dt:Float) {
 		saveCam3D();
 
-		@:privateAccess view.saveDisplayState("Camera2D", { x : context.shared.root2d.x - scene.s2d.width*0.5, y : context.shared.root2d.y - scene.s2d.height*0.5, z : context.shared.root2d.scaleX });
+		// TODO(ces) : Restore
+		//@:privateAccess view.saveDisplayState("Camera2D", { x : context.shared.root2d.x - scene.s2d.width*0.5, y : context.shared.root2d.y - scene.s2d.height*0.5, z : context.shared.root2d.scaleX });
 		if(gizmo != null) {
 			if(!gizmo.moving) {
 				moveGizmoToSelection();
