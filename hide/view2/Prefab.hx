@@ -181,11 +181,6 @@ class Prefab extends hide.view.FileView {
 
 				<div class="scene-partition" style="display: flex; flex-direction: row; flex: 1; overflow: hidden;">
 					<div class="heaps-scene"></div>
-					<span class="prefab-toolbar"></span>
-				</div>
-
-				<div class="scene-partition" style="display: flex; flex-direction: row; flex: 1; overflow: hidden;">
-					<div class="heaps-scene"></div>
 					<div class="tree-column">
 						<div class="flex vertical">
 							<div class="hide-toolbar">
@@ -234,15 +229,9 @@ class Prefab extends hide.view.FileView {
 					</div>
 				</div>
 			</div>
-			</div>
 		');
 
 		tools = new hide.comp.Toolbar(null,element.find("#prefab-toolbar"));
-		layerToolbar = new hide.comp.Toolbar(null,element.find(".layer-buttons"));
-		currentVersion = undo.currentID;
-
-
-		tools = new hide.comp.Toolbar(null,element.find(".prefab-toolbar"));
 		layerToolbar = new hide.comp.Toolbar(null,element.find(".layer-buttons"));
 		currentVersion = undo.currentID;
 

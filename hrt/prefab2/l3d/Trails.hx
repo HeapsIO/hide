@@ -743,7 +743,7 @@ class TrailsSubTrail extends Object3D {
 
 	override function onMakeInstance() {
 		var obj = new TrailsSubTailObj(getFirstLocal3d());
-        applyTransform(obj);
+        applyTransform();
 		obj.name = name;
 		local3d = obj;
 	}
@@ -785,7 +785,7 @@ class Trails extends Object3D {
 
 	public function create( ?parent : h3d.scene.Object, ?numTrails : Int ) {
 		var tr = new TrailObj(this, parent, numTrails);
-		applyTransform(tr);
+		applyTransform();
 		tr.name = name;
         tr.updateShader();
 		return tr;

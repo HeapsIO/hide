@@ -265,6 +265,7 @@ class Prefab {
         }
     }
 
+
     public final function destroy() {
         if (parent != null) {
             parent.children.remove(this);

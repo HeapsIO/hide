@@ -10,9 +10,9 @@ class Object3D extends Prefab {
     @:s public var rotationY : Float = 0.0;
     @:s public var rotationZ : Float = 0.0;
 
-    @:s public var scaleX : Float = 0.0;
-    @:s public var scaleY : Float = 0.0;
-    @:s public var scaleZ : Float = 0.0;
+    @:s public var scaleX : Float = 1.0;
+    @:s public var scaleY : Float = 1.0;
+    @:s public var scaleZ : Float = 1.0;
 
     @:s public var visible : Bool = true;
 
@@ -46,6 +46,7 @@ class Object3D extends Prefab {
 
     override function onMakeInstance() {
         local3d = new h3d.scene.Object(parent.getFirstLocal3d());
+		applyTransform();
     }
 
     override function onDestroy() {
@@ -72,7 +73,9 @@ class Object3D extends Prefab {
 		return { x : x, y : y, z : z, scaleX : scaleX, scaleY : scaleY, scaleZ : scaleZ, rotationX : rotationX, rotationY : rotationY, rotationZ : rotationZ };
 	}
 
-    public function applyTransform( o : h3d.scene.Object ) {
+    public function applyTransform() {
+		var o = getLocal3d();
+		if (o == null) return;
 		o.x = x;
 		o.y = y;
 		o.z = z;

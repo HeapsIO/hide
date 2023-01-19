@@ -833,8 +833,14 @@ class SceneEditor {
 		root2d.addChild(cameraController2D);
 		scene.setCurrent();
 		scene.onResize();
-		// TODO(ces) : Handle 2d and 3d scenes ?
-		sceneData.make(null, null/*scene.s2d*/, scene.s3d);
+		// TODO(ces) : Handle 2d and 3d scenes 
+		if (sceneData.parent == null) {
+			sceneData.setRoot(null, root3d);
+		}
+		else {
+			Std.downcast(sceneData.parent, Object3D).local3d = root3d;
+		}
+		sceneData.instanciate();
 		var bgcol = scene.engine.backgroundColor;
 		scene.init();
 		scene.engine.backgroundColor = bgcol;
@@ -1148,25 +1154,25 @@ class SceneEditor {
 						obj3d.scaleY = quantize(scaleSnap(s.y), scaleQuant);
 						obj3d.scaleZ = quantize(scaleSnap(s.z), scaleQuant);
 					}
-					obj3d.applyTransform(sceneObjs[i]);
+					obj3d.applyTransform();
 				}
 			}
 
-			gizmo.onFinishMove = function() {
+			/*gizmo.onFinishMove = function() {
 				var newState = [for(o in objects3d) o.saveTransform()];
 				refreshProps();
 				undo.change(Custom(function(undo) {
 					if( undo ) {
 						for(i in 0...objects3d.length) {
 							objects3d[i].loadTransform(prevState[i]);
-							objects3d[i].applyTransform(sceneObjs[i]);
+							objects3d[i].applyTransform();
 						}
 						refreshProps();
 					}
 					else {
 						for(i in 0...objects3d.length) {
 							objects3d[i].loadTransform(newState[i]);
-							objects3d[i].applyTransform(sceneObjs[i]);
+							objects3d[i].applyTransform();
 						}
 						refreshProps();
 					}
@@ -1177,7 +1183,7 @@ class SceneEditor {
 
 				for(o in objects3d)
 					o.refresh();
-			}
+			}*/
 		}
 		gizmo2d.onStartMove = function(mode) {
 			var objects2d = [for(o in selectedPrefabs) {
@@ -1575,8 +1581,7 @@ class SceneEditor {
 
 	function makePrefab(elt: PrefabElement) {
 		scene.setCurrent();
-		var p = elt.parent;
-		var n = elt.make(p);
+		elt.instanciate();
 		for( p in elt.flatten() )
 			makeInteractive(p);
 		//scene.init(ctx.local3d);
@@ -2132,14 +2137,14 @@ class SceneEditor {
 			if( undo ) {
 				for(i in 0...objects3d.length) {
 					objects3d[i].loadTransform(prevState[i]);
-					objects3d[i].applyTransform(sceneObjs[i]);
+					objects3d[i].applyTransform();
 				}
 				refreshProps();
 			}
 			else {
 				for(i in 0...objects3d.length) {
 					objects3d[i].loadTransform(newState[i]);
-					objects3d[i].applyTransform(sceneObjs[i]);
+					objects3d[i].applyTransform();
 				}
 				refreshProps();
 			}
@@ -2829,7 +2834,7 @@ class SceneEditor {
 					if (ptype == "UiDisplay")
 						trace("Break");
 					var p = Type.createInstance(prefabInfo.prefabClass, [parent]);
-					p.proto = new hrt.prefab2.ProtoPrefab(p, sourcePath);
+					//p.proto = new hrt.prefab2.ProtoPrefab(p, sourcePath);
 					if( objectName != null)
 						p.name = objectName;
 					else

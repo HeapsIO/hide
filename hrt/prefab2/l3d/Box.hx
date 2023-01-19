@@ -16,8 +16,8 @@ class Box extends Object3D {
 	}
 
 	override function onMakeInstance() {
-
-		var mesh = new h3d.scene.Mesh(h3d.prim.Cube.defaultUnitCube(), getFirstLocal3d());
+		var l3d = getFirstLocal3d();
+		var mesh = new h3d.scene.Mesh(h3d.prim.Cube.defaultUnitCube(), l3d);
 
 		#if editor
 		setDebugColor(0x60ffffff, mesh.material);
