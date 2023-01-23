@@ -1165,7 +1165,7 @@ class SceneEditor {
 				}
 			}
 
-			/*gizmo.onFinishMove = function() {
+			gizmo.onFinishMove = function() {
 				var newState = [for(o in objects3d) o.saveTransform()];
 				refreshProps();
 				undo.change(Custom(function(undo) {
@@ -1190,7 +1190,7 @@ class SceneEditor {
 
 				for(o in objects3d)
 					o.refresh();
-			}*/
+			}
 		}
 		gizmo2d.onStartMove = function(mode) {
 			var objects2d = [for(o in selectedPrefabs) {
