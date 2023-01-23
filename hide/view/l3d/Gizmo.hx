@@ -445,7 +445,6 @@ class Gizmo extends h3d.scene.Object {
 		var engine = h3d.Engine.getCurrent();
 		var ratio = 150 / engine.height;
 		var scale = ratio * distToCam * Math.tan(cam.fovY * 0.5 * Math.PI / 180.0);
-		trace(scale);
 		gizmo.setScale(scale);
 
 		if( !moving ) {
