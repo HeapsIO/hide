@@ -436,11 +436,17 @@ class Gizmo extends h3d.scene.Object {
 	static var tempMatrix = new h3d.Matrix();
 	public function update(dt, isLocal:Bool) {
 		var cam = this.getScene().camera;
-		var gpos = gizmo.getAbsPos().getPosition();
+		var abs = gizmo.getAbsPos();
+		var gpos = abs.getPosition();
 		var distToCam = cam.pos.sub(gpos).length();
+		if (hxd.Math.isNaN(distToCam)) {
+			distToCam = 1000000000.0;
+		}
 		var engine = h3d.Engine.getCurrent();
 		var ratio = 150 / engine.height;
-		gizmo.setScale(ratio * distToCam * Math.tan(cam.fovY * 0.5 * Math.PI / 180.0));
+		var scale = ratio * distToCam * Math.tan(cam.fovY * 0.5 * Math.PI / 180.0);
+		trace(scale);
+		gizmo.setScale(scale);
 
 		if( !moving ) {
 			var dir = cam.pos.sub(gpos).toPoint();
