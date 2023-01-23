@@ -1016,7 +1016,14 @@ class SceneEditor {
 		var group = getParentGroup(parentEl);
 		if( group != null )
 			parentEl = group;
-		var originPt = getPickTransform(parentEl).getPosition();
+
+		var origTrans = getPickTransform(parentEl);
+		if (origTrans == null) {
+			origTrans = new h3d.Matrix();
+			origTrans.identity();
+		}
+
+		var originPt = origTrans.getPosition();
 		var newItems = getNewContextMenu(parentEl, function(newElt) {
 			var newObj3d = Std.downcast(newElt, Object3D);
 			if(newObj3d != null) {
