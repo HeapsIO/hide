@@ -504,13 +504,22 @@ class FlightController extends CameraControllerBase {
 
 
 	override public function set(?distance:Float, ?theta:Float, ?phi:Float, ?target:h3d.col.Point, ?fovY:Float) {
-		if (distance == null && target != null) {
-			distance = target.toVector().sub(currentFlightPos).length();
+		trace(distance, theta, phi, target, fov);
+
+		if (target != null) {
+			var tv = target.toVector();
+			var dir = tv.sub(currentFlightPos);
+			if (distance == null) {
+				distance = dir.length();
+			}
+			dir.normalize();
+			targetFlightRot.initDirection(dir);
+			targetFlightRot.normalize();
+			//currentFlightRot = targetFlightRot;
+			dir.scale(distance);
+			targetFlightPos = tv.sub(dir);
+			syncCamera();
 		}
-		super.set(distance, theta, phi, target, fovY);
-		curPos = targetPos;
-		super.syncCamera();
-		loadFromCamera(true);
 	}
 
 	function moveKeys() {
@@ -695,11 +704,11 @@ class FlightController extends CameraControllerBase {
 		currentFlightRot.load(targetFlightRot);
 	}
 
-
 	override function syncCamera() {
 		var cam = getScene().camera;
 		currentFlightPos.lerp(currentFlightPos, targetFlightPos, 0.1);
 		currentFlightRot.slerp(currentFlightRot, targetFlightRot, 0.1);
+		currentFlightRot.normalize();
 
 		cam.orthoBounds = null;
 
