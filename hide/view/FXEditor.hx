@@ -157,6 +157,31 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		var recents = getNewRecentContextMenu(current, onMake);
 
 		var menu = [];
+
+		function splitMenu(menu : Array<hide.comp.ContextMenu.ContextMenuItem>, name : String, entries : Array<hide.comp.ContextMenu.ContextMenuItem>, len : Int = 30) {
+			entries.sort((a,b) -> Reflect.compare(a.label, b.label));
+
+			var pos = 0;
+			while(true) {
+				var arr = entries.slice(pos, pos+len);
+				if (arr.length == 0) {
+					break;
+				}
+				pos += len;
+				var firstChar = arr[0].label.charAt(0);
+				var endChar = (entries.length < pos+len) ? "Z" : arr[arr.length-1].label.charAt(0);
+
+				var label = name + " " + firstChar + "-" + endChar;
+				if (pos == 0 && arr.length < len) {
+					label = name;
+				}
+				menu.push({
+					label: label,
+					menu: arr
+				});
+			}
+		}
+
 		if (parent.is2D) {
 			for(name in ["Group 2D", "Bitmap", "Anim2D", "Atlas", "Particle2D", "Text", "Shader", "Shader Graph", "Placeholder"]) {
 				var item = allTypes.find(i -> i.label == name);
@@ -217,10 +242,10 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		}
 
 		menu.push({label: null, isSeparator: true});
-		menu.push({
-			label: "Other",
-			menu: allTypes
-		});
+		
+		splitMenu(menu, "Other", allTypes);
+
+
 		menu.unshift({
 			label : "Recents",
 			menu : recents,
