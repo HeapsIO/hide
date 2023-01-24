@@ -27,10 +27,10 @@ class Material extends Prefab {
 		color = obj.color != null ? obj.color : [1,1,1,1];
 	}
 
-	override function save(data: Dynamic) {
+	/*override function save(data: Dynamic) {
 		super.save(data);
 		if(color != null && h3d.Vector.fromArray(color).toColor() != 0xffffffff) data.color = color;
-	}
+	}*/
 
 	function renderProps() {
 		var cur = h3d.mat.MaterialSetup.current;
@@ -111,7 +111,7 @@ class Material extends Prefab {
 	}
 
 	#if editor
-	override function edit( ctx : hrt.prefab2.Prefab.EditContext ) {
+	override function edit( ctx : hide.prefab2.EditContext ) {
 		super.edit(ctx);
 		var isPbr = Std.isOfType(ctx.scene.s3d.renderer, h3d.scene.pbr.Renderer);
 		var mat = h3d.mat.Material.create();

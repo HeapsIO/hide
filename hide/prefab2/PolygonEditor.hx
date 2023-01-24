@@ -119,7 +119,7 @@ class MovablePoint {
 
 class PolygonEditor {
 
-	public var editContext : hrt.prefab2.Prefab.EditContext;
+	public var editContext : hide.prefab2.EditContext;
 	public var showDebug : Bool;
 	public var gridSize = 1;
 	public var showTriangles : Bool = false;
@@ -560,7 +560,7 @@ class PolygonEditor {
 			refreshPointList(editContext.getCurrentProps(polygonPrefab));
 	}
 
-	public function addProps( ctx : hrt.prefab2.Prefab.EditContext ){
+	public function addProps( ctx : hide.prefab2.EditContext ){
 		var props = new hide.Element('
 		<div class="poly-editor">
 			<div class="group" name="Tool">

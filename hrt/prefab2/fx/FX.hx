@@ -386,11 +386,11 @@ class FX extends BaseFX {
 		cullingRadius = 3.0;
 	}
 
-	override function save(data : Dynamic) {
+	/*override function save(data : Dynamic) {
 		super.save(data);
 		data.cullingRadius = cullingRadius;
 		if( scriptCode != "" ) data.scriptCode = scriptCode;
-	}
+	}*/
 
 	override function load( obj : Dynamic ) {
 		super.load(obj);
@@ -456,7 +456,7 @@ class FX extends BaseFX {
 		fxanim.initObjAnimations(this);
 	}
 
-	override function edit( ctx : hrt.prefab2.Prefab.EditContext ) {
+	override function edit( ctx : hide.prefab2.EditContext ) {
 		var props = new hide.Element('
 			<div class="group" name="FX Scene">
 				<dl>

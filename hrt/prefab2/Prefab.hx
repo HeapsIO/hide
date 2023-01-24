@@ -14,81 +14,6 @@ typedef PrefabMeta = {
     var ?range_step : Float;
 }
 
-class EditContext {
-    #if editor
-
-    public var scene : hide.comp2.Scene;
-    public var properties : hide.comp.PropsEditor;
-
-    public function onChange(p : Prefab, propName : String) {
-
-		scene.setCurrent();
-		p.updateInstance(propName);
-        var parent = p.parent;
-        while( parent != null ) {
-            var pr = parent.getHideProps();
-            if( pr.onChildUpdate != null ) pr.onChildUpdate(p);
-            parent = parent.parent;
-        }
-
-        // TODO(ces) : still usefull ?
-		/*for( ctx2 in rootContext.shared.getContexts(p) )
-			if( ctx2 != ctx )
-				p.updateInstance(ctx2, propName);*/
-	}
-
-    public function getCurrentProps( p : Prefab ) : hide.Element {
-		throw "Not implemented";
-		return null;
-	}
-
-    /**
-		Rebuild the edit window
-	**/
-	public function rebuildProperties() {
-	}
-
-    /**
-		Force rebuilding makeInstance for the given hierarchy
-	**/
-	public function rebuildPrefab( p : Prefab, ?sceneOnly=false) {
-	}
-
-    public function getNamedObjects(root:h3d.scene.Object, ?exclude : h3d.scene.Object ) {
-		var out = [];
-
-		function getJoint(path:Array<String>,j:h3d.anim.Skin.Joint) {
-			path.push(j.name);
-			out.push(path.join("."));
-			for( j in j.subs )
-				getJoint(path, j);
-			path.pop();
-		}
-
-		function getRec(path:Array<String>, o:h3d.scene.Object) {
-			if( o == exclude || o.name == null ) return;
-			path.push(o.name);
-			out.push(path.join("."));
-			for( c in o )
-				getRec(path, c);
-			var sk = Std.downcast(o, h3d.scene.Skin);
-			if( sk != null ) {
-				var j = sk.getSkinData();
-				for( j in j.rootJoints )
-					getJoint(path, j);
-			}
-			path.pop();
-		}
-
-		for( o in root )
-			getRec([], o);
-
-		return out;
-	}
-
-    #end
-}
-
 typedef PrefabInfo = {prefabClass : Class<Prefab> #if editor, inf : hide.prefab2.HideProps #end};
 
 @:keepSub
@@ -376,8 +301,11 @@ class Prefab {
         copyShallow(data, this, false, false, getSerializableProps());
     }
 
-    private function save(to: Dynamic) : Void {
+    final private function save(?to: Dynamic) : Dynamic {
+        if (to == null)
+            to = {};
         copyShallow(this, to, false, false, getSerializableProps());
+        return to;
     }
 
     public static function loadFromPath(path: String, parent: Prefab = null) : Prefab {
@@ -673,7 +601,7 @@ class Prefab {
 		return null;
 	}
 
-    public function edit(editContext : EditContext) {
+    public function edit(editContext : hide.prefab2.EditContext) {
 
     }
 

@@ -1286,7 +1286,7 @@ class Emitter extends Object3D {
 		a;
 	};
 
-	override function save(data : Dynamic) {
+	/*override function save(data : Dynamic) {
 		super.save(data);
 		data.props = Reflect.copy(props);
 		for(param in PARAMS) {
@@ -1304,7 +1304,7 @@ class Emitter extends Object3D {
 				Reflect.deleteField(data.props, param.name);
 			}
 		}
-	}
+	}*/
 
 	override function load( obj : Dynamic ) {
 		super.load(obj);
@@ -1579,7 +1579,7 @@ class Emitter extends Object3D {
 	}
 
 	#if editor
-	override function edit( ctx : hrt.prefab2.Prefab.EditContext ) {
+	override function edit( ctx : hide.prefab2.EditContext ) {
 		super.edit(ctx);
 
 		function refresh() {

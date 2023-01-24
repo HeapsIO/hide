@@ -1,6 +1,9 @@
 package hrt.prefab2;
 
-import hrt.prefab2.Prefab.EditContext;
+#if editor
+import hide.prefab2.EditContext;
+#end
+
 import hide.prefab2.HideProps;
 
 import hrt.prefab2.fx.Value;
@@ -75,7 +78,7 @@ class Curve extends Prefab {
 		}
 	}
 
-	public override function save(to : Dynamic) {
+	/*public override function save(to : Dynamic) {
 		super.save(to);
 		var obj = to;
 		var keysDat = [];
@@ -90,7 +93,7 @@ class Curve extends Prefab {
 			keysDat.push(o);
 		}
 		obj.keys = keysDat;
-	}
+	}*/
 
 	static inline function bezier(c0: Float, c1:Float, c2:Float, c3: Float, t:Float) {
 		var u = 1 - t;

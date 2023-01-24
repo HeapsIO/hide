@@ -102,11 +102,11 @@ class BaseFX extends Object3D {
 		cullingRadius = 1000;
 	}
 
-	override function save(data: Dynamic) : Void {
+	/*override function save(data: Dynamic) : Dynamic {
 		super.save(data);
 		if( markers != null && markers.length > 0 )
 			data.markers = markers;
-	}
+	}*/
 
 	override function load( obj : Dynamic ) {
 		super.load(obj);

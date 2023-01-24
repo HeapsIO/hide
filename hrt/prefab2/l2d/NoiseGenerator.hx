@@ -134,7 +134,7 @@ class NoiseGenerator extends Object2D {
 		return { icon : "cloud", name : "Noise Generator" };
 	}
 
-	override function edit( ctx : hrt.prefab2.Prefab.EditContext ) {
+	override function edit( ctx : hide.prefab2.EditContext ) {
 		var e = ctx.properties.add(new hide.Element('
 			<dl>
 				<dt>Mode</dt><dd><select field="mode">

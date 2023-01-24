@@ -2,7 +2,10 @@ package hrt.prefab2.l3d;
 import hxd.Math;
 import h2d.col.Point;
 
-import hrt.prefab2.Prefab.EditContext;
+#if editor
+import hide.prefab2.EditContext;
+#end
+
 import hide.prefab2.HideProps;
 
 
@@ -32,7 +35,7 @@ class Polygon extends Object3D {
 		super(parent);
 	}
 
-	override function save(data: Dynamic) {
+	/*override function save(data: Dynamic) {
 		super.save(data);
 		data.kind = shape.getIndex();
 		switch(shape){
@@ -41,7 +44,7 @@ class Polygon extends Object3D {
 		case Custom:
 			data.points = [for( p in points ) { x : p.x, y : p.y }];
 		}
-	}
+	}*/
 
 	override function load( obj : Dynamic ) {
 		super.load(obj);

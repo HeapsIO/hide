@@ -31,7 +31,7 @@ class Constraint extends Prefab {
 		return { icon : "lock", name : "Constraint" };
 	}
 
-	override function edit(ctx:hrt.prefab2.Prefab.EditContext) {
+	override function edit(ctx:hide.prefab2.EditContext) {
 		var curObj = getRoot().locateObject(object);
 		var props = ctx.properties.add(new hide.Element('
 			<dl>

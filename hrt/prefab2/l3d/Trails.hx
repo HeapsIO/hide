@@ -804,7 +804,7 @@ class Trails extends Object3D {
 		return { icon : "toggle-on", name : "Trails" };
 	}
 
-	override public function edit(ctx:hrt.prefab2.Prefab.EditContext) {
+	override public function edit(ctx:hide.prefab2.EditContext) {
 		super.edit(ctx);
 
 		var trail = Std.downcast(getLocal3d(), TrailObj);
