@@ -28,6 +28,7 @@ class Material extends Prefab {
 	override function save() {
 		var obj : Dynamic = super.save();
 		if(color != null && h3d.Vector.fromArray(color).toColor() != 0xffffffff) obj.color = color;
+		if(mainPassName == "") mainPassName = null;
 		return obj;
 	}
 
