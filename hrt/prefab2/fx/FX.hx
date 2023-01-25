@@ -399,8 +399,8 @@ class FX extends BaseFX {
 		scriptCode = obj.scriptCode;
 	}
 
-	override function onMake() {
-		var fxanim = createInstance(getNearestParentLocal3d());
+	override function onMake(?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) {
+		var fxanim = createInstance(o3d);
 		fxanim.duration = duration;
 		fxanim.cullingRadius = cullingRadius;
 

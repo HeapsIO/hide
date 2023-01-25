@@ -44,7 +44,7 @@ class Material extends Prefab {
 	}
 
 	public function getMaterials() {
-		var local3d = getNearestParentLocal3d();
+		var local3d = getLocal3d();
 		var mats = local3d.getMaterials();
 		var mat = Lambda.find(mats, m -> m.name == this.name || m.name == materialName);
 		return mat == null ? mats : [mat];
@@ -74,7 +74,7 @@ class Material extends Prefab {
 	}
 	
 	override function updateInstance(?propName ) {
-		var local3d = getNearestParentLocal3d();
+		var local3d = getThisOrParentLocal3d();
 		if( local3d == null )
 			return;
 
@@ -102,8 +102,8 @@ class Material extends Prefab {
 		return Object3D.cache.loadTexture(null, path, false);
 	}
 
-	override function onMakeInstance() {
-		var local3d = getNearestParentLocal3d();
+	override function onMakeInstance(?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) {
+		var local3d = o3d;
 		if(local3d == null)
 			return;
 

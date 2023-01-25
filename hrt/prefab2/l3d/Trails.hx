@@ -741,8 +741,8 @@ class TrailsSubTrail extends Object3D {
         name = "SubTrail";
 	}
 
-	override function onMakeInstance() {
-		var obj = new TrailsSubTailObj(getNearestParentLocal3d());
+	override function onMakeInstance(?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) {
+		var obj = new TrailsSubTailObj(o3d);
         applyTransform();
 		obj.name = name;
 		local3d = obj;
@@ -791,9 +791,9 @@ class Trails extends Object3D {
 		return tr;
 	}
 
-	override function onMakeInstance() {
+	override function onMakeInstance(?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) {
 		// TODO(ces) : Revert handling of multiple trails
-        var tr = create(getNearestParentLocal3d(), 1);
+        var tr = create(o3d, 1);
         local3d = tr;
 	}
 

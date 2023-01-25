@@ -60,18 +60,6 @@ class Prefab {
         return null;
     }
 
-    // This should be only called in "OnMakeInstance" to get the relevant object on which you should attach
-    final public function getNearestParentLocal3d() : h3d.scene.Object {
-        var p = parent;
-        while (p != null) {
-            var l = p.getLocal3d();
-            if (l != null)
-                return l;
-            p = p.parent;
-        }
-        return null;
-    }
-
     public function getThisOrParentLocal3d() : h3d.scene.Object {
         var p = this;
         while (p != null) {
@@ -122,39 +110,14 @@ class Prefab {
         newInstance.proto = this.proto;
 
         copy(this, newInstance, false, true);
-        if (root == null)
-            newInstance.setRoot(o2d, o3d);
-        newInstance.instanciate();
+        newInstance.instanciate(o2d, o3d);
 
         return newInstance;
     };
 
-    public function setRoot(?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) {
-        if (parent != null) {
-            throw "prefab already has a parent, can't be root";
-        }
-
-        var root: Prefab = null;
-        if (o2d != null) {
-            var p2d = new Object2D();
-            p2d.local2d = o2d;
-            root = p2d;
-        }
-        else if (o3d != null) {
-            var p3d = new Object3D();
-            p3d.local3d = o3d;
-            root = p3d;
-        }
-
-        if (root != null) {
-            root.children.push(this);
-            parent = root;
-        }
-    }
-
     // Like make but in-place
-    public function instanciate() {
-        onMake();
+    public function instanciate(?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) {
+        onMake(o2d, o3d);
 
         refresh();
 
@@ -169,15 +132,21 @@ class Prefab {
 
     // Override this function if you want to controll how the childrens are
     // made
-    private function onMake() : Void {
-        onMakeInstance();
+    private function onMake(?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) : Void {
+        onMakeInstance(o2d, o3d);
         for (c in children) {
-            c.onMake();
+            var new2d = getLocal2d();
+            if (new2d == null)
+                new2d = o2d;
+            var new3d = getLocal3d();
+            if (new3d == null)
+                new3d = o3d;
+            c.onMake(new2d, new3d);
         }
     }
 
     // Override this function to create runtime objects from this prefab
-    private function onMakeInstance() : Void {
+    private function onMakeInstance(?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) : Void {
 
     }
 

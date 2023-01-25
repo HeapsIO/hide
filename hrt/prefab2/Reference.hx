@@ -30,7 +30,7 @@ class Reference extends Prefab {
 
     public var pref : Prefab = null;
 
-    override private function onMakeInstance() {
+    override private function onMakeInstance(?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) {
         if (path != null) {
             pref = Prefab.loadFromPath(path).make(this);
         }

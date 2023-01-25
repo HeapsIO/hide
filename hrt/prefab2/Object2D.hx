@@ -28,8 +28,8 @@ class Object2D extends Prefab {
         return y;
     }
 
-    override function onMakeInstance() {
-        local2d = new h2d.Object(parent.getFirstLocal2d());
+    override function onMakeInstance(?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) {
+        local2d = new h2d.Object(o2d);
     }
 
     override function onDestroy() {

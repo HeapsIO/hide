@@ -13,8 +13,8 @@ class RenderProps extends Object3D {
 		props = {};
 	}
 
-	override function onMakeInstance() {
-		local3d = new RenderPropsObject(getNearestParentLocal3d());
+	override function onMakeInstance(?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) {
+		local3d = new RenderPropsObject(o3d);
 		local3d.name = name;
 		//updateInstance();
 	}

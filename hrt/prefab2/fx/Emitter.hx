@@ -1323,8 +1323,8 @@ class Emitter extends Object3D {
 		}
 	}
 
-	override function onMake() {
-		onMakeInstance();
+	override function onMake(?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) {
+		onMakeInstance(o2d, o3d);
 	}
 
 
@@ -1568,8 +1568,8 @@ class Emitter extends Object3D {
 		#end
 	}
 
-	override function onMakeInstance() {
-		var emitterObj = new EmitterObject(getNearestParentLocal3d());
+	override function onMakeInstance(?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) {
+		var emitterObj = new EmitterObject(o3d);
 		local3d = emitterObj;
 		updateInstance();
 	}

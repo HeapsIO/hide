@@ -135,11 +135,11 @@ class Shader extends Prefab {
 		}
 	}
 
-	override function onMakeInstance() {
+	override function onMakeInstance(?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) {
 		var shader = makeShader();
 		if( shader == null )
 			return;
-		var local2d = getFirstLocal2d();
+		var local2d = o2d;
 		if( local2d != null ) {
 			var drawable = Std.downcast(local2d, h2d.Drawable);
 			if (drawable != null) {
@@ -153,7 +153,7 @@ class Shader extends Prefab {
 				}
 			}
 		}
-		var local3d = getLocal3d();
+		var local3d = o3d;
 		if( local3d != null )
 			iterMaterials(function(obj,mat) if( targetMaterial == null || targetMaterial == mat.name ) applyShader(obj, mat, shader));
 		this.shader = shader;

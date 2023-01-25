@@ -43,10 +43,10 @@ class DynamicShader extends Shader {
 		return shader;
 	}
 
-	override function onMakeInstance() {
+	override function onMakeInstance(?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) {
 		if( source == null )
 			return;
-		super.onMakeInstance();
+		super.onMakeInstance(o2d, o3d);
 	}
 
 	function fixSourcePath() {

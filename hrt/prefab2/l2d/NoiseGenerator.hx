@@ -113,10 +113,10 @@ class NoiseGenerator extends Object2D {
 		return t.sub(repeat == Both || repeat == X ? tex.width >> 1 : 0, repeat == Both || repeat == Y ? tex.height >> 1 : 0, tex.width, tex.height);
 	}
 
-	override function onMakeInstance() {
+	override function onMakeInstance(?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) {
 		tex = new h3d.mat.Texture(size, size, [Target]);
 		updateTexture(tex);
-		var bmp = new h2d.Bitmap(makeTile(tex), getFirstLocal2d());
+		var bmp = new h2d.Bitmap(makeTile(tex), o2d);
 		bmp.tileWrap = !tex.flags.has(IsNPOT);
 		bmp.visible = false;
 		bmp.x = -size >> 1;

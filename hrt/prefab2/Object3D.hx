@@ -44,10 +44,14 @@ class Object3D extends Prefab {
         return z;
     }
 
-    override function onMakeInstance() {
-        local3d = new h3d.scene.Object(getNearestParentLocal3d());
-		applyTransform();
+    override function onMakeInstance(?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) {
+        local3d = new h3d.scene.Object(o3d);
+		updateInstance();
     }
+
+	override function updateInstance(?propName : String ) {
+		applyTransform();
+	}
 
     override function onDestroy() {
         if (local3d != null) local3d.remove();

@@ -836,14 +836,9 @@ class SceneEditor {
 		scene.setCurrent();
 		scene.onResize();
 		// TODO(ces) : Handle 2d and 3d scenes 
-		if (sceneData.parent == null) {
-			sceneData.setRoot(null, root3d);
-		}
-		else {
-			Std.downcast(sceneData.parent, Object3D).local3d = root3d;
-		}
+
 		//sceneData = PrefabElement.loadFromDynamic(sceneData.serializeToDynamic());
-		sceneData.instanciate();
+		sceneData.instanciate(root2d, root3d);
 		var bgcol = scene.engine.backgroundColor;
 		scene.init();
 		scene.engine.backgroundColor = bgcol;
