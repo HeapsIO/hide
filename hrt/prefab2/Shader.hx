@@ -153,7 +153,7 @@ class Shader extends Prefab {
 				}
 			}
 		}
-		var local3d = getFirstLocal3d();
+		var local3d = getLocal3d();
 		if( local3d != null )
 			iterMaterials(function(obj,mat) if( targetMaterial == null || targetMaterial == mat.name ) applyShader(obj, mat, shader));
 		this.shader = shader;

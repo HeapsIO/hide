@@ -1569,7 +1569,7 @@ class Emitter extends Object3D {
 	}
 
 	override function onMakeInstance() {
-		var emitterObj = new EmitterObject(getFirstLocal3d());
+		var emitterObj = new EmitterObject(getNearestParentLocal3d());
 		local3d = emitterObj;
 		updateInstance();
 	}
@@ -1782,7 +1782,7 @@ class Emitter extends Object3D {
 	}
 
 	override function setSelected(b : Bool ) {
-		var local3d = getFirstLocal3d();
+		var local3d = getLocal3d();
 		var emitterObj = Std.downcast(local3d, EmitterObject);
 		if(emitterObj == null)
 			return false;

@@ -45,7 +45,7 @@ class Object3D extends Prefab {
     }
 
     override function onMakeInstance() {
-        local3d = new h3d.scene.Object(parent.getFirstLocal3d());
+        local3d = new h3d.scene.Object(getNearestParentLocal3d());
 		applyTransform();
     }
 

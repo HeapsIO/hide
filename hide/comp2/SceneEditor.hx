@@ -842,7 +842,7 @@ class SceneEditor {
 		else {
 			Std.downcast(sceneData.parent, Object3D).local3d = root3d;
 		}
-		sceneData = PrefabElement.loadFromDynamic(sceneData.serializeToDynamic());
+		//sceneData = PrefabElement.loadFromDynamic(sceneData.serializeToDynamic());
 		sceneData.instanciate();
 		var bgcol = scene.engine.backgroundColor;
 		scene.init();

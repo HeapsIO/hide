@@ -400,7 +400,7 @@ class FX extends BaseFX {
 	}
 
 	override function onMake() {
-		var fxanim = createInstance(getFirstLocal3d());
+		var fxanim = createInstance(getNearestParentLocal3d());
 		fxanim.duration = duration;
 		fxanim.cullingRadius = cullingRadius;
 

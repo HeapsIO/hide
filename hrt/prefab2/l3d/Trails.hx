@@ -742,7 +742,7 @@ class TrailsSubTrail extends Object3D {
 	}
 
 	override function onMakeInstance() {
-		var obj = new TrailsSubTailObj(getFirstLocal3d());
+		var obj = new TrailsSubTailObj(getNearestParentLocal3d());
         applyTransform();
 		obj.name = name;
 		local3d = obj;
@@ -793,7 +793,7 @@ class Trails extends Object3D {
 
 	override function onMakeInstance() {
 		// TODO(ces) : Revert handling of multiple trails
-        var tr = create(getFirstLocal3d(), 1);
+        var tr = create(getNearestParentLocal3d(), 1);
         local3d = tr;
 	}
 

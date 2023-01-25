@@ -531,7 +531,7 @@ class Prefab extends hide.view.FileView {
 	function resetCamera( top : Bool ) {
 		var targetPt = new h3d.col.Point(0, 0, 0);
 		if(sceneEditor.selectedPrefabs.length > 0) {
-			targetPt = sceneEditor.selectedPrefabs[0].getFirstLocal3d().getAbsPos().getPosition().toPoint();
+			targetPt = sceneEditor.selectedPrefabs[0].getThisOrParentLocal3d().getAbsPos().getPosition().toPoint();
 		}
 		if(top)
 			sceneEditor.cameraController.set(200, Math.PI/2, 0.001, targetPt);
@@ -790,7 +790,9 @@ class Prefab extends hide.view.FileView {
 				if(cdbType != null && sceneFilters.get(cdbType) == false)
 					visible = false;
 			}
-			obj3d.getLocal3d().visible = visible;
+			if (obj3d.getLocal3d() != null) {
+				obj3d.getLocal3d().visible = visible;
+			}
 		}
 		var color = getDisplayColor(p);
 		if(color != null){

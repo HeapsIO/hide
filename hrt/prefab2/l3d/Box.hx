@@ -16,7 +16,7 @@ class Box extends Object3D {
 	}
 
 	override function onMakeInstance() {
-		var l3d = getFirstLocal3d();
+		var l3d = getNearestParentLocal3d();
 		var mesh = new h3d.scene.Mesh(h3d.prim.Cube.defaultUnitCube(), l3d);
 
 		#if editor

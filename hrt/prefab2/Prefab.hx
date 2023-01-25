@@ -60,12 +60,26 @@ class Prefab {
         return null;
     }
 
-    public function getFirstLocal3d() : h3d.scene.Object {
-        var l = getLocal3d();
-        if (l != null)
-            return l;
-        if (parent != null)
-            return parent.getFirstLocal3d();
+    // This should be only called in "OnMakeInstance" to get the relevant object on which you should attach
+    final public function getNearestParentLocal3d() : h3d.scene.Object {
+        var p = parent;
+        while (p != null) {
+            var l = p.getLocal3d();
+            if (l != null)
+                return l;
+            p = p.parent;
+        }
+        return null;
+    }
+
+    public function getThisOrParentLocal3d() : h3d.scene.Object {
+        var p = this;
+        while (p != null) {
+            var l = p.getLocal3d();
+            if (l != null)
+                return l;
+            p = p.parent;
+        }
         return null;
     }
 
