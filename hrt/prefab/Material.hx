@@ -50,7 +50,6 @@ class Material extends Prefab {
 	}
 
 	function update(mat : h3d.mat.Material, props, loadTexture : String -> h3d.mat.Texture) {
-		mat.props = props;
 		if(color != null)
 			mat.color.setColor(h3d.Vector.fromArray(color).toColor());
 		if(mainPassName != null)
@@ -70,6 +69,7 @@ class Material extends Prefab {
 		if( getTex("diffuseMap") != null ) mat.texture = getTex("diffuseMap");
 		if( getTex("normalMap") != null ) mat.normalMap = getTex("normalMap");
 		if( getTex("specularMap") != null ) mat.specularTexture = getTex("specularMap");
+		mat.props = props;
 	}
 	
 	override function updateInstance( ctx : Context, ?propName ) {
