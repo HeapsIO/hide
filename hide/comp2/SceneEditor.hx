@@ -1875,7 +1875,7 @@ class SceneEditor {
 		return p.setSelected(b);
 	}
 
-	public function changeAllModels(source : hrt.prefab.Object3D, path : String) {
+	public function changeAllModels(source : hrt.prefab2.Object3D, path : String) {
 		var all = sceneData.all();
 		var oldPath = source.source;
 		var changedModels = [];
