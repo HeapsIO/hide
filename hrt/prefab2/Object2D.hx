@@ -28,11 +28,11 @@ class Object2D extends Prefab {
         return y;
     }
 
-    override function onMakeInstance(?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) {
-        local2d = new h2d.Object(o2d);
+    override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateParams) {
+        local2d = new h2d.Object(ctx.local2d);
     }
 
-    override function onDestroy() {
+    override function destroy() {
         if (local2d != null) local2d.remove();
     }
 

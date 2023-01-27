@@ -399,8 +399,8 @@ class FX extends BaseFX {
 		scriptCode = obj.scriptCode;
 	}
 
-	override function onMake(?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) {
-		var fxanim = createInstance(o3d);
+	override function makeInstanceRec(ctx: hrt.prefab2.Prefab.InstanciateParams) {
+		var fxanim = createInstance(ctx.local3d);
 		fxanim.duration = duration;
 		fxanim.cullingRadius = cullingRadius;
 
@@ -433,7 +433,7 @@ class FX extends BaseFX {
 		else*/
 		
 		var root = getFXRoot(this);
-		super.onMake();
+		super.makeInstanceRec(ctx);
 		fxanim.init(this, root);
 	}
 

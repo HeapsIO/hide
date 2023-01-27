@@ -135,17 +135,16 @@ class Shader extends Prefab {
 		}
 	}
 
-	override function onMakeInstance(?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) {
+	override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateParams) {
 		var shader = makeShader();
 		if( shader == null )
 			return;
-		var local2d = o2d;
-		if( local2d != null ) {
-			var drawable = Std.downcast(local2d, h2d.Drawable);
+		if( ctx.local2d != null ) {
+			var drawable = Std.downcast(ctx.local2d, h2d.Drawable);
 			if (drawable != null) {
 				drawable.addShader(shader);
 			} else {
-				var flow = Std.downcast(local2d, h2d.Flow);
+				var flow = Std.downcast(ctx.local2d, h2d.Flow);
 				if (flow != null) {
 					@:privateAccess if (flow.background != null) {
 						flow.background.addShader(shader);
@@ -153,14 +152,13 @@ class Shader extends Prefab {
 				}
 			}
 		}
-		var local3d = o3d;
-		if( local3d != null )
+		if( ctx.local3d != null )
 			iterMaterials(function(obj,mat) if( targetMaterial == null || targetMaterial == mat.name ) applyShader(obj, mat, shader));
 		this.shader = shader;
 		updateInstance();
 	}
 
-	override function onDestroy() {
+	override function destroy() {
 		var drawable = Std.downcast(getLocal2d(), h2d.Drawable);
 		if (drawable != null) {
 			drawable.removeShader(shader);

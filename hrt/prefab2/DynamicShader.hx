@@ -43,10 +43,10 @@ class DynamicShader extends Shader {
 		return shader;
 	}
 
-	override function onMakeInstance(?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) {
+	override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateParams) {
 		if( source == null )
 			return;
-		super.onMakeInstance(o2d, o3d);
+		super.makeInstance(ctx);
 	}
 
 	function fixSourcePath() {

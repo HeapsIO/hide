@@ -91,6 +91,17 @@ class Macros {
                     expr: macro $v{hasSetter},
                 });
 
+                var e : Expr = macro @:pos(f.pos) null;
+                if (f.expr() != null) {
+                    e = Context.getTypedExpr(f.expr());
+                }
+                var defVal = e.expr.match(EConst(_) | EBinop(_) | EUnop(_)) ? e : macro @:pos(f.pos) null;
+
+                props.push({
+                    field: "defaultValue",
+                    expr: macro ($defVal:Dynamic),
+                });
+
                 {
                     expr: EObjectDecl(props),
                     pos: Context.currentPos(),
@@ -126,23 +137,23 @@ class Macros {
 
         var typeName = Context.getLocalClass().get().name;
 
-        // Experiment for a typed loadFromDynamic from the subclasses
+        // Experiment for a typed createFromDynamic from the subclasses
         /*if (typeName != "Prefab") {
-            var loadFromDynamic : Function = {
+            var createFromDynamic : Function = {
                 args: [
                     { name : "data", type : macro : Dynamic},
                     { name : "parent", type : macro : prefab.Prefab, value: macro null}
                 ],
                 expr: macro {
-                    return prefab.Macros.Cast(${macro prefab.Prefab.loadFromDynamic(data, parent)}, $v{typeName});
+                    return prefab.Macros.Cast(${macro prefab.Prefab.createFromDynamic(data, parent)}, $v{typeName});
                 }
             }
 
             buildFields.push({
-                name: "loadFromDynamic",
+                name: "createFromDynamic",
                 access : [AStatic, APublic],
                 pos : Context.currentPos(),
-                kind: FFun(loadFromDynamic)
+                kind: FFun(createFromDynamic)
             });
         }*/
 
@@ -154,7 +165,7 @@ class Macros {
                 { name : "o3d", type : macro :  h3d.scene.Object, value: macro null}
             ],
             expr: macro {
-                return hrt.prefab2.Macros.Cast(${macro _make_internal(root, o2d, o3d)}, $v{typeName});
+                return hrt.prefab2.Macros.Cast(${macro makeInternal(root, o2d, o3d)}, $v{typeName});
             }
         }
 

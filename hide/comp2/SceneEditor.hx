@@ -837,8 +837,13 @@ class SceneEditor {
 		scene.onResize();
 		// TODO(ces) : Handle 2d and 3d scenes 
 
-		//sceneData = PrefabElement.loadFromDynamic(sceneData.serializeToDynamic());
-		sceneData.instanciate(root2d, root3d);
+		//sceneData = PrefabElement.createFromDynamic(sceneData.serializeToDynamic());
+		var params : hrt.prefab2.Prefab.InstanciateParams = {
+            local2d: root2d,
+            local3d: root3d,
+			forceInstanciate: true,
+        };
+		sceneData.instanciate(params);
 		var bgcol = scene.engine.backgroundColor;
 		scene.init();
 		scene.engine.backgroundColor = bgcol;
@@ -863,7 +868,7 @@ class SceneEditor {
 			lastRenderProps.applyProps(scene.s3d.renderer);
 		else {
 			// TODO(ces) : restore
-			/*var refPrefab : hrt.prefab2.Reference = cast hrt.prefab2.Prefab.loadFromPath(view.config.getLocal("scene.renderProps"));
+			/*var refPrefab : hrt.prefab2.Reference = cast hrt.prefab2.Prefab.createFromPath(view.config.getLocal("scene.renderProps"));
 			refPrefab.make(null, root2d, root3d);
 			if( @:privateAccess refPrefab.pref != null ) {
 				var renderProps = @:privateAccess refPrefab.pref.get(hrt.prefab2.RenderProps);
@@ -1577,13 +1582,20 @@ class SceneEditor {
 	}
 
 	function removeInstance(elt : PrefabElement) {
-		elt.destroy();
+		elt.destroyPrefab();
 		return true;
 	}
 
 	function makePrefab(elt: PrefabElement) {
 		scene.setCurrent();
-		elt.instanciate();
+		
+		var params : hrt.prefab2.Prefab.InstanciateParams = {
+            local2d: root2d,
+            local3d: root3d,
+			forceInstanciate: true,
+        };
+
+		elt.instanciate(params);
 		for( p in elt.flatten() )
 			makeInteractive(p);
 		//scene.init(ctx.local3d);
@@ -1877,7 +1889,7 @@ class SceneEditor {
 
 	public function changeAllModels(source : hrt.prefab2.Object3D, path : String) {
 		var all = sceneData.all();
-		var oldPath = source.source;
+		var oldPath = source.getSource();
 		var changedModels = [];
 		for (child in all) {
 			var model = child.to(hrt.prefab2.Object3D);
@@ -2277,7 +2289,7 @@ class SceneEditor {
 		var opts : { ref : {source:String,name:String} } = { ref : null };
 		var obj = view.getClipboard("prefab",opts);
 		if(obj != null) {
-			var p = hrt.prefab2.Prefab.loadFromDynamic(obj).make(parent);
+			var p = hrt.prefab2.Prefab.createFromDynamic(obj).make(parent);
 			autoName(p);
 
 			if( opts.ref != null && opts.ref.source != null && opts.ref.name != null ) {
@@ -2305,7 +2317,7 @@ class SceneEditor {
 		else {
 			obj = view.getClipboard("library");
 			if(obj != null) {
-				var lib = hrt.prefab2.Prefab.loadFromDynamic(obj).make(parent);
+				var lib = hrt.prefab2.Prefab.createFromDynamic(obj).make(parent);
 				throw "aaaa";
 				// TODO(ces) : restore
 				/*for(c in lib.children) {
@@ -2572,7 +2584,7 @@ class SceneEditor {
 
 	public function deleteElements(elts : Array<PrefabElement>, ?then: Void->Void, doRefresh : Bool = true, enableUndo : Bool = true) {
 		for (e in elts) {
-			e.destroy();
+			e.destroyPrefab();
 		}
 		refresh();
 		/*var fullRefresh = false;

@@ -171,7 +171,7 @@ class Prefab extends hide.view.FileView {
 		if( sceneEditor != null ) sceneEditor.dispose();
 
 		var content = sys.io.File.getContent(getPath());
-		data = hrt.prefab2.Prefab.loadFromDynamic(haxe.Json.parse(content));
+		data = hrt.prefab2.Prefab.createFromDynamic(haxe.Json.parse(content));
 		currentSign = ide.makeSignature(content);
 
 
@@ -531,7 +531,7 @@ class Prefab extends hide.view.FileView {
 	function resetCamera( top : Bool ) {
 		var targetPt = new h3d.col.Point(0, 0, 0);
 		if(sceneEditor.selectedPrefabs.length > 0) {
-			targetPt = sceneEditor.selectedPrefabs[0].getThisOrParentLocal3d().getAbsPos().getPosition().toPoint();
+			targetPt = sceneEditor.selectedPrefabs[0].findFirstLocal3d().getAbsPos().getPosition().toPoint();
 		}
 		if(top)
 			sceneEditor.cameraController.set(200, Math.PI/2, 0.001, targetPt);

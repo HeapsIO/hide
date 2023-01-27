@@ -534,7 +534,7 @@ class EmitterObject extends h3d.scene.Object {
 				mesh.remove();
 			}
 
-			spawn.destroy();
+			spawn.destroyPrefab();
 			/*template.shared.contexts.remove(particleTemplate);
 			template.local3d.remove();
 			template.local3d = null;*/
@@ -562,7 +562,7 @@ class EmitterObject extends h3d.scene.Object {
 				if (Std.downcast(mat.parent, hrt.prefab2.l3d.Trails) != null)
 					continue;
 				if(mat.enabled) {
-					@:privateAccess mat.onMakeInstance();
+					@:privateAccess mat.makeInstance({local2d: prefab.findFirstLocal2d(), local3d: prefab.findFirstLocal3d()});
 				}
 			}
 
@@ -1323,11 +1323,6 @@ class Emitter extends Object3D {
 		}
 	}
 
-	override function onMake(?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) {
-		onMakeInstance(o2d, o3d);
-	}
-
-
 
 	static inline function randProp(name: String) {
 		return name + "_rand";
@@ -1568,8 +1563,8 @@ class Emitter extends Object3D {
 		#end
 	}
 
-	override function onMakeInstance(?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) {
-		var emitterObj = new EmitterObject(o3d);
+	override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateParams) {
+		var emitterObj = new EmitterObject(ctx.local3d);
 		local3d = emitterObj;
 		updateInstance();
 	}

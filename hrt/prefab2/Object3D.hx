@@ -51,8 +51,8 @@ class Object3D extends Prefab {
         return z;
     }
 
-    override function onMakeInstance(?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) {
-        local3d = new h3d.scene.Object(o3d);
+    override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateParams) {
+        local3d = new h3d.scene.Object(ctx.local3d);
 		updateInstance();
     }
 
@@ -60,7 +60,7 @@ class Object3D extends Prefab {
 		applyTransform();
 	}
 
-    override function onDestroy() {
+    override function destroy() {
         if (local3d != null) local3d.remove();
     }
 

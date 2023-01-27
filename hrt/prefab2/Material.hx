@@ -74,7 +74,7 @@ class Material extends Prefab {
 	}
 	
 	override function updateInstance(?propName ) {
-		var local3d = getThisOrParentLocal3d();
+		var local3d = findFirstLocal3d();
 		if( local3d == null )
 			return;
 
@@ -84,7 +84,7 @@ class Material extends Prefab {
 		if ( mats == null || mats.length == 0 ) {
 			try {
 				var path = hide.Ide.inst.currentConfig.get("material.preview", []);
-				var preview = Object3D.cache.loadModel(path);
+				var preview = Object3D.modelCache.loadModel(path);
 				local3d.parent.addChild(preview);
 				local3d = preview;
 				local3d.x = local3d.getScene().getMaterials().length * 5.0;
@@ -99,14 +99,10 @@ class Material extends Prefab {
 	}
 
 	function loadTexture( path : String ) : h3d.mat.Texture {
-		return Object3D.cache.loadTexture(null, path, false);
+		return Object3D.modelCache.loadTexture(null, path, false);
 	}
 
-	override function onMakeInstance(?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) {
-		var local3d = o3d;
-		if(local3d == null)
-			return;
-
+	override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateParams) {
 		updateInstance();
 	}
 
