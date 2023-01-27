@@ -70,6 +70,10 @@ class Shader extends Prefab {
 		material.mainPass.addShader(shader);
 	}
 
+	function checkMaterial(mat: h3d.mat.Material) {
+		return targetMaterial == null || targetMaterial == mat.name;
+	}
+
 	function iterMaterials(ctx:Context, callb) {
 		var parent = parent;
 		var shared = ctx.shared;
@@ -127,7 +131,7 @@ class Shader extends Prefab {
 			}
 		}
 		if( ctx.local3d != null )
-			iterMaterials(ctx, function(obj,mat) if( targetMaterial == null || targetMaterial == mat.name ) applyShader(obj, mat, shader));
+			iterMaterials(ctx, function(obj,mat) if(checkMaterial(mat)) applyShader(obj, mat, shader));
 		ctx.custom = shader;
 		updateInstance(ctx);
 		return ctx;
