@@ -40,13 +40,13 @@ class GenFogShader extends hrt.shader.PbrShader {
 
 			if( distanceOpacity != 0 ) {
 				var distance = (origin - (usePosition ? position : camera.position)).length() - cameraDistance;
-				amount += clamp((distance - startDistance) * distanceScale, 0, 1) * distanceOpacity;
+				amount += smoothstep(0.0, 1.0, (distance - startDistance) * distanceScale) * distanceOpacity;
 			}
 
 			if( heightOpacity != 0 ) {
 				var height = origin.z;
 				if( usePosition ) height -= position.z;
-				amount += clamp((height - startHeight) * heightScale, 0, 1) * heightOpacity;
+				amount += smoothstep(0.0, 1.0, (height - startHeight) * heightScale) * heightOpacity;
 			}
 
 			var fogColor = mix(startColor, endColor, clamp(amount,0,1));
