@@ -5,6 +5,7 @@ class Reference extends Prefab {
 	@:s public var editMode : Bool = false;
 
 
+
     //@:s @:copy(copy_overrides)
     //public var overrides : haxe.ds.StringMap<Dynamic> = new haxe.ds.StringMap<Dynamic>();
 

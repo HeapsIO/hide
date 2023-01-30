@@ -113,9 +113,7 @@ class BaseFX extends Object3D {
 		markers = obj.markers == null ? [] : obj.markers;
 	}
 
-	// TODO(ces) : re-implement
 	public static function makeShaderParams(shaderElt: hrt.prefab2.Shader) {
-		//ctx: Context, shaderElt: hrt.prefab.Shader
 		var shaderDef = shaderElt.getShaderDefinition();
 		if(shaderDef == null)
 			return null;

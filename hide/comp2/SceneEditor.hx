@@ -2053,11 +2053,11 @@ class SceneEditor {
 			pickedEl = pickedEl.parentElement;
 		}
 
-		var supported = @:privateAccess hrt.prefab.Library.registeredExtensions;
+		var supported = ["prefab2"]; //@:privateAccess hrt.prefab.Library.registeredExtensions;
 		var paths = [];
 			for(path in items) {
 			var ext = haxe.io.Path.extension(path).toLowerCase();
-			if( supported.exists(ext) || ext == "fbx" || ext == "hmd" || ext == "json")
+			if( supported.contains(ext) || ext == "fbx" || ext == "hmd" || ext == "json")
 				paths.push(path);
 		}
 		if( paths.length == 0 )
@@ -2067,18 +2067,19 @@ class SceneEditor {
 		return true;
 	}
 
-	function createDroppedElement(path: String, parent: PrefabElement) : Object3D {
-		var obj3d : Object3D;
-		//var relative = ide.makeRelative(path);selectedPrefabs
+	function createDroppedElement(path: String, parent: PrefabElement) : PrefabElement {
+		var prefab : PrefabElement = null;
+		var relative = ide.makeRelative(path);
 
-		// TODO(ces) : restore
-		/*if(hrt.prefab.Library.getPrefabType(path) != null) {
+
+		if(path.split(".").pop().toLowerCase() == "prefab2") {
 			var ref = new hrt.prefab2.Reference(parent);
-			ref.source = relative;
-			obj3d = ref;
-			obj3d.name = new haxe.io.Path(relative).file;
+			ref.path = relative;
+			prefab = ref;
+			prefab.name = new haxe.io.Path(relative).file;
 		}
-		else if(haxe.io.Path.extension(path).toLowerCase() == "json") {
+		// TODO(ces) : restore
+		/*else if(haxe.io.Path.extension(path).toLowerCase() == "json") {
 			obj3d = new hrt.prefab.l3d.Particles3D(parent);
 			obj3d.source = relative;
 			obj3d.name = new haxe.io.Path(relative).file;
@@ -2087,7 +2088,7 @@ class SceneEditor {
 			obj3d = new hrt.prefab.Model(parent);
 			obj3d.source = relative;
 		}*/
-		return null;
+		return prefab;
 	}
 
 	function dropElements(paths: Array<String>, parent: PrefabElement) {
@@ -2105,7 +2106,9 @@ class SceneEditor {
 		var elts: Array<PrefabElement> = [];
 		for(path in paths) {
 			var obj3d = createDroppedElement(path, parent);
-			obj3d.setTransform(localMat);
+			
+			//TODO(ces) restore
+			//obj3d.setTransform(localMat);
 			autoName(obj3d);
 			elts.push(obj3d);
 

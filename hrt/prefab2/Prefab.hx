@@ -162,8 +162,8 @@ class Prefab {
 
     // Like make but in-place
     public function instanciate(params: InstanciateParams) {
-        if (params.forceInstanciate == null ||
-            (!params.forceInstanciate && (proto.prefab == this)))
+        var forceInstanciate = (params.forceInstanciate != null && params.forceInstanciate);
+        if (!forceInstanciate && (proto.prefab == this))
             throw "Can't instanciate a template prefab unless params.forceInstanciate is true.";
         makeInstanceRec(params);
 
