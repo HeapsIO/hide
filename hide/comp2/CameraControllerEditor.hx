@@ -13,7 +13,7 @@ class CameraControllerEditor extends Popup {
 
 
     static public var controllersClasses : Array<{name: String, cl : Class<CameraControllerBase>}> = [
-        {name: "Legacy", cl: CamController},
+        {name: "Classic", cl: CamController},
         {name: "Orthographic", cl: OrthoController},
         {name: "FPS", cl: FPSController},
         {name: "Fly/6DOF", cl: FlightController},
