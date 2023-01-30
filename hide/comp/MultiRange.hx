@@ -6,10 +6,12 @@ class MultiRange extends Component {
     var current : Array<Float> = [];
     var numValues : Int = 0;
     var ranges : Array<Range> = [];
-    var isUniform : Bool = true;
+    var isUniform : Bool = false;
 
     var linkButton : Element;
     var linkIcon : Element;
+
+    static final uniformLockKey = "multiRangeUniformLock";
 
     function set_value(v : Array<Float>) {
         if (v.length != numValues) 
@@ -61,10 +63,16 @@ class MultiRange extends Component {
 	public function new(?parent:Element,?root:Element, num : Int , labels : Array<String>) {
         this.numValues = num;
         super(null, null);
+        saveDisplayKey = "MultiRange";
 
         var flex = new Element("<div>").css("position", "relative").css("width", "110%").appendTo(parent);
         flex.css("display", "flex");
 
+        var ds = getDisplayState(uniformLockKey + ":" + labels[0]);
+
+        if (ds != null) {
+            isUniform = ds == true;
+        }
 
         var rows = new Element("<div>").css("flex", "1 0").appendTo(flex);
 
@@ -121,6 +129,7 @@ class MultiRange extends Component {
 
         linkButton.click(function(e) {
             isUniform = !isUniform;
+            saveDisplayState(uniformLockKey + ":" + labels[0], isUniform);
             repaint();
         });
 
