@@ -27,12 +27,55 @@ typedef PrefabInfo = {prefabClass : Class<Prefab> #if editor, inf : hide.prefab2
 @:autoBuild(hrt.prefab2.Macros.buildPrefab())
 @:build(hrt.prefab2.Macros.buildPrefab())
 class Prefab {
+
+    /**
+        The registered type name for this prefab, used to identify a prefab when serializing
+    **/
+    public var type(get, never) : String;
+
+	/**
+		The name of the prefab in the tree view
+	**/
     @:s public var name : String = "";
+
+    /**
+		A storage for some extra properties
+	**/
     @:s public var props : Any = null;
+
+    /**
+		Tells if the prefab will create an instance when calling make() or be ignored. Also apply to this prefab children.
+	**/
     @:s public var enabled : Bool = true;
+
+    /**
+		Tells if the prefab will create an instance when used in an other prefab or in game. Also apply to this prefab children.
+	**/
     @:s public var editorOnly : Bool = false;
+
+    /**
+		Tells if the prefab will create an instance when used in editor. Also apply to this prefab children.
+	**/
     @:s public var inGameOnly : Bool = false;
+
+    /**
+		Prevent the prefab from being selected in Hide. Also apply to this prefab children.
+	**/
+    // TODO(ces) : Concept of editor only serializable flags ?
+    // maybe store this like the visibility (in the user prefs instead of the prefab ???)
+    // Also maybe store all the flags in a single variable ???
 	@:s public var locked : Bool = false;
+
+	/**
+		The parent of the prefab in the tree view
+	**/
+    public var children : Array<Prefab> = [];
+
+    /**
+		The parent of the prefab in the tree view
+	**/
+    public var parent : Prefab = null;
+
 
     public function new(?parent:Prefab = null) {
         this.parent = parent;
@@ -41,17 +84,13 @@ class Prefab {
         }
     }
 
-    // Todo : generate through macros
-    public var type(get, never) : String;
 
     function get_type() {
         var thisClass = Type.getClass(this);
         return getClassTypeName(thisClass);
     }
 
-    public var children : Array<Prefab> = [];
 
-    public var parent : Prefab = null;
 
     /**The original prefab that this prefab is derived from.**/
     public var proto : ProtoPrefab = null;
@@ -147,6 +186,7 @@ class Prefab {
     // Override this function if you want to controll how the childrens are
     // made
     function makeInstanceRec(params: InstanciateParams) : Void {
+        if (!enabled) return;
         makeInstance(params);
         var new2d = getLocal2d();
         if (new2d != null)
@@ -276,14 +316,8 @@ class Prefab {
     }
 
     public static function createFromPath(path: String, parent: Prefab = null) : Prefab {
-        var pref : Prefab = cache[path];
-        if (pref != null)
-            return pref;
-        var res = hxd.res.Loader.currentInstance.load(path);
-        var data = haxe.Json.parse(res.toText());
-        var pref = Prefab.createFromDynamic(data, parent);
-        pref.proto = new ProtoPrefab(pref, path);
-        return pref;
+        return hxd.res.Loader.currentInstance.load(path).to(hrt.prefab2.Resource).load();
+        //return null;
     }
 
     /** Copy all the properties in data to this prefab object. This is not recursive**/
@@ -474,7 +508,7 @@ class Prefab {
 	}
 
     /**
-		Find several prefabs in the tree by calling `f` on each and returning all the not-null values returned.
+		Find several prefabs in the tree by calling `f` on each and returning all the non-null values returned.
 	**/
 	public function findAll<T>( f : Prefab -> Null<T>, ?followRefs : Bool, ?arr : Array<T> ) : Array<T> {
 		if( arr == null ) arr = [];
@@ -492,7 +526,9 @@ class Prefab {
 		return arr;
 	}
 
-    // "override" this function in your child class
+	/**
+		Allows to customize how the prefab object is displayed / handled within Hide
+	**/
     public function getHideProps() : hide.prefab2.HideProps {
 		return { icon : "question-circle", name : "Unknown" };
 	}
@@ -513,10 +549,10 @@ class Prefab {
 		return children.iterator();
 	}
 
-    	/**
+    /**
 		Simlar to get() but returns null if not found.
 	**/
-	public function getOpt<T:Prefab>( cl : Class<T>, ?name : String, ?followRefs : Bool ) : T {
+	public function getOpt<T:Prefab>( cl : Class<T>, ?name : String, ?followRefs : Bool ) : Null<T> {
 		if( name == null || this.name == name ) {
 			var cval = to(cl);
 			if( cval != null ) return cval;
@@ -556,9 +592,10 @@ class Prefab {
 		return false;
 	}
 
-    /* Apply the filter function to this object, returning the result of filter if it's not null.
+    /**
+        Apply the filter function to this object, returning the result of filter if it's not null.
         If the filters returns null, it's then applied to the parent of this prefab, and this recursively.
-    */
+    **/
     inline public function findUp<T>(filter : (p:Prefab) -> Null<T>) : Null<T> {
         var current = this;
         var val = null;
