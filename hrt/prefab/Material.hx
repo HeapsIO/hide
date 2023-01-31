@@ -28,7 +28,7 @@ class Material extends Prefab {
 	override function save() {
 		var obj : Dynamic = super.save();
 		if(color != null && h3d.Vector.fromArray(color).toColor() != 0xffffffff) obj.color = color;
-		if(mainPassName == "") mainPassName = null;
+		if(mainPassName == "" || mainPassName == null ) Reflect.deleteField(obj, "mainPassName");
 		return obj;
 	}
 
@@ -69,7 +69,7 @@ class Material extends Prefab {
 		if( getTex("specularMap") != null ) mat.specularTexture = getTex("specularMap");
 		mat.props = props;
 
-		if(mainPassName != null)
+		if(mainPassName != null && mainPassName.length > 0 )
 			mat.mainPass.setPassName(mainPassName);
 	}
 	
