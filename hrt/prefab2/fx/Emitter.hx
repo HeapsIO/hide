@@ -1564,10 +1564,8 @@ class Emitter extends Object3D {
         #end
     }
 
-    override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) {
-        var emitterObj = new EmitterObject(ctx.local3d);
-        local3d = emitterObj;
-        updateInstance();
+    override function makeObject3d(parent3d: h3d.scene.Object) : h3d.scene.Object {
+        return new EmitterObject(parent3d);
     }
 
     override function removeInstance():Bool {

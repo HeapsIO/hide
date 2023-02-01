@@ -231,14 +231,13 @@ class Polygon extends Object3D {
         return primitive;
     }
 
-    override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) {
+    override function makeObject3d(parent3d: h3d.scene.Object) : h3d.scene.Object {
         var primitive = makePrimitive();
-        var mesh = new h3d.scene.Mesh(primitive, ctx.local3d);
+        var mesh = new h3d.scene.Mesh(primitive, parent3d);
         mesh.material.props = h3d.mat.MaterialSetup.current.getDefaults("overlay");
         mesh.material.blendMode = Alpha;
         mesh.material.mainPass.culling = None;
-        local3d = mesh;
-        updateInstance();
+        return mesh;
     }
 
     #if editor

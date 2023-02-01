@@ -185,7 +185,11 @@ class Prefab {
     // made
     function makeInstanceRec(params: InstanciateContext) : Void {
         if (!enabled) return;
+        var old2d = params.local2d;
+        var old3d = params.local3d;
+
         makeInstance(params);
+
         var new2d = this.getLocal2d();
         if (new2d != null)
             params.local2d = new2d;
@@ -195,6 +199,9 @@ class Prefab {
         for (c in children) {
             c.makeInstanceRec(params);
         }
+
+        params.local2d = old2d;
+        params.local3d = old3d;
     }
 
     /**

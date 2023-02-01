@@ -32,12 +32,11 @@ class Reference extends Object3D {
         }
     }
 
-    override private function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) {
-        super.makeInstance(ctx);
-
+    override function makeObject3d(parent3d: h3d.scene.Object) : h3d.scene.Object {
         if (path != null) {
-            refInstance = Prefab.createFromPath(path).make(null, null, local3d);
+            refInstance = Prefab.createFromPath(path).make(null, null, parent3d);
         }
+        return Object3D.getLocal3d(refInstance);
     }
 
     public static var _ = hrt.prefab2.Prefab.register("Reference", Reference);

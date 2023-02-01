@@ -54,9 +54,16 @@ class Object3D extends Prefab {
         return z;
     }
 
-    override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) {
-        local3d = new h3d.scene.Object(ctx.local3d);
+    /* Override makeObject3d instead of this */
+    override final function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) {
+        local3d = makeObject3d(ctx.local3d);
+        if (local3d != null)
+            local3d.name = name;
         updateInstance();
+    }
+
+    function makeObject3d(parent3d: h3d.scene.Object) : h3d.scene.Object {
+        return new h3d.scene.Object(parent3d);
     }
 
     override function updateInstance(?propName : String ) {

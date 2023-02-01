@@ -14,8 +14,8 @@ class Box extends Object3D {
         #end
     }
 
-    override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) {
-        var mesh = new h3d.scene.Mesh(h3d.prim.Cube.defaultUnitCube(), ctx.local3d);
+    override function makeObject3d(parent3d: h3d.scene.Object) : h3d.scene.Object {
+        var mesh = new h3d.scene.Mesh(h3d.prim.Cube.defaultUnitCube(), parent3d);
 
         #if editor
         setDebugColor(0x60ffffff, mesh.material);
@@ -26,9 +26,7 @@ class Box extends Object3D {
         wire.material.shadows = false;
         #end
 
-        local3d = mesh;
-        local3d.name = name;
-        updateInstance();
+        return mesh;
     }
 
     #if editor

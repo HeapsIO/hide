@@ -22,9 +22,9 @@ class Model extends Object3D {
         return super.save();
     }*/
 
-    override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) : Void  {
+    override function makeObject3d(parent3d: h3d.scene.Object) : h3d.scene.Object {
         if( source == null)
-            return super.makeInstance(ctx);
+            return super.makeObject3d(parent3d);
         #if editor
         try {
         #end
@@ -40,23 +40,15 @@ class Model extends Object3D {
                     m.cullingCollider = new h3d.col.ObjectCollider(m, m.primitive.getBounds().toSphere());
             if( retargetAnim ) applyRetarget(obj);
 
-            obj.name = name;
-            ctx.local3d.addChild(obj);
-            local3d = obj;
-            updateInstance();
-
-
-            if( animation != null )
-                obj.playAnimation(Object3D.loadAnimation(animation));
+            parent3d.addChild(obj);
+            return obj;
         #if editor
         } catch( e : Dynamic ) {
             e.message = "Could not load model " + source + ": " + e.message;
             throw e;
         }
         #end
-        local3d = new h3d.scene.Object(ctx.local3d);
-        local3d.name = name;
-        updateInstance();
+        return new h3d.scene.Object(parent3d);
     }
 
     function applyRetarget( obj : h3d.scene.Object ) {
@@ -94,6 +86,9 @@ class Model extends Object3D {
         super.updateInstance(propName);
         polys3D = null;
         boundingSphere = null;
+
+        if( animation != null )
+            local3d.playAnimation(Object3D.loadAnimation(animation));
     }
 
     var polys3D = null;
