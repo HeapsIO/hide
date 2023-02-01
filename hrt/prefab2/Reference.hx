@@ -1,20 +1,23 @@
 package hrt.prefab2;
 
-class Reference extends Prefab {
+class Reference extends Object3D {
     @:s public var path : String = null;
 	@:s public var editMode : Bool = false;
+
+    public var refInstance : Prefab;
 
 
 
     //@:s @:copy(copy_overrides)
     //public var overrides : haxe.ds.StringMap<Dynamic> = new haxe.ds.StringMap<Dynamic>();
 
-    override public function getLocal2d() : h2d.Object {
-        return pref != null ? pref.getLocal2d() : null;
+    /*override public function getLocal2d() : h2d.Object {
+        return refInstance != null ? refInstance.getLocal2d() : null;
     }
 
-    @:s
-    public var test : Array<Int> = [];
+    override public function getLocal3d() : h3d.scene.Object {
+        return refInstance != null ? refInstance.getLocal3d() : null;
+    }*/
 
     public static function copy_overrides(from:Dynamic) : haxe.ds.StringMap<Dynamic> {
         if (Std.isOfType(from, haxe.ds.StringMap)) {
@@ -29,11 +32,11 @@ class Reference extends Prefab {
         }
     }
 
-    public var pref : Prefab = null;
-
     override private function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateParams) {
+		super.makeInstance(ctx);
+
         if (path != null) {
-            pref = Prefab.createFromPath(path).make(this);
+            refInstance = Prefab.createFromPath(path).make(null, null, local3d);
         }
     }
 

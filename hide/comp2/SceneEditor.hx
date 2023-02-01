@@ -642,8 +642,8 @@ class SceneEditor {
 				objs = visibleObjs;
 			}
 			var ref = o == null ? null : o.to(Reference);
-			@:privateAccess if( ref != null && ref.editMode && ref.pref != null ) {
-				for( c in ref.pref )
+			@:privateAccess if( ref != null && ref.editMode && ref.refInstance != null ) {
+				for( c in ref.refInstance )
 					objs.push(c);
 			}
 			var out = [for( o in objs ) makeItem(o)];
@@ -887,7 +887,7 @@ class SceneEditor {
 		for( c in p.children )
 			getAllWithRefs(c, cl, arr);
 		var ref = p.to(Reference);
-		@:privateAccess if( ref != null && ref.pref != null ) getAllWithRefs(ref.pref, cl, arr);
+		@:privateAccess if( ref != null && ref.refInstance != null ) getAllWithRefs(ref.refInstance, cl, arr);
 		return arr;
 	}
 
@@ -902,7 +902,7 @@ class SceneEditor {
 		}
 		var ref = Std.downcast(elt,Reference);
 		@:privateAccess if( ref != null && ref.editMode ) {
-			for( p in ref.pref.flatten() )
+			for( p in ref.refInstance.flatten() )
 				makeInteractive(p);
 		}
 	}
@@ -2631,7 +2631,7 @@ class SceneEditor {
 			to = sceneData;
 
 		var ref = Std.downcast(to, Reference);
-		@:privateAccess if( ref != null && ref.editMode ) to = ref.pref;
+		@:privateAccess if( ref != null && ref.editMode ) to = ref.refInstance;
 
 		var effectFunc = reparentImpl(e, to, index);
 		undo.change(Custom(function(undo) {
@@ -3013,7 +3013,7 @@ class SceneEditor {
 				for( a in all.copy() ) {
 					var r = Std.downcast(a, hrt.prefab2.Reference);
 					if( r != null ) {
-						var sub = @:privateAccess r.pref;
+						var sub = @:privateAccess r.refInstance;
 						if( sub != null ) all = all.concat(getAll(sub));
 					}
 				}

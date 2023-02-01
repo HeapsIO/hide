@@ -128,7 +128,11 @@ class Object3D extends Prefab {
 		var local3d = getLocal3d();
 		if(local3d == null)
 			return null;
-		var meshes = [Std.downcast(local3d, h3d.scene.Mesh)];// ctx.shared.getObjects(this, h3d.scene.Mesh);
+		var meshes = [];
+		var mesh = Std.downcast(local3d, h3d.scene.Mesh);
+		if (mesh != null ) {
+			meshes.push(mesh);
+		}// ctx.shared.getObjects(this, h3d.scene.Mesh);
 		var invRootMat = local3d.getAbsPos().clone();
 		invRootMat.invert();
 		var bounds = new h3d.col.Bounds();

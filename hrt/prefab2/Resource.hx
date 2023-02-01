@@ -32,15 +32,15 @@ class Resource extends hxd.res.Resource {
 		if( prefab != null && cacheVersion == CACHE_VERSION )
 			return prefab;
 		var data = loadData();
-        prefab = Prefab.createFromDynamic(data);
-		prefab.proto = new ProtoPrefab(prefab, entry.path);
+        prefab = Std.downcast(Prefab.createFromDynamic(data), Object3D);
+		prefab.proto = {prefab:prefab, source: entry.path};
 		cacheVersion = CACHE_VERSION;
 		onPrefabLoaded(prefab);
 		watch(function() {}); // auto lib reload
 		return prefab;
 	}
 
-	public static function make( p : Prefab ) {
+	public static function make( p : Object3D ) {
 		if( p == null ) throw "assert";
 		var r = new Resource(null);
 		r.prefab = p;
@@ -48,7 +48,7 @@ class Resource extends hxd.res.Resource {
 	}
 
 	public static var CACHE_VERSION = 0;
-	public static dynamic function onPrefabLoaded(p:Prefab) {
+	public static dynamic function onPrefabLoaded(p:Object3D) {
 	}
 
 }

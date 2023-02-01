@@ -301,6 +301,10 @@ class Prefab {
         var classEntry = registry.get(type);
         if (classEntry == null) throw "unknown prefab type " + type;
 
+        // Converting (old) prefabs roots to Object3D automatically
+        if (parent == null && classEntry.prefabClass == Prefab)
+            classEntry = registry.get("object3D");
+
         var prefabInstance = Type.createInstance(classEntry.prefabClass, [parent]);
 
         prefabInstance.load(data);
@@ -517,8 +521,8 @@ class Prefab {
 			arr.push(v);
         if (followRefs) {
             var ref = to(Reference);
-            if (ref != null) {
-                ref.pref.findAll(f, followRefs, arr);
+            if (ref != null && ref.refInstance != null) {
+                ref.refInstance.findAll(f, followRefs, arr);
             }
         }
 		for( o in children )
