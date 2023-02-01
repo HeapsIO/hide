@@ -46,7 +46,7 @@ class Constraint extends Prefab {
 		});
 
 		for( select in [props.find("[field=object]"), props.find("[field=target]")] ) {
-			for( path in ctx.getNamedObjects(getRoot().getLocal3d()) ) {
+			for( path in ctx.getNamedObjects(Object3D.getLocal3d(getRoot())) ) {
 				var parts = path.split(".");
 				var opt = new hide.Element("<option>").attr("value", path).html([for( p in 1...parts.length ) "&nbsp; "].join("") + parts.pop());
 				select.append(opt);

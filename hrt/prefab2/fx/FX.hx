@@ -296,7 +296,7 @@ class FXAnimation extends h3d.scene.Object {
 		}
 
 		var ap : AdditionalProperies = null;
-		var local3d = elt.getLocal3d();
+		var local3d = Object3D.getLocal3d(elt);
 		if( Std.isOfType(local3d, h3d.scene.pbr.PointLight)) {
 			ap = PointLight(makeColor("color"), makeVal("power", null), makeVal("size", null), makeVal("range", null) );
 		}
@@ -333,7 +333,7 @@ class FXAnimation extends h3d.scene.Object {
 		if(!elt.enabled) return;
 		var em = Std.downcast(elt, hrt.prefab2.fx.Emitter);
 		if(em != null)  {
-			var local3d = em.getLocal3d();
+			var local3d = Object3D.getLocal3d(em);
 			if (local3d != null) {
 				if(emitters == null) emitters = [];
 				var emobj : hrt.prefab2.fx.Emitter.EmitterObject = cast local3d;
@@ -439,7 +439,7 @@ class FX extends BaseFX {
 
 	override function updateInstance(?propName : String ) {
 		super.updateInstance(null);
-		var fxanim = Std.downcast(getLocal3d(), FXAnimation);
+		var fxanim = Std.downcast(local3d, FXAnimation);
 		fxanim.duration = duration;
 		fxanim.cullingRadius = cullingRadius;
 	}
@@ -451,7 +451,7 @@ class FX extends BaseFX {
 	#if editor
 
 	override function refreshObjectAnims() {
-		var fxanim = Std.downcast(getLocal3d(), FXAnimation);
+		var fxanim = Std.downcast(local3d, FXAnimation);
 		fxanim.objAnims = null;
 		fxanim.initObjAnimations(this);
 	}

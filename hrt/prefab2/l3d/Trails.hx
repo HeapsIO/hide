@@ -807,7 +807,7 @@ class Trails extends Object3D {
 	override public function edit(ctx:hide.prefab2.EditContext) {
 		super.edit(ctx);
 
-		var trail = Std.downcast(getLocal3d(), TrailObj);
+		var trail : TrailObj= cast local3d;
 		var props = ctx.properties.add(new hide.Element('
 		<div class="group" name="Trail Properties">
 			<dl>

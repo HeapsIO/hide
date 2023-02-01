@@ -1,5 +1,9 @@
 package hrt.prefab2;
 
+using hrt.prefab2.Object3D;
+using hrt.prefab2.Object2D;
+
+
 
 typedef PrefabField = {
     var name : String;
@@ -99,19 +103,10 @@ class Prefab {
         return null;
     }
 
-    public function getLocal2d() : h2d.Object {
-        return null;
-    }
-
     public function findFirstLocal2d() : h2d.Object {
         return findUp(
             (p) -> p.getLocal2d()
         );
-    }
-
-    // Returns the local3d of this object if it's has one
-    public function getLocal3d() : h3d.scene.Object {
-        return null;
     }
 
     // Find the first local3d object, either in this object or it's parents
@@ -188,10 +183,10 @@ class Prefab {
     function makeInstanceRec(params: InstanciateParams) : Void {
         if (!enabled) return;
         makeInstance(params);
-        var new2d = getLocal2d();
+        var new2d = this.getLocal2d();
         if (new2d != null)
             params.local2d = new2d;
-        var new3d = getLocal3d();
+        var new3d = this.getLocal3d();
         if (new3d != null)
             params.local3d = new3d;
         for (c in children) {

@@ -2,6 +2,8 @@ package hide.prefab2;
 import hxd.Key as K;
 import hrt.prefab.Context;
 
+using hrt.prefab2.Object3D; // GetLocal3D
+
 enum ColorState{
 	None;
 	Overlapped;

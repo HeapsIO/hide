@@ -5,7 +5,6 @@ class Box extends Object3D {
 
 	public function setColor(color: Int) {
 		#if editor
-		var local3d = getLocal3d();
 		if(local3d == null)
 			return;
 		var mesh = Std.downcast(local3d, h3d.scene.Mesh);

@@ -29,9 +29,12 @@ class Object3D extends Prefab {
 
     public var local3d : h3d.scene.Object;
 
-    override public function getLocal3d() : h3d.scene.Object {
-        return local3d;
-    }
+	public static function getLocal3d(prefab: Prefab) : h3d.scene.Object {
+		var obj3d = Std.downcast(prefab, Object3D);
+		if (obj3d != null)
+			return obj3d.local3d;
+		return null;
+	}
 
     function set_x(v : Float) {
         x = v;
@@ -85,7 +88,7 @@ class Object3D extends Prefab {
 	}
 
     public function applyTransform() {
-		var o = getLocal3d();
+		var o = local3d;
 		if (o == null) return;
 		o.x = x;
 		o.y = y;
@@ -125,7 +128,6 @@ class Object3D extends Prefab {
 	}
 
 	override function makeInteractive() : hxd.SceneEvents.Interactive {
-		var local3d = getLocal3d();
 		if(local3d == null)
 			return null;
 		var meshes = [];

@@ -111,7 +111,7 @@ class Shader extends Prefab {
 			if( recursiveApply ) {
 				objs = [];
 				for( c in parent.flatten() ) {
-					var l3d = c.getLocal3d();
+					var l3d = Object3D.getLocal3d(c);
 					if (l3d != null)
 						objs.push(l3d);
 				}
@@ -120,7 +120,7 @@ class Shader extends Prefab {
 				// apply to all immediate children
 				objs = [];
 				for( c in parent.children ) {
-					var l3d = c.getLocal3d();
+					var l3d = Object3D.getLocal3d(c);
 					if (l3d != null)
 						objs.push(l3d);
 				}
@@ -159,7 +159,7 @@ class Shader extends Prefab {
 	}
 
 	override function destroy() {
-		var drawable = Std.downcast(getLocal2d(), h2d.Drawable);
+		var drawable = Std.downcast(findFirstLocal2d(), h2d.Drawable);
 		if (drawable != null) {
 			drawable.removeShader(shader);
 		}

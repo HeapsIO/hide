@@ -185,7 +185,7 @@ class NoiseGenerator extends Object2D {
 				<dt>&nbsp;</dt><dd><input type="button" value="Download" name="dl"/></dd>
 			</dl>
 		'),this,function(pname)  {
-			var bmp = cast(getLocal2d(), h2d.Bitmap);
+			var bmp = cast(local2d, h2d.Bitmap);
 			var tex = bmp.tile.getTexture();
 			if( tex.width != size ) {
 				tex.resize(size, size);
@@ -197,12 +197,12 @@ class NoiseGenerator extends Object2D {
 			updateTexture(tex);
 			ctx.onChange(this, pname);
 		});
-		var bmp = cast(getLocal2d(), h2d.Bitmap);
+		var bmp = cast(local2d, h2d.Bitmap);
 		var ide = hide.Ide.inst;
 		e.find("[name=dl]").click(function(_) {
 			ide.chooseFileSave("noise.png", function(f) {
 				try {
-					var data = cast(getLocal2d(), h2d.Bitmap).tile.getTexture().capturePixels().toPNG();
+					var data = cast(local2d, h2d.Bitmap).tile.getTexture().capturePixels().toPNG();
 					sys.io.File.saveBytes(ide.getPath(f), data);
 				} catch( e : Dynamic ) {
 					ide.error(e);

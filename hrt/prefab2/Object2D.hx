@@ -12,9 +12,12 @@ class Object2D extends Prefab {
 
     public var local2d : h2d.Object;
 
-    override public function getLocal2d() : h2d.Object {
-        return local2d;
-    }
+    public static function getLocal2d(prefab: Prefab) : h2d.Object {
+		var obj2d = Std.downcast(prefab, Object2D);
+		if (obj2d != null)
+			return obj2d.local2d;
+		return null;
+	}
 
     function set_x(v : Float) {
         x = v;

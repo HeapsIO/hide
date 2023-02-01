@@ -59,7 +59,7 @@ class Polygon extends Object3D {
 
 	override function updateInstance(?propName : String) {
 		super.updateInstance(propName);
-		var mesh : h3d.scene.Mesh = cast getLocal3d();
+		var mesh : h3d.scene.Mesh = cast local3d;
 		mesh.primitive = makePrimitive();
 		#if editor
 		setColor(color);
@@ -245,7 +245,6 @@ class Polygon extends Object3D {
 	public function setColor(color: Int) {
 		if(hrt.prefab2.Material.hasOverride(this))
 			return;
-		var local3d = getLocal3d();
 		if(local3d == null)
 			return;
 		var mesh = Std.downcast(local3d, h3d.scene.Mesh);
@@ -276,7 +275,7 @@ class Polygon extends Object3D {
 	}
 
 	public function getPrimitive() : h3d.prim.Polygon {
-		var mesh = Std.downcast(getLocal3d(), h3d.scene.Mesh);
+		var mesh : h3d.scene.Mesh = cast local3d;
 		return Std.downcast(mesh.primitive, h3d.prim.Polygon);
 	}
 
@@ -379,7 +378,7 @@ class Polygon extends Object3D {
 					}
 				}
 				else if( prevKind == Custom ){
-					var mesh = Std.downcast(getLocal3d(), h3d.scene.Mesh);
+					var mesh = Std.downcast(local3d, h3d.scene.Mesh);
 					if( mesh.primitive != null ) mesh.primitive.dispose(); // Dispose custom prim
 				}
 

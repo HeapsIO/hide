@@ -9,8 +9,6 @@ import hrt.prefab2.Prefab as PrefabElement;
 import hrt.prefab2.Object3D;
 import hide.comp.cdb.DataFiles;
 
-
-
 @:access(hide.view2.Prefab)
 private class PrefabSceneEditor extends hide.comp2.SceneEditor {
 	var parent : Prefab;
@@ -790,8 +788,8 @@ class Prefab extends hide.view.FileView {
 				if(cdbType != null && sceneFilters.get(cdbType) == false)
 					visible = false;
 			}
-			if (obj3d.getLocal3d() != null) {
-				obj3d.getLocal3d().visible = visible;
+			if (obj3d.local3d != null) {
+				obj3d.local3d.visible = visible;
 			}
 		}
 		var color = getDisplayColor(p);

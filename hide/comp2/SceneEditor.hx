@@ -1,5 +1,8 @@
 package hide.comp2;
 
+using hrt.prefab2.Object3D; // GetLocal3D
+using hrt.prefab2.Object2D; // GetLocal2D
+
 import hrt.prefab2.Reference;
 import h3d.scene.Mesh;
 import h3d.col.FPoint;

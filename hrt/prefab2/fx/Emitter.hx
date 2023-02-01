@@ -517,7 +517,7 @@ class EmitterObject extends h3d.scene.Object {
 				baseEmitMat = null;
 
 			var spawn = particleTemplate.make(this);
-			var loc3d = spawn.getLocal3d();
+			var loc3d = spawn.local3d;
 			var mesh = Std.downcast(loc3d, h3d.scene.Mesh);
 			if( mesh == null ) {
 				for( i in 0...loc3d.numChildren ) {
@@ -749,7 +749,7 @@ class EmitterObject extends h3d.scene.Object {
 		if (count > 0) {
 
 			if (trailsTemplate != null && trails == null) {
-				trails = cast trailsTemplate.make(this).getLocal3d();
+				trails = cast trailsTemplate.make(this).local3d;
 				trails.autoTrackPosition = false;
 			}
 
@@ -1107,7 +1107,7 @@ class EmitterObject extends h3d.scene.Object {
 					// SUB EMITTER
 					if( subEmitterTemplate != null ) {
 
-						var emitter : EmitterObject = cast subEmitterTemplate.make().getLocal3d();
+						var emitter : EmitterObject = cast subEmitterTemplate.make().local3d;
 						var pos = p.absPos.getPosition();
 						emitter.setPosition(pos.x, pos.y, pos.z);
 						emitter.isSubEmitter = true;
@@ -1357,7 +1357,7 @@ class Emitter extends Object3D {
 
 	override function updateInstance(?propName : String ) {
 		super.updateInstance(propName);
-		var emitterObj = Std.downcast(getLocal3d(), EmitterObject);
+		var emitterObj = Std.downcast(local3d, EmitterObject);
 
 		var randIdx = 0;
 		var template : Object3D = cast children.find( c -> c.enabled && (c.name == null || c.name.indexOf("collision") == -1) && c.to(Object3D) != null && c.to(Object3D).visible && c.to(hrt.prefab2.l3d.Trails) == null);
@@ -1777,7 +1777,6 @@ class Emitter extends Object3D {
 	}
 
 	override function setSelected(b : Bool ) {
-		var local3d = getLocal3d();
 		var emitterObj = Std.downcast(local3d, EmitterObject);
 		if(emitterObj == null)
 			return false;

@@ -44,8 +44,7 @@ class Material extends Prefab {
 	}
 
 	public function getMaterials() {
-		var local3d = getLocal3d();
-		var mats = local3d.getMaterials();
+		var mats = findFirstLocal3d().getMaterials();
 		var mat = Lambda.find(mats, m -> m.name == this.name || m.name == materialName);
 		return mat == null ? mats : [mat];
 	}
@@ -268,7 +267,7 @@ class Material extends Prefab {
 					<dt>Name</dt><dd><select><option value="any">Any</option></select>
 				</dl> ');
 		var select = dropDownMaterials.find("select");
-		var materialList = getLocal3d().getMaterials();
+		var materialList = findFirstLocal3d().getMaterials();
 		for( m in materialList )
 			if( m.name != null && m.name != "" )
 				new hide.Element('<option>').attr("value", m.name).text(m.name).appendTo(select);
