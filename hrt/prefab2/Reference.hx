@@ -2,7 +2,7 @@ package hrt.prefab2;
 
 class Reference extends Object3D {
     @:s public var path : String = null;
-	@:s public var editMode : Bool = false;
+    @:s public var editMode : Bool = false;
 
     public var refInstance : Prefab;
 
@@ -33,7 +33,7 @@ class Reference extends Object3D {
     }
 
     override private function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateParams) {
-		super.makeInstance(ctx);
+        super.makeInstance(ctx);
 
         if (path != null) {
             refInstance = Prefab.createFromPath(path).make(null, null, local3d);

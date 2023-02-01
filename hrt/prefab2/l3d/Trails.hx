@@ -149,7 +149,7 @@ class TrailObj extends h3d.scene.Mesh {
 
         maxNumPoints = calcMaxTrailPoints() * numTrails;
         if (maxNumPoints <= 0) maxNumPoints = 1;
-		points = #if (hl_ver >= version("1.13.0")) hl.CArray.alloc(TrailPoint, maxNumPoints) #else [for(i in 0...maxNumPoints) new TrailPoint()] #end;
+        points = #if (hl_ver >= version("1.13.0")) hl.CArray.alloc(TrailPoint, maxNumPoints) #else [for(i in 0...maxNumPoints) new TrailPoint()] #end;
 
         trails = #if (hl_ver >= version("1.13.0")) hl.CArray.alloc(TrailHead, numTrails) #else [for(i in 0...numTrails) new TrailHead()] #end;
 
@@ -169,7 +169,7 @@ class TrailObj extends h3d.scene.Mesh {
     var debugPointViz : h3d.scene.Graphics = null;
     #end
 
-	public var materialData = {};
+    public var materialData = {};
 
     public  function updateParams() {
         updateShader();
@@ -396,14 +396,14 @@ class TrailObj extends h3d.scene.Mesh {
     }
 
     public function getMaterialProps() {
-		var name = h3d.mat.MaterialSetup.current.name;
-		var p = Reflect.field(materialData, name);
-		if( p == null ) {
-			p = h3d.mat.MaterialSetup.current.getDefaults("trail3D");
-			Reflect.setField(materialData, name, p);
-		}
-		return p;
-	}
+        var name = h3d.mat.MaterialSetup.current.name;
+        var p = Reflect.field(materialData, name);
+        if( p == null ) {
+            p = h3d.mat.MaterialSetup.current.getDefaults("trail3D");
+            Reflect.setField(materialData, name, p);
+        }
+        return p;
+    }
 
     function onDprimContextLost() {
         return {
@@ -440,7 +440,7 @@ class TrailObj extends h3d.scene.Mesh {
         #end
 
         material.props = getMaterialProps();
-		material.mainPass.dynamicParameters = true;
+        material.mainPass.dynamicParameters = true;
 
         shader = new hrt.shader.BaseTrails();
         material.mainPass.addShader(shader);
@@ -466,7 +466,7 @@ class TrailObj extends h3d.scene.Mesh {
         calcAbsPos();
 
 
-		super.sync(ctx);
+        super.sync(ctx);
 
         var numObj = 0;
         for (child in children) {
@@ -719,7 +719,7 @@ class TrailObj extends h3d.scene.Mesh {
         if (triToDraw < 0) triToDraw = 0;
         ctx.engine.renderIndexed(dprim.buffer, dprim.indexes, 0, triToDraw);
 
-	}
+    }
 }
 
 // Empty class just for casting purposes
@@ -737,24 +737,24 @@ class TrailsSubTailObj extends h3d.scene.Object {
 class TrailsSubTrail extends Object3D {
 
     function new(?parent) {
-		super(parent);
+        super(parent);
         name = "SubTrail";
-	}
+    }
 
-	override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateParams) {
-		var obj = new TrailsSubTailObj(ctx.local3d);
+    override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateParams) {
+        var obj = new TrailsSubTailObj(ctx.local3d);
         applyTransform();
-		obj.name = name;
-		local3d = obj;
-	}
+        obj.name = name;
+        local3d = obj;
+    }
 
     #if editor
-	override function getHideProps():hide.prefab2.HideProps {
-		return { icon : "toggle-on", name : "Sub Trail" , allowChildren: (name) -> name == Trails};
-	}
+    override function getHideProps():hide.prefab2.HideProps {
+        return { icon : "toggle-on", name : "Sub Trail" , allowChildren: (name) -> name == Trails};
+    }
     #end
 
-	static var _ = Prefab.register("SubTrail", TrailsSubTrail);
+    static var _ = Prefab.register("SubTrail", TrailsSubTrail);
 
 }
 
@@ -778,46 +778,46 @@ class Trails extends Object3D {
     public var numTrails : Int = 1;
 
     function new(?parent) {
-		super(parent);
+        super(parent);
         name = "Trails";
 
-	}
+    }
 
-	public function create( ?parent : h3d.scene.Object, ?numTrails : Int ) {
-		var tr = new TrailObj(this, parent, numTrails);
-		applyTransform();
-		tr.name = name;
+    public function create( ?parent : h3d.scene.Object, ?numTrails : Int ) {
+        var tr = new TrailObj(this, parent, numTrails);
+        applyTransform();
+        tr.name = name;
         tr.updateShader();
-		return tr;
-	}
+        return tr;
+    }
 
-	override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateParams) {
-		// TODO(ces) : Revert handling of multiple trails
+    override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateParams) {
+        // TODO(ces) : Revert handling of multiple trails
         var tr = create(ctx.local3d, 1);
         local3d = tr;
-	}
+    }
 
 
     #if editor
 
-	override function getHideProps():hide.prefab2.HideProps {
-		return { icon : "toggle-on", name : "Trails" };
-	}
+    override function getHideProps():hide.prefab2.HideProps {
+        return { icon : "toggle-on", name : "Trails" };
+    }
 
-	override public function edit(ctx:hide.prefab2.EditContext) {
-		super.edit(ctx);
+    override public function edit(ctx:hide.prefab2.EditContext) {
+        super.edit(ctx);
 
-		var trail : TrailObj= cast local3d;
-		var props = ctx.properties.add(new hide.Element('
-		<div class="group" name="Trail Properties">
-			<dl>
-				<dt>Lifetime</dt><dd><input type="range" field="lifetime" min="0" max="1"/></dd>
-				<dt>Width Start</dt><dd><input type="range" field="startWidth" min="0" max="10"/></dd>
-				<dt>Width End</dt><dd><input type="range" field="endWidth" min="0" max="10"/></dd>
-				<dt>Min Speed</dt><dd><input type="range" field="minSpeed" min="0" max="1000"/></dd>
-				<dt>Max Speed</dt><dd><input type="range" field="maxSpeed" min="0" max="1000"/></dd>
-			</dl>
-		</div>
+        var trail : TrailObj= cast local3d;
+        var props = ctx.properties.add(new hide.Element('
+        <div class="group" name="Trail Properties">
+            <dl>
+                <dt>Lifetime</dt><dd><input type="range" field="lifetime" min="0" max="1"/></dd>
+                <dt>Width Start</dt><dd><input type="range" field="startWidth" min="0" max="10"/></dd>
+                <dt>Width End</dt><dd><input type="range" field="endWidth" min="0" max="10"/></dd>
+                <dt>Min Speed</dt><dd><input type="range" field="minSpeed" min="0" max="1000"/></dd>
+                <dt>Max Speed</dt><dd><input type="range" field="maxSpeed" min="0" max="1000"/></dd>
+            </dl>
+        </div>
 
         <div class="group" name="UV">
         <dl>
@@ -826,7 +826,7 @@ class Trails extends Object3D {
             <dt>UV Scale</dt><dd><input type="range" field="uvStretch" min="0" max="5" title="Hey look at me i\'m a comment"/></dd>
         </dl>
     </div>
-		'),this, function(name:String) {
+        '),this, function(name:String) {
             if (name == "uvRepeat") {
                 trail.updateShader();
             }
@@ -836,11 +836,11 @@ class Trails extends Object3D {
             if (name == "maxTriangles") {
                 trail.updateParams();
             }
-		});
-		//ctx.properties.addMaterial( trail.material, props.find("[name=Material] > .content"), function(_) data = trail.save());
-	}
+        });
+        //ctx.properties.addMaterial( trail.material, props.find("[name=Material] > .content"), function(_) data = trail.save());
+    }
 
-	#end
+    #end
 
-	static var _ = Prefab.register("trails", Trails);
+    static var _ = Prefab.register("trails", Trails);
 }

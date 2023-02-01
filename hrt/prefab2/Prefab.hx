@@ -37,47 +37,47 @@ class Prefab {
     **/
     public var type(get, never) : String;
 
-	/**
-		The name of the prefab in the tree view
-	**/
+    /**
+        The name of the prefab in the tree view
+    **/
     @:s public var name : String = "";
 
     /**
-		A storage for some extra properties
-	**/
+        A storage for some extra properties
+    **/
     @:s public var props : Any = null;
 
     /**
-		Tells if the prefab will create an instance when calling make() or be ignored. Also apply to this prefab children.
-	**/
+        Tells if the prefab will create an instance when calling make() or be ignored. Also apply to this prefab children.
+    **/
     @:s public var enabled : Bool = true;
 
     /**
-		Tells if the prefab will create an instance when used in an other prefab or in game. Also apply to this prefab children.
-	**/
+        Tells if the prefab will create an instance when used in an other prefab or in game. Also apply to this prefab children.
+    **/
     @:s public var editorOnly : Bool = false;
 
     /**
-		Tells if the prefab will create an instance when used in editor. Also apply to this prefab children.
-	**/
+        Tells if the prefab will create an instance when used in editor. Also apply to this prefab children.
+    **/
     @:s public var inGameOnly : Bool = false;
 
     /**
-		Prevent the prefab from being selected in Hide. Also apply to this prefab children.
-	**/
+        Prevent the prefab from being selected in Hide. Also apply to this prefab children.
+    **/
     // TODO(ces) : Concept of editor only serializable flags ?
     // maybe store this like the visibility (in the user prefs instead of the prefab ???)
     // Also maybe store all the flags in a single variable ???
-	@:s public var locked : Bool = false;
+    @:s public var locked : Bool = false;
 
-	/**
-		The parent of the prefab in the tree view
-	**/
+    /**
+        The parent of the prefab in the tree view
+    **/
     public var children : Array<Prefab> = [];
 
     /**
-		The parent of the prefab in the tree view
-	**/
+        The parent of the prefab in the tree view
+    **/
     public var parent : Prefab = null;
 
 
@@ -195,19 +195,19 @@ class Prefab {
     }
 
     /**
-		Allows to customize how an instance gets updated when a property name changes.
-		You can also call updateInstance(ctx) in order to force whole instance synchronization against current prefab data.
-	**/
+        Allows to customize how an instance gets updated when a property name changes.
+        You can also call updateInstance(ctx) in order to force whole instance synchronization against current prefab data.
+    **/
     public function updateInstance(?propName : String ) {
-	}
+    }
 
     /**
-		Removes the created instance for this prefab only (not is children).
-		If false is returned, the instance could not be removed and the whole context scene needs to be rebuilt
-	**/
-	public function removeInstance() : Bool {
-		return false;
-	}
+        Removes the created instance for this prefab only (not is children).
+        If false is returned, the instance could not be removed and the whole context scene needs to be rebuilt
+    **/
+    public function removeInstance() : Bool {
+        return false;
+    }
 
 
     // Copy all the fields from this prefab to the target prefab, recursively
@@ -230,13 +230,13 @@ class Prefab {
     }
 
     /**
-		Returns the first parent in the tree matching the specified class or null if not found.
-	**/
-	public function getParent<T:Prefab>( c : Class<T> ) : Null<T> {
-		if (parent != null)
+        Returns the first parent in the tree matching the specified class or null if not found.
+    **/
+    public function getParent<T:Prefab>( c : Class<T> ) : Null<T> {
+        if (parent != null)
             return parent.findUp(p -> p.to(c));
-		return null;
-	}
+        return null;
+    }
 
 
     private function destroy() {
@@ -396,34 +396,34 @@ class Prefab {
 
     public static var _ = Prefab.register("prefab", Prefab);
 
-	static function boardcastPrefabPostMake(p:Prefab) {
-		for (f in onPrefabPostMake)
-			f(p);
-	}
+    static function boardcastPrefabPostMake(p:Prefab) {
+        for (f in onPrefabPostMake)
+            f(p);
+    }
 
-	public static var onPrefabPostMake: Array<(p:Prefab) -> Void> = [];
+    public static var onPrefabPostMake: Array<(p:Prefab) -> Void> = [];
 
 
 
     // OLD API MIGRATION
 
     /**
-		Returns all prefabs in the tree matching the specified class.
-	**/
-	public function flatten<T:Prefab>( ?cl : Class<T>, ?arr: Array<T> ) : Array<T> {
-		if(arr == null)
-			arr = [];
-		if( cl == null )
-			arr.push(cast this);
-		else {
-			var i = to(cl);
-			if(i != null)
-				arr.push(i);
-		}
-		for(c in children)
-			c.flatten(cl, arr);
-		return arr;
-	}
+        Returns all prefabs in the tree matching the specified class.
+    **/
+    public function flatten<T:Prefab>( ?cl : Class<T>, ?arr: Array<T> ) : Array<T> {
+        if(arr == null)
+            arr = [];
+        if( cl == null )
+            arr.push(cast this);
+        else {
+            var i = to(cl);
+            if(i != null)
+                arr.push(i);
+        }
+        for(c in children)
+            c.flatten(cl, arr);
+        return arr;
+    }
 
     /**
         Returns all the prefab in the tree
@@ -433,163 +433,163 @@ class Prefab {
     }
 
     /**
-		Converts the prefab to another prefab class.
-		Returns null if not of this type.
-	**/
-	public function to<T:Prefab>( c : Class<T> ) : Null<T> {
-		return Std.downcast(this, c);
-	}
+        Converts the prefab to another prefab class.
+        Returns null if not of this type.
+    **/
+    public function to<T:Prefab>( c : Class<T> ) : Null<T> {
+        return Std.downcast(this, c);
+    }
 
     /**
-		Returns the absolute name path for this prefab
-	**/
-	public function getAbsPath(unique=false) {
-		if(parent == null)
-			return "";
-		var path = name != null ? name : getDefaultName();
-		if(unique) {
-			var suffix = 0;
-			for(i in 0...parent.children.length) {
-				var c = parent.children[i];
-				if(c == this)
-					break;
-				else {
-					var cname = c.name != null ? c.name : c.getDefaultName();
-					if(cname == path)
-						++suffix;
-				}
-			}
-			if(suffix > 0)
-				path += "-" + suffix;
-		}
-		if(parent.parent != null)
-			path = parent.getAbsPath(unique) + "." + path;
-		return path;
-	}
+        Returns the absolute name path for this prefab
+    **/
+    public function getAbsPath(unique=false) {
+        if(parent == null)
+            return "";
+        var path = name != null ? name : getDefaultName();
+        if(unique) {
+            var suffix = 0;
+            for(i in 0...parent.children.length) {
+                var c = parent.children[i];
+                if(c == this)
+                    break;
+                else {
+                    var cname = c.name != null ? c.name : c.getDefaultName();
+                    if(cname == path)
+                        ++suffix;
+                }
+            }
+            if(suffix > 0)
+                path += "-" + suffix;
+        }
+        if(parent.parent != null)
+            path = parent.getAbsPath(unique) + "." + path;
+        return path;
+    }
 
     /**
-		Returns the default name for this prefab
-	**/
-	public function getDefaultName() : String {
-		if(proto != null && proto.source != null) {
-			var f = new haxe.io.Path(proto.source).file;
-			f = f.split(" ")[0].split("-")[0];
-			return f;
-		}
-		return type.split(".").pop();
-	}
+        Returns the default name for this prefab
+    **/
+    public function getDefaultName() : String {
+        if(proto != null && proto.source != null) {
+            var f = new haxe.io.Path(proto.source).file;
+            f = f.split(" ")[0].split("-")[0];
+            return f;
+        }
+        return type.split(".").pop();
+    }
 
     public function locateObject( path : String ) {
-		if( path == null )
-			return null;
-		var parts = path.split(".");
-		var root = getRoot().getLocal3d();
-		while( parts.length > 0 ) {
-			var v = null;
-			var pname = parts.shift();
-			for( o in root )
-				if( o.name == pname ) {
-					v = o;
-					break;
-				}
-			if( v == null ) {
-				v = root.getObjectByName(pname);
-				//if( v != null && v.parent != root ) v = null; ??
-			}
-			if( v == null ) {
-				var parts2 = path.split(".");
-				for( i in 0...parts.length ) parts2.pop();
-				return null;
-			}
-			root = v;
-		}
-		return root;
-	}
+        if( path == null )
+            return null;
+        var parts = path.split(".");
+        var root = getRoot().getLocal3d();
+        while( parts.length > 0 ) {
+            var v = null;
+            var pname = parts.shift();
+            for( o in root )
+                if( o.name == pname ) {
+                    v = o;
+                    break;
+                }
+            if( v == null ) {
+                v = root.getObjectByName(pname);
+                //if( v != null && v.parent != root ) v = null; ??
+            }
+            if( v == null ) {
+                var parts2 = path.split(".");
+                for( i in 0...parts.length ) parts2.pop();
+                return null;
+            }
+            root = v;
+        }
+        return root;
+    }
 
     /**
-		Find several prefabs in the tree by calling `f` on each and returning all the non-null values returned.
-	**/
-	public function findAll<T>( f : Prefab -> Null<T>, ?followRefs : Bool, ?arr : Array<T> ) : Array<T> {
-		if( arr == null ) arr = [];
-		var v = f(this);
-		if( v != null )
-			arr.push(v);
+        Find several prefabs in the tree by calling `f` on each and returning all the non-null values returned.
+    **/
+    public function findAll<T>( f : Prefab -> Null<T>, ?followRefs : Bool, ?arr : Array<T> ) : Array<T> {
+        if( arr == null ) arr = [];
+        var v = f(this);
+        if( v != null )
+            arr.push(v);
         if (followRefs) {
             var ref = to(Reference);
             if (ref != null && ref.refInstance != null) {
                 ref.refInstance.findAll(f, followRefs, arr);
             }
         }
-		for( o in children )
-			o.findAll(f,followRefs,arr);
-		return arr;
-	}
+        for( o in children )
+            o.findAll(f,followRefs,arr);
+        return arr;
+    }
 
-	/**
-		Allows to customize how the prefab object is displayed / handled within Hide
-	**/
+    /**
+        Allows to customize how the prefab object is displayed / handled within Hide
+    **/
     public function getHideProps() : hide.prefab2.HideProps {
-		return { icon : "question-circle", name : "Unknown" };
-	}
+        return { icon : "question-circle", name : "Unknown" };
+    }
 
     /**
-	 	If the prefab `props` represent CDB data, returns the sheet name of it, or null.
-	 **/
-	public function getCdbType() : String {
-		if( props == null )
-			return null;
-		return Reflect.field(props, "$cdbtype");
-	}
+         If the prefab `props` represent CDB data, returns the sheet name of it, or null.
+     **/
+    public function getCdbType() : String {
+        if( props == null )
+            return null;
+        return Reflect.field(props, "$cdbtype");
+    }
 
     /**
-		Iterate over children prefab
-	**/
-	public inline function iterator() : Iterator<Prefab> {
-		return children.iterator();
-	}
+        Iterate over children prefab
+    **/
+    public inline function iterator() : Iterator<Prefab> {
+        return children.iterator();
+    }
 
     /**
-		Simlar to get() but returns null if not found.
-	**/
-	public function getOpt<T:Prefab>( cl : Class<T>, ?name : String, ?followRefs : Bool ) : Null<T> {
-		if( name == null || this.name == name ) {
-			var cval = to(cl);
-			if( cval != null ) return cval;
-		}
-		for( c in children ) {
-			var p = c.getOpt(cl, name, followRefs);
-			if( p != null )
-				return p;
-		}
-		return null;
-	}
-
-	/**
-		Search the prefab tree for the prefab matching the given prefab class (and name, if specified).
-		Throw an exception if not found. Uses getOpt() to return null instead.
-	**/
-	public function get<T:Prefab>( cl : Class<T>, ?name : String ) : T {
-		var v = getOpt(cl, name);
-		if( v == null )
-			throw "Missing prefab " + (name == null ? Type.getClassName(cl) : (cl == null ? name : name+"(" + Type.getClassName(cl) + ")"));
-		return v;
-	}
+        Simlar to get() but returns null if not found.
+    **/
+    public function getOpt<T:Prefab>( cl : Class<T>, ?name : String, ?followRefs : Bool ) : Null<T> {
+        if( name == null || this.name == name ) {
+            var cval = to(cl);
+            if( cval != null ) return cval;
+        }
+        for( c in children ) {
+            var p = c.getOpt(cl, name, followRefs);
+            if( p != null )
+                return p;
+        }
+        return null;
+    }
 
     /**
-		Return all prefabs in the tree matching the given prefab class.
-	**/
-	public function getAll<T:Prefab>( cl : Class<T>, ?followRefs : Bool, ?arr: Array<T> ) : Array<T> {
-		return findAll(function(p) return p.to(cl), followRefs, arr);
-	}
+        Search the prefab tree for the prefab matching the given prefab class (and name, if specified).
+        Throw an exception if not found. Uses getOpt() to return null instead.
+    **/
+    public function get<T:Prefab>( cl : Class<T>, ?name : String ) : T {
+        var v = getOpt(cl, name);
+        if( v == null )
+            throw "Missing prefab " + (name == null ? Type.getClassName(cl) : (cl == null ? name : name+"(" + Type.getClassName(cl) + ")"));
+        return v;
+    }
+
+    /**
+        Return all prefabs in the tree matching the given prefab class.
+    **/
+    public function getAll<T:Prefab>( cl : Class<T>, ?followRefs : Bool, ?arr: Array<T> ) : Array<T> {
+        return findAll(function(p) return p.to(cl), followRefs, arr);
+    }
 
     public static function isOfType( original : Class<Prefab>, parent : Class<Prefab> ) {
-		var c : Class<Dynamic> = original;
-		while( c != null ) {
-			if( c == parent ) return true;
-			c = Type.getSuperClass(c);
-		}
-		return false;
-	}
+        var c : Class<Dynamic> = original;
+        while( c != null ) {
+            if( c == parent ) return true;
+            c = Type.getSuperClass(c);
+        }
+        return false;
+    }
 
     /**
         Apply the filter function to this object, returning the result of filter if it's not null.
@@ -606,31 +606,31 @@ class Prefab {
     }
 
     #if editor
-	public function makeInteractive() : hxd.SceneEvents.Interactive {
-		return null;
-	}
-
-	/**
-		Allows to customize how the prefab instance changes when selected/unselected within Hide.
-		Selection of descendants is skipped if false is returned.
-	**/
-	public function setSelected(b : Bool ) {
-		return true;
-	}
+    public function makeInteractive() : hxd.SceneEvents.Interactive {
+        return null;
+    }
 
     /**
-		Search the prefab tree for the prefab matching the given name, returns null if not found
-	**/
-	public function getPrefabByName( name : String ) {
-		if( this.name == name )
-			return this;
-		for( c in children ) {
-			var p = c.getPrefabByName(name);
-			if( p != null )
-				return p;
-		}
-		return null;
-	}
+        Allows to customize how the prefab instance changes when selected/unselected within Hide.
+        Selection of descendants is skipped if false is returned.
+    **/
+    public function setSelected(b : Bool ) {
+        return true;
+    }
+
+    /**
+        Search the prefab tree for the prefab matching the given name, returns null if not found
+    **/
+    public function getPrefabByName( name : String ) {
+        if( this.name == name )
+            return this;
+        for( c in children ) {
+            var p = c.getPrefabByName(name);
+            if( p != null )
+                return p;
+        }
+        return null;
+    }
 
     public function edit(editContext : hide.prefab2.EditContext) {
 

@@ -5,188 +5,188 @@ import h3d.pass.ScreenFx;
 // ----- Default Rendering --------------------------------
 
 class DefaultForwardComposite extends h3d.shader.ScreenShader {
-	static var SRC = {
-		@param var texture : Sampler2D;
-		@param var outline : Sampler2D;
+    static var SRC = {
+        @param var texture : Sampler2D;
+        @param var outline : Sampler2D;
 
-		function fragment() {
-			pixelColor = texture.get(calculatedUV);
-			var outval = outline.get(calculatedUV).rgb;
-			if(outval.r > 0.1 && outval.r < 0.5)
-				pixelColor.rgb += outval.rgb * 3.0 + 0.1;
-		}
-	}
+        function fragment() {
+            pixelColor = texture.get(calculatedUV);
+            var outval = outline.get(calculatedUV).rgb;
+            if(outval.r > 0.1 && outval.r < 0.5)
+                pixelColor.rgb += outval.rgb * 3.0 + 0.1;
+        }
+    }
 }
 
 class MaterialSetup extends h3d.mat.MaterialSetup {
     override public function createRenderer() {
-	    return new Renderer();
-	}
+        return new Renderer();
+    }
 
-	override function getDefaults( ?type : String ) : Any {
-		if(type == "ui") return {
-			kind : "Alpha",
-			shadows : false,
-			culled : false,
-			lighted : false
-		};
-		return super.getDefaults(type);
-	}
+    override function getDefaults( ?type : String ) : Any {
+        if(type == "ui") return {
+            kind : "Alpha",
+            shadows : false,
+            culled : false,
+            lighted : false
+        };
+        return super.getDefaults(type);
+    }
 }
 
 class Renderer extends h3d.scene.fwd.Renderer {
 
-	var composite: h3d.pass.ScreenFx<DefaultForwardComposite>;
-	var outline = new ScreenOutline();
-	var outlineBlur = new h3d.pass.Blur(4);
+    var composite: h3d.pass.ScreenFx<DefaultForwardComposite>;
+    var outline = new ScreenOutline();
+    var outlineBlur = new h3d.pass.Blur(4);
 
-	public function new() {
-		super();
-		composite = new h3d.pass.ScreenFx(new DefaultForwardComposite());
-	}
+    public function new() {
+        super();
+        composite = new h3d.pass.ScreenFx(new DefaultForwardComposite());
+    }
 
-	override function render() {
+    override function render() {
 
-		var output = allocTarget("output");
-		setTarget(output);
-		clear(h3d.Engine.getCurrent().backgroundColor, 1, 0);
+        var output = allocTarget("output");
+        setTarget(output);
+        clear(h3d.Engine.getCurrent().backgroundColor, 1, 0);
 
-		if( has("shadow") )
-			renderPass(shadow,get("shadow"));
+        if( has("shadow") )
+            renderPass(shadow,get("shadow"));
 
-		if( has("depth") )
-			renderPass(depth,get("depth"));
+        if( has("depth") )
+            renderPass(depth,get("depth"));
 
-		if( has("normal") )
-			renderPass(normal,get("normal"));
+        if( has("normal") )
+            renderPass(normal,get("normal"));
 
-		renderPass(defaultPass, get("default"), frontToBack);
-		renderPass(defaultPass, get("alpha"), backToFront);
-		renderPass(defaultPass, get("additive") );
-		renderPass(defaultPass, get("debuggeom"), backToFront);
-		renderPass(defaultPass, get("debuggeom_alpha"), backToFront);
-		renderPass(defaultPass, get("overlay"), backToFront );
-		renderPass(defaultPass, get("ui"), backToFront);
+        renderPass(defaultPass, get("default"), frontToBack);
+        renderPass(defaultPass, get("alpha"), backToFront);
+        renderPass(defaultPass, get("additive") );
+        renderPass(defaultPass, get("debuggeom"), backToFront);
+        renderPass(defaultPass, get("debuggeom_alpha"), backToFront);
+        renderPass(defaultPass, get("overlay"), backToFront );
+        renderPass(defaultPass, get("ui"), backToFront);
 
 
-		var outlineTex = allocTarget("outlineBlur", false);
-		{
-			var outlineSrcTex = allocTarget("outline", true);
-			setTarget(outlineSrcTex);
-			clear(0);
-			draw("highlightBack");
-			draw("highlight");
-			resetTarget();
-			outlineBlur.apply(ctx, outlineSrcTex, outlineTex);
-		}
+        var outlineTex = allocTarget("outlineBlur", false);
+        {
+            var outlineSrcTex = allocTarget("outline", true);
+            setTarget(outlineSrcTex);
+            clear(0);
+            draw("highlightBack");
+            draw("highlight");
+            resetTarget();
+            outlineBlur.apply(ctx, outlineSrcTex, outlineTex);
+        }
 
-		resetTarget();
-		composite.shader.texture = output;
-		composite.shader.outline = outlineTex;
-		composite.render();
-	}
+        resetTarget();
+        composite.shader.texture = output;
+        composite.shader.outline = outlineTex;
+        composite.render();
+    }
 }
 
 // ----- PBR Rendering --------------------------------
 
 class PbrSetup extends h3d.mat.PbrMaterialSetup {
 
-	function getEnvMap() {
-		var ide = hide.Ide.inst;
-		var scene = hide.comp.Scene.getCurrent();
-		var path : String = "";
-		if (scene != null) {
-			path = ide.getPath(scene.config.get("scene.environment"));
-		}
-		else {
-			var scene2 = hide.comp2.Scene.getCurrent();
-			path = ide.getPath(scene2.config.get("scene.environment"));
-		}
-		var data = sys.io.File.getBytes(path);
-		var pix = hxd.res.Any.fromBytes(path, data).toImage().getPixels();
-		var t = h3d.mat.Texture.fromPixels(pix, h3d.mat.Texture.nativeFormat); // sync
-		t.setName(ide.makeRelative(path));
-		return t;
-	}
+    function getEnvMap() {
+        var ide = hide.Ide.inst;
+        var scene = hide.comp.Scene.getCurrent();
+        var path : String = "";
+        if (scene != null) {
+            path = ide.getPath(scene.config.get("scene.environment"));
+        }
+        else {
+            var scene2 = hide.comp2.Scene.getCurrent();
+            path = ide.getPath(scene2.config.get("scene.environment"));
+        }
+        var data = sys.io.File.getBytes(path);
+        var pix = hxd.res.Any.fromBytes(path, data).toImage().getPixels();
+        var t = h3d.mat.Texture.fromPixels(pix, h3d.mat.Texture.nativeFormat); // sync
+        t.setName(ide.makeRelative(path));
+        return t;
+    }
 
     override function createRenderer() {
-		var env = new h3d.scene.pbr.Environment(getEnvMap());
-		env.compute();
-		return new PbrRenderer(env);
-	}
+        var env = new h3d.scene.pbr.Environment(getEnvMap());
+        env.compute();
+        return new PbrRenderer(env);
+    }
 
-	override function getDefaults( ?type : String ) : Any {
-		if(type == "ui") return {
-			mode : "Overlay",
-			blend : "Alpha",
-			shadows : false,
-			culled : false,
-			lighted : false
-		};
-		return super.getDefaults(type);
-	}
+    override function getDefaults( ?type : String ) : Any {
+        if(type == "ui") return {
+            mode : "Overlay",
+            blend : "Alpha",
+            shadows : false,
+            culled : false,
+            lighted : false
+        };
+        return super.getDefaults(type);
+    }
 }
 
 class ScreenOutline extends h3d.shader.ScreenShader {
-	static var SRC = {
+    static var SRC = {
 
-		@param var texture: Sampler2D;
+        @param var texture: Sampler2D;
 
-		function fragment() {
-			var outval = texture.get(calculatedUV).rgb;
-			pixelColor.a = outval.r > 0.1 && outval.r < 0.5 ? 1.0 : 0.0;
-			pixelColor.rgb = (outval.r > outval.g ? 0.5 : 1.0).xxx;
-		}
-	};
+        function fragment() {
+            var outval = texture.get(calculatedUV).rgb;
+            pixelColor.a = outval.r > 0.1 && outval.r < 0.5 ? 1.0 : 0.0;
+            pixelColor.rgb = (outval.r > outval.g ? 0.5 : 1.0).xxx;
+        }
+    };
 }
 
 class PbrRenderer extends h3d.scene.pbr.Renderer {
 
-	var outline = new h3d.pass.ScreenFx(new ScreenOutline());
-	var outlineBlur = new h3d.pass.Blur(4);
+    var outline = new h3d.pass.ScreenFx(new ScreenOutline());
+    var outlineBlur = new h3d.pass.Blur(4);
 
-	public function new(env) {
-		super(env);
-		outline.pass.setBlendMode(Alpha);
-	}
+    public function new(env) {
+        super(env);
+        outline.pass.setBlendMode(Alpha);
+    }
 
-	override function getPassByName(name:String):h3d.pass.Base {
-		switch( name ) {
-		case "highlight", "highlightBack":
-			return defaultPass;
-		}
-		return super.getPassByName(name);
-	}
+    override function getPassByName(name:String):h3d.pass.Base {
+        switch( name ) {
+        case "highlight", "highlightBack":
+            return defaultPass;
+        }
+        return super.getPassByName(name);
+    }
 
-	override function getDefaultProps( ?kind : String ) : Any {
-		var props : h3d.scene.pbr.Renderer.RenderProps = super.getDefaultProps(kind);
-		props.sky = Background;
-		return props;
-	}
+    override function getDefaultProps( ?kind : String ) : Any {
+        var props : h3d.scene.pbr.Renderer.RenderProps = super.getDefaultProps(kind);
+        props.sky = Background;
+        return props;
+    }
 
-	override function end() {
-		switch( currentStep ) {
-		case MainDraw:
-		case BeforeTonemapping:
-			var outlineTex = allocTarget("outline", true);
-			ctx.engine.pushTarget(outlineTex);
-			clear(0);
-			draw("highlightBack");
-			draw("highlight");
-			ctx.engine.popTarget();
-			var outlineBlurTex = allocTarget("outlineBlur", false);
-			outlineBlur.apply(ctx, outlineTex, outlineBlurTex);
-			outline.shader.texture = outlineBlurTex;
-		case AfterTonemapping:
-			outline.render();
-			renderPass(defaultPass, get("debuggeom"), backToFront);
-			renderPass(defaultPass, get("debuggeom_alpha"), backToFront);
-		case Overlay:
-			renderPass(defaultPass, get("ui"), backToFront);
-		default:
-		}
-		super.end();
-	}
+    override function end() {
+        switch( currentStep ) {
+        case MainDraw:
+        case BeforeTonemapping:
+            var outlineTex = allocTarget("outline", true);
+            ctx.engine.pushTarget(outlineTex);
+            clear(0);
+            draw("highlightBack");
+            draw("highlight");
+            ctx.engine.popTarget();
+            var outlineBlurTex = allocTarget("outlineBlur", false);
+            outlineBlur.apply(ctx, outlineTex, outlineBlurTex);
+            outline.shader.texture = outlineBlurTex;
+        case AfterTonemapping:
+            outline.render();
+            renderPass(defaultPass, get("debuggeom"), backToFront);
+            renderPass(defaultPass, get("debuggeom_alpha"), backToFront);
+        case Overlay:
+            renderPass(defaultPass, get("ui"), backToFront);
+        default:
+        }
+        super.end();
+    }
 
 }
 
