@@ -71,10 +71,10 @@ class OrthoController extends CameraControllerBase {
 		switch( e.kind ) {
 		case EWheel:
 			if (e.wheelDelta > 0) {
-				orthoZoom /= 1.1;
+				orthoZoom *= 1.1;
 			}
 			else {
-				orthoZoom *= 1.1;
+				orthoZoom /= 1.1;
 			}
 		case EPush:
 			sceneEditor.view.keys.pushDisable();

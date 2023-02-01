@@ -2,7 +2,7 @@ package hrt.prefab2;
 
 class Resource extends hxd.res.Resource {
 
-	var prefab : Prefab;
+	var prefab : Object3D;
 	var cacheVersion : Int;
 
 	override function watch( onChanged: Null<Void -> Void> ) {
@@ -28,7 +28,7 @@ class Resource extends hxd.res.Resource {
 		return isBSON ? new hxd.fmt.hbson.Reader(entry.getBytes(),false).read() : haxe.Json.parse(entry.getText());
 	}
 
-	public function load() : Prefab {
+	public function load() : Object3D {
 		if( prefab != null && cacheVersion == CACHE_VERSION )
 			return prefab;
 		var data = loadData();
