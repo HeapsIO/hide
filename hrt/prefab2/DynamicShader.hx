@@ -43,7 +43,7 @@ class DynamicShader extends Shader {
         return shader;
     }
 
-    override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateParams) {
+    override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) {
         if( source == null )
             return;
         super.makeInstance(ctx);

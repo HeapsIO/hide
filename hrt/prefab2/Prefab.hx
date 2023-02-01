@@ -19,11 +19,16 @@ typedef PrefabMeta = {
     var ?range_step : Float;
 }
 
-typedef InstanciateParams = {
-    var local2d : h2d.Object;
-    var local3d : h3d.scene.Object;
-    var ?forceInstanciate : Bool; /** Force the instanciation of the prefab even if it's a template **/
-};
+class InstanciateContext {
+    public function new(local2d: h2d.Object, local3d: h3d.scene.Object) {
+        this.local2d = local2d;
+        this.local3d = local3d;
+    }
+
+    public var local2d : h2d.Object = null;
+    public var local3d : h3d.scene.Object = null;
+    public var forceInstanciate : Bool = false; /** Force the instanciation of the prefab even if it's a template **/
+}
 
 typedef PrefabInfo = {prefabClass : Class<Prefab> #if editor, inf : hide.prefab2.HideProps #end};
 
@@ -121,6 +126,7 @@ class Prefab {
     function copyDefault(?parent:Prefab = null) : Prefab {
         var thisClass = Type.getClass(this);
         var inst = Type.createInstance(thisClass, [parent]);
+        copyShallow(this, inst, false, true, true, getSerializableProps());
         for (child in children) {
             child.copyDefault(inst);
         }
@@ -143,12 +149,9 @@ class Prefab {
         var newInstance = copyDefault(root);
         newInstance.proto = this.proto;
 
-        copy(this, newInstance, false, true);
-
-        var params : InstanciateParams = {
-            local2d: o2d != null ? o2d : (root != null ? root.findFirstLocal2d() : null),
-            local3d: o3d != null ? o3d : (root != null ? root.findFirstLocal3d() : null),
-        };
+        o2d = o2d != null ? o2d : (root != null ? root.findFirstLocal2d() : null);
+        o3d = o3d != null ? o3d : (root != null ? root.findFirstLocal3d() : null);
+        var params = new InstanciateContext(o2d, o3d);
 
         newInstance.instanciate(params);
 
@@ -156,7 +159,7 @@ class Prefab {
     };
 
     // Like make but in-place
-    public function instanciate(params: InstanciateParams) {
+    public function instanciate(params: InstanciateContext) {
         var forceInstanciate = (params.forceInstanciate != null && params.forceInstanciate);
         if (!forceInstanciate && (proto.prefab == this))
             throw "Can't instanciate a template prefab unless params.forceInstanciate is true.";
@@ -174,13 +177,13 @@ class Prefab {
     }
 
     // Override this function to create runtime objects from this prefab
-    function makeInstance(ctx: InstanciateParams) : Void {
+    function makeInstance(ctx: InstanciateContext) : Void {
 
     }
 
     // Override this function if you want to controll how the childrens are
     // made
-    function makeInstanceRec(params: InstanciateParams) : Void {
+    function makeInstanceRec(params: InstanciateContext) : Void {
         if (!enabled) return;
         makeInstance(params);
         var new2d = this.getLocal2d();

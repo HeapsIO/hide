@@ -841,11 +841,9 @@ class SceneEditor {
         // TODO(ces) : Handle 2d and 3d scenes 
 
         //sceneData = PrefabElement.createFromDynamic(sceneData.serializeToDynamic());
-        var params : hrt.prefab2.Prefab.InstanciateParams = {
-            local2d: root2d,
-            local3d: root3d,
-            forceInstanciate: true,
-        };
+        var params = new hrt.prefab2.Prefab.InstanciateContext(root2d, root3d);
+        params.forceInstanciate = true;
+
         sceneData.instanciate(params);
         var bgcol = scene.engine.backgroundColor;
         scene.init();
@@ -1592,11 +1590,8 @@ class SceneEditor {
     function makePrefab(elt: PrefabElement) {
         scene.setCurrent();
         
-        var params : hrt.prefab2.Prefab.InstanciateParams = {
-            local2d: root2d,
-            local3d: root3d,
-            forceInstanciate: true,
-        };
+        var params = new hrt.prefab2.Prefab.InstanciateContext(root2d, root3d);
+        params.forceInstanciate = true;
 
         elt.instanciate(params);
         for( p in elt.flatten() )

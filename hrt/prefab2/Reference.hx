@@ -32,7 +32,7 @@ class Reference extends Object3D {
         }
     }
 
-    override private function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateParams) {
+    override private function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) {
         super.makeInstance(ctx);
 
         if (path != null) {

@@ -399,7 +399,7 @@ class FX extends BaseFX {
         scriptCode = obj.scriptCode;
     }
 
-    override function makeInstanceRec(ctx: hrt.prefab2.Prefab.InstanciateParams) {
+    override function makeInstanceRec(ctx: hrt.prefab2.Prefab.InstanciateContext) {
         var fxanim = createInstance(ctx.local3d);
         fxanim.duration = duration;
         fxanim.cullingRadius = cullingRadius;

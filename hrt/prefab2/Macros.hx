@@ -122,8 +122,19 @@ class Macros {
 
         var getSerFunc : Function = {
             args: [],
-            expr: macro return hrt.prefab2.Macros.getSerializableProps(),
+            expr: macro {
+                if (serializablePropsFields == null)
+                    serializablePropsFields = hrt.prefab2.Macros.getSerializableProps();
+                return serializablePropsFields;
+            },
         };
+
+        buildFields.push({
+            name: "serializablePropsFields",
+            access: [AStatic],
+            kind: FVar(macro : Array<hrt.prefab2.Prefab.PrefabField>, macro null),
+            pos: Context.currentPos(),
+        });
 
         var serFieldField : Field = {
             name: "getSerializablePropsStatic",
@@ -157,6 +168,7 @@ class Macros {
             });
         }*/
 
+
         // allow child classes to return an object of their type when using make
         var make : Function = {
             args: [
@@ -169,10 +181,13 @@ class Macros {
             }
         }
 
+
         var access = [APublic];
         if (typeName != "Prefab")
             access.push(AOverride);
 
+
+        
         buildFields.push({
             name: "make",
             access : access,

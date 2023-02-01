@@ -135,7 +135,7 @@ class Shader extends Prefab {
         }
     }
 
-    override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateParams) {
+    override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) {
         var shader = makeShader();
         if( shader == null )
             return;

@@ -231,7 +231,7 @@ class Polygon extends Object3D {
         return primitive;
     }
 
-    override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateParams) {
+    override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) {
         var primitive = makePrimitive();
         var mesh = new h3d.scene.Mesh(primitive, ctx.local3d);
         mesh.material.props = h3d.mat.MaterialSetup.current.getDefaults("overlay");

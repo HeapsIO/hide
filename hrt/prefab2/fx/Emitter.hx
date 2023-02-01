@@ -562,7 +562,8 @@ class EmitterObject extends h3d.scene.Object {
                 if (Std.downcast(mat.parent, hrt.prefab2.l3d.Trails) != null)
                     continue;
                 if(mat.enabled) {
-                    @:privateAccess mat.makeInstance({local2d: prefab.findFirstLocal2d(), local3d: prefab.findFirstLocal3d()});
+                    var context = new Prefab.InstanciateContext(prefab.findFirstLocal2d(), prefab.findFirstLocal3d());
+                    @:privateAccess mat.makeInstance(context);
                 }
             }
 
@@ -1563,7 +1564,7 @@ class Emitter extends Object3D {
         #end
     }
 
-    override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateParams) {
+    override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) {
         var emitterObj = new EmitterObject(ctx.local3d);
         local3d = emitterObj;
         updateInstance();

@@ -113,7 +113,7 @@ class NoiseGenerator extends Object2D {
         return t.sub(repeat == Both || repeat == X ? tex.width >> 1 : 0, repeat == Both || repeat == Y ? tex.height >> 1 : 0, tex.width, tex.height);
     }
 
-    override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateParams) {
+    override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) {
         tex = new h3d.mat.Texture(size, size, [Target]);
         updateTexture(tex);
         var bmp = new h2d.Bitmap(makeTile(tex), ctx.local2d);

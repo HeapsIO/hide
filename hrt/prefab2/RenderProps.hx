@@ -13,7 +13,7 @@ class RenderProps extends Object3D {
         props = {};
     }
 
-    override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateParams) {
+    override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) {
         local3d = new RenderPropsObject(ctx.local3d);
         local3d.name = name;
         //updateInstance();

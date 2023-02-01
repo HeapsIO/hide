@@ -22,7 +22,7 @@ class Model extends Object3D {
         return super.save();
     }*/
 
-    override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateParams) : Void  {
+    override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) : Void  {
         if( source == null)
             return super.makeInstance(ctx);
         #if editor

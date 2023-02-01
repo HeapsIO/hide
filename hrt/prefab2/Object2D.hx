@@ -31,7 +31,7 @@ class Object2D extends Prefab {
         return y;
     }
 
-    override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateParams) {
+    override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) {
         local2d = new h2d.Object(ctx.local2d);
     }
 

@@ -101,7 +101,7 @@ class Material extends Prefab {
         return Object3D.modelCache.loadTexture(null, path, false);
     }
 
-    override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateParams) {
+    override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) {
         updateInstance();
     }
 

@@ -741,7 +741,7 @@ class TrailsSubTrail extends Object3D {
         name = "SubTrail";
     }
 
-    override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateParams) {
+    override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) {
         var obj = new TrailsSubTailObj(ctx.local3d);
         applyTransform();
         obj.name = name;
@@ -791,7 +791,7 @@ class Trails extends Object3D {
         return tr;
     }
 
-    override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateParams) {
+    override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) {
         // TODO(ces) : Revert handling of multiple trails
         var tr = create(ctx.local3d, 1);
         local3d = tr;
