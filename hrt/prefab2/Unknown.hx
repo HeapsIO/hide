@@ -28,8 +28,19 @@ class Unknown extends Prefab {
     override function getHideProps() : hide.prefab2.HideProps {
         return {
             icon : "question-circle-o",
-            name : "unknown",
+            name : "Unknown",
         };
     }
+
+	override function edit( ctx : hide.prefab2.EditContext ) {
+		var props = new hide.Element('
+            <p>Unknown prefab type : <code>${data.type}</code></p> 
+            <p>This prefab might has been saved in a more recent version of hide (in that case try to update), or this type no longer exists. </p>
+            <p>No data will be lost if this prefab is saved, but rendering glitches or strange offsets can occur.</p>
+		');
+		ctx.properties.add(props, this, function(pname) {
+			ctx.onChange(this, pname);
+		});
+	}
 #end
 }

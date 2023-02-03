@@ -220,5 +220,25 @@ class Object3D extends Prefab {
         return int;
     }
 
+	override function edit( ctx : hide.prefab2.EditContext ) {
+		var props = new hide.Element('
+			<div class="group" name="Position">
+				<dl>
+					<dt>X</dt><dd><input type="range" min="-10" max="10" value="0" field="x"/></dd>
+					<dt>Y</dt><dd><input type="range" min="-10" max="10" value="0" field="y"/></dd>
+					<dt>Z</dt><dd><input type="range" min="-10" max="10" value="0" field="z"/></dd>
+					<dt>Scale</dt><dd><input type="multi-range" min="0" max="5" value="0" field="scale" data-subfields="X,Y,Z"/></dd>
+					<dt>Rotation X</dt><dd><input type="range" min="-180" max="180" value="0" field="rotationX" /></dd>
+					<dt>Rotation Y</dt><dd><input type="range" min="-180" max="180" value="0" field="rotationY" /></dd>
+					<dt>Rotation Z</dt><dd><input type="range" min="-180" max="180" value="0" field="rotationZ" /></dd>
+					<dt>Visible</dt><dd><input type="checkbox" field="visible"/></dd>
+				</dl>
+			</div>
+		');
+		ctx.properties.add(props, this, function(pname) {
+			ctx.onChange(this, pname);
+		});
+	}
+
 #end // if editor
 }
