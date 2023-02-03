@@ -53,9 +53,11 @@ class EditContext {
     }
 
     public function makeChanges( p : Prefab, f : Void -> Void ) @:privateAccess {
-        var current = p.save();
+        var current = {};
+        p.save(current);
         properties.undo.change(Custom(function(b) {
-            var old = p.save();
+            var old = {}
+            p.save(old);
             p.load(current);
             current = old;
             rebuildProperties();

@@ -90,8 +90,6 @@ class Prefab {
 
     // Public API
 
-    public static var _ = Prefab.register("prefab", Prefab);
-
     public function new(?parent:Prefab = null) {
         this.parent = parent;
         if (parent != null) {
@@ -145,16 +143,18 @@ class Prefab {
     public static function createFromDynamic(data:Dynamic, parent:Prefab = null) : Prefab {
         var type : String = data.type;
 
-        if (type == null) throw  "missing type in data";
-
-        var classEntry = registry.get(type);
-        if (classEntry == null) throw "unknown prefab type " + type;
+        var cl : Class<Prefab> = Unknown;
+        if (type != null) {
+            var classEntry = registry.get(type);
+            if (classEntry != null)
+                cl = classEntry.prefabClass;
+        }
 
         // Converting (old) prefabs roots to Object3D automatically
-        if (parent == null && classEntry.prefabClass == Prefab)
-            classEntry = registry.get("object3D");
+        if (parent == null && cl == Prefab)
+            cl = Object3D;
 
-        var prefabInstance = Type.createInstance(classEntry.prefabClass, [parent]);
+        var prefabInstance = Type.createInstance(cl, [parent]);
 
         prefabInstance.load(data);
 
@@ -588,25 +588,28 @@ class Prefab {
             shouldCopy = shouldCopy && (copyDefault || useProperty || v != prop.defaultValue);
             //shouldCopy &= (copyDefault || ) 
             if (shouldCopy) {
-                switch (Type.typeof(v)) {
-                    case TClass(c):
-                        trace(Type.getClassName(c));
-                        switch(c) {
-                            case cast Array:
-                                var v:Array<Dynamic> = v;
-                                set(dest, prop.name, v.copy());
-                            case cast String:
-                                var v:String = v;
-                                set(dest, prop.name, v);
-                                trace("set string " +v + " (" + prop.name + ")");
-                            default:
-                                // TODO : oh no
-                                set(dest, prop.name, haxe.Json.parse(haxe.Json.stringify(v)));
-                        }
-                    default:
-                        set(dest, prop.name, v);
-                }
+                set(dest, prop.name, copyValue(v));
             }
+        }
+    }
+
+    static function copyValue(v:Dynamic) : Dynamic {
+        switch (Type.typeof(v)) {
+            case TClass(c):
+                trace(Type.getClassName(c));
+                switch(c) {
+                    case cast Array:
+                        var v:Array<Dynamic> = v;
+                        return v.copy();
+                    case cast String:
+                        var v:String = v;
+                        return v;
+                    default:
+                        // TODO : oh no
+                        return haxe.Json.parse(haxe.Json.stringify(v));
+                }
+            default:
+                return v;
         }
     }
 
@@ -618,11 +621,8 @@ class Prefab {
     /** Save all the properties to the given dynamic object. This is not recursive. Returns the updated dynamic object.
         If to is null, a new dynamic object is created automatically and returned by the
     **/
-    final function save(?to: Dynamic) : Dynamic {
-        if (to == null)
-            to = {};
+    function save(to: Dynamic) : Void {
         copyShallow(this, to, false, false, false, getSerializableProps());
-        return to;
     }
 
     static var cache : Map<String, Prefab> = new Map();
@@ -671,6 +671,7 @@ class Prefab {
     }
 #end
 
+    public static var _ = Prefab.register("prefab", Prefab);
 
     /*inline public function findParent<T:Prefab,R>( cl : Class<T>, ?filter : (p:T) -> Null<R>) : Null<R> {
         var current = this;
