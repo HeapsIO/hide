@@ -6,7 +6,6 @@ import hrt.prefab2.Curve;
 import hrt.prefab2.fx.BaseFX.ShaderAnimation;
 import hrt.prefab2.fx.Value;
 import hrt.prefab2.fx.Evaluator;
-import hide.Element;
 
 import hide.prefab2.HideProps;
 
@@ -534,7 +533,7 @@ class EmitterObject extends h3d.scene.Object {
                 mesh.remove();
             }
 
-            spawn.destroyPrefab();
+            spawn.remove();
             /*template.shared.contexts.remove(particleTemplate);
             template.local3d.remove();
             template.local3d = null;*/
@@ -1551,7 +1550,7 @@ class Emitter extends Object3D {
 
 
         #if !editor  // Keep startTime at 0 in Editor, since global.time is synchronized to timeline
-        var scene = ctx.local3d.getScene();
+        var scene = local3d.getScene();
         if(scene != null)
             emitterObj.startTime = @:privateAccess scene.renderer.ctx.time;
         #end
@@ -1566,10 +1565,6 @@ class Emitter extends Object3D {
 
     override function makeObject3d(parent3d: h3d.scene.Object) : h3d.scene.Object {
         return new EmitterObject(parent3d);
-    }
-
-    override function removeInstance():Bool {
-        return false;
     }
 
     #if editor
@@ -1666,7 +1661,7 @@ class Emitter extends Object3D {
 
             for( gn in groupNames ) {
                 var params = params.filter( p -> p.groupName == (gn == "Emitter" ? null : gn) );
-                var group = new Element('<div class="group" name="$gn"></div>');
+                var group = new hide.Element('<div class="group" name="$gn"></div>');
                 group.append(hide.comp.PropsEditor.makePropsList(params));
                 ctx.properties.add(group, this.props, onChange);
             }
@@ -1685,12 +1680,12 @@ class Emitter extends Object3D {
 
             for (groupName => params in groups)
             {
-                var instGroup = new Element('<div class="group" name="$groupName"></div>');
-                var dl = new Element('<dl>').appendTo(instGroup);
+                var instGroup = new hide.Element('<div class="group" name="$groupName"></div>');
+                var dl = new hide.Element('<dl>').appendTo(instGroup);
 
                 for (p in params) {
-                    var dt = new Element('<dt>${p.disp != null ? p.disp : p.name}</dt>').appendTo(dl);
-                    var dd = new Element('<dd>').appendTo(dl);
+                    var dt = new hide.Element('<dt>${p.disp != null ? p.disp : p.name}</dt>').appendTo(dl);
+                    var dd = new hide.Element('<dd>').appendTo(dl);
 
                     function addUndo(pname: String) {
                         ctx.properties.undo.change(Field(this.props, pname, Reflect.field(this.props, pname)), function() {
@@ -1722,15 +1717,15 @@ class Emitter extends Object3D {
                         });
                     }
                     else {
-                        var btn = new Element('<input type="button" value="+"></input>').appendTo(dd);
+                        var btn = new hide.Element('<input type="button" value="+"></input>').appendTo(dd);
                         btn.click(function(e) {
                             addUndo(p.name);
                             resetParam(p);
                             refresh();
                         });
                     }
-                    var dt = new Element('<dt>~</dt>').appendTo(dl);
-                    var dd = new Element('<dd>').appendTo(dl);
+                    var dt = new hide.Element('<dt>~</dt>').appendTo(dl);
+                    var dd = new hide.Element('<dd>').appendTo(dl);
                     var randDef : Dynamic = switch(p.t) {
                         case PVec(n): [for(i in 0...n) 0.0];
                         case PFloat(_): 0.0;
@@ -1761,7 +1756,7 @@ class Emitter extends Object3D {
                         });
                     }
                     else {
-                        var btn = new Element('<input type="button" value="+"></input>').appendTo(dd);
+                        var btn = new hide.Element('<input type="button" value="+"></input>').appendTo(dd);
                         btn.click(function(e) {
                             addUndo(randProp(p.name));
                             Reflect.setField(this.props, randProp(p.name), randDef);

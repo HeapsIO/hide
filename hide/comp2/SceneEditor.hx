@@ -1583,7 +1583,7 @@ class SceneEditor {
     }
 
     function removeInstance(elt : PrefabElement) {
-        elt.destroyPrefab();
+        elt.remove();
         return true;
     }
 
@@ -2585,7 +2585,7 @@ class SceneEditor {
 
     public function deleteElements(elts : Array<PrefabElement>, ?then: Void->Void, doRefresh : Bool = true, enableUndo : Bool = true) {
         for (e in elts) {
-            e.destroyPrefab();
+            e.remove();
         }
         refresh();
         /*var fullRefresh = false;

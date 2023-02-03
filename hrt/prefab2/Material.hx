@@ -5,8 +5,6 @@ import h3d.scene.Object;
 import h3d.mat.PbrMaterial;
 import hide.prefab2.HideProps;
 
-import hide.Element;
-
 class Material extends Prefab {
 
     @:s public var wrapRepeat = false;
@@ -83,7 +81,7 @@ class Material extends Prefab {
         if ( mats == null || mats.length == 0 ) {
             try {
                 var path = hide.Ide.inst.currentConfig.get("material.preview", []);
-                var preview = Object3D.modelCache.loadModel(path);
+                    var preview = Object3D.modelCache.loadModel(path);
                 local3d.parent.addChild(preview);
                 local3d = preview;
                 local3d.x = local3d.getScene().getMaterials().length * 5.0;
@@ -132,7 +130,7 @@ class Material extends Prefab {
             </div>');
             ctx.properties.add(colorMask, this, function(pname) { ctx.onChange(this, pname); });
 
-            function setBit( e : Element, field : String, className : String, bitIndex : Int ) {
+            function setBit( e : hide.Element, field : String, className : String, bitIndex : Int ) {
                 var mask = e.find(className);
                 var val : Int = cast Reflect.field(pbrProps, field);
                 mask.prop("checked", val & (1<<bitIndex) > 0 ? true : false);

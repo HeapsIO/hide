@@ -124,7 +124,8 @@ class NoiseGenerator extends Object2D {
         local2d = bmp;
     }
 
-    override function destroy() {
+    // TODO(ces) : restore cleanup
+    function destroy() {
         tex.dispose();
     }
 

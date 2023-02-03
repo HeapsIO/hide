@@ -158,7 +158,8 @@ class Shader extends Prefab {
         updateInstance();
     }
 
-    override function destroy() {
+    // TODO(ces) : Shader cleanup
+    function destroy() {
         var drawable = Std.downcast(findFirstLocal2d(), h2d.Drawable);
         if (drawable != null) {
             drawable.removeShader(shader);

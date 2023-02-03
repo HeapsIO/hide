@@ -35,10 +35,6 @@ class Object2D extends Prefab {
         local2d = new h2d.Object(ctx.local2d);
     }
 
-    override function destroy() {
-        if (local2d != null) local2d.remove();
-    }
-
     public static var _ = Prefab.register("object2D", Object2D);
 
     public function loadTransform(t) {

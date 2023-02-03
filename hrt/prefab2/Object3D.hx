@@ -70,8 +70,14 @@ class Object3D extends Prefab {
         applyTransform();
     }
 
-    override function destroy() {
-        if (local3d != null) local3d.remove();
+    override function detach(newRoot: Prefab, removedClasses: Array<Class<Prefab>>) : Class<Prefab> {
+        if (local3d != null && !removedClasses.contains(Object3D)) {
+            //Perform sepukku
+            local3d.remove();
+
+            return Object3D;
+        }
+        return null;
     }
 
     public function setTransform(mat : h3d.Matrix) {
@@ -133,6 +139,8 @@ class Object3D extends Prefab {
     public function getDisplayFilters() : Array<String> {
         return [];
     }
+
+#if editor
 
     override function makeInteractive() : hxd.SceneEvents.Interactive {
         if(local3d == null)
@@ -212,4 +220,5 @@ class Object3D extends Prefab {
         return int;
     }
 
+#end // if editor
 }
