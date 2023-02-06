@@ -16,17 +16,6 @@ class Object3D extends Prefab {
 
     @:s public var visible : Bool = true;
 
-
-    public static var modelCache : h3d.prim.ModelCache = new h3d.prim.ModelCache();
-
-    public static function loadModel( path : String ) {
-        return modelCache.loadModel(hxd.res.Loader.currentInstance.load(path).toModel());
-    }
-
-    public static function loadAnimation( path : String ) {
-        return @:privateAccess modelCache.loadAnimation(hxd.res.Loader.currentInstance.load(path).toModel());
-    }
-
     public var local3d : h3d.scene.Object;
 
     public static function getLocal3d(prefab: Prefab) : h3d.scene.Object {

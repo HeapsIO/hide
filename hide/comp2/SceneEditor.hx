@@ -2081,11 +2081,12 @@ class SceneEditor {
             obj3d = new hrt.prefab.l3d.Particles3D(parent);
             obj3d.source = relative;
             obj3d.name = new haxe.io.Path(relative).file;
-        }
-        else {
-            obj3d = new hrt.prefab.Model(parent);
-            obj3d.source = relative;
         }*/
+        else {
+            var model = new hrt.prefab2.l3d.Model(parent);
+            model.source = relative;
+            prefab = model;
+        }
         return prefab;
     }
 

@@ -6,5 +6,6 @@ package hrt.prefab2;
 **/
 typedef ProtoPrefab = {
     prefab : Prefab,
+    cache : h3d.prim.ModelCache,
     ?source : String
 }

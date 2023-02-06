@@ -94,6 +94,7 @@ class Prefab {
         this.parent = parent;
         if (parent != null) {
             parent.children.push(this);
+            this.proto = parent.proto;
         }
     }
 
@@ -156,6 +157,10 @@ class Prefab {
 
         var prefabInstance = Type.createInstance(cl, [parent]);
 
+        prefabInstance.proto = {
+            prefab: prefabInstance,
+            cache: new h3d.prim.ModelCache(),
+        };
         prefabInstance.load(data);
 
         var children = Std.downcast(Reflect.field(data, "children"), Array);
@@ -226,6 +231,9 @@ class Prefab {
         return null;
     }
 
+    /**
+        Returns the root prefab, i.e. the first prefab that doesn't have any parent.
+    **/
     public function getRoot() : Prefab {
         var root = this;
 
@@ -331,8 +339,10 @@ class Prefab {
 
     // (Un)Serialization
 
-    // Recursively copy this prefab and it's children into a dynamic object, containing
-    // all the serializable properties and the type of the object
+    /**
+        Recursively copy this prefab and it's children into a dynamic object, containing
+        all the serializable properties and the type of the object
+    **/
     public function serializeToDynamic() : Dynamic {
         var thisClass = Type.getClass(this);
         var typeName = getClassTypeName(thisClass);
@@ -353,7 +363,9 @@ class Prefab {
         return dyn;
     }
 
-    // Copy all the fields from this prefab to the target prefab, recursively
+    /**
+        Copy all the fields from this prefab to the target prefab, recursively
+    **/
     public static function copy(source:Prefab, dest:Prefab, useProperty:Bool, copyNull:Bool)
     {
         copyShallow(source, dest, useProperty, copyNull, false, source.getSerializableProps());
@@ -372,12 +384,7 @@ class Prefab {
     }
 
     public static function getClassTypeName(cl : Class<Prefab>) : String {
-        for (k => v in registry) {
-            if (cl == v.prefabClass) {
-                return k;
-            }
-        }
-        return null;
+        return reverseRegistry.get(Type.getClassName(cl));
     }
 
     public static function getPrefabInfoByName(name:String) : PrefabInfo {
@@ -386,9 +393,21 @@ class Prefab {
 
     static var registry : Map<String, PrefabInfo> = new Map();
 
+    // Map prefab class name to the serialized name of the prefab
+    static var reverseRegistry : Map<String, String> = new Map();
+
+    /**
+        Register the given prefab class with the given typeName in the prefab regsitry.
+        This is necessary for the serialisation system.
+        Call it by placing this in you prefab class :
+        ```
+        public static var _ = Prefab.register("myPrefabName", myPrefabClassName);
+        ```
+    **/
     public static function register(typeName : String, prefabClass: Class<hrt.prefab2.Prefab>) {
         var info : hide.prefab2.HideProps = cast Type.createEmptyInstance(prefabClass).getHideProps();
 
+        reverseRegistry.set(Type.getClassName(prefabClass), typeName);
         registry.set(typeName, {prefabClass: prefabClass #if editor, inf : info #end});
         return true;
     }
@@ -421,7 +440,7 @@ class Prefab {
     }
 
     /**
-        Returns the default name for this prefab
+        Returns the default display name for this prefab
     **/
     public function getDefaultName() : String {
         if(proto != null && proto.source != null) {
@@ -460,7 +479,7 @@ class Prefab {
     }
 
     /**
-         If the prefab `props` represent CDB data, returns the sheet name of it, or null.
+        If the prefab `props` represent CDB data, returns the sheet name of it, or null.
      **/
      public function getCdbType() : String {
         if( props == null )
@@ -468,7 +487,9 @@ class Prefab {
         return Reflect.field(props, "$cdbtype");
     }
 
-    // Misc
+    /**
+        Misc
+    **/
 
     public final function toString() : String{
         return 'prefab:{type: $type, name: $name}';
@@ -478,10 +499,14 @@ class Prefab {
         return haxe.Json.stringify(serializeToDynamic(), null, "\t");
     }
 
-    // Private overridable API
+    /*
+        Private overridable API
+    */
 
-    // Override this function if you want to controll how the childrens are
-    // made
+    /**
+        Override this function if you want to controll how the childrens are
+        made
+    **/
     function makeInstanceRec(params: InstanciateContext) : Void {
         if (!enabled) return;
 
@@ -509,12 +534,28 @@ class Prefab {
         params.local3d = old3d;
     }
 
-    // Override this function to create runtime objects from this prefab
+	private function loadModel( path : String ) {
+		return proto.cache.loadModel(hxd.res.Loader.currentInstance.load(path).toModel());
+	}
+
+    private function loadAnimation( path : String ) {
+        return proto.cache.loadAnimation(hxd.res.Loader.currentInstance.load(path).toModel());
+    }
+
+    private function loadTexture( path : String, async : Bool = false ) {
+		return proto.cache.loadTexture(null, path, async);
+	}
+
+    /**
+        Override this function to create runtime objects from this prefab
+    **/
     function makeInstance(ctx: InstanciateContext) : Void {
 
     }
 
-    // Called after makeInstance (and by extension postChildrenMakeInstance) has been called on all the children
+    /**
+        Called after makeInstance (and by extension postChildrenMakeInstance) has been called on all the children
+    **/
     function postChildrenMakeInstance(ctx: InstanciateContext) : Void {
     }
 
@@ -536,7 +577,9 @@ class Prefab {
         return null;
     }
 
-    // Call all the setters of this object and its children
+    /**
+        Call all the setters of this object and its children
+    **/
     public function refresh() {
         for (field in getSerializableProps()) {
             if (field.hasSetter) {
@@ -548,10 +591,14 @@ class Prefab {
         }
     }
 
-    // Internal functionalities
+    /*
+        Internal functionalities
+    */
 
-    // Call the autogenerated make(?root: Prefab = null, ?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) function instead which is properly typed
-    // for each prefab using macro
+    /**
+        Call the autogenerated make(?root: Prefab = null, ?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) function instead which is properly typed
+        for each prefab using macro
+    **/
     @:noCompletion
     final function makeInternal(?root: Prefab = null, ?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) : Prefab {
         var newInstance = copyDefault(root);
@@ -566,7 +613,9 @@ class Prefab {
         return newInstance;
     };
 
-    // Create a copy of this prefab and it's childrens, whitout initializing their fields
+    /**
+        Create a copy of this prefab and it's childrens, whitout initializing their fields
+    **/
     final function copyDefault(?parent:Prefab = null) : Prefab {
         var thisClass = Type.getClass(this);
         var inst = Type.createInstance(thisClass, [parent]);
@@ -577,7 +626,9 @@ class Prefab {
         return inst;
     }
 
-    // Only copy a prefab serializable properties without it's children
+    /**
+        Only copy a prefab serializable properties without it's children
+    **/
     static function copyShallow(source:Dynamic, dest:Dynamic, useProperty:Bool, copyNull:Bool, copyDefault: Bool, props:Array<PrefabField>) {
         var set = useProperty ? Reflect.setProperty : Reflect.setField;
 
@@ -627,12 +678,11 @@ class Prefab {
 
     static var cache : Map<String, Prefab> = new Map();
 
-
-    /**
-        Editor
-    **/
-
 #if editor
+    /*
+        Editor API
+    */
+
     /**
         Allows to customize how the prefab object is displayed / handled within Hide
     **/
@@ -666,11 +716,17 @@ class Prefab {
         return null;
     }
 
+    /**
+        Called when the hide editor wants to edit this Prefab.
+        Used to create the various editor interfaces
+    **/
     public function edit(editContext : hide.prefab2.EditContext) {
 
     }
 #end
 
+    // Static initialization trick to register this class with the given name
+    // in the prefab registry. Call this in your own classes 
     public static var _ = Prefab.register("prefab", Prefab);
 
     /*inline public function findParent<T:Prefab,R>( cl : Class<T>, ?filter : (p:T) -> Null<R>) : Null<R> {

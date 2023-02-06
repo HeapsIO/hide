@@ -3,10 +3,10 @@ package hrt.prefab2.l3d;
 class Model extends Object3D {
 
     @:s public var animation : Null<String>;
-    @:s var lockAnimation : Bool = false;
-    @:s var retargetAnim : Bool = false;
-    @:s var retargetIgnore : String;
-    @:s var source : String;
+    @:s public var lockAnimation : Bool = false;
+    @:s public var retargetAnim : Bool = false;
+    @:s public var retargetIgnore : String = null;
+    @:s public var source : String = null;
 
 
     public function new(?parent) {
@@ -28,7 +28,7 @@ class Model extends Object3D {
         #if editor
         try {
         #end
-            var obj = Object3D.loadModel(source);
+            var obj = loadModel(source);
             if(obj.defaultTransform != null && children.length > 0) {
                 obj.name = "root";
                 var root = new h3d.scene.Object();
@@ -88,7 +88,7 @@ class Model extends Object3D {
         boundingSphere = null;
 
         if( animation != null )
-            local3d.playAnimation(Object3D.loadAnimation(animation));
+            local3d.playAnimation(loadAnimation(animation));
     }
 
     var polys3D = null;
@@ -159,7 +159,7 @@ class Model extends Object3D {
                 animation = null;
                 obj.stopAnimation();
             } else {
-                obj.playAnimation(Object3D.loadAnimation(v)).loop = true;
+                obj.playAnimation(loadAnimation(v)).loop = true;
                 if( lockAnimation ) return;
                 animation = v;
             }
@@ -171,7 +171,7 @@ class Model extends Object3D {
                     obj.stopAnimation();
                     select.val("");
                 } else {
-                    obj.playAnimation(Object3D.loadAnimation(animation)).loop = true;
+                    obj.playAnimation(loadAnimation(animation)).loop = true;
                     select.val(v);
                 }
             }));

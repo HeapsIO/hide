@@ -81,7 +81,7 @@ class Material extends Prefab {
         if ( mats == null || mats.length == 0 ) {
             try {
                 var path = hide.Ide.inst.currentConfig.get("material.preview", []);
-                    var preview = Object3D.modelCache.loadModel(path);
+                    var preview = loadModel(path);
                 local3d.parent.addChild(preview);
                 local3d = preview;
                 local3d.x = local3d.getScene().getMaterials().length * 5.0;
@@ -91,13 +91,14 @@ class Material extends Prefab {
             }
         }
         #end
+        function loadTextureCb( path : String ) : h3d.mat.Texture {
+            return loadTexture(path, false);
+        }
         for( m in mats )
-            update(m, props, loadTexture);
+            update(m, props, loadTextureCb);
     }
 
-    function loadTexture( path : String ) : h3d.mat.Texture {
-        return Object3D.modelCache.loadTexture(null, path, false);
-    }
+
 
     override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) {
         updateInstance();
