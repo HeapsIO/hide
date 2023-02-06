@@ -71,7 +71,7 @@ class LayerView2DRFXShader extends h3d.shader.ScreenShader {
 
 			if ( layerEnable ) {
 				var layer = layerMap.get( floor( curPos / layerScale ) * layerScale / worldSize );
-				var index = (floatToInt(layer.a) << 24) + (floatToInt(layer.r) << 16) + (floatToInt(layer.g) << 8) + (floatToInt(layer.b));
+				var index = floatToInt(layer.r);
 				if ( index > 0 )
 					pixelColor.rgba = colors.get(vec2((index + 0.5) / nbColorsIndexes, 0.5));
 				else if ( !collide && highlightNoPixels )
@@ -212,6 +212,10 @@ class Layers2D extends hrt.prefab.Object3D {
 			var datDir = path.toString();
 			var fileName = "layer_" + l.name + ".png";
 			var pixels = loadPixels(datDir + "/" + this.name + "/" + fileName);
+			if ( pixels.format != R8 ) { // retro compatibility
+				@:privateAccess pixels.innerFormat = RGBA;
+				pixels.convert(R8);
+			}
 			if ( pixels != null )
 				layerTextures.set(l.name, pixels);
 		}
@@ -683,10 +687,10 @@ class Layers2D extends hrt.prefab.Object3D {
 			var newSize = Math.floor(worldSize / layerScale);
 			var difSize = oldSize / newSize;
 			for( key => layerTexture in layerTextures ) {
-				var newLayerTexture = hxd.Pixels.alloc(newSize, newSize, RGBA);
+				var newLayerTexture = hxd.Pixels.alloc(newSize, newSize, R8);
 				for( y in 0...newSize ) {
 					for( x in 0...newSize ) {
-						var ox = Math.floor(x * difSize); 
+						var ox = Math.floor(x * difSize);
 						var oy = Math.floor(y * difSize);
 						var c = layerTexture.getPixel(ox, oy);
 						newLayerTexture.setPixel(x, y, c);
@@ -707,7 +711,7 @@ class Layers2D extends hrt.prefab.Object3D {
 			var newSize = Math.floor(worldSize / layerScale);
 			var copySize = hxd.Math.imin(oldSize, newSize);
 			for( key => layerTexture in layerTextures ) {
-				var newLayerTexture = hxd.Pixels.alloc(newSize, newSize, RGBA);
+				var newLayerTexture = hxd.Pixels.alloc(newSize, newSize, R8);
 				newLayerTexture.blit(0, 0, layerTexture, 0, 0, copySize, copySize);
 				layerTextures.set(key, newLayerTexture);
 			}
@@ -730,10 +734,10 @@ class Layers2D extends hrt.prefab.Object3D {
 
 				currentPixels = layerTextures.get(currentLayer);
 				if ( currentPixels == null ) {
-					currentPixels = hxd.Pixels.alloc(Math.floor(worldSize / layerScale), Math.floor(worldSize / layerScale), RGBA);
+					currentPixels = hxd.Pixels.alloc(Math.floor(worldSize / layerScale), Math.floor(worldSize / layerScale), R8);
 					layerTextures.set(currentLayer, currentPixels);
 				}
-				currentTexture = h3d.mat.Texture.fromPixels(currentPixels, RGBA);
+				currentTexture = h3d.mat.Texture.fromPixels(currentPixels, R8);
 				currentTexture.filter = Nearest;
 				updateColors();
 
