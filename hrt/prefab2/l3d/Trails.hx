@@ -743,7 +743,7 @@ class TrailsSubTrail extends Object3D {
 
     override function makeObject3d(parent3d: h3d.scene.Object) : h3d.scene.Object {
         var obj = new TrailsSubTailObj(parent3d);
-        return local3d;
+        return obj;
     }
 
     override function updateInstance(?props: String) {
