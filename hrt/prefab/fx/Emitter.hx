@@ -611,9 +611,9 @@ class EmitterObject extends h3d.scene.Object {
 					if( !shader.enabled ) continue;
 					var shCtx = makeShaderInstance(shader, context);
 					if( shCtx == null ) continue;
-	
+
 					//shCtx.local3d = null; // Prevent shader.iterMaterials from adding our objet to the list incorectly
-	
+
 					hrt.prefab.fx.BaseFX.getShaderAnims(shCtx, shader, shaderAnims);
 					var shader = Std.downcast(shCtx.custom, hxsl.Shader);
 					batch.material.mainPass.addShader(shader);
@@ -1084,12 +1084,15 @@ class EmitterObject extends h3d.scene.Object {
 					lockAxis.set(0, 0, 1);
 					frontAxis.set(0, 1, 0);
 			}
-
 			var lookAtPos = tmpVec;
 			lookAtPos.load(getScene().camera.pos);
+            lookAtPos.w = 1.0;
+
 			var invParent = parent.getInvPos();
-			lookAtPos.transform(invTransform);
+			lookAtPos.transform(invParent);
 			var deltaVec = new h3d.Vector(lookAtPos.x - x, lookAtPos.y - y, lookAtPos.z - z);
+            trace(deltaVec, lookAtPos);
+
 
 			var invParentQ = tmpQuat;
 			invParentQ.initRotateMatrix(invParent);
@@ -1108,6 +1111,9 @@ class EmitterObject extends h3d.scene.Object {
 				tmpQuat.initRotateAxis(1,0,0,-Math.PI/2);
 				screenQuat.multiply(screenQuat, tmpQuat);
 			}
+
+            trace(invParent);
+            trace(getScene().camera.pos, lookAtPos, x, y, z, lockAxis, targetOnPlane, deltaVec, angle);
 		}
 	}
 
@@ -1465,7 +1471,7 @@ class Emitter extends Object3D {
 		var emitterObj = Std.downcast(ctx.local3d, EmitterObject);
 
 		var randIdx = 0;
-		var template : Object3D = cast children.find( 
+		var template : Object3D = cast children.find(
 			c -> c.enabled &&
 			(c.name == null || c.name.indexOf("collision") == -1) &&
 			c.to(Object3D) != null &&
