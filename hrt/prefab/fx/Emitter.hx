@@ -1091,8 +1091,6 @@ class EmitterObject extends h3d.scene.Object {
 			var invParent = parent.getInvPos();
 			lookAtPos.transform(invParent);
 			var deltaVec = new h3d.Vector(lookAtPos.x - x, lookAtPos.y - y, lookAtPos.z - z);
-            trace(deltaVec, lookAtPos);
-
 
 			var invParentQ = tmpQuat;
 			invParentQ.initRotateMatrix(invParent);
@@ -1112,8 +1110,6 @@ class EmitterObject extends h3d.scene.Object {
 				screenQuat.multiply(screenQuat, tmpQuat);
 			}
 
-            trace(invParent);
-            trace(getScene().camera.pos, lookAtPos, x, y, z, lockAxis, targetOnPlane, deltaVec, angle);
 		}
 	}
 
