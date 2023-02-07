@@ -280,6 +280,16 @@ class HeightMapTile {
 		return height;
 	}
 
+	public function createShadows(mesh:HeightMapMesh) {
+		shadows = new h3d.scene.Mesh(@:privateAccess mesh.shadowGrid, root);
+		shadows.material.shadows = false;
+		shadows.material.mainPass.setPassName("shadow");
+		var smat = shadows.material;
+		@:bypassAccessor smat.castShadows = true; // trigger DirShadowMap
+		shadows.material.mainPass.addShader(root.material.mainPass.getShader(HeightMapShader));
+	}
+
+	var shadows : h3d.scene.Mesh;
 	@:access(hrt.prefab.l3d.HeightMapMesh)
 	public function create(mesh:HeightMapMesh) {
 		if( root != null ) throw "assert";
@@ -289,19 +299,14 @@ class HeightMapTile {
 		root.x = hmap.size * tx;
 		root.y = hmap.size * ty;
 
-		var shadows = new h3d.scene.Mesh(mesh.shadowGrid, root);
-		shadows.material.shadows = false;
-		shadows.material.mainPass.setPassName("shadow");
-		var smat = shadows.material;
-		@:bypassAccessor smat.castShadows = true; // trigger DirShadowMap
-
 		inline function getTextures(k) return hmap.getTextures(k,tx,ty);
 		var htex = getTextures(Height)[0];
 		var splat = getTextures(SplatMap);
 		var normal = getTextures(Normal)[0];
 
 		var shader = root.material.mainPass.addShader(new HeightMapShader());
-		shadows.material.mainPass.addShader(shader);
+		if ( mesh.hmap.castShadows )
+			createShadows(mesh);
 		shader.hasHeight = htex != null;
 		shader.heightMap = shader.heightMapFrag = htex;
 		shader.hasNormal = normal != null;
@@ -558,6 +563,25 @@ class HeightMap extends Object3D {
 		#end
 		return shadowQuality;
 
+	}
+	@:s public var castShadows = true;
+	public function set_castShadows(v : Bool) {
+		castShadows = v;
+		for ( t in tilesCache ) {
+			var shadows = @:privateAccess t.shadows;
+			if ( !castShadows ) {
+				if ( shadows != null ) {
+					shadows.remove();
+					shadows = null;
+				}
+			} else {
+				if ( shadows == null ) {
+					if ( t.root != null && t.root.parent != null )
+						t.createShadows(cast(t.root.parent, HeightMapMesh));
+				}
+			}
+		}
+		return castShadows;
 	}
 	@:s var sizeX = 0;
 	@:s var sizeY = 0;
@@ -931,6 +955,7 @@ class HeightMap extends Object3D {
 				<dt>MinZ</dt><dd><input type="range" min="-1000" max="0" field="minZ"/></dd>
 				<dt>MaxZ</dt><dd><input type="range" min="0" max="1000" field="maxZ"/></dd>
 				<dt>Quality</dt><dd><input type="range" min="0" max="4" field="quality" step="1"/></dd>
+				<dt>Cast Shadows</dt><dd><input type="checkbox" field="castShadows"/></dd>
 				<dt>Shadows Quality</dt><dd><input type="range" min="0" max="4" field="shadowQuality" step="1"/></dd>
 			'+(hasSplat ? '
 				<dt>Albedo Tiling</dt><dd><input type="range" field="albedoTiling"/>
