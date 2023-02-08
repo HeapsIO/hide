@@ -19,6 +19,16 @@ typedef PrefabMeta = {
     var ?range_step : Float;
 }
 
+class ContextShared {
+    public function new() {
+
+    }
+
+    public var source : String = null;
+    public var cache : h3d.prim.ModelCache = new h3d.prim.ModelCache();
+    public var isPrototype = true;
+}
+
 class InstanciateContext {
     public function new(local2d: h2d.Object, local3d: h3d.scene.Object) {
         this.local2d = local2d;
@@ -83,25 +93,32 @@ class Prefab {
     /**
         The parent of the prefab in the tree view
     **/
-    public var parent : Prefab = null;
+    public var parent(default, set) : Prefab = null;
 
-    /**The original prefab that this prefab is derived from.**/
-    public var proto : ProtoPrefab = null;
+    /**Cache of values**/
+    public var shared : ContextShared = null;
 
     // Public API
 
     public function new(?parent:Prefab = null) {
         this.parent = parent;
-        if (parent != null) {
-            parent.children.push(this);
-            this.proto = parent.proto;
-        }
     }
 
     // Accessors
     function get_type() {
         var thisClass = Type.getClass(this);
         return getClassTypeName(thisClass);
+    }
+
+    function set_parent(p) {
+        if( parent != null )
+			parent.children.remove(this);
+		parent = p;
+		if( parent != null ) {
+            shared = parent.shared;
+			parent.children.push(this);
+        }
+		return p;
     }
 
     public function getSource() : String {
@@ -112,7 +129,7 @@ class Prefab {
 
     // Like make but in-place
     public function instanciate(params: InstanciateContext) {
-        if (!params.forceInstanciate && (proto.prefab == this))
+        if (!params.forceInstanciate && (shared.isPrototype))
             throw "Can't instanciate a template prefab unless params.forceInstanciate is true.";
         makeInstanceRec(params);
 
@@ -157,10 +174,7 @@ class Prefab {
 
         var prefabInstance = Type.createInstance(cl, [parent]);
 
-        prefabInstance.proto = {
-            prefab: prefabInstance,
-            cache: new h3d.prim.ModelCache(),
-        };
+        prefabInstance.shared = new ContextShared();
         prefabInstance.load(data);
 
         var children = Std.downcast(Reflect.field(data, "children"), Array);
@@ -282,6 +296,22 @@ class Prefab {
     public function to<T:Prefab>( c : Class<T> ) : Null<T> {
         return Std.downcast(this, c);
     }
+
+
+	/**
+		Find a single prefab in the tree by calling `f` on each and returning the first not-null value returned, or null if not found.
+	**/
+	public function find<T>( f : Prefab -> Null<T>, ?followRefs : Bool ) : Null<T> {
+		var v = f(this);
+		if( v != null )
+			return v;
+		for( p in children ) {
+			var v = p.find(f, followRefs);
+			if( v != null ) return v;
+		}
+		return null;
+	}
+
 
     /**
         Find several prefabs in the tree by calling `f` on each and returning all the non-null values returned.
@@ -443,8 +473,8 @@ class Prefab {
         Returns the default display name for this prefab
     **/
     public function getDefaultName() : String {
-        if(proto != null && proto.source != null) {
-            var f = new haxe.io.Path(proto.source).file;
+        if(shared.source != null) {
+            var f = new haxe.io.Path(shared.source).file;
             f = f.split(" ")[0].split("-")[0];
             return f;
         }
@@ -535,15 +565,15 @@ class Prefab {
     }
 
 	private function loadModel( path : String ) {
-		return proto.cache.loadModel(hxd.res.Loader.currentInstance.load(path).toModel());
+		return shared.cache.loadModel(hxd.res.Loader.currentInstance.load(path).toModel());
 	}
 
     private function loadAnimation( path : String ) {
-        return proto.cache.loadAnimation(hxd.res.Loader.currentInstance.load(path).toModel());
+        return shared.cache.loadAnimation(hxd.res.Loader.currentInstance.load(path).toModel());
     }
 
     private function loadTexture( path : String, async : Bool = false ) {
-		return proto.cache.loadTexture(null, path, async);
+		return shared.cache.loadTexture(null, path, async);
 	}
 
     /**
@@ -602,7 +632,8 @@ class Prefab {
     @:noCompletion
     final function makeInternal(?root: Prefab = null, ?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) : Prefab {
         var newInstance = copyDefault(root);
-        newInstance.proto = this.proto;
+        newInstance.shared = new ContextShared();
+        newInstance.shared.isPrototype = false;
 
         o2d = o2d != null ? o2d : (root != null ? root.findFirstLocal2d() : null);
         o3d = o3d != null ? o3d : (root != null ? root.findFirstLocal3d() : null);
@@ -665,15 +696,16 @@ class Prefab {
     }
 
     /** Copy all the properties in data to this prefab object. This is not recursive**/
-    function load(data : Dynamic) : Void {
+    public function load(data : Dynamic) : Void {
         copyShallow(data, this, false, false, false, getSerializableProps());
     }
 
     /** Save all the properties to the given dynamic object. This is not recursive. Returns the updated dynamic object.
         If to is null, a new dynamic object is created automatically and returned by the
     **/
-    function save(to: Dynamic) : Void {
+    public function save(to: Dynamic) : Dynamic {
         copyShallow(this, to, false, false, false, getSerializableProps());
+        return to;
     }
 
     static var cache : Map<String, Prefab> = new Map();

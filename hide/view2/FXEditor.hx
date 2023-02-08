@@ -1,24 +1,24 @@
 package hide.view2;
-import hrt.prefab.Light;
+import hide.view.FileTree;
+import hrt.prefab2.Light;
 using Lambda;
 
 import hide.Element;
 import hrt.prefab2.Prefab in PrefabElement;
-import hrt.prefab.Curve;
-import hrt.prefab.fx.Event;
-import hide.view.CameraController.CamController;
+import hrt.prefab2.Curve;
+import hrt.prefab2.fx.Event;
+import hide.view2.CameraController.CamController;
 
 typedef PropTrackDef = {
     name: String,
     ?def: Float
 };
 
-#if 0
-@:access(hide.view.FXEditor)
-class FXEditContext extends hide.prefab.EditContext {
+@:access(hide.view2.FXEditor)
+class FXEditContext extends hide.prefab2.EditContext {
     var parent : FXEditor;
-    public function new(parent, context) {
-        super(context);
+    public function new(parent) {
+        super();
         this.parent = parent;
     }
     override function onChange(p, propName) {
@@ -63,13 +63,11 @@ private class FXSceneEditor extends hide.comp2.SceneEditor {
         var undoes = [];
         var newElements = [];
         for(elt in elements) {
-            var clone = elt.cloneData();
+            var clone = elt.make(elt.parent);
             var index = elt.parent.children.indexOf(elt) + 1;
-            clone.parent = elt.parent;
             elt.parent.children.remove(clone);
             elt.parent.children.insert(index, clone);
             autoName(clone);
-            makeInstance(clone);
             newElements.push(clone);
 
             undoes.push(function(undo) {
@@ -107,29 +105,31 @@ private class FXSceneEditor extends hide.comp2.SceneEditor {
 
             if(!undo) {
                 for(elt in newElements)
-                    makeInstance(elt);
+                    makePrefab(elt);
             }
 
             refresh(fullRefresh ? Full : Partial);
         }));
     }
 
-    override function createDroppedElement(path:String, parent:PrefabElement):hrt.prefab2.Object3D {
-        var type = hrt.prefab.Library.getPrefabType(path);
+    // TODO(ces) : restore
+    override function createDroppedElement(path:String, parent:PrefabElement):PrefabElement {
+        throw "implement";
+        /*var type = Prefab.getPrefabType(path);
         if(type == "fx") {
             var relative = ide.makeRelative(path);
-            var ref = new hrt.prefab.fx.SubFX(parent);
-            ref.source = relative;
+            var ref = new hrt.prefab2.fx.SubFX(parent);
+            ref.path = relative;
             ref.name = new haxe.io.Path(relative).file;
             return ref;
         }
-        return super.createDroppedElement(path, parent);
+        return super.createDroppedElement(path, parent);*/
     }
 
-    override function setElementSelected( p : PrefabElement, ctx : hrt.prefab.Context, b : Bool ) {
-        if( p.getParent(hrt.prefab.fx.Emitter) != null )
+    override function setElementSelected( p : PrefabElement, b : Bool ) {
+        if( p.getParent(hrt.prefab2.fx.Emitter) != null )
             return false;
-        return super.setElementSelected(p, ctx, b);
+        return super.setElementSelected(p, b);
     }
 
     override function selectElements( elts, ?mode ) {
@@ -145,7 +145,7 @@ private class FXSceneEditor extends hide.comp2.SceneEditor {
     }
 
     override function getNewContextMenu(current: PrefabElement, ?onMake: PrefabElement->Void=null, ?groupByType = true ) {
-        if(current != null && current.to(hrt.prefab.Shader) != null) {
+        if(current != null && current.to(hrt.prefab2.Shader) != null) {
             var ret : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
             ret.push({
                 label: "Animation",
@@ -272,17 +272,17 @@ class FXEditor extends hide.view.FileView {
     var selectMax : Float;
     var previewMin : Float;
     var previewMax : Float;
-    var curveEdits : Array<hide.comp.CurveEditor>;
+    var curveEdits : Array<hide.comp2.CurveEditor>;
     var timeLineEl : Element;
     var afterPanRefreshes : Array<Bool->Void> = [];
     var statusText : h2d.Text;
 
     var scriptEditor : hide.comp.ScriptEditor;
-    var fxScriptParser : hrt.prefab.fx.FXScriptParser;
+    //var fxScriptParser : hrt.prefab2.fx.FXScriptParser;
     var cullingPreview : h3d.scene.Sphere;
 
     override function getDefaultContent() {
-        return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab.fx.FX().saveData()));
+        return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab2.fx.FX().serializeToDynamic()));
     }
 
     override function canSave() {
@@ -307,17 +307,19 @@ class FXEditor extends hide.view.FileView {
         xOffset = -timelineLeftMargin / xScale;
         var content = sys.io.File.getContent(getPath());
         var json = haxe.Json.parse(content);
-        if (json.type == "fx") {
-            var inf = hrt.prefab.Library.getRegistered().get("fx");
-            data = Std.downcast(Type.createInstance(inf.cl, null), hrt.prefab.fx.FX);
+        /*if (json.type == "fx") {
+            var inf = hrt.prefab2.Library.getRegistered().get("fx");
+            data = Std.downcast(Type.createInstance(inf.cl, null), hrt.prefab2.fx.FX);
             if ( data == null )
                 throw "fx prefab override failed";
         }
         else {
-            is2D = true;
-            data = new hrt.prefab.fx.FX2D();
-        }
-        data.loadData(json);
+            // TODO(ces) : Fix FX2D
+            //is2D = true;
+            //data = new hrt.prefab2.fx.FX2D();
+            throw "FX2D not handled yet";
+        }*/
+        data = Std.downcast(PrefabElement.createFromDynamic(json), hrt.prefab2.fx.BaseFX);
         currentSign = ide.makeSignature(content);
 
         element.html('
@@ -391,7 +393,7 @@ class FXEditor extends hide.view.FileView {
         });
         fxprops = new hide.comp.PropsEditor(undo,null,element.find(".fx-props"));
         {
-            var edit = new FXEditContext(this, sceneEditor.context);
+            var edit = new FXEditContext(this);
             edit.properties = fxprops;
             edit.scene = sceneEditor.scene;
             edit.cleanups = [];
@@ -411,7 +413,7 @@ class FXEditor extends hide.view.FileView {
             modified = false;
         }
         scriptEditor.onSave = onSaveScript;
-        fxScriptParser = new hrt.prefab.fx.FXScriptParser();
+        //fxScriptParser = new hrt.prefab2.fx.FXScriptParser();
         data.scriptCode = scriptEditor.code;
 
         keys.register("playPause", function() { pauseButton.toggle(!pauseButton.isDown()); });
@@ -793,12 +795,12 @@ class FXEditor extends hide.view.FileView {
             var prevSel = null;
 
             function beforeChange() {
-                backup = [for(c in curves) haxe.Json.parse(haxe.Json.stringify(c.save()))];
+                backup = [for(c in curves) haxe.Json.parse(haxe.Json.stringify(c.save({})))];
                 prevSel = [selectMin, selectMax];
             }
 
             function afterChange() {
-                var newVals = [for(c in curves) haxe.Json.parse(haxe.Json.stringify(c.save()))];
+                var newVals = [for(c in curves) haxe.Json.parse(haxe.Json.stringify(c.save({})))];
                 var newSel = [selectMin, selectMax];
                 undo.change(Custom(function(undo) {
                     if(undo) {
@@ -963,7 +965,7 @@ class FXEditor extends hide.view.FileView {
 
     function addCurvesTrack(trackName: String, curves: Array<Curve>, tracksEl: Element) {
         var keyTimeTolerance = 0.05;
-        var trackEdits : Array<hide.comp.CurveEditor> = [];
+        var trackEdits : Array<hide.comp2.CurveEditor> = [];
         var trackEl = new Element('<div class="track">
             <div class="track-header">
                 <div class="track-prop">
@@ -1001,13 +1003,13 @@ class FXEditor extends hide.view.FileView {
             updateExpanded();
         });
         var dopesheet = trackEl.find(".dopesheet");
-        var evaluator = new hrt.prefab.fx.Evaluator();
+        var evaluator = new hrt.prefab2.fx.Evaluator();
 
         function getKeyColor(key) {
             return evaluator.getVector(Curve.getColorValue(curves), key.time, new h3d.Vector());
         }
 
-        function dragKey(from: hide.comp.CurveEditor, prevTime: Float, newTime: Float) {
+        function dragKey(from: hide.comp2.CurveEditor, prevTime: Float, newTime: Float) {
             for(edit in trackEdits) {
                 if(edit == from) continue;
                 var k = edit.curve.findKey(prevTime, keyTimeTolerance);
@@ -1024,7 +1026,7 @@ class FXEditor extends hide.view.FileView {
             }
         }
 
-        function refreshKey(key: hide.comp.CurveEditor.CurveKey, el: Element) {
+        function refreshKey(key: hide.comp2.CurveEditor.CurveKey, el: Element) {
             if(isColorTrack) {
                 var color = getKeyColor(key);
                 var colorStr = "#" + StringTools.hex(color.toColor() & 0xffffff, 6);
@@ -1035,7 +1037,7 @@ class FXEditor extends hide.view.FileView {
         var refreshDopesheet : Void -> Void = null;
 
         function backupCurves() {
-            return [for(c in curves) haxe.Json.parse(haxe.Json.stringify(c.save()))];
+            return [for(c in curves) haxe.Json.parse(haxe.Json.stringify(c.save({})))];
         }
         var lastBackup = backupCurves();
 
@@ -1073,7 +1075,7 @@ class FXEditor extends hide.view.FileView {
         }
 
 
-        function keyContextClick(key: hrt.prefab.Curve.CurveKey, el: Element) {
+        function keyContextClick(key: hrt.prefab2.Curve.CurveKey, el: Element) {
             function setCurveVal(suffix: String, value: Float) {
                 var c = curves.find(c -> StringTools.endsWith(c.name, suffix));
                 if(c != null) {
@@ -1172,7 +1174,6 @@ class FXEditor extends hide.view.FileView {
         }
 
         var minHeight = 40;
-        var ctx = sceneEditor.getContext(data);
         for(curve in curves) {
             var dispKey = getPath() + "/" + curve.getAbsPath(true);
             var curveContainer = new Element('<div class="curve"><label class="curve-label">${curve.name}</alpha></div>').appendTo(curvesContainer);
@@ -1182,7 +1183,7 @@ class FXEditor extends hide.view.FileView {
             if(height < minHeight) height = minHeight;
             curveContainer.height(height);
             curve.maxTime = data.duration == 0 ? 5000 : data.duration;
-            var curveEdit = new hide.comp.CurveEditor(this.undo, curveContainer);
+            var curveEdit = new hide.comp2.CurveEditor(this.undo, curveContainer);
             curveEdit.saveDisplayKey = dispKey;
             curveEdit.lockViewX = true;
             if(curves.length > 1)
@@ -1195,9 +1196,9 @@ class FXEditor extends hide.view.FileView {
                 curveEdit.minValue = 0;
                 curveEdit.maxValue = 360;
             }
-            var shader = curve.parent.to(hrt.prefab.Shader);
+            var shader = curve.parent.to(hrt.prefab2.Shader);
             if(shader != null) {
-                var sh = shader.getShaderDefinition(ctx);
+                var sh = shader.getShaderDefinition();
                 if(sh != null) {
                     var v = sh.data.vars.find(v -> v.kind == Param && v.name == curve.name);
                     if(v != null && v.qualifiers != null) {
@@ -1213,7 +1214,7 @@ class FXEditor extends hide.view.FileView {
             }
             curveEdit.xOffset = xOffset;
             curveEdit.xScale = xScale;
-            if(isInstanceCurve(curve) && curve.parent.to(hrt.prefab.fx.Emitter) == null || curve.name.indexOf("inst") >= 0)
+            if(isInstanceCurve(curve) && curve.parent.to(hrt.prefab2.fx.Emitter) == null || curve.name.indexOf("inst") >= 0)
                 curve.maxTime = 1.0;
             curveEdit.curve = curve;
             curveEdit.onChange = function(anim) {
@@ -1362,7 +1363,7 @@ class FXEditor extends hide.view.FileView {
                 getSection(curve).curves.push(curve);
             for(evt in sel.flatten(Event))
                 getSection(evt).events.push(evt);
-            for(fx in sel.flatten(hrt.prefab.fx.SubFX))
+            for(fx in sel.flatten(hrt.prefab2.fx.SubFX))
                 getSection(fx).events.push(fx);
         }
 
@@ -1460,11 +1461,13 @@ class FXEditor extends hide.view.FileView {
     }
 
     public function getNewTrackMenu(elt: PrefabElement) : Array<hide.comp.ContextMenu.ContextMenuItem> {
-        var obj3dElt = Std.downcast(elt, hrt.prefab.Object3D);
-        var obj2dElt = Std.downcast(elt, hrt.prefab.Object2D);
-        var shaderElt = Std.downcast(elt, hrt.prefab.Shader);
-        var emitterElt = Std.downcast(elt, hrt.prefab.fx.Emitter);
-        var particle2dElt = Std.downcast(elt, hrt.prefab.l2d.Particle2D);
+        var obj3dElt = Std.downcast(elt, hrt.prefab2.Object3D);
+        var obj2dElt = Std.downcast(elt, hrt.prefab2.Object2D);
+        var shaderElt = Std.downcast(elt, hrt.prefab2.Shader);
+        var emitterElt = Std.downcast(elt, hrt.prefab2.fx.Emitter);
+        
+        // TODO(ces) : Restore
+        //var particle2dElt = Std.downcast(elt, hrt.prefab2.l2d.Particle2D);
         var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
         var lightElt = Std.downcast(elt, Light);
 
@@ -1551,7 +1554,7 @@ class FXEditor extends hide.view.FileView {
         }
         if(shaderElt != null) {
             var shader = shaderElt.makeShader();
-            var inEmitter = shaderElt.getParent(hrt.prefab.fx.Emitter) != null;
+            var inEmitter = shaderElt.getParent(hrt.prefab2.fx.Emitter) != null;
             var params = shader == null ? [] : @:privateAccess shader.shader.data.vars.filter(inEmitter ? isPerInstance : v -> v.kind == Param);
             for(param in params) {
                 var item : hide.comp.ContextMenu.ContextMenuItem = switch(param.type) {
@@ -1577,7 +1580,7 @@ class FXEditor extends hide.view.FileView {
                     menuItems.push(item);
             }
         }
-        function addParam(param : hrt.prefab.fx.Emitter.ParamDef, prefix: String) {
+        function addParam(param : hrt.prefab2.fx.Emitter.ParamDef, prefix: String) {
             var label = prefix + (param.disp != null ? param.disp : upperCase(param.name));
             var item : hide.comp.ContextMenu.ContextMenuItem = switch(param.t) {
                 case PVec(n, _):
@@ -1591,24 +1594,26 @@ class FXEditor extends hide.view.FileView {
             menuItems.push(item);
         }
         if(emitterElt != null) {
-            for(param in hrt.prefab.fx.Emitter.emitterParams) {
+            for(param in hrt.prefab2.fx.Emitter.emitterParams) {
                 if(!param.animate)
                     continue;
                 addParam(param, "");
             }
-            for(param in hrt.prefab.fx.Emitter.instanceParams) {
+            for(param in hrt.prefab2.fx.Emitter.instanceParams) {
                 if(!param.animate)
                     continue;
                 addParam(param, "Instance ");
             }
         }
+        // TODO(ces) : Restore
+        /*
         if (particle2dElt != null) {
-            for(param in hrt.prefab.l2d.Particle2D.emitter2dParams) {
+            for(param in hrt.prefab2.l2d.Particle2D.emitter2dParams) {
                 if(!param.animate)
                     continue;
                 addParam(param, "");
             }
-        }
+        }*/
         if( lightElt != null ) {
             switch lightElt.kind {
                 case Point:
@@ -1715,7 +1720,7 @@ class FXEditor extends hide.view.FileView {
         throw "not implemented yet";
         /*var anim : hrt.prefab2.fx.FX2D.FX2DAnimation = null;
         if(ctx != null && ctx.local2d != null) {
-            anim = Std.downcast(ctx.local2d, hrt.prefab.fx.FX2D.FX2DAnimation);
+            anim = Std.downcast(ctx.local2d, hrt.prefab2.fx.FX2D.FX2DAnimation);
         }
         if(!pauseButton.isDown()) {
             currentTime += scene.speed * dt;
@@ -1813,7 +1818,7 @@ class FXEditor extends hide.view.FileView {
         if(local3d == null)
             return;
             
-        var allFx = local3d.findAll(o -> Std.downcast(o, hrt.prefab.fx.FX.FXAnimation));
+        var allFx = local3d.findAll(o -> Std.downcast(o, hrt.prefab2.fx.FX.FXAnimation));
 
         if(!pauseButton.isDown()) {
             currentTime += scene.speed * dt;
@@ -1832,7 +1837,7 @@ class FXEditor extends hide.view.FileView {
         for(fx in allFx)
             fx.setTime(currentTime - fx.startDelay);
     
-        var emitters = local3d.findAll(o -> Std.downcast(o, hrt.prefab.fx.Emitter.EmitterObject));
+        var emitters = local3d.findAll(o -> Std.downcast(o, hrt.prefab2.fx.Emitter.EmitterObject));
         var totalParts = 0;
         for(e in emitters)
             totalParts += @:privateAccess e.numInstances;
@@ -1842,7 +1847,7 @@ class FXEditor extends hide.view.FileView {
             emitterTime += e.tickTime;
         }
 
-        var trails = local3d.findAll(o -> Std.downcast(o, hrt.prefab.l3d.Trails.TrailObj));
+        var trails = local3d.findAll(o -> Std.downcast(o, hrt.prefab2.l3d.Trails.TrailObj));
         var trailCount = 0;
         var trailTime = 0.0;
         var trailTris = 0.0;
@@ -1939,20 +1944,22 @@ class FXEditor extends hide.view.FileView {
     }
 
     static function isInstanceCurve(curve: Curve) {
-        return curve.getParent(hrt.prefab.fx.Emitter) != null;
+        return curve.getParent(hrt.prefab2.fx.Emitter) != null;
     }
 
-    static var _ = FileTree.registerExtension(FXEditor, ["fx"], { icon : "sitemap", createNew : "FX" });
+    // TODO(ces) : restrore
+    static var _ = FileTree.registerExtension(FXEditor, ["fx2"], { icon : "sitemap", createNew : "FX2" });
 }
 
 
 class FX2DEditor extends FXEditor {
 
-    override function getDefaultContent() {
-        return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab.fx.FX2D().saveData()));
-    }
+    /*override function getDefaultContent() {
+        return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab2.fx.FX2D().saveData()));
+    }*/
 
-    static var _2d = FileTree.registerExtension(FX2DEditor, ["fx2d"], { icon : "sitemap", createNew : "FX 2D" });
+    // TODO(ces) : restore
+    //static var _2d = FileTree.registerExtension(FX2DEditor, ["fx2d"], { icon : "sitemap", createNew : "FX 2D" });
 }
 
-#end
+

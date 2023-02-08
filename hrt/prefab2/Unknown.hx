@@ -22,6 +22,7 @@ class Unknown extends Prefab {
         for (f in Reflect.fields(data)) {
             Reflect.setField(to, f, Prefab.copyValue(Reflect.getProperty(data, f)));
         }
+        return to;
     }
 
 #if editor

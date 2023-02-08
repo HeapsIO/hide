@@ -308,7 +308,7 @@ class SceneEditor {
         var models = sceneData.findAll(p -> Std.downcast(p, PrefabElement));
         var toRebuild : Array<PrefabElement> = [];
         for(m in models) {
-            if(m.proto != null && m.proto.source == lib.resource.entry.path) {
+            if(m.shared.source == lib.resource.entry.path) {
                 if (toRebuild.indexOf(m) < 0) {
                     toRebuild.push(m);
                 }
@@ -1881,7 +1881,7 @@ class SceneEditor {
         //addGroupCopyPaste(edit);
     }
 
-    function setElementSelected( p : PrefabElement, ctx : hrt.prefab.Context, b : Bool ) {
+    function setElementSelected( p : PrefabElement, b : Bool ) {
         return p.setSelected(b);
     }
 
@@ -1891,8 +1891,8 @@ class SceneEditor {
         var changedModels = [];
         for (child in all) {
             var model = child.to(hrt.prefab2.Object3D);
-            if (model != null && model.proto != null && model.proto.source == oldPath) {
-                model.proto.source = path;
+            if (model != null && model.shared.source == oldPath) {
+                model.shared.source = path;
                 model.name = "";
                 autoName(model);
                 changedModels.push(model);
@@ -1901,14 +1901,14 @@ class SceneEditor {
         undo.change(Custom(function(u) {
             if(u) {
                 for (model in changedModels) {
-                    model.proto.source = oldPath;
+                    model.shared.source = oldPath;
                     model.name = "";
                     autoName(model);
                 }
             }
             else {
                 for (model in changedModels) {
-                    model.proto.source = path;
+                    model.shared.source = path;
                     model.name = "";
                     autoName(model);
                 }

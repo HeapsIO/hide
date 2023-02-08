@@ -399,8 +399,8 @@ class FX extends BaseFX {
         scriptCode = obj.scriptCode;
     }
 
-    override function makeInstanceRec(ctx: hrt.prefab2.Prefab.InstanciateContext) {
-        var fxanim = createInstance(ctx.local3d);
+    override function makeObject3d(parent3d:h3d.scene.Object):h3d.scene.Object {
+        var fxanim = createInstance(parent3d);
         fxanim.duration = duration;
         fxanim.cullingRadius = cullingRadius;
 
@@ -413,28 +413,13 @@ class FX extends BaseFX {
             }
             p = p.parent;
         }
+        return fxanim;
+    }
 
-        local3d = fxanim;
-
-        // TODO(ces) : Restore
-        /*var fromRef = ctx.shared.parent != null;
-        #if editor
-        // only play if we are as a reference
-        if( fromRef ) fxanim.playSpeed = 1.0;
-        #else
-        fxanim.playSpeed = 1.0;
-        #end*/
-
-        /*var useFXRoot = #if editor fromRef #else true #end;
-        
-        if(useFXRoot && root != null){
-            root.make(ctx);
-        }
-        else*/
-        
+    override function postChildrenMakeInstance(ctx:hrt.prefab2.Prefab.InstanciateContext) {
         var root = getFXRoot(this);
-        super.makeInstanceRec(ctx);
-        fxanim.init(this, root);
+        var fxAnim : FXAnimation = cast local3d;
+        fxAnim.init(this, root);
     }
 
     override function updateInstance(?propName : String ) {

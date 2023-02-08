@@ -32,12 +32,22 @@ class Reference extends Object3D {
         }
     }
 
+    function resolveRef() : Prefab {
+        if(refInstance == null && path != null) {
+            refInstance = Prefab.createFromPath(path);
+        }
+        return refInstance;
+    }
+
     override function makeObject3d(parent3d: h3d.scene.Object) : h3d.scene.Object {
         if (path != null) {
-            refInstance = Prefab.createFromPath(path).make(null, null, parent3d);
+            resolveRef();
+            refInstance.make(null, null, parent3d);
         }
         return Object3D.getLocal3d(refInstance);
     }
+
+
 
     public static var _ = hrt.prefab2.Prefab.register("Reference", Reference);
 }

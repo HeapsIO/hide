@@ -998,15 +998,16 @@ class EmitterObject extends h3d.scene.Object {
                 case Y: lockAxis.set(0, 1, 0);
                 case Z: lockAxis.set(0, 0, 1);
                 case ScreenZ:
-                    lockAxis.set(0, 0, 1);
-                    frontAxis.set(0, 1, 0);
-            }
+					lockAxis.set(0, 0, 1);
+					frontAxis.set(0, 1, 0);
+			}
+			var lookAtPos = tmpVec;
+			lookAtPos.load(getScene().camera.pos);
+            lookAtPos.w = 1.0;
 
-            var lookAtPos = tmpVec;
-            lookAtPos.load(getScene().camera.pos);
-            var invParent = parent.getInvPos();
-            lookAtPos.transform(invTransform);
-            var deltaVec = new h3d.Vector(lookAtPos.x - x, lookAtPos.y - y, lookAtPos.z - z);
+			var invParent = parent.getInvPos();
+			lookAtPos.transform(invParent);
+			var deltaVec = new h3d.Vector(lookAtPos.x - x, lookAtPos.y - y, lookAtPos.z - z);
 
             var invParentQ = tmpQuat;
             invParentQ.initRotateMatrix(invParent);
