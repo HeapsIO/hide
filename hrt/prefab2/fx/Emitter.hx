@@ -1287,7 +1287,7 @@ class Emitter extends Object3D {
         a;
     };
 
-    /*override function save(data : Dynamic) {
+    override function save(data : Dynamic) {
         super.save(data);
         data.props = Reflect.copy(props);
         for(param in PARAMS) {
@@ -1305,7 +1305,8 @@ class Emitter extends Object3D {
                 Reflect.deleteField(data.props, param.name);
             }
         }
-    }*/
+        return data;
+    }
 
     override function load( obj : Dynamic ) {
         super.load(obj);
@@ -1562,6 +1563,23 @@ class Emitter extends Object3D {
         if(propName == null || ["emitShape", "emitAngle", "emitRad1", "emitRad2"].indexOf(propName) >= 0)
             updateEmitShape(emitterObj);
         #end
+    }
+
+    override function makeInstanceRec(params:hrt.prefab2.Prefab.InstanciateContext) {
+        if (!enabled) return;
+
+        var old2d = params.local2d;
+        var old3d = params.local3d;
+
+        makeInstance(params);
+
+        params.local2d = old2d;
+        params.local3d = old3d;
+
+        postChildrenMakeInstance(params);
+
+        params.local2d = old2d;
+        params.local3d = old3d;
     }
 
     override function makeObject3d(parent3d: h3d.scene.Object) : h3d.scene.Object {
