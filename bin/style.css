@@ -645,6 +645,7 @@ input[type=checkbox]:checked:after {
 }
 .tb-group > *.menu {
   background: #282828;
+  min-width: 2px;
 }
 .tb-group > *.menu:hover {
   background: #303030;
@@ -653,6 +654,7 @@ input[type=checkbox]:checked:after {
   font-family: FontAwesome;
   content: "\f107";
   vertical-align: middle;
+  margin-left: 2px;
   margin-right: 2px;
 }
 .hide-button,
@@ -2286,10 +2288,18 @@ div.popup:focus {
 .settings-popup .form-grid {
   display: grid;
   grid-template-columns: auto 1fr;
+  align-items: center;
+}
+.settings-popup .form-grid input[type="radio"] {
+  margin: 3px;
 }
 .settings-popup label {
   text-align: right;
   padding-right: 8px;
+}
+.settings-popup label.left {
+  text-align: left;
+  padding-left: 8px;
 }
 .settings-popup .hide-grid {
   visibility: hidden;

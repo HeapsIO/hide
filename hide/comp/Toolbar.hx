@@ -63,7 +63,13 @@ class Toolbar extends Component {
 	}
 
 	public function addButton( icon : String, ?label : String, ?onClick : Void -> Void, ?rightClick : Void -> Void ) {
-		var e = new Element('<div class="button2" title="${label==null ? "" : label}"><div class="icon ico ico-$icon"/></div>');
+		var e = new Element('<div class="button2" title="${label==null ? "" : label}"></div>');
+        if (icon != "") {
+            e.append(new Element('<div class="icon ico ico-$icon"/>'));
+        }
+        else {
+            e.addClass("menu");
+        }
 		if( onClick != null ) e.click(function(_) onClick());
 		e.appendTo(curGroup);
 		if ( rightClick != null )
@@ -146,19 +152,25 @@ class Toolbar extends Component {
 	}
 
 	public function addMenu<T>( icon : String, label : String ) : ToolMenu<T> {
-		var e = new Element('<div class="menu"><div class="icon ico ico-$icon"></div><span class="label">${label==null ? "" : label}</span></div>');
+        var menu = new Element('<div class="menu"></div>');
+        if (icon != null) {
+            menu.append(new Element('<div class="icon ico ico-$icon"></div>'));
+        }
+        if (label != null && label.length > 0) {
+            menu.append(new Element('<span class="label">${label==null ? "" : label}</span>'));
+        }
 		var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
 		var tool : ToolMenu<T> = {
-			element : e,
+			element : menu,
 			setContent : function(c) {
 					menuItems = c;
 			},
 			onSelect : function(_) {},
 		};
-		e.click(function(ev) if( ev.button == 0 ){
+		menu.click(function(ev) if( ev.button == 0 ){
 			new hide.comp.ContextMenu(menuItems);
 		});
-		e.appendTo(curGroup);
+		menu.appendTo(curGroup);
 		return tool;
 	}
 

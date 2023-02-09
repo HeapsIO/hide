@@ -407,6 +407,17 @@ class Prefab extends FileView {
 		toolsDefs.push({id: "scalingMode", title : "Gizmo scaling Mode", icon : "expand", type : Button(@:privateAccess sceneEditor.gizmo.scalingMode)});
 		
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
+
+        var bob = function() {
+            trace("bob");
+        }
+
+		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
+
+        toolsDefs.push({id: "snap", title : "Snap Toggle", icon: "magnet", type : Toggle((v) -> sceneEditor.snapToggle = v)});
+        toolsDefs.push({id: "snap-menu", title : "", icon: "", type : Popup((e) -> new hide.comp.SceneEditor.SnapSettingsPopup(null, e, sceneEditor))});
+
+		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 		
 		toolsDefs.push({id: "localTransformsToggle", title : "Local transforms", icon : "compass", type : Toggle((v) -> sceneEditor.localTransform = v)});
 		

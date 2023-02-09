@@ -153,6 +153,10 @@ class Gizmo extends h3d.scene.Object {
 		setup("yRotate", 0x00ff00, RotateY);
 		setup("zRotate", 0x0000ff, RotateZ);
 		setup("scale", 0xffffff, Scale);
+		setup("xScale", 0xff0000, MoveX);
+		setup("yScale", 0x00ff00, MoveY);
+		setup("zScale", 0x0000ff, MoveZ);
+
 		translationMode();
 	}
 
@@ -164,7 +168,7 @@ class Gizmo extends h3d.scene.Object {
 		for(n in ["xAxis", "yAxis", "zAxis", "xy", "xz", "yz"]) {
 			gizmo.getObjectByName(n).visible = true;
 		}
-		for(n in ["xRotate", "yRotate", "zRotate", "scale"]) {
+		for(n in ["xRotate", "yRotate", "zRotate", "scale", "xScale", "yScale", "zScale"]) {
 			gizmo.getObjectByName(n).visible = false;
 		}
 		onChangeMode(editMode);
@@ -176,7 +180,7 @@ class Gizmo extends h3d.scene.Object {
 		for(n in ["xRotate", "yRotate", "zRotate", ]) {
 			gizmo.getObjectByName(n).visible = true;
 		}
-		for(n in ["xAxis", "yAxis", "zAxis", "xy", "xz", "yz", "scale"]) {
+		for(n in ["xAxis", "yAxis", "zAxis", "xy", "xz", "yz", "scale", "xScale", "yScale", "zScale"]) {
 			gizmo.getObjectByName(n).visible = false;
 		}
 		onChangeMode(editMode);
@@ -185,10 +189,10 @@ class Gizmo extends h3d.scene.Object {
 	public function scalingMode() {
 		editMode = Scaling;
 		axisScale = true;
-		for(n in ["xAxis", "yAxis", "zAxis", "scale"]) {
+		for(n in ["scale", "xScale", "yScale", "zScale"]) {
 			gizmo.getObjectByName(n).visible = true;
 		}
-		for(n in ["xRotate", "yRotate", "zRotate", "xy", "xz", "yz"]) {
+		for(n in ["xAxis", "yAxis", "zAxis","xRotate", "yRotate", "zRotate", "xy", "xz", "yz"]) {
 			gizmo.getObjectByName(n).visible = false;
 		}
 		onChangeMode(editMode);
@@ -277,17 +281,26 @@ class Gizmo extends h3d.scene.Object {
 			}
 
 			function moveSnap(m: Float) {
-				if(moveStep <= 0 || !snapToGrid || axisScale)
+                return m;
+				/*if(moveStep <= 0 || !scene.editor.getSnapStatus() || axisScale)
 					return m;
 
 				var step = K.isDown(K.SHIFT) ? moveStep / 2.0 : moveStep;
-				return hxd.Math.round(m / step) * step;
+				return hxd.Math.round(m / step) * step;*/
 			}
+
+            function snap(m : Float) {
+                if (moveStep <= 0 || !scene.editor.getSnapStatus()) {
+                    return m;
+                }
+
+                return hxd.Math.round(m / moveStep) * moveStep;
+            }
 			if (mode == MoveX || mode == MoveY || mode == MoveZ || mode == MoveXY || mode == MoveYZ || mode == MoveZX) {
-				if ( snapToGrid && K.isPressed(K.SHIFT) ) {
+				/*if ( snapToGrid && K.isPressed(K.SHIFT) ) {
 					scene.editor.updateGrid(moveSteps[(moveSteps.indexOf(moveStep) + 1 ) % moveSteps.length]);
 					var changingStepViewer = new ChangingStepViewer(this, "" + moveStep);
-				}
+				}*/
 			}
 			if(mode == MoveX || mode == MoveXY || mode == MoveZX) vec.x = moveSnap(delta.dot(startMat.front().toPoint()));
 			if(mode == MoveY || mode == MoveYZ || mode == MoveXY) vec.y = moveSnap(delta.dot(startMat.right().toPoint()));
@@ -307,9 +320,9 @@ class Gizmo extends h3d.scene.Object {
 					tz.visible = true;
 					tz.text = "Z : "+ Math.round(vec.z*100)/100.;
 				}
-				x = (startPos.x + vec.x);
-				y = (startPos.y + vec.y);
-				z = (startPos.z + vec.z);
+				x = scene.editor.snap(startPos.x + vec.x, scene.editor.snapMoveStep);
+				y = scene.editor.snap(startPos.y + vec.y, scene.editor.snapMoveStep);
+				z = scene.editor.snap(startPos.z + vec.z, scene.editor.snapMoveStep);
 			}
 
 			if(mode == Scale) {
@@ -317,8 +330,10 @@ class Gizmo extends h3d.scene.Object {
 				vec.set(scale, scale, scale);
 			}
 
+            var doRot = false;
 			if(mode == RotateX || mode == RotateY || mode == RotateZ) {
-				var v1 = startDragPt.sub(startPos);
+				doRot = true;
+                var v1 = startDragPt.sub(startPos);
 				v1.normalize();
 				var v2 = curPt.sub(startPos);
 				v2.normalize();
@@ -390,8 +405,12 @@ class Gizmo extends h3d.scene.Object {
 						}
 						onMove(null, null, vec);
 					}
-					else
-						onMove(vec, quat, null);
+					else if (doRot) {
+						onMove(null, quat, null);
+                    }
+                    else {
+						onMove(vec, null, null);
+                    }
 				}
 			}
 
@@ -449,7 +468,7 @@ class Gizmo extends h3d.scene.Object {
 
 		if( !moving ) {
 			var dir = cam.pos.sub(gpos).toPoint();
-			if (isLocal)
+			if (isLocal || this.editMode == Scaling)
 			{
 				var rot = getRotationQuat().toMatrix(tempMatrix);
 				rot.invert();
