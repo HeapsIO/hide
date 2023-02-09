@@ -577,7 +577,6 @@ class SceneEditor {
 		view.keys.register("sceneeditor.translationMode", gizmo.translationMode);
 		view.keys.register("sceneeditor.rotationMode", gizmo.rotationMode);
 		view.keys.register("sceneeditor.scalingMode", gizmo.scalingMode);
-		view.keys.register("sceneeditor.toggleSnap", () -> toggleSnap());
 
 		gizmo2d = new hide.view.l3d.Gizmo2D();
 		scene.s2d.add(gizmo2d, 1); // over local3d

@@ -414,7 +414,7 @@ class Prefab extends FileView {
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
-        toolsDefs.push({id: "snap", title : "Snap Toggle", icon: "magnet", type : Toggle((v) -> sceneEditor.snapToggle = v)});
+        toolsDefs.push({id: "toggleSnap", title : "Snap Toggle", icon: "magnet", type : Toggle((v) -> sceneEditor.snapToggle = v)});
         toolsDefs.push({id: "snap-menu", title : "", icon: "", type : Popup((e) -> new hide.comp.SceneEditor.SnapSettingsPopup(null, e, sceneEditor))});
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
