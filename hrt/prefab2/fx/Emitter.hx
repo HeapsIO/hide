@@ -1582,6 +1582,14 @@ class Emitter extends Object3D {
         params.local3d = old3d;
     }
 
+    override public function refresh() {
+        for (field in getSerializableProps()) {
+            if (field.hasSetter) {
+                Reflect.setProperty(this, field.name, Reflect.getProperty(this, field.name));
+            }
+        }
+    }
+
     override function makeObject3d(parent3d: h3d.scene.Object) : h3d.scene.Object {
         return new EmitterObject(parent3d);
     }

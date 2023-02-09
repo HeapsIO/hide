@@ -139,7 +139,6 @@ class Prefab {
     // Remove this prefab and their object from the prefab and scene hierarchy
     public final function remove() {
         if (parent != null) {
-            parent.children.remove(this);
             parent = null;
         }
 
