@@ -2261,12 +2261,14 @@ div.color-box {
   cursor: pointer;
 }
 div.popup {
-  background-color: #282829;
-  border: 1px solid #333333;
+  background-color: #181818;
+  border: 1px solid #242424;
+  border-radius: 5px;
+  color: #d8d8d8;
   position: absolute;
   overflow: visible;
   z-index: 900;
-  box-shadow: 3px 3px 3px rgba(0, 0, 0, 0.777);
+  box-shadow: 2px 2px 3px rgba(0, 0, 0, 0.5);
   padding: 6px;
 }
 div.popup:focus {

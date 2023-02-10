@@ -451,6 +451,11 @@ class Prefab extends FileView {
 
 		toolsDefs.push({id: "sceneSpeed", title : "Speed", type : Range((v) -> scene.speed = v)});
 
+		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
+
+		//toolsDefs.push({id: "test", title : "Hello", icon : "", type : Popup((e : hide.Element) -> new hide.comp.CameraControllerEditor(sceneEditor, null,e))});
+
+
 		tools.makeToolbar(toolsDefs, config, keys);
 
 		posToolTip = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);

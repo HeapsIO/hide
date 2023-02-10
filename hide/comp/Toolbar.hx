@@ -68,6 +68,9 @@ class Toolbar extends Component {
             e.append(new Element('<div class="icon ico ico-$icon"/>'));
         }
         else {
+            if (label != null && label != "") {
+                e.append(new Element('<span class="label">$label</span>'));
+            }
             e.addClass("menu");
         }
 		if( onClick != null ) e.click(function(_) onClick());
