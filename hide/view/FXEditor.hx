@@ -624,46 +624,8 @@ class FXEditor extends FileView {
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
-		toolsDefs.push({id: "translationMode", title : "Gizmo translation Mode", icon : "arrows", type : Button(@:privateAccess sceneEditor.gizmo.translationMode), rightClick: () -> {
-			var items = [{
-				label : "Snap to Grid",
-				click : function() {
-					@:privateAccess sceneEditor.gizmo.snapToGrid = !sceneEditor.gizmo.snapToGrid;
-				},
-				checked: @:privateAccess sceneEditor.gizmo.snapToGrid
-			}];
-			var steps : Array<Float> = sceneEditor.view.config.get("sceneeditor.gridSnapSteps");
-			for (step in steps) {
-				items.push({
-					label : ""+step,
-					click : function() {
-						@:privateAccess sceneEditor.gizmo.moveStep = step;
-					},
-					checked: @:privateAccess sceneEditor.gizmo.moveStep == step
-				});
-			}
-			new hide.comp.ContextMenu(items);
-		}});
-		toolsDefs.push({id: "rotationMode", title : "Gizmo rotation Mode", icon : "refresh", type : Button(@:privateAccess sceneEditor.gizmo.rotationMode),  rightClick: () -> {
-			var steps : Array<Float> = sceneEditor.view.config.get("sceneeditor.rotateStepCoarses");
-			var items = [{
-				label : "Snap enabled",
-				click : function() {
-					@:privateAccess sceneEditor.gizmo.rotateSnap = !sceneEditor.gizmo.rotateSnap;
-				},
-				checked: @:privateAccess sceneEditor.gizmo.rotateSnap
-			}];
-			for (step in steps) {
-				items.push({
-					label : ""+step+"°",
-					click : function() {
-						@:privateAccess sceneEditor.gizmo.rotateStepCoarse = step;
-					},
-					checked: @:privateAccess sceneEditor.gizmo.rotateStepCoarse == step
-				});
-			}
-			new hide.comp.ContextMenu(items);
-		}});
+		toolsDefs.push({id: "translationMode", title : "Gizmo translation Mode", icon : "arrows", type : Button(@:privateAccess sceneEditor.gizmo.translationMode)});
+		toolsDefs.push({id: "rotationMode", title : "Gizmo rotation Mode", icon : "refresh", type : Button(@:privateAccess sceneEditor.gizmo.rotationMode)});
 		toolsDefs.push({id: "scalingMode", title : "Gizmo scaling Mode", icon : "expand", type : Button(@:privateAccess sceneEditor.gizmo.scalingMode)});
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});

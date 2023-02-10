@@ -175,6 +175,7 @@ class SnapSettingsPopup extends Popup {
                     case Scaling:
                         editor.snapScaleStep = value;
                 }
+                editor.updateGrid();
             });
             form_div.append(input);
             form_div.append(new Element('<label for="snap$value" class="left">$value${editMode==Rotation ? "°" : ""}</label>'));
@@ -563,6 +564,8 @@ class SceneEditor {
         if (snap != null) {
             snap.toggleAttribute("checked", snapToggle);
         }
+
+        updateGrid();
     }
 
 	function onSceneReady() {
@@ -573,7 +576,6 @@ class SceneEditor {
 		scene.s3d.addChild(context.shared.root3d);
 
 		gizmo = new hide.view.l3d.Gizmo(scene);
-		gizmo.moveStep = view.config.get("sceneeditor.gridStep");
 		view.keys.register("sceneeditor.translationMode", gizmo.translationMode);
 		view.keys.register("sceneeditor.rotationMode", gizmo.rotationMode);
 		view.keys.register("sceneeditor.scalingMode", gizmo.scalingMode);
@@ -1115,7 +1117,7 @@ class SceneEditor {
 		}
 	}
 
-	public dynamic function updateGrid(step : Float) {
+	public dynamic function updateGrid() {
 	}
 
 	function setupGizmo() {

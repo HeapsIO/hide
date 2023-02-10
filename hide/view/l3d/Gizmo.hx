@@ -76,11 +76,6 @@ class Gizmo extends h3d.scene.Object {
 	public var moving(default, null): Bool;
 
 	public var editMode : EditMode = Translation;
-	public var moveStep = 0.5;
-	public var snapToGrid = false;
-	public var rotateStepFine = 15.0;
-	public var rotateStepCoarse = 45.0;
-	public var rotateSnap = false;
 
 	var debug: h3d.scene.Graphics;
 	var axisScale = false;
@@ -198,16 +193,6 @@ class Gizmo extends h3d.scene.Object {
 		onChangeMode(editMode);
 	}
 
-	public function toggleSnap() {
-		switch (editMode) {
-			case Translation:
-				snapToGrid = !snapToGrid;
-			case Rotation:
-				rotateSnap = !rotateSnap;
-			case Scaling:
-		}
-	}
-
 	public function startMove(mode: TransformMode, ?duplicating=false) {
 		if (mode == Scale || (axisScale && (mode == MoveX || mode == MoveY || mode == MoveZ)))
 			mouseLock = true;
@@ -231,10 +216,6 @@ class Gizmo extends h3d.scene.Object {
 			case RotateZ: norm.set(0, 0, 1);
 			default:
 		}
-
-		var moveSteps : Array<Float> = scene.editor.view.config.get("sceneeditor.gridSnapSteps");
-		var rotateSteps : Array<Float> = scene.editor.view.config.get("sceneeditor.rotateStepCoarses");
-		var rotateStepFineIndex = rotateSteps.indexOf(rotateStepFine);
 
 		if (mode == MoveX || mode == MoveY || mode == MoveZ || mode == Scale) {
 			var point = scene.s3d.camera.rayFromScreen(mouseX, mouseY).getDir();
@@ -289,13 +270,7 @@ class Gizmo extends h3d.scene.Object {
 				return hxd.Math.round(m / step) * step;*/
 			}
 
-            function snap(m : Float) {
-                if (moveStep <= 0 || !scene.editor.getSnapStatus()) {
-                    return m;
-                }
 
-                return hxd.Math.round(m / moveStep) * moveStep;
-            }
 			if (mode == MoveX || mode == MoveY || mode == MoveZ || mode == MoveXY || mode == MoveYZ || mode == MoveZX) {
 				/*if ( snapToGrid && K.isPressed(K.SHIFT) ) {
 					scene.editor.updateGrid(moveSteps[(moveSteps.indexOf(moveStep) + 1 ) % moveSteps.length]);
@@ -339,19 +314,7 @@ class Gizmo extends h3d.scene.Object {
 				v2.normalize();
 
 				var angle = Math.atan2(v1.cross(v2).dot(norm), v1.dot(v2)) * speedFactor;
-				if(rotateSnap || K.isDown(K.CTRL)) {
-					if (K.isPressed(K.CTRL)) {
-						rotateStepCoarse = rotateSteps[rotateSteps.indexOf(rotateStepFine)];
-						var changingStepViewer = new ChangingStepViewer(this, "" + rotateStepCoarse + "°");
-					}
-					if (K.isPressed(K.SHIFT)) {
-						rotateStepCoarse = rotateSteps[rotateStepFineIndex];
-						rotateStepFineIndex = (rotateStepFineIndex + 1) % rotateSteps.length;
-						var changingStepViewer = new ChangingStepViewer(this, "" + rotateStepCoarse + "°");
-					}
-					var step = hxd.Math.degToRad(rotateStepCoarse);
-					angle =  hxd.Math.round(angle / step) * step;
-				}
+
 				if (mode == RotateX && angle != 0) {
 					tx.visible = true;
 					tx.text = ""+ Math.round(Math.radToDeg(angle)*100)/100. + "°";

@@ -345,10 +345,8 @@ class Prefab extends FileView {
 
 
 
-		gridStep = @:privateAccess sceneEditor.gizmo.moveStep;
-		sceneEditor.updateGrid = function(step) {
-			gridStep = step;
-			@:privateAccess sceneEditor.gizmo.moveStep = gridStep;
+		/*gridStep = @:privateAccess sceneEditor.gizmo.moveStep;*/
+		sceneEditor.updateGrid = function() {
 			updateGrid();
 		};
 		var toolsDefs = new Array<hide.comp.Toolbar.ToolDef>();
@@ -364,46 +362,8 @@ class Prefab extends FileView {
 		
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 		
-		toolsDefs.push({id: "translationMode", title : "Gizmo translation Mode", icon : "arrows", type : Button(@:privateAccess sceneEditor.gizmo.translationMode), rightClick: () -> {
-			var items = [{
-				label : "Snap to Grid",
-				click : function() {
-					@:privateAccess sceneEditor.gizmo.snapToGrid = !sceneEditor.gizmo.snapToGrid;
-				},
-				checked: @:privateAccess sceneEditor.gizmo.snapToGrid
-			}];
-			var steps : Array<Float> = sceneEditor.view.config.get("sceneeditor.gridSnapSteps");
-			for (step in steps) {
-				items.push({
-					label : ""+step,
-					click : function() {
-						sceneEditor.updateGrid(step);
-					},
-					checked: gridStep == step
-				});
-			}
-			new hide.comp.ContextMenu(items);
-		}});
-		toolsDefs.push({id: "rotationMode", title : "Gizmo rotation Mode", icon : "refresh", type : Button(@:privateAccess sceneEditor.gizmo.rotationMode),  rightClick: () -> {
-			var steps : Array<Float> = sceneEditor.view.config.get("sceneeditor.rotateStepCoarses");
-			var items = [{
-				label : "Snap enabled",
-				click : function() {
-					@:privateAccess sceneEditor.gizmo.rotateSnap = !sceneEditor.gizmo.rotateSnap;
-				},
-				checked: @:privateAccess sceneEditor.gizmo.rotateSnap
-			}];
-			for (step in steps) {
-				items.push({
-					label : ""+step+"°",
-					click : function() {
-						@:privateAccess sceneEditor.gizmo.rotateStepCoarse = step;
-					},
-					checked: @:privateAccess sceneEditor.gizmo.rotateStepCoarse == step
-				});
-			}
-			new hide.comp.ContextMenu(items);
-		}});
+		toolsDefs.push({id: "translationMode", title : "Gizmo translation Mode", icon : "arrows", type : Button(@:privateAccess sceneEditor.gizmo.translationMode)});
+		toolsDefs.push({id: "rotationMode", title : "Gizmo rotation Mode", icon : "refresh", type : Button(@:privateAccess sceneEditor.gizmo.rotationMode)});
 		toolsDefs.push({id: "scalingMode", title : "Gizmo scaling Mode", icon : "expand", type : Button(@:privateAccess sceneEditor.gizmo.scalingMode)});
 		
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
@@ -414,7 +374,7 @@ class Prefab extends FileView {
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
-        toolsDefs.push({id: "toggleSnap", title : "Snap Toggle", icon: "magnet", type : Toggle((v) -> sceneEditor.snapToggle = v)});
+        toolsDefs.push({id: "toggleSnap", title : "Snap Toggle", icon: "magnet", type : Toggle((v) -> {sceneEditor.snapToggle = v; sceneEditor.updateGrid();})});
         toolsDefs.push({id: "snap-menu", title : "", icon: "", type : Popup((e) -> new hide.comp.SceneEditor.SnapSettingsPopup(null, e, sceneEditor))});
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
@@ -581,14 +541,27 @@ class Prefab extends FileView {
 		grid = new h3d.scene.Graphics(scene.s3d);
 		grid.scale(1);
 		grid.material.mainPass.setPassName("debuggeom");
-		if (gridStep == 0.)
-			gridStep = ide.currentConfig.get("sceneeditor.gridStep");
+
+        if (sceneEditor.snapToggle) {
+    		gridStep = sceneEditor.snapMoveStep;
+        }
+        else {
+            gridStep = ide.currentConfig.get("sceneeditor.gridStep");
+        }
 		gridSize = ide.currentConfig.get("sceneeditor.gridSize");
 
 		var col = h3d.Vector.fromColor(scene.engine.backgroundColor);
 		var hsl = col.toColorHSL();
-		if(hsl.z > 0.5) hsl.z -= 0.1;
-		else hsl.z += 0.1;
+
+        var mov = 0.1;
+
+        if (sceneEditor.snapToggle) {
+            mov = 0.2;
+            hsl.y += (1.0-hsl.y) * 0.2;
+        }
+		if(hsl.z > 0.5) hsl.z -= mov;
+		else hsl.z += mov;
+
 		col.makeColor(hsl.x, hsl.y, hsl.z);
 
 		grid.lineStyle(1.0, col.toColor(), 1.0);
