@@ -401,7 +401,6 @@ class SceneEditor {
 
     // TODO(ces) : handle
     function set_editorDisplay(v) {
-        //context.shared.editorDisplay = v;
         return editorDisplay = v;
     }
 
@@ -917,7 +916,6 @@ class SceneEditor {
 
         root3d = new h3d.scene.Object();
         root2d = new h2d.Object();
-
 
         scene.s3d.addChild(root3d);
         scene.s2d.addChild(root2d);
@@ -1892,7 +1890,6 @@ class SceneEditor {
         if(curType != null) select.val(DataFiles.getTypeName(curType));
 
         function changeProps(props: Dynamic) {
-            // TODO(ces) : restore
             properties.undo.change(Field(e, "props", e.props), ()->edit.rebuildProperties());
             e.props = props;
             edit.onChange(e, "props");
@@ -1919,7 +1916,6 @@ class SceneEditor {
             editor.undo = properties.undo;
             editor.fileView = view;
 
-            // TODO(ces) : restore
             editor.onChange = function(pname) {
                 edit.onChange(e, 'props.$pname');
                 var e = Std.downcast(e, Object3D);
@@ -1966,9 +1962,8 @@ class SceneEditor {
         scene.setCurrent();
         var edit = makeEditContext([e]);
         properties.clear();
-        // TODO(ces) : restore
         fillProps(edit, e);
-        //addGroupCopyPaste(edit);
+        addGroupCopyPaste();
     }
 
     function setElementSelected( p : PrefabElement, b : Bool ) {
@@ -2011,9 +2006,8 @@ class SceneEditor {
     public function selectElements( elts : Array<PrefabElement>, ?mode : SelectMode = Default ) {
         function impl(elts,mode:SelectMode) {
             scene.setCurrent();
-            // TODO(ces) : restore
-            /*if( curEdit != null )
-                curEdit.cleanup();*/
+            if( curEdit != null )
+                curEdit.cleanup();
             var edit = makeEditContext(elts);
             selectedPrefabs = elts;
             if (elts.length == 0 || (customPivot != null && customPivot.elt != selectedPrefabs[0])) {
@@ -2093,14 +2087,13 @@ class SceneEditor {
     }
 
     function hasBeenRemoved( e : hrt.prefab2.Prefab ) {
-        // TODO(ces) : restore
-        /*var root = sceneData;
+        var root = sceneData;
         while( e != null && e != root ) {
             if( e.parent != null && e.parent.children.indexOf(e) < 0 )
                 return true;
             e = e.parent;
         }
-        return e != root;*/
+        return e != root;
     }
 
     public function resetCamera(distanceFactor = 1.5) {
@@ -2155,8 +2148,8 @@ class SceneEditor {
         return true;
     }
 
-    function createDroppedElement(path: String, parent: PrefabElement) : PrefabElement {
-        var prefab : PrefabElement = null;
+    function createDroppedElement(path: String, parent: PrefabElement) : hrt.prefab2.Object3D {
+        var prefab : hrt.prefab2.Object3D = null;
         var relative = ide.makeRelative(path);
 
 
@@ -2196,8 +2189,7 @@ class SceneEditor {
         for(path in paths) {
             var obj3d = createDroppedElement(path, parent);
             
-            //TODO(ces) restore
-            //obj3d.setTransform(localMat);
+            obj3d.setTransform(localMat);
             autoName(obj3d);
             elts.push(obj3d);
 

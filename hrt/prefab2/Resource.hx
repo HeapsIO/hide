@@ -15,8 +15,7 @@ class Resource extends hxd.res.Resource {
         super.watch(function() {
             if( prefab != null ) {
                 var data = try loadData() catch( e : Dynamic ) return; // parsing error (conflict ?)
-                // TODO(ces) : Handle Reloading ?
-                //prefab.reload(data);
+                prefab.reload(data);
                 onPrefabLoaded(prefab);
             }
             onChanged();

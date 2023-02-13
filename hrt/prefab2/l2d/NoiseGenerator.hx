@@ -96,14 +96,13 @@ class NoiseGenerator extends Object2D {
         return tex;
     }
 
-    // TODO(ces) : Restore
-    /*override function reload(p:Dynamic) {
+    override function reload(p:Dynamic) {
         if( tex != null ) {
             tex.dispose();
             tex = null;
         }
         super.reload(p);
-    }*/
+    }
 
     function makeTile( tex : h3d.mat.Texture ) {
         var t = h2d.Tile.fromTexture(tex);
@@ -124,7 +123,6 @@ class NoiseGenerator extends Object2D {
         local2d = bmp;
     }
 
-    // TODO(ces) : restore cleanup
     function destroy() {
         tex.dispose();
     }
@@ -211,8 +209,7 @@ class NoiseGenerator extends Object2D {
             });
         });
         bmp.visible = true;
-        // TODO(ces) : restore ????
-        //cleanups.push(function() bmp.visible = false);
+        ctx.cleanups.push(function() bmp.visible = false);
     }
 
     #end

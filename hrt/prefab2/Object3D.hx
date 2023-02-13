@@ -43,6 +43,20 @@ class Object3D extends Prefab {
         return z;
     }
 
+	public function setTransform(mat : h3d.Matrix) {
+		var rot = mat.getEulerAngles();
+		x = mat.tx;
+		y = mat.ty;
+		z = mat.tz;
+		var s = mat.getScale();
+		scaleX = s.x;
+		scaleY = s.y;
+		scaleZ = s.z;
+		rotationX = Math.radToDeg(rot.x);
+		rotationY = Math.radToDeg(rot.y);
+		rotationZ = Math.radToDeg(rot.z);
+	}
+
     /* Override makeObject3d instead of this */
     override final function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) {
         local3d = makeObject3d(ctx.local3d);
@@ -67,20 +81,6 @@ class Object3D extends Prefab {
             return Object3D;
         }
         return null;
-    }
-
-    public function setTransform(mat : h3d.Matrix) {
-        var rot = mat.getEulerAngles();
-        x = mat.tx;
-        y = mat.ty;
-        z = mat.tz;
-        var s = mat.getScale();
-        scaleX = s.x;
-        scaleY = s.y;
-        scaleZ = s.z;
-        rotationX = Math.radToDeg(rot.x);
-        rotationY = Math.radToDeg(rot.y);
-        rotationZ = Math.radToDeg(rot.z);
     }
 
     public static var _ = Prefab.register("object3D", Object3D);
@@ -137,77 +137,74 @@ class Object3D extends Prefab {
                 r.remove();
         // add ranges
         
-        // TODO(ces) : Restor
-        /*if( shared != null && shared.editorDisplay ) {*/
-            var sheet = getCdbType();
-            if( sheet != null ) {
-                var ide = hide.Ide.inst;
-                var ranges = Reflect.field(ctx.scene.config.get("sceneeditor.ranges"), sheet);
-                if( ranges != null ) {
-                    for( key in Reflect.fields(ranges) ) {
-                        var color = Std.parseInt(Reflect.field(ranges,key));
-                        var value : Dynamic = ide.resolveCDBValue(sheet,key, props);
-                        if( value != null ) {
-                            var mesh = new h3d.scene.Mesh(hrt.prefab.l3d.Spray.makePrimCircle(128, 0.99), local3d);
-                            mesh.name = "$UI.RANGE";
-                            mesh.ignoreCollide = true;
-                            mesh.ignoreBounds = true;
-                            mesh.material.mainPass.culling = None;
-                            mesh.material.name = "$UI.RANGE";
-                            mesh.setScale(value);
-                            mesh.scaleZ = 0.1;
-                            mesh.material.color.setColor(color|0xFF000000);
-                            mesh.material.mainPass.enableLights = false;
-                            mesh.material.shadows = false;
-                            mesh.material.mainPass.setPassName("overlay");
-                        }
-                    }
-                }
-                var huds : Dynamic = ctx.scene.config.get("sceneeditor.huds");
-                var icon = Reflect.field(huds, sheet);
-                if( icon != null ) {
-                    var t : Dynamic = ide.resolveCDBValue(sheet,icon, props);
-                    if( t != null && (t.file != null || Std.isOfType(t,String)) ) {
-                        var obj = Std.downcast(shared.originalContext.local2d, h2d.ObjectFollower);
-                        if( obj == null || obj.follow != local3d ) {
-                            shared.originalContext.local2d = obj = new h2d.ObjectFollower(local3d, shared.originalContext.local2d);
-                            obj.horizontalAlign = Middle;
-                            obj.followVisibility = true;
-                        }
-                        if( t.file != null ) {
-                            var t : cdb.Types.TilePos = t;
-                            var bmp = Std.downcast(obj.getObjectByName("$huds"), h2d.Bitmap);
-                            if( bmp == null ) {
-                                bmp = new h2d.Bitmap(null, obj);
-                                bmp.name = "$huds";
-                            }
-                            bmp.tile = h2d.Tile.fromTexture(loadTexture(t.file)).sub(
-                                t.x * t.size,
-                                t.y * t.size,
-                                (t.width == null ? 1 : t.width) * t.size,
-                                (t.height == null ? 1 : t.height) * t.size
-                            );
-                            var maxWidth : Dynamic = huds.maxWidth;
-                            if( maxWidth != null && bmp.tile.width > maxWidth )
-                                bmp.width = maxWidth;
-                        } else {
-                            var f = Std.downcast(obj.getObjectByName("$huds_f"), h2d.Flow);
-                            if( f == null ) {
-                                f = new h2d.Flow(obj);
-                                f.name = "$huds_f";
-                                f.padding = 3;
-                                f.paddingTop = 1;
-                                f.backgroundTile = h2d.Tile.fromColor(0,1,1,0.5);
-                            }
-                            var tf = cast(f.getChildAt(1), h2d.Text);
-                            if( tf == null )
-                                tf = new h2d.Text(hxd.res.DefaultFont.get(), f);
-                            tf.text = t;
-                        }
+        var sheet = getCdbType();
+        if( sheet != null ) {
+            var ide = hide.Ide.inst;
+            var ranges = Reflect.field(ctx.scene.config.get("sceneeditor.ranges"), sheet);
+            if( ranges != null ) {
+                for( key in Reflect.fields(ranges) ) {
+                    var color = Std.parseInt(Reflect.field(ranges,key));
+                    var value : Dynamic = ide.resolveCDBValue(sheet,key, props);
+                    if( value != null ) {
+                        var mesh = new h3d.scene.Mesh(hrt.prefab.l3d.Spray.makePrimCircle(128, 0.99), local3d);
+                        mesh.name = "$UI.RANGE";
+                        mesh.ignoreCollide = true;
+                        mesh.ignoreBounds = true;
+                        mesh.material.mainPass.culling = None;
+                        mesh.material.name = "$UI.RANGE";
+                        mesh.setScale(value);
+                        mesh.scaleZ = 0.1;
+                        mesh.material.color.setColor(color|0xFF000000);
+                        mesh.material.mainPass.enableLights = false;
+                        mesh.material.shadows = false;
+                        mesh.material.mainPass.setPassName("overlay");
                     }
                 }
             }
-        /*}*/
+            var huds : Dynamic = ctx.scene.config.get("sceneeditor.huds");
+            var icon = Reflect.field(huds, sheet);
+            if( icon != null ) {
+                var t : Dynamic = ide.resolveCDBValue(sheet,icon, props);
+                if( t != null && (t.file != null || Std.isOfType(t,String)) ) {
+                    var obj = Std.downcast(shared.originalContext.local2d, h2d.ObjectFollower);
+                    if( obj == null || obj.follow != local3d ) {
+                        shared.originalContext.local2d = obj = new h2d.ObjectFollower(local3d, shared.originalContext.local2d);
+                        obj.horizontalAlign = Middle;
+                        obj.followVisibility = true;
+                    }
+                    if( t.file != null ) {
+                        var t : cdb.Types.TilePos = t;
+                        var bmp = Std.downcast(obj.getObjectByName("$huds"), h2d.Bitmap);
+                        if( bmp == null ) {
+                            bmp = new h2d.Bitmap(null, obj);
+                            bmp.name = "$huds";
+                        }
+                        bmp.tile = h2d.Tile.fromTexture(loadTexture(t.file)).sub(
+                            t.x * t.size,
+                            t.y * t.size,
+                            (t.width == null ? 1 : t.width) * t.size,
+                            (t.height == null ? 1 : t.height) * t.size
+                        );
+                        var maxWidth : Dynamic = huds.maxWidth;
+                        if( maxWidth != null && bmp.tile.width > maxWidth )
+                            bmp.width = maxWidth;
+                    } else {
+                        var f = Std.downcast(obj.getObjectByName("$huds_f"), h2d.Flow);
+                        if( f == null ) {
+                            f = new h2d.Flow(obj);
+                            f.name = "$huds_f";
+                            f.padding = 3;
+                            f.paddingTop = 1;
+                            f.backgroundTile = h2d.Tile.fromColor(0,1,1,0.5);
+                        }
+                        var tf = cast(f.getChildAt(1), h2d.Text);
+                        if( tf == null )
+                            tf = new h2d.Text(hxd.res.DefaultFont.get(), f);
+                        tf.text = t;
+                    }
+                }
+            }
+        }
     }
 
     override function makeInteractive() : hxd.SceneEvents.Interactive {

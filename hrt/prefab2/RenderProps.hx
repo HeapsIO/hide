@@ -75,7 +75,7 @@ class RenderProps extends Object3D {
     #if editor
 
     // TODO(ces) : implement
-    /*override function edit() {
+    override function edit(ctx) {
         super.edit(ctx);
         var renderer = ctx.scene.s3d.renderer;
         var props = getProps(renderer);
@@ -91,9 +91,9 @@ class RenderProps extends Object3D {
             }
             applyProps(renderer);
         });
-        ctx.properties.add(new Element('<dl><dt>Make Default</dt><dd><input type="checkbox" field="isDefault"/></dd></dl>'), this);
+        ctx.properties.add(new hide.Element('<dl><dt>Make Default</dt><dd><input type="checkbox" field="isDefault"/></dd></dl>'), this);
         applyProps(renderer);
-    }*/
+    }
 
     override function getHideProps() : hide.prefab2.HideProps {
         return { icon : "sun-o", name : "RenderProps", allowChildren : function(p) {

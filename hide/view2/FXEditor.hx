@@ -113,7 +113,7 @@ private class FXSceneEditor extends hide.comp2.SceneEditor {
     }
 
     // TODO(ces) : restore
-    override function createDroppedElement(path:String, parent:PrefabElement):PrefabElement {
+    override function createDroppedElement(path:String, parent:PrefabElement):hrt.prefab2.Object3D {
         throw "implement";
         /*var type = Prefab.getPrefabType(path);
         if(type == "fx") {

@@ -770,7 +770,6 @@ class Trails extends Object3D {
     @:s public var minSpeed : Float = 10.0;
     @:s public var maxSpeed : Float = 1000.0;
 
-
     @:s public var uvMode : UVMode = EStretch;
     @:s public var uvStretch: Float = 1.0;
     @:s public var uvRepeat : UVRepeat = EMod;
@@ -779,10 +778,13 @@ class Trails extends Object3D {
     // Override this before calling make() to change how many trails are instancied
     public var numTrails : Int = 1;
 
-    function new(?parent) {
+    function new(?parent, ?numTrails : Int) {
         super(parent);
         name = "Trails";
 
+        if (numTrails != null) {
+            this.numTrails =  numTrails;
+        }
     }
 
     public function create( ?parent : h3d.scene.Object, ?numTrails : Int ) {
@@ -797,7 +799,7 @@ class Trails extends Object3D {
 
     override function makeObject3d(parent3d: h3d.scene.Object) : h3d.scene.Object {
         // TODO(ces) : Revert handling of multiple trails
-        return create(parent3d, 1);
+        return create(parent3d, numTrails);
     }
 
 

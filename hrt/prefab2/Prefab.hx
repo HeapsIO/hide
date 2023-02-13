@@ -81,9 +81,6 @@ class Prefab {
     /**
         Prevent the prefab from being selected in Hide. Also apply to this prefab children.
     **/
-    // TODO(ces) : Concept of editor only serializable flags ?
-    // maybe store this like the visibility (in the user prefs instead of the prefab ???)
-    // Also maybe store all the flags in a single variable ???
     @:s public var locked : Bool = false;
 
     /**
@@ -708,6 +705,66 @@ class Prefab {
         copyShallow(this, to, false, false, false, getSerializableProps());
         return to;
     }
+
+	/**
+		Updates in-place the whole prefab data and its children.
+	**/
+	public function reload( p : Dynamic ) {
+		var prevProps = props;
+		load(p);
+
+		if( props != null && prevProps != null ) {
+			// update prev props object instead of rebinding it : allow to propagate cdb changes
+			var old = Reflect.fields(prevProps);
+			for( k in Reflect.fields(props) ) {
+				if( haxe.Json.stringify(Reflect.field(props,k)) == haxe.Json.stringify(Reflect.field(prevProps,k)) ) {
+					old.remove(k);
+					continue;
+				}
+				Reflect.setField(prevProps, k, Reflect.field(props,k));
+				old.remove(k);
+			}
+			for( k in old )
+				Reflect.deleteField(prevProps, k);
+			props = prevProps;
+		}
+
+		var childData : Array<Dynamic> = p.children;
+		if( childData == null ) {
+			if( this.children.length > 0 ) this.children = [];
+			return;
+		}
+		var curChild = new Map();
+		for( c in children ) {
+			var cl = curChild.get(c.name);
+			if( cl == null ) {
+				cl = [];
+				curChild.set(c.name, cl);
+			}
+			cl.push(c);
+		}
+		var newchild = [];
+		for( v in childData ) {
+			var name : String = v.name;
+			var cl = curChild.get(name);
+			var prev = null;
+			if( cl != null ) {
+				for( c in cl )
+					if( c.type == v.type ) {
+						prev = c;
+						cl.remove(prev);
+						break;
+					}
+			}
+			if( prev != null ) {
+				prev.reload(v);
+				newchild.push(prev);
+			} else {
+				newchild.push(createFromDynamic(v,this));
+			}
+		}
+		children = newchild;
+	}
 
     static var cache : Map<String, Prefab> = new Map();
 
