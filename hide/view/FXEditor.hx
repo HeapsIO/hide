@@ -1728,7 +1728,7 @@ class FXEditor extends FileView {
 		if(shaderElt != null) {
 			var shader = shaderElt.makeShader();
 			var inEmitter = shaderElt.getParent(hrt.prefab.fx.Emitter) != null;
-			var params = shader == null ? [] : @:privateAccess shader.shader.data.vars.filter(inEmitter ? isPerInstance : v -> v.kind == Param);
+			var params = shader == null ? [] : @:privateAccess shader.shader.data.vars.filter(v -> v.kind == Param);
 			for(param in params) {
 				var item : hide.comp.ContextMenu.ContextMenuItem = switch(param.type) {
 					case TVec(n, VFloat):
