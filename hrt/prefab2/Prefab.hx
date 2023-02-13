@@ -27,6 +27,7 @@ class ContextShared {
     public var source : String = null;
     public var cache : h3d.prim.ModelCache = new h3d.prim.ModelCache();
     public var isPrototype = true;
+    public var originalContext : InstanciateContext = null;
 }
 
 class InstanciateContext {
@@ -131,6 +132,7 @@ class Prefab {
     public function instanciate(params: InstanciateContext) {
         if (!params.forceInstanciate && (shared.isPrototype))
             throw "Can't instanciate a template prefab unless params.forceInstanciate is true.";
+        shared.originalContext = params;
         makeInstanceRec(params);
 
         refresh();

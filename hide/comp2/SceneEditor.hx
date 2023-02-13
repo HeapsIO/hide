@@ -113,19 +113,20 @@ class SceneEditorContext extends hide.prefab2.EditContext {
         this.editor = editor;
         this.updates = @:privateAccess editor.updates;
         this.elements = elts;
+        rootElements = [];
         rootObjects = [];
         rootObjects2D = [];
-        rootElements = [];
         cleanups = [];
         for(elt in elements) {
-            // var obj3d = elt.to(Object3D);
-            // if(obj3d == null) continue;
+            var obj3d = elt.to(Object3D);
+            if(obj3d == null) continue;
             if(!SceneEditor.hasParent(elt, elements)) {
                 rootElements.push(elt);
-                // TODO(ces) : fix
-                // var ctx = getContext(elt);
-                // if(ctx != null) {
-                // 	var pobj = elt.parent == editor.sceneData ? ctx.shared.root3d : getContextRec(elt.parent).local3d;
+                var pobj = elt.parent == editor.sceneData ? obj3d.local3d : obj3d.parent.getLocal3d();
+                if (pobj != null)
+                    rootObjects.push(obj3d.local3d);
+                // TODO(ces) : 2D fix
+
                 // 	var pobj2d = elt.parent == editor.sceneData ? ctx.shared.root2d : getContextRec(elt.parent).local2d;
                 // 	if( ctx.local3d != pobj && ctx.local3d != null)
                 // 		rootObjects.push(ctx.local3d);
@@ -409,13 +410,12 @@ class SceneEditor {
     }
 
     function makeCamController() : CameraControllerBase {
-        //var c = new CameraController(scene.s3d, this);
-        var c = new hide.view2.CameraController.FlightController(scene.s3d, this);
-        // c.friction = 0.9;
-        // c.panSpeed = 0.6;
-        // c.zoomAmount = 1.05;
-        // c.smooth = 0.7;
-        // c.minDistance = 1;
+        var c = new hide.view2.CameraController.CamController(scene.s3d, this);
+        c.friction = 0.9;
+        c.panSpeed = 0.6;
+        c.zoomAmount = 1.05;
+        c.smooth = 0.7;
+        c.minDistance = 1;
         return c;
     }
 
@@ -924,9 +924,7 @@ class SceneEditor {
         root2d.addChild(cameraController2D);
         scene.setCurrent();
         scene.onResize();
-        // TODO(ces) : Handle 2d and 3d scenes 
 
-        //sceneData = PrefabElement.createFromDynamic(sceneData.serializeToDynamic());
         var params = new hrt.prefab2.Prefab.InstanciateContext(root2d, root3d);
         params.forceInstanciate = true;
 
@@ -954,14 +952,16 @@ class SceneEditor {
         if( lastRenderProps != null )
             lastRenderProps.applyProps(scene.s3d.renderer);
         else {
-            // TODO(ces) : restore
-            /*var refPrefab : hrt.prefab2.Reference = cast hrt.prefab2.Prefab.createFromPath(view.config.getLocal("scene.renderProps"));
-            refPrefab.make(null, root2d, root3d);
-            if( @:privateAccess refPrefab.pref != null ) {
-                var renderProps = @:privateAccess refPrefab.pref.get(hrt.prefab2.RenderProps);
-                if( renderProps != null )
-                    renderProps.applyProps(scene.s3d.renderer);
-            }*/
+            var path = view.config.getLocal("scene.renderProps");
+            if (path != null) {
+                var refPrefab : hrt.prefab2.Reference = cast hrt.prefab2.Prefab.createFromPath(path);
+                refPrefab.make(null, root2d, root3d);
+                if( @:privateAccess refPrefab.refInstance != null ) {
+                    var renderProps = @:privateAccess refPrefab.refInstance.get(hrt.prefab2.RenderProps);
+                    if( renderProps != null )
+                        renderProps.applyProps(scene.s3d.renderer);
+                }
+            }
         }
 
         onRefresh();
@@ -1893,10 +1893,10 @@ class SceneEditor {
 
         function changeProps(props: Dynamic) {
             // TODO(ces) : restore
-            //properties.undo.change(Field(e, "props", e.props), ()->edit.rebuildProperties());
+            properties.undo.change(Field(e, "props", e.props), ()->edit.rebuildProperties());
             e.props = props;
-            //edit.onChange(e, "props");
-            //edit.rebuildProperties();
+            edit.onChange(e, "props");
+            edit.rebuildProperties();
         }
 
         select.change(function(v) {
@@ -1920,14 +1920,13 @@ class SceneEditor {
             editor.fileView = view;
 
             // TODO(ces) : restore
-            /*editor.onChange = function(pname) {
+            editor.onChange = function(pname) {
                 edit.onChange(e, 'props.$pname');
                 var e = Std.downcast(e, Object3D);
                 if( e != null ) {
-                    for( ctx in context.shared.getContexts(e) )
-                        e.addEditorUI(ctx);
+                    e.addEditorUI(edit);
                 }
-            }*/
+            }
         }
     }
 
