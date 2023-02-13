@@ -3,11 +3,11 @@ package hrt.shader;
 class MaskColorAlpha extends hxsl.Shader {
 	static var SRC = {
 		@const var MULTIPLY : Bool;
-		@param var color : Vec4;
+		@perInstance @param var color : Vec4;
 		@param var mask : Sampler2D;
-		@param var UVOffset : Vec2;
-		@param var UVScale : Vec2 = vec2(1.0,1.0);
-		@param var alpha : Float = 1.0;
+		@perInstance @param var UVOffset : Vec2;
+		@perInstance @param var UVScale : Vec2 = vec2(1.0,1.0);
+		@perInstance @param var alpha : Float = 1.0;
 		var pixelColor : Vec4;
 
 		var calculatedUV : Vec2;
