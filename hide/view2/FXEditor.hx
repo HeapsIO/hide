@@ -281,6 +281,8 @@ class FXEditor extends hide.view.FileView {
     //var fxScriptParser : hrt.prefab2.fx.FXScriptParser;
     var cullingPreview : h3d.scene.Sphere;
 
+	var viewModes : Array<String>;
+
     override function getDefaultContent() {
         return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab2.fx.FX().serializeToDynamic()));
     }
@@ -572,126 +574,384 @@ class FXEditor extends hide.view.FileView {
             refreshLayout();
     }
 
+	public function onSceneReady() {
+		light = sceneEditor.scene.s3d.find(function(o) return Std.downcast(o, h3d.scene.fwd.DirLight));
+		if( light == null ) {
+			light = new h3d.scene.fwd.DirLight(scene.s3d);
+			light.enableSpecular = true;
+		} else
+			light = null;
 
-    public function onSceneReady() {
-        light = sceneEditor.scene.s3d.find(function(o) return Std.downcast(o, h3d.scene.fwd.DirLight));
-        if( light == null ) {
-            light = new h3d.scene.fwd.DirLight(scene.s3d);
-            light.enableSpecular = true;
-        } else
-            light = null;
+		var axis = new h3d.scene.Graphics(scene.s3d);
+		axis.z = 0.001;
+		axis.lineStyle(2,0xFF0000); axis.lineTo(1,0,0);
+		axis.lineStyle(1,0x00FF00); axis.moveTo(0,0,0); axis.lineTo(0,1,0);
+		axis.lineStyle(1,0x0000FF); axis.moveTo(0,0,0); axis.lineTo(0,0,1);
+		axis.lineStyle();
+		axis.material.mainPass.setPassName("debuggeom");
+		axis.visible = (!is2D) ? showGrid : false;
 
-        var axis = new h3d.scene.Graphics(scene.s3d);
-        axis.z = 0.001;
-        axis.lineStyle(2,0xFF0000); axis.lineTo(1,0,0);
-        axis.lineStyle(1,0x00FF00); axis.moveTo(0,0,0); axis.lineTo(0,1,0);
-        axis.lineStyle(1,0x0000FF); axis.moveTo(0,0,0); axis.lineTo(0,0,1);
-        axis.lineStyle();
-        axis.material.mainPass.setPassName("debuggeom");
-        axis.visible = (!is2D) ? showGrid : false;
+		cullingPreview = new h3d.scene.Sphere(0xffffff, data.cullingRadius, true, scene.s3d);
+		cullingPreview.visible = (!is2D) ? showGrid : false;
 
-        cullingPreview = new h3d.scene.Sphere(0xffffff, data.cullingRadius, true, scene.s3d);
-        cullingPreview.visible = (!is2D) ? showGrid : false;
+		var toolsDefs = new Array<hide.comp.Toolbar.ToolDef>();
+		toolsDefs.push({id: "perspectiveCamera", title : "Perspective camera", icon : "video-camera", type : Button(() -> sceneEditor.resetCamera()) });
+		toolsDefs.push({id: "camSettings", title : "Camera Settings", icon : "camera", type : Popup((e : hide.Element) -> new hide.comp2.CameraControllerEditor(sceneEditor, null,e)) });
 
-        tools.saveDisplayKey = "FXScene/tools";
-        tools.addButton("video-camera", "Perspective camera", () -> sceneEditor.resetCamera());
-        tools.addButton("arrows", "Gizmo translation Mode", @:privateAccess sceneEditor.gizmo.translationMode, () -> {
-            var items = [{
-                label : "Snap to Grid",
-                click : function() {
-                    @:privateAccess sceneEditor.gizmo.snapToGrid = !sceneEditor.gizmo.snapToGrid;
-                },
-                checked: @:privateAccess sceneEditor.gizmo.snapToGrid
-            }];
-            var steps : Array<Float> = sceneEditor.view.config.get("sceneeditor.gridSnapSteps");
-            for (step in steps) {
-                items.push({
-                    label : ""+step,
-                    click : function() {
-                        @:privateAccess sceneEditor.gizmo.moveStep = step;
-                    },
-                    checked: @:privateAccess sceneEditor.gizmo.moveStep == step
-                });
-            }
-            new hide.comp.ContextMenu(items);
-        });
-        tools.addButton("undo", "Gizmo rotation Mode", @:privateAccess sceneEditor.gizmo.rotationMode, () -> {
-            var steps : Array<Float> = sceneEditor.view.config.get("sceneeditor.rotateStepCoarses");
-            var items = [{
-                label : "Snap enabled",
-                click : function() {
-                    @:privateAccess sceneEditor.gizmo.rotateSnap = !sceneEditor.gizmo.rotateSnap;
-                },
-                checked: @:privateAccess sceneEditor.gizmo.rotateSnap
-            }];
-            for (step in steps) {
-                items.push({
-                    label : ""+step+"°",
-                    click : function() {
-                        @:privateAccess sceneEditor.gizmo.rotateStepCoarse = step;
-                    },
-                    checked: @:privateAccess sceneEditor.gizmo.rotateStepCoarse == step
-                });
-            }
-            new hide.comp.ContextMenu(items);
-        });
-        tools.addButton("compress", "Gizmo scaling Mode", @:privateAccess sceneEditor.gizmo.scalingMode);
+		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
-        function renderProps() {
-            properties.clear();
-            var renderer = scene.s3d.renderer;
-            var group = new Element('<div class="group" name="Renderer"></div>');
-            renderer.editProps().appendTo(group);
-            properties.add(group, renderer.props, function(_) {
-                renderer.refreshProps();
-                if( !properties.isTempChange ) renderProps();
-            });
-            var lprops = {
-                power : Math.sqrt(light.color.r),
-                enable: true
-            };
-            var group = new Element('<div class="group" name="Light">
-                <dl>
-                <dt>Power</dt><dd><input type="range" min="0" max="4" field="power"/></dd>
-                </dl>
-            </div>');
-            properties.add(group, lprops, function(_) {
-                var p = lprops.power * lprops.power;
-                light.color.set(p, p, p);
-            });
-        }
-        tools.addButton("gears", "Renderer Properties", renderProps);
+		toolsDefs.push({id: "translationMode", title : "Gizmo translation Mode", icon : "arrows", type : Button(@:privateAccess sceneEditor.gizmo.translationMode)});
+		toolsDefs.push({id: "rotationMode", title : "Gizmo rotation Mode", icon : "refresh", type : Button(@:privateAccess sceneEditor.gizmo.rotationMode)});
+		toolsDefs.push({id: "scalingMode", title : "Gizmo scaling Mode", icon : "expand", type : Button(@:privateAccess sceneEditor.gizmo.scalingMode)});
 
-        tools.addToggle("th", "Show grid", function(v) {
-            showGrid = v;
-            axis.visible = (is2D) ? false : v;
-            cullingPreview.visible = (is2D) ? false : v;
-            updateGrid();
-        }, showGrid);
+        toolsDefs.push({id: "", title : "", icon : "", type : Separator});
+
+        toolsDefs.push({id: "toggleSnap", title : "Snap Toggle", icon: "magnet", type : Toggle((v) -> {sceneEditor.snapToggle = v; sceneEditor.updateGrid();})});
+        toolsDefs.push({id: "snap-menu", title : "", icon: "", type : Popup((e) -> new hide.comp2.SceneEditor.SnapSettingsPopup(null, e, sceneEditor))});
+
+		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
+
+		toolsDefs.push({id: "localTransformsToggle", title : "Local transforms", icon : "compass", type : Toggle((v) -> sceneEditor.localTransform = v)});
+		
+		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
+
+		toolsDefs.push({id: "gridToggle", title : "Toggle grid", icon : "th", type : Toggle((v) -> { showGrid = v; updateGrid(); }) });
+		toolsDefs.push({id: "axisToggle", title : "Toggle model axis", icon : "cube", type : Toggle((v) -> { sceneEditor.showBasis = v; sceneEditor.updateBasis(); }) });
+		toolsDefs.push({id: "iconVisibility", title : "Toggle 3d icons visibility", icon : "image", type : Toggle((v) -> { hide.Ide.inst.show3DIcons = v; }), defaultValue: true });
 
 
-        tools.addToggle("cube", "Toggle model axis", null, (v) -> { sceneEditor.showBasis = v; sceneEditor.updateBasis(); });
+		tools.saveDisplayKey = "FXScene/tools";
+		/*tools.addButton("video-camera", "Perspective camera", () -> sceneEditor.resetCamera());
+		tools.addSeparator();
+		tools.addButton("arrows", "Gizmo translation Mode", @:privateAccess sceneEditor.gizmo.translationMode, () -> {
+			var items = [{
+				label : "Snap to Grid",
+				click : function() {
+					@:privateAccess sceneEditor.gizmo.snapToGrid = !sceneEditor.gizmo.snapToGrid;
+				},
+				checked: @:privateAccess sceneEditor.gizmo.snapToGrid
+			}];
+			var steps : Array<Float> = sceneEditor.view.config.get("sceneeditor.gridSnapSteps");
+			for (step in steps) {
+				items.push({
+					label : ""+step,
+					click : function() {
+						@:privateAccess sceneEditor.gizmo.moveStep = step;
+					},
+					checked: @:privateAccess sceneEditor.gizmo.moveStep == step
+				});
+			}
+			new hide.comp.ContextMenu(items);
+		});
+		tools.addButton("refresh", "Gizmo rotation Mode", @:privateAccess sceneEditor.gizmo.rotationMode, () -> {
+			var steps : Array<Float> = sceneEditor.view.config.get("sceneeditor.rotateStepCoarses");
+			var items = [{
+				label : "Snap enabled",
+				click : function() {
+					@:privateAccess sceneEditor.gizmo.rotateSnap = !sceneEditor.gizmo.rotateSnap;
+				},
+				checked: @:privateAccess sceneEditor.gizmo.rotateSnap
+			}];
+			for (step in steps) {
+				items.push({
+					label : ""+step+"°",
+					click : function() {
+						@:privateAccess sceneEditor.gizmo.rotateStepCoarse = step;
+					},
+					checked: @:privateAccess sceneEditor.gizmo.rotateStepCoarse == step
+				});
+			}
+			new hide.comp.ContextMenu(items);
+		});
+		tools.addButton("expand", "Gizmo scaling Mode", @:privateAccess sceneEditor.gizmo.scalingMode);
 
-        tools.addToggle("image", "Toggle 3d icons visibility", null, function(v) { hide.Ide.inst.show3DIcons = v; }, true);
-        tools.addColor("Background color", function(v) {
-            scene.engine.backgroundColor = v;
-            updateGrid();
-        }, scene.engine.backgroundColor);
-        tools.addToggle("refresh", "Auto synchronize", function(b) {
-            autoSync = b;
-        });
-        tools.addToggle("compass", "Local transforms", (v) -> sceneEditor.localTransform = v, sceneEditor.localTransform);
-        tools.addToggle("connectdevelop", "Wireframe",(b) -> { sceneEditor.setWireframe(b); });
-        pauseButton = tools.addToggle("pause", "Pause animation", function(v) {}, false);
-        tools.addRange("Speed", function(v) {
-            scene.speed = v;
-        }, scene.speed);
+		tools.addSeparator();
 
-        statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
-        statusText.setPosition(5, 5);
 
-        updateGrid();
-    }
+		function renderProps() {
+			properties.clear();
+			var renderer = scene.s3d.renderer;
+			var group = new Element('<div class="group" name="Renderer"></div>');
+			renderer.editProps().appendTo(group);
+			properties.add(group, renderer.props, function(_) {
+				renderer.refreshProps();
+				if( !properties.isTempChange ) renderProps();
+			});
+			var lprops = {
+				power : Math.sqrt(light.color.r),
+				enable: true
+			};
+			var group = new Element('<div class="group" name="Light">
+				<dl>
+				<dt>Power</dt><dd><input type="range" min="0" max="4" field="power"/></dd>
+				</dl>
+			</div>');
+			properties.add(group, lprops, function(_) {
+				var p = lprops.power * lprops.power;
+				light.color.set(p, p, p);
+			});
+		}
+		tools.addButton("gears", "Renderer Properties", renderProps);
+
+		tools.addToggle("th", "Show grid", function(v) {
+			showGrid = v;
+			axis.visible = (is2D) ? false : v;
+			cullingPreview.visible = (is2D) ? false : v;
+			updateGrid();
+		}, showGrid);
+
+
+		tools.addToggle("cube", "Toggle model axis", null, (v) -> { sceneEditor.showBasis = v; sceneEditor.updateBasis(); });
+
+		tools.addToggle("image", "Toggle 3d icons visibility", null, function(v) { hide.Ide.inst.show3DIcons = v; }, true);
+		tools.addColor("Background color", function(v) {
+			scene.engine.backgroundColor = v;
+			updateGrid();
+		}, scene.engine.backgroundColor);
+		tools.addToggle("refresh", "Auto synchronize", function(b) {
+			autoSync = b;
+		});
+		tools.addToggle("compass", "Local transforms", (v) -> sceneEditor.localTransform = v, sceneEditor.localTransform);
+		tools.addToggle("connectdevelop", "Wireframe",(b) -> { sceneEditor.setWireframe(b); });
+		pauseButton = tools.addToggle("pause", "Pause animation", function(v) {}, false);
+		tools.addRange("Speed", function(v) {
+			scene.speed = v;
+		}, scene.speed);*/
+
+		tools.makeToolbar(toolsDefs, config, keys);
+
+		function renderProps() {
+			properties.clear();
+			var renderer = scene.s3d.renderer;
+			var group = new Element('<div class="group" name="Renderer"></div>');
+			renderer.editProps().appendTo(group);
+			properties.add(group, renderer.props, function(_) {
+				renderer.refreshProps();
+				if( !properties.isTempChange ) renderProps();
+			});
+			var lprops = {
+				power : Math.sqrt(light.color.r),
+				enable: true
+			};
+			var group = new Element('<div class="group" name="Light">
+				<dl>
+				<dt>Power</dt><dd><input type="range" min="0" max="4" field="power"/></dd>
+				</dl>
+			</div>');
+			properties.add(group, lprops, function(_) {
+				var p = lprops.power * lprops.power;
+				light.color.set(p, p, p);
+			});
+		}
+		tools.addButton("gears", "Renderer Properties", renderProps);
+		tools.addToggle("refresh", "Auto synchronize", function(b) {
+			autoSync = b;
+		});
+
+		tools.addToggle("connectdevelop", "Wireframe",(b) -> { sceneEditor.setWireframe(b); });
+
+		tools.addColor("Background color", function(v) {
+			scene.engine.backgroundColor = v;
+			updateGrid();
+		}, scene.engine.backgroundColor);
+
+		tools.addSeparator();
+
+		var viewModesMenu = tools.addMenu(null, "View Modes");
+		var items : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
+		viewModes = ["LIT", "Full", "Albedo", "Normal", "Roughness", "Metalness", "Emissive", "AO", "Shadows", "Performance"];
+		for(typeid in viewModes) {
+			items.push({label : typeid, click : function() {
+				var r = Std.downcast(scene.s3d.renderer, h3d.scene.pbr.Renderer);
+				if ( r == null )
+					return;
+				var slides = @:privateAccess r.slides;
+				if ( slides == null )
+					return;
+				switch(typeid) {
+				case "LIT":
+					r.displayMode = Pbr;
+				case "Full":
+					r.displayMode = Debug;
+					slides.shader.mode = Full;
+				case "Albedo":
+					r.displayMode = Debug;
+					slides.shader.mode = Albedo;
+				case "Normal":
+					r.displayMode = Debug;
+					slides.shader.mode = Normal;
+				case "Roughness":
+					r.displayMode = Debug;
+					slides.shader.mode = Roughness;
+				case "Metalness":
+					r.displayMode = Debug;
+					slides.shader.mode = Metalness;
+				case "Emissive":
+					r.displayMode = Debug;
+					slides.shader.mode = Emmissive;
+				case "AO":
+					r.displayMode = Debug;
+					slides.shader.mode = AO;
+				case "Shadows":
+						r.displayMode = Debug;
+						slides.shader.mode = Shadow;
+				case "Performance":
+					r.displayMode = Performance;
+				default:
+				}
+			}
+			});
+		}
+		viewModesMenu.setContent(items);//, {id: "viewModes", title : "View Modes", type : Menu(filtersToMenuItem(viewModes, "View"))});
+		var el = viewModesMenu.element;
+		el.addClass("View Modes");
+
+		tools.addSeparator();
+
+
+		pauseButton = tools.addToggle("pause", "Pause animation", function(v) {}, false, "play");
+		tools.addRange("Speed", function(v) {
+			scene.speed = v;
+		}, scene.speed);
+
+		var gizmo = @:privateAccess sceneEditor.gizmo;
+
+		var onSetGizmoMode = function(mode: hide.view2.l3d.Gizmo.EditMode) {
+			tools.element.find("#translationMode").get(0).toggleAttribute("checked", mode == Translation);
+			tools.element.find("#rotationMode").get(0).toggleAttribute("checked", mode == Rotation);
+			tools.element.find("#scalingMode").get(0).toggleAttribute("checked", mode == Scaling);
+		};
+
+		gizmo.onChangeMode = onSetGizmoMode;
+		onSetGizmoMode(gizmo.editMode);
+
+
+
+		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
+		statusText.setPosition(5, 5);
+
+		updateGrid();
+	}
+
+    // public function onSceneReady() {
+    //     light = sceneEditor.scene.s3d.find(function(o) return Std.downcast(o, h3d.scene.fwd.DirLight));
+    //     if( light == null ) {
+    //         light = new h3d.scene.fwd.DirLight(scene.s3d);
+    //         light.enableSpecular = true;
+    //     } else
+    //         light = null;
+
+    //     var axis = new h3d.scene.Graphics(scene.s3d);
+    //     axis.z = 0.001;
+    //     axis.lineStyle(2,0xFF0000); axis.lineTo(1,0,0);
+    //     axis.lineStyle(1,0x00FF00); axis.moveTo(0,0,0); axis.lineTo(0,1,0);
+    //     axis.lineStyle(1,0x0000FF); axis.moveTo(0,0,0); axis.lineTo(0,0,1);
+    //     axis.lineStyle();
+    //     axis.material.mainPass.setPassName("debuggeom");
+    //     axis.visible = (!is2D) ? showGrid : false;
+
+    //     cullingPreview = new h3d.scene.Sphere(0xffffff, data.cullingRadius, true, scene.s3d);
+    //     cullingPreview.visible = (!is2D) ? showGrid : false;
+
+    //     tools.saveDisplayKey = "FXScene/tools";
+    //     tools.addButton("video-camera", "Perspective camera", () -> sceneEditor.resetCamera());
+    //     tools.addButton("arrows", "Gizmo translation Mode", @:privateAccess sceneEditor.gizmo.translationMode, () -> {
+    //         var items = [{
+    //             label : "Snap to Grid",
+    //             click : function() {
+    //                 @:privateAccess sceneEditor.gizmo.snapToGrid = !sceneEditor.gizmo.snapToGrid;
+    //             },
+    //             checked: @:privateAccess sceneEditor.gizmo.snapToGrid
+    //         }];
+    //         var steps : Array<Float> = sceneEditor.view.config.get("sceneeditor.gridSnapSteps");
+    //         for (step in steps) {
+    //             items.push({
+    //                 label : ""+step,
+    //                 click : function() {
+    //                     @:privateAccess sceneEditor.gizmo.moveStep = step;
+    //                 },
+    //                 checked: @:privateAccess sceneEditor.gizmo.moveStep == step
+    //             });
+    //         }
+    //         new hide.comp.ContextMenu(items);
+    //     });
+    //     tools.addButton("undo", "Gizmo rotation Mode", @:privateAccess sceneEditor.gizmo.rotationMode, () -> {
+    //         var steps : Array<Float> = sceneEditor.view.config.get("sceneeditor.rotateStepCoarses");
+    //         var items = [{
+    //             label : "Snap enabled",
+    //             click : function() {
+    //                 @:privateAccess sceneEditor.gizmo.rotateSnap = !sceneEditor.gizmo.rotateSnap;
+    //             },
+    //             checked: @:privateAccess sceneEditor.gizmo.rotateSnap
+    //         }];
+    //         for (step in steps) {
+    //             items.push({
+    //                 label : ""+step+"°",
+    //                 click : function() {
+    //                     @:privateAccess sceneEditor.gizmo.rotateStepCoarse = step;
+    //                 },
+    //                 checked: @:privateAccess sceneEditor.gizmo.rotateStepCoarse == step
+    //             });
+    //         }
+    //         new hide.comp.ContextMenu(items);
+    //     });
+    //     tools.addButton("compress", "Gizmo scaling Mode", @:privateAccess sceneEditor.gizmo.scalingMode);
+
+    //     function renderProps() {
+    //         properties.clear();
+    //         var renderer = scene.s3d.renderer;
+    //         var group = new Element('<div class="group" name="Renderer"></div>');
+    //         renderer.editProps().appendTo(group);
+    //         properties.add(group, renderer.props, function(_) {
+    //             renderer.refreshProps();
+    //             if( !properties.isTempChange ) renderProps();
+    //         });
+    //         var lprops = {
+    //             power : Math.sqrt(light.color.r),
+    //             enable: true
+    //         };
+    //         var group = new Element('<div class="group" name="Light">
+    //             <dl>
+    //             <dt>Power</dt><dd><input type="range" min="0" max="4" field="power"/></dd>
+    //             </dl>
+    //         </div>');
+    //         properties.add(group, lprops, function(_) {
+    //             var p = lprops.power * lprops.power;
+    //             light.color.set(p, p, p);
+    //         });
+    //     }
+    //     tools.addButton("gears", "Renderer Properties", renderProps);
+
+    //     tools.addToggle("th", "Show grid", function(v) {
+    //         showGrid = v;
+    //         axis.visible = (is2D) ? false : v;
+    //         cullingPreview.visible = (is2D) ? false : v;
+    //         updateGrid();
+    //     }, showGrid);
+
+
+    //     tools.addToggle("cube", "Toggle model axis", null, (v) -> { sceneEditor.showBasis = v; sceneEditor.updateBasis(); });
+
+    //     tools.addToggle("image", "Toggle 3d icons visibility", null, function(v) { hide.Ide.inst.show3DIcons = v; }, true);
+    //     tools.addColor("Background color", function(v) {
+    //         scene.engine.backgroundColor = v;
+    //         updateGrid();
+    //     }, scene.engine.backgroundColor);
+    //     tools.addToggle("refresh", "Auto synchronize", function(b) {
+    //         autoSync = b;
+    //     });
+    //     tools.addToggle("compass", "Local transforms", (v) -> sceneEditor.localTransform = v, sceneEditor.localTransform);
+    //     tools.addToggle("connectdevelop", "Wireframe",(b) -> { sceneEditor.setWireframe(b); });
+    //     pauseButton = tools.addToggle("pause", "Pause animation", function(v) {}, false);
+    //     tools.addRange("Speed", function(v) {
+    //         scene.speed = v;
+    //     }, scene.speed);
+
+    //     statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
+    //     statusText.setPosition(5, 5);
+
+    //     updateGrid();
+    // }
 
     function onPrefabChange(p: PrefabElement, ?pname: String) {
         if(p == data) {

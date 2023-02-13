@@ -20,6 +20,7 @@ enum AlignMode {
     None;
     Screen;
     Axis;
+    Speed;
 }
 
 enum AlignLockAxis {
@@ -383,7 +384,7 @@ private class ParticleInstance {
         this.speedAccumulation.load(speedAccumulation);
 
 
-        if(emitter.emitOrientation == Speed && tmpSpeed.lengthSq() > 0.01) {
+        if((emitter.emitOrientation == Speed || emitter.alignMode == Speed) && tmpSpeed.lengthSq() > 0.01) {
             var qRot = qRot.toQuat();
             inline qRot.initDirection(tmpSpeed);
             this.qRot.loadQuat(qRot);
@@ -1630,7 +1631,7 @@ class Emitter extends Object3D {
 
         var alignMode : AlignMode = getParamVal("alignMode");
         switch(alignMode) {
-            case None | Screen:
+            case None | Screen | Speed:
                 removeParam("alignLockAxis");
             default:
         }

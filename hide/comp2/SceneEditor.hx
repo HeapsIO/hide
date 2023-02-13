@@ -42,6 +42,63 @@ enum SelectMode {
     Nothing;
 }
 
+class SnapSettingsPopup extends hide.comp.Popup {
+    var editor : SceneEditor;
+
+    public function new(?parent : Element, ?root : Element, editor: SceneEditor) {
+        super(parent, root);
+        this.editor = editor;
+
+        popup.append(new Element("<p>Snap Settings</p>"));
+        popup.addClass("settings-popup");
+        popup.css("max-width", "300px");
+
+        var form_div = new Element("<div>").addClass("form-grid").appendTo(popup);
+
+        var editMode : hide.view2.l3d.Gizmo.EditMode = @:privateAccess editor.gizmo.editMode;
+
+        var steps : Array<Float> = [];
+        switch (editMode) {
+            case Translation:
+                steps = editor.view.config.get("sceneeditor.gridSnapSteps");
+            case Rotation:
+                steps = editor.view.config.get("sceneeditor.rotateStepCoarses");
+            case Scaling:
+                steps = editor.view.config.get("sceneeditor.gridSnapSteps");
+        }
+
+        for (value in steps) {
+            var input = new Element('<input type="radio" name="snap" id="snap$value" value="$value"/>');
+
+            var equals = switch (editMode) {
+                case Translation:
+                    editor.snapMoveStep == value;
+                case Rotation:
+                    editor.snapRotateStep == value;
+                case Scaling:
+                    editor.snapScaleStep == value;
+            }
+
+            if (equals)
+                input.get(0).toggleAttribute("checked", true);
+            input.change((e) -> {
+                switch (editMode) {
+                    case Translation:
+                        editor.snapMoveStep = value;
+                    case Rotation:
+                        editor.snapRotateStep = value;
+                    case Scaling:
+                        editor.snapScaleStep = value;
+                }
+                editor.updateGrid();
+            });
+            form_div.append(input);
+            form_div.append(new Element('<label for="snap$value" class="left">$value${editMode==Rotation ? "°" : ""}</label>'));
+
+        }
+    }
+}
+
 @:access(hide.comp2.SceneEditor)
 class SceneEditorContext extends hide.prefab2.EditContext {
 
@@ -140,6 +197,12 @@ class SceneEditor {
     //public var context(default,null) : hrt.prefab.Context;
     public var curEdit(default, null) : SceneEditorContext;
     public var snapToGround = false;
+
+    public var snapToggle = false;
+    public var snapMoveStep = 1.0;
+    public var snapRotateStep = 30.0;
+    public var snapScaleStep = 1.0;
+
     public var localTransform = true;
     public var cameraController : CameraControllerBase;
     public var cameraController2D : hide.view.l3d.CameraController2D;
@@ -289,6 +352,17 @@ class SceneEditor {
                 }
             }
         }
+    }
+
+    public function getSnapStatus() : Bool {
+        var ctrl = K.isDown(K.CTRL);
+        return (snapToggle && !ctrl) || (!snapToggle && ctrl);
+    };
+
+    public function snap(value: Float, step:Float) : Float {
+        if (step > 0.0 && getSnapStatus())
+            value = hxd.Math.round(value / step) * step;
+        return value;
     }
 
     public function dispose() {
@@ -526,6 +600,20 @@ class SceneEditor {
         @:privateAccess view.saveDisplayState("Camera", toSave);
     }
 
+    function toggleSnap(?force: Bool) {
+        if (force != null)
+            snapToggle = force;
+        else
+            snapToggle = !snapToggle;
+
+        var snap = new Element("#snap").get(0);
+        if (snap != null) {
+            snap.toggleAttribute("checked", snapToggle);
+        }
+
+        updateGrid();
+    }
+
     function onSceneReady() {
 
         tree.saveDisplayKey = view.saveDisplayKey + '/tree';
@@ -542,11 +630,9 @@ class SceneEditor {
         scene.s3d.addChild(root3d);
 
         gizmo = new hide.view2.l3d.Gizmo(scene);
-        gizmo.moveStep = view.config.get("sceneeditor.gridStep");
         view.keys.register("sceneeditor.translationMode", gizmo.translationMode);
         view.keys.register("sceneeditor.rotationMode", gizmo.rotationMode);
         view.keys.register("sceneeditor.scalingMode", gizmo.scalingMode);
-        view.keys.register("sceneeditor.toggleSnap", gizmo.toggleSnap);
 
         gizmo2d = new hide.view.l3d.Gizmo2D();
         scene.s2d.add(gizmo2d, 1); // over local3d
@@ -1079,7 +1165,7 @@ class SceneEditor {
         }
     }
 
-    public dynamic function updateGrid(step : Float) {
+    public dynamic function updateGrid() {
     }
 
     function setupGizmo() {
@@ -1145,13 +1231,18 @@ class SceneEditor {
                         newMat.prependScale(scale.x, scale.y, scale.z);
                     }
                     var obj3d = objects3d[i];
-                    var rot = newMat.getEulerAngles();
-                    obj3d.x = quantize(newMat.tx, posQuant);
-                    obj3d.y = quantize(newMat.ty, posQuant);
-                    obj3d.z = quantize(newMat.tz, posQuant);
-                    obj3d.rotationX = quantize(M.radToDeg(rot.x), rotQuant);
-                    obj3d.rotationY = quantize(M.radToDeg(rot.y), rotQuant);
-                    obj3d.rotationZ = quantize(M.radToDeg(rot.z), rotQuant);
+                    var euler = newMat.getEulerAngles();
+                    if (translate != null && translate.length() > 0.0001) {
+                        obj3d.x = quantize(snap(newMat.tx, snapMoveStep), posQuant);
+                        obj3d.y = quantize(snap(newMat.ty, snapMoveStep), posQuant);
+                        obj3d.z = quantize(snap(newMat.tz, snapMoveStep), posQuant);
+                    }
+
+                    if (rot != null) {
+                        obj3d.rotationX = quantize(snap(M.radToDeg(euler.x), snapRotateStep), rotQuant);
+                        obj3d.rotationY = quantize(snap(M.radToDeg(euler.y), snapRotateStep), rotQuant);
+                        obj3d.rotationZ = quantize(snap(M.radToDeg(euler.z), snapRotateStep), rotQuant);
+                    }
                     if(scale != null) {
                         inline function scaleSnap(x: Float) {
                             if(K.isDown(K.CTRL)) {
@@ -1161,9 +1252,9 @@ class SceneEditor {
                             return x;
                         }
                         var s = newMat.getScale();
-                        obj3d.scaleX = quantize(scaleSnap(s.x), scaleQuant);
-                        obj3d.scaleY = quantize(scaleSnap(s.y), scaleQuant);
-                        obj3d.scaleZ = quantize(scaleSnap(s.z), scaleQuant);
+                        obj3d.scaleX = quantize(snap(s.x, snapScaleStep), scaleQuant);
+						obj3d.scaleY = quantize(snap(s.y, snapScaleStep), scaleQuant);
+						obj3d.scaleZ = quantize(snap(s.z, snapScaleStep), scaleQuant);
                     }
                     obj3d.applyTransform();
                 }
@@ -1324,7 +1415,7 @@ class SceneEditor {
             gizmo.visible = showGizmo;
             gizmo.setPosition(pos.x, pos.y, pos.z);
 
-            if(roots.length == 1 && (localTransform || K.isDown(K.ALT))) {
+            if(roots.length == 1 && (localTransform || K.isDown(K.ALT) || gizmo.editMode == Scaling)) {
                 var obj = roots[0];
                 var mat = worldMat(obj);
                 var s = mat.getScale();

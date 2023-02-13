@@ -76,11 +76,6 @@ class Gizmo extends h3d.scene.Object {
     public var moving(default, null): Bool;
 
     public var editMode : EditMode = Translation;
-    public var moveStep = 0.5;
-    public var snapToGrid = false;
-    public var rotateStepFine = 15.0;
-    public var rotateStepCoarse = 45.0;
-    public var rotateSnap = false;
 
     var debug: h3d.scene.Graphics;
     var axisScale = false;
@@ -153,6 +148,10 @@ class Gizmo extends h3d.scene.Object {
         setup("yRotate", 0x00ff00, RotateY);
         setup("zRotate", 0x0000ff, RotateZ);
         setup("scale", 0xffffff, Scale);
+        setup("xScale", 0xff0000, MoveX);
+		setup("yScale", 0x00ff00, MoveY);
+		setup("zScale", 0x0000ff, MoveZ);
+        
         translationMode();
     }
 
@@ -164,7 +163,7 @@ class Gizmo extends h3d.scene.Object {
         for(n in ["xAxis", "yAxis", "zAxis", "xy", "xz", "yz"]) {
             gizmo.getObjectByName(n).visible = true;
         }
-        for(n in ["xRotate", "yRotate", "zRotate", "scale"]) {
+        for(n in ["xRotate", "yRotate", "zRotate", "scale", "xScale", "yScale", "zScale"]) {
             gizmo.getObjectByName(n).visible = false;
         }
         onChangeMode(editMode);
@@ -176,7 +175,7 @@ class Gizmo extends h3d.scene.Object {
         for(n in ["xRotate", "yRotate", "zRotate", ]) {
             gizmo.getObjectByName(n).visible = true;
         }
-        for(n in ["xAxis", "yAxis", "zAxis", "xy", "xz", "yz", "scale"]) {
+        for(n in ["xAxis", "yAxis", "zAxis", "xy", "xz", "yz", "scale", "xScale", "yScale", "zScale"]) {
             gizmo.getObjectByName(n).visible = false;
         }
         onChangeMode(editMode);
@@ -185,221 +184,204 @@ class Gizmo extends h3d.scene.Object {
     public function scalingMode() {
         editMode = Scaling;
         axisScale = true;
-        for(n in ["xAxis", "yAxis", "zAxis", "scale"]) {
+        for(n in ["scale", "xScale", "yScale", "zScale"]) {
             gizmo.getObjectByName(n).visible = true;
         }
-        for(n in ["xRotate", "yRotate", "zRotate", "xy", "xz", "yz"]) {
+        for(n in ["xAxis", "yAxis", "zAxis","xRotate", "yRotate", "zRotate", "xy", "xz", "yz"]) {
             gizmo.getObjectByName(n).visible = false;
         }
         onChangeMode(editMode);
     }
 
-    public function toggleSnap() {
-        switch (editMode) {
-            case Translation:
-                snapToGrid = !snapToGrid;
-            case Rotation:
-                rotateSnap = !rotateSnap;
-            case Scaling:
-        }
-    }
-
     public function startMove(mode: TransformMode, ?duplicating=false) {
-        if (mode == Scale || (axisScale && (mode == MoveX || mode == MoveY || mode == MoveZ)))
-            mouseLock = true;
-        moving = true;
-        if(onStartMove != null) onStartMove(mode);
-        var startMat = getAbsPos().clone();
-        var startQuat = new h3d.Quat();
-        startQuat.initRotateMatrix(startMat);
-        var startPos = getAbsPos().getPosition().toPoint();
-        var dragPlane = null;
-        var cam = scene.s3d.camera;
-        var norm = startPos.sub(cam.pos.toPoint());
-        intOverlay = new h2d.Interactive(40000, 40000, scene.s2d);
-        intOverlay.onPush = function(e) finishMove();
-        switch(mode) {
-            case MoveXY: norm.set(0, 0, 1);
-            case MoveYZ: norm.set(1, 0, 0);
-            case MoveZX: norm.set(0, 1, 0);
-            case RotateX: norm.set(1, 0, 0);
-            case RotateY: norm.set(0, 1, 0);
-            case RotateZ: norm.set(0, 0, 1);
-            default:
-        }
+		if (mode == Scale || (axisScale && (mode == MoveX || mode == MoveY || mode == MoveZ)))
+			mouseLock = true;
+		moving = true;
+		if(onStartMove != null) onStartMove(mode);
+		var startMat = getAbsPos().clone();
+		var startQuat = new h3d.Quat();
+		startQuat.initRotateMatrix(startMat);
+		var startPos = getAbsPos().getPosition().toPoint();
+		var dragPlane = null;
+		var cam = scene.s3d.camera;
+		var norm = startPos.sub(cam.pos.toPoint());
+		intOverlay = new h2d.Interactive(40000, 40000, scene.s2d);
+		intOverlay.onPush = function(e) finishMove();
+		switch(mode) {
+			case MoveXY: norm.set(0, 0, 1);
+			case MoveYZ: norm.set(1, 0, 0);
+			case MoveZX: norm.set(0, 1, 0);
+			case RotateX: norm.set(1, 0, 0);
+			case RotateY: norm.set(0, 1, 0);
+			case RotateZ: norm.set(0, 0, 1);
+			default:
+		}
 
-        var moveSteps : Array<Float> = scene.editor.view.config.get("sceneeditor.gridSnapSteps");
-        var rotateSteps : Array<Float> = scene.editor.view.config.get("sceneeditor.rotateStepCoarses");
-        var rotateStepFineIndex = rotateSteps.indexOf(rotateStepFine);
+		if (mode == MoveX || mode == MoveY || mode == MoveZ || mode == Scale) {
+			var point = scene.s3d.camera.rayFromScreen(mouseX, mouseY).getDir();
+			dragPlane = h3d.col.Plane.fromNormalPoint(point, startPos);
+		} else {
+			norm.normalize();
+			norm.transform3x3(startMat);
+			dragPlane = h3d.col.Plane.fromNormalPoint(norm, startPos);
+		}
+		var startDragPt = getDragPoint(dragPlane);
+		var cursor = new h3d.scene.Object();
+		deltaTextObject = new h2d.ObjectFollower(cursor, scene.s2d);
 
-        if (mode == MoveX || mode == MoveY || mode == MoveZ || mode == Scale) {
-            var point = scene.s3d.camera.rayFromScreen(mouseX, mouseY).getDir();
-            dragPlane = h3d.col.Plane.fromNormalPoint(point, startPos);
-        } else {
-            norm.normalize();
-            norm.transform3x3(startMat);
-            dragPlane = h3d.col.Plane.fromNormalPoint(norm, startPos);
-        }
-        var startDragPt = getDragPoint(dragPlane);
-        var cursor = new h3d.scene.Object();
-        deltaTextObject = new h2d.ObjectFollower(cursor, scene.s2d);
+		var tx = new h2d.Text(hxd.res.DefaultFont.get(), deltaTextObject);
+		tx.textColor = 0xff0000;
+		tx.textAlign = Center;
+		tx.dropShadow = { dx : 0.5, dy : 0.5, color : 0x202020, alpha : 1.0 };
+		tx.setScale(1.2);
+		var ty = new h2d.Text(hxd.res.DefaultFont.get(), deltaTextObject);
+		ty.textColor = 0x00ff00;
+		ty.textAlign = Center;
+		ty.dropShadow = { dx : 0.5, dy : 0.5, color : 0x202020, alpha : 1.0 };
+		ty.setScale(1.2);
+		var tz = new h2d.Text(hxd.res.DefaultFont.get(), deltaTextObject);
+		tz.textColor = 0x0000ff;
+		tz.textAlign = Center;
+		tz.dropShadow = { dx : 0.5, dy : 0.5, color : 0x202020, alpha : 1.0 };
+		tz.setScale(1.2);
+		updateFunc = function(dt) {
+			tx.visible = false;
+			ty.visible = false;
+			tz.visible = false;
+			var curPt = getDragPoint(dragPlane);
+			tx.setPosition(mouseX + 32, mouseY - 15);
+			ty.setPosition(mouseX + 32, mouseY);
+			tz.setPosition(mouseX + 32, mouseY + 15);
+			var delta = curPt.sub(startDragPt);
+			var vec = new h3d.Vector(0,0,0);
+			var quat = new h3d.Quat();
+			var speedFactor = (K.isDown(K.SHIFT) && !K.isDown(K.CTRL)) ? 0.1 : 1.0;
+			delta.scale(speedFactor);
+			inline function scaleFunc(x: Float) {
+				return x > 0 ? x + 1 : 1 / (1 - x);
+			}
 
-        var tx = new h2d.Text(hxd.res.DefaultFont.get(), deltaTextObject);
-        tx.textColor = 0xff0000;
-        tx.textAlign = Center;
-        tx.dropShadow = { dx : 0.5, dy : 0.5, color : 0x202020, alpha : 1.0 };
-        tx.setScale(1.2);
-        var ty = new h2d.Text(hxd.res.DefaultFont.get(), deltaTextObject);
-        ty.textColor = 0x00ff00;
-        ty.textAlign = Center;
-        ty.dropShadow = { dx : 0.5, dy : 0.5, color : 0x202020, alpha : 1.0 };
-        ty.setScale(1.2);
-        var tz = new h2d.Text(hxd.res.DefaultFont.get(), deltaTextObject);
-        tz.textColor = 0x0000ff;
-        tz.textAlign = Center;
-        tz.dropShadow = { dx : 0.5, dy : 0.5, color : 0x202020, alpha : 1.0 };
-        tz.setScale(1.2);
-        updateFunc = function(dt) {
-            tx.visible = false;
-            ty.visible = false;
-            tz.visible = false;
-            var curPt = getDragPoint(dragPlane);
-            tx.setPosition(mouseX + 32, mouseY - 15);
-            ty.setPosition(mouseX + 32, mouseY);
-            tz.setPosition(mouseX + 32, mouseY + 15);
-            var delta = curPt.sub(startDragPt);
-            var vec = new h3d.Vector(0,0,0);
-            var quat = new h3d.Quat();
-            var speedFactor = (K.isDown(K.SHIFT) && !K.isDown(K.CTRL)) ? 0.1 : 1.0;
-            delta.scale(speedFactor);
-            inline function scaleFunc(x: Float) {
-                return x > 0 ? x + 1 : 1 / (1 - x);
-            }
+			function moveSnap(m: Float) {
+                return m;
+				/*if(moveStep <= 0 || !scene.editor.getSnapStatus() || axisScale)
+					return m;
 
-            function moveSnap(m: Float) {
-                if(moveStep <= 0 || !snapToGrid || axisScale)
-                    return m;
+				var step = K.isDown(K.SHIFT) ? moveStep / 2.0 : moveStep;
+				return hxd.Math.round(m / step) * step;*/
+			}
 
-                var step = K.isDown(K.SHIFT) ? moveStep / 2.0 : moveStep;
-                return hxd.Math.round(m / step) * step;
-            }
-            if (mode == MoveX || mode == MoveY || mode == MoveZ || mode == MoveXY || mode == MoveYZ || mode == MoveZX) {
-                if ( snapToGrid && K.isPressed(K.SHIFT) ) {
-                    scene.editor.updateGrid(moveSteps[(moveSteps.indexOf(moveStep) + 1 ) % moveSteps.length]);
-                    var changingStepViewer = new ChangingStepViewer(this, "" + moveStep);
-                }
-            }
-            if(mode == MoveX || mode == MoveXY || mode == MoveZX) vec.x = moveSnap(delta.dot(startMat.front().toPoint()));
-            if(mode == MoveY || mode == MoveYZ || mode == MoveXY) vec.y = moveSnap(delta.dot(startMat.right().toPoint()));
-            if(mode == MoveZ || mode == MoveZX || mode == MoveYZ) vec.z = moveSnap(delta.dot(startMat.up().toPoint()));
 
-            if(!axisScale) {
-                vec.transform3x3(startMat);
-                if (vec.x != 0) {
-                    tx.visible = true;
-                    tx.text = "X : "+ Math.round(vec.x*100)/100.;
-                }
-                if (vec.y != 0) {
-                    ty.visible = true;
-                    ty.text = "Y : "+ Math.round(vec.y*100)/100.;
-                }
-                if (vec.z != 0) {
-                    tz.visible = true;
-                    tz.text = "Z : "+ Math.round(vec.z*100)/100.;
-                }
-                x = (startPos.x + vec.x);
-                y = (startPos.y + vec.y);
-                z = (startPos.z + vec.z);
-            }
+			if (mode == MoveX || mode == MoveY || mode == MoveZ || mode == MoveXY || mode == MoveYZ || mode == MoveZX) {
+				/*if ( snapToGrid && K.isPressed(K.SHIFT) ) {
+					scene.editor.updateGrid(moveSteps[(moveSteps.indexOf(moveStep) + 1 ) % moveSteps.length]);
+					var changingStepViewer = new ChangingStepViewer(this, "" + moveStep);
+				}*/
+			}
+			if(mode == MoveX || mode == MoveXY || mode == MoveZX) vec.x = moveSnap(delta.dot(startMat.front().toPoint()));
+			if(mode == MoveY || mode == MoveYZ || mode == MoveXY) vec.y = moveSnap(delta.dot(startMat.right().toPoint()));
+			if(mode == MoveZ || mode == MoveZX || mode == MoveYZ) vec.z = moveSnap(delta.dot(startMat.up().toPoint()));
 
-            if(mode == Scale) {
-                var scale = scaleFunc(delta.z * 0.5);
-                vec.set(scale, scale, scale);
-            }
+			if(!axisScale) {
+				vec.transform3x3(startMat);
+				if (vec.x != 0) {
+					tx.visible = true;
+					tx.text = "X : "+ Math.round(vec.x*100)/100.;
+				}
+				if (vec.y != 0) {
+					ty.visible = true;
+					ty.text = "Y : "+ Math.round(vec.y*100)/100.;
+				}
+				if (vec.z != 0) {
+					tz.visible = true;
+					tz.text = "Z : "+ Math.round(vec.z*100)/100.;
+				}
+				x = scene.editor.snap(startPos.x + vec.x, scene.editor.snapMoveStep);
+				y = scene.editor.snap(startPos.y + vec.y, scene.editor.snapMoveStep);
+				z = scene.editor.snap(startPos.z + vec.z, scene.editor.snapMoveStep);
+			}
 
-            if(mode == RotateX || mode == RotateY || mode == RotateZ) {
+			if(mode == Scale) {
+				var scale = scaleFunc(delta.z * 0.5);
+				vec.set(scale, scale, scale);
+			}
+
+            var doRot = false;
+			if(mode == RotateX || mode == RotateY || mode == RotateZ) {
+				doRot = true;
                 var v1 = startDragPt.sub(startPos);
-                v1.normalize();
-                var v2 = curPt.sub(startPos);
-                v2.normalize();
+				v1.normalize();
+				var v2 = curPt.sub(startPos);
+				v2.normalize();
 
-                var angle = Math.atan2(v1.cross(v2).dot(norm), v1.dot(v2)) * speedFactor;
-                if(rotateSnap || K.isDown(K.CTRL)) {
-                    if (K.isPressed(K.CTRL)) {
-                        rotateStepCoarse = rotateSteps[rotateSteps.indexOf(rotateStepFine)];
-                        var changingStepViewer = new ChangingStepViewer(this, "" + rotateStepCoarse + "°");
-                    }
-                    if (K.isPressed(K.SHIFT)) {
-                        rotateStepCoarse = rotateSteps[rotateStepFineIndex];
-                        rotateStepFineIndex = (rotateStepFineIndex + 1) % rotateSteps.length;
-                        var changingStepViewer = new ChangingStepViewer(this, "" + rotateStepCoarse + "°");
-                    }
-                    var step = hxd.Math.degToRad(rotateStepCoarse);
-                    angle =  hxd.Math.round(angle / step) * step;
-                }
-                if (mode == RotateX && angle != 0) {
-                    tx.visible = true;
-                    tx.text = ""+ Math.round(Math.radToDeg(angle)*100)/100. + "°";
-                }
-                if (mode == RotateY && angle != 0) {
-                    ty.visible = true;
-                    ty.text = ""+ Math.round(Math.radToDeg(angle)*100)/100. + "°";
-                }
-                if (mode == RotateZ && angle != 0) {
-                    tz.visible = true;
-                    tz.text = ""+ Math.round(Math.radToDeg(angle)*100)/100. + "°";
-                }
-                quat.initRotateAxis(norm.x, norm.y, norm.z, angle);
-                var localQuat = new h3d.Quat();
-                localQuat.multiply(quat, startQuat);
-                setRotationQuat(localQuat);
-            }
+				var angle = Math.atan2(v1.cross(v2).dot(norm), v1.dot(v2)) * speedFactor;
 
-            if(onMove != null) {
-                if(axisScale && mode != Scale) {
-                    vec.x = scaleFunc(vec.x);
-                    vec.y = scaleFunc(vec.y);
-                    vec.z = scaleFunc(vec.z);
-                    if (vec.x != 1) {
-                        tx.visible = true;
-                        tx.text = ""+ Math.round(vec.x*100)/100.;
-                    }
-                    if (vec.y != 1) {
-                        ty.visible = true;
-                        ty.text = ""+ Math.round(vec.y*100)/100.;
-                    }
-                    if (vec.z != 1) {
-                        tz.visible = true;
-                        tz.text = ""+ Math.round(vec.z*100)/100.;
-                    }
-                    onMove(null, null, vec);
-                }
-                else {
-                    if(mode == Scale) {
-                        if (vec.x != 1) {
-                            tx.visible = true;
-                            tx.text = ""+ Math.round(vec.x*100)/100.;
-                        }
-                        if (vec.y != 1) {
-                            ty.visible = true;
-                            ty.text = ""+ Math.round(vec.y*100)/100.;
-                        }
-                        if (vec.z != 1) {
-                            tz.visible = true;
-                            tz.text = ""+ Math.round(vec.z*100)/100.;
-                        }
-                        onMove(null, null, vec);
-                    }
-                    else
-                        onMove(vec, quat, null);
-                }
-            }
+				if (mode == RotateX && angle != 0) {
+					tx.visible = true;
+					tx.text = ""+ Math.round(Math.radToDeg(angle)*100)/100. + "°";
+				}
+				if (mode == RotateY && angle != 0) {
+					ty.visible = true;
+					ty.text = ""+ Math.round(Math.radToDeg(angle)*100)/100. + "°";
+				}
+				if (mode == RotateZ && angle != 0) {
+					tz.visible = true;
+					tz.text = ""+ Math.round(Math.radToDeg(angle)*100)/100. + "°";
+				}
+				quat.initRotateAxis(norm.x, norm.y, norm.z, angle);
+				var localQuat = new h3d.Quat();
+				localQuat.multiply(quat, startQuat);
+				setRotationQuat(localQuat);
+			}
 
-            if(duplicating && K.isPressed(K.MOUSE_LEFT) || K.isPressed(K.ESCAPE) || (!duplicating && !K.isDown(K.MOUSE_LEFT))) {
-                finishMove();
-            }
-        }
-    }
+			if(onMove != null) {
+				if(axisScale && mode != Scale) {
+					vec.x = scaleFunc(vec.x);
+					vec.y = scaleFunc(vec.y);
+					vec.z = scaleFunc(vec.z);
+					if (vec.x != 1) {
+						tx.visible = true;
+						tx.text = ""+ Math.round(vec.x*100)/100.;
+					}
+					if (vec.y != 1) {
+						ty.visible = true;
+						ty.text = ""+ Math.round(vec.y*100)/100.;
+					}
+					if (vec.z != 1) {
+						tz.visible = true;
+						tz.text = ""+ Math.round(vec.z*100)/100.;
+					}
+					onMove(null, null, vec);
+				}
+				else {
+					if(mode == Scale) {
+						if (vec.x != 1) {
+							tx.visible = true;
+							tx.text = ""+ Math.round(vec.x*100)/100.;
+						}
+						if (vec.y != 1) {
+							ty.visible = true;
+							ty.text = ""+ Math.round(vec.y*100)/100.;
+						}
+						if (vec.z != 1) {
+							tz.visible = true;
+							tz.text = ""+ Math.round(vec.z*100)/100.;
+						}
+						onMove(null, null, vec);
+					}
+					else if (doRot) {
+						onMove(null, quat, null);
+                    }
+                    else {
+						onMove(vec, null, null);
+                    }
+				}
+			}
+
+			if(duplicating && K.isPressed(K.MOUSE_LEFT) || K.isPressed(K.ESCAPE) || (!duplicating && !K.isDown(K.MOUSE_LEFT))) {
+				finishMove();
+			}
+		}
+	}
 
     function get_mouseX() return @:privateAccess scene.window.mouseX;
     function get_mouseY() return @:privateAccess scene.window.mouseY;
@@ -449,7 +431,7 @@ class Gizmo extends h3d.scene.Object {
 
         if( !moving ) {
             var dir = cam.pos.sub(gpos).toPoint();
-            if (isLocal)
+            if (isLocal || this.editMode == Scaling)
             {
                 var rot = getRotationQuat().toMatrix(tempMatrix);
                 rot.invert();
