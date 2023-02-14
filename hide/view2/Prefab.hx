@@ -57,6 +57,7 @@ private class PrefabSceneEditor extends hide.comp2.SceneEditor {
             haxe.Timer.delay(addElements.bind([p]), 0);
         }
 
+        // TODO(ces) : Restore Instances
         /*function addNewInstances() {
             var items = new Array<hide.comp.ContextMenu.ContextMenuItem>();
             for(type in DataFiles.getAvailableTypes() ) {
@@ -118,11 +119,11 @@ private class PrefabSceneEditor extends hide.comp2.SceneEditor {
                 menu: items
             });
         };
-        addNewInstances();
+        addNewInstances();*/
         newItems.unshift({
             label : "Recents",
             menu : recents,
-        });*/
+        });
         return newItems;
     }
 

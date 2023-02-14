@@ -294,11 +294,6 @@ class SceneEditor {
             onResize();
         };
 
-        // TODO(ces) : ref
-        //context = new hrt.prefab.Context();
-        //context.shared = new hide.prefab.ContextShared(scene,this);
-        //context.shared.currentPath = view.state.path;
-        //context.init();
         editorDisplay = true;
 
         view.keys.register("copy", onCopy);
@@ -1678,7 +1673,7 @@ class SceneEditor {
     function makePrefab(elt: PrefabElement) {
         scene.setCurrent();
         
-        var params = new hrt.prefab2.Prefab.InstanciateContext(root2d, root3d);
+        var params = new hrt.prefab2.Prefab.InstanciateContext(elt.parent.findFirstLocal2d(), elt.parent.findFirstLocal3d());
         params.forceInstanciate = true;
 
         elt.instanciate(params);
@@ -2158,7 +2153,7 @@ class SceneEditor {
             prefab = ref;
             prefab.name = new haxe.io.Path(relative).file;
         }
-        // TODO(ces) : restore
+        // TODO(ces) : restore missing class Particles3D
         /*else if(haxe.io.Path.extension(path).toLowerCase() == "json") {
             obj3d = new hrt.prefab.l3d.Particles3D(parent);
             obj3d.source = relative;
@@ -2320,13 +2315,6 @@ class SceneEditor {
 
         group.instanciate(params);
 
-        // TODO(ces) : restore ??
-        /*var parentCtx = getContext(parent);
-        if(parentCtx == null)
-            parentCtx = context;
-        group.make(parentCtx);
-        var groupCtx = getContext(group);*/
-
         var effectFunc = reparentImpl(elts, group, 0);
         undo.change(Custom(function(undo) {
             if(undo) {
@@ -2358,7 +2346,7 @@ class SceneEditor {
             for(e in selectedPrefabs) {
                 lib.children.push(e);
             }
-            view.setClipboard(lib.serializeToDynamic(), "library");
+            view.setClipboard(lib.serializeToDynamic(), "prefab");
         }
     }
 
@@ -2401,19 +2389,6 @@ class SceneEditor {
             }
 
             addElements([p]);
-        }
-        else {
-            obj = view.getClipboard("library");
-            if(obj != null) {
-                var lib = hrt.prefab2.Prefab.createFromDynamic(obj).make(parent);
-                throw "aaaa";
-                // TODO(ces) : restore
-                /*for(c in lib.children) {
-                    autoName(c);
-                    parent.children.push(c);
-                }
-                addElements(lib.children);*/
-            }
         }
     }
 
@@ -2604,18 +2579,15 @@ class SceneEditor {
         var newElements = [];
         for(elt in elements) {
             var clone = elt.make(elt.parent);
-            /*var index = elt.parent.children.indexOf(elt) + 1;
-            clone.parent = elt.parent;
+            var index = elt.parent.children.indexOf(elt) + 1;
             elt.parent.children.remove(clone);
-            elt.parent.children.insert(index, clone);*/
+            elt.parent.children.insert(index, clone);
             autoName(clone);
-            //makeInstance(clone);
             newElements.push(clone);
 
             undoes.push(function(undo) {
                 if(undo) elt.parent.children.remove(clone);
-                // TODO(ces) : restore insert at index juste after the cloned element
-                else elt.parent.children.push(clone);
+                else elt.parent.children.insert(index, clone);
             });
         }
 
@@ -2839,7 +2811,7 @@ class SceneEditor {
     function update(dt:Float) {
         saveCam3D();
 
-        // TODO(ces) : Restore
+        // TODO(ces) : Restore 2d
         //@:privateAccess view.saveDisplayState("Camera2D", { x : context.shared.root2d.x - scene.s2d.width*0.5, y : context.shared.root2d.y - scene.s2d.height*0.5, z : context.shared.root2d.scaleX });
         if(gizmo != null) {
             if(!gizmo.moving) {
@@ -2861,12 +2833,12 @@ class SceneEditor {
         var parent = current == null ? sceneData : current;
         var grecent = [];
         // TODO(ces) : restore
-        /*var recents : Array<String> = ide.currentConfig.get("sceneeditor.newrecents", []);
+        var recents : Array<String> = ide.currentConfig.get("sceneeditor.newrecents", []);
         for( g in recents) {
-            var pmodel = hrt.prefab2.Library.getRegistered().get(g);
-            if (pmodel != null && checkAllowParent({cl : g, inf : pmodel.inf}, parent))
+            @:privateAccess var pmodel = hrt.prefab2.Prefab.registry.get(g);
+            if (pmodel != null && checkAllowParent(pmodel, parent))
                 grecent.push(getNewTypeMenuItem(g, parent, onMake));
-        }*/
+        }
         return grecent;
     }
 
