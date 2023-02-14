@@ -615,9 +615,7 @@ class EmitterObject extends h3d.scene.Object {
 
 					//shCtx.local3d = null; // Prevent shader.iterMaterials from adding our objet to the list incorectly
 
-					hrt.prefab.fx.BaseFX.getShaderAnims(shCtx, shader, shaderAnims);
-					var shader = Std.downcast(shCtx.custom, hxsl.Shader);
-					batch.material.mainPass.addShader(shader);
+					hrt.prefab.fx.BaseFX.getShaderAnims(shCtx, shader, shaderAnims, batch);
 				}
 			}
 
