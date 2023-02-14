@@ -2315,6 +2315,11 @@ class SceneEditor {
         @:bypassAccessor group.y = local.ty;
         @:bypassAccessor group.z = local.tz;
 
+        var params = new hrt.prefab2.Prefab.InstanciateContext(parent.findFirstLocal2d(), parent.findFirstLocal3d());
+        params.forceInstanciate = true;
+
+        group.instanciate(params);
+
         // TODO(ces) : restore ??
         /*var parentCtx = getContext(parent);
         if(parentCtx == null)
@@ -2744,7 +2749,7 @@ class SceneEditor {
             var prevIndex = prev.children.indexOf(elt);
 
             var obj3d = elt.to(Object3D);
-            var preserveTransform = Std.isOfType(toElt, hrt.prefab.fx.Emitter) || Std.isOfType(prev, hrt.prefab.fx.Emitter);
+            var preserveTransform = Std.isOfType(toElt, hrt.prefab2.fx.Emitter) || Std.isOfType(prev, hrt.prefab2.fx.Emitter);
             var toObj = getObject(toElt);
             var obj = getObject(elt);
             var prevState = null, newState = null;
@@ -2752,8 +2757,8 @@ class SceneEditor {
                 var mat = worldMat(obj);
                 var parentMat = worldMat(toObj);
                 parentMat.invert();
-                mat.multiply(mat, parentMat);
                 prevState = obj3d.saveTransform();
+                mat.multiply(mat, parentMat);
                 newState = makeTransform(mat);
             }
 
