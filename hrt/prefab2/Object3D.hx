@@ -305,5 +305,14 @@ class Object3D extends Prefab {
 		});
 	}
 
+	override function getHideProps() : hide.prefab2.HideProps {
+		// Check children
+		var cname = Type.getClassName(Type.getClass(this)).split(".").pop();
+		return {
+			icon : children == null || children.length > 0 ? "folder-open" : "genderless",
+			name : cname == "Object3D" ? "Group" : cname,
+		};
+	}
+
 #end // if editor
 }

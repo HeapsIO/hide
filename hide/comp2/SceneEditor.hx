@@ -399,7 +399,6 @@ class SceneEditor {
     public dynamic function onResize() {
     }
 
-    // TODO(ces) : handle
     function set_editorDisplay(v) {
         return editorDisplay = v;
     }
@@ -2312,35 +2311,35 @@ class SceneEditor {
         local.multiply(local, invParentMat);
         var group = new hrt.prefab2.Object3D(parent);
         autoName(group);
-        group.x = local.tx;
-        group.y = local.ty;
-        group.z = local.tz;
+        @:bypassAccessor group.x = local.tx;
+        @:bypassAccessor group.y = local.ty;
+        @:bypassAccessor group.z = local.tz;
 
         // TODO(ces) : restore ??
         /*var parentCtx = getContext(parent);
         if(parentCtx == null)
             parentCtx = context;
         group.make(parentCtx);
-        var groupCtx = getContext(group);
+        var groupCtx = getContext(group);*/
 
         var effectFunc = reparentImpl(elts, group, 0);
         undo.change(Custom(function(undo) {
             if(undo) {
                 group.parent = null;
-                context.shared.contexts.remove(group);
+                //context.shared.contexts.remove(group);
                 effectFunc(true);
             }
             else {
                 group.parent = parent;
-                context.shared.contexts.set(group, groupCtx);
+                //context.shared.contexts.set(group, groupCtx);
                 effectFunc(false);
             }
             if(undo)
                 refresh(()->selectElements([],NoHistory));
             else
                 refresh(()->selectElements([group],NoHistory));
-        }));*/
-        //refresh(effectFunc(false) ? Full : Partial, () -> selectElements([group],NoHistory));
+        }));
+        refresh(effectFunc(false) ? Full : Partial, () -> selectElements([group],NoHistory));
     }
 
     function onCopy() {
@@ -2759,7 +2758,7 @@ class SceneEditor {
             }
 
             effects.push(function(undo) {
-                var refresh = false;
+                var refresh = true;
                 if( undo ) {
                     refresh = !removeInstance(elt);
                     elt.parent = prev;
@@ -3188,7 +3187,7 @@ class SceneEditor {
             var o = Std.downcast(elt, Object3D);
             while(o != null) {
                 mat.multiply(mat, o.getTransform());
-                o = o.parent.to(hrt.prefab2.Object3D);
+                o = o.parent != null ? o.parent.to(hrt.prefab2.Object3D) : null;
             }
             return mat;
         }

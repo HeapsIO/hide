@@ -2507,8 +2507,14 @@ class SceneEditor {
 	}
 
 	function groupSelection() {
-		if(!canGroupSelection())
+		if(!canGroupSelection()) {
+            var elts = curEdit.rootElements;
+            if (elts.length == 0) {
+                
+            }
+
 			return;
+        }
 
 		var elts = curEdit.rootElements;
 		var parent = elts[0].parent;
