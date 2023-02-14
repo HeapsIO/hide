@@ -85,7 +85,6 @@ typedef ObjectAnimation = {
 };
 
 class BaseFX extends hrt.prefab.Library {
-	public static var useAutoPerInstance = #if editor true #else false #end;
 
 	@:s public var duration : Float;
 	@:s public var startDelay : Float;
@@ -165,7 +164,7 @@ class BaseFX extends hrt.prefab.Library {
 		return ret;
 	}
 
-	public static function getShaderAnims(ctx: Context, elt: PrefabElement, anims: Array<ShaderAnimation>, ?batch: h3d.scene.MeshBatch) {
+	public static function getShaderAnims(ctx: Context, elt: PrefabElement, anims: Array<ShaderAnimation>) {
 		if(Std.downcast(elt, hrt.prefab.fx.Emitter) == null) {
 			for(c in elt.children) {
 				getShaderAnims(ctx, c, anims);
@@ -184,20 +183,6 @@ class BaseFX extends hrt.prefab.Library {
 			anim.shader = shCtx.custom;
 			anim.params = params;
 			anims.push(anim);
-			if(batch != null)  @:privateAccess {
-				if(useAutoPerInstance) {
-					var perInstance = batch.forcedPerInstance;
-					if(perInstance == null) {
-						perInstance = [];
-						batch.forcedPerInstance = perInstance;
-					}
-					perInstance.push({
-						shader: anim.shader.shader.data.name,
-						params: anim.params.map(p -> p.def.name)
-					});
-				}
-				batch.material.mainPass.addShader(anim.shader);
-			}
 		}
 	}
 

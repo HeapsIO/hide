@@ -574,6 +574,7 @@ class EmitterObject extends h3d.scene.Object {
 		}
 
 		if(meshPrimitive != null ) {
+
 			batch = new h3d.scene.MeshBatch(meshPrimitive, meshMaterial, null);
 			addChildAt(batch, 0);
 			batch.name = "emitter";
@@ -614,7 +615,9 @@ class EmitterObject extends h3d.scene.Object {
 
 					//shCtx.local3d = null; // Prevent shader.iterMaterials from adding our objet to the list incorectly
 
-					hrt.prefab.fx.BaseFX.getShaderAnims(shCtx, shader, shaderAnims, batch);
+					hrt.prefab.fx.BaseFX.getShaderAnims(shCtx, shader, shaderAnims);
+					var shader = Std.downcast(shCtx.custom, hxsl.Shader);
+					batch.material.mainPass.addShader(shader);
 				}
 			}
 
