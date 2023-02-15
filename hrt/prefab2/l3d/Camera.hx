@@ -2,6 +2,8 @@ package hrt.prefab2.l3d;
 import hrt.prefab2.rfx.RendererFX;
 import h3d.scene.Object;
 
+// NOTE(ces) : Not Tested
+
 class CameraSyncObject extends h3d.scene.Object {
 
 	public var enable : Bool;
