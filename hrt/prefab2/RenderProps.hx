@@ -63,18 +63,17 @@ class RenderProps extends Object3D {
         renderer.props = props;
         for(fx in renderer.effects)
             fx.dispose();
-        // TODO(ces) : restore
-        /*renderer.effects = [for( v in getAll(hrt.prefab.rfx.RendererFX,true) ) v];
-        var env = getOpt(hrt.prefab.l3d.Environment);
+
+        renderer.effects = [for( v in getAll(hrt.prefab2.rfx.RendererFX,true) ) v];
+        var env = getOpt(hrt.prefab2.l3d.Environment);
         if( env != null )
-            env.applyToRenderer(renderer);*/
+            env.applyToRenderer(renderer);
         renderer.refreshProps();
         return true;
     }
 
     #if editor
 
-    // TODO(ces) : implement
     override function edit(ctx) {
         super.edit(ctx);
         var renderer = ctx.scene.s3d.renderer;
@@ -97,10 +96,9 @@ class RenderProps extends Object3D {
 
     override function getHideProps() : hide.prefab2.HideProps {
         return { icon : "sun-o", name : "RenderProps", allowChildren : function(p) {
-            // TODO(ces) : implement
-            return false;/*Library.isOfType(t,hrt.prefab.rfx.RendererFX)
-                || Library.isOfType(t,Light)
-                || Library.isOfType(t,hrt.prefab.l3d.Environment);*/
+            return Prefab.isOfType(p,hrt.prefab2.rfx.RendererFX)
+                || Prefab.isOfType(p,Light)
+                || Prefab.isOfType(p,hrt.prefab2.l3d.Environment);
         }};
     }
 

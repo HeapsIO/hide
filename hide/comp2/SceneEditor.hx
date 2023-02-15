@@ -947,6 +947,7 @@ class SceneEditor {
             var path = view.config.getLocal("scene.renderProps");
             if (path != null) {
                 var refPrefab : hrt.prefab2.Reference = cast hrt.prefab2.Prefab.createFromPath(path);
+                refPrefab.shared.scene = scene;
                 refPrefab.make(null, root2d, root3d);
                 if( @:privateAccess refPrefab.refInstance != null ) {
                     var renderProps = @:privateAccess refPrefab.refInstance.get(hrt.prefab2.RenderProps);

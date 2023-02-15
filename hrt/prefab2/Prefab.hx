@@ -28,6 +28,10 @@ class ContextShared {
     public var cache : h3d.prim.ModelCache = new h3d.prim.ModelCache();
     public var isPrototype = true;
     public var originalContext : InstanciateContext = null;
+
+#if editor
+    public var scene : hide.comp2.Scene = null;
+#end
 }
 
 class InstanciateContext {
