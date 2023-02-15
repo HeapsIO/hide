@@ -125,6 +125,22 @@ class Object3D extends Prefab {
         rotationZ = t.rotationZ;
     }
 
+	public function getAbsPos() {
+		var p = parent;
+		while( p != null ) {
+			var obj = p.to(Object3D);
+			if( obj == null ) {
+				p = p.parent;
+				continue;
+			}
+			var m = getTransform();
+			var abs = obj.getAbsPos();
+			m.multiply3x4(m, abs);
+			return m;
+		}
+		return getTransform();
+	}
+
     public function getDisplayFilters() : Array<String> {
         return [];
     }

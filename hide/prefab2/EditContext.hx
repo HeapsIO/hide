@@ -123,7 +123,7 @@ class EditContext {
             path.pop();
         }
 
-        // TODO(ces) : restore
+        //TODO(ces) : restore
         //for( o in rootContext.shared.root3d )
         //	getRec([], o);
 
