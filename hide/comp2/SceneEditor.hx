@@ -2832,7 +2832,6 @@ class SceneEditor {
     function getNewRecentContextMenu(current, ?onMake: PrefabElement->Void=null) : Array<hide.comp.ContextMenu.ContextMenuItem> {
         var parent = current == null ? sceneData : current;
         var grecent = [];
-        // TODO(ces) : restore
         var recents : Array<String> = ide.currentConfig.get("sceneeditor.newrecents", []);
         for( g in recents) {
             @:privateAccess var pmodel = hrt.prefab2.Prefab.registry.get(g);

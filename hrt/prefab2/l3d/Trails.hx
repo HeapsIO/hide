@@ -798,7 +798,6 @@ class Trails extends Object3D {
     
 
     override function makeObject3d(parent3d: h3d.scene.Object) : h3d.scene.Object {
-        // TODO(ces) : Revert handling of multiple trails
         return create(parent3d, numTrails);
     }
 

@@ -15,24 +15,15 @@ class EditContext {
     function get_ide() return hide.Ide.inst;
 
     public function onChange(p : Prefab, propName : String) {
-        // TODO(ces) : restore
 
         p.updateInstance(propName);
 
-        // var ctx = getContext(p);
-        // scene.setCurrent();
-        // if(ctx != null) {
-        // 	p.updateInstance(ctx, propName);
-        // 	var parent = p.parent;
-        // 	while( parent != null ) {
-        // 		var pr = parent.getHideProps();
-        // 		if( pr.onChildUpdate != null ) pr.onChildUpdate(p);
-        // 		parent = parent.parent;
-        // 	}
-        // }
-        //for( ctx2 in rootContext.shared.getContexts(p) )
-        //	if( ctx2 != ctx )
-        //		p.updateInstance(ctx2, propName);
+        var parent = p.parent;
+        while( parent != null ) {
+            var pr = parent.getHideProps();
+            if( pr.onChildUpdate != null ) pr.onChildUpdate(p);
+                parent = parent.parent;
+        }
     }
 
     public function getCurrentProps( p : Prefab ) : Element {

@@ -177,8 +177,7 @@ class PolygonEditor {
     }
 
     inline function refreshInteractive() {
-        // TODO(ces) : restore
-        //editContext.scene.editor.refreshInteractive(polygonPrefab);
+        editContext.scene.editor.refreshInteractive(polygonPrefab);
     }
 
     public function update( ?propName : String) {
