@@ -277,9 +277,9 @@ class Gizmo extends h3d.scene.Object {
 					var changingStepViewer = new ChangingStepViewer(this, "" + moveStep);
 				}*/
 			}
-			if(mode == MoveX || mode == MoveXY || mode == MoveZX) vec.x = moveSnap(delta.dot(startMat.front().toPoint()));
-			if(mode == MoveY || mode == MoveYZ || mode == MoveXY) vec.y = moveSnap(delta.dot(startMat.right().toPoint()));
-			if(mode == MoveZ || mode == MoveZX || mode == MoveYZ) vec.z = moveSnap(delta.dot(startMat.up().toPoint()));
+			if(mode == MoveX || mode == MoveXY || mode == MoveZX) vec.x = scene.editor.snap(delta.dot(startMat.front().toPoint()),scene.editor.snapMoveStep);
+			if(mode == MoveY || mode == MoveYZ || mode == MoveXY) vec.y = scene.editor.snap(delta.dot(startMat.right().toPoint()),scene.editor.snapMoveStep);
+			if(mode == MoveZ || mode == MoveZX || mode == MoveYZ) vec.z = scene.editor.snap(delta.dot(startMat.up().toPoint()),scene.editor.snapMoveStep);
 
 			if(!axisScale) {
 				vec.transform3x3(startMat);
@@ -295,9 +295,14 @@ class Gizmo extends h3d.scene.Object {
 					tz.visible = true;
 					tz.text = "Z : "+ Math.round(vec.z*100)/100.;
 				}
-				x = scene.editor.snap(startPos.x + vec.x, scene.editor.snapMoveStep);
-				y = scene.editor.snap(startPos.y + vec.y, scene.editor.snapMoveStep);
-				z = scene.editor.snap(startPos.z + vec.z, scene.editor.snapMoveStep);
+                x = startPos.x + vec.x;
+				y = startPos.y + vec.y;
+				z = startPos.z + vec.z;
+                if (scene.editor.snapForceOnGrid) {
+                    x = scene.editor.snap(x, scene.editor.snapMoveStep);
+                    y = scene.editor.snap(y, scene.editor.snapMoveStep);
+                    z = scene.editor.snap(z, scene.editor.snapMoveStep);
+                }
 			}
 
 			if(mode == Scale) {
@@ -313,7 +318,8 @@ class Gizmo extends h3d.scene.Object {
 				var v2 = curPt.sub(startPos);
 				v2.normalize();
 
-				var angle = Math.atan2(v1.cross(v2).dot(norm), v1.dot(v2)) * speedFactor;
+				var angle = scene.editor.snap(Math.radToDeg(Math.atan2(v1.cross(v2).dot(norm), v1.dot(v2)) * speedFactor), scene.editor.snapRotateStep);
+                angle = Math.degToRad(angle);
 
 				if (mode == RotateX && angle != 0) {
 					tx.visible = true;
@@ -335,9 +341,9 @@ class Gizmo extends h3d.scene.Object {
 
 			if(onMove != null) {
 				if(axisScale && mode != Scale) {
-					vec.x = scaleFunc(vec.x);
-					vec.y = scaleFunc(vec.y);
-					vec.z = scaleFunc(vec.z);
+                    vec.x = scene.editor.snap(scaleFunc(vec.x), scene.editor.snapScaleStep);
+					vec.y = scene.editor.snap(scaleFunc(vec.y), scene.editor.snapScaleStep);
+					vec.z = scene.editor.snap(scaleFunc(vec.z), scene.editor.snapScaleStep);
 					if (vec.x != 1) {
 						tx.visible = true;
 						tx.text = ""+ Math.round(vec.x*100)/100.;

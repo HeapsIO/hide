@@ -91,10 +91,25 @@ class SnapSettingsPopup extends hide.comp.Popup {
                         editor.snapScaleStep = value;
                 }
                 editor.updateGrid();
+                editor.saveSnapSettings();
             });
             form_div.append(input);
             form_div.append(new Element('<label for="snap$value" class="left">$value${editMode==Rotation ? "°" : ""}</label>'));
 
+        }
+
+        
+        {
+            var input = new Element('<input type="checkbox" name="forceSnapGrid" id="forceSnapGrid"/>').appendTo(form_div);
+            new Element('<label for="forceSnapGrid" class="left">Force On Grid</label>').appendTo(form_div);
+
+            if (editor.snapForceOnGrid)
+                input.get(0).toggleAttribute("checked", true);
+
+            input.change((e) -> {
+                editor.snapForceOnGrid = !editor.snapForceOnGrid;
+                editor.saveSnapSettings();
+            });
         }
     }
 }
@@ -203,6 +218,7 @@ class SceneEditor {
     public var snapMoveStep = 1.0;
     public var snapRotateStep = 30.0;
     public var snapScaleStep = 1.0;
+    public var snapForceOnGrid = false;
 
     public var localTransform = true;
     public var cameraController : CameraControllerBase;
@@ -593,6 +609,26 @@ class SceneEditor {
         @:privateAccess view.saveDisplayState("Camera", toSave);
     }
 
+    function loadSnapSettings() {
+        // node : Snap toggle is already handled by the toolbar
+        function sanitize(value:Dynamic, def: Dynamic) {
+            if (value == null || value == 0.0)
+                return def;
+            return value;
+        }
+        @:privateAccess snapMoveStep = sanitize(view.getDisplayState("snapMoveStep"), snapMoveStep);
+        @:privateAccess snapRotateStep = sanitize(view.getDisplayState("snapRotateStep"), snapRotateStep);
+        @:privateAccess snapScaleStep = sanitize(view.getDisplayState("snapScaleStep"), snapScaleStep);
+        @:privateAccess snapForceOnGrid = view.getDisplayState("snapForceOnGrid");
+    }
+
+    public function saveSnapSettings() {
+        @:privateAccess view.saveDisplayState("snapMoveStep", snapMoveStep);
+        @:privateAccess view.saveDisplayState("snapRotateStep", snapRotateStep);
+        @:privateAccess view.saveDisplayState("snapScaleStep", snapScaleStep);
+        @:privateAccess view.saveDisplayState("snapForceOnGrid", snapForceOnGrid);
+    }
+
     function toggleSnap(?force: Bool) {
         if (force != null)
             snapToggle = force;
@@ -670,7 +706,8 @@ class SceneEditor {
         basis.visible = true;
 
         loadSavedCameraController3D();
-
+        loadSnapSettings();
+        
         scene.s2d.defaultSmooth = true;
         root2d.x = scene.s2d.width >> 1;
         root2d.y = scene.s2d.height >> 1;
@@ -1225,32 +1262,31 @@ class SceneEditor {
                     }
                     var obj3d = objects3d[i];
                     var euler = newMat.getEulerAngles();
-                    if (translate != null && translate.length() > 0.0001) {
-                        obj3d.x = quantize(snap(newMat.tx, snapMoveStep), posQuant);
-                        obj3d.y = quantize(snap(newMat.ty, snapMoveStep), posQuant);
-                        obj3d.z = quantize(snap(newMat.tz, snapMoveStep), posQuant);
+                    if (translate != null && translate.length() > 0.0001 && snapForceOnGrid) {
+                        obj3d.x = snap(quantize(newMat.tx, posQuant), snapMoveStep);
+                        obj3d.y = snap(quantize(newMat.ty, posQuant), snapMoveStep);
+                        obj3d.z = snap(quantize(newMat.tz, posQuant), snapMoveStep);
+                    }
+                    else { // Don't snap translation if the primary action wasn't a translation (i.e. Rotation around a pivot)
+                        obj3d.x = quantize(newMat.tx, posQuant);
+                        obj3d.y = quantize(newMat.ty, posQuant);
+                        obj3d.z = quantize(newMat.tz, posQuant);
                     }
 
                     if (rot != null) {
-                        obj3d.rotationX = quantize(snap(M.radToDeg(euler.x), snapRotateStep), rotQuant);
-                        obj3d.rotationY = quantize(snap(M.radToDeg(euler.y), snapRotateStep), rotQuant);
-                        obj3d.rotationZ = quantize(snap(M.radToDeg(euler.z), snapRotateStep), rotQuant);
+                        obj3d.rotationX = quantize(M.radToDeg(euler.x), rotQuant);
+                        obj3d.rotationY = quantize(M.radToDeg(euler.y), rotQuant);
+                        obj3d.rotationZ = quantize(M.radToDeg(euler.z), rotQuant);
                     }
-                    if(scale != null) {
-                        inline function scaleSnap(x: Float) {
-                            if(K.isDown(K.CTRL)) {
-                                var step = K.isDown(K.SHIFT) ? 0.5 : 1.0;
-                                x = Math.round(x / step) * step;
-                            }
-                            return x;
-                        }
-                        var s = newMat.getScale();
-                        obj3d.scaleX = quantize(snap(s.x, snapScaleStep), scaleQuant);
-						obj3d.scaleY = quantize(snap(s.y, snapScaleStep), scaleQuant);
-						obj3d.scaleZ = quantize(snap(s.z, snapScaleStep), scaleQuant);
-                    }
-                    obj3d.applyTransform();
-                }
+
+					if(scale != null) {
+						var s = newMat.getScale();
+						obj3d.scaleX = quantize(s.x, scaleQuant);
+						obj3d.scaleY = quantize(s.y, scaleQuant);
+						obj3d.scaleZ = quantize(s.z, scaleQuant);
+					}
+					obj3d.applyTransform();
+				}
             }
 
             gizmo.onFinishMove = function() {
