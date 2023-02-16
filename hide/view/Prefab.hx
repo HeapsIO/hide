@@ -836,6 +836,8 @@ class Prefab extends FileView {
 		}
 	}
 
+    
+
 	function getDisplayColor(p: PrefabElement) : Null<Int> {
 		var typeId = p.getCdbType();
 		if(typeId != null) {

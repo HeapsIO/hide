@@ -33,6 +33,7 @@ class Resource extends hxd.res.Resource {
         var data = loadData();
         prefab = Std.downcast(Prefab.createFromDynamic(data), Object3D);
         prefab.shared.source = entry.path;
+        prefab.shared.currentPath = entry.path;
         cacheVersion = CACHE_VERSION;
         onPrefabLoaded(prefab);
         watch(function() {}); // auto lib reload

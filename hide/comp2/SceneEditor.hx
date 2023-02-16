@@ -291,6 +291,8 @@ class SceneEditor {
         this.view = view;
         this.sceneData = data;
 
+        sceneData.shared.currentPath = view.state.path;
+
         event = new hxd.WaitEvent();
 
         var propsEl = new Element('<div class="props"></div>');

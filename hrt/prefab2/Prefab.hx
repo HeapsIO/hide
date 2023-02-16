@@ -28,6 +28,7 @@ class ContextShared {
     public var cache : h3d.prim.ModelCache = new h3d.prim.ModelCache();
     public var isPrototype = true;
     public var originalContext : InstanciateContext = null;
+    public var currentPath : String = "";
 
 #if editor
     public var scene : hide.comp2.Scene = null;
@@ -196,12 +197,14 @@ class Prefab {
     // Hierarchical Helpers
 
     public function findFirstLocal2d() : h2d.Object {
-        return findParent((p) -> p.getLocal2d(), true);
+        var l2d = findParent((p) -> p.getLocal2d(), true);
+        return l2d != null ? l2d : shared.originalContext.local2d;
     }
 
     // Find the first local3d object, either in this object or it's parents
     public function findFirstLocal3d() : h3d.scene.Object {
-        return findParent((p) -> p.getLocal3d(), true);
+        var l3d = findParent((p) -> p.getLocal3d(), true);
+        return l3d != null ? l3d : shared.originalContext.local3d;
     }
 
     /**
@@ -532,7 +535,7 @@ class Prefab {
     }
 
     /*
-        Private overridable API
+        overridable API
     */
 
     /**
@@ -566,17 +569,80 @@ class Prefab {
         params.local3d = old3d;
     }
 
-	private function loadModel( path : String ) {
+	function loadModel( path : String ) {
 		return shared.cache.loadModel(hxd.res.Loader.currentInstance.load(path).toModel());
 	}
 
-    private function loadAnimation( path : String ) {
+    function loadAnimation( path : String ) {
         return shared.cache.loadAnimation(hxd.res.Loader.currentInstance.load(path).toModel());
     }
 
-    private function loadTexture( path : String, async : Bool = false ) {
+    function loadTexture( path : String, async : Bool = false ) {
 		return shared.cache.loadTexture(null, path, async);
 	}
+
+    public function getPrefabDatPath(file : String, ext : String, prefab : String ) {
+		var datPath = new haxe.io.Path(shared.currentPath);
+		datPath.ext = "dat";
+		var path = new haxe.io.Path(datPath.toString() + "/" + prefab + "/" + file);
+		path.ext = ext;
+		return path.toString();
+	}
+
+	function loadPrefabDat(file : String, ext : String, prefab : String) : hxd.res.Any {
+		return try hxd.res.Loader.currentInstance.load(getPrefabDatPath(file,ext,prefab)) catch( e : hxd.res.NotFound ) null;
+	}
+
+    #if editor
+
+    function savePrefabDat(file : String, ext:String, p : String, bytes : haxe.io.Bytes ){
+		var path = new haxe.io.Path(shared.currentPath);
+		path.ext = "dat";
+		var datDir = path.toString();
+		var instanceDir = datDir + "/" + p;
+
+		if(!sys.FileSystem.isDirectory( hide.Ide.inst.getPath(datDir)))
+			sys.FileSystem.createDirectory( hide.Ide.inst.getPath(datDir));
+		if(!sys.FileSystem.isDirectory( hide.Ide.inst.getPath(instanceDir)))
+			sys.FileSystem.createDirectory( hide.Ide.inst.getPath(instanceDir));
+
+		var path = new haxe.io.Path("");
+		path.dir = instanceDir;
+		path.file = file;
+		path.ext = ext;
+		var file = hide.Ide.inst.getPath(path.toString());
+
+		if( bytes == null ){
+			try sys.FileSystem.deleteFile(file) catch( e : Dynamic ) {};
+			var p = hide.Ide.inst.getPath(instanceDir);
+			if(sys.FileSystem.isDirectory(p)){
+				var dir = sys.FileSystem.readDirectory(p);
+				if(dir.length == 0) sys.FileSystem.deleteDirectory(p);
+			}
+			var p = hide.Ide.inst.getPath(datDir);
+			if(sys.FileSystem.isDirectory(p)){
+				var dir = sys.FileSystem.readDirectory(p);
+				if(dir.length == 0) sys.FileSystem.deleteDirectory(p);
+			}
+			return;
+		}else{
+			sys.io.File.saveBytes(file, bytes);
+		}
+	}
+
+    function saveTexture(file:String, bytes:haxe.io.Bytes, dir:String, ext:String) {
+		var path = new haxe.io.Path("");
+		path.dir = dir + "/";
+		path.file = file;
+		path.ext = ext;
+
+		if(!sys.FileSystem.isDirectory( hide.Ide.inst.getPath(dir)))
+			sys.FileSystem.createDirectory( hide.Ide.inst.getPath(dir));
+
+		var file = hide.Ide.inst.getPath(path.toString());
+		sys.io.File.saveBytes(file, bytes);
+	}
+    #end
 
     /**
         Override this function to create runtime objects from this prefab

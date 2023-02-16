@@ -58,7 +58,7 @@ class Object3D extends Prefab {
 	}
 
     /* Override makeObject3d instead of this */
-    override final function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) {
+    override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) {
         local3d = makeObject3d(ctx.local3d);
         if (local3d != null)
             local3d.name = name;
