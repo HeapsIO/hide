@@ -42,7 +42,7 @@ class Sao extends RendererFX {
 			r.mark("SSAO");
 			if( sao == null ) sao = new h3d.pass.ScalableAO();
 			var ctx = r.ctx;
-			var saoTex = r.allocTarget("sao",false, size);
+			var saoTex = r.allocTarget("sao",false, size); // TODO : R8
 			var normal : hxsl.ChannelTexture = ctx.getGlobal("normalMap");
 			var depth : hxsl.ChannelTexture = ctx.getGlobal("depthMap");
 			var occlu : hxsl.ChannelTexture = ctx.getGlobal("occlusionMap");
