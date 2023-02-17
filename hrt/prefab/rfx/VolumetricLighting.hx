@@ -127,7 +127,7 @@ class VolumetricLighting extends RendererFX {
 
 			pass.shader.darkColor = h3d.Vector.fromColor(darkColor);
 			pass.shader.brightColor = h3d.Vector.fromColor(brightColor);
-			pass.shader.lightColor = hxd.Math.pow(sun.color, gamma);
+			pass.shader.lightColor.set(hxd.Math.pow(sun.color.x, gamma), hxd.Math.pow(sun.color.y, gamma), hxd.Math.pow(sun.color.z, gamma));
 			var lightDir = sun.getAbsPos().front();
 			lightDir.normalize();
 			pass.shader.lightDir.load(lightDir);
