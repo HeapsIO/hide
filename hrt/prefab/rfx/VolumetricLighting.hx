@@ -72,7 +72,7 @@ class VolumetricLightingShader extends hrt.shader.PbrShader {
 				fog += zMax - shadowBias > shadowDepth ? 0.0 : getFogDensity(pos.z) / float(steps);
 			}
 
-			var color = mix(darkColor, brightColor, fog) * pow(lightColor, vec3(gamma));
+			var color = mix(darkColor, brightColor, fog) * lightColor;
 			density *= mix(darkOpacity, brightOpacity, fog);
 
 
@@ -127,7 +127,7 @@ class VolumetricLighting extends RendererFX {
 
 			pass.shader.darkColor = h3d.Vector.fromColor(darkColor);
 			pass.shader.brightColor = h3d.Vector.fromColor(brightColor);
-			pass.shader.lightColor = sun.color;
+			pass.shader.lightColor = hxd.Math.pow(sun.color, gamma);
 			var lightDir = sun.getAbsPos().front();
 			lightDir.normalize();
 			pass.shader.lightDir.load(lightDir);
@@ -195,7 +195,6 @@ class VolumetricLighting extends RendererFX {
 				<dt>Dark opacity</dt><dd><input type="range" min="0" max="1" field="darkOpacity"/></dd>
 				<dt>Bright opacity</dt><dd><input type="range" min="0" max="1" field="brightOpacity"/></dd>
 				<dt>Dark color</dt><dd><input type="color" field="darkColor"/></dd>
-				<dt>Bright color</dt><dd><input type="color" field="brightColor"/></dd>
 				<dt>Bright color</dt><dd><input type="color" field="brightColor"/></dd>
 				<dt>Gamma</dt><dd><input type="range" min="1" max="2" field="gamma"/></dd>
 			</div>
