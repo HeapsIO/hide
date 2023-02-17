@@ -88,6 +88,11 @@ class Prefab {
     **/
     @:s public var locked : Bool = false;
 
+	/**
+		The associated source file (an image, a 3D model, etc.) if the prefab type needs it.
+	**/
+	@:s public var source : String;
+
     /**
         The parent of the prefab in the tree view
     **/
