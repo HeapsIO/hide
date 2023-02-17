@@ -1,4 +1,4 @@
-package hrt.prefab.l3d;
+package hrt.prefab2.l3d;
 
 class ModelLibraryOptimizer extends Object3D {
 
