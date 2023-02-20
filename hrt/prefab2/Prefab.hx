@@ -574,6 +574,14 @@ class Prefab {
         params.local3d = old3d;
     }
 
+    public function loadDir(p : String, ?dir : String ) : Array<hxd.res.Any> {
+		var datPath = new haxe.io.Path(shared.currentPath);
+		datPath.ext = "dat";
+		var path = datPath.toString() + "/" + p;
+		if(dir != null) path += "/" + dir;
+		return try hxd.res.Loader.currentInstance.dir(path) catch( e : hxd.res.NotFound ) null;
+	}
+
 	function loadModel( path : String ) {
 		return shared.cache.loadModel(hxd.res.Loader.currentInstance.load(path).toModel());
 	}
