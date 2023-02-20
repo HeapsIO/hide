@@ -57,12 +57,14 @@ class Refraction extends RendererFX {
 	var passes : h3d.pass.PassList;
 	override function begin( r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {
 		if( step == BeforeTonemapping ) {
-			r.mark("Refraction");
 
 			passes = r.get("refraction");
 			cullPasses(passes, function(col) {
 				return col.inFrustum(r.ctx.camera.frustum);
 			});
+
+			r.mark("Refraction");
+
 			var it = passes.current;
 			 while (it != null) {
 				if ( it.pass.getShaderByName("hrt.prefab.rfx.RefractionShader") == null)
