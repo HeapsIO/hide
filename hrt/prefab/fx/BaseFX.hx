@@ -182,6 +182,7 @@ class BaseFX extends hrt.prefab.Library {
 			if(shCtx.custom == null) continue;
 			var params = makeShaderParams(ctx, shader);
 			var shader : hxsl.Shader = shCtx.custom;
+			/*
 			if(useAutoPerInstance && batch != null)  @:privateAccess {
 				var perInstance = batch.forcedPerInstance;
 				if(perInstance == null) {
@@ -192,7 +193,7 @@ class BaseFX extends hrt.prefab.Library {
 					shader: shader.shader.data.name,
 					params: params == null ? emptyParams : params.map(p -> p.def.name)
 				});
-			}
+			}*/
 
 			if(params == null) continue;
 
