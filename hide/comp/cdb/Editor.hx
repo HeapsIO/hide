@@ -1284,25 +1284,28 @@ class Editor extends Component {
 
 		var scope = table.getScope();
 
-		if (currentValue != null) {
-			var newId : String;
-			var idWithScope : String;
-			do {
-				currentValue+=1;
-				var valStr = Std.string(currentValue);
+        if (currentValue == null) {
+            currentValue = 0;
+            strIdx = 0;
+        }
 
-				// Pad with zeroes
-				for (i in 0...strIdx - valStr.length) {
-					valStr = "0" + valStr;
-				}
-				newId = str.substr(0, -strIdx) + valStr;
-				idWithScope = if(column.scope != null)  table.makeId(scope, column.scope, newId) else newId;
-			}
-			while (!isUniqueID(table.getRealSheet(), {}, idWithScope));
 
-			return newId;
-		}
-		return "";
+        var newId : String;
+        var idWithScope : String;
+        do {
+            currentValue+=1;
+            var valStr = Std.string(currentValue);
+
+            // Pad with zeroes
+            for (i in 0...strIdx - valStr.length) {
+                valStr = "0" + valStr;
+            }
+            newId = str.substr(0, str.length-strIdx) + valStr;
+            idWithScope = if(column.scope != null)  table.makeId(scope, column.scope, newId) else newId;
+        }
+        while (!isUniqueID(table.getRealSheet(), {}, idWithScope));
+
+        return newId;
 	}
 
 	public function duplicateLine( table : Table, index = 0 ) {
