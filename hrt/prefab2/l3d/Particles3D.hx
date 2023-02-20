@@ -5,7 +5,6 @@ package hrt.prefab2.l3d;
 class Particles3D extends Object3D {
 
 	@:s var data : Any;
-    @:s var source : String;
 
 	public function new(?parent) {
 		super(parent);

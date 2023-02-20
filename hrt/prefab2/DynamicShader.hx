@@ -6,8 +6,6 @@ class DynamicShader extends Shader {
     var shaderClass : Class<hxsl.Shader>;
     @:s var isInstance : Bool;
 
-    @:s var source : String;
-
     public function new(?parent) {
         super(parent);
     }

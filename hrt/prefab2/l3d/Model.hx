@@ -6,7 +6,6 @@ class Model extends Object3D {
     @:s public var lockAnimation : Bool = false;
     @:s public var retargetAnim : Bool = false;
     @:s public var retargetIgnore : String = null;
-    @:s public var source : String = null;
 
 
     public function new(?parent) {
