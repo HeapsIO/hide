@@ -80,7 +80,8 @@ class OrthoController extends CameraControllerBase {
 			sceneEditor.view.keys.pushDisable();
 
 			pushing = e.button;
-			if (pushing == 0 && K.isDown(K.ALT)) pushing = 2;
+			if (pushing == 0 && K.isDown(K.ALT))
+                pushing = 2;
 			pushTime = haxe.Timer.stamp();
 			pushStartX = pushX = e.relX;
 			pushStartY = pushY = e.relY;
@@ -123,7 +124,7 @@ class OrthoController extends CameraControllerBase {
 					if(startPush != null && startPush.distance(new h2d.col.Point(e.relX, e.relY)) > 3) {
 						var angle = hxd.Math.abs(Math.PI/2 - phi);
 						if(K.isDown(K.SHIFT) || angle < groundSnapAngle) {
-							var m = 0.001 * curPos.x * panSpeed / 25;
+							var m = orthoZoom * panSpeed / 25;
 							pan(-(e.relX - pushX) * m, (e.relY - pushY) * m);
 						}
 						else {
@@ -202,6 +203,8 @@ class OrthoController extends CameraControllerBase {
 		ctx.elapsedTime = hxd.Timer.dt;
 		super.sync(ctx);
 		ctx.elapsedTime = old;
+
+        trace(orthoZoom, curPos.x, cam.m, cam.getInverseViewProj());
 	}
 }
 
