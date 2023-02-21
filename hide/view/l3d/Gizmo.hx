@@ -142,7 +142,7 @@ class Gizmo extends h3d.scene.Object {
 		setup("yAxis", 0x00ff00, MoveY);
 		setup("zAxis", 0x0000ff, MoveZ);
 		setup("xy", 0xffff00, MoveXY);
-		setup("xz", 0x01a396, MoveZX);
+		setup("xz", 0xffff00, MoveZX);
 		setup("yz", 0xffff00, MoveYZ);
 		setup("xRotate", 0xff0000, RotateX);
 		setup("yRotate", 0x00ff00, RotateY);
