@@ -88,6 +88,7 @@ typedef ObjectAnimation = {
 };
 
 class BaseFX extends Object3D {
+	public static var useAutoPerInstance = #if editor true #else false #end;
 
 	@:s public var duration : Float;
 	@:s public var startDelay : Float;
@@ -166,10 +167,12 @@ class BaseFX extends Object3D {
 		return ret;
 	}
 
-	public static function getShaderAnims(elt: PrefabElement, anims: Array<ShaderAnimation>) {
+	static var emptyParams : Array<String> = [];
+	public static function getShaderAnims(elt: PrefabElement, anims: Array<ShaderAnimation>, ?batch: h3d.scene.MeshBatch) {
+		// Init all animations recursively except Emitter ones (called in Emitter)
 		if(Std.downcast(elt, hrt.prefab2.fx.Emitter) == null) {
 			for(c in elt.children) {
-				getShaderAnims(c, anims);
+				getShaderAnims(c, anims, batch);
 			}
 		}
 
@@ -179,12 +182,29 @@ class BaseFX extends Object3D {
 
 		if (shader.shader != null) {
 			var params = makeShaderParams(shader);
+			/*
+			if(useAutoPerInstance && batch != null)  @:privateAccess {
+				var perInstance = batch.forcedPerInstance;
+				if(perInstance == null) {
+					perInstance = [];
+					batch.forcedPerInstance = perInstance;
+				}
+				perInstance.push({
+					shader: shader.shader.data.name,
+					params: params == null ? emptyParams : params.map(p -> p.def.name)
+				});
+			}*/
+
 			if(params != null) {
 				var anim = Std.isOfType(shader.shader,hxsl.DynamicShader) ? new ShaderDynAnimation() : new ShaderAnimation();
 				anim.shader = shader.shader;
 				anim.params = params;
 				anims.push(anim);
 			}
+		}
+
+		if(batch != null) {
+			batch.material.mainPass.addShader(shader.shader);
 		}
 
 	}
