@@ -1430,7 +1430,12 @@ class SceneEditor {
             var distToCam = cam.pos.sub(gpos).length();
             var engine = h3d.Engine.getCurrent();
             var ratio = 150 / engine.height;
-            basis.setScale(ratio * distToCam * Math.tan(cam.fovY * 0.5 * Math.PI / 180.0));
+
+            var scale = ratio * distToCam * Math.tan(cam.fovY * 0.5 * Math.PI / 180.0);
+            if (cam.orthoBounds != null) {
+                scale = ratio *  (cam.orthoBounds.xSize) * 0.5;
+            }
+			basis.setScale(scale);
 
         } else {
             basis.visible = false;
@@ -2318,8 +2323,14 @@ class SceneEditor {
     }
 
     function groupSelection() {
-        if(!canGroupSelection())
+		if(!canGroupSelection()) {
+            var elts = curEdit.rootElements;
+            if (elts.length == 0) {
+                
+            }
+
             return;
+        }
 
         var elts = selectedPrefabs;
         var parent = elts[0].parent;
