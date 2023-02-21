@@ -128,10 +128,10 @@ class Light extends Object3D {
 		return null;
 	}
 
-    override function makeObject3d(parent3d:h3d.scene.Object) : h3d.scene.Object {
-        var object : h3d.scene.Object = null;
+	override function makeObject3d(parent3d:h3d.scene.Object) : h3d.scene.Object {
+		var object : h3d.scene.Object = null;
 
-        var isPbr = Std.isOfType(h3d.mat.MaterialSetup.current, h3d.mat.PbrMaterialSetup);
+		var isPbr = Std.isOfType(h3d.mat.MaterialSetup.current, h3d.mat.PbrMaterialSetup);
 		if( !isPbr ) {
 			switch( kind ) {
 			case Point: object = new h3d.scene.fwd.PointLight(parent3d);
@@ -148,8 +148,8 @@ class Light extends Object3D {
 
 		cookieTex = initTexture(cookiePath);
 
-        return object;
-    }
+		return object;
+	}
 
 	override function updateInstance(?propName : String ) {
 		super.updateInstance(propName);

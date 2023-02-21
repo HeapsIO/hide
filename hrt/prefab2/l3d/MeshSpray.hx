@@ -304,7 +304,7 @@ class MeshSpray extends Spray {
 		for( c in children.copy() ) {
 			if( c.type != "model" || c.children.length != 0) continue;
 			var c = c.to(Model);
-            if (!meshes.exists(c.source)) continue;
+			if (!meshes.exists(c.source)) continue;
 			binaryMeshes.push({ path : c.source, x : c.x, y : c.y, z : c.z, scale : c.scaleX, rotX : c.rotationX, rotY : c.rotationY, rotZ : c.rotationZ });
 			children.remove(c);
 			binaryChanged = true;
@@ -894,8 +894,8 @@ class MeshSpray extends Spray {
 			}
 		}
 
-        var old2d = params.local2d;
-        var old3d = params.local3d;
+		var old2d = params.local2d;
+		var old3d = params.local3d;
 
 		makeInstance(params);
 		// add all children then build meshspray
@@ -911,13 +911,13 @@ class MeshSpray extends Spray {
 		// rebuild to apply per instance shaders
 		cast(local3d, MeshSprayObject).redraw(true);
 
-        params.local2d = old2d;
-        params.local3d = old3d;
+		params.local2d = old2d;
+		params.local3d = old3d;
 
-        postChildrenMakeInstance(params);
+		postChildrenMakeInstance(params);
 
-        params.local2d = old2d;
-        params.local3d = old3d;
+		params.local2d = old2d;
+		params.local3d = old3d;
 	}
 
 	override function applyTransform() {

@@ -98,7 +98,7 @@ class Text3D extends Object3D {
 
 	@:s public var contentText : String = "Empty string";
 
-    public var text2d : h2d.Text = null;
+	public var text2d : h2d.Text = null;
 
 	public function new( ?parent ) {
 		super(parent);
@@ -127,7 +127,7 @@ class Text3D extends Object3D {
 			this.pathFont = tfile.path;
 			updateInstance("pathFont");
 		}
-        new hide.Element('<dt>Align</dt>').appendTo(gr);
+		new hide.Element('<dt>Align</dt>').appendTo(gr);
 		var element = new hide.Element('<dd></dd>').appendTo(gr);
 		var leftAlign = new hide.Element('<input type="button" style="width: 50px" value="Left" /> ').appendTo(element);
 		var middleAlign = new hide.Element('<input type="button" style="width: 50px" value="Center" /> ').appendTo(element);
@@ -189,7 +189,7 @@ class Text3D extends Object3D {
 		h2dText.letterSpacing = letterSpacing;
 		h2dText.text = text;
 		h2dText.smooth = true;
-        h2dText.textAlign = switch (align) {
+		h2dText.textAlign = switch (align) {
 			case 1:
 				h2d.Text.Align.Center;
 			case 2:
@@ -248,8 +248,8 @@ class Text3D extends Object3D {
 		return null;
 	}
 
-    // TODO(ces) : AAAAAARGH
-    override function makeObject3d(parent3d : h3d.scene.Object) : h3d.scene.Object {
+	// TODO(ces) : AAAAAARGH
+	override function makeObject3d(parent3d : h3d.scene.Object) : h3d.scene.Object {
 		/*var mesh = new h3d.scene.Mesh(new Text3DPrimitive(), parent3d);
 		mesh.material.blendMode = Alpha;
 		text2d = new h2d.Text(hxd.res.DefaultFont.get(), findFirstLocal2d());
@@ -257,10 +257,10 @@ class Text3D extends Object3D {
 		local2d = h2dText;
 		text2d.name = name;
 
-        text2d*/
-        throw "2d and 3d aaaaaaaaaaaaaaaarg";
-        return null;
-    }
+		text2d*/
+		throw "2d and 3d aaaaaaaaaaaaaaaarg";
+		return null;
+	}
 
 	/*override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) : Void {
 		var mesh = new h3d.scene.Mesh(new Text3DPrimitive(), ctx.local3d);

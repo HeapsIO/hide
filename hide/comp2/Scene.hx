@@ -2,478 +2,478 @@ package hide.comp2;
 
 class Scene extends hide.comp.Component implements h3d.IDrawable {
 
-    static var UID = 0;
+	static var UID = 0;
 
-    var id = ++UID;
-    var window : hxd.Window;
-    public var canvas : js.html.CanvasElement;
-    var hmdCache = new Map<String, hxd.fmt.hmd.Library>();
-    var texCache = new Map<String, h3d.mat.Texture>();
-    var pathsMap = new Map<String, String>();
-    var cleanup = new Array<Void->Void>();
-    var defaultCamera : h3d.Camera;
-    var listeners = new Array<Float -> Void>();
-    public var config : hide.Config;
-    public var engine : h3d.Engine;
-    public var width(get, never) : Int;
-    public var height(get, never) : Int;
-    public var s2d : h2d.Scene;
-    public var s3d : h3d.scene.Scene;
-    public var sevents : hxd.SceneEvents;
-    public var speed : Float = 1.0;
-    public var visible(default, null) : Bool = true;
-    public var editor : hide.comp2.SceneEditor;
-    var unFocusedTime = 0.;
+	var id = ++UID;
+	var window : hxd.Window;
+	public var canvas : js.html.CanvasElement;
+	var hmdCache = new Map<String, hxd.fmt.hmd.Library>();
+	var texCache = new Map<String, h3d.mat.Texture>();
+	var pathsMap = new Map<String, String>();
+	var cleanup = new Array<Void->Void>();
+	var defaultCamera : h3d.Camera;
+	var listeners = new Array<Float -> Void>();
+	public var config : hide.Config;
+	public var engine : h3d.Engine;
+	public var width(get, never) : Int;
+	public var height(get, never) : Int;
+	public var s2d : h2d.Scene;
+	public var s3d : h3d.scene.Scene;
+	public var sevents : hxd.SceneEvents;
+	public var speed : Float = 1.0;
+	public var visible(default, null) : Bool = true;
+	public var editor : hide.comp2.SceneEditor;
+	var unFocusedTime = 0.;
 
-    public static var cache : h3d.prim.ModelCache = new h3d.prim.ModelCache();
+	public static var cache : h3d.prim.ModelCache = new h3d.prim.ModelCache();
 
-    public function new(config, parent, el) {
-        super(parent,el);
-        this.config = config;
-        element.addClass("hide-scene-container");
-        canvas = cast new Element("<canvas class='hide-scene' style='width:100%;height:100%'/>").appendTo(element)[0];
+	public function new(config, parent, el) {
+		super(parent,el);
+		this.config = config;
+		element.addClass("hide-scene-container");
+		canvas = cast new Element("<canvas class='hide-scene' style='width:100%;height:100%'/>").appendTo(element)[0];
 
-        canvas.addEventListener("mousemove",function(_) canvas.focus());
-        canvas.addEventListener("mouseleave",function(_) canvas.blur());
-        canvas.oncontextmenu = function(e){
-            e.stopPropagation();
-            e.preventDefault();
-            return false;
-        };
-        untyped canvas.__scene = this;
-        haxe.Timer.delay(delayedInit,0); // wait canvas added to window
-    }
+		canvas.addEventListener("mousemove",function(_) canvas.focus());
+		canvas.addEventListener("mouseleave",function(_) canvas.blur());
+		canvas.oncontextmenu = function(e){
+			e.stopPropagation();
+			e.preventDefault();
+			return false;
+		};
+		untyped canvas.__scene = this;
+		haxe.Timer.delay(delayedInit,0); // wait canvas added to window
+	}
 
-    public function dispose() {
-        for( c in cleanup )
-            c();
-        cleanup = [];
-        ide.unregisterUpdate(sync);
-        @:privateAccess s2d.window.removeResizeEvent(s2d.checkResize);
-        engine.dispose();
-        @:privateAccess engine.driver = null;
-        untyped canvas.__scene = null;
-        canvas = null;
-        if( h3d.Engine.getCurrent() == engine ) @:privateAccess h3d.Engine.CURRENT = null;
-        untyped js.Browser.window.$_ = null; // jquery can sometimes leak s2d
-        @:privateAccess haxe.NativeStackTrace.lastError = null; // possible leak there
-        window.dispose();
-    }
+	public function dispose() {
+		for( c in cleanup )
+			c();
+		cleanup = [];
+		ide.unregisterUpdate(sync);
+		@:privateAccess s2d.window.removeResizeEvent(s2d.checkResize);
+		engine.dispose();
+		@:privateAccess engine.driver = null;
+		untyped canvas.__scene = null;
+		canvas = null;
+		if( h3d.Engine.getCurrent() == engine ) @:privateAccess h3d.Engine.CURRENT = null;
+		untyped js.Browser.window.$_ = null; // jquery can sometimes leak s2d
+		@:privateAccess haxe.NativeStackTrace.lastError = null; // possible leak there
+		window.dispose();
+	}
 
-    public function addListener(f) {
-        listeners.push(f);
-    }
+	public function addListener(f) {
+		listeners.push(f);
+	}
 
-    public function removeListener(f) {
-        for( f2 in listeners )
-            if( Reflect.compareMethods(f,f2) ) {
-                listeners.remove(f2);
-                break;
-            }
-    }
+	public function removeListener(f) {
+		for( f2 in listeners )
+			if( Reflect.compareMethods(f,f2) ) {
+				listeners.remove(f2);
+				break;
+			}
+	}
 
-    function delayedInit() {
-        canvas.id = "webgl";
-        window = @:privateAccess new hxd.Window(canvas);
-        window.propagateKeyEvents = true;
-        window.setCurrent();
-        engine = @:privateAccess new h3d.Engine();
-        @:privateAccess engine.resCache.set(Scene, this);
-        engine.backgroundColor = 0xFF111111;
-        canvas.id = null;
-        engine.onResized = function() {
-            if( s2d == null ) return;
-            setCurrent();
-            visible = engine.width > 32 && engine.height > 32; // 32x32 when hidden !
-            s2d.scaleMode = Resize; // setter call
-            onResize();
-        };
-        engine.onReady = function() {
-            if( engine.driver == null ) return;
-            new Element(canvas).on("resize", function() {
-                window.setCurrent();
-                @:privateAccess window.checkResize();
-            });
-            setCurrent();
-            hxd.Key.initialize();
-            s2d = new h2d.Scene();
-            s3d = new h3d.scene.Scene();
+	function delayedInit() {
+		canvas.id = "webgl";
+		window = @:privateAccess new hxd.Window(canvas);
+		window.propagateKeyEvents = true;
+		window.setCurrent();
+		engine = @:privateAccess new h3d.Engine();
+		@:privateAccess engine.resCache.set(Scene, this);
+		engine.backgroundColor = 0xFF111111;
+		canvas.id = null;
+		engine.onResized = function() {
+			if( s2d == null ) return;
+			setCurrent();
+			visible = engine.width > 32 && engine.height > 32; // 32x32 when hidden !
+			s2d.scaleMode = Resize; // setter call
+			onResize();
+		};
+		engine.onReady = function() {
+			if( engine.driver == null ) return;
+			new Element(canvas).on("resize", function() {
+				window.setCurrent();
+				@:privateAccess window.checkResize();
+			});
+			setCurrent();
+			hxd.Key.initialize();
+			s2d = new h2d.Scene();
+			s3d = new h3d.scene.Scene();
 
-            sevents = new hxd.SceneEvents(window);
-            sevents.addScene(s2d);
-            sevents.addScene(s3d);
-            @:privateAccess window.checkResize();
-            onReady();
-            onResize();
-            sync();
-            ide.registerUpdate(sync);
-        };
-        engine.init();
-    }
+			sevents = new hxd.SceneEvents(window);
+			sevents.addScene(s2d);
+			sevents.addScene(s3d);
+			@:privateAccess window.checkResize();
+			onReady();
+			onResize();
+			sync();
+			ide.registerUpdate(sync);
+		};
+		engine.init();
+	}
 
-    function get_width() {
-        return engine.width;
-    }
+	function get_width() {
+		return engine.width;
+	}
 
-    function get_height() {
-        return engine.height;
-    }
+	function get_height() {
+		return engine.height;
+	}
 
-    public function init( ?root : h3d.scene.Object ) {
-        var autoHide : Array<String> = config.get("scene.autoHide");
-        function initRec( obj : h3d.scene.Object ) {
-            for(n in autoHide)
-                if(obj.name != null && obj.name.indexOf(n) == 0)
-                    obj.visible = false;
-            for( o in obj )
-                initRec(o);
-        }
-        if( root == null ) {
-            root = s3d;
-            engine.backgroundColor = Std.parseInt("0x"+config.get("scene.backgroundColor").substr(1)) | 0xFF000000;
-        }
-        initRec(root);
-    }
+	public function init( ?root : h3d.scene.Object ) {
+		var autoHide : Array<String> = config.get("scene.autoHide");
+		function initRec( obj : h3d.scene.Object ) {
+			for(n in autoHide)
+				if(obj.name != null && obj.name.indexOf(n) == 0)
+					obj.visible = false;
+			for( o in obj )
+				initRec(o);
+		}
+		if( root == null ) {
+			root = s3d;
+			engine.backgroundColor = Std.parseInt("0x"+config.get("scene.backgroundColor").substr(1)) | 0xFF000000;
+		}
+		initRec(root);
+	}
 
-    public function setCurrent() {
-        engine.setCurrent();
-        window.setCurrent();
-    }
+	public function setCurrent() {
+		engine.setCurrent();
+		window.setCurrent();
+	}
 
-    function checkCurrent() {
-        if( h3d.Engine.getCurrent() != engine )
-            throw "Invalid current engine : use setCurrent() first";
-    }
+	function checkCurrent() {
+		if( h3d.Engine.getCurrent() != engine )
+			throw "Invalid current engine : use setCurrent() first";
+	}
 
-    public function hasFocus() {
-        return js.Browser.document.activeElement == canvas;
-    }
+	public function hasFocus() {
+		return js.Browser.document.activeElement == canvas;
+	}
 
-    function sync() {
-        if( new Element(canvas).parents("html").length == 0 ) {
-            dispose();
-            return;
-        }
-        if( !visible || pendingCount > 0)
-            return;
-        var dt = hxd.Timer.tmod * speed / 60;
-        if( !Ide.inst.isFocused ) {
-            // refresh at 1FPS
-            unFocusedTime += dt;
-            if( unFocusedTime < 1 ) return;
-            unFocusedTime -= 1;
-            dt = 1;
-        } else
-            unFocusedTime = 0;
-        setCurrent();
-        sevents.checkEvents();
-        s2d.setElapsedTime(dt);
-        s3d.setElapsedTime(dt);
-        for( f in listeners )
-            f(dt);
-        onUpdate(dt);
-        engine.render(this);
-    }
+	function sync() {
+		if( new Element(canvas).parents("html").length == 0 ) {
+			dispose();
+			return;
+		}
+		if( !visible || pendingCount > 0)
+			return;
+		var dt = hxd.Timer.tmod * speed / 60;
+		if( !Ide.inst.isFocused ) {
+			// refresh at 1FPS
+			unFocusedTime += dt;
+			if( unFocusedTime < 1 ) return;
+			unFocusedTime -= 1;
+			dt = 1;
+		} else
+			unFocusedTime = 0;
+		setCurrent();
+		sevents.checkEvents();
+		s2d.setElapsedTime(dt);
+		s3d.setElapsedTime(dt);
+		for( f in listeners )
+			f(dt);
+		onUpdate(dt);
+		engine.render(this);
+	}
 
-    var loadQueue : Array<Void->Void> = [];
-    var pendingCount : Int = 0;
+	var loadQueue : Array<Void->Void> = [];
+	var pendingCount : Int = 0;
 
-    function loadTextureData( img : hxd.res.Image, onReady : h3d.mat.Texture -> Void, ?target : h3d.mat.Texture ) {
-        if( !img.getFormat().useLoadBitmap ) {
-            // immediate read
-            if( target == null )
-                target = img.toTexture();
-            else {
-                var pix = img.getPixels();
-                target.resize(pix.width, pix.height);
-                target.uploadPixels(pix);
-            }
-            if( onReady != null ) {
-                onReady(target);
-                onReady = null;
-            }
-            return target;
-        }
+	function loadTextureData( img : hxd.res.Image, onReady : h3d.mat.Texture -> Void, ?target : h3d.mat.Texture ) {
+		if( !img.getFormat().useLoadBitmap ) {
+			// immediate read
+			if( target == null )
+				target = img.toTexture();
+			else {
+				var pix = img.getPixels();
+				target.resize(pix.width, pix.height);
+				target.uploadPixels(pix);
+			}
+			if( onReady != null ) {
+				onReady(target);
+				onReady = null;
+			}
+			return target;
+		}
 
-        if( target == null ) {
-            var size = img.getSize();
-            target = new h3d.mat.Texture(size.width,size.height);
-            target.clear(0x102030);
-            target.flags.set(Loading);
-        }
+		if( target == null ) {
+			var size = img.getSize();
+			target = new h3d.mat.Texture(size.width,size.height);
+			target.clear(0x102030);
+			target.flags.set(Loading);
+		}
 
-        if( pendingCount < 10 ) {
-            pendingCount++;
-            _loadTextureData(img,function() {
-                target.flags.unset(Loading);
-                pendingCount--;
-                var f = loadQueue.shift();
-                if( f != null ) f();
-                onReady(target);
-            }, target);
-        } else {
-            loadQueue.push(loadTextureData.bind(img,onReady,target));
-        }
-        return target;
-    }
+		if( pendingCount < 10 ) {
+			pendingCount++;
+			_loadTextureData(img,function() {
+				target.flags.unset(Loading);
+				pendingCount--;
+				var f = loadQueue.shift();
+				if( f != null ) f();
+				onReady(target);
+			}, target);
+		} else {
+			loadQueue.push(loadTextureData.bind(img,onReady,target));
+		}
+		return target;
+	}
 
-    function _loadTextureData( img : hxd.res.Image, onReady : Void -> Void, t : h3d.mat.Texture ) {
-        var path = ide.getPath(img.entry.path);
-        var img = new Element('<img src="${ide.getUnCachedUrl(path)}" crossorigin="anonymous"/>');
-        function onLoaded() {
-            if( engine.driver == null ) return;
-            setCurrent();
-            var bmp : js.html.ImageElement = cast img[0];
-            t.resize(bmp.width, bmp.height);
-            untyped bmp.ctx = { getImageData : function(_) return bmp, canvas : { width : 0, height : 0 } };
-            engine.driver.uploadTextureBitmap(t, cast bmp, 0, 0);
-            t.realloc = onLoaded;
-            t.flags.unset(Loading);
-            @:privateAccess if( t.waitLoads != null ) {
-                var arr = t.waitLoads;
-                t.waitLoads = null;
-                for( f in arr ) f();
-            }
-            if( onReady != null ) {
-                onReady();
-                onReady = null;
-            }
-        }
-        img.on("load", onLoaded);
-        function onChange() {
-            img.attr("src", ide.getUnCachedUrl(path));
-        }
-        ide.fileWatcher.register( path, onChange, true, element );
-        cleanup.push(function() { ide.fileWatcher.unregister( path, onChange ); });
-    }
+	function _loadTextureData( img : hxd.res.Image, onReady : Void -> Void, t : h3d.mat.Texture ) {
+		var path = ide.getPath(img.entry.path);
+		var img = new Element('<img src="${ide.getUnCachedUrl(path)}" crossorigin="anonymous"/>');
+		function onLoaded() {
+			if( engine.driver == null ) return;
+			setCurrent();
+			var bmp : js.html.ImageElement = cast img[0];
+			t.resize(bmp.width, bmp.height);
+			untyped bmp.ctx = { getImageData : function(_) return bmp, canvas : { width : 0, height : 0 } };
+			engine.driver.uploadTextureBitmap(t, cast bmp, 0, 0);
+			t.realloc = onLoaded;
+			t.flags.unset(Loading);
+			@:privateAccess if( t.waitLoads != null ) {
+				var arr = t.waitLoads;
+				t.waitLoads = null;
+				for( f in arr ) f();
+			}
+			if( onReady != null ) {
+				onReady();
+				onReady = null;
+			}
+		}
+		img.on("load", onLoaded);
+		function onChange() {
+			img.attr("src", ide.getUnCachedUrl(path));
+		}
+		ide.fileWatcher.register( path, onChange, true, element );
+		cleanup.push(function() { ide.fileWatcher.unregister( path, onChange ); });
+	}
 
-    public function listAnims( path : String ) {
+	public function listAnims( path : String ) {
 
-        var config = hide.Config.loadForFile(ide, path);
+		var config = hide.Config.loadForFile(ide, path);
 
-        var dirs : Array<String> = config.get("hmd.animPaths");
-        if( dirs == null ) dirs = [];
-        dirs = [for( d in dirs ) ide.resourceDir + d];
+		var dirs : Array<String> = config.get("hmd.animPaths");
+		if( dirs == null ) dirs = [];
+		dirs = [for( d in dirs ) ide.resourceDir + d];
 
-        var parts = path.split("/");
-        parts.pop();
-        dirs.unshift(ide.getPath(parts.join("/")));
+		var parts = path.split("/");
+		parts.pop();
+		dirs.unshift(ide.getPath(parts.join("/")));
 
-        var anims = [];
+		var anims = [];
 
-        var lib = loadHMD(path, false);
-        if( lib.header.animations.length > 0 )
-            anims.push(ide.getPath(path));
+		var lib = loadHMD(path, false);
+		if( lib.header.animations.length > 0 )
+			anims.push(ide.getPath(path));
 
-        for( dir in dirs ) {
-            var dir = dir;
-            if( StringTools.endsWith(dir, "/") ) dir = dir.substr(0,-1);
-            for( f in try sys.FileSystem.readDirectory(dir) catch( e : Dynamic ) [] ) {
-                var file = f.toLowerCase();
-                if( StringTools.startsWith(f,"Anim_") && (StringTools.endsWith(file,".hmd") || StringTools.endsWith(file,".fbx")) )
-                    anims.push(dir+"/"+f);
-            }
-        }
-        return anims;
-    }
+		for( dir in dirs ) {
+			var dir = dir;
+			if( StringTools.endsWith(dir, "/") ) dir = dir.substr(0,-1);
+			for( f in try sys.FileSystem.readDirectory(dir) catch( e : Dynamic ) [] ) {
+				var file = f.toLowerCase();
+				if( StringTools.startsWith(f,"Anim_") && (StringTools.endsWith(file,".hmd") || StringTools.endsWith(file,".fbx")) )
+					anims.push(dir+"/"+f);
+			}
+		}
+		return anims;
+	}
 
-    public function animationName( path : String ) {
-        var name = path.split("/").pop();
-        if( StringTools.startsWith(name, "Anim_") )
-            name = name.substr(5);
-        name = name.substr(0, -4);
-        if( StringTools.endsWith(name,"_loop") )
-            name = name.substr(0,-5);
-        return name;
-    }
+	public function animationName( path : String ) {
+		var name = path.split("/").pop();
+		if( StringTools.startsWith(name, "Anim_") )
+			name = name.substr(5);
+		name = name.substr(0, -4);
+		if( StringTools.endsWith(name,"_loop") )
+			name = name.substr(0,-5);
+		return name;
+	}
 
-    public function loadModel( path : String, mainScene = false, reload = false ) {
-        checkCurrent();
-        var lib = loadHMD(path, false, reload);
-        return lib.makeObject(loadTexture.bind(path));
-    }
+	public function loadModel( path : String, mainScene = false, reload = false ) {
+		checkCurrent();
+		var lib = loadHMD(path, false, reload);
+		return lib.makeObject(loadTexture.bind(path));
+	}
 
-    public function loadAnimation( path : String ) {
-        var lib = loadHMD(path,true);
-        return lib.loadAnimation();
-    }
+	public function loadAnimation( path : String ) {
+		var lib = loadHMD(path,true);
+		return lib.loadAnimation();
+	}
 
-    function resolvePathImpl( modelPath : String, filePath : String ) {
-        inline function exists(path) return sys.FileSystem.exists(path);
-        var fullPath = ide.getPath(filePath);
-        if( exists(fullPath) )
-            return fullPath;
+	function resolvePathImpl( modelPath : String, filePath : String ) {
+		inline function exists(path) return sys.FileSystem.exists(path);
+		var fullPath = ide.getPath(filePath);
+		if( exists(fullPath) )
+			return fullPath;
 
-        // swap drive letter
-        if( fullPath.charAt(1) == ":" && fullPath.charAt(0) != ide.projectDir.charAt(0) ) {
-            fullPath = ide.projectDir.charAt(0) + fullPath.substr(1);
-            if( exists(fullPath) )
-                return fullPath;
-        }
+		// swap drive letter
+		if( fullPath.charAt(1) == ":" && fullPath.charAt(0) != ide.projectDir.charAt(0) ) {
+			fullPath = ide.projectDir.charAt(0) + fullPath.substr(1);
+			if( exists(fullPath) )
+				return fullPath;
+		}
 
-        if( modelPath == null )
-            return null;
+		if( modelPath == null )
+			return null;
 
-        filePath = filePath.split("\\").join("/");
-        modelPath = ide.getPath(modelPath);
+		filePath = filePath.split("\\").join("/");
+		modelPath = ide.getPath(modelPath);
 
-        var path = modelPath.split("/");
-        path.pop();
-        var relToModel = path.join("/") + "/" + filePath.split("/").pop();
-        if( exists(relToModel) )
-            return relToModel;
+		var path = modelPath.split("/");
+		path.pop();
+		var relToModel = path.join("/") + "/" + filePath.split("/").pop();
+		if( exists(relToModel) )
+			return relToModel;
 
-        return null;
-    }
+		return null;
+	}
 
-    function resolvePath(modelPath : String, filePath : String) {
-        var key = modelPath + ":" + filePath;
-        var p = pathsMap.get(key);
-        if(p != null)
-            return p;
-        p = resolvePathImpl(modelPath, filePath);
-        pathsMap.set(key, p);
-        return p;
-    }
+	function resolvePath(modelPath : String, filePath : String) {
+		var key = modelPath + ":" + filePath;
+		var p = pathsMap.get(key);
+		if(p != null)
+			return p;
+		p = resolvePathImpl(modelPath, filePath);
+		pathsMap.set(key, p);
+		return p;
+	}
 
-    public function loadTextureDotPath( path : String, ?onReady ) {
-        var path = path.split(".").join("/");
-        var t = resolvePath(null, path + ".png");
-        if( t == null )
-            t = resolvePath(null, path + ".jpg");
-        if( t == null )
-            t = resolvePath(null, path + ".jpeg");
-        if( t == null )
-            t = path;
-        return loadTexture("", t, onReady);
-    }
+	public function loadTextureDotPath( path : String, ?onReady ) {
+		var path = path.split(".").join("/");
+		var t = resolvePath(null, path + ".png");
+		if( t == null )
+			t = resolvePath(null, path + ".jpg");
+		if( t == null )
+			t = resolvePath(null, path + ".jpeg");
+		if( t == null )
+			t = path;
+		return loadTexture("", t, onReady);
+	}
 
-    public function loadTexture( modelPath : String, texturePath : String, ?onReady : h3d.mat.Texture -> Void, async=false ) {
-        checkCurrent();
-        var path = resolvePath(modelPath, texturePath);
-        if( path == null ) {
-            ide.error("Could not load texture " + { modelPath : modelPath, texturePath : texturePath });
-            return null;
-        }
-        var t = texCache.get(path);
-        if( t != null ) {
-            if( onReady != null ) haxe.Timer.delay(onReady.bind(t), 1);
-            return t;
-        }
-        var relPath = StringTools.startsWith(path, ide.resourceDir) ? path.substr(ide.resourceDir.length+1) : path;
-        var res = try hxd.res.Loader.currentInstance.load(relPath) catch( e : hxd.res.NotFound ) {
-            var bytes = sys.io.File.getBytes(path);
-            hxd.res.Any.fromBytes(path, bytes);
-        };
-        if( onReady == null ) onReady = function(_) {};
-        try {
-            var img = res.toImage();
-            img.enableAsyncLoading = async;
-            t = loadTextureData(img, onReady, t);
-            t.setName( ide.makeRelative(path));
-            texCache.set(path, t);
-        } catch( error : Dynamic ) {
-            throw "Could not load texure " + texturePath + ":\n" + Std.string(error);
-        };
-        return t;
-    }
+	public function loadTexture( modelPath : String, texturePath : String, ?onReady : h3d.mat.Texture -> Void, async=false ) {
+		checkCurrent();
+		var path = resolvePath(modelPath, texturePath);
+		if( path == null ) {
+			ide.error("Could not load texture " + { modelPath : modelPath, texturePath : texturePath });
+			return null;
+		}
+		var t = texCache.get(path);
+		if( t != null ) {
+			if( onReady != null ) haxe.Timer.delay(onReady.bind(t), 1);
+			return t;
+		}
+		var relPath = StringTools.startsWith(path, ide.resourceDir) ? path.substr(ide.resourceDir.length+1) : path;
+		var res = try hxd.res.Loader.currentInstance.load(relPath) catch( e : hxd.res.NotFound ) {
+			var bytes = sys.io.File.getBytes(path);
+			hxd.res.Any.fromBytes(path, bytes);
+		};
+		if( onReady == null ) onReady = function(_) {};
+		try {
+			var img = res.toImage();
+			img.enableAsyncLoading = async;
+			t = loadTextureData(img, onReady, t);
+			t.setName( ide.makeRelative(path));
+			texCache.set(path, t);
+		} catch( error : Dynamic ) {
+			throw "Could not load texure " + texturePath + ":\n" + Std.string(error);
+		};
+		return t;
+	}
 
-    function loadHMD( path : String, isAnimation : Bool, reload = false ) {
-        checkCurrent();
-        var fullPath = ide.getPath(path);
-        var key = fullPath;
-        var hmd = hmdCache.get(key);
+	function loadHMD( path : String, isAnimation : Bool, reload = false ) {
+		checkCurrent();
+		var fullPath = ide.getPath(path);
+		var key = fullPath;
+		var hmd = hmdCache.get(key);
 
-        if( !reload && hmd != null )
-            return hmd;
+		if( !reload && hmd != null )
+			return hmd;
 
-        var relPath = StringTools.startsWith(path, ide.resourceDir) ? path.substr(ide.resourceDir.length+1) : path;
-        var e;
-        if( reload )
-            @:privateAccess hxd.res.Loader.currentInstance.cache.remove(path);
-        if( ide.isDebugger )
-            e = hxd.res.Loader.currentInstance.load(relPath);
-        else
-            e = try hxd.res.Loader.currentInstance.load(relPath) catch( e : hxd.res.NotFound ) null;
-        if( e == null ) {
-            var data = sys.io.File.getBytes(fullPath);
-            if( data.get(0) != 'H'.code ) {
-                var hmdOut = new hxd.fmt.fbx.HMDOut(fullPath);
-                hmdOut.absoluteTexturePath = (e == null);
-                hmdOut.loadFile(data);
-                var hmd = hmdOut.toHMD(null, !isAnimation);
-                var out = new haxe.io.BytesOutput();
-                new hxd.fmt.hmd.Writer(out).write(hmd);
-                data = out.getBytes();
-            }
-            e = hxd.res.Any.fromBytes(path, data);
-        }
-        hmd = e.toModel().toHmd();
+		var relPath = StringTools.startsWith(path, ide.resourceDir) ? path.substr(ide.resourceDir.length+1) : path;
+		var e;
+		if( reload )
+			@:privateAccess hxd.res.Loader.currentInstance.cache.remove(path);
+		if( ide.isDebugger )
+			e = hxd.res.Loader.currentInstance.load(relPath);
+		else
+			e = try hxd.res.Loader.currentInstance.load(relPath) catch( e : hxd.res.NotFound ) null;
+		if( e == null ) {
+			var data = sys.io.File.getBytes(fullPath);
+			if( data.get(0) != 'H'.code ) {
+				var hmdOut = new hxd.fmt.fbx.HMDOut(fullPath);
+				hmdOut.absoluteTexturePath = (e == null);
+				hmdOut.loadFile(data);
+				var hmd = hmdOut.toHMD(null, !isAnimation);
+				var out = new haxe.io.BytesOutput();
+				new hxd.fmt.hmd.Writer(out).write(hmd);
+				data = out.getBytes();
+			}
+			e = hxd.res.Any.fromBytes(path, data);
+		}
+		hmd = e.toModel().toHmd();
 
-        if (!reload && e != null) {
-            e.watch(function() {
-                if (sys.FileSystem.exists(ide.getPath(e.entry.path))) {
-                    var lib = e.toModel().toHmd();
-                    hmdCache.set(key, lib);
-                    editor.onResourceChanged(lib);
-                }
-            });
-            cleanup.push(function() {
-                e.watch(null);
-            });
-        }
+		if (!reload && e != null) {
+			e.watch(function() {
+				if (sys.FileSystem.exists(ide.getPath(e.entry.path))) {
+					var lib = e.toModel().toHmd();
+					hmdCache.set(key, lib);
+					editor.onResourceChanged(lib);
+				}
+			});
+			cleanup.push(function() {
+				e.watch(null);
+			});
+		}
 
-        hmdCache.set(key, hmd);
-        return hmd;
-    }
+		hmdCache.set(key, hmd);
+		return hmd;
+	}
 
-    public function resetCamera( ?obj : h3d.scene.Object, distanceFactor = 1. ) {
+	public function resetCamera( ?obj : h3d.scene.Object, distanceFactor = 1. ) {
 
-        if( defaultCamera != null ) {
-            s3d.camera.load(defaultCamera);
-            return;
-        }
+		if( defaultCamera != null ) {
+			s3d.camera.load(defaultCamera);
+			return;
+		}
 
-        if( obj == null ) obj = s3d;
-        var b = obj.getBounds();
-        if( b.isEmpty() )
-            return;
-        var dx = Math.max(Math.abs(b.xMax),Math.abs(b.xMin));
-        var dy = Math.max(Math.abs(b.yMax),Math.abs(b.yMin));
-        var dz = Math.max(Math.abs(b.zMax),Math.abs(b.zMin));
-        var dist = Math.max(Math.max(dx * 6, dy * 6), dz * 4) * distanceFactor;
-        var ang = Math.PI / 4;
-        var zang = Math.PI * 0.4;
-        s3d.camera.pos.set(Math.sin(zang) * Math.cos(ang) * dist, Math.sin(zang) * Math.sin(ang) * dist, Math.cos(zang) * dist);
-        s3d.camera.target.set(0, 0, (b.zMax + b.zMin) * 0.5);
-    }
+		if( obj == null ) obj = s3d;
+		var b = obj.getBounds();
+		if( b.isEmpty() )
+			return;
+		var dx = Math.max(Math.abs(b.xMax),Math.abs(b.xMin));
+		var dy = Math.max(Math.abs(b.yMax),Math.abs(b.yMin));
+		var dz = Math.max(Math.abs(b.zMax),Math.abs(b.zMin));
+		var dist = Math.max(Math.max(dx * 6, dy * 6), dz * 4) * distanceFactor;
+		var ang = Math.PI / 4;
+		var zang = Math.PI * 0.4;
+		s3d.camera.pos.set(Math.sin(zang) * Math.cos(ang) * dist, Math.sin(zang) * Math.sin(ang) * dist, Math.cos(zang) * dist);
+		s3d.camera.target.set(0, 0, (b.zMax + b.zMin) * 0.5);
+	}
 
-    public function render( e : h3d.Engine ) {
-        s3d.render(e);
-        s2d.render(e);
-    }
+	public function render( e : h3d.Engine ) {
+		s3d.render(e);
+		s2d.render(e);
+	}
 
-    public dynamic function onUpdate(dt:Float) {
-    }
+	public dynamic function onUpdate(dt:Float) {
+	}
 
-    public dynamic function onReady() {
-    }
+	public dynamic function onReady() {
+	}
 
-    public dynamic function onResize() {
-    }
+	public dynamic function onResize() {
+	}
 
-    public static function getNearest( e : Element ) : Scene {
-        while( e.length > 0 ) {
-            var c : Dynamic = e.find("canvas")[0];
-            if( c != null && c.__scene != null )
-                return c.__scene;
-            e = e.parent();
-        }
-        return null;
-    }
+	public static function getNearest( e : Element ) : Scene {
+		while( e.length > 0 ) {
+			var c : Dynamic = e.find("canvas")[0];
+			if( c != null && c.__scene != null )
+				return c.__scene;
+			e = e.parent();
+		}
+		return null;
+	}
 
-    public static function getCurrent() : Scene {
-        return @:privateAccess h3d.Engine.getCurrent().resCache.get(Scene);
-    }
+	public static function getCurrent() : Scene {
+		return @:privateAccess h3d.Engine.getCurrent().resCache.get(Scene);
+	}
 
 }

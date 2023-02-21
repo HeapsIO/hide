@@ -123,7 +123,7 @@ class SplinePoint extends Object3D {
 		#end
 	}
 
-    // TODO(ces) : Restore
+	// TODO(ces) : Restore
 	/*override function removeInstance( ctx : Context) : Bool {
 		haxe.Timer.delay(() -> { // wait for next frame, need the point to be removed from children to recompute spline accurately
 			#if editor

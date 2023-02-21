@@ -5,11 +5,11 @@ package hrt.prefab2.l3d;
 class AnimSpeedControl extends hrt.prefab2.Prefab {
 
 	@:s var speed : Float = 1.;
-    var targetLocal3d : h3d.scene.Object = null;
+	var targetLocal3d : h3d.scene.Object = null;
 
 	override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext):Void {
 		targetLocal3d = ctx.local3d;
-        updateInstance();
+		updateInstance();
 	}
 
 	override function updateInstance(?propName) {

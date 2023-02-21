@@ -134,27 +134,27 @@ class SplineMesh extends Spline {
 	}
 
 	override function makeInstanceRec(params: hrt.prefab2.Prefab.InstanciateContext) : Void{
-        if (!enabled) return;
+		if (!enabled) return;
 
-        var old2d = params.local2d;
-        var old3d = params.local3d;
+		var old2d = params.local2d;
+		var old3d = params.local3d;
 
-        makeInstance(params);
+		makeInstance(params);
 
-        var new2d = Object2D.getLocal2d(this);
-        if (new2d != null)
-            params.local2d = new2d;
-        var new3d = Object3D.getLocal3d(this);
-        if (new3d != null)
-            params.local3d = new3d;
+		var new2d = Object2D.getLocal2d(this);
+		if (new2d != null)
+			params.local2d = new2d;
+		var new3d = Object3D.getLocal3d(this);
+		if (new3d != null)
+			params.local3d = new3d;
 
-        params.local2d = old2d;
-        params.local3d = old3d;
+		params.local2d = old2d;
+		params.local3d = old3d;
 
-        postChildrenMakeInstance(params);
+		postChildrenMakeInstance(params);
 
-        params.local2d = old2d;
-        params.local3d = old3d;
+		params.local2d = old2d;
+		params.local3d = old3d;
 	}
 
 	override function updateInstance(?propName : String ) {

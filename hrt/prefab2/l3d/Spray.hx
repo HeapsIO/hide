@@ -333,12 +333,12 @@ class Spray extends Object3D {
 
 	}
 
-    override function detach(newRoot: Prefab, removedClasses: Array<Class<Prefab>>) : Class<Prefab> {
+	override function detach(newRoot: Prefab, removedClasses: Array<Class<Prefab>>) : Class<Prefab> {
 		removeInteractiveBrush();
-        return super.detach(newRoot, removedClasses);
-    }
+		return super.detach(newRoot, removedClasses);
+	}
 
-    override function setSelected(b : Bool ) {
+	override function setSelected(b : Bool ) {
 		if( !b )
 			removeInteractiveBrush();
 		return false;

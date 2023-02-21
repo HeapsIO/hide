@@ -40,10 +40,10 @@ class ModelLibShader extends hxsl.Shader {
 		@param var mipPower : Float;
 		@param var mipNumber : Float;
 
-        @input var input2 : {
+		@input var input2 : {
 			var tangent : Vec3;
 			var uv : Vec2;
-        };
+		};
 
 		var calculatedUV : Vec2;
 		var transformedTangent : Vec4;

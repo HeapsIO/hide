@@ -53,8 +53,8 @@ class Environment extends Object3D {
 	}
 
 	override function makeObject3d(parent3d:h3d.scene.Object):h3d.scene.Object {
-        return super.makeObject3d(parent3d);
-    }
+		return super.makeObject3d(parent3d);
+	}
 
 	override function updateInstance(?propName : String ) {
 		super.updateInstance(propName);

@@ -11,8 +11,8 @@ class Instance extends Object3D {
 	#if editor
 	override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) : Void {
 		super.makeInstance(ctx);
-        throw "implement";
-        // TODO(ces) restore
+		throw "implement";
+		// TODO(ces) restore
 
 		/*var kind = getRefSheet(this);
 		var unknown = kind == null || kind.idx == null;
@@ -24,7 +24,7 @@ class Instance extends Object3D {
 					var ref = Prefab.createFromPath(modelPath);
 					if(ref != null) {
 						ref.make(ctx.local2d, ctx.local3d);
-                        local3d = ref;
+						local3d = ref;
 					}
 				}
 				else {
@@ -34,7 +34,7 @@ class Instance extends Object3D {
 				}
 			} catch( e : hxd.res.NotFound ) {
 				// TODO(ces) Restore ?
-                //ctx.shared.onError(e);
+				//ctx.shared.onError(e);
 			}
 		}
 		else {
@@ -64,7 +64,7 @@ class Instance extends Object3D {
 		return int;
 	}
 
-    // TODO(ces) restore
+	// TODO(ces) restore
 
 	/*override function removeInstance():Bool {
 		/*if(!super.removeInstance(ctx))

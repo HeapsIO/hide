@@ -38,7 +38,7 @@ class Decal extends Object3D {
 		blendMode = obj.blendMode != null ? h2d.BlendMode.createByIndex(obj.blendMode) : Alpha;
 	}
 
-    override function makeObject3d(parent3d:h3d.scene.Object):h3d.scene.Object {
+	override function makeObject3d(parent3d:h3d.scene.Object):h3d.scene.Object {
 		var mesh = new h3d.scene.pbr.Decal(h3d.prim.Cube.defaultUnitCube(), parent3d);
 
 		switch (renderMode) {
@@ -68,8 +68,8 @@ class Decal extends Object3D {
 		mesh.material.mainPass.depthTest = GreaterEqual;
 		mesh.material.mainPass.culling = Front;
 		mesh.material.shadows = false;
-        return mesh;
-    }
+		return mesh;
+	}
 
 	public function updateRenderParams() {
 		var mesh = Std.downcast(local3d, h3d.scene.Mesh);
