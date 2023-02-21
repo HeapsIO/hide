@@ -25,10 +25,12 @@ class Material extends Prefab {
 		color = obj.color != null ? obj.color : [1,1,1,1];
 	}
 
-	/*override function save(data: Dynamic) {
-		super.save(data);
-		if(color != null && h3d.Vector.fromArray(color).toColor() != 0xffffffff) data.color = color;
-	}*/
+	override function save(obj:Dynamic) : Dynamic {
+		super.save(obj);
+		if(color != null && h3d.Vector.fromArray(color).toColor() != 0xffffffff) obj.color = color;
+		if(mainPassName == "" || mainPassName == null ) Reflect.deleteField(obj, "mainPassName");
+		return obj;
+	}
 
 	function renderProps() {
 		var cur = h3d.mat.MaterialSetup.current;
@@ -48,11 +50,8 @@ class Material extends Prefab {
 	}
 
 	function update(mat : h3d.mat.Material, props, loadTexture : String -> h3d.mat.Texture) {
-		mat.props = props;
 		if(color != null)
 			mat.color.setColor(h3d.Vector.fromArray(color).toColor());
-		if(mainPassName != null)
-			mat.mainPass.setPassName(mainPassName);
 
 		inline function getTex(pname: String) {
 			var p : String = Reflect.field(this, pname);
@@ -68,6 +67,10 @@ class Material extends Prefab {
 		if( getTex("diffuseMap") != null ) mat.texture = getTex("diffuseMap");
 		if( getTex("normalMap") != null ) mat.normalMap = getTex("normalMap");
 		if( getTex("specularMap") != null ) mat.specularTexture = getTex("specularMap");
+		mat.props = props;
+
+		if(mainPassName != null && mainPassName.length > 0 )
+			mat.mainPass.setPassName(mainPassName);
 	}
 	
 	override function updateInstance(?propName ) {

@@ -80,6 +80,10 @@ class Shader extends Prefab {
 		material.mainPass.addShader(shader);
 	}
 
+	function checkMaterial(mat: h3d.mat.Material) {
+		return targetMaterial == null || targetMaterial == mat.name;
+	}
+
 	public function loadShader( path : String ) : ShaderDef {
 		var r = shaderCache.get(path);
 		if(r != null)
@@ -153,7 +157,7 @@ class Shader extends Prefab {
 			}
 		}
 		if( ctx.local3d != null )
-			iterMaterials(function(obj,mat) if( targetMaterial == null || targetMaterial == mat.name ) applyShader(obj, mat, shader));
+			iterMaterials(function(obj,mat) if(checkMaterial(mat)) applyShader(obj, mat, shader));
 		this.shader = shader;
 		updateInstance();
 	}
