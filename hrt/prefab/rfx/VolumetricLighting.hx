@@ -113,7 +113,16 @@ class VolumetricLighting extends RendererFX {
 		if( step == BeforeTonemapping ) {
 			r.mark("VolumetricLighting");
 
-			var sun = Std.downcast(r.getLightSystem().shadowLight, h3d.scene.pbr.DirLight);
+			var sun : h3d.scene.pbr.DirLight = null;
+			var light = @:privateAccess r.ctx.lights;
+			while ( light != null ) {
+				var pbrLight = Std.downcast(light, h3d.scene.pbr.DirLight);
+				if ( pbrLight != null && pbrLight.isMainLight ) {
+					sun = pbrLight;
+					break;
+				}
+				light = light.next;
+			}
 			if ( sun == null || sun.shadows == null || !sun.shadows.enabled )
 				return;
 			var tex = r.allocTarget("volumetricLighting", false, textureSize, RGBA16F);
@@ -169,7 +178,7 @@ class VolumetricLighting extends RendererFX {
 			}
 
 			var pbrRenderer = Std.downcast(r, h3d.scene.pbr.Renderer);
-			h3d.pass.Copy.run(tex, r.ctx.getGlobal("hdrMap"), Add);
+			h3d.pass.Copy.run(tex, h3d.Engine.getCurrent().getCurrentTarget(), Add);
 		}
 	}
 
