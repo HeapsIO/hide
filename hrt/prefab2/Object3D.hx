@@ -58,7 +58,7 @@ class Object3D extends Prefab {
 	}
 
 	/* Override makeObject3d instead of this */
-	override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) {
+	override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) : Void {
 		local3d = makeObject3d(ctx.local3d);
 		if (local3d != null)
 			local3d.name = name;
@@ -152,7 +152,7 @@ class Object3D extends Prefab {
 			if( r.name != null && StringTools.startsWith(r.name,"$UI.") )
 				r.remove();
 		// add ranges
-		
+
 		var sheet = getCdbType();
 		if( sheet != null ) {
 			var ide = hide.Ide.inst;

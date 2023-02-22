@@ -518,6 +518,37 @@ class Prefab {
 		return root;
 	}
 
+	public function getObjects<T:h3d.scene.Object>(c: Class<T> ) : Array<T> {
+		var root = Object3D.getLocal3d(this);
+		if(root == null) return [];
+		var childObjs = getChildrenRoots(root, this, []);
+		var ret = [];
+		function rec(o : h3d.scene.Object) {
+			var m = Std.downcast(o, c);
+			if(m != null) {
+				if(ret.contains(m))
+					throw "?!";
+				ret.push(m);
+			}
+			for( child in o )
+				if( childObjs.indexOf(child) < 0 )
+					rec(child);
+		}
+		rec(root);
+		return ret;
+	}
+
+	static function getChildrenRoots( base : h3d.scene.Object, p : Prefab, out : Array<h3d.scene.Object> ) {
+		for( c in p.children ) {
+			var local3d=  Object3D.getLocal3d(c);
+			if( local3d == base )
+				getChildrenRoots(base, c, out);
+			else
+				out.push(local3d);
+		}
+		return out;
+	}
+
 	/**
 		If the prefab `props` represent CDB data, returns the sheet name of it, or null.
 	 **/
@@ -749,7 +780,7 @@ class Prefab {
 			var shouldCopy = true;
 			shouldCopy = shouldCopy && (v != null || copyNull);
 			shouldCopy = shouldCopy && (copyDefault || useProperty || v != prop.defaultValue);
-			//shouldCopy &= (copyDefault || ) 
+			//shouldCopy &= (copyDefault || )
 			if (shouldCopy) {
 				set(dest, prop.name, copyValue(v));
 			}
@@ -899,7 +930,7 @@ class Prefab {
 #end
 
 	// Static initialization trick to register this class with the given name
-	// in the prefab registry. Call this in your own classes 
+	// in the prefab registry. Call this in your own classes
 	public static var _ = Prefab.register("prefab", Prefab);
 
 	/*inline public function findParent<T:Prefab,R>( cl : Class<T>, ?filter : (p:T) -> Null<R>) : Null<R> {

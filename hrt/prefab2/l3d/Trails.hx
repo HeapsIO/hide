@@ -1,6 +1,6 @@
 package hrt.prefab2.l3d;
 
-@:struct
+#if (hl_ver >= version("1.13.0")) @:struct #end
 class TrailPoint {
 	public var x : Float = 0;
 	public var y : Float = 0;
@@ -19,7 +19,7 @@ class TrailPoint {
 	public function new(){};
 }
 
-@:struct
+#if (hl_ver >= version("1.13.0")) @:struct #end
 class TrailHead {
 	public var firstPoint : TrailPoint = null;
 	public var totalLength : Float = 0;
