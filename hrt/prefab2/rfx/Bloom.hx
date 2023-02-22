@@ -11,6 +11,7 @@ class BloomTonemap extends hxsl.Shader {
 	}
 }
 
+@:access(h3d.scene.Renderer)
 class Bloom extends RendererFX {
 
 	var bloomPass = new h3d.pass.ScreenFx(new hrt.shader.Bloom());

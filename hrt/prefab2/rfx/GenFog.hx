@@ -75,6 +75,7 @@ enum abstract GenFogRenderMode(String) {
 	var AfterTonemapping;
 }
 
+@:access(h3d.scene.Renderer)
 class GenFog extends RendererFX {
 
 	var fogPass = new h3d.pass.ScreenFx(new GenFogShader());

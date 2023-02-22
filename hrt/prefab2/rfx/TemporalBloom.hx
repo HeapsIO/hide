@@ -79,6 +79,7 @@ class Threshold extends h3d.shader.ScreenShader {
 	};
 }
 
+@:access(h3d.scene.Renderer)
 class TemporalBloom extends RendererFX {
 
 	@:s public var size : Float;

@@ -50,7 +50,7 @@ class DistanceBlurShader extends hrt.shader.PbrShader {
 	}
 
 }
-
+@:access(h3d.scene.Renderer)
 class DistanceBlur extends RendererFX {
 
 	var blurPass = new h3d.pass.ScreenFx(new DistanceBlurShader());

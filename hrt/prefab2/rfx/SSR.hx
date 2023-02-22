@@ -131,6 +131,7 @@ class ApplySSRShader extends h3d.shader.ScreenShader {
 
 @:access(h3d.pass.PassList)
 @:access(h3d.pass.PassObject)
+@:access(h3d.scene.Renderer)
 class SSR extends RendererFX {
 
 	public var ssrShader : SSRShader;

@@ -4,17 +4,10 @@ import hrt.impl.Gradient;
 import hrt.impl.TextureType;
 import hide.prefab2.HideProps;
 
-typedef ShaderDef = {
-	var shader : hxsl.SharedShader;
-	var inits : Array<{ variable : hxsl.Ast.TVar, value : Dynamic }>;
-}
-
 class Shader extends Prefab {
 
 	@:s var targetMaterial : String;
 	@:s var recursiveApply = true;
-
-	static var shaderCache : Map<String, ShaderDef> = new Map<String, ShaderDef>();
 
 	public var shader : hxsl.Shader;
 
@@ -82,25 +75,6 @@ class Shader extends Prefab {
 
 	function checkMaterial(mat: h3d.mat.Material) {
 		return targetMaterial == null || targetMaterial == mat.name;
-	}
-
-	public function loadShader( path : String ) : ShaderDef {
-		var r = shaderCache.get(path);
-		if(r != null)
-			return r;
-		var cl : Class<hxsl.Shader> = cast Type.resolveClass(path.split("/").join("."));
-		if(cl == null) return null;
-		// make sure to share the SharedShader instance with the real shader
-		// so we don't get a duplicate cache of instances
-		var shaderInst = Type.createEmptyInstance(cl);
-		@:privateAccess shaderInst.initialize();
-		var shader = @:privateAccess shaderInst.shader;
-		r = {
-			shader: shader,
-			inits: []
-		};
-		shaderCache.set(path, r);
-		return r;
 	}
 
 	function iterMaterials(callb) {

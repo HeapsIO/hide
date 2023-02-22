@@ -2,7 +2,7 @@ package hrt.prefab2;
 
 class DynamicShader extends Shader {
 
-	var shaderDef : hrt.prefab2.Shader.ShaderDef;
+	var shaderDef : hrt.prefab2.Prefab.ShaderDef;
 	var shaderClass : Class<hxsl.Shader>;
 	@:s var isInstance : Bool;
 

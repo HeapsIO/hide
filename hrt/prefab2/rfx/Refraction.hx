@@ -28,6 +28,7 @@ class RefractionShader extends hxsl.Shader {
 }
 
 @:access(h3d.pass.PassList)
+@:access(h3d.scene.Renderer)
 @:access(h3d.pass.PassObject)
 class Refraction extends RendererFX {
 

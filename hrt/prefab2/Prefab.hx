@@ -36,8 +36,7 @@ class ContextShared {
 	public var isPrototype = true;
 	public var originalContext : InstanciateContext = null;
 	public var currentPath : String = "";
-
-	var shaderCache : ShaderDefCache;
+	public var shaderCache : ShaderDefCache;
 
 #if editor
 	public var scene : hide.comp2.Scene = null;
@@ -612,6 +611,25 @@ class Prefab {
 
 		params.local2d = old2d;
 		params.local3d = old3d;
+	}
+
+	public function loadShader( path : String ) : ShaderDef {
+		var r = shared.shaderCache.get(path);
+		if(r != null)
+			return r;
+		var cl : Class<hxsl.Shader> = cast Type.resolveClass(path.split("/").join("."));
+		if(cl == null) return null;
+		// make sure to share the SharedShader instance with the real shader
+		// so we don't get a duplicate cache of instances
+		var shaderInst = Type.createEmptyInstance(cl);
+		@:privateAccess shaderInst.initialize();
+		var shader = @:privateAccess shaderInst.shader;
+		r = {
+			shader: shader,
+			inits: []
+		};
+		shared.shaderCache.set(path, r);
+		return r;
 	}
 
 	public function loadDir(p : String, ?dir : String ) : Array<hxd.res.Any> {

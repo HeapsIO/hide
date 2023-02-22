@@ -20,6 +20,7 @@ class VignettingShader extends h3d.shader.ScreenShader {
 	}
 }
 
+@:access(h3d.scene.Renderer)
 class Vignetting extends RendererFX {
 
 	var vignettingPass = new h3d.pass.ScreenFx(new VignettingShader());

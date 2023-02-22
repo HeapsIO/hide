@@ -1,5 +1,5 @@
 package hrt.prefab2.rfx;
-
+@:access(h3d.scene.Renderer)
 class Sao extends RendererFX {
 
 	@:s public var size : Float = 1;

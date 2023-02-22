@@ -81,6 +81,7 @@ class VolumetricLightingShader extends hrt.shader.PbrShader {
 	};
 }
 
+@:access(h3d.scene.Renderer)
 class VolumetricLighting extends RendererFX {
 
 	var pass = new h3d.pass.ScreenFx(new VolumetricLightingShader());

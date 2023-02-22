@@ -2,6 +2,7 @@ package hrt.prefab2.rfx;
 
 @:access(h3d.pass.PassList)
 @:access(h3d.pass.PassObject)
+@:access(h3d.scene.Renderer)
 class LightVolume extends RendererFX {
 
 	var blurPass = new h3d.pass.Blur();
