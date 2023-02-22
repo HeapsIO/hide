@@ -147,7 +147,11 @@ class Prefab {
 	public function instanciate(params: InstanciateContext) {
 		if (!params.forceInstanciate && (shared.isPrototype))
 			throw "Can't instanciate a template prefab unless params.forceInstanciate is true.";
-		shared.originalContext = params;
+
+		shared.originalContext.local2d = params.local2d;
+		shared.originalContext.local3d = params.local3d;
+		shared.originalContext.forceInstanciate = params.forceInstanciate;
+
 		makeInstanceRec(params);
 
 		refresh();
@@ -191,6 +195,7 @@ class Prefab {
 		var prefabInstance = Type.createInstance(cl, [parent]);
 
 		prefabInstance.shared = new ContextShared();
+		prefabInstance.shared.originalContext = new InstanciateContext(null, null);
 		prefabInstance.load(data);
 
 		var children = Std.downcast(Reflect.field(data, "children"), Array);

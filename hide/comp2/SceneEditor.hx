@@ -98,7 +98,7 @@ class SnapSettingsPopup extends hide.comp.Popup {
 
 		}
 
-		
+
 		{
 			var input = new Element('<input type="checkbox" name="forceSnapGrid" id="forceSnapGrid"/>').appendTo(form_div);
 			new Element('<label for="forceSnapGrid" class="left">Force On Grid</label>').appendTo(form_div);
@@ -709,7 +709,7 @@ class SceneEditor {
 
 		loadSavedCameraController3D();
 		loadSnapSettings();
-		
+
 		scene.s2d.defaultSmooth = true;
 		root2d.x = scene.s2d.width >> 1;
 		root2d.y = scene.s2d.height >> 1;
@@ -1716,7 +1716,7 @@ class SceneEditor {
 
 	function makePrefab(elt: PrefabElement) {
 		scene.setCurrent();
-		
+
 		var params = new hrt.prefab2.Prefab.InstanciateContext(elt.parent.findFirstLocal2d(), elt.parent.findFirstLocal3d());
 		params.forceInstanciate = true;
 
@@ -1975,7 +1975,7 @@ class SceneEditor {
 				{label: "Paste", click: function() {
 					pasteFields(groupFields);
 				}}
-				
+
 			]);
 			});
 		}
@@ -2226,7 +2226,7 @@ class SceneEditor {
 		var elts: Array<PrefabElement> = [];
 		for(path in paths) {
 			var obj3d = createDroppedElement(path, parent);
-			
+
 			obj3d.setTransform(localMat);
 			autoName(obj3d);
 			elts.push(obj3d);
@@ -2326,7 +2326,7 @@ class SceneEditor {
 		if(!canGroupSelection()) {
 			var elts = curEdit.rootElements;
 			if (elts.length == 0) {
-				
+
 			}
 
 			return;
@@ -2894,7 +2894,7 @@ class SceneEditor {
 	// Override
 	function getNewContextMenu(current: PrefabElement, ?onMake: PrefabElement->Void=null, ?groupByType=true ) : Array<hide.comp.ContextMenu.ContextMenuItem> {
 		var newItems = new Array<hide.comp.ContextMenu.ContextMenuItem>();
-		
+
 		@:privateAccess var allRegs = hrt.prefab2.Prefab.registry.copy();
 		allRegs.remove("reference");
 		allRegs.remove("unknown");
