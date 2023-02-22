@@ -60,7 +60,7 @@ class LightProbeBaker {
 		if(offScreenScene != null) offScreenScene.dispose();
 		offScreenScene = new h3d.scene.Scene();
 
-		//@:privateAccess newShared.shaderCache =  @:privateAccess hide.Ide.inst.shaderLoader.shaderCache;
+		@:privateAccess sceneData.shared.shaderCache =  @:privateAccess hide.Ide.inst.shaderLoader.shaderCache;
 
 		var whiteList = [ "level3d", "object", "model", "material", "light"];
 		function keep( p : hrt.prefab2.Prefab ) {

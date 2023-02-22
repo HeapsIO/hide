@@ -19,6 +19,13 @@ typedef PrefabMeta = {
 	var ?range_step : Float;
 }
 
+typedef ShaderDef = {
+	var shader : hxsl.SharedShader;
+	var inits : Array<{ variable : hxsl.Ast.TVar, value : Dynamic }>;
+}
+
+typedef ShaderDefCache = Map<String, ShaderDef>;
+
 class ContextShared {
 	public function new() {
 
@@ -29,6 +36,8 @@ class ContextShared {
 	public var isPrototype = true;
 	public var originalContext : InstanciateContext = null;
 	public var currentPath : String = "";
+
+	var shaderCache : ShaderDefCache;
 
 #if editor
 	public var scene : hide.comp2.Scene = null;
