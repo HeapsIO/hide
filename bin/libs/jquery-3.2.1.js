@@ -865,10 +865,10 @@ function Sizzle( selector, context, results, seed ) {
 
 				if ( newSelector ) {
 					try {
-						push.apply( results,
+						/*push.apply( results,
 							newContext.querySelectorAll( newSelector )
 						);
-						return results;
+						return results;*/
 					} catch ( qsaError ) {
 					} finally {
 						if ( nid === expando ) {
@@ -1352,8 +1352,10 @@ setDocument = Sizzle.setDocument = function( node ) {
 			}
 
 			// Opera 10-11 does not throw on post-comma invalid pseudos
-			el.querySelectorAll("*,:x");
-			rbuggyQSA.push(",.*:");
+			// NOTE(ces) : Removed this line cause it's useless for our nwjs build and makes
+			// the debugger catch it all the time
+			//el.querySelectorAll("*,:x");
+			//rbuggyQSA.push(",.*:");
 		});
 	}
 
@@ -1370,8 +1372,8 @@ setDocument = Sizzle.setDocument = function( node ) {
 
 			// This should fail with an exception
 			// Gecko does not error, returns false instead
-			matches.call( el, "[s!='']:x" );
-			rbuggyMatches.push( "!=", pseudos );
+			//matches.call( el, "[s!='']:x" );
+			//rbuggyMatches.push( "!=", pseudos );
 		});
 	}
 
@@ -1527,7 +1529,7 @@ Sizzle.matchesSelector = function( elem, expr ) {
 		( !rbuggyMatches || !rbuggyMatches.test( expr ) ) &&
 		( !rbuggyQSA     || !rbuggyQSA.test( expr ) ) ) {
 
-		try {
+		/*try {
 			var ret = matches.call( elem, expr );
 
 			// IE 9's matchesSelector returns false on disconnected nodes
@@ -1537,7 +1539,7 @@ Sizzle.matchesSelector = function( elem, expr ) {
 					elem.document && elem.document.nodeType !== 11 ) {
 				return ret;
 			}
-		} catch (e) {}
+		} catch (e) {}*/
 	}
 
 	return Sizzle( expr, document, null, [ elem ] ).length > 0;
