@@ -287,6 +287,7 @@ class Cell {
 	}
 
 	function valueHtml( c : cdb.Data.Column, v : Dynamic, sheet : cdb.Sheet, obj : Dynamic, scope : Array<{ s : cdb.Sheet, obj : Dynamic }> ) : {str: String, containsHtml: Bool} {
+
 		inline function val(s:String) {
 			return {str: Std.string(s), containsHtml:false};
 		}
@@ -383,20 +384,25 @@ class Cell {
 			var t = editor.base.getCustomType(name);
 			var isHtml = false;
 			var a : Array<Dynamic> = v;
-			var cas = t.cases[a[0]];
-			var str = cas.name;
-			if( cas.args.length > 0 ) {
-				str += "(";
-				var out = [];
-				var pos = 1;
-				for( i in 1...a.length ) {
-					var r = valueHtml(cas.args[i-1], a[i], sheet, this, scope);
-					isHtml = isHtml || r.containsHtml;
-					out.push(r.str);
+			var str = "";
+
+			// Temp fix for hack
+			try {
+				var cas = t.cases[a[0]];
+				str = cas.name;
+				if( cas.args.length > 0 ) {
+					str += "(";
+					var out = [];
+					var pos = 1;
+					for( i in 1...a.length ) {
+						var r = valueHtml(cas.args[i-1], a[i], sheet, this, scope);
+						isHtml = isHtml || r.containsHtml;
+						out.push(r.str);
+					}
+					str += out.join(",");
+					str += ")";
 				}
-				str += out.join(",");
-				str += ")";
-			}
+			} catch(e) {};
 			{str: str, containsHtml: isHtml};
 		case TFlags(values):
 			var v : Int = v;
