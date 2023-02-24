@@ -189,6 +189,11 @@ class Cell {
 			elementHtml.textContent = html.str;
 		else
 			elementHtml.innerHTML = html.str;
+		switch( column.type ) {
+		case TEnum(values):
+			elementHtml.title = getEnumValueDoc(values[value]);
+		default:
+		}
 		blurOff = false;
 
 		updateClasses();
@@ -628,6 +633,20 @@ class Cell {
 		editor.cursor.set(table, this.columnIndex, this.line.index);
 	}
 
+	function getEnumValueDoc(v: String) {
+		var colDoc = column.documentation == null ? [] : column.documentation.split("\n");
+		var d = colDoc.find(l -> new EReg('\\b$v\\b', '').match(l));
+		if( d != null ) {
+			if( d.indexOf(':') >= 0 )
+				return StringTools.ltrim(d.substr(d.indexOf(':') + 1));
+			else if( d.indexOf('->') >= 0 )
+				return StringTools.ltrim(d.substr(d.indexOf('->') + 2));
+			else if( d.indexOf('=>') >= 0 )
+				return StringTools.ltrim(d.substr(d.indexOf('=>') + 2));
+		}
+		return null;
+	}
+
 	// kept available until we're confident in the new system
 	var useSelect2 = false;
 	public function edit() {
@@ -635,20 +654,6 @@ class Cell {
 			return;
 		useSelect2 = this.editor.config.get("cdb.useSelect2") || (Std.isOfType(editor, ObjEditor) && editor.element.parent().hasClass("detached"));
 		inEdit = true;
-
-		var colDoc = column.documentation == null ? [] : column.documentation.split("\n");
-		function getEnumValueDoc(v: String) {
-			var d = colDoc.find(l -> new EReg('\\b$v\\b', '').match(l));
-			if( d != null ) {
-				if( d.indexOf(':') >= 0 )
-					return StringTools.ltrim(d.substr(d.indexOf(':') + 1));
-				else if( d.indexOf('->') >= 0 )
-					return StringTools.ltrim(d.substr(d.indexOf('->') + 2));
-				else if( d.indexOf('=>') >= 0 )
-					return StringTools.ltrim(d.substr(d.indexOf('=>') + 2));
-			}
-			return null;
-		}
 
 		switch( column.type ) {
 		case TString if( column.kind == Script ):
