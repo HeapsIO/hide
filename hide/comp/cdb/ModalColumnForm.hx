@@ -62,7 +62,7 @@ class ModalColumnForm extends Modal {
 
 				<tr class="values">
 				<td>Possible Values
-				<td><input type="text" name="values" name="vals"/>
+				<td><div contenteditable="true" id="values" class="custom-text-edit-standalone" style="min-height: 3em; max-width: 170px;"></div>
 				</tr>
 
 				<tr class="sheet">
@@ -219,7 +219,7 @@ class ModalColumnForm extends Modal {
 			}
 			switch( column.type ) {
 			case TEnum(values), TFlags(values):
-				form.find("[name=values]").val(values.join(","));
+				form.find("#values")[0].innerText = values.join("\n");
 			case TRef(sname), TLayer(sname):
 				var index = base.sheets.indexOf(base.getSheet(sname));
 				form.find("[name=sheet]").val( "" + index);
@@ -244,7 +244,7 @@ class ModalColumnForm extends Modal {
 		contentModal.keydown(function(e) {
 			if( e.keyCode == 27 )
 				closeModal();
-			if( e.keyCode == hxd.Key.ENTER ) {
+			if( e.keyCode == hxd.Key.ENTER && !js.Browser.document.activeElement.hasAttribute("contenteditable")) {
 				if( e.target != form.find("[name=doc]")[0] ) {
 					if (editForm)
 						form.find("#editBtn").click();
@@ -284,6 +284,10 @@ class ModalColumnForm extends Modal {
 		var cols = form.find("input, select, textarea").not("[type=submit]");
 		for( i in cols.elements() )
 			Reflect.setField(v, i.attr("name"), i.attr("type") == "checkbox" ? (i.is(":checked")?"on":null) : i.val());
+		var divs = form.find("div[contenteditable]");
+		for (i in divs.elements()) {
+			Reflect.setField(v, i[0].id, i[0].innerText);
+		}
 
 		var t : ColumnType = switch( v.type ) {
 		case "id": TId;
@@ -292,7 +296,8 @@ class ModalColumnForm extends Modal {
 		case "string": TString;
 		case "bool": TBool;
 		case "enum":
-			var vals = StringTools.trim(v.values).split(",");
+			var vals = StringTools.trim(v.values).split("\n");
+			vals = [for ( v in vals) for (e in v.split(",")) e];
 			vals.removeIf(function(e) {
 				return StringTools.trim(e) == "";
 			});
@@ -302,7 +307,8 @@ class ModalColumnForm extends Modal {
 			}
 			TEnum([for( f in vals ) StringTools.trim(f)]);
 		case "flags":
-			var vals = StringTools.trim(v.values).split(",");
+			var vals = StringTools.trim(v.values).split("\n");
+			vals = [for ( v in vals) for (e in v.split(",")) e];
 			vals.removeIf(function(e) {
 				return StringTools.trim(e) == "";
 			});

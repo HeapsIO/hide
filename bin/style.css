@@ -51,6 +51,24 @@ textarea {
   outline: 1px solid #888888;
   outline-offset: 1px;
 }
+.custom-text-edit-standalone {
+  background-color: #222222;
+  border: 1px solid #444;
+  padding: 2px 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.custom-text-edit-standalone:focus {
+  background-color: #141414;
+}
+.custom-text-edit-standalone:hover {
+  border-color: #888;
+}
+.custom-text-edit-standalone:focus {
+  outline: 1px solid #888888;
+  outline-offset: 1px;
+}
 select:focus {
   outline: none;
 }

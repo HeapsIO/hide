@@ -52,6 +52,19 @@ input, textarea {
 	}
 }
 
+.custom-text-edit-standalone {
+	background-color: rgb(34,34,34);
+	border : 1px solid #444;
+	padding: 2px 4px;
+	&:focus {
+		background-color: rgb(20,20,20);
+	}
+	&:hover {
+		border-color : #888;
+	}
+	.custom-text-edit();
+}
+
 select {
 	&:focus {
 		outline: none;
