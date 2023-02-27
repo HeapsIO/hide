@@ -119,7 +119,7 @@ class ModalColumnForm extends Modal {
 
 				<tr class="doc hide">
 					<td>Documentation
-					<td><textarea name="doc" rows=10 columns=70></textarea>
+					<td><textarea name="doc"></textarea>
 				</tr>
 
 				<tr class="more">

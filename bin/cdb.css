@@ -130,8 +130,8 @@
   background-color: black;
 }
 .cdb .cdb-sheet td.edit {
-  /*padding : 2px;
-			padding-right : 6px;*/
+  padding: 2px;
+  padding-right: 6px;
 }
 .cdb .cdb-sheet td.edit > input,
 .cdb .cdb-sheet td.edit textarea,

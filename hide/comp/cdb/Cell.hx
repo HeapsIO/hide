@@ -188,8 +188,7 @@ class Cell {
 		if( !html.containsHtml )
 			elementHtml.textContent = html.str;
 		else
-			elementHtml.innerHTML = "<div style='max-height: 200px; overflow-y:auto; overflow-x:hidden;'>" + html.str + "</div>";
-
+			elementHtml.innerHTML = html.str;
 		switch( column.type ) {
 		case TEnum(values):
 			elementHtml.title = getEnumValueDoc(values[value]);
@@ -373,7 +372,7 @@ class Cell {
 			scope.pop();
 			if( out.length == 0 )
 				return val("");
-			return {str: out.join(", "), containsHtml: true};
+			return {str: out.join(", "), containsHtml: isHtml};
 		case TProperties:
 			var ps = sheet.getSub(c);
 			var out = [];
@@ -662,36 +661,49 @@ class Cell {
 		case TInt, TFloat, TString, TId, TCustom(_), TDynamic:
 			var str = value == null ? "" : Std.isOfType(value, String) ? value : editor.base.valToString(column.type, value);
 
+			var span = js.Browser.document.createSpanElement();
+			span.innerHTML = elementHtml.innerHTML;
+			elementHtml.innerHTML = null;
+			elementHtml.appendChild(span);
+
+			var textWidth = span.offsetWidth;
+			var textHeight = span.offsetHeight;
+			var longText = textHeight > 25 || str.indexOf("\n") >= 0 || str.length > 22;
 			elementHtml.innerHTML = null;
 			elementHtml.classList.add("edit");
-
-
-
-			var i = new Element("<div contenteditable='true' tabindex='1' class='custom-text-edit'>");
-			i.text(str);
-			var textHeight = i[0].offsetHeight;
-			var longText = textHeight > 25 || str.indexOf("\n") >= 0;
-
+			var i = new Element(longText ? "<textarea>" : "<input>");
 			elementHtml.appendChild(i[0]);
 			i.keypress(function(e) {
+				if (!longText) {
+					longText = i.val().length > 22;
+					if (longText) {
+						var old = currentValue;
+						// hack to tranform the input into textarea
+						var newVal = i.val();
+						var curPos = (cast elementHtml.querySelector("input") : js.html.InputElement).selectionStart;
+						Reflect.setField(line.obj, column.name, newVal+"x");
+						refresh();
+						Reflect.setField(line.obj, column.name,old);
+						currentValue = newVal;
+						edit();
+						(cast elementHtml.querySelector("textArea") : js.html.TextAreaElement).setSelectionRange(curPos, curPos);
+					}
+				}
 				e.stopPropagation();
 			});
 			i.dblclick(function(e) e.stopPropagation());
 			//if( str != "" && (table.displayMode == Properties || table.displayMode == AllProperties) )
 			//	i.css({ width : Math.ceil(textWidth - 3) + "px" }); -- bug if small text ?
-			/*if( longText ) {
+			if( longText ) {
 				elementHtml.classList.add("edit_long");
 				i.css({ height : Math.max(25,Math.ceil(textHeight - 1)) + "px" });
-			}*/
+			}
 			i.val(str);
 			function closeEdit() {
 				i.off();
 				this.closeEdit();
 			}
 			i.keydown(function(e) {
-				var t : js.html.HtmlElement = cast e.target;
-				var textHeight = t.offsetHeight;
-				var longText = textHeight > 25 || t.innerText.indexOf("\n") >= 0;
 				switch( e.keyCode ) {
 				case K.ESCAPE:
 					inEdit = false;
@@ -700,6 +712,17 @@ class Cell {
 					table.editor.element.focus();
 				case K.ENTER if( !e.shiftKey || !column.type.match(TString|TDynamic|TCustom(_)) ):
 					closeEdit();
+					e.preventDefault();
+				case K.ENTER if( !longText ):
+					var old = currentValue;
+					// hack to insert newline and tranform the input into textarea
+					var newVal = i.val() + "\n";
+					Reflect.setField(line.obj, column.name, newVal+"x");
+					refresh();
+					Reflect.setField(line.obj, column.name,old);
+					currentValue = newVal;
+					edit();
+					(cast elementHtml.querySelector("textarea") : js.html.TextAreaElement).setSelectionRange(newVal.length,newVal.length);
 					e.preventDefault();
 				case K.UP, K.DOWN if( !longText ):
 					closeEdit();
@@ -713,9 +736,8 @@ class Cell {
 				}
 				e.stopPropagation();
 			});
-			i.keyup(function(e) try {
-				var t : js.html.HtmlElement = cast e.target;
-				var v = editor.base.parseValue(column.type, t.innerText);
+			i.keyup(function(_) try {
+				var v = editor.base.parseValue(column.type, i.val());
 
 				if (column.type == TId && !isUniqueID((v:String), true)) {
 					throw v + " is not a unique id";
@@ -731,17 +753,7 @@ class Cell {
 					closeEdit();
 			});
 			i.focus();
-
-			// Select whole content of contenteditable div
-			{
-				var range =  js.Browser.document.createRange();
-				range.selectNodeContents(i[0]);
-				var sel = js.Browser.window.getSelection();
-				sel.removeAllRanges();
-				sel.addRange(range);
-			}
-
-
+			i.select();
 			if( longText ) i.scrollTop(0);
 		case TBool:
 			setValue( currentValue == false && column.opt && table.displayMode != Properties ? null : currentValue == null ? true : currentValue ? false : true );
@@ -1214,8 +1226,8 @@ class Cell {
 
 	public function closeEdit() {
 		inEdit = false;
-		var input = elementHtml.querySelector("div[contenteditable]");
-		if(input != null && input.innerText != null ) setRawValue(input.innerText);
+		var input : js.html.InputElement = cast elementHtml.querySelector("input, textarea");
+		if(input != null &&  input.value != null ) setRawValue(input.value);
 		refresh();
 		focus();
 	}

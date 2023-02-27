@@ -42,15 +42,6 @@ input,
 textarea {
   padding-left: 4px;
 }
-.custom-text-edit {
-  max-height: 200px;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-.custom-text-edit:focus {
-  outline: 1px solid #888888;
-  outline-offset: 1px;
-}
 select:focus {
   outline: none;
 }
