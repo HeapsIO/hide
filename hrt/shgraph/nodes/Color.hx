@@ -20,6 +20,14 @@ class Color extends ShaderConst {
 		addOutput("output", TVec(4, VFloat));
 	}
 
+	override public function getOutputTExpr(key : String) : TExpr {
+		return {
+			e: TVar(output),
+			p: null,
+			t: TVec(4, VFloat)
+		};
+	}
+
 	override public function build(key : String) : TExpr {
 
 		return { e: TBinop(OpAssign, {

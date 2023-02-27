@@ -108,6 +108,9 @@ class ShaderOutput extends ShaderNode {
 	}
 
 	override public function saveProperties() : Dynamic {
+		if (this.variable == null) {
+			this.variable = ShaderNode.availableVariables[0];
+		}
 		var parameters : Dynamic = {
 			name: variable.name,
 			type: variable.type.getName(),
