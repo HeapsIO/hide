@@ -337,9 +337,6 @@ class Terrain extends Object3D {
 		if( terrain.surfaceArray != null )
 			return;
 
-		#if editor
-		@:privateAccess shared.scene.setCurrent();
-		#end
 
 		var initDone = false;
 		function waitAll() {

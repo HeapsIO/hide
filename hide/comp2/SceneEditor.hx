@@ -240,7 +240,6 @@ class SceneEditor {
 	var ide : hide.Ide;
 	public var event(default, null) : hxd.WaitEvent;
 	var hideList : Map<PrefabElement, Bool> = new Map();
-	var rootPrefab : PrefabElement;
 	public var selectedPrefabs : Array<PrefabElement> = [];
 
 	public var root2d : h2d.Object = null;
@@ -311,6 +310,8 @@ class SceneEditor {
 			if( cameraController2D != null ) cameraController2D.toTarget();
 			onResize();
 		};
+
+		sceneData.shared.scene = scene;
 
 		editorDisplay = true;
 
