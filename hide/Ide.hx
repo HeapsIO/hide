@@ -1038,6 +1038,21 @@ class Ide {
 			t();
 	}
 
+	public function filterProps( callb : Dynamic -> Bool ) {
+		var exts = ["props", "json"];
+		var todo = [];
+		browseFiles(function(path) {
+			var ext = path.split(".").pop();
+			if( exts.indexOf(ext) < 0 ) return;
+			var content = parseJSON(sys.io.File.getContent(getPath(path)));
+			var changed = callb(content);
+			if( !changed ) return;
+			todo.push(function() sys.io.File.saveContent(getPath(path), toJSON(content)));
+		});
+		for( t in todo )
+			t();
+	}
+
 	function browseFiles( callb : String -> Void ) {
 		function browseRec(path) {
 			if( path == ".tmp" ) return;

@@ -272,6 +272,38 @@ class FileTree extends FileView {
 			return p;
 		}
 
+		function filterContent(content:Dynamic) {
+			var visited = new Array<Dynamic>();
+			function browseRec(obj:Dynamic) : Dynamic {
+				switch( Type.typeof(obj) ) {
+				case TObject:
+					if( visited.indexOf(obj) >= 0 ) return null;
+					visited.push(obj);
+					for( f in Reflect.fields(obj) ) {
+						var v : Dynamic = Reflect.field(obj, f);
+						v = browseRec(v);
+						if( v != null ) Reflect.setField(obj, f, v);
+					}
+				case TClass(Array):
+					if( visited.indexOf(obj) >= 0 ) return null;
+					visited.push(obj);
+					var arr : Array<Dynamic> = obj;
+					for( i in 0...arr.length ) {
+						var v : Dynamic = arr[i];
+						v = browseRec(v);
+						if( v != null ) arr[i] = v;
+					}
+				case TClass(String):
+					return filter(obj);
+				default:
+				}
+				return null;
+			}
+			for( f in Reflect.fields(content) ) {
+				var v = browseRec(Reflect.field(content,f));
+				if( v != null ) Reflect.setField(content,f,v);
+			}
+		}
 		ide.filterPrefabs(function(p:hrt.prefab.Prefab) {
 			changed = false;
 			p.source = filter(p.source);
@@ -279,37 +311,14 @@ class FileTree extends FileView {
 			if( h.onResourceRenamed != null )
 				h.onResourceRenamed(filter);
 			else {
-				var visited = new Array<Dynamic>();
-				function browseRec(obj:Dynamic) : Dynamic {
-					switch( Type.typeof(obj) ) {
-					case TObject:
-						if( visited.indexOf(obj) >= 0 ) return null;
-						visited.push(obj);
-						for( f in Reflect.fields(obj) ) {
-							var v : Dynamic = Reflect.field(obj, f);
-							v = browseRec(v);
-							if( v != null ) Reflect.setField(obj, f, v);
-						}
-					case TClass(Array):
-						if( visited.indexOf(obj) >= 0 ) return null;
-						visited.push(obj);
-						var arr : Array<Dynamic> = obj;
-						for( i in 0...arr.length ) {
-							var v : Dynamic = arr[i];
-							v = browseRec(v);
-							if( v != null ) arr[i] = v;
-						}
-					case TClass(String):
-						return filter(obj);
-					default:
-					}
-					return null;
-				}
-				for( f in Reflect.fields(p) ) {
-					var v = browseRec(Reflect.field(p,f));
-					if( v != null ) Reflect.setField(p,f,v);
-				}
+				filterContent(p);
 			}
+			return changed;
+		});
+
+		ide.filterProps(function(content:Dynamic) {
+			changed = false;
+			filterContent(content);
 			return changed;
 		});
 

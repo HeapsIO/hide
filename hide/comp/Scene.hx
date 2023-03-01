@@ -474,4 +474,36 @@ class Scene extends Component implements h3d.IDrawable {
 		return @:privateAccess h3d.Engine.getCurrent().resCache.get(Scene);
 	}
 
+	public function listMaterialFromLibraries( path : String ) {
+
+		var config = hide.Config.loadForFile(ide, path);
+
+		var paths : Array<String> = config.get("materialLibraries");
+		if( paths == null ) paths = [];
+
+		var materials = [];
+		function pathRec(p : String) {
+			var fullPath = ide.getPath(p);
+			if ( sys.FileSystem.isDirectory(fullPath) ) {
+				for(f in sys.FileSystem.readDirectory(fullPath) ) {
+					var fpath = p+"/"+f;
+					pathRec(fpath);
+				}
+			} else {
+				try {
+					var prefab = hxd.res.Loader.currentInstance.load(p).toPrefab().load();
+					var mats = prefab.getAll(hrt.prefab.Material);
+					for ( m in mats )
+						materials.push({ path : p, mat : m});
+				} catch ( e : hxd.res.NotFound ) {
+					ide.error('Material library ${p} not found, please update props.json');
+				}
+			}
+		}
+		for ( p in paths ) {
+			pathRec(p);
+		}
+		materials.sort((m1, m2) -> { return (m1.mat.name > m2.mat.name ? 1 : -1); });
+		return materials;
+	}
 }

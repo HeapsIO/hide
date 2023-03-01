@@ -202,30 +202,7 @@ class Model extends FileView {
 		<br/>
 		');
 
-		var materials : Array<{path:String, mat:hrt.prefab.Material}> = [];
-		var parts = getPath().split("/");
-		var dirs = [];
-		for ( p in parts ) {
-			if ( dirs.length != 0 ) {
-				dirs.push(dirs[dirs.length-1] + "/" + p);
-			} else {
-				dirs.push(p);
-			}
-		}
-		var baseDir = hxd.impl.Api.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem).baseDir;
-		for ( d in dirs ) {
-			try {
-				var path = d + "/materialLibrary.prefab";
-				path = path.split(baseDir)[1];
-				var prefab = hxd.res.Loader.currentInstance.load(path).toPrefab().load();
-				var mats = prefab.getAll(hrt.prefab.Material);
-				for ( m in mats ) {
-					materials.push( { path : path, mat : m } );
-				}
-			} catch(e: Dynamic) {
-			}
-		}
-		materials.sort((m1, m2) -> { return (m1.mat.name > m2.mat.name ? 1 : -1); });
+		var materials = scene.listMaterialFromLibraries(getPath());
 
 		var selected = null;
 		var props : Dynamic =  h3d.mat.MaterialSetup.current.loadMaterialProps(m);
