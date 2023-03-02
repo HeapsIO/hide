@@ -154,7 +154,7 @@ class SnapSettingsPopup extends Popup {
 
         for (value in steps) {
             var input = new Element('<input type="radio" name="snap" id="snap$value" value="$value"/>');
-            
+
             var equals = switch (editMode) {
                 case Translation:
                     editor.snapMoveStep == value;
@@ -163,7 +163,7 @@ class SnapSettingsPopup extends Popup {
                 case Scaling:
                     editor.snapScaleStep == value;
             }
-            
+
             if (equals)
                 input.get(0).toggleAttribute("checked", true);
             input.change((e) -> {
@@ -3025,6 +3025,7 @@ class SceneEditor {
 		hrt.shader.ParticleColorLife,
 		hrt.shader.ParticleColorRandom,
 		hrt.shader.MaskColorAlpha,
+		hrt.shader.Spinner,
 	];
 
 	function getNewShaderMenu(parentElt: PrefabElement, ?onMake: PrefabElement->Void) : hide.comp.ContextMenu.ContextMenuItem {
