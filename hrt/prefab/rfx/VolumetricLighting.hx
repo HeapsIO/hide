@@ -20,6 +20,8 @@ class VolumetricLightingShader extends hrt.shader.PbrShader {
 		@param var lightColor : Vec3;
 		@param var gamma : Float;
 
+		@param var maxDist : Float;
+
 		@param var cameraInverseViewProj : Mat4;
 		@param var cameraPosition : Vec3;
 
@@ -31,13 +33,13 @@ class VolumetricLightingShader extends hrt.shader.PbrShader {
 		@param var ditheringSize : Vec2;
 		@const var USE_DITHERING : Bool;
 
-		function computeScattering(rayDir : Vec3) : Float {
-			var G_SCATTERING = 1.0;
-			var d = dot(rayDir, lightDir);
-			var res = 1.0 - d * d;
-			res = res / 4.0 * PI * pow(1.0 + G_SCATTERING * G_SCATTERING - 2.0 * G_SCATTERING * d, 1.5);
-			return res;
-		}
+		// function computeScattering(rayDir : Vec3) : Float {
+		// 	var G_SCATTERING = 1.0;
+		// 	var d = dot(rayDir, lightDir);
+		// 	var res = 1.0 - d * d;
+		// 	res = res / 4.0 * PI * pow(1.0 + G_SCATTERING * G_SCATTERING - 2.0 * G_SCATTERING * d, 1.5);
+		// 	return res;
+		// }
 
 		function getFogDensity(z : Float) : Float {
 			return smoothstep(0.0, 1.0, (top - z) / (top - fallOff));
@@ -47,20 +49,34 @@ class VolumetricLightingShader extends hrt.shader.PbrShader {
 			var origin = getPosition();
 			var amount = 0.;
 
-			var toCam = normalize(cameraPosition - origin);
-			origin += saturate(bottom - origin.z) / toCam.z * toCam;
-			var density = saturate((top - origin.z) / (top - bottom));
-			var d = (top - origin.z) / toCam.z;
+			var camDir = normalize(origin - cameraPosition);
+
+			var startPos = cameraPosition;
+			if ( startPos.z > top ) {
+				if ( camDir.z > 0.0 )
+					discard;
+				startPos = startPos + (top - startPos.z) / camDir.z * camDir;
+			}
+			if ( startPos.z < bottom ) {
+				if ( camDir.z < 0.0 )
+					discard;
+				startPos = startPos + (bottom - startPos.z) / camDir.z * camDir;
+			}
+			if ( distance(startPos, cameraPosition) > distance(cameraPosition, origin) )
+				discard;
+			var d = min(maxDist, distance(startPos, origin));
 			if ( USE_DITHERING ) {
 				var dithering = ditheringNoise.getLod(calculatedUV * targetSize / ditheringSize, 0.0).r;
 				dithering *= ditheringIntensity * d / steps;
-				origin += toCam * dithering;
+				startPos += camDir * dithering;
 			}
-			var end = origin + d * toCam;
+			var end = startPos + d * camDir;
+
+			var density = smoothstep(0.0, 1.0, distance(startPos, end) / maxDist);
 
 			var fog = 0.0;
 			for ( i in 1...steps ) {
-				var pos = mix(origin, end, float(i) / float(steps));
+				var pos = mix(startPos, end, float(i) / float(steps));
 
 				var shadowPos = pos * shadowProj;
 				var zMax = shadowPos.z.saturate();
@@ -68,7 +84,7 @@ class VolumetricLightingShader extends hrt.shader.PbrShader {
 				var shadowDepth = shadowMap.getLod(shadowUv.xy, 0.0).r;
 
 				// TODO : Mie scattering approximation
-				var scattering = computeScattering(toCam);
+				// var scattering = computeScattering(toCam);
 				fog += zMax - shadowBias > shadowDepth ? 0.0 : getFogDensity(pos.z) / float(steps);
 			}
 
@@ -95,6 +111,9 @@ class VolumetricLighting extends RendererFX {
 	@:s public var blur : Float = 0.5;
 
 	@:s public var angleThreshold : Float = 90.0;
+	@:s public var minIntensity : Float = 0.0;
+	@:s public var fadeBlur : Float = 2.0;
+
 	@:s public var darkOpacity : Float = 0.0;
 	@:s public var brightOpacity : Float = 1.0;
 	@:s public var darkColor : Int = 0;
@@ -102,6 +121,8 @@ class VolumetricLighting extends RendererFX {
 
 	@:s public var ditheringNoise : String;
 	@:s public var ditheringIntensity : Float = 1.0;
+
+	@:s public var maxDist : Float = 30.0;
 
 	override function makeInstance( ctx : hrt.prefab.Context ) : hrt.prefab.Context {
 		ctx = super.makeInstance(ctx);
@@ -129,6 +150,8 @@ class VolumetricLighting extends RendererFX {
 			tex.clear(0, 0.0);
 			r.ctx.engine.pushTarget(tex);
 
+			pass.shader.maxDist = maxDist;
+			
 			pass.shader.gamma = gamma;
 			pass.shader.bottom = bottom;
 			pass.shader.top = top;
@@ -140,15 +163,16 @@ class VolumetricLighting extends RendererFX {
 			var lightDir = sun.getAbsPos().front();
 			lightDir.normalize();
 			pass.shader.lightDir.load(lightDir);
-			var cosAngle = Math.cos(hxd.Math.degToRad(angleThreshold));
-			pass.shader.angleThreshold = Math.cos(hxd.Math.degToRad(angleThreshold));
 
 			var camFront = r.ctx.camera.target.sub(r.ctx.camera.pos);
 			camFront.normalize();
 			var dot = camFront.dot(lightDir);
 			dot = hxd.Math.clamp(dot);
+			var cosAngle = Math.cos(hxd.Math.degToRad(angleThreshold));
 			var alignedFactor = (1.0 - dot) / (1.0 - cosAngle);
 			alignedFactor = hxd.Math.clamp(alignedFactor);
+			var realBlur = hxd.Math.lerp(fadeBlur, blur, alignedFactor);
+			alignedFactor = hxd.Math.lerp(minIntensity, 1.0, alignedFactor); 
 			pass.shader.brightOpacity = brightOpacity * alignedFactor;
 			pass.shader.darkOpacity = darkOpacity * alignedFactor;
 
@@ -172,12 +196,11 @@ class VolumetricLighting extends RendererFX {
 
 			r.ctx.engine.popTarget();
 
-			if ( blur > 0.0 ) {
-				blurPass.radius = blur;
+			if ( realBlur > 0.0 ) {
+				blurPass.radius = realBlur;
 				blurPass.apply(r.ctx, tex);
 			}
 
-			var pbrRenderer = Std.downcast(r, h3d.scene.pbr.Renderer);
 			h3d.pass.Copy.run(tex, h3d.Engine.getCurrent().getCurrentTarget(), Add);
 		}
 	}
@@ -192,6 +215,11 @@ class VolumetricLighting extends RendererFX {
 					<dt>Bottom</dt><dd><input type="range" min="0" max="10" field="bottom"/></dd>
 					<dt>Top</dt><dd><input type="range" min="0" max="10" field="top"/></dd>
 					<dt>Falloff</dt><dd><input type="range" min="0" max="1" field="fallOff"/></dd>
+					<dt>Decay distance</dt><dd><input type="range" min="0" max="50" field="maxDist"/></dd>
+				</dl>
+			</div>
+			<div class="group" name="Rendering">
+				<dl>
 					<dt>Steps</dt><dd><input type="range" step="1" min="0" max="255" field="steps"/></dd>
 					<dt>Texture size</dt><dd><input type="range" min="0" max="1" field="textureSize"/></dd>
 					<dt>Blur</dt><dd><input type="range" step="1" min="0" max="100" field="blur"/></dd>
@@ -200,12 +228,16 @@ class VolumetricLighting extends RendererFX {
 				</dl>
 			</div>
 			<div class="group" name="Color">
-				<dt>Angle threshold</dt><dd><input type="range" min="0" max="180" field="angleThreshold"/></dd>
 				<dt>Dark opacity</dt><dd><input type="range" min="0" max="1" field="darkOpacity"/></dd>
 				<dt>Bright opacity</dt><dd><input type="range" min="0" max="1" field="brightOpacity"/></dd>
 				<dt>Dark color</dt><dd><input type="color" field="darkColor"/></dd>
 				<dt>Bright color</dt><dd><input type="color" field="brightColor"/></dd>
 				<dt>Gamma</dt><dd><input type="range" min="1" max="2" field="gamma"/></dd>
+			</div>
+			<div class="group" name="Fade">
+				<dt>Angle threshold</dt><dd><input type="range" min="0" max="180" field="angleThreshold"/></dd>
+				<dt>Min intensity</dt><dd><input type="range" min="0" max="1" field="minIntensity"/></dd>
+				<dt>Blur fading</dt><dd><input type="range" min="0" max="100" field="fadeBlur"/></dd>
 			</div>
 			'), this, function(pname) {
 				ctx.onChange(this, pname);
