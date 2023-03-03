@@ -444,7 +444,7 @@ class ModelLibrary extends Prefab {
 			var sourcePath = m.source;
 			models.set(m.source, true);
 			var lib = null;
-			for( m in loadModel(m.source).getMeshes() ) {
+			for( m in shared.loadModel(m.source).getMeshes() ) {
 				var m = Std.downcast(m.primitive, h3d.prim.HMDModel);
 				if( m != null ) {
 					lib = @:privateAccess m.lib;
@@ -627,7 +627,7 @@ class ModelLibrary extends Prefab {
 		var w = new hxd.fmt.hmd.Writer(out);
 		w.write(hmd);
 		var bytes = out.getBytes();
-		savePrefabDat("model","hmd",name,bytes);
+		shared.savePrefabDat("model","hmd",name,bytes);
 
 		texturesCount = textures.length;
 		function make(textures:Array<h3d.mat.BigTexture>, name : String ) {
@@ -641,7 +641,7 @@ class ModelLibrary extends Prefab {
 				}
 				t.done();
 			}
-			savePrefabDat(name,"dds",this.name, hxd.Pixels.toDDSLayers(all));
+			shared.savePrefabDat(name,"dds",this.name, hxd.Pixels.toDDSLayers(all));
 		}
 		make(textures,"texture");
 		make(normalMaps,"normal");

@@ -211,7 +211,7 @@ class MeshSprayObject extends Spray.SprayObject {
 	function loadMesh( path : String ) {
 		var mesh = mlookup.get(path);
 		if( mesh == null ) {
-			var obj = spray.loadModel(path);
+			var obj = spray.shared.loadModel(path);
 			if( !obj.isMesh() ) throw path+" is not a mesh";
 			mesh = obj.toMesh();
 			mlookup.set(path, mesh);
@@ -338,7 +338,7 @@ class MeshSpray extends Spray {
 			bytes.addFloat(c.rotZ);
 			bytes.addByte("\n".code);
 		}
-		savePrefabDat("content","dat",name, bytes.getBytes());
+		shared.savePrefabDat("content","dat",name, bytes.getBytes());
 		binaryChanged = false;
 	}
 
@@ -730,7 +730,7 @@ class MeshSpray extends Spray {
 		super.createInteractiveBrush(ectx);
 		if (!enabled) return;
 
-		var s2d = shared.originalContext.local2d.getScene();
+		var s2d = shared.root2d.getScene();
 
 		interactive.onMove = function(e) {
 			var worldPos = ectx.screenToGround(s2d.mouseX, s2d.mouseY);
@@ -869,13 +869,13 @@ class MeshSpray extends Spray {
 		if ( editChildren )
 			locked = false;
 		super.updateInstance(propName);
-	} 
+	}
 
 	override function makeInstanceRec(params: hrt.prefab2.Prefab.InstanciateContext) {
 		if( !enabled ) return;
 		if( binaryStorage ) {
 			binaryMeshes = [];
-			var bytes = new haxe.io.BytesInput(loadPrefabDat("content","dat",name).entry.getBytes());
+			var bytes = new haxe.io.BytesInput(shared.loadPrefabDat("content","dat",name).entry.getBytes());
 			try {
 				while( true ) {
 					binaryMeshes.push({

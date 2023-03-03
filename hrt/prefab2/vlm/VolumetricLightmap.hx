@@ -159,7 +159,7 @@ class VolumetricLightmap extends Object3D {
 		volumetricLightmap.useAlignedProb = false;
 		volumetricLightmap.strength = strength;
 
-		var res = loadPrefabDat("sh", "bake", name);
+		var res = shared.loadPrefabDat("sh", "bake", name);
 		if(res != null) volumetricLightmap.load(res.entry.getBytes());
 
 		#if editor
@@ -282,7 +282,7 @@ class VolumetricLightmap extends Object3D {
 		baker.onEnd = function() {
 			if( onEnd != null ) onEnd();
 			var bytes = volumetricLightmap.save();
-			sceneData.savePrefabDat("sh", "bake", name, bytes);
+			sceneData.shared.savePrefabDat("sh", "bake", name, bytes);
 			createDebugPreview();
 		}
 	}

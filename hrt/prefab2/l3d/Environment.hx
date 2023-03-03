@@ -63,7 +63,7 @@ class Environment extends Object3D {
 			return;
 
 		#if editor
-		var sourceMap = loadTexture(sourceMapPath);
+		var sourceMap = shared.loadTexture(sourceMapPath);
 		if( sourceMap == null )
 			return;
 		if( sourceMap.flags.has(Loading) ) {
@@ -103,7 +103,7 @@ class Environment extends Object3D {
 			env.dispose();
 			env.specular = null;
 			env.diffuse = null;
-			env.source = loadTexture(sourceMapPath);
+			env.source = shared.loadTexture(sourceMapPath);
 			env.compute();
 			saveToBinary();
 		}

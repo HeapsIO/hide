@@ -47,6 +47,31 @@ class Reference extends Object3D {
 		return Object3D.getLocal3d(refInstance);
 	}
 
+	override public function findAll<T>( f : Prefab -> Null<T>, ?followRefs : Bool, ?arr : Array<T> ) : Array<T> {
+		arr = super.findAll(f, followRefs, arr);
+
+		if (followRefs && refInstance != null) {
+			return refInstance.findAll(f, followRefs, arr);
+		}
+
+		return arr;
+	}
+
+	override public function find<T>( f : Prefab -> Null<T>, ?followRefs : Bool ) : Null<T> {
+		var res = super.find(f, followRefs);
+		if (res == null && followRefs && refInstance != null) {
+			return refInstance.find(f, followRefs);
+		}
+		return res;
+	}
+
+	override public function getOpt<T:Prefab>( cl : Class<T>, ?name : String, ?followRefs : Bool ) : Null<T> {
+		var res = super.getOpt(cl, name, followRefs);
+		if (res == null && followRefs && refInstance != null) {
+			return refInstance.getOpt(cl, name, followRefs);
+		}
+		return res;
+	}
 
 
 	public static var _ = hrt.prefab2.Prefab.register("Reference", Reference);

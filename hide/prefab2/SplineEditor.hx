@@ -424,7 +424,7 @@ class SplineEditor {
 
 		if( editMode ) {
 			createGizmos();
-			var s2d = prefab.shared.originalContext.local2d.getScene();
+			var s2d = prefab.shared.root2d.getScene();
 			interactive = new h2d.Interactive(10000, 10000, s2d);
 			interactive.propagateEvents = true;
 			interactive.onPush =

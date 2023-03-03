@@ -49,8 +49,8 @@ class Anisotropy extends Prefab {
 		var nt = new NoiseTexture();
 		var ff = new FrequencyValue();
 
-		var noiseIntensityTexture = noiseIntensityPath != null ? loadTexture(noiseIntensityPath) : null;
-		var noiseDirectionTexture = noiseDirectionPath != null ? loadTexture(noiseDirectionPath) : null;
+		var noiseIntensityTexture = noiseIntensityPath != null ? shared.loadTexture(noiseIntensityPath) : null;
+		var noiseDirectionTexture = noiseDirectionPath != null ? shared.loadTexture(noiseDirectionPath) : null;
 
 		var mat = getMaterials();
 
@@ -102,8 +102,8 @@ class Anisotropy extends Prefab {
 
 			var nt = m.mainPass.getShader(NoiseTexture);
 			if( nt != null ) {
-				nt.noiseIntensityTexture = noiseIntensityPath != null ? loadTexture(noiseIntensityPath) : null;
-				nt.noiseDirectionTexture = noiseDirectionPath != null ? loadTexture(noiseDirectionPath) : null;
+				nt.noiseIntensityTexture = noiseIntensityPath != null ? shared.loadTexture(noiseIntensityPath) : null;
+				nt.noiseDirectionTexture = noiseDirectionPath != null ? shared.loadTexture(noiseDirectionPath) : null;
 				nt.intensityFactor = intensityFactor;
 				nt.rotationOffset = hxd.Math.degToRad(rotationOffset);
 			}

@@ -78,8 +78,8 @@ class Decal extends Object3D {
 			case Default, Terrain:
 				var shader = mesh.material.mainPass.getShader(h3d.shader.pbr.VolumeDecal.DecalPBR);
 				if( shader != null ){
-					shader.albedoTexture = albedoMap != null ? loadTexture(albedoMap) : null;
-					shader.normalTexture = normalMap != null ? loadTexture(normalMap) : null;
+					shader.albedoTexture = albedoMap != null ? shared.loadTexture(albedoMap) : null;
+					shader.normalTexture = normalMap != null ? shared.loadTexture(normalMap) : null;
 					if(shader.albedoTexture != null) shader.albedoTexture.wrap = Repeat;
 					if(shader.normalTexture != null) shader.normalTexture.wrap = Repeat;
 					shader.albedoStrength = albedoStrength;
@@ -93,7 +93,7 @@ class Decal extends Object3D {
 					shader.fadeStart = fadeStart;
 					shader.fadeEnd = fadeEnd;
 				}
-				var pbrTexture = pbrMap != null ? loadTexture(pbrMap) : null;
+				var pbrTexture = pbrMap != null ? shared.loadTexture(pbrMap) : null;
 				if( pbrTexture != null ) {
 					var propsTexture = mesh.material.mainPass.getShader(h3d.shader.pbr.PropsTexture);
 					if( propsTexture == null )
@@ -118,7 +118,7 @@ class Decal extends Object3D {
 			case BeforeTonemapping, AfterTonemapping:
 				var shader = mesh.material.mainPass.getShader(h3d.shader.pbr.VolumeDecal.DecalOverlay);
 				if( shader != null ){
-					shader.colorTexture = albedoMap != null ? loadTexture(albedoMap) : null;
+					shader.colorTexture = albedoMap != null ? shared.loadTexture(albedoMap) : null;
 					if(shader.colorTexture != null) shader.colorTexture.wrap = Repeat;
 					shader.CENTERED = centered;
 					shader.GAMMA_CORRECT = renderMode == BeforeTonemapping;

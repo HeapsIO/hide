@@ -779,7 +779,7 @@ class TerrainEditor {
 
 	public function setSelected(b : Bool ) {
 		if( b ) {
-			var s2d = terrainPrefab.shared.originalContext.local2d.getScene();
+			var s2d = terrainPrefab.shared.root2d.getScene();
 			if( interactive == null )
 				interactive.remove();
 			interactive = new h2d.Interactive(10000, 10000, s2d);
@@ -990,7 +990,7 @@ class TerrainEditor {
 	}
 
 	function loadTexture( ctx : hide.prefab2.EditContext, propsName : String, ?wrap : h3d.mat.Data.Wrap ) {
-		var texture = terrainPrefab.loadTexture(propsName);
+		var texture = terrainPrefab.shared.loadTexture(propsName);
 		texture.wrap = wrap == null ? Repeat : wrap;
 		return texture;
 	}
@@ -1190,9 +1190,9 @@ class TerrainEditor {
 		}
 		var name = split[0];
 		var ext = "."+path.split(".").pop();
-		var albedo = terrainPrefab.loadTexture(name + textureType[0] + ext);
-		var normal = terrainPrefab.loadTexture(name + textureType[1] + ext);
-		var pbr = terrainPrefab.loadTexture(name + textureType[2] + ext);
+		var albedo = terrainPrefab.shared.loadTexture(name + textureType[0] + ext);
+		var normal = terrainPrefab.shared.loadTexture(name + textureType[1] + ext);
+		var pbr = terrainPrefab.shared.loadTexture(name + textureType[2] + ext);
 
 		if( albedo == null || normal == null || pbr == null ) return;
 

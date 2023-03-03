@@ -72,7 +72,7 @@ class Material extends Prefab {
 		if(mainPassName != null && mainPassName.length > 0 )
 			mat.mainPass.setPassName(mainPassName);
 	}
-	
+
 	override function updateInstance(?propName ) {
 		var local3d = findFirstLocal3d();
 		if( local3d == null )
@@ -84,7 +84,7 @@ class Material extends Prefab {
 		if ( mats == null || mats.length == 0 ) {
 			try {
 				var path = hide.Ide.inst.currentConfig.get("material.preview", []);
-					var preview = loadModel(path);
+					var preview = shared.loadModel(path);
 				local3d.parent.addChild(preview);
 				local3d = preview;
 				local3d.x = local3d.getScene().getMaterials().length * 5.0;
@@ -95,7 +95,7 @@ class Material extends Prefab {
 		}
 		#end
 		function loadTextureCb( path : String ) : h3d.mat.Texture {
-			return loadTexture(path, false);
+			return shared.loadTexture(path, false);
 		}
 		for( m in mats )
 			update(m, props, loadTextureCb);

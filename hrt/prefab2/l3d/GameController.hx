@@ -104,7 +104,7 @@ class GameController extends Object3D {
 				var animList = try ctx.scene.listAnims(o.source) catch(e: Dynamic) [];
 				for( a2 in animList ) {
 					if( ctx.scene.animationName(a2).toLowerCase() == anim.toLowerCase() ) {
-						local3d.playAnimation(loadAnimation(a2));
+						local3d.playAnimation(shared.loadAnimation(a2));
 						if( animSmooth > 0 )
 							local3d.switchToAnimation(new h3d.anim.SmoothTarget(local3d.currentAnimation,animSmooth));
 						currentAnim.set(local3d, anim);

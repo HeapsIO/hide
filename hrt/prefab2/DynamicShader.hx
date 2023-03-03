@@ -2,7 +2,7 @@ package hrt.prefab2;
 
 class DynamicShader extends Shader {
 
-	var shaderDef : hrt.prefab2.Prefab.ShaderDef;
+	var shaderDef : hrt.prefab2.Cache.ShaderDef;
 	var shaderClass : Class<hxsl.Shader>;
 	@:s var isInstance : Bool;
 
@@ -88,7 +88,7 @@ class DynamicShader extends Shader {
 			} else {
 				var path = source;
 				if(StringTools.endsWith(path, ".hx")) path = path.substr(0, -3);
-				shaderDef = loadShader(path);
+				shaderDef = shared.loadShader(path);
 			}
 		}
 		if(shaderDef == null)

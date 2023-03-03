@@ -763,7 +763,7 @@ class HeightMap extends Object3D {
 			#end
 			if( b ) {
 				var path = resolveTexturePath(t.path,tx,ty);
-				tl.push(loadTexture(path));
+				tl.push(shared.loadTexture(path));
 			}
 		}
 		return tl;
@@ -791,7 +791,7 @@ class HeightMap extends Object3D {
 					var path = new haxe.io.Path(t.path);
 					path.file = path.file.split("_Albedo").join("");
 					path.file += "_Normal";
-					tl.push(loadTexture(path.toString()));
+					tl.push(shared.loadTexture(path.toString()));
 				}
 			tl;
 		default: throw "assert";

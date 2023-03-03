@@ -60,7 +60,7 @@ class LightProbeBaker {
 		if(offScreenScene != null) offScreenScene.dispose();
 		offScreenScene = new h3d.scene.Scene();
 
-		@:privateAccess sceneData.shared.shaderCache =  @:privateAccess hide.Ide.inst.shaderLoader.shaderCache;
+		//@:privateAccess sceneData.shared.shaderCache =  @:privateAccess hide.Ide.inst.shaderLoader.shaderCache;
 
 		var whiteList = [ "level3d", "object", "model", "material", "light"];
 		function keep( p : hrt.prefab2.Prefab ) {
@@ -77,7 +77,7 @@ class LightProbeBaker {
 					filter(c);
 		}
 		filter(sceneData);
-		sceneData.make(null, sceneData.shared.originalContext.local2d, offScreenScene);
+		sceneData.make(null, sceneData.shared.root2d, offScreenScene);
 
 		/*function disableFaceCulling( o : Object ){
 			for( m in o.getMaterials() )

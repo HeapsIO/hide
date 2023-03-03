@@ -298,7 +298,7 @@ class LightProbe extends Object3D {
 			case Texture:
 				var needCompute = false;
 				if( propName == "texturePath" || propName == "mode" ) {
-					var t = texturePath == null ? null : loadTexture(texturePath);
+					var t = texturePath == null ? null : shared.loadTexture(texturePath);
 					if( t != null ) {
 						lpo.env = new Environment(t);
 						needCompute = true;
@@ -421,16 +421,16 @@ class LightProbe extends Object3D {
 		data.setInt32(curPos, env.sampleBits); 			curPos += 4;
 		data.setInt32(curPos, env.ignoredSpecLevels); 	curPos += 4;
 
-		savePrefabDat("envd", "dds", name, diffuse);
-		savePrefabDat("envs", "dds", name, specular);
-		savePrefabDat("data", "bake", name, data);
+		shared.savePrefabDat("envd", "dds", name, diffuse);
+		shared.savePrefabDat("envs", "dds", name, specular);
+		shared.savePrefabDat("data", "bake", name, data);
 	}
 
 	function loadBinary( env : Environment) {
 
-		var diffuse = loadPrefabDat("envd", "dds", name);
-		var specular = loadPrefabDat("envs", "dds", name);
-		var data = loadPrefabDat("data", "bake", name);
+		var diffuse = shared.loadPrefabDat("envd", "dds", name);
+		var specular = shared.loadPrefabDat("envs", "dds", name);
+		var data = shared.loadPrefabDat("data", "bake", name);
 
 		if( data == null || specular == null || diffuse == null )
 			return false;
@@ -698,7 +698,7 @@ class LightProbe extends Object3D {
 					ignoredSpecLevels = lpo.env.ignoredSpecLevels;
 
 					// Save the import
-					savePrefabDat("probe", "bake", this.name, b);
+					shared.savePrefabDat("probe", "bake", this.name, b);
 
 					ctx.onChange(this, null);
 					ctx.rebuildProperties();

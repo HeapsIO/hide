@@ -56,7 +56,7 @@ class SpecularColor extends Prefab {
 			}
 			var sct = m.mainPass.getShader(hrt.shader.SpecularColorTexture);
 			if( sct != null ) {
-				sct.specularColorTexture = loadTexture(specularColorPath);
+				sct.specularColorTexture = shared.loadTexture(specularColorPath);
 			}
 			var sc = m.mainPass.getShader(hrt.shader.SpecularColor);
 			if( sc != null ) {
@@ -73,7 +73,7 @@ class SpecularColor extends Prefab {
 		var sct = new SpecularColorTexture();
 		var sc = new hrt.shader.SpecularColor();
 
-		var specularColorTexture = specularColorPath != null ? loadTexture(specularColorPath) : null;
+		var specularColorTexture = specularColorPath != null ? shared.loadTexture(specularColorPath) : null;
 
 		var mat = getMaterials();
 		for( m in mat ) {

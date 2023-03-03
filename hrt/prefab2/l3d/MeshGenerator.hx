@@ -218,7 +218,7 @@ class MeshGenerator extends Object3D {
 		if( mp.meshPath == null )
 			return;
 
-		var obj = loadModel(mp.meshPath);
+		var obj = shared.loadModel(mp.meshPath);
 		for( m in obj.getMaterials() ) {
 			m.castShadows = shadows;
 		}
@@ -300,7 +300,7 @@ class MeshGenerator extends Object3D {
 		if( meshPath == null )
 			return;
 
-		var obj = loadModel(meshPath);
+		var obj = shared.loadModel(meshPath);
 		if( obj == null )
 			return;
 
@@ -356,7 +356,7 @@ class MeshGenerator extends Object3D {
 	function createPreviewSphere() {
 		var root = new h3d.scene.Object();
 		root.setRotation(0,0, hxd.Math.degToRad(180));
-		var m : h3d.scene.Mesh = cast loadModel("${HIDE}/res/meshGeneratorArrow.fbx");
+		var m : h3d.scene.Mesh = cast shared.loadModel("${HIDE}/res/meshGeneratorArrow.fbx");
 		m.material.shadows = false;
 		root.addChild(m);
 		m.scale(0.5);
@@ -365,7 +365,7 @@ class MeshGenerator extends Object3D {
 		m.material.mainPass.depthTest = GreaterEqual;
 		m.material.mainPass.depthWrite = false;
 		m.material.mainPass.setPassName("overlay");
-		var m : h3d.scene.Mesh = cast loadModel("${HIDE}/res/meshGeneratorArrow.fbx");
+		var m : h3d.scene.Mesh = cast shared.loadModel("${HIDE}/res/meshGeneratorArrow.fbx");
 		m.material.shadows = false;
 		root.addChild(m);
 		m.scale(0.5);
@@ -401,7 +401,7 @@ class MeshGenerator extends Object3D {
 
 	function getHMD(meshPath : String ) : hxd.fmt.hmd.Library {
 		if( meshPath == null ) return null;
-		return @:privateAccess shared.cache.loadLibrary(hxd.res.Loader.currentInstance.load(meshPath).toModel());
+		return @:privateAccess Cache.get().modelCache.loadLibrary(hxd.res.Loader.currentInstance.load(meshPath).toModel());
 	}
 
 	function createMeshParts( sl : Array<Socket> ) : Array<MeshPart> {

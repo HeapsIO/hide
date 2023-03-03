@@ -27,7 +27,7 @@ class Model extends Object3D {
 		#if editor
 		try {
 		#end
-			var obj = loadModel(source);
+			var obj = shared.loadModel(source);
 			if(obj.defaultTransform != null && children.length > 0) {
 				obj.name = "root";
 				var root = new h3d.scene.Object();
@@ -87,7 +87,7 @@ class Model extends Object3D {
 		boundingSphere = null;
 
 		if( animation != null )
-			local3d.playAnimation(loadAnimation(animation));
+			local3d.playAnimation(shared.loadAnimation(animation));
 	}
 
 	var polys3D = null;
@@ -158,7 +158,7 @@ class Model extends Object3D {
 				animation = null;
 				obj.stopAnimation();
 			} else {
-				obj.playAnimation(loadAnimation(v)).loop = true;
+				obj.playAnimation(shared.loadAnimation(v)).loop = true;
 				if( lockAnimation ) return;
 				animation = v;
 			}
@@ -170,7 +170,7 @@ class Model extends Object3D {
 					obj.stopAnimation();
 					select.val("");
 				} else {
-					obj.playAnimation(loadAnimation(animation)).loop = true;
+					obj.playAnimation(shared.loadAnimation(animation)).loop = true;
 					select.val(v);
 				}
 			}));

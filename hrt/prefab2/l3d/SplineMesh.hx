@@ -188,7 +188,7 @@ class SplineMesh extends Spline {
 		meshPrimitive = null;
 		meshMaterial = null;
 		if( meshPath != null ) {
-			var meshTemplate : h3d.scene.Mesh = loadModel(meshPath).toMesh();
+			var meshTemplate : h3d.scene.Mesh = shared.loadModel(meshPath).toMesh();
 			if( meshTemplate != null ) {
 				meshPrimitive = cast meshTemplate.primitive;
 				meshMaterial = cast meshTemplate.material.clone();

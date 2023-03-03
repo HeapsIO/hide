@@ -149,7 +149,7 @@ class Terrain extends Object3D {
 
 	function loadTiles() {
 
-		var resDir = loadDir(name);
+		var resDir = shared.loadDir(name);
 		if( resDir == null )
 			return;
 
@@ -302,9 +302,9 @@ class Terrain extends Object3D {
 		for( i in 0 ... tmpSurfacesProps.length ) {
 			var surfaceProps = tmpSurfacesProps[i];
 			var surface = terrain.getSurface(i);
-			var albedo = loadTexture(surfaceProps.albedo);
-			var normal = loadTexture(surfaceProps.normal);
-			var pbr = loadTexture(surfaceProps.pbr);
+			var albedo = shared.loadTexture(surfaceProps.albedo);
+			var normal = shared.loadTexture(surfaceProps.normal);
+			var pbr = shared.loadTexture(surfaceProps.pbr);
 			function wait() {
 				if( albedo.isDisposed() || albedo.flags.has(Loading) || normal.flags.has(Loading) || pbr.flags.has(Loading) )
 					return;
@@ -437,7 +437,7 @@ class Terrain extends Object3D {
 		for( tile in terrain.tiles ) {
 			var pixels = tile.heightMap.capturePixels();
 			var fileName = tile.tileX + "_" + tile.tileY + "_" + "h";
-			savePrefabDat(fileName, "bin", name, pixels.bytes);
+			shared.savePrefabDat(fileName, "bin", name, pixels.bytes);
 		}
 	}
 
@@ -445,7 +445,7 @@ class Terrain extends Object3D {
 		for( tile in terrain.tiles ) {
 			var pixels : hxd.Pixels = tile.normalMap.capturePixels();
 			var fileName = tile.tileX + "_" + tile.tileY + "_" + "n";
-			savePrefabDat(fileName, "bin", name, pixels.bytes);
+			shared.savePrefabDat(fileName, "bin", name, pixels.bytes);
 		}
 	}
 
@@ -461,11 +461,11 @@ class Terrain extends Object3D {
 
 			var pixels = packedWeightsTex.capturePixels();
 			var fileName = tile.tileX + "_" + tile.tileY + "_" + "w";
-			savePrefabDat(fileName, "bin", name, pixels.bytes);
+			shared.savePrefabDat(fileName, "bin", name, pixels.bytes);
 
 			var pixels = tile.surfaceIndexMap.capturePixels();
 			var fileName = tile.tileX + "_" + tile.tileY + "_" + "i";
-			savePrefabDat(fileName, "bin", name, pixels.bytes);
+			shared.savePrefabDat(fileName, "bin", name, pixels.bytes);
 		}
 	}
 

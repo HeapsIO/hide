@@ -524,7 +524,7 @@ class Light extends Object3D {
 	function loadTextureCustom(propsName : String, texture : h3d.mat.Texture, ?wrap : h3d.mat.Data.Wrap){
 		if(texture != null) texture.dispose();
 		if(propsName == null) return null;
-		texture = loadTexture(propsName);
+		texture = shared.loadTexture(propsName);
 		texture.wrap = wrap == null ? Repeat : wrap;
 		return texture;
 	}

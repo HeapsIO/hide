@@ -23,7 +23,7 @@ class ScreenShaderGraph extends RendererFX {
 
 	var shaderPass = new h3d.pass.ScreenFx(new GraphShader());
 	var shaderGraph : hrt.shgraph.ShaderGraph;
-	var shaderDef : hrt.prefab2.Prefab.ShaderDef;
+	var shaderDef : hrt.prefab2.Cache.ShaderDef;
 	var shader : hxsl.DynamicShader;
 
 	@:s public var renderMode : ScreenShaderGraphMode;

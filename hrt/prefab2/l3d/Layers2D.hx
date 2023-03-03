@@ -193,7 +193,7 @@ class Layers2D extends hrt.prefab2.Object3D {
 				var path = new haxe.io.Path(shared.currentPath);
 				path.ext = "dat";
 				var fileName = "layer_" + l.name;
-				saveTexture(fileName, pixels.toPNG(), path.toString() + "/" + this.name, "png");
+				shared.saveTexture(fileName, pixels.toPNG(), path.toString() + "/" + this.name, "png");
 			}
 		}
 
@@ -293,7 +293,7 @@ class Layers2D extends hrt.prefab2.Object3D {
 			var sh : LayerView2DRFXShader = cast rfx.pass.shader;
 			if( collideMap == null || collideMap.isDisposed() ) {
 				if ( collidePath != null ) {
-					collideMap = loadTexture(collidePath);
+					collideMap = shared.loadTexture(collidePath);
 					collideMap.filter = Nearest;
 					collidePixels = loadPixels(collidePath);
 				}
@@ -361,7 +361,7 @@ class Layers2D extends hrt.prefab2.Object3D {
 	function createInteractiveBrush(ectx : hide.prefab2.EditContext) {
 		if (!enabled) return;
 		editorCtx = ectx;
-		var s2d = shared.originalContext.local2d.getScene();
+		var s2d = shared.root2d.getScene();
 		interactive = new h2d.Interactive(10000, 10000, s2d);
 		interactive.propagateEvents = true;
 		interactive.cancelEvents = false;

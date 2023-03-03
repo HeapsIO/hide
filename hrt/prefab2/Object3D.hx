@@ -18,6 +18,10 @@ class Object3D extends Prefab {
 
 	public var local3d : h3d.scene.Object;
 
+	#if editor
+	public var editorIcon : h2d.ObjectFollower;
+	#end
+
 	public static function getLocal3d(prefab: Prefab) : h3d.scene.Object {
 		var obj3d = Std.downcast(prefab, Object3D);
 		if (obj3d != null)
@@ -182,9 +186,9 @@ class Object3D extends Prefab {
 			if( icon != null ) {
 				var t : Dynamic = ide.resolveCDBValue(sheet,icon, props);
 				if( t != null && (t.file != null || Std.isOfType(t,String)) ) {
-					var obj = Std.downcast(shared.originalContext.local2d, h2d.ObjectFollower);
+					var obj = editorIcon;
 					if( obj == null || obj.follow != local3d ) {
-						shared.originalContext.local2d = obj = new h2d.ObjectFollower(local3d, shared.originalContext.local2d);
+						editorIcon = obj = new h2d.ObjectFollower(local3d, shared.root2d);
 						obj.horizontalAlign = Middle;
 						obj.followVisibility = true;
 					}
@@ -195,7 +199,7 @@ class Object3D extends Prefab {
 							bmp = new h2d.Bitmap(null, obj);
 							bmp.name = "$huds";
 						}
-						bmp.tile = h2d.Tile.fromTexture(loadTexture(t.file)).sub(
+						bmp.tile = h2d.Tile.fromTexture(shared.loadTexture(t.file)).sub(
 							t.x * t.size,
 							t.y * t.size,
 							(t.width == null ? 1 : t.width) * t.size,

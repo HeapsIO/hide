@@ -19,29 +19,6 @@ typedef PrefabMeta = {
 	var ?range_step : Float;
 }
 
-typedef ShaderDef = {
-	var shader : hxsl.SharedShader;
-	var inits : Array<{ variable : hxsl.Ast.TVar, value : Dynamic }>;
-}
-
-typedef ShaderDefCache = Map<String, ShaderDef>;
-
-class ContextShared {
-	public function new() {
-
-	}
-
-	public var source : String = null;
-	public var cache : h3d.prim.ModelCache = new h3d.prim.ModelCache();
-	public var isPrototype = true;
-	public var originalContext : InstanciateContext = null;
-	public var currentPath : String = "";
-	public var shaderCache : ShaderDefCache;
-
-#if editor
-	public var scene : hide.comp2.Scene = null;
-#end
-}
 
 class InstanciateContext {
 	public function new(local2d: h2d.Object, local3d: h3d.scene.Object) {
@@ -148,9 +125,8 @@ class Prefab {
 		if (!params.forceInstanciate && (shared.isPrototype))
 			throw "Can't instanciate a template prefab unless params.forceInstanciate is true.";
 
-		shared.originalContext.local2d = params.local2d;
-		shared.originalContext.local3d = params.local3d;
-		shared.originalContext.forceInstanciate = params.forceInstanciate;
+		shared.root2d = params.local2d;
+		shared.root3d = params.local3d;
 
 		makeInstanceRec(params);
 
@@ -194,8 +170,8 @@ class Prefab {
 
 		var prefabInstance = Type.createInstance(cl, [parent]);
 
+
 		prefabInstance.shared = new ContextShared();
-		prefabInstance.shared.originalContext = new InstanciateContext(null, null);
 		prefabInstance.load(data);
 
 		var children = Std.downcast(Reflect.field(data, "children"), Array);
@@ -216,13 +192,13 @@ class Prefab {
 
 	public function findFirstLocal2d() : h2d.Object {
 		var l2d = findParent((p) -> p.getLocal2d(), true);
-		return l2d != null ? l2d : shared.originalContext.local2d;
+		return l2d != null ? l2d : shared.root2d;
 	}
 
 	// Find the first local3d object, either in this object or it's parents
 	public function findFirstLocal3d() : h3d.scene.Object {
 		var l3d = findParent((p) -> p.getLocal3d(), true);
-		return l3d != null ? l3d : shared.originalContext.local3d;
+		return l3d != null ? l3d : shared.root3d;
 	}
 
 	/**
@@ -617,108 +593,6 @@ class Prefab {
 		params.local2d = old2d;
 		params.local3d = old3d;
 	}
-
-	public function loadShader( path : String ) : ShaderDef {
-		var r = shared.shaderCache.get(path);
-		if(r != null)
-			return r;
-		var cl : Class<hxsl.Shader> = cast Type.resolveClass(path.split("/").join("."));
-		if(cl == null) return null;
-		// make sure to share the SharedShader instance with the real shader
-		// so we don't get a duplicate cache of instances
-		var shaderInst = Type.createEmptyInstance(cl);
-		@:privateAccess shaderInst.initialize();
-		var shader = @:privateAccess shaderInst.shader;
-		r = {
-			shader: shader,
-			inits: []
-		};
-		shared.shaderCache.set(path, r);
-		return r;
-	}
-
-	public function loadDir(p : String, ?dir : String ) : Array<hxd.res.Any> {
-		var datPath = new haxe.io.Path(shared.currentPath);
-		datPath.ext = "dat";
-		var path = datPath.toString() + "/" + p;
-		if(dir != null) path += "/" + dir;
-		return try hxd.res.Loader.currentInstance.dir(path) catch( e : hxd.res.NotFound ) null;
-	}
-
-	function loadModel( path : String ) {
-		return shared.cache.loadModel(hxd.res.Loader.currentInstance.load(path).toModel());
-	}
-
-	function loadAnimation( path : String ) {
-		return shared.cache.loadAnimation(hxd.res.Loader.currentInstance.load(path).toModel());
-	}
-
-	function loadTexture( path : String, async : Bool = false ) {
-		return shared.cache.loadTexture(null, path, async);
-	}
-
-	public function getPrefabDatPath(file : String, ext : String, prefab : String ) {
-		var datPath = new haxe.io.Path(shared.currentPath);
-		datPath.ext = "dat";
-		var path = new haxe.io.Path(datPath.toString() + "/" + prefab + "/" + file);
-		path.ext = ext;
-		return path.toString();
-	}
-
-	function loadPrefabDat(file : String, ext : String, prefab : String) : hxd.res.Any {
-		return try hxd.res.Loader.currentInstance.load(getPrefabDatPath(file,ext,prefab)) catch( e : hxd.res.NotFound ) null;
-	}
-
-	#if editor
-
-	function savePrefabDat(file : String, ext:String, p : String, bytes : haxe.io.Bytes ){
-		var path = new haxe.io.Path(shared.currentPath);
-		path.ext = "dat";
-		var datDir = path.toString();
-		var instanceDir = datDir + "/" + p;
-
-		if(!sys.FileSystem.isDirectory( hide.Ide.inst.getPath(datDir)))
-			sys.FileSystem.createDirectory( hide.Ide.inst.getPath(datDir));
-		if(!sys.FileSystem.isDirectory( hide.Ide.inst.getPath(instanceDir)))
-			sys.FileSystem.createDirectory( hide.Ide.inst.getPath(instanceDir));
-
-		var path = new haxe.io.Path("");
-		path.dir = instanceDir;
-		path.file = file;
-		path.ext = ext;
-		var file = hide.Ide.inst.getPath(path.toString());
-
-		if( bytes == null ){
-			try sys.FileSystem.deleteFile(file) catch( e : Dynamic ) {};
-			var p = hide.Ide.inst.getPath(instanceDir);
-			if(sys.FileSystem.isDirectory(p)){
-				var dir = sys.FileSystem.readDirectory(p);
-				if(dir.length == 0) sys.FileSystem.deleteDirectory(p);
-			}
-			var p = hide.Ide.inst.getPath(datDir);
-			if(sys.FileSystem.isDirectory(p)){
-				var dir = sys.FileSystem.readDirectory(p);
-				if(dir.length == 0) sys.FileSystem.deleteDirectory(p);
-			}
-			return;
-		}else{
-			sys.io.File.saveBytes(file, bytes);
-		}
-	}
-
-	function saveTexture(file:String, bytes:haxe.io.Bytes, dir:String, ext:String) {
-		var path = new haxe.io.Path("");
-		path.dir = dir + "/";
-		path.file = file;
-		path.ext = ext;
-
-		if(!sys.FileSystem.isDirectory( hide.Ide.inst.getPath(dir)))
-			sys.FileSystem.createDirectory( hide.Ide.inst.getPath(dir));
-
-		var file = hide.Ide.inst.getPath(path.toString());
-		sys.io.File.saveBytes(file, bytes);
-	}
-	#end
 
 	/**
 		Override this function to create runtime objects from this prefab
