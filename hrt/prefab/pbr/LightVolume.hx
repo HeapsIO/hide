@@ -44,8 +44,7 @@ class LightVolumeShader extends hxsl.Shader {
 			var posWS = ppos.xyz / ppos.w;
 			var distToCam = length(posWS - camera.position);
 
-			var origin = transformedPosition;//ppos.xyz / ppos.w;
-
+			var origin = transformedPosition;
 			var rayDir = normalize(camera.position - origin);
 			var step = rayDir * 2.0 * range / float(steps);
 			if ( USE_DITHERING ) {
@@ -60,6 +59,7 @@ class LightVolumeShader extends hxsl.Shader {
 				curPos += step;
 				fog += raymarch(curPos, distToCam) / float(steps);
 			}
+			fog *= smoothstep(0.0, 1.0, distance(camera.position, lightPos) / range);
 
 			pixelColor = vec4(lightColor, fog * opacity);
 		}
