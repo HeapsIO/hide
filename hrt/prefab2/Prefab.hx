@@ -94,6 +94,14 @@ class Prefab {
 	// Public API
 
 	public function new(?parent:Prefab = null) {
+		if (parent == null) {
+			shared =
+			#if editor
+				new hide.prefab2.ContextShared();
+			#else
+				new ContextShared();
+			#end
+		}
 		this.parent = parent;
 	}
 
@@ -127,6 +135,7 @@ class Prefab {
 
 		shared.root2d = params.local2d;
 		shared.root3d = params.local3d;
+		shared.isPrototype = false;
 
 		makeInstanceRec(params);
 
@@ -170,8 +179,6 @@ class Prefab {
 
 		var prefabInstance = Type.createInstance(cl, [parent]);
 
-
-		prefabInstance.shared = new ContextShared();
 		prefabInstance.load(data);
 
 		var children = Std.downcast(Reflect.field(data, "children"), Array);
@@ -650,8 +657,12 @@ class Prefab {
 	@:noCompletion
 	final function makeInternal(?root: Prefab = null, ?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) : Prefab {
 		var newInstance = copyDefault(root);
-		newInstance.shared = new ContextShared();
-		newInstance.shared.isPrototype = false;
+		newInstance.shared =
+		#if editor
+			new hide.prefab2.ContextShared();
+		#else
+			new ContextShared();
+		#end
 
 		o2d = o2d != null ? o2d : (root != null ? root.findFirstLocal2d() : null);
 		o3d = o3d != null ? o3d : (root != null ? root.findFirstLocal3d() : null);

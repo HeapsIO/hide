@@ -19,7 +19,6 @@ class ContextShared {
 
 
 	public function new( ?res : hxd.res.Resource ) {
-		throw "HANDLE EDITOR TOO";
 		if( res != null ) currentPath = res.entry.path;
 	}
 

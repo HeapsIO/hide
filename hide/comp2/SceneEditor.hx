@@ -292,6 +292,7 @@ class SceneEditor {
 
 		sceneData.shared.currentPath = view.state.path;
 
+
 		event = new hxd.WaitEvent();
 
 		var propsEl = new Element('<div class="props"></div>');
@@ -312,6 +313,7 @@ class SceneEditor {
 		};
 
 		sceneData.shared.scene = scene;
+		(cast sceneData.shared:hide.prefab2.ContextShared).editor = this;
 
 		editorDisplay = true;
 
@@ -1717,6 +1719,9 @@ class SceneEditor {
 
 	function makePrefab(elt: PrefabElement) {
 		scene.setCurrent();
+
+		elt.shared.scene = scene;
+		(cast elt.shared:hide.prefab2.ContextShared).editor = this;
 
 		var params = new hrt.prefab2.Prefab.InstanciateContext(elt.parent.findFirstLocal2d(), elt.parent.findFirstLocal3d());
 		params.forceInstanciate = true;
