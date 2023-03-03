@@ -380,6 +380,7 @@ class Table extends Component {
 				syncLevel = sepInfo.level;
 				sep.addClass('seplevel-'+(syncLevel == null ? 0 : syncLevel));
 			}
+			sep.attr("level", syncLevel == null ? 0 : sepInfo.level);
 		}
 
 		sep.contextmenu(function(e) {
