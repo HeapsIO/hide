@@ -21,6 +21,7 @@ class VolumetricLightingShader extends hrt.shader.PbrShader {
 		@param var gamma : Float;
 
 		@param var maxDist : Float;
+		@param var decayPower : Float;
 
 		@param var cameraInverseViewProj : Mat4;
 		@param var cameraPosition : Vec3;
@@ -72,7 +73,7 @@ class VolumetricLightingShader extends hrt.shader.PbrShader {
 			}
 			var end = startPos + d * camDir;
 
-			var density = smoothstep(0.0, 1.0, distance(startPos, end) / maxDist);
+			var density = smoothstep(0.0, 1.0, pow(distance(startPos, end) / maxDist, decayPower));
 
 			var fog = 0.0;
 			for ( i in 1...steps ) {
@@ -123,6 +124,7 @@ class VolumetricLighting extends RendererFX {
 	@:s public var ditheringIntensity : Float = 1.0;
 
 	@:s public var maxDist : Float = 30.0;
+	@:s public var decayPower : Float = 1.0;
 
 	override function makeInstance( ctx : hrt.prefab.Context ) : hrt.prefab.Context {
 		ctx = super.makeInstance(ctx);
@@ -151,6 +153,7 @@ class VolumetricLighting extends RendererFX {
 			r.ctx.engine.pushTarget(tex);
 
 			pass.shader.maxDist = maxDist;
+			pass.shader.decayPower = decayPower;
 			
 			pass.shader.gamma = gamma;
 			pass.shader.bottom = bottom;
@@ -216,6 +219,7 @@ class VolumetricLighting extends RendererFX {
 					<dt>Top</dt><dd><input type="range" min="0" max="10" field="top"/></dd>
 					<dt>Falloff</dt><dd><input type="range" min="0" max="1" field="fallOff"/></dd>
 					<dt>Decay distance</dt><dd><input type="range" min="0" max="50" field="maxDist"/></dd>
+					<dt>Decay power</dt><dd><input type="range" min="0.2" max="5" field="decayPower"/></dd>
 				</dl>
 			</div>
 			<div class="group" name="Rendering">
