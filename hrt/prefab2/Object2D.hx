@@ -9,6 +9,7 @@ class Object2D extends Prefab {
 	@:s public var rotation : Float = 0.;
 
 	@:s public var visible : Bool = true;
+	@:c public var blendMode : h2d.BlendMode = None;
 
 	public var local2d : h2d.Object;
 
@@ -31,11 +32,17 @@ class Object2D extends Prefab {
 		return y;
 	}
 
-	override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) {
-		local2d = new h2d.Object(ctx.local2d);
+	function makeObject2d(parent2d: h2d.Object) : h2d.Object {
+		return new h2d.Object(parent2d);
 	}
 
-	public static var _ = Prefab.register("object2D", Object2D);
+	override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) {
+		local2d = makeObject2d(ctx.local2d);
+		if (local2d != null)
+			local2d.name = name;
+		updateInstance();
+	}
+
 
 	public function loadTransform(t) {
 		x = t.x;
@@ -64,5 +71,38 @@ class Object2D extends Prefab {
 		o.scaleY = scaleY;
 		o.rotation = Math.degToRad(rotation);
 	}
+
+	override function updateInstance(?propName : String ) {
+		var o = local2d;
+		o.x = x;
+		o.y = y;
+		if(propName == null || propName.indexOf("scale") == 0) {
+			o.scaleX = scaleX;
+			o.scaleY = scaleY;
+		}
+		if(propName == null || propName.indexOf("rotation") == 0)
+			o.rotation = Math.degToRad(rotation);
+		if(propName == null || propName == "visible")
+			o.visible = visible;
+
+		if(propName == null || propName == "blendMode")
+			if (blendMode != null) o.blendMode = blendMode;
+	}
+
+	#if editor
+	override function getHideProps() : hide.prefab2.HideProps {
+		// Check children
+		return {
+			icon : children == null || children.length > 0 ? "folder-open" : "genderless",
+			name : "Group 2D"
+		};
+	}
+	#end
+
+	override function getDefaultName() {
+		return type == "object2D" ? "group2D" : super.getDefaultName();
+	}
+
+	static var _ = Prefab.register("object2D", Object2D);
 
 }
