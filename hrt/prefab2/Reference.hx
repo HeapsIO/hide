@@ -1,7 +1,6 @@
 package hrt.prefab2;
 
 class Reference extends Object3D {
-	@:s public var path : String = null;
 	@:s public var editMode : Bool = false;
 
 	public var refInstance : Prefab;
@@ -33,14 +32,15 @@ class Reference extends Object3D {
 	}
 
 	function resolveRef() : Prefab {
-		if(refInstance == null && path != null) {
-			refInstance = Prefab.createFromPath(path);
+		if(refInstance == null && source != null) {
+			refInstance = Prefab.createFromPath(source);
+			refInstance.shared = shared;
 		}
 		return refInstance;
 	}
 
 	override function makeObject3d(parent3d: h3d.scene.Object) : h3d.scene.Object {
-		if (path != null) {
+		if (source != null) {
 			resolveRef();
 			refInstance.make(null, null, parent3d);
 		}
@@ -74,5 +74,5 @@ class Reference extends Object3D {
 	}
 
 
-	public static var _ = hrt.prefab2.Prefab.register("Reference", Reference);
+	public static var _ = hrt.prefab2.Prefab.register("reference", Reference);
 }

@@ -2199,7 +2199,7 @@ class SceneEditor {
 
 		if(path.split(".").pop().toLowerCase() == "prefab2") {
 			var ref = new hrt.prefab2.Reference(parent);
-			ref.path = relative;
+			ref.source = relative;
 			prefab = ref;
 			prefab.name = new haxe.io.Path(relative).file;
 		}

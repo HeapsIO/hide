@@ -176,6 +176,8 @@ class Prefab {
 		// Converting (old) prefabs roots to Object3D automatically
 		if (parent == null && cl == Prefab)
 			cl = Object3D;
+		if (parent == null && type == "level3d")
+			cl = Object3D;
 
 		var prefabInstance = Type.createInstance(cl, [parent]);
 
@@ -657,17 +659,12 @@ class Prefab {
 	@:noCompletion
 	final function makeInternal(?root: Prefab = null, ?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) : Prefab {
 		var newInstance = copyDefault(root);
-		newInstance.shared =
-		#if editor
-			new hide.prefab2.ContextShared();
-		#else
-			new ContextShared();
-		#end
+		newInstance.shared.isPrototype = false;
+
 
 		o2d = o2d != null ? o2d : (root != null ? root.findFirstLocal2d() : null);
 		o3d = o3d != null ? o3d : (root != null ? root.findFirstLocal3d() : null);
 		var params = new InstanciateContext(o2d, o3d);
-
 		newInstance.instanciate(params);
 
 		return newInstance;
@@ -679,6 +676,9 @@ class Prefab {
 	final function copyDefault(?parent:Prefab = null) : Prefab {
 		var thisClass = Type.getClass(this);
 		var inst = Type.createInstance(thisClass, [parent]);
+		#if editor
+		inst.shared.scene = shared.scene;
+		#end
 		copyShallow(this, inst, false, true, true, getSerializableProps());
 		for (child in children) {
 			child.copyDefault(inst);

@@ -349,19 +349,19 @@ class Prefab extends hide.view.FileView {
 
 		toolsDefs.push({id: "perspectiveCamera", title : "Perspective camera", icon : "video-camera", type : Button(() -> resetCamera(false)) });
 		toolsDefs.push({id: "camSettings", title : "Camera Settings", icon : "camera", type : Popup((e : hide.Element) -> new hide.comp2.CameraControllerEditor(sceneEditor, null,e)) });
-		
+
 		toolsDefs.push({id: "topCamera", title : "Top camera", icon : "video-camera", iconStyle: { transform: "rotateZ(90deg)" }, type : Button(() -> resetCamera(true))});
-		
+
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
-		
+
 		toolsDefs.push({id: "snapToGroundToggle", title : "Snap to ground", icon : "anchor", type : Toggle((v) -> sceneEditor.snapToGround = v)});
-		
+
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
-		
+
 		toolsDefs.push({id: "translationMode", title : "Gizmo translation Mode", icon : "arrows", type : Button(@:privateAccess sceneEditor.gizmo.translationMode)});
 		toolsDefs.push({id: "rotationMode", title : "Gizmo rotation Mode", icon : "refresh", type : Button(@:privateAccess sceneEditor.gizmo.rotationMode)});
 		toolsDefs.push({id: "scalingMode", title : "Gizmo scaling Mode", icon : "expand", type : Button(@:privateAccess sceneEditor.gizmo.scalingMode)});
-		
+
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
@@ -370,11 +370,11 @@ class Prefab extends hide.view.FileView {
 		toolsDefs.push({id: "snap-menu", title : "", icon: "", type : Popup((e) -> new hide.comp2.SceneEditor.SnapSettingsPopup(null, e, sceneEditor))});
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
-		
+
 		toolsDefs.push({id: "localTransformsToggle", title : "Local transforms", icon : "compass", type : Toggle((v) -> sceneEditor.localTransform = v)});
-		
+
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
-		
+
 		toolsDefs.push({id: "gridToggle", title : "Toggle grid", icon : "th", type : Toggle((v) -> { showGrid = v; updateGrid(); }) });
 		toolsDefs.push({id: "axisToggle", title : "Toggle model axis", icon : "cube", type : Toggle((v) -> { sceneEditor.showBasis = v; sceneEditor.updateBasis(); }) });
 		toolsDefs.push({id: "iconVisibility", title : "Toggle 3d icons visibility", icon : "image", type : Toggle((v) -> { hide.Ide.inst.show3DIcons = v; }), defaultValue: true });
@@ -797,7 +797,7 @@ class Prefab extends hide.view.FileView {
 		return null;
 	}
 
-	static var _ = hide.view.FileTree.registerExtension(Prefab, ["prefab2"], { icon : "sitemap", createNew : "Prefab2" });
-	static var _1 = hide.view.FileTree.registerExtension(Prefab, ["l3d2"], { icon : "sitemap" });
+	static var _ = hide.view.FileTree.registerExtension(Prefab, ["prefab"], { icon : "sitemap", createNew : "Prefab2" });
+	static var _1 = hide.view.FileTree.registerExtension(Prefab, ["l3d"], { icon : "sitemap" });
 
 }

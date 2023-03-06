@@ -52,7 +52,7 @@ class SubFX extends Reference implements hrt.prefab2.fx.Event.IEvent{
 	public function getDisplayInfo(ctx:hide.prefab2.EditContext) {
 		var ref = Std.downcast(resolveRef(), FX);
 		return {
-			label: ref != null ? new haxe.io.Path(path).file : "null",
+			label: ref != null ? new haxe.io.Path(source).file : "null",
 			length: ref != null ? ref.duration : 1.0
 		};
 	}

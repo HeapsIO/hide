@@ -836,7 +836,7 @@ class Prefab extends FileView {
 		}
 	}
 
-    
+
 
 	function getDisplayColor(p: PrefabElement) : Null<Int> {
 		var typeId = p.getCdbType();
@@ -850,7 +850,9 @@ class Prefab extends FileView {
 		return null;
 	}
 
-	static var _ = FileTree.registerExtension(Prefab, ["prefab"], { icon : "sitemap", createNew : "Prefab" });
-	static var _1 = FileTree.registerExtension(Prefab, ["l3d"], { icon : "sitemap" });
+	static var _ = FileTree.registerExtension(Prefab, ["prefab__"], { icon : "sitemap", createNew : "Prefab" });
+	static var _1 = FileTree.registerExtension(Prefab, ["l3d__"], { icon : "sitemap" });
+
+}
 
 }
