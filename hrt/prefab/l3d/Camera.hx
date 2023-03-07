@@ -134,6 +134,22 @@ class Camera extends Object3D {
 		#end
 	}
 
+	public function lerp( to : Camera, k : Float ) {
+		var start = getAbsPos();
+		var target = to.getAbsPos();
+		var qStart = new h3d.Quat();
+		qStart.initRotateMatrix(start);
+		var qEnd = new h3d.Quat();
+		qEnd.initRotateMatrix(target);
+		var q = new h3d.Quat();
+		q.slerp(qStart,qEnd,k);
+		var m = q.toMatrix();
+		m.tx = hxd.Math.lerp(start.tx, target.tx, k);
+		m.ty = hxd.Math.lerp(start.ty, target.ty, k);
+		m.tz = hxd.Math.lerp(start.tz, target.tz, k);
+		return m;
+	}
+
 	public function applyTo(c: h3d.Camera) {
 		var transform = null;
 		if ( obj != null )
