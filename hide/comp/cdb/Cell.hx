@@ -437,7 +437,7 @@ class Cell {
 				var dimsText = dims != null ? dims.width+"x"+dims.height : "";
 				var onload = dims != null ? "" : 'onload="hide.comp.cdb.Cell.onImageLoad(this, \'$url\');"';
 				var img = '<img src="$url" $onload/>';
-				var previewHandler = ' onmouseenter="$(this).find(\'.previewContent\').css(\'top\', (this.getBoundingClientRect().bottom - this.offsetHeight) + \'px\')"';
+				var previewHandler = ' onmouseenter="$(this).find(\'.previewContent\').css(\'top\', this.getBoundingClientRect().bottom + \'px\')"';
 				if (getCellConfigValue("inlineImageFiles", false)) {
 					innerHtml = '<span class="preview inlineImage" $previewHandler>
 						<img src="$url"><div class="previewContent"><div class="inlineImagePath">$innerHtml</div><div class="label">$dimsText</div>$img</div>
