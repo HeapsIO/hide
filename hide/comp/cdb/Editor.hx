@@ -1330,7 +1330,7 @@ class Editor extends Component {
 	public function duplicateLine( table : Table, index = 0 ) {
 		if( !table.canInsert() || table.displayMode != Table )
 			return;
-		var srcObj = table.sheet.getLines()[index];
+		var srcObj = table.sheet.lines[index];
 		beginChanges();
 		var obj = table.sheet.newLine(index);
 		for(colId => c in table.columns ) {
