@@ -81,16 +81,15 @@ class Material extends Prefab {
 		var props = renderProps();
 		#if editor
 		if ( mats == null || mats.length == 0 ) {
-			try {
-				var path = hide.Ide.inst.currentConfig.get("material.preview", []);
-				var preview = ctx.loadModel(path);
-				ctx.local3d.parent.addChild(preview);
-				ctx.local3d = preview;
-				ctx.local3d.x = ctx.local3d.getScene().getMaterials().length * 5.0;
-				mats = getMaterials(ctx);
-			} catch ( e:Dynamic) {
-
-			}
+			var sphere = new h3d.prim.Sphere(1., 16, 12);
+			sphere.addUVs();
+			sphere.addNormals();
+			sphere.addTangents();
+			var preview = new h3d.scene.Mesh(sphere);
+			ctx.local3d.parent.addChild(preview);
+			ctx.local3d = preview;
+			ctx.local3d.x = ctx.local3d.getScene().getMaterials().length * 5.0;
+			mats = getMaterials(ctx);
 		}
 		#end
 		for( m in mats )
