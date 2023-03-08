@@ -153,10 +153,25 @@ class Light extends Object3D {
 		}
 		ctx.local3d.name = name;
 
+		#if editor
+		ctx.custom = hrt.impl.EditorTools.create3DIcon(ctx.local3d, "icons/icon-pointlight.png", 0.5);
+		#end
+
 		cookieTex = initTexture(cookiePath);
 		updateInstance(ctx);
 		return ctx;
 	}
+
+	#if editor
+	override function removeInstance(ctx:Context):Bool {
+		var icon = Std.downcast(ctx.custom, hrt.impl.EditorTools.EditorIcon);
+		if (icon != null) {
+			icon.remove();
+			ctx.custom = null;
+		}
+		return super.removeInstance(ctx);
+	}
+	#end
 
 	override function updateInstance( ctx : Context, ?propName : String ) {
 		super.updateInstance(ctx, propName);
@@ -230,7 +245,6 @@ class Light extends Object3D {
 		var debugPoint = ctx.local3d.find(c -> if(c.name == "_debugPoint") c else null);
 		var debugDir = ctx.local3d.find(c -> if(c.name == "_debugDir") c else null);
 		var debugSpot = ctx.local3d.find(c -> if(c.name == "_debugSpot") c else null);
-		var mesh : h3d.scene.Mesh = null;
 		var sel : h3d.scene.Object = null;
 
 		switch(kind){
@@ -246,9 +260,7 @@ class Light extends Object3D {
 					debugPoint = new h3d.scene.Object(ctx.local3d);
 					debugPoint.name = "_debugPoint";
 
-					mesh = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), debugPoint);
-					mesh.ignoreBounds = true;
-					mesh.setScale(0.2);
+
 
 					rangeSphere = new h3d.scene.Sphere(0xffffff, 1, true, debugPoint);
 					rangeSphere.visible = false;
@@ -258,11 +270,9 @@ class Light extends Object3D {
 					rangeSphere.material.shadows = false;
 				}
 				else {
-					mesh = cast debugPoint.getChildAt(0);
-					rangeSphere = cast debugPoint.getChildAt(1);
+					rangeSphere = cast debugPoint.getChildAt(0);
 				}
 
-				mesh.setScale(0.2/range);
 				rangeSphere.material.color.setColor(color);
 				sel = rangeSphere;
 
@@ -275,10 +285,7 @@ class Light extends Object3D {
 					debugDir = new h3d.scene.Object(ctx.local3d);
 					debugDir.name = "_debugDir";
 
-					mesh = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), debugDir);
-					mesh.ignoreBounds = true;
-					mesh.setScale(0.2);
-					mesh.ignoreParentTransform = true;
+
 
 					var g = new h3d.scene.Graphics(debugDir);
 					g.lineStyle(1, 0xffffff);
@@ -291,11 +298,9 @@ class Light extends Object3D {
 					sel = g;
 				}
 				else {
-					mesh = cast debugDir.getChildAt(0);
-					sel = debugDir.getChildAt(1);
+					sel = debugDir.getChildAt(0);
 				}
 
-				mesh.setPosition(debugDir.getAbsPos().tx, debugDir.getAbsPos().ty, debugDir.getAbsPos().tz);
 
 			case Spot:
 
@@ -305,10 +310,6 @@ class Light extends Object3D {
 				if(debugSpot == null) {
 					debugSpot = new h3d.scene.Object(ctx.local3d);
 					debugSpot.name = "_debugSpot";
-
-					mesh = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), debugSpot);
-					mesh.ignoreBounds = true;
-					mesh.setScale(0.2);
 
 					var g = new h3d.scene.Graphics(debugSpot);
 					g.lineStyle(1, this.color);
@@ -328,7 +329,7 @@ class Light extends Object3D {
 					sel = g;
 				}
 				else{
-					var g : h3d.scene.Graphics = Std.downcast(debugSpot.getChildAt(1), h3d.scene.Graphics);
+					var g : h3d.scene.Graphics = Std.downcast(debugSpot.getChildAt(0), h3d.scene.Graphics);
 					g.clear();
 					g.lineStyle(1, this.color);
 					g.moveTo(0,0,0); g.lineTo(1, 1, 1);
@@ -340,26 +341,35 @@ class Light extends Object3D {
 					g.lineTo(1, -1, 1);
 					g.lineTo(1, -1, -1);
 
-					mesh = cast debugSpot.getChildAt(0);
 					sel = g;
 				}
 
-				mesh.setScale(0.2/range);
 		}
 
-		if(mesh != null){
-			var mat = mesh.material;
-			mat.mainPass.setPassName("overlay");
-			mat.color.setColor(color);
-			mat.shadows = false;
+
+		var icon = Std.downcast(ctx.custom, hrt.impl.EditorTools.EditorIcon);
+		if (icon != null) {
+			icon.color = h3d.Vector.fromColor(color);
+
+			var ide = hide.Ide.inst;
+			switch(kind) {
+				case Directional:
+					icon.texture = ide.getTexture(ide.getHideResPath("icons/DirLight.png"));
+				case Point:
+					icon.texture = ide.getTexture(ide.getHideResPath("icons/PointLight.png"));
+				case Spot:
+					icon.texture = ide.getTexture(ide.getHideResPath("icons/SpotLight.png"));
+				default:
+					throw "unknown light type";
+			}
 		}
 
 		var isSelected = false;
 		if(sel != null){
 			isSelected = sel.visible;
-			if( debugPoint != null ) debugPoint.visible = (isSelected || ctx.shared.editorDisplay) && debugDisplay;
-			if( debugDir != null ) debugDir.visible = (isSelected || ctx.shared.editorDisplay) && debugDisplay;
-			if( debugSpot != null ) debugSpot.visible = (isSelected || ctx.shared.editorDisplay) && debugDisplay;
+			if( debugPoint != null ) debugPoint.visible = (isSelected || ctx.shared.editorDisplay);
+			if( debugDir != null ) debugDir.visible = (isSelected || ctx.shared.editorDisplay);
+			if( debugSpot != null ) debugSpot.visible = (isSelected || ctx.shared.editorDisplay);
 			sel.name = "__selection";
 		}
 

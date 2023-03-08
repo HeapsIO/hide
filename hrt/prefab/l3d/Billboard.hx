@@ -4,6 +4,8 @@ class BillboardShader extends hxsl.Shader {
 
 	static var SRC = {
 
+		@param var scale : Float;
+
 		@:import h3d.shader.BaseMesh;
 
         function vertex() {
@@ -14,11 +16,11 @@ class BillboardShader extends hxsl.Shader {
                 vec4(0, 0, 0, 1)
             );
 
-            // scale 
+            // scale
             newModelView = mat4(
-                vec4(length(global.modelView[0].xyz), 0.0, 0.0, 0.0),
-                vec4(0.0, length(global.modelView[1].xyz), 0.0, 0.0),
-                vec4(0.0, 0.0, length(global.modelView[2].xyz), 0.0),
+                vec4(scale /*length(global.modelView[0].xyz)*/, 0.0, 0.0, 0.0),
+                vec4(0.0, scale /*length(global.modelView[1].xyz)*/, 0.0, 0.0),
+                vec4(0.0, 0.0, scale /*length(global.modelView[2].xyz)*/, 0.0),
                 vec4(0.0, 0.0, 0.0, 1.0)
             ) * newModelView;
 
@@ -41,6 +43,7 @@ class BillboardObj extends h3d.scene.Mesh {
 
     var prim : h3d.prim.Polygon;
     var shader : BillboardShader;
+	public var billboardScale : Float = 1.0;
 
     public var texture(get, set) : h3d.mat.Texture;
 
@@ -62,6 +65,11 @@ class BillboardObj extends h3d.scene.Mesh {
         return material.color;
     }
 
+	override function sync(ctx:h3d.scene.RenderContext) {
+		shader.scale = billboardScale;
+		super.sync(ctx);
+	}
+
     public function new(?tile : h3d.mat.Texture,  ?parent : h3d.scene.Object) {
         var shape : hrt.prefab.l3d.Polygon.Shape = Quad(0);
         var cache = hrt.prefab.l3d.Polygon.getPrimCache();
@@ -74,7 +82,7 @@ class BillboardObj extends h3d.scene.Mesh {
         material.mainPass.addShader(shader);
         material.mainPass.setBlendMode(Alpha);
         material.props = {
-                mode: "BeforeTonemapping",
+                mode: "Overlay",
                 blend: "Alpha",
                 shadows: false,
                 culling: "Back",

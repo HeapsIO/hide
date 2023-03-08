@@ -938,7 +938,20 @@ class SceneEditor {
 		else {
 			var refPrefab = new Reference();
 			refPrefab.source = view.config.getLocal("scene.renderProps");
-			refPrefab.makeInstance(context);
+			var ctx2 = refPrefab.makeInstance(context);
+
+			var lights = refPrefab.getAll(hrt.prefab.Light, true);
+			for (light in lights) {
+				var ctxs = ctx2.shared.getContexts(light);
+				for (ctx in ctxs) {
+					var icon = Std.downcast(ctx.custom, hrt.impl.EditorTools.EditorIcon);
+					if (icon != null) {
+						icon.remove();
+						ctx.custom = null;
+					}
+				}
+			}
+
 			if( @:privateAccess refPrefab.ref != null ) {
 				var renderProps = @:privateAccess refPrefab.ref.get(hrt.prefab.RenderProps);
 				if( renderProps != null )
