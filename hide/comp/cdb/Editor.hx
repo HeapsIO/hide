@@ -1516,11 +1516,14 @@ class Editor extends Component {
 	function moveLines(lines : Array<Line>, delta : Int) {
 		if( lines.length == 0 || !lines[0].table.canInsert() || delta == 0 )
 			return;
+		var selDiff: Null<Int> = cursor.select == null ? null : cursor.select.y - cursor.y;
 		beginChanges();
 		lines.sort((a, b) -> { return (a.index - b.index) * delta * -1; });
 		for( l in lines ) {
 			moveLine(l, delta);
 		}
+		if (selDiff != null && hxd.Math.iabs(selDiff) == lines.length - 1)
+			cursor.set(cursor.table, cursor.x, cursor.y, {x: cursor.x, y: cursor.y + selDiff});
 		endChanges();
 	}
 
