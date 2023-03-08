@@ -154,7 +154,7 @@ class Light extends Object3D {
 		ctx.local3d.name = name;
 
 		#if editor
-		ctx.custom = hrt.impl.EditorTools.create3DIcon(ctx.local3d, "icons/icon-pointlight.png", 0.5);
+		ctx.custom = hrt.impl.EditorTools.create3DIcon(ctx.local3d, "icons/PointLight.png", 0.5);
 		#end
 
 		cookieTex = initTexture(cookiePath);
