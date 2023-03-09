@@ -93,6 +93,15 @@ class Prefab {
 
 	// Public API
 
+/*
+			shared =
+			#if editor
+				new hide.prefab2.ContextShared();
+			#else
+				new ContextShared();
+			#end
+*/
+
 	public function new(?parent:Prefab = null) {
 		if (parent == null) {
 			shared =
@@ -102,7 +111,8 @@ class Prefab {
 				new ContextShared();
 			#end
 		}
-		this.parent = parent;
+		else
+			this.parent = parent;
 	}
 
 	// Accessors
@@ -116,7 +126,7 @@ class Prefab {
 			parent.children.remove(this);
 		parent = p;
 		if( parent != null ) {
-			shared = parent.shared;
+			this.shared = parent.shared;
 			parent.children.push(this);
 		}
 		return p;
@@ -193,9 +203,24 @@ class Prefab {
 		return prefabInstance;
 	}
 
-	public static function createFromPath(path: String, parent: Prefab = null) : Prefab {
-		return hxd.res.Loader.currentInstance.load(path).to(hrt.prefab2.Resource).load();
+	public static function createFromPath(path: String, parent: Prefab = null, ?contextShared: ContextShared) : Prefab {
+		return hxd.res.Loader.currentInstance.load(path).to(hrt.prefab2.Resource).load(contextShared);
 	}
+
+	#if editor
+	public function setEditor(sceneEditor: hide.comp2.SceneEditor) {
+		(cast shared:hide.prefab2.ContextShared).editor = sceneEditor;
+		(cast shared:hide.prefab2.ContextShared).scene = sceneEditor.scene;
+
+		setEditorChildren(sceneEditor);
+	}
+
+	public function setEditorChildren(sceneEditor: hide.comp2.SceneEditor) {
+		for (c in children) {
+			c.setEditorChildren(sceneEditor);
+		}
+	}
+	#end
 
 	// Hierarchical Helpers
 
@@ -658,7 +683,10 @@ class Prefab {
 	**/
 	@:noCompletion
 	final function makeInternal(?root: Prefab = null, ?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) : Prefab {
-		var newInstance = copyDefault(root);
+		var newInstance = copyDefault(root, shared);
+		#if editor
+		newInstance.setEditor((cast shared:hide.prefab2.ContextShared).editor);
+		#end
 		newInstance.shared.isPrototype = false;
 
 
@@ -673,15 +701,16 @@ class Prefab {
 	/**
 		Create a copy of this prefab and it's childrens, whitout initializing their fields
 	**/
-	final function copyDefault(?parent:Prefab = null) : Prefab {
+	final function copyDefault(?parent:Prefab = null, shared: ContextShared) : Prefab {
 		var thisClass = Type.getClass(this);
+
 		var inst = Type.createInstance(thisClass, [parent]);
 		#if editor
 		inst.shared.scene = shared.scene;
 		#end
 		copyShallow(this, inst, false, true, true, getSerializableProps());
 		for (child in children) {
-			child.copyDefault(inst);
+			child.copyDefault(inst, shared);
 		}
 		return inst;
 	}

@@ -210,6 +210,7 @@ class SceneEditor {
 	public var tree : hide.comp.IconTree<PrefabElement>;
 	public var scene : hide.comp2.Scene;
 	public var properties : hide.comp.PropsEditor;
+
 	//public var context(default,null) : hrt.prefab.Context;
 	public var curEdit(default, null) : SceneEditorContext;
 	public var snapToGround = false;
@@ -226,7 +227,6 @@ class SceneEditor {
 	public var editorDisplay(default,set) : Bool;
 	public var camera2D(default,set) : Bool = false;
 	public var objectAreSelectable = true;
-
 
 	var updates : Array<Float -> Void> = [];
 
@@ -312,8 +312,7 @@ class SceneEditor {
 			onResize();
 		};
 
-		sceneData.shared.scene = scene;
-		(cast sceneData.shared:hide.prefab2.ContextShared).editor = this;
+		sceneData.setEditor(this);
 
 		editorDisplay = true;
 
@@ -989,7 +988,7 @@ class SceneEditor {
 			var path = view.config.getLocal("scene.renderProps");
 			if (path != null) {
 				var refPrefab : hrt.prefab2.Reference = cast hrt.prefab2.Prefab.createFromPath(path);
-				refPrefab.shared.scene = scene;
+				refPrefab.setEditor(this);
 				refPrefab.make(null, root2d, root3d);
 				if( @:privateAccess refPrefab.refInstance != null ) {
 					var renderProps = @:privateAccess refPrefab.refInstance.get(hrt.prefab2.RenderProps);
@@ -1720,7 +1719,7 @@ class SceneEditor {
 	function makePrefab(elt: PrefabElement) {
 		scene.setCurrent();
 
-		elt.shared.scene = scene;
+		elt.setEditor(this);
 		(cast elt.shared:hide.prefab2.ContextShared).editor = this;
 
 		var params = new hrt.prefab2.Prefab.InstanciateContext(elt.parent.findFirstLocal2d(), elt.parent.findFirstLocal3d());

@@ -31,10 +31,20 @@ class Reference extends Object3D {
 		}
 	}
 
+	#if editor
+	override function setEditorChildren(sceneEditor:hide.comp2.SceneEditor) {
+		super.setEditorChildren(sceneEditor);
+
+		if (refInstance != null) {
+			refInstance.setEditor(sceneEditor);
+		}
+	}
+	#end
+
 	function resolveRef() : Prefab {
 		if(refInstance == null && source != null) {
-			refInstance = Prefab.createFromPath(source);
-			refInstance.shared = shared;
+			refInstance = Prefab.createFromPath(source, shared);
+			refInstance.setEditor((cast shared:hide.prefab2.ContextShared).editor);
 		}
 		return refInstance;
 	}
@@ -42,7 +52,9 @@ class Reference extends Object3D {
 	override function makeObject3d(parent3d: h3d.scene.Object) : h3d.scene.Object {
 		if (source != null) {
 			resolveRef();
-			refInstance.make(null, null, parent3d);
+			var inst = new hrt.prefab2.Prefab.InstanciateContext(findFirstLocal2d(), parent3d);
+			inst.forceInstanciate = true;
+			refInstance.instanciate(inst);
 		}
 		return Object3D.getLocal3d(refInstance);
 	}

@@ -277,7 +277,7 @@ class VolumetricLightmap extends Object3D {
 			trace("Invalid renderer");
 
 		var sceneData = @:privateAccess ctx.scene.editor.sceneData;
-		baker.init(pbrRenderer.env, sceneData.copyDefault(), ctx.scene);
+		baker.init(pbrRenderer.env, sceneData, ctx.scene);
 
 		baker.onEnd = function() {
 			if( onEnd != null ) onEnd();
