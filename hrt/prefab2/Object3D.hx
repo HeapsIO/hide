@@ -2,9 +2,9 @@ package hrt.prefab2;
 import hxd.Math;
 
 class Object3D extends Prefab {
-	@:s @:range(0,400) public var x(default, set) : Float = 0.0;
-	@:s @:range(0,400) public var y(default, set) : Float = 0.0;
-	@:s @:range(0,400) public var z(default, set) : Float = 0.0;
+	@:s @:range(0,400) public var x : Float = 0.0;
+	@:s @:range(0,400) public var y : Float = 0.0;
+	@:s @:range(0,400) public var z : Float = 0.0;
 
 	@:s public var rotationX : Float = 0.0;
 	@:s public var rotationY : Float = 0.0;
@@ -29,7 +29,7 @@ class Object3D extends Prefab {
 		return null;
 	}
 
-	function set_x(v : Float) {
+	/*function set_x(v : Float) {
 		x = v;
 		local3d.x = x;
 		return x;
@@ -45,7 +45,7 @@ class Object3D extends Prefab {
 		z = v;
 		local3d.z = z;
 		return z;
-	}
+	}*/
 
 	public function setTransform(mat : h3d.Matrix) {
 		var rot = mat.getEulerAngles();

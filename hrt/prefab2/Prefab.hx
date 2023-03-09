@@ -177,6 +177,9 @@ class Prefab {
 		var type : String = data.type;
 
 		var cl : Class<Prefab> = Unknown;
+		if (type == "object")
+			type = "object3D";
+
 		if (type != null) {
 			var classEntry = registry.get(type);
 			if (classEntry != null)
