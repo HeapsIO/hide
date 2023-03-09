@@ -866,6 +866,7 @@ class EmitterObject extends h3d.scene.Object {
 
 		emitCount += count;
 	}
+	/** Called every time a particle is emitted. `offset` and `orient` can be modified (local space) **/
 
 	// No-alloc version of h3d.Matrix.getEulerAngles()
 	static function getEulerAngles(m: h3d.Matrix) {
