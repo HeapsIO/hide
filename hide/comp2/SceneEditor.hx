@@ -2069,19 +2069,13 @@ class SceneEditor {
 			}
 
 			// TODO(ces) : implement
-			/*function getSelContext( e : PrefabElement ) {
-				var ectx = context.shared.contexts.get(e);
-				if( ectx == null ) ectx = context.shared.getContexts(e)[0];
-				if( ectx == null ) ectx = context;
-				return ectx;
-			}
 
 			var map = new Map<PrefabElement,Bool>();
 			function selectRec(e : PrefabElement, b:Bool) {
 				if( map.exists(e) )
 					return;
 				map.set(e, true);
-				if(setElementSelected(e, getSelContext(e), b))
+				if(setElementSelected(e, b))
 					for( e in e.children )
 						selectRec(e,b);
 			}
@@ -2092,7 +2086,7 @@ class SceneEditor {
 			edit.cleanups.push(function() {
 				for( e in map.keys() ) {
 					if( hasBeenRemoved(e) ) continue;
-					setElementSelected(e, getSelContext(e), false);
+					setElementSelected(e, false);
 				}
 			});
 
@@ -2102,7 +2096,7 @@ class SceneEditor {
 				if( !isLocked(e) ) {
 					showGizmo = true;
 					break;
-				}*/
+				}
 			curEdit = edit;
 			setupGizmo();
 		}

@@ -851,7 +851,7 @@ class Prefab {
 		Allows to customize how the prefab instance changes when selected/unselected within Hide.
 		Selection of descendants is skipped if false is returned.
 	**/
-	public function setSelected(b : Bool ) {
+	public function setSelected(b : Bool ) : Bool {
 		return true;
 	}
 
