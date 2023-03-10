@@ -951,8 +951,9 @@ class Editor extends Component {
 				}
 			}
 			var paths : Array<String> = this.config.get("cdb.prefabsSearchPaths");
+			var scriptStr = new EReg("\\b"+sheet.name.charAt(0).toUpperCase() + sheet.name.substr(1) + "\\." + id + "\\b","");
+
 			if( paths != null ) {
-				var scriptStr = new EReg("\\b"+sheet.name.charAt(0).toUpperCase() + sheet.name.substr(1) + "\\." + id + "\\b","");
 				function lookupPrefabRec(path) {
 					for( f in sys.FileSystem.readDirectory(path) ) {
 						var fpath = path+"/"+f;
@@ -975,6 +976,75 @@ class Editor extends Component {
 					var path = ide.getPath(p);
 					if( sys.FileSystem.exists(path) && sys.FileSystem.isDirectory(path) )
 						lookupPrefabRec(path);
+				}
+			}
+
+			{
+
+				var results = [];
+				for( s in sheet.base.sheets ) {
+					for( c in s.columns )
+						switch( c.type ) {
+						case TString:
+							if (c.kind == cdb.Data.ColumnKind.Script) {
+								var sheets = [];
+								var p = { s : s, c : c.name, id : null };
+								while( true ) {
+									for( c in p.s.columns )
+										switch( c.type ) {
+										case TId: p.id = c.name; break;
+										default:
+										}
+									sheets.unshift(p);
+									var p2 = p.s.getParent();
+									if( p2 == null ) break;
+									p = { s : p2.s, c : p2.c, id : null };
+								}
+								var objs = s.getObjects();
+								var i = 0;
+								for( sheetline => o in objs ) {
+									if (i == 18) {
+										trace("break");
+									}
+									i += 1;
+									var obj = o.path[o.path.length - 1];
+									var content = Reflect.field(obj, c.name);
+									if( !scriptStr.match(content) ) continue;
+									for( line => str in content.split("\n") ) {
+										if( scriptStr.match(str) )
+										{
+											var idname = sheets[sheets.length-1].id;
+											var refname = Std.string(sheetline);
+											if (idname != null) {
+												refname = Reflect.field(obj, idname);
+											}
+											message.push([for(s in sheets) s.s.name].join("/")+"." + refname + "." + c.name + ":"+(line+1));
+										}
+									}
+								}
+							}
+
+						/*case TRef(sname) if( sname == sheet.sheet.name ):
+							var sheets = [];
+							var p = { s : s, c : c.name, id : null };
+							while( true ) {
+								for( c in p.s.columns )
+									switch( c.type ) {
+									case TId: p.id = c.name; break;
+									default:
+									}
+								sheets.unshift(p);
+								var p2 = p.s.getParent();
+								if( p2 == null ) break;
+								p = { s : p2.s, c : p2.c, id : null };
+							}
+							for( o in s.getObjects() ) {
+								var obj = o.path[o.path.length - 1];
+								if( Reflect.field(obj, c.name) == id )
+									results.push({ s : sheets, o : o });
+							}*/
+						default:
+						}
 				}
 			}
 		}
