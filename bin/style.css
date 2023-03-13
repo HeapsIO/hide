@@ -645,6 +645,9 @@ input[type=checkbox]:checked:after {
 .tb-group > * .icon {
   font-size: 14px;
 }
+.tb-group > * .icon:before {
+  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.45);
+}
 .tb-group > * .label {
   font-family: Verdana, serif;
   display: inline-block;
@@ -668,7 +671,7 @@ input[type=checkbox]:checked:after {
 .tb-group > *.button2:active,
 .tb-group > *.button2[checked],
 .tb-group > *.menu:active {
-  background: #737373;
+  background: #969696;
 }
 .tb-group > *.menu {
   background: #282828;
