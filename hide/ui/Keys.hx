@@ -1,14 +1,18 @@
 package hide.ui;
 
+
+typedef EntryDoc = {name: String, category: String};
+typedef Entry = {doc: EntryDoc, cb: Void->Void};
+
 class Keys {
 
-	var keys = new Map<String,Void->Void>();
+	var keys = new Map<String,Entry>();
 	var parent : js.html.Element;
 	var listeners = new Array<js.jquery.Event -> Bool>();
 	var disabledStack : Int = 0;
 
 	public function pushDisable() {
-		
+
 		disabledStack ++;
 	}
 
@@ -83,19 +87,47 @@ class Keys {
 				continue;
 			}
 			if( keyCode == key ) {
-				keys.get(k)();
+				keys.get(k).cb();
 				return true;
 			}
 		}
 		return false;
 	}
 
-	public function register( name : String, callb : Void -> Void ) {
-		keys.set(name, callb);
+	public function register( name : String, ?doc : EntryDoc, callb : Void -> Void ) {
+		keys.set(name, {doc: doc, cb:callb});
 	}
 
 	public static function get( e : Element ) : Keys {
 		return Reflect.field(e[0], "__keys");
+	}
+
+	public function sortDocCategories(config: Config) : Map<String, Array<{name: String, shortcut: String}>> {
+		var ret = new Map();
+		for (k => v in keys) {
+			var shortcut = config.get("key."+k);
+			if (shortcut != null) {
+				var name = null;
+				var category = "none";
+				if (v.doc != null) {
+					name = v.doc.name;
+					category = v.doc.category;
+				}
+				if (name == null) {
+					name = k;
+					var parts = name.split(".");
+					name = parts[parts.length-1];
+					name = name.charAt(0).toUpperCase() + name.substr(1);
+				}
+				if (!ret.exists(category)) {
+					ret.set(category, new Array<{name: String, shortcut: String}>());
+				}
+				var arr = ret.get(category);
+				arr.push({name: name, shortcut: shortcut});
+			}
+		}
+
+		return ret;
 	}
 
 }

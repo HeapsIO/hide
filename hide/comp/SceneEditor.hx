@@ -198,6 +198,31 @@ class SnapSettingsPopup extends Popup {
     }
 }
 
+class HelpPopup extends Popup {
+	var editor : SceneEditor;
+
+	public function new(?parent : Element, ?root : Element, editor: SceneEditor) {
+        super(parent, root);
+        this.editor = editor;
+
+        popup.append(new Element("<p>Shortcuts</p>"));
+        popup.addClass("settings-popup");
+        popup.css("max-width", "300px");
+
+		var form_div = new Element("<div>").addClass("form-grid").appendTo(popup);
+		var categories = editor.view.keys.sortDocCategories(editor.view.config);
+
+		for (cat => shortcuts in categories) {
+			if (cat == "none")
+				continue;
+			form_div.append(new Element('<p style="grid-column: 1 / -1">$cat</p>'));
+			for (s in shortcuts) {
+				form_div.append(new Element('<label>${s.name}</label><span>${s.shortcut}</span>'));
+			}
+		}
+	}
+}
+
 class SceneEditor {
 
 	public var tree : hide.comp.IconTree<PrefabElement>;
@@ -273,43 +298,43 @@ class SceneEditor {
 		context.init();
 		editorDisplay = true;
 
-		view.keys.register("copy", onCopy);
-		view.keys.register("paste", onPaste);
-		view.keys.register("cancel", deselect);
-		view.keys.register("selectAll", selectAll);
-		view.keys.register("duplicate", duplicate.bind(true));
-		view.keys.register("duplicateInPlace", duplicate.bind(false));
-		view.keys.register("group", groupSelection);
-		view.keys.register("delete", () -> deleteElements(curEdit.rootElements));
-		view.keys.register("search", function() tree.openFilter());
-		view.keys.register("rename", function () {
+		view.keys.register("copy", {name: "Copy", category: "Edit"}, onCopy);
+		view.keys.register("paste", {name: "Paste", category: "Edit"}, onPaste);
+		view.keys.register("cancel", {name: "De-select", category: "Scene"}, deselect);
+		view.keys.register("selectAll", {name: "Select All", category: "Scene"}, selectAll);
+		view.keys.register("duplicate", {name: "Duplicate", category: "Scene"}, duplicate.bind(true));
+		view.keys.register("duplicateInPlace", {name: "Duplicate in place", category: "Scene"}, duplicate.bind(false));
+		view.keys.register("group", {name: "Group Selection", category: "Scene"}, groupSelection);
+		view.keys.register("delete", {name: "Delete", category: "Scene"}, () -> deleteElements(curEdit.rootElements));
+		view.keys.register("search", {name: "Search", category: "Scene"}, function() tree.openFilter());
+		view.keys.register("rename", {name: "Rename", category: "Scene"}, function () {
 			if(curEdit.rootElements.length > 0)
 				tree.editNode(curEdit.rootElements[0]);
 		});
 
-		view.keys.register("sceneeditor.focus", focusSelection);
-		view.keys.register("sceneeditor.lasso", startLassoSelect);
-		view.keys.register("sceneeditor.hide", function() {
+		view.keys.register("sceneeditor.focus", {name: "Focus Selection", category: "Scene"}, focusSelection);
+		view.keys.register("sceneeditor.lasso", {name: "Lasso Select", category: "Scene"}, startLassoSelect);
+		view.keys.register("sceneeditor.hide", {name: "Hide Selection", category: "Scene"}, function() {
 			var isHidden = isHidden(curEdit.rootElements[0]);
 			setVisible(curEdit.elements, isHidden);
 		});
-		view.keys.register("sceneeditor.isolate", function() {	isolate(curEdit.elements); });
-		view.keys.register("sceneeditor.showAll", function() {	setVisible(context.shared.elements(), true); });
-		view.keys.register("sceneeditor.selectParent", function() {
+		view.keys.register("sceneeditor.isolate", {name: "Isolate", category: "Scene"}, function() {	isolate(curEdit.elements); });
+		view.keys.register("sceneeditor.showAll", {name: "Show all", category: "Scene"}, function() {	setVisible(context.shared.elements(), true); });
+		view.keys.register("sceneeditor.selectParent", {name: "Select Parent", category: "Scene"}, function() {
 			if(curEdit.rootElements.length > 0) {
 				var p = curEdit.rootElements[0].parent;
 				if( p != null && p != sceneData ) selectElements([p]);
 			}
 		});
-		view.keys.register("sceneeditor.reparent", function() {
+		view.keys.register("sceneeditor.reparent", {name: "Reparent", category: "Scene"}, function() {
 			if(curEdit.rootElements.length > 1) {
 				var children = curEdit.rootElements.copy();
 				var parent = children.pop();
 				reparentElement(children, parent, 0);
 			}
 		});
-		view.keys.register("sceneeditor.editPivot", editPivot);
-		view.keys.register("sceneeditor.gatherToMouse", gatherToMouse);
+		view.keys.register("sceneeditor.editPivot", {name: "Edit Pivot", category: "Scene"}, editPivot);
+		view.keys.register("sceneeditor.gatherToMouse", {name: "Gather to mouse", category: "Scene"}, gatherToMouse);
 
 		// Load display state
 		{
@@ -324,6 +349,8 @@ class SceneEditor {
 			}
 		}
 	}
+
+
 
     public function getSnapStatus() : Bool {
         var ctrl = K.isDown(K.CTRL);
