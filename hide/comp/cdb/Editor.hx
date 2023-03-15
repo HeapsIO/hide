@@ -899,6 +899,7 @@ class Editor extends Component {
 		if( results != null ) {
 			for( rs in results ) {
 				var path = [];
+				var coords = [];
 				for( i in 0...rs.s.length ) {
 					var s = rs.s[i];
 					var oid = Reflect.field(rs.o.path[i], s.id);
@@ -908,8 +909,54 @@ class Editor extends Component {
 					else
 						path.push(oid);
 				}
-				path.push(rs.s[rs.s.length-1].c);
-				message.push(rs.s[0].s.name+"  "+path.join("."));
+
+				// Build a path of coordinates in the tables and subtable of the editor for the goto-reference functionality
+				var isSheet = true;
+				var curIdx = 0;
+				while(curIdx < rs.o.indexes.length) {
+					var colNo = 0;
+					var lineNo = 0;
+
+					function findColumnId(sheet: cdb.Sheet, name: String) {
+						var retid = null;
+						for (id => c in sheet.columns) {
+							if (c.name == name) {
+								retid = id;
+								break;
+							}
+						}
+						if (retid == null)
+							throw "wtf";
+
+						return retid;
+					}
+
+					if (isSheet) {
+						// sheets will reference an id, and optionally a column
+
+						lineNo = rs.o.indexes[curIdx];
+						var sheet = rs.s[curIdx].s;
+						var columns = sheet.columns;
+						if (curIdx < rs.o.indexes.length) {
+							colNo = findColumnId(sheet, rs.s[curIdx].c);
+							isSheet = rs.s[curIdx].s.columns[colNo].type != TProperties;
+						}
+					}
+					else {
+						// properties will only reference a column, which is then treated as a line in the editor
+						lineNo = findColumnId(rs.s[curIdx].s, rs.s[curIdx].c);
+						isSheet = rs.s[curIdx].s.columns[lineNo].type != TProperties;
+					}
+
+					curIdx += 1;
+
+					coords.push({line: lineNo, column: colNo});
+				}
+
+				openReference2(rs.s[0].s, coords);
+				return [];
+				//path.push(rs.s[rs.s.length-1].c);
+				//message.push(rs.s[0].s.name+"  "+path.join("."));
 			}
 		}
 		if (withCodePaths) {
@@ -983,7 +1030,7 @@ class Editor extends Component {
 
 				var results = [];
 				for( s in sheet.base.sheets ) {
-					for( c in s.columns )
+					for( cid => c in s.columns )
 						switch( c.type ) {
 						case TString:
 							if (c.kind == cdb.Data.ColumnKind.Script) {
@@ -1072,6 +1119,8 @@ class Editor extends Component {
 			ide.message("No reference found");
 			return;
 		}
+		//ide.open("hide.view.RefViewer", {refs: [], editor: this});
+
 		ide.message(message.join("\n"));
 	}
 
@@ -1089,8 +1138,12 @@ class Editor extends Component {
 		}
 	}
 
-	function openReference( s : cdb.Sheet, line : Int, column : Int ) {
-		ide.open("hide.view.CdbTable", {}, function(view) Std.downcast(view,hide.view.CdbTable).goto(s,line,column));
+	function openReference2(rootSheet : cdb.Sheet, coords: Array<{line: Int, column: Int}>, ?scriptLine: Int) {
+		ide.open("hide.view.CdbTable", {}, function(view) Std.downcast(view,hide.view.CdbTable).goto2(rootSheet,coords,scriptLine));
+	}
+
+	function openReference( s : cdb.Sheet, line : Int, column : Int, ?scriptLine: Int ) {
+		ide.open("hide.view.CdbTable", {}, function(view) Std.downcast(view,hide.view.CdbTable).goto(s,line,column,scriptLine));
 	}
 
 	public function syncSheet( ?base, ?name ) {

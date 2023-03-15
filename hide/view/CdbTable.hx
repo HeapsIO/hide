@@ -24,7 +24,32 @@ class CdbTable extends hide.ui.View<{}> {
 		view = cast this.config.get("cdb.view");
 	}
 
-	public function goto( s : cdb.Sheet, ?line : Int, ?column : Int ) {
+	public function goto2(rootSheet : cdb.Sheet, coords: Array<{line: Int, column: Int}>, ?scriptLine: Int) {
+
+
+		var sheets = [for( s in getSheets() ) s.name];
+		var index = sheets.indexOf(rootSheet.name);
+		if( index < 0 ) return;
+		tabs.currentTab = tabContents[index].parent();
+		editor.setFilter(null);
+		var curTable = @:privateAccess editor.tables[0];
+		for (i in 0...coords.length) {
+			var c = coords[i];
+			editor.cursor.set(curTable, c.column, c.line);
+			if( editor.cursor.table != null && c.line != null ) {
+				editor.cursor.table.expandLine(c.line);
+				if (i < coords.length - 1) {
+					editor.cursor.getCell().open(false);
+					curTable = editor.cursor.table;
+				}
+			}
+			else
+				break;
+		}
+
+	}
+
+	public function goto( s : cdb.Sheet, ?line : Int, ?column : Int, ?scriptLine : Int ) {
 		var sheets = [for( s in getSheets() ) s.name];
 		var index = sheets.indexOf(s.name);
 		if( index < 0 ) return;
@@ -35,6 +60,16 @@ class CdbTable extends hide.ui.View<{}> {
 				editor.cursor.setDefault(line, column);
 			if( editor.cursor.table != null )
 				editor.cursor.table.expandLine(line);
+			if (scriptLine != null) {
+				var cell = editor.cursor.getCell();
+				if (cell != null) {
+					cell.open(false);
+					var scr = Std.downcast(cell.line.subTable, hide.comp.cdb.ScriptTable);
+					if (scr != null) {
+						@:privateAccess scr.script.editor.setPosition({column:0, lineNumber: scriptLine});
+					}
+				}
+			}
 		}
 		editor.focus();
 		haxe.Timer.delay(() -> editor.cursor.update(), 1); // scroll
