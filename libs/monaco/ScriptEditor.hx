@@ -17,6 +17,9 @@ extern class ScriptEditor {
 	function updateOptions( options : Dynamic ) : Void;
 	function getPosition() : Position;
 	function setPosition( p : Position ) : Void;
+	function revealLine(lineNumber: Int, ?ScrollType: Int) : Void;
+	function revealLineInCenter(lineNumber: Int, ?ScrollType: Int) : Void;
+
 
 	public static function create( elt : js.html.Element, ?options : Dynamic ) : ScriptEditor;
 

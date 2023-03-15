@@ -4,6 +4,13 @@
 .cdb-view .cdb {
   margin-bottom: 350px;
 }
+.refviewer a {
+  text-decoration: underline;
+  cursor: pointer;
+}
+.refviewer a:hover {
+  color: #4772b3;
+}
 .cdb-view.cdb-diff .cdb-sheet th,
 .cdb-view.cdb-diff th.start {
   background-color: #d60;

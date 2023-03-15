@@ -3,6 +3,14 @@ package hide.comp.cdb;
 import hxd.Key in K;
 using hide.tools.Extensions;
 
+enum PathPart {
+	Id(idCol:String, name:String, ?targetCol: String);
+	Prop(name: String);
+	Line(lineNo:Int, ?targetCol: String);
+	Script(lineNo:Int);
+}
+
+typedef Path = Array<PathPart>;
 
 enum Direction {
 	Left;
@@ -140,7 +148,7 @@ class Editor extends Component {
 				cursor.update();
 			}
 		});
-		keys.register("cdb.gotoReference", () -> gotoReference(cursor.getCell()));
+		keys.register("cdb.", () -> gotoReference(cursor.getCell()));
 		keys.register("cdb.globalSeek", () -> new GlobalSeek(cdbTable.element, cdbTable));
 
 		base = sheet.base;
@@ -890,73 +898,54 @@ class Editor extends Component {
 		}
 		return id;
 	}
-	public function getReferences(id: String, withCodePaths = true, sheet: cdb.Sheet) {
+	public function getReferences(id: String, withCodePaths = true, sheet: cdb.Sheet) : Array<{str:String, ?goto:Void->Void}> {
 		if( id == null )
 			return [];
+
+		function splitPath(rs: {s:Array<{s:cdb.Sheet, c:String, id:Null<String>}>, o:{path:Array<Dynamic>, indexes:Array<Int>}}) {
+			var path = [];
+			var coords = [];
+			for( i in 0...rs.s.length ) {
+				var s = rs.s[i];
+				var oid = Reflect.field(rs.o.path[i], s.id);
+				var idx = rs.o.indexes[i];
+				if( oid == null || oid == "" )
+					path.push(s.s.name.split("@").pop() + (idx < 0 ? "" : "[" + idx +"]"));
+				else
+					path.push(oid);
+			}
+
+			var coords = [];
+			var curIdx = 0;
+			while(curIdx < rs.o.indexes.length) {
+				var sheet = rs.s[curIdx];
+				var isSheet = !sheet.s.props.isProps;
+				if (isSheet) {
+					var oid = Reflect.field(rs.o.path[curIdx], sheet.id);
+					var next = sheet.c;
+					if (oid != null) {
+						coords.push(Id(sheet.id, oid, next));
+					}
+					else {
+						coords.push(Line(rs.o.indexes[curIdx], next));
+					}
+				}
+				else {
+					coords.push(Prop(rs.s[curIdx].c));
+				}
+
+				curIdx += 1;
+			}
+
+			return {pathNames: path, pathParts: coords};
+		}
 
 		var results = sheet.getReferencesFromId(id);
 		var message = [];
 		if( results != null ) {
 			for( rs in results ) {
-				var path = [];
-				var coords = [];
-				for( i in 0...rs.s.length ) {
-					var s = rs.s[i];
-					var oid = Reflect.field(rs.o.path[i], s.id);
-					var idx = rs.o.indexes[i];
-					if( oid == null || oid == "" )
-						path.push(s.s.name.split("@").pop() + (idx < 0 ? "" : "[" + idx +"]"));
-					else
-						path.push(oid);
-				}
-
-				// Build a path of coordinates in the tables and subtable of the editor for the goto-reference functionality
-				var isSheet = true;
-				var curIdx = 0;
-				while(curIdx < rs.o.indexes.length) {
-					var colNo = 0;
-					var lineNo = 0;
-
-					function findColumnId(sheet: cdb.Sheet, name: String) {
-						var retid = null;
-						for (id => c in sheet.columns) {
-							if (c.name == name) {
-								retid = id;
-								break;
-							}
-						}
-						if (retid == null)
-							throw "wtf";
-
-						return retid;
-					}
-
-					if (isSheet) {
-						// sheets will reference an id, and optionally a column
-
-						lineNo = rs.o.indexes[curIdx];
-						var sheet = rs.s[curIdx].s;
-						var columns = sheet.columns;
-						if (curIdx < rs.o.indexes.length) {
-							colNo = findColumnId(sheet, rs.s[curIdx].c);
-							isSheet = rs.s[curIdx].s.columns[colNo].type != TProperties;
-						}
-					}
-					else {
-						// properties will only reference a column, which is then treated as a line in the editor
-						lineNo = findColumnId(rs.s[curIdx].s, rs.s[curIdx].c);
-						isSheet = rs.s[curIdx].s.columns[lineNo].type != TProperties;
-					}
-
-					curIdx += 1;
-
-					coords.push({line: lineNo, column: colNo});
-				}
-
-				openReference2(rs.s[0].s, coords);
-				return [];
-				//path.push(rs.s[rs.s.length-1].c);
-				//message.push(rs.s[0].s.name+"  "+path.join("."));
+				var path = splitPath(rs);
+				message.push({str: rs.s[0].s.name+"."+path.pathNames.join("."), goto: () -> openReference2(rs.s[0].s, path.pathParts)});
 			}
 		}
 		if (withCodePaths) {
@@ -984,8 +973,17 @@ class Editor extends Component {
 										if( regall.match(str2) ) trace("Skip "+str);
 										continue;
 									}
-									var rel = ide.makeRelative(fpath);
-									message.push(rel+":"+(line+1));
+									var path = ide.makeRelative(fpath);
+									var fn = function () {
+										ide.openFile(path, function (v) {
+											var scr : hide.view.Script = cast v;
+											haxe.Timer.delay(function() {
+												@:privateAccess scr.script.editor.setPosition({column:0, lineNumber: line+1});
+												haxe.Timer.delay(() ->@:privateAccess scr.script.editor.revealLineInCenter(line+1), 1);
+											}, 1);
+										});
+									}
+									message.push({str: path+":"+(line+1), goto: fn});
 								}
 							}
 						}
@@ -1013,8 +1011,19 @@ class Editor extends Component {
 							var content = sys.io.File.getContent(fpath);
 							if( !scriptStr.match(content) ) continue;
 							for( line => str in content.split("\n") ) {
-								if( scriptStr.match(str) )
-									message.push(ide.makeRelative(fpath)+":"+(line+1));
+								if( scriptStr.match(str) ) {
+									var path = ide.makeRelative(fpath);
+									var fn = function () {
+										ide.openFile(path, function (v) {
+											var scr : hide.view.Script = cast v;
+											haxe.Timer.delay(function() {
+												@:privateAccess scr.script.editor.setPosition({column:0, lineNumber: line+1});
+												haxe.Timer.delay(() ->@:privateAccess scr.script.editor.revealLineInCenter(line+1), 1);
+											}, 1);
+										});
+									}
+									message.push({str: path+":"+(line+1), goto: fn});
+								}
 							}
 						}
 					}
@@ -1050,9 +1059,6 @@ class Editor extends Component {
 								var objs = s.getObjects();
 								var i = 0;
 								for( sheetline => o in objs ) {
-									if (i == 18) {
-										trace("break");
-									}
 									i += 1;
 									var obj = o.path[o.path.length - 1];
 									var content = Reflect.field(obj, c.name);
@@ -1060,12 +1066,9 @@ class Editor extends Component {
 									for( line => str in content.split("\n") ) {
 										if( scriptStr.match(str) )
 										{
-											var idname = sheets[sheets.length-1].id;
-											var refname = Std.string(sheetline);
-											if (idname != null) {
-												refname = Reflect.field(obj, idname);
-											}
-											message.push([for(s in sheets) s.s.name].join("/")+"." + refname + "." + c.name + ":"+(line+1));
+											var res = splitPath({s: sheets, o: o});
+											res.pathParts.push(Script(line));
+											message.push({str: sheets[0].s.name+"."+res.pathNames.join(".") + "." + c.name + ":" + Std.string(line + 1), goto: () -> openReference2(sheets[0].s, res.pathParts)});
 										}
 									}
 								}
@@ -1112,16 +1115,17 @@ class Editor extends Component {
 				default:
 			}
 		}
-		var message = [];
+		var refs = [];
 		if( id != null )
-			message = getReferences(id, sheet);
-		if( message.length == 0 ) {
+			refs = getReferences(id, sheet);
+		if( refs.length == 0 ) {
 			ide.message("No reference found");
 			return;
 		}
-		//ide.open("hide.view.RefViewer", {refs: [], editor: this});
-
-		ide.message(message.join("\n"));
+		ide.open("hide.view.RefViewer", null, function(view) {
+			var refViewer : hide.view.RefViewer = cast view;
+			refViewer.showRefs(refs);
+		});
 	}
 
 	function gotoReference( c : Cell ) {
@@ -1138,8 +1142,8 @@ class Editor extends Component {
 		}
 	}
 
-	function openReference2(rootSheet : cdb.Sheet, coords: Array<{line: Int, column: Int}>, ?scriptLine: Int) {
-		ide.open("hide.view.CdbTable", {}, function(view) Std.downcast(view,hide.view.CdbTable).goto2(rootSheet,coords,scriptLine));
+	function openReference2(rootSheet : cdb.Sheet, path: Path) {
+		ide.open("hide.view.CdbTable", {}, function(view) Std.downcast(view,hide.view.CdbTable).goto2(rootSheet,path));
 	}
 
 	function openReference( s : cdb.Sheet, line : Int, column : Int, ?scriptLine: Int ) {

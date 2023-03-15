@@ -1369,6 +1369,7 @@ class Ide {
 			if( Type.getClassName(Type.getClass(v)) == ext.component && v.state.path == path ) {
 				if( v.container.tab != null )
 					v.container.parent.parent.setActiveContentItem(v.container.parent);
+				onCreate(v);
 				return;
 			}
 		open(ext.component, { path : path }, onCreate);
