@@ -2659,9 +2659,12 @@ class SceneEditor {
 		}
 		var undoes = [];
 		var newElements = [];
+		var lastElem = elements[elements.length-1];
+		var lastIndex = lastElem.parent.children.indexOf(lastElem) + 1;
 		for(elt in elements) {
 			var clone = elt.cloneData();
-			var index = elt.parent.children.indexOf(elt) + 1;
+			var index = lastIndex;
+			lastIndex +=1;
 			clone.parent = elt.parent;
 			elt.parent.children.remove(clone);
 			elt.parent.children.insert(index, clone);
