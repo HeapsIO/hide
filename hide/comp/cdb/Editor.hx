@@ -975,12 +975,28 @@ class Editor extends Component {
 									}
 									var path = ide.makeRelative(fpath);
 									var fn = function () {
-										ide.openFile(path, function (v) {
+										var ext = @:privateAccess hide.view.FileTree.getExtension(path);
+
+										ide.open(ext.component, { path : path }, function (v) {
 											var scr : hide.view.Script = cast v;
-											haxe.Timer.delay(function() {
-												@:privateAccess scr.script.editor.setPosition({column:0, lineNumber: line+1});
-												haxe.Timer.delay(() ->@:privateAccess scr.script.editor.revealLineInCenter(line+1), 1);
-											}, 1);
+
+											function checkSetPos() {
+												var s = @:privateAccess scr.script;
+												if (s != null) {
+													var e = @:privateAccess s.editor;
+													e.setPosition({column:0, lineNumber: line+1});
+													haxe.Timer.delay(() ->e.revealLineInCenter(line+1), 1);
+													return;
+												}
+
+												// needed because the editor can be created after our
+												// function is called (if the tab was created but never opened,
+												// likely because hide was closed and reopened)
+												// see : View.rebuild()
+												haxe.Timer.delay(checkSetPos, 200);
+											}
+
+											checkSetPos();
 										});
 									}
 									message.push({str: path+":"+(line+1), goto: fn});
