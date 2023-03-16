@@ -11,7 +11,7 @@ class RefViewer extends hide.ui.View<Data> {
 		element.html("");
 		var div = new Element('<div class="refviewer hide-scroll">').appendTo(element);
 
-		new Element('<p>Number of references : ${refs.length}</p>').appendTo(element);
+		new Element('<p>Number of references : ${refs.length}</p>').appendTo(div);
 		var ul = new Element('<ul>').appendTo(div);
 		for (ref in refs) {
 			var link = new Element('<li><a>${ref.str}</a></li>').appendTo(ul);
@@ -21,5 +21,5 @@ class RefViewer extends hide.ui.View<Data> {
 		}
 	}
 
-	static var _ = hide.ui.View.register(RefViewer, {position: Bottom, width: 100});
+	static var _ = hide.ui.View.register(RefViewer, {position: Left});
 }

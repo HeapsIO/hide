@@ -4,6 +4,9 @@
 .cdb-view .cdb {
   margin-bottom: 350px;
 }
+.refviewer {
+  padding: 4px;
+}
 .refviewer a {
   text-decoration: underline;
   cursor: pointer;

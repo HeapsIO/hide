@@ -95,7 +95,7 @@ class CdbTable extends hide.ui.View<{}> {
 				lastCell = editor.cursor.getCell();
 				if( editor.cursor.table != null) {
 					editor.cursor.table.expandLine(lineNo);
-					if (i < path.length) {
+					if (i < path.length-1) {
 						var sub = editor.cursor.getLine().subTable;
 						var cell = editor.cursor.getCell();
 						if (sub != null && sub.cell == cell) {
