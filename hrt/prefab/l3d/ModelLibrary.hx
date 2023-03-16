@@ -14,6 +14,11 @@ typedef MaterialData = {
 	var configIndex : Int;
 }
 
+typedef SubMeshes = {
+	meshes : Array<{mat : MaterialData, mesh : h3d.scene.Mesh}>,
+	name : String,
+}
+
 class ModelLibShader extends hxsl.Shader {
 	static var SRC = {
 
@@ -95,6 +100,7 @@ class ModelLibrary extends Prefab {
 	@:s var ignoredMaterials : Array<{name:String}> = [];
 	@:s var ignoredPrefabs : Array<{name:String}> = [];
 	@:s var ignoredObjectNames : Array<{name:String}> = [];
+	@:s var preserveObjectNames : Array<{name:String}> = [];
 
 	@:s var mipEnd : Float;
 	@:s var mipStart : Float;
@@ -235,6 +241,30 @@ class ModelLibrary extends Prefab {
 		add.appendTo(listObjectNames);
 		add.find("a").click(function(_) {
 			ignoredObjectNames.push({name:""});
+			ectx.rebuildProperties();
+		});
+
+		var listpreserveObjectNames = new Element('
+		<div class="group" name="Preserve object names"><ul id="preserveObjectNames"></ul></div>');
+		ectx.properties.add(listpreserveObjectNames);
+		for( i in 0...preserveObjectNames.length ) {
+			var e = new hide.Element('<li style="position:relative">
+				<input type="text" field="name"/>
+				<a href="#">[-]</a>
+			</li>');
+			e.find("a").click(function(_) {
+				preserveObjectNames.splice(i, 1);
+				ectx.rebuildProperties();
+			});
+			e.appendTo(listpreserveObjectNames);
+			ectx.properties.build(e, preserveObjectNames[i], (pname) -> {
+				updateInstance(ctx, pname);
+			});
+		}
+		var add = new hide.Element('<li><p><a href="#">[+]</a></p></li>');
+		add.appendTo(listpreserveObjectNames);
+		add.find("a").click(function(_) {
+			preserveObjectNames.push({name:""});
 			ectx.rebuildProperties();
 		});
 	}
@@ -735,6 +765,7 @@ class ModelLibrary extends Prefab {
 	}
 
 	var killAlpha = new h3d.shader.KillAlpha();
+	var curSubMeshes : SubMeshes = null;
 	public function optimize( obj : h3d.scene.Object, isStatic = true ) {
 		killAlpha.threshold = 0.5;
 		if( bakedMaterials == null )
@@ -742,7 +773,7 @@ class ModelLibrary extends Prefab {
 		if( shared == null )
 			throw "Please call make() on modelLibrary first";
 
-		var meshBatches = [for (i in 0...materialConfigs.length) null];
+		var meshBatches = [for (i in 0...materialConfigs.length * (preserveObjectNames.length + 1)) null];
 		for( c in obj ) {
 			var ms = Std.downcast(c, h3d.scene.MeshBatch);
 			if( ms != null && ms.name.indexOf("modelLibrary") == 0 ) {
@@ -752,44 +783,54 @@ class ModelLibrary extends Prefab {
 			}
 		}
 
-		var meshes = [];
-		var bounds = obj.getBounds();
-		optimizeRec(obj, meshes);
-		meshes.sort(function(m1,m2) return m1.mat.indexStart - m2.mat.indexStart);
-		for ( m in meshes ) {
-			var bk = m.mat;
-			if ( meshBatches[bk.configIndex] == null) {
-				var batch = new h3d.scene.MeshBatch(hmdPrim, h3d.mat.Material.create(), obj);
-				if ( isStatic ) {
-					batch.material.staticShadows = true;
-					batch.fixedPosition = true;
-				}
-				batch.cullingCollider = bounds;
-				batch.name = "modelLibrary"+"_"+bk.configIndex;
-				batch.material.mainPass.addShader(shader);
-				if ( debug ) batches.push(batch);
-				batch.material.props = materialConfigs[bk.configIndex];
-				batch.material.refreshProps();
-				if ( (batch.material.props:PbrProps).alphaKill && batch.material.textureShader == null )
-					batch.material.mainPass.addShader(killAlpha);
-				meshBatches[bk.configIndex] = batch;
-			}
+		var subMeshes : Array<SubMeshes> = [{meshes : [], name : ""}];
+		for ( name in preserveObjectNames ) {
+			subMeshes.push({meshes : [], name : name.name});
 		}
-		for( m in meshes ) {
-			var bk = m.mat;
-			shader.delta = 1.0 / 4096 / bk.uvSX;
-			shader.uvTransform.set(bk.uvX, bk.uvY, bk.uvSX, bk.uvSY);
-			shader.material = bk.texId;
-			var batch = meshBatches[bk.configIndex];
-			if ( batch.primitiveSubPart == null ) {
-				batch.primitiveSubPart = new h3d.scene.MeshBatch.MeshBatchPart();
-				batch.begin();
+		var bounds = obj.getBounds();
+		curSubMeshes = subMeshes[0];
+		optimizeRec(obj, subMeshes);
+		var indexOffset = 0;
+		for ( meshes in subMeshes ) {
+			var namedObject = new h3d.scene.Object(obj);
+			namedObject.name = meshes.name;
+			meshes.meshes.sort(function(m1,m2) return m1.mat.indexStart - m2.mat.indexStart);
+			for ( m in meshes.meshes ) {
+				var bk = m.mat;
+				if ( meshBatches[bk.configIndex + indexOffset] == null) {
+					var batch = new h3d.scene.MeshBatch(hmdPrim, h3d.mat.Material.create(), namedObject);
+					if ( isStatic ) {
+						batch.material.staticShadows = true;
+						batch.fixedPosition = true;
+					}
+					batch.cullingCollider = bounds;
+					batch.name = "modelLibrary"+"_"+(bk.configIndex + indexOffset);
+					batch.material.mainPass.addShader(shader);
+					if ( debug ) batches.push(batch);
+					batch.material.props = materialConfigs[bk.configIndex];
+					batch.material.refreshProps();
+					if ( (batch.material.props:PbrProps).alphaKill && batch.material.textureShader == null )
+						batch.material.mainPass.addShader(killAlpha);
+					meshBatches[bk.configIndex + indexOffset] = batch;
+				}
 			}
-			batch.primitiveSubPart.indexCount = bk.indexCount;
-			batch.primitiveSubPart.indexStart = bk.indexStart;
-			batch.primitiveSubPart.bounds = geomBounds[bk.geomId];
-			batch.worldPosition = m.mesh.getAbsPos();
-			batch.emitInstance();
+			for( m in meshes.meshes ) {
+				var bk = m.mat;
+				shader.delta = 1.0 / 4096 / bk.uvSX;
+				shader.uvTransform.set(bk.uvX, bk.uvY, bk.uvSX, bk.uvSY);
+				shader.material = bk.texId;
+				var batch = meshBatches[bk.configIndex + indexOffset];
+				if ( batch.primitiveSubPart == null ) {
+					batch.primitiveSubPart = new h3d.scene.MeshBatch.MeshBatchPart();
+					batch.begin();
+				}
+				batch.primitiveSubPart.indexCount = bk.indexCount;
+				batch.primitiveSubPart.indexStart = bk.indexStart;
+				batch.primitiveSubPart.bounds = geomBounds[bk.geomId];
+				batch.worldPosition = m.mesh.getAbsPos();
+				batch.emitInstance();
+			}
+			indexOffset += materialConfigs.length;
 		}
 
 		for (batch in meshBatches ) {
@@ -801,12 +842,19 @@ class ModelLibrary extends Prefab {
 			clearOptimized(obj);
 	}
 
-	function optimizeRec( obj : h3d.scene.Object, out : Array<{ mat : MaterialData, mesh : h3d.scene.Mesh }> ) {
+	function optimizeRec( obj : h3d.scene.Object, out : Array<SubMeshes> ) {
 		if( !obj.visible )
 			return;
 		for ( n in ignoredObjectNames ) {
 			if ( n.name == obj.name )
 				return;
+		}
+		var prevSubMeshes = curSubMeshes;
+		for ( name in preserveObjectNames ) {
+			if ( obj.name != null && obj.name == name.name ) {
+				curSubMeshes = out.filter(s -> s.name == name.name)[0];
+				break;
+			}
 		}
 		var mesh = Std.downcast(obj, h3d.scene.Mesh);
 		if( mesh != null ) {
@@ -833,11 +881,11 @@ class ModelLibrary extends Prefab {
 						bk = bakedMaterials.get(@:privateAccess prim.lib.resource.entry.path + "_" + matName);
 					if( bk == null ) {
 						mesh.culled = false;
-						while( out.length > 0 && out[out.length-1].mesh == mesh )
-							out.pop();
+						while( curSubMeshes.meshes.length > 0 && curSubMeshes.meshes[curSubMeshes.meshes.length-1].mesh == mesh )
+							curSubMeshes.meshes.pop();
 						break;
 					}
-					out.push({ mat : bk, mesh : mesh });
+					curSubMeshes.meshes.push({ mat : bk, mesh : mesh });
 				}
 				if ( mesh.culled && debug )
 					optimizedMeshes.push(mesh);
@@ -845,6 +893,7 @@ class ModelLibrary extends Prefab {
 		}
 		for( o in obj )
 			optimizeRec(o, out);
+		curSubMeshes = prevSubMeshes;
 	}
 
 	function clearOptimized(obj: h3d.scene.Object) {
