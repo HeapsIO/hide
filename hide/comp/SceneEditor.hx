@@ -3064,6 +3064,7 @@ class SceneEditor {
 		hrt.shader.Bloom,
 		hrt.shader.UVDebug,
 		hrt.shader.GradientMap,
+		hrt.shader.HeightGradient,
 		hrt.shader.ParticleFade,
 		hrt.shader.ParticleColorLife,
 		hrt.shader.ParticleColorRandom,
