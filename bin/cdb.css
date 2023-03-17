@@ -5,10 +5,10 @@
   margin-bottom: 350px;
 }
 .refviewer {
+  line-height: 18px;
   padding: 4px;
 }
 .refviewer a {
-  text-decoration: underline;
   cursor: pointer;
 }
 .refviewer a:hover {
