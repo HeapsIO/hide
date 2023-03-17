@@ -69,7 +69,7 @@ class CdbTable extends hide.ui.View<{}> {
 						}
 					}
 				case Line(id):
-					lineNo += 1;
+					lineNo = id;
 				case Script(line):
 					var cell = lastCell;
 					if (cell != null) {

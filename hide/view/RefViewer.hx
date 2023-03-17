@@ -7,6 +7,10 @@ class RefViewer extends hide.ui.View<Data> {
 		super(state);
 	}
 
+	override public function onDisplay() {
+		showRefs([]);
+	}
+
 	public function showRefs(refs: Data) {
 		element.html("");
 		var div = new Element('<div class="refviewer hide-scroll">').appendTo(element);
