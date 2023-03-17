@@ -148,7 +148,7 @@ class Editor extends Component {
 				cursor.update();
 			}
 		});
-		keys.register("cdb.", () -> gotoReference(cursor.getCell()));
+		keys.register("cdb.gotoReference", () -> gotoReference(cursor.getCell()));
 		keys.register("cdb.globalSeek", () -> new GlobalSeek(cdbTable.element, cdbTable));
 
 		base = sheet.base;
