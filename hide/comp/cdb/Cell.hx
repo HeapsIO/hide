@@ -431,7 +431,7 @@ class Cell {
 			if (v == "") return html('<span class="error">#MISSING</span>');
 			var innerHtml = StringTools.htmlEscape(v);
 			innerHtml = '<span title=\'$innerHtml\' >' + innerHtml  + '</span>';
-			if (!editor.quickExists(path)) return html('<span class="error">$innerHtml</span>');
+			if (!editor.quickExists(path)) return html('<span class="error">#NOTFOUND : $innerHtml</span>');
 			else if( ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "gif" ) {
 				var dims = imageDims.get(url);
 				var dimsText = dims != null ? dims.width+"x"+dims.height : "";
