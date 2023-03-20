@@ -1133,47 +1133,11 @@ class Cell {
 
 		switch( column.type ) {
 		case TId:
-			var obj = line.obj;
-			var prevValue = value;
-			var realSheet = table.getRealSheet();
-			var isLocal = realSheet.idCol.scope != null;
-			var parentID = isLocal ? table.makeId([],realSheet.idCol.scope,null) : null;
-			// most likely our obj, unless there was a #DUP
-			var prevObj = value != null ? realSheet.index.get(isLocal ? parentID+":"+value : value) : null;
-			// have we already an obj mapped to the same id ?
-			var prevTarget = realSheet.index.get(isLocal ? parentID+":"+newValue : newValue);
-
-			if (isUniqueID(newValue, true))
-			{
-				editor.beginChanges();
-				if( prevObj == null || prevObj.obj == obj ) {
-					// remap
-					var m = new Map();
-					m.set(value, newValue);
-					if( isLocal ) {
-						var scope = table.getScope();
-						var parent = scope[scope.length - realSheet.idCol.scope];
-						editor.base.updateLocalRefs(realSheet, m, parent.obj, parent.s);
-					} else
-						editor.base.updateRefs(realSheet, m);
-				}
-				setValue(newValue);
-				editor.endChanges();
-				editor.refreshRefs();
-				focus();
-
-				// Refresh display of all ids in the column manually
-				var colId = table.sheet.columns.indexOf(column);
-				for (l in table.lines) {
-					if (l.cells[colId] != null)
-						l.cells[colId].refresh(false);
-				}
+			if (isUniqueID(newValue, true)) {
+				editor.changeID(line.obj, newValue, column, table);
+				currentValue = newValue;
 			}
-			/*
-			// creates or remove a #DUP : need to refresh the whole table
-			if( prevTarget != null || (prevObj != null && (prevObj.obj != obj || table.sheet.index.get(prevValue) != null)) )
-				table.refresh();
-			*/
+			focus();
 		case TString if( column.kind == Script || column.kind == Localizable ):
 			setValue(StringTools.trim(newValue));
 		case TTilePos:

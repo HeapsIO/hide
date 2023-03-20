@@ -386,6 +386,50 @@ class Editor extends Component {
 		return null;
 	}
 
+	/* Change the id of a cell, propagating the changes to all the references in the database
+	*/
+	function changeID(obj : Dynamic, newValue : Dynamic, column : cdb.Data.Column, table : Table) {
+		if (column.type != TId)
+			throw "Target column is not an ID";
+		var value = Reflect.getProperty(obj, column.name);
+		var prevValue = value;
+		var realSheet = table.getRealSheet();
+		var isLocal = realSheet.idCol.scope != null;
+		var parentID = isLocal ? table.makeId([],realSheet.idCol.scope,null) : null;
+		// most likely our obj, unless there was a #DUP
+		var prevObj = value != null ? realSheet.index.get(isLocal ? parentID+":"+value : value) : null;
+		// have we already an obj mapped to the same id ?
+		var prevTarget = realSheet.index.get(isLocal ? parentID+":"+newValue : newValue);
+
+		{
+			beginChanges();
+			if( prevObj == null || prevObj.obj == obj ) {
+				// remap
+				var m = new Map();
+				m.set(value, newValue);
+				if( isLocal ) {
+					var scope = table.getScope();
+					var parent = scope[scope.length - realSheet.idCol.scope];
+					base.updateLocalRefs(realSheet, m, parent.obj, parent.s);
+				} else
+					base.updateRefs(realSheet, m);
+			}
+			Reflect.setField(obj, column.name, newValue);
+			endChanges();
+			refreshRefs();
+
+			// Refresh display of all ids in the column manually
+			var colId = table.sheet.columns.indexOf(column);
+			for (l in table.lines) {
+				if (l.cells[colId] != null)
+					l.cells[colId].refresh(false);
+			}
+		}
+
+		if( prevTarget != null || (prevObj != null && (prevObj.obj != obj || table.sheet.index.get(prevValue) != null)) )
+			table.refresh();
+	}
+
 	function onPaste() {
 		var text = ide.getClipboard();
 		var columns = cursor.table.columns;
@@ -452,8 +496,6 @@ class Editor extends Component {
 				beginChanges();
 				var obj = line.obj;
 				formulas.removeFromValue(obj, col);
-				if (col.type == TId)
-					value = ensureUniqueId(value, cursor.table, col);
 				Reflect.setField(obj, col.name, value);
 			} else {
 				beginChanges();
@@ -469,8 +511,6 @@ class Editor extends Component {
 						if( value == null ) continue;
 						var obj = sheet.lines[y];
 						formulas.removeFromValue(obj, col);
-						if (col.type == TId)
-							value = ensureUniqueId(value, cursor.table, col);
 						Reflect.setField(obj, col.name, value);
 						toRefresh.push(allLines[y].cells[x]);
 					}
@@ -509,6 +549,10 @@ class Editor extends Component {
 
 			if (destCol.type == TId) {
 				v = ensureUniqueId(v, cursor.table, destCol);
+				if (v != null) {
+					changeID(destObj, v, destCol, cursor.table);
+				}
+				return;
 			}
 			if( v == null )
 				Reflect.deleteField(destObj, destCol.name);
