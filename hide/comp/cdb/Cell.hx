@@ -113,6 +113,11 @@ class Cell {
 						click : () -> editor.showReferences(this.value),
 						keys : this.editor.config.get("key.cdb.showReferences"),
 					},
+					{
+						label : "Show unreferenced IDs",
+						click : () -> editor.findUnreferenced(this.column, this.table),
+						keys : this.editor.config.get("key.cdb.showUnreferenced"),
+					}
 				];
 		case TRef(sname):
 			if( value != null && value != "" )

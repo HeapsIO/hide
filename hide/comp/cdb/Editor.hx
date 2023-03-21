@@ -942,7 +942,7 @@ class Editor extends Component {
 		}
 		return id;
 	}
-	public function getReferences(id: String, withCodePaths = true, sheet: cdb.Sheet) : Array<{str:String, ?goto:Void->Void}> {
+	public function getReferences(id: String, withCodePaths = true, returnAtFirstRef = false, sheet: cdb.Sheet) : Array<{str:String, ?goto:Void->Void}> {
 		if( id == null )
 			return [];
 
@@ -985,11 +985,12 @@ class Editor extends Component {
 		}
 
 		var results = sheet.getReferencesFromId(id);
-		var message = [];
+		var message = new Array<{str:String, ?goto:Void->Void}>();
 		if( results != null ) {
 			for( rs in results ) {
 				var path = splitPath(rs);
 				message.push({str: rs.s[0].s.name+"."+path.pathNames.join("."), goto: () -> openReference2(rs.s[0].s, path.pathParts)});
+				if (returnAtFirstRef) return message;
 			}
 		}
 		if (withCodePaths) {
@@ -1005,6 +1006,7 @@ class Editor extends Component {
 						var fpath = p+"/"+f;
 						if( sys.FileSystem.isDirectory(fpath) ) {
 							lookupRec(fpath);
+							if (returnAtFirstRef && message.length > 0) return;
 							continue;
 						}
 						if( StringTools.endsWith(f, ".hx") ) {
@@ -1044,6 +1046,7 @@ class Editor extends Component {
 										});
 									}
 									message.push({str: path+":"+(line+1), goto: fn});
+									if (returnAtFirstRef) return;
 								}
 							}
 						}
@@ -1053,6 +1056,7 @@ class Editor extends Component {
 					var path = ide.getPath(p);
 					if( sys.FileSystem.exists(path) && sys.FileSystem.isDirectory(path) )
 						lookupRec(path);
+					if (returnAtFirstRef && message.length > 0) return message;
 				}
 			}
 			var paths : Array<String> = this.config.get("cdb.prefabsSearchPaths");
@@ -1083,6 +1087,7 @@ class Editor extends Component {
 										});
 									}
 									message.push({str: path+":"+(line+1), goto: fn});
+
 								}
 							}
 						}
@@ -1095,6 +1100,7 @@ class Editor extends Component {
 				}
 			}
 
+			// Script references
 			{
 
 				var results = [];
@@ -1129,6 +1135,7 @@ class Editor extends Component {
 											var res = splitPath({s: sheets, o: o});
 											res.pathParts.push(Script(line));
 											message.push({str: sheets[0].s.name+"."+res.pathNames.join(".") + "." + c.name + ":" + Std.string(line + 1), goto: () -> openReference2(sheets[0].s, res.pathParts)});
+											if (returnAtFirstRef) return message;
 										}
 									}
 								}
@@ -1159,6 +1166,26 @@ class Editor extends Component {
 			}
 		}
 		return message;
+	}
+
+	public function findUnreferenced(col: cdb.Data.Column, table: Table) {
+		var sheet = table.getRealSheet();
+
+		var nonrefs = new Array<{str:String, ?goto:Void->Void}>();
+
+		for (o in sheet.lines) {
+			// TODO : Add option to early quit getReferences as soon as one reference is found
+			var id = Reflect.getProperty(o, col.name);
+			var refs = getReferences(id, true, true, sheet);
+			if (refs.length == 0) {
+				nonrefs.push({str: id, goto: () -> openReference2(sheet, [Id(col.name, id)])});
+			}
+		}
+
+		ide.open("hide.view.RefViewer", null, function(view) {
+			var refViewer : hide.view.RefViewer = cast view;
+			refViewer.showRefs(nonrefs, "Number of unreferenced ids");
+		});
 	}
 
 	public function showReferences(?id: String, ?sheet: cdb.Sheet) {
