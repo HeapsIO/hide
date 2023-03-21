@@ -259,6 +259,19 @@ class Model extends FileView {
 				ide.openFile(mat.path);
 			}
 		});
+		var lib = @:privateAccess scene.loadHMD(this.getPath(),false);
+		var hmd = lib.header;
+		var defaultProps = null;
+		for ( mat in hmd.materials ) {
+			if ( mat.name == m.name ) {
+				var material = h3d.mat.MaterialSetup.current.createMaterial();
+				material.name = mat.name;
+				material.model = lib.resource;
+				material.blendMode = mat.blendMode;
+				defaultProps = material.getDefaultModelProps();
+				break;
+			}
+		}
 		matLibrary.find(".save").click(function(_) {
 			var mat = findMat(matLibrary.find(".matLib").val());
 			if ( mat != null ) {
@@ -268,7 +281,7 @@ class Model extends FileView {
 				Reflect.deleteField((m.props:Dynamic), "__ref");
 				Reflect.deleteField((m.props:Dynamic), "name");
 			}
-			h3d.mat.MaterialSetup.current.saveMaterialProps(m);
+			h3d.mat.MaterialSetup.current.saveMaterialProps(m, defaultProps);
 		});
 		properties.add(matLibrary, m);
 
@@ -284,7 +297,7 @@ class Model extends FileView {
 			undo.change(Field(m, "props", old), selectMaterial.bind(m));
 		});
 		e.find(".save").click(function(_) {
-			h3d.mat.MaterialSetup.current.saveMaterialProps(m);
+			h3d.mat.MaterialSetup.current.saveMaterialProps(m, defaultProps);
 		});
 	}
 
