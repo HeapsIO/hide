@@ -30,7 +30,7 @@ class Model extends FileView {
 	var selectedAxes : h3d.scene.Object;
 
 	var viewModes : Array<String>;
-	
+
 	override function save() {
 		if(!modified) return;
 		// Save current Anim data
@@ -227,7 +227,7 @@ class Model extends FileView {
 			</div>
 			<br/>
 		');
-		
+
 		function findMat(key:String) {
 			var p = key.split("/");
 			var name = p.pop();
@@ -330,6 +330,47 @@ class Model extends FileView {
 			materialDraws += count;
 		}
 
+		function roundVec(vec: Dynamic) : Any {
+			var scale = 1000;
+			vec.x = hxd.Math.round(vec.x * scale) / scale;
+			vec.y = hxd.Math.round(vec.y * scale) / scale;
+			vec.z = hxd.Math.round(vec.z * scale) / scale;
+			return vec;
+		}
+
+		var transform = obj.defaultTransform;
+		var bounds = obj.getBounds();
+		var size : h3d.col.Point = roundVec(obj.getBounds().getSize());
+
+		size.x = hxd.Math.max(0, size.x);
+		size.y = hxd.Math.max(0, size.y);
+		size.z = hxd.Math.max(0, size.z);
+
+		var mesh = Std.downcast(obj.toMesh(), h3d.scene.Mesh);
+		var meshSize : h3d.col.Point = null;
+		if (mesh != null) {
+			var bounds = mesh.primitive.getBounds().clone();
+			bounds.transform(obj.getAbsPos());
+			meshSize = bounds.getSize();
+
+			roundVec(meshSize);
+			meshSize.x = hxd.Math.max(0, meshSize.x);
+			meshSize.y = hxd.Math.max(0, meshSize.y);
+			meshSize.z = hxd.Math.max(0, meshSize.z);
+
+		}
+
+		var pos = transform.getPosition();
+		roundVec(pos);
+		var rot = transform.getEulerAngles();
+		rot.x = hxd.Math.radToDeg(rot.x);
+		rot.y = hxd.Math.radToDeg(rot.y);
+		rot.z = hxd.Math.radToDeg(rot.z);
+		rot = roundVec(rot);
+
+		var scale : h3d.Vector = roundVec(transform.getScale());
+
+
 		var e = properties.add(new Element('
 			<div class="group" name="Properties">
 				<dl>
@@ -348,6 +389,11 @@ class Model extends FileView {
 					<dt>Bones</dt><dd>$bonesCount</dd>
 					<dt>Vertexes</dt><dd>$vertexCount</dd>
 					<dt>Triangles</dt><dd>$triangleCount</dd>
+					<dt>Local Pos</dt><dd>X: ${pos.x}, Y: ${pos.y}, Z: ${pos.z}</dd>
+					<dt>Local Rot</dt><dd>X: ${rot.x}°, Y: ${rot.y}°, Z: ${rot.z}°</dd>
+					<dt>Local Scale</dt><dd>X: ${scale.x}, Y: ${scale.y}, Z: ${scale.z}</dd>
+					<dt>Total Size</dt><dd>X: ${size.x}, Y: ${size.y}, Z: ${size.z}</dd>
+					${meshSize != null ? '<dt>Mesh Size</dt><dd>X: ${meshSize.x}, Y: ${meshSize.y}, Z: ${meshSize.z}</dd>' : ""}
 				</dl>
 			</div>
 			<br/>
@@ -611,7 +657,7 @@ class Model extends FileView {
 
 	function initConsole() {
 		var c = new h2d.Console(hxd.res.DefaultFont.get(), scene.s2d);
-		c.addCommand("rotate",[{ name : "speed", t : AFloat }], function(r) {
+		c.addCommand("rotate",[{ name : "speed", t : h2d.Console.ConsoleArg.AFloat }], function(r) {
 			cameraMove = function() {
 				var cam = scene.s3d.camera;
 				var dir = cam.pos.sub(cam.target);
