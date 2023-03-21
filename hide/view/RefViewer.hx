@@ -25,5 +25,5 @@ class RefViewer extends hide.ui.View<Data> {
 		}
 	}
 
-	static var _ = hide.ui.View.register(RefViewer, {position: Left});
+	static var _ = hide.ui.View.register(RefViewer, {position: Left, width: 300});
 }
