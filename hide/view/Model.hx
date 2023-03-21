@@ -28,6 +28,9 @@ class Model extends FileView {
 	var rootPath : String;
 	var root : hrt.prefab.Prefab;
 	var selectedAxes : h3d.scene.Object;
+	var lastSelectedObject : h3d.scene.Object = null;
+
+	var highlightSelection : Bool = true;
 
 	var viewModes : Array<String>;
 
@@ -147,6 +150,10 @@ class Model extends FileView {
 		sceneEditor.editorDisplay = false;
 		sceneEditor.onRefresh = onRefresh;
 		sceneEditor.onUpdate = update;
+		sceneEditor.onSelectionChanged = function(elts : Array<hrt.prefab.Prefab>, ?mode : hide.comp.SceneEditor.SelectMode = Default) {
+			if (tree != null) tree.setSelection([]);
+			refreshSelectionHighlight(null);
+		}
 		sceneEditor.view.keys = new hide.ui.Keys(null); // Remove SceneEditor Shortcuts
 		sceneEditor.view.keys.register("save", function() {
 			save();
@@ -178,6 +185,8 @@ class Model extends FileView {
 
 	var def = false;
 	function selectMaterial( m : h3d.mat.Material ) {
+		refreshSelectionHighlight(null);
+
 		var properties = sceneEditor.properties;
 		properties.clear();
 
@@ -352,37 +361,6 @@ class Model extends FileView {
 		}
 
 		var transform = obj.defaultTransform;
-		var bounds = obj.getBounds();
-		var size : h3d.col.Point = roundVec(obj.getBounds().getSize());
-
-		size.x = hxd.Math.max(0, size.x);
-		size.y = hxd.Math.max(0, size.y);
-		size.z = hxd.Math.max(0, size.z);
-
-		var mesh = Std.downcast(obj.toMesh(), h3d.scene.Mesh);
-		var meshSize : h3d.col.Point = null;
-		if (mesh != null) {
-			var bounds = mesh.primitive.getBounds().clone();
-			bounds.transform(obj.getAbsPos());
-			meshSize = bounds.getSize();
-
-			roundVec(meshSize);
-			meshSize.x = hxd.Math.max(0, meshSize.x);
-			meshSize.y = hxd.Math.max(0, meshSize.y);
-			meshSize.z = hxd.Math.max(0, meshSize.z);
-
-		}
-
-		var pos = transform.getPosition();
-		roundVec(pos);
-		var rot = transform.getEulerAngles();
-		rot.x = hxd.Math.radToDeg(rot.x);
-		rot.y = hxd.Math.radToDeg(rot.y);
-		rot.z = hxd.Math.radToDeg(rot.z);
-		rot = roundVec(rot);
-
-		var scale : h3d.Vector = roundVec(transform.getScale());
-
 
 		var e = properties.add(new Element('
 			<div class="group" name="Properties">
@@ -402,12 +380,45 @@ class Model extends FileView {
 					<dt>Bones</dt><dd>$bonesCount</dd>
 					<dt>Vertexes</dt><dd>$vertexCount</dd>
 					<dt>Triangles</dt><dd>$triangleCount</dd>
-					<dt>Local Pos</dt><dd>X: ${pos.x}, Y: ${pos.y}, Z: ${pos.z}</dd>
-					<dt>Local Rot</dt><dd>X: ${rot.x}°, Y: ${rot.y}°, Z: ${rot.z}°</dd>
-					<dt>Local Scale</dt><dd>X: ${scale.x}, Y: ${scale.y}, Z: ${scale.z}</dd>
-					<dt>Total Size</dt><dd>X: ${size.x}, Y: ${size.y}, Z: ${size.z}</dd>
-					${meshSize != null ? '<dt>Mesh Size</dt><dd>X: ${meshSize.x}, Y: ${meshSize.y}, Z: ${meshSize.z}</dd>' : ""}
-				</dl>
+					' + if (transform != null) {
+						var bounds = obj.getBounds();
+						var size : h3d.col.Point = roundVec(obj.getBounds().getSize());
+
+						size.x = hxd.Math.max(0, size.x);
+						size.y = hxd.Math.max(0, size.y);
+						size.z = hxd.Math.max(0, size.z);
+
+						var mesh = Std.downcast(obj, h3d.scene.Mesh);
+						var meshSize : h3d.col.Point = null;
+						if (mesh != null) {
+							var bounds = mesh.primitive.getBounds().clone();
+							bounds.transform(obj.getAbsPos());
+							meshSize = bounds.getSize();
+
+							roundVec(meshSize);
+							meshSize.x = hxd.Math.max(0, meshSize.x);
+							meshSize.y = hxd.Math.max(0, meshSize.y);
+							meshSize.z = hxd.Math.max(0, meshSize.z);
+
+						}
+
+						var pos = transform.getPosition();
+						roundVec(pos);
+						var rot = transform.getEulerAngles();
+						rot.x = hxd.Math.radToDeg(rot.x);
+						rot.y = hxd.Math.radToDeg(rot.y);
+						rot.z = hxd.Math.radToDeg(rot.z);
+						rot = roundVec(rot);
+
+						var scale : h3d.Vector = roundVec(transform.getScale());
+
+						'<dt>Local Pos</dt><dd>X: ${pos.x}, Y: ${pos.y}, Z: ${pos.z}</dd>
+						<dt>Local Rot</dt><dd>X: ${rot.x}°, Y: ${rot.y}°, Z: ${rot.z}°</dd>
+						<dt>Local Scale</dt><dd>X: ${scale.x}, Y: ${scale.y}, Z: ${scale.z}</dd>
+						<dt>Total Size</dt><dd>X: ${size.x}, Y: ${size.y}, Z: ${size.z}</dd>
+						${meshSize != null ? '<dt>Mesh Size</dt><dd>X: ${meshSize.x}, Y: ${meshSize.y}, Z: ${meshSize.z}</dd>' : ""}';
+					} else '' +
+				'</dl>
 			</div>
 			<br/>
 		'),obj);
@@ -422,6 +433,45 @@ class Model extends FileView {
 			var name = select.val().split(".").pop();
 			obj.follow = this.obj.getObjectByName(name);
 		});
+
+
+		refreshSelectionHighlight(obj);
+	}
+
+	function refreshSelectionHighlight(selectedObj: h3d.scene.Object) {
+		lastSelectedObject = selectedObj;
+		var root = this.obj;
+		if (root == null)
+			return;
+
+		var materials = root.getMaterials();
+
+		for( m in materials ) {
+			m.removePass(m.getPass("highlight"));
+			m.removePass(m.getPass("highlightBack"));
+		}
+
+		if (!highlightSelection || selectedObj == null)
+			return;
+
+		materials = selectedObj.getMaterials();
+
+		var shader = new h3d.shader.FixedColor(0xffffff);
+		var shader2 = new h3d.shader.FixedColor(0xff8000);
+		for( m in materials ) {
+			if( m.name != null && StringTools.startsWith(m.name,"$UI.") )
+				continue;
+			var p = m.allocPass("highlight");
+			p.culling = None;
+			p.depthWrite = false;
+			p.depthTest = LessEqual;
+			p.addShader(shader);
+			var p = m.allocPass("highlightBack");
+			p.culling = None;
+			p.depthWrite = false;
+			p.depthTest = Always;
+			p.addShader(shader2);
+		}
 	}
 
 	function getNamedObjects( ?exclude : h3d.scene.Object ) {
@@ -517,7 +567,6 @@ class Model extends FileView {
 		tree = new hide.comp.SceneTree(obj, overlay, obj.name != null);
 		tree.onSelectMaterial = selectMaterial;
 		tree.onSelectObject = selectObject;
-
 		tree.saveDisplayKey = this.saveDisplayKey;
 
 		tools.clear();
@@ -569,6 +618,11 @@ class Model extends FileView {
 		displayJoints = tools.addToggle("connectdevelop", "Joints",(b) -> {
 			sceneEditor.setJoints(b, selectedJoint);
 		});
+
+		tools.addToggle("square-o", "Show selection Outline",(b) -> {
+			highlightSelection = b;
+			refreshSelectionHighlight(lastSelectedObject);
+		}, highlightSelection);
 
 		tools.addColor("Background color", function(v) {
 			scene.engine.backgroundColor = v;

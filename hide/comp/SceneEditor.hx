@@ -2068,6 +2068,8 @@ class SceneEditor {
 		refresh();
 	}
 
+	public dynamic function onSelectionChanged(elts : Array<PrefabElement>, ?mode : SelectMode = Default) {};
+
 	public function selectElements( elts : Array<PrefabElement>, ?mode : SelectMode = Default ) {
 		function impl(elts,mode:SelectMode) {
 			scene.setCurrent();
@@ -2124,6 +2126,8 @@ class SceneEditor {
 					break;
 				}
 			setupGizmo();
+
+			onSelectionChanged(elts, mode);
 		}
 
 		var prev : Array<PrefabElement> = null;
