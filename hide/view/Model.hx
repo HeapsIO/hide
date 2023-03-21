@@ -164,6 +164,8 @@ class Model extends FileView {
 		element.find(".hide-scene-tree").first().append(sceneEditor.tree.element);
 		element.find(".props").first().append(sceneEditor.properties.element);
 		element.find(".heaps-scene").first().append(sceneEditor.scene.element);
+		sceneEditor.view.keys.register("sceneeditor.focus", {name: "Focus Selection", category: "Scene"},
+			function() {if (lastSelectedObject != null) refreshSelectionHighlight(lastSelectedObject);});
 		sceneEditor.tree.element.addClass("small");
 
 		element.find("input[value=Export]").click(function(_) {
@@ -439,6 +441,9 @@ class Model extends FileView {
 	}
 
 	function refreshSelectionHighlight(selectedObj: h3d.scene.Object) {
+		if (selectedObj == lastSelectedObject && selectedObj != null) {
+			sceneEditor.focusObjects([selectedObj]);
+		}
 		lastSelectedObject = selectedObj;
 		var root = this.obj;
 		if (root == null)

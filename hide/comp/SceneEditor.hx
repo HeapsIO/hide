@@ -266,7 +266,7 @@ class SceneEditor {
 	var sceneData : PrefabElement;
 	var lastRenderProps : hrt.prefab.RenderProps;
 
-	var focusedSinceSelect = false;
+	public var lastFocusObjects : Array<Object> = [];
 
 	public function new(view, data) {
 		ide = hide.Ide.inst;
@@ -435,26 +435,38 @@ class SceneEditor {
 	}
 
 	function focusSelection() {
-		if(curEdit.rootObjects.length > 0) {
+		focusObjects(curEdit.rootObjects);
+		for(obj in curEdit.rootElements)
+			tree.revealNode(obj);
+	}
+
+	public function focusObjects(objs : Array<Object>) {
+		var focusChanged = false;
+		for (o in objs) {
+			if (!lastFocusObjects.contains(o)) {
+				focusChanged = true;
+				break;
+			}
+		}
+
+		if(objs.length > 0) {
 			var bnds = new h3d.col.Bounds();
 			var centroid = new h3d.Vector();
-			for(obj in curEdit.rootObjects) {
+			for(obj in objs) {
 				centroid = centroid.add(obj.getAbsPos().getPosition());
 				bnds.add(obj.getBounds());
 			}
 			if(!bnds.isEmpty()) {
 				var s = bnds.toSphere();
-				var r = focusedSinceSelect ? s.r * 4.0 : null;
+				var r = focusChanged ? null : s.r * 4.0;
 				cameraController.set(r, null, null, s.getCenter());
 			}
 			else {
-				centroid.scale3(1.0 / curEdit.rootObjects.length);
+				centroid.scale3(1.0 / objs.length);
 				cameraController.set(centroid.toPoint());
 			}
 		}
-		for(obj in curEdit.rootElements)
-			tree.revealNode(obj);
-		focusedSinceSelect = true;
+		lastFocusObjects = objs;
 	}
 
 	function getAvailableTags(p: PrefabElement) : Array<{id: String, color: String}>{
@@ -2140,16 +2152,6 @@ class SceneEditor {
 		}
 
 		impl(elts,mode);
-		if( prev == null || curEdit.rootElements.length != prev.length ) {
-			focusedSinceSelect = false;
-			return;
-		}
-		for( i in 0...curEdit.rootElements.length ) {
-			if( curEdit.rootElements[i] != prev[i] ) {
-				focusedSinceSelect = false;
-				return;
-			}
-		}
 	}
 
 	function hasBeenRemoved( e : hrt.prefab.Prefab ) {
