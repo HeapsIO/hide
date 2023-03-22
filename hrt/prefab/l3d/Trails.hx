@@ -270,7 +270,17 @@ class TrailObj extends h3d.scene.Mesh {
                 var vcamy = cam.y - target.y;
                 var vcamz = cam.z - target.z;
 
-                var len = 1.0/hxd.Math.distance(vcamx, vcamy, vcamz);
+
+                var len = hxd.Math.distance(vcamx, vcamy, vcamz);
+
+				if (len == 0) {
+					vcamx = 0;
+					vcamy = 0;
+					vcamz = 1.0;
+					len = 1.0;
+				}
+
+				len = 1.0 / len;
 
                 ux = vcamx * len;
                 uy = vcamy * len;
@@ -308,8 +318,11 @@ class TrailObj extends h3d.scene.Mesh {
             (z - prev.next.z) * (z - prev.next.z);
             len = Math.sqrt(len);
 
+			var len2 = hxd.Math.distance(x-prev.x, y-prev.y, z-prev.z);
+
             if (prev.lifetime < 1.0/maxFramerate-0.001 ||
                 head.numPoints >= calcMaxTrailPoints() // Don't allocate points if we have the max numPoints
+				|| len < 0.01 || len2 < 0.01
                 ) {
                 new_pt = prev;
                 prev = prev.next;
@@ -342,27 +355,30 @@ class TrailObj extends h3d.scene.Mesh {
             (z - prev.z) * (z - prev.z);
             len = Math.sqrt(lenSq);
 
-
             new_pt.len = len;
-            var len = 1.0/len;
 
-            if (nx == 0 && ny == 0 && nz == 0) {
-                nx = (prev.x - x) * len;
-                ny = (prev.y - y) * len;
-                nz = (prev.z - z) * len;
+            if (nx == 0 && ny == 0 && nz == 0 && len != 0) {
+            	var nlen = 1.0/len;
 
-                new_pt.nx = ny * uz - nz * uy;
-                new_pt.ny = nz * ux - nx * uz;
-                new_pt.nz = nx * uy - ny * ux;
 
-                var nlen = 1.0/hxd.Math.distance(new_pt.nx, new_pt.ny, new_pt.nz);
-                new_pt.nx *= nlen;
-                new_pt.ny *= nlen;
-                new_pt.nz *= nlen;
+				var dx = (prev.x - x) * nlen;
+                var dy = (prev.y - y) * nlen;
+                var dz = (prev.z - z) * nlen;
 
-                new_pt.ux = new_pt.ny * nz - new_pt.nz * ny;
-                new_pt.uy = new_pt.nz * nx - new_pt.nx * nz;
-                new_pt.uz = new_pt.nx * ny - new_pt.ny * nx;
+                new_pt.nx = dy * uz - dz * uy;
+                new_pt.ny = dz * ux - dx * uz;
+                new_pt.nz = dx * uy - dy * ux;
+
+                nlen = 1.0/hxd.Math.distance(new_pt.nx, new_pt.ny, new_pt.nz);
+
+				new_pt.nx *= nlen;
+				new_pt.ny *= nlen;
+				new_pt.nz *= nlen;
+
+
+				new_pt.ux = new_pt.ny * dz - new_pt.nz * dy;
+				new_pt.uy = new_pt.nz * dx - new_pt.nx * dz;
+				new_pt.uz = new_pt.nx * dy - new_pt.ny * dx;
 
                 if (prev.nx == 0 && prev.ny == 0 && prev.nz == 0) {
                     prev.nx = new_pt.nx;
@@ -440,7 +456,7 @@ class TrailObj extends h3d.scene.Mesh {
         super(dprim,parent);
 
         #if editor
-        debugPointViz = new h3d.scene.Graphics(parent);
+        debugPointViz = new h3d.scene.Graphics(parent.getScene());
         icon = hrt.impl.EditorTools.create3DIcon(this, "icons/icon-trails.png");
         #end
 
@@ -553,6 +569,7 @@ class TrailObj extends h3d.scene.Mesh {
         var num_segments = 0;
 
         // render
+
         for (trail in trails) {
             var prev : TrailPoint = null;
             var cur = trail.firstPoint;
@@ -585,9 +602,14 @@ class TrailObj extends h3d.scene.Mesh {
                 #if editor
                 if (cur.next != null) {
                     if (showDebugLines) {
-                        pointA.set(cur.next.x, cur.next.y, cur.next.z);
+                        debugPointViz.setColor(0xFFFFFF, 1.0);
+						debugPointViz.lineStyle(8.0);
+
+                        /*pointA.set(cur.next.x, cur.next.y, cur.next.z);
                         pointB.set(cur.x, cur.y, cur.z);
-                        debugPointViz.drawLine(pointA, pointB);
+                        debugPointViz.drawLine(pointA, pointB);*/
+
+						debugPointViz.lineStyle(4.0);
 
                         pointA.set((cur.x+cur.next.x) / 2.0,
                                     (cur.y+cur.next.y) / 2.0,
@@ -605,9 +627,6 @@ class TrailObj extends h3d.scene.Mesh {
                             pointA.z + cur.uz * 2.0);
                         debugPointViz.setColor(0x0000FF, 1.0);
                         debugPointViz.drawLine(pointA, pointB);
-
-
-                        debugPointViz.setColor(0xFFFFFF, 1.0);
                     }
                 }
                 #end
@@ -629,6 +648,8 @@ class TrailObj extends h3d.scene.Mesh {
 
                 #if editor
                 if (showDebugLines) {
+					debugPointViz.setColor(0xFFFFFF, 1.0);
+
                     pointA.set(cur.x, cur.y, cur.z);
                     pointB.set( cur.x+nx,
                         cur.y+ny,
