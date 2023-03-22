@@ -480,7 +480,6 @@ class TrailObj extends h3d.scene.Mesh {
 
     public function update(dt: Float) {
 
-		trace(dt);
         var numObj = 0;
         for (child in children) {
             if (Std.downcast(child, TrailsSubTailObj) == null)
