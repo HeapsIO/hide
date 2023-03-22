@@ -67,6 +67,7 @@ class TrailObj extends h3d.scene.Mesh {
 
     var points : PointsArray;
     var trails : TrailsArray;
+	var lastAddTime : Array<Float>;
 
     var trailsPool : TrailHead = null;
     var firstFreePointID = 0;
@@ -80,6 +81,8 @@ class TrailObj extends h3d.scene.Mesh {
     var numVerts : Int = 0;
     var bounds : h3d.col.Bounds;
     var prefab : Trails;
+
+	public var timeScale : Float = 1.0;
 
     #if editor
     var icon : hrt.impl.EditorTools.EditorIcon;
@@ -152,6 +155,8 @@ class TrailObj extends h3d.scene.Mesh {
 		points = #if (hl_ver >= version("1.13.0")) hl.CArray.alloc(TrailPoint, maxNumPoints) #else [for(i in 0...maxNumPoints) new TrailPoint()] #end;
 
         trails = #if (hl_ver >= version("1.13.0")) hl.CArray.alloc(TrailHead, numTrails) #else [for(i in 0...numTrails) new TrailHead()] #end;
+
+		lastAddTime = [for (i in 0...numTrails) 0.0];
 
         for (i in 0...numTrails-1) {
             trails[i].nextTrail = trails[i+1];
@@ -461,13 +466,21 @@ class TrailObj extends h3d.scene.Mesh {
 
     var lastUpdateDuration = 0.0;
 
-    override function sync(ctx) {
+	override function sync(ctx) {
         var t = haxe.Timer.stamp();
         calcAbsPos();
-
-
 		super.sync(ctx);
 
+		if (timeScale > 0.0) {
+			update(ctx.elapsedTime * timeScale);
+		}
+
+        lastUpdateDuration = haxe.Timer.stamp() - t;
+	}
+
+    public function update(dt: Float) {
+
+		trace(dt);
         var numObj = 0;
         for (child in children) {
             if (Std.downcast(child, TrailsSubTailObj) == null)
@@ -549,7 +562,7 @@ class TrailObj extends h3d.scene.Mesh {
             var totalLen = trail.totalLength + (cur != null ? cur.len : 0.0);
             while (cur != null) {
                 num_segments += 1;
-                cur.lifetime += ctx.elapsedTime;
+                cur.lifetime += dt;
                 var t = cur.lifetime / prefab.lifetime;
                 cur.w = hxd.Math.lerp(prefab.startWidth, prefab.endWidth, t);
                 if (cur.lifetime > prefab.lifetime) {
@@ -668,7 +681,7 @@ class TrailObj extends h3d.scene.Mesh {
                 buffer[count++] = u;
                 buffer[count++] = 1;
 
-                
+
                 if (prev != null ) {
                     var spd = cur.len / hxd.Math.max((cur.lifetime - prev.lifetime), 1.0/maxFramerate);
                     if (spd < prefab.maxSpeed && spd > prefab.minSpeed) {
@@ -677,13 +690,13 @@ class TrailObj extends h3d.scene.Mesh {
                         indices[numVertsIndices] = currentIndex;
                         indices[numVertsIndices+1] = currentIndex-1;
                         indices[numVertsIndices+2] = currentIndex-2;
-    
+
                         numVertsIndices += 3;
-    
+
                         indices[numVertsIndices] = currentIndex;
                         indices[numVertsIndices+1] = currentIndex+1;
                         indices[numVertsIndices+2] = currentIndex-1;
-    
+
                         numVertsIndices += 3;
                     }
 
@@ -707,7 +720,6 @@ class TrailObj extends h3d.scene.Mesh {
         dprim.indexes.upload(ibuf, 0, numVertsIndices);
 
 
-        lastUpdateDuration = haxe.Timer.stamp() - t;
     }
 
     override function draw(ctx:h3d.scene.RenderContext) {
