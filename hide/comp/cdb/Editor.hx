@@ -942,7 +942,7 @@ class Editor extends Component {
 		}
 		return id;
 	}
-	public function getReferences(id: String, withCodePaths = true, returnAtFirstRef = false, sheet: cdb.Sheet) : Array<{str:String, ?goto:Void->Void}> {
+	public function getReferences(id: String, withCodePaths = true, returnAtFirstRef = false, sheet: cdb.Sheet, ?codeFileCache: Array<{path: String, data:String}>, ?prefabFileCache: Array<{path: String, data:String}>) : Array<{str:String, ?goto:Void->Void}> {
 		if( id == null )
 			return [];
 
@@ -996,107 +996,131 @@ class Editor extends Component {
 		if (withCodePaths) {
 			var paths : Array<String> = this.config.get("haxe.classPath");
 			if( paths != null ) {
+
+
+				if (codeFileCache == null) {
+					codeFileCache = [];
+				}
+
+				if (codeFileCache.length == 0) {
+					function lookupRec(p) {
+						for( f in sys.FileSystem.readDirectory(p) ) {
+							var fpath = p+"/"+f;
+							if( sys.FileSystem.isDirectory(fpath) ) {
+								lookupRec(fpath);
+								if (returnAtFirstRef && message.length > 0) return;
+								continue;
+							}
+							if( StringTools.endsWith(f, ".hx") ) {
+								codeFileCache.push({path: f, data: sys.io.File.getContent(fpath)});
+							}
+						}
+					}
+
+					for( p in paths ) {
+						var path = ide.getPath(p);
+						if( sys.FileSystem.exists(path) && sys.FileSystem.isDirectory(path) )
+							lookupRec(path);
+					}
+				}
+
 				var spaces = "[ \\n\\t]";
 				var prevChars = ",\\(:=\\?\\[";
 				var postChars = ",\\):;\\?\\]&|";
 				var regexp = new EReg('((case$spaces+)|[$prevChars])$spaces*$id$spaces*[$postChars]',"");
 				var regall = new EReg("\\b"+id+"\\b", "");
-				function lookupRec(p) {
-					for( f in sys.FileSystem.readDirectory(p) ) {
-						var fpath = p+"/"+f;
-						if( sys.FileSystem.isDirectory(fpath) ) {
-							lookupRec(fpath);
-							if (returnAtFirstRef && message.length > 0) return;
-							continue;
-						}
-						if( StringTools.endsWith(f, ".hx") ) {
-							var content = sys.io.File.getContent(fpath);
-							if( content.indexOf(id) < 0 ) continue;
-							for( line => str in content.split("\n") ) {
-								if( regall.match(str) ) {
-									if( !regexp.match(str) ) {
-										var str2 = str.split(id+".").join("").split("."+id).join("").split(id+"(").join("").split(id+"<").join("");
-										if( regall.match(str2) ) trace("Skip "+str);
-										continue;
-									}
-									var path = ide.makeRelative(fpath);
-									var fn = function () {
-										var ext = @:privateAccess hide.view.FileTree.getExtension(path);
+				for (file in codeFileCache) {
 
-										ide.open(ext.component, { path : path }, function (v) {
-											var scr : hide.view.Script = cast v;
-
-											function checkSetPos() {
-												var s = @:privateAccess scr.script;
-												if (s != null) {
-													var e = @:privateAccess s.editor;
-													e.setPosition({column:0, lineNumber: line+1});
-													haxe.Timer.delay(() ->e.revealLineInCenter(line+1), 1);
-													return;
-												}
-
-												// needed because the editor can be created after our
-												// function is called (if the tab was created but never opened,
-												// likely because hide was closed and reopened)
-												// see : View.rebuild()
-												haxe.Timer.delay(checkSetPos, 200);
-											}
-
-											checkSetPos();
-										});
-									}
-									message.push({str: path+":"+(line+1), goto: fn});
-									if (returnAtFirstRef) return;
-								}
+					var fpath = file.path;
+					var content = file.data;
+					if( content.indexOf(id) < 0 ) continue;
+					for( line => str in content.split("\n") ) {
+						if( regall.match(str) ) {
+							if( !regexp.match(str) ) {
+								var str2 = str.split(id+".").join("").split("."+id).join("").split(id+"(").join("").split(id+"<").join("");
+								if( regall.match(str2) ) trace("Skip "+str);
+								continue;
 							}
+							var path = ide.makeRelative(fpath);
+							var fn = function () {
+								var ext = @:privateAccess hide.view.FileTree.getExtension(path);
+
+								ide.open(ext.component, { path : path }, function (v) {
+									var scr : hide.view.Script = cast v;
+
+									function checkSetPos() {
+										var s = @:privateAccess scr.script;
+										if (s != null) {
+											var e = @:privateAccess s.editor;
+											e.setPosition({column:0, lineNumber: line+1});
+											haxe.Timer.delay(() ->e.revealLineInCenter(line+1), 1);
+											return;
+										}
+
+										// needed because the editor can be created after our
+										// function is called (if the tab was created but never opened,
+										// likely because hide was closed and reopened)
+										// see : View.rebuild()
+										haxe.Timer.delay(checkSetPos, 200);
+									}
+
+									checkSetPos();
+								});
+							}
+							message.push({str: path+":"+(line+1), goto: fn});
+							if (returnAtFirstRef) return message;
 						}
 					}
-				}
-				for( p in paths ) {
-					var path = ide.getPath(p);
-					if( sys.FileSystem.exists(path) && sys.FileSystem.isDirectory(path) )
-						lookupRec(path);
-					if (returnAtFirstRef && message.length > 0) return message;
 				}
 			}
 			var paths : Array<String> = this.config.get("cdb.prefabsSearchPaths");
 			var scriptStr = new EReg("\\b"+sheet.name.charAt(0).toUpperCase() + sheet.name.substr(1) + "\\." + id + "\\b","");
 
 			if( paths != null ) {
-				function lookupPrefabRec(path) {
-					for( f in sys.FileSystem.readDirectory(path) ) {
-						var fpath = path+"/"+f;
-						if( sys.FileSystem.isDirectory(fpath) ) {
-							lookupPrefabRec(fpath);
-							continue;
-						}
-						var ext = f.split(".").pop();
-						if( @:privateAccess hrt.prefab.Library.registeredExtensions.exists(ext) ) {
-							var content = sys.io.File.getContent(fpath);
-							if( !scriptStr.match(content) ) continue;
-							for( line => str in content.split("\n") ) {
-								if( scriptStr.match(str) ) {
-									var path = ide.makeRelative(fpath);
-									var fn = function () {
-										ide.openFile(path, function (v) {
-											var scr : hide.view.Script = cast v;
-											haxe.Timer.delay(function() {
-												@:privateAccess scr.script.editor.setPosition({column:0, lineNumber: line+1});
-												haxe.Timer.delay(() ->@:privateAccess scr.script.editor.revealLineInCenter(line+1), 1);
-											}, 1);
-										});
-									}
-									message.push({str: path+":"+(line+1), goto: fn});
 
-								}
+				if (prefabFileCache == null)
+					prefabFileCache = [];
+
+				if (prefabFileCache.length == 0) {
+					function lookupPrefabRec(path) {
+						for( f in sys.FileSystem.readDirectory(path) ) {
+							var fpath = path+"/"+f;
+							if( sys.FileSystem.isDirectory(fpath) ) {
+								lookupPrefabRec(fpath);
+								continue;
+							}
+							var ext = f.split(".").pop();
+							if( @:privateAccess hrt.prefab.Library.registeredExtensions.exists(ext) ) {
+								prefabFileCache.push({path: fpath, data: sys.io.File.getContent(fpath)});
 							}
 						}
 					}
+					for( p in paths ) {
+						var path = ide.getPath(p);
+						if( sys.FileSystem.exists(path) && sys.FileSystem.isDirectory(path) )
+							lookupPrefabRec(path);
+					}
 				}
-				for( p in paths ) {
-					var path = ide.getPath(p);
-					if( sys.FileSystem.exists(path) && sys.FileSystem.isDirectory(path) )
-						lookupPrefabRec(path);
+
+				for (file in prefabFileCache) {
+					var fpath = file.path;
+					var content = file.data;
+					if( !scriptStr.match(content) ) continue;
+					for( line => str in content.split("\n") ) {
+						if( scriptStr.match(str) ) {
+							var path = ide.makeRelative(fpath);
+							var fn = function () {
+								ide.openFile(path, function (v) {
+									var scr : hide.view.Script = cast v;
+									haxe.Timer.delay(function() {
+										@:privateAccess scr.script.editor.setPosition({column:0, lineNumber: line+1});
+										haxe.Timer.delay(() ->@:privateAccess scr.script.editor.revealLineInCenter(line+1), 1);
+									}, 1);
+								});
+							}
+							message.push({str: path+":"+(line+1), goto: fn});
+						}
+					}
 				}
 			}
 
@@ -1173,14 +1197,17 @@ class Editor extends Component {
 
 		var nonrefs = new Array<{str:String, ?goto:Void->Void}>();
 
+		var codeFileCache = [];
+		var prefabFileCache = [];
 		for (o in sheet.lines) {
-			// TODO : Add option to early quit getReferences as soon as one reference is found
 			var id = Reflect.getProperty(o, col.name);
-			var refs = getReferences(id, true, true, sheet);
+			var refs = getReferences(id, true, true, sheet, codeFileCache, prefabFileCache);
 			if (refs.length == 0) {
 				nonrefs.push({str: id, goto: () -> openReference2(sheet, [Id(col.name, id)])});
 			}
 		}
+		trace("codeFileCache: ", codeFileCache.length);
+		trace("prefabFileCache: ", prefabFileCache.length);
 
 		ide.open("hide.view.RefViewer", null, function(view) {
 			var refViewer : hide.view.RefViewer = cast view;
