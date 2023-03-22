@@ -900,7 +900,7 @@ class ModelLibrary extends Prefab {
 		for ( c in @:privateAccess obj.children.copy() ) {
 			clearOptimized(c);
 		}
-		if ( @:privateAccess obj.children.length == 0 && (!Std.isOfType(obj, h3d.scene.Mesh) || obj.culled) )
+		if ( @:privateAccess obj.children.length == 0 && ((Std.isOfType(obj, h3d.scene.Mesh) && obj.culled) || Type.getClass(obj) == h3d.scene.Object) )
 			obj.remove();
 	}
 
