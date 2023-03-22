@@ -77,7 +77,7 @@ class CurveEditor extends Component {
 			}
 		});
 		element.keydown(function(e) {
-			if(e.key == "z" || e.key == "f") {
+			if((e.key == "z" || e.key == "f") && !e.ctrlKey) {
 				zoomAll();
 				refresh();
 			}
