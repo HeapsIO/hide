@@ -644,7 +644,7 @@ class Editor extends Component {
 		if( id != null && id.length > 0) {
 			var refs = getReferences(id, sheet);
 			if( refs.length > 0 ) {
-				var message = refs.join("\n");
+				var message = [for (r in refs) r.str].join("\n");
 				if( !ide.confirm('$id is referenced elswhere. Are you sure you want to delete?\n$message') )
 					return;
 			}
@@ -1871,7 +1871,7 @@ class Editor extends Component {
 				if( id != null && id.length > 0) {
 					var refs = getReferences(id, sheet);
 					if( refs.length > 0 ) {
-						var message = refs.join("\n");
+						var message = [for (r in refs) r.str].join("\n");
 						if( !ide.confirm('$id is referenced elswhere. Are you sure you want to delete?\n$message') )
 							return;
 					}
