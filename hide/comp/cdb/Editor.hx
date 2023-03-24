@@ -1012,7 +1012,7 @@ class Editor extends Component {
 								continue;
 							}
 							if( StringTools.endsWith(f, ".hx") ) {
-								codeFileCache.push({path: f, data: sys.io.File.getContent(fpath)});
+								codeFileCache.push({path: fpath, data: sys.io.File.getContent(fpath)});
 							}
 						}
 					}
