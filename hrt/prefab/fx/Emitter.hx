@@ -1285,12 +1285,11 @@ class EmitterObject extends h3d.scene.Object {
 		}
 	}
 
-	override function getBoundsRec( b : h3d.col.Bounds ) {
+	override function addBoundsRec( b : h3d.col.Bounds, relativeTo : h3d.Matrix ) {
 		if( posChanged ) {
 			posChanged = false;
 			calcAbsPos();
 		}
-		return b;
 	}
 }
 
