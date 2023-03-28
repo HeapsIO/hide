@@ -457,7 +457,7 @@ class TrailObj extends h3d.scene.Mesh {
 
         #if editor
         debugPointViz = new h3d.scene.Graphics(parent.getScene());
-        icon = hrt.impl.EditorTools.create3DIcon(this, "icons/icon-trails.png");
+        icon = hrt.impl.EditorTools.create3DIcon(this, hide.Ide.inst.getHideResPath("icons/icon-trails.png"), 0.75, Trails);
         #end
 
         material.props = getMaterialProps();
@@ -760,7 +760,7 @@ class TrailsSubTailObj extends h3d.scene.Object {
     public function new(?parent) {
         super(parent);
         #if editor
-        var icon = hrt.impl.EditorTools.create3DIcon(this, "icons/icon-trails.png");
+        var icon = hrt.impl.EditorTools.create3DIcon(this, "icons/icon-trails.png", 1.0, Trails);
         icon.scale(0.33);
         #end
     }

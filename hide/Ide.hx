@@ -56,6 +56,7 @@ class Ide {
 	var hasReloaded = false;
 
 	public var show3DIcons = true;
+	public var show3DIconsCategory : Map<hrt.impl.EditorTools.IconCategory, Bool> = new Map();
 
 	static var firstInit = true;
 
@@ -251,6 +252,8 @@ class Ide {
 			var view = getViewAt(mouseX, mouseY);
 			if(view != null) view.processKeyEvent(e);
 		});
+
+		hrt.impl.EditorTools.setupIconCategories();
 	}
 
 	public function getViews<K,T:hide.ui.View<K>>( cl : Class<T> ) {

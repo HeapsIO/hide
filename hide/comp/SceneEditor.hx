@@ -198,6 +198,37 @@ class SnapSettingsPopup extends Popup {
     }
 }
 
+class IconVisibilityPopup extends Popup {
+    var editor : SceneEditor;
+
+    public function new(?parent : Element, ?root : Element, editor: SceneEditor) {
+        super(parent, root);
+        this.editor = editor;
+
+        popup.append(new Element("<p>Icon Visibility</p>"));
+        popup.addClass("settings-popup");
+        popup.css("max-width", "300px");
+
+        var form_div = new Element("<div>").addClass("form-grid").appendTo(popup);
+
+        var editMode : hide.view.l3d.Gizmo.EditMode = @:privateAccess editor.gizmo.editMode;
+
+		var ide = hide.Ide.inst;
+        for (k => v in ide.show3DIconsCategory) {
+            var input = new Element('<input type="checkbox" name="snap" id="$k" value="$k"/>');
+            if (v)
+                input.get(0).toggleAttribute("checked", true);
+            input.change((e) -> {
+				var val = !ide.show3DIconsCategory.get(k);
+				ide.show3DIconsCategory.set(k, val);
+				js.Browser.window.localStorage.setItem(hrt.impl.EditorTools.iconVisibilityKey(k), val ? "true" : "false");
+            });
+            form_div.append(input);
+            form_div.append(new Element('<label for="$k" class="left">$k</label>'));
+        }
+    }
+}
+
 class HelpPopup extends Popup {
 	var editor : SceneEditor;
 
