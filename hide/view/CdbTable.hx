@@ -68,8 +68,16 @@ class CdbTable extends hide.ui.View<{}> {
 							}
 						}
 					}
-				case Line(id):
+				case Line(id,target):
 					lineNo = id;
+					if (target != null) {
+						for (c in curTable.columns) {
+							if (c.name == target) {
+								break;
+							}
+							colNo += 1;
+						}
+					}
 				case Script(line):
 					var cell = lastCell;
 					if (cell != null) {
