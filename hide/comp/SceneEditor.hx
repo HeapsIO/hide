@@ -1525,6 +1525,8 @@ class SceneEditor {
 					if(elt.to(Object3D) == null)
 						continue;
 					var ctx = contexts[elt];
+					if (ctx == null) // It appears that in edge cases the context linked to a prefab doesn't exist
+						continue;
 					var o = ctx.local3d;
 					if(o == null || !o.visible)
 						continue;
