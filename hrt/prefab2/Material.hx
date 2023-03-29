@@ -45,7 +45,7 @@ class Material extends Prefab {
 
 	public function getMaterials() {
 		var mats = findFirstLocal3d().getMaterials();
-		var mat = Lambda.find(mats, m -> m.name == this.name || m.name == materialName);
+        var mat = Lambda.find(mats, m -> m.name == this.name || (m.name != null && m.name == materialName));
 		return mat == null ? mats : [mat];
 	}
 

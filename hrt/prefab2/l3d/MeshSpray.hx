@@ -50,16 +50,29 @@ class MeshSpray extends Spray {
 				}
 			}
 		}
+		inline function loadBatchMesh( source : String, mesh : h3d.scene.Mesh ) {
+			var batch = new h3d.scene.MeshBatch(cast(mesh.primitive,h3d.prim.MeshPrimitive), mesh.material, mspray);
+			batch.cullingCollider = @:privateAccess batch.instanced.bounds;
+			var multi = Std.downcast(mesh, h3d.scene.MultiMaterial);
+			if( multi != null ) batch.materials = multi.materials;
+			curMap.set(source, { batch : batch, pivot : mesh.defaultTransform.isIdentity() ? null : mesh.defaultTransform });
+			mspray.batches.push(batch);
+		}
+		var tmp = new h3d.Matrix();
 		inline function loadBatch( source : String ) {
 			var batch = curMap.get(source);
 			if( batch != null ) return;
-			var obj = ctx.loadModel(source).toMesh();
-			var batch = new h3d.scene.MeshBatch(cast(obj.primitive,h3d.prim.MeshPrimitive), obj.material, mspray);
-			batch.cullingCollider = @:privateAccess batch.instanced.bounds;
-			var multi = Std.downcast(obj, h3d.scene.MultiMaterial);
-			if( multi != null ) batch.materials = multi.materials;
-			curMap.set(source, { batch : batch, pivot : obj.defaultTransform.isIdentity() ? null : obj.defaultTransform });
-			mspray.batches.push(batch);
+			var obj = ctx.loadModel(source);
+			if ( obj.isMesh() ) {
+				loadBatchMesh( source, obj.toMesh() );
+			} else {
+				var mesh = obj.find(o -> o.isMesh() ? o : null);
+				if ( !obj.defaultTransform.isIdentity() ) {
+					tmp.multiply(obj.defaultTransform, mesh.defaultTransform);
+					mesh.defaultTransform = tmp;
+				}
+				if ( mesh != null ) loadBatchMesh(source, mesh.toMesh());
+			}
 		}
 		for( c in children ) {
 			if( !c.enabled || c.type != "model" ) continue;
@@ -125,6 +138,11 @@ class MeshSpray extends Spray {
 				}
 			}
 			var inf = curMap.get(c.source);
+			// if ( inf == null ) {
+			// 	var obj = ctx.loadModel(c.source);
+			// 	for ( m in obj.findAll(o -> o.isMesh() ? o.toMesh() : null) )
+			// 		inf = curMap.get(c.source);
+			// }
 			tmp.multiply3x4(c.to(Object3D).getTransform(), pos);
 			if( inf.pivot != null ) tmp.multiply3x4(inf.pivot, tmp);
 			inf.batch.emitInstance();

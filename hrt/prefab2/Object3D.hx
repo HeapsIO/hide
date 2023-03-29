@@ -309,6 +309,14 @@ class Object3D extends Prefab {
 				continue;
 			}
 
+			var asIcon = Std.downcast(mesh, hrt.impl.EditorTools.EditorIcon);
+			if (asIcon != null) {
+				hasSkin = true; // hack
+				/*var pos = asIcon.getAbsPos();
+				bounds.addSpherePos(pos.tx, pos.ty, pos.tz, asIcon.billboardScale);*/
+				continue;
+			}
+
 			var lb = mesh.primitive.getBounds().clone();
 			lb.transform(localMat);
 			bounds.add(lb);

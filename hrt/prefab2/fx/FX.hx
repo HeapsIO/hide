@@ -24,6 +24,7 @@ class FXAnimation extends h3d.scene.Object {
 	public var objAnims: Array<ObjectAnimation>;
 	public var events: Array<hrt.prefab2.fx.Event.EventInstance>;
 	public var emitters : Array<hrt.prefab2.fx.Emitter.EmitterObject>;
+	public var trails : Array<hrt.prefab2.l3d.Trails.TrailObj>;
 	public var shaderAnims : Array<ShaderAnimation> = [];
 	public var constraints : Array<hrt.prefab2.l3d.Constraint>;
 
@@ -53,6 +54,8 @@ class FXAnimation extends h3d.scene.Object {
 		events = initEvents(root);
 		var root = def.getFXRoot(def);
 		initConstraints(root != null ? root : def);
+
+		trails = findAll((p) -> Std.downcast(p, hrt.prefab2.l3d.Trails.TrailObj));
 	}
 
 	public function reset() {
@@ -129,6 +132,10 @@ class FXAnimation extends h3d.scene.Object {
 			}
 		}
 
+		for (t in trails) {
+			t.timeScale = 0.0;
+		}
+
 		if(fullSync)
 			super.syncRec(ctx);
 
@@ -143,6 +150,7 @@ class FXAnimation extends h3d.scene.Object {
 	static var tempTransform = new h3d.Matrix();
 	static var tempVec = new h3d.Vector();
 	public function setTime( time : Float, fullSync=true ) {
+		var dt = time - this.localTime;
 		this.localTime = time;
 		if(fullSync) {
 			if(objAnims != null) {
@@ -231,6 +239,10 @@ class FXAnimation extends h3d.scene.Object {
 					if(em.visible)
 						em.setTime(time);
 				}
+			}
+
+			for (t in trails) {
+				t.update(hxd.Math.max(dt, 0.0));
 			}
 		}
 

@@ -151,7 +151,7 @@ class Light extends Object3D {
 		}
 
 		#if editor
-		icon = hrt.impl.EditorTools.create3DIcon(parent3d, "icons/PointLight.png", 0.5);
+		icon = hrt.impl.EditorTools.create3DIcon(local3d, hide.Ide.inst.getHideResPath("icons/PointLight.png"), 0.5, Light);
 		#end
 
 		cookieTex = initTexture(cookiePath);
@@ -241,7 +241,6 @@ class Light extends Object3D {
 		var debugPoint = local3d.find(c -> if(c.name == "_debugPoint") c else null);
 		var debugDir = local3d.find(c -> if(c.name == "_debugDir") c else null);
 		var debugSpot = local3d.find(c -> if(c.name == "_debugSpot") c else null);
-
 		var sel : h3d.scene.Object = null;
 
 		switch(kind){
@@ -342,7 +341,6 @@ class Light extends Object3D {
 				}
 
 		}
-
 
 
 		if (icon != null) {

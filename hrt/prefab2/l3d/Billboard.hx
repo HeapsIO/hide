@@ -16,7 +16,7 @@ class BillboardShader extends hxsl.Shader {
 				vec4(0, 0, 0, 1)
 			);
 
-            // scale 
+            // scale
 			newModelView = mat4(
                 vec4(scale /*length(global.modelView[0].xyz)*/, 0.0, 0.0, 0.0),
                 vec4(0.0, scale /*length(global.modelView[1].xyz)*/, 0.0, 0.0),
