@@ -53,6 +53,7 @@ class Editor extends Component {
 	var tables : Array<Table> = [];
 	var searchBox : Element;
 	var searchHidden : Bool = true;
+	var pendingSearchRefresh : haxe.Timer = null;
 	var displayMode : Table.DisplayMode;
 	var clipboard : {
 		text : String,
@@ -1323,6 +1324,8 @@ class Editor extends Component {
 		function addSearchInput() {
 			var index = filters.length;
 			filters.push("");
+
+
 			new Element("<input type='text'>").appendTo(inputCont).keydown(function(e) {
 				if( e.keyCode == 27 ) {
 					searchBox.find("i.close-search").click();
@@ -1333,7 +1336,21 @@ class Editor extends Component {
 				}
 			}).keyup(function(e) {
 				filters[index] = e.getThis().val();
-				searchFilter(filters.copy());
+
+				// Slow table refresh protection
+				if (currentSheet.lines.length > 300) {
+					if (pendingSearchRefresh != null) {
+						pendingSearchRefresh.stop();
+					}
+					pendingSearchRefresh = haxe.Timer.delay(function()
+						{
+							searchFilter(filters.copy());
+							pendingSearchRefresh = null;
+						}, 500);
+				}
+				else {
+					searchFilter(filters.copy());
+				}
 			});
 			inputCol.find(".remove-btn").toggleClass("hidden", filters.length <= 1);
 		}
