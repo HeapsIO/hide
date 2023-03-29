@@ -104,8 +104,7 @@ class Shader extends Prefab {
 				}
 			} else
 			{
-				throw "implement getObjects";
-				// objs = shared.getObjects(parent, h3d.scene.Object);
+				objs = shared.getObjects(parent, h3d.scene.Object);
 			}
 			for( obj in objs )
 				for( m in obj.getMaterials(false) )

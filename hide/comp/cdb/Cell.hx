@@ -483,6 +483,7 @@ class Cell {
 	static var KWDS = ["for","if","var","this","while","else","do","break","continue","switch","function","return","new","throw","try","catch","case","default"];
 	static var KWD_REG = new EReg([for( k in KWDS ) "(\\b"+k+"\\b)"].join("|"),"g");
 	function colorizeScript( c : cdb.Data.Column, ecode : String, objID : String ) {
+		return ecode;
 		var code = ecode;
 		code = StringTools.htmlEscape(code);
 		code = code.split("\n").join("<br/>");

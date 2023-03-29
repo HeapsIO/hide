@@ -161,4 +161,36 @@ class ContextShared {
 		}
 	}
 
+	public function getObjects<T:h3d.scene.Object>( p : Prefab, c: Class<T> ) : Array<T> {
+		var root = p.findFirstLocal3d();
+		if(root == null) return [];
+		var childObjs = getChildrenRoots(root, p, []);
+		var ret = [];
+		function rec(o : h3d.scene.Object) {
+			var m = Std.downcast(o, c);
+			if(m != null) {
+				if(ret.contains(m))
+					throw "?!";
+				ret.push(m);
+			}
+			for( child in o )
+				if( childObjs.indexOf(child) < 0 )
+					rec(child);
+		}
+		rec(root);
+		return ret;
+	}
+
+	function getChildrenRoots( base : h3d.scene.Object, p : Prefab, out : Array<h3d.scene.Object> ) {
+		for( c in p.children ) {
+			var o3d = c.to(Object3D);
+			if (o3d == null)
+				return out;
+			if( o3d.local3d == base )
+				getChildrenRoots(base, c, out);
+			else
+				out.push(o3d.local3d);
+		}
+		return out;
+	}
 }

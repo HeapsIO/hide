@@ -31,7 +31,7 @@ class InstanciateContext {
 	public var forceInstanciate : Bool = false; /** Force the instanciation of the prefab even if it's a template **/
 }
 
-typedef PrefabInfo = {prefabClass : Class<Prefab> #if editor, inf : hide.prefab2.HideProps #end};
+typedef PrefabInfo = {prefabClass : Class<Prefab> #if editor, inf : hide.prefab2.HideProps #end, ?extension: String};
 
 @:keepSub
 @:autoBuild(hrt.prefab2.Macros.buildPrefab())
@@ -461,6 +461,7 @@ class Prefab {
 
 	// Map prefab class name to the serialized name of the prefab
 	static var reverseRegistry : Map<String, String> = new Map();
+	static var extensionRegistry : Map<String, String> = new Map();
 
 	/**
 		Register the given prefab class with the given typeName in the prefab regsitry.
@@ -470,12 +471,23 @@ class Prefab {
 		public static var _ = Prefab.register("myPrefabName", myPrefabClassName);
 		```
 	**/
-	public static function register(typeName : String, prefabClass: Class<hrt.prefab2.Prefab>) {
+	public static function register(typeName : String, prefabClass: Class<hrt.prefab2.Prefab>, ?extension: String) {
+		#if editor
 		var info : hide.prefab2.HideProps = cast Type.createEmptyInstance(prefabClass).getHideProps();
+		#end
 
 		reverseRegistry.set(Type.getClassName(prefabClass), typeName);
-		registry.set(typeName, {prefabClass: prefabClass #if editor, inf : info #end});
+		registry.set(typeName, {prefabClass: prefabClass #if editor, inf : info #end, extension: extension});
+		if (extension != null) {
+			extensionRegistry.set(extension, typeName);
+		}
+
 		return true;
+	}
+
+	public static function getPrefabType(path: String) {
+		var extension = path.split(".").pop().toLowerCase();
+		return extensionRegistry.get(extension);
 	}
 
 	/**

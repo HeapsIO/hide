@@ -3,18 +3,21 @@ using Lambda;
 
 class Instance extends Object3D {
 
+	var instance : Prefab;
+	var model : h3d.scene.Object;
+	var icon : h2d.Object;
+
 	public function new(?parent) {
 		super(parent);
 		props = {};
 	}
 
 	#if editor
-	override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) : Void {
-		super.makeInstance(ctx);
-		throw "implement";
+	override function makeObject3d(parent3d: h3d.scene.Object) : h3d.scene.Object {
+		//throw "implement";
 		// TODO(ces) restore
 
-		/*var kind = getRefSheet(this);
+		var kind = getRefSheet(this);
 		var unknown = kind == null || kind.idx == null;
 
 		var modelPath = unknown ? null : findModelPath(kind.sheet, kind.idx.obj);
@@ -23,14 +26,16 @@ class Instance extends Object3D {
 				if(hrt.prefab2.Prefab.getPrefabType(modelPath) != null) {
 					var ref = Prefab.createFromPath(modelPath);
 					if(ref != null) {
-						ref.make(ctx.local2d, ctx.local3d);
-						local3d = ref;
+						var inst = new hrt.prefab2.Prefab.InstanciateContext(findFirstLocal2d(), parent3d);
+						ref.instanciate(inst);
+						instance = ref;
+						return instance.findFirstLocal3d();
 					}
 				}
 				else {
-					var obj = loadModel(modelPath);
-					obj.name = name;
-					ctx.local3d.addChild(obj);
+					model = shared.loadModel(modelPath);
+					model.name = name;
+					return model;
 				}
 			} catch( e : hxd.res.NotFound ) {
 				// TODO(ces) Restore ?
@@ -39,11 +44,12 @@ class Instance extends Object3D {
 		}
 		else {
 			var tile = unknown ? getDefaultTile().center() : findTile(kind.sheet, kind.idx.obj).center();
-			var objFollow = new h2d.ObjectFollower(ctx.local3d, ctx.local2d);
+			var objFollow = new h2d.ObjectFollower(parent3d, findFirstLocal2d());
 			objFollow.followVisibility = true;
 			var bmp = new h2d.Bitmap(tile, objFollow);
-			ctx.local2d = objFollow;
-		}*/
+			icon = objFollow;
+		}
+		return null;
 	}
 
 	override function makeInteractive():hxd.SceneEvents.Interactive {
