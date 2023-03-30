@@ -2973,6 +2973,8 @@ class SceneEditor {
 						trace("Break");
 					var p = Type.createInstance(prefabInfo.prefabClass, [parent]);
 					//p.proto = new hrt.prefab2.ProtoPrefab(p, sourcePath);
+					if(sourcePath != null)
+						p.source = sourcePath;
 					if( objectName != null)
 						p.name = objectName;
 					else
@@ -3012,10 +3014,12 @@ class SceneEditor {
 		hrt.shader.Bloom,
 		hrt.shader.UVDebug,
 		hrt.shader.GradientMap,
+		hrt.shader.HeightGradient,
 		hrt.shader.ParticleFade,
 		hrt.shader.ParticleColorLife,
 		hrt.shader.ParticleColorRandom,
 		hrt.shader.MaskColorAlpha,
+		hrt.shader.Spinner,
 	];
 
 	function getNewShaderMenu(parentElt: PrefabElement, ?onMake: PrefabElement->Void) : hide.comp.ContextMenu.ContextMenuItem {
