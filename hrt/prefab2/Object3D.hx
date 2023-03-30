@@ -151,6 +151,9 @@ class Object3D extends Prefab {
 
 #if editor
 	override function setSelected(b:Bool):Bool {
+		if (local3d == null)
+			return true;
+
 		var materials = local3d.getMaterials();
 
 		if( !b ) {
