@@ -49,7 +49,7 @@ class Instance extends Object3D {
 			var bmp = new h2d.Bitmap(tile, objFollow);
 			icon = objFollow;
 		}
-		return null;
+		return new h3d.scene.Object();
 	}
 
 	override function makeInteractive():hxd.SceneEvents.Interactive {

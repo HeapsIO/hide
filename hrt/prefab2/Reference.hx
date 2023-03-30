@@ -85,6 +85,35 @@ class Reference extends Object3D {
 		return res;
 	}
 
+	override function edit( ctx : hide.prefab2.EditContext ) {
+		var element = new hide.Element('
+			<div class="group" name="Reference">
+			<dl>
+				<dt>Reference</dt><dd><input type="fileselect" extensions="prefab l3d fx" field="source"/></dd>
+				<dt>Edit</dt><dd><input type="checkbox" field="editMode"/></dd>
+			</dl>
+			</div>');
+
+		function updateProps() {
+			var input = element.find("input");
+			var found = resolveRef() != null;
+			input.toggleClass("error", !found);
+		}
+		updateProps();
+
+		var props = ctx.properties.add(element, this, function(pname) {
+			ctx.onChange(this, pname);
+			if(pname == "source" || pname == "editMode") {
+				refInstance = null;
+				updateProps();
+				if(!ctx.properties.isTempChange)
+					ctx.rebuildPrefab(this);
+			}
+		});
+
+		super.edit(ctx);
+	}
+
 
 	public static var _ = hrt.prefab2.Prefab.register("reference", Reference);
 }

@@ -75,6 +75,7 @@ class Object3D extends Prefab {
 
 	override function updateInstance(?propName : String ) {
 		applyTransform();
+		local3d.visible = visible;
 	}
 
 	override function detach(newRoot: Prefab, removedClasses: Array<Class<Prefab>>) : Class<Prefab> {
