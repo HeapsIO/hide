@@ -472,5 +472,5 @@ class FX extends BaseFX {
 	#end
 
 	// TOCO(ces) : restore extension support
-	static var _ = Prefab.register("fx", FX/*, "fx"*/);
+	static var _ = Prefab.register("fx", FX, "fx");
 }

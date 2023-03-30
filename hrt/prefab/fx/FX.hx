@@ -495,5 +495,5 @@ class FX extends BaseFX {
 	}
 	#end
 
-	static var _ = Library.register("fx", FX, "fx");
+	static var _ = Library.register("fx", FX, "fx_old");
 }

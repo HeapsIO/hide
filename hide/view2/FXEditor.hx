@@ -612,7 +612,7 @@ class FXEditor extends hide.view.FileView {
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
 		toolsDefs.push({id: "localTransformsToggle", title : "Local transforms", icon : "compass", type : Toggle((v) -> sceneEditor.localTransform = v)});
-		
+
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
 		toolsDefs.push({id: "gridToggle", title : "Toggle grid", icon : "th", type : Toggle((v) -> { showGrid = v; updateGrid(); }) });
@@ -1725,7 +1725,7 @@ class FXEditor extends hide.view.FileView {
 		var obj2dElt = Std.downcast(elt, hrt.prefab2.Object2D);
 		var shaderElt = Std.downcast(elt, hrt.prefab2.Shader);
 		var emitterElt = Std.downcast(elt, hrt.prefab2.fx.Emitter);
-		
+
 		// TODO(ces) : Restore
 		//var particle2dElt = Std.downcast(elt, hrt.prefab2.l2d.Particle2D);
 		var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
@@ -2077,7 +2077,7 @@ class FXEditor extends hide.view.FileView {
 		var local3d = sceneEditor.root3d;
 		if(local3d == null)
 			return;
-			
+
 		var allFx = local3d.findAll(o -> Std.downcast(o, hrt.prefab2.fx.FX.FXAnimation));
 
 		if(!pauseButton.isDown()) {
@@ -2096,7 +2096,7 @@ class FXEditor extends hide.view.FileView {
 
 		for(fx in allFx)
 			fx.setTime(currentTime - fx.startDelay);
-	
+
 		var emitters = local3d.findAll(o -> Std.downcast(o, hrt.prefab2.fx.Emitter.EmitterObject));
 		var totalParts = 0;
 		for(e in emitters)
@@ -2208,7 +2208,7 @@ class FXEditor extends hide.view.FileView {
 	}
 
 	// TODO(ces) : restrore
-	static var _ = FileTree.registerExtension(FXEditor, ["fx2"], { icon : "sitemap", createNew : "FX2" });
+	static var _ = FileTree.registerExtension(FXEditor, ["fx"], { icon : "sitemap", createNew : "FX" });
 }
 
 
@@ -2221,5 +2221,3 @@ class FX2DEditor extends FXEditor {
 	// TODO(ces) : restore
 	//static var _2d = FileTree.registerExtension(FX2DEditor, ["fx2d"], { icon : "sitemap", createNew : "FX 2D" });
 }
-
-
