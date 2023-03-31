@@ -751,7 +751,6 @@ class Prefab {
 	static function copyValue(v:Dynamic) : Dynamic {
 		switch (Type.typeof(v)) {
 			case TClass(c):
-				trace(Type.getClassName(c));
 				switch(c) {
 					case cast Array:
 						var v:Array<Dynamic> = v;
