@@ -14,12 +14,14 @@ class SubFX extends Reference implements hrt.prefab2.fx.Event.IEvent{
 
 	override function makeObject3d(parent3d:h3d.scene.Object):h3d.scene.Object {
 		var obj = super.makeObject3d(parent3d);
-		var fxanim = obj.find(o -> Std.downcast(o, hrt.prefab.fx.FX.FXAnimation));
-		if(fxanim != null) {
-			fxanim.startDelay = time;
-			#if editor
-			instance = fxanim;
-			#end
+		if (obj != null) {
+			var fxanim = obj.find(o -> Std.downcast(o, hrt.prefab.fx.FX.FXAnimation));
+			if(fxanim != null) {
+				fxanim.startDelay = time;
+				#if editor
+				instance = fxanim;
+				#end
+			}
 		}
 		return obj;
 	}
