@@ -3020,6 +3020,7 @@ class SceneEditor {
 		hrt.shader.ParticleColorRandom,
 		hrt.shader.MaskColorAlpha,
 		hrt.shader.Spinner,
+		hrt.shader.FireShader,
 	];
 
 	function getNewShaderMenu(parentElt: PrefabElement, ?onMake: PrefabElement->Void) : hide.comp.ContextMenu.ContextMenuItem {
