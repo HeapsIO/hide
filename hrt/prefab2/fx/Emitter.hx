@@ -589,7 +589,7 @@ class EmitterObject extends h3d.scene.Object {
 
 				// Remove materials that are not directly parented to this emitter
 				var p = mat.parent;
-				if (Std.downcast(mat.parent, hrt.prefab2.l3d.Trails) != null)
+				while (p != null && Std.downcast(p, Emitter) == null)
 					p = p.parent;
 
 				if (this.emitterPrefab == p) {
@@ -606,14 +606,15 @@ class EmitterObject extends h3d.scene.Object {
 			for( shader in shaders ) {
 				// Remove shaders that are not directly parented to this emitter
 				var p = shader.parent;
-				if (Std.downcast(shader.parent, hrt.prefab2.l3d.Trails) != null) {
+				while (p != null && Std.downcast(p, Emitter) == null) {
 					p = p.parent;
 				}
 				if (this.emitterPrefab == p) {
 					if( !shader.enabled ) continue;
 					makeShaderInstance(shader);
 					//shCtx.local3d = null; // Prevent shader.iterMaterials from adding our objet to the list incorectly
-					hrt.prefab2.fx.BaseFX.getShaderAnims(shader, shaderAnims);
+					// TODO(ces) : It looks like particles anims are broken
+					hrt.prefab2.fx.BaseFX.getShaderAnims(shader, shaderAnims, batch);
 				//var shader = Std.downcast(shCtx.custom, hxsl.Shader);
 				}
 

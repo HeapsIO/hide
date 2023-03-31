@@ -27,7 +27,6 @@ class DynamicShader extends Shader {
 	override function makeShader() {
 		if( getShaderDefinition() == null )
 			return null;
-		var shader;
 		if( isInstance )
 			shader = Type.createInstance(shaderClass,[]);
 		else {
