@@ -44,6 +44,7 @@ class Reference extends Object3D {
 	function resolveRef() : Prefab {
 		if(refInstance == null && source != null) {
 			refInstance = Prefab.createFromPath(source, shared);
+			refInstance.shared.parent = this;
 			refInstance.setEditor((cast shared:hide.prefab2.ContextShared).editor);
 		}
 		return refInstance;

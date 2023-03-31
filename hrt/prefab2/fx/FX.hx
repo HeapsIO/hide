@@ -411,6 +411,18 @@ class FX extends BaseFX {
 		scriptCode = obj.scriptCode;
 	}
 
+	override function makeInstanceRec(params: hrt.prefab2.Prefab.InstanciateContext) : Void  {
+		var fromRef = shared.parent != null;
+		var useFXRoot = #if editor fromRef #else true #end;
+		var root = getFXRoot(this);
+		if(useFXRoot && root != null){
+			root.makeInstanceRec(params);
+			local3d = root.findFirstLocal3d();
+		}
+		else
+			super.makeInstanceRec(params);
+	}
+
 	override function makeObject3d(parent3d:h3d.scene.Object):h3d.scene.Object {
 		var fxanim = createInstance(parent3d);
 		fxanim.duration = duration;

@@ -11,6 +11,9 @@ class ContextShared {
 
 	public var prefabSource : String = "";
 
+	// Parent prefab if the object if it was created as a reference
+	public var parent : Prefab = null;
+
 	var bakedData : Map<String, haxe.io.Bytes>;
 
 	#if editor
