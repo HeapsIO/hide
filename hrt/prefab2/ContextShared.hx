@@ -9,7 +9,7 @@ class ContextShared {
 
 	public var isPrototype = true;
 
-	public var source : String = "";
+	public var prefabSource : String = "";
 
 	var bakedData : Map<String, haxe.io.Bytes>;
 

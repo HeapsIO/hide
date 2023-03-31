@@ -521,8 +521,8 @@ class Prefab {
 		Returns the default display name for this prefab
 	**/
 	public function getDefaultName() : String {
-		if(shared.source != null) {
-			var f = new haxe.io.Path(shared.source).file;
+		if(source != null) {
+			var f = new haxe.io.Path(source).file;
 			f = f.split(" ")[0].split("-")[0];
 			return f;
 		}
@@ -578,7 +578,7 @@ class Prefab {
 
 	static function getChildrenRoots( base : h3d.scene.Object, p : Prefab, out : Array<h3d.scene.Object> ) {
 		for( c in p.children ) {
-			var local3d=  Object3D.getLocal3d(c);
+			var local3d = Object3D.getLocal3d(c);
 			if( local3d == base )
 				getChildrenRoots(base, c, out);
 			else

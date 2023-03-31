@@ -78,7 +78,7 @@ class Shader extends Prefab {
 	}
 
 	function iterMaterials(callb) {
-		var parent = getRoot();
+		var parent = parent;
 
 		if( Std.isOfType(parent, Material) ) {
 			var material : Material = cast parent;
@@ -89,22 +89,20 @@ class Shader extends Prefab {
 			if( recursiveApply ) {
 				objs = [];
 				for( c in parent.flatten() ) {
-					var l3d = Object3D.getLocal3d(c);
-					if (l3d != null)
-						objs.push(l3d);
+					for( o in c.getObjects(h3d.scene.Object) )
+						objs.push(o);
 				}
 
 			} else if( parent.type == "object" ) {
 				// apply to all immediate children
 				objs = [];
 				for( c in parent.children ) {
-					var l3d = Object3D.getLocal3d(c);
-					if (l3d != null)
-						objs.push(l3d);
+					for( o in c.getObjects( h3d.scene.Object) )
+						objs.push(o);
 				}
 			} else
 			{
-				objs = shared.getObjects(parent, h3d.scene.Object);
+				objs = parent.getObjects(h3d.scene.Object);
 			}
 			for( obj in objs )
 				for( m in obj.getMaterials(false) )

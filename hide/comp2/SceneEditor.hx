@@ -398,7 +398,7 @@ class SceneEditor {
 		var models = sceneData.findAll(p -> Std.downcast(p, PrefabElement));
 		var toRebuild : Array<PrefabElement> = [];
 		for(m in models) {
-			if(m.shared.source == lib.resource.entry.path) {
+			if(m.shared.prefabSource == lib.resource.entry.path) {
 				if (toRebuild.indexOf(m) < 0) {
 					toRebuild.push(m);
 				}
@@ -2019,8 +2019,8 @@ class SceneEditor {
 		var changedModels = [];
 		for (child in all) {
 			var model = child.to(hrt.prefab2.Object3D);
-			if (model != null && model.shared.source == oldPath) {
-				model.shared.source = path;
+			if (model != null && model.source == oldPath) {
+				model.source = path;
 				model.name = "";
 				autoName(model);
 				changedModels.push(model);
@@ -2029,14 +2029,14 @@ class SceneEditor {
 		undo.change(Custom(function(u) {
 			if(u) {
 				for (model in changedModels) {
-					model.shared.source = oldPath;
+					model.source = oldPath;
 					model.name = "";
 					autoName(model);
 				}
 			}
 			else {
 				for (model in changedModels) {
-					model.shared.source = path;
+					model.source = path;
 					model.name = "";
 					autoName(model);
 				}
