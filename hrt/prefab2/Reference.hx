@@ -45,7 +45,9 @@ class Reference extends Object3D {
 		if(refInstance == null && source != null) {
 			refInstance = Prefab.createFromPath(source, shared);
 			refInstance.shared.parent = this;
+			#if editor
 			refInstance.setEditor((cast shared:hide.prefab2.ContextShared).editor);
+			#end
 		}
 		return refInstance;
 	}
@@ -86,6 +88,7 @@ class Reference extends Object3D {
 		return res;
 	}
 
+	#if editor
 	override function edit( ctx : hide.prefab2.EditContext ) {
 		var element = new hide.Element('
 			<div class="group" name="Reference">
@@ -114,6 +117,7 @@ class Reference extends Object3D {
 
 		super.edit(ctx);
 	}
+	#end
 
 
 	public static var _ = hrt.prefab2.Prefab.register("reference", Reference);
