@@ -73,6 +73,10 @@ class Shader extends Prefab {
 		material.mainPass.addShader(shader);
 	}
 
+	function removeShader( obj : h3d.scene.Object, material : h3d.mat.Material, shader : hxsl.Shader ) {
+		material.mainPass.removeShader(shader);
+	}
+
 	function checkMaterial(mat: h3d.mat.Material) {
 		return targetMaterial == null || targetMaterial == mat.name;
 	}
@@ -139,6 +143,11 @@ class Shader extends Prefab {
 		if (drawable != null) {
 			drawable.removeShader(shader);
 		}
+	}
+
+	override function detach(newRoot: Prefab, removedClasses: Array<Class<Prefab>>) : Class<Prefab> {
+		iterMaterials(function(obj,mat) if(checkMaterial(mat)) removeShader(obj, mat, shader));
+		return null;
 	}
 
 	#if editor

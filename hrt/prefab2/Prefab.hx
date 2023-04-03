@@ -160,7 +160,8 @@ class Prefab {
 
 
 		function detachRec(prefab:Prefab, newRoot: Prefab, removedClasses: Array<Class<Prefab>>) : Void {
-			var removed = detach(newRoot, removedClasses);
+			trace(this);
+			var removed = prefab.detach(newRoot, removedClasses);
 			if (removed != null)
 				removedClasses.push(removed);
 			for (c in prefab.children) {
