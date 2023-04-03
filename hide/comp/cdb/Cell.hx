@@ -949,10 +949,15 @@ class Cell {
 			}
 		case TColor:
 			var elem = new Element(elementHtml);
-			var cb = new ColorPicker(false, elem, elem.find(".color"));
+			var preview = elem.find(".color");
+			if (preview.length < 1) {
+				elem.html('<div class="color" style="background-color:#${StringTools.hex(0xFFFFFF,6)}"></div>');
+				preview = elem.find(".color");
+			}
+			var cb = new ColorPicker(false, elem, preview);
 			cb.value = currentValue;
 			cb.onChange = function(drag) {
-				elem.find(".color").css({backgroundColor : '#'+StringTools.hex(cb.value,6) });
+				preview.css({backgroundColor : '#'+StringTools.hex(cb.value,6) });
 			};
 			cb.onClose = function() {
 				setValue(cb.value);
