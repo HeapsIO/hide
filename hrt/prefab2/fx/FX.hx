@@ -114,6 +114,7 @@ class FXAnimation extends h3d.scene.Object {
 
 		var fullSync = ctx.visibleFlag || alwaysSyncAnimation || firstSync;
 		var finishedPlaying = false;
+		// TODO(ces) restore playspeed
 		if(playSpeed > 0 || firstSync) {
 			// This is done in syncRec() to make sure time and events are updated regarless of culling state,
 			// so we restore FX in correct state when unculled
@@ -416,8 +417,10 @@ class FX extends BaseFX {
 		var useFXRoot = #if editor fromRef #else true #end;
 		var root = getFXRoot(this);
 		if(useFXRoot && root != null){
-			root.makeInstanceRec(params);
-			local3d = root.findFirstLocal3d();
+			var childrenBackup = children;
+			children = [root];
+			super.makeInstanceRec(params);
+			children = childrenBackup;
 		}
 		else
 			super.makeInstanceRec(params);
@@ -437,6 +440,15 @@ class FX extends BaseFX {
 			}
 			p = p.parent;
 		}
+
+		var fromRef = shared.parent != null;
+		#if editor
+		// only play if we are as a reference
+		if( fromRef ) fxanim.playSpeed = 1.0;
+		#else
+		fxanim.playSpeed = 1.0;
+		#end
+
 		return fxanim;
 	}
 
