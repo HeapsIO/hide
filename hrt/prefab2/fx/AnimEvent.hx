@@ -1,6 +1,6 @@
 package hrt.prefab2.fx;
 
-/*class AnimEvent extends hrt.prefab2.fx.Event {
+class AnimEvent extends hrt.prefab2.fx.Event {
 
 	@:s public var animation: String;
 	@:s public var speed : Float = 1.0;
@@ -12,8 +12,8 @@ package hrt.prefab2.fx;
 	}
 
 	override function prepare() : Event.EventInstance {
-		var obj = getThisOrParentLocal3d();
-		var anim = animation != null ? Object3D.loadAnimation(animation) : null;
+		var obj = findFirstLocal3d();
+		var anim = animation != null ? shared.loadAnimation(animation) : null;
 		var lastTime = -1.0;
 		var inst = null;
 		if(anim == null) { return null; }
@@ -83,11 +83,11 @@ package hrt.prefab2.fx;
 		};
 	}
 
-	override function getDisplayInfo(ctx: EditContext) {
+	override function getDisplayInfo(ctx: hide.prefab2.EditContext) {
 		var anim = null;
 		if(animation != null) {
 			try {
-				anim = ctx.rootContext.loadAnimation(animation);
+				anim = shared.loadAnimation(animation);
 			} catch(e : hxd.res.NotFound) { }
 		}
 		return {
@@ -99,4 +99,4 @@ package hrt.prefab2.fx;
 
 	static var _ = Prefab.register("animEvent", AnimEvent);
 
-}*/
+}

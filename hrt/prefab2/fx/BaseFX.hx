@@ -76,7 +76,7 @@ class ShaderDynAnimation extends ShaderAnimation {
 typedef ObjectAnimation = {
 	?elt: hrt.prefab2.Object3D,
 	?obj: h3d.scene.Object,
-	?elt2d: hrt.prefab.Object2D,
+	?elt2d: hrt.prefab2.Object2D,
 	?obj2d: h2d.Object,
 	events: Array<hrt.prefab2.fx.Event.EventInstance>,
 	?position: Value,
@@ -87,32 +87,21 @@ typedef ObjectAnimation = {
 	?additionalProperies : AdditionalProperies
 };
 
-class BaseFX extends Object3D {
-	public static var useAutoPerInstance = #if editor true #else false #end;
+interface BaseFX {
 
 	@:s public var duration : Float;
 	@:s public var startDelay : Float;
 	@:c public var scriptCode : String;
 	@:c public var cullingRadius : Float;
-	@:c public var markers : Array<{t: Float}> = [];
+	@:c public var markers : Array<{t: Float}>;
 
-	public function new() {
-		super();
-		duration = 5.0;
-		scriptCode = null;
-		cullingRadius = 1000;
-	}
+	#if editor
+	public function refreshObjectAnims() : Void;
+	#end
+}
 
-	/*override function save(data: Dynamic) : Dynamic {
-		super.save(data);
-		if( markers != null && markers.length > 0 )
-			data.markers = markers;
-	}*/
-
-	override function load( obj : Dynamic ) {
-		super.load(obj);
-		markers = obj.markers == null ? [] : obj.markers;
-	}
+class BaseFXTools {
+	public static var useAutoPerInstance = #if editor true #else false #end;
 
 	public static function makeShaderParams(shaderElt: hrt.prefab2.Shader) {
 		var shaderDef = shaderElt.getShaderDefinition();
@@ -167,7 +156,6 @@ class BaseFX extends Object3D {
 		return ret;
 	}
 
-	static var emptyParams : Array<String> = [];
 	public static function getShaderAnims(elt: PrefabElement, anims: Array<ShaderAnimation>, ?batch: h3d.scene.MeshBatch) {
 		// Init all animations recursively except Emitter ones (called in Emitter)
 		if(Std.downcast(elt, hrt.prefab2.fx.Emitter) == null) {
@@ -209,7 +197,7 @@ class BaseFX extends Object3D {
 
 	}
 
-	public function getFXRoot(elt : PrefabElement ) : PrefabElement {
+	public static function getFXRoot(elt : PrefabElement ) : PrefabElement {
 		if( elt.name == "FXRoot" )
 			return elt;
 		else {
@@ -220,8 +208,4 @@ class BaseFX extends Object3D {
 		}
 		return null;
 	}
-
-	#if editor
-	public function refreshObjectAnims() { }
-	#end
 }

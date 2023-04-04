@@ -49,10 +49,10 @@ class FXAnimation extends h3d.scene.Object {
 			root = def;
 		initObjAnimations(root);
 		initEmitters(root);
-		BaseFX.getShaderAnims(root, shaderAnims);
+		hrt.prefab2.fx.BaseFX.BaseFXTools.getShaderAnims(root, shaderAnims);
 		if(shaderAnims.length == 0) shaderAnims = null;
 		events = initEvents(root);
-		var root = def.getFXRoot(def);
+		var root = hrt.prefab2.fx.BaseFX.BaseFXTools.getFXRoot(def);
 		initConstraints(root != null ? root : def);
 
 		trails = findAll((p) -> Std.downcast(p, hrt.prefab2.l3d.Trails.TrailObj));
@@ -392,7 +392,13 @@ class FXAnimation extends h3d.scene.Object {
 	}
 }
 
-class FX extends BaseFX {
+class FX extends Object3D implements BaseFX {
+
+	@:s public var duration : Float;
+	@:s public var startDelay : Float;
+	@:c public var scriptCode : String;
+	@:c public var cullingRadius : Float;
+	@:c public var markers : Array<{t: Float}> = [];
 
 	public function new() {
 		super();
@@ -415,7 +421,7 @@ class FX extends BaseFX {
 	override function makeInstanceRec(params: hrt.prefab2.Prefab.InstanciateContext) : Void  {
 		var fromRef = shared.parent != null;
 		var useFXRoot = #if editor fromRef #else true #end;
-		var root = getFXRoot(this);
+		var root = hrt.prefab2.fx.BaseFX.BaseFXTools.getFXRoot(this);
 		if(useFXRoot && root != null){
 			var childrenBackup = children;
 			children = [root];
@@ -453,7 +459,7 @@ class FX extends BaseFX {
 	}
 
 	override function postChildrenMakeInstance(ctx:hrt.prefab2.Prefab.InstanciateContext) {
-		var root = getFXRoot(this);
+		var root = hrt.prefab2.fx.BaseFX.BaseFXTools.getFXRoot(this);
 		var fxAnim : FXAnimation = cast local3d;
 		fxAnim.init(this, root);
 	}
@@ -471,7 +477,7 @@ class FX extends BaseFX {
 
 	#if editor
 
-	override function refreshObjectAnims() {
+	public function refreshObjectAnims() : Void {
 		var fxanim = Std.downcast(local3d, FXAnimation);
 		fxanim.objAnims = null;
 		fxanim.initObjAnimations(this);

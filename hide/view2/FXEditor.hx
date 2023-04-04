@@ -294,7 +294,7 @@ class FXEditor extends hide.view.FileView {
 	override function save() {
 		if( !canSave() )
 			return;
-		var content = ide.toJSON(data.serializeToDynamic());
+		var content = ide.toJSON(cast(data, hrt.prefab2.Prefab).serializeToDynamic());
 		var newSign = ide.makeSignature(content);
 		if(newSign != currentSign)
 			haxe.Timer.delay(saveBackup.bind(content), 0);
@@ -321,7 +321,8 @@ class FXEditor extends hide.view.FileView {
 			//data = new hrt.prefab2.fx.FX2D();
 			throw "FX2D not handled yet";
 		}*/
-		data = Std.downcast(PrefabElement.createFromDynamic(json), hrt.prefab2.fx.BaseFX);
+
+		data = cast(PrefabElement.createFromDynamic(json), hrt.prefab2.fx.BaseFX);
 		currentSign = ide.makeSignature(content);
 
 		element.html('
@@ -370,7 +371,7 @@ class FXEditor extends hide.view.FileView {
 			</div>');
 		tools = new hide.comp.Toolbar(null,element.find(".tools-buttons"));
 		tabs = new hide.comp.Tabs(null,element.find(".tabs"));
-		sceneEditor = new FXSceneEditor(this, data);
+		sceneEditor = new FXSceneEditor(this, cast(data, hrt.prefab2.Prefab));
 		element.find(".hide-scenetree").first().append(sceneEditor.tree.element);
 		element.find(".hide-scroll").first().append(sceneEditor.properties.element);
 		element.find(".heaps-scene").first().append(sceneEditor.scene.element);
@@ -399,7 +400,7 @@ class FXEditor extends hide.view.FileView {
 			edit.properties = fxprops;
 			edit.scene = sceneEditor.scene;
 			edit.cleanups = [];
-			data.edit(edit);
+			cast(data, hrt.prefab2.Prefab).edit(edit);
 		}
 
 		if (is2D) {
@@ -954,7 +955,7 @@ class FXEditor extends hide.view.FileView {
 	// }
 
 	function onPrefabChange(p: PrefabElement, ?pname: String) {
-		if(p == data) {
+		if(p == cast(data, hrt.prefab2.Prefab)) {
 			previewMax = hxd.Math.min(data.duration == 0 ? 5000 : data.duration, previewMax);
 			refreshTimeline(false);
 
@@ -968,7 +969,7 @@ class FXEditor extends hide.view.FileView {
 	}
 
 	function onRefreshScene() {
-		var renderProps = data.find(e -> e.to(hrt.prefab2.RenderProps));
+		var renderProps = cast(data, hrt.prefab2.Prefab).find(e -> e.to(hrt.prefab2.RenderProps));
 		if(renderProps != null)
 			renderProps.applyProps(scene.s3d.renderer);
 		updateGrid();

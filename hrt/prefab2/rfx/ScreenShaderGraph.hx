@@ -98,6 +98,8 @@ class ScreenShaderGraph extends RendererFX {
 	}
 
 	function syncShaderVars() {
+		if (shaderDef == null)
+			loadShaderDef();
 		for(v in shaderDef.shader.data.vars) {
 			if(v.kind != Param)
 				continue;

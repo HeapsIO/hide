@@ -117,10 +117,15 @@ class Light extends Object3D {
 
 	override function applyTransform() {
 		//super.applyTransform(o); // Disable scaling
-		local3d.x = x;
-		local3d.y = y;
-		local3d.z = z;
-		local3d.setRotation(hxd.Math.degToRad(rotationX), hxd.Math.degToRad(rotationY), hxd.Math.degToRad(rotationZ));
+		applyTransformToObject(local3d);
+	}
+
+	public function applyTransformToObject( o : h3d.scene.Object ) {
+		o.x = x;
+		o.y = y;
+		o.z = z;
+		o.setRotation(hxd.Math.degToRad(rotationX), hxd.Math.degToRad(rotationY), hxd.Math.degToRad(rotationZ));
+
 	}
 
 	function initTexture( path : String, ?wrap : h3d.mat.Data.Wrap ) {

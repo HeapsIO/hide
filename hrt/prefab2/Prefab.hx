@@ -530,6 +530,20 @@ class Prefab {
 		return type.split(".").pop();
 	}
 
+	/**
+		Search the prefab tree for the prefab matching the given name, returns null if not found
+	**/
+	public function getPrefabByName( name : String ) {
+		if( this.name == name )
+			return this;
+		for( c in children ) {
+			var p = c.getPrefabByName(name);
+			if( p != null )
+				return p;
+		}
+		return null;
+	}
+
 	public function locateObject( path : String ) {
 		if( path == null )
 			return null;
@@ -865,20 +879,6 @@ class Prefab {
 	**/
 	public function setSelected(b : Bool ) : Bool {
 		return true;
-	}
-
-	/**
-		Search the prefab tree for the prefab matching the given name, returns null if not found
-	**/
-	public function getPrefabByName( name : String ) {
-		if( this.name == name )
-			return this;
-		for( c in children ) {
-			var p = c.getPrefabByName(name);
-			if( p != null )
-				return p;
-		}
-		return null;
 	}
 
 	/**

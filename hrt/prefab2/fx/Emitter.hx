@@ -614,7 +614,7 @@ class EmitterObject extends h3d.scene.Object {
 					makeShaderInstance(shader);
 					//shCtx.local3d = null; // Prevent shader.iterMaterials from adding our objet to the list incorectly
 					// TODO(ces) : It looks like particles anims are broken
-					hrt.prefab2.fx.BaseFX.getShaderAnims(shader, shaderAnims, batch);
+					hrt.prefab2.fx.BaseFX.BaseFXTools.getShaderAnims(shader, shaderAnims, batch);
 				//var shader = Std.downcast(shCtx.custom, hxsl.Shader);
 				}
 
