@@ -81,7 +81,7 @@ class Material extends Prefab {
 		var props = renderProps();
 		#if editor
 		if ( mats == null || mats.length == 0 ) {
-			var sphere = new h3d.prim.Sphere(1., 16, 12);
+			var sphere = new h3d.prim.Sphere(1., 32, 24);
 			sphere.addUVs();
 			sphere.addNormals();
 			sphere.addTangents();
