@@ -529,6 +529,7 @@ class EmitterObject extends h3d.scene.Object {
 	}
 
 	function init(randSlots: Int, prefab: Emitter) {
+		trace('init ${prefab.shared.currentPath}');
 		this.emitterPrefab = prefab;
 		this.randSlots = randSlots;
 
@@ -558,7 +559,7 @@ class EmitterObject extends h3d.scene.Object {
 			if (mesh != null) {
 				meshPrimitive = Std.downcast(mesh.primitive, h3d.prim.MeshPrimitive);
 				meshMaterial = mesh.material;
-				mesh.remove();
+				//mesh.remove();
 			}
 
 			spawn.remove();
@@ -645,6 +646,8 @@ class EmitterObject extends h3d.scene.Object {
 		randomValues = [for(i in 0...(maxCount * randSlots)) 0];
 		evaluator = new Evaluator(randomValues, randSlots);
 		reset();
+
+		trace('end of init ${prefab.shared.currentPath}');
 	}
 
 	override function onRemove() {
@@ -1401,6 +1404,23 @@ class Emitter extends Object3D {
 						val = Type.createEnum(en, val);
 					default:
 				}
+				Reflect.setField(props, param.name, val);
+			}
+			else if(param.def != null)
+				resetParam(param);
+		}
+	}
+
+	override function copy(obj:Prefab) {
+		super.copy(obj);
+		for(param in emitterParams) {
+			if(Reflect.hasField(obj.props, param.name)) {
+				var val : Dynamic = Reflect.field(obj.props, param.name);
+				/*switch(param.t) {
+					case PEnum(en):
+						val = Type.createEnum(en, val);
+					default:
+				}*/
 				Reflect.setField(props, param.name, val);
 			}
 			else if(param.def != null)

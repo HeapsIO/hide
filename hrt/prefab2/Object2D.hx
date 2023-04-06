@@ -2,8 +2,8 @@ package hrt.prefab2;
 import hxd.Math;
 
 class Object2D extends Prefab {
-	@:s @:range(0,400) public var x(default, set) : Float = 0.;
-	@:s @:range(0,400) public var y(default, set) : Float = 0.;
+	@:s @:range(0,400) public var x : Float = 0.;
+	@:s @:range(0,400) public var y : Float = 0.;
 	@:s public var scaleX : Float = 1.;
 	@:s public var scaleY : Float = 1.;
 	@:s public var rotation : Float = 0.;
@@ -20,7 +20,7 @@ class Object2D extends Prefab {
 		return null;
 	}
 
-	function set_x(v : Float) {
+	/*function set_x(v : Float) {
 		x = v;
 		local2d.x = x;
 		return x;
@@ -30,7 +30,7 @@ class Object2D extends Prefab {
 		y = v;
 		local2d.y = y;
 		return y;
-	}
+	}*/
 
 	function makeObject2d(parent2d: h2d.Object) : h2d.Object {
 		return new h2d.Object(parent2d);

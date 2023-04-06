@@ -277,6 +277,12 @@ class Spline extends Object3D {
 		shape = obj.shape == null ? Linear : CurveShape.createByIndex(obj.shape);
 	}
 
+	override function copy(obj : Prefab) {
+		super.copy(obj);
+		var p : Spline = cast obj;
+		this.shape = p.shape;
+	}
+
 	// Generate the splineData from a matrix, can't move the spline after that
 	public function makeFromMatrix( m : h3d.Matrix ) {
 		var tmp = new h3d.Matrix();

@@ -40,8 +40,8 @@ typedef CurveKeys = Array<CurveKey>;
 class Curve extends Prefab {
 
 	@:s public var keyMode : CurveKeyMode = Linear;
-	@:c public var keys : CurveKeys = [];
-	@:c public var previewKeys : CurveKeys = [];
+	@:s public var keys : CurveKeys = [];
+	@:s public var previewKeys : CurveKeys = [];
 
 	@:s public var loop : Bool = false;
 
@@ -78,8 +78,35 @@ class Curve extends Prefab {
 		}
 	}
 
-	/*public override function save(to : Dynamic) {
-		super.save(to);
+	// public override function copy(o:Prefab) {
+	// 	super.copy(o);
+	// 	var p = Std.downcast(o, Curve);
+
+	// 	keys = p.keys;
+	// 	keys = [];
+	// 	if(o.keys != null) {
+	// 		for(k in (o.keys: Array<Dynamic>)) {
+	// 			var nk = new CurveKey();
+	// 			nk.time = k.time;
+	// 			nk.value = k.value;
+	// 			nk.mode = k.mode;
+	// 			if(k.prevHandle != null)
+	// 				nk.prevHandle = new CurveHandle(k.prevHandle.dt, k.prevHandle.dv);
+	// 			if(k.nextHandle != null)
+	// 				nk.nextHandle = new CurveHandle(k.nextHandle.dt, k.nextHandle.dv);
+	// 			keys.push(nk);
+	// 		}
+	// 	}
+	// 	if( keys.length == 0 ) {
+	// 		addKey(0.0, 0.0);
+	// 		addKey(1.0, 1.0);
+	// 	}
+	// }
+
+
+
+	public override function save(to : Dynamic) {
+		var to = super.save(to);
 		var obj = to;
 		var keysDat = [];
 		for(k in keys) {
@@ -93,7 +120,8 @@ class Curve extends Prefab {
 			keysDat.push(o);
 		}
 		obj.keys = keysDat;
-	}*/
+		return to;
+	}
 
 	static inline function bezier(c0: Float, c1:Float, c2:Float, c3: Float, t:Float) {
 		var u = 1 - t;

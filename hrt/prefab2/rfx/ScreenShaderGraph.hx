@@ -66,11 +66,6 @@ class ScreenShaderGraph extends RendererFX {
 		}
 	}
 
-	override function load( obj : Dynamic ) {
-		super.load(obj);
-		//loadSerializedFields(obj);
-	}
-
 	public function loadShaderDef() {
 		shaderDef = shaderGraph.compile();
 		if(shaderDef == null)

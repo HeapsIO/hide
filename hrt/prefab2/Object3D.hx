@@ -61,6 +61,12 @@ class Object3D extends Prefab {
 		rotationZ = Math.radToDeg(rot.z);
 	}
 
+	override function cleanupImpl() {
+		if (local3d != null) {
+			local3d.remove();
+		}
+	}
+
 	/* Override makeObject3d instead of this */
 	override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) : Void {
 		if (visible) {

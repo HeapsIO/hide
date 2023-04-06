@@ -33,9 +33,9 @@ class Decal extends Object3D {
 		return obj;
 	}
 
-	override function load( obj : Dynamic ) {
-		super.load(obj);
-		blendMode = obj.blendMode != null ? h2d.BlendMode.createByIndex(obj.blendMode) : Alpha;
+	override function copy( obj : Dynamic ) {
+		super.copy(obj);
+		blendMode = obj.blendMode;
 	}
 
 	override function makeObject3d(parent3d:h3d.scene.Object):h3d.scene.Object {

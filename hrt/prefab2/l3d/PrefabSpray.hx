@@ -4,7 +4,7 @@ import hrt.prefab2.l3d.Spray;
 
 class PrefabSpray extends Spray {
 
-	static var _ = Library.register("prefabSpray", PrefabSpray);
+	static var _ = Prefab.register("prefabSpray", PrefabSpray);
 
 }
 

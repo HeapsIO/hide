@@ -711,16 +711,14 @@ class ModelLibrary extends Prefab {
 
 	#else
 
-	var shared : hrt.prefab2.ContextShared;
 	var hmdPrim : h3d.prim.HMDModel;
 	var shader : ModelLibShader;
 	var geomBounds : Array<h3d.col.Bounds>;
 	public var debug = false;
 	public var clear = false;
 
-	override function make(ctx:hrt.prefab2.Context) {
+	override function makeInstanceRec(params: hrt.prefab2.Prefab.InstanciateContext) : Void {
 		// don't load/build children
-		shared = ctx.shared;
 		if ( hmdPrim == null )
 			hmdPrim = Std.downcast(shared.loadModel(shared.getPrefabDatPath("model","hmd",this.name)).toMesh().primitive, h3d.prim.HMDModel);
 		if ( geomBounds == null )
@@ -751,7 +749,6 @@ class ModelLibrary extends Prefab {
 			shader.hasNormal = tnormal != null;
 			shader.hasPbr = tspec != null;
 		}
-		return ctx;
 	}
 
 	public function dispose() {

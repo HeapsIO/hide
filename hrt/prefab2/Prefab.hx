@@ -160,7 +160,7 @@ class Prefab {
 
 
 		function detachRec(prefab:Prefab, newRoot: Prefab, removedClasses: Array<Class<Prefab>>) : Void {
-			trace(this);
+			trace('remove ${prefab.name}');
 			var removed = prefab.detach(newRoot, removedClasses);
 			if (removed != null)
 				removedClasses.push(removed);
@@ -205,6 +205,17 @@ class Prefab {
 		}
 
 		return prefabInstance;
+	}
+
+	public function cleanup() {
+		for (c in children) {
+			c.cleanup();
+		}
+		cleanupImpl();
+	}
+
+	function cleanupImpl() {
+
 	}
 
 	public static function createFromPath(path: String, parent: Prefab = null, ?contextShared: ContextShared) : Prefab {
@@ -433,11 +444,11 @@ class Prefab {
 	/**
 		Copy all the fields from this prefab to the target prefab, recursively
 	**/
-	public static function copy(source:Prefab, dest:Prefab, useProperty:Bool, copyNull:Bool)
+	public static function copyRecursive(source:Prefab, dest:Prefab, useProperty:Bool, copyNull:Bool)
 	{
 		copyShallow(source, dest, useProperty, copyNull, false, source.getSerializableProps());
 		for (idx in 0...source.children.length) {
-			copy(source.children[idx], dest.children[idx], useProperty, copyNull);
+			copyRecursive(source.children[idx], dest.children[idx], useProperty, copyNull);
 		}
 	}
 
@@ -738,7 +749,8 @@ class Prefab {
 		#if editor
 		inst.shared.scene = shared.scene;
 		#end
-		copyShallow(this, inst, false, true, true, getSerializableProps());
+		//copyShallow(this, inst, false, true, true, getSerializableProps());
+		inst.copy(this);
 		for (child in children) {
 			child.copyDefault(inst, shared);
 		}
@@ -758,6 +770,14 @@ class Prefab {
 			shouldCopy = shouldCopy && (copyDefault || useProperty || v != prop.defaultValue);
 			//shouldCopy &= (copyDefault || )
 			if (shouldCopy) {
+				// Fixup enums for non JS targets
+				switch (Type.typeof(Reflect.getProperty(dest, prop.name))) {
+					case TEnum(e):
+						if (Type.getClass(v) == String) {
+							v = e.createByName(v);
+						}
+					default:
+				}
 				set(dest, prop.name, copyValue(v));
 			}
 		}
@@ -782,8 +802,13 @@ class Prefab {
 		}
 	}
 
-	/** Copy all the properties in data to this prefab object. This is not recursive**/
+	/** Copy all the properties in data to this prefab object. This is not recursive. Done when loading the json data of the prefab**/
 	public function load(data : Dynamic) : Void {
+		copyShallow(data, this, false, false, false, getSerializableProps());
+	}
+
+	/** Copy all the properties in Prefab to this prefab object. Done when cloning an existing prefab**/
+	public function copy(data: Prefab) : Void {
 		copyShallow(data, this, false, false, false, getSerializableProps());
 	}
 

@@ -35,7 +35,7 @@ class Polygon extends Object3D {
 		super(parent);
 	}
 
-	/*override function save(data: Dynamic) {
+	override function save(data: Dynamic) {
 		super.save(data);
 		data.kind = shape.getIndex();
 		switch(shape){
@@ -44,7 +44,8 @@ class Polygon extends Object3D {
 		case Custom:
 			data.points = [for( p in points ) { x : p.x, y : p.y }];
 		}
-	}*/
+		return data;
+	}
 
 	override function load( obj : Dynamic ) {
 		super.load(obj);
@@ -55,6 +56,13 @@ class Polygon extends Object3D {
 				var list : Array<Dynamic> = obj.points;
 				points = [for(pt in list) new h2d.col.Point(pt.x, pt.y)];
 		}
+	}
+
+	override function copy(obj:Prefab) {
+		super.copy(obj);
+		var p : Polygon = cast obj;
+		this.shape = p.shape;
+		this.points = p.points;
 	}
 
 	override function updateInstance(?propName : String) {

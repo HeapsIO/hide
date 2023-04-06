@@ -2,7 +2,7 @@ package hrt.prefab2;
 
 class Resource extends hxd.res.Resource {
 
-	var prefab : Object3D;
+	var prefab : Prefab;
 	var cacheVersion : Int;
 
 	override function watch( onChanged: Null<Void -> Void> ) {
@@ -28,8 +28,8 @@ class Resource extends hxd.res.Resource {
 	}
 
 	public function load(?shared: ContextShared) : Object3D {
-		if( prefab != null && cacheVersion == CACHE_VERSION )
-			return prefab;
+		if( Std.downcast(prefab, Object3D) != null && cacheVersion == CACHE_VERSION )
+			return cast prefab;
 		var data = loadData();
 		prefab = Std.downcast(Prefab.createFromDynamic(data), Object3D);
 		prefab.shared.prefabSource = entry.path;
@@ -37,7 +37,20 @@ class Resource extends hxd.res.Resource {
 		cacheVersion = CACHE_VERSION;
 		onPrefabLoaded(prefab);
 		watch(function() {}); // auto lib reload
-		return prefab;
+		return cast prefab;
+	}
+
+	public function load2d(?shared: ContextShared) : Object2D {
+		if( Std.downcast(prefab, Object2D) != null && cacheVersion == CACHE_VERSION )
+			return cast prefab;
+		var data = loadData();
+		prefab = Std.downcast(Prefab.createFromDynamic(data), Object2D);
+		prefab.shared.prefabSource = entry.path;
+		prefab.shared.currentPath = entry.path;
+		cacheVersion = CACHE_VERSION;
+		onPrefabLoaded(prefab);
+		watch(function() {}); // auto lib reload
+		return cast prefab;
 	}
 
 	public static function make( p : Object3D ) {
@@ -48,7 +61,7 @@ class Resource extends hxd.res.Resource {
 	}
 
 	public static var CACHE_VERSION = 0;
-	public static dynamic function onPrefabLoaded(p:Object3D) {
+	public static dynamic function onPrefabLoaded(p:Prefab) {
 	}
 
 }

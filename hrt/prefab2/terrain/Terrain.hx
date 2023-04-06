@@ -53,8 +53,8 @@ class Terrain extends Object3D {
 		super(parent);
 	}
 
-	override function load( obj : Dynamic ) {
-		super.load(obj);
+	override function copy( obj : Dynamic ) {
+		super.copy(obj);
 		if( obj.surfaces != null ) tmpSurfacesProps = obj.surfaces;
 		surfaceCount = obj.surfaceCount == null ? 0 : obj.surfaceCount;
 		surfaceSize = obj.surfaceSize == null ? 0 : obj.surfaceSize;

@@ -45,8 +45,10 @@ class FXAnimation extends h3d.scene.Object {
 	}
 
 	function init(def: FX, ?root: PrefabElement) {
+		trace("Init FX");
 		if(root == null)
 			root = def;
+
 		initObjAnimations(root);
 		initEmitters(root);
 		hrt.prefab2.fx.BaseFX.BaseFXTools.getShaderAnims(root, shaderAnims);
@@ -56,6 +58,7 @@ class FXAnimation extends h3d.scene.Object {
 		initConstraints(root != null ? root : def);
 
 		trails = findAll((p) -> Std.downcast(p, hrt.prefab2.l3d.Trails.TrailObj));
+		trace("Init FX End");
 	}
 
 	public function reset() {
@@ -397,8 +400,8 @@ class FX extends Object3D implements BaseFX {
 	@:s public var duration : Float;
 	@:s public var startDelay : Float;
 	@:c public var scriptCode : String;
-	@:c public var cullingRadius : Float;
-	@:c public var markers : Array<{t: Float}> = [];
+	@:s public var cullingRadius : Float;
+	@:s public var markers : Array<{t: Float}> = [];
 
 	public function new() {
 		super();
@@ -411,8 +414,8 @@ class FX extends Object3D implements BaseFX {
 		if( scriptCode != "" ) data.scriptCode = scriptCode;
 	}*/
 
-	override function load( obj : Dynamic ) {
-		super.load(obj);
+	override function copy( obj : Dynamic ) {
+		super.copy(obj);
 		if(obj.cullingRadius != null)
 			cullingRadius = obj.cullingRadius;
 		scriptCode = obj.scriptCode;

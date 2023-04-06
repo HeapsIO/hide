@@ -31,8 +31,8 @@ class MeshSpray extends Spray {
 		}
 	}
 
-	override function createObject( ctx : Context ) {
-		var mspray = new MeshSprayObject(ctx.local3d);
+	override function makeObject3d(parent3d:h3d.scene.Object):h3d.scene.Object {
+		var mspray = new MeshSprayObject(parent3d);
 		// preallocate batches so their materials can be resolved
 		var curID = 0, curMap = mspray.batchesMap.get(0);
 		if( curMap == null ) {
@@ -62,7 +62,7 @@ class MeshSpray extends Spray {
 		inline function loadBatch( source : String ) {
 			var batch = curMap.get(source);
 			if( batch != null ) return;
-			var obj = ctx.loadModel(source);
+			var obj = shared.loadModel(source);
 			if ( obj.isMesh() ) {
 				loadBatchMesh( source, obj.toMesh() );
 			} else {
@@ -91,9 +91,9 @@ class MeshSpray extends Spray {
 		return mspray;
 	}
 
-	function loadBinary( ctx : Context ) {
+	function loadBinary() {
 		binaryMeshes = [];
-		var bytes = new haxe.io.BytesInput(ctx.shared.loadPrefabDat("content","dat",name).entry.getBytes());
+		var bytes = new haxe.io.BytesInput(shared.loadPrefabDat("content","dat",name).entry.getBytes());
 		try {
 			while( true ) {
 				binaryMeshes.push({
@@ -112,13 +112,13 @@ class MeshSpray extends Spray {
 		}
 	}
 
-	override function make( ctx : Context ) {
+	override function makeInstanceRec(params:hrt.prefab2.Prefab.InstanciateContext) {
 		if( !enabled )
-			return ctx;
+			return;
 		if( binaryStorage )
-			loadBinary(ctx);
-		ctx = super.make(ctx);
-		var mspray = Std.downcast(ctx.local3d, MeshSprayObject);
+			loadBinary();
+		super.makeInstanceRec(params);
+		var mspray = Std.downcast(local3d, MeshSprayObject);
 		var pos = mspray.getAbsPos();
 		var tmp = new h3d.Matrix();
 		for( b in mspray.batches ) {
@@ -172,16 +172,16 @@ class MeshSpray extends Spray {
 			b.worldPosition = null;
 		if ( clearBinaryMeshes )
 			binaryMeshes = null;
-		return ctx;
+
 	}
 
-	override function makeChild( ctx : Context, p : hrt.prefab2.Prefab ) {
+	/*override function makeChild(p : hrt.prefab2.Prefab ) {
 		if( p.type == "model" )
 			return;
-		super.makeChild(ctx, p);
-	}
+		super.makeChild(p);
+	}*/
 
-	static var _ = Library.register("meshSpray", MeshSpray);
+	static var _ = Prefab.register("meshSpray", MeshSpray);
 
 }
 
@@ -301,8 +301,8 @@ class MeshSpray extends Spray {
 		return super.save(obj);
 	}
 
-	override function load(obj : Dynamic) {
-		super.load(obj);
+	override function copy(obj : Dynamic) {
+		super.copy(obj);
 		//backward compatibility
 		if(Reflect.hasField(obj, "meshes")) {
 			var oldSources : Array<Spray.Source> = Reflect.field(obj, "meshes");

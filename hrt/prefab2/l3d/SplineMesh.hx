@@ -127,8 +127,8 @@ class SplineMesh extends Spline {
 		return obj;
 	}
 
-	override function load( obj : Dynamic ) {
-		super.load(obj);
+	override function copy( obj : Dynamic ) {
+		super.copy(obj);
 		meshScale = obj.meshScale == null ? new h3d.Vector(1,1,1) : new h3d.Vector(obj.meshScale.x, obj.meshScale.y, obj.meshScale.z);
 		meshRotation = obj.meshRotation == null ? new h3d.Vector(0,0,0) : new h3d.Vector(obj.meshRotation.x, obj.meshRotation.y, obj.meshRotation.z);
 	}

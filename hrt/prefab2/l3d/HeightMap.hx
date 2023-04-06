@@ -618,6 +618,12 @@ class HeightMap extends Object3D {
 		textures = [for( o in (obj.textures:Array<Dynamic>) ) { path : o.path, kind : o.kind, enable : o.enable == null ? true : o.enable, props : o.props }];
 	}
 
+	override function copy(o:Prefab) {
+		super.copy(o);
+		var p : HeightMap = cast o;
+		this.textures = p.textures;
+	}
+
 	function getAlbedoProps() {
 		if( albedoProps != null )
 			return albedoProps;

@@ -20,9 +20,15 @@ class Material extends Prefab {
 		props = {};
 	}
 
-	override function load(obj:Dynamic) {
+	override function load(obj:Dynamic) : Void {
 		super.load(obj);
 		color = obj.color != null ? obj.color : [1,1,1,1];
+	}
+
+	override function copy(o:Prefab) : Void {
+		super.copy(o);
+		var p = Std.downcast(o, Material);
+		this.color = p.color;
 	}
 
 	override function save(obj:Dynamic) : Dynamic {

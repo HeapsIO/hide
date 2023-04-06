@@ -109,8 +109,8 @@ class Light extends Object3D {
 		super.load(obj);
 		if( obj.shadows != null ) {
 			var sh : Dynamic = Reflect.copy(obj.shadows);
-			sh.mode = h3d.pass.Shadows.RenderMode.createByName(sh.mode);
 			shadows = sh;
+			shadows.mode = h3d.pass.Shadows.RenderMode.createByName(sh.mode);
 		} else
 			shadows = getShadowsDefault();
 	}
