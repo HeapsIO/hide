@@ -811,8 +811,8 @@ class Trails extends Object3D {
 	// Override this before calling make() to change how many trails are instancied
 	public var numTrails : Int = 1;
 
-	function new(?parent, ?numTrails : Int) {
-		super(parent);
+	function new(?parent, shared, ?numTrails : Int) {
+		super(parent, shared);
 		name = "Trails";
 
 		if (numTrails != null) {
@@ -828,7 +828,7 @@ class Trails extends Object3D {
 		return tr;
 	}
 
-	
+
 
 	override function makeObject3d(parent3d: h3d.scene.Object) : h3d.scene.Object {
 		return create(parent3d, numTrails);

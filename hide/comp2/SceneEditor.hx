@@ -2203,7 +2203,7 @@ class SceneEditor {
 			obj3d.name = new haxe.io.Path(relative).file;
 		}*/
 		else {
-			var model = new hrt.prefab2.l3d.Model(parent);
+			var model = new hrt.prefab2.Model(parent);
 			model.source = relative;
 			prefab = model;
 		}

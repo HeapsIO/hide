@@ -442,7 +442,7 @@ class ModelLibrary extends Prefab {
 		modelRoot.position.qz = 0;
 		hmd.models.push(modelRoot);
 
-		for( m in getAll(hrt.prefab2.l3d.Model, true) ) {
+		for( m in getAll(hrt.prefab2.Model, true) ) {
 			if( models.exists(m.source) )
 				continue;
 			if( m.getParent(hrt.prefab2.fx.FX) != null )

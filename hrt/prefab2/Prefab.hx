@@ -102,14 +102,9 @@ class Prefab {
 			#end
 */
 
-	public function new(?parent:Prefab = null) {
+	public function new(parent:Prefab = null, contextShared: ContextShared = null) {
 		if (parent == null) {
-			shared =
-			#if editor
-				new hide.prefab2.ContextShared();
-			#else
-				new ContextShared();
-			#end
+			shared = if (contextShared != null) contextShared else #if editor new hide.prefab2.ContextShared(); #else new ContextShared(); #end
 		}
 		else
 			this.parent = parent;
@@ -174,7 +169,19 @@ class Prefab {
 		detachRec(this, this, []);
 	}
 
-	public static function createFromDynamic(data:Dynamic, parent:Prefab = null) : Prefab {
+	public static function createFromDynamic(data:Dynamic, parent:Prefab = null, contextShared:ContextShared = null) : Prefab {
+
+		var fromRef = #if editor (contextShared?.parent ?? null) != null #else true #end;
+		var editorOnly = data.editorOnly ?? false;
+		if (fromRef && editorOnly)
+			return null;
+
+		#if editor
+		var inGameOnly = data.inGameOnly ?? false;
+		if (fromRef && inGameOnly)
+			return null;
+		#end
+
 		var type : String = data.type;
 
 		var cl : Class<Prefab> = Unknown;
@@ -193,7 +200,7 @@ class Prefab {
 		if (parent == null && type == "level3d")
 			cl = Object3D;
 
-		var prefabInstance = Type.createInstance(cl, [parent]);
+		var prefabInstance = Type.createInstance(cl, [parent, contextShared]);
 
 		prefabInstance.load(data);
 
@@ -745,10 +752,7 @@ class Prefab {
 	final function copyDefault(?parent:Prefab = null, shared: ContextShared) : Prefab {
 		var thisClass = Type.getClass(this);
 
-		var inst = Type.createInstance(thisClass, [parent]);
-		#if editor
-		inst.shared.scene = shared.scene;
-		#end
+		var inst = Type.createInstance(thisClass, [parent, shared]);
 		//copyShallow(this, inst, false, true, true, getSerializableProps());
 		inst.copy(this);
 		for (child in children) {

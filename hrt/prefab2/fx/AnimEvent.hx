@@ -78,7 +78,7 @@ class AnimEvent extends hrt.prefab2.fx.Event {
 	override function getHideProps() : hide.prefab2.HideProps {
 		return {
 			icon : "play-circle", name : "AnimEvent",
-			allowParent : (p) -> Std.downcast(p,hrt.prefab2.l3d.Model) != null,
+			allowParent : (p) -> Std.downcast(p,hrt.prefab2.Model) != null,
 			allowChildren: function(s) return false
 		};
 	}

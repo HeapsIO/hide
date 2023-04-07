@@ -469,7 +469,7 @@ class Spray extends Object3D {
 					refPrefab.source = itemUsed.path;
 					newPrefab = refPrefab;
 				} else {
-					var model = new hrt.prefab2.l3d.Model(this);
+					var model = new hrt.prefab2.Model(this);
 					model.source = itemUsed.path;
 					newPrefab = model;
 				}
