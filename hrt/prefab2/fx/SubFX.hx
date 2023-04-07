@@ -5,17 +5,17 @@ class SubFX extends Reference implements hrt.prefab2.fx.Event.IEvent{
 	@:s public var time(default, set) : Float;
 
 	#if editor
-	var instance : hrt.prefab.fx.FX.FXAnimation;
+	var instance : hrt.prefab2.fx.FX.FXAnimation;
 	#end
 
 	public function new(?parent) {
 		super(parent);
 	}
 
-	override function makeObject3d(parent3d:h3d.scene.Object):h3d.scene.Object {
-		var obj = super.makeObject3d(parent3d);
-		if (obj != null) {
-			var fxanim = obj.find(o -> Std.downcast(o, hrt.prefab.fx.FX.FXAnimation));
+	override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) : Void {
+		super.makeInstance(ctx);
+		if (refInstance != null) {
+			var fxanim : hrt.prefab2.fx.FX.FXAnimation = refInstance.findFirstLocal3d().find(o -> Std.downcast(o, hrt.prefab2.fx.FX.FXAnimation));
 			if(fxanim != null) {
 				fxanim.startDelay = time;
 				#if editor
@@ -23,8 +23,8 @@ class SubFX extends Reference implements hrt.prefab2.fx.Event.IEvent{
 				#end
 			}
 		}
-		return obj;
 	}
+
 
 	function set_time(v) {
 		#if editor

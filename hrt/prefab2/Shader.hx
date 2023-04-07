@@ -22,6 +22,7 @@ class Shader extends Prefab {
 
 	public function getShaderDefinition() : hxsl.SharedShader {
 		var s = shader != null ? shader : makeShader();
+		this.shader = s;
 		return s == null ? null : @:privateAccess s.shader;
 	}
 
