@@ -9,7 +9,7 @@ class Object2D extends Prefab {
 	@:s public var rotation : Float = 0.;
 
 	@:s public var visible : Bool = true;
-	@:c public var blendMode : h2d.BlendMode = None;
+	@:s public var blendMode : h2d.BlendMode = None;
 
 	public var local2d : h2d.Object;
 
@@ -97,6 +97,29 @@ class Object2D extends Prefab {
 			name : "Group 2D"
 		};
 	}
+
+	override function edit( ctx : hide.prefab2.EditContext ) {
+		var props = new hide.Element('
+			<div class="group" name="Position">
+				<dl>
+					<dt>X</dt><dd><input type="range" min="-100" max="100" value="0" field="x"/></dd>
+					<dt>Y</dt><dd><input type="range" min="-100" max="100" value="0" field="y"/></dd>
+					<dt>Scale</dt><dd><input type="multi-range" min="0" max="5" value="0" field="scale" data-subfields="X,Y"/></dd>
+					<dt>Rotation</dt><dd><input type="range" min="-180" max="180" value="0" field="rotation" /></dd>
+				</dl>
+			</div>
+			<div class="group" name="Display">
+				<dl>
+					<dt>Visible</dt><dd><input type="checkbox" field="visible"/></dd>
+					<dt>Blend Mode</dt><dd><select field="blendMode"/></dd></dd>
+				</dl>
+			</div>
+		');
+		ctx.properties.add(props, this, function(pname) {
+			ctx.onChange(this, pname);
+		});
+	}
+
 	#end
 
 	override function getDefaultName() {

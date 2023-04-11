@@ -2215,10 +2215,9 @@ class FXEditor extends hide.view.FileView {
 
 class FX2DEditor extends FXEditor {
 
-	/*override function getDefaultContent() {
-		return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab2.fx.FX2D().saveData()));
-	}*/
+	override function getDefaultContent() {
+		return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab2.fx.FX2D().save({})));
+	}
 
-	// TODO(ces) : restore
-	//static var _2d = FileTree.registerExtension(FX2DEditor, ["fx2d"], { icon : "sitemap", createNew : "FX 2D" });
+	static var _2d = FileTree.registerExtension(FX2DEditor, ["fx2d"], { icon : "sitemap", createNew : "FX 2D" });
 }

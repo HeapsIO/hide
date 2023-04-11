@@ -134,20 +134,23 @@ class SceneEditorContext extends hide.prefab2.EditContext {
 		cleanups = [];
 		for(elt in elements) {
 			var obj3d = elt.to(Object3D);
-			if(obj3d == null) continue;
-			if(!SceneEditor.hasParent(elt, elements)) {
-				rootElements.push(elt);
-				var pobj = elt.parent == editor.sceneData ? obj3d.local3d : obj3d.parent.getLocal3d();
-				if (pobj != null)
-					rootObjects.push(obj3d.local3d);
-				// TODO(ces) : 2D fix
+			if(obj3d != null) {
+				if(!SceneEditor.hasParent(elt, elements)) {
+					rootElements.push(elt);
+					var pobj = elt.parent == editor.sceneData ? obj3d.local3d : obj3d.parent.getLocal3d();
+					if (pobj != null)
+						rootObjects.push(pobj);
+				}
+			}
 
-				// 	var pobj2d = elt.parent == editor.sceneData ? ctx.shared.root2d : getContextRec(elt.parent).local2d;
-				// 	if( ctx.local3d != pobj && ctx.local3d != null)
-				// 		rootObjects.push(ctx.local3d);
-				// 	if( ctx.local2d != pobj2d && ctx.local2d != null)
-				// 		rootObjects2D.push(ctx.local2d);
-				// }
+			var obj2d = elt.to(Object2D);
+			if (obj2d != null) {
+				if(!SceneEditor.hasParent(elt, elements)) {
+					rootElements.push(elt);
+					var pobj = elt.parent == editor.sceneData ? obj2d.local2d : obj2d.parent.getLocal2d();
+					if (pobj != null)
+						rootObjects2D.push(pobj);
+				}
 			}
 		}
 	}

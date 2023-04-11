@@ -641,6 +641,21 @@ class Prefab {
 		return haxe.Json.stringify(serializeToDynamic(), null, "\t");
 	}
 
+	// Returns a string that represent all the enabled prefabs in this
+	// tree, with idtentation.
+	public function getTreeString(indent: String = "\t") : String {
+		var sb = new StringBuf();
+		function rec(prefab:Prefab, prefix:String) {
+			sb.add('\n$prefix${prefab.name} (${Type.getClassName(Type.getClass(prefab))})');
+			for (c in prefab.children) {
+				rec(c, prefix+indent);
+			}
+		}
+
+		rec(this, "");
+		return sb.toString();
+	}
+
 	/*
 		overridable API
 	*/

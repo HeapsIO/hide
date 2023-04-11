@@ -51,7 +51,7 @@ class Material extends Prefab {
 
 	public function getMaterials() {
 		var mats = findFirstLocal3d().getMaterials();
-        var mat = Lambda.find(mats, m -> m.name == this.name || (m.name != null && m.name == materialName));
+		var mat = Lambda.find(mats, m -> m.name == this.name || (m.name != null && m.name == materialName));
 		return mat == null ? mats : [mat];
 	}
 
@@ -88,16 +88,14 @@ class Material extends Prefab {
 		var props = renderProps();
 		#if editor
 		if ( mats == null || mats.length == 0 ) {
-			try {
-				var path = hide.Ide.inst.currentConfig.get("material.preview", []);
-					var preview = shared.loadModel(path);
-				local3d.parent.addChild(preview);
-				local3d = preview;
-				local3d.x = local3d.getScene().getMaterials().length * 5.0;
-				mats = getMaterials();
-			} catch ( e:Dynamic) {
-
-			}
+			var sphere = new h3d.prim.Sphere(1., 64, 48);
+			sphere.addUVs();
+			sphere.addTangents();
+			var preview = new h3d.scene.Mesh(sphere);
+			local3d.parent.addChild(preview);
+			local3d = preview;
+			local3d.x = local3d.getScene().getMaterials().length * 5.0;
+			mats = getMaterials();
 		}
 		#end
 		function loadTextureCb( path : String ) : h3d.mat.Texture {
