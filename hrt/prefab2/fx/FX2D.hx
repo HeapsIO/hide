@@ -259,18 +259,20 @@ class FX2D extends Object2D implements BaseFX {
 		#end
 	}
 
+
+	override function postChildrenMakeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) {
+		var fxanim : FX2DAnimation = cast local2d;
+		fxanim.init(this);
+		getObjAnimations(this, fxanim.objects);
+		hrt.prefab2.fx.BaseFX.BaseFXTools.getShaderAnims(this, fxanim.shaderAnims);
+	}
+
 	override function makeObject2d(parent2d: h2d.Object) : h2d.Object {
 		var fxanim = createInstance(parent2d);
 		fxanim.duration = duration;
 		fxanim.loop = loop;
 		fxanim.startLoop = startLoop;
 		fxanim.playSpeed = 1.0;
-
-
-		fxanim.init(this);
-
-		getObjAnimations(this, fxanim.objects);
-		hrt.prefab2.fx.BaseFX.BaseFXTools.getShaderAnims(this, fxanim.shaderAnims);
 
 		return fxanim;
 	}
