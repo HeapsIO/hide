@@ -104,6 +104,9 @@
 	// "cdb.mySheetName.myColumnName": { /* Applies only to File column with name myColumnName, located in mySheetName */ }
 	// "cdb.mySheetName.mySubSheet.myColumnName": { /* Applies to colum in a subsheet (Properties/lists) */ }
 
+	// It's possible to run arbitrary commands at the root of the project when specific cdb sheets change
+	// "cdb.onChangeHooks": [{ "cmd": "touch done.txt", "sheets": [ "sheetName" ] }],
+
 	// script support
 	"script.api.files" : [],
 	"script.cdbPackage" : "",

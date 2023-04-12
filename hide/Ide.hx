@@ -1080,6 +1080,11 @@ class Ide {
 		window.title = title != null ? title : ((isCDB ? "CastleDB" : "HIDE") + " - " + projectDir);
 	}
 
+	public function runCommand(cmd, ?callb) {
+		var changeDir = isWindows ? "chdir" : "cd";
+		js.node.ChildProcess.exec('$changeDir $projectDir && $cmd', callb);
+	}
+
 	public function initMenu() {
 
 		if( subView != null ) return;
