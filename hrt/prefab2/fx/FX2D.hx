@@ -260,7 +260,7 @@ class FX2D extends Object2D implements BaseFX {
 	}
 
 
-	override function postChildrenMakeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) {
+	override function postMakeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) {
 		var fxanim : FX2DAnimation = cast local2d;
 		fxanim.init(this);
 		getObjAnimations(this, fxanim.objects);

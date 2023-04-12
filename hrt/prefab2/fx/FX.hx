@@ -461,7 +461,7 @@ class FX extends Object3D implements BaseFX {
 		return fxanim;
 	}
 
-	override function postChildrenMakeInstance(ctx:hrt.prefab2.Prefab.InstanciateContext) {
+	override function postMakeInstance(ctx:hrt.prefab2.Prefab.InstanciateContext) {
 		var root = hrt.prefab2.fx.BaseFX.BaseFXTools.getFXRoot(this);
 		var fxAnim : FXAnimation = cast local3d;
 		fxAnim.init(this, root);

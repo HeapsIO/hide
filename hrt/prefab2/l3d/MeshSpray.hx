@@ -932,7 +932,7 @@ class MeshSpray extends Spray {
 		params.local2d = old2d;
 		params.local3d = old3d;
 
-		postChildrenMakeInstance(params);
+		postMakeInstance(params);
 
 		params.local2d = old2d;
 		params.local3d = old3d;

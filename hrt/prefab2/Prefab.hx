@@ -144,6 +144,8 @@ class Prefab {
 
 		makeInstanceRec(params);
 
+		// NOTE(ces) : Should we have a postMakeInstanceRec instead of postMakeInstance ???
+
 		refresh();
 	}
 
@@ -685,7 +687,7 @@ class Prefab {
 		params.local2d = old2d;
 		params.local3d = old3d;
 
-		postChildrenMakeInstance(params);
+		postMakeInstance(params);
 
 		params.local2d = old2d;
 		params.local3d = old3d;
@@ -694,14 +696,15 @@ class Prefab {
 	/**
 		Override this function to create runtime objects from this prefab
 	**/
+	// NOTE(ces) : Change to makeObject
 	function makeInstance(ctx: InstanciateContext) : Void {
 
 	}
 
 	/**
-		Called after makeInstance (and by extension postChildrenMakeInstance) has been called on all the children
+		Called after makeInstance (and by extension postMakeInstance) has been called on all the children
 	**/
-	function postChildrenMakeInstance(ctx: InstanciateContext) : Void {
+	function postMakeInstance(ctx: InstanciateContext) : Void {
 	}
 
 	/**
