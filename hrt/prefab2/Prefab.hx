@@ -172,8 +172,7 @@ class Prefab {
 	}
 
 	public static function createFromDynamic(data:Dynamic, parent:Prefab = null, contextShared:ContextShared = null) : Prefab {
-
-		var fromRef = #if editor (contextShared?.parent ?? null) != null #else true #end;
+		var fromRef = #if editor (contextShared != null && contextShared.parent != null) #else true #end;
 		var editorOnly = data.editorOnly ?? false;
 		if (fromRef && editorOnly)
 			return null;
