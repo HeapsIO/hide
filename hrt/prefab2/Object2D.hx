@@ -36,8 +36,8 @@ class Object2D extends Prefab {
 		return new h2d.Object(parent2d);
 	}
 
-	override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) {
-		local2d = makeObject2d(ctx.local2d);
+	override function makeInstance() {
+		local2d = makeObject2d(shared.tempInstanciateLocal2d);
 		if (local2d != null)
 			local2d.name = name;
 		updateInstance();

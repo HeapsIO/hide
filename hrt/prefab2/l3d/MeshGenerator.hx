@@ -135,11 +135,11 @@ class MeshGenerator extends Object3D {
 		root.load(obj.root);
 	}
 
-	override function makeInstance(ctx: Prefab.InstanciateContext) : Void {
-		local3d = new h3d.scene.Object(ctx.local3d);
-		ctx.local3d.name = name;
+	override function makeInstance() : Void {
+		local3d = new h3d.scene.Object(shared.tempInstanciateLocal3d);
+		local3d.name = name;
 
-		var rootObject = new MeshGeneratorRoot(ctx.local3d);
+		var rootObject = new MeshGeneratorRoot(shared.tempInstanciateLocal3d);
 		rootObject.name = "rootObject";
 
 		if( root == null ) {

@@ -961,10 +961,7 @@ class SceneEditor {
 		scene.setCurrent();
 		scene.onResize();
 
-		var params = new hrt.prefab2.Prefab.InstanciateContext(root2d, root3d);
-		params.forceInstanciate = true;
-
-		sceneData.instanciate(params);
+		sceneData.instanciate(root2d, root3d, true);
 		var bgcol = scene.engine.backgroundColor;
 		scene.init();
 		scene.engine.backgroundColor = bgcol;
@@ -1725,10 +1722,7 @@ class SceneEditor {
 		elt.setEditor(this);
 		(cast elt.shared:hide.prefab2.ContextShared).editor = this;
 
-		var params = new hrt.prefab2.Prefab.InstanciateContext(elt.parent.findFirstLocal2d(), elt.parent.findFirstLocal3d());
-		params.forceInstanciate = true;
-
-		elt.instanciate(params);
+		elt.instanciate(elt.parent.findFirstLocal2d(), elt.parent.findFirstLocal3d(), true);
 		for( p in elt.flatten() )
 			makeInteractive(p);
 		//scene.init(ctx.local3d);
@@ -2194,7 +2188,7 @@ class SceneEditor {
 
 
 		if(path.split(".").pop().toLowerCase() == "prefab2") {
-			var ref = new hrt.prefab2.Reference(parent);
+			var ref = new hrt.prefab2.Reference(parent, null);
 			ref.source = relative;
 			prefab = ref;
 			prefab.name = new haxe.io.Path(relative).file;
@@ -2206,7 +2200,7 @@ class SceneEditor {
 			obj3d.name = new haxe.io.Path(relative).file;
 		}*/
 		else {
-			var model = new hrt.prefab2.Model(parent);
+			var model = new hrt.prefab2.Model(parent, null);
 			model.source = relative;
 			prefab = model;
 		}
@@ -2356,16 +2350,13 @@ class SceneEditor {
 		var local = new h3d.Matrix();
 		local.initTranslation(pivot.x, pivot.y, pivot.z);
 		local.multiply(local, invParentMat);
-		var group = new hrt.prefab2.Object3D(parent);
+		var group = new hrt.prefab2.Object3D(parent, null);
 		autoName(group);
 		@:bypassAccessor group.x = local.tx;
 		@:bypassAccessor group.y = local.ty;
 		@:bypassAccessor group.z = local.tz;
 
-		var params = new hrt.prefab2.Prefab.InstanciateContext(parent.findFirstLocal2d(), parent.findFirstLocal3d());
-		params.forceInstanciate = true;
-
-		group.instanciate(params);
+		group.instanciate(parent.findFirstLocal2d(), parent.findFirstLocal3d(), true);
 
 		var effectFunc = reparentImpl(elts, group, 0);
 		undo.change(Custom(function(undo) {
@@ -2394,7 +2385,7 @@ class SceneEditor {
 			view.setClipboard(prefab.serializeToDynamic(), "prefab", { source : view.state.path, name : prefab.name });
 		}
 		else {
-			var lib = new hrt.prefab2.Prefab();
+			var lib = new hrt.prefab2.Prefab(null, null);
 			for(e in selectedPrefabs) {
 				lib.children.push(e);
 			}

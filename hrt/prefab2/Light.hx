@@ -90,8 +90,8 @@ class Light extends Object3D {
 		};
 	}
 
-	public function new(?parent) {
-		super(parent);
+	public function new(?parent, shared: ContextShared) {
+		super(parent, shared);
 		range = 10;
 		zNear = 0.02;
 	}

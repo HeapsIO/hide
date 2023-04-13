@@ -4,8 +4,8 @@ class Trail extends Object3D {
 
 	@:s var data : Dynamic;
 
-	function new(?parent) {
-		super(parent);
+	function new(?parent, shared: ContextShared) {
+		super(parent, shared);
 		data = new h3d.scene.Trail().save();
 	}
 

@@ -16,8 +16,7 @@ class Constraint extends Prefab {
 		return srcObj;
 	}
 
-	override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) {
-		if(!enabled) return;
+	override function makeInstance() {
 		var srcObj = locateObject(object);
 		var targetObj = locateObject(target);
 		if( srcObj != null && targetObj != null ){

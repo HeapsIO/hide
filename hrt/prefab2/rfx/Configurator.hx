@@ -130,8 +130,8 @@ class Configurator extends RendererFX {
 	#end
 	var rootPrefab : Prefab;
 
-	public function new(?parent) {
-		super(parent);
+	public function new(?parent, shared: ContextShared) {
+		super(parent, shared);
 	}
 
 	public function set( name : String, value : Float ) {
@@ -189,12 +189,12 @@ class Configurator extends RendererFX {
 		#end
 	}
 
-	override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) : Void {
+	override function makeInstance() : Void {
 		for( v in vars )
 			values.set(v.name, v.defValue);
 		rootPrefab = getRoot();
 		resetCache();
-		super.makeInstance(ctx);
+		super.makeInstance();
 	}
 
 	override function begin(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {

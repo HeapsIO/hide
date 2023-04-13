@@ -6,8 +6,8 @@ class DynamicShader extends Shader {
 	var shaderClass : Class<hxsl.Shader>;
 	@:s var isInstance : Bool;
 
-	public function new(?parent) {
-		super(parent);
+	public function new(?parent,  shared: ContextShared) {
+		super(parent, shared);
 	}
 
 	override function setShaderParam(shader:hxsl.Shader, v:hxsl.Ast.TVar, value:Dynamic) {
@@ -38,12 +38,6 @@ class DynamicShader extends Shader {
 		}
 		syncShaderVars(shader, shaderDef.shader);
 		return shader;
-	}
-
-	override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) {
-		if( source == null )
-			return;
-		super.makeInstance(ctx);
 	}
 
 	function fixSourcePath() {

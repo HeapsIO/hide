@@ -8,14 +8,14 @@ class RenderProps extends Object3D {
 
 	@:s var isDefault = false;
 
-	public function new(?parent) {
-		super(parent);
+	public function new(?parent, shared: ContextShared) {
+		super(parent, shared);
 		props = {};
 	}
 
 	override function makeObject3d(parent3d: h3d.scene.Object) : h3d.scene.Object {
 		return new RenderPropsObject(parent3d);
-		
+
 	}
 
 	public function getProps(renderer: h3d.scene.Renderer) {

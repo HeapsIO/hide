@@ -17,8 +17,8 @@ interface IEvent {
 class Event extends hrt.prefab2.Prefab implements IEvent {
 	@:s public var time(default, set): Float = 0.0;
 
-	public function new(?parent) {
-		super(parent);
+	public function new(?parent, shared: ContextShared) {
+		super(parent, shared);
 	}
 
 	function set_time(v) {

@@ -717,7 +717,7 @@ class ModelLibrary extends Prefab {
 	public var debug = false;
 	public var clear = false;
 
-	override function makeInstanceRec(params: hrt.prefab2.Prefab.InstanciateContext) : Void {
+	override function makeInstanceRec() : Void {
 		// don't load/build children
 		if ( hmdPrim == null )
 			hmdPrim = Std.downcast(shared.loadModel(shared.getPrefabDatPath("model","hmd",this.name)).toMesh().primitive, h3d.prim.HMDModel);

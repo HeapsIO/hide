@@ -769,11 +769,6 @@ class TrailsSubTailObj extends h3d.scene.Object {
 
 class TrailsSubTrail extends Object3D {
 
-	function new(?parent) {
-		super(parent);
-		name = "SubTrail";
-	}
-
 	override function makeObject3d(parent3d: h3d.scene.Object) : h3d.scene.Object {
 		var obj = new TrailsSubTailObj(parent3d);
 		return obj;

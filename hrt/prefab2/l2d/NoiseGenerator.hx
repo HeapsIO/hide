@@ -37,8 +37,8 @@ class NoiseGenerator extends Object2D {
 
 	var tex : h3d.mat.Texture;
 
-	function new(?parent) {
-		super(parent);
+	function new(?parent, shared: ContextShared) {
+		super(parent, shared);
 		seed = Std.random(100);
 	}
 
@@ -112,10 +112,10 @@ class NoiseGenerator extends Object2D {
 		return t.sub(repeat == Both || repeat == X ? tex.width >> 1 : 0, repeat == Both || repeat == Y ? tex.height >> 1 : 0, tex.width, tex.height);
 	}
 
-	override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) {
+	override function makeInstance() {
 		tex = new h3d.mat.Texture(size, size, [Target]);
 		updateTexture(tex);
-		var bmp = new h2d.Bitmap(makeTile(tex), ctx.local2d);
+		var bmp = new h2d.Bitmap(makeTile(tex), shared.tempInstanciateLocal2d);
 		bmp.tileWrap = !tex.flags.has(IsNPOT);
 		bmp.visible = false;
 		bmp.x = -size >> 1;

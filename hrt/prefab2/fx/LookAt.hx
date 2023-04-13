@@ -93,10 +93,6 @@ class LookAt extends Object3D {
 	@:s var target(default,null) : String;
 	@:s var lockAxis: Array<Float> = [0,0,0];
 
-	public function new(?parent) {
-		super(parent);
-	}
-
 	override function updateInstance(?propName:String) {
 		super.updateInstance(propName);
 		var targetObj = null;

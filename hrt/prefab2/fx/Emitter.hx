@@ -595,8 +595,7 @@ class EmitterObject extends h3d.scene.Object {
 
 				if (this.emitterPrefab == p) {
 					if(mat.enabled) {
-					var context = new Prefab.InstanciateContext(prefab.findFirstLocal2d(), prefab.findFirstLocal3d());
-					@:privateAccess mat.makeInstance(context);
+						@:privateAccess mat.makeInstance();
 					}
 				}
 			}
@@ -1288,8 +1287,8 @@ class EmitterObject extends h3d.scene.Object {
 
 class Emitter extends Object3D {
 
-	public function new(?parent) {
-		super(parent);
+	public function new(?parent, shared: ContextShared) {
+		super(parent, shared);
 		props = { };
 		for(param in emitterParams) {
 			if(param.def != null)
@@ -1678,22 +1677,9 @@ class Emitter extends Object3D {
 		#end
 	}
 
-	override function makeInstanceRec(params:hrt.prefab2.Prefab.InstanciateContext) {
-		if (!enabled) return;
+	override function makeChild(p:Prefab) {
 
-		var old2d = params.local2d;
-		var old3d = params.local3d;
-
-		makeInstance(params);
-
-		params.local2d = old2d;
-		params.local3d = old3d;
-
-		postMakeInstance(params);
-
-		params.local2d = old2d;
-		params.local3d = old3d;
-	}
+	};
 
 	override public function refresh() {
 		for (field in getSerializableProps()) {

@@ -133,28 +133,28 @@ class SplineMesh extends Spline {
 		meshRotation = obj.meshRotation == null ? new h3d.Vector(0,0,0) : new h3d.Vector(obj.meshRotation.x, obj.meshRotation.y, obj.meshRotation.z);
 	}
 
-	override function makeInstanceRec(params: hrt.prefab2.Prefab.InstanciateContext) : Void{
+	override function makeInstanceRec() : Void{
 		if (!enabled) return;
 
-		var old2d = params.local2d;
-		var old3d = params.local3d;
+		var old2d = shared.tempInstanciateLocal2d;
+		var old3d = shared.tempInstanciateLocal3d;
 
-		makeInstance(params);
+		makeInstance();
 
 		var new2d = Object2D.getLocal2d(this);
 		if (new2d != null)
-			params.local2d = new2d;
+			shared.tempInstanciateLocal2d = new2d;
 		var new3d = Object3D.getLocal3d(this);
 		if (new3d != null)
-			params.local3d = new3d;
+			shared.tempInstanciateLocal3d = new3d;
 
-		params.local2d = old2d;
-		params.local3d = old3d;
+		shared.tempInstanciateLocal2d = old2d;
+		shared.tempInstanciateLocal3d = old3d;
 
-		postMakeInstance(params);
+		postMakeInstance();
 
-		params.local2d = old2d;
-		params.local3d = old3d;
+		shared.tempInstanciateLocal2d = old2d;
+		shared.tempInstanciateLocal3d = old3d;
 	}
 
 	override function updateInstance(?propName : String ) {
@@ -172,14 +172,13 @@ class SplineMesh extends Spline {
 
 		// Remake the material
 		if( meshBatch != null ) {
-			var emptyCtx = new hrt.prefab2.Prefab.InstanciateContext(null, meshBatch);
 			for( c in @:privateAccess children ) {
 				var mat = Std.downcast(c, Material);
 				if( mat != null && mat.enabled )
-					@:privateAccess mat.makeInstance(emptyCtx);
+					@:privateAccess mat.makeInstance();
 				var shader = Std.downcast(c, Shader);
 				if( shader != null && shader.enabled )
-					shader.makeInstance(emptyCtx);
+					shader.makeInstance();
 			}
 		}
 	}

@@ -238,7 +238,7 @@ class SplineEditor {
 			scale = (spd.prev.scaleX + spd.next.scaleX) * 0.5;
 		}
 
-		var sp = new SplinePoint(prefab);
+		var sp = new SplinePoint(prefab, null);
 		sp.x = pos.x;
 		sp.y = pos.y;
 		sp.z = pos.z;

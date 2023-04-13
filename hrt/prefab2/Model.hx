@@ -7,8 +7,8 @@ class Model extends Object3D {
 	@:s var retargetAnim : Bool = false;
 	@:s var retargetIgnore : String;
 
-	public function new(?parent) {
-		super(parent);
+	public function new(?parent, shared: ContextShared) {
+		super(parent, shared);
 	}
 
 	override function save(to: Dynamic) : Dynamic {

@@ -7,12 +7,12 @@ class ModelLibraryOptimizer extends Object3D {
 	public var modelLibrary : ModelLibrary;
 	public var clear = false;
 
-	override public function postMakeInstance( ctx: hrt.prefab2.Prefab.InstanciateContext ) : Void {
+	override public function postMakeInstance() : Void {
 		modelLibrary = getOpt(ModelLibrary, null, true);
 		if ( modelLibrary == null )
 			throw "Missing modelLibrary as children";
 		modelLibrary.clear = clear;
-		for ( c in @:privateAccess ctx.local3d.children.copy() ) {
+		for ( c in @:privateAccess local3d.children.copy() ) {
 			if ( c != null )
 				modelLibrary.optimize(c);
 		}

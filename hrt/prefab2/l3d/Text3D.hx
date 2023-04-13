@@ -100,10 +100,6 @@ class Text3D extends Object3D {
 
 	public var text2d : h2d.Text = null;
 
-	public function new( ?parent ) {
-		super(parent);
-	}
-
 	#if editor
 
 	override function getHideProps() : hide.prefab2.HideProps {

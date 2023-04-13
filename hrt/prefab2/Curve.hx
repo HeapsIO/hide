@@ -52,8 +52,8 @@ class Curve extends Prefab {
 		return keys[keys.length-1].time;
 	}
 
-	   public function new(?parent) {
-		super(parent);
+	   public function new(?parent, shared: ContextShared) {
+		super(parent, shared);
 	}
 
 	public override function load(o:Dynamic) {

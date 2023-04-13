@@ -33,8 +33,8 @@ class RefractionShader extends hxsl.Shader {
 class Refraction extends RendererFX {
 
 	var refractionShader : RefractionShader;
-	function new(?parent) {
-		super(parent);
+	function new(?parent, shared: ContextShared) {
+		super(parent, shared);
 
 		refractionShader = new RefractionShader();
 	}

@@ -28,8 +28,8 @@ class ScreenShaderGraph extends RendererFX {
 
 	@:s public var renderMode : ScreenShaderGraphMode;
 
-	function new(?parent) {
-		super(parent);
+	function new(?parent, shared: ContextShared) {
+		super(parent, shared);
 		renderMode = AfterTonemapping;
 	}
 
@@ -136,11 +136,6 @@ class ScreenShaderGraph extends RendererFX {
 		syncShaderVars();
 		shaderPass.addShader(shader);
 		return shader;
-	}
-
-	override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) : Void {
-		super.makeInstance(ctx);
-		updateInstance();
 	}
 
 	override function updateInstance(?propName : String ) {

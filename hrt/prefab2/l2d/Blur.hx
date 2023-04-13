@@ -34,8 +34,8 @@ class Blur extends Prefab {
 		return t;
 	}
 
-	override function makeInstance(ctx:hrt.prefab2.Prefab.InstanciateContext) {
-		bitmap = new h2d.Bitmap(null, ctx.local2d);
+	override function makeInstance() {
+		bitmap = new h2d.Bitmap(null, shared.tempInstanciateLocal2d);
 		syncBitmap();
 		bitmap.visible = false;
 	}

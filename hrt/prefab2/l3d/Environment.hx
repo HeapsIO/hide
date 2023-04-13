@@ -16,10 +16,6 @@ class Environment extends Object3D {
 	@:s var configName : String;
 	var env : h3d.scene.pbr.Environment;
 
-	public function new( ?parent ) {
-		super(parent);
-	}
-
 	function loadFromBinary() {
 		try {
 			env.dispose();

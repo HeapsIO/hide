@@ -153,8 +153,8 @@ class SSR extends RendererFX {
 	@:s public var randomPower : Float = 0.0;
 	@:s public var textureSize : Float = 0.5;
 
-	function new(?parent) {
-		super(parent);
+	function new(?parent, shared: ContextShared) {
+		super(parent, shared);
 
 		ssrShader = new SSRShader();
 		applySSRShader = new ApplySSRShader();

@@ -20,8 +20,8 @@ class VolumetricLightmap extends Object3D {
 	var baker : hide.view2.l3d.ProbeBakerProcess;
 	#end
 
-	public function new(?parent) {
-		super(parent);
+	public function new(?parent, shared: ContextShared) {
+		super(parent, shared);
 	}
 
 	#if editor
@@ -145,13 +145,14 @@ class VolumetricLightmap extends Object3D {
 			resetLightmap();
 	}
 
-	override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) : Void{
-		var obj = new h3d.scene.Object(ctx.local3d);
+	override function makeInstance() : Void {
+		var parent = shared.tempInstanciateLocal3d;
+		var obj = new h3d.scene.Object(parent);
 		volumetricLightmap = new hrt.prefab2.vlm.VolumetricMesh(obj);
 		volumetricLightmap.ignoreCollide = true;
 		volumetricLightmap.setPosition(-0.5, -0.5, 0);
-		ctx.local3d = obj;
-		ctx.local3d.name = name;
+		local3d = obj;
+		local3d.name = name;
 		updateInstance();
 
 		volumetricLightmap.voxelSize = new h3d.Vector(voxelsize_x,voxelsize_y,voxelsize_z);

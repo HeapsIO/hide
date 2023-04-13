@@ -15,8 +15,8 @@ class Material extends Prefab {
 	@:c public var color : Array<Float> = [1,1,1,1];
 	@:s public var mainPassName : String;
 
-	public function new(?parent) {
-		super(parent);
+	public function new(?parent, shared: ContextShared) {
+		super(parent, shared);
 		props = {};
 	}
 
@@ -107,7 +107,7 @@ class Material extends Prefab {
 
 
 
-	override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) {
+	override function makeInstance() {
 		updateInstance();
 	}
 

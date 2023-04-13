@@ -24,8 +24,8 @@ class Anisotropy extends Prefab {
 	@:s public var noiseDirectionPath : String = null;
 	@:s public var rotationOffset : Float = 0.0;
 
-	public function new(?parent) {
-		super(parent);
+	public function new(?parent, shared: ContextShared) {
+		super(parent,shared);
 	}
 
 	function getMaterials() {
@@ -38,7 +38,7 @@ class Anisotropy extends Prefab {
 		}
 	}
 
-	override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext):Void {
+	override function makeInstance():Void {
 		refreshShaders();
 		updateInstance();
 	}

@@ -50,13 +50,9 @@ class SplinePoint extends Object3D {
 		return parent.to(Spline);
 	}
 
-	override public function new(?parent) {
-		super(parent);
-	}
-
-	override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) : Void {
+	override function makeInstance() : Void {
 		#if editor
-		local3d = new h3d.scene.Object(ctx.local3d);
+		local3d = new h3d.scene.Object(shared.tempInstanciateLocal3d);
 		pointViewer = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), null, local3d.getScene());
 		pointViewer.ignoreParentTransform = true;
 		pointViewer.follow = local3d;
@@ -76,7 +72,7 @@ class SplinePoint extends Object3D {
 		controlPointsViewer.moveTo(1, 0, 0);
 		controlPointsViewer.lineTo(-1, 0, 0);
 
-		indexText = new h2d.ObjectFollower(pointViewer, ctx.local2d.getScene());
+		indexText = new h2d.ObjectFollower(pointViewer, shared.tempInstanciateLocal2d.getScene());
 		var t = new h2d.Text(hxd.res.DefaultFont.get(), indexText);
 		t.textColor = 0xff00ff;
 		t.textAlign = Center;
@@ -294,18 +290,18 @@ class Spline extends Object3D {
 		computeSplineData();
 	}
 
-	override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) : Void {
-		local3d = new h3d.scene.Object(ctx.local3d);
+	override function makeInstance() : Void {
+		local3d = new h3d.scene.Object(shared.tempInstanciateLocal3d);
 		local3d.name = name;
 
 		// Backward compatibility
 		for( pd in pointsData ) {
-			var sp = new SplinePoint(this);
+			var sp = new SplinePoint(this, null);
 			sp.setTransform(pd);
 		}
 
 		if( points.length == 0 )
-			new SplinePoint(this);
+			new SplinePoint(this, null);
 
 		updateInstance();
 	}

@@ -104,11 +104,6 @@ class VolumetricLighting extends RendererFX {
 	@:s public var ditheringNoise : String;
 	@:s public var ditheringIntensity : Float = 1.0;
 
-	override function makeInstance( ctx : hrt.prefab2.Prefab.InstanciateContext ) : Void {
-		super.makeInstance(ctx);
-		updateInstance();
-	}
-
 	override function begin(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
 		if( step == BeforeTonemapping ) {
 			r.mark("VolumetricLighting");

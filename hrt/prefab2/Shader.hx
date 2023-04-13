@@ -11,8 +11,8 @@ class Shader extends Prefab {
 
 	public var shader : hxsl.Shader;
 
-	function new(?parent) {
-		super(parent);
+	function new(?parent, sh: ContextShared) {
+		super(parent, sh);
 		props = {};
 	}
 
@@ -117,16 +117,16 @@ class Shader extends Prefab {
 		}
 	}
 
-	override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) {
+	override function makeInstance() {
 		var shader = makeShader();
 		if( shader == null )
 			return;
-		if( ctx.local2d != null ) {
-			var drawable = Std.downcast(ctx.local2d, h2d.Drawable);
+		if( shared.tempInstanciateLocal2d != null ) {
+			var drawable = Std.downcast(shared.tempInstanciateLocal2d, h2d.Drawable);
 			if (drawable != null) {
 				drawable.addShader(shader);
 			} else {
-				var flow = Std.downcast(ctx.local2d, h2d.Flow);
+				var flow = Std.downcast(shared.tempInstanciateLocal2d, h2d.Flow);
 				if (flow != null) {
 					@:privateAccess if (flow.background != null) {
 						flow.background.addShader(shader);
@@ -135,7 +135,7 @@ class Shader extends Prefab {
 			}
 		}
 
-		if( ctx.local3d != null )
+		if( shared.tempInstanciateLocal3d != null )
 			iterMaterials(function(obj,mat) if(checkMaterial(mat)) applyShader(obj, mat, shader));
 		this.shader = shader;
 		updateInstance();

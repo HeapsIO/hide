@@ -174,10 +174,11 @@ class Macros {
 			args: [
 				{ name : "root", type : macro : hrt.prefab2.Prefab, value: macro null},
 				{ name : "o2d", type : macro :  h2d.Object, value: macro null},
-				{ name : "o3d", type : macro :  h3d.scene.Object, value: macro null}
+				{ name : "o3d", type : macro :  h3d.scene.Object, value: macro null},
+				{ name : "contextShared", type : macro :  hrt.prefab2.ContextShared, value: macro null}
 			],
 			expr: macro {
-				return hrt.prefab2.Macros.Cast(${macro makeInternal(root, o2d, o3d)}, $v{typeName});
+				return hrt.prefab2.Macros.Cast(${macro makeInternal(root, o2d, o3d, contextShared)}, $v{typeName});
 			}
 		}
 
@@ -187,7 +188,7 @@ class Macros {
 			access.push(AOverride);
 
 
-		
+
 		buildFields.push({
 			name: "make",
 			access : access,

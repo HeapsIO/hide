@@ -6,8 +6,8 @@ class Particles3D extends Object3D {
 
 	@:s var data : Any;
 
-	public function new(?parent) {
-		super(parent);
+	public function new(?parent, shared: ContextShared) {
+		super(parent, shared);
 	}
 
 	override function makeObject3d(parent3d:h3d.scene.Object):h3d.scene.Object {

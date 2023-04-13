@@ -18,8 +18,8 @@ class Sao extends RendererFX {
 	var saoBlur = new h3d.pass.Blur();
 	var saoCopy = new h3d.pass.Copy();
 
-	function new(?parent) {
-		super(parent);
+	function new(?parent, shared: ContextShared) {
+		super(parent, shared);
 		blur = 5;
 		samples = 30;
 		radius = 1;

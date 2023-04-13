@@ -99,8 +99,8 @@ class TemporalBloom extends RendererFX {
 
 	var tonemap = new Bloom.BloomTonemap();
 
-	function new(?parent) {
-		super(parent);
+	function new(?parent, shared: ContextShared) {
+		super(parent, shared);
 		size = 0.5;
 		downScaleCount = 5;
 		threshold = 0.5;

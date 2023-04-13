@@ -25,10 +25,6 @@ class SpecularColor extends Prefab {
 	@:s public var specularColorCustomValue : Int;
 	@:s public var mode : SpecularColorMode = Albedo;
 
-	public function new(?parent) {
-		super(parent);
-	}
-
 	function getMaterials() {
 		if( Std.isOfType(parent, Material) ) {
 			var material : Material = cast parent;
@@ -39,7 +35,7 @@ class SpecularColor extends Prefab {
 		}
 	}
 
-	override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) : Void {
+	override function makeInstance() : Void {
 		refreshShaders();
 		updateInstance();
 	}

@@ -7,8 +7,8 @@ class Instance extends Object3D {
 	var model : h3d.scene.Object;
 	var icon : h2d.Object;
 
-	public function new(?parent) {
-		super(parent);
+	public function new(?parent, shared: ContextShared) {
+		super(parent, shared);
 		props = {};
 	}
 
@@ -26,8 +26,7 @@ class Instance extends Object3D {
 				if(hrt.prefab2.Prefab.getPrefabType(modelPath) != null) {
 					var ref = Prefab.createFromPath(modelPath);
 					if(ref != null) {
-						var inst = new hrt.prefab2.Prefab.InstanciateContext(findFirstLocal2d(), parent3d);
-						ref.instanciate(inst);
+						ref.instanciate(findFirstLocal2d(), parent3d);
 						instance = ref;
 						return instance.findFirstLocal3d();
 					}

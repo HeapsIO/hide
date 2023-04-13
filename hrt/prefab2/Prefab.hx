@@ -20,17 +20,6 @@ typedef PrefabMeta = {
 }
 
 
-class InstanciateContext {
-	public function new(local2d: h2d.Object, local3d: h3d.scene.Object) {
-		this.local2d = local2d;
-		this.local3d = local3d;
-	}
-
-	public var local2d : h2d.Object = null;
-	public var local3d : h3d.scene.Object = null;
-	public var forceInstanciate : Bool = false; /** Force the instanciation of the prefab even if it's a template **/
-}
-
 typedef PrefabInfo = {prefabClass : Class<Prefab> #if editor, inf : hide.prefab2.HideProps #end, ?extension: String};
 
 @:keepSub
@@ -102,9 +91,9 @@ class Prefab {
 			#end
 */
 
-	public function new(parent:Prefab = null, contextShared: ContextShared = null) {
+	public function new(parent:Prefab, contextShared: ContextShared) {
 		if (parent == null) {
-			shared = if (contextShared != null) contextShared else #if editor new hide.prefab2.ContextShared(); #else new ContextShared(); #end
+			shared = if (contextShared != null) contextShared else createContextShared();
 		}
 		else
 			this.parent = parent;
@@ -117,12 +106,21 @@ class Prefab {
 	}
 
 	function set_parent(p) {
-		if( parent != null )
+		if( parent != null ) {
 			parent.children.remove(this);
+		}
 		parent = p;
 		if( parent != null ) {
 			this.shared = parent.shared;
 			parent.children.push(this);
+		}
+		else {
+			// TODO(ces) : Clone context shared properly
+			if (shared != null) {
+				var old = shared;
+				shared = createContextShared();
+				throw "Handle this case if needed";
+			}
 		}
 		return p;
 	}
@@ -134,27 +132,22 @@ class Prefab {
 	// Lifetime
 
 	// Like make but in-place
-	public function instanciate(params: InstanciateContext) {
-		if (!params.forceInstanciate && (shared.isPrototype))
+	public function instanciate(local2d : h2d.Object = null, local3d : h3d.scene.Object = null, forceInstanciate : Bool = false) {
+		if (!forceInstanciate && (shared.isPrototype))
 			throw "Can't instanciate a template prefab unless params.forceInstanciate is true.";
 
-		shared.root2d = params.local2d;
-		shared.root3d = params.local3d;
+		shared.root2d = shared.tempInstanciateLocal2d = local2d;
+		shared.root3d = shared.tempInstanciateLocal3d = local3d;
+
 		shared.isPrototype = false;
 
-		makeInstanceRec(params);
-
-		// NOTE(ces) : Should we have a postMakeInstanceRec instead of postMakeInstance ???
+		makeInstanceRec();
 
 		refresh();
 	}
 
 	// Remove this prefab and their object from the prefab and scene hierarchy
 	public final function remove() {
-		if (parent != null) {
-			parent = null;
-		}
-
 
 		function detachRec(prefab:Prefab, newRoot: Prefab, removedClasses: Array<Class<Prefab>>) : Void {
 			trace('remove ${prefab.name}');
@@ -169,20 +162,22 @@ class Prefab {
 		}
 
 		detachRec(this, this, []);
+
+		if (parent != null) {
+			parent = null;
+		}
+	}
+
+	function makeChild(p: Prefab) {
+		if (shared.customMake == null) {
+			p.makeInstanceRec();
+		}
+		else {
+			shared.customMake(p);
+		}
 	}
 
 	public static function createFromDynamic(data:Dynamic, parent:Prefab = null, contextShared:ContextShared = null) : Prefab {
-		var fromRef = #if editor (contextShared != null && contextShared.parent != null) #else true #end;
-		var editorOnly = data.editorOnly ?? false;
-		if (fromRef && editorOnly)
-			return null;
-
-		#if editor
-		var inGameOnly = data.inGameOnly ?? false;
-		if (fromRef && inGameOnly)
-			return null;
-		#end
-
 		var type : String = data.type;
 
 		var cl : Class<Prefab> = Unknown;
@@ -661,49 +656,64 @@ class Prefab {
 		overridable API
 	*/
 
+	function shouldBeInstanciated() : Bool {
+		if (!enabled) return false;
+
+		var fromRef = #if editor (shared.parent != null) #else true #end;
+		if (fromRef && editorOnly)
+			return false;
+
+		#if editor
+		if (fromRef && inGameOnly)
+			return false;
+		#end
+
+		return true;
+	}
+
 	/**
 		Override this function if you want to controll how the childrens are
 		made
 	**/
-	function makeInstanceRec(params: InstanciateContext) : Void {
-		if (!enabled) return;
+	function makeInstanceRec() : Void {
+		if (!shouldBeInstanciated()) return;
 
-		var old2d = params.local2d;
-		var old3d = params.local3d;
+		var old2d = shared.tempInstanciateLocal2d;
+		var old3d = shared.tempInstanciateLocal3d;
 
-		makeInstance(params);
+		makeInstance();
 
 		var new2d = this.getLocal2d();
 		if (new2d != null)
-			params.local2d = new2d;
+			shared.tempInstanciateLocal2d = new2d;
 		var new3d = this.getLocal3d();
 		if (new3d != null)
-			params.local3d = new3d;
+			shared.tempInstanciateLocal3d = new3d;
 		for (c in children) {
-			c.makeInstanceRec(params);
+			makeChild(c);
 		}
 
-		params.local2d = old2d;
-		params.local3d = old3d;
+		shared.tempInstanciateLocal2d = old2d;
+		shared.tempInstanciateLocal3d = old3d;
 
-		postMakeInstance(params);
+		postMakeInstance();
 
-		params.local2d = old2d;
-		params.local3d = old3d;
+		shared.tempInstanciateLocal2d = old2d;
+		shared.tempInstanciateLocal3d = old3d;
 	}
 
 	/**
 		Override this function to create runtime objects from this prefab
 	**/
 	// NOTE(ces) : Change to makeObject
-	function makeInstance(ctx: InstanciateContext) : Void {
+	function makeInstance() : Void {
 
 	}
 
 	/**
 		Called after makeInstance (and by extension postMakeInstance) has been called on all the children
 	**/
-	function postMakeInstance(ctx: InstanciateContext) : Void {
+	function postMakeInstance() : Void {
 	}
 
 	/**
@@ -747,18 +757,20 @@ class Prefab {
 		for each prefab using macro
 	**/
 	@:noCompletion
-	final function makeInternal(?root: Prefab = null, ?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null) : Prefab {
-		var newInstance = copyDefault(root, shared);
+	final function makeInternal(?root: Prefab = null, ?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null, contextShared:ContextShared = null) : Prefab {
+		var sh = contextShared == null ? Prefab.createContextShared() : contextShared;
+		sh.isPrototype = false;
+		var newInstance = copyDefault(root, sh);
+		if (newInstance == null)
+			return null;
 		#if editor
 		newInstance.setEditor((cast shared:hide.prefab2.ContextShared).editor);
 		#end
-		newInstance.shared.isPrototype = false;
 
 
 		o2d = o2d != null ? o2d : (root != null ? root.findFirstLocal2d() : null);
 		o3d = o3d != null ? o3d : (root != null ? root.findFirstLocal3d() : null);
-		var params = new InstanciateContext(o2d, o3d);
-		newInstance.instanciate(params);
+		newInstance.instanciate(o2d, o3d);
 
 		return newInstance;
 	};
@@ -766,14 +778,16 @@ class Prefab {
 	/**
 		Create a copy of this prefab and it's childrens, whitout initializing their fields
 	**/
-	final function copyDefault(?parent:Prefab = null, shared: ContextShared) : Prefab {
+	final function copyDefault(?parent:Prefab = null, sh: ContextShared) : Prefab {
+		if (!shouldBeInstanciated()) return null;
+
 		var thisClass = Type.getClass(this);
 
-		var inst = Type.createInstance(thisClass, [parent, shared]);
+		var inst = Type.createInstance(thisClass, [parent, sh]);
 		//copyShallow(this, inst, false, true, true, getSerializableProps());
 		inst.copy(this);
 		for (child in children) {
-			child.copyDefault(inst, shared);
+			child.copyDefault(inst, sh);
 		}
 		return inst;
 	}
@@ -935,6 +949,10 @@ class Prefab {
 
 	}
 #end
+
+	static dynamic function createContextShared() : ContextShared {
+		return #if editor new hide.prefab2.ContextShared(); #else new ContextShared(); #end
+	}
 
 	// Static initialization trick to register this class with the given name
 	// in the prefab registry. Call this in your own classes

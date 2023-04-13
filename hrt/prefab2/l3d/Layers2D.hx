@@ -202,8 +202,8 @@ class Layers2D extends hrt.prefab2.Object3D {
 	#end
 
 
-	override function makeInstance( ctx : hrt.prefab2.Prefab.InstanciateContext ){
-		super.makeInstance(ctx);
+	override function makeInstance(){
+		super.makeInstance();
 
 		for ( l in layers ) {
 			var path = new haxe.io.Path(shared.currentPath);
@@ -277,7 +277,7 @@ class Layers2D extends hrt.prefab2.Object3D {
 			return;
 		if ( b ) {
 			if ( rfx == null ) {
-				rfx = new Layer2DRFX();
+				rfx = new Layer2DRFX(null, null);
 				var renderer = Std.downcast(ectx.scene.s3d.renderer, h3d.scene.pbr.Renderer);
 				renderer.effects.push(rfx);
 			}

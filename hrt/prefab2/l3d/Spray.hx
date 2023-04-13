@@ -465,11 +465,11 @@ class Spray extends Object3D {
 				var newPrefab : hrt.prefab2.Object3D = null;
 
 				if (itemUsed.isRef) {
-					var refPrefab = new hrt.prefab2.Reference(this);
+					var refPrefab = new hrt.prefab2.Reference(this, null);
 					refPrefab.source = itemUsed.path;
 					newPrefab = refPrefab;
 				} else {
-					var model = new hrt.prefab2.Model(this);
+					var model = new hrt.prefab2.Model(this, null);
 					model.source = itemUsed.path;
 					newPrefab = model;
 				}
@@ -577,8 +577,8 @@ class Spray extends Object3D {
 		}
 	}
 
-	override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) : Void {
-		local3d = new SprayObject(this, ctx.local3d);
+	override function makeInstance() : Void {
+		local3d = new SprayObject(this, shared.tempInstanciateLocal3d);
 		local3d.name = name;
 		updateInstance();
 	}

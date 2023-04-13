@@ -16,8 +16,8 @@ class BorderShader extends h3d.shader.ScreenShader {
 class Border extends RendererFX {
 	public var pass : h3d.pass.ScreenFx<BorderShader>;
 
-	public function new(size = 0.1, color: Int = 0, alpha = 1.0) {
-		super();
+	public function new(parent: Prefab, shared: ContextShared, size = 0.1, color: Int = 0, alpha = 1.0) {
+		super(parent, shared);
 		var shader = new BorderShader();
 		shader.size = size;
 		shader.alpha = alpha;

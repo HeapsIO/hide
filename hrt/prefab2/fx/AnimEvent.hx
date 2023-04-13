@@ -7,10 +7,6 @@ class AnimEvent extends hrt.prefab2.fx.Event {
 	@:s public var duration : Float = 0.0;
 	@:s public var offset : Float = 0.0;
 
-	public function new(?parent) {
-		super(parent);
-	}
-
 	override function prepare() : Event.EventInstance {
 		var obj = findFirstLocal3d();
 		var anim = animation != null ? shared.loadAnimation(animation) : null;

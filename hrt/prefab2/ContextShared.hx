@@ -11,6 +11,18 @@ class ContextShared {
 
 	public var prefabSource : String = "";
 
+	/**
+		When make() is called on prefab, it will instead call customMake on
+		each child with current which can either intercept or call make() recursively.
+	 **/
+	 public var customMake : Prefab -> Void;
+
+	@:noCompletion
+	public var tempInstanciateLocal3d : h3d.scene.Object = null;
+
+	@:noCompletion
+	public var tempInstanciateLocal2d : h2d.Object = null;
+
 	// Parent prefab if the object if it was created as a reference
 	public var parent : Prefab = null;
 

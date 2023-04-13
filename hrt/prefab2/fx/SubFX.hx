@@ -8,12 +8,7 @@ class SubFX extends Reference implements hrt.prefab2.fx.Event.IEvent{
 	var instance : hrt.prefab2.fx.FX.FXAnimation;
 	#end
 
-	public function new(?parent) {
-		super(parent);
-	}
-
-	override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) : Void {
-		super.makeInstance(ctx);
+	override function postMakeInstance() : Void {
 		if (refInstance != null) {
 			var fxanim : hrt.prefab2.fx.FX.FXAnimation = refInstance.findFirstLocal3d().find(o -> Std.downcast(o, hrt.prefab2.fx.FX.FXAnimation));
 			if(fxanim != null) {

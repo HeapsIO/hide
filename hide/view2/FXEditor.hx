@@ -284,7 +284,7 @@ class FXEditor extends hide.view.FileView {
 	var viewModes : Array<String>;
 
 	override function getDefaultContent() {
-		return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab2.fx.FX().serializeToDynamic()));
+		return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab2.fx.FX(null, null).serializeToDynamic()));
 	}
 
 	override function canSave() {
@@ -1696,7 +1696,7 @@ class FXEditor extends hide.view.FileView {
 			var id = prefix != null ? prefix + "." + prop.name : prop.name;
 			if(Curve.getCurve(element, id) != null)
 				continue;
-			var curve = new Curve(element);
+			var curve = new Curve(element,null);
 			curve.name = id;
 			if(prop.def != null)
 				curve.addKey(0, prop.def, Linear);
@@ -2216,7 +2216,7 @@ class FXEditor extends hide.view.FileView {
 class FX2DEditor extends FXEditor {
 
 	override function getDefaultContent() {
-		return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab2.fx.FX2D().save({})));
+		return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab2.fx.FX2D(null, null).save({})));
 	}
 
 	static var _2d = FileTree.registerExtension(FX2DEditor, ["fx2d"], { icon : "sitemap", createNew : "FX 2D" });

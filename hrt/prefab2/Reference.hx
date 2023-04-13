@@ -42,22 +42,21 @@ class Reference extends Object3D {
 	#end
 
 	function resolveRef() : Prefab {
-		if(refInstance == null && source != null) {
-			refInstance = Prefab.createFromPath(source, shared);
-			refInstance.shared.parent = this;
-			#if editor
-			refInstance.setEditor((cast shared:hide.prefab2.ContextShared).editor);
-			#end
-		}
-		return refInstance;
+		if(source == null)
+			return null;
+		var p = Prefab.createFromPath(source);
+		return p;
 	}
 
 	override function makeObject3d(parent3d: h3d.scene.Object) : h3d.scene.Object {
 		if (source != null) {
-			resolveRef();
-			var inst = new hrt.prefab2.Prefab.InstanciateContext(findFirstLocal2d(), parent3d);
-			inst.forceInstanciate = true;
-			refInstance.instanciate(inst);
+			var p = resolveRef();
+			var sh = Prefab.createContextShared();
+			sh.parent = this;
+			#if editor
+			p.setEditor((cast shared:hide.prefab2.ContextShared).editor);
+			#end
+			refInstance = p.make(null, findFirstLocal2d(), parent3d, shared);
 		}
 		return Object3D.getLocal3d(refInstance);
 	}

@@ -313,6 +313,8 @@ class FXAnimation extends h3d.scene.Object {
 
 		var ap : AdditionalProperies = null;
 		var local3d = Object3D.getLocal3d(elt);
+		if (local3d == null)
+			trace("break");
 		if( Std.isOfType(local3d, h3d.scene.pbr.PointLight)) {
 			ap = PointLight(makeColor("color"), makeVal("power", null), makeVal("size", null), makeVal("range", null) );
 		}
@@ -400,13 +402,8 @@ class FX extends Object3D implements BaseFX {
 	@:s public var duration : Float;
 	@:s public var startDelay : Float;
 	@:c public var scriptCode : String;
-	@:s public var cullingRadius : Float;
+	@:s public var cullingRadius : Float = 3.0;
 	@:s public var markers : Array<{t: Float}> = [];
-
-	public function new() {
-		super();
-		cullingRadius = 3.0;
-	}
 
 	/*override function save(data : Dynamic) {
 		super.save(data);
@@ -421,18 +418,18 @@ class FX extends Object3D implements BaseFX {
 		scriptCode = obj.scriptCode;
 	}
 
-	override function makeInstanceRec(params: hrt.prefab2.Prefab.InstanciateContext) : Void  {
+	override function makeInstanceRec() : Void  {
 		var fromRef = shared.parent != null;
 		var useFXRoot = #if editor fromRef #else true #end;
 		var root = hrt.prefab2.fx.BaseFX.BaseFXTools.getFXRoot(this);
 		if(useFXRoot && root != null){
 			var childrenBackup = children;
 			children = [root];
-			super.makeInstanceRec(params);
+			super.makeInstanceRec();
 			children = childrenBackup;
 		}
 		else
-			super.makeInstanceRec(params);
+			super.makeInstanceRec();
 	}
 
 	override function makeObject3d(parent3d:h3d.scene.Object):h3d.scene.Object {
@@ -461,7 +458,7 @@ class FX extends Object3D implements BaseFX {
 		return fxanim;
 	}
 
-	override function postMakeInstance(ctx:hrt.prefab2.Prefab.InstanciateContext) {
+	override function postMakeInstance() {
 		var root = hrt.prefab2.fx.BaseFX.BaseFXTools.getFXRoot(this);
 		var fxAnim : FXAnimation = cast local3d;
 		fxAnim.init(this, root);

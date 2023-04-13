@@ -35,8 +35,8 @@ class Camera extends Object3D {
 	var editContext : hide.prefab2.EditContext;
 	#end
 
-	public function new(?parent) {
-		super(parent);
+	public function new(?parent, shared: ContextShared) {
+		super(parent, shared);
 	}
 
 	var g : h3d.scene.Graphics;
@@ -248,7 +248,7 @@ class Camera extends Object3D {
 				}
 				ctx.scene.editor.cameraController.lockZPlanes = true;
 				ctx.scene.editor.cameraController.loadFromCamera();
-				renderer.effects.push(new hrt.prefab2.rfx.Border(0.02, 0x0000ff, 0.5));
+				renderer.effects.push(new hrt.prefab2.rfx.Border(null, null, 0.02, 0x0000ff, 0.5));
 			}
 			else {
 				for ( effect in getAll(hrt.prefab2.rfx.RendererFX) )

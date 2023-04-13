@@ -57,8 +57,8 @@ class CloudShadow extends RendererFX {
 		var amount : Float;
 	};
 
-	override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) : Void {
-		super.makeInstance(ctx);
+	override function makeInstance() : Void {
+		super.makeInstance();
 		updateInstance();
 	}
 

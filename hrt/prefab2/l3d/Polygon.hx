@@ -31,10 +31,6 @@ class Polygon extends Object3D {
 	var prevScale = [1.0, 1.0];
 	#end
 
-	public function new(?parent) {
-		super(parent);
-	}
-
 	override function save(data: Dynamic) {
 		super.save(data);
 		data.kind = shape.getIndex();

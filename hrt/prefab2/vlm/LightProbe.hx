@@ -215,8 +215,8 @@ class LightProbe extends Object3D {
 	@:s public var debugDisplay : Bool = true;
 	@:s public var sphereRadius : Float = 0.5;
 
-	public function new( ?parent : Prefab ) {
-		super(parent);
+	public function new( ?parent : Prefab, shared: ContextShared) {
+		super(parent, shared);
 
 		// Duplicate Name Fix - Prevent baked data conflict
 		var root : Prefab = this;
@@ -239,8 +239,8 @@ class LightProbe extends Object3D {
 		name = "lightProbe_" + curIndex;
 	}
 
-	override function makeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) : Void {
-		var lpo = new LightProbeObject(ctx.local3d);
+	override function makeInstance() : Void {
+		var lpo = new LightProbeObject(shared.tempInstanciateLocal3d);
 		lpo.material.castShadows = false;
 		lpo.material.mainPass.setPassName("lightProbe");
 		lpo.ignoreCollide = true;

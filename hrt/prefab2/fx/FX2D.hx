@@ -171,9 +171,6 @@ class FX2D extends Object2D implements BaseFX {
 	@:s var loop : Bool = false;
 	@:s var startLoop : Float = 0.0;
 
-	public function new() {
-		super();
-	}
 
 	function getObjAnimations(elt: PrefabElement, anims: Array<ObjectAnimation>) {
 		for(c in elt.children) {
@@ -242,9 +239,9 @@ class FX2D extends Object2D implements BaseFX {
 			anims.push(anim);
 	}
 
-	override function makeInstanceRec(params: hrt.prefab2.Prefab.InstanciateContext) : Void {
+	override function makeInstanceRec() : Void {
 		#if editor
-		super.makeInstanceRec(params);
+		super.makeInstanceRec();
 		#else
 		var fromRef = shared.parent != null;
 		var useFXRoot = #if editor fromRef #else true #end;
@@ -252,15 +249,15 @@ class FX2D extends Object2D implements BaseFX {
 		if( useFXRoot && root != null ) {
 			var childrenBackup = children;
 			children = [root];
-			super.makeInstanceRec(params);
+			super.makeInstanceRec();
 			children = childrenBackup;
 		} else
-			super.makeInstanceRec(params);
+			super.makeInstanceRec();
 		#end
 	}
 
 
-	override function postMakeInstance(ctx: hrt.prefab2.Prefab.InstanciateContext) {
+	override function postMakeInstance() {
 		var fxanim : FX2DAnimation = cast local2d;
 		fxanim.init(this);
 		getObjAnimations(this, fxanim.objects);

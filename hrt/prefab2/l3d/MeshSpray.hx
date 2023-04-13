@@ -112,12 +112,12 @@ class MeshSpray extends Spray {
 		}
 	}
 
-	override function makeInstanceRec(params:hrt.prefab2.Prefab.InstanciateContext) {
+	override function makeInstanceRec() {
 		if( !enabled )
 			return;
 		if( binaryStorage )
 			loadBinary();
-		super.makeInstanceRec(params);
+		super.makeInstanceRec();
 		var mspray = Std.downcast(local3d, MeshSprayObject);
 		var pos = mspray.getAbsPos();
 		var tmp = new h3d.Matrix();
@@ -889,7 +889,7 @@ class MeshSpray extends Spray {
 		super.updateInstance(propName);
 	}
 
-	override function makeInstanceRec(params: hrt.prefab2.Prefab.InstanciateContext) {
+	override function makeInstanceRec() {
 		if( !enabled ) return;
 		if( binaryStorage ) {
 			binaryMeshes = [];
@@ -912,30 +912,30 @@ class MeshSpray extends Spray {
 			}
 		}
 
-		var old2d = params.local2d;
-		var old3d = params.local3d;
+		var old2d = shared.tempInstanciateLocal2d;
+		var old3d = shared.tempInstanciateLocal3d;
 
-		makeInstance(params);
+		makeInstance();
 		// add all children then build meshspray
 		for( c in children )
 			if( c.type == "model" )
-				c.makeInstanceRec(params);
+				c.makeInstanceRec();
 
 		cast(local3d, MeshSprayObject).redraw();
 		// then add other children (shaders etc.)
 		for( c in children )
 			if( c.type != "model" )
-				c.makeInstanceRec(params);
+				c.makeInstanceRec();
 		// rebuild to apply per instance shaders
 		cast(local3d, MeshSprayObject).redraw(true);
 
-		params.local2d = old2d;
-		params.local3d = old3d;
+		shared.tempInstanciateLocal2d = old2d;
+		shared.tempInstanciateLocal3d = old3d;
 
-		postMakeInstance(params);
+		postMakeInstance();
 
-		params.local2d = old2d;
-		params.local3d = old3d;
+		shared.tempInstanciateLocal2d = old2d;
+		shared.tempInstanciateLocal3d = old3d;
 	}
 
 	override function applyTransform() {
