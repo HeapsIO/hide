@@ -2610,8 +2610,10 @@ div.popup {
 		align-items: center;
 		
 		input[type="radio"] {
-			margin: 3px;
+			padding-bottom: 4px;
 		}
+
+		grid-row-gap: 2px;
 	}
 
 	label {
@@ -2628,6 +2630,44 @@ div.popup {
 		visibility: hidden;
 		height: 0px;
 	}
+
+	input[type=checkbox] {
+		appearance: none;
+		margin: 0;
+		background: #545454;
+		font: inherit;
+		width: 14px;
+		height: 14px;
+		border: 1px solid #3d3d3d;
+		border-radius: 3px;
+		transform: translateY(-0.075em);
+		padding: 0;
+		/*box-shadow: 0px 1px #181818;*/
+	  }
+	  
+	  input[type=checkbox]:checked{
+		background: #4772b3;
+	  }
+	  
+	  input[type=checkbox]:checked:after {
+		content: '\2714';
+		position: absolute;
+		text-align: center;
+		vertical-align: middle;
+		width: 12px;
+		height: 11px;
+		left: auto;
+		top: auto;
+		box-shadow: none;
+		background: none;
+		line-height: 12px;
+		font-size: 0.7em;
+		color: #f6f8fb;
+	  }
+
+	  input[type=checkbox]:after {
+		content: none;
+	  }
 }
 
 div.color-picker {

@@ -145,7 +145,8 @@ class FiltersPopup extends hide.comp.Popup {
 						}
 					});
 					form_div.append(input);
-					form_div.append(new Element('<label for="$typeid" class="left">$typeid</label>'));
+					var nameCap = typeid.substr(0, 1).toUpperCase() + typeid.substr(1);
+					form_div.append(new Element('<label for="$typeid" class="left">$nameCap</label>'));
 				}
 			}
 		}
