@@ -28,7 +28,7 @@ class SphereHandle extends h3d.scene.Mesh {
 		var gpos = getAbsPos().getPosition();
 		var distToCam = cam.pos.sub(gpos).length();
 		var engine = h3d.Engine.getCurrent();
-		var ratio = 18 / engine.height;
+		var ratio = 35 / engine.height;
 		// Ignore parent scale
 		var tmp = parent.getAbsPos().getScale();
 		var scale = ratio * distToCam * Math.tan(cam.fovY * 0.5 * Math.PI / 180.0);
@@ -57,6 +57,16 @@ class MovablePoint {
 		mesh.material.mainPass.depthTest = Always;
 		mesh.scale(0.1);
 		mesh.setPosition(point.x, point.y, 0);
+
+		// Outline
+		var shader = new h3d.shader.FixedColor(0xffffff);
+		var m = mesh.material;
+		var p = m.allocPass("highlight");
+		p.culling = None;
+		p.depthWrite = true;
+		p.depthTest = Always;
+		p.addShader(shader);
+
 		localPosText = createText(ctx);
 		worldPosText = createText(ctx);
 		worldPosText.offsetZ = (0.3);
