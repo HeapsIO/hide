@@ -150,7 +150,7 @@ class FXAnimation extends h3d.scene.Object {
 	static var tempTransform = new h3d.Matrix();
 	static var tempVec = new h3d.Vector();
 	public function setTime( time : Float, fullSync=true ) {
-		var dt = time - this.localTime;
+		var dt = time - this.prevTime;
 		this.localTime = time;
 		if(fullSync) {
 			if(objAnims != null) {
