@@ -64,7 +64,7 @@ class Toolbar extends Component {
 
 	public function addButton( icon : String, ?label : String, ?onClick : Void -> Void, ?rightClick : Void -> Void ) {
 		var e = new Element('<div class="button2" title="${label==null ? "" : label}"></div>');
-        if (icon != "" && icon != null) {
+        if (icon != "") {
             e.append(new Element('<div class="icon ico ico-$icon"/>'));
         }
         else {
