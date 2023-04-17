@@ -242,7 +242,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		}
 
 		menu.push({label: null, isSeparator: true});
-		
+
 		splitMenu(menu, "Other", allTypes);
 
 
@@ -631,7 +631,7 @@ class FXEditor extends FileView {
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
 		toolsDefs.push({id: "localTransformsToggle", title : "Local transforms", icon : "compass", type : Toggle((v) -> sceneEditor.localTransform = v)});
-		
+
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
 		toolsDefs.push({id: "gridToggle", title : "Toggle grid", icon : "th", type : Toggle((v) -> { showGrid = v; updateGrid(); }) });
@@ -776,54 +776,7 @@ class FXEditor extends FileView {
 
 		tools.addSeparator();
 
-		var viewModesMenu = tools.addMenu(null, "View Modes");
-		var items : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
-		viewModes = ["LIT", "Full", "Albedo", "Normal", "Roughness", "Metalness", "Emissive", "AO", "Shadows", "Performance"];
-		for(typeid in viewModes) {
-			items.push({label : typeid, click : function() {
-				var r = Std.downcast(scene.s3d.renderer, h3d.scene.pbr.Renderer);
-				if ( r == null )
-					return;
-				var slides = @:privateAccess r.slides;
-				if ( slides == null )
-					return;
-				switch(typeid) {
-				case "LIT":
-					r.displayMode = Pbr;
-				case "Full":
-					r.displayMode = Debug;
-					slides.shader.mode = Full;
-				case "Albedo":
-					r.displayMode = Debug;
-					slides.shader.mode = Albedo;
-				case "Normal":
-					r.displayMode = Debug;
-					slides.shader.mode = Normal;
-				case "Roughness":
-					r.displayMode = Debug;
-					slides.shader.mode = Roughness;
-				case "Metalness":
-					r.displayMode = Debug;
-					slides.shader.mode = Metalness;
-				case "Emissive":
-					r.displayMode = Debug;
-					slides.shader.mode = Emmissive;
-				case "AO":
-					r.displayMode = Debug;
-					slides.shader.mode = AO;
-				case "Shadows":
-						r.displayMode = Debug;
-						slides.shader.mode = Shadow;
-				case "Performance":
-					r.displayMode = Performance;
-				default:
-				}
-			}
-			});
-		}
-		viewModesMenu.setContent(items);//, {id: "viewModes", title : "View Modes", type : Menu(filtersToMenuItem(viewModes, "View"))});
-		var el = viewModesMenu.element;
-		el.addClass("View Modes");
+		tools.addPopup(null, "View Modes", (e) -> new hide.comp.SceneEditor.ViewModePopup(null, e, Std.downcast(@:privateAccess scene.s3d.renderer, h3d.scene.pbr.Renderer)), null);
 
 		tools.addSeparator();
 
@@ -1987,7 +1940,7 @@ class FXEditor extends FileView {
 		var ctx = sceneEditor.getContext(data);
 		if(ctx == null || ctx.local3d == null)
 			return;
-			
+
 		var allFx = ctx.local3d.findAll(o -> Std.downcast(o, hrt.prefab.fx.FX.FXAnimation));
 
 		if(!pauseButton.isDown()) {
@@ -2006,7 +1959,7 @@ class FXEditor extends FileView {
 
 		for(fx in allFx)
 			fx.setTime(currentTime - fx.startDelay);
-	
+
 		var emitRateCurrent = 0.0;
 
 		var emitters = ctx.local3d.findAll(o -> Std.downcast(o, hrt.prefab.fx.Emitter.EmitterObject));

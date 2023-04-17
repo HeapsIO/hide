@@ -14,78 +14,6 @@ import hrt.prefab.l3d.Instance;
 import hide.comp.cdb.DataFiles;
 
 class FiltersPopup extends hide.comp.Popup {
-	static var viewFilter : Array<{name: String, inf: {display: DisplayMode, debug: DebugMode}}> = [
-		{
-			name : "LIT",
-			inf : {
-				display : Pbr,
-				debug : Normal
-			},
-		},
-		{
-			name: "Full",
-			inf : {
-				display: Debug,
-				debug: Full
-			}
-		},
-		{
-			name: "Albedo",
-			inf : {
-				display: Debug,
-				debug: Albedo
-			}
-		},
-		{
-			name: "Normal",
-			inf : {
-				display: Debug,
-				debug: Normal
-			}
-		},
-		{
-			name: "Roughness",
-			inf : {
-				display: Debug,
-				debug: Roughness
-			}
-		},
-		{
-			name: "Metalness",
-			inf : {
-				display: Debug,
-				debug: Metalness
-			}
-		},
-		{
-			name: "Emissive",
-			inf : {
-				display: Debug,
-				debug: Emmissive
-			}
-		},
-		{
-			name: "AO",
-			inf : {
-				display: Debug,
-				debug: AO
-			}
-		},
-		{
-			name: "Shadows",
-			inf : {
-				display: Debug,
-				debug: Shadow
-			}
-		},
-		{
-			name: "Performance",
-			inf : {
-				display: Performance,
-				debug: Normal
-			}
-		}
-	];
 	var editor:Prefab;
 
 	public function new(?parent:Element, ?root:Element, editor:Prefab, filters:Map<String, Bool>, type:String) {
@@ -97,57 +25,26 @@ class FiltersPopup extends hide.comp.Popup {
 		var form_div = new Element("<div>").addClass("form-grid").appendTo(popup);
 
 		{
-			var initDone = false;
-			if (type == "View") {
-				var r = Std.downcast(@:privateAccess editor.scene.s3d.renderer, h3d.scene.pbr.Renderer);
-				if (r == null)
-					return;
-				var slides = @:privateAccess r.slides;
-				for (v in viewFilter) {
-					var typeid = v.name;
-					var on = r.displayMode == v.inf.display && (r.displayMode == Debug ? slides.shader.mode == v.inf.debug : true);
-					var input = new Element('<input type="radio" name="filter" id="$typeid" value="$typeid"/>');
-					if (on)
-						input.get(0).toggleAttribute("checked", true);
+			for (typeid in filters.keys()) {
+				var on = filters[typeid];
+				var input = new Element('<input type="checkbox" id="$typeid" value="$typeid"/>');
+				if (on)
+					input.get(0).toggleAttribute("checked", true);
 
-					input.change((e) -> {
-						var r = Std.downcast(@:privateAccess editor.scene.s3d.renderer, h3d.scene.pbr.Renderer);
-						if (r == null)
-							return;
-						var slides = @:privateAccess r.slides;
-						if (slides == null)
-							return;
-						r.displayMode = v.inf.display;
-						if (r.displayMode == Debug) {
-							slides.shader.mode = v.inf.debug;
-						}
-					});
+				input.change((e) -> {
+					var on = !filters[typeid];
+					filters.set(typeid, on);
 
-					form_div.append(input);
-					form_div.append(new Element('<label for="$typeid" class="left">$typeid</label>'));
-				}
-			} else {
-				for (typeid in filters.keys()) {
-					var on = filters[typeid];
-					var input = new Element('<input type="checkbox" id="$typeid" value="$typeid"/>');
-					if (on)
-						input.get(0).toggleAttribute("checked", true);
-
-					input.change((e) -> {
-						var on = !filters[typeid];
-						filters.set(typeid, on);
-
-						switch (type) {
-							case "Graphics":
-								@:privateAccess editor.applyGraphicsFilter(typeid, on);
-							case "Scene":
-								@:privateAccess editor.applySceneFilter(typeid, on);
-						}
-					});
-					form_div.append(input);
-					var nameCap = typeid.substr(0, 1).toUpperCase() + typeid.substr(1);
-					form_div.append(new Element('<label for="$typeid" class="left">$nameCap</label>'));
-				}
+					switch (type) {
+						case "Graphics":
+							@:privateAccess editor.applyGraphicsFilter(typeid, on);
+						case "Scene":
+							@:privateAccess editor.applySceneFilter(typeid, on);
+					}
+				});
+				form_div.append(input);
+				var nameCap = typeid.substr(0, 1).toUpperCase() + typeid.substr(1);
+				form_div.append(new Element('<label for="$typeid" class="left">$nameCap</label>'));
 			}
 		}
 	}
@@ -728,7 +625,7 @@ class Prefab extends FileView {
 			type: Separator
 		});
 
-		toolsDefs.push({id: "viewModes", title: "View Modes", type: Popup((e) -> new FiltersPopup(null, e, this, viewModes, "View"))});
+		toolsDefs.push({id: "viewModes", title: "View Modes", type: Popup((e) -> new hide.comp.SceneEditor.ViewModePopup(null, e, Std.downcast(@:privateAccess scene.s3d.renderer, h3d.scene.pbr.Renderer)))});
 
 		toolsDefs.push({
 			id: "",

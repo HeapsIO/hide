@@ -185,6 +185,22 @@ class Toolbar extends Component {
 		return r;
 	}
 
+	public function addPopup(icon: String, title: String, open: hide.Element -> hide.comp.Popup, ?rightClick : Void -> Void) {
+		var el = addButton(icon, title, null, rightClick);
+		var p: hide.comp.Popup = null;
+		el.click(function(e) {
+			if (p == null) {
+				p = open(el);
+				p.onClose = function() {
+					p = null;
+				}
+			}
+			else {
+				p.close();
+			}
+		});
+	}
+
 	public function makeToolbar(toolsDefs : Array<hide.comp.Toolbar.ToolDef>, ?config : Config, ?keys : hide.ui.Keys) {
 		for (tool in toolsDefs) {
 			var key = null;
@@ -214,19 +230,7 @@ class Toolbar extends Component {
 					menu.setContent(items);
 					el = menu.element;
 				case Popup(f):
-					el = addButton(tool.icon, tool.title + shortcut, null, tool.rightClick);
-					var p: hide.comp.Popup = null;
-					el.click(function(e) {
-						if (p == null) {
-							p = f(el);
-							p.onClose = function() {
-								p = null;
-							}
-						}
-						else {
-							p.close();
-						}
-					});
+					addPopup(tool.icon, tool.title + shortcut, f, tool.rightClick);
 			}
 
 			if (el != null) {

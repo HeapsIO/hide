@@ -11,6 +11,9 @@ import h3d.Vector;
 import hxd.Key as K;
 import hxd.Math as M;
 
+import h3d.shader.pbr.Slides.DebugMode;
+import h3d.scene.pbr.Renderer.DisplayMode;
+
 import hrt.prefab.Prefab as PrefabElement;
 import hrt.prefab.Object2D;
 import hrt.prefab.Object3D;
@@ -126,6 +129,122 @@ enum RefreshMode {
 }
 
 typedef CustomPivot = { elt : PrefabElement, mesh : Mesh, locPos : Vector };
+
+class ViewModePopup extends hide.comp.Popup {
+	static var viewFilter : Array<{name: String, inf: {display: DisplayMode, debug: DebugMode}}> = [
+		{
+			name : "LIT",
+			inf : {
+				display : Pbr,
+				debug : Normal
+			},
+		},
+		{
+			name: "Full",
+			inf : {
+				display: Debug,
+				debug: Full
+			}
+		},
+		{
+			name: "Albedo",
+			inf : {
+				display: Debug,
+				debug: Albedo
+			}
+		},
+		{
+			name: "Normal",
+			inf : {
+				display: Debug,
+				debug: Normal
+			}
+		},
+		{
+			name: "Roughness",
+			inf : {
+				display: Debug,
+				debug: Roughness
+			}
+		},
+		{
+			name: "Metalness",
+			inf : {
+				display: Debug,
+				debug: Metalness
+			}
+		},
+		{
+			name: "Emissive",
+			inf : {
+				display: Debug,
+				debug: Emmissive
+			}
+		},
+		{
+			name: "AO",
+			inf : {
+				display: Debug,
+				debug: AO
+			}
+		},
+		{
+			name: "Shadows",
+			inf : {
+				display: Debug,
+				debug: Shadow
+			}
+		},
+		{
+			name: "Performance",
+			inf : {
+				display: Performance,
+				debug: Normal
+			}
+		}
+	];
+	var renderer:h3d.scene.pbr.Renderer;
+
+	public function new(?parent:Element, ?root:Element, engineRenderer:h3d.scene.pbr.Renderer) {
+		super(parent, root);
+		this.renderer = engineRenderer;
+		popup.addClass("settings-popup");
+		popup.css("max-width", "300px");
+
+		if (renderer == null)
+			return;
+
+		var form_div = new Element("<div>").addClass("form-grid").appendTo(popup);
+
+		{
+			var initDone = false;
+			{
+
+				var slides = @:privateAccess renderer.slides;
+				for (v in viewFilter) {
+					var typeid = v.name;
+					var on = renderer.displayMode == v.inf.display && (renderer.displayMode == Debug ? slides.shader.mode == v.inf.debug : true);
+					var input = new Element('<input type="radio" name="filter" id="$typeid" value="$typeid"/>');
+					if (on)
+						input.get(0).toggleAttribute("checked", true);
+
+					input.change((e) -> {
+						var slides = @:privateAccess renderer.slides;
+						if (slides == null)
+							return;
+						renderer.displayMode = v.inf.display;
+						if (renderer.displayMode == Debug) {
+							slides.shader.mode = v.inf.debug;
+						}
+					});
+
+					form_div.append(input);
+					form_div.append(new Element('<label for="$typeid" class="left">$typeid</label>'));
+				}
+			}
+		}
+	}
+}
 
 class SnapSettingsPopup extends Popup {
     var editor : SceneEditor;
