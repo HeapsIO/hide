@@ -476,11 +476,11 @@ class Prefab extends FileView {
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
-		toolsDefs.push({id: "graphicsFilters", title : "Graphics filters", type : Menu(filtersToMenuItem(graphicsFilters, "Graphics"))});
+		toolsDefs.push({id: "graphicsFilters", title : "Graphics filters", type : Popup((e) -> new FiltersPopup(null, e, this, sceneFilters, "Graphics"))});
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
-		toolsDefs.push({id: "sceneFilters", title : "Scene filters", type : Menu(filtersToMenuItem(sceneFilters, "Scene"))});
+		toolsDefs.push({id: "sceneFilters", title : "Scene filters", type : Popup((e) -> new FiltersPopup(null, e, this, sceneFilters, "Scene"))});
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
