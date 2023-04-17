@@ -9,6 +9,41 @@ import hrt.prefab2.Prefab as PrefabElement;
 import hrt.prefab2.Object3D;
 import hide.comp.cdb.DataFiles;
 
+class FiltersPopup extends hide.comp.Popup {
+	var editor:Prefab;
+	public function new(?parent:Element, ?root:Element, editor:Prefab, filters:Map<String, Bool>, type:String) {
+		super(parent, root);
+		this.editor = editor;
+		popup.addClass("settings-popup");
+		popup.css("max-width", "300px");
+
+		var form_div = new Element("<div>").addClass("form-grid").appendTo(popup);
+
+		{
+			for (typeid in filters.keys()) {
+				var on = filters[typeid];
+				var input = new Element('<input type="checkbox" id="$typeid" value="$typeid"/>');
+				if (on)
+					input.get(0).toggleAttribute("checked", true);
+
+				input.change((e) -> {
+					var on = !filters[typeid];
+					filters.set(typeid, on);
+
+					switch (type) {
+						case "Graphics":
+							@:privateAccess editor.applyGraphicsFilter(typeid, on);
+						case "Scene":
+							@:privateAccess editor.applySceneFilter(typeid, on);
+					}
+				});
+				form_div.append(input);
+				var nameCap = typeid.substr(0, 1).toUpperCase() + typeid.substr(1);
+				form_div.append(new Element('<label for="$typeid" class="left">$nameCap</label>'));
+			}
+		}
+	}
+}
 @:access(hide.view2.Prefab)
 private class PrefabSceneEditor extends hide.comp2.SceneEditor {
 	var parent : Prefab;
@@ -342,6 +377,10 @@ class Prefab extends hide.view.FileView {
 		statusText.setPosition(5, 5);
 		statusText.visible = false;
 
+
+
+
+		/*gridStep = @:privateAccess sceneEditor.gizmo.moveStep;*/
 		sceneEditor.updateGrid = function() {
 			updateGrid();
 		};
@@ -364,10 +403,8 @@ class Prefab extends hide.view.FileView {
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
-		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
-
-		toolsDefs.push({id: "toggleSnap", title : "Snap Toggle", icon: "magnet", type : Toggle((v) -> {sceneEditor.snapToggle = v; sceneEditor.updateGrid();})});
-		toolsDefs.push({id: "snap-menu", title : "", icon: "", type : Popup((e) -> new hide.comp2.SceneEditor.SnapSettingsPopup(null, e, sceneEditor))});
+        toolsDefs.push({id: "toggleSnap", title : "Snap Toggle", icon: "magnet", type : Toggle((v) -> {sceneEditor.snapToggle = v; sceneEditor.updateGrid();})});
+        toolsDefs.push({id: "snap-menu", title : "", icon: "", type : Popup((e) -> new hide.comp2.SceneEditor.SnapSettingsPopup(null, e, sceneEditor))});
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
@@ -381,6 +418,8 @@ class Prefab extends hide.view.FileView {
 		toolsDefs.push({id: "gridToggle", title : "Toggle grid", icon : "th", type : Toggle((v) -> { showGrid = v; updateGrid(); }) });
 		toolsDefs.push({id: "axisToggle", title : "Toggle model axis", icon : "cube", type : Toggle((v) -> { sceneEditor.showBasis = v; sceneEditor.updateBasis(); }) });
 		toolsDefs.push({id: "iconVisibility", title : "Toggle 3d icons visibility", icon : "image", type : Toggle((v) -> { hide.Ide.inst.show3DIcons = v; }), defaultValue: true });
+        toolsDefs.push({id: "iconVisibility-menu", title : "", icon: "", type : Popup((e) -> new hide.comp2.SceneEditor.IconVisibilityPopup(null, e, sceneEditor))});
+
 
 		var texContent : Element = null;
 		toolsDefs.push({id: "sceneInformationToggle", title : "Scene information", icon : "info-circle", type : Toggle((b) -> statusText.visible = b), rightClick: () -> {
@@ -433,24 +472,34 @@ class Prefab extends hide.view.FileView {
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
-		toolsDefs.push({id: "viewModes", title : "View Modes", type : Menu(filtersToMenuItem(viewModes, "View"))});
+        toolsDefs.push({id: "help", title : "help", icon: "question", type : Popup((e) -> new hide.comp2.SceneEditor.HelpPopup(null, e, sceneEditor))});
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
-		toolsDefs.push({id: "graphicsFilters", title : "Graphics filters", type : Menu(filtersToMenuItem(graphicsFilters, "Graphics"))});
+		toolsDefs.push({id: "viewModes", title: "View Modes", type: Popup((e) -> new hide.comp.SceneEditor.ViewModePopup(null, e, Std.downcast(@:privateAccess scene.s3d.renderer, h3d.scene.pbr.Renderer)))});
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
-		toolsDefs.push({id: "sceneFilters", title : "Scene filters", type : Menu(filtersToMenuItem(sceneFilters, "Scene"))});
+		toolsDefs.push({id: "graphicsFilters", title : "Graphics filters", type : Popup((e) -> new FiltersPopup(null, e, this, sceneFilters, "Graphics"))});
+
+		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
+
+		toolsDefs.push({id: "sceneFilters", title : "Scene filters", type : Popup((e) -> new FiltersPopup(null, e, this, sceneFilters, "Scene"))});
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
 		toolsDefs.push({id: "sceneSpeed", title : "Speed", type : Range((v) -> scene.speed = v)});
 
+		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
+
+		//toolsDefs.push({id: "test", title : "Hello", icon : "", type : Popup((e : hide.Element) -> new hide.comp.CameraControllerEditor(sceneEditor, null,e))});
+
+
 		tools.makeToolbar(toolsDefs, config, keys);
 
 		posToolTip = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		posToolTip.dropShadow = { dx : 1, dy : 1, color : 0, alpha : 0.5 };
+
 
 		var gizmo = @:privateAccess sceneEditor.gizmo;
 
@@ -538,25 +587,26 @@ class Prefab extends hide.view.FileView {
 		grid.scale(1);
 		grid.material.mainPass.setPassName("debuggeom");
 
-		if (sceneEditor.snapToggle) {
-			gridStep = sceneEditor.snapMoveStep;
-		}
-		else {
-			gridStep = ide.currentConfig.get("sceneeditor.gridStep");
-		}
+        if (sceneEditor.snapToggle) {
+    		gridStep = sceneEditor.snapMoveStep;
+        }
+        else {
+            gridStep = ide.currentConfig.get("sceneeditor.gridStep");
+        }
 		gridSize = ide.currentConfig.get("sceneeditor.gridSize");
 
 		var col = h3d.Vector.fromColor(scene.engine.backgroundColor);
 		var hsl = col.toColorHSL();
 
-		var mov = 0.1;
+        var mov = 0.1;
 
-		if (sceneEditor.snapToggle) {
-			mov = 0.2;
-			hsl.y += (1.0-hsl.y) * 0.2;
-		}
+        if (sceneEditor.snapToggle) {
+            mov = 0.2;
+            hsl.y += (1.0-hsl.y) * 0.2;
+        }
 		if(hsl.z > 0.5) hsl.z -= mov;
 		else hsl.z += mov;
+
 		col.makeColor(hsl.x, hsl.y, hsl.z);
 
 		grid.lineStyle(1.0, col.toColor(), 1.0);
@@ -784,6 +834,8 @@ class Prefab extends hide.view.FileView {
 			}
 		}
 	}
+
+
 
 	function getDisplayColor(p: PrefabElement) : Null<Int> {
 		var typeId = p.getCdbType();

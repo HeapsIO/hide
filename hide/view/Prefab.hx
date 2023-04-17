@@ -854,5 +854,3 @@ class Prefab extends FileView {
 	static var _1 = FileTree.registerExtension(Prefab, ["l3d__"], { icon : "sitemap" });
 
 }
-
-}
