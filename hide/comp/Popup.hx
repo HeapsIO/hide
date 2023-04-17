@@ -14,7 +14,6 @@ class Popup extends Component {
 
 	function onMouseUp(e : js.html.MouseEvent) {
 		var elem = new Element(originalTarget);
-		trace(originalTarget);
 		if (originalTarget != null && canCloseOnClickOutside() && onShouldCloseOnClick(e) && elem.closest(popup).length == 0 && elem.closest(element).length == 0) {
 			close();
 		}
@@ -54,7 +53,7 @@ class Popup extends Component {
 				elem.onpointerdown = function(event : js.html.PointerEvent) {
 					elem.setPointerCapture(event.pointerId);
 				};
-		
+
 				elem.onpointerup = function(event : js.html.PointerEvent) {
 					elem.releasePointerCapture(event.pointerId);
 				};
@@ -72,7 +71,7 @@ class Popup extends Component {
 
 		offset.top += element.get(0).offsetHeight;
 		offset.top = Math.min(offset.top,  clientHeight - popupHeight - 32);
-		
+
 		//offset.left += element.get(0).offsetWidth;
 		offset.left = Math.min(offset.left,  clientWidth - popupWidth - 32);
 
