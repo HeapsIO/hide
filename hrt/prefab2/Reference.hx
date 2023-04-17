@@ -56,7 +56,7 @@ class Reference extends Object3D {
 			#if editor
 			p.setEditor((cast shared:hide.prefab2.ContextShared).editor);
 			#end
-			refInstance = p.make(null, findFirstLocal2d(), parent3d, shared);
+			refInstance = p.make(null, findFirstLocal2d(), parent3d, sh);
 		}
 		return Object3D.getLocal3d(refInstance);
 	}
