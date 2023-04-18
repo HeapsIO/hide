@@ -177,38 +177,6 @@ class Prefab {
 		}
 	}
 
-	public static function createFromDynamic(data:Dynamic, parent:Prefab = null, contextShared:ContextShared = null) : Prefab {
-		var type : String = data.type;
-
-		var cl : Class<Prefab> = Unknown;
-		if (type == "object")
-			type = "object3D";
-
-		if (type != null) {
-			var classEntry = registry.get(type);
-			if (classEntry != null)
-				cl = classEntry.prefabClass;
-		}
-
-		// Converting (old) prefabs roots to Object3D automatically
-		if (parent == null && cl == Prefab)
-			cl = Object3D;
-		if (parent == null && type == "level3d")
-			cl = Object3D;
-
-		var prefabInstance = Type.createInstance(cl, [parent, contextShared]);
-
-		prefabInstance.load(data);
-
-		var children = Std.downcast(Reflect.field(data, "children"), Array);
-		if (children != null) {
-			for (child in children) {
-				createFromDynamic(child, prefabInstance);
-			}
-		}
-
-		return prefabInstance;
-	}
 
 	public function cleanup() {
 		for (c in children) {
@@ -221,9 +189,7 @@ class Prefab {
 
 	}
 
-	public static function createFromPath(path: String, parent: Prefab = null, ?contextShared: ContextShared) : Prefab {
-		return hxd.res.Loader.currentInstance.load(path).to(hrt.prefab2.Resource).load(contextShared);
-	}
+
 
 	#if editor
 	public function setEditor(sceneEditor: hide.comp2.SceneEditor) {
@@ -271,14 +237,7 @@ class Prefab {
 		return findAll(function(p) return p.to(cl), followRefs, arr);
 	}
 
-	public static function isOfType( original : Class<Prefab>, parent : Class<Prefab> ) {
-		var c : Class<Dynamic> = original;
-		while( c != null ) {
-			if( c == parent ) return true;
-			c = Type.getSuperClass(c);
-		}
-		return false;
-	}
+
 
 	/**
 		Simlar to get() but returns null if not found.
@@ -444,65 +403,11 @@ class Prefab {
 		return dyn;
 	}
 
-	/**
-		Copy all the fields from this prefab to the target prefab, recursively
-	**/
-	public static function copyRecursive(source:Prefab, dest:Prefab, useProperty:Bool, copyNull:Bool)
-	{
-		copyShallow(source, dest, useProperty, copyNull, false, source.getSerializableProps());
-		for (idx in 0...source.children.length) {
-			copyRecursive(source.children[idx], dest.children[idx], useProperty, copyNull);
-		}
-	}
+
 
 	// Helpers function for meta
 	public final function getSerializableProps() : Array<PrefabField> {
 		return getSerializablePropsForClass(Type.getClass(this));
-	}
-
-	inline public static function getSerializablePropsForClass(cl : Class<Prefab>) {
-		return (cl:Dynamic).getSerializablePropsStatic();
-	}
-
-	public static function getClassTypeName(cl : Class<Prefab>) : String {
-		return reverseRegistry.get(Type.getClassName(cl));
-	}
-
-	public static function getPrefabInfoByName(name:String) : PrefabInfo {
-		return registry[name];
-	}
-
-	static var registry : Map<String, PrefabInfo> = new Map();
-
-	// Map prefab class name to the serialized name of the prefab
-	static var reverseRegistry : Map<String, String> = new Map();
-	static var extensionRegistry : Map<String, String> = new Map();
-
-	/**
-		Register the given prefab class with the given typeName in the prefab regsitry.
-		This is necessary for the serialisation system.
-		Call it by placing this in you prefab class :
-		```
-		public static var _ = Prefab.register("myPrefabName", myPrefabClassName);
-		```
-	**/
-	public static function register(typeName : String, prefabClass: Class<hrt.prefab2.Prefab>, ?extension: String) {
-		#if editor
-		var info : hide.prefab2.HideProps = cast Type.createEmptyInstance(prefabClass).getHideProps();
-		#end
-
-		reverseRegistry.set(Type.getClassName(prefabClass), typeName);
-		registry.set(typeName, {prefabClass: prefabClass #if editor, inf : info #end, extension: extension});
-		if (extension != null) {
-			extensionRegistry.set(extension, typeName);
-		}
-
-		return true;
-	}
-
-	public static function getPrefabType(path: String) {
-		var extension = path.split(".").pop().toLowerCase();
-		return extensionRegistry.get(extension);
 	}
 
 	/**
@@ -603,17 +508,6 @@ class Prefab {
 		}
 		rec(root);
 		return ret;
-	}
-
-	static function getChildrenRoots( base : h3d.scene.Object, p : Prefab, out : Array<h3d.scene.Object> ) {
-		for( c in p.children ) {
-			var local3d = Object3D.getLocal3d(c);
-			if( local3d == base )
-				getChildrenRoots(base, c, out);
-			else
-				out.push(local3d);
-		}
-		return out;
 	}
 
 	/**
@@ -792,50 +686,7 @@ class Prefab {
 		return inst;
 	}
 
-	/**
-		Only copy a prefab serializable properties without it's children
-	**/
-	static function copyShallow(source:Dynamic, dest:Dynamic, useProperty:Bool, copyNull:Bool, copyDefault: Bool, props:Array<PrefabField>) {
-		var set = useProperty ? Reflect.setProperty : Reflect.setField;
 
-		for (prop in props) {
-			var v : Dynamic = Reflect.getProperty(source, prop.name);
-			var shouldCopy = true;
-			shouldCopy = shouldCopy && (v != null || copyNull);
-			shouldCopy = shouldCopy && (copyDefault || useProperty || v != prop.defaultValue);
-			//shouldCopy &= (copyDefault || )
-			if (shouldCopy) {
-				// Fixup enums for non JS targets
-				switch (Type.typeof(Reflect.getProperty(dest, prop.name))) {
-					case TEnum(e):
-						if (Type.getClass(v) == String) {
-							v = e.createByName(v);
-						}
-					default:
-				}
-				set(dest, prop.name, copyValue(v));
-			}
-		}
-	}
-
-	static function copyValue(v:Dynamic) : Dynamic {
-		switch (Type.typeof(v)) {
-			case TClass(c):
-				switch(c) {
-					case cast Array:
-						var v:Array<Dynamic> = v;
-						return v.copy();
-					case cast String:
-						var v:String = v;
-						return v;
-					default:
-						// TODO : oh no
-						return haxe.Json.parse(haxe.Json.stringify(v));
-				}
-			default:
-				return v;
-		}
-	}
 
 	/** Copy all the properties in data to this prefab object. This is not recursive. Done when loading the json data of the prefab**/
 	public function load(data : Dynamic) : Void {
@@ -915,7 +766,6 @@ class Prefab {
 		children = newchild;
 	}
 
-	static var cache : Map<String, Prefab> = new Map();
 
 #if editor
 	/*
@@ -949,6 +799,166 @@ class Prefab {
 
 	}
 #end
+
+	public static function createFromPath(path: String, parent: Prefab = null, ?contextShared: ContextShared) : Prefab {
+		return hxd.res.Loader.currentInstance.load(path).to(hrt.prefab2.Resource).load(contextShared);
+	}
+
+	public static function createFromDynamic(data:Dynamic, parent:Prefab = null, contextShared:ContextShared = null) : Prefab {
+		var type : String = data.type;
+
+		var cl : Class<Prefab> = Unknown;
+		if (type == "object")
+			type = "object3D";
+
+		if (type != null) {
+			var classEntry = registry.get(type);
+			if (classEntry != null)
+				cl = classEntry.prefabClass;
+		}
+
+		// Converting (old) prefabs roots to Object3D automatically
+		if (parent == null && cl == Prefab)
+			cl = Object3D;
+		if (parent == null && type == "level3d")
+			cl = Object3D;
+
+		var prefabInstance = Type.createInstance(cl, [parent, contextShared]);
+
+		prefabInstance.load(data);
+
+		var children = Std.downcast(Reflect.field(data, "children"), Array);
+		if (children != null) {
+			for (child in children) {
+				createFromDynamic(child, prefabInstance);
+			}
+		}
+
+		return prefabInstance;
+	}
+
+	public static function isOfType( original : Class<Prefab>, parent : Class<Prefab> ) {
+		var c : Class<Dynamic> = original;
+		while( c != null ) {
+			if( c == parent ) return true;
+			c = Type.getSuperClass(c);
+		}
+		return false;
+	}
+
+	/**
+		Copy all the fields from this prefab to the target prefab, recursively
+	**/
+	public static function copyRecursive(source:Prefab, dest:Prefab, useProperty:Bool, copyNull:Bool)
+	{
+		copyShallow(source, dest, useProperty, copyNull, false, source.getSerializableProps());
+		for (idx in 0...source.children.length) {
+			copyRecursive(source.children[idx], dest.children[idx], useProperty, copyNull);
+		}
+	}
+
+	inline public static function getSerializablePropsForClass(cl : Class<Prefab>) {
+		return (cl:Dynamic).getSerializablePropsStatic();
+	}
+
+	public static function getClassTypeName(cl : Class<Prefab>) : String {
+		return reverseRegistry.get(Type.getClassName(cl));
+	}
+
+	public static function getPrefabInfoByName(name:String) : PrefabInfo {
+		return registry[name];
+	}
+
+	static var registry : Map<String, PrefabInfo> = new Map();
+
+	// Map prefab class name to the serialized name of the prefab
+	static var reverseRegistry : Map<String, String> = new Map();
+	static var extensionRegistry : Map<String, String> = new Map();
+
+	/**
+		Register the given prefab class with the given typeName in the prefab regsitry.
+		This is necessary for the serialisation system.
+		Call it by placing this in you prefab class :
+		```
+		public static var _ = Prefab.register("myPrefabName", myPrefabClassName);
+		```
+	**/
+	public static function register(typeName : String, prefabClass: Class<hrt.prefab2.Prefab>, ?extension: String) {
+		#if editor
+		var info : hide.prefab2.HideProps = cast Type.createEmptyInstance(prefabClass).getHideProps();
+		#end
+
+		reverseRegistry.set(Type.getClassName(prefabClass), typeName);
+		registry.set(typeName, {prefabClass: prefabClass #if editor, inf : info #end, extension: extension});
+		if (extension != null) {
+			extensionRegistry.set(extension, typeName);
+		}
+
+		return true;
+	}
+
+	public static function getPrefabType(path: String) {
+		var extension = path.split(".").pop().toLowerCase();
+		return extensionRegistry.get(extension);
+	}
+
+
+	static function getChildrenRoots( base : h3d.scene.Object, p : Prefab, out : Array<h3d.scene.Object> ) {
+		for( c in p.children ) {
+			var local3d = Object3D.getLocal3d(c);
+			if( local3d == base )
+				getChildrenRoots(base, c, out);
+			else
+				out.push(local3d);
+		}
+		return out;
+	}
+
+
+	/**
+		Only copy a prefab serializable properties without it's children
+	**/
+	static function copyShallow(source:Dynamic, dest:Dynamic, useProperty:Bool, copyNull:Bool, copyDefault: Bool, props:Array<PrefabField>) {
+		var set = useProperty ? Reflect.setProperty : Reflect.setField;
+
+		for (prop in props) {
+			var v : Dynamic = Reflect.getProperty(source, prop.name);
+			var shouldCopy = true;
+			shouldCopy = shouldCopy && (v != null || copyNull);
+			shouldCopy = shouldCopy && (copyDefault || useProperty || v != prop.defaultValue);
+			//shouldCopy &= (copyDefault || )
+			if (shouldCopy) {
+				// Fixup enums for non JS targets
+				switch (Type.typeof(Reflect.getProperty(dest, prop.name))) {
+					case TEnum(e):
+						if (Type.getClass(v) == String) {
+							v = e.createByName(v);
+						}
+					default:
+				}
+				set(dest, prop.name, copyValue(v));
+			}
+		}
+	}
+
+	static function copyValue(v:Dynamic) : Dynamic {
+		switch (Type.typeof(v)) {
+			case TClass(c):
+				switch(c) {
+					case cast Array:
+						var v:Array<Dynamic> = v;
+						return v.copy();
+					case cast String:
+						var v:String = v;
+						return v;
+					default:
+						// TODO : oh no
+						return haxe.Json.parse(haxe.Json.stringify(v));
+				}
+			default:
+				return v;
+		}
+	}
 
 	static dynamic function createContextShared() : ContextShared {
 		return #if editor new hide.prefab2.ContextShared(); #else new ContextShared(); #end

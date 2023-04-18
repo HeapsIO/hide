@@ -67,6 +67,8 @@ class ScreenShaderGraph extends RendererFX {
 	}
 
 	public function loadShaderDef() {
+		if (shaderGraph == null)
+			resolveRef();
 		shaderDef = shaderGraph.compile();
 		if(shaderDef == null)
 			return;
@@ -82,6 +84,11 @@ class ScreenShaderGraph extends RendererFX {
 		#end
 	}
 
+	override function makeInstance() {
+		super.makeInstance();
+		updateInstance();
+	}
+
 	function getShaderDefinition():hxsl.SharedShader {
 		if( shaderDef == null )
 			loadShaderDef();
@@ -93,8 +100,10 @@ class ScreenShaderGraph extends RendererFX {
 	}
 
 	function syncShaderVars() {
-		if (shaderDef == null)
-			loadShaderDef();
+		// if (shaderDef == null)
+		// 	loadShaderDef();
+		// if (shader == null)
+		// 	makeShader();
 		for(v in shaderDef.shader.data.vars) {
 			if(v.kind != Param)
 				continue;
