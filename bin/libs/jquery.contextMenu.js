@@ -1617,6 +1617,7 @@
                 var outerHeight = $menu.outerHeight();
                 var outerWidth = $menu.outerWidth();
 
+				var minOffset = 8;
                 if(menuHeight > winHeight){
                     $menu.css({
                         'height' : winHeight + 'px',
@@ -1628,14 +1629,14 @@
                     $menu.css({
                       'top': winScrollTop + 'px'
                     });
-                } else if($menuOffset.top + outerHeight > winScrollTop + winHeight){
+                } else if($menuOffset.top + outerHeight + minOffset > winScrollTop + winHeight){
                     $menu.css({
-                      'top': $menuOffset.top - (($menuOffset.top + outerHeight) - (winScrollTop + winHeight)) + "px"
+                      'top': $menuOffset.top - (($menuOffset.top + outerHeight) - (winScrollTop + winHeight) + minOffset) + "px"
                     });
                 }
-                if($menuOffset.left + outerWidth > winScrollLeft + winWidth){
+                if($menuOffset.left + outerWidth + minOffset > winScrollLeft + winWidth){
                     $menu.css({
-                      'left': $menuOffset.left - (($menuOffset.left + outerWidth) - (winScrollLeft + winWidth)) + "px"
+                      'left': $menuOffset.left - (($menuOffset.left + outerWidth) - (winScrollLeft + winWidth) + minOffset) + "px"
                     });
                 }
             }
