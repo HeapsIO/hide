@@ -580,6 +580,8 @@ class EmitterObject extends h3d.scene.Object {
 			batch.name = "emitter";
 			batch.calcBounds = false;
 
+			var batchContext = context.clone(null);
+			batchContext.local3d = batch;
 			// Setup mats.
 			// Should we do this manually here or make a recursive makeInstance on the template?
 			var materials = emitterPrefab.getAll(hrt.prefab.Material);
@@ -593,7 +595,7 @@ class EmitterObject extends h3d.scene.Object {
 
 				if (this.emitterPrefab == p) {
 					if(mat.enabled) {
-						var ctx = mat.makeInstance(context);
+						var ctx = mat.makeInstance(batchContext);
 						ctx.local3d = null;
 					}
 				}
@@ -610,10 +612,10 @@ class EmitterObject extends h3d.scene.Object {
 				}
 				if (this.emitterPrefab == p) {
 					if( !shader.enabled ) continue;
-					var shCtx = makeShaderInstance(shader, context);
+					var shCtx = makeShaderInstance(shader, batchContext);
 					if( shCtx == null ) continue;
 
-					//shCtx.local3d = null; // Prevent shader.iterMaterials from adding our objet to the list incorectly
+					shCtx.local3d = null; // Prevent shader.iterMaterials from adding our objet to the list incorectly
 
 					hrt.prefab.fx.BaseFX.getShaderAnims(shCtx, shader, shaderAnims, batch);
 				}
