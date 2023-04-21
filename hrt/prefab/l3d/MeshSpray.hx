@@ -112,6 +112,10 @@ class MeshSpray extends Spray {
 		}
 	}
 
+	function emitCondition(m : h3d.Matrix ) {
+		return true;
+	}
+
 	override function make( ctx : Context ) {
 		if( !enabled )
 			return ctx;
@@ -145,6 +149,8 @@ class MeshSpray extends Spray {
 			// }
 			tmp.multiply3x4(c.to(Object3D).getTransform(), pos);
 			if( inf.pivot != null ) tmp.multiply3x4(inf.pivot, tmp);
+			if ( !emitCondition(tmp) )
+				continue;
 			inf.batch.emitInstance();
 		}
 		if( binaryMeshes != null ) {
@@ -165,6 +171,8 @@ class MeshSpray extends Spray {
 				tmp.tz = c.z;
 				tmp.multiply3x4(tmp, pos);
 				if( inf.pivot != null ) tmp.multiply3x4(inf.pivot, tmp);
+				if ( !emitCondition(tmp) )
+					continue;
 				inf.batch.emitInstance();
 			}
 		}
