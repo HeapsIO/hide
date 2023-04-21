@@ -28,6 +28,7 @@ class Model extends FileView {
 	var rootPath : String;
 	var root : hrt.prefab.Prefab;
 	var selectedAxes : h3d.scene.Object;
+	var showSelectionAxes : Bool = false;
 	var lastSelectedObject : h3d.scene.Object = null;
 
 	var highlightSelection : Bool = true;
@@ -323,8 +324,6 @@ class Model extends FileView {
 		else
 			selectedJoint = null;
 
-		selectedAxes.follow = obj;
-
 		var properties = sceneEditor.properties;
 		properties.clear();
 
@@ -456,8 +455,17 @@ class Model extends FileView {
 			m.removePass(m.getPass("highlightBack"));
 		}
 
+		if (selectedObj == null) {
+			selectedAxes.visible = false;
+		}
+
 		if (!highlightSelection || selectedObj == null)
 			return;
+
+		{
+			selectedAxes.follow = selectedObj;
+			selectedAxes.visible = showSelectionAxes;
+		}
 
 		materials = selectedObj.getMaterials();
 
@@ -514,21 +522,25 @@ class Model extends FileView {
 		return out;
 	}
 
-	function makeAxes() {
+	function makeAxes(width: Float = 1.0, length: Float = 1.0, ?pass:String = null, alpha:Float = 1.0) {
 		var g = new h3d.scene.Graphics(scene.s3d);
-		g.lineStyle(1,0xFF0000);
-		g.lineTo(1,0,0);
-		g.lineStyle(1,0x00FF00);
+		g.lineStyle(width,0xFF0000, alpha);
+		g.lineTo(length,0,0);
+		g.lineStyle(width,0x00FF00, alpha);
 		g.moveTo(0,0,0);
-		g.lineTo(0,1,0);
-		g.lineStyle(1,0x0000FF);
+		g.lineTo(0,length,0);
+		g.lineStyle(width,0x0000FF, alpha);
 		g.moveTo(0,0,0);
-		g.lineTo(0,0,1);
+		g.lineTo(0,0,length);
 		g.lineStyle();
 
 		for(m in g.getMaterials()) {
-			m.mainPass.setPassName("overlay");
+			if (pass != null)
+				m.mainPass.setPassName(pass);
 			m.mainPass.depth(false, Always);
+			if (alpha != 1.0) {
+				m.blendMode = Alpha;
+			}
 		}
 
 		return g;
@@ -607,15 +619,16 @@ class Model extends FileView {
 
 		tools.addSeparator();
 
-		var axes = makeAxes();
+		var axes = makeAxes(0.5, 100.0, "overlay", 0.75);
 		axes.visible = false;
 
-		selectedAxes = makeAxes();
+		selectedAxes = makeAxes(3.0, 1.0, "overlay");
 		selectedAxes.visible = false;
 
 		tools.addToggle("location-arrow", "Toggle Axis", function(v) {
 			axes.visible = v;
-			selectedAxes.visible = v;
+			showSelectionAxes = v;
+			refreshSelectionHighlight(lastSelectedObject);
 		});
 		tools.addToggle("connectdevelop", "Wireframe",(b) -> {
 			sceneEditor.setWireframe(b);
