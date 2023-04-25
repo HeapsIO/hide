@@ -150,7 +150,6 @@ class Prefab {
 	public final function remove() {
 
 		function detachRec(prefab:Prefab, newRoot: Prefab, removedClasses: Array<Class<Prefab>>) : Void {
-			trace('remove ${prefab.name}');
 			var removed = prefab.detach(newRoot, removedClasses);
 			if (removed != null)
 				removedClasses.push(removed);
@@ -632,14 +631,14 @@ class Prefab {
 		Call all the setters of this object and its children
 	**/
 	public function refresh() {
-		for (field in getSerializableProps()) {
+		/*for (field in getSerializableProps()) {
 			if (field.hasSetter) {
 				Reflect.setProperty(this, field.name, Reflect.getProperty(this, field.name));
 			}
 		}
 		for (child in children) {
 			child.refresh();
-		}
+		}*/
 	}
 
 	/*
@@ -690,20 +689,22 @@ class Prefab {
 
 	/** Copy all the properties in data to this prefab object. This is not recursive. Done when loading the json data of the prefab**/
 	public function load(data : Dynamic) : Void {
-		copyShallow(data, this, false, false, false, getSerializableProps());
+		this.copyFromDynamic(data);
+		//copyShallow(data, this, false, false, false, getSerializableProps());
 	}
 
 	/** Copy all the properties in Prefab to this prefab object. Done when cloning an existing prefab**/
 	public function copy(data: Prefab) : Void {
-		copyShallow(data, this, false, false, false, getSerializableProps());
+		this.copyFromOther(data);
+		//copyShallow(data, this, false, false, false, getSerializableProps());
 	}
 
 	/** Save all the properties to the given dynamic object. This is not recursive. Returns the updated dynamic object.
 		If to is null, a new dynamic object is created automatically and returned by the
 	**/
 	public function save(to: Dynamic) : Dynamic {
-		copyShallow(this, to, false, false, false, getSerializableProps());
-		return to;
+		//copyShallow(this, to, false, false, false, getSerializableProps());
+		return this.copyToDynamic(to);
 	}
 
 	/**
@@ -851,6 +852,7 @@ class Prefab {
 	**/
 	public static function copyRecursive(source:Prefab, dest:Prefab, useProperty:Bool, copyNull:Bool)
 	{
+		throw "nuh uh";
 		copyShallow(source, dest, useProperty, copyNull, false, source.getSerializableProps());
 		for (idx in 0...source.children.length) {
 			copyRecursive(source.children[idx], dest.children[idx], useProperty, copyNull);
@@ -858,6 +860,7 @@ class Prefab {
 	}
 
 	inline public static function getSerializablePropsForClass(cl : Class<Prefab>) {
+		throw "nuh uh";
 		return (cl:Dynamic).getSerializablePropsStatic();
 	}
 

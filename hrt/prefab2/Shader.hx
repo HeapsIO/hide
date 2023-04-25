@@ -71,12 +71,10 @@ class Shader extends Prefab {
 	}
 
 	function applyShader( obj : h3d.scene.Object, material : h3d.mat.Material, shader : hxsl.Shader ) {
-		if (shader != null) trace("[+] " + Type.getClassName(Type.getClass(shader)));
 		material.mainPass.addShader(shader);
 	}
 
 	function removeShader( obj : h3d.scene.Object, material : h3d.mat.Material, shader : hxsl.Shader ) {
-		if (shader != null) trace("[-] " + Type.getClassName(Type.getClass(shader)));
 		material.mainPass.removeShader(shader);
 	}
 
@@ -156,9 +154,6 @@ class Shader extends Prefab {
 	}
 
 	override function detach(newRoot: Prefab, removedClasses: Array<Class<Prefab>>) : Class<Prefab> {
-		if (Type.getClass(this.shader) == hrt.shader.UVDebug) {
-			trace("BREAK");
-		}
 		iterMaterials(function(obj,mat) if(checkMaterial(mat)) removeShader(obj, mat, shader));
 		return null;
 	}

@@ -10,9 +10,10 @@ import hrt.prefab2.fx.Value;
 
 using Lambda;
 
+@:build(hrt.prefab2.Macros.buildSerializable())
 class CurveHandle {
-	public var dt: Float;
-	public var dv: Float;
+	@:s public var dt: Float;
+	@:s public var dv: Float;
 	public function new(t, v) {
 		this.dt = t;
 		this.dv = v;
@@ -26,12 +27,13 @@ enum abstract CurveKeyMode(Int) {
 	var Constant = 3;
 }
 
+@:build(hrt.prefab2.Macros.buildSerializable())
 class CurveKey {
-	public var time: Float;
-	public var value: Float;
-	public var mode: CurveKeyMode;
-	public var prevHandle: CurveHandle;
-	public var nextHandle: CurveHandle;
+	@:s public var time: Float;
+	@:s public var value: Float;
+	@:s public var mode: CurveKeyMode;
+	@:s public var prevHandle: CurveHandle;
+	@:s public var nextHandle: CurveHandle;
 	public function new() {}
 }
 
@@ -58,20 +60,6 @@ class Curve extends Prefab {
 
 	public override function load(o:Dynamic) {
 		super.load(o);
-		keys = [];
-		if(o.keys != null) {
-			for(k in (o.keys: Array<Dynamic>)) {
-				var nk = new CurveKey();
-				nk.time = k.time;
-				nk.value = k.value;
-				nk.mode = k.mode;
-				if(k.prevHandle != null)
-					nk.prevHandle = new CurveHandle(k.prevHandle.dt, k.prevHandle.dv);
-				if(k.nextHandle != null)
-					nk.nextHandle = new CurveHandle(k.nextHandle.dt, k.nextHandle.dv);
-				keys.push(nk);
-			}
-		}
 		if( keys.length == 0 ) {
 			addKey(0.0, 0.0);
 			addKey(1.0, 1.0);
@@ -103,25 +91,23 @@ class Curve extends Prefab {
 	// 	}
 	// }
 
-
-
-	public override function save(to : Dynamic) {
-		var to = super.save(to);
-		var obj = to;
-		var keysDat = [];
-		for(k in keys) {
-			var o = {
-				time: k.time,
-				value: k.value,
-				mode: k.mode
-			};
-			if(k.prevHandle != null) Reflect.setField(o, "prevHandle", { dv: k.prevHandle.dv, dt: k.prevHandle.dt });
-			if(k.nextHandle != null) Reflect.setField(o, "nextHandle", { dv: k.nextHandle.dv, dt: k.nextHandle.dt });
-			keysDat.push(o);
-		}
-		obj.keys = keysDat;
-		return to;
-	}
+	// public override function save(to : Dynamic) {
+	// 	var to = super.save(to);
+	// 	var obj = to;
+	// 	var keysDat = [];
+	// 	for(k in keys) {
+	// 		var o = {
+	// 			time: k.time,
+	// 			value: k.value,
+	// 			mode: k.mode
+	// 		};
+	// 		if(k.prevHandle != null) Reflect.setField(o, "prevHandle", { dv: k.prevHandle.dv, dt: k.prevHandle.dt });
+	// 		if(k.nextHandle != null) Reflect.setField(o, "nextHandle", { dv: k.nextHandle.dv, dt: k.nextHandle.dt });
+	// 		keysDat.push(o);
+	// 	}
+	// 	obj.keys = keysDat;
+	// 	return to;
+	// }
 
 	static inline function bezier(c0: Float, c1:Float, c2:Float, c3: Float, t:Float) {
 		var u = 1 - t;
