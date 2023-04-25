@@ -1081,8 +1081,10 @@ class Ide {
 	}
 
 	public function runCommand(cmd, ?callb) {
-		var changeDir = isWindows ? "chdir" : "cd";
-		js.node.ChildProcess.exec('$changeDir $projectDir && $cmd', callb);
+		var c = cmd.split("%PROJECTDIR%").join(projectDir);
+		var slash = isWindows ? "\\" : "/";
+		c = c.split("/").join(slash);
+		js.node.ChildProcess.exec(c, callb);
 	}
 
 	public function initMenu() {
