@@ -123,7 +123,6 @@ class FXAnimation extends h3d.scene.Object {
 				if (loop) {
 					t = (t % duration);
 				}
-				trace(t);
 				setTime(t, fullSync);
 			}
 			else {
