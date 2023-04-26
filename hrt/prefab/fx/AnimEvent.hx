@@ -36,7 +36,6 @@ class AnimEvent extends hrt.prefab.fx.Event {
 					else {
 						t = hxd.Math.min(t, anim.frameCount);
 					}
-					trace('$t / ${anim.frameCount}');
 					inst.setFrame(t);
 				}
 				else inst = null;
