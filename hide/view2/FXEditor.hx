@@ -157,6 +157,31 @@ private class FXSceneEditor extends hide.comp2.SceneEditor {
 		var recents = getNewRecentContextMenu(current, onMake);
 
 		var menu = [];
+
+		function splitMenu(menu : Array<hide.comp.ContextMenu.ContextMenuItem>, name : String, entries : Array<hide.comp.ContextMenu.ContextMenuItem>, len : Int = 30) {
+			entries.sort((a,b) -> Reflect.compare(a.label, b.label));
+
+			var pos = 0;
+			while(true) {
+				var arr = entries.slice(pos, pos+len);
+				if (arr.length == 0) {
+					break;
+				}
+				pos += len;
+				var firstChar = arr[0].label.charAt(0);
+				var endChar = (entries.length < pos+len) ? "Z" : arr[arr.length-1].label.charAt(0);
+
+				var label = name + " " + firstChar + "-" + endChar;
+				if (pos == 0 && arr.length < len) {
+					label = name;
+				}
+				menu.push({
+					label: label,
+					menu: arr
+				});
+			}
+		}
+
 		if (parent.is2D) {
 			for(name in ["Group 2D", "Bitmap", "Anim2D", "Atlas", "Particle2D", "Text", "Shader", "Shader Graph", "Placeholder"]) {
 				var item = allTypes.find(i -> i.label == name);
@@ -217,10 +242,10 @@ private class FXSceneEditor extends hide.comp2.SceneEditor {
 		}
 
 		menu.push({label: null, isSeparator: true});
-		menu.push({
-			label: "Other",
-			menu: allTypes
-		});
+
+		splitMenu(menu, "Other", allTypes);
+
+
 		menu.unshift({
 			label : "Recents",
 			menu : recents,
@@ -281,7 +306,7 @@ class FXEditor extends hide.view.FileView {
 	//var fxScriptParser : hrt.prefab2.fx.FXScriptParser;
 	var cullingPreview : h3d.scene.Sphere;
 
-	var viewModes : Array<String>;
+    var viewModes : Array<String>;
 
 	override function getDefaultContent() {
 		return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab2.fx.FX(null, null).serializeToDynamic()));
@@ -756,56 +781,11 @@ class FXEditor extends hide.view.FileView {
 			updateGrid();
 		}, scene.engine.backgroundColor);
 
+
 		tools.addSeparator();
 
-		var viewModesMenu = tools.addMenu(null, "View Modes");
-		var items : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
-		viewModes = ["LIT", "Full", "Albedo", "Normal", "Roughness", "Metalness", "Emissive", "AO", "Shadows", "Performance"];
-		for(typeid in viewModes) {
-			items.push({label : typeid, click : function() {
-				var r = Std.downcast(scene.s3d.renderer, h3d.scene.pbr.Renderer);
-				if ( r == null )
-					return;
-				var slides = @:privateAccess r.slides;
-				if ( slides == null )
-					return;
-				switch(typeid) {
-				case "LIT":
-					r.displayMode = Pbr;
-				case "Full":
-					r.displayMode = Debug;
-					slides.shader.mode = Full;
-				case "Albedo":
-					r.displayMode = Debug;
-					slides.shader.mode = Albedo;
-				case "Normal":
-					r.displayMode = Debug;
-					slides.shader.mode = Normal;
-				case "Roughness":
-					r.displayMode = Debug;
-					slides.shader.mode = Roughness;
-				case "Metalness":
-					r.displayMode = Debug;
-					slides.shader.mode = Metalness;
-				case "Emissive":
-					r.displayMode = Debug;
-					slides.shader.mode = Emmissive;
-				case "AO":
-					r.displayMode = Debug;
-					slides.shader.mode = AO;
-				case "Shadows":
-						r.displayMode = Debug;
-						slides.shader.mode = Shadow;
-				case "Performance":
-					r.displayMode = Performance;
-				default:
-				}
-			}
-			});
-		}
-		viewModesMenu.setContent(items);//, {id: "viewModes", title : "View Modes", type : Menu(filtersToMenuItem(viewModes, "View"))});
-		var el = viewModesMenu.element;
-		el.addClass("View Modes");
+		tools.addPopup(null, "View Modes", (e) -> new hide.comp2.SceneEditor.ViewModePopup(null, e, Std.downcast(@:privateAccess scene.s3d.renderer, h3d.scene.pbr.Renderer)), null);
+
 
 		tools.addSeparator();
 
@@ -814,6 +794,8 @@ class FXEditor extends hide.view.FileView {
 		tools.addRange("Speed", function(v) {
 			scene.speed = v;
 		}, scene.speed);
+
+
 
 		var gizmo = @:privateAccess sceneEditor.gizmo;
 
@@ -962,7 +944,7 @@ class FXEditor extends hide.view.FileView {
 			cullingPreview.radius = data.cullingRadius;
 		}
 
-		if(pname == "time") {
+		if(pname == "time" || pname == "loop") {
 			afterPan(false);
 			data.refreshObjectAnims();
 		}
@@ -1447,6 +1429,21 @@ class FXEditor extends hide.view.FileView {
 			var curveEdit = new hide.comp2.CurveEditor(this.undo, curveContainer);
 			curveEdit.saveDisplayKey = dispKey;
 			curveEdit.lockViewX = true;
+
+			curveEdit.requestXZoom = function(xMin, xMax) {
+				var margin = 10.0;
+				var scroll = element.find(".timeline-scroll");
+				var width = scroll.parent().width();
+				xScale = (width - margin * 2.0) / (xMax);
+				xOffset = 0.0;
+
+				curveEdit.xOffset = xOffset;
+				curveEdit.xScale = xScale;
+
+				refreshDopesheet();
+				refreshTimeline(false);
+			}
+
 			if(curves.length > 1)
 				curveEdit.lockKeyX = true;
 			if(["visibility", "s", "l", "a"].indexOf(curve.name.split(".").pop()) >= 0) {
@@ -1518,7 +1515,13 @@ class FXEditor extends hide.view.FileView {
 			for(item in items) {
 				var info = item.event.getDisplayInfo(sceneEditor.curEdit);
 				item.el.css({left: xt(item.event.time), top: yoff});
-				item.el.width(info.length * xScale);
+				if (info.loop) {
+					item.el.get(0).style.removeProperty("width");
+					item.el.css({right: 0});
+				} else {
+					item.el.get(0).style.removeProperty("right");
+					item.el.width(info.length * xScale);
+				}
 				item.el.find("label").text(info.label);
 				yoff += 21;
 			}
@@ -1816,7 +1819,7 @@ class FXEditor extends hide.view.FileView {
 		if(shaderElt != null) {
 			var shader = shaderElt.makeShader();
 			var inEmitter = shaderElt.getParent(hrt.prefab2.fx.Emitter) != null;
-			var params = shader == null ? [] : @:privateAccess shader.shader.data.vars.filter(inEmitter ? isPerInstance : v -> v.kind == Param);
+			var params = shader == null ? [] : @:privateAccess shader.shader.data.vars.filter(v -> v.kind == Param);
 			for(param in params) {
 				var item : hide.comp.ContextMenu.ContextMenuItem = switch(param.type) {
 					case TVec(n, VFloat):
@@ -2098,10 +2101,16 @@ class FXEditor extends hide.view.FileView {
 		for(fx in allFx)
 			fx.setTime(currentTime - fx.startDelay);
 
+		var emitRateCurrent = 0.0;
+
 		var emitters = local3d.findAll(o -> Std.downcast(o, hrt.prefab2.fx.Emitter.EmitterObject));
 		var totalParts = 0;
-		for(e in emitters)
+		for(e in emitters) {
 			totalParts += @:privateAccess e.numInstances;
+			if (e.emitRateCurrent != null) {
+				emitRateCurrent = e.emitRateCurrent;
+			}
+		}
 
 		var emitterTime = 0.0;
 		for (e in emitters) {
@@ -2162,6 +2171,10 @@ class FXEditor extends hide.view.FileView {
 				'Particles CPU time: ${floatToStringPrecision(avg_smooth * 1000, 3, true)} ms',
 			];
 
+			if (emitRateCurrent > 0.0) {
+				lines.push('Random emit rate : ${floatToStringPrecision(emitRateCurrent, 3, true)}');
+			}
+
 			if (trailCount > 0) {
 
 				lines.push('Trails CPU time : ${floatToStringPrecision(trailTime_smooth * 1000, 3, true)} ms');
@@ -2219,5 +2232,5 @@ class FX2DEditor extends FXEditor {
 		return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab2.fx.FX2D(null, null).save({})));
 	}
 
-	static var _2d = FileTree.registerExtension(FX2DEditor, ["fx2d"], { icon : "sitemap", createNew : "FX 2D" });
+	static var _2d = FileTree.registerExtension(FX2DEditor, ["fx2d__"], { icon : "sitemap", createNew : "FX 2D" });
 }

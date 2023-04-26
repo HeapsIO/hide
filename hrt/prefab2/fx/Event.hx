@@ -9,13 +9,14 @@ typedef EventInstance = {
 interface IEvent {
 	#if editor
 	function getEventPrefab() : hrt.prefab2.Prefab;
-	function getDisplayInfo(ctx: hide.prefab2.EditContext) : { label: String, length: Float };
+	function getDisplayInfo(ctx: hide.prefab2.EditContext) : { label: String, length: Float, ?loop: Bool };
 	#end
 	var time(default, set) : Float;
 }
 
 class Event extends hrt.prefab2.Prefab implements IEvent {
 	@:s public var time(default, set): Float = 0.0;
+
 
 	public function new(?parent, shared: ContextShared) {
 		super(parent, shared);
@@ -69,7 +70,8 @@ class Event extends hrt.prefab2.Prefab implements IEvent {
 	public function getDisplayInfo(ctx: hide.prefab2.EditContext) {
 		return {
 			label: name,
-			length: 1.0
+			length: 1.0,
+			loop: false
 		};
 	}
 

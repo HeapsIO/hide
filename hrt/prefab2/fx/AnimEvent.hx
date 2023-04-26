@@ -3,6 +3,7 @@ package hrt.prefab2.fx;
 class AnimEvent extends hrt.prefab2.fx.Event {
 
 	@:s public var animation: String;
+	@:s public var loop: Bool = false;
 	@:s public var speed : Float = 1.0;
 	@:s public var duration : Float = 0.0;
 	@:s public var offset : Float = 0.0;
@@ -17,13 +18,20 @@ class AnimEvent extends hrt.prefab2.fx.Event {
 			evt: this,
 			setTime: function(localTime) {
 				var duration = duration > 0 ? duration : anim.getDuration();
-				if(localTime > 0 && localTime < duration) {
+				if(localTime > 0 && (localTime < duration || loop)) {
 					if(inst == null) {
 						inst = obj.playAnimation(anim);
 						inst.pause = true;
-						inst.loop = false;
+						inst.loop = loop;
 					}
-					inst.setFrame(hxd.Math.clamp((localTime + offset) * anim.sampling * anim.speed * speed, 0, anim.frameCount));
+					var t = hxd.Math.max(0,(localTime + offset) * anim.sampling * anim.speed * speed);
+					if (loop) {
+						t = t % anim.frameCount;
+					}
+					else {
+						t = hxd.Math.min(t, anim.frameCount);
+					}
+					inst.setFrame(t);
 				}
 				else inst = null;
 				lastTime = localTime;
@@ -38,6 +46,7 @@ class AnimEvent extends hrt.prefab2.fx.Event {
 			<div class="group" name="Event">
 				<dl>
 					<dt>Time</dt><dd><input type="number" value="0" field="time"/></dd>
+					<dt>Loop</dt><dd><input type="checkbox" field="loop"/></dd>
 					<dt>Animation</dt><dd><select><option value="">-- Choose --</option></select></dd>
 					<dt>Speed</dt><dd><input type="number" value="0" field="speed"/></dd>
 					<dt>Duration</dt><dd><input type="number" value="0" field="duration"/></dd>
@@ -88,7 +97,8 @@ class AnimEvent extends hrt.prefab2.fx.Event {
 		}
 		return {
 			label: anim != null ? ctx.scene.animationName(animation) : "null",
-			length: duration > 0 ? duration : anim != null ? anim.getDuration() : 1.0
+			length: duration > 0 ? duration : anim != null ? anim.getDuration() : 1.0,
+			loop: loop,
 		}
 	}
 	#end

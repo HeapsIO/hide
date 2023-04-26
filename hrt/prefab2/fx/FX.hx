@@ -14,6 +14,7 @@ class FXAnimation extends h3d.scene.Object {
 	public var playSpeed : Float = 0;
 	public var localTime : Float = 0.0;
 	public var startDelay : Float = 0.0;
+	public var loop : Bool = false;
 	public var duration : Float;
 
 	/** Enable automatic culling based on `cullingRadius` and `cullingDistance`. Will override `culled` on every sync. **/
@@ -122,6 +123,9 @@ class FXAnimation extends h3d.scene.Object {
 			// so we restore FX in correct state when unculled
 			if(parentFX != null) {
 				var t = hxd.Math.max(0, parentFX.localTime - startDelay);
+				if (loop) {
+					t = (t % duration);
+				}
 				setTime(t, fullSync);
 			}
 			else {
