@@ -31,6 +31,19 @@ class Reference extends Object3D {
 		}
 	}
 
+	override function save(obj : Dynamic) {
+		var obj : Dynamic = super.save(obj);
+		#if editor
+		if( editMode && refInstance != null ) {
+			var sheditor = Std.downcast(shared, hide.prefab2.ContextShared);
+			if( sheditor.editor != null ) sheditor.editor.watchIgnoreChanges(source);
+			var s = refInstance.serializeToDynamic();
+			sys.io.File.saveContent(hide.Ide.inst.getPath(source), hide.Ide.inst.toJSON(s));
+		}
+		#end
+		return obj;
+	}
+
 	#if editor
 	override function setEditorChildren(sceneEditor:hide.comp2.SceneEditor) {
 		super.setEditorChildren(sceneEditor);
@@ -44,6 +57,8 @@ class Reference extends Object3D {
 	function resolveRef() : Prefab {
 		if(source == null)
 			return null;
+		if (refInstance != null)
+			return refInstance;
 		var p = Prefab.createFromPath(source);
 		return p;
 	}

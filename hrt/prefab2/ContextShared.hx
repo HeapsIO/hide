@@ -32,7 +32,6 @@ class ContextShared {
 	public var scene : hide.comp2.Scene = null;
 	#end
 
-
 	public function new( ?res : hxd.res.Resource ) {
 		if( res != null ) currentPath = res.entry.path;
 	}

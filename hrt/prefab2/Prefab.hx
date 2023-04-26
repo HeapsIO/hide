@@ -78,7 +78,14 @@ class Prefab {
 	public var parent(default, set) : Prefab = null;
 
 	/**Cache of values**/
-	public var shared : ContextShared = null;
+	public var shared(get, default) : ContextShared = null;
+
+	function get_shared() {
+		return if (shared != null)
+			shared;
+		else
+			parent.shared;
+	}
 
 	// Public API
 
@@ -115,12 +122,7 @@ class Prefab {
 			parent.children.push(this);
 		}
 		else {
-			// TODO(ces) : Clone context shared properly
-			if (shared != null) {
-				var old = shared;
-				shared = createContextShared();
-				throw "Handle this case if needed";
-			}
+			shared = null;
 		}
 		return p;
 	}
