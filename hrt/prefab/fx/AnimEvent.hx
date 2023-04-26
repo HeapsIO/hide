@@ -92,7 +92,8 @@ class AnimEvent extends hrt.prefab.fx.Event {
 		}
 		return {
 			label: anim != null ? ctx.scene.animationName(animation) : "null",
-			length: duration > 0 ? duration : anim != null ? anim.getDuration() : 1.0
+			length: duration > 0 ? duration : anim != null ? anim.getDuration() : 1.0,
+			loop: false,
 		}
 	}
 	#end

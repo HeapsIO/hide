@@ -813,7 +813,7 @@ class FXEditor extends FileView {
 			cullingPreview.radius = data.cullingRadius;
 		}
 
-		if(pname == "time") {
+		if(pname == "time" || pname == "loop") {
 			afterPan(false);
 			data.refreshObjectAnims(sceneEditor.getContext(data));
 		}
@@ -1385,7 +1385,13 @@ class FXEditor extends FileView {
 			for(item in items) {
 				var info = item.event.getDisplayInfo(sceneEditor.curEdit);
 				item.el.css({left: xt(item.event.time), top: yoff});
-				item.el.width(info.length * xScale);
+				if (info.loop) {
+					item.el.get(0).style.removeProperty("width");
+					item.el.css({right: 0});
+				} else {
+					item.el.get(0).style.removeProperty("right");
+					item.el.width(info.length * xScale);
+				}
 				item.el.find("label").text(info.label);
 				yoff += 21;
 			}

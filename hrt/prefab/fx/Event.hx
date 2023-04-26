@@ -10,7 +10,7 @@ interface IEvent {
 	#if editor
 	function getEventPrefab() : hrt.prefab.Prefab;
 	function getHideProps() : hide.prefab.HideProps;
-	function getDisplayInfo(ctx: EditContext) : { label: String, length: Float };
+	function getDisplayInfo(ctx: EditContext) : { label: String, length: Float, ?loop: Bool};
 	#end
 	var time(default, set) : Float;
 }
@@ -71,7 +71,8 @@ class Event extends hrt.prefab.Prefab implements IEvent {
 	public function getDisplayInfo(ctx) {
 		return {
 			label: name,
-			length: 1.0
+			length: 1.0,
+			loop: false
 		};
 	}
 

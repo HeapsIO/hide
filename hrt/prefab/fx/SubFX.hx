@@ -3,6 +3,7 @@ package hrt.prefab.fx;
 class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 
 	@:s public var time(default, set) : Float;
+	@:s public var loop(default, set) : Bool;
 
 	#if editor
 	var instance : hrt.prefab.fx.FX.FXAnimation;
@@ -18,6 +19,7 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 		var fxanim = ctx.local3d.find(o -> Std.downcast(o, hrt.prefab.fx.FX.FXAnimation));
 		if(fxanim != null) {
 			fxanim.startDelay = time;
+			fxanim.loop = loop;
 			#if editor
 			instance = fxanim;
 			#end
@@ -33,6 +35,14 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 		return time = v;
 	}
 
+	function set_loop(v) {
+		#if editor
+		if(instance != null)
+			instance.loop = v;
+		#end
+		return loop = v;
+	}
+
 	#if editor
 
 	override function edit( ctx : EditContext ) {
@@ -40,6 +50,7 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 			<div class="group" name="Event">
 				<dl>
 					<dt>Time</dt><dd><input type="number" value="0" field="time"/></dd>
+					<dt>Loop</dt><dd><input type="checkbox" field="loop"/></dd>
 				</dl>
 			</div>
 		'),this, function(pname) {
@@ -54,7 +65,8 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 		var ref = Std.downcast(resolveRef(ctx.rootContext.shared), FX);
 		return {
 			label: ref != null ? new haxe.io.Path(source).file : "null",
-			length: ref != null ? ref.duration : 1.0
+			length: ref != null ? ref.duration : 1.0,
+			loop: loop
 		};
 	}
 
