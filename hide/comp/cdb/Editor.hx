@@ -994,8 +994,12 @@ class Editor extends Component {
 				var idx = rs.o.indexes[i];
 				if( oid == null || oid == "" )
 					path.push(s.s.name.split("@").pop() + (idx < 0 ? "" : "[" + idx +"]"));
-				else
+				else {
 					path.push(oid);
+				}
+				if (i == rs.s.length - 1 && s.c != "" && s.c != null) {
+					path.push(s.c);
+				}
 			}
 
 			var coords = [];
