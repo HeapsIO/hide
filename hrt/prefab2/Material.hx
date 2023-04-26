@@ -91,6 +91,7 @@ class Material extends Prefab {
 			var sphere = new h3d.prim.Sphere(1., 64, 48);
 			sphere.addUVs();
 			sphere.addTangents();
+            sphere.addNormals();
 			var preview = new h3d.scene.Mesh(sphere);
 			local3d.parent.addChild(preview);
 			local3d = preview;

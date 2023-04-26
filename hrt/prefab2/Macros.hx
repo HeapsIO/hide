@@ -216,7 +216,21 @@ class Macros {
 				case TEnum(t, _):
 					return macro haxe.EnumTools.EnumValueTools.getName($e{source});
 				case TInst(cl, params):
-						return tryCopyInst(cl, params, "copyToDynamic", source);
+					switch(cl.toString()){
+						case "Array" | "String":
+							return null;
+						default:
+							var name = cl.get().pack.copy();
+							name.push(cl.get().name);
+							return macro {
+								if ($e{source} != null) {
+									@:privateAccess $e{source}.copyToDynamic({});
+								}
+								else {
+									null;
+								}
+							}
+					}
 				default:
 					return null;
 			}
@@ -316,6 +330,7 @@ class Macros {
 		var buildFields = fields;
 
 		var serializableFields = [];
+		var copyableFields = [];
 		var pos = Context.currentPos();
 
 
@@ -325,10 +340,13 @@ class Macros {
 
 			var isSerializable = false;
 			var isDeepCopy = false;
+			var isCopyable = false;
 			for (m in f.meta) {
 				switch(m.name) {
 					case ":s":
 						isSerializable = true;
+					case ":c":
+						isCopyable = true;
 					case ":deepCopy":
 						isDeepCopy = true;
 				}
@@ -336,6 +354,10 @@ class Macros {
 
 			if (isSerializable) {
 				serializableFields.push({field: f, deepCopy: isDeepCopy});
+			}
+
+			if (isCopyable || isSerializable) {
+				copyableFields.push({field: f, deepCopy: isDeepCopy});
 			}
 		}
 
@@ -361,9 +383,8 @@ class Macros {
 			}
 		}
 
-		for (f in serializableFields) {
-			var name = f.field.name;
-			var defExpr = switch(f.field.kind) {
+		function getDefExpr(f:Field) {
+			return switch(f.kind) {
 				case FProp(_, _, t, e), FVar(t,e):
 					if (e == null) {
 						switch(t) {
@@ -374,16 +395,27 @@ class Macros {
 						e;
 					}
 				default:
-					throw "Invalid serializable field " + f.field.kind;
+					throw "Invalid serializable field " + f.kind;
 			}
+		}
+
+		for (f in serializableFields) {
+			var name = f.field.name;
+			var defExpr = getDefExpr(f.field);
 
 			copyFromDynamic.push(macro hrt.prefab2.Macros.deepCopyFromDynamic(this.$name, obj.$name, $e{defExpr}));
+			copyToDynamic.push(macro hrt.prefab2.Macros.deepCopyToDynamic(obj.$name, this.$name, null));
+		}
+
+		for (f in copyableFields) {
+			var name = f.field.name;
+			var defExpr = getDefExpr(f.field);
+
 			if (f.deepCopy) {
 				copyFromOther.push(macro hrt.prefab2.Macros.deepCopyFromOther(this.$name, obj.$name, null));
 			} else {
 				copyFromOther.push(macro this.$name = obj.$name);
 			}
-			copyToDynamic.push(macro hrt.prefab2.Macros.deepCopyToDynamic(obj.$name, this.$name, null));
 		}
 
 		function makeFun(name,expr, paramType, returnType) : Field {
@@ -517,7 +549,6 @@ class Macros {
 									if (a.get().name == "Null") {
 										return getArrayType(c[0]);
 									}
-									trace(type);
 									throw 'Tying to unserialize non array ($type) into array variable ---';
 								default:
 									throw 'Tying to unserialize non array ($type) into array variable';

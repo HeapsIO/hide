@@ -125,7 +125,9 @@ class LookAt extends Object3D {
 			{ name: "lockAxis", t: PVec(3), def: [1,0,0] }
 		]));
 
-		var props = ctx.properties.add(group ,this, function(_) { trace(this.lockAxis); });
+		var props = ctx.properties.add(group ,this);
+
+
 
 		var select = props.find("select");
 		var opt = new hide.Element("<option>").attr("value", "camera").html("Camera");

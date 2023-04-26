@@ -529,7 +529,6 @@ class EmitterObject extends h3d.scene.Object {
 	}
 
 	function init(randSlots: Int, prefab: Emitter) {
-		trace('init ${prefab.shared.currentPath}');
 		this.emitterPrefab = prefab;
 		this.randSlots = randSlots;
 
@@ -593,6 +592,7 @@ class EmitterObject extends h3d.scene.Object {
 				while (p != null && Std.downcast(p, Emitter) == null)
 					p = p.parent;
 
+				// TODO(ces) : Attach materials directly to the batch
 				if (this.emitterPrefab == p) {
 					if(mat.enabled) {
 						@:privateAccess mat.makeInstance();
@@ -611,6 +611,8 @@ class EmitterObject extends h3d.scene.Object {
 				}
 				if (this.emitterPrefab == p) {
 					if( !shader.enabled ) continue;
+					// TODO(ces) : Attach materials directly to the batch
+
 					makeShaderInstance(shader);
 					//shCtx.local3d = null; // Prevent shader.iterMaterials from adding our objet to the list incorectly
 					// TODO(ces) : It looks like particles anims are broken
@@ -646,7 +648,6 @@ class EmitterObject extends h3d.scene.Object {
 		evaluator = new Evaluator(randomValues, randSlots);
 		reset();
 
-		trace('end of init ${prefab.shared.currentPath}');
 	}
 
 	override function onRemove() {
