@@ -155,7 +155,6 @@ class Model extends Object3D {
 			elts.push({id : ctx.ide.makeRelative(a), ico : null, text : ctx.scene.animationName(a), classes : ["compact"]});
 
 
-
 		var select = new hide.comp.Select(null, props.find("#anim"), elts);
 		select.value = animation;
 		select.onChange = function(newAnim : String) {
