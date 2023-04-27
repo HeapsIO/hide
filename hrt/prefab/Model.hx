@@ -132,7 +132,7 @@ class Model extends Object3D {
 				<dl>
 					<dt>Model</dt><dd><input type="model" field="source"/></dd>
 					<dt/><dd><input type="button" value="Change All" id="changeAll"/></dd>
-					<dt>Animation</dt><dd><input type="custom" id="anim"></dd>
+					<dt>Animation</dt><dd><input id="anim" value="--- Choose ---"></dd>
 					<dt title="Don\'t save animation changes">Lock</dt><dd><input type="checkbox" field="lockAnimation"></dd>
 					<dt>Retarget</dt><dd><input type="checkbox" field="retargetAnim"></dd>
 					<dt>Retarget Ignore</dt><dd><input type="text" field="retargetIgnore"></dd>
@@ -148,18 +148,17 @@ class Model extends Object3D {
 			ctx.scene.editor.changeAllModels(this, path);
 		}));
 
-		var select = props.find("#anim");
+
 		var anims = try ctx.scene.listAnims(source) catch(e: Dynamic) [];
 		var elts: Array<hide.comp.Dropdown.Choice> = [];
 		for( a in anims )
 			elts.push({id : ctx.ide.makeRelative(a), ico : null, text : ctx.scene.animationName(a), classes : ["compact"]});
-			//new hide.Element('<option>').attr("value", ctx.ide.makeRelative(a)).text(ctx.scene.animationName(a)).appendTo(select);
-		if( animation != null )
-			select.val(ctx.scene.animationName(animation));
 
-		var ide = hide.Ide.inst;
 
-		function setAnimation(newAnim : String) {
+
+		var select = new hide.comp.Select(null, props.find("#anim"), elts);
+		select.value = animation;
+		select.onChange = function(newAnim : String) {
 			var v = newAnim;
 			var prev = animation;
 			var obj = ctx.getContext(this).local3d;
@@ -178,32 +177,15 @@ class Model extends Object3D {
 				animation = undo ? prev : newValue;
 				if( animation == null ) {
 					obj.stopAnimation();
-					select.val("");
 				} else {
 					obj.playAnimation(ctx.rootContext.loadAnimation(animation)).loop = true;
-					select.val(ctx.scene.animationName(animation));
 				}
+				select.value = animation;
 			}));
-			select.val(ctx.scene.animationName(animation));
 		}
-		select.toggleClass("file", true);
-		select.contextmenu(function(e) {
-			e.preventDefault();
-			new hide.comp.ContextMenu([
-				{ label : "Copy", click : () -> ide.setClipboard(animation)},
-				{ label : "Paste", click : () -> setAnimation(ide.getClipboard())},
-			]);
-			return false;
-		});
-		select.mousedown(function(e) {
-			e.preventDefault();
-			var d = new hide.comp.Dropdown(new Element(select), elts, animation, (_) -> null, true);
-			d.ignoreIdInSearch = true;
-			d.onSelect = function(v) {
-				setAnimation(v);
-			}
-		});
 	}
+
+
 
 	override function getHideProps() : HideProps {
 		return {

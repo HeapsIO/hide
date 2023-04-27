@@ -813,7 +813,7 @@ class FXEditor extends FileView {
 			cullingPreview.radius = data.cullingRadius;
 		}
 
-		if(pname == "time" || pname == "loop") {
+		if(pname == "time" || pname == "loop" || pname == "animation") {
 			afterPan(false);
 			data.refreshObjectAnims(sceneEditor.getContext(data));
 		}
