@@ -1090,7 +1090,7 @@ class SceneEditor {
 			var all = sceneData.flatten(PrefabElement);
 			for(elt in all) {
 				var el = tree.getElement(elt);
-				if(el == null) continue;
+				if(!Std.isOfType(el, Element)) continue;
 				applyTreeStyle(elt, el);
 			}
 			if(callb != null) callb();

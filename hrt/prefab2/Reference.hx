@@ -54,6 +54,14 @@ class Reference extends Object3D {
 	}
 	#end
 
+	override public function flatten<T:Prefab>( ?cl : Class<T>, ?arr: Array<T> ) : Array<T> {
+		arr = super.flatten(cl, arr);
+		if (refInstance != null) {
+			arr = refInstance.flatten(cl, arr);
+		}
+		return arr;
+	}
+
 	function resolveRef() : Prefab {
 		if(source == null)
 			return null;

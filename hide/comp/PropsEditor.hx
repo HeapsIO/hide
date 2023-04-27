@@ -90,7 +90,7 @@ class PropsEditor extends Component {
 			else {
 				var row = new Element('<div class="flex"/>').appendTo(parent);
 				for( i in 0...n ) {
-					var e = new Element('<input type="number" field="${p.name}.$i">').appendTo(row);
+					var e = new Element('<input type="number" field="${p.name}.$i" step="0.1">').appendTo(row);
 					if(min == null) min = isColor ? 0.0 : -1.0;
 					if(max == null)	max = 1.0;
 					e.attr("min", "" + min);

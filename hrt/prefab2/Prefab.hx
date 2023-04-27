@@ -854,7 +854,6 @@ class Prefab {
 	**/
 	public static function copyRecursive(source:Prefab, dest:Prefab, useProperty:Bool, copyNull:Bool)
 	{
-		throw "nuh uh";
 		copyShallow(source, dest, useProperty, copyNull, false, source.getSerializableProps());
 		for (idx in 0...source.children.length) {
 			copyRecursive(source.children[idx], dest.children[idx], useProperty, copyNull);
@@ -862,7 +861,6 @@ class Prefab {
 	}
 
 	inline public static function getSerializablePropsForClass(cl : Class<Prefab>) {
-		throw "nuh uh";
 		return (cl:Dynamic).getSerializablePropsStatic();
 	}
 

@@ -2510,7 +2510,7 @@ class SceneEditor {
 		if(!canGroupSelection()) {
             var elts = curEdit.rootElements;
             if (elts.length == 0) {
-                
+
             }
 
 			return;

@@ -402,8 +402,8 @@ class FXAnimation extends h3d.scene.Object {
 
 class FX extends Object3D implements BaseFX {
 
-	@:s public var duration : Float;
-	@:s public var startDelay : Float;
+	@:s public var duration : Float = 5.0;
+	@:s public var startDelay : Float = 0.0;
 	@:c public var scriptCode : String;
 	@:s public var cullingRadius : Float = 3.0;
 	@:s public var markers : Array<{t: Float}> = [];
@@ -413,13 +413,6 @@ class FX extends Object3D implements BaseFX {
 		data.cullingRadius = cullingRadius;
 		if( scriptCode != "" ) data.scriptCode = scriptCode;
 	}*/
-
-	override function copy( obj : Dynamic ) {
-		super.copy(obj);
-		if(obj.cullingRadius != null)
-			cullingRadius = obj.cullingRadius;
-		scriptCode = obj.scriptCode;
-	}
 
 	override function makeInstanceRec() : Void  {
 		var fromRef = shared.parent != null;
