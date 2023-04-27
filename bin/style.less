@@ -115,6 +115,15 @@ body .select2-container--default {
 	}
 }
 
+.select-box {
+	color: @color-text;
+	border-color: #888;
+	border-style: solid;
+	border-width: 1px;
+	width: 178px;
+	display: inline-block;
+}
+
 .hide-dropdown {
 	position: relative;
 	width: 100%;
@@ -141,8 +150,18 @@ body .select2-container--default {
 				padding: 6px;
 				user-select: none;
 
+				&.compact {
+					padding-top: 0;
+					padding-bottom: 0;
+				}
+
 				div.tile {
 					margin-right : 5px;
+				}
+
+				p {
+					display: inline-block;
+					margin: 0;
 				}
 
 				&.current-value {

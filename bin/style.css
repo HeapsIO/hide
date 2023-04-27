@@ -123,6 +123,14 @@ body .select2-container--default .select2-results__option--highlighted[aria-sele
 .select2-results__option > div div.tile {
   margin-right: 5px;
 }
+.select-box {
+  color: #e5e5e5;
+  border-color: #888;
+  border-style: solid;
+  border-width: 1px;
+  width: 178px;
+  display: inline-block;
+}
 .hide-dropdown {
   position: relative;
   width: 100%;
@@ -151,8 +159,16 @@ body .select2-container--default .select2-results__option--highlighted[aria-sele
   padding: 6px;
   user-select: none;
 }
+.hide-dropdown > .dropdown-cont .options .dropdown-option.compact {
+  padding-top: 0;
+  padding-bottom: 0;
+}
 .hide-dropdown > .dropdown-cont .options .dropdown-option div.tile {
   margin-right: 5px;
+}
+.hide-dropdown > .dropdown-cont .options .dropdown-option p {
+  display: inline-block;
+  margin: 0;
 }
 .hide-dropdown > .dropdown-cont .options .dropdown-option.current-value {
   background-color: #444;

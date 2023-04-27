@@ -12,11 +12,13 @@ typedef Choice = {
 class Dropdown extends Component {
 	var highlightIndex : Null<Int> = null;
 	var optionsCont : Element;
+	public var ignoreIdInSearch : Bool = false; // Search won't filter based on id if this is true
 	public var filterInput : Element;
 	var options : Array<Choice>;
 	var orderedOptions : Array<Choice>;
+	var anchor : Element = null;
 
-	public function new( parent, options : Array<Choice>, currentValue: String, ?buildIcon : (Choice) -> Element ) {
+	public function new( parent, options : Array<Choice>, currentValue: String, ?buildIcon : (Choice) -> Element, detached : Bool = false ) {
 		var root = new Element('<div class="hide-dropdown">
 			<div class="dropdown-cont">
 				<input id="filter" autocomplete="off" class="filter-input" type="text"/>
@@ -66,7 +68,8 @@ class Dropdown extends Component {
 			var v = filterInput.val();
 			if (v != null) {
 				for( o in optionsCont.children().elements() ) {
-					o.toggleClass("hidden", !matches(o.data("text"), v) && !matches(o.data("id"), v));
+					var m = matches(o.data("text"), v) || (!ignoreIdInSearch && matches(o.data("id"), v));
+					o.toggleClass("hidden", !m);
 				}
 				var sortedChildren = optionsCont.children().elements().toArray();
 				sortedChildren.sort((a, b) -> sorter(a.data("text"), a.data("id"), b.data("text"), b.data("id"), v));
@@ -78,7 +81,26 @@ class Dropdown extends Component {
 		filterInput.keydown(onKey);
 		resetHighlight();
 
-		super(parent, root);
+		if (!detached) {
+			super(parent, root);
+		}
+		else {
+			var body = root.closest(".lm_content");
+			if (body.length == 0) body = new Element("body");
+			anchor = parent;
+			super(body, root);
+
+			root.width(anchor.get(0).offsetWidth);
+			reflow();
+
+			var timer = new haxe.Timer(500);
+			timer.run = function() {
+				if( anchor.closest("body").length == 0 ) {
+					timer.stop();
+					remove();
+				}
+			};
+		}
 		var pos = element.offset();
 		var window = js.Browser.window;
 		var cont = element.find(".dropdown-cont").first();
@@ -97,6 +119,23 @@ class Dropdown extends Component {
 				remove();
 		});
 
+	}
+
+	function reflow() {
+		var offset = anchor.offset();
+		var popupHeight = element.get(0).offsetHeight;
+		var popupWidth = element.get(0).offsetWidth;
+
+		var clientHeight = js.Browser.document.documentElement.clientHeight;
+		var clientWidth = js.Browser.document.documentElement.clientWidth;
+
+		offset.top += anchor.get(0).offsetHeight;
+		offset.top = Math.min(offset.top,  clientHeight - popupHeight - 32);
+
+		//offset.left += anchor.get(0).offsetWidth;
+		offset.left = Math.min(offset.left,  clientWidth - popupWidth - 32);
+
+		element.offset(offset);
 	}
 
 	var removed = false;

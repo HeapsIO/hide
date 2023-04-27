@@ -552,13 +552,15 @@ class PropsField extends Component {
 				onChange(false);
 			};
 			return;
+		case "custom":
+			return;
 		default:
 			if( f.is("select") ) {
 				enumValue = Type.getEnum(current);
 				if( enumValue != null && f.find("option").length == 0 ) {
 					var meta = haxe.rtti.Meta.getFields(enumValue);
 					for( c in enumValue.getConstructors() ) {
-						
+
 						var name = c;
 						var comment = "";
 						if (Reflect.hasField(meta, c)) {
