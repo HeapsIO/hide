@@ -34,8 +34,8 @@ class Config {
 	var ide : Ide;
 	var parent : Config;
 	public var path(default,null) : String;
-	public var source(default, null) : ConfigDef;
-	public var current : ConfigDef;
+	public var source(default, null) : ConfigDef = cast {};
+	public var current : ConfigDef = cast {};
 
 	public function new( ?parent : Config ) {
 		ide = Ide.inst;
@@ -118,14 +118,28 @@ class Config {
 		save();
 	}
 
+	public static function loadConfig(config : Config, path : String) : Config {
+		try {
+			config.load(path);
+		} catch(err) {
+			js.Browser.window.alert('Couldn\'t load config file ${path}. Reverting to default config.\n${err}.');
+		}
+		return config;
+	}
+
 	public static function loadForProject( projectPath : String, resourcePath : String ) {
 		var hidePath = Ide.inst.appPath;
 
 		var defaults = new Config();
-		defaults.load(hidePath + "/defaultProps.json");
+		try {
+			defaults.load(hidePath + "/defaultProps.json");
+		}
+		catch (err) {
+			js.Browser.window.alert('Fatal error : Couldn\'t load ${hidePath}/defaultProps.json. Please check your hide installation.\n$err');
+			Sys.exit(-1);
+		}
 
-		var userGlobals = new Config(defaults);
-		userGlobals.load(hidePath + "/props.json");
+		var userGlobals = loadConfig(new Config(defaults), hidePath + "/props.json");
 
 		if( userGlobals.source.hide == null )
 			userGlobals.source.hide = {
@@ -137,11 +151,9 @@ class Config {
 				renderer : null,
 			};
 
-		var perProject = new Config(userGlobals);
-		perProject.load(resourcePath + "/props.json");
+		var perProject = loadConfig(new Config(userGlobals), resourcePath + "/props.json");
 
-		var projectUserCustom = new Config(perProject);
-		projectUserCustom.load(nw.App.dataPath + "/" + projectPath.split("\\").join("/").split("/").join("_").split(":").join("_") + ".json");
+		var projectUserCustom = loadConfig(new Config(perProject), nw.App.dataPath + "/" + projectPath.split("\\").join("/").split("/").join("_").split(":").join("_") + ".json");
 		var p = projectUserCustom;
 		if( p.source.hide == null )
 			p.source.hide = ({ layouts : [], renderer : null, dbCategories: null, dbProofread: null } : HideProjectConfig);
