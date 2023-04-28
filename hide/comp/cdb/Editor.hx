@@ -427,7 +427,7 @@ class Editor extends Component {
 			}
 		}
 
-		if( prevTarget != null || (prevObj != null && (prevObj.obj != obj || table.sheet.index.get(prevValue) != null)) )
+		if( prevTarget != null || (prevObj != null && (prevObj.obj != obj || (table.sheet.index != null && table.sheet.index.get(prevValue) != null))) )
 			table.refresh();
 	}
 
