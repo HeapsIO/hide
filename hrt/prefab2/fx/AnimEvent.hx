@@ -57,10 +57,9 @@ class AnimEvent extends hrt.prefab2.fx.Event {
 			ctx.onChange(this, pname);
 		});
 
-		var source = parent.getSource();
-		if(source != null) {
+		if(parent.source != null) {
 			var select = props.find("select");
-			var anims = try ctx.scene.listAnims(source) catch(e: Dynamic) [];
+			var anims = try ctx.scene.listAnims(parent.source) catch(e: Dynamic) [];
 			for( a in anims )
 				new hide.Element('<option>').attr("value", ctx.ide.makeRelative(a)).text(ctx.scene.animationName(a)).appendTo(select);
 			if( animation != null )

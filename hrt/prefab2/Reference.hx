@@ -84,7 +84,7 @@ class Reference extends Object3D {
 		return Object3D.getLocal3d(refInstance);
 	}
 
-	override public function findAll<T>( f : Prefab -> Null<T>, ?followRefs : Bool, ?arr : Array<T> ) : Array<T> {
+	override public function findAll<T>( f : Prefab -> Null<T>, followRefs : Bool = false, ?arr : Array<T> ) : Array<T> {
 		arr = super.findAll(f, followRefs, arr);
 
 		if (followRefs && refInstance != null) {
@@ -94,7 +94,7 @@ class Reference extends Object3D {
 		return arr;
 	}
 
-	override public function find<T>( f : Prefab -> Null<T>, ?followRefs : Bool ) : Null<T> {
+	override public function find<T>( f : Prefab -> Null<T>, followRefs : Bool = false ) : Null<T> {
 		var res = super.find(f, followRefs);
 		if (res == null && followRefs && refInstance != null) {
 			return refInstance.find(f, followRefs);

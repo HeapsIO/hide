@@ -402,10 +402,10 @@ class FXAnimation extends h3d.scene.Object {
 
 class FX extends Object3D implements BaseFX {
 
-	@:s public var duration : Float = 5.0;
+	@:s public var duration : Float;
 	@:s public var startDelay : Float = 0.0;
 	@:c public var scriptCode : String;
-	@:s public var cullingRadius : Float = 3.0;
+	@:s public var cullingRadius : Float;
 	@:s public var markers : Array<{t: Float}> = [];
 
 	/*override function save(data : Dynamic) {
@@ -413,6 +413,12 @@ class FX extends Object3D implements BaseFX {
 		data.cullingRadius = cullingRadius;
 		if( scriptCode != "" ) data.scriptCode = scriptCode;
 	}*/
+
+	public function new(parent:Prefab, contextShared: ContextShared) {
+		super(parent, contextShared);
+		duration = 5.0;
+		cullingRadius = 3.0;
+	}
 
 	override function makeInstanceRec() : Void  {
 		var fromRef = shared.parent != null;

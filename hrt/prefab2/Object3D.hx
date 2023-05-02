@@ -6,13 +6,13 @@ class Object3D extends Prefab {
 	@:s @:range(0,400) public var y : Float = 0.0;
 	@:s @:range(0,400) public var z : Float = 0.0;
 
-	@:s public var rotationX : Float = 0.0;
-	@:s public var rotationY : Float = 0.0;
-	@:s public var rotationZ : Float = 0.0;
-
 	@:s public var scaleX : Float = 1.0;
 	@:s public var scaleY : Float = 1.0;
 	@:s public var scaleZ : Float = 1.0;
+
+	@:s public var rotationX : Float = 0.0;
+	@:s public var rotationY : Float = 0.0;
+	@:s public var rotationZ : Float = 0.0;
 
 	@:s public var visible : Bool = true;
 
@@ -96,7 +96,7 @@ class Object3D extends Prefab {
 		return null;
 	}
 
-	public static var _ = Prefab.register("object3D", Object3D);
+	public static var _ = Prefab.register("object", Object3D);
 
 	public function saveTransform() {
 		return { x : x, y : y, z : z, scaleX : scaleX, scaleY : scaleY, scaleZ : scaleZ, rotationX : rotationX, rotationY : rotationY, rotationZ : rotationZ };

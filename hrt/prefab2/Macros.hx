@@ -236,12 +236,26 @@ class Macros {
 			}
 		}
 
-		var e : Expr = deepCopyRec(type, sourceExpr, Context.typeof(sourceExpr), defaultValue, custommFilter);
+		var e : Expr = deepCopyRec(type, sourceExpr, Context.typeof(sourceExpr), null, custommFilter);
 		var pos = Context.currentPos();
-		return macro @:pos(pos) $e{target} = ${e};
+		return macro @:pos(pos) if ($e{shouldSerializeValule(Context.typeof(sourceExpr), sourceExpr, defaultValue)}) $e{target} = ${e};
 	}
 
 	#if macro
+
+	static function shouldSerializeValule(type: Type, a: Expr, b: Expr) : Expr {
+		switch (type) {
+			case TInst(cl, params):
+				switch(cl.toString()){
+					case "Array":
+						return macro @:pos(a.pos) $a.length > 0;
+					}
+			case TType(subtype, _):
+				return shouldSerializeValule(subtype.get().type, a, b);
+			default:
+		}
+		return macro @:pos(a.pos) ${a} != ${b};
+	}
 
 	static public function getDefValueForType(name : String) {
 		return switch(name) {
@@ -383,13 +397,18 @@ class Macros {
 			}
 		}
 
-		function getDefExpr(f:Field) {
+		function getDefExpr(f:Field, replaceNull: Bool = true) {
 			return switch(f.kind) {
 				case FProp(_, _, t, e), FVar(t,e):
 					if (e == null) {
-						switch(t) {
-							case TPath({pack : [], name : val}): getDefValueForType(val);
-							default: macro @:pos(pos) null;
+						if (replaceNull) {
+							switch(t) {
+								case TPath({pack : [], name : val}): getDefValueForType(val);
+								default: macro @:pos(pos) null;
+							}
+						}
+						else {
+							macro @:pos(pos) null;
 						}
 					} else {
 						e;
@@ -402,9 +421,10 @@ class Macros {
 		for (f in serializableFields) {
 			var name = f.field.name;
 			var defExpr = getDefExpr(f.field);
+			var defExprNull = getDefExpr(f.field);
 
 			copyFromDynamic.push(macro hrt.prefab2.Macros.deepCopyFromDynamic(this.$name, obj.$name, $e{defExpr}));
-			copyToDynamic.push(macro hrt.prefab2.Macros.deepCopyToDynamic(obj.$name, this.$name, null));
+			copyToDynamic.push(macro hrt.prefab2.Macros.deepCopyToDynamic(obj.$name, this.$name, $e{defExprNull}));
 		}
 
 		for (f in copyableFields) {

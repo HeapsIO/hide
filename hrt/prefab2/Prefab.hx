@@ -38,9 +38,14 @@ class Prefab {
 	@:s public var name : String = "";
 
 	/**
-		A storage for some extra properties
+		The associated source file (an image, a 3D model, etc.) if the prefab type needs it.
 	**/
-	@:s public var props : Any = null;
+	@:s public var source : String;
+
+	/**
+		The parent of the prefab in the tree view
+	**/
+	public var children : Array<Prefab> = [];
 
 	/**
 		Tells if the prefab will create an instance when calling make() or be ignored. Also apply to this prefab children.
@@ -63,14 +68,9 @@ class Prefab {
 	@:s public var locked : Bool = false;
 
 	/**
-		The associated source file (an image, a 3D model, etc.) if the prefab type needs it.
+		A storage for some extra properties
 	**/
-	@:s public var source : String;
-
-	/**
-		The parent of the prefab in the tree view
-	**/
-	public var children : Array<Prefab> = [];
+	@:s public var props : Any = null;
 
 	/**
 		The parent of the prefab in the tree view
@@ -88,15 +88,6 @@ class Prefab {
 	}
 
 	// Public API
-
-/*
-			shared =
-			#if editor
-				new hide.prefab2.ContextShared();
-			#else
-				new ContextShared();
-			#end
-*/
 
 	public function new(parent:Prefab, contextShared: ContextShared) {
 		if (parent == null) {
@@ -127,13 +118,9 @@ class Prefab {
 		return p;
 	}
 
-	public function getSource() : String {
-		return null;
-	}
-
 	// Lifetime
 
-	// Like make but in-place
+	// Create the hierarchy of heaps objects from this prefab. Can only be done on cloned prefabs or if forceInstanciate is true ()
 	public function instanciate(local2d : h2d.Object = null, local3d : h3d.scene.Object = null, forceInstanciate : Bool = false) {
 		if (!forceInstanciate && (shared.isPrototype))
 			throw "Can't instanciate a template prefab unless params.forceInstanciate is true.";
@@ -190,8 +177,6 @@ class Prefab {
 
 	}
 
-
-
 	#if editor
 	public function setEditor(sceneEditor: hide.comp2.SceneEditor) {
 		(cast shared:hide.prefab2.ContextShared).editor = sceneEditor;
@@ -237,8 +222,6 @@ class Prefab {
 	public function getAll<T:Prefab>( cl : Class<T>, ?followRefs : Bool, ?arr: Array<T> ) : Array<T> {
 		return findAll(function(p) return p.to(cl), followRefs, arr);
 	}
-
-
 
 	/**
 		Simlar to get() but returns null if not found.
@@ -312,7 +295,7 @@ class Prefab {
 	/**
 		Find a single prefab in the tree by calling `f` on each and returning the first not-null value returned, or null if not found.
 	**/
-	public function find<T>( f : Prefab -> Null<T>, ?followRefs : Bool ) : Null<T> {
+	public function find<T>( f : Prefab -> Null<T>, followRefs : Bool = false ) : Null<T> {
 		var v = f(this);
 		if( v != null )
 			return v;
@@ -323,11 +306,18 @@ class Prefab {
 		return null;
 	}
 
+	/**
+		Return the first prefab with the class `cl` on this or the children of this prefab
+	**/
+	public function findClass<T:Prefab>(cl: Class<T>, followRefs : Bool = false) : Null<T> {
+		return find((p: Prefab) -> Std.downcast(p, cl), followRefs);
+	}
+
 
 	/**
 		Find several prefabs in the tree by calling `f` on each and returning all the non-null values returned.
 	**/
-	public function findAll<T>( f : Prefab -> Null<T>, ?followRefs : Bool, ?arr : Array<T> ) : Array<T> {
+	public function findAll<T>( f : Prefab -> Null<T>, followRefs : Bool = false, ?arr : Array<T> ) : Array<T> {
 		if( arr == null ) arr = [];
 		var v = f(this);
 		if( v != null )
@@ -344,10 +334,17 @@ class Prefab {
 	}
 
 	/**
+		Return all the prefabs in this hierarcy that have the class `cl`
+	**/
+	public function findAllClass<T:Prefab>(cl: Class<T>, followRefs : Bool = false, ?arr : Array<T> ) : Array<T> {
+		return findAll((p: Prefab) -> Std.downcast(p, cl), followRefs, arr);
+	}
+
+	/**
 		Apply the filter function to this object, returning the result of filter if it's not null.
 		If the filters returns null, it's then applied to the parent of this prefab, and this recursively.
 	**/
-	inline public function findParent<T>(filter : (p:Prefab) -> Null<T>, includeSelf:Bool = false) : Null<T> {
+	public function findParent<T>(filter : (p:Prefab) -> Null<T>, includeSelf:Bool = false) : Null<T> {
 		var current = includeSelf ? this : this.parent;
 		var val = null;
 		while(current != null && val == null) {
@@ -357,7 +354,11 @@ class Prefab {
 		return val;
 	}
 
-	inline public function filterParents<T>(filter : (p:Prefab) -> Null<T>, includeSelf: Bool = false, ?array: Array<T>) : Array<T> {
+	public function findParentClass<T:Prefab>(cl: Class<T>, includeSelf:Bool = false) : Null<T> {
+		return findParent((p: Prefab) -> Std.downcast(p, cl), includeSelf);
+	}
+
+	public function filterParents<T>(filter : (p:Prefab) -> Null<T>, includeSelf: Bool = false, ?array: Array<T>) : Array<T> {
 		if (array == null)
 			array = [];
 
@@ -403,8 +404,6 @@ class Prefab {
 
 		return dyn;
 	}
-
-
 
 	// Helpers function for meta
 	public final function getSerializableProps() : Array<PrefabField> {
@@ -609,6 +608,7 @@ class Prefab {
 		Called after makeInstance (and by extension postMakeInstance) has been called on all the children
 	**/
 	function postMakeInstance() : Void {
+
 	}
 
 	/**
@@ -819,12 +819,6 @@ class Prefab {
 			if (classEntry != null)
 				cl = classEntry.prefabClass;
 		}
-
-		// Converting (old) prefabs roots to Object3D automatically
-		if (parent == null && cl == Prefab)
-			cl = Object3D;
-		if (parent == null && type == "level3d")
-			cl = Object3D;
 
 		var prefabInstance = Type.createInstance(cl, [parent, contextShared]);
 

@@ -2210,7 +2210,7 @@ class SceneEditor {
 
 	public function changeAllModels(source : hrt.prefab2.Object3D, path : String) {
 		var all = sceneData.all();
-		var oldPath = source.getSource();
+		var oldPath = source.source;
 		var changedModels = [];
 		for (child in all) {
 			var model = child.to(hrt.prefab2.Object3D);

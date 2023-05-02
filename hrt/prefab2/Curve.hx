@@ -12,8 +12,8 @@ using Lambda;
 
 @:build(hrt.prefab2.Macros.buildSerializable())
 class CurveHandle {
-	@:s public var dt: Float;
-	@:s public var dv: Float;
+	@:s public var dv: Float = -1; // Force serialization of 0 values for retrocompat
+	@:s public var dt: Float = -1; // Force serialization of 0 values for retrocompat
 	public function new(t, v) {
 		this.dt = t;
 		this.dv = v;
@@ -29,8 +29,8 @@ enum abstract CurveKeyMode(Int) {
 
 @:build(hrt.prefab2.Macros.buildSerializable())
 class CurveKey {
-	@:s public var time: Float;
-	@:s public var value: Float;
+	@:s public var time: Float = -1; // Force serialization of 0 values for retrocompat
+	@:s public var value: Float = -1; // Force serialization of 0 values for retrocompat
 	@:s public var mode: CurveKeyMode;
 	@:s public var prevHandle: CurveHandle;
 	@:s public var nextHandle: CurveHandle;
