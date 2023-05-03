@@ -2360,11 +2360,11 @@ class SceneEditor {
 			pickedEl = pickedEl.parentElement;
 		}
 
-		var supported = ["prefab2"]; //@:privateAccess hrt.prefab.Library.registeredExtensions;
+		var supported = @:privateAccess hrt.prefab2.Prefab.extensionRegistry;
 		var paths = [];
 			for(path in items) {
 			var ext = haxe.io.Path.extension(path).toLowerCase();
-			if( supported.contains(ext) || ext == "fbx" || ext == "hmd" || ext == "json")
+			if( supported.exists(ext) || ext == "fbx" || ext == "hmd" || ext == "json")
 				paths.push(path);
 		}
 		if( paths.length == 0 )
@@ -2379,18 +2379,18 @@ class SceneEditor {
 		var relative = ide.makeRelative(path);
 
 
-		if(path.split(".").pop().toLowerCase() == "prefab2") {
+		if(hrt.prefab2.Prefab.getPrefabType(path) != null) {
 			var ref = new hrt.prefab2.Reference(parent, null);
 			ref.source = relative;
 			prefab = ref;
 			prefab.name = new haxe.io.Path(relative).file;
 		}
 		// TODO(ces) : restore missing class Particles3D
-		/*else if(haxe.io.Path.extension(path).toLowerCase() == "json") {
-			obj3d = new hrt.prefab.l3d.Particles3D(parent);
-			obj3d.source = relative;
-			obj3d.name = new haxe.io.Path(relative).file;
-		}*/
+		else if(haxe.io.Path.extension(path).toLowerCase() == "json") {
+			prefab = new hrt.prefab2.l3d.Particles3D(parent, null);
+			prefab.source = relative;
+			prefab.name = new haxe.io.Path(relative).file;
+		}
 		else {
 			var model = new hrt.prefab2.Model(parent, null);
 			model.source = relative;
