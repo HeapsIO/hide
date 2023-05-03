@@ -681,13 +681,20 @@ class Cell {
 			i.keypress(function(e) {
 				e.stopPropagation();
 			});
+
+			i[0].addEventListener("paste", function(e) {
+				e.preventDefault();
+
+				var event : Dynamic = e;
+				if (e.originalEvent != null) {
+					event = e.originalEvent;
+				}
+				var text = event.clipboardData.getData('text/plain');
+
+				js.Browser.document.execCommand("insertHTML", false, text);
+			});
 			i.dblclick(function(e) e.stopPropagation());
-			//if( str != "" && (table.displayMode == Properties || table.displayMode == AllProperties) )
-			//	i.css({ width : Math.ceil(textWidth - 3) + "px" }); -- bug if small text ?
-			/*if( longText ) {
-				elementHtml.classList.add("edit_long");
-				i.css({ height : Math.max(25,Math.ceil(textHeight - 1)) + "px" });
-			}*/
+
 			i.val(str);
 			function closeEdit() {
 				i.off();
@@ -1189,6 +1196,7 @@ class Cell {
 	public function closeEdit() {
 		inEdit = false;
 		var input = elementHtml.querySelector("div[contenteditable]");
+
 		if(input != null && input.innerText != null ) setRawValue(input.innerText);
 		refresh();
 		focus();
