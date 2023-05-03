@@ -4,14 +4,17 @@ class Resource extends hxd.res.Resource {
 
 	var lib : Prefab;
 	var cacheVersion : Int;
+	var isWatched : Bool;
 
 	override function watch( onChanged: Null<Void -> Void> ) {
 		if( entry == null )
 			return;
 		if( onChanged == null ) {
 			super.watch(null);
+			isWatched = false;
 			return;
 		}
+		isWatched = true;
 		super.watch(function() {
 			if( lib != null ) {
 				var data = try loadData() catch( e : Dynamic ) return; // parsing error (conflict ?)
@@ -35,7 +38,8 @@ class Resource extends hxd.res.Resource {
 		lib.loadData(data);
 		cacheVersion = CACHE_VERSION;
 		onPrefabLoaded(lib);
-		watch(function() {}); // auto lib reload
+		if( !isWatched )
+			watch(function() {}); // auto lib reload
 		return lib;
 	}
 
