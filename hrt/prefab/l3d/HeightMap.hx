@@ -80,7 +80,7 @@ class HeightMapShader extends hxsl.Shader {
 		}
 
 		function splat( index : Int, amount : Float ) : Vec4 {
-			if( (!albedoIsArray || index >= AlbedoCount) || amount <= 0 )
+			if( index >= AlbedoCount || amount <= 0 )
 				return vec4(0.);
 			else if( hasAlbedoProps ) {
 				var p = albedoProps[index];
@@ -108,18 +108,20 @@ class HeightMapShader extends hxsl.Shader {
 				pixelColor = bakedAlbedo.getLod(calculatedUV, 0);
 			} else if( SplatCount > 0 ) {
 				var color = vec4(0.);
+				if( SplatMode == 3 || SplatMode == 4 )
+					color = splat(0,1);
 				@unroll for( i in 0...SplatCount ) {
 					var s = splats[i].getLod(calculatedUV,0);
 					switch( SplatMode ) {
 					case 0:
+						color += splat(i*3, s.r);
+						color += splat(i*3+1, s.g);
+						color += splat(i*3+2, s.b);
+					case 1:
 						color += splat(i*4, s.r);
 						color += splat(i*4+1, s.g);
 						color += splat(i*4+2, s.b);
 						color += splat(i*4+3, s.a);
-					case 1:
-						color += splat(i*3, s.r);
-						color += splat(i*3+1, s.g);
-						color += splat(i*3+2, s.b);
 					case 2:
 						var i1 = int(s.r*256);
 						var i2 = int(s.g*256);
@@ -142,6 +144,15 @@ class HeightMapShader extends hxsl.Shader {
 
 							roughness *= 1 - med.a * med.a * albedoRoughness;
 						}
+					case 3:
+						color = mix(color, splat(i*3+1, 1), s.r);
+						color = mix(color, splat(i*3+2, 1), s.g);
+						color = mix(color, splat(i*3+3, 1), s.b);
+					case 4:
+						color = mix(color, splat(i*4+1, 1), s.r);
+						color = mix(color, splat(i*4+2, 1), s.g);
+						color = mix(color, splat(i*4+3, 1), s.b);
+						color = mix(color, splat(i*4+4, 1), s.a);
 					}
 				}
 				color.a = 1;
@@ -189,7 +200,7 @@ private class HeightMapTileBakeShader extends h3d.shader.ScreenShader {
 		}
 
 		function splat( index : Int, amount : Float ) : Vec4 {
-			if( (!albedoIsArray || index >= AlbedoCount) || amount <= 0 )
+			if( index >= AlbedoCount || amount <= 0 )
 				return vec4(0.);
 			else if( hasAlbedoProps ) {
 				var p = albedoProps[index];
@@ -325,6 +336,8 @@ class HeightMapTile {
 		case Weights3: 0;
 		case Weights4: 1;
 		case I1I2W1W2: shader.albedoIsArray = true; 2;
+		case BaseWeights3: 3;
+		case BaseWeights4: 4;
 		}
 
 		shader.albedoTiling = hmap.albedoTiling;
@@ -484,6 +497,10 @@ class HeightMapMesh extends h3d.scene.Object {
 		height >>= (4 - hmap.quality);
 		if( width < 4 ) width = 4;
 		if( height < 4 ) height = 4;
+		#if js
+		if( width > 4096 ) width = 4096;
+		if( height > 4096 ) height = 4096;
+		#end
 		var cw = size/width, ch = size/height;
 		if( grid == null || grid.width != width || grid.height != height || grid.cellWidth != cw || grid.cellHeight != ch ) {
 			grid = new HeightGrid(width,height,cw,ch);
@@ -510,6 +527,8 @@ class HeightMapMesh extends h3d.scene.Object {
 enum abstract SplatMode(String) {
 	var Weights3;
 	var Weights4;
+	var BaseWeights3;
+	var BaseWeights4;
 	var I1I2W1W2;
 }
 
@@ -964,6 +983,8 @@ class HeightMap extends Object3D {
 						<option value="Weights4">Weights4
 						<option value="Weights3">Weights3
 						<option value="I1I2W1W2">I1I2W1W2
+						<option value="BaseWeights4">BaseWeights4
+						<option value="BaseWeights3">BaseWeights3
 					</select>
 					<label><input type="checkbox" field="splatNearest"/> Nearest</label>
 				</dd>
