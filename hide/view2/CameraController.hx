@@ -101,7 +101,9 @@ class OrthoController extends CameraControllerBase {
 			moveCount = 0;
 			@:privateAccess scene.window.mouseMode = AbsoluteUnbound(true);
 		case ERelease, EReleaseOutside:
-			sceneEditor.view.keys.popDisable();
+			if (pushing != -1) {
+				sceneEditor.view.keys.popDisable();
+			}
 
 			if( pushing == e.button || pushing == 2) {
 				pushing = -1;
@@ -218,7 +220,6 @@ class FPSController extends CameraControllerBase {
 	}
 
 	override function onEvent(e : hxd.Event) {
-		if(curPos == null) return;
 		switch( e.kind ) {
 		case EWheel:
 			if (pushing == 2 || pushing == 1) {
@@ -239,7 +240,9 @@ class FPSController extends CameraControllerBase {
 			startPush = new h2d.col.Point(pushX, pushY);
 			@:privateAccess scene.window.mouseMode = AbsoluteUnbound(true);
 		case ERelease, EReleaseOutside:
-			sceneEditor.view.keys.popDisable();
+			if (pushing != -1) {
+				sceneEditor.view.keys.popDisable();
+			}
 			if( pushing == e.button || pushing == 2) {
 				pushing = -1;
 				startPush = null;
@@ -357,7 +360,6 @@ class CamController extends CameraControllerBase {
 	}
 
 	override function onEvent( e : hxd.Event ) {
-		if(curPos == null) return;
 		switch( e.kind ) {
 		case EWheel:
 			zoom(e.wheelDelta);
@@ -597,7 +599,6 @@ class FlightController extends CameraControllerBase {
 	}
 
 	override function onEvent( e : hxd.Event ) {
-		if(curPos == null) return;
 		switch( e.kind ) {
 		case EWheel:
 			if (pushing == 2 || pushing == 1) {
@@ -631,7 +632,9 @@ class FlightController extends CameraControllerBase {
 			/*moveCount = 0;*/
 			@:privateAccess scene.window.mouseMode = AbsoluteUnbound(true);
 		case ERelease, EReleaseOutside:
-			sceneEditor.view.keys.popDisable();
+			if (pushing != -1) {
+				sceneEditor.view.keys.popDisable();
+			}
 
 			if( pushing == e.button || pushing == 2) {
 				pushing = -1;
@@ -727,7 +730,10 @@ class FlightController extends CameraControllerBase {
 	}
 
 	override function sync(ctx : h3d.scene.RenderContext) {
-		moveKeys();
+		if( pushing == 2 || pushing == 1) {
+			moveKeys();
+		}
+
 		//lookAround(0.01, 0.0, 0.0);
 		syncCamera();
 	}
