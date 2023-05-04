@@ -12,12 +12,15 @@ class Keys {
 	var disabledStack : Int = 0;
 
 	public function pushDisable() {
-
 		disabledStack ++;
 	}
 
 	public function popDisable() {
 		disabledStack--;
+		if (disabledStack < 0) {
+			trace("Missmatched push/pop disable !!!!");
+			disabledStack = 0;
+		}
 	}
 
 	public function new( parent : Element ) {
