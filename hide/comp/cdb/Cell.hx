@@ -197,7 +197,11 @@ class Cell {
 
 		switch( column.type ) {
 		case TEnum(values):
-			elementHtml.title = getEnumValueDoc(values[value]);
+			var doc = getEnumValueDoc(values[value]);
+			if (doc != null)
+				elementHtml.title = doc;
+		case TId, TRef(_):
+			elementHtml.title = value;
 		default:
 		}
 		blurOff = false;
