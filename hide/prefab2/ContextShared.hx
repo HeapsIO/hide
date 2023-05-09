@@ -4,8 +4,8 @@ class ContextShared extends hrt.prefab2.ContextShared {
 	#if editor
 	public var editor : hide.comp2.SceneEditor;
 
-	public function new() {
-		super();
+	public function new(?res : hxd.res.Resource ) {
+		super(res);
 	}
 
 

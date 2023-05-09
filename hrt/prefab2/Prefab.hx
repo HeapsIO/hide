@@ -957,8 +957,8 @@ class Prefab {
 		}
 	}
 
-	static dynamic function createContextShared() : ContextShared {
-		return #if editor new hide.prefab2.ContextShared(); #else new ContextShared(); #end
+	static dynamic function createContextShared(?res : hxd.res.Resource) : ContextShared {
+		return #if editor new hide.prefab2.ContextShared(res); #else new ContextShared(res); #end
 	}
 
 	// Static initialization trick to register this class with the given name
