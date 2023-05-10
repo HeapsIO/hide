@@ -178,9 +178,11 @@ class Swarm extends Object3D {
 		return new SwarmObject(ctx.local3d, this);
 	}
 
+	#if editor
 	override function getHideProps() : HideProps {
 		return { icon : "random", name : "Swarm", allowParent : function(p) return p.to(FX) != null || p.getParent(FX) != null };
 	}
+	#end
 
 	override public function edit(ctx:EditContext) {
 		super.edit(ctx);
