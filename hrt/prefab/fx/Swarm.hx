@@ -16,6 +16,10 @@ class SwarmElement {
 class SwarmObject extends h3d.scene.Object {
 	public var prefab : Swarm = null;
 	public var elements: Array<SwarmElement> = [];
+	public var lastPos :h3d.Vector = null;
+	public var facingAngle: Float = 0.0;
+	public var targetAngle: Float = 0.0;
+
 
 	var time = 0.0;
 
@@ -44,6 +48,41 @@ class SwarmObject extends h3d.scene.Object {
 	override function syncRec(ctx:h3d.scene.RenderContext) {
 		super.syncRec(ctx);
 
+		var absPos = getAbsPos();
+
+		if (lastPos == null) {
+			lastPos = absPos.getPosition();
+		}
+
+		var curPos = absPos.getPosition();
+		var delta = curPos.sub(lastPos);
+		delta.z = 0.0;
+
+		if (delta.lengthSq() > 0.00001) {
+			delta.normalize();
+			var forward = tmpVector;
+			forward.set(1.0,0.0,0.0);
+			var up = tmpVector2;
+			up.set(0.0,0.0,1.0);
+
+			targetAngle = -hxd.Math.atan2(delta.cross(forward).dot(up), delta.dot(forward));
+		}
+
+		if (ctx.elapsedTime > 0.0001) {
+			var diff = (targetAngle - facingAngle);
+			trace(diff / (hxd.Math.PI * 2.0));
+			while (diff > hxd.Math.PI) {
+				diff -= hxd.Math.PI * 2.0;
+			}
+			while (diff < -hxd.Math.PI) {
+				diff += hxd.Math.PI * 2.0;
+			}
+			facingAngle += diff * (1-hxd.Math.pow(2, -0.001/ctx.elapsedTime));
+			facingAngle = (facingAngle % (hxd.Math.PI * 2.0));
+		}
+
+		lastPos.load(curPos);
+
 		time = ctx.time;
 
 		var prevLen = elements.length;
@@ -55,7 +94,7 @@ class SwarmObject extends h3d.scene.Object {
 			e.y = pos.y;
 			e.z = pos.z;
 
-			e.vx = 1.0;
+			e.vx = 0.0;
 			e.vy = 0.0;
 			e.vz = 0.0;
 
@@ -63,7 +102,6 @@ class SwarmObject extends h3d.scene.Object {
 		}
 
 
-		var absPos = getAbsPos();
 		for (i in 0...elements.length) {
 			var e = elements[i];
 
@@ -90,15 +128,22 @@ class SwarmObject extends h3d.scene.Object {
 				var spd = curVec.length();
 				spd = hxd.Math.clamp(spd, 0.0, prefab.maxSpeed * hxd.Math.lerp(0.75, 1.25, hashf(i, 744102359)));
 				curVec.normalize();
+
+				var spdNorm = tmpVector2;
+				spdNorm.load(curVec);
+				spdNorm.set(spdNorm.y, -spdNorm.x, spdNorm.z);
+
+				spdNorm.scale(hxd.Math.sin(time + hashf(i, 17) * hxd.Math.PI * 2.0) * prefab.objectSelfSin * hxd.Math.max(0.10, spd/prefab.maxSpeed));
+
 				curVec.scale(spd);
 
 				e.vx = curVec.x;
 				e.vy = curVec.y;
 				e.vz = curVec.z;
 
-				e.x += e.vx * ctx.elapsedTime;
-				e.y += e.vy * ctx.elapsedTime;
-				e.z += e.vz * ctx.elapsedTime;
+				e.x += e.vx * ctx.elapsedTime + spdNorm.x* ctx.elapsedTime;
+				e.y += e.vy * ctx.elapsedTime + spdNorm.y* ctx.elapsedTime;
+				e.z += e.vz * ctx.elapsedTime + spdNorm.z* ctx.elapsedTime;
 			}
 
 		}
@@ -151,7 +196,7 @@ class SwarmObject extends h3d.scene.Object {
 
 		var r = hxd.Math.lerp(0.5, 1.5, hashf(id, 188947+s)) * 1.0;
 		var theta = hxd.Math.lerp(0.2, hxd.Math.PI * 2.0 - 0.2, hashf(id, 7841+s) % 1.0);
-		var sigma = (hashf(id, 4449) % 1.0 + time * hxd.Math.lerp(0.5, 1.5, hashf(id, 99741+s)) * 0.05) * hxd.Math.PI * 2.0;
+		var sigma = (hashf(id, 4449) % 1.0 + 0.0 * hxd.Math.lerp(0.5, 1.5, hashf(id, 99741+s)) * 0.05) * hxd.Math.PI * 2.0 + facingAngle;
 
 		var st = hxd.Math.sin(theta);
 		outPos.x = r * st * hxd.Math.cos(sigma);
@@ -170,6 +215,9 @@ class Swarm extends Object3D {
 	@:s public var maxSpeed : Float = 10.0;
 
 	@:s public var braking : Float = 1.0;
+
+	@:s public var objectSelfSin : Float = 1.0;
+
 
 	@:s public var debugTargets : Bool = false;
 
@@ -193,6 +241,10 @@ class Swarm extends Object3D {
 				<dt>Acceleration</dt><dd><input type="range" field="acceleration" min = "0.01" max = "10.0"/></dd>
 				<dt>MaxSpeed</dt><dd><input type="range" field="acceleration" min = "0.01" max = "100.0"/></dd>
 				<dt>Braking</dt><dd><input type="range" field="braking" min = "0.01" max = "10.0"/></dd>
+
+				<dt>ObjectSelfSin</dt><dd><input type="range" field="objectSelfSin" min = "0.01" max = "10.0"/></dd>
+
+
 				<dt>Debug Targets</dt><dd><input type="checkbox" field="debugTargets"/></dd>
 
 			</dl>
