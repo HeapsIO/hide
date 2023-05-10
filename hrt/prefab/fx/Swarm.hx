@@ -11,6 +11,15 @@ class SwarmElement {
 	public var vx: Float = 0.0;
 	public var vy: Float = 0.0;
 	public var vz: Float = 0.0;
+
+	// Interpolation
+	public var prev_x: Float = 0.0;
+	public var prev_y: Float = 0.0;
+	public var prev_z: Float = 0.0;
+
+	public var prev_vx: Float = 0.0;
+	public var prev_vy: Float = 0.0;
+	public var prev_vz: Float = 0.0;
 }
 
 class SwarmObject extends h3d.scene.Object {
@@ -22,6 +31,7 @@ class SwarmObject extends h3d.scene.Object {
 
 
 	var time = 0.0;
+	var stepTime = 0.0;
 
 	#if editor
 	public var debugViz : h3d.scene.Graphics = null;
@@ -45,9 +55,12 @@ class SwarmObject extends h3d.scene.Object {
 	static var tmpVector2 = new h3d.Vector();
 	static var tmpVector3 = new h3d.Vector();
 
-	override function syncRec(ctx:h3d.scene.RenderContext) {
-		super.syncRec(ctx);
+	var stepSize = 1.0/15.0;
+	var maxIter = 3;
 
+	// Performs a fixed step in the simulation
+	// Avoid degenerating parameters at low framerates
+	function step() {
 		var absPos = getAbsPos();
 
 		if (lastPos == null) {
@@ -68,7 +81,7 @@ class SwarmObject extends h3d.scene.Object {
 			targetAngle = -hxd.Math.atan2(delta.cross(forward).dot(up), delta.dot(forward));
 		}
 
-		if (ctx.elapsedTime > 0.0001) {
+		if (stepSize > 0.0001) {
 			var diff = (targetAngle - facingAngle);
 			trace(diff / (hxd.Math.PI * 2.0));
 			while (diff > hxd.Math.PI) {
@@ -77,13 +90,12 @@ class SwarmObject extends h3d.scene.Object {
 			while (diff < -hxd.Math.PI) {
 				diff += hxd.Math.PI * 2.0;
 			}
-			facingAngle += diff * (1-hxd.Math.pow(2, -0.001/ctx.elapsedTime));
+			facingAngle += diff * (1-hxd.Math.pow(0.5, stepSize));
 			facingAngle = (facingAngle % (hxd.Math.PI * 2.0));
 		}
 
 		lastPos.load(curPos);
 
-		time = ctx.time;
 
 		var prevLen = elements.length;
 		elements.resize(prefab.numObjects);
@@ -112,6 +124,15 @@ class SwarmObject extends h3d.scene.Object {
 			var dir = tmpVector2;
 			dir.set(target.x - e.x, target.y - e.y, target.z - e.z);
 			var len = dir.length();
+
+			e.prev_vx = e.vx;
+			e.prev_vy = e.vy;
+			e.prev_vz = e.vz;
+
+			e.prev_x = e.x;
+			e.prev_y = e.y;
+			e.prev_z = e.z;
+
 			if (len > 0.001) {
 				var curVec = tmpVector3;
 				curVec.set(e.vx, e.vy, e.vz);
@@ -120,9 +141,9 @@ class SwarmObject extends h3d.scene.Object {
 				curVec.scale(prefab.braking);
 				dir = dir.sub(curVec);
 
-				e.vx += dir.x * ctx.elapsedTime;
-				e.vy += dir.y * ctx.elapsedTime;
-				e.vz += dir.z * ctx.elapsedTime;
+				e.vx += dir.x * stepSize;
+				e.vy += dir.y * stepSize;
+				e.vz += dir.z * stepSize;
 
 				curVec.set(e.vx, e.vy, e.vz);
 				var spd = curVec.length();
@@ -141,12 +162,28 @@ class SwarmObject extends h3d.scene.Object {
 				e.vy = curVec.y;
 				e.vz = curVec.z;
 
-				e.x += e.vx * ctx.elapsedTime + spdNorm.x* ctx.elapsedTime;
-				e.y += e.vy * ctx.elapsedTime + spdNorm.y* ctx.elapsedTime;
-				e.z += e.vz * ctx.elapsedTime + spdNorm.z* ctx.elapsedTime;
+				e.x += e.vx * stepSize + spdNorm.x * stepSize;
+				e.y += e.vy * stepSize + spdNorm.y * stepSize;
+				e.z += e.vz * stepSize + spdNorm.z * stepSize;
 			}
-
 		}
+	}
+
+	override function syncRec(ctx:h3d.scene.RenderContext) {
+		super.syncRec(ctx);
+
+		stepTime += ctx.time - time;
+		time = ctx.time;
+
+		var numIter = 0;
+		while(stepTime > stepSize && numIter < maxIter) {
+			stepTime -= stepSize;
+			numIter += 1;
+
+			step();
+		}
+
+		stepTime = stepTime % stepSize;
 
 		#if editor
 		debugViz.clear();
@@ -161,11 +198,21 @@ class SwarmObject extends h3d.scene.Object {
 		debugVizElem.clear();
 		for (e in elements) {
 			debugVizElem.setColorF(0.5,0.0,0.0,1.0);
-			tmpVector.set(e.vx, e.vy, e.vz);
+			var dd = stepTime/stepSize;
+
+			var x = hxd.Math.lerp(e.prev_x, e.x, dd);
+			var y = hxd.Math.lerp(e.prev_y, e.y, dd);
+			var z = hxd.Math.lerp(e.prev_z, e.z, dd);
+
+			var vx = hxd.Math.lerp(e.prev_vx, e.vx, dd);
+			var vy = hxd.Math.lerp(e.prev_vy, e.vy, dd);
+			var vz = hxd.Math.lerp(e.prev_vz, e.vz, dd);
+
+			tmpVector.set(vx, vy, vz);
 			tmpVector.normalize();
 			tmpVector.scale(0.25);
-			debugVizElem.moveTo(e.x, e.y, e.z);
-			debugVizElem.lineTo(e.x + tmpVector.x, e.y + tmpVector.y, e.z + tmpVector.z);
+			debugVizElem.moveTo(x, y, z);
+			debugVizElem.lineTo(x + tmpVector.x, y + tmpVector.y, z + tmpVector.z);
 		}
 		#end
 	}
