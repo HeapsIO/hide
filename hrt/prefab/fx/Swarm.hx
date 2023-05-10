@@ -182,7 +182,6 @@ class Swarm extends Object3D {
 	override function getHideProps() : HideProps {
 		return { icon : "random", name : "Swarm", allowParent : function(p) return p.to(FX) != null || p.getParent(FX) != null };
 	}
-	#end
 
 	override public function edit(ctx:EditContext) {
 		super.edit(ctx);
@@ -199,6 +198,7 @@ class Swarm extends Object3D {
 			</dl>
 		</div>'), this);
 	}
+	#end
 
 	static var _ = hrt.prefab.Library.register("Swarm", Swarm);
 }
