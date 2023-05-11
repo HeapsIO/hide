@@ -1,4 +1,5 @@
 package hrt.prefab.fx;
+using Lambda;
 
 
 class SwarmElement {
@@ -29,6 +30,11 @@ class SwarmObject extends h3d.scene.Object {
 	public var facingAngle: Float = 0.0;
 	public var targetAngle: Float = 0.0;
 
+	public var batch : h3d.scene.MeshBatch = null;
+	public var context : Context = null;
+
+	public var swarmElementTemplate: Object3D = null;
+
 
 	var time = 0.0;
 	var stepTime = 0.0;
@@ -51,9 +57,96 @@ class SwarmObject extends h3d.scene.Object {
 		#end
 	}
 
+	public function init() {
+
+		var meshPrimitive : h3d.prim.MeshPrimitive = null;
+		var meshMaterial : h3d.mat.Material = null;
+
+		if( batch != null ) {
+			batch.remove();
+			batch = null;
+		}
+
+		if (swarmElementTemplate != null) {
+			// baseEmitMat = swarmElementTemplate.getTransform();
+			// if(baseEmitMat.isIdentityEpsilon(0.01))
+			// 	baseEmitMat = null;
+
+			var template = swarmElementTemplate.makeInstance(context);
+			var mesh = Std.downcast(template.local3d, h3d.scene.Mesh);
+			if( mesh == null ) {
+				for( i in 0...template.local3d.numChildren ) {
+					mesh = Std.downcast(template.local3d.getChildAt(i), h3d.scene.Mesh);
+					if( mesh != null ) {
+						break;
+					}
+				}
+			}
+
+			if (mesh != null) {
+				meshPrimitive = Std.downcast(mesh.primitive, h3d.prim.MeshPrimitive);
+				meshMaterial = mesh.material;
+				mesh.remove();
+			}
+
+			template.shared.contexts.remove(swarmElementTemplate);
+			template.local3d.remove();
+			template.local3d = null;
+		}
+
+		if (meshPrimitive != null) {
+			batch = new h3d.scene.MeshBatch(meshPrimitive, meshMaterial, null);
+			addChildAt(batch, 0);
+			batch.name = "emitter";
+			batch.calcBounds = false;
+
+			var batchContext = context.clone(null);
+			batchContext.local3d = batch;
+			// Setup mats.
+			// Should we do this manually here or make a recursive makeInstance on the template?
+			// var materials = emitterPrefab.getAll(hrt.prefab.Material);
+			// for(mat in materials) {
+
+			// 	// Remove materials that are not directly parented to this emitter
+			// 	var p = mat.parent;
+			// 	while (p != null && Std.downcast(p, Emitter) == null) {
+			// 		p = p.parent;
+			// 	}
+
+			// 	if (this.emitterPrefab == p) {
+			// 		if(mat.enabled) {
+			// 			var ctx = mat.makeInstance(batchContext);
+			// 			ctx.local3d = null;
+			// 		}
+			// 	}
+			// }
+
+			// // Setup shaders
+			// shaderAnims = [];
+			// var shaders = emitterPrefab.getAll(hrt.prefab.Shader);
+			// for( shader in shaders ) {
+			// 	// Remove shaders that are not directly parented to this emitter
+			// 	var p = shader.parent;
+			// 	while (p != null && Std.downcast(p, Emitter) == null) {
+			// 		p = p.parent;
+			// 	}
+			// 	if (this.emitterPrefab == p) {
+			// 		if( !shader.enabled ) continue;
+			// 		var shCtx = makeShaderInstance(shader, batchContext);
+			// 		if( shCtx == null ) continue;
+
+			// 		shCtx.local3d = null; // Prevent shader.iterMaterials from adding our objet to the list incorectly
+
+			// 		hrt.prefab.fx.BaseFX.getShaderAnims(shCtx, shader, shaderAnims, batch);
+			// 	}
+			// }
+		}
+	}
+
 	static var tmpVector = new h3d.Vector();
 	static var tmpVector2 = new h3d.Vector();
 	static var tmpVector3 = new h3d.Vector();
+	static var tmpQuat = new h3d.Quat();
 
 	var stepSize = 1.0/15.0;
 	var maxIter = 3;
@@ -68,47 +161,51 @@ class SwarmObject extends h3d.scene.Object {
 		}
 
 		var curPos = absPos.getPosition();
-		var delta = curPos.sub(lastPos);
-		delta.z = 0.0;
 
-		if (delta.lengthSq() > 0.00001) {
-			delta.normalize();
-			var forward = tmpVector;
-			forward.set(1.0,0.0,0.0);
-			var up = tmpVector2;
-			up.set(0.0,0.0,1.0);
+		if (prefab.autoTrackRotation) {
+			var delta = curPos.sub(lastPos);
+			delta.z = 0.0;
 
-			targetAngle = -hxd.Math.atan2(delta.cross(forward).dot(up), delta.dot(forward));
+			if (delta.lengthSq() > 0.00001) {
+				delta.normalize();
+				var forward = tmpVector;
+				forward.set(1.0,0.0,0.0);
+				var up = tmpVector2;
+				up.set(0.0,0.0,1.0);
+
+				targetAngle = -hxd.Math.atan2(delta.cross(forward).dot(up), delta.dot(forward));
+			}
+
+			if (stepSize > 0.0001) {
+				var diff = (targetAngle - facingAngle);
+				trace(diff / (hxd.Math.PI * 2.0));
+				while (diff > hxd.Math.PI) {
+					diff -= hxd.Math.PI * 2.0;
+				}
+				while (diff < -hxd.Math.PI) {
+					diff += hxd.Math.PI * 2.0;
+				}
+				facingAngle += diff * (1-hxd.Math.pow(1-prefab.trackRotationSpeed, stepSize));
+				facingAngle = (facingAngle % (hxd.Math.PI * 2.0));
+			}
 		}
 
-		if (stepSize > 0.0001) {
-			var diff = (targetAngle - facingAngle);
-			trace(diff / (hxd.Math.PI * 2.0));
-			while (diff > hxd.Math.PI) {
-				diff -= hxd.Math.PI * 2.0;
-			}
-			while (diff < -hxd.Math.PI) {
-				diff += hxd.Math.PI * 2.0;
-			}
-			facingAngle += diff * (1-hxd.Math.pow(0.5, stepSize));
-			facingAngle = (facingAngle % (hxd.Math.PI * 2.0));
-		}
 
 		lastPos.load(curPos);
-
 
 		var prevLen = elements.length;
 		elements.resize(prefab.numObjects);
 		for (i in prevLen...prefab.numObjects) {
 			var pos = getPointPos(i, tmpVector);
+			pos.transform(absPos);
 			var e = new SwarmElement();
 			e.x = pos.x;
 			e.y = pos.y;
 			e.z = pos.z;
 
-			e.vx = 0.0;
-			e.vy = 0.0;
-			e.vz = 0.0;
+			e.prev_vx = e.x;
+			e.prev_vy = e.y;
+			e.prev_vz = e.z;
 
 			elements[i] = e;
 		}
@@ -117,9 +214,26 @@ class SwarmObject extends h3d.scene.Object {
 		for (i in 0...elements.length) {
 			var e = elements[i];
 
-			var maxAccDist = 10.0;
 
 			var target = getPointPos(i, tmpVector);
+
+			if (hxd.Math.isNaN(e.x) ||
+				hxd.Math.isNaN(e.y) ||
+				hxd.Math.isNaN(e.z) ||
+				hxd.Math.isNaN(e.vx) ||
+				hxd.Math.isNaN(e.vy) ||
+				hxd.Math.isNaN(e.vz)
+				)
+			{
+				e.x = target.x;
+				e.y = target.y;
+				e.z = target.z;
+
+				e.vx = 0.0;
+				e.vy = 0.0;
+				e.vz = 0.0;
+			}
+
 			target.transform(absPos);
 			var dir = tmpVector2;
 			dir.set(target.x - e.x, target.y - e.y, target.z - e.z);
@@ -154,7 +268,7 @@ class SwarmObject extends h3d.scene.Object {
 				spdNorm.load(curVec);
 				spdNorm.set(spdNorm.y, -spdNorm.x, spdNorm.z);
 
-				spdNorm.scale(hxd.Math.sin(time + hashf(i, 17) * hxd.Math.PI * 2.0) * prefab.objectSelfSin * hxd.Math.max(0.10, spd/prefab.maxSpeed));
+				spdNorm.scale(hxd.Math.sin(time * prefab.objectSelfSinFreq + hashf(i, 17) * hxd.Math.PI * 2.0) * prefab.objectSelfSin * hxd.Math.max(0.10, spd/prefab.maxSpeed));
 
 				curVec.scale(spd);
 
@@ -167,12 +281,22 @@ class SwarmObject extends h3d.scene.Object {
 				e.z += e.vz * stepSize + spdNorm.z * stepSize;
 			}
 		}
+
+		#if debug
+		debugViz.clear();
+		if (prefab.debugTargets) {
+			for (i in 0...prefab.numObjects) {
+				debugViz.setColorF(0.0,1.0,1.0,1.0);
+				drawPoint(debugViz, getPointPos(i, tmpVector));
+			}
+		}
+		#end
 	}
 
 	override function syncRec(ctx:h3d.scene.RenderContext) {
 		super.syncRec(ctx);
 
-		stepTime += ctx.time - time;
+		stepTime += ctx.elapsedTime;
 		time = ctx.time;
 
 		var numIter = 0;
@@ -185,15 +309,9 @@ class SwarmObject extends h3d.scene.Object {
 
 		stepTime = stepTime % stepSize;
 
-		#if editor
-		debugViz.clear();
-		if (prefab.debugTargets) {
-			for (i in 0...prefab.numObjects) {
-				debugViz.setColorF(0.0,1.0,1.0,1.0);
-				drawPoint(debugViz, getPointPos(i, tmpVector));
-			}
-		}
+		updateMeshBatch();
 
+		#if editor
 
 		debugVizElem.clear();
 		for (e in elements) {
@@ -215,6 +333,53 @@ class SwarmObject extends h3d.scene.Object {
 			debugVizElem.lineTo(x + tmpVector.x, y + tmpVector.y, z + tmpVector.z);
 		}
 		#end
+	}
+
+	function updateMeshBatch() {
+		if(batch == null) return;
+
+		var parentScale = tmpVector3;
+		if (parent != null) {
+			parentScale.load(parent.getAbsPos().getScale());
+		} else {
+			parentScale.set(1.0,1.0,1.0);
+		}
+		batch.begin(hxd.Math.nextPOT(prefab.numObjects));
+
+		for (e in elements) {
+			var dd = stepTime/stepSize;
+
+			var x = hxd.Math.lerp(e.prev_x, e.x, dd);
+			var y = hxd.Math.lerp(e.prev_y, e.y, dd);
+			var z = hxd.Math.lerp(e.prev_z, e.z, dd);
+
+			var vx = hxd.Math.lerp(e.prev_vx, e.vx, dd);
+			var vy = hxd.Math.lerp(e.prev_vy, e.vy, dd);
+			var vz = hxd.Math.lerp(e.prev_vz, e.vz, dd);
+
+			tmpVector.set(vx, vy, vz);
+			if (tmpVector.lengthSq() < hxd.Math.EPSILON ) {
+				tmpVector.set(1.0,0,0);
+			}
+			var quat = tmpQuat;
+			quat.initDirection(tmpVector);
+
+			if (batch.worldPosition == null)
+				batch.worldPosition = new h3d.Matrix();
+
+			quat.toMatrix(batch.worldPosition);
+
+
+			batch.worldPosition.tx = x;
+			batch.worldPosition.ty = y;
+			batch.worldPosition.tz = z;
+			batch.worldPosition._44 = 1.0;
+
+			batch.worldPosition.scale(parentScale.x, parentScale.y, parentScale.z);
+
+			batch.emitInstance();
+		}
+
 	}
 
 	#if editor
@@ -243,7 +408,7 @@ class SwarmObject extends h3d.scene.Object {
 
 		var r = hxd.Math.lerp(0.5, 1.5, hashf(id, 188947+s)) * 1.0;
 		var theta = hxd.Math.lerp(0.2, hxd.Math.PI * 2.0 - 0.2, hashf(id, 7841+s) % 1.0);
-		var sigma = (hashf(id, 4449) % 1.0 + 0.0 * hxd.Math.lerp(0.5, 1.5, hashf(id, 99741+s)) * 0.05) * hxd.Math.PI * 2.0 + facingAngle;
+		var sigma = (hashf(id, 4449) % 1.0 + prefab.baseTargetRotationSpeed * time * hxd.Math.lerp(0.5, 1.5, hashf(id, 99741+s)) * 0.05) * hxd.Math.PI * 2.0 + facingAngle;
 
 		var st = hxd.Math.sin(theta);
 		outPos.x = r * st * hxd.Math.cos(sigma);
@@ -263,14 +428,50 @@ class Swarm extends Object3D {
 
 	@:s public var braking : Float = 1.0;
 
+	@:s public var baseTargetRotationSpeed: Float = 1.0;
+	@:s public var baseTargetRotationSpeedSpread : Float = 0.0;
+
 	@:s public var objectSelfSin : Float = 1.0;
+	@:s public var objectSelfSinFreq : Float = 1.0;
+
+	@:s public var autoTrackRotation : Bool = false;
+	@:s public var trackRotationSpeed : Float = 0.5;
+
+
+
 
 
 	@:s public var debugTargets : Bool = false;
 
+	// Override child creation
+	override function make(ctx: Context) {
+		if( ctx == null ) {
+			ctx = new Context();
+			ctx.init();
+		}
+		ctx = makeInstance(ctx);
+		return ctx;
+	}
 
 	override function createObject(ctx:Context) {
-		return new SwarmObject(ctx.local3d, this);
+		var obj = new SwarmObject(ctx.local3d, this);
+		obj.context = ctx;
+		return obj;
+	}
+
+	override function updateInstance( ctx: Context, ?propName : String) {
+		super.updateInstance(ctx, propName);
+		var swarm : SwarmObject = cast ctx.local3d;
+
+		var template : Object3D = cast children.find(
+			c -> c.enabled &&
+			(c.name == null || c.name.indexOf("collision") == -1) &&
+			c.to(Object3D) != null &&
+			c.to(Object3D).visible);
+
+		swarm.swarmElementTemplate = template;
+
+		swarm.init();
 	}
 
 	#if editor
@@ -281,21 +482,35 @@ class Swarm extends Object3D {
 	override public function edit(ctx:EditContext) {
 		super.edit(ctx);
 		var props = ctx.properties.add(new hide.Element('
-		<div class="group" name="Trail Properties">
+		<div class="group" name="Swarm Entities">
 			<dl>
 				<dt>Count</dt><dd><input field="numObjects"/></dd>
 				<dt>Random Seed</dt><dd><input field="seed"/></dd>
 				<dt>Acceleration</dt><dd><input type="range" field="acceleration" min = "0.01" max = "10.0"/></dd>
-				<dt>MaxSpeed</dt><dd><input type="range" field="acceleration" min = "0.01" max = "100.0"/></dd>
+				<dt>MaxSpeed</dt><dd><input type="range" field="maxSpeed" min = "0.01" max = "100.0"/></dd>
 				<dt>Braking</dt><dd><input type="range" field="braking" min = "0.01" max = "10.0"/></dd>
 
-				<dt>ObjectSelfSin</dt><dd><input type="range" field="objectSelfSin" min = "0.01" max = "10.0"/></dd>
+				<dt>SelfSin</dt><dd><input type="range" field="objectSelfSin" min = "0.01" max = "10.0"/></dd>
+				<dt>SelfSinFreq</dt><dd><input type="range" field="objectSelfSinFreq" min = "0.01" max = "10.0"/></dd>
 
-
-				<dt>Debug Targets</dt><dd><input type="checkbox" field="debugTargets"/></dd>
 
 			</dl>
-		</div>'), this);
+		</div>
+
+		<div class="group" name="Targets">
+		<dl>
+			<details><summary> info </summary><p>Controls the targets that the entities follow. Each entity has a fixed target that it will try to reach. Use theses settings to add some movement to the targets to randomise the placement of the entities.</details>
+
+			<dt>Rot Speed</dt><dd><input type="range" field="baseTargetRotationSpeed" min = "-10.0" max = "10.0"/></dd>
+
+			<dt>Rotate Targets with movement</dt><dd><input type="checkbox" field="autoTrackRotation"/></dd>
+			<dt>Movement rotation speed</dt><dd><input type="range" field="trackRotationSpeed" min = "0.01" max = "1.0"/></dd>
+
+			<dt>Debug Targets</dt><dd><input type="checkbox" field="debugTargets"/></dd>
+		</dl>
+		</div>
+		'
+		), this);
 	}
 	#end
 
