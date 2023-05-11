@@ -123,19 +123,20 @@ class Dropdown extends Component {
 
 	function reflow() {
 		var offset = anchor.offset();
-		var popupHeight = element.get(0).offsetHeight;
-		var popupWidth = element.get(0).offsetWidth;
+		var popupHeight =  element.get(0).offsetHeight;
+		var popupWidth = hxd.Math.clamp(element.get(0).offsetWidth, 300, 600);
 
 		var clientHeight = js.Browser.document.documentElement.clientHeight;
 		var clientWidth = js.Browser.document.documentElement.clientWidth;
 
 		offset.top += anchor.get(0).offsetHeight;
-		offset.top = Math.min(offset.top,  clientHeight - popupHeight - 32);
+		offset.top = Math.min(offset.top,  clientHeight - popupHeight - 8);
 
 		//offset.left += anchor.get(0).offsetWidth;
-		offset.left = Math.min(offset.left,  clientWidth - popupWidth - 32);
+		offset.left = Math.min(offset.left,  clientWidth - popupWidth - 8);
 
 		element.offset(offset);
+		element.width(popupWidth);
 	}
 
 	var removed = false;
