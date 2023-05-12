@@ -1,6 +1,16 @@
 package hrt.prefab.fx;
 using Lambda;
 
+class PerObjectRandom extends hxsl.Shader {
+	static var SRC = {
+		@perInstance @param var randomParam : Float;
+		var random : Float;
+
+		function vertex() {
+			random = randomParam;
+		}
+	}
+}
 
 class SwarmElement {
 	public function new() {};
@@ -35,13 +45,16 @@ class SwarmObject extends h3d.scene.Object {
 
 	public var swarmElementTemplate: Object3D = null;
 
+	public var shaderAnims : Array<hrt.prefab.fx.BaseFX.ShaderAnimation>;
+
+	public var shader : PerObjectRandom;
+
 
 	var time = 0.0;
 	var stepTime = 0.0;
 
 	#if editor
 	public var debugViz : h3d.scene.Graphics = null;
-	public var debugVizElem : h3d.scene.Graphics = null;
 
 	#end
 
@@ -52,8 +65,6 @@ class SwarmObject extends h3d.scene.Object {
 
 		#if editor
 		debugViz = new h3d.scene.Graphics(this);
-		debugVizElem = new h3d.scene.Graphics(this);
-		debugVizElem.follow = this.getScene();
 		#end
 	}
 
@@ -64,7 +75,6 @@ class SwarmObject extends h3d.scene.Object {
 
 		if( batch != null ) {
 			batch.remove();
-			batch = null;
 		}
 
 		if (swarmElementTemplate != null) {
@@ -94,53 +104,81 @@ class SwarmObject extends h3d.scene.Object {
 			template.local3d = null;
 		}
 
+		if (meshPrimitive == null) {
+			var cube =  new h3d.prim.Cube(2.0,1.0,1.0, true);
+			cube.addUVs();
+			cube.addNormals();
+			meshPrimitive = cube;
+		}
+
 		if (meshPrimitive != null) {
 			batch = new h3d.scene.MeshBatch(meshPrimitive, meshMaterial, null);
+
+			shader = new PerObjectRandom();
+			batch.material.mainPass.addShader(shader);
+
 			addChildAt(batch, 0);
 			batch.name = "emitter";
-			batch.calcBounds = false;
+			batch.calcBounds = true;
 
 			var batchContext = context.clone(null);
 			batchContext.local3d = batch;
 			// Setup mats.
 			// Should we do this manually here or make a recursive makeInstance on the template?
-			// var materials = emitterPrefab.getAll(hrt.prefab.Material);
-			// for(mat in materials) {
+			var materials = prefab.getAll(hrt.prefab.Material);
+			for(mat in materials) {
 
-			// 	// Remove materials that are not directly parented to this emitter
-			// 	var p = mat.parent;
-			// 	while (p != null && Std.downcast(p, Emitter) == null) {
-			// 		p = p.parent;
-			// 	}
+				// Remove materials that are not directly parented to this Swarm
+				var p = mat.parent;
+				while (p != null && Std.downcast(p, Swarm) == null) {
+					p = p.parent;
+				}
 
-			// 	if (this.emitterPrefab == p) {
-			// 		if(mat.enabled) {
-			// 			var ctx = mat.makeInstance(batchContext);
-			// 			ctx.local3d = null;
-			// 		}
-			// 	}
-			// }
+				if (this.prefab == p) {
+					if(mat.enabled) {
+						var ctx = mat.makeInstance(batchContext);
+						ctx.local3d = null;
+					}
+				}
+			}
 
-			// // Setup shaders
-			// shaderAnims = [];
-			// var shaders = emitterPrefab.getAll(hrt.prefab.Shader);
-			// for( shader in shaders ) {
-			// 	// Remove shaders that are not directly parented to this emitter
-			// 	var p = shader.parent;
-			// 	while (p != null && Std.downcast(p, Emitter) == null) {
-			// 		p = p.parent;
-			// 	}
-			// 	if (this.emitterPrefab == p) {
-			// 		if( !shader.enabled ) continue;
-			// 		var shCtx = makeShaderInstance(shader, batchContext);
-			// 		if( shCtx == null ) continue;
+			// Setup shaders
+			shaderAnims = [];
+			var shaders = prefab.getAll(hrt.prefab.Shader);
+			for( shader in shaders ) {
+				// Remove shaders that are not directly parented to this Swarm
+				var p = shader.parent;
+				while (p != null && Std.downcast(p, Swarm) == null) {
+					p = p.parent;
+				}
+				if (this.prefab == p) {
+					if( !shader.enabled ) continue;
+					var shCtx = makeShaderInstance(shader, batchContext);
+					if( shCtx == null ) continue;
 
-			// 		shCtx.local3d = null; // Prevent shader.iterMaterials from adding our objet to the list incorectly
+					shCtx.local3d = null; // Prevent shader.iterMaterials from adding our objet to the list incorectly
 
-			// 		hrt.prefab.fx.BaseFX.getShaderAnims(shCtx, shader, shaderAnims, batch);
-			// 	}
-			// }
+					hrt.prefab.fx.BaseFX.getShaderAnims(shCtx, shader, shaderAnims, batch);
+				}
+			}
+
+			// Pre-heat the swarm system
+			step();
+			step();
+			updateMeshBatch();
 		}
+
+	}
+
+	function makeShaderInstance(prefab: hrt.prefab.Shader, ctx:Context):Context {
+		ctx = ctx.clone(prefab);
+		var shader = prefab.makeShader(ctx);
+		if( shader == null )
+			return ctx;
+		ctx.custom = shader;
+		prefab.updateInstance(ctx);
+		ctx.local3d = null;  // prevent ContextShared.getSelfObject from incorrectly reporting object
+		return ctx;
 	}
 
 	static var tmpVector = new h3d.Vector();
@@ -251,7 +289,10 @@ class SwarmObject extends h3d.scene.Object {
 				var curVec = tmpVector3;
 				curVec.set(e.vx, e.vy, e.vz);
 				dir.normalize();
-				dir.scale(len * prefab.acceleration);
+
+				var randAccelMult = Math.exp((hashf(i, 456317) - 0.5) * prefab.accelerationRandom);
+				var noiseAccelMult = prefab.accelerationNoise != 0 ? Math.exp(noise(i) * prefab.accelerationNoise) : 1.0;
+				dir.scale(len * prefab.acceleration * randAccelMult * noiseAccelMult);
 				curVec.scale(prefab.braking);
 				dir = dir.sub(curVec);
 
@@ -261,7 +302,10 @@ class SwarmObject extends h3d.scene.Object {
 
 				curVec.set(e.vx, e.vy, e.vz);
 				var spd = curVec.length();
-				spd = hxd.Math.clamp(spd, 0.0, prefab.maxSpeed * hxd.Math.lerp(0.75, 1.25, hashf(i, 744102359)));
+				var randMaxSpeedMult = Math.exp((hashf(i, 11427) - 0.5) * prefab.maxSpeedRandom);
+				var noiseMaxSpeedMult = prefab.maxSpeedNoise != 0 ? Math.exp(noise(i+7) * prefab.maxSpeedNoise) : 1.0;
+
+				spd = hxd.Math.clamp(spd, 0.0, prefab.maxSpeed * randMaxSpeedMult * noiseMaxSpeedMult);
 				curVec.normalize();
 
 				var spdNorm = tmpVector2;
@@ -297,7 +341,7 @@ class SwarmObject extends h3d.scene.Object {
 		super.syncRec(ctx);
 
 		stepTime += ctx.elapsedTime;
-		time = ctx.time;
+		time += stepTime;
 
 		var numIter = 0;
 		while(stepTime > stepSize && numIter < maxIter) {
@@ -310,29 +354,6 @@ class SwarmObject extends h3d.scene.Object {
 		stepTime = stepTime % stepSize;
 
 		updateMeshBatch();
-
-		#if editor
-
-		debugVizElem.clear();
-		for (e in elements) {
-			debugVizElem.setColorF(0.5,0.0,0.0,1.0);
-			var dd = stepTime/stepSize;
-
-			var x = hxd.Math.lerp(e.prev_x, e.x, dd);
-			var y = hxd.Math.lerp(e.prev_y, e.y, dd);
-			var z = hxd.Math.lerp(e.prev_z, e.z, dd);
-
-			var vx = hxd.Math.lerp(e.prev_vx, e.vx, dd);
-			var vy = hxd.Math.lerp(e.prev_vy, e.vy, dd);
-			var vz = hxd.Math.lerp(e.prev_vz, e.vz, dd);
-
-			tmpVector.set(vx, vy, vz);
-			tmpVector.normalize();
-			tmpVector.scale(0.25);
-			debugVizElem.moveTo(x, y, z);
-			debugVizElem.lineTo(x + tmpVector.x, y + tmpVector.y, z + tmpVector.z);
-		}
-		#end
 	}
 
 	function updateMeshBatch() {
@@ -346,7 +367,7 @@ class SwarmObject extends h3d.scene.Object {
 		}
 		batch.begin(hxd.Math.nextPOT(prefab.numObjects));
 
-		for (e in elements) {
+		for (i => e in elements) {
 			var dd = stepTime/stepSize;
 
 			var x = hxd.Math.lerp(e.prev_x, e.x, dd);
@@ -369,14 +390,15 @@ class SwarmObject extends h3d.scene.Object {
 
 			quat.toMatrix(batch.worldPosition);
 
+			batch.worldPosition.scale(parentScale.x, parentScale.y, parentScale.z);
 
 			batch.worldPosition.tx = x;
 			batch.worldPosition.ty = y;
 			batch.worldPosition.tz = z;
 			batch.worldPosition._44 = 1.0;
 
-			batch.worldPosition.scale(parentScale.x, parentScale.y, parentScale.z);
 
+			shader.randomParam = hashf(i, 77894 + prefab.seed);
 			batch.emitInstance();
 		}
 
@@ -394,6 +416,11 @@ class SwarmObject extends h3d.scene.Object {
 		viz.lineTo(pos.x, pos.y, pos.z + size/2.0);
 	}
 	#end
+
+	inline function noise(id: Int) : Float {
+		var h = hashf(id, 7841);
+		return hxd.Math.sin(h * time * prefab.noiseSpeed / 24.0 + hxd.Math.sin(h/13.47 * time * prefab.noiseSpeed));
+	}
 
 	inline function hashf(id: Int, seed:Int) : Float {
 		var h = hxd.Rand.hash(id, seed);
@@ -424,7 +451,12 @@ class Swarm extends Object3D {
 	@:s public var numObjects : Int = 3;
 	@:s public var seed : Int = 0;
 	@:s public var acceleration : Float = 1.0;
+	@:s public var accelerationRandom : Float = 0.0;
+	@:s public var accelerationNoise : Float = 0.0;
+
 	@:s public var maxSpeed : Float = 10.0;
+	@:s public var maxSpeedRandom : Float = 0.0;
+	@:s public var maxSpeedNoise : Float = 0.0;
 
 	@:s public var braking : Float = 1.0;
 
@@ -437,6 +469,7 @@ class Swarm extends Object3D {
 	@:s public var autoTrackRotation : Bool = false;
 	@:s public var trackRotationSpeed : Float = 0.5;
 
+	@:s public var noiseSpeed : Float = 1.0;
 
 
 
@@ -476,7 +509,7 @@ class Swarm extends Object3D {
 
 	#if editor
 	override function getHideProps() : HideProps {
-		return { icon : "random", name : "Swarm", allowParent : function(p) return p.to(FX) != null || p.getParent(FX) != null };
+		return { icon : "random", name : "Swarm" };
 	}
 
 	override public function edit(ctx:EditContext) {
@@ -484,14 +517,24 @@ class Swarm extends Object3D {
 		var props = ctx.properties.add(new hide.Element('
 		<div class="group" name="Swarm Entities">
 			<dl>
-				<dt>Count</dt><dd><input field="numObjects"/></dd>
-				<dt>Random Seed</dt><dd><input field="seed"/></dd>
-				<dt>Acceleration</dt><dd><input type="range" field="acceleration" min = "0.01" max = "10.0"/></dd>
-				<dt>MaxSpeed</dt><dd><input type="range" field="maxSpeed" min = "0.01" max = "100.0"/></dd>
-				<dt>Braking</dt><dd><input type="range" field="braking" min = "0.01" max = "10.0"/></dd>
+				<dt title="Totla number of entities in the swarm">Count</dt><dd><input field="numObjects"/></dd>
+				<dt title="Randomize the values of the swarm">Random Seed</dt><dd><input field="seed"/></dd>
+				<dt title="The acceleration of an entity">Acceleration</dt><dd><input type="range" field="acceleration" min = "0.01" max = "10.0"/></dd>
+				<dt title="Randomly multiply the acceleration of each entity. A value ">Rand Acceleration</dt><dd><input type="range" field="accelerationRandom" min = "0.00" max = "1.0"/></dd>
+				<dt title="Add a noise to the acceleration">Noise Acceleration</dt><dd><input type="range" field="accelerationNoise" min = "0.0" max = "1.0"/></dd>
 
-				<dt>SelfSin</dt><dd><input type="range" field="objectSelfSin" min = "0.01" max = "10.0"/></dd>
-				<dt>SelfSinFreq</dt><dd><input type="range" field="objectSelfSinFreq" min = "0.01" max = "10.0"/></dd>
+
+
+				<dt title="The maximum speed at witch a entity can move">MaxSpeed</dt><dd><input type="range" field="maxSpeed" min = "0.01" max = "100.0"/></dd>
+				<dt title="Randomly multiply the max speed of each entity">Rand MaxSpeed</dt><dd><input type="range" field="maxSpeedRandom" min = "0.00" max = "1.0"/></dd>
+				<dt title="Add a noise to the max speed">Noise MaxSpeed</dt><dd><input type="range" field="maxSpeedNoise" min = "0.0" max = "1.0"/></dd>
+
+
+
+				<dt title="How much the entity brakes when approaching the target">Braking</dt><dd><input type="range" field="braking" min = "0.01" max = "10.0"/></dd>
+
+				<dt title="Add a sinusoid to the entities movement that scales with the current speed of the entity">Move Sin Amp.</dt><dd><input type="range" field="objectSelfSin" min = "0.01" max = "10.0"/></dd>
+				<dt title="The frequency of the sinusoid that\' added to the movement">Move Sin Freq</dt><dd><input type="range" field="objectSelfSinFreq" min = "0.01" max = "10.0"/></dd>
 
 
 			</dl>
@@ -501,12 +544,18 @@ class Swarm extends Object3D {
 		<dl>
 			<details><summary> info </summary><p>Controls the targets that the entities follow. Each entity has a fixed target that it will try to reach. Use theses settings to add some movement to the targets to randomise the placement of the entities.</details>
 
-			<dt>Rot Speed</dt><dd><input type="range" field="baseTargetRotationSpeed" min = "-10.0" max = "10.0"/></dd>
+			<dt title="Add a rotation to the targets that helps randomize the spread of the entities">Auto Rot.</dt><dd><input type="range" field="baseTargetRotationSpeed" min = "-10.0" max = "10.0"/></dd>
 
-			<dt>Rotate Targets with movement</dt><dd><input type="checkbox" field="autoTrackRotation"/></dd>
-			<dt>Movement rotation speed</dt><dd><input type="range" field="trackRotationSpeed" min = "0.01" max = "1.0"/></dd>
+			<dt title="Align the targets with the velocity of the swarm target object">Align Vel.</dt><dd><input type="checkbox" field="autoTrackRotation"/></dd>
+			<dt title="At which speed the targets realign themselves">Align Vel. Spd.</dt><dd><input type="range" field="trackRotationSpeed" min = "0.01" max = "1.0"/></dd>
 
-			<dt>Debug Targets</dt><dd><input type="checkbox" field="debugTargets"/></dd>
+			<dt title="Displays the current position of the targets (editor only)">View Targets</dt><dd><input type="checkbox" field="debugTargets"/></dd>
+		</dl>
+		</div>
+
+		<div class="group" name="Advanced">
+		<dl>
+			<dt title="Add a rotation to the targets that helps randomize the spread of the entities">Noise Speed</dt><dd><input type="range" field="noiseSpeed" min = "0.01" max = "10.0"/></dd>
 		</dl>
 		</div>
 		'

@@ -72,7 +72,7 @@ class Material extends Prefab {
 		if(mainPassName != null && mainPassName.length > 0 )
 			mat.mainPass.setPassName(mainPassName);
 	}
-	
+
 	override function updateInstance( ctx : Context, ?propName ) {
 		if( ctx.local3d == null )
 			return;
@@ -115,6 +115,10 @@ class Material extends Prefab {
 		ctx.properties.addMaterial(mat, group.find('.group > .content'), function(pname) {
 			Reflect.setField(props, h3d.mat.MaterialSetup.current.name, mat.props);
 			ctx.onChange(this, "props");
+
+			var fx = getParent(hrt.prefab.fx.FX);
+			if(fx != null)
+				ctx.rebuildPrefab(fx, true);
 		});
 
 		if( isPbr ) {
@@ -130,7 +134,12 @@ class Material extends Prefab {
 						A <input type="checkbox" class="colorMaskA"/>
 					</dd>
 			</div>');
-			ctx.properties.add(colorMask, this, function(pname) { ctx.onChange(this, pname); });
+			ctx.properties.add(colorMask, this, function(pname) {
+				ctx.onChange(this, pname);
+				var fx = getParent(hrt.prefab.fx.FX);
+				if(fx != null)
+					ctx.rebuildPrefab(fx, true);
+			});
 
 			function setBit( e : Element, field : String, className : String, bitIndex : Int ) {
 				var mask = e.find(className);
@@ -149,6 +158,10 @@ class Material extends Prefab {
 							Reflect.setField(pbrProps, field, checked ? val | (1 << bitIndex) : val & ~(1 << bitIndex));
 						mask.prop("checked", val & (1<<bitIndex) > 0 ? true : false);
 					}));
+
+					var fx = getParent(hrt.prefab.fx.FX);
+					if(fx != null)
+						ctx.rebuildPrefab(fx, true);
 				});
 			}
 
@@ -285,6 +298,10 @@ class Material extends Prefab {
 			ctx.onChange(this, null);
 			ctx.rebuildProperties();
 			ctx.scene.editor.refresh(Partial);
+
+			var fx = getParent(hrt.prefab.fx.FX);
+			if(fx != null)
+				ctx.rebuildPrefab(fx, true);
 		});
 		select.val(materialName == null ? "any" : materialName);
 
@@ -302,6 +319,10 @@ class Material extends Prefab {
 		dropDownMaterials.appendTo(matProps);
 		ctx.properties.add(matProps, this, function(pname) {
 			ctx.onChange(this, pname);
+
+			var fx = getParent(hrt.prefab.fx.FX);
+			if(fx != null)
+				ctx.rebuildPrefab(fx, true);
 		});
 	}
 
