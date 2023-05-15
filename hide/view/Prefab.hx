@@ -476,7 +476,7 @@ class Prefab extends FileView {
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
-		toolsDefs.push({id: "graphicsFilters", title : "Graphics filters", type : Popup((e) -> new FiltersPopup(null, e, this, sceneFilters, "Graphics"))});
+		toolsDefs.push({id: "graphicsFilters", title : "Graphics filters", type : Popup((e) -> new FiltersPopup(null, e, this, graphicsFilters, "Graphics"))});
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
