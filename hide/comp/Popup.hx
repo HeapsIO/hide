@@ -7,6 +7,7 @@ import js.Browser;
 // that appears when clicking on an item
 class Popup extends Component {
 	var popup : Element;
+	var timer : haxe.Timer;
 
 	function onMouseDown(e : js.html.MouseEvent) {
 		originalTarget = e.target;
@@ -35,10 +36,9 @@ class Popup extends Component {
 		Browser.document.addEventListener("mousedown",onMouseDown);
 		Browser.document.addEventListener("mouseup", onMouseUp);
 
-		var timer = new haxe.Timer(500);
+		timer = new haxe.Timer(500);
 		timer.run = function() {
 			if( root.closest("body").length == 0 ) {
-				timer.stop();
 				close();
 			}
 		};
@@ -79,6 +79,7 @@ class Popup extends Component {
 	}
 
 	public function close() {
+		timer.stop();
 		popup.remove();
 		Browser.document.removeEventListener("mousedown", onMouseDown);
 		Browser.document.removeEventListener("mouseup", onMouseUp);

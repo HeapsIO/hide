@@ -17,6 +17,8 @@ class Dropdown extends Component {
 	var options : Array<Choice>;
 	var orderedOptions : Array<Choice>;
 	var anchor : Element = null;
+	var timer : haxe.Timer;
+
 
 	public function new( parent, options : Array<Choice>, currentValue: String, ?buildIcon : (Choice) -> Element, detached : Bool = false ) {
 		var root = new Element('<div class="hide-dropdown">
@@ -93,10 +95,9 @@ class Dropdown extends Component {
 			root.width(anchor.get(0).offsetWidth);
 			reflow();
 
-			var timer = new haxe.Timer(500);
+			timer = new haxe.Timer(500);
 			timer.run = function() {
 				if( anchor.closest("body").length == 0 ) {
-					timer.stop();
 					remove();
 				}
 			};
@@ -142,8 +143,11 @@ class Dropdown extends Component {
 	var removed = false;
 	override function remove() {
 		super.remove();
-		removed = true;
-		onClose();
+		if (removed == false) {
+			timer.stop();
+			removed = true;
+			onClose();
+		}
 	}
 
 	function resetHighlight() {
