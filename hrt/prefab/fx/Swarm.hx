@@ -105,7 +105,7 @@ class SwarmObject extends h3d.scene.Object {
 		}
 
 		if (meshPrimitive == null) {
-			var cube =  new h3d.prim.Cube(2.0,1.0,1.0, true);
+			var cube =  new h3d.prim.Cube(0.25,0.125,0.125, true);
 			cube.addUVs();
 			cube.addNormals();
 			meshPrimitive = cube;
@@ -449,7 +449,7 @@ class SwarmObject extends h3d.scene.Object {
 class Swarm extends Object3D {
 	@:s public var numObjects : Int = 3;
 	@:s public var seed : Int = 0;
-	@:s public var acceleration : Float = 1.0;
+	@:s public var acceleration : Float = 5.0;
 	@:s public var accelerationRandom : Float = 0.0;
 	@:s public var accelerationNoise : Float = 0.0;
 
@@ -457,13 +457,13 @@ class Swarm extends Object3D {
 	@:s public var maxSpeedRandom : Float = 0.0;
 	@:s public var maxSpeedNoise : Float = 0.0;
 
-	@:s public var braking : Float = 1.0;
+	@:s public var braking : Float = 5.0;
 
 	@:s public var baseTargetRotationSpeed: Float = 1.0;
 	@:s public var baseTargetRotationSpeedSpread : Float = 0.0;
 
-	@:s public var objectSelfSin : Float = 1.0;
-	@:s public var objectSelfSinFreq : Float = 1.0;
+	@:s public var objectSelfSin : Float = 0.0;
+	@:s public var objectSelfSinFreq : Float = 0.0;
 
 	@:s public var autoTrackRotation : Bool = false;
 	@:s public var trackRotationSpeed : Float = 0.5;
@@ -516,7 +516,7 @@ class Swarm extends Object3D {
 		var props = ctx.properties.add(new hide.Element('
 		<div class="group" name="Swarm Entities">
 			<dl>
-				<dt title="Totla number of entities in the swarm">Count</dt><dd><input field="numObjects"/></dd>
+				<dt title="Totla number of entities in the swarm">Count</dt><dd><input type="range" field="numObjects" min="1" max="100" step="1"/></dd>
 				<dt title="Randomize the values of the swarm">Random Seed</dt><dd><input field="seed"/></dd>
 				<dt title="The acceleration of an entity">Acceleration</dt><dd><input type="range" field="acceleration" min = "0.01" max = "10.0"/></dd>
 				<dt title="Randomly multiply the acceleration of each entity. A value ">Rand Acceleration</dt><dd><input type="range" field="accelerationRandom" min = "0.00" max = "1.0"/></dd>
