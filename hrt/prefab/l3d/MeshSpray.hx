@@ -52,6 +52,7 @@ class MeshSpray extends Spray {
 		}
 		inline function loadBatchMesh( source : String, mesh : h3d.scene.Mesh ) {
 			var batch = new h3d.scene.MeshBatch(cast(mesh.primitive,h3d.prim.MeshPrimitive), mesh.material, mspray);
+			batch.name = '${this.name}_${mesh.name}_${curID}';
 			batch.cullingCollider = @:privateAccess batch.instanced.bounds;
 			var multi = Std.downcast(mesh, h3d.scene.MultiMaterial);
 			if( multi != null ) batch.materials = multi.materials;
