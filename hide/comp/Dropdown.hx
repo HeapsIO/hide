@@ -144,7 +144,8 @@ class Dropdown extends Component {
 	override function remove() {
 		super.remove();
 		if (removed == false) {
-			timer.stop();
+			if (timer != null)
+				timer.stop();
 			removed = true;
 			onClose();
 		}

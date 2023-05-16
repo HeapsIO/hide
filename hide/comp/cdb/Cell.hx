@@ -193,7 +193,7 @@ class Cell {
 		if( !html.containsHtml )
 			elementHtml.textContent = html.str;
 		else
-			elementHtml.innerHTML = "<div style='max-height: 200px; overflow-y:auto; overflow-x:hidden;'>" + html.str + "</div>";
+			elementHtml.innerHTML = "<div class='cell-root' style='max-height: 200px; overflow-y:auto; overflow-x:hidden;'>" + html.str + "</div>";
 
 		switch( column.type ) {
 		case TEnum(values):
