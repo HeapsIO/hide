@@ -8,15 +8,32 @@ class SplineMoverObject extends h3d.scene.Object {
 	var state : Spline.MoveAlongSplineState = new Spline.MoveAlongSplineState();
 	public var movables : Array<h3d.scene.Object> = [];
 
+	#if editor
+	var debugViz : h3d.scene.Mesh = null;
+	#end
+
 
 	override public function new(?parent : h3d.scene.Object, prefab : SplineMover, ctx:Context) {
 		super(parent);
 		this.prefab = prefab;
 		this.ctx = ctx;
+
+		#if editor
+		var prim = new h3d.prim.Sphere();
+		prim.addNormals();
+		debugViz = new h3d.scene.Mesh(prim, this);
+		debugViz.material.color.setColor(0xFF0000);
+		debugViz.material.shadows = false;
+		movables.push(debugViz);
+		#end
 	}
 
 	override function syncRec(rctx:h3d.scene.RenderContext) {
 		super.syncRec(rctx);
+
+		#if editor
+		debugViz.visible = prefab.showDebug;
+		#end
 
 		updatePoint(rctx.elapsedTime);
 	}
@@ -41,8 +58,10 @@ class SplineMoverObject extends h3d.scene.Object {
 
 class SplineMover extends Spline {
 
-	public var speed = 1.0;
-
+	@:s public var speed = 1.0;
+	#if editor
+	@:s public var showDebug : Bool = true;
+	#end
 	override public function new(?parent) {
 		super(parent);
 	}
@@ -105,6 +124,7 @@ class SplineMover extends Spline {
 		<div class="group" name="Mover">
 			<dl>
 				<dt>Speed</dt><dd><input type="range" min="-100" max="100" field="speed"/></dd>
+				<dt>Show Debug</dt><dd><input type="checkbox" field="showDebug"/></dd>
 			</dl>
 		</div>'), this, function(pname) { ctx.onChange(this, pname); });
 	}
