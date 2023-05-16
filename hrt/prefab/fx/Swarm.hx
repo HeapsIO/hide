@@ -163,9 +163,8 @@ class SwarmObject extends h3d.scene.Object {
 			}
 
 			// Pre-heat the swarm system
-			step();
-			step();
-			updateMeshBatch();
+			stepTime = 2.0 * stepSize + hxd.Math.EPSILON;
+			//updateMeshBatch();
 		}
 
 	}

@@ -391,6 +391,9 @@ class Spline extends Object3D {
 	/* Move a point a given distance on the spline.
 	*/
 	public function moveAlongSpline(distance: Float, ?state: MoveAlongSplineState) : MoveAlongSplineState {
+		if( data == null )
+			computeSplineData();
+
 		if (state == null) {
 			state = new MoveAlongSplineState();
 		}

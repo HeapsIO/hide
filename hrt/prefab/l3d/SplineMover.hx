@@ -18,7 +18,10 @@ class SplineMoverObject extends h3d.scene.Object {
 	override function syncRec(rctx:h3d.scene.RenderContext) {
 		super.syncRec(rctx);
 
-		var dt = rctx.elapsedTime;
+		updatePoint(rctx.elapsedTime);
+	}
+
+	public function updatePoint(dt: Float) {
 		if (prefab.points.length <= 1)
 			return;
 
@@ -26,10 +29,12 @@ class SplineMoverObject extends h3d.scene.Object {
 		var pt = state.point;
 
 		for (c in movables) {
-			// kinda hacky but hey
-			if (Std.downcast(c, SplinePointObject) == null && c.name != "pointViewer" && c.name != "controlPointsViewer" && c.name != "lineGraphics") {
-				c.setPosition(pt.x, pt.y, pt.z);
+			if (c.follow == null) {
+				// We attach the object to this parent because moveAlongSpline already includes the transform of
+				// this spline
+				c.follow = this.parent;
 			}
+			c.setPosition(pt.x, pt.y, pt.z);
 		}
 	}
 }
@@ -71,6 +76,9 @@ class SplineMover extends Spline {
 			}
 		}
 
+		// Pre-heat spline
+		(cast ctx.local3d:SplineMoverObject).updatePoint(1.0);
+
 		// Original Spline make
 		var curCtx = ctx.shared.getContexts(this)[0];
 		updateInstance(curCtx);
@@ -80,7 +88,6 @@ class SplineMover extends Spline {
 	override function updateInstance(ctx:Context, ?propName:String) {
 		super.updateInstance(ctx, propName);
 
-		trace("UpdateInstance");
 	}
 
 	#if editor
