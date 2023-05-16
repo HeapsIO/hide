@@ -16,6 +16,26 @@ typedef SplinePointData = {
 	?t : Float
 }
 
+class MoveAlongSplineState {
+	public var currentPoint: Int = 0;
+	public var currentPointTime: Float = 0.0;
+	public var point: h3d.col.Point;
+	public var tangent: h3d.col.Point;
+
+	public function reset() {
+		currentPoint = 0;
+		currentPointTime = 0.0;
+		point.set();
+		tangent.set(1.0, 0.0, 0.0);
+	}
+
+	public function new(?point: h3d.col.Point, ?tangent:  h3d.col.Point) {
+		this.point = point != null ? point : new h3d.col.Point();
+		this.tangent = tangent != null ? tangent : new h3d.col.Point();
+		reset();
+	}
+}
+
 class SplineData {
 	public var length : Float;
 	public var step : Int;
@@ -356,7 +376,7 @@ class Spline extends Object3D {
 					tangent.load(data.samples[s1].tangent);
 			}
 			else {
-				var t = (l - s1) / segmentLength;
+				var t = (l - s1);
 				pos.lerp(data.samples[s1].pos, data.samples[s2].pos, t);
 				if(tangent != null)
 					tangent.lerp(data.samples[s1].tangent, data.samples[s2].tangent, t);
@@ -364,6 +384,60 @@ class Spline extends Object3D {
 
 		}
 		return pos;
+	}
+
+
+
+	/* Move a point a given distance on the spline.
+	*/
+	public function moveAlongSpline(distance: Float, ?state: MoveAlongSplineState) : MoveAlongSplineState {
+		if (state == null) {
+			state = new MoveAlongSplineState();
+		}
+
+		if (data.samples.length <= 0) {
+			return state;
+		}
+
+		// if the spline is too small return just the state (we'll just sping inside the while loop for nothing)
+		if (data.length < distance / 10.0) {
+			state.point.load(data.samples[0].pos);
+			state.tangent.load(data.samples[0].tangent);
+			return state;
+		}
+
+		var dir = distance > 0.0 ? 1 : -1;
+		distance = Math.abs(distance);
+
+		var numPoints = data.samples.length;
+		while (distance > 0.0) {
+			var p1i = state.currentPoint;
+			var p2i = (state.currentPoint + 1) % numPoints;
+
+			var p1 = data.samples[p1i];
+			var p2 = data.samples[p2i];
+
+			var segmentLength = p2.pos.distance(p1.pos);
+			var curDist = state.currentPointTime * segmentLength;
+
+			var nextDist = curDist + dir*distance;
+			var remainder = dir > 0 ? segmentLength - nextDist : nextDist;
+
+			// If we moved past the current point
+			if (remainder < 0.0) {
+				distance += remainder;
+				state.currentPointTime = dir > 0.0 ? 0.0 : 1.0;
+				state.currentPoint = (state.currentPoint + dir + (numPoints-1)) % (numPoints-1);
+			} else {
+				state.currentPointTime = segmentLength > 0.0 ? nextDist / segmentLength : 0.0;
+
+				state.point.lerp(p1.pos, p2.pos, state.currentPointTime);
+				state.tangent.lerp(p1.tangent, p2.tangent, state.currentPointTime);
+				state.tangent.scale(dir);
+				break;
+			}
+		}
+		return state;
 	}
 
 	// Return the euclidean distance between the two points
@@ -544,6 +618,7 @@ class Spline extends Object3D {
 		if( lineGraphics == null ) {
 			lineGraphics = new h3d.scene.Graphics(ctx.local3d);
 			lineGraphics.lineStyle(lineThickness, color);
+			lineGraphics.name = "lineGraphics";
 			lineGraphics.material.mainPass.setPassName("overlay");
 			lineGraphics.material.mainPass.depth(false, LessEqual);
 			lineGraphics.ignoreParentTransform = false;

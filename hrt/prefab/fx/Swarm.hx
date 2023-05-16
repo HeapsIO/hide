@@ -216,7 +216,6 @@ class SwarmObject extends h3d.scene.Object {
 
 			if (stepSize > 0.0001) {
 				var diff = (targetAngle - facingAngle);
-				trace(diff / (hxd.Math.PI * 2.0));
 				while (diff > hxd.Math.PI) {
 					diff -= hxd.Math.PI * 2.0;
 				}
