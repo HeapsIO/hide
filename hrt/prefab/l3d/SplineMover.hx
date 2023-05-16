@@ -89,6 +89,9 @@ class SplineMover extends Spline {
 	}
 
 	override function edit(ctx:EditContext) {
+		ctx.properties.add( new hide.Element('
+			<p>Important ! Save then reload when you add a child prefab to animate in order to see the animation ! It\'s a known bug.</p>
+		'));
 		super.edit(ctx);
 
 		ctx.properties.add( new hide.Element('
