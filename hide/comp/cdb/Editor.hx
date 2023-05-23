@@ -227,8 +227,10 @@ class Editor extends Component {
 					}
 				}
 
-				searchBox.hide();
-				refresh();
+				if (searchBox != null && searchBox.is(":visible")) {
+					searchBox.hide();
+					refresh();
+				}
 			}
 		}
 		return false;
