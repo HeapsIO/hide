@@ -178,6 +178,7 @@ class Editor extends Component {
 	function onKey( e : js.jquery.Event ) {
 		if( e.altKey )
 			return false;
+		var isRepeat: Bool = untyped e.originalEvent.repeat;
 		switch( e.keyCode ) {
 		case K.LEFT:
 			cursor.move( -1, 0, e.shiftKey, e.ctrlKey);
@@ -203,30 +204,32 @@ class Editor extends Component {
 		case K.SPACE:
 			e.preventDefault(); // prevent scroll
 		case K.ESCAPE:
-			if( currentFilters.length > 0 ) {
-				searchFilter([]);
-				// Auto expand separators if they were hidden
-				// Also : Very cursed code
-				var line = cursor.getLine();
-				if (line != null) {
-					var sep = line.element.prevAll(".separator").first();
-					while (sep.length > 0) {
-						trace(sep.get(0).classList);
-						if (sep.hasClass("sep-hidden")) {
-							sep.find("a").click();
-						}
-						if (Std.parseInt(sep.attr("level")) > 0) {
-							sep = sep.prevAll(".separator").first();
-						}
-						else {
-							break;
+			if (!isRepeat) {
+				if( currentFilters.length > 0 ) {
+					searchFilter([]);
+					// Auto expand separators if they were hidden
+					// Also : Very cursed code
+					var line = cursor.getLine();
+					if (line != null) {
+						var sep = line.element.prevAll(".separator").first();
+						while (sep.length > 0) {
+							trace(sep.get(0).classList);
+							if (sep.hasClass("sep-hidden")) {
+								sep.find("a").click();
+							}
+							if (Std.parseInt(sep.attr("level")) > 0) {
+								sep = sep.prevAll(".separator").first();
+							}
+							else {
+								break;
+							}
 						}
 					}
 				}
-			}
 
-			searchBox.hide();
-			refresh();
+				searchBox.hide();
+				refresh();
+			}
 		}
 		return false;
 	}
