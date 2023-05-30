@@ -237,7 +237,8 @@ class Editor extends Component {
 	}
 
 	public function updateFilter() {
-		searchFilter(currentFilters);
+		if (currentFilters.length > 0)
+			searchFilter(currentFilters, false);
 	}
 
 	public function setFilter( f : String ) {
@@ -255,7 +256,7 @@ class Editor extends Component {
 			searchFilter([f]);
 	}
 
-	function searchFilter( filters : Array<String> ) {
+	function searchFilter( filters : Array<String>, updateCursor=true ) {
 		while( filters.indexOf("") >= 0 )
 			filters.remove("");
 		while( filters.indexOf(null) >= 0 )
@@ -312,7 +313,8 @@ class Editor extends Component {
 			}
 		}
 		currentFilters = filters;
-		cursor.update();
+		if (updateCursor)
+			cursor.update();
 	}
 
 	function onCopy() {
