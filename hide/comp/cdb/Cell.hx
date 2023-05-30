@@ -695,7 +695,7 @@ class Cell {
 				}
 				var text = event.clipboardData.getData('text/plain');
 
-				js.Browser.document.execCommand("insertHTML", false, text);
+				js.Browser.document.execCommand("insertText", false, text);
 			});
 			i.dblclick(function(e) e.stopPropagation());
 
