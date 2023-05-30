@@ -516,7 +516,7 @@ class Swarm extends Object3D {
 		<div class="group" name="Swarm Entities">
 			<dl>
 				<dt title="Totla number of entities in the swarm">Count</dt><dd><input type="range" field="numObjects" min="1" max="100" step="1"/></dd>
-				<dt title="Randomize the values of the swarm">Random Seed</dt><dd><input field="seed"/></dd>
+				<dt title="Randomize the values of the swarm">Random Seed</dt><dd><input type="number" field="seed"/></dd>
 				<dt title="The acceleration of an entity">Acceleration</dt><dd><input type="range" field="acceleration" min = "0.01" max = "10.0"/></dd>
 				<dt title="Randomly multiply the acceleration of each entity. A value ">Rand Acceleration</dt><dd><input type="range" field="accelerationRandom" min = "0.00" max = "1.0"/></dd>
 				<dt title="Add a noise to the acceleration">Noise Acceleration</dt><dd><input type="range" field="accelerationNoise" min = "0.0" max = "1.0"/></dd>
