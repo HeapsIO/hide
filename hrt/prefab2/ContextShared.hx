@@ -12,6 +12,13 @@ class ContextShared {
 	public var prefabSource : String = "";
 
 	/**
+		isSceneReference is set to true when this
+		context is a local reference to another prefab
+		within the same scene.
+	**/
+	public var isSceneReference : Bool = false;
+
+	/**
 		When make() is called on prefab, it will instead call customMake on
 		each child with current which can either intercept or call make() recursively.
 	 **/

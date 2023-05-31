@@ -3,8 +3,6 @@ package hrt.prefab2;
 using hrt.prefab2.Object3D;
 using hrt.prefab2.Object2D;
 
-
-
 typedef PrefabField = {
 	var name : String;
 	var hasSetter : Bool;
@@ -124,6 +122,10 @@ class Prefab {
 	public function instanciate(local2d : h2d.Object = null, local3d : h3d.scene.Object = null, forceInstanciate : Bool = false) {
 		if (!forceInstanciate && (shared.isPrototype))
 			throw "Can't instanciate a template prefab unless params.forceInstanciate is true.";
+
+		#if editor
+		setEditor((cast shared:hide.prefab2.ContextShared).editor);
+		#end
 
 		shared.root2d = shared.tempInstanciateLocal2d = local2d;
 		shared.root3d = shared.tempInstanciateLocal3d = local3d;
@@ -658,10 +660,6 @@ class Prefab {
 		var newInstance = copyDefault(root, sh);
 		if (newInstance == null)
 			return null;
-		#if editor
-		newInstance.setEditor((cast shared:hide.prefab2.ContextShared).editor);
-		#end
-
 
 		o2d = o2d != null ? o2d : (root != null ? root.findFirstLocal2d() : null);
 		o3d = o3d != null ? o3d : (root != null ? root.findFirstLocal3d() : null);
