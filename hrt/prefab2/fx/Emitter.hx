@@ -543,7 +543,8 @@ class EmitterObject extends h3d.scene.Object {
 			if(baseEmitMat.isIdentityEpsilon(0.01))
 				baseEmitMat = null;
 
-			var spawn = particleTemplate.make(this);
+			var empty3d = new h3d.scene.Object();
+			var spawn = particleTemplate.make(empty3d);
 			var loc3d = spawn.local3d;
 			var mesh = Std.downcast(loc3d, h3d.scene.Mesh);
 			if( mesh == null ) {
@@ -558,13 +559,9 @@ class EmitterObject extends h3d.scene.Object {
 			if (mesh != null) {
 				meshPrimitive = Std.downcast(mesh.primitive, h3d.prim.MeshPrimitive);
 				meshMaterial = mesh.material;
-				//mesh.remove();
 			}
 
-			spawn.remove();
-			/*template.shared.contexts.remove(particleTemplate);
-			template.local3d.remove();
-			template.local3d = null;*/
+			empty3d.remove();
 		}
 
 		if (meshPrimitive == null ) {

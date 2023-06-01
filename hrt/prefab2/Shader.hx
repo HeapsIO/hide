@@ -139,27 +139,6 @@ class Shader extends Prefab {
 		updateInstance();
 	}
 
-	// TODO(ces) : Shader cleanup
-	function destroy() {
-		var drawable = Std.downcast(findFirstLocal2d(), h2d.Drawable);
-		if (drawable != null) {
-			drawable.removeShader(shader);
-		}
-	}
-
-	override function cleanupImpl() {
-
-		destroy();
-		iterMaterials(function(obj,mat) if(checkMaterial(mat)) removeShader(obj, mat, shader));
-	}
-
-	override function detach(newRoot: Prefab, removedClasses: Array<Class<Prefab>>) : Class<Prefab> {
-		iterMaterials(function(obj,mat) if(checkMaterial(mat)) removeShader(obj, mat, shader));
-		return null;
-	}
-
-
-
 	#if editor
 
 	function getEditProps(shaderDef: hxsl.SharedShader) : Array<hrt.prefab.Props.PropDef> {

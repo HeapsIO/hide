@@ -137,27 +137,6 @@ class Prefab {
 		refresh();
 	}
 
-	// Remove this prefab and their object from the prefab and scene hierarchy
-	public final function remove() {
-
-		function detachRec(prefab:Prefab, newRoot: Prefab, removedClasses: Array<Class<Prefab>>) : Void {
-			var removed = prefab.detach(newRoot, removedClasses);
-			if (removed != null)
-				removedClasses.push(removed);
-			for (c in prefab.children) {
-				detachRec(c,newRoot, removedClasses);
-			}
-			if (removed!= null)
-				removedClasses.remove(removed);
-		}
-
-		detachRec(this, this, []);
-
-		if (parent != null) {
-			parent = null;
-		}
-	}
-
 	function makeChild(p: Prefab) {
 		if (shared.customMake == null) {
 			p.makeInstanceRec();
@@ -167,16 +146,10 @@ class Prefab {
 		}
 	}
 
-
-	public function cleanup() {
+	public function dispose() {
 		for (c in children) {
-			c.cleanup();
+			c.dispose();
 		}
-		cleanupImpl();
-	}
-
-	function cleanupImpl() {
-
 	}
 
 	#if editor
@@ -618,17 +591,6 @@ class Prefab {
 		You can also call updateInstance(ctx) in order to force whole instance synchronization against current prefab data.
 	**/
 	public function updateInstance(?propName : String ) {
-	}
-
-	/**
-		Called by remove on all the prefabs in the tree.
-		This function should remove objects created in makeInstance if they were
-		attached to objects that are no longer present in the tree.
-		You can use removedClasses to keep track of classes that already detached themselves
-		(i.e logically only the first Object3D in a branch should remove itself)
-	**/
-	function detach(newRoot: Prefab, removedClasses: Array<Class<Prefab>>) : Class<Prefab> {
-		return null;
 	}
 
 	/**

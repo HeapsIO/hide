@@ -1910,7 +1910,10 @@ class SceneEditor {
 	}
 
 	function removeInstance(elt : PrefabElement) {
-		elt.remove();
+		if (elt.getLocal3d() != null)
+			elt.getLocal3d().remove();
+		if (elt.getLocal2d() != null)
+			elt.getLocal2d().remove();
 		return true;
 	}
 
@@ -2881,7 +2884,8 @@ class SceneEditor {
 
 	public function deleteElements(elts : Array<PrefabElement>, ?then: Void->Void, doRefresh : Bool = true, enableUndo : Bool = true) {
 		for (e in elts) {
-			e.remove();
+			removeInstance(e);
+			e.parent = null;
 		}
 		refresh();
 		/*var fullRefresh = false;

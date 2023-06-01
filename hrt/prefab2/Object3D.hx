@@ -61,17 +61,9 @@ class Object3D extends Prefab {
 		rotationZ = Math.radToDeg(rot.z);
 	}
 
-	override function cleanupImpl() {
-		if (local3d != null) {
-			local3d.remove();
-		}
-	}
-
 	/* Override makeObject3d instead of this */
 	override function makeInstance() : Void {
 		local3d = makeObject3d(shared.tempInstanciateLocal3d);
-		if (local3d != null)
-			local3d.name = name;
 		updateInstance();
 	}
 
@@ -82,18 +74,9 @@ class Object3D extends Prefab {
 	override function updateInstance(?propName : String ) {
 		applyTransform();
 		if (local3d != null) {
+			local3d.name = name;
 			local3d.visible = visible;
 		}
-	}
-
-	override function detach(newRoot: Prefab, removedClasses: Array<Class<Prefab>>) : Class<Prefab> {
-		if (local3d != null && !removedClasses.contains(Object3D)) {
-			//Perform sepukku
-			local3d.remove();
-
-			return Object3D;
-		}
-		return null;
 	}
 
 	public static var _ = Prefab.register("object", Object3D);
