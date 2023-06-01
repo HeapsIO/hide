@@ -257,11 +257,17 @@ class Macros {
 		return macro @:pos(a.pos) ${a} != ${b};
 	}
 
-	static public function getDefValueForType(name : String) {
-		return switch(name) {
-			case "Int"|"Float": macro 0;
-			case "Bool": macro false;
-			default: macro null;
+	static public function getDefValueForType(t : Type) {
+		return switch(t) {
+			case TAbstract(t, c):
+				var n = t.get().name;
+				switch(n) {
+					case "Int"|"Float": macro 0;
+					case "Bool": macro false;
+					default: macro null;
+				}
+			default:
+				macro null;
 		}
 	}
 
@@ -402,10 +408,8 @@ class Macros {
 				case FProp(_, _, t, e), FVar(t,e):
 					if (e == null) {
 						if (replaceNull) {
-							switch(t) {
-								case TPath({pack : [], name : val}): getDefValueForType(val);
-								default: macro @:pos(pos) null;
-							}
+							var typ = haxe.macro.ComplexTypeTools.toType(t);
+							getDefValueForType(typ);
 						}
 						else {
 							macro @:pos(pos) null;
@@ -601,7 +605,8 @@ class Macros {
 					return deepCopyRec(c[0], source, sourceType, defaultValue, custom);
 				}
 				else {
-					var def = defaultValue != null ? defaultValue : getDefValueForType(t.get().name);
+					var trueType = haxe.macro.TypeTools.followWithAbstracts(t.get().type, false);
+					var def = defaultValue != null ? defaultValue : getDefValueForType(t.get().type);
 					return nullCheck(source, defaultValue);
 				}
 			case TDynamic(_):

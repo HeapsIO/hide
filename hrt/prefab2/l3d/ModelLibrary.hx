@@ -751,10 +751,11 @@ class ModelLibrary extends Prefab {
 		}
 	}
 
-	public function dispose() {
-		optimizedMeshes = [];
-		batches = [];
-	}
+
+	// public function dispose() {
+	// 	optimizedMeshes = [];
+	// 	batches = [];
+	// }
 
 	var killAlpha = new h3d.shader.KillAlpha();
 	var curSubMeshes : SubMeshes = null;

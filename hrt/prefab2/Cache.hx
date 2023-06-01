@@ -12,14 +12,14 @@ class Cache {
 	static var inst : Cache;
 
 	// Override this with your own cache objets
-	static dynamic function init() : Cache {
+	public static dynamic function init() : Cache {
 		var c = new Cache();
 		c.modelCache = new h3d.prim.ModelCache();
 		c.shaderDefCache = new ShaderDefCache();
 		return c;
 	}
 
-	function new() {
+	public function new() {
 
 	}
 

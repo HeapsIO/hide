@@ -31,7 +31,7 @@ enum abstract CurveKeyMode(Int) {
 class CurveKey {
 	@:s public var time: Float = -1; // Force serialization of 0 values for retrocompat
 	@:s public var value: Float = -1; // Force serialization of 0 values for retrocompat
-	@:s public var mode: CurveKeyMode;
+	@:s public var mode: CurveKeyMode = Aligned;
 	@:s public var prevHandle: CurveHandle;
 	@:s public var nextHandle: CurveHandle;
 	public function new() {}
