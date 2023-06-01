@@ -136,10 +136,10 @@ class MeshGenerator extends Object3D {
 	}
 
 	override function makeInstance() : Void {
-		local3d = new h3d.scene.Object(shared.tempInstanciateLocal3d);
+		local3d = new h3d.scene.Object(shared.current3d);
 		local3d.name = name;
 
-		var rootObject = new MeshGeneratorRoot(shared.tempInstanciateLocal3d);
+		var rootObject = new MeshGeneratorRoot(shared.current3d);
 		rootObject.name = "rootObject";
 
 		if( root == null ) {

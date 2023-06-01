@@ -52,7 +52,7 @@ class SplinePoint extends Object3D {
 
 	override function makeInstance() : Void {
 		#if editor
-		local3d = new h3d.scene.Object(shared.tempInstanciateLocal3d);
+		local3d = new h3d.scene.Object(shared.current3d);
 		pointViewer = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), null, local3d.getScene());
 		pointViewer.ignoreParentTransform = true;
 		pointViewer.follow = local3d;
@@ -72,7 +72,7 @@ class SplinePoint extends Object3D {
 		controlPointsViewer.moveTo(1, 0, 0);
 		controlPointsViewer.lineTo(-1, 0, 0);
 
-		indexText = new h2d.ObjectFollower(pointViewer, shared.tempInstanciateLocal2d.getScene());
+		indexText = new h2d.ObjectFollower(pointViewer, shared.current2d.getScene());
 		var t = new h2d.Text(hxd.res.DefaultFont.get(), indexText);
 		t.textColor = 0xff00ff;
 		t.textAlign = Center;
@@ -291,7 +291,7 @@ class Spline extends Object3D {
 	}
 
 	override function makeInstance() : Void {
-		local3d = new h3d.scene.Object(shared.tempInstanciateLocal3d);
+		local3d = new h3d.scene.Object(shared.current3d);
 		local3d.name = name;
 
 		// Backward compatibility

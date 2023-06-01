@@ -912,8 +912,8 @@ class MeshSpray extends Spray {
 			}
 		}
 
-		var old2d = shared.tempInstanciateLocal2d;
-		var old3d = shared.tempInstanciateLocal3d;
+		var old2d = shared.current2d;
+		var old3d = shared.current3d;
 
 		makeInstance();
 		// add all children then build meshspray
@@ -929,13 +929,13 @@ class MeshSpray extends Spray {
 		// rebuild to apply per instance shaders
 		cast(local3d, MeshSprayObject).redraw(true);
 
-		shared.tempInstanciateLocal2d = old2d;
-		shared.tempInstanciateLocal3d = old3d;
+		shared.current2d = old2d;
+		shared.current3d = old3d;
 
 		postMakeInstance();
 
-		shared.tempInstanciateLocal2d = old2d;
-		shared.tempInstanciateLocal3d = old3d;
+		shared.current2d = old2d;
+		shared.current3d = old3d;
 	}
 
 	override function applyTransform() {

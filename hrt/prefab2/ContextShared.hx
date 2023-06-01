@@ -24,11 +24,13 @@ class ContextShared {
 	 **/
 	 public var customMake : Prefab -> Void;
 
+	// When makeInstance is called, this contains the 3d object that should be used as a parent for the newly created object
 	@:noCompletion
-	public var tempInstanciateLocal3d : h3d.scene.Object = null;
+	public var current3d : h3d.scene.Object = null;
 
+	// When makeInstance is called, this contains the 2d object that should be used as a parent for the newly created object
 	@:noCompletion
-	public var tempInstanciateLocal2d : h2d.Object = null;
+	public var current2d : h2d.Object = null;
 
 	// Parent prefab if the object if it was created as a reference
 	public var parent : Prefab = null;

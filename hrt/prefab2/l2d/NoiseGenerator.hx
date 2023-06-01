@@ -115,7 +115,7 @@ class NoiseGenerator extends Object2D {
 	override function makeInstance() {
 		tex = new h3d.mat.Texture(size, size, [Target]);
 		updateTexture(tex);
-		var bmp = new h2d.Bitmap(makeTile(tex), shared.tempInstanciateLocal2d);
+		var bmp = new h2d.Bitmap(makeTile(tex), shared.current2d);
 		bmp.tileWrap = !tex.flags.has(IsNPOT);
 		bmp.visible = false;
 		bmp.x = -size >> 1;

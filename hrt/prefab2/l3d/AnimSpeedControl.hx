@@ -8,7 +8,7 @@ class AnimSpeedControl extends hrt.prefab2.Prefab {
 	var targetLocal3d : h3d.scene.Object = null;
 
 	override function makeInstance():Void {
-		targetLocal3d = shared.tempInstanciateLocal3d;
+		targetLocal3d = shared.current3d;
 		updateInstance();
 	}
 

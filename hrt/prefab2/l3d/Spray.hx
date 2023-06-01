@@ -573,7 +573,7 @@ class Spray extends Object3D {
 	}
 
 	override function makeInstance() : Void {
-		local3d = new SprayObject(this, shared.tempInstanciateLocal3d);
+		local3d = new SprayObject(this, shared.current3d);
 		local3d.name = name;
 		updateInstance();
 	}

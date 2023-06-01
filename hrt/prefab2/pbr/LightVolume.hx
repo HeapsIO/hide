@@ -169,18 +169,18 @@ class LightVolume extends Object3D {
 	@:s var USE_SHADOW_MAP : Bool = false;
 
 	override function makeInstance() : Void {
-		var pbrLight = Std.downcast(shared.tempInstanciateLocal3d, h3d.scene.pbr.Light);
+		var pbrLight = Std.downcast(shared.current3d, h3d.scene.pbr.Light);
 		if ( pbrLight == null )
 			return;
 
-		var mesh = new LightVolumeObject(@:privateAccess pbrLight.primitive, shared.tempInstanciateLocal3d);
-		var pointLight = Std.downcast(shared.tempInstanciateLocal3d, h3d.scene.pbr.PointLight);
+		var mesh = new LightVolumeObject(@:privateAccess pbrLight.primitive, shared.current3d);
+		var pointLight = Std.downcast(shared.current3d, h3d.scene.pbr.PointLight);
 		if ( pointLight != null ) {
 			var shader = new PointLightVolumeShader();
 			mesh.shader = shader;
 			mesh.material.mainPass.addShader(shader);
 		} else {
-			var spotLight = Std.downcast(shared.tempInstanciateLocal3d, h3d.scene.pbr.SpotLight);
+			var spotLight = Std.downcast(shared.current3d, h3d.scene.pbr.SpotLight);
 			if ( spotLight != null ) {
 				var shader = new SpotLightVolumeShader();
 				mesh.shader = shader;

@@ -37,7 +37,7 @@ class Object2D extends Prefab {
 	}
 
 	override function makeInstance() {
-		local2d = makeObject(shared.tempInstanciateLocal2d);
+		local2d = makeObject(shared.current2d);
 		if (local2d != null)
 			local2d.name = name;
 		updateInstance();

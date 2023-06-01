@@ -146,7 +146,7 @@ class VolumetricLightmap extends Object3D {
 	}
 
 	override function makeInstance() : Void {
-		var parent = shared.tempInstanciateLocal3d;
+		var parent = shared.current3d;
 		var obj = new h3d.scene.Object(parent);
 		volumetricLightmap = new hrt.prefab2.vlm.VolumetricMesh(obj);
 		volumetricLightmap.ignoreCollide = true;

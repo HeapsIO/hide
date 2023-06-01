@@ -240,7 +240,7 @@ class LightProbe extends Object3D {
 	}
 
 	override function makeInstance() : Void {
-		var lpo = new LightProbeObject(shared.tempInstanciateLocal3d);
+		var lpo = new LightProbeObject(shared.current3d);
 		lpo.material.castShadows = false;
 		lpo.material.mainPass.setPassName("lightProbe");
 		lpo.ignoreCollide = true;

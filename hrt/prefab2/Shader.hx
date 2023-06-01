@@ -119,12 +119,12 @@ class Shader extends Prefab {
 		var shader = makeShader();
 		if( shader == null )
 			return;
-		if( shared.tempInstanciateLocal2d != null ) {
-			var drawable = Std.downcast(shared.tempInstanciateLocal2d, h2d.Drawable);
+		if( shared.current2d != null ) {
+			var drawable = Std.downcast(shared.current2d, h2d.Drawable);
 			if (drawable != null) {
 				drawable.addShader(shader);
 			} else {
-				var flow = Std.downcast(shared.tempInstanciateLocal2d, h2d.Flow);
+				var flow = Std.downcast(shared.current2d, h2d.Flow);
 				if (flow != null) {
 					@:privateAccess if (flow.background != null) {
 						flow.background.addShader(shader);
@@ -133,7 +133,7 @@ class Shader extends Prefab {
 			}
 		}
 
-		if( shared.tempInstanciateLocal3d != null )
+		if( shared.current3d != null )
 			iterMaterials(function(obj,mat) if(checkMaterial(mat)) applyShader(obj, mat, shader));
 		this.shader = shader;
 		updateInstance();

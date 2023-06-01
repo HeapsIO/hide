@@ -127,8 +127,8 @@ class Prefab {
 		setEditor((cast shared:hide.prefab2.ContextShared).editor);
 		#end
 
-		shared.root2d = shared.tempInstanciateLocal2d = local2d;
-		shared.root3d = shared.tempInstanciateLocal3d = local3d;
+		shared.root2d = shared.current2d = local2d;
+		shared.root3d = shared.current3d = local3d;
 
 		shared.isPrototype = false;
 
@@ -547,28 +547,28 @@ class Prefab {
 	function makeInstanceRec() : Void {
 		if (!shouldBeInstanciated()) return;
 
-		var old2d = shared.tempInstanciateLocal2d;
-		var old3d = shared.tempInstanciateLocal3d;
+		var old2d = shared.current2d;
+		var old3d = shared.current3d;
 
 		makeInstance();
 
 		var new2d = this.getLocal2d();
 		if (new2d != null)
-			shared.tempInstanciateLocal2d = new2d;
+			shared.current2d = new2d;
 		var new3d = this.getLocal3d();
 		if (new3d != null)
-			shared.tempInstanciateLocal3d = new3d;
+			shared.current3d = new3d;
 		for (c in children) {
 			makeChild(c);
 		}
 
-		shared.tempInstanciateLocal2d = old2d;
-		shared.tempInstanciateLocal3d = old3d;
+		shared.current2d = old2d;
+		shared.current3d = old3d;
 
 		postMakeInstance();
 
-		shared.tempInstanciateLocal2d = old2d;
-		shared.tempInstanciateLocal3d = old3d;
+		shared.current2d = old2d;
+		shared.current3d = old3d;
 	}
 
 	/**
