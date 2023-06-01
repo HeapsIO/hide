@@ -21,7 +21,7 @@ class GameController extends Object3D {
 
 	#if editor
 
-	override function makeObject3d(parent3d:h3d.scene.Object):h3d.scene.Object {
+	override function makeObject(parent3d:h3d.scene.Object):h3d.scene.Object {
 		parent3d.ignoreParentTransform = true;
 		return parent3d;
 	}

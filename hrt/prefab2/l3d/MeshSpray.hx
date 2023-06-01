@@ -31,7 +31,7 @@ class MeshSpray extends Spray {
 		}
 	}
 
-	override function makeObject3d(parent3d:h3d.scene.Object):h3d.scene.Object {
+	override function makeObject(parent3d:h3d.scene.Object):h3d.scene.Object {
 		var mspray = new MeshSprayObject(parent3d);
 		// preallocate batches so their materials can be resolved
 		var curID = 0, curMap = mspray.batchesMap.get(0);
@@ -878,7 +878,7 @@ class MeshSpray extends Spray {
 		}
 	}
 
-	override function makeObject3d(parent3d:h3d.scene.Object):h3d.scene.Object {
+	override function makeObject(parent3d:h3d.scene.Object):h3d.scene.Object {
 		return new MeshSprayObject(this, parent3d);
 	}
 

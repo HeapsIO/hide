@@ -13,7 +13,7 @@ class Instance extends Object3D {
 	}
 
 	#if editor
-	override function makeObject3d(parent3d: h3d.scene.Object) : h3d.scene.Object {
+	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
 		//throw "implement";
 		// TODO(ces) restore
 

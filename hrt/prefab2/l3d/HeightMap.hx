@@ -876,7 +876,7 @@ class HeightMap extends Object3D {
 		return arr;
 	}
 
-	override function makeObject3d(parent3d:h3d.scene.Object):h3d.scene.Object {
+	override function makeObject(parent3d:h3d.scene.Object):h3d.scene.Object {
 		var mesh = new HeightMapMesh(this, parent3d);
 		return mesh;
 	}

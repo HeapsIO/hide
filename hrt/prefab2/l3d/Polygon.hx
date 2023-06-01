@@ -235,7 +235,7 @@ class Polygon extends Object3D {
 		return primitive;
 	}
 
-	override function makeObject3d(parent3d: h3d.scene.Object) : h3d.scene.Object {
+	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
 		var primitive = makePrimitive();
 		var mesh = new h3d.scene.Mesh(primitive, parent3d);
 		mesh.material.props = h3d.mat.MaterialSetup.current.getDefaults("overlay");

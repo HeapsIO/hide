@@ -71,7 +71,7 @@ class Reference extends Object3D {
 		return p;
 	}
 
-	override function makeObject3d(parent3d: h3d.scene.Object) : h3d.scene.Object {
+	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
 		if (source != null) {
 			var p = resolveRef();
 			var sh = Prefab.createContextShared();

@@ -9,7 +9,7 @@ class Trail extends Object3D {
 		data = new h3d.scene.Trail().save();
 	}
 
-	override public function makeObject3d(parent3d:h3d.scene.Object):h3d.scene.Object {
+	override public function makeObject(parent3d:h3d.scene.Object):h3d.scene.Object {
 		var tr = new h3d.scene.Trail(parent3d);
 		tr.load(data);
 		applyTransform();

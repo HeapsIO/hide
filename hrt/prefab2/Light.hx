@@ -137,7 +137,7 @@ class Light extends Object3D {
 		return null;
 	}
 
-	override function makeObject3d(parent3d:h3d.scene.Object) : h3d.scene.Object {
+	override function makeObject(parent3d:h3d.scene.Object) : h3d.scene.Object {
 		var object : h3d.scene.Object = null;
 
 		var isPbr = Std.isOfType(h3d.mat.MaterialSetup.current, h3d.mat.PbrMaterialSetup);

@@ -102,7 +102,7 @@ class Camera extends Object3D {
 		}
 	}
 
-	override function makeObject3d(parent3d:Object):Object {
+	override function makeObject(parent3d:Object):Object {
 		var cam = new CameraSyncObject(parent3d);
 		obj = cam;
 		return obj;

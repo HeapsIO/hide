@@ -10,7 +10,7 @@ class Particles3D extends Object3D {
 		super(parent, shared);
 	}
 
-	override function makeObject3d(parent3d:h3d.scene.Object):h3d.scene.Object {
+	override function makeObject(parent3d:h3d.scene.Object):h3d.scene.Object {
 		var parts = new h3d.parts.GpuParticles(parent3d);
 		if( source != null ) {
 			var src = null;

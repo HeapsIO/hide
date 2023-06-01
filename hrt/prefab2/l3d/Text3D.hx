@@ -245,7 +245,7 @@ class Text3D extends Object3D {
 	}
 
 	// TODO(ces) : AAAAAARGH
-	override function makeObject3d(parent3d : h3d.scene.Object) : h3d.scene.Object {
+	override function makeObject(parent3d : h3d.scene.Object) : h3d.scene.Object {
 		/*var mesh = new h3d.scene.Mesh(new Text3DPrimitive(), parent3d);
 		mesh.material.blendMode = Alpha;
 		text2d = new h2d.Text(hxd.res.DefaultFont.get(), findFirstLocal2d());

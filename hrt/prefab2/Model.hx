@@ -16,9 +16,9 @@ class Model extends Object3D {
 		return super.save(to);
 	}
 
-	override function makeObject3d(parent3d:h3d.scene.Object):h3d.scene.Object {
+	override function makeObject(parent3d:h3d.scene.Object):h3d.scene.Object {
 		if( source == null)
-			return super.makeObject3d(parent3d);
+			return super.makeObject(parent3d);
 
 		#if editor
 		try {

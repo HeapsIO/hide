@@ -434,7 +434,7 @@ class FX extends Object3D implements BaseFX {
 			super.makeInstanceRec();
 	}
 
-	override function makeObject3d(parent3d:h3d.scene.Object):h3d.scene.Object {
+	override function makeObject(parent3d:h3d.scene.Object):h3d.scene.Object {
 		var fxanim = createInstance(parent3d);
 		fxanim.duration = duration;
 		fxanim.cullingRadius = cullingRadius;

@@ -1687,7 +1687,7 @@ class Emitter extends Object3D {
 		}
 	}
 
-	override function makeObject3d(parent3d: h3d.scene.Object) : h3d.scene.Object {
+	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
 		return new EmitterObject(parent3d);
 	}
 

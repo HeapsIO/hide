@@ -13,7 +13,7 @@ class RenderProps extends Object3D {
 		props = {};
 	}
 
-	override function makeObject3d(parent3d: h3d.scene.Object) : h3d.scene.Object {
+	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
 		return new RenderPropsObject(parent3d);
 
 	}
