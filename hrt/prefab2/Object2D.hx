@@ -32,12 +32,12 @@ class Object2D extends Prefab {
 		return y;
 	}*/
 
-	function makeObject2d(parent2d: h2d.Object) : h2d.Object {
+	function makeObject(parent2d: h2d.Object) : h2d.Object {
 		return new h2d.Object(parent2d);
 	}
 
 	override function makeInstance() {
-		local2d = makeObject2d(shared.tempInstanciateLocal2d);
+		local2d = makeObject(shared.tempInstanciateLocal2d);
 		if (local2d != null)
 			local2d.name = name;
 		updateInstance();

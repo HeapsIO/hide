@@ -41,7 +41,7 @@ class Bitmap extends Object2D {
 		#end
 	}
 
-	override function makeObject2d(parent2d:h2d.Object):h2d.Object {
+	override function makeObject(parent2d:h2d.Object):h2d.Object {
 		var bmp = new h2d.Bitmap(null, parent2d);
 		bmp.smooth = true;
 		return bmp;

@@ -106,7 +106,7 @@ class Particle2D extends Object2D {
 		}
 	}
 
-	override function makeObject2d(parent2d:h2d.Object):h2d.Object {
+	override function makeObject(parent2d:h2d.Object):h2d.Object {
 		var particle2d = new Particles(local2d);
 
 		var group = new ParticleGroup(particle2d);

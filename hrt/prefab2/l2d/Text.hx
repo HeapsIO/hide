@@ -105,7 +105,7 @@ class Text extends Object2D {
 		#end
 	}
 
-	override function makeObject2d(parent2d:h2d.Object):h2d.Object {
+	override function makeObject(parent2d:h2d.Object):h2d.Object {
 		var h2dText = new h2d.HtmlText(hxd.res.DefaultFont.get(), parent2d);
 		h2dText.text = "";
 		h2dText.smooth = true;

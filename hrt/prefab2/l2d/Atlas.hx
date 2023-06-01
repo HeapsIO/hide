@@ -46,7 +46,7 @@ class Atlas extends Object2D {
 		#end
 	}
 
-	override function makeObject2d(parent2d:h2d.Object): h2d.Object {
+	override function makeObject(parent2d:h2d.Object): h2d.Object {
 		var h2dAnim = new h2d.Anim([], fpsAnimation, parent2d);
 		return h2dAnim;
 	}
