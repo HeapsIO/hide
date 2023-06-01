@@ -86,6 +86,7 @@ class Material extends Prefab {
 			sphere.addNormals();
 			sphere.addTangents();
 			var preview = new h3d.scene.Mesh(sphere);
+			preview.name = "materialPreviewSphere";
 			ctx.local3d.parent.addChild(preview);
 			ctx.local3d = preview;
 			ctx.local3d.x = ctx.local3d.getScene().getMaterials().length * 5.0;
