@@ -616,10 +616,8 @@ class Prefab {
 		for each prefab using macro
 	**/
 	@:noCompletion
-	final function makeInternal(?root: Prefab = null, ?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null, contextShared:ContextShared = null) : Prefab {
-		var sh = contextShared == null ? Prefab.createContextShared() : contextShared;
-		sh.isPrototype = false;
-		var newInstance = copyDefault(root, sh);
+	final function makeInternal(?root: Prefab = null, ?o2d: h2d.Object = null, ?o3d: h3d.scene.Object = null, ?contextShared:ContextShared = null) : Prefab {
+		var newInstance = clone(root, contextShared);
 		if (newInstance == null)
 			return null;
 
@@ -629,6 +627,14 @@ class Prefab {
 
 		return newInstance;
 	};
+
+
+	// Todo : maybe make the same shananigans as make to have a "type safe" clone
+	public final function clone(?root: Prefab = null, ?contextShared:ContextShared = null) : Prefab {
+		var sh = contextShared == null ? Prefab.createContextShared() : contextShared;
+		sh.isPrototype = false;
+		return copyDefault(root, sh);
+	}
 
 	/**
 		Create a copy of this prefab and it's childrens, whitout initializing their fields
@@ -917,7 +923,7 @@ class Prefab {
 		}
 	}
 
-	static dynamic function createContextShared(?res : hxd.res.Resource) : ContextShared {
+	public static dynamic function createContextShared(?res : hxd.res.Resource) : ContextShared {
 		return #if editor new hide.prefab2.ContextShared(res); #else new ContextShared(res); #end
 	}
 
