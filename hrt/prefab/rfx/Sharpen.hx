@@ -23,6 +23,7 @@ class SharpenShader extends h3d.shader.ScreenShader {
 	}
 }
 
+@:access(h3d.scene.Renderer)
 class Sharpen extends RendererFX {
 
 	var sharpenPass = new h3d.pass.ScreenFx(new SharpenShader());
@@ -56,6 +57,6 @@ class Sharpen extends RendererFX {
 	}
 	#end
 
-	static var _ = Library.register("rfx.sharpen", Sharpen);
+	static var _ = Prefab.register("rfx.sharpen", Sharpen);
 
 }

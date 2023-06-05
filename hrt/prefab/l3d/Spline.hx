@@ -16,26 +16,6 @@ typedef SplinePointData = {
 	?t : Float
 }
 
-class MoveAlongSplineState {
-	public var currentPoint: Int = 0;
-	public var currentPointTime: Float = 0.0;
-	public var point: h3d.col.Point;
-	public var tangent: h3d.col.Point;
-
-	public function reset() {
-		currentPoint = 0;
-		currentPointTime = 0.0;
-		point.set();
-		tangent.set(1.0, 0.0, 0.0);
-	}
-
-	public function new(?point: h3d.col.Point, ?tangent:  h3d.col.Point) {
-		this.point = point != null ? point : new h3d.col.Point();
-		this.tangent = tangent != null ? tangent : new h3d.col.Point();
-		reset();
-	}
-}
-
 class SplineData {
 	public var length : Float;
 	public var step : Int;
@@ -70,25 +50,19 @@ class SplinePoint extends Object3D {
 		return parent.to(Spline);
 	}
 
-	override public function new(?parent) {
-		super(parent);
-		type = "splinePoint";
-	}
-
-	override function makeInstance(ctx:Context):Context {
+	override function makeInstance() : Void {
 		#if editor
-		ctx = ctx.clone(this);
-		ctx.local3d = createObject(ctx);
-		pointViewer = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), null, ctx.local3d.getScene());
+		local3d = new h3d.scene.Object(shared.current3d);
+		pointViewer = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), null, local3d.getScene());
 		pointViewer.ignoreParentTransform = true;
-		pointViewer.follow = ctx.local3d;
+		pointViewer.follow = local3d;
 		pointViewer.followPositionOnly = true;
 		pointViewer.name = "pointViewer";
 		pointViewer.material.setDefaultProps("ui");
 		pointViewer.material.color.set(0,0,1,1);
 		pointViewer.material.mainPass.depthTest = Always;
 
-		controlPointsViewer = new h3d.scene.Graphics(ctx.local3d);
+		controlPointsViewer = new h3d.scene.Graphics(local3d);
 		controlPointsViewer.name = "controlPointsViewer";
 		controlPointsViewer.lineStyle(4, 0xffffff);
 		controlPointsViewer.material.mainPass.setPassName("ui");
@@ -98,15 +72,15 @@ class SplinePoint extends Object3D {
 		controlPointsViewer.moveTo(1, 0, 0);
 		controlPointsViewer.lineTo(-1, 0, 0);
 
-		indexText = new h2d.ObjectFollower(pointViewer, ctx.shared.root2d.getScene());
+		indexText = new h2d.ObjectFollower(pointViewer, shared.current2d.getScene());
 		var t = new h2d.Text(hxd.res.DefaultFont.get(), indexText);
 		t.textColor = 0xff00ff;
 		t.textAlign = Center;
 		t.dropShadow = { dx : 0.5, dy : 0.5, color : 0x202020, alpha : 1.0 };
 		t.setScale(2.5);
-		applyTransform(ctx.local3d);
+		applyTransform();
 		setViewerVisible(false);
-		obj = new SplinePointObject(ctx.local3d);
+		obj = new SplinePointObject(local3d);
 		obj.onSync = function(rctx) {
 			var cam = rctx.camera;
 			var gpos = obj.getAbsPos().getPosition();
@@ -120,33 +94,33 @@ class SplinePoint extends Object3D {
 			indexText.remove();
 			pointViewer.remove();
 		}
-		updateInstance(ctx);
+		updateInstance();
 		#end
-		return ctx;
 	}
 
-	override function applyTransform(o : h3d.scene.Object) {
-		super.applyTransform(o);
+	override function applyTransform() {
+		super.applyTransform();
 		#if editor
 			if (spline.editor != null)
-				@:privateAccess spline.computeSpline(spline.editor.editContext.getContext(spline));
+				@:privateAccess spline.computeSpline();
 		#end
 	}
 
-	override function updateInstance(ctx : Context, ?propName : String) {
-		super.updateInstance(ctx, propName);
+	override function updateInstance(?propName : String) {
+		super.updateInstance(propName);
 		#if editor
 			if( spline.editor != null ) {
-				spline.editor.setSelected(spline.editor.editContext.getContext(spline), true);
-				spline.editor.update(spline.editor.editContext.getContext(spline));
+				spline.editor.setSelected(true);
+				spline.editor.update();
 			}
 			for (sp in spline.points) {
-				sp.computeName(ctx);
+				sp.computeName();
 			}
 		#end
 	}
 
-	override function removeInstance( ctx : Context) : Bool {
+	// TODO(ces) : Restore
+	/*override function removeInstance( ctx : Context) : Bool {
 		haxe.Timer.delay(() -> { // wait for next frame, need the point to be removed from children to recompute spline accurately
 			#if editor
 				if (spline.editor != null && spline.editor.editContext.getContext(spline) != null)
@@ -154,29 +128,29 @@ class SplinePoint extends Object3D {
 			#end
 		}, 0);
 		return super.removeInstance(ctx);
-	}
+	}*/
 
 
 	#if editor
 
-	public function computeName(ctx) {
+	public function computeName() {
 		var index = spline.points.indexOf(this);
 		name = "SplinePoint" + index;
-		ctx.local3d.name = name;
+		local3d.name = name;
 		if (indexText != null) {
 			var t = Std.downcast(indexText.getChildAt(0), h2d.Text);
 			t.text = "" + index;
 		}
 	}
 
-	override function edit(ctx : EditContext) {
+	override function edit(ctx : hide.prefab.EditContext) {
 		super.edit(ctx);
 		if( spline.editor == null ) {
 			spline.editor = new hide.prefab.SplineEditor(spline, ctx.properties.undo);
 		}
 		spline.editor.editContext = ctx;
 	}
-	override function getHideProps() : HideProps {
+	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "arrows-v", name : "SplinePoint", allowParent: function(p) return p.to(Spline) != null, allowChildren: function(s) return false};
 	}
 	#end
@@ -224,7 +198,7 @@ class SplinePoint extends Object3D {
 		pointViewer.material.color.setColor(color);
 	}
 
-	static var _ = hrt.prefab.Library.register("splinePoint", SplinePoint);
+	static var _ = Prefab.register("splinePoint", SplinePoint);
 }
 
 class Spline extends Object3D {
@@ -276,8 +250,8 @@ class Spline extends Object3D {
 	#end
 	public var wasEdited = false;
 
-	override function save() {
-		var obj : Dynamic = super.save();
+	override function save(obj:Dynamic) : Dynamic {
+		super.save(obj);
 
 		obj.shape = shape.getIndex();
 		return obj;
@@ -299,6 +273,12 @@ class Spline extends Object3D {
 		shape = obj.shape == null ? Linear : CurveShape.createByIndex(obj.shape);
 	}
 
+	override function copy(obj : Prefab) {
+		super.copy(obj);
+		var p : Spline = cast obj;
+		this.shape = p.shape;
+	}
+
 	// Generate the splineData from a matrix, can't move the spline after that
 	public function makeFromMatrix( m : h3d.Matrix ) {
 		var tmp = new h3d.Matrix();
@@ -310,39 +290,29 @@ class Spline extends Object3D {
 		computeSplineData();
 	}
 
-	override public function make( ctx : Context ) : Context {
-		super.make(ctx);
-		var curCtx = ctx.shared.getContexts(this)[0];
-		updateInstance(curCtx);
-		return curCtx;
-	}
-
-
-	override function makeInstance( ctx : hrt.prefab.Context ) : hrt.prefab.Context {
-		var ctx = ctx.clone(this);
-		ctx.local3d = createObject(ctx);
-		ctx.local3d.name = name;
+	override function makeInstance() : Void {
+		local3d = new h3d.scene.Object(shared.current3d);
+		local3d.name = name;
 
 		// Backward compatibility
 		for( pd in pointsData ) {
-			var sp = new SplinePoint(this);
+			var sp = new SplinePoint(this, null);
 			sp.setTransform(pd);
 		}
 
 		if( points.length == 0 )
-			new SplinePoint(this);
+			new SplinePoint(this, null);
 
-		updateInstance(ctx);
-		return ctx;
+		updateInstance();
 	}
 
-	override function updateInstance( ctx : hrt.prefab.Context , ?propName : String ) {
-		super.updateInstance(ctx, propName);
+	override function updateInstance(?propName : String ) {
+		super.updateInstance(propName);
 		#if editor
 		if( editor != null )
-			editor.update(ctx, propName);
+			editor.update(propName);
 		#end
-		computeSpline(ctx);
+		computeSpline();
 	}
 
 	// Return an interpolation of two samples at t, 0 <= t <= 1
@@ -376,7 +346,7 @@ class Spline extends Object3D {
 					tangent.load(data.samples[s1].tangent);
 			}
 			else {
-				var t = (l - s1);
+				var t = (l - s1) / segmentLength;
 				pos.lerp(data.samples[s1].pos, data.samples[s2].pos, t);
 				if(tangent != null)
 					tangent.lerp(data.samples[s1].tangent, data.samples[s2].tangent, t);
@@ -384,63 +354,6 @@ class Spline extends Object3D {
 
 		}
 		return pos;
-	}
-
-
-
-	/* Move a point a given distance on the spline.
-	*/
-	public function moveAlongSpline(distance: Float, ?state: MoveAlongSplineState) : MoveAlongSplineState {
-		if( data == null )
-			computeSplineData();
-
-		if (state == null) {
-			state = new MoveAlongSplineState();
-		}
-
-		if (data.samples.length <= 0) {
-			return state;
-		}
-
-		// if the spline is too small return just the state (we'll just sping inside the while loop for nothing)
-		if (data.length < distance / 10.0) {
-			state.point.load(data.samples[0].pos);
-			state.tangent.load(data.samples[0].tangent);
-			return state;
-		}
-
-		var dir = distance > 0.0 ? 1 : -1;
-		distance = Math.abs(distance);
-
-		var numPoints = data.samples.length;
-		while (distance > 0.0) {
-			var p1i = state.currentPoint;
-			var p2i = (state.currentPoint + 1) % numPoints;
-
-			var p1 = data.samples[p1i];
-			var p2 = data.samples[p2i];
-
-			var segmentLength = p2.pos.distance(p1.pos);
-			var curDist = state.currentPointTime * segmentLength;
-
-			var nextDist = curDist + dir*distance;
-			var remainder = dir > 0 ? segmentLength - nextDist : nextDist;
-
-			// If we moved past the current point
-			if (remainder < 0.0) {
-				distance += remainder;
-				state.currentPointTime = dir > 0.0 ? 0.0 : 1.0;
-				state.currentPoint = (state.currentPoint + dir + (numPoints-1)) % (numPoints-1);
-			} else {
-				state.currentPointTime = segmentLength > 0.0 ? nextDist / segmentLength : 0.0;
-
-				state.point.lerp(p1.pos, p2.pos, state.currentPointTime);
-				state.tangent.lerp(p1.tangent, p2.tangent, state.currentPointTime);
-				state.tangent.scale(dir);
-				break;
-			}
-		}
-		return state;
 	}
 
 	// Return the euclidean distance between the two points
@@ -607,8 +520,7 @@ class Spline extends Object3D {
 		return p1.sub(p0).multiply(3 * (1 - t) * (1 - t)).add(p2.sub(p1).multiply(6 * (1 - t) * t)).add(p3.sub(p2).multiply(3 * t * t)).normalized();
 	}
 
-	function generateSplineGraph( ctx : hrt.prefab.Context ) {
-		if (ctx == null) return;
+	function generateSplineGraph() {
 
 		if( !showSpline ) {
 			if( lineGraphics != null ) {
@@ -619,9 +531,8 @@ class Spline extends Object3D {
 		}
 
 		if( lineGraphics == null ) {
-			lineGraphics = new h3d.scene.Graphics(ctx.local3d);
+			lineGraphics = new h3d.scene.Graphics(local3d);
 			lineGraphics.lineStyle(lineThickness, color);
-			lineGraphics.name = "lineGraphics";
 			lineGraphics.material.mainPass.setPassName("overlay");
 			lineGraphics.material.mainPass.depth(false, LessEqual);
 			lineGraphics.ignoreParentTransform = false;
@@ -631,16 +542,16 @@ class Spline extends Object3D {
 		lineGraphics.clear();
 		var b = true;
 		for( s in data.samples ) {
-			var localPos = ctx.local3d.globalToLocal(s.pos.clone());
+			var localPos = local3d.globalToLocal(s.pos.clone());
 			b ? lineGraphics.moveTo(localPos.x, localPos.y, localPos.z) : lineGraphics.lineTo(localPos.x, localPos.y, localPos.z);
 			b = false;
 		}
 	}
 
-	public function computeSpline(ctx : hrt.prefab.Context) {
+	public function computeSpline() {
 		computeSplineData();
 		#if editor
-			generateSplineGraph(ctx);
+			generateSplineGraph();
 		#end
 	}
 
@@ -650,16 +561,16 @@ class Spline extends Object3D {
 		if( b ) wasEdited = true;
 	}
 
-	override function setSelected( ctx : hrt.prefab.Context , b : Bool ) {
-		super.setSelected(ctx, b);
+	override function setSelected(b : Bool ) {
+		super.setSelected(b);
 
 		if( editor != null )
-			editor.setSelected(ctx, b);
+			editor.setSelected(b);
 
 		return true;
 	}
 
-	override function edit( ctx : EditContext ) {
+	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);
 
 		ctx.properties.add( new hide.Element('
@@ -688,10 +599,10 @@ class Spline extends Object3D {
 		editor.edit(ctx);
 	}
 
-	override function getHideProps() : HideProps {
-		return { icon : "arrows-v", name : "Spline", allowChildren: function(s) return Library.isOfType(s, SplinePoint) };
+	override function getHideProps() : hide.prefab.HideProps {
+		return { icon : "arrows-v", name : "Spline", allowChildren: function(s) return Prefab.isOfType(s, SplinePoint) };
 	}
 	#end
 
-	static var _ = hrt.prefab.Library.register("spline", Spline);
+	static var _ = Prefab.register("spline", Spline);
 }

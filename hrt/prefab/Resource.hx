@@ -2,7 +2,7 @@ package hrt.prefab;
 
 class Resource extends hxd.res.Resource {
 
-	var lib : Prefab;
+	var prefab : Prefab;
 	var cacheVersion : Int;
 	var isWatched : Bool;
 
@@ -16,10 +16,10 @@ class Resource extends hxd.res.Resource {
 		}
 		isWatched = true;
 		super.watch(function() {
-			if( lib != null ) {
+			if( prefab != null ) {
 				var data = try loadData() catch( e : Dynamic ) return; // parsing error (conflict ?)
-				lib.reload(data);
-				onPrefabLoaded(lib);
+				prefab.reload(data);
+				onPrefabLoaded(prefab);
 			}
 			onChanged();
 		});
@@ -30,23 +30,36 @@ class Resource extends hxd.res.Resource {
 		return isBSON ? new hxd.fmt.hbson.Reader(entry.getBytes(),false).read() : haxe.Json.parse(entry.getText());
 	}
 
-	public function load() : Prefab {
-		if( lib != null && cacheVersion == CACHE_VERSION )
-			return lib;
+	public function load(?shared: ContextShared) : Object3D {
+		if( Std.downcast(prefab, Object3D) != null && cacheVersion == CACHE_VERSION )
+			return cast prefab;
 		var data = loadData();
-		lib = Library.create(entry.extension);
-		lib.loadData(data);
+		prefab = Std.downcast(Prefab.createFromDynamic(data), Object3D);
+		prefab.shared.prefabSource = entry.path;
+		prefab.shared.currentPath = entry.path;
 		cacheVersion = CACHE_VERSION;
-		onPrefabLoaded(lib);
-		if( !isWatched )
-			watch(function() {}); // auto lib reload
-		return lib;
+		onPrefabLoaded(prefab);
+		watch(function() {}); // auto lib reload
+		return cast prefab;
 	}
 
-	public static function make( p : Prefab ) {
+	public function load2d(?shared: ContextShared) : Object2D {
+		if( Std.downcast(prefab, Object2D) != null && cacheVersion == CACHE_VERSION )
+			return cast prefab;
+		var data = loadData();
+		prefab = Std.downcast(Prefab.createFromDynamic(data), Object2D);
+		prefab.shared.prefabSource = entry.path;
+		prefab.shared.currentPath = entry.path;
+		cacheVersion = CACHE_VERSION;
+		onPrefabLoaded(prefab);
+		watch(function() {}); // auto lib reload
+		return cast prefab;
+	}
+
+	public static function make( p : Object3D ) {
 		if( p == null ) throw "assert";
 		var r = new Resource(null);
-		r.lib = p;
+		r.prefab = p;
 		return r;
 	}
 

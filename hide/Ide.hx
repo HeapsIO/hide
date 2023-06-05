@@ -1005,28 +1005,24 @@ class Ide {
 	public function loadPrefab<T:hrt.prefab.Prefab>( file : String, ?cl : Class<T>, ?checkExists ) : T {
 		if( file == null )
 			return null;
-		var l = hrt.prefab.Library.create(file.split(".").pop().toLowerCase());
 		try {
 			var path = getPath(file);
 			if( checkExists && !sys.FileSystem.exists(path) )
 				return null;
-			l.loadData(parseJSON(sys.io.File.getContent(path)));
+			return hrt.prefab.Prefab.createFromPath(path).get(cl);
 		} catch( e : Dynamic ) {
 			error("Invalid prefab "+file+" ("+e+")");
 			throw e;
 		}
-		if( cl == null )
-			return cast l;
-		return l.get(cl);
 	}
 
 	public function savePrefab( file : String, f : hrt.prefab.Prefab ) {
-		var content = f.saveData();
+		var content = f.serializeToDynamic();
 		sys.io.File.saveContent(getPath(file), toJSON(content));
 	}
 
 	public function filterPrefabs( callb : hrt.prefab.Prefab -> Bool ) {
-		var exts = Lambda.array({iterator : @:privateAccess hrt.prefab.Library.registeredExtensions.keys });
+		var exts = Lambda.array({iterator : @:privateAccess hrt.prefab.Prefab.extensionRegistry.keys });
 		exts.push("prefab");
 		var todo = [];
 		browseFiles(function(path) {
@@ -1041,7 +1037,7 @@ class Ide {
 			}
 			filterRec(prefab);
 			if( !changed ) return;
-			todo.push(function() sys.io.File.saveContent(getPath(path), toJSON(prefab.saveData())));
+			todo.push(function() sys.io.File.saveContent(getPath(path), toJSON(prefab.serializeToDynamic())));
 		});
 		for( t in todo )
 			t();

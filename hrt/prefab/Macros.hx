@@ -1,4 +1,4 @@
-package hrt.prefab2;
+package hrt.prefab;
 
 import haxe.macro.Context;
 import haxe.macro.Expr;
@@ -169,7 +169,7 @@ class Macros {
 						defaultValue = macro @:pos(source.pos) null;
 					return macro @:pos(source.pos) {
 						if (Std.isOfType($e{source}, String) || $e{source} == null) {
-							hrt.prefab2.Macros.enumOrNullByName($p{path}, $e{source}, null, $e{defaultValue});
+							hrt.prefab.Macros.enumOrNullByName($p{path}, $e{source}, null, $e{defaultValue});
 						} else {
 							$e{source};
 						}
@@ -278,7 +278,7 @@ class Macros {
 			args: [],
 			expr: macro {
 				if (serializablePropsFields == null)
-					serializablePropsFields = hrt.prefab2.Macros.getSerializableProps();
+					serializablePropsFields = hrt.prefab.Macros.getSerializableProps();
 				return serializablePropsFields;
 			},
 		};
@@ -286,7 +286,7 @@ class Macros {
 		buildFields.push({
 			name: "serializablePropsFields",
 			access: [AStatic],
-			kind: FVar(macro : Array<hrt.prefab2.Prefab.PrefabField>, macro null),
+			kind: FVar(macro : Array<hrt.prefab.Prefab.PrefabField>, macro null),
 			pos: Context.currentPos(),
 		});
 
@@ -306,13 +306,13 @@ class Macros {
 		// allow child classes to return an object of their type when using make
 		var make : Function = {
 			args: [
-				{ name : "root", type : macro : hrt.prefab2.Prefab, value: macro null},
+				{ name : "root", type : macro : hrt.prefab.Prefab, value: macro null},
 				{ name : "o2d", type : macro :  h2d.Object, value: macro null},
 				{ name : "o3d", type : macro :  h3d.scene.Object, value: macro null},
-				{ name : "contextShared", type : macro :  hrt.prefab2.ContextShared, value: macro null}
+				{ name : "contextShared", type : macro :  hrt.prefab.ContextShared, value: macro null}
 			],
 			expr: macro {
-				return hrt.prefab2.Macros.Cast(${macro makeInternal(root, o2d, o3d, contextShared)}, $v{typeName});
+				return hrt.prefab.Macros.Cast(${macro makeInternal(root, o2d, o3d, contextShared)}, $v{typeName});
 			}
 		}
 
@@ -427,8 +427,8 @@ class Macros {
 			var defExpr = getDefExpr(f.field);
 			var defExprNull = getDefExpr(f.field);
 
-			copyFromDynamic.push(macro hrt.prefab2.Macros.deepCopyFromDynamic(this.$name, obj.$name, $e{defExpr}));
-			copyToDynamic.push(macro hrt.prefab2.Macros.deepCopyToDynamic(obj.$name, this.$name, $e{defExprNull}));
+			copyFromDynamic.push(macro hrt.prefab.Macros.deepCopyFromDynamic(this.$name, obj.$name, $e{defExpr}));
+			copyToDynamic.push(macro hrt.prefab.Macros.deepCopyToDynamic(obj.$name, this.$name, $e{defExprNull}));
 		}
 
 		for (f in copyableFields) {
@@ -436,7 +436,7 @@ class Macros {
 			var defExpr = getDefExpr(f.field);
 
 			if (f.deepCopy) {
-				copyFromOther.push(macro hrt.prefab2.Macros.deepCopyFromOther(this.$name, obj.$name, null));
+				copyFromOther.push(macro hrt.prefab.Macros.deepCopyFromOther(this.$name, obj.$name, null));
 			} else {
 				copyFromOther.push(macro this.$name = obj.$name);
 			}
@@ -588,7 +588,7 @@ class Macros {
 							else
 							{
 								var _a : Array<Dynamic> = cast $e{source};
-								[for (_elem in _a) $e{hrt.prefab2.Macros.deepCopyRec(params[0], macro @:pos(source.pos) _elem, targetType, null, custom, true)}];
+								[for (_elem in _a) $e{hrt.prefab.Macros.deepCopyRec(params[0], macro @:pos(source.pos) _elem, targetType, null, custom, true)}];
 							}
 						};
 					case "String":

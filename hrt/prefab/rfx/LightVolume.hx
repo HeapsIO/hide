@@ -2,6 +2,7 @@ package hrt.prefab.rfx;
 
 @:access(h3d.pass.PassList)
 @:access(h3d.pass.PassObject)
+@:access(h3d.scene.Renderer)
 class LightVolume extends RendererFX {
 
 	var blurPass = new h3d.pass.Blur();
@@ -74,6 +75,6 @@ class LightVolume extends RendererFX {
 	}
 	#end
 
-	static var _ = Library.register("rfx.lightVolume", LightVolume);
+	static var _ = Prefab.register("rfx.lightVolume", LightVolume);
 
 }

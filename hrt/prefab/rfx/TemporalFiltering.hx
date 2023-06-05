@@ -111,6 +111,7 @@ class TemporalFilteringShader extends h3d.shader.ScreenShader {
 	}
 }
 
+@:access(h3d.scene.Renderer)
 class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 
 	@:s public var amount : Float;
@@ -242,6 +243,6 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 	}
 	#end
 
-	static var _ = hrt.prefab.Library.register("rfx.temporalFiltering", TemporalFiltering);
+	static var _ = Prefab.register("rfx.temporalFiltering", TemporalFiltering);
 
 }

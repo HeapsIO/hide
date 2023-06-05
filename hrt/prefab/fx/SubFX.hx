@@ -9,23 +9,19 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 	var instance : hrt.prefab.fx.FX.FXAnimation;
 	#end
 
-	public function new(?parent) {
-		super(parent);
-		this.type = "subFX";
+	override function postMakeInstance() : Void {
+		if (refInstance != null) {
+			var fxanim : hrt.prefab.fx.FX.FXAnimation = refInstance.findFirstLocal3d().find(o -> Std.downcast(o, hrt.prefab.fx.FX.FXAnimation));
+			if(fxanim != null) {
+				fxanim.startDelay = time;
+			    fxanim.loop = loop;
+				#if editor
+				instance = fxanim;
+				#end
+			}
+		}
 	}
 
-	override function makeInstance(ctx:Context):Context {
-		var ctx = super.makeInstance(ctx);
-		var fxanim = ctx.local3d.find(o -> Std.downcast(o, hrt.prefab.fx.FX.FXAnimation));
-		if(fxanim != null) {
-			fxanim.startDelay = time;
-			fxanim.loop = loop;
-			#if editor
-			instance = fxanim;
-			#end
-		}
-		return ctx;
-	}
 
 	function set_time(v) {
 		#if editor
@@ -45,7 +41,7 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 
 	#if editor
 
-	override function edit( ctx : EditContext ) {
+	override function edit( ctx : hide.prefab.EditContext ) {
 		var props = ctx.properties.add(new hide.Element('
 			<div class="group" name="Event">
 				<dl>
@@ -61,8 +57,8 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 
 	public function getEventPrefab() { return this; }
 
-	public function getDisplayInfo(ctx:EditContext) {
-		var ref = Std.downcast(resolveRef(ctx.rootContext.shared), FX);
+	public function getDisplayInfo(ctx:hide.prefab.EditContext) {
+		var ref = Std.downcast(resolveRef(), FX);
 		return {
 			label: ref != null ? new haxe.io.Path(source).file : "null",
 			length: ref != null ? ref.duration : 1.0,
@@ -70,13 +66,13 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 		};
 	}
 
-	override function getHideProps() : HideProps {
+	override function getHideProps() : hide.prefab.HideProps {
 		return {
 			icon : "play-circle", name : "SubFX"
 		};
 	}
 	#end
 
-	static var _ = Library.register("subFX", SubFX);
+	static var _ = Prefab.register("subFX", SubFX);
 
 }

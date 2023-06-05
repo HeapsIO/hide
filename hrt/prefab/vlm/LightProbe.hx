@@ -1,6 +1,5 @@
 package hrt.prefab.vlm;
 
-import hrt.prefab.l3d.Level3D;
 import h3d.scene.pbr.Environment;
 
 enum abstract ProbeMode(String) {
@@ -216,9 +215,8 @@ class LightProbe extends Object3D {
 	@:s public var debugDisplay : Bool = true;
 	@:s public var sphereRadius : Float = 0.5;
 
-	public function new( ?parent : Prefab ) {
-		super(parent);
-		type = "lightProbe";
+	public function new( ?parent : Prefab, shared: ContextShared) {
+		super(parent, shared);
 
 		// Duplicate Name Fix - Prevent baked data conflict
 		var root : Prefab = this;
@@ -241,14 +239,13 @@ class LightProbe extends Object3D {
 		name = "lightProbe_" + curIndex;
 	}
 
-	override function makeInstance( ctx : Context ) : Context {
-		ctx = ctx.clone(this);
-		var lpo = new LightProbeObject(ctx.local3d);
+	override function makeInstance() : Void {
+		var lpo = new LightProbeObject(shared.current3d);
 		lpo.material.castShadows = false;
 		lpo.material.mainPass.setPassName("lightProbe");
 		lpo.ignoreCollide = true;
-		ctx.local3d = lpo;
-		ctx.local3d.name = name;
+		local3d = lpo;
+		local3d.name = name;
 
 		#if editor
 		var wire = new h3d.scene.Box(lpo);
@@ -274,13 +271,12 @@ class LightProbe extends Object3D {
 		previewSphereSpecular.material.castShadows = false;
 		#end
 
-		updateInstance(ctx, texturePath == null ? null : "texturePath");
-		return ctx;
+		updateInstance(texturePath == null ? null : "texturePath");
 	}
 
-	override function updateInstance( ctx : Context, ?propName : String ) {
-		super.updateInstance(ctx, propName);
-		var lpo : LightProbeObject = cast ctx.local3d;
+	override function updateInstance(?propName : String ) {
+		super.updateInstance(propName);
+		var lpo : LightProbeObject = cast local3d;
 		lpo.fadeDist = fadeDist;
 		lpo.fadeMode = fadeMode;
 		lpo.shape = shape;
@@ -302,7 +298,7 @@ class LightProbe extends Object3D {
 			case Texture:
 				var needCompute = false;
 				if( propName == "texturePath" || propName == "mode" ) {
-					var t = texturePath == null ? null : ctx.loadTexture(texturePath);
+					var t = texturePath == null ? null : shared.loadTexture(texturePath);
 					if( t != null ) {
 						lpo.env = new Environment(t);
 						needCompute = true;
@@ -352,19 +348,19 @@ class LightProbe extends Object3D {
 				if( propName == "sampleBits" || propName == "ignoredSpecLevels" )
 					needCompute = true;
 
-				if( loadBinary(lpo.env, ctx) )
+				if( loadBinary(lpo.env) )
 					needCompute = false; // No Env available with binary load, everything else is already baked
 
 				if( needCompute )
 					lpo.env.compute();
 		}
 
-		updatePreviewSphere(lpo);
+		updatePreviewSphere();
 	}
 
-	function updatePreviewSphere( o : h3d.scene.Object ) {
+	function updatePreviewSphere() {
 		#if editor
-		var lpo : LightProbeObject = cast o;
+		var lpo : LightProbeObject = cast local3d;
 		var previewSphereDiffuse : h3d.scene.Mesh = Std.downcast(lpo.find( o -> o.name == "preview_sphere_diffuse" ? o : null), h3d.scene.Mesh);
 		var previewSphereSpecular : h3d.scene.Mesh = Std.downcast(lpo.find( o -> o.name == "preview_sphere_specular" ? o : null), h3d.scene.Mesh);
 		var parentScale = lpo.getAbsPos().getScale();
@@ -409,12 +405,12 @@ class LightProbe extends Object3D {
 		#end
 	}
 
-	override function applyTransform( o : h3d.scene.Object ) {
-		super.applyTransform(o);
-		updatePreviewSphere(o);
+	override function applyTransform() {
+		super.applyTransform();
+		updatePreviewSphere();
 	}
 
-	function saveBinary( env : Environment, ctx : Context ) {
+	function saveBinary( env : Environment) {
 
 		var diffuse = hxd.Pixels.toDDSLayers([for( i in 0...6 ) env.diffuse.capturePixels(i)], true);
 		var specular = hxd.Pixels.toDDSLayers([for( i in 0...6 ) for( mip in 0...env.getMipLevels() ) env.specular.capturePixels(i,mip)],true);
@@ -425,16 +421,16 @@ class LightProbe extends Object3D {
 		data.setInt32(curPos, env.sampleBits); 			curPos += 4;
 		data.setInt32(curPos, env.ignoredSpecLevels); 	curPos += 4;
 
-		ctx.shared.savePrefabDat("envd", "dds", name, diffuse);
-		ctx.shared.savePrefabDat("envs", "dds", name, specular);
-		ctx.shared.savePrefabDat("data", "bake", name, data);
+		shared.savePrefabDat("envd", "dds", name, diffuse);
+		shared.savePrefabDat("envs", "dds", name, specular);
+		shared.savePrefabDat("data", "bake", name, data);
 	}
 
-	function loadBinary( env : Environment, ctx : Context ) {
+	function loadBinary( env : Environment) {
 
-		var diffuse = ctx.shared.loadPrefabDat("envd", "dds", name);
-		var specular = ctx.shared.loadPrefabDat("envs", "dds", name);
-		var data = ctx.shared.loadPrefabDat("data", "bake", name);
+		var diffuse = shared.loadPrefabDat("envd", "dds", name);
+		var specular = shared.loadPrefabDat("envs", "dds", name);
+		var data = shared.loadPrefabDat("data", "bake", name);
 
 		if( data == null || specular == null || diffuse == null )
 			return false;
@@ -527,18 +523,18 @@ class LightProbe extends Object3D {
 		}
 	}
 
-	override function getHideProps() : HideProps {
+	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "map-o", name : "LightProbe" };
 	}
 
-	override function setSelected( ctx : Context, b : Bool ) {
-		var w = ctx.local3d.find( o -> o.name == "wire_select" ? o : null);
+	override function setSelected(b : Bool ) {
+		var w = local3d.find( o -> o.name == "wire_select" ? o : null);
 		if( w != null )
 			w.visible = b;
 		return true;
 	}
 
-	override function edit( ctx : EditContext ) {
+	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);
 
 		var captureModeParams =
@@ -647,7 +643,7 @@ class LightProbe extends Object3D {
 		var clearButton = props.find(".clear");
 		if( clearButton != null ) {
 			clearButton.click(function(_) {
-				var lpo : LightProbeObject = cast ctx.getContext(this).local3d;
+				var lpo : LightProbeObject = cast local3d;
 				lpo.env.createTextures();
 				lpo.clear();
 				ctx.properties.undo.change(Custom(function(undo) {
@@ -660,7 +656,7 @@ class LightProbe extends Object3D {
 		if( exportButton != null ) {
 			exportButton.click(function(_) {
 
-				var lpo : LightProbeObject = cast ctx.getContext(this).local3d;
+				var lpo : LightProbeObject = cast local3d;
 				if( lpo.env == null || lpo.env.specular == null || lpo.env.diffuse == null ) {
 					hide.Ide.inst.message("Capture is empty.");
 					return;
@@ -680,7 +676,7 @@ class LightProbe extends Object3D {
 		if( importButton != null ) {
 			importButton.click(function(_) {
 
-				var lpo : LightProbeObject = cast ctx.getContext(this).local3d;
+				var lpo : LightProbeObject = cast local3d;
 
 				function loadData( name : String ) {
 
@@ -702,7 +698,7 @@ class LightProbe extends Object3D {
 					ignoredSpecLevels = lpo.env.ignoredSpecLevels;
 
 					// Save the import
-					ctx.rootContext.shared.savePrefabDat("probe", "bake", this.name, b);
+					shared.savePrefabDat("probe", "bake", this.name, b);
 
 					ctx.onChange(this, null);
 					ctx.rebuildProperties();
@@ -721,7 +717,7 @@ class LightProbe extends Object3D {
 		if( bakeButton != null ) {
 			bakeButton.click(function(_) {
 
-				var lpo : LightProbeObject = cast ctx.getContext(this).local3d;
+				var lpo : LightProbeObject = cast local3d;
 				var captureSize = specSize;
 
 				// Start with a black texture, need to override the default env
@@ -755,7 +751,7 @@ class LightProbe extends Object3D {
 
 				probeBaker.dispose();
 
-				saveBinary(lpo.env, ctx.rootContext);
+				saveBinary(lpo.env);
 
 				ctx.onChange(this, null);
 			});
@@ -764,5 +760,5 @@ class LightProbe extends Object3D {
 
 	#end
 
-	static var _ = Library.register("lightProbe", LightProbe);
+	static var _ = Prefab.register("lightProbe", LightProbe);
 }

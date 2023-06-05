@@ -3,6 +3,7 @@ package hrt.prefab;
 import h3d.scene.Mesh;
 import h3d.scene.Object;
 import h3d.mat.PbrMaterial;
+import hide.prefab.HideProps;
 
 class Material extends Prefab {
 
@@ -14,19 +15,24 @@ class Material extends Prefab {
 	@:c public var color : Array<Float> = [1,1,1,1];
 	@:s public var mainPassName : String;
 
-	public function new(?parent) {
-		super(parent);
-		type = "material";
+	public function new(?parent, shared: ContextShared) {
+		super(parent, shared);
 		props = {};
 	}
 
-	override function load(obj:Dynamic) {
+	override function load(obj:Dynamic) : Void {
 		super.load(obj);
 		color = obj.color != null ? obj.color : [1,1,1,1];
 	}
 
-	override function save() {
-		var obj : Dynamic = super.save();
+	override function copy(o:Prefab) : Void {
+		super.copy(o);
+		var p = Std.downcast(o, Material);
+		this.color = p.color;
+	}
+
+	override function save(obj:Dynamic) : Dynamic {
+		super.save(obj);
 		if(color != null && h3d.Vector.fromArray(color).toColor() != 0xffffffff) obj.color = color;
 		if(mainPassName == "" || mainPassName == null ) Reflect.deleteField(obj, "mainPassName");
 		return obj;
@@ -43,8 +49,8 @@ class Material extends Prefab {
 		return r;
 	}
 
-	public function getMaterials( ctx : Context ) {
-		var mats = ctx.local3d.getMaterials();
+	public function getMaterials() {
+		var mats = findFirstLocal3d().getMaterials();
 		var mat = Lambda.find(mats, m -> m.name == this.name || (m.name != null && m.name == materialName));
 		return mat == null ? mats : [mat];
 	}
@@ -73,40 +79,41 @@ class Material extends Prefab {
 			mat.mainPass.setPassName(mainPassName);
 	}
 
-	override function updateInstance( ctx : Context, ?propName ) {
-		if( ctx.local3d == null )
+	override function updateInstance(?propName ) {
+		var local3d = findFirstLocal3d();
+		if( local3d == null )
 			return;
 
-		var mats = getMaterials(ctx);
+		var mats = getMaterials();
 		var props = renderProps();
 		#if editor
 		if ( mats == null || mats.length == 0 ) {
 			var sphere = new h3d.prim.Sphere(1., 64, 48);
 			sphere.addUVs();
-			sphere.addNormals();
 			sphere.addTangents();
+            sphere.addNormals();
 			var preview = new h3d.scene.Mesh(sphere);
-			ctx.local3d.parent.addChild(preview);
-			ctx.local3d = preview;
-			ctx.local3d.x = ctx.local3d.getScene().getMaterials().length * 5.0;
-			mats = getMaterials(ctx);
+			local3d.parent.addChild(preview);
+			local3d = preview;
+			local3d.x = local3d.getScene().getMaterials().length * 5.0;
+			mats = getMaterials();
 		}
 		#end
+		function loadTextureCb( path : String ) : h3d.mat.Texture {
+			return shared.loadTexture(path, false);
+		}
 		for( m in mats )
-			update(m, props, ctx.loadTexture);
+			update(m, props, loadTextureCb);
 	}
 
-	override function makeInstance(ctx:Context):Context {
-		if(ctx.local3d == null)
-			return ctx;
-		ctx = ctx.clone(this);
 
-		updateInstance(ctx);
-		return ctx;
+
+	override function makeInstance() {
+		updateInstance();
 	}
 
 	#if editor
-	override function edit( ctx : EditContext ) {
+	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);
 		var isPbr = Std.isOfType(ctx.scene.s3d.renderer, h3d.scene.pbr.Renderer);
 		var mat = h3d.mat.Material.create();
@@ -115,10 +122,6 @@ class Material extends Prefab {
 		ctx.properties.addMaterial(mat, group.find('.group > .content'), function(pname) {
 			Reflect.setField(props, h3d.mat.MaterialSetup.current.name, mat.props);
 			ctx.onChange(this, "props");
-
-			var fx = getParent(hrt.prefab.fx.FX);
-			if(fx != null)
-				ctx.rebuildPrefab(fx, true);
 		});
 
 		if( isPbr ) {
@@ -134,14 +137,9 @@ class Material extends Prefab {
 						A <input type="checkbox" class="colorMaskA"/>
 					</dd>
 			</div>');
-			ctx.properties.add(colorMask, this, function(pname) {
-				ctx.onChange(this, pname);
-				var fx = getParent(hrt.prefab.fx.FX);
-				if(fx != null)
-					ctx.rebuildPrefab(fx, true);
-			});
+			ctx.properties.add(colorMask, this, function(pname) { ctx.onChange(this, pname); });
 
-			function setBit( e : Element, field : String, className : String, bitIndex : Int ) {
+			function setBit( e : hide.Element, field : String, className : String, bitIndex : Int ) {
 				var mask = e.find(className);
 				var val : Int = cast Reflect.field(pbrProps, field);
 				mask.prop("checked", val & (1<<bitIndex) > 0 ? true : false);
@@ -158,10 +156,6 @@ class Material extends Prefab {
 							Reflect.setField(pbrProps, field, checked ? val | (1 << bitIndex) : val & ~(1 << bitIndex));
 						mask.prop("checked", val & (1<<bitIndex) > 0 ? true : false);
 					}));
-
-					var fx = getParent(hrt.prefab.fx.FX);
-					if(fx != null)
-						ctx.rebuildPrefab(fx, true);
 				});
 			}
 
@@ -280,7 +274,7 @@ class Material extends Prefab {
 					<dt>Name</dt><dd><select><option value="any">Any</option></select>
 				</dl> ');
 		var select = dropDownMaterials.find("select");
-		var materialList = ctx.rootContext.local3d.getMaterials();
+		var materialList = findFirstLocal3d().getMaterials();
 		for( m in materialList )
 			if( m.name != null && m.name != "" )
 				new hide.Element('<option>').attr("value", m.name).text(m.name).appendTo(select);
@@ -298,10 +292,6 @@ class Material extends Prefab {
 			ctx.onChange(this, null);
 			ctx.rebuildProperties();
 			ctx.scene.editor.refresh(Partial);
-
-			var fx = getParent(hrt.prefab.fx.FX);
-			if(fx != null)
-				ctx.rebuildPrefab(fx, true);
 		});
 		select.val(materialName == null ? "any" : materialName);
 
@@ -319,10 +309,6 @@ class Material extends Prefab {
 		dropDownMaterials.appendTo(matProps);
 		ctx.properties.add(matProps, this, function(pname) {
 			ctx.onChange(this, pname);
-
-			var fx = getParent(hrt.prefab.fx.FX);
-			if(fx != null)
-				ctx.rebuildPrefab(fx, true);
 		});
 	}
 
@@ -347,5 +333,5 @@ class Material extends Prefab {
 		return false;
 	}
 
-	static var _ = Library.register("material", Material);
+	static var _ = Prefab.register("material", Material);
 }

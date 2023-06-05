@@ -12,7 +12,7 @@ enum abstract RepeatMode(String) {
 	var None;
 }
 
-class NoiseGenerator extends Prefab {
+class NoiseGenerator extends Object2D {
 
 	@:s public var seed : Int;
 
@@ -37,8 +37,8 @@ class NoiseGenerator extends Prefab {
 
 	var tex : h3d.mat.Texture;
 
-	function new(?parent) {
-		super(parent);
+	function new(?parent, shared: ContextShared) {
+		super(parent, shared);
 		seed = Std.random(100);
 	}
 
@@ -112,27 +112,28 @@ class NoiseGenerator extends Prefab {
 		return t.sub(repeat == Both || repeat == X ? tex.width >> 1 : 0, repeat == Both || repeat == Y ? tex.height >> 1 : 0, tex.width, tex.height);
 	}
 
-	override function makeInstance( ctx : Context ) {
-		var tex = new h3d.mat.Texture(size, size, [Target]);
+	override function makeInstance() {
+		tex = new h3d.mat.Texture(size, size, [Target]);
 		updateTexture(tex);
-		ctx = ctx.clone(this);
-		var bmp = new h2d.Bitmap(makeTile(tex), ctx.local2d);
+		var bmp = new h2d.Bitmap(makeTile(tex), shared.current2d);
 		bmp.tileWrap = !tex.flags.has(IsNPOT);
 		bmp.visible = false;
 		bmp.x = -size >> 1;
 		bmp.y = -size >> 1;
-		ctx.local2d = bmp;
-		ctx.cleanup = function() tex.dispose();
-		return ctx;
+		local2d = bmp;
+	}
+
+	function destroy() {
+		tex.dispose();
 	}
 
 	#if editor
 
-	override function getHideProps() : HideProps {
+	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "cloud", name : "Noise Generator" };
 	}
 
-	override function edit( ctx : EditContext ) {
+	override function edit( ctx : hide.prefab.EditContext ) {
 		var e = ctx.properties.add(new hide.Element('
 			<dl>
 				<dt>Mode</dt><dd><select field="mode">
@@ -183,7 +184,7 @@ class NoiseGenerator extends Prefab {
 				<dt>&nbsp;</dt><dd><input type="button" value="Download" name="dl"/></dd>
 			</dl>
 		'),this,function(pname)  {
-			var bmp = cast(ctx.getContext(this).local2d, h2d.Bitmap);
+			var bmp = cast(local2d, h2d.Bitmap);
 			var tex = bmp.tile.getTexture();
 			if( tex.width != size ) {
 				tex.resize(size, size);
@@ -195,14 +196,15 @@ class NoiseGenerator extends Prefab {
 			updateTexture(tex);
 			ctx.onChange(this, pname);
 		});
-		var bmp = cast(ctx.getContext(this).local2d, h2d.Bitmap);
+		var bmp = cast(local2d, h2d.Bitmap);
+		var ide = hide.Ide.inst;
 		e.find("[name=dl]").click(function(_) {
-			ctx.ide.chooseFileSave("noise.png", function(f) {
+			ide.chooseFileSave("noise.png", function(f) {
 				try {
-					var data = cast(ctx.getContext(this).local2d, h2d.Bitmap).tile.getTexture().capturePixels().toPNG();
-					sys.io.File.saveBytes(ctx.ide.getPath(f), data);
+					var data = cast(local2d, h2d.Bitmap).tile.getTexture().capturePixels().toPNG();
+					sys.io.File.saveBytes(ide.getPath(f), data);
 				} catch( e : Dynamic ) {
-					ctx.ide.error(e);
+					ide.error(e);
 				}
 			});
 		});
@@ -212,7 +214,7 @@ class NoiseGenerator extends Prefab {
 
 	#end
 
-	static var _ = Library.register("noise", NoiseGenerator);
+	static var _ = Prefab.register("noise", NoiseGenerator);
 
 }
 

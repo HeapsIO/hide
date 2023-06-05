@@ -99,7 +99,7 @@ class PbrSetup extends h3d.mat.PbrMaterialSetup {
 			path = ide.getPath(scene.config.get("scene.environment"));
 		}
 		else {
-			var scene2 = hide.comp2.Scene.getCurrent();
+			var scene2 = hide.comp.Scene.getCurrent();
 			path = ide.getPath(scene2.config.get("scene.environment"));
 		}
 		var data = sys.io.File.getBytes(path);

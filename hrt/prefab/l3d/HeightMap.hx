@@ -1,5 +1,7 @@
 package hrt.prefab.l3d;
 
+// NOTE(ces) : Not Tested
+
 enum abstract HeightMaPTexturePathKind(String) {
 	var Albedo = "albedo";
 	var Height = "height";
@@ -80,7 +82,7 @@ class HeightMapShader extends hxsl.Shader {
 		}
 
 		function splat( index : Int, amount : Float ) : Vec4 {
-			if( index >= AlbedoCount || amount <= 0 )
+			if( (!albedoIsArray || index >= AlbedoCount) || amount <= 0 )
 				return vec4(0.);
 			else if( hasAlbedoProps ) {
 				var p = albedoProps[index];
@@ -108,20 +110,18 @@ class HeightMapShader extends hxsl.Shader {
 				pixelColor = bakedAlbedo.getLod(calculatedUV, 0);
 			} else if( SplatCount > 0 ) {
 				var color = vec4(0.);
-				if( SplatMode == 3 || SplatMode == 4 )
-					color = splat(0,1);
 				@unroll for( i in 0...SplatCount ) {
 					var s = splats[i].getLod(calculatedUV,0);
 					switch( SplatMode ) {
 					case 0:
-						color += splat(i*3, s.r);
-						color += splat(i*3+1, s.g);
-						color += splat(i*3+2, s.b);
-					case 1:
 						color += splat(i*4, s.r);
 						color += splat(i*4+1, s.g);
 						color += splat(i*4+2, s.b);
 						color += splat(i*4+3, s.a);
+					case 1:
+						color += splat(i*3, s.r);
+						color += splat(i*3+1, s.g);
+						color += splat(i*3+2, s.b);
 					case 2:
 						var i1 = int(s.r*256);
 						var i2 = int(s.g*256);
@@ -144,15 +144,6 @@ class HeightMapShader extends hxsl.Shader {
 
 							roughness *= 1 - med.a * med.a * albedoRoughness;
 						}
-					case 3:
-						color = mix(color, splat(i*3+1, 1), s.r);
-						color = mix(color, splat(i*3+2, 1), s.g);
-						color = mix(color, splat(i*3+3, 1), s.b);
-					case 4:
-						color = mix(color, splat(i*4+1, 1), s.r);
-						color = mix(color, splat(i*4+2, 1), s.g);
-						color = mix(color, splat(i*4+3, 1), s.b);
-						color = mix(color, splat(i*4+4, 1), s.a);
 					}
 				}
 				color.a = 1;
@@ -200,7 +191,7 @@ private class HeightMapTileBakeShader extends h3d.shader.ScreenShader {
 		}
 
 		function splat( index : Int, amount : Float ) : Vec4 {
-			if( index >= AlbedoCount || amount <= 0 )
+			if( (!albedoIsArray || index >= AlbedoCount) || amount <= 0 )
 				return vec4(0.);
 			else if( hasAlbedoProps ) {
 				var p = albedoProps[index];
@@ -336,8 +327,6 @@ class HeightMapTile {
 		case Weights3: 0;
 		case Weights4: 1;
 		case I1I2W1W2: shader.albedoIsArray = true; 2;
-		case BaseWeights3: 3;
-		case BaseWeights4: 4;
 		}
 
 		shader.albedoTiling = hmap.albedoTiling;
@@ -497,10 +486,6 @@ class HeightMapMesh extends h3d.scene.Object {
 		height >>= (4 - hmap.quality);
 		if( width < 4 ) width = 4;
 		if( height < 4 ) height = 4;
-		#if js
-		if( width > 4096 ) width = 4096;
-		if( height > 4096 ) height = 4096;
-		#end
 		var cw = size/width, ch = size/height;
 		if( grid == null || grid.width != width || grid.height != height || grid.cellWidth != cw || grid.cellHeight != ch ) {
 			grid = new HeightGrid(width,height,cw,ch);
@@ -527,8 +512,6 @@ class HeightMapMesh extends h3d.scene.Object {
 enum abstract SplatMode(String) {
 	var Weights3;
 	var Weights4;
-	var BaseWeights3;
-	var BaseWeights4;
 	var I1I2W1W2;
 }
 
@@ -614,12 +597,11 @@ class HeightMap extends Object3D {
 	@:s var albedoRoughness : Float = 0.;
 
 	// todo : instead of storing the context, we should find a way to have a texture loader
-	var storedCtx : hrt.prefab.Context;
 	var albedoProps : Array<h3d.Vector>;
 	var texArrayCache : Map<HeightMaPTexturePathKind, { texture : h3d.mat.TextureArray, indexes : Array<Int> }>;
 
-	override function save():{} {
-		var o : Dynamic = super.save();
+	override function save(obj:Dynamic):Dynamic {
+		var o : Dynamic = super.save(obj);
 		o.textures = [for( t in textures ) {
 			var v : Dynamic = { path : t.path, kind : t.kind };
 			if( !t.enable ) v.enable = false;
@@ -634,6 +616,12 @@ class HeightMap extends Object3D {
 	override function load(obj:Dynamic) {
 		super.load(obj);
 		textures = [for( o in (obj.textures:Array<Dynamic>) ) { path : o.path, kind : o.kind, enable : o.enable == null ? true : o.enable, props : o.props }];
+	}
+
+	override function copy(o:Prefab) {
+		super.copy(o);
+		var p : HeightMap = cast o;
+		this.textures = p.textures;
 	}
 
 	function getAlbedoProps() {
@@ -676,7 +664,7 @@ class HeightMap extends Object3D {
 		return h;
 	}
 
-	override function localRayIntersection(ctx:Context, ray:h3d.col.Ray):Float {
+	override function localRayIntersection(ray:h3d.col.Ray):Float {
 		if( ray.lz > 0 )
 			return -1; // only from top
 		if( ray.lx == 0 && ray.ly == 0 ) {
@@ -694,7 +682,7 @@ class HeightMap extends Object3D {
 		if( pt.z < minZ )
 			return -1;
 
-		var prim = @:privateAccess cast(ctx.local3d, HeightMapMesh).grid;
+		var prim = @:privateAccess cast(local3d, HeightMapMesh).grid;
 		var m = hxd.Math.min(prim.cellWidth, prim.cellHeight) * 0.5;
 		var curX = -1, curY = -1, curMap = null, offX = 0., offY = 0., cw = 0., ch = 0.;
 		var prevH = pt.z;
@@ -781,7 +769,7 @@ class HeightMap extends Object3D {
 			#end
 			if( b ) {
 				var path = resolveTexturePath(t.path,tx,ty);
-				tl.push(loadTexture(path));
+				tl.push(shared.loadTexture(path));
 			}
 		}
 		return tl;
@@ -809,7 +797,7 @@ class HeightMap extends Object3D {
 					var path = new haxe.io.Path(t.path);
 					path.file = path.file.split("_Albedo").join("");
 					path.file += "_Normal";
-					tl.push(loadTexture(path.toString()));
+					tl.push(shared.loadTexture(path.toString()));
 				}
 			tl;
 		default: throw "assert";
@@ -888,21 +876,12 @@ class HeightMap extends Object3D {
 		return arr;
 	}
 
-	function loadTexture( path : String ) {
-		return storedCtx.shared.loadTexture(path, false);
+	override function makeObject(parent3d:h3d.scene.Object):h3d.scene.Object {
+		var mesh = new HeightMapMesh(this, parent3d);
+		return mesh;
 	}
 
-	override function makeInstance(ctx:Context):Context {
-		ctx = ctx.clone(this);
-		var mesh = new HeightMapMesh(this, ctx.local3d);
-		ctx.local3d = mesh;
-		ctx.local3d.name = name;
-		storedCtx = ctx;
-		updateInstance(ctx);
-		return ctx;
-	}
-
-	override function updateInstance( ctx : Context, ?propName : String ) {
+	override function updateInstance( ?propName : String ) {
 
 		#if editor
 		if( (propName == "albedoTiling" || propName == "albedoColorGamma") && albedoProps != null ) {
@@ -910,20 +889,19 @@ class HeightMap extends Object3D {
 			return;
 		}
 		if (view == null) {
-			var shared = Std.downcast(ctx.shared, hide.prefab.ContextShared);
-			if (shared != null && shared.editor != null)
-				view = shared.editor.view;
+			if (shared != null)
+				view = shared.scene.editor.view;
 		}
 		#end
 
 		albedoProps = null;
 		cleanCache();
-		super.updateInstance(ctx, propName);
+		super.updateInstance(propName);
 
 		for( t in tilesCache )
 			t.remove();
 		tilesCache = new Map();
-		var mesh = cast(ctx.local3d,HeightMapMesh);
+		var mesh = cast(local3d,HeightMapMesh);
 		mesh.init();
 	}
 
@@ -933,11 +911,11 @@ class HeightMap extends Object3D {
 
 	#if editor
 
-	override function setSelected(ctx:Context, b:Bool):Bool {
+	override function setSelected(b:Bool):Bool {
 		return true;
 	}
 
-	override function getHideProps() : HideProps {
+	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "industry", name : "HeightMap", isGround : true };
 	}
 
@@ -950,9 +928,8 @@ class HeightMap extends Object3D {
 		albedoProps = prev;
 	}
 
-	override function edit(ectx:EditContext) {
+	override function edit(ectx:hide.prefab.EditContext) {
 		super.edit(ectx);
-		var ctx = ectx.getContext(this);
 		var hasSplat = false;
 		for( t in textures )
 			if( t.kind == SplatMap ) {
@@ -983,8 +960,6 @@ class HeightMap extends Object3D {
 						<option value="Weights4">Weights4
 						<option value="Weights3">Weights3
 						<option value="I1I2W1W2">I1I2W1W2
-						<option value="BaseWeights4">BaseWeights4
-						<option value="BaseWeights3">BaseWeights3
 					</select>
 					<label><input type="checkbox" field="splatNearest"/> Nearest</label>
 				</dd>
@@ -1005,7 +980,7 @@ class HeightMap extends Object3D {
 		');
 
 		var list = props.find("ul#tex");
-		ectx.properties.add(props,this, (_) -> updateInstance(ctx));
+		ectx.properties.add(props,this, (_) -> updateInstance());
 		for( tex in textures ) {
 			var prevTex = tex.path;
 			var e = new hide.Element('<li style="position:relative">
@@ -1029,14 +1004,14 @@ class HeightMap extends Object3D {
 				textures.remove(tex);
 				textures.insert(index-1, tex);
 				ectx.rebuildProperties();
-				updateInstance(ctx);
+				updateInstance();
 			});
 			e.find(".down").click(function(_) {
 				var index = textures.indexOf(tex);
 				textures.remove(tex);
 				textures.insert(index+1, tex);
 				ectx.rebuildProperties();
-				updateInstance(ctx);
+				updateInstance();
 			});
 			e.appendTo(list);
 			ectx.properties.build(e, tex, (pname) -> {
@@ -1063,7 +1038,7 @@ class HeightMap extends Object3D {
 					textures.remove(tex);
 					ectx.rebuildProperties();
 				}
-				updateInstance(ctx, pname);
+				updateInstance(pname);
 			});
 			if( tex.props != null ) {
 				var e = new hide.Element('<li style="position:relative">
@@ -1094,7 +1069,7 @@ class HeightMap extends Object3D {
 	}
 	#end
 
-	static var _ = Library.register("heightmap", HeightMap);
+	static var _ = Prefab.register("heightmap", HeightMap);
 
 }
 

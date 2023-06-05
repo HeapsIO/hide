@@ -5,7 +5,7 @@ typedef HideProps = {
 	var name : String;
 	var ?isGround : Bool;
 	var ?fileSource : Array<String>;
-	@:optional dynamic function allowChildren( type : String ) : Bool;
+	@:optional dynamic function allowChildren( cl : Class<hrt.prefab.Prefab> ) : Bool;
 	@:optional dynamic function allowParent( p : hrt.prefab.Prefab ) : Bool;
 	@:optional dynamic function onChildUpdate( p : hrt.prefab.Prefab ) : Void;
 	@:optional dynamic function onChildListChanged() : Void;

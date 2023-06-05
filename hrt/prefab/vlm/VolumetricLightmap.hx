@@ -20,9 +20,8 @@ class VolumetricLightmap extends Object3D {
 	var baker : hide.view.l3d.ProbeBakerProcess;
 	#end
 
-	public function new(?parent) {
-		super(parent);
-		type = "volumetricLightmap";
+	public function new(?parent, shared: ContextShared) {
+		super(parent, shared);
 	}
 
 	#if editor
@@ -131,8 +130,8 @@ class VolumetricLightmap extends Object3D {
 		}
 	}
 
-	override function updateInstance( ctx: Context, ?propName : String ) {
-		super.updateInstance(ctx, propName);
+	override function updateInstance(?propName : String ) {
+		super.updateInstance(propName);
 
 		if(propName ==  "strength" && displaySH){
 			var previewSpheres = volumetricLightmap.findAll(c -> if(c.name == "_previewSphere") c else null);
@@ -146,47 +145,45 @@ class VolumetricLightmap extends Object3D {
 			resetLightmap();
 	}
 
-	override function makeInstance(ctx:Context):Context {
-
-		ctx = ctx.clone(this);
-		var obj = new h3d.scene.Object(ctx.local3d);
+	override function makeInstance() : Void {
+		var parent = shared.current3d;
+		var obj = new h3d.scene.Object(parent);
 		volumetricLightmap = new hrt.prefab.vlm.VolumetricMesh(obj);
 		volumetricLightmap.ignoreCollide = true;
 		volumetricLightmap.setPosition(-0.5, -0.5, 0);
-		ctx.local3d = obj;
-		ctx.local3d.name = name;
-		updateInstance(ctx);
+		local3d = obj;
+		local3d.name = name;
+		updateInstance();
 
 		volumetricLightmap.voxelSize = new h3d.Vector(voxelsize_x,voxelsize_y,voxelsize_z);
 		volumetricLightmap.shOrder = order;
 		volumetricLightmap.useAlignedProb = false;
 		volumetricLightmap.strength = strength;
 
-		var res = ctx.shared.loadPrefabDat("sh", "bake", name);
+		var res = shared.loadPrefabDat("sh", "bake", name);
 		if(res != null) volumetricLightmap.load(res.entry.getBytes());
 
 		#if editor
 		initProbes();
 		#end
-		return ctx;
 	}
 
 	#if editor
 
-	override function getHideProps() : HideProps {
+	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "map-o", name : "VolumetricLightmap" };
 	}
 
-	override function setSelected( ctx : Context, b : Bool ) {
+	override function setSelected(b : Bool ) {
 		if( b ) {
-			var obj = ctx.shared.contexts.get(this).local3d;
+			var obj = local3d;
 			var wire = new h3d.scene.Box(volumetricLightmap.lightProbeTexture == null ? 0xFFFF0000 : 0xFFFFFFFF,h3d.col.Bounds.fromValues(-0.5,-0.5,0,1,1,1),obj);
 			wire.name = "_highlight";
 			wire.material.setDefaultProps("ui");
 			wire.ignoreCollide = true;
 			wire.material.shadows = false;
 		} else {
-			for( o in ctx.shared.getObjects(this,h3d.scene.Box) )
+			for( o in getObjects(h3d.scene.Box) )
 				if( o.name == "_highlight" ) {
 					o.remove();
 					return false;
@@ -195,7 +192,7 @@ class VolumetricLightmap extends Object3D {
 		return true;
 	}
 
-	override function edit( ctx : EditContext ) {
+	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);
 		var props = new hide.Element('
 			<div class="group" name="Light Params">
@@ -267,10 +264,10 @@ class VolumetricLightmap extends Object3D {
 
 	}
 
-	public function startBake(ctx : EditContext, ?onEnd){
+	public function startBake(ctx : hide.prefab.EditContext, ?onEnd){
 		maxOrderBaked = order;
 		volumetricLightmap.lastBakedProbeIndex = -1;
-		var s3d = @:privateAccess ctx.rootContext.local3d.getScene();
+		var s3d = @:privateAccess local3d.getScene();
 		baker = new hide.view.l3d.ProbeBakerProcess(this, resolution, useGPU, 0.032);
 
 		var pbrRenderer = Std.downcast(s3d.renderer, h3d.scene.pbr.Renderer);
@@ -281,17 +278,17 @@ class VolumetricLightmap extends Object3D {
 			trace("Invalid renderer");
 
 		var sceneData = @:privateAccess ctx.scene.editor.sceneData;
-		baker.init(pbrRenderer.env, sceneData.cloneData(), cast ctx.rootContext.shared, ctx.scene);
+		baker.init(pbrRenderer.env, sceneData, ctx.scene);
 
 		baker.onEnd = function() {
 			if( onEnd != null ) onEnd();
 			var bytes = volumetricLightmap.save();
-			ctx.rootContext.shared.savePrefabDat("sh", "bake", name, bytes);
+			sceneData.shared.savePrefabDat("sh", "bake", name, bytes);
 			createDebugPreview();
 		}
 	}
 
 	#end
 
-	static var _ = Library.register("volumetricLightmap", VolumetricLightmap);
+	static var _ = Prefab.register("volumetricLightmap", VolumetricLightmap);
 }

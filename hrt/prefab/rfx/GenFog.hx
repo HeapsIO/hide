@@ -75,6 +75,7 @@ enum abstract GenFogRenderMode(String) {
 	var AfterTonemapping;
 }
 
+@:access(h3d.scene.Renderer)
 class GenFog extends RendererFX {
 
 	var fogPass = new h3d.pass.ScreenFx(new GenFogShader());
@@ -106,8 +107,8 @@ class GenFog extends RendererFX {
 	@:s public var lightColorAmount : Float;
 	@:s public var lightAngle : Float = 90.0;
 
-	public function new(?parent) {
-		super(parent);
+	public function new(?parent, shared: ContextShared) {
+		super(parent, shared);
 		renderMode = AfterTonemapping;
 		endDistance = 100;
 		startHeight = 100;
@@ -243,6 +244,6 @@ class GenFog extends RendererFX {
 	}
 	#end
 
-	static var _ = Library.register("rfx.genFog", GenFog);
+	static var _ = Prefab.register("rfx.genFog", GenFog);
 
 }

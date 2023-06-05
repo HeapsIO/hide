@@ -1,4 +1,4 @@
-package hrt.prefab2;
+package hrt.prefab;
 
 
 typedef ShaderDef = {

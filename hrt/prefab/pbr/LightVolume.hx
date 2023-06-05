@@ -44,7 +44,8 @@ class LightVolumeShader extends hxsl.Shader {
 			var posWS = ppos.xyz / ppos.w;
 			var distToCam = length(posWS - camera.position);
 
-			var origin = transformedPosition;
+			var origin = transformedPosition;//ppos.xyz / ppos.w;
+
 			var rayDir = normalize(camera.position - origin);
 			var step = rayDir * 2.0 * range / float(steps);
 			if ( USE_DITHERING ) {
@@ -59,7 +60,6 @@ class LightVolumeShader extends hxsl.Shader {
 				curPos += step;
 				fog += raymarch(curPos, distToCam) / float(steps);
 			}
-			fog *= smoothstep(0.0, 1.0, distance(camera.position, lightPos) / range);
 
 			pixelColor = vec4(lightColor, fog * opacity);
 		}
@@ -162,47 +162,46 @@ class LightVolumeObject extends h3d.scene.Mesh {
 	}
 }
 
-class LightVolume extends hrt.prefab.Prefab {
+class LightVolume extends Object3D {
 
 	@:s var fallOff : Float = 1.0;
 	@:s var opacity : Float = 1.0;
 	@:s var USE_SHADOW_MAP : Bool = false;
 
-	override function makeInstance(ctx : hrt.prefab.Context ) : hrt.prefab.Context {
-		ctx = ctx.clone(this);
-
-		var pbrLight = Std.downcast(ctx.local3d, h3d.scene.pbr.Light);
+	override function makeInstance() : Void {
+		var pbrLight = Std.downcast(shared.current3d, h3d.scene.pbr.Light);
 		if ( pbrLight == null )
-			return ctx;
+			return;
 
-		var mesh = new LightVolumeObject(@:privateAccess pbrLight.primitive, ctx.local3d);
-		var pointLight = Std.downcast(ctx.local3d, h3d.scene.pbr.PointLight);
+		var mesh = new LightVolumeObject(@:privateAccess pbrLight.primitive, shared.current3d);
+		var pointLight = Std.downcast(shared.current3d, h3d.scene.pbr.PointLight);
 		if ( pointLight != null ) {
 			var shader = new PointLightVolumeShader();
 			mesh.shader = shader;
 			mesh.material.mainPass.addShader(shader);
 		} else {
-			var spotLight = Std.downcast(ctx.local3d, h3d.scene.pbr.SpotLight);
+			var spotLight = Std.downcast(shared.current3d, h3d.scene.pbr.SpotLight);
 			if ( spotLight != null ) {
 				var shader = new SpotLightVolumeShader();
 				mesh.shader = shader;
 				mesh.material.mainPass.addShader(shader);
 			}
 		}
-		ctx.local3d = mesh;
+
+		local3d = mesh;
 		mesh.material.shadows = false;
 		mesh.material.mainPass.setBlendMode(Add);
 		mesh.material.mainPass.depthTest = Always;
 		mesh.material.mainPass.culling = Front;
 		mesh.material.mainPass.depthWrite = false;
 		mesh.material.mainPass.setPassName("lightVolume");
-		updateInstance(ctx);
-		return ctx;
+		updateInstance();
 	}
 
-	override function updateInstance(ctx : hrt.prefab.Context, ?propName : String) {
-		super.updateInstance(ctx, propName);
-		var lvo = Std.downcast(ctx.local3d, LightVolumeObject);
+
+	override function updateInstance(?propName : String) {
+		super.updateInstance(propName);
+		var lvo = Std.downcast(local3d, LightVolumeObject);
 		lvo.USE_SHADOW_MAP = USE_SHADOW_MAP;
 		lvo.shader.fallOff = fallOff;
 		lvo.shader.opacity = opacity;
@@ -224,12 +223,12 @@ class LightVolume extends hrt.prefab.Prefab {
 		});
 	}
 
-	override function getHideProps() : HideProps {
+	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "sun-o", name : "Light volume" };
 	}
 
 	#end
 
-	static var _ = hrt.prefab.Library.register("lightVolume", LightVolume);
+	static var _ = Prefab.register("lightVolume", LightVolume);
 
 }

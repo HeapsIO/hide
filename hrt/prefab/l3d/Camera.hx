@@ -1,8 +1,8 @@
 package hrt.prefab.l3d;
 import hrt.prefab.rfx.RendererFX;
 import h3d.scene.Object;
-import hrt.prefab.Context;
-import hrt.prefab.Library;
+
+// NOTE(ces) : Not Tested
 
 class CameraSyncObject extends h3d.scene.Object {
 
@@ -35,13 +35,12 @@ class Camera extends Object3D {
 	var editContext : hide.prefab.EditContext;
 	#end
 
-	public function new(?parent) {
-		super(parent);
-		type = "camera";
+	public function new(?parent, shared: ContextShared) {
+		super(parent, shared);
 	}
 
 	var g : h3d.scene.Graphics;
-	function drawFrustum( ctx : Context ) {
+	function drawFrustum() {
 
 		if( !showFrustum ) {
 			if( g != null ) {
@@ -52,7 +51,7 @@ class Camera extends Object3D {
 		}
 
 		if( g == null ) {
-			g = new h3d.scene.Graphics(ctx.local3d);
+			g = new h3d.scene.Graphics(local3d);
 			g.name = "frustumDebug";
 			g.material.mainPass.setPassName("overlay");
 			g.ignoreBounds = true;
@@ -103,22 +102,19 @@ class Camera extends Object3D {
 		}
 	}
 
-	override function makeInstance( ctx : hrt.prefab.Context ) {
-		ctx = ctx.clone(this);
-		ctx.local3d = new CameraSyncObject(ctx.local3d);
-		obj = ctx.local3d;
-		ctx.local3d.name = name;
-		updateInstance(ctx);
-		return ctx;
+	override function makeObject(parent3d:Object):Object {
+		var cam = new CameraSyncObject(parent3d);
+		obj = cam;
+		return obj;
 	}
 
-	override function updateInstance( ctx : hrt.prefab.Context, ?p ) {
-		applyRFX(ctx);
-		super.updateInstance(ctx, p);
+	override function updateInstance( ?p ) {
+		applyRFX();
+		super.updateInstance(p);
 		#if editor
-		drawFrustum(ctx);
+		drawFrustum();
 		#end
-		var cso = Std.downcast(ctx.local3d, CameraSyncObject);
+		var cso = Std.downcast(local3d, CameraSyncObject);
 		if( cso != null ) {
 			cso.fovY = fovY;
 			cso.zFar = zFar;
@@ -132,22 +128,6 @@ class Camera extends Object3D {
 			editContext.scene.editor.cameraController.loadFromCamera();
 		}
 		#end
-	}
-
-	public function lerp( to : Camera, k : Float ) {
-		var start = getAbsPos();
-		var target = to.getAbsPos();
-		var qStart = new h3d.Quat();
-		qStart.initRotateMatrix(start);
-		var qEnd = new h3d.Quat();
-		qEnd.initRotateMatrix(target);
-		var q = new h3d.Quat();
-		q.slerp(qStart,qEnd,k);
-		var m = q.toMatrix();
-		m.tx = hxd.Math.lerp(start.tx, target.tx, k);
-		m.ty = hxd.Math.lerp(start.ty, target.ty, k);
-		m.tz = hxd.Math.lerp(start.tz, target.tz, k);
-		return m;
 	}
 
 	public function applyTo(c: h3d.Camera) {
@@ -171,9 +151,9 @@ class Camera extends Object3D {
 		c.zNear = zNear;
 	}
 
-	function applyRFX(ctx : hrt.prefab.Context) {
-		if (ctx.local3d.getScene() == null) return;
-		var renderer = ctx.local3d.getScene().renderer;
+	function applyRFX() {
+		if (local3d.getScene() == null) return;
+		var renderer = local3d.getScene().renderer;
 		if (renderer == null) return;
 		if (preview) {
 
@@ -208,7 +188,7 @@ class Camera extends Object3D {
 		}
 	}
 
-	override function setSelected( ctx : Context, b : Bool ) {
+	override function setSelected(b : Bool ) {
 		setEditModeButton();
 		return false;
 	}
@@ -258,7 +238,7 @@ class Camera extends Object3D {
 			var cam = ctx.scene.s3d.camera;
 			var renderer = @:privateAccess ctx.scene.s3d.renderer;
 			if (preview) {
-				updateInstance(ctx.getContext(this));
+				updateInstance();
 				applyTo(cam);
 				for ( effect in getAll(hrt.prefab.rfx.RendererFX) ) {
 					var prevEffect = @:privateAccess renderer.getEffect(hrt.prefab.rfx.RendererFX);
@@ -268,7 +248,7 @@ class Camera extends Object3D {
 				}
 				ctx.scene.editor.cameraController.lockZPlanes = true;
 				ctx.scene.editor.cameraController.loadFromCamera();
-				renderer.effects.push(new hrt.prefab.rfx.Border(0.02, 0x0000ff, 0.5));
+				renderer.effects.push(new hrt.prefab.rfx.Border(null, null, 0.02, 0x0000ff, 0.5));
 			}
 			else {
 				for ( effect in getAll(hrt.prefab.rfx.RendererFX) )
@@ -353,6 +333,6 @@ class Camera extends Object3D {
 	}
 	#end
 
-	static var _ = Library.register("camera", Camera);
+	static var _ = Prefab.register("camera", Camera);
 
 }

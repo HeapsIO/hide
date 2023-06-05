@@ -18,8 +18,8 @@ class ProbeBakerProcess {
 		lightProbeBaker.useGPU = useGPU;
 	}
 
-	public function init( env : h3d.scene.pbr.Environment, sceneData : hrt.prefab.Prefab , shared : hide.prefab.ContextShared, scene : hide.comp.Scene) {
-		lightProbeBaker.initScene(sceneData, shared, scene, env);
+	public function init( env : h3d.scene.pbr.Environment, sceneData : hrt.prefab.Prefab, scene : hide.comp.Scene) {
+		lightProbeBaker.initScene(sceneData, scene, env);
 	}
 
 	public function update(dt:Float) {
@@ -37,4 +37,3 @@ class ProbeBakerProcess {
 	}
 
 }
-

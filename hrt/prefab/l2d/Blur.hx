@@ -13,6 +13,8 @@ class Blur extends Prefab {
 
 	var pass : h3d.pass.Blur;
 
+	var bitmap : h2d.Bitmap;
+
 	public function makeFilter() {
 		var f = new h2d.filter.Blur(radius, gain, quality);
 		f.linear = linear;
@@ -32,38 +34,35 @@ class Blur extends Prefab {
 		return t;
 	}
 
-	override function makeInstance( ctx : Context ) {
-		ctx = ctx.clone(this);
-		var bmp = new h2d.Bitmap(null, ctx.local2d);
-		syncBitmap(bmp, ctx);
-		bmp.visible = false;
-		ctx.local2d = bmp;
-		return ctx;
+	override function makeInstance() {
+		bitmap = new h2d.Bitmap(null, shared.current2d);
+		syncBitmap();
+		bitmap.visible = false;
 	}
 
-	function syncBitmap( bmp : h2d.Bitmap, ctx : Context ) {
+	function syncBitmap() {
 		var t;
 		if( image != null )
-			t = h2d.Tile.fromTexture(ctx.loadTexture(image));
+			t = h2d.Tile.fromTexture(shared.loadTexture(image));
 		else {
 			t = h2d.Tile.fromTexture(h3d.mat.Texture.genChecker(16));
 			t.setSize(256, 256);
 		}
 		t.dx = -t.iwidth>>1;
 		t.dy = -t.iheight>>1;
-		bmp.tile = t;
-		bmp.filter = makeFilter();
-		bmp.smooth = true;
-		bmp.tileWrap = image == null;
-		bmp.setScale(zoom);
+		bitmap.tile = t;
+		bitmap.filter = makeFilter();
+		bitmap.smooth = true;
+		bitmap.tileWrap = image == null;
+		bitmap.setScale(zoom);
 	}
 
 	#if editor
-	override function getHideProps() : HideProps {
+	override function getHideProps() : hide.prefab.HideProps {
 		return { name : "Blur", icon : "bullseye" };
 	}
 
-	override function edit( ctx : EditContext ) {
+	override function edit( ctx : hide.prefab.EditContext ) {
 		var e : hide.Element = null;
 		function sync( bmp : h2d.Bitmap ) {
 			var k = @:privateAccess Std.downcast(bmp.filter, h2d.filter.Blur).pass.getKernelSize();
@@ -83,19 +82,14 @@ class Blur extends Prefab {
 				<dt>Display zoom</dt><dd><input type="range" min="1" max="8" step="1" field="zoom"/></dd>
 			</dl>
 		'),this,function(f) {
-			var ctx = ctx.getContext(this);
-			var bmp = cast(ctx.local2d, h2d.Bitmap);
-			syncBitmap(bmp, ctx);
-			sync(bmp);
+			sync(bitmap);
 		});
-		var lctx = ctx.getContext(this);
-		var bmp = cast(lctx.local2d, h2d.Bitmap);
-		bmp.visible = true;
-		ctx.cleanups.push(function() bmp.visible = false);
-		sync(bmp);
+		bitmap.visible = true;
+		ctx.cleanups.push(function() bitmap.visible = false);
+		sync(bitmap);
 	}
 	#end
 
-	static var _ = Library.register("blur", Blur);
+	static var _ = Prefab.register("blur", Blur);
 
 }

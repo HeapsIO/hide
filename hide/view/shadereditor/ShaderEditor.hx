@@ -52,7 +52,7 @@ class ShaderEditor extends hide.view.Graph {
 	var COMPILE_SHADER_DEBOUNCE : Int = 100;
 	var VIEW_VISIBLE_CHECK_TIMER : Int = 500;
 	var currentShader : DynamicShader;
-	var currentShaderDef : hrt.prefab.ContextShared.ShaderDef;
+	var currentShaderDef : hrt.prefab.Cache.ShaderDef;
 
 	static var clipboard : SavedClipboard = null;
 	static var lastCopyEditor : ShaderEditor = null;
@@ -112,9 +112,9 @@ class ShaderEditor extends hide.view.Graph {
 			lightsAreOn == true;
 		}
 
-		var def = new hrt.prefab.Library();
-		new hrt.prefab.RenderProps(def).name = "renderer";
-		defaultLight = new hrt.prefab.Light(def);
+		var def = new hrt.prefab.Prefab(null, null);
+		new hrt.prefab.RenderProps(def, null).name = "renderer";
+		defaultLight = new hrt.prefab.Light(def, null);
 		defaultLight.name = "sunLight";
 		defaultLight.kind = Directional;
 		defaultLight.power = 1.5;
@@ -371,8 +371,8 @@ class ShaderEditor extends hide.view.Graph {
 		var relative = ide.makeRelative(path);
 		if( ext == "fbx" )
 			obj = sceneEditor.scene.loadModel(path, true);
-		else if( hrt.prefab.Library.getPrefabType(relative) != null ) {
-			var ref = new hrt.prefab.Reference(root);
+		else if( hrt.prefab.Prefab.getPrefabType(relative) != null ) {
+			var ref = new hrt.prefab.Reference(root, null);
 			ref.source = relative;
 			sceneEditor.addElements([ref], false, true, false);
 			prefabObj = ref;
@@ -980,7 +980,8 @@ class ShaderEditor extends hide.view.Graph {
 	}
 
 	function setParamValue(shader : DynamicShader, variable : hxsl.Ast.TVar, value : Dynamic) {
-		@:privateAccess ShaderGraph.setParamValue(sceneEditor.context.shared, shader, variable, value);
+		throw "Re-implement";
+		//@:privateAccess ShaderGraph.setParamValue(sceneEditor.context.shared, shader, variable, value);
 	}
 
 	function initSpecifics(node : Null<ShaderNode>) {

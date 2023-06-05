@@ -9,8 +9,8 @@ common.hxml
 --macro include("hxd.clipper")
 --macro include("hxd.earcut")
 --macro include("hrt.prefab")
---macro include("hrt.prefab2")
+--macro include("hrt.prefab")
 --macro include("hrt.shgraph.nodes")
---macro include("hide.view2")
+--macro include("hide.view")
 -dce no
 -debug

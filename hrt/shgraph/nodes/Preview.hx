@@ -35,7 +35,7 @@ class Preview extends ShaderNode {
 	var cube : Mesh;
 	var scene : hide.comp.Scene;
 	var currentShaderPreview : hxsl.DynamicShader;
-	var currentShaderDef : hrt.prefab.ContextShared.ShaderDef;
+	var currentShaderDef : hrt.prefab.Cache.ShaderDef;
 	public var config : hide.Config;
 
 	override public function getPropertiesHTML(width : Float) : Array<hide.Element> {
@@ -52,7 +52,7 @@ class Preview extends ShaderNode {
 		var element = new hide.Element('<div style="width: 100px; height: 100px"><div class="preview-parent" top="-10px" ><div class="node-preview" style="height: 100px" ></div></div></div>');
 		nodePreview = element.find(".node-preview");
 		scene = new hide.comp.Scene(config, null, nodePreview);
-		
+
 		scene.onReady = function() {
 			var prim = new h3d.prim.Cube();
 			prim.addUVs();

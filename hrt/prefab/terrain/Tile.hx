@@ -313,9 +313,9 @@ class Tile extends h3d.scene.Mesh {
 				return pixels.getPixelF(Std.int(hxd.Math.clamp(u, 0, pixels.width - 1)), Std.int(hxd.Math.clamp(v, 0, pixels.height - 1))).r;
 			}
 			var px = u * (pixels.width - 1) ;
-            var py = v * (pixels.height - 1) ;
+			var py = v * (pixels.height - 1) ;
 			var pxi = hxd.Math.floor(px);
-            var pyi = hxd.Math.floor(py);
+			var pyi = hxd.Math.floor(py);
 			var c00 = getPix(pxi, pyi);
 			var c10 = getPix(pxi + 1, pyi);
 			var c01 = getPix(pxi, pyi + 1);

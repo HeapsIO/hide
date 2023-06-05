@@ -25,30 +25,23 @@ class SpecularColor extends Prefab {
 	@:s public var specularColorCustomValue : Int;
 	@:s public var mode : SpecularColorMode = Albedo;
 
-	public function new(?parent) {
-		super(parent);
-		type = "specularColor";
-	}
-
-	function getMaterials( ctx : Context ) {
+	function getMaterials() {
 		if( Std.isOfType(parent, Material) ) {
 			var material : Material = cast parent;
-			return material.getMaterials(ctx);
+			return material.getMaterials();
 		}
 		else {
-			return ctx.local3d.getMaterials();
+			return findFirstLocal3d().getMaterials();
 		}
 	}
 
-	override function makeInstance( ctx : Context ):Context {
-		ctx = ctx.clone(this);
-		refreshShaders(ctx);
-		updateInstance(ctx);
-		return ctx;
+	override function makeInstance() : Void {
+		refreshShaders();
+		updateInstance();
 	}
 
-	override function updateInstance( ctx : Context, ?propName : String ) {
-		for( m in getMaterials(ctx) ) {
+	override function updateInstance(?propName : String ) {
+		for( m in getMaterials() ) {
 			var sca = m.mainPass.getShader(hrt.shader.SpecularColorAlbedo);
 			if( sca != null ) {
 				// No params
@@ -59,7 +52,7 @@ class SpecularColor extends Prefab {
 			}
 			var sct = m.mainPass.getShader(hrt.shader.SpecularColorTexture);
 			if( sct != null ) {
-				sct.specularColorTexture = ctx.loadTexture(specularColorPath);
+				sct.specularColorTexture = shared.loadTexture(specularColorPath);
 			}
 			var sc = m.mainPass.getShader(hrt.shader.SpecularColor);
 			if( sc != null ) {
@@ -69,16 +62,16 @@ class SpecularColor extends Prefab {
 		}
 	}
 
-	function refreshShaders( ctx : Context ) {
+	function refreshShaders() {
 
 		var sca = new SpecularColorAlbedo();
 		var scf = new SpecularColorFlat();
 		var sct = new SpecularColorTexture();
 		var sc = new hrt.shader.SpecularColor();
 
-		var specularColorTexture = specularColorPath != null ? ctx.loadTexture(specularColorPath) : null;
+		var specularColorTexture = specularColorPath != null ? shared.loadTexture(specularColorPath) : null;
 
-		var mat = getMaterials(ctx);
+		var mat = getMaterials();
 		for( m in mat ) {
 			m.mainPass.removeShader(m.mainPass.getShader(SpecularColorAlbedo));
 			m.mainPass.removeShader(m.mainPass.getShader(SpecularColorFlat));
@@ -101,13 +94,13 @@ class SpecularColor extends Prefab {
 	}
 
 	#if editor
-	override function getHideProps() : HideProps {
+	override function getHideProps() : hide.prefab.HideProps {
 		return { 	icon : "cube",
 					name : "SpecularColor",
 					allowParent : function(p) return p.to(Material) != null };
 	}
 
-	override function edit( ctx : EditContext ) {
+	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);
 
 		var flatParams = 	'<dt>Color</dt><dd><input type="color" field="specularColorCustomValue"/></dd>';
@@ -143,12 +136,12 @@ class SpecularColor extends Prefab {
 		ctx.properties.add(props, this, function(pname) {
 			if( pname == "mode" || pname == "specularColorPath" ) {
 				ctx.rebuildProperties();
-				refreshShaders(ctx.getContext(this));
+				refreshShaders();
 			}
 			ctx.onChange(this, pname);
 		});
 	}
 	#end
 
-	static var _ = Library.register("specularColor", SpecularColor);
+	static var _ = Prefab.register("specularColor", SpecularColor);
 }

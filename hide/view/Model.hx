@@ -127,12 +127,12 @@ class Model extends FileView {
 			rootPath = config.getLocal("scene.renderProps");
 
 		if( rootPath != null )
-			root = ide.loadPrefab(rootPath, hrt.prefab.Library);
+			root = ide.loadPrefab(rootPath, hrt.prefab.Prefab);
 
 		if( root == null ) {
-			var def = new hrt.prefab.Library();
-			new hrt.prefab.RenderProps(def).name = "renderer";
-			var l = new hrt.prefab.Light(def);
+			var def = new hrt.prefab.Prefab(null, null);
+			new hrt.prefab.RenderProps(def, null).name = "renderer";
+			var l = new hrt.prefab.Light(def, null);
 			l.name = "sunLight";
 			l.kind = Directional;
 			l.power = 1.5;
@@ -556,7 +556,7 @@ class Model extends FileView {
 
 		plight = root.getAll(hrt.prefab.Light)[0];
 		if( plight != null ) {
-			this.light = sceneEditor.context.shared.contexts.get(plight).local3d;
+			this.light = hrt.prefab.Object3D.getLocal3d(plight);
 			lightDirection = this.light.getLocalDirection();
 		}
 

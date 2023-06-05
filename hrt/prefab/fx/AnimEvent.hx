@@ -8,14 +8,9 @@ class AnimEvent extends hrt.prefab.fx.Event {
 	@:s public var duration : Float = 0.0;
 	@:s public var offset : Float = 0.0;
 
-	public function new(?parent) {
-		super(parent);
-		this.type = "animEvent";
-	}
-
-	override function prepare(ctx: Context) : Event.EventInstance {
-		var obj = ctx.local3d;
-		var anim = animation != null ? ctx.loadAnimation(animation) : null;
+	override function prepare() : Event.EventInstance {
+		var obj = findFirstLocal3d();
+		var anim = animation != null ? shared.loadAnimation(animation) : null;
 		var lastTime = -1.0;
 		var inst = null;
 		if(anim == null) { return null; }
@@ -45,14 +40,14 @@ class AnimEvent extends hrt.prefab.fx.Event {
 	}
 
 	#if editor
-	override function edit( ctx : EditContext ) {
+	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);
 		var props = ctx.properties.add(new hide.Element('
 			<div class="group" name="Event">
 				<dl>
 					<dt>Time</dt><dd><input type="number" value="0" field="time"/></dd>
 					<dt>Loop</dt><dd><input type="checkbox" field="loop"/></dd>
-					<dt>Animation</dt><dd><input id="anim" value="--- Choose ---"></dd>
+					<dt>Animation</dt><dd><select><option value="">-- Choose --</option></select></dd>
 					<dt>Speed</dt><dd><input type="number" value="0" field="speed"/></dd>
 					<dt>Duration</dt><dd><input type="number" value="0" field="duration"/></dd>
 					<dt>Offset</dt><dd><input type="number" value="0" field="offset"/></dd>
@@ -63,40 +58,40 @@ class AnimEvent extends hrt.prefab.fx.Event {
 		});
 
 		if(parent.source != null) {
-
+			var select = props.find("select");
 			var anims = try ctx.scene.listAnims(parent.source) catch(e: Dynamic) [];
-			var elts: Array<hide.comp.Dropdown.Choice> = [];
 			for( a in anims )
-				elts.push({id : ctx.ide.makeRelative(a), ico : null, text : ctx.scene.animationName(a), classes : ["compact"]});
-
-			var select = new hide.comp.Select(null, props.find("#anim"), elts, false);
-			select.value = animation;
-			select.onChange = function(newAnim : String) {
+				new hide.Element('<option>').attr("value", ctx.ide.makeRelative(a)).text(ctx.scene.animationName(a)).appendTo(select);
+			if( animation != null )
+				select.val(animation);
+			select.change(function(_) {
+				ctx.scene.setCurrent();
+				var v = select.val();
 				var prev = animation;
-				if( newAnim == "" ) {
+				if( v == "" ) {
 					animation = null;
 				} else {
-					animation = newAnim;
+					animation = v;
 				}
 				ctx.properties.undo.change(Field(this, "animation", prev));
 				ctx.onChange(this, "animation");
-			}
+			});
 		}
 	}
 
-	override function getHideProps() : HideProps {
+	override function getHideProps() : hide.prefab.HideProps {
 		return {
 			icon : "play-circle", name : "AnimEvent",
-			allowParent : (p) -> p.to(Model) != null,
+			allowParent : (p) -> Std.downcast(p,hrt.prefab.Model) != null,
 			allowChildren: function(s) return false
 		};
 	}
 
-	override function getDisplayInfo(ctx: EditContext) {
+	override function getDisplayInfo(ctx: hide.prefab.EditContext) {
 		var anim = null;
 		if(animation != null) {
 			try {
-				anim = ctx.rootContext.loadAnimation(animation);
+				anim = shared.loadAnimation(animation);
 			} catch(e : hxd.res.NotFound) { }
 		}
 		return {
@@ -107,6 +102,6 @@ class AnimEvent extends hrt.prefab.fx.Event {
 	}
 	#end
 
-	static var _ = Library.register("animEvent", AnimEvent);
+	static var _ = Prefab.register("animEvent", AnimEvent);
 
 }

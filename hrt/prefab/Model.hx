@@ -7,24 +7,23 @@ class Model extends Object3D {
 	@:s var retargetAnim : Bool = false;
 	@:s var retargetIgnore : String;
 
-	public function new(?parent) {
-		super(parent);
-		type = "model";
+	public function new(?parent, shared: ContextShared) {
+		super(parent, shared);
 	}
 
-	override function save() {
+	override function save(to: Dynamic) : Dynamic {
 		if( retargetIgnore == "" ) retargetIgnore = null;
-		return super.save();
+		return super.save(to);
 	}
 
-	override function makeInstance(ctx:Context):Context {
+	override function makeObject(parent3d:h3d.scene.Object):h3d.scene.Object {
 		if( source == null)
-			return super.makeInstance(ctx);
-		ctx = ctx.clone(this);
+			return super.makeObject(parent3d);
+
 		#if editor
 		try {
 		#end
-			var obj = ctx.loadModel(source);
+			var obj = shared.loadModel(source);
 			if(obj.defaultTransform != null && children.length > 0) {
 				obj.name = "root";
 				var root = new h3d.scene.Object();
@@ -37,25 +36,19 @@ class Model extends Object3D {
 			if( retargetAnim ) applyRetarget(obj);
 
 			obj.name = name;
-			ctx.local3d.addChild(obj);
-			ctx.local3d = obj;
-			updateInstance(ctx);
-
+			parent3d.addChild(obj);
 
 			if( animation != null )
-				obj.playAnimation(ctx.loadAnimation(animation));
+				obj.playAnimation(shared.loadAnimation(animation));
 
-			return ctx;
+			return obj;
 		#if editor
 		} catch( e : Dynamic ) {
 			e.message = "Could not load model " + source + ": " + e.message;
-			ctx.shared.onError(e);
+			shared.onError(e);
 		}
 		#end
-		ctx.local3d = new h3d.scene.Object(ctx.local3d);
-		ctx.local3d.name = name;
-		updateInstance(ctx);
-		return ctx;
+		return new h3d.scene.Object(parent3d);
 	}
 
 	function applyRetarget( obj : h3d.scene.Object ) {
@@ -89,24 +82,24 @@ class Model extends Object3D {
 
 	#if editor
 
-	override function updateInstance( ctx: Context, ?propName : String ) {
-		super.updateInstance(ctx, propName);
+	override function updateInstance(?propName : String ) {
+		super.updateInstance(propName);
 		polys3D = null;
 		boundingSphere = null;
 	}
 
     var polys3D = null;
     var boundingSphere = null;
-    override function localRayIntersection( ctx : Context, ray : h3d.col.Ray ) : Float {
+    override function localRayIntersection(ray : h3d.col.Ray ) : Float {
         if( polys3D == null ) {
             polys3D = [];
-            var bounds = ctx.local3d.getBounds();
-			bounds.transform(ctx.local3d.getAbsPos().getInverse());
+            var bounds = local3d.getBounds();
+			bounds.transform(local3d.getAbsPos().getInverse());
             boundingSphere = bounds.toSphere();
-            for( m in ctx.shared.getObjects(this, h3d.scene.Mesh) ) {
+            for( m in getObjects(h3d.scene.Mesh) ) {
                 var p = cast(m.primitive, h3d.prim.HMDModel);
                	var col = cast(cast(p.getCollider(), h3d.col.Collider.OptimizedCollider).b, h3d.col.PolygonBuffer);
-                polys3D.push({ col : col, mat : m.getRelPos(ctx.local3d).getInverse() });
+                polys3D.push({ col : col, mat : m.getRelPos(local3d).getInverse() });
             }
         }
 
@@ -125,14 +118,14 @@ class Model extends Object3D {
         return minD;
     }
 
-	override function edit( ctx : EditContext ) {
+	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);
 		var props = ctx.properties.add(new hide.Element('
 			<div class="group" name="Animation">
 				<dl>
 					<dt>Model</dt><dd><input type="model" field="source"/></dd>
 					<dt/><dd><input type="button" value="Change All" id="changeAll"/></dd>
-					<dt>Animation</dt><dd><input id="anim" value="--- Choose ---"></dd>
+					<dt>Animation</dt><dd><select><option value="">-- Choose --</option></select>
 					<dt title="Don\'t save animation changes">Lock</dt><dd><input type="checkbox" field="lockAnimation"></dd>
 					<dt>Retarget</dt><dd><input type="checkbox" field="retargetAnim"></dd>
 					<dt>Retarget Ignore</dt><dd><input type="text" field="retargetIgnore"></dd>
@@ -148,53 +141,49 @@ class Model extends Object3D {
 			ctx.scene.editor.changeAllModels(this, path);
 		}));
 
-
+		var select = props.find("select");
 		var anims = try ctx.scene.listAnims(source) catch(e: Dynamic) [];
-		var elts: Array<hide.comp.Dropdown.Choice> = [];
 		for( a in anims )
-			elts.push({id : ctx.ide.makeRelative(a), ico : null, text : ctx.scene.animationName(a), classes : ["compact"]});
-
-
-		var select = new hide.comp.Select(null, props.find("#anim"), elts);
-		select.value = animation;
-		select.onChange = function(newAnim : String) {
-			var v = newAnim;
+			new hide.Element('<option>').attr("value", ctx.ide.makeRelative(a)).text(ctx.scene.animationName(a)).appendTo(select);
+		if( animation != null )
+			select.val(animation);
+		select.change(function(_) {
+			var v = select.val();
 			var prev = animation;
-			var obj = ctx.getContext(this).local3d;
+			var obj = local3d;
 			ctx.scene.setCurrent();
 			if( v == "" ) {
 				animation = null;
 				obj.stopAnimation();
 			} else {
-				obj.playAnimation(ctx.rootContext.loadAnimation(v)).loop = true;
+				obj.playAnimation(shared.loadAnimation(v)).loop = true;
 				if( lockAnimation ) return;
 				animation = v;
 			}
 			var newValue = animation;
 			ctx.properties.undo.change(Custom(function(undo) {
-				var obj = ctx.getContext(this).local3d;
+				var obj = local3d;
 				animation = undo ? prev : newValue;
 				if( animation == null ) {
 					obj.stopAnimation();
+					select.val("");
 				} else {
-					obj.playAnimation(ctx.rootContext.loadAnimation(animation)).loop = true;
+					obj.playAnimation(shared.loadAnimation(animation)).loop = true;
+					select.val(v);
 				}
-				select.value = animation;
 			}));
-		}
+		});
 	}
 
-
-
-	override function getHideProps() : HideProps {
+	override function getHideProps() : hide.prefab.HideProps {
 		return {
 			icon : "cube", name : "Model", fileSource : ["fbx","hmd"],
-			allowChildren : function(t) return Library.isOfType(t,Object3D) || Library.isOfType(t,Material) || Library.isOfType(t,Shader) || Library.isOfType(t, hrt.prefab.fx.AnimEvent),
+			allowChildren : function(t) return Prefab.isOfType(t,Object3D) || Prefab.isOfType(t,Material) || Prefab.isOfType(t,Shader) || Prefab.isOfType(t, hrt.prefab.fx.AnimEvent),
 			onResourceRenamed : function(f) animation = f(animation),
 		};
 	}
 	#end
 
-	static var _ = Library.register("model", Model);
+	static var _ = Prefab.register("model", Model);
 
 }

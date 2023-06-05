@@ -1,6 +1,7 @@
 package hide.prefab;
 import hxd.Key as K;
-import hrt.prefab.Context;
+
+using hrt.prefab.Object3D; // GetLocal3D
 
 enum ColorState{
 	None;
@@ -28,7 +29,7 @@ class SphereHandle extends h3d.scene.Mesh {
 		var gpos = getAbsPos().getPosition();
 		var distToCam = cam.pos.sub(gpos).length();
 		var engine = h3d.Engine.getCurrent();
-		var ratio = 35 / engine.height;
+		var ratio = 18 / engine.height;
 		// Ignore parent scale
 		var tmp = parent.getAbsPos().getScale();
 		var scale = ratio * distToCam * Math.tan(cam.fovY * 0.5 * Math.PI / 180.0);
@@ -49,7 +50,7 @@ class MovablePoint {
 	var localPosText : h2d.ObjectFollower;
 	var worldPosText : h2d.ObjectFollower;
 
-	public function new(point : h2d.col.Point, ctx : Context){
+	public function new(point : h2d.col.Point, ctx : hrt.prefab.l3d.Polygon){
 		this.point = point;
 		mesh = new SphereHandle(h3d.prim.Cube.defaultUnitCube(), null, ctx.local3d);
 		mesh.name = "_movablePoint";
@@ -57,16 +58,6 @@ class MovablePoint {
 		mesh.material.mainPass.depthTest = Always;
 		mesh.scale(0.1);
 		mesh.setPosition(point.x, point.y, 0);
-
-		// Outline
-		var shader = new h3d.shader.FixedColor(0xffffff);
-		var m = mesh.material;
-		var p = m.allocPass("highlight");
-		p.culling = None;
-		p.depthWrite = true;
-		p.depthTest = Always;
-		p.addShader(shader);
-
 		localPosText = createText(ctx);
 		worldPosText = createText(ctx);
 		worldPosText.offsetZ = (0.3);
@@ -74,7 +65,7 @@ class MovablePoint {
 		updateText(ctx);
 	}
 
-	function createText(ctx : Context){
+	function createText(ctx : hrt.prefab.l3d.Polygon){
 		var o = new h2d.ObjectFollower(mesh, ctx.shared.root2d.getScene());
 		var t = new h2d.Text(hxd.res.DefaultFont.get(), o);
 		t.textColor = 0xFFFFFF;
@@ -89,7 +80,7 @@ class MovablePoint {
 		localPosText.remove();
 	}
 
-	function worldToScreen(wx: Float, wy: Float, wz: Float, ctx : Context) {
+	function worldToScreen(wx: Float, wy: Float, wz: Float, ctx : hrt.prefab.l3d.Polygon) {
 		var s2d = ctx.shared.root2d.getScene();
 		var camera = @:privateAccess ctx.local3d.getScene().camera;
 		camera.update();
@@ -97,7 +88,7 @@ class MovablePoint {
 		return new h2d.col.Point( pt.x, pt.y);
 	}
 
-	public function updateText(ctx : Context){
+	public function updateText(ctx : hrt.prefab.l3d.Polygon){
 		inline function getText(o) : h2d.Text{
 			return Std.downcast(o.getChildAt(0), h2d.Text);
 		}
@@ -129,7 +120,7 @@ class MovablePoint {
 
 class PolygonEditor {
 
-	public var editContext : EditContext;
+	public var editContext : hide.prefab.EditContext;
 	public var showDebug : Bool;
 	public var gridSize = 1;
 	public var showTriangles : Bool = false;
@@ -179,7 +170,7 @@ class PolygonEditor {
 	}
 
 	inline function getContext(){
-		return editContext.getContext(polygonPrefab);
+		return polygonPrefab;
 	}
 
 	inline function refreshInteractive() {
@@ -197,7 +188,7 @@ class PolygonEditor {
 			drawTriangles(showTriangles);
 		}
 		else if(propName == "editMode") {
-			setSelected(getContext(), true);
+			setSelected(true);
 		} else {
 			refreshInteractive();
 		}
@@ -355,24 +346,24 @@ class PolygonEditor {
 		return localPos;
 	}
 
-	public function setSelected( ctx : Context, b : Bool ) {
+	public function setSelected(b : Bool ) {
 		if (!polygonPrefab.enabled) return;
 		reset();
 		if(!editMode) return;
 		if(b){
-			var s2d = ctx.shared.root2d.getScene();
+			var s2d = editContext.scene.s2d;
 			interactive = new h2d.Interactive(10000, 10000, s2d);
 			interactive.propagateEvents = true;
 			interactive.cancelEvents = false;
-			lineGraphics = new h3d.scene.Graphics(ctx.local3d);
+			lineGraphics = new h3d.scene.Graphics(polygonPrefab.getLocal3d());
 			lineGraphics.lineStyle(2, 0xFFFFFF);
 			lineGraphics.material.mainPass.setPassName("overlay");
 			lineGraphics.material.mainPass.depth(false, LessEqual);
-			selectedEdgeGraphic = new h3d.scene.Graphics(ctx.local3d);
+			selectedEdgeGraphic = new h3d.scene.Graphics(polygonPrefab.getLocal3d());
 			selectedEdgeGraphic.lineStyle(3, 0xFFFF00, 0.5);
 			selectedEdgeGraphic.material.mainPass.setPassName("overlay");
 			selectedEdgeGraphic.material.mainPass.depth(false, LessEqual);
-			triangleGraphics = new h3d.scene.Graphics(ctx.local3d);
+			triangleGraphics = new h3d.scene.Graphics(polygonPrefab.getLocal3d());
 			triangleGraphics.lineStyle(2, 0xFF0000);
 			triangleGraphics.material.mainPass.setPassName("overlay");
 			triangleGraphics.material.mainPass.depth(false, LessEqual);
@@ -388,7 +379,7 @@ class PolygonEditor {
 				e.propagate = false;
 				if( K.isDown( K.SHIFT ) ){
 					clearSelectedPoint();
-					var ray = @:privateAccess ctx.local3d.getScene().camera.rayFromScreen(s2d.mouseX, s2d.mouseY);
+					var ray = @:privateAccess polygonPrefab.getLocal3d().getScene().camera.rayFromScreen(s2d.mouseX, s2d.mouseY);
 					refreshMovablePoints(ray);
 					if(lastPos == null) lastPos = getFinalPos(s2d.mouseX, s2d.mouseY);
 					refreshSelectedEdge(new h2d.col.Point(lastPos.x, lastPos.y));
@@ -397,7 +388,7 @@ class PolygonEditor {
 			interactive.onKeyUp =
 			function(e) {
 				e.propagate = false;
-				var ray = @:privateAccess ctx.local3d.getScene().camera.rayFromScreen(s2d.mouseX, s2d.mouseY);
+				var ray = @:privateAccess polygonPrefab.getLocal3d().getScene().camera.rayFromScreen(s2d.mouseX, s2d.mouseY);
 				refreshMovablePoints(ray);
 				if(lastPos == null) lastPos = getFinalPos(s2d.mouseX, s2d.mouseY);
 				refreshSelectedEdge(new h2d.col.Point(lastPos.x, lastPos.y));
@@ -405,7 +396,7 @@ class PolygonEditor {
 			interactive.onPush =
 			function(e) {
 				var finalPos = getFinalPos(s2d.mouseX, s2d.mouseY);
-				var ray = @:privateAccess ctx.local3d.getScene().camera.rayFromScreen(s2d.mouseX, s2d.mouseY);
+				var ray = @:privateAccess polygonPrefab.getLocal3d().getScene().camera.rayFromScreen(s2d.mouseX, s2d.mouseY);
 				if( K.isDown( K.MOUSE_LEFT ) ){
 					e.propagate = false;
 					// Shift + Left Click : Remove Point
@@ -463,7 +454,7 @@ class PolygonEditor {
 			};
 			interactive.onMove =
 			function(e) {
-				var ray = @:privateAccess ctx.local3d.getScene().camera.rayFromScreen(s2d.mouseX, s2d.mouseY);
+				var ray = @:privateAccess polygonPrefab.getLocal3d().getScene().camera.rayFromScreen(s2d.mouseX, s2d.mouseY);
 				var finalPos = getFinalPos(s2d.mouseX, s2d.mouseY);
 				refreshMovablePoints(ray);
 				refreshSelectedEdge(new h2d.col.Point(finalPos.x, finalPos.y));
@@ -506,9 +497,9 @@ class PolygonEditor {
 		if (triangleGraphics == null)
 			return;
 		triangleGraphics.clear();
-		if(b && polygonPrefab.getPrimitive(getContext()) != null){
+		var prim = polygonPrefab.getPrimitive();
+		if(b && prim != null){
 			var i = 0;
-			var prim = polygonPrefab.getPrimitive(getContext());
 			while(i < prim.idx.length){
 				triangleGraphics.moveTo(prim.points[prim.idx[i]].x, prim.points[prim.idx[i]].y, 0);
 				triangleGraphics.lineTo(prim.points[prim.idx[i + 1]].x, prim.points[prim.idx[i + 1]].y, 0);
@@ -567,7 +558,7 @@ class PolygonEditor {
 			refreshPointList(editContext.getCurrentProps(polygonPrefab));
 	}
 
-	public function addProps( ctx : EditContext ){
+	public function addProps( ctx : hide.prefab.EditContext ){
 		var props = new hide.Element('
 		<div class="poly-editor">
 			<div class="group" name="Tool">
@@ -600,7 +591,7 @@ class PolygonEditor {
 			editMode = !editMode;
 			editModeButton.val(editMode ? "Edit Mode : Enabled" : "Edit Mode : Disabled");
 			editModeButton.toggleClass("editModeEnabled", editMode);
-			setSelected(getContext(), true);
+			setSelected(true);
 			if(!editMode)
 				refreshInteractive();
 		});

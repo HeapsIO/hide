@@ -39,6 +39,7 @@ class DirLightWithClouds extends h3d.shader.pbr.Light {
 }
 
 @:access(h3d.scene.pbr.DirLight)
+@:access(h3d.scene.Renderer)
 class CloudShadow extends RendererFX {
 
 	var dlwc = new DirLightWithClouds();
@@ -56,10 +57,9 @@ class CloudShadow extends RendererFX {
 		var amount : Float;
 	};
 
-	override function makeInstance( ctx : Context ) : Context {
-		ctx = super.makeInstance(ctx);
-		updateInstance(ctx);
-		return ctx;
+	override function makeInstance() : Void {
+		super.makeInstance();
+		updateInstance();
 	}
 
 	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
@@ -146,6 +146,6 @@ class CloudShadow extends RendererFX {
 	}
 	#end
 
-	static var _ = Library.register("rfx.cloudShadow", CloudShadow);
+	static var _ = Prefab.register("rfx.cloudShadow", CloudShadow);
 
 }

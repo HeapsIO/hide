@@ -131,6 +131,7 @@ class ApplySSRShader extends h3d.shader.ScreenShader {
 
 @:access(h3d.pass.PassList)
 @:access(h3d.pass.PassObject)
+@:access(h3d.scene.Renderer)
 class SSR extends RendererFX {
 
 	public var ssrShader : SSRShader;
@@ -152,8 +153,8 @@ class SSR extends RendererFX {
 	@:s public var randomPower : Float = 0.0;
 	@:s public var textureSize : Float = 0.5;
 
-	function new(?parent) {
-		super(parent);
+	function new(?parent, shared: ContextShared) {
+		super(parent, shared);
 
 		ssrShader = new SSRShader();
 		applySSRShader = new ApplySSRShader();
@@ -232,6 +233,6 @@ class SSR extends RendererFX {
 	}
 	#end
 
-	static var _ = Library.register("rfx.ssr", SSR);
+	static var _ = Prefab.register("rfx.ssr", SSR);
 
 }

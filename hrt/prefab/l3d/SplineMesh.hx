@@ -120,26 +120,45 @@ class SplineMesh extends Spline {
 	var meshMaterial : h3d.mat.Material = null;
 	@:s var customPass : String;
 
-	override function save() {
-		var obj : Dynamic = super.save();
+	override function save(obj:Dynamic) : Dynamic {
+		super.save(obj);
 		obj.meshScale = meshScale;
 		obj.meshRotation = meshRotation;
 		return obj;
 	}
 
-	override function load( obj : Dynamic ) {
-		super.load(obj);
+	override function copy( obj : Dynamic ) {
+		super.copy(obj);
 		meshScale = obj.meshScale == null ? new h3d.Vector(1,1,1) : new h3d.Vector(obj.meshScale.x, obj.meshScale.y, obj.meshScale.z);
 		meshRotation = obj.meshRotation == null ? new h3d.Vector(0,0,0) : new h3d.Vector(obj.meshRotation.x, obj.meshRotation.y, obj.meshRotation.z);
 	}
 
-	override function make(ctx: Context) {
-		// Don't make children, which are used to setup the material
-		return makeInstance(ctx);
+	override function makeInstanceRec() : Void{
+		if (!enabled) return;
+
+		var old2d = shared.current2d;
+		var old3d = shared.current3d;
+
+		makeInstance();
+
+		var new2d = Object2D.getLocal2d(this);
+		if (new2d != null)
+			shared.current2d = new2d;
+		var new3d = Object3D.getLocal3d(this);
+		if (new3d != null)
+			shared.current3d = new3d;
+
+		shared.current2d = old2d;
+		shared.current3d = old3d;
+
+		postMakeInstance();
+
+		shared.current2d = old2d;
+		shared.current3d = old3d;
 	}
 
-	override function updateInstance( ctx : hrt.prefab.Context , ?propName : String ) {
-		super.updateInstance(ctx, propName);
+	override function updateInstance(?propName : String ) {
+		super.updateInstance(propName);
 
 		var rot = new h3d.Matrix();
 		rot.initRotation(hxd.Math.degToRad(meshRotation.x), hxd.Math.degToRad(meshRotation.y), hxd.Math.degToRad(meshRotation.z));
@@ -147,31 +166,28 @@ class SplineMesh extends Spline {
 		scale.initScale(meshScale.x, meshScale.y, meshScale.z);
 		modelMat.multiply(scale, rot);
 
-		createMeshPrimitive(ctx);
-		createMeshBatch(ctx);
-		createBatches(ctx);
+		createMeshPrimitive();
+		createMeshBatch();
+		createBatches();
 
 		// Remake the material
 		if( meshBatch != null ) {
-			var emptyCtx = new hrt.prefab.Context();
-			emptyCtx.local3d = meshBatch;
-			emptyCtx.shared = ctx.shared;
 			for( c in @:privateAccess children ) {
 				var mat = Std.downcast(c, Material);
 				if( mat != null && mat.enabled )
-					@:privateAccess mat.makeInstance(emptyCtx);
+					@:privateAccess mat.makeInstance();
 				var shader = Std.downcast(c, Shader);
 				if( shader != null && shader.enabled )
-					shader.makeInstance(emptyCtx);
+					shader.makeInstance();
 			}
 		}
 	}
 
-	function createMeshPrimitive( ctx : Context ) {
+	function createMeshPrimitive() {
 		meshPrimitive = null;
 		meshMaterial = null;
 		if( meshPath != null ) {
-			var meshTemplate : h3d.scene.Mesh = ctx.loadModel(meshPath).toMesh();
+			var meshTemplate : h3d.scene.Mesh = shared.loadModel(meshPath).toMesh();
 			if( meshTemplate != null ) {
 				meshPrimitive = cast meshTemplate.primitive;
 				meshMaterial = cast meshTemplate.material.clone();
@@ -179,7 +195,7 @@ class SplineMesh extends Spline {
 		}
 	}
 
-	function createMeshBatch( ctx : Context ) {
+	function createMeshBatch() {
 
 		if( meshBatch != null ) {
 			meshBatch.remove();
@@ -197,18 +213,18 @@ class SplineMesh extends Spline {
 
 			if( customPass != null ) {
 				for( p in customPass.split(",") ) {
-					if( ctx.local3d.getScene().renderer.getPassByName(p) != null )
+					if( local3d.getScene().renderer.getPassByName(p) != null )
 						splineMaterial.allocPass(p);
 				}
 			}
 
-			meshBatch = new SplineMeshBatch(meshPrimitive, splineMaterial, ctx.local3d);
+			meshBatch = new SplineMeshBatch(meshPrimitive, splineMaterial, local3d);
 			meshBatch.ignoreParentTransform = true;
 			meshBatch.splineData = this.data;
 		}
 	}
 
-	function createBatches( ctx : Context ) {
+	function createBatches() {
 
 		if( meshBatch == null )
 			return;
@@ -231,7 +247,7 @@ class SplineMesh extends Spline {
 		}
 	}
 
-	function createMultiMeshes( ctx : Context ) {
+	function createMultiMeshes() {
 
 		for( m in meshes )
 			m.remove();
@@ -256,7 +272,7 @@ class SplineMesh extends Spline {
 			var s = createShader();
 			m.material.mainPass.addShader(s);
 			s.splinePos = i * step + minOffset;
-			ctx.local3d.addChild(m);
+			local3d.addChild(m);
 			meshes.push(m);
 		}
 	}
@@ -282,7 +298,7 @@ class SplineMesh extends Spline {
 
 	#if editor
 
-	override function edit( ctx : EditContext ) {
+	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);
 
 		var props = new hide.Element('
@@ -312,11 +328,11 @@ class SplineMesh extends Spline {
 		ctx.properties.add(props, this, function(pname) { ctx.onChange(this, pname); });
 	}
 
-	override function getHideProps() : HideProps {
+	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "arrows-v", name : "SplineMesh" };
 	}
 
 	#end
 
-	static var _ = hrt.prefab.Library.register("splineMesh", SplineMesh);
+	static var _ = Prefab.register("splineMesh", SplineMesh);
 }

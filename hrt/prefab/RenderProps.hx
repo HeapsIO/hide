@@ -4,22 +4,18 @@ class RenderPropsObject extends h3d.scene.Object {
 
 }
 
-class RenderProps extends Prefab {
+class RenderProps extends Object3D {
 
 	@:s var isDefault = false;
 
-	public function new(?parent) {
-		super(parent);
-		type = "renderProps";
+	public function new(?parent, shared: ContextShared) {
+		super(parent, shared);
 		props = {};
 	}
 
-	override function makeInstance(ctx:Context):Context {
-		ctx = ctx.clone(this);
-		ctx.local3d = new RenderPropsObject(ctx.local3d);
-		ctx.local3d.name = name;
-		updateInstance(ctx);
-		return ctx;
+	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
+		return new RenderPropsObject(parent3d);
+
 	}
 
 	public function getProps(renderer: h3d.scene.Renderer) {
@@ -67,6 +63,7 @@ class RenderProps extends Prefab {
 		renderer.props = props;
 		for(fx in renderer.effects)
 			fx.dispose();
+
 		renderer.effects = [for( v in getAll(hrt.prefab.rfx.RendererFX,true) ) v];
 		var env = getOpt(hrt.prefab.l3d.Environment);
 		if( env != null )
@@ -77,7 +74,7 @@ class RenderProps extends Prefab {
 
 	#if editor
 
-	override function edit( ctx : EditContext ) {
+	override function edit(ctx) {
 		super.edit(ctx);
 		var renderer = ctx.scene.s3d.renderer;
 		var props = getProps(renderer);
@@ -93,19 +90,19 @@ class RenderProps extends Prefab {
 			}
 			applyProps(renderer);
 		});
-		ctx.properties.add(new Element('<dl><dt>Make Default</dt><dd><input type="checkbox" field="isDefault"/></dd></dl>'), this);
+		ctx.properties.add(new hide.Element('<dl><dt>Make Default</dt><dd><input type="checkbox" field="isDefault"/></dd></dl>'), this);
 		applyProps(renderer);
 	}
 
-	override function getHideProps() : HideProps {
-		return { icon : "sun-o", name : "RenderProps", allowChildren : function(t) {
-			return Library.isOfType(t,hrt.prefab.rfx.RendererFX)
-				|| Library.isOfType(t,Light)
-				|| Library.isOfType(t,hrt.prefab.l3d.Environment);
+	override function getHideProps() : hide.prefab.HideProps {
+		return { icon : "sun-o", name : "RenderProps", allowChildren : function(p) {
+			return Prefab.isOfType(p,hrt.prefab.rfx.RendererFX)
+				|| Prefab.isOfType(p,Light)
+				|| Prefab.isOfType(p,hrt.prefab.l3d.Environment);
 		}};
 	}
 
 	#end
 
-	static var _ = Library.register("renderProps", RenderProps);
+	static var _ = Prefab.register("renderProps", RenderProps);
 }

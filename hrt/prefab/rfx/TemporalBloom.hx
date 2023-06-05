@@ -79,6 +79,7 @@ class Threshold extends h3d.shader.ScreenShader {
 	};
 }
 
+@:access(h3d.scene.Renderer)
 class TemporalBloom extends RendererFX {
 
 	@:s public var size : Float;
@@ -98,8 +99,8 @@ class TemporalBloom extends RendererFX {
 
 	var tonemap = new Bloom.BloomTonemap();
 
-	function new(?parent) {
-		super(parent);
+	function new(?parent, shared: ContextShared) {
+		super(parent, shared);
 		size = 0.5;
 		downScaleCount = 5;
 		threshold = 0.5;
@@ -187,6 +188,6 @@ class TemporalBloom extends RendererFX {
 	}
 	#end
 
-	static var _ = Library.register("rfx.temporalbloom", TemporalBloom);
+	static var _ = Prefab.register("rfx.temporalbloom", TemporalBloom);
 
 }

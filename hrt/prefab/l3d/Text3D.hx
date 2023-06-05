@@ -98,18 +98,15 @@ class Text3D extends Object3D {
 
 	@:s public var contentText : String = "Empty string";
 
-	public function new( ?parent ) {
-		super(parent);
-		type = "text3d";
-	}
+	public var text2d : h2d.Text = null;
 
 	#if editor
 
-	override function getHideProps() : HideProps {
+	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "font", name : "Text3D" };
 	}
 
-	override function edit( ctx : EditContext ) {
+	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);
 
 		var parameters = new hide.Element('<div class="group" name="Parameters"></div>');
@@ -124,9 +121,9 @@ class Text3D extends Object3D {
 		if (this.pathFont != null && this.pathFont.length > 0) tfile.path = this.pathFont;
 		tfile.onChange = function() {
 			this.pathFont = tfile.path;
-			updateInstance(ctx.getContext(this), "pathFont");
+			updateInstance("pathFont");
 		}
-        new hide.Element('<dt>Align</dt>').appendTo(gr);
+		new hide.Element('<dt>Align</dt>').appendTo(gr);
 		var element = new hide.Element('<dd></dd>').appendTo(gr);
 		var leftAlign = new hide.Element('<input type="button" style="width: 50px" value="Left" /> ').appendTo(element);
 		var middleAlign = new hide.Element('<input type="button" style="width: 50px" value="Center" /> ').appendTo(element);
@@ -136,21 +133,21 @@ class Text3D extends Object3D {
 			leftAlign.attr("disabled", "true");
 			middleAlign.removeAttr("disabled");
 			rightAlign.removeAttr("disabled");
-			updateInstance(ctx.getContext(this), "align");
+			updateInstance("align");
 		});
 		middleAlign.on("click", function(e) {
 			align = 1;
 			leftAlign.removeAttr("disabled");
 			middleAlign.attr("disabled", "true");
 			rightAlign.removeAttr("disabled");
-			updateInstance(ctx.getContext(this), "align");
+			updateInstance("align");
 		});
 		rightAlign.on("click", function(e) {
 			align = 2;
 			leftAlign.removeAttr("disabled");
 			middleAlign.removeAttr("disabled");
 			rightAlign.attr("disabled", "true");
-			updateInstance(ctx.getContext(this), "align");
+			updateInstance("align");
 		});
 
 		new hide.Element('<dt>Color</dt><dd><input type="color" field="color" /></dd>').appendTo(gr);
@@ -173,28 +170,28 @@ class Text3D extends Object3D {
 
 	#end
 
-	override function updateInstance( ctx : Context, ?propName : String) {
-		super.updateInstance(ctx, propName);
+	override function updateInstance(?propName : String) {
+		super.updateInstance(propName);
 		if (pathFont == null || pathFont.length == 0) {
 			return;
 		}
 		var text = loadText();
 		if (text == null || text.length == 0)
 			return;
-		var mesh : h3d.scene.Mesh = cast ctx.local3d;
+		var mesh : h3d.scene.Mesh = cast local3d;
 		var h2dFont = loadFont();
-		var h2dText = (cast ctx.local2d : h2d.Text);
+		var h2dText = null/*(cast local2d : h2d.Text)*/;
 		h2dText.font = h2dFont;
 		h2dText.letterSpacing = letterSpacing;
 		h2dText.text = text;
 		h2dText.smooth = true;
-        h2dText.textAlign = switch (align) {
+		h2dText.textAlign = switch (align) {
 			case 1:
-				Center;
+				h2d.Text.Align.Center;
 			case 2:
-				Right;
+				h2d.Text.Align.Right;
 			default:
-				Left;
+				h2d.Text.Align.Left;
 		}
 		@:privateAccess h2dText.glyphs.content = (cast mesh.primitive : Text3DPrimitive);
 		@:privateAccess {
@@ -247,8 +244,21 @@ class Text3D extends Object3D {
 		return null;
 	}
 
-	override function makeInstance(ctx:Context):Context {
-		ctx = ctx.clone(this);
+	// TODO(ces) : AAAAAARGH
+	override function makeObject(parent3d : h3d.scene.Object) : h3d.scene.Object {
+		/*var mesh = new h3d.scene.Mesh(new Text3DPrimitive(), parent3d);
+		mesh.material.blendMode = Alpha;
+		text2d = new h2d.Text(hxd.res.DefaultFont.get(), findFirstLocal2d());
+		@:privateAccess h2dText.glyphs.content = new Text3DPrimitive();
+		local2d = h2dText;
+		text2d.name = name;
+
+		text2d*/
+		throw "2d and 3d aaaaaaaaaaaaaaaarg";
+		return null;
+	}
+
+	/*override function makeInstance(ctx: hrt.prefab.Prefab.InstanciateContext) : Void {
 		var mesh = new h3d.scene.Mesh(new Text3DPrimitive(), ctx.local3d);
 		mesh.material.blendMode = Alpha;
 		ctx.local3d = mesh;
@@ -257,9 +267,7 @@ class Text3D extends Object3D {
 		@:privateAccess h2dText.glyphs.content = new Text3DPrimitive();
 		ctx.local2d = h2dText;
 		ctx.local2d.name = name;
-		updateInstance(ctx);
-		return ctx;
-	}
+	}*/
 
-	static var _ = Library.register("text3d", Text3D);
+	static var _ = Prefab.register("text3d", Text3D);
 }

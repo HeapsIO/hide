@@ -10,8 +10,6 @@ class RendererFX extends Prefab implements h3d.impl.RendererFX {
 	public function end( r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {
 	}
 
-	public function dispose() {
-	}
 
 	inline function checkEnabled() {
 		return enabled #if editor && enableInEditor && !inGameOnly #end;
@@ -21,7 +19,7 @@ class RendererFX extends Prefab implements h3d.impl.RendererFX {
 	override function getHideProps() : hide.prefab.HideProps {
 		return { name : Type.getClassName(Type.getClass(this)).split(".").pop(), icon : "plus-circle" };
 	}
-	override function edit(ctx:EditContext) {
+	override function edit(ctx:hide.prefab.EditContext) {
 		ctx.properties.add(new hide.Element('
 		<dl>
 			<dt>Enable in Hide</dt><dd><input type="checkbox" field="enableInEditor"/></dd>

@@ -45,16 +45,18 @@ class FXAnimation extends h3d.scene.Object {
 		inheritCulled = true;
 	}
 
-	function init(ctx: Context, def: FX, ?root: PrefabElement) {
+	function init(def: FX, ?root: PrefabElement) {
+		trace("Init FX");
 		if(root == null)
 			root = def;
-		initObjAnimations(ctx, root);
-		initEmitters(ctx, root);
-		BaseFX.getShaderAnims(ctx, root, shaderAnims);
+
+		initObjAnimations(root);
+		initEmitters(root);
+		hrt.prefab.fx.BaseFX.BaseFXTools.getShaderAnims(root, shaderAnims);
 		if(shaderAnims.length == 0) shaderAnims = null;
-		events = initEvents(root, ctx);
-		var root = def.getFXRoot(ctx, def);
-		initConstraints(ctx, root != null ? root : def);
+		events = initEvents(root);
+		var root = hrt.prefab.fx.BaseFX.BaseFXTools.getFXRoot(def);
+		initConstraints(root != null ? root : def);
 
 		trails = findAll((p) -> Std.downcast(p, hrt.prefab.l3d.Trails.TrailObj));
 	}
@@ -115,6 +117,7 @@ class FXAnimation extends h3d.scene.Object {
 
 		var fullSync = ctx.visibleFlag || alwaysSyncAnimation || firstSync;
 		var finishedPlaying = false;
+		// TODO(ces) restore playspeed
 		if(playSpeed > 0 || firstSync) {
 			// This is done in syncRec() to make sure time and events are updated regarless of culling state,
 			// so we restore FX in correct state when unculled
@@ -255,11 +258,11 @@ class FXAnimation extends h3d.scene.Object {
 		this.prevTime = localTime;
 	}
 
-	function initEvents(elt: PrefabElement, ctx: Context) {
+	function initEvents(elt: PrefabElement) {
 		var childEvents = [for(c in elt.children) if(c.enabled && c.to(Event) != null) c.to(Event)];
 		var ret = null;
 		for(evt in childEvents) {
-			var eventObj = evt.prepare(ctx);
+			var eventObj = evt.prepare();
 			if(eventObj == null) continue;
 			if(ret == null) ret = [];
 			ret.push(eventObj);
@@ -267,22 +270,17 @@ class FXAnimation extends h3d.scene.Object {
 		return ret;
 	}
 
-	function initObjAnimations(ctx:Context, elt: PrefabElement) {
+	function initObjAnimations(elt: PrefabElement) {
 		if(!elt.enabled) return;
 		if(Std.downcast(elt, hrt.prefab.fx.Emitter) == null) {
 			// Don't extract animations for children of Emitters
 			for(c in elt.children) {
-				initObjAnimations(ctx, c);
+				initObjAnimations(c);
 			}
 		}
 
 		var obj3d = elt.to(hrt.prefab.Object3D);
 		if(obj3d == null)
-			return;
-
-		// TODO: Support references?
-		var objCtx = ctx.shared.contexts.get(elt);
-		if(objCtx == null || objCtx.local3d == null)
 			return;
 
 		var anyFound = false;
@@ -317,19 +315,22 @@ class FXAnimation extends h3d.scene.Object {
 		}
 
 		var ap : AdditionalProperies = null;
-		if( Std.isOfType(objCtx.local3d, h3d.scene.pbr.PointLight)) {
+		var local3d = Object3D.getLocal3d(elt);
+		if (local3d == null)
+			trace("break");
+		if( Std.isOfType(local3d, h3d.scene.pbr.PointLight)) {
 			ap = PointLight(makeColor("color"), makeVal("power", null), makeVal("size", null), makeVal("range", null) );
 		}
-		else if( Std.isOfType(objCtx.local3d, h3d.scene.pbr.SpotLight)) {
+		else if( Std.isOfType(local3d, h3d.scene.pbr.SpotLight)) {
 			ap = SpotLight(makeColor("color"), makeVal("power", null), makeVal("range", null), makeVal("angle", null), makeVal("fallOff", null) );
 		}
-		else if( Std.isOfType(objCtx.local3d, h3d.scene.pbr.DirLight)) {
+		else if( Std.isOfType(local3d, h3d.scene.pbr.DirLight)) {
 			ap = DirLight(makeColor("color"), makeVal("power", null));
 		}
 
 		var anim : ObjectAnimation = {
 			elt: obj3d,
-			obj: objCtx.local3d,
+			obj: local3d,
 			events: null,
 			position: makeVector("position", 0.0),
 			scale: makeVector("scale", 1.0, true),
@@ -339,7 +340,7 @@ class FXAnimation extends h3d.scene.Object {
 			additionalProperies: ap,
 		};
 
-		anim.events = initEvents(elt, objCtx);
+		anim.events = initEvents(elt);
 		if(anim.events != null)
 			anyFound = true;
 
@@ -349,26 +350,26 @@ class FXAnimation extends h3d.scene.Object {
 		}
 	}
 
-	function initEmitters(ctx: Context, elt: PrefabElement) {
+	function initEmitters(elt: PrefabElement) {
 		if(!elt.enabled) return;
 		var em = Std.downcast(elt, hrt.prefab.fx.Emitter);
 		if(em != null)  {
-			for(emCtx in ctx.shared.getContexts(elt)) {
-				if(emCtx.local3d == null) continue;
+			var local3d = Object3D.getLocal3d(em);
+			if (local3d != null) {
 				if(emitters == null) emitters = [];
-				var emobj : hrt.prefab.fx.Emitter.EmitterObject = cast emCtx.local3d;
+				var emobj : hrt.prefab.fx.Emitter.EmitterObject = cast local3d;
 				emobj.setRandSeed(randSeed);
 				emitters.push(emobj);
 			}
 		}
 		else {
 			for(c in elt.children) {
-				initEmitters(ctx, c);
+				initEmitters(c);
 			}
 		}
 	}
 
-	function initConstraints( ctx : Context, elt : PrefabElement ){
+	function initConstraints(elt : PrefabElement ){
 		if(!elt.enabled) return;
 		var co = Std.downcast(elt, hrt.prefab.l3d.Constraint);
 		if(co != null) {
@@ -377,13 +378,13 @@ class FXAnimation extends h3d.scene.Object {
 		}
 		else
 			for(c in elt.children)
-				initConstraints(ctx, c);
+				initConstraints(c);
 	}
 
 	public function resolveConstraints( caster : h3d.scene.Object ) {
 		for( co in constraints ) {
 			if( !co.enabled )
-		 		continue;
+				 continue;
 
 			var objectName = co.object.split(".").pop();
 			var targetName = co.target.split(".").pop();
@@ -399,31 +400,42 @@ class FXAnimation extends h3d.scene.Object {
 	}
 }
 
-class FX extends BaseFX {
+class FX extends Object3D implements BaseFX {
 
-	public function new() {
-		super();
-		type = "fx";
+	@:s public var duration : Float;
+	@:s public var startDelay : Float = 0.0;
+	@:c public var scriptCode : String;
+	@:s public var cullingRadius : Float;
+	@:s public var markers : Array<{t: Float}> = [];
+
+	/*override function save(data : Dynamic) {
+		super.save(data);
+		data.cullingRadius = cullingRadius;
+		if( scriptCode != "" ) data.scriptCode = scriptCode;
+	}*/
+
+	public function new(parent:Prefab, contextShared: ContextShared) {
+		super(parent, contextShared);
+		duration = 5.0;
 		cullingRadius = 3.0;
 	}
 
-	override function save() {
-		var obj : Dynamic = super.save();
-		obj.cullingRadius = cullingRadius;
-		if( scriptCode != "" ) obj.scriptCode = scriptCode;
-		return obj;
+	override function makeInstanceRec() : Void  {
+		var fromRef = shared.parent != null;
+		var useFXRoot = #if editor fromRef #else true #end;
+		var root = hrt.prefab.fx.BaseFX.BaseFXTools.getFXRoot(this);
+		if(useFXRoot && root != null){
+			var childrenBackup = children;
+			children = [root];
+			super.makeInstanceRec();
+			children = childrenBackup;
+		}
+		else
+			super.makeInstanceRec();
 	}
 
-	override function load( obj : Dynamic ) {
-		super.load(obj);
-		if(obj.cullingRadius != null)
-			cullingRadius = obj.cullingRadius;
-		scriptCode = obj.scriptCode;
-	}
-
-	override function make( ctx : Context ) : Context {
-		ctx = ctx.clone(this);
-		var fxanim = createInstance(ctx.local3d);
+	override function makeObject(parent3d:h3d.scene.Object):h3d.scene.Object {
+		var fxanim = createInstance(parent3d);
 		fxanim.duration = duration;
 		fxanim.cullingRadius = cullingRadius;
 
@@ -437,8 +449,7 @@ class FX extends BaseFX {
 			p = p.parent;
 		}
 
-		ctx.local3d = fxanim;
-		var fromRef = ctx.shared.parent != null;
+		var fromRef = shared.parent != null;
 		#if editor
 		// only play if we are as a reference
 		if( fromRef ) fxanim.playSpeed = 1.0;
@@ -446,21 +457,18 @@ class FX extends BaseFX {
 		fxanim.playSpeed = 1.0;
 		#end
 
-		var useFXRoot = #if editor fromRef #else true #end;
-		var root = getFXRoot(ctx, this);
-		if(useFXRoot && root != null){
-			root.make(ctx);
-		}
-		else
-			super.make(ctx);
-		fxanim.init(ctx, this, root);
-
-		return ctx;
+		return fxanim;
 	}
 
-	override function updateInstance( ctx: Context, ?propName : String ) {
-		super.updateInstance(ctx, null);
-		var fxanim = Std.downcast(ctx.local3d, FXAnimation);
+	override function postMakeInstance() {
+		var root = hrt.prefab.fx.BaseFX.BaseFXTools.getFXRoot(this);
+		var fxAnim : FXAnimation = cast local3d;
+		fxAnim.init(this, root);
+	}
+
+	override function updateInstance(?propName : String ) {
+		super.updateInstance(null);
+		var fxanim = Std.downcast(local3d, FXAnimation);
 		fxanim.duration = duration;
 		fxanim.cullingRadius = cullingRadius;
 	}
@@ -471,13 +479,13 @@ class FX extends BaseFX {
 
 	#if editor
 
-	override function refreshObjectAnims(ctx: Context) {
-		var fxanim = Std.downcast(ctx.local3d, FXAnimation);
+	public function refreshObjectAnims() : Void {
+		var fxanim = Std.downcast(local3d, FXAnimation);
 		fxanim.objAnims = null;
-		fxanim.initObjAnimations(ctx, this);
+		fxanim.initObjAnimations(this);
 	}
 
-	override function edit( ctx : EditContext ) {
+	override function edit( ctx : hide.prefab.EditContext ) {
 		var props = new hide.Element('
 			<div class="group" name="FX Scene">
 				<dl>
@@ -490,10 +498,11 @@ class FX extends BaseFX {
 		});
 	}
 
-	override function getHideProps() : HideProps {
+	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "cube", name : "FX", allowParent: _ -> false};
 	}
 	#end
 
-	static var _ = Library.register("fx", FX, "fx_old");
+	// TOCO(ces) : restore extension support
+	static var _ = Prefab.register("fx", FX, "fx");
 }

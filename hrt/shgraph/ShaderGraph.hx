@@ -461,7 +461,7 @@ class ShaderGraph {
 		return shaderData;
 	}
 
-	public function compile(?specificOutput : ShaderNode, ?subShaderId : Int) : hrt.prefab.ContextShared.ShaderDef {
+	public function compile(?specificOutput : ShaderNode, ?subShaderId : Int) : hrt.prefab.Cache.ShaderDef {
 
 		var shaderData = generateShader(specificOutput, subShaderId);
 

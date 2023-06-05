@@ -2,7 +2,7 @@ package hide.comp;
 
 typedef CurveKey = hrt.prefab.Curve.CurveKey;
 
-class CurveEditor extends Component {
+class CurveEditor extends hide.comp.Component {
 
 	public var xScale = 200.;
 	public var yScale = 30.;
@@ -135,7 +135,7 @@ class CurveEditor extends Component {
 	function set_curve(curve: hrt.prefab.Curve) {
 		this.curve = curve;
 		maxLength = curve.maxTime;
-		lastValue = haxe.Json.parse(haxe.Json.stringify(curve.save()));
+		lastValue = curve.serializeToDynamic();
 		var view = getDisplayState("view");
 		if(view != null) {
 			if(!lockViewX) {
@@ -362,11 +362,11 @@ class CurveEditor extends Component {
 	}
 
 	function beforeChange() {
-		lastValue = haxe.Json.parse(haxe.Json.stringify(curve.save()));
+		lastValue = curve.serializeToDynamic();
 	}
 
 	function afterChange() {
-		var newVal = haxe.Json.parse(haxe.Json.stringify(curve.save()));
+		var newVal = curve.serializeToDynamic();
 		var oldVal = lastValue;
 		undo.change(Custom(function(undo) {
 			if(undo) {
@@ -375,7 +375,7 @@ class CurveEditor extends Component {
 			else {
 				curve.load(newVal);
 			}
-			lastValue = haxe.Json.parse(haxe.Json.stringify(curve.save()));
+			lastValue = curve.serializeToDynamic();
 			selectedKeys = [];
 			refresh();
 			onChange(false);
@@ -646,7 +646,7 @@ class CurveEditor extends Component {
 						var abskx = xt(key.time);
 						var absky = yt(key.value);
 						if(next && lx < abskx || !next && lx > abskx)
-						 	lx = kx;
+							 lx = kx;
 						var ndt = ixt(lx) - key.time;
 						var ndv = iyt(ly) - key.value;
 						handle.dt = ndt;

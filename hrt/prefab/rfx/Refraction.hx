@@ -28,12 +28,13 @@ class RefractionShader extends hxsl.Shader {
 }
 
 @:access(h3d.pass.PassList)
+@:access(h3d.scene.Renderer)
 @:access(h3d.pass.PassObject)
 class Refraction extends RendererFX {
 
 	var refractionShader : RefractionShader;
-	function new(?parent) {
-		super(parent);
+	function new(?parent, shared: ContextShared) {
+		super(parent, shared);
 
 		refractionShader = new RefractionShader();
 	}
@@ -87,5 +88,5 @@ class Refraction extends RendererFX {
 		}
 	}
 
-	static var _ = Library.register("rfx.refraction", Refraction);
+	static var _ = Prefab.register("rfx.refraction", Refraction);
 }

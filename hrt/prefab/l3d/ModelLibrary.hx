@@ -45,10 +45,10 @@ class ModelLibShader extends hxsl.Shader {
 		@param var mipPower : Float;
 		@param var mipNumber : Float;
 
-        @input var input2 : {
+		@input var input2 : {
 			var tangent : Vec3;
 			var uv : Vec2;
-        };
+		};
 
 		var calculatedUV : Vec2;
 		var transformedTangent : Vec4;
@@ -113,12 +113,7 @@ class ModelLibrary extends Prefab {
 
 	var errors = [];
 
-	override function makeInstance(ctx) {
-		return ctx.clone(this);
-	}
-
 	override function edit(ectx:hide.prefab.EditContext) {
-		var ctx = ectx.getContext(this);
 
 		ectx.properties.add(new hide.Element('
 		<div class="group" name="Params">
@@ -132,13 +127,13 @@ class ModelLibrary extends Prefab {
 			ectx.onChange(this, pname);
 		});
 
-		var bt = new Element('<div align="center"><input type="button" value="Build"/></div>');
+		var bt = new hide.Element('<div align="center"><input type="button" value="Build"/></div>');
 		bt.find("input").click(function(e) {
 			ectx.makeChanges(this, function() {
 				errors = [];
-				rebuildData(ctx.shared, ectx.scene);
+				rebuildData(ectx.scene);
 				if ( compress )
-					compression(ctx.shared, ectx.scene);
+					compression(ectx.scene);
 
 				var ide = hide.Ide.inst;
 				ide.setProgress();
@@ -157,11 +152,11 @@ class ModelLibrary extends Prefab {
 			ectx.onChange(this, pname);
 		});
 
-		var bt = new Element('<div align="center"><input type="button" value="CompressOnly"/></div>');
+		var bt = new hide.Element('<div align="center"><input type="button" value="CompressOnly"/></div>');
 		bt.find("input").click(function(e) {
 			ectx.makeChanges(this, function() {
 				errors = [];
-				compression(ctx.shared, ectx.scene);
+				compression(ectx.scene);
 
 				var ide = hide.Ide.inst;
 				ide.setProgress();
@@ -171,7 +166,7 @@ class ModelLibrary extends Prefab {
 		});
 		ectx.properties.add(bt);
 
-		var listMaterials = new Element('
+		var listMaterials = new hide.Element('
 		<div class="group" name="Ignored materials"><ul id="ignoreMatList"></ul></div>');
 		ectx.properties.add(listMaterials);
 		for( i in 0...ignoredMaterials.length ) {
@@ -185,7 +180,7 @@ class ModelLibrary extends Prefab {
 			});
 			e.appendTo(listMaterials);
 			ectx.properties.build(e, ignoredMaterials[i], (pname) -> {
-				updateInstance(ctx, pname);
+				updateInstance(pname);
 			});
 		}
 		var add = new hide.Element('<li><p><a href="#">[+]</a></p></li>');
@@ -195,7 +190,7 @@ class ModelLibrary extends Prefab {
 			ectx.rebuildProperties();
 		});
 
-		var listPrefabs = new Element('
+		var listPrefabs = new hide.Element('
 		<div class="group" name="Ignored prefabs"><ul id="ignorePrefabList"></ul></div>');
 		ectx.properties.add(listPrefabs);
 		for( i in 0...ignoredPrefabs.length ) {
@@ -210,7 +205,7 @@ class ModelLibrary extends Prefab {
 			});
 			e.appendTo(listPrefabs);
 			ectx.properties.build(e, ignoredPrefabs[i], (pname) -> {
-				updateInstance(ctx, pname);
+				updateInstance(pname);
 			});
 		}
 		var add = new hide.Element('<li><p><a href="#">[+]</a></p></li>');
@@ -220,7 +215,7 @@ class ModelLibrary extends Prefab {
 			ectx.rebuildProperties();
 		});
 
-		var listObjectNames = new Element('
+		var listObjectNames = new hide.Element('
 		<div class="group" name="Ignored object names"><ul id="ignoreObjectNames"></ul></div>');
 		ectx.properties.add(listObjectNames);
 		for( i in 0...ignoredObjectNames.length ) {
@@ -234,7 +229,7 @@ class ModelLibrary extends Prefab {
 			});
 			e.appendTo(listObjectNames);
 			ectx.properties.build(e, ignoredObjectNames[i], (pname) -> {
-				updateInstance(ctx, pname);
+				updateInstance(pname);
 			});
 		}
 		var add = new hide.Element('<li><p><a href="#">[+]</a></p></li>');
@@ -244,7 +239,7 @@ class ModelLibrary extends Prefab {
 			ectx.rebuildProperties();
 		});
 
-		var listpreserveObjectNames = new Element('
+		var listpreserveObjectNames = new hide.Element('
 		<div class="group" name="Preserve object names"><ul id="preserveObjectNames"></ul></div>');
 		ectx.properties.add(listpreserveObjectNames);
 		for( i in 0...preserveObjectNames.length ) {
@@ -258,7 +253,7 @@ class ModelLibrary extends Prefab {
 			});
 			e.appendTo(listpreserveObjectNames);
 			ectx.properties.build(e, preserveObjectNames[i], (pname) -> {
-				updateInstance(ctx, pname);
+				updateInstance(pname);
 			});
 		}
 		var add = new hide.Element('<li><p><a href="#">[+]</a></p></li>');
@@ -269,7 +264,7 @@ class ModelLibrary extends Prefab {
 		});
 	}
 
-	override function getHideProps() : HideProps {
+	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "square", name : "Model Library" };
 	}
 
@@ -277,7 +272,7 @@ class ModelLibrary extends Prefab {
 		hide.Ide.inst.setProgress(text);
 	}
 
-	function rebuildData( shared : ContextShared, scene : hide.comp.Scene ) {
+	function rebuildData(scene : hide.comp.Scene ) {
 
 		bakedMaterials = {};
 		materialConfigs = [];
@@ -683,7 +678,7 @@ class ModelLibrary extends Prefab {
 		make(specMaps,"specular");
 	}
 
-	function compression( shared : ContextShared, scene : hide.comp.Scene ) {
+	function compression(scene : hide.comp.Scene ) {
 		var convert = new hxd.fs.Convert.CompressIMG("png,tga,jpg,jpeg,dds,envd,envs","dds");
 		convert.params = {format: "BC3"};
 		var path = new haxe.io.Path(hxd.impl.Api.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem).baseDir+shared.currentPath);
@@ -716,16 +711,14 @@ class ModelLibrary extends Prefab {
 
 	#else
 
-	var shared : hrt.prefab.ContextShared;
 	var hmdPrim : h3d.prim.HMDModel;
 	var shader : ModelLibShader;
 	var geomBounds : Array<h3d.col.Bounds>;
 	public var debug = false;
 	public var clear = false;
 
-	override function make(ctx:hrt.prefab.Context) {
+	override function makeInstanceRec() : Void {
 		// don't load/build children
-		shared = ctx.shared;
 		if ( hmdPrim == null )
 			hmdPrim = Std.downcast(shared.loadModel(shared.getPrefabDatPath("model","hmd",this.name)).toMesh().primitive, h3d.prim.HMDModel);
 		if ( geomBounds == null )
@@ -756,13 +749,13 @@ class ModelLibrary extends Prefab {
 			shader.hasNormal = tnormal != null;
 			shader.hasPbr = tspec != null;
 		}
-		return ctx;
 	}
 
-	public function dispose() {
-		optimizedMeshes = [];
-		batches = [];
-	}
+
+	// public function dispose() {
+	// 	optimizedMeshes = [];
+	// 	batches = [];
+	// }
 
 	var killAlpha = new h3d.shader.KillAlpha();
 	var curSubMeshes : SubMeshes = null;
@@ -921,6 +914,6 @@ class ModelLibrary extends Prefab {
 
 	#end
 
-	static var _ = Library.register("modelLib", ModelLibrary);
+	static var _ = Prefab.register("modelLib", ModelLibrary);
 
 }

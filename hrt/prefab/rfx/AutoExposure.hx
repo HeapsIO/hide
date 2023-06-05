@@ -1,5 +1,6 @@
 package hrt.prefab.rfx;
 
+@:access(h3d.scene.Renderer)
 class AutoExposure extends RendererFX {
 
 	@:s var lightFront : Float = 0.;
@@ -60,6 +61,6 @@ class AutoExposure extends RendererFX {
 	}
 	#end
 
-	static var _ = Library.register("rfx.autoexp", AutoExposure);
+	static var _ = Prefab.register("rfx.autoexp", AutoExposure);
 
 }

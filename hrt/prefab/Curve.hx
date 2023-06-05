@@ -1,9 +1,19 @@
 package hrt.prefab;
+
+#if editor
+import hide.prefab.EditContext;
+#end
+
+import hide.prefab.HideProps;
+
+import hrt.prefab.fx.Value;
+
 using Lambda;
 
+@:build(hrt.prefab.Macros.buildSerializable())
 class CurveHandle {
-	public var dt: Float;
-	public var dv: Float;
+	@:s public var dv: Float = -1; // Force serialization of 0 values for retrocompat
+	@:s public var dt: Float = -1; // Force serialization of 0 values for retrocompat
 	public function new(t, v) {
 		this.dt = t;
 		this.dv = v;
@@ -17,12 +27,13 @@ enum abstract CurveKeyMode(Int) {
 	var Constant = 3;
 }
 
+@:build(hrt.prefab.Macros.buildSerializable())
 class CurveKey {
-	public var time: Float;
-	public var value: Float;
-	public var mode: CurveKeyMode;
-	public var prevHandle: CurveHandle;
-	public var nextHandle: CurveHandle;
+	@:s public var time: Float = -1; // Force serialization of 0 values for retrocompat
+	@:s public var value: Float = -1; // Force serialization of 0 values for retrocompat
+	@:s public var mode: CurveKeyMode = Aligned;
+	@:s public var prevHandle: CurveHandle;
+	@:s public var nextHandle: CurveHandle;
 	public function new() {}
 }
 
@@ -31,8 +42,8 @@ typedef CurveKeys = Array<CurveKey>;
 class Curve extends Prefab {
 
 	@:s public var keyMode : CurveKeyMode = Linear;
-	@:c public var keys : CurveKeys = [];
-	@:c public var previewKeys : CurveKeys = [];
+	@:s public var keys : CurveKeys = [];
+	@:s public var previewKeys : CurveKeys = [];
 
 	@:s public var loop : Bool = false;
 
@@ -43,49 +54,60 @@ class Curve extends Prefab {
 		return keys[keys.length-1].time;
 	}
 
-   	public function new(?parent) {
-		super(parent);
-		this.type = "curve";
+	   public function new(?parent, shared: ContextShared) {
+		super(parent, shared);
 	}
 
 	public override function load(o:Dynamic) {
 		super.load(o);
-		keys = [];
-		if(o.keys != null) {
-			for(k in (o.keys: Array<Dynamic>)) {
-				var nk = new CurveKey();
-				nk.time = k.time;
-				nk.value = k.value;
-				nk.mode = k.mode;
-				if(k.prevHandle != null)
-					nk.prevHandle = new CurveHandle(k.prevHandle.dt, k.prevHandle.dv);
-				if(k.nextHandle != null)
-					nk.nextHandle = new CurveHandle(k.nextHandle.dt, k.nextHandle.dv);
-				keys.push(nk);
-			}
-		}
 		if( keys.length == 0 ) {
 			addKey(0.0, 0.0);
 			addKey(1.0, 1.0);
 		}
 	}
 
-	public override function save() {
-		var obj : Dynamic = super.save();
-		var keysDat = [];
-		for(k in keys) {
-			var o = {
-				time: k.time,
-				value: k.value,
-				mode: k.mode
-			};
-			if(k.prevHandle != null) Reflect.setField(o, "prevHandle", { dv: k.prevHandle.dv, dt: k.prevHandle.dt });
-			if(k.nextHandle != null) Reflect.setField(o, "nextHandle", { dv: k.nextHandle.dv, dt: k.nextHandle.dt });
-			keysDat.push(o);
-		}
-		obj.keys = keysDat;
-		return obj;
-	}
+	// public override function copy(o:Prefab) {
+	// 	super.copy(o);
+	// 	var p = Std.downcast(o, Curve);
+
+	// 	keys = p.keys;
+	// 	keys = [];
+	// 	if(o.keys != null) {
+	// 		for(k in (o.keys: Array<Dynamic>)) {
+	// 			var nk = new CurveKey();
+	// 			nk.time = k.time;
+	// 			nk.value = k.value;
+	// 			nk.mode = k.mode;
+	// 			if(k.prevHandle != null)
+	// 				nk.prevHandle = new CurveHandle(k.prevHandle.dt, k.prevHandle.dv);
+	// 			if(k.nextHandle != null)
+	// 				nk.nextHandle = new CurveHandle(k.nextHandle.dt, k.nextHandle.dv);
+	// 			keys.push(nk);
+	// 		}
+	// 	}
+	// 	if( keys.length == 0 ) {
+	// 		addKey(0.0, 0.0);
+	// 		addKey(1.0, 1.0);
+	// 	}
+	// }
+
+	// public override function save(to : Dynamic) {
+	// 	var to = super.save(to);
+	// 	var obj = to;
+	// 	var keysDat = [];
+	// 	for(k in keys) {
+	// 		var o = {
+	// 			time: k.time,
+	// 			value: k.value,
+	// 			mode: k.mode
+	// 		};
+	// 		if(k.prevHandle != null) Reflect.setField(o, "prevHandle", { dv: k.prevHandle.dv, dt: k.prevHandle.dt });
+	// 		if(k.nextHandle != null) Reflect.setField(o, "nextHandle", { dv: k.nextHandle.dv, dt: k.nextHandle.dt });
+	// 		keysDat.push(o);
+	// 	}
+	// 	obj.keys = keysDat;
+	// 	return to;
+	// }
 
 	static inline function bezier(c0: Float, c1:Float, c2:Float, c3: Float, t:Float) {
 		var u = 1 - t;
@@ -133,15 +155,10 @@ class Curve extends Prefab {
 	}
 
 	public function getBounds() {
+		// TODO: Take bezier handles into account
 		var ret = new h2d.col.Bounds();
 		for(k in keys) {
 			ret.addPos(k.time, k.value);
-			if (k.nextHandle != null) {
-				ret.addPos(k.time + k.nextHandle.dt, k.value + k.nextHandle.dv);
-			}
-			if (k.prevHandle != null) {
-				ret.addPos(k.time + k.prevHandle.dt, k.value + k.prevHandle.dv);
-			}
 		}
 		return ret;
 	}
@@ -332,7 +349,7 @@ class Curve extends Prefab {
 		return curves.find(c -> StringTools.endsWith(c.name, suffix));
 	}
 
-	public static function getVectorValue(curves: Array<Curve>, defVal: Float=0.0, scale: Float=1.0) : hrt.prefab.fx.Value {
+	public static function getVectorValue(curves: Array<Curve>, defVal: Float=0.0, scale: Float=1.0) : Value {
 		inline function find(s) {
 			return findCurve(curves, s);
 		}
@@ -341,7 +358,7 @@ class Curve extends Prefab {
 		var z = find(".z");
 		var w = find(".w");
 
-		inline function curveOrVal(c: Curve, defVal: Float) : hrt.prefab.fx.Value {
+		inline function curveOrVal(c: Curve, defVal: Float) : Value {
 			return c != null ? (scale != 1.0 ? VCurveScale(c, scale) : VCurve(c)) : VConst(defVal);
 		}
 
@@ -352,7 +369,7 @@ class Curve extends Prefab {
 			curveOrVal(w, 1.0));
 	}
 
-	public static function getColorValue(curves: Array<Curve>) : hrt.prefab.fx.Value {
+	public static function getColorValue(curves: Array<Curve>) : Value {
 		inline function find(s) {
 			return findCurve(curves, s);
 		}
@@ -386,5 +403,5 @@ class Curve extends Prefab {
 			a != null ? VCurve(a) : VConst(1.0));
 	}
 
-	static var _ = Library.register("curve", Curve);
+	static var _ = Prefab.register("curve", Curve);
 }

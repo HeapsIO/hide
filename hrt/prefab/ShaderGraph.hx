@@ -2,12 +2,11 @@ package hrt.prefab;
 
 class ShaderGraph extends DynamicShader {
 
-	public function new(?parent) {
-		super(parent);
-		type = "shadergraph";
+	public function new(?parent, shared: ContextShared) {
+		super(parent, shared);
 	}
 
-	override public function loadShaderDef(ctx: Context) {
+	override public function loadShaderDef() {
 		if(shaderDef == null) {
 			var shaderGraph = new hrt.shgraph.ShaderGraph(source);
 			shaderDef = shaderGraph.compile();
@@ -25,11 +24,11 @@ class ShaderGraph extends DynamicShader {
 	}
 
 	#if editor
-	override function getHideProps() : HideProps {
+	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "scribd", name : "Shader Graph", fileSource : ["shgraph"], allowParent : function(p) return p.to(Object2D) != null || p.to(Object3D) != null };
 	}
 
-	override function edit( ctx : EditContext ) {
+	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);
 
 		var btn = new hide.Element("<input type='submit' style='width: 100%; margin-top: 10px;' value='Open Shader Graph' />");
@@ -42,5 +41,5 @@ class ShaderGraph extends DynamicShader {
 	}
 	#end
 
-	static var _ = Library.register("shgraph", ShaderGraph);
+	static var _ = hrt.prefab.Prefab.register("shgraph", ShaderGraph);
 }

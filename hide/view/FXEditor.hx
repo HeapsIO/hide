@@ -1,4 +1,5 @@
 package hide.view;
+import hide.view.FileTree;
 import hrt.prefab.Light;
 using Lambda;
 
@@ -16,8 +17,8 @@ typedef PropTrackDef = {
 @:access(hide.view.FXEditor)
 class FXEditContext extends hide.prefab.EditContext {
 	var parent : FXEditor;
-	public function new(parent, context) {
-		super(context);
+	public function new(parent) {
+		super();
 		this.parent = parent;
 	}
 	override function onChange(p, propName) {
@@ -50,8 +51,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 	}
 
 	override function duplicate(thenMove : Bool) {
-		if(curEdit == null) return;
-		var elements = curEdit.rootElements;
+		var elements = selectedPrefabs;
 		if(elements == null || elements.length == 0)
 			return;
 		if( isDuplicating )
@@ -63,13 +63,11 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		var undoes = [];
 		var newElements = [];
 		for(elt in elements) {
-			var clone = elt.cloneData();
+			var clone = elt.make(elt.parent);
 			var index = elt.parent.children.indexOf(elt) + 1;
-			clone.parent = elt.parent;
 			elt.parent.children.remove(clone);
 			elt.parent.children.insert(index, clone);
 			autoName(clone);
-			makeInstance(clone);
 			newElements.push(clone);
 
 			undoes.push(function(undo) {
@@ -107,29 +105,31 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 
 			if(!undo) {
 				for(elt in newElements)
-					makeInstance(elt);
+					makePrefab(elt);
 			}
 
 			refresh(fullRefresh ? Full : Partial);
 		}));
 	}
 
+	// TODO(ces) : restore
 	override function createDroppedElement(path:String, parent:PrefabElement):hrt.prefab.Object3D {
-		var type = hrt.prefab.Library.getPrefabType(path);
+		throw "implement";
+		/*var type = Prefab.getPrefabType(path);
 		if(type == "fx") {
 			var relative = ide.makeRelative(path);
 			var ref = new hrt.prefab.fx.SubFX(parent);
-			ref.source = relative;
+			ref.path = relative;
 			ref.name = new haxe.io.Path(relative).file;
 			return ref;
 		}
-		return super.createDroppedElement(path, parent);
+		return super.createDroppedElement(path, parent);*/
 	}
 
-	override function setElementSelected( p : PrefabElement, ctx : hrt.prefab.Context, b : Bool ) {
+	override function setElementSelected( p : PrefabElement, b : Bool ) {
 		if( p.getParent(hrt.prefab.fx.Emitter) != null )
 			return false;
-		return super.setElementSelected(p, ctx, b);
+		return super.setElementSelected(p, b);
 	}
 
 	override function selectElements( elts, ?mode ) {
@@ -258,7 +258,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 	}
 }
 
-class FXEditor extends FileView {
+class FXEditor extends hide.view.FileView {
 
 	var sceneEditor : FXSceneEditor;
 	var data : hrt.prefab.fx.BaseFX;
@@ -303,13 +303,13 @@ class FXEditor extends FileView {
 	var statusText : h2d.Text;
 
 	var scriptEditor : hide.comp.ScriptEditor;
-	var fxScriptParser : hrt.prefab.fx.FXScriptParser;
+	//var fxScriptParser : hrt.prefab.fx.FXScriptParser;
 	var cullingPreview : h3d.scene.Sphere;
 
-	var viewModes : Array<String>;
+    var viewModes : Array<String>;
 
 	override function getDefaultContent() {
-		return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab.fx.FX().saveData()));
+		return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab.fx.FX(null, null).serializeToDynamic()));
 	}
 
 	override function canSave() {
@@ -319,7 +319,7 @@ class FXEditor extends FileView {
 	override function save() {
 		if( !canSave() )
 			return;
-		var content = ide.toJSON(data.saveData());
+		var content = ide.toJSON(cast(data, hrt.prefab.Prefab).serializeToDynamic());
 		var newSign = ide.makeSignature(content);
 		if(newSign != currentSign)
 			haxe.Timer.delay(saveBackup.bind(content), 0);
@@ -334,17 +334,20 @@ class FXEditor extends FileView {
 		xOffset = -timelineLeftMargin / xScale;
 		var content = sys.io.File.getContent(getPath());
 		var json = haxe.Json.parse(content);
-		if (json.type == "fx") {
-			var inf = hrt.prefab.Library.getRegistered().get("fx");
+		/*if (json.type == "fx") {
+			var inf = hrt.prefab.Prefab.getRegistered().get("fx");
 			data = Std.downcast(Type.createInstance(inf.cl, null), hrt.prefab.fx.FX);
 			if ( data == null )
 				throw "fx prefab override failed";
 		}
 		else {
-			is2D = true;
-			data = new hrt.prefab.fx.FX2D();
-		}
-		data.loadData(json);
+			// TODO(ces) : Fix FX2D
+			//is2D = true;
+			//data = new hrt.prefab.fx.FX2D();
+			throw "FX2D not handled yet";
+		}*/
+
+		data = cast(PrefabElement.createFromDynamic(json), hrt.prefab.fx.BaseFX);
 		currentSign = ide.makeSignature(content);
 
 		element.html('
@@ -393,7 +396,7 @@ class FXEditor extends FileView {
 			</div>');
 		tools = new hide.comp.Toolbar(null,element.find(".tools-buttons"));
 		tabs = new hide.comp.Tabs(null,element.find(".tabs"));
-		sceneEditor = new FXSceneEditor(this, data);
+		sceneEditor = new FXSceneEditor(this, cast(data, hrt.prefab.Prefab));
 		element.find(".hide-scenetree").first().append(sceneEditor.tree.element);
 		element.find(".hide-scroll").first().append(sceneEditor.properties.element);
 		element.find(".heaps-scene").first().append(sceneEditor.scene.element);
@@ -418,11 +421,11 @@ class FXEditor extends FileView {
 		});
 		fxprops = new hide.comp.PropsEditor(undo,null,element.find(".fx-props"));
 		{
-			var edit = new FXEditContext(this, sceneEditor.context);
+			var edit = new FXEditContext(this);
 			edit.properties = fxprops;
 			edit.scene = sceneEditor.scene;
 			edit.cleanups = [];
-			data.edit(edit);
+			cast(data, hrt.prefab.Prefab).edit(edit);
 		}
 
 		if (is2D) {
@@ -438,7 +441,7 @@ class FXEditor extends FileView {
 			modified = false;
 		}
 		scriptEditor.onSave = onSaveScript;
-		fxScriptParser = new hrt.prefab.fx.FXScriptParser();
+		//fxScriptParser = new hrt.prefab.fx.FXScriptParser();
 		data.scriptCode = scriptEditor.code;
 
 		keys.register("playPause", function() { pauseButton.toggle(!pauseButton.isDown()); });
@@ -597,7 +600,6 @@ class FXEditor extends FileView {
 			refreshLayout();
 	}
 
-
 	public function onSceneReady() {
 		light = sceneEditor.scene.s3d.find(function(o) return Std.downcast(o, h3d.scene.fwd.DirLight));
 		if( light == null ) {
@@ -627,6 +629,11 @@ class FXEditor extends FileView {
 		toolsDefs.push({id: "translationMode", title : "Gizmo translation Mode", icon : "arrows", type : Button(@:privateAccess sceneEditor.gizmo.translationMode)});
 		toolsDefs.push({id: "rotationMode", title : "Gizmo rotation Mode", icon : "refresh", type : Button(@:privateAccess sceneEditor.gizmo.rotationMode)});
 		toolsDefs.push({id: "scalingMode", title : "Gizmo scaling Mode", icon : "expand", type : Button(@:privateAccess sceneEditor.gizmo.scalingMode)});
+
+		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
+
+		toolsDefs.push({id: "toggleSnap", title : "Snap Toggle", icon: "magnet", type : Toggle((v) -> {sceneEditor.snapToggle = v; sceneEditor.updateGrid();})});
+		toolsDefs.push({id: "snap-menu", title : "", icon: "", type : Popup((e) -> new hide.comp.SceneEditor.SnapSettingsPopup(null, e, sceneEditor))});
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
@@ -774,9 +781,11 @@ class FXEditor extends FileView {
 			updateGrid();
 		}, scene.engine.backgroundColor);
 
+
 		tools.addSeparator();
 
 		tools.addPopup(null, "View Modes", (e) -> new hide.comp.SceneEditor.ViewModePopup(null, e, Std.downcast(@:privateAccess scene.s3d.renderer, h3d.scene.pbr.Renderer)), null);
+
 
 		tools.addSeparator();
 
@@ -785,6 +794,8 @@ class FXEditor extends FileView {
 		tools.addRange("Speed", function(v) {
 			scene.speed = v;
 		}, scene.speed);
+
+
 
 		var gizmo = @:privateAccess sceneEditor.gizmo;
 
@@ -805,22 +816,142 @@ class FXEditor extends FileView {
 		updateGrid();
 	}
 
+	// public function onSceneReady() {
+	//     light = sceneEditor.scene.s3d.find(function(o) return Std.downcast(o, h3d.scene.fwd.DirLight));
+	//     if( light == null ) {
+	//         light = new h3d.scene.fwd.DirLight(scene.s3d);
+	//         light.enableSpecular = true;
+	//     } else
+	//         light = null;
+
+	//     var axis = new h3d.scene.Graphics(scene.s3d);
+	//     axis.z = 0.001;
+	//     axis.lineStyle(2,0xFF0000); axis.lineTo(1,0,0);
+	//     axis.lineStyle(1,0x00FF00); axis.moveTo(0,0,0); axis.lineTo(0,1,0);
+	//     axis.lineStyle(1,0x0000FF); axis.moveTo(0,0,0); axis.lineTo(0,0,1);
+	//     axis.lineStyle();
+	//     axis.material.mainPass.setPassName("debuggeom");
+	//     axis.visible = (!is2D) ? showGrid : false;
+
+	//     cullingPreview = new h3d.scene.Sphere(0xffffff, data.cullingRadius, true, scene.s3d);
+	//     cullingPreview.visible = (!is2D) ? showGrid : false;
+
+	//     tools.saveDisplayKey = "FXScene/tools";
+	//     tools.addButton("video-camera", "Perspective camera", () -> sceneEditor.resetCamera());
+	//     tools.addButton("arrows", "Gizmo translation Mode", @:privateAccess sceneEditor.gizmo.translationMode, () -> {
+	//         var items = [{
+	//             label : "Snap to Grid",
+	//             click : function() {
+	//                 @:privateAccess sceneEditor.gizmo.snapToGrid = !sceneEditor.gizmo.snapToGrid;
+	//             },
+	//             checked: @:privateAccess sceneEditor.gizmo.snapToGrid
+	//         }];
+	//         var steps : Array<Float> = sceneEditor.view.config.get("sceneeditor.gridSnapSteps");
+	//         for (step in steps) {
+	//             items.push({
+	//                 label : ""+step,
+	//                 click : function() {
+	//                     @:privateAccess sceneEditor.gizmo.moveStep = step;
+	//                 },
+	//                 checked: @:privateAccess sceneEditor.gizmo.moveStep == step
+	//             });
+	//         }
+	//         new hide.comp.ContextMenu(items);
+	//     });
+	//     tools.addButton("undo", "Gizmo rotation Mode", @:privateAccess sceneEditor.gizmo.rotationMode, () -> {
+	//         var steps : Array<Float> = sceneEditor.view.config.get("sceneeditor.rotateStepCoarses");
+	//         var items = [{
+	//             label : "Snap enabled",
+	//             click : function() {
+	//                 @:privateAccess sceneEditor.gizmo.rotateSnap = !sceneEditor.gizmo.rotateSnap;
+	//             },
+	//             checked: @:privateAccess sceneEditor.gizmo.rotateSnap
+	//         }];
+	//         for (step in steps) {
+	//             items.push({
+	//                 label : ""+step+"°",
+	//                 click : function() {
+	//                     @:privateAccess sceneEditor.gizmo.rotateStepCoarse = step;
+	//                 },
+	//                 checked: @:privateAccess sceneEditor.gizmo.rotateStepCoarse == step
+	//             });
+	//         }
+	//         new hide.comp.ContextMenu(items);
+	//     });
+	//     tools.addButton("compress", "Gizmo scaling Mode", @:privateAccess sceneEditor.gizmo.scalingMode);
+
+	//     function renderProps() {
+	//         properties.clear();
+	//         var renderer = scene.s3d.renderer;
+	//         var group = new Element('<div class="group" name="Renderer"></div>');
+	//         renderer.editProps().appendTo(group);
+	//         properties.add(group, renderer.props, function(_) {
+	//             renderer.refreshProps();
+	//             if( !properties.isTempChange ) renderProps();
+	//         });
+	//         var lprops = {
+	//             power : Math.sqrt(light.color.r),
+	//             enable: true
+	//         };
+	//         var group = new Element('<div class="group" name="Light">
+	//             <dl>
+	//             <dt>Power</dt><dd><input type="range" min="0" max="4" field="power"/></dd>
+	//             </dl>
+	//         </div>');
+	//         properties.add(group, lprops, function(_) {
+	//             var p = lprops.power * lprops.power;
+	//             light.color.set(p, p, p);
+	//         });
+	//     }
+	//     tools.addButton("gears", "Renderer Properties", renderProps);
+
+	//     tools.addToggle("th", "Show grid", function(v) {
+	//         showGrid = v;
+	//         axis.visible = (is2D) ? false : v;
+	//         cullingPreview.visible = (is2D) ? false : v;
+	//         updateGrid();
+	//     }, showGrid);
+
+
+	//     tools.addToggle("cube", "Toggle model axis", null, (v) -> { sceneEditor.showBasis = v; sceneEditor.updateBasis(); });
+
+	//     tools.addToggle("image", "Toggle 3d icons visibility", null, function(v) { hide.Ide.inst.show3DIcons = v; }, true);
+	//     tools.addColor("Background color", function(v) {
+	//         scene.engine.backgroundColor = v;
+	//         updateGrid();
+	//     }, scene.engine.backgroundColor);
+	//     tools.addToggle("refresh", "Auto synchronize", function(b) {
+	//         autoSync = b;
+	//     });
+	//     tools.addToggle("compass", "Local transforms", (v) -> sceneEditor.localTransform = v, sceneEditor.localTransform);
+	//     tools.addToggle("connectdevelop", "Wireframe",(b) -> { sceneEditor.setWireframe(b); });
+	//     pauseButton = tools.addToggle("pause", "Pause animation", function(v) {}, false);
+	//     tools.addRange("Speed", function(v) {
+	//         scene.speed = v;
+	//     }, scene.speed);
+
+	//     statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
+	//     statusText.setPosition(5, 5);
+
+	//     updateGrid();
+	// }
+
 	function onPrefabChange(p: PrefabElement, ?pname: String) {
-		if(p == data) {
+		if(p == cast(data, hrt.prefab.Prefab)) {
 			previewMax = hxd.Math.min(data.duration == 0 ? 5000 : data.duration, previewMax);
 			refreshTimeline(false);
 
 			cullingPreview.radius = data.cullingRadius;
 		}
 
-		if(pname == "time" || pname == "loop" || pname == "animation") {
+		if(pname == "time" || pname == "loop") {
 			afterPan(false);
-			data.refreshObjectAnims(sceneEditor.getContext(data));
+			data.refreshObjectAnims();
 		}
 	}
 
 	function onRefreshScene() {
-		var renderProps = data.find(e -> e.to(hrt.prefab.RenderProps));
+		var renderProps = cast(data, hrt.prefab.Prefab).find(e -> e.to(hrt.prefab.RenderProps));
 		if(renderProps != null)
 			renderProps.applyProps(scene.s3d.renderer);
 		updateGrid();
@@ -907,12 +1038,12 @@ class FXEditor extends FileView {
 			var prevSel = null;
 
 			function beforeChange() {
-				backup = [for(c in curves) haxe.Json.parse(haxe.Json.stringify(c.save()))];
+				backup = [for(c in curves) haxe.Json.parse(haxe.Json.stringify(c.save({})))];
 				prevSel = [selectMin, selectMax];
 			}
 
 			function afterChange() {
-				var newVals = [for(c in curves) haxe.Json.parse(haxe.Json.stringify(c.save()))];
+				var newVals = [for(c in curves) haxe.Json.parse(haxe.Json.stringify(c.save({})))];
 				var newSel = [selectMin, selectMax];
 				undo.change(Custom(function(undo) {
 					if(undo) {
@@ -1149,7 +1280,7 @@ class FXEditor extends FileView {
 		var refreshDopesheet : Void -> Void = null;
 
 		function backupCurves() {
-			return [for(c in curves) haxe.Json.parse(haxe.Json.stringify(c.save()))];
+			return [for(c in curves) haxe.Json.parse(haxe.Json.stringify(c.save({})))];
 		}
 		var lastBackup = backupCurves();
 
@@ -1286,7 +1417,6 @@ class FXEditor extends FileView {
 		}
 
 		var minHeight = 40;
-		var ctx = sceneEditor.getContext(data);
 		for(curve in curves) {
 			var dispKey = getPath() + "/" + curve.getAbsPath(true);
 			var curveContainer = new Element('<div class="curve"><label class="curve-label">${curve.name}</alpha></div>').appendTo(curvesContainer);
@@ -1326,7 +1456,7 @@ class FXEditor extends FileView {
 			}
 			var shader = curve.parent.to(hrt.prefab.Shader);
 			if(shader != null) {
-				var sh = shader.getShaderDefinition(ctx);
+				var sh = shader.getShaderDefinition();
 				if(sh != null) {
 					var v = sh.data.vars.find(v -> v.kind == Param && v.name == curve.name);
 					if(v != null && v.qualifiers != null) {
@@ -1569,7 +1699,7 @@ class FXEditor extends FileView {
 			var id = prefix != null ? prefix + "." + prop.name : prop.name;
 			if(Curve.getCurve(element, id) != null)
 				continue;
-			var curve = new Curve(element);
+			var curve = new Curve(element,null);
 			curve.name = id;
 			if(prop.def != null)
 				curve.addKey(0, prop.def, Linear);
@@ -1599,7 +1729,9 @@ class FXEditor extends FileView {
 		var obj2dElt = Std.downcast(elt, hrt.prefab.Object2D);
 		var shaderElt = Std.downcast(elt, hrt.prefab.Shader);
 		var emitterElt = Std.downcast(elt, hrt.prefab.fx.Emitter);
-		var particle2dElt = Std.downcast(elt, hrt.prefab.l2d.Particle2D);
+
+		// TODO(ces) : Restore
+		//var particle2dElt = Std.downcast(elt, hrt.prefab.l2d.Particle2D);
 		var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
 		var lightElt = Std.downcast(elt, Light);
 
@@ -1737,13 +1869,15 @@ class FXEditor extends FileView {
 				addParam(param, "Instance ");
 			}
 		}
+		// TODO(ces) : Restore
+		/*
 		if (particle2dElt != null) {
 			for(param in hrt.prefab.l2d.Particle2D.emitter2dParams) {
 				if(!param.animate)
 					continue;
 				addParam(param, "");
 			}
-		}
+		}*/
 		if( lightElt != null ) {
 			switch lightElt.kind {
 				case Point:
@@ -1802,7 +1936,7 @@ class FXEditor extends FileView {
 			return;
 
 		if (is2D) {
-			grid2d = new h2d.Graphics(scene.editor.context.local2d);
+			grid2d = new h2d.Graphics(scene.s2d);
 			grid2d.scale(1);
 
 			grid2d.lineStyle(1.0, 12632256, 1.0);
@@ -1846,8 +1980,9 @@ class FXEditor extends FileView {
 	}
 
 	function onUpdate2D(dt:Float) {
-		var anim : hrt.prefab.fx.FX2D.FX2DAnimation = null;
-		var ctx = sceneEditor.getContext(data);
+		//TODO(ces) : ...
+		throw "not implemented yet";
+		/*var anim : hrt.prefab.fx.FX2D.FX2DAnimation = null;
 		if(ctx != null && ctx.local2d != null) {
 			anim = Std.downcast(ctx.local2d, hrt.prefab.fx.FX2D.FX2DAnimation);
 		}
@@ -1885,7 +2020,7 @@ class FXEditor extends FileView {
 			@:privateAccess grid2d.setPosition(scene.s2d.children[0].x, scene.s2d.children[0].y);
 		}
 
-
+	*/
 	}
 
 	var avg_smooth = 0.0;
@@ -1943,11 +2078,11 @@ class FXEditor extends FileView {
 	}
 
 	function onUpdate3D(dt:Float) {
-		var ctx = sceneEditor.getContext(data);
-		if(ctx == null || ctx.local3d == null)
+		var local3d = sceneEditor.root3d;
+		if(local3d == null)
 			return;
 
-		var allFx = ctx.local3d.findAll(o -> Std.downcast(o, hrt.prefab.fx.FX.FXAnimation));
+		var allFx = local3d.findAll(o -> Std.downcast(o, hrt.prefab.fx.FX.FXAnimation));
 
 		if(!pauseButton.isDown()) {
 			currentTime += scene.speed * dt;
@@ -1968,7 +2103,7 @@ class FXEditor extends FileView {
 
 		var emitRateCurrent = 0.0;
 
-		var emitters = ctx.local3d.findAll(o -> Std.downcast(o, hrt.prefab.fx.Emitter.EmitterObject));
+		var emitters = local3d.findAll(o -> Std.downcast(o, hrt.prefab.fx.Emitter.EmitterObject));
 		var totalParts = 0;
 		for(e in emitters) {
 			totalParts += @:privateAccess e.numInstances;
@@ -1982,7 +2117,7 @@ class FXEditor extends FileView {
 			emitterTime += e.tickTime;
 		}
 
-		var trails = ctx.local3d.findAll(o -> Std.downcast(o, hrt.prefab.l3d.Trails.TrailObj));
+		var trails = local3d.findAll(o -> Std.downcast(o, hrt.prefab.l3d.Trails.TrailObj));
 		var trailCount = 0;
 		var trailTime = 0.0;
 		var trailTris = 0.0;
@@ -2086,6 +2221,7 @@ class FXEditor extends FileView {
 		return curve.getParent(hrt.prefab.fx.Emitter) != null;
 	}
 
+	// TODO(ces) : restrore
 	static var _ = FileTree.registerExtension(FXEditor, ["fx"], { icon : "sitemap", createNew : "FX" });
 }
 
@@ -2093,7 +2229,7 @@ class FXEditor extends FileView {
 class FX2DEditor extends FXEditor {
 
 	override function getDefaultContent() {
-		return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab.fx.FX2D().saveData()));
+		return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab.fx.FX2D(null, null).save({})));
 	}
 
 	static var _2d = FileTree.registerExtension(FX2DEditor, ["fx2d__"], { icon : "sitemap", createNew : "FX 2D" });
