@@ -467,9 +467,13 @@ class Terrain extends Object3D {
 
 	#end
 
+	function createTerrain( parent : h3d.scene.Object ) {
+		return new TerrainMesh(parent);
+	}
+
 	override function makeInstance() : Void {
 
-		terrain = new TerrainMesh(shared.current3d);
+		terrain = createTerrain(shared.current3d);
 		terrain.tileSize = new h2d.col.Point(tileSizeX, tileSizeY);
 		terrain.cellCount = new h2d.col.IPoint(Math.ceil(tileSizeX * vertexPerMeter), Math.ceil(tileSizeY * vertexPerMeter) );
 		terrain.cellSize = new h2d.col.Point(tileSizeX / terrain.cellCount.x, tileSizeY / terrain.cellCount.y );

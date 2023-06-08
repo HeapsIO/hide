@@ -146,12 +146,6 @@ class Prefab {
 		}
 	}
 
-	public function dispose() {
-		for (c in children) {
-			c.dispose();
-		}
-	}
-
 	#if editor
 	public function setEditor(sceneEditor: hide.comp.SceneEditor) {
 		(cast shared:hide.prefab.ContextShared).editor = sceneEditor;

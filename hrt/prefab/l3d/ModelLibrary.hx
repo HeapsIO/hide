@@ -107,6 +107,12 @@ class ModelLibrary extends Prefab {
 	@:s var mipPower : Float;
 	@:s var mipLevels : Int = 1;
 
+	public function dispose() {
+		optimizedMeshes = [];
+		batches = [];
+
+	}
+
 	#if editor
 
 	@:s var compress : Bool = true;
