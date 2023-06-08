@@ -373,7 +373,9 @@ class Prefab {
 		Iterate over children prefab
 	**/
 	public inline function iterator() : Iterator<Prefab> {
-		return children.iterator();
+		if (children != null)
+			return children.iterator();
+		return [].iterator();
 	}
 
 	// (Un)Serialization
@@ -464,7 +466,7 @@ class Prefab {
 		if( path == null )
 			return null;
 		var parts = path.split(".");
-		var root = getRoot().getLocal3d();
+		var root = shared.root3d;
 		while( parts.length > 0 ) {
 			var v = null;
 			var pname = parts.shift();
@@ -799,8 +801,6 @@ class Prefab {
 		var type : String = data.type;
 
 		var cl : Class<Prefab> = Unknown;
-		if (type == "object")
-			type = "object3D";
 
 		if (type != null) {
 			var classEntry = registry.get(type);

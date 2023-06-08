@@ -30,11 +30,11 @@ class Resource extends hxd.res.Resource {
 		return isBSON ? new hxd.fmt.hbson.Reader(entry.getBytes(),false).read() : haxe.Json.parse(entry.getText());
 	}
 
-	public function load(?shared: ContextShared) : Object3D {
-		if( Std.downcast(prefab, Object3D) != null && cacheVersion == CACHE_VERSION )
-			return cast prefab;
+	public function load(?shared: ContextShared) : Prefab {
+		if( prefab != null && cacheVersion == CACHE_VERSION )
+			return prefab;
 		var data = loadData();
-		prefab = Std.downcast(Prefab.createFromDynamic(data), Object3D);
+		prefab = Prefab.createFromDynamic(data);
 		prefab.shared.prefabSource = entry.path;
 		prefab.shared.currentPath = entry.path;
 		cacheVersion = CACHE_VERSION;
