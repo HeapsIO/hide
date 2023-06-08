@@ -1,5 +1,6 @@
 common.hxml
 -D hide
+-D prefab2
 -js bin/hide.js
 -main hide.Ide
 --macro include("h3d.shader")
