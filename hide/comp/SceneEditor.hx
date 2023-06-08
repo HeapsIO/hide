@@ -1910,6 +1910,7 @@ class SceneEditor {
 	}
 
 	function removeInstance(elt : PrefabElement) {
+		elt.parent = null;
 		if (elt.getLocal3d() != null)
 			elt.getLocal3d().remove();
 		if (elt.getLocal2d() != null)

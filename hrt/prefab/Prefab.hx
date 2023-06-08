@@ -123,9 +123,7 @@ class Prefab {
 		if (!forceInstanciate && (shared.isPrototype))
 			throw "Can't instanciate a template prefab unless params.forceInstanciate is true.";
 
-		#if editor
-		setEditor((cast shared:hide.prefab.ContextShared).editor);
-		#end
+
 
 		shared.root2d = shared.current2d = local2d;
 		shared.root3d = shared.current3d = local3d;
@@ -644,6 +642,10 @@ class Prefab {
 		var newInstance = clone(root, contextShared);
 		if (newInstance == null)
 			return null;
+
+		#if editor
+		newInstance.setEditor((cast shared:hide.prefab.ContextShared).editor);
+		#end
 
 		o2d = o2d != null ? o2d : (root != null ? root.findFirstLocal2d() : null);
 		o3d = o3d != null ? o3d : (root != null ? root.findFirstLocal3d() : null);

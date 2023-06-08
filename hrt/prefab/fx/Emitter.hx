@@ -544,8 +544,11 @@ class EmitterObject extends h3d.scene.Object {
 				baseEmitMat = null;
 
 			var empty3d = new h3d.scene.Object();
-			var spawn = particleTemplate.make(empty3d);
-			var loc3d = spawn.local3d;
+			// if (particleTemplate.local3d == null)
+			// 	particleTemplate.instanciate(null, empty3d);
+			// var loc3d = particleTemplate.local3d;
+			var loc3d = particleTemplate.make(empty3d).local3d;
+
 			var mesh = Std.downcast(loc3d, h3d.scene.Mesh);
 			if( mesh == null ) {
 				for( i in 0...loc3d.numChildren ) {
