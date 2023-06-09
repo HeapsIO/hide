@@ -641,6 +641,12 @@ class Ide {
 		js.Browser.console.error(e);
 	}
 
+	public function quickError( e : Dynamic ) {
+		var e = new Element('<div class="globalErrorMessage">${StringTools.htmlEscape(Std.string(e))}</div>');
+		e.appendTo(window.window.document.body);
+		haxe.Timer.delay(() -> e.remove(), 5000);
+	}
+
 	function get_projectDir() return ideConfig.currentProject.split("\\").join("/");
 	function get_resourceDir() return projectDir+"/res";
 

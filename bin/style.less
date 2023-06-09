@@ -15,6 +15,17 @@ body {
 	user-select:none;
 }
 
+.globalErrorMessage {
+	position : absolute;
+	z-index : 999;
+	bottom:0px;
+	left:0px;
+	padding : 3px;
+	background: #400;
+	color : red;
+	border : 1px solid #C00;
+}
+
 //:focus { outline: none; }
 
 ul, li {
@@ -2627,7 +2638,7 @@ div.popup {
 		display: grid;
 		grid-template-columns: auto 1fr;
 		align-items: center;
-		
+
 		input[type="radio"] {
 			padding-bottom: 4px;
 		}
@@ -2663,11 +2674,11 @@ div.popup {
 		padding: 0;
 		/*box-shadow: 0px 1px #181818;*/
 	  }
-	  
+
 	  input[type=checkbox]:checked{
 		background: #4772b3;
 	  }
-	  
+
 	  input[type=checkbox]:checked:after {
 		content: '\2714';
 		position: absolute;
@@ -2823,7 +2834,7 @@ div.gradient-box {
 		}
 
 		.gradient-stop {
-			
+
 			filter: url(#shadow);
 
 			.outline {

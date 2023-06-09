@@ -11,6 +11,16 @@ body {
   background-color: black;
   user-select: none;
 }
+.globalErrorMessage {
+  position: absolute;
+  z-index: 999;
+  bottom: 0px;
+  left: 0px;
+  padding: 3px;
+  background: #400;
+  color: red;
+  border: 1px solid #C00;
+}
 ul,
 li {
   margin: 0;
