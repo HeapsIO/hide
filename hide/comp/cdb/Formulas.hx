@@ -3,6 +3,54 @@ import hscript.Checker;
 
 typedef Formula = { name : String, type : String, call : Dynamic -> Null<Float> }
 
+class SheetAccess {
+	public var form : Formulas;
+	public var name : String;
+	public var all(get,never) : Iterator<Dynamic>;
+	var sheetName : String;
+	var resolveCache : Map<String,Dynamic>;
+
+	public function new(form,name) {
+		this.form = form;
+		this.name = name;
+		sheetName = @:privateAccess form.typeNameToSheet(name);
+	}
+
+	public function get_all() : Iterator<Dynamic> {
+		for( s in @:privateAccess form.editor.base.sheets )
+			if( s.name == sheetName ) {
+				var index = 0;
+				var lines = s.lines;
+				var max = lines.length;
+				return {
+					hasNext : () -> index < max,
+					next: () -> @:privateAccess form.remap(lines[index++], s)
+				};
+			}
+		throw "Sheet not found : "+sheetName;
+		return null;
+	}
+
+	public function resolve(id:String) : Dynamic {
+		if( resolveCache == null )
+			resolveCache = new Map();
+		var o = resolveCache.get(id);
+		if( o != null )
+			return o;
+		for( s in @:privateAccess form.editor.base.sheets )
+			if( s.name == sheetName ) {
+				for( o in s.lines )
+					if( Reflect.field(o,s.idCol.name) == id ) {
+						var o = @:privateAccess form.remap(o, s);
+						resolveCache.set(id, o);
+						return o;
+					}
+			}
+		throw "Could not resolve "+name+"."+id;
+	}
+
+}
+
 class Formulas {
 
 	var ide : hide.Ide;
@@ -11,6 +59,7 @@ class Formulas {
 
 	var formulas : Array<Formula> = [];
 	var fmap : Map<String, Map<String, Formula>> = [];
+	var currentMap : Map<String,Dynamic>;
 
 	public function new( editor : Editor ) {
 		ide = hide.Ide.inst;
@@ -28,7 +77,7 @@ class Formulas {
 	}
 
 	public function evaluateAll( ?sheet : cdb.Sheet ) {
-		var maps = new Map();
+		currentMap = new Map();
 		for( s in editor.base.sheets ) {
 			if( sheet != null && sheet != s ) continue;
 			var forms = fmap.get(s.name);
@@ -46,7 +95,7 @@ class Formulas {
 					if( fname == null ) fname = c.def;
 					if( fname == null ) continue;
 					if( omapped == null )
-						omapped = remap(o, s, maps);
+						omapped = remap(o, s);
 					var v = try forms.get(fname).call(omapped) catch( e : Dynamic ) Math.NaN;
 					if( v == null && c.opt )
 						Reflect.deleteField(o, c.name);
@@ -57,16 +106,17 @@ class Formulas {
 				}
 			}
 		}
+		currentMap = null;
 	}
 
-	function remap( o : Dynamic, s : cdb.Sheet, maps : Map<String,Dynamic> ) : Dynamic {
+	function remap( o : Dynamic, s : cdb.Sheet ) : Dynamic {
 		var id = s.idCol != null ? Reflect.field(o, s.idCol.name) : null;
-		var m = if( id != null ) maps.get(s.name+":"+id) else null;
+		var m = if( id != null ) currentMap.get(s.name+":"+id) else null;
 		if( m != null )
 			return m;
 		m = {};
 		if( id != null )
-			maps.set(s.name+":"+id, m);
+			currentMap.set(s.name+":"+id, m);
 		for( c in s.columns ) {
 			var v : Dynamic = Reflect.field(o, c.name);
 			if( v == null ) continue;
@@ -75,12 +125,12 @@ class Formulas {
 				var sother = editor.base.getSheet(other);
 				var o2 = sother.index.get(v);
 				if( o2 == null ) continue;
-				v = remap(o2.obj, sother, maps);
+				v = remap(o2.obj, sother);
 			case TProperties:
-				v = remap(v, s.getSub(c), maps);
+				v = remap(v, s.getSub(c));
 			case TList:
 				var sub = s.getSub(c);
-				v = [for( o in (v:Array<Dynamic>) ) remap(o, sub, maps)];
+				v = [for( o in (v:Array<Dynamic>) ) remap(o, sub)];
 			//case TEnum(values) -- TODO later (remap String?)
 			//case TFlags(values) -- TODO later
 			default:
@@ -98,12 +148,21 @@ class Formulas {
 
 		var sheetNames = new Map();
 		for( s in editor.base.sheets )
-			if( s.idCol != null )
-				sheetNames.set(getTypeName(s), true);
+			sheetNames.set(getTypeName(s), s);
+
+		var refs : Array<SheetAccess> = [];
 		function replaceRec( e : hscript.Expr ) {
 			switch( e.e ) {
 			case EField({ e : EIdent(s) }, name) if( sheetNames.exists(s) ):
-				e.e = EConst(CString(name)); // replace for faster eval
+				if( name == "all" || name == "resolve" ) {
+					var found = false;
+					for( r in refs )
+						if( r.name == s )
+							found = true;
+					if( !found )
+						refs.push(new SheetAccess(this, s));
+				} else if( sheetNames.get(s).idCol != null )
+					e.e = EConst(CString(name)); // replace for faster eval
 			default:
 				hscript.Tools.iter(e, replaceRec);
 			}
@@ -114,6 +173,9 @@ class Formulas {
 		fmap = new Map();
 		var interp = new hscript.Interp();
 		interp.variables.set("Math", Math);
+		for( r in refs )
+			interp.variables.set(r.name, r);
+
 		try interp.execute(expr) catch( e : hscript.Expr.Error ) {
 			ide.error(formulasFile+": "+e.toString());
 			return;
@@ -185,6 +247,14 @@ class Formulas {
 			if( def == null ) Reflect.deleteField(obj, c.name) else Reflect.setField(obj, c.name, def);
 		} else
 			Reflect.setField(obj, field, fname);
+	}
+
+	public function evalBlock<T>( f : Void -> T ) : T {
+		var old = currentMap;
+		if( currentMap == null ) currentMap = new Map();
+		var ret = f();
+		currentMap = old;
+		return ret;
 	}
 
 	function getFormulaNameFromValue( obj : Dynamic, c : cdb.Data.Column ) {
@@ -265,6 +335,18 @@ class FormulasView extends hide.view.Script {
 		},[]));
 
 		var tstring = check.checker.types.resolve("String");
+		var _tarray = check.checker.types.resolve("Array");
+		if( tstring == null ) {
+			var cstring = check.checker.types.defineClass("String");
+			tstring = TInst(cstring,[]);
+		}
+		if( _tarray == null ) {
+			var carray = check.checker.types.defineClass("Array");
+			_tarray = TInst(carray,[]);
+		}
+		var carray = switch( _tarray ) { case TInst(c,_): c; default: throw "assert"; }
+		function tarray(t) return TInst(carray,[t]);
+
 		var cdefs = new Map();
 		for( s in ide.database.sheets ) {
 			var cdef : CClass = {
@@ -274,6 +356,19 @@ class FormulasView extends hide.view.Script {
 				params : [],
 			};
 			cdefs.set(s.name, cdef);
+			var afields = [
+				{
+					name : "all",
+					t : tarray(TInst(cdef,[])),
+					opt : false,
+				},
+				{
+					name : "resolve",
+					t : TFun([{t:tstring,name:"id",opt:false}],TInst(cdef,[])),
+					opt : false,
+				}
+			];
+			check.checker.setGlobal(cdef.name, TAnon(afields));
 		}
 		for( s in ide.database.sheets ) {
 			var cdef = cdefs.get(s.name);
@@ -295,7 +390,7 @@ class FormulasView extends hide.view.Script {
 				if( t == null ) continue;
 				cdef.fields.set(c.name, { t : t, name : c.name, isPublic : true, complete : true, canWrite : false, params : [] });
 			}
-			@:privateAccess check.checker.types.types.set(cdef.name, CTClass(cdef));
+			check.checker.types.defineClass(cdef.name, cdef);
 		}
 		return check;
 	}
