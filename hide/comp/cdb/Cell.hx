@@ -94,7 +94,12 @@ class Cell {
 	function evaluate() {
 		var f = editor.formulas.get(this);
 		if( f == null ) return;
-		var newV : Float = try f.call(line.obj) catch( e : Dynamic ) Math.NaN;
+		function displayError(msg:String) {
+			ide.quickError(msg);
+		}
+		var newV : Float = try editor.formulas.evalBlock(() -> f.call(line.obj))
+		catch( e : hscript.Expr.Error ) { displayError(e.toString()); Math.NaN; }
+		catch( e : Dynamic ) { displayError(Std.string(e)); Math.NaN; }
 		if( newV != currentValue ) {
 			currentValue = newV;
 			Reflect.setField(line.obj, column.name, newV);
