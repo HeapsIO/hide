@@ -93,7 +93,6 @@ class Table extends Component {
 		@:privateAccess {
 			var elt = editor.element.parent();
 			var scrollbarWidth = elt.parent().width() - elt.width();
-			trace(@:privateAccess editor.cdbTable.contentWidth, scrollbarWidth);
 			element.width(@:privateAccess editor.cdbTable.contentWidth - scrollbarWidth); // prevent to reflow all cdb-view
 		}
 	}
