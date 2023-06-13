@@ -1,129 +1,54 @@
 package hrt.prefab;
 
-typedef ShaderDef = {
-	var shader : hxsl.SharedShader;
-	var inits : Array<{ variable : hxsl.Ast.TVar, value : Dynamic }>;
-}
-
-typedef ShaderDefCache = Map<String, ShaderDef>;
-
 class ContextShared {
 	public var root2d : h2d.Object;
 	public var root3d : h3d.scene.Object;
-	public var contexts : Map<Prefab,Context>;
+
 	public var currentPath : String;
 	public var editorDisplay : Bool;
+
+	public var isPrototype = true;
+
+	public var prefabSource : String = "";
+
+	/**
+		isSceneReference is set to true when this
+		context is a local reference to another prefab
+		within the same scene.
+	**/
+	public var isSceneReference : Bool = false;
 
 	/**
 		When make() is called on prefab, it will instead call customMake on
 		each child with current which can either intercept or call make() recursively.
 	 **/
-	public var customMake : Context -> Prefab -> Void;
+	 public var customMake : Prefab -> Void;
 
-	/**
-		If is a reference to another prefab file, this is the parent prefab.
-		See refContexts for children.
-	**/
-	public var parent : { prefab : Prefab, shared : ContextShared };
+	// When makeInstance is called, this contains the 3d object that should be used as a parent for the newly created object
+	@:noCompletion
+	public var current3d : h3d.scene.Object = null;
 
-	var cache : h3d.prim.ModelCache;
-	var shaderCache : ShaderDefCache;
+	// When makeInstance is called, this contains the 2d object that should be used as a parent for the newly created object
+	@:noCompletion
+	public var current2d : h2d.Object = null;
+
+	// Parent prefab if the object if it was created as a reference
+	public var parent : Prefab = null;
+
 	var bakedData : Map<String, haxe.io.Bytes>;
-	/**
-		References to prefab within the same scene
-	**/
-	var sceneReferences : Map<Prefab,Array<Context>>;
-	/**
-		Contexts of references to other prefabs
-	**/
-	var refsContexts : Map<Prefab, ContextShared>;
 
-	public var customCleanup : Context -> Void;
+	#if editor
+	public var scene : hide.comp.Scene = null;
+	#end
+
+	public var customCleanup : Void -> Void;
 
 	public function new( ?res : hxd.res.Resource ) {
-		root2d = new h2d.Object();
-		root3d = new h3d.scene.Object();
-		contexts = new Map();
-		cache = new h3d.prim.ModelCache();
-		shaderCache = new ShaderDefCache();
-		sceneReferences = new Map();
-		refsContexts = new Map();
 		if( res != null ) currentPath = res.entry.path;
 	}
 
 	public function onError( e : Dynamic ) {
 		throw e;
-	}
-
-	public function elements() {
-		return [for(e in contexts.keys()) e];
-	}
-
-	public function getContexts(p: Prefab) : Array<Context> {
-		var ret : Array<Context> = [];
-		var ctx = contexts.get(p);
-		if(ctx != null)
-			ret.push(ctx);
-		var ctxs = sceneReferences.get(p);
-		if( ctxs != null )
-			for( v in ctxs )
-				ret.push(v);
-		for( ref in refsContexts )
-			for( v in ref.getContexts(p) )
-				ret.push(v);
-		return ret;
-	}
-
-	public function find<T:hrt.prefab.Prefab>( cur : Prefab, cl : Class<T>, ?name, ?references ) : T {
-		var root = cur;
-		while( root.parent != null ) root = root.parent;
-		var p = root.getOpt(cl, name, true);
-		if( p != null )
-			return p;
-		if( references ) {
-			for( p => ref in refsContexts ) {
-				var v = ref.find(p, cl, name, true);
-				if( v != null ) return v;
-			}
-		}
-		return null;
-	}
-
-	public function getRef( prefab : Prefab ) {
-		return refsContexts.get(prefab);
-	}
-
-	public function cloneRef( prefab : Prefab, newPath : String ) {
-		var ctx = contexts.get(prefab);
-		if( ctx == null )
-			throw "Prefab reference has no context created";
-		var sh = refsContexts.get(prefab);
-		if( sh != null ) {
-			sh.root2d = ctx.local2d;
-			sh.root3d = ctx.local3d;
-			return sh;
-		}
-		sh = allocForRef();
-		refsContexts.set(prefab, sh);
-
-		sh.root2d = ctx.local2d;
-		sh.root3d = ctx.local3d;
-		// own contexts
-		// own references
-		sh.currentPath = newPath;
-		sh.editorDisplay = editorDisplay;
-		sh.parent = { shared : this, prefab : prefab };
-		sh.cache = cache;
-		sh.shaderCache = shaderCache;
-		sh.customMake = customMake;
-		sh.customCleanup = customCleanup;
-		// own bakedData
-		// own refsContext
-		return sh;
-	}
-
-	function allocForRef() {
-		return new ContextShared();
 	}
 
 	public function loadDir(p : String, ?dir : String ) : Array<hxd.res.Any> {
@@ -150,12 +75,8 @@ class ContextShared {
 		throw "Not implemented";
 	}
 
-	public function loadPrefab( path : String ) : Prefab {
-		return hxd.res.Loader.currentInstance.load(path).toPrefab().load();
-	}
-
-	public function loadShader( path : String ) : ShaderDef {
-		var r = shaderCache.get(path);
+	public function loadShader( path : String ) : Cache.ShaderDef {
+		var r = Cache.get().shaderDefCache.get(path);
 		if(r != null)
 			return r;
 		var cl : Class<hxsl.Shader> = cast Type.resolveClass(path.split("/").join("."));
@@ -169,20 +90,20 @@ class ContextShared {
 			shader: shader,
 			inits: []
 		};
-		shaderCache.set(path, r);
+		Cache.get().shaderDefCache.set(path, r);
 		return r;
 	}
 
 	public function loadModel( path : String ) {
-		return cache.loadModel(hxd.res.Loader.currentInstance.load(path).toModel());
+		return Cache.get().modelCache.loadModel(hxd.res.Loader.currentInstance.load(path).toModel());
 	}
 
 	public function loadAnimation( path : String ) {
-		return @:privateAccess cache.loadAnimation(hxd.res.Loader.currentInstance.load(path).toModel());
+		return @:privateAccess Cache.get().modelCache.loadAnimation(hxd.res.Loader.currentInstance.load(path).toModel());
 	}
 
 	public function loadTexture( path : String, async : Bool = false ) {
-		return cache.loadTexture(null, path, async);
+		return Cache.get().modelCache.loadTexture(null, path, async);
 	}
 
 	public function loadBytes( file : String) : haxe.io.Bytes {
@@ -265,31 +186,8 @@ class ContextShared {
 		}
 	}
 
-	function getChildrenRoots( base : h3d.scene.Object, p : Prefab, out : Array<h3d.scene.Object> ) {
-		for( c in p.children ) {
-			var ctx = contexts.get(c);
-			if( ctx == null ) continue;
-			if( ctx.local3d == base )
-				getChildrenRoots(base, c, out);
-			else
-				out.push(ctx.local3d);
-		}
-		return out;
-	}
-
-	public function getSelfObject( p : Prefab ) : h3d.scene.Object {
-		var ctx = contexts.get(p);
-		if(ctx == null) return null;
-
-		var parentCtx = p.parent != null ? contexts.get(p.parent) : null;
-		if(parentCtx != null && ctx.local3d == parentCtx.local3d)
-			return null;
-
-		return ctx.local3d;
-	}
-
 	public function getObjects<T:h3d.scene.Object>( p : Prefab, c: Class<T> ) : Array<T> {
-		var root = getSelfObject(p);
+		var root = p.findFirstLocal3d();
 		if(root == null) return [];
 		var childObjs = getChildrenRoots(root, p, []);
 		var ret = [];
@@ -308,28 +206,16 @@ class ContextShared {
 		return ret;
 	}
 
-	public function getMaterials( p : Prefab ) {
-		var root = getSelfObject(p);
-		if(root == null) return [];
-		var childObjs = getChildrenRoots(root, p, []);
-		var ret = [];
-		function rec(o : h3d.scene.Object) {
-			if( o.isMesh() ) {
-				var m = o.toMesh();
-				var multi = Std.downcast(m, h3d.scene.MultiMaterial);
-				if( multi != null ) {
-					for( m in multi.materials )
-						if( m != null )
-							ret.push(m);
-				} else if( m.material != null )
-					ret.push(m.material);
-			}
-			for( child in o )
-				if( childObjs.indexOf(child) < 0 )
-					rec(child);
+	function getChildrenRoots( base : h3d.scene.Object, p : Prefab, out : Array<h3d.scene.Object> ) {
+		for( c in p.children ) {
+			var o3d = c.to(Object3D);
+			if (o3d == null)
+				return out;
+			if( o3d.local3d == base )
+				getChildrenRoots(base, c, out);
+			else
+				out.push(o3d.local3d);
 		}
-		rec(root);
-		return ret;
+		return out;
 	}
-
 }

@@ -23,38 +23,35 @@ class Anisotropy extends Prefab {
 	@:s public var noiseDirectionPath : String = null;
 	@:s public var rotationOffset : Float = 0.0;
 
-	public function new(?parent) {
-		super(parent);
-		type = "anisotropy";
+	public function new(?parent, shared: ContextShared) {
+		super(parent,shared);
 	}
 
-	function getMaterials( ctx : Context ) {
+	function getMaterials() {
 		if( Std.isOfType(parent, Material) ) {
 			var material : Material = cast parent;
-			return material.getMaterials(ctx);
+			return material.getMaterials();
 		}
 		else {
-			return ctx.local3d.getMaterials();
+			return findFirstLocal3d().getMaterials();
 		}
 	}
 
-	override function makeInstance( ctx : Context ):Context {
-		ctx = ctx.clone(this);
-		refreshShaders(ctx);
-		updateInstance(ctx);
-		return ctx;
+	override function makeInstance():Void {
+		refreshShaders();
+		updateInstance();
 	}
 
-	function refreshShaders( ctx : Context ) {
+	function refreshShaders() {
 		var fv = new FlatValue();
 		var as = new AnisotropicForward();
 		var nt = new NoiseTexture();
 		var ff = new FrequencyValue();
 
-		var noiseIntensityTexture = noiseIntensityPath != null ? ctx.loadTexture(noiseIntensityPath) : null;
-		var noiseDirectionTexture = noiseDirectionPath != null ? ctx.loadTexture(noiseDirectionPath) : null;
+		var noiseIntensityTexture = noiseIntensityPath != null ? shared.loadTexture(noiseIntensityPath) : null;
+		var noiseDirectionTexture = noiseDirectionPath != null ? shared.loadTexture(noiseDirectionPath) : null;
 
-		var mat = getMaterials(ctx);
+		var mat = getMaterials();
 
 		for( m in mat ) {
 			m.mainPass.removeShader(m.mainPass.getShader(NoiseTexture));
@@ -83,8 +80,8 @@ class Anisotropy extends Prefab {
 		}
 	}
 
-	override function updateInstance( ctx : Context, ?propName : String ) {
-		for( m in getMaterials(ctx) ) {
+	override function updateInstance(?propName : String ) {
+		for( m in getMaterials() ) {
 
 			var fv = m.mainPass.getShader(FlatValue);
 			if( fv != null ) {
@@ -104,8 +101,8 @@ class Anisotropy extends Prefab {
 
 			var nt = m.mainPass.getShader(NoiseTexture);
 			if( nt != null ) {
-				nt.noiseIntensityTexture = noiseIntensityPath != null ? ctx.loadTexture(noiseIntensityPath) : null;
-				nt.noiseDirectionTexture = noiseDirectionPath != null ? ctx.loadTexture(noiseDirectionPath) : null;
+				nt.noiseIntensityTexture = noiseIntensityPath != null ? shared.loadTexture(noiseIntensityPath) : null;
+				nt.noiseDirectionTexture = noiseDirectionPath != null ? shared.loadTexture(noiseDirectionPath) : null;
 				nt.intensityFactor = intensityFactor;
 				nt.rotationOffset = hxd.Math.degToRad(rotationOffset);
 			}
@@ -113,13 +110,13 @@ class Anisotropy extends Prefab {
 	}
 
 	#if editor
-	override function getHideProps() : HideProps {
+	override function getHideProps() : hide.prefab.HideProps {
 		return { 	icon : "cube",
 					name : "Anisotropy",
 					allowParent : function(p) return p.to(Material) != null  };
 	}
 
-	override function edit( ctx : EditContext ) {
+	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);
 
 		var flatParams = 	'<dt>Intensity</dt><dd><input type="range" min="0" max="1" field="intensity"/></dd>
@@ -160,12 +157,12 @@ class Anisotropy extends Prefab {
 		ctx.properties.add(props, this, function(pname) {
 			if( pname == "mode" || pname == "noiseIntensityPath" || pname == "noiseDirectionPath" ) {
 				ctx.rebuildProperties();
-				refreshShaders(ctx.getContext(this));
+				refreshShaders();
 			}
 			ctx.onChange(this, pname);
 		});
 	}
 	#end
 
-	static var _ = Library.register("anisotropy", Anisotropy);
+	static var _ = Prefab.register("anisotropy", Anisotropy);
 }

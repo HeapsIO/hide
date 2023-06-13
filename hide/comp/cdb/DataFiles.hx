@@ -60,7 +60,7 @@ class DataFiles {
 	}
 	#else
 	static function loadPrefab(file:String) {
-		var l = hrt.prefab.Library.create(file.split(".").pop().toLowerCase());
+		var l = hrt.prefab.Prefab.create(file.split(".").pop().toLowerCase());
 		var path = getPath(file);
 		l.loadData(haxe.Json.parse(sys.io.File.getContent(path)));
 		return l;
@@ -327,7 +327,7 @@ class DataFiles {
 		for( file => pf in prefabs ) {
 			skip++;
 			var path = ide.getPath(file);
-			var out = ide.toJSON(pf.saveData());
+			var out = ide.toJSON(pf.serializeToDynamic());
 			if( force ) {
 				var txt = try sys.io.File.getContent(path) catch( e : Dynamic ) null;
 				if( txt == out ) continue;

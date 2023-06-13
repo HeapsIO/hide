@@ -13,17 +13,17 @@ class Anim2D extends Object2D {
 
 	var tex : h3d.mat.Texture;
 
-	override function updateInstance( ctx: Context, ?propName : String ) {
-		super.updateInstance(ctx, propName);
+	override function updateInstance(?propName : String ) {
+		super.updateInstance(propName);
 
-		var h2dAnim = (cast ctx.local2d : h2d.Anim);
+		var h2dAnim = (cast local2d : h2d.Anim);
 
 		if (propName == null || (propName == "src" || propName == "widthFrame" || propName == "heightFrame" || propName == "nbFrames")) {
 			if (tex != null) {
 				tex = null;
 			}
 			if (src != null) {
-				tex = ctx.loadTexture(src);
+				tex = shared.loadTexture(src);
 				var t = h2d.Tile.fromTexture(tex);
 				var tiles = [];
 				var nbFrameRow = Std.int(t.width / widthFrame);
@@ -46,17 +46,13 @@ class Anim2D extends Object2D {
 		h2dAnim.blendMode = blendMode;
 	}
 
-	override function makeInstance(ctx:Context):Context {
-		ctx = ctx.clone(this);
-		var h2dAnim = new h2d.Anim([], fpsAnimation, ctx.local2d);
-		ctx.local2d = h2dAnim;
-		ctx.local2d.name = name;
-		updateInstance(ctx);
-		return ctx;
+	override function makeObject(parent2d: h2d.Object) : h2d.Object {
+		var h2dAnim = new h2d.Anim([], fpsAnimation, parent2d);
+		return h2dAnim;
 	}
 
 	#if editor
-	override function edit( ctx : EditContext ) {
+	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);
 
 		ctx.properties.add(new hide.Element('<div class="group" name="Frames">
@@ -73,12 +69,12 @@ class Anim2D extends Object2D {
 		});
 	}
 
-	override function getHideProps() : HideProps {
+	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "square", name : "Anim2D" };
 	}
 
 	#end
 
-	static var _ = Library.register("anim2D", Anim2D);
+	static var _ = Prefab.register("anim2D", Anim2D);
 
 }

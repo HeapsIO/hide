@@ -1,6 +1,9 @@
 package hrt.prefab.fx;
 import hrt.prefab.Curve;
 import hrt.prefab.Prefab as PrefabElement;
+import hrt.prefab.fx.Value as Value;
+
+import hrt.prefab.fx.Evaluator;
 
 typedef ShaderParam = {
 	idx: Int,
@@ -102,38 +105,25 @@ typedef ObjectAnimation = {
 	?additionalProperies : AdditionalProperies
 };
 
-class BaseFX extends hrt.prefab.Library {
-	public static var useAutoPerInstance = true;
+interface BaseFX {
 
 	@:s public var duration : Float;
 	@:s public var startDelay : Float;
 	@:c public var scriptCode : String;
 	@:c public var cullingRadius : Float;
 	@:c public var blendFactor : Float;
-	@:c public var markers : Array<{t: Float}> = [];
+	@:s public var markers : Array<{t: Float}>;
 
-	public function new() {
-		super();
-		duration = 5.0;
-		scriptCode = null;
-		cullingRadius = 1000;
-		blendFactor = 1.0;
-	}
+	#if editor
+	public function refreshObjectAnims() : Void;
+	#end
+}
 
-	override function save() {
-		var obj : Dynamic = super.save();
-		if( markers != null && markers.length > 0 )
-			obj.markers = markers;
-		return obj;
-	}
+class BaseFXTools {
+	public static var useAutoPerInstance = true;
 
-	override function load( obj : Dynamic ) {
-		super.load(obj);
-		markers = obj.markers == null ? [] : obj.markers;
-	}
-
-	public static function makeShaderParams(ctx: Context, shaderElt: hrt.prefab.Shader) {
-		var shaderDef = shaderElt.getShaderDefinition(ctx);
+	public static function makeShaderParams(shaderElt: hrt.prefab.Shader) {
+		var shaderDef = shaderElt.getShaderDefinition();
 		if(shaderDef == null)
 			return null;
 
@@ -186,11 +176,11 @@ class BaseFX extends hrt.prefab.Library {
 	}
 
 	static var emptyParams : Array<String> = [];
-	public static function getShaderAnims(ctx: Context, elt: PrefabElement, anims: Array<ShaderAnimation>, ?batch: h3d.scene.MeshBatch) {
+	public static function getShaderAnims(elt: PrefabElement, anims: Array<ShaderAnimation>, ?batch: h3d.scene.MeshBatch) {
 		// Init all animations recursively except Emitter ones (called in Emitter)
 		if(Std.downcast(elt, hrt.prefab.fx.Emitter) == null) {
 			for(c in elt.children) {
-				getShaderAnims(ctx, c, anims, batch);
+				getShaderAnims(c, anims, batch);
 			}
 		}
 
@@ -198,25 +188,23 @@ class BaseFX extends hrt.prefab.Library {
 		if(shader == null)
 			return;
 
-		for(shCtx in ctx.shared.getContexts(elt)) {
-			if(shCtx.custom == null) continue;
-			var params = makeShaderParams(ctx, shader);
-			var shader : hxsl.Shader = shCtx.custom;
+		var params = makeShaderParams(shader);
 
-			if(useAutoPerInstance && batch != null)  @:privateAccess {
-				var perInstance = batch.instancedParams;
-				if ( perInstance == null ) {
-					perInstance = new hxsl.Cache.BatchInstanceParams([]);
-					batch.instancedParams = perInstance;
-				}
-				perInstance.forcedPerInstance.push({
-					shader: shader.shader.data.name,
-					params: params == null ? emptyParams : params.map(p -> p.def.name)
-				});
+		var shader = shader.shader;
+
+		if(useAutoPerInstance && batch != null) @:privateAccess {
+			var perInstance = batch.instancedParams;
+			if ( perInstance == null ) {
+				perInstance = new hxsl.Cache.BatchInstanceParams([]);
+					batch.instancedParams = perInstance; 
 			}
+			perInstance.forcedPerInstance.push({
+				shader: shader.shader.data.name,
+				params: params == null ? emptyParams : params.map(p -> p.def.name)
+			});
+		}
 
-			if(params == null) continue;
-
+		if(params != null) {
 			var anim = Std.isOfType(shader,hxsl.DynamicShader) ? new ShaderDynAnimation() : new ShaderAnimation();
 			anim.shader = shader;
 			anim.params = params;
@@ -224,17 +212,16 @@ class BaseFX extends hrt.prefab.Library {
 		}
 
 		if(batch != null) {
-			var shader = Std.downcast(ctx.custom, hxsl.Shader);
 			batch.material.mainPass.addShader(shader);
 		}
 	}
 
-	public function getFXRoot( ctx : Context, elt : PrefabElement ) : PrefabElement {
+	public static function getFXRoot(elt : PrefabElement ) : PrefabElement {
 		if( elt.name == "FXRoot" )
 			return elt;
 		else {
 			for(c in elt.children) {
-				var elt = getFXRoot(ctx, c);
+				var elt = getFXRoot(c);
 				if(elt != null) return elt;
 			}
 		}
@@ -242,6 +229,6 @@ class BaseFX extends hrt.prefab.Library {
 	}
 
 	#if editor
-	public function refreshObjectAnims(ctx: Context) { }
+	public function refreshObjectAnims() { }
 	#end
 }

@@ -2,14 +2,13 @@ package hrt.prefab;
 
 class DynamicShader extends Shader {
 
-	var shaderDef : hrt.prefab.ContextShared.ShaderDef;
+	var shaderDef : hrt.prefab.Cache.ShaderDef;
 	var shaderClass : Class<hxsl.Shader>;
 	@:s var isInstance : Bool = false;
 	var isShadergraph : Bool = false;
 
-	public function new(?parent) {
-		super(parent);
-		type = "shader";
+	public function new(?parent,  shared: ContextShared) {
+		super(parent, shared);
 	}
 
 	override function setShaderParam(shader:hxsl.Shader, v:hxsl.Ast.TVar, value:Dynamic) {
@@ -20,16 +19,15 @@ class DynamicShader extends Shader {
 		cast(shader,hxsl.DynamicShader).setParamValue(v, value);
 	}
 
-	override function getShaderDefinition(ctx:Context):hxsl.SharedShader {
-		if( shaderDef == null && ctx != null )
-			loadShaderDef(ctx);
+	override function getShaderDefinition():hxsl.SharedShader {
+		if( shaderDef == null)
+			loadShaderDef();
 		return shaderDef == null ? null : shaderDef.shader;
 	}
 
-	override function makeShader( ?ctx:Context ) {
-		if( getShaderDefinition(ctx) == null )
+	override function makeShader() {
+		if( getShaderDefinition() == null )
 			return null;
-		var shader;
 		if( isInstance && !isShadergraph)
 			shader = Type.createInstance(shaderClass,[]);
 		else {
@@ -41,12 +39,6 @@ class DynamicShader extends Shader {
 		}
 		syncShaderVars(shader, shaderDef.shader);
 		return shader;
-	}
-
-	override function makeInstance(ctx:Context):Context {
-		if( source == null )
-			return ctx;
-		return super.makeInstance(ctx);
 	}
 
 	function fixSourcePath() {
@@ -76,7 +68,7 @@ class DynamicShader extends Shader {
 		return cl;
 	}
 
-	public function loadShaderDef(ctx: Context) {
+	public function loadShaderDef() {
 		if(shaderDef == null) {
 			fixSourcePath();
 			if (StringTools.endsWith(source, ".shgraph")) {
@@ -97,7 +89,7 @@ class DynamicShader extends Shader {
 			} else {
 				var path = source;
 				if(StringTools.endsWith(path, ".hx")) path = path.substr(0, -3);
-				shaderDef = ctx.loadShader(path);
+				shaderDef = shared.loadShader(path);
 			}
 		}
 		if(shaderDef == null)
@@ -175,5 +167,5 @@ class DynamicShader extends Shader {
 		return null;
 	}
 
-	static var _ = Library.register("shader", DynamicShader);
+	static var _ = Prefab.register("shader", DynamicShader);
 }

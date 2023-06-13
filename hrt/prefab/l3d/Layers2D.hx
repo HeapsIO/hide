@@ -1,5 +1,7 @@
 package hrt.prefab.l3d;
 
+// NOTE(ces) : Not Tested
+
 typedef Layer2DValue = {
 	index	: Int,
 	name 	: String,
@@ -92,6 +94,7 @@ class LayerView2DRFXShader extends h3d.shader.ScreenShader {
 	}
 }
 
+@:access(h3d.scene.Renderer)
 class Layer2DRFX extends hrt.prefab.rfx.RendererFX {
 
 	public var pass = new h3d.pass.ScreenFx(new LayerView2DRFXShader());
@@ -155,7 +158,6 @@ class Layers2D extends hrt.prefab.Object3D {
 	@:s public var keepVisible : Bool = false;
 
 	#if editor
-	var storedCtx : hrt.prefab.Context;
 
 	var currentPixels : hxd.Pixels = null;
 	var currentTexture : h3d.mat.Texture = null;
@@ -188,32 +190,29 @@ class Layers2D extends hrt.prefab.Object3D {
 	#end
 
 	#if editor
-	override function save() : {} {
-		var o : Dynamic = super.save();
+	override function save(obj : Dynamic) : Dynamic {
+		super.save(obj);
 
 		for ( l in layers ) {
 			var pixels = layerTextures.get(l.name);
 			if ( pixels != null ) {
-				var contextShared = storedCtx.shared;
-				var path = new haxe.io.Path(contextShared.currentPath);
+				var path = new haxe.io.Path(shared.currentPath);
 				path.ext = "dat";
 				var fileName = "layer_" + l.name;
-				contextShared.saveTexture(fileName, pixels.toPNG(), path.toString() + "/" + this.name, "png");
+				shared.saveTexture(fileName, pixels.toPNG(), path.toString() + "/" + this.name, "png");
 			}
 		}
 
-		return o;
+		return obj;
 	}
 	#end
 
-	override function makeInstance( ctx : hrt.prefab.Context ) : hrt.prefab.Context {
-		ctx = super.makeInstance(ctx);
-		#if editor
-		storedCtx = ctx;
-		#end
+
+	override function makeInstance(){
+		super.makeInstance();
 
 		for ( l in layers ) {
-			var path = new haxe.io.Path(ctx.shared.currentPath);
+			var path = new haxe.io.Path(shared.currentPath);
 			path.ext = "dat";
 			var datDir = path.toString();
 			var fileName = "layer_" + l.name + ".png";
@@ -225,7 +224,6 @@ class Layers2D extends hrt.prefab.Object3D {
 			if ( pixels != null )
 				layerTextures.set(l.name, pixels);
 		}
-		return ctx;
 	}
 
 	function loadPixels(path : String) {
@@ -285,7 +283,7 @@ class Layers2D extends hrt.prefab.Object3D {
 			return;
 		if ( b ) {
 			if ( rfx == null ) {
-				rfx = new Layer2DRFX();
+				rfx = new Layer2DRFX(null, null);
 				var renderer = Std.downcast(ectx.scene.s3d.renderer, h3d.scene.pbr.Renderer);
 				renderer.effects.push(rfx);
 			}
@@ -296,12 +294,12 @@ class Layers2D extends hrt.prefab.Object3D {
 		}
 	}
 
-	function updateVisuals( ctx : hrt.prefab.Context ) {
+	function updateVisuals() {
 		if ( rfx != null ) {
 			var sh : LayerView2DRFXShader = cast rfx.pass.shader;
 			if( collideMap == null || collideMap.isDisposed() ) {
 				if ( collidePath != null ) {
-					collideMap = ctx.loadTexture(collidePath);
+					collideMap = shared.loadTexture(collidePath);
 					collideMap.filter = Nearest;
 					collidePixels = loadPixels(collidePath);
 				}
@@ -363,7 +361,7 @@ class Layers2D extends hrt.prefab.Object3D {
 
 			if ( currentLayer == revertDataToApply.layer ) {
 				currentTexture.uploadPixels(currentPixels);
-				updateVisuals(editorCtx.getContext(this));
+				updateVisuals();
 			}
 		}));
 	}
@@ -371,8 +369,7 @@ class Layers2D extends hrt.prefab.Object3D {
 	function createInteractiveBrush(ectx : hide.prefab.EditContext) {
 		if (!enabled) return;
 		editorCtx = ectx;
-		var ctx = ectx.getContext(this);
-		var s2d = ctx.shared.root2d.getScene();
+		var s2d = shared.root2d.getScene();
 		interactive = new h2d.Interactive(10000, 10000, s2d);
 		interactive.propagateEvents = true;
 		interactive.cancelEvents = false;
@@ -398,7 +395,7 @@ class Layers2D extends hrt.prefab.Object3D {
 				color = 0xff0000;
 			}
 
-			drawCircle(ctx, worldPos.x, worldPos.y, worldPos.z, radius, 5, color);
+			drawCircle(worldPos.x, worldPos.y, worldPos.z, radius, 5, color);
 		}
 
 		interactive.onWheel = function(e) {
@@ -573,16 +570,17 @@ class Layers2D extends hrt.prefab.Object3D {
 				paint();
 			}
 		};
-		updateVisuals(ctx);
+		updateVisuals();
 
 	}
 
-	public function drawCircle(ctx : hrt.prefab.Context, originX : Float, originY : Float, originZ : Float, radius: Float, thickness: Float, color) {
+	public function drawCircle(originX : Float, originY : Float, originZ : Float, radius: Float, thickness: Float, color) {
 		var newColor = h3d.Vector4.fromColor(color);
 		if (gBrushes == null || gBrushes.length == 0 || gBrushes[0].scaleX != radius || gBrushes[0].material.color != newColor) {
 			clearBrushes();
 			gBrushes = [];
-			var gBrush = new h3d.scene.Mesh(hrt.prefab.l3d.Spray.makePrimCircle(64, 0.95), ctx.local3d);
+			// TODO(ces) : Replace Prefab 2
+			var gBrush = new h3d.scene.Mesh(hrt.prefab.l3d.Spray.makePrimCircle(64, 0.95), local3d);
 			gBrush.scaleX = gBrush.scaleY = radius;
 			gBrush.ignoreParentTransform = true;
 			var pass = gBrush.material.mainPass;
@@ -592,7 +590,7 @@ class Layers2D extends hrt.prefab.Object3D {
 			gBrush.material.shadows = false;
 			gBrush.material.color = newColor;
 			gBrushes.push(gBrush);
-			gBrush = new h3d.scene.Mesh(new h3d.prim.Sphere(Math.min(radius*0.05, 0.35)), ctx.local3d);
+			gBrush = new h3d.scene.Mesh(new h3d.prim.Sphere(Math.min(radius*0.05, 0.35)), local3d);
 			gBrush.ignoreParentTransform = true;
 			var pass = gBrush.material.mainPass;
 			pass.setPassName("outline");
@@ -610,12 +608,12 @@ class Layers2D extends hrt.prefab.Object3D {
 		}
 	}
 
-	override function setSelected( ctx : hrt.prefab.Context, b : Bool ) {
+	override function setSelected(b : Bool ) {
 		if( !b ) {
 			removeInteractiveBrush();
 		}
 		setupRfx(editorCtx, keepVisible || b);
-		updateVisuals(ctx);
+		updateVisuals();
 		return false;
 	}
 
@@ -642,7 +640,6 @@ class Layers2D extends hrt.prefab.Object3D {
 
 	override function edit( ectx : hide.prefab.EditContext ) {
 		super.edit(ectx);
-		var ctx = ectx.getContext(this);
 
 		sceneEditor = ectx.scene.editor;
 
@@ -762,7 +759,7 @@ class Layers2D extends hrt.prefab.Object3D {
 					collideMap = null;
 				}
 			}
-			updateVisuals(ctx);
+			updateVisuals();
 		});
 
 		function selectLayer( name : String ) {
@@ -809,7 +806,7 @@ class Layers2D extends hrt.prefab.Object3D {
 					ectx.properties.build(lValueContent, vLayer, (pname) -> {
 						if (pname == "color") {
 							updateColors();
-							updateVisuals(ctx);
+							updateVisuals();
 						}
 					});
 
@@ -893,7 +890,7 @@ class Layers2D extends hrt.prefab.Object3D {
 		}
 
 		setupRfx(ectx, true);
-		updateVisuals(ctx);
+		updateVisuals();
 
 		var actions = new hide.Element('<div class="btn-list" align="center" style="margin-top: 5px;" ></div>').appendTo(list);
 		var addLayer = new hide.Element('<input type="button" value="Create a new layer" />').appendTo(actions);
@@ -921,6 +918,5 @@ class Layers2D extends hrt.prefab.Object3D {
 
 	#end
 
-	static var _ = hrt.prefab.Library.register("layers2D", Layers2D);
-
+	static var _ = hrt.prefab.Prefab.register("layers2D", Layers2D);
 }

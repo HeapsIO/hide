@@ -7,12 +7,10 @@ import hxd.Key as K;
 
 import hrt.prefab.Prefab as PrefabElement;
 import hrt.prefab.Object3D;
-import hrt.prefab.l3d.Instance;
 import hide.comp.cdb.DataFiles;
 
 class FiltersPopup extends hide.comp.Popup {
 	var editor:Prefab;
-
 	public function new(?parent:Element, ?root:Element, editor:Prefab, filters:Map<String, Bool>, type:String) {
 		super(parent, root);
 		this.editor = editor;
@@ -46,7 +44,6 @@ class FiltersPopup extends hide.comp.Popup {
 		}
 	}
 }
-
 @:access(hide.view.Prefab)
 class PrefabSceneEditor extends hide.comp.SceneEditor {
 	var parent : Prefab;
@@ -95,7 +92,8 @@ class PrefabSceneEditor extends hide.comp.SceneEditor {
 			haxe.Timer.delay(addElements.bind([p]), 0);
 		}
 
-		function addNewInstances() {
+		// TODO(ces) : Restore Instances
+		/*function addNewInstances() {
 			var items = new Array<hide.comp.ContextMenu.ContextMenuItem>();
 			for(type in DataFiles.getAvailableTypes() ) {
 				var typeId = DataFiles.getTypeName(type);
@@ -156,7 +154,7 @@ class PrefabSceneEditor extends hide.comp.SceneEditor {
 				menu: items
 			});
 		};
-		addNewInstances();
+		addNewInstances();*/
 		newItems.unshift({
 			label : "Recents",
 			menu : recents,
@@ -178,10 +176,11 @@ class PrefabSceneEditor extends hide.comp.SceneEditor {
 	}
 }
 
-class Prefab extends FileView {
+@:keep
+class Prefab extends hide.view.FileView {
 
 	public var sceneEditor : PrefabSceneEditor;
-	var data : hrt.prefab.Library;
+	var data : hrt.prefab.Prefab;
 
 	var tools : hide.comp.Toolbar;
 
@@ -225,8 +224,9 @@ class Prefab extends FileView {
 
 		createData();
 		var content = sys.io.File.getContent(getPath());
-		data.loadData(haxe.Json.parse(content));
+		data = hrt.prefab.Prefab.createFromDynamic(haxe.Json.parse(content));
 		currentSign = ide.makeSignature(content);
+
 
 		element.html('
 			<div class="flex vertical">
@@ -394,6 +394,7 @@ class Prefab extends FileView {
 		refreshViewModes();
 		tools.saveDisplayKey = "Prefab/toolbar";
 		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
+		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		statusText.setPosition(5, 5);
 		statusText.visible = false;
 
@@ -429,6 +430,9 @@ class Prefab extends FileView {
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
+		toolsDefs.push({id: "gridToggle", title : "Toggle grid", icon : "th", type : Toggle((v) -> { showGrid = v; updateGrid(); }) });
+		toolsDefs.push({id: "axisToggle", title : "Toggle model axis", icon : "cube", type : Toggle((v) -> { sceneEditor.showBasis = v; sceneEditor.updateBasis(); }) });
+		toolsDefs.push({id: "iconVisibility", title : "Toggle 3d icons visibility", icon : "image", type : Toggle((v) -> { hide.Ide.inst.show3DIcons = v; }), defaultValue: true });
 		toolsDefs.push({id: "gridToggle", title : "Toggle grid", icon : "th", type : Toggle((v) -> { showGrid = v; updateGrid(); }) });
 		toolsDefs.push({id: "axisToggle", title : "Toggle model axis", icon : "cube", type : Toggle((v) -> { sceneEditor.showBasis = v; sceneEditor.updateBasis(); }) });
 		toolsDefs.push({id: "iconVisibility", title : "Toggle 3d icons visibility", icon : "image", type : Toggle((v) -> { hide.Ide.inst.show3DIcons = v; }), defaultValue: true });
@@ -472,6 +476,7 @@ class Prefab extends FileView {
 			icon: "connectdevelop",
 			type: Toggle((b) -> { sceneEditor.setWireframe(b); }),
 		});
+
 		toolsDefs.push({
 			id: "jointsToggle",
 			title: "Joints",
@@ -530,6 +535,7 @@ class Prefab extends FileView {
 		posToolTip = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		posToolTip.dropShadow = { dx : 1, dy : 1, color : 0, alpha : 0.5 };
 
+
 		var gizmo = @:privateAccess sceneEditor.gizmo;
 
 		var onSetGizmoMode = function(mode: hide.view.l3d.Gizmo.EditMode) {
@@ -544,6 +550,7 @@ class Prefab extends FileView {
 		updateStats();
 		updateGrid();
 		initGraphicsFilters();
+
 		initSceneFilters();
 		sceneEditor.onRefresh = () -> {
 			initGraphicsFilters();
@@ -558,7 +565,6 @@ class Prefab extends FileView {
 			var lines : Array<String> = [
 				'Scene objects: ${scene.s3d.getObjectsCount()}',
 				'Interactives: ' + sceneEditor.interactives.count(),
-				'Contexts: ' + sceneEditor.context.shared.contexts.count(),
 				'Triangles: ${scene.engine.drawTriangles}',
 				'Buffers: ${memStats.bufferCount}',
 				'Textures: ${memStats.textureCount}',
@@ -572,9 +578,8 @@ class Prefab extends FileView {
 
 	function resetCamera( top : Bool ) {
 		var targetPt = new h3d.col.Point(0, 0, 0);
-		var curEdit = sceneEditor.curEdit;
-		if(curEdit != null && curEdit.rootObjects.length > 0) {
-			targetPt = curEdit.rootObjects[0].getAbsPos().getPosition().toPoint();
+		if(sceneEditor.selectedPrefabs.length > 0) {
+			targetPt = sceneEditor.selectedPrefabs[0].findFirstLocal3d().getAbsPos().getPosition().toPoint();
 		}
 		if(top)
 			sceneEditor.cameraController.set(200, Math.PI/2, 0.001, targetPt);
@@ -584,7 +589,7 @@ class Prefab extends FileView {
 	}
 
 	override function getDefaultContent() {
-		return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab.Library().saveData()));
+		return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab.Prefab(null, null).serializeToDynamic()));
 	}
 
 	override function canSave() {
@@ -595,7 +600,7 @@ class Prefab extends FileView {
 		if( !canSave() )
 			return;
 
-		var content = ide.toJSON(data.saveData());
+		var content = ide.toJSON(data.serializeToDynamic());
 		var newSign = ide.makeSignature(content);
 		if(newSign != currentSign)
 			haxe.Timer.delay(saveBackup.bind(content), 0);
@@ -685,9 +690,7 @@ class Prefab extends FileView {
 		var all = data.getAll(hrt.prefab.Object3D, true);
 		for (obj in all) {
 			if (obj.getDisplayFilters().contains(typeid)) {
-				var ctx = scene.editor.getContext(obj);
-				if (ctx != null)
-					obj.updateInstance(ctx);
+				obj.updateInstance();
 			}
 		}
 
@@ -837,7 +840,7 @@ class Prefab extends FileView {
 	}
 
 	function applySceneStyle(p: PrefabElement) {
-		var prefabView = Std.downcast(p, hrt.prefab.Library); // don't use "to" (Reference)
+		var prefabView = Std.downcast(p, hrt.prefab.Prefab); // don't use "to" (Reference)
 		if( prefabView != null && prefabView.parent == null ) {
 			updateGrid();
 			return;
@@ -851,8 +854,8 @@ class Prefab extends FileView {
 				if(cdbType != null && sceneFilters.get(cdbType) == false)
 					visible = false;
 			}
-			for(ctx in sceneEditor.getContexts(obj3d)) {
-				ctx.local3d.visible = visible;
+			if (obj3d.local3d != null) {
+				obj3d.local3d.visible = visible;
 			}
 		}
 		var color = getDisplayColor(p);
@@ -860,16 +863,16 @@ class Prefab extends FileView {
 			color = (color & 0xffffff) | 0xa0000000;
 			var box = p.to(hrt.prefab.l3d.Box);
 			if(box != null) {
-				var ctx = sceneEditor.getContext(box);
-				box.setColor(ctx, color);
+				box.setColor(color);
 			}
 			var poly = p.to(hrt.prefab.l3d.Polygon);
 			if(poly != null) {
-				var ctx = sceneEditor.getContext(poly);
-				poly.setColor(ctx, color);
+				poly.setColor(color);
 			}
 		}
 	}
+
+
 
 	function getDisplayColor(p: PrefabElement) : Null<Int> {
 		var typeId = p.getCdbType();
@@ -883,7 +886,7 @@ class Prefab extends FileView {
 		return null;
 	}
 
-	static var _ = FileTree.registerExtension(Prefab, ["prefab"], { icon : "sitemap", createNew : "Prefab" });
-	static var _1 = FileTree.registerExtension(Prefab, ["l3d"], { icon : "sitemap" });
+	static var _ = hide.view.FileTree.registerExtension(Prefab, ["prefab"], { icon : "sitemap", createNew : "prefab" });
+	static var _1 = hide.view.FileTree.registerExtension(Prefab, ["l3d"], { icon : "sitemap" });
 
 }

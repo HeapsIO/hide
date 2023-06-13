@@ -120,7 +120,9 @@ class Model extends FileView {
 		tabs = new hide.comp.Tabs(null,element.find(".tabs"));
 		eventList = element.find(".event-editor");
 
-		root = new hrt.prefab.Library();
+			var def = new hrt.prefab.Library();
+			new hrt.prefab.RenderProps(def).name = "renderer";
+			var l = new hrt.prefab.Light(def);
 		sceneEditor = new hide.comp.SceneEditor(this, root);
 		sceneEditor.editorDisplay = false;
 		sceneEditor.onRefresh = onRefresh;
@@ -639,7 +641,7 @@ class Model extends FileView {
 
 		plight = root.getAll(hrt.prefab.Light)[0];
 		if( plight != null ) {
-			this.light = sceneEditor.context.shared.contexts.get(plight).local3d;
+			this.light = hrt.prefab.Object3D.getLocal3d(plight);
 			lightDirection = this.light.getLocalDirection();
 		}
 

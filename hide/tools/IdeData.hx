@@ -233,7 +233,7 @@ class IdeData {
 			var path = getPath(file);
 			if( checkExists && !sys.FileSystem.exists(path) )
 				return null;
-			l.loadData(parseJSON(sys.io.File.getContent(path)));
+			return hrt.prefab.Prefab.createFromPath(path).get(cl);
 		} catch( e : Dynamic ) {
 			error("Invalid prefab "+file+" ("+e+")");
 			throw e;
@@ -244,7 +244,7 @@ class IdeData {
 	}
 
 	public function savePrefab( file : String, f : hrt.prefab.Prefab ) {
-		var content = f.saveData();
+		var content = f.serialize();
 		sys.io.File.saveContent(getPath(file), toJSON(content));
 	}
 

@@ -1,5 +1,7 @@
 package hrt.prefab.l3d;
 
+// NOTE(ces) : Not Tested
+
 class GameController extends Object3D {
 
 	@:s public var moveSpeed : Float = 1.;
@@ -19,13 +21,13 @@ class GameController extends Object3D {
 
 	#if editor
 
-	override function makeInstance(ctx:Context):Context {
-		ctx = super.makeInstance(ctx);
-		ctx.local3d.ignoreParentTransform = true;
-		return ctx;
+	override function makeObject(parent3d:h3d.scene.Object):h3d.scene.Object {
+		parent3d.ignoreParentTransform = true;
+		return parent3d;
 	}
 
-	override function edit(ctx:EditContext) {
+
+	override function edit(ctx:hide.prefab.EditContext) {
 		super.edit(ctx);
 
 		ctx.properties.add(new hide.Element('
@@ -58,18 +60,17 @@ class GameController extends Object3D {
 		'),this);
 
 		var active = false;
-		var lctx = ctx.getContext(this);
-		var obj = lctx.local3d;
+		var obj = local3d;
 		var camSave = null;
 		var dummy : h3d.scene.Object = null;
-		var cam = ctx.scene.s3d.camera;
+		var cam = local3d.getScene().camera;
 		var camRot : h3d.Vector4 = null;
 		var startCamRot : h3d.Vector4 = null;
 		var zSpeed = 0.;
 		var startJumpTime = 1e9;
 
 		function selectRec( p : Prefab, b : Bool ) {
-			if( !p.setSelected(ctx.getContext(p), b) )
+			if( !p.setSelected(b) )
 				return;
 			for( c in p.children )
 				selectRec(c, b);
@@ -96,19 +97,17 @@ class GameController extends Object3D {
 		function playAnim( anim : String ) {
 			for( o in getAll(Model,true) ) {
 				if( o.source == null ) continue;
-				var octx = ctx.getContext(o);
-				if( octx == null ) continue;
 
-				if( currentAnim.get(octx.local3d) == anim )
+				if( currentAnim.get(local3d) == anim )
 					continue;
 
 				var animList = try ctx.scene.listAnims(o.source) catch(e: Dynamic) [];
 				for( a2 in animList ) {
 					if( ctx.scene.animationName(a2).toLowerCase() == anim.toLowerCase() ) {
-						octx.local3d.playAnimation(octx.loadAnimation(a2));
+						local3d.playAnimation(shared.loadAnimation(a2));
 						if( animSmooth > 0 )
-							octx.local3d.switchToAnimation(new h3d.anim.SmoothTarget(octx.local3d.currentAnimation,animSmooth));
-						currentAnim.set(octx.local3d, anim);
+							local3d.switchToAnimation(new h3d.anim.SmoothTarget(local3d.currentAnimation,animSmooth));
+						currentAnim.set(local3d, anim);
 						break;
 					}
 				}
@@ -229,6 +228,6 @@ class GameController extends Object3D {
 	}
 	#end
 
-	static var _ = Library.register("gamectrl", GameController);
+	static var _ = Prefab.register("gamectrl", GameController);
 
 }

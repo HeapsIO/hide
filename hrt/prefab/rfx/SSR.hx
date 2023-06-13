@@ -220,6 +220,6 @@ class SSR extends RendererFX {
 	}
 	#end
 
-	static var _ = Library.register("rfx.ssr", SSR);
+	static var _ = Prefab.register("rfx.ssr", SSR);
 
 }

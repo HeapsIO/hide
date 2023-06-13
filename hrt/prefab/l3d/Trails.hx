@@ -82,6 +82,7 @@ class TrailObj extends h3d.scene.Mesh {
 	var bounds : h3d.col.Bounds;
 	var prefab : Trails;
 
+
 	public var timeScale : Float = 1.0;
 
 	#if editor
@@ -775,27 +776,22 @@ class TrailsSubTailObj extends h3d.scene.Object {
 
 class TrailsSubTrail extends Object3D {
 
-	function new(?parent) {
-		super(parent);
-		name = "SubTrail";
+	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
+		var obj = new TrailsSubTailObj(parent3d);
+		return obj;
 	}
 
-	override function makeInstance(ctx:Context):Context {
-		ctx = ctx.clone(this);
-		var obj = new TrailsSubTailObj(ctx.local3d);
-		applyTransform(obj);
-		obj.name = name;
-		ctx.local3d = obj;
-		return ctx;
+	override function updateInstance(?props: String) {
+		applyTransform();
 	}
 
 	#if editor
-	override function getHideProps():HideProps {
-		return { icon : "toggle-on", name : "Sub Trail" , allowChildren: (name) -> name == "Trails"};
+	override function getHideProps():hide.prefab.HideProps {
+		return { icon : "toggle-on", name : "Sub Trail" , allowChildren: (name) -> name == Trails};
 	}
 	#end
 
-	static var _ = Library.register("SubTrail", TrailsSubTrail);
+	static var _ = Prefab.register("SubTrail", TrailsSubTrail);
 
 }
 
@@ -809,43 +805,48 @@ class Trails extends Object3D {
 	@:s public var minSpeed : Float = 10.0;
 	@:s public var maxSpeed : Float = 1000.0;
 
-
 	@:s public var uvMode : UVMode = EStretch;
 	@:s public var uvStretch: Float = 1.0;
 	@:s public var uvRepeat : UVRepeat = EMod;
 
-	function new(?parent) {
-		super(parent);
+	// TODO(ces) : find better way to do that
+	// Override this before calling make() to change how many trails are instancied
+	public var numTrails : Int = 1;
+
+	function new(?parent, shared, ?numTrails : Int) {
+		super(parent, shared);
 		name = "Trails";
 
+		if (numTrails != null) {
+			this.numTrails =  numTrails;
+		}
 	}
 
 	public function create( ?parent : h3d.scene.Object, ?numTrails : Int ) {
 		var tr = new TrailObj(this, parent, numTrails);
-		applyTransform(tr);
+		applyTransform();
 		tr.name = name;
 		tr.updateShader();
 		return tr;
 	}
 
-	override function makeInstance(ctx:Context):Context {
-		ctx = ctx.clone(this);
-		var tr = create(ctx.local3d, ctx.custom != null ? ctx.custom.numTrails : 1);
-		ctx.local3d = tr;
-		return ctx;
+
+
+	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
+		return create(parent3d, numTrails);
 	}
+
 
 	#if editor
 
-	override function getHideProps():HideProps {
+	override function getHideProps():hide.prefab.HideProps {
 		return { icon : "toggle-on", name : "Trails" };
 	}
 
-	override public function edit(ctx:EditContext) {
+	override public function edit(ctx:hide.prefab.EditContext) {
 		super.edit(ctx);
 
-		var trailContext = ctx.getContext(this);
-		var trailObj = trailContext == null ? null : Std.downcast(trailContext.local3d, TrailObj);
+		var trailObj : TrailObj= cast local3d;
 		var props = ctx.properties.add(new hide.Element('
 		<div class="group" name="Trail Properties">
 			<dl>
@@ -882,5 +883,5 @@ class Trails extends Object3D {
 
 	#end
 
-	static var _ = Library.register("trails", Trails);
+	static var _ = Prefab.register("trails", Trails);
 }

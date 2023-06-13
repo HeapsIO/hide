@@ -1,7 +1,6 @@
 package hrt.prefab.rfx;
 
 import hrt.prefab.rfx.RendererFX;
-import hrt.prefab.Library;
 import hxd.Math;
 
 class VignettingShader extends h3d.shader.ScreenShader {
@@ -21,6 +20,7 @@ class VignettingShader extends h3d.shader.ScreenShader {
 	}
 }
 
+@:access(h3d.scene.Renderer)
 class Vignetting extends RendererFX {
 
 	var vignettingPass = new h3d.pass.ScreenFx(new VignettingShader());
@@ -62,6 +62,6 @@ class Vignetting extends RendererFX {
 	}
 	#end
 
-	static var _ = Library.register("rfx.Vignetting", Vignetting);
+	static var _ = Prefab.register("rfx.Vignetting", Vignetting);
 
 }

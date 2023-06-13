@@ -123,31 +123,30 @@ class MeshGenerator extends Object3D {
 	public var maxDepth = 1;
 	@:s public var shadows = true;
 
-	override function save() {
-		var obj : Dynamic = super.save();
+	override function save(obj:Dynamic) : Dynamic {
+		super.save(obj);
 		obj.root = root.save();
 		return obj;
 	}
 
-	override function load( obj : Dynamic ) {
-		super.load(obj);
+	override function copy( obj : Dynamic ) {
+		super.copy(obj);
 		root = new MeshPart();
 		root.load(obj.root);
 	}
 
-	override function makeInstance( ctx : Context ) : Context {
-		ctx = ctx.clone(this);
-		ctx.local3d = new h3d.scene.Object(ctx.local3d);
-		ctx.local3d.name = name;
+	override function makeInstance() : Void {
+		local3d = new h3d.scene.Object(shared.current3d);
+		local3d.name = name;
 
-		var rootObject = new MeshGeneratorRoot(ctx.local3d);
+		var rootObject = new MeshGeneratorRoot(shared.current3d);
 		rootObject.name = "rootObject";
 
 		if( root == null ) {
 			root = new MeshPart();
 			root.socket.type = "Root";
 		}
-		updateInstance(ctx);
+		updateInstance();
 
 		#if editor
 		if( customScene == null ) {
@@ -157,25 +156,23 @@ class MeshGenerator extends Object3D {
 			#end
 		}
 		#end
-
-		return ctx;
 	}
 
-	override function updateInstance( ctx: Context, ?propName : String ) {
-		super.updateInstance(ctx,propName);
-		resetMesh(ctx);
+	override function updateInstance(?propName : String ) {
+		super.updateInstance(propName);
+		resetMesh();
 
 		#if editor
-		createEmptyMeshPart(ctx, root);
+		createEmptyMeshPart(root);
 		#end
 
-		var rootObject = ctx.local3d.getObjectByName("rootObject");
-		createMeshPart(ctx, root, rootObject);
+		var rootObject = local3d.getObjectByName("rootObject");
+		createMeshPart(root, rootObject);
 
 		#if editor
-		var int = ctx.local3d.find(o -> Std.downcast(o, h3d.scene.Interactive));
+		var int = local3d.find(o -> Std.downcast(o, h3d.scene.Interactive));
 		if(int != null) {
-			var dummy = Std.downcast(makeInteractive(ctx), h3d.scene.Interactive);
+			var dummy = Std.downcast(makeInteractive(), h3d.scene.Interactive);
 			int.preciseShape = dummy.preciseShape;
 			dummy.remove();
 		}
@@ -201,16 +198,16 @@ class MeshGenerator extends Object3D {
 		return null;
 	}
 
-	function createMeshPart( ctx : Context, mp : MeshPart, parent : h3d.scene.Object ) {
+	function createMeshPart(mp : MeshPart, parent : h3d.scene.Object ) {
 
 		#if editor
 		if( mp.previewPos ) {
 			if( mp.isRoot() )
-				parent.addChild(createPreviewSphere(ctx));
+				parent.addChild(createPreviewSphere());
 			else {
 				var socket = getSocket(parent, mp.socket);
 				if( socket != null )
-					socket.addChild(createPreviewSphere(ctx));
+					socket.addChild(createPreviewSphere());
 			}
 		}
 		#end
@@ -221,7 +218,7 @@ class MeshGenerator extends Object3D {
 		if( mp.meshPath == null )
 			return;
 
-		var obj = ctx.loadModel(mp.meshPath);
+		var obj = shared.loadModel(mp.meshPath);
 		for( m in obj.getMaterials() ) {
 			m.castShadows = shadows;
 		}
@@ -239,11 +236,11 @@ class MeshGenerator extends Object3D {
 		obj.setPosition(mp.offset.x, mp.offset.y, mp.offset.z);
 
 		for( cmp in mp.childParts )
-			createMeshPart(ctx, cmp, obj);
+			createMeshPart(cmp, obj);
 	}
 
-	function resetMesh( ctx : Context ) {
-		ctx.local3d.getObjectByName("rootObject").removeChildren();
+	function resetMesh() {
+		local3d.getObjectByName("rootObject").removeChildren();
 	}
 
 	function getSocketMatFromHMD( hmd : hxd.fmt.hmd.Library, s : Socket ) : h3d.Matrix {
@@ -261,18 +258,18 @@ class MeshGenerator extends Object3D {
 
 	#if editor
 
-	function generate( ctx : EditContext, mp : MeshPart, maxDepth : Int, curDepth : Int) {
+	function generate( ctx : hide.prefab.EditContext, mp : MeshPart, maxDepth : Int, curDepth : Int) {
 		if( curDepth >  maxDepth ) return;
 		curDepth++;
 		mp.meshPath = getRandomMeshPath(ctx.scene.config, mp.socket);
 		if( root.meshPath == null ) return;
-		mp.childParts = createMeshParts(getSocketListFromHMD(getHMD(ctx.rootContext, mp.meshPath)));
+		mp.childParts = createMeshParts(getSocketListFromHMD(getHMD(mp.meshPath)));
 		for( cmp in mp.childParts )
 			generate(ctx, cmp, maxDepth, curDepth);
 	}
 
-	function createEmptyMeshPart( ctx : Context, mp : MeshPart ) {
-		var sl = getSocketListFromHMD(getHMD(ctx, mp.meshPath));
+	function createEmptyMeshPart(mp : MeshPart ) {
+		var sl = getSocketListFromHMD(getHMD(mp.meshPath));
 		if( mp.childParts.length < sl.length ) {
 			for( s in sl ) {
 				var b = true;
@@ -291,11 +288,11 @@ class MeshGenerator extends Object3D {
 			}
 		}
 		for( cmp in mp.childParts )
-			createEmptyMeshPart(ctx, cmp);
+			createEmptyMeshPart(cmp);
 	}
 
 	var target : h3d.mat.Texture;
-	function renderMeshThumbnail( ctx : Context, meshPath : String ) {
+	function renderMeshThumbnail(meshPath : String ) {
 
 		if( target == null )
 			target = new h3d.mat.Texture(256, 256, [Target], RGBA);
@@ -303,7 +300,7 @@ class MeshGenerator extends Object3D {
 		if( meshPath == null )
 			return;
 
-		var obj = ctx.loadModel(meshPath);
+		var obj = shared.loadModel(meshPath);
 		if( obj == null )
 			return;
 
@@ -323,7 +320,7 @@ class MeshGenerator extends Object3D {
 		if(sys.FileSystem.exists(file))
 			return;
 
-		var mainScene = @:privateAccess ctx.local3d.getScene();
+		var mainScene = @:privateAccess local3d.getScene();
 		@:privateAccess customScene.children = [];
 		@:privateAccess customScene.children.push(obj);
 
@@ -356,10 +353,10 @@ class MeshGenerator extends Object3D {
 		return false;
 	}
 
-	function createPreviewSphere( ctx : Context ) {
+	function createPreviewSphere() {
 		var root = new h3d.scene.Object();
 		root.setRotation(0,0, hxd.Math.degToRad(180));
-		var m : h3d.scene.Mesh = cast ctx.loadModel("${HIDE}/res/meshGeneratorArrow.fbx");
+		var m : h3d.scene.Mesh = cast shared.loadModel("${HIDE}/res/meshGeneratorArrow.fbx");
 		m.material.shadows = false;
 		root.addChild(m);
 		m.scale(0.5);
@@ -368,7 +365,7 @@ class MeshGenerator extends Object3D {
 		m.material.mainPass.depthTest = GreaterEqual;
 		m.material.mainPass.depthWrite = false;
 		m.material.mainPass.setPassName("overlay");
-		var m : h3d.scene.Mesh = cast ctx.loadModel("${HIDE}/res/meshGeneratorArrow.fbx");
+		var m : h3d.scene.Mesh = cast shared.loadModel("${HIDE}/res/meshGeneratorArrow.fbx");
 		m.material.shadows = false;
 		root.addChild(m);
 		m.scale(0.5);
@@ -386,15 +383,15 @@ class MeshGenerator extends Object3D {
 			resetPreview(cmp);
 	}
 
-	override function getHideProps() : HideProps {
+	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "paint-brush", name : "MeshGenerator" };
 	}
 
-	override function setSelected( ctx : Context, b : Bool ) {
-		super.setSelected(ctx, b);
+	override function setSelected(b : Bool ) {
+		super.setSelected(b);
 
 		if( !b ) {
-			var previewSpheres = ctx.local3d.findAll(c -> if(c.name == "previewSphere") c else null);
+			var previewSpheres = local3d.findAll(c -> if(c.name == "previewSphere") c else null);
 			for( s in previewSpheres ) {
 				s.remove();
 			}
@@ -402,9 +399,9 @@ class MeshGenerator extends Object3D {
 		return true;
 	}
 
-	function getHMD( ctx : Context, meshPath : String ) : hxd.fmt.hmd.Library {
+	function getHMD(meshPath : String ) : hxd.fmt.hmd.Library {
 		if( meshPath == null ) return null;
-		return @:privateAccess ctx.shared.cache.loadLibrary(hxd.res.Loader.currentInstance.load(meshPath).toModel());
+		return @:privateAccess Cache.get().modelCache.loadLibrary(hxd.res.Loader.currentInstance.load(meshPath).toModel());
 	}
 
 	function createMeshParts( sl : Array<Socket> ) : Array<MeshPart> {
@@ -441,7 +438,7 @@ class MeshGenerator extends Object3D {
 		return childParts[childParts.length - 1].split(".")[0];
 	}
 
-	function getThumbnailPath( ctx : EditContext, meshPath : String ) : String {
+	function getThumbnailPath( ctx : hide.prefab.EditContext, meshPath : String ) : String {
 		return ctx.ide.getPath(".tmp/meshGeneratorData/"+ extractMeshName(meshPath) +"_thumbnail.png");
 	}
 
@@ -466,7 +463,7 @@ class MeshGenerator extends Object3D {
 		return available[hxd.Math.round(hxd.Math.random() * (available.length - 1))];
 	}
 
-	function fillSelectMenu( ctx : EditContext, select : hide.Element, socket : Socket ) {
+	function fillSelectMenu( ctx : hide.prefab.EditContext, select : hide.Element, socket : Socket ) {
 		for( f in filter ) {
 			var meshList : Array<Dynamic> = ctx.scene.config.get("meshGenerator." + f);
 			if( meshList == null ) continue;
@@ -489,7 +486,7 @@ class MeshGenerator extends Object3D {
 		}
 	}
 
-	function createMenu( ctx : EditContext, mp : MeshPart ) {
+	function createMenu( ctx : hide.prefab.EditContext, mp : MeshPart ) {
 
 		if( mp.isRoot() ) {
 			var rootElement = new hide.Element('
@@ -509,7 +506,7 @@ class MeshGenerator extends Object3D {
 				var previous = mp.clone();
 				var actual = mp;
 				mp.meshPath = val == "none" ? null : val;
-				mp.childParts = createMeshParts(getSocketListFromHMD(getHMD(ctx.rootContext, mp.meshPath)));
+				mp.childParts = createMeshParts(getSocketListFromHMD(getHMD(mp.meshPath)));
 				ctx.properties.undo.change(Custom(function(undo) {
 					undo ? mp.loadFrom(previous) : mp.loadFrom(actual);
 					ctx.onChange(this, null);
@@ -523,7 +520,7 @@ class MeshGenerator extends Object3D {
 			ctx.properties.add(rootElement, mp, function(pname) {});
 		}
 
-		var socketList = getSocketListFromHMD(getHMD(ctx.rootContext, mp.meshPath));
+		var socketList = getSocketListFromHMD(getHMD(mp.meshPath));
 		if( mp.meshPath != null && socketList.length != 0 ) {
 			var s = '<div class="group" name="${extractMeshName(mp.meshPath)}">';
 			s += '<div align="center"><div class="meshGenerator-thumbnail"></div></div><dl>';
@@ -617,7 +614,7 @@ class MeshGenerator extends Object3D {
 						var previous = mp.clone();
 						var actual = mp;
 						mp.meshPath = val == "none" ? null : val;
-						mp.childParts = createMeshParts(getSocketListFromHMD(getHMD(ctx.rootContext, cmp.meshPath)));
+						mp.childParts = createMeshParts(getSocketListFromHMD(getHMD(cmp.meshPath)));
 						ctx.properties.undo.change(Custom(function(undo) {
 							undo ? mp.loadFrom(previous) : mp.loadFrom(actual);
 							ctx.onChange(this, null);
@@ -651,7 +648,7 @@ class MeshGenerator extends Object3D {
 		}
 	}
 
-	override function edit( ctx : EditContext ) {
+	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);
 
 		undo = ctx.properties.undo;
@@ -714,5 +711,5 @@ class MeshGenerator extends Object3D {
 	}
 	#end
 
-	static var _ = Library.register("meshGenerator", MeshGenerator);
+	static var _ = Prefab.register("meshGenerator", MeshGenerator);
 }

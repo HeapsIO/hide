@@ -50,7 +50,7 @@ class DistanceBlurShader extends hrt.shader.PbrShader {
 	}
 
 }
-
+@:access(h3d.scene.Renderer)
 class DistanceBlur extends RendererFX {
 
 	var blurPass = new h3d.pass.ScreenFx(new DistanceBlurShader());
@@ -70,8 +70,8 @@ class DistanceBlur extends RendererFX {
 	@:s public var blurTextureSize : Float;
 	@:s public var blurRange : Int;
 
-	function new(?parent) {
-		super(parent);
+	function new(?parent, shared: ContextShared) {
+		super(parent, shared);
 		nearEndDistance = 10;
 		farStartDistance = 100;
 		farEndDistance = 500;
@@ -132,6 +132,6 @@ class DistanceBlur extends RendererFX {
 	}
 	#end
 
-	static var _ = Library.register("rfx.distanceBlur", DistanceBlur);
+	static var _ = Prefab.register("rfx.distanceBlur", DistanceBlur);
 
 }

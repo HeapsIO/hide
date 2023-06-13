@@ -4,6 +4,11 @@ import hrt.impl.Gradient;
 import hrt.prefab.l3d.Polygon;
 import hrt.prefab.Curve;
 import hrt.prefab.fx.BaseFX.ShaderAnimation;
+import hrt.prefab.fx.Value;
+import hrt.prefab.fx.Evaluator;
+
+import hide.prefab.HideProps;
+
 using Lambda;
 
 enum SimulationSpace {
@@ -509,7 +514,6 @@ class EmitterObject extends h3d.scene.Object {
 
 	var random: hxd.Rand;
 	var randomSeed = 0;
-	var context : hrt.prefab.Context;
 	var emitCount = 0;
 	var emitTarget = 0.0;
 	var curTime = 0.0;
@@ -531,15 +535,11 @@ class EmitterObject extends h3d.scene.Object {
 		random = new hxd.Rand(randomSeed);
 	}
 
-	function makeShaderInstance(prefab: hrt.prefab.Shader, ctx:Context):Context {
-		ctx = ctx.clone(prefab);
-		var shader = prefab.makeShader(ctx);
+	function makeShaderInstance(prefab: hrt.prefab.Shader) {
+		var shader = prefab.makeShader();
 		if( shader == null )
-			return ctx;
-		ctx.custom = shader;
-		prefab.updateInstance(ctx);
-		ctx.local3d = null;  // prevent ContextShared.getSelfObject from incorrectly reporting object
-		return ctx;
+			return;
+		prefab.updateInstance();
 	}
 
 	function init(randSlots: Int, prefab: Emitter) {
@@ -557,11 +557,18 @@ class EmitterObject extends h3d.scene.Object {
 			if(baseEmitMat.isIdentityEpsilon(0.01))
 				baseEmitMat = null;
 
-			var template = particleTemplate.makeInstance(context);
-			var mesh = Std.downcast(template.local3d, h3d.scene.Mesh);
+			var empty3d = new h3d.scene.Object();
+			// if (particleTemplate.local3d == null)
+			// 	particleTemplate.instanciate(null, empty3d);
+			// var loc3d = particleTemplate.local3d;
+			particleTemplate.shared.root3d = particleTemplate.shared.current3d = empty3d;
+			@:privateAccess particleTemplate.makeInstance();
+			var loc3d = particleTemplate.local3d;
+
+			var mesh = Std.downcast(loc3d, h3d.scene.Mesh);
 			if( mesh == null ) {
-				for( i in 0...template.local3d.numChildren ) {
-					mesh = Std.downcast(template.local3d.getChildAt(i), h3d.scene.Mesh);
+				for( i in 0...loc3d.numChildren ) {
+					mesh = Std.downcast(loc3d.getChildAt(i), h3d.scene.Mesh);
 					if( mesh != null ) {
 						break;
 					}
@@ -571,12 +578,9 @@ class EmitterObject extends h3d.scene.Object {
 			if (mesh != null) {
 				meshPrimitive = Std.downcast(mesh.primitive, h3d.prim.MeshPrimitive);
 				meshMaterial = mesh.material;
-				mesh.remove();
 			}
 
-			template.shared.contexts.remove(particleTemplate);
-			template.local3d.remove();
-			template.local3d = null;
+			empty3d.remove();
 		}
 
 		if (meshPrimitive == null ) {
@@ -594,8 +598,6 @@ class EmitterObject extends h3d.scene.Object {
 			batch.name = "emitter";
 			batch.calcBounds = false;
 
-			var batchContext = context.clone(null);
-			batchContext.local3d = batch;
 			// Setup mats.
 			// Should we do this manually here or make a recursive makeInstance on the template?
 			var materials = emitterPrefab.getAll(hrt.prefab.Material);
@@ -603,14 +605,13 @@ class EmitterObject extends h3d.scene.Object {
 
 				// Remove materials that are not directly parented to this emitter
 				var p = mat.parent;
-				while (p != null && Std.downcast(p, Emitter) == null) {
+				while (p != null && Std.downcast(p, Emitter) == null)
 					p = p.parent;
-				}
 
+				// TODO(ces) : Attach materials directly to the batch
 				if (this.emitterPrefab == p) {
 					if(mat.enabled) {
-						var ctx = mat.makeInstance(batchContext);
-						ctx.local3d = null;
+						@:privateAccess mat.makeInstance();
 					}
 				}
 			}
@@ -626,13 +627,15 @@ class EmitterObject extends h3d.scene.Object {
 				}
 				if (this.emitterPrefab == p) {
 					if( !shader.enabled ) continue;
-					var shCtx = makeShaderInstance(shader, batchContext);
-					if( shCtx == null ) continue;
+					// TODO(ces) : Attach materials directly to the batch
 
-					shCtx.local3d = null; // Prevent shader.iterMaterials from adding our objet to the list incorectly
-
-					hrt.prefab.fx.BaseFX.getShaderAnims(shCtx, shader, shaderAnims, batch);
+					makeShaderInstance(shader);
+					//shCtx.local3d = null; // Prevent shader.iterMaterials from adding our objet to the list incorectly
+					// TODO(ces) : It looks like particles anims are broken
+					hrt.prefab.fx.BaseFX.BaseFXTools.getShaderAnims(shader, shaderAnims, batch);
+				//var shader = Std.downcast(shCtx.custom, hxsl.Shader);
 				}
+
 			}
 
 			// Animated textures animations
@@ -662,6 +665,7 @@ class EmitterObject extends h3d.scene.Object {
 		randomValues = [for(i in 0...(maxCount * randSlots)) 0];
 		evaluator = new Evaluator(randomValues, randSlots);
 		reset();
+
 	}
 
 	override function onRemove() {
@@ -792,7 +796,6 @@ class EmitterObject extends h3d.scene.Object {
 		return idx;
 	}
 
-	var tmpCtx : hrt.prefab.Context;
 	static var tmpQuat = new h3d.Quat();
 	static var tmpEmitterQuat = new h3d.Quat();
 	static var tmpOffset = new h3d.Vector();
@@ -815,13 +818,7 @@ class EmitterObject extends h3d.scene.Object {
 			var scene = relativeScenePosition ? getScene() : null;
 
 			if (trailsTemplate != null && trails == null) {
-				if( tmpCtx == null ) {
-					tmpCtx = new hrt.prefab.Context();
-					tmpCtx.shared = context.shared;
-				}
-				tmpCtx.custom = {numTrails: maxCount};
-				tmpCtx.local3d = this;
-				trails = cast trailsTemplate.make(tmpCtx).local3d;
+				trails = cast trailsTemplate.make(this).local3d;
 				trails.autoTrackPosition = false;
 			}
 
@@ -940,11 +937,11 @@ class EmitterObject extends h3d.scene.Object {
 			}
 		}
 
-		context.local3d = this;
 		emitCount += count;
 	}
 
-	/** Called every time a particle is emitted. `offset` and `orient` can be modified (local space) **/
+	/** Called every time a particle is emitted. `offset` and `orient`
+		 can be modified (local space) **/
 	public dynamic function onEmit(offset: h3d.Vector, orient : h3d.Quat) { }
 
 	// No-alloc version of h3d.Matrix.getEulerAngles()
@@ -1217,14 +1214,9 @@ class EmitterObject extends h3d.scene.Object {
 					i = disposeInstance(i);
 					// SUB EMITTER
 					if( subEmitterTemplates != null ) {
-						if( tmpCtx == null ) {
-							tmpCtx = new hrt.prefab.Context();
-							tmpCtx.local3d = this.getScene();
-							tmpCtx.shared = context.shared;
-						}
-						tmpCtx.local3d = this.getScene();
-						for (sub in subEmitterTemplates) {
-							var emitter : EmitterObject = cast sub.makeInstance(tmpCtx).local3d;
+
+						for (subEmitterTemplate in subEmitterTemplates) {
+						    var emitter : EmitterObject = cast @:privateAccess subEmitterTemplate.make().local3d;
 							var pos = p.absPos.getPosition();
 							emitter.setPosition(pos.x, pos.y, pos.z);
 							emitter.isSubEmitter = true;
@@ -1341,8 +1333,8 @@ class EmitterObject extends h3d.scene.Object {
 
 class Emitter extends Object3D {
 
-	public function new(?parent) {
-		super(parent);
+	public function new(?parent, shared: ContextShared) {
+		super(parent, shared);
 		props = { };
 		for(param in emitterParams) {
 			if(param.def != null)
@@ -1429,9 +1421,9 @@ class Emitter extends Object3D {
 		a;
 	};
 
-	override function save() {
-		var obj : Dynamic = super.save();
-		obj.props = Reflect.copy(props);
+	override function save(data : Dynamic) {
+		super.save(data);
+		data.props = Reflect.copy(props);
 		for(param in PARAMS) {
 			var f : Dynamic = Reflect.field(props, param.name);
 			if(f != null && haxe.Json.stringify(f) != haxe.Json.stringify(param.def)) {
@@ -1441,13 +1433,13 @@ class Emitter extends Object3D {
 						val = Type.enumConstructor(val);
 					default:
 				}
-				Reflect.setField(obj.props, param.name, val);
+				Reflect.setField(data.props, param.name, val);
 			}
 			else {
-				Reflect.deleteField(obj.props, param.name);
+				Reflect.deleteField(data.props, param.name);
 			}
 		}
-		return obj;
+		return data;
 	}
 
 	override function load( obj : Dynamic ) {
@@ -1467,15 +1459,22 @@ class Emitter extends Object3D {
 		}
 	}
 
-	override function make(ctx: Context) {
-		if( ctx == null ) {
-			ctx = new Context();
-			ctx.init();
+	override function copy(obj:Prefab) {
+		super.copy(obj);
+		for(param in emitterParams) {
+			if(Reflect.hasField(obj.props, param.name)) {
+				var val : Dynamic = Reflect.field(obj.props, param.name);
+				/*switch(param.t) {
+					case PEnum(en):
+						val = Type.createEnum(en, val);
+					default:
+				}*/
+				Reflect.setField(props, param.name, val);
+			}
+			else if(param.def != null)
+				resetParam(param);
 		}
-		ctx = makeInstance(ctx);
-		return ctx;
 	}
-
 
 
 	static inline function randProp(name: String) {
@@ -1509,9 +1508,9 @@ class Emitter extends Object3D {
 			Reflect.setField(props, param.name, param.def);
 	}
 
-	override function updateInstance( ctx: Context, ?propName : String ) {
-		super.updateInstance(ctx, propName);
-		var emitterObj = Std.downcast(ctx.local3d, EmitterObject);
+	override function updateInstance(?propName : String ) {
+		super.updateInstance(propName);
+		var emitterObj = Std.downcast(local3d, EmitterObject);
 
 		var randIdx = 0;
 		var template : Object3D = cast children.find(
@@ -1723,7 +1722,7 @@ class Emitter extends Object3D {
 
 
 		#if !editor  // Keep startTime at 0 in Editor, since global.time is synchronized to timeline
-		var scene = ctx.local3d.getScene();
+		var scene = local3d.getScene();
 		if(scene != null)
 			emitterObj.startTime = @:privateAccess scene.renderer.ctx.time;
 		#end
@@ -1736,22 +1735,24 @@ class Emitter extends Object3D {
 		#end
 	}
 
-	override function makeInstance(ctx:Context):Context {
-		ctx = ctx.clone(this);
-		var emitterObj = new EmitterObject(ctx.local3d);
-		emitterObj.context = ctx;
-		ctx.local3d = emitterObj;
-		ctx.local3d.name = name;
-		updateInstance(ctx);
-		return ctx;
+	override function makeChild(p:Prefab) {
+
+	};
+
+	override public function refresh() {
+		for (field in getSerializableProps()) {
+			if (field.hasSetter) {
+				Reflect.setProperty(this, field.name, Reflect.getProperty(this, field.name));
+			}
+		}
 	}
 
-	override function removeInstance(ctx:Context):Bool {
-		return false;
+	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
+		return new EmitterObject(parent3d);
 	}
 
 	#if editor
-	override function edit( ctx : EditContext ) {
+	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);
 
 		function refresh() {
@@ -1862,7 +1863,7 @@ class Emitter extends Object3D {
 
 			for( gn in groupNames ) {
 				var params = params.filter( p -> p.groupName == (gn == "Emitter" ? null : gn) );
-				var group = new Element('<div class="group" name="$gn"></div>');
+				var group = new hide.Element('<div class="group" name="$gn"></div>');
 				group.append(hide.comp.PropsEditor.makePropsList(params));
 				ctx.properties.add(group, this.props, onChange);
 			}
@@ -1881,12 +1882,12 @@ class Emitter extends Object3D {
 
 			for (groupName => params in groups)
 			{
-				var instGroup = new Element('<div class="group" name="$groupName"></div>');
-				var dl = new Element('<dl>').appendTo(instGroup);
+				var instGroup = new hide.Element('<div class="group" name="$groupName"></div>');
+				var dl = new hide.Element('<dl>').appendTo(instGroup);
 
 				for (p in params) {
-					var dt = new Element('<dt>${p.disp != null ? p.disp : p.name}</dt>').appendTo(dl);
-					var dd = new Element('<dd>').appendTo(dl);
+					var dt = new hide.Element('<dt>${p.disp != null ? p.disp : p.name}</dt>').appendTo(dl);
+					var dd = new hide.Element('<dd>').appendTo(dl);
 
 					function addUndo(pname: String) {
 						ctx.properties.undo.change(Field(this.props, pname, Reflect.field(this.props, pname)), function() {
@@ -1918,15 +1919,15 @@ class Emitter extends Object3D {
 						});
 					}
 					else {
-						var btn = new Element('<input type="button" value="+"></input>').appendTo(dd);
+						var btn = new hide.Element('<input type="button" value="+"></input>').appendTo(dd);
 						btn.click(function(e) {
 							addUndo(p.name);
 							resetParam(p);
 							refresh();
 						});
 					}
-					var dt = new Element('<dt>~</dt>').appendTo(dl);
-					var dd = new Element('<dd>').appendTo(dl);
+					var dt = new hide.Element('<dt>~</dt>').appendTo(dl);
+					var dd = new hide.Element('<dd>').appendTo(dl);
 					var randDef : Dynamic = switch(p.t) {
 						case PVec(n): [for(i in 0...n) 0.0];
 						case PFloat(_): 0.0;
@@ -1957,7 +1958,7 @@ class Emitter extends Object3D {
 						});
 					}
 					else {
-						var btn = new Element('<input type="button" value="+"></input>').appendTo(dd);
+						var btn = new hide.Element('<input type="button" value="+"></input>').appendTo(dd);
 						btn.click(function(e) {
 							addUndo(randProp(p.name));
 							Reflect.setField(this.props, randProp(p.name), randDef);
@@ -1971,8 +1972,8 @@ class Emitter extends Object3D {
 		}
 	}
 
-	override function setSelected( ctx : Context, b : Bool ) {
-		var emitterObj = Std.downcast(ctx.local3d, EmitterObject);
+	override function setSelected(b : Bool ) {
+		var emitterObj = Std.downcast(local3d, EmitterObject);
 		if(emitterObj == null)
 			return false;
 		var debugShape : h3d.scene.Object = emitterObj.find(c -> if(c.name == "_highlight") c else null);
@@ -2098,7 +2099,7 @@ class Emitter extends Object3D {
 	}
 	#end
 
-	static var _ = Library.register("emitter", Emitter);
+	static var _ = Prefab.register("emitter", Emitter);
 
 }
 

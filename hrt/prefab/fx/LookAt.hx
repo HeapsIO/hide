@@ -92,35 +92,26 @@ class LookAt extends Object3D {
 	@:s var target(default,null) : String;
 	@:s var lockAxis: Array<Float> = [0,0,0];
 
-	public function new(?parent) {
-		super(parent);
-		type = "lookAt";
-	}
-
-	override function updateInstance(ctx:hrt.prefab.Context, ?propName:String) {
-		super.updateInstance(ctx, propName);
+	override function updateInstance(?propName:String) {
+		super.updateInstance(propName);
 		var targetObj = null;
 		if(target != "camera")
-			targetObj = ctx.locateObject(target);
+			targetObj = locateObject(target);
 	}
 
-	override function makeInstance( ctx : Context ) {
-		ctx = ctx.clone(this);
-		ctx.local3d = new LookAtObject(ctx.local3d, this);
-		ctx.local3d.name = name;
-		updateInstance(ctx);
-		return ctx;
+	override function makeObject(parent3d:h3d.scene.Object):h3d.scene.Object {
+		return new LookAtObject(parent3d, this);
 	}
 
 	#if editor
-	override function getHideProps() : HideProps {
+	override function getHideProps() : hide.prefab.HideProps {
 		return {
 			icon : "cog",
 			name : "LookAt"
 		};
 	}
 
-	override function edit(ctx:EditContext) {
+	override function edit(ctx:hide.prefab.EditContext) {
 		super.edit(ctx);
 		var group = new hide.Element('
 		<div class="group" name="LookAt">
@@ -133,7 +124,9 @@ class LookAt extends Object3D {
 			{ name: "lockAxis", t: PVec(3), def: [1,0,0] }
 		]));
 
-		var props = ctx.properties.add(group ,this, function(_) { trace(this.lockAxis); });
+		var props = ctx.properties.add(group ,this);
+
+
 
 		var select = props.find("select");
 		var opt = new hide.Element("<option>").attr("value", "camera").html("Camera");
@@ -148,5 +141,5 @@ class LookAt extends Object3D {
 	}
 	#end
 
-	static var _ = Library.register("lookAt", LookAt);
+	static var _ = Prefab.register("lookAt", LookAt);
 }

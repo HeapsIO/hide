@@ -2,6 +2,13 @@ package hrt.prefab.l3d;
 import hxd.Math;
 import h2d.col.Point;
 
+#if editor
+import hide.prefab.EditContext;
+#end
+
+import hide.prefab.HideProps;
+
+
 
 enum Shape {
 	Quad(subdivision : Int);
@@ -27,21 +34,16 @@ class Polygon extends Object3D {
 	var prevScale = [1.0, 1.0];
 	#end
 
-	public function new(?parent) {
-		super(parent);
-		type = "polygon";
-	}
-
-	override function save() {
-		var obj : Dynamic = super.save();
-		obj.kind = shape.getIndex();
+	override function save(data: Dynamic) {
+		super.save(data);
+		data.kind = shape.getIndex();
 		switch(shape){
 		case Quad(_), Disc(_), Sphere(_), Capsule(_):
-			obj.args = shape.getParameters();
+			data.args = shape.getParameters();
 		case Custom:
-			obj.points = [for( p in points ) { x : p.x, y : p.y }];
+			data.points = [for( p in points ) { x : p.x, y : p.y }];
 		}
-		return obj;
+		return data;
 	}
 
 	override function load( obj : Dynamic ) {
@@ -55,12 +57,19 @@ class Polygon extends Object3D {
 		}
 	}
 
-	override function updateInstance( ctx : Context, ?propName : String) {
-		super.updateInstance(ctx, propName);
-		var mesh : h3d.scene.Mesh = cast ctx.local3d;
+	override function copy(obj:Prefab) {
+		super.copy(obj);
+		var p : Polygon = cast obj;
+		this.shape = p.shape;
+		this.points = p.points;
+	}
+
+	override function updateInstance(?propName : String) {
+		super.updateInstance(propName);
+		var mesh : h3d.scene.Mesh = cast local3d;
 		mesh.primitive = makePrimitive();
 		#if editor
-		setColor(ctx, color);
+		setColor(color);
 		if(editor != null)
 			editor.update(propName);
 		#else
@@ -98,7 +107,7 @@ class Polygon extends Object3D {
 		return primitive;
 	}
 
-	override function localRayIntersection(ctx : hrt.prefab.Context, ray:h3d.col.Ray):Float {
+	override function localRayIntersection(ray:h3d.col.Ray):Float {
 		var prim = makePrimitive();
 		var col = prim.getCollider();
 		return col.rayIntersection(ray, true);
@@ -234,26 +243,22 @@ class Polygon extends Object3D {
 		return primitive;
 	}
 
-	override function makeInstance(ctx:Context):Context {
-		ctx = ctx.clone(this);
+	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
 		var primitive = makePrimitive();
-		var mesh = new h3d.scene.Mesh(primitive, ctx.local3d);
+		var mesh = new h3d.scene.Mesh(primitive, parent3d);
 		mesh.material.props = h3d.mat.MaterialSetup.current.getDefaults("overlay");
 		mesh.material.blendMode = Alpha;
 		mesh.material.mainPass.culling = None;
-		ctx.local3d = mesh;
-		ctx.local3d.name = name;
-		updateInstance(ctx);
-		return ctx;
+		return mesh;
 	}
 
 	#if editor
-	public function setColor(ctx: Context, color: Int) {
+	public function setColor(color: Int) {
 		if(hrt.prefab.Material.hasOverride(this))
 			return;
-		if(ctx.local3d == null)
+		if(local3d == null)
 			return;
-		var mesh = Std.downcast(ctx.local3d, h3d.scene.Mesh);
+		var mesh = Std.downcast(local3d, h3d.scene.Mesh);
 		if(mesh != null && hasDebugColor)
 			hrt.prefab.l3d.Box.setDebugColor(color, mesh.material);
 	}
@@ -280,8 +285,8 @@ class Polygon extends Object3D {
 		return polyPrim;
 	}
 
-	public function getPrimitive( ctx : Context ) : h3d.prim.Polygon {
-		var mesh = Std.downcast(ctx.local3d, h3d.scene.Mesh);
+	public function getPrimitive() : h3d.prim.Polygon {
+		var mesh : h3d.scene.Mesh = cast local3d;
 		return Std.downcast(mesh.primitive, h3d.prim.Polygon);
 	}
 
@@ -293,11 +298,11 @@ class Polygon extends Object3D {
 		}
 	}
 
-	override function setSelected( ctx : Context, b : Bool ) {
+	override function setSelected( b : Bool ) {
 		if (!enabled) return true;
-		super.setSelected(ctx, b);
+		super.setSelected(b);
 		if( editor != null && shape == Custom)
-			editor.setSelected(ctx, b);
+			editor.setSelected(b);
 		return true;
 	}
 
@@ -388,7 +393,7 @@ class Polygon extends Object3D {
 					}
 				}
 				else if( prevKind == Custom ){
-					var mesh = Std.downcast(ctx.getContext(this).local3d, h3d.scene.Mesh);
+					var mesh = Std.downcast(local3d, h3d.scene.Mesh);
 					if( mesh.primitive != null ) mesh.primitive.dispose(); // Dispose custom prim
 				}
 
@@ -459,7 +464,7 @@ class Polygon extends Object3D {
 				case "Sphere": sphereProps.show();
 				case "Custom":
 					editorProps.show();
-					setSelected(ctx.getContext(this), true);
+					setSelected(true);
 				default:
 			}
 		}
@@ -479,5 +484,5 @@ class Polygon extends Object3D {
 
 	#end
 
-	static var _ = Library.register("polygon", Polygon);
+	static var _ = Prefab.register("polygon", Polygon);
 }

@@ -10,16 +10,16 @@ class Bitmap extends Object2D {
 
 	var tex : h3d.mat.Texture;
 
-	override function updateInstance( ctx: Context, ?propName : String ) {
-		super.updateInstance(ctx, propName);
-		var bmp = (cast ctx.local2d : h2d.Bitmap);
+	override function updateInstance(?propName : String ) {
+		super.updateInstance(propName);
+		var bmp = (cast local2d : h2d.Bitmap);
 		bmp.visible = visible;
 		if (propName == null || propName == "src") {
 			if (tex != null) {
 				tex = null;
 			}
 			if (src != null) {
-				tex = ctx.loadTexture(src);
+				tex = shared.loadTexture(src);
 				bmp.tile = h2d.Tile.fromTexture(this.tex);
 			} else {
 				bmp.tile = h2d.Tile.fromColor(0xFF00FF,32,32,0.5);
@@ -41,14 +41,10 @@ class Bitmap extends Object2D {
 		#end
 	}
 
-	override function makeInstance(ctx:Context):Context {
-		ctx = ctx.clone(this);
-		var bmp = new h2d.Bitmap(null, ctx.local2d);
+	override function makeObject(parent2d:h2d.Object):h2d.Object {
+		var bmp = new h2d.Bitmap(null, parent2d);
 		bmp.smooth = true;
-		ctx.local2d = bmp;
-		ctx.local2d.name = name;
-		updateInstance(ctx);
-		return ctx;
+		return bmp;
 	}
 
 	static public function getCenterRatio(dx : Float, dy : Float) {
@@ -57,8 +53,7 @@ class Bitmap extends Object2D {
 
 	#if editor
 
-	override function makeInteractive(ctx:Context):h2d.Interactive {
-		var local2d = ctx.local2d;
+	override function makeInteractive():h2d.Interactive {
 		if(local2d == null)
 			return null;
 		var bmp = cast(local2d, h2d.Bitmap);
@@ -70,7 +65,7 @@ class Bitmap extends Object2D {
 		return int;
 	}
 
-	override function edit( ctx : EditContext ) {
+	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);
 
 		ctx.properties.add(new hide.Element('<div class="group" name="Parameters">
@@ -84,12 +79,12 @@ class Bitmap extends Object2D {
 		});
 	}
 
-	override function getHideProps() : HideProps {
+	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "square", name : "Bitmap" };
 	}
 
 	#end
 
-	static var _ = Library.register("bitmap", Bitmap);
+	static var _ = Prefab.register("bitmap", Bitmap);
 
 }

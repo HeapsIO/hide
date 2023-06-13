@@ -98,6 +98,7 @@ class VolumetricLightingShader extends hrt.shader.PbrShader {
 	};
 }
 
+@:access(h3d.scene.Renderer)
 class VolumetricLighting extends RendererFX {
 
 	var pass = new h3d.pass.ScreenFx(new VolumetricLightingShader());
@@ -126,10 +127,9 @@ class VolumetricLighting extends RendererFX {
 	@:s public var maxDist : Float = 30.0;
 	@:s public var decayPower : Float = 1.0;
 
-	override function makeInstance( ctx : hrt.prefab.Context ) : hrt.prefab.Context {
-		ctx = super.makeInstance(ctx);
-		updateInstance(ctx);
-		return ctx;
+	override function makeInstance() {
+		 super.makeInstance();
+		updateInstance();
 	}
 
 	override function begin(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
@@ -231,6 +231,7 @@ class VolumetricLighting extends RendererFX {
 				</dl>
 			</div>
 			<div class="group" name="Color">
+				<dt>Angle threshold</dt><dd><input type="range" min="0" max="180" field="angleThreshold"/></dd>
 				<dt>Dark opacity</dt><dd><input type="range" min="0" max="1" field="darkOpacity"/></dd>
 				<dt>Bright opacity</dt><dd><input type="range" min="0" max="1" field="brightOpacity"/></dd>
 				<dt>Dark color</dt><dd><input type="color" field="darkColor"/></dd>
@@ -249,6 +250,6 @@ class VolumetricLighting extends RendererFX {
 
 	#end
 
-	static var _ = hrt.prefab.Library.register("rfx.volumetricLighting", VolumetricLighting);
+	static var _ = Prefab.register("rfx.volumetricLighting", VolumetricLighting);
 
 }

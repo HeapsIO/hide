@@ -3,24 +3,22 @@ package hrt.prefab.l3d;
 class Box extends Object3D {
 
 
-	public function setColor(ctx: Context, color: Int) {
+	public function setColor(color: Int) {
 		#if editor
-		if(ctx.local3d == null)
+		if(local3d == null)
 			return;
-		var mesh = Std.downcast(ctx.local3d, h3d.scene.Mesh);
+		var mesh = Std.downcast(local3d, h3d.scene.Mesh);
 		if(mesh != null) {
 			setDebugColor(color, mesh.material);
 		}
 		#end
 	}
 
-	override function makeInstance(ctx:Context):Context {
-		ctx = ctx.clone(this);
-
-		var mesh = new h3d.scene.Mesh(h3d.prim.Cube.defaultUnitCube(), ctx.local3d);
+	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
+		var mesh = new h3d.scene.Mesh(h3d.prim.Cube.defaultUnitCube(), parent3d);
 
 		#if editor
-		setDebugColor(0x60ffffff, mesh.material);
+		setDebugColor(0x6008bd90, mesh.material);
 
 		var wire = new h3d.scene.Box(mesh);
 		wire.color = 0;
@@ -28,10 +26,7 @@ class Box extends Object3D {
 		wire.material.shadows = false;
 		#end
 
-		ctx.local3d = mesh;
-		ctx.local3d.name = name;
-		updateInstance(ctx);
-		return ctx;
+		return mesh;
 	}
 
 	#if editor
@@ -45,8 +40,8 @@ class Box extends Object3D {
 			if(alpha != null)
 				mat.removePass(alpha);
 			mat.mainPass.setPassName("default");
-		 	mat.mainPass.setBlendMode(None);
-		 	mat.mainPass.depthWrite = true;
+			 mat.mainPass.setBlendMode(None);
+			 mat.mainPass.depthWrite = true;
 			mat.mainPass.culling = None;
 		}
 		else {
@@ -61,10 +56,10 @@ class Box extends Object3D {
 		}
 	}
 
-	override function getHideProps() : HideProps {
+	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "square", name : "Box" };
 	}
 	#end
 
-	static var _ = Library.register("box", Box);
+	static var _ = Prefab.register("box", Box);
 }

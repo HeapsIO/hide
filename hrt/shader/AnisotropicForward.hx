@@ -67,7 +67,7 @@ class AnisotropicForward extends h3d.shader.pbr.DefaultForward {
 		//-- Uniforms -----------------------------------------------------------------
 
 		@global var global : {
-            @perObject var modelView : Mat4;
+			@perObject var modelView : Mat4;
 		};
 
 		//-----------------------------------------------------------------------------

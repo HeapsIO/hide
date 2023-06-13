@@ -1,56 +1,51 @@
 package hrt.prefab;
 import hxd.Math;
-using Lambda;
 
 class Object3D extends Prefab {
+	@:s @:range(0,400) public var x : Float = 0.0;
+	@:s @:range(0,400) public var y : Float = 0.0;
+	@:s @:range(0,400) public var z : Float = 0.0;
 
-	@:s public var x : Float = 0.;
-	@:s public var y : Float = 0.;
-	@:s public var z : Float = 0.;
-	@:s public var scaleX : Float = 1.;
-	@:s public var scaleY : Float = 1.;
-	@:s public var scaleZ : Float = 1.;
-	@:s public var rotationX : Float = 0.;
-	@:s public var rotationY : Float = 0.;
-	@:s public var rotationZ : Float = 0.;
+	@:s public var scaleX : Float = 1.0;
+	@:s public var scaleY : Float = 1.0;
+	@:s public var scaleZ : Float = 1.0;
+
+	@:s public var rotationX : Float = 0.0;
+	@:s public var rotationY : Float = 0.0;
+	@:s public var rotationZ : Float = 0.0;
+
 	@:s public var visible : Bool = true;
 
-	public function new(?parent) {
-		super(parent);
-		type = "object";
+	public var local3d : h3d.scene.Object;
+
+	#if editor
+	public var editorIcon : h2d.ObjectFollower;
+	#end
+
+	public static function getLocal3d(prefab: Prefab) : h3d.scene.Object {
+		var obj3d = Std.downcast(prefab, Object3D);
+		if (obj3d != null)
+			return obj3d.local3d;
+		return null;
 	}
 
-	public function loadTransform(t) {
-		x = t.x;
-		y = t.y;
-		z = t.z;
-		scaleX = t.scaleX;
-		scaleY = t.scaleY;
-		scaleZ = t.scaleZ;
-		rotationX = t.rotationX;
-		rotationY = t.rotationY;
-		rotationZ = t.rotationZ;
+	/*function set_x(v : Float) {
+		x = v;
+		local3d.x = x;
+		return x;
 	}
 
-	public function saveTransform() {
-		return { x : x, y : y, z : z, scaleX : scaleX, scaleY : scaleY, scaleZ : scaleZ, rotationX : rotationX, rotationY : rotationY, rotationZ : rotationZ };
+	function set_y(v : Float) {
+		y = v;
+		local3d.y = y;
+		return y;
 	}
 
-	public function localRayIntersection( ctx : Context, ray : h3d.col.Ray ) : Float {
-		return -1;
-	}
-
-	function createObject(ctx:Context) {
-		return new h3d.scene.Object(ctx.local3d);
-	}
-
-	override function makeInstance(ctx:Context):Context {
-		ctx = ctx.clone(this);
-		ctx.local3d = createObject(ctx);
-		ctx.local3d.name = name;
-		updateInstance(ctx);
-		return ctx;
-	}
+	function set_z(v : Float) {
+		z = v;
+		local3d.z = z;
+		return z;
+	}*/
 
 	public function setTransform(mat : h3d.Matrix) {
 		var rot = mat.getEulerAngles();
@@ -66,6 +61,41 @@ class Object3D extends Prefab {
 		rotationZ = Math.radToDeg(rot.z);
 	}
 
+	/* Override makeObject instead of this */
+	override function makeInstance() : Void {
+		local3d = makeObject(shared.current3d);
+		updateInstance();
+	}
+
+	function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
+		return new h3d.scene.Object(parent3d);
+	}
+
+	override function updateInstance(?propName : String ) {
+		applyTransform();
+		if (local3d != null) {
+			local3d.name = name;
+			local3d.visible = visible;
+		}
+	}
+
+	public static var _ = Prefab.register("object", Object3D);
+
+	public function saveTransform() {
+		return { x : x, y : y, z : z, scaleX : scaleX, scaleY : scaleY, scaleZ : scaleZ, rotationX : rotationX, rotationY : rotationY, rotationZ : rotationZ };
+	}
+
+	public function applyTransform() {
+		var o = local3d;
+		if (o == null) return;
+		o.x = x;
+		o.y = y;
+		o.z = z;
+		o.scaleX = scaleX;
+		o.scaleY = scaleY;
+		o.scaleZ = scaleZ;
+		o.setRotation(Math.degToRad(rotationX), Math.degToRad(rotationY), Math.degToRad(rotationZ));
+	}
 
 	public function getTransform( ?m: h3d.Matrix ) {
 		if( m == null ) m = new h3d.Matrix();
@@ -73,6 +103,22 @@ class Object3D extends Prefab {
 		m.rotate(Math.degToRad(rotationX), Math.degToRad(rotationY), Math.degToRad(rotationZ));
 		m.translate(x, y, z);
 		return m;
+	}
+
+	public function localRayIntersection(ray : h3d.col.Ray ) : Float {
+		return -1;
+	}
+
+	public function loadTransform(t) {
+		x = t.x;
+		y = t.y;
+		z = t.z;
+		scaleX = t.scaleX;
+		scaleY = t.scaleY;
+		scaleZ = t.scaleZ;
+		rotationX = t.rotationX;
+		rotationY = t.rotationY;
+		rotationZ = t.rotationZ;
 	}
 
 	public function getAbsPos() {
@@ -91,41 +137,16 @@ class Object3D extends Prefab {
 		return getTransform();
 	}
 
-	public function applyTransform( o : h3d.scene.Object ) {
-		o.x = x;
-		o.y = y;
-		o.z = z;
-		o.scaleX = scaleX;
-		o.scaleY = scaleY;
-		o.scaleZ = scaleZ;
-		o.setRotation(Math.degToRad(rotationX), Math.degToRad(rotationY), Math.degToRad(rotationZ));
+	public function getDisplayFilters() : Array<String> {
+		return [];
 	}
 
-	override function updateInstance( ctx: Context, ?propName : String ) {
-		var o = ctx.local3d;
-		applyTransform(o);
-		o.visible = visible;
-		#if editor
-		addEditorUI(ctx);
-		#end
-	}
-
-	override function removeInstance(ctx: Context):Bool {
-		if(ctx.local3d != null)
-			ctx.local3d.remove();
-		#if editor
-		if( ctx.local2d != null ) {
-			var f = Std.downcast(ctx.local2d, h2d.ObjectFollower);
-			if( f != null && f.follow == ctx.local3d ) f.remove();
-		}
-		#end
+#if editor
+	override function setSelected(b:Bool):Bool {
+		if (local3d == null)
 		return true;
-	}
 
-	#if editor
-
-	override function setSelected(ctx:Context, b:Bool):Bool {
-		var materials = ctx.shared.getMaterials(this);
+		var materials = local3d.getMaterials();
 
 		if( !b ) {
 			for( m in materials ) {
@@ -155,23 +176,23 @@ class Object3D extends Prefab {
 		return true;
 	}
 
-	public function addEditorUI( ctx : Context ) {
-		for( r in ctx.shared.getObjects(this,h3d.scene.Object) )
+	public function addEditorUI(ctx : hide.prefab.EditContext) {
+		var objs = findAll((p) -> p.to(Object3D).local3d, true);
+		for( r in objs )
 			if( r.name != null && StringTools.startsWith(r.name,"$UI.") )
 				r.remove();
 		// add ranges
-		var shared = Std.downcast(ctx.shared, hide.prefab.ContextShared);
-		if( shared != null && shared.editorDisplay ) {
+
 			var sheet = getCdbType();
 			if( sheet != null ) {
 				var ide = hide.Ide.inst;
-				var ranges = Reflect.field(shared.scene.config.get("sceneeditor.ranges"), sheet);
+			var ranges = Reflect.field(ctx.scene.config.get("sceneeditor.ranges"), sheet);
 				if( ranges != null ) {
 					for( key in Reflect.fields(ranges) ) {
 						var color = Std.parseInt(Reflect.field(ranges,key));
 						var value : Dynamic = hide.comp.cdb.DataFiles.resolveCDBValue(sheet,key, props);
 						if( value != null ) {
-							var mesh = new h3d.scene.Mesh(hrt.prefab.l3d.Spray.makePrimCircle(128, 0.99), ctx.local3d);
+						var mesh = new h3d.scene.Mesh(hrt.prefab.l3d.Spray.makePrimCircle(128, 0.99), local3d);
 							mesh.name = "$UI.RANGE";
 							mesh.ignoreCollide = true;
 							mesh.ignoreBounds = true;
@@ -186,14 +207,14 @@ class Object3D extends Prefab {
 						}
 					}
 				}
-				var huds : Dynamic = shared.scene.config.get("sceneeditor.huds");
+			var huds : Dynamic = ctx.scene.config.get("sceneeditor.huds");
 				var icon = Reflect.field(huds, sheet);
 				if( icon != null ) {
 					var t : Dynamic = hide.comp.cdb.DataFiles.resolveCDBValue(sheet,icon, props);
 					if( t != null && (t.file != null || Std.isOfType(t,String)) ) {
-						var obj = Std.downcast(ctx.local2d, h2d.ObjectFollower);
-						if( obj == null || obj.follow != ctx.local3d ) {
-							ctx.local2d = obj = new h2d.ObjectFollower(ctx.local3d, ctx.local2d);
+					var obj = editorIcon;
+					if( obj == null || obj.follow != local3d ) {
+						editorIcon = obj = new h2d.ObjectFollower(local3d, shared.root2d);
 							obj.horizontalAlign = Middle;
 							obj.followVisibility = true;
 						}
@@ -206,7 +227,7 @@ class Object3D extends Prefab {
 								bmp = new h2d.Bitmap(null, obj);
 								bmp.name = "$huds";
 							}
-							bmp.tile = h2d.Tile.fromTexture(ctx.loadTexture(t.file)).sub(
+						bmp.tile = h2d.Tile.fromTexture(shared.loadTexture(t.file)).sub(
 								t.x * t.size,
 								t.y * t.size,
 								(t.width == null ? 1 : t.width) * t.size,
@@ -247,13 +268,15 @@ class Object3D extends Prefab {
 				}
 			}
 		}
-	}
 
-	override function makeInteractive( ctx : Context ) : hxd.SceneEvents.Interactive {
-		var local3d = ctx.local3d;
+	override function makeInteractive() : hxd.SceneEvents.Interactive {
 		if(local3d == null)
 			return null;
-		var meshes = ctx.shared.getObjects(this, h3d.scene.Mesh);
+		var meshes = [];
+		var mesh = Std.downcast(local3d, h3d.scene.Mesh);
+		if (mesh != null ) {
+			meshes.push(mesh);
+		}// ctx.shared.getObjects(this, h3d.scene.Mesh);
 		var invRootMat = local3d.getAbsPos().clone();
 		invRootMat.invert();
 		var bounds = new h3d.col.Bounds();
@@ -286,6 +309,14 @@ class Object3D extends Prefab {
 
 			if( Std.downcast(mesh, h3d.scene.Skin) != null ) {
 				hasSkin = true;
+				continue;
+			}
+
+			var asIcon = Std.downcast(mesh, hrt.impl.EditorTools.EditorIcon);
+			if (asIcon != null) {
+				hasSkin = true; // hack
+				/*var pos = asIcon.getAbsPos();
+				bounds.addSpherePos(pos.tx, pos.ty, pos.tz, asIcon.billboardScale);*/
 				continue;
 			}
 
@@ -332,7 +363,7 @@ class Object3D extends Prefab {
 		return int;
 	}
 
-	override function edit( ctx : EditContext ) {
+	override function edit( ctx : hide.prefab.EditContext ) {
 		var props = new hide.Element('
 			<div class="group" name="Position">
 				<dl>
@@ -352,11 +383,7 @@ class Object3D extends Prefab {
 		});
 	}
 
-	public function getDisplayFilters() : Array<String> {
-		return [];
-	}
-
-	override function getHideProps() : HideProps {
+	override function getHideProps() : hide.prefab.HideProps {
 		// Check children
 		var cname = Type.getClassName(Type.getClass(this)).split(".").pop();
 		return {
@@ -364,12 +391,6 @@ class Object3D extends Prefab {
 			name : cname == "Object3D" ? "Group" : cname,
 		};
 	}
-	#end
 
-	override function getDefaultName() {
-		return type == "object" ? "group" : super.getDefaultName();
-	}
-
-	static var _ = Library.register("object", Object3D);
-
+#end // if editor
 }
