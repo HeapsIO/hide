@@ -120,18 +120,16 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		}));
 	}
 
-	// TODO(ces) : restore
 	override function createDroppedElement(path:String, parent:PrefabElement):hrt.prefab.Object3D {
-		throw "implement";
-		/*var type = Prefab.getPrefabType(path);
+		var type = hrt.prefab.Prefab.getPrefabType(path);
 		if(type == "fx") {
 			var relative = ide.makeRelative(path);
-			var ref = new hrt.prefab.fx.SubFX(parent);
-			ref.path = relative;
+			var ref = new hrt.prefab.fx.SubFX(parent, null);
+			ref.source = relative;
 			ref.name = new haxe.io.Path(relative).file;
 			return ref;
 		}
-		return super.createDroppedElement(path, parent);*/
+		return super.createDroppedElement(path, parent);
 	}
 
 	override function setElementSelected( p : PrefabElement, b : Bool ) {
@@ -333,18 +331,6 @@ class FXEditor extends hide.view.FileView {
 		xOffset = -timelineLeftMargin / xScale;
 		var content = sys.io.File.getContent(getPath());
 		var json = haxe.Json.parse(content);
-		/*if (json.type == "fx") {
-			var inf = hrt.prefab.Prefab.getRegistered().get("fx");
-			data = Std.downcast(Type.createInstance(inf.cl, null), hrt.prefab.fx.FX);
-			if ( data == null )
-				throw "fx prefab override failed";
-		}
-		else {
-			// TODO(ces) : Fix FX2D
-			//is2D = true;
-			//data = new hrt.prefab.fx.FX2D();
-			throw "FX2D not handled yet";
-		}*/
 
 		data = cast(PrefabElement.createFromDynamic(json), hrt.prefab.fx.BaseFX);
 		currentSign = ide.makeSignature(content);
@@ -1411,8 +1397,7 @@ class FXEditor extends hide.view.FileView {
 		var shaderElt = Std.downcast(elt, hrt.prefab.Shader);
 		var emitterElt = Std.downcast(elt, hrt.prefab.fx.Emitter);
 
-		// TODO(ces) : Restore
-		//var particle2dElt = Std.downcast(elt, hrt.prefab.l2d.Particle2D);
+		var particle2dElt = Std.downcast(elt, hrt.prefab.l2d.Particle2D);
 		var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
 		var lightElt = Std.downcast(elt, Light);
 
@@ -1549,15 +1534,15 @@ class FXEditor extends hide.view.FileView {
 				addParam(param, "Instance ");
 			}
 		}
-		// TODO(ces) : Restore
-		/*
+
 		if (particle2dElt != null) {
 			for(param in hrt.prefab.l2d.Particle2D.emitter2dParams) {
 				if(!param.animate)
 					continue;
 				addParam(param, "");
 			}
-		}*/
+		}
+
 		if( lightElt != null ) {
 			switch lightElt.kind {
 				case Point:
@@ -1670,12 +1655,9 @@ class FXEditor extends hide.view.FileView {
 	}
 
 	function onUpdate2D(dt:Float) {
-		//TODO(ces) : ...
-		throw "not implemented yet";
-		/*var anim : hrt.prefab.fx.FX2D.FX2DAnimation = null;
-		if(ctx != null && ctx.local2d != null) {
-			anim = Std.downcast(ctx.local2d, hrt.prefab.fx.FX2D.FX2DAnimation);
-		}
+
+		var anim = Std.downcast(sceneEditor.root2d, hrt.prefab.fx.FX2D.FX2DAnimation);
+
 		if(!pauseButton.isDown()) {
 			currentTime += scene.speed * dt;
 			if(this.curveEditor != null) {
@@ -1712,7 +1694,6 @@ class FXEditor extends hide.view.FileView {
 			@:privateAccess grid2d.setPosition(scene.s2d.children[0].x, scene.s2d.children[0].y);
 		}
 
-	*/
 	}
 
 	var avg_smooth = 0.0;
@@ -1915,7 +1896,6 @@ class FXEditor extends hide.view.FileView {
 		return curve.getParent(hrt.prefab.fx.Emitter) != null;
 	}
 
-	// TODO(ces) : restrore
 	static var _ = FileTree.registerExtension(FXEditor, ["fx"], { icon : "sitemap", createNew : "FX" });
 
 	function set_currentTime(value:Float):Float {

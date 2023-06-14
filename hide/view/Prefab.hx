@@ -1,4 +1,5 @@
 package hide.view;
+import hrt.prefab.l3d.Instance;
 import hide.view.CameraController.CamController;
 using Lambda;
 
@@ -92,8 +93,7 @@ class PrefabSceneEditor extends hide.comp.SceneEditor {
 			haxe.Timer.delay(addElements.bind([p]), 0);
 		}
 
-		// TODO(ces) : Restore Instances
-		/*function addNewInstances() {
+		function addNewInstances() {
 			var items = new Array<hide.comp.ContextMenu.ContextMenuItem>();
 			for(type in DataFiles.getAvailableTypes() ) {
 				var typeId = DataFiles.getTypeName(type);
@@ -104,7 +104,7 @@ class PrefabSceneEditor extends hide.comp.SceneEditor {
 				var idCol = refCols == null ? null : Instance.findIDColumn(refSheet);
 
 				function make(name) {
-					var p = new Instance(current == null ? sceneData : current);
+					var p = new Instance(current == null ? sceneData : current, null);
 					p.name = name;
 					p.props = makeCdbProps(p, type);
 					setup(p);
@@ -154,7 +154,7 @@ class PrefabSceneEditor extends hide.comp.SceneEditor {
 				menu: items
 			});
 		};
-		addNewInstances();*/
+		addNewInstances();
 		newItems.unshift({
 			label : "Recents",
 			menu : recents,

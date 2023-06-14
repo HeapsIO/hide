@@ -14,8 +14,6 @@ class Instance extends Object3D {
 
 	#if editor
 	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
-		//throw "implement";
-		// TODO(ces) restore
 
 		var kind = getRefSheet(this);
 		var unknown = kind == null || kind.idx == null;
@@ -37,8 +35,7 @@ class Instance extends Object3D {
 					return model;
 				}
 			} catch( e : hxd.res.NotFound ) {
-				// TODO(ces) Restore ?
-				//ctx.shared.onError(e);
+				shared.onError(e);
 			}
 		}
         return new h3d.scene.Object();
@@ -65,7 +62,7 @@ class Instance extends Object3D {
 	// TODO(ces) restore
 
 	/*override function removeInstance():Bool {
-		/*if(!super.removeInstance(ctx))
+		if(!super.removeInstance(ctx))
 			return false;
 		if(ctx.local2d != null ) {
 			var p = parent;

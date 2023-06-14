@@ -244,30 +244,14 @@ class Text3D extends Object3D {
 		return null;
 	}
 
-	// TODO(ces) : AAAAAARGH
 	override function makeObject(parent3d : h3d.scene.Object) : h3d.scene.Object {
-		/*var mesh = new h3d.scene.Mesh(new Text3DPrimitive(), parent3d);
+		var mesh = new h3d.scene.Mesh(new Text3DPrimitive(), parent3d);
 		mesh.material.blendMode = Alpha;
 		text2d = new h2d.Text(hxd.res.DefaultFont.get(), findFirstLocal2d());
-		@:privateAccess h2dText.glyphs.content = new Text3DPrimitive();
-		local2d = h2dText;
+		@:privateAccess text2d.glyphs.content = new Text3DPrimitive();
 		text2d.name = name;
-
-		text2d*/
-		throw "2d and 3d aaaaaaaaaaaaaaaarg";
-		return null;
+		return mesh;
 	}
-
-	/*override function makeInstance(ctx: hrt.prefab.Prefab.InstanciateContext) : Void {
-		var mesh = new h3d.scene.Mesh(new Text3DPrimitive(), ctx.local3d);
-		mesh.material.blendMode = Alpha;
-		ctx.local3d = mesh;
-		ctx.local3d.name = name;
-		var h2dText = new h2d.Text(hxd.res.DefaultFont.get(), ctx.local2d);
-		@:privateAccess h2dText.glyphs.content = new Text3DPrimitive();
-		ctx.local2d = h2dText;
-		ctx.local2d.name = name;
-	}*/
 
 	static var _ = Prefab.register("text3d", Text3D);
 }

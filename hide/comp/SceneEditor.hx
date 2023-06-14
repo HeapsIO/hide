@@ -2609,8 +2609,6 @@ class SceneEditor {
 			case Nothing, NoTree:
 			}
 
-			// TODO(ces) : implement
-
 			var map = new Map<PrefabElement,Bool>();
 			function selectRec(e : PrefabElement, b:Bool) {
 				if( map.exists(e) )
@@ -2729,7 +2727,6 @@ class SceneEditor {
 			prefab = ref;
 			prefab.name = new haxe.io.Path(relative).file;
 		}
-		// TODO(ces) : restore missing class Particles3D
 		else if(haxe.io.Path.extension(path).toLowerCase() == "json") {
 			prefab = new hrt.prefab.l3d.Particles3D(parent, null);
 			prefab.source = relative;
@@ -3467,8 +3464,7 @@ class SceneEditor {
 	function update(dt:Float) {
 		saveCam3D();
 
-		// TODO(ces) : Restore 2d
-		//@:privateAccess view.saveDisplayState("Camera2D", { x : context.shared.root2d.x - scene.s2d.width*0.5, y : context.shared.root2d.y - scene.s2d.height*0.5, z : context.shared.root2d.scaleX });
+		@:privateAccess view.saveDisplayState("Camera2D", { x : sceneData.shared.root2d.x - scene.s2d.width*0.5, y : sceneData.shared.root2d.y - scene.s2d.height*0.5, z : sceneData.shared.root2d.scaleX });
 		if(gizmo != null) {
 			if(!gizmo.moving) {
 				moveGizmoToSelection();
@@ -3663,8 +3659,7 @@ class SceneEditor {
 				ide.chooseFile(shModel.inf.fileSource.concat(graphModel.inf.fileSource).concat(["shgraph"]), function(path) {
 					var cl = isClassShader(path) ? shModel.prefabClass : graphModel.prefabClass;
 					var p = Type.createInstance(cl, [parentElt]);
-					// TODO(ces) : restore ?
-					//p.source = path;
+					p.source = path;
 					autoName(p);
 					if(onMake != null)
 						onMake(p);
