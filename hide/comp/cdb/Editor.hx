@@ -1758,7 +1758,7 @@ class Editor extends Component {
 			menu.insert(1,{ label : "Edit all", click : function() editScripts(table,col) });
 		if( table.displayMode == Properties ) {
 			menu.push({ label : "Delete All", click : function() {
-				if( !ide.confirm("*** WARNING ***\nThis will delete the row for all properties !") )
+				if( !ide.confirm('*** WARNING ***\nThis will delete the row for all properties!\n${col.name}') )
 					return;
 				beginChanges(true);
 				table.sheet.deleteColumn(col.name);
