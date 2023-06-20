@@ -431,8 +431,8 @@ class SwarmObject extends h3d.scene.Object {
 
 		var s = prefab.seed;
 
-		var r = hxd.Math.lerp(0.5, 1.5, hashf(id, 188947+s)) * 1.0;
-		var theta = hxd.Math.lerp(0.2, hxd.Math.PI * 2.0 - 0.2, hashf(id, 7841+s) % 1.0);
+		var r = Math.exp(prefab.sphereDistanceScale * hashf(id, 188947+s));
+		var theta = hxd.Math.PI/2 + prefab.sphereAngleRange * hxd.Math.lerp(-hxd.Math.PI/2, hxd.Math.PI/2, hashf(id, 7841+s) % 1.0);
 		var sigma = (hashf(id, 4449) % 1.0 + prefab.baseTargetRotationSpeed * time * hxd.Math.lerp(0.5, 1.5, hashf(id, 99741+s)) * 0.05) * hxd.Math.PI * 2.0 + facingAngle;
 
 		var st = hxd.Math.sin(theta);
@@ -469,6 +469,8 @@ class Swarm extends Object3D {
 
 	@:s public var noiseSpeed : Float = 1.0;
 
+	@:s public var sphereAngleRange : Float = 1.0;
+	@:s public var sphereDistanceScale : Float = 1.0;
 
 
 
@@ -542,6 +544,9 @@ class Swarm extends Object3D {
 		<dl>
 			<details><summary> info </summary><p>Controls the targets that the entities follow. Each entity has a fixed target that it will try to reach. Use theses settings to add some movement to the targets to randomise the placement of the entities.</details>
 
+			<dt>Angle Min/Max</dt><dd><input type="range" field="sphereAngleRange" min = "0.0" max = "1.0"/></dd>
+			<dt>Rand Radius</dt><dd><input type="range" field="sphereDistanceScale" min = "0.0" max = "1.0"/></dd>
+
 			<dt title="Add a rotation to the targets that helps randomize the spread of the entities">Auto Rot.</dt><dd><input type="range" field="baseTargetRotationSpeed" min = "-10.0" max = "10.0"/></dd>
 
 			<dt title="Align the targets with the velocity of the swarm target object">Align Vel.</dt><dd><input type="checkbox" field="autoTrackRotation"/></dd>
@@ -550,6 +555,7 @@ class Swarm extends Object3D {
 			<dt title="Displays the current position of the targets (editor only)">View Targets</dt><dd><input type="checkbox" field="debugTargets"/></dd>
 		</dl>
 		</div>
+
 
 		<div class="group" name="Advanced">
 		<dl>
