@@ -13,6 +13,8 @@ class MeshWave extends hxsl.Shader {
 			var color: Vec3;
 		}
 
+		@param var axis : Vec3 = vec3(0.0,1.0,0.0);
+
 		@param var speed : Float = 0.5;
 		@param var length : Float = 1.0;
 		@param var scale : Float = 1.0;
@@ -44,7 +46,8 @@ class MeshWave extends hxsl.Shader {
 			var xScale = 1.0 / max(length, 0.001);
 
 			var carrierSpeed = global.time*rSpeed*speed*tau;
-			relativePosition.y = relativePosition.y + sin(carrierSpeed + relativePosition.x*xScale + random + sin(carrierSpeed*fmSpeed + random) * fmAmplitude) * input.color.r * scale * rScale;
+			var dispScale = sin(carrierSpeed + relativePosition.x*xScale + random + sin(carrierSpeed*fmSpeed + random) * fmAmplitude) * input.color.r * scale * rScale;
+			relativePosition += dispScale * axis;
 		}
 	};
 }
