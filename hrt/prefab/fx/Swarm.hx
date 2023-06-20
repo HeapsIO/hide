@@ -382,7 +382,7 @@ class SwarmObject extends h3d.scene.Object {
 				tmpVector.set(1.0,0,0);
 			}
 
-			var randScale = Math.exp((0.5-hashf(i, 85619))*2.0 * prefab.randScale);
+			var randScale = prefab.randScale != 0 ? Math.exp((0.5-hashf(i, 85619))*2.0 * prefab.randScale) : 1.0;
 
 			var quat = tmpQuat;
 			quat.initDirection(tmpVector);
@@ -391,6 +391,10 @@ class SwarmObject extends h3d.scene.Object {
 				batch.worldPosition = new h3d.Matrix();
 
 			batch.worldPosition.initScale(randScale, randScale, randScale);
+			if (swarmElementTemplate != null) {
+				batch.worldPosition.scale(swarmElementTemplate.scaleX, swarmElementTemplate.scaleY, swarmElementTemplate.scaleZ);
+			}
+
 			quat.toMatrix(tmpMatrix);
 			batch.worldPosition.multiply(batch.worldPosition, tmpMatrix);
 
