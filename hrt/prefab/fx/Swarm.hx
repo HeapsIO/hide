@@ -354,6 +354,7 @@ class SwarmObject extends h3d.scene.Object {
 		updateMeshBatch();
 	}
 
+	static var tmpMatrix = new h3d.Matrix();
 	function updateMeshBatch() {
 		if(batch == null) return;
 
@@ -380,13 +381,18 @@ class SwarmObject extends h3d.scene.Object {
 			if (tmpVector.lengthSq() < hxd.Math.EPSILON ) {
 				tmpVector.set(1.0,0,0);
 			}
+
+			var randScale = Math.exp((0.5-hashf(i, 85619))*2.0 * prefab.randScale);
+
 			var quat = tmpQuat;
 			quat.initDirection(tmpVector);
 
 			if (batch.worldPosition == null)
 				batch.worldPosition = new h3d.Matrix();
 
-			quat.toMatrix(batch.worldPosition);
+			batch.worldPosition.initScale(randScale, randScale, randScale);
+			quat.toMatrix(tmpMatrix);
+			batch.worldPosition.multiply(batch.worldPosition, tmpMatrix);
 
 			batch.worldPosition.scale(parentScale.x, parentScale.y, parentScale.z);
 
@@ -394,7 +400,6 @@ class SwarmObject extends h3d.scene.Object {
 			batch.worldPosition.ty = y;
 			batch.worldPosition.tz = z;
 			batch.worldPosition._44 = 1.0;
-
 
 			shader.randomParam = hashf(i, 77894 + prefab.seed);
 			batch.emitInstance();
@@ -431,7 +436,7 @@ class SwarmObject extends h3d.scene.Object {
 
 		var s = prefab.seed;
 
-		var r = Math.exp(prefab.sphereDistanceScale * hashf(id, 188947+s));
+		var r = Math.exp(prefab.sphereDistanceScale * 2.0 * (hashf(id, 188947+s)-0.5));
 		var theta = hxd.Math.PI/2 + prefab.sphereAngleRange * hxd.Math.lerp(-hxd.Math.PI/2, hxd.Math.PI/2, hashf(id, 7841+s) % 1.0);
 		var sigma = (hashf(id, 4449) % 1.0 + prefab.baseTargetRotationSpeed * time * hxd.Math.lerp(0.5, 1.5, hashf(id, 99741+s)) * 0.05) * hxd.Math.PI * 2.0 + facingAngle;
 
@@ -448,6 +453,7 @@ class SwarmObject extends h3d.scene.Object {
 class Swarm extends Object3D {
 	@:s public var numObjects : Int = 3;
 	@:s public var seed : Int = 0;
+	@:s public var randScale: Float = 0.0;
 	@:s public var acceleration : Float = 5.0;
 	@:s public var accelerationRandom : Float = 0.0;
 	@:s public var accelerationNoise : Float = 0.0;
@@ -517,8 +523,10 @@ class Swarm extends Object3D {
 		var props = ctx.properties.add(new hide.Element('
 		<div class="group" name="Swarm Entities">
 			<dl>
-				<dt title="Totla number of entities in the swarm">Count</dt><dd><input type="range" field="numObjects" min="1" max="100" step="1"/></dd>
+				<dt title="Total number of entities in the swarm">Count</dt><dd><input type="range" field="numObjects" min="1" max="100" step="1"/></dd>
 				<dt title="Randomize the values of the swarm">Random Seed</dt><dd><input type="number" field="seed"/></dd>
+				<dt title="Uniform Random scale applied to each entity in the swarm">Random Scale</dt><dd><input type="range" field="randScale" min = "0.0" max = "1.0"/></dd>
+
 				<dt title="The acceleration of an entity">Acceleration</dt><dd><input type="range" field="acceleration" min = "0.01" max = "10.0"/></dd>
 				<dt title="Randomly multiply the acceleration of each entity. A value ">Rand Acceleration</dt><dd><input type="range" field="accelerationRandom" min = "0.00" max = "1.0"/></dd>
 				<dt title="Add a noise to the acceleration">Noise Acceleration</dt><dd><input type="range" field="accelerationNoise" min = "0.0" max = "1.0"/></dd>
