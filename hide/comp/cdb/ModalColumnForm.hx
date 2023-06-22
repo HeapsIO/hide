@@ -278,6 +278,8 @@ class ModalColumnForm extends Modal {
 		close();
 	}
 
+	var validIdentifierReg = ~/^[_a-zA-Z][_a-zA-Z0-9]*$/;
+
 	public function getColumn( refColumn : cdb.Data.Column) : Column{
 		var base = editor.base;
 		var v : Dynamic<String> = { };
@@ -289,6 +291,23 @@ class ModalColumnForm extends Modal {
 			Reflect.setField(v, i[0].id, i[0].innerText);
 		}
 
+		function stringToValues(str: String) {
+			var vals = StringTools.trim(str).split("\n");
+			vals = [for ( v in vals) for (e in v.split(",")) e];
+			vals = [for (v in vals) StringTools.trim(v)];
+			for (v in vals) {
+				if (!validIdentifierReg.match(v)) {
+					error('Invalid name : "$v"');
+					return null;
+				}
+			}
+			if( vals.length == 0 ) {
+				error("Missing value list");
+				return null;
+			}
+			return vals;
+		}
+
 		var t : ColumnType = switch( v.type ) {
 		case "id": TId;
 		case "int": TInt;
@@ -296,26 +315,14 @@ class ModalColumnForm extends Modal {
 		case "string": TString;
 		case "bool": TBool;
 		case "enum":
-			var vals = StringTools.trim(v.values).split("\n");
-			vals = [for ( v in vals) for (e in v.split(",")) e];
-			vals.removeIf(function(e) {
-				return StringTools.trim(e) == "";
-			});
-			if( vals.length == 0 ) {
-				error("Missing value list");
+			var vals = stringToValues(v.values);
+			if (vals == null)
 				return null;
-			}
 			TEnum([for( f in vals ) StringTools.trim(f)]);
 		case "flags":
-			var vals = StringTools.trim(v.values).split("\n");
-			vals = [for ( v in vals) for (e in v.split(",")) e];
-			vals.removeIf(function(e) {
-				return StringTools.trim(e) == "";
-			});
-			if( vals.length == 0 ) {
-				error("Missing value list");
+			var vals = stringToValues(v.values);
+			if (vals == null)
 				return null;
-			}
 			if( vals.length > 30 ) {
 				error("Too many possible values");
 				return null;
