@@ -24,6 +24,9 @@ class Decal extends Object3D {
 	@:s var centered : Bool = true;
 	@:s var autoAlpha : Bool = true;
 	@:c var blendMode : h2d.BlendMode = Alpha;
+	@:s var normalFade : Bool = false;
+	@:s var normalFadeStart : Float = 0;
+	@:s var normalFadeEnd : Float = 1;
 
 	override function save() {
 		var obj : Dynamic = super.save();
@@ -76,6 +79,16 @@ class Decal extends Object3D {
 	public function updateRenderParams(ctx) {
 		var mesh = Std.downcast(ctx.local3d, h3d.scene.Mesh);
 		mesh.material.mainPass.setBlendMode(blendMode);
+
+		inline function commonSetup(shader: h3d.shader.pbr.VolumeDecal.BaseDecal) {
+			shader.fadePower = fadePower;
+			shader.fadeStart = fadeStart;
+			shader.fadeEnd = fadeEnd;
+			shader.USE_NORMAL_FADE = normalFade;
+			shader.normalFadeStart = normalFadeStart;
+			shader.normalFadeEnd = normalFadeEnd;
+		}
+
 		switch (renderMode) {
 			case Default, Terrain:
 				var shader = mesh.material.mainPass.getShader(h3d.shader.pbr.VolumeDecal.DecalPBR);
@@ -91,9 +104,7 @@ class Decal extends Object3D {
 					shader.USE_ALBEDO = albedoStrength != 0&& shader.albedoTexture != null;
 					shader.USE_NORMAL = normalStrength != 0 && shader.normalTexture != null;
 					shader.CENTERED = centered;
-					shader.fadePower = fadePower;
-					shader.fadeStart = fadeStart;
-					shader.fadeEnd = fadeEnd;
+					commonSetup(shader);
 				}
 				var pbrTexture = pbrMap != null ? ctx.loadTexture(pbrMap) : null;
 				if( pbrTexture != null ) {
@@ -125,10 +136,8 @@ class Decal extends Object3D {
 					shader.CENTERED = centered;
 					shader.GAMMA_CORRECT = renderMode == BeforeTonemapping;
 					shader.AUTO_ALPHA = autoAlpha;
-					shader.fadePower = fadePower;
-					shader.fadeStart = fadeStart;
-					shader.fadeEnd = fadeEnd;
 					shader.emissive = emissive;
+					commonSetup(shader);
 				}
 		}
 	}
@@ -227,6 +236,10 @@ class Decal extends Object3D {
 					<dt>FadePower</dt><dd> <input type="range" min="0" max="3" field="fadePower"/></dd>
 					<dt>Start</dt><dd> <input type="range" min="0" max="1" field="fadeStart"/></dd>
 					<dt>End</dt><dd> <input type="range" min="0" max="1" field="fadeEnd"/></dd>
+
+					<dt>Fade normal</dt><dd><input type="checkbox" field="normalFade"/></dd>
+					<dt>Normal start</dt><dd> <input type="range" min="0" max="1" field="normalFadeStart"/></dd>
+					<dt>Normal end</dt><dd> <input type="range" min="0" max="1" field="normalFadeEnd"/></dd>
 				</div>
 			</div>
 			'),this, function(pname) {
