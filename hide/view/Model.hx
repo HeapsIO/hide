@@ -287,6 +287,8 @@ class Model extends FileView {
 		matLibrary.find(".save").click(function(_) {
 			var mat = findMat(matLibrary.find(".matLib").val());
 			if ( mat != null ) {
+				for ( f in Reflect.fields((m.props:Dynamic)) )
+					Reflect.deleteField((m.props:Dynamic), f);
 				Reflect.setField((m.props:Dynamic), "__ref", mat.path);
 				Reflect.setField((m.props:Dynamic), "name", mat.mat.name);
 			} else {
