@@ -252,6 +252,7 @@ class HeightMapTile {
 
 	var hmap : HeightMap;
 	var height : hxd.Pixels;
+	var shader : HeightMapShader;
 
 	public function new(hmap, tx, ty) {
 		this.hmap = hmap;
@@ -265,6 +266,8 @@ class HeightMapTile {
 			root.remove();
 			root = null;
 		}
+		if ( albedoTex != null )
+			albedoTex.dispose();
 	}
 
 	public function isEmpty() {
@@ -297,7 +300,7 @@ class HeightMapTile {
 		shadows.material.mainPass.setPassName("shadow");
 		var smat = shadows.material;
 		@:bypassAccessor smat.castShadows = true; // trigger DirShadowMap
-		shadows.material.mainPass.addShader(root.material.mainPass.getShader(HeightMapShader));
+		shadows.material.mainPass.addShader(shader);
 	}
 
 	var shadows : h3d.scene.Mesh;
@@ -315,7 +318,7 @@ class HeightMapTile {
 		var splat = getTextures(SplatMap);
 		var normal = getTextures(Normal)[0];
 
-		var shader = root.material.mainPass.addShader(new HeightMapShader());
+		shader = root.material.mainPass.addShader(new HeightMapShader());
 		if ( mesh.hmap.castShadows )
 			createShadows(mesh);
 		shader.hasHeight = htex != null;
@@ -367,37 +370,41 @@ class HeightMapTile {
 		shader.albedoProps = hmap.getAlbedoProps();
 		shader.hasAlbedoProps = shader.albedoProps.length > 0;
 
-		if ( hmap.bakedAlbedo ) {
-			albedoTex = new h3d.mat.Texture(hmap.bakedAlbedoSize, hmap.bakedAlbedoSize, [Target]);
-			albedoTex.preventAutoDispose();
+		shader.USE_BAKED_ALBEDO = false;
 
-			var ss = new h3d.pass.ScreenFx(new HeightMapTileBakeShader(), [Value("albedoOutput")]);
-			ss.shader.SplatCount = shader.SplatCount;
-			ss.shader.albedoIsArray = shader.albedoIsArray;
-			ss.shader.SplatMode = shader.SplatMode;
-			ss.shader.albedoTiling = shader.albedoTiling;
-			ss.shader.albedoGamma = shader.albedoGamma;
-			ss.shader.splats = shader.splats;
-			ss.shader.AlbedoCount = shader.AlbedoCount;
-			if( shader.albedoIsArray ) {
-				ss.shader.albedoArray = shader.albedoArray;
-				ss.shader.albedoIndexes = shader.albedoIndexes;
-			} else {
-				ss.shader.albedos = shader.albedos;
-			}
-			ss.shader.albedoProps = shader.albedoProps;
-			ss.shader.hasAlbedoProps = shader.hasAlbedoProps;
+		if ( hmap.bakedAlbedo )
+			bake();
+	}
 
-			var engine = h3d.Engine.getCurrent();
-			engine.pushTarget(albedoTex);
-			ss.render();
-			engine.popTarget();
+	public function bake() {
+		albedoTex = new h3d.mat.Texture(hmap.bakedAlbedoSize, hmap.bakedAlbedoSize, [Target]);
+		albedoTex.preventAutoDispose();
 
-			shader.USE_BAKED_ALBEDO = true;
-			shader.bakedAlbedo = albedoTex;
+		// Should use waitLod on splat textures to wait for async loading if any.
+		var ss = new h3d.pass.ScreenFx(new HeightMapTileBakeShader(), [Value("albedoOutput")]);
+		ss.shader.SplatCount = shader.SplatCount;
+		ss.shader.albedoIsArray = shader.albedoIsArray;
+		ss.shader.SplatMode = shader.SplatMode;
+		ss.shader.albedoTiling = shader.albedoTiling;
+		ss.shader.albedoGamma = shader.albedoGamma;
+		ss.shader.splats = shader.splats;
+		ss.shader.AlbedoCount = shader.AlbedoCount;
+		if( shader.albedoIsArray ) {
+			ss.shader.albedoArray = shader.albedoArray;
+			ss.shader.albedoIndexes = shader.albedoIndexes;
 		} else {
-			shader.USE_BAKED_ALBEDO = false;
+			ss.shader.albedos = shader.albedos;
 		}
+		ss.shader.albedoProps = shader.albedoProps;
+		ss.shader.hasAlbedoProps = shader.hasAlbedoProps;
+
+		var engine = h3d.Engine.getCurrent();
+		engine.pushTarget(albedoTex);
+		ss.render();
+		engine.popTarget();
+
+		shader.USE_BAKED_ALBEDO = true;
+		shader.bakedAlbedo = albedoTex;
 	}
 
 	inline function resolveTexturePath( path : String ) {
