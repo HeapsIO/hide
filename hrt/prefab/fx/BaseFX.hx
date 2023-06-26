@@ -92,7 +92,7 @@ typedef ObjectAnimation = {
 };
 
 class BaseFX extends hrt.prefab.Library {
-	public static var useAutoPerInstance = #if editor true #else false #end;
+	public static var useAutoPerInstance = true;
 
 	@:s public var duration : Float;
 	@:s public var startDelay : Float;
@@ -189,18 +189,18 @@ class BaseFX extends hrt.prefab.Library {
 			if(shCtx.custom == null) continue;
 			var params = makeShaderParams(ctx, shader);
 			var shader : hxsl.Shader = shCtx.custom;
-			/*
+
 			if(useAutoPerInstance && batch != null)  @:privateAccess {
-				var perInstance = batch.forcedPerInstance;
-				if(perInstance == null) {
-					perInstance = [];
-					batch.forcedPerInstance = perInstance;
+				var perInstance = batch.instancedParams;
+				if ( perInstance == null ) {
+					perInstance = new hxsl.Cache.BatchInstanceParams([]);
+					batch.instancedParams = perInstance; 
 				}
-				perInstance.push({
+				perInstance.forcedPerInstance.push({
 					shader: shader.shader.data.name,
 					params: params == null ? emptyParams : params.map(p -> p.def.name)
 				});
-			}*/
+			}
 
 			if(params == null) continue;
 
