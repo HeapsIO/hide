@@ -234,6 +234,13 @@ class Model extends FileView {
 						${[for( i in 0...materials.length ) '<option value="${materials[i].path + "/" + materials[i].mat.name}" ${(selected == materials[i].path + "/" + materials[i].mat.name) ? 'selected' : ''}>${materials[i].mat.name}</option>'].join("")}
 					</select>
 				</dd>
+				<dt>Mode</dt>
+				<dd>
+					<select class="mode">
+						<option value="folder">Shared by folder</option>
+						<option value="modelSpec">Model specific</option>
+					</select>
+				</dd>
 				<dt></dt><dd><input type="button" value="Go to library" class="goTo"/></dd>
 				<dt></dt><dd><input type="button" value="Save" class="save"/></dd>
 			</div>
@@ -250,8 +257,13 @@ class Model extends FileView {
 			}
 			return null;
 		}
-		matLibrary.find(".matLib").change(function(_) {
-			var mat = findMat(matLibrary.find(".matLib").val());
+		var mode = matLibrary.find(".mode");
+		var saveButton = matLibrary.find(".save");
+		var matLib = matLibrary.find(".matLib");
+		if ( props != null && props.__refMode != null )
+			mode.val((props:Dynamic).__refMode).select();
+		matLib.change(function(_) {
+			var mat = findMat(matLib.val());
 			if ( mat != null ) {
 				@:privateAccess mat.mat.update(m, mat.mat.renderProps(), function(path:String) {
 					return hxd.res.Loader.currentInstance.load(path).toTexture();
@@ -266,7 +278,7 @@ class Model extends FileView {
 			}
 		});
 		matLibrary.find(".goTo").click(function(_) {
-			var mat = findMat(matLibrary.find(".matLib").val());
+			var mat = findMat(matLib.val());
 			if ( mat != null ) {
 				ide.openFile(mat.path);
 			}
@@ -284,19 +296,25 @@ class Model extends FileView {
 				break;
 			}
 		}
-		matLibrary.find(".save").click(function(_) {
-			var mat = findMat(matLibrary.find(".matLib").val());
+		var saveCallback = function(_) {
+			var mat = findMat(matLib.val()); 
 			if ( mat != null ) {
 				for ( f in Reflect.fields((m.props:Dynamic)) )
 					Reflect.deleteField((m.props:Dynamic), f);
 				Reflect.setField((m.props:Dynamic), "__ref", mat.path);
 				Reflect.setField((m.props:Dynamic), "name", mat.mat.name);
+				if ( mode.val() == "modelSpec" )
+					Reflect.setField((m.props:Dynamic), "__refMode", "modelSpec");
+				else
+					Reflect.deleteField((m.props:Dynamic), "__refMode");
 			} else {
 				Reflect.deleteField((m.props:Dynamic), "__ref");
 				Reflect.deleteField((m.props:Dynamic), "name");
+				Reflect.deleteField((m.props:Dynamic), "__refMode");
 			}
 			h3d.mat.MaterialSetup.current.saveMaterialProps(m, defaultProps);
-		});
+		};
+		saveButton.click(saveCallback);
 		properties.add(matLibrary, m);
 
 		properties.add(tex, m);
@@ -310,9 +328,7 @@ class Model extends FileView {
 			selectMaterial(m);
 			undo.change(Field(m, "props", old), selectMaterial.bind(m));
 		});
-		e.find(".save").click(function(_) {
-			h3d.mat.MaterialSetup.current.saveMaterialProps(m, defaultProps);
-		});
+		e.find(".save").click(saveCallback);
 	}
 
 	var selectedJoint : String = null;
