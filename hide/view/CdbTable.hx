@@ -220,7 +220,7 @@ class CdbTable extends hide.ui.View<{}> {
 		if( tabs != null ) {
 			tabs.onTabChange = setEditor;
 			tabs.onTabRightClick = function(index) {
-				editor.popupSheet(getSheets()[index], function() {
+				editor.popupSheet(true, getSheets()[index], function() {
 					var newSheets = getSheets();
 					var delta = newSheets.length - sheets.length;
 					var sshow = null;

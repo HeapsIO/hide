@@ -137,7 +137,16 @@ class Table extends Component {
 
 	function refreshTable() {
 		var cols = J("<thead>").addClass("head");
-		J("<th>").addClass("start").appendTo(cols);
+		var start = J("<th>").addClass("start").appendTo(cols);
+		if (!Std.isOfType(this, SubTable) && sheet.props.dataFiles == null) {
+			start.mousedown(function(e) {
+				if( e.which == 3 ) {
+					editor.popupSheet(false, sheet);
+					e.preventDefault();
+					return;
+				}
+			});
+		}
 		lines = [for( index in 0...sheet.lines.length ) {
 			var l = J("<tr>");
 			var head = J("<td>").addClass("start").text("" + index);

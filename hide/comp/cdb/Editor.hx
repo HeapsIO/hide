@@ -2053,40 +2053,43 @@ class Editor extends Component {
 		return menu;
 	}
 
-	public function popupSheet( ?sheet : cdb.Sheet, ?onChange : Void -> Void ) {
+	public function popupSheet( withMacro = true, ?sheet : cdb.Sheet, ?onChange : Void -> Void ) {
 		if( view != null )
 			return;
 		if( sheet == null ) sheet = this.currentSheet;
 		if( onChange == null ) onChange = function() {}
 		var index = base.sheets.indexOf(sheet);
 
-		var content : Array<ContextMenu.ContextMenuItem> = [
-			{ label : "Add Sheet", click : function() { beginChanges(); var db = ide.createDBSheet(index+1); endChanges(); if( db != null ) onChange(); } },
-			{ label : "Move Left", click : function() { beginChanges(); base.moveSheet(sheet,-1); endChanges(); onChange(); } },
-			{ label : "Move Right", click : function() { beginChanges(); base.moveSheet(sheet,1); endChanges(); onChange(); } },
-			{ label : "Rename", click : function() {
-				var name = ide.ask("New name", sheet.name);
-				if( name == null || name == "" || name == sheet.name ) return;
-				if( !rename(sheet, name) ) return;
-				onChange();
-			}},
-			{ label : "Delete", click : function() {
-				beginChanges();
-				base.deleteSheet(sheet);
-				endChanges();
-				onChange();
-			}},
-			{ label : "Categories", menu: categoriesMenu(getSheetProps(sheet).categories, function(cats) {
-				beginChanges();
-				var props = getSheetProps(sheet);
-				props.categories = cats;
-				sheet.props.editor = props;
-				endChanges();
-				onChange();
-			})},
-			{ label : "", isSeparator: true },
+		var content : Array<ContextMenu.ContextMenuItem> = [];
+		if (withMacro) {
+			content = content.concat([
+				{ label : "Add Sheet", click : function() { beginChanges(); var db = ide.createDBSheet(index+1); endChanges(); if( db != null ) onChange(); } },
+				{ label : "Move Left", click : function() { beginChanges(); base.moveSheet(sheet,-1); endChanges(); onChange(); } },
+				{ label : "Move Right", click : function() { beginChanges(); base.moveSheet(sheet,1); endChanges(); onChange(); } },
+				{ label : "Rename", click : function() {
+					var name = ide.ask("New name", sheet.name);
+					if( name == null || name == "" || name == sheet.name ) return;
+					if( !rename(sheet, name) ) return;
+					onChange();
+				}},
+				{ label : "Delete", click : function() {
+					beginChanges();
+					base.deleteSheet(sheet);
+					endChanges();
+					onChange();
+				}},
+				{ label : "Categories", menu: categoriesMenu(getSheetProps(sheet).categories, function(cats) {
+					beginChanges();
+					var props = getSheetProps(sheet);
+					props.categories = cats;
+					sheet.props.editor = props;
+					endChanges();
+					onChange();
+				})},
+				{ label : "", isSeparator: true },
 
-		];
+			]);
+		}
 		if( sheet.props.dataFiles == null )
 			content = content.concat([
 				{ label : "Add Index", checked : sheet.props.hasIndex, click : function() {
