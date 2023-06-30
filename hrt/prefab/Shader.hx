@@ -83,8 +83,9 @@ class Shader extends Prefab {
 		}
 		if( Std.isOfType(parent, Material) ) {
 			var material : Material = cast parent;
-			for( m in material.getMaterials(ctx) )
-				callb(null, m);
+			if (ctx.local3d != null) // Fix non made materials in emitters
+				for( m in material.getMaterials(ctx) )
+					callb(null, m);
 		} else {
 			var objs;
 			if( recursiveApply ) {
