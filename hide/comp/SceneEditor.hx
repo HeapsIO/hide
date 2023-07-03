@@ -3229,6 +3229,7 @@ class SceneEditor {
 		hrt.shader.MaskColorAlpha,
 		hrt.shader.Spinner,
 		hrt.shader.MeshWave,
+		hrt.shader.TextureRotate,
 	];
 
 	function getNewShaderMenu(parentElt: PrefabElement, ?onMake: PrefabElement->Void) : hide.comp.ContextMenu.ContextMenuItem {
