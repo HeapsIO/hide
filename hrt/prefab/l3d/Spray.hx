@@ -25,14 +25,10 @@ class Spray extends Object3D {
 	override function make( ctx : Context ) {
 		if( !enabled )
 			return ctx;
-		return super.make(ctx);
-	}
-
-	override function makeChild( ctx : Context, p : hrt.prefab.Prefab ) {
 		children.sort(function(c1, c2) {
 			return Std.isOfType(c1, Object3D) ? -1 : 1;
 		});
-		super.makeChild(ctx, p);
+		return super.make(ctx);
 	}
 }
 
