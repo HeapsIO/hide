@@ -324,7 +324,7 @@ class SwarmObject extends h3d.scene.Object {
 			}
 		}
 
-		#if debug
+		#if editor
 		debugViz.clear();
 		if (prefab.debugTargets) {
 			for (i in 0...prefab.numObjects) {
