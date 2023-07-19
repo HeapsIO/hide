@@ -1193,8 +1193,7 @@ class HeightGrid extends h3d.prim.MeshPrimitive {
 					buf[p++] = y / height;
 				}
 			}
-		var flags : Array<h3d.Buffer.BufferFlag> = [LargeBuffer];
-		buffer = h3d.Buffer.ofFloats(buf, size, flags);
+		buffer = h3d.Buffer.ofFloats(buf, size);
 
 		for( i in 0...names.length )
 			addBuffer(names[i], buffer, positions[i]);
