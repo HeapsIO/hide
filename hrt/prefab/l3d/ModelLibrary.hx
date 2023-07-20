@@ -423,10 +423,7 @@ class ModelLibrary extends Prefab {
 		geomAll.bounds = new h3d.col.Bounds();
 		geomAll.bounds.addPos(0,0,0);
 		geomAll.indexCounts = [];
-		geomAll.vertexFormat = [
-			new GeometryFormat("position", DVec3),
-			new GeometryFormat("normal", DVec3),
-		];
+		geomAll.vertexFormat = hxd.BufferFormat.POS3D_NORMAL;
 
 		hmd.geometries.push(geomAll);
 		indexStarts.push(null);
@@ -554,19 +551,14 @@ class ModelLibrary extends Prefab {
 
 			for( g in lib.header.geometries ) {
 
-				if( !hasTangents ) {
-					for( f in g.vertexFormat )
-						if( f.name == "tangent" ) {
-							hasTangents = true;
-							geomAll.vertexFormat.push(f);
-							break;
-						}
+				if( !hasTangents && g.vertexFormat.hasInput("tangent") ) {
+					hasTangents = true;
+					geomAll.vertexFormat = geomAll.vertexFormat.append("tangent",DVec3);
 				}
 
 				var g2 = new Geometry();
 				g2.props = g.props;
 				g2.vertexCount = 0;
-				g2.vertexStride = g.vertexStride;
 				g2.vertexFormat = g.vertexFormat;
 				g2.indexCounts = [];
 				g2.bounds = g.bounds;
@@ -622,20 +614,18 @@ class ModelLibrary extends Prefab {
 		}
 
 		modelRoot.materials = [for( i in 0...hmd.materials.length ) i];
-		geomAll.vertexFormat.push(new GeometryFormat("uv",DVec2));
-		geomAll.vertexStride = 0;
-		for( f in geomAll.vertexFormat ) geomAll.vertexStride += f.format.getSize();
+		geomAll.vertexFormat = geomAll.vertexFormat.append("uv",DVec2);
 		geomAll.vertexCount = currentVertex;
 		geomAll.vertexPosition = dataOut.length;
-		if( geomAll.vertexStride < 0 ) {
+		if( geomAll.vertexFormat.stride < 3 ) {
 			ide.error("No model found in data");
 			return;
 		}
 		for( inf in dataToStore ) {
 			var g = inf.g;
 			g.vertexPosition = dataOut.length;
-			var buf = inf.lib.getBuffers(inf.origin, geomAll.vertexFormat, [for( v in geomAll.vertexFormat ) new h3d.Vector(0,0,0,0)]);
-			for( i in 0...geomAll.vertexStride * inf.origin.vertexCount )
+			var buf = inf.lib.getBuffers(inf.origin, geomAll.vertexFormat, [for( v in geomAll.vertexFormat.getInputs() ) new h3d.Vector(0,0,0,0)]);
+			for( i in 0...geomAll.vertexFormat.stride * inf.origin.vertexCount )
 				dataOut.addFloat(buf.vertexes[i]);
 		}
 
