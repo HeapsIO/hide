@@ -169,7 +169,7 @@ class ProbeBaker {
 			v.push( posX ); v.push( 1 ); v.push(0); v.push(0);
 			v.push( posX + pixelSize * 2 ); v.push( -1 ); v.push(0); v.push(0);
 			v.push( posX + pixelSize * 2 ); v.push( 1 ); v.push(0); v.push(0);
-			prim.buffer = h3d.Buffer.ofFloats(v, 4, [RawFormat]);
+			prim.buffer = h3d.Buffer.ofFloats(v, hxd.BufferFormat.XY_UV);
 		}
 		setPrimPos(probeIndex);
 

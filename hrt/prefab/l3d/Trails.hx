@@ -430,8 +430,7 @@ class TrailObj extends h3d.scene.Mesh {
 		return {
 			vbuf : vbuf,
 			ibuf : ibuf,
-			stride : 8,
-			quads : false,
+			format : hxd.BufferFormat.POS3D_NORMAL_UV,
 			bounds : bounds,
 		};
 	}

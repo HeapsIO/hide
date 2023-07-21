@@ -135,7 +135,7 @@ class TerrainMesh extends h3d.scene.Object {
 		if( primitive != null )
 			primitive.dispose();
 
-		primitive = new h3d.prim.BigPrimitive(3, true);
+		primitive = new h3d.prim.BigPrimitive(hxd.BufferFormat.POS3D);
 
 		inline function addVertice(x : Float, y : Float) {
 			primitive.addPoint(x, y, 0);

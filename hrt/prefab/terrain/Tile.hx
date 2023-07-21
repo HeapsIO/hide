@@ -135,7 +135,7 @@ class Tile extends h3d.scene.Mesh {
 		if( bigPrim != null )
 			bigPrim.dispose();
 
-		bigPrim = new h3d.prim.BigPrimitive(6, true);
+		bigPrim = new h3d.prim.BigPrimitive(hxd.BufferFormat.POS3D_NORMAL);
 
 		var cellCount = terrain.cellCount;
 		var cellSize = terrain.cellSize;

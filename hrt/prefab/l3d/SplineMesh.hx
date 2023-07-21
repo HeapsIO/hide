@@ -95,7 +95,7 @@ class SplineMeshBatch extends h3d.scene.MeshBatch {
 				bufferData[index] = s.pos.x; bufferData[index + 1] = s.pos.y; bufferData[index + 2] = s.pos.z; bufferData[index + 3] = 0.0;
 				bufferData[index + 4] = s.tangent.x; bufferData[index + 5] = s.tangent.y; bufferData[index + 6] = s.tangent.z; bufferData[index + 7] = 0.0;
 			}
-			s.points = new h3d.Buffer(s.POINT_COUNT * 2, 4, [UniformBuffer,Dynamic]);
+			s.points = new h3d.Buffer(s.POINT_COUNT * 2, @:privateAccess SplineMesh.SPLINE_FMT, [UniformBuffer,Dynamic]);
 			s.points.uploadVector(bufferData, 0, s.points.vertices, 0);
 		}
 	}
@@ -103,6 +103,8 @@ class SplineMeshBatch extends h3d.scene.MeshBatch {
 }
 
 class SplineMesh extends Spline {
+
+	static var SPLINE_FMT = hxd.BufferFormat.make([{ name : "position", type : DVec4 },{ name : "tangent", type : DVec4 }]);
 
 	@:s var meshPath : String;
 	var meshes : Array<h3d.scene.Mesh> = [];
@@ -273,7 +275,7 @@ class SplineMesh extends Spline {
 			bufferData[index] = s.pos.x; bufferData[index + 1] = s.pos.y; bufferData[index + 2] = s.pos.z; bufferData[index + 3] = 0.0;
 			bufferData[index + 4] = s.tangent.x; bufferData[index + 5] = s.tangent.y; bufferData[index + 6] = s.tangent.z; bufferData[index + 7] = 0.0;
 		}
-		s.points = new h3d.Buffer(s.POINT_COUNT * 2, 4, [UniformBuffer,Dynamic]);
+		s.points = new h3d.Buffer(s.POINT_COUNT * 2, SPLINE_FMT, [UniformBuffer,Dynamic]);
 		s.points.uploadVector(bufferData, 0, s.points.vertices, 0);
 		s.SPLINE_UV_X = splineUVx;
 		s.SPLINE_UV_Y = splineUVy;

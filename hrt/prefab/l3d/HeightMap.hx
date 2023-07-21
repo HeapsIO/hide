@@ -1162,21 +1162,15 @@ class HeightGrid extends h3d.prim.MeshPrimitive {
 
 	override function alloc(engine:h3d.Engine) {
 		dispose();
-		var size = 3;
-		var names = ["position"];
-		var positions = [0];
-		if( hasNormals ) {
-			names.push("normal");
-			positions.push(size);
-			size += 3;
-		}
-		if( hasUVs ) {
-			names.push("uv");
-			positions.push(size);
-			size += 2;
-		}
-
-		var buf = new hxd.FloatBuffer((width + 1) * (height +  1) * size);
+		var format = if( hasNormals && hasUVs )
+			hxd.BufferFormat.POS3D_NORMAL_UV;
+		else if( hasNormals )
+			hxd.BufferFormat.POS3D_NORMAL
+		else if( hasUVs )
+			hxd.BufferFormat.POS3D_UV
+		else
+			hxd.BufferFormat.POS3D;
+		var buf = new hxd.FloatBuffer((width + 1) * (height +  1) * format.stride);
 		var p = 0;
 		for( y in 0...height + 1 )
 			for( x in 0...width + 1 ) {
@@ -1193,10 +1187,13 @@ class HeightGrid extends h3d.prim.MeshPrimitive {
 					buf[p++] = y / height;
 				}
 			}
-		buffer = h3d.Buffer.ofFloats(buf, size);
+		buffer = h3d.Buffer.ofFloats(buf, format);
 
-		for( i in 0...names.length )
-			addBuffer(names[i], buffer, positions[i]);
+		var position = 0;
+		for( i in format.getInputs() ) {
+			addBuffer(i.name, buffer, position);
+			position += i.type.getSize();
+		}
 
 		indexes = new h3d.Indexes(width * height * 6, true);
 		var b = haxe.io.Bytes.alloc(indexes.count * 4);
