@@ -96,7 +96,7 @@ class SplineMeshBatch extends h3d.scene.MeshBatch {
 				bufferData[index + 4] = s.tangent.x; bufferData[index + 5] = s.tangent.y; bufferData[index + 6] = s.tangent.z; bufferData[index + 7] = 0.0;
 			}
 			s.points = new h3d.Buffer(s.POINT_COUNT * 2, @:privateAccess SplineMesh.SPLINE_FMT, [UniformBuffer,Dynamic]);
-			s.points.uploadVector(bufferData, 0, s.points.vertices, 0);
+			s.points.uploadFloats(bufferData, 0, s.points.vertices, 0);
 		}
 	}
 
@@ -276,7 +276,7 @@ class SplineMesh extends Spline {
 			bufferData[index + 4] = s.tangent.x; bufferData[index + 5] = s.tangent.y; bufferData[index + 6] = s.tangent.z; bufferData[index + 7] = 0.0;
 		}
 		s.points = new h3d.Buffer(s.POINT_COUNT * 2, SPLINE_FMT, [UniformBuffer,Dynamic]);
-		s.points.uploadVector(bufferData, 0, s.points.vertices, 0);
+		s.points.uploadFloats(bufferData, 0, s.points.vertices, 0);
 		s.SPLINE_UV_X = splineUVx;
 		s.SPLINE_UV_Y = splineUVy;
 		return s;
