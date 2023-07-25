@@ -1106,7 +1106,7 @@ class HeightMap extends Object3D {
 }
 
 
-class HeightGrid extends h3d.prim.MeshPrimitive {
+class HeightGrid extends h3d.prim.Primitive {
 
 	/**
 		The number of cells in width
@@ -1188,13 +1188,6 @@ class HeightGrid extends h3d.prim.MeshPrimitive {
 				}
 			}
 		buffer = h3d.Buffer.ofFloats(buf, format);
-
-		var position = 0;
-		for( i in format.getInputs() ) {
-			addBuffer(i.name, buffer, position);
-			position += i.type.getSize();
-		}
-
 		indexes = new h3d.Indexes(width * height * 6, true);
 		var b = haxe.io.Bytes.alloc(indexes.count * 4);
 		var p = 0;
