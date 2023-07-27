@@ -262,6 +262,8 @@ class MeshSprayObject extends Spray.SprayObject {
 
 			var batch = getBatch(m);
 			batch.worldPosition = c.absPos;
+			if ( !emitCondition(c.absPos) )
+				continue;
 			batch.emitInstance();
 			c.culled = true;
 		}
@@ -280,11 +282,17 @@ class MeshSprayObject extends Spray.SprayObject {
 				tmp.multiply3x4(tmp, absPos);
 				tmp.multiply3x4(mesh.defaultTransform, tmp);
 				batch.worldPosition = tmp;
+				if ( !emitCondition(tmp) )
+					continue;
 				batch.emitInstance();
 			}
 		}
 		for( b in batches )
 			b.worldPosition = null;
+	}
+
+	dynamic function emitCondition(m : h3d.Matrix ) {
+		return true;
 	}
 
 }
@@ -897,8 +905,13 @@ class MeshSpray extends Spray {
 		return ctx;
 	}
 
+	function emitCondition(m: h3d.Matrix) {
+		return true;
+	}
+
 	override function updateInstance(ctx:Context, ?propName) {
 		cast(ctx.local3d, MeshSprayObject).editChildren = editChildren;
+		@:privateAccess cast(ctx.local3d, MeshSprayObject).emitCondition = emitCondition;
 		if ( editChildren )
 			locked = false;
 		super.updateInstance(ctx, propName);
