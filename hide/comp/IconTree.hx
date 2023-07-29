@@ -308,6 +308,12 @@ class IconTree<T:{}> extends Component {
 		(element:Dynamic).jstree('_open_to', v.id);
 	}
 
+	public function openNodeAsync(e: T, ?onReady : Void -> Void ) {
+		var v = getRev(e);
+		if(v == null) return;
+		(element:Dynamic).jstree('open_node', v.id, onReady, false);
+	}
+
 	public function revealNode(e : T) {
 		openNode(e);
 		var el = getElement(e);

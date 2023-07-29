@@ -436,16 +436,19 @@ class FileTree extends FileView {
 	}
 
 	public function revealNode( path : String ) {
-		function doreveal() {
-			tree.revealNode(path);
-			tree.setSelection([path]);
+		var folders = path.split("/");
+		var currentFolder = "";
+		function _revealNode() {
+			if( folders.length == 0 ) {
+				tree.setSelection([path]);
+				tree.revealNode(currentFolder);
+				return;
+			}
+			if( currentFolder.length > 0 ) currentFolder += "/";
+			currentFolder += folders.shift();
+			tree.openNodeAsync(currentFolder, _revealNode);
 		}
-		if( tree.async ) {
-			tree.async = false;
-			tree.refresh(doreveal);
-		}
-		else
-			doreveal();
+		_revealNode();
 	}
 
 	function createNew( basePath : String, ext : ExtensionDesc ) {
