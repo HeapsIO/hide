@@ -264,6 +264,7 @@ class Cursor {
 		} else {
 			editor.pushCursorState();
 			set(line.table, -1, line.index);
+			line.table.showSeparator(line);
 		}
 	}
 
@@ -275,6 +276,7 @@ class Cursor {
 		} else {
 			editor.pushCursorState();
 			set(cell.table, xIndex, cell.line.index);
+			cell.table.showSeparator(cell.line);
 		}
 	}
 

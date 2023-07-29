@@ -8,6 +8,7 @@ enum DisplayMode {
 }
 
 private typedef SepTree = { sep : cdb.Data.Separator, index : Int, subs : Array<SepTree>, parent : SepTree };
+private typedef Separator = { index : Int, element : Element, toggle : Element, hidden : Null<Bool> };
 
 class Table extends Component {
 
@@ -19,6 +20,8 @@ class Table extends Component {
 
 	public var columns : Array<cdb.Data.Column>;
 	public var view : cdb.DiffFile.SheetView;
+
+	var separators : Array<Separator>;
 
 	public var nestedIndex : Int = 0;
 
@@ -256,9 +259,11 @@ class Table extends Component {
 
 		var groupClass : String = null;
 		var sepIndex = -1, sepNext = sheet.separators[++sepIndex], hidden = false;
+		separators = [];
 		for( i in 0...lines.length+1 ) {
 			while( sepNext != null && sepNext.index == i ) {
 				var sep = makeSeparator(sepIndex, colCount);
+				separators.push(sep);
 				sep.element.appendTo(tbody);
 				if( sep.hidden != null ) hidden = sep.hidden;
 				if( sepNext.title != null )
@@ -343,7 +348,7 @@ class Table extends Component {
 		}
 	}
 
-	function makeSeparator( sindex : Int, colCount : Int ) : { element : Element, hidden : Null<Bool> } {
+	function makeSeparator( sindex : Int, colCount : Int ) : Separator {
 		var sep = J("<tr>").addClass("separator").attr("sindex", sindex).append('<td colspan="${colCount+1}"><a href="#" class="toggle"></a><span></span></td>');
 		var content = sep.find("span");
 		var toggle = sep.find("a");
@@ -351,6 +356,8 @@ class Table extends Component {
 		var title = sepInfo.title;
 		if( title != null )
 			sep.addClass(StringTools.replace('separator-$title'.toLowerCase(), " ", "-"));
+
+		var data = { hidden : false, element : sep, toggle : toggle, index : sindex };
 
 		var curLevel = sepInfo.level;
 		if( curLevel == null ) curLevel = 0;
@@ -375,14 +382,13 @@ class Table extends Component {
 			return out;
 		}
 
-		var hidden : Bool;
 		var syncLevel : Int = -1;
 		function sync() {
-			hidden = title == null ? null : isSepHidden(sindex);
+			data.hidden = title == null ? null : isSepHidden(sindex);
 			toggle.css({ display : title == null ? "none" : "" });
-			toggle.text(hidden ? "🡆" : "🡇");
-			content.text(title == null ? "" : title+(hidden ? " ("+getLines().length+")" : ""));
-			sep.toggleClass("sep-hidden", hidden == true);
+			toggle.text(data.hidden ? "🡆" : "🡇");
+			content.text(title == null ? "" : title+(data.hidden ? " ("+getLines().length+")" : ""));
+			sep.toggleClass("sep-hidden", data.hidden == true);
 			if( syncLevel != sepInfo.level ) {
 				sep.removeClass("seplevel-"+(syncLevel == null ? 0 : syncLevel));
 				syncLevel = sepInfo.level;
@@ -528,7 +534,7 @@ class Table extends Component {
 				if( s.title != null && (s.level == null || s.level == level) ) {
 					if( isSepHidden(sindex - 1 - i) ) {
 						sep[0].style.display = "none";
-						hidden = true;
+						data.hidden = true;
 					}
 					break;
 				}
@@ -537,7 +543,8 @@ class Table extends Component {
 		}
 		toggle.dblclick(function(e) e.stopPropagation());
 		toggle.click(function(e) {
-			hidden = !hidden;
+			data.hidden = !data.hidden;
+			var hidden = data.hidden;
 			saveDisplayState("sep/"+title, !hidden);
 			sync();
 
@@ -565,7 +572,26 @@ class Table extends Component {
 
 			editor.updateFilter();
 		});
-		return { hidden : hidden, element : sep };
+		return data;
+	}
+
+	public function showSeparator( line : Line ) {
+		if( separators == null ) return;
+		var sepIndexes = [];
+		for( i in 0...sheet.separators.length ) {
+			var s = sheet.separators[i];
+			if( s.index > line.index )
+				break;
+			if( s.level == null )
+				sepIndexes = [];
+			sepIndexes[s.level != null ? s.level : 0] = i;
+		}
+		for( sepIdx in sepIndexes ) {
+			var sep = separators[sepIdx];
+			if( sep != null && sep.hidden ) {
+				sep.toggle.click();
+			}
+		}
 	}
 
 	public function getScope() : Array<{ s : cdb.Sheet, obj : Dynamic }> {

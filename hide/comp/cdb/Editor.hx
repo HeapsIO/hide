@@ -207,24 +207,6 @@ class Editor extends Component {
 			if (!isRepeat) {
 				if( currentFilters.length > 0 ) {
 					searchFilter([]);
-					// Auto expand separators if they were hidden
-					// Also : Very cursed code
-					var line = cursor.getLine();
-					if (line != null) {
-						var sep = line.element.prevAll(".separator").first();
-						while (sep.length > 0) {
-							trace(sep.get(0).classList);
-							if (sep.hasClass("sep-hidden")) {
-								sep.find("a").click();
-							}
-							if (Std.parseInt(sep.attr("level")) > 0) {
-								sep = sep.prevAll(".separator").first();
-							}
-							else {
-								break;
-							}
-						}
-					}
 				}
 
 				if (searchBox != null && searchBox.is(":visible")) {
