@@ -151,14 +151,17 @@ class Particle2D extends Object2D {
 
 		var params = new hide.Element(hide.view.Particles2D.getParamsHTMLform());
 
-		var particles2d = (cast ctx.getContext(this).local2d : Particles);
-		var group = @:privateAccess particles2d.groups[0];
-		ctx.properties.add(params, group, function (pname) {
-			// if fx2d is running, tick() changes group params and modifies group.save()
-			// if a param has a curve and we changed this param on the right panel,
-			// the saved value will be the value of the curve at this point.
-			Reflect.setField(paramsParticleGroup, pname, Reflect.field(group.save(), pname));
-		});
+		var context = ctx.getContext(this);
+		if( context != null ) {
+			var particles2d = (cast context.local2d : Particles);
+			var group = @:privateAccess particles2d.groups[0];
+			ctx.properties.add(params, group, function (pname) {
+				// if fx2d is running, tick() changes group params and modifies group.save()
+				// if a param has a curve and we changed this param on the right panel,
+				// the saved value will be the value of the curve at this point.
+				Reflect.setField(paramsParticleGroup, pname, Reflect.field(group.save(), pname));
+			});
+		}
 	}
 
 	override function getHideProps() : HideProps {
