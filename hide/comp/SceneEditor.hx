@@ -22,6 +22,8 @@ import h3d.scene.Object;
 import hide.comp.cdb.DataFiles;
 import hide.view.CameraController;
 
+using hide.tools.Extensions.ArrayExtensions;
+
 enum SelectMode {
 	/**
 		Update tree, add undo command
@@ -2978,25 +2980,24 @@ class SceneEditor {
 			}
 
 			effects.push(function(undo) {
-				var refresh = false;
 				if( undo ) {
-					refresh = !removeInstance(elt);
+					!removeInstance(elt);
 					elt.parent = prev;
 					prev.children.remove(elt);
 					prev.children.insert(prevIndex, elt);
 					if(obj3d != null && prevState != null)
 						obj3d.loadTransform(prevState);
 				} else {
-					var refresh = !removeInstance(elt);
+					!removeInstance(elt);
 					elt.parent = toElt;
 					toElt.children.remove(elt);
 					toElt.children.insert(index, elt);
 					if(obj3d != null && newState != null)
 						obj3d.loadTransform(newState);
 				};
-				if(toRefresh.indexOf(elt) < 0)
-					toRefresh.push(elt);
-				return refresh;
+				toRefresh.pushUnique(elt);
+				toRefresh.pushUnique(toElt);
+				return true;
 			});
 		}
 		return function(undo) {
