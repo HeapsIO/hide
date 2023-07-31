@@ -160,6 +160,7 @@ class Particle2D extends Object2D {
 				// if a param has a curve and we changed this param on the right panel,
 				// the saved value will be the value of the curve at this point.
 				Reflect.setField(paramsParticleGroup, pname, Reflect.field(group.save(), pname));
+				ctx.onChange(this, pname);
 			});
 		}
 	}
