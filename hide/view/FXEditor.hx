@@ -1643,10 +1643,7 @@ class FXEditor extends FileView {
 				label: "Position",
 				menu: groupedTracks("position", xyzwTracks(2)),
 			});
-			menuItems.push({
-				label: "Rotation",
-				menu: [trackItem("X", [{name: "x"}], "rotation")],
-			});
+			menuItems.push(trackItem("Rotation", [{name: "rotation"}]));
 			menuItems.push({
 				label: "Scale",
 				menu: scaleTracks,
