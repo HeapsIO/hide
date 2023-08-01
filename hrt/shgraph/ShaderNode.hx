@@ -22,6 +22,9 @@ class ShaderNode {
 
 	var inputs : Map<String, NodeVar> = [];
 	var outputs : Map<String, TVar> = [];
+
+	public var inputs2 : Map<String, ShaderGraph.Connection> = [];
+
 	public var outputCompiled : Map<String, Bool> = []; // todo: put with outputs variable
 
 	public function setId(id : Int) {

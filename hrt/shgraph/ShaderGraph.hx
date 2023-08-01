@@ -2,6 +2,7 @@ package hrt.shgraph;
 
 import hxsl.SharedShader;
 using hxsl.Ast;
+using hide.tools.Extensions.ArrayExtensions;
 
 typedef Node = {
 	x : Float,
@@ -19,6 +20,13 @@ private typedef Edge = {
 	nameOutput : String,
 	idInput : Int,
 	nameInput : String
+};
+
+typedef Connection = {
+	from : Node,
+	fromName : String,
+	to : Node,
+	toName : String,
 };
 
 typedef Parameter = {
@@ -39,6 +47,8 @@ class ShaderGraph {
 	var current_param_id = 0;
 	var filepath : String;
 	var nodes : Map<Int, Node> = [];
+	var connections : Map<Connection, Bool> = [];
+
 	public var parametersAvailable : Map<Int, Parameter> = [];
 	public var parametersKeys : Array<Int> = [];
 
@@ -127,6 +137,13 @@ class ShaderGraph {
 		node.instance.setInput(edge.nameInput, new NodeVar(output.instance, edge.nameOutput));
 		output.outputs.push(node);
 
+		var connection : Connection = {from: output, fromName: edge.nameOutput, to: node, toName: edge.nameInput};
+		var prevConn = node.instance.inputs2.get(edge.nameInput);
+		if (prevConn != null)
+			connections.remove(prevConn);
+
+		node.instance.inputs2.set(edge.nameInput, connection);
+
 		var subShaderIn = Std.downcast(node.instance, hrt.shgraph.nodes.SubGraph);
 		var subShaderOut = Std.downcast(output.instance, hrt.shgraph.nodes.SubGraph);
 		if( @:privateAccess ((subShaderIn != null) && !subShaderIn.inputInfoKeys.contains(edge.nameInput))
@@ -195,6 +212,198 @@ class ShaderGraph {
 				name: name,
 				type: type
 			};
+	}
+
+	public function compile2() : ShaderData {
+
+		var shaderData : ShaderData = {
+			name: "foobar",
+			vars: [],
+			funs: [],
+		};
+
+		var pos : Position = {file: "no", min: 0, max: 0};
+
+		var fragExprs : Array<TExpr> = [];
+
+		var outputNodes : Array<Node> = [];
+
+		// find all outputs
+		for (id => node in nodes) {
+			var shaderOutput = Std.downcast(node.instance, ShaderOutput);
+			if (shaderOutput != null) {
+				outputNodes.push(node);
+			}
+		}
+
+		var varIdCount = 0;
+		var nodeIdCount = 0;
+
+		inline function getNewVarId() : Int {
+			return varIdCount++;
+		}
+
+		inline function getNewVarName(id: Int) : String {
+			return 'nodeoutput_$id';
+		}
+
+		var nodesInputs : Map<Node, Map<String, TVar>> = [];
+		var nodeOutputs : Map<Node, Map<String, TVar>> = [];
+
+		function getInputs(node: Node) : Map<String, TVar> {
+			if (!nodesInputs.exists(node)) {
+				var inputs : Map<String, TVar> = [];
+
+				var keys = node.instance.getInputInfoKeys();
+				for (key in keys) {
+					var info = node.instance.getInputInfo(key);
+					var type = TVec(4, VFloat);//ShaderType.getType(info.type);
+					if (type == null) throw "no type";
+					var id = getNewVarId();
+					var input = {id: id, name: getNewVarName(id), type: type, kind : Local};
+					inputs.set(info.name, input);
+				}
+
+				if (keys.length <= 0) {
+					inputs.set("internalinput", {id: getNewVarId(), name: "internalinput", type: TVec(4, VFloat), kind : Local});
+				}
+
+				nodesInputs.set(node, inputs);
+			}
+			return nodesInputs.get(node);
+		}
+
+		function getOutputs(node: Node) : Map<String, TVar> {
+			if (!nodeOutputs.exists(node)) {
+				var outputs : Map<String, TVar> = [];
+
+				var keys = node.instance.getOutputInfoKeys();
+				for (key in keys) {
+					var info = node.instance.getOutputInfo(key);
+					var type = TVec(4, VFloat);//ShaderType.getType(info.type);
+					if (type == null) throw "no type";
+					var id = getNewVarId();
+					var output = {id: id, name: getNewVarName(id), type: type, kind : Local};
+					outputs.set(key, output);
+				}
+
+				if (keys.length <= 0) {
+					outputs.set("internaloutput", {id: getNewVarId(), name: "internaloutput", type: TVec(4, VFloat), kind : Local});
+				}
+
+				nodeOutputs.set(node, outputs);
+			}
+			return nodeOutputs.get(node);
+		}
+
+		var graphInputVars = [];
+
+
+		var graphOutputsVars = [];
+
+		var nodeToExplore : Array<Node> = [];
+
+		var exprsReverse : Array<TExpr> = [];
+
+		for (outputNode in outputNodes) {
+			var outputs = getOutputs(outputNode);
+			for (outputVar in outputs) {
+				graphOutputsVars.push(outputVar);
+			}
+
+			nodeToExplore.push(outputNode);
+		}
+
+		while (nodeToExplore.length > 0) {
+			var currentNode = nodeToExplore[0];
+			nodeToExplore.remove(currentNode);
+			var outputs = getOutputs(currentNode);
+
+
+
+			var tvars : Array<TVar> = [];
+			for (name => input in currentNode.instance.inputs2) {
+				var outputs = getOutputs(input.from);
+				var tvar = outputs[input.fromName];
+				if (tvar == null) throw "null tvar";
+
+				tvars.push(tvar);
+				nodeToExplore.pushUnique(input.from);
+			}
+
+			// Simple addition node
+			for (outName => output in outputs) {
+				if (output == null) throw "null output";
+
+				var fullExpr : TExpr = null;
+				for (tvar in tvars) {
+					if (tvar == null) throw "null tvar";
+					var expr : TExpr = {e: TVar(tvar), p: pos, t: output.type};
+					if (fullExpr == null)
+						fullExpr = expr;
+					else
+						fullExpr = {e: TBinop(OpAdd, fullExpr, expr), p: pos, t: output.type};
+				}
+
+				if (fullExpr != null) {
+					if (output.type == null) throw "no type";
+					var finalExpr : TExpr = {e: TVarDecl(output, fullExpr), p: pos, t: output.type};
+					exprsReverse.push(finalExpr);
+				}
+
+			}
+		}
+
+		exprsReverse.reverse();
+
+		shaderData.funs.push({
+			ret : TVoid, kind : Fragment,
+			ref : {
+				name : "fragment",
+				id : 0,
+				kind : Function,
+				type : TFun([{ ret : TVoid, args : [] }])
+			},
+			expr : {
+				p : null,
+				t : TVoid,
+				e : TBlock(exprsReverse)
+			},
+			args : []
+		});
+
+		return shaderData;
+
+		/*var pixelColor : TVar = {id: 0, name: "pixelColor", type: TVec(4, VFloat), kind: Local};
+		shaderData.vars.push(pixelColor);
+
+		var fragExprs : Array<TExpr> = [];
+
+		var pos : Position = {file: "no", min: 0, max: 0};
+
+		fragExprs.push({e : TBinop(
+				OpAssign,
+				{e: TSwiz({e: TVar(pixelColor), t: TFloat, p: pos}, [X]), t: TFloat, p: pos},
+				{e: TConst(CFloat(1.0)), t: TFloat, p: pos}),
+			t: TFloat, p: pos});
+
+		shaderData.funs.push({
+				ret : TVoid, kind : Fragment,
+				ref : {
+					name : "fragment",
+					id : 0,
+					kind : Function,
+					type : TFun([{ ret : TVoid, args : [] }])
+				},
+				expr : {
+					p : null,
+					t : TVoid,
+					e : TBlock(fragExprs)
+				},
+				args : []
+			});
+
+		return shaderData;*/
 	}
 
 	public function getParameter(id : Int) {
