@@ -9,6 +9,8 @@ class Text extends Object2D {
 	@:s var smoothing : Float = 1 / 32;
 	@:s var align : Int = 0;
 
+	@:s var maxWidth : Float = 0;
+
 	@:s var pathFont : String;
 
 	// TextShadow
@@ -45,6 +47,7 @@ class Text extends Object2D {
 		h2dText.visible = visible;
 		h2dText.color = h3d.Vector.fromColor(color);
 		h2dText.color.w = 1;
+		h2dText.maxWidth = maxWidth > 0 ? maxWidth : null;
 
 		if (enableTextShadow) {
 			h2dText.dropShadow = {
@@ -204,6 +207,7 @@ class Text extends Object2D {
 		new hide.Element('<dt>Size</dt><dd><input type="range" min="1" max="50" step="1" field="size" /></dd>').appendTo(gr);
 		new hide.Element('<dt>Cutoff</dt><dd><input type="range" min="0" max="1" field="cutoff" /></dd>').appendTo(gr);
 		new hide.Element('<dt>Smoothing</dt><dd><input type="range" min="0" max="1" field="smoothing" /></dd>').appendTo(gr);
+		new hide.Element('<dt>Max Width</dt><dd><input type="range" min="0" max="500" field="maxWidth" /></dd>').appendTo(gr);
 
 		ctx.properties.add(parameters, this, function(pname) {
 			ctx.onChange(this, pname);
