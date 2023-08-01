@@ -38,6 +38,21 @@ typedef Parameter = {
 	index : Int
 };
 
+@:autoBuild(hrt.shgraph.Macros.buildNode())
+class TestNewNode {
+
+}
+
+class TestNewNode2 extends TestNewNode {
+	static var SRC = {
+		@sginput var input : Vec4;
+		@sgoutput var out : Vec4;
+		function fragment() {
+			out = vec4(input.r, 1.0, 1.0, 1.0);
+		}
+	}
+}
+
 class ShaderGraph {
 
 	var allVariables : Array<TVar> = [];
@@ -371,6 +386,11 @@ class ShaderGraph {
 			},
 			args : []
 		});
+
+		var unser = new hxsl.Serializer();
+		var data = @:privateAccess unser.unserialize(TestNewNode2.SRC);
+		data.vars.find((v) -> v.name == "input").name = "inputomgichangedthename";
+		trace(hxsl.Printer.shaderToString(data));
 
 		return shaderData;
 
