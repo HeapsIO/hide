@@ -52,7 +52,7 @@ class TestNewNode2 extends TestNewNode {
 		@sginput var input1 : Vec4;
 		@sgoutput var output : Vec4;
 		function fragment() {
-			output = input0 * input1;
+			output = input0 + input1;
 		}
 	}
 }
@@ -233,13 +233,7 @@ class ShaderGraph {
 			};
 	}
 
-	public function compile2() : hrt.prefab.ContextShared.ShaderDef {
-
-		var shaderData : ShaderData = {
-			name: "foobar",
-			vars: [],
-			funs: [],
-		};
+	public function generate2(?getNewVarId: () -> Int) : {expr: TExpr, inVars: Array<{variable: TVar, value: Dynamic}>, outVars: Array<TVar>} {
 
 		var pos : Position = {file: "", min: 0, max: 0};
 
@@ -256,11 +250,9 @@ class ShaderGraph {
 				outputNodes.push(node);
 			}
 		}
-
-		var varIdCount = 0;
-
-		inline function getNewVarId() : Int {
-			return varIdCount++;
+		if (getNewVarId == null) {
+			var varIdCount = 0;
+			getNewVarId = function(){return varIdCount++;};
 		}
 
 		inline function getNewVarName(id: Int) : String {
@@ -324,6 +316,7 @@ class ShaderGraph {
 		}
 
 		function syncLocalVar(expr: TExpr, localVar: TVar) : TExpr {
+			throw "locals vars not supported yet";
 			var prev = shaderLocalVars.get(localVar.name);
 			if (prev != null) {
 				return replaceVar(expr, localVar, prev);
@@ -360,16 +353,7 @@ class ShaderGraph {
 
 				exprsReverse.push(finalExpr);
 				graphOutputsVars.push(outVar);
-			} /*else if (Std.downcast(currentNode.instance, ShaderInput) != null) {
-				var inputNode : ShaderInput = cast currentNode.instance;
-				var outVars = getOutputs(currentNode);
-				var inVar : TVar = {name: inputNode.variable.name, id:getNewVarId(), type: TVec(4, VFloat), kind: Local};
-				graphInputVars.push(inVar);
-
-				for (output in outVars) {
-					replaceVar(output, inVar);
-				}
-			} */else if (Std.downcast(currentNode.instance, ShaderParam) != null) {
+			} else if (Std.downcast(currentNode.instance, ShaderParam) != null) {
 				var inputNode : ShaderParam = cast currentNode.instance;
 				var inVar : TVar = {name: inputNode.variable.name, id:getNewVarId(), type: TVec(4, VFloat), kind: Param};
 
@@ -381,6 +365,32 @@ class ShaderGraph {
 
 				var param = getParameter(inputNode.parameterId);
 				inits.push({variable: inVar, value: param.defaultValue});
+			} else if (Std.downcast(currentNode.instance, hrt.shgraph.nodes.SubGraph) != null) {
+				var subgraph : hrt.shgraph.nodes.SubGraph = cast currentNode.instance;
+				var shader = new ShaderGraph(subgraph.pathShaderGraph);
+				var gen = shader.generate2(getNewVarId);
+
+				var finalExprs = [];
+
+				// Patch outputs
+				for (i => output in outputs) {
+					gen.expr = replaceVar(gen.expr, gen.outVars[0], output);
+				}
+
+				// Patch inputs
+				for (i => tvar in tvars) {
+					var originalInput = gen.inVars[i].variable;
+					var finalExpr : TExpr = {e: TVarDecl(originalInput, {e: TVar(tvar), p: pos, t: originalInput.type}), p: pos, t: tvar.type};
+					finalExprs.push(finalExpr);
+				}
+
+				finalExprs.push(gen.expr);
+				exprsReverse.push({e: TBlock(finalExprs), p:pos, t:TVoid});
+
+				for (i => output in outputs) {
+					var finalExpr : TExpr = {e: TVarDecl(output), p: pos, t: output.type};
+					exprsReverse.push(finalExpr);
+				}
 			}
 			else
 			{
@@ -403,11 +413,11 @@ class ShaderGraph {
 							expr = replaceVar(expr, inputTVar, tvar);
 						}
 
-						for (localvar in data.vars) {
+						/*for (localvar in data.vars) {
 							if (localvar.qualifiers == null || localvar.qualifiers.length == 0) {
 								expr = syncLocalVar(expr,localvar);
 							}
-						}
+						}*/
 
 						exprsReverse.push(expr);
 
@@ -437,8 +447,27 @@ class ShaderGraph {
 		}
 
 		exprsReverse.reverse();
-		shaderData.vars.append(graphOutputsVars);
-		shaderData.vars.append(graphInputVars);
+
+		return {
+			expr: {e: TBlock(exprsReverse), t:TVoid, p:pos},
+			inVars: inits,
+			outVars: graphOutputsVars,
+		};
+	}
+
+	public function compile2() : hrt.prefab.ContextShared.ShaderDef {
+
+
+		var gen = generate2();
+
+		var shaderData : ShaderData = {
+			name: "",
+			vars: [],
+			funs: [],
+		};
+
+		shaderData.vars.append(gen.inVars.map((f) -> f.variable));
+		shaderData.vars.append(gen.outVars);
 
 		shaderData.funs.push({
 			ret : TVoid, kind : Fragment,
@@ -448,11 +477,7 @@ class ShaderGraph {
 				kind : Function,
 				type : TFun([{ ret : TVoid, args : [] }])
 			},
-			expr : {
-				p : null,
-				t : TVoid,
-				e : TBlock(exprsReverse)
-			},
+			expr : gen.expr,
 			args : []
 		});
 
@@ -460,8 +485,8 @@ class ShaderGraph {
 		@:privateAccess shared.data = shaderData;
 		@:privateAccess shared.initialize();
 
-		trace(inits);
-		return {shader : shared, inits: inits};
+
+		return {shader : shared, inits: gen.inVars};
 
 		/*var pixelColor : TVar = {id: 0, name: "pixelColor", type: TVec(4, VFloat), kind: Local};
 		shaderData.vars.push(pixelColor);
