@@ -28,6 +28,12 @@ class Particles extends h2d.Particles {
 		randomSeed = Std.random(0xFFFFFF);
 		random = new hxd.Rand(randomSeed);
 		evaluator = new Evaluator();
+		onEnd = function() {
+			for( g in groups ) {
+				if( g.emitLoop )
+					@:privateAccess g.needRebuild = true;
+			}
+		}
 	}
 
 	function tick( dt : Float, full=true) {
@@ -46,6 +52,9 @@ class Particles extends h2d.Particles {
 	}
 
 	public function reset() {
+		for( g in groups ) {
+			@:privateAccess g.needRebuild = true;
+		}
 		random.init(randomSeed);
 		curTime = 0.0;
 		lastTime = 0.0;
