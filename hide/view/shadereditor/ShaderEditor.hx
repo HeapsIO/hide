@@ -280,7 +280,7 @@ class ShaderEditor extends hide.view.Graph {
 		element.find("#displayGlsl").on("click", () -> displayCompiled("glsl"));
 		element.find("#displayHlsl").on("click", () -> displayCompiled("hlsl"));
 
-		element.find("#display2").on("click", () -> {@:privateAccess info(hxsl.Printer.shaderToString(shaderGraph.compile2()));});
+		element.find("#display2").on("click", () -> {@:privateAccess info(hxsl.Printer.shaderToString(shaderGraph.compile2().shader.data));});
 
 		editorMatrix.on("click", "input, select", function(ev) {
 			beforeChange();
@@ -889,7 +889,7 @@ class ShaderEditor extends hide.view.Graph {
 				for (m in obj.getMaterials())
 					m.mainPass.removeShader(currentShader);
 
-			var shaderGraphDef = shaderGraph.compile();
+			var shaderGraphDef = shaderGraph.compile2();
 			newShader = new hxsl.DynamicShader(shaderGraphDef.shader);
 			for (init in shaderGraphDef.inits) {
 				setParamValue(newShader, init.variable, init.value);
@@ -899,7 +899,7 @@ class ShaderEditor extends hide.view.Graph {
 			}
 			sceneEditor.scene.render(sceneEditor.scene.engine);
 			currentShader = newShader;
-			currentShaderDef = shaderGraphDef;
+			currentShaderDef = shaderGraphDef;//{shader: shaderGraphDef, inits:[]};
 			info('Shader compiled in  ${Date.now().getTime() - timeStart}ms');
 
 		} catch (e : Dynamic) {

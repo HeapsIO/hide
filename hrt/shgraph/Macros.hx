@@ -35,7 +35,7 @@ class Macros {
 								haxe.macro.Context.warning(msg, pos);
 							};
 							var shader = check.check(name, shader);
-							trace(shader);
+							//trace(shader);
 							//Printer.check(shader);
 							var str = Context.defined("display") ? "" : hxsl.Serializer.run(shader);
 							f.kind = FVar(null, { expr : EConst(CString(str)), pos : pos } );
