@@ -80,7 +80,7 @@ class Toolbar extends Component {
 		return e;
 	}
 
-	public function addToggle( icon : String, ?title : String, ?label : String, ?onToggle : Bool -> Void, ?defValue = false, ?toggledIcon : String ) : ToolToggle {
+	public function addToggle( icon : String, ?title : String, ?label : String, ?onToggle : Bool -> Void, ?defValue = false, ?toggledIcon : String) : ToolToggle {
 		var e = new Element('<div class="button2" title="${title==null ? "" : title}"><div class="icon ico ico-$icon"/></div>');
 		if(label != null) {
 			new Element('<label>$label</label>').appendTo(e);

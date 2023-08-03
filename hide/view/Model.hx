@@ -56,6 +56,7 @@ class Model extends FileView {
 		super.save();
 	}
 
+
 	override function onFileChanged( wasDeleted : Bool, rebuildView = true ) {
 		if (wasDeleted ) {
 			super.onFileChanged(wasDeleted);
@@ -297,7 +298,7 @@ class Model extends FileView {
 			}
 		}
 		var saveCallback = function(_) {
-			var mat = findMat(matLib.val()); 
+			var mat = findMat(matLib.val());
 			if ( mat != null ) {
 				for ( f in Reflect.fields((m.props:Dynamic)) )
 					Reflect.deleteField((m.props:Dynamic), f);
@@ -648,6 +649,12 @@ class Model extends FileView {
 			showSelectionAxes = v;
 			refreshSelectionHighlight(lastSelectedObject);
 		});
+
+		var toolsDefs : Array<hide.comp.Toolbar.ToolDef> = [];
+		toolsDefs.push({id: "iconVisibility", title : "Toggle 3d icons visibility", icon : "image", type : Toggle((v) -> { hide.Ide.inst.show3DIcons = v; }), defaultValue: true });
+        toolsDefs.push({id: "iconVisibility-menu", title : "", icon: "", type : Popup((e) -> new hide.comp.SceneEditor.IconVisibilityPopup(null, e, sceneEditor))});
+		tools.makeToolbar(toolsDefs);
+
 		tools.addToggle("connectdevelop", "Wireframe",(b) -> {
 			sceneEditor.setWireframe(b);
 		});
