@@ -50,11 +50,11 @@ class TestNewNode2 extends TestNewNode {
 	static var SRC = {
 		var calculatedUV : Vec2;
 
-		@sginput var input0 : Vec4;
-		@sginput var input1 : Vec4;
+		@sginput var a : Vec4;
+		@sginput var b : Vec4;
 		@sgoutput var output : Vec4;
 		function fragment() {
-			output = input0 + input1;
+			output = a + b;
 		}
 	}
 }
@@ -281,12 +281,12 @@ class ShaderGraph {
 		}
 
 		// Recursively replace the to tvar with from tvar in the given expression
-		function replaceVar(expr: TExpr, to: TVar, from: TVar) : TExpr {
-			if(!to.type.equals(from.type))
-				throw "type missmatch " + to.type + " != " + from.type;
+		function replaceVar(expr: TExpr, what: TVar, with: TExpr) : TExpr {
+			if(!what.type.equals(with.t))
+				throw "type missmatch " + what.type + " != " + with.t;
 			function repRec(f: TExpr) {
-				if (f.e.equals(TVar(to))) {
-					return {e: TVar(from), t: from.type, p:f.p};
+				if (f.e.equals(TVar(what))) {
+					return with;
 				} else {
 					return f.map(repRec);
 				}
@@ -341,6 +341,55 @@ class ShaderGraph {
 			}
 		}
 
+		function convertToType(targetType: hxsl.Ast.Type, sourceExpr: TExpr) : TExpr {
+			var sourceType = sourceExpr.t;
+
+			var sourceSize = switch (sourceType) {
+				case TFloat: 1;
+				case TVec(size, VFloat): size;
+				default:
+					throw "Unsupported source type " + sourceType;
+			}
+
+			var targetSize = switch (targetType) {
+				case TFloat: 1;
+				case TVec(size, VFloat): size;
+				default:
+					throw "Unsupported target type " + targetType;
+			}
+
+			var delta = targetSize - sourceSize;
+			if (delta == 0)
+				return sourceExpr;
+			if (delta > 0) {
+				var args = [];
+				if (sourceSize == 1) {
+					for (i in 0...targetSize) {
+						args.push(sourceExpr);
+					}
+				}
+				else {
+					args.push(sourceExpr);
+					for (i in 0...delta) {
+						args.push({e : TConst(CFloat(0.0)), p: sourceExpr.p, t: TFloat});
+					}
+				}
+				var global : TGlobal = switch (targetSize) {
+					case 2: Vec2;
+					case 3: Vec3;
+					case 4: Vec4;
+					default: throw "unreachable";
+				}
+				return {e: TCall({e: TGlobal(global), p: sourceExpr.p, t:targetType}, args), p: sourceExpr.p, t: targetType};
+			}
+			if (delta < 0) {
+				var swizz : Array<hxsl.Ast.Component> = [X,Y,Z,W];
+				swizz.resize(targetSize);
+				return {e: TSwiz(sourceExpr, swizz), p: sourceExpr.p, t: targetType};
+			}
+			throw "unreachable";
+		}
+
 		//sortedNodes.reverse();
 
 		// Actually build the final shader expression
@@ -355,13 +404,14 @@ class ShaderGraph {
 
 			var outputs = getOutputs(currentNode);
 
-			var inputVars : Array<TVar> = [];
+			var inputVars : Map<String, TVar> = [];
 			for (input in currentNode.instance.inputs2) {
+				if (input.to != currentNode) throw "node connection missmatch";
 				var outputs = getOutputs(input.from);
 				var outputVar = outputs[input.fromName];
 				if (outputVar == null) throw "null tvar";
 
-				inputVars.push(outputVar);
+				inputVars.set(input.toName, outputVar);
 			}
 
 
@@ -370,7 +420,8 @@ class ShaderGraph {
 			if (Std.downcast(currentNode.instance, ShaderOutput) != null) {
 				var outputNode : ShaderOutput = cast currentNode.instance;
 				var outVar : TVar = {name: outputNode.variable.name, id:getNewVarId(), type: TVec(4, VFloat), kind: Local};
-				var finalExpr : TExpr = {e: TBinop(OpAssign, {e: TVar(outVar), p: pos, t: outVar.type}, {e: TVar(inputVars[0]), p: pos, t: outVar.type}), p: pos, t: outVar.type};
+				var firstInput = inputVars.iterator().next();
+				var finalExpr : TExpr = {e: TBinop(OpAssign, {e: TVar(outVar), p: pos, t: outVar.type}, {e: TVar(firstInput), p: pos, t: outVar.type}), p: pos, t: outVar.type};
 
 				exprsReverse.push(finalExpr);
 				graphOutputsVars.push(outVar);
@@ -392,16 +443,20 @@ class ShaderGraph {
 				var shader = new ShaderGraph(subgraph.pathShaderGraph);
 				var gen = shader.generate2(getNewVarId);
 
+				trace(hxsl.Printer.shaderToString(shader.compile2().shader.data));
+
 				var finalExprs = [];
 
 				// Patch outputs
 				for (output in outputs) {
-					gen.expr = replaceVar(gen.expr, gen.outVars[0], output);
+					gen.expr = replaceVar(gen.expr, gen.outVars[0], {e: TVar(output), p:pos, t: output.type});
 				}
 
 				// Patch inputs
-				for (i => tvar in inputVars) {
-					var originalInput = gen.inVars[i].variable;
+				for (inputName => tvar in inputVars) {
+					trace(inputName, tvar);
+					var trueName = subgraph.getInputInfo(inputName).name;
+					var originalInput = gen.inVars.find((f) -> f.variable.name == trueName).variable;
 					var finalExpr : TExpr = {e: TVarDecl(originalInput, {e: TVar(tvar), p: pos, t: originalInput.type}), p: pos, t: tvar.type};
 					finalExprs.push(finalExpr);
 				}
@@ -416,39 +471,46 @@ class ShaderGraph {
 			}
 			else
 			{
-				for (outputName => output in outputs) {
-					if (output == null) throw "null output";
+				var fullExpr : TExpr = null;
 
-					var fullExpr : TExpr = null;
+				if (Std.downcast(currentNode.instance, hrt.shgraph.nodes.Add) != null) {
+					var unser = new hxsl.Serializer();
+					var shaderData = getShaderData(TestNewNode2);
+					var fn = shaderData.funs[0]; // TODO : spec the function to use for shader node definitions
+					var expr = fn.expr;
 
-					if (Std.downcast(currentNode.instance, hrt.shgraph.nodes.Add) != null) {
-						var unser = new hxsl.Serializer();
-						var shaderData = getShaderData(TestNewNode2);
+					for (outputName => output in outputs) {
 						var outputVar : TVar = shaderData.vars.find((v : TVar) -> v.name == outputName);
-						var fn = shaderData.funs[0]; // TODO : spec the function to use for shader node definitions
-						var expr = fn.expr;
+						expr = replaceVar(expr, outputVar, {e: TVar(output), p:pos, t: output.type});
+					}
 
-						expr = replaceVar(expr, outputVar, output);
 
-						for (i => tvar in inputVars) {
-							var inputTVar : TVar = shaderData.vars.find((v : TVar) -> v.name == 'input$i');
-							expr = replaceVar(expr, inputTVar, tvar);
+					for (shaderVar in shaderData.vars) {
+						if (shaderVar.qualifiers != null && shaderVar.qualifiers.has(SgInput)) {
+							var ourInputVar = inputVars.get(shaderVar.name);
+							var replacement : TExpr = null;
+							if (ourInputVar != null) {
+								replacement = convertToType(shaderVar.type,  {e: TVar(ourInputVar), p:pos, t: ourInputVar.type});
+							}
+							else {
+								replacement = convertToType(shaderVar.type, {e: TConst(CFloat(0.0)), p:pos, t: TFloat});
+							}
+							expr = replaceVar(expr, shaderVar, replacement);
 						}
-
-						exprsReverse.push(expr);
-
-						fullExpr = null;
-					}
-					else {
-						throw "unsuported node";
 					}
 
-					{
+					exprsReverse.push(expr);
+
+					for (outputName => output in outputs) {
 						if (output.type == null) throw "no type";
-						var finalExpr : TExpr = {e: TVarDecl(output, fullExpr), p: pos, t: output.type};
+						var finalExpr : TExpr = {e: TVarDecl(output), p: pos, t: output.type};
 						exprsReverse.push(finalExpr);
 					}
 
+					fullExpr = null;
+				}
+				else {
+					throw "unsuported node";
 				}
 			}
 		}
