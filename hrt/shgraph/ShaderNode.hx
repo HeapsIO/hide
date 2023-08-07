@@ -5,6 +5,7 @@ using hxsl.Ast;
 typedef InputInfo = { name : String, type : ShaderType.SType, hasProperty : Bool, isRequired : Bool, ?ids : Array<Int>, ?index : Int };
 typedef OutputInfo = { name : String, type : ShaderType.SType, ?id : Int };
 
+@:autoBuild(hrt.shgraph.Macros.buildNode())
 @:autoBuild(hrt.shgraph.ParseFieldsMacro.build())
 @:keepSub
 class ShaderNode {
@@ -19,6 +20,25 @@ class ShaderNode {
 						name: "pixelColor",
 						type: TVec(4, VFloat)
 					}];
+
+	static var output2 : Map<String, Map<String, TVar>> = [];
+	public function getOutputs2() : Map<String, TVar> {
+		var cl = Type.getClass(this);
+		var className = Type.getClassName(cl);
+		var outputs = output2.get(className);
+		if (outputs != null)
+			return outputs;
+		outputs = [];
+		var shData = ShaderGraph.getShaderData(cl);
+		for (shaderVar in shData.vars) {
+			if (shaderVar.qualifiers != null && shaderVar.qualifiers.contains(SgOutput)) {
+				outputs.set(shaderVar.name, shaderVar);
+			}
+		}
+		output2.set(className, outputs);
+
+		return outputs;
+	}
 
 	var inputs : Map<String, NodeVar> = [];
 	var outputs : Map<String, TVar> = [];

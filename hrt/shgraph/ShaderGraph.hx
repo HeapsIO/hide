@@ -237,12 +237,14 @@ class ShaderGraph {
 	}
 
 	static var nodeCache : Map<String, ShaderData> = [];
-	function getShaderData(cl: Class<TestNewNode>) {
+	public static function getShaderData(cl: Class<ShaderNode>) {
 		var className = Type.getClassName(cl);
 		var data = nodeCache.get(className);
 		if (data == null) {
 			var unser = new hxsl.Serializer();
-			data = @:privateAccess unser.unserialize((cl:Dynamic).SRC);
+			var toUnser = (cl:Dynamic).SRC;
+			if (toUnser == null) throw "Node " + cl + " has no SRC";
+			data = @:privateAccess unser.unserialize(toUnser);
 			nodeCache.set(className, data);
 		}
 		return data;
@@ -266,14 +268,13 @@ class ShaderGraph {
 			if (!nodeOutputs.exists(node)) {
 				var outputs : Map<String, TVar> = [];
 
-				var keys = node.instance.getOutputInfoKeys();
-				for (key in keys) {
-					var info = node.instance.getOutputInfo(key);
-					var type = TVec(4, VFloat);//ShaderType.getType(info.type);
+				var shaderNodeOutputs = node.instance.getOutputs2();
+				for (name => output in shaderNodeOutputs) {
+					var type = output.type;
 					if (type == null) throw "no type";
 					var id = getNewVarId();
 					var output = {id: id, name: getNewVarName(node, id), type: type, kind : Local};
-					outputs.set(key, output);
+					outputs.set(name, output);
 				}
 
 				nodeOutputs.set(node, outputs);
@@ -429,16 +430,15 @@ class ShaderGraph {
 			} else if (Std.downcast(currentNode.instance, ShaderParam) != null) {
 				var inputNode : ShaderParam = cast currentNode.instance;
 
-				var inVar : TVar = {name: inputNode.variable.name, id:getNewVarId(), type: TVec(4, VFloat), kind: Param};
 
 				for (output in outputs) {
+					var inVar : TVar = {name: inputNode.variable.name, id:getNewVarId(), type: output.type, kind: Param};
 					var finalExpr : TExpr = {e: TVarDecl(output, {e: TVar(inVar), p: pos, t: output.type}), p: pos, t: output.type};
 					exprsReverse.push(finalExpr);
+					graphInputVars.push(inVar);
+					var param = getParameter(inputNode.parameterId);
+					inits.push({variable: inVar, value: param.defaultValue});
 				}
-				graphInputVars.push(inVar);
-
-				var param = getParameter(inputNode.parameterId);
-				inits.push({variable: inVar, value: param.defaultValue});
 			} else if (Std.downcast(currentNode.instance, hrt.shgraph.nodes.SubGraph) != null) {
 				var subgraph : hrt.shgraph.nodes.SubGraph = cast currentNode.instance;
 				var shader = new ShaderGraph(subgraph.pathShaderGraph);
@@ -456,7 +456,7 @@ class ShaderGraph {
 				for (inputName => tvar in inputVars) {
 					var trueName = subgraph.getInputInfo(inputName).name;
 					var originalInput = gen.inVars.find((f) -> f.variable.name == trueName).variable;
-					var finalExpr : TExpr = {e: TVarDecl(originalInput, {e: TVar(tvar), p: pos, t: originalInput.type}), p: pos, t: tvar.type};
+					var finalExpr : TExpr = {e: TVarDecl(originalInput, convertToType(originalInput.type, {e: TVar(tvar), p: pos, t: tvar.type})), p: pos, t: originalInput.type};
 					finalExprs.push(finalExpr);
 				}
 
@@ -474,12 +474,13 @@ class ShaderGraph {
 
 				if (Std.downcast(currentNode.instance, hrt.shgraph.nodes.Add) != null) {
 					var unser = new hxsl.Serializer();
-					var shaderData = getShaderData(TestNewNode2);
+					var shaderData = getShaderData(Type.getClass(currentNode.instance));
 					var fn = shaderData.funs[0]; // TODO : spec the function to use for shader node definitions
 					var expr = fn.expr;
 
+					var nodeShaderOutputs = currentNode.instance.getOutputs2();
 					for (outputName => output in outputs) {
-						var outputVar : TVar = shaderData.vars.find((v : TVar) -> v.name == outputName);
+						var outputVar : TVar = nodeShaderOutputs.get(outputName);
 						expr = replaceVar(expr, outputVar, {e: TVar(output), p:pos, t: output.type});
 					}
 

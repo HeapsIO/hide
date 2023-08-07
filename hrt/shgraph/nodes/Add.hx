@@ -12,4 +12,14 @@ class Add extends Operation {
 		super(OpAdd);
 	}
 
+	static var SRC = {
+		@sginput var a : Vec4;
+		@sginput var b : Vec4;
+		@sgoutput var output : Vec4;
+		function fragment() {
+			var c = a + b;
+			output = c;
+		}
+	}
+
 }

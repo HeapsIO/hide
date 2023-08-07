@@ -12,6 +12,12 @@ class ShaderParam extends ShaderNode {
 	@prop() public var parameterId : Int;
 	@prop() public var perInstance : Bool;
 
+	override public function getOutputs2() : Map<String, TVar> {
+		var outputs : Map<String, TVar> = [];
+		outputs.set("output", this.variable);
+
+		return outputs;
+	}
 
 	public var variable : TVar;
 

@@ -10,6 +10,32 @@ class SubGraph extends ShaderNode {
 
 	@prop() public var pathShaderGraph : String;
 
+	override public function getOutputs2() : Map<String, TVar> {
+		// TODO : proper caching with invalidation when subgraph is modified
+		/*var cl = Type.getClass(this);
+		var className = Type.getClassName(cl);
+
+		var outputs = ShaderNode.output2.get(className);
+		if (outputs != null)
+			return outputs;*/
+		outputs = [];
+
+		// big big hack, propery do this in the future
+		// by compiling the subgraph and storing the tvars here
+
+		var shader = new ShaderGraph(pathShaderGraph);
+		var gen = shader.generate2();
+
+		// compatibility hack with prev version
+		var prefixSubGraph = "shgraph_" + id + "_";
+
+		for (i => outVar in gen.outVars) {
+			outputs.set(prefixSubGraph + i, outVar);
+		}
+
+		return outputs;
+	}
+
 	var inputsInfo : Map<String, ShaderNode.InputInfo>;
 	var inputInfoKeys : Array<String> = [];
 	var outputsInfo : Map<String, ShaderNode.OutputInfo>;

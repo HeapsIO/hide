@@ -12,6 +12,12 @@ class ShaderOutput extends ShaderNode {
 
 	@prop("Variable") public var variable : TVar;
 
+	static var SRC = {
+		@sginput var input : Vec4;
+		function fragment() {
+		}
+	}
+
 	var components = [X, Y, Z, W];
 
 	override public function checkValidityInput(key : String, type : ShaderType.SType) : Bool {
