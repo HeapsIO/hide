@@ -54,7 +54,8 @@ class TestNewNode2 extends TestNewNode {
 		@sginput var b : Vec4;
 		@sgoutput var output : Vec4;
 		function fragment() {
-			output = a + b;
+			var c = a + b;
+			output = c;
 		}
 	}
 }
@@ -256,8 +257,8 @@ class ShaderGraph {
 				};
 		}
 
-		inline function getNewVarName(id: Int) : String {
-			return '_sg_var_$id';
+		inline function getNewVarName(node: Node, id: Int) : String {
+			return '_sg_${(node.type).split(".").pop()}_var_$id';
 		}
 
 		var nodeOutputs : Map<Node, Map<String, TVar>> = [];
@@ -271,7 +272,7 @@ class ShaderGraph {
 					var type = TVec(4, VFloat);//ShaderType.getType(info.type);
 					if (type == null) throw "no type";
 					var id = getNewVarId();
-					var output = {id: id, name: getNewVarName(id), type: type, kind : Local};
+					var output = {id: id, name: getNewVarName(node, id), type: type, kind : Local};
 					outputs.set(key, output);
 				}
 
@@ -364,7 +365,7 @@ class ShaderGraph {
 			if (delta > 0) {
 				var args = [];
 				if (sourceSize == 1) {
-					for (i in 0...targetSize) {
+					for (_ in 0...targetSize) {
 						args.push(sourceExpr);
 					}
 				}
@@ -443,7 +444,6 @@ class ShaderGraph {
 				var shader = new ShaderGraph(subgraph.pathShaderGraph);
 				var gen = shader.generate2(getNewVarId);
 
-				trace(hxsl.Printer.shaderToString(shader.compile2().shader.data));
 
 				var finalExprs = [];
 
@@ -454,7 +454,6 @@ class ShaderGraph {
 
 				// Patch inputs
 				for (inputName => tvar in inputVars) {
-					trace(inputName, tvar);
 					var trueName = subgraph.getInputInfo(inputName).name;
 					var originalInput = gen.inVars.find((f) -> f.variable.name == trueName).variable;
 					var finalExpr : TExpr = {e: TVarDecl(originalInput, {e: TVar(tvar), p: pos, t: originalInput.type}), p: pos, t: tvar.type};
@@ -493,6 +492,7 @@ class ShaderGraph {
 								replacement = convertToType(shaderVar.type,  {e: TVar(ourInputVar), p:pos, t: ourInputVar.type});
 							}
 							else {
+
 								replacement = convertToType(shaderVar.type, {e: TConst(CFloat(0.0)), p:pos, t: TFloat});
 							}
 							expr = replaceVar(expr, shaderVar, replacement);
