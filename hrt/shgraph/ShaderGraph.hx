@@ -422,8 +422,6 @@ class ShaderGraph {
 			var inputVars : Map<String, TVar> = [];
 			for (input in currentNode.instance.inputs2) {
 				if (input.to != currentNode) throw "node connection missmatch";
-				if (input.from.type == "hrt.shgraph.nodes.Add")
-					trace("break");
 				var outputs = getOutputs(input.from);
 				var outputVar = outputs[input.fromName];
 				if (outputVar == null) throw "null tvar";
@@ -500,7 +498,7 @@ class ShaderGraph {
 							}
 							else {
 								var id = getNewVarId();
-								var outVar = {id: id, name: nodeVar.name, type: nodeVar.type, kind : Param, qualifiers: [SgOutput]};
+								var outVar = {id: id, name: nodeVar.name, type: nodeVar.type, kind : Param, qualifiers: [SgInput]};
 								replacement = {e: TVar(outVar), p:pos, t: nodeVar.type};
 								graphInputVars.push(outVar);
 								externs.push(outVar);
