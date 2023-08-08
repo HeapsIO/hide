@@ -5,7 +5,6 @@ using hxsl.Ast;
 typedef InputInfo = { name : String, type : ShaderType.SType, hasProperty : Bool, isRequired : Bool, ?ids : Array<Int>, ?index : Int };
 typedef OutputInfo = { name : String, type : ShaderType.SType, ?id : Int };
 
-@:autoBuild(hrt.shgraph.Macros.buildNode())
 @:autoBuild(hrt.shgraph.ParseFieldsMacro.build())
 @:keepSub
 class ShaderNode {
@@ -38,6 +37,11 @@ class ShaderNode {
 		output2.set(className, outputs);
 
 		return outputs;
+	}
+
+	public function getShaderDef() : ShaderGraph.ShaderNodeDef {
+		throw "Shouln't be called";
+		return {expr: null, inVars: [], outVars: [], inits: [], externVars: []};
 	}
 
 	var inputs : Map<String, NodeVar> = [];

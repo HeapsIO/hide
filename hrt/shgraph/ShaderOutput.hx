@@ -12,13 +12,24 @@ class ShaderOutput extends ShaderNode {
 
 	@prop("Variable") public var variable : TVar;
 
-	static var SRC = {
-		@sginput var input : Vec4;
-		function fragment() {
-		}
+	var components = [X, Y, Z, W];
+
+	override function getOutputs2():Map<String, TVar> {
+		return [];
 	}
 
-	var components = [X, Y, Z, W];
+	override function getShaderDef():hrt.shgraph.ShaderGraph.ShaderNodeDef {
+		var pos : Position = {file: "", min: 0, max: 0};
+
+		var inVar : TVar = {name: "input", id:0, type: this.variable.type, kind: Param, qualifiers: [SgInput]};
+		var output : TVar = {name: variable.name, id:1, type: this.variable.type, kind: Local, qualifiers: [SgOutput]};
+		var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(output), p:pos, t:output.type}, {e: TVar(inVar), p: pos, t: output.type}), p: pos, t: output.type};
+
+		//var param = getParameter(inputNode.parameterId);
+		//inits.push({variable: inVar, value: param.defaultValue});
+
+		return {expr: finalExpr, inVars: [inVar], outVars:[], externVars: [inVar, output], inits: []};
+	}
 
 	override public function checkValidityInput(key : String, type : ShaderType.SType) : Bool {
 		return ShaderType.checkConversion(type, ShaderType.getSType(variable.type));

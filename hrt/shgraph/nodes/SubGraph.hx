@@ -27,13 +27,27 @@ class SubGraph extends ShaderNode {
 		var gen = shader.generate2();
 
 		// compatibility hack with prev version
-		var prefixSubGraph = "shgraph_" + id + "_";
+		/*var prefixSubGraph = "shgraph_" + id + "_";
 
 		for (i => outVar in gen.outVars) {
 			outputs.set(prefixSubGraph + i, outVar);
-		}
+		}*/
 
 		return outputs;
+	}
+
+	override public function getShaderDef():hrt.shgraph.ShaderGraph.ShaderNodeDef {
+		var shader = new ShaderGraph(pathShaderGraph);
+		var gen = shader.generate2();
+
+		/*for (i => outVar in gen.outVars) {
+			var prefixSubGraph = "shgraph_" + id + "_";
+
+			outVar.name = prefixSubGraph + i;
+			outputs.set(prefixSubGraph + i, outVar);
+		}*/
+
+		return gen;
 	}
 
 	var inputsInfo : Map<String, ShaderNode.InputInfo>;

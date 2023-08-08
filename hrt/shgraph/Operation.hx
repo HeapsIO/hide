@@ -2,7 +2,7 @@ package hrt.shgraph;
 
 using hxsl.Ast;
 
-class Operation extends ShaderNode {
+class Operation extends ShaderNodeHxsl {
 
 	@input("A", true) var a = SType.Number;
 	@input("B", true) var b = SType.Number;

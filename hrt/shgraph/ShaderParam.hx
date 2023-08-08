@@ -19,6 +19,19 @@ class ShaderParam extends ShaderNode {
 		return outputs;
 	}
 
+	override function getShaderDef():hrt.shgraph.ShaderGraph.ShaderNodeDef {
+		var pos : Position = {file: "", min: 0, max: 0};
+
+		var inVar : TVar = {name: this.variable.name, id:0, type: this.variable.type, kind: Param, qualifiers: [SgInput]};
+		var output : TVar = {name: "output", id:1, type: this.variable.type, kind: Local, qualifiers: [SgOutput]};
+		var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(output), p:pos, t:output.type}, {e: TVar(inVar), p: pos, t: output.type}), p: pos, t: output.type};
+
+		//var param = getParameter(inputNode.parameterId);
+		//inits.push({variable: inVar, value: param.defaultValue});
+
+		return {expr: finalExpr, inVars: [], outVars:[output], externVars: [inVar, output], inits: []};
+	}
+
 	public var variable : TVar;
 
 	override public function computeOutputs() {

@@ -6,6 +6,14 @@ using hide.tools.Extensions.ArrayExtensions;
 using haxe.EnumTools.EnumValueTools;
 using Lambda;
 
+typedef ShaderNodeDef = {
+	expr: TExpr,
+	inVars: Array<TVar>, // Variables that shows up as input of a node
+	outVars: Array<TVar>, // Variables that shows up as outputs of a node
+	externVars: Array<TVar>, // All the external variables of a shader, including sginput/sgoutputs
+	inits: Array<{variable: TVar, value: Dynamic}>, // Default values for some variables
+};
+
 typedef Node = {
 	x : Float,
 	y : Float,
@@ -159,7 +167,14 @@ class ShaderGraph {
 		node.instance.setInput(edge.nameInput, new NodeVar(output.instance, edge.nameOutput));
 		output.outputs.push(node);
 
-		var connection : Connection = {from: output, fromName: edge.nameOutput, to: node, toName: edge.nameInput};
+		// pas du tout envie de mourrir
+		var fromGen = output.instance.getShaderDef();
+		var fromName = fromGen.outVars[output.instance.getOutputInfoKeys().indexOf(edge.nameOutput)].name;
+
+		var toGen = node.instance.getShaderDef();
+		var toName = toGen.inVars[node.instance.getInputInfoKeys().indexOf(edge.nameInput)].name;
+
+		var connection : Connection = {from: output, fromName: fromName, to: node, toName: toName};
 		var prevConn = node.instance.inputs2.get(edge.nameInput);
 		if (prevConn != null)
 			connections.remove(prevConn);
@@ -250,7 +265,7 @@ class ShaderGraph {
 		return data;
 	}
 
-	public function generate2(?getNewVarId: () -> Int) : {expr: TExpr, inVars: Array<{variable: TVar, value: Dynamic}>, outVars: Array<TVar>} {
+	public function generate2(?getNewVarId: () -> Int) : ShaderNodeDef {
 		if (getNewVarId == null) {
 			var varIdCount = 0;
 			getNewVarId = function()
@@ -268,13 +283,13 @@ class ShaderGraph {
 			if (!nodeOutputs.exists(node)) {
 				var outputs : Map<String, TVar> = [];
 
-				var shaderNodeOutputs = node.instance.getOutputs2();
-				for (name => output in shaderNodeOutputs) {
+				var def = node.instance.getShaderDef();
+				for (output in def.outVars) {
 					var type = output.type;
 					if (type == null) throw "no type";
 					var id = getNewVarId();
-					var output = {id: id, name: getNewVarName(node, id), type: type, kind : Local};
-					outputs.set(name, output);
+					var outVar = {id: id, name: getNewVarName(node, id), type: type, kind : Local};
+					outputs.set(output.name, outVar);
 				}
 
 				nodeOutputs.set(node, outputs);
@@ -315,7 +330,8 @@ class ShaderGraph {
 		}
 
 		var graphInputVars : Array<TVar> = [];
-		var graphOutputsVars : Array<TVar> = [];
+		var graphOutputVars : Array<TVar> = [];
+		var externs : Array<TVar> = [];
 
 		var nodeToExplore : Array<Node> = [];
 
@@ -323,7 +339,6 @@ class ShaderGraph {
 			if (!hasOutputs)
 				nodeToExplore.push(node);
 		}
-
 
 		var sortedNodes : Array<Node> = [];
 
@@ -392,8 +407,6 @@ class ShaderGraph {
 			throw "unreachable";
 		}
 
-		//sortedNodes.reverse();
-
 		// Actually build the final shader expression
 		var exprsReverse : Array<TExpr> = [];
 		for (currentNode in sortedNodes) {
@@ -409,6 +422,8 @@ class ShaderGraph {
 			var inputVars : Map<String, TVar> = [];
 			for (input in currentNode.instance.inputs2) {
 				if (input.to != currentNode) throw "node connection missmatch";
+				if (input.from.type == "hrt.shgraph.nodes.Add")
+					trace("break");
 				var outputs = getOutputs(input.from);
 				var outputVar = outputs[input.fromName];
 				if (outputVar == null) throw "null tvar";
@@ -416,26 +431,27 @@ class ShaderGraph {
 				inputVars.set(input.toName, outputVar);
 			}
 
-
-
-
-			if (Std.downcast(currentNode.instance, ShaderOutput) != null) {
+			/*if (Std.downcast(currentNode.instance, ShaderOutput) != null) {
 				var outputNode : ShaderOutput = cast currentNode.instance;
-				var outVar : TVar = {name: outputNode.variable.name, id:getNewVarId(), type: TVec(4, VFloat), kind: Local};
+				var outVar : TVar = {name: outputNode.variable.name, id:getNewVarId(), type: TVec(4, VFloat), kind: Local, qualifiers: [SgOutput]};
 				var firstInput = inputVars.iterator().next();
 				var finalExpr : TExpr = {e: TBinop(OpAssign, {e: TVar(outVar), p: pos, t: outVar.type}, {e: TVar(firstInput), p: pos, t: outVar.type}), p: pos, t: outVar.type};
 
 				exprsReverse.push(finalExpr);
-				graphOutputsVars.push(outVar);
+				externs.push(outVar);
+				graphOutputVars.push(outVar);
+
 			} else if (Std.downcast(currentNode.instance, ShaderParam) != null) {
 				var inputNode : ShaderParam = cast currentNode.instance;
 
 
 				for (output in outputs) {
-					var inVar : TVar = {name: inputNode.variable.name, id:getNewVarId(), type: output.type, kind: Param};
+					var inVar : TVar = {name: inputNode.variable.name, id:getNewVarId(), type: output.type, kind: Param, qualifiers: [SgInput]};
 					var finalExpr : TExpr = {e: TVarDecl(output, {e: TVar(inVar), p: pos, t: output.type}), p: pos, t: output.type};
 					exprsReverse.push(finalExpr);
+					externs.push(inVar);
 					graphInputVars.push(inVar);
+
 					var param = getParameter(inputNode.parameterId);
 					inits.push({variable: inVar, value: param.defaultValue});
 				}
@@ -455,7 +471,7 @@ class ShaderGraph {
 				// Patch inputs
 				for (inputName => tvar in inputVars) {
 					var trueName = subgraph.getInputInfo(inputName).name;
-					var originalInput = gen.inVars.find((f) -> f.variable.name == trueName).variable;
+					var originalInput = gen.inVars.find((f) -> f.name == trueName);
 					var finalExpr : TExpr = {e: TVarDecl(originalInput, convertToType(originalInput.type, {e: TVar(tvar), p: pos, t: tvar.type})), p: pos, t: originalInput.type};
 					finalExprs.push(finalExpr);
 				}
@@ -467,51 +483,55 @@ class ShaderGraph {
 					var finalExpr : TExpr = {e: TVarDecl(output), p: pos, t: output.type};
 					exprsReverse.push(finalExpr);
 				}
-			}
-			else
+			}*/
+			/*else*/
 			{
-				var fullExpr : TExpr = null;
+				var def = currentNode.instance.getShaderDef();
+				var expr = def.expr;
 
-				if (Std.downcast(currentNode.instance, hrt.shgraph.nodes.Add) != null) {
-					var unser = new hxsl.Serializer();
-					var shaderData = getShaderData(Type.getClass(currentNode.instance));
-					var fn = shaderData.funs[0]; // TODO : spec the function to use for shader node definitions
-					var expr = fn.expr;
-
-					var nodeShaderOutputs = currentNode.instance.getOutputs2();
-					for (outputName => output in outputs) {
-						var outputVar : TVar = nodeShaderOutputs.get(outputName);
-						expr = replaceVar(expr, outputVar, {e: TVar(output), p:pos, t: output.type});
-					}
-
-
-					for (shaderVar in shaderData.vars) {
-						if (shaderVar.qualifiers != null && shaderVar.qualifiers.has(SgInput)) {
-							var ourInputVar = inputVars.get(shaderVar.name);
+				var outputDecls : Array<TVar> = [];
+				for (nodeVar in def.externVars) {
+					if (nodeVar.qualifiers != null) {
+						if (nodeVar.qualifiers.has(SgInput)) {
+							var ourInputVar = inputVars.get(nodeVar.name);
 							var replacement : TExpr = null;
 							if (ourInputVar != null) {
-								replacement = convertToType(shaderVar.type,  {e: TVar(ourInputVar), p:pos, t: ourInputVar.type});
+								replacement = convertToType(nodeVar.type,  {e: TVar(ourInputVar), p:pos, t: ourInputVar.type});
 							}
 							else {
-
-								replacement = convertToType(shaderVar.type, {e: TConst(CFloat(0.0)), p:pos, t: TFloat});
+								var id = getNewVarId();
+								var outVar = {id: id, name: nodeVar.name, type: nodeVar.type, kind : Param, qualifiers: [SgOutput]};
+								replacement = {e: TVar(outVar), p:pos, t: nodeVar.type};
+								graphInputVars.push(outVar);
+								externs.push(outVar);
+								inits.push({variable: outVar, value:new h3d.Vector()});
 							}
-							expr = replaceVar(expr, shaderVar, replacement);
+							expr = replaceVar(expr, nodeVar, replacement);
+
+						}
+						else if (nodeVar.qualifiers.has(SgOutput)) {
+							var outputVar : TVar = outputs.get(nodeVar.name);
+							if (outputVar == null) {
+								externs.push(nodeVar);
+							} else {
+								expr = replaceVar(expr, nodeVar, {e: TVar(outputVar), p:pos, t: nodeVar.type});
+								outputDecls.push(outputVar);
+							}
+						}
+						else {
+							externs.push(nodeVar);
 						}
 					}
-
-					exprsReverse.push(expr);
-
-					for (outputName => output in outputs) {
-						if (output.type == null) throw "no type";
-						var finalExpr : TExpr = {e: TVarDecl(output), p: pos, t: output.type};
-						exprsReverse.push(finalExpr);
+					else {
+						externs.push(nodeVar);
 					}
-
-					fullExpr = null;
 				}
-				else {
-					throw "unsuported node";
+
+				exprsReverse.push(expr);
+
+				for (output in outputDecls) {
+					var finalExpr : TExpr = {e: TVarDecl(output), p: pos, t: output.type};
+					exprsReverse.push(finalExpr);
 				}
 			}
 		}
@@ -520,8 +540,10 @@ class ShaderGraph {
 
 		return {
 			expr: {e: TBlock(exprsReverse), t:TVoid, p:pos},
-			inVars: inits,
-			outVars: graphOutputsVars,
+			inVars: graphInputVars,
+			outVars: graphOutputVars,
+			externVars: externs,
+			inits: inits,
 		};
 	}
 
@@ -543,8 +565,7 @@ class ShaderGraph {
 			funs: [],
 		};
 
-		shaderData.vars.append(gen.inVars.map((f) -> f.variable));
-		shaderData.vars.append(gen.outVars);
+		shaderData.vars.append(gen.externVars);
 
 		shaderData.funs.push({
 			ret : TVoid, kind : Fragment,
@@ -566,7 +587,7 @@ class ShaderGraph {
 		var time = haxe.Timer.stamp() - start;
 		trace("Shader compile2 in " + time * 1000 + " ms");
 
-		return {shader : shared, inits: gen.inVars};
+		return {shader : shared, inits: gen.inits};
 	}
 
 	public function getParameter(id : Int) {
