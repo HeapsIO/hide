@@ -36,9 +36,9 @@ class SubGraph extends ShaderNode {
 		return outputs;
 	}
 
-	override public function getShaderDef():hrt.shgraph.ShaderGraph.ShaderNodeDef {
+	override public function getShaderDef(?getNewVarId: () -> Int):hrt.shgraph.ShaderGraph.ShaderNodeDef {
 		var shader = new ShaderGraph(pathShaderGraph);
-		var gen = shader.generate2();
+		var gen = shader.generate2(getNewVarId);
 
 		for (tvar in gen.externVars) {
 			if (tvar.qualifiers != null) {

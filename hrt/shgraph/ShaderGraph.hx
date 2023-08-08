@@ -179,7 +179,7 @@ class ShaderGraph {
 		if (prevConn != null)
 			connections.remove(prevConn);
 
-		node.instance.inputs2.set(edge.nameInput, connection);
+		node.instance.inputs2.set(toName, connection);
 
 		var subShaderIn = Std.downcast(node.instance, hrt.shgraph.nodes.SubGraph);
 		var subShaderOut = Std.downcast(output.instance, hrt.shgraph.nodes.SubGraph);
@@ -222,6 +222,11 @@ class ShaderGraph {
 		var node = this.nodes.get(idNode);
 		this.nodes.get(node.instance.getInput(nameInput).node.id).outputs.remove(node);
 		node.instance.setInput(nameInput, null);
+
+		var toGen = node.instance.getShaderDef();
+		var toName = toGen.inVars[node.instance.getInputInfoKeys().indexOf(nameInput)].name;
+
+		node.instance.inputs2.remove(toName);
 		if (update) {
 			updateOutputs(node);
 		}
@@ -419,15 +424,7 @@ class ShaderGraph {
 
 			var outputs = getOutputs(currentNode);
 
-			var inputVars : Map<String, TVar> = [];
-			for (input in currentNode.instance.inputs2) {
-				if (input.to != currentNode) throw "node connection missmatch";
-				var outputs = getOutputs(input.from);
-				var outputVar = outputs[input.fromName];
-				if (outputVar == null) throw "null tvar";
 
-				inputVars.set(input.toName, outputVar);
-			}
 
 			/*if (Std.downcast(currentNode.instance, ShaderOutput) != null) {
 				var outputNode : ShaderOutput = cast currentNode.instance;
@@ -484,26 +481,50 @@ class ShaderGraph {
 			}*/
 			/*else*/
 			{
-				var def = currentNode.instance.getShaderDef();
+				var def = currentNode.instance.getShaderDef(getNewVarId);
 				var expr = def.expr;
+
+				/*var inputVars : Map<String, TVar> = [];
+
+				for (input in currentNode.instance.inputs2) {
+					if (input.to != currentNode) throw "node connection missmatch";
+					var outputs = getOutputs(input.from);
+					var outputVar = outputs[input.fromName];
+					if (outputVar == null) throw "null tvar";
+
+					inputVars.set(input.toName, outputVar);
+				}*/
 
 				var outputDecls : Array<TVar> = [];
 				for (nodeVar in def.externVars) {
 					if (nodeVar.qualifiers != null) {
 						if (nodeVar.qualifiers.has(SgInput)) {
-							var ourInputVar = inputVars.get(nodeVar.name);
+							var connection = currentNode.instance.inputs2.get(nodeVar.name);
+
 							var replacement : TExpr = null;
-							if (ourInputVar != null) {
-								replacement = convertToType(nodeVar.type,  {e: TVar(ourInputVar), p:pos, t: ourInputVar.type});
+
+							if (connection != null) {
+								var outputs = getOutputs(connection.from);
+								var outputVar = outputs[connection.fromName];
+								if (outputVar == null) throw "null tvar";
+								replacement = convertToType(nodeVar.type,  {e: TVar(outputVar), p:pos, t: outputVar.type});
 							}
 							else {
-								var id = getNewVarId();
-								var outVar = {id: id, name: nodeVar.name, type: nodeVar.type, kind : Param, qualifiers: [SgInput]};
-								replacement = {e: TVar(outVar), p:pos, t: nodeVar.type};
-								graphInputVars.push(outVar);
-								externs.push(outVar);
-								inits.push({variable: outVar, value:new h3d.Vector()});
+								var shParam = Std.downcast(currentNode.instance, ShaderParam);
+								if (shParam != null) {
+									var id = getNewVarId();
+									var outVar = {id: id, name: nodeVar.name, type: nodeVar.type, kind : Param, qualifiers: [SgInput]};
+									replacement = {e: TVar(outVar), p:pos, t: nodeVar.type};
+									graphInputVars.push(outVar);
+									externs.push(outVar);
+									var param = getParameter(shParam.parameterId);
+									inits.push({variable: outVar, value: param.defaultValue});
+								}
+								else {
+									replacement = convertToType(nodeVar.type, {e: TConst(CFloat(0.5)), p: pos, t:TFloat});
+								}
 							}
+
 							expr = replaceVar(expr, nodeVar, replacement);
 
 						}

@@ -39,7 +39,7 @@ class ShaderNode {
 		return outputs;
 	}
 
-	public function getShaderDef() : ShaderGraph.ShaderNodeDef {
+	public function getShaderDef(?getNewVarId: () -> Int) : ShaderGraph.ShaderNodeDef {
 		throw "Shouln't be called";
 		return {expr: null, inVars: [], outVars: [], inits: [], externVars: []};
 	}

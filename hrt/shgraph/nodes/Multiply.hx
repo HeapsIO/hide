@@ -12,4 +12,13 @@ class Multiply extends Operation {
 		super(OpMult);
 	}
 
+	static var SRC = {
+		@sginput var a : Vec4;
+		@sginput var b : Vec4;
+		@sgoutput var output : Vec4;
+		function fragment() {
+			var c = a + b * 0.00001;
+			output = c;
+		}
+	}
 }
