@@ -8,17 +8,17 @@ using hxsl.Ast;
 @group("Math")
 class Tan extends ShaderFunction {
 
-	@input("A") var a = SType.Float;
+	// @input("A") var a = SType.Float;
 
-	public function new() {
-		super(Tan);
-	}
+	// public function new() {
+	// 	super(Tan);
+	// }
 
-	override public function computeOutputs() {
-		if (a != null && !a.isEmpty())
-			addOutput("output", a.getType());
-		else
-			removeOutput("output");
-	}
+	// override public function computeOutputs() {
+	// 	if (a != null && !a.isEmpty())
+	// 		addOutput("output", a.getType());
+	// 	else
+	// 		removeOutput("output");
+	// }
 
 }

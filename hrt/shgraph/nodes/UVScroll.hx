@@ -7,23 +7,23 @@ using hxsl.Ast;
 @group("Specials")
 class UVScroll extends ShaderNode {
 
-	@input("UV") var uv = SType.Vec2;
-	@input("USpeed", true) var uSpeed = SType.Number;
-	@input("VSpeed", true) var vSpeed = SType.Number;
+	// @input("UV") var uv = SType.Vec2;
+	// @input("USpeed", true) var uSpeed = SType.Number;
+	// @input("VSpeed", true) var vSpeed = SType.Number;
 
 
-	var operation : Binop;
+	// var operation : Binop;
 
-	public function new(operation : Binop) {
-		this.operation = operation;
-	}
+	// public function new(operation : Binop) {
+	// 	this.operation = operation;
+	// }
 
-	override public function computeOutputs() {
-		if (uv != null && !uv.isEmpty())
-			addOutput("output", uv.getType());
-		else
-			removeOutput("output");
-	}
+	// override public function computeOutputs() {
+	// 	if (uv != null && !uv.isEmpty())
+	// 		addOutput("output", uv.getType());
+	// 	else
+	// 		removeOutput("output");
+	// }
 
 	// override public function build(key : String) : TExpr {
 

@@ -8,8 +8,6 @@ using hxsl.Ast;
 @color("#A90707")
 class ShaderOutput extends ShaderNode {
 
-	@input("input") var input = SType.Variant;
-
 	@prop("Variable") public var variable : TVar;
 
 	var components = [X, Y, Z, W];
@@ -28,22 +26,22 @@ class ShaderOutput extends ShaderNode {
 		return {expr: finalExpr, inVars: [inVar], outVars:[], externVars: [inVar, output], inits: []};
 	}
 
-	override public function checkValidityInput(key : String, type : ShaderType.SType) : Bool {
-		return ShaderType.checkConversion(type, ShaderType.getSType(variable.type));
-	}
+	/*override public function checkValidityInput(key : String, type : hxsl.Ast.Type) : Bool {
+		return ShaderType.checkConversion(type, variable.type);
+	}*/
 
-	override public function build(key : String) : TExpr {
-		return {
-				p : null,
-				t : TVoid,
-				e : TBinop(OpAssign, {
-					e: TVar(variable),
-					p: null,
-					t: variable.type
-				}, input.getVar(variable.type))
-			};
+	// override public function build(key : String) : TExpr {
+	// 	return {
+	// 			p : null,
+	// 			t : TVoid,
+	// 			e : TBinop(OpAssign, {
+	// 				e: TVar(variable),
+	// 				p: null,
+	// 				t: variable.type
+	// 			}, input.getVar(variable.type))
+	// 		};
 
-	}
+	// }
 
 	static var availableOutputs = [
 		{

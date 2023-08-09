@@ -8,22 +8,22 @@ using hxsl.Ast;
 @group("Math")
 class Step extends ShaderFunction {
 
-	@input("Edge") var edge = SType.Number;
-	@input("A") var x = SType.Number;
+	// @input("Edge") var edge = SType.Number;
+	// @input("A") var x = SType.Number;
 
-	public function new() {
-		super(Step);
-	}
+	// public function new() {
+	// 	super(Step);
+	// }
 
-	override public function computeOutputs() {
-		if (x != null && !x.isEmpty() && edge != null && !edge.isEmpty())
-			addOutput("output", edge.getVar(x.getType()).t);
-		else if (x != null && !x.isEmpty() )
-			addOutput("output", x.getType());
-		else if (edge != null && !edge.isEmpty())
-			addOutput("output", edge.getType());
-		else
-			removeOutput("output");
-	}
+	// override public function computeOutputs() {
+	// 	if (x != null && !x.isEmpty() && edge != null && !edge.isEmpty())
+	// 		addOutput("output", edge.getVar(x.getType()).t);
+	// 	else if (x != null && !x.isEmpty() )
+	// 		addOutput("output", x.getType());
+	// 	else if (edge != null && !edge.isEmpty())
+	// 		addOutput("output", edge.getType());
+	// 	else
+	// 		removeOutput("output");
+	// }
 
 }

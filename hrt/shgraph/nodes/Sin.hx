@@ -8,17 +8,17 @@ using hxsl.Ast;
 @group("Math")
 class Sin extends ShaderFunction {
 
-	@input("A") var a = SType.Float;
+	// @input("A") var a = SType.Float;
 
-	public function new() {
-		super(Sin);
-	}
+	// public function new() {
+	// 	super(Sin);
+	// }
 
-	override public function computeOutputs() {
-		if (a != null && !a.isEmpty())
-			addOutput("output", a.getType());
-		else
-			removeOutput("output");
-	}
+	// override public function computeOutputs() {
+	// 	if (a != null && !a.isEmpty())
+	// 		addOutput("output", a.getType());
+	// 	else
+	// 		removeOutput("output");
+	// }
 
 }

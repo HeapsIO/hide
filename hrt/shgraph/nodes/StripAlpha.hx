@@ -7,14 +7,14 @@ using hxsl.Ast;
 @group("Channel")
 class StripAlpha extends ShaderNode {
 
-	@input("RGBA") var input = SType.Vec4;
+	// @input("RGBA") var input = SType.Vec4;
 
 
 
-	override public function computeOutputs() {
-		addOutput("rgb", TVec(3, VFloat));
-		addOutput("a", TFloat);
-	}
+	// override public function computeOutputs() {
+	// 	addOutput("rgb", TVec(3, VFloat));
+	// 	addOutput("a", TFloat);
+	// }
 
 	// override public function build(key : String) : TExpr {
     //     if( key == "a" ) {

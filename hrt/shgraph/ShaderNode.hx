@@ -5,7 +5,6 @@ using hxsl.Ast;
 typedef InputInfo = { name : String, type : ShaderType.SType, hasProperty : Bool, isRequired : Bool, ?ids : Array<Int>, ?index : Int };
 typedef OutputInfo = { name : String, type : ShaderType.SType, ?id : Int };
 
-@:autoBuild(hrt.shgraph.ParseFieldsMacro.build())
 @:keepSub
 class ShaderNode {
 
@@ -43,32 +42,19 @@ class ShaderNode {
 		return map;
 	}
 
+	// TODO(ces) : caching
+	public function getInputs2() : Map<String, TVar> {
+		var def = getShaderDef();
+		var map : Map<String, TVar> = [];
+		for (tvar in def.inVars) {
+			map.set(tvar.name, tvar);
+		}
+		return map;
+	}
+
 
 	public function setId(id : Int) {
 		this.id = id;
-	}
-
-	public function setInput(key : String, s : NodeVar) {
-		if (s == null)
-				inputs.remove(key);
-		else
-			inputs.set(key, s);
-	}
-
-	public function getInput(key : String) : NodeVar {
-		return inputs.get(key);
-	}
-
-	public function getInputsKey() {
-		return [for (k in inputs.keys()) k ];
-	}
-
-	public function getInputs() {
-		return [for (k in inputs.keys()) inputs.get(k) ];
-	}
-
-	public function hasInputs() {
-		return inputs.keys().hasNext();
 	}
 
 
@@ -117,25 +103,20 @@ class ShaderNode {
 		throw "Build function not implemented";
 	}
 
-	public function checkTypeAndCompatibilyInput(key : String, type : ShaderType.SType) : Bool {
-		var infoKey = getInputInfo(key).type;
+	public function checkTypeAndCompatibilyInput(key : String, type : hxsl.Ast.Type) : Bool {
+		/*var infoKey = getInputs2()[key].type;
 		if (infoKey != null && !(ShaderType.checkConversion(type, infoKey))) {
 			return false;
 		}
-		return checkValidityInput(key, type);
-	}
-
-	public function checkValidityInput(key : String, type : ShaderType.SType) : Bool {
+		return checkValidityInput(key, type);*/
 		return true;
 	}
 
-	public function getInputInfoKeys() : Array<String> {
-		return [];
+	public function checkValidityInput(key : String, type : hxsl.Ast.Type) : Bool {
+		return true;
 	}
 
-	public function getInputInfo(key : String) : InputInfo {
-		return null;
-	}
+
 
 	// public function getOutputInfoKeys() : Array<String> {
 	// 	return [];

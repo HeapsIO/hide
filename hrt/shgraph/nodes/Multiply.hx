@@ -8,9 +8,9 @@ using hxsl.Ast;
 @group("Operation")
 class Multiply extends Operation {
 
-	public function new() {
-		super(OpMult);
-	}
+	// public function new() {
+	// 	super(OpMult);
+	// }
 
 	static var SRC = {
 		@sginput var a : Vec4;

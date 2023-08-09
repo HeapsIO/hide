@@ -465,13 +465,13 @@ class ShaderEditor extends hide.view.Graph {
 		updateMatrix();
 
 		for (node in shaderGraph.getNodes()) {
-			var shaderPreview = Std.downcast(node.instance, hrt.shgraph.nodes.Preview);
+			/*var shaderPreview = Std.downcast(node.instance, hrt.shgraph.nodes.Preview);
 			if (shaderPreview != null) {
 				shaderPreview.config = config;
 				shaderPreview.shaderGraph = shaderGraph;
 				addBox(new Point(node.x, node.y), std.Type.getClass(node.instance), shaderPreview);
 				continue;
-			}
+			}*/
 			var paramNode = Std.downcast(node.instance, ShaderParam);
 			if (paramNode != null) {
 				var paramShader = shaderGraph.getParameter(paramNode.parameterId);
@@ -518,38 +518,33 @@ class ShaderEditor extends hide.view.Graph {
 	}
 
 	function generateEdgesFromBox(box : Box) {
-		for (outputName => outputVar in box.getInstance().getOutputs2()) {
-			for (b in listOfBoxes) {
-				for (key in b.getInstance().getInputsKey()) {
-					var input = b.getInstance().getInput(key);
-					if (input != null && input.node.id == box.getId() && input.keyOutput == outputName) {
-						var nodeFrom = box.getElement().find('[field=${outputName}]');
-						var nodeTo = b.getElement().find('[field=${key}]');
-						edgeStyle.stroke = nodeFrom.css("fill");
-						createEdgeInEditorGraph({from: box, nodeFrom: nodeFrom, to : b, nodeTo: nodeTo, elt : createCurve(nodeFrom, nodeTo) });
-					}
-				}
-			}
 
+		for (b in listOfBoxes) {
+			for (inputName => connection in b.getInstance().inputs2) {
+				if (connection.from.id == box.getId()) {
+					var nodeFrom = box.getElement().find('[field=${connection.fromName}]');
+					var nodeTo = b.getElement().find('[field=${inputName}]');
+					edgeStyle.stroke = nodeFrom.css("fill");
+					createEdgeInEditorGraph({from: box, nodeFrom: nodeFrom, to : b, nodeTo: nodeTo, elt : createCurve(nodeFrom, nodeTo) });
+				}
+
+			}
 		}
 	}
 
 	function generateEdgesToBox(box : Box) {
-		for (key in box.getInstance().getInputsKey()) {
-			var input = box.getInstance().getInput(key);
-			if (input != null) {
-				var fromBox : Box = null;
-				for (boxFrom in listOfBoxes) {
-					if (boxFrom.getId() == input.node.id) {
-						fromBox = boxFrom;
-						break;
-					}
+		for (inputName => connection in box.getInstance().inputs2) {
+			var fromBox : Box = null;
+			for (boxFrom in listOfBoxes) {
+				if (boxFrom.getId() == connection.from.id) {
+					fromBox = boxFrom;
+					break;
 				}
-				var nodeFrom = fromBox.getElement().find('[field=${input.getKey()}]');
-				var nodeTo = box.getElement().find('[field=${key}]');
-				edgeStyle.stroke = nodeFrom.css("fill");
-				createEdgeInEditorGraph({from: fromBox, nodeFrom: nodeFrom, to : box, nodeTo: nodeTo, elt : createCurve(nodeFrom, nodeTo) });
 			}
+			var nodeFrom = fromBox.getElement().find('[field=${connection.fromName}]');
+			var nodeTo = box.getElement().find('[field=${inputName}]');
+			edgeStyle.stroke = nodeFrom.css("fill");
+			createEdgeInEditorGraph({from: fromBox, nodeFrom: nodeFrom, to : box, nodeTo: nodeTo, elt : createCurve(nodeFrom, nodeTo) });
 		}
 	}
 
@@ -963,10 +958,10 @@ class ShaderEditor extends hide.view.Graph {
 		var param = shaderGraph.getParameter(id);
 		setParamValueByName(currentShader, param.name, param.defaultValue);
 		for (b in listOfBoxes) {
-			var previewBox = Std.downcast(b.getInstance(), hrt.shgraph.nodes.Preview);
+			/*var previewBox = Std.downcast(b.getInstance(), hrt.shgraph.nodes.Preview);
 			if (previewBox != null) {
 				previewBox.setParamValueByName(param.variable.name, param.defaultValue);
-			}
+			}*/
 		}
 	}
 
@@ -987,12 +982,12 @@ class ShaderEditor extends hide.view.Graph {
 	function initSpecifics(node : Null<ShaderNode>) {
 		if( node == null )
 			return;
-		var shaderPreview = Std.downcast(node, hrt.shgraph.nodes.Preview);
+		/*var shaderPreview = Std.downcast(node, hrt.shgraph.nodes.Preview);
 		if (shaderPreview != null) {
 			shaderPreview.config = config;
 			shaderPreview.shaderGraph = shaderGraph;
 			return;
-		}
+		}*/
 		var subGraphNode = Std.downcast(node, hrt.shgraph.nodes.SubGraph);
 		if (subGraphNode != null) {
 			subGraphNode.loadGraphShader();
@@ -1558,19 +1553,19 @@ class ShaderEditor extends hide.view.Graph {
 
 	override function updatePosition(box : Box) {
 		var previewBox = Std.downcast(box.getInstance(), hrt.shgraph.nodes.Preview);
-		if (previewBox != null){
+		/*if (previewBox != null){
 			previewBox.onMove(gX(box.getX()), gY(box.getY()), transformMatrix[0]);
-		}
+		}*/
 		shaderGraph.setPosition(box.getId(), box.getX(), box.getY());
 	}
 
 	override function updateMatrix() {
 		super.updateMatrix();
 		for (b in listOfBoxes) {
-			var previewBox = Std.downcast(b.getInstance(), hrt.shgraph.nodes.Preview);
+			/*var previewBox = Std.downcast(b.getInstance(), hrt.shgraph.nodes.Preview);
 			if (previewBox != null){
 				previewBox.onMove(gX(b.getX()), gY(b.getY()), transformMatrix[0]);
-			}
+			}*/
 		}
 	}
 

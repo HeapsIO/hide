@@ -9,17 +9,17 @@ using hxsl.Ast;
 @:keep
 class Sqrt extends ShaderFunction {
 
-	@input("A") var a = SType.Number;
+	// @input("A") var a = SType.Number;
 
-	public function new() {
-		super(Sqrt);
-	}
+	// public function new() {
+	// 	super(Sqrt);
+	// }
 
-	override public function computeOutputs() {
-		if (a != null && !a.isEmpty())
-			addOutput("output", a.getType());
-		else
-			removeOutput("output");
-	}
+	// override public function computeOutputs() {
+	// 	if (a != null && !a.isEmpty())
+	// 		addOutput("output", a.getType());
+	// 	else
+	// 		removeOutput("output");
+	// }
 
 }

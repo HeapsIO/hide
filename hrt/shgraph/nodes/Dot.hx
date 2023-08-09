@@ -8,14 +8,14 @@ using hxsl.Ast;
 @group("Math")
 class Dot extends ShaderFunction {
 
-	@input("A") var a = SType.Number;
-	@input("B") var b = SType.Number;
+	// @input("A") var a = SType.Number;
+	// @input("B") var b = SType.Number;
 
-	public function new() {
-		super(Dot);
-	}
+	// public function new() {
+	// 	super(Dot);
+	// }
 
-	override public function computeOutputs() {
-		addOutput("output", TFloat);
-	}
+	// override public function computeOutputs() {
+	// 	addOutput("output", TFloat);
+	// }
 }

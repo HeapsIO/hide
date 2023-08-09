@@ -8,17 +8,17 @@ using hxsl.Ast;
 @group("Math")
 class Fract extends ShaderFunction {
 
-	@input("X") var x = SType.Number;
+	// @input("X") var x = SType.Number;
 
-	public function new() {
-		super(Fract);
-	}
+	// public function new() {
+	// 	super(Fract);
+	// }
 
-	override public function computeOutputs() {
-		if (x != null && !x.isEmpty())
-			addOutput("output", x.getType());
-		else
-			removeOutput("output");
-	}
+	// override public function computeOutputs() {
+	// 	if (x != null && !x.isEmpty())
+	// 		addOutput("output", x.getType());
+	// 	else
+	// 		removeOutput("output");
+	// }
 
 }

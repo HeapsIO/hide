@@ -6,19 +6,13 @@ using hxsl.Ast;
 @description("The output is the arc tangent of A")
 @width(80)
 @group("Math")
-class Atan extends ShaderFunction {
+class Atan extends ShaderNodeHxsl {
 
-	@input("A") var a = SType.Float;
-
-	public function new() {
-		super(Atan);
-	}
-
-	override public function computeOutputs() {
-		if (a != null && !a.isEmpty())
-			addOutput("output", a.getType());
-		else
-			removeOutput("output");
-	}
-
+	static var SRC = {
+		@sginput var a : Vec4;
+		@sgoutput var output : Vec4;
+		function fragment() {
+			output = atan(a);
+		}
+	};
 }

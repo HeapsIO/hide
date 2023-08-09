@@ -8,21 +8,21 @@ using hxsl.Ast;
 @group("Math")
 class Max extends ShaderFunction {
 
-	@input("A") var a = SType.Number;
-	@input("B") var b = SType.Number;
+	// @input("A") var a = SType.Number;
+	// @input("B") var b = SType.Number;
 
-	public function new() {
-		super(Max);
-	}
+	// public function new() {
+	// 	super(Max);
+	// }
 
-	override public function computeOutputs() {
-		if (a != null && !a.isEmpty())
-			addOutput("output", a.getType());
-		else if (b != null && !b.isEmpty())
-			addOutput("output", b.getType());
-		else
-			removeOutput("output");
-	}
+	// override public function computeOutputs() {
+	// 	if (a != null && !a.isEmpty())
+	// 		addOutput("output", a.getType());
+	// 	else if (b != null && !b.isEmpty())
+	// 		addOutput("output", b.getType());
+	// 	else
+	// 		removeOutput("output");
+	// }
 
 
 }

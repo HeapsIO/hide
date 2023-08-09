@@ -262,21 +262,15 @@ class Graph extends FileView {
 		});
 		listOfBoxes.push(box);
 
-		for (inputKey in box.getInstance().getInputInfoKeys()) {
-			var inputInfo = box.getInstance().getInputInfo(inputKey);
-
-			if (inputInfo == null) {
-				trace(inputKey);
-			}
-
+		for (inputName => inputVar in box.getInstance().getInputs2()) {
 			var defaultValue = null;
-			if (inputInfo.hasProperty) {
-				defaultValue = Reflect.field(box.getInstance(), 'prop_${inputKey}');
+			/*if (inputInfo.hasProperty) {
+				defaultValue = Reflect.field(box.getInstance(), 'prop_${inputName => inputVar}');
 				if (defaultValue == null) {
 					defaultValue = "0";
 				}
-			}
-			var grNode = box.addInput(editor, inputInfo.name, defaultValue, inputInfo.type);
+			}*/
+			var grNode = box.addInput(editor, inputName, defaultValue, inputVar.type);
 			if (defaultValue != null) {
 				var fieldEditInput = grNode.find("input");
 				fieldEditInput.on("change", function(ev) {
@@ -284,13 +278,13 @@ class Graph extends FileView {
 					if (Math.isNaN(tmpValue) ) {
 						fieldEditInput.addClass("error");
 					} else {
-						Reflect.setField(box.getInstance(), 'prop_${inputKey}', tmpValue);
+						Reflect.setField(box.getInstance(), 'prop_${inputName}', tmpValue);
 						fieldEditInput.val(tmpValue);
 						fieldEditInput.removeClass("error");
 					}
 				});
 			}
-			grNode.find(".node").attr("field", inputKey);
+			grNode.find(".node").attr("field", inputName);
 			grNode.on("mousedown", function(e : js.jquery.Event) {
 				e.stopPropagation();
 				var node = grNode.find(".node");
@@ -384,11 +378,10 @@ class Graph extends FileView {
 	function setAvailableInputNodes(boxOutput : Box, field : String) {
 		var type = boxOutput.getInstance().getOutputs2()[field].type;
 		var sType : SType;
-		sType = ShaderType.getSType(type);
 
 		for (box in listOfBoxes) {
 			for (input in box.inputs) {
-				if (box.getInstance().checkTypeAndCompatibilyInput(input.attr("field"), sType)) {
+				if (box.getInstance().checkTypeAndCompatibilyInput(input.attr("field"), type)) {
 					input.addClass("nodeMatch");
 				}
 			}
@@ -401,7 +394,7 @@ class Graph extends FileView {
 				var outputField = output.attr("field");
 				var type = box.getInstance().getOutputs2()[outputField].type;
 				var sType = ShaderType.getSType(type);
-				if (boxInput.getInstance().checkTypeAndCompatibilyInput(field, sType)) {
+				if (boxInput.getInstance().checkTypeAndCompatibilyInput(field, type)) {
 					output.addClass("nodeMatch");
 				}
 			}

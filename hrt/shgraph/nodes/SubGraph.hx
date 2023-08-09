@@ -129,14 +129,6 @@ class SubGraph extends ShaderNode {
 		}
 	}
 
-	override public function getInputInfo(key : String) : ShaderNode.InputInfo {
-		return inputsInfo.get(key);
-	}
-
-	override public function getInputInfoKeys() : Array<String> {
-		return inputInfoKeys;
-	}
-
 	// override public function getOutputInfo(key : String) : ShaderNode.OutputInfo {
 	// 	return outputsInfo.get(key);
 	// }

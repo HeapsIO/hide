@@ -10,8 +10,8 @@ using hxsl.Ast;
 @group("Channel")
 class CombineAlpha extends ShaderNode {
 
-	@input("RGB") var rgb = SType.Vec3;
-	@input("A", true) var a = SType.Float;
+	// @input("RGB") var rgb = SType.Vec3;
+	// @input("A", true) var a = SType.Float;
 
 
 	// override public function computeOutputs() {

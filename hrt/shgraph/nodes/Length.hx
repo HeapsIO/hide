@@ -8,17 +8,17 @@ using hxsl.Ast;
 @group("Math")
 class Length extends ShaderFunction {
 
-	@input("A") var a = SType.Vec2;
+	// @input("A") var a = SType.Vec2;
 
-	public function new() {
-		super(Length);
-	}
+	// public function new() {
+	// 	super(Length);
+	// }
 
-	override public function computeOutputs() {
-		if (a != null && !a.isEmpty())
-			addOutput("output", TFloat);
-		else
-			removeOutput("output");
-	}
+	// override public function computeOutputs() {
+	// 	if (a != null && !a.isEmpty())
+	// 		addOutput("output", TFloat);
+	// 	else
+	// 		removeOutput("output");
+	// }
 
 }

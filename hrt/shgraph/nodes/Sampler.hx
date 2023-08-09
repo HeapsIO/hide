@@ -7,21 +7,21 @@ using hxsl.Ast;
 @group("Property")
 class Sampler extends ShaderNode {
 
-	@input("Texture") var texture = SType.Sampler;
-	@input("UV") var uv = SType.Vec2;
+	// @input("Texture") var texture = SType.Sampler;
+	// @input("UV") var uv = SType.Vec2;
 
 
 
-	var components = [X, Y, Z, W];
-	var componentsString = ["r", "g", "b", "a"];
+	// var components = [X, Y, Z, W];
+	// var componentsString = ["r", "g", "b", "a"];
 
-	override public function computeOutputs() {
-		addOutput("rgba", TVec(4, VFloat));
-		addOutput("r", TFloat);
-		addOutput("g", TFloat);
-		addOutput("b", TFloat);
-		addOutput("a", TFloat);
-	}
+	// override public function computeOutputs() {
+	// 	addOutput("rgba", TVec(4, VFloat));
+	// 	addOutput("r", TFloat);
+	// 	addOutput("g", TFloat);
+	// 	addOutput("b", TFloat);
+	// 	addOutput("a", TFloat);
+	// }
 
 	// override public function build(key : String) : TExpr {
 	// 	if (key == "rgba") {

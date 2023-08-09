@@ -140,16 +140,9 @@ class ShaderGraph {
 		if (!output.instance.getOutputs2().exists(edge.nameOutput)) {
 			return false;
 		}
-		node.instance.setInput(edge.nameInput, new NodeVar(output.instance, edge.nameOutput));
-		output.outputs.push(node);
-
-		// pas du tout envie de mourrir
-
-		var toGen = node.instance.getShaderDef();
-		var toName = toGen.inVars[node.instance.getInputInfoKeys().indexOf(edge.nameInput)].name;
 
 		var connection : Connection = {from: output, fromName: edge.nameOutput};
-		node.instance.inputs2.set(toName, connection);
+		node.instance.inputs2.set(edge.nameInput, connection);
 
 		#if editor
 		if (hasCycle()){
@@ -182,13 +175,9 @@ class ShaderGraph {
 
 	public function removeEdge(idNode, nameInput, update = true) {
 		var node = this.nodes.get(idNode);
-		this.nodes.get(node.instance.getInput(nameInput).node.id).outputs.remove(node);
-		node.instance.setInput(nameInput, null);
+		this.nodes.get(node.instance.inputs2[nameInput].from.id).outputs.remove(node);
 
-		var toGen = node.instance.getShaderDef();
-		var toName = toGen.inVars[node.instance.getInputInfoKeys().indexOf(nameInput)].name;
-
-		node.instance.inputs2.remove(toName);
+		node.instance.inputs2.remove(nameInput);
 		if (update) {
 			updateOutputs(node);
 		}
@@ -546,8 +535,8 @@ class ShaderGraph {
 			var node = queue[currentIndex];
 			currentIndex++;
 
-			for (input in node.instance.getInputs()) {
-				var nodeInput = nodes.get(input.node.id);
+			for (connection in node.instance.inputs2) {
+				var nodeInput = connection.from;
 				nodeInput.indegree -= 1;
 				if (nodeInput.indegree == 0) {
 					queue.push(nodeInput);
@@ -616,9 +605,8 @@ class ShaderGraph {
 	public function save() {
 		var edgesJson : Array<Edge> = [];
 		for (n in nodes) {
-			for (k in n.instance.getInputsKey()) {
-				var output =  n.instance.getInput(k);
-				edgesJson.push({ idOutput: output.node.id, nameOutput: output.keyOutput, idInput: n.id, nameInput: k });
+			for (inputName => connection in n.instance.inputs2) {
+				edgesJson.push({ idOutput: connection.from.id, nameOutput: connection.fromName, idInput: n.id, nameInput: inputName });
 			}
 		}
 		var json = haxe.Json.stringify({

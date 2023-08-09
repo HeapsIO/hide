@@ -8,17 +8,17 @@ using hxsl.Ast;
 @group("Math")
 class Cos extends ShaderFunction {
 
-	@input("A") var a = SType.Float;
+	// @input("A") var a = SType.Float;
 
-	public function new() {
-		super(Cos);
-	}
+	// public function new() {
+	// 	super(Cos);
+	// }
 
-	override public function computeOutputs() {
-		if (a != null && !a.isEmpty())
-			addOutput("output", a.getType());
-		else
-			removeOutput("output");
-	}
+	// override public function computeOutputs() {
+	// 	if (a != null && !a.isEmpty())
+	// 		addOutput("output", a.getType());
+	// 	else
+	// 		removeOutput("output");
+	// }
 
 }

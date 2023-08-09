@@ -8,8 +8,8 @@ using hxsl.Ast;
 @group("Operation")
 class Divide extends Operation {
 
-	public function new() {
-		super(OpDiv);
-	}
+	// public function new() {
+	// 	super(OpDiv);
+	// }
 
 }

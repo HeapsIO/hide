@@ -8,17 +8,17 @@ using hxsl.Ast;
 @group("Math")
 class Saturate extends ShaderFunction {
 
-	@input("X") var x = SType.Number;
+	// @input("X") var x = SType.Number;
 
-	public function new() {
-		super(Saturate);
-	}
+	// public function new() {
+	// 	super(Saturate);
+	// }
 
-	override public function computeOutputs() {
-		if (x != null && !x.isEmpty())
-			addOutput("output", x.getType());
-		else
-			removeOutput("output");
-	}
+	// override public function computeOutputs() {
+	// 	if (x != null && !x.isEmpty())
+	// 		addOutput("output", x.getType());
+	// 	else
+	// 		removeOutput("output");
+	// }
 
 }

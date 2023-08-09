@@ -8,17 +8,17 @@ using hxsl.Ast;
 @group("Math")
 class UvToScreen extends ShaderFunction {
 
-	@input("UV") var uv = SType.Vec2;
+	// @input("UV") var uv = SType.Vec2;
 
-	public function new() {
-		super(UvToScreen);
-	}
+	// public function new() {
+	// 	super(UvToScreen);
+	// }
 
-	override public function computeOutputs() {
-		if (uv != null && !uv.isEmpty())
-			addOutput("output", uv.getType());
-		else
-			removeOutput("output");
-	}
+	// override public function computeOutputs() {
+	// 	if (uv != null && !uv.isEmpty())
+	// 		addOutput("output", uv.getType());
+	// 	else
+	// 		removeOutput("output");
+	// }
 
 }

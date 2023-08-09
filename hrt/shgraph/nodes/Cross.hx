@@ -8,21 +8,21 @@ using hxsl.Ast;
 @group("Math")
 class Cross extends ShaderFunction {
 
-	@input("A") var a = SType.Number;
-	@input("B") var b = SType.Number;
+	// @input("A") var a = SType.Number;
+	// @input("B") var b = SType.Number;
 
-	public function new() {
-		super(Cross);
-	}
+	// public function new() {
+	// 	super(Cross);
+	// }
 
-	override public function computeOutputs() {
-		if (a != null && !a.isEmpty() && b != null && !b.isEmpty())
-			addOutput("output", a.getVar(b.getType()).t);
-		else if (a != null && !a.isEmpty() )
-			addOutput("output", a.getType());
-		else if (b != null && !b.isEmpty())
-			addOutput("output", b.getType());
-		else
-			removeOutput("output");
-	}
+	// override public function computeOutputs() {
+	// 	if (a != null && !a.isEmpty() && b != null && !b.isEmpty())
+	// 		addOutput("output", a.getVar(b.getType()).t);
+	// 	else if (a != null && !a.isEmpty() )
+	// 		addOutput("output", a.getType());
+	// 	else if (b != null && !b.isEmpty())
+	// 		addOutput("output", b.getType());
+	// 	else
+	// 		removeOutput("output");
+	// }
 }

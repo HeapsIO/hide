@@ -8,17 +8,17 @@ using hxsl.Ast;
 @group("Channel")
 class UnpackNormal extends ShaderFunction {
 
-	@input("normal") var normal = SType.Vec4;
+	// @input("normal") var normal = SType.Vec4;
 
-	public function new() {
-		super(UnpackNormal);
-	}
+	// public function new() {
+	// 	super(UnpackNormal);
+	// }
 
-	override public function computeOutputs() {
-		if (normal != null && !normal.isEmpty())
-			addOutput("output", TVec(3, VFloat));
-		else
-			removeOutput("output");
-	}
+	// override public function computeOutputs() {
+	// 	if (normal != null && !normal.isEmpty())
+	// 		addOutput("output", TVec(3, VFloat));
+	// 	else
+	// 		removeOutput("output");
+	// }
 
 }

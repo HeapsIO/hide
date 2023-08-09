@@ -8,17 +8,17 @@ using hxsl.Ast;
 @group("Math")
 class Pow extends ShaderFunction {
 
-	@input("X") var x = SType.Number;
-	@input("P", true) var p = SType.Number;
+	// @input("X") var x = SType.Number;
+	// @input("P", true) var p = SType.Number;
 
-	public function new() {
-		super(Pow);
-	}
+	// public function new() {
+	// 	super(Pow);
+	// }
 
-	override public function computeOutputs() {
-		if (x != null && !x.isEmpty())
-			addOutput("output", x.getType());
-		else
-			removeOutput("output");
-	}
+	// override public function computeOutputs() {
+	// 	if (x != null && !x.isEmpty())
+	// 		addOutput("output", x.getType());
+	// 	else
+	// 		removeOutput("output");
+	// }
 }

@@ -10,10 +10,10 @@ using hxsl.Ast;
 @group("Channel")
 class Combine extends ShaderNode {
 
-	@input("R", false, false) var r = SType.Float;
-	@input("G", false, false) var g = SType.Float;
-	@input("B", false, false) var b = SType.Float;
-	@input("A", false, false) var a = SType.Float;
+	// @input("R", false, false) var r = SType.Float;
+	// @input("G", false, false) var g = SType.Float;
+	// @input("B", false, false) var b = SType.Float;
+	// @input("A", false, false) var a = SType.Float;
 
 
 	var components = [X, Y, Z, W];

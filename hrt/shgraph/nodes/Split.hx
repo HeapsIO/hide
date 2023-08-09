@@ -7,18 +7,18 @@ using hxsl.Ast;
 @group("Channel")
 class Split extends ShaderNode {
 
-	@input("RGBA") var input = SType.Vec4;
+	// @input("RGBA") var input = SType.Vec4;
 
 
-	var components = [X, Y, Z, W];
-	var componentsString = ["r", "g", "b", "a"];
+	// var components = [X, Y, Z, W];
+	// var componentsString = ["r", "g", "b", "a"];
 
-	override public function computeOutputs() {
-		addOutput("r", TFloat);
-		addOutput("g", TFloat);
-		addOutput("b", TFloat);
-		addOutput("a", TFloat);
-	}
+	// override public function computeOutputs() {
+	// 	addOutput("r", TFloat);
+	// 	addOutput("g", TFloat);
+	// 	addOutput("b", TFloat);
+	// 	addOutput("a", TFloat);
+	// }
 
 	// override public function build(key : String) : TExpr {
 	// 	var compIdx = componentsString.indexOf(key);
