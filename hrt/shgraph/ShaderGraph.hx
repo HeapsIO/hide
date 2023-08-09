@@ -137,26 +137,19 @@ class ShaderGraph {
 	public function addEdge(edge : Edge) {
 		var node = this.nodes.get(edge.idInput);
 		var output = this.nodes.get(edge.idOutput);
+		if (!output.instance.getOutputs2().exists(edge.nameOutput)) {
+			return false;
+		}
 		node.instance.setInput(edge.nameInput, new NodeVar(output.instance, edge.nameOutput));
 		output.outputs.push(node);
 
 		// pas du tout envie de mourrir
-		var fromGen = output.instance.getShaderDef();
-		var fromName = fromGen.outVars[output.instance.getOutputInfoKeys().indexOf(edge.nameOutput)].name;
 
 		var toGen = node.instance.getShaderDef();
 		var toName = toGen.inVars[node.instance.getInputInfoKeys().indexOf(edge.nameInput)].name;
 
-		var connection : Connection = {from: output, fromName: fromName};
+		var connection : Connection = {from: output, fromName: edge.nameOutput};
 		node.instance.inputs2.set(toName, connection);
-
-		var subShaderIn = Std.downcast(node.instance, hrt.shgraph.nodes.SubGraph);
-		var subShaderOut = Std.downcast(output.instance, hrt.shgraph.nodes.SubGraph);
-		if( @:privateAccess ((subShaderIn != null) && !subShaderIn.inputInfoKeys.contains(edge.nameInput))
-			|| @:privateAccess ((subShaderOut != null) && !subShaderOut.outputInfoKeys.contains(edge.nameOutput))
-		) {
-			removeEdge(edge.idInput, edge.nameInput, false);
-		}
 
 		#if editor
 		if (hasCycle()){

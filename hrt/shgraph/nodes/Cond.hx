@@ -10,7 +10,6 @@ class Cond extends ShaderNode {
 	@input("Left") var leftVar = SType.Number;
 	@input("Right") var rightVar = SType.Number;
 
-	@output("Boolean") var output = SType.Bool;
 
 	@prop() var condition : Binop;
 
@@ -25,36 +24,36 @@ class Cond extends ShaderNode {
 		return true;
 	}
 
-	override public function computeOutputs() {
-		if (leftVar != null && !leftVar.isEmpty() && rightVar != null && !rightVar.isEmpty()) {
-			var type = leftVar.getVar(rightVar.getType()).t;
-			switch(type) {
-				case TVec(s, t):
-					removeOutput("output");
-					throw ShaderException.t("Vector of bools is not supported", this.id); //addOutput("output", TVec(s, VBool));
-				case TFloat:
-					addOutput("output", TBool);
-				default:
-					removeOutput("output");
-			}
-		} else
-			removeOutput("output");
-	}
+	// override public function computeOutputs() {
+	// 	if (leftVar != null && !leftVar.isEmpty() && rightVar != null && !rightVar.isEmpty()) {
+	// 		var type = leftVar.getVar(rightVar.getType()).t;
+	// 		switch(type) {
+	// 			case TVec(s, t):
+	// 				removeOutput("output");
+	// 				throw ShaderException.t("Vector of bools is not supported", this.id); //addOutput("output", TVec(s, VBool));
+	// 			case TFloat:
+	// 				addOutput("output", TBool);
+	// 			default:
+	// 				removeOutput("output");
+	// 		}
+	// 	} else
+	// 		removeOutput("output");
+	// }
 
-	override public function build(key : String) : TExpr {
-		return {
-				p : null,
-				t : output.type,
-				e : TBinop(OpAssign, {
-						e: TVar(output),
-						p: null,
-						t: output.type
-					}, {e: TBinop(this.condition,
-							leftVar.getVar(rightVar.getType()),
-							rightVar.getVar(leftVar.getType())),
-						p: null, t: output.type })
-			};
-	}
+	// override public function build(key : String) : TExpr {
+	// 	return {
+	// 			p : null,
+	// 			t : output.type,
+	// 			e : TBinop(OpAssign, {
+	// 					e: TVar(output),
+	// 					p: null,
+	// 					t: output.type
+	// 				}, {e: TBinop(this.condition,
+	// 						leftVar.getVar(rightVar.getType()),
+	// 						rightVar.getVar(leftVar.getType())),
+	// 					p: null, t: output.type })
+	// 		};
+	// }
 
 	var availableConditions = [OpEq, OpNotEq, OpGt, OpGte, OpLt, OpLte, OpAnd, OpOr];
 	var conditionStrings 	= ["==", "!=",    ">",  ">=",  "<",  "<=",  "AND", "OR"];

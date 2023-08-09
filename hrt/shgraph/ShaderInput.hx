@@ -8,17 +8,16 @@ using hxsl.Ast;
 @color("#0e8826")
 class ShaderInput extends ShaderNode {
 
-	@output() var output = SType.Variant;
 
 	@prop("Variable") public var variable : TVar;
 
-	override public function getOutput(key : String) : TVar {
-		return variable;
-	}
+	// override public function getOutput(key : String) : TVar {
+	// 	return variable;
+	// }
 
-	override public function build(key : String) : TExpr {
-		return null;
-	}
+	// override public function build(key : String) : TExpr {
+	// 	return null;
+	// }
 
 	public static var availableInputs : Array<TVar> = [
 									{ parent: null, id: 0, kind: Input, name: "position", type: TVec(3, VFloat) },

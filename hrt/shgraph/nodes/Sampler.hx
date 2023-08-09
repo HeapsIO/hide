@@ -10,11 +10,7 @@ class Sampler extends ShaderNode {
 	@input("Texture") var texture = SType.Sampler;
 	@input("UV") var uv = SType.Vec2;
 
-	@output("RGBA") var rgba = SType.Vec4;
-	@output("R") var r = SType.Float;
-	@output("G") var g = SType.Float;
-	@output("B") var b = SType.Float;
-	@output("A") var a = SType.Float;
+
 
 	var components = [X, Y, Z, W];
 	var componentsString = ["r", "g", "b", "a"];
@@ -27,72 +23,72 @@ class Sampler extends ShaderNode {
 		addOutput("a", TFloat);
 	}
 
-	override public function build(key : String) : TExpr {
-		if (key == "rgba") {
-			var args = [];
-			var varArgs = [];
+	// override public function build(key : String) : TExpr {
+	// 	if (key == "rgba") {
+	// 		var args = [];
+	// 		var varArgs = [];
 
-			for (k in getInputInfoKeys()) {
-				args.push({ name: k, type: getInput(k).getType() });
-				var wantedType = ShaderType.getType(getInputInfo(k).type);
-				varArgs.push(getInput(k).getVar((wantedType != null) ? wantedType : null));
-			}
+	// 		for (k in getInputInfoKeys()) {
+	// 			args.push({ name: k, type: getInput(k).getType() });
+	// 			var wantedType = ShaderType.getType(getInputInfo(k).type);
+	// 			varArgs.push(getInput(k).getVar((wantedType != null) ? wantedType : null));
+	// 		}
 
-			return {
-						p : null,
-						t : rgba.type,
-						e : TBinop(OpAssign, {
-							e: TVar(rgba),
-							p: null,
-							t: rgba.type
-						}, {
-							e: TCall({
-								e: TGlobal(Texture),
-								p: null,
-								t: TFun([
-									{
-										ret: rgba.type,
-										args: args
-									}
-								])
-							}, varArgs),
-							p: null,
-							t: rgba.type
-						})
-					};
-		} else {
-			var arrayExpr = [];
-			if (!outputCompiled.get("rgba")) {
-				arrayExpr.push({ e : TVarDecl(rgba), t : rgba.type, p : null });
-				arrayExpr.push(build("rgba"));
-				outputCompiled.set("rgba", true);
-			}
-			var compIdx = componentsString.indexOf(key);
-			arrayExpr.push({ e: TBinop(OpAssign, {
-						e: TVar(getOutput(key)),
-						p: null,
-						t: getOutput(key).type
-					}, {e: TSwiz({
-							e: TVar(rgba),
-							p: null,
-							t: rgba.type
-						},
-						[components[compIdx]]),
-						p: null,
-						t: getOutput(key).type }),
-					p: null,
-					t: getOutput(key).type
-				});
-			if (arrayExpr.length > 1) {
-				return {
-					p : null,
-					t : TVoid,
-					e : TBlock(arrayExpr)
-				};
-			} else {
-				return arrayExpr[0];
-			}
-		}
-	}
+	// 		return {
+	// 					p : null,
+	// 					t : rgba.type,
+	// 					e : TBinop(OpAssign, {
+	// 						e: TVar(rgba),
+	// 						p: null,
+	// 						t: rgba.type
+	// 					}, {
+	// 						e: TCall({
+	// 							e: TGlobal(Texture),
+	// 							p: null,
+	// 							t: TFun([
+	// 								{
+	// 									ret: rgba.type,
+	// 									args: args
+	// 								}
+	// 							])
+	// 						}, varArgs),
+	// 						p: null,
+	// 						t: rgba.type
+	// 					})
+	// 				};
+	// 	} else {
+	// 		var arrayExpr = [];
+	// 		if (!outputCompiled.get("rgba")) {
+	// 			arrayExpr.push({ e : TVarDecl(rgba), t : rgba.type, p : null });
+	// 			arrayExpr.push(build("rgba"));
+	// 			outputCompiled.set("rgba", true);
+	// 		}
+	// 		var compIdx = componentsString.indexOf(key);
+	// 		arrayExpr.push({ e: TBinop(OpAssign, {
+	// 					e: TVar(getOutput(key)),
+	// 					p: null,
+	// 					t: getOutput(key).type
+	// 				}, {e: TSwiz({
+	// 						e: TVar(rgba),
+	// 						p: null,
+	// 						t: rgba.type
+	// 					},
+	// 					[components[compIdx]]),
+	// 					p: null,
+	// 					t: getOutput(key).type }),
+	// 				p: null,
+	// 				t: getOutput(key).type
+	// 			});
+	// 		if (arrayExpr.length > 1) {
+	// 			return {
+	// 				p : null,
+	// 				t : TVoid,
+	// 				e : TBlock(arrayExpr)
+	// 			};
+	// 		} else {
+	// 			return arrayExpr[0];
+	// 		}
+	// 	}
+	// }
 
 }

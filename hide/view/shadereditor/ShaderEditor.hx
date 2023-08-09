@@ -518,21 +518,19 @@ class ShaderEditor extends hide.view.Graph {
 	}
 
 	function generateEdgesFromBox(box : Box) {
-		for (outputKey in box.getInstance().getOutputInfoKeys()) {
-			var output = box.getInstance().getOutput(outputKey);
-			if (output != null) {
-				for (b in listOfBoxes) {
-					for (key in b.getInstance().getInputsKey()) {
-						var input = b.getInstance().getInput(key);
-						if (input != null && input.node.id == box.getId() && input.keyOutput == outputKey) {
-							var nodeFrom = box.getElement().find('[field=${outputKey}]');
-							var nodeTo = b.getElement().find('[field=${key}]');
-							edgeStyle.stroke = nodeFrom.css("fill");
-							createEdgeInEditorGraph({from: box, nodeFrom: nodeFrom, to : b, nodeTo: nodeTo, elt : createCurve(nodeFrom, nodeTo) });
-						}
+		for (outputName => outputVar in box.getInstance().getOutputs2()) {
+			for (b in listOfBoxes) {
+				for (key in b.getInstance().getInputsKey()) {
+					var input = b.getInstance().getInput(key);
+					if (input != null && input.node.id == box.getId() && input.keyOutput == outputName) {
+						var nodeFrom = box.getElement().find('[field=${outputName}]');
+						var nodeTo = b.getElement().find('[field=${key}]');
+						edgeStyle.stroke = nodeFrom.css("fill");
+						createEdgeInEditorGraph({from: box, nodeFrom: nodeFrom, to : b, nodeTo: nodeTo, elt : createCurve(nodeFrom, nodeTo) });
 					}
 				}
 			}
+
 		}
 	}
 

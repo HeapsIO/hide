@@ -137,13 +137,13 @@ class SubGraph extends ShaderNode {
 		return inputInfoKeys;
 	}
 
-	override public function getOutputInfo(key : String) : ShaderNode.OutputInfo {
-		return outputsInfo.get(key);
-	}
+	// override public function getOutputInfo(key : String) : ShaderNode.OutputInfo {
+	// 	return outputsInfo.get(key);
+	// }
 
-	override public function getOutputInfoKeys() : Array<String> {
-		return outputInfoKeys;
-	}
+	// override public function getOutputInfoKeys() : Array<String> {
+	// 	return outputInfoKeys;
+	// }
 
 	override public function loadProperties(props : Dynamic) {
 		this.pathShaderGraph = Reflect.field(props, "pathShaderGraph");

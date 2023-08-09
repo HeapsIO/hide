@@ -7,7 +7,6 @@ using hxsl.Ast;
 @color("#d6d6d6")
 class ShaderParam extends ShaderNode {
 
-	@output() var output = SType.Variant;
 
 	@prop() public var parameterId : Int;
 	@prop() public var perInstance : Bool;
@@ -33,9 +32,6 @@ class ShaderParam extends ShaderNode {
 			removeOutput("output");
 	}
 
-	override public function getOutput(key : String) : TVar {
-		return variable;
-	}
 
 	override public function loadProperties(props : Dynamic) {
 		parameterId = Reflect.field(props, "parameterId");

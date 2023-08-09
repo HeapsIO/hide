@@ -27,11 +27,22 @@ class ShaderNode {
 	}
 
 	var inputs : Map<String, NodeVar> = [];
-	var outputs : Map<String, TVar> = [];
+	// var outputs : Map<String, TVar> = [];
 
 	public var inputs2 : Map<String, ShaderGraph.Connection> = [];
 
 	public var outputCompiled : Map<String, Bool> = []; // todo: put with outputs variable
+
+	// TODO(ces) : caching
+	public function getOutputs2() : Map<String, TVar> {
+		var def = getShaderDef();
+		var map : Map<String, TVar> = [];
+		for (tvar in def.outVars) {
+			map.set(tvar.name, tvar);
+		}
+		return map;
+	}
+
 
 	public function setId(id : Int) {
 		this.id = id;
@@ -60,46 +71,47 @@ class ShaderNode {
 		return inputs.keys().hasNext();
 	}
 
+
 	function addOutput(key : String, t : Type) {
-		outputs.set(key, { parent: null,
+		/*outputs.set(key, { parent: null,
 			id: 0,
 			kind: Local,
 			name: "output_" + id + "_" + key,
 			type: t
-		});
+		});*/
 	}
 
 	function removeOutput(key : String) {
-		outputs.remove(key);
+		/*outputs.remove(key);*/
 	}
 
 	function addOutputTvar(tVar : TVar) {
-		outputs.set(tVar.name, tVar);
+		/*outputs.set(tVar.name, tVar);*/
 	}
 
 	public function computeOutputs() : Void {}
 
-	public function getOutput(key : String) : TVar {
-		return outputs.get(key);
-	}
+	// public function getOutput(key : String) : TVar {
+	// 	return outputs.get(key);
+	// }
 
-	public function getOutputType(key : String) : Type {
-		var output = getOutput(key);
-		if (output == null)
-			return null;
-		return output.type;
-	}
+	// public function getOutputType(key : String) : Type {
+	// 	var output = getOutput(key);
+	// 	if (output == null)
+	// 		return null;
+	// 	return output.type;
+	// }
 
-	public function getOutputTExpr(key : String) : TExpr {
-		var o = getOutput(key);
-		if (o == null)
-			return null;
-		return {
-			e: TVar(o),
-			p: null,
-			t: o.type
-		};
-	}
+	// public function getOutputTExpr(key : String) : TExpr {
+	// 	var o = getOutput(key);
+	// 	if (o == null)
+	// 		return null;
+	// 	return {
+	// 		e: TVar(o),
+	// 		p: null,
+	// 		t: o.type
+	// 	};
+	// }
 
 	public function build(key : String) : TExpr {
 		throw "Build function not implemented";
@@ -125,13 +137,13 @@ class ShaderNode {
 		return null;
 	}
 
-	public function getOutputInfoKeys() : Array<String> {
-		return [];
-	}
+	// public function getOutputInfoKeys() : Array<String> {
+	// 	return [];
+	// }
 
-	public function getOutputInfo(key : String) : OutputInfo {
-		return null;
-	}
+	// public function getOutputInfo(key : String) : OutputInfo {
+	// 	return null;
+	// }
 
 	public function loadProperties(props : Dynamic) {
 		var fields = Reflect.fields(props);

@@ -9,8 +9,6 @@ using hxsl.Ast;
 @noheader()
 class Color extends ShaderConst {
 
-	@output() var output = SType.Vec4;
-
 	@prop() var r : Float = 0;
 	@prop() var g : Float = 0;
 	@prop() var b : Float = 0;
@@ -20,60 +18,60 @@ class Color extends ShaderConst {
 		addOutput("output", TVec(4, VFloat));
 	}
 
-	override public function getOutputTExpr(key : String) : TExpr {
-		return {
-			e: TVar(output),
-			p: null,
-			t: TVec(4, VFloat)
-		};
-	}
+	// override public function getOutputTExpr(key : String) : TExpr {
+	// 	return {
+	// 		e: TVar(output),
+	// 		p: null,
+	// 		t: TVec(4, VFloat)
+	// 	};
+	// }
 
-	override public function build(key : String) : TExpr {
+	// override public function build(key : String) : TExpr {
 
-		return { e: TBinop(OpAssign, {
-						e: TVar(output),
-						p: null,
-						t: output.type
-					}, {
-						e: TCall({
-							e: TGlobal(Vec4),
-							p: null,
-							t: TFun([
-								{
-									ret: output.type,
-									args: [
-									{ name: "r", type : TFloat },
-									{ name: "g", type : TFloat },
-									{ name: "b", type : TFloat },
-									{ name: "a", type : TFloat }]
-								}
-							])
-						}, [{
-								e: TConst(CFloat(r)),
-								p: null,
-								t: TFloat
-							},
-							{
-								e: TConst(CFloat(g)),
-								p: null,
-								t: TFloat
-							},
-							{
-								e: TConst(CFloat(b)),
-								p: null,
-								t: TFloat
-							},{
-								e: TConst(CFloat(a)),
-								p: null,
-								t: TFloat
-							}]),
-						p: null,
-						t: output.type
-					}),
-					p: null,
-					t: output.type
-				};
-	}
+	// 	return { e: TBinop(OpAssign, {
+	// 					e: TVar(output),
+	// 					p: null,
+	// 					t: output.type
+	// 				}, {
+	// 					e: TCall({
+	// 						e: TGlobal(Vec4),
+	// 						p: null,
+	// 						t: TFun([
+	// 							{
+	// 								ret: output.type,
+	// 								args: [
+	// 								{ name: "r", type : TFloat },
+	// 								{ name: "g", type : TFloat },
+	// 								{ name: "b", type : TFloat },
+	// 								{ name: "a", type : TFloat }]
+	// 							}
+	// 						])
+	// 					}, [{
+	// 							e: TConst(CFloat(r)),
+	// 							p: null,
+	// 							t: TFloat
+	// 						},
+	// 						{
+	// 							e: TConst(CFloat(g)),
+	// 							p: null,
+	// 							t: TFloat
+	// 						},
+	// 						{
+	// 							e: TConst(CFloat(b)),
+	// 							p: null,
+	// 							t: TFloat
+	// 						},{
+	// 							e: TConst(CFloat(a)),
+	// 							p: null,
+	// 							t: TFloat
+	// 						}]),
+	// 					p: null,
+	// 					t: output.type
+	// 				}),
+	// 				p: null,
+	// 				t: output.type
+	// 			};
+	// }
 
 	#if editor
 	override public function getPropertiesHTML(width : Float) : Array<hide.Element> {

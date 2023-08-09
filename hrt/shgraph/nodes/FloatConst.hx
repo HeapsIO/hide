@@ -9,7 +9,6 @@ using hxsl.Ast;
 @noheader()
 class FloatConst extends ShaderConst {
 
-	@output() var output = SType.Float;
 
 	@prop() var value : Float = 0.;
 
@@ -18,13 +17,13 @@ class FloatConst extends ShaderConst {
 			this.value = value;
 	}
 
-	override public function getOutputTExpr(key : String) : TExpr {
-		return {
-					e: TConst(CFloat(value)),
-					p: null,
-					t: TFloat
-				};
-	}
+	// override public function getOutputTExpr(key : String) : TExpr {
+	// 	return {
+	// 				e: TConst(CFloat(value)),
+	// 				p: null,
+	// 				t: TFloat
+	// 			};
+	// }
 
 	override public function build(key : String) : TExpr {
 		return null;

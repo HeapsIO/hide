@@ -95,30 +95,6 @@ class ParseFieldsMacro {
 
 							break;
 						} else if (m.name == "output") {
-							hasOutputs = true;
-							var sel = f.name;
-							var get_sel = "get_" + sel;
-							var sfields = macro class {
-								inline function $get_sel() : TVar return getOutput($v{sel});
-							};
-							for( field in sfields.fields )
-								fields.push(field);
-							if (e == null)
-								Context.error('Output ${sel} has not affectation', f.pos);
-							var nameOutput = "";
-							if (m.params.length > 0) {
-								switch(m.params[0].expr) {
-									case EConst(CString(s)):
-										if (s.length > 0)
-											nameOutput = s;
-									default:
-								}
-							}
-							var enumValue = ["ShaderType", "SType", e.toString().split(".").pop()];
-							mapOutputs.push(macro $v{sel} => { name : $v{nameOutput}, type : ${enumValue.toFieldExpr()} });
-							f.kind = FProp("get", "null", TPath({ pack: [], name: "TVar" }));
-							f.meta = saveMeta;
-							outputsList.push(f.name);
 
 							break;
 						}
@@ -141,18 +117,18 @@ class ParseFieldsMacro {
 				fields.push(field);
 		}
 		if (hasOutputs) {
-			fields.push({
+			/*fields.push({
 				name: "outputsInfo",
 				access: [Access.APrivate],
 				kind: FieldType.FVar(macro:Map<String, ShaderNode.OutputInfo>, macro $a{mapOutputs}),
 				pos: Context.currentPos(),
-			});
-			var sfields = macro class {
+			});*/
+			/*var sfields = macro class {
 				override public function getOutputInfo(key : String) : ShaderNode.OutputInfo return outputsInfo.get(key);
 				override public function getOutputInfoKeys() : Array<String> return $v{outputsList};
 			};
 			for( field in sfields.fields )
-				fields.push(field);
+				fields.push(field);*/
 		}
 
 		var thisClass = Context.getLocalClass();

@@ -305,10 +305,9 @@ class Graph extends FileView {
 				setAvailableOutputNodes(box, grNode.find(".node").attr("field"));
 			});
 		}
-		for (outputKey in box.getInstance().getOutputInfoKeys()) {
-			var outputInfo = box.getInstance().getOutputInfo(outputKey);
-			var grNode = box.addOutput(editor, outputInfo.name, box.getInstance().getOutputType(outputKey));
-			grNode.find(".node").attr("field", outputKey);
+		for (outputName => outputVar in box.getInstance().getOutputs2()) {
+			var grNode = box.addOutput(editor, outputName, outputVar.type);
+			grNode.find(".node").attr("field", outputName);
 			grNode.on("mousedown", function(e) {
 				e.stopPropagation();
 				var node = grNode.find(".node");
@@ -381,14 +380,11 @@ class Graph extends FileView {
 		}
 	}
 
+	// TODO(ces) : nuke SType from orbit
 	function setAvailableInputNodes(boxOutput : Box, field : String) {
-		var type = boxOutput.getInstance().getOutputType(field);
+		var type = boxOutput.getInstance().getOutputs2()[field].type;
 		var sType : SType;
-		if (type == null) {
-			sType = boxOutput.getInstance().getOutputInfo(field).type;
-		} else {
-			sType = ShaderType.getSType(type);
-		}
+		sType = ShaderType.getSType(type);
 
 		for (box in listOfBoxes) {
 			for (input in box.inputs) {
@@ -403,13 +399,8 @@ class Graph extends FileView {
 		for (box in listOfBoxes) {
 			for (output in box.outputs) {
 				var outputField = output.attr("field");
-				var type = box.getInstance().getOutputType(outputField);
-				var sType : SType;
-				if (type == null) {
-					sType = box.getInstance().getOutputInfo(outputField).type;
-				} else {
-					sType = ShaderType.getSType(type);
-				}
+				var type = box.getInstance().getOutputs2()[outputField].type;
+				var sType = ShaderType.getSType(type);
 				if (boxInput.getInstance().checkTypeAndCompatibilyInput(field, sType)) {
 					output.addClass("nodeMatch");
 				}

@@ -166,7 +166,7 @@ class Box {
 		}
 		var nodeCircle = editor.circle(node, width, nodeHeight, NODE_RADIUS, style).addClass("node output-node");
 
-		if (name.length > 0)
+		if (name.length > 0 && name != "output")
 			editor.text(node, width - NODE_TITLE_PADDING - (name.length * 6.75), nodeHeight + 4, name).addClass("title-node");
 
 		outputs.push(nodeCircle);

@@ -11,7 +11,6 @@ class IfCondition extends ShaderNode {
 	@input("True") var trueVar = SType.Variant;
 	@input("False") var falseVar = SType.Variant;
 
-	@output() var output = SType.Variant;
 
 	override public function checkValidityInput(key : String, type : ShaderType.SType) : Bool {
 
@@ -35,22 +34,22 @@ class IfCondition extends ShaderNode {
 			removeOutput("output");
 	}
 
-	override public function build(key : String) : TExpr {
-		return {
-			p : null,
-			t: output.type,
-			e : TBinop(OpAssign, {
-					e: TVar(output),
-					p: null,
-					t: output.type
-				}, {
-				e: TIf( condition.getVar(),
-						trueVar.getVar(falseVar.getType()),
-						falseVar.getVar(trueVar.getType())),
-				p: null,
-				t: output.type
-			})
-		};
-	}
+	// override public function build(key : String) : TExpr {
+	// 	return {
+	// 		p : null,
+	// 		t: output.type,
+	// 		e : TBinop(OpAssign, {
+	// 				e: TVar(output),
+	// 				p: null,
+	// 				t: output.type
+	// 			}, {
+	// 			e: TIf( condition.getVar(),
+	// 					trueVar.getVar(falseVar.getType()),
+	// 					falseVar.getVar(trueVar.getType())),
+	// 			p: null,
+	// 			t: output.type
+	// 		})
+	// 	};
+	// }
 
 }

@@ -7,7 +7,6 @@ class Operation extends ShaderNodeHxsl {
 	@input("A", true) var a = SType.Number;
 	@input("B", true) var b = SType.Number;
 
-	@output("") var output = SType.Number;
 
 	var operation : Binop;
 
@@ -26,22 +25,22 @@ class Operation extends ShaderNodeHxsl {
 			removeOutput("output");
 	}
 
-	override public function build(key : String) : TExpr {
+	// override public function build(key : String) : TExpr {
 
-		return { e: TBinop(OpAssign, {
-						e: TVar(output),
-						p: null,
-						t: output.type
-					}, {
-						e: TBinop(operation,
-							a.getVar(b.getType()),
-							b.getVar(a.getType())),
-						p: null,
-						t: output.type
-					}),
-					p: null,
-					t: output.type
-				};
-	}
+	// 	return { e: TBinop(OpAssign, {
+	// 					e: TVar(output),
+	// 					p: null,
+	// 					t: output.type
+	// 				}, {
+	// 					e: TBinop(operation,
+	// 						a.getVar(b.getType()),
+	// 						b.getVar(a.getType())),
+	// 					p: null,
+	// 					t: output.type
+	// 				}),
+	// 				p: null,
+	// 				t: output.type
+	// 			};
+	// }
 
 }

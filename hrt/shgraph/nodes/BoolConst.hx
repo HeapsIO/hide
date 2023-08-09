@@ -9,17 +9,16 @@ using hxsl.Ast;
 @noheader()
 class BoolConst extends ShaderConst {
 
-	@output() var fakeOutput = SType.Bool;
 
 	@prop() var value : Bool = true;
 
-	override public function getOutputTExpr(key : String) : TExpr {
-		return {
-					e: TConst(CBool(value)),
-					p: null,
-					t: TBool
-				};
-	}
+	// override public function getOutputTExpr(key : String) : TExpr {
+	// 	return {
+	// 				e: TConst(CBool(value)),
+	// 				p: null,
+	// 				t: TBool
+	// 			};
+	// }
 
 	override public function build(key : String) : TExpr {
 		return null;
