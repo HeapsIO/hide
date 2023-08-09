@@ -17,8 +17,7 @@ class Add extends Operation {
 		@sginput var b : Vec4;
 		@sgoutput var output : Vec4;
 		function fragment() {
-			var c = a + b;
-			output = c;
+			output = a + b;;
 		}
 	}
 

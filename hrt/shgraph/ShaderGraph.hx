@@ -35,8 +35,6 @@ private typedef Edge = {
 typedef Connection = {
 	from : Node,
 	fromName : String,
-	to : Node,
-	toName : String,
 };
 
 typedef Parameter = {
@@ -48,42 +46,17 @@ typedef Parameter = {
 	index : Int
 };
 
-@:autoBuild(hrt.shgraph.Macros.buildNode())
-class TestNewNode {
-
-}
-
-class TestNewNode2 extends TestNewNode {
-
-	static var SRC = {
-		var calculatedUV : Vec2;
-
-		@sginput var a : Vec4;
-		@sginput var b : Vec4;
-		@sgoutput var output : Vec4;
-		function fragment() {
-			var c = a + b;
-			output = c;
-		}
-	}
-}
-
 class ShaderGraph {
 
-	var allVariables : Array<TVar> = [];
 	var allParameters = [];
 	var allParamDefaultValue = [];
 	var current_node_id = 0;
 	var current_param_id = 0;
 	var filepath : String;
 	var nodes : Map<Int, Node> = [];
-	var connections : Map<Connection, Bool> = [];
 
 	public var parametersAvailable : Map<Int, Parameter> = [];
 	public var parametersKeys : Array<Int> = [];
-
-	// subgraph variable
-	var variableNamesAlreadyUpdated = false;
 
 	public function new(filepath : String) {
 		if (filepath == null) return;
@@ -174,11 +147,7 @@ class ShaderGraph {
 		var toGen = node.instance.getShaderDef();
 		var toName = toGen.inVars[node.instance.getInputInfoKeys().indexOf(edge.nameInput)].name;
 
-		var connection : Connection = {from: output, fromName: fromName, to: node, toName: toName};
-		var prevConn = node.instance.inputs2.get(edge.nameInput);
-		if (prevConn != null)
-			connections.remove(prevConn);
-
+		var connection : Connection = {from: output, fromName: fromName};
 		node.instance.inputs2.set(toName, connection);
 
 		var subShaderIn = Std.downcast(node.instance, hrt.shgraph.nodes.SubGraph);
@@ -254,20 +223,6 @@ class ShaderGraph {
 				name: name,
 				type: type
 			};
-	}
-
-	static var nodeCache : Map<String, ShaderData> = [];
-	public static function getShaderData(cl: Class<ShaderNode>) {
-		var className = Type.getClassName(cl);
-		var data = nodeCache.get(className);
-		if (data == null) {
-			var unser = new hxsl.Serializer();
-			var toUnser = (cl:Dynamic).SRC;
-			if (toUnser == null) throw "Node " + cl + " has no SRC";
-			data = @:privateAccess unser.unserialize(toUnser);
-			nodeCache.set(className, data);
-		}
-		return data;
 	}
 
 	public function generate2(?getNewVarId: () -> Int) : ShaderNodeDef {
@@ -424,76 +379,9 @@ class ShaderGraph {
 
 			var outputs = getOutputs(currentNode);
 
-
-
-			/*if (Std.downcast(currentNode.instance, ShaderOutput) != null) {
-				var outputNode : ShaderOutput = cast currentNode.instance;
-				var outVar : TVar = {name: outputNode.variable.name, id:getNewVarId(), type: TVec(4, VFloat), kind: Local, qualifiers: [SgOutput]};
-				var firstInput = inputVars.iterator().next();
-				var finalExpr : TExpr = {e: TBinop(OpAssign, {e: TVar(outVar), p: pos, t: outVar.type}, {e: TVar(firstInput), p: pos, t: outVar.type}), p: pos, t: outVar.type};
-
-				exprsReverse.push(finalExpr);
-				externs.push(outVar);
-				graphOutputVars.push(outVar);
-
-			} else if (Std.downcast(currentNode.instance, ShaderParam) != null) {
-				var inputNode : ShaderParam = cast currentNode.instance;
-
-
-				for (output in outputs) {
-					var inVar : TVar = {name: inputNode.variable.name, id:getNewVarId(), type: output.type, kind: Param, qualifiers: [SgInput]};
-					var finalExpr : TExpr = {e: TVarDecl(output, {e: TVar(inVar), p: pos, t: output.type}), p: pos, t: output.type};
-					exprsReverse.push(finalExpr);
-					externs.push(inVar);
-					graphInputVars.push(inVar);
-
-					var param = getParameter(inputNode.parameterId);
-					inits.push({variable: inVar, value: param.defaultValue});
-				}
-			} else if (Std.downcast(currentNode.instance, hrt.shgraph.nodes.SubGraph) != null) {
-				var subgraph : hrt.shgraph.nodes.SubGraph = cast currentNode.instance;
-				var shader = new ShaderGraph(subgraph.pathShaderGraph);
-				var gen = shader.generate2(getNewVarId);
-
-
-				var finalExprs = [];
-
-				// Patch outputs
-				for (output in outputs) {
-					gen.expr = replaceVar(gen.expr, gen.outVars[0], {e: TVar(output), p:pos, t: output.type});
-				}
-
-				// Patch inputs
-				for (inputName => tvar in inputVars) {
-					var trueName = subgraph.getInputInfo(inputName).name;
-					var originalInput = gen.inVars.find((f) -> f.name == trueName);
-					var finalExpr : TExpr = {e: TVarDecl(originalInput, convertToType(originalInput.type, {e: TVar(tvar), p: pos, t: tvar.type})), p: pos, t: originalInput.type};
-					finalExprs.push(finalExpr);
-				}
-
-				finalExprs.push(gen.expr);
-				exprsReverse.push({e: TBlock(finalExprs), p:pos, t:TVoid});
-
-				for (i => output in outputs) {
-					var finalExpr : TExpr = {e: TVarDecl(output), p: pos, t: output.type};
-					exprsReverse.push(finalExpr);
-				}
-			}*/
-			/*else*/
 			{
-				var def = currentNode.instance.getShaderDef(getNewVarId);
+				var def = currentNode.instance.getShaderDef();
 				var expr = def.expr;
-
-				/*var inputVars : Map<String, TVar> = [];
-
-				for (input in currentNode.instance.inputs2) {
-					if (input.to != currentNode) throw "node connection missmatch";
-					var outputs = getOutputs(input.from);
-					var outputVar = outputs[input.fromName];
-					if (outputVar == null) throw "null tvar";
-
-					inputVars.set(input.toName, outputVar);
-				}*/
 
 				var outputDecls : Array<TVar> = [];
 				for (nodeVar in def.externVars) {
@@ -566,17 +454,10 @@ class ShaderGraph {
 		};
 	}
 
-	public static function measure2<T>(f:Void->T, ?pos:haxe.PosInfos):T {
-		//var t0 = haxe.Timer.stamp();
-		var r = f();
-		//haxe.Log.trace((haxe.Timer.stamp() - t0) * 1000 + "ms", pos);
-		return r;
-	}
-
 	public function compile2() : hrt.prefab.ContextShared.ShaderDef {
 		var start = haxe.Timer.stamp();
 
-		var gen = measure2(()->generate2());
+		var gen = generate2();
 
 		var shaderData : ShaderData = {
 			name: "",
@@ -613,285 +494,8 @@ class ShaderGraph {
 		return parametersAvailable.get(id);
 	}
 
-	static var alreadyBuiltSubGraphs : Array<Int> = [];
-	function buildNodeVar(nodeVar : NodeVar) : Array<TExpr>{
-		var node = nodeVar.node;
-		var isSubGraph = Std.isOfType(node, hrt.shgraph.nodes.SubGraph);
-		if (node == null)
-			return [];
-		if (alreadyBuiltSubGraphs == null)
-			alreadyBuiltSubGraphs = [];
-		if (isSubGraph)
-			alreadyBuiltSubGraphs.push(node.id);
-		var res = [];
-		var keys = node.getInputInfoKeys();
-		for (key in keys) {
-			var input = node.getInput(key);
-			if (input != null) {
-				if (!Std.isOfType(input.node, hrt.shgraph.nodes.SubGraph) || !alreadyBuiltSubGraphs.contains(input.node.id))
-					res = res.concat(buildNodeVar(input));
-			} else if (node.getInputInfo(key).hasProperty) {
-			} else if (!node.getInputInfo(key).isRequired) {
-			} else {
-				throw ShaderException.t("This box has inputs not connected", node.id);
-			}
-		}
-
-		var shaderInput = Std.downcast(node, ShaderInput);
-		if (shaderInput != null) {
-			var variable = shaderInput.variable;
-			if ((variable.kind == Param || variable.kind == Global || variable.kind == Input || variable.kind == Local) && !alreadyAddVariable(variable)) {
-				allVariables.push(variable);
-			}
-		}
-		var shaderParam = Std.downcast(node, ShaderParam);
-		if (shaderParam != null && !alreadyAddVariable(shaderParam.variable)) {
-			if (shaderParam.variable == null) {
-				shaderParam.variable = generateParameter(shaderParam.variable.name, shaderParam.variable.type);
-			}
-			allVariables.push(shaderParam.variable);
-			allParameters.push(shaderParam.variable);
-			if (parametersAvailable.exists(shaderParam.parameterId))
-				allParamDefaultValue.push(getParameter(shaderParam.parameterId).defaultValue);
-		}
-		var build = [];
-		if (!isSubGraph)
-			build = nodeVar.getExpr();
-		else {
-			var subGraph = Std.downcast(node, hrt.shgraph.nodes.SubGraph);
-			var nodeBuild = node.build("");
-			for (k in subGraph.getOutputInfoKeys()) {
-				var tvar = subGraph.getOutput(k);
-				if (tvar != null && tvar.kind == Local && ShaderInput.availableInputs.indexOf(tvar) < 0)
-					build.push({ e : TVarDecl(tvar), t : tvar.type, p : null });
-			}
-			if (nodeBuild != null)
-				build.push(nodeBuild);
-
-			var params = subGraph.subShaderGraph.parametersAvailable;
-			for (subVar in subGraph.varsSubGraph) {
-				if (subVar.kind == Param) {
-					if (!alreadyAddVariable(subVar)) {
-						allVariables.push(subVar);
-						allParameters.push(subVar);
-						var defaultValueFound = false;
-						for (param in params) {
-							if (param.variable.name == subVar.name) {
-								allParamDefaultValue.push(param.defaultValue);
-								defaultValueFound = true;
-								break;
-							}
-						}
-						if (!defaultValueFound) {
-							throw ShaderException.t("Default value of '" + subVar.name + "' parameter not found", node.id);
-						}
-					}
-				} else {
-					if (!alreadyAddVariable(subVar)) {
-						allVariables.push(subVar);
-					}
-				}
-			}
-			var buildWithoutTBlock = [];
-			for (i in 0...build.length) {
-				switch (build[i].e) {
-					case TBlock(block):
-						for (b in block) {
-							buildWithoutTBlock.push(b);
-						}
-					default:
-						buildWithoutTBlock.push(build[i]);
-				}
-			}
-			build = buildWithoutTBlock;
-		}
-		res = res.concat(build);
-		return res;
-	}
-
-	function alreadyAddVariable(variable : TVar) {
-		for (v in allVariables) {
-			if (v.name == variable.name && v.type == variable.type) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	var variableNameAvailableOnlyInVertex = [];
-
-	public function generateShader(specificOutput : ShaderNode = null, subShaderId : Int = null) : ShaderData {
-		allVariables = [];
-		allParameters = [];
-		allParamDefaultValue = [];
-		var contentVertex = [];
-		var contentFragment = [];
-
-		if( subShaderId == null )
-			alreadyBuiltSubGraphs = [];
-		for (n in nodes) {
-			if (!variableNamesAlreadyUpdated && subShaderId != null && !Std.isOfType(n.instance, ShaderInput)) {
-				for (outputKey in n.instance.getOutputInfoKeys()) {
-					var output = n.instance.getOutput(outputKey);
-					if (output != null)
-						output.name = "sub_" + subShaderId + "_" + output.name;
-				}
-			}
-			n.instance.outputCompiled = [];
-			#if !editor
-			if (!n.instance.hasInputs()) {
-				updateOutputs(n);
-			}
-			#end
-		}
-		variableNamesAlreadyUpdated = true;
-
-		var outputs : Array<String> = [];
-
-		for (g in ShaderGlobalInput.globalInputs) {
-			allVariables.push(g);
-		}
-
-		for (n in nodes) {
-			var outNode;
-			var outVar;
-			if (specificOutput != null) {
-				if (n.instance != specificOutput) continue;
-				outNode = specificOutput;
-				outVar = Std.downcast(specificOutput, hrt.shgraph.nodes.Preview).variable;
-			} else {
-				var shaderOutput = Std.downcast(n.instance, ShaderOutput);
-
-				if (shaderOutput != null) {
-					outVar = shaderOutput.variable;
-					outNode = n.instance;
-				} else {
-					continue;
-				}
-			}
-			if (outNode != null) {
-				if (outputs.indexOf(outVar.name) != -1) {
-					throw ShaderException.t("This output already exists", n.id);
-				}
-				outputs.push(outVar.name);
-				if ( !alreadyAddVariable(outVar) ) {
-					allVariables.push(outVar);
-				}
-				var nodeVar = new NodeVar(outNode, "input");
-				var isVertex = (variableNameAvailableOnlyInVertex.indexOf(outVar.name) != -1);
-				if (isVertex) {
-					contentVertex = contentVertex.concat(buildNodeVar(nodeVar));
-				} else {
-					contentFragment = contentFragment.concat(buildNodeVar(nodeVar));
-				}
-				if (specificOutput != null) break;
-			}
-		}
-
-		var shvars = [];
-		var inputVar : TVar = null, inputVars = [], inputMap = new Map();
-		for( v in allVariables ) {
-			if( v.id == 0 )
-				v.id = hxsl.Tools.allocVarId();
-			if( v.kind != Input ) {
-				shvars.push(v);
-				continue;
-			}
-			if( inputVar == null ) {
-				inputVar = {
-					id : hxsl.Tools.allocVarId(),
-					name : "input",
-					kind : Input,
-					type : TStruct(inputVars),
-				};
-				shvars.push(inputVar);
-			}
-			var prevId = v.id;
-			v = Reflect.copy(v);
-			v.id = hxsl.Tools.allocVarId();
-			v.parent = inputVar;
-			inputVars.push(v);
-			inputMap.set(prevId, v);
-		}
-
-		if( inputVars.length > 0 ) {
-			function remap(e:TExpr) {
-				return switch( e.e ) {
-				case TVar(v):
-					var i = inputMap.get(v.id);
-					if( i == null ) e else { e : TVar(i), p : e.p, t : e.t };
-				default:
-					hxsl.Tools.map(e, remap);
-				}
-			}
-			contentVertex = [for( e in contentVertex ) remap(e)];
-			contentFragment = [for( e in contentFragment ) remap(e)];
-		}
-
-		var shaderData = {
-			funs : [],
-			name: "SHADER_GRAPH",
-			vars: shvars
-		};
-
-		if (contentVertex.length > 0) {
-			shaderData.funs.push({
-					ret : TVoid, kind : Vertex,
-					ref : {
-						name : "vertex",
-						id : 0,
-						kind : Function,
-						type : TFun([{ ret : TVoid, args : [] }])
-					},
-					expr : {
-						p : null,
-						t : TVoid,
-						e : TBlock(contentVertex)
-					},
-					args : []
-				});
-		}
-
-		if (contentFragment.length > 0) {
-			shaderData.funs.push({
-					ret : TVoid, kind : Fragment,
-					ref : {
-						name : "fragment",
-						id : 0,
-						kind : Function,
-						type : TFun([{ ret : TVoid, args : [] }])
-					},
-					expr : {
-						p : null,
-						t : TVoid,
-						e : TBlock(contentFragment)
-					},
-					args : []
-				});
-		}
-
-		return shaderData;
-	}
-
-	public function compile(?specificOutput : ShaderNode, ?subShaderId : Int) : hrt.prefab.ContextShared.ShaderDef {
-
-		var shaderData = generateShader(specificOutput, subShaderId);
-
-		var s = new SharedShader("");
-		s.data = shaderData;
-		@:privateAccess s.initialize();
-		var inits : Array<{ variable : hxsl.Ast.TVar, value : Dynamic }> = [];
-
-		for (i in 0...allParameters.length) {
-			inits.push({ variable : allParameters[i], value : allParamDefaultValue[i] });
-		}
-
-		var shaderDef = { shader : s, inits : inits };
-		return shaderDef;
-	}
-
 	public function makeInstance(ctx: hrt.prefab.ContextShared) : hxsl.DynamicShader {
-		var def = compile();
+		var def = compile2();
 		var s = new hxsl.DynamicShader(def.shader);
 		for (init in def.inits)
 			setParamValue(ctx, s, init.variable, init.value);

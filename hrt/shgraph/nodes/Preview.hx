@@ -52,7 +52,7 @@ class Preview extends ShaderNode {
 		var element = new hide.Element('<div style="width: 100px; height: 100px"><div class="preview-parent" top="-10px" ><div class="node-preview" style="height: 100px" ></div></div></div>');
 		nodePreview = element.find(".node-preview");
 		scene = new hide.comp.Scene(config, null, nodePreview);
-		
+
 		scene.onReady = function() {
 			var prim = new h3d.prim.Cube();
 			prim.addUVs();
@@ -114,7 +114,7 @@ class Preview extends ShaderNode {
 
 		var shader : hxsl.DynamicShader = null;
 		try {
-			var shaderGraphDef = shaderGraph.compile(this);
+			var shaderGraphDef = shaderGraph.compile2(/*this*/);
 			shader = new hxsl.DynamicShader(shaderGraphDef.shader);
 			for (init in shaderGraphDef.inits) {
 				setParamValue(init.variable, init.value, shader);

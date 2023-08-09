@@ -20,26 +20,8 @@ class ShaderNode {
 						type: TVec(4, VFloat)
 					}];
 
-	static var output2 : Map<String, Map<String, TVar>> = [];
-	public function getOutputs2() : Map<String, TVar> {
-		var cl = Type.getClass(this);
-		var className = Type.getClassName(cl);
-		var outputs = output2.get(className);
-		if (outputs != null)
-			return outputs;
-		outputs = [];
-		var shData = ShaderGraph.getShaderData(cl);
-		for (shaderVar in shData.vars) {
-			if (shaderVar.qualifiers != null && shaderVar.qualifiers.contains(SgOutput)) {
-				outputs.set(shaderVar.name, shaderVar);
-			}
-		}
-		output2.set(className, outputs);
 
-		return outputs;
-	}
-
-	public function getShaderDef(?getNewVarId: () -> Int) : ShaderGraph.ShaderNodeDef {
+	public function getShaderDef() : ShaderGraph.ShaderNodeDef {
 		throw "Shouln't be called";
 		return {expr: null, inVars: [], outVars: [], inits: [], externVars: []};
 	}

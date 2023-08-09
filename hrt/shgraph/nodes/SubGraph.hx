@@ -10,35 +10,9 @@ class SubGraph extends ShaderNode {
 
 	@prop() public var pathShaderGraph : String;
 
-	override public function getOutputs2() : Map<String, TVar> {
-		// TODO : proper caching with invalidation when subgraph is modified
-		/*var cl = Type.getClass(this);
-		var className = Type.getClassName(cl);
-
-		var outputs = ShaderNode.output2.get(className);
-		if (outputs != null)
-			return outputs;*/
-		outputs = [];
-
-		// big big hack, propery do this in the future
-		// by compiling the subgraph and storing the tvars here
-
+	override public function getShaderDef():hrt.shgraph.ShaderGraph.ShaderNodeDef {
 		var shader = new ShaderGraph(pathShaderGraph);
 		var gen = shader.generate2();
-
-		// compatibility hack with prev version
-		/*var prefixSubGraph = "shgraph_" + id + "_";
-
-		for (i => outVar in gen.outVars) {
-			outputs.set(prefixSubGraph + i, outVar);
-		}*/
-
-		return outputs;
-	}
-
-	override public function getShaderDef(?getNewVarId: () -> Int):hrt.shgraph.ShaderGraph.ShaderNodeDef {
-		var shader = new ShaderGraph(pathShaderGraph);
-		var gen = shader.generate2(getNewVarId);
 
 		for (tvar in gen.externVars) {
 			if (tvar.qualifiers != null) {
@@ -153,93 +127,6 @@ class SubGraph extends ShaderNode {
 			paramInfoKeys.sort((x,y) -> Reflect.compare(inputsInfo[x].index, inputsInfo[y].index));
 			inputInfoKeys = paramInfoKeys.concat(inputInfoKeys);
 		}
-	}
-
-	override public function build(key : String) : TExpr {
-
-		for (inputKey in inputInfoKeys) {
-			var inputInfo = inputsInfo.get(inputKey);
-			var inputTVar = getInput(inputKey);
-
-			if (inputTVar != null) {
-				for (id in inputInfo.ids) {
-					var nodeToReplace = subShaderGraph.getNodes().get(id);
-					for (i in 0...nodeToReplace.outputs.length) {
-						var inputNode = nodeToReplace.outputs[i];
-
-						for (inputKey in inputNode.instance.getInputsKey()) {
-							var input = inputNode.instance.getInput(inputKey);
-							if (input.node == nodeToReplace.instance) {
-								inputNode.instance.setInput(inputKey, inputTVar);
-							}
-						}
-					}
-				}
-			}
-		}
-
-		for (p in parameters) {
-			if (p.defaultValue != null) {
-				var node = subShaderGraph.getNode(p.id);
-				switch (p.type) {
-					case TBool:
-						var boolConst = Std.downcast(node.instance, BoolConst);
-						@:privateAccess boolConst.value = p.defaultValue;
-					case TVec(4, VFloat):
-						var colorConst = Std.downcast(node.instance, Color);
-						@:privateAccess {
-							colorConst.r = p.defaultValue.x;
-							colorConst.g = p.defaultValue.y;
-							colorConst.b = p.defaultValue.z;
-							colorConst.a = p.defaultValue.w;
-						}
-					case TFloat:
-						var floatConst = Std.downcast(node.instance, FloatConst);
-						@:privateAccess floatConst.value = p.defaultValue;
-					default:
-				}
-			}
-		}
-
-		var shaderDef;
-		try {
-			shaderDef = subShaderGraph.generateShader(null, id);
-		} catch (e : ShaderException) {
-			throw ShaderException.t(e.msg, id);
-		}
-		if (shaderDef.funs.length > 1) {
-			throw ShaderException.t("The sub shader is vertex and fragment.", id);
-		}
-		varsSubGraph = shaderDef.vars;
-		var arrayExpr : Array<TExpr> = [];
-		switch (shaderDef.funs[0].expr.e) {
-			case TBlock(block):
-				arrayExpr = block;
-			default:
-
-		}
-
-		for (outputKey in outputInfoKeys) {
-			var outputInfo = outputsInfo.get(outputKey);
-			var outputTVar = getOutput(outputKey);
-			if (outputTVar != null) {
-				arrayExpr.push({
-					p : null,
-					t : outputTVar.type,
-					e : TBinop(OpAssign, {
-							e: TVar(outputTVar),
-							p: null,
-							t: outputTVar.type
-						}, subShaderGraph.getNodes().get(outputInfo.id).instance.getInput("input").getVar(outputTVar.type))
-				});
-			}
-		}
-
-		return {
-				p : null,
-				t : TVoid,
-				e : TBlock(arrayExpr)
-			};
 	}
 
 	override public function getInputInfo(key : String) : ShaderNode.InputInfo {
