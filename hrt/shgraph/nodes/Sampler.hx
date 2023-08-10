@@ -5,7 +5,17 @@ using hxsl.Ast;
 @name("Sampler")
 @description("Get color from texture and UV")
 @group("Property")
-class Sampler extends ShaderNode {
+class Sampler extends ShaderNodeHxsl {
+
+	static var SRC = {
+		@sginput var texture : Sampler2D;
+		@sginput var uv : Vec2;
+		@sgoutput var output : Vec4;
+
+		function fragment() {
+			output = texture.get(uv);
+		}
+	}
 
 	// @input("Texture") var texture = SType.Sampler;
 	// @input("UV") var uv = SType.Vec2;

@@ -5,6 +5,7 @@ using hxsl.Ast;
 typedef InputInfo = { name : String, type : ShaderType.SType, hasProperty : Bool, isRequired : Bool, ?ids : Array<Int>, ?index : Int };
 typedef OutputInfo = { name : String, type : ShaderType.SType, ?id : Int };
 
+@:autoBuild(hrt.shgraph.Macros.autoRegisterNode())
 @:keepSub
 class ShaderNode {
 
@@ -21,7 +22,7 @@ class ShaderNode {
 
 
 	public function getShaderDef() : ShaderGraph.ShaderNodeDef {
-		throw "Shouln't be called";
+		throw "getShaderDef is not defined for class " + Type.getClassName(Type.getClass(this));
 		return {expr: null, inVars: [], outVars: [], inits: [], externVars: []};
 	}
 

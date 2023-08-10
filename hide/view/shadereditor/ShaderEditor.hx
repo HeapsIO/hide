@@ -289,7 +289,7 @@ class ShaderEditor extends hide.view.Graph {
 		editorMatrix.on("change", "input, select", function(ev) {
 			try {
 				var idBox = ev.target.closest(".box").id;
-				shaderGraph.nodeUpdated(idBox);
+				//shaderGraph.nodeUpdated(idBox);
 				afterChange();
 				launchCompileShader();
 			} catch (e : Dynamic) {
@@ -477,7 +477,7 @@ class ShaderEditor extends hide.view.Graph {
 				var paramShader = shaderGraph.getParameter(paramNode.parameterId);
 				paramNode.setName(paramShader.name);
 				setDisplayValue(paramNode, paramShader.type, paramShader.defaultValue);
-				shaderGraph.nodeUpdated(paramNode.id);
+				//shaderGraph.nodeUpdated(paramNode.id);
 				addBox(new Point(node.x, node.y), ShaderParam, paramNode);
 			} else {
 				addBox(new Point(node.x, node.y), std.Type.getClass(node.instance), node.instance);

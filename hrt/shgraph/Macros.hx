@@ -53,5 +53,25 @@ class Macros {
 		}
 		return fields;
 	}
+
+	static function autoRegisterNode() {
+		var fields = Context.getBuildFields();
+
+		var thisClass = Context.getLocalClass();
+		var cl = thisClass.get();
+		var clPath = cl.pack.copy();
+		clPath.push(cl.name);
+
+		#if editor
+		fields.push({
+			name: "_",
+			access: [Access.AStatic],
+			kind: FieldType.FVar(macro:Bool, macro ShaderNode.register($v{cl.name}, ${clPath.toFieldExpr()})),
+			pos: Context.currentPos(),
+		});
+		#end
+
+		return fields;
+	}
 	#end
 }

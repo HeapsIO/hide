@@ -137,7 +137,11 @@ class ShaderGraph {
 	public function addEdge(edge : Edge) {
 		var node = this.nodes.get(edge.idInput);
 		var output = this.nodes.get(edge.idOutput);
-		if (!output.instance.getOutputs2().exists(edge.nameOutput)) {
+
+		var inputs = node.instance.getInputs2();
+		var outputs = output.instance.getOutputs2();
+
+		if (!output.instance.getOutputs2().exists(edge.nameOutput) || !node.instance.getInputs2().exists(edge.nameInput)) {
 			return false;
 		}
 
@@ -149,8 +153,14 @@ class ShaderGraph {
 			removeEdge(edge.idInput, edge.nameInput, false);
 			return false;
 		}
+
+		var inputType = inputs[edge.nameInput].type;
+		var outputType = outputs[edge.nameOutput].type;
+
+		if (!areTypesCompatible(inputType, outputType)) {
+			removeEdge(edge.idInput, edge.nameInput);
+		}
 		try {
-			updateOutputs(output);
 		} catch (e : Dynamic) {
 			removeEdge(edge.idInput, edge.nameInput);
 			throw e;
@@ -159,17 +169,14 @@ class ShaderGraph {
 		return true;
 	}
 
-	public function nodeUpdated(idNode : Int) {
-		var node = this.nodes.get(idNode);
-		if (node != null) {
-			updateOutputs(node);
-		}
-	}
-
-	function updateOutputs(node : Node) {
-		node.instance.computeOutputs();
-		for (o in node.outputs) {
-			updateOutputs(o);
+	public function areTypesCompatible(input: hxsl.Ast.Type, output: hxsl.Ast.Type) : Bool {
+		return switch (input) {
+			case TFloat, TVec(_, VFloat):
+				switch (output) {
+					case TFloat, TVec(_, VFloat): true;
+					default: false;
+				}
+			default: haxe.EnumTools.EnumValueTools.equals(input, output);
 		}
 	}
 
@@ -178,9 +185,6 @@ class ShaderGraph {
 		this.nodes.get(node.instance.connections[nameInput].from.id).outputs.remove(node);
 
 		node.instance.connections.remove(nameInput);
-		if (update) {
-			updateOutputs(node);
-		}
 	}
 
 	public function setPosition(idNode : Int, x : Float, y : Float) {
@@ -303,6 +307,9 @@ class ShaderGraph {
 		function convertToType(targetType: hxsl.Ast.Type, sourceExpr: TExpr) : TExpr {
 			var sourceType = sourceExpr.t;
 
+			if (sourceType.equals(targetType))
+				return sourceExpr;
+
 			var sourceSize = switch (sourceType) {
 				case TFloat: 1;
 				case TVec(size, VFloat): size;
@@ -383,7 +390,7 @@ class ShaderGraph {
 								var shParam = Std.downcast(currentNode.instance, ShaderParam);
 								if (shParam != null) {
 									var id = getNewVarId();
-									var outVar = {id: id, name: nodeVar.name, type: nodeVar.type, kind : Param, qualifiers: [SgInput]};
+									var outVar = {id: id, name: nodeVar.name, type: nodeVar.type, kind : Param, qualifiers: nodeVar.qualifiers.copy()};
 									replacement = {e: TVar(outVar), p:pos, t: nodeVar.type};
 									graphInputVars.push(outVar);
 									externs.push(outVar);
