@@ -389,13 +389,18 @@ class ShaderGraph {
 							else {
 								var shParam = Std.downcast(currentNode.instance, ShaderParam);
 								if (shParam != null) {
+									var outVar = outputs["output"];
 									var id = getNewVarId();
-									var outVar = {id: id, name: nodeVar.name, type: nodeVar.type, kind : Param, qualifiers: nodeVar.qualifiers.copy()};
-									replacement = {e: TVar(outVar), p:pos, t: nodeVar.type};
+									outVar.id = id;
+									outVar.name = nodeVar.name;
+									outVar.type = nodeVar.type;
+									outVar.kind = Param;
+									outVar.qualifiers = [SgInput];
 									graphInputVars.push(outVar);
 									externs.push(outVar);
 									var param = getParameter(shParam.parameterId);
 									inits.push({variable: outVar, value: param.defaultValue});
+									continue;
 								}
 								else {
 									// default parameter if no connection
@@ -409,6 +414,11 @@ class ShaderGraph {
 						}
 						else if (nodeVar.qualifiers.has(SgOutput)) {
 							var outputVar : TVar = outputs.get(nodeVar.name);
+							// Kinda of a hack : skip decl writing for shaderParams
+							var shParam = Std.downcast(currentNode.instance, ShaderParam);
+							if (shParam != null) {
+								continue;
+							}
 							if (outputVar == null) {
 								externs.push(nodeVar);
 							} else {
@@ -425,7 +435,8 @@ class ShaderGraph {
 					}
 				}
 
-				exprsReverse.push(expr);
+				if (expr != null)
+					exprsReverse.push(expr);
 
 				for (output in outputDecls) {
 					var finalExpr : TExpr = {e: TVarDecl(output), p: pos, t: output.type};

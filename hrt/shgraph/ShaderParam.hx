@@ -21,10 +21,10 @@ class ShaderParam extends ShaderNode {
 		}
 		var inVar : TVar = {name: this.variable.name, id:0, type: this.variable.type, kind: Param, qualifiers: qual};
 		var output : TVar = {name: "output", id:1, type: this.variable.type, kind: Local, qualifiers: [SgOutput]};
-		var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(output), p:pos, t:output.type}, {e: TVar(inVar), p: pos, t: output.type}), p: pos, t: output.type};
+		//var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(output), p:pos, t:output.type}, {e: TVar(inVar), p: pos, t: output.type}), p: pos, t: output.type};
 
 
-		return {expr: finalExpr, inVars: [], outVars:[output], externVars: [inVar, output], inits: []};
+		return {expr: null, inVars: [], outVars:[output], externVars: [inVar, output], inits: []};
 	}
 
 	public var variable : TVar;
