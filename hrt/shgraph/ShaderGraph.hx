@@ -398,7 +398,9 @@ class ShaderGraph {
 									inits.push({variable: outVar, value: param.defaultValue});
 								}
 								else {
-									replacement = convertToType(nodeVar.type, {e: TConst(CFloat(0.5)), p: pos, t:TFloat});
+									// default parameter if no connection
+									// TODO : Handle default values for non Float/Vec vars
+									replacement = convertToType(nodeVar.type, {e: TConst(CFloat(0.0)), p: pos, t:TFloat});
 								}
 							}
 
