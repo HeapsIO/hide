@@ -142,7 +142,7 @@ class ShaderGraph {
 		}
 
 		var connection : Connection = {from: output, fromName: edge.nameOutput};
-		node.instance.inputs2.set(edge.nameInput, connection);
+		node.instance.connections.set(edge.nameInput, connection);
 
 		#if editor
 		if (hasCycle()){
@@ -175,9 +175,9 @@ class ShaderGraph {
 
 	public function removeEdge(idNode, nameInput, update = true) {
 		var node = this.nodes.get(idNode);
-		this.nodes.get(node.instance.inputs2[nameInput].from.id).outputs.remove(node);
+		this.nodes.get(node.instance.connections[nameInput].from.id).outputs.remove(node);
 
-		node.instance.inputs2.remove(nameInput);
+		node.instance.connections.remove(nameInput);
 		if (update) {
 			updateOutputs(node);
 		}
@@ -259,7 +259,7 @@ class ShaderGraph {
 		var outputNodes : Array<Node> = [];
 		var inits : Array<{ variable : hxsl.Ast.TVar, value : Dynamic }> = [];
 
-		var allConnections : Array<Connection> = [for (node in nodes) for (connection in node.instance.inputs2) connection];
+		var allConnections : Array<Connection> = [for (node in nodes) for (connection in node.instance.connections) connection];
 
 
 		// find all node with no output
@@ -290,7 +290,7 @@ class ShaderGraph {
 			while (nodeToExplore.length > 0) {
 				var currentNode = nodeToExplore.pop();
 				sortedNodes.push(currentNode);
-				for (connection in currentNode.instance.inputs2) {
+				for (connection in currentNode.instance.connections) {
 					var targetNode = connection.from;
 					if (!allConnections.remove(connection)) throw "connection not in graph";
 					if (allConnections.find((n:Connection) -> n.from == targetNode) == null) {
@@ -369,7 +369,7 @@ class ShaderGraph {
 				for (nodeVar in def.externVars) {
 					if (nodeVar.qualifiers != null) {
 						if (nodeVar.qualifiers.has(SgInput)) {
-							var connection = currentNode.instance.inputs2.get(nodeVar.name);
+							var connection = currentNode.instance.connections.get(nodeVar.name);
 
 							var replacement : TExpr = null;
 
@@ -535,7 +535,7 @@ class ShaderGraph {
 			var node = queue[currentIndex];
 			currentIndex++;
 
-			for (connection in node.instance.inputs2) {
+			for (connection in node.instance.connections) {
 				var nodeInput = connection.from;
 				nodeInput.indegree -= 1;
 				if (nodeInput.indegree == 0) {
@@ -605,7 +605,7 @@ class ShaderGraph {
 	public function save() {
 		var edgesJson : Array<Edge> = [];
 		for (n in nodes) {
-			for (inputName => connection in n.instance.inputs2) {
+			for (inputName => connection in n.instance.connections) {
 				edgesJson.push({ idOutput: connection.from.id, nameOutput: connection.fromName, idInput: n.id, nameInput: inputName });
 			}
 		}

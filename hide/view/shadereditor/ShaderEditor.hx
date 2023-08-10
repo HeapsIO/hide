@@ -520,7 +520,7 @@ class ShaderEditor extends hide.view.Graph {
 	function generateEdgesFromBox(box : Box) {
 
 		for (b in listOfBoxes) {
-			for (inputName => connection in b.getInstance().inputs2) {
+			for (inputName => connection in b.getInstance().connections) {
 				if (connection.from.id == box.getId()) {
 					var nodeFrom = box.getElement().find('[field=${connection.fromName}]');
 					var nodeTo = b.getElement().find('[field=${inputName}]');
@@ -533,7 +533,7 @@ class ShaderEditor extends hide.view.Graph {
 	}
 
 	function generateEdgesToBox(box : Box) {
-		for (inputName => connection in box.getInstance().inputs2) {
+		for (inputName => connection in box.getInstance().connections) {
 			var fromBox : Box = null;
 			for (boxFrom in listOfBoxes) {
 				if (boxFrom.getId() == connection.from.id) {
