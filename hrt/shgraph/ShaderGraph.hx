@@ -26,10 +26,12 @@ typedef Node = {
 };
 
 private typedef Edge = {
-	idOutput : Int,
+	outputNodeId : Int,
 	nameOutput : String,
-	idInput : Int,
-	nameInput : String
+	?outputId : Int, // Fallback if name has changed
+	inputNodeId : Int,
+	nameInput : String,
+	?inputId : Int, // Fallback if name has changed
 };
 
 typedef Connection = {
@@ -129,40 +131,68 @@ class ShaderGraph {
 		if (nodes[nodes.length-1] != null)
 			this.current_node_id = nodes[nodes.length-1].id+1;
 
+		// Migration patch
+		for (e in edges) {
+			if (e.inputNodeId == null)
+				e.inputNodeId = (e:Dynamic).idInput;
+			if (e.outputNodeId == null)
+				e.outputNodeId = (e:Dynamic).idOutput;
+		}
+
 		for (e in edges) {
 			addEdge(e);
 		}
 	}
 
 	public function addEdge(edge : Edge) {
-		var node = this.nodes.get(edge.idInput);
-		var output = this.nodes.get(edge.idOutput);
+		var node = this.nodes.get(edge.inputNodeId);
+		var output = this.nodes.get(edge.outputNodeId);
 
 		var inputs = node.instance.getInputs2();
 		var outputs = output.instance.getOutputs2();
 
-		if (!output.instance.getOutputs2().exists(edge.nameOutput) || !node.instance.getInputs2().exists(edge.nameInput)) {
-			return false;
+		var inputName = edge.nameInput;
+		var outputName = edge.nameOutput;
+
+		// Patch I/O if name have changed
+		if (!outputs.exists(outputName)) {
+			var def = output.instance.getShaderDef();
+			if(edge.outputId != null && def.outVars.length > edge.outputId) {
+				outputName = def.outVars[edge.outputId].name;
+			}
+			else {
+				return false;
+			}
 		}
 
-		var connection : Connection = {from: output, fromName: edge.nameOutput};
-		node.instance.connections.set(edge.nameInput, connection);
+		if (!inputs.exists(inputName)) {
+			var def = node.instance.getShaderDef();
+			if (edge.inputId != null && def.inVars.length > edge.inputId) {
+				inputName = def.inVars[edge.inputId].name;
+			}
+			else {
+				return false;
+			}
+		}
+
+		var connection : Connection = {from: output, fromName: outputName};
+		node.instance.connections.set(inputName, connection);
 
 		#if editor
 		if (hasCycle()){
-			removeEdge(edge.idInput, edge.nameInput, false);
+			removeEdge(edge.inputNodeId, inputName, false);
 			return false;
 		}
 
-		var inputType = inputs[edge.nameInput].type;
-		var outputType = outputs[edge.nameOutput].type;
+		var inputType = inputs[inputName].type;
+		var outputType = outputs[outputName].type;
 
 		if (!areTypesCompatible(inputType, outputType)) {
-			removeEdge(edge.idInput, edge.nameInput);
+			removeEdge(edge.inputNodeId, inputName);
 		}
 		try {
 		} catch (e : Dynamic) {
-			removeEdge(edge.idInput, edge.nameInput);
+			removeEdge(edge.inputNodeId, inputName);
 			throw e;
 		}
 		#end
@@ -427,11 +457,11 @@ class ShaderGraph {
 							}
 						}
 						else {
-							externs.push(nodeVar);
+							externs.pushUnique(nodeVar);
 						}
 					}
 					else {
-						externs.push(nodeVar);
+						externs.pushUnique(nodeVar);
 					}
 				}
 
@@ -626,7 +656,25 @@ class ShaderGraph {
 		var edgesJson : Array<Edge> = [];
 		for (n in nodes) {
 			for (inputName => connection in n.instance.connections) {
-				edgesJson.push({ idOutput: connection.from.id, nameOutput: connection.fromName, idInput: n.id, nameInput: inputName });
+				var def = n.instance.getShaderDef();
+				var inputId = null;
+				for (i => inVar in def.inVars) {
+					if (inVar.name == inputName) {
+						inputId = i;
+						break;
+					}
+				}
+
+				var def = connection.from.instance.getShaderDef();
+				var outputId = null;
+				for (i => outVar in def.outVars) {
+					if (outVar.name == connection.fromName) {
+						outputId = i;
+						break;
+					}
+				}
+
+				edgesJson.push({ outputNodeId: connection.from.id, nameOutput: connection.fromName, inputNodeId: n.id, nameInput: inputName, inputId: inputId, outputId: outputId });
 			}
 		}
 		var json = haxe.Json.stringify({

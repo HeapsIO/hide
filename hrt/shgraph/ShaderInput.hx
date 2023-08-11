@@ -9,7 +9,7 @@ using hxsl.Ast;
 class ShaderInput extends ShaderNode {
 
 
-	@prop("Variable") public var variable : TVar;
+	@prop("Variable") public var variable : TVar = availableInputs[0];
 
 	// override public function getOutput(key : String) : TVar {
 	// 	return variable;
@@ -18,6 +18,17 @@ class ShaderInput extends ShaderNode {
 	// override public function build(key : String) : TExpr {
 	// 	return null;
 	// }
+
+	override function getShaderDef():hrt.shgraph.ShaderGraph.ShaderNodeDef {
+		var pos : Position = {file: "", min: 0, max: 0};
+
+		var inVar : TVar = variable;
+		var output : TVar = {name: "output", id:1, type: this.variable.type, kind: Local, qualifiers: [SgOutput]};
+		var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(output), p:pos, t:output.type}, {e: TVar(inVar), p: pos, t: output.type}), p: pos, t: output.type};
+
+
+		return {expr: finalExpr, inVars: [], outVars:[output], externVars: [inVar, output], inits: []};
+	}
 
 	public static var availableInputs : Array<TVar> = [
 									{ parent: null, id: 0, kind: Input, name: "position", type: TVec(3, VFloat) },

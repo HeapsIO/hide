@@ -1039,7 +1039,7 @@ class ShaderEditor extends hide.view.Graph {
 		}
 		try {
 			beforeChange();
-			if (shaderGraph.addEdge({ idOutput: startLinkBox.getId(), nameOutput: startLinkNode.attr("field"), idInput: endLinkBox.getId(), nameInput: endLinkNode.attr("field") })) {
+			if (shaderGraph.addEdge({ outputNodeId: startLinkBox.getId(), nameOutput: startLinkNode.attr("field"), inputNodeId: endLinkBox.getId(), nameInput: endLinkNode.attr("field") })) {
 				afterChange();
 				createEdgeInEditorGraph(newEdge);
 				currentLink.removeClass("draft");
@@ -1459,9 +1459,9 @@ class ShaderEditor extends hide.view.Graph {
 			if( instancedBoxes[edge.fromIdx] == null || instancedBoxes[edge.toIdx] == null )
 				continue;
 			var toCreate = {
-				idOutput: instancedBoxes[edge.fromIdx].getId(),
+				outputNodeId: instancedBoxes[edge.fromIdx].getId(),
 				nameOutput: edge.fromName,
-				idInput: instancedBoxes[edge.toIdx].getId(),
+				inputNodeId: instancedBoxes[edge.toIdx].getId(),
 				nameInput: edge.toName,
 			}
 			if( !shaderGraph.addEdge(toCreate) ) {
