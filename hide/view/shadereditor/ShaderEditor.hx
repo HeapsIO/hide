@@ -280,7 +280,15 @@ class ShaderEditor extends hide.view.Graph {
 		element.find("#displayGlsl").on("click", () -> displayCompiled("glsl"));
 		element.find("#displayHlsl").on("click", () -> displayCompiled("hlsl"));
 
-		element.find("#display2").on("click", () -> {@:privateAccess info(hxsl.Printer.shaderToString(shaderGraph.compile2().shader.data, true));});
+		var preview : hrt.shgraph.nodes.Preview = null;
+		for (selected in listOfBoxesSelected) {
+			var asPrev = Std.downcast(selected.getInstance(), hrt.shgraph.nodes.Preview);
+			if (asPrev != null) {
+				preview = asPrev;
+				break;
+			}
+		}
+		element.find("#display2").on("click", () -> {@:privateAccess info(hxsl.Printer.shaderToString(shaderGraph.compile2(preview).shader.data, true));});
 
 		editorMatrix.on("click", "input, select", function(ev) {
 			beforeChange();
@@ -465,13 +473,13 @@ class ShaderEditor extends hide.view.Graph {
 		updateMatrix();
 
 		for (node in shaderGraph.getNodes()) {
-			/*var shaderPreview = Std.downcast(node.instance, hrt.shgraph.nodes.Preview);
+			var shaderPreview = Std.downcast(node.instance, hrt.shgraph.nodes.Preview);
 			if (shaderPreview != null) {
 				shaderPreview.config = config;
 				shaderPreview.shaderGraph = shaderGraph;
 				addBox(new Point(node.x, node.y), std.Type.getClass(node.instance), shaderPreview);
 				continue;
-			}*/
+			}
 			var paramNode = Std.downcast(node.instance, ShaderParam);
 			if (paramNode != null) {
 				var paramShader = shaderGraph.getParameter(paramNode.parameterId);
@@ -893,6 +901,15 @@ class ShaderEditor extends hide.view.Graph {
 			sceneEditor.scene.render(sceneEditor.scene.engine);
 			currentShader = newShader;
 			currentShaderDef = shaderGraphDef;//{shader: shaderGraphDef, inits:[]};
+
+			for (node in shaderGraph.getNodes()) {
+				var preview = Std.downcast(node.instance, hrt.shgraph.nodes.Preview);
+				if (preview != null) {
+					preview.config = config;
+					preview.shaderGraph = shaderGraph;
+					preview.update();
+				}
+			}
 			info('Shader compiled in  ${Date.now().getTime() - timeStart}ms');
 
 		} catch (e : Dynamic) {
@@ -982,12 +999,12 @@ class ShaderEditor extends hide.view.Graph {
 	function initSpecifics(node : Null<ShaderNode>) {
 		if( node == null )
 			return;
-		/*var shaderPreview = Std.downcast(node, hrt.shgraph.nodes.Preview);
+		var shaderPreview = Std.downcast(node, hrt.shgraph.nodes.Preview);
 		if (shaderPreview != null) {
 			shaderPreview.config = config;
 			shaderPreview.shaderGraph = shaderGraph;
 			return;
-		}*/
+		}
 		// var subGraphNode = Std.downcast(node, hrt.shgraph.nodes.SubGraph);
 		// if (subGraphNode != null) {
 		// 	subGraphNode.loadGraphShader();

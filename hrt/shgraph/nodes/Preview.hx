@@ -11,6 +11,19 @@ using hxsl.Ast;
 @noheader()
 class Preview extends ShaderNode {
 
+	override function getShaderDef():hrt.shgraph.ShaderGraph.ShaderNodeDef {
+		var pos : Position = {file: "", min: 0, max: 0};
+
+		var inVar : TVar = {name: "input", id:0, type: TVec(4, VFloat), kind: Param, qualifiers: [SgInput]};
+		var output : TVar = {name: "pixelColor", id:1, type: TVec(4, VFloat), kind: Local, qualifiers: [SgOutput]};
+		var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(output), p:pos, t:output.type}, {e: TVar(inVar), p: pos, t: output.type}), p: pos, t: output.type};
+
+		//var param = getParameter(inputNode.parameterId);
+		//inits.push({variable: inVar, value: param.defaultValue});
+
+		return {expr: finalExpr, inVars: [inVar], outVars:[], externVars: [inVar, output], inits: []};
+	}
+
 	// @input("Input") var input = SType.Vec4;
 
 	// public var variable : TVar;
@@ -29,135 +42,133 @@ class Preview extends ShaderNode {
 
 	// }
 
-	// #if editor
-	// public var shaderGraph : ShaderGraph;
-	// var nodePreview : js.jquery.JQuery;
-	// var cube : Mesh;
-	// var scene : hide.comp.Scene;
-	// var currentShaderPreview : hxsl.DynamicShader;
-	// var currentShaderDef : hrt.prefab.ContextShared.ShaderDef;
-	// public var config : hide.Config;
+	#if editor
+	var nodePreview : js.jquery.JQuery;
+	var element : js.jquery.JQuery;
+	public var shaderGraph: ShaderGraph;
+	var cube : Mesh;
+	var scene : hide.comp.Scene;
+	var currentShaderPreview : hxsl.DynamicShader;
+	var currentShaderDef : hrt.prefab.ContextShared.ShaderDef;
+	var inited = false;
+	public var config : hide.Config;
 
-	// override public function getPropertiesHTML(width : Float) : Array<hide.Element> {
-	// 	var elements = super.getPropertiesHTML(width);
-	// 	for (c in ShaderNode.availableVariables) {
-	// 		if (c.name == "pixelColor") {
-	// 			this.variable = c;
-	// 		}
-	// 	}
+	override public function getPropertiesHTML(width : Float) : Array<hide.Element> {
+		var elements = super.getPropertiesHTML(width);
 
-	// 	if (this.variable == null) {
-	// 		throw ShaderException.t("The preview is not available", this.id);
-	// 	}
-	// 	var element = new hide.Element('<div style="width: 100px; height: 100px"><div class="preview-parent" top="-10px" ><div class="node-preview" style="height: 100px" ></div></div></div>');
-	// 	nodePreview = element.find(".node-preview");
-	// 	scene = new hide.comp.Scene(config, null, nodePreview);
+		if (element == null) {
+			element = new hide.Element('<div style="width: 100px; height: 100px"><div class="preview-parent" top="-10px" ><div class="node-preview" style="height: 100px" ></div></div></div>');
+			nodePreview = element.find(".node-preview");
 
-	// 	scene.onReady = function() {
-	// 		var prim = new h3d.prim.Cube();
-	// 		prim.addUVs();
-	// 		prim.addNormals();
-	// 		cube = new Mesh(prim, scene.s3d);
-	// 		scene.s3d.camera.pos = new h3d.Vector(0.5, 3.4, 0.5);
-	// 		scene.s3d.camera.target = new h3d.Vector(0.5, 0.5, 0.5);
-	// 		var light = new h3d.scene.pbr.DirLight(scene.s3d.camera.target.sub(scene.s3d.camera.pos), scene.s3d);
-	// 		light.setPosition(scene.s3d.camera.pos.x, scene.s3d.camera.pos.y, scene.s3d.camera.pos.z);
-	// 		scene.s3d.camera.zoom = 1;
-	// 		scene.init();
-	// 		onMove();
-	// 		computeOutputs();
-	// 	};
+			scene = new hide.comp.Scene(config, null, nodePreview);
 
-	// 	elements.push(element);
-	// 	return elements;
-	// }
+			scene.onReady = function() {
+				var prim = new h3d.prim.Cube();
+				prim.addUVs();
+				prim.addNormals();
+				cube = new Mesh(prim, scene.s3d);
+				scene.s3d.camera.pos = new h3d.Vector(0.5, 3.4, 0.5);
+				scene.s3d.camera.target = new h3d.Vector(0.5, 0.5, 0.5);
+				var light = new h3d.scene.pbr.DirLight(scene.s3d.camera.target.sub(scene.s3d.camera.pos), scene.s3d);
+				light.setPosition(scene.s3d.camera.pos.x, scene.s3d.camera.pos.y, scene.s3d.camera.pos.z);
+				scene.s3d.camera.zoom = 1;
+				scene.init();
+				onMove();
+				inited = true;
 
-	// public function onMove(?x : Float, ?y : Float, zoom : Float = 1.) {
-	// 	// var top : Float;
-	// 	// var left : Float;
-	// 	// var parent = nodePreview.parent();
-	// 	// if (x != null && y != null) {
-	// 	// 	left = x;
-	// 	// 	top = y;
-	// 	// } else {
-	// 	// 	var offsetWindow = nodePreview.closest(".heaps-scene").offset();
-	// 	// 	var offset = nodePreview.closest("foreignObject").offset();
-	// 	// 	if (offsetWindow == null || offset == null) return;
-	// 	// 	top = offset.top - offsetWindow.top - 32;
-	// 	// 	left = offset.left - offsetWindow.left;
-	// 	// }
-	// 	// nodePreview.closest(".prop-group").attr("transform", 'translate(0, -5)');
-	// 	nodePreview.closest(".properties-group").children().first().css("fill", "#000");
-	// 	// parent.css("top", top/zoom + 17);
-	// 	// parent.css("left", left/zoom);
-	// 	// parent.css("zoom", zoom);
-	// }
+				update();
+			};
+		}
 
-	// function onResize() {
-	// 	if( cube == null ) return;
+		elements.push(element);
+		return elements;
+	}
 
-	// }
+	public function onMove(?x : Float, ?y : Float, zoom : Float = 1.) {
+		// var top : Float;
+		// var left : Float;
+		// var parent = nodePreview.parent();
+		// if (x != null && y != null) {
+		// 	left = x;
+		// 	top = y;
+		// } else {
+		// 	var offsetWindow = nodePreview.closest(".heaps-scene").offset();
+		// 	var offset = nodePreview.closest("foreignObject").offset();
+		// 	if (offsetWindow == null || offset == null) return;
+		// 	top = offset.top - offsetWindow.top - 32;
+		// 	left = offset.left - offsetWindow.left;
+		// }
+		// nodePreview.closest(".prop-group").attr("transform", 'translate(0, -5)');
+		nodePreview.closest(".properties-group").children().first().css("fill", "#000");
+		// parent.css("top", top/zoom + 17);
+		// parent.css("left", left/zoom);
+		// parent.css("zoom", zoom);
+	}
 
-	// override public function computeOutputs() {
-	// 	if (currentShaderPreview != null) {
-	// 		for (m in cube.getMaterials()) {
-	// 			m.mainPass.removeShader(currentShaderPreview);
-	// 		}
-	// 		currentShaderPreview = null;
-	// 	}
+	function onResize() {
+		if( cube == null ) return;
+	}
 
-	// 	if (scene == null || input == null || input.isEmpty()) return;
+	public function update() {
+		if (!inited)
+			return;
+		if (currentShaderPreview != null) {
+			for (m in cube.getMaterials()) {
+				m.mainPass.removeShader(currentShaderPreview);
+			}
+			currentShaderPreview = null;
+		}
 
-	// 	if (@:privateAccess scene.window == null)
-	// 		return;
-	// 	scene.setCurrent();
+		if (@:privateAccess scene.window == null)
+			return;
+		scene.setCurrent();
 
-	// 	var shader : hxsl.DynamicShader = null;
-	// 	try {
-	// 		var shaderGraphDef = shaderGraph.compile2(/*this*/);
-	// 		shader = new hxsl.DynamicShader(shaderGraphDef.shader);
-	// 		for (init in shaderGraphDef.inits) {
-	// 			setParamValue(init.variable, init.value, shader);
-	// 		}
-	// 		for (m in cube.getMaterials()) {
-	// 			m.mainPass.addShader(shader);
-	// 		}
-	// 		currentShaderPreview = shader;
-	// 		currentShaderDef = shaderGraphDef;
-	// 	} catch(e : Dynamic) {
-	// 		if (shader != null) {
-	// 			for (m in cube.getMaterials()) {
-	// 				m.mainPass.removeShader(shader);
-	// 			}
-	// 		}
-	// 	}
-	// }
+		var shader : hxsl.DynamicShader = null;
+		try {
+			var shaderGraphDef = shaderGraph.compile2(this);
+			shader = new hxsl.DynamicShader(shaderGraphDef.shader);
+			for (init in shaderGraphDef.inits) {
+				setParamValue(init.variable, init.value, shader);
+			}
+			for (m in cube.getMaterials()) {
+				m.mainPass.addShader(shader);
+			}
+			currentShaderPreview = shader;
+			currentShaderDef = shaderGraphDef;
+		} catch(e : Dynamic) {
+			if (shader != null) {
+				for (m in cube.getMaterials()) {
+					m.mainPass.removeShader(shader);
+				}
+			}
+		}
+	}
 
-	// public function setParamValueByName(varName : String, value : Dynamic) {
-	// 	if (currentShaderDef == null) return;
-	// 	for (init in currentShaderDef.inits) {
-	// 		if (init.variable.name == varName) {
-	// 			setParamValue(init.variable, value, currentShaderPreview);
-	// 			return;
-	// 		}
-	// 	}
-	// }
+	public function setParamValueByName(varName : String, value : Dynamic) {
+		if (currentShaderDef == null) return;
+		for (init in currentShaderDef.inits) {
+			if (init.variable.name == varName) {
+				setParamValue(init.variable, value, currentShaderPreview);
+				return;
+			}
+		}
+	}
 
-	// public function setParamValue(variable : TVar, value : Dynamic, shader : hxsl.DynamicShader) {
-	// 	scene.setCurrent();
-	// 	try {
-	// 		switch (variable.type) {
-	// 			case TSampler2D:
-	// 				shader.setParamValue(variable, scene.loadTexture("", value));
-	// 			case TVec(size, _):
-	// 				shader.setParamValue(variable, h3d.Vector.fromArray(value));
-	// 			default:
-	// 				shader.setParamValue(variable, value);
-	// 		}
-	// 	} catch (e : Dynamic) {
-	// 		// variable not used
-	// 	}
-	// }
+	public function setParamValue(variable : TVar, value : Dynamic, shader : hxsl.DynamicShader) {
+		scene.setCurrent();
+		try {
+			switch (variable.type) {
+				case TSampler2D:
+					shader.setParamValue(variable, scene.loadTexture("", value));
+				case TVec(size, _):
+					shader.setParamValue(variable, h3d.Vector.fromArray(value));
+				default:
+					shader.setParamValue(variable, value);
+			}
+		} catch (e : Dynamic) {
+			// variable not used
+		}
+	}
 
-	// #end
+	#end
 }

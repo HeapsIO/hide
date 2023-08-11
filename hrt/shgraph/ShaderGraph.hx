@@ -241,14 +241,13 @@ class ShaderGraph {
 			};
 	}
 
-	public function generate2(?getNewVarId: () -> Int) : ShaderNodeDef {
-		if (getNewVarId == null) {
-			var varIdCount = 0;
-			getNewVarId = function()
-				{
-					return varIdCount++;
-				};
-		}
+	public function generate2(?specificOutput: ShaderNode) : ShaderNodeDef {
+
+		var varIdCount = 0;
+		var getNewVarId = function()
+		{
+			return varIdCount++;
+		};
 
 		inline function getNewVarName(node: Node, id: Int) : String {
 			return '_sg_${(node.type).split(".").pop()}_var_$id';
@@ -389,10 +388,15 @@ class ShaderGraph {
 		// Actually build the final shader expression
 		var exprsReverse : Array<TExpr> = [];
 		for (currentNode in sortedNodes) {
+
 			// Skip nodes with no outputs that arent a final node
-			if (Std.downcast(currentNode.instance, ShaderOutput)==null) {
-				if (!nodeHasOutputs.get(currentNode))
+			if (!nodeHasOutputs.get(currentNode))
+			{
+				if (specificOutput != null && currentNode.instance != specificOutput)
 					continue;
+				if ( currentNode.instance != specificOutput && Std.downcast(currentNode.instance, ShaderOutput)==null) {
+					continue;
+				}
 			}
 
 
@@ -486,10 +490,10 @@ class ShaderGraph {
 		};
 	}
 
-	public function compile2() : hrt.prefab.ContextShared.ShaderDef {
+	public function compile2(?specificOutput: ShaderNode) : hrt.prefab.ContextShared.ShaderDef {
 		var start = haxe.Timer.stamp();
 
-		var gen = generate2();
+		var gen = generate2(specificOutput);
 
 		var shaderData : ShaderData = {
 			name: "",
