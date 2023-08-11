@@ -6,20 +6,16 @@ using hxsl.Ast;
 @description("Limits value between min and max")
 @width(80)
 @group("Math")
-class Clamp extends ShaderFunction {
+class Clamp extends ShaderNodeHxsl {
 
-// 	@input("X") var x = SType.Number;
-// 	@input("Min", true) var min = SType.Number;
-// 	@input("Max", true) var max = SType.Number;
+	static var SRC = {
+		@sginput var a : Vec4;
+		@sginput var min : Vec4;
+		@sginput var max : Vec4;
 
-// 	public function new() {
-// 		super(Clamp);
-// 	}
-
-// 	override public function computeOutputs() {
-// 		if (x != null && !x.isEmpty())
-// 			addOutput("output", x.getType());
-// 		else
-// 			removeOutput("output");
-// 	}
+		@sgoutput var output : Vec4;
+		function fragment() {
+			output = clamp(a, min, max);
+		}
+	};
 }

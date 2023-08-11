@@ -6,19 +6,15 @@ using hxsl.Ast;
 @description("The output is the result of x ^ b")
 @width(80)
 @group("Math")
-class Pow extends ShaderFunction {
+class Pow extends ShaderNodeHxsl {
 
-	// @input("X") var x = SType.Number;
-	// @input("P", true) var p = SType.Number;
+	static var SRC = {
+		@sginput var a : Vec4;
+		@sginput var b : Vec4;
+		@sgoutput var output : Vec4;
+		function fragment() {
+			output = pow(a,b);
+		}
+	};
 
-	// public function new() {
-	// 	super(Pow);
-	// }
-
-	// override public function computeOutputs() {
-	// 	if (x != null && !x.isEmpty())
-	// 		addOutput("output", x.getType());
-	// 	else
-	// 		removeOutput("output");
-	// }
 }

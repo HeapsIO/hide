@@ -6,18 +6,14 @@ using hxsl.Ast;
 @description("The output is the result of normalize(x)")
 @width(80)
 @group("Math")
-class Normalize extends ShaderFunction {
+class Normalize extends ShaderNodeHxsl {
 
-	// @input("X") var x = SType.Number;
+	static var SRC = {
+		@sginput var a : Vec4;
+		@sgoutput var output : Vec4;
+		function fragment() {
+			output = normalize(a);
+		}
+	};
 
-	// public function new() {
-	// 	super(Normalize);
-	// }
-
-	// override public function computeOutputs() {
-	// 	if (x != null && !x.isEmpty())
-	// 		addOutput("output", x.getType());
-	// 	else
-	// 		removeOutput("output");
-	// }
 }

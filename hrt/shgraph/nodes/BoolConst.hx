@@ -12,16 +12,13 @@ class BoolConst extends ShaderConst {
 
 	@prop() var value : Bool = true;
 
-	// override public function getOutputTExpr(key : String) : TExpr {
-	// 	return {
-	// 				e: TConst(CBool(value)),
-	// 				p: null,
-	// 				t: TBool
-	// 			};
-	// }
+	override function getShaderDef():hrt.shgraph.ShaderGraph.ShaderNodeDef {
+		var pos : Position = {file: "", min: 0, max: 0};
 
-	override public function build(key : String) : TExpr {
-		return null;
+		var output : TVar = {name: "output", id:1, type: TBool, kind: Local, qualifiers: [SgOutput]};
+		var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(output), p:pos, t:output.type}, {e: TConst(CBool(value)), p: pos, t: output.type}), p: pos, t: output.type};
+
+		return {expr: finalExpr, inVars: [], outVars:[output], externVars: [output], inits: []};
 	}
 
 	#if editor

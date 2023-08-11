@@ -5,31 +5,20 @@ using hxsl.Ast;
 @name("Split")
 @description("Split all components of a vector into floats")
 @group("Channel")
-class Split extends ShaderNode {
+class Split extends ShaderNodeHxsl {
 
-	// @input("RGBA") var input = SType.Vec4;
-
-
-	// var components = [X, Y, Z, W];
-	// var componentsString = ["r", "g", "b", "a"];
-
-	// override public function computeOutputs() {
-	// 	addOutput("r", TFloat);
-	// 	addOutput("g", TFloat);
-	// 	addOutput("b", TFloat);
-	// 	addOutput("a", TFloat);
-	// }
-
-	// override public function build(key : String) : TExpr {
-	// 	var compIdx = componentsString.indexOf(key);
-	// 	return { e: TBinop(OpAssign, {
-	// 				e: TVar(getOutput(key)),
-	// 				p: null,
-	// 				t: getOutput(key).type
-	// 			}, {e: TSwiz(input.getVar(TVec(4, VFloat)), [components[compIdx]]), p: null, t: getOutput(key).type }),
-	// 			p: null,
-	// 			t: getOutput(key).type
-	// 		};
-	// }
+	static var SRC = {
+		@sginput var rgba : Vec4;
+		@sgoutput var r : Float;
+		@sgoutput var g : Float;
+		@sgoutput var b : Float;
+		@sgoutput var a : Float;
+		function fragment() {
+			r = rgba.r;
+			g = rgba.g;
+			b = rgba.b;
+			a = rgba.a;
+		}
+	};
 
 }

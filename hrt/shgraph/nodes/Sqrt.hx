@@ -7,19 +7,14 @@ using hxsl.Ast;
 @width(80)
 @group("Math")
 @:keep
-class Sqrt extends ShaderFunction {
+class Sqrt extends ShaderNodeHxsl {
 
-	// @input("A") var a = SType.Number;
-
-	// public function new() {
-	// 	super(Sqrt);
-	// }
-
-	// override public function computeOutputs() {
-	// 	if (a != null && !a.isEmpty())
-	// 		addOutput("output", a.getType());
-	// 	else
-	// 		removeOutput("output");
-	// }
+	static var SRC = {
+		@sginput var a : Vec4;
+		@sgoutput var output : Vec4;
+		function fragment() {
+			output = sqrt(a);
+		}
+	};
 
 }

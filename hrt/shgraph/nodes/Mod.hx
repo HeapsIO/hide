@@ -6,20 +6,15 @@ using hxsl.Ast;
 @description("The output is the result of X modulo MOD")
 @width(80)
 @group("Math")
-class Mod extends ShaderFunction {
+class Mod extends ShaderNodeHxsl {
 
-	// @input("X") var x = SType.Variant;
-	// @input("Mod", true) var mod = SType.Float;
-
-	// public function new() {
-	// 	super(Mod);
-	// }
-
-	// override public function computeOutputs() {
-	// 	if (x != null && !x.isEmpty())
-	// 		addOutput("output", x.getType());
-	// 	else
-	// 		removeOutput("output");
-	// }
+	static var SRC = {
+		@sginput var a : Vec4;
+		@sginput var b : Vec4;
+		@sgoutput var output : Vec4;
+		function fragment() {
+			output = mod(a,b);
+		}
+	};
 
 }

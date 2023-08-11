@@ -5,7 +5,22 @@ using hxsl.Ast;
 @name("UV Scroll")
 @description("Scroll UV according to U & V speed")
 @group("Specials")
-class UVScroll extends ShaderNode {
+class UVScroll extends  ShaderNodeHxsl {
+
+	static var SRC = {
+		@sginput var uv : Vec2;
+		@sginput var uSpeed : Float;
+		@sginput var vSpeed : Float;
+		@sginput var time : Float;
+
+		@sgoutput var output : Vec2;
+
+		function fragment() {
+			output = mod(uv + vec2(uSpeed * time, vSpeed * time), 1.0);
+		}
+	};
+
+}
 
 	// @input("UV") var uv = SType.Vec2;
 	// @input("USpeed", true) var uSpeed = SType.Number;
@@ -104,5 +119,3 @@ class UVScroll extends ShaderNode {
 	// 				t: output.type
 	// 			};
 	// }
-
-}

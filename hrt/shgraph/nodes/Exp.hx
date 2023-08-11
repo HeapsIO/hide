@@ -6,19 +6,14 @@ using hxsl.Ast;
 @description("The output is the result of exp(x)")
 @width(80)
 @group("Math")
-class Exp extends ShaderFunction {
+class Exp extends ShaderNodeHxsl {
 
-	// @input("X") var x = SType.Number;
-	// @input("P", true) var p = SType.Number;
+	static var SRC = {
+		@sginput var a : Vec4;
+		@sgoutput var output : Vec4;
+		function fragment() {
+			output = exp(a);
+		}
+	};
 
-	// public function new() {
-	// 	super(Exp);
-	// }
-
-	// override public function computeOutputs() {
-	// 	if (x != null && !x.isEmpty())
-	// 		addOutput("output", x.getType());
-	// 	else
-	// 		removeOutput("output");
-	// }
 }

@@ -26,6 +26,57 @@ class Color extends ShaderConst {
 	// 	};
 	// }
 
+	override function getShaderDef():hrt.shgraph.ShaderGraph.ShaderNodeDef {
+		var pos : Position = {file: "", min: 0, max: 0};
+
+		var output : TVar = {name: "output", id:1, type: TVec(4, VFloat), kind: Local, qualifiers: [SgOutput]};
+		var finalExpr : TExpr =
+		{ e: TBinop(OpAssign, {
+				e: TVar(output),
+				p: null,
+				t: output.type
+			}, {
+				e: TCall({
+					e: TGlobal(Vec4),
+					p: null,
+					t: TFun([
+						{
+							ret: output.type,
+							args: [
+							{ name: "r", type : TFloat },
+							{ name: "g", type : TFloat },
+							{ name: "b", type : TFloat },
+							{ name: "a", type : TFloat }]
+						}
+					])
+				}, [{
+						e: TConst(CFloat(r)),
+						p: null,
+						t: TFloat
+					},
+					{
+						e: TConst(CFloat(g)),
+						p: null,
+						t: TFloat
+					},
+					{
+						e: TConst(CFloat(b)),
+						p: null,
+						t: TFloat
+					},{
+						e: TConst(CFloat(a)),
+						p: null,
+						t: TFloat
+					}]),
+				p: null,
+				t: output.type
+			}),
+			p: null,
+			t: output.type
+		};
+		return {expr: finalExpr, inVars: [], outVars:[output], externVars: [output], inits: []};
+	}
+
 	// override public function build(key : String) : TExpr {
 
 	// 	return { e: TBinop(OpAssign, {
@@ -77,7 +128,7 @@ class Color extends ShaderConst {
 	override public function getPropertiesHTML(width : Float) : Array<hide.Element> {
 		var elements = super.getPropertiesHTML(width);
 		var element = new hide.Element('<div style="width: 47px; height: 35px"></div>');
-		var picker = new hide.comp.ColorPicker(true, element);
+		var picker = new hide.comp.ColorPicker.ColorBox(element, true, true);
 
 
 		var start = h3d.Vector.fromArray([r, g, b, a]);

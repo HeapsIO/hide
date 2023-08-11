@@ -6,19 +6,14 @@ using hxsl.Ast;
 @description("The fractional part of X")
 @width(80)
 @group("Math")
-class Fract extends ShaderFunction {
+class Fract extends ShaderNodeHxsl {
 
-	// @input("X") var x = SType.Number;
-
-	// public function new() {
-	// 	super(Fract);
-	// }
-
-	// override public function computeOutputs() {
-	// 	if (x != null && !x.isEmpty())
-	// 		addOutput("output", x.getType());
-	// 	else
-	// 		removeOutput("output");
-	// }
+	static var SRC = {
+		@sginput var a : Vec4;
+		@sgoutput var output : Vec4;
+		function fragment() {
+			output = fract(a);
+		}
+	};
 
 }

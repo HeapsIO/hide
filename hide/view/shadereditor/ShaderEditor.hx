@@ -988,11 +988,11 @@ class ShaderEditor extends hide.view.Graph {
 			shaderPreview.shaderGraph = shaderGraph;
 			return;
 		}*/
-		var subGraphNode = Std.downcast(node, hrt.shgraph.nodes.SubGraph);
-		if (subGraphNode != null) {
-			subGraphNode.loadGraphShader();
-			return;
-		}
+		// var subGraphNode = Std.downcast(node, hrt.shgraph.nodes.SubGraph);
+		// if (subGraphNode != null) {
+		// 	subGraphNode.loadGraphShader();
+		// 	return;
+		// }
 	}
 
 	function addNode(p : Point, nodeClass : Class<ShaderNode>) {
@@ -1011,7 +1011,7 @@ class ShaderEditor extends hide.view.Graph {
 	function addSubGraph(p : Point, path : String) {
 		var node : SubGraph = cast addNode(p, SubGraph);
 		@:privateAccess node.pathShaderGraph = path;
-		node.loadGraphShader();
+		// node.loadGraphShader();
 		return node;
 	}
 
@@ -1340,7 +1340,7 @@ class ShaderEditor extends hide.view.Graph {
 				field = edge.nodeFrom.attr("field");
 			}
 			var newBox = refreshBox(edge.to);
-			subGraph.loadGraphShader();
+			// subGraph.loadGraphShader();
 
 			clearAvailableNodes();
 			if (isCreatingLink == FromInput) {

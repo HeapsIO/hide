@@ -6,11 +6,7 @@ using hxsl.Ast;
 @description("The output is the result of A * B")
 @width(80)
 @group("Operation")
-class Multiply extends Operation {
-
-	// public function new() {
-	// 	super(OpMult);
-	// }
+class Multiply extends ShaderNodeHxsl {
 
 	static var SRC = {
 		@sginput var a : Vec4;

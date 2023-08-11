@@ -6,10 +6,14 @@ using hxsl.Ast;
 @description("The output is the result of A - B")
 @width(80)
 @group("Operation")
-class Subtract extends Operation {
+class Subtract extends ShaderNodeHxsl {
 
-	// public function new() {
-	// 	super(OpSub);
-	// }
-
+	static var SRC = {
+		@sginput var a : Vec4;
+		@sginput var b : Vec4;
+		@sgoutput var output : Vec4;
+		function fragment() {
+			output = a - b;
+		}
+	}
 }
