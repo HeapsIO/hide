@@ -1516,6 +1516,8 @@ class Editor extends Component {
 			// if first column or subtable, refresh all
 			if( sheet.columns.length == 1 || sheet.name.indexOf("@") > 0 )
 				refresh();
+			else
+				sheet.sync();
 			for( t in tables )
 				if( t.sheet == sheet )
 					t.refresh();
