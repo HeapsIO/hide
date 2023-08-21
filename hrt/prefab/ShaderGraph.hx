@@ -4,7 +4,7 @@ class ShaderGraph extends DynamicShader {
 
 	public function new(?parent) {
 		super(parent);
-		type = "shadergraph";
+		type = "shgraph";
 	}
 
 	override public function loadShaderDef(ctx: Context) {
