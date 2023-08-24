@@ -20,6 +20,28 @@ class Macros {
 						try {
 							var c = Context.getLocalClass();
 
+							trace("=========================");
+							// function map(e: haxe.macro.Expr) {
+							// 	switch(e) {
+							// 		case EMeta("sginput", args, e):
+							// 			trace("sginput");
+							// 	}
+							// }
+
+							// expr.map()
+
+							function iter(e: haxe.macro.Expr) : Void {
+								switch(e.expr) {
+									case EMeta(meta, subexpr):
+										if (meta.name == "sginput")
+											trace("sginput", subexpr);
+										else if (meta.name == "sgoutput")
+											trace("sgoutput", subexpr);
+									default:
+								}
+							}
+
+							expr.iter(iter);
 							var shader = new hxsl.MacroParser().parseExpr(expr);
 							f.kind = FVar(null, macro @:pos(pos) $v{shader});
 							var check = new hxsl.Checker();
