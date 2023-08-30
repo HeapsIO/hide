@@ -630,13 +630,16 @@ class Editor extends Component {
 			return;
 		var hasChanges = false;
 		var sheet = cursor.table.sheet;
-		var id = getCursorId(sheet, true);
-		if( id != null && id.length > 0) {
-			var refs = getReferences(id, sheet);
-			if( refs.length > 0 ) {
-				var message = [for (r in refs) r.str].join("\n");
-				if( !ide.confirm('$id is referenced elswhere. Are you sure you want to delete?\n$message') )
-					return;
+
+		if (cursor.getCell() == null || cursor.getCell().column.type == TId) {
+			var id = getCursorId(sheet, true);
+			if(id != null && id.length > 0) {
+				var refs = getReferences(id, sheet);
+				if( refs.length > 0 ) {
+					var message = [for (r in refs) r.str].join("\n");
+					if( !ide.confirm('$id is referenced elswhere. Are you sure you want to delete?\n$message') )
+						return;
+				}
 			}
 		}
 		beginChanges();
