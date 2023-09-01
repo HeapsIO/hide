@@ -838,7 +838,7 @@ class Trails extends Object3D {
 		super.edit(ctx);
 
 		var trailContext = ctx.getContext(this);
-		var trail = trailContext == null ? create(null) : Std.downcast(trailContext.local3d, TrailObj);
+		var trailObj = trailContext == null ? null : Std.downcast(trailContext.local3d, TrailObj);
 		var props = ctx.properties.add(new hide.Element('
 		<div class="group" name="Trail Properties">
 			<dl>
@@ -858,14 +858,16 @@ class Trails extends Object3D {
 		</dl>
 	</div>
 		'),this, function(name:String) {
+			if(trailObj == null)
+				return;
 			if (name == "uvRepeat") {
-				trail.updateShader();
+				trailObj.updateShader();
 			}
 			if (name == "uvMode") {
-				trail.reset();
+				trailObj.reset();
 			}
 			if (name == "maxTriangles") {
-				trail.updateParams();
+				trailObj.updateParams();
 			}
 		});
 		//ctx.properties.addMaterial( trail.material, props.find("[name=Material] > .content"), function(_) data = trail.save());
