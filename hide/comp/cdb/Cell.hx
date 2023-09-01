@@ -674,7 +674,8 @@ class Cell {
 		case TString if( column.kind == Script ):
 			open();
 		case TInt, TFloat, TString, TId, TCustom(_), TDynamic:
-			var str = value == null ? "" : Std.isOfType(value, String) ? value : editor.base.valToString(column.type, value);
+			var isPercent = column.display == Percent;
+			var str = value == null ? "" : Std.isOfType(value, String) ? value : editor.base.valToString(column.type, value, false, isPercent);
 
 			elementHtml.innerHTML = null;
 			elementHtml.classList.add("edit");
@@ -1153,6 +1154,9 @@ class Cell {
 			newValue = try editor.base.parseValue(column.type, str, false) catch( e : Dynamic ) return;
 		} else
 			newValue = str;
+
+		if (column.display == Percent)
+			newValue *= 0.01;
 
 		if( newValue == null || newValue == currentValue )
 			return;
