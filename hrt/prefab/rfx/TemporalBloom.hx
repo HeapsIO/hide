@@ -17,7 +17,7 @@ class DualFilterDown extends h3d.shader.ScreenShader {
 			sum += texture(source, calculatedUV - halfPixel.xy).rgb;
 			sum += texture(source, calculatedUV + vec2(halfPixel.x, -halfPixel.y)).rgb;
 			sum += texture(source, calculatedUV - vec2(halfPixel.x, -halfPixel.y)).rgb;
-			pixelColor.rgb = sum / 8.0;
+			pixelColor.rgb = max(sum / 8.0, 0.0);
 		}
 	};
 }
