@@ -148,7 +148,7 @@ class TerrainEditor {
 				uvTex.dispose();
 			}
 			uvTex = new h3d.mat.Texture( Std.int(h3d.Engine.getCurrent().width * uvTexRes),  Std.int(h3d.Engine.getCurrent().height * uvTexRes), [Target], RGBA32F);
-			uvTex.depthBuffer = new h3d.mat.DepthBuffer(uvTex.width, uvTex.height);
+			uvTex.depthBuffer = new h3d.mat.Texture(uvTex.width, uvTex.height, Depth24Stencil8);
 		}
 
 		var prevParent = terrainPrefab.terrain.parent;
