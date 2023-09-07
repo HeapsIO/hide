@@ -420,6 +420,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var shaderAnims : ShaderAnims;
 
 	public var isSubEmitter : Bool = false;
+	public var relativeScenePosition : Bool = false;
 	public var parentEmitter : EmitterObject = null;
 	public var enable : Bool;
 
@@ -796,6 +797,7 @@ class EmitterObject extends h3d.scene.Object {
 
 		var emitterQuat : h3d.Quat = null;
 		if (count > 0) {
+			var scene = relativeScenePosition ? getScene() : null;
 
 			if (trailsTemplate != null && trails == null) {
 				if( tmpCtx == null ) {
@@ -900,7 +902,10 @@ class EmitterObject extends h3d.scene.Object {
 					case World:
 						tmpPt.set(tmpOffset.x, tmpOffset.y, tmpOffset.z);
 						localToGlobal(tmpPt);
-						part.setPosition(tmpPt.x, tmpPt.y, tmpPt.z);
+						if( relativeScenePosition )
+							part.setPosition(tmpPt.x - scene.x, tmpPt.y - scene.y, tmpPt.z - scene.z);
+						else
+							part.setPosition(tmpPt.x, tmpPt.y, tmpPt.z);
 						emitterQuat = tmpEmitterQuat;
 						tmpMat.load(getAbsPos());
 						var s = tmpMat.getScale();
