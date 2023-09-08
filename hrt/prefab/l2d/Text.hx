@@ -45,8 +45,7 @@ class Text extends Object2D {
 		super.updateInstance(ctx, propName);
 		var h2dText = (cast ctx.local2d : h2d.HtmlText);
 		h2dText.visible = visible;
-		h2dText.color = h3d.Vector.fromColor(color);
-		h2dText.color.w = 1;
+		h2dText.textColor = color;
 		h2dText.maxWidth = maxWidth > 0 ? maxWidth : null;
 
 		if (enableTextShadow) {
