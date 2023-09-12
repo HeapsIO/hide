@@ -87,18 +87,22 @@ class Shader extends Prefab {
 				for( m in material.getMaterials(ctx) )
 					callb(null, m);
 		} else {
-			var objs;
+			var objs = [];
+			function pushUnique(obj : h3d.scene.Object ) {
+				for ( o in objs )
+					if ( o == obj )
+						return;
+				objs.push(obj);
+			}
 			if( recursiveApply ) {
-				objs = [];
 				for( c in parent.flatten() )
 					for( o in shared.getObjects(c, h3d.scene.Object) )
-						objs.push(o);
+						pushUnique(o);
 			} else if( parent.type == "object" ) {
 				// apply to all immediate children
-				objs = [];
 				for( c in parent.children )
 					for( o in shared.getObjects(c, h3d.scene.Object) )
-						objs.push(o);
+						pushUnique(o);
 			} else
 				objs = shared.getObjects(parent, h3d.scene.Object);
 			for( obj in objs )
