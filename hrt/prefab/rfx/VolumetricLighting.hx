@@ -146,7 +146,7 @@ class VolumetricLighting extends RendererFX {
 				}
 				light = light.next;
 			}
-			if ( sun == null || sun.shadows == null || !sun.shadows.enabled )
+			if ( sun == null || sun.shadows == null || !sun.shadows.enabled || sun.shadows.getShadowTex() == null )
 				return;
 			var tex = r.allocTarget("volumetricLighting", false, textureSize, RGBA16F);
 			tex.clear(0, 0.0);

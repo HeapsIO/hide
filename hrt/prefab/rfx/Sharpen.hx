@@ -33,6 +33,7 @@ class Sharpen extends RendererFX {
 			r.mark("Sharpen");
 			var sharpen = r.allocTarget("sharpen", true, 1.0, RGBA);
 			var ctx = r.ctx;
+			var prevDepthBinding = @:privateAccess ctx.engine.currentDepthBinding;
 			ctx.engine.pushTarget(sharpen);
 			sharpenPass.shader.source = ctx.getGlobal("ldrMap");
 			sharpenPass.shader.intensity = intensity;
@@ -40,7 +41,8 @@ class Sharpen extends RendererFX {
 			sharpenPass.render();
 			ctx.engine.popTarget();
 			ctx.setGlobal("ldrMap", sharpen);
-			r.setTarget(sharpen);
+			@:privateAccess cast(r, h3d.scene.pbr.Renderer).textures.ldr = sharpen;
+			r.setTarget(sharpen, prevDepthBinding);
 		}
 	}
 
