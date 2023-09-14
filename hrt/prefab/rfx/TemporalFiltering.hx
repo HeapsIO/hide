@@ -163,6 +163,10 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 			var output : h3d.mat.Texture = ctx.engine.getCurrentTarget();
 			var depthMap : Dynamic = ctx.getGlobal("depthMap");
 			var prevFrame = r.allocTarget("prevFrame", false, 1.0, output.format);
+			if ( !prevFrame.flags.has(WasCleared) ) {
+				prevFrame.flags.set(WasCleared);
+				prevFrame.clear(0);
+			}
 			var curFrame = r.allocTarget("curFrame", false, 1.0, output.format);
 			h3d.pass.Copy.run(output, curFrame);
 
