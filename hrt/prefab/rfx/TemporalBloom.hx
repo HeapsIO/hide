@@ -55,7 +55,6 @@ class Threshold extends h3d.shader.ScreenShader {
 
 		@const var USE_TEMPORAL_FILTER : Bool;
 		@const var PREVENT_GHOSTING : Bool;
-		@param var cur : Sampler2D;
 		@param var prev : Sampler2D;
 		@param var prevCamMat : Mat4;
 		@param var cameraInverseViewProj : Mat4;
@@ -104,8 +103,6 @@ class TemporalBloom extends RendererFX {
 		downScaleCount = 5;
 		threshold = 0.5;
 		maxValue = 100.0;
-		prevCamMat = new h3d.Matrix();
-		prevCamMat.identity();
 	}
 
 	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
@@ -120,8 +117,16 @@ class TemporalBloom extends RendererFX {
             thresholdPass.shader.intensity = intensity;
 			thresholdPass.shader.maxIntensity = maxValue;
 			if( useTemporalFilter ) {
+				if ( prevCamMat == null ) {
+					prevCamMat = new h3d.Matrix();
+					prevCamMat.load(ctx.camera.m);
+				}
 				thresholdPass.shader.USE_TEMPORAL_FILTER = true;
 				prevResult = r.allocTarget("pr", false, size, RGBA16F);
+				if ( !prevResult.flags.has(WasCleared) ) {
+					prevResult.clear(0);
+					prevResult.flags.set(WasCleared);
+				}
 				thresholdPass.shader.prev = prevResult;
 				thresholdPass.shader.prevCamMat.load(prevCamMat);
 				thresholdPass.shader.cameraInverseViewProj.load(ctx.camera.getInverseViewProj());
