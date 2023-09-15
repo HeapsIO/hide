@@ -146,6 +146,7 @@ class CdbTable extends hide.ui.View<{}> {
 		var sheets = [for( s in getSheets() ) s.name];
 		var index = sheets.indexOf(s.name);
 		if( index < 0 ) return;
+		@:privateAccess editor.currentFilters = [];
 		tabs.currentTab = tabContents[index].parent();
 		editor.setFilter(null);
 		if( line != null ) {
