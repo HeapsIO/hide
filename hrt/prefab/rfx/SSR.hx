@@ -152,6 +152,8 @@ class SSR extends RendererFX {
 	@:s public var randomPower : Float = 0.0;
 	@:s public var textureSize : Float = 0.5;
 
+	@:s public var stepName : String = "MainDraw";
+
 	function new(?parent) {
 		super(parent);
 
@@ -164,7 +166,7 @@ class SSR extends RendererFX {
 
 	var passes : h3d.pass.PassList;
 	override function end( r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {
-		if( step == Decals) {
+		if( step.getName() == stepName ) {
 			r.mark("SSR");
 
 			var ldrMap = r.ctx.getGlobal("ldrMap");
@@ -226,6 +228,21 @@ class SSR extends RendererFX {
 				<dt>Thickness</dt><dd><input type="range" min="0" max="1" field="thickness"/></dd>
 				<dt>Blur radius</dt><dd><input type="range" min="0" max="5" field="blurRadius"/></dd>
 				<dt>Texture size</dt><dd><input type="range" min="0" max="1" field="textureSize"/></dd>
+			</dl>
+		</div>
+		<div class="group" name="Rendering">
+			<dl>
+				<dt>Render Mode</dt>
+					<dd><select field="stepName">
+						<option value="MainDraw">Main Draw</option>
+						<option value="Decals">Decals</option>
+						<option value="Shadows">Shadows</option>
+						<option value="Lighting">Lighting</option>
+						<option value="Forward">Forward</option>
+						<option value="Overlay">Overlay</option>
+						<option value="BeforeTonemapping">Before Tonemapping</option>
+						<option value="AfterTonemapping">After Tonemapping</option>
+					</select></dd>
 			</dl>
 		</div>
 		'),this);
