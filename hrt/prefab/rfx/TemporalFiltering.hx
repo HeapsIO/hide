@@ -18,6 +18,7 @@ class TemporalFilteringShader extends h3d.shader.ScreenShader {
 		@param var prevCamMat : Mat4;
 		@param var cameraInverseViewProj : Mat4;
 
+		@const var PACKED_DEPTH : Bool;
 		@param var depthChannel : Channel;
 		@param var depthTexture : Sampler2D;
 
@@ -70,7 +71,7 @@ class TemporalFilteringShader extends h3d.shader.ScreenShader {
 		var isSky : Bool;
 
 		function getPixelPosition( uv : Vec2 ) : Vec3 {
-			var d = depthChannel.get(uv).r;
+			var d = PACKED_DEPTH ? unpack(depthTexture.get(uv)) : depthChannel.get(uv).r;
 			var tmp = vec4(uvToScreen(uv), d, 1) * cameraInverseViewProj;
 			tmp.xyz /= tmp.w;
 			isSky = d == 1.0;
@@ -178,12 +179,16 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 			s.depthChannel = depthMap.texture;
 			s.depthChannelChannel = depthMap.channel == null ? hxsl.Channel.R : depthMap.channel;
 
-			s.resolution.set(output.width, output.height);
-			s.VARIANCE_CLIPPING = varianceClipping;
-			s.YCOCG = ycocg;
-			s.UNJITTER = unjitter;
+			s.PACKED_DEPTH = depthMap.packed != null && depthMap.packed == true;
+			if( s.PACKED_DEPTH ) {
+				s.depthTexture = depthMap.texture;
+			}
+			else {
+				s.depthChannel = depthMap.texture;
+				s.depthChannelChannel = depthMap.channel == null ? hxsl.Channel.R : depthMap.channel;
+			}
 
-			r.setTarget(output, ReadOnly);
+			r.setTarget(output);
 			pass.render();
 
 			h3d.pass.Copy.run(output, prevFrame);

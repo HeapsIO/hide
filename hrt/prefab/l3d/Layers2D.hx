@@ -127,7 +127,7 @@ class Layer2DRFX extends hrt.prefab.rfx.RendererFX {
 				s.depthChannelChannel = depthMap.channel == null ? hxsl.Channel.R : depthMap.channel;
 			}
 
-			r.setTarget(output, ReadOnly);
+			r.setTarget(output);
 			pass.render();
 		}
 	}
