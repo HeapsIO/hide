@@ -176,9 +176,6 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 			s.prevFrame = prevFrame;
 			s.amount = amount;
 
-			s.depthChannel = depthMap.texture;
-			s.depthChannelChannel = depthMap.channel == null ? hxsl.Channel.R : depthMap.channel;
-
 			s.PACKED_DEPTH = depthMap.packed != null && depthMap.packed == true;
 			if( s.PACKED_DEPTH ) {
 				s.depthTexture = depthMap.texture;
@@ -187,6 +184,11 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 				s.depthChannel = depthMap.texture;
 				s.depthChannelChannel = depthMap.channel == null ? hxsl.Channel.R : depthMap.channel;
 			}
+
+			s.resolution.set(output.width, output.height);
+			s.VARIANCE_CLIPPING = varianceClipping;
+			s.YCOCG = ycocg;
+			s.UNJITTER = unjitter;
 
 			r.setTarget(output);
 			pass.render();
