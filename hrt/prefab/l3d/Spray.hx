@@ -26,7 +26,7 @@ class Spray extends Object3D {
 		children.sort(function(c1, c2) {
 			return Std.isOfType(c1, Object3D) ? -1 : 1;
 		});
-		super.makeChild(ctx, p);
+		super.makeChild(p);
 
 	}
 }

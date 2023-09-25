@@ -16,17 +16,12 @@ class Object3D extends Prefab {
 
 	@:s public var visible : Bool = true;
 
-	public var local3d : h3d.scene.Object;
-
 	#if editor
 	public var editorIcon : h2d.ObjectFollower;
 	#end
 
-	public static function getLocal3d(prefab: Prefab) : h3d.scene.Object {
-		var obj3d = Std.downcast(prefab, Object3D);
-		if (obj3d != null)
-			return obj3d.local3d;
-		return null;
+	public static inline function getLocal3d(prefab: Prefab) : h3d.scene.Object {
+		return prefab.local3d;
 	}
 
 	/*function set_x(v : Float) {

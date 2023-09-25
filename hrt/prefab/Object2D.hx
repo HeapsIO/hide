@@ -11,13 +11,9 @@ class Object2D extends Prefab {
 	@:s public var visible : Bool = true;
 	@:s public var blendMode : h2d.BlendMode = None;
 
-	public var local2d : h2d.Object;
 
-	public static function getLocal2d(prefab: Prefab) : h2d.Object {
-		var obj2d = Std.downcast(prefab, Object2D);
-		if (obj2d != null)
-			return obj2d.local2d;
-		return null;
+	public static inline function getLocal2d(prefab: Prefab) : h2d.Object {
+		return prefab.local2d;
 	}
 
 	/*function set_x(v : Float) {
