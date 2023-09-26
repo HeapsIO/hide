@@ -670,6 +670,7 @@ class Prefab {
 	public final function clone(?root: Prefab = null, ?contextShared:ContextShared = null) : Prefab {
 		var sh = contextShared == null ? Prefab.createContextShared() : contextShared;
 		sh.isPrototype = false;
+		sh.currentPath = contextShared?.currentPath ?? this.shared?.currentPath;
 		return copyDefault(root, sh);
 	}
 
