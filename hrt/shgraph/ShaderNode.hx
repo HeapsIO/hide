@@ -38,7 +38,8 @@ class ShaderNode {
 		var def = getShaderDef();
 		var map : Map<String, TVar> = [];
 		for (tvar in def.outVars) {
-			map.set(tvar.name, tvar);
+			if (!tvar.internal)
+				map.set(tvar.v.name, tvar.v);
 		}
 		return map;
 	}
@@ -48,7 +49,8 @@ class ShaderNode {
 		var def = getShaderDef();
 		var map : Map<String, TVar> = [];
 		for (tvar in def.inVars) {
-			map.set(tvar.name, tvar);
+			if (!tvar.internal)
+				map.set(tvar.v.name, tvar.v);
 		}
 		return map;
 	}

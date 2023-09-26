@@ -14,14 +14,14 @@ class Preview extends ShaderNode {
 	override function getShaderDef():hrt.shgraph.ShaderGraph.ShaderNodeDef {
 		var pos : Position = {file: "", min: 0, max: 0};
 
-		var inVar : TVar = {name: "input", id:0, type: TVec(4, VFloat), kind: Param, qualifiers: [SgInput]};
-		var output : TVar = {name: "pixelColor", id:1, type: TVec(4, VFloat), kind: Local, qualifiers: [SgOutput]};
+		var inVar : TVar = {name: "input", id:0, type: TVec(4, VFloat), kind: Param, qualifiers: []};
+		var output : TVar = {name: "pixelColor", id:1, type: TVec(4, VFloat), kind: Local, qualifiers: []};
 		var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(output), p:pos, t:output.type}, {e: TVar(inVar), p: pos, t: output.type}), p: pos, t: output.type};
 
 		//var param = getParameter(inputNode.parameterId);
 		//inits.push({variable: inVar, value: param.defaultValue});
 
-		return {expr: finalExpr, inVars: [inVar], outVars:[], externVars: [inVar, output], inits: []};
+		return {expr: finalExpr, inVars: [{v: inVar, internal: false}], outVars:[], externVars: [output], inits: []};
 	}
 
 	// @input("Input") var input = SType.Vec4;

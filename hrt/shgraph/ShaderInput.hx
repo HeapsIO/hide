@@ -23,11 +23,11 @@ class ShaderInput extends ShaderNode {
 		var pos : Position = {file: "", min: 0, max: 0};
 
 		var inVar : TVar = variable;
-		var output : TVar = {name: "output", id:1, type: this.variable.type, kind: Local, qualifiers: [SgOutput]};
+		var output : TVar = {name: "output", id:1, type: this.variable.type, kind: Local, qualifiers: []};
 		var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(output), p:pos, t:output.type}, {e: TVar(inVar), p: pos, t: output.type}), p: pos, t: output.type};
 
 
-		return {expr: finalExpr, inVars: [], outVars:[output], externVars: [inVar, output], inits: []};
+		return {expr: finalExpr, inVars: [], outVars:[{v:output, internal: false}], externVars: [inVar], inits: []};
 	}
 
 	public static var availableInputs : Array<TVar> = [

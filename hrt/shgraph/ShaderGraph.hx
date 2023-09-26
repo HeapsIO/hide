@@ -8,9 +8,9 @@ using Lambda;
 
 typedef ShaderNodeDef = {
 	expr: TExpr,
-	inVars: Array<TVar>, // Variables that shows up as input of a node
-	outVars: Array<TVar>, // Variables that shows up as outputs of a node
-	externVars: Array<TVar>, // All the external variables of a shader, including sginput/sgoutputs
+	inVars: Array<{v: TVar, internal: Bool}>, // If internal = true, don't show input in ui
+	outVars: Array<{v: TVar, internal: Bool}>,
+	externVars: Array<TVar>, // other external variables like globals and stuff
 	inits: Array<{variable: TVar, value: Dynamic}>, // Default values for some variables
 };
 
@@ -158,7 +158,7 @@ class ShaderGraph {
 		if (!outputs.exists(outputName)) {
 			var def = output.instance.getShaderDef();
 			if(edge.outputId != null && def.outVars.length > edge.outputId) {
-				outputName = def.outVars[edge.outputId].name;
+				outputName = def.outVars[edge.outputId].v.name;
 			}
 			else {
 				return false;
@@ -168,7 +168,7 @@ class ShaderGraph {
 		if (!inputs.exists(inputName)) {
 			var def = node.instance.getShaderDef();
 			if (edge.inputId != null && def.inVars.length > edge.inputId) {
-				inputName = def.inVars[edge.inputId].name;
+				inputName = def.inVars[edge.inputId].v.name;
 			}
 			else {
 				return false;
@@ -260,11 +260,11 @@ class ShaderGraph {
 
 				var def = node.instance.getShaderDef();
 				for (output in def.outVars) {
-					var type = output.type;
+					var type = output.v.type;
 					if (type == null) throw "no type";
 					var id = getNewVarId();
 					var outVar = {id: id, name: getNewVarName(node, id), type: type, kind : Local};
-					outputs.set(output.name, outVar);
+					outputs.set(output.v.name, outVar);
 				}
 
 				nodeOutputs.set(node, outputs);
@@ -304,8 +304,8 @@ class ShaderGraph {
 			nodeHasOutputs.set(connection.from, true);
 		}
 
-		var graphInputVars : Array<TVar> = [];
-		var graphOutputVars : Array<TVar> = [];
+		var graphInputVars  = [];
+		var graphOutputVars  = [];
 		var externs : Array<TVar> = [];
 
 		var nodeToExplore : Array<Node> = [];
@@ -407,66 +407,62 @@ class ShaderGraph {
 				var expr = def.expr;
 
 				var outputDecls : Array<TVar> = [];
-				for (nodeVar in def.externVars) {
-					if (nodeVar.qualifiers != null) {
-						if (nodeVar.qualifiers.has(SgInput)) {
-							var connection = currentNode.instance.connections.get(nodeVar.name);
 
-							var replacement : TExpr = null;
+				for (nodeVar in def.inVars) {
+					var connection = currentNode.instance.connections.get(nodeVar.v.name);
 
-							if (connection != null) {
-								var outputs = getOutputs(connection.from);
-								var outputVar = outputs[connection.fromName];
-								if (outputVar == null) throw "null tvar";
-								replacement = convertToType(nodeVar.type,  {e: TVar(outputVar), p:pos, t: outputVar.type});
-							}
-							else {
-								var shParam = Std.downcast(currentNode.instance, ShaderParam);
-								if (shParam != null) {
-									var outVar = outputs["output"];
-									var id = getNewVarId();
-									outVar.id = id;
-									outVar.name = nodeVar.name;
-									outVar.type = nodeVar.type;
-									outVar.kind = Param;
-									outVar.qualifiers = [SgInput];
-									graphInputVars.push(outVar);
-									externs.push(outVar);
-									var param = getParameter(shParam.parameterId);
-									inits.push({variable: outVar, value: param.defaultValue});
-									continue;
-								}
-								else {
-									// default parameter if no connection
-									// TODO : Handle default values for non Float/Vec vars
-									replacement = convertToType(nodeVar.type, {e: TConst(CFloat(0.0)), p: pos, t:TFloat});
-								}
-							}
+					var replacement : TExpr = null;
 
-							expr = replaceVar(expr, nodeVar, replacement);
-
-						}
-						else if (nodeVar.qualifiers.has(SgOutput)) {
-							var outputVar : TVar = outputs.get(nodeVar.name);
-							// Kinda of a hack : skip decl writing for shaderParams
-							var shParam = Std.downcast(currentNode.instance, ShaderParam);
-							if (shParam != null) {
-								continue;
-							}
-							if (outputVar == null) {
-								externs.push(nodeVar);
-							} else {
-								expr = replaceVar(expr, nodeVar, {e: TVar(outputVar), p:pos, t: nodeVar.type});
-								outputDecls.push(outputVar);
-							}
-						}
-						else {
-							externs.pushUnique(nodeVar);
-						}
+					if (connection != null) {
+						var outputs = getOutputs(connection.from);
+						var outputVar = outputs[connection.fromName];
+						if (outputVar == null) throw "null tvar";
+						replacement = convertToType(nodeVar.v.type,  {e: TVar(outputVar), p:pos, t: outputVar.type});
 					}
 					else {
-						externs.pushUnique(nodeVar);
+						var shParam = Std.downcast(currentNode.instance, ShaderParam);
+						if (shParam != null) {
+							var outVar = outputs["output"];
+							var id = getNewVarId();
+							outVar.id = id;
+							outVar.name = nodeVar.v.name;
+							outVar.type = nodeVar.v.type;
+							outVar.kind = Param;
+							outVar.qualifiers = [];
+							graphInputVars.push({v: outVar, internal: false});
+							externs.push(outVar);
+							var param = getParameter(shParam.parameterId);
+							inits.push({variable: outVar, value: param.defaultValue});
+							continue;
+						}
+						else {
+							// default parameter if no connection
+							// TODO : Handle default values for non Float/Vec vars
+							replacement = convertToType(nodeVar.v.type, {e: TConst(CFloat(0.0)), p: pos, t:TFloat});
+						}
 					}
+
+					expr = replaceVar(expr, nodeVar.v, replacement);
+				}
+
+				for (nodeVar in def.outVars) {
+					var outputVar : TVar = outputs.get(nodeVar.v.name);
+					// Kinda of a hack : skip decl writing for shaderParams
+					var shParam = Std.downcast(currentNode.instance, ShaderParam);
+					if (shParam != null) {
+						continue;
+					}
+					if (outputVar == null) {
+						externs.push(nodeVar.v);
+					} else {
+						expr = replaceVar(expr, nodeVar.v, {e: TVar(outputVar), p:pos, t: nodeVar.v.type});
+						outputDecls.push(outputVar);
+						graphOutputVars.push({v: nodeVar.v, internal: false});
+					}
+				}
+
+				for (nodeVar in def.externVars) {
+					externs.pushUnique(nodeVar);
 				}
 
 				if (expr != null)
@@ -663,7 +659,7 @@ class ShaderGraph {
 				var def = n.instance.getShaderDef();
 				var inputId = null;
 				for (i => inVar in def.inVars) {
-					if (inVar.name == inputName) {
+					if (inVar.v.name == inputName) {
 						inputId = i;
 						break;
 					}
@@ -672,7 +668,7 @@ class ShaderGraph {
 				var def = connection.from.instance.getShaderDef();
 				var outputId = null;
 				for (i => outVar in def.outVars) {
-					if (outVar.name == connection.fromName) {
+					if (outVar.v.name == connection.fromName) {
 						outputId = i;
 						break;
 					}

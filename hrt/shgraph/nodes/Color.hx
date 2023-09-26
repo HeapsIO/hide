@@ -29,7 +29,7 @@ class Color extends ShaderConst {
 	override function getShaderDef():hrt.shgraph.ShaderGraph.ShaderNodeDef {
 		var pos : Position = {file: "", min: 0, max: 0};
 
-		var output : TVar = {name: "output", id:1, type: TVec(4, VFloat), kind: Local, qualifiers: [SgOutput]};
+		var output : TVar = {name: "output", id:1, type: TVec(4, VFloat), kind: Local, qualifiers: []};
 		var finalExpr : TExpr =
 		{ e: TBinop(OpAssign, {
 				e: TVar(output),
@@ -74,7 +74,7 @@ class Color extends ShaderConst {
 			p: null,
 			t: output.type
 		};
-		return {expr: finalExpr, inVars: [], outVars:[output], externVars: [output], inits: []};
+		return {expr: finalExpr, inVars: [], outVars:[{v: output, internal: false}], externVars: [], inits: []};
 	}
 
 	// override public function build(key : String) : TExpr {

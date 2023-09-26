@@ -20,7 +20,6 @@ class Macros {
 						try {
 							var c = Context.getLocalClass();
 
-							trace("=========================");
 							// function map(e: haxe.macro.Expr) {
 							// 	switch(e) {
 							// 		case EMeta("sginput", args, e):
@@ -30,13 +29,35 @@ class Macros {
 
 							// expr.map()
 
+							var inVars : Array<String> = [];
+							var outVars : Array<String> = [];
+
 							function iter(e: haxe.macro.Expr) : Void {
 								switch(e.expr) {
 									case EMeta(meta, subexpr):
-										if (meta.name == "sginput")
-											trace("sginput", subexpr);
-										else if (meta.name == "sgoutput")
-											trace("sgoutput", subexpr);
+										switch (meta.name) {
+											case "sginput":
+												switch(subexpr.expr) {
+													case EVars(vars):
+														for (v in vars) {
+															inVars.push(v.name);
+														}
+														e.expr = subexpr.expr;
+													default:
+														throw "sginput must be used with variables only";
+												}
+											case "sgoutput":
+												switch(subexpr.expr) {
+													case EVars(vars):
+														for (v in vars) {
+															outVars.push(v.name);
+														}
+														e.expr = subexpr.expr;
+													default:
+														throw "sgoutput must be used with variables only";
+												}
+											default:
+										}
 									default:
 								}
 							}
@@ -65,6 +86,27 @@ class Macros {
 								name : ":keep",
 								pos : pos,
 							});
+
+							function makeField(name: String, arr: Array<String>) : Field
+							{
+								return {
+									name: name,
+									access: [APublic, AStatic],
+									kind: FVar(macro : Array<String>, macro $v{arr}),
+									pos: f.pos,
+									meta: [{
+											name : ":keep",
+											pos : pos,}
+									],
+								};
+							}
+
+							var inVarField : Field = makeField("_inVars", inVars);
+							var outVarField : Field = makeField("_outVars", outVars);
+
+							fields.push(inVarField);
+							fields.push(outVarField);
+
 						} catch( e : hxsl.Ast.Error ) {
 							fields.remove(f);
 							Context.error(e.msg, e.pos);

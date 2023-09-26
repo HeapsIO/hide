@@ -21,23 +21,22 @@ class ShaderNodeHxsl extends ShaderNode {
 			var externVars = [];
 
 			for (tvar in data.vars) {
-				if (tvar.qualifiers != null) {
 					var input = false;
 					var output = false;
-					if (tvar.qualifiers.contains(SgInput)) {
-						inVars.push(tvar);
+					var classInVars : Array<String> = cast (cl:Dynamic)._inVars;
+					if (classInVars.contains(tvar.name)) {
+						inVars.push({v:tvar, internal: false});
 						// TODO : handle default values
 						input = true;
 					}
-					if (tvar.qualifiers.contains(SgOutput)) {
-						outVars.push(tvar);
+					var classOutVars : Array<String> = cast (cl:Dynamic)._outVars;
+					if (classOutVars.contains(tvar.name)) {
+						outVars.push({v: tvar, internal: false});
 						output = true;
 					}
 					if (input && output) {
 						throw "Variable is both sginput and sgoutput";
 					}
-					externVars.push(tvar);
-				}
 			}
 
 			def = {expr: expr, inVars: inVars, outVars: outVars, externVars: externVars, inits: []};

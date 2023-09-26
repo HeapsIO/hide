@@ -14,16 +14,16 @@ class SubGraph extends ShaderNode {
 		var shader = new ShaderGraph(pathShaderGraph);
 		var gen = shader.generate2();
 
-		for (tvar in gen.externVars) {
-			if (tvar.qualifiers != null) {
-				if (tvar.qualifiers.contains(SgInput)) {
-					gen.inVars.push(tvar);
-				}
-				if (tvar.qualifiers.contains(SgOutput)) {
-					gen.outVars.push(tvar);
-				}
-			}
-		}
+		// for (tvar in gen.externVars) {
+		// 	if (tvar.qualifiers != null) {
+		// 		if (tvar.qualifiers.contains(SgInput)) {
+		// 			gen.inVars.push(tvar);
+		// 		}
+		// 		if (tvar.qualifiers.contains(SgOutput)) {
+		// 			gen.outVars.push(tvar);
+		// 		}
+		// 	}
+		// }
 
 		return gen;
 	}

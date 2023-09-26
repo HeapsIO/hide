@@ -12,10 +12,10 @@ class FloatConst extends ShaderConst {
 	override function getShaderDef():hrt.shgraph.ShaderGraph.ShaderNodeDef {
 		var pos : Position = {file: "", min: 0, max: 0};
 
-		var output : TVar = {name: "output", id:1, type: TFloat, kind: Local, qualifiers: [SgOutput]};
+		var output : TVar = {name: "output", id:1, type: TFloat, kind: Local, qualifiers: []};
 		var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(output), p:pos, t:output.type}, {e: TConst(CFloat(value)), p: pos, t: output.type}), p: pos, t: output.type};
 
-		return {expr: finalExpr, inVars: [], outVars:[output], externVars: [output], inits: []};
+		return {expr: finalExpr, inVars: [], outVars:[{v: output, internal: false}], externVars: [], inits: []};
 	}
 
 	@prop() var value : Float = 0.;
