@@ -31,6 +31,7 @@ class CdbTable extends hide.ui.View<{}> {
 		var index = sheets.indexOf(rootSheet.name);
 		if( index < 0 ) return;
 		if (tabs.currentTab.get(0) != tabContents[index].parent().get(0)) {
+			@:privateAccess editor.currentFilters = [];
 			tabs.currentTab = tabContents[index].parent();
 		}
 		editor.setFilter(null);
