@@ -68,7 +68,7 @@ class Reference extends Object3D {
 			return null;
 		if (refInstance != null)
 			return refInstance;
-		var p = Prefab.createFromPath(source);
+		var p = Prefab.loadPath(source);
 		return p;
 	}
 

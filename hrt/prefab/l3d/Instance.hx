@@ -22,7 +22,7 @@ class Instance extends Object3D {
 		if(modelPath != null) {
 			try {
 				if(hrt.prefab.Prefab.getPrefabType(modelPath) != null) {
-					var ref = Prefab.createFromPath(modelPath);
+					var ref = Prefab.loadPath(modelPath);
 					if(ref != null) {
 						ref.instanciate(findFirstLocal2d(), parent3d);
 						instance = ref;

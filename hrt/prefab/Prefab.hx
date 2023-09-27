@@ -807,7 +807,7 @@ class Prefab {
 	}
 #end
 
-	public static function createFromPath(path: String, parent: Prefab = null, ?contextShared: ContextShared) : Prefab {
+	public static function loadPath(path: String, ?contextShared: ContextShared) : Prefab {
 		return hxd.res.Loader.currentInstance.load(path).to(hrt.prefab.Resource).load(contextShared);
 	}
 
