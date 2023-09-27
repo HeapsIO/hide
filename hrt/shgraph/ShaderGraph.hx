@@ -26,10 +26,10 @@ typedef Node = {
 };
 
 private typedef Edge = {
-	outputNodeId : Int,
+	?outputNodeId : Int,
 	nameOutput : String,
 	?outputId : Int, // Fallback if name has changed
-	inputNodeId : Int,
+	?inputNodeId : Int,
 	nameInput : String,
 	?inputId : Int, // Fallback if name has changed
 };
