@@ -567,10 +567,8 @@ class Spray extends Object3D {
 		}
 	}
 
-	override function makeInstance() : Void {
-		local3d = new SprayObject(this, shared.current3d);
-		local3d.name = name;
-		updateInstance();
+	override function makeObject(parent3d: h3d.scene.Object ) : h3d.scene.Object {
+		return new SprayObject(this, parent3d);
 	}
 
 	override function applyTransform() {

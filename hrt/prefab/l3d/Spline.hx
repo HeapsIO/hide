@@ -154,6 +154,7 @@ class SplinePoint extends Object3D {
 	#if editor
 
 	public function computeName() {
+		if( local3d == null ) return;
 		var index = spline.points.indexOf(this);
 		name = "SplinePoint" + index;
 		local3d.name = name;
