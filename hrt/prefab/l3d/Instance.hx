@@ -24,8 +24,15 @@ class Instance extends Object3D {
 				if(hrt.prefab.Prefab.getPrefabType(modelPath) != null) {
 					var ref = Prefab.loadPath(modelPath);
 					if(ref != null) {
-						ref.instanciate(findFirstLocal2d(), parent3d);
-						instance = ref;
+						var sh = Prefab.createContextShared();
+						sh.currentPath = source;
+						sh.parent = this;
+						sh.customMake = this.shared.customMake;
+						#if editor
+						ref.setEditor((cast shared:hide.prefab.ContextShared).editor);
+						#end
+
+						instance = ref.make(null, findFirstLocal2d(), parent3d, sh);
 						return instance.findFirstLocal3d();
 					}
 				}

@@ -1540,7 +1540,7 @@ class SceneEditor {
 			if( isLocked(elt) ) toggleInteractive(elt, false);
 		}
 		var ref = Std.downcast(elt,Reference);
-		@:privateAccess if( ref != null && ref.editMode ) {
+		@:privateAccess if( ref != null && ref.editMode && ref.refInstance != null ) {
 			for( p in ref.refInstance.flatten() )
 				makeInteractive(p);
 		}

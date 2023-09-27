@@ -562,13 +562,15 @@ class Prefab {
 		if (!enabled) return false;
 
 		var fromRef = #if editor (shared.parent != null) #else true #end;
-		if (fromRef && editorOnly)
-			return false;
 
 		#if editor
 		if (fromRef && inGameOnly)
 			return false;
+		#else
+		if (fromRef && editorOnly)
+			return false;
 		#end
+
 
 		return true;
 	}
@@ -964,7 +966,7 @@ class Prefab {
 	}
 	// Static initialization trick to register this class with the given name
 	// in the prefab registry. Call this in your own classes
-	public static var _ = Prefab.register("prefab", Prefab);
+	public static var _ = Prefab.register("prefab", Prefab, "prefab");
 
 	/*inline public function findParent<T:Prefab,R>( cl : Class<T>, ?filter : (p:T) -> Null<R>) : Null<R> {
 		var current = this;
