@@ -5,6 +5,7 @@ class GradientMapLife extends hxsl.Shader {
 	static var SRC = {
         @:import hrt.shader.BaseEmitter;
 		@const var sourceAlpha : Bool;
+		@const var colorMult : Bool;
 		@const var destAlpha : Bool = true;
 
 
@@ -16,9 +17,16 @@ class GradientMapLife extends hxsl.Shader {
 			// force texture reapeat
 			var s = gradient.size();
 			var sample = gradient.get(vec2(saturate(t), saturate(particleLife/particleLifeTime)) * (s-vec2(1.0))/(s));
-            pixelColor.rgb = sample.rgb;
-			if (destAlpha)
-				pixelColor.a = sample.a;
+			if (colorMult) {
+            	pixelColor.rgb *= sample.rgb;
+			}
+			else {
+            	pixelColor.rgb = sample.rgb;
+			}
+
+			if (destAlpha) {
+				pixelColor.a *= sample.a;
+			}
         }
 	};
 }
