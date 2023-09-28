@@ -13,7 +13,7 @@ class Macros {
 		};
 
 		if (value == null) {
-			var defaultConstructors = Type.allEnums(e);
+			var defaultConstructors = std.Type.allEnums(e);
 			if (defaultConstructors.length > 0) value = defaultConstructors[0];
 		}
 
