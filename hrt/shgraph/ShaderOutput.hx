@@ -23,7 +23,7 @@ class ShaderOutput extends ShaderNode {
 		//var param = getParameter(inputNode.parameterId);
 		//inits.push({variable: inVar, value: param.defaultValue});
 
-		return {expr: finalExpr, inVars: [{v: inVar, internal: false}], outVars:[], externVars: [output], inits: []};
+		return {expr: finalExpr, inVars: [{v: inVar, internal: false}], outVars:[{v: output, internal: true}], externVars: [], inits: []};
 	}
 
 	/*override public function checkValidityInput(key : String, type : hxsl.Ast.Type) : Bool {

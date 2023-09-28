@@ -13,7 +13,6 @@ class SubGraph extends ShaderNode {
 	override public function getShaderDef():hrt.shgraph.ShaderGraph.ShaderNodeDef {
 		var shader = new ShaderGraph(pathShaderGraph);
 		var gen = shader.generate2();
-
 		// for (tvar in gen.externVars) {
 		// 	if (tvar.qualifiers != null) {
 		// 		if (tvar.qualifiers.contains(SgInput)) {

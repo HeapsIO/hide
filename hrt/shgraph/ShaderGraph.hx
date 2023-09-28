@@ -260,6 +260,8 @@ class ShaderGraph {
 
 				var def = node.instance.getShaderDef();
 				for (output in def.outVars) {
+					if (output.internal)
+						continue;
 					var type = output.v.type;
 					if (type == null) throw "no type";
 					var id = getNewVarId();
@@ -283,7 +285,10 @@ class ShaderGraph {
 					return f.map(repRec);
 				}
 			}
-			return repRec(expr);
+			var expr = repRec(expr);
+			//trace("replaced " + what.getName() + " with " + switch(with.e) {case TVar(v): v.getName(); default: "err";});
+			//trace(hxsl.Printer.toString(expr));
+			return expr;
 		}
 
 		// Shader generation starts here
@@ -430,7 +435,6 @@ class ShaderGraph {
 							outVar.kind = Param;
 							outVar.qualifiers = [];
 							graphInputVars.push({v: outVar, internal: false});
-							externs.push(outVar);
 							var param = getParameter(shParam.parameterId);
 							inits.push({variable: outVar, value: param.defaultValue});
 							continue;
@@ -453,11 +457,10 @@ class ShaderGraph {
 						continue;
 					}
 					if (outputVar == null) {
-						externs.push(nodeVar.v);
+						graphOutputVars.push({v: nodeVar.v, internal: false});
 					} else {
 						expr = replaceVar(expr, nodeVar.v, {e: TVar(outputVar), p:pos, t: nodeVar.v.type});
 						outputDecls.push(outputVar);
-						graphOutputVars.push({v: nodeVar.v, internal: false});
 					}
 				}
 
@@ -498,6 +501,12 @@ class ShaderGraph {
 		};
 
 		shaderData.vars.append(gen.externVars);
+		for (v in gen.inVars)
+			shaderData.vars.push(v.v);
+		for (v in gen.outVars)
+			shaderData.vars.push(v.v);
+
+
 
 		shaderData.funs.push({
 			ret : TVoid, kind : Fragment,
