@@ -12,7 +12,7 @@ class ShaderParam extends ShaderNode {
 	@prop() public var perInstance : Bool;
 
 
-	override function getShaderDef():hrt.shgraph.ShaderGraph.ShaderNodeDef {
+	override function getShaderDef(domain: ShaderGraph.Domain):hrt.shgraph.ShaderGraph.ShaderNodeDef {
 		var pos : Position = {file: "", min: 0, max: 0};
 
 		var qual = [];

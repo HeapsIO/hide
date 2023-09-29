@@ -5,7 +5,7 @@ class ShaderNodeHxsl extends ShaderNode {
 
 	static var nodeCache : Map<String, ShaderGraph.ShaderNodeDef> = [];
 
-	override public function getShaderDef() : ShaderGraph.ShaderNodeDef {
+	override public function getShaderDef(domain: ShaderGraph.Domain) : ShaderGraph.ShaderNodeDef {
 		var cl = Type.getClass(this);
 		var className = Type.getClassName(cl);
 		var def = nodeCache.get(className);

@@ -10,9 +10,10 @@ class SubGraph extends ShaderNode {
 
 	@prop() public var pathShaderGraph : String;
 
-	override public function getShaderDef():hrt.shgraph.ShaderGraph.ShaderNodeDef {
+	override public function getShaderDef(domain: ShaderGraph.Domain):hrt.shgraph.ShaderGraph.ShaderNodeDef {
 		var shader = new ShaderGraph(pathShaderGraph);
-		var gen = shader.generate2();
+		var gen = shader.getGraph(domain).generate2();
+
 		// for (tvar in gen.externVars) {
 		// 	if (tvar.qualifiers != null) {
 		// 		if (tvar.qualifiers.contains(SgInput)) {

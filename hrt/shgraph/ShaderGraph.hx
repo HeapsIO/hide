@@ -48,17 +48,16 @@ typedef Parameter = {
 	index : Int
 };
 
+enum Domain {
+	Vertex;
+	Fragment;
+}
+
 class ShaderGraph {
 
-	var allParameters = [];
-	var allParamDefaultValue = [];
-	var current_node_id = 0;
-	var current_param_id = 0;
 	var filepath : String;
-	var nodes : Map<Int, Node> = [];
+	var graphs : Array<Graph>;
 
-	public var parametersAvailable : Map<Int, Parameter> = [];
-	public var parametersKeys : Array<Int> = [];
 
 	public function new(filepath : String) {
 		if (filepath == null) return;
@@ -80,21 +79,151 @@ class ShaderGraph {
 		}
 
 		load(json);
-
 	}
 
-	public function load(json : Dynamic) {
-		nodes = [];
+	public function load(json : Dynamic) : Void {
+
+		graphs = [];
+
 		parametersAvailable = [];
 		parametersKeys = [];
-		generate(Reflect.getProperty(json, "nodes"), Reflect.getProperty(json, "edges"), Reflect.getProperty(json, "parameters"));
-	}
-	public function checkParameterOrder() {
-		parametersKeys.sort((x,y) -> Reflect.compare(parametersAvailable.get(x).index, parametersAvailable.get(y).index));
+
+		loadParameters(json.parameters ?? []);
+		for (domain in haxe.EnumTools.getConstructors(Domain)) {
+			var graph = new Graph(this, haxe.EnumTools.createByName(Domain, domain));
+			var graphJson = Reflect.getProperty(json, domain);
+			if (graphJson != null) {
+				graph.load(graphJson);
+			}
+
+			graphs.push(graph);
+		}
 	}
 
-	public function generate(nodes : Array<Node>, edges : Array<Edge>, parameters : Array<Parameter>) {
+	public function saveToDynamic() : Dynamic {
+		var json : Dynamic = {};
 
+		json.parameters = [
+			for (p in parametersAvailable) { id : p.id, name : p.name, type : [p.type.getName(), p.type.getParameters().toString()], defaultValue : p.defaultValue, index : p.index }
+		];
+
+		for (graph in graphs) {
+			var serName = EnumValueTools.getName(graph.domain);
+			Reflect.setField(json, serName, graph.saveToDynamic());
+		}
+
+		return json;
+	}
+
+	public function saveToText() : String {
+		return haxe.Json.stringify(saveToDynamic(), "\t");
+	}
+
+	public function compile2(?specificOutput: ShaderNode) : hrt.prefab.ContextShared.ShaderDef {
+		var start = haxe.Timer.stamp();
+
+		var gens : Array<ShaderNodeDef> = [];
+		var inits : Array<{variable: TVar, value: Dynamic}>= [];
+
+		var shaderData : ShaderData = {
+			name: "",
+			vars: [],
+			funs: [],
+		};
+
+
+		for (i => graph in graphs) {
+			var gen = graph.generate2(specificOutput);
+			gens.push(gen);
+
+			shaderData.vars.append(gen.externVars);
+			for (v in gen.inVars)
+				shaderData.vars.pushUnique(v.v);
+			for (v in gen.outVars)
+				shaderData.vars.pushUnique(v.v);
+
+			var functionName : String = EnumValueTools.getName(graph.domain).toLowerCase();
+
+			shaderData.funs.push({
+				ret : TVoid, kind : Fragment,
+				ref : {
+					name : functionName,
+					id : i,
+					kind : Function,
+					type : TFun([{ ret : TVoid, args : [] }])
+				},
+				expr : gen.expr,
+				args : []
+			});
+
+			for (init in gen.inits) {
+				inits.pushUnique(init);
+			}
+		}
+
+		var shared = new SharedShader("");
+		@:privateAccess shared.data = shaderData;
+		@:privateAccess shared.initialize();
+
+		var time = haxe.Timer.stamp() - start;
+		trace("Shader compile2 in " + time * 1000 + " ms");
+
+		return {shader : shared, inits: inits};
+	}
+
+	public function makeInstance(ctx: hrt.prefab.ContextShared) : hxsl.DynamicShader {
+		var def = compile2();
+		var s = new hxsl.DynamicShader(def.shader);
+		for (init in def.inits)
+			setParamValue(ctx, s, init.variable, init.value);
+		return s;
+	}
+
+	static function setParamValue(ctx: hrt.prefab.ContextShared, shader : hxsl.DynamicShader, variable : hxsl.Ast.TVar, value : Dynamic) {
+		try {
+			switch (variable.type) {
+				case TSampler2D:
+					var t = ctx.loadTexture(value);
+					t.wrap = Repeat;
+					shader.setParamValue(variable, t);
+				case TVec(size, _):
+					shader.setParamValue(variable, h3d.Vector.fromArray(value));
+				default:
+					shader.setParamValue(variable, value);
+			}
+		} catch (e : Dynamic) {
+			// The parameter is not used
+		}
+	}
+
+	var allParameters = [];
+	var current_param_id = 0;
+	public var parametersAvailable : Map<Int, Parameter> = [];
+	public var parametersKeys : Array<Int> = [];
+
+	function generateParameter(name : String, type : Type) : TVar {
+		return {
+				parent: null,
+				id: 0,
+				kind:Param,
+				name: name,
+				type: type
+			};
+	}
+
+	public function getParameter(id : Int) {
+		return parametersAvailable.get(id);
+	}
+
+	public function addParameter(type : Type) {
+		var name = "Param_" + current_param_id;
+		parametersAvailable.set(current_param_id, {id: current_param_id, name : name, type : type, defaultValue : null, variable : generateParameter(name, type), index : parametersKeys.length});
+		parametersKeys.push(current_param_id);
+		current_param_id++;
+		return current_param_id-1;
+	}
+
+	function loadParameters(parameters: Array<Dynamic>) {
 		for (p in parameters) {
 			var typeString : Array<Dynamic> = Reflect.field(p, "type");
 			if (Std.isOfType(typeString, Array)) {
@@ -111,6 +240,84 @@ class ShaderGraph {
 			current_param_id = p.id + 1;
 		}
 		checkParameterOrder();
+	}
+
+	public function checkParameterOrder() {
+		parametersKeys.sort((x,y) -> Reflect.compare(parametersAvailable.get(x).index, parametersAvailable.get(y).index));
+	}
+
+
+	public function setParameterTitle(id : Int, newName : String) {
+		var p = parametersAvailable.get(id);
+		if (p != null) {
+			if (newName != null) {
+				for (p in parametersAvailable) {
+					if (p.name == newName) {
+						return false;
+					}
+				}
+				p.name = newName;
+				p.variable = generateParameter(newName, p.type);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public function setParameterDefaultValue(id : Int, newDefaultValue : Dynamic) : Bool {
+		var p = parametersAvailable.get(id);
+		if (p != null) {
+			if (newDefaultValue != null) {
+				p.defaultValue = newDefaultValue;
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public function removeParameter(id : Int) {
+		parametersAvailable.remove(id);
+		parametersKeys.remove(id);
+		checkParameterIndex();
+	}
+
+	public function checkParameterIndex() {
+		for (k in parametersKeys) {
+			var oldParam = parametersAvailable.get(k);
+			oldParam.index = parametersKeys.indexOf(k);
+			parametersAvailable.set(k, oldParam);
+		}
+	}
+
+	public function getGraph(domain: Domain) {
+		return graphs[domain.getIndex()];
+	}
+}
+
+class Graph {
+
+	var allParamDefaultValue = [];
+	var current_node_id = 0;
+	var nodes : Map<Int, Node> = [];
+
+	public var parent : ShaderGraph = null;
+
+	public var domain : Domain = Fragment;
+
+
+	public function new(parent: ShaderGraph, domain: Domain) {
+		this.parent = parent;
+		this.domain = domain;
+	}
+
+	public function load(json : Dynamic) {
+		nodes = [];
+		generate(Reflect.getProperty(json, "nodes"), Reflect.getProperty(json, "edges"));
+	}
+
+	public function generate(nodes : Array<Node>, edges : Array<Edge>) {
+
+
 
 		for (n in nodes) {
 			n.outputs = [];
@@ -148,15 +355,15 @@ class ShaderGraph {
 		var node = this.nodes.get(edge.inputNodeId);
 		var output = this.nodes.get(edge.outputNodeId);
 
-		var inputs = node.instance.getInputs2();
-		var outputs = output.instance.getOutputs2();
+		var inputs = node.instance.getInputs2(domain);
+		var outputs = output.instance.getOutputs2(domain);
 
 		var inputName = edge.nameInput;
 		var outputName = edge.nameOutput;
 
 		// Patch I/O if name have changed
 		if (!outputs.exists(outputName)) {
-			var def = output.instance.getShaderDef();
+			var def = output.instance.getShaderDef(domain);
 			if(edge.outputId != null && def.outVars.length > edge.outputId) {
 				outputName = def.outVars[edge.outputId].v.name;
 			}
@@ -166,7 +373,7 @@ class ShaderGraph {
 		}
 
 		if (!inputs.exists(inputName)) {
-			var def = node.instance.getShaderDef();
+			var def = node.instance.getShaderDef(domain);
 			if (edge.inputId != null && def.inVars.length > edge.inputId) {
 				inputName = def.inVars[edge.inputId].v.name;
 			}
@@ -231,15 +438,7 @@ class ShaderGraph {
 		return this.nodes.get(id);
 	}
 
-	function generateParameter(name : String, type : Type) : TVar {
-		return {
-				parent: null,
-				id: 0,
-				kind:Param,
-				name: name,
-				type: type
-			};
-	}
+
 
 	public function generate2(?specificOutput: ShaderNode) : ShaderNodeDef {
 
@@ -258,7 +457,7 @@ class ShaderGraph {
 			if (!nodeOutputs.exists(node)) {
 				var outputs : Map<String, TVar> = [];
 
-				var def = node.instance.getShaderDef();
+				var def = node.instance.getShaderDef(domain);
 				for (output in def.outVars) {
 					if (output.internal)
 						continue;
@@ -408,7 +607,7 @@ class ShaderGraph {
 			var outputs = getOutputs(currentNode);
 
 			{
-				var def = currentNode.instance.getShaderDef();
+				var def = currentNode.instance.getShaderDef(domain);
 				var expr = def.expr;
 
 				var outputDecls : Array<TVar> = [];
@@ -489,75 +688,8 @@ class ShaderGraph {
 		};
 	}
 
-	public function compile2(?specificOutput: ShaderNode) : hrt.prefab.ContextShared.ShaderDef {
-		var start = haxe.Timer.stamp();
-
-		var gen = generate2(specificOutput);
-
-		var shaderData : ShaderData = {
-			name: "",
-			vars: [],
-			funs: [],
-		};
-
-		shaderData.vars.append(gen.externVars);
-		for (v in gen.inVars)
-			shaderData.vars.push(v.v);
-		for (v in gen.outVars)
-			shaderData.vars.push(v.v);
-
-
-
-		shaderData.funs.push({
-			ret : TVoid, kind : Fragment,
-			ref : {
-				name : "fragment",
-				id : 0,
-				kind : Function,
-				type : TFun([{ ret : TVoid, args : [] }])
-			},
-			expr : gen.expr,
-			args : []
-		});
-
-
-		var shared = new SharedShader("");
-		@:privateAccess shared.data = shaderData;
-		@:privateAccess shared.initialize();
-
-		var time = haxe.Timer.stamp() - start;
-		trace("Shader compile2 in " + time * 1000 + " ms");
-
-		return {shader : shared, inits: gen.inits};
-	}
-
 	public function getParameter(id : Int) {
-		return parametersAvailable.get(id);
-	}
-
-	public function makeInstance(ctx: hrt.prefab.ContextShared) : hxsl.DynamicShader {
-		var def = compile2();
-		var s = new hxsl.DynamicShader(def.shader);
-		for (init in def.inits)
-			setParamValue(ctx, s, init.variable, init.value);
-		return s;
-	}
-
-	static function setParamValue(ctx: hrt.prefab.ContextShared, shader : hxsl.DynamicShader, variable : hxsl.Ast.TVar, value : Dynamic) {
-		try {
-			switch (variable.type) {
-				case TSampler2D:
-					var t = ctx.loadTexture(value);
-					t.wrap = Repeat;
-					shader.setParamValue(variable, t);
-				case TVec(size, _):
-					shader.setParamValue(variable, h3d.Vector.fromArray(value));
-				default:
-					shader.setParamValue(variable, value);
-			}
-		} catch (e : Dynamic) {
-			// The parameter is not used
-		}
+		return parent.getParameter(id);
 	}
 
 
@@ -607,65 +739,15 @@ class ShaderGraph {
 		return counter != nbNodes;
 	}
 
-	public function addParameter(type : Type) {
-		var name = "Param_" + current_param_id;
-		parametersAvailable.set(current_param_id, {id: current_param_id, name : name, type : type, defaultValue : null, variable : generateParameter(name, type), index : parametersKeys.length});
-		parametersKeys.push(current_param_id);
-		current_param_id++;
-		return current_param_id-1;
-	}
-
-	public function setParameterTitle(id : Int, newName : String) {
-		var p = parametersAvailable.get(id);
-		if (p != null) {
-			if (newName != null) {
-				for (p in parametersAvailable) {
-					if (p.name == newName) {
-						return false;
-					}
-				}
-				p.name = newName;
-				p.variable = generateParameter(newName, p.type);
-				return true;
-			}
-		}
-		return false;
-	}
-
-	public function setParameterDefaultValue(id : Int, newDefaultValue : Dynamic) : Bool {
-		var p = parametersAvailable.get(id);
-		if (p != null) {
-			if (newDefaultValue != null) {
-				p.defaultValue = newDefaultValue;
-				return true;
-			}
-		}
-		return false;
-	}
-
-	public function removeParameter(id : Int) {
-		parametersAvailable.remove(id);
-		parametersKeys.remove(id);
-		checkParameterIndex();
-	}
-
-	public function checkParameterIndex() {
-		for (k in parametersKeys) {
-			var oldParam = parametersAvailable.get(k);
-			oldParam.index = parametersKeys.indexOf(k);
-			parametersAvailable.set(k, oldParam);
-		}
-	}
-
 	public function removeNode(idNode : Int) {
 		this.nodes.remove(idNode);
 	}
 
-	public function save() {
+	public function saveToDynamic() : Dynamic {
 		var edgesJson : Array<Edge> = [];
 		for (n in nodes) {
 			for (inputName => connection in n.instance.connections) {
-				var def = n.instance.getShaderDef();
+				var def = n.instance.getShaderDef(domain);
 				var inputId = null;
 				for (i => inVar in def.inVars) {
 					if (inVar.v.name == inputName) {
@@ -674,7 +756,7 @@ class ShaderGraph {
 					}
 				}
 
-				var def = connection.from.instance.getShaderDef();
+				var def = connection.from.instance.getShaderDef(domain);
 				var outputId = null;
 				for (i => outVar in def.outVars) {
 					if (outVar.v.name == connection.fromName) {
@@ -686,15 +768,12 @@ class ShaderGraph {
 				edgesJson.push({ outputNodeId: connection.from.id, nameOutput: connection.fromName, inputNodeId: n.id, nameInput: inputName, inputId: inputId, outputId: outputId });
 			}
 		}
-		var json = haxe.Json.stringify({
+		var json = {
 			nodes: [
 				for (n in nodes) { x : Std.int(n.x), y : Std.int(n.y), id: n.id, type: n.type, properties : n.instance.savePropertiesNode() }
 			],
-			edges: edgesJson,
-			parameters: [
-				for (p in parametersAvailable) { id : p.id, name : p.name, type : [p.type.getName(), p.type.getParameters().toString()], defaultValue : p.defaultValue, index : p.index }
-			]
-		}, "\t");
+			edges: edgesJson
+		};
 
 		return json;
 	}

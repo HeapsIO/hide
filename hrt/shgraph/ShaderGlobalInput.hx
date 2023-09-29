@@ -16,7 +16,7 @@ class ShaderGlobalInput extends ShaderNode {
 										{ parent: null, id: 0, kind: Global, name: "global.modelView", type: TMat4 },
 										{ parent: null, id: 0, kind: Global, name: "global.modelViewInverse", type: TMat4 } ];
 
-	override function getShaderDef():hrt.shgraph.ShaderGraph.ShaderNodeDef {
+	override function getShaderDef(domain: ShaderGraph.Domain):hrt.shgraph.ShaderGraph.ShaderNodeDef {
 		var pos : Position = {file: "", min: 0, max: 0};
 
 		var inVar : TVar = globalInputs[variableIdx];

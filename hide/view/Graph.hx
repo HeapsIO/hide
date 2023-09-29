@@ -56,6 +56,9 @@ class Graph extends FileView {
 	// used for deleting
 	var currentEdge : Edge;
 
+	// aaaaaa
+	var domain : hrt.shgraph.ShaderGraph.Domain;
+
 	override function onDisplay() {
 		element.html('
 			<div class="flex vertical" >
@@ -262,7 +265,7 @@ class Graph extends FileView {
 		});
 		listOfBoxes.push(box);
 
-		for (inputName => inputVar in box.getInstance().getInputs2()) {
+		for (inputName => inputVar in box.getInstance().getInputs2(domain)) {
 			var defaultValue = null;
 			/*if (inputInfo.hasProperty) {
 				defaultValue = Reflect.field(box.getInstance(), 'prop_${inputName => inputVar}');
@@ -299,7 +302,7 @@ class Graph extends FileView {
 				setAvailableOutputNodes(box, grNode.find(".node").attr("field"));
 			});
 		}
-		for (outputName => outputVar in box.getInstance().getOutputs2()) {
+		for (outputName => outputVar in box.getInstance().getOutputs2(domain)) {
 			var grNode = box.addOutput(editor, outputName, outputVar.type);
 			grNode.find(".node").attr("field", outputName);
 			grNode.on("mousedown", function(e) {
@@ -376,7 +379,7 @@ class Graph extends FileView {
 
 	// TODO(ces) : nuke SType from orbit
 	function setAvailableInputNodes(boxOutput : Box, field : String) {
-		var type = boxOutput.getInstance().getOutputs2()[field].type;
+		var type = boxOutput.getInstance().getOutputs2(domain)[field].type;
 		var sType : SType;
 
 		for (box in listOfBoxes) {
@@ -392,7 +395,7 @@ class Graph extends FileView {
 		for (box in listOfBoxes) {
 			for (output in box.outputs) {
 				var outputField = output.attr("field");
-				var type = box.getInstance().getOutputs2()[outputField].type;
+				var type = box.getInstance().getOutputs2(domain)[outputField].type;
 				var sType = ShaderType.getSType(type);
 				if (boxInput.getInstance().checkTypeAndCompatibilyInput(field, type)) {
 					output.addClass("nodeMatch");

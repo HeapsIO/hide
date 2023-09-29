@@ -12,7 +12,7 @@ class Text extends ShaderNode {
 
 	@prop() var text : String = "";
 
-	override function getShaderDef():hrt.shgraph.ShaderGraph.ShaderNodeDef {
+	override function getShaderDef(domain: ShaderGraph.Domain):hrt.shgraph.ShaderGraph.ShaderNodeDef {
 		return {expr: null, inVars: [], outVars: [], inits: [], externVars: []};
 	}
 

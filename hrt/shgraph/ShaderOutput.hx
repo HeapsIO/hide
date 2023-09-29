@@ -13,7 +13,7 @@ class ShaderOutput extends ShaderNode {
 	var components = [X, Y, Z, W];
 
 
-	override function getShaderDef():hrt.shgraph.ShaderGraph.ShaderNodeDef {
+	override function getShaderDef(domain: ShaderGraph.Domain):hrt.shgraph.ShaderGraph.ShaderNodeDef {
 		var pos : Position = {file: "", min: 0, max: 0};
 
 		var inVar : TVar = {name: "input", id:0, type: this.variable.type, kind: Param, qualifiers: []};

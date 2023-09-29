@@ -11,7 +11,7 @@ using hxsl.Ast;
 @noheader()
 class Preview extends ShaderNode {
 
-	override function getShaderDef():hrt.shgraph.ShaderGraph.ShaderNodeDef {
+	override function getShaderDef(domain: ShaderGraph.Domain):hrt.shgraph.ShaderGraph.ShaderNodeDef {
 		var pos : Position = {file: "", min: 0, max: 0};
 
 		var inVar : TVar = {name: "input", id:0, type: TVec(4, VFloat), kind: Param, qualifiers: []};

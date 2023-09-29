@@ -12,7 +12,7 @@ class BoolConst extends ShaderConst {
 
 	@prop() var value : Bool = true;
 
-	override function getShaderDef():hrt.shgraph.ShaderGraph.ShaderNodeDef {
+	override function getShaderDef(domain: ShaderGraph.Domain):hrt.shgraph.ShaderGraph.ShaderNodeDef {
 		var pos : Position = {file: "", min: 0, max: 0};
 
 		var output : TVar = {name: "output", id:1, type: TBool, kind: Local, qualifiers: []};

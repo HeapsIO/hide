@@ -9,7 +9,7 @@ using hxsl.Ast;
 @noheader()
 class FloatConst extends ShaderConst {
 
-	override function getShaderDef():hrt.shgraph.ShaderGraph.ShaderNodeDef {
+	override function getShaderDef(domain: ShaderGraph.Domain):hrt.shgraph.ShaderGraph.ShaderNodeDef {
 		var pos : Position = {file: "", min: 0, max: 0};
 
 		var output : TVar = {name: "output", id:1, type: TFloat, kind: Local, qualifiers: []};
