@@ -72,7 +72,7 @@ class Light extends Object3D {
 	@:s public var cascadePow : Float = 2;
 	@:s public var firstCascadeSize : Float = 10;
 	@:s public var castingMaxDist : Float = 0.0;
-	@:s public var params : Array<CascadeParams> = [{bias : 0.01}];
+	@:s public var params : Array<CascadeParams> = [];
 	@:s public var debugShader : Bool = false;
 
 	// Debug
