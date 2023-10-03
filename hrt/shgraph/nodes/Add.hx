@@ -10,7 +10,7 @@ class Add extends Operation {
 
 	static var SRC = {
 		@sginput var a : Vec4;
-		@sginput var b : Vec4;
+		@sginput(a) var b : Vec4;
 		@sgoutput var output : Vec4;
 		function fragment() {
 			output = a + b;

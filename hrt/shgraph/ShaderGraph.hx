@@ -8,7 +8,7 @@ using Lambda;
 
 typedef ShaderNodeDef = {
 	expr: TExpr,
-	inVars: Array<{v: TVar, internal: Bool}>, // If internal = true, don't show input in ui
+	inVars: Array<{v: TVar, internal: Bool, ?defVal: String}>, // If internal = true, don't show input in ui
 	outVars: Array<{v: TVar, internal: Bool}>,
 	externVars: Array<TVar>, // other external variables like globals and stuff
 	inits: Array<{variable: TVar, value: Dynamic}>, // Default values for some variables
@@ -316,9 +316,6 @@ class Graph {
 	}
 
 	public function generate(nodes : Array<Node>, edges : Array<Edge>) {
-
-
-
 		for (n in nodes) {
 			n.outputs = [];
 			var cl = std.Type.resolveClass(n.type);
@@ -391,7 +388,7 @@ class Graph {
 			return false;
 		}
 
-		var inputType = inputs[inputName].type;
+		var inputType = inputs[inputName].v.type;
 		var outputType = outputs[outputName].type;
 
 		if (!areTypesCompatible(inputType, outputType)) {
@@ -640,8 +637,12 @@ class Graph {
 						}
 						else {
 							// default parameter if no connection
-							// TODO : Handle default values for non Float/Vec vars
-							replacement = convertToType(nodeVar.v.type, {e: TConst(CFloat(0.0)), p: pos, t:TFloat});
+							var defVal = 0.0;
+							var defaultValue = Reflect.getProperty(currentNode.instance.defaults, nodeVar.v.name);
+							if (defaultValue != null) {
+								defVal = Std.parseFloat(defaultValue) ?? 0.0;
+							}
+							replacement = convertToType(nodeVar.v.type, {e: TConst(CFloat(defVal)), p: pos, t:TFloat});
 						}
 					}
 
@@ -770,7 +771,7 @@ class Graph {
 		}
 		var json = {
 			nodes: [
-				for (n in nodes) { x : Std.int(n.x), y : Std.int(n.y), id: n.id, type: n.type, properties : n.instance.savePropertiesNode() }
+				for (n in nodes) { x : Std.int(n.x), y : Std.int(n.y), id: n.id, type: n.type, properties : n.instance.saveProperties() }
 			],
 			edges: edgesJson
 		};

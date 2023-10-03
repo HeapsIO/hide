@@ -267,13 +267,14 @@ class Graph extends FileView {
 
 		for (inputName => inputVar in box.getInstance().getInputs2(domain)) {
 			var defaultValue = null;
-			/*if (inputInfo.hasProperty) {
-				defaultValue = Reflect.field(box.getInstance(), 'prop_${inputName => inputVar}');
+
+			if (inputVar.def != null) {
+				defaultValue = Reflect.getProperty(box.getInstance().defaults, '${inputName}');
 				if (defaultValue == null) {
 					defaultValue = "0";
 				}
-			}*/
-			var grNode = box.addInput(editor, inputName, defaultValue, inputVar.type);
+			}
+			var grNode = box.addInput(editor, inputName, defaultValue, inputVar.v.type);
 			if (defaultValue != null) {
 				var fieldEditInput = grNode.find("input");
 				fieldEditInput.on("change", function(ev) {
@@ -281,7 +282,7 @@ class Graph extends FileView {
 					if (Math.isNaN(tmpValue) ) {
 						fieldEditInput.addClass("error");
 					} else {
-						Reflect.setField(box.getInstance(), 'prop_${inputName}', tmpValue);
+						Reflect.setField(box.getInstance().defaults, '${inputName}', tmpValue);
 						fieldEditInput.val(tmpValue);
 						fieldEditInput.removeClass("error");
 					}

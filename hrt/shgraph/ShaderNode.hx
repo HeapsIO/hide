@@ -11,6 +11,8 @@ class ShaderNode {
 
 	public var id : Int;
 
+	public var defaults : Dynamic = {};
+
 	static var availableVariables = [
 					{
 						parent: null,
@@ -45,12 +47,13 @@ class ShaderNode {
 	}
 
 	// TODO(ces) : caching
-	public function getInputs2(domain: ShaderGraph.Domain) : Map<String, TVar> {
+	public function getInputs2(domain: ShaderGraph.Domain) : Map<String, {v: TVar, ?def: String}> {
 		var def = getShaderDef(domain);
-		var map : Map<String, TVar> = [];
-		for (tvar in def.inVars) {
-			if (!tvar.internal)
-				map.set(tvar.v.name, tvar.v);
+		var map : Map<String, {v: TVar, ?def: String}> = [];
+		for (i => tvar in def.inVars) {
+			if (!tvar.internal) {
+				map.set(tvar.v.name, {v: tvar.v, def: tvar.defVal});
+			}
 		}
 		return map;
 	}
@@ -132,35 +135,13 @@ class ShaderNode {
 	public function loadProperties(props : Dynamic) {
 		var fields = Reflect.fields(props);
 		for (f in fields) {
-			Reflect.setField(this, f, Reflect.field(props, f));
-		}
-	}
-
-	public function savePropertiesNode() : Dynamic {
-		var parameters = saveProperties();
-
-		var thisClass = std.Type.getClass(this);
-		var fields = std.Type.getInstanceFields(thisClass);
-		var metas = haxe.rtti.Meta.getFields(thisClass);
-		var metaSuperClass = haxe.rtti.Meta.getFields(std.Type.getSuperClass(thisClass));
-
-		for (f in fields) {
-			var m = Reflect.field(metas, f);
-			if (m == null) {
-				m = Reflect.field(metaSuperClass, f);
-				if (m == null)
-					continue;
+			if (f == "defaults") {
+				defaults = haxe.Json.parse(Reflect.field(props, f));
 			}
-
-			if (Reflect.hasField(m, "prop")) {
-				var metaData : Array<String> = Reflect.field(m, "prop");
-				if (metaData != null && metaData.length >= 1 && metaData[0] == "macro") {
-					Reflect.setField(parameters, f, Reflect.getProperty(this, f));
-				}
+			else {
+				Reflect.setField(this, f, Reflect.field(props, f));
 			}
 		}
-
-		return parameters;
 	}
 
 	public function saveProperties() : Dynamic {
@@ -185,6 +166,11 @@ class ShaderNode {
 				}
 			}
 		}
+		var defSer = haxe.Json.stringify(defaults);
+		if (defSer.length > 0) {
+			Reflect.setField(parameters, "defaults", defSer);
+		}
+
 		return parameters;
 	}
 

@@ -31,16 +31,23 @@ class Macros {
 
 							var inVars : Array<String> = [];
 							var outVars : Array<String> = [];
+							var defValues : Array<String> = [];
 
 							function iter(e: haxe.macro.Expr) : Void {
 								switch(e.expr) {
 									case EMeta(meta, subexpr):
 										switch (meta.name) {
 											case "sginput":
+												var defValue = null;
+												if (meta.params != null && meta.params.length > 0) {
+													defValue = "0.0";
+												}
+
 												switch(subexpr.expr) {
 													case EVars(vars):
 														for (v in vars) {
 															inVars.push(v.name);
+															defValues.push(defValue);
 														}
 														e.expr = subexpr.expr;
 													default:
@@ -103,9 +110,12 @@ class Macros {
 
 							var inVarField : Field = makeField("_inVars", inVars);
 							var outVarField : Field = makeField("_outVars", outVars);
+							var defValuesField : Field = makeField("_defValues", defValues);
 
 							fields.push(inVarField);
 							fields.push(outVarField);
+							fields.push(defValuesField);
+
 
 						} catch( e : hxsl.Ast.Error ) {
 							fields.remove(f);

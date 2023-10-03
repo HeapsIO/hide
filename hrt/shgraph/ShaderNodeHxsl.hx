@@ -24,8 +24,11 @@ class ShaderNodeHxsl extends ShaderNode {
 					var input = false;
 					var output = false;
 					var classInVars : Array<String> = cast (cl:Dynamic)._inVars;
-					if (classInVars.contains(tvar.name)) {
-						inVars.push({v:tvar, internal: false});
+					var classDefVal : Array<String> = cast (cl:Dynamic)._defValues;
+
+					var indexOf = classInVars.indexOf(tvar.name);
+					if (indexOf > -1) {
+						inVars.push({v:tvar, internal: false, defVal: classDefVal[indexOf]});
 						// TODO : handle default values
 						input = true;
 					}
