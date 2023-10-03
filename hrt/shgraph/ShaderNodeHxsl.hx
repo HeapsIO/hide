@@ -28,7 +28,18 @@ class ShaderNodeHxsl extends ShaderNode {
 
 					var indexOf = classInVars.indexOf(tvar.name);
 					if (indexOf > -1) {
-						inVars.push({v:tvar, internal: false, defVal: classDefVal[indexOf]});
+						var defStr = classDefVal[indexOf];
+						var def : hrt.shgraph.ShaderGraph.ShaderDefInput = null;
+						if (defStr != null) {
+							var float = Std.parseFloat(defStr);
+							if (!Math.isNaN(float)) {
+								def = Const(float);
+							} else {
+								def = Var(defStr);
+							}
+							trace(def);
+						}
+						inVars.push({v:tvar, internal: false, defVal: def});
 						// TODO : handle default values
 						input = true;
 					}

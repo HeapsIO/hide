@@ -266,13 +266,14 @@ class Graph extends FileView {
 		listOfBoxes.push(box);
 
 		for (inputName => inputVar in box.getInstance().getInputs2(domain)) {
-			var defaultValue = null;
-
-			if (inputVar.def != null) {
-				defaultValue = Reflect.getProperty(box.getInstance().defaults, '${inputName}');
-				if (defaultValue == null) {
-					defaultValue = "0";
-				}
+			var defaultValue : String = null;
+			switch (inputVar.def) {
+				case Const(defValue):
+					defaultValue= Reflect.getProperty(box.getInstance().defaults, '${inputName}');
+					if (defaultValue == null) {
+						defaultValue = '$defValue';
+					}
+				default:
 			}
 			var grNode = box.addInput(editor, inputName, defaultValue, inputVar.v.type);
 			if (defaultValue != null) {

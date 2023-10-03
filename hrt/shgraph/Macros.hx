@@ -40,7 +40,19 @@ class Macros {
 											case "sginput":
 												var defValue = null;
 												if (meta.params != null && meta.params.length > 0) {
-													defValue = "0.0";
+													switch (meta.params[0].expr) {
+														case EConst(v):
+															switch(v) {
+																case CIdent(name):
+																	defValue = name;
+																case CFloat(val), CInt(val):
+																	defValue = '$val';
+																default:
+																	throw "sginput default param must be an identifier or a integer";
+															}
+														default:
+															throw "sginput default param must be a constant value";
+													}
 												}
 
 												switch(subexpr.expr) {

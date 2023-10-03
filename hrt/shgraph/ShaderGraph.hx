@@ -6,9 +6,15 @@ using hide.tools.Extensions.ArrayExtensions;
 using haxe.EnumTools.EnumValueTools;
 using Lambda;
 
+enum ShaderDefInput {
+	Var(name: String);
+	Const(intialValue: Float);
+}
+
+
 typedef ShaderNodeDef = {
 	expr: TExpr,
-	inVars: Array<{v: TVar, internal: Bool, ?defVal: String}>, // If internal = true, don't show input in ui
+	inVars: Array<{v: TVar, internal: Bool, ?defVal: ShaderDefInput}>, // If internal = true, don't show input in ui
 	outVars: Array<{v: TVar, internal: Bool}>,
 	externVars: Array<TVar>, // other external variables like globals and stuff
 	inits: Array<{variable: TVar, value: Dynamic}>, // Default values for some variables
@@ -637,12 +643,30 @@ class Graph {
 						}
 						else {
 							// default parameter if no connection
-							var defVal = 0.0;
-							var defaultValue = Reflect.getProperty(currentNode.instance.defaults, nodeVar.v.name);
-							if (defaultValue != null) {
-								defVal = Std.parseFloat(defaultValue) ?? 0.0;
+							switch(nodeVar.defVal) {
+								case Const(def):
+									var defVal = def;
+									var defaultValue = Reflect.getProperty(currentNode.instance.defaults, nodeVar.v.name);
+									if (defaultValue != null) {
+										defVal = Std.parseFloat(defaultValue) ?? defVal;
+									}
+									replacement = convertToType(nodeVar.v.type, {e: TConst(CFloat(defVal)), p: pos, t:TFloat});
+								case Var(name):
+									var tvar = externs.find((v) -> v.name == name);
+									if (tvar == null) {
+										tvar = {
+											id: getNewVarId(),
+											name: name,
+											type: nodeVar.v.type,
+											kind: Input
+										};
+										externs.push(tvar);
+									}
+									replacement = {e: TVar(tvar), p: pos, t:nodeVar.v.type};
+								default:
+									replacement = convertToType(nodeVar.v.type, {e: TConst(CFloat(0.0)), p: pos, t:TFloat});
 							}
-							replacement = convertToType(nodeVar.v.type, {e: TConst(CFloat(defVal)), p: pos, t:TFloat});
+
 						}
 					}
 

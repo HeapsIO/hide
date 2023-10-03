@@ -47,9 +47,9 @@ class ShaderNode {
 	}
 
 	// TODO(ces) : caching
-	public function getInputs2(domain: ShaderGraph.Domain) : Map<String, {v: TVar, ?def: String}> {
+	public function getInputs2(domain: ShaderGraph.Domain) : Map<String, {v: TVar, ?def: hrt.shgraph.ShaderGraph.ShaderDefInput}> {
 		var def = getShaderDef(domain);
-		var map : Map<String, {v: TVar, ?def: String}> = [];
+		var map : Map<String, {v: TVar, ?def: hrt.shgraph.ShaderGraph.ShaderDefInput}> = [];
 		for (i => tvar in def.inVars) {
 			if (!tvar.internal) {
 				map.set(tvar.v.name, {v: tvar.v, def: tvar.defVal});
