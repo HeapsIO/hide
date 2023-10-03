@@ -34,6 +34,10 @@ typedef ShadowSamplingPCF = {> ShadowSamplingMode,
 	var scale : Float;
 }
 
+typedef CascadeParams = {
+	var bias : Float;
+}
+
 class Light extends Object3D {
 
 	@:s public var kind : LightKind = Point;
@@ -68,6 +72,7 @@ class Light extends Object3D {
 	@:s public var cascadePow : Float = 2;
 	@:s public var firstCascadeSize : Float = 10;
 	@:s public var castingMaxDist : Float = 0.0;
+	@:s public var params : Array<CascadeParams> = [{bias : 0.01}];
 	@:s public var debugShader : Bool = false;
 
 	// Debug
@@ -200,6 +205,11 @@ class Light extends Object3D {
 						cs.debug = debugDisplay;
 						cs.castingMaxDist = castingMaxDist;
 						cs.debugShader = debugShader;
+						params.resize(cascadeNbr);
+						for ( i in 0...params.length )
+							if ( params[i] == null )
+								params[i] = {bias : 0.001};
+						cs.params = params;
 					}
 				}
 			case Spot:
@@ -441,16 +451,8 @@ class Light extends Object3D {
 			]));
 		default:
 		}
-		if ( cascade )
-			group.append(hide.comp.PropsEditor.makePropsList([
-				{ name: "cascadeNbr", t: PInt(1, 5), def: 1},
-				{ name: "cascadePow", t: PFloat(0, 4), def: 2},
-				{ name: "firstCascadeSize", t: PFloat(0, 1), def: 0.2},
-				{ name: "castingMaxDist", t: PFloat(0, 100), def: 0.0},
-				{ name: "debugShader", t: PBool, def: false},
-			]));
 
-		var props = ctx.properties.add(group, this, function(pname) {
+		ctx.properties.add(group, this, function(pname) {
 			if( pname == "kind" || pname == "cascade" || pname == "autoShrink" ){
 				ctx.rebuildPrefab(this);
 				ctx.rebuildProperties();
@@ -536,6 +538,40 @@ class Light extends Object3D {
 		if( shadows.mode == None ) {
 			e.find("dd").not(":first").remove();
 			e.find("dt").not(":first").remove();
+		}
+
+		var cascadeGroup = new hide.Element(
+			'<div class="group" name="Cascades">
+				<dl>
+					<dt>Number</dt><dd><input type="range" field="cascadeNbr" step="1" min="1" max="4"/></dd>
+					<dt>First cascade size</dt><dd><input type="range" field="firstCascadeSize" min="5" max="100"/></dd>
+					<dt>Casting max dist</dt><dd><input type="range" field="castingMaxDist" min="-1" max="1000"/></dd>
+					<dl>
+						<ul id="params"></ul>
+					</dl>
+					<dt>Debug shader</dt><dd><input type="checkbox" field="debugShader"/></dd>
+				</dl>
+			</div>'
+		);
+
+		ctx.properties.add(cascadeGroup,this,function(pname) {
+			ctx.onChange(this,pname);
+			params.resize(cascadeNbr);
+			if( pname == "cascadeNbr" ) ctx.rebuildProperties();
+		});
+
+		var list = cascadeGroup.find("ul#params");
+		for ( param in params ) {
+			var e = new hide.Element('
+			<div class="group" name="Params">
+				<dl>
+					<dt>Bias</dt><dd><input type="range" field="bias"/></dd>
+				</dl>
+			</div>');
+			e.appendTo(list);
+			ctx.properties.build(e, param, (pname) -> {
+				ctx.onChange(this, "params");
+			});
 		}
 	}
 
