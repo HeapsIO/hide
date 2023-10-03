@@ -526,8 +526,20 @@ class Editor extends Component {
 
 			var f = base.getConvFunction(clipSchema.type, destCol.type);
 			var v : Dynamic = Reflect.field(cliObj, clipSchema.name);
-			if( f == null )
-				v = base.getDefault(destCol, sheet);
+			if (f == null) {
+				switch ([clipSchema.type, destCol.type]) {
+					case [TId, TRef(destSheet)]:
+						if (v != null)
+							v = haxe.Json.parse(haxe.Json.stringify(v));
+
+						if (!doesSheetContainsId(base.getSheet(destSheet), v))
+							v = base.getDefault(destCol, sheet);
+					case [TRef(_), TId]:
+					// do nothing
+					default:
+						v = base.getDefault(destCol, sheet);
+				}
+			}
 			else {
 				// make a deep copy to erase references
 				if( v != null ) v = haxe.Json.parse(haxe.Json.stringify(v));
@@ -1576,6 +1588,13 @@ class Editor extends Component {
 			return originalId;
 		}
 		return getNewUniqueId(originalId, table, column);
+	}
+
+	public function doesSheetContainsId(sheet:cdb.Sheet, id:String) {
+		var idx = base.getSheet(sheet.name).index;
+
+		var uniq = idx.get(id);
+		return uniq != null;
 	}
 
 	public function getNewUniqueId(originalId : String, table : Table, column : cdb.Data.Column) {
