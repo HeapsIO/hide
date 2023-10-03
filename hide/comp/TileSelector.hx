@@ -113,23 +113,31 @@ class TileSelector extends Component {
 			tex.path = file;
 			tex.onChange = function() this.file = tex.path;
 		}
-		if( allowSizeSelect ) {
-			var widthEdit = new Element('<span class="dim-edit">Width:<input type="number" value="${size.width}">px</span>').appendTo(tool.element);
-			widthEdit.find("input").on("blur",function(e:js.jquery.Event) {
-				var nsize = Std.parseInt(e.getThis().val());
-				if( this.size.width != nsize && nsize != null && nsize > 0 )
-					this.size.width = nsize;
+		if (allowSizeSelect) {
+			var tooltipText = 'Different value types are accepted :
+			- Values in pixels (100 - it will take 100px of the image),
+			- Values in percent (100% - it will take the max size of the image),
+			- Values in ratio (1/2 - it will take half of the image size)';
+
+			var widthEdit = new Element('<span class="dim-edit">Width:<input type="text" title="$tooltipText" value="${size.width}">px</span>')
+				.appendTo(tool.element);
+			widthEdit.find("input").on("blur", (e:js.jquery.Event) -> {
+				this.size.width = setSizeEdit(e.getThis(), this.size.width, imageWidth);
+				widthEdit.find("input").val(this.size.width);
 			}).on("keydown", function(e:js.jquery.Event) {
-				if( e.keyCode == 13 ) widthEdit.find("input").blur();
+				if (e.keyCode == 13)
+					widthEdit.find("input").blur();
 			});
-			var heightEdit = new Element('<span class="dim-edit">Height:<input type="number" value="${size.height}">px</span>').appendTo(tool.element);
-			heightEdit.find("input").on("blur",function(e:js.jquery.Event) {
-				var nsize = Std.parseInt(e.getThis().val());
-				if( this.size.height != nsize && nsize != null && nsize > 0 )
-					this.size.height = nsize;
+			var heightEdit = new Element('<span class="dim-edit">Height:<input type="text" title="$tooltipText" value="${size.height}">px</span>')
+				.appendTo(tool.element);
+			heightEdit.find("input").on("blur", (e:js.jquery.Event) -> {
+				this.size.height = setSizeEdit(e.getThis(), this.size.height, imageHeight);
+				heightEdit.find("input").val(this.size.height);
 			}).on("keydown", function(e:js.jquery.Event) {
-				if( e.keyCode == 13 ) heightEdit.find("input").blur();
+				if (e.keyCode == 13)
+					heightEdit.find("input").blur();
 			});
+
 			widthEdit.find("input").on("blur", updateCursor);
 			heightEdit.find("input").on("blur", updateCursor);
 		}
@@ -247,6 +255,30 @@ class TileSelector extends Component {
 			rescale();
 		};
 		i.src = url;
+	}
+
+	function setSizeEdit(element:Element, sizeValue:Int, maxValue:Int):Int {
+		var val = element.val();
+		var isRatio = StringTools.contains(Std.string(val), '/');
+		var isPercent = StringTools.contains(Std.string(val), '%');
+
+		if (isRatio || isPercent) {
+			if (isRatio) {
+				var ratio = Std.string(val).split('/');
+				sizeValue = Std.int((Std.parseFloat(ratio[0]) / Std.parseFloat(ratio[1])) * maxValue);
+			}
+
+			if (isPercent) {
+				var percent = Std.string(val).split('%');
+				sizeValue = Std.int((Std.parseFloat(percent[0]) / 100.0) * maxValue);
+			}
+		} else {
+			var nsize = Std.parseInt(element.val());
+			if (sizeValue != nsize && nsize != null && nsize > 0)
+				sizeValue = nsize;
+		}
+
+		return sizeValue;
 	}
 
 	public dynamic function onChange( cancel : Bool ) {
