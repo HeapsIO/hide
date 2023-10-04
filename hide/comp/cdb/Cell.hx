@@ -734,7 +734,8 @@ class Cell {
 					e.preventDefault();
 					editor.cursor.move(e.shiftKey ? -1 : 1, 0, false, false, true);
 					var c = editor.cursor.getCell();
-					if( c != this ) c.edit();
+							if (c != this && c != null)
+								c.edit();
 				}
 				e.stopPropagation();
 			});
