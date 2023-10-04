@@ -10,6 +10,24 @@ class SubGraph extends ShaderNode {
 
 	@prop() public var pathShaderGraph : String;
 
+	override public function getShaderDef(domain: ShaderGraph.Domain):hrt.shgraph.ShaderGraph.ShaderNodeDef {
+		var shader = new ShaderGraph(pathShaderGraph);
+		var gen = shader.getGraph(domain).generate2();
+
+		// for (tvar in gen.externVars) {
+		// 	if (tvar.qualifiers != null) {
+		// 		if (tvar.qualifiers.contains(SgInput)) {
+		// 			gen.inVars.push(tvar);
+		// 		}
+		// 		if (tvar.qualifiers.contains(SgOutput)) {
+		// 			gen.outVars.push(tvar);
+		// 		}
+		// 	}
+		// }
+
+		return gen;
+	}
+
 	var inputsInfo : Map<String, ShaderNode.InputInfo>;
 	var inputInfoKeys : Array<String> = [];
 	var outputsInfo : Map<String, ShaderNode.OutputInfo>;
@@ -21,232 +39,137 @@ class SubGraph extends ShaderNode {
 
 	public var varsSubGraph : Array<TVar> = [];
 
-	public function loadGraphShader() {
-		if (this.pathShaderGraph != null) {
-			subShaderGraph = new ShaderGraph(pathShaderGraph);
-			inputsInfo = new Map<String, ShaderNode.InputInfo>();
-			inputInfoKeys = [];
-			var paramInfoKeys = [];
-			outputsInfo = new Map<String, ShaderNode.OutputInfo>();
-			outputInfoKeys = [];
-			parameters = [];
-			propertiesSubGraph = new Map<Int, Dynamic>();
-			var prefixSubGraph = "shgraph_" + id + "_";
+	// public function loadGraphShader() {
+	// 	if (this.pathShaderGraph != null) {
+	// 		subShaderGraph = new ShaderGraph(pathShaderGraph);
+	// 		inputsInfo = new Map<String, ShaderNode.InputInfo>();
+	// 		inputInfoKeys = [];
+	// 		var paramInfoKeys = [];
+	// 		outputsInfo = new Map<String, ShaderNode.OutputInfo>();
+	// 		outputInfoKeys = [];
+	// 		parameters = [];
+	// 		propertiesSubGraph = new Map<Int, Dynamic>();
+	// 		var prefixSubGraph = "shgraph_" + id + "_";
 
-			for (node in subShaderGraph.getNodes()) {
-				switch (node.type.split(".").pop()) {
-					case "ShaderParam": // params become inputs
-						var shaderParam = Std.downcast(node.instance, ShaderParam);
-						var paramName = subShaderGraph.getParameter(shaderParam.parameterId).name;
-						var paramId = "param_" + shaderParam.parameterId;
-						var paramInfo = inputsInfo.get(prefixSubGraph+paramId);
-						var ids = [];
-						if (paramInfo != null && paramInfo.ids != null)
-							ids = paramInfo.ids;
-						ids.push(node.id);
-						if (!inputsInfo.exists(prefixSubGraph + paramId)) {
-							paramInfoKeys.push(prefixSubGraph+paramId);
-						}
-						inputsInfo.set(prefixSubGraph+paramId, { name : paramName , type: ShaderType.getSType(shaderParam.variable.type), hasProperty: false, isRequired : false, ids : ids, index :  subShaderGraph.getParameter(shaderParam.parameterId).index});
-					case "ShaderInput":
-						var shaderInput = Std.downcast(node.instance, ShaderInput);
-						var inputId = "input_" + shaderInput.variable.name;
-						var inputInfo = inputsInfo.get(prefixSubGraph+inputId);
-						var ids = [];
-						if (inputInfo != null && inputInfo.ids != null)
-							ids = inputInfo.ids;
-						ids.push(node.id);
-						if (!inputsInfo.exists(prefixSubGraph+inputId)) {
-							inputInfoKeys.push(prefixSubGraph+inputId);
-						}
-						inputsInfo.set(prefixSubGraph+inputId, { name : "*" + shaderInput.variable.name , type: ShaderType.getSType(shaderInput.variable.type), hasProperty: false, isRequired : false, ids : ids });
-					case "ShaderGlobalInput":
-						var shaderInput = Std.downcast(node.instance, ShaderGlobalInput);
-						var inputId = "globalInput_" + shaderInput.variable.name;
-						var inputInfo = inputsInfo.get(prefixSubGraph+inputId);
-						var ids = [];
-						if (inputInfo != null && inputInfo.ids != null)
-							ids = inputInfo.ids;
-						ids.push(node.id);
-						if (!inputsInfo.exists(prefixSubGraph+inputId)) {
-							inputInfoKeys.push(prefixSubGraph+inputId);
-						}
-						inputsInfo.set(prefixSubGraph+inputId, { name : "*" + shaderInput.variable.name , type: ShaderType.getSType(shaderInput.variable.type), hasProperty: false, isRequired : false, ids : ids });
-					case "ShaderCameraInput":
-						var shaderInput = Std.downcast(node.instance, ShaderCameraInput);
-						var inputId = "cameraInput_" + shaderInput.variable.name;
-						var inputInfo = inputsInfo.get(prefixSubGraph+inputId);
-						var ids = [];
-						if (inputInfo != null && inputInfo.ids != null)
-							ids = inputInfo.ids;
-						ids.push(node.id);
-						if (!inputsInfo.exists(prefixSubGraph+inputId)) {
-							inputInfoKeys.push(prefixSubGraph+inputId);
-						}
-						inputsInfo.set(prefixSubGraph+inputId, { name : "*" + shaderInput.variable.name , type: ShaderType.getSType(shaderInput.variable.type), hasProperty: false, isRequired : false, ids : ids });
-					case "ShaderOutput":
-						var shaderOutput = Std.downcast(node.instance, ShaderOutput);
-						var prefix = shaderOutput.variable.kind == Local ? "" : "*";
+	// 		for (node in subShaderGraph.getNodes()) {
+	// 			switch (node.type.split(".").pop()) {
+	// 				case "ShaderParam": // params become inputs
+	// 					var shaderParam = Std.downcast(node.instance, ShaderParam);
+	// 					var paramName = subShaderGraph.getParameter(shaderParam.parameterId).name;
+	// 					var paramId = "param_" + shaderParam.parameterId;
+	// 					var paramInfo = inputsInfo.get(prefixSubGraph+paramId);
+	// 					var ids = [];
+	// 					if (paramInfo != null && paramInfo.ids != null)
+	// 						ids = paramInfo.ids;
+	// 					ids.push(node.id);
+	// 					if (!inputsInfo.exists(prefixSubGraph + paramId)) {
+	// 						paramInfoKeys.push(prefixSubGraph+paramId);
+	// 					}
+	// 					inputsInfo.set(prefixSubGraph+paramId, { name : paramName , type: ShaderType.getSType(shaderParam.variable.type), hasProperty: false, isRequired : false, ids : ids, index :  subShaderGraph.getParameter(shaderParam.parameterId).index});
+	// 				case "ShaderInput":
+	// 					var shaderInput = Std.downcast(node.instance, ShaderInput);
+	// 					var inputId = "input_" + shaderInput.variable.name;
+	// 					var inputInfo = inputsInfo.get(prefixSubGraph+inputId);
+	// 					var ids = [];
+	// 					if (inputInfo != null && inputInfo.ids != null)
+	// 						ids = inputInfo.ids;
+	// 					ids.push(node.id);
+	// 					if (!inputsInfo.exists(prefixSubGraph+inputId)) {
+	// 						inputInfoKeys.push(prefixSubGraph+inputId);
+	// 					}
+	// 					inputsInfo.set(prefixSubGraph+inputId, { name : "*" + shaderInput.variable.name , type: ShaderType.getSType(shaderInput.variable.type), hasProperty: false, isRequired : false, ids : ids });
+	// 				case "ShaderGlobalInput":
+	// 					var shaderInput = Std.downcast(node.instance, ShaderGlobalInput);
+	// 					var inputId = "globalInput_" + shaderInput.variable.name;
+	// 					var inputInfo = inputsInfo.get(prefixSubGraph+inputId);
+	// 					var ids = [];
+	// 					if (inputInfo != null && inputInfo.ids != null)
+	// 						ids = inputInfo.ids;
+	// 					ids.push(node.id);
+	// 					if (!inputsInfo.exists(prefixSubGraph+inputId)) {
+	// 						inputInfoKeys.push(prefixSubGraph+inputId);
+	// 					}
+	// 					inputsInfo.set(prefixSubGraph+inputId, { name : "*" + shaderInput.variable.name , type: ShaderType.getSType(shaderInput.variable.type), hasProperty: false, isRequired : false, ids : ids });
+	// 				case "ShaderCameraInput":
+	// 					var shaderInput = Std.downcast(node.instance, ShaderCameraInput);
+	// 					var inputId = "cameraInput_" + shaderInput.variable.name;
+	// 					var inputInfo = inputsInfo.get(prefixSubGraph+inputId);
+	// 					var ids = [];
+	// 					if (inputInfo != null && inputInfo.ids != null)
+	// 						ids = inputInfo.ids;
+	// 					ids.push(node.id);
+	// 					if (!inputsInfo.exists(prefixSubGraph+inputId)) {
+	// 						inputInfoKeys.push(prefixSubGraph+inputId);
+	// 					}
+	// 					inputsInfo.set(prefixSubGraph+inputId, { name : "*" + shaderInput.variable.name , type: ShaderType.getSType(shaderInput.variable.type), hasProperty: false, isRequired : false, ids : ids });
+	// 				case "ShaderOutput":
+	// 					var shaderOutput = Std.downcast(node.instance, ShaderOutput);
+	// 					var prefix = shaderOutput.variable.kind == Local ? "" : "*";
 
-						outputsInfo.set(prefixSubGraph+node.id, { name : prefix + shaderOutput.variable.name , type: ShaderType.getSType(shaderOutput.variable.type), id : node.id });
-						outputInfoKeys.push(prefixSubGraph+node.id);
+	// 					outputsInfo.set(prefixSubGraph+node.id, { name : prefix + shaderOutput.variable.name , type: ShaderType.getSType(shaderOutput.variable.type), id : node.id });
+	// 					outputInfoKeys.push(prefixSubGraph+node.id);
 
-						addOutput(prefixSubGraph+node.id, shaderOutput.variable.type);
-					default:
-						var shaderConst = Std.downcast(node.instance, ShaderConst);
-						if (shaderConst != null) { // input static become properties
-							if (shaderConst.name.length == 0) continue;
-							if (Std.isOfType(shaderConst, BoolConst)) {
-								parameters.push({ name : shaderConst.name, type : TBool, defaultValue : null, id : shaderConst.id, index : parameters.length });
-							} else if (Std.isOfType(shaderConst, FloatConst)) {
-								parameters.push({ name : shaderConst.name, type : TFloat, defaultValue : null, id : shaderConst.id, index : parameters.length });
-							} else if (Std.isOfType(shaderConst, Color)) {
-								parameters.push({ name : shaderConst.name, type : TVec(4, VFloat), defaultValue : null, id : shaderConst.id, index : parameters.length });
-							}
-						}
-				}
-			}
-			paramInfoKeys.sort((x,y) -> Reflect.compare(inputsInfo[x].index, inputsInfo[y].index));
-			inputInfoKeys = paramInfoKeys.concat(inputInfoKeys);
-		}
-	}
+	// 					addOutput(prefixSubGraph+node.id, shaderOutput.variable.type);
+	// 				default:
+	// 					var shaderConst = Std.downcast(node.instance, ShaderConst);
+	// 					if (shaderConst != null) { // input static become properties
+	// 						if (shaderConst.name.length == 0) continue;
+	// 						if (Std.isOfType(shaderConst, BoolConst)) {
+	// 							parameters.push({ name : shaderConst.name, type : TBool, defaultValue : null, id : shaderConst.id, index : parameters.length });
+	// 						} else if (Std.isOfType(shaderConst, FloatConst)) {
+	// 							parameters.push({ name : shaderConst.name, type : TFloat, defaultValue : null, id : shaderConst.id, index : parameters.length });
+	// 						} else if (Std.isOfType(shaderConst, Color)) {
+	// 							parameters.push({ name : shaderConst.name, type : TVec(4, VFloat), defaultValue : null, id : shaderConst.id, index : parameters.length });
+	// 						}
+	// 					}
+	// 			}
+	// 		}
+	// 		paramInfoKeys.sort((x,y) -> Reflect.compare(inputsInfo[x].index, inputsInfo[y].index));
+	// 		inputInfoKeys = paramInfoKeys.concat(inputInfoKeys);
+	// 	}
+	// }
 
-	override public function build(key : String) : TExpr {
+	// override public function getOutputInfo(key : String) : ShaderNode.OutputInfo {
+	// 	return outputsInfo.get(key);
+	// }
 
-		for (inputKey in inputInfoKeys) {
-			var inputInfo = inputsInfo.get(inputKey);
-			var inputTVar = getInput(inputKey);
+	// override public function getOutputInfoKeys() : Array<String> {
+	// 	return outputInfoKeys;
+	// }
 
-			if (inputTVar != null) {
-				for (id in inputInfo.ids) {
-					var nodeToReplace = subShaderGraph.getNodes().get(id);
-					for (i in 0...nodeToReplace.outputs.length) {
-						var inputNode = nodeToReplace.outputs[i];
+	// override public function loadProperties(props : Dynamic) {
+	// 	this.pathShaderGraph = Reflect.field(props, "pathShaderGraph");
+	// 	loadGraphShader();
 
-						for (inputKey in inputNode.instance.getInputsKey()) {
-							var input = inputNode.instance.getInput(inputKey);
-							if (input.node == nodeToReplace.instance) {
-								inputNode.instance.setInput(inputKey, inputTVar);
-							}
-						}
-					}
-				}
-			}
-		}
+	// 	var parametersValues : Array<hrt.shgraph.ShaderGraph.Parameter> = Reflect.field(props, "parametersValues");
+	// 	if (parametersValues == null) return;
+	// 	var index = 0;
+	// 	for (p in this.parameters) {
+	// 		if (parametersValues.length <= index) break;
+	// 		if (p.id != parametersValues[index].id) {
+	// 			continue;
+	// 		}
+	// 		p.defaultValue = parametersValues[index].defaultValue;
+	// 		index++;
+	// 	}
+	// }
 
-		for (p in parameters) {
-			if (p.defaultValue != null) {
-				var node = subShaderGraph.getNode(p.id);
-				switch (p.type) {
-					case TBool:
-						var boolConst = Std.downcast(node.instance, BoolConst);
-						@:privateAccess boolConst.value = p.defaultValue;
-					case TVec(4, VFloat):
-						var colorConst = Std.downcast(node.instance, Color);
-						@:privateAccess {
-							colorConst.r = p.defaultValue.x;
-							colorConst.g = p.defaultValue.y;
-							colorConst.b = p.defaultValue.z;
-							colorConst.a = p.defaultValue.w;
-						}
-					case TFloat:
-						var floatConst = Std.downcast(node.instance, FloatConst);
-						@:privateAccess floatConst.value = p.defaultValue;
-					default:
-				}
-			}
-		}
+	// override public function saveProperties() : Dynamic {
 
-		var shaderDef;
-		try {
-			shaderDef = subShaderGraph.generateShader(null, id);
-		} catch (e : ShaderException) {
-			throw ShaderException.t(e.msg, id);
-		}
-		if (shaderDef.funs.length > 1) {
-			throw ShaderException.t("The sub shader is vertex and fragment.", id);
-		}
-		varsSubGraph = shaderDef.vars;
-		var arrayExpr : Array<TExpr> = [];
-		switch (shaderDef.funs[0].expr.e) {
-			case TBlock(block):
-				arrayExpr = block;
-			default:
+	// 	var parametersValues = [];
+	// 	for (p in this.parameters) {
+	// 		if (p.defaultValue != null) {
+	// 			parametersValues.push({id: p.id, defaultValue : p.defaultValue});
+	// 		}
+	// 	}
 
-		}
+	// 	var properties = {
+	// 		pathShaderGraph: this.pathShaderGraph,
+	// 		parametersValues : parametersValues
+	// 	};
 
-		for (outputKey in outputInfoKeys) {
-			var outputInfo = outputsInfo.get(outputKey);
-			var outputTVar = getOutput(outputKey);
-			if (outputTVar != null) {
-				arrayExpr.push({
-					p : null,
-					t : outputTVar.type,
-					e : TBinop(OpAssign, {
-							e: TVar(outputTVar),
-							p: null,
-							t: outputTVar.type
-						}, subShaderGraph.getNodes().get(outputInfo.id).instance.getInput("input").getVar(outputTVar.type))
-				});
-			}
-		}
-
-		return {
-				p : null,
-				t : TVoid,
-				e : TBlock(arrayExpr)
-			};
-	}
-
-	override public function getInputInfo(key : String) : ShaderNode.InputInfo {
-		return inputsInfo.get(key);
-	}
-
-	override public function getInputInfoKeys() : Array<String> {
-		return inputInfoKeys;
-	}
-
-	override public function getOutputInfo(key : String) : ShaderNode.OutputInfo {
-		return outputsInfo.get(key);
-	}
-
-	override public function getOutputInfoKeys() : Array<String> {
-		return outputInfoKeys;
-	}
-
-	override public function loadProperties(props : Dynamic) {
-		this.pathShaderGraph = Reflect.field(props, "pathShaderGraph");
-		loadGraphShader();
-
-		var parametersValues : Array<hrt.shgraph.ShaderGraph.Parameter> = Reflect.field(props, "parametersValues");
-		if (parametersValues == null) return;
-		var index = 0;
-		for (p in this.parameters) {
-			if (parametersValues.length <= index) break;
-			if (p.id != parametersValues[index].id) {
-				continue;
-			}
-			p.defaultValue = parametersValues[index].defaultValue;
-			index++;
-		}
-	}
-
-	override public function saveProperties() : Dynamic {
-
-		var parametersValues = [];
-		for (p in this.parameters) {
-			if (p.defaultValue != null) {
-				parametersValues.push({id: p.id, defaultValue : p.defaultValue});
-			}
-		}
-
-		var properties = {
-			pathShaderGraph: this.pathShaderGraph,
-			parametersValues : parametersValues
-		};
-
-		return properties;
-	}
+	// 	return properties;
+	// }
 
 	#if editor
 	override public function getPropertiesHTML(width : Float) : Array<hide.Element> {

@@ -6,19 +6,16 @@ using hxsl.Ast;
 @description("")
 @width(100)
 @group("Math")
-class UvToScreen extends ShaderFunction {
+class UvToScreen extends ShaderNodeHxsl {
 
-	@input("UV") var uv = SType.Vec2;
+	static var SRC = {
+		@sginput var uv : Vec2;
 
-	public function new() {
-		super(UvToScreen);
-	}
+		@sgoutput var output : Vec2;
 
-	override public function computeOutputs() {
-		if (uv != null && !uv.isEmpty())
-			addOutput("output", uv.getType());
-		else
-			removeOutput("output");
-	}
+		function fragment() {
+			output = uvToScreen(uv);
+		}
+	};
 
 }

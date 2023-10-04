@@ -6,23 +6,15 @@ using hxsl.Ast;
 @description("The output is the maximum between A and B")
 @width(80)
 @group("Math")
-class Max extends ShaderFunction {
+class Max extends ShaderNodeHxsl {
 
-	@input("A") var a = SType.Number;
-	@input("B") var b = SType.Number;
-
-	public function new() {
-		super(Max);
-	}
-
-	override public function computeOutputs() {
-		if (a != null && !a.isEmpty())
-			addOutput("output", a.getType());
-		else if (b != null && !b.isEmpty())
-			addOutput("output", b.getType());
-		else
-			removeOutput("output");
-	}
-
+	static var SRC = {
+		@sginput(0.0) var a : Vec4;
+		@sginput(0.0) var b : Vec4;
+		@sgoutput var output : Vec4;
+		function fragment() {
+			output = max(a,b);
+		}
+	};
 
 }

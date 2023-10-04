@@ -89,28 +89,28 @@ class Box {
 		//editor.line(element, width/2, HEADER_HEIGHT, width/2, 0, {display: "none"}).addClass("nodes-separator");
 	}
 
-	public function addInput(editor : SVG, name : String, valueDefault : String = null, type : hrt.shgraph.ShaderType.SType) {
+	public function addInput(editor : SVG, name : String, valueDefault : String = null, type : hxsl.Ast.Type) {
 		var node = editor.group(element).addClass("input-node-group");
 		var nodeHeight = HEADER_HEIGHT + NODE_MARGIN * (inputs.length+1) + NODE_RADIUS * inputs.length;
 		var style = {fill : ""}
 		switch (type) {
-			case Bool:
+			case TBool:
 				style.fill = boolColor;
-			case Number:
-				style.fill = numberColor;
-			case Float:
+			case TFloat:
 				style.fill = floatColor;
-			case Vec2:
-				style.fill = vec2Color;
-			case Vec3:
-				style.fill = vec3Color;
-			case Vec4:
-				style.fill = vec4Color;
-			case Sampler:
+			case TVec(size, _):
+				switch (size) {
+					case 2:
+						style.fill = vec2Color;
+					case 3:
+						style.fill = vec3Color;
+					case 4:
+						style.fill = vec4Color;
+				}
+			case TSampler2D:
 				style.fill = samplerColor;
 			default:
 				style.fill = defaultColor;
-
 		}
 		var nodeCircle = editor.circle(node, 0, nodeHeight, NODE_RADIUS, style).addClass("node input-node");
 
@@ -166,7 +166,7 @@ class Box {
 		}
 		var nodeCircle = editor.circle(node, width, nodeHeight, NODE_RADIUS, style).addClass("node output-node");
 
-		if (name.length > 0)
+		if (name.length > 0 && name != "output")
 			editor.text(node, width - NODE_TITLE_PADDING - (name.length * 6.75), nodeHeight + 4, name).addClass("title-node");
 
 		outputs.push(nodeCircle);

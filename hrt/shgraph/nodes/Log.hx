@@ -6,19 +6,14 @@ using hxsl.Ast;
 @description("The output is the result of log(x)")
 @width(80)
 @group("Math")
-class Log extends ShaderFunction {
+class Log extends ShaderNodeHxsl {
 
-	@input("X") var x = SType.Number;
-	@input("P", true) var p = SType.Number;
+	static var SRC = {
+		@sginput(0.0) var a : Vec4;
+		@sgoutput var output : Vec4;
+		function fragment() {
+			output = log(a);
+		}
+	};
 
-	public function new() {
-		super(Log);
-	}
-
-	override public function computeOutputs() {
-		if (x != null && !x.isEmpty())
-			addOutput("output", x.getType());
-		else
-			removeOutput("output");
-	}
 }

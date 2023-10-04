@@ -6,19 +6,14 @@ using hxsl.Ast;
 @description("The output is the result of |A|")
 @width(80)
 @group("Math")
-class Abs extends ShaderFunction {
+class Abs extends ShaderNodeHxsl {
 
-	@input("A") var a = SType.Number;
-
-	public function new() {
-		super(Abs);
-	}
-
-	override public function computeOutputs() {
-		if (a != null && !a.isEmpty())
-			addOutput("output", a.getType());
-		else
-			removeOutput("output");
-	}
+	static var SRC = {
+		@sginput(0.0) var a : Vec4;
+		@sgoutput var output : Vec4;
+		function fragment() {
+			output = abs(a);
+		}
+	};
 
 }

@@ -6,16 +6,15 @@ using hxsl.Ast;
 @description("The output is the dot product of a and b")
 @width(80)
 @group("Math")
-class Dot extends ShaderFunction {
+class Dot extends ShaderNodeHxsl {
 
-	@input("A") var a = SType.Number;
-	@input("B") var b = SType.Number;
+	static var SRC = {
+		@sginput(0.0) var a : Vec4;
+		@sginput(0.0) var b : Vec4;
+		@sgoutput var output : Float;
+		function fragment() {
+			output = dot(a,b);
+		}
+	};
 
-	public function new() {
-		super(Dot);
-	}
-
-	override public function computeOutputs() {
-		addOutput("output", TFloat);
-	}
 }

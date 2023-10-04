@@ -12,8 +12,8 @@ class Text extends ShaderNode {
 
 	@prop() var text : String = "";
 
-	override public function build(key : String) : TExpr {
-		return null;
+	override function getShaderDef(domain: ShaderGraph.Domain):hrt.shgraph.ShaderGraph.ShaderNodeDef {
+		return {expr: null, inVars: [], outVars: [], inits: [], externVars: []};
 	}
 
 	#if editor

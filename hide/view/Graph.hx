@@ -56,6 +56,9 @@ class Graph extends FileView {
 	// used for deleting
 	var currentEdge : Edge;
 
+	// aaaaaa
+	var domain : hrt.shgraph.ShaderGraph.Domain;
+
 	override function onDisplay() {
 		element.html('
 			<div class="flex vertical" >
@@ -262,21 +265,17 @@ class Graph extends FileView {
 		});
 		listOfBoxes.push(box);
 
-		for (inputKey in box.getInstance().getInputInfoKeys()) {
-			var inputInfo = box.getInstance().getInputInfo(inputKey);
-
-			if (inputInfo == null) {
-				trace(inputKey);
+		for (inputName => inputVar in box.getInstance().getInputs2(domain)) {
+			var defaultValue : String = null;
+			switch (inputVar.def) {
+				case Const(defValue):
+					defaultValue= Reflect.getProperty(box.getInstance().defaults, '${inputName}');
+					if (defaultValue == null) {
+						defaultValue = '$defValue';
+					}
+				default:
 			}
-
-			var defaultValue = null;
-			if (inputInfo.hasProperty) {
-				defaultValue = Reflect.field(box.getInstance(), 'prop_${inputKey}');
-				if (defaultValue == null) {
-					defaultValue = "0";
-				}
-			}
-			var grNode = box.addInput(editor, inputInfo.name, defaultValue, inputInfo.type);
+			var grNode = box.addInput(editor, inputName, defaultValue, inputVar.v.type);
 			if (defaultValue != null) {
 				var fieldEditInput = grNode.find("input");
 				fieldEditInput.on("change", function(ev) {
@@ -284,13 +283,14 @@ class Graph extends FileView {
 					if (Math.isNaN(tmpValue) ) {
 						fieldEditInput.addClass("error");
 					} else {
-						Reflect.setField(box.getInstance(), 'prop_${inputKey}', tmpValue);
+						// Store the value as a string anyway
+						Reflect.setField(box.getInstance().defaults, '${inputName}', '$tmpValue');
 						fieldEditInput.val(tmpValue);
 						fieldEditInput.removeClass("error");
 					}
 				});
 			}
-			grNode.find(".node").attr("field", inputKey);
+			grNode.find(".node").attr("field", inputName);
 			grNode.on("mousedown", function(e : js.jquery.Event) {
 				e.stopPropagation();
 				var node = grNode.find(".node");
@@ -305,10 +305,9 @@ class Graph extends FileView {
 				setAvailableOutputNodes(box, grNode.find(".node").attr("field"));
 			});
 		}
-		for (outputKey in box.getInstance().getOutputInfoKeys()) {
-			var outputInfo = box.getInstance().getOutputInfo(outputKey);
-			var grNode = box.addOutput(editor, outputInfo.name, box.getInstance().getOutputType(outputKey));
-			grNode.find(".node").attr("field", outputKey);
+		for (outputName => outputVar in box.getInstance().getOutputs2(domain)) {
+			var grNode = box.addOutput(editor, outputName, outputVar.type);
+			grNode.find(".node").attr("field", outputName);
 			grNode.on("mousedown", function(e) {
 				e.stopPropagation();
 				var node = grNode.find(".node");
@@ -381,18 +380,14 @@ class Graph extends FileView {
 		}
 	}
 
+	// TODO(ces) : nuke SType from orbit
 	function setAvailableInputNodes(boxOutput : Box, field : String) {
-		var type = boxOutput.getInstance().getOutputType(field);
+		var type = boxOutput.getInstance().getOutputs2(domain)[field].type;
 		var sType : SType;
-		if (type == null) {
-			sType = boxOutput.getInstance().getOutputInfo(field).type;
-		} else {
-			sType = ShaderType.getSType(type);
-		}
 
 		for (box in listOfBoxes) {
 			for (input in box.inputs) {
-				if (box.getInstance().checkTypeAndCompatibilyInput(input.attr("field"), sType)) {
+				if (box.getInstance().checkTypeAndCompatibilyInput(input.attr("field"), type)) {
 					input.addClass("nodeMatch");
 				}
 			}
@@ -403,14 +398,9 @@ class Graph extends FileView {
 		for (box in listOfBoxes) {
 			for (output in box.outputs) {
 				var outputField = output.attr("field");
-				var type = box.getInstance().getOutputType(outputField);
-				var sType : SType;
-				if (type == null) {
-					sType = box.getInstance().getOutputInfo(outputField).type;
-				} else {
-					sType = ShaderType.getSType(type);
-				}
-				if (boxInput.getInstance().checkTypeAndCompatibilyInput(field, sType)) {
+				var type = box.getInstance().getOutputs2(domain)[outputField].type;
+				var sType = ShaderType.getSType(type);
+				if (boxInput.getInstance().checkTypeAndCompatibilyInput(field, type)) {
 					output.addClass("nodeMatch");
 				}
 			}

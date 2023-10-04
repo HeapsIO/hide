@@ -6,23 +6,15 @@ using hxsl.Ast;
 @description("The output is the cross product of a and b")
 @width(80)
 @group("Math")
-class Cross extends ShaderFunction {
+class Cross extends ShaderNodeHxsl {
 
-	@input("A") var a = SType.Number;
-	@input("B") var b = SType.Number;
+	static var SRC = {
+		@sginput var a : Vec3;
+		@sginput var b : Vec3;
+		@sgoutput var output : Vec3;
+		function fragment() {
+			output = cross(a,b);
+		}
+	};
 
-	public function new() {
-		super(Cross);
-	}
-
-	override public function computeOutputs() {
-		if (a != null && !a.isEmpty() && b != null && !b.isEmpty())
-			addOutput("output", a.getVar(b.getType()).t);
-		else if (a != null && !a.isEmpty() )
-			addOutput("output", a.getType());
-		else if (b != null && !b.isEmpty())
-			addOutput("output", b.getType());
-		else
-			removeOutput("output");
-	}
 }

@@ -8,28 +8,40 @@ using hxsl.Ast;
 @color("#A90707")
 class ShaderOutput extends ShaderNode {
 
-	@input("input") var input = SType.Variant;
-
 	@prop("Variable") public var variable : TVar;
 
 	var components = [X, Y, Z, W];
 
-	override public function checkValidityInput(key : String, type : ShaderType.SType) : Bool {
-		return ShaderType.checkConversion(type, ShaderType.getSType(variable.type));
+
+	override function getShaderDef(domain: ShaderGraph.Domain):hrt.shgraph.ShaderGraph.ShaderNodeDef {
+		var pos : Position = {file: "", min: 0, max: 0};
+
+		var inVar : TVar = {name: "input", id:0, type: this.variable.type, kind: Param, qualifiers: []};
+		var output : TVar = {name: variable.name, id:1, type: this.variable.type, kind: Local, qualifiers: []};
+		var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(output), p:pos, t:output.type}, {e: TVar(inVar), p: pos, t: output.type}), p: pos, t: output.type};
+
+		//var param = getParameter(inputNode.parameterId);
+		//inits.push({variable: inVar, value: param.defaultValue});
+
+		return {expr: finalExpr, inVars: [{v: inVar, internal: false}], outVars:[{v: output, internal: true}], externVars: [], inits: []};
 	}
 
-	override public function build(key : String) : TExpr {
-		return {
-				p : null,
-				t : TVoid,
-				e : TBinop(OpAssign, {
-					e: TVar(variable),
-					p: null,
-					t: variable.type
-				}, input.getVar(variable.type))
-			};
+	/*override public function checkValidityInput(key : String, type : hxsl.Ast.Type) : Bool {
+		return ShaderType.checkConversion(type, variable.type);
+	}*/
 
-	}
+	// override public function build(key : String) : TExpr {
+	// 	return {
+	// 			p : null,
+	// 			t : TVoid,
+	// 			e : TBinop(OpAssign, {
+	// 				e: TVar(variable),
+	// 				p: null,
+	// 				t: variable.type
+	// 			}, input.getVar(variable.type))
+	// 		};
+
+	// }
 
 	static var availableOutputs = [
 		{

@@ -8,16 +8,26 @@ using hxsl.Ast;
 @color("#0e8826")
 class ShaderInput extends ShaderNode {
 
-	@output() var output = SType.Variant;
 
-	@prop("Variable") public var variable : TVar;
+	@prop("Variable") public var variable : TVar = availableInputs[0];
 
-	override public function getOutput(key : String) : TVar {
-		return variable;
-	}
+	// override public function getOutput(key : String) : TVar {
+	// 	return variable;
+	// }
 
-	override public function build(key : String) : TExpr {
-		return null;
+	// override public function build(key : String) : TExpr {
+	// 	return null;
+	// }
+
+	override function getShaderDef(domain: ShaderGraph.Domain):hrt.shgraph.ShaderGraph.ShaderNodeDef {
+		var pos : Position = {file: "", min: 0, max: 0};
+
+		var inVar : TVar = variable;
+		var output : TVar = {name: "output", id:1, type: this.variable.type, kind: Local, qualifiers: []};
+		var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(output), p:pos, t:output.type}, {e: TVar(inVar), p: pos, t: output.type}), p: pos, t: output.type};
+
+
+		return {expr: finalExpr, inVars: [], outVars:[{v:output, internal: false}], externVars: [inVar], inits: []};
 	}
 
 	public static var availableInputs : Array<TVar> = [

@@ -6,19 +6,14 @@ using hxsl.Ast;
 @description("Saturate input A")
 @width(80)
 @group("Math")
-class Saturate extends ShaderFunction {
+class Saturate extends ShaderNodeHxsl {
 
-	@input("X") var x = SType.Number;
-
-	public function new() {
-		super(Saturate);
-	}
-
-	override public function computeOutputs() {
-		if (x != null && !x.isEmpty())
-			addOutput("output", x.getType());
-		else
-			removeOutput("output");
-	}
+	static var SRC = {
+		@sginput(0.0) var a : Vec4;
+		@sgoutput var output : Vec4;
+		function fragment() {
+			output = saturate(a);
+		}
+	};
 
 }

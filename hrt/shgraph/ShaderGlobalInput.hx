@@ -6,21 +6,24 @@ using hxsl.Ast;
 @description("Global Inputs")
 @group("Property")
 @color("#0e8826")
-class ShaderGlobalInput extends ShaderInput {
+class ShaderGlobalInput extends ShaderNode {
+
+	@prop("Variable") public var variableIdx : Int = 0;
+
 
 	static public var globalInputs = [	{ parent: null, id: 0, kind: Global, name: "global.time", type: TFloat },
 										{ parent: null, id: 0, kind: Global, name: "global.pixelSize", type: TVec(2, VFloat) },
 										{ parent: null, id: 0, kind: Global, name: "global.modelView", type: TMat4 },
 										{ parent: null, id: 0, kind: Global, name: "global.modelViewInverse", type: TMat4 } ];
 
-	override public function loadProperties(props : Dynamic) {
-		var paramVariable : String = Reflect.field(props, "variable");
-		for (c in ShaderGlobalInput.globalInputs) {
-			if (c.name == paramVariable) {
-				this.variable = c;
-				return;
-			}
-		}
+	override function getShaderDef(domain: ShaderGraph.Domain):hrt.shgraph.ShaderGraph.ShaderNodeDef {
+		var pos : Position = {file: "", min: 0, max: 0};
+
+		var inVar : TVar = globalInputs[variableIdx];
+		var output : TVar = {name: "output", id:1, type: inVar.type, kind: Local, qualifiers: []};
+		var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(output), p:pos, t:output.type}, {e: TVar(inVar), p: pos, t: output.type}), p: pos, t: output.type};
+
+		return {expr: finalExpr, inVars: [], outVars:[{v: output, internal: false}], externVars: [inVar], inits: []};
 	}
 
 	#if editor
@@ -29,22 +32,17 @@ class ShaderGlobalInput extends ShaderInput {
 		var element = new hide.Element('<div style="width: 120px; height: 30px"></div>');
 		element.append(new hide.Element('<select id="variable"></select>'));
 
-		if (this.variable == null)
-			this.variable = ShaderGlobalInput.globalInputs[0];
-
 		var input = element.children("select");
-		var indexOption = 0;
-		for (c in ShaderGlobalInput.globalInputs) {
+		for (indexOption => c in ShaderGlobalInput.globalInputs) {
 			var name = c.name.split(".")[1];
 			input.append(new hide.Element('<option value="${indexOption}">${name}</option>'));
-			if (this.variable.name == c.name) {
+			if (this.variableIdx == indexOption) {
 				input.val(indexOption);
 			}
-			indexOption++;
 		}
 		input.on("change", function(e) {
 			var value = input.val();
-			this.variable = ShaderGlobalInput.globalInputs[value];
+			this.variableIdx = value;
 		});
 
 		elements.push(element);

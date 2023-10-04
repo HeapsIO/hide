@@ -6,22 +6,15 @@ using hxsl.Ast;
 @description("The output is the minimum between A and B")
 @width(80)
 @group("Math")
-class Min extends ShaderFunction {
+class Min extends ShaderNodeHxsl {
 
-	@input("A") var a = SType.Number;
-	@input("B") var b = SType.Number;
-
-	public function new() {
-		super(Min);
-	}
-
-	override public function computeOutputs() {
-		if (a != null && !a.isEmpty())
-			addOutput("output", a.getType());
-		else if (b != null && !b.isEmpty())
-			addOutput("output", b.getType());
-		else
-			removeOutput("output");
-	}
+	static var SRC = {
+		@sginput(0.0) var a : Vec4;
+		@sginput(0.0) var b : Vec4;
+		@sgoutput var output : Vec4;
+		function fragment() {
+			output = min(a,b);
+		}
+	};
 
 }

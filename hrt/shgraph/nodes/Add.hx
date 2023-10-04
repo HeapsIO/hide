@@ -8,8 +8,13 @@ using hxsl.Ast;
 @group("Operation")
 class Add extends Operation {
 
-	public function new() {
-		super(OpAdd);
+	static var SRC = {
+		@sginput(0.0) var a : Vec4;
+		@sginput(0.0) var b : Vec4;
+		@sgoutput var output : Vec4;
+		function fragment() {
+			output = a + b;
+		}
 	}
 
 }

@@ -30,6 +30,8 @@ typedef SavedClipboard = {
 class ShaderEditor extends hide.view.Graph {
 
 	var parametersList : JQuery;
+	var domainSelection : JQuery;
+
 	var draggedParamId : Int;
 
 	var addMenu : JQuery;
@@ -45,6 +47,7 @@ class ShaderEditor extends hide.view.Graph {
 	var obj : h3d.scene.Object;
 	var prefabObj : hrt.prefab.Prefab;
 	var shaderGraph : ShaderGraph;
+	var currentGraph : Graph;
 
 	var lastSnapshot : haxe.Json;
 
@@ -60,6 +63,8 @@ class ShaderEditor extends hide.view.Graph {
 	override function onDisplay() {
 		super.onDisplay();
 		shaderGraph = new ShaderGraph(state.path);
+		domain = Fragment;
+
 		addMenu = null;
 
 		element.find("#rightPanel").html('
@@ -71,7 +76,9 @@ class ShaderEditor extends hide.view.Graph {
 							</div>
 							<div class="options-block hide-block">
 								<input id="createParameter" type="button" value="Add parameter" />
+								<select id="domainSelection"></select>
 								<input id="launchCompileShader" type="button" value="Compile shader" />
+
 								<input id="saveShader" type="button" value="Save" />
 								<div>
 									<input id="changeModel" type="button" value="Change Model" />
@@ -83,6 +90,7 @@ class ShaderEditor extends hide.view.Graph {
 									<input id="displayHxsl" type="button" value="Hxsl" />
 									<input id="displayGlsl" type="button" value="Glsl" />
 									<input id="displayHlsl" type="button" value="Hlsl" />
+									<input id="display2" type="button" value="2" />
 								</div>
 								<input id="togglelight" type="button" value="Toggle Default Lights" />
 								<input id="refreshGraph" type="button" value="Refresh Shader Graph" />
@@ -90,7 +98,7 @@ class ShaderEditor extends hide.view.Graph {
 						</div>)');
 		parent.on("drop", function(e) {
 			var posCursor = new Point(lX(ide.mouseX - 25), lY(ide.mouseY - 10));
-			var node = Std.downcast(shaderGraph.addNode(posCursor.x, posCursor.y, ShaderParam), ShaderParam);
+			var node = Std.downcast(currentGraph.addNode(posCursor.x, posCursor.y, ShaderParam), ShaderParam);
 			node.parameterId = draggedParamId;
 			var paramShader = shaderGraph.getParameter(draggedParamId);
 			node.variable = paramShader.variable;
@@ -111,6 +119,19 @@ class ShaderEditor extends hide.view.Graph {
 		} else {
 			lightsAreOn == true;
 		}
+
+		domainSelection = element.find("#domainSelection");
+		for (domain in haxe.EnumTools.getConstructors(hrt.shgraph.ShaderGraph.Domain)) {
+			domainSelection.append('<option value="$domain">$domain</option>');
+		};
+
+		domainSelection.val(haxe.EnumTools.EnumValueTools.getName(domain));
+
+		domainSelection.on("change", (e) -> {
+			var domainString : String = domainSelection.val();
+			var domain = haxe.EnumTools.createByName(hrt.shgraph.ShaderGraph.Domain, domainString);
+			setDomain(domain);
+		});
 
 		var def = new hrt.prefab.Library();
 		new hrt.prefab.RenderProps(def).name = "renderer";
@@ -279,6 +300,16 @@ class ShaderEditor extends hide.view.Graph {
 		element.find("#displayGlsl").on("click", () -> displayCompiled("glsl"));
 		element.find("#displayHlsl").on("click", () -> displayCompiled("hlsl"));
 
+		var preview : hrt.shgraph.nodes.Preview = null;
+		for (selected in listOfBoxesSelected) {
+			var asPrev = Std.downcast(selected.getInstance(), hrt.shgraph.nodes.Preview);
+			if (asPrev != null) {
+				preview = asPrev;
+				break;
+			}
+		}
+		element.find("#display2").on("click", () -> {@:privateAccess info(hxsl.Printer.shaderToString(shaderGraph.compile2(preview).shader.data, true));});
+
 		editorMatrix.on("click", "input, select", function(ev) {
 			beforeChange();
 		});
@@ -286,7 +317,7 @@ class ShaderEditor extends hide.view.Graph {
 		editorMatrix.on("change", "input, select", function(ev) {
 			try {
 				var idBox = ev.target.closest(".box").id;
-				shaderGraph.nodeUpdated(idBox);
+				//shaderGraph.nodeUpdated(idBox);
 				afterChange();
 				launchCompileShader();
 			} catch (e : Dynamic) {
@@ -356,7 +387,7 @@ class ShaderEditor extends hide.view.Graph {
 	}
 
 	override function save() {
-		var content = shaderGraph.save();
+		var content = shaderGraph.saveToText();
 		currentSign = ide.makeSignature(content);
 		sys.io.File.saveContent(getPath(), content);
 		super.save();
@@ -448,9 +479,16 @@ class ShaderEditor extends hide.view.Graph {
 		saveDisplayState("useDefaultLights", lightsAreOn);
 	}
 
+	function setDomain(domain: hrt.shgraph.ShaderGraph.Domain) {
+		this.domain = domain;
+		refreshShaderGraph(true);
+	}
+
 	function refreshShaderGraph(readyEvent : Bool = true) {
 		listOfBoxes = [];
 		listOfEdges = [];
+
+		currentGraph = shaderGraph.getGraph(domain);
 
 		var saveToggleParams = new Map<Int, Bool>();
 		for (pElt in parametersList.find(".parameter").elements()) {
@@ -461,7 +499,7 @@ class ShaderEditor extends hide.view.Graph {
 
 		updateMatrix();
 
-		for (node in shaderGraph.getNodes()) {
+		for (node in currentGraph.getNodes()) {
 			var shaderPreview = Std.downcast(node.instance, hrt.shgraph.nodes.Preview);
 			if (shaderPreview != null) {
 				shaderPreview.config = config;
@@ -474,7 +512,7 @@ class ShaderEditor extends hide.view.Graph {
 				var paramShader = shaderGraph.getParameter(paramNode.parameterId);
 				paramNode.setName(paramShader.name);
 				setDisplayValue(paramNode, paramShader.type, paramShader.defaultValue);
-				shaderGraph.nodeUpdated(paramNode.id);
+				//shaderGraph.nodeUpdated(paramNode.id);
 				addBox(new Point(node.x, node.y), ShaderParam, paramNode);
 			} else {
 				addBox(new Point(node.x, node.y), std.Type.getClass(node.instance), node.instance);
@@ -515,40 +553,33 @@ class ShaderEditor extends hide.view.Graph {
 	}
 
 	function generateEdgesFromBox(box : Box) {
-		for (outputKey in box.getInstance().getOutputInfoKeys()) {
-			var output = box.getInstance().getOutput(outputKey);
-			if (output != null) {
-				for (b in listOfBoxes) {
-					for (key in b.getInstance().getInputsKey()) {
-						var input = b.getInstance().getInput(key);
-						if (input != null && input.node.id == box.getId() && input.keyOutput == outputKey) {
-							var nodeFrom = box.getElement().find('[field=${outputKey}]');
-							var nodeTo = b.getElement().find('[field=${key}]');
-							edgeStyle.stroke = nodeFrom.css("fill");
-							createEdgeInEditorGraph({from: box, nodeFrom: nodeFrom, to : b, nodeTo: nodeTo, elt : createCurve(nodeFrom, nodeTo) });
-						}
-					}
+
+		for (b in listOfBoxes) {
+			for (inputName => connection in b.getInstance().connections) {
+				if (connection.from.id == box.getId()) {
+					var nodeFrom = box.getElement().find('[field=${connection.fromName}]');
+					var nodeTo = b.getElement().find('[field=${inputName}]');
+					edgeStyle.stroke = nodeFrom.css("fill");
+					createEdgeInEditorGraph({from: box, nodeFrom: nodeFrom, to : b, nodeTo: nodeTo, elt : createCurve(nodeFrom, nodeTo) });
 				}
+
 			}
 		}
 	}
 
 	function generateEdgesToBox(box : Box) {
-		for (key in box.getInstance().getInputsKey()) {
-			var input = box.getInstance().getInput(key);
-			if (input != null) {
-				var fromBox : Box = null;
-				for (boxFrom in listOfBoxes) {
-					if (boxFrom.getId() == input.node.id) {
-						fromBox = boxFrom;
-						break;
-					}
+		for (inputName => connection in box.getInstance().connections) {
+			var fromBox : Box = null;
+			for (boxFrom in listOfBoxes) {
+				if (boxFrom.getId() == connection.from.id) {
+					fromBox = boxFrom;
+					break;
 				}
-				var nodeFrom = fromBox.getElement().find('[field=${input.getKey()}]');
-				var nodeTo = box.getElement().find('[field=${key}]');
-				edgeStyle.stroke = nodeFrom.css("fill");
-				createEdgeInEditorGraph({from: fromBox, nodeFrom: nodeFrom, to : box, nodeTo: nodeTo, elt : createCurve(nodeFrom, nodeTo) });
 			}
+			var nodeFrom = fromBox.getElement().find('[field=${connection.fromName}]');
+			var nodeTo = box.getElement().find('[field=${inputName}]');
+			edgeStyle.stroke = nodeFrom.css("fill");
+			createEdgeInEditorGraph({from: fromBox, nodeFrom: nodeFrom, to : box, nodeTo: nodeTo, elt : createCurve(nodeFrom, nodeTo) });
 		}
 	}
 
@@ -886,7 +917,7 @@ class ShaderEditor extends hide.view.Graph {
 				for (m in obj.getMaterials())
 					m.mainPass.removeShader(currentShader);
 
-			var shaderGraphDef = shaderGraph.compile();
+			var shaderGraphDef = shaderGraph.compile2();
 			newShader = new hxsl.DynamicShader(shaderGraphDef.shader);
 			for (init in shaderGraphDef.inits) {
 				setParamValue(newShader, init.variable, init.value);
@@ -896,7 +927,16 @@ class ShaderEditor extends hide.view.Graph {
 			}
 			sceneEditor.scene.render(sceneEditor.scene.engine);
 			currentShader = newShader;
-			currentShaderDef = shaderGraphDef;
+			currentShaderDef = shaderGraphDef;//{shader: shaderGraphDef, inits:[]};
+
+			for (node in currentGraph.getNodes()) {
+				var preview = Std.downcast(node.instance, hrt.shgraph.nodes.Preview);
+				if (preview != null) {
+					preview.config = config;
+					preview.shaderGraph = shaderGraph;
+					preview.update();
+				}
+			}
 			info('Shader compiled in  ${Date.now().getTime() - timeStart}ms');
 
 		} catch (e : Dynamic) {
@@ -962,10 +1002,10 @@ class ShaderEditor extends hide.view.Graph {
 		var param = shaderGraph.getParameter(id);
 		setParamValueByName(currentShader, param.name, param.defaultValue);
 		for (b in listOfBoxes) {
-			var previewBox = Std.downcast(b.getInstance(), hrt.shgraph.nodes.Preview);
+			/*var previewBox = Std.downcast(b.getInstance(), hrt.shgraph.nodes.Preview);
 			if (previewBox != null) {
 				previewBox.setParamValueByName(param.variable.name, param.defaultValue);
-			}
+			}*/
 		}
 	}
 
@@ -992,17 +1032,17 @@ class ShaderEditor extends hide.view.Graph {
 			shaderPreview.shaderGraph = shaderGraph;
 			return;
 		}
-		var subGraphNode = Std.downcast(node, hrt.shgraph.nodes.SubGraph);
-		if (subGraphNode != null) {
-			subGraphNode.loadGraphShader();
-			return;
-		}
+		// var subGraphNode = Std.downcast(node, hrt.shgraph.nodes.SubGraph);
+		// if (subGraphNode != null) {
+		// 	subGraphNode.loadGraphShader();
+		// 	return;
+		// }
 	}
 
 	function addNode(p : Point, nodeClass : Class<ShaderNode>) {
 		beforeChange();
 
-		var node = shaderGraph.addNode(p.x, p.y, nodeClass);
+		var node = currentGraph.addNode(p.x, p.y, nodeClass);
 		afterChange();
 
 		initSpecifics(node);
@@ -1015,7 +1055,7 @@ class ShaderEditor extends hide.view.Graph {
 	function addSubGraph(p : Point, path : String) {
 		var node : SubGraph = cast addNode(p, SubGraph);
 		@:privateAccess node.pathShaderGraph = path;
-		node.loadGraphShader();
+		// node.loadGraphShader();
 		return node;
 	}
 
@@ -1043,7 +1083,7 @@ class ShaderEditor extends hide.view.Graph {
 		}
 		try {
 			beforeChange();
-			if (shaderGraph.addEdge({ idOutput: startLinkBox.getId(), nameOutput: startLinkNode.attr("field"), idInput: endLinkBox.getId(), nameInput: endLinkNode.attr("field") })) {
+			if (currentGraph.addEdge({ outputNodeId: startLinkBox.getId(), nameOutput: startLinkNode.attr("field"), inputNodeId: endLinkBox.getId(), nameInput: endLinkNode.attr("field") })) {
 				afterChange();
 				createEdgeInEditorGraph(newEdge);
 				currentLink.removeClass("draft");
@@ -1315,11 +1355,11 @@ class ShaderEditor extends hide.view.Graph {
 	}
 
 	function beforeChange() {
-		lastSnapshot = haxe.Json.parse(shaderGraph.save());
+		lastSnapshot = haxe.Json.parse(shaderGraph.saveToText());
 	}
 
 	function afterChange() {
-		var newVal = haxe.Json.parse(shaderGraph.save());
+		var newVal = haxe.Json.parse(shaderGraph.saveToText());
 		var oldVal = lastSnapshot;
 		undo.change(Custom(function(undo) {
 			if (undo)
@@ -1331,7 +1371,7 @@ class ShaderEditor extends hide.view.Graph {
 	}
 
 	function removeShaderGraphEdge(edge : Graph.Edge) {
-		shaderGraph.removeEdge(edge.to.getId(), edge.nodeTo.attr("field"));
+		currentGraph.removeEdge(edge.to.getId(), edge.nodeTo.attr("field"));
 	}
 
 	function removeEdgeSubGraphUpdate(edge : Graph.Edge) {
@@ -1344,7 +1384,7 @@ class ShaderEditor extends hide.view.Graph {
 				field = edge.nodeFrom.attr("field");
 			}
 			var newBox = refreshBox(edge.to);
-			subGraph.loadGraphShader();
+			// subGraph.loadGraphShader();
 
 			clearAvailableNodes();
 			if (isCreatingLink == FromInput) {
@@ -1440,14 +1480,14 @@ class ShaderEditor extends hide.view.Graph {
 				instancedBoxes.push(null);
 				continue;
 			}
-			var node = shaderGraph.addNode(offset.x + n.pos.x, offset.y + n.pos.y, n.nodeType);
+			var node = currentGraph.addNode(offset.x + n.pos.x, offset.y + n.pos.y, n.nodeType);
 			node.loadProperties(n.props);
 			initSpecifics(node);
 			var shaderParam = Std.downcast(node, ShaderParam);
 			if( shaderParam != null ) {
-				var paramShader = shaderGraph.getParameter(shaderParam.parameterId);
+				var paramShader = currentGraph.getParameter(shaderParam.parameterId);
 				if( paramShader == null ) {
-					shaderGraph.removeNode(node.id);
+					currentGraph.removeNode(node.id);
 					instancedBoxes.push(null);
 					continue;
 				}
@@ -1463,12 +1503,12 @@ class ShaderEditor extends hide.view.Graph {
 			if( instancedBoxes[edge.fromIdx] == null || instancedBoxes[edge.toIdx] == null )
 				continue;
 			var toCreate = {
-				idOutput: instancedBoxes[edge.fromIdx].getId(),
+				outputNodeId: instancedBoxes[edge.fromIdx].getId(),
 				nameOutput: edge.fromName,
-				idInput: instancedBoxes[edge.toIdx].getId(),
+				inputNodeId: instancedBoxes[edge.toIdx].getId(),
 				nameInput: edge.toName,
 			}
-			if( !shaderGraph.addEdge(toCreate) ) {
+			if( !currentGraph.addEdge(toCreate) ) {
 				error("A pasted edge creates a cycle");
 			}
 		}
@@ -1537,7 +1577,7 @@ class ShaderEditor extends hide.view.Graph {
 				if (!isSubShader) removeEdgeSubGraphUpdate(edge);
 			}
 		}
-		shaderGraph.removeNode(box.getId());
+		currentGraph.removeNode(box.getId());
 		if( trackChanges )
 			afterChange();
 		box.dispose();
@@ -1557,19 +1597,19 @@ class ShaderEditor extends hide.view.Graph {
 
 	override function updatePosition(box : Box) {
 		var previewBox = Std.downcast(box.getInstance(), hrt.shgraph.nodes.Preview);
-		if (previewBox != null){
+		/*if (previewBox != null){
 			previewBox.onMove(gX(box.getX()), gY(box.getY()), transformMatrix[0]);
-		}
-		shaderGraph.setPosition(box.getId(), box.getX(), box.getY());
+		}*/
+		currentGraph.setPosition(box.getId(), box.getX(), box.getY());
 	}
 
 	override function updateMatrix() {
 		super.updateMatrix();
 		for (b in listOfBoxes) {
-			var previewBox = Std.downcast(b.getInstance(), hrt.shgraph.nodes.Preview);
+			/*var previewBox = Std.downcast(b.getInstance(), hrt.shgraph.nodes.Preview);
 			if (previewBox != null){
 				previewBox.onMove(gX(b.getX()), gY(b.getY()), transformMatrix[0]);
-			}
+			}*/
 		}
 	}
 

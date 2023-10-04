@@ -6,19 +6,14 @@ using hxsl.Ast;
 @description("")
 @width(80)
 @group("Math")
-class Length extends ShaderFunction {
+class Length extends ShaderNodeHxsl {
 
-	@input("A") var a = SType.Vec2;
-
-	public function new() {
-		super(Length);
-	}
-
-	override public function computeOutputs() {
-		if (a != null && !a.isEmpty())
-			addOutput("output", TFloat);
-		else
-			removeOutput("output");
-	}
+	static var SRC = {
+		@sginput(0.0) var a : Vec4;
+		@sgoutput var output : Float;
+		function fragment() {
+			output = length(a);
+		}
+	};
 
 }

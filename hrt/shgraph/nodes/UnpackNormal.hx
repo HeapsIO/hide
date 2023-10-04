@@ -6,19 +6,14 @@ using hxsl.Ast;
 @description("")
 @width(120)
 @group("Channel")
-class UnpackNormal extends ShaderFunction {
+class UnpackNormal extends  ShaderNodeHxsl {
 
-	@input("normal") var normal = SType.Vec4;
-
-	public function new() {
-		super(UnpackNormal);
-	}
-
-	override public function computeOutputs() {
-		if (normal != null && !normal.isEmpty())
-			addOutput("output", TVec(3, VFloat));
-		else
-			removeOutput("output");
-	}
+	static var SRC = {
+		@sginput(0.0) var a : Vec4;
+		@sgoutput var output : Vec3;
+		function fragment() {
+			output = unpackNormal(a);
+		}
+	};
 
 }

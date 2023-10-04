@@ -6,19 +6,14 @@ using hxsl.Ast;
 @description("The output is the arc sinus of A")
 @width(80)
 @group("Math")
-class Asin extends ShaderFunction {
+class Asin extends ShaderNodeHxsl {
 
-	@input("A") var a = SType.Float;
-
-	public function new() {
-		super(Asin);
-	}
-
-	override public function computeOutputs() {
-		if (a != null && !a.isEmpty())
-			addOutput("output", a.getType());
-		else
-			removeOutput("output");
-	}
+	static var SRC = {
+		@sginput(0.0) var a : Vec4;
+		@sgoutput var output : Vec4;
+		function fragment() {
+			output = asin(a);
+		}
+	};
 
 }

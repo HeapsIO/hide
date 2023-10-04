@@ -7,11 +7,25 @@ using hxsl.Ast;
 @color("#d6d6d6")
 class ShaderParam extends ShaderNode {
 
-	@output() var output = SType.Variant;
 
 	@prop() public var parameterId : Int;
 	@prop() public var perInstance : Bool;
 
+
+	override function getShaderDef(domain: ShaderGraph.Domain):hrt.shgraph.ShaderGraph.ShaderNodeDef {
+		var pos : Position = {file: "", min: 0, max: 0};
+
+		var qual = [];
+		if (this.variable.type == TSampler2D) {
+			qual.push(Sampler(this.variable.name));
+		}
+		var inVar : TVar = {name: this.variable.name, id:0, type: this.variable.type, kind: Param, qualifiers: qual};
+		var output : TVar = {name: "output", id:1, type: this.variable.type, kind: Local, qualifiers: []};
+		//var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(output), p:pos, t:output.type}, {e: TVar(inVar), p: pos, t: output.type}), p: pos, t: output.type};
+
+
+		return {expr: null, inVars: [{v:inVar, internal: true}], outVars:[{v:output, internal: false}], externVars: [], inits: []};
+	}
 
 	public var variable : TVar;
 
@@ -22,9 +36,6 @@ class ShaderParam extends ShaderNode {
 			removeOutput("output");
 	}
 
-	override public function getOutput(key : String) : TVar {
-		return variable;
-	}
 
 	override public function loadProperties(props : Dynamic) {
 		parameterId = Reflect.field(props, "parameterId");

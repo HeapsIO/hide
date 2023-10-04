@@ -11,62 +11,74 @@ using hxsl.Ast;
 @noheader()
 class Preview extends ShaderNode {
 
-	@input("Input") var input = SType.Vec4;
+	override function getShaderDef(domain: ShaderGraph.Domain):hrt.shgraph.ShaderGraph.ShaderNodeDef {
+		var pos : Position = {file: "", min: 0, max: 0};
 
-	public var variable : TVar;
+		var inVar : TVar = {name: "input", id:0, type: TVec(4, VFloat), kind: Param, qualifiers: []};
+		var output : TVar = {name: "pixelColor", id:1, type: TVec(4, VFloat), kind: Local, qualifiers: []};
+		var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(output), p:pos, t:output.type}, {e: TVar(inVar), p: pos, t: output.type}), p: pos, t: output.type};
 
-	override public function build(key : String) : TExpr {
+		//var param = getParameter(inputNode.parameterId);
+		//inits.push({variable: inVar, value: param.defaultValue});
 
-		return {
-				p : null,
-				t : TVoid,
-				e : TBinop(OpAssign, {
-					e: TVar(variable),
-					p: null,
-					t: variable.type
-				}, input.getVar(variable.type))
-			};
-
+		return {expr: finalExpr, inVars: [{v: inVar, internal: false}], outVars:[], externVars: [output], inits: []};
 	}
 
+	// @input("Input") var input = SType.Vec4;
+
+	// public var variable : TVar;
+
+	// override public function build(key : String) : TExpr {
+
+	// 	return {
+	// 			p : null,
+	// 			t : TVoid,
+	// 			e : TBinop(OpAssign, {
+	// 				e: TVar(variable),
+	// 				p: null,
+	// 				t: variable.type
+	// 			}, input.getVar(variable.type))
+	// 		};
+
+	// }
+
 	#if editor
-	public var shaderGraph : ShaderGraph;
 	var nodePreview : js.jquery.JQuery;
+	var element : js.jquery.JQuery;
+	public var shaderGraph: ShaderGraph;
 	var cube : Mesh;
 	var scene : hide.comp.Scene;
 	var currentShaderPreview : hxsl.DynamicShader;
 	var currentShaderDef : hrt.prefab.ContextShared.ShaderDef;
+	var inited = false;
 	public var config : hide.Config;
 
 	override public function getPropertiesHTML(width : Float) : Array<hide.Element> {
 		var elements = super.getPropertiesHTML(width);
-		for (c in ShaderNode.availableVariables) {
-			if (c.name == "pixelColor") {
-				this.variable = c;
-			}
-		}
 
-		if (this.variable == null) {
-			throw ShaderException.t("The preview is not available", this.id);
+		if (element == null) {
+			element = new hide.Element('<div style="width: 100px; height: 100px"><div class="preview-parent" top="-10px" ><div class="node-preview" style="height: 100px" ></div></div></div>');
+			nodePreview = element.find(".node-preview");
+
+			scene = new hide.comp.Scene(config, null, nodePreview);
+
+			scene.onReady = function() {
+				var prim = new h3d.prim.Cube();
+				prim.addUVs();
+				prim.addNormals();
+				cube = new Mesh(prim, scene.s3d);
+				scene.s3d.camera.pos = new h3d.Vector(0.5, 3.4, 0.5);
+				scene.s3d.camera.target = new h3d.Vector(0.5, 0.5, 0.5);
+				var light = new h3d.scene.pbr.DirLight(scene.s3d.camera.target.sub(scene.s3d.camera.pos), scene.s3d);
+				light.setPosition(scene.s3d.camera.pos.x, scene.s3d.camera.pos.y, scene.s3d.camera.pos.z);
+				scene.s3d.camera.zoom = 1;
+				scene.init();
+				onMove();
+				inited = true;
+
+				update();
+			};
 		}
-		var element = new hide.Element('<div style="width: 100px; height: 100px"><div class="preview-parent" top="-10px" ><div class="node-preview" style="height: 100px" ></div></div></div>');
-		nodePreview = element.find(".node-preview");
-		scene = new hide.comp.Scene(config, null, nodePreview);
-		
-		scene.onReady = function() {
-			var prim = new h3d.prim.Cube();
-			prim.addUVs();
-			prim.addNormals();
-			cube = new Mesh(prim, scene.s3d);
-			scene.s3d.camera.pos = new h3d.Vector(0.5, 3.4, 0.5);
-			scene.s3d.camera.target = new h3d.Vector(0.5, 0.5, 0.5);
-			var light = new h3d.scene.pbr.DirLight(scene.s3d.camera.target.sub(scene.s3d.camera.pos), scene.s3d);
-			light.setPosition(scene.s3d.camera.pos.x, scene.s3d.camera.pos.y, scene.s3d.camera.pos.z);
-			scene.s3d.camera.zoom = 1;
-			scene.init();
-			onMove();
-			computeOutputs();
-		};
 
 		elements.push(element);
 		return elements;
@@ -95,10 +107,11 @@ class Preview extends ShaderNode {
 
 	function onResize() {
 		if( cube == null ) return;
-
 	}
 
-	override public function computeOutputs() {
+	public function update() {
+		if (!inited)
+			return;
 		if (currentShaderPreview != null) {
 			for (m in cube.getMaterials()) {
 				m.mainPass.removeShader(currentShaderPreview);
@@ -106,15 +119,13 @@ class Preview extends ShaderNode {
 			currentShaderPreview = null;
 		}
 
-		if (scene == null || input == null || input.isEmpty()) return;
-
 		if (@:privateAccess scene.window == null)
 			return;
 		scene.setCurrent();
 
 		var shader : hxsl.DynamicShader = null;
 		try {
-			var shaderGraphDef = shaderGraph.compile(this);
+			var shaderGraphDef = shaderGraph.compile2(this);
 			shader = new hxsl.DynamicShader(shaderGraphDef.shader);
 			for (init in shaderGraphDef.inits) {
 				setParamValue(init.variable, init.value, shader);

@@ -9,77 +9,126 @@ using hxsl.Ast;
 @noheader()
 class Color extends ShaderConst {
 
-	@output() var output = SType.Vec4;
-
 	@prop() var r : Float = 0;
 	@prop() var g : Float = 0;
 	@prop() var b : Float = 0;
 	@prop() var a : Float = 1;
 
-	override public function computeOutputs() {
-		addOutput("output", TVec(4, VFloat));
-	}
+	// override public function computeOutputs() {
+	// 	addOutput("output", TVec(4, VFloat));
+	// }
 
-	override public function getOutputTExpr(key : String) : TExpr {
-		return {
-			e: TVar(output),
-			p: null,
-			t: TVec(4, VFloat)
-		};
-	}
+	// override public function getOutputTExpr(key : String) : TExpr {
+	// 	return {
+	// 		e: TVar(output),
+	// 		p: null,
+	// 		t: TVec(4, VFloat)
+	// 	};
+	// }
 
-	override public function build(key : String) : TExpr {
+	override function getShaderDef(domain: ShaderGraph.Domain):hrt.shgraph.ShaderGraph.ShaderNodeDef {
+		var pos : Position = {file: "", min: 0, max: 0};
 
-		return { e: TBinop(OpAssign, {
-						e: TVar(output),
-						p: null,
-						t: output.type
-					}, {
-						e: TCall({
-							e: TGlobal(Vec4),
-							p: null,
-							t: TFun([
-								{
-									ret: output.type,
-									args: [
-									{ name: "r", type : TFloat },
-									{ name: "g", type : TFloat },
-									{ name: "b", type : TFloat },
-									{ name: "a", type : TFloat }]
-								}
-							])
-						}, [{
-								e: TConst(CFloat(r)),
-								p: null,
-								t: TFloat
-							},
-							{
-								e: TConst(CFloat(g)),
-								p: null,
-								t: TFloat
-							},
-							{
-								e: TConst(CFloat(b)),
-								p: null,
-								t: TFloat
-							},{
-								e: TConst(CFloat(a)),
-								p: null,
-								t: TFloat
-							}]),
-						p: null,
-						t: output.type
-					}),
+		var output : TVar = {name: "output", id:1, type: TVec(4, VFloat), kind: Local, qualifiers: []};
+		var finalExpr : TExpr =
+		{ e: TBinop(OpAssign, {
+				e: TVar(output),
+				p: null,
+				t: output.type
+			}, {
+				e: TCall({
+					e: TGlobal(Vec4),
 					p: null,
-					t: output.type
-				};
+					t: TFun([
+						{
+							ret: output.type,
+							args: [
+							{ name: "r", type : TFloat },
+							{ name: "g", type : TFloat },
+							{ name: "b", type : TFloat },
+							{ name: "a", type : TFloat }]
+						}
+					])
+				}, [{
+						e: TConst(CFloat(r)),
+						p: null,
+						t: TFloat
+					},
+					{
+						e: TConst(CFloat(g)),
+						p: null,
+						t: TFloat
+					},
+					{
+						e: TConst(CFloat(b)),
+						p: null,
+						t: TFloat
+					},{
+						e: TConst(CFloat(a)),
+						p: null,
+						t: TFloat
+					}]),
+				p: null,
+				t: output.type
+			}),
+			p: null,
+			t: output.type
+		};
+		return {expr: finalExpr, inVars: [], outVars:[{v: output, internal: false}], externVars: [], inits: []};
 	}
+
+	// override public function build(key : String) : TExpr {
+
+	// 	return { e: TBinop(OpAssign, {
+	// 					e: TVar(output),
+	// 					p: null,
+	// 					t: output.type
+	// 				}, {
+	// 					e: TCall({
+	// 						e: TGlobal(Vec4),
+	// 						p: null,
+	// 						t: TFun([
+	// 							{
+	// 								ret: output.type,
+	// 								args: [
+	// 								{ name: "r", type : TFloat },
+	// 								{ name: "g", type : TFloat },
+	// 								{ name: "b", type : TFloat },
+	// 								{ name: "a", type : TFloat }]
+	// 							}
+	// 						])
+	// 					}, [{
+	// 							e: TConst(CFloat(r)),
+	// 							p: null,
+	// 							t: TFloat
+	// 						},
+	// 						{
+	// 							e: TConst(CFloat(g)),
+	// 							p: null,
+	// 							t: TFloat
+	// 						},
+	// 						{
+	// 							e: TConst(CFloat(b)),
+	// 							p: null,
+	// 							t: TFloat
+	// 						},{
+	// 							e: TConst(CFloat(a)),
+	// 							p: null,
+	// 							t: TFloat
+	// 						}]),
+	// 					p: null,
+	// 					t: output.type
+	// 				}),
+	// 				p: null,
+	// 				t: output.type
+	// 			};
+	// }
 
 	#if editor
 	override public function getPropertiesHTML(width : Float) : Array<hide.Element> {
 		var elements = super.getPropertiesHTML(width);
 		var element = new hide.Element('<div style="width: 47px; height: 35px"></div>');
-		var picker = new hide.comp.ColorPicker(true, element);
+		var picker = new hide.comp.ColorPicker.ColorBox(element, true, true);
 
 
 		var start = h3d.Vector.fromArray([r, g, b, a]);

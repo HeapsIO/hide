@@ -5,45 +5,17 @@ using hxsl.Ast;
 @name("Strip Alpha")
 @description("Separate the rgb and a components of an rgba vector")
 @group("Channel")
-class StripAlpha extends ShaderNode {
+class StripAlpha extends ShaderNodeHxsl {
 
-	@input("RGBA") var input = SType.Vec4;
+	static var SRC = {
+		@sginput var rgba : Vec4;
+		@sgoutput var rgb : Vec3;
+		@sgoutput var a : Float;
 
-	@output("RGB") var rgb = SType.Vec3;
-	@output("A") var a = SType.Float;
-
-	override public function computeOutputs() {
-		addOutput("rgb", TVec(3, VFloat));
-		addOutput("a", TFloat);
-	}
-
-	override public function build(key : String) : TExpr {
-        if( key == "a" ) {
-            return { e: TBinop(OpAssign, {
-                    e: TVar(getOutput(key)),
-                    p: null,
-                    t: getOutput(key).type
-                }, {
-                    e: TSwiz(input.getVar(TVec(4, VFloat)), [W]),
-                    p: null,
-                    t: getOutput(key).type
-                }),
-                p: null,
-                t: getOutput(key).type
-            };
-	    }
-        return { e: TBinop(OpAssign, {
-                e: TVar(getOutput(key)),
-                p: null,
-                t: getOutput(key).type
-            }, {
-                e: TSwiz(input.getVar(TVec(4, VFloat)), [X, Y, Z]),
-                p: null,
-                t: getOutput(key).type
-            }),
-            p: null,
-            t: getOutput(key).type
-        };
-    }
+		function fragment() {
+			rgb = rgba.rgb;
+			a = rgba.a;
+		}
+	};
 
 }
