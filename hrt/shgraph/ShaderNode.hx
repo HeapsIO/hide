@@ -136,7 +136,7 @@ class ShaderNode {
 		var fields = Reflect.fields(props);
 		for (f in fields) {
 			if (f == "defaults") {
-				defaults = haxe.Json.parse(Reflect.field(props, f));
+				defaults = Reflect.field(props, f);
 			}
 			else {
 				Reflect.setField(this, f, Reflect.field(props, f));
@@ -166,9 +166,9 @@ class ShaderNode {
 				}
 			}
 		}
-		var defSer = haxe.Json.stringify(defaults);
-		if (defSer.length > 0) {
-			Reflect.setField(parameters, "defaults", defSer);
+
+		if (Reflect.fields(defaults).length > 0) {
+			Reflect.setField(parameters, "defaults", defaults);
 		}
 
 		return parameters;
