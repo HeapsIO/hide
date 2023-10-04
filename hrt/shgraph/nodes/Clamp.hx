@@ -9,7 +9,7 @@ using hxsl.Ast;
 class Clamp extends ShaderNodeHxsl {
 
 	static var SRC = {
-		@sginput var a : Vec4;
+		@sginput(0.0) var a : Vec4;
 		@sginput var min : Vec4;
 		@sginput var max : Vec4;
 

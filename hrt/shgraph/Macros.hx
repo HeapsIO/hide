@@ -51,6 +51,7 @@ class Macros {
 																	throw "sginput default param must be an identifier or a integer";
 															}
 														default:
+															trace(meta.params[0].expr);
 															throw "sginput default param must be a constant value";
 													}
 												}

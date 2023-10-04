@@ -9,7 +9,7 @@ using hxsl.Ast;
 class Saturate extends ShaderNodeHxsl {
 
 	static var SRC = {
-		@sginput var a : Vec4;
+		@sginput(0.0) var a : Vec4;
 		@sgoutput var output : Vec4;
 		function fragment() {
 			output = saturate(a);

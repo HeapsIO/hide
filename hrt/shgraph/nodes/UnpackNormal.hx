@@ -9,7 +9,7 @@ using hxsl.Ast;
 class UnpackNormal extends  ShaderNodeHxsl {
 
 	static var SRC = {
-		@sginput var a : Vec4;
+		@sginput(0.0) var a : Vec4;
 		@sgoutput var output : Vec3;
 		function fragment() {
 			output = unpackNormal(a);

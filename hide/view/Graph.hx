@@ -283,7 +283,8 @@ class Graph extends FileView {
 					if (Math.isNaN(tmpValue) ) {
 						fieldEditInput.addClass("error");
 					} else {
-						Reflect.setField(box.getInstance().defaults, '${inputName}', tmpValue);
+						// Store the value as a string anyway
+						Reflect.setField(box.getInstance().defaults, '${inputName}', '$tmpValue');
 						fieldEditInput.val(tmpValue);
 						fieldEditInput.removeClass("error");
 					}

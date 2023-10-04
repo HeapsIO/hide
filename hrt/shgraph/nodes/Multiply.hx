@@ -9,8 +9,8 @@ using hxsl.Ast;
 class Multiply extends ShaderNodeHxsl {
 
 	static var SRC = {
-		@sginput var a : Vec4;
-		@sginput var b : Vec4;
+		@sginput(1.0) var a : Vec4;
+		@sginput(1.0) var b : Vec4;
 		@sgoutput var output : Vec4;
 		function fragment() {
 			output = a * b;

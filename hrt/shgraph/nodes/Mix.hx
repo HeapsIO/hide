@@ -9,8 +9,8 @@ using hxsl.Ast;
 class Mix extends ShaderNodeHxsl {
 
 	static var SRC = {
-		@sginput var a : Vec4;
-		@sginput var b : Vec4;
+		@sginput(0.0) var a : Vec4;
+		@sginput(0.0) var b : Vec4;
 		@sginput var fact : Vec4;
 		@sgoutput var output : Vec4;
 		function fragment() {

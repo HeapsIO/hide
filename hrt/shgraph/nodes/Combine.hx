@@ -11,10 +11,10 @@ using hxsl.Ast;
 class Combine extends ShaderNodeHxsl {
 
 	static var SRC = {
-		@sginput var r : Float;
-		@sginput var g : Float;
-		@sginput var b : Float;
-		@sginput var a : Float;
+		@sginput(0.0) var r : Float;
+		@sginput(0.0) var g : Float;
+		@sginput(0.0) var b : Float;
+		@sginput(0.0) var a : Float;
 		@sgoutput var output : Vec4;
 
 		function fragment() {

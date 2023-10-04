@@ -9,7 +9,7 @@ using hxsl.Ast;
 class Sin extends ShaderNodeHxsl {
 
 	static var SRC = {
-		@sginput var a : Vec4;
+		@sginput(0.0) var a : Vec4;
 		@sgoutput var output : Vec4;
 		function fragment() {
 			output = sin(a);

@@ -106,6 +106,7 @@ class ShaderGraph {
 		}
 	}
 
+	#if editor
 	public function saveToDynamic() : Dynamic {
 		var json : Dynamic = {};
 
@@ -124,6 +125,7 @@ class ShaderGraph {
 	public function saveToText() : String {
 		return haxe.Json.stringify(saveToDynamic(), "\t");
 	}
+	#end
 
 	public function compile2(?specificOutput: ShaderNode) : hrt.prefab.ContextShared.ShaderDef {
 		var start = haxe.Timer.stamp();
@@ -803,4 +805,5 @@ class Graph {
 		return json;
 	}
 	#end
+
 }

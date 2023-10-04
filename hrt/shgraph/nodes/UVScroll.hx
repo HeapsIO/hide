@@ -8,10 +8,10 @@ using hxsl.Ast;
 class UVScroll extends  ShaderNodeHxsl {
 
 	static var SRC = {
-		@sginput var uv : Vec2;
-		@sginput var uSpeed : Float;
-		@sginput var vSpeed : Float;
-		@sginput var time : Float;
+		@sginput(uv) var uv : Vec2;
+		@sginput(0.0) var uSpeed : Float;
+		@sginput(0.0) var vSpeed : Float;
+		@sginput(0.0) var time : Float;
 
 		@sgoutput var output : Vec2;
 

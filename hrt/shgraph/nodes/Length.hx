@@ -9,7 +9,7 @@ using hxsl.Ast;
 class Length extends ShaderNodeHxsl {
 
 	static var SRC = {
-		@sginput var a : Vec4;
+		@sginput(0.0) var a : Vec4;
 		@sgoutput var output : Float;
 		function fragment() {
 			output = length(a);
