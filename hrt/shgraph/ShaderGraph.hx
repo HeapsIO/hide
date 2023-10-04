@@ -66,22 +66,23 @@ class ShaderGraph {
 
 
 	public function new(filepath : String) {
-		if (filepath == null) return;
 		this.filepath = filepath;
 
-		var json : Dynamic;
-		try {
-			var content : String = null;
-			#if editor
-			content = sys.io.File.getContent(hide.Ide.inst.resourceDir + "/" + this.filepath);
-			#else
-			content = hxd.res.Loader.currentInstance.load(this.filepath).toText();
-			//content = hxd.Res.load(this.filepath).toText();
-			#end
-			if (content.length == 0) return;
-			json = haxe.Json.parse(content);
-		} catch( e : Dynamic ) {
-			throw "Invalid shader graph parsing ("+e+")";
+		var json : Dynamic = {};
+		if (filepath != null) {
+			try {
+				var content : String = null;
+				#if editor
+				content = sys.io.File.getContent(hide.Ide.inst.resourceDir + "/" + this.filepath);
+				#else
+				content = hxd.res.Loader.currentInstance.load(this.filepath).toText();
+				//content = hxd.Res.load(this.filepath).toText();
+				#end
+				if (content.length == 0) return;
+				json = haxe.Json.parse(content);
+			} catch( e : Dynamic ) {
+				throw "Invalid shader graph parsing ("+e+")";
+			}
 		}
 
 		load(json);
@@ -90,7 +91,6 @@ class ShaderGraph {
 	public function load(json : Dynamic) : Void {
 
 		graphs = [];
-
 		parametersAvailable = [];
 		parametersKeys = [];
 
