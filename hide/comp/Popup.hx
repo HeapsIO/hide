@@ -8,6 +8,7 @@ import js.Browser;
 class Popup extends Component {
 	var popup : Element;
 	var timer : haxe.Timer;
+	var isSearchable:Bool;
 
 	function onMouseDown(e : js.html.MouseEvent) {
 		originalTarget = e.target;
@@ -23,12 +24,20 @@ class Popup extends Component {
 
 	var originalTarget : js.html.EventTarget;
 
-	public function new(?parent : Element, ?root : Element) {
+	public function new(?parent:Element, ?root:Element, isSearchable = false) {
 		if( root == null ) root = new Element("<div>");
         super(parent,root);
 
+		this.isSearchable = isSearchable;
 		popup = new Element("<div>").addClass("popup");
 
+		if (isSearchable) {
+			var searchBar = new Element('<input type="text" class="search-bar" placeholder="Search ..."/>');
+			popup.append(searchBar);
+
+			searchBar.keyup((e) -> onSearchChanged(searchBar));
+		}
+		
 		var body = root.closest(".lm_content");
 		if (body.length == 0) body = new Element("body");
 		body.append(popup);
@@ -77,6 +86,8 @@ class Popup extends Component {
 
 		popup.offset(offset);
 	}
+
+	public function onSearchChanged(searchBar:Element):Void {}
 
 	public function close() {
 		timer.stop();

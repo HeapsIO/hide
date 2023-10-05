@@ -378,14 +378,28 @@ class HelpPopup extends Popup {
 class RenderPropsPopup extends Popup {
 	var editor:SceneEditor;
 
-	public function new(?parent:Element, ?root:Element, editor:SceneEditor) {
-		super(parent, root);
+	public function new(?parent:Element, ?root:Element, editor:SceneEditor, isSearchable = false) {
+		super(parent, root, isSearchable);
 		this.editor = editor;
 
 		popup.addClass("settings-popup");
 		popup.css("max-width", "300px");
 
 		var form_div = new Element("<div>").addClass("form-grid").appendTo(popup);
+		var lastRenderProps:hrt.prefab.RenderProps = null;
+		var currentRenderProps = @:privateAccess editor.getAllWithRefs(@:privateAccess editor.sceneData, hrt.prefab.RenderProps);
+		for (r in currentRenderProps)
+			if (@:privateAccess r.isDefault) {
+				lastRenderProps = r;
+				break;
+			}
+		if (lastRenderProps == null)
+			lastRenderProps = currentRenderProps[0];
+
+		if (lastRenderProps != null) {
+			form_div.append(new Element('<p>A render props (${lastRenderProps.name}) is already existing in scene.</p>'));
+			return;
+		}
 
 		var renderProps = hide.Ide.inst.currentConfig.get("scene.renderProps");
 
@@ -425,6 +439,43 @@ class RenderPropsPopup extends Popup {
 		}
 
 		form_div.append(new Element("<p>No render props detected in .json file.</p>"));
+	}
+	
+	override function onSearchChanged(searchBar:Element) {
+		var search = searchBar.val();
+		var form_div = popup.find(".form-grid");
+
+		popup.find("label").remove();
+		popup.find('input[type=radio]').remove();
+
+		var renderProps = hide.Ide.inst.currentConfig.get("scene.renderProps");
+		if (renderProps is Array) {
+			var a_renderProps = Std.downcast(renderProps, Array);
+			var selectedRenderProps = editor.view.getDisplayState("renderProps");
+
+			for (idx in 0...a_renderProps.length) {
+				var rp = a_renderProps[idx];
+
+				if (!StringTools.contains(rp.name.toLowerCase(), search.toLowerCase()))
+					continue;
+
+				var input = new Element('<input type="radio" name="renderProps" id="${rp.name}" value="${rp.name}"/>');
+
+				var isDefaultRenderProp = selectedRenderProps == null && idx == 0;
+				var isSelectedRenderProp = selectedRenderProps != null && rp.value == selectedRenderProps.value;
+				if (isDefaultRenderProp || isSelectedRenderProp)
+					input.get(0).toggleAttribute("checked", true);
+
+				input.change((e) -> {
+					editor.view.saveDisplayState("renderProps", rp);
+					editor.refreshScene();
+				});
+
+				form_div.append(input);
+				form_div.append(new Element('<label for="${rp.name}" class="left">${rp.name}</label>'));
+			}
+			return;
+		}
 	}
 }
 

@@ -487,7 +487,7 @@ class Prefab extends FileView {
 		toolsDefs.push({
 			id: "renderProps",
 			title: "Render props",
-			type: Popup((e) -> new hide.comp.SceneEditor.RenderPropsPopup(null, e, sceneEditor))
+			type: Popup((e) -> new hide.comp.SceneEditor.RenderPropsPopup(null, e, sceneEditor, true))
 		});
 
 		toolsDefs.push({
