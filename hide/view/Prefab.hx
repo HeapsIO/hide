@@ -484,6 +484,19 @@ class Prefab extends FileView {
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
+		toolsDefs.push({
+			id: "renderProps",
+			title: "Render props",
+			type: Popup((e) -> new hide.comp.SceneEditor.RenderPropsPopup(null, e, sceneEditor))
+		});
+
+		toolsDefs.push({
+			id: "",
+			title: "",
+			icon: "",
+			type: Separator
+		});
+
 		toolsDefs.push({id: "sceneSpeed", title : "Speed", type : Range((v) -> scene.speed = v)});
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});

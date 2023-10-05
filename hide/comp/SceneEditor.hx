@@ -375,6 +375,59 @@ class HelpPopup extends Popup {
 	}
 }
 
+class RenderPropsPopup extends Popup {
+	var editor:SceneEditor;
+
+	public function new(?parent:Element, ?root:Element, editor:SceneEditor) {
+		super(parent, root);
+		this.editor = editor;
+
+		popup.addClass("settings-popup");
+		popup.css("max-width", "300px");
+
+		var form_div = new Element("<div>").addClass("form-grid").appendTo(popup);
+
+		var renderProps = hide.Ide.inst.currentConfig.get("scene.renderProps");
+
+		if (renderProps is String) {
+			var s_renderProps:String = cast renderProps;
+
+			var input = new Element('<input type="radio" name="renderProps" id="${s_renderProps}" value="${s_renderProps}"/>');
+			input.get(0).toggleAttribute("checked", true);
+
+			form_div.append(input);
+			form_div.append(new Element('<label for="${s_renderProps}" class="left">${s_renderProps}</label>'));
+			return;
+		}
+
+		if (renderProps is Array) {
+			var a_renderProps = Std.downcast(renderProps, Array);
+			var selectedRenderProps = editor.view.getDisplayState("renderProps");
+
+			for (idx in 0...a_renderProps.length) {
+				var rp = a_renderProps[idx];
+				var input = new Element('<input type="radio" name="renderProps" id="${rp.name}" value="${rp.name}"/>');
+
+				var isDefaultRenderProp = selectedRenderProps == null && idx == 0;
+				var isSelectedRenderProp = selectedRenderProps != null && rp.value == selectedRenderProps.value;
+				if (isDefaultRenderProp || isSelectedRenderProp)
+					input.get(0).toggleAttribute("checked", true);
+
+				input.change((e) -> {
+					editor.view.saveDisplayState("renderProps", rp);
+					editor.refreshScene();
+				});
+
+				form_div.append(input);
+				form_div.append(new Element('<label for="${rp.name}" class="left">${rp.name}</label>'));
+			}
+			return;
+		}
+
+		form_div.append(new Element("<p>No render props detected in .json file.</p>"));
+	}
+}
+
 class SceneEditor {
 
 	public var tree : hide.comp.IconTree<PrefabElement>;
@@ -1124,11 +1177,32 @@ class SceneEditor {
 				lastRenderProps = renderProps[0];
 		}
 
-		if( lastRenderProps != null )
+		if (lastRenderProps != null)
 			lastRenderProps.applyProps(scene.s3d.renderer);
 		else {
 			var refPrefab = new Reference();
-			refPrefab.source = view.config.getLocal("scene.renderProps");
+			var renderProps = view.config.getLocal("scene.renderProps");
+
+			if (renderProps is String) {
+				refPrefab.source = cast renderProps;
+			}
+
+			if (renderProps is Array) {
+				var a_renderProps = Std.downcast(renderProps, Array);
+				var savedRenderProp = @:privateAccess view.getDisplayState("renderProps");
+
+				// Check if the saved render prop hasn't been deleted from json
+				var isRenderPropAvailable = false;
+				for (idx in 0...a_renderProps.length) {
+					if (a_renderProps[idx].value == savedRenderProp.value)
+						isRenderPropAvailable = true;
+				}
+
+				refPrefab.source = view.config.getLocal("scene.renderProps")[0].value;
+				if (savedRenderProp != null && isRenderPropAvailable)
+					refPrefab.source = savedRenderProp.value;
+			}
+
 			var ctx2 = refPrefab.makeInstance(context);
 
 			var lights = refPrefab.getAll(hrt.prefab.Light, true);
