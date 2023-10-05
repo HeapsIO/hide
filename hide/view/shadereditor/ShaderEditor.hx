@@ -893,13 +893,23 @@ class ShaderEditor extends hide.view.Graph {
 
 	function displayCompiled(type : String) {
 		var text = "\n";
-		if( currentShaderDef == null || currentShader == null )
-			text += "No valid shader in memory";
+
+		var preview : hrt.shgraph.nodes.Preview = null;
+		for (selected in listOfBoxesSelected) {
+			var asPrev = Std.downcast(selected.getInstance(), hrt.shgraph.nodes.Preview);
+			if (asPrev != null) {
+				preview = asPrev;
+				break;
+			}
+		}
+
+		var def = shaderGraph.compile2(preview);
+
 		if( currentShaderDef != null) {
 			text += switch( type ) {
-				case "hxsl": hxsl.Printer.shaderToString(currentShaderDef.shader.data);
-				case "glsl": hxsl.GlslOut.compile(currentShaderDef.shader.data);
-				case "hlsl": new hxsl.HlslOut().run(currentShaderDef.shader.data);
+				case "hxsl": hxsl.Printer.shaderToString(def.shader.data);
+				case "glsl": hxsl.GlslOut.compile(def.shader.data);
+				case "hlsl": new hxsl.HlslOut().run(def.shader.data);
 				default: "";
 			}
 		}

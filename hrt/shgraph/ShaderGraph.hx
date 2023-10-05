@@ -141,6 +141,9 @@ class ShaderGraph {
 
 
 		for (i => graph in graphs) {
+			// Temp fix for code generation
+			if (graph.domain == Vertex)
+				continue;
 			var gen = graph.generate2(specificOutput);
 			gens.push(gen);
 
