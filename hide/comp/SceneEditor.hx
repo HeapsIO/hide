@@ -1194,7 +1194,7 @@ class SceneEditor {
 				// Check if the saved render prop hasn't been deleted from json
 				var isRenderPropAvailable = false;
 				for (idx in 0...a_renderProps.length) {
-					if (a_renderProps[idx].value == savedRenderProp.value)
+					if (savedRenderProp != null && a_renderProps[idx].value == savedRenderProp.value)
 						isRenderPropAvailable = true;
 				}
 
