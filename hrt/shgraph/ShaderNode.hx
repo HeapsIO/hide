@@ -23,7 +23,7 @@ class ShaderNode {
 					}];
 
 
-	public function getShaderDef(domain: ShaderGraph.Domain) : ShaderGraph.ShaderNodeDef {
+	public function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int ) : ShaderGraph.ShaderNodeDef {
 		throw "getShaderDef is not defined for class " + Type.getClassName(Type.getClass(this));
 		return {expr: null, inVars: [], outVars: [], inits: [], externVars: []};
 	}
@@ -37,7 +37,7 @@ class ShaderNode {
 
 	// TODO(ces) : caching
 	public function getOutputs2(domain: ShaderGraph.Domain) : Map<String, TVar> {
-		var def = getShaderDef(domain);
+		var def = getShaderDef(domain, () -> 0);
 		var map : Map<String, TVar> = [];
 		for (tvar in def.outVars) {
 			if (!tvar.internal)
@@ -48,7 +48,7 @@ class ShaderNode {
 
 	// TODO(ces) : caching
 	public function getInputs2(domain: ShaderGraph.Domain) : Map<String, {v: TVar, ?def: hrt.shgraph.ShaderGraph.ShaderDefInput}> {
-		var def = getShaderDef(domain);
+		var def = getShaderDef(domain, () -> 0);
 		var map : Map<String, {v: TVar, ?def: hrt.shgraph.ShaderGraph.ShaderDefInput}> = [];
 		for (i => tvar in def.inVars) {
 			if (!tvar.internal) {

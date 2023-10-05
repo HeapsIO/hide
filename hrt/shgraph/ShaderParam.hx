@@ -12,19 +12,18 @@ class ShaderParam extends ShaderNode {
 	@prop() public var perInstance : Bool;
 
 
-	override function getShaderDef(domain: ShaderGraph.Domain):hrt.shgraph.ShaderGraph.ShaderNodeDef {
+	override function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int ):hrt.shgraph.ShaderGraph.ShaderNodeDef {
 		var pos : Position = {file: "", min: 0, max: 0};
 
 		var qual = [];
 		if (this.variable.type == TSampler2D) {
 			qual.push(Sampler(this.variable.name));
 		}
-		var inVar : TVar = {name: this.variable.name, id:0, type: this.variable.type, kind: Param, qualifiers: qual};
-		var output : TVar = {name: "output", id:1, type: this.variable.type, kind: Local, qualifiers: []};
-		//var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(output), p:pos, t:output.type}, {e: TVar(inVar), p: pos, t: output.type}), p: pos, t: output.type};
+		var inVar : TVar = {name: this.variable.name, id: getNewIdFn(), type: this.variable.type, kind: Param, qualifiers: qual};
+		var output : TVar = {name: "output", id: getNewIdFn(), type: this.variable.type, kind: Local, qualifiers: []};
+		var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(output), p:pos, t:output.type}, {e: TVar(inVar), p: pos, t: output.type}), p: pos, t: output.type};
 
-
-		return {expr: null, inVars: [{v:inVar, internal: true}], outVars:[{v:output, internal: false}], externVars: [], inits: []};
+		return {expr: finalExpr, inVars: [{v:inVar, internal: true}], outVars:[{v:output, internal: false}], externVars: [], inits: []};
 	}
 
 	public var variable : TVar;

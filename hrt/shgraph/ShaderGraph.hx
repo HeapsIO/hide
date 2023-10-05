@@ -371,7 +371,7 @@ class Graph {
 
 		// Patch I/O if name have changed
 		if (!outputs.exists(outputName)) {
-			var def = output.instance.getShaderDef(domain);
+			var def = output.instance.getShaderDef(domain, () -> 0);
 			if(edge.outputId != null && def.outVars.length > edge.outputId) {
 				outputName = def.outVars[edge.outputId].v.name;
 			}
@@ -381,7 +381,7 @@ class Graph {
 		}
 
 		if (!inputs.exists(inputName)) {
-			var def = node.instance.getShaderDef(domain);
+			var def = node.instance.getShaderDef(domain,  () -> 0);
 			if (edge.inputId != null && def.inVars.length > edge.inputId) {
 				inputName = def.inVars[edge.inputId].v.name;
 			}
@@ -448,24 +448,37 @@ class Graph {
 
 
 
-	public function generate2(?specificOutput: ShaderNode) : ShaderNodeDef {
+	public function generate2(?specificOutput: ShaderNode, ?getNewVarId: () -> Int) : ShaderNodeDef {
 
-		var varIdCount = 0;
-		var getNewVarId = function()
-		{
-			return varIdCount++;
-		};
+		if (getNewVarId == null) {
+			var varIdCount = 0;
+			getNewVarId = function()
+			{
+				return hxsl.Tools.allocVarId();
+			};
+		}
 
 		inline function getNewVarName(node: Node, id: Int) : String {
 			return '_sg_${(node.type).split(".").pop()}_var_$id';
 		}
 
 		var nodeOutputs : Map<Node, Map<String, TVar>> = [];
+		var nodeDef : Map<Node, ShaderGraph.ShaderNodeDef> = [];
+
+		function getDef(node: Node) : ShaderGraph.ShaderNodeDef {
+			var def = nodeDef.get(node);
+			if (def != null)
+				return def;
+			def = node.instance.getShaderDef(domain, getNewVarId);
+			nodeDef.set(node, def);
+			return def;
+		}
+
 		function getOutputs(node: Node) : Map<String, TVar> {
 			if (!nodeOutputs.exists(node)) {
 				var outputs : Map<String, TVar> = [];
 
-				var def = node.instance.getShaderDef(domain);
+				var def = getDef(node);
 				for (output in def.outVars) {
 					if (output.internal)
 						continue;
@@ -481,7 +494,9 @@ class Graph {
 			return nodeOutputs.get(node);
 		}
 
-		// Recursively replace the to tvar with from tvar in the given expression
+
+
+		// Recursively replace the "what" tvar with "with" tvar in the given expression
 		function replaceVar(expr: TExpr, what: TVar, with: TExpr) : TExpr {
 			if(!what.type.equals(with.t))
 				throw "type missmatch " + what.type + " != " + with.t;
@@ -516,9 +531,28 @@ class Graph {
 			nodeHasOutputs.set(connection.from, true);
 		}
 
-		var graphInputVars  = [];
+		var graphInputVars = [];
 		var graphOutputVars  = [];
 		var externs : Array<TVar> = [];
+
+		var outsideVars : Map<String, TVar> = [];
+		function getOutsideVar(name: String, original: TVar, isInput: Bool) : TVar {
+			var v : TVar = outsideVars.get(name);
+			if (v == null) {
+				v = Reflect.copy(original);
+				v.id = getNewVarId();
+				v.name = name;
+				outsideVars.set(name, v);
+			}
+			if (isInput) {
+				graphInputVars.pushUnique({v: v, internal: false, defVal: null});
+			}
+			else {
+				graphOutputVars.pushUnique({v: v, internal: false});
+			}
+
+			return v;
+		}
 
 		var nodeToExplore : Array<Node> = [];
 
@@ -615,7 +649,7 @@ class Graph {
 			var outputs = getOutputs(currentNode);
 
 			{
-				var def = currentNode.instance.getShaderDef(domain);
+				var def = getDef(currentNode);
 				var expr = def.expr;
 
 				var outputDecls : Array<TVar> = [];
@@ -632,19 +666,37 @@ class Graph {
 						replacement = convertToType(nodeVar.v.type,  {e: TVar(outputVar), p:pos, t: outputVar.type});
 					}
 					else {
-						var shParam = Std.downcast(currentNode.instance, ShaderParam);
-						if (shParam != null) {
-							var outVar = outputs["output"];
-							var id = getNewVarId();
-							outVar.id = id;
-							outVar.name = nodeVar.v.name;
-							outVar.type = nodeVar.v.type;
-							outVar.kind = Param;
-							outVar.qualifiers = [];
-							graphInputVars.push({v: outVar, internal: false});
-							var param = getParameter(shParam.parameterId);
-							inits.push({variable: outVar, value: param.defaultValue});
-							continue;
+						if (nodeVar.internal) {
+							if (nodeVar.v.type == TSampler2D) {
+								// Rewrite output var to be the sampler directly because we can't assign
+								// a sampler to a temporary variable
+								var outVar = outputs["output"];
+								outVar.id = nodeVar.v.id;
+								outVar.name = nodeVar.v.name;
+								outVar.type = nodeVar.v.type;
+								outVar.qualifiers = nodeVar.v.qualifiers;
+								outVar.parent = nodeVar.v.parent;
+								outVar.kind = nodeVar.v.kind;
+
+								expr = null;
+
+								graphInputVars.pushUnique({v: outVar, internal: false, defVal: null});
+
+								var shParam = Std.downcast(currentNode.instance, ShaderParam);
+								var param = getParameter(shParam.parameterId);
+								inits.push({variable: outVar, value: param.defaultValue});
+
+								continue;
+							}
+
+							var inVar = getOutsideVar(nodeVar.v.name, nodeVar.v, true);
+
+							var shParam = Std.downcast(currentNode.instance, ShaderParam);
+							if (shParam != null) {
+								var param = getParameter(shParam.parameterId);
+								inits.push({variable: inVar, value: param.defaultValue});
+							}
+							replacement = {e: TVar(inVar), p: pos, t:nodeVar.v.type};
 						}
 						else {
 							// default parameter if no connection
@@ -663,7 +715,7 @@ class Graph {
 											id: getNewVarId(),
 											name: name,
 											type: nodeVar.v.type,
-											kind: Input
+											kind: Local
 										};
 										externs.push(tvar);
 									}
@@ -686,7 +738,10 @@ class Graph {
 						continue;
 					}
 					if (outputVar == null) {
-						graphOutputVars.push({v: nodeVar.v, internal: false});
+						var v = getOutsideVar(nodeVar.v.name, nodeVar.v, false);
+						expr = replaceVar(expr, nodeVar.v, {e: TVar(v), p:pos, t: nodeVar.v.type});
+
+						//graphOutputVars.push({v: nodeVar.v, internal: false});
 					} else {
 						expr = replaceVar(expr, nodeVar.v, {e: TVar(outputVar), p:pos, t: nodeVar.v.type});
 						outputDecls.push(outputVar);
@@ -777,7 +832,7 @@ class Graph {
 		var edgesJson : Array<Edge> = [];
 		for (n in nodes) {
 			for (inputName => connection in n.instance.connections) {
-				var def = n.instance.getShaderDef(domain);
+				var def = n.instance.getShaderDef(domain, () -> 0);
 				var inputId = null;
 				for (i => inVar in def.inVars) {
 					if (inVar.v.name == inputName) {
@@ -786,7 +841,7 @@ class Graph {
 					}
 				}
 
-				var def = connection.from.instance.getShaderDef(domain);
+				var def = connection.from.instance.getShaderDef(domain, () -> 0);
 				var outputId = null;
 				for (i => outVar in def.outVars) {
 					if (outVar.v.name == connection.fromName) {

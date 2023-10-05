@@ -19,15 +19,16 @@ class ShaderInput extends ShaderNode {
 	// 	return null;
 	// }
 
-	override function getShaderDef(domain: ShaderGraph.Domain):hrt.shgraph.ShaderGraph.ShaderNodeDef {
+	override function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int ):hrt.shgraph.ShaderGraph.ShaderNodeDef {
 		var pos : Position = {file: "", min: 0, max: 0};
 
-		var inVar : TVar = variable;
-		var output : TVar = {name: "output", id:1, type: this.variable.type, kind: Local, qualifiers: []};
+		var inVar : TVar = Reflect.copy(variable);
+		inVar.id = getNewIdFn();
+		var output : TVar = {name: "output", id: getNewIdFn(), type: this.variable.type, kind: Local, qualifiers: []};
 		var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(output), p:pos, t:output.type}, {e: TVar(inVar), p: pos, t: output.type}), p: pos, t: output.type};
 
 
-		return {expr: finalExpr, inVars: [], outVars:[{v:output, internal: false}], externVars: [inVar], inits: []};
+		return {expr: finalExpr, inVars: [{v:inVar, internal: true}], outVars:[{v:output, internal: false}], externVars: [], inits: []};
 	}
 
 	public static var availableInputs : Array<TVar> = [

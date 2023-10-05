@@ -1,3 +1,4 @@
+
 package hrt.shgraph;
 
 using hxsl.Ast;
@@ -13,11 +14,11 @@ class ShaderOutput extends ShaderNode {
 	var components = [X, Y, Z, W];
 
 
-	override function getShaderDef(domain: ShaderGraph.Domain):hrt.shgraph.ShaderGraph.ShaderNodeDef {
+	override function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int ):hrt.shgraph.ShaderGraph.ShaderNodeDef {
 		var pos : Position = {file: "", min: 0, max: 0};
 
-		var inVar : TVar = {name: "input", id:0, type: this.variable.type, kind: Param, qualifiers: []};
-		var output : TVar = {name: variable.name, id:1, type: this.variable.type, kind: Local, qualifiers: []};
+		var inVar : TVar = {name: "input", id: getNewIdFn(), type: this.variable.type, kind: Param, qualifiers: []};
+		var output : TVar = {name: variable.name, id: getNewIdFn(), type: this.variable.type, kind: Local, qualifiers: []};
 		var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(output), p:pos, t:output.type}, {e: TVar(inVar), p: pos, t: output.type}), p: pos, t: output.type};
 
 		//var param = getParameter(inputNode.parameterId);

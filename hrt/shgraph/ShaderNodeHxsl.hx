@@ -1,21 +1,43 @@
 package hrt.shgraph;
 
+import hxsl.Ast.TExpr;
+using hxsl.Ast;
+
 @:autoBuild(hrt.shgraph.Macros.buildNode())
 class ShaderNodeHxsl extends ShaderNode {
 
 	static var nodeCache : Map<String, ShaderGraph.ShaderNodeDef> = [];
 
-	override public function getShaderDef(domain: ShaderGraph.Domain) : ShaderGraph.ShaderNodeDef {
+	override public function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int ) : ShaderGraph.ShaderNodeDef {
 		var cl = Type.getClass(this);
 		var className = Type.getClassName(cl);
-		var def = nodeCache.get(className);
+		var def = null;//nodeCache.get(className);
 		if (def == null) {
-
 			var unser = new hxsl.Serializer();
 			var toUnser = (cl:Dynamic).SRC;
 			if (toUnser == null) throw "Node " + className + " has no SRC";
 			var data = @:privateAccess unser.unserialize(toUnser);
 			var expr = data.funs[0].expr;
+
+			var idToNewId : Map<Int, Int> = [];
+
+			function patchExprId(expr: TExpr) : TExpr {
+				switch (expr.e) {
+					case TVar(v):
+						var newId = idToNewId.get(v.id);
+						if (newId == null) {
+							newId = getNewIdFn();
+							idToNewId.set(v.id, newId);
+						}
+						v.id = newId;
+						return expr;
+					default:
+						return expr.map(patchExprId);
+				}
+			}
+
+			patchExprId(expr);
+
 			var inVars = [];
 			var outVars = [];
 			var externVars = [];

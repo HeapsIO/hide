@@ -32,11 +32,11 @@ class AlphaPreview extends hxsl.Shader {
 @noheader()
 class Preview extends ShaderNode {
 
-	override function getShaderDef(domain: ShaderGraph.Domain):hrt.shgraph.ShaderGraph.ShaderNodeDef {
+	override function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int ):hrt.shgraph.ShaderGraph.ShaderNodeDef {
 		var pos : Position = {file: "", min: 0, max: 0};
 
-		var inVar : TVar = {name: "input", id:0, type: TVec(4, VFloat), kind: Param, qualifiers: []};
-		var output : TVar = {name: "pixelColor", id:1, type: TVec(4, VFloat), kind: Local, qualifiers: []};
+		var inVar : TVar = {name: "input", id: getNewIdFn(), type: TVec(4, VFloat), kind: Param, qualifiers: []};
+		var output : TVar = {name: "pixelColor", id: getNewIdFn(), type: TVec(4, VFloat), kind: Local, qualifiers: []};
 		var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(output), p:pos, t:output.type}, {e: TVar(inVar), p: pos, t: output.type}), p: pos, t: output.type};
 
 		//var param = getParameter(inputNode.parameterId);

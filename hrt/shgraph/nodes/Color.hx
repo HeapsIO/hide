@@ -26,10 +26,10 @@ class Color extends ShaderConst {
 	// 	};
 	// }
 
-	override function getShaderDef(domain: ShaderGraph.Domain):hrt.shgraph.ShaderGraph.ShaderNodeDef {
+	override function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int ):hrt.shgraph.ShaderGraph.ShaderNodeDef {
 		var pos : Position = {file: "", min: 0, max: 0};
 
-		var output : TVar = {name: "output", id:1, type: TVec(4, VFloat), kind: Local, qualifiers: []};
+		var output : TVar = {name: "output", id:getNewIdFn(), type: TVec(4, VFloat), kind: Local, qualifiers: []};
 		var finalExpr : TExpr =
 		{ e: TBinop(OpAssign, {
 				e: TVar(output),
