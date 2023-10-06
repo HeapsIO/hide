@@ -778,6 +778,10 @@ class FXEditor extends FileView {
 		tools.addSeparator();
 
 		tools.addPopup(null, "View Modes", (e) -> new hide.comp.SceneEditor.ViewModePopup(null, e, Std.downcast(@:privateAccess scene.s3d.renderer, h3d.scene.pbr.Renderer)), null);
+		
+		tools.addSeparator();
+		
+		tools.addPopup(null, "Render Props", (e) -> new hide.comp.SceneEditor.RenderPropsPopup(null, e, sceneEditor, true), null);
 
 		tools.addSeparator();
 

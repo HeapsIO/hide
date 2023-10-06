@@ -125,7 +125,29 @@ class Model extends FileView {
 		eventList = element.find(".event-editor");
 
 		if( rootPath == null )
-			rootPath = config.getLocal("scene.renderProps");
+			{
+				var renderProps = config.getLocal("scene.renderProps");
+
+				if (renderProps is String) {
+					rootPath = cast renderProps;
+				}
+
+				if (renderProps is Array) {
+					var a_renderProps = Std.downcast(renderProps, Array);
+					var savedRenderProp = @:privateAccess getDisplayState("renderProps");
+	
+					// Check if the saved render prop hasn't been deleted from json
+					var isRenderPropAvailable = false;
+					for (idx in 0...a_renderProps.length) {
+						if (savedRenderProp != null && a_renderProps[idx].value == savedRenderProp.value)
+							isRenderPropAvailable = true;
+					}
+	
+					rootPath = config.getLocal("scene.renderProps")[0].value;
+					if (savedRenderProp != null && isRenderPropAvailable)
+						rootPath = savedRenderProp.value;
+				}
+			}
 
 		if( rootPath != null )
 			root = ide.loadPrefab(rootPath, hrt.prefab.Library);
