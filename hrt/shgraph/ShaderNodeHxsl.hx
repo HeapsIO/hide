@@ -74,7 +74,12 @@ class ShaderNodeHxsl extends ShaderNode {
 						throw "Variable is both sginput and sgoutput";
 					}
 					if (!input && !output) {
-						externVars.push(tvar);
+						switch (tvar.kind) {
+							case Function:
+								// do nothing
+							default:
+								externVars.push(tvar);
+						}
 					}
 			}
 

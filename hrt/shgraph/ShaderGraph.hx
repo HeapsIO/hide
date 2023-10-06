@@ -11,11 +11,12 @@ enum ShaderDefInput {
 	Const(intialValue: Float);
 }
 
-
+typedef ShaderNodeDefInVar = {v: TVar, internal: Bool, ?defVal: ShaderDefInput};
+typedef ShaderNodeDefOutVar = {v: TVar, internal: Bool};
 typedef ShaderNodeDef = {
 	expr: TExpr,
-	inVars: Array<{v: TVar, internal: Bool, ?defVal: ShaderDefInput}>, // If internal = true, don't show input in ui
-	outVars: Array<{v: TVar, internal: Bool}>,
+	inVars: Array<ShaderNodeDefInVar>, // If internal = true, don't show input in ui
+	outVars: Array<ShaderNodeDefOutVar>,
 	externVars: Array<TVar>, // other external variables like globals and stuff
 	inits: Array<{variable: TVar, value: Dynamic}>, // Default values for some variables
 };
@@ -148,28 +149,65 @@ class ShaderGraph {
 			gens.push(gen);
 
 			shaderData.vars.append(gen.externVars);
-			for (v in gen.inVars)
-				shaderData.vars.pushUnique(v.v);
+
+			var inputInputVars = [];
+
+			for (v in gen.inVars) {
+				var split = v.v.name.split(".");
+				switch(split[0]) {
+					case "input": {
+						v.v.name = split[1] ?? throw "Invalid variable name";
+						inputInputVars.pushUnique(v.v);
+					}
+					default:
+						if (split.length > 1) {
+							throw "Var has a dot in its name without being input or global var";
+						}
+					shaderData.vars.pushUnique(v.v);
+				}
+			}
+
+			if (inputInputVars.length > 0) {
+				var v : TVar = {
+					id: hxsl.Tools.allocVarId(),
+					type: TStruct(inputInputVars),
+					kind: Input,
+					name: "input",
+				};
+
+				for (iv in inputInputVars) {
+					iv.parent = v;
+				}
+
+				shaderData.vars.pushUnique(v);
+			}
+
 			for (v in gen.outVars)
 				shaderData.vars.pushUnique(v.v);
 
+
 			var functionName : String = EnumValueTools.getName(graph.domain).toLowerCase();
 
-			shaderData.funs.push({
+			var funcVar : TVar = {
+				name : functionName,
+				id : hxsl.Tools.allocVarId(),
+				kind : Function,
+				type : TFun([{ ret : TVoid, args : [] }])
+			};
+
+			var fn : TFunction = {
 				ret : TVoid, kind : Fragment,
-				ref : {
-					name : functionName,
-					id : i,
-					kind : Function,
-					type : TFun([{ ret : TVoid, args : [] }])
-				},
+				ref : funcVar,
 				expr : gen.expr,
 				args : []
-			});
+			};
+			shaderData.funs.push(fn);
+			shaderData.vars.push(funcVar);
 
 			for (init in gen.inits) {
 				inits.pushUnique(init);
 			}
+
 		}
 
 		var shared = new SharedShader("");
@@ -451,7 +489,6 @@ class Graph {
 	public function generate2(?specificOutput: ShaderNode, ?getNewVarId: () -> Int) : ShaderNodeDef {
 
 		if (getNewVarId == null) {
-			var varIdCount = 0;
 			getNewVarId = function()
 			{
 				return hxsl.Tools.allocVarId();
@@ -516,7 +553,6 @@ class Graph {
 		// Shader generation starts here
 
 		var pos : Position = {file: "", min: 0, max: 0};
-		var outputNodes : Array<Node> = [];
 		var inits : Array<{ variable : hxsl.Ast.TVar, value : Dynamic }> = [];
 
 		var allConnections : Array<Connection> = [for (node in nodes) for (connection in node.instance.connections) connection];
@@ -531,8 +567,8 @@ class Graph {
 			nodeHasOutputs.set(connection.from, true);
 		}
 
-		var graphInputVars = [];
-		var graphOutputVars  = [];
+		var graphInputVars : Array<ShaderNodeDefInVar> = [];
+		var graphOutputVars : Array<ShaderNodeDefOutVar> = [];
 		var externs : Array<TVar> = [];
 
 		var outsideVars : Map<String, TVar> = [];
@@ -545,10 +581,14 @@ class Graph {
 				outsideVars.set(name, v);
 			}
 			if (isInput) {
-				graphInputVars.pushUnique({v: v, internal: false, defVal: null});
+				if (graphInputVars.find((o) -> o.v == v) == null) {
+					graphInputVars.pushUnique({v: v, internal: false, defVal: null});
+				}
 			}
 			else {
-				graphOutputVars.pushUnique({v: v, internal: false});
+				if (graphOutputVars.find((o) -> o.v == v) == null) {
+					graphOutputVars.push({v: v, internal: false});
+				}
 			}
 
 			return v;
@@ -679,12 +719,12 @@ class Graph {
 								outVar.kind = nodeVar.v.kind;
 
 								expr = null;
-
-								graphInputVars.pushUnique({v: outVar, internal: false, defVal: null});
-
-								var shParam = Std.downcast(currentNode.instance, ShaderParam);
-								var param = getParameter(shParam.parameterId);
-								inits.push({variable: outVar, value: param.defaultValue});
+								if (graphInputVars.find((v) -> v.v == outVar) == null) {
+									graphInputVars.push({v: outVar, internal: false, defVal: null});
+									var shParam = Std.downcast(currentNode.instance, ShaderParam);
+									var param = getParameter(shParam.parameterId);
+									inits.push({variable: outVar, value: param.defaultValue});
+								}
 
 								continue;
 							}
@@ -730,23 +770,26 @@ class Graph {
 					expr = replaceVar(expr, nodeVar.v, replacement);
 				}
 
-				for (nodeVar in def.outVars) {
-					var outputVar : TVar = outputs.get(nodeVar.v.name);
-					// Kinda of a hack : skip decl writing for shaderParams
-					var shParam = Std.downcast(currentNode.instance, ShaderParam);
-					if (shParam != null) {
-						continue;
-					}
-					if (outputVar == null) {
-						var v = getOutsideVar(nodeVar.v.name, nodeVar.v, false);
-						expr = replaceVar(expr, nodeVar.v, {e: TVar(v), p:pos, t: nodeVar.v.type});
+				if (expr != null) {
+					for (nodeVar in def.outVars) {
+						var outputVar : TVar = outputs.get(nodeVar.v.name);
+						// Kinda of a hack : skip decl writing for shaderParams
+						// var shParam = Std.downcast(currentNode.instance, ShaderParam);
+						// if (shParam != null) {
+						// 	continue;
+						// }
+						if (outputVar == null) {
+							var v = getOutsideVar(nodeVar.v.name, nodeVar.v, false);
+							expr = replaceVar(expr, nodeVar.v, {e: TVar(v), p:pos, t: nodeVar.v.type});
 
-						//graphOutputVars.push({v: nodeVar.v, internal: false});
-					} else {
-						expr = replaceVar(expr, nodeVar.v, {e: TVar(outputVar), p:pos, t: nodeVar.v.type});
-						outputDecls.push(outputVar);
+							//graphOutputVars.push({v: nodeVar.v, internal: false});
+						} else {
+							expr = replaceVar(expr, nodeVar.v, {e: TVar(outputVar), p:pos, t: nodeVar.v.type});
+							outputDecls.push(outputVar);
+						}
 					}
 				}
+
 
 				for (nodeVar in def.externVars) {
 					externs.pushUnique(nodeVar);

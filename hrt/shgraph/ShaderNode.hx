@@ -28,9 +28,6 @@ class ShaderNode {
 		return {expr: null, inVars: [], outVars: [], inits: [], externVars: []};
 	}
 
-	var inputs : Map<String, NodeVar> = [];
-	// var outputs : Map<String, TVar> = [];
-
 	public var connections : Map<String, ShaderGraph.Connection> = [];
 
 	public var outputCompiled : Map<String, Bool> = []; // todo: put with outputs variable
