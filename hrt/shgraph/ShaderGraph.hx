@@ -19,6 +19,7 @@ typedef ShaderNodeDef = {
 	outVars: Array<ShaderNodeDefOutVar>,
 	externVars: Array<TVar>, // other external variables like globals and stuff
 	inits: Array<{variable: TVar, value: Dynamic}>, // Default values for some variables
+	?__inits__: Array<{name: String, e:TExpr}>,
 };
 
 typedef Node = {
@@ -165,6 +166,37 @@ class ShaderGraph {
 						}
 					shaderData.vars.pushUnique(v.v);
 				}
+			}
+
+
+			var cuv = shaderData.vars.find((v) -> v.name == "calculatedUV");
+			if (cuv != null) {
+				var inputUv : TVar = inputInputVars.find(v -> v.name == "uv");
+				if (inputUv == null) {
+					inputUv = { parent: null, id: hxsl.Tools.allocVarId(), kind: Input, name: "uv", type: TVec(2, VFloat) };
+					inputInputVars.push(inputUv);
+				}
+
+				var pos : Position = {file: "", min: 0, max: 0};
+				var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(cuv), p:pos, t:cuv.type}, {e: TVar(inputUv), p: pos, t: inputUv.type}), p: pos, t: inputUv.type};
+
+				var block: TExpr = {e: TBlock([finalExpr]), p:pos, t:null};
+				var funcVar : TVar = {
+					name : "__init__",
+					id : hxsl.Tools.allocVarId(),
+					kind : Function,
+					type : TFun([{ ret : TVoid, args : [] }])
+				};
+
+				var fn : TFunction = {
+					ret : TVoid, kind : Init,
+					ref : funcVar,
+					expr : block,
+					args : []
+				};
+
+				shaderData.funs.push(fn);
+				shaderData.vars.push(funcVar);
 			}
 
 			if (inputInputVars.length > 0) {

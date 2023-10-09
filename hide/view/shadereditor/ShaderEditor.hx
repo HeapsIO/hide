@@ -425,6 +425,7 @@ class ShaderEditor extends hide.view.Graph {
 		var sp = new h3d.prim.Sphere(1, 128, 128);
 		sp.addNormals();
 		sp.addUVs();
+		sp.addTangents();
 		obj = new h3d.scene.Mesh(sp);
 		sceneEditor.scene.s3d.addChild(obj);
 		sceneEditor.resetCamera(1.05);
