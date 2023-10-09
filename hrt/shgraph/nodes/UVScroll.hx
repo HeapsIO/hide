@@ -4,7 +4,7 @@ using hxsl.Ast;
 
 @name("UV Scroll")
 @description("Scroll UV according to U & V speed")
-@group("Specials")
+@group("UV")
 class UVScroll extends  ShaderNodeHxsl {
 
 	static var SRC = {

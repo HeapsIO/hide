@@ -5,7 +5,7 @@ using hxsl.Ast;
 @name("UV To Screen")
 @description("")
 @width(100)
-@group("Math")
+@group("UV")
 class UvToScreen extends ShaderNodeHxsl {
 
 	static var SRC = {

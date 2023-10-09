@@ -11,7 +11,7 @@ typedef InputVariable = {display: String, v: TVar};
 class ShaderInput extends ShaderNode {
 
 
-	@prop("Variable") public var variable : String = "position";
+	@prop("Variable") public var variable : String = "pixelColor";
 
 	// override public function getOutput(key : String) : TVar {
 	// 	return variable;
@@ -37,6 +37,17 @@ class ShaderInput extends ShaderNode {
 		return {expr: finalExpr, inVars: [{v:inVar, internal: true}], outVars:[{v:output, internal: false}], externVars: [], inits: []};
 	}
 
+	override function loadProperties(props:Dynamic) {
+		super.loadProperties(props);
+		var ivar : InputVariable = availableInputs.get(this.variable);
+		if (ivar == null) {
+			for (k => v in availableInputs) {
+				variable = k;
+				break;
+			}
+		}
+	}
+
 	public static var availableInputs : Map<String, InputVariable> = [
 		"pixelColor" => {display: "Pixel Color", v: { parent: null, id: 0, kind: Local, name: "pixelColor", type: TVec(4, VFloat) }},
 		"calculatedUV" => {display: "UV", v: { parent: null, id: 0, kind: Local, name: "calculatedUV", type: TVec(2, VFloat) }},
@@ -45,11 +56,11 @@ class ShaderInput extends ShaderNode {
 		"projectedPosition" => {display: "Projected Position", v: { parent: null, id: 0, kind: Local, name: "projectedPosition", type: TVec(4, VFloat) }},
 		"transformedNormal" => {display: "Normal", v: { parent: null, id: 0, kind: Local, name: "transformedNormal", type: TVec(3, VFloat) }},
 
-		"position" => {display: "Source Position", v: { parent: null, id: 0, kind: Input, name: "input.position", type: TVec(3, VFloat) }},
-		"color" => 	{display: "Source Vertex Color", v: { parent: null, id: 0, kind: Input, name: "input.color", type: TVec(3, VFloat) }},
+		// "position" => {display: "Source Position", v: { parent: null, id: 0, kind: Input, name: "input.position", type: TVec(3, VFloat) }},
+		// "color" => 	{display: "Source Vertex Color", v: { parent: null, id: 0, kind: Input, name: "input.color", type: TVec(3, VFloat) }},
 		"uv" => {display: "Source UV", v: { parent: null, id: 0, kind: Input, name: "input.uv", type: TVec(2, VFloat) }},
-		"normal" => {display: "Source Normal", v: { parent: null, id: 0, kind: Input, name: "input.normal", type: TVec(3, VFloat) }},
-		"tangent" => {display: "Source Tangent", v: { parent: null, id: 0, kind: Input, name: "input.tangent", type: TVec(3, VFloat) }},
+		// "normal" => {display: "Source Normal", v: { parent: null, id: 0, kind: Input, name: "input.normal", type: TVec(3, VFloat) }},
+		// "tangent" => {display: "Source Tangent", v: { parent: null, id: 0, kind: Input, name: "input.tangent", type: TVec(3, VFloat) }},
 	];
 
 	/*public static var availableInputs : Array<TVar> = [

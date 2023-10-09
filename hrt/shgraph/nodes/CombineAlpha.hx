@@ -12,12 +12,11 @@ class CombineAlpha extends ShaderNodeHxsl {
 
 	static var SRC = {
 		@sginput var rgb : Vec3;
-		@sginput var a : Float;
+		@sginput(1.0) var a : Float;
 		@sgoutput var output : Vec4;
 
 		function fragment() {
 			output = vec4(rgb,a);
 		}
 	}
-
 }
