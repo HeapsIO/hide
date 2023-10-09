@@ -149,24 +149,32 @@ class ShaderGraph {
 			var gen = graph.generate2(specificOutput);
 			gens.push(gen);
 
-			shaderData.vars.append(gen.externVars);
+			//shaderData.vars.append(gen.externVars);
 
 			var inputInputVars = [];
+			var globalInputVars = [];
 
-			for (v in gen.inVars) {
-				var split = v.v.name.split(".");
-				switch(split[0]) {
-					case "input": {
-						v.v.name = split[1] ?? throw "Invalid variable name";
-						inputInputVars.pushUnique(v.v);
-					}
-					default:
-						if (split.length > 1) {
-							throw "Var has a dot in its name without being input or global var";
+			for (arr in [[for (v in gen.inVars) v.v], gen.externVars]) {
+				for (v in arr) {
+					var split = v.name.split(".");
+					switch(split[0]) {
+						case "input": {
+							v.name = split[1] ?? throw "Invalid variable name";
+							inputInputVars.pushUnique(v);
 						}
-					shaderData.vars.pushUnique(v.v);
+						case "global": {
+							v.name = split[1] ?? throw "Invalid variable name";
+							globalInputVars.pushUnique(v);
+						}
+						default:
+							if (split.length > 1) {
+								throw "Var has a dot in its name without being input or global var";
+							}
+						shaderData.vars.pushUnique(v);
+					}
 				}
 			}
+
 
 
 			var cuv = shaderData.vars.find((v) -> v.name == "calculatedUV");
@@ -199,20 +207,40 @@ class ShaderGraph {
 				shaderData.vars.push(funcVar);
 			}
 
-			if (inputInputVars.length > 0) {
-				var v : TVar = {
-					id: hxsl.Tools.allocVarId(),
-					type: TStruct(inputInputVars),
-					kind: Input,
-					name: "input",
-				};
+			function makeVarStruct(elems: Array<TVar>, name: String, kind: VarKind) {
+				if (elems.length > 0) {
+					var v : TVar = {
+						id: hxsl.Tools.allocVarId(),
+						type: TStruct(elems),
+						kind: kind,
+						name: name,
+					};
 
-				for (iv in inputInputVars) {
-					iv.parent = v;
+					for (iv in elems) {
+						iv.parent = v;
+					}
+
+					shaderData.vars.pushUnique(v);
 				}
-
-				shaderData.vars.pushUnique(v);
 			}
+
+			makeVarStruct(inputInputVars, "input", Input);
+			makeVarStruct(globalInputVars, "global", Global);
+
+			// if (inputInputVars.length > 0) {
+			// 	var v : TVar = {
+			// 		id: hxsl.Tools.allocVarId(),
+			// 		type: TStruct(inputInputVars),
+			// 		kind: Input,
+			// 		name: "input",
+			// 	};
+
+			// 	for (iv in inputInputVars) {
+			// 		iv.parent = v;
+			// 	}
+
+			// 	shaderData.vars.pushUnique(v);
+			// }
 
 			for (v in gen.outVars)
 				shaderData.vars.pushUnique(v.v);
@@ -682,9 +710,12 @@ class Graph {
 					}
 				}
 				else {
+
 					args.push(sourceExpr);
 					for (i in 0...delta) {
-						args.push({e : TConst(CFloat(0.0)), p: sourceExpr.p, t: TFloat});
+						// Set alpha to 1.0 by default on upcasts casts
+						var value = i == delta - 1 ? 1.0 : 0.0;
+						args.push({e : TConst(CFloat(value)), p: sourceExpr.p, t: TFloat});
 					}
 				}
 				var global : TGlobal = switch (targetSize) {

@@ -45,6 +45,8 @@ class Macros {
 															switch(v) {
 																case CIdent(name):
 																	defValue = name;
+																case CString(val):
+																	defValue = val;
 																case CFloat(val), CInt(val):
 																	defValue = '$val';
 																default:

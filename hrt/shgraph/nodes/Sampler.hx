@@ -9,7 +9,7 @@ class Sampler extends ShaderNodeHxsl {
 
 	static var SRC = {
 		@sginput var texture : Sampler2D;
-		@sginput var uv : Vec2;
+		@sginput(calculatedUV) var uv : Vec2;
 		@sgoutput var RGBA : Vec4;
 		@sgoutput var RGB : Vec3;
 		@sgoutput var A : Float;
