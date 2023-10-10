@@ -33,8 +33,6 @@ class Model extends FileView {
 
 	var highlightSelection : Bool = true;
 
-	var viewModes : Array<String>;
-
 	override function save() {
 		if(!modified) return;
 		// Save current Anim data
@@ -87,6 +85,8 @@ class Model extends FileView {
 	}
 
 	override function onDisplay() {
+		this.saveDisplayKey = "Model:" + state.path;
+
 		element.html('
 			<div class="flex vertical">
 				<div id="toolbar"></div>
@@ -99,12 +99,7 @@ class Model extends FileView {
 					<div class="tabs">
 						<div class="tab expand" name="Model" icon="sitemap">
 							<div class="hide-block">
-								<table>
-								<tr>
-								<td><input type="button" style="width:145px" value="Export"/>
-								<td><input type="button" style="width:145px" value="Import"/>
-								</tr>
-								</table>
+							<input type="button" style="width:312px" value="Save render props"/>
 								<div class="hide-scene-tree hide-list">
 								</div>
 							</div>
@@ -119,57 +114,13 @@ class Model extends FileView {
 				</div>
 			</div>
 		');
+
 		tools = new hide.comp.Toolbar(null,element.find("#toolbar"));
 		overlay = element.find(".hide-scene-layer .tree");
 		tabs = new hide.comp.Tabs(null,element.find(".tabs"));
 		eventList = element.find(".event-editor");
 
-		if( rootPath == null )
-			{
-				var renderProps = config.getLocal("scene.renderProps");
-
-				if (renderProps is String) {
-					rootPath = cast renderProps;
-				}
-
-				if (renderProps is Array) {
-					var a_renderProps = Std.downcast(renderProps, Array);
-					var savedRenderProp = @:privateAccess getDisplayState("renderProps");
-	
-					// Check if the saved render prop hasn't been deleted from json
-					var isRenderPropAvailable = false;
-					for (idx in 0...a_renderProps.length) {
-						if (savedRenderProp != null && a_renderProps[idx].value == savedRenderProp.value)
-							isRenderPropAvailable = true;
-					}
-	
-					rootPath = config.getLocal("scene.renderProps")[0].value;
-					if (savedRenderProp != null && isRenderPropAvailable)
-						rootPath = savedRenderProp.value;
-				}
-			}
-
-		if( rootPath != null )
-			root = ide.loadPrefab(rootPath, hrt.prefab.Library);
-
-		if( root == null ) {
-			var def = new hrt.prefab.Library();
-			new hrt.prefab.RenderProps(def).name = "renderer";
-			var l = new hrt.prefab.Light(def);
-			l.name = "sunLight";
-			l.kind = Directional;
-			l.power = 1.5;
-			var q = new h3d.Quat();
-			q.initDirection(new h3d.Vector(-0.28,0.83,-0.47));
-			var a = q.toEuler();
-			l.rotationX = Math.round(a.x * 180 / Math.PI);
-			l.rotationY = Math.round(a.y * 180 / Math.PI);
-			l.rotationZ = Math.round(a.z * 180 / Math.PI);
-			l.shadows.mode = Dynamic;
-			l.shadows.size = 1024;
-			root = def;
-		}
-
+		root = new hrt.prefab.Library();
 		sceneEditor = new hide.comp.SceneEditor(this, root);
 		sceneEditor.editorDisplay = false;
 		sceneEditor.onRefresh = onRefresh;
@@ -191,19 +142,13 @@ class Model extends FileView {
 		sceneEditor.view.keys.register("sceneeditor.focus", {name: "Focus Selection", category: "Scene"},
 			function() {if (lastSelectedObject != null) refreshSelectionHighlight(lastSelectedObject);});
 		sceneEditor.tree.element.addClass("small");
+		element.find("input[value=\"Save render props\"]").click(function(_) {
+			if( !canSave() )
+				return;
+			var toSave = root.children[0];
+			@:privateAccess toSave.save();
 
-		element.find("input[value=Export]").click(function(_) {
-			ide.chooseFileSave("renderer.prefab", function(sel) if( sel != null ) ide.savePrefab(sel, root));
-		});
-		element.find("input[value=Import]").click(function(_) {
-			ide.chooseFile(["prefab"], function(f) {
-				if( ide.loadPrefab(f, hrt.prefab.RenderProps) == null ) {
-					ide.error("This prefab does not have renderer properties");
-					return;
-				}
-				rootPath = f;
-				rebuild();
-			});
+			save();			
 		});
 	}
 
@@ -590,17 +535,59 @@ class Model extends FileView {
 	function onRefresh() {
 		this.saveDisplayKey = "Model:" + state.path;
 
-		sceneEditor.loadSavedCameraController3D(true);
+		// Remove current instancied render props
+		sceneEditor.context.local3d.removeChildren();
+		
+		// Remove current library to create a new one with the actual render prop
+		root = new hrt.prefab.Library();
+		for (c in @:privateAccess sceneEditor.sceneData.children)
+			@:privateAccess sceneEditor.sceneData.children.remove(c);
 
-		var r = root.get(hrt.prefab.RenderProps);
-		if( r != null ) r.applyProps(scene.s3d.renderer);
+		@:privateAccess sceneEditor.createRenderProps(@:privateAccess sceneEditor.sceneData);
 
+		if (sceneEditor.renderPropsRoot != null && sceneEditor.renderPropsRoot.source != null)
+			root.children.push(sceneEditor.renderPropsRoot);
+		
+		// Create default render props if no render props has been created yet
+		var r = root.getOpt(hrt.prefab.RenderProps, true);
+		if( r == null) {
+			var def = new hrt.prefab.Object3D(root);
+			def.name = "Default Ligthing";
+			var render = new hrt.prefab.RenderProps(def);
+			render.name = "renderer";
+			var l = new hrt.prefab.Light(def);
+			l.name = "sunLight";
+			l.kind = Directional;
+			l.power = 1.5;
+			var q = new h3d.Quat();
+			q.initDirection(new h3d.Vector(-0.28,0.83,-0.47));
+			var a = q.toEuler();
+			l.rotationX = Math.round(a.x * 180 / Math.PI);
+			l.rotationY = Math.round(a.y * 180 / Math.PI);
+			l.rotationZ = Math.round(a.z * 180 / Math.PI);
+			l.shadows.mode = Dynamic;
+			l.shadows.size = 1024;
+
+			def.make(sceneEditor.context);
+
+			r = render;
+			r.applyProps(scene.s3d.renderer);
+		}
+
+		// Apply render props properties on scene
+		var refPrefab = new hrt.prefab.Reference();
+		if( @:privateAccess refPrefab.ref != null ) {
+			var renderProps = @:privateAccess refPrefab.ref.getOpt(hrt.prefab.RenderProps);
+			if( renderProps != null )
+				renderProps.applyProps(scene.s3d.renderer);
+		}
+		
 		plight = root.getAll(hrt.prefab.Light)[0];
 		if( plight != null ) {
 			this.light = sceneEditor.context.shared.contexts.get(plight).local3d;
 			lightDirection = this.light.getLocalDirection();
 		}
-
+		
 		undo.onChange = function() {};
 
 		if (obj != null)
@@ -695,54 +682,11 @@ class Model extends FileView {
 
 		tools.addSeparator();
 
-		var viewModesMenu = tools.addMenu(null, "View Modes");
-		var items : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
-		viewModes = ["LIT", "Full", "Albedo", "Normal", "Roughness", "Metalness", "Emissive", "AO", "Shadows", "Performance"];
-		for(typeid in viewModes) {
-			items.push({label : typeid, click : function() {
-				var r = Std.downcast(scene.s3d.renderer, h3d.scene.pbr.Renderer);
-				if ( r == null )
-					return;
-				var slides = @:privateAccess r.slides;
-				if ( slides == null )
-					return;
-				switch(typeid) {
-					case "LIT":
-						r.displayMode = Pbr;
-					case "Full":
-						r.displayMode = Debug;
-						slides.shader.mode = Full;
-					case "Albedo":
-						r.displayMode = Debug;
-						slides.shader.mode = Albedo;
-					case "Normal":
-						r.displayMode = Debug;
-						slides.shader.mode = Normal;
-					case "Roughness":
-						r.displayMode = Debug;
-						slides.shader.mode = Roughness;
-					case "Metalness":
-						r.displayMode = Debug;
-						slides.shader.mode = Metalness;
-					case "Emissive":
-						r.displayMode = Debug;
-						slides.shader.mode = Emmissive;
-					case "AO":
-						r.displayMode = Debug;
-						slides.shader.mode = AO;
-					case "Shadows":
-						r.displayMode = Debug;
-						slides.shader.mode = Shadow;
-					case "Performance":
-						r.displayMode = Performance;
-					default:
-				}
-			}
-			});
-		}
-		viewModesMenu.setContent(items);//, {id: "viewModes", title : "View Modes", type : Menu(filtersToMenuItem(viewModes, "View"))});
-		var el = viewModesMenu.element;
-		el.addClass("View Modes");
+		tools.addPopup(null, "View Modes", (e) -> new hide.comp.SceneEditor.ViewModePopup(null, e, Std.downcast(@:privateAccess scene.s3d.renderer, h3d.scene.pbr.Renderer)), null);
+
+		tools.addSeparator();
+
+		tools.addPopup(null, "Render Props", (e) -> new hide.comp.SceneEditor.RenderPropsPopup(null, e, sceneEditor, true, true), null);
 
 		tools.addSeparator();
 
@@ -774,6 +718,8 @@ class Model extends FileView {
 
 		if ( displayJoints.isDown() )
 			sceneEditor.setJoints(true, null);
+
+		sceneEditor.loadSavedCameraController3D(true);
 	}
 
 	function setRetargetAnim(b:Bool) {
@@ -832,7 +778,7 @@ class Model extends FileView {
 		];
 		return menu.concat(arr);
 	}
-
+	
 	function setAnimation( file : String ) {
 
 		scene.setCurrent();

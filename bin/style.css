@@ -216,6 +216,10 @@ input[type=button]:disabled {
   color: #c0c0c0;
   background-color: #383838;
 }
+input[type=button]:active {
+  color: white;
+  background-color: #424242;
+}
 input[type=range] {
   -webkit-appearance: none;
   background: transparent;
