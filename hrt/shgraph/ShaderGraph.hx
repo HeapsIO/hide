@@ -562,7 +562,7 @@ class Graph {
 
 		var nodeData : Array<
 		{
-			outputToInputMap: Map<String, {node: Node, inputName: String}>,
+			outputToInputMap: Map<String, Array<{node: Node, inputName: String}>>,
 			inputTypes: Array<Type>,
 			?outputs: Map<String, TVar>,
 			?def: ShaderGraph.ShaderNodeDef,
@@ -767,15 +767,16 @@ class Graph {
 			throw "unreachable";
 		}
 
-
-
-
-
 		// Build output to input map
 		for (node in sortedNodes) {
 			for (inputName => co in node.instance.connections) {
 				var targetNodeMap = nodeData[co.from.generateId].outputToInputMap;
-				targetNodeMap.set(co.fromName, {node: node, inputName: inputName});
+				var arr = targetNodeMap.get(co.fromName);
+				if (arr == null) {
+					arr = [];
+					targetNodeMap.set(co.fromName, arr);
+				}
+				arr.push({node: node, inputName: inputName});
 			}
 		}
 
@@ -799,19 +800,20 @@ class Graph {
 			for (outputVar in def.outVars) {
 				if (outputVar.internal)
 					continue;
-				var input = data.outputToInputMap.get(outputVar.v.name);
+				var inputs = data.outputToInputMap.get(outputVar.v.name);
 
-				// if there is no connection, skip
-				if (input == null)
+				if (inputs == null)
 					continue;
 
-				var def = getDef(input.node);
+				for (input in inputs) {
+					var def = getDef(input.node);
 
-				var inputVarId = def.inVars.findIndex((v) -> v.v.name == input.inputName);
-				if (inputVarId < 0)
-					throw "Missing var " + input.inputName;
+					var inputVarId = def.inVars.findIndex((v) -> v.v.name == input.inputName);
+					if (inputVarId < 0)
+						throw "Missing var " + input.inputName;
 
-				nodeData[input.node.generateId].inputTypes[inputVarId] = outputVar.v.type;
+					nodeData[input.node.generateId].inputTypes[inputVarId] = outputVar.v.type;
+				}
 			}
 		}
 
@@ -841,15 +843,21 @@ class Graph {
 			for (i => v in def.outVars) {
 				if (v.internal)
 					continue;
-				var to = data.outputToInputMap.get(v.v.name);
+				var targets = data.outputToInputMap.get(v.v.name);
 
-				var className = if (to != null) {
-					Type.getClassName(Type.getClass(to.node.instance)) + ':${to.node.generateId}:${to.inputName}';
-				} else {
-					"not connected";
+				var targetString = "";
+				if (targets != null) {
+					for (to in targets) {
+						if (targetString.length > 0)
+							targetString += ", ";
+						targetString +=	Type.getClassName(Type.getClass(to.node.instance)) + ':${to.node.generateId}:${to.inputName}';
+					}
+				}
+				else {
+					targetString = "No Targets";
 				}
 
-				trace('\t${v.v.name}, type:${v.v.type} ------> $className');
+				trace('\t${v.v.name}, type:${v.v.type} ------> $targetString');
 			}
 
 		}

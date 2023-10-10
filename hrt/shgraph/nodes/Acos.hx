@@ -9,8 +9,8 @@ using hxsl.Ast;
 class Acos extends ShaderNodeHxsl {
 
 	static var SRC = {
-		@sginput(0.0) var a : Vec4;
-		@sgoutput var output : Vec4;
+		@sginput(0.0) var a : Dynamic;
+		@sgoutput var output : Dynamic;
 		function fragment() {
 			output = acos(a);
 		}
