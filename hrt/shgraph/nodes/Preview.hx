@@ -32,7 +32,7 @@ class AlphaPreview extends hxsl.Shader {
 @noheader()
 class Preview extends ShaderNode {
 
-	override function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int ):hrt.shgraph.ShaderGraph.ShaderNodeDef {
+	override function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int, ?inputTypes: Array<Type>):hrt.shgraph.ShaderGraph.ShaderNodeDef {
 		var pos : Position = {file: "", min: 0, max: 0};
 
 		var inVar : TVar = {name: "input", id: getNewIdFn(), type: TVec(4, VFloat), kind: Param, qualifiers: []};
@@ -42,7 +42,7 @@ class Preview extends ShaderNode {
 		//var param = getParameter(inputNode.parameterId);
 		//inits.push({variable: inVar, value: param.defaultValue});
 
-		return {expr: finalExpr, inVars: [{v: inVar, internal: false}], outVars:[], externVars: [output], inits: []};
+		return {expr: finalExpr, inVars: [{v: inVar, internal: false, isDynamic: false}], outVars:[], externVars: [output], inits: []};
 	}
 
 	// @input("Input") var input = SType.Vec4;

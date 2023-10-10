@@ -9,13 +9,13 @@ using hxsl.Ast;
 @noheader()
 class FloatConst extends ShaderConst {
 
-	override function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int ):hrt.shgraph.ShaderGraph.ShaderNodeDef {
+	override function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int, ?inputTypes: Array<Type>):hrt.shgraph.ShaderGraph.ShaderNodeDef {
 		var pos : Position = {file: "", min: 0, max: 0};
 
 		var output : TVar = {name: "output", id: getNewIdFn(), type: TFloat, kind: Local, qualifiers: []};
 		var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(output), p:pos, t:output.type}, {e: TConst(CFloat(value)), p: pos, t: output.type}), p: pos, t: output.type};
 
-		return {expr: finalExpr, inVars: [], outVars:[{v: output, internal: false}], externVars: [], inits: []};
+		return {expr: finalExpr, inVars: [], outVars:[{v: output, internal: false, isDynamic: false}], externVars: [], inits: []};
 	}
 
 	@prop() var value : Float = 0.;

@@ -26,7 +26,7 @@ class Color extends ShaderConst {
 	// 	};
 	// }
 
-	override function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int ):hrt.shgraph.ShaderGraph.ShaderNodeDef {
+	override function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int, ?inputTypes: Array<Type>):hrt.shgraph.ShaderGraph.ShaderNodeDef {
 		var pos : Position = {file: "", min: 0, max: 0};
 
 		var output : TVar = {name: "output", id:getNewIdFn(), type: TVec(4, VFloat), kind: Local, qualifiers: []};
@@ -74,7 +74,7 @@ class Color extends ShaderConst {
 			p: null,
 			t: output.type
 		};
-		return {expr: finalExpr, inVars: [], outVars:[{v: output, internal: false}], externVars: [], inits: []};
+		return {expr: finalExpr, inVars: [], outVars:[{v: output, internal: false, isDynamic: false}], externVars: [], inits: []};
 	}
 
 	// override public function build(key : String) : TExpr {

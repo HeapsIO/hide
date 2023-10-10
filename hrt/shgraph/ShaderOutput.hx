@@ -14,7 +14,7 @@ class ShaderOutput extends ShaderNode {
 	var components = [X, Y, Z, W];
 
 
-	override function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int ):hrt.shgraph.ShaderGraph.ShaderNodeDef {
+	override function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int, ?inputTypes: Array<Type>):hrt.shgraph.ShaderGraph.ShaderNodeDef {
 		var pos : Position = {file: "", min: 0, max: 0};
 
 		var inVar : TVar = {name: "input", id: getNewIdFn(), type: this.variable.type, kind: Param, qualifiers: []};
@@ -24,7 +24,7 @@ class ShaderOutput extends ShaderNode {
 		//var param = getParameter(inputNode.parameterId);
 		//inits.push({variable: inVar, value: param.defaultValue});
 
-		return {expr: finalExpr, inVars: [{v: inVar, internal: false}], outVars:[{v: output, internal: true}], externVars: [], inits: []};
+		return {expr: finalExpr, inVars: [{v: inVar, internal: false, isDynamic: false}], outVars:[{v: output, internal: true, isDynamic: false}], externVars: [], inits: []};
 	}
 
 	/*override public function checkValidityInput(key : String, type : hxsl.Ast.Type) : Bool {

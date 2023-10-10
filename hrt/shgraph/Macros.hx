@@ -32,6 +32,7 @@ class Macros {
 							var inVars : Array<String> = [];
 							var outVars : Array<String> = [];
 							var defValues : Array<String> = [];
+							var dynamicValues : Array<String> = [];
 
 							function iter(e: haxe.macro.Expr) : Void {
 								switch(e.expr) {
@@ -61,10 +62,20 @@ class Macros {
 												switch(subexpr.expr) {
 													case EVars(vars):
 														for (v in vars) {
-															inVars.push(v.name);
-															defValues.push(defValue);
-														}
-														e.expr = subexpr.expr;
+																inVars.push(v.name);
+																defValues.push(defValue);
+
+																switch (v.type) {
+																	case TPath(p): {
+																		if (p.name == "Dynamic") {
+																			dynamicValues.push(v.name);
+																			p.name = "Vec4"; // Convert dynamic value back to vec4 as a hack
+																		}
+																	}
+																	default:
+																}
+															}
+															e.expr = subexpr.expr;
 													default:
 														throw "sginput must be used with variables only";
 												}
@@ -73,6 +84,16 @@ class Macros {
 													case EVars(vars):
 														for (v in vars) {
 															outVars.push(v.name);
+
+															switch (v.type) {
+																case TPath(p): {
+																	if (p.name == "Dynamic") {
+																		dynamicValues.push(v.name);
+																		p.name = "Vec4"; // Convert dynamic value back to vec4 as a hack
+																	}
+																}
+																default:
+															}
 														}
 														e.expr = subexpr.expr;
 													default:
@@ -123,14 +144,10 @@ class Macros {
 								};
 							}
 
-							var inVarField : Field = makeField("_inVars", inVars);
-							var outVarField : Field = makeField("_outVars", outVars);
-							var defValuesField : Field = makeField("_defValues", defValues);
-
-							fields.push(inVarField);
-							fields.push(outVarField);
-							fields.push(defValuesField);
-
+							fields.push(makeField("_inVars", inVars));
+							fields.push(makeField("_outVars", outVars));
+							fields.push(makeField("_defValues", defValues));
+							fields.push(makeField("_dynamicValues", dynamicValues));
 
 						} catch( e : hxsl.Ast.Error ) {
 							fields.remove(f);

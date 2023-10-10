@@ -16,7 +16,7 @@ class ShaderGlobalInput extends ShaderNode {
 										{ parent: null, id: 0, kind: Global, name: "global.modelView", type: TMat4 },
 										{ parent: null, id: 0, kind: Global, name: "global.modelViewInverse", type: TMat4 } ];
 
-	override function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int ):hrt.shgraph.ShaderGraph.ShaderNodeDef {
+	override function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int, ?inputTypes: Array<Type>):hrt.shgraph.ShaderGraph.ShaderNodeDef {
 		var pos : Position = {file: "", min: 0, max: 0};
 
 		var inVar : TVar = Reflect.copy(globalInputs[variableIdx]);
@@ -24,7 +24,7 @@ class ShaderGlobalInput extends ShaderNode {
 		var output : TVar = {name: "output", id: getNewIdFn(), type: inVar.type, kind: Local, qualifiers: []};
 		var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(output), p:pos, t:output.type}, {e: TVar(inVar), p: pos, t: output.type}), p: pos, t: output.type};
 
-		return {expr: finalExpr, inVars: [], outVars:[{v: output, internal: false}], externVars: [inVar], inits: []};
+		return {expr: finalExpr, inVars: [], outVars:[{v: output, internal: false, isDynamic: false}], externVars: [inVar], inits: []};
 	}
 
 	#if editor

@@ -2,9 +2,6 @@ package hrt.shgraph;
 
 using hxsl.Ast;
 
-typedef InputInfo = { name : String, type : ShaderType.SType, hasProperty : Bool, isRequired : Bool, ?ids : Array<Int>, ?index : Int };
-typedef OutputInfo = { name : String, type : ShaderType.SType, ?id : Int };
-
 @:autoBuild(hrt.shgraph.Macros.autoRegisterNode())
 @:keepSub
 class ShaderNode {
@@ -23,7 +20,7 @@ class ShaderNode {
 					}];
 
 
-	public function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int ) : ShaderGraph.ShaderNodeDef {
+	public function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int, ?inputTypes: Array<Type>) : ShaderGraph.ShaderNodeDef {
 		throw "getShaderDef is not defined for class " + Type.getClassName(Type.getClass(this));
 		return {expr: null, inVars: [], outVars: [], inits: [], externVars: []};
 	}
@@ -33,7 +30,7 @@ class ShaderNode {
 	public var outputCompiled : Map<String, Bool> = []; // todo: put with outputs variable
 
 	// TODO(ces) : caching
-	public function getOutputs2(domain: ShaderGraph.Domain) : Map<String, TVar> {
+	public function getOutputs2(domain: ShaderGraph.Domain, ?inputTypes: Array<Type>) : Map<String, TVar> {
 		var def = getShaderDef(domain, () -> 0);
 		var map : Map<String, TVar> = [];
 		for (tvar in def.outVars) {

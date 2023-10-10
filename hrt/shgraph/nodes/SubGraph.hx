@@ -10,7 +10,7 @@ class SubGraph extends ShaderNode {
 
 	@prop() public var pathShaderGraph : String;
 
-	override public function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int ):hrt.shgraph.ShaderGraph.ShaderNodeDef {
+	override public function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int, ?inputTypes: Array<Type>):hrt.shgraph.ShaderGraph.ShaderNodeDef {
 		var shader = new ShaderGraph(pathShaderGraph);
 		var gen = shader.getGraph(domain).generate2(getNewIdFn);
 
@@ -28,9 +28,7 @@ class SubGraph extends ShaderNode {
 		return gen;
 	}
 
-	var inputsInfo : Map<String, ShaderNode.InputInfo>;
 	var inputInfoKeys : Array<String> = [];
-	var outputsInfo : Map<String, ShaderNode.OutputInfo>;
 	var outputInfoKeys : Array<String> = [];
 	var parameters : Array<ShaderGraph.Parameter> = [];
 	var propertiesSubGraph : Map<Int, Dynamic>;

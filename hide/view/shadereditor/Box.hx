@@ -93,25 +93,29 @@ class Box {
 		var node = editor.group(element).addClass("input-node-group");
 		var nodeHeight = HEADER_HEIGHT + NODE_MARGIN * (inputs.length+1) + NODE_RADIUS * inputs.length;
 		var style = {fill : ""}
-		switch (type) {
-			case TBool:
-				style.fill = boolColor;
-			case TFloat:
-				style.fill = floatColor;
-			case TVec(size, _):
-				switch (size) {
-					case 2:
-						style.fill = vec2Color;
-					case 3:
-						style.fill = vec3Color;
-					case 4:
-						style.fill = vec4Color;
-				}
-			case TSampler2D:
-				style.fill = samplerColor;
-			default:
-				style.fill = defaultColor;
+		style.fill = defaultColor;
+
+		if (type != null) {
+			switch (type) {
+				case TBool:
+					style.fill = boolColor;
+				case TFloat:
+					style.fill = floatColor;
+				case TVec(size, _):
+					switch (size) {
+						case 2:
+							style.fill = vec2Color;
+						case 3:
+							style.fill = vec3Color;
+						case 4:
+							style.fill = vec4Color;
+					}
+				case TSampler2D:
+					style.fill = samplerColor;
+				default:
+			}
 		}
+
 		var nodeCircle = editor.circle(node, 0, nodeHeight, NODE_RADIUS, style).addClass("node input-node");
 
 		var nameWidth = 0.0;
@@ -144,26 +148,29 @@ class Box {
 		var node = editor.group(element).addClass("output-node-group");
 		var nodeHeight = HEADER_HEIGHT + NODE_MARGIN * (outputs.length+1) + NODE_RADIUS * outputs.length;
 		var style = {fill : ""}
-		switch (type) {
-			case TBool:
-				style.fill = boolColor;
-			case TInt:
-				style.fill = intColor;
-			case TFloat:
-				style.fill = floatColor;
-			case TVec(size, t):
-				if (size == 2)
-					style.fill = vec2Color;
-				else if (size == 3)
-					style.fill = vec3Color;
-				else if (size == 4)
-					style.fill = vec4Color;
-			case TSampler2D:
-				style.fill = samplerColor;
-			default:
-				style.fill = defaultColor;
 
+		style.fill = defaultColor;
+		if (type != null) {
+			switch (type) {
+				case TBool:
+					style.fill = boolColor;
+				case TInt:
+					style.fill = intColor;
+				case TFloat:
+					style.fill = floatColor;
+				case TVec(size, t):
+					if (size == 2)
+						style.fill = vec2Color;
+					else if (size == 3)
+						style.fill = vec3Color;
+					else if (size == 4)
+						style.fill = vec4Color;
+				case TSampler2D:
+					style.fill = samplerColor;
+				default:
+			}
 		}
+
 		var nodeCircle = editor.circle(node, width, nodeHeight, NODE_RADIUS, style).addClass("node output-node");
 
 		if (name.length > 0 && name != "output")

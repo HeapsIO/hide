@@ -11,8 +11,8 @@ enum ShaderDefInput {
 	Const(intialValue: Float);
 }
 
-typedef ShaderNodeDefInVar = {v: TVar, internal: Bool, ?defVal: ShaderDefInput};
-typedef ShaderNodeDefOutVar = {v: TVar, internal: Bool};
+typedef ShaderNodeDefInVar = {v: TVar, internal: Bool, ?defVal: ShaderDefInput, isDynamic: Bool};
+typedef ShaderNodeDefOutVar = {v: TVar, internal: Bool, isDynamic: Bool};
 typedef ShaderNodeDef = {
 	expr: TExpr,
 	inVars: Array<ShaderNodeDefInVar>, // If internal = true, don't show input in ui
@@ -30,7 +30,8 @@ typedef Node = {
 	?properties : Dynamic,
 	?instance : ShaderNode,
 	?outputs: Array<Node>,
-	?indegree : Int
+	?indegree : Int,
+	?generateId : Int, // Id used to index the node in the generate function
 };
 
 private typedef Edge = {
@@ -514,9 +515,9 @@ class Graph {
 
 	public function areTypesCompatible(input: hxsl.Ast.Type, output: hxsl.Ast.Type) : Bool {
 		return switch (input) {
-			case TFloat, TVec(_, VFloat):
+			case TFloat, TVec(_, VFloat), null:
 				switch (output) {
-					case TFloat, TVec(_, VFloat): true;
+					case TFloat, TVec(_, VFloat), null: true;
 					default: false;
 				}
 			default: haxe.EnumTools.EnumValueTools.equals(input, output);
@@ -559,36 +560,68 @@ class Graph {
 			return '_sg_${(node.type).split(".").pop()}_var_$id';
 		}
 
-		var nodeOutputs : Map<Node, Map<String, TVar>> = [];
-		var nodeDef : Map<Node, ShaderGraph.ShaderNodeDef> = [];
+		var nodeData : Array<
+		{
+			outputToInputMap: Map<String, {node: Node, inputName: String}>,
+			inputTypes: Array<Type>,
+			?outputs: Map<String, TVar>,
+			?def: ShaderGraph.ShaderNodeDef,
+		}> = [];
+
+		{
+			var currIndex = 0;
+			for (node in nodes) {
+				node.generateId = currIndex;
+				nodeData[node.generateId] = {
+					outputToInputMap: [],
+					inputTypes: []
+				};
+				currIndex++;
+			}
+		}
+
 
 		function getDef(node: Node) : ShaderGraph.ShaderNodeDef {
-			var def = nodeDef.get(node);
-			if (def != null)
-				return def;
-			def = node.instance.getShaderDef(domain, getNewVarId);
-			nodeDef.set(node, def);
+			var data = nodeData[node.generateId];
+			if (data.def != null)
+				return data.def;
+
+			var def = node.instance.getShaderDef(domain, getNewVarId, data.inputTypes);
+
+			// Don't cache vars while there still are dynamics inputs as getShaderDef
+			// is responsible for dynamic typing resolution
+			for (input in def.inVars) {
+				if (input.isDynamic)
+					return def;
+			}
+
+			for (output in def.outVars) {
+				if (output.isDynamic)
+					throw "Output is dynamic while there is no remaining dynamic inputs.";
+			}
+
+			data.def = def;
+
 			return def;
 		}
 
 		function getOutputs(node: Node) : Map<String, TVar> {
-			if (!nodeOutputs.exists(node)) {
-				var outputs : Map<String, TVar> = [];
+			var data = nodeData[node.generateId];
+			if (data.outputs != null)
+				return data.outputs;
+			data.outputs = [];
 
-				var def = getDef(node);
-				for (output in def.outVars) {
-					if (output.internal)
-						continue;
-					var type = output.v.type;
-					if (type == null) throw "no type";
-					var id = getNewVarId();
-					var outVar = {id: id, name: getNewVarName(node, id), type: type, kind : Local};
-					outputs.set(output.v.name, outVar);
-				}
-
-				nodeOutputs.set(node, outputs);
+			var def = getDef(node);
+			for (output in def.outVars) {
+				if (output.internal)
+					continue;
+				var type = output.v.type;
+				if (type == null) throw "no type";
+				var id = getNewVarId();
+				var outVar = {id: id, name: getNewVarName(node, id), type: type, kind : Local};
+				data.outputs.set(output.v.name, outVar);
 			}
-			return nodeOutputs.get(node);
+			return data.outputs;
 		}
 
 
@@ -642,12 +675,12 @@ class Graph {
 			}
 			if (isInput) {
 				if (graphInputVars.find((o) -> o.v == v) == null) {
-					graphInputVars.pushUnique({v: v, internal: false, defVal: null});
+					graphInputVars.pushUnique({v: v, internal: false, defVal: null, isDynamic: false});
 				}
 			}
 			else {
 				if (graphOutputVars.find((o) -> o.v == v) == null) {
-					graphOutputVars.push({v: v, internal: false});
+					graphOutputVars.push({v: v, internal: false, isDynamic: false});
 				}
 			}
 
@@ -734,6 +767,93 @@ class Graph {
 			throw "unreachable";
 		}
 
+
+
+
+
+		// Build output to input map
+		for (node in sortedNodes) {
+			for (inputName => co in node.instance.connections) {
+				var targetNodeMap = nodeData[co.from.generateId].outputToInputMap;
+				targetNodeMap.set(co.fromName, {node: node, inputName: inputName});
+			}
+		}
+
+		// Interate from input to output to resolve dynamic types
+		for (i => _ in sortedNodes) {
+			var node = sortedNodes[sortedNodes.length - i - 1];
+
+			var def = getDef(node);
+			var data = nodeData[node.generateId];
+
+			for (i => inputVar in def.inVars) {
+				var from = node.instance.connections.get(inputVar.v.name);
+				if (from == null) {
+					var init = def.inits.find((v) -> v.variable == inputVar.v);
+					if (init != null) {
+						data.inputTypes[i] = init.variable.type;
+					}
+				}
+			}
+
+			for (outputVar in def.outVars) {
+				if (outputVar.internal)
+					continue;
+				var input = data.outputToInputMap.get(outputVar.v.name);
+
+				// if there is no connection, skip
+				if (input == null)
+					continue;
+
+				var def = getDef(input.node);
+
+				var inputVarId = def.inVars.findIndex((v) -> v.v.name == input.inputName);
+				if (inputVarId < 0)
+					throw "Missing var " + input.inputName;
+
+				nodeData[input.node.generateId].inputTypes[inputVarId] = outputVar.v.type;
+			}
+		}
+
+		trace("------ Typing done : ------");
+		for (i => _ in sortedNodes) {
+			var node = sortedNodes[sortedNodes.length - i - 1];
+			var data = nodeData[node.generateId];
+
+			var className = Type.getClassName(Type.getClass(node.instance));
+			trace("node " +  className + ":" + node.generateId);
+			var def = getDef(node);
+			trace("inVars:");
+			for (i => v in def.inVars) {
+				if (v.internal)
+					continue;
+				var from = node.instance.connections.get(v.v.name);
+				var className = if (from != null) {
+					Type.getClassName(Type.getClass(from.from.instance)) + ':${from.from.generateId}:${from.fromName}';
+				} else {
+					"not connected";
+				}
+				trace('\t$className ----> ${v.v.name}, type:${v.v.type}, genType:${data.inputTypes[i]}');
+			}
+
+			trace("outVars:");
+
+			for (i => v in def.outVars) {
+				if (v.internal)
+					continue;
+				var to = data.outputToInputMap.get(v.v.name);
+
+				var className = if (to != null) {
+					Type.getClassName(Type.getClass(to.node.instance)) + ':${to.node.generateId}:${to.inputName}';
+				} else {
+					"not connected";
+				}
+
+				trace('\t${v.v.name}, type:${v.v.type} ------> $className');
+			}
+
+		}
+
 		// Actually build the final shader expression
 		var exprsReverse : Array<TExpr> = [];
 		for (currentNode in sortedNodes) {
@@ -783,7 +903,7 @@ class Graph {
 
 								expr = null;
 								if (graphInputVars.find((v) -> v.v == outVar) == null) {
-									graphInputVars.push({v: outVar, internal: false, defVal: null});
+									graphInputVars.push({v: outVar, internal: false, defVal: null, isDynamic: false});
 									var shParam = Std.downcast(currentNode.instance, ShaderParam);
 									var param = getParameter(shParam.parameterId);
 									inits.push({variable: outVar, value: param.defaultValue});
