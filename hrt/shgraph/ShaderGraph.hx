@@ -609,8 +609,6 @@ class Graph {
 				return data.outputs;
 			data.outputs = [];
 
-			if (node.generateId == 23)
-				trace("Break");
 
 			var def = getDef(node);
 			for (output in def.outVars) {
@@ -785,8 +783,6 @@ class Graph {
 		for (i => _ in sortedNodes) {
 			var node = sortedNodes[sortedNodes.length - i - 1];
 
-			trace('Typing node ${node.generateId}');
-
 			var def = getDef(node);
 			var data = nodeData[node.generateId];
 
@@ -819,54 +815,57 @@ class Graph {
 				}
 			}
 
-			trace('Cached node : ${node.generateId} (${data.inputTypes})');
 			data.def = def;
 		}
 
-		trace("------ Typing done : ------");
-		for (i => _ in sortedNodes) {
-			var node = sortedNodes[sortedNodes.length - i - 1];
-			var data = nodeData[node.generateId];
 
-			var className = Type.getClassName(Type.getClass(node.instance));
-			trace("node " +  className + ":" + node.generateId);
-			var def = getDef(node);
-			trace("inVars:");
-			for (i => v in def.inVars) {
-				if (v.internal)
-					continue;
-				var from = node.instance.connections.get(v.v.name);
-				var className = if (from != null) {
-					Type.getClassName(Type.getClass(from.from.instance)) + ':${from.from.generateId}:${from.fromName}';
-				} else {
-					"not connected";
-				}
-				trace('\t$className ----> ${v.v.name}, type:${v.v.type}, genType:${data.inputTypes[i]}');
-			}
+		var debugMode = false;
+		if (debugMode) {
+			for (i => _ in sortedNodes) {
+				var node = sortedNodes[sortedNodes.length - i - 1];
+				var data = nodeData[node.generateId];
 
-			trace("outVars:");
-
-			for (i => v in def.outVars) {
-				if (v.internal)
-					continue;
-				var targets = data.outputToInputMap.get(v.v.name);
-
-				var targetString = "";
-				if (targets != null) {
-					for (to in targets) {
-						if (targetString.length > 0)
-							targetString += ", ";
-						targetString +=	Type.getClassName(Type.getClass(to.node.instance)) + ':${to.node.generateId}:${to.inputName}';
+				var className = Type.getClassName(Type.getClass(node.instance));
+				trace("node " +  className + ":" + node.generateId);
+				var def = getDef(node);
+				trace("inVars:");
+				for (i => v in def.inVars) {
+					if (v.internal)
+						continue;
+					var from = node.instance.connections.get(v.v.name);
+					var className = if (from != null) {
+						Type.getClassName(Type.getClass(from.from.instance)) + ':${from.from.generateId}:${from.fromName}';
+					} else {
+						"not connected";
 					}
-				}
-				else {
-					targetString = "No Targets";
+					trace('\t$className ----> ${v.v.name}, type:${v.v.type}, genType:${data.inputTypes[i]}');
 				}
 
-				trace('\t${v.v.name}, type:${v.v.type} ------> $targetString');
+				trace("outVars:");
+
+				for (i => v in def.outVars) {
+					if (v.internal)
+						continue;
+					var targets = data.outputToInputMap.get(v.v.name);
+
+					var targetString = "";
+					if (targets != null) {
+						for (to in targets) {
+							if (targetString.length > 0)
+								targetString += ", ";
+							targetString +=	Type.getClassName(Type.getClass(to.node.instance)) + ':${to.node.generateId}:${to.inputName}';
+						}
+					}
+					else {
+						targetString = "No Targets";
+					}
+
+					trace('\t${v.v.name}, type:${v.v.type} ------> $targetString');
+				}
+
 			}
-
 		}
+
 
 		// Actually build the final shader expression
 		var exprsReverse : Array<TExpr> = [];
