@@ -9,9 +9,9 @@ using hxsl.Ast;
 class Step extends ShaderNodeHxsl {
 
 	static var SRC = {
-		@sginput var edge : Vec4;
-		@sginput var fact : Vec4;
-		@sgoutput var output : Vec4;
+		@sginput var edge : Dynamic;
+		@sginput var fact : Dynamic;
+		@sgoutput var output : Dynamic;
 		function fragment() {
 			output = step(edge, fact);
 		}

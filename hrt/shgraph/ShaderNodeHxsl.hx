@@ -61,7 +61,6 @@ class ShaderNodeHxsl extends ShaderNode {
 							} else {
 								def = Var(defStr);
 							}
-							trace(def);
 						}
 						inVars.push({v:tvar, internal: false, defVal: def, isDynamic: false});
 						// TODO : handle default values
@@ -91,7 +90,9 @@ class ShaderNodeHxsl extends ShaderNode {
 				for (t in inputTypes) {
 					switch (t) {
 						case null:
-						case TFloat: // TFloat doesn't change output because vec * scalar is always correct
+						case TFloat:
+							if (dynamicType == null)
+								dynamicType = TFloat;
 						case TVec(size, t1): // Vec2 always convert to it because it's the smallest vec type
 							switch(dynamicType) {
 								case TFloat, null:

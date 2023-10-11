@@ -9,9 +9,9 @@ using hxsl.Ast;
 class Min extends ShaderNodeHxsl {
 
 	static var SRC = {
-		@sginput(0.0) var a : Vec4;
-		@sginput(0.0) var b : Vec4;
-		@sgoutput var output : Vec4;
+		@sginput(0.0) var a : Dynamic;
+		@sginput(0.0) var b : Dynamic;
+		@sgoutput var output : Dynamic;
 		function fragment() {
 			output = min(a,b);
 		}

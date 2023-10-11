@@ -9,8 +9,8 @@ using hxsl.Ast;
 class Dot extends ShaderNodeHxsl {
 
 	static var SRC = {
-		@sginput(0.0) var a : Vec4;
-		@sginput(0.0) var b : Vec4;
+		@sginput(0.0) var a : Dynamic;
+		@sginput(0.0) var b : Dynamic;
 		@sgoutput var output : Float;
 		function fragment() {
 			output = dot(a,b);

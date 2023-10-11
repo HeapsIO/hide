@@ -600,8 +600,6 @@ class Graph {
 					throw "Output is dynamic while there is no remaining dynamic inputs.";
 			}
 
-			data.def = def;
-
 			return def;
 		}
 
@@ -610,6 +608,9 @@ class Graph {
 			if (data.outputs != null)
 				return data.outputs;
 			data.outputs = [];
+
+			if (node.generateId == 23)
+				trace("Break");
 
 			var def = getDef(node);
 			for (output in def.outVars) {
@@ -784,6 +785,8 @@ class Graph {
 		for (i => _ in sortedNodes) {
 			var node = sortedNodes[sortedNodes.length - i - 1];
 
+			trace('Typing node ${node.generateId}');
+
 			var def = getDef(node);
 			var data = nodeData[node.generateId];
 
@@ -815,6 +818,9 @@ class Graph {
 					nodeData[input.node.generateId].inputTypes[inputVarId] = outputVar.v.type;
 				}
 			}
+
+			trace('Cached node : ${node.generateId} (${data.inputTypes})');
+			data.def = def;
 		}
 
 		trace("------ Typing done : ------");

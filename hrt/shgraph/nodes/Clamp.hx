@@ -9,9 +9,9 @@ using hxsl.Ast;
 class Clamp extends ShaderNodeHxsl {
 
 	static var SRC = {
-		@sginput(0.0) var a : Vec4;
-		@sginput var min : Vec4;
-		@sginput var max : Vec4;
+		@sginput(0.0) var a : Dynamic;
+		@sginput var min : Dynamic;
+		@sginput var max : Dynamic;
 
 		@sgoutput var output : Vec4;
 		function fragment() {

@@ -10,8 +10,8 @@ using hxsl.Ast;
 class Sqrt extends ShaderNodeHxsl {
 
 	static var SRC = {
-		@sginput(0.0) var a : Vec4;
-		@sgoutput var output : Vec4;
+		@sginput(0.0) var a : Dynamic;
+		@sgoutput var output : Dynamic;
 		function fragment() {
 			output = sqrt(a);
 		}

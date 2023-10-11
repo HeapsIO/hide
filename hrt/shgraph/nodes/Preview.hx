@@ -157,7 +157,7 @@ class Preview extends ShaderNode {
 			}
 			for (m in cube.getMaterials()) {
 				m.mainPass.addShader(shader);
-				m.mainPass.addShader(alphaPreview);
+				//m.mainPass.addShader(alphaPreview);
 			}
 			currentShaderPreview = shader;
 			currentShaderDef = shaderGraphDef;
