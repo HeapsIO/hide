@@ -84,10 +84,17 @@ class ShaderNodeHxsl extends ShaderNode {
 					}
 			}
 
+			var classDynamicVal : Array<String> = cast (cl:Dynamic)._dynamicValues;
+
 			// DynamicType is the smallest vector type or float if all inputTypes are floats
 			var dynamicType : Type = null;
 			if (inputTypes != null) {
-				for (t in inputTypes) {
+				for (i => t in inputTypes) {
+					var targetInput = inVars[i];
+					if (targetInput == null)
+						throw "More input types than inputs";
+					if (!classDynamicVal.contains(targetInput.v.name))
+						continue; // Skip variables not marked as dynamic
 					switch (t) {
 						case null:
 						case TFloat:
@@ -110,7 +117,6 @@ class ShaderNodeHxsl extends ShaderNode {
 			}
 
 
-			var classDynamicVal : Array<String> = cast (cl:Dynamic)._dynamicValues;
 			for (v in inVars) {
 				if (classDynamicVal.contains(v.v.name)) {
 					v.v.type = dynamicType;
