@@ -10,7 +10,7 @@ class ShaderGraph extends DynamicShader {
 	override public function loadShaderDef(ctx: Context) {
 		if(shaderDef == null) {
 			var shaderGraph = new hrt.shgraph.ShaderGraph(source);
-			shaderDef = shaderGraph.compile2();
+			shaderDef = shaderGraph.compile2(false);
 		}
 		if(shaderDef == null)
 			return;

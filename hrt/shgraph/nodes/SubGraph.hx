@@ -12,7 +12,7 @@ class SubGraph extends ShaderNode {
 
 	override public function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int, ?inputTypes: Array<Type>):hrt.shgraph.ShaderGraph.ShaderNodeDef {
 		var shader = new ShaderGraph(pathShaderGraph);
-		var gen = shader.getGraph(domain).generate2(getNewIdFn);
+		var gen = shader.getGraph(domain).generate2(false, getNewIdFn);
 
 		// for (tvar in gen.externVars) {
 		// 	if (tvar.qualifiers != null) {

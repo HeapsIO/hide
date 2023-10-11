@@ -130,7 +130,7 @@ class ShaderGraph {
 	}
 	#end
 
-	public function compile2(?specificOutput: ShaderNode) : hrt.prefab.ContextShared.ShaderDef {
+	public function compile2(includePreviews: Bool) : hrt.prefab.ContextShared.ShaderDef {
 		var start = haxe.Timer.stamp();
 
 		var gens : Array<ShaderNodeDef> = [];
@@ -147,7 +147,7 @@ class ShaderGraph {
 			// Temp fix for code generation
 			if (graph.domain == Vertex)
 				continue;
-			var gen = graph.generate2(specificOutput);
+			var gen = graph.generate2(includePreviews);
 			gens.push(gen);
 
 			//shaderData.vars.append(gen.externVars);
@@ -269,6 +269,11 @@ class ShaderGraph {
 				inits.pushUnique(init);
 			}
 
+			var output_select = gen.inVars.find((v) -> v.v.name == "__sg_output_select");
+			if (output_select != null) {
+				inits.push({variable: output_select.v, value: 0});
+			}
+
 		}
 
 		var shared = new SharedShader("");
@@ -282,7 +287,7 @@ class ShaderGraph {
 	}
 
 	public function makeInstance(ctx: hrt.prefab.ContextShared) : hxsl.DynamicShader {
-		var def = compile2();
+		var def = compile2(false);
 		var s = new hxsl.DynamicShader(def.shader);
 		for (init in def.inits)
 			setParamValue(ctx, s, init.variable, init.value);
@@ -547,7 +552,7 @@ class Graph {
 
 
 
-	public function generate2(?specificOutput: ShaderNode, ?getNewVarId: () -> Int) : ShaderNodeDef {
+	public function generate2(includePreviews: Bool, ?getNewVarId: () -> Int) : ShaderNodeDef {
 
 		if (getNewVarId == null) {
 			getNewVarId = function()
@@ -570,8 +575,20 @@ class Graph {
 
 		{
 			var currIndex = 0;
+			var previewIndex = 1;
 			for (node in nodes) {
 				node.generateId = currIndex;
+				var preview = Std.downcast(node.instance, hrt.shgraph.nodes.Preview);
+				if (preview != null) {
+					preview.previewID = previewIndex;
+					previewIndex++;
+				}
+
+				var output = Std.downcast(node.instance, hrt.shgraph.ShaderOutput);
+				if (output != null) {
+					output.generatePreview = includePreviews;
+				}
+
 				nodeData[node.generateId] = {
 					outputToInputMap: [],
 					inputTypes: []
@@ -624,7 +641,6 @@ class Graph {
 		}
 
 
-
 		// Recursively replace the "what" tvar with "with" tvar in the given expression
 		function replaceVar(expr: TExpr, what: TVar, with: TExpr) : TExpr {
 			if(!what.type.equals(with.t))
@@ -655,6 +671,7 @@ class Graph {
 		for (node in nodes) {
 			nodeHasOutputs.set(node, false);
 		}
+
 		for (connection in allConnections) {
 			nodeHasOutputs.set(connection.from, true);
 		}
@@ -874,11 +891,8 @@ class Graph {
 			// Skip nodes with no outputs that arent a final node
 			if (!nodeHasOutputs.get(currentNode))
 			{
-				if (specificOutput != null && currentNode.instance != specificOutput)
+				if (Std.downcast(currentNode.instance, ShaderOutput) != null && (Std.downcast(currentNode.instance, hrt.shgraph.nodes.Preview) != null && !includePreviews))
 					continue;
-				if ( currentNode.instance != specificOutput && Std.downcast(currentNode.instance, ShaderOutput)==null) {
-					continue;
-				}
 			}
 
 

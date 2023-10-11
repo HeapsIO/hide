@@ -13,6 +13,7 @@ class ShaderOutput extends ShaderNode {
 
 	var components = [X, Y, Z, W];
 
+	public var generatePreview = false;
 
 	override function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int, ?inputTypes: Array<Type>):hrt.shgraph.ShaderGraph.ShaderNodeDef {
 		var pos : Position = {file: "", min: 0, max: 0};
@@ -23,8 +24,33 @@ class ShaderOutput extends ShaderNode {
 
 		//var param = getParameter(inputNode.parameterId);
 		//inits.push({variable: inVar, value: param.defaultValue});
+		var inVars = [{v: inVar, internal: false, isDynamic: false}];
 
-		return {expr: finalExpr, inVars: [{v: inVar, internal: false, isDynamic: false}], outVars:[{v: output, internal: true, isDynamic: false}], externVars: [], inits: []};
+		if (generatePreview && variable.name == "pixelColor") {
+			var outputSelect : TVar = {name: "__sg_output_select", id: getNewIdFn(), type: TInt, kind: Param, qualifiers: []};
+
+			finalExpr = {
+				e: TIf(
+						{
+							e: TBinop(
+								OpEq,
+								{e:TVar(outputSelect),p:pos, t:TInt},
+								{e:TConst(CInt(0)), p:pos, t:TInt}
+							),
+							p:pos,
+							t:TInt
+						},
+						finalExpr,
+						null
+					),
+				p: pos,
+				t:null
+			};
+
+			inVars.push( {v: outputSelect, internal: true, isDynamic: false});
+		}
+
+		return {expr: finalExpr, inVars: inVars, outVars:[{v: output, internal: true, isDynamic: false}], externVars: [], inits: []};
 	}
 
 	/*override public function checkValidityInput(key : String, type : hxsl.Ast.Type) : Bool {

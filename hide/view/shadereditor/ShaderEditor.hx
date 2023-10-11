@@ -91,6 +91,7 @@ class ShaderEditor extends hide.view.Graph {
 									<input id="displayGlsl" type="button" value="Glsl" />
 									<input id="displayHlsl" type="button" value="Hlsl" />
 									<input id="display2" type="button" value="2" />
+
 								</div>
 								<input id="togglelight" type="button" value="Toggle Default Lights" />
 								<input id="refreshGraph" type="button" value="Refresh Shader Graph" />
@@ -300,15 +301,8 @@ class ShaderEditor extends hide.view.Graph {
 		element.find("#displayGlsl").on("click", () -> displayCompiled("glsl"));
 		element.find("#displayHlsl").on("click", () -> displayCompiled("hlsl"));
 
-		var preview : hrt.shgraph.nodes.Preview = null;
-		for (selected in listOfBoxesSelected) {
-			var asPrev = Std.downcast(selected.getInstance(), hrt.shgraph.nodes.Preview);
-			if (asPrev != null) {
-				preview = asPrev;
-				break;
-			}
-		}
-		element.find("#display2").on("click", () -> {@:privateAccess info(hxsl.Printer.shaderToString(shaderGraph.compile2(preview).shader.data, true));});
+		element.find("#display2").on("click", () -> {@:privateAccess info(hxsl.Printer.shaderToString(shaderGraph.compile2(true).shader.data, true));});
+
 
 		editorMatrix.on("click", "input, select", function(ev) {
 			beforeChange();
@@ -895,16 +889,7 @@ class ShaderEditor extends hide.view.Graph {
 	function displayCompiled(type : String) {
 		var text = "\n";
 
-		var preview : hrt.shgraph.nodes.Preview = null;
-		for (selected in listOfBoxesSelected) {
-			var asPrev = Std.downcast(selected.getInstance(), hrt.shgraph.nodes.Preview);
-			if (asPrev != null) {
-				preview = asPrev;
-				break;
-			}
-		}
-
-		var def = shaderGraph.compile2(preview);
+		var def = shaderGraph.compile2(false);
 
 		if( currentShaderDef != null) {
 			text += switch( type ) {
@@ -928,7 +913,7 @@ class ShaderEditor extends hide.view.Graph {
 				for (m in obj.getMaterials())
 					m.mainPass.removeShader(currentShader);
 
-			var shaderGraphDef = shaderGraph.compile2();
+			var shaderGraphDef = shaderGraph.compile2(true);
 			newShader = new hxsl.DynamicShader(shaderGraphDef.shader);
 			for (init in shaderGraphDef.inits) {
 				setParamValue(newShader, init.variable, init.value);
@@ -943,8 +928,8 @@ class ShaderEditor extends hide.view.Graph {
 			for (node in currentGraph.getNodes()) {
 				var preview = Std.downcast(node.instance, hrt.shgraph.nodes.Preview);
 				if (preview != null) {
+					preview.shaderGraphDef = shaderGraphDef;
 					preview.config = config;
-					preview.shaderGraph = shaderGraph;
 					preview.update();
 				}
 			}
@@ -1013,10 +998,10 @@ class ShaderEditor extends hide.view.Graph {
 		var param = shaderGraph.getParameter(id);
 		setParamValueByName(currentShader, param.name, param.defaultValue);
 		for (b in listOfBoxes) {
-			/*var previewBox = Std.downcast(b.getInstance(), hrt.shgraph.nodes.Preview);
+			var previewBox = Std.downcast(b.getInstance(), hrt.shgraph.nodes.Preview);
 			if (previewBox != null) {
 				previewBox.setParamValueByName(param.variable.name, param.defaultValue);
-			}*/
+			}
 		}
 	}
 

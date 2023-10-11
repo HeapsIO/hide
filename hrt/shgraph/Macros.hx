@@ -84,7 +84,6 @@ class Macros {
 													case EVars(vars):
 														for (v in vars) {
 															outVars.push(v.name);
-
 															switch (v.type) {
 																case TPath(p): {
 																	if (p.name == "Dynamic") {

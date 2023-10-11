@@ -2,6 +2,7 @@ package hrt.shgraph.nodes;
 
 import h3d.scene.Mesh;
 
+using Lambda;
 using hxsl.Ast;
 
 
@@ -32,9 +33,12 @@ class AlphaPreview extends hxsl.Shader {
 @noheader()
 class Preview extends ShaderNode {
 
+	public var previewID = 1;
+
 	override function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int, ?inputTypes: Array<Type>):hrt.shgraph.ShaderGraph.ShaderNodeDef {
 		var pos : Position = {file: "", min: 0, max: 0};
 
+		var outputSelect : TVar = {name: "__sg_output_select", id: getNewIdFn(), type: TInt, kind: Param, qualifiers: []};
 		var inVar : TVar = {name: "input", id: getNewIdFn(), type: TVec(4, VFloat), kind: Param, qualifiers: []};
 		var output : TVar = {name: "pixelColor", id: getNewIdFn(), type: TVec(4, VFloat), kind: Local, qualifiers: []};
 		var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(output), p:pos, t:output.type}, {e: TVar(inVar), p: pos, t: output.type}), p: pos, t: output.type};
@@ -42,7 +46,25 @@ class Preview extends ShaderNode {
 		//var param = getParameter(inputNode.parameterId);
 		//inits.push({variable: inVar, value: param.defaultValue});
 
-		return {expr: finalExpr, inVars: [{v: inVar, internal: false, isDynamic: false}], outVars:[], externVars: [output], inits: []};
+		var ifExpr : TExpr = {
+			e: TIf(
+					{
+						e: TBinop(
+							OpEq,
+							{e:TVar(outputSelect),p:pos, t:TInt},
+							{e:TConst(CInt(previewID)), p:pos, t:TInt}
+						),
+						p:pos,
+						t:TInt
+					},
+					finalExpr,
+					null
+				),
+			p: pos,
+			t:null
+		};
+
+		return {expr: ifExpr, inVars: [{v: inVar, internal: false, isDynamic: false}, {v: outputSelect, internal: true, isDynamic: false}], outVars:[{v: output, internal: true, isDynamic: false}], externVars: [], inits: []};
 	}
 
 	// @input("Input") var input = SType.Vec4;
@@ -69,9 +91,10 @@ class Preview extends ShaderNode {
 	public var shaderGraph: ShaderGraph;
 	var cube : Mesh;
 	var scene : hide.comp.Scene;
-	var currentShaderPreview : hxsl.DynamicShader;
+	var shader : hxsl.DynamicShader;
+	public var shaderGraphDef : hrt.prefab.ContextShared.ShaderDef = null;
+
 	var alphaPreview : AlphaPreview = null;
-	var currentShaderDef : hrt.prefab.ContextShared.ShaderDef;
 	var inited = false;
 	public var config : hide.Config;
 
@@ -131,14 +154,15 @@ class Preview extends ShaderNode {
 		if( cube == null ) return;
 	}
 
+
 	public function update() {
 		if (!inited)
 			return;
-		if (currentShaderPreview != null) {
+		if (shader != null) {
 			for (m in cube.getMaterials()) {
-				m.mainPass.removeShader(currentShaderPreview);
+				m.mainPass.removeShader(shader);
 			}
-			currentShaderPreview = null;
+			shader = null;
 		}
 
 		if (@:privateAccess scene.window == null)
@@ -148,33 +172,27 @@ class Preview extends ShaderNode {
 		if (alphaPreview == null)
 			alphaPreview = new AlphaPreview();
 
-		var shader : hxsl.DynamicShader = null;
-		try {
-			var shaderGraphDef = shaderGraph.compile2(this);
+		if (shaderGraphDef != null) {
 			shader = new hxsl.DynamicShader(shaderGraphDef.shader);
 			for (init in shaderGraphDef.inits) {
 				setParamValue(init.variable, init.value, shader);
+			}
+			var select = shaderGraphDef.inits.find((v) -> v.variable.name == "__sg_output_select");
+			if (select != null) {
+				setParamValue(select.variable, previewID, shader);
 			}
 			for (m in cube.getMaterials()) {
 				m.mainPass.addShader(shader);
 				//m.mainPass.addShader(alphaPreview);
 			}
-			currentShaderPreview = shader;
-			currentShaderDef = shaderGraphDef;
-		} catch(e : Dynamic) {
-			if (shader != null) {
-				for (m in cube.getMaterials()) {
-					m.mainPass.removeShader(shader);
-				}
-			}
 		}
 	}
 
 	public function setParamValueByName(varName : String, value : Dynamic) {
-		if (currentShaderDef == null) return;
-		for (init in currentShaderDef.inits) {
+		if (shaderGraphDef == null) return;
+		for (init in shaderGraphDef.inits) {
 			if (init.variable.name == varName) {
-				setParamValue(init.variable, value, currentShaderPreview);
+				setParamValue(init.variable, value, shader);
 				return;
 			}
 		}
