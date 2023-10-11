@@ -104,6 +104,8 @@ class Light extends Object3D {
 			obj.shadows = Reflect.copy(shadows);
 			obj.shadows.mode = shadows.mode.getName();
 		}
+		if ( !cascade )
+			Reflect.deleteField(obj, "params");
 		return obj;
 	}
 
@@ -503,7 +505,9 @@ class Light extends Object3D {
 					</dd>
 					<dt>Blur Radius</dt><dd><input type="range" field="radius" min="0" max="20"/></dd>
 					<dt>Blur Quality</dt><dd><input type="range" field="quality" min="0" max="1"/></dd>
-					<dt>Bias</dt><dd><input type="range" field="bias" min="0" max="1"/></dd>
+					<div class="bias">
+						<dt>Bias</dt><dd><input type="range" field="bias" min="0" max="1"/></dd>
+					</div>
 					<dt>Sampling Mode</dt>
 					<dd>
 						<select field="samplingMode.kind">
@@ -515,6 +519,12 @@ class Light extends Object3D {
 				</dl>
 			</div>
 		');
+
+		var biasEl = shadowGroup.find(".bias");
+		if ( cascade )
+			biasEl.hide();
+		else
+			biasEl.show();
 
 		switch (shadows.samplingMode.kind) {
 			case None:
@@ -545,6 +555,7 @@ class Light extends Object3D {
 				<dl>
 					<dt>Number</dt><dd><input type="range" field="cascadeNbr" step="1" min="1" max="4"/></dd>
 					<dt>First cascade size</dt><dd><input type="range" field="firstCascadeSize" min="5" max="100"/></dd>
+					<dt>Range power</dt><dd><input type="range" field="cascadePow" min="0.1" max="10"/></dd>
 					<dt>Casting max dist</dt><dd><input type="range" field="castingMaxDist" min="-1" max="1000"/></dd>
 					<dl>
 						<ul id="params"></ul>
@@ -565,7 +576,7 @@ class Light extends Object3D {
 			var e = new hide.Element('
 			<div class="group" name="Params">
 				<dl>
-					<dt>Bias</dt><dd><input type="range" field="bias"/></dd>
+					<dt>Bias</dt><dd><input type="range" min="0" max="0.1" field="bias"/></dd>
 				</dl>
 			</div>');
 			e.appendTo(list);
