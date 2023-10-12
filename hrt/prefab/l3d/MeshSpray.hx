@@ -3,9 +3,16 @@ package hrt.prefab.l3d;
 import hrt.prefab.l3d.Spray;
 #if !editor
 
+typedef BatchData = {
+	batch : h3d.scene.MeshBatch,
+	pivot : h3d.Matrix,
+	emitCountTip : Int,
+	init : Bool
+};
+
 class MeshSprayObject extends Spray.SprayObject {
 	public var batches : Array<h3d.scene.MeshBatch> = [];
-	public var batchesMap : Map<Int,Map<String,{ batch : h3d.scene.MeshBatch, pivot : h3d.Matrix }>> = [];
+	public var batchesMap : Map<Int,Map<String,BatchData>> = [];
 }
 
 class MeshSpray extends Spray {
@@ -56,13 +63,16 @@ class MeshSpray extends Spray {
 			batch.cullingCollider = @:privateAccess batch.instanced.bounds;
 			var multi = Std.downcast(mesh, h3d.scene.MultiMaterial);
 			if( multi != null ) batch.materials = multi.materials;
-			curMap.set(source, { batch : batch, pivot : mesh.defaultTransform.isIdentity() ? null : mesh.defaultTransform });
+			curMap.set(source, { batch : batch, pivot : mesh.defaultTransform.isIdentity() ? null : mesh.defaultTransform, emitCountTip : 1, init : false });
 			mspray.batches.push(batch);
 		}
 		var tmp = new h3d.Matrix();
 		inline function loadBatch( source : String ) {
 			var batch = curMap.get(source);
-			if( batch != null ) return;
+			if( batch != null ) {
+				batch.emitCountTip++;
+				return;
+			}
 			var obj = ctx.loadModel(source);
 			if ( obj.isMesh() ) {
 				loadBatchMesh( source, obj.toMesh() );
@@ -126,11 +136,23 @@ class MeshSpray extends Spray {
 		var mspray = Std.downcast(ctx.local3d, MeshSprayObject);
 		var pos = mspray.getAbsPos();
 		var tmp = new h3d.Matrix();
-		for( b in mspray.batches ) {
-			b.begin();
-			b.worldPosition = tmp;
-		}
 		var curID = 0, curMap = mspray.batchesMap.get(0);
+		function emitInstance( batchData : BatchData ) {
+			var batch = batchData.batch;
+			if( !batchData.init ) {
+				batchData.init = true;
+				var emitCountTip = batchData.emitCountTip;
+				if( emitCountTip < 10 )
+					emitCountTip = 10;
+				else {
+					var STEP_TIP = 25;
+					emitCountTip = (Math.floor(emitCountTip / STEP_TIP) + 1) * STEP_TIP;
+				}
+				batch.begin(emitCountTip);
+				batch.worldPosition = tmp;
+			}
+			batch.emitInstance();
+		}
 		for( c in children ) {
 			if( !c.enabled || c.type != "model" )
 				continue;
@@ -152,7 +174,7 @@ class MeshSpray extends Spray {
 			if( inf.pivot != null ) tmp.multiply3x4(inf.pivot, tmp);
 			if ( !emitCondition(tmp) )
 				continue;
-			inf.batch.emitInstance();
+			emitInstance(inf);
 		}
 		if( binaryMeshes != null ) {
 			var degToRad = Math.PI / 180;
@@ -174,7 +196,7 @@ class MeshSpray extends Spray {
 				if( inf.pivot != null ) tmp.multiply3x4(inf.pivot, tmp);
 				if ( !emitCondition(tmp) )
 					continue;
-				inf.batch.emitInstance();
+				emitInstance(inf);
 			}
 		}
 		for( b in mspray.batches )
