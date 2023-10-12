@@ -291,14 +291,15 @@ class Tile extends h3d.scene.Mesh {
 				var unpackWeight = new h3d.pass.ScreenFx(new UnpackWeight());
 				var tmpPackedWeightTexture = new h3d.mat.Texture(terrain.weightMapResolution.x, terrain.weightMapResolution.y, [Target]);
 				tmpPackedWeightTexture.uploadPixels(packedWeightMapPixel);
+				unpackWeight.shader.indexMap = surfaceIndexMap;
+				unpackWeight.shader.packedWeightTexture = tmpPackedWeightTexture;
 				for( i in 0 ... surfaceWeightArray.layerCount ) {
 					engine.pushTarget(surfaceWeightArray, i);
-					unpackWeight.shader.indexMap = surfaceIndexMap;
-					unpackWeight.shader.packedWeightTexture = tmpPackedWeightTexture;
 					unpackWeight.shader.index = i;
 					unpackWeight.render();
 					engine.popTarget();
 				}
+				tmpPackedWeightTexture.dispose();
 			}
 		}
 		for( i in 0 ... surfaceWeights.length )
