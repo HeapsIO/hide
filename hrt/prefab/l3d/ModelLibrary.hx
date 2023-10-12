@@ -706,7 +706,8 @@ class ModelLibrary extends Prefab {
 
 	#else
 
-	var shared : hrt.prefab.ContextShared;
+	// var shared : hrt.prefab.ContextShared;
+	var wasMake = false;
 	var hmdPrim : h3d.prim.HMDModel;
 	var shader : ModelLibShader;
 	var geomBounds : Array<h3d.col.Bounds>;
@@ -715,7 +716,8 @@ class ModelLibrary extends Prefab {
 
 	override function make(ctx:hrt.prefab.Context) {
 		// don't load/build children
-		shared = ctx.shared;
+		var shared = ctx.shared;
+		wasMake = true;
 		if ( hmdPrim == null )
 			hmdPrim = Std.downcast(shared.loadModel(shared.getPrefabDatPath("model","hmd",this.name)).toMesh().primitive, h3d.prim.HMDModel);
 		if ( geomBounds == null )
@@ -760,7 +762,7 @@ class ModelLibrary extends Prefab {
 		killAlpha.threshold = 0.5;
 		if( bakedMaterials == null )
 			throw "Model library was not built or saved";
-		if( shared == null )
+		if( !wasMake )
 			throw "Please call make() on modelLibrary first";
 
 		var meshBatches = [for (i in 0...materialConfigs.length * (preserveObjectNames.length + 1)) null];
