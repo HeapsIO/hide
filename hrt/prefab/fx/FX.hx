@@ -22,6 +22,8 @@ class FXAnimation extends h3d.scene.Object {
 	public var cullingRadius : Float;
 	public var cullingDistance = defaultCullingDistance;
 
+	public var blendFactor : Float;
+
 	public var objAnims: Array<ObjectAnimation>;
 	public var events: Array<hrt.prefab.fx.Event.EventInstance>;
 	public var emitters : Array<hrt.prefab.fx.Emitter.EmitterObject>;
@@ -408,11 +410,13 @@ class FX extends BaseFX {
 		super();
 		type = "fx";
 		cullingRadius = 3.0;
+		blendFactor = 1.0;
 	}
 
 	override function save() {
 		var obj : Dynamic = super.save();
 		obj.cullingRadius = cullingRadius;
+		obj.blendFactor = blendFactor;
 		if( scriptCode != "" ) obj.scriptCode = scriptCode;
 		return obj;
 	}
@@ -421,6 +425,8 @@ class FX extends BaseFX {
 		super.load(obj);
 		if(obj.cullingRadius != null)
 			cullingRadius = obj.cullingRadius;
+		if(obj.blendFactor != null)
+			blendFactor = obj.blendFactor;
 		scriptCode = obj.scriptCode;
 	}
 
@@ -429,6 +435,7 @@ class FX extends BaseFX {
 		var fxanim = createInstance(ctx.local3d);
 		fxanim.duration = duration;
 		fxanim.cullingRadius = cullingRadius;
+		fxanim.blendFactor = blendFactor;
 
 		var p = fxanim.parent;
 		while(p != null) {
@@ -466,6 +473,7 @@ class FX extends BaseFX {
 		var fxanim = Std.downcast(ctx.local3d, FXAnimation);
 		fxanim.duration = duration;
 		fxanim.cullingRadius = cullingRadius;
+		fxanim.blendFactor = blendFactor;
 	}
 
 	function createInstance(parent: h3d.scene.Object) : FXAnimation {
@@ -486,6 +494,7 @@ class FX extends BaseFX {
 				<dl>
 					<dt>Duration</dt><dd><input type="number" value="0" field="duration"/></dd>
 					<dt>Culling radius</dt><dd><input type="number" field="cullingRadius"/></dd>
+					<dt>Blend factor</dt><dd><input type="number" field="blendFactor" min="0" max="1"/></dd>
 				</dl>
 			</div>');
 		ctx.properties.add(props, this, function(pname) {

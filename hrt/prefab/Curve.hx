@@ -35,9 +35,15 @@ class Curve extends Prefab {
 	@:c public var previewKeys : CurveKeys = [];
 
 	@:s public var loop : Bool = false;
-
+	
 	public var maxTime : Float;
 	public var duration(get, never): Float;
+
+	public var color : Int;
+	public var hidden : Bool = false;
+	public var lock : Bool = false;
+	public var selected : Bool = false;
+
 	function get_duration() {
 		if(keys.length == 0) return 0.0;
 		return keys[keys.length-1].time;
@@ -268,13 +274,15 @@ class Curve extends Prefab {
 		<div class="group" name="Parameters">
 			<dl>
 				<dt>Loop curve</dt><dd><input type="checkbox" field="loop"/></dd>
+				<dt>Double curve</dt><dd><input type="checkbox" field="doubleCurve"/></dd>
 			</dl>
 		</div>'), this, function(pname) {
 			ctx.onChange(this, pname);
 		});
 
-		var ce = new hide.comp.CurveEditor(ctx.properties.undo, ctx.properties.element);
-		ce.curve = this;
+		// Do we really want a curve editor in the inspector of a curve ?
+		//var ce = new hide.comp.CurveEditor(ctx.properties.undo, ctx.properties.element);
+		//ce.curve = this;
 	}
 
 	override function getHideProps() : HideProps {

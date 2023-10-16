@@ -98,6 +98,7 @@ class BaseFX extends hrt.prefab.Library {
 	@:s public var startDelay : Float;
 	@:c public var scriptCode : String;
 	@:c public var cullingRadius : Float;
+	@:c public var blendFactor : Float;
 	@:c public var markers : Array<{t: Float}> = [];
 
 	public function new() {
@@ -105,6 +106,7 @@ class BaseFX extends hrt.prefab.Library {
 		duration = 5.0;
 		scriptCode = null;
 		cullingRadius = 1000;
+		blendFactor = 1.0;
 	}
 
 	override function save() {

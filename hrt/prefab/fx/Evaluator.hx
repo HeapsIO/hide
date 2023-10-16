@@ -22,6 +22,7 @@ class Evaluator {
 			case VOne: return 1.0;
 			case VConst(v): return v;
 			case VCurve(c): return c.getVal(time);
+			case VMultipleCurves(c, factor): return factor;
 			case VCurveScale(c, scale): return c.getVal(time) * scale;
 			case VRandom(ridx, scale):
 				return getRandom(pidx, ridx) * getFloat(pidx, scale, time);
@@ -44,6 +45,7 @@ class Evaluator {
 			case VConst(v): return v * time;
 			case VCurveScale(c, scale): return c.getSum(time) * scale;
 			case VCurve(c): return c.getSum(time);
+			case VMultipleCurves(c, factor): return c[0].getSum(time);
 			case VAdd(a, b):
 				return getSum(a, time) + getSum(b, time);
 			case VMult(a, b):
