@@ -15,8 +15,7 @@ class CurveEditor extends Component {
 
 	public var xScale = 200.;
 	public var yScale = 30.;
-	private var _xOffset = 0.;
-	public var xOffset(get,set): Float;
+	public var xOffset = 0.;
 	public var yOffset = 0.;
 
 	public var curves(default, set) : Array<hrt.prefab.Curve>;
@@ -728,7 +727,7 @@ class CurveEditor extends Component {
 			var curveStyle: Dynamic = { opacity : curve.selected ? 1 : 0.5, stroke : color, "stroke-width":'${curve.selected ? 2 : 1}px'};
 			var keyStyle: Dynamic = { opacity : curve.selected ? 1 : 0.5, fill : curve.selected ? "#FFFFFF" : "#000000"};
 			
-			if (curve.lock) {
+			if (curve.lock || curve.blendCurve) {
 				curveStyle = { opacity : curve.selected ? 1 : 0.5 , stroke : color, "stroke-width":'${curve.selected ? 2 : 1}px', "stroke-dasharray":"5, 3"};
 				keyStyle = { opacity : curve.selected ? 1 : 0.5, fill : "#000000"};
 			}
@@ -739,7 +738,11 @@ class CurveEditor extends Component {
 			}
 
 			drawCurve(curve, curveStyle);
-			drawKeys(curve, keyStyle);
+			
+			// Blend curve are controlled with parent curve
+			// so we don't want to allow user to use keys on this.s
+			if (!curve.blendCurve)
+				drawKeys(curve, keyStyle);
 		}
 
 		if(selectedKeys.length > 1) {
@@ -802,14 +805,5 @@ class CurveEditor extends Component {
 				});
 			}
 		}
-	}
-
-	function set_xOffset(value:Float):Float {
-		trace('Value set to :${value}');
-		return _xOffset = value;
-	}
-
-	function get_xOffset():Float {
-		return _xOffset;
 	}
 }

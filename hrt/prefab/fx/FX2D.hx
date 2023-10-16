@@ -205,7 +205,7 @@ class FX2D extends BaseFX {
 			if(uniform && curves.length == 1 && curves[0].name == name)
 				return scale != 1.0 ? VCurveScale(curves[0], scale) : VCurve(curves[0]);
 
-			return Curve.getVectorValue(curves, defVal, scale);
+			return Curve.getVectorValue(curves, defVal, scale, blendFactor);
 		}
 
 		function makeColor(name: String) {

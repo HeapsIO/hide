@@ -34,6 +34,8 @@ class Curve extends Prefab {
 	@:c public var keys : CurveKeys = [];
 	@:c public var previewKeys : CurveKeys = [];
 
+	@:s public var blendCurve : Bool = false;
+	@:s public var blendFactor : Float = 0;
 	@:s public var loop : Bool = false;
 	
 	public var maxTime : Float;
@@ -46,6 +48,11 @@ class Curve extends Prefab {
 
 	function get_duration() {
 		if(keys.length == 0) return 0.0;
+		if (blendCurve) {
+			var c1:Curve = cast this.children[0];
+			var c2:Curve = cast this.children[1];
+			return Math.min(c1.duration, c2.duration);
+		}
 		return keys[keys.length-1].time;
 	}
 
@@ -259,9 +266,22 @@ class Curve extends Prefab {
 
 	public function sample(numPts: Int) {
 		var vals = [];
+		
 		var duration = this.duration;
 		for(i in 0...numPts) {
-			var v = getVal(duration * i/(numPts-1));
+			var v = 0.0;
+
+			if (blendCurve) {
+				var c1 = Std.downcast(this.children[0], Curve);
+				var c2 = Std.downcast(this.children[1], Curve);
+				var a = c1.getVal(duration * i/(numPts-1));
+				var b = c2.getVal(duration * i/(numPts-1));
+				v = a + (b - a) * blendFactor;	
+			}
+			else {
+				v = getVal(duration * i/(numPts-1));
+			}
+
 			vals.push(v);
 		}
 		return vals;
@@ -274,7 +294,7 @@ class Curve extends Prefab {
 		<div class="group" name="Parameters">
 			<dl>
 				<dt>Loop curve</dt><dd><input type="checkbox" field="loop"/></dd>
-				<dt>Double curve</dt><dd><input type="checkbox" field="doubleCurve"/></dd>
+				<dt>Blend curve</dt><dd><input type="checkbox" field="blendCurve"/></dd>
 			</dl>
 		</div>'), this, function(pname) {
 			ctx.onChange(this, pname);
@@ -340,7 +360,7 @@ class Curve extends Prefab {
 		return curves.find(c -> StringTools.endsWith(c.name, suffix));
 	}
 
-	public static function getVectorValue(curves: Array<Curve>, defVal: Float=0.0, scale: Float=1.0) : hrt.prefab.fx.Value {
+	public static function getVectorValue(curves: Array<Curve>, defVal: Float=0.0, scale: Float=1.0, blendFactor: Float = 1.0) : hrt.prefab.fx.Value {
 		inline function find(s) {
 			return findCurve(curves, s);
 		}
@@ -350,7 +370,7 @@ class Curve extends Prefab {
 		var w = find(".w");
 
 		inline function curveOrVal(c: Curve, defVal: Float) : hrt.prefab.fx.Value {
-			return c != null ? (scale != 1.0 ? VCurveScale(c, scale) : VCurve(c)) : VConst(defVal);
+			return c != null ? (c.blendCurve ? VBlendCurve(c, blendFactor) : (scale != 1.0 ? VCurveScale(c, scale) : VCurve(c))) : VConst(defVal);
 		}
 
 		return VVector(

@@ -22,7 +22,7 @@ class FXAnimation extends h3d.scene.Object {
 	public var cullingRadius : Float;
 	public var cullingDistance = defaultCullingDistance;
 
-	public var blendFactor : Float;
+	public var blendFactor: Float;
 
 	public var objAnims: Array<ObjectAnimation>;
 	public var events: Array<hrt.prefab.fx.Event.EventInstance>;
@@ -296,7 +296,11 @@ class FXAnimation extends h3d.scene.Object {
 			var c = Curve.getCurve(elt, name);
 			if(c != null)
 				anyFound = true;
-			return c != null ? VCurve(c) : def;
+			
+			if (c == null) 
+				return def;
+
+			return c.blendCurve ? VBlendCurve(c, blendFactor) : VCurve(c);
 		}
 
 		function makeVector(name: String, defVal: Float, uniform: Bool=true, scale: Float=1.0) : Value {
@@ -306,10 +310,14 @@ class FXAnimation extends h3d.scene.Object {
 
 			anyFound = true;
 
-			if(uniform && curves.length == 1 && curves[0].name == name)
-				return scale != 1.0 ? VCurveScale(curves[0], scale) : VCurve(curves[0]);
+			if(uniform && curves.length == 1 && curves[0].name == name) {
+				if (curves[0].blendCurve) 
+					return VBlendCurve(curves[0], blendFactor);
 
-			return Curve.getVectorValue(curves, defVal, scale);
+				return scale != 1.0 ? VCurveScale(curves[0], scale) : VCurve(curves[0]);
+			}
+
+			return Curve.getVectorValue(curves, defVal, scale, blendFactor);
 		}
 
 		function makeColor(name: String) {
@@ -474,6 +482,13 @@ class FX extends BaseFX {
 		fxanim.duration = duration;
 		fxanim.cullingRadius = cullingRadius;
 		fxanim.blendFactor = blendFactor;
+
+		// Populate the value among blend curves
+		var curves = this.flatten(Curve);
+		for (curve in curves) {
+			if (curve.blendCurve)
+				curve.blendFactor = blendFactor;
+		}
 	}
 
 	function createInstance(parent: h3d.scene.Object) : FXAnimation {
@@ -494,7 +509,7 @@ class FX extends BaseFX {
 				<dl>
 					<dt>Duration</dt><dd><input type="number" value="0" field="duration"/></dd>
 					<dt>Culling radius</dt><dd><input type="number" field="cullingRadius"/></dd>
-					<dt>Blend factor</dt><dd><input type="number" field="blendFactor" min="0" max="1"/></dd>
+					<dt>Blend factor</dt><dd><input type="range" field="blendFactor" min="0" max="1"/></dd>
 				</dl>
 			</div>');
 		ctx.properties.add(props, this, function(pname) {

@@ -5,7 +5,7 @@ enum Value {
 	VOne;
 	VConst(v: Float);
 	VCurve(c: Curve);
-	VMultipleCurves(c: Array<Curve>, factor: Float);
+	VBlendCurve(c: Curve, factor: Float);
 	VCurveScale(c: Curve, scale: Float);
 	VRandom(idx: Int, scale: Value);
 	VRandomScale(idx: Int, scale: Float);

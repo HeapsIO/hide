@@ -826,9 +826,45 @@ class FXEditor extends FileView {
 			cullingPreview.radius = data.cullingRadius;
 		}
 
-		if(pname == "time" || pname == "loop" || pname == "animation") {
+		if (pname == "blendCurve") {
+			var curve = Std.downcast(p, Curve);
+
+			if (curve != null) {
+				if (curve.blendCurve) {
+					// We're currently supporting blending with only 2 curves
+					for (i in 0...2) {
+						var c = new Curve();
+						c.parent = curve;
+						c.name = '${curve.name}.${i}';
+					}
+				}
+				else {
+					var toRemove: Array<Curve> = [];
+					for (child in curve.children) {
+						var c = Std.downcast(child, Curve);
+						if (c != null) 
+							toRemove.push(c);
+					}
+
+					while (toRemove.length > 0) {
+						var c = toRemove.pop();
+						c.removeInstance(sceneEditor.context);
+						c.parent.children.remove(c);
+					}					
+				}				
+			}
+
+			sceneEditor.refresh();
+			rebuildAnimPanel();
+		}
+
+		if(pname == "time" || pname == "loop" || pname == "animation" || pname == "blendCurve" || pname == "blendFactor") {
 			afterPan(false);
 			data.refreshObjectAnims(sceneEditor.getContext(data));
+		}
+
+		if (pname == "blendFactor") {
+			rebuildAnimPanel();
 		}
 	}
 
@@ -1324,6 +1360,12 @@ class FXEditor extends FileView {
 			if (section.curves.length > 0) {
 				for (i in 0...section.curves.length) {
 					var c = section.curves[i];
+
+					// We don't want to show an header for the blending curve,
+					// just for the parent blend curves.
+					if (c.blendCurve)
+						continue;
+
 					c.color = hide.comp.CurveEditor.CURVE_COLORS[i];
 					var colorStyle = c.selected ? "style = color:#d59320" : "";
 					var hexColor = '#${StringTools.hex(hide.comp.CurveEditor.CURVE_COLORS[i])}';
@@ -1349,24 +1391,29 @@ class FXEditor extends FileView {
 
 			if (section.root is Curve) {
 				var c: Curve = cast section.root;
-				var hexColor = '#${StringTools.hex(c.color)}';
-				var colorStyle = c.selected ? "style = color:#d59320" : "";
-				var trackEl = new Element('<div>
-					<div class="track-header" style="margin-left: ${(depth + 1) * 10}px">
-						<div class="track-button color-id ico" style="background-color:${hexColor}"></div>
-						<div class="track-button visibility ico ${c.hidden ? "ico-eye-slash" : "ico-eye"}"></div>
-						<label class="name" ${colorStyle}>${upperCase(c.name)}</label>
-						<div class="track-button lock align-right-second ico ${c.lock ? "ico-lock" : "ico-unlock"}"></div>
-					</div>
-					<div class="tracks"></div>
-				</div>');
-					
-				sectionEl.append(trackEl);
 
-				addVisibilityButtonListener(trackEl, curves);
-				addLockButtonListener(trackEl, curves);
-				addOnSelectListener(trackEl, curves);
-				addFoldButtonListener(trackEl);
+				// We don't want to show an header for the blending curve,
+				// just for the parent blend curves.
+				if (!c.blendCurve) {
+					var hexColor = '#${StringTools.hex(c.color)}';
+					var colorStyle = c.selected ? "style = color:#d59320" : "";
+					var trackEl = new Element('<div>
+						<div class="track-header" style="margin-left: ${(depth + 1) * 10}px">
+							<div class="track-button color-id ico" style="background-color:${hexColor}"></div>
+							<div class="track-button visibility ico ${c.hidden ? "ico-eye-slash" : "ico-eye"}"></div>
+							<label class="name" ${colorStyle}>${upperCase(c.name)}</label>
+							<div class="track-button lock align-right-second ico ${c.lock ? "ico-lock" : "ico-unlock"}"></div>
+						</div>
+						<div class="tracks"></div>
+					</div>');
+						
+					sectionEl.append(trackEl);
+	
+					addVisibilityButtonListener(trackEl, curves);
+					addLockButtonListener(trackEl, curves);
+					addOnSelectListener(trackEl, curves);
+					addFoldButtonListener(trackEl);
+				}
 			}
 
 	
