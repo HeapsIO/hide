@@ -145,8 +145,8 @@ class Curve extends Prefab {
 		return key;
 	}
 
-	public function getBounds() {
-		var ret = new h2d.col.Bounds();
+	public function getBounds(bounds: h2d.col.Bounds = null) {
+		var ret = bounds == null ? new h2d.col.Bounds() : bounds;
 		for(k in keys) {
 			ret.addPos(k.time, k.value);
 			if (k.nextHandle != null) {

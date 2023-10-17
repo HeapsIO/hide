@@ -114,6 +114,7 @@ class CurveEditor extends Component {
 			if(changed) {
 				e.preventDefault();
 				e.stopPropagation();
+				saveView();
 				refresh();
 			}
 		});
@@ -161,20 +162,6 @@ class CurveEditor extends Component {
 		}
 
 		lastValue = [for (c in curves) c.save()];
-		var view = getDisplayState("view");
-		if(view != null) {
-			if(!lockViewX) {
-				xOffset = view.xOffset;
-				xScale = view.xScale;
-			}
-			if(!lockViewY) {
-				yOffset = view.yOffset;
-				yScale = view.yScale;
-			}
-		}
-		else {
-			zoomAll();
-		}
 		refresh();
 		return curves;
 	}
@@ -204,72 +191,77 @@ class CurveEditor extends Component {
 	}
 
 	function fixKey(key : CurveKey) {
-		/*var index = curve.keys.indexOf(key);
-		var prev = curve.keys[index-1];
-		var next = curve.keys[index+1];
+		for (c in curves) {
+			if (!c.selected)
+				continue;
 
-		inline function addPrevH() {
-			if(key.prevHandle == null)
-				key.prevHandle = new hrt.prefab.Curve.CurveHandle(prev != null ? (prev.time - key.time) / 3 : -0.5, 0);
-		}
-		inline function addNextH() {
-			if(key.nextHandle == null)
-				key.nextHandle = new hrt.prefab.Curve.CurveHandle(next != null ? (next.time - key.time) / 3 : -0.5, 0);
-		}
-		switch(key.mode) {
-			case Aligned:
-				addPrevH();
-				addNextH();
-				var pa = hxd.Math.atan2(key.prevHandle.dv, key.prevHandle.dt);
-				var na = hxd.Math.atan2(key.nextHandle.dv, key.nextHandle.dt);
-				if(hxd.Math.abs(hxd.Math.angle(pa - na)) < Math.PI - (1./180.)) {
-					key.nextHandle.dt = -key.prevHandle.dt;
-					key.nextHandle.dv = -key.prevHandle.dv;
+			var index = c.keys.indexOf(key);
+			var prev = c.keys[index-1];
+			var next = c.keys[index+1];
+	
+			inline function addPrevH() {
+				if(key.prevHandle == null)
+					key.prevHandle = new hrt.prefab.Curve.CurveHandle(prev != null ? (prev.time - key.time) / 3 : -0.5, 0);
+			}
+			inline function addNextH() {
+				if(key.nextHandle == null)
+					key.nextHandle = new hrt.prefab.Curve.CurveHandle(next != null ? (next.time - key.time) / 3 : -0.5, 0);
+			}
+			switch(key.mode) {
+				case Aligned:
+					addPrevH();
+					addNextH();
+					var pa = hxd.Math.atan2(key.prevHandle.dv, key.prevHandle.dt);
+					var na = hxd.Math.atan2(key.nextHandle.dv, key.nextHandle.dt);
+					if(hxd.Math.abs(hxd.Math.angle(pa - na)) < Math.PI - (1./180.)) {
+						key.nextHandle.dt = -key.prevHandle.dt;
+						key.nextHandle.dv = -key.prevHandle.dv;
+					}
+				case Free:
+					addPrevH();
+					addNextH();
+				case Linear:
+					key.nextHandle = null;
+					key.prevHandle = null;
+				case Constant:
+					key.nextHandle = null;
+					key.prevHandle = null;
+			}
+	
+			if(key.time < 0)
+				key.time = 0;
+			if(maxLength > 0 && key.time > maxLength)
+				key.time = maxLength;
+	
+			if(prev != null && key.time < prev.time)
+				key.time = prev.time + 0.01;
+			if(next != null && key.time > next.time)
+				key.time = next.time - 0.01;
+	
+			if(minValue < maxValue)
+				key.value = hxd.Math.clamp(key.value, minValue, maxValue);
+	
+			if(false) {
+				// TODO: This sorta works but is annoying.
+				// Doesn't yet prevent backwards handles
+				if(next != null && key.nextHandle != null) {
+					var slope = key.nextHandle.dv / key.nextHandle.dt;
+					slope = hxd.Math.clamp(slope, -1000, 1000);
+					if(key.nextHandle.dt + key.time > next.time) {
+						key.nextHandle.dt = next.time - key.time;
+						key.nextHandle.dv = slope * key.nextHandle.dt;
+					}
 				}
-			case Free:
-				addPrevH();
-				addNextH();
-			case Linear:
-				key.nextHandle = null;
-				key.prevHandle = null;
-			case Constant:
-				key.nextHandle = null;
-				key.prevHandle = null;
-		}
-
-		if(key.time < 0)
-			key.time = 0;
-		if(maxLength > 0 && key.time > maxLength)
-			key.time = maxLength;
-
-		if(prev != null && key.time < prev.time)
-			key.time = prev.time + 0.01;
-		if(next != null && key.time > next.time)
-			key.time = next.time - 0.01;
-
-		if(minValue < maxValue)
-			key.value = hxd.Math.clamp(key.value, minValue, maxValue);
-
-		if(false) {
-			// TODO: This sorta works but is annoying.
-			// Doesn't yet prevent backwards handles
-			if(next != null && key.nextHandle != null) {
-				var slope = key.nextHandle.dv / key.nextHandle.dt;
-				slope = hxd.Math.clamp(slope, -1000, 1000);
-				if(key.nextHandle.dt + key.time > next.time) {
-					key.nextHandle.dt = next.time - key.time;
-					key.nextHandle.dv = slope * key.nextHandle.dt;
+				if(prev != null && key.prevHandle != null) {
+					var slope = key.prevHandle.dv / key.prevHandle.dt;
+					slope = hxd.Math.clamp(slope, -1000, 1000);
+					if(key.prevHandle.dt + key.time < prev.time) {
+						key.prevHandle.dt = prev.time - key.time;
+						key.prevHandle.dv = slope * key.prevHandle.dt;
+					}
 				}
 			}
-			if(prev != null && key.prevHandle != null) {
-				var slope = key.prevHandle.dv / key.prevHandle.dt;
-				slope = hxd.Math.clamp(slope, -1000, 1000);
-				if(key.prevHandle.dt + key.time < prev.time) {
-					key.prevHandle.dt = prev.time - key.time;
-					key.prevHandle.dv = slope * key.prevHandle.dt;
-				}
-			}
-		}*/
+		}
 	}
 
 	function startSelectRect(p1x: Float, p1y: Float) {
@@ -314,6 +306,23 @@ class CurveEditor extends Component {
 		});
 	}
 
+	function applyView () {
+		var view = getDisplayState("view");
+		if(view != null) {
+			if(!lockViewX) {
+				xOffset = view.xOffset;
+				xScale = view.xScale;
+			}
+			if(!lockViewY) {
+				yOffset = view.yOffset;
+				yScale = view.yScale;
+			}
+		}
+		else {
+			zoomAll();
+		}
+	}
+
 	function startPan(e) {
 		var lastX = e.clientX;
 		var lastY = e.clientY;
@@ -352,7 +361,15 @@ class CurveEditor extends Component {
 	}
 
 	public function zoomAll() {
-		/*var bounds = curve.getBounds();
+		// Compute a surrounding box that encapsulate all the visible curves
+		var bounds = new h2d.col.Bounds();
+		for (c in curves) {
+			if (c.hidden)
+				continue;
+			
+			c.getBounds(bounds);
+		}
+
 		if(bounds.width <= 0) {
 			bounds.xMin = 0.0;
 			bounds.xMax = 1.0;
@@ -376,7 +393,7 @@ class CurveEditor extends Component {
 		else {
 			requestXZoom(bounds.xMin, bounds.xMax);
 		}
-		saveView();*/
+		saveView();
 	}
 
 	inline function xt(x: Float) return Math.round((x - xOffset) * xScale);
@@ -426,10 +443,9 @@ class CurveEditor extends Component {
 	}
 
 	public function refresh(?anim: Bool) {
+		applyView();
 		refreshGrid();
 		refreshGraph(anim);
-		if(!anim)
-			saveView();
 	}
 
 	public function refreshGrid() {
@@ -496,19 +512,13 @@ class CurveEditor extends Component {
 		var selection = svg.group(graphGroup, "selection");
 		var size = 3;
 
-		// function addRect(group, x: Float, y: Float) {
-		// 	return svg.rect(group, x - Math.floor(size/2), y - Math.floor(size/2), size, size).attr({
-		// 		"shape-rendering": "crispEdges"
-		// 	});
-		// }
-
 		function addCircle(group, x: Float, y: Float, ?style: Dynamic) {
 			return svg.circle(group, x, y , size, style).attr({
 				"shape-rendering": "crispEdges"
 			});
 		}
 
-		function editPopup(key: CurveKey, top: Float, left: Float) {
+		function editPopup(curve: Curve, key: CurveKey, top: Float, left: Float) {
 			var popup = new Element('<div class="keyPopup">
 					<div class="line"><label>Time</label><input class="x" type="number" value="0" step="0.1"/></div>
 					<div class="line"><label>Value</label><input class="y" type="number" value="0" step="0.1"/></div>
@@ -531,11 +541,12 @@ class CurveEditor extends Component {
 			});
 
 			function setMode(m: hrt.prefab.Curve.CurveKeyMode) {
-				// key.mode = m;
-				// curves.keyMode = m;
-				// fixKey(key);
-				// refreshGraph();
+					key.mode = m;
+					curve.keyMode = m;
+					fixKey(key);
+					refreshGraph();
 			}
+			
 			var select = popup.find("select");
 			select.val(Std.string(key.mode));
 			select.change(function(val) {
@@ -664,7 +675,7 @@ class CurveEditor extends Component {
 					});
 					keyHandle.contextmenu(function(e) {
 						var offset = element.offset();
-						var popup = editPopup(key, e.clientY - offset.top - 50, e.clientX - offset.left);
+						var popup = editPopup(curve, key, e.clientY - offset.top - 50, e.clientX - offset.left);
 						e.preventDefault();
 						return false;
 					});

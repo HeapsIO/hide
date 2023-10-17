@@ -1219,8 +1219,7 @@ class FXEditor extends FileView {
 		var leftPanel = element.find(".left-fx-animpanel").first();
 		
 		function drawSection(parent : Element, section: Section, depth: Int) {
-			// All curves from the root to the latest child, to be allowed to apply
-			// modfiyers on curves when using buttons (lock, visibility, etc)
+			// We want to create headers in the same order as the hierarchy
 			var curves = section.root.flatten(Curve);
 			if (section.root is Curve)
 				curves.push(cast section.root);
@@ -1361,14 +1360,17 @@ class FXEditor extends FileView {
 				for (i in 0...section.curves.length) {
 					var c = section.curves[i];
 
-					// We don't want to show an header for the blending curve,
-					// just for the parent blend curves.
-					if (c.blendCurve)
-						continue;
+					var curveColor = hide.comp.CurveEditor.CURVE_COLORS[i];
+					if (StringTools.contains(c.name, ".x") || StringTools.contains(c.name, ".h")) curveColor = hide.comp.CurveEditor.CURVE_COLORS[0];
+					if (StringTools.contains(c.name, ".y") || StringTools.contains(c.name, ".s")) curveColor = hide.comp.CurveEditor.CURVE_COLORS[1];
+					if (StringTools.contains(c.name, ".z") || StringTools.contains(c.name, ".l")) curveColor = hide.comp.CurveEditor.CURVE_COLORS[2];
+					if (StringTools.contains(c.name, ".w") || StringTools.contains(c.name, ".a")) curveColor = hide.comp.CurveEditor.CURVE_COLORS[3];
+					
+					// Assign same color to curve and curve's header
+					c.color = curveColor;
+					var hexColor = '#${StringTools.hex(curveColor)}';
 
-					c.color = hide.comp.CurveEditor.CURVE_COLORS[i];
 					var colorStyle = c.selected ? "style = color:#d59320" : "";
-					var hexColor = '#${StringTools.hex(hide.comp.CurveEditor.CURVE_COLORS[i])}';
 					var trackEl = new Element('<div>
 						<div class="track-header" style="margin-left: ${(depth + 1) * 10}px">
 							<div class="track-button color-id ico" style="background-color:${hexColor}"></div>
@@ -1535,8 +1537,13 @@ class FXEditor extends FileView {
 			for(child in root.children) {
 				if (child.flatten(Curve).length > 0) {
 					if (child is Curve) {
-						section.curves.push(Std.downcast(child, Curve));
-						curvesToDraw.push(Std.downcast(child, Curve));
+						var c = Std.downcast(child, Curve);
+						curvesToDraw.push(c);
+						
+						if (c.blendCurve) 
+							section.children.push(getSection(c));
+						else
+							section.curves.push(c);
 					}
 					else {
 						section.children.push(getSection(child));
