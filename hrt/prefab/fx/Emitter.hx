@@ -912,7 +912,7 @@ class EmitterObject extends h3d.scene.Object {
 						tmpMat.prependScale(1.0/s.x, 1.0/s.y, 1.0/s.z);
 						emitterQuat.initRotateMatrix(tmpMat);
 						emitterQuat.normalize();
-						tmpQuat.multiply(tmpQuat, emitterQuat);
+						tmpQuat.multiply(emitterQuat, tmpQuat);
 						part.qRot.loadQuat(tmpQuat);
 						tmpQuat.toMatrix(tmpMat2);
 						part.emitOrientation.load(tmpMat2);
