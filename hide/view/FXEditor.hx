@@ -300,7 +300,7 @@ class FXEditor extends FileView {
 	var xOffset = 0.;
 
 	var pauseButton : hide.comp.Toolbar.ToolToggle;
-	var currentTime : Float;
+	@:isVar var currentTime(get, set) : Float;
 	var selectMin : Float;
 	var selectMax : Float;
 	var previewMin : Float;
@@ -2190,6 +2190,18 @@ class FXEditor extends FileView {
 	}
 
 	static var _ = FileTree.registerExtension(FXEditor, ["fx"], { icon : "sitemap", createNew : "FX" });
+
+	function set_currentTime(value:Float):Float {
+		if (this.curveEditor != null) 
+			@:privateAccess this.curveEditor.currentTime = value;
+
+		return this.currentTime = value;
+	}
+	
+	function get_currentTime():Float {
+		return @:privateAccess this.curveEditor.currentTime;
+	}
+
 }
 
 

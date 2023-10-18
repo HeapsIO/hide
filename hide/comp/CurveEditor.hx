@@ -65,7 +65,118 @@ class CurveEditor extends Component {
 		gridGroup = svg.group(root, "grid");
 		graphGroup = svg.group(root, "graph");
 		selectGroup = svg.group(root, "selection-overlay");
-		markersGroup = svg.group(root, "markers");
+		tlGroup = svg.group(root, "tlgroup");
+		markersGroup = svg.group(root, "markers").css({'pointer-events':'none'});
+
+		var sMin = 0.0;
+		var sMax = 0.0;
+		tlGroup.mousedown(function(e) {
+			var lastX = e.clientX;
+			var shift = e.shiftKey;
+			var ctrl = e.ctrlKey;
+			var xoffset = svg.element.offset().left;
+			//var clickTime = ixt(e.clientX - xoffset);
+
+			// if(shift) {
+			// 	sMin = hxd.Math.max(0, clickTime);
+			// }
+			// else if(ctrl) {
+			// 	previewMin = hxd.Math.max(0, clickTime);
+			// }
+
+			function updateMouse(e: js.jquery.Event) {
+				var dt = (e.clientX - lastX) / xScale;
+				if(e.which == 1) {
+					// if(shift) {
+					// 	sMax = ixt(e.clientX - xoffset);
+					// }
+					// else if(ctrl) {
+					// 	previewMax = ixt(e.clientX - xoffset);
+					// }
+					//else {
+						currentTime = ixt(e.clientX - xoffset);
+						currentTime = hxd.Math.max(currentTime, 0);
+					//}
+				}
+			}
+			// 	if(hxd.Math.abs(sMax - sMin) < 1e-5) {
+			// 		selectMin = 0;
+			// 		selectMax = 0;
+			// 	}
+			// 	else {
+			// 		selectMax = hxd.Math.max(sMin, sMax);
+			// 		selectMin = hxd.Math.min(sMin, sMax);
+			// 	}
+			// }
+
+			// if(data.markers != null) {
+			// 	var marker = data.markers.find(m -> hxd.Math.abs(xt(clickTime) - xt(m.t)) < 4);
+			// 	if(marker != null) {
+			// 		var prevVal = marker.t;
+			// 		startDrag(function(e) {
+			// 			updateMouse(e);
+			// 			var x = ixt(e.clientX - xoffset);
+			// 			x = hxd.Math.max(0, x);
+			// 			x = untyped parseFloat(x.toFixed(5));
+			// 			marker.t = x;
+			// 			refreshTimeline(true);
+			// 		}, function(e) {
+			// 			undo.change(Field(marker, "t", prevVal), refreshTimeline.bind(false));
+			// 		});
+			// 		e.preventDefault();
+			// 		e.stopPropagation();
+			// 		return;
+			// 	}
+			// }
+
+			tlGroup.mousemove(function(e: js.jquery.Event) {
+				updateMouse(e);
+				lastX = e.clientX;
+				refreshTimeline(currentTime);
+				//refreshTimeline(true);
+				//afterPan(true);
+			});
+			tlGroup.mouseup(function(e: js.jquery.Event) {
+				updateMouse(e);
+
+				// if(previewMax < previewMin + 0.1) {
+				// 	previewMin = 0;
+				// 	previewMax = data.duration == 0 ? 5000 : data.duration;
+				// }
+
+				element.off("mousemove");
+				element.off("mouseup");
+				e.preventDefault();
+				e.stopPropagation();
+				refreshTimeline(currentTime);
+				//afterPan(false);
+			});
+			e.preventDefault();
+			e.stopPropagation();
+		});
+
+		// var wheelTimer : haxe.Timer = null;
+		// timeline.on("mousewheel", function(e) {
+		// 	var step = e.originalEvent.wheelDelta > 0 ? 1.0 : -1.0;
+		// 	xScale *= Math.pow(1.125, step);
+		// 	e.preventDefault();
+		// 	e.stopPropagation();
+		// 	refreshTimeline(false);
+		// 	if(wheelTimer != null)
+		// 		wheelTimer.stop();
+		// 	wheelTimer = haxe.Timer.delay(function() {
+		// 		this.curveEditor.xOffset = xOffset;
+		// 		this.curveEditor.xScale = xScale;
+		// 		this.curveEditor.refresh();
+		// 		afterPan(false);
+		// 	}, 50);
+		// });
+
+		// selectMin = 0.0;
+		// selectMax = 0.0;
+		// previewMin = 0.0;
+		// previewMax = data.duration == 0 ? 5000 : data.duration;
+		// refreshTimeline(false);
 
 		root.resize((e) -> refresh());
 		root.addClass("hide-curve-editor");
@@ -472,7 +583,7 @@ class CurveEditor extends Component {
 		var maxX = Math.ceil(ixt(width));
 		var hgrid = svg.group(gridGroup, "hgrid");
 
-		tlGroup = svg.group(gridGroup, "tlgroup");
+		tlGroup.empty();
 		svg.rect(tlGroup, 0, 0, width, tlHeight).addClass("timeline");
 
 		inline function xHline(ix) {
@@ -553,6 +664,7 @@ class CurveEditor extends Component {
 			svg.polygon(parent, points, style);
 		}
 
+		// Draw timeline marker
 		var labelWidth = 18;
 		var labelHeight = 10;
 		var rounderCurrTime = Math.round(this.currentTime * 10) / 10.0;
