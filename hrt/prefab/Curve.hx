@@ -300,9 +300,8 @@ class Curve extends Prefab {
 			ctx.onChange(this, pname);
 		});
 
-		// Do we really want a curve editor in the inspector of a curve ?
-		//var ce = new hide.comp.CurveEditor(ctx.properties.undo, ctx.properties.element);
-		//ce.curve = this;
+		var ce = new hide.comp.CurveEditor(ctx.properties.undo, ctx.properties.element);
+		ce.curves.push(this);
 	}
 
 	override function getHideProps() : HideProps {

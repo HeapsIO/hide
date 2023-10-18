@@ -31,15 +31,22 @@ class CurveEditor extends Component {
 	var svg : hide.comp.SVG;
 	var width = 0;
 	var height = 0;
+	var tlGroup : Element;
+	var markersGroup : Element;
 	var gridGroup : Element;
 	var graphGroup : Element;
 	var selectGroup : Element;
+
+	var tlHeight = 20;
 
 	var refreshTimer : haxe.Timer = null;
 	var lastValue : Dynamic;
 
 	var selectedKeys: Array<CurveKey> = [];
 	var previewKeys: Array<CurveKey> = [];
+
+	var currentTime: Float = 0.;
+
 
 	public function new(undo, ?parent) {
 		super(parent,null);
@@ -58,6 +65,7 @@ class CurveEditor extends Component {
 		gridGroup = svg.group(root, "grid");
 		graphGroup = svg.group(root, "graph");
 		selectGroup = svg.group(root, "selection-overlay");
+		markersGroup = svg.group(root, "markers");
 
 		root.resize((e) -> refresh());
 		root.addClass("hide-curve-editor");
@@ -336,6 +344,7 @@ class CurveEditor extends Component {
 			lastX = e.clientX;
 			lastY = e.clientY;
 			setPan(xOffset, yOffset);
+			refreshTimeline();
 		}, function(e) {
 			saveView();
 		});
@@ -446,6 +455,7 @@ class CurveEditor extends Component {
 		applyView();
 		refreshGrid();
 		refreshGraph(anim);
+		refreshTimeline();
 	}
 
 	public function refreshGrid() {
@@ -453,46 +463,102 @@ class CurveEditor extends Component {
 		height = Math.round(svg.element.height());
 
 		gridGroup.empty();
-		var minX = Math.floor(ixt(0));
-		var maxX = Math.ceil(ixt(width));
-		var hgrid = svg.group(gridGroup, "hgrid");
-		for(ix in minX...(maxX+1)) {
-			var l = svg.line(hgrid, xt(ix), 0, xt(ix), height).attr({
-				"shape-rendering": "crispEdges"
-			});
-			if(ix == 0)
-				l.addClass("axis");
-		}
 
 		var minY = Math.floor(iyt(height));
 		var maxY = Math.ceil(iyt(0));
 		var vgrid = svg.group(gridGroup, "vgrid");
-		var vstep = 0.1;
-		while((maxY - minY) / vstep > 20)
-			vstep *= 10;
+		
+		var minX = Math.floor(ixt(0));
+		var maxX = Math.ceil(ixt(width));
+		var hgrid = svg.group(gridGroup, "hgrid");
 
-		inline function hline(iy) {
+		tlGroup = svg.group(gridGroup, "tlgroup");
+		svg.rect(tlGroup, 0, 0, width, tlHeight).addClass("timeline");
+
+		inline function xHline(ix) {
+			return svg.line(hgrid, xt(ix), 0, xt(ix), height).attr({
+				"shape-rendering": "crispEdges"
+			});
+		}
+
+		inline function yHline(iy) {
 			return svg.line(vgrid, 0, yt(iy), width, yt(iy)).attr({
 				"shape-rendering": "crispEdges"
 			});
 		}
 
-		inline function hlabel(str, iy) {
+		inline function xHlabel(str, ix) {
+			svg.text(tlGroup, xt(ix), 14, str, {'text-anchor':'middle'});
+		}
+
+		inline function yHlabel(str, iy) {
 			svg.text(vgrid, 1, yt(iy), str);
 		}
+
+		var vstep = 0.1;
+		while((maxY - minY) / vstep > 21)
+			vstep *= 2;
 
 		var minS = Math.floor(minY / vstep);
 		var maxS = Math.ceil(maxY / vstep);
 		for(i in minS...(maxS+1)) {
 			var iy = i * vstep;
-			var l = hline(iy);
+			var l = yHline(iy);
+
+			var interY = (i + 0.5) * vstep;
+			var interl = yHline(interY);
+			interl.addClass("interline");
+			
 			if(iy == 0)
 				l.addClass("axis");
-			hlabel("" + hxd.Math.fmt(iy), iy);
+			yHlabel("" + hxd.Math.fmt(iy), iy);
+		}
+
+		var hstep = 0.1;
+		while((maxX - minX) / hstep > 21)
+			hstep *= 2;
+
+		minS = Math.floor(minX / hstep);
+		maxS = Math.ceil(maxX / hstep);
+		for(i in minS...(maxS+1)) {
+			var ix = i * hstep;
+			var l = xHline(ix);
+
+			var interX = (i + 0.5) * hstep;
+			var interl = xHline(interX);
+			interl.addClass("interline");
+
+			if(ix == 0)
+				l.addClass("axis");
+
+			xHlabel("" + hxd.Math.fmt(ix), ix);
 		}
 
 		if(maxLength > 0)
 			svg.rect(gridGroup, xt(maxLength), 0, width - xt(maxLength), height, { opacity: 0.4});
+	}
+
+	public function refreshTimeline(?currentTime : Float) {
+		markersGroup.empty();
+
+		if (!Math.isNaN(currentTime))
+			this.currentTime = currentTime;
+		
+		function drawLabel(?parent: Element, x:Float, y:Float, width:Float, height:Float, ?style:Dynamic) {
+			var a = new h2d.col.Point(x - width / 2.0, y - height / 2.0);
+			var b = new h2d.col.Point(x + width / 2.0, y - height / 2.0);
+			var c = new h2d.col.Point(x + width / 2.0, y + height / 2.0);
+			var d = new h2d.col.Point( x - width / 2.0,y + height / 2.0);
+			var points: Array<h2d.col.Point> = [ a, b, c, d, a, b];
+			svg.polygon(parent, points, style);
+		}
+
+		var labelWidth = 18;
+		var labelHeight = 10;
+		var rounderCurrTime = Math.round(this.currentTime * 10) / 10.0;
+		svg.line(markersGroup, xt(this.currentTime), svg.element.height(), xt(this.currentTime), labelHeight / 2.0, { stroke:'#426dae', 'stroke-width':'2px' });
+		drawLabel(markersGroup, xt(this.currentTime), labelHeight / 2.0 + (tlHeight - labelHeight) / 2.0, labelWidth, labelHeight, { fill:'#426dae', stroke: '#426dae', 'stroke-width':'5px', 'stroke-linejoin':'round'});
+		svg.text(markersGroup, xt(this.currentTime), 14, '${rounderCurrTime}', { 'fill':'#e7ecf5', 'text-anchor':'middle', 'font':'10px sans-serif'});
 	}
 
 	public function refreshGraph(?anim: Bool = false, ?animKey: CurveKey) {

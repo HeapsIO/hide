@@ -1134,9 +1134,9 @@ input[type=checkbox]:checked:after {
 /* Curve editor */
 .hide-curve-editor {
   position: relative;
+  background-color: #303030;
 }
 .hide-curve-editor:focus {
-  background-color: rgba(0, 0, 0, 0.219);
   outline: none;
 }
 .hide-curve-editor .keyPopup {
@@ -1168,10 +1168,18 @@ input[type=checkbox]:checked:after {
   shape-rendering: crispEdges;
 }
 .hide-curve-editor svg .grid .hgrid line {
-  stroke: #444;
+  stroke: #181818;
+}
+.hide-curve-editor svg .grid .hgrid .interline {
+  stroke: #1e1e1e;
+  opacity: 0.2;
 }
 .hide-curve-editor svg .grid .vgrid line {
-  stroke: #444;
+  stroke: #181818;
+}
+.hide-curve-editor svg .grid .vgrid .interline {
+  stroke: #1e1e1e;
+  opacity: 0.2;
 }
 .hide-curve-editor svg .grid line.axis {
   stroke: #747474;
@@ -1179,7 +1187,7 @@ input[type=checkbox]:checked:after {
 }
 .hide-curve-editor svg .grid text {
   font: 10px sans-serif;
-  fill: #555;
+  fill: #8d8d8d;
 }
 .hide-curve-editor svg .graph .selection rect {
   fill: #ffffff;
@@ -1260,10 +1268,10 @@ input[type=checkbox]:checked:after {
 }
 .fx-animpanel .right-fx-animpanel {
   position: absolute;
-  top: 20px;
+  top: 0px;
   left: 200px;
   right: 0px;
-  height: 100%;
+  bottom: 0px;
   overflow: hidden;
 }
 .fx-animpanel .anim-scroll {
@@ -1276,14 +1284,16 @@ input[type=checkbox]:checked:after {
   position: relative;
 }
 .fx-animpanel .timeline {
-  background: #141414;
+  background: #161616;
+  fill: #161616;
   position: relative;
   height: 20px;
   overflow: hidden;
 }
 .fx-animpanel .timeline .mark {
   height: 100%;
-  border-left: 1px solid white;
+  color: #8e8e8e;
+  border-left: 1px solid #8e8e8e;
   vertical-align: middle;
   padding-left: 4px;
   position: absolute;

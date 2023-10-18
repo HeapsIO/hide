@@ -1225,9 +1225,10 @@ input[type=checkbox] {
 /* Curve editor */
 .hide-curve-editor {
 	position: relative;
+	background-color: #303030;
 
 	&:focus {
-		background-color: rgba(0, 0, 0, 0.219);
+		//background-color: rgba(0, 0, 0, 0.219);
 		outline: none;
 	}
 	.keyPopup {
@@ -1262,14 +1263,16 @@ input[type=checkbox] {
 			line {
 				shape-rendering: crispEdges;
 			}
-			.hgrid line { stroke: #444; }
-			.vgrid line { stroke: #444; }
+			.hgrid line { stroke: #181818; }
+			.hgrid .interline { stroke: #1e1e1e; opacity: 0.2; }
+			.vgrid line { stroke: #181818; }
+			.vgrid .interline { stroke: #1e1e1e; opacity: 0.2; }
 			line.axis {
 				stroke: rgb(116, 116, 116);
 				shape-rendering: crispEdges;
 			}
 			text {
-				font: 10px sans-serif; fill: #555;
+				font: 10px sans-serif; fill: #8d8d8d;
 			}
 		}
 
@@ -1372,10 +1375,10 @@ input[type=checkbox] {
 	.right-fx-animpanel
 	{
 		position: absolute;
-		top: @timelineHeight;
+		top: 0px;
 		left: @leftPanelWidth;
 		right: 0px;
-		height: 100%;
+		bottom: 0px;
 		overflow: hidden;
 	}
 
@@ -1384,6 +1387,7 @@ input[type=checkbox] {
 		overflow-x: hidden;
 		height: 400px;
 	}
+
 	.top-bar {
 		margin-left: @leftPanelWidth;
 		position: relative;
@@ -1391,14 +1395,16 @@ input[type=checkbox] {
 	}
 
 	.timeline {
-		background: rgb(20, 20, 20);
+		background: #161616;
+		fill: #161616;
 		position: relative;
 		height: @timelineHeight;
 		overflow: hidden;
 
 		.mark {
 			height: 100%;
-			border-left: 1px solid white;
+			color: #8e8e8e;
+			border-left: 1px solid #8e8e8e;
 			vertical-align: middle;
 			padding-left: 4px;
 			position: absolute;

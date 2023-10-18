@@ -306,7 +306,6 @@ class FXEditor extends FileView {
 	var previewMin : Float;
 	var previewMax : Float;
 	var curveEditor : hide.comp.CurveEditor;
-	var timeLineEl : Element;
 	var afterPanRefreshes : Array<Bool->Void> = [];
 	var statusText : h2d.Text;
 
@@ -364,11 +363,6 @@ class FXEditor extends FileView {
 					<div style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
 						<div class="flex heaps-scene"></div>
 						<div class="fx-animpanel">
-							<div class="top-bar">
-								<div class="timeline">
-									<div class="timeline-scroll"/></div>
-								</div>
-							</div>
 							<div class="right-fx-animpanel">
 							</div>
 							<div class="left-fx-animpanel">
@@ -887,225 +881,225 @@ class FXEditor extends FileView {
 	inline function ixt(px: Float) return px / xScale + xOffset;
 
 	function refreshTimeline(anim: Bool) {
-		var scroll = element.find(".timeline-scroll");
-		scroll.empty();
-		var width = scroll.parent().width();
-		var minX = Math.floor(ixt(0));
-		var maxX = Math.ceil(hxd.Math.min(data.duration == 0 ? 5000 : data.duration, ixt(width)));
-		for(ix in minX...(maxX+1)) {
-			var mark = new Element('<span class="mark"></span>').appendTo(scroll);
-			mark.css({left: xt(ix)});
-			mark.text(ix + ".00");
-		}
+		// var scroll = element.find(".timeline-scroll");
+		// scroll.empty();
+		// var width = scroll.parent().width();
+		// var minX = Math.floor(ixt(0));
+		// var maxX = Math.ceil(hxd.Math.min(data.duration == 0 ? 5000 : data.duration, ixt(width)));
+		// for(ix in minX...(maxX+1)) {
+		// 	var mark = new Element('<span class="mark"></span>').appendTo(scroll);
+		// 	mark.css({left: xt(ix)});
+		// 	mark.text(ix + ".00");
+		// }
 
-		var overlay = element.find(".overlay");
-		overlay.empty();
-		timeLineEl = new Element('<span class="time-marker"></span>').appendTo(overlay);
-		timeLineEl.css({left: xt(currentTime)});
+		// var overlay = element.find(".overlay");
+		// overlay.empty();
+		// timeLineEl = new Element('<span class="time-marker"></span>').appendTo(overlay);
+		// timeLineEl.css({left: xt(currentTime)});
 
-		if(data.markers != null) {
-			for(m in data.markers) {
-				var el = new Element('<span class="marker"></span>').appendTo(overlay);
-				el.css({left: xt(m.t)});
-			}
-		}
+		// if(data.markers != null) {
+		// 	for(m in data.markers) {
+		// 		var el = new Element('<span class="marker"></span>').appendTo(overlay);
+		// 		el.css({left: xt(m.t)});
+		// 	}
+		// }
 
-		var select = new Element('<span class="selection"></span>').appendTo(overlay);
-		select.css({left: xt(selectMin), width: xt(selectMax) - xt(selectMin)});
+		// var select = new Element('<span class="selection"></span>').appendTo(overlay);
+		// select.css({left: xt(selectMin), width: xt(selectMax) - xt(selectMin)});
 
-		if(!anim && selectMax != selectMin) {
-			var selLeft = new Element('<span class="selection-left"></span>').appendTo(overlay);
-			var selRight = new Element('<span class="selection-right"></span>').appendTo(overlay);
+		// if(!anim && selectMax != selectMin) {
+		// 	var selLeft = new Element('<span class="selection-left"></span>').appendTo(overlay);
+		// 	var selRight = new Element('<span class="selection-right"></span>').appendTo(overlay);
 
-			function updateSelectPos() {
-				select.css({left: xt(selectMin), width: xt(selectMax) - xt(selectMin)});
-				selLeft.css({left: xt(selectMin) - 4});
-				selRight.css({left: xt(selectMax)});
-			}
-			updateSelectPos();
+		// 	function updateSelectPos() {
+		// 		select.css({left: xt(selectMin), width: xt(selectMax) - xt(selectMin)});
+		// 		selLeft.css({left: xt(selectMin) - 4});
+		// 		selRight.css({left: xt(selectMax)});
+		// 	}
+		// 	updateSelectPos();
 
-			function refreshViews() {
-				this.curveEditor.refreshGraph(false);
-				this.curveEditor.onChange(false);
-			}
+		// 	function refreshViews() {
+		// 		this.curveEditor.refreshGraph(false);
+		// 		this.curveEditor.onChange(false);
+		// 	}
 
-			var curves = null;
-			var allKeys = null;
+		// 	var curves = null;
+		// 	var allKeys = null;
 
-			// function updateSelected() {
-			// 	curves = [];
+		// 	// function updateSelected() {
+		// 	// 	curves = [];
 				
-			// 	//var anyNonEmitter = curveEdits.find(ce -> !isInstanceCurve(ce.curve)) != null;
-			// 	for(c in this.curveEditor.curves) {
-			// 		if(anyNonEmitter && isInstanceCurve(ce.curve))
-			// 			continue;  // Filter-out emitter curves unless only emitter curves are selected
-			// 		curves.push(ce.curve);
-			// 	}
+		// 	// 	//var anyNonEmitter = curveEdits.find(ce -> !isInstanceCurve(ce.curve)) != null;
+		// 	// 	for(c in this.curveEditor.curves) {
+		// 	// 		if(anyNonEmitter && isInstanceCurve(ce.curve))
+		// 	// 			continue;  // Filter-out emitter curves unless only emitter curves are selected
+		// 	// 		curves.push(ce.curve);
+		// 	// 	}
 
-			// 	allKeys = [];
-			// 	for(curve in curves) {
-			// 		for(key in curve.keys) {
-			// 			if(key.time >= selectMin && key.time <= selectMax)
-			// 				allKeys.push(key);
-			// 		}
-			// 	}
-			// }
+		// 	// 	allKeys = [];
+		// 	// 	for(curve in curves) {
+		// 	// 		for(key in curve.keys) {
+		// 	// 			if(key.time >= selectMin && key.time <= selectMax)
+		// 	// 				allKeys.push(key);
+		// 	// 		}
+		// 	// 	}
+		// 	// }
 
-			var backup = null;
-			var prevSel = null;
+		// 	var backup = null;
+		// 	var prevSel = null;
 
-			function beforeChange() {
-				//backup = [for(c in curves) haxe.Json.parse(haxe.Json.stringify(c.save()))];
-				//prevSel = [selectMin, selectMax];
-			}
+		// 	function beforeChange() {
+		// 		//backup = [for(c in curves) haxe.Json.parse(haxe.Json.stringify(c.save()))];
+		// 		//prevSel = [selectMin, selectMax];
+		// 	}
 
-			function afterChange() {
-				/*var newVals = [for(c in curves) haxe.Json.parse(haxe.Json.stringify(c.save()))];
-				var newSel = [selectMin, selectMax];
-				undo.change(Custom(function(undo) {
-					if(undo) {
-						for(i in 0...curves.length)
-							curves[i].load(backup[i]);
-						selectMin = prevSel[0];
-						selectMax = prevSel[1];
-					}
-					else {
-						for(i in 0...curves.length)
-							curves[i].load(newVals[i]);
-						selectMin = newSel[0];
-						selectMax = newSel[1];
-					}
-					updateSelected();
-					updateSelectPos();
-					refreshViews();
-				}));
-				refreshViews();*/
-			}
+		// 	function afterChange() {
+		// 		/*var newVals = [for(c in curves) haxe.Json.parse(haxe.Json.stringify(c.save()))];
+		// 		var newSel = [selectMin, selectMax];
+		// 		undo.change(Custom(function(undo) {
+		// 			if(undo) {
+		// 				for(i in 0...curves.length)
+		// 					curves[i].load(backup[i]);
+		// 				selectMin = prevSel[0];
+		// 				selectMax = prevSel[1];
+		// 			}
+		// 			else {
+		// 				for(i in 0...curves.length)
+		// 					curves[i].load(newVals[i]);
+		// 				selectMin = newSel[0];
+		// 				selectMax = newSel[1];
+		// 			}
+		// 			updateSelected();
+		// 			updateSelectPos();
+		// 			refreshViews();
+		// 		}));
+		// 		refreshViews();*/
+		// 	}
 
-			var duplicateMode = false;
-			var previewKeys = [];
-			function setupSelectDrag(element: js.jquery.JQuery, update: Float->Float->Void) {
-				element.mousedown(function(e) {
-					//updateSelected();
+		// 	var duplicateMode = false;
+		// 	var previewKeys = [];
+		// 	function setupSelectDrag(element: js.jquery.JQuery, update: Float->Float->Void) {
+		// 		element.mousedown(function(e) {
+		// 			//updateSelected();
 
-					if(e.button != 0)
-						return;
-					var offset = scroll.offset();
-					e.preventDefault();
-					e.stopPropagation();
-					var lastTime = ixt(e.clientX);
-					beforeChange();
-					startDrag(function(e) {
-						var time = ixt(e.clientX);
-						update(time, lastTime);
-						this.curveEditor.refreshGraph(true);
-						this.curveEditor.onChange(true);
-						updateSelectPos();
-						lastTime = time;
-					}, function(e) {
-						for (pKey in previewKeys) {
-							var curve = curves.find((curve) -> return curve.previewKeys.contains(pKey));
-							curve.previewKeys.remove(pKey);
-						}
-						previewKeys = [];
-						this.curveEditor.refreshGraph(true);
-						this.curveEditor.onChange(true);
-						afterChange();
-					}, function(e) {
-						if (e.keyCode == hxd.Key.ALT){
-							// if (!duplicateMode) {
-							// 	duplicateMode = !duplicateMode;
-							// 	for (key in allKeys) {
-							// 		var curve = curves.find((curve) -> return curve.keys.contains(key));
-							// 		var pKey = curve.addPreviewKey(key.time, key.value);
-							// 		previewKeys.push(pKey);
-							// 	}
-							// 	allKeys = [];
-							// 	for(ce in curveEdits) {
-							// 		ce.refreshGraph(true);
-							// 		ce.onChange(true);
-							// 	}
-							// }
-						}
-					}, function(e) {
-						if (e.keyCode == hxd.Key.ALT){
-							/*if (duplicateMode) {
-								duplicateMode = !duplicateMode;
-								for (pKey in previewKeys) {
-									var curve = curves.find((curve) -> return curve.previewKeys.contains(pKey));
-									curve.previewKeys.remove(pKey);
-									allKeys.push(curve.addKey(pKey.time, pKey.value));
-								}
-								previewKeys = [];
-								for(ce in curveEdits) {
-									ce.refreshGraph(true);
-									ce.onChange(true);
-								}
-							}*/
-						}
-					});
-				});
-			}
+		// 			if(e.button != 0)
+		// 				return;
+		// 			var offset = scroll.offset();
+		// 			e.preventDefault();
+		// 			e.stopPropagation();
+		// 			var lastTime = ixt(e.clientX);
+		// 			beforeChange();
+		// 			startDrag(function(e) {
+		// 				var time = ixt(e.clientX);
+		// 				update(time, lastTime);
+		// 				this.curveEditor.refreshGraph(true);
+		// 				this.curveEditor.onChange(true);
+		// 				updateSelectPos();
+		// 				lastTime = time;
+		// 			}, function(e) {
+		// 				for (pKey in previewKeys) {
+		// 					var curve = curves.find((curve) -> return curve.previewKeys.contains(pKey));
+		// 					curve.previewKeys.remove(pKey);
+		// 				}
+		// 				previewKeys = [];
+		// 				this.curveEditor.refreshGraph(true);
+		// 				this.curveEditor.onChange(true);
+		// 				afterChange();
+		// 			}, function(e) {
+		// 				if (e.keyCode == hxd.Key.ALT){
+		// 					// if (!duplicateMode) {
+		// 					// 	duplicateMode = !duplicateMode;
+		// 					// 	for (key in allKeys) {
+		// 					// 		var curve = curves.find((curve) -> return curve.keys.contains(key));
+		// 					// 		var pKey = curve.addPreviewKey(key.time, key.value);
+		// 					// 		previewKeys.push(pKey);
+		// 					// 	}
+		// 					// 	allKeys = [];
+		// 					// 	for(ce in curveEdits) {
+		// 					// 		ce.refreshGraph(true);
+		// 					// 		ce.onChange(true);
+		// 					// 	}
+		// 					// }
+		// 				}
+		// 			}, function(e) {
+		// 				if (e.keyCode == hxd.Key.ALT){
+		// 					/*if (duplicateMode) {
+		// 						duplicateMode = !duplicateMode;
+		// 						for (pKey in previewKeys) {
+		// 							var curve = curves.find((curve) -> return curve.previewKeys.contains(pKey));
+		// 							curve.previewKeys.remove(pKey);
+		// 							allKeys.push(curve.addKey(pKey.time, pKey.value));
+		// 						}
+		// 						previewKeys = [];
+		// 						for(ce in curveEdits) {
+		// 							ce.refreshGraph(true);
+		// 							ce.onChange(true);
+		// 						}
+		// 					}*/
+		// 				}
+		// 			});
+		// 		});
+		// 	}
 
-			setupSelectDrag(selRight, function(time, lastTime) {
-				/*var shift = time - lastTime;
-				if(selectMax > selectMin + 0.1) {
-					var scaleFactor = (selectMax + shift - selectMin) / (selectMax - selectMin);
+		// 	setupSelectDrag(selRight, function(time, lastTime) {
+		// 		/*var shift = time - lastTime;
+		// 		if(selectMax > selectMin + 0.1) {
+		// 			var scaleFactor = (selectMax + shift - selectMin) / (selectMax - selectMin);
 
-					if (duplicateMode) {
-						for (key in previewKeys)
-							key.time = (key.time - selectMin) * scaleFactor + selectMin;
-					}
-					else {
-						for(key in allKeys)
-							key.time = (key.time - selectMin) * scaleFactor + selectMin;
-					}
+		// 			if (duplicateMode) {
+		// 				for (key in previewKeys)
+		// 					key.time = (key.time - selectMin) * scaleFactor + selectMin;
+		// 			}
+		// 			else {
+		// 				for(key in allKeys)
+		// 					key.time = (key.time - selectMin) * scaleFactor + selectMin;
+		// 			}
 
-					selectMax += shift;
-				}*/
-			});
+		// 			selectMax += shift;
+		// 		}*/
+		// 	});
 
-			setupSelectDrag(selLeft, function(time, lastTime) {
-				/*var shift = time - lastTime;
-				if(selectMax > selectMin + 0.1) {
-					var scaleFactor = (selectMax - (selectMin + shift)) / (selectMax - selectMin);
+		// 	setupSelectDrag(selLeft, function(time, lastTime) {
+		// 		/*var shift = time - lastTime;
+		// 		if(selectMax > selectMin + 0.1) {
+		// 			var scaleFactor = (selectMax - (selectMin + shift)) / (selectMax - selectMin);
 
-					if (duplicateMode) {
-						for(key in previewKeys)
-							key.time = selectMax - (selectMax - key.time) * scaleFactor;
-					}
-					else {
-						for(key in allKeys)
-							key.time = selectMax - (selectMax - key.time) * scaleFactor;
-					}
+		// 			if (duplicateMode) {
+		// 				for(key in previewKeys)
+		// 					key.time = selectMax - (selectMax - key.time) * scaleFactor;
+		// 			}
+		// 			else {
+		// 				for(key in allKeys)
+		// 					key.time = selectMax - (selectMax - key.time) * scaleFactor;
+		// 			}
 
-					selectMin += shift;
-				}*/
-			});
+		// 			selectMin += shift;
+		// 		}*/
+		// 	});
 
-			setupSelectDrag(select, function(time, lastTime) {
-				/*var shift = time - lastTime;
+		// 	setupSelectDrag(select, function(time, lastTime) {
+		// 		/*var shift = time - lastTime;
 
-				if (duplicateMode) {
-					for(key in previewKeys)
-						key.time += shift;
-				}
-				else {
-					for(key in allKeys)
-						key.time += shift;
-				}
-				selectMin += shift;
-				selectMax += shift;*/
+		// 		if (duplicateMode) {
+		// 			for(key in previewKeys)
+		// 				key.time += shift;
+		// 		}
+		// 		else {
+		// 			for(key in allKeys)
+		// 				key.time += shift;
+		// 		}
+		// 		selectMin += shift;
+		// 		selectMax += shift;*/
 
-			});
-		}
+		// 	});
+		// }
 
-		//var preview = new Element('<span class="preview"></span>').appendTo(overlay);
-		// preview.css({left: xt(previewMin), width: xt(previewMax) - xt(previewMin)});
-		var prevLeft = new Element('<span class="preview-left"></span>').appendTo(overlay);
-		prevLeft.css({left: 0, width: xt(previewMin)});
-		var prevRight = new Element('<span class="preview-right"></span>').appendTo(overlay);
-		prevRight.css({left: xt(previewMax), width: xt(data.duration == 0 ? 5000 : data.duration) - xt(previewMax)});
+		// //var preview = new Element('<span class="preview"></span>').appendTo(overlay);
+		// // preview.css({left: xt(previewMin), width: xt(previewMax) - xt(previewMin)});
+		// var prevLeft = new Element('<span class="preview-left"></span>').appendTo(overlay);
+		// prevLeft.css({left: 0, width: xt(previewMin)});
+		// var prevRight = new Element('<span class="preview-right"></span>').appendTo(overlay);
+		// prevRight.css({left: xt(previewMax), width: xt(data.duration == 0 ? 5000 : data.duration) - xt(previewMax)});
 	}
 
 	function afterPan(anim: Bool) {
@@ -1630,6 +1624,8 @@ class FXEditor extends FileView {
 
 		addHeadersToCurveEditor(sections);
 		addCurvesToCurveEditor(curvesToDraw);
+
+		this.curveEditor.refreshTimeline(currentTime);
 	}
 
 	function startDrag(onMove: js.jquery.Event->Void, onStop: js.jquery.Event->Void, ?onKeyDown: js.jquery.Event->Void, ?onKeyUp: js.jquery.Event->Void) {
@@ -1960,8 +1956,8 @@ class FXEditor extends FileView {
 		}
 		if(!pauseButton.isDown()) {
 			currentTime += scene.speed * dt;
-			if(timeLineEl != null)
-				timeLineEl.css({left: xt(currentTime)});
+			if(this.curveEditor != null)
+				this.curveEditor.refreshTimeline(currentTime);
 			if(currentTime >= previewMax) {
 				currentTime = previewMin;
 
@@ -2058,8 +2054,8 @@ class FXEditor extends FileView {
 
 		if(!pauseButton.isDown()) {
 			currentTime += scene.speed * dt;
-			if(timeLineEl != null)
-				timeLineEl.css({left: xt(currentTime)});
+			if(this.curveEditor != null)
+				this.curveEditor.refreshTimeline(currentTime);
 			if(currentTime >= previewMax) {
 				currentTime = previewMin;
 
