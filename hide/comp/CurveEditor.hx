@@ -837,6 +837,9 @@ class CurveEditor extends Component {
 						var startV = key.value;
 	
 						startDrag(function(e) {
+							if (curve.lock || curve.hidden)
+								return;
+
 							var lx = e.clientX - offset.left;
 							var ly = e.clientY - offset.top;
 							var nkx = ixt(lx);
@@ -878,8 +881,8 @@ class CurveEditor extends Component {
 					if(handle == null) return null;
 					var px = xScale*(key.time + handle.dt);
 					var py = -yScale*(key.value + handle.dv);
-					var line = svg.line(vectorsGroup, kx, ky, px, py);
-					var circle = svg.circle(tangentsHandles, px, py, size);
+					var line = svg.line(vectorsGroup, kx, ky, px, py, style);
+					var circle = svg.circle(tangentsHandles, px, py, size, style);
 					if(selected) {
 						line.addClass("selected");
 						circle.addClass("selected");
@@ -887,6 +890,9 @@ class CurveEditor extends Component {
 					if(anim)
 						return circle;
 					circle.mousedown(function(e) {
+						if (curve.lock || curve.hidden)
+							return;
+
 						if(e.which != 1) return;
 						e.preventDefault();
 						e.stopPropagation();
