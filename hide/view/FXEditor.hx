@@ -1306,7 +1306,7 @@ class FXEditor extends FileView {
 			function addFoldButtonListener(parentEl: Element) {
 				var foldEl = parentEl.find(".fold");
 
-				if (savedFoldList.contains(section.root.name))
+				if (savedFoldList.contains(section.root.getAbsPath(true)))
 					toFoldList.push( {el:foldEl, parentEl: parentEl} );
 			
 				foldEl.click(function(e) {
@@ -1316,8 +1316,8 @@ class FXEditor extends FileView {
 						parentEl.children().find(".tracks-header").addClass("hidden");
 						parentEl.children().find(".track-header").addClass("hidden");
 						
-						if (!savedFoldList.contains(section.root.name))
-							savedFoldList.push(section.root.name);
+						if (!savedFoldList.contains(section.root.getAbsPath(true)))
+							savedFoldList.push(section.root.getAbsPath(true));
 
 						toFoldList.push( {el:foldEl, parentEl: parentEl} );
 					}
@@ -1327,7 +1327,7 @@ class FXEditor extends FileView {
 						parentEl.children().find(".tracks-header").removeClass("hidden");
 						parentEl.children().find(".track-header").removeClass("hidden");
 
-						savedFoldList.remove(section.root.name);
+						savedFoldList.remove(section.root.getAbsPath(true));
 					}
 
 					saveDisplayState("foldList", savedFoldList);
