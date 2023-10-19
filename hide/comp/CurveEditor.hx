@@ -219,7 +219,7 @@ class CurveEditor extends Component {
 					changed = true;
 				}
 			}
-			else if (e.ctrlKey){
+			else if (e.altKey){
 				if(!lockViewX) {
 					xScale *= Math.pow(1.125, step);
 					changed = true;
@@ -309,12 +309,17 @@ class CurveEditor extends Component {
 		afterChange();
 	}
 
-	function fixKey(key : CurveKey) {
+	function fixKey(key : CurveKey) {		
 		for (c in curves) {
 			if (!c.selected)
 				continue;
 
 			var index = c.keys.indexOf(key);
+
+			// Meaning that this key isn't appartening to this curve
+			if (index == -1)
+				continue;
+
 			var prev = c.keys[index-1];
 			var next = c.keys[index+1];
 	
@@ -322,10 +327,12 @@ class CurveEditor extends Component {
 				if(key.prevHandle == null)
 					key.prevHandle = new hrt.prefab.Curve.CurveHandle(prev != null ? (prev.time - key.time) / 3 : -0.5, 0);
 			}
+			
 			inline function addNextH() {
 				if(key.nextHandle == null)
 					key.nextHandle = new hrt.prefab.Curve.CurveHandle(next != null ? (next.time - key.time) / 3 : -0.5, 0);
 			}
+
 			switch(key.mode) {
 				case Aligned:
 					addPrevH();
@@ -347,16 +354,16 @@ class CurveEditor extends Component {
 					key.prevHandle = null;
 			}
 	
-			if(key.time < 0)
+			if(key.time < 0) 
 				key.time = 0;
 			if(maxLength > 0 && key.time > maxLength)
 				key.time = maxLength;
 	
 			if(prev != null && key.time < prev.time)
 				key.time = prev.time + 0.01;
-			if(next != null && key.time > next.time)
+			if(next != null && key.time > next.time) 
 				key.time = next.time - 0.01;
-	
+			
 			if(minValue < maxValue)
 				key.value = hxd.Math.clamp(key.value, minValue, maxValue);
 	
@@ -407,9 +414,16 @@ class CurveEditor extends Component {
 
 			selectedKeys = [];
 			for (c in curves){
+				c.selected = false;
+				
+				if (c.hidden || c.lock || c.blendCurve)
+					continue;
+
 				for (key in c.keys)
-					if(key.time >= minT && key.time <= maxT && key.value >= minV && key.value <= maxV)
+					if(key.time >= minT && key.time <= maxT && key.value >= minV && key.value <= maxV) {
+						c.selected = true;
 						selectedKeys.push(key);
+					}
 			}
 
 			refreshGraph();
@@ -835,10 +849,10 @@ class CurveEditor extends Component {
 								key.time = Math.round(key.time * 10) / 10.;
 								key.value = Math.round(key.value * 10) / 10.;
 							}
-							if(lockKeyX || e.shiftKey)
-								key.time = startT;
-							if(e.altKey)
+							if(lockKeyX || e.altKey)
 								key.value = startV;
+							if(e.shiftKey)
+								key.time = startT;
 							fixKey(key);
 							refreshGraph(true, key);
 							onKeyMove(key, prevTime, prevVal);
@@ -914,11 +928,11 @@ class CurveEditor extends Component {
 		for (curve in curves){
 			var color = '#${StringTools.hex(curve.color)}';
 			var curveStyle: Dynamic = { opacity : curve.selected ? 1 : 0.5, stroke : color, "stroke-width":'${curve.selected ? 2 : 1}px'};
-			var keyStyle: Dynamic = { opacity : curve.selected ? 1 : 0.5, fill : curve.selected ? "#FFFFFF" : "#000000"};
+			var keyStyle: Dynamic = { opacity : curve.selected ? 1 : 0.5};
 			
 			if (curve.lock || curve.blendCurve) {
 				curveStyle = { opacity : curve.selected ? 1 : 0.5 , stroke : color, "stroke-width":'${curve.selected ? 2 : 1}px', "stroke-dasharray":"5, 3"};
-				keyStyle = { opacity : curve.selected ? 1 : 0.5, fill : "#000000"};
+				keyStyle = { opacity : curve.selected ? 1 : 0.5};
 			}
 
 			if (curve.hidden) {
@@ -970,6 +984,8 @@ class CurveEditor extends Component {
 							key.value -= dy / yScale;
 							if(e.altKey)
 								key.value += deltaY / yScale;
+
+							fixKey(key);
 						}
 						deltaX += dx;
 						deltaY += dy;
@@ -985,6 +1001,7 @@ class CurveEditor extends Component {
 						}
 						else
 							lastY = e.clientY;
+
 						refreshGraph(true);
 						onChange(true);
 					}, function(e) {

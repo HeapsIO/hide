@@ -1156,7 +1156,7 @@ class FXEditor extends FileView {
 				refreshTimeline(false);
 			}
 	
-			this.curveEditor.lockKeyX = true;
+			//this.curveEditor.lockKeyX = true;
 	
 			if(["visibility", "s", "l", "a"].indexOf(curve.name.split(".").pop()) >= 0) {
 				this.curveEditor.minValue = 0;
