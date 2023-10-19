@@ -215,7 +215,7 @@ class Polygon extends Object3D {
 				sp.addTangents();
 				return sp;
 			case Capsule(sw, sh):
-				var cp = new h3d.prim.Capsule(1, 1, sw, sh);
+				var cp = new h3d.prim.Capsule(1, 1, sw);
 				return cp;
 			default:
 		}
