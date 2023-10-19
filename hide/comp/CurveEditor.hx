@@ -828,7 +828,15 @@ class CurveEditor extends Component {
 					keyHandle.addClass("selected");
 				if(!anim) {
 					keyHandle.mousedown(function(e) {
+						if (curve.lock || curve.hidden) return;
+						
+						for (c in curves)
+							c.selected = false;
+						
+						curve.selected = true;
+						
 						if(e.which != 1) return;
+
 						e.preventDefault();
 						e.stopPropagation();
 						var offset = element.offset();
@@ -837,8 +845,6 @@ class CurveEditor extends Component {
 						var startV = key.value;
 	
 						startDrag(function(e) {
-							if (curve.lock || curve.hidden)
-								return;
 
 							var lx = e.clientX - offset.left;
 							var ly = e.clientY - offset.top;
@@ -869,6 +875,12 @@ class CurveEditor extends Component {
 						refreshGraph();
 					});
 					keyHandle.contextmenu(function(e) {
+						if (curve.lock || curve.hidden) return false;
+						
+						for (c in curves)
+							c.selected = false;
+						
+						curve.selected = true;
 						var offset = element.offset();
 						var popup = editPopup(curve, key, e.clientY - offset.top - 50, e.clientX - offset.left);
 						e.preventDefault();
@@ -890,8 +902,12 @@ class CurveEditor extends Component {
 					if(anim)
 						return circle;
 					circle.mousedown(function(e) {
-						if (curve.lock || curve.hidden)
-							return;
+						if (curve.lock || curve.hidden) return;
+
+						for (c in curves)
+							c.selected = false;
+
+						curve.selected = true;
 
 						if(e.which != 1) return;
 						e.preventDefault();
