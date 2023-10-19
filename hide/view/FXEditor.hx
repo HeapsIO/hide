@@ -1213,13 +1213,12 @@ class FXEditor extends FileView {
 	}
 	
 	function addHeadersToCurveEditor(sections: Array<Section>) {
+		var savedFoldList : Array<String> = getDisplayState("foldList") != null ? getDisplayState("foldList") : [];
+		var toFoldList : Array<{ el: Element, parentEl: Element }> = [];
+
 		var leftPanel = element.find(".left-fx-animpanel").first();
 		
 		function drawSection(parent : Element, section: Section, depth: Int) {
-			// We want to create headers in the same order as the hierarchy
-			var curves = section.root.flatten(Curve);
-			if (section.root is Curve)
-				curves.push(cast section.root);
 
 			function getTagRec(elt : PrefabElement) {
 				var p = elt;
@@ -1306,19 +1305,32 @@ class FXEditor extends FileView {
 
 			function addFoldButtonListener(parentEl: Element) {
 				var foldEl = parentEl.find(".fold");
+
+				if (savedFoldList.contains(section.root.name))
+					toFoldList.push( {el:foldEl, parentEl: parentEl} );
+			
 				foldEl.click(function(e) {
 					var expanded = foldEl.hasClass("ico-angle-down");
 					if (expanded) {
 						foldEl.removeClass("ico-angle-down").addClass("ico-angle-right");
 						parentEl.children().find(".tracks-header").addClass("hidden");
 						parentEl.children().find(".track-header").addClass("hidden");
+						
+						if (!savedFoldList.contains(section.root.name))
+							savedFoldList.push(section.root.name);
+
+						toFoldList.push( {el:foldEl, parentEl: parentEl} );
 					}
 					else {
 						foldEl.removeClass("ico-angle-right").addClass("ico-angle-down");
 						parentEl.children().find(".ico-angle-right").removeClass("ico-angle-right").addClass("ico-angle-down");
 						parentEl.children().find(".tracks-header").removeClass("hidden");
 						parentEl.children().find(".track-header").removeClass("hidden");
+
+						savedFoldList.remove(section.root.name);
 					}
+
+					saveDisplayState("foldList", savedFoldList);
 				});
 			}
 
@@ -1334,8 +1346,12 @@ class FXEditor extends FileView {
 					new hide.comp.ContextMenu(menuItems);
 				});
 			}
+
+			var curves = section.root.flatten(Curve);
+			if (section.root is Curve)
+				curves.push(cast section.root);
 			
-			var sectionEl = new Element('<div class="section">
+			var sectionEl = new Element('<div class="section" name="${section.root.name}">
 			<div class="tracks-header" style="margin-left: ${depth * 10}px">
 			<div class="track-button fold ico ico-angle-down"></div>
 			<div class="track-button visibility ico ${areAllChildrenHidden(section.root) ? "ico-eye-slash" : "ico-eye"}"></div>
@@ -1421,9 +1437,15 @@ class FXEditor extends FileView {
 				
 			parent.append(sectionEl);
 		}
-
-		for (sec in sections) {
+		
+		for (sec in sections)
 			drawSection(leftPanel, sec, 0);
+
+		// Apply preferences of fold / lock / visibility
+		for (fold in toFoldList) {
+			fold.el.removeClass("ico-angle-down").addClass("ico-angle-right");
+			fold.parentEl.children().find(".tracks-header").addClass("hidden");
+			fold.parentEl.children().find(".track-header").addClass("hidden");
 		}
 
 		var prefWidth = leftAnimPanel.getDisplayState("size");
