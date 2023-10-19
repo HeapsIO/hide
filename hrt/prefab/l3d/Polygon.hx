@@ -8,6 +8,7 @@ enum Shape {
 	Disc(segments: Int, angle: Float, inner: Float, rings:Int);
 	Custom;
 	Sphere( segsW : Int, segsH : Int );
+	Capsule( segsW : Int, segsH : Int );
 }
 
 typedef PrimCache = Map<Shape, h3d.prim.Polygon>;
@@ -33,7 +34,7 @@ class Polygon extends Object3D {
 		var obj : Dynamic = super.save();
 		obj.kind = shape.getIndex();
 		switch(shape){
-		case Quad(_), Disc(_), Sphere(_):
+		case Quad(_), Disc(_), Sphere(_), Capsule(_):
 			obj.args = shape.getParameters();
 		case Custom:
 			obj.points = [for( p in points ) { x : p.x, y : p.y }];
@@ -44,7 +45,7 @@ class Polygon extends Object3D {
 	override function load( obj : Dynamic ) {
 		super.load(obj);
 		switch(obj.kind){
-			case 0, 1, 3: shape = Type.createEnumIndex(Shape, obj.kind, obj.args == null ? [0] : obj.args);
+			case 0, 1, 3, 4: shape = Type.createEnumIndex(Shape, obj.kind, obj.args == null ? [0] : obj.args);
 			case 2:
 				shape = Custom;
 				var list : Array<Dynamic> = obj.points;
@@ -125,6 +126,8 @@ class Polygon extends Object3D {
 		case Custom:
 			[for( p in points ) p.clone()];
 		case Sphere(_):
+			null;
+		case Capsule(_):
 			null;
 		};
 	}
@@ -211,6 +214,9 @@ class Polygon extends Object3D {
 				sp.addNormals();
 				sp.addTangents();
 				return sp;
+			case Capsule(sw, sh):
+				var cp = new h3d.prim.Capsule(1, 1, sw, sh);
+				return cp;
 			default:
 		}
 
@@ -325,6 +331,9 @@ class Polygon extends Object3D {
 			case Sphere(segw, segh):
 				viewModel.segments = segw;
 				viewModel.segmentsH = segh;
+			case Capsule(segw, segh):
+				viewModel.segments = segw;
+				viewModel.segmentsH = segh;
 		}
 
 		var group = new hide.Element('
@@ -335,6 +344,7 @@ class Polygon extends Object3D {
 						<option value="Quad">Quad</option>
 						<option value="Disc">Disc</option>
 						<option value="Sphere">Sphere</option>
+						<option value="Capsule">Capsule</option>
 						<option value="Custom">Custom</option>
 					</select>
 				</dd>
@@ -390,6 +400,8 @@ class Polygon extends Object3D {
 					shape = Disc(viewModel.segments, viewModel.angle, viewModel.innerRadius, viewModel.rings);
 				case "Sphere":
 					shape = Sphere(viewModel.segments, viewModel.segmentsH);
+				case "Capsule":
+					shape = Capsule(viewModel.segments, viewModel.segmentsH);
 				case "Custom":
 					shape = Custom;
 					if(pIsKind) {
