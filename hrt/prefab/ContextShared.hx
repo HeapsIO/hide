@@ -38,6 +38,8 @@ class ContextShared {
 	**/
 	var refsContexts : Map<Prefab, ContextShared>;
 
+	public var customCleanup : Context -> Void;
+
 	public function new( ?res : hxd.res.Resource ) {
 		root2d = new h2d.Object();
 		root3d = new h3d.scene.Object();
@@ -114,6 +116,7 @@ class ContextShared {
 		sh.cache = cache;
 		sh.shaderCache = shaderCache;
 		sh.customMake = customMake;
+		sh.customCleanup = customCleanup;
 		// own bakedData
 		// own refsContext
 		return sh;

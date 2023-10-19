@@ -5,7 +5,7 @@ package hrt.prefab;
 	public var local2d : h2d.Object;
 	public var local3d : h3d.scene.Object;
 	public var shared : ContextShared;
-	public var cleanup : Void -> Void;
+	public var cleanup(default, set) : Void -> Void;
 	public var custom : Dynamic;
 
 	/**
@@ -16,6 +16,13 @@ package hrt.prefab;
 	public var isSceneReference : Bool;
 
 	public function new() {
+	}
+
+	function set_cleanup( fct : Void -> Void ) {
+		this.cleanup = fct;
+		if( fct != null && shared != null && shared.customCleanup != null )
+			shared.customCleanup(this);
+		return this.cleanup;
 	}
 
 	public function init( ?res : hxd.res.Resource ) {
