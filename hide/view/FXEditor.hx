@@ -1338,7 +1338,7 @@ class FXEditor extends FileView {
 			<div class="track-button visibility ico ${areAllChildrenHidden(section.root) ? "ico-eye-slash" : "ico-eye"}"></div>
 			<label class="name">${upperCase(section.root.name)}</label>
 			<label class="abspath">${section.root.getAbsPath(true)}</label>
-			<div class="track-button align-right-first addtrack ico ico-plus-square"></div>
+			${section.root is Curve ?'': '<div class="track-button align-right-first addtrack ico ico-plus-square"></div>'}
 			<div class="track-button lock align-right-second ico ${areAllChildrenLocked(section.root) ? "ico-lock" : "ico-unlock"}"></div>
 			</div>
 			<div class="tracks"></div>
