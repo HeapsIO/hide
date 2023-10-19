@@ -1361,37 +1361,28 @@ input[type=checkbox] {
 	min-height: 120px;
 	max-height: 800px;
 	position: relative;
+	display: flex;
+    flex-direction: row;
 
 	.left-fx-animpanel
 	{
-		position: absolute;
-		top: @timelineHeight;
-		left: 0px;
-		width: @leftPanelWidth;
-		height: 100%;
-		overflow: hidden;
+		margin-top: @timelineHeight;
+		min-width: @leftPanelWidth;
+		max-width: 700px;
+		overflow-y: auto;
+		overflow-x: hidden;
 	}
 
 	.right-fx-animpanel
 	{
-		position: absolute;
-		top: 0px;
-		left: @leftPanelWidth;
-		right: 0px;
-		bottom: 0px;
 		overflow: hidden;
-	}
-
-	.anim-scroll {
-		overflow-y: scroll;
-		overflow-x: hidden;
-		height: 400px;
+		height:100%;
+		flex: 1;
 	}
 
 	.top-bar {
 		margin-left: @leftPanelWidth;
 		position: relative;
-		//height: 100%;
 	}
 
 	.timeline {
@@ -1493,15 +1484,16 @@ input[type=checkbox] {
 		position: relative;
 		background: #4a4a4a;
 		text-align: left;
+		white-space: nowrap;
+		
 		.name {
 			padding: 1px;
 			padding-left: 5px;
 			padding-right: 5px;
 		}
 		.abspath {
-			position: absolute;
+			position: relative;
 			opacity: 0.5;
-			left: 200px;
 		}
 
 		:first-child.track-button {

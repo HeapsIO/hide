@@ -4,13 +4,21 @@ enum LayoutDirection {
 	Horizontal;
 	Vertical;
 }
+
+enum SplitterPosition {
+	Before;
+	After;
+}
+
 class ResizablePanel extends hide.comp.Component {
 
 	var layoutDirection : LayoutDirection;
+	var splitterPosition : SplitterPosition;
 
-	public function new(layoutDirection : LayoutDirection, element : Element) {
+	public function new(layoutDirection : LayoutDirection, element : Element, splitterPosition : SplitterPosition = Before) {
 		super(null, element);
 		this.layoutDirection = layoutDirection;
+		this.splitterPosition = splitterPosition;
 		var splitter = new Element('<div class="splitter"><div class="drag-handle"></div></div>');
 		switch (layoutDirection) {
 			case Horizontal:
@@ -18,7 +26,12 @@ class ResizablePanel extends hide.comp.Component {
 			case Vertical:
 				splitter.addClass("vertical");
 		}
-		splitter.insertBefore(element);
+
+		if (splitterPosition == Before)
+			splitter.insertBefore(element);
+		else
+			splitter.insertAfter(element);
+		
 		var handle = splitter.find(".drag-handle").first();
 		var drag = false;
 		var startSize = 0;
@@ -35,7 +48,13 @@ class ResizablePanel extends hide.comp.Component {
 		var scenePartition = element.parent();
 		scenePartition.mousemove((e) -> {
 			if (drag){
-				setSize(startSize - ((layoutDirection == Horizontal? e.clientX : e.clientY) - startPos));
+				var newSize = 0;
+				if (splitterPosition == Before)
+					newSize = startSize - ((layoutDirection == Horizontal? e.clientX : e.clientY) - startPos);
+				else 
+					newSize = startSize + ((layoutDirection == Horizontal? e.clientX : e.clientY) - startPos);
+
+				setSize(newSize);
 			}
 		});
 		scenePartition.mouseup((e) -> {

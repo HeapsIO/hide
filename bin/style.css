@@ -1257,27 +1257,20 @@ input[type=checkbox]:checked:after {
   min-height: 120px;
   max-height: 800px;
   position: relative;
+  display: flex;
+  flex-direction: row;
 }
 .fx-animpanel .left-fx-animpanel {
-  position: absolute;
-  top: 20px;
-  left: 0px;
-  width: 200px;
-  height: 100%;
-  overflow: hidden;
+  margin-top: 20px;
+  min-width: 200px;
+  max-width: 700px;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 .fx-animpanel .right-fx-animpanel {
-  position: absolute;
-  top: 0px;
-  left: 200px;
-  right: 0px;
-  bottom: 0px;
   overflow: hidden;
-}
-.fx-animpanel .anim-scroll {
-  overflow-y: scroll;
-  overflow-x: hidden;
-  height: 400px;
+  height: 100%;
+  flex: 1;
 }
 .fx-animpanel .top-bar {
   margin-left: 200px;
@@ -1379,6 +1372,7 @@ input[type=checkbox]:checked:after {
   position: relative;
   background: #4a4a4a;
   text-align: left;
+  white-space: nowrap;
 }
 .fx-animpanel .tracks-header .name {
   padding: 1px;
@@ -1386,9 +1380,8 @@ input[type=checkbox]:checked:after {
   padding-right: 5px;
 }
 .fx-animpanel .tracks-header .abspath {
-  position: absolute;
+  position: relative;
   opacity: 0.5;
-  left: 200px;
 }
 .fx-animpanel .tracks-header :first-child.track-button {
   padding-left: 10px;

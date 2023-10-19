@@ -277,6 +277,7 @@ class FXEditor extends FileView {
 	var tools : hide.comp.Toolbar;
 	var treePanel : hide.comp.ResizablePanel;
 	var animPanel : hide.comp.ResizablePanel;
+	var leftAnimPanel : hide.comp.ResizablePanel;
 	var light : h3d.scene.fwd.DirLight;
 	var lightDirection = new h3d.Vector( 1, 2, -4 );
 
@@ -363,10 +364,8 @@ class FXEditor extends FileView {
 					<div style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
 						<div class="flex heaps-scene"></div>
 						<div class="fx-animpanel">
-							<div class="right-fx-animpanel">
-							</div>
-							<div class="left-fx-animpanel">
-							</div>
+							<div class="left-fx-animpanel"></div>
+							<div class="right-fx-animpanel"></div>
 							<div class="overlay-container">
 								<div class="overlay"></div>
 							</div>
@@ -408,10 +407,15 @@ class FXEditor extends FileView {
 		treePanel.saveDisplayKey = "treeColumn";
 		treePanel.onResize = () -> @:privateAccess if( scene.window != null) scene.window.checkResize();
 
-		var fxPanel = element.find(".fx-animpanel").first();
+		var fxPanel = element.find(".fx-animpanel").first(); 
 		animPanel = new hide.comp.ResizablePanel(Vertical, fxPanel);
 		animPanel.saveDisplayKey = "animPanel";
 		animPanel.onResize = () -> @:privateAccess { if( scene.window != null) scene.window.checkResize(); if( this.curveEditor != null) this.curveEditor.refresh();}
+
+		var leftFxPanel = element.find(".left-fx-animpanel").first();
+		leftAnimPanel = new hide.comp.ResizablePanel(Horizontal, leftFxPanel, After);
+		leftAnimPanel.saveDisplayKey = "leftAnimPanel";
+		leftAnimPanel.onResize = () -> { @:privateAccess if( scene.window != null) scene.window.checkResize(); rebuildAnimPanel(); };
 
 		refreshLayout();
 		element.resize(function(e) {
@@ -1113,7 +1117,6 @@ class FXEditor extends FileView {
 
 	function addCurvesToCurveEditor(curves: Array<Curve>){
 		var rightPanel = element.find(".right-fx-animpanel").first();
-		var leftPanel = element.find(".left-fx-animpanel").first();
 
 		if (this.curveEditor != null)
 			rightPanel.find(".hide-curve-editor").remove();
@@ -1422,6 +1425,10 @@ class FXEditor extends FileView {
 		for (sec in sections) {
 			drawSection(leftPanel, sec, 0);
 		}
+
+		var prefWidth = leftAnimPanel.getDisplayState("size");
+		if (prefWidth != null)
+			leftPanel.width(prefWidth);
 	}
 
 	function addEventsTrack(events: Array<IEvent>, tracksEl: Element) {
