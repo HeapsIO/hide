@@ -1774,16 +1774,6 @@ class FXEditor extends FileView {
 								trackItem("FallOff", [{name: "fallOff"}]),
 								]
 					});
-				case Capsule:
-					menuItems.push({
-						label: "CapsuleLight",
-						menu: [	trackItem("Color", hslTracks(), "color"),
-								trackItem("Power",[{name: "power"}]),
-								trackItem("Size", [{name: "size"}]),
-								trackItem("Length", [{name: "length"}]),
-								trackItem("Range", [{name: "range"}]),
-								]
-					});
 			}
 		}
 		return menuItems;
