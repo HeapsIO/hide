@@ -36,6 +36,7 @@ class CurveEditor extends Component {
 	var gridGroup : Element;
 	var graphGroup : Element;
 	var selectGroup : Element;
+	var overlayGroup : Element;
 
 	var tlHeight = 20;
 
@@ -46,7 +47,7 @@ class CurveEditor extends Component {
 	var previewKeys: Array<CurveKey> = [];
 
 	var currentTime: Float = 0.;
-
+	var duration: Float = 2000.;
 
 	public function new(undo, ?parent) {
 		super(parent,null);
@@ -63,6 +64,7 @@ class CurveEditor extends Component {
 		width = Math.round(svg.element.width());
 
 		gridGroup = svg.group(root, "grid");
+		overlayGroup = svg.group(root, "overlaygroup");
 		graphGroup = svg.group(root, "graph");
 		selectGroup = svg.group(root, "selection-overlay");
 		tlGroup = svg.group(root, "tlgroup");
@@ -133,6 +135,7 @@ class CurveEditor extends Component {
 				updateMouse(e);
 				lastX = e.clientX;
 				refreshTimeline(currentTime);
+				refreshOverlay(duration);
 				//refreshTimeline(true);
 				//afterPan(true);
 			});
@@ -149,6 +152,7 @@ class CurveEditor extends Component {
 				e.preventDefault();
 				e.stopPropagation();
 				refreshTimeline(currentTime);
+				refreshOverlay(duration);
 				//afterPan(false);
 			});
 			e.preventDefault();
@@ -470,6 +474,7 @@ class CurveEditor extends Component {
 			lastY = e.clientY;
 			setPan(xOffset, yOffset);
 			refreshTimeline();
+			refreshOverlay();
 		}, function(e) {
 			saveView();
 		});
@@ -581,6 +586,7 @@ class CurveEditor extends Component {
 		refreshGrid();
 		refreshGraph(anim);
 		refreshTimeline();
+		refreshOverlay();
 	}
 
 	public function refreshGrid() {
@@ -685,6 +691,20 @@ class CurveEditor extends Component {
 		svg.line(markersGroup, xt(this.currentTime), svg.element.height(), xt(this.currentTime), labelHeight / 2.0, { stroke:'#426dae', 'stroke-width':'2px' });
 		drawLabel(markersGroup, xt(this.currentTime), labelHeight / 2.0 + (tlHeight - labelHeight) / 2.0, labelWidth, labelHeight, { fill:'#426dae', stroke: '#426dae', 'stroke-width':'5px', 'stroke-linejoin':'round'});
 		svg.text(markersGroup, xt(this.currentTime), 14, '${rounderCurrTime}', { 'fill':'#e7ecf5', 'text-anchor':'middle', 'font':'10px sans-serif'});
+	}
+
+	public function refreshOverlay(?duration: Float) {
+		overlayGroup.empty();
+
+		if (!Math.isNaN(duration))
+			this.duration = duration;
+
+		var minX = xt(0) - 1;
+		var maxX = xt(this.duration);
+		svg.line(overlayGroup, minX, svg.element.height(), minX, 0, { stroke:'#000000', 'stroke-width':'1px' });
+		svg.line(overlayGroup, maxX, svg.element.height(), maxX, 0, { stroke:'#000000', 'stroke-width':'1px' });
+		svg.rect(overlayGroup, 0, 0, xt(0), svg.element.height(), { 'fill':'#000000', opacity:0.3});
+		svg.rect(overlayGroup, maxX, 0, svg.element.width(), svg.element.height(), { 'fill':'#000000', opacity:0.3});
 	}
 
 	public function refreshGraph(?anim: Bool = false, ?animKey: CurveKey) {

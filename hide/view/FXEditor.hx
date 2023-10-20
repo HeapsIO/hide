@@ -818,8 +818,13 @@ class FXEditor extends FileView {
 
 	function onPrefabChange(p: PrefabElement, ?pname: String) {
 		if(p == data) {
+			if (this.curveEditor != null) {
+				previewMax = data.duration == 0 ? 5000 : data.duration;
+				this.curveEditor.refreshTimeline(currentTime);
+				this.curveEditor.refreshOverlay(data.duration);
+			}
+
 			previewMax = hxd.Math.min(data.duration == 0 ? 5000 : data.duration, previewMax);
-			refreshTimeline(false);
 
 			cullingPreview.radius = data.cullingRadius;
 		}
@@ -1216,6 +1221,12 @@ class FXEditor extends FileView {
 		var savedFoldList : Array<String> = getDisplayState("foldList") != null ? getDisplayState("foldList") : [];
 		var toFoldList : Array<{ el: Element, parentEl: Element }> = [];
 
+		var savedLockList : Array<String> = getDisplayState("lockList") != null ? getDisplayState("lockList") : [];
+		var toLockList : Array<{ parentEl: Element, curves: Array<Curve> }> = [];
+
+		var savedHiddenList : Array<String> = getDisplayState("hiddenList") != null ? getDisplayState("hiddenList") : [];
+		var toHiddenList : Array<{ parentEl: Element, curves: Array<Curve> }> = [];
+
 		var leftPanel = element.find(".left-fx-animpanel").first();
 		
 		function drawSection(parent : Element, section: Section, depth: Int) {
@@ -1249,6 +1260,11 @@ class FXEditor extends FileView {
 
 			function addVisibilityButtonListener(parentEl: Element, affectedCurves : Array<Curve>) {
 				var visibilityEl = parentEl.find(".visibility");
+				var saveKey = affectedCurves.length == 1 ? affectedCurves[0].getAbsPath(true) : parentEl.hasClass("section") ? section.root.getAbsPath(true) : affectedCurves[0].parent.getAbsPath(true);
+
+				if (savedHiddenList.contains(saveKey))
+					toHiddenList.push( {parentEl:parentEl, curves:affectedCurves} );
+
 				visibilityEl.click(function(e) {
 					// Update the value of visibilityEl since at this time
 					// the html tree might not be fully constructed
@@ -1256,11 +1272,17 @@ class FXEditor extends FileView {
 					var visible = visibilityEl.first().hasClass("ico-eye");
 					if (visible) {
 						visibilityEl.removeClass("ico-eye").addClass("ico-eye-slash");
+						
+						savedHiddenList = savedHiddenList.filter(hidden -> !StringTools.contains(hidden, saveKey));
+						savedHiddenList.push(saveKey);
 					}
 					else {
 						visibilityEl.removeClass("ico-eye-slash").addClass("ico-eye");
+						savedHiddenList = savedHiddenList.filter(hidden -> !StringTools.contains(saveKey, hidden));
 					}
 	
+					saveDisplayState("hiddenList", savedHiddenList);
+
 					for (c in affectedCurves)
 						c.hidden = visibilityEl.hasClass("ico-eye-slash");
 	
@@ -1270,20 +1292,33 @@ class FXEditor extends FileView {
 
 			function addLockButtonListener(parentEl: Element, affectedCurves : Array<Curve>) {
 				var lockEl = parentEl.find(".lock");
+				var saveKey = affectedCurves.length == 1 ? affectedCurves[0].getAbsPath(true) : parentEl.hasClass("section") ? section.root.getAbsPath(true) : affectedCurves[0].parent.getAbsPath(true);
+
+				if (savedLockList.contains(saveKey))
+					toLockList.push( {parentEl:parentEl, curves:affectedCurves} );
+
 				lockEl.click(function(e) {
 					// Update the value of lockEl since at this time
 					// the html tree might not be fully constructed
 					lockEl = parentEl.find(".lock");
 					var locked = lockEl.first().hasClass("ico-lock");
+					
 					if (locked) {
 						lockEl.removeClass("ico-lock").addClass("ico-unlock");
+
+						savedLockList = savedLockList.filter(lock -> !StringTools.contains(saveKey, lock));
 					}
 					else {
 						lockEl.removeClass("ico-unlock").addClass("ico-lock");
+
+						savedLockList = savedLockList.filter(lock -> !StringTools.contains(lock, saveKey));
+						savedLockList.push(saveKey);
 					}
 
+					saveDisplayState("lockList", savedLockList);
+
 					for (c in affectedCurves)
-						c.lock = lockEl.hasClass("ico-lock");
+						c.lock = lockEl.first().hasClass("ico-lock");
 
 					rebuildAnimPanel();
 				});
@@ -1318,8 +1353,6 @@ class FXEditor extends FileView {
 						
 						if (!savedFoldList.contains(section.root.getAbsPath(true)))
 							savedFoldList.push(section.root.getAbsPath(true));
-
-						toFoldList.push( {el:foldEl, parentEl: parentEl} );
 					}
 					else {
 						foldEl.removeClass("ico-angle-right").addClass("ico-angle-down");
@@ -1331,6 +1364,7 @@ class FXEditor extends FileView {
 					}
 
 					saveDisplayState("foldList", savedFoldList);
+					rebuildAnimPanel();
 				});
 			}
 
@@ -1446,6 +1480,22 @@ class FXEditor extends FileView {
 			fold.el.removeClass("ico-angle-down").addClass("ico-angle-right");
 			fold.parentEl.children().find(".tracks-header").addClass("hidden");
 			fold.parentEl.children().find(".track-header").addClass("hidden");
+		}
+
+		for (lock in toLockList) {
+			var lockEl = lock.parentEl.find(".lock");
+			lockEl.removeClass("ico-unlock").addClass("ico-lock");
+
+			for (c in lock.curves)
+				c.lock = lockEl.first().hasClass("ico-lock");
+		}
+
+		for (hidden in toHiddenList) {
+			var visibilityEl = hidden.parentEl.find(".visibility");
+			visibilityEl.removeClass("ico-eye").addClass("ico-eye-slash");
+
+			for (c in hidden.curves)
+				c.hidden = visibilityEl.hasClass("ico-eye-slash");
 		}
 
 		var prefWidth = leftAnimPanel.getDisplayState("size");
@@ -1655,6 +1705,7 @@ class FXEditor extends FileView {
 		addCurvesToCurveEditor(curvesToDraw);
 
 		this.curveEditor.refreshTimeline(currentTime);
+		this.curveEditor.refreshOverlay(data.duration);
 	}
 
 	function startDrag(onMove: js.jquery.Event->Void, onStop: js.jquery.Event->Void, ?onKeyDown: js.jquery.Event->Void, ?onKeyUp: js.jquery.Event->Void) {
@@ -1985,8 +2036,10 @@ class FXEditor extends FileView {
 		}
 		if(!pauseButton.isDown()) {
 			currentTime += scene.speed * dt;
-			if(this.curveEditor != null)
+			if(this.curveEditor != null) {
 				this.curveEditor.refreshTimeline(currentTime);
+				this.curveEditor.refreshOverlay(data.duration);
+			}
 			if(currentTime >= previewMax) {
 				currentTime = previewMin;
 
@@ -2083,8 +2136,10 @@ class FXEditor extends FileView {
 
 		if(!pauseButton.isDown()) {
 			currentTime += scene.speed * dt;
-			if(this.curveEditor != null)
+			if(this.curveEditor != null) {
 				this.curveEditor.refreshTimeline(currentTime);
+				this.curveEditor.refreshOverlay(data.duration);
+			}
 			if(currentTime >= previewMax) {
 				currentTime = previewMin;
 
@@ -2230,7 +2285,6 @@ class FXEditor extends FileView {
 	function get_currentTime():Float {
 		return @:privateAccess this.curveEditor.currentTime;
 	}
-
 }
 
 
