@@ -535,6 +535,8 @@ class Model extends FileView {
 	function onRefresh() {
 		this.saveDisplayKey = "Model:" + state.path;
 
+		sceneEditor.loadSavedCameraController3D(true);
+
 		// Remove current instancied render props
 		sceneEditor.context.local3d.removeChildren();
 		
@@ -542,6 +544,7 @@ class Model extends FileView {
 		root = new hrt.prefab.Library();
 		for (c in @:privateAccess sceneEditor.sceneData.children)
 			@:privateAccess sceneEditor.sceneData.children.remove(c);
+		
 
 		@:privateAccess sceneEditor.createRenderProps(@:privateAccess sceneEditor.sceneData);
 
@@ -719,7 +722,18 @@ class Model extends FileView {
 		if ( displayJoints.isDown() )
 			sceneEditor.setJoints(true, null);
 
-		sceneEditor.loadSavedCameraController3D(true);
+		if (sceneEditor.view.getDisplayState("Camera") == null) {
+			var bnds = new h3d.col.Bounds();
+			var centroid = new h3d.Vector();
+	
+			centroid = centroid.add(this.obj.getAbsPos().getPosition());
+			bnds.add(this.obj.getBounds());
+			
+			var s = bnds.toSphere();
+			var r = s.r * 4.0;
+			sceneEditor.cameraController.set(r, null, null, s.getCenter());
+			sceneEditor.cameraController.toTarget();
+		}
 	}
 
 	function setRetargetAnim(b:Bool) {
