@@ -1,35 +1,31 @@
 package hrt.prefab.rfx;
 
-class SSRShader extends hxsl.Shader {
-
+class SSRShader extends h3d.shader.ScreenShader {
 	static var SRC = {
 
 		@global var camera : {
 			var inverseViewProj : Mat4;
 			var position : Vec3;
-			var viewProj : Mat4;
-			var zNear : Float;
-			var zFar : Float;
 		};
 
-		@global var depthMap:Channel;
+		@param var cameraViewProj : Mat4;
 
-		@param var ldrMap:Sampler2D;
+		@global var depthMap : Channel;
+
+		@param var hdrMap : Sampler2D;
+		@param var roughnessMap : Sampler2D;
+		@param var normalMap : Sampler2D;
 
 		@param var intensity : Float;
 		@param var colorMul : Float;
 		@param var maxRayDistance : Float;
 		@param var startFadeDistance : Float;
-		@param var stepsFirstPass : Int;
-		@param var stepsSecondPass : Int;
+		@const var stepsFirstPass : Int;
+		@const var stepsSecondPass : Int;
 		@param var thickness : Float;
-
-		var startRay : Vec2;
-
-		var projectedPosition:Vec4;
-		var pixelColor:Vec4;
-		var transformedNormal : Vec3;
-		var transformedPosition : Vec3;
+		@param var maxRoughness : Float;
+		@param var minCosAngle : Float;
+		@param var invGamma : Float;
 
 		function rand(co : Vec2) : Float {
 			return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
@@ -41,34 +37,49 @@ class SSRShader extends hxsl.Shader {
 
 		var curPos : Vec2;
 		function getDepths( worldPos : Vec3) : Vec2 {
-			var projPos = vec4(worldPos, 1.0) * camera.viewProj;
+			var projPos = vec4(worldPos, 1.0) * cameraViewProj;
 			curPos = projPos.xy / projPos.w;
 			var distToCam = projPos.z / projPos.w;
-			return vec2(distToCam, depthMap.getLod(screenToUv(curPos), 0.0));
+			return vec2(distToCam, depthMap.get(screenToUv(curPos)));
 		}
 
+		function getWorlPos(uv:Vec2):Vec3 {
+			var depth = depthMap.get(uv).r;
+			var ruv = vec4(uvToScreen(uv), depth, 1);
+			var wpos = ruv * camera.inverseViewProj;
+			var result = (wpos.xyz / wpos.w);
+			return result;
+		};
+
 		function fragment() {
-			var depths = getDepths(transformedPosition);
-			if ( depths.r > depths.g )
+			var normal = normalMap.get(calculatedUV).rgb;
+
+			if (normal.dot(normal) <= 0)
 				discard;
 
-			startRay = projectedPosition.xy / projectedPosition.w;
+			var roughnessFactor = 1 - smoothstep(0.0, maxRoughness, roughnessMap.get(calculatedUV).g);
+			if (roughnessFactor <= 0)
+				discard;
 
-			var camDir = (transformedPosition - camera.position).normalize();
-			var reflectedRay = reflectedRay(camDir, transformedNormal);
+			var depth = depthMap.get(calculatedUV);
 
-			var curPosWS = transformedPosition + reflectedRay * maxRayDistance / stepsFirstPass;
+			var initialWPos = getWorlPos(calculatedUV);
+
+			var camDir = (initialWPos - camera.position).normalize();
+			var reflectedRay = reflectedRay(camDir, normal);
+
+			var curPosWS = initialWPos + reflectedRay * maxRayDistance / stepsFirstPass;
 			var hitFirstPass = false;
 
 			for (i in 0 ... stepsFirstPass) {
-				depths = getDepths(curPosWS);
+				var depths = getDepths(curPosWS);
 				var distToCam = depths.r;
 				var curDepth = depths.g;
 				if (distToCam > curDepth && curPos.x <= 1.0 && curPos.x >= -1.0 && curPos.y <= 1.0 && curPos.y >= -1.0) {
 					var ruv = vec4( curPos, curDepth, 1 );
 					var ppos = ruv * camera.inverseViewProj;
 					var wpos = ppos.xyz / ppos.w;
-					if ((wpos - curPosWS).length() < thickness)
+					if ((wpos - curPosWS).length() < thickness && dot(normalMap.get(screenToUv(curPos)).rgb, normal) < minCosAngle)
 						hitFirstPass = true;
 				}
 				if (hitFirstPass == false) {
@@ -82,7 +93,7 @@ class SSRShader extends hxsl.Shader {
 			curPosWS -= reflectedRay * maxRayDistance / stepsFirstPass / stepsSecondPass;
 			var hitSecondPass = false;
 			for (i in 0 ... stepsSecondPass) {
-				depths = getDepths(curPosWS);
+				var depths = getDepths(curPosWS);
 				var distToCam = depths.r;
 				var curDepth = depths.g;
 				if (distToCam < curDepth && curPos.x <= 1.0 && curPos.x >= -1.0 && curPos.y <= 1.0 && curPos.y >= -1.0) {
@@ -100,42 +111,19 @@ class SSRShader extends hxsl.Shader {
 			var fragmentColor = vec3(0.0);
 			var alpha = 0.0;
 			if (hitFirstPass && hitSecondPass) {
-				fragmentColor = ldrMap.getLod(screenToUv(curPos), 0.0).rgb;
-				alpha = 1.0 - saturate(((curPosWS - transformedPosition).length() - startFadeDistance) / (maxRayDistance - startFadeDistance));
+				fragmentColor = hdrMap.getLod(screenToUv(curPos), 0.0).rgb;
+				alpha = 1.0 - saturate(((curPosWS - initialWPos).length() - startFadeDistance) / (maxRayDistance - startFadeDistance));
 				alpha *= intensity;
 			}
 
-			pixelColor.rgba = saturate(vec4(fragmentColor * colorMul, pixelColor.a * alpha));
+			pixelColor.rgba = saturate(vec4(fragmentColor * colorMul, alpha * roughnessFactor));
 		}
 	}
 }
 
-class ApplySSRShader extends h3d.shader.ScreenShader {
-	static var SRC = {
-
-		@param var ssrTexture : Sampler2D;
-
-		@param var colorMul : Float;
-
-		function fragment() {
-			var ssr = ssrTexture.get(calculatedUV).rgba;
-			var reflectedUV = ssr.rg;
-			var alpha = ssr.a;
-
-			pixelColor = ssrTexture.get(calculatedUV).rgba;
-		}
-
-	}
-}
-
-
-@:access(h3d.pass.PassList)
-@:access(h3d.pass.PassObject)
 class SSR extends RendererFX {
 
-	public var ssrShader : SSRShader;
-	public var applySSRPass : h3d.pass.ScreenFx<ApplySSRShader>;
-	var applySSRShader : ApplySSRShader;
+	public var ssrPass : h3d.pass.ScreenFx<SSRShader>;
 
 	var blurPass = new h3d.pass.Blur();
 	var ssr : h3d.mat.Texture;
@@ -151,26 +139,26 @@ class SSR extends RendererFX {
 	@:s public var blurRadius : Float = 1.0;
 	@:s public var randomPower : Float = 0.0;
 	@:s public var textureSize : Float = 0.5;
-
-	@:s public var stepName : String = "MainDraw";
+	@:s public var maxRoughness : Float = 0.75;
+	@:s public var minAngle : Float = 15;
 
 	function new(?parent) {
 		super(parent);
-
-		ssrShader = new SSRShader();
-		applySSRShader = new ApplySSRShader();
-		applySSRPass = new h3d.pass.ScreenFx(applySSRShader);
-		applySSRPass.pass.setBlendMode(Alpha);
-		applySSRPass.pass.depthTest = Always;
+		ssrPass = new h3d.pass.ScreenFx(new SSRShader());
 	}
 
-	var passes : h3d.pass.PassList;
 	override function end( r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {
-		if( step.getName() == stepName ) {
+		if( step == Forward ) {
 			r.mark("SSR");
 
-			var ldrMap = r.ctx.getGlobal("ldrMap");
-			ssrShader.ldrMap = ldrMap;
+			var ssrShader = ssrPass.shader;
+
+			var hdrMap = r.ctx.getGlobal("hdrMap");
+			ssrShader.hdrMap = hdrMap;
+			@:privateAccess ssrShader.roughnessMap = cast(r, h3d.scene.pbr.Renderer).textures.pbr;
+
+			var normalMap = r.ctx.getGlobal("normalMap").texture;
+			ssrShader.normalMap = normalMap;
 
 			ssrShader.colorMul = colorMul;
 			ssrShader.intensity = intensity;
@@ -179,38 +167,23 @@ class SSR extends RendererFX {
 			ssrShader.stepsFirstPass = stepsFirstPass;
 			ssrShader.stepsSecondPass = stepsSecondPass;
 			ssrShader.thickness = thickness;
+			ssrShader.maxRoughness = maxRoughness;
+			ssrShader.minCosAngle = Math.cos(hxd.Math.degToRad(minAngle));
 
-			passes = r.get("ssr");
-			var pbrRenderer = Std.downcast(r, h3d.scene.pbr.Renderer);
-			if ( pbrRenderer == null )
-				return;
-			@:privateAccess pbrRenderer.cullPasses(passes, function(col) return col.inFrustum(r.ctx.camera.frustum));
-			var it = passes.current;
-			while ( it != null ) {
-				if ( it.pass.getShaderByName("hrt.prefab.rfx.SSRShader") == null )
-					it.pass.addShader(ssrShader);
-				it = it.next;
-			}
+			ssrShader.cameraViewProj = r.ctx.camera.m;
 
-			if ( passes.current == null )
-				return;
-			ssr = r.allocTarget("ssr", false, textureSize, RGBA);
+			ssrPass.setGlobals(r.ctx);
+
+			ssr = r.allocTarget("ssr", false, textureSize, hdrMap.format);
 			ssr.clear(0, 0);
 			r.ctx.engine.pushTarget(ssr);
-			r.defaultPass.draw(passes);
+			ssrPass.render();
 			r.ctx.engine.popTarget();
 
 			blurPass.radius = blurRadius;
 			blurPass.apply(r.ctx, ssr);
-		}
 
-		if( step == Forward ) {
-			if ( passes.current == null )
-				return;
-			r.mark("SSRApply");
-			applySSRShader.colorMul = colorMul;
-			applySSRShader.ssrTexture = ssr;
-			applySSRPass.render();
+			h3d.pass.Copy.run(ssr, r.ctx.engine.getCurrentTarget(), Alpha);
 		}
 	}
 
@@ -221,6 +194,8 @@ class SSR extends RendererFX {
 			<dl>
 				<dt>Intensity</dt><dd><input type="range" min="0" max="1" field="intensity"/></dd>
 				<dt>Color Mul</dt><dd><input type="range" min="0" max="1" field="colorMul"/></dd>
+				<dt>Max Roughness</dt><dd><input type="range" min="0" max="1" field="maxRoughness"/></dd>
+				<dt>Min Angle</dt><dd><input type="range" min="0" max="90" field="minAngle"/></dd>
 				<dt>Max ray distance</dt><dd><input type="range" min="0" max="10" field="maxRayDistance"/></dd>
 				<dt>Start Fade Distance</dt><dd><input type="range" min="0" max="10" field="startFadeDistance"/></dd>
 				<dt>Steps first pass</dt><dd><input type="range" min="1" max="30" step="1" field="stepsFirstPass"/></dd>
@@ -228,21 +203,6 @@ class SSR extends RendererFX {
 				<dt>Thickness</dt><dd><input type="range" min="0" max="1" field="thickness"/></dd>
 				<dt>Blur radius</dt><dd><input type="range" min="0" max="5" field="blurRadius"/></dd>
 				<dt>Texture size</dt><dd><input type="range" min="0" max="1" field="textureSize"/></dd>
-			</dl>
-		</div>
-		<div class="group" name="Rendering">
-			<dl>
-				<dt>Render Mode</dt>
-					<dd><select field="stepName">
-						<option value="MainDraw">Main Draw</option>
-						<option value="Decals">Decals</option>
-						<option value="Shadows">Shadows</option>
-						<option value="Lighting">Lighting</option>
-						<option value="Forward">Forward</option>
-						<option value="Overlay">Overlay</option>
-						<option value="BeforeTonemapping">Before Tonemapping</option>
-						<option value="AfterTonemapping">After Tonemapping</option>
-					</select></dd>
 			</dl>
 		</div>
 		'),this);
