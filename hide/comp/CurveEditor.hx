@@ -37,8 +37,11 @@ class CurveEditor extends Component {
 	var graphGroup : Element;
 	var selectGroup : Element;
 	var overlayGroup : Element;
+	var topbarGroup : Element;
+	var topbarKeys : Element;
 
 	var tlHeight = 20;
+	var topBarHeight = 30;
 
 	var refreshTimer : haxe.Timer = null;
 	var lastValue : Dynamic;
@@ -64,8 +67,10 @@ class CurveEditor extends Component {
 		width = Math.round(svg.element.width());
 
 		gridGroup = svg.group(root, "grid");
-		overlayGroup = svg.group(root, "overlaygroup");
 		graphGroup = svg.group(root, "graph");
+		topbarGroup = svg.group(root, "eventGroup");
+		topbarKeys = svg.group(root, "event-handles");
+		overlayGroup = svg.group(root, "overlaygroup");
 		selectGroup = svg.group(root, "selection-overlay");
 		tlGroup = svg.group(root, "tlgroup");
 		markersGroup = svg.group(root, "markers").css({'pointer-events':'none'});
@@ -485,6 +490,7 @@ class CurveEditor extends Component {
 		yOffset = yoff;
 		refreshGrid();
 		graphGroup.attr({transform: 'translate(${xt(0)},${yt(0)})'});
+		topbarKeys.attr({transform: 'translate(${xt(0)}, 0)'});
 	}
 
 	public function setYZoom(yMin: Float, yMax: Float) {
@@ -691,6 +697,11 @@ class CurveEditor extends Component {
 		svg.line(markersGroup, xt(this.currentTime), svg.element.height(), xt(this.currentTime), labelHeight / 2.0, { stroke:'#426dae', 'stroke-width':'2px' });
 		drawLabel(markersGroup, xt(this.currentTime), labelHeight / 2.0 + (tlHeight - labelHeight) / 2.0, labelWidth, labelHeight, { fill:'#426dae', stroke: '#426dae', 'stroke-width':'5px', 'stroke-linejoin':'round'});
 		svg.text(markersGroup, xt(this.currentTime), 14, '${rounderCurrTime}', { 'fill':'#e7ecf5', 'text-anchor':'middle', 'font':'10px sans-serif'});
+
+		// Draw top bar
+		topbarGroup.empty();
+		var topBar = svg.rect(topbarGroup, 0, tlHeight, width, topBarHeight).addClass("event-track");
+		svg.line(topbarGroup, 0, tlHeight + topBarHeight, width, tlHeight + topBarHeight,{ stroke:'#000000', 'stroke-width':'1px' });
 	}
 
 	public function refreshOverlay(?duration: Float) {
@@ -715,17 +726,35 @@ class CurveEditor extends Component {
 		var graphOffX = xt(0);
 		var graphOffY = yt(0);
 		graphGroup.attr({transform: 'translate($graphOffX, $graphOffY)'});
+		
+		topbarKeys.empty();
+		topbarKeys.attr({transform: 'translate($graphOffX, 0)'});
 
 		var curveGroup = svg.group(graphGroup, "curve");
 		var vectorsGroup = svg.group(graphGroup, "vectors");
 		var handlesGroup = svg.group(graphGroup, "handles");
-		var tangentsHandles = svg.group(handlesGroup, "tangents");
 		var keyHandles = svg.group(handlesGroup, "keys");
+		var tangentsHandles = svg.group(handlesGroup, "tangents");
 		var selection = svg.group(graphGroup, "selection");
 		var size = 3;
 
 		function addCircle(group, x: Float, y: Float, ?style: Dynamic) {
 			return svg.circle(group, x, y , size, style).attr({
+				"shape-rendering": "crispEdges"
+			});
+		}
+
+		function addDiamound(group, x: Float, y: Float, ?style: Dynamic) {
+			var size = 4;
+			var points = [
+				new h2d.col.Point(x + size,y),
+				new h2d.col.Point(x,y - size * 1.5),
+				new h2d.col.Point(x - size,y),
+				new h2d.col.Point(x,y + size * 1.5),
+				new h2d.col.Point(x + size,y)
+			];
+
+			return svg.polygon(group, points, style).attr({
 				"shape-rendering": "crispEdges"
 			});
 		}
@@ -795,7 +824,7 @@ class CurveEditor extends Component {
 			return popup;
 		}
 
-		function drawCurve(curve : Curve, ?style: Dynamic){
+		function drawCurve(curve : Curve, ?style: Dynamic) {
 			// Draw curve
 			if(curve.keys.length > 0) {
 				var keys = curve.keys;
@@ -832,7 +861,7 @@ class CurveEditor extends Component {
 			}
 		}
 
-		function drawKeys(curve : Curve, ?style: Dynamic){
+		function drawKeys(curve : Curve, ?style: Dynamic) {
 			for(key in curve.previewKeys) {
 				var kx = xScale*(key.time);
 				var ky = -yScale*(key.value);
@@ -966,28 +995,100 @@ class CurveEditor extends Component {
 				}
 			}
 		}
+
+		function drawTopBarKeys(curve : Curve, ?style: Dynamic) {
+			for(key in curve.keys) {
+				var kx = xScale*(key.time);
+				var ky = -yScale*(key.value);
+
+				var keyEvent = addDiamound(topbarKeys, kx, tlHeight + topBarHeight / 2.0,style);
+				keyEvent.addClass("key-event");
+
+				var selected = selectedKeys.indexOf(key) >= 0;
+				if(selected)
+					keyEvent.addClass("selected");
+				if(!anim) {
+					keyEvent.mousedown(function(e) {
+						if (curve.lock || curve.hidden) return;
+						
+						for (c in curves)
+							c.selected = false;
+						
+						curve.selected = true;
+						
+						if(e.which != 1) return;
+
+						e.preventDefault();
+						e.stopPropagation();
+						var offset = element.offset();
+						beforeChange();
+						var startT = key.time;
+	
+						startDrag(function(e) {
+							var lx = e.clientX - offset.left;
+							var nkx = ixt(lx);
+							var prevTime = key.time;
+							key.time = nkx;
+							if(e.ctrlKey) {
+								key.time = Math.round(key.time * 10) / 10.;
+								key.value = Math.round(key.value * 10) / 10.;
+							}
+							if(e.shiftKey)
+								key.time = startT;
+							fixKey(key);
+							refreshGraph(true, key);
+							onKeyMove(key, prevTime, null);
+							onChange(true);
+						}, function(e) {
+							selectedKeys = [key];
+							fixKey(key);
+							afterChange();
+						});
+						selectedKeys = [key];
+						refreshGraph();
+					});
+					keyEvent.contextmenu(function(e) {
+						if (curve.lock || curve.hidden) return false;
+						
+						for (c in curves)
+							c.selected = false;
+						
+						curve.selected = true;
+						var offset = element.offset();
+						var popup = editPopup(curve, key, e.clientY - offset.top - 50, e.clientX - offset.left);
+						e.preventDefault();
+						return false;
+					});
+				}
+			}
+		}
 		
 		for (curve in curves){
 			var color = '#${StringTools.hex(curve.color)}';
 			var curveStyle: Dynamic = { opacity : curve.selected ? 1 : 0.5, stroke : color, "stroke-width":'${curve.selected ? 2 : 1}px'};
 			var keyStyle: Dynamic = { opacity : curve.selected ? 1 : 0.5};
+			var eventStyle: Dynamic = { 'fill-opacity' : curve.selected ? 1 : 0.5};
 			
 			if (curve.lock || curve.blendCurve) {
 				curveStyle = { opacity : curve.selected ? 1 : 0.5 , stroke : color, "stroke-width":'${curve.selected ? 2 : 1}px', "stroke-dasharray":"5, 3"};
 				keyStyle = { opacity : curve.selected ? 1 : 0.5};
+				eventStyle = { 'fill-opacity' : curve.selected ? 1 : 0.5};
 			}
 
 			if (curve.hidden) {
 				curveStyle = { opacity : 0};
 				keyStyle = { opacity : 0};
+				eventStyle = { 'fill-opacity' : 0};
 			}
 
 			drawCurve(curve, curveStyle);
 			
 			// Blend curve are controlled with parent curve
 			// so we don't want to allow user to use keys on this.s
-			if (!curve.blendCurve)
+			if (!curve.blendCurve) {
 				drawKeys(curve, keyStyle);
+				drawTopBarKeys(curve, eventStyle);
+			}
 		}
 
 		if(selectedKeys.length > 1) {

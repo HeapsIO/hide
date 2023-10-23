@@ -672,104 +672,7 @@ class FXEditor extends FileView {
 		toolsDefs.push({id: "iconVisibility", title : "Toggle 3d icons visibility", icon : "image", type : Toggle((v) -> { hide.Ide.inst.show3DIcons = v; }), defaultValue: true });
 		toolsDefs.push({id: "iconVisibility-menu", title : "", icon: "", type : Popup((e) -> new hide.comp.SceneEditor.IconVisibilityPopup(null, e, sceneEditor))});
 
-
 		tools.saveDisplayKey = "FXScene/tools";
-		/*tools.addButton("video-camera", "Perspective camera", () -> sceneEditor.resetCamera());
-		tools.addSeparator();
-		tools.addButton("arrows", "Gizmo translation Mode", @:privateAccess sceneEditor.gizmo.translationMode, () -> {
-			var items = [{
-				label : "Snap to Grid",
-				click : function() {
-					@:privateAccess sceneEditor.gizmo.snapToGrid = !sceneEditor.gizmo.snapToGrid;
-				},
-				checked: @:privateAccess sceneEditor.gizmo.snapToGrid
-			}];
-			var steps : Array<Float> = sceneEditor.view.config.get("sceneeditor.gridSnapSteps");
-			for (step in steps) {
-				items.push({
-					label : ""+step,
-					click : function() {
-						@:privateAccess sceneEditor.gizmo.moveStep = step;
-					},
-					checked: @:privateAccess sceneEditor.gizmo.moveStep == step
-				});
-			}
-			new hide.comp.ContextMenu(items);
-		});
-		tools.addButton("refresh", "Gizmo rotation Mode", @:privateAccess sceneEditor.gizmo.rotationMode, () -> {
-			var steps : Array<Float> = sceneEditor.view.config.get("sceneeditor.rotateStepCoarses");
-			var items = [{
-				label : "Snap enabled",
-				click : function() {
-					@:privateAccess sceneEditor.gizmo.rotateSnap = !sceneEditor.gizmo.rotateSnap;
-				},
-				checked: @:privateAccess sceneEditor.gizmo.rotateSnap
-			}];
-			for (step in steps) {
-				items.push({
-					label : ""+step+"°",
-					click : function() {
-						@:privateAccess sceneEditor.gizmo.rotateStepCoarse = step;
-					},
-					checked: @:privateAccess sceneEditor.gizmo.rotateStepCoarse == step
-				});
-			}
-			new hide.comp.ContextMenu(items);
-		});
-		tools.addButton("expand", "Gizmo scaling Mode", @:privateAccess sceneEditor.gizmo.scalingMode);
-
-		tools.addSeparator();
-
-
-		function renderProps() {
-			properties.clear();
-			var renderer = scene.s3d.renderer;
-			var group = new Element('<div class="group" name="Renderer"></div>');
-			renderer.editProps().appendTo(group);
-			properties.add(group, renderer.props, function(_) {
-				renderer.refreshProps();
-				if( !properties.isTempChange ) renderProps();
-			});
-			var lprops = {
-				power : Math.sqrt(light.color.r),
-				enable: true
-			};
-			var group = new Element('<div class="group" name="Light">
-				<dl>
-				<dt>Power</dt><dd><input type="range" min="0" max="4" field="power"/></dd>
-				</dl>
-			</div>');
-			properties.add(group, lprops, function(_) {
-				var p = lprops.power * lprops.power;
-				light.color.set(p, p, p);
-			});
-		}
-		tools.addButton("gears", "Renderer Properties", renderProps);
-
-		tools.addToggle("th", "Show grid", function(v) {
-			showGrid = v;
-			axis.visible = (is2D) ? false : v;
-			cullingPreview.visible = (is2D) ? false : v;
-			updateGrid();
-		}, showGrid);
-
-
-		tools.addToggle("cube", "Toggle model axis", null, (v) -> { sceneEditor.showBasis = v; sceneEditor.updateBasis(); });
-
-		tools.addToggle("image", "Toggle 3d icons visibility", null, function(v) { hide.Ide.inst.show3DIcons = v; }, true);
-		tools.addColor("Background color", function(v) {
-			scene.engine.backgroundColor = v;
-			updateGrid();
-		}, scene.engine.backgroundColor);
-		tools.addToggle("refresh", "Auto synchronize", function(b) {
-			autoSync = b;
-		});
-		tools.addToggle("compass", "Local transforms", (v) -> sceneEditor.localTransform = v, sceneEditor.localTransform);
-		tools.addToggle("connectdevelop", "Wireframe",(b) -> { sceneEditor.setWireframe(b); });
-		pauseButton = tools.addToggle("pause", "Pause animation", function(v) {}, false);
-		tools.addRange("Speed", function(v) {
-			scene.speed = v;
-		}, scene.speed);*/
 
 		tools.makeToolbar(toolsDefs, config, keys);
 
@@ -1161,21 +1064,8 @@ class FXEditor extends FileView {
 
 		for (curve in curves){
 			var dispKey = getPath() + "/" + curve.getAbsPath(true);
-			// Was certainly used for set prefered display height of a curve
-			// var height = getDisplayState(dispKey + "/height");
-	
-			// if(height == null)
-			// 	height = curveEditorHeight;
-	
-			// if(height < minHeight)
-			// 	height = minHeight;
-
-			//curveContainer.height(height);
 			curve.maxTime = data.duration == 0 ? 5000 : data.duration;
 			this.curveEditor.saveDisplayKey = dispKey;
-
-			// Why do we want to lock displacement in x when focused on a curve ?
-			//this.curveEditor.lockViewX = true;
 	
 			this.curveEditor.requestXZoom = function(xMin, xMax) {
 				var margin = 10.0;
@@ -1190,8 +1080,6 @@ class FXEditor extends FileView {
 				//refreshDopesheet();
 				refreshTimeline(false);
 			}
-	
-			//this.curveEditor.lockKeyX = true;
 	
 			if(["visibility", "s", "l", "a"].indexOf(curve.name.split(".").pop()) >= 0) {
 				this.curveEditor.minValue = 0;
@@ -1530,6 +1418,12 @@ class FXEditor extends FileView {
 			leftPanel.width(prefWidth);
 	}
 
+	function addEventsToCurveEditor(sections: Array<Section>) {
+		for (sec in sections) {
+			
+		}
+	}
+
 	function addEventsTrack(events: Array<IEvent>, tracksEl: Element) {
 		var trackEl = new Element('<div class="track">
 			<div class="track-header">
@@ -1628,7 +1522,7 @@ class FXEditor extends FileView {
 		afterPanRefreshes = [];
 		var curvesToDraw : Array<Curve> = [];
 
-		function getSection(?root : PrefabElement): Section{		
+		function getSection(?root : PrefabElement): Section {		
 			var section: Section = { root:root, curves: [], children: [], events: []};
 
 			if (root is Curve)
@@ -1670,65 +1564,8 @@ class FXEditor extends FileView {
 			sections.push(getSection(sel));
 		}
 
-		// function getTagRec(elt : PrefabElement) {
-		// 	var p = elt;
-		// 	while(p != null) {
-		// 		var tag = sceneEditor.getTag(p);
-		// 		if(tag != null)
-		// 			return tag;
-		// 		p = p.parent;
-		// 	}
-		// 	return null;
-		// }
-
-		// for(sel in selection) {
-		// 	for(curve in sel.flatten(Curve))
-		// 		getSection(curve).curves.push(curve);
-		// 	for(evt in sel.flatten(Event))
-		// 		getSection(evt).events.push(evt);
-		// 	for(fx in sel.flatten(hrt.prefab.fx.SubFX))
-		// 		getSection(fx).events.push(fx);
-		// }
-
-
-		// for(sec in sections) {
-		// 	var objPanel = new Element('<div>
-		// 		<div class="tracks-header">
-		// 			<div class="track-button fold ico ico-angle-right"></div>
-		// 			<div class="track-button ico ico-eye"></div>
-		// 			<label class="name">${upperCase(sec.elt.name)}</label>
-		// 			<label class="abspath">${sec.elt.getAbsPath(true)}</label>
-		// 			<div class="track-button addtrack ico ico-plus-square"></div>
-		// 			<div class="track-button ico ico-lock"></div>
-		// 		</div>
-		// 		<div class="tracks"></div>
-		// 	</div>');
-
-		// 	leftPanel.append(objPanel);
-			
-		// 	var addTrackEl = objPanel.find(".addtrack");
-
-		// 	var parentTag = getTagRec(sec.elt);
-		// 	if(parentTag != null) {
-		// 		objPanel.find(".name").css("background", parentTag.color);
-		// 	}
-
-		// 	addTrackEl.click(function(e) {
-		// 		var menuItems = getNewTrackMenu(sec.elt);
-		// 		new hide.comp.ContextMenu(menuItems);
-		// 	});
-		// 	var tracksEl = objPanel.find(".tracks");
-
-		// 	if(sec.events.length > 0)
-		// 		addEventsTrack(sec.events, tracksEl);
-
-		// 	var groups = Curve.getGroups(sec.curves);
-		// 	for(group in groups)
-		// 		for (item in group.items)
-		// 			curvesToDraw.push(item);
-		// }
-
 		addHeadersToCurveEditor(sections);
+		//addEventToCurveEditor(sections);
 		addCurvesToCurveEditor(curvesToDraw);
 
 		this.curveEditor.refreshTimeline(currentTime);

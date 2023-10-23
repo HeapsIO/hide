@@ -1283,9 +1283,23 @@ input[type=checkbox]:checked:after {
   height: 100%;
   flex: 1;
 }
-.fx-animpanel .top-bar {
-  margin-left: 200px;
+.fx-animpanel .event-track {
+  background: #161616;
+  fill: #303030;
   position: relative;
+}
+.fx-animpanel .key-event {
+  fill: rgba(187, 187, 187, 0.644);
+  stroke: #000000;
+  stroke-width: 1px;
+  cursor: pointer;
+}
+.fx-animpanel .key-event:hover {
+  fill: #ffd967;
+}
+.fx-animpanel .key-event.selected,
+.fx-animpanel .key-event:hover.selected {
+  fill: #ffbe33;
 }
 .fx-animpanel .timeline {
   background: #161616;
@@ -1493,32 +1507,6 @@ input[type=checkbox]:checked:after {
 }
 .fx-animpanel .track.hidden {
   display: none;
-}
-.fx-animpanel .track .dopesheet {
-  position: relative;
-  height: 20px;
-  flex-grow: 1;
-  background: #333;
-  box-shadow: 0px -1px 0px black inset;
-  overflow-x: hidden;
-}
-.fx-animpanel .track .dopesheet .key {
-  cursor: pointer;
-  user-select: none;
-  position: absolute;
-  width: 5px;
-  margin-top: 1px;
-  margin-left: -2px;
-  height: 15px;
-  background: #9a9a9a;
-  border: 1px solid black;
-}
-.fx-animpanel .track .dopesheet .key:hover {
-  background: white;
-}
-.fx-animpanel .track .dopesheet .key .sp-replacer {
-  border: none;
-  padding: 0;
 }
 .fx-animpanel .track .curve {
   margin-left: 200px;

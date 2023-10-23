@@ -1393,9 +1393,25 @@ input[type=checkbox] {
 		flex: 1;
 	}
 
-	.top-bar {
-		margin-left: @leftPanelWidth;
+	.event-track {
+		background: #161616;
+		fill: #303030;
 		position: relative;
+	}
+	
+
+	.key-event {
+		fill: rgba(187, 187, 187, 0.644);
+		stroke: #000000;
+		stroke-width: 1px;
+		cursor: pointer;
+	}
+
+	.key-event:hover {
+		fill: #ffd967;
+	}
+	.key-event.selected, .key-event:hover.selected {
+		fill: #ffbe33;
 	}
 
 	.timeline {
@@ -1630,33 +1646,6 @@ input[type=checkbox] {
 			
 		&.hidden {
 			display: none;
-		}
-
-		.dopesheet {
-			position: relative;
-			height: 20px;
-			flex-grow: 1;
-			background: #333;
-			box-shadow: 0px -1px 0px black inset;
-			overflow-x: hidden;
-			.key {
-				cursor: pointer;
-				user-select: none;
-				position: absolute;
-				width: 5px;
-				margin-top: 1px;
-				margin-left: -2px;
-				height: 15px;
-				background: #9a9a9a;
-				border: 1px solid black;
-				&:hover {
-					background: white;
-				}
-				.sp-replacer {
-					border: none;
-					padding: 0;
-				}
-			}
 		}
 		
 		.curve {
