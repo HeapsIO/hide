@@ -353,7 +353,7 @@ class IconVisibilityPopup extends Popup {
 class HelpPopup extends Popup {
 	var editor : SceneEditor;
 
-	public function new(?parent : Element, ?root : Element, editor: SceneEditor) {
+	public function new(?parent : Element, ?root : Element, editor: SceneEditor, ?shortcuts: Array<{name:String, shortcut:String}>) {
         super(parent, root);
         this.editor = editor;
 
@@ -362,13 +362,21 @@ class HelpPopup extends Popup {
         popup.css("max-width", "300px");
 
 		var form_div = new Element("<div>").addClass("form-grid").appendTo(popup);
-		var categories = editor.view.keys.sortDocCategories(editor.view.config);
 
-		for (cat => shortcuts in categories) {
+		if (shortcuts != null) {
+			for (shortcut in shortcuts) {
+				form_div.append(new Element('<label>${shortcut.name}</label><span>${shortcut.shortcut}</span>'));
+			}
+
+			return;
+		}
+
+		var categories = editor.view.keys.sortDocCategories(editor.view.config);
+		for (cat => sc in categories) {
 			if (cat == "none")
 				continue;
 			form_div.append(new Element('<p style="grid-column: 1 / -1">$cat</p>'));
-			for (s in shortcuts) {
+			for (s in sc) {
 				form_div.append(new Element('<label>${s.name}</label><span>${s.shortcut}</span>'));
 			}
 		}

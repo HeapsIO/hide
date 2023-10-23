@@ -299,6 +299,7 @@ class FXEditor extends FileView {
 	var timelineLeftMargin = 10;
 	var xScale = 200.;
 	var xOffset = 0.;
+	var tlKeys: Array<{name:String, shortcut:String}> = [];
 
 	var pauseButton : hide.comp.Toolbar.ToolToggle;
 	@:isVar var currentTime(get, set) : Float;
@@ -364,6 +365,7 @@ class FXEditor extends FileView {
 					<div style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
 						<div class="flex heaps-scene"></div>
 						<div class="fx-animpanel">
+							<div class="help-button icon ico ico-question" title="help"></div>
 							<div class="left-fx-animpanel"></div>
 							<div class="right-fx-animpanel"></div>
 							<div class="overlay-container">
@@ -416,6 +418,31 @@ class FXEditor extends FileView {
 		leftAnimPanel = new hide.comp.ResizablePanel(Horizontal, leftFxPanel, After);
 		leftAnimPanel.saveDisplayKey = "leftAnimPanel";
 		leftAnimPanel.onResize = () -> { @:privateAccess if( scene.window != null) scene.window.checkResize(); rebuildAnimPanel(); };
+
+		tlKeys.empty();
+		tlKeys.push({name:"Undo", shortcut:"Ctrl Z"});
+		tlKeys.push({name:"Drag / zoom on Y axis", shortcut:"Hold shift during action"});
+		tlKeys.push({name:"Drag / zoom on X axis", shortcut:"Hold alt during action"});
+		tlKeys.push({name:"Edit keyframe", shortcut:"Right-click"});
+		tlKeys.push({name:"Snap keyframe", shortcut:"Ctrl while dragging"});
+		tlKeys.push({name:"Zoom on curves", shortcut:"F"});
+		tlKeys.push({name:"Move in curve graph", shortcut:"Mouse wheel"});
+
+		var helpButton = element.find(".help-button").first();
+		var p : hide.comp.Popup = null;
+		helpButton.click(function(e) {
+			if (p == null) {
+				p = new hide.comp.SceneEditor.HelpPopup(null, helpButton, sceneEditor, tlKeys);
+				@:privateAccess p.popup.css({'position':'absolute', 'left':'30px','top':'800px'});
+				//p = open(el);
+				p.onClose = function() {
+					p = null;
+				}
+			}
+			else {
+				p.close();
+			}
+		});
 
 		refreshLayout();
 		element.resize(function(e) {
