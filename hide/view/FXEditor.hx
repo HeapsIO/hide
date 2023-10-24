@@ -1059,9 +1059,11 @@ class FXEditor extends FileView {
 		// Build new curve editor with all the required comps
 		this.curveEditor = new hide.comp.CurveEditor(this.undo, rightPanel);
 
+		var overviewEditor = new hide.comp.CurveEditor.OverviewEditor(rightPanel, this.curveEditor);
 		var eventEditor = new hide.comp.CurveEditor.EventsEditor(rightPanel, this, this.curveEditor);
 		for (e in events)
 			eventEditor.events.push(e);
+		
 
 		var minHeight = 40;
 		var curveEditorHeight = 100;

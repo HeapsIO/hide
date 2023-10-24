@@ -1391,12 +1391,20 @@ input[type=checkbox] {
 		overflow: hidden;
 		height:100%;
 		flex: 1;
-	}
 
-	.event-track {
-		background: #161616;
-		fill: #303030;
-		position: relative;
+		.overview {
+			background: #161616;
+			fill: #303030;
+			position: relative;
+
+			.overview-selection {
+				fill: #17ffeb12;
+				stroke: #000000;
+				stroke-width: 1px;
+				pointer-events: all;
+				cursor: move;
+			}
+		}
 	}
 
 	.events {
