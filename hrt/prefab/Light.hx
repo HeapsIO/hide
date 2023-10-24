@@ -632,11 +632,13 @@ class Light extends Object3D {
 			</div>'
 		);
 
-		ctx.properties.add(cascadeGroup,this,function(pname) {
-			ctx.onChange(this,pname);
-			params.resize(cascadeNbr);
-			if( pname == "cascadeNbr" ) ctx.rebuildProperties();
-		});
+		if ( cascade && shadows.mode != None ) {
+			ctx.properties.add(cascadeGroup,this,function(pname) {
+				ctx.onChange(this,pname);
+				params.resize(cascadeNbr);
+				if( pname == "cascadeNbr" ) ctx.rebuildProperties();
+			});
+		}
 
 		var list = cascadeGroup.find("ul#params");
 		for ( param in params ) {
