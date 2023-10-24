@@ -4,6 +4,7 @@ enum abstract LightKind(String) {
 	var Point;
 	var Directional;
 	var Spot;
+	var Capsule;
 }
 
 typedef LightShadows = {
@@ -65,6 +66,9 @@ class Light extends Object3D {
 	@:s public var minDist : Float = -1;
 	@:s public var autoShrink : Bool = true;
 	@:s public var autoZPlanes : Bool = false;
+
+	// Capsule
+	@:s public var length : Float = 1.0;
 
 	// Cascade
 	@:s public var cascade : Bool = false;
@@ -150,12 +154,14 @@ class Light extends Object3D {
 			case Point: ctx.local3d = new h3d.scene.fwd.PointLight(ctx.local3d);
 			case Directional: ctx.local3d = new h3d.scene.fwd.DirLight(ctx.local3d);
 			case Spot:
+			case Capsule:
 			}
 		} else {
 			switch( kind ) {
 			case Point: ctx.local3d = new h3d.scene.pbr.PointLight(ctx.local3d);
 			case Directional: ctx.local3d = new h3d.scene.pbr.DirLight(ctx.local3d, cascade);
 			case Spot: ctx.local3d = new h3d.scene.pbr.SpotLight(ctx.local3d);
+			case Capsule: ctx.local3d = new h3d.scene.pbr.CapsuleLight(ctx.local3d);
 			}
 		}
 		ctx.local3d.name = name;
@@ -225,6 +231,12 @@ class Light extends Object3D {
 				pl.range = range;
 				pl.size = size;
 				pl.zNear = hxd.Math.max(0.02, zNear);
+			case Capsule:
+				var cl = Std.downcast(light, h3d.scene.pbr.CapsuleLight);
+				cl.range = range;
+				cl.length = length;
+				cl.radius = size;
+				cl.zNear = hxd.Math.max(0.02, zNear);
 			default:
 			}
 			pbrLight.color.setColor(color);
@@ -257,6 +269,7 @@ class Light extends Object3D {
 		var debugPoint = ctx.local3d.find(c -> if(c.name == "_debugPoint") c else null);
 		var debugDir = ctx.local3d.find(c -> if(c.name == "_debugDir") c else null);
 		var debugSpot = ctx.local3d.find(c -> if(c.name == "_debugSpot") c else null);
+		var debugCapsule = ctx.local3d.find(c -> if(c.name == "_debugCapsule") c else null);
 		var sel : h3d.scene.Object = null;
 
 		switch(kind){
@@ -265,6 +278,7 @@ class Light extends Object3D {
 
 				if(debugDir != null) debugDir.remove();
 				if(debugSpot != null) debugSpot.remove();
+				if(debugCapsule != null) debugCapsule.remove();
 
 				var rangeSphere : h3d.scene.Sphere;
 
@@ -272,26 +286,33 @@ class Light extends Object3D {
 					debugPoint = new h3d.scene.Object(ctx.local3d);
 					debugPoint.name = "_debugPoint";
 
-
-
 					rangeSphere = new h3d.scene.Sphere(0xffffff, 1, true, debugPoint);
 					rangeSphere.visible = false;
 					rangeSphere.ignoreBounds = true;
 					rangeSphere.ignoreCollide = true;
 					rangeSphere.material.mainPass.setPassName("overlay");
 					rangeSphere.material.shadows = false;
+
+					var sizeSphere = new h3d.scene.Sphere(0xffff00, 1, true, rangeSphere);
+					sizeSphere.visible = true;
+					sizeSphere.ignoreBounds = true;
+					sizeSphere.ignoreCollide = true;
+					sizeSphere.material.mainPass.setPassName("overlay");
+					sizeSphere.material.shadows = false;
 				}
 				else {
 					rangeSphere = cast debugPoint.getChildAt(0);
 				}
 
 				rangeSphere.material.color.setColor(color);
+				cast(rangeSphere.getChildAt(0), h3d.scene.Sphere).setScale(size / range);
 				sel = rangeSphere;
 
 			case Directional :
 
 				if(debugPoint != null) debugPoint.remove();
 				if(debugSpot != null) debugSpot.remove();
+				if(debugCapsule != null) debugCapsule.remove();
 
 				if(debugDir == null) {
 					debugDir = new h3d.scene.Object(ctx.local3d);
@@ -318,6 +339,7 @@ class Light extends Object3D {
 
 				if(debugDir != null) debugDir.remove();
 				if(debugPoint != null) debugPoint.remove();
+				if(debugCapsule != null) debugCapsule.remove();
 
 				if(debugSpot == null) {
 					debugSpot = new h3d.scene.Object(ctx.local3d);
@@ -356,6 +378,42 @@ class Light extends Object3D {
 					sel = g;
 				}
 
+			case Capsule:
+
+				if(debugDir != null) debugDir.remove();
+				if(debugPoint != null) debugPoint.remove();
+				if(debugSpot != null) debugSpot.remove();
+
+				var rangeCapsule : h3d.scene.Capsule;
+
+				if(debugCapsule == null) {
+					debugCapsule = new h3d.scene.Object(ctx.local3d);
+					debugCapsule.name = "_debugCapsule";
+
+					rangeCapsule = new h3d.scene.Capsule(0xffffff, 1, true, debugCapsule);
+					rangeCapsule.visible = false;
+					rangeCapsule.ignoreBounds = true;
+					rangeCapsule.ignoreCollide = true;
+					rangeCapsule.material.mainPass.setPassName("overlay");
+					rangeCapsule.material.shadows = false;
+
+					var sizeCapsule = new h3d.scene.Capsule(0xffff00, 1, true, rangeCapsule);
+					sizeCapsule.visible = true;
+					sizeCapsule.ignoreBounds = true;
+					sizeCapsule.ignoreCollide = true;
+					sizeCapsule.material.mainPass.setPassName("overlay");
+					sizeCapsule.material.shadows = false;
+				}
+				else {
+					rangeCapsule = cast(debugCapsule.getChildAt(0));
+				}
+
+				rangeCapsule.length = length / range;
+				var sizeCapsule = cast(rangeCapsule.getChildAt(0), h3d.scene.Capsule);
+				sizeCapsule.radius = size / range;
+				sizeCapsule.length = length / range;
+				sel = rangeCapsule;
+
 		}
 
 
@@ -371,8 +429,8 @@ class Light extends Object3D {
 					icon.texture = ide.getTexture(ide.getHideResPath("icons/PointLight.png"));
 				case Spot:
 					icon.texture = ide.getTexture(ide.getHideResPath("icons/SpotLight.png"));
-				default:
-					throw "unknown light type";
+				case Capsule:
+					icon.texture = ide.getTexture(ide.getHideResPath("icons/CapsuleLight.png"));
 			}
 		}
 
@@ -382,6 +440,7 @@ class Light extends Object3D {
 			if( debugPoint != null ) debugPoint.visible = (isSelected || ctx.shared.editorDisplay);
 			if( debugDir != null ) debugDir.visible = (isSelected || ctx.shared.editorDisplay);
 			if( debugSpot != null ) debugSpot.visible = (isSelected || ctx.shared.editorDisplay);
+			if( debugCapsule != null ) debugCapsule.visible = (isSelected || ctx.shared.editorDisplay);
 			sel.name = "__selection";
 		}
 
@@ -413,6 +472,7 @@ class Light extends Object3D {
 							<option value="Point">Point</option>
 							<option value="Directional">Directional</option>
 							<option value="Spot">Spot</option>
+							<option value="Capsule">Capsule</option>
 						</select></dd>
 					<dt>Color</dt><dd><input type="color" field="color"/></dd>
 					<dt>Power</dt><dd><input type="range" min="0" max="10" field="power"/></dd>
@@ -448,6 +508,13 @@ class Light extends Object3D {
 		case Point:
 			group.append(hide.comp.PropsEditor.makePropsList([
 				{ name: "size", t: PFloat(0, 5), def: 0 },
+				{ name: "range", t: PFloat(1, 20), def: 10 },
+				{ name: "zNear", t: PFloat(0.02, 5), def: 0.02 },
+			]));
+		case Capsule:
+			group.append(hide.comp.PropsEditor.makePropsList([
+				{ name: "size", t: PFloat(0, 5), def: 0 },
+				{ name: "length", t: PFloat(0, 5), def: 0 },
 				{ name: "range", t: PFloat(1, 20), def: 10 },
 				{ name: "zNear", t: PFloat(0.02, 5), def: 0.02 },
 			]));
