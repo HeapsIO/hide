@@ -19,6 +19,7 @@ class CurveEditor extends Component {
 	public var yOffset = 0.;
 
 	public var curves(default, set) : Array<hrt.prefab.Curve>;
+	public var events : Array<Dynamic> = [];
 	public var undo : hide.ui.UndoHistory;
 
 	public var lockViewX = false;
@@ -506,6 +507,9 @@ class CurveEditor extends Component {
 	}
 
 	public function zoomAll() {
+		if (curves.length == 0)
+			return;
+
 		// Compute a surrounding box that encapsulate all the visible curves
 		var bounds = new h2d.col.Bounds();
 		for (c in curves) {
@@ -730,6 +734,7 @@ class CurveEditor extends Component {
 		topbarKeys.empty();
 		topbarKeys.attr({transform: 'translate($graphOffX, 0)'});
 
+		var eventGroup = svg.group(graphGroup, "events");
 		var curveGroup = svg.group(graphGroup, "curve");
 		var vectorsGroup = svg.group(graphGroup, "vectors");
 		var handlesGroup = svg.group(graphGroup, "handles");
@@ -1062,6 +1067,18 @@ class CurveEditor extends Component {
 				}
 			}
 		}
+
+		function drawEvent(event:Dynamic, eventCount: Int, ?style: Dynamic) {
+			var eventHeight = 18;
+			var spacing = 2;
+			var fontSize = 12;
+			var evtBody = svg.rect(eventGroup, event.e.time * xScale, (eventHeight + spacing) * eventCount, event.info.length * xScale, eventHeight, style);
+			var evtLabel = svg.text(eventGroup, event.e.time * xScale + 5, (eventHeight + spacing) * eventCount + fontSize, event.info.label, { 'font-size':fontSize});
+
+			var element = event.e.getEventPrefab();
+			evtBody.addClass("event");
+			evtBody.addClass(element.type);
+		}
 		
 		for (curve in curves){
 			var color = '#${StringTools.hex(curve.color)}';
@@ -1089,6 +1106,11 @@ class CurveEditor extends Component {
 				drawKeys(curve, keyStyle);
 				drawTopBarKeys(curve, eventStyle);
 			}
+		}
+
+		var eventCount = 0;
+		for (event in events) {
+			drawEvent(event, eventCount++, { 'opacity':'0.5' });
 		}
 
 		if(selectedKeys.length > 1) {

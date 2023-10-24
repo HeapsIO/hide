@@ -1418,10 +1418,13 @@ class FXEditor extends FileView {
 			leftPanel.width(prefWidth);
 	}
 
-	function addEventsToCurveEditor(sections: Array<Section>) {
-		for (sec in sections) {
-			
+	function addEventsToCurveEditor(events: Array<IEvent>) {
+		for (e in events) {	
+			var info = e.getDisplayInfo(sceneEditor.curEdit);
+			this.curveEditor.events.push({ e:e,info:info });
 		}
+
+		this.curveEditor.refresh();
 	}
 
 	function addEventsTrack(events: Array<IEvent>, tracksEl: Element) {
@@ -1521,6 +1524,7 @@ class FXEditor extends FileView {
 		var selection = sceneEditor.getSelection();
 		afterPanRefreshes = [];
 		var curvesToDraw : Array<Curve> = [];
+		var eventsToDraw : Array<IEvent> = [];
 
 		function getSection(?root : PrefabElement): Section {		
 			var section: Section = { root:root, curves: [], children: [], events: []};
@@ -1545,13 +1549,19 @@ class FXEditor extends FileView {
 				}
 
 				if (child.flatten(Event).length > 0) {
-					if (child is Event)
-						section.events.push(Std.downcast(child, Event));
+					if (child is Event) {
+						var e = Std.downcast(child, Event);
+						section.events.push(e);
+						eventsToDraw.push(e);
+					}
 				}
 
 				if (child.flatten(hrt.prefab.fx.SubFX).length > 0) {
-					if (child is hrt.prefab.fx.SubFX)
-						section.events.push(Std.downcast(child, hrt.prefab.fx.SubFX));
+					if (child is hrt.prefab.fx.SubFX) {
+						var s = Std.downcast(child, hrt.prefab.fx.SubFX);
+						section.events.push(s);
+						eventsToDraw.push(s);
+					}
 				}
 			
 			}
@@ -1565,8 +1575,8 @@ class FXEditor extends FileView {
 		}
 
 		addHeadersToCurveEditor(sections);
-		//addEventToCurveEditor(sections);
 		addCurvesToCurveEditor(curvesToDraw);
+		addEventsToCurveEditor(eventsToDraw);
 
 		this.curveEditor.refreshTimeline(currentTime);
 		this.curveEditor.refreshOverlay(data.duration);

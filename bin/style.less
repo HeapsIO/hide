@@ -1398,7 +1398,30 @@ input[type=checkbox] {
 		fill: #303030;
 		position: relative;
 	}
-	
+
+	.events {
+		.event {
+			stroke:#000;
+			stroke-width: 1px;;
+			cursor: pointer;
+			user-select: none;
+			fill: #202;
+			overflow-x: hidden;
+			padding-top: 3px;
+		}
+
+		.event.subFX {
+			fill: #1b3673;
+		}
+
+		.event:hover {
+			stroke: white;
+		}
+
+		text {
+			pointer-events: none;
+		}
+	}
 
 	.key-event {
 		fill: rgba(187, 187, 187, 0.644);
@@ -1655,48 +1678,6 @@ input[type=checkbox] {
 		}
 		.curves.hidden {
 			display: none;
-		}
-
-		.events {
-			position: relative;
-			overflow-x: hidden;
-			flex-grow: 1;
-			box-shadow: 0px -1px 0px black inset;
-
-			.event {
-				cursor: pointer;
-				min-width: 10px;
-				display: inline-block;
-				height: 17px;
-				user-select: none;
-				position: absolute;
-				background: #202;
-				overflow-x: hidden;
-				padding-top: 3px;
-
-				label, i {
-					margin-left: 3px;
-					display: inline;
-				}
-			}
-
-			.event.subFX {
-				background: #1b3673;
-			}
-
-			.event:hover {
-				color: white;
-			}
-		}
-		label.curve-label {
-			user-select: none;
-			pointer-events: none;
-			position: absolute;
-			text-transform: capitalize;
-			margin-left: 15px;
-			font-size: 20px;
-			color: white;
-			mix-blend-mode: overlay;
 		}
 	}
 }

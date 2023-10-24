@@ -1288,6 +1288,24 @@ input[type=checkbox]:checked:after {
   fill: #303030;
   position: relative;
 }
+.fx-animpanel .events .event {
+  stroke: #000;
+  stroke-width: 1px;
+  cursor: pointer;
+  user-select: none;
+  fill: #202;
+  overflow-x: hidden;
+  padding-top: 3px;
+}
+.fx-animpanel .events .event.subFX {
+  fill: #1b3673;
+}
+.fx-animpanel .events .event:hover {
+  stroke: white;
+}
+.fx-animpanel .events text {
+  pointer-events: none;
+}
 .fx-animpanel .key-event {
   fill: rgba(187, 187, 187, 0.644);
   stroke: #000000;
@@ -1515,44 +1533,6 @@ input[type=checkbox]:checked:after {
 }
 .fx-animpanel .track .curves.hidden {
   display: none;
-}
-.fx-animpanel .track .events {
-  position: relative;
-  overflow-x: hidden;
-  flex-grow: 1;
-  box-shadow: 0px -1px 0px black inset;
-}
-.fx-animpanel .track .events .event {
-  cursor: pointer;
-  min-width: 10px;
-  display: inline-block;
-  height: 17px;
-  user-select: none;
-  position: absolute;
-  background: #202;
-  overflow-x: hidden;
-  padding-top: 3px;
-}
-.fx-animpanel .track .events .event label,
-.fx-animpanel .track .events .event i {
-  margin-left: 3px;
-  display: inline;
-}
-.fx-animpanel .track .events .event.subFX {
-  background: #1b3673;
-}
-.fx-animpanel .track .events .event:hover {
-  color: white;
-}
-.fx-animpanel .track label.curve-label {
-  user-select: none;
-  pointer-events: none;
-  position: absolute;
-  text-transform: capitalize;
-  margin-left: 15px;
-  font-size: 20px;
-  color: white;
-  mix-blend-mode: overlay;
 }
 /* Poly editor */
 .poly-editor .editModeButton {
