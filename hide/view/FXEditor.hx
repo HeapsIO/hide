@@ -1050,13 +1050,18 @@ class FXEditor extends FileView {
 		}
 	}
 
-	function addCurvesToCurveEditor(curves: Array<Curve>){
+	function addCurvesToCurveEditor(curves: Array<Curve>, events: Array<Dynamic>){
 		var rightPanel = element.find(".right-fx-animpanel").first();
 
 		if (this.curveEditor != null)
 			rightPanel.find(".hide-curve-editor").remove();
 
+		// Build new curve editor with all the required comps
 		this.curveEditor = new hide.comp.CurveEditor(this.undo, rightPanel);
+
+		var eventEditor = new hide.comp.CurveEditor.EventsEditor(rightPanel, this, this.curveEditor);
+		for (e in events)
+			eventEditor.events.push(e);
 
 		var minHeight = 40;
 		var curveEditorHeight = 100;
@@ -1418,102 +1423,6 @@ class FXEditor extends FileView {
 			leftPanel.width(prefWidth);
 	}
 
-	function addEventsToCurveEditor(events: Array<IEvent>) {
-		for (e in events) {	
-			var info = e.getDisplayInfo(sceneEditor.curEdit);
-			this.curveEditor.events.push({ e:e,info:info });
-		}
-
-		this.curveEditor.refresh();
-	}
-
-	function addEventsTrack(events: Array<IEvent>, tracksEl: Element) {
-		var trackEl = new Element('<div class="track">
-			<div class="track-header">
-				<div class="track-prop">
-					<label>Events</label>
-				</div>
-				<div class="events"></div>
-			</div>
-		</div>');
-		var eventsEl = trackEl.find(".events");
-		var items : Array<{el: Element, event: IEvent }> = [];
-		function refreshItems() {
-			var yoff = 1;
-			for(item in items) {
-				var info = item.event.getDisplayInfo(sceneEditor.curEdit);
-				item.el.css({left: xt(item.event.time), top: yoff});
-				if (info.loop) {
-					item.el.get(0).style.removeProperty("width");
-					item.el.css({right: 0});
-				} else {
-					item.el.get(0).style.removeProperty("right");
-					item.el.width(info.length * xScale);
-				}
-				item.el.find("label").text(info.label);
-				yoff += 21;
-			}
-			eventsEl.css("height", yoff + 1);
-		}
-
-		function refreshTrack() {
-			trackEl.remove();
-			trackEl = addEventsTrack(events, tracksEl);
-		}
-
-		for(event in events) {
-			var info = event.getDisplayInfo(sceneEditor.curEdit);
-			var evtEl = new Element('<div class="event">
-				<i class="icon ico ico-play-circle"></i><label></label>
-			</div>').appendTo(eventsEl);
-			evtEl.addClass(event.getEventPrefab().type);
-			items.push({el: evtEl, event: event });
-
-			var element = event.getEventPrefab();
-
-			evtEl.click(function(e) {
-				sceneEditor.showProps(element);
-			});
-
-			evtEl.contextmenu(function(e) {
-				e.preventDefault();
-				e.stopPropagation();
-				new hide.comp.ContextMenu([
-					{
-						label: "Delete", click: function() {
-							events.remove(event);
-							sceneEditor.deleteElements([element], refreshTrack);
-						}
-					}
-				]);
-			});
-
-			evtEl.mousedown(function(e) {
-				var offsetX = e.clientX - xt(event.time);
-				e.preventDefault();
-				e.stopPropagation();
-				if(e.button == 2) {
-				}
-				else {
-					var prevVal = event.time;
-					startDrag(function(e) {
-						var x = ixt(e.clientX - offsetX);
-						x = hxd.Math.max(0, x);
-						x = untyped parseFloat(x.toFixed(5));
-						event.time = x;
-						refreshItems();
-					}, function(e) {
-						undo.change(Field(event, "time", prevVal), refreshItems);
-					});
-				}
-			});
-		}
-		refreshItems();
-		afterPanRefreshes.push(function(anim) refreshItems());
-		tracksEl.append(trackEl);
-		return trackEl;
-	}
-
 	function rebuildAnimPanel() {
 		if(element == null)
 			return;
@@ -1575,8 +1484,7 @@ class FXEditor extends FileView {
 		}
 
 		addHeadersToCurveEditor(sections);
-		addCurvesToCurveEditor(curvesToDraw);
-		addEventsToCurveEditor(eventsToDraw);
+		addCurvesToCurveEditor(curvesToDraw, eventsToDraw);
 
 		this.curveEditor.refreshTimeline(currentTime);
 		this.curveEditor.refreshOverlay(data.duration);

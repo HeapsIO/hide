@@ -4,6 +4,98 @@ import hrt.prefab.Curve;
 
 typedef CurveKey = hrt.prefab.Curve.CurveKey;
 
+interface CurveEditorComponent {
+	function refreshComp(): Void;
+}
+
+class EventsEditor extends Component implements CurveEditorComponent
+{
+	public var fxEditor : hide.view.FXEditor;
+	public var curveEditor : CurveEditor;
+	public var events : Array<hrt.prefab.fx.Event.IEvent> = [];
+
+	var svg : SVG;
+	var eventGroup: Element;
+
+	public function new(?parent, fxEditor: hide.view.FXEditor, curveEditor: CurveEditor) {
+		super(parent, null);
+
+		this.fxEditor = fxEditor;
+		this.curveEditor = curveEditor;
+		this.curveEditor.components.push(this);
+
+		@:privateAccess svg = this.curveEditor.svg;
+	}
+
+	public function refreshComp() {
+		if (eventGroup != null)
+			eventGroup.empty();
+
+		eventGroup = svg.group(@:privateAccess this.curveEditor.graphGroup, "events");
+
+		var eventCount = 0;
+
+		function drawEvent(event:hrt.prefab.fx.Event.IEvent, eventCount: Int, ?style: Dynamic) {
+			var eventHeight = 18;
+			var spacing = 2;
+			var fontSize = 12;
+
+			if (@:privateAccess fxEditor.sceneEditor.curEdit == null)
+				return;
+
+			var infos = event.getDisplayInfo(@:privateAccess fxEditor.sceneEditor.curEdit);
+			var element = event.getEventPrefab();
+
+			var evtBody = svg.rect(eventGroup, event.time * this.curveEditor.xScale, (eventHeight + spacing) * eventCount, infos.length * this.curveEditor.xScale, eventHeight, style);
+			var evtLabel = svg.text(eventGroup, event.time * this.curveEditor.xScale + 5, (eventHeight + spacing) * eventCount + fontSize, infos.label, { 'font-size':fontSize});
+
+			evtBody.addClass("event");
+			evtBody.addClass(element.type);
+
+			evtBody.click(function(e) {
+				@:privateAccess this.fxEditor.sceneEditor.showProps(element);
+			});
+
+			evtBody.contextmenu(function(e) {
+				e.preventDefault();
+				e.stopPropagation();
+				new hide.comp.ContextMenu([
+					{
+						label: "Delete", click: function() {
+							events.remove(event);
+							@:privateAccess fxEditor.sceneEditor.deleteElements([element], refreshComp);
+						}
+					}
+				]);
+			});
+
+			evtBody.mousedown(function(e) {
+				var offsetX = e.clientX - @:privateAccess this.curveEditor.xt(event.time);
+				e.preventDefault();
+				e.stopPropagation();
+				if(e.button == 2) {
+				}
+				else {
+					var prevVal = event.time;
+					@:privateAccess fxEditor.startDrag(function(e) {
+						var x = @:privateAccess this.curveEditor.ixt(e.clientX - offsetX);
+						x = hxd.Math.max(0, x);
+						x = untyped parseFloat(x.toFixed(5));
+						event.time = x;
+						refreshComp();
+					}, function(e) {
+						this.curveEditor.undo.change(Field(event, "time", prevVal), refreshComp);
+					});
+				}
+			});
+		}
+
+		for (event in events) {
+			drawEvent(event, eventCount++, { 'opacity':'0.5' });
+		}
+	}
+}
+
 class CurveEditor extends Component {
 	
 	public static var CURVE_COLORS: Array<Int> = [
@@ -19,7 +111,6 @@ class CurveEditor extends Component {
 	public var yOffset = 0.;
 
 	public var curves(default, set) : Array<hrt.prefab.Curve>;
-	public var events : Array<Dynamic> = [];
 	public var undo : hide.ui.UndoHistory;
 
 	public var lockViewX = false;
@@ -29,6 +120,8 @@ class CurveEditor extends Component {
 	public var minValue : Float = 0.;
 	public var maxValue : Float = 0.;
 
+	public var components : Array<CurveEditorComponent> = [];
+	
 	var svg : hide.comp.SVG;
 	var width = 0;
 	var height = 0;
@@ -40,11 +133,11 @@ class CurveEditor extends Component {
 	var overlayGroup : Element;
 	var topbarGroup : Element;
 	var topbarKeys : Element;
-
+	
+	
 	var tlHeight = 20;
 	var topBarHeight = 30;
 
-	var refreshTimer : haxe.Timer = null;
 	var lastValue : Dynamic;
 
 	var selectedKeys: Array<CurveKey> = [];
@@ -734,7 +827,6 @@ class CurveEditor extends Component {
 		topbarKeys.empty();
 		topbarKeys.attr({transform: 'translate($graphOffX, 0)'});
 
-		var eventGroup = svg.group(graphGroup, "events");
 		var curveGroup = svg.group(graphGroup, "curve");
 		var vectorsGroup = svg.group(graphGroup, "vectors");
 		var handlesGroup = svg.group(graphGroup, "handles");
@@ -1067,18 +1159,6 @@ class CurveEditor extends Component {
 				}
 			}
 		}
-
-		function drawEvent(event:Dynamic, eventCount: Int, ?style: Dynamic) {
-			var eventHeight = 18;
-			var spacing = 2;
-			var fontSize = 12;
-			var evtBody = svg.rect(eventGroup, event.e.time * xScale, (eventHeight + spacing) * eventCount, event.info.length * xScale, eventHeight, style);
-			var evtLabel = svg.text(eventGroup, event.e.time * xScale + 5, (eventHeight + spacing) * eventCount + fontSize, event.info.label, { 'font-size':fontSize});
-
-			var element = event.e.getEventPrefab();
-			evtBody.addClass("event");
-			evtBody.addClass(element.type);
-		}
 		
 		for (curve in curves){
 			var color = '#${StringTools.hex(curve.color)}';
@@ -1106,11 +1186,6 @@ class CurveEditor extends Component {
 				drawKeys(curve, keyStyle);
 				drawTopBarKeys(curve, eventStyle);
 			}
-		}
-
-		var eventCount = 0;
-		for (event in events) {
-			drawEvent(event, eventCount++, { 'opacity':'0.5' });
 		}
 
 		if(selectedKeys.length > 1) {
@@ -1175,6 +1250,10 @@ class CurveEditor extends Component {
 					refreshGraph();
 				});
 			}
+		}
+
+		for (comp in this.components) {
+			comp.refreshComp();
 		}
 	}
 }
