@@ -494,6 +494,10 @@ class EmitterObject extends h3d.scene.Object {
 	public var screenQuat = new h3d.Quat();
 	public var worldScale = new h3d.Vector(1,1,1);
 
+	public dynamic function postParticleUpdate(particle: ParticleInstance, dt: Float) {
+
+	}
+
 	var random: hxd.Rand;
 	var randomSeed = 0;
 	var context : hrt.prefab.Context;
@@ -1221,6 +1225,8 @@ class EmitterObject extends h3d.scene.Object {
 			}
 			else {
 				p.update(this, dt);
+				postParticleUpdate(p, dt);
+
 				if(full) {
 					p.updateAbsPos(this);
 					if(p.distToCam < 0 || enableSort)
