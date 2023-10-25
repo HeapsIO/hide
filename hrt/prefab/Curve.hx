@@ -301,7 +301,9 @@ class Curve extends Prefab {
 		});
 
 		var ce = new hide.comp.CurveEditor(ctx.properties.undo, ctx.properties.element);
+		ce.saveDisplayKey = this.getAbsPath(true);
 		ce.curves.push(this);
+		ce.refresh();
 	}
 
 	override function getHideProps() : HideProps {

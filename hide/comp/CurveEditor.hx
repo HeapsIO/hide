@@ -184,7 +184,7 @@ class OverviewEditor extends Component implements CurveEditorComponent
 			overviewGroup.remove();
 		} 
 
-		overviewGroup = svg.group(svg.element, "overview");
+		overviewGroup = svg.group(this.curveEditor.componentsGroup, "overview");
 		
 		var overview = svg.rect(overviewGroup, 0, tlHeight, width, overviewHeight);
 		overviewKeys = svg.group(overviewGroup, "overview-keys");
@@ -367,6 +367,7 @@ class CurveEditor extends Component {
 	public var maxValue : Float = 0.;
 
 	public var components : Array<CurveEditorComponent> = [];
+	public var componentsGroup : Element;
 	
 	var svg : hide.comp.SVG;
 	var width = 0;
@@ -406,6 +407,7 @@ class CurveEditor extends Component {
 		graphGroup = svg.group(root, "graph");
 		overlayGroup = svg.group(root, "overlaygroup");
 		selectGroup = svg.group(root, "selection-overlay");
+		componentsGroup = svg.group(root, "components");
 		tlGroup = svg.group(root, "tlgroup");
 		markersGroup = svg.group(root, "markers").css({'pointer-events':'none'});
 

@@ -377,9 +377,6 @@ class Prefab extends FileView {
 		statusText.setPosition(5, 5);
 		statusText.visible = false;
 
-
-
-
 		/*gridStep = @:privateAccess sceneEditor.gizmo.moveStep;*/
 		sceneEditor.updateGrid = function() {
 			updateGrid();

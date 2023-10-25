@@ -1136,6 +1136,27 @@ input[type=checkbox]:checked:after {
   position: relative;
   background-color: #303030;
 }
+.hide-curve-editor .timeline {
+  background: #161616;
+  fill: #161616;
+  position: relative;
+  height: 20px;
+  overflow: hidden;
+}
+.hide-curve-editor .timeline .tlgroup .mark {
+  height: 100%;
+  color: #8e8e8e;
+  border-left: 1px solid #8e8e8e;
+  vertical-align: middle;
+  padding-left: 4px;
+  position: absolute;
+  line-height: 20px;
+  user-select: none;
+}
+.hide-curve-editor text {
+  font: 10px sans-serif;
+  fill: #8d8d8d;
+}
 .hide-curve-editor:focus {
   outline: none;
 }
@@ -1325,23 +1346,6 @@ input[type=checkbox]:checked:after {
 .fx-animpanel .key-event.selected,
 .fx-animpanel .key-event:hover.selected {
   fill: #ffbe33;
-}
-.fx-animpanel .timeline {
-  background: #161616;
-  fill: #161616;
-  position: relative;
-  height: 20px;
-  overflow: hidden;
-}
-.fx-animpanel .timeline .tlgroup .mark {
-  height: 100%;
-  color: #8e8e8e;
-  border-left: 1px solid #8e8e8e;
-  vertical-align: middle;
-  padding-left: 4px;
-  position: absolute;
-  line-height: 20px;
-  user-select: none;
 }
 .fx-animpanel text {
   font: 10px sans-serif;

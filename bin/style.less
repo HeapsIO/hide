@@ -1223,9 +1223,34 @@ input[type=checkbox] {
 }
 
 /* Curve editor */
+@timelineHeight: 20px;
 .hide-curve-editor {
 	position: relative;
 	background-color: #303030;
+
+	.timeline {
+		background: #161616;
+		fill: #161616;
+		position: relative;
+		height: @timelineHeight;
+		overflow: hidden;
+
+		.tlgroup .mark {
+			height: 100%;
+			color: #8e8e8e;
+			border-left: 1px solid #8e8e8e;
+			vertical-align: middle;
+			padding-left: 4px;
+			position: absolute;
+			line-height: @timelineHeight;
+			user-select: none;
+		}
+
+	}
+
+	text {
+		font: 10px sans-serif; fill: #8d8d8d;
+	}
 
 	&:focus {
 		//background-color: rgba(0, 0, 0, 0.219);
@@ -1357,7 +1382,6 @@ input[type=checkbox] {
 
 .fx-animpanel {
 	@leftPanelWidth: 200px;
-	@timelineHeight: 20px;
 	min-height: 120px;
 	max-height: 800px;
 	position: relative;
@@ -1443,26 +1467,6 @@ input[type=checkbox] {
 	}
 	.key-event.selected, .key-event:hover.selected {
 		fill: #ffbe33;
-	}
-
-	.timeline {
-		background: #161616;
-		fill: #161616;
-		position: relative;
-		height: @timelineHeight;
-		overflow: hidden;
-
-		.tlgroup .mark {
-			height: 100%;
-			color: #8e8e8e;
-			border-left: 1px solid #8e8e8e;
-			vertical-align: middle;
-			padding-left: 4px;
-			position: absolute;
-			line-height: @timelineHeight;
-			user-select: none;
-		}
-
 	}
 	
 	text {
