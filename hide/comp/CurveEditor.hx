@@ -274,6 +274,9 @@ class OverviewEditor extends Component implements CurveEditorComponent
 		}
 
 		for (curve in this.curveEditor.curves){
+			if (curve.hidden)
+				continue;
+			
 			var style: Dynamic = { 'fill-opacity' : curve.selected ? 1 : 0.5};
 			
 			if (curve.lock || curve.blendCurve)
