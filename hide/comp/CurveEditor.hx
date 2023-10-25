@@ -43,6 +43,7 @@ class EventsEditor extends Component implements CurveEditorComponent
 		var eventCount = 0;
 
 		function drawEvent(event:hrt.prefab.fx.Event.IEvent, eventCount: Int, ?style: Dynamic) {
+			var yOrigin = 20;
 			var eventHeight = 18;
 			var spacing = 2;
 			var fontSize = 12;
@@ -53,8 +54,9 @@ class EventsEditor extends Component implements CurveEditorComponent
 			var infos = event.getDisplayInfo(@:privateAccess fxEditor.sceneEditor.curEdit);
 			var element = event.getEventPrefab();
 
-			var evtBody = svg.rect(eventGroup, event.time * this.curveEditor.xScale, (eventHeight + spacing) * eventCount, infos.length * this.curveEditor.xScale, eventHeight, style);
-			var evtLabel = svg.text(eventGroup, event.time * this.curveEditor.xScale + 5, (eventHeight + spacing) * eventCount + fontSize, infos.label, { 'font-size':fontSize});
+			var yPos = yOrigin + (eventHeight + spacing) * eventCount;
+			var evtBody = svg.rect(eventGroup, event.time * this.curveEditor.xScale, yPos, ((infos.length == 0 || infos.loop) ? 5000.0 : infos.length)  * this.curveEditor.xScale, eventHeight, style);
+			var evtLabel = svg.text(eventGroup, event.time * this.curveEditor.xScale + 5, yPos + fontSize, infos.label, { 'font-size':fontSize});
 
 			evtBody.addClass("event");
 			evtBody.addClass(element.type);
@@ -64,6 +66,9 @@ class EventsEditor extends Component implements CurveEditorComponent
 			});
 
 			evtBody.contextmenu(function(e) {
+				if (event.lock || event.hidden)
+					return;
+
 				e.preventDefault();
 				e.stopPropagation();
 				new hide.comp.ContextMenu([
@@ -77,6 +82,9 @@ class EventsEditor extends Component implements CurveEditorComponent
 			});
 
 			evtBody.mousedown(function(e) {
+				if (event.lock || event.hidden)
+					return;
+
 				var offsetX = e.clientX - @:privateAccess this.curveEditor.xt(event.time);
 				e.preventDefault();
 				e.stopPropagation();
@@ -98,7 +106,15 @@ class EventsEditor extends Component implements CurveEditorComponent
 		}
 
 		for (event in events) {
-			drawEvent(event, eventCount++, { 'opacity':'0.5' });
+			var style = { 'stroke-width':'1px', 'opacity':'0.7' };
+
+			if (event.lock)
+				style = { 'stroke-width':'1px', 'opacity':'0.2', 'stroke-dasharray': '5, 3' };
+
+			if (event.hidden)
+				continue;
+
+			drawEvent(event, eventCount++, style);
 		}
 	}
 }

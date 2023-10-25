@@ -13,11 +13,16 @@ interface IEvent {
 	function getDisplayInfo(ctx: EditContext) : { label: String, length: Float, ?loop: Bool};
 	#end
 	var time(default, set) : Float;
+	var hidden : Bool;
+	var lock : Bool;
+	var selected : Bool;
 }
 
 class Event extends hrt.prefab.Prefab implements IEvent {
 	@:s public var time(default, set): Float = 0.0;
-
+	public var hidden:Bool = false;
+	public var lock:Bool = false;
+	public var selected:Bool = false;
 
 	public function new(?parent) {
 		super(parent);

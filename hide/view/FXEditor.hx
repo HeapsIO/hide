@@ -446,7 +446,6 @@ class FXEditor extends FileView {
 
 		refreshLayout();
 		element.resize(function(e) {
-			refreshTimeline(false);
 			rebuildAnimPanel();
 		});
 		element.find(".collapse-btn").click(function(e) {
@@ -482,143 +481,10 @@ class FXEditor extends FileView {
 		currentVersion = undo.currentID;
 		sceneEditor.tree.element.addClass("small");
 
-		var timeline = element.find(".timeline");
-		var sMin = 0.0;
-		var sMax = 0.0;
-		timeline.contextmenu(function(e) {
-			var offset = e.clientX - timeline.offset().left;
-			var marker = data.markers.find(m -> hxd.Math.abs(offset - xt(m.t)) < 4);
-			new hide.comp.ContextMenu([
-			{ label : "Add marker", click : function() {
-				if(data.markers == null)
-					data.markers = [];
-				var prevVal = data.markers.copy();
-				data.markers.push({t : ixt(e.clientX - timeline.offset().left)});
-				undo.change(Field(data, "markers", prevVal), refreshTimeline.bind(false));
-				refreshTimeline(false);
-			} },
-			{ label : "Remove marker", enabled: marker != null, click : function() {
-				var prevVal = data.markers.copy();
-				data.markers.remove(marker);
-				undo.change(Field(data, "markers", prevVal), refreshTimeline.bind(false));
-				refreshTimeline(false);
-			} }
-			]);
-			e.preventDefault();
-			return false;
-		});
-		timeline.mousedown(function(e) {
-			var lastX = e.clientX;
-			var shift = e.shiftKey;
-			var ctrl = e.ctrlKey;
-			var xoffset = timeline.offset().left;
-			var clickTime = ixt(e.clientX - xoffset);
-
-			if(shift) {
-				sMin = hxd.Math.max(0, clickTime);
-			}
-			else if(ctrl) {
-				previewMin = hxd.Math.max(0, clickTime);
-			}
-
-			function updateMouse(e: js.jquery.Event) {
-				var dt = (e.clientX - lastX) / xScale;
-				if(e.which == 2) {
-					xOffset -= dt;
-					xOffset = hxd.Math.max(xOffset, -timelineLeftMargin/xScale);
-				}
-				else if(e.which == 1) {
-					if(shift) {
-						sMax = ixt(e.clientX - xoffset);
-					}
-					else if(ctrl) {
-						previewMax = ixt(e.clientX - xoffset);
-					}
-					else {
-						if(!pauseButton.isDown())
-							pauseButton.toggle(true);
-						currentTime = ixt(e.clientX - xoffset);
-						currentTime = hxd.Math.max(currentTime, 0);
-					}
-				}
-
-				if(hxd.Math.abs(sMax - sMin) < 1e-5) {
-					selectMin = 0;
-					selectMax = 0;
-				}
-				else {
-					selectMax = hxd.Math.max(sMin, sMax);
-					selectMin = hxd.Math.min(sMin, sMax);
-				}
-			}
-
-			if(data.markers != null) {
-				var marker = data.markers.find(m -> hxd.Math.abs(xt(clickTime) - xt(m.t)) < 4);
-				if(marker != null) {
-					var prevVal = marker.t;
-					startDrag(function(e) {
-						updateMouse(e);
-						var x = ixt(e.clientX - xoffset);
-						x = hxd.Math.max(0, x);
-						x = untyped parseFloat(x.toFixed(5));
-						marker.t = x;
-						refreshTimeline(true);
-					}, function(e) {
-						undo.change(Field(marker, "t", prevVal), refreshTimeline.bind(false));
-					});
-					e.preventDefault();
-					e.stopPropagation();
-					return;
-				}
-			}
-
-			element.mousemove(function(e: js.jquery.Event) {
-				updateMouse(e);
-				lastX = e.clientX;
-				refreshTimeline(true);
-				afterPan(true);
-			});
-			element.mouseup(function(e: js.jquery.Event) {
-				updateMouse(e);
-
-				if(previewMax < previewMin + 0.1) {
-					previewMin = 0;
-					previewMax = data.duration == 0 ? 5000 : data.duration;
-				}
-
-				element.off("mousemove");
-				element.off("mouseup");
-				e.preventDefault();
-				e.stopPropagation();
-				refreshTimeline(false);
-				afterPan(false);
-			});
-			e.preventDefault();
-			e.stopPropagation();
-		});
-
-		var wheelTimer : haxe.Timer = null;
-		timeline.on("mousewheel", function(e) {
-			var step = e.originalEvent.wheelDelta > 0 ? 1.0 : -1.0;
-			xScale *= Math.pow(1.125, step);
-			e.preventDefault();
-			e.stopPropagation();
-			refreshTimeline(false);
-			if(wheelTimer != null)
-				wheelTimer.stop();
-			wheelTimer = haxe.Timer.delay(function() {
-				this.curveEditor.xOffset = xOffset;
-				this.curveEditor.xScale = xScale;
-				this.curveEditor.refresh();
-				afterPan(false);
-			}, 50);
-		});
-
 		selectMin = 0.0;
 		selectMax = 0.0;
 		previewMin = 0.0;
 		previewMax = data.duration == 0 ? 5000 : data.duration;
-		refreshTimeline(false);
 	}
 
 	function refreshLayout() {
@@ -796,7 +662,7 @@ class FXEditor extends FileView {
 			data.refreshObjectAnims(sceneEditor.getContext(data));
 		}
 
-		if (pname == "blendFactor") {
+		if (pname == "blendFactor" || pname == "loop") {
 			rebuildAnimPanel();
 		}
 	}
@@ -819,228 +685,6 @@ class FXEditor extends FileView {
 	inline function xt(x: Float) return Math.round((x - xOffset) * xScale);
 	inline function ixt(px: Float) return px / xScale + xOffset;
 
-	function refreshTimeline(anim: Bool) {
-		// var scroll = element.find(".timeline-scroll");
-		// scroll.empty();
-		// var width = scroll.parent().width();
-		// var minX = Math.floor(ixt(0));
-		// var maxX = Math.ceil(hxd.Math.min(data.duration == 0 ? 5000 : data.duration, ixt(width)));
-		// for(ix in minX...(maxX+1)) {
-		// 	var mark = new Element('<span class="mark"></span>').appendTo(scroll);
-		// 	mark.css({left: xt(ix)});
-		// 	mark.text(ix + ".00");
-		// }
-
-		// var overlay = element.find(".overlay");
-		// overlay.empty();
-		// timeLineEl = new Element('<span class="time-marker"></span>').appendTo(overlay);
-		// timeLineEl.css({left: xt(currentTime)});
-
-		// if(data.markers != null) {
-		// 	for(m in data.markers) {
-		// 		var el = new Element('<span class="marker"></span>').appendTo(overlay);
-		// 		el.css({left: xt(m.t)});
-		// 	}
-		// }
-
-		// var select = new Element('<span class="selection"></span>').appendTo(overlay);
-		// select.css({left: xt(selectMin), width: xt(selectMax) - xt(selectMin)});
-
-		// if(!anim && selectMax != selectMin) {
-		// 	var selLeft = new Element('<span class="selection-left"></span>').appendTo(overlay);
-		// 	var selRight = new Element('<span class="selection-right"></span>').appendTo(overlay);
-
-		// 	function updateSelectPos() {
-		// 		select.css({left: xt(selectMin), width: xt(selectMax) - xt(selectMin)});
-		// 		selLeft.css({left: xt(selectMin) - 4});
-		// 		selRight.css({left: xt(selectMax)});
-		// 	}
-		// 	updateSelectPos();
-
-		// 	function refreshViews() {
-		// 		this.curveEditor.refreshGraph(false);
-		// 		this.curveEditor.onChange(false);
-		// 	}
-
-		// 	var curves = null;
-		// 	var allKeys = null;
-
-		// 	// function updateSelected() {
-		// 	// 	curves = [];
-				
-		// 	// 	//var anyNonEmitter = curveEdits.find(ce -> !isInstanceCurve(ce.curve)) != null;
-		// 	// 	for(c in this.curveEditor.curves) {
-		// 	// 		if(anyNonEmitter && isInstanceCurve(ce.curve))
-		// 	// 			continue;  // Filter-out emitter curves unless only emitter curves are selected
-		// 	// 		curves.push(ce.curve);
-		// 	// 	}
-
-		// 	// 	allKeys = [];
-		// 	// 	for(curve in curves) {
-		// 	// 		for(key in curve.keys) {
-		// 	// 			if(key.time >= selectMin && key.time <= selectMax)
-		// 	// 				allKeys.push(key);
-		// 	// 		}
-		// 	// 	}
-		// 	// }
-
-		// 	var backup = null;
-		// 	var prevSel = null;
-
-		// 	function beforeChange() {
-		// 		//backup = [for(c in curves) haxe.Json.parse(haxe.Json.stringify(c.save()))];
-		// 		//prevSel = [selectMin, selectMax];
-		// 	}
-
-		// 	function afterChange() {
-		// 		/*var newVals = [for(c in curves) haxe.Json.parse(haxe.Json.stringify(c.save()))];
-		// 		var newSel = [selectMin, selectMax];
-		// 		undo.change(Custom(function(undo) {
-		// 			if(undo) {
-		// 				for(i in 0...curves.length)
-		// 					curves[i].load(backup[i]);
-		// 				selectMin = prevSel[0];
-		// 				selectMax = prevSel[1];
-		// 			}
-		// 			else {
-		// 				for(i in 0...curves.length)
-		// 					curves[i].load(newVals[i]);
-		// 				selectMin = newSel[0];
-		// 				selectMax = newSel[1];
-		// 			}
-		// 			updateSelected();
-		// 			updateSelectPos();
-		// 			refreshViews();
-		// 		}));
-		// 		refreshViews();*/
-		// 	}
-
-		// 	var duplicateMode = false;
-		// 	var previewKeys = [];
-		// 	function setupSelectDrag(element: js.jquery.JQuery, update: Float->Float->Void) {
-		// 		element.mousedown(function(e) {
-		// 			//updateSelected();
-
-		// 			if(e.button != 0)
-		// 				return;
-		// 			var offset = scroll.offset();
-		// 			e.preventDefault();
-		// 			e.stopPropagation();
-		// 			var lastTime = ixt(e.clientX);
-		// 			beforeChange();
-		// 			startDrag(function(e) {
-		// 				var time = ixt(e.clientX);
-		// 				update(time, lastTime);
-		// 				this.curveEditor.refreshGraph(true);
-		// 				this.curveEditor.onChange(true);
-		// 				updateSelectPos();
-		// 				lastTime = time;
-		// 			}, function(e) {
-		// 				for (pKey in previewKeys) {
-		// 					var curve = curves.find((curve) -> return curve.previewKeys.contains(pKey));
-		// 					curve.previewKeys.remove(pKey);
-		// 				}
-		// 				previewKeys = [];
-		// 				this.curveEditor.refreshGraph(true);
-		// 				this.curveEditor.onChange(true);
-		// 				afterChange();
-		// 			}, function(e) {
-		// 				if (e.keyCode == hxd.Key.ALT){
-		// 					// if (!duplicateMode) {
-		// 					// 	duplicateMode = !duplicateMode;
-		// 					// 	for (key in allKeys) {
-		// 					// 		var curve = curves.find((curve) -> return curve.keys.contains(key));
-		// 					// 		var pKey = curve.addPreviewKey(key.time, key.value);
-		// 					// 		previewKeys.push(pKey);
-		// 					// 	}
-		// 					// 	allKeys = [];
-		// 					// 	for(ce in curveEdits) {
-		// 					// 		ce.refreshGraph(true);
-		// 					// 		ce.onChange(true);
-		// 					// 	}
-		// 					// }
-		// 				}
-		// 			}, function(e) {
-		// 				if (e.keyCode == hxd.Key.ALT){
-		// 					/*if (duplicateMode) {
-		// 						duplicateMode = !duplicateMode;
-		// 						for (pKey in previewKeys) {
-		// 							var curve = curves.find((curve) -> return curve.previewKeys.contains(pKey));
-		// 							curve.previewKeys.remove(pKey);
-		// 							allKeys.push(curve.addKey(pKey.time, pKey.value));
-		// 						}
-		// 						previewKeys = [];
-		// 						for(ce in curveEdits) {
-		// 							ce.refreshGraph(true);
-		// 							ce.onChange(true);
-		// 						}
-		// 					}*/
-		// 				}
-		// 			});
-		// 		});
-		// 	}
-
-		// 	setupSelectDrag(selRight, function(time, lastTime) {
-		// 		/*var shift = time - lastTime;
-		// 		if(selectMax > selectMin + 0.1) {
-		// 			var scaleFactor = (selectMax + shift - selectMin) / (selectMax - selectMin);
-
-		// 			if (duplicateMode) {
-		// 				for (key in previewKeys)
-		// 					key.time = (key.time - selectMin) * scaleFactor + selectMin;
-		// 			}
-		// 			else {
-		// 				for(key in allKeys)
-		// 					key.time = (key.time - selectMin) * scaleFactor + selectMin;
-		// 			}
-
-		// 			selectMax += shift;
-		// 		}*/
-		// 	});
-
-		// 	setupSelectDrag(selLeft, function(time, lastTime) {
-		// 		/*var shift = time - lastTime;
-		// 		if(selectMax > selectMin + 0.1) {
-		// 			var scaleFactor = (selectMax - (selectMin + shift)) / (selectMax - selectMin);
-
-		// 			if (duplicateMode) {
-		// 				for(key in previewKeys)
-		// 					key.time = selectMax - (selectMax - key.time) * scaleFactor;
-		// 			}
-		// 			else {
-		// 				for(key in allKeys)
-		// 					key.time = selectMax - (selectMax - key.time) * scaleFactor;
-		// 			}
-
-		// 			selectMin += shift;
-		// 		}*/
-		// 	});
-
-		// 	setupSelectDrag(select, function(time, lastTime) {
-		// 		/*var shift = time - lastTime;
-
-		// 		if (duplicateMode) {
-		// 			for(key in previewKeys)
-		// 				key.time += shift;
-		// 		}
-		// 		else {
-		// 			for(key in allKeys)
-		// 				key.time += shift;
-		// 		}
-		// 		selectMin += shift;
-		// 		selectMax += shift;*/
-
-		// 	});
-		// }
-
-		// //var preview = new Element('<span class="preview"></span>').appendTo(overlay);
-		// // preview.css({left: xt(previewMin), width: xt(previewMax) - xt(previewMin)});
-		// var prevLeft = new Element('<span class="preview-left"></span>').appendTo(overlay);
-		// prevLeft.css({left: 0, width: xt(previewMin)});
-		// var prevRight = new Element('<span class="preview-right"></span>').appendTo(overlay);
-		// prevRight.css({left: xt(previewMax), width: xt(data.duration == 0 ? 5000 : data.duration) - xt(previewMax)});
-	}
-
 	function afterPan(anim: Bool) {
 		if(!anim) {
 			this.curveEditor.setPan(xOffset, this.curveEditor.yOffset);
@@ -1062,7 +706,6 @@ class FXEditor extends FileView {
 		for (e in events)
 			eventEditor.events.push(e);
 		
-
 		var minHeight = 40;
 		var curveEditorHeight = 100;
 		var ctx = sceneEditor.getContext(data);
@@ -1081,9 +724,6 @@ class FXEditor extends FileView {
 	
 				this.curveEditor.xOffset = xOffset;
 				this.curveEditor.xScale = xScale;
-	
-				//refreshDopesheet();
-				refreshTimeline(false);
 			}
 	
 			if(["visibility", "s", "l", "a"].indexOf(curve.name.split(".").pop()) >= 0) {
@@ -1142,10 +782,10 @@ class FXEditor extends FileView {
 		var toFoldList : Array<{ el: Element, parentEl: Element }> = [];
 
 		var savedLockList : Array<String> = getDisplayState("lockList") != null ? getDisplayState("lockList") : [];
-		var toLockList : Array<{ parentEl: Element, curves: Array<Curve> }> = [];
+		var toLockList : Array<{ parentEl: Element, elements: Array<Dynamic> }> = [];
 
 		var savedHiddenList : Array<String> = getDisplayState("hiddenList") != null ? getDisplayState("hiddenList") : [];
-		var toHiddenList : Array<{ parentEl: Element, curves: Array<Curve> }> = [];
+		var toHiddenList : Array<{ parentEl: Element, elements: Array<Dynamic> }> = [];
 
 		var leftPanel = element.find(".left-fx-animpanel").first();
 		
@@ -1178,12 +818,12 @@ class FXEditor extends FileView {
 				return true;
 			}
 
-			function addVisibilityButtonListener(parentEl: Element, affectedCurves : Array<Curve>) {
+			function addVisibilityButtonListener(parentEl: Element, affectedElements : Array<Dynamic>) {
 				var visibilityEl = parentEl.find(".visibility");
-				var saveKey = affectedCurves.length == 1 ? affectedCurves[0].getAbsPath(true) : parentEl.hasClass("section") ? section.root.getAbsPath(true) : affectedCurves[0].parent.getAbsPath(true);
+				var saveKey = affectedElements.length == 1 ? affectedElements[0].getAbsPath(true) : parentEl.hasClass("section") ? section.root.getAbsPath(true) : affectedElements[0].parent.getAbsPath(true);
 
 				if (savedHiddenList.contains(saveKey))
-					toHiddenList.push( {parentEl:parentEl, curves:affectedCurves} );
+					toHiddenList.push( {parentEl:parentEl, elements:affectedElements} );
 
 				visibilityEl.click(function(e) {
 					// Update the value of visibilityEl since at this time
@@ -1203,19 +843,19 @@ class FXEditor extends FileView {
 	
 					saveDisplayState("hiddenList", savedHiddenList);
 
-					for (c in affectedCurves)
+					for (c in affectedElements)
 						c.hidden = visibilityEl.hasClass("ico-eye-slash");
 	
 					rebuildAnimPanel();
 				});
 			}
 
-			function addLockButtonListener(parentEl: Element, affectedCurves : Array<Curve>) {
+			function addLockButtonListener(parentEl: Element, affectedElements : Array<Dynamic>) {
 				var lockEl = parentEl.find(".lock");
-				var saveKey = affectedCurves.length == 1 ? affectedCurves[0].getAbsPath(true) : parentEl.hasClass("section") ? section.root.getAbsPath(true) : affectedCurves[0].parent.getAbsPath(true);
+				var saveKey = affectedElements.length == 1 ? affectedElements[0].getAbsPath(true) : parentEl.hasClass("section") ? section.root.getAbsPath(true) : affectedElements[0].parent.getAbsPath(true);
 
 				if (savedLockList.contains(saveKey))
-					toLockList.push( {parentEl:parentEl, curves:affectedCurves} );
+					toLockList.push( {parentEl:parentEl, elements:affectedElements} );
 
 				lockEl.click(function(e) {
 					// Update the value of lockEl since at this time
@@ -1237,21 +877,21 @@ class FXEditor extends FileView {
 
 					saveDisplayState("lockList", savedLockList);
 
-					for (c in affectedCurves)
+					for (c in affectedElements)
 						c.lock = lockEl.first().hasClass("ico-lock");
 
 					rebuildAnimPanel();
 				});
 			}
 
-			function addOnSelectListener(parentEl: Element, affectedCurves : Array<Curve>) {
+			function addOnSelectListener(parentEl: Element, affectedElements : Array<Dynamic>) {
 				var trackEl = parentEl.find(".track-header");
 				trackEl.click(function(e) {
 
 					for (c in this.curveEditor.curves)
 						c.selected = false;
 					
-					for (c in affectedCurves)
+					for (c in affectedElements)
 						c.selected = true;
 
 					rebuildAnimPanel();
@@ -1301,9 +941,30 @@ class FXEditor extends FileView {
 				});
 			}
 
+			var allElements: Array<Dynamic> = [];
 			var curves = section.root.flatten(Curve);
-			if (section.root is Curve)
+			for (c in curves) 
+				allElements.push(c);
+
+			if (section.root is Curve) {
 				curves.push(cast section.root);
+				allElements.push(cast section.root);
+			}
+
+			var events: Array<IEvent> = [];
+			for (e in section.root.flatten(Event)) {
+				events.push(e);
+				allElements.push(e);
+			}
+			for (e in section.root.flatten(hrt.prefab.fx.SubFX)) {
+				events.push(e);
+				allElements.push(e);
+			}
+
+			if (section.root is Event || section.root is hrt.prefab.fx.SubFX) {
+				events.push(cast section.root);
+				allElements.push(cast section.root);
+			}
 			
 			var sectionEl = new Element('<div class="section" name="${section.root.name}">
 			<div class="tracks-header" style="margin-left: ${depth * 10}px">
@@ -1317,9 +978,9 @@ class FXEditor extends FileView {
 			<div class="tracks"></div>
 			</div>');
 
-			addVisibilityButtonListener(sectionEl, curves);
-			addLockButtonListener(sectionEl, curves);
-			addOnSelectListener(sectionEl, curves);
+			addVisibilityButtonListener(sectionEl, allElements);
+			addLockButtonListener(sectionEl, allElements);
+			addOnSelectListener(sectionEl, allElements);
 			addFoldButtonListener(sectionEl);
 			addAddTrackButtonListener(sectionEl, section.root);
 			
@@ -1358,6 +1019,32 @@ class FXEditor extends FileView {
 
 			}
 
+			if (section.events.length > 0) {
+				for (i in 0...section.events.length) {
+					var e = section.events[i];
+
+					var colorStyle = e.selected ? "style = color:#d59320" : "";
+					var hexColor = '#FFFFFF';
+					var trackEl = new Element('<div>
+						<div class="track-header toto" style="margin-left: ${(depth + 1) * 10}px">
+							<div class="track-button color-id ico" style="background-color:${hexColor}"></div>
+							<div class="track-button visibility ico ${e.hidden ? "ico-eye-slash" : "ico-eye"}"></div>
+							<label class="name" ${colorStyle}>${upperCase(e.getEventPrefab().name)}</label>
+							<div class="track-button lock align-right-second ico ${e.lock ? "ico-lock" : "ico-unlock"}"></div>
+						</div>
+						<div class="tracks"></div>
+					</div>');
+					
+					sectionEl.append(trackEl);
+
+					addVisibilityButtonListener(trackEl, [ e ]);
+					addLockButtonListener(trackEl, [ e ]);
+					addOnSelectListener(trackEl, [ e ]);
+					addFoldButtonListener(trackEl);
+				}
+
+			}
+
 			if (section.root is Curve) {
 				var c: Curve = cast section.root;
 
@@ -1385,7 +1072,28 @@ class FXEditor extends FileView {
 				}
 			}
 
-	
+			if (section.root is IEvent) {
+				var e: IEvent = cast section.root;
+				var colorStyle = e.selected ? "style = color:#d59320" : "";
+				var hexColor = '#FFFFFF';
+				var trackEl = new Element('<div>
+					<div class="track-header toto" style="margin-left: ${(depth + 1) * 10}px">
+						<div class="track-button color-id ico" style="background-color:${hexColor}"></div>
+						<div class="track-button visibility ico ${e.hidden ? "ico-eye-slash" : "ico-eye"}"></div>
+						<label class="name" ${colorStyle}>${upperCase(e.getEventPrefab().name)}</label>
+						<div class="track-button lock align-right-second ico ${e.lock ? "ico-lock" : "ico-unlock"}"></div>
+					</div>
+					<div class="tracks"></div>
+				</div>');
+				
+				sectionEl.append(trackEl);
+
+				addVisibilityButtonListener(trackEl, [ e ]);
+				addLockButtonListener(trackEl, [ e ]);
+				addOnSelectListener(trackEl, [ e ]);
+				addFoldButtonListener(trackEl);
+			}
+
 			for (child in section.children)
 				drawSection(sectionEl, child, depth + 1);
 				
@@ -1406,7 +1114,7 @@ class FXEditor extends FileView {
 			var lockEl = lock.parentEl.find(".lock");
 			lockEl.removeClass("ico-unlock").addClass("ico-lock");
 
-			for (c in lock.curves)
+			for (c in lock.elements)
 				c.lock = lockEl.first().hasClass("ico-lock");
 		}
 
@@ -1414,7 +1122,7 @@ class FXEditor extends FileView {
 			var visibilityEl = hidden.parentEl.find(".visibility");
 			visibilityEl.removeClass("ico-eye").addClass("ico-eye-slash");
 
-			for (c in hidden.curves)
+			for (c in hidden.elements)
 				c.hidden = visibilityEl.hasClass("ico-eye-slash");
 		}
 
@@ -1435,11 +1143,15 @@ class FXEditor extends FileView {
 		var curvesToDraw : Array<Curve> = [];
 		var eventsToDraw : Array<IEvent> = [];
 
-		function getSection(?root : PrefabElement): Section {		
+		function getSection(?root : PrefabElement, depth = 0): Section {		
 			var section: Section = { root:root, curves: [], children: [], events: []};
+			var eventAdded = false;
 
 			if (root is Curve)
 				curvesToDraw.push(cast root);
+
+			if (root is IEvent && depth == 0)
+				eventsToDraw.push(cast root);
 
 			for(child in root.children) {
 				if (child.flatten(Curve).length > 0) {
@@ -1448,12 +1160,12 @@ class FXEditor extends FileView {
 						curvesToDraw.push(c);
 						
 						if (c.blendCurve) 
-							section.children.push(getSection(c));
+							section.children.push(getSection(c,depth+1));
 						else
 							section.curves.push(c);
 					}
 					else {
-						section.children.push(getSection(child));
+						section.children.push(getSection(child,depth+1));
 					}
 				}
 

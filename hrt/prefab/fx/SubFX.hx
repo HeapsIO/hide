@@ -9,6 +9,11 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 	var instance : hrt.prefab.fx.FX.FXAnimation;
 	#end
 
+	public var hidden:Bool = false;
+	public var lock:Bool = false;
+	public var selected:Bool = false;
+
+
 	public function new(?parent) {
 		super(parent);
 		this.type = "subFX";
