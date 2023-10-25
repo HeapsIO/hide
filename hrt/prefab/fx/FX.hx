@@ -129,6 +129,9 @@ class FXAnimation extends h3d.scene.Object {
 				var curTime = localTime;
 				setTime(curTime, fullSync);
 				localTime += ctx.elapsedTime * playSpeed;
+				if( loop && duration > 0 ) {
+					localTime = (localTime % duration);
+				}
 				if( duration > 0 && curTime < duration && localTime >= duration) {
 					localTime = duration;
 					finishedPlaying = true;
