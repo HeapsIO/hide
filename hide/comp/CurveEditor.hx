@@ -849,7 +849,9 @@ class CurveEditor extends Component {
 	}
 
 	public function setYZoom(yMin: Float, yMax: Float) {
-		var margin = 20.0;
+		// If there is some components attached to curve, it takes some place
+		// on svg, so we add bigger margin on Y axis.
+		var margin = this.components.length == 0 ? 30.0 : 60.0;
 		yScale = (height - margin * 2.0) / (yMax - yMin);
 		yOffset = (yMax + yMin) * 0.5;
 	}
