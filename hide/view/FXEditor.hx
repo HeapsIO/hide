@@ -1052,9 +1052,7 @@ class FXEditor extends FileView {
 
 	function addCurvesToCurveEditor(curves: Array<Curve>, events: Array<Dynamic>){
 		var rightPanel = element.find(".right-fx-animpanel").first();
-
-		if (this.curveEditor != null)
-			rightPanel.find(".hide-curve-editor").remove();
+		rightPanel.empty();
 
 		// Build new curve editor with all the required comps
 		this.curveEditor = new hide.comp.CurveEditor(this.undo, rightPanel);
