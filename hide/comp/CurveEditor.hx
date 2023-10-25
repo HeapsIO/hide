@@ -1048,7 +1048,7 @@ class CurveEditor extends Component {
 			this.duration = duration;
 
 		var minX = xt(0) - 1;
-		var maxX = xt(this.duration);
+		var maxX = xt(this.duration == 0 ? 5000 : this.duration);
 		svg.line(overlayGroup, minX, svg.element.height(), minX, 0, { stroke:'#000000', 'stroke-width':'1px' });
 		svg.line(overlayGroup, maxX, svg.element.height(), maxX, 0, { stroke:'#000000', 'stroke-width':'1px' });
 		svg.rect(overlayGroup, 0, 0, xt(0), svg.element.height(), { 'fill':'#000000', opacity:0.3});
