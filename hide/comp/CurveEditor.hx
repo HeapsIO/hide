@@ -5,7 +5,7 @@ import hrt.prefab.Curve;
 typedef CurveKey = hrt.prefab.Curve.CurveKey;
 
 interface CurveEditorComponent {
-	function refresh(): Void;
+	function refresh(?anim: Bool = false): Void;
 	function setPan(): Void;
 }
 
@@ -30,7 +30,11 @@ class EventsEditor extends Component implements CurveEditorComponent
 
 	public function setPan() { }
 
-	public function refresh() {
+	public function refreshOverview() {
+		refresh(false);
+	}
+
+	public function refresh(?anim:Bool = false) {
 		if (eventGroup != null)
 			eventGroup.empty();
 
@@ -66,7 +70,7 @@ class EventsEditor extends Component implements CurveEditorComponent
 					{
 						label: "Delete", click: function() {
 							events.remove(event);
-							@:privateAccess fxEditor.sceneEditor.deleteElements([element], refresh);
+							@:privateAccess fxEditor.sceneEditor.deleteElements([element], refreshOverview);
 						}
 					}
 				]);
@@ -87,7 +91,7 @@ class EventsEditor extends Component implements CurveEditorComponent
 						event.time = x;
 						refresh();
 					}, function(e) {
-						this.curveEditor.undo.change(Field(event, "time", prevVal), refresh);
+						this.curveEditor.undo.change(Field(event, "time", prevVal), refreshOverview);
 					});
 				}
 			});
@@ -168,7 +172,7 @@ class OverviewEditor extends Component implements CurveEditorComponent
 			overviewSelection.attr({transform: 'translate(${@:privateAccess this.curveEditor.xt(0)}, 0)'});
 	}
 
-	public function refresh() {
+	public function refresh(?anim:Bool = false) {
 		var width = Math.round(svg.element.width());
 		var xScale = @:privateAccess this.curveEditor.xScale;
 		var yScale = @:privateAccess this.curveEditor.yScale;
@@ -297,41 +301,43 @@ class OverviewEditor extends Component implements CurveEditorComponent
 			var rect = svg.rect(overviewSelection, bounds.x, bounds.y, bounds.width, bounds.height).attr({
 				"shape-rendering": "crispEdges"
 			});
-
-			@:privateAccess this.curveEditor.beforeChange();
-			rect.mousedown(function(e) {
-				if(e.which != 1) return;
-				e.preventDefault();
-				e.stopPropagation();
-				var deltaX = 0;
-				var lastX = e.clientX;
-
-				@:privateAccess this.curveEditor.startDrag(function(e) {
-					var dx = e.clientX - lastX;
-					if(@:privateAccess this.curveEditor.lockKeyX || e.shiftKey)
-						dx = 0;
-					for(key in selectedKeys) {
-						key.time += dx / xScale;
+			
+			if (!anim) {
+				rect.mousedown(function(e) {
+					if(e.which != 1) return;
+					@:privateAccess this.curveEditor.beforeChange();
+					e.preventDefault();
+					e.stopPropagation();
+					var deltaX = 0;
+					var lastX = e.clientX;
+	
+					@:privateAccess this.curveEditor.startDrag(function(e) {
+						var dx = e.clientX - lastX;
 						if(@:privateAccess this.curveEditor.lockKeyX || e.shiftKey)
-							key.time -= deltaX / xScale;
-
-						@:privateAccess this.curveEditor.fixKey(key);
-					}
-					deltaX += dx;
-					if(@:privateAccess this.curveEditor.lockKeyX || e.shiftKey) {
-						lastX -= deltaX;
-						deltaX = 0;
-					}
-					else
-						lastX = e.clientX;
-
-					this.curveEditor.refreshGraph(true);
-					this.curveEditor.onChange(true);
-				}, function(e) {
-					@:privateAccess this.curveEditor.afterChange();
-				});
-				this.curveEditor.refreshGraph();
-			});	
+							dx = 0;
+						for(key in selectedKeys) {
+							key.time += dx / xScale;
+							if(@:privateAccess this.curveEditor.lockKeyX || e.shiftKey)
+								key.time -= deltaX / xScale;
+	
+							@:privateAccess this.curveEditor.fixKey(key);
+						}
+						deltaX += dx;
+						if(@:privateAccess this.curveEditor.lockKeyX || e.shiftKey) {
+							lastX -= deltaX;
+							deltaX = 0;
+						}
+						else
+							lastX = e.clientX;
+	
+						this.curveEditor.refreshGraph(true);
+						this.curveEditor.onChange(true);
+					}, function(e) {
+						@:privateAccess this.curveEditor.afterChange();
+					});
+					this.curveEditor.refreshGraph();
+				});	
+			}
 		}
 	}
 }
@@ -1397,7 +1403,7 @@ class CurveEditor extends Component {
 			}
 		}
 
-		refreshComponents();
+		refreshComponents(anim);
 	}
 
 	public function setComponentsPan() {
@@ -1406,9 +1412,9 @@ class CurveEditor extends Component {
 		}
 	}
 
-	public function refreshComponents() {
+	public function refreshComponents(?anim:Bool = false) {
 		for (comp in this.components) {
-			comp.refresh();
+			comp.refresh(anim);
 		}
 	}
 }
