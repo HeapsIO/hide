@@ -221,7 +221,7 @@ class OverviewEditor extends Component implements CurveEditorComponent
 		setPan();
 
 		function addDiamound(group, x: Float, y: Float, ?style: Dynamic) {
-			var size = 4;
+			var size = 6;
 			var points = [
 				new h2d.col.Point(x + size,y),
 				new h2d.col.Point(x,y - size),
