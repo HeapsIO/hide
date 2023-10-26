@@ -19,7 +19,7 @@ class Spinner extends hxsl.Shader {
 		@const var correctTextureNormals : Bool = false;
 
 
-		@param var numTrails : Int = 3;
+		@param var numTrails : Float = 3;
 
 		@const var useTimeTexture : Bool = false;
 		@param var timeTexture : Sampler2D;
