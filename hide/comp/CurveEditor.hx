@@ -437,14 +437,6 @@ class CurveEditor extends Component {
 			var shift = e.shiftKey;
 			var ctrl = e.ctrlKey;
 			var xoffset = svg.element.offset().left;
-			//var clickTime = ixt(e.clientX - xoffset);
-
-			// if(shift) {
-			// 	sMin = hxd.Math.max(0, clickTime);
-			// }
-			// else if(ctrl) {
-			// 	previewMin = hxd.Math.max(0, clickTime);
-			// }
 
 			function updateMouse(e: js.jquery.Event) {
 				var dt = (e.clientX - lastX) / xScale;
@@ -461,6 +453,29 @@ class CurveEditor extends Component {
 					//}
 				}
 			}
+
+			startDrag(function(e) {
+				updateMouse(e);
+				lastX = e.clientX;
+				refreshTimeline(currentTime);
+				refreshOverlay(duration);
+			}, function(e) {
+				updateMouse(e);
+
+				// if(previewMax < previewMin + 0.1) {
+				// 	previewMin = 0;
+				// 	previewMax = data.duration == 0 ? 5000 : data.duration;
+				// }
+
+				element.off("mousemove");
+				element.off("mouseup");
+				e.preventDefault();
+				e.stopPropagation();
+				refreshTimeline(currentTime);
+				refreshOverlay(duration);
+				//afterPan(false);
+			});
+			
 			// 	if(hxd.Math.abs(sMax - sMin) < 1e-5) {
 			// 		selectMin = 0;
 			// 		selectMax = 0;
@@ -490,31 +505,7 @@ class CurveEditor extends Component {
 			// 		return;
 			// 	}
 			// }
-
-			tlGroup.mousemove(function(e: js.jquery.Event) {
-				updateMouse(e);
-				lastX = e.clientX;
-				refreshTimeline(currentTime);
-				refreshOverlay(duration);
-				//refreshTimeline(true);
-				//afterPan(true);
-			});
-			tlGroup.mouseup(function(e: js.jquery.Event) {
-				updateMouse(e);
-
-				// if(previewMax < previewMin + 0.1) {
-				// 	previewMin = 0;
-				// 	previewMax = data.duration == 0 ? 5000 : data.duration;
-				// }
-
-				element.off("mousemove");
-				element.off("mouseup");
-				e.preventDefault();
-				e.stopPropagation();
-				refreshTimeline(currentTime);
-				refreshOverlay(duration);
-				//afterPan(false);
-			});
+			
 			e.preventDefault();
 			e.stopPropagation();
 		});
