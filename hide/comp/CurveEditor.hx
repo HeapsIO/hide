@@ -1342,8 +1342,14 @@ class CurveEditor extends Component {
 			var keyStyle: Dynamic = { opacity : curve.selected ? 1 : 0.5};
 			var eventStyle: Dynamic = { 'fill-opacity' : curve.selected ? 1 : 0.5};
 			
-			if (curve.lock || curve.blendCurve) {
+			if (curve.lock) {
 				curveStyle = { opacity : curve.selected ? 1 : 0.5 , stroke : color, "stroke-width":'${curve.selected ? 2 : 1}px', "stroke-dasharray":"5, 3"};
+				keyStyle = { opacity : curve.selected ? 1 : 0.5};
+				eventStyle = { 'fill-opacity' : curve.selected ? 1 : 0.5};
+			}
+
+			if (curve.blendCurve) {
+				curveStyle = { opacity : curve.selected ? 1 : 0.5 , stroke : color, "stroke-width":'${curve.selected ? 2 : 1}px', "stroke-dasharray":"20,10,5,5,5,10"};
 				keyStyle = { opacity : curve.selected ? 1 : 0.5};
 				eventStyle = { 'fill-opacity' : curve.selected ? 1 : 0.5};
 			}
