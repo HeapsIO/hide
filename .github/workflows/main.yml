@@ -17,6 +17,7 @@ jobs:
     - uses: krdlab/setup-haxe@v1
     - name: Build
       run: |
+        haxelib git format https://github.com/HaxeFoundation/format
         haxelib git heaps https://github.com/HeapsIO/heaps
         haxelib git castle https://github.com/ncannasse/castle
         haxelib git hxbit https://github.com/ncannasse/hxbit

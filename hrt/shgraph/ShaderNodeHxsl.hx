@@ -11,8 +11,8 @@ class ShaderNodeHxsl extends ShaderNode {
 	static var nodeCache : Map<String, ShaderGraph.ShaderNodeDef> = [];
 
 	override public function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int, ?inputTypes: Array<Type>) : ShaderGraph.ShaderNodeDef {
-		var cl = Type.getClass(this);
-		var className = Type.getClassName(cl);
+		var cl = std.Type.getClass(this);
+		var className = std.Type.getClassName(cl);
 		var def = null;//nodeCache.get(className);
 		if (def == null) {
 			var unser = new hxsl.Serializer();
