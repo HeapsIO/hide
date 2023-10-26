@@ -387,6 +387,8 @@ class CurveEditor extends Component {
 
 	public var components : Array<CurveEditorComponent> = [];
 	public var componentsGroup : Element;
+
+	var enableTimeMarker = true;
 	
 	var svg : hide.comp.SVG;
 	var width = 0;
@@ -408,9 +410,11 @@ class CurveEditor extends Component {
 	var currentTime: Float = 0.;
 	var duration: Float = 2000.;
 
-	public function new(undo, ?parent) {
+	public function new(undo, ?parent, enableTimeMarker = true) {
 		super(parent,null);
 		this.undo = undo;
+		this.enableTimeMarker = enableTimeMarker;
+		
 		element.addClass("hide-curve-editor");
 		element.attr({ tabindex: "1" });
 		element.css({ width: "100%", height: "100%" });
@@ -505,7 +509,7 @@ class CurveEditor extends Component {
 			// 		return;
 			// 	}
 			// }
-			
+
 			e.preventDefault();
 			e.stopPropagation();
 		});
@@ -1042,6 +1046,9 @@ class CurveEditor extends Component {
 		}
 
 		// Draw timeline marker
+		if (!enableTimeMarker)
+			return;
+
 		var labelWidth = 18;
 		var labelHeight = 10;
 		var rounderCurrTime = Math.round(this.currentTime * 10) / 10.0;

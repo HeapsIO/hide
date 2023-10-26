@@ -300,7 +300,7 @@ class Curve extends Prefab {
 			ctx.onChange(this, pname);
 		});
 
-		var ce = new hide.comp.CurveEditor(ctx.properties.undo, ctx.properties.element);
+		var ce = new hide.comp.CurveEditor(ctx.properties.undo, ctx.properties.element, false);
 		ce.saveDisplayKey = this.getAbsPath(true);
 		ce.curves.push(this);
 		ce.refresh();
