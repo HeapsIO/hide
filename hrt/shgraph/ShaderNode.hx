@@ -21,7 +21,7 @@ class ShaderNode {
 
 
 	public function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int, ?inputTypes: Array<Type>) : ShaderGraph.ShaderNodeDef {
-		throw "getShaderDef is not defined for class " + Type.getClassName(Type.getClass(this));
+		throw "getShaderDef is not defined for class " + std.Type.getClassName(std.Type.getClass(this));
 		return {expr: null, inVars: [], outVars: [], inits: [], externVars: []};
 	}
 

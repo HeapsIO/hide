@@ -842,7 +842,7 @@ class Graph {
 				var node = sortedNodes[sortedNodes.length - i - 1];
 				var data = nodeData[node.generateId];
 
-				var className = Type.getClassName(Type.getClass(node.instance));
+				var className = std.Type.getClassName(std.Type.getClass(node.instance));
 				trace("node " +  className + ":" + node.generateId);
 				var def = getDef(node);
 				trace("inVars:");
@@ -851,7 +851,7 @@ class Graph {
 						continue;
 					var from = node.instance.connections.get(v.v.name);
 					var className = if (from != null) {
-						Type.getClassName(Type.getClass(from.from.instance)) + ':${from.from.generateId}:${from.fromName}';
+						std.Type.getClassName(std.Type.getClass(from.from.instance)) + ':${from.from.generateId}:${from.fromName}';
 					} else {
 						"not connected";
 					}
@@ -870,7 +870,7 @@ class Graph {
 						for (to in targets) {
 							if (targetString.length > 0)
 								targetString += ", ";
-							targetString +=	Type.getClassName(Type.getClass(to.node.instance)) + ':${to.node.generateId}:${to.inputName}';
+							targetString +=	std.Type.getClassName(std.Type.getClass(to.node.instance)) + ':${to.node.generateId}:${to.inputName}';
 						}
 					}
 					else {
