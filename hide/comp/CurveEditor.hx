@@ -1188,10 +1188,34 @@ class CurveEditor extends Component {
 					svg.make(curveGroup, "path", {d: lines.join("")});
 				}
 				else {
-					var pts = curve.sample(200);
+					// Basic value of xScale is 200
+					var pts = curve.sample(200 * cast (xScale / 200.0));
 					var poly = [];
+					var idx = 0;
+
+					// We want to avoid the path to not be on keyframes due to low sample size.
+					// this is why we add points on keyframes to ensure path will be on.
 					for(i in 0...pts.length) {
 						var x = xScale * (curve.duration * i / (pts.length - 1));
+
+						if (idx != 0 && xScale * curve.keys[idx - 1].time > x)
+							continue;
+						
+						var val = Math.POSITIVE_INFINITY;
+						if (idx < curve.keys.length)
+							val = xScale * curve.keys[idx].time;
+
+						var ptsAdded = false;
+						while (x >= val && idx < curve.keys.length) {
+							ptsAdded = true;
+							val = xScale * curve.keys[idx].time;
+							poly.push(new h2d.col.Point(xScale * curve.keys[idx].time, yScale * (-curve.keys[idx].value)));
+							idx++;
+						}
+
+						if (ptsAdded)
+							continue;
+
 						var y = yScale * (-pts[i]);
 						poly.push(new h2d.col.Point(x, y));
 					}
