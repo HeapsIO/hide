@@ -1236,6 +1236,10 @@ class CurveEditor extends Component {
 				var kx = xScale*(key.time);
 				var ky = -yScale*(key.value);
 				var keyHandle = addCircle(keyHandles, kx, ky, style);
+				
+				if(curve.lock)
+					keyHandle.addClass("no-hover");
+				
 				var selected = selectedKeys.indexOf(key) >= 0;
 				if(selected)
 					keyHandle.addClass("selected");
@@ -1368,7 +1372,7 @@ class CurveEditor extends Component {
 			
 			if (curve.lock) {
 				curveStyle = { opacity : curve.selected ? 1 : 0.5 , stroke : color, "stroke-width":'${curve.selected ? 2 : 1}px', "stroke-dasharray":"5, 3"};
-				keyStyle = { opacity : curve.selected ? 1 : 0.5};
+				keyStyle = { opacity : curve.selected ? 1 : 0.5, 'cursor':'default'};
 				eventStyle = { 'fill-opacity' : curve.selected ? 1 : 0.5};
 			}
 

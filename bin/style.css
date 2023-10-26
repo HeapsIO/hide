@@ -1234,7 +1234,7 @@ input[type=checkbox]:checked:after {
   fill: rgba(187, 187, 187, 0.644);
   cursor: pointer;
 }
-.hide-curve-editor svg .graph .handles circle:hover,
+.hide-curve-editor svg .graph .handles circle:hover:not(.no-hover),
 .hide-curve-editor svg .graph .handles rect:hover {
   fill: #fff;
   stroke: #fff;
