@@ -1153,6 +1153,9 @@ input[type=checkbox]:checked:after {
   line-height: 20px;
   user-select: none;
 }
+.hide-curve-editor .overlaygroup {
+  pointer-events: none;
+}
 .hide-curve-editor text {
   font: 10px sans-serif;
   fill: #8d8d8d;
