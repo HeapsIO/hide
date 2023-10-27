@@ -17,6 +17,12 @@ enum abstract CurveKeyMode(Int) {
 	var Constant = 3;
 }
 
+enum abstract CurveBlendMode(Int) {
+	var None = 0;
+	var Blend = 1;
+	var RandomBlend = 2;
+}
+
 class CurveKey {
 	public var time: Float;
 	public var value: Float;
@@ -34,7 +40,7 @@ class Curve extends Prefab {
 	@:c public var keys : CurveKeys = [];
 	@:c public var previewKeys : CurveKeys = [];
 
-	@:s public var blendCurve : Bool = false;
+	@:s public var blendMode : CurveBlendMode = CurveBlendMode.None;
 	@:s public var blendFactor : Float = 0;
 	@:s public var loop : Bool = false;
 	
@@ -48,7 +54,7 @@ class Curve extends Prefab {
 
 	function get_duration() {
 		if(keys.length == 0) return 0.0;
-		if (blendCurve) {
+		if (blendMode == CurveBlendMode.Blend || blendMode == CurveBlendMode.RandomBlend) {
 			var c1:Curve = cast this.children[0];
 			var c2:Curve = cast this.children[1];
 			return Math.min(c1.duration, c2.duration);
@@ -160,6 +166,14 @@ class Curve extends Prefab {
 	}
 
 	public function getVal(time: Float) : Float {
+		if (blendMode == CurveBlendMode.Blend) {
+			var c1 = Std.downcast(this.children[0], Curve);
+			var c2 = Std.downcast(this.children[1], Curve);
+			var a = c1.getVal(time);
+			var b = c2.getVal(time);
+			return a + (b - a) * blendFactor;	
+		}
+		
 		switch(keys.length) {
 			case 0: return 0;
 			case 1: return keys[0].value;
@@ -270,18 +284,7 @@ class Curve extends Prefab {
 		var duration = this.duration;
 		for(i in 0...numPts) {
 			var v = 0.0;
-
-			if (blendCurve) {
-				var c1 = Std.downcast(this.children[0], Curve);
-				var c2 = Std.downcast(this.children[1], Curve);
-				var a = c1.getVal(duration * i/(numPts-1));
-				var b = c2.getVal(duration * i/(numPts-1));
-				v = a + (b - a) * blendFactor;	
-			}
-			else {
-				v = getVal(duration * i/(numPts-1));
-			}
-
+			v = getVal(duration * i/(numPts-1));
 			vals.push(v);
 		}
 		return vals;
@@ -290,11 +293,18 @@ class Curve extends Prefab {
 	#if editor
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
+
 		ctx.properties.add(new hide.Element('
 		<div class="group" name="Parameters">
 			<dl>
 				<dt>Loop curve</dt><dd><input type="checkbox" field="loop"/></dd>
-				<dt>Blend curve</dt><dd><input type="checkbox" field="blendCurve"/></dd>
+				<dt>Blend Mode</dt><dd>
+					<select class="blendmode-selector" field="blendMode">
+						<option value="0">None</option>
+						<option value="1">Blend curve</option>
+						<option value="2">Random between two curves</option>
+					</select>
+				</dd>
 			</dl>
 		</div>'), this, function(pname) {
 			ctx.onChange(this, pname);
@@ -371,7 +381,7 @@ class Curve extends Prefab {
 		var w = find(".w");
 
 		inline function curveOrVal(c: Curve, defVal: Float) : hrt.prefab.fx.Value {
-			return c != null ? (c.blendCurve ? VBlendCurve(c, blendFactor) : (scale != 1.0 ? VCurveScale(c, scale) : VCurve(c))) : VConst(defVal);
+			return c != null ? (c.blendMode == CurveBlendMode.Blend ? VBlendCurve(c, blendFactor) : (scale != 1.0 ? VCurveScale(c, scale) : VCurve(c))) : VConst(defVal);
 		}
 
 		return VVector(

@@ -1558,11 +1558,17 @@ class Emitter extends Object3D {
 					randVal = VRandomScale(randIdx++, randProp);
 
 				var xCurve = getCurve(pname + suffix);
-				if (xCurve != null)
-					if (pname.indexOf("Rotation") >= 0 || pname.indexOf("Offset") >= 0)
-						return vAdd(vAdd(xVal, randVal), VCurve(xCurve));
-					else
-						return vMult(vAdd(xVal, randVal), VCurve(xCurve));
+				if (xCurve != null) {
+					if (xCurve.blendMode == CurveBlendMode.RandomBlend) {
+						return VRandomBetweenCurves(randIdx++, xCurve);
+					}
+					else {
+						if (pname.indexOf("Rotation") >= 0 || pname.indexOf("Offset") >= 0)
+							return vAdd(vAdd(xVal, randVal), VCurve(xCurve));
+						else
+							return vMult(vAdd(xVal, randVal), VCurve(xCurve));
+					}
+				}
 				else
 					return vAdd(xVal, randVal);
 			}

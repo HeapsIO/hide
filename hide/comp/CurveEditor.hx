@@ -217,7 +217,7 @@ class OverviewEditor extends Component implements CurveEditorComponent
 			for (c in this.curveEditor.curves){
 				c.selected = false;
 				
-				if (c.hidden || c.lock || c.blendCurve)
+				if (c.hidden || c.lock || c.blendMode == CurveBlendMode.Blend || c.blendMode == CurveBlendMode.RandomBlend)
 					continue;
 
 				for (key in c.keys) {
@@ -347,15 +347,15 @@ class OverviewEditor extends Component implements CurveEditorComponent
 			
 			var style: Dynamic = { 'fill-opacity' : curve.selected ? 1 : 0.5};
 			
-			if (curve.lock || curve.blendCurve)
+			if (curve.lock || curve.blendMode == CurveBlendMode.Blend)
 				style = { 'fill-opacity' : curve.selected ? 1 : 0.5};
 
-			if (curve.hidden)
+			if (curve.hidden || curve.blendMode == CurveBlendMode.RandomBlend)
 				style = { 'fill-opacity' : 0};
 			
 			// We don't want to show keys in overview if the
 			// concerned curve is a blended one
-			if (!curve.blendCurve) 
+			if (curve.blendMode != CurveBlendMode.Blend && curve.blendMode != CurveBlendMode.RandomBlend ) 
 				addCurveKeysToOverview(curve, style);
 		}
 
@@ -836,7 +836,7 @@ class CurveEditor extends Component {
 			for (c in curves){
 				c.selected = false;
 				
-				if (c.hidden || c.lock || c.blendCurve)
+				if (c.hidden || c.lock || c.blendMode == CurveBlendMode.Blend ||  c.blendMode == CurveBlendMode.RandomBlend)
 					continue;
 
 				for (key in c.keys)
@@ -980,7 +980,6 @@ class CurveEditor extends Component {
 	}
 
 	function beforeChange() {
-		trace("Before changes");
 		lastValue = [for (c in curves) c.save()];
 	}
 
@@ -1402,6 +1401,39 @@ class CurveEditor extends Component {
 				}
 			}
 		}
+
+		function drawBlendArea(curve : Curve, ?style: Dynamic) {
+			if (curve.blendMode == CurveBlendMode.RandomBlend) {
+				var c1: Curve = cast curve.children[0];
+				var c2: Curve = cast curve.children[1];
+
+				var sampleSize = 500 * cast (xScale / 200.0);
+				var poly = [];
+
+				var ptsC1 = c1.sample(sampleSize);
+				for(i in 0...ptsC1.length) {
+					var x = xScale * (c1.duration * i / (ptsC1.length - 1));
+					var y = yScale * (-ptsC1[i]);
+					poly.push(new h2d.col.Point(x, y));
+				}
+
+				var ptsC2 = c2.sample(sampleSize);
+
+				var idx = ptsC2.length-1;
+				while (idx >= 0) {
+					var x = xScale * (c2.duration * idx / (ptsC2.length - 1));
+					var y = yScale * (-ptsC2[idx]);
+					poly.push(new h2d.col.Point(x, y));
+					idx--;
+				}
+
+				var blendAreaStyle: Dynamic = { opacity : 0.1 , fill : '#FFFFFF', stroke : '#000000'};
+				if (c1.lock && c2.lock) blendAreaStyle = { opacity : 0.05 , fill : '#FFFFFF', stroke : '#000000'};
+				if (c1.hidden && c2.hidden) blendAreaStyle = { opacity : 0 , fill : '#FFFFFF', stroke : '#000000'};
+
+				svg.polygon(curveGroup, poly, blendAreaStyle).attr("pointer-events","none");
+			}
+		}
 		
 		for (curve in curves){
 			var color = '#${StringTools.hex(curve.color)}';
@@ -1415,23 +1447,26 @@ class CurveEditor extends Component {
 				eventStyle = { 'fill-opacity' : curve.selected ? 1 : 0.5};
 			}
 
-			if (curve.blendCurve) {
+			if (curve.blendMode == CurveBlendMode.Blend) {
 				curveStyle = { opacity : curve.selected ? 1 : 0.5 , stroke : color, "stroke-width":'${curve.selected ? 2 : 1}px', "stroke-dasharray":"20,10,5,5,5,10"};
 				keyStyle = { opacity : curve.selected ? 1 : 0.5};
 				eventStyle = { 'fill-opacity' : curve.selected ? 1 : 0.5};
 			}
 
-			if (curve.hidden) {
+			if (curve.hidden || curve.blendMode == CurveBlendMode.RandomBlend) {
 				curveStyle = { opacity : 0};
 				keyStyle = { opacity : 0};
 				eventStyle = { 'fill-opacity' : 0};
 			}
-
+			
 			drawCurve(curve, curveStyle);
 			
+			// Draw the area where random blend curves will be picked
+			drawBlendArea(curve);
+
 			// Blend curve are controlled with parent curve
 			// so we don't want to allow user to use keys on this.s
-			if (!curve.blendCurve)
+			if (curve.blendMode != CurveBlendMode.Blend && curve.blendMode != CurveBlendMode.RandomBlend)
 				drawKeys(curve, keyStyle);
 		}
 

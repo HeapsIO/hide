@@ -6,6 +6,7 @@ enum Value {
 	VConst(v: Float);
 	VCurve(c: Curve);
 	VBlendCurve(c: Curve, factor: Float);
+	VRandomBetweenCurves(idx: Int, c: Curve);
 	VCurveScale(c: Curve, scale: Float);
 	VRandom(idx: Int, scale: Value);
 	VRandomScale(idx: Int, scale: Float);

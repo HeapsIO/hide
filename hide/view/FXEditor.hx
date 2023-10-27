@@ -625,31 +625,39 @@ class FXEditor extends FileView {
 			cullingPreview.radius = data.cullingRadius;
 		}
 
-		if (pname == "blendCurve") {
+		if (pname == "blendMode") {
 			var curve = Std.downcast(p, Curve);
 
+			function removeCurves() {
+				var toRemove: Array<Curve> = [];
+				for (child in curve.children) {
+					var c = Std.downcast(child, Curve);
+					if (c != null) 
+						toRemove.push(c);
+				}
+
+				while (toRemove.length > 0) {
+					var c = toRemove.pop();
+					c.removeInstance(sceneEditor.context);
+					c.parent.children.remove(c);
+				}	
+			}
+
 			if (curve != null) {
-				if (curve.blendCurve) {
-					// We're currently supporting blending with only 2 curves
-					for (i in 0...2) {
-						var c = new Curve();
-						c.parent = curve;
-						c.name = '${curve.name}.${i}';
+				if (curve.blendMode == CurveBlendMode.Blend || curve.blendMode == CurveBlendMode.RandomBlend) {	
+					if (curve.children.length != 2) {
+						removeCurves();
+						
+						// We're currently supporting blending with only 2 curves
+						for (i in 0...2) {
+							var c = new Curve();
+							c.parent = curve;
+							c.name = '${curve.name}.${i}';
+						}
 					}
 				}
 				else {
-					var toRemove: Array<Curve> = [];
-					for (child in curve.children) {
-						var c = Std.downcast(child, Curve);
-						if (c != null) 
-							toRemove.push(c);
-					}
-
-					while (toRemove.length > 0) {
-						var c = toRemove.pop();
-						c.removeInstance(sceneEditor.context);
-						c.parent.children.remove(c);
-					}					
+					removeCurves();				
 				}				
 			}
 
@@ -657,14 +665,20 @@ class FXEditor extends FileView {
 			rebuildAnimPanel();
 		}
 
-		if(pname == "time" || pname == "loop" || pname == "animation" || pname == "blendCurve" || pname == "blendFactor") {
+		if(pname == "time" || pname == "loop" || pname == "animation" || pname == "blendMode" || pname == "blendFactor") {
 			afterPan(false);
 			data.refreshObjectAnims(sceneEditor.getContext(data));
 		}
 
-		if (pname == "blendFactor" || pname == "loop") {
+		if (pname == "loop") {
 			rebuildAnimPanel();
 		}
+
+		if (pname == "blendFactor") {
+			if (this.curveEditor != null)
+				this.curveEditor.refreshGraph();
+		}
+		
 	}
 
 	function onRefreshScene() {
@@ -1050,7 +1064,7 @@ class FXEditor extends FileView {
 
 				// We don't want to show an header for the blending curve,
 				// just for the parent blend curves.
-				if (!c.blendCurve) {
+				if (c.blendMode != CurveBlendMode.Blend && c.blendMode != CurveBlendMode.RandomBlend) {
 					var hexColor = '#${StringTools.hex(c.color)}';
 					var colorStyle = c.selected ? "style = color:#d59320" : "";
 					var trackEl = new Element('<div>
@@ -1159,7 +1173,7 @@ class FXEditor extends FileView {
 						var c = Std.downcast(child, Curve);
 						curvesToDraw.push(c);
 						
-						if (c.blendCurve) 
+						if (c.blendMode == CurveBlendMode.Blend || c.blendMode == CurveBlendMode.RandomBlend) 
 							section.children.push(getSection(c,depth+1));
 						else
 							section.curves.push(c);

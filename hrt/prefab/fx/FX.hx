@@ -300,7 +300,7 @@ class FXAnimation extends h3d.scene.Object {
 			if (c == null) 
 				return def;
 
-			return c.blendCurve ? VBlendCurve(c, blendFactor) : VCurve(c);
+			return c.blendMode == CurveBlendMode.Blend ? VBlendCurve(c, blendFactor) : VCurve(c);
 		}
 
 		function makeVector(name: String, defVal: Float, uniform: Bool=true, scale: Float=1.0) : Value {
@@ -311,7 +311,7 @@ class FXAnimation extends h3d.scene.Object {
 			anyFound = true;
 
 			if(uniform && curves.length == 1 && curves[0].name == name) {
-				if (curves[0].blendCurve) 
+				if (curves[0].blendMode == CurveBlendMode.Blend) 
 					return VBlendCurve(curves[0], blendFactor);
 
 				return scale != 1.0 ? VCurveScale(curves[0], scale) : VCurve(curves[0]);
@@ -486,7 +486,7 @@ class FX extends BaseFX {
 		// Populate the value among blend curves
 		var curves = this.flatten(Curve);
 		for (curve in curves) {
-			if (curve.blendCurve)
+			if (curve.blendMode == CurveBlendMode.Blend)
 				curve.blendFactor = blendFactor;
 		}
 	}
