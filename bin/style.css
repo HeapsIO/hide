@@ -1219,6 +1219,7 @@ input[type=checkbox]:checked:after {
   stroke: #ffffff;
   opacity: 0.3;
   mix-blend-mode: screen;
+  cursor: move;
 }
 .hide-curve-editor svg .graph .curve line,
 .hide-curve-editor svg .graph path {
