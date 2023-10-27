@@ -40,10 +40,10 @@ class Curve extends Prefab {
 	@:c public var keys : CurveKeys = [];
 	@:c public var previewKeys : CurveKeys = [];
 
-	@:s public var blendMode : CurveBlendMode = CurveBlendMode.None;
+	@:s public var blendMode : CurveBlendMode = None;
 	@:s public var blendFactor : Float = 0;
 	@:s public var loop : Bool = false;
-	
+
 	public var maxTime : Float;
 	public var duration(get, never): Float;
 
@@ -171,9 +171,9 @@ class Curve extends Prefab {
 			var c2 = Std.downcast(this.children[1], Curve);
 			var a = c1.getVal(time);
 			var b = c2.getVal(time);
-			return a + (b - a) * blendFactor;	
+			return a + (b - a) * blendFactor;
 		}
-		
+
 		switch(keys.length) {
 			case 0: return 0;
 			case 1: return keys[0].value;
@@ -280,7 +280,7 @@ class Curve extends Prefab {
 
 	public function sample(numPts: Int) {
 		var vals = [];
-		
+
 		var duration = this.duration;
 		for(i in 0...numPts) {
 			var v = 0.0;
