@@ -432,13 +432,7 @@ class OverviewEditor extends Component implements CurveEditorComponent
 
 		for (c in this.curveEditor.curves)
 			if (c.selected) {
-				var previousKeyIdx = -1;
-
-				while (previousKeyIdx + 1 < c.keys.length && time >= c.keys[previousKeyIdx + 1].time) 
-					previousKeyIdx++;
-
-				var previousKeyVal = c.keys[cast hxd.Math.max(0,previousKeyIdx)].value;
-
+				var previousKeyVal = c.getVal(time);
 				c.addKey(time, previousKeyVal, c.keyMode);
 			}
 
