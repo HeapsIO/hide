@@ -471,7 +471,7 @@ class PolygonEditor {
 				if (ctx.local3d.getScene() == null) return;
 
 				var ray = @:privateAccess ctx.local3d.getScene().camera.rayFromScreen(s2d.mouseX, s2d.mouseY);
-				var finalPos = getFinalPos(s2d.mouseX, s2d.mouseY, true);
+				var finalPos = getFinalPos(s2d.mouseX, s2d.mouseY, false);
 				refreshMovablePoints(ray);
 				refreshSelectedEdge(new h2d.col.Point(finalPos.x, finalPos.y));
 				if( K.isDown( K.MOUSE_LEFT )){
