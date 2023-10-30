@@ -265,7 +265,14 @@ class OverviewEditor extends Component implements CurveEditorComponent
 			e.stopPropagation();
 			overview.focus();
 			if(e.which == 1) {
-				startSelectRect(px, py);
+				if(e.which == 1) {
+					if(e.ctrlKey) {
+						addKey(@:privateAccess this.curveEditor.ixt(px));
+					}
+					else {
+						startSelectRect(px, py);
+					}
+				}
 			}
 		});
 		
@@ -418,6 +425,24 @@ class OverviewEditor extends Component implements CurveEditorComponent
 				});	
 			}
 		}
+	}
+	
+	public function addKey(time: Float) {
+		@:privateAccess this.curveEditor.beforeChange();
+
+		for (c in this.curveEditor.curves)
+			if (c.selected) {
+				var previousKeyIdx = -1;
+
+				while (previousKeyIdx + 1 < c.keys.length && time >= c.keys[previousKeyIdx + 1].time) 
+					previousKeyIdx++;
+
+				var previousKeyVal = c.keys[cast hxd.Math.max(0,previousKeyIdx)].value;
+
+				c.addKey(time, previousKeyVal, c.keyMode);
+			}
+
+		@:privateAccess this.curveEditor.afterChange();
 	}
 
 	public function onSelectionEnd(minT:Float, minV:Float, maxT:Float, MaxV:Float) {}
