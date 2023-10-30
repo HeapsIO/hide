@@ -1574,6 +1574,9 @@ input[type=checkbox]:checked:after {
   display: block;
   padding: 5px;
 }
+.poly-editor input[type=button] {
+  margin-top: 5px;
+}
 .string-array .array-element {
   display: block;
   padding: 5px;

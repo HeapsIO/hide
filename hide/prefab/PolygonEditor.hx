@@ -332,10 +332,10 @@ class PolygonEditor {
 		return edge;
 	}
 
-	function getFinalPos( mouseX, mouseY ){
+	function getFinalPos( mouseX, mouseY, ignoreSnap: Bool = false ){
 		var worldPos = screenToWorld(mouseX, mouseY);
 		var localPos = getContext().local3d.globalToLocal(worldPos);
-		if( K.isDown( K.CTRL ) ){ // Snap To Grid with Ctrl
+		if( K.isDown( K.CTRL ) && !ignoreSnap ){ // Snap To Grid with Ctrl
 			var gridPos = new h3d.col.Point();
 			if( worldSnap ){
 				var absPos = getContext().local3d.getAbsPos();
@@ -385,6 +385,7 @@ class PolygonEditor {
 			};
 			interactive.onKeyDown =
 			function(e) {
+				if (ctx.local3d.getScene() == null) return;
 				e.propagate = false;
 				if( K.isDown( K.SHIFT ) ){
 					clearSelectedPoint();
@@ -396,6 +397,7 @@ class PolygonEditor {
 			}
 			interactive.onKeyUp =
 			function(e) {
+				if (ctx.local3d.getScene() == null) return;
 				e.propagate = false;
 				var ray = @:privateAccess ctx.local3d.getScene().camera.rayFromScreen(s2d.mouseX, s2d.mouseY);
 				refreshMovablePoints(ray);
@@ -404,6 +406,7 @@ class PolygonEditor {
 			}
 			interactive.onPush =
 			function(e) {
+				if (ctx.local3d.getScene() == null) return;
 				var finalPos = getFinalPos(s2d.mouseX, s2d.mouseY);
 				var ray = @:privateAccess ctx.local3d.getScene().camera.rayFromScreen(s2d.mouseX, s2d.mouseY);
 				if( K.isDown( K.MOUSE_LEFT ) ){
@@ -436,11 +439,12 @@ class PolygonEditor {
 							// var diff = curStamp - lastClickStamp;
 							// if(diff < 0.2){
 								var prevList = copyArray(polygonPrefab.points.points);
-								var pt = new h2d.col.Point(finalPos.x, finalPos.y);
+								var pos = getFinalPos(s2d.mouseX, s2d.mouseY, true);
+								var pt = new h2d.col.Point(pos.x, pos.y);
 								addPointOnEdge(pt, selectedEdge);
 								var newList = copyArray(polygonPrefab.points.points);
 								addUndo(prevList, newList);
-								refreshSelectedEdge(new h2d.col.Point(finalPos.x, finalPos.y));
+								refreshSelectedEdge(new h2d.col.Point(pos.x, pos.y));
 								// Select new point
 								lastPointSelected = pt;
 							}
@@ -452,6 +456,7 @@ class PolygonEditor {
 			};
 			interactive.onRelease =
 			function(e) {
+				if (ctx.local3d.getScene() == null) return;
 				//lastPos = null;
 				lastPointSelected = null;
 				if( beforeMoveList != null ){
@@ -463,8 +468,10 @@ class PolygonEditor {
 			};
 			interactive.onMove =
 			function(e) {
+				if (ctx.local3d.getScene() == null) return;
+
 				var ray = @:privateAccess ctx.local3d.getScene().camera.rayFromScreen(s2d.mouseX, s2d.mouseY);
-				var finalPos = getFinalPos(s2d.mouseX, s2d.mouseY);
+				var finalPos = getFinalPos(s2d.mouseX, s2d.mouseY, true);
 				refreshMovablePoints(ray);
 				refreshSelectedEdge(new h2d.col.Point(finalPos.x, finalPos.y));
 				if( K.isDown( K.MOUSE_LEFT )){
@@ -555,6 +562,7 @@ class PolygonEditor {
 	}
 
 	function refreshEditorDisplay(withProps=true) {
+		if (!polygonPrefab.enabled || lineGraphics == null) return;
 		lineGraphics.clear();
 		clearMovablePoints();
 		if(polygonPrefab.points == null || polygonPrefab.points.length == 0) return;
@@ -590,6 +598,7 @@ class PolygonEditor {
 				<div class="group" name="Points">
 					<div class="point-list"> </div>
 					<input type="button" value="Reset" class="reset" />
+					<input type="button" value="Set pivot to centroid" class="centroid" />
 				</div>
 			</div>
 		</div>');
@@ -612,6 +621,66 @@ class PolygonEditor {
 			var nextList = copyArray(polygonPrefab.points.points);
 			addUndo(prevList, nextList);
 			refreshPolygon();
+		});
+
+		props.find(".centroid").click(function(_) {
+			if (!polygonPrefab.enabled) return;
+
+			var sum = new h2d.col.Point(0,0);
+			var idx = 0;
+			for (pts in polygonPrefab.points.points) {
+				sum.x += pts.x;
+				sum.y += pts.y;
+				idx++;
+			}
+
+			sum.x /= idx;
+			sum.y /= idx;
+
+			var transform = polygonPrefab.getTransform();
+			var prevM = transform.clone();
+			var prevPos = transform.getPosition();
+			var offset = new h3d.Vector(sum.x,sum.y,prevPos.z);
+			var centroid = offset.add(prevPos);
+
+			transform.setPosition(centroid);
+			polygonPrefab.setTransform(transform);
+
+			for (pts in polygonPrefab.points.points) {
+				pts.x -= offset.x;
+				pts.y -= offset.y;
+			}
+
+			var nextM = transform.clone();
+
+			undo.change(Custom(function(undo) {
+				var undoPrevM = prevM;
+				var undoNewM = nextM;
+				var undoOffset = offset;
+
+				if (undo) {
+					polygonPrefab.setTransform(undoPrevM);
+					for (pts in polygonPrefab.points.points) {
+						pts.x += offset.x;
+						pts.y += offset.y;
+					}
+				}
+				else {
+					polygonPrefab.setTransform(undoNewM);
+					for (pts in polygonPrefab.points.points) {
+						pts.x -= offset.x;
+						pts.y -= offset.y;
+					}
+				}
+				
+				refreshPolygon();
+				refreshInteractive();
+				ctx.scene.editor.refresh();
+			}));
+
+			refreshPolygon();
+			refreshInteractive();
+			ctx.scene.editor.refresh();
 		});
 
 		refreshPointList(props);
