@@ -106,14 +106,15 @@ class EventsEditor extends Component implements CurveEditorComponent
 			});
 		}
 
+		var isSquareRect = svg.element.find(".selection").children().length > 0;
 		for (event in events) {
-			var style = { 'stroke-width':'1px', 'opacity':'0.7', 'stroke':'black' };
+			var style = { 'stroke-width':'1px', 'opacity':'0.7', 'stroke':'black', 'cursor': isSquareRect ? 'default' : 'pointer', 'pointer-events': isSquareRect ? 'none':'all'};
 
 			if (event.lock)
-				style = { 'stroke-width':'1px', 'opacity':'0.2', 'stroke':'black', 'stroke-dasharray': '5, 3' };
+				style = { 'stroke-width':'1px', 'opacity':'0.2', 'stroke':'black', 'cursor': isSquareRect ? 'default' : 'pointer', 'stroke-dasharray': '5, 3', 'pointer-events': isSquareRect ? 'none':'all' };
 
 			if (event.selected)
-				style = { 'stroke-width':'1px', 'opacity':'1', 'stroke':'#d59320'};
+				style = { 'stroke-width':'1px', 'opacity':'1', 'stroke':'#d59320', 'cursor': isSquareRect ? 'default' : 'pointer', 'pointer-events': isSquareRect ? 'none':'all'};
 
 			if (event.hidden)
 				continue;

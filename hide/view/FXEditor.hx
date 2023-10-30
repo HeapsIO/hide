@@ -1040,7 +1040,7 @@ class FXEditor extends FileView {
 					var colorStyle = e.selected ? "style = color:#d59320" : "";
 					var hexColor = '#FFFFFF';
 					var trackEl = new Element('<div>
-						<div class="track-header toto" style="margin-left: ${(depth + 1) * 10}px">
+						<div class="track-header" style="margin-left: ${(depth + 1) * 10}px">
 							<div class="track-button color-id ico" style="background-color:${hexColor}"></div>
 							<div class="track-button visibility ico ${e.hidden ? "ico-eye-slash" : "ico-eye"}"></div>
 							<label class="name" ${colorStyle}>${upperCase(e.getEventPrefab().name)}</label>
@@ -1091,7 +1091,7 @@ class FXEditor extends FileView {
 				var colorStyle = e.selected ? "style = color:#d59320" : "";
 				var hexColor = '#FFFFFF';
 				var trackEl = new Element('<div>
-					<div class="track-header toto" style="margin-left: ${(depth + 1) * 10}px">
+					<div class="track-header" style="margin-left: ${(depth + 1) * 10}px">
 						<div class="track-button color-id ico" style="background-color:${hexColor}"></div>
 						<div class="track-button visibility ico ${e.hidden ? "ico-eye-slash" : "ico-eye"}"></div>
 						<label class="name" ${colorStyle}>${upperCase(e.getEventPrefab().name)}</label>
