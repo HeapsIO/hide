@@ -449,7 +449,7 @@ class RenderPropsPopup extends Popup {
 
 		form_div.append(new Element("<p>No render props detected in .json file.</p>"));
 	}
-	
+
 	override function onSearchChanged(searchBar:Element) {
 		var search = searchBar.val();
 		var form_div = popup.find(".form-grid");
@@ -1288,7 +1288,7 @@ class SceneEditor {
 
 		if( lastRenderProps == null )
 			lastRenderProps = renderProps[0];
-		
+
 		if (lastRenderProps != null)
 			lastRenderProps.applyProps(scene.s3d.renderer);
 		else {
@@ -3377,6 +3377,7 @@ class SceneEditor {
 		hrt.shader.MeshWave,
 		hrt.shader.TextureRotate,
 		hrt.shader.GradientMapLife,
+		hrt.shader.TextureMult,
 	];
 
 	function getNewShaderMenu(parentElt: PrefabElement, ?onMake: PrefabElement->Void) : hide.comp.ContextMenu.ContextMenuItem {
