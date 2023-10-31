@@ -464,8 +464,6 @@ class CurveEditor extends Component {
 	public var lockViewY = false;
 	public var lockKeyX = false;
 	public var maxLength = 0.0;
-	public var minValue : Float = 0.;
-	public var maxValue : Float = 0.;
 
 	public var components : Array<CurveEditorComponent> = [];
 	public var componentsGroup : Element;
@@ -727,24 +725,27 @@ class CurveEditor extends Component {
 
 	function addKey(time: Float, ?val: Float) {
 		beforeChange();
-		if(minValue < maxValue)
-			val = hxd.Math.clamp(val, minValue, maxValue);
-
+		
 		for (c in curves)
-			if (c.selected)
+			if (c.selected) {
+				if(c.minValue < c.maxValue)
+					val = hxd.Math.clamp(val, c.minValue, c.maxValue);
+
 				c.addKey(time, val, c.keyMode);
+			}
 
 		afterChange();
 	}
 
 	function addPreviewKey(time: Float, ?val: Float) {
 		beforeChange();
-		if(minValue < maxValue)
-			val = hxd.Math.clamp(val, minValue, maxValue);
-
 		for (c in curves)
-			if (c.selected)
+			if (c.selected) {
+				if(c.minValue < c.maxValue)
+					val = hxd.Math.clamp(val, c.minValue, c.maxValue);
+
 				c.addPreviewKey(time, val);
+			}
 		
 		afterChange();
 	}
@@ -777,12 +778,13 @@ class CurveEditor extends Component {
 				case Aligned:
 					addPrevH();
 					addNextH();
-					var pa = hxd.Math.atan2(key.prevHandle.dv, key.prevHandle.dt);
-					var na = hxd.Math.atan2(key.nextHandle.dv, key.nextHandle.dt);
-					if(hxd.Math.abs(hxd.Math.angle(pa - na)) < Math.PI - (1./180.)) {
-						key.nextHandle.dt = -key.prevHandle.dt;
-						key.nextHandle.dv = -key.prevHandle.dv;
-					}
+					// var pa = hxd.Math.atan2(key.prevHandle.dv, key.prevHandle.dt);
+					// var na = hxd.Math.atan2(key.nextHandle.dv, key.nextHandle.dt);
+
+					// if(hxd.Math.abs(hxd.Math.angle(pa - na)) < Math.PI - (1./180.)) {
+					// 	key.nextHandle.dt = -key.prevHandle.dt;
+					// 	key.nextHandle.dv = -key.prevHandle.dv;
+					// }
 				case Free:
 					addPrevH();
 					addNextH();
@@ -804,8 +806,8 @@ class CurveEditor extends Component {
 			if(next != null && key.time > next.time) 
 				key.time = next.time - 0.01;
 			
-			if(minValue < maxValue)
-				key.value = hxd.Math.clamp(key.value, minValue, maxValue);
+			if(c.minValue < c.maxValue)
+				key.value = hxd.Math.clamp(key.value, c.minValue, c.maxValue);
 	
 			if(false) {
 				// TODO: This sorta works but is annoying.
@@ -956,16 +958,12 @@ class CurveEditor extends Component {
 			bounds.xMin = 0.0;
 			bounds.xMax = 1.0;
 		}
+		
 		if(bounds.height <= 0) {
-			if(minValue < maxValue) {
-				bounds.yMin = minValue;
-				bounds.yMax = maxValue;
-			}
-			else {
-				bounds.yMin = -1.0;
-				bounds.yMax = 1.0;
-			}
+			bounds.yMin = -1.0;
+			bounds.yMax = 1.0;
 		}
+
 		if(!lockViewY) {
 			setYZoom(bounds.yMin, bounds.yMax);
 		}

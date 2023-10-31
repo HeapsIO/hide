@@ -741,12 +741,12 @@ class FXEditor extends FileView {
 			}
 	
 			if(["visibility", "s", "l", "a"].indexOf(curve.name.split(".").pop()) >= 0) {
-				this.curveEditor.minValue = 0;
-				this.curveEditor.maxValue = 1;
+				curve.minValue = 0;
+				curve.maxValue = 1;
 			}
 			if(curve.name.indexOf("Rotation") >= 0) {
-				this.curveEditor.minValue = 0;
-				this.curveEditor.maxValue = 360;
+				curve.minValue = 0;
+				curve.maxValue = 360;
 			}
 			var shader = curve.parent.to(hrt.prefab.Shader);
 			if(shader != null) {
@@ -757,8 +757,8 @@ class FXEditor extends FileView {
 						for( q in v.qualifiers )
 							switch( q ) {
 							case Range(rmin, rmax):
-								this.curveEditor.minValue = rmin;
-								this.curveEditor.maxValue = rmax;
+								curve.minValue = rmin;
+								curve.maxValue = rmax;
 							default:
 						}
 					}

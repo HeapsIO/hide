@@ -46,6 +46,8 @@ class Curve extends Prefab {
 
 	public var maxTime : Float;
 	public var duration(get, never): Float;
+	public var minValue : Float = 0.;
+	public var maxValue : Float = 0.;
 
 	public var color : Int;
 	public var hidden : Bool = false;
