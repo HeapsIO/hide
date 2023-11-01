@@ -18,8 +18,10 @@ class Polygon extends Object3D {
 	@:c public var shape(default, null) : Shape = Quad(0);
 	@:c public var points : h2d.col.Polygon;
 	@:s public var color : Int = 0xFFFFFFFF;
+	
 	#if editor
 	public var editor : hide.prefab.PolygonEditor;
+	@:s public var gridSize:Float = 1;
 	public var cachedPrim : h3d.prim.Polygon;
 	public var hasDebugColor : Bool = true;
 	var prevScale = [1.0, 1.0];
