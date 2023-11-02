@@ -800,7 +800,8 @@ class CurveEditor extends Component {
 				key.time = 0;
 			if(maxLength > 0 && key.time > maxLength)
 				key.time = maxLength;
-	
+			if(key.time > c.maxTime)
+				key.time = c.maxTime;
 			if(prev != null && key.time < prev.time)
 				key.time = prev.time + 0.01;
 			if(next != null && key.time > next.time) 
@@ -1145,6 +1146,7 @@ class CurveEditor extends Component {
 
 		var minX = xt(0) - 1;
 		var maxX = xt(this.duration == 0 ? 5000 : this.duration);
+		svg.line(overlayGroup, xt(1), svg.element.height(), xt(1), 0, { stroke:'#000000', 'stroke-width':'1px', 'stroke-dasharray':'10, 5' });
 		svg.line(overlayGroup, minX, svg.element.height(), minX, 0, { stroke:'#000000', 'stroke-width':'1px' });
 		svg.line(overlayGroup, maxX, svg.element.height(), maxX, 0, { stroke:'#000000', 'stroke-width':'1px' });
 		svg.rect(overlayGroup, 0, 0, xt(0), svg.element.height(), { 'fill':'#000000', opacity:0.3});
