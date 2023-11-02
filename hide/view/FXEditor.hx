@@ -713,6 +713,10 @@ class FXEditor extends FileView {
 		rightPanel.empty();
 
 		// Build new curve editor with all the required comps
+		var previousTime = 0.0;
+		if (this.curveEditor != null)
+			previousTime = @:privateAccess this.curveEditor.currentTime;
+		
 		this.curveEditor = new hide.comp.CurveEditor(this.undo, rightPanel);
 
 		var overviewEditor = new hide.comp.CurveEditor.OverviewEditor(rightPanel, this.curveEditor);
@@ -788,6 +792,7 @@ class FXEditor extends FileView {
 			});	
 		}
 		
+		this.curveEditor.refreshTimeline(previousTime);
 		this.curveEditor.refresh();
 	}
 	
