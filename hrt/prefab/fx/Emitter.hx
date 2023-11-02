@@ -476,6 +476,8 @@ class EmitterObject extends h3d.scene.Object {
 	public var frameDivisionY : Int = 1;
 	public var animationSpeed : Float = 1;
 	public var animationLoop : Bool = true;
+	public var animationBlendBetweenFrames : Bool = true;
+
 	// ALIGNMENT
 	public var alignMode : AlignMode;
 	public var alignLockAxis : AlignLockAxis;
@@ -633,6 +635,7 @@ class EmitterObject extends h3d.scene.Object {
 				animatedTextureShader = new h3d.shader.AnimatedTexture(tex, frameDivisionX, frameDivisionY, frameCount, frameCount * animationSpeed / lifeTime);
 				animatedTextureShader.startTime = startTime;
 				animatedTextureShader.loop = animationLoop;
+				animatedTextureShader.blendBetweenFrames = animationBlendBetweenFrames;
 				animatedTextureShader.setPriority(1);
 				batch.material.mainPass.addShader(animatedTextureShader);
 			}
@@ -1360,6 +1363,8 @@ class Emitter extends Object3D {
 		{ name: "frameDivisionY", t: PInt(1), def: 1, groupName : "Sprite Sheet Animation", disp: "Divisions Y" },
 		{ name: "animationSpeed", t: PFloat(0, 2.0), def: 1.0, groupName : "Sprite Sheet Animation", disp: "Speed" },
 		{ name: "animationLoop", t: PBool, def: true, groupName : "Sprite Sheet Animation", disp: "Loop" },
+		{ name: "animationBlendBetweenFrames", t: PBool, def: true, groupName : "Sprite Sheet Animation", disp: "Blend frames" },
+
 		// COLLISION
 		{ name: "useCollision", t: PBool, def: false, groupName : "Ground Collision" },
 		{ name: "elasticity", t: PFloat(0, 1.0), disp: "Elasticity", def : 1.0, groupName : "Ground Collision" },
@@ -1670,6 +1675,8 @@ class Emitter extends Object3D {
 		emitterObj.frameDivisionY 		= 	getParamVal("frameDivisionY");
 		emitterObj.animationSpeed 		= 	getParamVal("animationSpeed");
 		emitterObj.animationLoop 		= 	getParamVal("animationLoop");
+		emitterObj.animationBlendBetweenFrames 		= 	getParamVal("animationBlendBetweenFrames");
+
 		// COLLISION
 		emitterObj.useCollision 		= 	getParamVal("useCollision");
 		emitterObj.killOnCollision 		= 	getParamVal("killOnCollision");
