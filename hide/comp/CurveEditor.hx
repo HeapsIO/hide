@@ -8,6 +8,8 @@ interface CurveEditorComponent {
 	function refresh(?anim: Bool = false): Void;
 	function setPan(): Void;
 	function onSelectionEnd(minT: Float, minV: Float, maxT: Float, MaxV: Float):Void;
+	function beforeChange(): Void;
+	function afterChange() : Void;
 }
 
 class EventsEditor extends Component implements CurveEditorComponent
@@ -16,6 +18,7 @@ class EventsEditor extends Component implements CurveEditorComponent
 	public var curveEditor : CurveEditor;
 	public var events : Array<hrt.prefab.fx.Event.IEvent> = [];
 
+	var lastValue : Array<Float>;
 	var svg : SVG;
 	var eventGroup: Element;
 
@@ -169,12 +172,34 @@ class EventsEditor extends Component implements CurveEditorComponent
 			idx++;
 		}
 	}
+
+	public function beforeChange() {
+		lastValue = [for (e in events) e.time ];
+	}
+
+	public function afterChange() {
+		var newVal = [for (e in events) e.time ];
+		var oldVal = lastValue;
+		@:privateAccess this.curveEditor.undo.change(Custom(function(undo) {
+			if(undo) {
+				for (i in 0...events.length) 
+					events[i].time = oldVal[i];
+			}
+			else {
+				for (i in 0...events.length)
+					events[i].time = newVal[i];
+			}
+
+			lastValue = [for (e in events) e.time ];
+			refresh();
+		}));
+		refresh();
+	}
 }
 
 class OverviewEditor extends Component implements CurveEditorComponent
 {
 	public var curveEditor : CurveEditor;
-	public var events : Array<hrt.prefab.fx.Event.IEvent> = [];
 
 	var svg : SVG;
 	var overviewGroup: Element;
@@ -390,7 +415,7 @@ class OverviewEditor extends Component implements CurveEditorComponent
 					e.stopPropagation();
 					var deltaX = 0;
 					var lastX = e.clientX;
-	
+					
 					@:privateAccess this.curveEditor.startDrag(function(e) {
 						var dx = e.clientX - lastX;
 						if(@:privateAccess this.curveEditor.lockKeyX || e.shiftKey)
@@ -405,7 +430,7 @@ class OverviewEditor extends Component implements CurveEditorComponent
 
 						for(evt in selectedEvents) {
 							evt.event.time += dx / xScale;
-							if(@:privateAccess this.curveEditor.lockKeyX || e.shiftKey)
+							if(@:privateAccess this.curveEditor.lockKeyX || e.shiftKey) 
 								evt.event.time -= deltaX / xScale;
 						}
 
@@ -441,6 +466,10 @@ class OverviewEditor extends Component implements CurveEditorComponent
 	}
 
 	public function onSelectionEnd(minT:Float, minV:Float, maxT:Float, MaxV:Float) {}
+
+	public function beforeChange() {}
+
+	public function afterChange() {}
 }
 
 class CurveEditor extends Component {
@@ -1000,6 +1029,9 @@ class CurveEditor extends Component {
 
 	function beforeChange() {
 		lastValue = [for (c in curves) c.save()];
+
+		for (c in components)
+			c.beforeChange();
 	}
 
 	function afterChange() {
@@ -1019,6 +1051,10 @@ class CurveEditor extends Component {
 			refresh();
 			onChange(false);
 		}));
+
+		for (c in components)
+			c.afterChange();
+
 		refresh();
 		onChange(false);
 	}
