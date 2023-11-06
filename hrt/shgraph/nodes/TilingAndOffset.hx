@@ -7,7 +7,7 @@ package hrt.shgraph.nodes;
 class TilingAndOffset extends ShaderNodeHxsl {
 
 	static var SRC = {
-		@sginput var uv : Vec2;
+		@sginput(calculatedUV) var uv : Vec2;
 		@sginput(1.0) var tiling : Vec2;
 		@sginput(0.0) var offset : Vec2;
 
