@@ -281,7 +281,7 @@ class ShaderGraph {
 		@:privateAccess shared.initialize();
 
 		var time = haxe.Timer.stamp() - start;
-		trace("Shader compile2 in " + time * 1000 + " ms");
+		//trace("Shader compile2 in " + time * 1000 + " ms");
 
 		return {shader : shared, inits: inits};
 	}
