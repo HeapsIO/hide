@@ -572,12 +572,15 @@ class Prefab extends FileView {
 			return;
 		
 		var needRefresh = false;
+		
+		#if editor
 		for (c in @:privateAccess sceneEditor.sceneData) {
 			if (c is hrt.prefab.Reference) {
 				var ref = Std.downcast(c, hrt.prefab.Reference);
 				needRefresh = needRefresh || ref.ref.dirty;
 			}
 		}
+		#end
 
 		var content = ide.toJSON(data.saveData());
 		var newSign = ide.makeSignature(content);

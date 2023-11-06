@@ -509,10 +509,12 @@ class Prefab {
 		return loadPrefab(data);
 	}
 
+	#if editor
 	function set_dirty(value:Bool):Bool {
 		if (parent == null)
 			return this.dirty = value;
 		else 
 			return parent.dirty = value;
 	}
+	#end
 }
