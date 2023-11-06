@@ -346,7 +346,7 @@ class Scene extends Component implements h3d.IDrawable {
 		return loadTexture("", t, onReady);
 	}
 
-	public function loadTexture( modelPath : String, texturePath : String, ?onReady : h3d.mat.Texture -> Void, async=false ) {
+	public function loadTexture( modelPath : String, texturePath : String, ?onReady : h3d.mat.Texture -> Void, async=false, ?uncompressed: Bool = false) {
 		checkCurrent();
 		var path = resolvePath(modelPath, texturePath);
 		if( path == null ) {
@@ -359,10 +359,17 @@ class Scene extends Component implements h3d.IDrawable {
 			return t;
 		}
 		var relPath = StringTools.startsWith(path, ide.resourceDir) ? path.substr(ide.resourceDir.length+1) : path;
+
 		var res = try hxd.res.Loader.currentInstance.load(relPath) catch( e : hxd.res.NotFound ) {
 			var bytes = sys.io.File.getBytes(path);
 			hxd.res.Any.fromBytes(path, bytes);
 		};
+
+		if (uncompressed) {
+			var bytes = sys.io.File.getBytes(path);
+			res = hxd.res.Any.fromBytes(path, bytes);
+		}
+
 		if( onReady == null ) onReady = function(_) {};
 		try {
 			var img = res.toImage();

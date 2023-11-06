@@ -488,6 +488,39 @@ class RenderPropsPopup extends Popup {
 	}
 }
 
+class CompressionPopup extends Popup {
+
+	public function new(?parent:Element, ?root:Element, texturePath: String) {
+		super(parent, root, isSearchable);
+
+		popup.addClass("settings-popup");
+		popup.css("max-width", "300px");
+
+		var fs:hxd.fs.LocalFileSystem = Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
+		@:privateAccess var textureConvertRule = fs.convert.getConvertRule(texturePath);
+		
+		function addField(parent: Element, label:String, options:Array<String>) {
+			var field = new Element('<div>
+				<label>${label}</label>
+				<select class="field-select">
+				</select>
+			</div>');
+
+			var select = field.find(".field-select");
+			for (opt in options) {
+				select.append(new Element('<option value="${opt}">${opt}</option>'));
+			}
+
+			parent.append(field);
+		}
+
+		addField(popup, "Format", ["No compression", "BC1", "BC2", "BC3", "R16U", "RG16U", "RGB16U", "RGBA16U"] );
+		
+		var fieldSelect = popup.find(".field-select");
+		fieldSelect.val(textureConvertRule == null ? "No compression" : textureConvertRule.cmd.params.format);
+	}
+}
+
 class SceneEditor {
 
 	public var tree : hide.comp.IconTree<PrefabElement>;
