@@ -181,7 +181,10 @@ class Prefab {
 		if( children.length > 0 )
 			obj.children = [for( s in children ) s.saveData()];
 
+		#if editor
 		dirty = false;
+		#end
+		
 		return obj;
 	}
 
