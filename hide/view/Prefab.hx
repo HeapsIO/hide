@@ -570,6 +570,15 @@ class Prefab extends FileView {
 	override function save() {
 		if( !canSave() )
 			return;
+		
+		var needRefresh = false;
+		for (c in @:privateAccess sceneEditor.sceneData) {
+			if (c is hrt.prefab.Reference) {
+				var ref = Std.downcast(c, hrt.prefab.Reference);
+				needRefresh = needRefresh || ref.ref.dirty;
+			}
+		}
+
 		var content = ide.toJSON(data.saveData());
 		var newSign = ide.makeSignature(content);
 		if(newSign != currentSign)
@@ -577,6 +586,9 @@ class Prefab extends FileView {
 		currentSign = newSign;
 		sys.io.File.saveContent(getPath(), content);
 		super.save();
+
+		if (needRefresh)
+			sceneEditor.refresh();
 	}
 
 	function updateGrid() {

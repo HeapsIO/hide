@@ -27,7 +27,9 @@ class Reference extends Object3D {
 		#if editor
 		if( editMode && ref != null ) {
 			if( editor != null ) editor.watchIgnoreChanges(source);
-			hide.Ide.inst.savePrefab(source, ref);
+
+			if (ref.dirty)
+				hide.Ide.inst.savePrefab(source, ref);
 		}
 		#end
 		return obj;

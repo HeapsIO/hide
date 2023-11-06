@@ -56,6 +56,14 @@ class Prefab {
 	**/
 	@:s public var props : Any;
 
+	#if editor
+	/**
+		Flag set to true when changes are made in prefab editor.
+		/!\ Changes from code won't set the flag to true.
+	**/
+	public var dirty(default, set) : Bool = false;
+	#end
+
 	/**
 		Creates a new prefab with the given parent.
 	**/
@@ -169,8 +177,11 @@ class Prefab {
 	**/
 	public final function saveData() : {} {
 		var obj : Dynamic = save();
+
 		if( children.length > 0 )
 			obj.children = [for( s in children ) s.saveData()];
+
+		dirty = false;
 		return obj;
 	}
 
@@ -498,4 +509,10 @@ class Prefab {
 		return loadPrefab(data);
 	}
 
+	function set_dirty(value:Bool):Bool {
+		if (parent == null)
+			return this.dirty = value;
+		else 
+			return parent.dirty = value;
+	}
 }

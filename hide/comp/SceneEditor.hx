@@ -1912,6 +1912,7 @@ class SceneEditor {
 			if( el != null && el.toggleClass != null ) applyTreeStyle(p, el, pname);
 		}
 
+		p.dirty = true;
 		applySceneStyle(p);
 	}
 
