@@ -1152,6 +1152,24 @@ class Cell {
 		return editor.isUniqueID(table.getRealSheet(), if(ignoreSelf) line.obj else {}, idWithScope);
 	}
 
+	function isSpace(c: Int) {
+		return (c > 8 && c < 14) || c == 32 || c == 0xA0;
+	}
+
+	function trimNonBreakableSpaces(str: String) {
+		var pos = 0;
+		var endPos = str.length - 1;
+
+		while(pos < str.length && isSpace(str.charCodeAt(pos))) {
+			pos ++;
+		}
+
+		while (endPos > 0 && isSpace(str.charCodeAt(endPos))) {
+			endPos --;
+		}
+		return str.substr(pos, endPos - pos + 1);
+	}
+
 	function setRawValue( str : Dynamic ) {
 		var newValue : Dynamic;
 		if( Std.isOfType(str,String) ) {
@@ -1173,7 +1191,7 @@ class Cell {
 			}
 			focus();
 		case TString if( column.kind == Script || column.kind == Localizable ):
-			setValue(StringTools.trim(newValue));
+			setValue(trimNonBreakableSpaces(newValue));
 		case TTilePos:
 			// if we change a file that has moved, change it for all instances having the same file
 			editor.beginChanges();
