@@ -458,9 +458,10 @@ class EmitterObject extends h3d.scene.Object {
 	public var emitRateMin : Value;
 	public var emitRateMax : Value;
 	public var emitRateChangeDelay : Float = 1.0;
+	public var emitRateChangeDelayStart : Float = 0.0;
 	public var emitRateCurrent : Null<Float>;
-	public var emitRateChange : Float = 0.0;
-	public var emitRateLastChangeTime : Float = 0.0;
+	public var emitRatePrevious : Null<Float>;
+	public var emitRateTarget : Null<Float>;
 	public var maxCount = 20;
 	public var enableSort = true;
 	// EMIT SHAPE
@@ -998,24 +999,30 @@ class EmitterObject extends h3d.scene.Object {
 					if( isSubEmitter && (parentEmitter == null || parentEmitter.parent == null) )
 						enable = false;
 				case InfinityRandom:
+					// Every emitRateChangeDelay time, we choose a new emit rate value between min and max
+					// and lerp from previous emit rate value to the new one, to ensure
+					// there's no "step" effect visible (we want the emit rate changes to
+					// be smooth).
+
 					var min = evaluator.getFloat(emitRateMin, curTime);
 					var max = evaluator.getFloat(emitRateMax, curTime);
-
-					if (emitRateCurrent == null || emitRateCurrent == Math.NaN) {
-						emitRateCurrent = random.rand() * (max-min) + min;
-						emitRateLastChangeTime = emitRateChangeDelay;
+					
+					var unInitiliazed = emitRateCurrent == Math.NaN || emitRateCurrent == null;
+					var needNewValue = curTime - emitRateChangeDelayStart >= emitRateChangeDelay || curTime - emitRateChangeDelayStart < 0;
+					if (unInitiliazed || needNewValue) {
+						emitRateChangeDelayStart = curTime;
+						emitRatePrevious = emitRateTarget;
+						emitRateTarget = random.rand() * (max-min) + min;
+						
+						if (emitRatePrevious == Math.NaN || emitRatePrevious == null)
+							emitRatePrevious = random.rand() * (max-min) + min;
 					}
 
-					if (emitRateLastChangeTime >= emitRateChangeDelay) {
-						emitRateLastChangeTime = emitRateLastChangeTime % emitRateChangeDelay;
-						var target = random.rand() * (max-min) + min;
-						emitRateChange = (target-emitRateCurrent) / (emitRateChangeDelay - emitRateLastChangeTime);
-					}
-
-					emitRateCurrent += emitRateChange * dt;
-					emitRateLastChangeTime += dt;
-
+					var t = (curTime - emitRateChangeDelayStart) / emitRateChangeDelay;
+					emitRateCurrent = (emitRatePrevious - emitRateTarget) * t + emitRatePrevious;
+					
 					emitTarget += emitRateCurrent * dt;
+
 					var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, emitTarget - emitCount));
 					doEmit(delta);
 					if( isSubEmitter && (parentEmitter == null || parentEmitter.parent == null) )
