@@ -65,10 +65,12 @@ enum ViewMode {
 class Image extends FileView {
 
 	var bmp : h2d.Bitmap;
+	var sliderBmp : h2d.Bitmap;
 	var scene : hide.comp.Scene;
 	var viewMode : ViewMode = Compressed;
-	var firstDisplay : Bool = true;
+	var interactive : h2d.Interactive;
 	var tools : hide.comp.Toolbar;
+	var sliderTexture : Null<h3d.mat.Texture>;
 
 	override function onDisplay() {
 		element.html('
@@ -79,13 +81,14 @@ class Image extends FileView {
 			</div>
 		');
 
+		cleanUp();
+
+		scene = new hide.comp.Scene(config, null, element.find(".heaps-scene"));
+
 		this.saveDisplayKey = state.path;
 		this.viewMode = getDisplayState("ViewMode");
 
-		if (this.viewMode == null)
-			this.viewMode = Compressed;
-
-		firstDisplay = true;
+		var shader = new ImageViewerShader();
 
 		tools = new hide.comp.Toolbar(null,element.find(".toolbar"));
 
@@ -95,73 +98,65 @@ class Image extends FileView {
 			tools.element.find(".show-uncompressed").removeAttr("checked");
 			tools.element.find(".show-comparison").removeAttr("checked");
 
-			if (firstDisplay) {
-				firstDisplay = false;
-				return;
-			}
-
 			this.saveDisplayState("ViewMode", Compressed);
-			this.onDisplay();
-		}, this.viewMode.match(Compressed));
+			this.viewMode = Compressed;
+			
+			if (bmp != null)
+				applyShaderConfiguration(shader);
+
+		});
 		tgCompressed.element.addClass("show-compressed");
 
 		var tgUncompressed = tools.addToggle("file-image-o", "Show uncompressed texture", "", function (e) {
 			tools.element.find(".show-compressed").removeAttr("checked");
 			tools.element.find(".show-comparison").removeAttr("checked");
 
-			if (firstDisplay) {
-				firstDisplay = false;
-				return;
-			}
-
 			this.saveDisplayState("ViewMode", Uncompressed);
-			scene.remove();
-			this.onDisplay();
+			this.viewMode = Uncompressed;
 			
-		}, this.viewMode.match(Uncompressed));
+			if (bmp != null)
+				applyShaderConfiguration(shader);
+
+		});
 		tgUncompressed.element.addClass("show-uncompressed");
 
 		var tgComparison = tools.addToggle("arrows-h", "Show comparison between compressed and uncompressed texture", "", function (e) {
 			tools.element.find(".show-uncompressed").removeAttr("checked");
 			tools.element.find(".show-compressed").removeAttr("checked");
 
-			if (firstDisplay) {
-				firstDisplay = false;
-				return;
-			}
-
 			this.saveDisplayState("ViewMode", Comparison);
-			scene.remove();
-			this.onDisplay();
-		}, this.viewMode.match(Comparison));
+			this.viewMode = Comparison;
+			
+			if (bmp != null)
+				applyShaderConfiguration(shader);
+			
+		});
 		tgComparison.element.addClass("show-comparison");
 
 		tools.addSeparator();
 
 		tools.addPopup(null, "Compression", (e) -> new hide.comp.SceneEditor.CompressionPopup(null, e, state.path), null);
-		
-		tools.addSeparator();
 
 		tools.addSeparator();
-
-		tools.addButton("", "Save compression", function() {});
-
-		tools.addSeparator();
-
-		scene = new hide.comp.Scene(config, null, element.find(".heaps-scene"));
 		
 		scene.onReady = function() {
 			scene.loadTexture(state.path, state.path, function(compressedTexture) {
 				scene.loadTexture(state.path, state.path, function(uncompressedTexture) {
-					onTexturesLoaded(compressedTexture, uncompressedTexture);
+					var path = hide.Ide.inst.appPath + "/res/slider.png";
+					scene.loadTexture(path, path, function(sliderTexture) {
+						this.sliderTexture = sliderTexture;
+						onTexturesLoaded(compressedTexture, uncompressedTexture, shader, tgCompressed, tgUncompressed, tgComparison);
+					}, false);
 				}, false, true);
 			}, false);
 		};
 	}
 
 	override function onRebuild() {
-		if ( scene != null )
+		if ( scene != null ) {
 			scene.dispose();
+			scene = null;
+		}
 		super.onRebuild();
 	}
 
@@ -173,8 +168,7 @@ class Image extends FileView {
 		bmp.y = -Std.int(bmp.tile.height * bmp.scaleY) >> 1;
 	}
 
-	public function onTexturesLoaded(compressedTexture: Null<h3d.mat.Texture>, uncompressedTexture: Null<h3d.mat.Texture>) {
-		var shader = new ImageViewerShader();
+	public function onTexturesLoaded(compressedTexture: Null<h3d.mat.Texture>, uncompressedTexture: Null<h3d.mat.Texture>, shader : ImageViewerShader, tgCompressed : hide.comp.Toolbar.ToolToggle, tgUncompressed : hide.comp.Toolbar.ToolToggle, tgComparison : hide.comp.Toolbar.ToolToggle) {
 		for( i in 0...4 ) {
 			var name = "RGBA".charAt(i);
 			tools.addToggle("", "Channel "+name, name, function(b) {
@@ -182,6 +176,10 @@ class Image extends FileView {
 				if( b ) shader.channels |= 1 << i;
 			});
 		}
+
+		tgCompressed.toggle(this.viewMode.match(Compressed));
+		tgUncompressed.toggle(this.viewMode.match(Uncompressed));
+		tgComparison.toggle(this.viewMode.match(Comparison));
 
 		if( !compressedTexture.flags.has(Cube) ) {
 			bmp = new h2d.Bitmap(h2d.Tile.fromTexture(compressedTexture), scene.s2d);
@@ -222,31 +220,57 @@ class Image extends FileView {
 			tools.addRange("Exposure", function(f) shader.exposure = f, 0, -10, 10);
 		}
 
-		var switch (this.viewMode) {
+		applyShaderConfiguration(shader);
+		onResize();
+	}
+
+	public function applyShaderConfiguration(shader : ImageViewerShader) {
+		switch (this.viewMode) {
 			case  Compressed:
-				shader.comparisonFactor = 1;
+				{
+					shader.comparisonFactor = 1;
+
+					if (interactive != null)
+						interactive.remove();
+
+					if (sliderBmp != null)
+						sliderBmp.alpha = 0;
+				}
 
 			case Uncompressed:
-				shader.comparisonFactor = 0;
+				{
+					shader.comparisonFactor = 0;
+
+					if (interactive != null)
+						interactive.remove();
+
+					if (sliderBmp != null)
+						sliderBmp.alpha = 0;
+				}
 
 			case Comparison:
 				{
-					var path = hide.Ide.inst.appPath + "/res/slider.png";
-					var data = sys.io.File.getBytes(path);
-					var tex = hxd.res.Any.fromBytes(path, data).toTexture();
-					var sliderBmp = new h2d.Bitmap(h2d.Tile.fromTexture(tex), bmp);
+					if (sliderBmp == null)
+						sliderBmp = new h2d.Bitmap(h2d.Tile.fromTexture(sliderTexture), bmp);
+					else 
+						sliderBmp.alpha = 1;
+
 					bmp.addChild(sliderBmp);
 					sliderBmp.height = bmp.tile.height;
 			
 					var bounds = new h2d.col.Bounds();
 					sliderBmp.getSize(bounds);
 			
-					var interactive = new h2d.Interactive(bmp.tile.width,bmp.tile.height,bmp);
+					if (interactive != null)
+						interactive.remove();
+
+					interactive = new h2d.Interactive(bmp.tile.width,bmp.tile.height,bmp);
 					interactive.propagateEvents = true;
 					interactive.x = bmp.tile.dx;
 					interactive.y = bmp.tile.dy;
 			
 					sliderBmp.x = bmp.tile.width / 2.0 - bounds.width / 2.0;
+					shader.comparisonFactor = 0.5;
 					var clicked = false;
 			
 					function updateSlider(e: hxd.Event) {
@@ -274,8 +298,16 @@ class Image extends FileView {
 				default:
 					trace("Not implemented yet");
 		}
+	}
 
-		onResize();
+	public function cleanUp() {
+		if (scene != null)
+			scene.dispose();
+
+		sliderBmp = null;
+		bmp = null;
+		interactive = null;
+		sliderTexture = null;
 	}
 
 	static var _ = FileTree.registerExtension(Image,hide.Ide.IMG_EXTS.concat(["envd","envs"]),{ icon : "picture-o" });
