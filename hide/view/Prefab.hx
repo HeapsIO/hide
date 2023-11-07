@@ -577,7 +577,8 @@ class Prefab extends FileView {
 		for (c in @:privateAccess sceneEditor.sceneData) {
 			if (c is hrt.prefab.Reference) {
 				var ref = Std.downcast(c, hrt.prefab.Reference);
-				needRefresh = needRefresh || ref.ref.dirty;
+				var refreshException = ref.flatten(hrt.prefab.l3d.Polygon).length > 0 || ref.flatten(hrt.prefab.l3d.MeshSpray).length > 0;
+				needRefresh = needRefresh || (ref.ref.dirty && !refreshException);
 			}
 		}
 		#end

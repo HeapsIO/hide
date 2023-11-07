@@ -311,6 +311,10 @@ class Polygon extends Object3D {
 		super.edit(ctx);
 		createEditor(ctx);
 
+		#if editor
+		this.dirty = true;
+		#end
+		
 		var prevKind : Shape = this.shape;
 		var viewModel = {
 			kind: shape.getName(),
