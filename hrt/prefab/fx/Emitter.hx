@@ -1001,7 +1001,7 @@ class EmitterObject extends h3d.scene.Object {
 					var min = evaluator.getFloat(emitRateMin, curTime);
 					var max = evaluator.getFloat(emitRateMax, curTime);
 
-					if (emitRateCurrent == null) {
+					if (emitRateCurrent == null || emitRateCurrent == Math.NaN) {
 						emitRateCurrent = random.rand() * (max-min) + min;
 						emitRateLastChangeTime = emitRateChangeDelay;
 					}
