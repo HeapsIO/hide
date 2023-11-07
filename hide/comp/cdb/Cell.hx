@@ -339,7 +339,7 @@ class Cell {
 		case TString if( c.kind == Script ):  // wrap content in div because td cannot have max-height
 			v == "" ? val(" ") : html('<div class="script">${colorizeScript(c,v, sheet.idCol == null ? null : Reflect.field(obj, sheet.idCol.name))}</div>');
 		case TString, TLayer(_):
-			v == "" ? val(" ") : html(StringTools.htmlEscape(v).split("\n").join("<br/>"));
+			v == "" ? val(" ") : html(spacesToNBSP(StringTools.htmlEscape(v).split("\n").join("<br/>")));
 		case TRef(sname):
 			if( v == "" )
 				html('<span class="error">#MISSING</span>');
@@ -662,6 +662,27 @@ class Cell {
 		return null;
 	}
 
+	// replace consecutive spaces to non brekable space + a space
+	public function spacesToNBSP(str: String) {
+		var buf = new StringBuf();
+
+		for (i in 0...str.length) {
+			var c : Int = str.charCodeAt(i);
+			if (c == 0x20) {
+				var c2 = str.charCodeAt(i+1);
+				if (c2 == null || c2 == 0x20) {
+					c = 0xa0;
+				}
+			}
+			buf.addChar(c);
+		}
+		return buf.toString();
+	}
+
+	public function nBSPtoSpaces(str: String) {
+		return StringTools.replace(str, "\u00A0", " ");
+	}
+
 	// kept available until we're confident in the new system
 	var useSelect2 = false;
 	public function edit() {
@@ -686,6 +707,8 @@ class Cell {
 
 
 			var i = new Element("<div contenteditable='true' tabindex='1' class='custom-text-edit'>");
+			// replace all spaces with unbreakable spaces (I wanna die)
+			str = spacesToNBSP(str);
 			i[0].innerText = str;
 			var textHeight = i[0].offsetHeight;
 			var longText = textHeight > 25 || str.indexOf("\n") >= 0;
@@ -1231,8 +1254,17 @@ class Cell {
 	public function closeEdit() {
 		inEdit = false;
 		var input = elementHtml.querySelector("div[contenteditable]");
+		var text : String = input?.innerText;
+		if (text != null) {
+			trace(text);
+			trace("before", [for (i in 0...text.length()) StringTools.hex(text.charCodeAt(i))]);
+			text = nBSPtoSpaces(text);
 
-		if(input != null && input.innerText != null ) setRawValue(input.innerText);
+			var bytes = haxe.io.Bytes.ofString(text);
+			trace("after", [for (i in 0...text.length()) StringTools.hex(text.charCodeAt(i))]);
+			setRawValue(text);
+		}
+
 		refresh();
 		focus();
 	}
