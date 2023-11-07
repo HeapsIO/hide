@@ -1256,12 +1256,7 @@ class Cell {
 		var input = elementHtml.querySelector("div[contenteditable]");
 		var text : String = input?.innerText;
 		if (text != null) {
-			trace(text);
-			trace("before", [for (i in 0...text.length()) StringTools.hex(text.charCodeAt(i))]);
 			text = nBSPtoSpaces(text);
-
-			var bytes = haxe.io.Bytes.ofString(text);
-			trace("after", [for (i in 0...text.length()) StringTools.hex(text.charCodeAt(i))]);
 			setRawValue(text);
 		}
 
