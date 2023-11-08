@@ -22,6 +22,8 @@ class TemporalFilteringShader extends h3d.shader.ScreenShader {
 		@param var depthChannel : Channel;
 		@param var depthTexture : Sampler2D;
 
+		@const var KEEP_SKY_ALPHA : Bool;
+
 		function rgb2ycocg( rgb : Vec3 ) : Vec3 {
 			if( YCOCG ) {
 				var co = rgb.r - rgb.b;
@@ -87,7 +89,8 @@ class TemporalFilteringShader extends h3d.shader.ScreenShader {
 			var prevPos = vec4(curPos, 1.0) * prevCamMat;
 			prevPos.xyz /= prevPos.w;
 
-			var curColor = curFrame.get(unJitteredUV).rgb;
+			var curSample = curFrame.get(unJitteredUV); 
+			var curColor = curSample.rgb;
 			var prevUV = screenToUv(prevPos.xy);
 			var prevColor = prevFrame.get(prevUV).rgb;
 
@@ -106,7 +109,10 @@ class TemporalFilteringShader extends h3d.shader.ScreenShader {
 				prevColor = max(vec3(0.0), ycocg2rgb(clipToAABB(rgb2ycocg(prevColor), rgb2ycocg(curColor), m1, m2)));
 			}
 			pixelColor.rgb = isSky ? curColor : mix(curColor, prevColor, amount);
-			pixelColor.a = 1.0;
+			if ( KEEP_SKY_ALPHA )
+				pixelColor.a = isSky ? curSample.a : 1.0;
+			else
+				pixelColor.a = 1.0;
 		}
 	}
 }
@@ -120,6 +126,7 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 	@:s public var jitterPattern : FrustumJitter.Pattern = Still;
 	@:s public var jitterScale : Float = 1;
 	@:s public var renderMode : String = "AfterTonemapping";
+	@:s public var keepSkyAlpha : Bool = false;
 
 	public var frustumJitter = new FrustumJitter();
 	public var pass = new h3d.pass.ScreenFx(new TemporalFilteringShader());
@@ -190,6 +197,8 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 			s.YCOCG = ycocg;
 			s.UNJITTER = unjitter;
 
+			s.KEEP_SKY_ALPHA = keepSkyAlpha;
+
 			r.setTarget(output);
 			pass.render();
 
@@ -240,6 +249,7 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 							<option value="BeforeTonemapping">Before Tonemapping</option>
 							<option value="AfterTonemapping">After Tonemapping</option>
 						</select></dd>
+					<dt>Keep sky alpha</dt><dd><input type="checkbox" field="keepSkyAlpha"/></dd>
 				</div>
 			</dl>
 		'),this);
