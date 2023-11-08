@@ -61,7 +61,8 @@ class Evaluator {
 			case VCurve(c): return c.getSum(time);
 			case VAdd(a, b):
 				return getSum(a, time) + getSum(b, time);
-			case VMult(a, b), VZero:
+			case VMult(a, b):
+			case VZero:
 			default: throw "Not implemented";
 		}
 		return 0.0;
