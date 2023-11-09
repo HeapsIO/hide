@@ -27,7 +27,7 @@ class SSRShader extends h3d.shader.ScreenShader {
 		}
 
 		function getViewPos(uv:Vec2):Vec4 {
-			var depth = depthMap.get(uv).r;
+			var depth = depthMap.getLod(uv, 0).r;
 			var ruv = vec4(uvToScreen(uv), depth, 1);
 			var vpos = ruv * cameraInverseProj;
 			return vpos / vpos.w;
