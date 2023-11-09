@@ -117,9 +117,13 @@ class GenFog extends RendererFX {
 		fogPass.pass.setBlendMode(Alpha);
 	}
 
+	function checkPass(step : h3d.impl.RendererFX.Step) {
+		return (step == AfterTonemapping && renderMode == AfterTonemapping) || (step == BeforeTonemapping && renderMode == BeforeTonemapping);
+	}
+
 	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
 		if( !checkEnabled() ) return;
-		if( (step == AfterTonemapping && renderMode == AfterTonemapping) || (step == BeforeTonemapping && renderMode == BeforeTonemapping) ) {
+		if( checkPass(step) ) {
 			r.mark("DistanceFog");
 			var ctx = r.ctx;
 
